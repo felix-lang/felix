@@ -3,6 +3,7 @@
 @tangler schannels.flx=share/lib/std/control/schannels.flx
 @tangler mux.flx=share/lib/std/control/mux.flx
 @tangler spipes.flx=share/lib/std/control/spipes.flx
+
 @tangler spipeexpr.fsyn = share/lib/std/control/spipeexpr.fsyn
 @tangler spipesex-01.flx=test/regress/rt/spipesex-01.flx
 @tangler spipesex-01.expect=test/regress/rt/spipesex-01.expect
@@ -16,6 +17,12 @@
 @tangler spipesex-04.expect=test/regress/rt/spipesex-04.expect
 @tangler spipesex-05.flx=test/regress/rt/spipesex-05.flx
 @tangler spipesex-05.expect=test/regress/rt/spipesex-05.expect
+
+@tangler subrout-01.flx=test/regress/rt/subrout-01.flx
+@tangler subrout-01.expect=test/regress/rt/subrout-01.expect
+@tangler subrout-02.flx=test/regress/rt/subrout-02.flx
+@tangler subrout-02.expect=test/regress/rt/subrout-02.expect
+
 @h1 Fibres (fthreads)
 @tangle fibres.flx
 
@@ -189,10 +196,13 @@ open class Schannel
   //$ The type of an output synchronous channel.
   _gc_pointer type oschannel[t] = "::flx::rtl::schannel_t*";
 
-  //$ Create a bidirectional synchronous channel.
-  gen mk_schannel[t]: 1->schannel[t] =
+  gen mk_untyped_schannel: 1 -> address = 
     "new(*PTF gcp,::flx::rtl::schannel_ptr_map,false) ::flx::rtl::schannel_t(PTF gcp)"
     requires property "needs_gc"
+  ;
+  //$ Create a bidirectional synchronous channel.
+  gen mk_schannel[t]():schannel[t] => 
+    C_hack::cast[schannel[t]] #mk_untyped_schannel
   ;
 
   //$ Model a NULL pointer as an schannel. 
@@ -343,6 +353,12 @@ syntax spipeexpr
 
   //$ input/output schannel type %<>T
   x[sprefixed_pri] := "%<>" x[spower_pri] =># '`(ast_name ,_sr "ioschannel" (,_2))';
+
+  //$ duplex schannel type %<INPUT%>OUTPUT
+  x[sprefixed_pri] := "%<" x[spower_pri] "%>" x[spower_pri] =># 
+    '`(ast_name ,_sr "duplex_schannel" (,_2 ,_4))'
+  ;
+
 
 }
 
@@ -1005,3 +1021,124 @@ spawn_fthread$  source |-> xduce |-> sink;
 9
 18
 @
+
+@h1 Subroutines
+In this section, we will provides some special uses of fibres and 
+schannels.
+
+The usual protocol for calling a function is to call the function passing
+an argument and wait to receive back a value. We can emulate this with a 
+transducer already.
+
+@tangle subrout-01.flx
+proc int_to_string (chi: %<int, cho: %>string)  ()
+{
+  var x = read chi;
+  var r = x.str;
+  write(cho, r);
+}
+var ain, aout = mk_ioschannel_pair[int]();
+var rin, rout = mk_ioschannel_pair[string]();
+spawn_fthread int_to_string (ain, rout);
+write (aout, 42);
+var r = read rin;
+println$ r;
+@
+@tangle subrout-01.expect
+42
+@
+
+Most notable in this structure is that the write and read from
+the mainline can be split. We expect that in the subroutine,
+the argument is passed at the beginning and the result returned
+at the end. In a non-looping subroutine, we can do some initialisation
+work before the read. However calculations performed after the write
+are useless because the fibre suicides.
+
+The split in the mainline, however, is unusual. If the subroutine
+were to wait on an asynchronous event, the waiting time could
+be used by the mainline until it requires the result. Otherwise
+there is no good reason not to demand the result immediately.
+
+This suggests the mainline should write and read in a single
+operation. Similarly the subroutine should terminate with the
+final write.
+
+In addition, we note that we have used two schannels here with
+two ends each. But clearly a single channel is enough because
+of the subroutine call protocol.
+
+This therefore demands a new schannel typing arrangement.
+@tangle schannels.flx
+
+open class DuplexSchannels
+{
+_gc_pointer type duplex_schannel[r,w] = "::flx::rtl::schannel_t*";
+
+inline gen read[r,w] (chan:duplex_schannel[r,w]) : r =>
+  read (C_hack::cast[ischannel[r]] chan)
+;
+
+inline proc write[r,w] (chan:duplex_schannel[r,w], v:w)  =>
+  write (C_hack::cast[oschannel[w]] chan, v)
+;
+
+ctor[r,w] duplex_schannel[r,w] () =>
+  C_hack::cast[duplex_schannel[r,w]] #mk_untyped_schannel
+; 
+
+// NOTE: assuming the mainline want to read an r
+// after passing a w to the subroutine, it must
+// use the second channel of the pair to do so.
+// passing the first one to the subroutine.
+gen mk_duplex_schannel_pair[r,w] () =>
+  let c = #mk_untyped_schannel in
+  C_hack::cast[duplex_schannel[w,r]] c,
+  C_hack::cast[duplex_schannel[r,w]] c
+;
+
+// Here is our subroutine call, assuming the
+// fibre is already created
+fun subcall[r,w] (ch:duplex_schannel[r,w]) (arg:w):r =
+{
+  write (ch,arg);
+  return read ch;
+}
+
+// Now, we can use the duplex channel AS a function:
+fun apply[r,w] (ch:duplex_schannel[r,w], arg:w):r =>
+  subcall ch arg
+;
+
+// Here is a self contained subcall that spawns the fibre
+// and creates the channel too. This model is for a one shot.
+gen subcall[r,w] 
+  (fib: duplex_schannel[w,r] -> 1 -> 0)
+  (arg: w)
+: r =
+{
+  var wr,rw = mk_duplex_schannel_pair[r,w]();
+  spawn_fthread$ fib wr;
+  write (rw,arg);
+  return read rw;
+}
+} // class DuplexSchannels
+
+@
+Let's now rewrite our example:
+@tangle subrout-02.flx
+proc int_to_string (ch: %<int%>string)  ()
+{
+  var x = read ch;
+  var r = x.str;
+  write(ch, r);
+}
+var wr, rw = mk_duplex_schannel_pair[string,int]();
+spawn_fthread$ int_to_string wr;
+println$ rw 42;
+@
+@tangle subrout-02.expect
+42
+@
+
+
