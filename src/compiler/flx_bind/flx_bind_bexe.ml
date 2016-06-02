@@ -391,6 +391,11 @@ let rec bind_exe state bsym_table (sr, exe) : bexe_t list =
   | EXE_call (EXPR_name (_,"axiom_check",[]), e2) ->
     [(bexe_axiom_check (sr,be e2))]
 
+  | EXE_call (EXPR_apply(_,(EXPR_name (_,"_iter",[]), EXPR_name (_,fn,[]))),arg) ->
+    Flx_gmap.generic_map_proc bsym_table (bind_exe state) be sr fn arg 
+
+
+
   | EXE_call (f',a') ->
 (*
 print_endline ("Binding call f=" ^ string_of_expr f' ^ ",a=" ^ string_of_expr a');

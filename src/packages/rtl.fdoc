@@ -203,6 +203,8 @@ void dmove_assign (T *dst, T *src)
 
 class ValueType
 {
+  virtual size_t object_size_impl()=0;
+  virtual size_t object_alignment_impl()=0;
   virtual void dflt_init_impl (void *)=0;
   virtual void destroy_impl (void *)=0;
   virtual void copy_init_impl(void *, void *)=0;
@@ -210,6 +212,8 @@ class ValueType
   virtual void copy_assign_impl(void *, void *)=0;
   virtual void move_assign_impl(void *, void *)=0;
 public:
+  size_t object_size() { return object_size_impl(); }
+  size_t object_alignment() { return object_size_impl(); }
   void dflt_init(void *dst) { dflt_init_impl(dst); }
   void destroy(void *dst) { destroy_impl (dst); }
 
@@ -222,6 +226,8 @@ public:
 template<typename T> 
 class CxxValueType : public virtual ValueType
 {
+  size_t object_size_impl() { return sizeof(T); }
+  size_t object_alignment_impl() { return alignof(T); }
   void dflt_init_impl(void *dst) { ::dflt_init<T>((T*)dst); }
   void destroy_impl(void *dst) { ::dflt_init<T>((T*)dst); }
   void copy_init_impl(void *dst, void *src) { ::copy_init<T>((T*)dst,(T*)src); }
@@ -229,6 +235,26 @@ class CxxValueType : public virtual ValueType
   void copy_assign_impl(void *dst, void *src) { ::copy_assign<T>((T*)dst,(T*)src); }
   void move_assign_impl(void *dst, void *src) { ::move_assign<T>((T*)dst,(T*)src); }
 };
+
+// object does NOT own the product description array
+// should use a shared pointer thing I guess
+class ProductType : public virtual ValueType
+{
+  size_t n;
+  ValueType **cp;
+public:
+  ProductType (ValueType **p, size_t m) : cp(p), n(n) {}
+  ~ProductType();
+  size_t object_size_impl() override;
+  size_t object_alignment_impl() override;
+  void dflt_init_impl (void *) override;
+  void destroy_impl (void *) override;
+  void copy_init_impl(void *, void *) override;
+  void move_init_impl(void *, void *) override;
+  void copy_assign_impl(void *, void *) override;
+  void move_assign_impl(void *, void *) override;
+};
+
 
 template<typename T0, typename T1> 
 struct _tt2 {
@@ -844,9 +870,107 @@ void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char const *file, int line
     print_loc(stderr,sr,file,line);
   }
 }
-
-
 }}
+
+ProductType::~ProductType(){}
+
+size_t ProductType::object_size_impl() {
+  size_t s = 0;
+  for (int i=0; i<n; ++i) s+=cp[i]->object_size();
+  return s;
+}
+
+size_t ProductType::object_alignment_impl() {
+  size_t s = 0;
+  for (int i=0; i<n; ++i) s = ::std::max(s,cp[i]->object_alignment());
+  return s;
+}
+
+// if a is aligned then a%amt == 0
+// otherwise a%amt is the amount over the previously aligned
+// address, so we subtract it to get the previously aligned address
+// and then add the amt back to get the next one.
+uintptr_t round_up (uintptr_t a, size_t amt) {
+  size_t adj = a % amt;
+  return adj? a + amt - a%amt:a;
+}
+#define INCR(p,a) *(unsigned char **)p += a;
+
+void *round_up (void *a, size_t amt) { 
+  return (void*)round_up((uintptr_t)a, amt); 
+}
+
+void ProductType::dflt_init_impl (void *p) {
+  for (int i = 0; i<n; ++i) {
+    auto vt = cp[i];
+    p = round_up(p,vt->object_alignment());
+    vt->dflt_init(p);
+    INCR(p,vt->object_size());
+  }
+};
+
+void ProductType::destroy_impl (void *p) {
+  for (int i = 0; i<n; ++i) {
+    auto vt = cp[i];
+    p = round_up(p,vt->object_alignment());
+    vt->destroy(p);
+    INCR(p,vt->object_size());
+  }
+}
+
+void ProductType::copy_init_impl(void *dst, void *src) {
+  for (int i = 0; i<n; ++i) {
+    auto vt = cp[i];
+    auto align = vt->object_alignment();
+    src = round_up(src,align);
+    dst = round_up(dst,align);
+    vt->copy_init(dst,src);
+    auto z = vt->object_size();
+    INCR(src,z);
+    INCR(dst,z);
+  }
+}
+
+void ProductType::move_init_impl(void *dst, void *src) {
+  for (int i = 0; i<n; ++i) {
+    auto vt = cp[i];
+    auto align = vt->object_alignment();
+    src = round_up(src,align);
+    dst = round_up(dst,align);
+    vt->move_init(dst,src);
+    auto z = vt->object_size();
+    INCR(src, z);
+    INCR(dst, z);
+  }
+}
+
+void ProductType::copy_assign_impl(void *dst, void *src) {
+  for (int i = 0; i<n; ++i) {
+    auto vt = cp[i];
+    auto align = vt->object_alignment();
+    src = round_up(src,align);
+    dst = round_up(dst,align);
+    vt->copy_assign(dst,src);
+    auto z = vt->object_size();
+    INCR(src, z);
+    INCR(dst, z);
+  }
+}
+
+void ProductType::move_assign_impl(void *dst, void *src) {
+  for (int i = 0; i<n; ++i) {
+    auto vt = cp[i];
+    auto align = vt->object_alignment();
+    src = round_up(src,align);
+    dst = round_up(dst,align);
+    vt->move_assign(dst,src);
+    auto z = vt->object_size();
+    INCR(src, z);
+    INCR(dst, z);
+  }
+}
+
+
 @
 @h1 Exec Util
 @tangle flx_executil.hpp
@@ -1106,6 +1230,7 @@ static ::flx::gc::generic::offset_data_t const _variant_offset_data = { 1, _vari
   gc::generic::gc_flags_default
 };
 
+static CxxValueType<int> int_fcops {};
 
 // ********************************************************
 // int implementation
@@ -1118,7 +1243,8 @@ static ::flx::gc::generic::offset_data_t const _variant_offset_data = { 1, _vari
   1,
   sizeof(int),
   0, // finaliser
-  0, // fcops
+  &int_fcops,
+  //0, // fcops
   0, // scanner data
   0, // scanner
   ::flx::gc::generic::tblit<int>, // encoder

@@ -1835,6 +1835,8 @@ class Rtti {
 
   //$ The type of an RTTI record.
   type gc_shape_t = "::flx::gc::generic::gc_shape_t*";
+  fun ==: gc_shape_t * gc_shape_t -> bool = "$1==$2";
+
   fun isNULL: gc_shape_t -> bool = "$1==0";
   typedef gc_shape_flags_t = uint;
     val gc_flags_default = 0;
@@ -1848,13 +1850,17 @@ class Rtti {
   typedef gc_decoder_t = address * +char * size --> size;
 
   type fcops_t = "ValueType*";
+  fun get_fcops : gc_shape_t -> fcops_t = "$1->fcops";
+  fun isNULL: fcops_t -> bool = "$1==0";
+
+  fun object_size: fcops_t -> size = "$1->object_size()";
+  fun object_alignment: fcops_t -> size = "$1->object_alignment()";
   proc dflt_init : fcops_t * address = "$1->dflt_init($2);";
   proc destroy : fcops_t * address = "$1->destroy($2);";
   proc copy_init : fcops_t * address * address  = "$1->copy_init($2,$3);";
   proc move_init : fcops_t * address * address  = "$1->move_init($2,$3);";
   proc copy_assign: fcops_t * address * address  = "$1->copy_assign($2,$3);";
   proc move_assign: fcops_t * address * address  = "$1->move_assign($2,$3);";
-  fun get_fcops : gc_shape_t -> fcops_t = "$1->fcops";
 
   //$ Iterator to find the next shape after a given one.
   fun next_shape: gc_shape_t -> gc_shape_t = "$1->next_shape";
