@@ -578,6 +578,10 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     let ps = List.map (fun (pat,e) -> pat, mt sr e) ps in
     EXPR_type_match (sr,(mt sr e,ps))
 
+  | EXPR_typecase_match (sr, (e,ps)) ->
+    let ps = List.map (fun (t,e) -> mt sr t, me e) ps in
+    EXPR_typecase_match (sr,(me e,ps))
+
   | EXPR_ellipsis _
   | EXPR_void _ -> e
 

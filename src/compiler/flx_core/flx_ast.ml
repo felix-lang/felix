@@ -208,6 +208,7 @@ and expr_t =
   | EXPR_expr of Flx_srcref.t * Flx_code_spec.t * typecode_t * expr_t
 
   | EXPR_type_match of Flx_srcref.t * (typecode_t * (typecode_t * typecode_t) list)
+  | EXPR_typecase_match of Flx_srcref.t * (expr_t * (typecode_t * expr_t) list)
 
   | EXPR_extension of Flx_srcref.t * expr_t list * expr_t
 
@@ -748,6 +749,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_as_var (s,_)
   | EXPR_match (s, _)
   | EXPR_type_match (s, _)
+  | EXPR_typecase_match (s, _)
   | EXPR_cond (s,_)
   | EXPR_expr (s,_,_,_)
   | EXPR_letin (s,_)

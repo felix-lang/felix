@@ -4565,6 +4565,7 @@ syntax type_decls {
   requires statements;
 
   satom := stypematch =># "_1";
+  satom := stypecasematch =># "_1";
 
   //$ Typedef creates an alias for a type.
   stmt := "typedef" sdeclname "=" sexpr ";" =>#
@@ -4606,6 +4607,14 @@ syntax type_decls {
   //$ after substitution.
   stypematch := "typematch" sexpr "with" stype_matching+ "endmatch" =>#
     "`(ast_type_match ,_sr (,_2 ,_4))";
+
+
+  //$ A typecase expression computes an expression based on a type match.
+  stypecasematch := "typecase" sexpr "with" stype_matching+ "endmatch" =>#
+    "`(ast_typecase_match ,_sr (,_2 ,_4))";
+
+  //satom := "(" sexpr "=>" sname ")" =># "`(ast_caseextract ,_sr (,_2 ,_4))";
+
 
   //$ A struct is a nominally type product type similar to a C struct.
   //$ A struct may be polymorphic.  Felix generates a constructor for

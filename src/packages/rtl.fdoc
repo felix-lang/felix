@@ -586,11 +586,11 @@ struct RTL_EXTERN slist_node_t {
 
 
 struct RTL_EXTERN slist_t {
+  slist_t(){} // hack
   gc::generic::gc_profile_t *gcp;
   struct slist_node_t *head;
 
   slist_t (gc::generic::gc_profile_t*); ///< create empty list
-  slist_t (slist_t const &);            ///< shallow copy
 
   void push(void *data);                ///< push a gc pointer
   void *pop();                          ///< pop a gc pointer
@@ -611,8 +611,8 @@ struct RTL_EXTERN fthread_t // fthread abstraction
   void kill();                  ///< kill by detaching the continuation
   _uctor_ *get_svc()const;      ///< get current service request of waiting thread
 private: // uncopyable
-  fthread_t(fthread_t const&);
-  void operator=(fthread_t const&);
+  fthread_t(fthread_t const&) = delete;
+  void operator=(fthread_t const&) = delete;
 };
 
 // ********************************************************
@@ -629,8 +629,8 @@ struct RTL_EXTERN schannel_t
   void push_writer(fthread_t *);        ///< add a writer
   fthread_t *pop_writer();              ///< pop a writer, NULL if none
 private: // uncopyable
-  schannel_t(schannel_t const&);
-  void operator= (schannel_t const&);
+  schannel_t(schannel_t const&) = delete;
+  void operator= (schannel_t const&) = delete;
 };
 
 // ********************************************************
@@ -740,7 +740,6 @@ con_t::~con_t(){
 // ********************************************************
 
 slist_t::slist_t(::flx::gc::generic::gc_profile_t *_gcp) : gcp (_gcp), head(0) {}
-slist_t::slist_t(slist_t const &r) : gcp (r.gcp), head(r.head) {}
 
 bool slist_t::isempty()const { return head == 0; }
 
@@ -766,9 +765,9 @@ void *slist_t::pop()
 fthread_t::fthread_t() : cc(0) {}
 fthread_t::fthread_t(con_t *a) : cc(a) {}
 
-// uncopyable object but implementation needed for linker
-fthread_t::fthread_t(fthread_t const&){ assert(false); }
-void fthread_t::operator=(fthread_t const&){ assert(false); }
+// uncopyable object but implementation needed for linker????
+//fthread_t::fthread_t(fthread_t const&){ assert(false); }
+//void fthread_t::operator=(fthread_t const&){ assert(false); }
 
 void fthread_t::kill() { cc = 0; }
 
@@ -822,8 +821,8 @@ schannel_t::schannel_t (gc::generic::gc_profile_t *gcp) :
 }
 
 // uncopyable object but implementation needed for linker
-schannel_t::schannel_t(schannel_t const&) { assert(false); }
-void schannel_t::operator=(schannel_t const&) { assert(false); }
+//schannel_t::schannel_t(schannel_t const&) { assert(false); }
+//void schannel_t::operator=(schannel_t const&) { assert(false); }
 
 void schannel_t::push_reader(fthread_t *r)
 {
@@ -1121,12 +1120,14 @@ static const std::size_t slist_offsets[1]={
 };
 static ::flx::gc::generic::offset_data_t const slist_offset_data = { 1, slist_offsets };
 
+static CxxValueType<slist_t> _slist_t_fcops {};
+
 ::flx::gc::generic::gc_shape_t slist_ptr_map = {
   &slist_node_ptr_map,
   "rtl::slist_t",
   1,sizeof(slist_t),
   0, // no finaliser
-  0, // fcops
+  &_slist_t_fcops, // fcops
   &slist_offset_data,
   ::flx::gc::generic::scan_by_offsets,
   ::flx::gc::generic::tblit<slist_t>,::flx::gc::generic::tunblit<slist_t>, 
@@ -1192,13 +1193,15 @@ static const std::size_t _uctor_offsets[1]= {
 
 static ::flx::gc::generic::offset_data_t const _uctor_offset_data = { 1, _uctor_offsets };
 
+static CxxValueType<_uctor_> _uctor_fcops {};
+
 ::flx::gc::generic::gc_shape_t _uctor_ptr_map = {
   &schannel_ptr_map,
   "rtl::_uctor_",
   1,
   sizeof(_uctor_),
   0, // finaliser
-  0, // fcops
+  &_uctor_fcops, // fcops
   &_uctor_offset_data, // scanner data
   ::flx::gc::generic::scan_by_offsets, // scanner
   ::flx::gc::generic::tblit<_uctor_>, // encoder
@@ -1214,6 +1217,8 @@ static const std::size_t _variant_offsets[1]= {
   offsetof(_variant_,vdata)
 };
 
+static CxxValueType<_variant_> _variant_fcops {};
+
 static ::flx::gc::generic::offset_data_t const _variant_offset_data = { 1, _variant_offsets };
 
 ::flx::gc::generic::gc_shape_t _variant_ptr_map = {
@@ -1222,7 +1227,7 @@ static ::flx::gc::generic::offset_data_t const _variant_offset_data = { 1, _vari
   1,
   sizeof(_variant_),
   0, // finaliser
-  0, // fcops
+  &_variant_fcops, // fcops
   &_variant_offset_data, // scanner data
   ::flx::gc::generic::scan_by_offsets, // scanner
   ::flx::gc::generic::tblit<_variant_>, // encoder
@@ -1253,13 +1258,15 @@ static CxxValueType<int> int_fcops {};
   0UL, 0UL
 };
 
+static CxxValueType<cl_t> cl_t_fcops {};
+
 ::flx::gc::generic::gc_shape_t cl_t_ptr_map = {
   &_int_ptr_map,
   "rtl::cl_t",
   1,
   sizeof(cl_t),
   0, // finaliser
-  0, // fcops
+  &cl_t_fcops, // fcops
   0, // scanner data
   0, // scanner
   ::flx::gc::generic::tblit<cl_t>,::flx::gc::generic::tunblit<cl_t>, 

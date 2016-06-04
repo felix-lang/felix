@@ -13,7 +13,9 @@ class DynamicMetaTyping
   interface typedesc_t 
   {
     name: 1 -> string;
-    len: 1 -> size;
+    len: 1 -> size; // all the objects
+    object_size: 1 -> size; // one object
+    object_alignment: 1 -> size;
     dflt_init : address -> 0;
     destroy : address -> 0;
     copy_init : address * address -> 0; 
@@ -29,6 +31,9 @@ class DynamicMetaTyping
     method fun name () => tname;
 
     method fun len() => tlen;
+
+    method fun object_size() => Rtti::object_size fcops;
+    method fun object_alignment() => Rtti::object_alignment fcops;
 
     method proc dflt_init (dst:address)
       => Rtti::dflt_init (fcops, dst);
@@ -59,21 +64,27 @@ class DynamicMetaTyping
   ;
 
 
-  typedef binproc_t = address * address -> 0;
-  typedef unproc_t = address -> 0;
+  typedef binproc_t = address * address -> 0; // P2
+  typedef unproc_t = address -> 0; // P1
+  typedef get_size_t = 1 -> size; // FZ
 
   // NOTE: currently NOT GC aware!
 
-  body FelixValueType_poly[T,A2] = """
+  body FelixValueType_poly[P2,A2,P1,FZ] = """
     class FelixValueType : public virtual ValueType 
     {
+      ?4 object_size_ptr;
+      ?4 object_size_ptr;
       ?3 dflt_init_ptr;
-      ?3 ddestroy_ptr;
+      ?3 destroy_ptr;
       ?1 copy_init_ptr;
       ?1 move_init_ptr;
       ?1 copy_assign_ptr;
       ?1 move_assign_ptr;
 
+      size_t object_size() { return sizeof(?1); }
+      size_t object_alignment() { return alignof(?1); }
+ 
       void dflt_init_impl (void *dst) { 
         ::flx::rtl::executil::run (dflt_init_ptr->call(0,dst)); 
       }
@@ -101,7 +112,7 @@ class DynamicMetaTyping
 
     public:
       FelixValueType (?3 di, ?3 de, ?1 ci, ?1 mi, ?1 ca, ?1 ma) : 
-        deflt_init_ptr (di), 
+        dflt_init_ptr (di), 
         destroy_ptr (de), 
         copy_init_ptr (ci), 
         move_init_ptr (mi),
@@ -114,7 +125,7 @@ class DynamicMetaTyping
   // Tricky! Declare incomplete type in header
   // Implement class in body
   header FelixValueType_class = "class FelixValueType;" 
-    requires FelixValueType_poly[binproc_t, address^2, unproc_t],
+    requires FelixValueType_poly[binproc_t, address^2, unproc_t, get_size_t],
     package "flx_executil" 
   ;
 
@@ -126,6 +137,8 @@ class DynamicMetaTyping
 
   ctor FelixValueType (x:DynamicMetaTyping::typedesc_t) =>
     FelixValueType (
+      x.object_size, 
+      x.object_alignment, 
       x.dflt_init, 
       x.destroy_init, 
       x.copy_init, 

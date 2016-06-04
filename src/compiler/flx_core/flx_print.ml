@@ -308,6 +308,20 @@ and string_of_expr (e:expr_t) =
     ^
     "\n endmatch"
 
+  | EXPR_typecase_match (_,(e, ps)) ->
+    "typecase " ^ se e ^ " with " ^
+    catmap ""
+    (fun (p,e')->
+      "\n  | " ^
+      string_of_typecode p ^
+      " => " ^
+      se e'
+    )
+    ps
+    ^
+    "\n endmatch"
+
+
   | EXPR_range_check (_,mi,v,mx) ->
     "range_check " ^ se mi ^ " <= " ^ se v ^ " < " ^ se mx
 

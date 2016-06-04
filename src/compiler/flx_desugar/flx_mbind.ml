@@ -94,6 +94,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | EXPR_label _
   | EXPR_rnprj _
   | EXPR_remove_fields _
+  | EXPR_typecase_match _
     ->
       let sr = src_of_expr e in
       clierr sr ("[mbind:subst] Not expected in pattern when clause: " ^ string_of_expr e); 

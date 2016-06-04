@@ -856,76 +856,8 @@ print_endline ("Calling Flx_beta.adjust, possibly incorrectly, type = " ^ sbt bs
    * if that fails, we generate a delayed matching construction. The latter
    * will be needed when the argument is a type variable. *)
   | TYP_type_match (t,ps) as ubt ->
-      let t = bt t in
-      let pts = ref [] in
-      let finished = ref false in
-      List.iter begin fun (p',t') ->
-        let p',explicit_vars,any_vars, as_vars, eqns =
-          type_of_tpattern state.counter p'
-        in
-        let p' = bt p' in
-        let eqns = List.map (fun (j,t) -> j, bt t) eqns in
-        let varset =
-          let x = List.fold_left
-            (fun s (i,_) -> BidSet.add i s)
-            BidSet.empty explicit_vars
-          in
-          List.fold_left (fun s i -> BidSet.add i s)
-          x any_vars
-        in
-
-        (* HACK! GACK! we have to assume a variable in a pattern is is a TYPE
-         * variable .. type patterns don't include coercion terms at the moment,
-         * so there isn't any way to even specify the metatype In some contexts
-         * the kinding can be infered, for example:
-         *
-         * int * ?x
-         *
-         * clearly x has to be a type .. but a lone type variable would require
-         * the argument typing to be known ... no notation for that yet either
-         * *)
-        let args = List.map (fun (i,s) ->
-        s, btyp_type_var (i,btyp_type 0)) (explicit_vars @ as_vars)
-        in
-        let t' = btp t' (params@args) in
-        let t' = list_subst state.counter eqns t' in
-        pts := ({pattern=p'; pattern_vars=varset; assignments=eqns},t') :: !pts;
-        let u = maybe_unification bsym_table state.counter [p', t] in
-        match u with
-        | None ->  ()
-            (* CRAP! The below argument is correct BUT ..  our unification
-             * algorithm isn't strong enough ...  so just let this thru and hope
-             * it is reduced later on instantiation
-             *)
-            (* If the initially bound, context free pattern can never unify with
-             * the argument, we have a choice: chuck an error, or just eliminate
-             * the match case -- I'm going to chuck an error for now, because I
-             * don't see why one would ever code such a case, except as a
-             * mistake. *)
-            (*
-            clierr sr
-              ("[bind_type'] type match argument\n" ^
-              sbt bsym_table t ^
-              "\nwill never unify with pattern\n" ^
-              sbt bsym_table p'
-              )
-            *)
-        | Some mgu ->
-            if !finished then begin
-              print_endline "[bind_type] Warning: useless match case in typematch ignored:";
-              print_endline (Flx_srcref.short_string_of_src sr);
-              print_endline (string_of_typecode ubt);
-            end
-            else
-              let mguvars = List.fold_left
-                (fun s (i,_) -> BidSet.add i s)
-                BidSet.empty mgu
-              in
-              if varset = mguvars then finished := true
-      end ps;
-      let pts = List.rev !pts in
-
-      btyp_type_match (t,pts)
+    let t = bt t in
+    bind_type_match bsym_table state.counter bt btp params sr t ps ubt 
 
   | TYP_dual t -> dual (bt t)
 
@@ -3909,6 +3841,46 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     ->
       clierr sr
      ("[bind_expression] Expected expression, got " ^ string_of_expr e)
+
+  (* Use a trick! convert the casematch to a typematch
+    which returns a unit sum, then use that to select
+    the expression to bind
+  *)
+  | EXPR_typecase_match (sr,(e,ms)) -> 
+    let (_,argt) as arg = be e in
+    let uba = Flx_typecode_of_btype.typecode_of_btype bsym_table sr argt in
+    let tpats,es = List.split ms in
+    let n = List.length ms in
+    let il = Flx_list.nlist n in
+    let ps = List.map2 (fun t u-> t,TYP_unitsum u) tpats il in
+    let ubt = TYP_type_match (uba,ps) in
+    let selector =
+      let btp t params = bind_type' state bsym_table env
+        {rs with depth = rs.depth+1}
+        sr t params mkenv
+      in
+      bind_type_match bsym_table state.counter (bt sr) btp [] sr argt ps ubt  
+    in
+
+(*
+print_endline ("TYPEMATCH = " ^ sbt bsym_table selector);
+*)
+    let ix = beta_reduce "flx_lookup:typecase" state.counter bsym_table sr selector in 
+(*
+print_endline ("REDUCED = " ^ sbt bsym_table ix);
+*)
+    let index = match ix with
+    | BTYP_void -> 0
+    | BTYP_tuple [] -> 1
+    | BTYP_unitsum n -> n
+    | _ -> clierr sr ("Unable to match typecase argument type " ^ sbt bsym_table argt ^
+      " with any case in\n" ^ sbt bsym_table selector)
+    in
+(*
+print_endline ("Case number " ^ si index);
+*)
+    let x = List.nth es index in
+    be x
 
   | EXPR_cond (sr,(c,t,f)) ->
     bexpr_cond (be c) (be t) (be f)

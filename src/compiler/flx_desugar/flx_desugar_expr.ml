@@ -150,6 +150,12 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     let asgn = Exe (sr,EXE_init (name,x1)) in
     l1 @ [dcl] @ [asgn], EXPR_name (sr,name,[])
 
+  | EXPR_typecase_match (sr,(e, es)) ->
+    let l1,x1 = rex e in
+    let ts,es = List.split es in
+    let lss,xs = List.split (List.map rex es) in
+    l1 @ List.concat lss,
+    EXPR_typecase_match (sr, (x1, List.combine ts xs))
 
   | EXPR_type_match _ -> [],e
 

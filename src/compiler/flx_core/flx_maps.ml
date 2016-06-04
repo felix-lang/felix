@@ -166,6 +166,10 @@ let map_expr f (e:expr_t):expr_t = match e with
 
   | EXPR_expr (sr,s,t,e) -> EXPR_expr (sr,s,t, f e)
   | EXPR_type_match _ -> e
+  | EXPR_typecase_match (sr,(e,ps)) ->
+    let ps = List.map (fun (t,e) -> t, f e) ps in
+    EXPR_typecase_match (sr, (f e, ps))
+
   | EXPR_range_check (sr,mi,v,mx) -> EXPR_range_check (sr, f mi, f v, f mx)
   | EXPR_not (sr,e) -> EXPR_not (sr, f e)
   | EXPR_extension (sr,es,e) -> EXPR_extension (sr, List.map f es, f e)
@@ -251,6 +255,9 @@ let iter_expr f (e:expr_t) =
 
   | EXPR_match (sr,(a,pes)) ->
     f a; List.iter (fun (pat,x) -> f x) pes
+
+  | EXPR_typecase_match (sr,(e,es)) ->
+    f e; List.iter (fun (t,e) -> f e) es
 
   | EXPR_cond (sr,(a,b,c)) -> f a; f b; f c
   | EXPR_range_check (sr,a,b,c) -> f a; f b; f c
