@@ -1143,6 +1143,7 @@ and string_of_statement level s =
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
   match s with
+
   | STMT_type_error (_,stmt) -> spaces level ^ "type-error" ^ string_of_statement 0 stmt
   | STMT_cgoto (_,e) -> spaces level ^ "goto-indirect " ^ se e ^ ";"
   | STMT_try _ -> spaces level ^ "try"
@@ -1670,6 +1671,7 @@ and string_of_symdef entry name vs =
 
   | SYMDEF_typeclass ->
     "typeclass " ^ string_of_id name ^ string_of_ivs vs ^ ";"
+
 
   | SYMDEF_fun (props, pts,res,cts, reqs,prec) ->
     string_of_properties props ^

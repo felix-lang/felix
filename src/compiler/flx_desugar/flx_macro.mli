@@ -23,6 +23,13 @@
  * Note: name macros replace names in executable code, including macro bodies,
  * but they cannot be used to rename macros. *)
 
+
+type macro_t =
+ | MVal of Flx_ast.expr_t
+ | MName of Flx_id.t
+
+type macro_dfn_t = Flx_id.t * macro_t
+
 type macro_state_t
 
 val make_macro_state:
@@ -46,3 +53,8 @@ val expand_macros_in_statement:
   'a
 
 val get_macro_seq: macro_state_t -> int
+
+val expand_expr: 
+  int -> string -> int ref -> 
+  macro_dfn_t list -> Flx_ast.expr_t -> Flx_ast.expr_t 
+

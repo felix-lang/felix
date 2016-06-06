@@ -824,7 +824,6 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
         xc sr ct,
         xrr sr req,
         prec)
-
   | Lst [Id "ast_callback_decl"; sr; id; Lst ps; t; req] -> let sr = xsr sr in 
       STMT_callback_decl (sr, xid id, map (ti sr) ps, ti sr t, xrr sr req)
 
