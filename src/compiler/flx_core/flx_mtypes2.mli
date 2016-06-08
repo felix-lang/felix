@@ -1,5 +1,10 @@
 module TypecodeSet : Set.S with type elt = Flx_ast.typecode_t
 
+type generic_rebind_entry_t = Flx_types.bid_t * Flx_btype.t
+type generic_cache_t =
+  (Flx_types.bid_t * generic_rebind_entry_t list,  Flx_btype.overload_result) Hashtbl.t
+
+
 type typecodeset_t = TypecodeSet.t
 val typecodeset_of_list : TypecodeSet.elt list -> TypecodeSet.t
 val typecodeset_map :
@@ -51,6 +56,7 @@ type sym_state_t =
   counter : Flx_types.bid_t ref;
   mutable varmap : typevarmap_t;
   mutable ticache : (Flx_types.bid_t, Flx_btype.t) Hashtbl.t;
+  generic_cache: generic_cache_t;
   env_cache : (Flx_types.bid_t, env_t) Hashtbl.t;
   registry : type_registry_t;
   array_as_tuple_registry : type_array_as_tuple_registry_t;

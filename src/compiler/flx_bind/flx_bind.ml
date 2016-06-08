@@ -23,6 +23,7 @@ let make_bind_state syms sym_table =
       syms.Flx_mtypes2.counter 
       syms.Flx_mtypes2.varmap
       syms.Flx_mtypes2.ticache
+      syms.Flx_mtypes2.generic_cache
       sym_table 
   in
   let bbind_state = Flx_bbind.make_bbind_state 

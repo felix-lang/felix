@@ -66,6 +66,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   let te e = typecode_of_expr e in
   match e with
   | EXPR_name (_,"TYPE",[]) -> TYP_type
+  | EXPR_name (sr,"GENERIC",[]) -> TYP_generic sr
   | EXPR_name (_,"LABEL",[]) -> TYP_label
   | EXPR_name (sr,"DEFER",[]) -> TYP_defer (sr,ref None)
   | EXPR_name (sr,"_",[]) -> TYP_patany sr

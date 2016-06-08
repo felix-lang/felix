@@ -185,6 +185,7 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
 (*
   print_endline (" ^^^^ BBIND_SYMBOL (subroutine) : Binding symbol "^sym.Flx_sym.id^" index=" ^ string_of_int symbol_index);
 *)
+
   (* If we've already processed this bid, exit early. We do this so we can avoid
    * any infinite loops in the symbols. *)
   if Hashtbl.mem state.visited symbol_index then () else begin
@@ -302,7 +303,15 @@ print_endline (" &&&&&& bind_type_uses calling BBIND_SYMBOL");
 
   (* this is the full vs list *)
   let ivs = find_vs state.sym_table bsym_table symbol_index in
-
+  let is_generic vs = List.fold_left (fun acc (name,index,typ) ->
+      acc || match typ with | TYP_generic _ -> true | _ -> false) 
+      false
+      vs
+  in
+  if is_generic (fst ivs) then begin
+     print_endline ("bind_symbol skipping symbol with generic type parameter: "^ 
+       sym.Flx_sym.id ^"<"^ si symbol_index ^">")
+  end else
   (* bind the type variables *)
   let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in
 
@@ -313,6 +322,7 @@ print_endline (" &&&&&& bind_type_uses calling BBIND_SYMBOL");
           state.counter
           bsym_table
           bt
+          sym.Flx_sym.id
           sym.Flx_sym.sr
           (fst ivs)
       with Not_found ->

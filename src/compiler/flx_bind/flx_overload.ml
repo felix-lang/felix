@@ -129,12 +129,7 @@ let constraint_implies bsym_table counter a b =
   let r = terms_imply bsym_table counter (split_conjuncts a) (split_conjuncts b) in
   r
 
-type overload_result =
- bid_t *  (* index of function *)
- Flx_btype.t * (* type of function signature *)
- Flx_btype.t * (* type of function return *)
- (bid_t * Flx_btype.t) list * (* mgu *)
- Flx_btype.t list (* ts *)
+type overload_result = Flx_btype.overload_result
 
 let show_overload_result bsym_table (bid,sign,ret,mgu,ts) =
   string_of_int bid ^ ":" ^ sbt bsym_table sign^ " -> " ^ sbt bsym_table ret ^
@@ -307,6 +302,10 @@ let fixup_argtypes be bid pnames base_domain argt rs =
 
 let resolve sym_table bsym_table base_sym bt be arg_types =
   let sym = Flx_sym_table.find sym_table base_sym in
+  let name = sym.Flx_sym.id in
+(*
+if name = "accumulate" then print_endline "Attempting to resolve accumulate";
+*)
   let opt_bsym = try Some (Flx_bsym_table.find bsym_table base_sym) with Not_found -> None in
 
   let pvs, vs, { raw_type_constraint=con } =
@@ -318,6 +317,12 @@ let resolve sym_table bsym_table base_sym bt be arg_types =
     sym.Flx_sym.id
     base_sym
   in
+(*
+if name = "accumulate" then begin
+  print_endline ("Base_sym=" ^si base_sym^ ", base domain="^string_of_typecode base_domain ^
+   ", base result="^string_of_typecode base_result^", pnames from sig_of_symdef");
+end;
+*)
 
   let arg_types =
     match arg_types with
@@ -330,7 +335,10 @@ let resolve sym_table bsym_table base_sym bt be arg_types =
     | _ ->
         arg_types
   in
-
+(*
+if name = "accumulate" then 
+  print_endline ("Arg types = " ^ catmap "," (sbt bsym_table) arg_types);
+*)
   (* bind type in base context, then translate it to view context:
    * thus, base type variables are eliminated and specialisation
    * type variables introduced *)
@@ -359,8 +367,20 @@ let resolve sym_table bsym_table base_sym bt be arg_types =
 (*
 print_endline ("Warning: didn't find function binding for " ^ sym.Flx_sym.id);
 *)
-    let domain = bt sym.Flx_sym.sr base_domain in
-    let base_result = bt sym.Flx_sym.sr base_result in
+(*
+if name = "accumulate" then 
+  print_endline ("Can't find bound symbol table entry, binding:");
+*)
+    let domain = 
+      try bt sym.Flx_sym.sr base_domain 
+      with _ -> 
+       print_endline ("Can't bind base domain type " ^ string_of_typecode base_domain);
+       assert false
+    in
+    let base_result = 
+     try bt sym.Flx_sym.sr base_result 
+     with _ -> print_endline ("Can't bind base result type " ^ string_of_typecode base_result); BTYP_none
+    in
     domain,base_result
   in
   sym.Flx_sym.id, sym.Flx_sym.sr, vs, pvs, con, domain, base_result, arg_types
@@ -506,6 +526,9 @@ let solve_mgu
 (*
   print_endline "Specialisation detected";
   print_endline (" .. mgu = " ^ string_of_varlist bsym_table mgu);
+*)
+(*
+if id = "accumulate" then print_endline "solve_mgu";
 *)
   let mgu = ref mgu in
   (* each universally quantified variable must be fixed
@@ -771,7 +794,10 @@ let solve_mgu
           end
         end ur
   end;
-
+(*
+if id = "accumulate" then
+  print_endline ("Unresolved variables: " ^ si (List.length (!unresolved)));
+*)
   if List.length !unresolved > 0 then None else begin
     let ok = ref true in
     List.iter begin fun sign ->
@@ -794,7 +820,9 @@ let solve_mgu
         *)
       end
     end arg_types;
-
+(*
+if id = "accumulate" then print_endline (match !ok with | true -> "Argtypes ok" | _ -> "argtypes BAD");
+*)
     if not (!ok) then None else
     (*
     print_endline ("Matched with mgu = " ^ string_of_varlist sym_table !mgu);
@@ -811,7 +839,9 @@ let solve_mgu
 
     let base_ts = List.map (list_subst counter !mgu) entry_kind.sub_ts in
     let base_ts = List.map (beta_reduce "flx_overload: base_ts" counter bsym_table sr) base_ts in
-
+(*
+if id = "accumulate" then print_endline ("base_ts = " ^ catmap "," (sbt bsym_table) base_ts);
+*)
     (* we need to check the type constraint, it uses the
       raw vs type variable indicies. We need to substitute
       in the corresponding ts values. First we need to build
@@ -821,20 +851,22 @@ let solve_mgu
       (fun (n,i,_) -> btyp_type_var (i, btyp_type 0))
       parent_vs
     in
-    let type_constraint = build_type_constraints counter bsym_table (bt sr) sr base_vs in
+    let type_constraint = build_type_constraints counter bsym_table (bt sr) id sr base_vs in
     let type_constraint = btyp_intersect [type_constraint; con] in
-    (*
+(*
+if id = "accumulate" then
     print_endline ("Raw type constraint " ^ sbt bsym_table type_constraint);
-    *)
+*)
     let vs = List.map (fun (s,i,_)-> s,i) base_vs in
     let type_constraint = tsubst sr vs base_ts type_constraint in
     (*
     print_endline ("Substituted type constraint " ^ sbt bsym_table type_constraint);
     *)
     let reduced_constraint = beta_reduce "flx_overload: constraint" counter bsym_table sr type_constraint in
-    (*
+(*
+if id = "accumulate" then
     print_endline ("Reduced type constraint " ^ sbt bsym_table reduced_constraint);
-    *)
+*)
     begin match reduced_constraint with
     | BTYP_void ->
         (*
@@ -887,6 +919,9 @@ let consider
   (* Helper function to simplify the bind type function. *)
   let bt sr t = bt sr entry_kind.base_sym t in
 
+(*
+if name = "accumulate" then print_endline ("Considering ..");
+*)
   let id, sr, base_vs, parent_vs, con, domain, base_result, arg_types =
     resolve sym_table bsym_table entry_kind.base_sym bt be arg_types 
   in
@@ -984,13 +1019,18 @@ let consider
      Note that the base_vs variables are eliminated
      from the signature .. so the renaming is pointless! *)
 
+(*
+if name = "accumulate" then print_endline "Considering function .. ";
+*)
   let spec_result =
     try specialize_domain sr base_vs entry_kind.sub_ts base_result
     with Not_found ->
       clierr sr ("Failed to bind candidate return type! fn='" ^ name ^
         "', type=" ^ sbt bsym_table base_result)
   in
-
+(*
+if name = "accumulate" then print_endline "Making equations";
+*)
   (* Step1: make equations for the ts *)
   let mgu = make_equations
     counter
@@ -1003,7 +1043,9 @@ let consider
     (specialize_domain sr base_vs entry_kind.sub_ts domain)
     spec_result
   in
-
+(*
+if name = "accumulate" then print_endline "maybe got mgu ..";
+*)
 (*
   let mgu = maybe_specialisation counter bsym_table mgu in
 *)
@@ -1017,6 +1059,10 @@ let consider
      already by the instance match .. hmm .. *)
   match mgu with
   | Some mgu ->
+(*
+if name = "accumulate" then
+print_endline "solving mgu";
+*)
       solve_mgu
         counter
         bsym_table
@@ -1035,9 +1081,10 @@ let consider
         env_traint
 
   | None ->
-      (*
+(*
+if name = "accumulate" then
       print_endline "No match";
-      *)
+*)
       None
 
 
@@ -1059,7 +1106,8 @@ let overload
   overload_result option
 =
 (*
-if name = "f" then begin
+if name = "accumulate" then
+begin
   print_endline ("Overload " ^ name);
   print_endline ("Argument sigs are " ^ catmap ", " (sbt bsym_table) sufs);
   print_endline (string_of_int (List.length fs) ^ 
@@ -1098,8 +1146,16 @@ end;
         sufs
         env_traint
     with
-    | Some x -> Unique x
-    | None -> Fail
+    | Some x -> 
+(*
+if name = "accumulate" then print_endline "Found unique result";
+*)
+      Unique x
+    | None -> 
+(*
+if name = "accumulate" then print_endline "Failed to find result";
+*)
+      Fail
   in
   let fun_defs = List.map aux fs in
 
@@ -1111,7 +1167,7 @@ end;
     end fun_defs
   in
 (*
-  if name = "f" then
+  if name = "accumulate" then
     print_endline ("First stage: matching Candidates are:\n" ^ 
       catmap ",\n" (show_result bsym_table) candidates^"\n");
 *)

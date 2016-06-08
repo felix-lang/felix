@@ -19,6 +19,8 @@ open Flx_overload
 open Flx_tpat
 open Flx_lookup_state
 
+let svs (s,i,mt) = s ^ "<" ^ si i ^ ">:"^ string_of_typecode mt
+
 let typecode_of_btype sr x = Flx_typecode_of_btype.typecode_of_btype sr x
 type bfres_t = 
   | RecordAddition of Flx_bexpr.t
@@ -754,6 +756,11 @@ print_endline ("Bind type " ^ string_of_typecode t);
 
   let t =
   match t with
+  | TYP_generic sr -> 
+    print_endline ("[bind_type'] trying to bind TYP_generic"); btyp_type (-1)
+(*
+    syserr sr ("[bind_type'] attempt to bind TYP_generic")
+*)
   | TYP_defer (sr, tor) -> 
     begin match !tor with
     | None -> print_endline ("Bind type: undefined defered type found"); assert false
@@ -1392,6 +1399,8 @@ end;
           *)
           let rec guess_metatype t =
             match t with
+            | TYP_generic _ -> syserr sr ("[bind_type_index] Attempt to bind TYP_generic]")
+
             | TYP_defer _ -> print_endline "Guess metatype: defered type found"; assert false
             | TYP_tuple_cons (sr,t1,t2) -> assert false
             | TYP_type_tuple _ -> print_endline "A type tuple"; assert false
@@ -2270,7 +2279,7 @@ and koenig_lookup state bsym_table env rs sra id' name_map fn t2 ts =
     (*
     print_endline ("Got candidates: " ^ string_of_entry_set entries);
     *)
-    begin match resolve_overload' state bsym_table env rs sra fs fn [t2] ts with
+    begin match resolve_overload state bsym_table env rs sra fs fn [t2] ts with
     | Some (index'',t,ret,mgu,ts) ->
       (*
       print_endline "Overload resolution OK";
@@ -2341,7 +2350,7 @@ and lookup_qn_with_sig'
         let hvs = List.map (fun (id,index,kind) -> id,index) hack_vs in
         let hts = List.map (fun (_,index) -> Flx_btype.btyp_type_var (index,Flx_btype.btyp_type 0)) hvs in
         let hacked_entry = { base_sym=index; spec_vs=hvs; sub_ts=hts } in
-        let ro = resolve_overload' state bsym_table env rs sra [hacked_entry] id signs ts in
+        let ro = resolve_overload state bsym_table env rs sra [hacked_entry] id signs ts in
         let (_,t),bts =
           match ro with
           | Some (index,t,ret,mgu,ts) ->
@@ -2655,7 +2664,7 @@ print_endline ("ctor hack failed (client error)");
 
     | FunctionEntry fs ->
       match
-        resolve_overload'
+        resolve_overload
         state bsym_table env rs sra fs name signs ts
       with
       | Some (index,t,ret,mgu,ts) ->
@@ -2872,7 +2881,7 @@ print_endline "Found non-function entry";
 print_endline "Found function entry";
 *)
       match
-        resolve_overload'
+        resolve_overload
         state bsym_table env rs sra fs name signs ts
       with
       | Some (index,t,ret,mgu,ts) ->
@@ -3366,7 +3375,7 @@ and lookup_name_in_table_dirs_with_sig
         print_endline ("Argument types are " ^ catmap "," (sbt bsym_table) t2);
         *)
         let ro =
-          resolve_overload'
+          resolve_overload
           state bsym_table caller_env rs sra [index] name t2 ts
         in
           begin match ro with
@@ -3426,15 +3435,22 @@ and lookup_name_in_table_dirs_with_sig
     end
 
   | FunctionEntry fs ->
-    (*
-    print_endline ("Found function set size " ^ si (List.length fs));
-    *)
+(*
+    if name = "accumulate" then
+    print_endline ("Lookup_name_in_table_dirs_with_sig Found function set size " ^ si (List.length fs));
+*)
     let ro =
-      resolve_overload'
+      resolve_overload
       state bsym_table caller_env rs sra fs name t2 ts
     in
     match ro with
       | Some (index,t,ret,mgu,ts) ->
+(*
+    if name = "accumulate" then begin 
+       print_endline ("Overload resolved to index " ^ si index);
+       print_endline ("handle_function (3) ts=" ^ catmap "," (sbt bsym_table) ts);
+    end;
+*)
         (*
         print_endline ("handle_function (3) ts=" ^ catmap "," (sbt bsym_table) ts);
         let ts = adjust_ts state.sym_table sra index ts in
@@ -3508,7 +3524,7 @@ and lookup_name_in_table_dirs_with_sig
             merge_functions opens name
         in
           let ro =
-            resolve_overload'
+            resolve_overload
             state bsym_table caller_env rs sra fs name t2 ts
           in
           (*
@@ -3580,7 +3596,7 @@ and lookup_type_name_in_table_dirs_with_sig
         print_endline "lookup_name_in_table_dirs_with_sig finds struct constructor";
         *)
         let ro =
-          resolve_overload'
+          resolve_overload
           state bsym_table caller_env rs sra [index] name t2 ts
         in
           begin match ro with
@@ -3659,7 +3675,7 @@ and lookup_type_name_in_table_dirs_with_sig
     print_endline ("Found function set size " ^ si (List.length fs));
 *)
     let ro =
-      resolve_overload'
+      resolve_overload
       state bsym_table caller_env rs sra fs name t2 ts
     in
     match ro with
@@ -3728,7 +3744,7 @@ and lookup_type_name_in_table_dirs_with_sig
             merge_functions opens name
         in
           let ro =
-            resolve_overload'
+            resolve_overload
             state bsym_table caller_env rs sra fs name t2 ts
           in
           (*
@@ -4454,7 +4470,7 @@ print_endline ("LOOKUP 7: varname " ^ si index);
         )
       | args ->
         let sufs = List.map snd args in
-        let ro = resolve_overload' state bsym_table env rs sr fs name sufs ts in
+        let ro = resolve_overload state bsym_table env rs sr fs name sufs ts in
         begin match ro with
          | Some (index, dom,ret,mgu,ts) ->
            (*
@@ -4596,7 +4612,7 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
 
         | FunctionEntry [f] when args = []  ->
             let sufs = List.map snd args in
-            let ro = resolve_overload' state bsym_table env rs sr [f] name sufs ts in
+            let ro = resolve_overload state bsym_table env rs sr [f] name sufs ts in
             begin match ro with
              | Some (index, dom,ret,mgu,ts) ->
                (*
@@ -4622,7 +4638,7 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
 
           | args ->
             let sufs = List.map snd args in
-            let ro = resolve_overload' state bsym_table env rs sr fs name sufs ts in
+            let ro = resolve_overload state bsym_table env rs sr fs name sufs ts in
             begin match ro with
              | Some (index, dom,ret,mgu,ts) ->
                (*
@@ -5292,19 +5308,6 @@ print_endline ("Codomain = " ^ sbt bsym_table codomain);
       "Unexpected match when binding expression (should have been lifted out)"
     )
 
-and resolve_overload
-  state
-  bsym_table
-  env
-  sr
-  fs
-  name
-  sufs
-  ts
-=
-  resolve_overload' state bsym_table env rsground sr fs name sufs ts
-
-
 and hack_name qn = match qn with
 | `AST_name (sr,name,ts) -> `AST_name (sr,"_inst_"^name,ts)
 | `AST_lookup (sr,(e,name,ts)) -> `AST_lookup (sr,(e,"_inst_"^name,ts))
@@ -5362,7 +5365,7 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
           print_endline ("check base vs (constraint) = " ^ print_ivs_with_index vs);
           *)
           let cons = try
-            Flx_tconstraint.build_type_constraints state.counter bsym_table bt sr (fst vs)
+            Flx_tconstraint.build_type_constraints state.counter bsym_table bt id sr (fst vs)
             with _ -> clierr sr "Can't build type constraints, type binding failed"
           in
           let {raw_type_constraint=icons} = snd vs in
@@ -5456,48 +5459,73 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
     *)
 
 
-and instance_check state bsym_table caller_env called_env mgu sr calledname rtcr tsub = if true then () else
-  (*
-  print_endline ("INSTANCE CHECK MGU: " ^ catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt bsym_table t) mgu);
-  print_endline "SEARCH FOR INSTANCE!";
-  print_env caller_env;
-  *)
-  let luqn2 qn = lookup_qn_in_env2' state bsym_table caller_env rsground qn in
-  if List.length rtcr > 0 then begin
-    (*
-    print_endline (calledname ^" TYPECLASS INSTANCES REQUIRED (unbound): " ^
-      catmap "," string_of_qualified_name rtcr
-    );
-    *)
-    List.iter
-    (fun qn ->
-      let call_sr = src_of_qualified_name qn in
-      let classname = grab_name qn in
-      let es,ts' =
-        try luqn2 (hack_name qn)
-        with
-          (* This is a HACK. we need lookup to throw a specific
-             lookup failure exception
-          *)
-          ClientError (sr',msg) -> raise (ClientError2 (sr,sr',msg))
-      in
-      (*
-      print_endline ("With unbound ts = " ^ catmap "," string_of_typecode ts');
-      *)
-      let ts' = List.map (fun t -> try inner_bind_type state bsym_table called_env sr rsground t with _ -> print_endline "Bind type failed .."; assert false) ts' in
-      (*
-      print_endline ("With bound ts = " ^ catmap "," (sbt bsym_table) ts');
-      *)
-      let ts' = List.map tsub ts' in
-      (*
-      print_endline ("With bound, mapped ts = " ^ catmap "," (sbt bsym_table) ts');
-      *)
-      check_instances state bsym_table call_sr calledname classname es ts' (fun i->build_env state bsym_table (Some i))
-    )
-    rtcr
-  end
+and clone state bsym_table fi ft fbt fe fx new_vs generic_alias index =
+      begin 
+      let parent,sym = Flx_sym_table.find_with_parent state.sym_table index in
+      let {Flx_sym.id=id;sr=sr;vs=vs;pubmap=pubmap; privmap=privmap;dirs=dirs;symdef=symdef} = sym in
+      print_endline ("CLONING SYMBOL " ^ id ^"<"^si index^">");
+      let nupubmap = Flx_btype.map_name_map fi fbt pubmap in 
+      let nuprivmap = Flx_btype.map_name_map fi fbt privmap in
+      Hashtbl.iter (fun key value -> Hashtbl.replace nuprivmap key value)
+      generic_alias;
+print_endline ("New public name map = " ^ string_of_name_map nupubmap);
+print_endline ("New private name map = " ^ string_of_name_map nuprivmap);
+      let nudirs = dirs in
+      let vs_list, {Flx_ast.raw_type_constraint=traint; raw_typeclass_reqs=tcreqs} = vs in
 
-and resolve_overload'
+      let nusymdef = 
+        match symdef with
+        | SYMDEF_function (params,rett,props,sexes) -> 
+          let paramlist, ptraint = params in
+          let nuparamlist = List.map (fun (pkind,pname,ptyp,pinitopt) -> 
+            pkind,pname,ft ptyp, pinitopt (* HACK *)) 
+            paramlist
+          in
+          let nuptraint = match ptraint with | None -> None | Some e -> Some (fe e) in
+          let nuparams = nuparamlist, nuptraint in
+      print_endline ("Remapped parameters: " ^ string_of_parameters nuparams);
+          let nurett = ft rett in
+          let nuprops = props in (* HACK, FIXME! *)
+          let nusexes = List.map (fun (sr,x) -> sr,fx x) sexes in
+      print_endline ("New exes =\n");
+      List.iter (fun (sr,x) -> print_endline (Flx_print.string_of_exe 2 x)) nusexes;
+          SYMDEF_function (nuparams, nurett, nuprops, nusexes)
+        | SYMDEF_insert (cs,ik,rqs) -> symdef (* HACK, FIXME! *)
+        | SYMDEF_var t -> 
+          let t = ft t in
+          print_endline ("Cloned VAR type = " ^ string_of_typecode t);
+          SYMDEF_var (t)
+        | SYMDEF_val t -> 
+          let t = ft t in
+          print_endline ("Cloned VAL type = " ^ string_of_typecode t);
+          SYMDEF_val (t)
+        | SYMDEF_ref t -> 
+          let t = ft t in
+          print_endline ("Cloned REF type = " ^ string_of_typecode t); 
+          SYMDEF_ref (t)
+        | SYMDEF_parameter (k,t) -> 
+          let t = ft t in
+          print_endline ("Cloned PARAMETER type = " ^ string_of_typecode t); 
+          SYMDEF_parameter (k,t)
+        | _ -> 
+          print_endline ("[Flx_lookup:clone] Unhandled symdef");
+          print_endline (string_of_symdef symdef id vs);
+          assert false
+      in
+      let nuvs_vars = List.map (fun (s,i,t) -> s,fi i, ft t) new_vs in 
+      let nutraint = ft traint in
+      let nutcreqs = tcreqs in (* just a qualified name list *)
+      let nuvs_aux = {Flx_ast.raw_type_constraint=nutraint; raw_typeclass_reqs=nutcreqs} in
+      let nuvs = nuvs_vars,nuvs_aux in
+      let nuparent = match parent with None -> None | Some i -> Some (fi i) in
+      let nusym = {Flx_sym.id=id;sr=sr;vs=nuvs;pubmap=nupubmap; privmap=nuprivmap;dirs=nudirs;symdef=nusymdef} in
+      let nuindex = fi index in
+      Flx_sym_table.add state.sym_table nuindex nuparent nusym;
+print_endline ("++++ Cloned " ^ si index ^ " -> " ^ si nuindex);
+      end
+
+
+and resolve_overload
   state
   bsym_table
   caller_env
@@ -5511,7 +5539,7 @@ and resolve_overload'
   if List.length fs = 0 then None else
   let env i =
     (*
-    print_endline ("resolve_overload': Building env for " ^ name ^ "<" ^ si i ^ ">");
+    print_endline ("resolve_overload: Building env for " ^ name ^ "<" ^ si i ^ ">");
     *)
     inner_build_env state bsym_table rs (Some i)
   in
@@ -5527,24 +5555,179 @@ and resolve_overload'
     overload state.counter state.sym_table bsym_table caller_env rs bt be luqn2 sr fs name sufs ts
   in
   begin match result with
-  | None -> ()
+  | None -> None 
   | Some (index,sign,ret,mgu,ts) ->
-    (*
+(*
+if name = "accumulate" then begin
     print_endline ("RESOLVED OVERLOAD OF " ^ name);
     print_endline (" .. mgu = " ^ string_of_varlist bsym_table mgu);
     print_endline ("Resolve ts = " ^ catmap "," (sbt bsym_table) ts);
-    *)
+end;
+*)
     let parent_vs,vs,{raw_typeclass_reqs=rtcr} = find_split_vs state.sym_table bsym_table index in
-    (*
-    print_endline ("Function vs=" ^ catmap "," (fun (s,i,_) -> s^"<"^si i^">") vs);
-    print_endline ("Parent vs=" ^ catmap "," (fun (s,i,_) -> s^"<"^si i^">") parent_vs);
+(*
+if name = "accumulate" then begin
+    print_endline ("Function vs=" ^ catmap "," svs vs);
+    print_endline ("Parent vs=" ^ catmap "," svs parent_vs);
+end;
+*)
+    let is_generic vs = List.fold_left (fun acc (s,i,mt) -> 
+      acc || match mt with | TYP_generic _ -> true | _ -> false) 
+      false 
+      vs 
+    in
+    assert (not (is_generic parent_vs));
+    if not (is_generic vs) then result else let () = () in
+
+    print_endline ("Found generic function " ^ name);
+    print_endline ("REBINDING");
+    let new_vs = ref [] in
+    let gen_vs = ref [] in
+    let counter = ref 0 in
+    let vmap = ref [] in
+    let smap = ref [] in
+    let parent_vs_len = List.length parent_vs in
+    let parentts, funts = Flx_list.list_split ts parent_vs_len in
+    let nufunts = ref [] in
+    List.iter (fun (s,i,mt as v) -> 
+      let n = !counter in
+      begin match mt with 
+      | TYP_generic _ -> 
+        let bt = List.nth ts n in
+        let ubt = Flx_typecode_of_btype.typecode_of_btype bsym_table sr bt in
+        gen_vs := (v,n) :: !gen_vs;
+        smap := (s, ubt) :: !smap;
+        vmap := (i, bt) :: !vmap
+      | _ -> 
+        new_vs := v :: !new_vs;
+        nufunts := (List.nth funts n) ::!nufunts
+      end;
+      incr counter
+      )
+      vs
+    ;
+    let new_vs = List.rev (!new_vs) in
+    let gen_vs = List.rev (!gen_vs) in
+
+    (* smap lis list that says replace type named s with unbound type expression *) 
+    let smap = List.rev (!smap) in
+
+    (* vmap is list that says replace type variable index i with given bound type *)
+    let vmap = List.rev (!vmap) in
+    let nufunts = List.rev (!nufunts) in
+
+    print_endline ("Polymorphic vs = " ^ catmap "," svs new_vs);
+    print_endline ("Generic vs = " ^ catmap "," (fun (v,n) -> "POS " ^ si n ^" " ^ 
+      svs v^ " --> " ^ sbt bsym_table (List.nth ts n)
+      ) gen_vs
+    );
+    List.iter (fun (ix,bt) -> print_endline ("Rebind " ^ si ix ^ " -> " ^ sbt bsym_table bt)) vmap;
+    List.iter (fun (s,ubt) -> print_endline ("Rebind " ^ s ^ " -> " ^ string_of_typecode ubt)) smap;
+    let previous_rebinding =
+       try Some (Hashtbl.find state.generic_cache (index, vmap))
+       with Not_found -> None
+    in
+    match previous_rebinding with
+    | Some result -> Some result (* weird but correct *)
+    | None ->
+    (* prevent the generator running twice *)
+    (* we have to actually calculate a new rebinding right now, the reason is
+      we need the return type!
     *)
-    let vs = List.map (fun (s,i,_)->s,i) (parent_vs @ vs) in
-    let tsub t = tsubst sr vs ts t in
-    instance_check state bsym_table caller_env (env index) mgu sr name rtcr tsub
+    print_endline "*** Calculating new rebinding";
+    let sym = Flx_sym_table.find state.sym_table index in
+    let fresh () = Flx_mtypes2.fresh_bid state.counter in
+    let remap_table = Hashtbl.create 97 in 
+    let add i = let j = fresh() in (Hashtbl.add remap_table i j);j in
+    let fi i = try Hashtbl.find remap_table i with Not_found -> i in
+    let nuindex = add index in
+
+    let descendants = Flx_sym_table.find_descendants state.sym_table index in
+    print_endline ("Descendants = " ^ catmap "," si descendants);
+    (* calculate rebinding map for descendants *)
+    List.iter (fun i -> let _ = add i in ()) descendants;
+    Hashtbl.iter (fun i j -> print_endline ("  Rebind index " ^ si i ^ " -> " ^ si j)) remap_table;
+    let rec fbt t = match t with
+      | Flx_btype.BTYP_type_var (i,mt) ->
+print_endline ("Examining bound type variable index " ^ si i);
+        begin
+          try 
+            let r = List.assoc i vmap in
+print_endline ("Replaced by vmap: " ^ sbt bsym_table r);
+            r
+          with Not_found ->  
+            let j = fi i in
+print_endline ("Not found in vmap, remaping with index remapper: " ^ si j);
+            Flx_btype.btyp_type_var (j, mt)
+        end
+      | x -> Flx_btype.map ~f_bid:fi ~f_btype:fbt x
+    in
+    let rec fe e = Flx_maps.full_map_expr fi ft fe e
+    and ft t = match t with 
+    | TYP_typeof e ->
+      let e' = fe e in
+print_endline ("Unbound type remapper typeof " ^ string_of_expr e ^ " --> " ^ string_of_expr e');
+      TYP_typeof e'
+
+    | TYP_var index -> 
+      let j = fi index in
+print_endline ("Ubound type remapper type variable " ^ si index ^ " --> " ^ si j);
+      TYP_var j  
+    | TYP_name (sr,tname,[]) as t -> 
+print_endline ("Trying to bind type name=" ^ tname);
+      begin
+        try let r = List.assoc tname smap in
+           print_endline ("Rebound type name " ^ tname ^ " -> " ^ string_of_typecode r);
+           r 
+        with Not_found -> t
+      end
+    | x -> Flx_maps.map_type ft x
+    in 
+    let fx x = Flx_maps.map_exe fi ft fe x in
+ 
+    (* this code is ALMOST but not quite fully general.
+       The problem is that the main function has its vs list and ts list
+       reduced by the generic substitution, wherease the descendants do not
+     *)
+    assert (nuindex = fi index);
+    let noalias = Hashtbl.create 97 in
+    let generic_alias = Hashtbl.create 97 in
+    List.iter (fun (s, t) ->
+      let alias_index = fresh() in
+print_endline ("Adding alias " ^ s ^ "<"^si alias_index^"> -> " ^ string_of_typecode t);
+      let entry = NonFunctionEntry {Flx_btype.base_sym=alias_index; spec_vs=[]; sub_ts=[]} in
+      Hashtbl.add generic_alias s entry;
+      let symdef = SYMDEF_type_alias t in
+      let sym = {Flx_sym.id=s;sr=sr;vs=dfltvs;pubmap=noalias; privmap=noalias;dirs=[];symdef=symdef} in
+      Flx_sym_table.add state.sym_table alias_index (Some index) sym;
+    )
+    smap; 
+    clone state bsym_table fi ft fbt fe fx new_vs generic_alias index;
+    print_endline ("Main symbol cloned and added");
+
+    (* HACK, FIXME! This will be the vs of the new symbol, for the master
+       we have to replace the vs with one generics are stripped out of,
+       but for kids, the vs is whatever they have. Use an option type
+       instead to indicate an override or native calc.
+    *)
+    let hack_vs = [] in 
+    List.iter (fun index -> 
+      clone state bsym_table fi ft fbt fe fx hack_vs noalias index) 
+    descendants;
+
+(* end of cloning code, the rest is for recalculating the MGU *)
+    let nuts = parentts @ nufunts in
+print_endline ("New  full ts = " ^ catmap "," (sbt bsym_table) nuts);
+    let numgu = mgu in (* HACK, FIXME! *)
+print_endline ("New mgu = " ^ catmap "," (fun (v,t) -> string_of_int v ^ "<-" ^ sbt bsym_table t) mgu);
+    let nusign = fbt sign in 
+print_endline ("New signature = " ^ sbt bsym_table nusign);
+    let nuret = fbt ret in (* HACK, FIXME! *)
+print_endline ("New return type = " ^ sbt bsym_table nuret);
+    let result_data = nuindex,nusign,nuret,numgu,nuts in
+    Hashtbl.add state.generic_cache (index, vmap) result_data;
+    Some result_data
   end
-  ;
-  result
 
 (* an environment is a list of hastables, mapping
    names to definition indicies. Each entity defining

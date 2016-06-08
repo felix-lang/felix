@@ -76,3 +76,32 @@ let fold f sym_table init =
     (fun bid elt init -> f bid elt.parent elt.sym init)
     sym_table
     init
+
+let find_children sym_table i =
+ let add_kid index parent _ acc = 
+    match parent with
+    | Some j when i = j -> index :: acc
+    | _ -> acc
+  in
+  fold add_kid sym_table []
+
+let rec is_descendant sym_table (parent:Flx_types.bid_t) (candidate:Flx_types.bid_t) =
+  let p = find_parent sym_table candidate in
+  match p with 
+  | None -> false
+  | Some 0 -> false
+  | Some j ->
+    if j = parent then true  (* candidates parent is given parent *)
+    else is_descendant sym_table parent j
+
+
+let find_descendants sym_table parent =
+  let add_descendant candidate _ _ acc =
+    if is_descendant sym_table parent candidate then
+      candidate :: acc
+    else acc
+  in
+  fold add_descendant sym_table []
+
+
+

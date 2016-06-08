@@ -82,6 +82,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | TYP_patany _
 
   (* absolute constants *)
+  | TYP_generic _
   | TYP_label
   | TYP_void _
   | TYP_ellipsis
@@ -90,92 +91,100 @@ let map_type f (t:typecode_t):typecode_t = match t with
   -> t
 
 
-let map_expr f (e:expr_t):expr_t = match e with
+let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | EXPR_label _
   | EXPR_patvar _
   | EXPR_patany _
   | EXPR_interpolate _ 
   | EXPR_vsprintf _ -> e
-  | EXPR_map (sr,a,b) -> EXPR_map (sr,f a, f b)
+  | EXPR_map (sr,a,b) -> EXPR_map (sr,fe a, fe b)
   | EXPR_noexpand (sr,x) -> e (* DO NOT EXPAND .. HMM .. *)
-  | EXPR_name _ -> e
+  | EXPR_name (sr,name,ts) -> EXPR_name (sr, name, List.map ft ts) 
   | EXPR_callback _ -> e
-  | EXPR_index _ -> e
+  | EXPR_index (sr,s,ix) -> 
+(*
+    print_endline ("full_map_expr EXPR_index " ^ string_of_int ix ^ " -> " ^ string_of_int (fi ix)); 
+*)
+    EXPR_index (sr,s,fi ix)
   | EXPR_case_tag _ -> e
-  | EXPR_typed_case _ -> e
-  | EXPR_projection _ -> e
-  | EXPR_rnprj (sr,name,seq,a) -> EXPR_rnprj (sr,name,seq, f a)
-  | EXPR_lookup (sr,(x,s,ts)) -> EXPR_lookup (sr,(f x, s, ts))
-  | EXPR_apply (sr,(a,b)) -> EXPR_apply (sr,(f a, f b))
-  | EXPR_tuple (sr,es) -> EXPR_tuple (sr, List.map f es)
-  | EXPR_tuple_cons (sr,eh, et) -> EXPR_tuple_cons (sr, f eh, f et)
-  | EXPR_record (sr,es) -> EXPR_record (sr, List.map (fun (s,e) -> s,f e) es)
-  | EXPR_polyrecord (sr,es,e) -> EXPR_polyrecord (sr, List.map (fun (s,e) -> s,f e) es, f e)
-  | EXPR_remove_fields (sr,e,ss) -> EXPR_remove_fields (sr, f e, ss)
-  | EXPR_variant (sr,(s,e)) -> EXPR_variant (sr, (s,f e))
-  | EXPR_arrayof (sr, es) -> EXPR_arrayof (sr, List.map f es)
-  | EXPR_coercion (sr, (x,t)) -> EXPR_coercion (sr,(f x, t))
-  | EXPR_suffix _ -> e
+  | EXPR_typed_case (sr,n,t) -> EXPR_typed_case (sr,n, ft t)
+  | EXPR_projection (sr,n,t) -> EXPR_projection (sr,n,ft t)
+  | EXPR_rnprj (sr,name,seq,a) -> EXPR_rnprj (sr,name,seq, fe a)
+  | EXPR_lookup (sr,(x,s,ts)) -> EXPR_lookup (sr,(fe x, s, List.map ft ts))
+  | EXPR_apply (sr,(a,b)) -> EXPR_apply (sr,(fe a, fe b))
+  | EXPR_tuple (sr,es) -> EXPR_tuple (sr, List.map fe es)
+  | EXPR_tuple_cons (sr,eh, et) -> EXPR_tuple_cons (sr, fe eh, fe et)
+  | EXPR_record (sr,es) -> EXPR_record (sr, List.map (fun (s,e) -> s,fe e) es)
+  | EXPR_polyrecord (sr,es,e) -> EXPR_polyrecord (sr, List.map (fun (s,e) -> s,fe e) es, fe e)
+  | EXPR_remove_fields (sr,e,ss) -> EXPR_remove_fields (sr, fe e, ss)
+  | EXPR_variant (sr,(s,e)) -> EXPR_variant (sr, (s,fe e))
+  | EXPR_arrayof (sr, es) -> EXPR_arrayof (sr, List.map fe es)
+  | EXPR_coercion (sr, (x,t)) -> EXPR_coercion (sr,(fe x, ft t))
+  | EXPR_suffix (sr,(qn,t)) -> EXPR_suffix (sr,(qn, ft t))
 
-  | EXPR_record_type (sr,ts) -> e
-  | EXPR_polyrecord_type (sr,ts,v) -> e
-  | EXPR_variant_type (sr,ts) -> e
-  | EXPR_void sr -> e
+  (* these ones are types and should have been desugared out a long way back *)
+  | EXPR_record_type (sr,ts) -> assert false 
+  | EXPR_polyrecord_type (sr,ts,v) -> assert false
+  | EXPR_variant_type (sr,ts) -> assert false
+  | EXPR_void sr -> assert false 
+
   | EXPR_ellipsis sr -> e
-  | EXPR_product (sr,es) -> EXPR_product (sr, List.map f es)
-  | EXPR_sum (sr,es) -> EXPR_sum (sr, List.map f es)
-  | EXPR_intersect (sr,es) -> EXPR_intersect (sr, List.map f es)
-  | EXPR_isin (sr,(a,b)) -> EXPR_isin (sr, (f a, f b))
-  | EXPR_orlist (sr,es) -> EXPR_orlist (sr, List.map f es)
-  | EXPR_andlist (sr,es) -> EXPR_andlist (sr, List.map f es)
-  | EXPR_arrow (sr,(a,b)) -> EXPR_arrow (sr,(f a, f b))
-  | EXPR_longarrow (sr,(a,b)) -> EXPR_longarrow (sr,(f a, f b))
-  | EXPR_superscript (sr,(a,b)) -> EXPR_superscript (sr,(f a, f b))
+  | EXPR_product (sr,es) -> EXPR_product (sr, List.map fe es)
+  | EXPR_sum (sr,es) -> EXPR_sum (sr, List.map fe es)
+  | EXPR_intersect (sr,es) -> EXPR_intersect (sr, List.map fe es)
+  | EXPR_isin (sr,(a,b)) -> EXPR_isin (sr, (fe a, fe b))
+  | EXPR_orlist (sr,es) -> EXPR_orlist (sr, List.map fe es)
+  | EXPR_andlist (sr,es) -> EXPR_andlist (sr, List.map fe es)
+  | EXPR_arrow (sr,(a,b)) -> EXPR_arrow (sr,(fe a, fe b))
+  | EXPR_longarrow (sr,(a,b)) -> EXPR_longarrow (sr,(fe a, fe b))
+  | EXPR_superscript (sr,(a,b)) -> EXPR_superscript (sr,(fe a, fe b))
 
   | EXPR_literal _ -> e
-  | EXPR_deref (sr,x) -> EXPR_deref (sr,f x)
-  | EXPR_ref (sr,x) -> EXPR_ref (sr, f x)
-  | EXPR_likely (sr,x) -> EXPR_likely (sr, f x)
-  | EXPR_unlikely (sr,x) -> EXPR_unlikely (sr, f x)
-  | EXPR_new (sr,x) -> EXPR_new (sr, f x)
+  | EXPR_deref (sr,x) -> EXPR_deref (sr,fe x)
+  | EXPR_ref (sr,x) -> EXPR_ref (sr, fe x)
+  | EXPR_likely (sr,x) -> EXPR_likely (sr, fe x)
+  | EXPR_unlikely (sr,x) -> EXPR_unlikely (sr, fe x)
+  | EXPR_new (sr,x) -> EXPR_new (sr, fe x)
 
   (* GIVE UP ON LAMBDAS FOR THE MOMENT .. NEEDS STATEMENT MAPPING TOO *)
   (* | EXPR_lambda of Flx_srcref.t * (vs_list_t * params_t list * typecode_t * statement_t list) *)
   | EXPR_lambda _ -> e
 
-  | EXPR_match_ctor (sr,(qn,x)) -> EXPR_match_ctor (sr,(qn,f x))
-  | EXPR_match_variant (sr,(s,x)) -> EXPR_match_variant (sr,(s,f x))
-  | EXPR_match_case (sr,(j,x)) -> EXPR_match_case (sr,(j, f x))
+  | EXPR_match_ctor (sr,(qn,x)) -> EXPR_match_ctor (sr,(qn,fe x))
+  | EXPR_match_variant (sr,(s,x)) -> EXPR_match_variant (sr,(s,fe x))
+  | EXPR_match_case (sr,(j,x)) -> EXPR_match_case (sr,(j, fe x))
 
-  | EXPR_ctor_arg (sr,(qn,x)) -> EXPR_ctor_arg (sr,(qn,f x))
-  | EXPR_variant_arg (sr,(s,x)) -> EXPR_variant_arg (sr,(s, f x))
-  | EXPR_case_arg (sr,(j,x)) -> EXPR_case_arg (sr,(j, f x))
-  | EXPR_case_index (sr,x) -> EXPR_case_index (sr,f x)
+  | EXPR_ctor_arg (sr,(qn,x)) -> EXPR_ctor_arg (sr,(qn,fe x))
+  | EXPR_variant_arg (sr,(s,x)) -> EXPR_variant_arg (sr,(s, fe x))
+  | EXPR_case_arg (sr,(j,x)) -> EXPR_case_arg (sr,(j, fe x))
+  | EXPR_case_index (sr,x) -> EXPR_case_index (sr,fe x)
 
-  | EXPR_letin (sr,(pat,a,b)) -> EXPR_letin (sr,(pat,f a, f b))
+  | EXPR_letin (sr,(pat,a,b)) -> EXPR_letin (sr,(pat,fe a, fe b))
 
-  | EXPR_get_n (sr,(j,x)) -> EXPR_get_n (sr,(j,f x))
-  | EXPR_get_named_variable (sr,(j,x)) -> EXPR_get_named_variable (sr,(j,f x))
-  | EXPR_as (sr,(x,s)) -> EXPR_as (sr,(f x, s))
-  | EXPR_as_var (sr,(x,s)) -> EXPR_as_var (sr,(f x, s))
+  | EXPR_get_n (sr,(j,x)) -> EXPR_get_n (sr,(j,fe x))
+  | EXPR_get_named_variable (sr,(j,x)) -> EXPR_get_named_variable (sr,(j,fe x))
+  | EXPR_as (sr,(x,s)) -> EXPR_as (sr,(fe x, s))
+  | EXPR_as_var (sr,(x,s)) -> EXPR_as_var (sr,(fe x, s))
   | EXPR_match (sr,(a,pes)) ->
-    EXPR_match (sr, (f a, List.map (fun (pat,x) -> pat, f x) pes))
+    EXPR_match (sr, (fe a, List.map (fun (pat,x) -> pat, fe x) pes))
 
-  | EXPR_typeof (sr,x) -> EXPR_typeof (sr,f x)
-  | EXPR_cond (sr,(a,b,c)) -> EXPR_cond (sr, (f a, f b, f c))
+  | EXPR_typeof (sr,x) -> EXPR_typeof (sr,fe x)
+  | EXPR_cond (sr,(a,b,c)) -> EXPR_cond (sr, (fe a, fe b, fe c))
 
-  | EXPR_expr (sr,s,t,e) -> EXPR_expr (sr,s,t, f e)
+  | EXPR_expr (sr,s,t,e) -> EXPR_expr (sr,s,ft t, fe e)
   | EXPR_type_match _ -> e
   | EXPR_typecase_match (sr,(e,ps)) ->
-    let ps = List.map (fun (t,e) -> t, f e) ps in
-    EXPR_typecase_match (sr, (f e, ps))
+    let ps = List.map (fun (t,e) -> ft t, fe e) ps in
+    EXPR_typecase_match (sr, (fe e, ps))
 
-  | EXPR_range_check (sr,mi,v,mx) -> EXPR_range_check (sr, f mi, f v, f mx)
-  | EXPR_not (sr,e) -> EXPR_not (sr, f e)
-  | EXPR_extension (sr,es,e) -> EXPR_extension (sr, List.map f es, f e)
-  | EXPR_get_tuple_tail (sr,e) -> EXPR_get_tuple_tail (sr, f e)
-  | EXPR_get_tuple_head (sr,e) -> EXPR_get_tuple_head (sr, f e)
- 
+  | EXPR_range_check (sr,mi,v,mx) -> EXPR_range_check (sr, fe mi, fe v, fe mx)
+  | EXPR_not (sr,e) -> EXPR_not (sr, fe e)
+  | EXPR_extension (sr,es,e) -> EXPR_extension (sr, List.map fe es, fe e)
+  | EXPR_get_tuple_tail (sr,e) -> EXPR_get_tuple_tail (sr, fe e)
+  | EXPR_get_tuple_head (sr,e) -> EXPR_get_tuple_head (sr, fe e)
+
+let idf x = x 
+let map_expr fe (e:expr_t):expr_t = full_map_expr idf idf fe e
  
 let iter_expr f (e:expr_t) =
   f e;
@@ -268,3 +277,34 @@ let scan_expr e =
   let add x = ls := Flx_ast.src_of_expr x :: !ls in
   iter_expr add e;
   Flx_list.uniq_list !ls
+
+let rec map_exe fi ft fe (x:exe_t):exe_t = match x with
+  | EXE_type_error (x) -> EXE_type_error (map_exe fi ft fe x)
+  | EXE_code (c,e) -> EXE_code (c, fe e)
+  | EXE_noreturn_code (c,e) -> EXE_noreturn_code (c, fe e)
+  | EXE_comment _
+  | EXE_label _
+  | EXE_goto _
+    -> x
+  | EXE_cgoto e -> EXE_cgoto (fe e)
+  | EXE_ifgoto (e,s) -> EXE_ifgoto (fe e,s)
+  | EXE_call (a,b) -> EXE_call (fe a, fe b)
+  | EXE_jump (a,b) -> EXE_jump (fe a, fe b)
+  | EXE_loop (s,e) -> EXE_loop (s, fe e)
+  | EXE_svc _ -> x
+  | EXE_fun_return e -> EXE_fun_return (fe e)
+  | EXE_yield e -> EXE_yield (fe e)
+  | EXE_proc_return -> x
+  | EXE_halt _ -> x
+  | EXE_trace _ -> x
+  | EXE_nop _ -> x
+  | EXE_init (name,e) -> EXE_init (name, fe e)
+  | EXE_iinit ((name,idx),e) -> EXE_iinit ((name, fi idx), fe e)
+  | EXE_assign (a,b) -> EXE_assign (fe a, fe b)
+  | EXE_assert e -> EXE_assert (fe e)
+  | EXE_try  -> x
+  | EXE_endtry -> x
+  | EXE_catch (name,t) -> EXE_catch (name, ft t)
+  | EXE_proc_return_from _ -> x
+
+

@@ -55,3 +55,7 @@ val fold :
   t ->
   'a ->
   'a
+
+val find_children: t -> Flx_types.bid_t -> Flx_types.bid_t list
+val find_descendants : t -> Flx_types.bid_t -> Flx_types.bid_t list
+ 

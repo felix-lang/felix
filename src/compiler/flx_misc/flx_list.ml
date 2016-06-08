@@ -70,6 +70,13 @@ let list_prefix lst n =
     else rev nl
   in aux lst [] n
 
+let list_split lst n =
+  let rec aux ol nl n =
+    if n>0 then aux (tl ol) (hd ol :: nl) (n-1)
+    else rev nl,ol
+  in aux lst [] n
+
+
 let list_tail lst n =
   let rec aux ol il n =
     if n > 0 then aux (hd il::ol) (tl il) (n-1)

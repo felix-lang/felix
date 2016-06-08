@@ -28,6 +28,10 @@ val list_prefix: 'a list -> int -> 'a list
  * the second list must be long enough or an exception is thrown *)
 val list_tail: 'a list -> int -> 'a list
 
+(** split a list into a head list length n, and a tail,
+ * equivalent to list_prefix lst n, list_tail lst n *)
+val list_split: 'a list -> int -> 'a list * 'a list
+
 (** the first list with the tail of the second list
  * appended. If the second list isn't long enough return just the first list
  * (routine cannot fail) *)

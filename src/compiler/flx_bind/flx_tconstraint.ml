@@ -26,6 +26,7 @@ open Flx_list
 let build_constraint_element counter bt sr i p1 =
   (* special case, no constraint, represent by just 'true' (unit type) *)
   match p1 with
+  | TYP_generic _ -> (* print_endline ("constraint generic .. "); *) btyp_tuple []
   | TYP_patany _
   | TYP_type
   | TYP_function _ -> btyp_tuple []
@@ -91,9 +92,15 @@ let build_constraint_element counter bt sr i p1 =
     (* print_endline ("Bound typematch is " ^ sbt counter.sym_table tm); *)
     tm
 
-let build_type_constraints counter bsym_table bt sr vs =
+let build_type_constraints counter bsym_table bt name sr vs =
+(*
+if name = "accumulate" then print_endline ("building type constraints for accumulate");
+*)
   let type_constraints =
     map (fun (s,i,tp) ->
+(*
+if name = "accumulate" then print_endline ("type variable " ^ s ^ " constraint = " ^ string_of_typecode tp);
+*)
       let tp = build_constraint_element counter bt sr i tp in
       (*
       if tp <> btyp_tuple [] then

@@ -47,6 +47,14 @@ and t =
   | BTYP_type_set_union of t list (** open union *)
   | BTYP_type_set_intersection of t list (** open union *)
 
+type overload_result =
+ bid_t *  (* index of function *)
+ t * (* type of function signature *)
+ t * (* type of function return *)
+ (bid_t * t) list * (* mgu *)
+ t list (* ts *)
+
+
 let catmap sep f ls = String.concat sep (List.map f ls) 
 
 let rec str_of_btype typ = 
@@ -531,4 +539,25 @@ let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_type_set_union ls -> btyp_type_set_union (List.map f_btype ls)
   | BTYP_type_set_intersection ls ->
       btyp_type_set_intersection (List.map f_btype ls)
+
+let map_entry fi ft {base_sym=base_sym; spec_vs=spec_vs; sub_ts=sub_ts } =
+ {
+   base_sym=fi base_sym; 
+   spec_vs=List.map (fun (s,i) -> s, fi i) spec_vs; 
+   sub_ts=List.map ft sub_ts
+ }
+
+
+let map_name_map fi ft nm =
+  let me k = map_entry fi ft k in
+  let numap = Hashtbl.create 97 in
+  Hashtbl.iter (fun name es -> 
+    let es = match es with
+    | NonFunctionEntry ek -> NonFunctionEntry (me ek)
+    | FunctionEntry eks -> FunctionEntry (List.map me eks)
+    in
+    Hashtbl.add numap name es
+  ) 
+  nm;
+  numap
 

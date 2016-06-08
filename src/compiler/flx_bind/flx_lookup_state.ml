@@ -1,4 +1,3 @@
-
 type lookup_state_t = {
   counter : Flx_types.bid_t ref;
   print_flag: bool;
@@ -10,9 +9,10 @@ type lookup_state_t = {
      *)
   sym_table: Flx_sym_table.t;
   env_cache: (Flx_types.bid_t, Flx_mtypes2.env_t) Hashtbl.t;
+  generic_cache: Flx_mtypes2.generic_cache_t;
 }
 
-let make_lookup_state print_flag counter varmap ticache sym_table =
+let make_lookup_state print_flag counter varmap ticache generic_cache sym_table =
   {
     counter = counter;
     print_flag = print_flag;
@@ -20,6 +20,7 @@ let make_lookup_state print_flag counter varmap ticache sym_table =
     varmap = varmap;
     sym_table = sym_table;
     env_cache = Hashtbl.create 97;
+    generic_cache = generic_cache;
   }
 
 let hfind msg h k =

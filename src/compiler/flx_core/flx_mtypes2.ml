@@ -2,6 +2,10 @@ open Flx_set
 open Flx_types
 open List
 
+type generic_rebind_entry_t = Flx_types.bid_t * Flx_btype.t
+type generic_cache_t =
+  (Flx_types.bid_t * generic_rebind_entry_t list,  Flx_btype.overload_result) Hashtbl.t
+
 (* generic entity instances: functions, variables *)
 type instance_registry_t = (
   Flx_types.bid_t * Flx_btype.t list,
@@ -55,6 +59,7 @@ type sym_state_t =
   counter : bid_t ref;
   mutable varmap : typevarmap_t;
   mutable ticache : (bid_t, Flx_btype.t) Hashtbl.t;
+  generic_cache: generic_cache_t;
   env_cache : (bid_t, env_t) Hashtbl.t;
   registry : type_registry_t;
   array_as_tuple_registry : type_array_as_tuple_registry_t;
@@ -79,6 +84,7 @@ let make_syms options =
     counter = ref 10;
     varmap = Hashtbl.create 97;
     ticache = Hashtbl.create 97;
+    generic_cache = Hashtbl.create 97;
     env_cache = Hashtbl.create 97;
     registry = Hashtbl.create 97;
     array_as_tuple_registry = Hashtbl.create 97;

@@ -51,6 +51,7 @@ and suffixed_name_t =
 
 (** type of a type *)
 and typecode_t =
+  | TYP_generic of Flx_srcref.t
   | TYP_label 
   | TYP_void of Flx_srcref.t                   (** void type *)
   | TYP_name of Flx_srcref.t * Flx_id.t * typecode_t list
@@ -645,6 +646,7 @@ let src_of_suffixed_name (e : suffixed_name_t) = match e with
   -> s
 
 let src_of_typecode = function
+  | TYP_generic s
   | TYP_defer (s,_)
   | TYP_void s
   | TYP_name  (s,_,_)

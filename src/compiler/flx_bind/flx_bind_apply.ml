@@ -161,6 +161,11 @@ let cal_bind_apply
         let bt,tf as f =
           match Flx_typing2.qualified_name_of_expr f' with
           | Some name ->
+(*
+if match name with | `AST_name (_,"accumulate",_) -> true | _ -> false then begin
+  print_endline "Trying to bind application of accumulate";
+end;
+*)
             let srn = src_of_qualified_name name in
             begin 
               try  (lookup_qn_with_sig' state bsym_table sr srn env rs name (ta::sigs))

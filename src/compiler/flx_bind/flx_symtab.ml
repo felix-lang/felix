@@ -393,7 +393,15 @@ and build_table_for_dcl
     symdef
   =
 (*
-    print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", parent=" ^ str_parent parent);
+print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", parent=" ^ str_parent parent);
+*)
+(*
+    let is_generic vs = List.fold_left (fun acc (name,index,typ) ->
+      acc || match typ with | TYP_generic _ -> true | _ -> false) 
+      false
+      (fst ivs) 
+    in
+    if is_generic ivs then print_endline ("Add symbol with generic type variable");
 *)
     let pubtab =
       match pubtab with

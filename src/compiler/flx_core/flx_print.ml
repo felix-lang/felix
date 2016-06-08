@@ -357,6 +357,7 @@ and st prec tc : string =
 
     | TYP_index (sr,name,idx) -> 0, name ^ "<" ^ string_of_bid idx ^ ">"
     | TYP_label -> 0, "LABEL"
+    | TYP_generic _ -> 0, "GENERIC"
     | TYP_void _ -> 0, "void"
     | TYP_name (_,name,ts) ->
         0, string_of_id name ^
