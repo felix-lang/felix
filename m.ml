@@ -130,9 +130,14 @@ let fold t =
 let minimise t =
   fold (map fold t)
 
+let p t = print_endline (string_of_btyp t)
+
 let u = BTYP_tuple [] ;;
 let f1 = BTYP_function (u,u);;
+let f2 = BTYP_tuple [u;BTYP_function (u,BTYP_fix (-2))];;
 
-print_endline (string_of_btyp f1);;
-
+p f1;;
+p f2;;
+p (unfold f2);;
+p (fold (unfold f2));;
 
