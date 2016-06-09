@@ -89,7 +89,7 @@ print_endline ("_eq of type " ^ sbt bsym_table ta);
 (*
 print_endline ("Got return expression " ^ Flx_print.string_of_expr retexpr);
 *)
-      let ubt = Flx_typecode_of_btype.typecode_of_btype bsym_table sr ta in
+      let ubt = Flx_typecode_of_btype.typecode_of_btype bsym_table state.Flx_lookup_state.counter sr ta in
 (*
 print_endline ("Unbound type = " ^ string_of_typecode ubt);
 *)

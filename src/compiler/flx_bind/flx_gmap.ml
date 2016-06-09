@@ -9,7 +9,7 @@ let call (sr:Flx_srcref.t) (fn : string) (arg:expr_t) =
   EXE_call ( EXPR_name (sr,fn,[]), arg)
 
 
-let rec generic_map bsym_table state be rs sr env fn b =
+let rec generic_map bsym_table counter be rs sr env fn b =
   let argx,argt as arg = be rs b in
   match argt with
   | BTYP_tuple ls ->
@@ -21,7 +21,7 @@ let rec generic_map bsym_table state be rs sr env fn b =
 
   | BTYP_array (t,_) ->
     (* print_endline ("Cheating, array element type " ^ Flx_print.sbt bsym_table t); *)
-    let ubt = Flx_typecode_of_btype.typecode_of_btype bsym_table sr t in
+    let ubt = Flx_typecode_of_btype.typecode_of_btype bsym_table counter sr t in
     let fname = EXPR_suffix(sr, (`AST_name (sr,fn,[]),ubt)) in
     be rs (EXPR_apply (sr, (EXPR_apply (sr,(EXPR_name (sr,"map",[]),fname)),b)))
 

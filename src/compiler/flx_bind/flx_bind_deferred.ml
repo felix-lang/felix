@@ -85,7 +85,7 @@ let set_deferred_type
     | Some t -> print_endline ("DEFERED TYPE IS ALREADY SET")
     | None -> 
       print_endline ("DEFERED TYPE IS NOT SET");
-      let tc = typecode_of_btype bsym_table sr ta in
+      let tc = typecode_of_btype bsym_table state.counter sr ta in
       tref := Some tc;
       print_endline ("DEFERED TYPE SET NOW TO " ^ Flx_print.string_of_typecode tc)
     end;

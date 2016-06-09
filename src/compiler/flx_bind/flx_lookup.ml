@@ -21,7 +21,6 @@ open Flx_lookup_state
 
 let svs (s,i,mt) = s ^ "<" ^ si i ^ ">:"^ string_of_typecode mt
 
-let typecode_of_btype sr x = Flx_typecode_of_btype.typecode_of_btype sr x
 type bfres_t = 
   | RecordAddition of Flx_bexpr.t
   | Function of Flx_bexpr.t
@@ -3864,7 +3863,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   *)
   | EXPR_typecase_match (sr,(e,ms)) -> 
     let (_,argt) as arg = be e in
-    let uba = Flx_typecode_of_btype.typecode_of_btype bsym_table sr argt in
+    let uba = Flx_typecode_of_btype.typecode_of_btype bsym_table state.counter sr argt in
     let tpats,es = List.split ms in
     let n = List.length ms in
     let il = Flx_list.nlist n in
@@ -4858,7 +4857,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
       )
     ) ->
     let be rs e = bind_expression' state bsym_table env rs e [] in
-    Flx_gmap.generic_map bsym_table state be rs sr env func b
+    Flx_gmap.generic_map bsym_table state.counter be rs sr env func b
 
   | EXPR_apply (sr,(f',a')) -> 
 (*
@@ -5510,6 +5509,7 @@ print_endline ("New private name map = " ^ string_of_name_map nuprivmap);
         | _ -> 
           print_endline ("[Flx_lookup:clone] Unhandled symdef");
           print_endline (string_of_symdef symdef id vs);
+          print_endline ("Parent is " ^ match parent with | None -> "NONE" | Some i -> si i);
           assert false
       in
       let nuvs_vars = List.map (fun (s,i,t) -> s,fi i, ft t) new_vs in 
@@ -5594,7 +5594,7 @@ end;
       begin match mt with 
       | TYP_generic _ -> 
         let bt = List.nth ts n in
-        let ubt = Flx_typecode_of_btype.typecode_of_btype bsym_table sr bt in
+        let ubt = Flx_typecode_of_btype.typecode_of_btype bsym_table state.counter sr bt in
         gen_vs := (v,n) :: !gen_vs;
         smap := (s, ubt) :: !smap;
         vmap := (i, bt) :: !vmap
@@ -5699,7 +5699,7 @@ print_endline ("Adding alias " ^ s ^ "<"^si alias_index^"> -> " ^ string_of_type
       Hashtbl.add generic_alias s entry;
       let symdef = SYMDEF_type_alias t in
       let sym = {Flx_sym.id=s;sr=sr;vs=dfltvs;pubmap=noalias; privmap=noalias;dirs=[];symdef=symdef} in
-      Flx_sym_table.add state.sym_table alias_index (Some index) sym;
+      Flx_sym_table.add state.sym_table alias_index (Some nuindex) sym;
     )
     smap; 
     clone state bsym_table fi ft fbt fe fx new_vs generic_alias index;

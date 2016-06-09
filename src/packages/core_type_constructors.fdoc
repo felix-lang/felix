@@ -227,6 +227,19 @@ union slice[T] =
   | Slice_one of T
 ;
 
+fun \in[T with Integer[T]] (x:T, s:slice[T]) => 
+  match s with
+  | #Slice_all => true
+  | Slice_from i => x >= i
+  | Slice_from_counted (i,n) => x >= i and x < i+n
+  | Slice_to_incl j => x <= j
+  | Slice_to_excl j => x < j
+  | Slice_range_incl (i,j) => x >= i and x <= j
+  | Slice_range_excl (i,j) => x >= i and x < j 
+  | Slice_one i => i == x
+;
+
+
 gen iterator[T with Integer[T]] (s:slice[T]) =>
   match s with
   | Slice_one x => { yield Some x; return None[T]; }
