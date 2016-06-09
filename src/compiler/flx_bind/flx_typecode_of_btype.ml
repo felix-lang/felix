@@ -43,7 +43,9 @@ let typecode_of_btype bsym_table counter sr t0 =
     else r
   in
   let r = tc 0 [] t0 in
-  print_endline ("Translated btype " ^ Flx_print.sbt bsym_table t0 " --> " ^ string_of_typecode r);
+  (*
+  print_endline ("Translated btype " ^ Flx_print.sbt bsym_table t0 ^ " --> " ^ string_of_typecode r);
+  *)
   r
 
 
