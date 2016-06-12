@@ -621,7 +621,7 @@ let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
 print_endline "  [flx_inst] Begin instantiation";
 *)
   Hashtbl.clear syms.instances;
-  Hashtbl.clear syms.registry;
+  syms.registry <- [];
   Hashtbl.clear syms.array_as_tuple_registry;
 
   (* empty instantiation registry *)

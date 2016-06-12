@@ -45,7 +45,7 @@ let scan_bexpr syms bsym_table allocable_types e : unit =
     | BEXPR_new (_,t),_ when t <> Flx_btype.btyp_tuple [] ->
       (* print_endline ("FOUND A NEW " ^ sbt bsym_table t); *)
       let index =
-        try Hashtbl.find syms.registry t
+        try Flx_treg.find_type_index syms bsym_table t
         with Not_found -> failwith ("new: Can't find type in registry " ^ sbt bsym_table t)
       in
       Hashtbl.replace allocable_types t index;
@@ -55,7 +55,7 @@ let scan_bexpr syms bsym_table allocable_types e : unit =
       print_endline ("FOUND A CLASS NEW " ^ sbt bsym_table t);
       *)
       let index =
-        try Hashtbl.find syms.registry cls
+        try Flx_treg.find_type_index syms bsym_table cls
         with Not_found -> failwith ("class new: Can't find type in registry " ^ sbt bsym_table cls)
       in
       Hashtbl.replace allocable_types cls index;
@@ -404,13 +404,13 @@ let gen_offset_tables syms bsym_table extras module_name first_ptr_map=
 
   (* extra shapes required by primitives *)
   List.iter (fun t ->
-    let index = Hashtbl.find syms.registry t in
+    let index = Flx_treg.find_type_index syms bsym_table t in
     Hashtbl.replace allocable_types t index
   )
   extras;
 
-  Hashtbl.iter
-  (fun btyp index ->
+  List.iter
+  (fun (btyp, index) ->
 print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index);
     match unfold "flx_ogen: gen_shape_tables" btyp with
     | BTYP_sum args ->
@@ -420,7 +420,7 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
         | BTYP_void -> ()
         | _ ->
           try
-            let index = Hashtbl.find syms.registry t in
+            let index = Flx_treg.find_type_index syms bsym_table t in
             Hashtbl.replace allocable_types t index
           with Not_found -> ()
       end args
@@ -432,7 +432,7 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
         | BTYP_void -> ()
         | _ ->
           try
-            let index = Hashtbl.find syms.registry t in
+            let index = Flx_treg.find_type_index syms bsym_table t in
             Hashtbl.replace allocable_types t index
           with Not_found -> ()
       end args
@@ -463,7 +463,7 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
           print_endline ("Needs shape (instantiated) " ^ sbt bsym_table t);
           *)
           begin try
-            let index = Hashtbl.find syms.registry t in
+            let index = Flx_treg.find_type_index syms bsym_table t in
             Hashtbl.replace allocable_types t index
           with
           | Not_found -> failwith ("[gen_offset_tables] Woops, type "^si i^ " = " ^ 
@@ -496,7 +496,7 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
           | BTYP_void -> ()
           | _ ->
             try
-              let index = Hashtbl.find syms.registry t in
+              let index = Flx_treg.find_type_index syms bsym_table t in
               Hashtbl.replace allocable_types t index
             with Not_found -> ()
         end args

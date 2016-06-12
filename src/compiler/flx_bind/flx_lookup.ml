@@ -6246,6 +6246,7 @@ and build_env state bsym_table parent : env_t =
 and rebind_btype state bsym_table env sr ts t =
   let rbt t = rebind_btype state bsym_table env sr ts t in
   match t with
+  | BTYP_hole -> assert false
   | BTYP_tuple_cons _ -> assert false
   | BTYP_none -> assert false
   | BTYP_inst (i,_) ->

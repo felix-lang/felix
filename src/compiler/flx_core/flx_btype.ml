@@ -15,6 +15,7 @@ type btpattern_t = {
 
 (** general typing *)
 and t = 
+  | BTYP_hole
   | BTYP_int (* type of a C++ int, so we don't have to look it up *)
   | BTYP_none
   | BTYP_sum of t list
@@ -61,6 +62,7 @@ let rec str_of_btype typ =
   let s t = str_of_btype t in
   let ss ts = String.concat "," (List.map str_of_btype ts) in
   match typ with
+  | BTYP_hole -> "BTYP_hole"
   | BTYP_int -> "BTYP_int"
   | BTYP_none -> "BTYP_none"
   | BTYP_sum ts -> "BTYP_sum(" ^ ss ts ^")"
@@ -132,10 +134,13 @@ type biface_t =
   | BIFACE_export_requirement of Flx_srcref.t * breqs_t
 
 (* -------------------------------------------------------------------------- *)
-(* NOTE: only works on explicit fixpoint operators,
-  i.e. it won't work on typedefs: no name lookup,
-  these should be removed first ..
-  another view: only works on non-generative types.
+(* NOTE: this code only works on structural types because the symbol
+   table is not available. However this should be good enough, IF we
+   assume that the symbol table entry for a BTYP_inst only contains
+   complete types. For example, for a struct, the list of field/type
+   pairs, we have to be sure the type of each field is complete,
+   and doesn't have a free fixpoint trying to refer back to the 
+   struct (or worse something containing the struct).
 *)
 
 let complete_type t =
@@ -166,6 +171,7 @@ let complete_type t =
   in try aux 0 t; true with | Free_fixpoint _ -> false
 
 (* -------------------------------------------------------------------------- *)
+let btyp_hole = BTYP_hole
 
 let btyp_label () = BTYP_label
 
@@ -428,6 +434,7 @@ let flat_iter
   btype
 =
   match btype with
+  | BTYP_hole -> ()
   | BTYP_int -> ()
   | BTYP_label -> ()
   | BTYP_none -> ()
@@ -486,6 +493,7 @@ let rec iter
 (** Recursively iterate over each bound type and transform it with the
  * function. *)
 let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
+  | BTYP_hole as x -> x
   | BTYP_int as x -> x
   | BTYP_label as x -> x
   | BTYP_none as x -> x

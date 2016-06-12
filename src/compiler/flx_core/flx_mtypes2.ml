@@ -12,7 +12,7 @@ type instance_registry_t = (
   Flx_types.bid_t
 ) Hashtbl.t
 
-type type_registry_t = (Flx_btype.t, Flx_types.bid_t) Hashtbl.t
+type type_registry_t = (Flx_btype.t * Flx_types.bid_t) list
 type type_array_as_tuple_registry_t = (Flx_types.bid_t, unit) Hashtbl.t
 
 (* used when indexing concatenated arrays to find the offset
@@ -61,7 +61,7 @@ type sym_state_t =
   mutable ticache : (bid_t, Flx_btype.t) Hashtbl.t;
   generic_cache: generic_cache_t;
   env_cache : (bid_t, env_t) Hashtbl.t;
-  registry : type_registry_t;
+  mutable registry : type_registry_t;
   array_as_tuple_registry : type_array_as_tuple_registry_t;
   compiler_options : Flx_options.t;
   instances : instance_registry_t;
@@ -86,7 +86,7 @@ let make_syms options =
     ticache = Hashtbl.create 97;
     generic_cache = Hashtbl.create 97;
     env_cache = Hashtbl.create 97;
-    registry = Hashtbl.create 97;
+    registry = [];
     array_as_tuple_registry = Hashtbl.create 97;
     compiler_options = options;
     instances = Hashtbl.create 97;
@@ -126,6 +126,4 @@ let typecodeset_of_list x =
   in tsol x
 
 let typecodeset_map f x = typecodeset_of_list (map f (TypecodeSet.elements x))
-
-(* for regular expressions *)
 

@@ -25,7 +25,7 @@ and metatype' sym_table bsym_table rs sr term =
 print_endline ("Metatyping term " ^ st term);
 *)
   match term with
-
+  | BTYP_hole -> assert false
   | BTYP_type_function (a,b,c) ->
     let ps = List.map snd a in
     let argt =

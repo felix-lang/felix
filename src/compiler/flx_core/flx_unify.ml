@@ -290,6 +290,7 @@ let fix i t =
   let rec aux n t =
     let aux t = aux (n - 1) t in
     match t with
+    | BTYP_hole -> assert false
     | BTYP_tuple_cons _ -> assert false
     | BTYP_none -> assert false
     | BTYP_type_var (k,mt) -> if k = i then btyp_fix n mt else t
@@ -804,6 +805,9 @@ let rec type_eq' bsym_table counter ltrail ldepth rtrail rdepth trail t1 t2 =
   in
   *)
   match t1,t2 with
+  | BTYP_hole,_ (* for zippers *)
+  | _,BTYP_hole -> true
+
   | BTYP_label,BTYP_label -> true
   | BTYP_type i, BTYP_type j -> i = j
   | BTYP_inst (i1,ts1),BTYP_inst (i2,ts2) ->
@@ -1001,6 +1005,7 @@ let fold bsym_table counter t =
     | BTYP_pointer a -> ax a
     | BTYP_tuple_cons (a,b) -> ax a; ax b
 
+    | BTYP_hole
     | BTYP_label 
     | BTYP_none
     | BTYP_int
@@ -1031,11 +1036,145 @@ let fold bsym_table counter t =
     try aux [] 0 t; t
     with Found t -> t
 
+exception Discard of int * int 
+
+let wrap bsym_table counter t =
+  let rec aux trail depth t' =
+    let rec scan ctor left right =
+      match right with
+      | pivot::tail ->
+        let trail = (depth,ctor (left @ [btyp_hole] @ tail))::trail in
+        let r = aux trail (depth+1) pivot in
+        scan ctor (left @ [r]) tail
+      | _ -> ctor left
+    in 
+
+    let pair ctor a b =
+      let trail = (depth, (ctor (btyp_hole,b))):: trail in
+      let a' = aux trail (depth+1) a in
+      let trail = (depth, (ctor (a,btyp_hole))):: trail in
+      let b' = aux trail (depth+1) b in
+      ctor (a,b)
+    in
+    try
+      match t' with
+      | BTYP_intersect ls -> scan btyp_intersect [] ls
+      | BTYP_sum ls -> scan btyp_sum [] ls
+      | BTYP_inst (k,ls) ->
+        let ctor ls = btyp_inst (k,ls) in
+        scan ctor [] ls
+
+      | BTYP_tuple ls -> scan btyp_tuple [] ls
+      | BTYP_record (ls) ->
+        let rec scan left right =
+          match right with
+          | (label,pivot)::tail ->
+            let trail = (depth,btyp_record (left @ [label,btyp_hole] @ tail))::trail in
+            let r = aux trail (depth+1) pivot in
+            scan (left @ [label,r]) tail
+          | _ -> btyp_record left
+        in 
+        scan [] ls
+ 
+      | BTYP_polyrecord (ls,v) ->
+        let rec scan left right =
+          match right with
+          | (label,pivot)::tail ->
+            let trail = (depth,btyp_polyrecord (left @ [label,btyp_hole] @ tail) v)::trail in
+            let r = aux trail (depth+1) pivot in
+            scan (left @ [label,r]) tail
+          | _ -> left 
+        in 
+        let ls = scan [] ls in
+        let trail = (depth, btyp_polyrecord ls btyp_hole):: trail in
+        let v = aux trail (depth+1) v in
+        btyp_polyrecord ls v
+ 
+      | BTYP_variant ls ->
+        let rec scan left right =
+          match right with
+          | (label,pivot)::tail ->
+            let trail = (depth,btyp_variant(left @ [label,btyp_hole] @ tail))::trail in
+            let r = aux trail (depth+1) pivot in
+            scan (left @ [label,r]) tail
+          | _ -> btyp_variant left
+        in 
+        scan [] ls
+ 
+      | BTYP_array (a,b) -> pair btyp_array a b
+      | BTYP_function (a,b) -> pair btyp_function a b
+      | BTYP_cfunction (a,b) -> pair btyp_cfunction a b
+      | BTYP_pointer a ->
+        let trail = (depth, (btyp_pointer btyp_hole)):: trail in
+        let a' = aux trail (depth+1) a in
+        btyp_pointer a'
+
+      | BTYP_tuple_cons (a,b) -> 
+        let ctor (a,b) = btyp_tuple_cons a b 
+        in pair ctor a b 
+
+      | BTYP_label 
+      | BTYP_none
+      | BTYP_int
+      | BTYP_void
+      | BTYP_unitsum _
+      | BTYP_type_var _
+      | BTYP_fix (0,_) -> t' 
+      | BTYP_fix (i,_) when depth + i = 0 -> t' (* original term is recursive *)
+
+      | BTYP_fix (i,_) ->
+       let rec slide j = 
+          (* off the top! *)
+          if depth - j + i < 0 then raise (Discard (j-1,i)) else
+
+          (* grab the unzipped term above the binderl *)
+          let binder_zipper_m1 = List.assoc (depth - j + i) trail in 
+
+          (* grab the unzipped term above fixpoint *)
+          let fix_zipper_m1 = List.assoc (depth - j) trail in
+
+          (* check if the two terms are equal with holes *)
+          if type_eq bsym_table counter binder_zipper_m1 fix_zipper_m1 
+          then begin
+            slide (j+1) (* if equal, slide up again *)
+          end else begin
+            raise (Discard (j-1,i))
+          end
+        in 
+        slide 1
+
+
+      | BTYP_type_apply (a,b) -> pair btyp_type_apply a b
+   
+      | BTYP_type_set_intersection _
+      | BTYP_type_set_union _
+      | BTYP_type_set _
+      | BTYP_type_function _
+      | BTYP_type _
+      | BTYP_type_tuple _
+      | BTYP_type_match _ ->  t' (* a bit hacky *)
+
+      | BTYP_hole -> assert false
+    with Discard (n,i) -> if n=0 then btyp_fix i (btyp_type 0) else raise (Discard (n-1,i))
+
+    in
+    aux [] 0 t
+
+
 (* produces a unique minimal representation of a type
 by folding at every node *)
 
 let minimise bsym_table counter t =
   fold bsym_table counter (Flx_btype.map ~f_btype:(fold bsym_table counter) t)
+
+(*
+let minimise bsym_table counter t = 
+  let t' =  wrap bsym_table counter t in
+  if t <> t' then 
+    print_endline ("Minimised " ^ sbt bsym_table t ^ "\n  to " ^ sbt bsym_table t')
+  ;
+  t'
+*)
 
 let var_occurs bsym_table t =
   let rec aux' excl t = let aux t = aux' excl t in

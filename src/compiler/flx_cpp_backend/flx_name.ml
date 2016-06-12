@@ -180,23 +180,30 @@ let cpp_instance_name syms bsym_table index ts =
   end
   else long_name
 
-let tix syms bsym_table t =
+let tix msg syms bsym_table t =
   let t =
     match t with
     | BTYP_function (BTYP_void,cod) -> btyp_function (btyp_tuple [],cod)
     | x -> x
   in
-  try Hashtbl.find syms.registry t
+  let t' = minimise bsym_table syms.counter t in
+  try Flx_treg.find_type_index syms bsym_table t'
   with Not_found ->
-    failwith ("Cannot find type " ^sbt bsym_table t ^" in registry")
+    if t = t' then
+    failwith (msg^" Cannot find type " ^sbt bsym_table t ^" in registry")
+    else
+    failwith (msg^"[flx_name:tix] Cannot find type " ^sbt bsym_table t' ^
+      "\n(=minimised("^ sbt bsym_table t ^"))\nin registry")
+
 
 let rec cpp_type_classname syms bsym_table t =
   let tn t = cpp_typename syms bsym_table t in
-  let tix t = tix syms bsym_table t in
+  let tix t = tix "[flx_name:cpp_type_classname" syms bsym_table t in
   let t = fold bsym_table syms.counter t in
   let t = normalise_tuple_cons bsym_table t in
   let t' = unfold "flx_name: cpp_type_classname" t in
   try match t' with
+  | BTYP_hole -> assert false
   | BTYP_int -> "int"
   | BTYP_type_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
@@ -338,7 +345,7 @@ let rec cpp_type_classname syms bsym_table t =
 
 and cpp_structure_name syms bsym_table t =
   let tn t = cpp_typename syms bsym_table t in
-  let tix t = tix syms bsym_table t in
+  let tix t = tix "[flx_name:cpp_structure_name]" syms bsym_table t in
   let t = normalise_tuple_cons bsym_table t in
   let t = fold bsym_table syms.counter t in
   let t' = unfold "flx_name: cpp_structure_name" t in

@@ -433,7 +433,7 @@ let rec gen_type syms bsym_table (index,typ) =
     let requires_tuple_ctor = 
       try 
         Hashtbl.mem syms.array_as_tuple_registry 
-        (Hashtbl.find syms.registry typ)
+        (Flx_treg.find_type_index syms bsym_table typ)
       with Not_found -> false 
     in
 (*
@@ -561,15 +561,15 @@ let gen_type_names syms bsym_table ts =
 
 let gen_types syms bsym_table ts =
   (* print_endline "GENERATING TYPES"; *)
-  let handled = ref [] in
+  let handled_names = ref [] in
   let s = Buffer.create 100 in
   iter
   (fun ((i,t) as t') ->
     let name = cpp_typename syms bsym_table t in
-    if mem name !handled then
+    if mem name !handled_names then
       () (* print_endline ("WOOPS ALREADY HANDLED " ^ name) *)
     else (
-      handled := name :: !handled;
+      handled_names := name :: !handled_names;
       Buffer.add_string s (gen_type syms bsym_table t')
     )
   )

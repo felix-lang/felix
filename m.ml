@@ -232,5 +232,24 @@ begin
     "\nwrapped=" ^ string_of_btyp (wrap (unfold f2)) ^
     "\nwrapped twice=" ^ string_of_btyp (wrap (wrap (unfold f2)))
   );
+
+  let g1 = BTYP_function (u,BTYP_fix(-1)) in 
+  let g2 = BTYP_function (u, BTYP_function(u, BTYP_fix (-2))) in
+  peq g1 g2; 
+  let ug1 = wrap g1 in
+  let ug2 = wrap g2 in
+  peq ug1 ug2;
+  pt ug1;
+  pt ug2;
+
+  let a1 = BTYP_function (u, BTYP_function (u,BTYP_fix (-2))) in (* same as g2 *)
+  let a2 = BTYP_function (u, BTYP_function (u, BTYP_fix (-1))) in (* same as g1 *)
+  peq a1 a2;
+  let ua1 = wrap a1 in
+  let ua2 = wrap a2 in
+  peq ua1 ua2;
+  pt ua1;
+  pt ua2;
+
 end
 ;;

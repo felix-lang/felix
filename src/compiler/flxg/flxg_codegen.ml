@@ -179,7 +179,7 @@ let codegen_bsyms
   if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//GENERATING C++: collect types";
   let types = ref [] in
-  Hashtbl.iter (fun t index -> types := (index, t) :: !types) state.syms.registry;
+  List.iter (fun (t, index) -> types := (index, t) :: !types) state.syms.registry;
 
   let types = List.sort (fun a1 a2 -> compare (fst a1) (fst a2)) !types in
   (*

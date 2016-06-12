@@ -579,6 +579,7 @@ and sb bsym_table depth fixlist counter prec tc =
   let sbt prec t = sb bsym_table (depth+1) fixlist counter prec t in
   let iprec, term =
     match tc with
+    | BTYP_hole -> 0, "BTYP_hole"
     | BTYP_int -> 0,"builtin_int"
     | BTYP_none -> 0,"none"
     | BTYP_label -> 0,"label"

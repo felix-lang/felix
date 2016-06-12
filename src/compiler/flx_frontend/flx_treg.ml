@@ -12,6 +12,25 @@ open List
 open Flx_maps
 open Flx_beta
 
+exception Found of Flx_btype.t * bid_t
+let find_equivalent_type_entry syms bsym_table t =
+  try List.iter (fun (t',i) ->
+     if Flx_unify.type_eq bsym_table syms.counter t' t then
+       raise (Found (t',i))
+     ) syms.registry;
+     None
+  with Found (t',i) -> Some (t',i)
+
+let find_type_index syms bsym_table t =
+  match find_equivalent_type_entry syms bsym_table t with
+  | None -> raise Not_found
+  | Some (_,i) -> i
+ 
+let registered_type syms bsym_table t =
+  match find_equivalent_type_entry syms bsym_table t with
+  | None -> false
+  | Some (_,i) -> true
+  
 let register_type_nr syms bsym_table t =
 let t = normalise_tuple_cons bsym_table t in
 (*
@@ -26,6 +45,7 @@ print_endline ("Register type nr " ^ sbt bsym_table t);
   if t <> t' then print_endline ("UNREDUCED TYPE! " ^ sbt bsym_table t ^ " <> " ^ sbt bsym_table t');
   *)
   match t with
+  | BTYP_hole -> assert false
   | BTYP_int -> ()
   | BTYP_label -> ()
   | BTYP_fix _
@@ -33,24 +53,24 @@ print_endline ("Register type nr " ^ sbt bsym_table t);
     -> ()
   | _
     ->
-    let t = fold bsym_table syms.counter t in
-    if not (Hashtbl.mem syms.registry t)
+    let t = minimise bsym_table syms.counter t in
+    if not (registered_type syms bsym_table t)
     then begin
       let () = check_recursion t in
       let n = fresh_bid syms.counter in
       if syms.compiler_options.Flx_options.print_flag then
       print_endline ("//Register type " ^ string_of_bid n ^ ": " ^
         sbt bsym_table t);
-      Hashtbl.add syms.registry t n
+      syms.registry <- (t, n)::syms.registry;
     end
 
 
 let register_tuple syms bsym_table t =
   let t = normalise_tuple_cons bsym_table t in
-  let t = fold bsym_table syms.counter t in
+  let t = minimise bsym_table syms.counter t in
   let record_tuple t =
     register_type_nr syms bsym_table t;
-    try Hashtbl.replace syms.array_as_tuple_registry (Hashtbl.find syms.registry t) ()
+    try Hashtbl.replace syms.array_as_tuple_registry (find_type_index syms bsym_table t) ()
     with Not_found -> ()
   in
   match t with
@@ -74,7 +94,7 @@ print_endline ("flx_treg: Try to register tuple " ^ sbt bsym_table t);
     assert false
 
 let rec register_type_r ui syms bsym_table exclude sr t =
-let t = normalise_tuple_cons bsym_table t in
+  let t = normalise_tuple_cons bsym_table t in
 (*
 print_endline ("Register type r " ^ sbt bsym_table t);
 *)
@@ -84,7 +104,8 @@ print_endline ("Register type r " ^ sbt bsym_table t);
   print_endline (sp ^ "Register type " ^ sbt sym_table t);
   if (mem t exclude) then print_endline (sp ^ "Excluded ..");
   *)
-  if not (Hashtbl.mem syms.registry t) then
+  let t = minimise bsym_table syms.counter t in
+  if not (registered_type syms bsym_table t) then
   if not (mem t exclude) then
   if complete_type t then
   let rr t' = register_type_r ui syms bsym_table (t :: exclude) sr t' in
@@ -94,6 +115,7 @@ print_endline ("Register type r " ^ sbt bsym_table t);
   print_endline (sp ^ "Unfolded type " ^ sbt sym_table t');
   *)
   match t' with
+  | BTYP_hole -> assert false
   | BTYP_int -> ()
   | BTYP_label -> ()
   | BTYP_void -> ()

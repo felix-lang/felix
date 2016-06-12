@@ -13,7 +13,7 @@ val typecodeset_map :
 (* generic entity instances: functions, variables *)
 type instance_registry_t = (Flx_types.bid_t * Flx_btype.t list, Flx_types.bid_t) Hashtbl.t
 
-type type_registry_t = (Flx_btype.t, Flx_types.bid_t) Hashtbl.t
+type type_registry_t = (Flx_btype.t * Flx_types.bid_t) list
 type type_array_as_tuple_registry_t = (Flx_types.bid_t, unit) Hashtbl.t
 
 type array_sum_offset_data_t = string * int list (* name, values *)
@@ -58,7 +58,7 @@ type sym_state_t =
   mutable ticache : (Flx_types.bid_t, Flx_btype.t) Hashtbl.t;
   generic_cache: generic_cache_t;
   env_cache : (Flx_types.bid_t, env_t) Hashtbl.t;
-  registry : type_registry_t;
+  mutable registry : type_registry_t;
   array_as_tuple_registry : type_array_as_tuple_registry_t;
   compiler_options : Flx_options.t;
   instances : instance_registry_t;
