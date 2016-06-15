@@ -374,6 +374,8 @@ and xpattern_t x =
       in
       PAT_polyrecord (xsr sr, ips, xid r)
 
+  | Lst [Id "pat_alt"; sr; Lst ps] ->
+      PAT_alt (xsr sr, map xp ps) 
 
   | x ->
     err x "pattern"

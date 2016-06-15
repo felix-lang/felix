@@ -831,6 +831,7 @@ and string_of_pattern p =
   | PAT_range (sr,l1,l2) -> string_of_literal l1 ^ ".." ^ string_of_literal l2
   | PAT_name (_,s) -> string_of_id s
   | PAT_tuple (_,ps) -> "(" ^ catmap ", "  string_of_pattern ps ^ ")"
+  | PAT_alt (_,ps) -> "(" ^ catmap " | "  string_of_pattern ps ^ ")"
   | PAT_tuple_cons (_,a,b) -> string_of_pattern a ^ ",," ^ string_of_pattern b
   | PAT_any _ -> "any"
   | PAT_setform_any _ -> "setform_any (elidable)"
@@ -853,7 +854,6 @@ and string_of_pattern p =
      "( " ^ catmap ", " (fun (s,p) ->
        string_of_id s ^ "=" ^ string_of_pattern p) ps ^ " | " ^r^")"
   | PAT_expr (_,e) -> "$(" ^ string_of_expr e ^ ")"
-
 
 and string_of_compound level ss =
   spaces level ^ "{\n" ^

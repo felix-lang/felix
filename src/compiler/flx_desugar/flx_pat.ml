@@ -204,6 +204,7 @@ and renaming pats = ()
 *)
 and find_match_type pat =
   match pat with
+  | PAT_alt _
   | PAT_none _ -> assert false
   | PAT_literal _ -> check_match_literal
 
@@ -231,6 +232,7 @@ and find_match_type pat =
 let rec is_irrefutable pat =
   let irf pat = is_irrefutable pat in
   match pat with
+  | PAT_alt _ 
   | PAT_none _ -> assert false
   | PAT_literal _ -> false
 

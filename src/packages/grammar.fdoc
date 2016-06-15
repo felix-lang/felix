@@ -3577,14 +3577,16 @@ syntax patterns {
   //$ Match nothing.
   smatching := "|" "=>" sexpr =># "`((pat_none ,_sr) ,_3)";
 
+  spattern := sguard_pattern ("|" sguard_pattern)* =># "(chain 'pat_alt _1 _2)";
+
   //$ Match with guard.
   //$ The LHS pattern is match first.
   //$ Then the RHS guard expression is evaluated,
   //$ in a context which includes any extracted match variables.
   //$ If the guard is true, the whole pattern matches,
   //$ otherwise the matching fails.
-  spattern := sas_pattern "when" sexpr =># "`(pat_when ,_sr ,_1 ,_3)";
-  spattern := sas_pattern =># "_1";
+  sguard_pattern := sas_pattern "when" sexpr =># "`(pat_when ,_sr ,_1 ,_3)";
+  sguard_pattern := sas_pattern =># "_1";
 
   //$ Match with naming of subexpression.
   //$ Matches the pattern against the corresponding subexpression,

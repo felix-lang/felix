@@ -756,7 +756,10 @@ print_endline ("Bind type " ^ string_of_typecode t);
   let t =
   match t with
   | TYP_generic sr -> 
-    print_endline ("[bind_type'] trying to bind TYP_generic"); btyp_type (-1)
+(*
+    print_endline ("[bind_type'] trying to bind TYP_generic"); 
+*)
+    btyp_type (-1)
 (*
     syserr sr ("[bind_type'] attempt to bind TYP_generic")
 *)
@@ -5462,13 +5465,17 @@ and clone state bsym_table fi ft fbt fe fx new_vs generic_alias index =
       begin 
       let parent,sym = Flx_sym_table.find_with_parent state.sym_table index in
       let {Flx_sym.id=id;sr=sr;vs=vs;pubmap=pubmap; privmap=privmap;dirs=dirs;symdef=symdef} = sym in
+(*
       print_endline ("CLONING SYMBOL " ^ id ^"<"^si index^">");
+*)
       let nupubmap = Flx_btype.map_name_map fi fbt pubmap in 
       let nuprivmap = Flx_btype.map_name_map fi fbt privmap in
       Hashtbl.iter (fun key value -> Hashtbl.replace nuprivmap key value)
       generic_alias;
+(*
 print_endline ("New public name map = " ^ string_of_name_map nupubmap);
 print_endline ("New private name map = " ^ string_of_name_map nuprivmap);
+*)
       let nudirs = dirs in
       let vs_list, {Flx_ast.raw_type_constraint=traint; raw_typeclass_reqs=tcreqs} = vs in
 
@@ -5482,29 +5489,41 @@ print_endline ("New private name map = " ^ string_of_name_map nuprivmap);
           in
           let nuptraint = match ptraint with | None -> None | Some e -> Some (fe e) in
           let nuparams = nuparamlist, nuptraint in
+(*
       print_endline ("Remapped parameters: " ^ string_of_parameters nuparams);
+*)
           let nurett = ft rett in
           let nuprops = props in (* HACK, FIXME! *)
           let nusexes = List.map (fun (sr,x) -> sr,fx x) sexes in
+(*
       print_endline ("New exes =\n");
       List.iter (fun (sr,x) -> print_endline (Flx_print.string_of_exe 2 x)) nusexes;
+*)
           SYMDEF_function (nuparams, nurett, nuprops, nusexes)
         | SYMDEF_insert (cs,ik,rqs) -> symdef (* HACK, FIXME! *)
         | SYMDEF_var t -> 
           let t = ft t in
+(*
           print_endline ("Cloned VAR type = " ^ string_of_typecode t);
+*)
           SYMDEF_var (t)
         | SYMDEF_val t -> 
           let t = ft t in
+(*
           print_endline ("Cloned VAL type = " ^ string_of_typecode t);
+*)
           SYMDEF_val (t)
         | SYMDEF_ref t -> 
           let t = ft t in
+(*
           print_endline ("Cloned REF type = " ^ string_of_typecode t); 
+*)
           SYMDEF_ref (t)
         | SYMDEF_parameter (k,t) -> 
           let t = ft t in
+(*
           print_endline ("Cloned PARAMETER type = " ^ string_of_typecode t); 
+*)
           SYMDEF_parameter (k,t)
         | _ -> 
           print_endline ("[Flx_lookup:clone] Unhandled symdef");
@@ -5521,7 +5540,9 @@ print_endline ("New private name map = " ^ string_of_name_map nuprivmap);
       let nusym = {Flx_sym.id=id;sr=sr;vs=nuvs;pubmap=nupubmap; privmap=nuprivmap;dirs=nudirs;symdef=nusymdef} in
       let nuindex = fi index in
       Flx_sym_table.add state.sym_table nuindex nuparent nusym;
+(*
 print_endline ("++++ Cloned " ^ si index ^ " -> " ^ si nuindex);
+*)
       end
 
 
@@ -5579,8 +5600,10 @@ end;
     assert (not (is_generic parent_vs));
     if not (is_generic vs) then result else let () = () in
 
+(*
     print_endline ("Found generic function " ^ name);
     print_endline ("REBINDING");
+*)
     let new_vs = ref [] in
     let gen_vs = ref [] in
     let counter = ref 0 in
@@ -5615,7 +5638,7 @@ end;
     (* vmap is list that says replace type variable index i with given bound type *)
     let vmap = List.rev (!vmap) in
     let nufunts = List.rev (!nufunts) in
-
+(*
     print_endline ("Polymorphic vs = " ^ catmap "," svs new_vs);
     print_endline ("Generic vs = " ^ catmap "," (fun (v,n) -> "POS " ^ si n ^" " ^ 
       svs v^ " --> " ^ sbt bsym_table (List.nth ts n)
@@ -5623,6 +5646,7 @@ end;
     );
     List.iter (fun (ix,bt) -> print_endline ("Rebind " ^ si ix ^ " -> " ^ sbt bsym_table bt)) vmap;
     List.iter (fun (s,ubt) -> print_endline ("Rebind " ^ s ^ " -> " ^ string_of_typecode ubt)) smap;
+*)
     let previous_rebinding =
        try Some (Hashtbl.find state.generic_cache (index, vmap))
        with Not_found -> None
@@ -5634,7 +5658,9 @@ end;
     (* we have to actually calculate a new rebinding right now, the reason is
       we need the return type!
     *)
+(*
     print_endline "*** Calculating new rebinding";
+*)
     let sym = Flx_sym_table.find state.sym_table index in
     let fresh () = Flx_mtypes2.fresh_bid state.counter in
     let remap_table = Hashtbl.create 97 in 
@@ -5643,21 +5669,31 @@ end;
     let nuindex = add index in
 
     let descendants = Flx_sym_table.find_descendants state.sym_table index in
+(*
     print_endline ("Descendants = " ^ catmap "," si descendants);
+*)
     (* calculate rebinding map for descendants *)
     List.iter (fun i -> let _ = add i in ()) descendants;
+(*
     Hashtbl.iter (fun i j -> print_endline ("  Rebind index " ^ si i ^ " -> " ^ si j)) remap_table;
+*)
     let rec fbt t = match t with
       | Flx_btype.BTYP_type_var (i,mt) ->
+(*
 print_endline ("Examining bound type variable index " ^ si i);
+*)
         begin
           try 
             let r = List.assoc i vmap in
+(*
 print_endline ("Replaced by vmap: " ^ sbt bsym_table r);
+*)
             r
           with Not_found ->  
             let j = fi i in
+(*
 print_endline ("Not found in vmap, remaping with index remapper: " ^ si j);
+*)
             Flx_btype.btyp_type_var (j, mt)
         end
       | x -> Flx_btype.map ~f_bid:fi ~f_btype:fbt x
@@ -5666,18 +5702,26 @@ print_endline ("Not found in vmap, remaping with index remapper: " ^ si j);
     and ft t = match t with 
     | TYP_typeof e ->
       let e' = fe e in
+(*
 print_endline ("Unbound type remapper typeof " ^ string_of_expr e ^ " --> " ^ string_of_expr e');
+*)
       TYP_typeof e'
 
     | TYP_var index -> 
       let j = fi index in
+(*
 print_endline ("Ubound type remapper type variable " ^ si index ^ " --> " ^ si j);
+*)
       TYP_var j  
     | TYP_name (sr,tname,[]) as t -> 
+(*
 print_endline ("Trying to bind type name=" ^ tname);
+*)
       begin
         try let r = List.assoc tname smap in
+(*
            print_endline ("Rebound type name " ^ tname ^ " -> " ^ string_of_typecode r);
+*)
            r 
         with Not_found -> t
       end
@@ -5694,7 +5738,9 @@ print_endline ("Trying to bind type name=" ^ tname);
     let generic_alias = Hashtbl.create 97 in
     List.iter (fun (s, t) ->
       let alias_index = fresh() in
+(*
 print_endline ("Adding alias " ^ s ^ "<"^si alias_index^"> -> " ^ string_of_typecode t);
+*)
       let entry = NonFunctionEntry {Flx_btype.base_sym=alias_index; spec_vs=[]; sub_ts=[]} in
       Hashtbl.add generic_alias s entry;
       let symdef = SYMDEF_type_alias t in
@@ -5703,8 +5749,9 @@ print_endline ("Adding alias " ^ s ^ "<"^si alias_index^"> -> " ^ string_of_type
     )
     smap; 
     clone state bsym_table fi ft fbt fe fx new_vs generic_alias index;
+(*
     print_endline ("Main symbol cloned and added");
-
+*)
     (* HACK, FIXME! This will be the vs of the new symbol, for the master
        we have to replace the vs with one generics are stripped out of,
        but for kids, the vs is whatever they have. Use an option type
@@ -5717,13 +5764,21 @@ print_endline ("Adding alias " ^ s ^ "<"^si alias_index^"> -> " ^ string_of_type
 
 (* end of cloning code, the rest is for recalculating the MGU *)
     let nuts = parentts @ nufunts in
+(*
 print_endline ("New  full ts = " ^ catmap "," (sbt bsym_table) nuts);
+*)
     let numgu = mgu in (* HACK, FIXME! *)
+(*
 print_endline ("New mgu = " ^ catmap "," (fun (v,t) -> string_of_int v ^ "<-" ^ sbt bsym_table t) mgu);
+*)
     let nusign = fbt sign in 
+(*
 print_endline ("New signature = " ^ sbt bsym_table nusign);
+*)
     let nuret = fbt ret in (* HACK, FIXME! *)
+(*
 print_endline ("New return type = " ^ sbt bsym_table nuret);
+*)
     let result_data = nuindex,nusign,nuret,numgu,nuts in
     Hashtbl.add state.generic_cache (index, vmap) result_data;
     Some result_data

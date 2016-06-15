@@ -15,6 +15,7 @@ open Flx_exceptions
 open Flx_constfld
 open Flx_typing2
 open Flx_util
+open List
 
 let mkstring sr x = 
   EXPR_literal (sr, {Flx_literal.felix_type="string"; internal_value=x; 
@@ -161,6 +162,7 @@ let fix_pattern counter pat =
     let test = EXPR_apply (sr, (eq,args)) in
     PAT_when (sr,PAT_name (sr,n),test)
 
+  | PAT_alt _ -> assert false
   in aux pat
 
 (* Find variable names in patterns so as to protect them *)
@@ -175,7 +177,90 @@ let rec get_pattern_vars pat =
   | PAT_tuple_cons (sr,a,b) -> get_pattern_vars a @ get_pattern_vars b
   | PAT_record (_,ps) -> List.concat(List.map get_pattern_vars (List.map snd ps))
   | PAT_polyrecord (_,ps,r) -> r :: List.concat(List.map get_pattern_vars (List.map snd ps))
+  | PAT_alt _ -> assert false
   | _ -> []
+
+(* cartesian product of two lists N x M is a single list of N x M pairs *)
+
+let cart2j (join:'a ->'b -> 'c) (ps: 'a list) (qs:'b list) : 'c list =
+  fold_left (fun acc a -> acc @ (map (fun b-> join a b) qs)) [] ps
+
+let cart2 (ps: 'a list) (qs:'b list) : ('a * 'b) list =  
+  cart2j (fun a b -> a,b) ps qs
+
+type field_t = string * pattern_t
+type record_t = field_t list
+type field_pats = string * pattern_t list
+
+(* let us suppose we have a list of record with all but the last
+field to be added, and a list of field_pats to add to them 
+Then for each pat, for each record we make a new record with
+that field added.
+*)
+
+let add_fields_to_records (ps: field_pats) (rs: record_t list) =
+  let field_name, pats = ps in
+  concat (map (fun pat -> map (fun r -> (field_name,pat)::r) rs) pats)
+
+(* to process a whole list, we just fold over it *)
+let cartr (ps: field_pats list) : record_t list =
+  fold_right add_fields_to_records  ps [[]]
+
+type component_t = pattern_t
+type tuple_t = component_t list
+type component_pats = pattern_t list
+
+let add_components_to_tuples (ps: component_pats) (rs: tuple_t list) =
+  let pats = ps in
+  concat (map (fun pat -> map (fun r -> (pat)::r) rs) pats)
+
+let cartt (ps: component_pats list) : tuple_t list =
+  fold_right add_components_to_tuples  ps [[]]
+
+let expand_pattern_branches pes =
+  let rec aux p = match p with
+    | PAT_none _
+
+    | PAT_literal _
+    | PAT_range _
+
+    | PAT_name _
+    | PAT_any _
+    | PAT_setform_any _
+    | PAT_const_ctor _ 
+    | PAT_const_variant _ 
+    | PAT_expr _
+      -> [p]
+
+    | PAT_coercion (sr, p, t) -> map (fun p-> PAT_coercion (sr, p, t)) (aux p)
+
+    | PAT_tuple_cons (sr,a,b) ->  
+      map (fun (a,b) -> PAT_tuple_cons (sr,a,b)) (cart2 (aux a) (aux b))
+
+    | PAT_nonconst_ctor (sr,qn,p) -> map (fun p->PAT_nonconst_ctor (sr,qn,p)) (aux p)
+    | PAT_nonconst_variant (sr,s,p) -> map (fun p->PAT_nonconst_variant (sr,s,p)) (aux p)
+    | PAT_as (sr,p,i) -> map (fun p->PAT_as (sr,p,i)) (aux p)
+    | PAT_when (sr,p,e) -> map (fun p-> PAT_when (sr,p,e)) (aux p)
+
+    | PAT_tuple (sr,ps) -> 
+      let pss = map aux ps in
+      map (fun (p) -> PAT_tuple (sr, (p))) (cartt pss)
+
+    | PAT_record (sr, ps) -> 
+      let pss = map (fun (s,p) -> s,aux p) ps in
+      map (fun rs -> PAT_record (sr, rs)) (cartr pss)
+
+    | PAT_polyrecord (sr, ps,r) ->
+      let pss = map (fun (s,p) -> s,aux p) ps in
+      map (fun rs -> PAT_polyrecord (sr, rs, r)) (cartr pss)
+   
+    | PAT_alt (sr,ps) -> ps
+
+  in 
+  let pss= map (fun (p,e) -> map (fun p ->p,e) (aux p)) pes in
+  concat pss
+
+  
 
 let alpha_pat local_prefix seq fast_remap remap expand_expr pat = 
   let ren v = List.assoc v fast_remap in
@@ -561,6 +646,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_as_var (sr, (e1, id)) ->  EXPR_as_var (sr,(me e1, mi sr id))
 
   | EXPR_match (sr, (e1, pes)) ->
+    let pes = expand_pattern_branches pes in
     let pes =
       List.map
       (fun (pat,e) ->
@@ -910,6 +996,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     let start_reachable = !reachable in
     let case_end_reachable = ref false in
     let end_label = "_degen_stmt_match_end_" ^ local_prefix ^ "_" ^ string_of_int (let n = !seq in incr seq; n) in
+    let pss = expand_pattern_branches pss in
     let pss = List.map (fun (pat,sts) ->
       let pat = fix_pattern seq pat in
       let pvs = get_pattern_vars pat in

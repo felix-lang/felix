@@ -246,6 +246,7 @@ and pattern_t =
   | PAT_polyrecord of Flx_srcref.t * (Flx_id.t * pattern_t) list * Flx_id.t
 
   | PAT_expr of Flx_srcref.t * expr_t
+  | PAT_alt of Flx_srcref.t * pattern_t list
 
 (** {7 Statements}
  *
@@ -863,6 +864,7 @@ let src_of_pat (e : pattern_t) = match e with
   | PAT_record (s,_)
   | PAT_polyrecord (s,_,_)
   | PAT_expr (s,_)
+  | PAT_alt (s,_)
   -> s
 
 let typecode_of_qualified_name = function

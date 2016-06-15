@@ -49,6 +49,1571 @@ library code; these bindings defined the type name and some operations
 on the types in terms of C++.
 
 % =====================================
+\part{Scripting}
+
+\chapter{Statements}
+\section{Assignment}
+\href{http://felix-lang.org/share/lib/grammar/assignment.fsyn}{Syntax}
+
+\section{Basic Assignment}
+\begin{minted}{felix}
+  //$ Assignment form.
+  sassignexpr := sexpr sassignop sexpr;
+
+  //$ Assignment.
+    sassignop:= "=" =># "'_set";
+
+  //$ Store at pointer.
+    sassignop:= "<-" =># "'_pset";
+
+  //$ Short form val declaration.
+    sassignop:= ":=" =># "'_init";
+
+\end{minted}
+
+\section{Read-modify-write operations}
+
+\begin{minted}{felix}
+  //$ binary read-modify-write operators.
+  sassignexpr := sexpr srmwop sexpr;
+    //$ Increment.
+    srmwop:= "+=" =># "_1";
+    //$ Decrement.
+    srmwop:= "-=" =># "_1";
+    //$ Multiply.
+    srmwop:= "*=" =># "_1";
+    //$ Divide.
+    srmwop:= "/=" =># "_1";
+    //$ C remainder.
+    srmwop:= "%=" =># "_1";
+    //$ Left shift.
+    srmwop:= "<<=" =># "_1";
+    //$ Right shift.
+    srmwop:= ">>=" =># "_1";
+    //$ Bitwise exclusive or.
+    srmwop:= "^=" =># "_1";
+    //$ Bitwise or.
+    srmwop:= "|=" =># "_1";
+    //$ Bitwise and.
+    srmwop:= "&=" =># "_1";
+    //$ Left shift.
+    srmwop:= "<<=" =># "_1";
+    //$ Right shift.
+    srmwop:= ">>=" =># "_1";
+
+  //$ Swap operator.
+  sassignexpr := sexpr sswapop sexpr;
+
+  //$ Prefix read/modify/write.
+  sassignexpr := spreincrop sexpr;
+    //$ Pre-increment.
+    spreincrop:= "++" =># "'pre_incr";
+    //$ Pre-decrement.
+    spreincrop:= "--" =># "'pre_decr";
+
+  //$ Postfix read/modify/write.
+  sassignexpr := sexpr spostincrop;
+    //$ Post-increment.
+    spostincrop:= "++" =># "'post_incr";
+    //$ Post-decrement.
+    spostincrop:= "--" =># "'post_decr";
+\end{minted}
+
+\section{Special Assignment}
+Compound assignment form uses leadin \verb%def% to allows
+recursive decoding of tuples and a mix of variable
+initialisation, value initialisation and assignment to
+existing variables from projections of the RHS in the
+corresponding position.
+
+The pattern of variables, \verb%var% and \verb%val% terms in
+the LHS is called an \verb%l-expression%. An underscore \verb%_%
+may also be used.
+
+\begin{minted}{felix}
+  //$ Multiple initialisation/assignment form.
+  //$
+  //$ def x, (var y, val z) = 1,(2,3);
+  //$
+  //$ allows unpacking a tuple into a pre-existing variable,
+  //$ creating a new variable, and binding a new value,
+  //$ in a single form, with nesting.
+  sassignexpr := "def" slexpr "=" sexpr;
+    slexpr := slexprs =># """ (if (null? (tail _1)) (first _1) `((List ,_1) none)) """;
+    slexprs := stlelement "," slexprs =># "(cons _1 _3)";
+    slexprs := stlelement =># "`(,_1)";
+
+    slelement := "val" sname =># "`(Val ,_sr ,_2)";
+    slelement := "var" sname =># "`(Var ,_sr ,_2)";
+    slelement := sname =># "`(Name ,_sr ,_1)";
+    slelement := _ =># "`(Skip ,_sr)";
+    slelement := "(" slexprs ")" =># "`(List ,_2)";
+
+    stlelement := slelement ":" x[sfactor_pri] =># "`(,_1 (some ,_3))";
+    stlelement := slelement =># "`(,_1 none)";
+
+}
+\end{minted}
+
+
+\section{The {\tt goto} statement and label {\tt prefix}}
+Felix statements may be prefixed by a label
+to which control may be transfered by a \verb%goto%
+statement:
+
+\begin{minted}{felix}
+alabel:>
+  dosomething;
+  goto alabel;
+\end{minted}
+
+The label must be visible from the goto statement.
+
+There are two kinds of gotos. A local goto is a jump
+to a label in the same scope as the goto statement.
+
+A non-local goto is a jump to any other visible label.
+
+Non-local transfers of control may cross procedure
+boundaries. They may not cross function or generator 
+boundaries.
+
+The procedure or function containing the label 
+must be active at the time of the control transfer.
+
+A non-local goto may be wrapped in a procedure closure
+and passed to a procedure from which the goto target
+is not visible.
+
+
+\begin{minted}{felix}
+proc doit (err: 1 -> 0) { e; }
+
+proc outer () {
+  proc handler () { goto error; }
+  doit (handler);
+  return;
+
+  error:> println$ error;
+}
+\end{minted}
+
+This is a valid way to handle errors.
+the code is correct because \verb%outer% is active
+at the time that \verb%handler% performs the
+control transfer.
+\subsection{halt}
+Stops the program with a diagnostic.
+
+\begin{minted}{felix}
+halt "Program complete";
+\end{minted}
+
+
+\section{try/catch/entry}
+The try/catch construction may only be user to wrap
+calls to C++ primitives, so as to catch exceptions.
+
+\begin{minted}{felix}
+proc mythrow 1 = "throw 0;";
+try
+   mythrow;
+catch (x:int) =>
+   println$ "Caughht integer " + x.str;
+endtry
+\end{minted}
+
+
+\section{goto-indirect/label\_address}
+The \verb%label-address% operator captures the address
+of code at a nominated label. 
+
+The address has type \verb%LABEL% and can be stored in a variable.
+
+Provided the activation record of the procedure containing
+the label remains live, a subsequent @{goto-indirect) can
+be used to jump to that location.
+
+
+\begin{minted}{felix}
+proc demo (selector:int) {
+  var pos : LABEL = 
+    if selector == 1 
+    then label_address lab1
+    else label_address lab2
+    endif
+  ;
+  goto-indirect selector;
+lab1:>
+  println$ "Lab1"; return;
+lab2:>
+  println$ "Lab2"; return;
+}
+\end{minted}
+
+
+\section{Exchange of control}
+Built on top of label adressing and indirect gotos,
+the \verb%branch-and-link% instruction is conceptually
+the most fundamental control instruction. The library
+implementation is in 
+
+\begin{minted}{felix}
+inline proc branch-and-link (target:&LABEL, save:&LABEL)
+{
+  save <- label_address next;
+  goto-indirect *target;
+  next:>
+}
+\end{minted}
+
+A good example is \href{http://felix-lang.org/share/src/test/regress/rt/coroutines-01.fdoc}{here},
+which shows an example of coroutines.
+
+\section{match/endmatch}
+The form:
+
+\begin{minted}{felix}
+match expr with
+| pattern1 => stmts1
+| pattern2 => stmts2
+...
+endmatch
+\end{minted}
+
+is an extension of the C switch statement. See \fullref{Pattern Matching}.
+
+\section{if/goto}
+The conditional goto is an abbreviation for 
+the more verbose conditional:
+
+\begin{minted}{felix}
+if c goto lab; // equivalent to
+if c do goto lab; done
+\end{minted}
+
+
+\section{if/return}
+The conditional return is an abbreviation for
+the more verbose conditional:
+
+\begin{minted}{felix}
+if c return; // equivalent to
+if c do return; done
+\end{minted}
+
+
+\section{if/call}
+The conditional call is an abbreviation for
+the more verbose conditional:
+
+\begin{minted}{felix}
+if c call f x; // equivalent to
+if c do call f x; done
+\end{minted}
+
+
+
+\section{if/do/elif/else/done}
+The procedural conditional branch is used to select
+a control path based on a boolean expression.
+
+The \verb%else} and @{elif% clauses are optional.
+
+\begin{minted}{felix}
+if c1 do 
+  stmt1;
+  stmt2;
+elif c2 do
+  stmt3;
+  stmt4;
+else
+  stmt5;
+  stmt6;
+done
+\end{minted}
+
+
+The \verb%elif% clause saves writing a nested conditional.
+The above is equivalent to:
+
+\begin{minted}{felix}
+if c1 do 
+  stmt1;
+  stmt2;
+else 
+  if c2 do
+    stmt3;
+    stmt4;
+  else
+    stmt5;
+    stmt6;
+  done
+done
+\end{minted}
+
+One or more statements may be givn in the selected control path.
+
+A simple conditional is an abbreviation for a statement match:
+
+\begin{minted}{felix}
+if c do stmt1; stmt2; else stmt3; stmt4; done
+// is equivalent to
+match c with
+| true => stmt1; stmt2; 
+| false => stmt3; stmt4;
+endmatch;
+\end{minted}
+
+
+\section{call}
+The \verb%call% statement is used to invoke a procedure.
+
+\begin{minted}{felix}
+proc p(x:int) { println$ x; }
+call p 1;
+\end{minted}
+
+The word \verb%call% may be elided in a simple call:
+
+\begin{minted}{felix}
+p 1;
+\end{minted}
+
+If the argument is of unit type; that is, it is the
+empty tuple, then the tuple may also be elided in
+a simple call:
+
+\begin{minted}{felix}
+proc f() { println$ "Hi"; }
+call f (); // is equivalent to
+f(); // is equivalent to
+f;
+\end{minted}
+
+
+\section{procedure return}
+The procedural return is used to return control
+from a procedure to its caller.
+
+A return is not required at the end of a procedure
+where control would otherwise appear to drop through,
+a return is assumed:
+
+\begin{minted}{felix}
+proc f() { println$ 1; }
+// equivalent to
+proc f() { println$ 1; return; }
+\end{minted}
+
+
+\section{return from}
+The return from statement allows control to be
+returned from an enclosing procedure, provided that
+procedure is active.
+
+\begin{minted}{felix}
+proc outer () {
+  proc inner () {
+     println$ "Inner";
+     return from outer;
+  }
+  inner;
+  println$ "Never executed";
+}
+\end{minted}
+
+
+\section{jump }
+The procedural jump is an abbreviation for 
+the more verbose sequence:
+
+\begin{minted}{felix}
+jump procedure arg; // is equivalent to
+call procedure arg;
+return;
+\end{minted}
+
+
+\section{function return}
+The functional return statement returns a value from
+a function.
+
+\begin{minted}{felix}
+fun f () : int = {
+  return 1;
+}
+\end{minted}
+
+Control may not fall through the end of a function.
+
+\section{yield}
+The yield statement returns a value from a generator
+whilst retaining the current location so that execution
+may be resumed at the point after the yield.
+
+For this to work a closure of the generator must be stored
+in a variable which is subsequently applied.
+
+\begin{minted}{felix}
+gen counter () = { 
+  var x = 0;
+next_integer:>
+  yield x;
+  ++x;
+  goto next_integer;
+}
+
+var counter1 = counter;
+var zero = counter1 ();
+var one = counter1 ();
+println$ zero, one;
+\end{minted}
+
+
+
+\section{{\tt spawn\_fthread}}
+\href{http://felix-lang.org/share/lib/std/control/fibres.flx}{Library Reference}
+
+The \verb%spawn_fthread% library function invokes the corresponding
+service call to schedule the initial continuation of a procedure 
+taking a unit argument as an fthread (fibre). 
+
+The spawned fthread begins executing immediately.
+If coutrol returns before yielding by a synchronous
+channel operation, the action is equivalent to calling
+the procedure.
+
+Otherwise the spawned fthread is suspended when the first
+write, or the first unmatched read operation occurs.
+
+
+\section{read/write/broadcast schannel}
+\href{http://felix-lang.org/share/lib/std/control/schannels.flx}{Library Reference}
+
+\section{{\tt spawn\_pthread}}
+\href{http://felix-lang.org/share/lib/std/control/pthread.flx}{Library Reference}
+
+\section{read/write pchannel}
+\href{http://felix-lang.org/share/lib/std/control/pchannels.flx}{Library Reference}
+
+\section{loops}
+\href{http://felix-lang.org/share/lib/grammar/loops.fsyn}{Library Reference}
+
+Felix has some low level and high level loop constructions.
+
+The low level for, while, and repeat loops are equivalent
+to loops implemented with gotos.
+
+The bodies of do loops do not constitute a scope,
+therefore any symbol defined in such a body is also visible
+in the surrounding code.
+
+Low level loops may be labelled with a loop label
+which is used to allow break, continue, and redo
+statements to exit from any containing loop.
+
+
+\begin{minted}{felix}
+outer:for var i in 0 upto 9 do
+   inner: for var j in 0 upto 9 do
+     println$ i,j;
+     if i == j do break inner; done
+     if i * j > 60 do break outer; done
+   done
+done
+\end{minted}
+
+
+\subsection{redo}
+The redo statement causes control to jump to the start
+of the specified loop without incrementing the control variable.
+
+\subsection{break}
+The break statement causes control to jump past the end of
+the specified loop, terminating iteration.
+
+\subsection{continue}
+The continue statement causes the control variable to
+be incremented and tests and the next iteration commenced
+or the loop terminated.
+
+\subsection{for/in/upto/downto/do/done}
+A basic loop with an inclusive range.
+
+\begin{minted}{felix}
+// up
+for var ti:int in 0 upto 9 do println$ ti; done
+for var i in 0 upto 9 do println$ i; done
+for i in  0 upto 9 do println$ i; done
+
+// down
+for var tj:int in 9 downto 0 do println$ j; done
+for var j in 9 downto 0 do println$ j; done
+for j in  0 upto 9 do println$ j; done
+\end{minted}
+
+The start and end expressions must be of the same type.
+
+If the control variable is defined in the loop with a type
+annotation, that type must agree with the control variable.
+
+The type must support comparison with the equality operator \verb%==%
+the less than or equals operator \verb%<=% and increment with 
+the pre increment procedure \verb%++%.
+
+For loops over unsigned types cannot handle the empty case.
+For loops over signed types cannot span the whole range of the type.
+
+The loop logic takes care to ensure the control variable is not
+incremented (resp. decremented) past the end (resp.start) value.
+
+\subsection{while/do/done}
+The while loop executes the body repeatedly whilst the control
+condition is true at the start of the loop body.
+
+\begin{minted}{felix}
+var i = 0;
+while i < 10 do println$ i; ++i; done
+\end{minted}
+
+
+\subsection{until loop}
+The until loop executes the loop body repeatedly
+until the control condition is false at the start of the loop,
+it is equivalent o a while loop with a negated condition.
+
+\begin{minted}{felix}
+var i = 0;
+until i == 9 do println$ i; ++i; done
+\end{minted}
+
+
+\subsection{for/match/done}
+TBD
+\subsection{loop}
+TBD
+\section{Assertions}
+\href{http://felix-lang.org/share/lib/grammar/assertions.fsyn}{Library Reference}
+\subsection{assert}
+Ad hoc assertion throws an assertion exception if its argument
+is false. 
+
+\begin{minted}{felix}
+assert x > 0;
+\end{minted}
+
+
+\subsection{axiom}
+An axiom is a relationship between functions, typically
+polymorphic, which is required to hold.
+
+\begin{minted}{felix}
+axiom squares (x:double) => x * x >= 0;
+class addition[T]
+{
+  virtual add : T * T -> T;
+  virtual == : T * T -> bool;
+
+  axiom assoc (x:T, y:T, z:T) : 
+    add (add (x,y),z) == add (x, add (y,z))
+  ;
+}
+\end{minted}
+
+In a class, an axiom is a specification constraining
+implementations of virtual function in instances.
+
+Axioms are restricted to first order logic, that is, they
+may be polymorphic, but the universal quantification implied
+is always at the head.
+
+Existential quantification can be provided in a constructive
+logic by actually constructing the requisite variable.
+
+Second order logic, with quantifiers internal to the 
+logic term, are not supported.
+
+\subsection{lemma}
+A lemma is similar to an axiom, except that is it
+easily derivable from axioms; in particular,
+a reasonable automatic theorem prover should
+be able to derived it.
+
+\subsection{theorem}
+A theorem is similar to a lemma, except that it is 
+too hard to expect an automatic theorem prover
+to be able to derive it without hints or assistance.
+
+There is currently no standard way to prove such hints.
+
+\subsection{reduce}
+A reduce statement specifies a term reduction and is logically
+equivalent to an axiom, lemma, or theorem, however it acts
+as an instruction to the compiler to attempt to actually 
+apply the axiom.
+
+The compiler may apply the axiom, but it may miss opportunities
+for application.
+
+The set of reductions must be coherent and terminal, 
+that is, after a finite number of reductions the final
+term must be unique and irreducible. 
+
+Application of reduction is extremely expensive and they
+should be used lightly.
+
+\begin{minted}{felix}
+reduce revrev[T] (x: list[T]) : rev (rev x) => x;
+\end{minted}
+
+
+
+\section{invariant}
+An invariant is an assertion which must hold on the state variables
+of an object, at the point after construction of the state
+is completed by the constructor function and just before the
+record of method closures is returned, and, at the start and
+end of every method invocation.
+
+The invariant need not hold during execution of a method.
+
+Felix inserts the a check on the invariant into the constructor function
+and into the post conditions of every procedure or generator
+method.
+
+
+\begin{minted}{felix}
+object f(var x:int, var y:int) =
+{
+   invariant y >= 0;
+   method proc set_y (newy: int) => y = newy;
+}
+\end{minted}
+
+
+\section{code}
+The code statement inserts C++ code literally into the current
+Felix code.
+
+The code must be one or more C++ statements.
+
+
+\begin{minted}{felix}
+code 'cout << "hello";';
+\end{minted}
+
+
+\section{noreturn code}
+Similar to code, however noreturn code never returns.
+
+\begin{minted}{felix}
+noreturn code "throw 1;";
+\end{minted}
+
+
+\section{Service call}
+The service call statement calls the Felix system kernel
+to perform a specified operation.
+
+It is equivalent to an OS kernel call.
+
+The available operations include:
+
+\begin{minted}{felix}
+  union svc_req_t =
+  /*0*/ | svc_yield
+  /*1*/ | svc_get_fthread         of &fthread    // CHANGED LAYOUT
+  /*2*/ | svc_read                of address
+  /*3*/ | svc_general             of &address    // CHANGED LAYOUT
+  /*4*/ | svc_reserved1
+  /*5*/ | svc_spawn_pthread       of fthread
+  /*6*/ | svc_spawn_detached      of fthread
+  /*7*/ | svc_sread               of _schannel * &gcaddress
+  /*8*/ | svc_swrite              of _schannel * &gcaddress
+  /*9*/ | svc_kill                of fthread
+  /*10*/ | svc_reserved2
+  /*11*/ | svc_multi_swrite       of _schannel * &gcaddress 
+  /*12*/ | svc_schedule_detached  of fthread
+  ;
+\end{minted}
+
+
+These operations are typically related to coroutine or thread scheduling.
+However \verb%svc_general% is an unspecified operation, which is typically
+used to invoke the asynchronous I/O subsystem.
+
+Service calls can only be issued from flat code, that is,
+from procedures, since they call the system by returning
+control, the system must reside exactly one return address
+up the machine stack at the point a service call is executed.
+
+\section{with/do/done}
+The with/do/done statement is use to define temporary variables
+which are accessible only in the do/done body of the statement.
+
+It is the statement equivalent of the let expression.
+
+\begin{minted}{felix}
+var x = 1;
+with var x = 2; do println$ x; done
+assert x == 1;
+\end{minted}
+
+
+\section{do/done}
+The do/done statement has no semantics and merely acts as a
+way to make a sequence of statements appear as a single
+statement to the parser.
+
+Jumps into do/done groups are therefore allowed, and
+any labels defined in a do/done group are visible in
+the enclosing context.
+
+Any variables, functions, or other symbols defined in a do/done
+group are visible in the enclosing context.
+
+\begin{minted}{felix}
+do something; done
+\end{minted}
+
+
+\section{begin/end}
+The begin/end statement creates an anonymous procedure
+and then calls it. It therefore appears as a single statement
+to the parser, but it simulates a block as would be used in C.
+It is exactly equivalent to a brace enclosed procedure called
+by a terminating semi-colon.
+
+\begin{minted}{felix}
+begin
+  var x = 1;
+end
+// equivalent to
+{
+  var x = 1;
+};
+\end{minted}
+
+
+\chapter{Expressions}
+\href{http://felix-lang.org/share/lib/grammar/expressions.fsyn}{Syntax}
+
+Expressions are listed in approximate order of precedence,
+starting with the weakest binding.
+
+We will often exhibit expressions in the form
+
+\begin{minted}{felix}
+var x = expr;
+\end{minted}
+
+so as to present a complete statement. The \verb%x% is of no significance.
+
+\section{Priority levels}
+\begin{minted}{felix}
+priority 
+    let_pri < 
+    slambda_pri <
+    spipe_apply_pri <
+    sdollar_apply_pri < 
+    stuple_cons_pri <
+    stuple_pri <
+    simplies_condition_pri <
+    sor_condition_pri <
+    sand_condition_pri <
+    snot_condition_pri <
+    stex_implies_condition_pri <
+    stex_or_condition_pri <
+    stex_and_condition_pri <
+    stex_not_condition_pri <
+    scomparison_pri <
+    sas_expr_pri <
+    ssetunion_pri <
+    ssetintersection_pri <
+    sarrow_pri <
+    scase_literal_pri <
+    sbor_pri <
+    sbxor_pri <
+    sband_pri <
+    sshift_pri <
+    ssum_pri <
+    ssubtraction_pri <
+    sproduct_pri <
+    s_term_pri <
+    sprefixed_pri <
+    spower_pri <
+    ssuperscript_pri <
+    srefr_pri <
+    sapplication_pri <
+    scoercion_pri <
+    sfactor_pri <
+    srcompose_pri <
+    sthename_pri <
+    satomic_pri
+  ;
+\end{minted}
+
+
+
+
+\section{Chain forms}
+\subsection{Pattern let}
+The traditional let binding of ML.
+The syntax is 
+
+\begin{minted}{felix}
+var x = let pattern = expr1 in expr2; // equivalent to
+var x = match expr1 with pattern => expr2 endmatch;
+\end{minted}
+
+\begin{minted}{felix}
+var x = let a = 1 in a + 1; // equivalent to
+var x = match 1 with a => a + 1 endmatch
+\end{minted}
+
+
+\subsection{Function let}
+A let form which makes a function available in the
+expression
+
+\begin{minted}{felix}
+var x = 
+  let fun f(y:int)=> y + 1 in 
+  f 42
+;
+\end{minted}
+
+\subsection{Match chain}
+A variant on the terminated match which allows a second
+match to be chained onto the last branch without any endmatch.
+
+\begin{minted}{felix}
+var y = list (1,2);
+var x = 
+  match y with
+  | #Empty => "Empty"
+  | _ =>
+  match y with 
+  | h ! Empty => h.str
+  | _ =>
+  match y with 
+  | h1 ! h2 ! Empty => h1.str + "," + h2.str
+;
+
+println$ x;
+\end{minted}
+
+\subsection{conditional chain}
+A variant on the terminated if/then/elif/else allowing chaining.
+
+\begin{minted}{felix}
+var x = 
+  if c1 then r1 
+  elif c2 then r2 else
+  if c3 then r3 else
+  r4
+;
+\end{minted}
+
+
+\section{Alternate conditional chain}
+
+\begin{minted}{felix}
+var x = n / d unless d == 0 then 0;
+\end{minted}
+
+
+\section{Dollar application}
+A right associative low precedence forward apply operator taken
+from Haskell.
+
+\begin{minted}{felix}
+var x =  str$ rev$ list$ 1,2,3;
+\end{minted}
+
+
+
+\section{Pipe application}
+A left associative low precedence reverse apply operator taken
+from \verb%C#%.
+
+\begin{minted}{felix}
+var x =  1,2,3 |> list |> rev |> str;
+\end{minted}
+
+
+\section{Tuple cons constructor}
+A right associative cons operator for tuples. Allows concatenating
+an element to the head/front/left end of a tuple. Can also be used
+in a pattern match to recursively decode a tuple like a list.
+
+\begin{minted}{felix}
+var x =  3,4;
+var y = 1 ,, 2 ,, x; // 1,2,3,4
+\end{minted}
+
+
+\section{N-ary tuple constructor}
+The is a non-associative n-ary tuple constructor
+consists of a sequence of expressions separated by commas.
+
+\begin{minted}{felix}
+var x = 1,2,3,4;
+\end{minted}
+
+
+\section{Logical implication}
+An operator for function \verb%implies%.
+
+\begin{minted}{felix}
+var x = false implies true;
+\end{minted}
+
+
+\section{Logical disjunction}
+A chaining operator for function \verb%lor%.
+
+\begin{minted}{felix}
+var x = true or false;
+\end{minted}
+
+ 
+\section{Logical conjunction}
+A chaining operator for function \verb%land%.
+
+\begin{minted}{felix}
+var x = true and false;
+\end{minted}
+
+
+\section{Logical negation}
+A bool operator for function \verb%lnot%.
+
+\section{Comparisons}
+Non-associative.
+
+\begin{minted}{felix}
+var x =
+  a < b or 
+  a > b or
+  a <= b or
+  a >= b or
+  a == b or
+  a != b or
+  1 in list(1,2,3)
+  1 \in list (1,2,3)
+;
+\end{minted}
+
+
+\section{Name temporary}
+Allows a subexpression to be named as a \verb%val% by default
+or a \verb%var%.
+
+\begin{minted}{felix}
+var x = a +  (f y as z) + z; // equivalent to
+val z = f y; var x = a + z + z;
+
+var x = a +  (f y as var k) + k; // equivalent to
+var k = f y; var x = a + k + k;
+\end{minted}
+
+Note that the \verb%var% for ensures the subexpression is eagerly
+evaluated, before the containing expression.
+
+\section{Schannel pipe operators}
+Used to flow data through schannels from the source on the 
+left to the sink on the right via processing units in between.
+
+\begin{minted}{felix}
+spawn_fthread$ source |-> filter |-> enhancer |-> sink;
+\end{minted}
+
+
+This variant uses an iterator to stream data out of a data structure:
+
+\begin{minted}{felix}
+spawn_fthread$ list (1,2,3) >-> sink;
+\end{minted}
+
+
+\section{Right Arrows}
+Right associative arrow operators.
+
+List cons operator.
+
+\begin{minted}{felix}
+var x = 1 ! 2 ! list (3,4);
+\end{minted}
+
+
+Function types (type language only):
+
+\begin{minted}{felix}
+  D -> C // Felix function
+  D --> C // C function pointer
+\end{minted}
+
+
+\section{Case literals}
+
+The case tag is only used in pattern matches.
+The sum or union type isn't required because it can be deduced
+from the match argument.
+
+\begin{minted}{felix}
+var a = match a with Some v  => v | #None => 0;
+\end{minted}
+
+
+The case constructor with integer caseno has two uses. 
+
+It creates a value of
+a sum type with no arguments:
+
+\begin{minted}{felix}
+var x = case 1 of 2; // aka true
+\end{minted}
+
+or it is a function for a sum type variant with an argument:
+
+\begin{minted}{felix}
+var x = (case 1 of int + double) 4.2;
+\end{minted}
+
+
+A case literal with a name instead of an integer constructs
+a variant instead:
+
+\begin{minted}{felix}
+typedef maybe = union { No; Yes of int; };
+var x = (case Yes of maybe) 42;
+\end{minted}
+
+
+The tuple projection function names a tuple projection:
+
+\begin{minted}{felix}
+typedef triple = int * long * string;
+var snd = proj 1 of triple;
+var y: int = snd (1, 2L, "3");
+\end{minted}
+
+
+\section{Bitwise or}
+Left associative.
+
+\begin{minted}{felix}
+var x = q \| b;
+\end{minted}
+
+
+\section{Bitwise exclusive or}
+Left associative.
+
+\begin{minted}{felix}
+var x = q \^ b;
+\end{minted}
+
+
+\section{Bitwise and}
+Left associative.
+
+\begin{minted}{felix}
+var x = q \& b;
+\end{minted}
+
+
+\section{Bitwise shifts}
+Left associative.
+
+\begin{minted}{felix}
+var x = a << b; // left shift
+var x = a >> b; // right shift
+\end{minted}
+
+
+\section{Addition}
+Chain operator. Non-associative for types. 
+Left associative for expressions.
+
+\begin{minted}{felix}
+var x = a + b + c;
+\end{minted}
+
+
+\section{Subtraction}
+Left associative.
+
+\begin{minted}{felix}
+var x = a - b;
+\end{minted}
+
+
+\section{Multiplication}
+Chain operator. Non-associative for types.
+Left associative for expressions.
+
+\begin{minted}{felix}
+var x = a * b;
+\end{minted}
+
+
+\section{Division operators}
+Left associative. Not carefully: higher precedence
+that multiplication, unlike C!!
+
+\begin{minted}{felix}
+var x = a * b / c * d; // means
+var x = a * (b / c) * d;
+
+var x = a * b % c * d; // means
+var x = a * (b % c) * d;
+\end{minted}
+
+
+\section{Prefix operators}
+
+\begin{minted}{felix}
+var x = !a;
+var x = -a; // negation
+var x = ~a; // bitwise complement
+\end{minted}
+
+
+\section{Fortran exponentiation}
+Infix \verb%**} is special syntax for function @{pow%. 
+The left operand binds more tightly than \verb%**%
+but the right operand binds as for prefixed operators
+or more tightly. Observe than that:
+
+
+\begin{minted}{felix}
+var x = -a**-b;  // means
+var x = -(a**(-b));
+\end{minted}
+
+preserving the usual mathematical syntax. 
+
+\section{Felix exponentiation}
+Left associative. The right operand binds as deref operator
+or more tightly. Used for array notation in the type language.
+
+\begin{minted}{felix}
+var x = a ^ ix;
+\end{minted}
+
+
+\section{Function composition}
+Standard math notation. Left associative. Same precedence as
+exponentiation. Spelled \verb%\}@{circ%.
+
+\begin{minted}{felix}
+var x = f \circ g;
+\end{minted}
+
+
+\section{Dereference}
+For function \verb%deref%.
+
+\begin{minted}{felix}
+var x = *p;
+\end{minted}
+
+
+For builtin dereference operator:
+
+\begin{minted}{felix}
+var x = _deref p;
+\end{minted}
+
+
+Note these usually have the same meaning however
+the function \verb%deref% can be overloaded. If the overloaded
+definition is not to be circular it may use \verb%_deref%
+when dereferencing pointers.
+
+\subsection{Operator new}
+Copies a value onto the heap and returns a pointer.
+
+\begin{minted}{felix}
+var px = new 42;
+\end{minted}
+
+
+\section{Whitespace application}
+Operator whitespace is used for applications.
+\subsection{General}
+
+\begin{minted}{felix}
+var x = sin y;
+\end{minted}
+
+
+\subsection{Caseno operator}
+Returns the integer tag value of the value of an anonymous sum, 
+union, or variant  type.
+
+\begin{minted}{felix}
+var x = caseno true; // 1
+var x = caseno (Some 43); // 1
+\end{minted}
+
+
+\subsection{Likelyhood}
+Indicaties if a bool valued expression is likely
+or unlikely to be true. Used to generate the corresponding
+gcc optimisation hints, if available.
+
+\begin{minted}{felix}
+if likely (c) goto restart;
+if unlikely (d) goto loopend;
+\end{minted}
+
+
+\section{Coercion operator}
+left associative. The right operand is a type.
+
+\begin{minted}{felix}
+var x = 1L :>> int; // cast
+\end{minted}
+
+
+\section{Suffixed name}
+The most general form of a name:
+
+\begin{minted}{felix}
+var x = qualified::name of int;
+\end{minted}
+
+Used to name functions, with the right operand specifying
+the function argument type.
+
+\section{Factors}
+\subsection{Subscript}
+Used for array and string subscripting. Calls function \verb%subscript%.
+For strings, returns a character. If the subscript is out of range
+after adjustment of negative index, returns \verb%char 0% and thus
+cannot fail.
+
+\begin{minted}{felix}
+var x = a . [ i ]; // i'th element
+\end{minted}
+
+
+\subsection{Subsstring}
+Calls function \verb%substring%. Negative indices may be used to
+offset from end, i.e. -1 is the index of the last element.
+Out of range indices (past the end or before the start, after
+adjustment of negative indices) are clipped back to the end
+or start respectively.
+
+\begin{minted}{felix}
+var x = a . [ first to past]; 
+  // past is one past the last element refered to
+\end{minted}
+
+
+\subsection{Copyfrom}
+Calls function \verb%copyfrom%. Copies from designated index to end.
+Supports negative indices and range clipping for strings.
+
+\begin{minted}{felix}
+var x = a . [to past]; // from the first
+\end{minted}
+
+
+\subsection{Copyto}
+Calls function \verb%copyto%. Supports negative indices and
+range clipping for strings.
+
+\begin{minted}{felix}
+var x = a . [to past]; // from the first
+\end{minted}
+
+
+\subsection{Reverse application}
+Left associative.
+
+\begin{minted}{felix}
+var x = y .f; // means
+var x = f y;
+\end{minted}
+
+
+\subsection{Reverse application with deref}
+Left associative
+
+\begin{minted}{felix}
+var x = p *. k; // means
+var x = (*p) . k;
+\end{minted}
+
+
+\subsection{Reverse application with addressing}
+Left associative
+
+\begin{minted}{felix}
+var x = v &. k; // means
+var x = (&v) . k;
+\end{minted}
+
+
+\subsection{Unit application}
+Prefix operator applies argument to empty tuple.
+
+\begin{minted}{felix}
+var x = #f; // means
+var x = f ();
+\end{minted}
+
+
+\subsection{Addressing}
+Finds the pointer address of a variable.
+Means pointer to in type language.
+
+\begin{minted}{felix}
+var x : int = 1;
+var px : &int = &x; 
+  // address of x
+  // type pointer to int
+\end{minted}
+
+
+\subsection{C pointer}
+Used in type language for pointer to type or NULL.
+
+\begin{minted}{felix}
+var px : @char =  malloc (42);
+\end{minted}
+
+
+Note that this symbol is also used in fdoc as a markup
+indicator. Please keep out of column 1, do not follow
+with a left brace.
+
+\subsection{Label address}
+Used to find the machine address in the code text of
+a label. Used with computed goto instruction.
+
+\begin{minted}{felix}
+proc f (a: int) {
+  var target: LABEL = 
+    if a < 0 then label_address neg
+    elif a > 0 then label_address pos
+    else label_address zer
+  ;
+  goto-indirect target;
+  pos:> println$ "pos"; return;
+  neg:> println$ "neg"; return;
+  zer:> println$ "zer"; return;
+}
+\end{minted}
+
+
+\subsection{Macro freezer}
+Used to disable macro expansion of a symbol.
+
+\begin{minted}{felix}
+macro val fred = joe;
+var x = fred + noexpand fred; // means
+var x = joe + fred;
+\end{minted}
+
+
+\subsection{Pattern variable}
+Notation \verb%v% Used in patterns to designate a val variable
+to be bound in the pattern matching.
+
+\begin{minted}{felix}
+var x = 
+  match y with 
+  | Some v => "Some " + v.str 
+  | #None => "None";
+;
+\end{minted}
+
+
+\subsection{Parser argument}
+Notation \verb%n} for some integer @{n%. In user defined syntax designates
+the n'th term of a syntax production.
+
+\section{Qualified name}
+A name in Felix has the form:
+
+\begin{minted}{felix}
+  class1 :: nested1 :: ... :: identifier [ type1, type2, ... ]
+\end{minted}
+
+where the qualifiers and/or type list may be elided. 
+This is the same as C++ except we use \verb%[]} instead of @{<>%
+for template argument types.
+
+\chapter{Atoms}
+\section{Record expression}
+
+\begin{minted}{felix}
+var x = (name="Hello", age=42);
+\end{minted}
+
+
+\section{Alternate record expression}
+
+\begin{minted}{felix}
+var x = 
+  struct {
+    var name = "Hello";
+    var age = 42;
+  }
+;
+\end{minted}
+
+
+\section{Variant type}
+Denotes a variant type.
+
+\begin{minted}{felix}
+var x : 
+  union {
+    Cart of double * double;
+    Polar of double * double;
+  }
+;
+\end{minted}
+
+
+\section{Wildcard pattern}
+Used in a pattern match, matches anything.
+
+\begin{minted}{felix}
+  var x = match a with _ => "anything";
+\end{minted}
+
+
+\section{Ellipsis}
+Used only in C bindings to denote varags.
+
+\begin{minted}{felix}
+  fun f: int * ... -> int;
+\end{minted}
+
+
+\section{Truth constants}
+
+\begin{minted}{felix}
+  false // alias for case 0 of 2
+  true  // alias for case 1 of 2
+\end{minted}
+
+
+\section{callback expression}
+??
+
+\begin{minted}{felix}
+callback [ x ]
+\end{minted}
+
+
+\section{Lazy expression}
+Function of unit.
+
+\begin{minted}{felix}
+var f = { expr };
+var x = f ();
+\end{minted}
+
+
+\section{Sequencing}
+Function dependent on final expression.
+
+\begin{minted}{felix}
+var x = ( var y = 1; var z = y + y; z + 1 ); // equivalent to
+var x = #{ var y = 1; var z = y + y; return z + 1; };
+\end{minted}
+
+
+\section{Procedure of unit.}
+
+\begin{minted}{felix}
+var p = { println$ "Hello"; } // procedure
+p (); 
+
+var f = { var y = 1; return y + y; }; // function
+var x = f ();
+\end{minted}
+
+
+\section{Grouping}
+Parentheses are used for grouping.
+
+\begin{minted}{felix}
+var x = (1 + 2) * 3;
+\end{minted}
+
+
+\section{Object extension}
+
+\begin{minted}{felix}
+var x = extend a,b with c end;
+\end{minted}
+
+
+\section{Conditional expression}
+
+\begin{minted}{felix}
+var x =
+  if c1 then a elif c2 then b else c endif
+;
+\end{minted}
+
+\chapter{Pattern Matching}
+The patterns
+are composed of these forms:
+
+\begin{minted}{felix}
+(v1, v2, ... )          // tuple match
+h!t                     // list match
+h,,t                    // tuple cons
+Ctor                      // const union or variant match
+Ctor v                   // nonconst union or variant match
+(fld1=f1, fld2=f2, ...)  // record match
+pat as v                 // assign variable to matched subexpression
+pat when expr             // guarded match
+pat1 | pat2               // match either pattern
+999                       // integer match
+"str"                     // string match 
+lit1 .. lit2              // range match
+_                         // wildcard match
+\end{minted}
+
+
+The guarded match only matches the pattern if the guard expression is true.
+
+\begin{minted}{felix}
+match x with
+| (x,y) when y != 0 => ...
+endmatch
+\end{minted}
+
+
+The tuple as list cons match is a form of row polymorphism
+where the first element of a tuple and the remaining elements
+considered as a tuple are matched.
+
+A good example of this is found in the library \href{http://felix-lang.org/share/lib/std/datatype/tuple.flx}{here}
+which allows printing a tuple of arbitrary number of components, indeed,
+this facility was implemented precisely to allow this definition in the library.
+
+Record matches succeed with any record containing a superset
+of the specified fields.
+
+As well as integer and string matches, a literal of any type with an
+equality and inequality operator can be matched. In addition,
+if there is a less than or equal operator \verb%<=% an inclusive
+range match can be specified.
+
+
 
 \part{Gross Structure}
 
@@ -3468,6 +5033,339 @@ fun f[T where ispair T] (x:T)=>x;
 
 println$ f (42,33L); // OK, signature ispair (int * long) true
 \end{minted}
+\chapter{Generics}
+\section{Generic Functions}
+Generic provide a way to do {\em cut and paste} polymorphism,
+similar to what C++ does. It is useful for one-off scripts,
+or times when parametric polymorphism and type classes are
+not enough.
+
+\subsection{Generic Syntax}
+The syntax is to just put the kind of a type
+variable as \verb%GENERIC%:
+
+\begin{minted}{felix}
+fun accumulate [T:GENERIC] (container:T) = {
+  var sum = 0;
+  for elt in container do
+    sum = sum + elt;
+  done 
+  return sum;
+}
+\end{minted}
+
+\subsection{Using a generic}
+With the above example you can write:
+
+\begin{minted}{felix}
+println$ accumulate (1,2,3,4);
+println$ accumulate (1,2,3,4).list;
+println$ accumulate (1,2,3,4).varray;
+\end{minted}
+
+\subsection{Operational Semantics}
+Felix handles generics as follows. The generic function is
+treated first, as if it were polymorphic, that is, the
+\verb%GENERIC% kind replaced by the default \verb%TYPE%.
+After overload resolution is complete, if a generic
+function is selected, Felix clones the function and all
+its descendants, creating a new function. In these clones,
+however, the generic type variable is removed and in the
+definition of the function and its descenants it is replaced
+by the actual type deduced by the overload resolution algorithm.
+The system then replaces the overload result with a reference
+to this new function.
+
+Therefore, the call is dispatched to a non-generic function,
+specialised for the arguments.
+
+This kind of operation is also done by the type class specialiser
+during monomorphisation, and inlining routines during optimisation,
+however with generics the specialisation is done {\em before} binding.
+
+Unlike C++, the specialisation is done in the context of the definition.
+This is more reliable, but it means functions in the context of use
+cannot participate in overload resolution.
+
+\begin{minted}{felix}
+class X {
+  proc f(x:int) => println$ "X::f " + x;
+  proc g[T:GENERIC] (x:T) => f x;
+  g 25;
+}
+
+class Y {
+  proc f(x:int) => println$ "Y::f " + x;
+  X::g 33;
+}
+
+X::g 99;
+\end{minted}
+
+The output is:
+
+\begin{minted}{text}
+X::f 25
+X::f 33
+X::f 99
+\end{minted}
+
+\section{Builtin Generics}
+Felix has a number of builtin generic functions.
+
+\subsection{The {\tt \_strr} function}
+The \verb%_strr% function converts any value into a string,
+with a syntax roughly approximating the syntax used in the program.
+
+It was primarily intended to simplify output of records, the 
+final \verb%r% from to record.
+
+\begin{minted}{felix}
+println$ (a=1,b="hello", c=(1,2,3), a=(1,2,3).list);
+struct A {
+  a:int;
+  b:int;
+}
+println$ (A(1,2))._strr;
+\end{minted}
+
+The output is:
+
+\begin{minted}{felix}
+(a=1,a=Snoc (Snoc (Snoc (Empty,3),2),1),b='hello',c=(1, 2, 3))
+A {a=1,b=2}
+\end{minted}
+
+The \verb%Snoc(tail,head)% terms there are the native list constructors
+used by Felix, which are reversed \verb%Cons(head,tail)% terms. Felix
+uses these because they generate a pointer followed by data in C++,
+which means list scanning is independent of the data type.
+
+\subsubsection{Operational Semantics}
+The converter works by calling the \verb%str% function for primitives
+such as \verb%int%, \verb%string%, or \verb%float%, so these must
+be in scope. The type class based \verb%str% is injected into the
+global shadow scope so this will always be bound, however if
+there is no instance for a type an error will be generated during
+monomorphisation.
+
+For structured types, \verb%_strr% exhibits the structure in some
+nice way, wrapping the child members of the structures, which are
+converted to strings recursively.
+
+There is a limit on the recursion depth, and Felix will print
+\verb%...% when it hits that depth.
+
+\begin{minted}{felix}
+println$ (1,2,3,4,5,6,7,8,9).list._strr;
+\end{minted}
+
+produces
+
+\begin{minted}{text}
+Snoc (Snoc (Snoc (Snoc (...,4),3),2),1)
+\end{minted}
+
+\subsection{The {\tt \_eq} function}
+Felix provides a builtin generic function \verb%_eq% which can
+be used to compare small acyclic values of arbitrary types:
+
+\begin{minted}{felix}
+var x = (1,(a=2,b=3,c=(1,2).list));
+var y = x;
+println$ _eq (x,y);
+\end{minted}
+
+\subsubsection{Operational Semantics}
+The comparator requires arguments of the same type.
+It operates by a recursive descent into the structure
+of the types. If the type of a subexpression is primitve, 
+the function \verb%==% is used. This function is defined
+in the typeclass \verb%Eq%, and may also be defined in the
+context of the comparison.
+
+Do not use this generic on a cyclic value, it will loop 
+forever at run time.
+
+The current implementation only expands tuples and records.
+It delegates to \verb%==% for all other types. Therefore,
+lists will be handled correctly since \verb%==% is already
+defined for lists in the library.
+
+Technically \verb%_eq% is polyadic, not generic. However the
+implementation is generic.
+
+\subsection{The {\tt \_map} function}
+The \verb%_map% operator maps an overloaded function set over a tuple. 
+For example:
+
+\begin{minted}{felix}
+fun f(x:int)=> x + 1;
+fun f(x:double)=> (x+42.0).str+ "!!";
+fun f[T] (x:T)=>x;
+println$ _map f (1,2.2,"Hello");
+\end{minted}
+
+produces:
+
+\begin{minted}{text}
+(2, 44.2!!, Hello)
+\end{minted}
+
+Although many generic operations can better be defined using type classes,
+it is not possible to do this kind of operation other than with a generic.
+
+All folds, for example, can be defined with type classes because
+folding mandates the return type be invariant, and we can use
+polymorphism on the argument type. However this is not possible
+with mapping because the return type is not dependent on the
+argument type in a predictable manner.
+
+Technically, Felix can indeed express the return type of
+the individual functions. Consider:
+
+\begin{minted}{felix}
+typedef fun fret(argtype:TYPE):TYPE =>
+  typematch argtype with
+  | int => int
+  | double => string
+  | ?other => other
+  endmatch
+;
+
+class U[T] {
+  virtual fun ff: T -> fret T;
+}
+
+instance U[int] {
+fun ff(x:int)=> x + 1;
+}
+
+instance U[double] {
+fun ff(x:double)=> (x+42.0).str+ "!!";
+}
+
+instance[T] U[T] {
+fun ff[T] (x:T)=>x;
+}
+
+open[T] U[T];
+
+println$ ff 22; 
+println$ ff 3.0; 
+println$ ff "Hello";
+\end{minted}
+
+The first two prints actually work, but the last one fails:
+
+\begin{minted}{text}
+CLIENT ERROR
+[Cannotmatch] Cannot instantiate virtual ff<271188>[string]
+In /Users/skaller/felix/b.flx: line 57, cols 1 to 20
+56: println$ ff 3.0;
+57: println$ ff "Hello";
+    ********************
+58:
+\end{minted}
+
+The reason is, that the ff[T] in instance U[T] does not have the
+correct type to specialise the virtual. The virtual has type
+
+\begin{minted}{felix}
+T ->  
+  typematch argtype with
+  | int => int
+  | double => string
+  | ?other => other
+  endmatch
+\end{minted}
+
+whereas the instance has type
+
+\begin{minted}{felix}
+T -> T
+\end{minted}
+
+however matching T against \verb%int% or %double% in the typematch stalls
+because whether the match succeeds depends on the not yet performed
+replacement of T with a specific type.
+
+Note that in theory if the \verb%double% branch were removed,
+the typematch would always return \verb%T%, since if it is \verb%int% it returns
+\verb%int%, and otherwise returns that. However the compiler is not
+able to reduce the typematch like that because it looks only
+at the top branch to begin, and continues only on definite failure.
+
+
+\chapter{Abstract Types}
+An abstract type is a type for which a specific implementation
+is given, but which can only be accessed by specified methods.
+
+\subsection{Syntax}
+An abstract type is created like this, taken
+from the standard library: 
+
+\begin{minted}{felix}
+open class Darray {
+  private struct darray_ctl[T]
+  {
+    a: varray[T];
+    resize: size * size --> size;
+  }
+  type darray[T] = new &darray_ctl[T];
+
+  //$ Make an empty darray, give it 20 slots for no particular reason.
+  ctor[T] darray[T] () => 
+    _make_darray[T]$ new darray_ctl[T](varray[T] 20uz , dflt_resize);
+
+  // resize
+  proc do_resize[T] (pd: darray[T], new_size: size)
+  {
+    var old = (_repr_ pd)*.a;
+    (_repr_ pd).a <- 
+      varray[T] (new_size, (len old), (fun(i:size)=>old.i));
+  }
+
+  // pop head
+  proc pop[t](a:darray[t]) {
+    pop (_repr_ a)*.a;
+    newsize := (_repr_ a)*.resize 
+      (maxlen (_repr_ a)*.a, len (_repr_ a)*.a)
+    ;
+    if newsize != maxlen (_repr_ a)*.a call do_resize (a,newsize);
+  }
+}
+
+The statement
+
+\begin{minted}{felix}
+  type darray[T] = new &darray_ctl[T];
+\end{minted}
+
+defines a new, abstract, polymorphic type, \verb%darray[T]%
+implemented as a pointer to a \verb%struct% containing an 
+bounded array \verb%varray% and a \verb%resize% function.
+
+In order to construct a \verb%darray%, we first create pointer
+to a \verb%darray_ctl% objects, and then cast it to the
+abstract type using special name \verb%_make_darray%.
+The cast from the representation to the abstract type is the
+name of the abstract type constructor prefixed by \verb%_make_%.
+
+To access the implementation, which is needed to define methods
+on the abstract type, we use the cast \verb%_repr_%, which 
+converts the abstract type back to its implementation.
+
+Both these casts are private to the containing class \verb%Darray%,
+so they can only be used in the class defining the abstract type,
+because private names of a class are only accessible within
+the class (and it descendants of course).
+
+Therefore, the mechanism provides a way to rigorously protect
+the implementation of the abstract type. The privacy of
+the representation type in the example is not necessary, but is used
+to prevent namespace pollution.
+
 
 \part{Executable Syntax}
 \chapter{Variable Definitions}
@@ -4007,1570 +5905,6 @@ Objects provide an excellent way for a dynamically loaded
 shared library to export a set of functions, only the object
 function needs to be exported so it has a C name which
 can be linked to with \verb%dlopen%.
-
-
-\chapter{Statements}
-\section{Assignment}
-\href{http://felix-lang.org/share/lib/grammar/assignment.fsyn}{Syntax}
-
-\section{Basic Assignment}
-\begin{minted}{felix}
-  //$ Assignment form.
-  sassignexpr := sexpr sassignop sexpr;
-
-  //$ Assignment.
-    sassignop:= "=" =># "'_set";
-
-  //$ Store at pointer.
-    sassignop:= "<-" =># "'_pset";
-
-  //$ Short form val declaration.
-    sassignop:= ":=" =># "'_init";
-
-\end{minted}
-
-\section{Read-modify-write operations}
-
-\begin{minted}{felix}
-  //$ binary read-modify-write operators.
-  sassignexpr := sexpr srmwop sexpr;
-    //$ Increment.
-    srmwop:= "+=" =># "_1";
-    //$ Decrement.
-    srmwop:= "-=" =># "_1";
-    //$ Multiply.
-    srmwop:= "*=" =># "_1";
-    //$ Divide.
-    srmwop:= "/=" =># "_1";
-    //$ C remainder.
-    srmwop:= "%=" =># "_1";
-    //$ Left shift.
-    srmwop:= "<<=" =># "_1";
-    //$ Right shift.
-    srmwop:= ">>=" =># "_1";
-    //$ Bitwise exclusive or.
-    srmwop:= "^=" =># "_1";
-    //$ Bitwise or.
-    srmwop:= "|=" =># "_1";
-    //$ Bitwise and.
-    srmwop:= "&=" =># "_1";
-    //$ Left shift.
-    srmwop:= "<<=" =># "_1";
-    //$ Right shift.
-    srmwop:= ">>=" =># "_1";
-
-  //$ Swap operator.
-  sassignexpr := sexpr sswapop sexpr;
-
-  //$ Prefix read/modify/write.
-  sassignexpr := spreincrop sexpr;
-    //$ Pre-increment.
-    spreincrop:= "++" =># "'pre_incr";
-    //$ Pre-decrement.
-    spreincrop:= "--" =># "'pre_decr";
-
-  //$ Postfix read/modify/write.
-  sassignexpr := sexpr spostincrop;
-    //$ Post-increment.
-    spostincrop:= "++" =># "'post_incr";
-    //$ Post-decrement.
-    spostincrop:= "--" =># "'post_decr";
-\end{minted}
-
-\section{Special Assignment}
-Compound assignment form uses leadin \verb%def% to allows
-recursive decoding of tuples and a mix of variable
-initialisation, value initialisation and assignment to
-existing variables from projections of the RHS in the
-corresponding position.
-
-The pattern of variables, \verb%var% and \verb%val% terms in
-the LHS is called an \verb%l-expression%. An underscore \verb%_%
-may also be used.
-
-\begin{minted}{felix}
-  //$ Multiple initialisation/assignment form.
-  //$
-  //$ def x, (var y, val z) = 1,(2,3);
-  //$
-  //$ allows unpacking a tuple into a pre-existing variable,
-  //$ creating a new variable, and binding a new value,
-  //$ in a single form, with nesting.
-  sassignexpr := "def" slexpr "=" sexpr;
-    slexpr := slexprs =># """ (if (null? (tail _1)) (first _1) `((List ,_1) none)) """;
-    slexprs := stlelement "," slexprs =># "(cons _1 _3)";
-    slexprs := stlelement =># "`(,_1)";
-
-    slelement := "val" sname =># "`(Val ,_sr ,_2)";
-    slelement := "var" sname =># "`(Var ,_sr ,_2)";
-    slelement := sname =># "`(Name ,_sr ,_1)";
-    slelement := _ =># "`(Skip ,_sr)";
-    slelement := "(" slexprs ")" =># "`(List ,_2)";
-
-    stlelement := slelement ":" x[sfactor_pri] =># "`(,_1 (some ,_3))";
-    stlelement := slelement =># "`(,_1 none)";
-
-}
-\end{minted}
-
-
-\section{The {\tt goto} statement and label {\tt prefix}}
-Felix statements may be prefixed by a label
-to which control may be transfered by a \verb%goto%
-statement:
-
-\begin{minted}{felix}
-alabel:>
-  dosomething;
-  goto alabel;
-\end{minted}
-
-The label must be visible from the goto statement.
-
-There are two kinds of gotos. A local goto is a jump
-to a label in the same scope as the goto statement.
-
-A non-local goto is a jump to any other visible label.
-
-Non-local transfers of control may cross procedure
-boundaries. They may not cross function or generator 
-boundaries.
-
-The procedure or function containing the label 
-must be active at the time of the control transfer.
-
-A non-local goto may be wrapped in a procedure closure
-and passed to a procedure from which the goto target
-is not visible.
-
-
-\begin{minted}{felix}
-proc doit (err: 1 -> 0) { e; }
-
-proc outer () {
-  proc handler () { goto error; }
-  doit (handler);
-  return;
-
-  error:> println$ error;
-}
-\end{minted}
-
-This is a valid way to handle errors.
-the code is correct because \verb%outer% is active
-at the time that \verb%handler% performs the
-control transfer.
-\subsection{halt}
-Stops the program with a diagnostic.
-
-\begin{minted}{felix}
-halt "Program complete";
-\end{minted}
-
-
-\section{try/catch/entry}
-The try/catch construction may only be user to wrap
-calls to C++ primitives, so as to catch exceptions.
-
-\begin{minted}{felix}
-proc mythrow 1 = "throw 0;";
-try
-   mythrow;
-catch (x:int) =>
-   println$ "Caughht integer " + x.str;
-endtry
-\end{minted}
-
-
-\section{goto-indirect/label\_address}
-The \verb%label-address% operator captures the address
-of code at a nominated label. 
-
-The address has type \verb%LABEL% and can be stored in a variable.
-
-Provided the activation record of the procedure containing
-the label remains live, a subsequent @{goto-indirect) can
-be used to jump to that location.
-
-
-\begin{minted}{felix}
-proc demo (selector:int) {
-  var pos : LABEL = 
-    if selector == 1 
-    then label_address lab1
-    else label_address lab2
-    endif
-  ;
-  goto-indirect selector;
-lab1:>
-  println$ "Lab1"; return;
-lab2:>
-  println$ "Lab2"; return;
-}
-\end{minted}
-
-
-\section{Exchange of control}
-Built on top of label adressing and indirect gotos,
-the \verb%branch-and-link% instruction is conceptually
-the most fundamental control instruction. The library
-implementation is in 
-
-\begin{minted}{felix}
-inline proc branch-and-link (target:&LABEL, save:&LABEL)
-{
-  save <- label_address next;
-  goto-indirect *target;
-  next:>
-}
-\end{minted}
-
-A good example is \href{http://felix-lang.org/share/src/test/regress/rt/coroutines-01.fdoc}{here},
-which shows an example of coroutines.
-
-\section{match/endmatch}
-The form:
-
-\begin{minted}{felix}
-match expr with
-| pattern1 => stmts1
-| pattern2 => stmts2
-...
-endmatch
-\end{minted}
-
-is an extension of the C switch statement. See \fullref{Pattern Matching}.
-
-\section{if/goto}
-The conditional goto is an abbreviation for 
-the more verbose conditional:
-
-\begin{minted}{felix}
-if c goto lab; // equivalent to
-if c do goto lab; done
-\end{minted}
-
-
-\section{if/return}
-The conditional return is an abbreviation for
-the more verbose conditional:
-
-\begin{minted}{felix}
-if c return; // equivalent to
-if c do return; done
-\end{minted}
-
-
-\section{if/call}
-The conditional call is an abbreviation for
-the more verbose conditional:
-
-\begin{minted}{felix}
-if c call f x; // equivalent to
-if c do call f x; done
-\end{minted}
-
-
-
-\section{if/do/elif/else/done}
-The procedural conditional branch is used to select
-a control path based on a boolean expression.
-
-The \verb%else} and @{elif% clauses are optional.
-
-\begin{minted}{felix}
-if c1 do 
-  stmt1;
-  stmt2;
-elif c2 do
-  stmt3;
-  stmt4;
-else
-  stmt5;
-  stmt6;
-done
-\end{minted}
-
-
-The \verb%elif% clause saves writing a nested conditional.
-The above is equivalent to:
-
-\begin{minted}{felix}
-if c1 do 
-  stmt1;
-  stmt2;
-else 
-  if c2 do
-    stmt3;
-    stmt4;
-  else
-    stmt5;
-    stmt6;
-  done
-done
-\end{minted}
-
-One or more statements may be givn in the selected control path.
-
-A simple conditional is an abbreviation for a statement match:
-
-\begin{minted}{felix}
-if c do stmt1; stmt2; else stmt3; stmt4; done
-// is equivalent to
-match c with
-| true => stmt1; stmt2; 
-| false => stmt3; stmt4;
-endmatch;
-\end{minted}
-
-
-\section{call}
-The \verb%call% statement is used to invoke a procedure.
-
-\begin{minted}{felix}
-proc p(x:int) { println$ x; }
-call p 1;
-\end{minted}
-
-The word \verb%call% may be elided in a simple call:
-
-\begin{minted}{felix}
-p 1;
-\end{minted}
-
-If the argument is of unit type; that is, it is the
-empty tuple, then the tuple may also be elided in
-a simple call:
-
-\begin{minted}{felix}
-proc f() { println$ "Hi"; }
-call f (); // is equivalent to
-f(); // is equivalent to
-f;
-\end{minted}
-
-
-\section{procedure return}
-The procedural return is used to return control
-from a procedure to its caller.
-
-A return is not required at the end of a procedure
-where control would otherwise appear to drop through,
-a return is assumed:
-
-\begin{minted}{felix}
-proc f() { println$ 1; }
-// equivalent to
-proc f() { println$ 1; return; }
-\end{minted}
-
-
-\section{return from}
-The return from statement allows control to be
-returned from an enclosing procedure, provided that
-procedure is active.
-
-\begin{minted}{felix}
-proc outer () {
-  proc inner () {
-     println$ "Inner";
-     return from outer;
-  }
-  inner;
-  println$ "Never executed";
-}
-\end{minted}
-
-
-\section{jump }
-The procedural jump is an abbreviation for 
-the more verbose sequence:
-
-\begin{minted}{felix}
-jump procedure arg; // is equivalent to
-call procedure arg;
-return;
-\end{minted}
-
-
-\section{function return}
-The functional return statement returns a value from
-a function.
-
-\begin{minted}{felix}
-fun f () : int = {
-  return 1;
-}
-\end{minted}
-
-Control may not fall through the end of a function.
-
-\section{yield}
-The yield statement returns a value from a generator
-whilst retaining the current location so that execution
-may be resumed at the point after the yield.
-
-For this to work a closure of the generator must be stored
-in a variable which is subsequently applied.
-
-\begin{minted}{felix}
-gen counter () = { 
-  var x = 0;
-next_integer:>
-  yield x;
-  ++x;
-  goto next_integer;
-}
-
-var counter1 = counter;
-var zero = counter1 ();
-var one = counter1 ();
-println$ zero, one;
-\end{minted}
-
-
-
-\section{{\tt spawn\_fthread}}
-\href{http://felix-lang.org/share/lib/std/control/fibres.flx}{Library Reference}
-
-The \verb%spawn_fthread% library function invokes the corresponding
-service call to schedule the initial continuation of a procedure 
-taking a unit argument as an fthread (fibre). 
-
-The spawned fthread begins executing immediately.
-If coutrol returns before yielding by a synchronous
-channel operation, the action is equivalent to calling
-the procedure.
-
-Otherwise the spawned fthread is suspended when the first
-write, or the first unmatched read operation occurs.
-
-
-\section{read/write/broadcast schannel}
-\href{http://felix-lang.org/share/lib/std/control/schannels.flx}{Library Reference}
-
-\section{{\tt spawn\_pthread}}
-\href{http://felix-lang.org/share/lib/std/control/pthread.flx}{Library Reference}
-
-\section{read/write pchannel}
-\href{http://felix-lang.org/share/lib/std/control/pchannels.flx}{Library Reference}
-
-\section{loops}
-\href{http://felix-lang.org/share/lib/grammar/loops.fsyn}{Library Reference}
-
-Felix has some low level and high level loop constructions.
-
-The low level for, while, and repeat loops are equivalent
-to loops implemented with gotos.
-
-The bodies of do loops do not constitute a scope,
-therefore any symbol defined in such a body is also visible
-in the surrounding code.
-
-Low level loops may be labelled with a loop label
-which is used to allow break, continue, and redo
-statements to exit from any containing loop.
-
-
-\begin{minted}{felix}
-outer:for var i in 0 upto 9 do
-   inner: for var j in 0 upto 9 do
-     println$ i,j;
-     if i == j do break inner; done
-     if i * j > 60 do break outer; done
-   done
-done
-\end{minted}
-
-
-\subsection{redo}
-The redo statement causes control to jump to the start
-of the specified loop without incrementing the control variable.
-
-\subsection{break}
-The break statement causes control to jump past the end of
-the specified loop, terminating iteration.
-
-\subsection{continue}
-The continue statement causes the control variable to
-be incremented and tests and the next iteration commenced
-or the loop terminated.
-
-\subsection{for/in/upto/downto/do/done}
-A basic loop with an inclusive range.
-
-\begin{minted}{felix}
-// up
-for var ti:int in 0 upto 9 do println$ ti; done
-for var i in 0 upto 9 do println$ i; done
-for i in  0 upto 9 do println$ i; done
-
-// down
-for var tj:int in 9 downto 0 do println$ j; done
-for var j in 9 downto 0 do println$ j; done
-for j in  0 upto 9 do println$ j; done
-\end{minted}
-
-The start and end expressions must be of the same type.
-
-If the control variable is defined in the loop with a type
-annotation, that type must agree with the control variable.
-
-The type must support comparison with the equality operator \verb%==%
-the less than or equals operator \verb%<=% and increment with 
-the pre increment procedure \verb%++%.
-
-For loops over unsigned types cannot handle the empty case.
-For loops over signed types cannot span the whole range of the type.
-
-The loop logic takes care to ensure the control variable is not
-incremented (resp. decremented) past the end (resp.start) value.
-
-\subsection{while/do/done}
-The while loop executes the body repeatedly whilst the control
-condition is true at the start of the loop body.
-
-\begin{minted}{felix}
-var i = 0;
-while i < 10 do println$ i; ++i; done
-\end{minted}
-
-
-\subsection{until loop}
-The until loop executes the loop body repeatedly
-until the control condition is false at the start of the loop,
-it is equivalent o a while loop with a negated condition.
-
-\begin{minted}{felix}
-var i = 0;
-until i == 9 do println$ i; ++i; done
-\end{minted}
-
-
-\subsection{for/match/done}
-TBD
-\subsection{loop}
-TBD
-\section{Assertions}
-\href{http://felix-lang.org/share/lib/grammar/assertions.fsyn}{Library Reference}
-\subsection{assert}
-Ad hoc assertion throws an assertion exception if its argument
-is false. 
-
-\begin{minted}{felix}
-assert x > 0;
-\end{minted}
-
-
-\subsection{axiom}
-An axiom is a relationship between functions, typically
-polymorphic, which is required to hold.
-
-\begin{minted}{felix}
-axiom squares (x:double) => x * x >= 0;
-class addition[T]
-{
-  virtual add : T * T -> T;
-  virtual == : T * T -> bool;
-
-  axiom assoc (x:T, y:T, z:T) : 
-    add (add (x,y),z) == add (x, add (y,z))
-  ;
-}
-\end{minted}
-
-In a class, an axiom is a specification constraining
-implementations of virtual function in instances.
-
-Axioms are restricted to first order logic, that is, they
-may be polymorphic, but the universal quantification implied
-is always at the head.
-
-Existential quantification can be provided in a constructive
-logic by actually constructing the requisite variable.
-
-Second order logic, with quantifiers internal to the 
-logic term, are not supported.
-
-\subsection{lemma}
-A lemma is similar to an axiom, except that is it
-easily derivable from axioms; in particular,
-a reasonable automatic theorem prover should
-be able to derived it.
-
-\subsection{theorem}
-A theorem is similar to a lemma, except that it is 
-too hard to expect an automatic theorem prover
-to be able to derive it without hints or assistance.
-
-There is currently no standard way to prove such hints.
-
-\subsection{reduce}
-A reduce statement specifies a term reduction and is logically
-equivalent to an axiom, lemma, or theorem, however it acts
-as an instruction to the compiler to attempt to actually 
-apply the axiom.
-
-The compiler may apply the axiom, but it may miss opportunities
-for application.
-
-The set of reductions must be coherent and terminal, 
-that is, after a finite number of reductions the final
-term must be unique and irreducible. 
-
-Application of reduction is extremely expensive and they
-should be used lightly.
-
-\begin{minted}{felix}
-reduce revrev[T] (x: list[T]) : rev (rev x) => x;
-\end{minted}
-
-
-
-\section{invariant}
-An invariant is an assertion which must hold on the state variables
-of an object, at the point after construction of the state
-is completed by the constructor function and just before the
-record of method closures is returned, and, at the start and
-end of every method invocation.
-
-The invariant need not hold during execution of a method.
-
-Felix inserts the a check on the invariant into the constructor function
-and into the post conditions of every procedure or generator
-method.
-
-
-\begin{minted}{felix}
-object f(var x:int, var y:int) =
-{
-   invariant y >= 0;
-   method proc set_y (newy: int) => y = newy;
-}
-\end{minted}
-
-
-\section{code}
-The code statement inserts C++ code literally into the current
-Felix code.
-
-The code must be one or more C++ statements.
-
-
-\begin{minted}{felix}
-code 'cout << "hello";';
-\end{minted}
-
-
-\section{noreturn code}
-Similar to code, however noreturn code never returns.
-
-\begin{minted}{felix}
-noreturn code "throw 1;";
-\end{minted}
-
-
-\section{Service call}
-The service call statement calls the Felix system kernel
-to perform a specified operation.
-
-It is equivalent to an OS kernel call.
-
-The available operations include:
-
-\begin{minted}{felix}
-  union svc_req_t =
-  /*0*/ | svc_yield
-  /*1*/ | svc_get_fthread         of &fthread    // CHANGED LAYOUT
-  /*2*/ | svc_read                of address
-  /*3*/ | svc_general             of &address    // CHANGED LAYOUT
-  /*4*/ | svc_reserved1
-  /*5*/ | svc_spawn_pthread       of fthread
-  /*6*/ | svc_spawn_detached      of fthread
-  /*7*/ | svc_sread               of _schannel * &gcaddress
-  /*8*/ | svc_swrite              of _schannel * &gcaddress
-  /*9*/ | svc_kill                of fthread
-  /*10*/ | svc_reserved2
-  /*11*/ | svc_multi_swrite       of _schannel * &gcaddress 
-  /*12*/ | svc_schedule_detached  of fthread
-  ;
-\end{minted}
-
-
-These operations are typically related to coroutine or thread scheduling.
-However \verb%svc_general% is an unspecified operation, which is typically
-used to invoke the asynchronous I/O subsystem.
-
-Service calls can only be issued from flat code, that is,
-from procedures, since they call the system by returning
-control, the system must reside exactly one return address
-up the machine stack at the point a service call is executed.
-
-\section{with/do/done}
-The with/do/done statement is use to define temporary variables
-which are accessible only in the do/done body of the statement.
-
-It is the statement equivalent of the let expression.
-
-\begin{minted}{felix}
-var x = 1;
-with var x = 2; do println$ x; done
-assert x == 1;
-\end{minted}
-
-
-\section{do/done}
-The do/done statement has no semantics and merely acts as a
-way to make a sequence of statements appear as a single
-statement to the parser.
-
-Jumps into do/done groups are therefore allowed, and
-any labels defined in a do/done group are visible in
-the enclosing context.
-
-Any variables, functions, or other symbols defined in a do/done
-group are visible in the enclosing context.
-
-\begin{minted}{felix}
-do something; done
-\end{minted}
-
-
-\section{begin/end}
-The begin/end statement creates an anonymous procedure
-and then calls it. It therefore appears as a single statement
-to the parser, but it simulates a block as would be used in C.
-It is exactly equivalent to a brace enclosed procedure called
-by a terminating semi-colon.
-
-\begin{minted}{felix}
-begin
-  var x = 1;
-end
-// equivalent to
-{
-  var x = 1;
-};
-\end{minted}
-
-
-\chapter{Expressions}
-\href{http://felix-lang.org/share/lib/grammar/expressions.fsyn}{Syntax}
-
-Expressions are listed in approximate order of precedence,
-starting with the weakest binding.
-
-We will often exhibit expressions in the form
-
-\begin{minted}{felix}
-var x = expr;
-\end{minted}
-
-so as to present a complete statement. The \verb%x% is of no significance.
-
-\section{Priority levels}
-\begin{minted}{felix}
-priority 
-    let_pri < 
-    slambda_pri <
-    spipe_apply_pri <
-    sdollar_apply_pri < 
-    stuple_cons_pri <
-    stuple_pri <
-    simplies_condition_pri <
-    sor_condition_pri <
-    sand_condition_pri <
-    snot_condition_pri <
-    stex_implies_condition_pri <
-    stex_or_condition_pri <
-    stex_and_condition_pri <
-    stex_not_condition_pri <
-    scomparison_pri <
-    sas_expr_pri <
-    ssetunion_pri <
-    ssetintersection_pri <
-    sarrow_pri <
-    scase_literal_pri <
-    sbor_pri <
-    sbxor_pri <
-    sband_pri <
-    sshift_pri <
-    ssum_pri <
-    ssubtraction_pri <
-    sproduct_pri <
-    s_term_pri <
-    sprefixed_pri <
-    spower_pri <
-    ssuperscript_pri <
-    srefr_pri <
-    sapplication_pri <
-    scoercion_pri <
-    sfactor_pri <
-    srcompose_pri <
-    sthename_pri <
-    satomic_pri
-  ;
-\end{minted}
-
-
-
-
-\section{Chain forms}
-\subsection{Pattern let}
-The traditional let binding of ML.
-The syntax is 
-
-\begin{minted}{felix}
-var x = let pattern = expr1 in expr2; // equivalent to
-var x = match expr1 with pattern => expr2 endmatch;
-\end{minted}
-
-\begin{minted}{felix}
-var x = let a = 1 in a + 1; // equivalent to
-var x = match 1 with a => a + 1 endmatch
-\end{minted}
-
-
-\subsection{Function let}
-A let form which makes a function available in the
-expression
-
-\begin{minted}{felix}
-var x = 
-  let fun f(y:int)=> y + 1 in 
-  f 42
-;
-\end{minted}
-
-\subsection{Match chain}
-A variant on the terminated match which allows a second
-match to be chained onto the last branch without any endmatch.
-
-\begin{minted}{felix}
-var y = list (1,2);
-var x = 
-  match y with
-  | #Empty => "Empty"
-  | _ =>
-  match y with 
-  | h ! Empty => h.str
-  | _ =>
-  match y with 
-  | h1 ! h2 ! Empty => h1.str + "," + h2.str
-;
-
-println$ x;
-\end{minted}
-
-\subsection{conditional chain}
-A variant on the terminated if/then/elif/else allowing chaining.
-
-\begin{minted}{felix}
-var x = 
-  if c1 then r1 
-  elif c2 then r2 else
-  if c3 then r3 else
-  r4
-;
-\end{minted}
-
-
-\section{Alternate conditional chain}
-
-\begin{minted}{felix}
-var x = n / d unless d == 0 then 0;
-\end{minted}
-
-
-\section{Dollar application}
-A right associative low precedence forward apply operator taken
-from Haskell.
-
-\begin{minted}{felix}
-var x =  str$ rev$ list$ 1,2,3;
-\end{minted}
-
-
-
-\section{Pipe application}
-A left associative low precedence reverse apply operator taken
-from \verb%C#%.
-
-\begin{minted}{felix}
-var x =  1,2,3 |> list |> rev |> str;
-\end{minted}
-
-
-\section{Tuple cons constructor}
-A right associative cons operator for tuples. Allows concatenating
-an element to the head/front/left end of a tuple. Can also be used
-in a pattern match to recursively decode a tuple like a list.
-
-\begin{minted}{felix}
-var x =  3,4;
-var y = 1 ,, 2 ,, x; // 1,2,3,4
-\end{minted}
-
-
-\section{N-ary tuple constructor}
-The is a non-associative n-ary tuple constructor
-consists of a sequence of expressions separated by commas.
-
-\begin{minted}{felix}
-var x = 1,2,3,4;
-\end{minted}
-
-
-\section{Logical implication}
-An operator for function \verb%implies%.
-
-\begin{minted}{felix}
-var x = false implies true;
-\end{minted}
-
-
-\section{Logical disjunction}
-A chaining operator for function \verb%lor%.
-
-\begin{minted}{felix}
-var x = true or false;
-\end{minted}
-
- 
-\section{Logical conjunction}
-A chaining operator for function \verb%land%.
-
-\begin{minted}{felix}
-var x = true and false;
-\end{minted}
-
-
-\section{Logical negation}
-A bool operator for function \verb%lnot%.
-
-\section{Comparisons}
-Non-associative.
-
-\begin{minted}{felix}
-var x =
-  a < b or 
-  a > b or
-  a <= b or
-  a >= b or
-  a == b or
-  a != b or
-  1 in list(1,2,3)
-  1 \in list (1,2,3)
-;
-\end{minted}
-
-
-\section{Name temporary}
-Allows a subexpression to be named as a \verb%val% by default
-or a \verb%var%.
-
-\begin{minted}{felix}
-var x = a +  (f y as z) + z; // equivalent to
-val z = f y; var x = a + z + z;
-
-var x = a +  (f y as var k) + k; // equivalent to
-var k = f y; var x = a + k + k;
-\end{minted}
-
-Note that the \verb%var% for ensures the subexpression is eagerly
-evaluated, before the containing expression.
-
-\section{Schannel pipe operators}
-Used to flow data through schannels from the source on the 
-left to the sink on the right via processing units in between.
-
-\begin{minted}{felix}
-spawn_fthread$ source |-> filter |-> enhancer |-> sink;
-\end{minted}
-
-
-This variant uses an iterator to stream data out of a data structure:
-
-\begin{minted}{felix}
-spawn_fthread$ list (1,2,3) >-> sink;
-\end{minted}
-
-
-\section{Right Arrows}
-Right associative arrow operators.
-
-List cons operator.
-
-\begin{minted}{felix}
-var x = 1 ! 2 ! list (3,4);
-\end{minted}
-
-
-Function types (type language only):
-
-\begin{minted}{felix}
-  D -> C // Felix function
-  D --> C // C function pointer
-\end{minted}
-
-
-\section{Case literals}
-
-The case tag is only used in pattern matches.
-The sum or union type isn't required because it can be deduced
-from the match argument.
-
-\begin{minted}{felix}
-var a = match a with Some v  => v | #None => 0;
-\end{minted}
-
-
-The case constructor with integer caseno has two uses. 
-
-It creates a value of
-a sum type with no arguments:
-
-\begin{minted}{felix}
-var x = case 1 of 2; // aka true
-\end{minted}
-
-or it is a function for a sum type variant with an argument:
-
-\begin{minted}{felix}
-var x = (case 1 of int + double) 4.2;
-\end{minted}
-
-
-A case literal with a name instead of an integer constructs
-a variant instead:
-
-\begin{minted}{felix}
-typedef maybe = union { No; Yes of int; };
-var x = (case Yes of maybe) 42;
-\end{minted}
-
-
-The tuple projection function names a tuple projection:
-
-\begin{minted}{felix}
-typedef triple = int * long * string;
-var snd = proj 1 of triple;
-var y: int = snd (1, 2L, "3");
-\end{minted}
-
-
-\section{Bitwise or}
-Left associative.
-
-\begin{minted}{felix}
-var x = q \| b;
-\end{minted}
-
-
-\section{Bitwise exclusive or}
-Left associative.
-
-\begin{minted}{felix}
-var x = q \^ b;
-\end{minted}
-
-
-\section{Bitwise and}
-Left associative.
-
-\begin{minted}{felix}
-var x = q \& b;
-\end{minted}
-
-
-\section{Bitwise shifts}
-Left associative.
-
-\begin{minted}{felix}
-var x = a << b; // left shift
-var x = a >> b; // right shift
-\end{minted}
-
-
-\section{Addition}
-Chain operator. Non-associative for types. 
-Left associative for expressions.
-
-\begin{minted}{felix}
-var x = a + b + c;
-\end{minted}
-
-
-\section{Subtraction}
-Left associative.
-
-\begin{minted}{felix}
-var x = a - b;
-\end{minted}
-
-
-\section{Multiplication}
-Chain operator. Non-associative for types.
-Left associative for expressions.
-
-\begin{minted}{felix}
-var x = a * b;
-\end{minted}
-
-
-\section{Division operators}
-Left associative. Not carefully: higher precedence
-that multiplication, unlike C!!
-
-\begin{minted}{felix}
-var x = a * b / c * d; // means
-var x = a * (b / c) * d;
-
-var x = a * b % c * d; // means
-var x = a * (b % c) * d;
-\end{minted}
-
-
-\section{Prefix operators}
-
-\begin{minted}{felix}
-var x = !a;
-var x = -a; // negation
-var x = ~a; // bitwise complement
-\end{minted}
-
-
-\section{Fortran exponentiation}
-Infix \verb%**} is special syntax for function @{pow%. 
-The left operand binds more tightly than \verb%**%
-but the right operand binds as for prefixed operators
-or more tightly. Observe than that:
-
-
-\begin{minted}{felix}
-var x = -a**-b;  // means
-var x = -(a**(-b));
-\end{minted}
-
-preserving the usual mathematical syntax. 
-
-\section{Felix exponentiation}
-Left associative. The right operand binds as deref operator
-or more tightly. Used for array notation in the type language.
-
-\begin{minted}{felix}
-var x = a ^ ix;
-\end{minted}
-
-
-\section{Function composition}
-Standard math notation. Left associative. Same precedence as
-exponentiation. Spelled \verb%\}@{circ%.
-
-\begin{minted}{felix}
-var x = f \circ g;
-\end{minted}
-
-
-\section{Dereference}
-For function \verb%deref%.
-
-\begin{minted}{felix}
-var x = *p;
-\end{minted}
-
-
-For builtin dereference operator:
-
-\begin{minted}{felix}
-var x = _deref p;
-\end{minted}
-
-
-Note these usually have the same meaning however
-the function \verb%deref% can be overloaded. If the overloaded
-definition is not to be circular it may use \verb%_deref%
-when dereferencing pointers.
-
-\subsection{Operator new}
-Copies a value onto the heap and returns a pointer.
-
-\begin{minted}{felix}
-var px = new 42;
-\end{minted}
-
-
-\section{Whitespace application}
-Operator whitespace is used for applications.
-\subsection{General}
-
-\begin{minted}{felix}
-var x = sin y;
-\end{minted}
-
-
-\subsection{Caseno operator}
-Returns the integer tag value of the value of an anonymous sum, 
-union, or variant  type.
-
-\begin{minted}{felix}
-var x = caseno true; // 1
-var x = caseno (Some 43); // 1
-\end{minted}
-
-
-\subsection{Likelyhood}
-Indicaties if a bool valued expression is likely
-or unlikely to be true. Used to generate the corresponding
-gcc optimisation hints, if available.
-
-\begin{minted}{felix}
-if likely (c) goto restart;
-if unlikely (d) goto loopend;
-\end{minted}
-
-
-\section{Coercion operator}
-left associative. The right operand is a type.
-
-\begin{minted}{felix}
-var x = 1L :>> int; // cast
-\end{minted}
-
-
-\section{Suffixed name}
-The most general form of a name:
-
-\begin{minted}{felix}
-var x = qualified::name of int;
-\end{minted}
-
-Used to name functions, with the right operand specifying
-the function argument type.
-
-\section{Factors}
-\subsection{Subscript}
-Used for array and string subscripting. Calls function \verb%subscript%.
-For strings, returns a character. If the subscript is out of range
-after adjustment of negative index, returns \verb%char 0% and thus
-cannot fail.
-
-\begin{minted}{felix}
-var x = a . [ i ]; // i'th element
-\end{minted}
-
-
-\subsection{Subsstring}
-Calls function \verb%substring%. Negative indices may be used to
-offset from end, i.e. -1 is the index of the last element.
-Out of range indices (past the end or before the start, after
-adjustment of negative indices) are clipped back to the end
-or start respectively.
-
-\begin{minted}{felix}
-var x = a . [ first to past]; 
-  // past is one past the last element refered to
-\end{minted}
-
-
-\subsection{Copyfrom}
-Calls function \verb%copyfrom%. Copies from designated index to end.
-Supports negative indices and range clipping for strings.
-
-\begin{minted}{felix}
-var x = a . [to past]; // from the first
-\end{minted}
-
-
-\subsection{Copyto}
-Calls function \verb%copyto%. Supports negative indices and
-range clipping for strings.
-
-\begin{minted}{felix}
-var x = a . [to past]; // from the first
-\end{minted}
-
-
-\subsection{Reverse application}
-Left associative.
-
-\begin{minted}{felix}
-var x = y .f; // means
-var x = f y;
-\end{minted}
-
-
-\subsection{Reverse application with deref}
-Left associative
-
-\begin{minted}{felix}
-var x = p *. k; // means
-var x = (*p) . k;
-\end{minted}
-
-
-\subsection{Reverse application with addressing}
-Left associative
-
-\begin{minted}{felix}
-var x = v &. k; // means
-var x = (&v) . k;
-\end{minted}
-
-
-\subsection{Unit application}
-Prefix operator applies argument to empty tuple.
-
-\begin{minted}{felix}
-var x = #f; // means
-var x = f ();
-\end{minted}
-
-
-\subsection{Addressing}
-Finds the pointer address of a variable.
-Means pointer to in type language.
-
-\begin{minted}{felix}
-var x : int = 1;
-var px : &int = &x; 
-  // address of x
-  // type pointer to int
-\end{minted}
-
-
-\subsection{C pointer}
-Used in type language for pointer to type or NULL.
-
-\begin{minted}{felix}
-var px : @char =  malloc (42);
-\end{minted}
-
-
-Note that this symbol is also used in fdoc as a markup
-indicator. Please keep out of column 1, do not follow
-with a left brace.
-
-\subsection{Label address}
-Used to find the machine address in the code text of
-a label. Used with computed goto instruction.
-
-\begin{minted}{felix}
-proc f (a: int) {
-  var target: LABEL = 
-    if a < 0 then label_address neg
-    elif a > 0 then label_address pos
-    else label_address zer
-  ;
-  goto-indirect target;
-  pos:> println$ "pos"; return;
-  neg:> println$ "neg"; return;
-  zer:> println$ "zer"; return;
-}
-\end{minted}
-
-
-\subsection{Macro freezer}
-Used to disable macro expansion of a symbol.
-
-\begin{minted}{felix}
-macro val fred = joe;
-var x = fred + noexpand fred; // means
-var x = joe + fred;
-\end{minted}
-
-
-\subsection{Pattern variable}
-Notation \verb%v% Used in patterns to designate a val variable
-to be bound in the pattern matching.
-
-\begin{minted}{felix}
-var x = 
-  match y with 
-  | Some v => "Some " + v.str 
-  | #None => "None";
-;
-\end{minted}
-
-
-\subsection{Parser argument}
-Notation \verb%n} for some integer @{n%. In user defined syntax designates
-the n'th term of a syntax production.
-
-\section{Qualified name}
-A name in Felix has the form:
-
-\begin{minted}{felix}
-  class1 :: nested1 :: ... :: identifier [ type1, type2, ... ]
-\end{minted}
-
-where the qualifiers and/or type list may be elided. 
-This is the same as C++ except we use \verb%[]} instead of @{<>%
-for template argument types.
-
-\chapter{Atoms}
-\section{Record expression}
-
-\begin{minted}{felix}
-var x = (name="Hello", age=42);
-\end{minted}
-
-
-\section{Alternate record expression}
-
-\begin{minted}{felix}
-var x = 
-  struct {
-    var name = "Hello";
-    var age = 42;
-  }
-;
-\end{minted}
-
-
-\section{Variant type}
-Denotes a variant type.
-
-\begin{minted}{felix}
-var x : 
-  union {
-    Cart of double * double;
-    Polar of double * double;
-  }
-;
-\end{minted}
-
-
-\section{Wildcard pattern}
-Used in a pattern match, matches anything.
-
-\begin{minted}{felix}
-  var x = match a with _ => "anything";
-\end{minted}
-
-
-\section{Ellipsis}
-Used only in C bindings to denote varags.
-
-\begin{minted}{felix}
-  fun f: int * ... -> int;
-\end{minted}
-
-
-\section{Truth constants}
-
-\begin{minted}{felix}
-  false // alias for case 0 of 2
-  true  // alias for case 1 of 2
-\end{minted}
-
-
-\section{callback expression}
-??
-
-\begin{minted}{felix}
-callback [ x ]
-\end{minted}
-
-
-\section{Lazy expression}
-Function of unit.
-
-\begin{minted}{felix}
-var f = { expr };
-var x = f ();
-\end{minted}
-
-
-\section{Sequencing}
-Function dependent on final expression.
-
-\begin{minted}{felix}
-var x = ( var y = 1; var z = y + y; z + 1 ); // equivalent to
-var x = #{ var y = 1; var z = y + y; return z + 1; };
-\end{minted}
-
-
-\section{Procedure of unit.}
-
-\begin{minted}{felix}
-var p = { println$ "Hello"; } // procedure
-p (); 
-
-var f = { var y = 1; return y + y; }; // function
-var x = f ();
-\end{minted}
-
-
-\section{Grouping}
-Parentheses are used for grouping.
-
-\begin{minted}{felix}
-var x = (1 + 2) * 3;
-\end{minted}
-
-
-\section{Object extension}
-
-\begin{minted}{felix}
-var x = extend a,b with c end;
-\end{minted}
-
-
-\section{Conditional expression}
-
-\begin{minted}{felix}
-var x =
-  if c1 then a elif c2 then b else c endif
-;
-\end{minted}
-
-\chapter{Pattern Matching}
-The patterns
-are composed of these forms:
-
-\begin{minted}{felix}
-(v1, v2, ... )          // tuple match
-h!t                     // list match
-h,,t                    // tuple cons
-Ctor                      // const union or variant match
-Ctor v                   // nonconst union or variant match
-(fld1=f1, fld2=f2, ...)  // record match
-pat as v                 // assign variable to matched subexpression
-pat when expr             // guarded match
-pat1 | pat2               // match either pattern
-999                       // integer match
-"str"                     // string match 
-lit1 .. lit2              // range match
-_                         // wildcard match
-\end{minted}
-
-
-The guarded match only matches the pattern if the guard expression is true.
-
-\begin{minted}{felix}
-match x with
-| (x,y) when y != 0 => ...
-endmatch
-\end{minted}
-
-
-The tuple as list cons match is a form of row polymorphism
-where the first element of a tuple and the remaining elements
-considered as a tuple are matched.
-
-A good example of this is found in the library \href{http://felix-lang.org/share/lib/std/datatype/tuple.flx}{here}
-which allows printing a tuple of arbitrary number of components, indeed,
-this facility was implemented precisely to allow this definition in the library.
-
-Record matches succeed with any record containing a superset
-of the specified fields.
-
-As well as integer and string matches, a literal of any type with an
-equality and inequality operator can be matched. In addition,
-if there is a less than or equal operator \verb%<=% an inclusive
-range match can be specified.
-
 
 
 \part{Interfacing}
@@ -8297,5 +8631,26 @@ class LS_expr
 
 
 \appendix
+\chapter{Special Names}
+\begin{description}
+\item[{\tt \_make\_}typename]
+Cast the representation of an abstract type to the abstract type.
+\item[{\tt \_repr\_}]
+Cast an abstract type to its representation.
+\item[{\tt \_map}]
+Generic map.
+\item[{\tt \_eq}]
+Generic equality.
+
+\item[{\tt apply}]
+User defined application.
+
+\item[{\tt \_ctor_\_}typename}]
+User defined constructor/conversion function.
+
+
+
+\end{description}
+
 \backmatter
 \end{document}

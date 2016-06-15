@@ -285,6 +285,7 @@ let rec gen_match_check pat (arg:expr_t) =
   and mklit sr e = EXPR_literal (sr,e)
   in
   match pat with
+  | PAT_alt _
   | PAT_expr _ -> assert false
   | PAT_literal (sr,s) -> apl2 sr "eq" (mklit sr s) arg
   | PAT_none sr -> clierr sr "Empty pattern not allowed"

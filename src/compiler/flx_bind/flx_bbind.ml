@@ -309,8 +309,10 @@ print_endline (" &&&&&& bind_type_uses calling BBIND_SYMBOL");
       vs
   in
   if is_generic (fst ivs) then begin
+(*
      print_endline ("bind_symbol skipping symbol with generic type parameter: "^ 
        sym.Flx_sym.id ^"<"^ si symbol_index ^">")
+*)
   end else
   (* bind the type variables *)
   let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in
