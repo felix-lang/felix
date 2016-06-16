@@ -356,6 +356,20 @@ and xpattern_t x =
   | Lst [Id "pat_as"; sr; p; id] -> PAT_as (xsr sr, xp p, xid id)
   | Lst [Id "pat_when"; sr; p; e] -> PAT_when (xsr sr, xp p, xexpr_t (xsr sr) e)
 
+  | Lst [Id "pat_with"; sr; p; Lst es] -> 
+    let sr = xsr sr in
+    let es = List.map begin function
+      | Lst [id;e] -> xid id,xexpr_t sr e
+      | x -> err x "pat_with syntax"
+      end es
+    in
+    let p = PAT_with(sr, xp p, es) in
+(*
+print_endline ("sex2flx: pat_with=" ^ Flx_print.string_of_pattern p);
+print_endline (String.concat ", " (List.map (fun (s,e) -> s ^ "=" ^ Flx_print.string_of_expr e) es));
+*)
+    p
+
   | Lst [Id "pat_record"; sr; Lst ips] ->
       let ips =
         List.map begin function

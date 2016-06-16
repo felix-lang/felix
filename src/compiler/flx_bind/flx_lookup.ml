@@ -3943,14 +3943,14 @@ print_endline ("Case number " ^ si index);
     end
 
   | EXPR_sum (sri,ls) ->
-    begin let mksum a b = Flx_strr.apl2 sri "add" [a;b] in
+    begin let mksum a b = Flx_strr.apl2 sri "+" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mksum h t)
     | [] -> clierr sri "Not expecting empty product (unit)"
     end
 
   | EXPR_product (sri,ls) ->
-    begin let mkprod a b = Flx_strr.apl2 sri "mul" [a;b] in
+    begin let mkprod a b = Flx_strr.apl2 sri "*" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mkprod h t)
     | [] -> clierr sri "Not expecting empty sum (void)"

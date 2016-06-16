@@ -561,11 +561,11 @@ if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int
 
   | DCL_match_handler (pat,(mvname,match_var_index),asms) ->
       assert (List.length (fst ivs) = 0);
-      let vars = Hashtbl.create 97 in
+      let vars = ref [] in
       Flx_mbind.get_pattern_vars vars pat [];
 
       let new_asms = ref asms in
-      Hashtbl.iter begin fun vname (sr,extractor) ->
+      List.iter begin fun (vname, (sr,extractor)) ->
         let component =
           Flx_mbind.gen_extractor
             extractor
@@ -576,7 +576,7 @@ if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int
             DCL_value (TYP_typeof (component), `Val))
         and instr = Exe (sr, EXE_init (vname, component)) in
         new_asms := dcl :: instr :: !new_asms;
-      end vars;
+      end (List.rev (!vars));
 
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables

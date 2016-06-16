@@ -150,6 +150,7 @@ let fix_pattern counter pat =
   | PAT_nonconst_variant (sr,s,p) -> PAT_nonconst_variant (sr,s,aux p)
   | PAT_as (sr,p,i) -> PAT_as (sr,aux p,i)
   | PAT_when (sr,p,e) -> PAT_when (sr,aux p,e)
+  | PAT_with (sr,p,es) -> PAT_with (sr, aux p, es)
   | PAT_record (sr, ps) -> PAT_record (sr, List.map (fun (i,p) -> i,aux p) ps)
   | PAT_polyrecord (sr, ps,r) -> PAT_polyrecord (sr, List.map (fun (i,p) -> i,aux p) ps, r)
 
@@ -178,6 +179,7 @@ let rec get_pattern_vars pat =
   | PAT_record (_,ps) -> List.concat(List.map get_pattern_vars (List.map snd ps))
   | PAT_polyrecord (_,ps,r) -> r :: List.concat(List.map get_pattern_vars (List.map snd ps))
   | PAT_alt _ -> assert false
+  | PAT_with (_,p,asgns) -> List.map fst asgns @ get_pattern_vars p
   | _ -> []
 
 (* cartesian product of two lists N x M is a single list of N x M pairs *)
@@ -242,6 +244,8 @@ let expand_pattern_branches pes =
     | PAT_as (sr,p,i) -> map (fun p->PAT_as (sr,p,i)) (aux p)
     | PAT_when (sr,p,e) -> map (fun p-> PAT_when (sr,p,e)) (aux p)
 
+    | PAT_with (sr,p, asgns) -> map (fun p-> PAT_with (sr,p,asgns)) (aux p)
+
     | PAT_tuple (sr,ps) -> 
       let pss = map aux ps in
       map (fun (p) -> PAT_tuple (sr, (p))) (cartt pss)
@@ -267,6 +271,9 @@ let alpha_pat local_prefix seq fast_remap remap expand_expr pat =
   let rexp e = expand_expr 50 local_prefix seq remap e in 
   let rec aux pat = match pat with
   | PAT_name (sr,v) -> PAT_name (sr, ren v)
+  | PAT_with (sr,p,es) ->
+    let es = List.map (fun (s,e) -> ren s, rexp e) es in
+    PAT_with (sr, aux p, es)
   | PAT_as (sr,p,v) -> PAT_as (sr,aux p, ren v)
   | PAT_when (sr,p,e) -> PAT_when (sr,aux p, rexp e)
   | PAT_nonconst_ctor (sr,n,p) -> PAT_nonconst_ctor (sr, n, aux p)
@@ -1002,7 +1009,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       let pvs = get_pattern_vars pat in
       let pvs' =  (* new parameter names *)
         List.map
-        (fun _ -> let b = !seq in incr seq; "_param_" ^ local_prefix ^ "_" ^ string_of_int b)
+        (fun s -> let b = !seq in incr seq; s^"_param_" ^ local_prefix ^ "_" ^ string_of_int b)
         pvs
       in
       let fast_remap = List.combine pvs pvs' in

@@ -242,6 +242,7 @@ and pattern_t =
 
   | PAT_as of Flx_srcref.t * pattern_t * Flx_id.t
   | PAT_when of Flx_srcref.t * pattern_t * expr_t
+  | PAT_with of Flx_srcref.t * pattern_t * (Flx_id.t * expr_t) list
   | PAT_record of Flx_srcref.t * (Flx_id.t * pattern_t) list
   | PAT_polyrecord of Flx_srcref.t * (Flx_id.t * pattern_t) list * Flx_id.t
 
@@ -860,6 +861,7 @@ let src_of_pat (e : pattern_t) = match e with
   | PAT_const_variant (s,_)
   | PAT_nonconst_variant (s,_,_)
   | PAT_as (s,_,_)
+  | PAT_with (s,_,_)
   | PAT_when (s,_,_)
   | PAT_record (s,_)
   | PAT_polyrecord (s,_,_)

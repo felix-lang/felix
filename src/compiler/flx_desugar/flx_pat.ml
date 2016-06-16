@@ -23,8 +23,8 @@ let rec check_match_literal pats =
 
     | PAT_coercion (_,pat,_)
     | PAT_as (_,pat,_)
+    | PAT_with (_,pat,_)
     | PAT_when (_,pat,_) -> check pat
-
     | _ ->
         let sr = src_of_pat pat in
         clierr sr "Literal pattern expected"
@@ -42,6 +42,7 @@ let rec check_match_range pats =
 
     | PAT_coercion (_,pat,_)
     | PAT_as (_,pat,_)
+    | PAT_with (_,pat,_)
     | PAT_when (_,pat,_) -> check pat
 
     | _ ->
@@ -62,6 +63,7 @@ and check_match_record pats =
 
     | PAT_as (_,pat,_)
     | PAT_coercion (_,pat,_)
+    | PAT_with (_,pat,_)
     | PAT_when (_,pat,_) -> check pat
 
     | _ ->
@@ -84,6 +86,7 @@ and check_match_tuple n pats =
 
     | PAT_coercion (_,pat,_)
     | PAT_as (_,pat,_)
+    | PAT_with (_,pat,_)
     | PAT_when (_,pat,_) -> check n pat
 
     | _ ->
@@ -100,7 +103,8 @@ and check_match_tuple n pats =
     | PAT_name _ -> []
     | PAT_coercion (_,pat,_)
     | PAT_as (_,pat,_)
-    | PAT_when (_,pat,_) -> match_split pat
+    | PAT_with (_,pat,_) 
+    | PAT_when (_,pat,_) -> match_split pat 
     | PAT_tuple (_,ps) -> ps
     | _ ->
         let sr = src_of_pat pat in
@@ -131,6 +135,7 @@ and check_match_tuple_cons pats =
     | PAT_tuple_cons (_,p1,p2) -> check p2
     | PAT_as (_,pat,_)
     | PAT_when (_,pat,_)
+    | PAT_with (_,pat,_)
     | PAT_coercion (_,pat,_) -> check pat
     | _ ->
         let sr = src_of_pat pat in
@@ -155,6 +160,7 @@ and check_match_union pats =
 
     | PAT_coercion (_,pat,_)
     | PAT_as (_,pat,_)
+    | PAT_with (_,pat,_)
     | PAT_when (_,pat,_) -> check pat
 
     | _ ->
@@ -179,6 +185,7 @@ and check_match_variant pats =
 
     | PAT_coercion (_,pat,_)
     | PAT_as (_,pat,_)
+    | PAT_with (_,pat,_)
     | PAT_when (_,pat,_) -> check pat
 
     | _ ->
@@ -227,6 +234,7 @@ and find_match_type pat =
   | PAT_expr _ -> assert false
   | PAT_as (_,pat,_)
   | PAT_when (_,pat,_)
+  | PAT_with (_,pat,_)
   | PAT_coercion (_,pat,_) -> find_match_type pat
 
 let rec is_irrefutable pat =
@@ -254,6 +262,7 @@ let rec is_irrefutable pat =
 
   | PAT_expr _ -> assert false
   | PAT_as (_,pat,_) -> true
+  | PAT_with (_,pat,_) -> true
   | PAT_when (_,pat,_) -> false
   | PAT_coercion (_,pat,_) -> irf pat
 

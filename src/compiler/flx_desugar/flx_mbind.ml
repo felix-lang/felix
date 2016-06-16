@@ -14,6 +14,11 @@ type extract_t =
   | Proj_head of Flx_srcref.t                (* tuple_cons head extractor  *)
   | Proj_tail of Flx_srcref.t                (* tuple_cons tail extractor  *)
   | Polyrec_tail of Flx_srcref.t * string list (* list of fields to exclude! *)
+  | Expr of Flx_srcref.t * expr_t
+
+type extractor_t = extract_t list
+type psym_t = string * (Flx_srcref.t * extractor_t)
+type psym_table_t = psym_t list
 
 (* the extractor is a function to be applied to
    the argument to extract the value of the identifier;
@@ -29,7 +34,7 @@ type extract_t =
 *)
 
 let gen_extractor
-  (extractor : extract_t list)
+  (extractor : extractor_t)
   (mv : expr_t)
 : expr_t =
   List.fold_right
@@ -41,6 +46,7 @@ let gen_extractor
     | Proj_tail (sr) -> EXPR_get_tuple_tail (sr,(marg))
     | Proj_head (sr) -> EXPR_get_tuple_head (sr,(marg))
     | Polyrec_tail (sr,flds) -> EXPR_remove_fields (sr,marg,flds)
+    | Expr (sr,e) -> e
   )
   extractor
   mv
@@ -56,7 +62,7 @@ let gen_extractor
    BRANCH OF THE PATTERN MATCH .. WHICH IS HARD TO ORGANISE AT 
    THIS POINT IN THE CODE.
 *)
-let rec subst vars (e:expr_t) mv : expr_t =
+let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   let subst e = subst vars e mv in
   (* FIXME: most of these cases are legal, the when clause should
      be made into a function call to an arbitrary function, passing
@@ -127,9 +133,9 @@ let rec subst vars (e:expr_t) mv : expr_t =
 
   | EXPR_name (sr,name,idx) ->
     if idx = [] then
-    if Hashtbl.mem vars name
+    if List.mem_assoc name vars
     then
-      let sr,extractor = Hashtbl.find vars name in
+      let sr,extractor = List.assoc name vars in
       gen_extractor extractor mv
     else e
     else failwith "Can't use indexed name in when clause :("
@@ -186,12 +192,12 @@ let rec subst vars (e:expr_t) mv : expr_t =
 *)
 
 let rec get_pattern_vars
-  vars      (* Hashtable of variable -> Flx_srcref.t * extractor *)
+  (vars : psym_table_t ref)
   pat       (* pattern *)
-  extractor (* extractor for this pattern *)
+  (extractor : extractor_t)
 =
   match pat with
-  | PAT_name (sr,id) -> Hashtbl.add vars id (sr,extractor)
+  | PAT_name (sr,id) -> vars :=  (id, (sr,extractor))::!vars
 
   | PAT_tuple (sr,pats) ->
     let n = ref 0 in
@@ -223,11 +229,32 @@ let rec get_pattern_vars
 
 
   | PAT_as (sr,pat,id) ->
-    Hashtbl.add vars id (sr,extractor);
+    vars := (id, (sr,extractor)) :: !vars;
     get_pattern_vars vars pat extractor
 
   | PAT_coercion (sr,pat,_)
+
   | PAT_when (sr,pat,_) ->
+    get_pattern_vars vars pat extractor
+  
+  | PAT_with (sr,pat,es) ->
+    (* we have to add all the variables defined in es at this point
+      as pattern variables. The only problem is, what are the extractors?
+      They are, in fact, just expressions, and, this will work provided
+      we replace in them the variables they depend on with THEIR extractors.
+      Like we have to do with PAT_when.
+    *)
+(*
+    print_endline ("PAT_with !");
+*)
+    List.iter (fun (s,e) ->
+      let extractor = Expr (sr,e) :: extractor in
+(*
+print_endline ("PAT_with: " ^ s ^ " = " ^ Flx_print.string_of_expr e); 
+*)
+      vars := (s, (sr,extractor))::!vars
+    )
+    (List.rev es);
     get_pattern_vars vars pat extractor
 
   | PAT_record (sr,rpats) ->
@@ -249,7 +276,7 @@ let rec get_pattern_vars
     rpats;
     let flds = List.map fst rpats in
     let extractor' = Polyrec_tail (sr,flds) :: extractor in 
-    Hashtbl.add vars r (sr,extractor')
+    vars := (r, (sr,extractor'))::!vars
 
   | _ -> ()
 
@@ -392,10 +419,13 @@ let rec gen_match_check pat (arg:expr_t) =
   | PAT_as (sr,pat,_) ->
     gen_match_check pat arg
 
+  | PAT_with (sr, pat,es) ->
+    gen_match_check pat arg
+
   | PAT_when (sr,pat,expr) ->
-    let vars =  Hashtbl.create 97 in
+    let vars =  ref [] in
     get_pattern_vars vars pat [];
-    apl2 sr "andthen" (gen_match_check pat arg) (closure sr (subst vars expr arg))
+    apl2 sr "andthen" (gen_match_check pat arg) (closure sr (subst (!vars) expr arg))
 
   | PAT_tuple_cons (sr, p1, p2) -> 
     (* Not clear how to check p2 matches the rest of the argument,

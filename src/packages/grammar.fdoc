@@ -3585,8 +3585,13 @@ syntax patterns {
   //$ in a context which includes any extracted match variables.
   //$ If the guard is true, the whole pattern matches,
   //$ otherwise the matching fails.
-  sguard_pattern := sas_pattern "when" sexpr =># "`(pat_when ,_sr ,_1 ,_3)";
-  sguard_pattern := sas_pattern =># "_1";
+  sguard_pattern := swith_pattern "when" sexpr =># "`(pat_when ,_sr ,_1 ,_3)";
+  sguard_pattern := swith_pattern =># "_1";
+
+  swith_pattern := sas_pattern "with" spat_avars =># "`(pat_with ,_sr ,_1 ,_3)";
+    spat_avar := sname "=" stypeexpr =># "`(,_1 ,_3)";
+    spat_avars := list::commalist1<spat_avar> =># "_1"; 
+  swith_pattern := sas_pattern =># "_1";
 
   //$ Match with naming of subexpression.
   //$ Matches the pattern against the corresponding subexpression,

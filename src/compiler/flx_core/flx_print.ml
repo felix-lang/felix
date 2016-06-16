@@ -847,6 +847,11 @@ and string_of_pattern p =
     | _ -> "(" ^ string_of_pattern p ^ " as " ^ (string_of_id n) ^ ")"
     end
   | PAT_when (_,p,e) -> "(" ^ string_of_pattern p ^ " when " ^ se e ^ ")"
+
+  | PAT_with (_,p,es) -> 
+    let asgns = catmap ", " (fun (s,e) -> string_of_id s ^ "=" ^string_of_expr e) es in
+    "(" ^ string_of_pattern p ^ " with " ^ asgns ^ ")"
+
   | PAT_record (_,ps) ->
      "( " ^ catmap ", " (fun (s,p) ->
        string_of_id s ^ "=" ^ string_of_pattern p) ps ^ ")"

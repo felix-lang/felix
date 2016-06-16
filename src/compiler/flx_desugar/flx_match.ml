@@ -285,21 +285,21 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
       let patsrc = src_of_pat pat in
       let match_checker_id = name ^ "_mc" ^ string_of_bid n1 in
       let match_checker = EXPR_index (patsrc,match_checker_id,n1) in
-      let vars = Hashtbl.create 97 in
+      let vars = ref [] in
       Flx_mbind.get_pattern_vars vars pat [];
 (*
           print_endline ("PATTERN IS " ^ string_of_pattern pat ^ ", VARIABLE=" ^ match_var_name);
           print_endline "VARIABLES ARE";
-          Hashtbl.iter (fun vname (sr,extractor) ->
+          List.iter (fun vname (sr,extractor) ->
             let component =
               Flx_mbind.gen_extractor extractor (EXPR_index (sr,match_var_name,match_var_index))
             in
             print_endline ("  " ^ vname ^ " := " ^ string_of_expr component);
-          ) vars;
+          ) (List.rev (!vars);
 *)
       let new_sts = ref sts in
-      Hashtbl.iter
-          (fun vname (sr,extractor) ->
+      List.iter
+          (fun (vname, (sr,extractor)) ->
             let component =
               Flx_mbind.gen_extractor extractor
               (EXPR_index (sr,match_var_name,match_var_index))
@@ -307,7 +307,7 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
             let dcl = STMT_val_decl (sr,vname,dfltvs,None,Some component) in
             new_sts := dcl :: !new_sts;
           )
-      vars;
+      (List.rev (!vars));
       let body = 
 (*
         rsts name parent_vs access [block sr !new_sts]
