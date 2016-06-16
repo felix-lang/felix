@@ -3864,9 +3864,11 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     which returns a unit sum, then use that to select
     the expression to bind
   *)
-  | EXPR_typecase_match (sr,(e,ms)) -> 
-    let (_,argt) as arg = be e in
+  | EXPR_typecase_match (sr,(uba,ms)) -> 
+    let argt = bt sr uba in
+(*
     let uba = Flx_typecode_of_btype.typecode_of_btype bsym_table state.counter sr argt in
+*)
     let tpats,es = List.split ms in
     let n = List.length ms in
     let il = Flx_list.nlist n in

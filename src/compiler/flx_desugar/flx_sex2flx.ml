@@ -278,14 +278,14 @@ and xexpr_t sr x =
      ts
    in EXPR_type_match (xsr sr,(ti t, ts))
 
- | Lst [Id "ast_typecase_match";  sr; Lst [e; Lst ts]] ->
+ | Lst [Id "ast_typecase_match";  sr; Lst [t; Lst ts]] ->
    let ts =
      map (function
        | Lst [t1; e2] -> ti t1, ex e2
        | x -> err x "ast_typecase_match typerrror"
      )
      ts
-   in EXPR_typecase_match (xsr sr,(ex e, ts))
+   in EXPR_typecase_match (xsr sr,(ti t, ts))
 
 
   | Lst [Id "ast_extension"; sr; Lst bases; extension] ->

@@ -222,7 +222,7 @@ syntax assignment {
     slelement := "val" sname =># "`(Val ,_sr ,_2)";
     slelement := "var" sname =># "`(Var ,_sr ,_2)";
     slelement := sname =># "`(Name ,_sr ,_1)";
-    slelement := _ =># "`(Skip ,_sr)";
+    slelement := "_" =># "`(Skip ,_sr)";
     slelement := "(" slexprs ")" =># "`(List ,_2)";
 
     stlelement := slelement ":" x[sfactor_pri] =># "`(,_1 (some ,_3))";

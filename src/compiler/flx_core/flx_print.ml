@@ -308,8 +308,8 @@ and string_of_expr (e:expr_t) =
     ^
     "\n endmatch"
 
-  | EXPR_typecase_match (_,(e, ps)) ->
-    "typecase " ^ se e ^ " with " ^
+  | EXPR_typecase_match (_,(t, ps)) ->
+    "typecase " ^ string_of_typecode t ^ " with " ^
     catmap ""
     (fun (p,e')->
       "\n  | " ^

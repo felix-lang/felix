@@ -50,73 +50,393 @@ on the types in terms of C++.
 
 % =====================================
 \part{Scripting}
+Felix is primarily a scripting language, meaning, it is intended
+for writing a program in one file and immediately running it.
+
+It's hard to define what this means but the lack of separate 
+interfaces  is one of the things that makes writing script simpler.
+
+Although out of logical order, we present the basic statements,
+expressions, and definitions first, because together with examples
+that is enough to get most programmers writing scipt.
+
+Felix code, like most other languages, is compiled before
+execution. However it differs from many other systems which
+compile to byte code and interpret it: Felix uses C++
+as its bytecode, and compiles it to machine binary and
+executes that. Compilation times are slower, but the
+run time performace is better.
+
+\chapter{The flavour of Felix}
+Although this is a reference manual, it seems wise to show
+the flavour of the scripting subsystem with examples, and
+what could be a better starting point than:
+
+\begin{minted}{felix}
+println "Hello World";
+\end{minted}
+
+To perform a simple numerical calculation using a function:
+
+\begin{minted}{felix}
+fun hypot (x:double, y:double) => sqrt (x^2 + y^2);
+var x = 4.0;
+var y = 5.0;
+var d = hypot (x,y);
+
+println$ 
+  "Hypotenuse of triangle base " + x.str + 
+  ", side " + y.str " is " + d.str
+;
+\end{minted}
+
+To calculate the number of rabbits using a yielding generator:
+
+\begin{minted}{felix}
+gen rabbits () = {
+  var generation = 1;
+  var last_gen = 1;
+  var this_gen = 2;
+  while true do
+    yield (generation, this_gen);
+    var rabbits  = this_gen;
+    this_gen = rabbits + last_gen;
+    last_gen = rabbits;
+  done
+}
+
+var fibonacci = rabbits;
+
+for var i in 1..10 do
+  var bunnies = fibonacci(); 
+  println$ bunnies;
+done
+\end{minted}
+
+To parse text into words, using a coroutine pipeline:
+
+\begin{minted}{felix}
+proc char_stream (s:string) (out:%>char) {
+  for c in s perform write (out,c);
+  write (out,char "");
+}
+
+proc words (inp:%<char, out:%>string) {
+  while true do
+    var s = "";
+    nextch: while true do
+      var c = read inp;
+      if isalnum c do
+        s+=c;
+      else 
+        if s != "" call write (out,s);
+        break nextch;
+      done
+    done // nextch
+  done
+}
+
+proc emit (inp:%<string) {
+  while true do
+    var word = read inp;
+    println$ "Word = " + word;
+  done
+}
+
+var text = 
+  "The quick, brown fox jumped "
+  "over the lazy dog"
+;
+
+#(char_stream (text) |-> words |-> emit);
+\end{minted}
+
+
+\chapter{Variable Definitions}
+\href{http://felix-lang.org/share/lib/grammar/variables.fsyn}{Syntax}
+
+A definition is a statement which defines a name, but does
+no cause any observable behavior, or, a class statement, or, 
+a var or val statement. The latter two exceptions define a name
+but may also have associated behaviour.
+
+\section{The {\tt var} statement}
+The \verb%var% statement is used to introduce a variable name
+and potential executable behaviour. It has one of three 
+basic forms:
+
+\begin{minted}{felix}
+var x : int = 1;
+var y : int;
+var z = 1;
+\end{minted}
+
+The first form specifies the type and an initialising
+expression which must be of the specified type.
+
+The second form specifies a variable of the given type
+without an explicit initialiser, however the variable
+will be initialised anyhow with the default contructor
+for the underlying C++ type, although that constructor
+may be trivial.
+
+The third form does not specify the type, it will be deduced
+from the initialiser.
+
+If the initialiser has observable behaviour it will be observed
+if at all, when control passes through the variable statement.
+
+If the variable introduced by the \verb%var% statement is not used,
+the variable and its initaliser will be elided and any observable
+behaviour will be lost.
+
+To be used means to have its address taken in a used expression,
+to occur in a used expression. A used expression is one which
+initialises a used variable, or, is an argument to function
+or generator in a used expression, or an argument to a procedure
+through which control passes. 
+
+In other words, the variable is used if the behaviour of
+the program appears to depend on its value or its address.
+
+The library procedure \verb%C_hack::ignore% ensures the compiler
+believes a variable is used:
+
+\begin{minted}{felix}
+var x = expr;
+C_hack::ignore x;
+\end{minted}
+
+so that any side effects of \verb%expr% will be seen.
+In general the argument to any primitive function, generator
+or procedure will be considered used if its containing 
+entity is also considered used. In general this means there
+is a possible execution path from a root procedure of the
+program.
+
+A variable may have its address taken:
+
+\begin{minted}{felix}
+var x = 1;
+var px = &x;
+\end{minted}
+
+it may be assigned a new value directly or indirectly:
+
+\begin{minted}{felix}
+x = 2;
+px <- 3;
+*px = 4;
+\end{minted}
+
+
+A variable is said to name an object, not a value.
+This basically means it is associated with the address of a typed
+storage location.
+
+\subsection{Multiple variables}
+Multipls variables can be defined at once:
+
+
+\begin{minted}{felix}
+var m = 1,2;
+var a,b = 1,2;
+var c,d = m;
+\end{minted}
+
+With this syntax, no type annotation may be given.
+
+\section{The \tt{val} statement.}
+A \verb%val% statement defines a name for an expression.
+
+\begin{minted}{felix}
+val x : int = 1;
+val z = 1;
+\end{minted}
+
+The value associated with a \verb%val% symbol may be computed
+at any time between its definition and its use, and may
+differ between uses, if the initialising expression depends
+on variable state, such as a variable or call to a generator.
+
+It is not an error to create such a dependence since either
+the value may, in fact, not change, or the change may
+not be significant.
+
+Nevertheless the user must be warned to take care
+with the indeterminate evaluation time and use
+a \verb%var% when there is any doubt.
+
+Since a \verb%val% simply names an expression, it is associated
+with a value not an object and cannot be addressed
+or assigned to. However this does NOT mean its value cannot
+change:
+
+\begin{minted}{felix}
+for var i in 0 upto 9 do
+  val x = i;
+  println$ x;
+done
+\end{minted}
+
+In this example, x isn't mutable but it does take on
+all the values 0 to 9 in succession. This is just a 
+most obvious case: a less obvious one:
+
+\begin{minted}{felix}
+var i = 0;
+val x = i;
+println$ x;
+++i;
+println$ x;
+\end{minted}
+
+which is clearly just an expansion of the the first two
+iteration of the previously given for loop. However in
+this case there is no assurance \verb%x% will change after \verb%i%
+is incremented because the compiler is free to replace
+any \verb%val% definition with a \verb%var% definition.
+
+\subsection{Multiple values}
+Multipls values can be defined at once:
+
+\begin{minted}{felix}
+val m = 1,2;
+val a,b = 1,2;
+val c,d = m;
+\end{minted}
+
+With this syntax, no type annotation may be given.
+
 
 \chapter{Statements}
 \section{Assignment}
 \href{http://felix-lang.org/share/lib/grammar/assignment.fsyn}{Syntax}
 
 \section{Basic Assignment}
+In Felix, the core assignment operation is a procedure:
+
 \begin{minted}{felix}
-  //$ Assignment form.
-  sassignexpr := sexpr sassignop sexpr;
+  &T * T -> 0
+\end{minted}
 
-  //$ Assignment.
-    sassignop:= "=" =># "'_set";
+This operator is pronounced "store at", its use is like so:
 
-  //$ Store at pointer.
-    sassignop:= "<-" =># "'_pset";
+\begin{minted}{felix}
+  var x = 1;
+  &x <- 2;
+\end{minted}
 
-  //$ Short form val declaration.
-    sassignop:= ":=" =># "'_init";
+Conceptually, this says to store the value 2 in the object at
+address \verb%&x%. The operator \verb%&% here is sometimes 
+called "address of" but this is a mistake in Felix. 
+Rather, a variable {\em IS} an address, and the spelling
+of the variable named in a definition denotes a 
+dereference of that address.
 
+Therefore, the address of operator can only be applied to
+a variable. You cannot take the address of an expression.
+Felix has no concept of lvalues! (Except for C bindings).
+
+However Felix does provide a conventional assignment 
+operator which is syntactic sugar:
+
+\begin{minted}{felix}
+  var x = 1;
+  x = 2;          // means &x <- 2;
+\end{minted}
+
+The left hand side of such an assignment must be a variable,
+or a dereference of a pointer expression:
+
+\begin{minted}{felix}
+  var px = new 1; // on the heap
+  *px = 2;        // means px <- 2;
+\end{minted}
+
+The true understanding of this is to be found by
+examining access to the subcomponents of a product:
+
+\begin{minted}{felix}
+  var x = (3, 7);
+  (&x).0  <- x.1; // x is (7,7) now
+\end{minted}
+
+The projection operation denoted by \verb%.1% on the RHS
+is applied to a tuple value, and selects the first component 
+of the tuple as a value. However, the projection \verb%.0% 
+on the LHS is not applied to a value of tuple type, but
+a value of type pointer to a tuple type!
+
+\begin{minted}{felix}
+  int * int -> int      // type of RHS projection function
+  &(int * int) -> &int  // type of LHS projection function
+\end{minted}
+
+Felix overloads the meaning of projections, so that a projection
+can also be applied to a value which has the type of a pointer
+to a product. In this case it returns a pointer to the selected
+component.
+
+The effect of this mechanism is to eliminate the need for
+the notion of lvalues, and ensure the underlying semantics
+is entirely based on values. Pointer provide the bridge
+between objects and values.
+
+Thus, any value can be turned into an object by storing
+it in a variable, or copying it onto the heap with the \verb%new%
+
+Felix also supports a short form of value definition:
+
+\begin{minted}{felix}
+  x:= 1; // means val x = 1;
 \end{minted}
 
 \section{Read-modify-write operations}
+The following read/modify/write operations are similar to those in C.
+Each of these dispatches to a {\em procedure} of the same name,
+taking two arguments, the first being a pointer and the second a value.
+The parser automatically takes the address of the LHS of the assignment
+when calling the procedure. Therefore, the LHS must be a simple variable.
 
 \begin{minted}{felix}
-  //$ binary read-modify-write operators.
-  sassignexpr := sexpr srmwop sexpr;
-    //$ Increment.
-    srmwop:= "+=" =># "_1";
-    //$ Decrement.
-    srmwop:= "-=" =># "_1";
-    //$ Multiply.
-    srmwop:= "*=" =># "_1";
-    //$ Divide.
-    srmwop:= "/=" =># "_1";
-    //$ C remainder.
-    srmwop:= "%=" =># "_1";
-    //$ Left shift.
-    srmwop:= "<<=" =># "_1";
-    //$ Right shift.
-    srmwop:= ">>=" =># "_1";
-    //$ Bitwise exclusive or.
-    srmwop:= "^=" =># "_1";
-    //$ Bitwise or.
-    srmwop:= "|=" =># "_1";
-    //$ Bitwise and.
-    srmwop:= "&=" =># "_1";
-    //$ Left shift.
-    srmwop:= "<<=" =># "_1";
-    //$ Right shift.
-    srmwop:= ">>=" =># "_1";
+  var x = 1u; var y=1u;
+  var b = true; var c = true;
 
-  //$ Swap operator.
-  sassignexpr := sexpr sswapop sexpr;
+  x += y; // means +=(&x,y)
+  x -= y; // means -=(&x,y)
+  x *= y; // means *=(&x,y)
+  x /= y; // means /=(&x,y)
+  x %= y; // means %=(&x,y)
+  x <<= y; // means <<=(&x,y)
+  x >>= y; // means >>=(&x,y)
+  b ^= c; // means ^=(&b,c)
+  b |= c; // means |=(&b,c)
+  b &= c; // means &=(&b,c)
+\end{minted}
 
-  //$ Prefix read/modify/write.
-  sassignexpr := spreincrop sexpr;
-    //$ Pre-increment.
-    spreincrop:= "++" =># "'pre_incr";
-    //$ Pre-decrement.
-    spreincrop:= "--" =># "'pre_decr";
+\section{Swap operator}
+Felix provides a swap operator
+to swap the contents of two variables.
 
-  //$ Postfix read/modify/write.
-  sassignexpr := sexpr spostincrop;
-    //$ Post-increment.
-    spostincrop:= "++" =># "'post_incr";
-    //$ Post-decrement.
-    spostincrop:= "--" =># "'post_decr";
+\begin{minted}{felix}
+  var x = 1;
+  var y = 2;
+  x <-> y; // swap so x = 2, y = 1
+\end{minted}
+
+\section{Pre and post increment and decrement}
+Felix provides pre and post increment and decrement.
+These are procedures taking a pointer argument,
+not expressions. The procedures have special names
+as indicated:
+
+\begin{minted}{felix}
+  var x = 1;
+  ++x; // means pre_incr (&x);
+  --x; // means pre_decr (&x);
+  x++; // means post_incr (&x);
+  x--; // means post_decr (&x);
 \end{minted}
 
 \section{Special Assignment}
@@ -131,28 +451,10 @@ the LHS is called an \verb%l-expression%. An underscore \verb%_%
 may also be used.
 
 \begin{minted}{felix}
-  //$ Multiple initialisation/assignment form.
-  //$
-  //$ def x, (var y, val z) = 1,(2,3);
-  //$
-  //$ allows unpacking a tuple into a pre-existing variable,
-  //$ creating a new variable, and binding a new value,
-  //$ in a single form, with nesting.
-  sassignexpr := "def" slexpr "=" sexpr;
-    slexpr := slexprs =># """ (if (null? (tail _1)) (first _1) `((List ,_1) none)) """;
-    slexprs := stlelement "," slexprs =># "(cons _1 _3)";
-    slexprs := stlelement =># "`(,_1)";
-
-    slelement := "val" sname =># "`(Val ,_sr ,_2)";
-    slelement := "var" sname =># "`(Var ,_sr ,_2)";
-    slelement := sname =># "`(Name ,_sr ,_1)";
-    slelement := _ =># "`(Skip ,_sr)";
-    slelement := "(" slexprs ")" =># "`(List ,_2)";
-
-    stlelement := slelement ":" x[sfactor_pri] =># "`(,_1 (some ,_3))";
-    stlelement := slelement =># "`(,_1 none)";
-
-}
+  var a = (1,2,(3,4),5);
+  var z: int;
+  def var x, val y,(z,_),_ = a;
+  println$ x,y,z;
 \end{minted}
 
 
@@ -202,7 +504,7 @@ This is a valid way to handle errors.
 the code is correct because \verb%outer% is active
 at the time that \verb%handler% performs the
 control transfer.
-\subsection{halt}
+\section{halt}
 Stops the program with a diagnostic.
 
 \begin{minted}{felix}
@@ -210,7 +512,7 @@ halt "Program complete";
 \end{minted}
 
 
-\section{try/catch/entry}
+\section{try/catch/endtry}
 The try/catch construction may only be user to wrap
 calls to C++ primitives, so as to catch exceptions.
 
@@ -1572,13 +1874,14 @@ The patterns
 are composed of these forms:
 
 \begin{minted}{felix}
-(v1, v2, ... )          // tuple match
-h!t                     // list match
-h,,t                    // tuple cons
+pat | pat | pat ...       // alternate matches
+(v1, v2, ... )            // tuple match
+h!t                       // list match
+h,,t                      // tuple cons
 Ctor                      // const union or variant match
-Ctor v                   // nonconst union or variant match
-(fld1=f1, fld2=f2, ...)  // record match
-pat as v                 // assign variable to matched subexpression
+Ctor v                    // nonconst union or variant match
+(fld1=f1, fld2=f2, ...)   // record match
+pat as v                  // assign variable to matched subexpression
 pat when expr             // guarded match
 pat1 | pat2               // match either pattern
 999                       // integer match
@@ -1612,6 +1915,388 @@ As well as integer and string matches, a literal of any type with an
 equality and inequality operator can be matched. In addition,
 if there is a less than or equal operator \verb%<=% an inclusive
 range match can be specified.
+
+
+\chapter{Definitions}
+\href{http://felix-lang.org/share/lib/grammar/functions.fsyn}{Syntax}
+
+\section{Functions }
+A felix function definition takes one of three basic forms:
+
+\begin{minted}{felix}
+fun f (x:int) = { var y = x + x; return y + 1; }
+fun g (x:int) => x + x + 1;
+fun h : int -> int = | x => x + x + 1;
+\end{minted}
+
+The first form is the most general, the body 
+of the function contains executable statements
+and the result is returned by a return statement.
+
+The second form is equivalent to a function in the first
+form whose body returns the RHS expression.
+
+The third form specifies the function type then the
+body of a pattern match. It is equivalent to
+
+\begin{minted}{felix}
+fun h (a:int) = { return match a with | x => x + x + 1 endmatch; }
+\end{minted}
+
+The first two forms also allow the return type to be
+specified:
+
+\begin{minted}{felix}
+fun f (x:int) : int = { var y = x + x; return y + 1; }
+fun g (x:int) :int => x + x + 1;
+\end{minted}
+
+
+Functions may not have side effects.
+
+All these function have a type:
+
+\begin{minted}{felix}
+D -> C
+\end{minted}
+
+where D is the domain and C is the codomain: both would
+be \verb%int% in the examples.
+
+A function can be applied by the normal forward
+notation using juxtaposition or what is whimsically
+known as operator whitespace, or in reverse notation
+using operator dot:
+
+\begin{minted}{felix}
+f x
+x.f
+\end{minted}
+
+Such applications are equivalent.  Both operators are left
+associative. Operator dot binds more
+tightly than whitespace so that
+
+\begin{minted}{felix}
+f x.g    // means
+f (g x)
+\end{minted}
+
+
+A special notation is used for application to the unit tuple:
+
+\begin{minted}{felix}
+#zero // means
+zero ()
+\end{minted}
+
+The intention is intended to suggest a constant since a pure
+function with unit argument must always return the
+same value. 
+
+This hash operator binds more tightly than operator dot so
+
+\begin{minted}{felix}
+#a.b // means
+(#a).b
+\end{minted}
+
+
+
+\section{Pre- and post-conditions}
+A function using one of the first two forms
+may have pre-conditions, post-conditions, or both:
+
+\begin{minted}{felix}
+fun f1 (x:int when x > 0) => x + x + 1;
+fun f2 (x:int) expect result > 1 => x + x + 1;
+fun f3 (x:int when x > 0) expect result > 1 => x + x + 1;
+fun f4 (x:int when x > 0) : int expect result > 1 => x + x + 1;
+\end{minted}
+
+Pre- and pos-conditions are usually treated as boolean assertions
+which are checked at run time. The compiler may occasionally be able
+to prove a pre- or post-condition must hold and elide it.
+
+The special identifier \verb%result% is used to indicate the return
+value of the function.
+
+\section{Higher order functions}
+A function may be written like
+
+\begin{minted}{felix}
+fun hof (x:int) (y:int) : int = { return x + y; }
+fun hof (x:int) (y:int) => x + y;
+\end{minted}
+
+These are called higher order functions of arity 2.
+They have the type
+
+\begin{minted}{felix}
+int -> int -> int   // or equivalently
+int -> (int -> int) //since -> is right associative.
+\end{minted}
+
+They are equivalent to
+
+\begin{minted}{felix}
+fun hof (x:int) : int -> int = 
+{
+  fun inner (y:int) : int => x + y;
+  return inner;
+}
+\end{minted}
+
+that is, a function which returns another function.
+
+Such a function can be applied like
+
+\begin{minted}{felix}
+hof 1 2 // or equivalently
+(hof 1) 2
+\end{minted}
+
+since whitespace application is left associative.
+
+\section{Procedures}
+A function which returns control but no value is called a procedure.
+Procedures may have side effects.
+
+
+\begin{minted}{felix}
+fun show (x:int) : 0 = { println x; }
+proc show (x:int) { println x; }
+proc show (x:int) => println x;
+\end{minted}
+
+
+The second form is a more convenient notation.
+The type 0 is also called \verb%void% and denotes
+a type with no values.
+
+A procedure may return with a simple return statement:
+
+
+\begin{minted}{felix}
+proc show (x:int) { println x; return; }
+\end{minted}
+
+
+however one is assumed at the end of the procedure
+body.
+
+Procedures can also have pre- and post-conditions.
+
+A procedure may be called like an application,
+however it must be a whole statement since
+expressions of type void may not occur interior
+to an expression.
+
+
+\begin{minted}{felix}
+show 1;
+1.show;
+\end{minted}
+
+
+If a procedure accepts the unit argument, it may be elided:
+
+
+\begin{minted}{felix}
+proc f () =>  show 1;
+f; // equivalent to
+f ();
+\end{minted}
+
+
+\section{Generators}
+A generator is a special kind of function which is allowed
+to have side effects. It is defined similarly to a function,
+but using the binder \verb%gen% instead of \verb%fun%:
+
+
+\begin{minted}{felix}
+var seqno = 1;
+gen seq () { var result = seqno; ++seqno; return result; }
+\end{minted}
+
+
+When a generator is directly applied in an expression, the application
+is replaced by a fresh variable and the generator application
+is lifted out and assigned to the variable. For example:
+
+
+\begin{minted}{felix}
+fun twice (x:int) => x + x;
+println$ twice #seq;
+\end{minted}
+
+
+will always print an even number because it is equivalent to
+
+
+\begin{minted}{felix}
+var tmp = #seq;
+println$ twice tmp;
+\end{minted}
+
+
+Therefore even if twice is inlined we end up with the argument
+to \verb%println} being @{tmp+tmp} and not @{#seq+#seq% which would
+print an odd number.
+
+\subsection{Yielding Generators}
+A generator may contain a \verb%yield% statement:
+
+\begin{minted}{felix}
+gen fresh() {
+  var x = 1;
+  while x < 10 do
+    yield x;
+    ++x;
+  done
+  return x;
+}
+\end{minted}
+
+In order to use such a yielding generator, a closure of the generator
+must be stored in a variable. Then the generator may be called repeatedly.
+
+
+\begin{minted}{felix}
+var g = fresh;
+for i in 1 upto 20 do 
+  println$ i,#g;
+done
+\end{minted}
+
+
+This will print pairs (1,1), (2,2) up to (10,10) then print
+(11,10), (12,10) up to (20,10).
+
+The yield statement returns a value such that a subsequent call
+to a closure of the generator will resume execution after the yield
+statement. Therefore \verb%yield% is a kind of cross between a return
+and a subroutine call.
+
+If a generator executes a return statement, that is equivalent
+to yielding a value and setting the resume point back to the return
+statement, in other words \verb%return expr;% is equivalent to
+
+\begin{minted}{felix}
+while true do yield expr; done
+\end{minted}
+
+
+Yielding generators should not be called directly because they
+will always start at the beginning with a fresh copy of any
+local variables used to maintain state.
+
+Function closures differ from generator closures in that
+the closures is cloned before every application to ensure
+that the initial state is fresh.
+
+Yielding generators are primarily intended to implement iterators,
+that is, to provide lazy lists or streams.
+
+\section{Constructors}
+Felix provides a special notation which allows an identifier
+naming a type to return a value of that type:
+
+\begin{minted}{felix}
+typedef cart = dcomplex;
+typedef polar = dcomplex;
+ctor cart (x:double, y:double) => dcomplex (x,y);
+ctor polar (r: double, theta: double) => 
+  dcomplex (r * sin theta, r * cos theta)
+;
+var z = cart (20.0,15.0) + polar (25.8, 0.7 * pi);
+\end{minted}
+
+The constructions are equivalent to
+
+\begin{minted}{felix}
+fun _ctor_cart (x:double, y:double) : cart => dcomplex (x,y);
+fun _ctor_polar (r: double, theta: double): polar => 
+  dcomplex (r * sin theta, r * cos theta)
+;
+\end{minted}
+
+When a type with a simple name is applied to a value,
+Felix tries to find a function with that name prefixed by  \verb%_ctor_%
+instead.
+
+Note that Felix generates a constructor for struct and cstruct types
+automatically with argument type the product of the types of the
+structure fields.
+
+\section{Special function {\tt apply}}
+When Felix finds and application
+
+\begin{minted}{felix}
+  f a
+\end{minted}
+
+where \verb%f% is a value of type F which is not
+a function (or C function) type, Felix looks instead 
+for a function named apply with argument of type:
+
+\begin{minted}{felix}
+F * A
+\end{minted}
+
+where A is the type of a. For example
+
+\begin{minted}{felix}
+fun apply (x:string, y:string) => x + y; // concat
+var x = "hello " "world"; // apply a string to a string
+\end{minted}
+
+
+\section{Dynanic Objects}
+\label{Dynamic Objects}
+Felix provides an object system with syntax based on Java,
+and technology based on CLOS.
+
+An object is a record of function closures, closed over the local
+scope of a constructor function that returns the record.
+
+
+\begin{minted}{felix}
+interface person_t {
+  get_name: 1 -> string; 
+  set_age: int -> 0; 
+  set_job : string -> 0;
+  get_job : 1 -> string;
+}
+
+object person (name:string, var age:int) implements person_t =
+{
+  var job = "unknown";
+  method fun get_name () => name;
+  method proc set_age (x:int) { age = x; }
+  method fun get_job () => job;
+  method proc set_job (x:string) {  job = x; }
+}
+
+var john = person ("John", 42);
+println$ #(john.name) + " is " + #(john.age).str;
+\end{minted}
+
+The entity \verb%person% is a function which when called with
+its argument of name and age returns a record of type
+\verb%person_t% consisting of closures of the functions and procedures
+marked as method in its definition.
+
+Since functions hide their local variables the object state
+is hidden and can only be accessed using the methods.
+
+The \verb%implements% clause is optional.
+
+Objects provide an excellent way for a dynamically loaded
+shared library to export a set of functions, only the object
+function needs to be exported so it has a C name which
+can be linked to with \verb%dlopen%.
 
 
 
@@ -5110,6 +5795,43 @@ X::f 33
 X::f 99
 \end{minted}
 
+\section{The {\tt typecase} expression}
+The \verb%typecase% expression allows you to write
+expressions dependent on a type.  Typecase expressions must be
+resolved before binding is complete.
+
+\begin{minted}{felix}
+fun f[T:GENERIC] (x:T) =>
+  typecase x with
+  | int => x + 1
+  | double => x + 1.0
+  endmatch
+;
+
+println$ f 1, f 4.2;
+\end{minted}
+
+Note that the argument of the typecase is an expression,
+the result of each is a branch dependent on the type of the 
+expression. Although primarily of use in generic functions, 
+typecases can also be useful for conditional compilation.
+For example:
+
+\begin{minted}{felix}
+if PLAT_WIN32
+  type file = "HANDLE";
+else
+  type file = "int";
+endif
+
+fun read (f:file) =>
+  typecase typeof f with
+  | int => unix::read f
+  | HANDLE => win32::read f
+  endmatch
+;
+\end{minted}
+
 \section{Builtin Generics}
 Felix has a number of builtin generic functions.
 
@@ -5366,545 +6088,6 @@ the implementation of the abstract type. The privacy of
 the representation type in the example is not necessary, but is used
 to prevent namespace pollution.
 
-
-\part{Executable Syntax}
-\chapter{Variable Definitions}
-\href{http://felix-lang.org/share/lib/grammar/variables.fsyn}{Syntax}
-
-A definition is a statement which defines a name, but does
-no cause any observable behavior, or, a class statement, or, 
-a var or val statement. The latter two exceptions define a name
-but may also have associated behaviour.
-
-\section{The {\tt var} statement}
-The \verb%var% statement is used to introduce a variable name
-and potential executable behaviour. It has one of three 
-basic forms:
-
-\begin{minted}{felix}
-var x : int = 1;
-var y : int;
-var z = 1;
-\end{minted}
-
-The first form specifies the type and an initialising
-expression which must be of the specified type.
-
-The second form specifies a variable of the given type
-without an explicit initialiser, however the variable
-will be initialised anyhow with the default contructor
-for the underlying C++ type, although that constructor
-may be trivial.
-
-The third form does not specify the type, it will be deduced
-from the initialiser.
-
-If the initialiser has observable behaviour it will be observed
-if at all, when control passes through the variable statement.
-
-If the variable introduced by the \verb%var% statement is not used,
-the variable and its initaliser will be elided and any observable
-behaviour will be lost.
-
-To be used means to have its address taken in a used expression,
-to occur in a used expression. A used expression is one which
-initialises a used variable, or, is an argument to function
-or generator in a used expression, or an argument to a procedure
-through which control passes. 
-
-In other words, the variable is used if the behaviour of
-the program appears to depend on its value or its address.
-
-The library procedure \verb%C_hack::ignore% ensures the compiler
-believes a variable is used:
-
-\begin{minted}{felix}
-var x = expr;
-C_hack::ignore x;
-\end{minted}
-
-so that any side effects of \verb%expr% will be seen.
-In general the argument to any primitive function, generator
-or procedure will be considered used if its containing 
-entity is also considered used. In general this means there
-is a possible execution path from a root procedure of the
-program.
-
-A variable may have its address taken:
-
-\begin{minted}{felix}
-var x = 1;
-var px = &x;
-\end{minted}
-
-it may be assigned a new value directly or indirectly:
-
-\begin{minted}{felix}
-x = 2;
-px <- 3;
-*px = 4;
-\end{minted}
-
-
-A variable is said to name an object, not a value.
-This basically means it is associated with the address of a typed
-storage location.
-
-\subsection{Multiple variables}
-Multipls variables can be defined at once:
-
-
-\begin{minted}{felix}
-var m = 1,2;
-var a,b = 1,2;
-var c,d = m;
-\end{minted}
-
-With this syntax, no type annotation may be given.
-
-\section{The \tt{val} statement.}
-A \verb%val% statement defines a name for an expression.
-
-\begin{minted}{felix}
-val x : int = 1;
-val z = 1;
-\end{minted}
-
-The value associated with a \verb%val% symbol may be computed
-at any time between its definition and its use, and may
-differ between uses, if the initialising expression depends
-on variable state, such as a variable or call to a generator.
-
-It is not an error to create such a dependence since either
-the value may, in fact, not change, or the change may
-not be significant.
-
-Nevertheless the user must be warned to take care
-with the indeterminate evaluation time and use
-a \verb%var% when there is any doubt.
-
-Since a \verb%val% simply names an expression, it is associated
-with a value not an object and cannot be addressed
-or assigned to. However this does NOT mean its value cannot
-change:
-
-\begin{minted}{felix}
-for var i in 0 upto 9 do
-  val x = i;
-  println$ x;
-done
-\end{minted}
-
-In this example, x isn't mutable but it does take on
-all the values 0 to 9 in succession. This is just a 
-most obvious case: a less obvious one:
-
-\begin{minted}{felix}
-var i = 0;
-val x = i;
-println$ x;
-++i;
-println$ x;
-\end{minted}
-
-which is clearly just an expansion of the the first two
-iteration of the previously given for loop. However in
-this case there is no assurance \verb%x% will change after \verb%i%
-is incremented because the compiler is free to replace
-any \verb%val% definition with a \verb%var% definition.
-
-\subsection{Multiple values}
-Multipls values can be defined at once:
-
-\begin{minted}{felix}
-val m = 1,2;
-val a,b = 1,2;
-val c,d = m;
-\end{minted}
-
-With this syntax, no type annotation may be given.
-
-
-\chapter{Functions }
-\href{http://felix-lang.org/share/lib/grammar/functions.fsyn}{Syntax}
-
-\section{Functions }
-A felix function definition takes one of three basic forms:
-
-\begin{minted}{felix}
-fun f (x:int) = { var y = x + x; return y + 1; }
-fun g (x:int) => x + x + 1;
-fun h : int -> int = | x => x + x + 1;
-\end{minted}
-
-The first form is the most general, the body 
-of the function contains executable statements
-and the result is returned by a return statement.
-
-The second form is equivalent to a function in the first
-form whose body returns the RHS expression.
-
-The third form specifies the function type then the
-body of a pattern match. It is equivalent to
-
-\begin{minted}{felix}
-fun h (a:int) = { return match a with | x => x + x + 1 endmatch; }
-\end{minted}
-
-The first two forms also allow the return type to be
-specified:
-
-\begin{minted}{felix}
-fun f (x:int) : int = { var y = x + x; return y + 1; }
-fun g (x:int) :int => x + x + 1;
-\end{minted}
-
-
-Functions may not have side effects.
-
-All these function have a type:
-
-\begin{minted}{felix}
-D -> C
-\end{minted}
-
-where D is the domain and C is the codomain: both would
-be \verb%int% in the examples.
-
-A function can be applied by the normal forward
-notation using juxtaposition or what is whimsically
-known as operator whitespace, or in reverse notation
-using operator dot:
-
-\begin{minted}{felix}
-f x
-x.f
-\end{minted}
-
-Such applications are equivalent.  Both operators are left
-associative. Operator dot binds more
-tightly than whitespace so that
-
-\begin{minted}{felix}
-f x.g    // means
-f (g x)
-\end{minted}
-
-
-A special notation is used for application to the unit tuple:
-
-\begin{minted}{felix}
-#zero // means
-zero ()
-\end{minted}
-
-The intention is intended to suggest a constant since a pure
-function with unit argument must always return the
-same value. 
-
-This hash operator binds more tightly than operator dot so
-
-\begin{minted}{felix}
-#a.b // means
-(#a).b
-\end{minted}
-
-
-
-\section{Pre- and post-conditions}
-A function using one of the first two forms
-may have pre-conditions, post-conditions, or both:
-
-\begin{minted}{felix}
-fun f1 (x:int when x > 0) => x + x + 1;
-fun f2 (x:int) expect result > 1 => x + x + 1;
-fun f3 (x:int when x > 0) expect result > 1 => x + x + 1;
-fun f4 (x:int when x > 0) : int expect result > 1 => x + x + 1;
-\end{minted}
-
-Pre- and pos-conditions are usually treated as boolean assertions
-which are checked at run time. The compiler may occasionally be able
-to prove a pre- or post-condition must hold and elide it.
-
-The special identifier \verb%result% is used to indicate the return
-value of the function.
-
-\section{Higher order functions}
-A function may be written like
-
-\begin{minted}{felix}
-fun hof (x:int) (y:int) : int = { return x + y; }
-fun hof (x:int) (y:int) => x + y;
-\end{minted}
-
-These are called higher order functions of arity 2.
-They have the type
-
-\begin{minted}{felix}
-int -> int -> int   // or equivalently
-int -> (int -> int) //since -> is right associative.
-\end{minted}
-
-They are equivalent to
-
-\begin{minted}{felix}
-fun hof (x:int) : int -> int = 
-{
-  fun inner (y:int) : int => x + y;
-  return inner;
-}
-\end{minted}
-
-that is, a function which returns another function.
-
-Such a function can be applied like
-
-\begin{minted}{felix}
-hof 1 2 // or equivalently
-(hof 1) 2
-\end{minted}
-
-since whitespace application is left associative.
-
-\section{Procedures}
-A function which returns control but no value is called a procedure.
-Procedures may have side effects.
-
-
-\begin{minted}{felix}
-fun show (x:int) : 0 = { println x; }
-proc show (x:int) { println x; }
-proc show (x:int) => println x;
-\end{minted}
-
-
-The second form is a more convenient notation.
-The type 0 is also called \verb%void% and denotes
-a type with no values.
-
-A procedure may return with a simple return statement:
-
-
-\begin{minted}{felix}
-proc show (x:int) { println x; return; }
-\end{minted}
-
-
-however one is assumed at the end of the procedure
-body.
-
-Procedures can also have pre- and post-conditions.
-
-A procedure may be called like an application,
-however it must be a whole statement since
-expressions of type void may not occur interior
-to an expression.
-
-
-\begin{minted}{felix}
-show 1;
-1.show;
-\end{minted}
-
-
-If a procedure accepts the unit argument, it may be elided:
-
-
-\begin{minted}{felix}
-proc f () =>  show 1;
-f; // equivalent to
-f ();
-\end{minted}
-
-
-\section{Generators}
-A generator is a special kind of function which is allowed
-to have side effects. It is defined similarly to a function,
-but using the binder \verb%gen% instead of \verb%fun%:
-
-
-\begin{minted}{felix}
-var seqno = 1;
-gen seq () { var result = seqno; ++seqno; return result; }
-\end{minted}
-
-
-When a generator is directly applied in an expression, the application
-is replaced by a fresh variable and the generator application
-is lifted out and assigned to the variable. For example:
-
-
-\begin{minted}{felix}
-fun twice (x:int) => x + x;
-println$ twice #seq;
-\end{minted}
-
-
-will always print an even number because it is equivalent to
-
-
-\begin{minted}{felix}
-var tmp = #seq;
-println$ twice tmp;
-\end{minted}
-
-
-Therefore even if twice is inlined we end up with the argument
-to \verb%println} being @{tmp+tmp} and not @{#seq+#seq% which would
-print an odd number.
-
-\subsection{Yielding Generators}
-A generator may contain a \verb%yield% statement:
-
-\begin{minted}{felix}
-gen fresh() {
-  var x = 1;
-  while x < 10 do
-    yield x;
-    ++x;
-  done
-  return x;
-}
-\end{minted}
-
-In order to use such a yielding generator, a closure of the generator
-must be stored in a variable. Then the generator may be called repeatedly.
-
-
-\begin{minted}{felix}
-var g = fresh;
-for i in 1 upto 20 do 
-  println$ i,#g;
-done
-\end{minted}
-
-
-This will print pairs (1,1), (2,2) up to (10,10) then print
-(11,10), (12,10) up to (20,10).
-
-The yield statement returns a value such that a subsequent call
-to a closure of the generator will resume execution after the yield
-statement. Therefore \verb%yield% is a kind of cross between a return
-and a subroutine call.
-
-If a generator executes a return statement, that is equivalent
-to yielding a value and setting the resume point back to the return
-statement, in other words \verb%return expr;% is equivalent to
-
-\begin{minted}{felix}
-while true do yield expr; done
-\end{minted}
-
-
-Yielding generators should not be called directly because they
-will always start at the beginning with a fresh copy of any
-local variables used to maintain state.
-
-Function closures differ from generator closures in that
-the closures is cloned before every application to ensure
-that the initial state is fresh.
-
-Yielding generators are primarily intended to implement iterators,
-that is, to provide lazy lists or streams.
-
-\section{Constructors}
-Felix provides a special notation which allows an identifier
-naming a type to return a value of that type:
-
-\begin{minted}{felix}
-typedef cart = dcomplex;
-typedef polar = dcomplex;
-ctor cart (x:double, y:double) => dcomplex (x,y);
-ctor polar (r: double, theta: double) => 
-  dcomplex (r * sin theta, r * cos theta)
-;
-var z = cart (20.0,15.0) + polar (25.8, 0.7 * pi);
-\end{minted}
-
-The constructions are equivalent to
-
-\begin{minted}{felix}
-fun _ctor_cart (x:double, y:double) : cart => dcomplex (x,y);
-fun _ctor_polar (r: double, theta: double): polar => 
-  dcomplex (r * sin theta, r * cos theta)
-;
-\end{minted}
-
-When a type with a simple name is applied to a value,
-Felix tries to find a function with that name prefixed by  \verb%_ctor_%
-instead.
-
-Note that Felix generates a constructor for struct and cstruct types
-automatically with argument type the product of the types of the
-structure fields.
-
-\section{Special function {\tt apply}}
-When Felix finds and application
-
-\begin{minted}{felix}
-  f a
-\end{minted}
-
-where \verb%f% is a value of type F which is not
-a function (or C function) type, Felix looks instead 
-for a function named apply with argument of type:
-
-\begin{minted}{felix}
-F * A
-\end{minted}
-
-where A is the type of a. For example
-
-\begin{minted}{felix}
-fun apply (x:string, y:string) => x + y; // concat
-var x = "hello " "world"; // apply a string to a string
-\end{minted}
-
-
-\section{Dynanic Objects}
-\label{Dynamic Objects}
-Felix provides an object system with syntax based on Java,
-and technology based on CLOS.
-
-An object is a record of function closures, closed over the local
-scope of a constructor function that returns the record.
-
-
-\begin{minted}{felix}
-interface person_t {
-  get_name: 1 -> string; 
-  set_age: int -> 0; 
-  set_job : string -> 0;
-  get_job : 1 -> string;
-}
-
-object person (name:string, var age:int) implements person_t =
-{
-  var job = "unknown";
-  method fun get_name () => name;
-  method proc set_age (x:int) { age = x; }
-  method fun get_job () => job;
-  method proc set_job (x:string) {  job = x; }
-}
-
-var john = person ("John", 42);
-println$ #(john.name) + " is " + #(john.age).str;
-\end{minted}
-
-The entity \verb%person% is a function which when called with
-its argument of name and age returns a record of type
-\verb%person_t% consisting of closures of the functions and procedures
-marked as method in its definition.
-
-Since functions hide their local variables the object state
-is hidden and can only be accessed using the methods.
-
-The \verb%implements% clause is optional.
-
-Objects provide an excellent way for a dynamically loaded
-shared library to export a set of functions, only the object
-function needs to be exported so it has a C name which
-can be linked to with \verb%dlopen%.
 
 
 \part{Interfacing}
@@ -8645,7 +8828,7 @@ Generic equality.
 \item[{\tt apply}]
 User defined application.
 
-\item[{\tt \_ctor_\_}typename}]
+\item[{\tt \_ctor\_}typename]
 User defined constructor/conversion function.
 
 

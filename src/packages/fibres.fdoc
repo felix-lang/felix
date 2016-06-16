@@ -342,7 +342,8 @@ syntax spipeexpr
   x[ssetunion_pri] := x[ssetunion_pri] "|->" x[>ssetunion_pri] =># "(infix 'pipe)"; 
 
   //$ Right assoc, for schannel pipes transformers
-  x[ssetunion_pri] := x[>ssetunion_pri] "=>" x[ssetunion_pri] =># "(infix 'trans_type)"; 
+  // => BREAKS PATTERN MATCHING, replaced with >=> but can't find any uses
+  //x[ssetunion_pri] := x[>ssetunion_pri] ">=>" x[ssetunion_pri] =># "(infix 'trans_type)"; 
 
   //$ Non associative, streaming data structure into transducer.
   x[ssetunion_pri] := x[>ssetunion_pri] ">->" x[>ssetunion_pri] =># "(infix 'xpipe)"; 
@@ -438,7 +439,6 @@ suicide together when they become unreachable.
 @h2 A simple example
 Now we will show a simple example.
 @tangle spipesex-01.flx
-include "std/control/spipes";
 
 begin
   var src = (1,2,3,4,5).iterator.source_from_iterator;
@@ -536,7 +536,6 @@ producing another transducer.
 Here is an example:
 
 @tangle spipesex-02.flx
-include "std/control/spipes";
 begin
   var src = (1,2,3,4,5).iterator.source_from_iterator;
   var snk = println[int].sink_from_procedure;
@@ -654,7 +653,6 @@ want to send schannels themselves down schannels!
 Here is an example:
 
 @tangle spipesex-02a.flx
-include "std/control/spipes";
 begin
   #((1,2,3,4,5).iterator |-> (fun (x:int) => x + 1) |-> (fun (x:int) => x * x) |-> println[int]);
 end
@@ -684,7 +682,6 @@ construct raw devices. We will make a simple tokeniser.
 First our source emits characters:
 
 @tangle spipesex-03.flx
-include "std/control/spipes";
 proc source(w:%>char)
 {
   var s = "The quick brown fox jumped over the lazy dog";
@@ -850,7 +847,6 @@ Returns a pair of transducers.
 
 @h2 A simple example.
 @tangle spipesex-04.flx
-include "std/control/spipes";
 
 // sources
 var src1 = (1,2,3,4,5).iterator.source_from_iterator;
@@ -980,8 +976,6 @@ list('25', '16', '9', '4', '1')
 @
 
 @tangle spipesex-05.flx
-include "std/control/schannels";
-include "std/control/spipes";
 
 // Pipe test.
 proc source (cho:%>int) { 

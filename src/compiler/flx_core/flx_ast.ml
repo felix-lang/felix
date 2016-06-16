@@ -209,7 +209,7 @@ and expr_t =
   | EXPR_expr of Flx_srcref.t * Flx_code_spec.t * typecode_t * expr_t
 
   | EXPR_type_match of Flx_srcref.t * (typecode_t * (typecode_t * typecode_t) list)
-  | EXPR_typecase_match of Flx_srcref.t * (expr_t * (typecode_t * expr_t) list)
+  | EXPR_typecase_match of Flx_srcref.t * (typecode_t * (typecode_t * expr_t) list)
 
   | EXPR_extension of Flx_srcref.t * expr_t list * expr_t
 
