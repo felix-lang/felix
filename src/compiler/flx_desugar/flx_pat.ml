@@ -261,8 +261,8 @@ let rec is_irrefutable pat =
   | PAT_polyrecord (_,rpats,_) -> fold_left (fun acc (_,p) -> acc && irf p) true rpats
 
   | PAT_expr _ -> assert false
-  | PAT_as (_,pat,_) -> true
-  | PAT_with (_,pat,_) -> true
+  | PAT_as (_,pat,_) -> irf pat
+  | PAT_with (_,pat,_) -> irf pat
   | PAT_when (_,pat,_) -> false
   | PAT_coercion (_,pat,_) -> irf pat
 
