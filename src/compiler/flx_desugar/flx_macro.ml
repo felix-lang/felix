@@ -647,7 +647,22 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_ctor_arg (sr, (qn, e1)) -> EXPR_ctor_arg (sr,(qn, me e1))
   | EXPR_variant_arg (sr, (s, e1)) -> EXPR_variant_arg (sr,(s, me e1))
   | EXPR_case_arg (sr, (i, e1)) ->  EXPR_case_arg (sr,(i,me e1))
-  | EXPR_letin (sr, (pat, e1, e2)) -> EXPR_letin (sr, (pat, me e1, me e2))
+  | EXPR_letin (sr, (pat, e1, e2)) -> 
+    let e1 = me e1 in
+    let pes = [pat, e2] in
+    let pes = expand_pattern_branches pes in
+    let pes =
+      List.map
+      (fun (pat,e) ->
+        let pat = fix_pattern seq pat in
+        pat,
+        let pvs = get_pattern_vars pat in
+        let pr = protect sr pvs in
+        expand_expr recursion_limit local_prefix seq (pr @ macros) e
+      )
+      pes
+    in
+    EXPR_match (sr,(e1, pes))
 
   | EXPR_get_n (sr, (i, e1)) ->  EXPR_get_n (sr,(i,me e1))
   | EXPR_get_named_variable (sr, (i, e1)) ->  EXPR_get_named_variable (sr,(i,me e1))

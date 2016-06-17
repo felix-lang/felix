@@ -465,8 +465,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     let l1,x1 = rex e in
     l1, EXPR_coercion (sr,(x1,t))
 
-  | EXPR_letin (sr,(pat,e1,e2)) ->
-    rex (EXPR_match (sr,(e1,[pat,e2])))
+  | EXPR_letin (sr,(pat,e1,e2)) -> assert false
 
   (* MATCH HANDLING NEEDS TO BE REWORKED, THE SWITCHING SHOULD BE
      DELAYED TO ALLOW TYPE BASED OPTIMISATION WHERE THE TOP
