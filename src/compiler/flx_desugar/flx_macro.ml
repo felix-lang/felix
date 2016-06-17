@@ -274,8 +274,8 @@ let alpha_pat local_prefix seq fast_remap remap expand_expr pat =
   | PAT_with (sr,p,es) -> assert false
 (*
     let es = List.map (fun (s,e) -> ren s, rexp e) es in
-*)
     PAT_with (sr, aux p, es)
+*)
   | PAT_as (sr,p,v) -> PAT_as (sr,aux p, ren v)
   | PAT_when (sr,p,e) -> PAT_when (sr,aux p, rexp e)
   | PAT_nonconst_ctor (sr,n,p) -> PAT_nonconst_ctor (sr, n, aux p)

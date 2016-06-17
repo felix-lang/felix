@@ -198,8 +198,8 @@ and check_match_variant pats =
   in
   List.iter check pats
 
-
 and renaming pats = ()
+and check_match_alts pats = () (* SKIP for now cause I'm confused! *)
 
 (* This routine finds the checker routine for given
    pattern. Note that 'renaming' checks nothing:
@@ -211,8 +211,9 @@ and renaming pats = ()
 *)
 and find_match_type pat =
   match pat with
-  | PAT_alt _
-  | PAT_none _ -> assert false
+  | PAT_alt (_,head::tail) -> check_match_alts
+  | PAT_alt (_,[])
+  | PAT_none _ -> print_endline ("Find match type none"); assert false
   | PAT_literal _ -> check_match_literal
 
   (* ranges *)
@@ -240,7 +241,7 @@ and find_match_type pat =
 let rec is_irrefutable pat =
   let irf pat = is_irrefutable pat in
   match pat with
-  | PAT_alt _ 
+  | PAT_alt _ -> false (* HACK! *)
   | PAT_none _ -> assert false
   | PAT_literal _ -> false
 
