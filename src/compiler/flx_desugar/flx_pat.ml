@@ -240,7 +240,7 @@ and find_match_type pat =
 let rec is_irrefutable pat =
   let irf pat = is_irrefutable pat in
   match pat with
-  | PAT_alt _ -> asset false
+  | PAT_alt _ -> assert false
   | PAT_none _ -> assert false
   | PAT_literal _ -> false
 
