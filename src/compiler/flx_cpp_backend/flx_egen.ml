@@ -250,7 +250,14 @@ let rec gen_expr'
   | BEXPR_funsum _ -> assert false
   | BEXPR_lrangle _ -> assert false
   | BEXPR_lrbrack _ -> assert false
-  | BEXPR_label (s) -> 
+  | BEXPR_label (s,idx) -> 
+      begin try
+        let i = Flx_bsym_table.find bsym_table idx in
+        ()
+      with _ -> print_endline ("[egen:bexpr_label] Can't find label " ^ cid_of_flxid s
+       ^ " from index " ^ string_of_int idx
+      )
+      end;
       begin match Flx_label.find_label bsym_table label_map this s with
       | `Local pc -> 
         let target_instance =

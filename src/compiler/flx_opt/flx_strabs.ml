@@ -13,6 +13,13 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 
+
+(* this module, strabs, is responsible for upgrading an abstract
+  type to its implementation: strip abstract types
+
+  well .. actually its a downgrade 
+*)
+
 (* identify a type which is a union with a single constructor *)
 let is_solo_union bsym_table t =
   match t with
@@ -268,6 +275,8 @@ let strabs_symbol bsym_table index parent bsym bsym_table' =
     -> assert false
 
   | BBDCL_newtype (bvs, t) -> ()
+
+  | BBDCL_label s as x -> h x
 
   | BBDCL_fun (props, bvs, bps, ret, bexes) ->
       h (bbdcl_fun (props, bvs, fp bps, ft ret, fxs bexes))

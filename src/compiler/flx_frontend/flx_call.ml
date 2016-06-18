@@ -185,6 +185,7 @@ let call_report syms bsym_table (uses,usedby) f k =
     | BBDCL_fun (_,_,_,_,_) -> "fun "
     | BBDCL_val (_,_,`Val) -> "val "
     | BBDCL_val (_,_,`Var) -> "var "
+    | BBDCL_label _ -> "label "
     | _ -> assert false
     end
   ;
@@ -194,6 +195,7 @@ let call_report syms bsym_table (uses,usedby) f k =
   List.iter begin fun (i,_) ->
     if not (List.mem i !x) then
     try match Flx_bsym_table.find_bbdcl bsym_table i with
+      | BBDCL_label _
       | BBDCL_fun _
       | BBDCL_val (_,_,(`Val | `Var)) -> x := i :: !x
       | _ -> ()
@@ -214,6 +216,7 @@ let print_call_report' syms bsym_table usage f =
   let x = ref [] in
   Flx_bsym_table.iter begin fun k _ bsym ->
     match Flx_bsym.bbdcl bsym with
+    | BBDCL_label _
     | BBDCL_fun _
     | BBDCL_val (_,_,(`Val | `Var)) -> x := k :: !x
     | _ -> ()

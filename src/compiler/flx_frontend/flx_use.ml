@@ -118,6 +118,7 @@ and uses_bexe' add bsym_table count_inits exe =
   in
   match exe,count_inits with
   | BEXE_init (_,i,e),false -> f_bexpr e
+  | BEXE_label _,false -> ()
   | BEXE_assign (_,lhs,rhs),_ ->
       (* check is a term is a tuple projection of a variable *)
       if count_inits then f_bexpr lhs
@@ -216,6 +217,11 @@ print_endline ("Cal use closure...");
 (*
       print_endline ("Keeping " ^ string_of_int bid);
 *)
+      begin try
+        let bsym = Flx_bsym_table.find bsym_table bid in
+        ()
+      with Not_found -> print_endline ("Flx_use: Woops, can't find a symbol we're keeping? " ^ string_of_int bid)
+      end;
       untraced := BidSet.add bid !untraced;
     end
   in
@@ -311,11 +317,17 @@ let strip_inits bsym_table bidset exes =
         try uses_bexe add bsym_table true exe; true
         with Bad -> false
       in
+(*
+if not keep then print_endline ("Throwing out instruction " ^ string_of_bexe bsym_table 0 exe);
+*)
       aux tail (if keep then (exe::exes_out) else exes_out)
   in
   aux exes [] 
 
 let copy_used1' syms bsym_table =
+(*
+print_endline ("copy used ... ");
+*)
   (* Calculate the used symbols. *)
   let bidset = cal_use_closure syms bsym_table false in
 

@@ -455,15 +455,22 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
 
 
     | BEXE_comment (_,s) -> "/*" ^ s ^ "*/\n"
-    | BEXE_label (_,s) ->
+    | BEXE_label (_,s,idx) ->
       let local_labels =
         try Hashtbl.find label_map this with _ ->
           failwith ("[gen_exe] Can't find label map of " ^ string_of_bid this)
       in
       let label_index =
         try Hashtbl.find local_labels s
-        with _ -> failwith ("[gen_exe] In " ^ Flx_bsym.id bsym ^ ": Can't find label " ^ cid_of_flxid s)
+        with _ -> failwith ("[gen_exe] In " ^ Flx_bsym.id bsym ^ ", label map: Can't find label " ^ cid_of_flxid s)
       in
+      begin try
+        let i = Flx_bsym_table.find bsym_table idx in
+        ()
+      with _ -> print_endline ("[gen_exe:label] In " ^ Flx_bsym.id bsym ^ ", symbol table: Can't find label " ^ cid_of_flxid s
+       ^ " from index " ^ string_of_int idx
+      )
+      end;
       let label_kind = get_label_kind_from_index label_usage_map label_index in
       (match kind with
         | Procedure ->
@@ -507,7 +514,14 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
        "      FLX_TRACE(" ^ v ^"," ^ s ^ "," ^ msg ^ ");\n"
 
 
-    | BEXE_goto (sr,s) ->
+    | BEXE_goto (sr,s,idx) ->
+      begin try
+        let i = Flx_bsym_table.find bsym_table idx in
+        ()
+      with _ -> print_endline ("[gen_exe:goto] In " ^ Flx_bsym.id bsym ^ ", symbol table: Can't find label " ^ cid_of_flxid s
+       ^ " from index " ^ string_of_int idx
+      )
+      end;
       begin match find_label bsym_table label_map this s with
       | `Local _ -> "      goto " ^ cid_of_flxid s ^ ";\n"
       | `Nonlocal (pc,frame) -> gen_nonlocal_goto pc frame s
@@ -530,7 +544,14 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       "      FLX_DIRECT_LONG_JUMP(" ^ e ^ ")\n"
       
 
-    | BEXE_ifgoto (sr,e,s) ->
+    | BEXE_ifgoto (sr,e,s,idx) ->
+      begin try
+        let i = Flx_bsym_table.find bsym_table idx in
+        ()
+      with _ -> print_endline ("[gen_exe:ifgoto] In " ^ Flx_bsym.id bsym ^ ", symbol table: Can't find label " ^ cid_of_flxid s
+       ^ " from index " ^ string_of_int idx
+      )
+      end;
       begin match find_label bsym_table label_map this s with
       | `Local _ ->
         "      if(" ^ ge sr e ^ ") goto " ^ cid_of_flxid s ^ ";\n"

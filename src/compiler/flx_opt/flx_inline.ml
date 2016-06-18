@@ -74,7 +74,8 @@ prevent gross bloat.
 let mk_label_map syms exes =
   let h = Hashtbl.create 97 in
   let aux = function
-  | BEXE_label (sr,s) ->
+  | BEXE_label (sr,s,idx) ->
+    (* replace with idx later *)
     let n = fresh_bid syms.counter in
     let s' =  "_" ^ string_of_bid n in
     Hashtbl.add h s s'
@@ -152,9 +153,18 @@ let call_lifting syms uses bsym_table caller callee a argument =
 
     (* replace all function returns with tailed calls *)
     let body2 = ref [] in
-    let n = fresh_bid syms.counter in
-    let end_label = "_end_call_lift_" ^ string_of_bid n in
-    body2 := bexe_label (Flx_bsym.sr bsym,end_label) :: !body2;
+    let end_index = fresh_bid syms.counter in
+    let end_label = "_end_call_lift_" ^ string_of_bid end_index in
+    let bbdcl = Flx_bbdcl.bbdcl_label end_label in
+    let bsym = {Flx_bsym.id=end_label; sr=Flx_bsym.sr bsym; bbdcl=bbdcl} in 
+    let parent = Some caller in 
+(*
+print_endline ("flx_inline: call lifting: adding label " ^ end_label ^ "<" ^ string_of_int end_index ^">");
+*)
+    Flx_bsym_table.add bsym_table end_index parent bsym;
+
+    (* Got too lazy to tack if this is used or not! *) 
+    body2 := bexe_label (Flx_bsym.sr bsym,end_label,end_index) :: !body2;
     List.iter
       (function
       | BEXE_fun_return (sr,e) ->
@@ -169,7 +179,7 @@ let call_lifting syms uses bsym_table caller callee a argument =
             bexe_call (sr,e,argument)
           )
         in
-        body2 := bexe_goto (sr,end_label) :: !body2;
+        body2 := bexe_goto (sr,end_label,end_index) :: !body2;
         body2 := call_instr :: !body2;
       | BEXE_yield _ ->
         syserr (Flx_bsym.sr bsym) "Attempt to inline generator containing a yield"
@@ -275,8 +285,8 @@ let inline_function syms uses bsym_table caller callee a varindex =
     *)
     (* replace all function returns with variable initialisations *)
     let body2 = ref [] in
-    let n = fresh_bid syms.counter in
-    let end_label = "_end_inline_" ^ Flx_bsym.id bsym ^ "_" ^ string_of_bid n in
+    let end_index = fresh_bid syms.counter in
+    let end_label = "_end_inline_" ^ Flx_bsym.id bsym ^ "_" ^ string_of_bid end_index in
     let t = ref None in
     let end_label_used = ref false in
     List.iter
@@ -284,7 +294,7 @@ let inline_function syms uses bsym_table caller callee a varindex =
       | BEXE_fun_return (sr,((_,t') as e)) ->
         t := Some t';
         if not (!body2 == []) then begin
-          body2 := bexe_goto (sr,end_label) :: !body2;
+          body2 := bexe_goto (sr,end_label,end_index) :: !body2;
           end_label_used := true
         end
         ;
@@ -302,8 +312,16 @@ let inline_function syms uses bsym_table caller callee a varindex =
       body
     ;
     (* Ugghhh *)
-    if !end_label_used then
-      body2 := !body2 @ [bexe_label (Flx_bsym.sr bsym,end_label)]
+    if !end_label_used then begin
+      let bbdcl = Flx_bbdcl.bbdcl_label end_label in
+      let bsym = {Flx_bsym.id=end_label; sr=Flx_bsym.sr bsym; bbdcl=bbdcl} in 
+      let parent = Some caller in 
+(*
+print_endline ("flx_inline: inline function : adding label " ^ end_label ^ "<" ^ string_of_int end_index ^">");
+*)
+      Flx_bsym_table.add bsym_table end_index parent bsym;
+      body2 := !body2 @ [bexe_label (Flx_bsym.sr bsym,end_label,end_index)]
+    end
     ;
     (*
     print_endline (
@@ -384,9 +402,9 @@ let expand_exe syms bsym_table u exe =
       let e2,xs2 = u sr e2 in
       bexe_jump (sr,e1,e2) :: xs2 @ xs1
 
-    | BEXE_ifgoto (sr,e,lab) ->
+    | BEXE_ifgoto (sr,e,lab,idx) ->
       let e,xs = u sr e in
-      bexe_ifgoto (sr,e,lab) :: xs
+      bexe_ifgoto (sr,e,lab,idx) :: xs
 
     | BEXE_cgoto (sr,e) ->
       let e,xs = u sr e in

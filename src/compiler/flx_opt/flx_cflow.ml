@@ -8,7 +8,7 @@ open Flx_print
 let rec find_label tail label =
   match tail with
   | [] -> None
-  | BEXE_label (_,x) :: tail when x = label -> Some tail
+  | BEXE_label (_,x,_) :: tail when x = label -> Some tail
   | _ :: tail -> find_label tail label
 
 (* tell whether there is any reachable executable code here:
@@ -23,14 +23,14 @@ let rec tailable exes exclude tail =
     | BEXE_label _
     | BEXE_nop _
       -> aux t
-    | BEXE_goto (_,label) ->
+    | BEXE_goto (_,label,_) ->
       if mem label exclude then false (* infinite loop *)
       else
         begin match find_label exes label with
         | None -> false
         | Some tail -> tailable exes (label::exclude) tail
         end
-    | BEXE_ifgoto (_,_,label) ->
+    | BEXE_ifgoto (_,_,label,_) ->
       if mem label exclude then false (* infinite loop *)
       else
         begin match find_label exes label with
@@ -59,7 +59,7 @@ let rec can_drop s tail : bool =
     match h with
     | BEXE_comment _
     | BEXE_nop _  -> can_drop s t
-    | BEXE_label (_,s') ->
+    | BEXE_label (_,s',_) ->
       if s <> s' then can_drop s t
       else true
 
@@ -67,7 +67,7 @@ let rec can_drop s tail : bool =
 
 let rec retarget exes exe exclude =
   match exe with
-  | BEXE_goto (sr,label) ->
+  | BEXE_goto (sr,label,_) ->
     (*
     print_endline ("Checking label " ^ label);
     *)
@@ -87,22 +87,22 @@ let rec retarget exes exe exclude =
           print_endline ("[goto] Retargetting " ^ label ^ " to return");
           *)
           h
-        | BEXE_goto (_,s) ->
+        | BEXE_goto (_,s,_) ->
           (*
           print_endline ("[goto] Retargetting " ^ label ^ " to " ^ s);
           *)
           if mem s exclude then bexe_halt (sr,"infinite loop")
           else retarget exes h (s::exclude)
-        | BEXE_label (_,s) ->
+        | BEXE_label (_,s,idx) ->
           (*
           print_endline ("[goto] Retargetting " ^ label ^ " to " ^ s);
           *)
-          retarget exes (bexe_goto (sr,s)) exclude
+          retarget exes (bexe_goto (sr,s,idx)) exclude
 
         | _ -> exe
     end
 
-  | BEXE_ifgoto (sr,e,label) ->
+  | BEXE_ifgoto (sr,e,label,_) ->
     (*
     print_endline ("Checking label " ^ label);
     *)
@@ -113,17 +113,17 @@ let rec retarget exes exe exclude =
       | [] -> exe
       | h :: t ->
         match h with
-        | BEXE_goto (_,s) ->
+        | BEXE_goto (_,s,idx) ->
           (*
           print_endline ("[ifgoto] Retargetting " ^ label ^ " to " ^ s);
           *)
           if mem s exclude then bexe_halt (sr,"infinite loop")
-          else retarget exes (bexe_ifgoto (sr,e,s)) (s::exclude)
-        | BEXE_label (_,s) ->
+          else retarget exes (bexe_ifgoto (sr,e,s,idx)) (s::exclude)
+        | BEXE_label (_,s,idx) ->
           (*
           print_endline ("[ifgoto] Retargetting " ^ label ^ " to " ^ s);
           *)
-          retarget exes (bexe_ifgoto (sr,e,s)) (s::exclude)
+          retarget exes (bexe_ifgoto (sr,e,s,idx)) (s::exclude)
         | _ -> exe
     end
 
@@ -143,8 +143,8 @@ let fix_dropthrus syms exes =
     match tail with
     | [] -> rev out
     |
-    ( BEXE_goto (_,s)
-    | BEXE_ifgoto (_,_,s)
+    ( BEXE_goto (_,s,_)
+    | BEXE_ifgoto (_,_,s,_)
     ) as h :: t ->
       if can_drop s t
       then aux t out

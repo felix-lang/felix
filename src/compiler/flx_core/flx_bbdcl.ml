@@ -26,6 +26,7 @@ type external_fun_kind_t = [
 type t =
   | BBDCL_invalid
   | BBDCL_module
+  | BBDCL_label of      string
   | BBDCL_fun of        property_t list * bvs_t * Flx_bparams.t * Flx_btype.t *
                         Flx_bexe.t list
   | BBDCL_val of        bvs_t * Flx_btype.t * value_kind_t
@@ -61,6 +62,8 @@ type t =
   | BBDCL_reduce
 
 (* -------------------------------------------------------------------------- *)
+
+let bbdcl_label s = BBDCL_label s
 
 let bbdcl_invalid () =
   BBDCL_invalid
@@ -154,6 +157,7 @@ let get_bvs = function
   | BBDCL_axiom -> []
   | BBDCL_lemma -> []
   | BBDCL_reduce -> []
+  | BBDCL_label _ -> []
 
 (* -------------------------------------------------------------------------- *)
 
@@ -197,6 +201,7 @@ let iter
     | `Decoder cs -> ()
   in
   match bbdcl with
+  | BBDCL_label _ -> ()
   | BBDCL_invalid -> ()
   | BBDCL_module -> ()
   | BBDCL_fun (_,_,ps,res,es) ->
@@ -276,6 +281,8 @@ let map
     | `Decoder cs -> `Decoder cs
   in
   match bbdcl with
+  | BBDCL_label s -> bbdcl
+
   | BBDCL_invalid -> bbdcl
   | BBDCL_module -> bbdcl
   | BBDCL_fun (props,bvs,ps,res,es) ->

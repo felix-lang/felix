@@ -63,6 +63,7 @@ type sdir_t = Flx_srcref.t * dir_t
 type value_kind_t = [ `Val | `Var | `Ref | `Lazy of expr_t ]
 
 type dcl_t =
+  | DCL_label
   (* data structures *)
   | DCL_axiom of         params_t * axiom_method_t
   | DCL_lemma of         params_t * axiom_method_t
@@ -119,6 +120,7 @@ type bound_iface_t = Flx_srcref.t * iface_t * bid_t option
 type bvs_t = (string * bid_t) list
 
 type symbol_definition_t =
+  | SYMDEF_label of string
   | SYMDEF_newtype of typecode_t
   | SYMDEF_abs of type_qual_t list * Flx_code_spec.t * named_req_expr_t
   | SYMDEF_parameter of  param_kind_t * typecode_t

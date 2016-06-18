@@ -99,7 +99,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
   | STMT_include (sr,inspec) ->
       state.Flx_desugar_expr.include_file_cache <- inspec :: state.Flx_desugar_expr.include_file_cache;
       []
-  | STMT_label (sr,s) -> [Exe (sr,EXE_label s)]
+  | STMT_label (sr,s) -> [Dcl (sr,s, None,`Private,dfltvs, DCL_label); Exe (sr,EXE_label s)]
   | STMT_proc_return sr -> [Exe (sr,EXE_proc_return)]
   | STMT_proc_return_from (sr,s) -> [Exe (sr,EXE_proc_return_from s)]
   | STMT_halt (sr,s) -> [Exe (sr,EXE_halt s)]

@@ -20,7 +20,7 @@ let check_reachability_exes bsym_table label_map label_usage idx sr name rt exes
   (* remove unused labels to avoid confusing algorithm *)
   let exes = List.filter 
     (fun exe -> match exe with 
-      | BEXE_label (_,s) -> 
+      | BEXE_label (_,s,_) -> 
         (match get_label_kind label_map label_usage idx s with 
         | `Far | `Near -> true 
         | `Unused -> (* print_endline ("Removing unused label " ^ s); *) false 
@@ -37,7 +37,7 @@ let check_reachability_exes bsym_table label_map label_usage idx sr name rt exes
     Array.init n (fun i -> 
      let exe = List.hd (!tmp_exes) in tmp_exes := List.tl (!tmp_exes);
      begin match exe with
-     | BEXE_label (_,s) ->
+     | BEXE_label (_,s,_) ->
        (match get_label_kind label_map label_usage idx s with 
        | `Far -> unprocessed_targets := Flx_set.IntSet.add i (!unprocessed_targets)
        | _ -> ()
@@ -51,7 +51,7 @@ let check_reachability_exes bsym_table label_map label_usage idx sr name rt exes
   let find_label s = 
     try Array.iter 
       (fun {index=i; instr=instr;} -> 
-        match instr with BEXE_label (_,s') when  s' = s -> 
+        match instr with BEXE_label (_,s',_) when  s' = s -> 
         raise (Found_label i)
         | _ -> ()
       ) 
@@ -98,8 +98,8 @@ let check_reachability_exes bsym_table label_map label_usage idx sr name rt exes
          * then add it to the set of unprocessed labels
          *)
         begin match a.(i).instr with
-        | BEXE_goto (_,s) 
-        | BEXE_ifgoto (_,_,s) -> 
+        | BEXE_goto (_,s,_) 
+        | BEXE_ifgoto (_,_,s,_) -> 
            begin match find_label s with
            | None -> ()
            | Some i -> 

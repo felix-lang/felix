@@ -323,11 +323,19 @@ let rec bind_exe state bsym_table (sr, exe) : bexe_t list =
 
   | EXE_label s ->
       state.reachable <- true;
-      [bexe_label (sr,s)]
+      let maybe_index = lookup_label_in_env state.lookup_state bsym_table state.env sr s in
+      begin match maybe_index with
+      | None -> clierr sr ("[bind_exe:EXE_label] Can't find label " ^ s)
+      | Some i -> [bexe_label (sr,s,i)] 
+      end
 
   | EXE_goto s ->
       state.reachable <- false;
-      [(bexe_goto (sr,s))]
+      let maybe_index = lookup_label_in_env state.lookup_state bsym_table state.env sr s in
+      begin match maybe_index with
+      | None -> clierr sr ("bind_exe:EXE_goto] Can't find label " ^ s)
+      | Some i -> [bexe_goto (sr,s,i)] 
+      end
 
   | EXE_cgoto e ->
     state.reachable <- false;
@@ -346,13 +354,22 @@ let rec bind_exe state bsym_table (sr, exe) : bexe_t list =
   | EXE_proc_return_from s ->
     state.reachable <- false;
     state.proc_return_count <- state.proc_return_count + 1;
-    [(bexe_goto (sr,"_endof_" ^ s))]
+    let label_name = "_endof_" ^ s in
+    let maybe_index = lookup_label_in_env state.lookup_state bsym_table state.env sr label_name in
+    begin match maybe_index with
+    | None -> clierr sr ("[bind_exe:EXE_proc_return_from] Can't find label " ^ s)
+    | Some i -> [bexe_goto (sr,label_name,i)] 
+    end
 
   | EXE_ifgoto (e,s) ->
     let e',t = be e in
     if t = flx_bbool
     then
-      [(bexe_ifgoto (sr,(e',t),s))]
+      let maybe_index = lookup_label_in_env state.lookup_state bsym_table state.env sr s in
+      begin match maybe_index with
+      | None -> clierr sr ("[bind_exe:EXE_if_goto] Can't find label " ^ s)
+      | Some i -> [bexe_ifgoto (sr,(e',t),s,i)] 
+      end
     else
       clierr (src_of_expr e)
       (

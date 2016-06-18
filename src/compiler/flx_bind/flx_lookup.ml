@@ -1846,6 +1846,7 @@ and btype_of_bsym state bsym_table sr bt bid bsym =
   in
 
   match Flx_bsym.bbdcl bsym with
+  | BBDCL_label _ -> btyp_label ()
   | BBDCL_invalid -> assert false
   | BBDCL_module -> clierr (Flx_bsym.sr bsym) 
      ("Attempt to find type of module name " ^ Flx_bsym.id bsym)
@@ -1949,6 +1950,8 @@ if index = 37461 then print_env env;
 
   let sym = get_data state.sym_table index in
   match sym.Flx_sym.symdef with
+  | SYMDEF_label s -> btyp_label ()
+
   | SYMDEF_callback _ ->
       print_endline "Inner type of index finds callback";
       assert false
@@ -3644,6 +3647,7 @@ and lookup_type_name_in_table_dirs_with_sig
       Some (btyp_inst (sye index, ts))
 
 
+    | SYMDEF_label _
     | SYMDEF_const_ctor _
     | SYMDEF_const _
     | SYMDEF_var _
@@ -3793,6 +3797,22 @@ and handle_map sr (f,ft) (a,at) =
       *)
       failwith "MAP NOT IMPLEMENTED"
 
+and lookup_label_in_env state bsym_table env sr name : Flx_types.bid_t option =
+  let result = 
+    try 
+      Some (inner_lookup_name_in_env state bsym_table (env:env_t) rsground sr name)
+    with _ -> None
+  in
+  match result with
+  | Some (FunctionEntry _) -> clierr sr ("Expected "^name^" to be a label, got function set")
+  | Some (NonFunctionEntry x) -> 
+    begin match hfind "lookup" state.sym_table (sye x) with
+    | { Flx_sym.symdef=SYMDEF_label s} -> Some (sye x)
+    | { Flx_sym.symdef=symdef; vs=vs } -> clierr sr ("Expected " ^ name ^ " to be a label, got:\n" ^
+      string_of_symdef symdef name vs)
+    end
+  | None -> None
+
 
 and bind_expression_with_args state bsym_table env e args =
   try
@@ -3905,7 +3925,13 @@ print_endline ("Case number " ^ si index);
   | EXPR_cond (sr,(c,t,f)) ->
     bexpr_cond (be c) (be t) (be f)
 
-  | EXPR_label (sr,s) -> bexpr_label s
+  | EXPR_label (sr,label) -> 
+    let maybe_index = lookup_label_in_env state bsym_table env sr label in
+    begin match maybe_index with
+    | Some index -> bexpr_label label index
+    | None ->
+      clierr sr ("Flx_lookup: Cannot find label " ^ label ^ " in environment");
+    end
 
   | EXPR_range_check (sr, mi, v, mx) ->
     let (x,t) as v' = be v in
@@ -5527,6 +5553,9 @@ print_endline ("New private name map = " ^ string_of_name_map nuprivmap);
           print_endline ("Cloned PARAMETER type = " ^ string_of_typecode t); 
 *)
           SYMDEF_parameter (k,t)
+
+        | SYMDEF_label label as x -> x
+
         | _ -> 
           print_endline ("[Flx_lookup:clone] Unhandled symdef");
           print_endline (string_of_symdef symdef id vs);
@@ -6448,8 +6477,7 @@ with
     ("Recursive dependency resolving name " ^ string_of_qualified_name qn)
 
 let lookup_name_in_env state bsym_table (env:env_t) sr name : entry_set_t =
- inner_lookup_name_in_env state bsym_table (env:env_t) rsground sr name
-
+  inner_lookup_name_in_env state bsym_table (env:env_t) rsground sr name
 
 let lookup_qn_in_env2
   state

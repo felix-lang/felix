@@ -292,6 +292,20 @@ let flat_poly_fixup_exe syms bsym_table polyinst parent_ts mt exe =
     *)
     bexe_svc (sr,j)
 
+  | BEXE_label (sr,s,i) ->
+    let j,ts = polyinst sr i parent_ts in
+    bexe_label (sr,s,j)
+
+  | BEXE_goto  (sr,s,i) ->
+    let j,ts = polyinst sr i parent_ts in
+    bexe_goto (sr,s,j)
+
+  | BEXE_ifgoto (sr,e,s,i) ->
+    let j,ts = polyinst sr i parent_ts in
+    bexe_ifgoto (sr,e,s,j)
+
+
+
   | x -> x
   in
   (*
@@ -499,6 +513,8 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
   let mt vars t = fixup_type syms bsym_table vars bsym virtualinst polyinst sr t in
   let bbdcl = Flx_bsym.bbdcl bsym in
   match bbdcl with
+  | BBDCL_label s -> Some (bbdcl_label s)
+
   | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
     begin try
       let props = List.filter (fun p -> p <> `Virtual) props in

@@ -24,6 +24,7 @@ type external_fun_kind_t = [
 type t = private
   | BBDCL_invalid
   | BBDCL_module
+  | BBDCL_label of      string
   | BBDCL_fun of        property_t list * bvs_t * Flx_bparams.t * Flx_btype.t *
                         Flx_bexe.t list
   | BBDCL_val of        bvs_t * Flx_btype.t * value_kind_t
@@ -60,6 +61,7 @@ type t = private
 
 (* -------------------------------------------------------------------------- *)
 
+val bbdcl_label : string -> t
 val bbdcl_invalid : unit -> t
 val bbdcl_module : unit -> t
 val bbdcl_fun :

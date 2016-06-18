@@ -97,7 +97,7 @@ let remap_expr
         bexpr_apply_prim (t) (i,ts,aux e)
 
     | _ -> 
-      Flx_bexpr.map ~f_bexpr:aux ~f_label:relab e
+      Flx_bexpr.map ~f_bexpr:aux ~f_label:relab ~f_bid:revar e
   in
   let a = aux e in
 (*
@@ -146,9 +146,10 @@ let remap_exe
     bexe_call_direct (sr,i,ts, ge e2)
 
   | BEXE_call_stack (sr,i,ts,e2) -> assert false
-  | BEXE_label (sr,lab) -> bexe_label (sr,relab lab)
-  | BEXE_goto (sr,lab) -> bexe_goto (sr,relab lab)
-  | BEXE_ifgoto (sr,e,lab) -> bexe_ifgoto (sr,ge e,relab lab)
+
+  | BEXE_label (sr,lab,index) -> bexe_label (sr,relab lab, revar index)
+  | BEXE_goto (sr,lab,index) -> bexe_goto (sr,relab lab, revar index)
+  | BEXE_ifgoto (sr,e,lab,index) -> bexe_ifgoto (sr,ge e,relab lab, revar index)
 
   | x -> Flx_bexe.map ~f_bid:revar ~f_bexpr:ge ~f_label_use:relab ~f_label_def:relab x
   in
@@ -230,6 +231,13 @@ let reparent1
   in
 
   match Flx_bsym.bbdcl bsym with
+  | BBDCL_label s ->
+    update_bsym (bbdcl_label s);
+    let calls = try Hashtbl.find uses index with Not_found -> [] in
+    let calls = map (fun (j,sr) -> revar j,sr) calls in
+    Hashtbl.add uses k calls
+
+
   | BBDCL_fun (props, vs, (ps,traint), ret, exes) ->
     let props = allow_rescan rescan_flag props in
     let props = filter (fun p -> p <> `Virtual) props in

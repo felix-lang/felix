@@ -532,6 +532,13 @@ print_endline "BINDING PARAMETER";
           "functor parent")
     end
 
+  | SYMDEF_label s ->
+(*
+print_endline ("flx_bind: Adding label " ^ s ^ " index " ^ string_of_int symbol_index ^ " parent " ^
+  (match true_parent with | None -> "None" | Some x -> string_of_int x));
+*) 
+    add_bsym true_parent (bbdcl_label s) 
+
   | SYMDEF_const_ctor (uidx,ut,ctor_idx,vs') ->
     (*
     print_endline ("Binding const ctor " ^ sym.Flx_sym.id);

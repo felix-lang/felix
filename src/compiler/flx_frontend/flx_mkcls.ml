@@ -54,7 +54,7 @@ let process_exe ue syms bsym_table all_closures exe =
   | BEXE_call (sr,e1,e2) -> ue sr e1; ue sr e2
   | BEXE_jump (sr,e1,e2) -> ue sr e1; ue sr e2
 
-  | BEXE_ifgoto (sr,e,l) -> ue sr e
+  | BEXE_ifgoto (sr,e,l,idx) -> ue sr e
   | BEXE_cgoto (sr,e) -> ue sr e
   | BEXE_fun_return (sr,e) -> ue sr e
   | BEXE_yield (sr,e) -> ue sr e

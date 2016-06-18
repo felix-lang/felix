@@ -105,7 +105,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_funsum _ -> assert false
   | BEXPR_lrangle _ -> assert false
   | BEXPR_lrbrack _ -> assert false
-  | BEXPR_label s -> ()
+  | BEXPR_label (s,i) ->  ui i []
 
   | BEXPR_int _ -> ()
   | BEXPR_unit -> ()
@@ -260,6 +260,13 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
 *)
   (* TODO: replace with a map *)
   match exe with
+  | BEXE_label (sr,s,i)
+  | BEXE_goto (sr,s,i) -> ui sr i
+
+  | BEXE_ifgoto (sr,e,s,i) ->
+    ui sr i;
+    ue sr e
+
   | BEXE_axiom_check _ -> assert false
   | BEXE_call_prim (sr,i,ts,e2)
   | BEXE_call_direct (sr,i,ts,e2)
@@ -282,7 +289,6 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
     -> ue sr e
 
   | BEXE_assert (sr,e)
-  | BEXE_ifgoto (sr,e,_)
   | BEXE_cgoto (sr,e)
   | BEXE_fun_return (sr,e)
   | BEXE_yield (sr,e)
@@ -325,10 +331,8 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
   | BEXE_catch (sr, s, t) -> 
     let ut t = register_type_r (uis sr) syms bsym_table [] sr t in
     ut t
-  | BEXE_label _
   | BEXE_halt _
   | BEXE_trace _
-  | BEXE_goto _
   | BEXE_comment _
   | BEXE_nop _
   | BEXE_proc_return _
@@ -384,6 +388,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     "<" ^ string_of_bid i ^ ">[" ^
     catmap "," (sbt bsym_table) ts ^ "]");
   match Flx_bsym.bbdcl bsym with
+  | BBDCL_label s -> ()
   | BBDCL_invalid -> assert false
   | BBDCL_module -> ()
   | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->

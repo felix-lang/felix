@@ -26,7 +26,8 @@ let get_labels counter exes =
   let labels = Hashtbl.create 97 in
   List.iter
     (fun exe -> match exe with
-      | BEXE_label (_,s) ->
+      | BEXE_label (_,s,idx) ->
+(* NOTE: change this to use idx later *)
         let bid = fresh_bid counter in 
 (*
         print_endline ("    Add Label " ^ s ^ " = " ^ si bid);

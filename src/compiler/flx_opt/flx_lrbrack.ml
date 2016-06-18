@@ -80,9 +80,14 @@ let elim_lrbracks syms bsym_table =
       let exe = Flx_bexe.bexe_ifgoto 
         (sr,
           Flx_bexpr.bexpr_not (Flx_bexpr.bexpr_match_case (i, param)), 
-          label
+          label,labno
         )
       in 
+      (* we made a new label so we have to add it to the bsym_table *) 
+      let bbdcl = Flx_bbdcl.bbdcl_label label in
+      let bsym = {Flx_bsym.id=label; sr=sr; bbdcl=bbdcl} in 
+      Flx_bsym_table.add bsym_table labno pa bsym;
+
       exes := exe :: !exes;
       (* extract parameter argument *)
       let paramarg = Flx_bexpr.bexpr_case_arg pd (i,param) in
@@ -104,7 +109,7 @@ let elim_lrbracks syms bsym_table =
       exes := exe :: !exes;
 
       (* stick a label for skipping the above case *)
-      let exe = Flx_bexe.bexe_label (sr,label) in
+      let exe = Flx_bexe.bexe_label (sr,label,labno) in
       exes := exe :: !exes
 
       )

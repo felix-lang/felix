@@ -479,6 +479,13 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
 
   (* Add the declarations to the symbol table. *)
   begin match (dcl:Flx_types.dcl_t) with
+  | DCL_label -> 
+(*
+print_endline ("Flx_symtab: Adding label " ^ id ^ "  -> " ^ string_of_int symbol_index);
+*)
+      add_symbol ~privtab symbol_index id (SYMDEF_label id);
+      add_unique priv_name_map id symbol_index;
+
   | DCL_reduce (ps, e1, e2) ->
       let ips = add_simple_parameters pubtab privtab (Some symbol_index) ps in
 

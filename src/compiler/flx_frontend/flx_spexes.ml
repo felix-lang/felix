@@ -194,8 +194,8 @@ let gen_body syms uses bsym_table id
   let relab s = try let r = Hashtbl.find relabel s in (* print_endline ("Relab: " ^ s ^ "->" ^ r); *) r with Not_found -> s in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let end_label_uses = ref 0 in
+  let end_index = fresh_bid syms.counter in
   let end_label =
-    let end_index = fresh_bid syms.counter in
     "_end_" ^ (string_of_bid end_index)
   in
 
@@ -248,7 +248,7 @@ let gen_body syms uses bsym_table id
     let e1 = match e1 with Some e1 -> Some (ge e1) | None -> None in
     [bexe_assert2 (sr, sr2, e1,ge e2)]
 
-  | BEXE_ifgoto (sr,e,lab) -> [bexe_ifgoto (sr,ge e, relab lab)]
+  | BEXE_ifgoto (sr,e,lab,idx) -> [bexe_ifgoto (sr,ge e, relab lab, revar idx)]
   | BEXE_cgoto (sr,e) -> [bexe_cgoto (sr,ge e)]
   | BEXE_fun_return (sr,e) -> [bexe_fun_return (sr, ge e)]
   | BEXE_yield (sr,e) -> [bexe_yield (sr, ge e)]
@@ -258,19 +258,19 @@ let gen_body syms uses bsym_table id
 
   | BEXE_code (sr,s,e) -> [bexe_code (sr,s, ge e)]
   | BEXE_nonreturn_code (sr,s,e) -> [bexe_nonreturn_code (sr,s, ge e)]
-  | BEXE_goto (sr,lab) -> [bexe_goto (sr, relab lab)]
+  | BEXE_goto (sr,lab,idx) -> [bexe_goto (sr, relab lab, revar idx)]
 
 
   (* INLINING THING *)
   | BEXE_proc_return sr as x ->
     incr end_label_uses;
-    [bexe_goto (sr,end_label)]
+    [bexe_goto (sr,end_label,end_index)]
 
   | BEXE_comment (sr,s) as x -> [x]
   | BEXE_nop (sr,s) as x -> [x]
   | BEXE_halt (sr,s) as x -> [x]
   | BEXE_trace (sr,v,s) as x -> [x]
-  | BEXE_label (sr,lab) -> [bexe_label (sr, relab lab)]
+  | BEXE_label (sr,lab,idx) -> [bexe_label (sr, relab lab, revar idx)]
   | BEXE_begin as x -> [x]
   | BEXE_end as x -> [x]
   | BEXE_catch _ as x -> [x]
@@ -489,15 +489,24 @@ let gen_body syms uses bsym_table id
     end;
 
     let trail_jump = match !b with
-      | BEXE_goto (_,lab)::_ when lab = end_label -> true
+      | BEXE_goto (_,lab,_)::_ when lab = end_label -> true
       | _ -> false
     in
     if trail_jump then
       (b := tl !b; decr end_label_uses)
     ;
-    if !end_label_uses > 0 then
-      b := (bexe_label (sr,end_label)) :: !b
-    ;
+    if !end_label_uses > 0 then begin
+(*
+print_endline ("[flx_spexes: inserting end label " ^ end_label);
+*)
+      b := (bexe_label (sr,end_label,end_index)) :: !b;
+      (* we made a new label so we have to add it to the bsym_table *) 
+      let bbdcl = Flx_bbdcl.bbdcl_label end_label in
+      let bsym = {Flx_bsym.id=end_label; sr=sr; bbdcl=bbdcl} in 
+      let parent = Some caller in (* We're inlining into this procedure! *)
+      (* NOTE: WARNING: THIS MAY SCREW UP THE CURRENT ITERATION THROUGH THE HASH TABLE !!! *)
+      Flx_bsym_table.add bsym_table end_index parent bsym 
+    end;
     if syms.compiler_options.Flx_options.print_flag then begin
     print_endline ("INLINING " ^ id ^ " into " ^ si caller ^ " .. OUTPUT:");
     iter (fun x -> print_endline (string_of_bexe bsym_table 0 x)) (rev !b);

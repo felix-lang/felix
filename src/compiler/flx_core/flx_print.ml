@@ -1600,6 +1600,8 @@ and string_of_symdef entry name vs =
   let se e = string_of_expr e in
   let st t = string_of_typecode t in
   match entry with
+  | SYMDEF_label s -> "label " ^ s ^ "\n"
+
   | SYMDEF_instance qn ->
     "instance " ^ string_of_ivs vs ^ " " ^
     string_of_qualified_name qn ^ ";\n"
@@ -1871,7 +1873,7 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_cond (c,t,f) -> "if " ^ se c ^ " then " ^ se t ^ " else " ^ se f ^ " endif"
   | BEXPR_unit -> "()"
   | BEXPR_unitptr -> "NULL"
-  | BEXPR_label s -> "(&&" ^ s ^ ")"
+  | BEXPR_label (s,i) -> "(&&" ^ s ^ "<"^string_of_int i^">)"
   | BEXPR_tuple_head e -> "tuple_head ("^ se e ^")"
   | BEXPR_tuple_tail e -> "tuple_tail("^ se e ^")"
   | BEXPR_tuple_cons (eh,et) -> "tuple_cons("^ se eh ^"," ^ se et ^")"
@@ -2007,7 +2009,7 @@ and string_of_bexe bsym_table level s =
   let se e = string_of_bound_expression bsym_table e in
   let sid n = bound_name_of_bindex bsym_table n in
   match s with
-  | BEXE_goto (_,s) -> spc ^ "goto " ^ s ^ ";"
+  | BEXE_goto (_,s,i) -> spc ^ "goto " ^ s ^ "<"^string_of_int i^">;"
   | BEXE_cgoto (_,e) -> spc ^ "goto *" ^ se e ^ ";"
 
   | BEXE_assert (_,e) -> spc ^ "assert " ^ se e ^ ";"
@@ -2023,10 +2025,10 @@ and string_of_bexe bsym_table level s =
   | BEXE_halt (_,s) -> spc ^ "halt " ^ s ^ ";"
   | BEXE_trace(_,v,s) -> spc ^ "trace " ^ s ^ ";"
 
-  | BEXE_ifgoto (_,e,s) -> spc ^
-     "if(" ^ se e ^ ")goto " ^ s ^ ";"
+  | BEXE_ifgoto (_,e,s,i) -> spc ^
+     "if(" ^ se e ^ ")goto " ^ s ^ "<"^string_of_int i^">;"
 
-  | BEXE_label (_,s) -> s ^ ":"
+  | BEXE_label (_,s,i) -> s ^ "<"^string_of_int i^">:>"
 
   | BEXE_comment (_,s) -> spc ^
     "// " ^ s
@@ -2103,6 +2105,8 @@ and string_of_dcl level name seq vs (s:dcl_t) =
   let sl = spaces level in
   let seq = match seq with Some i -> "<" ^ string_of_bid i ^ ">" | None -> "" in
   match s with
+  | DCL_label ->
+    spaces (if level >2 then level - 2 else level) ^ string_of_id name ^ ":>"
   | DCL_type_alias (t2) ->
     sl ^ "typedef " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     " = " ^ st t2 ^ ";"
@@ -2345,6 +2349,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
   let se e = string_of_bound_expression bsym_table e in
   let un = btyp_tuple [] in
   match bbdcl with
+  | BBDCL_label s -> "label " ^ s
   | BBDCL_invalid -> assert false
 
   | BBDCL_module ->
@@ -2606,6 +2611,7 @@ let print_symbols bsym_table =
   Flx_bsym_table.iter begin fun i _ bsym ->
     let id = Flx_bsym.id bsym in
     match Flx_bsym.bbdcl bsym with
+    | BBDCL_label s -> print_endline ("label " ^ s)
     | BBDCL_fun (_,bvs,ps,_,exes) ->
         print_function_body
           bsym_table

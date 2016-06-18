@@ -43,7 +43,7 @@ touching the compiler.
 
 For example a complete set of primitive types with their base
 operations cannot be presented, because, with a couple of exceptions
-there aren't any such type. Instead, most primitive types are introduced
+there aren't any such types. Instead, most primitive types are introduced
 without knowledge of the compiler, by creating bindings to C++ in 
 library code; these bindings defined the type name and some operations
 on the types in terms of C++.
@@ -99,15 +99,14 @@ gen rabbits () = {
   var this_gen = 2;
   while true do
     yield (generation, this_gen);
-    var rabbits  = this_gen;
-    this_gen = rabbits + last_gen;
-    last_gen = rabbits;
+    last_gen <-> this_gen;
+    this_gen += last_gen;
   done
 }
 
 var fibonacci = rabbits;
 
-for var i in 1..10 do
+for i in 1..10 do
   var bunnies = fibonacci(); 
   println$ bunnies;
 done
@@ -292,13 +291,13 @@ println$ x;
 \end{minted}
 
 which is clearly just an expansion of the the first two
-iteration of the previously given for loop. However in
+iterations of the previously given for loop. However in
 this case there is no assurance \verb%x% will change after \verb%i%
 is incremented because the compiler is free to replace
 any \verb%val% definition with a \verb%var% definition.
 
 \subsection{Multiple values}
-Multipls values can be defined at once:
+Multiple values can be defined at once:
 
 \begin{minted}{felix}
 val m = 1,2;
@@ -380,11 +379,13 @@ component.
 
 The effect of this mechanism is to eliminate the need for
 the notion of lvalues, and ensure the underlying semantics
-is entirely based on values. Pointer provide the bridge
-between objects and values.
+is entirely based on values. 
+
+{\em Pointers provide the bridge
+between objects and values. }
 
 Thus, any value can be turned into an object by storing
-it in a variable, or copying it onto the heap with the \verb%new%
+it in a variable, or copying it onto the heap with operator \verb%new%.
 
 Felix also supports a short form of value definition:
 
@@ -513,7 +514,7 @@ halt "Program complete";
 
 
 \section{try/catch/endtry}
-The try/catch construction may only be user to wrap
+The try/catch construction may only be used to wrap
 calls to C++ primitives, so as to catch exceptions.
 
 \begin{minted}{felix}
@@ -545,7 +546,7 @@ proc demo (selector:int) {
     else label_address lab2
     endif
   ;
-  goto-indirect selector;
+  goto-indirect pos;
 lab1:>
   println$ "Lab1"; return;
 lab2:>

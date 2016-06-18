@@ -86,6 +86,9 @@ let rec is_pure syms bsym_table i =
     *)
     true
 
+  (* not sure about this *)
+  | BBDCL_label s -> true
+
   (* not sure if this is the right place for this check .. *)
   | BBDCL_external_fun (props,_,_,_,_,_,kind) ->
       begin match kind with
@@ -489,7 +492,7 @@ let rec can_stack_proc
        *)
        raise Unstackable
 
-    | BEXE_label (_,s) ->
+    | BEXE_label (_,s,idx) ->
        let  lno = hfind "labels" labels s in
        let lkind =
          Flx_label.get_label_kind_from_index label_usage lno
@@ -502,8 +505,8 @@ let rec can_stack_proc
          raise Unstackable
        end
 
-    | BEXE_ifgoto (_,_,s) 
-    | BEXE_goto (_,s) ->
+    | BEXE_ifgoto (_,_,s,idx) 
+    | BEXE_goto (_,s,idx) ->
       begin
         match Flx_label.find_label bsym_table label_map i s with
         | `Nonlocal _ ->
