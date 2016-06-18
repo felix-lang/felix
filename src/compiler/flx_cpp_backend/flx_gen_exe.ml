@@ -542,7 +542,20 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       let e = ge sr e in
       (* temporarily ignore stack unwinding issues .. and other issues too *) 
       "      FLX_DIRECT_LONG_JUMP(" ^ e ^ ")\n"
-      
+
+    | BEXE_ifcgoto (sr, e1,e2) ->
+      (* Computed goto. Expression e must resolve to a label expression of C++ type jump_address_t *)
+      needs_switch := true;
+      let skip = "_skip_" ^ cid_of_bid (fresh_bid syms.counter) in
+      let not_e = ce_prefix "!" (ge' sr e1) in
+      let not_e = string_of_cexpr not_e in
+
+      (* temporarily ignore stack unwinding issues .. and other issues too *) 
+      let e2 = ge sr e2 in
+      "      if("^not_e^") goto " ^ cid_of_flxid skip ^ ";\n"  ^
+      "      FLX_DIRECT_LONG_JUMP(" ^ e2 ^ ")\n" ^
+      "    " ^ cid_of_flxid skip ^ ":;\n"
+       
 
     | BEXE_ifgoto (sr,e,s,idx) ->
       begin try

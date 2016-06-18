@@ -307,6 +307,7 @@ let fold_vars syms bsym_table uses i ps exes : Flx_bexe.t list =
           (* return modified instr *)
           | BEXE_cgoto _  (* ?? *)
           | BEXE_ifgoto _ (* ?? *)
+          | BEXE_ifcgoto _ (* ?? *)
           | BEXE_assert _
           | BEXE_assert2 _
           | BEXE_axiom_check2 _

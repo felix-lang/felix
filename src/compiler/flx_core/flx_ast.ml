@@ -371,6 +371,7 @@ and ast_term_t =
 and statement_t =
   | STMT_type_error of Flx_srcref.t * statement_t
   | STMT_cgoto of Flx_srcref.t * expr_t
+  | STMT_ifcgoto of Flx_srcref.t * expr_t * expr_t
   | STMT_try of Flx_srcref.t 
   | STMT_endtry of Flx_srcref.t 
   | STMT_catch of Flx_srcref.t  * Flx_id.t * typecode_t
@@ -606,6 +607,7 @@ type exe_t =
   | EXE_label of string (* for internal use only *)
   | EXE_goto of string  (* for internal use only *)
   | EXE_cgoto of expr_t (* for internal use only *)
+  | EXE_ifcgoto of expr_t * expr_t (* for internal use only *)
   | EXE_ifgoto of expr_t * string  (* for internal use only *)
   | EXE_call of expr_t * expr_t
   | EXE_jump of expr_t * expr_t
@@ -777,6 +779,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_label (s,_)
   | STMT_goto (s,_)
   | STMT_cgoto (s,_)
+  | STMT_ifcgoto (s,_,_)
   | STMT_assert (s,_)
   | STMT_init (s,_,_)
   | STMT_function (s,_,_,_,_,_,_)

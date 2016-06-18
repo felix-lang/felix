@@ -775,6 +775,7 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
   | Lst [Id "ast_goto_indirect"; sr; e] -> let sr = xsr sr in STMT_cgoto (sr, ex sr e)
   | Lst [Id "ast_goto"; sr; id] -> let sr = xsr sr in STMT_goto (sr, xid id)
   | Lst [Id "ast_ifgoto"; sr; e; id] -> let sr = xsr sr in STMT_ifgoto (sr,ex sr e, xid id)
+  | Lst [Id "ast_ifgoto_indirect"; sr; e1; e2] -> let sr = xsr sr in STMT_ifcgoto (sr,ex sr e1, ex sr e2)
   | Lst [Id "ast_likely_ifgoto"; sr; e; id] -> let sr = xsr sr in 
       STMT_ifgoto (sr, EXPR_likely (sr,ex sr e), xid id)
 

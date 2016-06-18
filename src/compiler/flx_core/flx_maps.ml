@@ -287,6 +287,7 @@ let rec map_exe fi ft fe (x:exe_t):exe_t = match x with
   | EXE_goto _
     -> x
   | EXE_cgoto e -> EXE_cgoto (fe e)
+  | EXE_ifcgoto (e1,e2) -> EXE_ifcgoto (fe e1, fe e2)
   | EXE_ifgoto (e,s) -> EXE_ifgoto (fe e,s)
   | EXE_call (a,b) -> EXE_call (fe a, fe b)
   | EXE_jump (a,b) -> EXE_jump (fe a, fe b)

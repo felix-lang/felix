@@ -431,6 +431,12 @@ print_endline ("Translating Lazy Declaration " ^ name);
   | STMT_cgoto (sr,e) -> 
    let d,x = rex e in d @ [Exe (sr,EXE_cgoto x)]
 
+  | STMT_ifcgoto (sr,e1,e2) -> 
+   let d1,x1 = rex e1 in 
+   let d2,x2 = rex e2 in 
+   d1 @ d2 @ [Exe (sr,EXE_ifcgoto (x1,x2))]
+
+
   | STMT_fun_return (sr,e) ->
     let d,x = rex e in d @ [Exe (sr,EXE_fun_return x)]
 

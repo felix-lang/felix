@@ -1068,6 +1068,21 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | STMT_instance (sr, vs, qn, sts) ->
     tack (STMT_instance (sr, vs, mq qn, ms sts))
 
+  | STMT_ifcgoto (sr, e1 , e2) ->
+    let e1 = me e1 in
+    let e1 = cf e1 in
+    let e2 = me e2 in
+    let e2 = cf e2 in
+    begin match truthof e1 with
+    | Some true ->
+      ctack (STMT_cgoto (sr,e2));
+      reachable := false
+
+    | Some false -> ()
+    | None ->
+      ctack (STMT_ifcgoto (sr, e1, e2))
+    end
+
   | STMT_ifgoto (sr, e , id) ->
     let e = me e in
     let e = cf e in

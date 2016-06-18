@@ -341,7 +341,14 @@ let rec bind_exe state bsym_table (sr, exe) : bexe_t list =
     state.reachable <- false;
     let e',t as x = be e in
     if t = Flx_btype.btyp_label () then
-      [(bexe_cgoto (sr,x))]
+      begin match e' with
+      | BEXPR_label (s,i) -> 
+        (*
+        print_endline ("optimised cgoto to goto: label " ^ s);
+        *)
+        [bexe_goto (sr,s,i)]
+      | _ -> [(bexe_cgoto (sr,x))]
+      end
     else
       clierr (src_of_expr e)
       (
@@ -349,7 +356,33 @@ let rec bind_exe state bsym_table (sr, exe) : bexe_t list =
         sbt bsym_table t
       )
 
-
+  | EXE_ifcgoto (e1,e2) ->
+    state.reachable <- false;
+    let e1',t1 as x1 = be e1 in
+    if t1 = flx_bbool
+    then
+      let e2',t2 as x2 = be e2 in
+      if t2 = Flx_btype.btyp_label () then
+        begin match e2' with
+        | BEXPR_label (s,i) -> 
+          (*
+          print_endline ("optimised cgoto to goto: label " ^ s);
+          *)
+          [bexe_ifgoto (sr,x1,s,i)]
+        | _ -> [(bexe_ifcgoto (sr,x1,x2))]
+        end
+      else
+        clierr (src_of_expr e2)
+        (
+          "[bind_exes:ifcgoto] Computed goto require LABEL argument, got " ^
+          sbt bsym_table t2
+        )
+    else
+      clierr (src_of_expr e1)
+      (
+        "[bind_exes:ifgoto] Conditional requires bool argument, got " ^
+        sbt bsym_table t1
+      )
 
   | EXE_proc_return_from s ->
     state.reachable <- false;

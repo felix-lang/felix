@@ -9,6 +9,7 @@ type t =
   | BEXE_goto of Flx_srcref.t * string * Flx_types.bid_t  (* for internal use only *)
   | BEXE_cgoto of Flx_srcref.t * Flx_bexpr.t (* computed goto *)
   | BEXE_ifgoto of Flx_srcref.t * Flx_bexpr.t * string  * Flx_types.bid_t (* for internal use only *)
+  | BEXE_ifcgoto of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
   | BEXE_call of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
   | BEXE_call_direct of Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t
   | BEXE_call_stack of Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t
@@ -43,6 +44,7 @@ let bexe_halt (sr,s) = BEXE_halt (sr,s)
 let bexe_trace (sr,s1,s2) = BEXE_trace (sr,s1,s2)
 let bexe_goto (sr,s,i) = BEXE_goto (sr,s,i)
 let bexe_cgoto (sr,e) = BEXE_cgoto (sr,e)
+let bexe_ifcgoto (sr,e1,e2) = BEXE_ifcgoto (sr,e1,e2)
 let bexe_ifgoto (sr,e,s,i) = BEXE_ifgoto (sr,e,s,i)
 let bexe_call (sr,e1,e2) = BEXE_call (sr,e1,e2)
 let bexe_call_direct (sr,bid,ts,e) = BEXE_call_direct (sr,bid,ts,e)
@@ -76,6 +78,7 @@ let bexe_catch sr s t  = BEXE_catch (sr,s, t)
 let get_srcref = function
   | BEXE_goto (sr,_,_)
   | BEXE_cgoto (sr,_)
+  | BEXE_ifcgoto (sr,_,_)
   | BEXE_assert (sr,_)
   | BEXE_assert2 (sr,_,_,_)
   | BEXE_axiom_check2 (sr,_,_,_)
@@ -145,9 +148,9 @@ let iter
       f_bid idx;
       f_label_use lab;
       f_bexpr e
-  | BEXE_label (sr,lab,idx) -> f_label_def lab; f_bid idx;
-  | BEXE_goto (sr,lab,idx) -> f_label_use lab; f_bid idx;
-
+  | BEXE_label (sr,lab,idx) -> f_label_def lab; f_bid idx
+  | BEXE_goto (sr,lab,idx) -> f_label_use lab; f_bid idx
+  | BEXE_ifcgoto (sr,e1,e2) -> f_bexpr e2; f_bexpr e2
   | BEXE_cgoto (sr,e) -> f_bexpr e
   | BEXE_fun_return (sr,e) -> f_bexpr e
   | BEXE_yield (sr,e) -> f_bexpr e
@@ -202,6 +205,7 @@ let map
   | BEXE_label (sr,lab,idx) -> BEXE_label (sr, f_label_def lab,f_bid idx)
   | BEXE_goto (sr,lab,idx) -> BEXE_goto (sr, f_label_use lab, f_bid idx)
   | BEXE_cgoto (sr,e) -> BEXE_cgoto (sr, f_bexpr e)
+  | BEXE_ifcgoto (sr,e1,e2) -> BEXE_ifcgoto (sr, f_bexpr e1, f_bexpr e2)
   | BEXE_fun_return (sr,e) -> BEXE_fun_return (sr,f_bexpr e)
   | BEXE_yield (sr,e) -> BEXE_yield (sr,f_bexpr e)
   | BEXE_assert (sr,e) -> BEXE_assert (sr,f_bexpr e)

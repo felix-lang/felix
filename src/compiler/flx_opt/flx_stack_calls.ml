@@ -519,6 +519,7 @@ let rec can_stack_proc
       end
 
     | BEXE_cgoto _ -> raise Unstackable
+    | BEXE_ifcgoto _ -> raise Unstackable
 
     | BEXE_yield _
     | BEXE_fun_return _ -> assert is_nonreturn 

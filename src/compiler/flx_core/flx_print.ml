@@ -1153,6 +1153,7 @@ and string_of_statement level s =
 
   | STMT_type_error (_,stmt) -> spaces level ^ "type-error" ^ string_of_statement 0 stmt
   | STMT_cgoto (_,e) -> spaces level ^ "goto-indirect " ^ se e ^ ";"
+  | STMT_ifcgoto (_,e1,e2) -> spaces level ^ "if("^se e1^") goto-indirect " ^ se e2 ^ ";"
   | STMT_try _ -> spaces level ^ "try"
   | STMT_endtry _ -> spaces level ^ "endtry"
   | STMT_catch (_,id,t) -> spaces level ^ "catch "^id ^ " : " ^ string_of_typecode t^" => "
@@ -1788,6 +1789,10 @@ and string_of_exe level s =
   | EXE_ifgoto (e,s) -> spc ^
      "if(" ^ se e ^ ")goto " ^ s ^ ";"
 
+  | EXE_ifcgoto (e1,e2) -> spc ^
+     "if(" ^ se e1 ^ ")goto-indirect " ^ se e2 ^ ";"
+
+
   | EXE_label s -> s ^ ":>"
 
   | EXE_comment s -> spc ^
@@ -2027,6 +2032,10 @@ and string_of_bexe bsym_table level s =
 
   | BEXE_ifgoto (_,e,s,i) -> spc ^
      "if(" ^ se e ^ ")goto " ^ s ^ "<"^string_of_int i^">;"
+
+  | BEXE_ifcgoto (_,e1,e2) -> spc ^
+     "if(" ^ se e1 ^ ") goto-indirect " ^ se e2 ^ ";"
+
 
   | BEXE_label (_,s,i) -> s ^ "<"^string_of_int i^">:>"
 

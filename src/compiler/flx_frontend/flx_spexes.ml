@@ -250,6 +250,8 @@ let gen_body syms uses bsym_table id
 
   | BEXE_ifgoto (sr,e,lab,idx) -> [bexe_ifgoto (sr,ge e, relab lab, revar idx)]
   | BEXE_cgoto (sr,e) -> [bexe_cgoto (sr,ge e)]
+  | BEXE_ifcgoto (sr,e1,e2) -> [bexe_ifcgoto (sr,ge e1, ge e2)]
+
   | BEXE_fun_return (sr,e) -> [bexe_fun_return (sr, ge e)]
   | BEXE_yield (sr,e) -> [bexe_yield (sr, ge e)]
   | BEXE_assign (sr,e1,e2) -> [bexe_assign (sr, ge e1, ge e2)]

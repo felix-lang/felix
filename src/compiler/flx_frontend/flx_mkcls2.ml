@@ -424,6 +424,7 @@ let chk_exe state bsym_table nutab exe =
 
   | BEXE_ifgoto (sr,e,l,idx) -> bexe_ifgoto (sr, ce sr e,l,idx)
   | BEXE_cgoto (sr,e) -> bexe_cgoto (sr, ce sr e)
+  | BEXE_ifcgoto (sr,e1,e2) -> bexe_ifcgoto (sr, ce sr e1, ce sr e2)
   | BEXE_fun_return (sr,e) -> bexe_fun_return (sr,ce sr e)
 
   | BEXE_code (sr,s,e) -> bexe_code (sr,s, ce sr e)

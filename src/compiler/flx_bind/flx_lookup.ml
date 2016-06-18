@@ -4380,6 +4380,9 @@ print_endline ("LOOKUP 5: varname " ^ si index);
           | BBDCL_const_ctor _  ->
             bexpr_varname t (index, ts)
 
+          | BBDCL_label _ ->
+            bexpr_label name index
+
           | BBDCL_fun _ 
             ->
             clierr sr ("Flx_lookup: bind_expression: EXPR_name] Nonfunction entry: Expected name "^name^ 
@@ -4440,6 +4443,9 @@ print_endline ("LOOKUP 7: varname " ^ si index);
 (* DEPRECATED *)
           | { Flx_sym.symdef=SYMDEF_const_ctor  _ } ->
             bexpr_varname t (index,ts)
+
+          | { Flx_sym.symdef=SYMDEF_label _ } ->
+            bexpr_label name index
 
 
           | _ -> 

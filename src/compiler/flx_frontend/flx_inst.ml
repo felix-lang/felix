@@ -280,6 +280,7 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
     uis sr i ts;
     ue sr e2
 
+  | BEXE_ifcgoto (sr,e1,e2)
   | BEXE_call (sr,e1,e2)
   | BEXE_jump (sr,e1,e2)
     -> ue sr e1; ue sr e2
@@ -700,6 +701,5 @@ print_endline "  [flx_inst] Begin instantiation";
 (*
   print_endline "  [flx_inst] End instantiation";
 *)
-
 
 (* BUG!!!!! Abstract type requirements aren't handled!! *)

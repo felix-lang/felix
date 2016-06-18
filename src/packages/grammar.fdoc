@@ -1108,7 +1108,7 @@ syntax conditional
   if_stmt := "if" sexpr "perform" stmt =># '`(ast_ifdo ,_sr ,_2 (,_4) ())';
   
   //$ Short form conditional goto statements.
-  if_stmt := "if" sexpr "goto" sname =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
+  if_stmt := "if" sexpr "goto" sexpr ";" =># "`(ast_ifgoto_indirect ,_sr ,_2 ,_4)";
   if_stmt := "if" sexpr "break" sname =># '`(ast_ifgoto ,_sr ,_2 ,(string-append "break_" _4))';
   if_stmt := "if" sexpr "continue" sname =># '`(ast_ifgoto ,_sr ,_2 ,(string-append "continue_" _4))';
   if_stmt := "if" sexpr "redo" sname =># '`(ast_ifgoto ,_sr ,_2 ,(string-append "redo_" _4))';
@@ -1153,7 +1153,7 @@ syntax conditional
   private selif_clause := "elif" sexpr "return" sexpr ";" =># "`(,_2 ((ast_fun_return ,_sr ,_4)))";
 
   //$ Short form elif goto clause.
-  private selif_clause := "elif" sexpr "goto" sname =># "`(,_2 (ast_goto ,_sr ,_4))";
+  private selif_clause := "elif" sexpr "goto" sexpr ";" =># "`(,_2 (ast_cgoto ,_sr ,_4))";
 
 
   private selif_clauses := selif_clauses selif_clause =># "(cons _2 _1)"; // Reversed!
@@ -1242,7 +1242,7 @@ syntax control
   stmt := sname ":>" =># "`(ast_label ,_sr ,_1)";
 
   //$ Unconditional goto label.
-  stmt := "goto" sname ";" =># "`(ast_goto ,_sr ,_2)";
+  stmt := "goto" sexpr ";" =># "`(ast_goto_indirect ,_sr ,_2)";
 
   //$ Unconditional goto expression.
   block := "goto-indirect" sexpr ";" =># "`(ast_goto_indirect ,_sr ,_2)";

@@ -9,6 +9,7 @@ type t = private
   | BEXE_goto of Flx_srcref.t * string * Flx_types.bid_t (* for internal use only *)
   | BEXE_cgoto of Flx_srcref.t * Flx_bexpr.t (* computed goto *)
   | BEXE_ifgoto of Flx_srcref.t * Flx_bexpr.t * string * Flx_types.bid_t (* for internal use only *)
+  | BEXE_ifcgoto of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
   | BEXE_call of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
   | BEXE_call_direct of Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t
   | BEXE_call_stack of Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t
@@ -45,6 +46,7 @@ val bexe_trace : Flx_srcref.t * string * string -> t
 val bexe_goto : Flx_srcref.t * string * Flx_types.bid_t -> t
 val bexe_cgoto : Flx_srcref.t * Flx_bexpr.t -> t
 val bexe_ifgoto : Flx_srcref.t * Flx_bexpr.t * string * Flx_types.bid_t -> t
+val bexe_ifcgoto : Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t -> t
 val bexe_call : Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t -> t
 val bexe_call_direct : Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t -> t
 val bexe_call_stack : Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t -> t
