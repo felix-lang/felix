@@ -63,7 +63,6 @@ type sdir_t = Flx_srcref.t * dir_t
 type value_kind_t = [ `Val | `Var | `Ref | `Lazy of expr_t ]
 
 type dcl_t =
-  | DCL_label
   (* data structures *)
   | DCL_axiom of         params_t * axiom_method_t
   | DCL_lemma of         params_t * axiom_method_t
@@ -129,8 +128,8 @@ type symbol_definition_t =
   | SYMDEF_lemma of params_t * axiom_method_t
   | SYMDEF_reduce of parameter_t list * expr_t * expr_t
   | SYMDEF_function of params_t * typecode_t * property_t list * sexe_t list
-  | SYMDEF_root of sexe_t list
-  | SYMDEF_module of sexe_t list
+  | SYMDEF_root of bid_t option (* initialiser procedure *)
+  | SYMDEF_module of bid_t option (* initialisation function *)
   | SYMDEF_const_ctor of bid_t * typecode_t * int * ivs_list_t
   | SYMDEF_nonconst_ctor of bid_t * typecode_t * int * ivs_list_t * typecode_t
   | SYMDEF_const of property_t list * typecode_t * Flx_code_spec.t * named_req_expr_t
@@ -144,7 +143,7 @@ type symbol_definition_t =
   | SYMDEF_union of (Flx_id.t * int *  vs_list_t * typecode_t) list
   | SYMDEF_struct of (Flx_id.t * typecode_t) list
   | SYMDEF_cstruct of (Flx_id.t * typecode_t) list * named_req_expr_t 
-  | SYMDEF_typeclass
+  | SYMDEF_typeclass of bid_t option (* initialiser procedure *)
   | SYMDEF_type_alias of typecode_t
   | SYMDEF_inherit of qualified_name_t
   | SYMDEF_inherit_fun of qualified_name_t

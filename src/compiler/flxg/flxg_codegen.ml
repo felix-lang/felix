@@ -11,43 +11,39 @@ open Flxg_state
 module CS = Flx_code_spec
 
 
-let instantiate state bsym_table root_proc =
+let instantiate state bsym_table (root_proc: int option) =
   if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//INSTANTIATING\n";
 
-  let label_map = Flx_label.create_label_map bsym_table state.syms.counter in
-  let label_usage = Flx_label.create_label_usage bsym_table label_map in
-  let label_info = label_map, label_usage in
+  let label_info = Flx_label.create_label_info bsym_table in
+  match root_proc with
+  | Some root_proc ->
+    (* Make sure we can find the _init_ instance *)
+    let top_class =
+      try Flx_name.cpp_instance_name state.syms bsym_table root_proc []
+      with Not_found ->
+        failwith ("can't name instance of root _init_ procedure index " ^
+          string_of_bid root_proc)
+    in
 
-  (* Make sure we can find the _init_ instance *)
-  let top_class =
-    try Flx_name.cpp_instance_name state.syms bsym_table root_proc []
-    with Not_found ->
-      failwith ("can't name instance of root _init_ procedure index " ^
-        string_of_bid root_proc)
-  in
+    (* FUDGE the init procedure to make interfacing a bit simpler *)
+    let topclass_props =
+      let bsym = Flx_bsym_table.find bsym_table root_proc in
+      match Flx_bsym.bbdcl bsym with
+      | BBDCL_fun (props,vs,p,BTYP_void,exes) -> props
+      | _ -> syserr (Flx_bsym.sr bsym) "Expected root to be procedure"
+    in
+    if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+    print_endline  ("//root module's init procedure has name " ^  top_class);
 
-  (* FUDGE the init procedure to make interfacing a bit simpler *)
-  let topclass_props =
-    let bsym = Flx_bsym_table.find bsym_table root_proc in
-    match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,p,BTYP_void,exes) -> props
-    | _ -> syserr (Flx_bsym.sr bsym) "Expected root to be procedure"
-  in
-  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
-  print_endline  ("//root module's init procedure has name " ^  top_class);
-
-  label_map, label_usage, label_info, top_class, topclass_props
-
+    label_info, Some (top_class, topclass_props)
+  | None -> label_info, None
 
 let codegen_bsyms
   state
   bsym_table
-  label_map
-  label_usage
   label_info
-  top_class
-  topclass_props
+  top_data
 =
   let shapes = ref Flx_set.StringSet.empty in 
   let shape_map = Hashtbl.create 97 in
@@ -329,10 +325,11 @@ let codegen_bsyms
     Hashtbl.iter
     (fun (fno,_) inst ->
       try
-        let labels = Hashtbl.find label_map fno in
-        Hashtbl.iter
-        (fun lab lno ->
-          match Flx_label.get_label_kind_from_index label_usage lno with
+        let labels = Hashtbl.find label_info.Flx_label.labels_by_proc fno in
+        List.iter
+        (fun lno ->
+          let lab = Flx_name.cid_of_flxid (Flx_label.get_label_name bsym_table lno) in
+          match Flx_label.get_label_kind_from_index label_info.Flx_label.label_usage lno with
           | `Far ->
             if not !header_emitted then begin
               plb "\n//-----------------------------------------";
@@ -383,23 +380,27 @@ let codegen_bsyms
   plb (
     "FLX_FRAME_WRAPPERS(::flxusr::" ^ mname ^","^mname ^ ")");
 
-  begin if List.mem `Pure topclass_props then
-    if List.mem `Requires_ptf topclass_props then
-    plb (
-      "FLX_C_START_WRAPPER_PTF(::flxusr::" ^ 
-      mname ^ ","^mname^"," ^ top_class ^ ")")
+  begin match top_data with
+  | Some (top_class, topclass_props) ->
+    begin if List.mem `Pure topclass_props then
+      if List.mem `Requires_ptf topclass_props then
+      plb (
+        "FLX_C_START_WRAPPER_PTF(::flxusr::" ^ 
+        mname ^ ","^mname^"," ^ top_class ^ ")")
+      else
+      plb (
+        "FLX_C_START_WRAPPER_NOPTF(::flxusr::" ^ 
+        mname ^ ","^mname^"," ^ top_class ^ ")")
+    else if List.mem `Stackable topclass_props then
+      plb (
+        "FLX_STACK_START_WRAPPER(::flxusr::" ^
+        mname ^ ","^mname^"," ^ top_class ^ ")")
     else
-    plb (
-      "FLX_C_START_WRAPPER_NOPTF(::flxusr::" ^ 
-      mname ^ ","^mname^"," ^ top_class ^ ")")
-  else if List.mem `Stackable topclass_props then
-    plb (
-      "FLX_STACK_START_WRAPPER(::flxusr::" ^
-      mname ^ ","^mname^"," ^ top_class ^ ")")
-  else
-    plb (
-      "FLX_START_WRAPPER(::flxusr::" ^
-      mname ^ ","^mname^"," ^ top_class ^ ")")
+      plb (
+        "FLX_START_WRAPPER(::flxusr::" ^
+        mname ^ ","^mname^"," ^ top_class ^ ")")
+    end;
+  | None -> ()
   end;
 
   plb "\n//-----------------------------------------";
@@ -416,7 +417,7 @@ let codegen_bsyms
       state.syms
       bsym_table
       shapes shape_map
-      label_map
+      label_info
       state.syms.bifaces);
 
     plb (Flx_gen_python.gen_python_module
@@ -536,8 +537,8 @@ let codegen_bsyms
   Flxg_file.close_out state.package_file
 
 
-let codegen state bsym_table root_proc =
-  let label_map, label_usage, label_info, top_class, topclass_props =
+let codegen state bsym_table (root_proc: int option) =
+  let label_info, top_data =
     Flx_profile.call
       "Flxg_codegen.instantiate"
       (instantiate state bsym_table)
@@ -550,6 +551,6 @@ let codegen state bsym_table root_proc =
   (* Finally, lets do some code generation! *)
   Flx_profile.call
     "Flxg_codegen.codegen_bsyms"
-    (codegen_bsyms state bsym_table label_map label_usage label_info top_class)
-    topclass_props
+    (codegen_bsyms state bsym_table label_info)
+    top_data
 

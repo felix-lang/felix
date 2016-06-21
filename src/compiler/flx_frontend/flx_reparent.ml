@@ -55,7 +55,6 @@ let mk_remap counter d =
 let remap_expr
   syms
   bsym_table
-  relabel
   revariable    (** revariable remaps indices. *)
   e
 =
@@ -63,7 +62,6 @@ let remap_expr
   print_endline ("Remapping expression " ^ sbe bsym_table e);
 *)
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
-  let relab s = try let r = Hashtbl.find relabel s in (* print_endline ("Relab: " ^ s ^ "->" ^ r); *) r with Not_found -> s in
   let fixup i ts =
     try
       let j= Hashtbl.find revariable i in
@@ -97,7 +95,7 @@ let remap_expr
         bexpr_apply_prim (t) (i,ts,aux e)
 
     | _ -> 
-      Flx_bexpr.map ~f_bexpr:aux ~f_label:relab ~f_bid:revar e
+      Flx_bexpr.map ~f_bexpr:aux ~f_bid:revar e
   in
   let a = aux e in
 (*
@@ -108,16 +106,14 @@ let remap_expr
 let remap_exe
   syms
   bsym_table
-  relabel
   revariable    (** revariable remaps indices. *)
   exe
 =
 (*
   print_endline ("remap_exe " ^ string_of_bexe bsym_table 0 exe);
 *)
-  let ge e = remap_expr syms bsym_table relabel revariable e in
+  let ge e = remap_expr syms bsym_table revariable e in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
-  let relab s = try let r = Hashtbl.find relabel s in (* print_endline ("Relab: " ^ s ^ "->" ^ r); *) r with Not_found -> s in
 
   let exe =
   match exe with
@@ -147,11 +143,11 @@ let remap_exe
 
   | BEXE_call_stack (sr,i,ts,e2) -> assert false
 
-  | BEXE_label (sr,lab,index) -> bexe_label (sr,relab lab, revar index)
-  | BEXE_goto (sr,lab,index) -> bexe_goto (sr,relab lab, revar index)
-  | BEXE_ifgoto (sr,e,lab,index) -> bexe_ifgoto (sr,ge e,relab lab, revar index)
+  | BEXE_label (sr,index) -> bexe_label (sr,revar index)
+  | BEXE_goto (sr,index) -> bexe_goto (sr,revar index)
+  | BEXE_ifgoto (sr,e,index) -> bexe_ifgoto (sr,ge e,revar index)
 
-  | x -> Flx_bexe.map ~f_bid:revar ~f_bexpr:ge ~f_label_use:relab ~f_label_def:relab x
+  | x -> Flx_bexe.map ~f_bid:revar ~f_bexpr:ge  x
   in
 (*
   print_endline ("remapped_exe " ^ string_of_bexe bsym_table 0 exe);
@@ -159,8 +155,8 @@ let remap_exe
   exe
 
 
-let remap_exes syms bsym_table relabel revariable exes =
-  map (remap_exe syms bsym_table relabel revariable) exes
+let remap_exes syms bsym_table revariable exes =
+  map (remap_exe syms bsym_table revariable) exes
 
 let remap_reqs syms bsym_table revariable reqs : breqs_t =
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
@@ -176,7 +172,6 @@ let remap_reqs syms bsym_table revariable reqs : breqs_t =
 (* this routine makes a (type) specialised version of a symbol:
    a function, procedure, variable, or whatever.
 
-   relabel: maps old labels onto fresh labels
    revariable: maps old variables and functions to fresh ones
    varmap: maps type variables to types (type specialisation)
    index: this routine
@@ -196,7 +191,6 @@ let reparent1
   (syms:sym_state_t)
   uses
   bsym_table
-  relabel
   revariable
   index         (** Routine index. *)
   parent        (** The parent symbol. *)
@@ -213,8 +207,8 @@ let reparent1
      ps
    in
 
-  let rexes xs = remap_exes syms bsym_table relabel revariable xs in
-  let rexpr e = remap_expr syms bsym_table relabel revariable e in
+  let rexes xs = remap_exes syms bsym_table revariable xs in
+  let rexpr e = remap_expr syms bsym_table revariable e in
   let rreqs rqs = remap_reqs syms bsym_table revariable rqs in
   let bsym = Flx_bsym_table.find bsym_table index in
   let bsym_parent = Flx_bsym_table.find_parent bsym_table index in
@@ -306,7 +300,7 @@ let reparent1
 *)
 
 let reparent_children syms uses bsym_table
-  index (parent:bid_t option) relabel rescan_flag extras
+  index (parent:bid_t option) rescan_flag extras
 =
   let extras = List.filter (fun i -> i <> 0) extras in
   let pp p = match p with None -> "NONE" | Some i -> string_of_bid i in
@@ -340,7 +334,7 @@ let reparent_children syms uses bsym_table
         else Some (Hashtbl.find revariable p)
     in
     let k = Hashtbl.find revariable i in
-    reparent1 syms uses bsym_table relabel revariable
+    reparent1 syms uses bsym_table revariable
       i new_parent k rescan_flag
   end closure;
   if syms.compiler_options.Flx_options.print_flag then begin
@@ -386,7 +380,7 @@ let reparent_children syms uses bsym_table
 
 
 let specialise_symbol syms uses bsym_table
-  index parent relabel rescan_flag
+  index parent rescan_flag
  =
   try Hashtbl.find syms.transient_specialisation_cache index
   with Not_found ->
@@ -399,12 +393,12 @@ let specialise_symbol syms uses bsym_table
 
     let revariable =
        reparent_children syms uses bsym_table
-       index (Some k) relabel rescan_flag []
+       index (Some k) rescan_flag []
     in
 
     (* Finally, reparent the symbol. *)
     reparent1 (syms:sym_state_t) uses bsym_table
-      relabel revariable
+      revariable
       index parent k rescan_flag;
 
     Hashtbl.add syms.transient_specialisation_cache index k;

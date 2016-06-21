@@ -193,36 +193,19 @@ print_endline "Flx_bind.bind_asms: bbind done";
 *)
 
 (** Find the root module's init function index. *)
-let find_root_module_init_function bind_state =
+let find_root_module_init_function_from_sym_table syms =
   (* Look up the root procedure index. *)
   let { Flx_sym.pubmap=pubmap; symdef=symdef } =
-    try Flx_sym_table.find bind_state.sym_table 0 with Not_found ->
+    try Flx_sym_table.find syms 0 with Not_found ->
       failwith ("Can't find root entry " ^ Flx_print.string_of_bid 0 ^
         " in symbol table?")
   in
 
-(* FIX ME *)
-  begin match symdef with
-    | Flx_types.SYMDEF_root _ -> ()
-    | Flx_types.SYMDEF_module _ -> ()
+  match symdef with
+    | Flx_types.SYMDEF_root p -> None 
+    | Flx_types.SYMDEF_module p -> p
     | _ -> failwith "Expected to find top level module ''"
-  end;
-  let entry =
-    try Hashtbl.find pubmap "_init_" with Not_found ->
-      failwith "Can't find name _init_ in top level module's name map"
-  in
-  let index =
-    match entry with
-    | Flx_btype.FunctionEntry [x] ->
-        Flx_typing.sye x
-    | Flx_btype.FunctionEntry [] ->
-        failwith "Couldn't find '_init_'"
-    | Flx_btype.FunctionEntry _ ->
-        failwith "Too many top level procedures called '_init_'"
-    | Flx_btype.NonFunctionEntry _ ->
-        failwith "_init_ found but not procedure"
-  in
 
-  index
-
+let find_root_module_init_function_from_bind_state bind_state =
+ find_root_module_init_function_from_sym_table bind_state.sym_table
 

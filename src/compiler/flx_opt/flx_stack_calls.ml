@@ -13,6 +13,7 @@ open List
 open Flx_unify
 open Flx_maps
 open Flx_exceptions
+open Flx_label
 
 module CS = Flx_code_spec
 
@@ -385,8 +386,7 @@ let rec can_stack_proc
   bsym_table
   fn_cache
   ptr_cache
-  label_map
-  label_usage
+  label_info
   i
   recstop
 =
@@ -406,7 +406,7 @@ let rec can_stack_proc
      * a recursive check would be more aggressive
     *)
     if has_proc_children bsym_table children then false else
-    let labels = hfind "label_map" label_map i in
+    let labels = Flx_label.get_labels_for_proc label_info i in
     begin try iter (fun exe ->
     match exe with
 
@@ -429,8 +429,7 @@ let rec can_stack_proc
         bsym_table
         fn_cache
         ptr_cache
-        label_map
-        label_usage
+        label_info
         j
         (i::recstop))
       then begin
@@ -492,10 +491,9 @@ let rec can_stack_proc
        *)
        raise Unstackable
 
-    | BEXE_label (_,s,idx) ->
-       let  lno = hfind "labels" labels s in
+    | BEXE_label (_,idx) ->
        let lkind =
-         Flx_label.get_label_kind_from_index label_usage lno
+         get_label_kind_from_index label_info.label_usage idx 
        in
        if lkind = `Far then
        begin
@@ -505,19 +503,32 @@ let rec can_stack_proc
          raise Unstackable
        end
 
-    | BEXE_ifgoto (_,_,s,idx) 
-    | BEXE_goto (_,s,idx) ->
+    | BEXE_ifgoto (_,_,idx) 
+    | BEXE_goto (_,idx) ->
       begin
-        match Flx_label.find_label bsym_table label_map i s with
-        | `Nonlocal _ ->
-          (*
-          print_endline (id ^ " does non-local goto");
-          *)
-          raise Unstackable
-        | `Unreachable -> assert false
-        | `Local _ -> ()
+        (* NOTE: if we do a goto to a Far label there are two cases:
+           its Local or of Nonlocal. If its local, there's no
+           objection to a stack. If it's Nonlocal, we have to do a
+           far goto to reach it, which prohibits the stack.
+
+           HOWEVER, if the label is marked Far, someone ELSE
+           is jumping to it from outside, also prohibiting the stack.
+           However saying this now is not useful, since no local
+           jumps may go to the label, we have to check all the 
+           labels anyhow!
+
+           At this point we don't kow if the label is local.
+           The point is, we don't care!
+        *)
+        match get_label_kind_from_index label_info.label_usage idx with
+        | `Far -> raise Unstackable
+        | `Unused -> assert false
+        | `Near -> ()
       end
 
+    (* A computed goto, without a constraint on targets,
+       could go anywhere 
+    *)
     | BEXE_cgoto _ -> raise Unstackable
     | BEXE_ifcgoto _ -> raise Unstackable
 
@@ -566,8 +577,7 @@ and check_stackable_proc
   bsym_table
   fn_cache
   ptr_cache
-  label_map
-  label_usage
+  label_info
   i
   recstop
 =
@@ -587,7 +597,7 @@ and check_stackable_proc
     | BTYP_fix (0,_) ->
       if mem `Stackable props then true
       else if mem `Unstackable props then false
-      else if can_stack_proc syms bsym_table fn_cache ptr_cache label_map label_usage i recstop
+      else if can_stack_proc syms bsym_table fn_cache ptr_cache label_info  i recstop
       then begin
         (*
         print_endline ("MARKING PROCEDURE " ^ id ^ " stackable!");
@@ -641,7 +651,7 @@ let rec enstack_applies syms bsym_table fn_cache ptr_cache x =
       end
   | x -> x
 
-let mark_stackable syms bsym_table fn_cache ptr_cache label_map label_usage =
+let mark_stackable syms bsym_table fn_cache ptr_cache label_info =
   Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,vs,p,BTYP_fix (0,_),exes)
@@ -652,8 +662,7 @@ let mark_stackable syms bsym_table fn_cache ptr_cache label_map label_usage =
           bsym_table
           fn_cache
           ptr_cache
-          label_map
-          label_usage
+          label_info
           i
           [])
 
@@ -725,8 +734,7 @@ let enstack_calls syms bsym_table fn_cache ptr_cache self exes =
 let make_stack_calls
   syms
   bsym_table
-  label_map
-  label_usage
+  label_info
 =
   let fn_cache, ptr_cache = Hashtbl.create 97 , Hashtbl.create 97 in
   let ea e = enstack_applies syms bsym_table fn_cache ptr_cache e in
@@ -736,8 +744,7 @@ let make_stack_calls
     bsym_table
     fn_cache
     ptr_cache
-    label_map
-    label_usage;
+    label_info;
 
 
   Flx_bsym_table.iter begin fun i _ bsym ->

@@ -1570,7 +1570,7 @@ print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table
     | SYMDEF_union _
     | SYMDEF_struct _
     | SYMDEF_cstruct _
-    | SYMDEF_typeclass
+    | SYMDEF_typeclass _
       ->
 (*
 print_endline ("bind type index, struct thing " ^ si index ^ " ts=" ^ catmap "," (sbt bsym_table) ts);
@@ -2643,7 +2643,9 @@ print_endline ("ctor hack failed (client error)");
     end
 
   | `AST_lookup (sr,(qn',name,ts)) ->
-
+(*
+print_endline ("Lookup qn with sig: AST_lookup of " ^ name ^ " in " ^ string_of_expr qn');
+*)
     let m =  eval_module_expr state bsym_table env qn' in
     match m with (Flx_bind_deferred.Simple_module (impl, ts',htab,dirs)) ->
     (* let n = List.length ts in *)
@@ -2735,7 +2737,7 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
           if not (type_match bsym_table state.counter a sign) then
             clierr sr
             (
-              "[lookup_qn_with_sig] Struct constructor for "^id^" has wrong signature, got:\n" ^
+              "[lookup_type_qn_with_sig] Struct constructor for "^id^" has wrong signature, got:\n" ^
               sbt bsym_table t ^
               "\nexpected:\n" ^
               sbt bsym_table sign
@@ -2819,7 +2821,7 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
       env env rs name ts signs
 
   | `AST_index (sr,name,index) as x ->
-    print_endline ("[lookup qn with sig] AST_index " ^ string_of_qualified_name x);
+    print_endline ("[lookup_type_qn_with_sig] AST_index " ^ string_of_qualified_name x);
     begin match get_data state.sym_table index with
     | { Flx_sym.vs=vs; id=id; sr=sra; symdef=entry } ->
     match entry with
@@ -2870,7 +2872,7 @@ print_endline ("Lookup type with qn found AST_lookup of " ^ name ^ " in " ^ stri
     | None ->
       clierr sr
       (
-        "[lookup_qn_with_sig] AST_lookup: Simple_module: Can't find name " ^ name
+        "[lookup_type_qn_with_sig] AST_lookup: Simple_module: Can't find name " ^ name
       )
     | Some entries -> 
       print_endline "Found some entries .. ";
@@ -3665,7 +3667,7 @@ and lookup_type_name_in_table_dirs_with_sig
     | SYMDEF_module _
     | SYMDEF_root _
     | SYMDEF_reduce _
-    | SYMDEF_typeclass
+    | SYMDEF_typeclass _
       ->
         clierr sra
         (
@@ -3928,7 +3930,7 @@ print_endline ("Case number " ^ si index);
   | EXPR_label (sr,label) -> 
     let maybe_index = lookup_label_in_env state bsym_table env sr label in
     begin match maybe_index with
-    | Some index -> bexpr_label label index
+    | Some index -> bexpr_label index
     | None ->
       clierr sr ("Flx_lookup: Cannot find label " ^ label ^ " in environment");
     end
@@ -4381,7 +4383,7 @@ print_endline ("LOOKUP 5: varname " ^ si index);
             bexpr_varname t (index, ts)
 
           | BBDCL_label _ ->
-            bexpr_label name index
+            bexpr_label index
 
           | BBDCL_fun _ 
             ->
@@ -4445,7 +4447,7 @@ print_endline ("LOOKUP 7: varname " ^ si index);
             bexpr_varname t (index,ts)
 
           | { Flx_sym.symdef=SYMDEF_label _ } ->
-            bexpr_label name index
+            bexpr_label index
 
 
           | _ -> 
@@ -5441,7 +5443,7 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
       ;
 
 
-    | SYMDEF_typeclass ->
+    | SYMDEF_typeclass _ ->
       (*
       print_endline ("Verified " ^ si i ^ " is an typeclass specialisation of " ^ classname);
       print_endline ("  base vs = " ^ print_ivs_with_index vs);
@@ -6108,7 +6110,7 @@ and pub_table_dir state bsym_table env (invs,i,ts) : name_map_t =
     in
     table
 
-  | SYMDEF_typeclass ->
+  | SYMDEF_typeclass _ ->
     let table = 
       if List.length ts = 0 
       then sym.Flx_sym.pubmap 
@@ -6403,7 +6405,7 @@ and check_module state name sr entries ts =
         | SYMDEF_root _
         | SYMDEF_module _ ->
             Flx_bind_deferred.Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
-        | SYMDEF_typeclass ->
+        | SYMDEF_typeclass _ ->
             Flx_bind_deferred.Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
         | _ ->
             clierr sr ("Expected '" ^ sym.Flx_sym.id ^ "' to be module in: " ^

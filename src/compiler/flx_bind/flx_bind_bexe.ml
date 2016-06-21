@@ -326,7 +326,7 @@ let rec bind_exe state bsym_table (sr, exe) : bexe_t list =
       let maybe_index = lookup_label_in_env state.lookup_state bsym_table state.env sr s in
       begin match maybe_index with
       | None -> clierr sr ("[bind_exe:EXE_label] Can't find label " ^ s)
-      | Some i -> [bexe_label (sr,s,i)] 
+      | Some i -> [bexe_label (sr,i)] 
       end
 
   | EXE_goto s ->
@@ -334,7 +334,7 @@ let rec bind_exe state bsym_table (sr, exe) : bexe_t list =
       let maybe_index = lookup_label_in_env state.lookup_state bsym_table state.env sr s in
       begin match maybe_index with
       | None -> clierr sr ("bind_exe:EXE_goto] Can't find label " ^ s)
-      | Some i -> [bexe_goto (sr,s,i)] 
+      | Some i -> [bexe_goto (sr,i)] 
       end
 
   | EXE_cgoto e ->
@@ -342,11 +342,11 @@ let rec bind_exe state bsym_table (sr, exe) : bexe_t list =
     let e',t as x = be e in
     if t = Flx_btype.btyp_label () then
       begin match e' with
-      | BEXPR_label (s,i) -> 
+      | BEXPR_label (i) -> 
         (*
         print_endline ("optimised cgoto to goto: label " ^ s);
         *)
-        [bexe_goto (sr,s,i)]
+        [bexe_goto (sr,i)]
       | _ -> [(bexe_cgoto (sr,x))]
       end
     else
@@ -364,11 +364,11 @@ let rec bind_exe state bsym_table (sr, exe) : bexe_t list =
       let e2',t2 as x2 = be e2 in
       if t2 = Flx_btype.btyp_label () then
         begin match e2' with
-        | BEXPR_label (s,i) -> 
+        | BEXPR_label (i) -> 
           (*
           print_endline ("optimised cgoto to goto: label " ^ s);
           *)
-          [bexe_ifgoto (sr,x1,s,i)]
+          [bexe_ifgoto (sr,x1,i)]
         | _ -> [(bexe_ifcgoto (sr,x1,x2))]
         end
       else
@@ -391,7 +391,7 @@ let rec bind_exe state bsym_table (sr, exe) : bexe_t list =
     let maybe_index = lookup_label_in_env state.lookup_state bsym_table state.env sr label_name in
     begin match maybe_index with
     | None -> clierr sr ("[bind_exe:EXE_proc_return_from] Can't find label " ^ s)
-    | Some i -> [bexe_goto (sr,label_name,i)] 
+    | Some i -> [bexe_goto (sr,i)] 
     end
 
   | EXE_ifgoto (e,s) ->
@@ -401,7 +401,7 @@ let rec bind_exe state bsym_table (sr, exe) : bexe_t list =
       let maybe_index = lookup_label_in_env state.lookup_state bsym_table state.env sr s in
       begin match maybe_index with
       | None -> clierr sr ("[bind_exe:EXE_if_goto] Can't find label " ^ s)
-      | Some i -> [bexe_ifgoto (sr,(e',t),s,i)] 
+      | Some i -> [bexe_ifgoto (sr,(e',t),i)] 
       end
     else
       clierr (src_of_expr e)

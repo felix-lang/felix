@@ -124,7 +124,6 @@ let gen_match rex seq name sr e pss =
         if !match_caseno <> 1 then
         let label = "_ml"^string_of_bid n1 in
         [
-        Dcl (patsrc,label,None,`Private,dfltvs,DCL_label);
         Exe (patsrc,EXE_label label)
         ]
         else []
@@ -204,7 +203,6 @@ let gen_match rex seq name sr e pss =
       in
       [
         Exe (sr, EXE_comment "match failure");
-        Dcl (sr,failure_label,None,`Private,dfltvs,DCL_label);
         Exe (sr, EXE_label failure_label);
         Exe (sr, EXE_noreturn_code (
           CS.Str ("      FLX_MATCH_FAILURE(" ^ s ^ "); //[flx_match] \n"),etup));
@@ -381,7 +379,6 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
         @
         (let label = "_ml"^string_of_bid (!n2) in
         [
-        Dcl (patsrc,label,None,`Private,dfltvs,DCL_label);
         Exe (patsrc,EXE_label label)
         ])
       ;
@@ -412,7 +409,6 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
     @
     (if !need_final_label then 
       [ 
-        Dcl (sr,end_match_label,None,`Private,dfltvs,DCL_label);
         Exe (sr,EXE_label end_match_label) 
       ] 
       else []

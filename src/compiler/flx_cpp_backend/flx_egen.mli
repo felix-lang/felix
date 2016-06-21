@@ -3,7 +3,7 @@ val gen_expr:
   Flx_bsym_table.t ->
   Flx_set.StringSet.t ref ->
   (string, Flx_btype.t) Hashtbl.t ->
-  Flx_label.label_map_t ->
+  Flx_label.label_info_t ->
   Flx_types.bid_t ->
   Flx_types.bvs_t ->
   Flx_btype.t list ->
@@ -16,7 +16,7 @@ val gen_expr':
   Flx_bsym_table.t ->
   Flx_set.StringSet.t ref ->
   (string, Flx_btype.t) Hashtbl.t ->
-  Flx_label.label_map_t ->
+  Flx_label.label_info_t ->
   Flx_types.bid_t ->
   Flx_types.bvs_t ->
   Flx_btype.t list ->

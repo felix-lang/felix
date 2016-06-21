@@ -292,17 +292,17 @@ let flat_poly_fixup_exe syms bsym_table polyinst parent_ts mt exe =
     *)
     bexe_svc (sr,j)
 
-  | BEXE_label (sr,s,i) ->
+  | BEXE_label (sr,i) ->
     let j,ts = polyinst sr i parent_ts in
-    bexe_label (sr,s,j)
+    bexe_label (sr,j)
 
-  | BEXE_goto  (sr,s,i) ->
+  | BEXE_goto  (sr,i) ->
     let j,ts = polyinst sr i parent_ts in
-    bexe_goto (sr,s,j)
+    bexe_goto (sr,j)
 
-  | BEXE_ifgoto (sr,e,s,i) ->
+  | BEXE_ifgoto (sr,e,i) ->
     let j,ts = polyinst sr i parent_ts in
-    bexe_ifgoto (sr,e,s,j)
+    bexe_ifgoto (sr,e,j)
 
 
 
@@ -496,7 +496,41 @@ let notunitassign exe = match exe with
     -> false
   | _ -> true
 
+let rec notemptycall (bsym_table:Flx_bsym_table.t) (trail: int list) exe : bool = 
+  match exe with
+  | BEXE_call (sr,(BEXPR_closure (f,ts),_),(_,BTYP_tuple[])) ->
+    if List.mem f trail then false (* INFINITE RECURSION! *)
+    else
+    begin 
+      let bsym = Flx_bsym_table.find bsym_table f in
+      match Flx_bsym.bbdcl bsym with
+      | BBDCL_fun (_,_,_,_,exes)  ->
+        begin match exes with
+        | [BEXE_proc_return _] -> false
+        | ls  ->
+          begin try List.iter 
+            (fun exe -> 
+              if notemptycall bsym_table (f::trail) exe 
+              then raise Not_found
+              else ()
+            )
+            ls;
+            false
+          with Not_found -> true
+          end
+        end
+      | _ -> true
+    end 
+  | _ -> true
+
 let strip_unit_assigns exes = List.filter notunitassign exes 
+
+(* remove calls to procedures that do nothing. Do NOT remove
+the procedures, let the GC do that: they might be passed as arguments
+to some HOF
+*)
+let strip_empty_calls bsym_table exes = 
+  List.filter (notemptycall bsym_table []) exes 
 
 let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst ts bsym i j =
 (*
@@ -553,6 +587,7 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
         | None -> None
         | Some x -> Some (fixup_expr syms bsym_table (mt vars) virtualinst polyinst sr x)
       in
+      let exes = strip_empty_calls bsym_table exes in
       let exes = 
         try fixup_exes syms bsym_table vars virtualinst polyinst ts exes 
         with Not_found -> assert false

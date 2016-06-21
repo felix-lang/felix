@@ -1,0 +1,83 @@
+@h1 Alternatives in patterns
+Including with suffices
+@felix
+proc f(x: int * int * int) {
+  print$ "Check " + x.str + " ";
+  match x with
+  | (1|2),(2|3),(3|4) => println$ "Yes";
+  | _ => println$ "No";
+  endmatch;
+}
+
+f (1,2,3);
+f (1,2,4);
+f (1,1,1);
+
+proc g (x:int) {
+  match x with
+  | 1 | 2 => println$ "Yes";
+  | _ => println$ "No";
+  endmatch;
+}
+
+g 2;
+g 3;
+
+var fred = (1,2,3,4,5).list;
+proc joe (x:list[int]) {
+  match x with
+  | Cons (1,t) 
+    with tail = t+fred + (99,33).list  , x = tail + 1, y = 42 
+    when t == (2,3,4,5).list => println$ "y="  + y.str  + ",tail="+tail.str + ", x=" + x.str; 
+  endmatch;
+}
+
+joe fred;
+
+fun jim (x:list[int]) : string =>
+  match x with
+  | Cons (1,t) 
+    with tail = t+fred + (99,33).list  , x = tail + 1, y = 42 
+    when t == (2,3,4,5).list => "y="  + y.str  + ",tail="+tail.str + ", x=" + x.str
+  endmatch
+;
+
+println$ jim fred;
+
+
+union shape = 
+  | Square of int 
+  | Rect of int * int
+;
+
+fun area: shape -> int =
+	| Square x with y = x
+	| Rect (x,y)
+    => x * y
+;
+
+println$ (Square 2).area;
+println$  (Rect (2,3)).area;
+
+// OH YEA!!
+fun area2 (s:shape) =>
+  let Square x with y = x | Rect (x,y) = s in x * y
+;
+
+println$ (Square 2).area2;
+println$  (Rect (2,3)).area2;
+
+@expect
+Check (1, 2, 3) Yes
+Check (1, 2, 4) Yes
+Check (1, 1, 1) No
+Yes
+No
+y=42,tail=list(2, 3, 4, 5, 1, 2, 3, 4, 5, 99, 33), x=list(2, 3, 4, 5, 1, 2, 3, 4, 5, 99, 33, 1)
+y=42,tail=list(2, 3, 4, 5, 1, 2, 3, 4, 5, 99, 33), x=list(2, 3, 4, 5, 1, 2, 3, 4, 5, 99, 33, 1)
+4
+6
+4
+6
+@
+

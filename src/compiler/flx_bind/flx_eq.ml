@@ -102,6 +102,7 @@ print_endline ("Unbound type = " ^ string_of_typecode ubt);
       let dcl = DCL_function (params, typecode, properties, asms) in
       let sdcl = sr,"__eq",None,`Public,dfltvs,dcl in
       let interfaces = ref [] in
+      let inits = ref [] in
       let rootsym = Flx_sym_table.find state.Flx_lookup_state.sym_table 0 in 
 (*
 print_endline ("BEFORE: Name table has " ^ si (Hashtbl.length rootsym.Flx_sym.pubmap) ^ " entries");
@@ -119,6 +120,7 @@ print_endline ("BEFORE: Symbol table has " ^ si (Hashtbl.length state.sym_table)
           rootsym.Flx_sym.pubmap
           rootsym.Flx_sym.privmap
           interfaces
+          inits
           sdcl
       in
 (*

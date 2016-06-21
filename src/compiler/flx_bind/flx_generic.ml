@@ -75,7 +75,7 @@ let rec find_func_vs sym_table bsym_table vs bid =
   match sym.Flx_sym.symdef with
   | SYMDEF_root _
   | SYMDEF_module _
-  | SYMDEF_typeclass ->
+  | SYMDEF_typeclass _ ->
       begin match parent with
       | None ->
           let vs = merge_ivs sym.Flx_sym.vs vs in

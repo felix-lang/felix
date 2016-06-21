@@ -71,19 +71,6 @@ calls don't cause an infinite unrolling, and hopefully
 prevent gross bloat.
 *)
 
-let mk_label_map syms exes =
-  let h = Hashtbl.create 97 in
-  let aux = function
-  | BEXE_label (sr,s,idx) ->
-    (* replace with idx later *)
-    let n = fresh_bid syms.counter in
-    let s' =  "_" ^ string_of_bid n in
-    Hashtbl.add h s s'
-  | _ -> ()
-  in
-    List.iter aux exes;
-    h
-
 let idt t = t
 
 (*
@@ -129,10 +116,9 @@ let call_lifting syms uses bsym_table caller callee a argument =
     (*
     print_endline ("Found procedure "^id^": Inline it!");
     *)
-    let relabel = mk_label_map syms exes in
     let revariable = reparent_children
       syms uses bsym_table
-      callee (Some caller) relabel false []
+      callee (Some caller) false []
     in
     (* use the inliner to handle the heavy work *)
     let body = gen_body
@@ -140,7 +126,6 @@ let call_lifting syms uses bsym_table caller callee a argument =
       uses bsym_table
       (Flx_bsym.id bsym)
       ps
-      relabel
       revariable
       exes
       a
@@ -164,7 +149,7 @@ print_endline ("flx_inline: call lifting: adding label " ^ end_label ^ "<" ^ str
     Flx_bsym_table.add bsym_table end_index parent bsym;
 
     (* Got too lazy to tack if this is used or not! *) 
-    body2 := bexe_label (Flx_bsym.sr bsym,end_label,end_index) :: !body2;
+    body2 := bexe_label (Flx_bsym.sr bsym,end_index) :: !body2;
     List.iter
       (function
       | BEXE_fun_return (sr,e) ->
@@ -179,7 +164,7 @@ print_endline ("flx_inline: call lifting: adding label " ^ end_label ^ "<" ^ str
             bexe_call (sr,e,argument)
           )
         in
-        body2 := bexe_goto (sr,end_label,end_index) :: !body2;
+        body2 := bexe_goto (sr,end_index) :: !body2;
         body2 := call_instr :: !body2;
       | BEXE_yield _ ->
         syserr (Flx_bsym.sr bsym) "Attempt to inline generator containing a yield"
@@ -213,11 +198,9 @@ let inline_tail_apply syms uses bsym_table caller callee a =
       "[" ^ catmap "," (sbt bsym_table) ts ^ "] into " ^ id2 ^ "<" ^ si caller ^">"
     );
     *)
-    let relabel = mk_label_map syms exes in
-
     let revariable = reparent_children
       syms uses bsym_table
-      callee (Some caller) relabel false []
+      callee (Some caller) false []
     in
 
     (* use the inliner to handle the heavy work *)
@@ -226,7 +209,6 @@ let inline_tail_apply syms uses bsym_table caller callee a =
       uses bsym_table
       (Flx_bsym.id bsym)
       ps
-      relabel
       revariable
       exes
       a
@@ -257,10 +239,9 @@ let inline_function syms uses bsym_table caller callee a varindex =
       "\nvs = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs
     );
     *)
-    let relabel = mk_label_map syms exes in
     let revariable = reparent_children
       syms uses bsym_table
-      callee (Some caller) relabel false []
+      callee (Some caller) false []
     in
 
     (* use the inliner to handle the heavy work *)
@@ -269,7 +250,6 @@ let inline_function syms uses bsym_table caller callee a varindex =
       uses bsym_table
       (Flx_bsym.id bsym)
       ps
-      relabel
       revariable
       exes
       a
@@ -294,7 +274,7 @@ let inline_function syms uses bsym_table caller callee a varindex =
       | BEXE_fun_return (sr,((_,t') as e)) ->
         t := Some t';
         if not (!body2 == []) then begin
-          body2 := bexe_goto (sr,end_label,end_index) :: !body2;
+          body2 := bexe_goto (sr,end_index) :: !body2;
           end_label_used := true
         end
         ;
@@ -320,7 +300,7 @@ let inline_function syms uses bsym_table caller callee a varindex =
 print_endline ("flx_inline: inline function : adding label " ^ end_label ^ "<" ^ string_of_int end_index ^">");
 *)
       Flx_bsym_table.add bsym_table end_index parent bsym;
-      body2 := !body2 @ [bexe_label (Flx_bsym.sr bsym,end_label,end_index)]
+      body2 := !body2 @ [bexe_label (Flx_bsym.sr bsym,end_index)]
     end
     ;
     (*
@@ -402,9 +382,9 @@ let expand_exe syms bsym_table u exe =
       let e2,xs2 = u sr e2 in
       bexe_jump (sr,e1,e2) :: xs2 @ xs1
 
-    | BEXE_ifgoto (sr,e,lab,idx) ->
+    | BEXE_ifgoto (sr,e,idx) ->
       let e,xs = u sr e in
-      bexe_ifgoto (sr,e,lab,idx) :: xs
+      bexe_ifgoto (sr,e,idx) :: xs
 
     | BEXE_cgoto (sr,e) ->
       let e,xs = u sr e in
@@ -504,17 +484,15 @@ let heavy_inline_call syms uses bsym_table
   (*
   print_endline ("Found procedure "^id^": Inline it!");
   *)
-  let relabel = mk_label_map syms exes in
   let revariable = reparent_children
     syms uses bsym_table
-    callee (Some caller) relabel false []
+    callee (Some caller) false []
   in
   let xs = gen_body
     syms
     uses bsym_table
     id
     ps
-    relabel
     revariable
     exes
     argument
@@ -536,11 +514,10 @@ let make_specialisation syms uses bsym_table
   (*
   print_endline ("Found procedure "^id^": Inline it!");
   *)
-  let relabel = mk_label_map syms exes in
   let k=
     specialise_symbol
       syms uses bsym_table
-      callee parent relabel rescan_flag
+      callee parent rescan_flag
    in
    (*
    print_endline ("Specialised to " ^ id ^ "<"^si k ^ ">" );
@@ -1266,7 +1243,7 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
 (*
       let exes = check_reductions syms bsym_table exes in (* user reductions *)
 *)
-      let exes = Flx_cflow.chain_gotos syms exes in
+      let exes = Flx_cflow.chain_gotos syms (Flx_bsym.id bsym) ret exes in
 (*
       let exes = List.map Flx_bexe.reduce exes in
 *)

@@ -28,9 +28,9 @@ let elim_funsums syms bsym_table =
   )
   bsym_table
   ;
-  Hashtbl.iter (fun i (pa,(sr,e,pt)) ->
+  Hashtbl.iter (fun funsum_index (pa,(sr,e,pt)) ->
 (*
-    print_endline ("******* Add function sum " ^ string_of_int i);
+    print_endline ("******* Add function sum " ^ string_of_int funsum_index);
 *)
     let _,e_t = e in
 (*
@@ -49,7 +49,7 @@ let elim_funsums syms bsym_table =
     incr (syms.Flx_mtypes2.counter);
     let bbdcl = Flx_bbdcl.bbdcl_val ([],dt,`Var) in 
     let bsym = Flx_bsym.create ~sr "_a" bbdcl in
-    Flx_bsym_table.add bsym_table pindex (Some i) bsym;
+    Flx_bsym_table.add bsym_table pindex (Some funsum_index) bsym;
     let param = Flx_bexpr.bexpr_varname dt (pindex,[]) in
 
     (* calculate domain and codomain component types *)
@@ -78,38 +78,37 @@ let elim_funsums syms bsym_table =
     let ixs = Flx_list.nlist n in
 
     let exes = ref [] in
-    List.iter2  (fun i (pd,pc) ->
+    List.iter2  (fun caseno (pd,pc) ->
       (* calculate a label for the next case *)
       let labno = !(syms.Flx_mtypes2.counter) in 
       incr (syms.Flx_mtypes2.counter);
       (* label _funsum_5_9999 used for case 5 *)
-      let label = "_funsum"^ string_of_int (i+1) ^ "_" ^ string_of_int labno in
+      let label = "_funsum"^ string_of_int (caseno+1) ^ "_" ^ string_of_int labno in
 
       (* check the case number .. note, inefficient, extracts case no multiple times
          but this is easier to write than extracting the index and comparing for equality
       *)
       let exe = Flx_bexe.bexe_ifgoto 
         (sr,
-          Flx_bexpr.bexpr_not (Flx_bexpr.bexpr_match_case (i, param)), 
-          label,
+          Flx_bexpr.bexpr_not (Flx_bexpr.bexpr_match_case (caseno, param)), 
           labno
         )
       in 
       (* we made a new label so we have to add it to the bsym_table *) 
       let bbdcl = Flx_bbdcl.bbdcl_label label in
       let bsym = {Flx_bsym.id=label; sr=sr; bbdcl=bbdcl} in 
-      Flx_bsym_table.add bsym_table labno pa bsym;
+      Flx_bsym_table.add bsym_table labno (Some funsum_index) bsym;
 
       exes := exe :: !exes;
       (* extract parameter argument *)
-      let paramarg = Flx_bexpr.bexpr_case_arg pd (i,param) in
+      let paramarg = Flx_bexpr.bexpr_case_arg pd (caseno,param) in
 
       (* component function type *)
       let ft = Flx_btype.btyp_function (pd,pc) in
 
       (* projection to extract the function *)
-      let fnprj = Flx_bexpr.bexpr_prj i e_t ft in
-(* function should have type pt = pd -> pc *)
+      let fnprj = Flx_bexpr.bexpr_prj caseno e_t ft in
+      (* function should have type pt = pd -> pc *)
 
       (* extract the function *)
       let fn = Flx_bexpr.bexpr_apply ft (fnprj, e) in
@@ -118,7 +117,7 @@ let elim_funsums syms bsym_table =
       let outarg = Flx_bexpr.bexpr_apply pc (fn,paramarg) in
 
       (* calculate the injector *)
-      let fninj = Flx_bexpr.bexpr_nonconst_case pc (i,ct) in
+      let fninj = Flx_bexpr.bexpr_nonconst_case pc (caseno,ct) in
 
       (* apply the injection *)
       let outval = Flx_bexpr.bexpr_apply ct (fninj, outarg) in
@@ -128,7 +127,7 @@ let elim_funsums syms bsym_table =
       exes := exe :: !exes;
 
       (* stick a label for skipping the above case *)
-      let exe = Flx_bexe.bexe_label (sr,label,labno) in
+      let exe = Flx_bexe.bexe_label (sr,labno) in
       exes := exe :: !exes
 
       )
@@ -143,7 +142,7 @@ print_endline " .. Calculated function sum *********";
     let props = [`Generated "funsum"] in
     let bbdcl = Flx_bbdcl.bbdcl_fun (props,[],params, ct,exes) in 
     let bsym = Flx_bsym.create "funsum" bbdcl in
-    Flx_bsym_table.add bsym_table i pa bsym
+    Flx_bsym_table.add bsym_table funsum_index pa bsym
   )
   summap
   ;

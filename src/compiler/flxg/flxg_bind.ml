@@ -42,12 +42,13 @@ let bind_root_module state sym_table bsym_table module_name =
     | _ -> failwith "flxg: expected root entry to have parent None"
   in
 
-  let exes =
+  let root_proc =
     match sym with
-    | { Flx_sym.symdef=SYMDEF_root exes } -> exes
+    | { Flx_sym.symdef=SYMDEF_root init_proc } -> init_proc
     | _ -> failwith "flxg: expected root entry to be SYMDEF_root"
   in
 
+(*
   (* this is a hack .. oh well .. *)
   let root_proc = Flx_mtypes2.fresh_bid (state.syms.counter) in
   let dcl = DCL_function (
@@ -78,6 +79,7 @@ let bind_root_module state sym_table bsym_table module_name =
 
   if not (Flx_bsym_table.mem bsym_table root_proc) then
     failwith "flxg: can't find init proc in bound symbol table";
+*)
 
   root_proc
 

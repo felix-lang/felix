@@ -1,0 +1,124 @@
+@h1 Lots of Stuff
+Checks a lot of stuff: functions, generators,
+iterators, fibres, pipelines, generics, typecase.
+@felix
+fun hypot (x:double, y:double) => sqrt (x^2 + y^2);
+var x = 4.0;
+var y = 3.0;
+var d = hypot (x,y);
+
+println$ "Hypotenuse of triangle base " + x.str + 
+  ", side " + y.str " is " + d.str
+;
+
+gen rabbits () = {
+  var generation = 1;
+  var last_gen = 1;
+  var this_gen = 2;
+  while true do
+    yield (generation, this_gen);
+    var rabbits  = this_gen;
+    this_gen = rabbits + last_gen;
+    last_gen = rabbits;
+    ++generation;
+  done
+}
+
+var fibonacci = rabbits;
+
+for i in 1..10 do
+  var count = fibonacci();
+  println$ i,count;
+done
+
+proc char_stream (s:string) (out:%>char) {
+  for c in s perform write (out,c);
+  write (out,char "");
+}
+
+proc words (inp:%<char, out:%>string) => 
+  while true do
+    var s = "";
+    nextch: while true do
+      var c = read inp;
+      if not (isalnum c) do
+        if s != "" call write (out,s);
+        break nextch;
+      else 
+        s+=c;
+      done
+    done
+  done
+
+proc emit (inp:%<string) => 
+  while true do
+    var word = read inp;
+    println$ "Word = " + word;
+  done
+
+var text = 
+  "The quick, brown fox jumped "
+  "over the lazy dog"
+;
+
+#(char_stream (text) |-> words |-> emit);
+
+proc int_to_string (ch: %<int%>string)  ()
+{
+  var x = read ch;
+  var r = x.str;
+  write(ch, r);
+}
+println$ int_to_string 42;
+
+proc _set (x: string, y:int) {
+  println$ "Set x to y";
+}
+
+var u = 1;
++=(&u,1);
+println$ u;
+
+begin
+  var a = (1,2,(3,4),5);
+  var z: int;
+  def var x, val y,(z,_),_ = a;
+  println$ x,y,z;
+end
+
+begin
+  fun f[T:GENERIC] (x:T) =>
+    typecase T with
+    | int => x + 1
+    | double => x + 1.0
+    endmatch
+  ;
+
+  println$ f 1, f 4.2;
+end
+@expect
+Hypotenuse of triangle base 4, side 3 is 5
+(1, (1, 2))
+(2, (2, 3))
+(3, (3, 5))
+(4, (4, 8))
+(5, (5, 13))
+(6, (6, 21))
+(7, (7, 34))
+(8, (8, 55))
+(9, (9, 89))
+(10, (10, 144))
+Word = The
+Word = quick
+Word = brown
+Word = fox
+Word = jumped
+Word = over
+Word = the
+Word = lazy
+Word = dog
+42
+2
+(1, 2, 3)
+(2, 5.2)
+@

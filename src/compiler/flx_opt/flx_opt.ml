@@ -54,16 +54,8 @@ let mkproc syms bsym_table =
 let stack_calls syms bsym_table =
   print_debug syms "//Calculating stackable calls";
 
-  let label_map = Flx_label.create_label_map
-    bsym_table
-    syms.Flx_mtypes2.counter
-  in
-  let label_usage = Flx_label.create_label_usage bsym_table label_map in
-  Flx_stack_calls.make_stack_calls
-    syms
-    bsym_table
-    label_map
-    label_usage;
+  let label_info = Flx_label.create_label_info bsym_table in
+  Flx_stack_calls.make_stack_calls syms bsym_table label_info;
 
   print_debug syms "//stackable calls done";
 
@@ -71,7 +63,7 @@ let stack_calls syms bsym_table =
 
 
 (* Do some platform independent optimizations of the code. *)
-let optimize_bsym_table' syms bsym_table root_proc =
+let optimize_bsym_table' syms bsym_table (root_proc: int option) =
   print_debug syms "//OPTIMISING";
 
   print_time syms "[flx_opt]; Finding roots" begin fun () ->

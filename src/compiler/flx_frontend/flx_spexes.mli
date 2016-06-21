@@ -13,7 +13,6 @@ val gen_body :
   usage_table_t -> Flx_bsym_table.t ->
   string ->                         (* name *)
   Flx_bparameter.t list ->          (* parameters *)
-  (string, string) Hashtbl.t ->     (* relabel *)
   (bid_t, bid_t) Hashtbl.t ->       (* revariable *)
   Flx_bexe.t list ->                (* the exes *)
   Flx_bexpr.t ->                    (* argument *)

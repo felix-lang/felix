@@ -56,7 +56,7 @@ type bexpr_t =
   | BEXPR_inj of int * Flx_btype.t * Flx_btype.t 
     (* first arg = constructor index, second arg domain = ctor type, third arg codomain = union type *)
 
-  | BEXPR_label of string * Flx_types.bid_t
+  | BEXPR_label of Flx_types.bid_t
   | BEXPR_unit 
   | BEXPR_unitptr
   | BEXPR_cond of t * t * t (* conditional *)
@@ -94,7 +94,7 @@ let bexpr_bool b = BEXPR_case ((if b then 1 else 0), Flx_btype.btyp_bool ()),Flx
 let bexpr_true = bexpr_bool true
 let bexpr_false = bexpr_bool false
 
-let bexpr_label s i = BEXPR_label (s,i), Flx_btype.btyp_label ()
+let bexpr_label i = BEXPR_label (i), Flx_btype.btyp_label ()
 let bexpr_tuple_tail t e = BEXPR_tuple_tail e, complete_check t
 let bexpr_tuple_head t e = BEXPR_tuple_head e, complete_check t
 
@@ -467,7 +467,7 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_cond (c,t,f), BEXPR_cond (c',t',f') ->
     cmp c c' && cmp t t' && cmp f f'
 
-  | BEXPR_label (lab,i), BEXPR_label (lab',i') -> lab = lab' && i = i'
+  | BEXPR_label (i), BEXPR_label (i') -> i = i'
   | BEXPR_coerce (e,t),BEXPR_coerce (e',t') ->
     (* not really right .. *)
     cmp e e'
@@ -572,7 +572,7 @@ let flat_iter
   ((x,t) as e) =
   match x with
   | BEXPR_cond (c,t,f) -> f_bexpr c; f_bexpr t; f_bexpr f
-  | BEXPR_label (s,i) -> f_label s; f_bid i
+  | BEXPR_label (i) -> f_label i; f_bid i
   | BEXPR_not e -> f_bexpr e
   | BEXPR_int e -> ()
 
@@ -666,12 +666,11 @@ let map
   ?(f_bid=fun i -> i)
   ?(f_btype=fun t -> t)
   ?(f_bexpr=fun e -> e)
-  ?(f_label=fun s -> s)
   e
 =
   match e with
   | BEXPR_cond (c,tr,fa),t -> BEXPR_cond (f_bexpr c, f_bexpr tr, f_bexpr fa), f_btype t
-  | BEXPR_label (s,i),t -> BEXPR_label (f_label s, f_bid i),f_btype t
+  | BEXPR_label (i),t -> BEXPR_label (f_bid i),f_btype t
   | BEXPR_not e,t -> BEXPR_not (f_bexpr e), f_btype t
   | BEXPR_int i,t -> BEXPR_int i, f_btype t
 

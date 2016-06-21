@@ -172,13 +172,17 @@ print_endline ("  ^^^^ END   Flx_use.uses processing index " ^ si i ^ " symbol "
     | None ->
         raise (NotFoundDefn i)
 
-let find_roots syms bsym_table root bifaces =
+let find_roots syms bsym_table (root: int option) bifaces =
   (* make a list of the root and all exported functions,
   add exported types and components thereof into the used
   set now too
   *)
-  let roots = ref (BidSet.singleton root) in
+  let roots = ref (BidSet.empty) in
   let add i = roots := BidSet.add i (!roots) in
+  begin match root with
+  | None -> ()
+  | Some p -> add p
+  end;
 
   List.iter begin function
   | BIFACE_export_python_fun (_,x,_)

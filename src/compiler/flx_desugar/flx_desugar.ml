@@ -32,6 +32,7 @@ let assign sr op l r =
   )
 
 
+(* SHOULD BE UNUSED NOW ... *)
 let gen_call_init sr name' =
   let mname = EXPR_name (sr,name',[]) in
   let pname = `AST_lookup (sr, (mname, "_init_", [])) in
@@ -99,7 +100,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
   | STMT_include (sr,inspec) ->
       state.Flx_desugar_expr.include_file_cache <- inspec :: state.Flx_desugar_expr.include_file_cache;
       []
-  | STMT_label (sr,s) -> [Dcl (sr,s, None,`Private,dfltvs, DCL_label); Exe (sr,EXE_label s)]
+  | STMT_label (sr,s) -> [Exe (sr,EXE_label s)]
   | STMT_proc_return sr -> [Exe (sr,EXE_proc_return)]
   | STMT_proc_return_from (sr,s) -> [Exe (sr,EXE_proc_return_from s)]
   | STMT_halt (sr,s) -> [Exe (sr,EXE_halt s)]
@@ -242,7 +243,10 @@ print_endline ("Translating Lazy Declaration " ^ name);
     (* hack: add _init_ function to typeclass to init any variables,
        but only if it is not polymorphic
     *)
-    if vs = dfltvs then gen_call_init sr name :: mdcl else mdcl
+(*
+    if vs = dfltvs then gen_call_init sr name :: mdcl else 
+*)
+    mdcl
 
   (* typeclasses and modules are basically the same thing now .. *)
   | STMT_untyped_module (sr,name', vs', sts) ->
@@ -253,7 +257,10 @@ print_endline ("Translating Lazy Declaration " ^ name);
     in
     (* HACK !!!! Actually, it's wrong: there are no polymorphic modules
        or polymorphic variables .. *)
-    if vs' = dfltvs then gen_call_init sr name' :: mdcl else mdcl
+(*
+    if vs' = dfltvs then gen_call_init sr name' :: mdcl else 
+*)
+    mdcl
 
 
   | STMT_instance (sr, vs, name, sts) ->

@@ -16,12 +16,12 @@ let next_reachable exe = match exe with
     -> false
   | _ -> true
 
-let check_reachability_exes bsym_table label_map label_usage idx sr name rt exes =
+let check_reachability_exes bsym_table label_info idx sr name rt exes =
   (* remove unused labels to avoid confusing algorithm *)
   let exes = List.filter 
     (fun exe -> match exe with 
-      | BEXE_label (_,s,_) -> 
-        (match get_label_kind label_map label_usage idx s with 
+      | BEXE_label (_,idx) -> 
+        (match get_label_kind_from_index label_info.label_usage idx with 
         | `Far | `Near -> true 
         | `Unused -> (* print_endline ("Removing unused label " ^ s); *) false 
         )
@@ -37,8 +37,8 @@ let check_reachability_exes bsym_table label_map label_usage idx sr name rt exes
     Array.init n (fun i -> 
      let exe = List.hd (!tmp_exes) in tmp_exes := List.tl (!tmp_exes);
      begin match exe with
-     | BEXE_label (_,s,_) ->
-       (match get_label_kind label_map label_usage idx s with 
+     | BEXE_label (_,idx) ->
+       (match get_label_kind_from_index label_info.label_usage idx with 
        | `Far -> unprocessed_targets := Flx_set.IntSet.add i (!unprocessed_targets)
        | _ -> ()
        )
@@ -51,7 +51,7 @@ let check_reachability_exes bsym_table label_map label_usage idx sr name rt exes
   let find_label s = 
     try Array.iter 
       (fun {index=i; instr=instr;} -> 
-        match instr with BEXE_label (_,s',_) when  s' = s -> 
+        match instr with BEXE_label (_,s') when  s' = s -> 
         raise (Found_label i)
         | _ -> ()
       ) 
@@ -98,14 +98,10 @@ let check_reachability_exes bsym_table label_map label_usage idx sr name rt exes
          * then add it to the set of unprocessed labels
          *)
         begin match a.(i).instr with
-        | BEXE_goto (_,s,_) 
-        | BEXE_ifgoto (_,_,s,_) -> 
-           begin match find_label s with
-           | None -> ()
-           | Some i -> 
-             if not (Flx_set.IntSet.mem i (!processed_targets)) then 
-               unprocessed_targets := Flx_set.IntSet.add i (!unprocessed_targets) 
-           end
+        | BEXE_goto (_,idx) 
+        | BEXE_ifgoto (_,_,idx) -> 
+          if not (Flx_set.IntSet.mem idx (!processed_targets)) then 
+            unprocessed_targets := Flx_set.IntSet.add idx (!unprocessed_targets) 
         | BEXE_try _ ->
           scan_trycatch 0 (i+1)
 
@@ -125,9 +121,17 @@ let check_reachability_exes bsym_table label_map label_usage idx sr name rt exes
   ;
   let is_proc rt = match rt with | Flx_btype.BTYP_void |Flx_btype.BTYP_fix (0,_) -> true | _ -> false in
   if !drops_thru_end && not (is_proc rt) then begin
-    print_endline ("check_reachability] Function " ^ name ^ " drops thru end, code:");
+(*
+    print_endline ("WARNING: [check_reachability] Function " ^ name ^ " drops thru end, code:");
+*)
+(*
     List.iter (fun exe -> print_endline (Flx_print.string_of_bexe bsym_table 2 exe)) exes;
+    print_endline ("Source:");
+    print_endline (long_string_of_src sr);
+*)
+(*
     Flx_exceptions.clierr sr ("[check_reachability] Function " ^ name ^ " drops thru end")
+*)
   end
   ;
   let new_exes = ref [] in
@@ -150,18 +154,19 @@ let tagged s ps =
   | [] -> false
   in aux ps
 
-let check_reachability bsym_table =
+let check_reachability bsym_table = () 
+(* 
   let counter = ref 0 in
-  let label_map = Flx_label.create_label_map bsym_table counter in 
-  let label_usage = Flx_label.create_label_usage bsym_table label_map in
+  let label_info = Flx_label.create_label_info bsym_table in 
   Flx_bsym_table.iter
   (fun idx parent bsym -> match Flx_bsym.bbdcl bsym with
   | Flx_bbdcl.BBDCL_fun (ps,bvs,bpar,rt,exes) when not (tagged "reachability-done" ps) ->
     let name = Flx_bsym.id bsym in
     let sr = Flx_bsym.sr bsym in 
-    let newexes = check_reachability_exes bsym_table label_map label_usage idx sr name rt exes in
+    let newexes = check_reachability_exes bsym_table label_info idx sr name rt exes in
     let newbbdcl = Flx_bbdcl.bbdcl_fun (`Tag "reachability-done"::ps, bvs, bpar, rt, newexes) in
     Flx_bsym_table.update_bbdcl bsym_table idx newbbdcl
   | _ -> ()
   )
   bsym_table
+*)

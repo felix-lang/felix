@@ -271,11 +271,9 @@ let alpha_pat local_prefix seq fast_remap remap expand_expr pat =
   let rexp e = expand_expr 50 local_prefix seq remap e in 
   let rec aux pat = match pat with
   | PAT_name (sr,v) -> PAT_name (sr, ren v)
-  | PAT_with (sr,p,es) -> assert false
-(*
+  | PAT_with (sr,p,es) ->
     let es = List.map (fun (s,e) -> ren s, rexp e) es in
     PAT_with (sr, aux p, es)
-*)
   | PAT_as (sr,p,v) -> PAT_as (sr,aux p, ren v)
   | PAT_when (sr,p,e) -> PAT_when (sr,aux p, rexp e)
   | PAT_nonconst_ctor (sr,n,p) -> PAT_nonconst_ctor (sr, n, aux p)

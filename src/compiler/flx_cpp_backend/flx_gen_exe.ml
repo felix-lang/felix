@@ -56,7 +56,7 @@ let gen_exe filename cxx_name
   syms
   bsym_table
   (shapes : Flx_set.StringSet.t ref) shape_map
-  (label_map, label_usage_map)
+  label_info 
   counter
   this
   vs
@@ -97,8 +97,8 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     | _ -> false
   in
   let tsub t = beta_reduce "gen_exe" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr vs ts t) in
-  let ge = gen_expr syms bsym_table shapes shape_map label_map this vs ts in
-  let ge' = gen_expr' syms bsym_table shapes shape_map label_map this vs ts in
+  let ge = gen_expr syms bsym_table shapes shape_map label_info this vs ts in
+  let ge' = gen_expr' syms bsym_table shapes shape_map label_info this vs ts in
   let tn t = cpp_typename syms bsym_table (tsub t) in
   let bsym =
     try Flx_bsym_table.find bsym_table this with _ ->
@@ -361,7 +361,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       )
     end
   in
-  let gen_nonlocal_goto pc frame s =
+  let gen_nonlocal_goto pc frame index =
     (* WHAT THIS CODE DOES: we pop the call stack until
        we find the first ancestor containing the target label,
        set the pc there, and return its continuation to the
@@ -370,10 +370,11 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     *)
     let target_instance =
       try Hashtbl.find syms.instances (frame, ts)
-      with Not_found -> failwith "Woops, bugged code, wrong type arguments for instance?"
+      with Not_found -> failwith ("[Flx_gen_exe:gen_nonlocal_goto] Can't find instance for "^string_of_int frame)
     in
+    let label = cid_of_flxid (get_label_name bsym_table index) in 
     let frame_ptr = "ptr" ^ cpp_instance_name syms bsym_table frame ts in
-    "      // non local goto " ^ cid_of_flxid s ^ "\n" ^
+    "      // non local goto " ^ label ^ "\n" ^
     "      {\n" ^
     "        ::flx::rtl::con_t *tmp1 = this;\n" ^
     "        while(tmp1 && " ^ frame_ptr ^ "!= tmp1)\n" ^
@@ -383,7 +384,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     "          tmp1 = tmp2;\n" ^
     "        }\n" ^
     "      }\n" ^
-    "      " ^ frame_ptr ^ "->pc = FLX_FARTARGET(" ^ cid_of_bid pc ^ "," ^ cid_of_bid target_instance ^ "," ^ s ^ ");\n" ^
+    "      " ^ frame_ptr ^ "->pc = FLX_FARTARGET(" ^ cid_of_bid pc ^ "," ^ cid_of_bid target_instance ^ "," ^ label ^ ");\n" ^
     "      return " ^ frame_ptr ^ ";\n"
   in
   let forget_template sr s = match s with
@@ -455,41 +456,27 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
 
 
     | BEXE_comment (_,s) -> "/*" ^ s ^ "*/\n"
-    | BEXE_label (_,s,idx) ->
-      let local_labels =
-        try Hashtbl.find label_map this with _ ->
-          failwith ("[gen_exe] Can't find label map of " ^ string_of_bid this)
-      in
-      let label_index =
-        try Hashtbl.find local_labels s
-        with _ -> failwith ("[gen_exe] In " ^ Flx_bsym.id bsym ^ ", label map: Can't find label " ^ cid_of_flxid s)
-      in
-      begin try
-        let i = Flx_bsym_table.find bsym_table idx in
-        ()
-      with _ -> print_endline ("[gen_exe:label] In " ^ Flx_bsym.id bsym ^ ", symbol table: Can't find label " ^ cid_of_flxid s
-       ^ " from index " ^ string_of_int idx
-      )
-      end;
-      let label_kind = get_label_kind_from_index label_usage_map label_index in
+    | BEXE_label (_,label_index) ->
+      let label_kind = get_label_kind_from_index label_info.label_usage label_index in
+      let label = cid_of_flxid (get_label_name bsym_table label_index) in
       (match kind with
         | Procedure ->
           begin match label_kind with
           | `Far ->
             needs_switch := true;
             "    FLX_LABEL(" ^ cid_of_bid label_index ^ "," ^
-              cid_of_bid instance_no ^ "," ^ cid_of_flxid s ^ ")\n"
+              cid_of_bid instance_no ^ "," ^ label ^ ")\n"
           | `Near ->
-            "    " ^ cid_of_flxid s ^ ":;\n"
+            "    " ^label ^ ":;\n"
           | `Unused -> ""
           end
 
         | Function ->
           begin match label_kind with
           | `Far -> failwith ("[gen_exe] In function " ^ Flx_bsym.id bsym ^ 
-              ": Non-local going to label " ^s)
+              ": Non-local going to label " ^label)
           | `Near ->
-            "    " ^ cid_of_flxid s ^ ":;\n"
+            "    " ^ label ^ ":;\n"
           | `Unused -> ""
           end
       )
@@ -514,27 +501,40 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
        "      FLX_TRACE(" ^ v ^"," ^ s ^ "," ^ msg ^ ");\n"
 
 
-    | BEXE_goto (sr,s,idx) ->
-      begin try
-        let i = Flx_bsym_table.find bsym_table idx in
-        ()
-      with _ -> print_endline ("[gen_exe:goto] In " ^ Flx_bsym.id bsym ^ ", symbol table: Can't find label " ^ cid_of_flxid s
-       ^ " from index " ^ string_of_int idx
-      )
-      end;
-      begin match find_label bsym_table label_map this s with
-      | `Local _ -> "      goto " ^ cid_of_flxid s ^ ";\n"
-      | `Nonlocal (pc,frame) -> gen_nonlocal_goto pc frame s
+    | BEXE_goto (sr,idx) ->
+      let distance = Flx_label.find_label_distance bsym_table label_info.labels_by_proc this idx in
+      begin match distance with
+      | `Local ->
+        let cname = cid_of_flxid (get_label_name bsym_table idx) in
+        "      goto " ^ cname ^ ";\n"
+      | `Nonlocal -> 
+        let pc = get_label_pc idx in
+        let frame = get_label_frame bsym_table idx in
+        gen_nonlocal_goto pc frame idx
       | `Unreachable ->
-        print_endline "LABELS ..";
-        let labels = Hashtbl.find label_map this in
-        Hashtbl.iter (fun lab lno ->
-          print_endline ("Label " ^ lab ^ " -> " ^ string_of_bid lno);
-        )
-        labels
-        ;
-        clierr sr ("Unconditional Jump to unreachable label " ^ cid_of_flxid s)
+        clierr sr ("Unconditional Jump to Unreachable label " ^ string_of_int idx)
       end
+
+    | BEXE_ifgoto (sr,e,idx) ->
+      let distance = Flx_label.find_label_distance bsym_table label_info.labels_by_proc this idx in
+      begin match distance with
+      | `Local ->
+        let cname = cid_of_flxid (get_label_name bsym_table idx) in
+        "      if(" ^ ge sr e ^ ") goto " ^ cname ^ ";\n"
+      | `Nonlocal ->
+        let skip = "_skip_" ^ cid_of_bid (fresh_bid syms.counter) in
+        let not_e = ce_prefix "!" (ge' sr e) in
+        let not_e = string_of_cexpr not_e in
+        let pc = get_label_pc idx in
+        let frame = get_label_frame bsym_table idx in
+        "      if("^not_e^") goto " ^ cid_of_flxid skip ^ ";\n"  ^
+        gen_nonlocal_goto pc frame idx ^
+        "    " ^ cid_of_flxid skip ^ ":;\n"
+
+      | `Unreachable ->
+        syserr sr ("Conditional Jump to unreachable label " ^ string_of_int idx)
+      end
+
 
     | BEXE_cgoto (sr, e) ->
       (* Computed goto. Expression e must resolve to a label expression of C++ type jump_address_t *)
@@ -556,29 +556,6 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       "      FLX_DIRECT_LONG_JUMP(" ^ e2 ^ ")\n" ^
       "    " ^ cid_of_flxid skip ^ ":;\n"
        
-
-    | BEXE_ifgoto (sr,e,s,idx) ->
-      begin try
-        let i = Flx_bsym_table.find bsym_table idx in
-        ()
-      with _ -> print_endline ("[gen_exe:ifgoto] In " ^ Flx_bsym.id bsym ^ ", symbol table: Can't find label " ^ cid_of_flxid s
-       ^ " from index " ^ string_of_int idx
-      )
-      end;
-      begin match find_label bsym_table label_map this s with
-      | `Local _ ->
-        "      if(" ^ ge sr e ^ ") goto " ^ cid_of_flxid s ^ ";\n"
-      | `Nonlocal (pc,frame) ->
-        let skip = "_skip_" ^ cid_of_bid (fresh_bid syms.counter) in
-        let not_e = ce_prefix "!" (ge' sr e) in
-        let not_e = string_of_cexpr not_e in
-        "      if("^not_e^") goto " ^ cid_of_flxid skip ^ ";\n"  ^
-        gen_nonlocal_goto pc frame s ^
-        "    " ^ cid_of_flxid skip ^ ":;\n"
-
-      | `Unreachable ->
-        clierr sr ("Conditional Jump to unreachable label " ^ s)
-      end
 
     (* Hmmm .. stack calls ?? *)
     | BEXE_call_stack (sr,index,ts,a)  ->
@@ -1160,13 +1137,17 @@ let gen_exes
 =
   let needs_switch = ref false in
   let b = Buffer.create (200 * List.length exes) in 
-  List.iter 
-   (fun exe -> Buffer.add_string b 
-    (gen_exe filename cxx_name syms bsym_table shapes shape_map
-    label_info counter index vs
-    ts instance_no needs_switch stackable exe))
-  exes
-  ;
-  Buffer.contents b,!needs_switch
-
+  try
+    List.iter 
+     (fun exe -> Buffer.add_string b 
+      (gen_exe filename cxx_name syms bsym_table shapes shape_map
+      label_info counter index vs
+      ts instance_no needs_switch stackable exe))
+    exes
+    ;
+    Buffer.contents b,!needs_switch
+  with exn ->
+    print_endline ("Error generating code for "^cxx_name^"  exes=\n");
+    List.iter (fun exe -> print_endline (Flx_print.string_of_bexe bsym_table 2 exe)) exes;
+  raise exn
 

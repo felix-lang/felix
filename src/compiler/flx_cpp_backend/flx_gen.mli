@@ -18,7 +18,7 @@ val gen_execute_methods:
   Flx_bsym_table.t ->
   Flx_set.StringSet.t ref ->
   (string, Flx_btype.t) Hashtbl.t ->
-  Flx_label.label_map_t * Flx_label.label_usage_t ->
+  Flx_label.label_info_t ->
   Flx_types.bid_t ref ->
   out_channel ->
   out_channel ->

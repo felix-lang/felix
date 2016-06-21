@@ -104,7 +104,7 @@ let subarg syms bsym_table argmap exe =
 
 (* NOTE: result is in reversed order *)
 let gen_body syms uses bsym_table id
-  ps relabel revariable exes argument
+  ps revariable exes argument
   sr caller callee inline_method props
 =
   if syms.compiler_options.Flx_options.print_flag then
@@ -185,13 +185,12 @@ let gen_body syms uses bsym_table id
 (*
      print_endline ("Remap expr " ^ sbe bsym_table e);
 *)
-     let result = remap_expr syms bsym_table relabel revariable e  in
+     let result = remap_expr syms bsym_table revariable e  in
 (*
      print_endline ("Remap DONE result " ^ sbe bsym_table result);
 *)
      result
   in
-  let relab s = try let r = Hashtbl.find relabel s in (* print_endline ("Relab: " ^ s ^ "->" ^ r); *) r with Not_found -> s in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let end_label_uses = ref 0 in
   let end_index = fresh_bid syms.counter in
@@ -248,7 +247,7 @@ let gen_body syms uses bsym_table id
     let e1 = match e1 with Some e1 -> Some (ge e1) | None -> None in
     [bexe_assert2 (sr, sr2, e1,ge e2)]
 
-  | BEXE_ifgoto (sr,e,lab,idx) -> [bexe_ifgoto (sr,ge e, relab lab, revar idx)]
+  | BEXE_ifgoto (sr,e,idx) -> [bexe_ifgoto (sr,ge e, revar idx)]
   | BEXE_cgoto (sr,e) -> [bexe_cgoto (sr,ge e)]
   | BEXE_ifcgoto (sr,e1,e2) -> [bexe_ifcgoto (sr,ge e1, ge e2)]
 
@@ -260,19 +259,19 @@ let gen_body syms uses bsym_table id
 
   | BEXE_code (sr,s,e) -> [bexe_code (sr,s, ge e)]
   | BEXE_nonreturn_code (sr,s,e) -> [bexe_nonreturn_code (sr,s, ge e)]
-  | BEXE_goto (sr,lab,idx) -> [bexe_goto (sr, relab lab, revar idx)]
+  | BEXE_goto (sr,idx) -> [bexe_goto (sr, revar idx)]
 
 
   (* INLINING THING *)
   | BEXE_proc_return sr as x ->
     incr end_label_uses;
-    [bexe_goto (sr,end_label,end_index)]
+    [bexe_goto (sr,end_index)]
 
   | BEXE_comment (sr,s) as x -> [x]
   | BEXE_nop (sr,s) as x -> [x]
   | BEXE_halt (sr,s) as x -> [x]
   | BEXE_trace (sr,v,s) as x -> [x]
-  | BEXE_label (sr,lab,idx) -> [bexe_label (sr, relab lab, revar idx)]
+  | BEXE_label (sr,idx) -> [bexe_label (sr, revar idx)]
   | BEXE_begin as x -> [x]
   | BEXE_end as x -> [x]
   | BEXE_catch _ as x -> [x]
@@ -491,7 +490,7 @@ let gen_body syms uses bsym_table id
     end;
 
     let trail_jump = match !b with
-      | BEXE_goto (_,lab,_)::_ when lab = end_label -> true
+      | BEXE_goto (_,idx)::_ when idx = end_index -> true
       | _ -> false
     in
     if trail_jump then
@@ -501,7 +500,7 @@ let gen_body syms uses bsym_table id
 (*
 print_endline ("[flx_spexes: inserting end label " ^ end_label);
 *)
-      b := (bexe_label (sr,end_label,end_index)) :: !b;
+      b := (bexe_label (sr,end_index)) :: !b;
       (* we made a new label so we have to add it to the bsym_table *) 
       let bbdcl = Flx_bbdcl.bbdcl_label end_label in
       let bsym = {Flx_bsym.id=end_label; sr=sr; bbdcl=bbdcl} in 

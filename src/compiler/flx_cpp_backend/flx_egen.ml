@@ -20,6 +20,7 @@ open Flx_cexpr
 open Flx_maps
 open Flx_pgen
 open Flx_beta
+open Flx_label
 
 module CS = Flx_code_spec
 module L = Flx_literal
@@ -40,7 +41,8 @@ let get_var_frame syms bsym_table this index ts : string =
       failwith ("[get_var_frame(1)] Can't find index " ^ string_of_bid index)
   in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_val (vs,t,(`Val | `Var | `Ref)) ->
+  | BBDCL_label _ 
+  | BBDCL_val (_,_,(`Val | `Var | `Ref)) ->
       begin match bsym_parent with
       | None -> "ptf"
       | Some i ->
@@ -137,7 +139,7 @@ let rec gen_expr'
   bsym_table
   (shapes : Flx_set.StringSet.t ref)
   (shape_map: (string, Flx_btype.t) Hashtbl.t)
-  label_map
+  label_info
   this
   this_vs
   this_ts
@@ -164,8 +166,8 @@ let rec gen_expr'
     )
   end;
 
-  let ge = gen_expr syms bsym_table shapes shape_map label_map this this_vs this_ts sr in
-  let ge' = gen_expr' syms bsym_table shapes shape_map label_map this this_vs this_ts sr in
+  let ge = gen_expr syms bsym_table shapes shape_map label_info this this_vs this_ts sr in
+  let ge' = gen_expr' syms bsym_table shapes shape_map label_info this this_vs this_ts sr in
   let tsub t = beta_reduce "flx_egen" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr this_vs this_ts t) in
   let tn t = cpp_typename syms bsym_table (tsub t) in
   let clt t = islinear_type bsym_table t in
@@ -250,45 +252,35 @@ let rec gen_expr'
   | BEXPR_funsum _ -> assert false
   | BEXPR_lrangle _ -> assert false
   | BEXPR_lrbrack _ -> assert false
-  | BEXPR_label (s,idx) -> 
-      begin try
-        let i = Flx_bsym_table.find bsym_table idx in
-        ()
-      with _ -> print_endline ("[egen:bexpr_label] Can't find label " ^ cid_of_flxid s
-       ^ " from index " ^ string_of_int idx
-      )
-      end;
-      begin match Flx_label.find_label bsym_table label_map this s with
-      | `Local pc -> 
+  | BEXPR_label (idx) -> 
+      let label = Flx_name.cid_of_flxid (Flx_label.get_label_name bsym_table idx) in
+      let pc = get_label_pc idx in
+      let frame = get_label_frame bsym_table idx in
+      let distance = Flx_label.find_label_distance bsym_table label_info.labels_by_proc this idx in
+      begin match distance with
+      | `Local -> 
         let target_instance =
           try Hashtbl.find syms.instances (this, this_ts)
-          with Not_found -> failwith "Woops, bugged code, wrong type arguments for instance?"
+          with Not_found -> failwith ("[Flx_egen:BEXPR_label:Local] Can't find instance for "^string_of_int this)
         in
         let frame_ptr = "this" in
-        let ladr = "FLX_FARTARGET(" ^ cid_of_bid pc ^ "," ^ cid_of_bid target_instance ^ "," ^ s ^ ")" in
+        let ladr = "FLX_FARTARGET(" ^ cid_of_bid pc ^ "," ^ cid_of_bid target_instance ^ "," ^ label ^ ")" in
         let label_value = "::flx::rtl::jump_address_t(" ^ frame_ptr ^ "," ^ ladr ^ ")" in
         ce_atom label_value
 
  
-      | `Nonlocal (pc,frame) -> 
+      | `Nonlocal -> 
         let target_instance =
           try Hashtbl.find syms.instances (frame, this_ts)
-          with Not_found -> failwith "Woops, bugged code, wrong type arguments for instance?"
+          with Not_found -> failwith ("[Flx_egen:BEXPR_label:Nonlocal] Can't find instance for "^string_of_int frame)
         in
         let frame_ptr = "ptr" ^ cpp_instance_name syms bsym_table frame this_ts in
-        let ladr = "FLX_FARTARGET(" ^ cid_of_bid pc ^ "," ^ cid_of_bid target_instance ^ "," ^ s ^ ")" in
+        let ladr = "FLX_FARTARGET(" ^ cid_of_bid pc ^ "," ^ cid_of_bid target_instance ^ "," ^ label ^ ")" in
         let label_value = "::flx::rtl::jump_address_t(" ^ frame_ptr ^ "," ^ ladr ^ ")" in
         ce_atom label_value
 
       | `Unreachable ->
-        print_endline "LABELS ..";
-        let labels = Hashtbl.find label_map this in
-        Hashtbl.iter (fun lab lno ->
-          print_endline ("Label " ^ lab ^ " -> " ^ string_of_bid lno);
-        )
-        labels
-        ;
-        clierr sr ("Unconditional Jump to unreachable label " ^ cid_of_flxid s)
+        syserr sr ("Closure of unreachable label " ^ label)
       end
 
 
@@ -610,7 +602,7 @@ assert false;
     | CS.Identity -> assert false
     | CS.Str s -> ce_atom ("(" ^  s ^ ")")
     | CS.Str_template s ->
-      let gen_expr' = gen_expr' syms bsym_table shapes shape_map label_map this [] [] in
+      let gen_expr' = gen_expr' syms bsym_table shapes shape_map label_info this [] [] in
           gen_prim_call
             syms
             bsym_table
@@ -705,7 +697,7 @@ print_endline "Apply prim";
       syms
       bsym_table
       shapes shape_map
-      label_map
+      label_info
       this
       sr
       this_vs
@@ -1477,7 +1469,7 @@ and gen_apply_prim
   bsym_table
   (shapes: Flx_set.StringSet.t ref)
   shape_map
-  label_map
+  label_info
   this
   sr
   this_vs
@@ -1487,7 +1479,7 @@ and gen_apply_prim
   ts
   ((arg,argt) as a)
 =
-  let gen_expr' = gen_expr' syms bsym_table shapes shape_map label_map this this_vs this_ts in
+  let gen_expr' = gen_expr' syms bsym_table shapes shape_map label_info this this_vs this_ts in
   let beta_reduce calltag vs ts t =
     beta_reduce calltag syms.Flx_mtypes2.counter bsym_table sr (tsubst sr vs ts t)
   in
@@ -1560,10 +1552,10 @@ and gen_apply_prim
         string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) index
       )
 
-and gen_expr syms bsym_table shapes shape_map label_map this vs ts sr e : string =
+and gen_expr syms bsym_table shapes shape_map label_info this vs ts sr e : string =
   let e = Flx_bexpr.reduce e in
   let s =
-    try gen_expr' syms bsym_table shapes shape_map label_map this vs ts sr e
+    try gen_expr' syms bsym_table shapes shape_map label_info this vs ts sr e
     with Unknown_prec p -> clierr sr
     ("[gen_expr] Unknown precedence name '"^p^"' in " ^ sbe bsym_table e)
   in

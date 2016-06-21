@@ -186,7 +186,7 @@ let make_sym_table () =
     pubmap=Hashtbl.create 97;
     privmap=Hashtbl.create 97;
     dirs=[];
-    symdef=(SYMDEF_root []) }
+    symdef=(SYMDEF_root None) }
   in
 
   (* The root symbol's index is 0. *)

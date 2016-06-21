@@ -5,12 +5,14 @@ open Flx_mtypes2
 
 val tailable:
   Flx_bexe.t list ->
-  string list ->
+  Flx_types.bid_t list ->
   Flx_bexe.t list ->
   bool
 
 val chain_gotos:
   sym_state_t ->
+  string -> (* name of func *)
+  Flx_btype.t -> (* return type to indicate if proc or fun *)
   Flx_bexe.t list -> Flx_bexe.t list
 
 val final_tailcall_opt:

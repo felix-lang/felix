@@ -55,8 +55,8 @@ open class Control
 
   proc branch-and-link (target:&LABEL, save:&LABEL)
   {
-     save <- label_address next;
-     goto-indirect *target;
+     save <- next;
+     goto *target;
      next:>
   }
 

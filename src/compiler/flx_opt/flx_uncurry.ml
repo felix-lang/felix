@@ -206,7 +206,7 @@ let make_uncurry_map syms bsym_table =
 let fixup_function
   syms
   bsym_table
-  ut rl
+  ut 
   i c k
   bsymi bsymi_parent
   psc exesc
@@ -223,7 +223,6 @@ let fixup_function
     ut bsym_table
     c
     (Some k)
-    rl
     true
     (Flx_bparameter.get_bids ps)
   in
@@ -289,7 +288,7 @@ let fixup_function
   ps, exes
 
 
-let synthesize_function syms bsym_table ut rl i (c, k, n) =
+let synthesize_function syms bsym_table ut i (c, k, n) =
   (* As a safety check, make sure that the child has the parent as the
    * parent. *)
   assert (Flx_bsym_table.find_parent bsym_table c = Some i);
@@ -311,7 +310,7 @@ let synthesize_function syms bsym_table ut rl i (c, k, n) =
   let fixup_function = fixup_function
     syms
     bsym_table
-    ut rl
+    ut
     i c k
     bsymi bsymi_parent
   in
@@ -334,10 +333,9 @@ let synthesize_function syms bsym_table ut rl i (c, k, n) =
 (** synthesise the new functions *)
 let synthesize_functions syms bsym_table uncurry_map =
   let ut = Hashtbl.create 97 in (* dummy usage table *)
-  let rl = Hashtbl.create 97 in (* dummy relabel *)
 
   Hashtbl.iter
-    (synthesize_function syms bsym_table ut rl)
+    (synthesize_function syms bsym_table ut)
     uncurry_map
 
 

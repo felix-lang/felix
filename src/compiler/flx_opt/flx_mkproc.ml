@@ -118,7 +118,7 @@ let mkproc_exes syms bsym_table sr this mkproc_map vs exes =
 
 let proc_exe k exe = match exe with
   | BEXE_fun_return (sr,e)
-     -> [bexe_assign (sr,k,e); bexe_proc_return sr]
+     -> [bexe_comment(sr,"mkproc: simulate fun return"); bexe_assign (sr,k,e); bexe_proc_return sr]
 
   | BEXE_yield (sr,e)
      ->
@@ -127,7 +127,7 @@ let proc_exe k exe = match exe with
      *)
      (* failwith "Can't handle yield in procedure made from generator yet! :))"; *)
      (* Argg, who know, it might work lol *)
-     [bexe_assign (sr,k,e); bexe_proc_return sr]
+     [bexe_comment(sr,"mkproc: simulate yield"); bexe_assign (sr,k,e); bexe_proc_return sr]
 
   | x -> [x]
 
@@ -135,7 +135,6 @@ let proc_exes syms bsym_table k exes = List.concat (List.map (proc_exe k) exes)
 
 let mkproc_gen syms bsym_table =
   let ut = Hashtbl.create 97 in (* dummy usage table *)
-  let rl = Hashtbl.create 97 in (* dummy relabel *)
   let mkproc_map = Hashtbl.create 97 in
 
   let unstackable i =
@@ -263,7 +262,7 @@ let mkproc_gen syms bsym_table =
         let revariable =
           Flx_reparent.reparent_children syms
           ut bsym_table
-          i (Some k) rl true bids
+          i (Some k) true bids
         in
         let revar i = try Hashtbl.find revariable i with Not_found -> i in
         begin

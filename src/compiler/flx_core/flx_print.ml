@@ -1679,9 +1679,6 @@ and string_of_symdef entry name vs =
   | SYMDEF_cstruct (cts, reqs) ->
     "cstruct " ^ string_of_id name ^ string_of_ivs vs ^ string_of_named_reqs reqs ^ ";"
 
-  | SYMDEF_typeclass ->
-    "typeclass " ^ string_of_id name ^ string_of_ivs vs ^ ";"
-
 
   | SYMDEF_fun (props, pts,res,cts, reqs,prec) ->
     string_of_properties props ^
@@ -1761,11 +1758,17 @@ and string_of_symdef entry name vs =
     ) ^
     ";"
 
-  | SYMDEF_module exes ->
-    "module " ^ string_of_id name ^ "{"^catmap ";" (string_of_sexe 2) exes ^"};"
+  | SYMDEF_typeclass init ->
+    "typeclass " ^ string_of_id name ^ string_of_ivs vs ^ 
+    " with init=" ^
+    (match init with None -> "None" | Some p -> "_init_<"^string_of_int p^">") ^ ";"
 
-  | SYMDEF_root exes ->
-    "root {"^catmap ";" (string_of_sexe 2) exes ^"};"
+  | SYMDEF_module init ->
+    "module " ^ string_of_id name ^ " with init= " ^ 
+    (match init with None -> "None" | Some p -> "_init_<"^string_of_int p^">") ^ ";"
+
+  | SYMDEF_root init ->
+    "root {init=" ^  (match init with | None -> "None" | Some init -> si init) ^"};"
 
 and string_of_sexe level (sr,x) = string_of_exe level x
 
@@ -1878,7 +1881,7 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_cond (c,t,f) -> "if " ^ se c ^ " then " ^ se t ^ " else " ^ se f ^ " endif"
   | BEXPR_unit -> "()"
   | BEXPR_unitptr -> "NULL"
-  | BEXPR_label (s,i) -> "(&&" ^ s ^ "<"^string_of_int i^">)"
+  | BEXPR_label (i) -> sid i ^ "label"
   | BEXPR_tuple_head e -> "tuple_head ("^ se e ^")"
   | BEXPR_tuple_tail e -> "tuple_tail("^ se e ^")"
   | BEXPR_tuple_cons (eh,et) -> "tuple_cons("^ se eh ^"," ^ se et ^")"
@@ -2014,8 +2017,8 @@ and string_of_bexe bsym_table level s =
   let se e = string_of_bound_expression bsym_table e in
   let sid n = bound_name_of_bindex bsym_table n in
   match s with
-  | BEXE_goto (_,s,i) -> spc ^ "goto " ^ s ^ "<"^string_of_int i^">;"
-  | BEXE_cgoto (_,e) -> spc ^ "goto *" ^ se e ^ ";"
+  | BEXE_goto (_,i) -> spc ^ "goto " ^ sid i ^ ";"
+  | BEXE_cgoto (_,e) -> spc ^ "goto-indirect " ^ se e ^ ";"
 
   | BEXE_assert (_,e) -> spc ^ "assert " ^ se e ^ ";"
   | BEXE_axiom_check2 (_,_,e1,e2) -> spc ^ "axiom_check2 " ^
@@ -2030,14 +2033,14 @@ and string_of_bexe bsym_table level s =
   | BEXE_halt (_,s) -> spc ^ "halt " ^ s ^ ";"
   | BEXE_trace(_,v,s) -> spc ^ "trace " ^ s ^ ";"
 
-  | BEXE_ifgoto (_,e,s,i) -> spc ^
-     "if(" ^ se e ^ ")goto " ^ s ^ "<"^string_of_int i^">;"
+  | BEXE_ifgoto (_,e,i) -> spc ^
+     "if(" ^ se e ^ ")goto " ^ sid i^">;"
 
   | BEXE_ifcgoto (_,e1,e2) -> spc ^
      "if(" ^ se e1 ^ ") goto-indirect " ^ se e2 ^ ";"
 
 
-  | BEXE_label (_,s,i) -> s ^ "<"^string_of_int i^">:>"
+  | BEXE_label (_,i) -> sid i ^":>"
 
   | BEXE_comment (_,s) -> spc ^
     "// " ^ s
@@ -2114,8 +2117,6 @@ and string_of_dcl level name seq vs (s:dcl_t) =
   let sl = spaces level in
   let seq = match seq with Some i -> "<" ^ string_of_bid i ^ ">" | None -> "" in
   match s with
-  | DCL_label ->
-    spaces (if level >2 then level - 2 else level) ^ string_of_id name ^ ":>"
   | DCL_type_alias (t2) ->
     sl ^ "typedef " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     " = " ^ st t2 ^ ";"

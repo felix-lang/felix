@@ -201,13 +201,13 @@ let tailit syms bsym_table uses id this sr ps exes =
     match ps with
     | [] ->
       [
-        bexe_goto (sr,start_label,lc);
+        bexe_goto (sr,lc);
         bexe_comment (sr,"tail rec call (0)")
       ]
     | [{pindex=k}] ->
       assert (k <> 0);
       [
-        bexe_goto (sr,start_label,lc);
+        bexe_goto (sr,lc);
         bexe_init (sr,k,e);
         bexe_comment (sr,"tail rec call (1)")
       ]
@@ -228,7 +228,7 @@ let tailit syms bsym_table uses id this sr ps exes =
         let tmps,exes = Flx_passign.passign syms bsym_table pinits sr in
         parameters := tmps @ !parameters;
         let result = ref exes in
-        result := bexe_goto (sr,start_label,lc) :: !result;
+        result := bexe_goto (sr,lc) :: !result;
         (*
           print_endline "Tail opt code is:";
           List.iter (fun x -> print_endline (string_of_bexe bsym_table 0 x) ) (rev !result);
@@ -258,7 +258,7 @@ let tailit syms bsym_table uses id this sr ps exes =
           ps
         in
         [
-          bexe_goto (sr,start_label,lc);
+          bexe_goto (sr,lc);
         ]
         @
         param_decode
@@ -616,7 +616,7 @@ print_endline ("flx_tailit: adding label " ^ start_label ^ "<" ^ string_of_int l
 *)
           Flx_bsym_table.add bsym_table lc parent bsym;
  
-          bexe_label (sr,start_label,lc) :: exes
+          bexe_label (sr,lc) :: exes
         end
         else exes
       in

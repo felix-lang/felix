@@ -403,6 +403,10 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
     add_bsym true_parent (bbdcl_module ())
     *)
 
+  | SYMDEF_typeclass init  ->
+    add_bsym true_parent (bbdcl_typeclass ([], bvs))
+
+
   | SYMDEF_reduce (ps,e1,e2) ->
     let bps = bind_basic_ps ps in
     let be1 = be e1 in
@@ -791,9 +795,6 @@ print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid 
     let breqs = bind_reqs reqs in 
     add_bsym None (bbdcl_cstruct (bvs, cs', breqs))
 
-  | SYMDEF_typeclass ->
-    add_bsym true_parent (bbdcl_typeclass ([], bvs))
-
   | SYMDEF_instance qn ->
     (*
     print_endline "INSTANCE";
@@ -893,7 +894,7 @@ print_endline ("Binding symbol " ^ symdef.Flx_sym.id ^ "<" ^ si i ^ ">");
       with Not_found ->
         try match hfind "bbind" state.sym_table i with { Flx_sym.id=id } ->
           failwith ("Binding error, Not_found thrown binding " ^ id ^ " index " ^
-            string_of_bid i)
+            string_of_bid i ^ " parent " ^ (match parent with | None -> "NONE" | Some p -> string_of_int p))
         with Not_found ->
           failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
       end

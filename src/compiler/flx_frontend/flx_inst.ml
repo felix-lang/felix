@@ -105,7 +105,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_funsum _ -> assert false
   | BEXPR_lrangle _ -> assert false
   | BEXPR_lrbrack _ -> assert false
-  | BEXPR_label (s,i) ->  ui i []
+  | BEXPR_label (i) ->  ui i []
 
   | BEXPR_int _ -> ()
   | BEXPR_unit -> ()
@@ -260,10 +260,10 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
 *)
   (* TODO: replace with a map *)
   match exe with
-  | BEXE_label (sr,s,i)
-  | BEXE_goto (sr,s,i) -> ui sr i
+  | BEXE_label (sr,i)
+  | BEXE_goto (sr,i) -> ui sr i
 
-  | BEXE_ifgoto (sr,e,s,i) ->
+  | BEXE_ifgoto (sr,e,i) ->
     ui sr i;
     ue sr e
 
@@ -622,7 +622,7 @@ print_endline ("arg types c " ^ catmap "," (sbt bsym_table) tss);
   type and function.
 *)
 
-let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
+let instantiate syms bsym_table instps (root:bid_t option) (bifaces:biface_t list) =
 (*
 print_endline "  [flx_inst] Begin instantiation";
 *)
@@ -637,7 +637,10 @@ print_endline "  [flx_inst] Begin instantiation";
   let add_cand i ts = insts1 := FunInstSet.add (i,ts) !insts1 in
 
   (* add the root *)
-  add_cand root [];
+  begin match root with
+  | None -> ()
+  | Some root -> add_cand root []
+  end;
 
   (* add exported functions, and register exported types *)
   let ui sr i ts = add_inst syms bsym_table insts1 sr (i,ts) in

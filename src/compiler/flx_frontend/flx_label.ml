@@ -7,56 +7,65 @@ open Flx_exceptions
 open List
 open Flx_util
 open Flx_print
+open Flx_bsym
 
-type label_map_t =
-  (bid_t, (string, bid_t) Hashtbl.t) Hashtbl.t
+(* parent -> label index *)
+type labels_by_proc_t =
+  (bid_t, bid_t list) Hashtbl.t
 
 type label_kind_t = [`Far | `Near | `Unused ]
 
+(* label -> usage *)
 type label_usage_t = (bid_t, label_kind_t) Hashtbl.t
 
-type goto_kind_t =
-[
-  | `Local of bid_t
-  | `Nonlocal of bid_t * bid_t
-  | `Unreachable
-]
+type label_info_t = { labels_by_proc: labels_by_proc_t; label_usage: label_usage_t }
 
-let get_labels counter exes =
-  let labels = Hashtbl.create 97 in
-  List.iter
-    (fun exe -> match exe with
-      | BEXE_label (_,s,idx) ->
-(* NOTE: change this to use idx later *)
-        let bid = fresh_bid counter in 
-(*
-        print_endline ("    Add Label " ^ s ^ " = " ^ si bid);
-*)
-        Hashtbl.add labels s bid
-      | _ -> ()
-    )
-    exes
+let get_labels_for_proc label_info index =
+  try Hashtbl.find label_info.labels_by_proc index 
+  with Not_found -> []
+
+let get_label_kind_from_index (h:label_usage_t) idx =
+  try Hashtbl.find h idx
+  with Not_found -> assert false 
+
+type goto_kind_t = [ | `Local | `Nonlocal | `Unreachable ]
+
+let get_label_parent bsym_table idx : bid_t =
+  let parent,bsym = Flx_bsym_table.find_with_parent bsym_table idx in
+  match parent, bsym.bbdcl with
+  | Some p, BBDCL_label _ -> p
+  | _ -> assert false
+
+let get_init_label_info bsym_table : label_info_t =
+  let pl = Hashtbl.create 97 in
+  let lu = Hashtbl.create 97 in
+  Flx_bsym_table.iter (fun idx parent bsym ->
+    let add p =
+      let kids = try Hashtbl.find pl p with Not_found -> [] in
+      Hashtbl.replace pl p (idx::kids);
+      Hashtbl.add lu idx `Unused
+    in
+    match bsym.Flx_bsym.bbdcl with
+    | BBDCL_label label  ->
+      begin match parent with
+      (* this should NOT happen! The top level procedure is 0 , all code should belong
+         to some parent, even 0. None is only for definitions, including types,
+         classes, and variables: the top level procedure refers to variables
+         in the thread frame. So:
+
+         Some 0 -> top level _init_ <<--- this is nested in the root
+         None -> thread_frame <<--- this is the root 
+       *)
+      | None ->  print_endline ("Flx_label:get_init_label_info: label " ^ label ^ " Has no parent!");
+        assert false 
+      | Some p -> add p
+      end
+    | _ -> ()
+  )
+  bsym_table
   ;
-  labels
+  { labels_by_proc=pl; label_usage= lu }
 
-let update_label_map counter label_map index bsym =
-  match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (_,_,_,_,exes) ->
-(*
-print_endline ("Create label map for " ^ si index ^ " " ^ Flx_bsym.id bsym);
-*)
-      Hashtbl.add label_map index (get_labels counter exes)
-  | _ -> ()
-
-let create_label_map bsym_table counter =
-  (*
-  print_endline "Creating label map";
-  *)
-  let label_map = Hashtbl.create 97 in
-  Flx_bsym_table.iter begin fun bid _ bsym ->
-    update_label_map counter label_map bid bsym
-  end bsym_table;
-  label_map
 
 (* Previously this test tried to stop jumps through functions.
   Unfortantely a jump which goes through a function *statically*
@@ -81,43 +90,32 @@ let create_label_map bsym_table counter =
   Unfortunately the GC only tracks data pointers, not 
   control pointers (a goto is basically a control pointer).
 *)
-let rec find_label bsym_table label_map caller label =
-  let labels = try Hashtbl.find label_map caller with Not_found -> 
-    let caller_sym = Flx_bsym_table.find bsym_table caller in
-    let sr = Flx_bsym.sr caller_sym in
-    let id = Flx_bsym.id caller_sym in
-    clierr sr ("Cannot find label " ^ label ^ " targetted in " ^ id);
-  in
-  try `Local (Hashtbl.find labels label)
-  with Not_found ->
+
+(* find the jump distance of a goto, unreachable should never happen now! *)
+let rec find_label_distance bsym_table (pl:labels_by_proc_t) caller (label:bid_t) =
+  let labels = try Hashtbl.find pl caller with Not_found -> [] in 
+  if List.mem label labels then `Local else
   let bsym_parent, bsym = Flx_bsym_table.find_with_parent bsym_table caller in
-  match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (_,_,_,_,_) -> 
-      begin match bsym_parent with
-      | None -> `Unreachable
-      | Some parent ->
-          begin match find_label bsym_table label_map parent label with
-          | `Local i -> `Nonlocal (i,parent)
-          | x -> x
-          end
-      end
-  | _ -> assert false
-
-let get_label_kind_from_index usage lix =
-  try Hashtbl.find usage lix with Not_found -> `Unused
-
-let get_label_kind label_map usage_map proc label =
+  match bsym_parent with
+  | None -> assert false (* `Unreachable (* shouldn't happen! *) *)
 (*
-print_endline ("Get labal kind of " ^ label ^ " in proc " ^ si proc);
+    (* See above comment! *)
+    let parent = 0 in (* HACK! *)
+    let result = find_label_distance bsym_table pl parent label in
+    begin match result with
+    | `Local -> `Nonlocal
+    | _ -> result
+    end
 *)
-  let labels = try Hashtbl.find label_map proc with Not_found -> assert false in
-  try
-    let lix = Hashtbl.find labels label in
-    get_label_kind_from_index usage_map lix
-  with 
-    Not_found -> assert false
+  | Some parent ->
+    let result = find_label_distance bsym_table pl parent label in
+    begin match result with
+    | `Local -> `Nonlocal
+    | _ -> result
+    end
 
-let cal_usage bsym_table label_map caller exes usage =
+
+let cal_usage bsym_table label_info caller exes  =
 (*
 print_endline ("Scanning exes of procedure " ^ si caller);
 *)
@@ -125,28 +123,29 @@ print_endline ("Scanning exes of procedure " ^ si caller);
 (*
     print_endline ("goto Label " ^ label ^ " loc= .. ");
 *)
-    let label_loc = find_label bsym_table label_map caller label in
+    let label_loc = find_label_distance bsym_table label_info.labels_by_proc caller label in
     begin match label_loc with
     | `Unreachable ->
 print_endline "Unreachable or not found";
       syserr sr ("[flx_label] Caller " ^ string_of_bid caller ^
-        " Jump to unreachable or non-existant label " ^ label ^ "\n" ^
+        " Jump to unreachable or non-existant label " ^ string_of_int label ^ "\n" ^
         (catmap "\n" (string_of_bexe bsym_table 2) exes))
-    | `Local lix ->
-      if force_far then Hashtbl.replace usage lix `Far else
+    | `Local ->
+      if force_far then Hashtbl.replace label_info.label_usage label `Far else
 (*
 print_endline ("Local label " ^ si lix);
 *)
-      begin match get_label_kind_from_index usage lix with
-      | `Unused -> Hashtbl.replace usage lix `Near
+      begin match get_label_kind_from_index label_info.label_usage label with
+      | `Unused -> Hashtbl.replace label_info.label_usage label `Near
       | `Near | `Far -> ()
       end
-    | `Nonlocal (lix,_) ->
+
+    | `Nonlocal  ->
 (*
 print_endline "Non-Local";
 *)
-      begin match get_label_kind_from_index usage lix with
-      | `Unused | `Near -> Hashtbl.replace usage lix `Far
+      begin match get_label_kind_from_index label_info.label_usage label with
+      | `Unused | `Near -> Hashtbl.replace label_info.label_usage label `Far
       | `Far -> ()
       end
     end
@@ -154,29 +153,45 @@ print_endline "Non-Local";
 
   let check exe = 
     let sr = get_srcref exe in
-    let f_label_use s = handle_label_use false sr s in
-    let f_label s = handle_label_use true sr s in
-    let f_bexpr e = Flx_bexpr.iter ~f_label e in
+    let f_label_use i = handle_label_use false sr i in (* direct goto in exe *)
+    let f_label i = handle_label_use true sr i in  (* indirect use in expr, assume far *)
+
+    let f_bexpr e = Flx_bexpr.iter ~f_label  e in
     Flx_bexe.iter ~f_label_use ~f_bexpr exe
   in
   iter check exes
 
-let update_label_usage bsym_table label_map usage index bsym =
-  match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (_,_,_,_,exes) ->
-(*
-print_endline ("Update label usage of " ^ si index ^ " " ^ Flx_bsym.id bsym);
+let populate_label_usage bsym_table label_info =
+  Flx_bsym_table.iter (fun index parent bsym ->
+    match bsym.bbdcl with
+    | BBDCL_fun (_,_,_,_,exes) -> cal_usage bsym_table label_info index exes 
+    | _ -> ()
+  )
+  bsym_table
+
+let create_label_info bsym_table =
+  let label_info = get_init_label_info bsym_table in
+  populate_label_usage bsym_table label_info;
+  label_info
+
+let get_label_name bsym_table index =
+  let bsym = Flx_bsym_table.find bsym_table index in
+  let id = Flx_bsym.id bsym in
+  id ^ "_L"^ string_of_int index
+
+(* the value of the program counter to use for the switch
+  to the label: just use the label index
 *)
-      cal_usage bsym_table label_map index exes usage
-  | _ -> ()
+let get_label_pc index = index
 
-let create_label_usage bsym_table label_map =
-  let usage = Hashtbl.create 97 in
+(* the value of the frame containing the pc to be used,
+  is just the parent index
+*)
+let get_label_frame bsym_table index =
+  let parent = Flx_bsym_table.find_parent bsym_table index in
+  match parent with
+  | Some p -> p
+  | None -> assert false (* see above comment *)
 
-  Flx_bsym_table.iter begin fun bid _ bsym ->
-    update_label_usage bsym_table label_map usage bid bsym
-  end bsym_table;
-
-  usage
 
 
