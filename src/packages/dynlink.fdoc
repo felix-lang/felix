@@ -993,21 +993,21 @@ Finally the instance is returned.
   // If the library isn't reachable, you can't create an instance.
   // If an instance is created, it reaches the library.
   noinline gen prepare_lib(modulename:string):flx_instance = {
-    var library = create_library_handle(get_debug_driver_flag());
+    var dlibrary = create_library_handle(get_debug_driver_flag());
     //Gc::add_root (C_hack::cast[address] library);
     var linstance =  create_instance_handle(get_debug_driver_flag());
-    regopen #get_module_registry (library,modulename);
-    create (library,linstance);
+    regopen #get_module_registry (dlibrary,modulename);
+    create (dlibrary,linstance);
     return linstance;
   }
 
   //$ Create, link, and prepare a DLL instance from a modulename.
   noinline gen prepare_lib_with_args(modulename:string, args:list[string]):flx_instance = {
-    var library = create_library_handle(get_debug_driver_flag());
+    var dlibrary = create_library_handle(get_debug_driver_flag());
     //Gc::add_root (C_hack::cast[address] library);
     var linstance =  create_instance_handle(get_debug_driver_flag());
-    regopen #get_module_registry (library,modulename);
-    create_with_args (library,linstance,args);
+    regopen #get_module_registry (dlibrary,modulename);
+    create_with_args (dlibrary,linstance,args);
     return linstance;
   }
 
@@ -1060,10 +1060,10 @@ if the symbol cannot be found.
 @tangle dynlink.flx
   //$ Find typed address of a symbol in a DLL.
   noinline fun flx_dlsym[T] (linst: flx_instance, sym:string) = {
-    var library = Dynlink::get_library linst;
+    var dlibrary = Dynlink::get_library linst;
     var tf = Dynlink::get_thread_frame linst;
 //println$ "Trying to load symbol " + sym + " from library " + linst.filename;
-    var raw_sym = Dynlink::find_sym$ library, sym;
+    var raw_sym = Dynlink::find_sym$ dlibrary, sym;
     if isNULL raw_sym do
       eprintln$ "Unable to load symbol " + sym + " from library " + linst.filename;
       raise$ flx_link_failure_t(linst.filename,"dlsym","Cannot find symbol " + sym); 

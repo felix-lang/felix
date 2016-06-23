@@ -81,7 +81,8 @@ let rec find_true_parent sym_table child parent =
   | Some parent ->
     let grandparent, sym = Flx_sym_table.find_with_parent sym_table parent in
     match sym.Flx_sym.symdef with
-    | SYMDEF_module _  -> find_true_parent sym_table child grandparent
+    | SYMDEF_library 
+    | SYMDEF_module  -> find_true_parent sym_table child grandparent
     | SYMDEF_root _ -> None
     | _ -> Some parent
 
@@ -397,13 +398,13 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
      initialisation code from it.
   *)
   | SYMDEF_root _ -> () 
-
-  | SYMDEF_module _ -> ()
+  | SYMDEF_library -> () 
+  | SYMDEF_module -> ()
     (*
     add_bsym true_parent (bbdcl_module ())
     *)
 
-  | SYMDEF_typeclass init  ->
+  | SYMDEF_typeclass ->
     add_bsym true_parent (bbdcl_typeclass ([], bvs))
 
 

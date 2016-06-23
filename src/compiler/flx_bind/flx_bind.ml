@@ -53,108 +53,6 @@ let make_bind_state syms sym_table =
     bbind_state = bbind_state;
   }
 
-let bind_asm state bsym_table handle_bound init asm =
-  let print_flag = state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag in
-  let counter_ref = state.syms.Flx_mtypes2.counter in
-  (* We need to save the symbol index counter so we can bind all of the symbols
-   * that we just added. *)
-  let initial_index = !(state.syms.Flx_mtypes2.counter) in
-
-  (* Add declarations to the symbol table *)
-  let init =
-    match asm with
-    | Flx_types.Exe exe ->
-        let bexes = Flx_bind_bexe.bind_exe state.bexe_state bsym_table exe in
-        List.fold_left (fun acc bexe -> handle_bound acc (Bound_exe bexe)) init bexes
-
-    | Flx_types.Dcl dcl ->
-        ignore(Flx_symtab.add_dcl ?parent:state.parent print_flag counter_ref state.symtab dcl);
-        init
-    | Flx_types.Iface (sr,iface) ->
-        let biface = Flx_bbind.bind_interface
-          state.bbind_state
-          bsym_table
-          (sr, iface, state.parent)
-        in
-        state.syms.Flx_mtypes2.bifaces <-
-          biface :: state.syms.Flx_mtypes2.bifaces;
-        init
-    | Flx_types.Dir dir -> init
-  in
-
-  let defered = ref [] in
-  (* Now bind in order all of the symbols we added. *)
-  Flx_mtypes2.iter_bids begin fun bid ->
-    (* Skip this bid if we've already bound it. *)
-    if Flx_bsym_table.mem bsym_table bid then () else
-
-    (* Next, find the symbol to bind. *)
-    match
-      try Some (Flx_sym_table.find_with_parent state.sym_table bid)
-      with Not_found -> None
-    with
-    | None -> ()
-    | Some (parent, sym) ->
-print_endline ("bind_symbol " ^ sym.Flx_sym.id ^ "??");
-      begin match sym.symdef with
-      | Flx_types.SYMDEF_function (([kind,pid,TYP_defer _,_],None),ret,props,exes) ->
-print_endline ("bind_symbol " ^ sym.Flx_sym.id ^ " .. DEFERED");
-        defered := bid :: !defered
-      | _ -> 
-print_endline ("bind_symbol " ^ sym.Flx_sym.id ^ " .. BINDING");
-        (* Then, bind the symbol. *)
-        ignore (Flx_bbind.bbind_symbol
-          state.bbind_state
-          bsym_table
-          bid
-          parent
-          sym)
-      end
-  end initial_index !(state.syms.Flx_mtypes2.counter);
-
-  print_endline ("Processing " ^ string_of_int (List.length (!defered)) ^ " defered syms");
-  List.iter begin fun bid ->
-    (* Skip this bid if we've already bound it. *)
-    if Flx_bsym_table.mem bsym_table bid then () else
-
-    (* Next, find the symbol to bind. *)
-    match
-      try Some (Flx_sym_table.find_with_parent state.sym_table bid)
-      with Not_found -> None
-    with
-    | None -> ()
-    | Some (parent, sym) ->
-        (* Then, bind the symbol. *)
-        ignore (Flx_bbind.bbind_symbol
-          state.bbind_state
-          bsym_table
-          bid
-          parent
-          sym)
-  end (!defered);
-
-
-  (* Now that we've bound all the symbols, we can downgrade the types. *)
-  let init = ref init in
-
-  (* Finally, pass on the bound symbols to the client. *)
-  Flx_mtypes2.iter_bids begin fun i ->
-    (* First, find the symbol to bind. *)
-    let symbol =
-      try Some (Flx_bsym_table.find bsym_table i)
-      with Not_found -> None
-    in
-    begin match symbol with
-    | None -> ()
-    | Some s ->
-        (* ... and finally pass the symbol to the client *)
-        init := handle_bound !init (Bound_symbol (i, s));
-    end
-  end initial_index !(state.syms.Flx_mtypes2.counter);
-
-  (* Return the folded value. *)
-  !init
-
 let bind_asms bind_state bsym_table start_counter asms =
 (*
 print_endline "Flx_bind.bind_asms: Binding asms ..";
@@ -166,7 +64,9 @@ print_endline "Flx_bind.bind_asms: Binding asms ..";
 (*
 print_endline "Flx_bind.bind_asms: Making symbol table done";
 *)
+(*
   let exes = Flx_symtab.get_init_exes bind_state.symtab in
+*)
   let ifaces = Flx_symtab.get_exports bind_state.symtab in
 (*
 print_endline ("Bind_asms: ifaces = " ^ string_of_int (List.length ifaces));
@@ -203,7 +103,7 @@ let find_root_module_init_function_from_sym_table syms =
 
   match symdef with
     | Flx_types.SYMDEF_root p -> None 
-    | Flx_types.SYMDEF_module p -> p
+    (* | Flx_types.SYMDEF_module p -> p *)
     | _ -> failwith "Expected to find top level module ''"
 
 let find_root_module_init_function_from_bind_state bind_state =

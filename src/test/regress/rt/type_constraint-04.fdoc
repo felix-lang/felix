@@ -11,7 +11,7 @@ var px:&int = &x;
 
 module X {
   proc h[t,u=&t]: u  * t = '*$1=$2; ::std::cout <<*$1<<","<<$2<<::std::endl;';
-  h(px,1);
+  proc chk() => h(px,1);
 
   // address and dereference operators where
   // constraint is required to deduce type variable
@@ -24,6 +24,7 @@ module X {
 
 open X[int];
 open C_hack;
+chk();
 h(px,1);
 //h(px,1.1); // should fail
 

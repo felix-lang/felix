@@ -58,10 +58,13 @@ t1();
 module A
 {
   proc print:int='printf("module A print int=%d",$1);';
-  print 1;
-  print "\n";
+  proc chk() {
+    print 1;
+    print "\n";
+  }
 }
 
+A::chk();
 @expect
 10
 10x=1, y=2

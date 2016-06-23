@@ -1247,6 +1247,13 @@ and string_of_statement level s =
     "\n" ^
     string_of_compound level sts
 
+  | STMT_library (_,name, sts)  ->
+    spaces level ^ "module " ^ string_of_id name ^ 
+    " = " ^
+    "\n" ^
+    string_of_compound level sts
+
+
   | STMT_struct (_,name, vs, cs) ->
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ string_of_id name ^ ": " ^
@@ -1758,14 +1765,14 @@ and string_of_symdef entry name vs =
     ) ^
     ";"
 
-  | SYMDEF_typeclass init ->
-    "typeclass " ^ string_of_id name ^ string_of_ivs vs ^ 
-    " with init=" ^
-    (match init with None -> "None" | Some p -> "_init_<"^string_of_int p^">") ^ ";"
+  | SYMDEF_typeclass->
+    "typeclass " ^ string_of_id name ^ string_of_ivs vs ^ ";"
 
-  | SYMDEF_module init ->
-    "module " ^ string_of_id name ^ " with init= " ^ 
-    (match init with None -> "None" | Some p -> "_init_<"^string_of_int p^">") ^ ";"
+  | SYMDEF_module->
+    "module " ^ string_of_id name  ^ ";"
+
+  | SYMDEF_library ->
+    "library " ^ string_of_id name ^ ";"
 
   | SYMDEF_root init ->
     "root {init=" ^  (match init with | None -> "None" | Some init -> si init) ^"};"
@@ -2133,6 +2140,12 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     sl ^ "module " ^ string_of_id name ^ seq ^ string_of_vs vs ^ " = " ^
     "\n" ^
     string_of_asm_compound level asms
+
+  | DCL_library (asms) ->
+    sl ^ "library " ^ string_of_id name ^ seq ^ string_of_vs vs ^ " = " ^
+    "\n" ^
+    string_of_asm_compound level asms
+
 
   | DCL_root (asms) ->
     sl ^ "root" ^ " = " ^

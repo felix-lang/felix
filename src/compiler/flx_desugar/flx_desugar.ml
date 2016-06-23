@@ -262,6 +262,13 @@ print_endline ("Translating Lazy Declaration " ^ name);
 *)
     mdcl
 
+  | STMT_library (sr,name', sts) ->
+    let asms = rsts name' (parent_vs) `Public sts in
+    let asms = bridge name' sr :: asms in
+    let mdcl =
+      [ Dcl (sr,name',None,access,dfltvs, DCL_library asms) ]
+    in
+    mdcl
 
   | STMT_instance (sr, vs, name, sts) ->
     let name',ts = match name with

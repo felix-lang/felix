@@ -191,6 +191,10 @@ uproot:
 	rm -rf ${BUILDROOT}/host
 	mv ${BUILDROOT}/trial ${BUILDROOT}/host
 
+src:
+	mkdir -p ${BUILDROOT}/share/
+	cp -r src ${BUILDROOT}/share
+
 #
 # regression test on release image
 #
@@ -260,4 +264,4 @@ install:
 .PHONY : doc install websites-linux  release install-bin
 .PHONY : copy-doc gen-doc gendoc fbuild speed tarball
 .PHONY : weblink flx tools web-plugins toolchain-plugins rtl copy lib
-.PHONY : sdltest
+.PHONY : sdltest src

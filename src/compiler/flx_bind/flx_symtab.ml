@@ -12,12 +12,12 @@ type t = {
   sym_table: Flx_sym_table.t;
   pub_name_map: (string, Flx_btype.entry_set_t) Hashtbl.t;
   priv_name_map: (string, Flx_btype.entry_set_t) Hashtbl.t;
-  mutable init_exes: sexe_t list;
+  inits_ref: int list ref;
   mutable exports: bound_iface_t list;
   mutable directives: sdir_t list;
 }
 
-let get_init_exes x = x.init_exes
+let get_inits x = !(x.inits_ref)
 let get_exports x = x.exports
 let get_directives x = x.directives
 
@@ -25,7 +25,7 @@ let summary x =
   Flx_sym_table.summary x.sym_table ^ ", " ^ 
   string_of_int (Hashtbl.length x.pub_name_map) ^ " public names, " ^ 
   string_of_int (Hashtbl.length x.priv_name_map) ^ " private names, " ^
-  string_of_int (List.length x.init_exes) ^ " initialisation instructions, " ^
+  string_of_int (List.length !(x.inits_ref)) ^ " initialisation instructions, " ^
   string_of_int (List.length x.exports) ^ " exports, " ^
   string_of_int (List.length x.directives) ^ " compiler directives "
 
@@ -38,8 +38,8 @@ let detail x =
   Flx_sym_table.detail x.sym_table ^"\n" ^
   "public names = " ^ Hashtbl.fold (fun k v acc -> acc ^"\n  "^k^": "^dsp v) x.pub_name_map "" ^ 
   "\nprivate names = " ^ Hashtbl.fold (fun k v acc -> acc ^"\n  "^k^": "^dsp v) x.priv_name_map ""  ^ 
-  "\ninitialisation instructions: \n" ^ String.concat "\n" 
-      (List.map (fun (sr,exe)->Flx_print.string_of_exe 2 exe) x.init_exes) ^
+  "\ninitialisation procedures : \n" ^ 
+      (String.concat  "," (List.map (fun i->string_of_int i) !(x.inits_ref))) ^
   "\ncompiler directives:\n"^ String.concat "\n" (List.map (fun (_,s) -> Flx_print.string_of_dir 2 s) x.directives) ^
   "\nexports:\n"^ String.concat "\n" (List.map 
       (fun (_,s,b) -> Flx_print.string_of_iface 2 s ^ 
@@ -209,6 +209,29 @@ let full_add_function counter_ref sym_table sr (vs:ivs_list_t) table key value =
   with Not_found ->
     Hashtbl.add table key (FunctionEntry [mkentry counter_ref vs value])
 
+let full_replace_function counter_ref sym_table sr (vs:ivs_list_t) table key value =
+  try
+    match Hashtbl.find table key with
+    | NonFunctionEntry entry ->
+        let sym = Flx_sym_table.find sym_table (Flx_typing.sye entry) in
+        Flx_exceptions.clierr2 sr sym.Flx_sym.sr (
+          "[build_tables] Cannot overload " ^
+          key ^ "<" ^ Flx_print.string_of_bid value ^ ">" ^
+          " with non-function " ^
+          sym.Flx_sym.id ^ "<" ^
+          Flx_print.string_of_bid (Flx_typing.sye entry) ^ ">")
+
+    | FunctionEntry [_] ->
+      Hashtbl.replace table key (FunctionEntry [mkentry counter_ref vs value])
+
+    | FunctionEntry fs ->
+        Flx_exceptions.clierr sr (
+          "[build_tables] Cannot replace non-singleton set of functions with " ^
+          key ^ "<" ^ Flx_print.string_of_bid value ^ ">")
+
+  with Not_found ->
+    Hashtbl.add table key (FunctionEntry [mkentry counter_ref vs value])
+
 
 (* make_ivs inserts unique indexes into vs_lists, thus creating an ivs_list. *)
 let make_ivs ?(print=false) level counter_ref (vs, con) : ivs_list_t =
@@ -254,6 +277,7 @@ let rec build_tables
   inherit_ivs
   level
   parent
+  inits_ref
   asms
 =
   (* Split up the assemblies into their repsective types. split_asms returns
@@ -287,7 +311,7 @@ print_endline ("Level " ^string_of_int level ^ " build tables, exports = " ^ str
     else 
       add_root_entry counter_ref priv_name_map
   ;
-  let inner_interfaces, inits = 
+  let inner_interfaces = 
     add_dcls
       print_flag
       counter_ref
@@ -298,6 +322,7 @@ print_endline ("Level " ^string_of_int level ^ " build tables, exports = " ^ str
       parent
       pub_name_map
       priv_name_map
+      inits_ref
       dcls
   in
 (*
@@ -305,7 +330,7 @@ print_endline ("Interfaces level " ^string_of_int level ^  " = " ^
        string_of_int (List.length (!interfaces)) ^ " + " ^ 
         string_of_int (List.length inner_interfaces));
 *)
-  pub_name_map, priv_name_map, exes, (!interfaces) @ inner_interfaces, dirs, inits
+  pub_name_map, priv_name_map, exes, (!interfaces) @ inner_interfaces, dirs
 
 and add_dcls 
   print_flag 
@@ -317,10 +342,10 @@ and add_dcls
   parent 
   pub_name_map 
   priv_name_map 
+  inits_ref
   dcls
 =
   let interfaces_ref = ref [] in
-  let inits_ref = ref [] in
   List.iter (fun dcl ->
     ignore(build_table_for_dcl
       print_flag
@@ -336,7 +361,7 @@ and add_dcls
       inits_ref
       dcl)
   ) dcls;
-  !interfaces_ref, (List.rev (!inits_ref))
+  !interfaces_ref
 
 
 
@@ -352,7 +377,7 @@ and build_table_for_dcl
   pub_name_map
   priv_name_map
   interfaces
-  (inits: int list ref)
+  (inits_ref: int list ref)
   (sr, id, seq, access, vs, dcl)
 =
 
@@ -395,6 +420,16 @@ and build_table_for_dcl
     id
     idx
   in
+  let replace_function table id idx = full_replace_function
+    counter_ref
+    sym_table
+    sr
+    (merge_ivs ivs inherit_ivs)
+    table
+    id
+    idx
+  in
+
 
   (* Add the symbol to the symbol table. *)
   let add_symbol
@@ -438,6 +473,46 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
       symdef = symdef;
     }
   in
+
+  let replace_symbol
+    ?(parent=parent)
+    ?(ivs=ivs)
+    ?pubtab
+    ?privtab
+    ?(dirs=[])
+    index
+    id
+    symdef
+  =
+(*
+    let is_generic vs = List.fold_left (fun acc (name,index,typ) ->
+      acc || match typ with | TYP_generic _ -> true | _ -> false) 
+      false
+      (fst ivs) 
+    in
+    if is_generic ivs then print_endline ("Add symbol with generic type variable");
+*)
+    let pubtab =
+      match pubtab with
+      | Some pubtab -> pubtab
+      | None -> Hashtbl.create 0
+    in
+    let privtab =
+      match privtab with
+      | Some privtab -> privtab
+      | None -> Hashtbl.create 0
+    in
+    Flx_sym_table.replace sym_table index parent {
+      Flx_sym.id = id;
+      sr = sr;
+      vs = ivs;
+      pubmap = pubtab;
+      privmap = privtab;
+      dirs = dirs;
+      symdef = symdef;
+    }
+  in
+
 
   let add_tvars' parent table ivs =
     List.iter begin fun (tvid, index, tpat) ->
@@ -557,7 +632,7 @@ if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int
       let id = if is_ctor then "_ctor_" ^ name else id in
 
       let t = if t = TYP_none then TYP_var symbol_index else t in
-      let pubtab, privtab, exes, ifaces, dirs,inits =
+      let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           ~pub_name_map:(Hashtbl.create 97)
           ~priv_name_map:(Hashtbl.create 97)
@@ -568,6 +643,7 @@ if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int
           dfltvs
           (level + 1)
           (Some symbol_index)
+          inits_ref
           asms
       in
       let ips = add_parameters pubtab privtab (Some symbol_index) ps in
@@ -608,7 +684,7 @@ if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int
         new_asms := dcl :: instr :: !new_asms;
       end (List.rev (!vars));
 
-      let pubtab, privtab, exes, ifaces, dirs,inits =
+      let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           ~pub_name_map:(Hashtbl.create 97)
           ~priv_name_map:(Hashtbl.create 97)
@@ -619,6 +695,7 @@ if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int
           dfltvs
           (level + 1)
           (Some symbol_index)
+          inits_ref
           !new_asms
       in
 
@@ -653,7 +730,8 @@ if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int
       add_function priv_name_map id symbol_index
 
   | DCL_root asms ->
-      let pubtab, privtab, exes, ifaces, dirs,inner_inits =
+      let capture_inits = ref [] in
+      let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           ~pub_name_map:(Hashtbl.create 97)
           ~priv_name_map:(Hashtbl.create 97)
@@ -664,6 +742,7 @@ if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int
           (merge_ivs inherit_ivs ivs)
           (level + 1)
           (Some 0)
+          capture_inits 
           asms
       in
 (*
@@ -679,7 +758,8 @@ print_endline ("ROOT: Init procs = " ^ string_of_int (List.length inner_inits));
         match sym with {Flx_sym.pubmap=old_pubmap; privmap=old_privmap; dirs=old_dirs; symdef=symdef} ->
         Hashtbl.iter (fun k v -> merge_entry_set sym_table old_pubmap k v) pubtab;
         Hashtbl.iter (fun k v -> merge_entry_set sym_table old_privmap k v) privtab;
-        let exes = merge_calls sr inner_inits exes in
+        let exes = (make_calls sr (List.rev !capture_inits)) @ exes in
+        let exes = merge_calls sr (!inits_ref) exes in
         let symdef = 
           match symdef with 
           | SYMDEF_root old_init_proc -> 
@@ -725,12 +805,94 @@ print_endline ("ROOT: Init procs = " ^ string_of_int (List.length inner_inits));
       (* Add the interface. *)
       interfaces := !interfaces @ ifaces
 
-  | DCL_module asms ->
+  | DCL_library asms ->
 (*
-print_endline ("BUILDING MODULE " ^ name);
+print_endline ("BUILDING LIBRARY " ^ id ^ " parent " ^ name);
+print_endline ("Checking parent's public map");
 *)
+      let fresh,pub,priv,library_index =
+      try
+        let entry = Hashtbl.find pub_name_map id in
+        match entry with
+        | FunctionEntry _ -> Flx_exceptions.clierr sr ("Library name "^id^" already used for function")
+        | NonFunctionEntry { base_sym=old_index } ->  
+(*
+          print_endline ("Name already exists, index= " ^ string_of_int old_index);
+*)
+          let sym = Flx_sym_table.find sym_table old_index in
+          let {Flx_sym.id=old_id; sr=old_sr; vs=old_vs; pubmap=old_pubmap; 
+            privmap=old_privmap; symdef=old_symdef } = sym 
+          in 
+          match old_symdef with
+          | SYMDEF_library  -> 
+(*
+            print_endline ("Got old library named " ^ id) ;
+*)
+            false, old_pubmap, old_privmap, old_index
+
+          | _ -> Flx_exceptions.clierr sr ("Old definition of " ^ id ^ " must be a library")
+      with Not_found -> 
+(*
+        print_endline ("OK, not found");
+*)
+        true, Hashtbl.create 97, Hashtbl.create 97, symbol_index
+      in
+ 
       let complete_vs = merge_ivs inherit_ivs ivs in
-      let pubtab, privtab, exes, ifaces, dirs,inner_inits =
+      let capture_inits = ref [] in
+      let pubtab, privtab, exes, ifaces, dirs =
+        build_tables
+          ~pub_name_map:pub
+          ~priv_name_map:priv
+          print_flag
+          counter_ref
+          sym_table
+          id
+          complete_vs
+          (level + 1)
+          (Some library_index)
+          capture_inits
+          asms
+      in
+
+      let exes = (make_calls sr (List.rev !capture_inits)) @ exes in
+      if List.length exes > 0 then begin
+        let init_fun = Flx_mtypes2.fresh_bid counter_ref in
+        inits_ref := init_fun :: !inits_ref;
+        let init_privtab = Hashtbl.create 97 in
+        add_labels init_fun init_privtab exes;
+
+        (* Take all the exes and add them to a function called _init_ that's
+         * called when the module is loaded. *)
+        let init_def = SYMDEF_function (([], None), TYP_void sr, [], exes) in
+
+        (* Get a unique index for the _init_ function. *)
+
+        if print_flag then
+          print_endline ("//  " ^ spc ^ Flx_print.string_of_bid init_fun ^
+          " -> _init_  (library " ^ id ^ ")");
+
+        (* Add the _init_ function to the sym_table. *)
+        add_symbol ~privtab:init_privtab ~parent:(Some library_index) init_fun "_init_" init_def;
+
+      end;
+
+      (* Add the module to the sym_table. *)
+      if fresh then begin
+        add_symbol ~pubtab ~privtab ~dirs symbol_index id (SYMDEF_library);
+        if access = `Public then add_unique pub_name_map id library_index;
+        add_unique priv_name_map id library_index;
+      end;
+      (* Add the interface. *)
+      interfaces := !interfaces @ ifaces;
+(*
+      print_endline ("Library addition complete");
+*)
+
+  | DCL_module asms ->
+      let complete_vs = merge_ivs inherit_ivs ivs in
+      let capture_inits = ref [] in
+      let pubtab, privtab, exes, ifaces, dirs=
         build_tables
           ~pub_name_map:(Hashtbl.create 97)
           ~priv_name_map:(Hashtbl.create 97)
@@ -741,47 +903,41 @@ print_endline ("BUILDING MODULE " ^ name);
           complete_vs
           (level + 1)
           (Some symbol_index)
+          capture_inits
           asms
       in
 (*
 print_endline ("Length of exes " ^ string_of_int (List.length exes));
 print_endline ("MODULE "^name^" Init procs = " ^ string_of_int (List.length inner_inits));
 *)
-      let exes = merge_calls sr inner_inits exes in
-      let init_fun =
-        if complete_vs = dfltvs && List.length exes > 0 then begin
-          let init_fun = Flx_mtypes2.fresh_bid counter_ref in
-          inits := init_fun :: !inits;
-          let init_privtab = Hashtbl.create 97 in
-          add_labels init_fun init_privtab exes;
+      let exes = 
+        (make_calls sr (List.rev !capture_inits)) @ 
+        (if complete_vs = dfltvs then exes else []) 
+      in
+      if List.length exes > 0 then begin
+        let init_fun = Flx_mtypes2.fresh_bid counter_ref in
+        inits_ref := init_fun :: !inits_ref;
+        let init_privtab = Hashtbl.create 97 in
+        add_labels init_fun init_privtab exes;
 
-          (* Take all the exes and add them to a function called _init_ that's
-           * called when the module is loaded. *)
-          let init_def = SYMDEF_function (([], None), TYP_void sr, [], exes) in
+        (* Take all the exes and add them to a function called _init_ that's
+         * called when the module is loaded. *)
+        let init_def = SYMDEF_function (([], None), TYP_void sr, [], exes) in
 
-          (* Get a unique index for the _init_ function. *)
+        (* Get a unique index for the _init_ function. *)
 
-          if print_flag then
-            print_endline ("//  " ^ spc ^ Flx_print.string_of_bid init_fun ^
-            " -> _init_  (module " ^ id ^ ")");
+        if print_flag then
+          print_endline ("//  " ^ spc ^ Flx_print.string_of_bid init_fun ^
+          " -> _init_  (module " ^ id ^ ")");
 
-          (* Add the _init_ function to the sym_table. *)
-          add_symbol ~privtab:init_privtab ~parent:(Some symbol_index) init_fun "_init_" init_def;
-
-          (* Possibly add the _init_ function to the public symbol table. *)
-          if access = `Public then add_function pubtab "_init_" init_fun;
-
-          (* Add the _init_ function to the symbol table. *)
-          add_function privtab "_init_" init_fun;
-          Some  init_fun
-        end
-        else None
-      in 
+        (* Add the _init_ function to the sym_table. *)
+        add_symbol ~privtab:init_privtab ~parent:(Some symbol_index) init_fun "_init_" init_def;
+      end;
       (* Add the module to the sym_table. *)
 (*
 print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p -> string_of_int p | None -> "None"));
 *)
-      add_symbol ~pubtab ~privtab ~dirs symbol_index id (SYMDEF_module init_fun);
+      add_symbol ~pubtab ~privtab ~dirs symbol_index id (SYMDEF_module);
 
       (* Possibly add module to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
@@ -802,7 +958,8 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
 
   | DCL_typeclass asms ->
       let complete_vs = merge_ivs inherit_ivs ivs in
-      let pubtab, privtab, exes, ifaces, dirs,inner_inits =
+      let capture_inits = ref [] in
+      let pubtab, privtab, exes, ifaces, dirs=
         build_tables
           ~pub_name_map:(Hashtbl.create 97)
           ~priv_name_map:(Hashtbl.create 97)
@@ -813,6 +970,7 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
           complete_vs
           (level + 1)
           (Some symbol_index)
+          capture_inits
           asms
       in
       let fudged_privtab = Hashtbl.create 97 in
@@ -847,42 +1005,36 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
 print_endline ("Length of exes " ^ string_of_int (List.length exes));
 print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length inner_inits));
 *)
-      let exes = merge_calls sr inner_inits exes in
-      let init_fun =
-        if complete_vs = dfltvs && List.length exes > 0 then begin
-          let init_fun = Flx_mtypes2.fresh_bid counter_ref in
-          inits := init_fun :: !inits;
-          let init_privtab = Hashtbl.create 97 in
-          add_labels init_fun init_privtab exes;
+      let exes = 
+        (make_calls sr (List.rev !capture_inits)) @ 
+        (if complete_vs = dfltvs then exes else []) 
+      in
+      if List.length exes > 0 then begin
+        let init_fun = Flx_mtypes2.fresh_bid counter_ref in
+        inits_ref := init_fun :: !inits_ref;
+        let init_privtab = Hashtbl.create 97 in
+        add_labels init_fun init_privtab exes;
 
-          (* Take all the exes and add them to a function called _init_ that's
-           * called when the module is loaded. *)
-          let init_def = SYMDEF_function (([], None), TYP_void sr, [], exes) in
+        (* Take all the exes and add them to a function called _init_ that's
+         * called when the module is loaded. *)
+        let init_def = SYMDEF_function (([], None), TYP_void sr, [], exes) in
 
-          (* Get a unique index for the _init_ function. *)
+        (* Get a unique index for the _init_ function. *)
 
-          if print_flag then
-            print_endline ("//  " ^ spc ^ Flx_print.string_of_bid init_fun ^
-            " -> _init_  (typeclass " ^ id ^ ")");
+        if print_flag then
+          print_endline ("//  " ^ spc ^ Flx_print.string_of_bid init_fun ^
+          " -> _init_  (typeclass " ^ id ^ ")");
 
-          (* Add the _init_ function to the sym_table. *)
-          add_symbol ~privtab:init_privtab ~parent:(Some symbol_index) init_fun "_init_" init_def;
-          (* Possibly add the _init_ function to the public symbol table. *)
-          if access = `Public then add_function pubtab "_init_" init_fun;
-
-          (* Add the _init_ function to the symbol table. *)
-          add_function privtab "_init_" init_fun;
-          Some  init_fun
-        end
-        else None
-      in 
+        (* Add the _init_ function to the sym_table. *)
+        add_symbol ~privtab:init_privtab ~parent:(Some symbol_index) init_fun "_init_" init_def;
+      end; 
 
       (* Add the typeclass to the sym_table. *)
       add_symbol
         ~pubtab
         ~privtab:fudged_privtab
         ~dirs
-        symbol_index id (SYMDEF_typeclass init_fun);
+        symbol_index id (SYMDEF_typeclass);
 
       (* Possibly add the typeclass to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
@@ -897,7 +1049,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       add_tvars fudged_privtab
 
   | DCL_instance (qn,asms) ->
-      let pubtab, privtab, exes, ifaces, dirs, inner_inits =
+      let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           ~pub_name_map:(Hashtbl.create 97)
           ~priv_name_map:(Hashtbl.create 97)
@@ -908,6 +1060,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
           dfltvs
           (level + 1)
           (Some symbol_index)
+          inits_ref
           asms
       in
       if (List.length exes <> 0) then
@@ -1253,12 +1406,12 @@ let make sym_table =
     sym_table = sym_table;
     pub_name_map = Hashtbl.create 97;
     priv_name_map = Hashtbl.create 97;
-    init_exes = [];
+    inits_ref = ref [];
     exports = [];
     directives = [];
   }
 
-let add_dcl ?parent print_flag counter_ref symbol_table dcl =
+let add_dcl ?parent print_flag counter_ref symbol_table inits_ref dcl =
   let level, pubmap, privmap =
     match parent with
     | Some index ->
@@ -1269,7 +1422,6 @@ let add_dcl ?parent print_flag counter_ref symbol_table dcl =
   in
 
   let interfaces = ref [] in
-  let inits = ref [] in
   let symbol_index =
     build_table_for_dcl
       print_flag
@@ -1282,10 +1434,10 @@ let add_dcl ?parent print_flag counter_ref symbol_table dcl =
       pubmap
       privmap
       interfaces
-      inits
+      inits_ref
       dcl
   in
-  symbol_index, !interfaces, (List.rev (!inits))
+  symbol_index, !interfaces
 
 
 (* Add the assemblies to the symbol table. *)
@@ -1302,7 +1454,7 @@ let add_asms
 print_endline ("SYMBOL TABLE CONSTRUCTION: name=" ^ name ^ " level = " ^ string_of_int level ^ " parent = " ^
   match parent with | None -> "None" | Some p -> string_of_int p);
 *)
-  let _, _, exes, interfaces, dirs,inits =
+  let _, _, exes, interfaces, dirs =
     build_tables
       ~pub_name_map:symbol_table.pub_name_map
       ~priv_name_map:symbol_table.priv_name_map
@@ -1313,6 +1465,7 @@ print_endline ("SYMBOL TABLE CONSTRUCTION: name=" ^ name ^ " level = " ^ string_
       dfltvs
       level (*0*)
       parent (*None*)
+      symbol_table.inits_ref
       asms
   in
   assert (List.length exes = 0);
@@ -1320,7 +1473,7 @@ print_endline ("SYMBOL TABLE CONSTRUCTION: name=" ^ name ^ " level = " ^ string_
 print_endline ("Orphaned executables: " ^ string_of_int (List.length exes));
 print_endline ("SYMBOL TABLE: Init procs = " ^ string_of_int (List.length inits));
 *)
-  symbol_table.init_exes <- symbol_table.init_exes @ exes;
+  assert (List.length exes = 0);
   symbol_table.exports <- symbol_table.exports @ interfaces;
   symbol_table.directives <- symbol_table.directives @ dirs
 (*

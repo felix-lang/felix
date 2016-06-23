@@ -998,6 +998,10 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | STMT_untyped_module (sr, id, vs, sts) ->
     tack (STMT_untyped_module (sr, mi sr id, vs, ms sts))
 
+  | STMT_library (sr, id, sts) ->
+    tack (STMT_library (sr, mi sr id, ms sts))
+
+
   (* this gets called twice, pointlessly *)
   | STMT_stmt_match (sr, (e, pss)) ->
     (*

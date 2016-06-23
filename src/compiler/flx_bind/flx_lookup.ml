@@ -1570,7 +1570,7 @@ print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table
     | SYMDEF_union _
     | SYMDEF_struct _
     | SYMDEF_cstruct _
-    | SYMDEF_typeclass _
+    | SYMDEF_typeclass
       ->
 (*
 print_endline ("bind type index, struct thing " ^ si index ^ " ts=" ^ catmap "," (sbt bsym_table) ts);
@@ -1848,8 +1848,8 @@ and btype_of_bsym state bsym_table sr bt bid bsym =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_label _ -> btyp_label ()
   | BBDCL_invalid -> assert false
-  | BBDCL_module -> clierr (Flx_bsym.sr bsym) 
-     ("Attempt to find type of module name " ^ Flx_bsym.id bsym)
+  | BBDCL_module -> 
+    clierr (Flx_bsym.sr bsym) ("Attempt to find type of module or library name " ^ Flx_bsym.id bsym)
 
   | BBDCL_fun (_,_,(params,_),return_type,_) ->
       btyp_function (type_of_params params, return_type)
@@ -3664,10 +3664,11 @@ and lookup_type_name_in_table_dirs_with_sig
     | SYMDEF_insert _
     | SYMDEF_instance _
     | SYMDEF_lazy _
-    | SYMDEF_module _
+    | SYMDEF_module
+    | SYMDEF_library
     | SYMDEF_root _
     | SYMDEF_reduce _
-    | SYMDEF_typeclass _
+    | SYMDEF_typeclass
       ->
         clierr sra
         (
@@ -5443,7 +5444,7 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
       ;
 
 
-    | SYMDEF_typeclass _ ->
+    | SYMDEF_typeclass ->
       (*
       print_endline ("Verified " ^ si i ^ " is an typeclass specialisation of " ^ classname);
       print_endline ("  base vs = " ^ print_ivs_with_index vs);
@@ -6102,7 +6103,8 @@ and pub_table_dir state bsym_table env (invs,i,ts) : name_map_t =
   let sym = get_data state.sym_table i in
   match sym.Flx_sym.symdef with
   | SYMDEF_root _ 
-  | SYMDEF_module _ ->
+  | SYMDEF_library 
+  | SYMDEF_module ->
     let table = 
       if List.length ts = 0 
       then sym.Flx_sym.pubmap 
@@ -6110,7 +6112,7 @@ and pub_table_dir state bsym_table env (invs,i,ts) : name_map_t =
     in
     table
 
-  | SYMDEF_typeclass _ ->
+  | SYMDEF_typeclass  ->
     let table = 
       if List.length ts = 0 
       then sym.Flx_sym.pubmap 
@@ -6403,9 +6405,10 @@ and check_module state name sr entries ts =
         let sym = get_data state.sym_table (sye index) in
         begin match sym.Flx_sym.symdef with
         | SYMDEF_root _
-        | SYMDEF_module _ ->
+        | SYMDEF_library 
+        | SYMDEF_module ->
             Flx_bind_deferred.Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
-        | SYMDEF_typeclass _ ->
+        | SYMDEF_typeclass ->
             Flx_bind_deferred.Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
         | _ ->
             clierr sr ("Expected '" ^ sym.Flx_sym.id ^ "' to be module in: " ^
