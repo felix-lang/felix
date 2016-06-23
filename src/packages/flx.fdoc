@@ -2982,8 +2982,8 @@ morelibrary:>
   goto morelibrary;
 
 saveit:>
-  var library = load("library.flx");
-  library += text;
+  var dlibrary = load("library.flx");
+  dlibrary += text;
   save("library.flx",library);
   goto nextline;
 
@@ -2991,8 +2991,8 @@ executable:>
    var session = load("session.flx");
    session += text;
    save ("session.flx", session);
-   library = load("library.flx");
-   var torun = library + text;
+   dlibrary = load("library.flx");
+   var torun = dlibrary + text;
    save ("cmd.flx", torun);
 }
 
