@@ -2058,7 +2058,7 @@ private val qualifiers =
   ("noreturn","specify C code doesn't return")
 ;
 
-private val library = 
+private val dlibrary = 
   ("any", "Type a non-returning function returns"),
   ("void", "Type with no values, returning void indicates a procedure"),
   ("unit", "Type with one values (), the empty tuple"),
@@ -2293,7 +2293,7 @@ println$ "Package file basename is " + n;
         var bv=valof(big_keywords,b);
         var sv=valof(small_keywords,b);
         var qv=valof(qualifiers,b);
-        var lv=valof(library,b);
+        var lv=valof(dlibrary,b);
         if   bv != "" do last_key=b; write_string('<span class="big_keyword" title="'+bv+'">'+b+"</span>"); 
         elif sv != "" do last_key=b; write_string('<span class="small_keyword" title="'+sv+'">'+b+"</span>");
         elif qv != "" do write_string('<span class="qualifier" title="'+qv+'">'+b+"</span>"); 

@@ -118,7 +118,7 @@ class Avl
 
   private fun height[T] : avl[T]->int =
     | #Nil => 0
-    | Tree(H, _, _, _) => H
+    | Tree(h, _, _, _) => h
   ;
 
   private fun slope[T] : avl[T]->int =
@@ -136,7 +136,7 @@ class Avl
 
   private fun shift_l[T](tree : avl[T]) =>
     match tree with
-      | Tree(H, x, left, right) =>
+      | Tree(_, x, left, right) =>
         if (slope(right) == 1) then
           rot_l(avl(x, left, rot_r(right)))
         else
@@ -156,7 +156,7 @@ class Avl
 
   private fun shift_r[T](tree : avl[T]) =>
     match tree with
-      | Tree(H, x, left, right) =>
+      | Tree(_, x, left, right) =>
         if (slope(right) == -1) then
           rot_r(avl(x, rot_r(left), right))
         else
@@ -180,13 +180,13 @@ class Avl
     match tree with
       | #Nil =>
         Tree(1, y, Nil[T], Nil[T])
-      | Tree(H, x, left, right) =>
+      | Tree(h, x, left, right) =>
         if cmp(x, y) > 0 then
           balance(avl(x, (insert(left, y, cmp)), right))
         elif cmp(x, y) < 0 then
           balance(avl(x, left, insert(right, y, cmp)))
         else
-          Tree(H, x, left, right)
+          Tree(h, x, left, right)
         endif
     endmatch
   ;
@@ -200,7 +200,7 @@ class Avl
   fun find[T] (tree : avl[T], y : T, cmp : T*T->int) : opt[T] =>
       match tree with
         | #Nil => None[T]
-        | Tree(H, x, left, right) =>
+        | Tree(_, x, left, right) =>
           if cmp(x, y) > 0 then
             find(left, y, cmp)
           elif cmp(x, y) < 0 then
@@ -282,7 +282,7 @@ class Avl
   {
     match tree with
       | #Nil => {}
-      | Tree (H, x, left, right) => {
+      | Tree (_, x, left, right) => {
         iter(f, left);
         f(x);
         iter(f, right);
@@ -295,7 +295,7 @@ class Avl
     proc aux (depth:int, f:int*T->void, tree:avl[T]) {
       match tree with
         | #Nil => {}
-        | Tree (H, x, left, right) => {
+        | Tree (_, x, left, right) => {
           aux(depth + 1, f, left);
           f(depth, x);
           aux(depth + 1, f, right);

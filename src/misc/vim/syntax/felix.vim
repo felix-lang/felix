@@ -106,6 +106,7 @@ syn keyword felixStatement inherit
 syn keyword felixStatement inline
 syn keyword felixStatement jump
 syn keyword felixStatement lemma
+syn keyword felixStatement library
 syn keyword felixStatement let
 syn keyword felixStatement loop
 syn keyword felixStatement lval

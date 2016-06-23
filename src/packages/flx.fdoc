@@ -2984,7 +2984,7 @@ morelibrary:>
 saveit:>
   var dlibrary = load("library.flx");
   dlibrary += text;
-  save("library.flx",library);
+  save("library.flx",dlibrary);
   goto nextline;
 
 executable:>

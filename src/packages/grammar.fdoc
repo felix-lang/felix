@@ -3644,39 +3644,37 @@ syntax patterns {
   private sapplicative_pattern := sctor_name sargument_pattern =>#
     "`(pat_nonconst_ctor ,_sr ,_1 ,_2)";
 
+    //$ The sum type constructor can either be a qualified name...
+    private sctor_name := sname =># "`(ast_name ,_sr ,_1 ())";
+
+    //$ or it can be a case literal.
+    private sctor_name := "case" sinteger =># "`(ast_case_tag ,_sr ,_2)";
+
+
   private sapplicative_pattern := "case" sname sargument_pattern =>#
     "`(pat_nonconst_variant ,_sr ,_2 ,_3)";
 
-
-  private sargument_pattern := satomic_pattern =># "_1";
-  private sargument_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
-  private sargument_pattern := "val" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
-  private sargument_pattern := "#" sctor_name =># "`(pat_const_ctor ,_sr ,_2)";
-  private sargument_pattern := "#" "case" sname =># "`(pat_const_variant ,_sr ,_3)";
-  private sargument_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
-
-  private sargument_pattern := sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_1)";
-
-
   private sapplicative_pattern := satomic_pattern =># "_1";
-  private sapplicative_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
-  private sapplicative_pattern := "val" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
-  private sapplicative_pattern := "#" sctor_name =># "`(pat_const_ctor ,_sr ,_2)";
-  private sapplicative_pattern := "#" "case" sname =># "`(pat_const_variant ,_sr ,_3)";
-  private sapplicative_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
-
-  // CHANGE PROTOCOL SO A SINGLE NAME IS A VARIABLE NOT A CONST CTOR!!!
-  // sapplicative_pattern := sctor_name =># "`(pat_const_ctor ,_sr ,_1)";
-  private sapplicative_pattern := sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_1)";
-
-  //$ The sum type constructor can either be a qualified name...
-  private sctor_name := sname =># "`(ast_name ,_sr ,_1 ())";
-
-  //$ or it can be a case literal.
-  private sctor_name := "case" sinteger =># "`(ast_case_tag ,_sr ,_2)";
+  private sargument_pattern := satomic_pattern =># "_1";
 
   //-----------------------------------------------------------------------
-  // atomic pattern excludes name, ?name and qualified names
+  // atomic pattern
+
+  private satomic_pattern := sname =># 
+  """
+    (if 
+      (char-upper-case? (string-ref _1 0))
+      `(pat_const_ctor ,_sr (ast_name ,_sr ,_1 ()))
+      `(pat_as ,_sr (pat_any ,_sr) ,_1)
+    )
+  """;
+
+  private satomic_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
+  private satomic_pattern := "val" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
+  private satomic_pattern := "#" sctor_name =># "`(pat_const_ctor ,_sr ,_2)";
+  private satomic_pattern := "#" "case" sname =># "`(pat_const_variant ,_sr ,_3)";
+  private satomic_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
+
 
   //$ Match the value true = case 1 of 2.
   private satomic_pattern := "true" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 1))";
