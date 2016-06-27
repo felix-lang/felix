@@ -463,7 +463,7 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
 
     add_bsym true_parent (bbdcl_lemma ())
 
-  | SYMDEF_function (ps,rt,props,exes) ->
+  | SYMDEF_function (ps,rt,effects,props,exes) ->
 (*
     print_endline (" ... Binding function");
     print_endline (" ... Binding parameters");
@@ -476,8 +476,9 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
 
     (* We don't need to bind the intermediary type. *)
     let brt = bt' rt in
+    let beffects = bt' effects in
     let brt, bbexes = bexes exes brt symbol_index bvs in
-    let bbdcl = bbdcl_fun (props,bvs,bps,brt,bbexes) in
+    let bbdcl = bbdcl_fun (props,bvs,bps,brt,beffects,bbexes) in
 
     (* Cache the type of the function. *)
     if not (Hashtbl.mem state.ticache symbol_index) then begin
@@ -485,7 +486,7 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
       let ft =
         if mem `Cfun props
         then btyp_cfunction (d,brt)
-        else btyp_function (d,brt)
+        else btyp_effector (d,beffects,brt)
       in
       let t = fold bsym_table state.counter ft in
       Hashtbl.add state.ticache symbol_index t
@@ -496,7 +497,7 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
       let t =
         if mem `Cfun props
         then btyp_cfunction (atyp,brt)
-        else btyp_function (atyp,brt)
+        else btyp_effector (atyp,beffects,brt)
       in
       print_endline ("//bound function " ^ qname ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
@@ -624,8 +625,8 @@ print_endline ("flx_bind: Adding label " ^ s ^ " index " ^ string_of_int symbol_
       print_endline ("//bound lazy " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table brt);
-
-    add_bsym true_parent (bbdcl_fun (props,bvs,([],None),brt,bbexes))
+    let beffects = btyp_unit () in
+    add_bsym true_parent (bbdcl_fun (props,bvs,([],None),brt,beffects,bbexes))
 
   | SYMDEF_const (props,t,ct,reqs) ->
     let t = type_of_index symbol_index in
@@ -879,7 +880,7 @@ print_endline ("Flx_bbind.bbind *********************** ");
 print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
 *)
       begin match sym.Flx_sym.symdef with
-      | Flx_types.SYMDEF_function (([kind,pid,TYP_defer _,_],None),ret,props,exes) ->
+      | Flx_types.SYMDEF_function (([kind,pid,TYP_defer _,_],None),ret,effects,props,exes) ->
 print_endline ("[flx_bbind] bind_symbol FUNCTION " ^ sym.Flx_sym.id ^ " .. DEFERED");
         defered := i :: !defered
       | Flx_types.SYMDEF_parameter (kind,TYP_defer _) ->

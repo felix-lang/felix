@@ -131,7 +131,7 @@ let make_uncurry_map syms bsym_table =
 
   Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (_,vs,_,_,[BEXE_fun_return (_,(BEXPR_closure (f,ts),_))])
+    | BBDCL_fun (_,vs,_,_,effects,[BEXE_fun_return (_,(BEXPR_closure (f,ts),_))])
       when Flx_bsym_table.is_child bsym_table i f ->
         assert (vs=[]);
         let k = fresh_bid syms.counter in
@@ -147,7 +147,7 @@ let make_uncurry_map syms bsym_table =
   (* count curried calls to these functions *)
   Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (_,vs,_,_,exes) ->
+    | BBDCL_fun (_,vs,_,_,effects,exes) ->
         assert (vs = []);
         find_uncurry_exes syms bsym_table uncurry_map exes
     | _ -> ()
@@ -213,7 +213,7 @@ let fixup_function
 =
   let ps =
     match Flx_bsym.bbdcl bsymi with
-    | BBDCL_fun (_,_,(ps,_),_,_) -> ps
+    | BBDCL_fun (_,_,(ps,_),_,_,_) -> ps
     | _ -> assert false
   in
 
@@ -318,12 +318,12 @@ let synthesize_function syms bsym_table ut i (c, k, n) =
   (* Add the new function or procedure. *)
   let bbdcl =
     match Flx_bsym_table.find_bbdcl bsym_table c with
-    | BBDCL_fun (propsc,vsc,(psc,traintc),retc,exesc) ->
+    | BBDCL_fun (propsc,vsc,(psc,traintc),retc,effects,exesc) ->
       assert (vsc=[]);
       if syms.compiler_options.print_flag then
       print_endline ("Properties " ^ Flx_print.string_of_properties propsc);
       let ps,exes = fixup_function psc exesc in
-      bbdcl_fun (propsc,[],(ps,traintc),retc,exes)
+      bbdcl_fun (propsc,[],(ps,traintc),retc,effects,exes)
     | _ -> assert false
   in
 
@@ -343,10 +343,10 @@ let synthesize_functions syms bsym_table uncurry_map =
 let replace_calls syms bsym_table uncurry_map =
   Flx_bsym_table.iter begin fun bid _ bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,ps,ret,exes) ->
+    | BBDCL_fun (props,vs,ps,ret,effects,exes) ->
         assert (vs = []);
         let exes = uncurry_exes syms bsym_table uncurry_map exes in
-        let bbdcl = bbdcl_fun (props,[],ps,ret,exes) in
+        let bbdcl = bbdcl_fun (props,[],ps,ret,effects,exes) in
         Flx_bsym_table.update_bbdcl bsym_table bid bbdcl
 
     | _ -> ()

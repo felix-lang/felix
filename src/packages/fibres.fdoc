@@ -415,7 +415,7 @@ operator which can be used conveniently: @{|->}.
 @tangle spipes.flx
   //$ Wire a source component to a sink.
   //$ Return coupled fibre ready to run.
-  fun pipe[T] 
+  inline fun pipe[T] 
     (var w: %>T -> 0, // source
     var r: %<T -> 0)  // sink
   :
@@ -476,7 +476,7 @@ another sink.
 @tangle spipes.flx
   //$ Wire a transducer into a sink.
   //$ Return a sink.
-  fun pipe[T,U]
+  inline fun pipe[T,U]
     (var a: %<T * %>U -> 0,
     var b: %<U -> 0)
   :
@@ -497,7 +497,7 @@ another source.
 @tangle spipes.flx
   //$ Wire a source component to a transducer.
   //$ Return source.
-  fun pipe[T,U]
+  inline fun pipe[T,U]
     (var w: %>T -> 0,
     var t: %<T * %>U -> 0)
   :
@@ -517,7 +517,7 @@ producing another transducer.
 @tangle spipes.flx
   //$ Wire a transducer into a transducer.
   //$ Return another transducer.
-  fun pipe[T,U,V]
+  inline fun pipe[T,U,V]
     (var a: %<T * %>U -> 0,
     var b: %<U * %>V -> 0)
   :
@@ -592,59 +592,59 @@ want to send schannels themselves down schannels!
 
 @tangle spipes.flx
   // source to sink: autobuild both arguments
-  fun pipe[T] (w:1->T,r:T->0) => 
+  inline fun pipe[T] (w:1->T,r:T->0) => 
      w.source_from_stream |-> r.sink_from_procedure;
 
-  fun pipe[T] (w:1->opt[T],r:T->0) => 
+  inline fun pipe[T] (w:1->opt[T],r:T->0) => 
      w.source_from_iterator |-> r.sink_from_procedure;
 
   // source to sink: autobuild only one argument
-  fun pipe[T] (w:1->T,r:%<T->0) => 
+  inline fun pipe[T] (w:1->T,r:%<T->0) => 
      w.source_from_stream |-> r;
 
-  fun pipe[T] (w:1->opt[T],r:%<T->0) => 
+  inline fun pipe[T] (w:1->opt[T],r:%<T->0) => 
      w.source_from_iterator |-> r;
 
-  fun pipe[T] (w:%>T->0,r:T->0) => 
+  inline fun pipe[T] (w:%>T->0,r:T->0) => 
      w |-> r.sink_from_procedure;
 
   // source to transducer: autobuild both arguments
-  fun pipe[T0,T1] (w:1->T0,f:T0->T1) => 
+  inline fun pipe[T0,T1] (w:1->T0,f:T0->T1) => 
      w.source_from_stream |-> f.transducer_from_function;
 
-  fun pipe[T0,T1] (w:1->opt[T0],f:T0->T1) => 
+  inline fun pipe[T0,T1] (w:1->opt[T0],f:T0->T1) => 
      w.source_from_iterator |-> f.transducer_from_function;
 
   // source to transducer: autobuild one argument
-  fun pipe[T0,T1] (w:%>T0->0,f:T0->T1) => 
+  inline fun pipe[T0,T1] (w:%>T0->0,f:T0->T1) => 
      w |-> f.transducer_from_function;
 
-  fun pipe[T0,T1] (w:1->T0,f:%<T0*%>T1->0) => 
+  inline fun pipe[T0,T1] (w:1->T0,f:%<T0*%>T1->0) => 
      w.source_from_stream |-> f;
 
-  fun pipe[T0,T1] (w:1->opt[T0],f:%<T0 *%>T1->0) => 
+  inline fun pipe[T0,T1] (w:1->opt[T0],f:%<T0 *%>T1->0) => 
      w.source_from_iterator |-> f;
 
   // transducer to transducer: autobuild both arguments
-  fun pipe[T0,T1,T2] (f1:T0->T1,f2:T1->T2) => 
+  inline fun pipe[T0,T1,T2] (f1:T0->T1,f2:T1->T2) => 
     f1.transducer_from_function |-> f2.transducer_from_function;
 
   // transducer to transducer: autobuild one argument
-  fun pipe[T0,T1,T2] (f1:T0->T1,f2:%<T1 * %>T2 ->0) => 
+  inline fun pipe[T0,T1,T2] (f1:T0->T1,f2:%<T1 * %>T2 ->0) => 
     f1.transducer_from_function |-> f2;
 
-  fun pipe[T0,T1,T2] (f1:%<T0 * %>T1->0,f2:T1->T2) => 
+  inline fun pipe[T0,T1,T2] (f1:%<T0 * %>T1->0,f2:T1->T2) => 
     f1 |-> f2.transducer_from_function;
 
   // transducer to sink: autobuild both arguments
-  fun pipe[T0,T1] (f:T0->T1, r:T1->0) =>
+  inline fun pipe[T0,T1] (f:T0->T1, r:T1->0) =>
     f.transducer_from_function |-> r.sink_from_procedure;
 
   // transducer to sink: autobuild one argument
-  fun pipe[T0,T1] (f:T0->T1, r:%<T1->0) =>
+  inline fun pipe[T0,T1] (f:T0->T1, r:%<T1->0) =>
     f.transducer_from_function |-> r;
 
-  fun pipe[T0,T1] (f:%<T0 * %>T1->0, r:T1->0) =>
+  inline fun pipe[T0,T1] (f:%<T0 * %>T1->0, r:T1->0) =>
     f |-> r.sink_from_procedure;
 
 @
@@ -779,7 +779,7 @@ a pair of transducers.
 @tangle spipes.flx
   //$ Wire two source components to two transducers.
   //$ Return two sources.
-  fun pipe[T0,T1,U0,U1]
+  inline fun pipe[T0,T1,U0,U1]
     (
       var w: 
         (%>T0 -> 0) *
@@ -802,7 +802,7 @@ Returns a pair of sinks.
 @tangle spipes.flx
   //$ Wire two transducers into two sinks.
   //$ Return two sinks.
-  fun pipe[T0,T1,U0,U1]
+  inline fun pipe[T0,T1,U0,U1]
     (
       var a: 
         (%<T0 * %>U0 -> 0) *
@@ -827,7 +827,7 @@ Returns a pair of transducers.
 
   //$ Wire two transducers into two transducers.
   //$ Return two transducers.
-  fun pipe[T0,T1,U0,U1,V0,V1]
+  inline fun pipe[T0,T1,U0,U1,V0,V1]
     (
       var a: 
         (%<T0 * %>U0 -> 0) *
@@ -898,7 +898,7 @@ list('25', '16', '9', '4', '1')
 
   //$ Wire together a source component with an array of sinks.
   //$ Returns a closed pipeline.
-  fun pipe[T,N] 
+  inline fun pipe[T,N] 
   (
     var w: %>T -> 0,
     var r: (%<T -> 0) ^ N
@@ -931,7 +931,7 @@ list('25', '16', '9', '4', '1')
   // Functions cannot run threads at the moment.
   // Unless they manually construct a scheduler.
 
-  fun pipe[T,U0,U1] 
+  inline fun pipe[T,U0,U1] 
   (
     var w: %>T -> 0,
     var r: (%<T * %>U0 -> 0) * (%<T * %>U1 -> 0)

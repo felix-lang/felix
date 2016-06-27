@@ -153,7 +153,7 @@ let mkproc_gen syms bsym_table =
   (* make the funproc map *)
   Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
+    | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
         let k = fresh_bid syms.counter in
         Hashtbl.add mkproc_map i (k,0);
         (*
@@ -168,7 +168,7 @@ let mkproc_gen syms bsym_table =
   (* count direct applications of these functions *)
   Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (_,_,_,_,exes) ->
+    | BBDCL_fun (_,_,_,_,_,exes) ->
         find_mkproc_exes mkproc_map exes
 
     | _ -> ()
@@ -233,10 +233,10 @@ let mkproc_gen syms bsym_table =
         string_of_bid k ^ " count=" ^ si n);
 
       let bsym_parent, bsym = Flx_bsym_table.find_with_parent bsym_table i in
-      let props, vs, ps, traint, ret, exes =
+      let props, vs, ps, traint, ret, effects, exes =
         match Flx_bsym.bbdcl bsym with
-        | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
-            props, vs, ps, traint, ret, exes
+        | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
+            props, vs, ps, traint, ret, effects, exes
         | _ -> assert false
       in
 
@@ -332,7 +332,7 @@ let mkproc_gen syms bsym_table =
       let exes = proc_exes syms bsym_table dv exes in
 
       (* save the new procedure *)
-      let bbdcl = bbdcl_fun (props,vs,(ps,traint),btyp_void (),exes) in
+      let bbdcl = bbdcl_fun (props,vs,(ps,traint),btyp_void (),effects,exes) in
       Flx_bsym_table.update_bbdcl bsym_table k bbdcl;
 
       if syms.compiler_options.print_flag then
@@ -356,9 +356,9 @@ let mkproc_gen syms bsym_table =
       mkproc_map
     in
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
+    | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
         let exes = mkproc_exes vs exes in
-        let bbdcl = bbdcl_fun (props,vs,(ps,traint),ret,exes) in
+        let bbdcl = bbdcl_fun (props,vs,(ps,traint),ret,effects,exes) in
         Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 
     | _ -> ()

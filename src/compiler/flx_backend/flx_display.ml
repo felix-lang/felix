@@ -32,7 +32,7 @@ let cal_display bsym_table parent : (bid_t *int) list =
               Flx_print.string_of_bid parent)
         in
         match Flx_bsym.bbdcl bsym with
-        | BBDCL_fun (_, vs, _, _, _) ->
+        | BBDCL_fun (_, vs, _, _, _,_) ->
             aux bsym_parent ((parent, List.length vs)::display)
 
         (* typeclasses have to be treated 'as if' top level *)

@@ -365,8 +365,8 @@ syntax cbind {
         (name (first _3))
         (vs (second _3))
         (kind (cal_funkind _1 _2))
-        (t (first _4))
-        (traint (second _4))
+        (t (first (first _4)))
+        (traint (second (first _4)))
         (prec _6)
         (reqs (if (memv 'Virtual _1)
           `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
@@ -1343,13 +1343,14 @@ syntax expressions {
     (let* 
       (
         (body `((ast_fun_return ,_sr ,_7)))
-        (fun_decl `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 Function () ,body))
+        (fun_decl `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ,(first _5) ,(second _5) Function () ,body))
         (final_return `(ast_fun_return ,_sr ,_9))
       )
       (block_expr `(,fun_decl ,final_return))
     )
     """;
 
+  // FIXME
   x[let_pri] := "let" "fun" sdeclname fun_return_type "=" smatching+ "in" x[let_pri] =>#
     """
     (let* 
@@ -1357,8 +1358,8 @@ syntax expressions {
         (ixname _3)
         (name (first ixname))
         (tvars (second ixname))
-        (t (first _4))
-        (traint (second _4))
+        (t (first (first _4)))
+        (traint (second (first _4)))
         (matching _6)
         (expr _8)
       )
@@ -1430,6 +1431,7 @@ syntax expressions {
   // right arrows: RIGHT ASSOCIATIVE!
   //$ Function type, right associative.
   x[sarrow_pri] := x[>sarrow_pri] "->" x[sarrow_pri] =># "`(ast_arrow (,_1 ,_3))";
+  x[sarrow_pri] := x[>sarrow_pri] "->" "[" sexpr "]" x[sarrow_pri] =># "`(ast_effector (,_1 ,_4 ,_6))";
 
   //$ C function type, right associative.
   x[sarrow_pri] := x[>sarrow_pri] "-->" x[sarrow_pri] =># "`(ast_longarrow (,_1 ,_3))";
@@ -1756,25 +1758,25 @@ syntax functions {
   //$ Anonymous function (lamda).
   satom := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
     """
-    `(ast_lambda ,_sr (,_3 ,_4 ,(first _5) ,_7))
+    `(ast_lambda ,_sr (,_3 ,_4 ,(first (first _5)) ,_7))
     """;
 
   //$ Anonymous function (lamda).
   x[slambda_pri] := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=>" sexpr =>#
     """
-    `(ast_lambda ,_sr (,_3 ,_4 ,(first _5) ((ast_fun_return ,_sr ,_7))))
+    `(ast_lambda ,_sr (,_3 ,_4 ,(first (first _5)) ((ast_fun_return ,_sr ,_7))))
     """;
 
   //$ Anonymous generator (lamda).
   satom := sadjectives "gen" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
     """
-    `(ast_generator ,_sr (,_3 ,_4 ,(first _5) ,_7))
+    `(ast_generator ,_sr (,_3 ,_4 ,(first (first _5)) ,_7))
     """;
 
   //$ Anonymous generator (lamda).
   x[slambda_pri] := sadjectives "gen" stvarlist slambda_fun_args fun_return_type "=>" sexpr =>#
     """
-    `(ast_generator ,_sr (,_3 ,_4 ,(first _5) ((ast_fun_return ,_sr ,_7))))
+    `(ast_generator ,_sr (,_3 ,_4 ,(first (first _5)) ((ast_fun_return ,_sr ,_7))))
     """;
 
 
@@ -1794,7 +1796,7 @@ syntax functions {
   //$ UGLY.
   satom := sadjectives "object" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
     """
-    `(ast_object ,_sr (,_3 ,_4 ,(first _5) ,_7))
+    `(ast_object ,_sr (,_3 ,_4 ,(first (first _5)) ,_7))
     """;
 
   //$ Function adjective (prefix property) inline.
@@ -1858,16 +1860,20 @@ syntax functions {
   slambda_fun_args := slambda_fun_arg+ =># "_1";
 
   //$ Function return type specification with post-condition.
-  fun_return_type := ":" stypeexpr "expect" sexpr =># "`(,_2 (some ,_4))";
+  fun_return_type := ":" stypeexpr "expect" sexpr =># "`((,_2 (some ,_4)) ,dflteffects)";
+  fun_return_type := ":" "[" sexpr "]" stypeexpr "expect" sexpr =># "`((,_5 (some ,_7)) ,_3)";
 
   //$ Function return type specification without post-condition.
-  fun_return_type := ":" stypeexpr =># "`(,_2 none)";
+  fun_return_type := ":" stypeexpr =># "`((,_2 none) ,dflteffects)";
+  fun_return_type := ":" "[" sexpr "]" stypeexpr =># "`((,_5 none) ,_3)";
 
   //$ Function return postcondition without type.
-  fun_return_type := "expect" sexpr =># "`(,(noi 'typ_none) (some ,_2))";
+  fun_return_type := "expect" sexpr =># "`((,(noi 'typ_none) (some ,_2)) ,dflteffects)";
+  fun_return_type := ":" "[" sexpr "]" "expect" sexpr =># "`((,(noi 'typ_none) (some ,_6)) ,_3)";
 
   //$ No return type.
-  fun_return_type := sepsilon =># "`(,(noi 'typ_none) none)";
+  fun_return_type := ":" "[" sexpr "]" =># "`((,(noi 'typ_none) none) ,dflteffects)";
+  fun_return_type := sepsilon =># "`((,(noi 'typ_none) none) ,dflteffects)";
 
   //$ Object factory return type.
   object_return_type := stypeexpr =># "`(,_1 none)";
@@ -1928,7 +1934,7 @@ syntax functions {
     """
       (begin ;;(display "GENERAL FUNCTION")
       (let ((body `((ast_fun_return ,_sr ,_7))))
-      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_1 ,body))
+      `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ,(first _5) ,(second _5) ,(cal_funkind _1 _2) ,_1 ,body))
       )
     """;
 
@@ -1937,7 +1943,7 @@ syntax functions {
   sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=" scompound =>#
     """
       (begin ;;(display "COMPOUND FUNCTION")
-      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_1 ,_7))
+      `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ,(first _5) ,(second _5) ,(cal_funkind _1 _2) ,_1 ,_7))
     """;
 
   //$ Object factory definition with interface type.
@@ -2027,25 +2033,24 @@ syntax functions {
     """;
 */
 
-  sfunction := sadjectives sfun_kind sdeclname fun_return_type "=" smatching+ ";" =>#
+  sfunction := sadjectives sfun_kind sdeclname ":" stypeexpr "=" smatching+ ";" =>#
     """
      (let
        (
-        (t (first _4))
-        (traint (second _4))
+        (t _5)
        )
       (begin ;;(display "MATCHING ftype=")(display t)(display "\\n")
         (let
           (
             (argt `(ast_apply ,_sr (,(nos "dom") ,t)))
             (ret `(ast_apply ,_sr (,(nos "cod") ,t)))
-            (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,_6)))))
+            (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,_7)))))
           )
           `(ast_curry ,_sr ,(first _3) ,(second _3)
             (
               (((PVal _a ,argt none)) none)
             )
-            (,ret ,traint)
+            (,ret none)
             ,(cal_funkind _1 _2) ,_1 ,body)
         )
        )
@@ -2083,12 +2088,20 @@ syntax functions {
   //$ Procedure has C function type (with void result type).
   sproc_kind := "cproc" =># "'CFunction";
 
-  private sopt_traint_eq:= "expect" sexpr "=" =># "`(some ,_2)";
-  private sopt_traint_eq:= "=" =># "'none";
-  private sopt_traint_eq:= sepsilon =># "'none";
+  private sopt_traint_eq:= "expect" sexpr "=" =># "`((some ,_2) ,dflteffects)";
+  private sopt_traint_eq:= "=" =># "`(none ,dflteffects)";
+  private sopt_traint_eq:= sepsilon =># "`(none ,dflteffects)";
 
-  private sopt_traint:= "expect" sexpr =># "`(some ,_2)";
-  private sopt_traint:= sepsilon =># "'none";
+  private sopt_traint_eq:= "expect" sexpr ":" "[" sexpr "]" "=" =># "`((some ,_2) ,_5)";
+  private sopt_traint_eq:= ":" "[" sexpr "]" "=" =># "`(none ,_3)";
+  private sopt_traint_eq:= ":" "[" sexpr "]" =># "`(none ,_3)";
+
+
+  private sopt_traint:= "expect" sexpr =># "`((some ,_2) ,dflteffects)";
+  private sopt_traint:= sepsilon =># "`(none ,dflteffects)";
+
+  private sopt_traint:= "expect" sexpr ":" "[" sexpr "]" =># "`((some ,_2) ,_5)";
+  private sopt_traint:= ":" "[" sexpr "]" =># "`(none ,_3)";
 
   //$ Short form constructor function.
   //$ The name of the function must be a type name.
@@ -2100,11 +2113,12 @@ syntax functions {
         (name (string-append "_ctor_" (base_of_qualified_name _3)))
         (vs _2)
         (ret _3)
-        (traint _5)
+        (traint (first _5))
+        (effects (second _5))
         (body _6)
         (args _4)
       )
-      `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function () ,body))
+      `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects Function () ,body))
     """;
 
   //$ Short form constructor function.
@@ -2117,23 +2131,26 @@ syntax functions {
         (name (string-append "_ctor_" (base_of_qualified_name _3)))
         (vs _2)
         (ret _3)
-        (traint _5)
+        (traint (first _5))
+        (effects (second _5))
         (body `((ast_fun_return ,_sr ,_7)))
         (args _4)
       )
-      `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function () ,body))
+      `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects Function () ,body))
     """;
 
   //$ Procedure definition, general form.
   sfunction := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint_eq scompound =>#
     """
-      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) ,_5) ,(cal_funkind _1 _2) ,_1 ,_6)
+      `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) ,(first _5)) ,(second _5)
+         ,(cal_funkind _1 _2) ,_1 ,_6)
     """;
 
   //$ Procedure definition, short form (one statement).
-  sfunction := sadjectives sproc_kind sdeclname sfun_arg* "=>" stmt =>#
+  sfunction := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint "=>" stmt =>#
     """
-      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) none) ,(cal_funkind _1 _2) ,_1 (,_6))
+      `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) ,(first _5)) ,(second _5) 
+         ,(cal_funkind _1 _2) ,_1 (,_7))
     """;
 }
 
@@ -2337,6 +2354,7 @@ SCHEME """
   (define dfltaux '( (ast_tuple ("dummy" 0 0 0 0) ()) ()))
   (define dfltvs `( () ,dfltaux)) ;; vs list: name,type,constraint triple
   (define dfltargs '((() none)))
+  (define dflteffects '(ast_tuple ("dummy" 0 0 0 0) ())) ;; type unit
 )
 """;
 
@@ -4679,25 +4697,26 @@ syntax type_decls {
                (t2 (list-ref lst 2)) ; name
                (polyspec (list-ref lst 3)) ; polyvars
                (t4 (list-ref lst 4)) ; args
-               (t5 (list-ref lst 5)) ; return type
-               (t6 (list-ref lst 6)) ; fun kind
-               (t7 (list-ref lst 7)) ; adjective properties
-               (t8 (list-ref lst 8)) ; body
+               (t5 (list-ref lst 5)) ; return type, constraint
+               (t6 (list-ref lst 6)) ; effects
+               (t7 (list-ref lst 7)) ; fun kind
+               (t8 (list-ref lst 8)) ; adjective properties
+               (t9 (list-ref lst 9)) ; body
                (polyvars (first polyspec))
                (polyaux (second polyspec))
                (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
                (self-name 'self)
                (self-type 
-                  (if (equal? (first (first t5)) 'ast_void)
-                    `(ast_ref ,_sr (ast_name ,_sr ,struct-name ,struct-pvs))
-                    `(ast_name ,_sr ,struct-name ,struct-pvs)
-                  )
+                 (if (equal? (first (first t5)) 'ast_void)
+                   `(ast_ref ,_sr (ast_name ,_sr ,struct-name ,struct-pvs))
+                   `(ast_name ,_sr ,struct-name ,struct-pvs)
+                 )
                )
                (self-arg `(PVal ,self-name ,self-type none)) 
                (self-args `((,self-arg) none))
                (args (cons self-args t4))
              ) 
-             `(,t0 ,t1 ,t2 ,outpolyvars ,args ,t5 ,t6 ,t7 ,t8)
+             `(,t0 ,t1 ,t2 ,outpolyvars ,args ,t5 ,t6 ,t7 ,t8 ,t9)
            )) funs)
          )
          (sts (cons struct mfuns))
@@ -4714,7 +4733,31 @@ syntax type_decls {
      """;
     sstruct_mem_decl := stypeexpr sname ";" =># "`(Pval ,_2 ,_1)"; // like C: int x;!
     sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(Pval ,_1 ,_3)";
-    sstruct_mem_decl := sfunction  =># "`(Pfun ,_1)";
+    sstruct_mem_decl := sfunction  =># """
+     (let 
+       (
+         (curry_kind (first _1))
+       )
+       (if 
+         (equal? curry_kind 'ast_curry_effects)
+         `(Pfun ,_1)
+         (let*
+           (
+             (lst _1)
+             (t1 (list-ref lst 1)) ; sr
+             (t2 (list-ref lst 2)) ; name
+             (t3 (list-ref lst 3)) ; vs
+             (t4 (list-ref lst 4)) ; args
+             (t5 (list-ref lst 5)) ; return type, constraint
+             (t6 (list-ref lst 6)) ; fun kind
+             (t7 (list-ref lst 7)) ; adjective properties
+             (t8 (list-ref lst 8)) ; body
+           )
+          `(Pfun (ast_curry_effects ,t1 ,t2 ,t3 ,t4 ,t5 ,dflteffects ,t6 ,t7 ,t8))
+         )
+       )
+     )
+     """;
 
   //$ A ctruct provides a model of a C structure.
   //$ This is the same as a struct except the structure is not emitted.

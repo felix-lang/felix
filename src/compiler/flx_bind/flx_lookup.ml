@@ -942,6 +942,7 @@ print_endline ("Binding TYP_var " ^ si i);
         btyp_sum ts'
 
   | TYP_function (d,c) -> btyp_function (bt d, bt c)
+  | TYP_effector (d,e,c) -> btyp_effector (bt d, bt e,bt c)
   | TYP_cfunction (d,c) -> btyp_cfunction (bt d, bt c)
   | TYP_pointer t -> btyp_pointer (bt t)
   | TYP_void _ -> btyp_void ()
@@ -1447,6 +1448,7 @@ end;
 
             (* note this one COULD be a type function type *)
             | TYP_function _ -> btyp_type 0
+            | TYP_effector _ -> btyp_type 0
 
             | TYP_type -> btyp_type 1
 
@@ -1718,7 +1720,7 @@ and cal_ret_type' state bsym_table (rs:recstop) index args =
   | { Flx_sym.id=id;
       sr=sr;
       dirs=dirs;
-      symdef=SYMDEF_function ((ps,_),rt,props,exes)
+      symdef=SYMDEF_function ((ps,_),rt,effects,props,exes)
     } ->
 (*
 print_endline ("Cal ret type of " ^ id ^ " at " ^ Flx_srcref.short_string_of_src sr);
@@ -1851,8 +1853,13 @@ and btype_of_bsym state bsym_table sr bt bid bsym =
   | BBDCL_module -> 
     clierr (Flx_bsym.sr bsym) ("Attempt to find type of module or library name " ^ Flx_bsym.id bsym)
 
-  | BBDCL_fun (_,_,(params,_),return_type,_) ->
+  | BBDCL_fun (_,_,(params,_),return_type,effects,_) ->
+    begin match effects with
+    | BTYP_tuple [] ->
       btyp_function (type_of_params params, return_type)
+    | _ ->
+      btyp_effector (type_of_params params, effects, return_type)
+    end
   | BBDCL_val (_,t,_) -> t
   | BBDCL_newtype (_,t) -> t
   | BBDCL_external_type _ -> clierr2 sr (Flx_bsym.sr bsym) ("Use type as if variable: " ^ Flx_bsym.id bsym)
@@ -1968,7 +1975,7 @@ print_endline ("bind_type_index finds: Type alias name " ^ sym.Flx_sym.id);
       let t = bt sym.Flx_sym.sr t in
       Flx_metatype.metatype state.sym_table bsym_table rs sym.Flx_sym.sr t
 
-  | SYMDEF_function ((ps,_),rt,props,_) ->
+  | SYMDEF_function ((ps,_),rt,effects,props,_) ->
 (*
 print_endline ("** BEGIN ** Calculating Function type for function " ^ sym.Flx_sym.id ^ " index "^si index);
 *)
@@ -2009,10 +2016,16 @@ print_endline ("** END **** Abnormal Exit Function type for function " ^ sym.Flx
       end;
 
       let d = bt sym.Flx_sym.sr (type_of_list pts) in
-
-      if List.mem `Cfun props
-      then btyp_cfunction (d, rt)
-      else btyp_function (d, rt)
+      let e = bt sym.Flx_sym.sr effects in
+      let ft = 
+        if List.mem `Cfun props
+        then btyp_cfunction (d, rt)
+        else btyp_effector (d, e, rt)
+      in
+(*
+print_endline ("** FINISH **** Calculating Function type for function " ^ sym.Flx_sym.id ^ ":" ^ sbt bsym_table ft);
+*)
+      ft
 
   | SYMDEF_const (_,t,_,_)
   | SYMDEF_val t
@@ -2110,7 +2123,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
               in
               let pnames =
                 match hfind "lookup" state.sym_table i with
-                | { Flx_sym.symdef=SYMDEF_function (ps,_,_,_) } ->
+                | { Flx_sym.symdef=SYMDEF_function (ps,_,_,_,_) } ->
                   List.map 
                     begin fun (_,name,_,d) -> name, 
                       match d with 
@@ -3252,7 +3265,7 @@ and handle_function state bsym_table rs sra srn name ts index =
 
       (* Make sure we got a function type back. *)
       begin match t with
-      | BTYP_cfunction _ | BTYP_function _ -> ()
+      | BTYP_cfunction _ | BTYP_function _ | BTYP_effector _ -> ()
       | BTYP_fix _ -> raise (Free_fixpoint t)
       | _ ->
           ignore (try unfold "flx_lookup" t with | _ -> raise (Free_fixpoint t));
@@ -3875,6 +3888,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   | EXPR_as_var _
   | EXPR_void _
   | EXPR_arrow _
+  | EXPR_effector _
   | EXPR_longarrow _
   | EXPR_ellipsis _
   | EXPR_intersect _
@@ -4489,6 +4503,9 @@ print_endline ("LOOKUP 7: varname " ^ si index);
 
     | FunctionEntry fs ->
       assert (List.length fs > 1);
+(*
+print_endline ("lookup_name_in_table_dirs_with_sig found functions " ^ name);
+*)
       begin match args with
       | [] ->
 (*
@@ -4508,6 +4525,7 @@ print_endline ("LOOKUP 7: varname " ^ si index);
           "\nCandidates are\n: " ^ catmap "\n" (full_string_of_entry_kind state.sym_table bsym_table) fs 
         )
       | args ->
+
         let sufs = List.map snd args in
         let ro = resolve_overload state bsym_table env rs sr fs name sufs ts in
         begin match ro with
@@ -4721,14 +4739,14 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
         with
         | Some bsym ->
             begin match Flx_bsym.bbdcl bsym with
-            | BBDCL_fun (properties,_,_,_,_) 
+            | BBDCL_fun (properties,_,_,_,_,_) 
             | BBDCL_external_fun (properties,_,_,_,_,_,_) ->
                 List.mem property properties
             | _ -> false
             end
         | None ->
             begin match (get_data state.sym_table bid).Flx_sym.symdef with
-            | SYMDEF_function (_,_,properties,_) -> List.mem property properties
+            | SYMDEF_function (_,_,_,properties,_) -> List.mem property properties
             | SYMDEF_fun (properties,_,_,_,_,_) -> List.mem property properties
             | _ -> false
             end
@@ -5518,7 +5536,7 @@ print_endline ("New private name map = " ^ string_of_name_map nuprivmap);
 
       let nusymdef = 
         match symdef with
-        | SYMDEF_function (params,rett,props,sexes) -> 
+        | SYMDEF_function (params,rett,effects,props,sexes) -> 
           let paramlist, ptraint = params in
           let nuparamlist = List.map (fun (pkind,pname,ptyp,pinitopt) -> 
             pkind,pname,ft ptyp, pinitopt (* HACK *)) 
@@ -5530,13 +5548,14 @@ print_endline ("New private name map = " ^ string_of_name_map nuprivmap);
       print_endline ("Remapped parameters: " ^ string_of_parameters nuparams);
 *)
           let nurett = ft rett in
+          let nueffects = ft effects in
           let nuprops = props in (* HACK, FIXME! *)
           let nusexes = List.map (fun (sr,x) -> sr,fx x) sexes in
 (*
       print_endline ("New exes =\n");
       List.iter (fun (sr,x) -> print_endline (Flx_print.string_of_exe 2 x)) nusexes;
 *)
-          SYMDEF_function (nuparams, nurett, nuprops, nusexes)
+          SYMDEF_function (nuparams, nurett, nueffects,nuprops, nusexes)
         | SYMDEF_insert (cs,ik,rqs) -> symdef (* HACK, FIXME! *)
         | SYMDEF_var t -> 
           let t = ft t in
@@ -6380,6 +6399,7 @@ and rebind_btype state bsym_table env sr ts t =
       btyp_sum ts
 
   | BTYP_function (a,r) -> btyp_function (rbt a, rbt r)
+  | BTYP_effector (a,e,r) -> btyp_effector (rbt a, rbt e, rbt r)
   | BTYP_cfunction (a,r) -> btyp_cfunction (rbt a, rbt r)
   | BTYP_pointer t -> btyp_pointer (rbt t)
   | BTYP_array (t1,t2) -> btyp_array (rbt t1, rbt t2)
@@ -6623,6 +6643,9 @@ let bind_expression state bsym_table env e  =
   try
   inner_bind_expression state bsym_table env rsground e
   with Not_found -> failwith "xxxx bind expression raised Not_found [BUG]"
+  | exn ->  
+    print_endline ("Inner bind expression failed binding " ^ string_of_expr e);
+    raise exn
 
 let type_of_index state bsym_table sr bid =
   try

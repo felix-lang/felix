@@ -52,7 +52,7 @@ let exes_get_xclosures syms exes =
 let function_find_xclosure syms cls bsym_table i =
   let exes =
     match Flx_bsym_table.find_bbdcl bsym_table i with
-    | BBDCL_fun (_,_,_,_,exes) -> exes
+    | BBDCL_fun (_,_,_,_,_,exes) -> exes
     | _ -> []
   in
   (*
@@ -108,7 +108,7 @@ let check_proj_wrap_exes syms bsym_table n i xs =
 
 let check_proj_wrap_entry syms bsym_table n i k =
   match Flx_bsym_table.find_bbdcl bsym_table k with
-  | BBDCL_fun (_,_,_,_,exes) -> check_proj_wrap_exes syms bsym_table n i exes
+  | BBDCL_fun (_,_,_,_,_,exes) -> check_proj_wrap_exes syms bsym_table n i exes
   | _ -> ()
 
 let check_proj_wrap_closure syms bsym_table descend usage n i e =

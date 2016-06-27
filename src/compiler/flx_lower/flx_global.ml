@@ -119,7 +119,7 @@ let exes_use_yield exes =
 (* ALSO calculates if a function uses a yield *)
 let set_gc_use bsym_table index bsym =
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props, vs, ps, rt, exes) ->
+  | BBDCL_fun (props, vs, ps, rt, effects, exes) ->
       let props = if exes_use_gc bsym_table exes
         then `Uses_gc :: props
         else props
@@ -132,7 +132,7 @@ let set_gc_use bsym_table index bsym =
               then `Heap_closure :: `Yields :: `Generator :: props
               else props
       in
-      let bbdcl = bbdcl_fun (props,vs,ps,rt,exes) in
+      let bbdcl = bbdcl_fun (props,vs,ps,rt,effects, exes) in
       Flx_bsym_table.update_bbdcl bsym_table index bbdcl
 
   | _ -> ()
@@ -158,16 +158,16 @@ let exes_use_global bsym_table exes =
 
 let set_local_globals bsym_table index bsym =
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,ps,rt,exes) ->
+  | BBDCL_fun (props,vs,ps,rt,effects, exes) ->
       if exes_use_global bsym_table exes then begin
-        let bbdcl = bbdcl_fun (`Uses_global_var :: props,vs,ps,rt,exes) in
+        let bbdcl = bbdcl_fun (`Uses_global_var :: props,vs,ps,rt,effects, exes) in
         Flx_bsym_table.update_bbdcl bsym_table index bbdcl
       end
   | _ -> ()
 
 let set_base_ptf_use bsym_table bid bsym  =
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,ps,rt,exes) ->
+  | BBDCL_fun (props,vs,ps,rt,effects, exes) ->
     if List.mem `Not_requires_ptf props then begin
       print_endline "Set_base_ptf_use found symbol with Not_requires_ptf use already set!";
       assert false;
@@ -179,7 +179,7 @@ let set_base_ptf_use bsym_table bid bsym  =
         assert false
       end else 
       if not (List.mem `Requires_ptf props) then begin
-        let bbdcl = bbdcl_fun (`Requires_ptf :: props,vs,ps,rt,exes) in
+        let bbdcl = bbdcl_fun (`Requires_ptf :: props,vs,ps,rt,effects,exes) in
         Flx_bsym_table.update_bbdcl bsym_table bid bbdcl
       end
     end 
@@ -228,7 +228,7 @@ let set_base_ptf_use bsym_table bid bsym  =
 let set_ptf_for_symbol bsym_table usedby bid bsym  =
   let props = 
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,_,_,_,_) 
+    | BBDCL_fun (props,_,_,_,_,_) 
     | BBDCL_external_fun (props,_,_,_,_,_,_) -> props
     | BBDCL_external_const (props,_,_,_,_) -> props
     | _ -> []
@@ -239,13 +239,13 @@ let set_ptf_for_symbol bsym_table usedby bid bsym  =
     let bsym = Flx_bsym_table.find bsym_table bid in
     let bbdcl = Flx_bsym.bbdcl bsym in
     match bbdcl with
-    | BBDCL_fun (props,vs,ps,rt,exes) ->
+    | BBDCL_fun (props,vs,ps,rt,effects,exes) ->
       if List.mem `Not_requires_ptf props then begin
         print_endline "Conflicting requirements";
         assert false
       end else 
       if not (List.mem `Requires_ptf props) then begin
-        let bbdcl = bbdcl_fun (`Requires_ptf :: props,vs,ps,rt,exes) in
+        let bbdcl = bbdcl_fun (`Requires_ptf :: props,vs,ps,rt,effects,exes) in
         Flx_bsym_table.update_bbdcl bsym_table bid bbdcl
       end
     | _ -> ()

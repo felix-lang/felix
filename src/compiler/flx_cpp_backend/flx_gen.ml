@@ -158,7 +158,7 @@ let gen_function_names syms bsym_table =
         failwith ("[gen_functions] can't find index " ^ string_of_bid index)
     in
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,(ps,traint), _, _) ->
+    | BBDCL_fun (props,vs,(ps,traint), _, effects,_) ->
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
       end else begin
         let name = cpp_instance_name syms bsym_table index ts in
@@ -195,7 +195,7 @@ let gen_functions syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_table 
     in
     let sr = Flx_bsym.sr bsym in
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,(ps,traint),ret,_) ->
+    | BBDCL_fun (props,vs,(ps,traint),ret,effects,_) ->
       let is_proc = match ret with | BTYP_void | BTYP_fix (0,_) -> true | _ -> false in
       let name = if is_proc then "PROCEDURE" else "FUNCTION" in
       bcat s ("\n//------------------------------\n");
@@ -351,7 +351,7 @@ let gen_function_methods filename syms bsym_table (
   );
   let cxx_name = cid_of_flxid (Flx_bsym.id bsym) in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(bps,traint),ret',exes) ->
+  | BBDCL_fun (props,vs,(bps,traint),ret',effects,exes) ->
     let tailsr = Flx_bsym.sr bsym in
     if length ts <> length vs then
     failwith
@@ -500,8 +500,8 @@ let gen_procedure_methods filename syms bsym_table
   );
   let cxx_name = cid_of_flxid (Flx_bsym.id bsym) in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(bps,traint),BTYP_fix (0,_),exes)
-  | BBDCL_fun (props,vs,(bps,traint),BTYP_void,exes) ->
+  | BBDCL_fun (props,vs,(bps,traint),BTYP_fix (0,_),effects,exes)
+  | BBDCL_fun (props,vs,(bps,traint),BTYP_void,effects,exes) ->
     if length ts <> length vs then
     failwith
     (
@@ -664,8 +664,8 @@ let gen_execute_methods filename syms bsym_table
   let cxx_name = cid_of_flxid (Flx_bsym.id bsym) in
 
   begin match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(ps,traint),BTYP_fix (0,_),_)
-  | BBDCL_fun (props,vs,(ps,traint),BTYP_void,_) ->
+  | BBDCL_fun (props,vs,(ps,traint),BTYP_fix (0,_),effects,_)
+  | BBDCL_fun (props,vs,(ps,traint),BTYP_void,effects,_) ->
     bcat s ("//------------------------------\n");
     if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
       bcat s (
@@ -680,7 +680,7 @@ let gen_execute_methods filename syms bsym_table
       bcat s call;
       bcat s2 ctor
 
-  | BBDCL_fun (props,vs,(ps,traint),ret,_) ->
+  | BBDCL_fun (props,vs,(ps,traint),ret,effects,_) ->
     bcat s ("//------------------------------\n");
     if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
       bcat s (

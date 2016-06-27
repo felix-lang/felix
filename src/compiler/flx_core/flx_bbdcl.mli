@@ -25,7 +25,7 @@ type t = private
   | BBDCL_invalid
   | BBDCL_module
   | BBDCL_label of      string
-  | BBDCL_fun of        property_t list * bvs_t * Flx_bparams.t * Flx_btype.t *
+  | BBDCL_fun of        property_t list * bvs_t * Flx_bparams.t * Flx_btype.t * Flx_btype.t *
                         Flx_bexe.t list
   | BBDCL_val of        bvs_t * Flx_btype.t * value_kind_t
 
@@ -65,8 +65,11 @@ val bbdcl_label : string -> t
 val bbdcl_invalid : unit -> t
 val bbdcl_module : unit -> t
 val bbdcl_fun :
-  property_t list * bvs_t * Flx_bparams.t * Flx_btype.t * Flx_bexe.t list ->
+  property_t list * bvs_t * Flx_bparams.t * Flx_btype.t * Flx_btype.t *
+  Flx_bexe.t list ->
   t
+
+
 val bbdcl_val : bvs_t * Flx_btype.t * value_kind_t -> t
 val bbdcl_newtype : bvs_t * Flx_btype.t -> t
 val bbdcl_external_type : bvs_t * btype_qual_t list * Flx_code_spec.t * Flx_btype.breqs_t -> t

@@ -93,6 +93,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | EXPR_intersect (_,ts) -> TYP_intersect (map te ts)
   | EXPR_isin (_,(a,b)) -> TYP_isin (te a, te b)
   | EXPR_arrow (_,(a,b)) -> TYP_function (te a, te b)
+  | EXPR_effector (_,(a,e,b)) -> TYP_effector (te a, te e, te b)
   | EXPR_longarrow (_,(a,b)) -> TYP_cfunction (te a, te b)
   | EXPR_superscript (_,(a,b)) -> TYP_array (te a, te b)
 (*  | EXPR_lvalue (sr,e) -> TYP_lvalue (te e) *)

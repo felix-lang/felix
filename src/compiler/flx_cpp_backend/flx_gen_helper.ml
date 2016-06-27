@@ -94,7 +94,7 @@ let get_type bsym_table index =
     with _ -> failwith ("[get_type] Can't find index " ^ si index)
   in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(ps,_),ret,_) ->
+  | BBDCL_fun (props,vs,(ps,_),ret,effects,_) ->
       btyp_function (typeof_bparams ps,ret)
   | _ -> failwith "Only function and procedure types handles by get_type"
 

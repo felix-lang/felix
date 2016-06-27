@@ -29,6 +29,7 @@ and t =
   | BTYP_variant of (string * t) list
   | BTYP_pointer of t
   | BTYP_function of t * t
+  | BTYP_effector of t * t * t
   | BTYP_cfunction of t * t
   | BTYP_void
   | BTYP_label (* type of a label *)
@@ -77,6 +78,7 @@ let rec str_of_btype typ =
   | BTYP_pointer t -> "BTYP_pointer("^s t^")"
   | BTYP_function (d,c) -> "BTYP_function(" ^ s d ^ " -> " ^ s c ^")"
   | BTYP_cfunction (d,c) -> "BTYP_cfunction(" ^ s d ^ " --> " ^ s c ^")"
+  | BTYP_effector (d,e,c) -> "BTYP_effector(" ^ s d ^ " ->["^s e^"] " ^ s c ^")"
  
   | BTYP_void -> "BTYP_void"
   | BTYP_label -> "BTYP_label" (* type of a label *)
@@ -154,6 +156,7 @@ let complete_type t =
     | BTYP_variant ls -> (List.iter (fun (s,t) -> uf t) ls)
     | BTYP_array (a,b) -> uf a; uf b
     | BTYP_function (a,b) -> uf a;uf b
+    | BTYP_effector (a,e,b) -> uf a; uf e; uf b
     | BTYP_cfunction (a,b) -> uf a;uf b
     | BTYP_pointer a -> uf a
     | BTYP_fix (i,_) when (-i) = depth -> ()
@@ -288,6 +291,13 @@ let btyp_pointer ts =
 let btyp_function (args, ret) =
   BTYP_function (args, ret)
 
+(** Construct a BTYP_function type. *)
+let btyp_effector (args, effects, ret) =
+  match effects with
+  | BTYP_tuple [] -> BTYP_function (args,ret)
+  | _ -> BTYP_effector (args, effects, ret)
+
+
 (** Construct a BTYP_cfunction type. *)
 let btyp_cfunction (args, ret) =
   BTYP_cfunction (args, ret)
@@ -344,6 +354,7 @@ let unfold msg t =
     | BTYP_variant ls -> btyp_variant (List.map (fun (s,t) -> s,uf t) ls)
     | BTYP_array (a,b) -> btyp_array (uf a,uf b)
     | BTYP_function (a,b) -> btyp_function (uf a,uf b)
+    | BTYP_effector (a,e, b) -> btyp_effector (uf a,uf e,uf b)
     | BTYP_cfunction (a,b) -> btyp_cfunction (uf a,uf b)
     | BTYP_pointer a -> btyp_pointer (uf a)
     | BTYP_fix (i,_) when (-i) = depth -> t
@@ -451,6 +462,7 @@ let flat_iter
   | BTYP_variant ts -> List.iter (fun (s,t) -> f_btype t) ts
   | BTYP_pointer t -> f_btype t
   | BTYP_function (a,b) -> f_btype a; f_btype b
+  | BTYP_effector (a,e,b) -> f_btype a; f_btype e; f_btype b
   | BTYP_cfunction (a,b) -> f_btype a; f_btype b
   | BTYP_void -> ()
   | BTYP_fix _ -> ()
@@ -513,6 +525,7 @@ let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_variant ts -> btyp_variant (List.map (fun (s,t) -> s, f_btype t) ts)
   | BTYP_pointer t -> btyp_pointer (f_btype t)
   | BTYP_function (a,b) -> btyp_function (f_btype a, f_btype b)
+  | BTYP_effector (a,e,b) -> btyp_effector (f_btype a, f_btype e, f_btype b)
   | BTYP_cfunction (a,b) -> btyp_cfunction (f_btype a, f_btype b)
   | BTYP_void as x -> x
   | BTYP_fix _ as x -> x

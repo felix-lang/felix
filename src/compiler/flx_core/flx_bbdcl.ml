@@ -28,6 +28,7 @@ type t =
   | BBDCL_module
   | BBDCL_label of      string
   | BBDCL_fun of        property_t list * bvs_t * Flx_bparams.t * Flx_btype.t *
+                        Flx_btype.t * (* effects *)
                         Flx_bexe.t list
   | BBDCL_val of        bvs_t * Flx_btype.t * value_kind_t
 
@@ -71,8 +72,9 @@ let bbdcl_invalid () =
 let bbdcl_module () =
   BBDCL_module
 
-let bbdcl_fun (prop, bvs, ps, res, es) =
-  BBDCL_fun (prop, bvs, ps, res, es)
+let bbdcl_fun (prop, bvs, ps, res, effects, es) =
+  BBDCL_fun (prop, bvs, ps, res, effects, es)
+
 
 let bbdcl_val (bvs, t, kind) =
   BBDCL_val (bvs, t, kind)
@@ -127,7 +129,7 @@ let bbdcl_lemma () =
 (** Extract the parameters of a bound declaration. *)
 let get_bparams = function
   | BBDCL_invalid -> assert false
-  | BBDCL_fun (_,_,ps,_,_) -> ps
+  | BBDCL_fun (_,_,ps,_,_,_) -> ps
   | _ -> assert false
 
 (** Extract the types of a bound declaration. *)
@@ -140,7 +142,7 @@ let get_ts = function
 let get_bvs = function
   | BBDCL_invalid -> assert false
   | BBDCL_module -> []
-  | BBDCL_fun (_, bvs, _, _, _) -> bvs
+  | BBDCL_fun (_, bvs, _, _, _,_) -> bvs
   | BBDCL_val (bvs, _, _) -> bvs
   | BBDCL_newtype (bvs, _) -> bvs
   | BBDCL_external_type (bvs, _, _, _) -> bvs
@@ -204,8 +206,9 @@ let iter
   | BBDCL_label _ -> ()
   | BBDCL_invalid -> ()
   | BBDCL_module -> ()
-  | BBDCL_fun (_,_,ps,res,es) ->
+  | BBDCL_fun (_,_,ps,res,effects,es) ->
       f_ps ps;
+      f_btype effects;
       f_btype res;
       List.iter f_bexe es
   | BBDCL_val (_,t,`Ref) -> f_btype (Flx_btype.btyp_pointer t)
@@ -285,8 +288,8 @@ let map
 
   | BBDCL_invalid -> bbdcl
   | BBDCL_module -> bbdcl
-  | BBDCL_fun (props,bvs,ps,res,es) ->
-      BBDCL_fun (props,bvs,f_ps ps,f_btype res,List.map f_bexe es)
+  | BBDCL_fun (props,bvs,ps,res,effects,es) ->
+      BBDCL_fun (props,bvs,f_ps ps,f_btype res,f_btype effects, List.map f_bexe es)
   | BBDCL_val (bvs,t,`Ref) ->
       bbdcl_val (bvs,f_btype (Flx_btype.btyp_pointer t),`Ref)
   | BBDCL_val (bvs,t,kind) -> bbdcl_val (bvs,f_btype t,kind)
@@ -371,9 +374,11 @@ let iter_uses f bbdcl =
     | `Decoder cs -> ()
   in
   match bbdcl with
-  | BBDCL_fun (_,_,ps,res,_) ->
+  | BBDCL_fun (_,_,ps,res,effects,_) ->
       f_ps ps;
-      f_btype res
+      f_btype res;
+      f_btype effects
+
   | BBDCL_external_type (_,quals,_,breqs) ->
       List.iter f_btype_qual quals;
       f_breqs breqs

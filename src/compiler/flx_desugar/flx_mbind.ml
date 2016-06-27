@@ -86,6 +86,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   | EXPR_projection _
   | EXPR_case_arg _
   | EXPR_arrow _
+  | EXPR_effector _
   | EXPR_longarrow _
   | EXPR_ellipsis _
   | EXPR_intersect _

@@ -278,8 +278,8 @@ let strabs_symbol bsym_table index parent bsym bsym_table' =
 
   | BBDCL_label s as x -> h x
 
-  | BBDCL_fun (props, bvs, bps, ret, bexes) ->
-      h (bbdcl_fun (props, bvs, fp bps, ft ret, fxs bexes))
+  | BBDCL_fun (props, bvs, bps, ret, effects, bexes) ->
+      h (bbdcl_fun (props, bvs, fp bps, ft ret, ft effects, fxs bexes))
 
   | BBDCL_val (bvs, t, kind) ->
       h (bbdcl_val (bvs, ft t, kind))

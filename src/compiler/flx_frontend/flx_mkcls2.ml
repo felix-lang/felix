@@ -34,6 +34,8 @@ open Flx_exceptions
 open Flx_use
 open Flx_prop
 
+let noeffects = Flx_btype.btyp_unit ()
+
 type closure_state_t = {
   syms: Flx_mtypes2.sym_state_t;
   wrappers : (Flx_types.bid_t, Flx_types.bid_t) Hashtbl.t;
@@ -172,7 +174,7 @@ let rec chk_expr state bsym_table nutab sr exe e : Flx_bexpr.t =
 *)
         e
 
-      | BBDCL_fun (props,_,_,_,_) when List.mem `Cfun props -> 
+      | BBDCL_fun (props,_,_,_,_,_) when List.mem `Cfun props -> 
 (*
         print_endline ("in exe=" ^ sbx exe ^ "\nCfun function pointer passed as argument? " ^ sbe bsym_table e);
 *)
@@ -208,7 +210,7 @@ end;
         in
 
         let props = if List.mem `Generator props then [`Generator] else [] in
-        let bbdcl = bbdcl_fun (props,[],([param],None),ret,exes) in
+        let bbdcl = bbdcl_fun (props,[],([param],None),ret,noeffects,exes) in
         Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
         bexpr_closure t (closure_bid, [])
 
@@ -232,7 +234,7 @@ end;
            [ bexe_fun_return (fsr, e) ]
         in
         let ret = btyp_inst (i,ts) in 
-        let bbdcl = bbdcl_fun ([],[],([param],None),ret,exes) in
+        let bbdcl = bbdcl_fun ([],[],([param],None),ret,noeffects,exes) in
         Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
         bexpr_closure t (closure_bid, [])
 
@@ -257,7 +259,7 @@ end;
         in
 
         let ret = btyp_inst (i,ts) in 
-        let bbdcl = bbdcl_fun ([],[],([param],None),ret,exes) in
+        let bbdcl = bbdcl_fun ([],[],([param],None),ret,noeffects,exes) in
         Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
         bexpr_closure t (closure_bid, [])
 
@@ -281,7 +283,7 @@ end;
            [ bexe_fun_return (fsr, e) ]
         in
 
-        let bbdcl = bbdcl_fun ([],[],([param],None),ret,exes) in
+        let bbdcl = bbdcl_fun ([],[],([param],None),ret,noeffects,exes) in
         Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
         bexpr_closure t (closure_bid, [])
 
@@ -320,7 +322,7 @@ end;
        [ bexe_fun_return (sr, e) ]
     in
 
-    let bbdcl = bbdcl_fun ([],[],([param],None),cod1,exes) in
+    let bbdcl = bbdcl_fun ([],[],([param],None),cod1,noeffects,exes) in
     Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
     bexpr_closure t (closure_bid, [])
 
@@ -341,7 +343,7 @@ end;
        [ bexe_fun_return (sr, e) ]
     in
 
-    let bbdcl = bbdcl_fun ([],[],([param],None),c,exes) in
+    let bbdcl = bbdcl_fun ([],[],([param],None),c,noeffects,exes) in
     Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
     bexpr_closure t (closure_bid, [])
 
@@ -363,7 +365,7 @@ end;
        [ bexe_fun_return (sr, e) ]
     in
 
-    let bbdcl = bbdcl_fun ([],[],([param],None),c,exes) in
+    let bbdcl = bbdcl_fun ([],[],([param],None),c,noeffects,exes) in
     Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
     bexpr_closure t (closure_bid, [])
 
@@ -384,7 +386,7 @@ end;
        [ bexe_fun_return (sr, e) ]
     in
 
-    let bbdcl = bbdcl_fun ([],[],([param],None),c,exes) in
+    let bbdcl = bbdcl_fun ([],[],([param],None),c,noeffects,exes) in
     Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
     bexpr_closure t (closure_bid, [])
 
@@ -470,9 +472,9 @@ let process_exes state bsym_table nutab exes =
 
 let process_entry state bsym_table nutab i parent bsym =
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,ps,ret,exes) ->
+  | BBDCL_fun (props,vs,ps,ret,effects,exes) ->
     let exes = process_exes state bsym_table nutab exes in
-    let bbdcl = bbdcl_fun (props,vs,ps,ret,exes) in
+    let bbdcl = bbdcl_fun (props,vs,ps,ret,effects,exes) in
     let bsym = (Flx_bsym.replace_bbdcl bsym bbdcl) in
     Flx_bsym_table.add nutab i parent bsym
 

@@ -49,7 +49,7 @@ let is_function bsym =
 (** Return if the bound symbol is a generator. *)
 let is_generator bsym =
   match bsym.bbdcl with
-  | Flx_bbdcl.BBDCL_fun (props,_,_,_,_)
+  | Flx_bbdcl.BBDCL_fun (props,_,_,_,_,_)
   | Flx_bbdcl.BBDCL_external_fun (props,_,_,_,_,_,_)
     when List.mem `Generator props -> true
   | _ -> false

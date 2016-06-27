@@ -14,7 +14,7 @@ let make_match_check sr rex pat match_var_name match_var_index =
   let match_expr = Flx_mbind.gen_match_check pat (EXPR_index (sr,match_var_name, match_var_index)) in
   let stmts, e = rex match_expr in
   let asms = stmts @ [Exe (sr,EXE_fun_return e)] in
-  DCL_function (params, Flx_typing.flx_bool,[`Generated "Flx_match.make_match_check"],asms)
+  DCL_function (params, Flx_typing.flx_bool,Flx_typing.flx_unit,[`Generated "Flx_match.make_match_check"],asms)
 
 let make_match_handler sr rex pat match_var_name match_var_index body =
  assert false (* TO BE DONE *)
@@ -220,6 +220,7 @@ let gen_match rex seq name sr e pss =
         (
           ([],None),
           TYP_none,
+          Flx_typing.flx_unit,
           [`GeneratedInline;`Generated "desugar:match fun"],
           match_function_body
         )

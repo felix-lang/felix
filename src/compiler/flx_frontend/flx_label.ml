@@ -164,7 +164,7 @@ print_endline "Non-Local";
 let populate_label_usage bsym_table label_info =
   Flx_bsym_table.iter (fun index parent bsym ->
     match bsym.bbdcl with
-    | BBDCL_fun (_,_,_,_,exes) -> cal_usage bsym_table label_info index exes 
+    | BBDCL_fun (_,_,_,_,_,exes) -> cal_usage bsym_table label_info index exes 
     | _ -> ()
   )
   bsym_table

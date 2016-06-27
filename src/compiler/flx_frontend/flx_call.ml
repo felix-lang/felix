@@ -181,8 +181,8 @@ let call_report syms bsym_table (uses,usedby) f k =
   w (if isr then "recursive " else "");
   w
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (_,_,_,BTYP_void,_) -> "proc "
-    | BBDCL_fun (_,_,_,_,_) -> "fun "
+    | BBDCL_fun (_,_,_,BTYP_void,_,_) -> "proc "
+    | BBDCL_fun (_,_,_,_,_,_) -> "fun "
     | BBDCL_val (_,_,`Val) -> "val "
     | BBDCL_val (_,_,`Var) -> "var "
     | BBDCL_label _ -> "label "

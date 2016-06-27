@@ -107,9 +107,9 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
   let our_display = get_display_list bsym_table this in
   let caller_name = Flx_bsym.id bsym in
   let kind = match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (_,_,_,BTYP_fix (0,_),_) -> Procedure
-    | BBDCL_fun (_,_,_,BTYP_void,_) -> Procedure
-    | BBDCL_fun (_,_,_,_,_) -> Function
+    | BBDCL_fun (_,_,_,BTYP_fix (0,_),_,_) -> Procedure
+    | BBDCL_fun (_,_,_,BTYP_void,_,_) -> Procedure
+    | BBDCL_fun (_,_,_,_,_,_) -> Function
     | _ -> failwith "Expected executable code to be in function or procedure"
   in let our_level = length our_display in
 
@@ -208,15 +208,31 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         begin
           match kind with
           | Function ->
+(*
             (if with_comments
-            then "      //run procedure " ^ src_str ^ "\n"
-            else "") ^
+            then 
+*)
+            "      //run procedure " ^ src_str ^ "\n"
+(*
+            else "") 
+*)
+            ^
             "      {\n" ^
             subs ^
-            "      ::flx::rtl::con_t *_p =\n" ^
-            "      (FLX_NEWP(" ^ name ^ ")" ^ Flx_gen_display.strd the_display props^ ")\n" ^
-            "      ->call(" ^ args ^ ");\n" ^
-            "      while(_p) _p=_p->resume();\n" ^
+            "        ::flx::rtl::con_t *_p =\n" ^
+            "          (FLX_NEWP(" ^ name ^ ")" ^ Flx_gen_display.strd the_display props^ ")\n" ^
+            "          ->call(" ^ args ^ ");\n" ^
+            "        while(_p) {\n" ^
+            "          if(_p->p_svc) {\n" ^
+            "            int svc = _p->p_svc->variant;\n" ^
+            "            fprintf(stderr,\"Function calls procedure which does service call %d: %s\\n\","^
+            "                svc,::flx::rtl::describe_service_call(svc));\n"^
+            "            fprintf(stderr,\"Caller "^caller_name^"\\n\");\n" ^
+            "            fprintf(stderr,\"Calls  "^called_name^"\\n\");\n" ^
+            "            abort();\n" ^
+            "          }\n"^
+            "          _p=_p->resume();\n" ^
+            "        }\n"^
             "      }\n"
 
           | Procedure ->
@@ -342,7 +358,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         else ""
       end
 
-    | BBDCL_fun (props,vs,ps,ret,bexes) ->
+    | BBDCL_fun (props,vs,ps,ret,effects,bexes) ->
       begin match ret with
       | BTYP_void 
       | BTYP_fix (0,_) -> handle_call props vs ps ret bexes
@@ -576,8 +592,8 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         | _ -> assert false
       in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (props,vs,(ps,traint),BTYP_fix (0,_),_)
-      | BBDCL_fun (props,vs,(ps,traint),BTYP_void,_) ->
+      | BBDCL_fun (props,vs,(ps,traint),BTYP_fix (0,_),effects,_)
+      | BBDCL_fun (props,vs,(ps,traint),BTYP_void,effects,_) ->
         assert (mem `Stack_closure props);
         let a = match a with (a,t) -> a, tsub t in
         let ts = List.map tsub ts in
@@ -785,23 +801,29 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       end
 
     | BEXE_svc (sr,index) ->
-      let bsym =
-        try Flx_bsym_table.find bsym_table index with _ ->
-          failwith ("[gen_expr(name)] Can't find index " ^ string_of_bid index)
-      in
-      let t =
-        match Flx_bsym.bbdcl bsym with
-        | BBDCL_val (_,t,(`Val | `Var)) -> t
-        | _ -> syserr (Flx_bsym.sr bsym) "Expected read argument to be variable"
-      in
-      let n = fresh_bid counter in
-      needs_switch := true;
-      "      //read variable\n" ^
-      "      p_svc = &" ^ get_var_ref syms bsym_table this index ts^";\n" ^
-      "      FLX_SET_PC(" ^ cid_of_bid n ^ ")\n" ^
-      "      return this;\n" ^
-      "    FLX_CASE_LABEL(" ^ cid_of_bid n ^ ")\n"
-
+      begin match stackable, kind with
+        | false,Procedure ->
+        let bsym =
+          try Flx_bsym_table.find bsym_table index with _ ->
+            failwith ("[gen_expr(name)] Can't find index " ^ string_of_bid index)
+        in
+        let t =
+          match Flx_bsym.bbdcl bsym with
+          | BBDCL_val (_,t,(`Val | `Var)) -> t
+          | _ -> syserr (Flx_bsym.sr bsym) "Expected read argument to be variable"
+        in
+        let n = fresh_bid counter in
+        needs_switch := true;
+        "      //read variable\n" ^
+        "      p_svc = &" ^ get_var_ref syms bsym_table this index ts^";\n" ^
+        "      FLX_SET_PC(" ^ cid_of_bid n ^ ")\n" ^
+        "      return this;\n" ^
+        "    FLX_CASE_LABEL(" ^ cid_of_bid n ^ ")\n"
+      | true,Procedure ->
+        clierr sr ("Stackable procedure contains service call")
+      | _,Function ->
+        clierr sr ("Function contains service call")
+      end
 
     | BEXE_yield (sr,e) ->
       let labno = fresh_bid counter in

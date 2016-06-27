@@ -647,6 +647,7 @@ struct RTL_EXTERN _uctor_
   _uctor_(int *a, _uctor_ x) : variant(a[x.variant]), data(x.data) {}
 };
 
+RTL_EXTERN char const *describe_service_call(int);
 
 // ********************************************************
 /// VARIANTS. Felix variant type
@@ -719,6 +720,29 @@ RTL_EXTERN void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char const *fil
 // main run time library code
 
 namespace flx { namespace rtl {
+
+
+static char const *svc_desc[13] = {
+  "svc_yield",
+  "svc_get_fthread",
+  "svc_read",
+  "svc_general",
+  "svc_reserved1",
+  "svc_spawn_pthread",
+  "svc_spawn_detached",
+  "svc_sread",
+  "svc_swrite",
+  "svc_kill",
+  "svc_reserved2",
+  "svc_multi_swrite",
+  "svc_schedule_detached"
+};
+
+char const *describe_service_call(int x)
+{
+  if (x < 0 || x >12) return "Unknown service call";
+  else return svc_desc[x];
+}
 
 // ********************************************************
 // con_t implementation

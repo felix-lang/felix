@@ -124,7 +124,7 @@ let gen_C_function_body filename syms bsym_table
     )
   );
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(bps,traint),ret',exes) ->
+  | BBDCL_fun (props,vs,(bps,traint),ret',effects,exes) ->
     (*
     print_endline ("Properties=" ^ catmap "," (fun x->st (x:>felix_term_t)) props);
     *)
@@ -255,8 +255,8 @@ let gen_C_procedure_body filename syms bsym_table
     )
   );
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(bps,traint),BTYP_fix (0,_),exes) 
-  | BBDCL_fun (props,vs,(bps,traint),BTYP_void,exes) ->
+  | BBDCL_fun (props,vs,(bps,traint),BTYP_fix (0,_),effects,exes) 
+  | BBDCL_fun (props,vs,(bps,traint),BTYP_void,effects,exes) ->
     let requires_ptf = mem `Requires_ptf props in
     if length ts <> length vs then
     failwith

@@ -132,6 +132,7 @@ print_endline ("Metatyping term " ^ st term);
   (* Ordinary type expressions *)
   | BTYP_cfunction _
   | BTYP_function _
+  | BTYP_effector _
   | BTYP_pointer _
   | BTYP_variant _
   | BTYP_record _

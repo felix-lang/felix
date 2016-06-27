@@ -629,6 +629,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     EXPR_callback (sr, qn)
 
   | EXPR_arrow (sr, (e1, e2)) ->  EXPR_arrow (sr,(me e1, me e2))
+  | EXPR_effector (sr, (e1, e2, e3)) ->  EXPR_effector (sr,(me e1, me e2, me e3))
   | EXPR_longarrow (sr, (e1, e2)) ->  EXPR_longarrow (sr,(me e1, me e2))
   | EXPR_superscript (sr, (e1, e2)) ->  EXPR_superscript (sr,(me e1, me e2))
 
@@ -912,16 +913,16 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     in
     tack(STMT_lemma (sr, mi sr id, vs, mpsp sr psp, e1))
 
-  | STMT_function (sr, id, vs, psp, (t,post), props, sts ) ->
+  | STMT_function (sr, id, vs, psp, (t,post), effects, props, sts ) ->
     let pr = List.map (fun (x,y,z,d)->y) (fst psp) in
     let post = meopt post in
-    tack(STMT_function (sr, mi sr id, vs, mpsp sr psp, (mt sr t, post), props, msp sr pr sts ))
+    tack(STMT_function (sr, mi sr id, vs, mpsp sr psp, (mt sr t, post), mt sr effects, props, msp sr pr sts ))
 
-  | STMT_curry (sr,id,vs,pss,(ret,post),kind,adjs,sts) ->
+  | STMT_curry (sr,id,vs,pss,(ret,post),effects,kind,adjs,sts) ->
     let pr = List.map (fun(x,y,z,d)->y) (List.concat (List.map fst pss)) in
     let post = match post with | None -> None | Some x -> Some (me x) in
     let pss = List.map (fun psp -> mpsp sr psp) pss in
-    tack(STMT_curry(sr, mi sr id, vs, pss, (ret,post),kind, adjs, msp sr pr sts ))
+    tack(STMT_curry(sr, mi sr id, vs, pss, (ret,post),effects,kind, adjs, msp sr pr sts ))
 
   | STMT_val_decl (sr, id, vs, optt, opte) ->
     let opte = match opte with

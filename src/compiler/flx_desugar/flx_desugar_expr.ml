@@ -78,6 +78,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
   | EXPR_case_arg _
   | EXPR_void _
   | EXPR_arrow _
+  | EXPR_effector _
   | EXPR_longarrow _
   | EXPR_ellipsis _
   | EXPR_intersect _
@@ -446,7 +447,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
       name
       access
       dfltvs
-      (mkcurry seq sr name' vs pps (ret,None) kind sts [`Generated "lambda"])
+      (mkcurry seq sr name' vs pps (ret,None) Flx_typing.flx_unit kind sts [`Generated "lambda"])
     in
     if List.length pps = 0 then syserr sr "[rex] Lambda with no arguments?" else
     let t = type_of_argtypes (List.map (fun(x,y,z,d)->z) (fst (List.hd pps))) in

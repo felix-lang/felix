@@ -6,6 +6,8 @@ open Flx_ast
 open Flx_types
 open Flx_btype
 
+let noeffects = Flx_typing.flx_unit
+
 let str_parent x = match x with | Some p -> string_of_int p | None -> "None"
 
 type t = {
@@ -611,7 +613,7 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | DCL_function ((ps,pre),t,props,asms) ->
+  | DCL_function ((ps,pre),t,effects,props,asms) ->
 (*
 if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int symbol_index);
 *)
@@ -650,7 +652,7 @@ if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int
 
       (* Add the symbols to the sym_table. *)
       add_symbol ~pubtab ~privtab ~dirs
-        symbol_index id (SYMDEF_function ((ips, pre), t, props, exes));
+        symbol_index id (SYMDEF_function ((ips, pre), t, effects, props, exes));
       add_labels symbol_index privtab exes;
 
       (* Possibly add the function to the public symbol table. *)
@@ -703,6 +705,7 @@ if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int
       add_symbol ~pubtab ~privtab ~dirs symbol_index id (SYMDEF_function (
           ([],None),
           TYP_var symbol_index,
+          noeffects,
           [`Generated "symtab:match handler" ; `GeneratedInline],
           exes));
 
@@ -775,7 +778,7 @@ print_endline ("ROOT: Init procs = " ^ string_of_int (List.length inner_inits));
                   | Some x -> (sr,EXE_call (EXPR_index (sr,"_init_",x),EXPR_tuple (sr,[]))):: exes 
                   | None -> exes
                 in
-                let init_def = SYMDEF_function (([], None), TYP_void sr, [], exes) in
+                let init_def = SYMDEF_function (([], None), TYP_void sr, noeffects, [], exes) in
 
                 (* Get a unique index for the _init_ function. *)
 
@@ -864,7 +867,7 @@ print_endline ("Checking parent's public map");
 
         (* Take all the exes and add them to a function called _init_ that's
          * called when the module is loaded. *)
-        let init_def = SYMDEF_function (([], None), TYP_void sr, [], exes) in
+        let init_def = SYMDEF_function (([], None), TYP_void sr, noeffects, [], exes) in
 
         (* Get a unique index for the _init_ function. *)
 
@@ -922,7 +925,7 @@ print_endline ("MODULE "^name^" Init procs = " ^ string_of_int (List.length inne
 
         (* Take all the exes and add them to a function called _init_ that's
          * called when the module is loaded. *)
-        let init_def = SYMDEF_function (([], None), TYP_void sr, [], exes) in
+        let init_def = SYMDEF_function (([], None), TYP_void sr, noeffects, [], exes) in
 
         (* Get a unique index for the _init_ function. *)
 
@@ -1017,7 +1020,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
 
         (* Take all the exes and add them to a function called _init_ that's
          * called when the module is loaded. *)
-        let init_def = SYMDEF_function (([], None), TYP_void sr, [], exes) in
+        let init_def = SYMDEF_function (([], None), TYP_void sr, noeffects, [], exes) in
 
         (* Get a unique index for the _init_ function. *)
 

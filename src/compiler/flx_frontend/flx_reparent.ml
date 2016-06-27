@@ -232,12 +232,12 @@ let reparent1
     Hashtbl.add uses k calls
 
 
-  | BBDCL_fun (props, vs, (ps,traint), ret, exes) ->
+  | BBDCL_fun (props, vs, (ps,traint), ret, effects, exes) ->
     let props = allow_rescan rescan_flag props in
     let props = filter (fun p -> p <> `Virtual) props in
     let ps = remap_ps ps in
     let exes = rexes exes in
-    update_bsym (bbdcl_fun (props,vs,(ps,traint),ret,exes));
+    update_bsym (bbdcl_fun (props,vs,(ps,traint),ret,effects, exes));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls

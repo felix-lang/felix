@@ -210,6 +210,7 @@ let rec cpp_type_classname syms bsym_table t =
   let t = normalise_tuple_cons bsym_table t in
   let t' = unfold "flx_name: cpp_type_classname" t in
   try match t' with
+  | BTYP_effector _ -> assert false
   | BTYP_hole -> assert false
   | BTYP_int -> "int"
   | BTYP_type_var (i,mt) ->

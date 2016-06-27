@@ -46,7 +46,8 @@ let cal_props kind props = match kind with
   | `Virtual -> if not (List.mem `Virtual props) then `Virtual::props else props
   | _ -> []
 
-let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type (kind:funkind_t) body props =
+let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type effects (kind:funkind_t) body props =
+  let noeffects = Flx_typing.flx_unit in
   if List.mem `Lvalue props then
     clierr sr "Felix function cannot return lvalue"
   ;
@@ -59,17 +60,17 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
   let vss',(args:params_t list)= List.split (List.map (fix_params sr seq) args) in
   let vs = List.concat (vs :: vss') in
   let vs : vs_list_t = vs,tcon in
-  let mkfuntyp d c = TYP_function (d,c)
+  let mkfuntyp d e c = TYP_effector (d,e,c)
   and typeoflist lst = match lst with
     | [x] -> x
     | _ -> TYP_tuple lst
   in
-  let mkret arg ret = mkfuntyp (typeoflist (List.map (fun(x,y,z,d)->z) (fst arg))) ret in
+  let mkret arg (eff,ret) = Flx_typing.flx_unit,mkfuntyp (typeoflist (List.map (fun(x,y,z,d)->z) (fst arg))) eff ret in
   let arity = List.length args in
-  let rettype args =
+  let rettype args eff =
     match return_type with
     | TYP_none -> TYP_none
-    | _ -> List.fold_right mkret args return_type
+    | _ -> snd (List.fold_right mkret args (eff,return_type))
   in
 
   let isobject = kind = `Object in
@@ -92,7 +93,7 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
               | _ -> STMT_proc_return sr :: reved
             )
           in
-          STMT_function (sr, synthname n, vs, ([],None), (return_type,postcondition), props, body)
+          STMT_function (sr, synthname n, vs, ([],None), (return_type,postcondition), effects, props, body)
         | _ ->
           (* allow functions with no arguments now .. *)
           begin match body with
@@ -133,7 +134,9 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
             match st with
             | STMT_fun_return _ -> clierr sr "FOUND function RETURN in Object";
             | STMT_proc_return _ -> clierr sr "FOUND procedure RETURN in Object";
-            | STMT_curry (_,name, vs, pss, (res,traint) , kind, adjectives, ss) when kind = `Method || kind = `GeneratorMethod -> methods := name :: !methods
+            | STMT_curry (_,name, vs, pss, (res,traint) , effects, kind, adjectives, ss)
+                when kind = `Method || kind = `GeneratorMethod -> 
+                methods := name :: !methods
             | STMT_invariant (_, _)  as invariant -> invariants := invariant :: !invariants
             | _ -> ()
           )
@@ -159,12 +162,12 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
             !invariants
         in
         let invariant_func = 
-          STMT_function (sr, "invariant", dfltvs, ([], None), (TYP_unitsum 2, None), [], [STMT_fun_return (sr, conjunction)]) 
+          STMT_function (sr, "invariant", dfltvs, ([], None), (TYP_unitsum 2, None), effects,[], [STMT_fun_return (sr, conjunction)]) 
         in
 
         let body = List.rev (invariant_func :: revbody) in
 (* print_endline ("Object " ^name^ " return type " ^ string_of_typecode return_type); *)
-        STMT_function (sr, synthname n, vs, h, (return_type, postcondition), props, body)
+        STMT_function (sr, synthname n, vs, h, (return_type, postcondition), effects,props, body)
 
       end else 
         let body = 
@@ -181,7 +184,7 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
             )
           | _ -> body
         in
-        STMT_function (sr, synthname n, vs, h, (return_type,postcondition), props, body)
+        STMT_function (sr, synthname n, vs, h, (return_type,postcondition), effects,props, body)
     | h :: t ->
       let argt =
         let hdt = List.hd t in
@@ -205,7 +208,7 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
           )
         ]
       in
-        STMT_function (sr, synthname m, vs, h, (rettype t,None), `Generated "curry"::props, body)
+        STMT_function (sr, synthname m, vs, h, (rettype t effects,None), noeffects,`Generated "curry"::props, body)
    in aux args vs (cal_props kind props)
 
 

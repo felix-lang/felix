@@ -1,4 +1,5 @@
 let sbt b t = Flx_print.sbt b t
+let noeffects = Flx_btype.btyp_unit ()
 
 let rec reduce_bexpr syms summap pa sr e =
   let f_bexpr e = reduce_bexpr syms summap pa sr e in
@@ -20,9 +21,9 @@ let elim_funsums syms bsym_table =
   Flx_bsym_table.iter
   (fun id pa sym -> 
      match sym.Flx_bsym.bbdcl with 
-     | Flx_bbdcl.BBDCL_fun (prop, bvs, ps, res, exes) ->
+     | Flx_bbdcl.BBDCL_fun (prop, bvs, ps, res, effects,exes) ->
        let exes = List.map (reduce_exe syms summap pa) exes in
-       let bbdcl = Flx_bbdcl.bbdcl_fun (prop, bvs, ps, res,exes) in
+       let bbdcl = Flx_bbdcl.bbdcl_fun (prop, bvs, ps, res,effects,exes) in
        Flx_bsym_table.update_bbdcl bsym_table id bbdcl
      | _ -> () 
   )
@@ -140,7 +141,7 @@ print_endline " .. Calculated function sum *********";
     let params = [{Flx_bparameter.pid="_a"; pindex=pindex; pkind=`PVar;ptyp=dt}] in
     let params = params,None in 
     let props = [`Generated "funsum"] in
-    let bbdcl = Flx_bbdcl.bbdcl_fun (props,[],params, ct,exes) in 
+    let bbdcl = Flx_bbdcl.bbdcl_fun (props,[],params, ct,noeffects,exes) in 
     let bsym = Flx_bsym.create "funsum" bbdcl in
     Flx_bsym_table.add bsym_table funsum_index pa bsym
   )

@@ -61,6 +61,7 @@ let rec dual t =
     end
 
   | BTYP_function (a,b) -> btyp_function (b,a)
+  | BTYP_effector (a,e,b) -> btyp_effector (b,e,a)
   | BTYP_cfunction (a,b) -> btyp_cfunction (b,a)
   | BTYP_array (a,b) -> btyp_array (b,a)
 
@@ -80,6 +81,7 @@ let rec check_recursion t = match t with
    | BTYP_pointer _
    | BTYP_sum _
    | BTYP_function _
+   | BTYP_effector _
    | BTYP_cfunction _
      -> ()
 
@@ -300,6 +302,7 @@ let fix i t =
     | BTYP_intersect ts -> btyp_intersect (List.map aux ts)
     | BTYP_type_set ts -> btyp_type_set (List.map aux ts)
     | BTYP_function (a,b) -> btyp_function (aux a, aux b)
+    | BTYP_effector (a,e,b) -> btyp_effector (aux a, aux e, aux b)
     | BTYP_cfunction (a,b) -> btyp_cfunction (aux a, aux b)
     | BTYP_pointer a -> btyp_pointer (aux a)
     | BTYP_array (a,b) -> btyp_array (aux a, aux b)
@@ -488,6 +491,11 @@ let rec unification bsym_table counter eqns dvars =
       | BTYP_function (t11, t12), BTYP_function (t21, t22)
       | BTYP_cfunction (t11, t12), BTYP_cfunction (t21, t22) ->
         add_eqn (t11,t21); add_eqn (t12,t22)
+
+      (* FIXME *)
+      | BTYP_effector (t11, t12, t13), BTYP_effector (t21, t22, t23) ->
+        add_eqn (t11,t21); add_eqn (t12,t22); add_eqn (t13, t23)
+
 
       | BTYP_record ([]),BTYP_tuple []
       | BTYP_tuple [],BTYP_record ([]) -> ()
@@ -879,6 +887,9 @@ let rec type_eq' bsym_table counter ltrail ldepth rtrail rdepth trail t1 t2 =
   | BTYP_tuple_cons (s1,d1),BTYP_tuple_cons (s2,d2)
     -> te s1 s2 && te d1 d2
 
+  | BTYP_effector (s1,e1,d1),BTYP_effector (s2,e2,d2)
+    -> te s1 s2 && te d1 d2 && te e1 e2
+
   (* order is important for lvalues .. *)
   | BTYP_array (ta,BTYP_unitsum n),BTYP_tuple ts
     when List.length ts = n ->
@@ -1000,6 +1011,7 @@ let fold bsym_table counter t =
 
     | BTYP_array (a,b)
     | BTYP_function (a,b) -> ax a; ax b
+    | BTYP_effector (a,e, b) -> ax a; ax e; ax b
     | BTYP_cfunction (a,b) -> ax a; ax b
 
     | BTYP_pointer a -> ax a
@@ -1100,6 +1112,8 @@ let wrap bsym_table counter t =
           | _ -> btyp_variant left
         in 
         scan [] ls
+
+      | BTYP_effector _ -> assert false
  
       | BTYP_array (a,b) -> pair btyp_array a b
       | BTYP_function (a,b) -> pair btyp_function a b
@@ -1192,6 +1206,7 @@ let var_occurs bsym_table t =
 
     | BTYP_array (a,b)
     | BTYP_function (a,b) -> aux a; aux b
+    | BTYP_effector (a,e,b) -> aux a; aux e; aux b
     | BTYP_cfunction (a,b) -> aux a; aux b
 
     | BTYP_pointer a  -> aux a

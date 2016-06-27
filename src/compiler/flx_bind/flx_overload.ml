@@ -206,7 +206,7 @@ let sig_of_symdef symdef sr name i = match symdef with
       in
       type_of_list ts_cf,r,None
 
-  | SYMDEF_function (ps,r,_,_) ->
+  | SYMDEF_function (ps,r,effects,_,_) ->
     let p = fst ps in
     begin match p,r with
     | _ ->
@@ -355,7 +355,7 @@ if name = "accumulate" then
    * the order of binding the compiler happens to pick! FIX IT!
    *)
   match opt_bsym with
-  | Some {Flx_bsym.id=id;sr=sr;bbdcl=Flx_bbdcl.BBDCL_fun (props,base_bvs,ps,rt,_)} ->
+  | Some {Flx_bsym.id=id;sr=sr;bbdcl=Flx_bbdcl.BBDCL_fun (props,base_bvs,ps,rt,effects,_)} ->
 (*
     print_endline ("Found function binding for " ^ id);
 *)
@@ -1247,7 +1247,7 @@ if name = "accumulate" then print_endline "Failed to find result";
                     let isvirtual1 = 
                       let props = 
                         match sym1.Flx_sym.symdef with
-                        | SYMDEF_function (_,_,props,_) -> props
+                        | SYMDEF_function (_,_,_,props,_) -> props
                         | SYMDEF_fun (props,_,_,_,_,_) -> props
                         | _ -> failwith "OK, dunno what we got!"
                       in
@@ -1256,7 +1256,7 @@ if name = "accumulate" then print_endline "Failed to find result";
                    let isvirtual2 = 
                       let props = 
                         match sym2.Flx_sym.symdef with
-                        | SYMDEF_function (_,_,props,_) -> props
+                        | SYMDEF_function (_,_,_,props,_) -> props
                         | SYMDEF_fun (props,_,_,_,_,_) -> props
                         | _ -> failwith "OK, dunno what we got!"
                       in

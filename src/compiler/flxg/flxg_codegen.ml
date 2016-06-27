@@ -30,7 +30,7 @@ let instantiate state bsym_table (root_proc: int option) =
     let topclass_props =
       let bsym = Flx_bsym_table.find bsym_table root_proc in
       match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (props,vs,p,BTYP_void,exes) -> props
+      | BBDCL_fun (props,vs,p,BTYP_void,effects,exes) -> props
       | _ -> syserr (Flx_bsym.sr bsym) "Expected root to be procedure"
     in
     if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
@@ -380,6 +380,13 @@ let codegen_bsyms
   plb (
     "FLX_FRAME_WRAPPERS(::flxusr::" ^ mname ^","^mname ^ ")");
 
+(*
+  begin match top_data with
+  | Some ( top_class, topclass_props) ->
+    print_endline ("Flxg_codegen] Top data: top class = " ^ top_class ^ ", props = " ^ Flx_print.string_of_properties topclass_props);
+  | None -> print_endline ("Flxg_codegen] No top level class");
+  end;
+*)
   begin match top_data with
   | Some (top_class, topclass_props) ->
     begin if List.mem `Pure topclass_props then

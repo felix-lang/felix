@@ -14,27 +14,23 @@
    instantiated to multiple values .. ..])
 *)
 let do_unify counter varmap sym_table bsym_table a b =
-  let eqns =
-    [
-      Flx_unify.varmap_subst varmap a,
-      Flx_unify.varmap_subst varmap b
-    ]
-  in
-  (*
-  print_endline "Calling unification";
-  *)
+  let a' = Flx_unify.varmap_subst varmap a in
+  let b' = Flx_unify.varmap_subst varmap b in
+  let eqns = [a',b'] in
+(*
+  print_endline ("Calling unification " ^ Flx_print.sbt bsym_table a' ^ " ==? " ^ Flx_print.sbt bsym_table b');
+*)
   match Flx_unify.maybe_unification bsym_table counter eqns with
-  | None -> false
+  | None ->  (*print_endline ("Unification failed");*) false
   | Some mgu ->
-    (*
+(*
     print_endline "mgu=";
     List.iter
     (fun (i, t) ->
-      print_endline (string_of_int i ^ " -> " ^ string_of_btypecode sym_table t)
+      print_endline (string_of_int i ^ " -> " ^ Flx_print.sbt bsym_table t)
     )
     mgu;
-    *)
-
+*)
     (* This crud is used to find the return types of
     functions initially marked TYP_none, which really
     means the type is unknown and should be calculated.

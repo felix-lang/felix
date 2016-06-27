@@ -219,8 +219,8 @@ let is_function bsym_table bid =
 let update_bexes f bsym_table =
   iter begin fun bid _ bsym ->
     match Flx_bsym.bbdcl bsym with
-    | Flx_bbdcl.BBDCL_fun (ps, bvs, bpar, rt, bexes) ->
-        let bbdcl = Flx_bbdcl.bbdcl_fun (ps, bvs, bpar, rt, f bexes) in
+    | Flx_bbdcl.BBDCL_fun (ps, bvs, bpar, rt, effects, bexes) ->
+        let bbdcl = Flx_bbdcl.bbdcl_fun (ps, bvs, bpar, rt, effects, f bexes) in
         update bsym_table bid (Flx_bsym.replace_bbdcl bsym bbdcl)
 
     | _ -> ()

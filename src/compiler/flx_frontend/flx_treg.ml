@@ -140,6 +140,17 @@ print_endline ("Register type r " ^ sbt bsym_table t);
     rr ret;
     rnr (btyp_function (ps,ret))
 
+  | BTYP_effector (ps,effects, ret) ->
+    let ps = match ps with
+    | BTYP_void -> btyp_tuple []
+    | x -> x
+    in
+    rr ps;
+    rr ret;
+    rr effects;
+    (* PROBABLY THIS SHOULD BE FUNCTION: erase effects! *)
+    rnr (btyp_effector (ps,effects,ret))
+
   | BTYP_cfunction (ps,ret) ->
     rr ps;
     rr ret;

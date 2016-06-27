@@ -42,6 +42,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | TYP_sum ts -> TYP_sum (List.map f ts)
   | TYP_intersect ts -> TYP_intersect (List.map f ts)
   | TYP_function (a,b) -> TYP_function (f a, f b)
+  | TYP_effector (a,e,b) -> TYP_effector (f a, f e, f b)
   | TYP_cfunction (a,b) -> TYP_cfunction (f a, f b)
   | TYP_pointer t -> TYP_pointer (f t)
   | TYP_array (t1, t2) -> TYP_array (f t1, f t2)
@@ -136,6 +137,7 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | EXPR_orlist (sr,es) -> EXPR_orlist (sr, List.map fe es)
   | EXPR_andlist (sr,es) -> EXPR_andlist (sr, List.map fe es)
   | EXPR_arrow (sr,(a,b)) -> EXPR_arrow (sr,(fe a, fe b))
+  | EXPR_effector (sr,(a,e,b)) -> EXPR_effector (sr,(fe a, fe e, fe b))
   | EXPR_longarrow (sr,(a,b)) -> EXPR_longarrow (sr,(fe a, fe b))
   | EXPR_superscript (sr,(a,b)) -> EXPR_superscript (sr,(fe a, fe b))
 
@@ -249,6 +251,9 @@ let iter_expr f (e:expr_t) =
   | EXPR_isin (_,(a,b))
   | EXPR_tuple_cons (_, a, b) 
     -> f a; f b
+
+  | EXPR_effector (_,(a,e,b))
+    -> f a; f e; f b
 
   | EXPR_tuple (_,es)
   | EXPR_product (_,es)

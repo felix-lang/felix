@@ -78,7 +78,7 @@ let rec retarget name ret exes exe exclude =
       match skip_white tail with
       | [] ->
         begin match ret with
-        | Flx_btype.BTYP_void _ ->
+        | Flx_btype.BTYP_void ->
           print_endline ("[Flx_cflow: goto] in "^name^" Retargetting " ^ string_of_int label ^ " to proc return");
           bexe_proc_return sr
         | _ ->

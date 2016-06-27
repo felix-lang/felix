@@ -55,5 +55,8 @@ module FunInstSet = Set.Make(
   end
 )
 
+let flx_unit = TYP_tuple []
 let flx_bool = TYP_unitsum 2
+
+
 let flx_bbool = Flx_btype.btyp_unitsum 2

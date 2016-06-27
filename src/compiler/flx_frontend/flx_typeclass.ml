@@ -113,7 +113,7 @@ end;
             let qt = bvs, btyp_function (argt,ret) in
             (Flx_bsym.id bsym,(i,qt)) :: acc
 
-        | BBDCL_fun (_,bvs,bps,ret,_) ->
+        | BBDCL_fun (_,bvs,bps,ret,effects,_) ->
             let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
             let qt = bvs, btyp_function (argt,ret) in
             (Flx_bsym.id bsym,(i,qt)) :: acc
@@ -243,8 +243,9 @@ in the typeclass might be used instead. This routine only handles actual instanc
         let ft = btyp_function (btyp_tuple params,ret) in
         check_binding tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
 
-      | BBDCL_fun (props,bvs,bps,ret,_) when mem `Virtual props ->
+      | BBDCL_fun (props,bvs,bps,ret,effects,_) when mem `Virtual props ->
         let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
+        (* ignore effects for now! *)
         let ft = btyp_function (argt,ret) in
         check_binding tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
 
@@ -319,7 +320,7 @@ let build_typeclass_to_instance_table syms bsym_table : unit =
         ts
 
   (* virtual with default *)
-  | BBDCL_fun (props,bvs,params,rettype,exes) ->
+  | BBDCL_fun (props,bvs,params,rettype,effects, exes) ->
     if List.mem `Virtual  props then
     let tc = match parent with
     | None -> assert false

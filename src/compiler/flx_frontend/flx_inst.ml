@@ -138,7 +138,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
           string_of_bid index)
     in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (_,_,_,BTYP_void,_) ->
+    | BBDCL_fun (_,_,_,BTYP_void,_,_) ->
       failwith "Use of mangled procedure in expression! (should have been lifted out)"
 
     (* function type not needed for direct call *)
@@ -392,7 +392,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
   | BBDCL_label s -> ()
   | BBDCL_invalid -> assert false
   | BBDCL_module -> ()
-  | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
     let argtypes = Flx_bparameter.get_btypes ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -652,7 +652,7 @@ print_endline "  [flx_inst] Begin instantiation";
       let bsym = Flx_bsym_table.find bsym_table x in
       let sr = Flx_bsym.sr bsym in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (props,_,(ps,_),_,_) ->
+      | BBDCL_fun (props,_,(ps,_),_,_,_) ->
         begin match ps with
         | [] -> ()
         | [{ptyp=t}] -> register_type_r (ui sr) syms bsym_table [] sr t

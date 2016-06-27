@@ -32,7 +32,7 @@ let set_deferred_type
       begin match entries with
       | FunctionEntry [{base_sym=idx; spec_vs=[]; sub_ts=[]}] ->
         begin match hfind "lookup(defered?)" state.sym_table idx with
-        | { Flx_sym.symdef=SYMDEF_function (pss, ret, props,exes) } -> pss
+        | { Flx_sym.symdef=SYMDEF_function (pss, ret, effects,props,exes) } -> pss
         | _ -> raise Flx_dot.OverloadResolutionError 
         end
       | _ -> 
@@ -59,7 +59,7 @@ let set_deferred_type
         begin match entry with
         | FunctionEntry [{base_sym=idx; spec_vs=[]; sub_ts=[]}] -> 
           begin match hfind "lookup(defered?)" state.sym_table idx with
-          | { Flx_sym.symdef=SYMDEF_function (pss, ret, props,exes) } -> pss
+          | { Flx_sym.symdef=SYMDEF_function (pss, ret, effects,props,exes) } -> pss
           | _ -> raise Flx_dot.OverloadResolutionError 
           end
         | _ -> raise Flx_dot.OverloadResolutionError
@@ -69,7 +69,7 @@ let set_deferred_type
 
     | EXPR_index (sr,name,idx) ->
       begin match hfind "lookup(defered?)" state.sym_table idx with
-      | { Flx_sym.symdef=SYMDEF_function (pss, ret, props,exes) } -> pss
+      | { Flx_sym.symdef=SYMDEF_function (pss, ret, effects,props,exes) } -> pss
       | _ -> raise Flx_dot.OverloadResolutionError 
       end 
     | EXPR_suffix (sr,(qn,TYP_defer (sr2,dt))) -> 

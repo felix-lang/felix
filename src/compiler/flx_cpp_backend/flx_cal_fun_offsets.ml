@@ -84,7 +84,7 @@ let gen_all_fun_shapes module_name scan s syms bsym_table last_ptr_map =
     in
     print_debug syms ("Offsets for " ^ Flx_bsym.id bsym ^ "<"^ si index ^">["^catmap "," (sbt bsym_table) ts ^"]");
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,ps,ret,exes) ->
+    | BBDCL_fun (props,vs,ps,ret,effects,exes) ->
 print_debug syms "Scan exes ..";
         scan exes;
 print_debug syms "Scan exes DONE"; 

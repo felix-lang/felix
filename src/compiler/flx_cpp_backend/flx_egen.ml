@@ -758,7 +758,7 @@ print_endline "Apply struct";
     print_endline ("  .. argument is " ^ string_of_bound_expression sym_table a);
     *)
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,_,_,_,_) ->
+    | BBDCL_fun (props,_,_,_,_,_) ->
       (*
       print_endline ("Generating closure[apply direct] of " ^ si index);
       *)
@@ -805,7 +805,7 @@ print_endline "Apply struct";
     in
     begin
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,(ps,traint),retyp,_) ->
+    | BBDCL_fun (props,vs,(ps,traint),retyp,effects,_) ->
       let display = get_display_list bsym_table index in
       let name = cpp_instance_name syms bsym_table index ts in
       (* C FUNCTION CALL *)
@@ -1232,7 +1232,7 @@ end
         end
 
       (* | BBDCL_fun (_,_,([s,(_,BTYP_void)],_),_,[BEXE_fun_return e]) -> *)
-      | BBDCL_fun (_,_,([],_),_,[BEXE_fun_return (_,e)]) ->
+      | BBDCL_fun (_,_,([],_),_,_,[BEXE_fun_return (_,e)]) ->
         ge' e
 
       | BBDCL_cstruct _
@@ -1267,7 +1267,7 @@ end
     *)
     let ts = map tsub ts' in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,_,_,_,_) ->
+    | BBDCL_fun (props,_,_,_,_,_) ->
       let the_display =
         let d' =
           map begin fun (i,vslen) ->

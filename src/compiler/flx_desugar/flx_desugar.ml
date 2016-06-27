@@ -289,9 +289,9 @@ print_endline ("Translating Lazy Declaration " ^ name);
   | STMT_inherit (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit qn)]
   | STMT_inherit_fun (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit_fun qn)]
 
-  | STMT_curry (sr,name',vs,pps,ret,kind,adjs,sts) ->
+  | STMT_curry (sr,name',vs,pps,ret,effects,kind,adjs,sts) ->
     let fdef = rst state name access parent_vs 
-      (Flx_curry.mkcurry seq sr name' vs pps ret kind sts adjs) 
+      (Flx_curry.mkcurry seq sr name' vs pps ret effects kind sts adjs) 
     in
     let export_name = ref name' in
     let doexport = ref false in
@@ -342,7 +342,7 @@ print_endline ("Translating Lazy Declaration " ^ name);
   | STMT_lemma (sr,name,vs,params, rsrc) ->
     [ Dcl (sr,name,None,access,vs,DCL_lemma (params,rsrc)) ]
 
-  | STMT_function (sr,name', vs, params, (res,postcondition), props, sts) ->
+  | STMT_function (sr,name', vs, params, (res,postcondition), effects, props, sts) ->
     (*
     print_endline (string_of_statement 0 st);
     *)
@@ -355,7 +355,7 @@ print_endline ("Translating Lazy Declaration " ^ name);
       let asms = bridge name' sr :: asms in
       [
         Dcl (sr,name',None,access,vs,
-          DCL_function (params, res, props, asms)
+          DCL_function (params, res, effects, props, asms)
         )
       ]
     | pre,post ->
@@ -369,7 +369,7 @@ print_endline ("Translating Lazy Declaration " ^ name);
         )
         @
         [
-          STMT_function (sr,name'', dfltvs,([],None),(res,None),props,sts);
+          STMT_function (sr,name'', dfltvs,([],None),(res,None),effects,props,sts);
         ]
         @
         begin match res with
@@ -394,7 +394,7 @@ print_endline ("Translating Lazy Declaration " ^ name);
         end
       in
       let st =
-        STMT_function (sr,name',vs,(ps,None),(res,None),props,sts)
+        STMT_function (sr,name',vs,(ps,None),(res,None),effects,props,sts)
       in
       rst state name access parent_vs st
     end

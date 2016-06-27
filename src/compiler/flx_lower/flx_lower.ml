@@ -77,7 +77,7 @@ print_endline "RUNNING OLD LOWER PROCESS";
   Flx_types.BidSet.iter begin fun i ->
     let bsym = Flx_bsym_table.find bsym_table i in
     match Flx_bsym.bbdcl bsym with
-    | Flx_bbdcl.BBDCL_fun (props,vs,p,ret,exes) ->
+    | Flx_bbdcl.BBDCL_fun (props,vs,p,ret,effects,exes) ->
         let props = ref props in
 
         if List.mem `Stackable !props then begin
@@ -95,12 +95,7 @@ print_endline "RUNNING OLD LOWER PROCESS";
 
         (* Update the procedure with the new properties. *)
         Flx_bsym_table.update_bbdcl bsym_table i
-          (Flx_bbdcl.bbdcl_fun (
-            !props,
-            vs,
-            p,
-            ret,
-            exes))
+          (Flx_bbdcl.bbdcl_fun ( !props, vs, p, ret,effects, exes))
     | _ -> ()
   end !(state.syms.Flx_mtypes2.roots);
 

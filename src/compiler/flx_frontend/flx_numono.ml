@@ -397,7 +397,7 @@ let fixup_exes syms bsym_table vars virtualinst polyinst parent_ts exes =
            diagnostic prints and reduces the crap in the symbol
            table a little earlier.
         *) 
-        | BBDCL_fun (props,_,_,_,[]) when not (List.mem `Virtual props) -> oexes 
+        | BBDCL_fun (props,_,_,_,_,[]) when not (List.mem `Virtual props) -> oexes 
         | _ -> mono_exe syms bsym_table vars iexe :: oexes
         end 
       | _ ->  mono_exe syms bsym_table vars iexe :: oexes
@@ -504,7 +504,7 @@ let rec notemptycall (bsym_table:Flx_bsym_table.t) (trail: int list) exe : bool 
     begin 
       let bsym = Flx_bsym_table.find bsym_table f in
       match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (_,_,_,_,exes)  ->
+      | BBDCL_fun (_,_,_,_,_,exes)  ->
         begin match exes with
         | [BEXE_proc_return _] -> false
         | ls  ->
@@ -549,7 +549,7 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
   match bbdcl with
   | BBDCL_label s -> Some (bbdcl_label s)
 
-  | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
     begin try
       let props = List.filter (fun p -> p <> `Virtual) props in
       if List.length vs <> List.length ts then begin try
@@ -564,6 +564,12 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
         try mt vars ret 
         with Not_found -> print_endline "Not_found fixing up return type"; 
           print_endline ("Ret=" ^ sbt bsym_table ret); 
+          assert false 
+      in
+      let effects = 
+        try mt vars effects
+        with Not_found -> print_endline "Not_found fixing up effects type"; 
+          print_endline ("Effects=" ^ sbt bsym_table effects); 
           assert false 
       in
       let ps = try
@@ -595,7 +601,7 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
       let exes = strip_unit_assigns exes in
       let exes = List.map (fun exe -> Flx_bexe.map ~f_bexpr:Flx_bexpr.reduce exe) exes in
       let props = List.filter (fun p -> p <> `Virtual) props in
-      Some (bbdcl_fun (props,[],(ps,traint),ret,exes))
+      Some (bbdcl_fun (props,[],(ps,traint),ret,effects,exes))
     with Not_found ->
       assert false
     end
@@ -774,7 +780,7 @@ let rec mono_element debug syms to_process processed bsym_table nutab nubids i t
         in
         let {Flx_bsym.id=id;sr=sr;bbdcl=bbdcl} = psym in
         begin match bbdcl with
-        | BBDCL_fun (_,vs,_,_,_) ->
+        | BBDCL_fun (_,vs,_,_,_,_) ->
           let n = List.length vs in
           let pts = Flx_list.list_prefix ts n in 
 (*

@@ -34,7 +34,7 @@ let gen_fun_header syms bsym_table kind index export_name modulename =
         failwith ("[gen_biface_header] Can't find index " ^ string_of_bid index)
     in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,(ps,traint),ret,_) ->
+    | BBDCL_fun (props,vs,(ps,traint),ret,effects,_) ->
       let display = get_display_list bsym_table index in
       if length display <> 0
       then clierr (Flx_bsym.sr bsym) ("Can't export nested function " ^ export_name);
@@ -121,7 +121,7 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
     in
     let sr = Flx_bsym.sr bsym in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,(ps,traint),BTYP_void,_) ->
+    | BBDCL_fun (props,vs,(ps,traint),BTYP_void,effects,_) ->
       if length vs <> 0
       then clierr sr ("Can't export generic procedure " ^ Flx_bsym.id bsym)
       ;
@@ -233,7 +233,7 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
       ^
       "}\n"
 
-    | BBDCL_fun (props,vs,(ps,traint),ret,_) ->
+    | BBDCL_fun (props,vs,(ps,traint),ret,effects,_) ->
       if length vs <> 0
       then clierr (Flx_bsym.sr bsym) ("Can't export generic function " ^ Flx_bsym.id bsym)
       ;
@@ -343,7 +343,7 @@ let gen_felix_binding syms bsym_table kind index export_name modulename =
       failwith ("[gen_biface_header] Can't find index " ^ string_of_bid index)
   in
   begin match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(ps,traint),ret,_) ->
+  | BBDCL_fun (props,vs,(ps,traint),ret,effects,_) ->
     let display = get_display_list bsym_table index in
     if length display <> 0
     then clierr (Flx_bsym.sr bsym) ("Can't export nested function " ^ export_name);

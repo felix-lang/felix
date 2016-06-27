@@ -205,6 +205,7 @@ and xexpr_t sr x =
  | Lst [Id "ast_andlist"; sr; Lst es] -> EXPR_andlist (xsr sr, map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_not"; sr; e] -> EXPR_not (xsr sr, ex e)
  | Lst [Id "ast_arrow";  Lst [e1; e2]] -> EXPR_arrow (sr,(ex e1, ex e2))
+ | Lst [Id "ast_effector";  Lst [e1; e2; e3]] -> EXPR_effector (sr,(ex e1, ex e2, ex e3))
  | Lst [Id "ast_longarrow";  Lst [e1; e2]] -> EXPR_longarrow (sr,(ex e1, ex e2))
  | Lst [Id "ast_superscript";  Lst [e1; e2]] -> EXPR_superscript (sr,(ex e1, ex e2))
  | Lst [Id "ast_literal";  sr; Str felix_type; Str internal_value; Str c_value ] ->
@@ -668,9 +669,26 @@ and xstatement_t sr x : statement_t =
       xvs sr vs,
       map (xps pdef sr) pss,
       fret,
+      Flx_typing.flx_unit,
       xfk sr fk,
       map xadjective_t props,
       xsts sr sts)
+
+  | Lst [Id "ast_curry_effects"; sr; id; vs; Lst pss; ret; effects; fk; Lst props; sts] -> let sr = xsr sr in 
+    let fret = xret sr ret in
+    let rett, _ = fret in 
+    let pdef = (*  match rett with TYP_void _ -> `PVar | _ ->*)  `PVal in
+    STMT_curry(
+      sr,
+      xid id,
+      xvs sr vs,
+      map (xps pdef sr) pss,
+      fret,
+      ti sr effects,
+      xfk sr fk,
+      map xadjective_t props,
+      xsts sr sts)
+
 
   | Lst [Id "ast_macro_val"; sr; ids; v] -> let sr = xsr sr in 
       STMT_macro_val (sr, lst "ast_macro_val" xid ids, ex sr v)

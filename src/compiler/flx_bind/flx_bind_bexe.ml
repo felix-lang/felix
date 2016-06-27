@@ -152,7 +152,7 @@ print_endline "Cal call, types don't match ..";
               | _ -> assert false
             in
             begin let pnames = match hfind "bexe" state.sym_table i with
-            | { Flx_sym.symdef=SYMDEF_function (ps,_,_,_)} ->
+            | { Flx_sym.symdef=SYMDEF_function (ps,_,_,_,_)} ->
               map (fun (_,name,_,d)->
                 name,
                 match d with None -> None | Some e -> Some (be i e)
@@ -209,12 +209,14 @@ print_endline "Cal call, types don't match ..";
   *)
   | BTYP_cfunction (t, BTYP_fix (0,_))
   | BTYP_function (t, BTYP_fix (0,_)) 
+  | BTYP_effector (t, _, BTYP_fix (0,_)) 
     ->
     let a = genargs t in
     bexe_jump a
 
   | BTYP_cfunction (t, BTYP_void)
   | BTYP_function (t, BTYP_void) 
+  | BTYP_effector (t, _, BTYP_void) 
     ->
     let a = genargs t in
     bexe_call a
@@ -226,7 +228,8 @@ print_endline "Cal call, types don't match ..";
 
 let cal_loop sym_table sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
   match unfold "flx_bind_bexe" pt with
-  | BTYP_function (t, BTYP_void) ->
+  | BTYP_function (t, BTYP_void)
+  | BTYP_effector (t, _, BTYP_void) ->
     if t = argt
     then
       match p with
@@ -290,6 +293,7 @@ let rec bind_exe state bsym_table (sr, exe) : bexe_t list =
       n
   in
 (*
+print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_type);
   print_endline ("EXE="^string_of_exe 1 exe);
 *)
 (*
@@ -490,7 +494,8 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
     *)
     begin match tf with
     | BTYP_cfunction _
-    | BTYP_function _ ->
+    | BTYP_function _ 
+    | BTYP_effector _ ->
       begin try
       [(cal_call state bsym_table sr f a)]
       with exn ->

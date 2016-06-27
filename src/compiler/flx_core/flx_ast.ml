@@ -71,6 +71,7 @@ and typecode_t =
   | TYP_polyrecord of (Flx_id.t * typecode_t) list * typecode_t
   | TYP_variant of (Flx_id.t * typecode_t) list (** anon sum *)
   | TYP_function of typecode_t * typecode_t    (** function type *)
+  | TYP_effector of typecode_t * typecode_t * typecode_t    (** function type *)
   | TYP_cfunction of typecode_t * typecode_t   (** C function type *)
   | TYP_pointer of typecode_t                  (** pointer type *)
   | TYP_array of typecode_t * typecode_t       (** array type base ^ index *)
@@ -155,6 +156,7 @@ and expr_t =
   | EXPR_orlist of Flx_srcref.t * expr_t list
   | EXPR_andlist of Flx_srcref.t * expr_t list
   | EXPR_arrow of Flx_srcref.t * (expr_t * expr_t)
+  | EXPR_effector of Flx_srcref.t * (expr_t * expr_t * expr_t)
   | EXPR_longarrow of Flx_srcref.t * (expr_t * expr_t)
   | EXPR_superscript of Flx_srcref.t * (expr_t * expr_t)
   | EXPR_literal of Flx_srcref.t * Flx_literal.literal_t
@@ -315,6 +317,8 @@ and property_t = [
   | `Tag of string       (* whatever *)
   | `Export
   | `NamedExport of string
+  | `Service_call        (* does a svc instruction (directly or indirectly maybe*)
+  | `NoService_call      (* does not do a svc instruction definitely *)
 ]
 
 and type_qual_t = [
@@ -413,6 +417,7 @@ and statement_t =
       vs_list_t *
       params_t *
       (typecode_t * expr_t option) *
+      typecode_t *
       property_t list *
       statement_t list
   | STMT_curry of
@@ -421,6 +426,7 @@ and statement_t =
       vs_list_t *
       params_t list *
       (typecode_t * expr_t option) *
+      typecode_t * (* effects *)
       funkind_t *
       property_t list *
       statement_t list
@@ -681,6 +687,7 @@ let src_of_typecode = function
   | TYP_polyrecord _
   | TYP_variant _
   | TYP_function _
+  | TYP_effector _
   | TYP_cfunction _
   | TYP_pointer _
   | TYP_array _
@@ -726,6 +733,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_orlist (s,_)
   | EXPR_andlist (s,_)
   | EXPR_arrow (s,_)
+  | EXPR_effector (s,_)
   | EXPR_longarrow (s,_)
   | EXPR_superscript (s,_)
   | EXPR_map (s,_,_)
@@ -788,11 +796,11 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_ifcgoto (s,_,_)
   | STMT_assert (s,_)
   | STMT_init (s,_,_)
-  | STMT_function (s,_,_,_,_,_,_)
+  | STMT_function (s,_,_,_,_,_,_,_)
   | STMT_reduce (s,_,_,_,_,_)
   | STMT_axiom (s,_,_,_,_)
   | STMT_lemma (s,_,_,_,_)
-  | STMT_curry (s,_,_,_,_,_,_,_)
+  | STMT_curry (s,_,_,_,_,_,_,_,_)
   | STMT_macro_val (s,_,_)
   | STMT_macro_forall (s,_,_,_)
   | STMT_val_decl (s,_,_,_,_)

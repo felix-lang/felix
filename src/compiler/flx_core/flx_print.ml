@@ -190,6 +190,9 @@ and string_of_expr (e:expr_t) =
   | EXPR_arrow (_,(a,b)) ->
     "(" ^ se a ^ " -> " ^ se b ^ ")"
 
+  | EXPR_effector (_,(a,e,b)) ->
+    "(" ^ se a ^ " ->["^se e^"] " ^ se b ^ ")"
+
   | EXPR_longarrow (_,(a,b)) ->
     "(" ^ se a ^ " --> " ^ se b ^ ")"
 
@@ -473,6 +476,10 @@ and st prec tc : string =
     | TYP_function (args, result) ->
       9,st 9 args ^ " -> " ^ st 9 result
 
+    | TYP_effector (args, effects, result) ->
+      9,st 9 args ^ " ->["^st 0 effects^"] " ^ st 9 result
+
+
     | TYP_cfunction (args, result) ->
       9,st 9 args ^ " --> " ^ st 9 result
 
@@ -699,6 +706,10 @@ and sb bsym_table depth fixlist counter prec tc =
 
     | BTYP_function (args, result) ->
       6,(sbt 6 args) ^ " -> " ^ (sbt 6 result)
+
+    | BTYP_effector (args, effects, result) ->
+      6,(sbt 6 args) ^ " ->["^sbt 0 effects^"] " ^ (sbt 6 result)
+
 
     | BTYP_cfunction (args, result) ->
       6,(sbt 6 args) ^ " --> " ^ (sbt 6 result)
@@ -1010,6 +1021,8 @@ and string_of_property = function
 | `Tag s -> "Tag " ^ s
 | `Export -> "export"
 | `NamedExport s -> "export "^ string_of_string s
+| `Service_call -> "Does_service_call"
+| `NoService_call -> "No_service_call"
 
 and string_of_properties ps =
   match ps with
@@ -1375,11 +1388,11 @@ and string_of_statement level s =
     string_of_axiom_method a ^
     ";\n"
 
-  | STMT_function (_,name, vs, ps, (res,post), props, ss) ->
+  | STMT_function (_,name, vs, ps, (res,post), effects, props, ss) ->
     spaces level ^
     string_of_properties props ^
     "fun " ^ string_of_id name ^ string_of_vs vs ^
-    "("^string_of_parameters ps^"): "^string_of_typecode res^
+    "("^string_of_parameters ps^"):["^string_of_typecode effects^"] "^string_of_typecode res^
     (match post with
     | None -> ""
     | Some x -> " when " ^ string_of_expr x
@@ -1389,7 +1402,7 @@ and string_of_statement level s =
     | _ -> "\n" ^ string_of_compound level ss
     end
 
-  | STMT_curry (_,name, vs, pss, (res,traint) , kind, props, ss) ->
+  | STMT_curry (_,name, vs, pss, (res,traint), effects, kind, props, ss) ->
     spaces level ^ string_of_properties props ^ string_of_funkind kind ^ " "
     ^
     string_of_id name ^ string_of_vs vs ^
@@ -1399,7 +1412,7 @@ and string_of_statement level s =
     )
     pss
     ^
-    ": "^string_of_typecode res^
+    ":["^string_of_typecode effects^"] "^string_of_typecode res^
     (match traint with
     | None -> ""
     | Some x -> " when " ^ string_of_expr x
@@ -1746,21 +1759,20 @@ and string_of_symdef entry name vs =
   | SYMDEF_lemma (ps,e1) ->
     "lemma " ^ string_of_id name ^ string_of_ivs vs ^ ";"
 
-  | SYMDEF_function (ps,res,props,es) ->
+  | SYMDEF_function (ps,res,effects,props,es) ->
     let ps,traint = ps in
     string_of_properties props ^
     "(Felix function) fun " ^ string_of_id name ^ string_of_ivs vs ^
     ": " ^ st
     (
-      TYP_function
+      TYP_effector
       (
         (
           match map (fun (x,y,z,d) -> z) ps with
           | [x] -> x
           | x -> TYP_tuple x
-        )
-        ,
-        res
+        ),
+        effects , res
       )
     ) ^
     ";"
@@ -2264,11 +2276,11 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     "("^ string_of_parameters ps ^"): " ^
     string_of_axiom_method e1 ^ ";"
 
-  | DCL_function (ps, res, props, ss) ->
+  | DCL_function (ps, res, effects, props, ss) ->
     sl ^
     string_of_properties props ^
     "fun " ^ string_of_id name ^ seq ^ string_of_vs vs ^
-    "("^ (string_of_parameters ps)^"): "^(st res)^"\n" ^
+    "("^ (string_of_parameters ps)^"):["^st effects^"] "^(st res)^"\n" ^
     string_of_asm_compound level ss
 
 
@@ -2378,13 +2390,17 @@ and string_of_bbdcl bsym_table bbdcl index : string =
   | BBDCL_module ->
     "module " ^ name ^ " {}"
 
-  | BBDCL_fun (props,vs,ps,res,es) ->
+  | BBDCL_fun (props,vs,ps,res,effects,es) ->
     let is_proc = Flx_btype.is_void res in
     string_of_properties props ^
     (if is_proc then "proc " else "fun ") ^
     name ^ string_of_bvs vs ^
     "(" ^ (string_of_bparameters bsym_table ps) ^ ")" ^
-    (if is_proc then "" else ": " ^ sobt res) ^
+    (if effects = BTYP_tuple [] then
+      (if is_proc then "" else ": " ^ sobt res)
+     else
+      (if is_proc then "["^sobt effects^"]" else ":["^sobt effects^"] " ^ sobt res)
+    ) ^
     "{\n" ^
     cat "\n" (map (string_of_bexe bsym_table 1) es) ^
     "}"
@@ -2606,7 +2622,7 @@ let print_function_body bsym_table id i (bvs:bvs_t) ps exes =
 let print_function bsym_table i =
   let bsym = Flx_bsym_table.find bsym_table i in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (_,bvs,ps,_,exes) ->
+  | BBDCL_fun (_,bvs,ps,ret,effects,exes) ->
       print_function_body 
         bsym_table
         (Flx_bsym.id bsym)
@@ -2619,7 +2635,7 @@ let print_function bsym_table i =
 let print_functions bsym_table =
   Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (_,bvs,ps,_,exes) ->
+    | BBDCL_fun (_,bvs,ps,ret,effects,exes) ->
         print_function_body
           bsym_table
           (Flx_bsym.id bsym)
@@ -2635,7 +2651,7 @@ let print_symbols bsym_table =
     let id = Flx_bsym.id bsym in
     match Flx_bsym.bbdcl bsym with
     | BBDCL_label s -> print_endline ("label " ^ s)
-    | BBDCL_fun (_,bvs,ps,_,exes) ->
+    | BBDCL_fun (_,bvs,ps,ret,effects,exes) ->
         print_function_body
           bsym_table
           (Flx_bsym.id bsym)

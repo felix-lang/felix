@@ -383,12 +383,12 @@ print_endline ("copy used ... ");
       let bsym = Flx_bsym_table.find bsym_table bid in
       let bsym =
         match bsym.Flx_bsym.bbdcl with 
-        | BBDCL_fun  (prop, bvs, ps, res, exes) ->  
+        | BBDCL_fun  (prop, bvs, ps, res, effects, exes) ->  
 (*
 print_endline ("Flx_use: BEGIN Handling function " ^ Flx_bsym.id bsym);
 *)
           let exes = strip_inits bsym_table bidset exes in
-          let bbdcl = Flx_bbdcl.bbdcl_fun  (prop, bvs, ps, res, exes) in
+          let bbdcl = Flx_bbdcl.bbdcl_fun  (prop, bvs, ps, res, effects, exes) in
           let nubsym = Flx_bsym.create 
             ~sr:(bsym.Flx_bsym.sr) 
             bsym.Flx_bsym.id  

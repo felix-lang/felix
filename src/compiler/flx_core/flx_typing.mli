@@ -3,6 +3,7 @@ open Flx_btype
 
 exception UnificationError of Flx_btype.t * Flx_btype.t
 
+val flx_unit: typecode_t
 val flx_bool : typecode_t
 val flx_bbool : Flx_btype.t
 

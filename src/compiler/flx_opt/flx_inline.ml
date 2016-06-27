@@ -111,7 +111,7 @@ let call_lifting syms uses bsym_table caller callee a argument =
   *)
   let bsym = Flx_bsym_table.find bsym_table callee in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
     assert (vs=[]);
     (*
     print_endline ("Found procedure "^id^": Inline it!");
@@ -187,7 +187,7 @@ let inline_tail_apply syms uses bsym_table caller callee a =
   assert (callee <> caller);
   let bsym = Flx_bsym_table.find bsym_table callee in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
     assert (vs=[]);
     (*
     let id2,_,_,_ = hfind "inline-tail[function]" bsym_table caller in
@@ -228,7 +228,7 @@ let inline_function syms uses bsym_table caller callee a varindex =
   *)
   let bsym = Flx_bsym_table.find bsym_table callee in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
     (*
     print_endline
     (
@@ -576,7 +576,7 @@ of the original expression, done by the 'aux' function.
 
 let inlining_complete bsym_table i =
   match Flx_bsym_table.find_bbdcl bsym_table i with
-  | BBDCL_fun (props,_,_,_,_) -> mem `Inlining_complete props
+  | BBDCL_fun (props,_,_,_,_,_) -> mem `Inlining_complete props
   | BBDCL_external_fun _ -> true
 
   | _ -> assert false
@@ -602,7 +602,7 @@ let inline_check syms bsym_table uses srcall caller callee props exes =
   let bbdcl = Flx_bsym.bbdcl bsym in
   let kind = 
      match bbdcl with
-     | BBDCL_fun (_,_,_,ret,_) -> (match ret with BTYP_void -> `Proc | _ -> `Fun)
+     | BBDCL_fun (_,_,_,ret,effects,_) -> (match ret with BTYP_void -> `Proc | _ -> `Fun)
      | _ -> assert false
   in
 
@@ -746,7 +746,7 @@ let rec special_inline syms uses bsym_table caller hic excludes sr e =
         heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
         let bsym = Flx_bsym_table.find bsym_table callee in
         begin match Flx_bsym.bbdcl bsym with
-        | BBDCL_fun (props,_,_,_,_)  
+        | BBDCL_fun (props,_,_,_,_,_)  
           when mem `Generator props && not (mem `Inline props)
           ->
           (*
@@ -768,7 +768,7 @@ let rec special_inline syms uses bsym_table caller hic excludes sr e =
           (* replace application with the variable *)
           bexpr_varname t (urv,[])
 
-        | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
+        | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
           (* TEMPORARY FIX! *)
 
           (*
@@ -1001,7 +1001,7 @@ and heavy_inline_calls
       print_endline ("CALL DIRECT " ^ id ^ "<"^ si callee^">");
       *)
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (props,vs,(ps,traint),BTYP_void,exes) ->
+      | BBDCL_fun (props,vs,(ps,traint),BTYP_void,effects,exes) ->
         assert (vs = []);
         if inline_check syms bsym_table uses sr caller callee props exes then
         begin
@@ -1045,7 +1045,7 @@ and heavy_inline_calls
       heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
+      | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
         assert (vs=[]);
         if inline_check syms bsym_table uses sr caller callee props exes then
         begin
@@ -1071,7 +1071,7 @@ and heavy_inline_calls
       heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
+      | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
         if inline_check syms bsym_table uses sr caller callee props exes then
           begin
             let bsymv = Flx_bsym_table.find bsym_table i in
@@ -1109,7 +1109,7 @@ and heavy_inline_calls
       heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
+      | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
         assert (vs=[]);
         if inline_check syms bsym_table uses sr caller callee props exes then
         begin
@@ -1177,11 +1177,11 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
   in
   match bsym with None -> () | Some bsym ->
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
     assert (vs=[]);
     if not (mem `Inlining_started props) then begin
       let props = `Inlining_started :: props in
-      let bbdcl = bbdcl_fun (props,[],(ps,traint),ret,exes) in
+      let bbdcl = bbdcl_fun (props,[],(ps,traint),ret,effects, exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       (* inline into all children first *)
       let children = Flx_bsym_table.find_children bsym_table i in
@@ -1248,7 +1248,7 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
       let exes = List.map Flx_bexe.reduce exes in
 *)
       let props = `Inlining_complete :: props in
-      let bbdcl = bbdcl_fun (props,[],(ps,traint),ret,exes) in
+      let bbdcl = bbdcl_fun (props,[],(ps,traint),ret,effects, exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       remove_unused_children syms uses bsym_table i;

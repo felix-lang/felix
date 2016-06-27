@@ -94,7 +94,7 @@ let process_exes ue syms bsym_table all_closures exes =
 
 let process_entry ue syms bsym_table all_closures i bbdcl =
   match bbdcl with
-  | BBDCL_fun (props,vs,ps,ret,exes) ->
+  | BBDCL_fun (props,vs,ps,ret,effects,exes) ->
     process_exes ue syms bsym_table all_closures exes
 
   | _ -> ()
