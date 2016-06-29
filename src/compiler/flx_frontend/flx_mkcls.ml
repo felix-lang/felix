@@ -17,15 +17,21 @@ open Flx_use
 open Flx_prop
 open Flx_bsym
 
+let rec add_cls bsym_table all_closures i =
+  all_closures := BidSet.add i !all_closures;
+  let parent = Flx_bsym_table.find_parent bsym_table i in
+  match parent with
+  | None -> ()
+  | Some j -> if j <> 0 then add_cls bsym_table all_closures j
+
+
 (* processes closures *)
 let cls syms bsym_table all_closures sr e =
   match e with
-  | BEXPR_closure (i,ts),t as x ->
-   all_closures := BidSet.add i !all_closures
+  | BEXPR_closure (i,ts),t as x -> add_cls bsym_table all_closures i
 
-  | BEXPR_apply_direct (i,ts,a),t as x ->
+  | BEXPR_apply_direct (i,ts,a),t as x -> add_cls bsym_table all_closures i
    (* Direct calls to non-stacked functions require heap but not a clone. *)
-   all_closures := BidSet.add i !all_closures
 
   | x -> ()
 
@@ -39,12 +45,12 @@ let process_exe ue syms bsym_table all_closures exe =
   | BEXE_axiom_check _ -> assert false
   | BEXE_call_prim (sr,i,ts,e2) -> ue sr e2
 
-  | BEXE_call_direct (sr,i,ts,e2) ->
-    all_closures := BidSet.add i !all_closures;
+  | BEXE_call_direct (sr,i,ts,e2) -> 
+    add_cls bsym_table all_closures i;
     ue sr e2
 
   | BEXE_jump_direct (sr,i,ts,e2)  ->
-    all_closures := BidSet.add i !all_closures;
+    add_cls bsym_table all_closures i;
     ue sr e2
 
   | BEXE_call_stack (sr,i,ts,e2)  ->
@@ -102,6 +108,9 @@ let process_entry ue syms bsym_table all_closures i bbdcl =
 let set_closure bsym_table i = add_prop bsym_table `Heap_closure i
 
 let mark_heap_closures syms bsym_table =
+(*
+print_endline ("Calculating heap closures");
+*)
   let all_closures = ref BidSet.empty in
   Flx_bsym_table.iter 
    (fun i _ bsym -> process_entry adj_cls syms bsym_table all_closures i bsym.bbdcl) 

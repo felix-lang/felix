@@ -210,7 +210,7 @@ let rec cpp_type_classname syms bsym_table t =
   let t = normalise_tuple_cons bsym_table t in
   let t' = unfold "flx_name: cpp_type_classname" t in
   try match t' with
-  | BTYP_effector _ -> assert false
+
   | BTYP_hole -> assert false
   | BTYP_int -> "int"
   | BTYP_type_var (i,mt) ->
@@ -224,9 +224,16 @@ let rec cpp_type_classname syms bsym_table t =
   | t when islinear_type bsym_table t -> " ::flx::rtl::cl_t"
 
   | BTYP_pointer t' -> cpp_type_classname syms bsym_table t' ^ "*"
+
+  | BTYP_effector (d,e,c) -> 
+    print_endline ("[Flx_name:cpp_type_classname] Attempt to name effector type in code generator:" ^ sbt bsym_table t');
+    print_endline (" .. using equivalent function type instead");
+    cpp_type_classname syms bsym_table (btyp_function (d,c))
+
  
   | BTYP_function (_,BTYP_void) -> "_pt" ^ cid_of_bid (tix t)
   | BTYP_function _ -> "_ft" ^ cid_of_bid (tix t)
+
   | BTYP_cfunction _ -> "_cft" ^ cid_of_bid (tix t)
   | BTYP_array _ -> "_at" ^ cid_of_bid (tix t)
   | BTYP_tuple _ -> "_tt" ^ cid_of_bid (tix t)
@@ -368,6 +375,8 @@ and cpp_structure_name syms bsym_table t =
 
   | BTYP_pointer t' -> cpp_type_classname syms bsym_table t' ^ "*"
  
+  | BTYP_effector (d,_,BTYP_void) -> "_pt<" ^tn d ^ ">"
+  | BTYP_effector (d,_,c) -> "_ft<" ^ tn d ^ "," ^ tn c ^ ">" 
   | BTYP_function (d,BTYP_void) -> "_pt<" ^tn d ^ ">"
   | BTYP_function (d,c) -> "_ft<" ^ tn d ^ "," ^ tn c ^ ">" 
   | BTYP_cfunction (d,c) -> "_cft<" ^  tn d ^ "," ^ tn c ^">"
@@ -453,6 +462,7 @@ and cpp_structure_name syms bsym_table t =
 
 and cpp_typename syms bsym_table t =
   match unfold "flx_name: cpp_typename" t with
+  | BTYP_effector _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_function _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_cfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_pointer t -> cpp_typename syms bsym_table t ^ "*"

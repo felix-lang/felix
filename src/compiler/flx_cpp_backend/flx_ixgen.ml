@@ -83,7 +83,9 @@ let rec print_index bsym_table idx =
 
 (* Note: this calculates a compact linear value *)
 let rec cal_symbolic_compact_linear_value bsym_table (_,idxt as idx) = 
+(*
 print_endline ("Calsym " ^ sbe bsym_table idx^ ", type="^ sbt bsym_table idxt);
+*)
   let cax x = cal_symbolic_compact_linear_value bsym_table x in
   match idx,idxt with
   | (BEXPR_tuple es,_), BTYP_tuple ts  -> 
@@ -189,9 +191,19 @@ print_endline ("xDecomposing index of sum type " ^ sbe bsym_table e);
   | e,BTYP_tuple [] -> `Int 0 
 
   | e,BTYP_tuple _ -> 
+(*
     print_endline ("cal_symbolic_compact_linear_value can't handle expression of tuple type " ^ sbe bsym_table idx);
     print_endline ("Assume already linearised");
+*)
     expr e 
+
+  | e,BTYP_array _ -> 
+(*
+    print_endline ("cal_symbolic_compact_linear_value can't handle expression of array type " ^ sbe bsym_table idx);
+    print_endline ("Assume already linearised");
+*)
+    expr e 
+
 
   | e,_ -> 
     print_endline ("cal_symbolic_compact_linear_value can't handle expression " ^ sbe bsym_table idx);
@@ -239,7 +251,7 @@ let get_power_table bsym_table power_table size count =
 
 
 (* Linearise a structured index *)
-let rec render_compact_linear_value bsym_table ge' array_sum_offset_table seq idx = 
+let rec render_compact_linear_value bsym_table ge' array_sum_offset_table seq idx : Flx_ctypes.cexpr_t = 
   let ri x = render_compact_linear_value bsym_table ge' array_sum_offset_table seq x in
   match idx with
   | `Int n -> ce_atom (siu n)
@@ -324,7 +336,8 @@ let projoflinear bsym_table e = match e with
   | _ -> false
 
 
-let handle_get_n (syms:Flx_mtypes2.sym_state_t) bsym_table ls rt ge' e t n ((e',t') as arg) =
+(* the parameter "e" here is not used, what is it for? Apart from the diagnostics .. *)
+let handle_get_n (syms:Flx_mtypes2.sym_state_t) bsym_table ls rt ge' e t n ((e',t') as arg) : Flx_ctypes.cexpr_t =
   let seq = syms.Flx_mtypes2.counter in
   let array_sum_offset_table = syms.Flx_mtypes2.array_sum_offset_table in
 print_endline ("Flx_ixgen:handle_get_n expr : " ^ sbe bsym_table e);

@@ -140,16 +140,20 @@ print_endline ("Register type r " ^ sbt bsym_table t);
     rr ret;
     rnr (btyp_function (ps,ret))
 
+  (* do not register effectors, the effect variable is a phantom.
+     just register the equivalent function instead
+  *)
   | BTYP_effector (ps,effects, ret) ->
+print_endline ("Flx_treg: attempt to register effector type, register equivalent function type instead");
+
     let ps = match ps with
     | BTYP_void -> btyp_tuple []
     | x -> x
     in
     rr ps;
     rr ret;
-    rr effects;
     (* PROBABLY THIS SHOULD BE FUNCTION: erase effects! *)
-    rnr (btyp_effector (ps,effects,ret))
+    rnr (btyp_function (ps,ret))
 
   | BTYP_cfunction (ps,ret) ->
     rr ps;

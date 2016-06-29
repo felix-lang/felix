@@ -199,9 +199,10 @@ let gen_functions syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_table 
       let is_proc = match ret with | BTYP_void | BTYP_fix (0,_) -> true | _ -> false in
       let name = if is_proc then "PROCEDURE" else "FUNCTION" in
       bcat s ("\n//------------------------------\n");
+      let ft = btyp_effector (typeof_bparams ps,effects,ret) in
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
         bcat s ("//PURE C " ^ name ^ " <" ^ string_of_bid index ^ ">: " ^
-          qualified_name_of_bindex bsym_table index ^ tss ^
+          qualified_name_of_bindex bsym_table index ^ tss ^ " " ^ sbt bsym_table ft ^
           "\n");
         bcat s
         (Flx_gen_cfunc.gen_C_function
@@ -219,7 +220,7 @@ let gen_functions syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_table 
           i)
       end else begin
         bcat s ("//" ^ name ^ " <" ^ string_of_bid index ^ ">: " ^
-          qualified_name_of_bindex bsym_table index ^ tss ^
+          qualified_name_of_bindex bsym_table index ^ tss ^ " " ^ sbt bsym_table ft ^
           "\n");
         bcat s
         (Flx_gen_func.gen_function
@@ -309,6 +310,51 @@ let gen_functions syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_table 
 let gen_dtor syms bsym_table name display ts =
   name^"::~"^name^"(){}\n"
 *)
+
+let unpack_args syms bsym_table shapes shape_table label_info index vs ts sr argtype bps params =
+  match bps with
+  | [] -> ""
+  | [{pindex=i}] ->
+    if Hashtbl.mem syms.instances (i, ts)
+    && not (argtype = btyp_tuple [] || argtype = btyp_void ())
+    then
+      "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg;\n"
+    else ""
+  | _ ->
+    let ge' e : Flx_ctypes.cexpr_t = 
+      Flx_egen.gen_expr' syms bsym_table shapes shape_table label_info index vs ts sr e 
+    in
+    let counter = ref 0 in
+    List.fold_left begin fun s i ->
+      let n = !counter in incr counter;
+      if Hashtbl.mem syms.instances (i,ts)
+      then
+        if Flx_btype.islinear_type bsym_table argtype then begin
+(*
+print_endline ("Handling compact linear parameter");
+*)
+          let arg = BEXPR_literal {Flx_literal.felix_type="";internal_value=""; c_value="_arg"},argtype in 
+          let component = match argtype with
+          | BTYP_array (v,idxt) -> 
+            let index = bexpr_const_case (n,idxt) in
+            Flx_ixgen.handle_get_n_array_clt syms bsym_table ge' index idxt v idxt argtype arg  
+          | BTYP_tuple ls -> 
+            let rt = List.nth ls n in
+            let dummy = arg in (* dont care doesn't seem to be used *)
+            Flx_ixgen.handle_get_n syms bsym_table ls rt ge' dummy argtype n arg
+          | _ -> assert false
+          in
+          let component = Flx_cexpr.string_of_cexpr component in
+          s ^ "  " ^ cpp_instance_name syms bsym_table i ts ^ " = " ^ component ^";\n"
+        end else let memexpr =
+          match argtype with
+          | BTYP_array _ -> ".data["^si n^"]"
+          | BTYP_tuple _ -> ".mem_"^ si n
+          | _ -> assert false
+        in
+        s ^ "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg"^ memexpr ^";\n"
+      else s (* elide initialisation of elided variable *)
+    end "" params
 (* PROCEDURES are implemented by continuations.
    The constructor accepts the display vector to
    form the closure object. The call method accepts
@@ -409,30 +455,7 @@ let gen_function_methods filename syms bsym_table (
       )
       ^
       *)
-      (
-        match bps with
-        | [] -> ""
-        | [{pindex=i}] ->
-          if Hashtbl.mem syms.instances (i, ts)
-          && not (argtype = btyp_tuple [] || argtype = btyp_void ())
-          then
-            "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg;\n"
-          else ""
-        | _ ->
-          let counter = ref 0 in
-          List.fold_left begin fun s i ->
-            let n = !counter in incr counter;
-            if Hashtbl.mem syms.instances (i,ts)
-            then
-              let memexpr =
-                match argtype with
-                | BTYP_array _ -> ".data["^si n^"]"
-                | BTYP_tuple _ -> ".mem_"^ si n
-                | _ -> assert false
-              in
-              s ^ "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg"^ memexpr ^";\n"
-            else s (* elide initialisation of elided variable *)
-          end "" params
+      ( unpack_args syms bsym_table shapes shape_table label_info index vs ts sr argtype bps params
       )^
         (if needs_switch then
         "  FLX_START_SWITCH\n" else ""
@@ -552,7 +575,10 @@ let gen_procedure_methods filename syms bsym_table
       | BTYP_tuple [] -> ""
       | _ -> argtypename ^" const &_arg"
     in
-    let unpack_args =
+    let unpacked_args =
+      unpack_args syms bsym_table shapes shape_table label_info index vs ts sr argtype bps params
+    in
+(*
       match bps with
       | [] -> ""
       | [{pindex=i}] ->
@@ -577,12 +603,12 @@ let gen_procedure_methods filename syms bsym_table
               s ^ "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg" ^ memexpr ^";\n"
             else s (* elide initialisation of elided variables *)
           end "" params
-    in
+*)
     let stack_call =
         "void " ^name^ "::stack_call(" ^ stack_call_arg_sig ^ "){\n" ^
         (
           if not heapable
-          then unpack_args ^ exe_string
+          then unpacked_args ^ exe_string
           else
             "  ::flx::rtl::con_t *cc = call("^heap_call_arg^");\n" ^
             "  while(cc) cc = cc->resume();\n"
@@ -590,7 +616,7 @@ let gen_procedure_methods filename syms bsym_table
     and heap_call =
         cont ^ " " ^ name ^ "::call(" ^ heap_call_arg_sig ^ "){\n" ^
         "  _caller = _ptr_caller;\n" ^
-        unpack_args ^
+        unpacked_args ^
         "  INIT_PC\n" ^
         "  return this;\n}\n"
     and resume =

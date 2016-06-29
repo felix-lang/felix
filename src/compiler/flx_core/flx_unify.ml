@@ -496,6 +496,12 @@ let rec unification bsym_table counter eqns dvars =
       | BTYP_effector (t11, t12, t13), BTYP_effector (t21, t22, t23) ->
         add_eqn (t11,t21); add_eqn (t12,t22); add_eqn (t13, t23)
 
+      | BTYP_effector (t11, t12, t13), BTYP_function (t21, t23)
+      | BTYP_function (t21, t23), BTYP_effector (t11, t12, t13) ->
+        let t22 = btyp_tuple [] in
+        add_eqn (t11,t21); add_eqn (t12,t22); add_eqn (t13, t23)
+
+
 
       | BTYP_record ([]),BTYP_tuple []
       | BTYP_tuple [],BTYP_record ([]) -> ()

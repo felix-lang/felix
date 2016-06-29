@@ -41,7 +41,9 @@ type bexpr_t =
 
   | BEXPR_case_index of t
 
+(* inline application of C++ string as function to argument *)
   | BEXPR_expr of Flx_code_spec.t * Flx_btype.t * t 
+
   | BEXPR_range_check of t * t * t
   | BEXPR_coerce of t * Flx_btype.t
   | BEXPR_compose of t * t

@@ -156,6 +156,9 @@ let optimize_bsym_table' syms bsym_table (root_proc: int option) =
   let elim_state = Flx_elim.make_elim_state syms bsym_table in
   Flx_elim.eliminate_unused elim_state end;
 
+  print_time syms "[flx_opt]; Mark heap closures" begin fun () ->
+  Flx_mkcls.mark_heap_closures syms bsym_table end;
+
   let bsym_table = print_time syms "[flx_opt]; Do stack call optimisation" begin fun () ->
   (* Convert functions into stack calls. *)
   stack_calls syms bsym_table end

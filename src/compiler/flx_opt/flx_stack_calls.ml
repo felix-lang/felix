@@ -345,7 +345,8 @@ let can_stack_func syms bsym_table fn_cache ptr_cache i =
   in
   let bsym = Flx_bsym_table.find bsym_table i in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (_,_,_,ret,_,_) ->
+  | BBDCL_fun (props,_,_,ret,_,_) ->
+    if mem `Heap_closure props then false else
     let has_vars = has_var_children bsym_table children in
     let has_funs = has_fun_children bsym_table children in
     let returns_fun = type_has_fn fn_cache syms bsym_table children ret in
@@ -397,8 +398,9 @@ let rec can_stack_proc
   let bsym = Flx_bsym_table.find bsym_table i in
   let bbdcl = Flx_bsym.bbdcl bsym in
   match bbdcl with
-  | BBDCL_fun (_,_,_,BTYP_fix (0,_),effects,exes) 
-  | BBDCL_fun (_,_,_,BTYP_void,effects,exes) ->
+  | BBDCL_fun (props,_,_,BTYP_fix (0,_),effects,exes) 
+  | BBDCL_fun (props,_,_,BTYP_void,effects,exes) ->
+    if mem `Heap_closure props then false else
     let is_nonreturn = match bbdcl with 
     | BBDCL_fun (_,_,_,BTYP_fix (0,_),_,_) -> true | _ -> false 
     in
@@ -736,6 +738,9 @@ let make_stack_calls
   bsym_table
   label_info
 =
+(*
+print_endline ("Calculating stack calls\n");
+*)
   let fn_cache, ptr_cache = Hashtbl.create 97 , Hashtbl.create 97 in
   let ea e = enstack_applies syms bsym_table fn_cache ptr_cache e in
 

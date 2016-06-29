@@ -684,7 +684,7 @@ print_endline "Apply cfunction";
 print_endline "Apply general";
 *)
     ce_atom (
-    "("^(ge f) ^ ")->clone()\n      ->apply(" ^ ge_arg a ^ ")"
+    "("^(ge f) ^ ")->clone()\n      ->apply(" ^ ge_arg a ^ ") /* general apply */"
     )
 
 
@@ -843,7 +843,7 @@ print_endline "Apply struct";
         let s =
           name^ Flx_gen_display.strd the_display props
           ^
-          "\n      .apply(" ^ ge_arg a ^ ")"
+          "\n      .apply(" ^ ge_arg a ^ ") /* apply_stack */"
         in ce_atom s
 
     | _ ->

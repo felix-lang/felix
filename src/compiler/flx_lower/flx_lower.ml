@@ -42,10 +42,11 @@ print_endline "RUNNING OLD LOWER PROCESS";
   (* We have to remove module parents before we can do code generation. *)
   (* remove_module_parents bsym_table; *)
 
+(*
   (* Wrap closures. *)
   print_debug state "//Generating primitive wrapper closures";
   Flx_mkcls.mark_heap_closures state.syms bsym_table;
-
+*)
   (* Mark which functions are using global state. *)
   print_debug state "//Finding which functions use globals";
 

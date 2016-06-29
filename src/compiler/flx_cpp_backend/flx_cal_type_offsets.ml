@@ -62,7 +62,6 @@ let rec get_offsets' syms bsym_table typ : string list =
   let typ = normalise_tuple_cons bsym_table typ in
   let t' = unfold "flx_cal_type_offsets: get_offsets" typ in
   match t' with
-  | BTYP_effector _ -> assert false
   | BTYP_hole -> assert false
   | BTYP_int -> []
   | BTYP_pointer t -> ["0"]
@@ -183,6 +182,7 @@ let rec get_offsets' syms bsym_table typ : string list =
     ;
     !lst
 
+  | BTYP_effector _ 
   | BTYP_function _ -> ["0"]
   | BTYP_cfunction _ -> []
 
