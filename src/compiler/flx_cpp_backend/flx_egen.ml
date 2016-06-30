@@ -474,6 +474,7 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
     ;
     failwith "Error calculating record name"
     with Recname s ->
+      let s = if s = "" then "_blank_" else s in
       ce_dot (ge' a) s 
     end
 
@@ -491,6 +492,7 @@ assert false;
       with Not_found ->
         failwith "[flx_egen] Woops, index of non-existent struct field"
     in
+    let field_name = if field_name = "" then "_blank_" else field_name in
     ce_prefix "&" (ce_arrow (ge' a) (cid_of_flxid field_name))
 
   (* pointer to record projection *)

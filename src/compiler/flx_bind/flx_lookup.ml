@@ -5064,9 +5064,6 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
     end
 
   | EXPR_rnprj (sr,name,seq,e) -> 
-(*
-print_endline ("EXPR_rnprj (" ^ name ^ " seq=" ^ string_of_int seq ^ " arg="^ string_of_expr e ^ ")");
-*)
     let (e',domain) as e = be e in
     begin match domain with
     | BTYP_record flds ->
@@ -5082,14 +5079,7 @@ print_endline ("EXPR_rnprj (" ^ name ^ " seq=" ^ string_of_int seq ^ " arg="^ st
         print_endline ("Invalid named projection " ^ name ^ ", seq=" ^ string_of_int seq);
         assert false
       with Not_found ->
-(*
-print_endline ("Translating name " ^ name ^ " seq " ^ string_of_int seq ^ " to index " ^ string_of_int (!idx));
-*)
         let codomain = snd (List.nth flds (!idx)) in
-(*
-print_endline ("Domain = " ^ sbt bsym_table domain);
-print_endline ("Codomain = " ^ sbt bsym_table codomain);
-*)
         bexpr_apply codomain (bexpr_prj (!idx) domain codomain,e)
       end
 

@@ -1573,14 +1573,18 @@ syntax expressions {
   x[satomic_pri] := satom =># "_1";
 
   //$ record value (comma separated).
-  satom := "(" rassign ("," rassign )* ")" =>#
+  satom := "(" rassign ("," rassign2 )* ")" =>#
     "`(ast_record ,_sr ,(cons _2 (map second _3)))"
   ;
     rassign := sname "=" x[sor_condition_pri] =># "`(,_1 ,_3)";
+    rassign := "=" x[sor_condition_pri] =># '`("" ,_2)';
+    rassign2 := sname "=" x[sor_condition_pri] =># "`(,_1 ,_3)";
+    rassign2 := "=" x[sor_condition_pri] =># '`("" ,_2)';
+    rassign2 := x[sor_condition_pri] =># '`("" ,_1)';
 
   //$ polyrecord value
   //$ record value (comma separated).
-  satom := "(" rassign ("," rassign )* "|" sexpr ")" =>#
+  satom := "(" rassign ("," rassign2 )* "|" sexpr ")" =>#
     "`(ast_polyrecord ,_sr ,(cons _2 (map second _3)) ,_5)"
   ;
 
@@ -1597,12 +1601,16 @@ syntax expressions {
     vassign := "var" sname "=" sexpr ";" =># "`(,_2 ,_4)";
 
   //$ Record type.
-  satom := "(" srecord_mem_decl ("," srecord_mem_decl)*  ")" =># 
+  satom := "(" srecord_mem_decl ("," srecord_mem_decl2)*  ")" =># 
    "`(ast_record_type ,(cons _2 (map second _3)))";
     srecord_mem_decl := sname ":" stypeexpr =># "`(,_1 ,_3)";
+    srecord_mem_decl := ":" stypeexpr =># '`("" ,_2)';
+    srecord_mem_decl2 := sname ":" stypeexpr =># "`(,_1 ,_3)";
+    srecord_mem_decl2 := ":" stypeexpr =># '`("" ,_2)';
+    srecord_mem_decl2 := stypeexpr =># '`("" ,_1)';
 
   //$ polyRecord type.
-  satom := "(" srecord_mem_decl ("," srecord_mem_decl)*  "|" stypeexpr ")" =># 
+  satom := "(" srecord_mem_decl ("," srecord_mem_decl2)*  "|" stypeexpr ")" =># 
    "`(ast_polyrecord_type ,(cons _2 (map second _3)) ,_5)";
 
 

@@ -80,7 +80,7 @@ let gen_record tname tn typs =
       "_" ^ s ^ "_" ^ string_of_int count
     else begin
       Hashtbl.add dups s 1;
-      s
+      if s = "" then "_blank_" else s
     end
   in
   let typs = List.map (fun (n,t) -> Flx_name.cid_of_flxid (name n),t) typs in

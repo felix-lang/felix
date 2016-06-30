@@ -85,7 +85,11 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
     | [x] -> failwith "Unexpected one element tuple converting to type tuple"
     | _ -> TYP_type_tuple (map te ls)
     end
-  | EXPR_record_type (sr,es) -> TYP_record es
+  | EXPR_record_type (sr,es) -> 
+    let all_blank = fold_left (fun acc (s,_) -> acc && s = "") true es in
+    if all_blank then TYP_tuple (List.map snd es) 
+    else TYP_record es
+
   | EXPR_polyrecord_type (sr,es,e) -> TYP_polyrecord (es,e)
   | EXPR_variant_type (sr,es) -> TYP_variant es
 

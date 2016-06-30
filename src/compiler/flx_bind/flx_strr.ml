@@ -56,6 +56,7 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
       let seq = ref 0 in
       let e = cats (
         List.fold_left (fun acc (s,_) -> 
+          if !first then ctrl_fld := s else
           if s = !ctrl_fld then incr seq else begin seq := 0; ctrl_fld := s end;
           let res = if !first then rfldrep1 s (!seq) a else rfldrep2 s (!seq) a in
           first:=false;

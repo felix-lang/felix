@@ -593,7 +593,9 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_tuple (sr, es) -> EXPR_tuple (sr, List.map me es)
   | EXPR_tuple_cons (sr, eh, et) -> EXPR_tuple_cons (sr, me eh, me et)
   | EXPR_record (sr, es) ->
-    EXPR_record (sr, List.map (fun (s,e)-> s, me e) es)
+    let all_blank = fold_left (fun acc (s,_) -> acc && s = "") true es in
+    if all_blank then EXPR_tuple (sr, List.map snd es) 
+    else EXPR_record (sr, List.map (fun (s,e)-> s, me e) es)
 
   | EXPR_polyrecord (sr, es,e) ->
     EXPR_polyrecord (sr, List.map (fun (s,e)-> s, me e) es, me e)
