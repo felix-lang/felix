@@ -33,7 +33,7 @@ let fixups = [
   "apply","_apply"; (* we get a class apply with method apply otherwise *)
 ] @ List.map (fun k -> k, "_" ^ k) cpp_keywords
 
-let cid_of_flxid s =
+let plain_cid_of_flxid s =
   let n = String.length s in
   let id = Buffer.create (n+10) in
   (* if the value is prefixed with a number, prepend an underscore *)
@@ -82,6 +82,10 @@ let cid_of_flxid s =
     | _ -> name
   in
   let name = try List.assoc name fixups with Not_found -> name in
+  name
+
+let cid_of_flxid s =
+  let name = plain_cid_of_flxid s in
   if String.length name > 40 then 
     let h = string_hash name in
     String.sub name 0 4 ^ "_hash_" ^ string_of_int h

@@ -40,8 +40,13 @@ val cpp_ltypename :
 
 
 (** mangle a Felix identifier to a C one *)
+val plain_cid_of_flxid:
+ string -> string
+
+(** mangle a Felix identifier to a C one, with hash if too long *)
 val cid_of_flxid:
  string -> string
+
 
 (** mangle a Felix bound symbol index to a C one. *)
 val cid_of_bid: bid_t -> string

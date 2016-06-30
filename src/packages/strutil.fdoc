@@ -125,7 +125,7 @@ namespace flx { namespace rtl { namespace strutil {
     int c;
     char const *str = s.c_str();
     while (c = *str++)
-        hash = (hash * 33 + c) % (size_t)65535ll; /* hash * 33 + c */
+        hash = (hash * 33 + c) % (size_t)1073741823ll; /* hash * 33 + c */
     return hash;
   }
  
@@ -177,7 +177,7 @@ namespace flx { namespace rtl { namespace strutil {
       }
    }
    if (out.size() > 40) 
-     return flx_asprintf("_hash_%zu",string_hash(out));
+     return out.substr(0,4) + flx_asprintf("_hash_%zu",string_hash(out));
    else
      return out;
   }
