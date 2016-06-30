@@ -19,7 +19,7 @@ module CS = Flx_code_spec
 *)
 let string_hash s =
   let hash = ref 5381 in
-  String.iter (fun ch -> hash := ((!hash) * 33 + Char.code ch) mod 65535) s;
+  String.iter (fun ch -> hash := ((!hash) * 33 + Char.code ch) mod 1073741823 (* 2^30-1*) ) s;
   !hash
 
 let fixups = [
@@ -84,7 +84,7 @@ let cid_of_flxid s =
   let name = try List.assoc name fixups with Not_found -> name in
   if String.length name > 40 then 
     let h = string_hash name in
-    "_hash_" ^ string_of_int h
+    String.sub name 0 4 ^ "_hash_" ^ string_of_int h
   else 
     name
 
