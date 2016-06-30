@@ -198,7 +198,9 @@ print_endline ("Construction rnprj " ^ name ^ "[" ^ string_of_int seq ^ "]: " ^ 
           else begin incr idx; incr dcnt end
         ) 
         ts;
-        print_endline ("Invalid named projection " ^ name ^ ", seq=" ^ string_of_int seq);
+        print_endline ("Invalid named projection " ^ name ^ ", seq=" ^ string_of_int seq ^ ", fields=" ^
+          String.concat ","(List.map fst ts)
+        );
         assert false
       with Not_found ->
 (*
@@ -218,6 +220,8 @@ print_endline ("rnprj: Projection type=" ^ st t);
 let bexpr_rprj name d c = bexpr_rnprj name 0 d c
 
 let bexpr_record es : t = 
+  let all_blank = List.fold_left (fun acc (s,_) -> acc && s = "") true es in
+  if all_blank then bexpr_tuple (btyp_tuple (List.map (fun (s,(e,t))->t) es)) (List.map snd es) else
   let cmp (s1,e1) (s2,e2) = compare s1 s2 in
   let es = List.stable_sort cmp es in
   let ts = List.map (fun (s,(_,t)) -> s,t) es in
@@ -326,8 +330,10 @@ print_endline ("polyrecord core is record: fields = " ^ String.concat "," (List.
     let idx = ref 0 in
     let ctrl_key = ref "" in
     let nuflds = ref [] in
+    let first = ref true in
     List.iter 
       (fun (name,t) -> 
+        if !first then begin first := false; ctrl_key := name; dcnt := 0 end else
         if name = !ctrl_key then incr dcnt else begin ctrl_key := name; dcnt := 0 end;
 (*
 print_endline ("bexpr_polyrecord: record case ..");
@@ -360,8 +366,10 @@ print_endline "Constructing polyrecord value";
     let ctrl_key = ref "" in
     let nuflds = ref [] in
     let nunames = ref [] in
+    let first = ref true in
     List.iter 
       (fun (name,t) -> 
+        if !first then begin first := false; ctrl_key := name; dcnt :=0 end else
         if name = !ctrl_key then incr dcnt else begin ctrl_key := name; dcnt := 0 end;
 (*
 print_endline ("bexpr_polyrecord: polyrecord case ..");
@@ -394,10 +402,16 @@ print_endline ("Core = " ^ st (snd reduced_e));
 *)
     e
 
-  | _ ->
+  | BTYP_type_var _ ->
     let cmp (s1,e1) (s2,e2) = compare s1 s2 in
     let es = List.stable_sort cmp es in
     BEXPR_polyrecord (es,e), result_type 
+
+  | _ ->
+   let fld = "",e in
+   let es = es @ [fld] in
+   bexpr_record es
+
 
 (************************ END POLYRECORD **************************)
 

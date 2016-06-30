@@ -248,6 +248,8 @@ let btyp_array (t, n) =
 
 (** Construct a BTYP_record type. *)
 let btyp_record ts = 
+   let all_blank = List.fold_left (fun acc (s,_) -> acc && s = "") true ts in
+   if all_blank then btyp_tuple (List.map snd ts) else
    let cmp (s1,t1) (s2, t2) = compare s1 s2 in
    let ts = List.stable_sort cmp ts in
    BTYP_record (ts)

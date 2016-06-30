@@ -5076,7 +5076,7 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
           else begin incr idx; incr dcnt end
         ) 
         flds;
-        print_endline ("Invalid named projection " ^ name ^ ", seq=" ^ string_of_int seq);
+        print_endline ("[Flx_lookup:bind_expression] Invalid named projection " ^ name ^ ", seq=" ^ string_of_int seq);
         assert false
       with Not_found ->
         let codomain = snd (List.nth flds (!idx)) in

@@ -11,7 +11,7 @@ let cal_bind_apply
   bind_expression'
   rs sr f' a' args
 =
-
+    let sigs = List.map snd args in
     begin (* apply *)
     (*
     print_endline ("[bind_expression] GENERAL APPLY " ^ Flx_print.string_of_expr f' ^ " to " ^  Flx_print.string_of_expr a');
@@ -151,13 +151,11 @@ let cal_bind_apply
           bexpr_apply t (prj,a)
         | _ -> raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->
-    (*
-    print_endline ("Can't interpret apply function "^string_of_expr f'^" as projection, trying as an actual function");
-    *)
-
-      begin (* as a function *)
+      (*
+        print_endline ("Can't interpret apply function "^string_of_expr f'^" as projection, trying as an actual function");
+      *)
+      try begin (* as a function *)
       try
-        let sigs = List.map snd args in
         let bt,tf as f =
           match Flx_typing2.qualified_name_of_expr f' with
           | Some name ->
@@ -205,26 +203,7 @@ end;
            bsym_table state bind_type' mkenv build_env cal_apply
            rs sr f a i ts'
 
-        | _ ->
-          begin (* record addition *)
-            match Flx_typing2.qualified_name_of_expr f' with
-            | Some name ->
-              begin match name,(ta::sigs) with
-              | `AST_name (_,"+",[]),[BTYP_tuple [BTYP_record lfields as lt; BTYP_record _ as rt]] 
-              | `AST_name (_,"+",[]),[BTYP_tuple [BTYP_record lfields as lt; BTYP_polyrecord _ as rt]] ->
-                  let larg = bexpr_get_n lt 0 a in 
-                  let lcs = List.map (fun (s,ft)-> 
-                    s,bexpr_apply ft ((bexpr_rprj s lt ft), larg)
-                  )
-                  lfields 
-                  in
-                  let rarg = bexpr_get_n rt 1 a in 
-                  bexpr_polyrecord lcs rarg
-            
-              | _ ->raise Flx_dot.OverloadResolutionError
-              end
-            | None ->raise Flx_dot.OverloadResolutionError
-          end (* record addition *)
+        | _ -> raise Flx_dot.OverloadResolutionError
         end (* tf *)
       with exn -> (* as a function failed *)
         (*
@@ -246,5 +225,19 @@ end;
         try apl "apply"
         with _ -> raise exn (* raise original error *)
       end (* as a function *)
+      with exn ->
+      try (* record addition *)
+        match Flx_typing2.qualified_name_of_expr f' with
+        | Some (`AST_name (_,"+",[])) ->
+          begin match (ta::sigs) with
+          | [BTYP_tuple [lt; rt]] -> 
+            Flx_product_addition.add (bexpr_get_n lt 0 a) (bexpr_get_n rt 1 a)
+          | [BTYP_array (et, BTYP_unitsum 2)] ->
+            Flx_product_addition.add (bexpr_get_n et 0 a) (bexpr_get_n et 1 a)
+          | _ -> raise Flx_dot.OverloadResolutionError
+          end
+        | _ ->raise Flx_dot.OverloadResolutionError
+      with Flx_dot.OverloadResolutionError -> 
+      raise exn (* tell the user about the usual case not the special cases *)
     end (* apply *)
 
