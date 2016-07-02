@@ -11,7 +11,6 @@ open Flxg_state
 Flx_version_hook.set_version ()
 
 (* -------------------------------------------------------------------------- *)
-
 let generate_dep_file state =
   Flxg_file.output_string state.dep_file (String.concat "\n" (!(state.syms.include_files)) ^ "\n");
   Flxg_file.close_out state.dep_file
@@ -51,19 +50,20 @@ let showtime (s:string) (t0:float) =
   print_endline ( " flxg: " ^ s ^ " : " ^ string_of_int (int_of_float minutes) ^ "m" ^ Printf.sprintf "%2.1f" seconds)
 
 (* -------------------------------------------------------------------------- *)
-
 (** Handle the assembly of the parse tree. *)
 let handle_assembly state main_prog module_name =
+
+  (* Load syntax automata from disk, either via image or recompile. *)
   let parser_state = Flx_profile.call
     "Flxg_parse.load_syntax"
     Flxg_parse.load_syntax
     state
   in
 
-(*
-print_endline "Flxg.HANDLE ASSEMBLY";
-*)
+  (* print_endline "Flxg.HANDLE ASSEMBLY"; *)
   let start_counter = ref 2 in
+
+  (* Load libs. Build them if necessary. *)
   let deps, excls, sym_table, bsym_table = Flxg_lib.process_libs
     state
     parser_state
@@ -85,43 +85,55 @@ print_endline "Flxg.HANDLE ASSEMBLY";
   (* update the global include file list *)
   state.syms.include_files := !deps;
 
-(*
-print_endline "Flxg.HANDLE ASSEMBLY DONE";
-*)
+  (* print_endline "Flxg.HANDLE ASSEMBLY DONE"; *)
   start_counter, sym_table, bsym_table, stmtss, asmss
 
 
+(* -------------------------------------------------------------------------- *)
 (** Handle the parse phase (which is actually is integrated with the desugar
  * phase). *)
 let handle_parse state main_prog module_name =
+
+  (* Build assembly *)
   let start_counter, sym_table, bsym_table, stmtss, _ = handle_assembly
     state
     main_prog
     module_name
   in
 
+  (* Group statements together *)
   let stmts = List.concat (List.rev stmtss) in
 
   start_counter, sym_table, bsym_table, stmts
 
 
+(* -------------------------------------------------------------------------- *)
 (** Handle the AST desugaring. *)
 let handle_desugar state main_prog module_name =
+
   let t0 = Unix.gettimeofday () in
+
+  (* Build assembly *)
   let start_counter, sym_table, bsym_table, _, asmss = handle_assembly
     state
     main_prog
     module_name
   in
 
+  (* Group assemblies together *)
   let asms = List.concat (List.rev asmss) in
+
   if state.syms.compiler_options.showtime  then
-  showtime "frontend" t0;
+    showtime "frontend" t0;
+
   start_counter, sym_table, bsym_table, asms
 
 
+(* -------------------------------------------------------------------------- *)
 (** Handle the type binding. *)
 let handle_bind state main_prog module_name =
+
+  (* Assemble again to grab all of the assemblies *)
   let start_counter, sym_table, bsym_table, asms = handle_desugar
     state
     main_prog
@@ -130,26 +142,36 @@ let handle_bind state main_prog module_name =
   
   let t0 = Unix.gettimeofday () in
 
+  (* Do the binding here *)
   let root_proc = Flx_profile.call
     "Flxg_bind.bind"
     (Flxg_bind.bind state sym_table bsym_table module_name start_counter)
     asms
   in
 
+  (* Build table for tracking virtual typeclasses to their instances. *)
   Flx_typeclass.build_typeclass_to_instance_table state.syms bsym_table;
 
   (* generate axiom checks *)
   (* or not: the routine must be run to strip axiom checks out of the code *)
-  Flx_axiom.axiom_check state.syms bsym_table
+  Flx_axiom.axiom_check 
+    state.syms 
+    bsym_table
     state.syms.compiler_options.generate_axiom_checks;
-
+  
+  (* Walk through AST to verify labels are reachable from their calling 
+     sites. Currently disabled. *)
   Flx_reachability.check_reachability bsym_table;
-  if state.syms.compiler_options.showtime  then
-  showtime "bind" t0;
 
+  (* Profiling. *)
+  if state.syms.compiler_options.showtime  then
+    showtime "bind" t0;
+
+  (* Return *)
   bsym_table, root_proc
 
 
+(* -------------------------------------------------------------------------- *)
 (** Handle the optimization. *)
 let handle_optimize state main_prog module_name =
   let bsym_table, root_proc = handle_bind state main_prog module_name in
@@ -183,7 +205,8 @@ let handle_optimize state main_prog module_name =
   bsym_table, root_proc
 
 
-(** Handle the lowering of abstract types. *)
+(* -------------------------------------------------------------------------- *)
+(** Handle the lowering of abstract types.  *)
 let handle_lower state main_prog module_name =
   let bsym_table, root_proc = handle_optimize state main_prog module_name in
 
@@ -200,6 +223,7 @@ let handle_lower state main_prog module_name =
   bsym_table, root_proc
 
 
+(* -------------------------------------------------------------------------- *)
 (** Handle the code generation. *)
 let handle_codegen state main_prog module_name =
   let bsym_table, root_proc = handle_lower state main_prog module_name in
