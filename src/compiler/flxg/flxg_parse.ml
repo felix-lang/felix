@@ -53,7 +53,7 @@ let parse_syntax state =
 
   (* Debugging. *)
   if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
-  print_endline "PARSED SYNTAX/IMPORT FILES.";
+    print_endline "PARSED SYNTAX/IMPORT FILES.";
 
   (* Create directory for housing the automotons. *)
   let filename = state.syms.compiler_options.automaton_filename  
