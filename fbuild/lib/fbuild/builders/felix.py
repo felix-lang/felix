@@ -21,8 +21,8 @@ class Flx(fbuild.db.PersistentObject):
         self.debug = debug
         self.flags = flags
 
-        #if not self.check_flags([]):
-        #    raise fbuild.ConfigFailed('%s failed to compile an exe' % self)
+        if not self.check_flags([]):
+            raise fbuild.ConfigFailed('%s failed to compile an exe' % self)
 
     def __call__(self, src, *args,
             includes=[],
@@ -51,11 +51,6 @@ class Flx(fbuild.db.PersistentObject):
         cmd.extend(flags)
         cmd.append(src)
 
-        #print("src=" + str (src))
-        #with open(src,"r") as f:
-        #  text = f.read()
-        #  print(text)
-        print("Flx.__call__.ctx.execute cmd=" + str (cmd))
         return self.ctx.execute(cmd, *args, **kwargs)
 
     def check_flags(self, flags=[]):
@@ -67,7 +62,7 @@ class Flx(fbuild.db.PersistentObject):
 
         with tempfile('', suffix='.flx') as src:
             try:
-                self(src, flags=flags, quieter=1, timeout=120)
+                self(src, flags=flags, quieter=1)
             except fbuild.ExecutionError as e:
                 self.ctx.logger.failed()
                 if e.stdout:
@@ -114,7 +109,6 @@ class Felix(fbuild.builders.AbstractCompiler):
             **kwargs):
         """Compile a felix file without caching the results.  This is needed
         when compiling temporary files."""
-        print("Uncached compile " + src)
         src = Path(src)
         buildroot = buildroot or self.ctx.buildroot
         src_buildroot = src.addroot(buildroot)
@@ -159,8 +153,6 @@ class Felix(fbuild.builders.AbstractCompiler):
     # --------------------------------------------------------------------------
 
     def tempfile_run(self, code='', *, quieter=1, **kwargs):
-        print("fbuild/builders/felix:tempfile_run")
-        with "tmp.flx" as src:
+        with self.tempfile(code) as src:
             exe = self.uncached_compile(src, quieter=quieter, **ckwargs)
             return self.run(exe, quieter=quieter, **kwargs)
-
