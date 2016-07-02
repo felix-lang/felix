@@ -104,15 +104,20 @@ let is_simple_expr syms bsym_table e =
   f (if c then a else b) v => if c then f a v else f b v
 
 *)
-
 let call_lifting syms uses bsym_table caller callee a argument =
   (*
   print_endline "DOING CALL LIFTING";
   *)
+
+  (* Get the callee from the symbol binding table *)
   let bsym = Flx_bsym_table.find bsym_table callee in
+
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
+
+    (* Ensure that we aren't dealing with any type variables. *)
     assert (vs=[]);
+
     (*
     print_endline ("Found procedure "^id^": Inline it!");
     *)
@@ -120,6 +125,7 @@ let call_lifting syms uses bsym_table caller callee a argument =
       syms uses bsym_table
       callee (Some caller) false []
     in
+
     (* use the inliner to handle the heavy work *)
     let body = gen_body
       syms
@@ -150,9 +156,11 @@ print_endline ("flx_inline: call lifting: adding label " ^ end_label ^ "<" ^ str
 
     (* Got too lazy to tack if this is used or not! *) 
     body2 := bexe_label (Flx_bsym.sr bsym,end_index) :: !body2;
+
     List.iter
       (function
       | BEXE_fun_return (sr,e) ->
+
         (* NOTE REVERSED ORDER *)
         let call_instr =
           (
