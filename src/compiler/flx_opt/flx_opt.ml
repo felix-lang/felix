@@ -32,22 +32,23 @@ let uncurry_functions syms bsym_table =
 let mkproc syms bsym_table =
   (* Clean up the symbol table. *)
   let bsym_table = Flx_use.copy_used syms bsym_table in
-
-  (* XXX: What does mkproc do? *)
-  (* see below, it turns functions into procedures, by assigning
-   * the return value to where an extra argument points
-   *)
   let bsym_table = ref bsym_table in
-  let counter = ref 0 in
-  while Flx_mkproc.mkproc_gen syms !bsym_table > 0 do
-    incr counter;
-    if !counter > 10 then failwith "mkproc exceeded 10 passes";
-
+  let counter = ref 1 in
+  let ncvt = ref (Flx_mkproc.mkproc_gen syms !bsym_table  ) in
+(*
+print_endline ("\n\n++++++ Ran mkproc, pass = " ^ string_of_int (!counter) ^ ", converted " ^ string_of_int !ncvt);
+*)
+  while !ncvt > 0 do
     (* Clean up the symbol table. *)
     bsym_table := Flx_use.copy_used syms !bsym_table;
+    ncvt := Flx_mkproc.mkproc_gen syms !bsym_table;
+(*
+print_endline ("\n\n++++++ Ran mkproc, pass = " ^ string_of_int (!counter) ^ ", converted " ^ string_of_int !ncvt);
+*)
+    incr counter;
+    if !counter > 10 then failwith "mkproc exceeded 10 passes";
   done;
-
-  !bsym_table
+  Flx_use.copy_used syms !bsym_table (* final cleanup *)
 
 
 (* Convert functions into stack calls. *)
@@ -132,11 +133,6 @@ let optimize_bsym_table' syms bsym_table (root_proc: int option) =
   uncurry_functions syms bsym_table end
   in
 
-  let bsym_table = print_time syms "[flx_opt]; Converting functions to procedures" begin fun () ->
-  (* convert functions to procedures *)
-  mkproc syms bsym_table end
-  in
-
   let bsym_table = print_time syms "[flx_opt]; Generating wrappers (new)" begin fun () ->
   (* make wrappers for non-function functional values *)
   Flx_mkcls2.make_wrappers syms bsym_table end
@@ -151,10 +147,18 @@ let optimize_bsym_table' syms bsym_table (root_proc: int option) =
   Flx_use.copy_used syms bsym_table end
   in
 
+  let bsym_table = print_time syms "[flx_opt]; Converting functions to procedures" begin fun () ->
+  (* convert functions to procedures *)
+  mkproc syms bsym_table end
+  in
+
+
   print_time syms "[flx_opt]; Eliminate dead code" begin fun () ->
   (* Eliminate dead code. *)
   let elim_state = Flx_elim.make_elim_state syms bsym_table in
   Flx_elim.eliminate_unused elim_state end;
+
+  Flx_svc.svc_check syms bsym_table;
 
   print_time syms "[flx_opt]; Mark heap closures" begin fun () ->
   Flx_mkcls.mark_heap_closures syms bsym_table end;

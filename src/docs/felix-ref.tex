@@ -475,7 +475,8 @@ The label must be visible from the goto statement.
 There are two kinds of gotos. A local goto is a jump
 to a label in the same scope as the goto statement.
 
-A non-local goto is a jump to any other visible label.
+A non-local goto is a jump to any other label,
+visible in an ancestor scope.
 
 Non-local transfers of control may cross procedure
 boundaries. They may not cross function or generator 
@@ -505,6 +506,57 @@ This is a valid way to handle errors.
 the code is correct because \verb%outer% is active
 at the time that \verb%handler% performs the
 control transfer.
+
+\subsection{Label values}
+Labels are first class values of the kind \verb%LABEL%.
+The can be stored in variables, and targetted by a goto statement.
+
+\begin{minted}{felix}
+proc demo (selector:int) {
+  var pos : LABEL = 
+    if selector == 1 
+    then lab1
+    else lab2
+    endif
+  ;
+  goto pos;
+lab1:>
+  println$ "Lab1"; return;
+lab2:>
+  println$ "Lab2"; return;
+}
+\end{minted}
+
+Used of saved label values is not safe unless the procedure
+frame of the procedure containing the label at the time
+it is saved remains live at the time it is jumped to.
+
+Label values are not merely code addresses, they are
+closures which capture the state of the containing
+procedure frame. This prevents the frame from being
+garbage collected, but it does not prevent control
+being returned from the frame. The effect of returning
+to an already returned frame is undefined.
+
+\subsection{Exchange of control}
+Built on top of label adressing and indirect gotos,
+the \verb%branch-and-link% instruction is conceptually
+the most fundamental control instruction. The library
+implementation is in 
+
+\begin{minted}{felix}
+inline proc branch-and-link (target:LABEL, save:LABEL)
+{
+  save <- next;
+  goto target;
+  next:>
+}
+\end{minted}
+
+A good example is \href{http://felix-lang.org/share/src/test/regress/rt/coroutines-01.fdoc}{here},
+which shows an example of coroutines.
+
+
 \section{halt}
 Stops the program with a diagnostic.
 
@@ -526,52 +578,6 @@ catch (x:int) =>
 endtry
 \end{minted}
 
-
-\section{goto-indirect/label\_address}
-The \verb%label-address% operator captures the address
-of code at a nominated label. 
-
-The address has type \verb%LABEL% and can be stored in a variable.
-
-Provided the activation record of the procedure containing
-the label remains live, a subsequent @{goto-indirect) can
-be used to jump to that location.
-
-
-\begin{minted}{felix}
-proc demo (selector:int) {
-  var pos : LABEL = 
-    if selector == 1 
-    then label_address lab1
-    else label_address lab2
-    endif
-  ;
-  goto-indirect pos;
-lab1:>
-  println$ "Lab1"; return;
-lab2:>
-  println$ "Lab2"; return;
-}
-\end{minted}
-
-
-\section{Exchange of control}
-Built on top of label adressing and indirect gotos,
-the \verb%branch-and-link% instruction is conceptually
-the most fundamental control instruction. The library
-implementation is in 
-
-\begin{minted}{felix}
-inline proc branch-and-link (target:&LABEL, save:&LABEL)
-{
-  save <- label_address next;
-  goto-indirect *target;
-  next:>
-}
-\end{minted}
-
-A good example is \href{http://felix-lang.org/share/src/test/regress/rt/coroutines-01.fdoc}{here},
-which shows an example of coroutines.
 
 \section{match/endmatch}
 The form:
@@ -615,7 +621,14 @@ if c call f x; // equivalent to
 if c do call f x; done
 \end{minted}
 
+\section{if/perform}
+The conditional perform is an abbreviation for
+the more verbose conditional:
 
+\begin{minted}{felix}
+if c perform x = 1; // equivalent to
+if c do x=1; done
+\end{minted}
 
 \section{if/do/elif/else/done}
 The procedural conditional branch is used to select
@@ -5803,7 +5816,7 @@ resolved before binding is complete.
 
 \begin{minted}{felix}
 fun f[T:GENERIC] (x:T) =>
-  typecase x with
+  typecase T with
   | int => x + 1
   | double => x + 1.0
   endmatch
@@ -5812,9 +5825,7 @@ fun f[T:GENERIC] (x:T) =>
 println$ f 1, f 4.2;
 \end{minted}
 
-Note that the argument of the typecase is an expression,
-the result of each is a branch dependent on the type of the 
-expression. Although primarily of use in generic functions, 
+ Although primarily of use in generic functions, 
 typecases can also be useful for conditional compilation.
 For example:
 
@@ -8829,7 +8840,18 @@ Generic equality.
 \item[{\tt apply}]
 User defined application.
 
-\item[{\tt \_ctor\_}typename]
+\item[{\tt typeof}]
+Denotes type of an expression. The expression is not eveluated.
+
+
+\item[{\tt _match\_ctor\_}name]
+User defined pattern match constructor check.
+
+\item[{\tt _ctor_arg\_}name]
+User defined pattern match extractor.
+
+
+\item[{\tt \_ctor\_arg\_}typename]
 User defined constructor/conversion function.
 
 

@@ -225,7 +225,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
             "        while(_p) {\n" ^
             "          if(_p->p_svc) {\n" ^
             "            int svc = _p->p_svc->variant;\n" ^
-            "            fprintf(stderr,\"Function calls procedure which does service call %d: %s\\n\","^
+            "            fprintf(stderr,\"Function calls procedure which does service call %d: %s\\n\",\n"^
             "                svc,::flx::rtl::describe_service_call(svc));\n"^
             "            fprintf(stderr,\"Caller "^caller_name^"\\n\");\n" ^
             "            fprintf(stderr,\"Calls  "^called_name^"\\n\");\n" ^
