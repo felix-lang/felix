@@ -21,15 +21,14 @@ open Flx_args
 
 let ident x = x
 
-(* THIS CODE JUST COUNTS APPLICATIONS *)
+(* THIS CODE JUST COUNTS APPLICATIONS 
+   we check both apply and apply direct so this pass can be done
+   before or after direct apply term is generated
+*)
 let find_mkproc_expr mkproc_map e =
   let aux e = match e with
-  | BEXPR_apply
-    (
-      (BEXPR_closure (f,ts),_),
-      a
-    )
-    ,ret
+  | BEXPR_apply ( (BEXPR_closure (f,ts),_), a) ,ret
+  | BEXPR_apply_direct (f,ts,a),ret
     when Hashtbl.mem mkproc_map f ->
     let p,n = Hashtbl.find mkproc_map f in
     Hashtbl.replace mkproc_map f (p,n+1)
@@ -48,12 +47,8 @@ let find_mkproc_exes mkproc_map exes =
 let mkproc_expr syms bsym_table sr this mkproc_map vs e =
   let exes = ref [] in
   let rec aux e = match Flx_bexpr.map ~f_bexpr:aux e with
-  | BEXPR_apply
-    (
-      (BEXPR_closure (f,ts),_),
-      a
-    )
-    ,ret
+  | BEXPR_apply ( (BEXPR_closure (f,ts),_), a) ,ret
+  | BEXPR_apply_direct (f,ts,a),ret
     when Hashtbl.mem mkproc_map f ->
 
     let e =
@@ -73,12 +68,7 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
       let (_,at') as a' = append_args syms bsym_table f a [ptr] in
 
       (* create a call instruction to the mapped procedure *)
-      let call =
-        bexe_call (sr,
-          (bexpr_closure (btyp_function (at',btyp_void ())) (p,ts)),
-          a'
-        )
-      in
+      let call = bexe_call_direct (sr,p,ts,a') in
 
       (* record the procedure call *)
       exes := call :: !exes;
@@ -103,7 +93,7 @@ let mkproc_exe syms bsym_table sr this mkproc_map vs exe =
   if syms.compiler_options.print_flag then
   begin
     if length exes > 1 then begin
-      print_endline ("Unravelling exe=\n" ^ string_of_bexe bsym_table 2 exe);
+      print_endline ("\n\nUnravelling exe=\n" ^ string_of_bexe bsym_table 2 exe);
       print_endline ("Unravelled exes =");
       List.iter
         (fun exe -> print_endline (string_of_bexe bsym_table 2 exe))
@@ -153,7 +143,8 @@ let mkproc_gen syms bsym_table =
   (* make the funproc map *)
   Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
+    | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) 
+      when (match ret with BTYP_void ->false | _ -> true) ->
         let k = fresh_bid syms.counter in
         Hashtbl.add mkproc_map i (k,0);
         (*
@@ -190,6 +181,10 @@ let mkproc_gen syms bsym_table =
 
   (* remove any function which is an ancestor of any other:
      keep the children (arbitrary choice)
+
+     WHY??? Because of reparenting children! A new mkproc
+     will get its old children.
+
   *)
   let isnot_asc adult =
     fold_left
@@ -198,12 +193,14 @@ let mkproc_gen syms bsym_table =
   in
 
   let to_mkproc = filter isnot_asc (!to_mkproc) in
+(*
   let to_mkproc = filter unstackable to_mkproc in
+*)
 
   let nu_mkproc_map = Hashtbl.create 97 in
   Hashtbl.iter begin fun i j ->
-    if mem i to_mkproc
-    then begin
+    if mem i to_mkproc then 
+    begin
       Hashtbl.add nu_mkproc_map i j
       (*
       ;
@@ -337,16 +334,13 @@ let mkproc_gen syms bsym_table =
 
       if syms.compiler_options.print_flag then
       begin
-        print_endline "NEW PROCEDURE BODY ****************";
-        List.iter
-          (fun exe -> print_endline (string_of_bexe bsym_table 2 exe))
-          exes;
+        print_endline "NEW PROCEDURE ****************";
+          print_endline (string_of_bbdcl bsym_table bbdcl k)
       end;
   end mkproc_map;
 
 
   (* replace applications *)
-  (* DISABLE MODIFICATIONS DURING INITIAL DEPLOYMENT *)
   Flx_bsym_table.iter begin fun i _ bsym ->
     let mkproc_exes = mkproc_exes
       syms
@@ -364,6 +358,3 @@ let mkproc_gen syms bsym_table =
     | _ -> ()
   end bsym_table;
   !nuprocs
-  (*
-  0 (* TEMPORARY HACK, to prevent infinite recursion *)
-  *)

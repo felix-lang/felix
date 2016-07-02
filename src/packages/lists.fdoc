@@ -15,7 +15,7 @@ open class List
   union list[T] = | Empty | Snoc of list[T] * T;
   fun _match_ctor_Cons[T] : list[T] -> bool = "!!$1"; 
   inline fun _ctor_arg_Cons[T]: list[T] -> T * list[T] = 
-    "flx::list::snoc2cons<?1>($1)" 
+    "reinterpret<#0>(flx::list::snoc2cons<?1>($1))" 
     requires snoc2cons_h
   ;
   inline fun Cons[T] (h:T, t:list[T]) => Snoc (t,h);

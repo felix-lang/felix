@@ -408,13 +408,13 @@ let rec gen_match_check pat (arg:expr_t) =
     let check_component = EXPR_match_ctor (sr,(name,arg)) in
     let tuple = EXPR_ctor_arg (sr,(name,arg)) in
     let check_tuple = gen_match_check pat tuple in
-    apl2 sr "land" check_component check_tuple
+    apl2 sr "andthen" check_component (closure sr check_tuple)
 
   | PAT_nonconst_variant (sr,name,pat) ->
     let check_component = EXPR_match_variant (sr,(name,arg)) in
     let tuple = EXPR_variant_arg (sr,(name,arg)) in
     let check_tuple = gen_match_check pat tuple in
-    apl2 sr "land" check_component check_tuple
+    apl2 sr "andthen" check_component (closure sr check_tuple)
 
   | PAT_coercion (sr,pat,_)
   | PAT_as (sr,pat,_) ->
@@ -426,7 +426,12 @@ let rec gen_match_check pat (arg:expr_t) =
   | PAT_when (sr,pat,expr) ->
     let vars =  ref [] in
     get_pattern_vars vars pat [];
-    apl2 sr "andthen" (gen_match_check pat arg) (closure sr (subst (!vars) expr arg))
+    let mc = gen_match_check pat arg in 
+    let mwhen = subst (!vars) expr arg in
+    begin match mc with
+    | EXPR_typed_case(_,1,TYP_unitsum 2)  ->  mwhen
+    | _ -> apl2 sr "andthen" mc (closure sr mwhen)
+    end
 
   | PAT_tuple_cons (sr, p1, p2) -> 
     (* Not clear how to check p2 matches the rest of the argument,
