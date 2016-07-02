@@ -126,8 +126,12 @@ let remap_exe
       with Not_found -> i,ts
     in
     let j,ts2 = fixup i ts in
-    assert (i = j && ts = ts2);
-    bexe_call_prim (sr,i,ts, ge e2)
+    if not (i = j && ts = ts2) then begin
+     print_endline ("Unexpected: Reparent call to primitive adjusts: " ^ 
+       string_of_int i ^ "[" ^ catmap "," (Flx_print.sbt bsym_table) ts ^ "] to " ^ 
+       string_of_int j ^ "[" ^ catmap "," (Flx_print.sbt bsym_table) ts2);
+    end;
+    bexe_call_prim (sr,j,ts2, ge e2)
 
   | BEXE_call_direct (sr,i,ts,e2) -> 
     let fixup i ts =
