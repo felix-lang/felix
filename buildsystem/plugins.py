@@ -1,7 +1,7 @@
 
 import fbuild
 import fbuild.builders.file
-import os
+import os, platform
 from fbuild.path import Path
 from fbuild.builders.file import copy
 
@@ -22,13 +22,24 @@ def build(phase, felix):
       #"fdoc_fileseq",
       #"fdoc_scanner",
       #"fdoc_button",
-      "toolchain_clang_osx",
-      "toolchain_clang_linux",
-      "toolchain_gcc_osx",
-      "toolchain_gcc_linux",
-      "toolchain_msvc_win32",
-      "flx_plugin",
       ]
+
+    plat = platform.system()
+
+    # queue up only the relevant plugins
+    if plat == 'Windows':
+      plugins.append("toolchain_msvc_win32")
+
+    elif plat == 'Linux':
+      plugins.append("toolchain_clang_linux")
+      plugins.append("toolchain_gcc_linux")
+
+    else: # osx/bsd
+      plugins.append("toolchain_clang_osx")
+      plugins.append("toolchain_gcc_osx")
+
+    plugins.append("flx_plugin")
+
     for base in plugins:
       shlib = felix.compile(phase.ctx.buildroot/('share/lib/plugins/'+base+'.flx'),flags=['-od',phase.ctx.buildroot/'host/lib/rtl'])
 
