@@ -176,7 +176,7 @@ let handle_bind state main_prog module_name =
 let handle_optimize state main_prog module_name =
   let bsym_table, root_proc = handle_bind state main_prog module_name in
 
-  (*
+(*
   (* Remove unused symbols. *)
 
   (* THIS DOESN'T WORK. WHY NOT? Seems like newtype isn't scanned
@@ -189,7 +189,7 @@ let handle_optimize state main_prog module_name =
      I mean, this HAS to work for say, structs.
   *)
   let bsym_table = Flx_use.copy_used state.syms bsym_table in
-  *)
+*)
 
   let t0 = Unix.gettimeofday () in
 
@@ -199,9 +199,12 @@ let handle_optimize state main_prog module_name =
     (Flxg_opt.optimize state bsym_table)
     root_proc
   in
-  if state.syms.compiler_options.showtime  then
-  showtime "optimse" t0;
 
+  (* Profiling. *)
+  if state.syms.compiler_options.showtime  then
+    showtime "optimse" t0;
+
+  (* Return. *)
   bsym_table, root_proc
 
 
