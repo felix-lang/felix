@@ -3,6 +3,7 @@ open Flx_mtypes2
 open Flxg_state
 
 
+(* -------------------------------------------------------------------------- *)
 (** Parse an implementation file. *)
 let parse_syntax state =
   let include_dirs = state.syms.compiler_options.include_dirs in
@@ -83,6 +84,8 @@ let parse_syntax state =
 
 
 
+(* -------------------------------------------------------------------------- *)
+(** Load the syntax from file or rebuild it. Either way, it goes into memory. *)
 let load_syntax state =
 
   (* Did the programmar enter 'flx --force-compiler'? *)
@@ -121,6 +124,7 @@ let load_syntax state =
       (* Recover by parsing everything instead of relying on the disk image. *)
       Flx_profile.call "Flxg_parse.parse_syntax" parse_syntax state
 
+(* -------------------------------------------------------------------------- *)
 (** Parse an implementation file *)
 let parse_file state parser_state file =
 
