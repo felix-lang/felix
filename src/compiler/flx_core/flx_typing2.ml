@@ -203,17 +203,15 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
            try
              let t = typecode_of_expr e in
              match paramss,ret with
+
              (* special case, allows {t} to mean 1 -> t *)
              | [[],None],TYP_none ->
-              TYP_function (TYP_tuple [],t)
+               TYP_function (TYP_tuple [],t)
+
              | _ ->
-             let params = map (fun (x,y,z,d)-> y,z) params in
-             TYP_typefun
-             (
-               params,
-               ret,
-               t
-             )
+               let params = map (fun (x,y,z,d)-> y,z) params in
+               TYP_typefun (params, ret, t)
+
            with _ ->
              clierr sr
              "Type lambda must return type expression"
@@ -242,3 +240,170 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | _ ->
     let sr = src_of_expr e in
     clierr sr ("Type expression expected, got " ^ string_of_expr e)
+
+(** Conversion function from TYP expression to EXPR expression *)
+(* passing in a default source location (dsr) can fill in some missing info *)
+let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) = 
+  match t with 
+
+  (* The following cannot be converted. There's no analagous expression in EXPR. *)
+  | TYP_label -> clierr dsr ("expr_of_typecode: TYP_label")
+  | TYP_none -> clierr dsr ("expr_of_typecode: TYP_none")
+  | TYP_type -> clierr dsr ("expr_of_typecode: TYP_type")
+  | TYP_generic _  -> clierr dsr ("expr_of_typecode: TYP_generic")
+  | TYP_var _ -> clierr dsr ("expr_of_typecode: TYP_var")
+  | TYP_defer _ -> clierr dsr ("expr_of_typecode: TYP_defer")
+  | TYP_dual _ -> clierr dsr ("expr_of_typecode: TYP_dual")
+
+  (*
+      clierr dsr ("Unable to convert " 
+        ^ (string_of_typecode t)  
+        ^ " to an expression. No suitable analogue.")
+      *)
+  | TYP_cfunction (t1,t2) -> 
+      let e1 = (expr_of_typecode dsr t1) in
+      let e2 = (expr_of_typecode dsr t2) in
+      EXPR_longarrow (dsr,(e1,e2))
+
+  | TYP_array (t1,t2) -> 
+      let e1 = (expr_of_typecode dsr t1) in
+      let e2 = (expr_of_typecode dsr t2) in
+      EXPR_superscript (dsr,(e1,e2))
+
+  | TYP_unitsum (len) -> 
+      EXPR_literal (dsr, ({Flx_literal.felix_type="int"; 
+                           internal_value=(string_of_int len);
+                           c_value=(string_of_int len)}))
+
+  | TYP_type_tuple ls -> EXPR_tuple (dsr, List.map (expr_of_typecode dsr) ls)
+  | TYP_type_match (e,ps) -> EXPR_type_match (dsr,(e,ps))
+
+  | TYP_type_extension (sr, bases, extension) -> 
+      EXPR_extension (sr,
+        List.map (expr_of_typecode dsr) bases, 
+        (expr_of_typecode dsr extension))
+
+  (* Expressions with analogues, but still can't convert *)
+  | TYP_variant _ ->
+      clierr dsr ("Unable to convert " 
+        ^ (string_of_typecode t)  
+        ^ " to an expression. Seems incompatible.")
+
+  (* This is a hack, we're trying to build a function out of nothing. *)
+  | TYP_function (param,t) -> 
+      EXPR_lambda (dsr,
+        (`GeneratedInlineFunction,
+        dfltvs,
+        [[],None],
+        TYP_none,
+        [STMT_fun_return (dsr,(expr_of_typecode dsr t))]))
+
+  (* Also a hack. Treat with caution. *)
+  | TYP_typefun (params, ret, t) -> 
+
+      let params = map (fun (y,z)-> (`PVal,y,z,None)) params in
+      EXPR_lambda (dsr,
+        (`GeneratedInlineFunction,
+        dfltvs,
+        [params,None],
+        ret,
+        [STMT_fun_return (dsr,(expr_of_typecode dsr t))]))
+
+  (* The following can be converted *)
+  | TYP_pointer t -> EXPR_ref (dsr,(expr_of_typecode dsr t))
+  | TYP_void (sr) -> EXPR_void (sr)
+  | TYP_name (sr, id, ts) -> EXPR_name (sr, id, ts)
+  | TYP_case_tag (sr, i) -> EXPR_case_tag (sr, i)
+  | TYP_typed_case (sr, i, ts) -> EXPR_typed_case (sr, i, ts)
+  | TYP_lookup (sr, (ex,id,ts)) -> EXPR_lookup (sr, (ex,id,ts))
+  | TYP_index (sr, name, index) -> EXPR_index (sr, name, index)
+  | TYP_callback (sr, qn) -> EXPR_callback (sr, qn)
+  | TYP_suffix (sr, (qn, t)) -> EXPR_suffix (sr, (qn, t))
+  | TYP_patvar (sr,id) -> EXPR_patvar (sr,id)
+  | TYP_patany (sr) -> EXPR_patany (sr)
+  | TYP_typeof (e) -> EXPR_typeof (dsr, e)
+  | TYP_ellipsis -> EXPR_ellipsis (dsr)
+
+  | TYP_as (t, id) -> 
+      let e = (expr_of_typecode dsr t) in
+      EXPR_as (dsr, (e, id))
+
+  | TYP_tuple (ts) -> 
+      let exprs = (List.map (expr_of_typecode dsr) ts) in
+      EXPR_tuple (dsr, exprs)
+
+  | TYP_sum (ts) -> 
+      let exprs = (List.map (expr_of_typecode dsr) ts) in
+      EXPR_sum (dsr, exprs)
+
+  | TYP_intersect (ts) -> 
+      let exprs = (List.map (expr_of_typecode dsr) ts) in
+      EXPR_intersect (dsr, exprs)
+  
+  | TYP_record (ids_and_ts) -> 
+      EXPR_record_type (dsr, ids_and_ts)
+
+  | TYP_polyrecord (ids_and_ts, t2) -> 
+      let ids_and_es = 
+          (List.map 
+            (fun (id,t) -> (id, (expr_of_typecode dsr t))) 
+            ids_and_ts) 
+      in
+      let e2 = (expr_of_typecode dsr t2) in
+      EXPR_polyrecord (dsr, ids_and_es, e2)
+
+  | TYP_effector (t1,t2,t3) -> 
+      let e1= (expr_of_typecode dsr t1) in
+      let e2 = (expr_of_typecode dsr t2) in
+      let e3 = (expr_of_typecode dsr t3) in
+      EXPR_effector (dsr, (e1, e2, e3))
+    
+  | TYP_isin (t1, t2) -> 
+      let e1 = (expr_of_typecode dsr t1) in
+      let e2 = (expr_of_typecode dsr t2) in
+      EXPR_isin (dsr, (e1, e2))
+
+  | TYP_apply (t1, t2) -> 
+      let e1 = (expr_of_typecode dsr t1) in
+      let e2 = (expr_of_typecode dsr t2) in
+      EXPR_apply (dsr, (e1, e2))
+
+  | TYP_tuple_cons (sr, t1, t2) -> 
+      let e1 = EXPR_name (dsr, "pow", []) in
+      let e2 = EXPR_tuple (dsr, 
+        [(expr_of_typecode dsr t1);
+         (expr_of_typecode dsr t2)]) 
+      in
+      EXPR_apply (dsr, (e1, e2))
+
+  | TYP_setunion [t1;t2] -> 
+      let e1 = EXPR_name (dsr, "\\cup", []) in
+      let e2 = EXPR_tuple (dsr, 
+        [(expr_of_typecode dsr t1);
+         (expr_of_typecode dsr t2)]) 
+      in
+      EXPR_apply (dsr, (e1, e2))
+
+  | TYP_setintersection [t1;t2] ->
+      let e1 = EXPR_name (dsr, "\\cap", []) in
+      let e2 = EXPR_tuple (dsr, 
+        [(expr_of_typecode dsr t1);
+         (expr_of_typecode dsr t2)]) 
+      in
+      EXPR_apply (dsr, (e1, e2))
+
+  | TYP_typeset [x] -> 
+      let e1 = EXPR_name (dsr, "typesetof", []) in
+      let e2 = (expr_of_typecode dsr x) in
+      EXPR_apply (dsr, (e1, e2))
+
+  | TYP_typeset ls -> 
+      let e1 = EXPR_name (dsr, "typesetof", []) in
+      let e2 = EXPR_tuple (dsr, (List.map (expr_of_typecode dsr) ls)) in
+      EXPR_apply (dsr, (e1, e2))
+
+  | TYP_setintersection _
+  | TYP_setunion _ -> 
+      clierr dsr "expr_of_typecode: ignoring this case for now."
+      
+

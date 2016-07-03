@@ -15,6 +15,7 @@ module CS = Flx_code_spec
 
 let generated = Flx_srcref.make_dummy "[flx_desugar] generated"
 
+(* -------------------------------------------------------------------------- *)
 (* model binary operator as procedure call *)
 let assign sr op l r =
   match op with
@@ -32,6 +33,7 @@ let assign sr op l r =
   )
 
 
+(* -------------------------------------------------------------------------- *)
 (* SHOULD BE UNUSED NOW ... *)
 let gen_call_init sr name' =
   let mname = EXPR_name (sr,name',[]) in
@@ -44,10 +46,15 @@ let gen_call_init sr name' =
     EXE_call (sname, unitt)
   )
 
+(* -------------------------------------------------------------------------- *)
+(** Recursive statement desugerer *)
 let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
+
   (* construct an anonymous name *)
   let parent_ts sr : typecode_t list =
-    List.map (fun (s,tp)-> TYP_name (sr,s,[])) (fst parent_vs)
+    List.map 
+      (fun (s,tp)-> TYP_name (sr,s,[])) 
+      (fst parent_vs)
   in
 
   (* this is the name of the parent's root requirement tag, if the parent
@@ -62,16 +69,28 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
      parent_vs is the vs list required for us,
      it is always empty for a function.
   *)
-
   let bridge sr n = Flx_reqs.bridge sr n parent_vs rqname' name in
 
   (* rename _root headers *)
-
-  let rex x = Flx_desugar_expr.rex rst (Flx_reqs.mkreqs state access parent_ts) (Flx_reqs.map_reqs rqname') state name x in
-  let rsts name vs access sts = List.concat (List.map
-    (rst state name access vs) sts)
+  let rex x = 
+    Flx_desugar_expr.rex 
+      rst 
+      (Flx_reqs.mkreqs state access parent_ts) 
+      (Flx_reqs.map_reqs rqname') 
+      state 
+      name 
+      x 
   in
+
+  let rsts name vs access sts = 
+    List.concat 
+      (List.map
+        (rst state name access vs) 
+        sts)
+  in
+
   let seq () = state.Flx_desugar_expr.fresh_bid () in
+
   (* add _root headers and bodies as requirements for all
     bindings defined in this entity
   *)

@@ -3,6 +3,9 @@ open Flx_ast
 val typecode_of_expr:
   expr_t -> typecode_t
 
+val expr_of_typecode:
+  Flx_srcref.t -> typecode_t -> expr_t 
+
 val type_of_list:
   typecode_t list -> typecode_t
 
