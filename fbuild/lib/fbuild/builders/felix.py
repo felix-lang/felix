@@ -21,9 +21,6 @@ class Flx(fbuild.db.PersistentObject):
         self.debug = debug
         self.flags = flags
 
-        if not self.check_flags([]):
-            raise fbuild.ConfigFailed('%s failed to compile an exe' % self)
-
     def __call__(self, src, *args,
             includes=[],
             debug=None,
@@ -51,28 +48,8 @@ class Flx(fbuild.db.PersistentObject):
         cmd.extend(flags)
         cmd.append(src)
 
+        print("Running cmd=" + str(cmd))
         return self.ctx.execute(cmd, *args, **kwargs)
-
-    def check_flags(self, flags=[]):
-        if flags:
-            self.ctx.logger.check('checking %s with %s' %
-                (self, ' '.join(flags)))
-        else:
-            self.ctx.logger.check('checking %s' % self)
-
-        with tempfile('', suffix='.flx') as src:
-            try:
-                self(src, flags=flags, quieter=1)
-            except fbuild.ExecutionError as e:
-                self.ctx.logger.failed()
-                if e.stdout:
-                    self.ctx.logger.log(e.stdout.decode())
-                if e.stderr:
-                    self.ctx.logger.log(e.stderr.decode())
-                return False
-
-        self.ctx.logger.passed()
-        return True
 
     def __str__(self):
         return ' '.join([self.exe] + self.flags)
