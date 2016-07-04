@@ -76,6 +76,7 @@ what could be a better starting point than:
 println "Hello World";
 \end{minted}
 
+\section{Simple calculations}
 To perform a simple numerical calculation using a function:
 
 \begin{minted}{felix}
@@ -86,10 +87,24 @@ var d = hypot (x,y);
 
 println$ 
   "Hypotenuse of triangle base " + x.str + 
-  ", side " + y.str " is " + d.str
+  ", side " + y.str " is " + 
+  d.str
 ;
 \end{minted}
 
+A better looking way:
+
+\begin{minted}[escapeinside=||]{felix}
+fun hypot (x:double, y:double) => |$\sqrt {x^2 + y^2}$|;
+\end{minted}
+
+encoded like this:
+
+\begin{minted}{felix}
+fun hypot (x:double, y:double) => \(\sqrt \(x^2 + y^2\)\);
+\end{minted}
+
+\section{Yielding Generators}
 To calculate the number of rabbits using a yielding generator:
 
 \begin{minted}{felix}
@@ -112,6 +127,7 @@ for i in 1..10 do
 done
 \end{minted}
 
+\section{Fibres}
 To parse text into words, using a coroutine pipeline:
 
 \begin{minted}{felix}
@@ -329,7 +345,12 @@ This operator is pronounced "store at", its use is like so:
 Conceptually, this says to store the value 2 in the object at
 address \verb%&x%. The operator \verb%&% here is sometimes 
 called "address of" but this is a mistake in Felix. 
-Rather, a variable {\em IS} an address, and the spelling
+Rather, 
+\begin{center}
+\framebox{\em a variable is an address,}
+\end{center}
+
+and the spelling
 of the variable named in a definition denotes a 
 dereference of that address.
 
@@ -357,8 +378,8 @@ The true understanding of this is to be found by
 examining access to the subcomponents of a product:
 
 \begin{minted}{felix}
-  var x = (3, 7);
-  (&x).0  <- x.1; // x is (7,7) now
+  var x = (3.0, 7.0);
+  (&x).0  <- x.1; // x is (7.0,7.0) now
 \end{minted}
 
 The projection operation denoted by \verb%.1% on the RHS
@@ -368,8 +389,8 @@ on the LHS is not applied to a value of tuple type, but
 a value of type pointer to a tuple type!
 
 \begin{minted}{felix}
-  int * int -> int      // type of RHS projection function
-  &(int * int) -> &int  // type of LHS projection function
+  double * double -> double        // type of RHS projection function
+  &(double * double) -> &double    // type of LHS projection function
 \end{minted}
 
 Felix overloads the meaning of projections, so that a projection
@@ -381,8 +402,10 @@ The effect of this mechanism is to eliminate the need for
 the notion of lvalues, and ensure the underlying semantics
 is entirely based on values. 
 
+\begin{center}
 {\em Pointers provide the bridge
 between objects and values. }
+\end{center}
 
 Thus, any value can be turned into an object by storing
 it in a variable, or copying it onto the heap with operator \verb%new%.
@@ -8844,10 +8867,10 @@ User defined application.
 Denotes type of an expression. The expression is not eveluated.
 
 
-\item[{\tt _match\_ctor\_}name]
+\item[{\tt \_match\_ctor\_}name]
 User defined pattern match constructor check.
 
-\item[{\tt _ctor_arg\_}name]
+\item[{\tt \_ctor\_arg\_}name]
 User defined pattern match extractor.
 
 

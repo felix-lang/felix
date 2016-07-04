@@ -95,23 +95,26 @@ let cid_of_flxid s =
 let cid_of_bid bid =
   string_of_int bid
 
-(* basic name mangler *)
-let cpp_name bsym_table index = "_flxN_" ^ string_of_int index
-(*
-  let bsym =
-    try Flx_bsym_table.find bsym_table index
-    with _ -> failwith ("[cpp_name] Can't find index " ^ string_of_bid index)
-  in
-  (match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (_,_,_,BTYP_void,_) -> "_p"
-  | BBDCL_fun (_,_,_,_,_) -> "_f"
+let cpp_kind_prefix bsym =
+  match Flx_bsym.bbdcl bsym with
+  | BBDCL_fun (_,_,_,BTYP_void,_,_) -> "_p"
+  | BBDCL_fun (_,_,_,BTYP_fix (0,_),_,_) -> "_nrtf"
+  | BBDCL_fun (_,_,_,_,_,_) -> "_f"
   | BBDCL_external_fun (_,_,_,_,_,_,`Callback _) -> "_cf"
   | BBDCL_val (_,_,(`Val | `Var | `Ref)) -> "_v"
   | BBDCL_val (_,_,`Tmp) -> "_tmp"
   | _ ->
       syserr (Flx_bsym.sr bsym) "cpp_name expected func,proc,var,val,ref, or tmp"
-  ) ^ cid_of_bid index ^ "_" ^ cid_of_flxid (Flx_bsym.id bsym)
-*)
+
+(* basic name mangler *)
+let cpp_name bsym_table index = (* "_flxN_" ^ string_of_int index *)
+  let bsym =
+    try Flx_bsym_table.find bsym_table index
+    with _ -> failwith ("[cpp_name] Can't find index " ^ string_of_bid index)
+  in 
+    cpp_kind_prefix bsym ^ 
+    cid_of_bid index ^ "_" ^ 
+    cid_of_flxid (Flx_bsym.id bsym)
 
 let cpp_instance_name' syms bsym_table index ts =
   let inst =
@@ -145,8 +148,15 @@ print_endline "Cannot find instance";
   in
 (*
   "_i" ^ cid_of_bid inst ^ cpp_name bsym_table index
-*)
   "_flxI_"  ^ string_of_int inst ^ "_N_" ^ string_of_int index
+*)
+  let bsym =
+    try Flx_bsym_table.find bsym_table index
+    with _ -> failwith ("[cpp_name] Can't find index " ^ string_of_bid index)
+  in 
+    cpp_kind_prefix bsym ^ 
+    "I"^ cid_of_bid inst ^ "_" ^ 
+    cid_of_flxid (Flx_bsym.id bsym)
 
 let is_export syms bsym_table id =
   let bifaces = syms.bifaces in
@@ -168,8 +178,7 @@ let is_export syms bsym_table id =
      false
   with Not_found -> true
 
-let cpp_instance_name syms bsym_table index ts =cpp_instance_name' syms bsym_table index ts 
-(*
+let cpp_instance_name syms bsym_table index ts =
   let long_name = cpp_instance_name' syms bsym_table index ts in
   if syms.compiler_options.Flx_options.mangle_names then long_name else
   let id =
@@ -189,7 +198,6 @@ let cpp_instance_name syms bsym_table index ts =cpp_instance_name' syms bsym_tab
       if is_export syms bsym_table id then long_name else id
   end
   else long_name
-*)
 
 let tix msg syms bsym_table t =
   let t =

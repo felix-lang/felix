@@ -138,6 +138,9 @@ let optimize_bsym_table' syms bsym_table (root_proc: int option) =
   Flx_mkcls2.make_wrappers syms bsym_table end
   in
 
+  print_time syms "[flx_opt]; Set SVC funs inline " begin fun () -> 
+  Flx_svc.svc_set_inline syms bsym_table end;
+
   print_time syms "[flx_opt]; Inlining" begin fun () -> 
   (* Perform the inlining. *)
   Flx_inline.heavy_inlining syms bsym_table end;
@@ -147,11 +150,12 @@ let optimize_bsym_table' syms bsym_table (root_proc: int option) =
   Flx_use.copy_used syms bsym_table end
   in
 
+(*
   let bsym_table = print_time syms "[flx_opt]; Converting functions to procedures" begin fun () ->
   (* convert functions to procedures *)
   mkproc syms bsym_table end
   in
-
+*)
 
   print_time syms "[flx_opt]; Eliminate dead code" begin fun () ->
   (* Eliminate dead code. *)
