@@ -23,3 +23,5 @@ val expr_of_qualified_name:
 
 val expr_of_suffixed_name:
   suffixed_name_t -> expr_t
+
+val string_of_type_name : typecode_t -> string

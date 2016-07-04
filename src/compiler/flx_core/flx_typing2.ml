@@ -255,11 +255,6 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
   | TYP_defer _ -> clierr dsr ("expr_of_typecode: TYP_defer")
   | TYP_dual _ -> clierr dsr ("expr_of_typecode: TYP_dual")
 
-  (*
-      clierr dsr ("Unable to convert " 
-        ^ (string_of_typecode t)  
-        ^ " to an expression. No suitable analogue.")
-      *)
   | TYP_cfunction (t1,t2) -> 
       let e1 = (expr_of_typecode dsr t1) in
       let e2 = (expr_of_typecode dsr t2) in
@@ -283,7 +278,6 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
         List.map (expr_of_typecode dsr) bases, 
         (expr_of_typecode dsr extension))
 
-  (* Expressions with analogues, but still can't convert *)
   | TYP_variant _ ->
       clierr dsr ("Unable to convert " 
         ^ (string_of_typecode t)  
@@ -406,4 +400,46 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
   | TYP_setunion _ -> 
       clierr dsr "expr_of_typecode: ignoring this case for now."
       
-
+let string_of_type_name (t:typecode_t) = match t with
+  | TYP_label -> "TYP_label"
+  | TYP_none -> " TYP_none"
+  | TYP_ellipsis -> "TYP_ellipsis"
+  | TYP_generic _ -> "TYP_generic"
+  | TYP_void _ -> "TYP_void"
+  | TYP_name _ -> " TYP_name"
+  | TYP_case_tag _ -> " TYP_case_tag"
+  | TYP_typed_case _ -> " TYP_typed_case"
+  | TYP_lookup _ -> " TYP_lookup"
+  | TYP_index _ -> " TYP_index"
+  | TYP_callback _ -> " TYP_callback"
+  | TYP_suffix _ -> " TYP_suffix"
+  | TYP_patvar _ -> " TYP_patvar"
+  | TYP_patany _ -> " TYP_patany"
+  | TYP_tuple _ -> "TYP_tuple"
+  | TYP_unitsum _ -> "TYP_unitsum"
+  | TYP_sum _ -> "TYP_sum"
+  | TYP_intersect _ -> "TYP_intersect"
+  | TYP_record _ -> "TYP_record"
+  | TYP_polyrecord _ -> "TYP_polyrecord"
+  | TYP_variant _ -> "TYP_variant"
+  | TYP_function _ -> "TYP_function"
+  | TYP_effector _ -> "TYP_effector"
+  | TYP_cfunction _ -> "TYP_cfunction"
+  | TYP_pointer _ -> "TYP_pointer"
+  | TYP_array _ -> "TYP_array"
+  | TYP_as _ -> "TYP_as"
+  | TYP_type -> "TYP_type"
+  | TYP_var _ -> "TYP_var"
+  | TYP_isin _ -> "TYP_isin"
+  | TYP_defer _ -> "TYP_defer"
+  | TYP_typeset _ -> "TYP_typeset"
+  | TYP_setunion _ -> "TYP_setunion"
+  | TYP_setintersection _ -> "TYP_setintersection"
+  | TYP_dual _ -> "TYP_dual"
+  | TYP_apply _ -> "TYP_apply"
+  | TYP_typefun _ -> "TYP_typefun"
+  | TYP_type_tuple _ -> "TYP_type_tuple"
+  | TYP_type_match _ -> "TYP_type_match"
+  | TYP_type_extension _ -> "TYP_type_extension"
+  | TYP_tuple_cons _ -> "TYP_tuple_cons"
+  | TYP_typeof _ -> "TYP_typeof"
