@@ -303,8 +303,30 @@ print_endline ("Translating Lazy Declaration " ^ name);
     mdcl
 
   | STMT_type_alias (sr,name,vs,typ) -> 
-    [Dcl (sr,name,None,access,vs,DCL_type_alias (typ))]
 
+      (match typ with
+      | TYP_typeof _ ->
+
+        (* Lift lambdas inside typeof() if needed *)
+        let d,x = rex (expr_of_typecode sr typ) in
+        let decls = d @ [Dcl (sr,name,None,access,vs,DCL_type_alias(typecode_of_expr(x)))]  in 
+
+        (*
+          print_endline (string_of_desugared d2);
+          print_endline ("vs = " ^ (string_of_vs vs));
+          print_endline ("x =  "^ (string_of_expr x));
+          print_endline ("typ= "^ (string_of_type_name typ));
+          print_endline ("compare w/ orig "^name^"= " ^ (string_of_typecode(typ)));
+          print_endline ("------------");
+        *)
+
+        decls
+
+      | _ ->
+        [Dcl (sr,name,None,access,vs,DCL_type_alias(typ))]
+
+      )
+      
   | STMT_inherit (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit qn)]
   | STMT_inherit_fun (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit_fun qn)]
 
