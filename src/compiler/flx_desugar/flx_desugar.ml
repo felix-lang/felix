@@ -303,6 +303,10 @@ print_endline ("Translating Lazy Declaration " ^ name);
     mdcl
 
   | STMT_type_alias (sr,name,vs,typ) -> 
+    (* Held back, just for merge.
+    let asms,typ = Flx_desugar_expr.rett rex typ in
+    asms @ [Dcl (sr,name,None,access,vs,DCL_type_alias (typ))]
+    *)
 
       (match typ with
       | TYP_typeof _ ->

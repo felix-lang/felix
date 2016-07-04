@@ -101,7 +101,7 @@ let direct_call_check syms bsym_table svcs =
   !counter
 
 
-let svc_check syms bsym_table =
+let find_svcs syms bsym_table =
   let svcs = ref BidSet.empty in
   svc_leaf_check syms bsym_table svcs;
   let iterations = ref 0 in
@@ -116,6 +116,32 @@ let svc_check syms bsym_table =
 (*
   print_endline ("Done svcs in " ^ string_of_int !iterations);
 *)
+  !svcs
+
+let svc_set_inline syms bsym_table =
+  let svcs = find_svcs syms bsym_table in
+  BidSet.iter (fun i ->
+    let bsym = Flx_bsym_table.find bsym_table i in
+    let bbdcl = Flx_bsym.bbdcl bsym in
+    match bbdcl with
+    | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
+      if ret <> btyp_void () then
+      if List.mem `NoInline  props then begin
+        print_endline ("WARNING: SVC propagates to noinline function " ^ Flx_bsym.id bsym ^ "<"^string_of_int i^">")
+      end
+      else if not (List.mem `Inline props) then
+        let props = `Inline :: props in
+        let bbdcl = Flx_bbdcl.bbdcl_fun (props,vs,(ps,traint),ret,effects,exes) in 
+        Flx_bsym_table.update_bbdcl bsym_table i bbdcl
+      else ()
+
+    | _ -> assert false
+  ) svcs
+
+
+
+let svc_check syms bsym_table =
+  let svcs = find_svcs syms bsym_table in
   BidSet.iter (fun i ->
     let bsym = Flx_bsym_table.find bsym_table i in
     let bbdcl = Flx_bsym.bbdcl bsym in
@@ -125,6 +151,6 @@ let svc_check syms bsym_table =
         print_endline ("Warning: SVC propagates to function " ^
           Flx_bsym.id bsym ^ "<"^ string_of_int i ^">");
     | _ -> assert false
-  ) (!svcs);
+  ) svcs;
 
 

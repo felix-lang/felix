@@ -2375,7 +2375,19 @@ thisch:> // same char, reconsider it
 
   | #mathmode =>
      if ch == char "\\" do
-       if ahead (1) in (char ")", char "]") do
+       if ahead (1) == char ")" do
+         --mathcount;
+         if mathcount == 0 do
+           // EXIT MATH MODE
+           cp; next; cp; w; goto nextt;
+         else
+          next; b+="}"; goto nextch;
+         done
+       elif ahead (1) == char "(" do
+          ++mathcount;
+          b+="{";
+          next; goto nextch;
+       elif ahead (1) == char "]" do
          --mathcount;
          if mathcount == 0 do
            // EXIT MATH MODE
@@ -2383,7 +2395,7 @@ thisch:> // same char, reconsider it
          else
           cp; next; cp; b+="}"; goto nextch;
          done
-       elif ahead (1) in (char "(", char "[") do
+       elif ahead (1) == char "[" do
           ++mathcount;
           b+="{";
           cp; next; cp; goto nextch;

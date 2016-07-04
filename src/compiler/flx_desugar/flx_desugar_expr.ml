@@ -30,10 +30,20 @@ let make_desugar_state name seq = {
 }
 
 
-
 let block sr body :statement_t =
   let e = EXPR_lambda (sr,(`GeneratedInlineProcedure,dfltvs,[[],None],TYP_void sr,body)) in
   STMT_call (sr,e,EXPR_tuple(sr,[]))
+
+(* This function has to lift lambdas out of types, 
+  this mainly (exclusively?) applies to TYP_typeof (e) term
+*)
+let rec rett rex typ : asm_t list * typecode_t =
+  match typ with
+  | TYP_typeof e -> 
+    let ls,x = rex e in 
+    ls, TYP_typeof x
+
+  | _ -> [],typ
 
 (* split lambdas out. Each lambda is replaced by a
    reference to a synthesised name in the original
