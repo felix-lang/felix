@@ -37,14 +37,18 @@ let block sr body :statement_t =
 (* This function has to lift lambdas out of types, 
   this mainly (exclusively?) applies to TYP_typeof (e) term
 *)
-let rec rett rex typ : asm_t list * typecode_t =
+let rec rett rex typ sr =
   match typ with
-  | TYP_typeof e -> 
-    let ls,x = rex e in 
-    ls, TYP_typeof x
 
-  | _ -> [],typ
+  (* Lift lambdas inside typeof() *)
+  | TYP_typeof _ ->
+    let decls,use_t = rex (expr_of_typecode sr typ) in
+    let typ = typecode_of_expr(use_t) in
+    decls,typ
 
+  | _ ->
+    [],typ
+      
 (* split lambdas out. Each lambda is replaced by a
    reference to a synthesised name in the original
    statement, which is prefixed by the definition.
@@ -86,15 +90,17 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
   | EXPR_patany _
   | EXPR_match_case _
   | EXPR_case_arg _
-  | EXPR_void _
   | EXPR_arrow _
   | EXPR_effector _
-  | EXPR_longarrow _
   | EXPR_ellipsis _
   | EXPR_intersect _
   | EXPR_isin _
     ->
     clierr sr ("[rex] Unexpected " ^ string_of_expr e)
+
+
+  | EXPR_void (x) -> [], EXPR_void x
+  | EXPR_longarrow (sr,x) -> [], EXPR_longarrow (sr,x)
 
   | EXPR_superscript (sr,(e1,e2)) -> 
     let l1,x1 = rex e1 in
