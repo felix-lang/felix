@@ -373,15 +373,27 @@ print_endline ("Translating Lazy Declaration " ^ name);
     let ps,traint = params in
     begin match traint,postcondition with
     | None,None ->
+
+      (* Check for unbound type parameters and make them bindable. Also, return
+        them for introduction *)
       let vs',params = Flx_curry.fix_params sr seq params in
+
+      (* Merge new type variables with existing *)
       let vs = Flx_merge_vs.merge_vs vs (vs',dfltvs_aux)  in
       let asms = rsts name' dfltvs `Public sts in
       let asms = bridge name' sr :: asms in
+
+      (* Fix params with type level lifting *)
+      let asms',ps = Flx_desugar_expr.rett_fixparams rex ps sr in
+      let params = ps,traint in
+      let asms = asms' @ asms in
+
       [
         Dcl (sr,name',None,access,vs,
           DCL_function (params, res, effects, props, asms)
         )
       ]
+
     | pre,post ->
       let name'' = "_wrap_" ^ name' in
       let inner = EXPR_name (sr,name'',[]) in
