@@ -13,26 +13,38 @@ open Flx_pat
 open Flx_exceptions
 let generated = Flx_srcref.make_dummy "[flx_desugar_expr] generated"
 
-let fix_params sr seq (ps:params_t):plain_vs_list_t * params_t =
-  let rec aux (ps:parameter_t list) :plain_vs_list_t * parameter_t list =
-    match ps with
-    | (k,x,TYP_none,d) :: t ->
-      let v = "_v" ^ string_of_bid (seq()) in
-      let vt: typecode_t = TYP_name (generated,v,[]) in
-      let vs,ps = aux t in
-      (*
-      ((v,TPAT_any)::vs),((k,x,vt,d)::ps) (* a bit HACKY *)
-      *)
-      ((v,TYP_patany sr)::vs),((k,x,vt,d)::ps) (* a bit HACKY *)
+(** Iterate over parameters and create type variables when needed. *)
+let fix_params sr seq ps =
 
+  let rec aux ps =
+    (* ps : (param_kind_t * Flx_id.t * typecode_t * expr_t option) *)
+    match ps with
+
+    (* The case where the param type is none. 
+       This is where things like 'could not match type "_v4029" with "int" in "x + 3"' originate *)
+    | (kind,id,TYP_none,expr) :: t ->
+
+      let v = "_v" ^ string_of_bid (seq()) in  (* Create a fresh identifier *)
+      let vt = TYP_name (generated,v,[]) in    (* Create a new type variable w/ dummy source ref. *)
+      let vs,ps = aux t in                     (* work on the other cases before wrapping up. *)
+
+      (* Add our new type in to the sequence. It has the new type of TYP_patany
+         which should trigger future processing for type binding. *)
+      ((v,TYP_patany sr)::vs),((kind,id,vt,expr)::ps) (* a bit HACKY *)
+
+    (* General case: Recurse assmbling the fixed type variables (vs). *)
     | h :: t ->
       let vs,ps = aux t in
       vs, (h::ps)
+
+    (* Empty case: no input, no output. *)
     | [] -> [],[]
   in
-  let ps, traint = ps in
-  let vs,ps = aux ps in
-  vs,(ps,traint)
+
+  let ps, traint = ps in   (* Split ps into type variables and type constraints *)
+  let vs,ps = aux ps in    (* Process params *)
+  vs,(ps,traint)           (* Reassemble *)
+
 
 let cal_props kind props = match kind with
   | `CFunction -> `Cfun::props
