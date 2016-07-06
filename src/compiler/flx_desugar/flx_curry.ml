@@ -53,6 +53,7 @@ let invariants_of_stmts body sr =
 
 (** Iterates over preconditions (in type constraints) and builds a conjuction *)
 let invariants_of_constraints traints sr =
+  (* Use all the constraints at once 
   let pre = ref [] in
   List.iter (fun t -> match t with Some x -> pre := x :: !pre | None -> ()) traints;
 
@@ -65,6 +66,13 @@ let invariants_of_constraints traints sr =
           (EXPR_typed_case (sr, 1, TYP_unitsum 2))  
           !pre
       )
+  in
+  *)
+  (* Use just the first one, cause that's safer. *)
+  let inv = 
+    match traints with
+    | Some(h) :: t -> Some(h)
+    | _ -> None
   in
   inv
 
