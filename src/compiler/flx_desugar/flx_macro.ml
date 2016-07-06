@@ -762,6 +762,8 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   let cf e = const_fold e in
 
   begin match st with
+  | STMT_circuit (sr,cs) -> tack st
+    
   | STMT_try _ -> tack st
   | STMT_type_error _ -> tack st
 
