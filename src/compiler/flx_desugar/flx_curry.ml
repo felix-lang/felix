@@ -13,6 +13,74 @@ open Flx_pat
 open Flx_exceptions
 let generated = Flx_srcref.make_dummy "[flx_desugar_expr] generated"
 
+let invariants_of_stmts body sr =
+  let invariants = ref [] in
+
+  List.iter 
+    (fun st ->
+      match st with
+      | STMT_invariant (_, e)  as invariant -> 
+          invariants := invariant :: !invariants
+      | _ -> ()
+    )
+    body;
+
+  let conjunction =
+    match !invariants with
+    | [] -> None
+    | _ -> 
+      Some(
+        List.fold_left 
+          (fun x y -> 
+            match y with
+            | STMT_invariant (sr, e) ->
+               EXPR_apply (sr, (EXPR_name (sr, "land", []), EXPR_tuple (sr, [x; e]))) 
+            | _ -> failwith "Unexpected statement type found processing invariants"
+          ) 
+          (EXPR_typed_case (sr, 1, TYP_unitsum 2)) 
+          !invariants
+      )
+    in
+    conjunction
+
+(* Removes everything except invariants, becuase those aren't allowed to be run. *)
+let propagate_invariants body invariants sr =
+
+  let addpost p i = 
+      begin match p,i with
+      | None,None -> None
+      | None,Some _ -> i
+      | Some _, None -> p
+      | Some post, Some inv -> Some( EXPR_apply (sr, (EXPR_name (sr, "land", []), EXPR_tuple (sr, [post; inv]))))
+      end
+  in
+
+  let newstatements = ref [] in
+
+  List.iter (fun st ->
+    match st with
+    (* Erase invariants from the original expression. *)
+    | STMT_invariant (_, _) -> ()
+
+    (* propagate invariants to deeper levels (i.e. object -> method) *)
+    | STMT_curry (sr, name, vs, pss, (res,traint) , effects, kind, adjectives, ss) ->
+        let inv2 = addpost traint invariants in 
+        newstatements := 
+          STMT_curry (sr,name, vs, pss, (res,inv2) , effects, kind, adjectives, ss)
+          :: !newstatements
+
+    (* Just accumulate everything else. *)
+    | _ -> 
+        newstatements := st :: !newstatements
+  )
+  body;
+
+  (* Becuase the statements get added backwards, reverse to correct it. *)
+  let body = List.rev !newstatements in 
+  body
+
+
+
 (** Iterate over parameters and create type variables when needed. *)
 let fix_params sr seq ps =
 
@@ -58,31 +126,70 @@ let cal_props kind props = match kind with
   | `Virtual -> if not (List.mem `Virtual props) then `Virtual::props else props
   | _ -> []
 
-let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type effects (kind:funkind_t) body props =
-  let noeffects = Flx_typing.flx_unit in
-  if List.mem `Lvalue props then
-    clierr sr "Felix function cannot return lvalue"
-  ;
-  if List.mem `Pure props && match return_type with  | TYP_void _,_ -> true | _ -> false then
-    clierr sr "Felix procedure cannot be pure"
-  ;
+(** Currying, A.K.A. Shonfinkeling *)
+let mkcurry seq sr name vs args return_type effects kind body props =
 
+  (* preflight checks *)
+  if List.mem `Lvalue props then
+    clierr sr "Felix function cannot return lvalue";
+  if List.mem `Pure props && match return_type with  | TYP_void _,_ -> true | _ -> false then
+    clierr sr "Felix procedure cannot be pure";
+
+  (* Manipulate the type variables ----- *)
+
+  (* vs = type variables and tcon = type constraints *)
   let vs, tcon = vs in
-  let return_type, postcondition = return_type in
-  let vss',(args:params_t list)= List.split (List.map (fix_params sr seq) args) in
+
+  (* Iterate over parameters and determine if new type variables need to be created *)
+  (* New ones are stored in vss' *)
+  let vss',args = 
+    List.split 
+      (List.map (fix_params sr seq) args) in 
+
+  (* Reassemble vs back together *)
   let vs = List.concat (vs :: vss') in
   let vs : vs_list_t = vs,tcon in
-  let mkfuntyp d e c = TYP_effector (d,e,c)
-  and typeoflist lst = match lst with
+
+  let return_type, postcondition = return_type in
+
+  (* Install invariants into postcondition *)
+  let invariants = invariants_of_stmts body sr in 
+  let body = propagate_invariants body invariants sr in
+  let postcondition = 
+      match postcondition,invariants with
+      | None,None -> None
+      | None,Some _ -> invariants
+      | Some _, None -> postcondition
+      | Some post, Some inv -> Some( EXPR_apply (sr, (EXPR_name (sr, "land", []), EXPR_tuple (sr, [post; inv]))))
+  in
+
+  let typeoflist lst = match lst with
     | [x] -> x
     | _ -> TYP_tuple lst
   in
-  let mkret arg (eff,ret) = Flx_typing.flx_unit,mkfuntyp (typeoflist (List.map (fun(x,y,z,d)->z) (fst arg))) eff ret in
+
+  let mkret arg (eff,ret) = 
+    Flx_typing.flx_unit,
+    TYP_effector 
+      ((typeoflist 
+        (List.map 
+          (fun(x,y,z,d)->z) 
+          (fst arg))),
+      eff,
+      ret)
+  in
+
   let arity = List.length args in
+
   let rettype args eff =
     match return_type with
     | TYP_none -> TYP_none
-    | _ -> snd (List.fold_right mkret args (eff,return_type))
+    | _ -> 
+        snd 
+          (List.fold_right 
+            mkret 
+            args 
+            (eff,return_type))
   in
 
   let isobject = kind = `Object in
@@ -106,6 +213,7 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
             )
           in
           STMT_function (sr, synthname n, vs, ([],None), (return_type,postcondition), effects, props, body)
+
         | _ ->
           (* allow functions with no arguments now .. *)
           begin match body with
@@ -116,7 +224,7 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
             in
             STMT_lazy_decl (sr, synthname n, vs, rt, Some e)
           | _ ->
-          clierr sr "Function with no arguments"
+            clierr sr "Function with no arguments"
           end
         end
 
@@ -125,21 +233,10 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
         (*
         print_endline "Found an object, scanning for methods and bogus returns";
         *)
-
         let methods = ref [] in
-        let invariants = ref [] in
 
-        let revbody = 
-          let newstatements = ref [] in
-          List.iter (fun st ->
-            match st with
-            | STMT_invariant (_, _) -> ()
-            | _ -> newstatements := st :: !newstatements
-          )
-            body
-          ;
-
-          List.iter (fun st ->
+        List.iter 
+          (fun st ->
             (*
             print_endline ("Statement " ^ Flx_print.string_of_statement 2 st);
             *)
@@ -149,36 +246,20 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
             | STMT_curry (_,name, vs, pss, (res,traint) , effects, kind, adjectives, ss)
                 when kind = `Method || kind = `GeneratorMethod -> 
                 methods := name :: !methods
-            | STMT_invariant (_, _)  as invariant -> invariants := invariant :: !invariants
             | _ -> ()
           )
           body
-          ;
-          !newstatements
-        in
+        ;
 
+        (* Calculate methods to attach to return type *)
+        let revbody = List.rev body in 
         let mkfield s = s,EXPR_name (sr,s,[]) in
         let record = EXPR_record (sr, List.map mkfield (!methods)) in
         let retstatement = STMT_fun_return (sr, record) in
         let revbody = retstatement :: revbody in
+        let body = List.rev revbody in
 
-        let conjunction =
-          List.fold_left 
-            (fun x y -> 
-              match y with
-              | STMT_invariant (sr, e) ->
-                EXPR_apply (sr, (EXPR_name (sr, "land", []), EXPR_tuple (sr, [x; e])))
-              | _ -> failwith "Unexpected statement type found processing invariants"
-            ) 
-            (EXPR_typed_case (sr, 1, TYP_unitsum 2)) 
-            !invariants
-        in
-        let invariant_func = 
-          STMT_function (sr, "invariant", dfltvs, ([], None), (TYP_unitsum 2, None), effects,[], [STMT_fun_return (sr, conjunction)]) 
-        in
-
-        let body = List.rev (invariant_func :: revbody) in
-(* print_endline ("Object " ^name^ " return type " ^ string_of_typecode return_type); *)
+        (* print_endline ("Object " ^name^ " return type " ^ string_of_typecode return_type); *)
         STMT_function (sr, synthname n, vs, h, (return_type, postcondition), effects,props, body)
 
       end else 
@@ -197,6 +278,7 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
           | _ -> body
         in
         STMT_function (sr, synthname n, vs, h, (return_type,postcondition), effects,props, body)
+
     | h :: t ->
       let argt =
         let hdt = List.hd t in
@@ -204,23 +286,13 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
         typeoflist (List.map (fun (x,y,z,d) -> z) xargs)
       in
       let m = List.length args in
-      let body =
-        [
-          aux t dfltvs [];
-          STMT_fun_return
-          (
-            sr,
-            EXPR_suffix
-            (
-              sr,
-              (
-                `AST_name (sr,synthname (m-1),[]),argt
-              )
-            )
-          )
-        ]
+      let body = [ 
+        aux t dfltvs []; 
+        STMT_fun_return ( sr, EXPR_suffix ( sr, ( `AST_name (sr,synthname (m-1),[]),argt))) ] 
       in
-        STMT_function (sr, synthname m, vs, h, (rettype t effects,None), noeffects,`Generated "curry"::props, body)
+      let noeffects = Flx_typing.flx_unit in
+      STMT_function (sr, synthname m, vs, h, (rettype t effects,postcondition), noeffects,`Generated "curry"::props, body)
+
    in aux args vs (cal_props kind props)
 
 

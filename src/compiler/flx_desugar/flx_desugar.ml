@@ -314,9 +314,13 @@ print_endline ("Translating Lazy Declaration " ^ name);
   | STMT_inherit_fun (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit_fun qn)]
 
   | STMT_curry (sr,name',vs,pps,ret,effects,kind,adjs,sts) ->
-    let fdef = rst state name access parent_vs 
-      (Flx_curry.mkcurry seq sr name' vs pps ret effects kind sts adjs) 
-    in
+    (* construct a function-like STMT from the given statements, etc. *)
+    let curr = (Flx_curry.mkcurry seq sr name' vs pps ret effects kind sts adjs) in
+
+    (* The final construction we want to return and possibly export. *)
+    let fdef = rst state name access parent_vs curr in
+
+    (* Determine if we should export this function *)
     let export_name = ref name' in
     let doexport = ref false in
     List.iter 
@@ -326,8 +330,9 @@ print_endline ("Translating Lazy Declaration " ^ name);
         | `NamedExport s -> doexport := true; export_name := s 
         | _ -> ()
       )
-      adjs
-    ;
+      adjs;
+
+    (* Handle exporting process *)
     if (!doexport) then
       let domain = 
         match pps with
@@ -388,6 +393,7 @@ print_endline ("Translating Lazy Declaration " ^ name);
       let params = ps,traint in
       let asms = asms' @ asms in
 
+      (* Build the function declaration *)
       [
         Dcl (sr,name',None,access,vs,
           DCL_function (params, res, effects, props, asms)
@@ -395,38 +401,49 @@ print_endline ("Translating Lazy Declaration " ^ name);
       ]
 
     | pre,post ->
+    (*
+      print_endline ("This post case (inside "^name'^") s reached.");
+      print_endline ("Postconditions: " ^
+        (match post with
+        | Some e -> (string_of_expr e)
+        | None -> "no post condition"));
+      *)
+
       let name'' = "_wrap_" ^ name' in
       let inner = EXPR_name (sr,name'',[]) in
       let un = EXPR_tuple (sr,[]) in
-      let sts =
-        (match pre with
+
+      let pre_assert = (match pre with
         | None -> []
-        | Some x -> [STMT_assert (src_of_expr x,x)]
-        )
-        @
-        [
-          STMT_function (sr,name'', dfltvs,([],None),(res,None),effects,props,sts);
-        ]
-        @
+        | Some x -> [STMT_assert (src_of_expr x,x)]) in
+
+      let sts =
+        pre_assert @
+        [ STMT_function (sr,name'', dfltvs,([],None),(res,None),effects,props,sts); ] @
+
         begin match res with
+
+        (* For procedures *)
         | TYP_void _ ->
-           [STMT_call (sr,inner,un) ] @
-           begin match post with
-           | None -> []
-           | Some y -> [STMT_assert (src_of_expr y,y)]
-           end
-          | _ ->
-            let retval:expr_t = EXPR_apply (sr,(inner,un)) in
-            begin match post with
-            | None ->
-              [STMT_fun_return (sr,retval)]
-            | Some y ->
-              [
-                STMT_val_decl (sr,"result",dfltvs,None,Some retval);
-                STMT_assert (src_of_expr y,y);
-                STMT_fun_return (sr,EXPR_name (sr,"result",[]))
-              ]
-            end
+          [STMT_call (sr,inner,un) ] @
+          begin match post with
+          | None -> []
+          | Some y -> [STMT_assert (src_of_expr y,y)]
+          end
+
+        (* For functions *)
+        | _ ->
+          let retval = EXPR_apply (sr,(inner,un)) in
+          begin match post with
+          | None ->
+            [STMT_fun_return (sr,retval)]
+          | Some y ->
+            [
+              STMT_val_decl (sr,"result",dfltvs,None,Some retval);
+              STMT_assert (src_of_expr y,y);
+              STMT_fun_return (sr,EXPR_name (sr,"result",[]))
+            ]
+          end
         end
       in
       let st =
