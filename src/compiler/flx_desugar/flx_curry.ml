@@ -14,13 +14,19 @@ open Flx_exceptions
 let generated = Flx_srcref.make_dummy "[flx_desugar_expr] generated"
 
 
+(** A helper function to take two opt[expressions] in, boolean conjunct them,
+    and wrap back into an opt. *)
 let inv_join l r sr = 
   match l, r with
   | None, None -> None
   | None, Some i2 -> r
   | Some i1, None -> l
-  | Some i1, Some i2 -> Some( EXPR_apply (sr, (EXPR_name (sr, "land", []), EXPR_tuple (sr, [i1; i2]))))
+  | Some i1, Some i2 -> 
+      Some( EXPR_apply (sr, 
+        (EXPR_name (sr, "land", []), 
+         EXPR_tuple (sr, [i1; i2]))))
 
+(** Scoop up invariants from the body of a function and return them as an expression *)
 let invariants_of_stmts body sr =
   let invariants = ref [] in
 
@@ -32,7 +38,8 @@ let invariants_of_stmts body sr =
       | _ -> ()
     )
     body;
-
+  
+  (* take the statements, pull out expression and then boolean and them (e and (e2 and ...)) *)
   let conjunction =
     match !invariants with
     | [] -> None
@@ -50,31 +57,6 @@ let invariants_of_stmts body sr =
       )
     in
     conjunction
-
-(** Iterates over preconditions (in type constraints) and builds a conjuction *)
-let invariants_of_constraints traints sr =
-  (* Use all the constraints at once 
-  let pre = ref [] in
-  List.iter (fun t -> match t with Some x -> pre := x :: !pre | None -> ()) traints;
-
-  let inv = 
-    match !pre with
-    | [] -> None
-    | _ -> Some(
-        List.fold_left 
-          (fun x y -> EXPR_apply (sr, (EXPR_name (sr, "land", []), EXPR_tuple (sr, [x; y]))) )
-          (EXPR_typed_case (sr, 1, TYP_unitsum 2))  
-          !pre
-      )
-  in
-  *)
-  (* Use just the first one, cause that's safer. *)
-  let inv = 
-    match traints with
-    | Some(h) :: t -> Some(h)
-    | _ -> None
-  in
-  inv
 
 
 (* Removes everything except invariants, becuase those aren't allowed to be run. *)
@@ -97,7 +79,9 @@ let propagate_invariants body invariants sr =
     | STMT_invariant (_, _) -> ()
 
     (* propagate invariants to deeper levels (i.e. object -> method) *)
-    | STMT_curry (sr, name, vs, pss, (res,traint) , effects, kind, adjectives, ss) ->
+    | STMT_curry (sr, name, vs, pss, (res,traint) , effects, kind, adjectives, ss)
+            when kind = `Method || kind = `GeneratorMethod -> 
+
         let inv2 = addpost traint invariants in 
         newstatements := 
           STMT_curry (sr,name, vs, pss, (res,inv2) , effects, kind, adjectives, ss)
@@ -186,18 +170,6 @@ let mkcurry seq sr name vs args return_type effects kind body props =
 
   let return_type, postcondition = return_type in
 
-  (* Gather invariants from: param constraints and from invariant statements *)
-  let _,traints = List.split args in
-  let pre_inv = invariants_of_constraints traints sr in
-  let post_inv = invariants_of_stmts body sr in 
-  let invariants = inv_join pre_inv post_inv sr in
-
-  (* propagate invariants into child functions *)
-  let body = propagate_invariants body invariants sr in
-
-  (* merge invariants with the current closure's post conditions *)
-  let postcondition = inv_join postcondition invariants sr in
-
   let typeoflist lst = match lst with
     | [x] -> x
     | _ -> TYP_tuple lst
@@ -229,6 +201,19 @@ let mkcurry seq sr name vs args return_type effects kind body props =
 
   let isobject = kind = `Object in
   let rec aux (args:params_t list) (vs:vs_list_t) props =
+
+    (* Gather invariants from: param constraints and from invariant statements *)
+    let _,traints = List.split args in
+    let pre_inv = match traints with | Some(h) :: t -> Some(h) | _ -> None in
+    let post_inv = invariants_of_stmts body sr in 
+    let invariants = inv_join pre_inv post_inv sr in
+
+    (* propagate invariants into child functions *)
+    let body = propagate_invariants body invariants sr in
+
+    (* merge invariants with the current closure's post conditions *)
+    let postcondition = inv_join postcondition invariants sr in
+
     let n = List.length args in
     let synthname n =
       if n = arity
