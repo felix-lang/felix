@@ -48,6 +48,34 @@ let rec rett rex typ sr =
 
   | _ ->
     [],typ
+
+
+(* Take one param and try to lift expressions out of the type *)
+let rett_fixparam rex (kind,id,typ,expr) sr = 
+  let decls,typ' = rett rex typ sr in    (* try to lift lambdas from type expressions *)
+  let param' = (kind, id, typ', expr) in (* rebuild param (with new type) for return *)
+  decls,param'
+    
+
+(* Iterate over params and lift lambdas out of types. 
+   Returns a tuple: (list of declarations, list of params) *)
+let rec rett_fixparams rex ps sr = 
+  match ps with
+
+  (* Inductive case: destructure head element and fix it *)
+  | param :: ps_tail ->
+    let decls,param' = rett_fixparam rex param sr in
+
+    (* work on the other cases before wrapping up. *)
+    let other_decls, other_ps = 
+      rett_fixparams rex ps_tail sr in
+
+    decls @ other_decls, (param' :: other_ps)
+
+  (* Base case: no input, no output. *)
+  | [] -> [],[]
+
+  
       
 (* split lambdas out. Each lambda is replaced by a
    reference to a synthesised name in the original
