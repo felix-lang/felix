@@ -2972,7 +2972,7 @@ and lookup_name_with_sig'
   | [] ->
     clierr srn
     (
-      "[lookup_name_with_sig] Can't find " ^ name ^
+      "[lookup_name_with_sig] Can't find " ^ name ^ "[" ^catmap "," (sbt bsym_table) ts^ "]" ^
       " of " ^ catmap "," (sbt bsym_table) t2
     )
   | (_,_,table,dirs,_)::tail ->
@@ -3006,7 +3006,7 @@ and lookup_name_with_sig
   t2
 =
 (*
-  print_endline ("[lookup_name_with_sig] " ^ name ^
+  print_endline ("[lookup_name_with_sig] " ^ name ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]" ^
     " of " ^ catmap "," (sbt bsym_table) t2)
   ;
 *)

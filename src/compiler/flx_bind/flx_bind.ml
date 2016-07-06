@@ -6,7 +6,7 @@ type bind_state_t = {
   sym_table: Flx_sym_table.t;
   symtab: Flx_symtab.t;
   parent: Flx_types.bid_t option;
-  bexe_state: Flx_bind_bexe.bexe_state_t;
+  bexe_state: Flx_bexe_state.bexe_state_t;
   lookup_state: Flx_lookup_state.lookup_state_t;
   bbind_state: Flx_bbind.bbind_state_t;
 }
@@ -43,7 +43,7 @@ let make_bind_state syms sym_table =
     sym_table = sym_table;
     symtab = Flx_symtab.make sym_table;
     parent = None;
-    bexe_state = Flx_bind_bexe.make_bexe_state
+    bexe_state = Flx_bexe_state.make_bexe_state
       syms.Flx_mtypes2.counter
       sym_table
       lookup_state

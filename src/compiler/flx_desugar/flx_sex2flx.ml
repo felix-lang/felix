@@ -598,6 +598,10 @@ and xstruct_component sr = function
   | Lst [id; t] -> xid id, type_of_sex sr t
   | x -> err x "struct component"
 
+and xconnection_t sr = function
+  | Lst[Lst[ld;lp]; Lst[rd;rp]] -> (xid ld,xid lp),(xid rd, xid rp)
+  | x -> err x "connection specification"
+
 and xstatement_t sr x : statement_t =
   let xpvs sr x = xplain_vs_list_t sr x in
   let xs sr x = xstatement_t sr x in
@@ -622,6 +626,10 @@ and xstatement_t sr x : statement_t =
   let xp x = xpattern_t x in
   let lnot sr x = EXPR_not (sr, x) in
   match x with
+  | Lst [Id "ast_circuit"; sr; Lst cs] -> let sr = xsr sr in
+    let cs = map (xconnection_t sr) cs in
+    STMT_circuit (sr,cs)
+
   | Lst [] -> STMT_nop(Flx_srcref.dummy_sr, "null")
 
   | Lst [Id "ast_seq"; sr; sts] -> let sr = xsr sr in 

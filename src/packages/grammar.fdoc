@@ -31,7 +31,7 @@
 @tangler type_decls.fsyn                 = share/lib/grammar/type_decls.fsyn
 @tangler utility.fsyn                    = share/lib/grammar/utility.fsyn
 @tangler variables.fsyn                  = share/lib/grammar/variables.fsyn
-
+@tangler chips.fsyn                      = share/lib/grammar/chips.fsyn
 @h1 Grammar Base
 @h2 Assertions
 @tangle assertions.fsyn
@@ -1752,7 +1752,8 @@ syntax felix {
     regexps,
     macros,
     plugins,
-    debug
+    debug,
+    chips
   ;
 }
 @
@@ -5014,4 +5015,52 @@ syntax variables {
 
 @
 
+
+@h2 Chips
+@tangle chips.fsyn
+syntax chips {
+  //$ input schannel type %<T
+  pintype := "%<" x[spower_pri] =># '`(ast_name ,_sr "ischannel" (,_2))';
+
+  //$ output schannel type %>T
+  pintype := "%>" x[spower_pri] =># '`(ast_name ,_sr "oschannel" (,_2))';
+
+  //$ input/output schannel type %<>T
+  pintype := "%<>" x[spower_pri] =># '`(ast_name ,_sr "ioschannel" (,_2))';
+
+  //$ duplex schannel type %<INPUT%>OUTPUT
+  pintype := "%<" x[spower_pri] "%>" x[spower_pri] =># 
+    '`(ast_name ,_sr "duplex_schannel" (,_2 ,_4))'
+  ;
+
+  pinspec :=  "pin" sname ":"  pintype =># "`(,_2 ,_4)"; 
+
+  stmt := "chip" sdeclname sfun_arg* 
+    "pins" pinspec*
+     scompound =>#
+    """
+      (let*
+        (
+          (name (first _2))
+          (vs (second _2))
+          (args _3)
+          (effects dflteffects)
+          (ret `(ast_void ,_sr))
+          (traint 'none)
+          (body _6)
+          (pinstype `(ast_record_type ,_5))
+          (pinsarg `(PVal "pin" ,pinstype none))
+          (pinsargs `((,pinsarg) none))
+          (args (append args `(,pinsargs (() none))))
+        )
+        `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects
+         Function () ,body)
+      )
+    """;
+
+  stmt := "circuit" sconnection+ "endcircuit" =># "`(ast_circuit ,_sr ,_2)";
+   sconnection := "connect" sname "." sname "to" sname "." sname =># "`((,_2 ,_4) (,_6 ,_8))";
+
+}
+@
 

@@ -1164,6 +1164,16 @@ and string_of_statement level s =
   let sqn n = string_of_qualified_name n in
   match s with
 
+  | STMT_circuit (_,cs) ->
+    spaces level ^ "connections\n" ^
+    fold_left (fun acc ((ld,lp),(rd,rp)) -> 
+      acc ^ spaces (level + 1) ^ "connect " ^ 
+        ld ^ "." ^ lp ^ " to " ^ 
+        rd ^ "." ^ rp ^ "\n"
+   )
+   ""
+   cs
+
   | STMT_type_error (_,stmt) -> spaces level ^ "type-error" ^ string_of_statement 0 stmt
   | STMT_cgoto (_,e) -> spaces level ^ "goto-indirect " ^ se e ^ ";"
   | STMT_ifcgoto (_,e1,e2) -> spaces level ^ "if("^se e1^") goto-indirect " ^ se e2 ^ ";"
@@ -1796,6 +1806,17 @@ and string_of_exe level s =
   and se e = string_of_expr e
   in
   match s with
+
+  | EXE_circuit cs ->
+    "connections\n" ^
+    fold_left (fun acc ((ld,lp),(rd,rp)) -> 
+      acc ^ "  connect " ^ 
+         ld ^ "." ^ lp ^ " to " ^ 
+         rd ^ "." ^ rp ^ "\n"
+   )
+   ""
+   cs
+
 
   | EXE_type_error x -> "type-error " ^ string_of_exe 0 x
   | EXE_cgoto e -> "goto-indirect " ^ se e ^ ";"

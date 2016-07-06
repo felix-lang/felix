@@ -233,7 +233,7 @@ print_endline (" &&&&&& bind_type_uses calling BBIND_SYMBOL");
     end btype
   in
   let bexes exes ret_type index tvars : Flx_btype.t * Flx_bexe.t list=
-    let bexe_state = Flx_bind_bexe.make_bexe_state
+    let bexe_state = Flx_bexe_state.make_bexe_state
       ?parent:sym_parent
       ~env
       state.counter
