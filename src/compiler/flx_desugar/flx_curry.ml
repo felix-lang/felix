@@ -13,6 +13,14 @@ open Flx_pat
 open Flx_exceptions
 let generated = Flx_srcref.make_dummy "[flx_desugar_expr] generated"
 
+
+let inv_join l r sr = 
+  match l, r with
+  | None, None -> None
+  | None, Some i2 -> r
+  | Some i1, None -> l
+  | Some i1, Some i2 -> Some( EXPR_apply (sr, (EXPR_name (sr, "land", []), EXPR_tuple (sr, [i1; i2]))))
+
 let invariants_of_stmts body sr =
   let invariants = ref [] in
 
@@ -42,6 +50,24 @@ let invariants_of_stmts body sr =
       )
     in
     conjunction
+
+(** Iterates over preconditions (in type constraints) and builds a conjuction *)
+let invariants_of_constraints traints sr =
+  let pre = ref [] in
+  List.iter (fun t -> match t with Some x -> pre := x :: !pre | None -> ()) traints;
+
+  let inv = 
+    match !pre with
+    | [] -> None
+    | _ -> Some(
+        List.fold_left 
+          (fun x y -> EXPR_apply (sr, (EXPR_name (sr, "land", []), EXPR_tuple (sr, [x; y]))) )
+          (EXPR_typed_case (sr, 1, TYP_unitsum 2))  
+          !pre
+      )
+  in
+  inv
+
 
 (* Removes everything except invariants, becuase those aren't allowed to be run. *)
 let propagate_invariants body invariants sr =
@@ -152,16 +178,17 @@ let mkcurry seq sr name vs args return_type effects kind body props =
 
   let return_type, postcondition = return_type in
 
-  (* Install invariants into postcondition *)
-  let invariants = invariants_of_stmts body sr in 
+  (* Gather invariants from: param constraints and from invariant statements *)
+  let _,traints = List.split args in
+  let pre_inv = invariants_of_constraints traints sr in
+  let post_inv = invariants_of_stmts body sr in 
+  let invariants = inv_join pre_inv post_inv sr in
+
+  (* propagate invariants into child functions *)
   let body = propagate_invariants body invariants sr in
-  let postcondition = 
-      match postcondition,invariants with
-      | None,None -> None
-      | None,Some _ -> invariants
-      | Some _, None -> postcondition
-      | Some post, Some inv -> Some( EXPR_apply (sr, (EXPR_name (sr, "land", []), EXPR_tuple (sr, [post; inv]))))
-  in
+
+  (* merge invariants with the current closure's post conditions *)
+  let postcondition = inv_join postcondition invariants sr in
 
   let typeoflist lst = match lst with
     | [x] -> x
