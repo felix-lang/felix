@@ -446,10 +446,14 @@ print_endline ("Translating Lazy Declaration " ^ name);
           end
         end
       in
+
+      (* Fix params with type level lifting *)
+      let asms,ps = Flx_desugar_expr.rett_fixparams rex ps sr in
+
       let st =
         STMT_function (sr,name',vs,(ps,None),(res,None),effects,props,sts)
       in
-      rst state name access parent_vs st
+      asms @ (rst state name access parent_vs st) 
     end
 
   | STMT_fun_decl (sr,name',vs,args,result,code, reqs,prec) ->
