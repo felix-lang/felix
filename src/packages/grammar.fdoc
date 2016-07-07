@@ -5042,7 +5042,7 @@ syntax chips {
   pinspec :=  "pin" sname ":"  pintype =># "`(,_2 ,_4)"; 
 
   stmt := "chip" sdeclname sfun_arg* 
-    "pins" pinspec*
+    "connector" sname pinspec*
      scompound =>#
     """
       (let*
@@ -5053,9 +5053,9 @@ syntax chips {
           (effects dflteffects)
           (ret `(ast_void ,_sr))
           (traint 'none)
-          (body _6)
-          (pinstype `(ast_record_type ,_5))
-          (pinsarg `(PVal "pin" ,pinstype none))
+          (body _7)
+          (pinstype `(ast_record_type ,_6))
+          (pinsarg `(PVal ,_5 ,pinstype none))
           (pinsargs `((,pinsarg) none))
           (args (append args `(,pinsargs (() none))))
         )

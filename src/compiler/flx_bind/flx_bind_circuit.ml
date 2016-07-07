@@ -89,25 +89,34 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
       ) [] cs
     in 
 
+(*
     print_endline ("Named wires: " ^ catmap "," (fun e -> string_of_expr e) named_wires);
-
+*)
+(*
     print_endline ("Device list");
     List.iter (fun s -> print_endline ("  device " ^ s)) devices;
     print_endline ("Device types");
+*)
     let device_data : device_descr_t list =
       List.fold_left (fun acc s -> 
+(*
         print_endline ("Binding device " ^ s);
+*)
         let name = EXPR_name (sr,s,[]) in
         let (_,t) as bname = 
           try be name 
           with exn -> print_endline ("Cannot bind device name " ^ s); raise exn 
         in
+(*
         print_endline (" device " ^ s ^ ": " ^ sbt bsym_table t);
+*)
         match t with
         | BTYP_function (BTYP_record pins, BTYP_function (BTYP_tuple [], BTYP_void)) -> 
           let pin_data :  pin_descr_t list =
             List.fold_left (fun acc (name,typ) ->
+(*
               print_endline ("  pin " ^ name ^ ":" ^ sbt bsym_table typ);
+*)
               let i,direction,vt = cal_channel bsym_table (schannel,ischannel,oschannel) sr typ in
 (*
                  print_endline ("      pin " ^ name ^ ":" ^ direction ^ " " ^ sbt bsym_table t);
@@ -176,17 +185,20 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
       | Wire (e,(rd,rp)) -> 
          let pinindex = List.assoc (rd,rp) pin_list in
          let canonical_rep = find_cand pinindex in
+(*
          print_endline ("Wire " ^ string_of_expr e^ " connects to pin " ^
            rd ^ "." ^ rp ^ " = pinindex " ^ string_of_int pinindex ^
            " canonical rep = " ^ string_of_int canonical_rep
          );
+*)
         match Array.get named_wire_con canonical_rep with
         | Some _ ->
-          clierr sr ("Connect a named wire to same pin group twice!")
+          clierr sr ("Connect a named wire "^string_of_expr e ^"to same pin group twice!")
         | None ->
           let e = 
             try be e
-            with exn -> print_endline ("Cannot bind named wire"); raise exn
+            with exn ->
+              print_endline ("Cannot bind named wire " ^ string_of_expr e); raise exn
           in
           Array.set named_wire_con canonical_rep (Some e);
       )
@@ -203,7 +215,9 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
         if not (BidSet.is_empty pinset) then 
         begin
            wires := (!cnt,(BidSet.fold (fun index acc -> index :: acc) pinset [])) :: !wires;
+(*
   print_endline ("Created wire, index " ^ string_of_int !cnt ^ " for canonical pin " ^ string_of_int i);
+*)
            incr cnt
         end
       done;

@@ -174,9 +174,10 @@ syn keyword felixStatement typematch
 syn keyword felixStatement typecase
 syn keyword felixStatement chip
 syn keyword felixStatement connect
+syn keyword felixStatement connector
 syn keyword felixStatement circuit
 syn keyword felixStatement endcircuit
-syn keyword felixStatement pins
+syn keyword felixStatement wire
 syn keyword felixStatement _
 " all the felix keywords ..
 " directives
