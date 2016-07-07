@@ -23,7 +23,7 @@ Basic parametric polymorphism in Felix.
 <a href="pattern_index.fdoc">Pattern Matching:</a>
 pattern matching and the discriminated union construction.
 @p
-<a href="Array_index.fdoc">Arrays:</a>
+<a href="array_index.fdoc">Arrays:</a>
 Core array handling.
 @p
 <a href="list_index.fdoc">Lists:</a>

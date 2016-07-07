@@ -23,7 +23,20 @@ open Flx_bexe_state
 type pin_descr_t = string * (string * int * Flx_btype.t)
 type device_descr_t = string * pin_descr_t list
 
-let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be cs =
+let cal_channel bsym_table (schannel,ischannel,oschannel) sr typ : int * string * Flx_btype.t =
+  match typ with
+  | BTYP_inst (i,[t]) ->
+     let direction = match i with
+     | _ when i = schannel -> "io"
+     | _ when i = oschannel -> "output"
+     | _ when i = ischannel -> "input"
+     | _ -> clierrx "[flx_bind/flx_bind_circuit.ml:108: E40] " sr ("Invalid pin type " ^ sbt bsym_table typ) 
+     in
+     i,direction,t
+  | _ -> clierr sr ("Invalid pin type " ^ sbt bsym_table typ)
+
+
+let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_ast.connection_t list) =
  
     let proc_t = Flx_btype.btyp_function (Flx_btype.btyp_unit (), Flx_btype.btyp_void ()) in  
 (*
@@ -33,7 +46,7 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be cs =
     let lun name = 
        match lu name with
        | NonFunctionEntry {base_sym=index} -> index
-       | _ -> clierr sr ("Require channel type " ^ name ^ " to be in scope")
+       | _ -> clierrx "[flx_bind/flx_bind_circuit.ml:36: E39] " sr ("Require channel type " ^ name ^ " to be in scope")
     in
     let luf name ts signs =
       Flx_lookup.lookup_name_with_sig' state.lookup_state
@@ -57,51 +70,54 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be cs =
 
     (* find all the devices *)
     let devices = 
-      List.fold_left (fun acc ((ld,_),(rd,_)) ->
-        let acc = if List.mem ld acc then acc else ld :: acc in
-        let acc = if List.mem rd acc then acc else rd :: acc in
-        acc
+      List.fold_left (fun acc term ->
+        match term with
+        | Connect ((ld,_),(rd,_))->
+          let acc = if List.mem ld acc then acc else ld :: acc in
+          let acc = if List.mem rd acc then acc else rd :: acc in
+          acc
+        | Wire (e,(rd,rp))-> 
+          let acc = if List.mem rd acc then acc else rd :: acc in
+           acc
       ) [] cs
     in 
-(*
+    let named_wires = 
+      List.fold_left (fun acc term ->
+        match term with
+        | Wire (e,_) -> e :: acc 
+        | Connect _ -> acc
+      ) [] cs
+    in 
+
+    print_endline ("Named wires: " ^ catmap "," (fun e -> string_of_expr e) named_wires);
+
     print_endline ("Device list");
     List.iter (fun s -> print_endline ("  device " ^ s)) devices;
-*)
-(*
     print_endline ("Device types");
-*)
     let device_data : device_descr_t list =
       List.fold_left (fun acc s -> 
+        print_endline ("Binding device " ^ s);
         let name = EXPR_name (sr,s,[]) in
-        let (_,t) as bname = be name in
-(*
+        let (_,t) as bname = 
+          try be name 
+          with exn -> print_endline ("Cannot bind device name " ^ s); raise exn 
+        in
         print_endline (" device " ^ s ^ ": " ^ sbt bsym_table t);
-*)
         match t with
         | BTYP_function (BTYP_record pins, BTYP_function (BTYP_tuple [], BTYP_void)) -> 
           let pin_data :  pin_descr_t list =
             List.fold_left (fun acc (name,typ) ->
-(*
               print_endline ("  pin " ^ name ^ ":" ^ sbt bsym_table typ);
-*)
-              match typ with
-              | BTYP_inst (i,[t]) ->
-                 let direction = match i with
-                 | _ when i = schannel -> "io"
-                 | _ when i = oschannel -> "output"
-                 | _ when i = ischannel -> "input"
-                 | _ -> clierr sr ("Invalid pin type " ^ sbt bsym_table typ) 
-                 in
+              let i,direction,vt = cal_channel bsym_table (schannel,ischannel,oschannel) sr typ in
 (*
                  print_endline ("      pin " ^ name ^ ":" ^ direction ^ " " ^ sbt bsym_table t);
 *)
-                 (name,(direction,i,t))::acc
-              | _ -> clierr sr ("Invalid pin type " ^ sbt bsym_table typ)
+              (name,(direction,i,vt))::acc
             )
             [] pins 
           in
           (s,pin_data):: acc
-        | _ -> clierr sr ("Invalid device type " ^ sbt bsym_table t)
+        | _ -> clierrx "[flx_bind/flx_bind_circuit.ml:119: E42] " sr ("Invalid device type " ^ sbt bsym_table t)
       )
       []
       devices
@@ -134,10 +150,13 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be cs =
     let join i j = Array.set partition (find_cand i) (find_cand j) in
      
     (* do connections *)
-    List.iter (fun ((ld,lp),(rd,rp)) ->
-      let lindex = List.assoc (ld,lp) pin_list in
-      let rindex = List.assoc (rd,rp) pin_list in
-      join lindex rindex
+    List.iter (fun term ->
+      match term with
+      | Connect ((ld,lp),(rd,rp)) -> 
+        let lindex = List.assoc (ld,lp) pin_list in
+        let rindex = List.assoc (rd,rp) pin_list in
+        join lindex rindex
+      | Wire _ -> ()
       )
       cs 
     ;
@@ -149,19 +168,46 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be cs =
       Array.set eqpins cand (BidSet.add i (Array.get eqpins cand))
     done;
 
+    (* find wires connected to pin groups *)
+    let named_wire_con = Array.make npins None in
+    List.iter (fun term ->
+      match term with
+      | Connect _ -> ()
+      | Wire (e,(rd,rp)) -> 
+         let pinindex = List.assoc (rd,rp) pin_list in
+         let canonical_rep = find_cand pinindex in
+         print_endline ("Wire " ^ string_of_expr e^ " connects to pin " ^
+           rd ^ "." ^ rp ^ " = pinindex " ^ string_of_int pinindex ^
+           " canonical rep = " ^ string_of_int canonical_rep
+         );
+        match Array.get named_wire_con canonical_rep with
+        | Some _ ->
+          clierr sr ("Connect a named wire to same pin group twice!")
+        | None ->
+          let e = 
+            try be e
+            with exn -> print_endline ("Cannot bind named wire"); raise exn
+          in
+          Array.set named_wire_con canonical_rep (Some e);
+      )
+      cs 
+    ;
+
     (* create wires : map wire index to list of pin indices*)
-    let wires = 
+    let wires, wire_to_named_wire = 
       let wires = ref [] in
+      let wire_to_named_wire = ref [] in
       let cnt = ref 0 in
       for i = 0 to npins - 1 do
-         let pinset = Array.get eqpins i in
-         if not (BidSet.is_empty pinset) then 
-         begin
+        let pinset = Array.get eqpins i in
+        if not (BidSet.is_empty pinset) then 
+        begin
            wires := (!cnt,(BidSet.fold (fun index acc -> index :: acc) pinset [])) :: !wires;
+  print_endline ("Created wire, index " ^ string_of_int !cnt ^ " for canonical pin " ^ string_of_int i);
            incr cnt
-         end
+        end
       done;
-      !wires
+      !wires,!wire_to_named_wire
     in  
     let str_of_pins pins =
       String.concat "," (List.map (fun pinindex ->
@@ -178,13 +224,26 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be cs =
 *)
     (* validate I/O directions *)
     List.iter (fun (wireno,pins) -> 
-      match pins with
+      let reads = ref 0 and writes = ref 0 and ios = ref 0 in
+      begin match pins with
       | [] -> assert false
       | [pinindex] -> 
-        let device,pin,dir,_,vt = List.assoc pinindex pin_data in
-        print_endline ("WARNING: " ^ device ^ "." ^ pin ^ " is not connected")
+        let nw = Array.get named_wire_con pinindex in
+        begin match nw with
+        | None ->
+          let device,pin,dir,_,vt = List.assoc pinindex pin_data in
+          print_endline ("WARNING: " ^ device ^ "." ^ pin ^ " is not connected")
+        | Some (_,typ) -> 
+          let i,dir,vt = cal_channel bsym_table (schannel,ischannel,oschannel) sr typ in
+          begin match dir with
+          | "input" -> incr reads
+          | "output" -> incr writes
+          | "io" -> incr ios
+          | _ -> assert false
+          end
+        end
+
       | pins ->
-        let reads = ref 0 and writes = ref 0 and ios = ref 0 in
         List.iter (fun pinindex ->
           let device,pin,dir,_,vt = List.assoc pinindex (pin_data) in
           match dir with
@@ -192,11 +251,12 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be cs =
           | "output" -> incr writes
           | "io" -> incr ios
           | _ -> assert false
-        ) pins;
-        if !ios = 0 && !reads = 0 then
-          print_endline ("WARNING: pins " ^ str_of_pins pins ^ " are all output")
-        else if !ios = 0 && !writes = 0 then
-          print_endline ("WARNING: pins " ^ str_of_pins pins ^ " are all input")
+        ) pins
+      end;
+      if !ios = 0 && !reads = 0 then
+        print_endline ("WARNING: pins " ^ str_of_pins pins ^ " are all output")
+      else if !ios = 0 && !writes = 0 then
+        print_endline ("WARNING: pins " ^ str_of_pins pins ^ " are all input")
     )
     wires;
 
@@ -228,10 +288,13 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be cs =
     (* create variables *)
     List.iter (fun (wireno,index) ->
       let pins = List.assoc wireno wires in
-      let vt =
+      let vt,maybe_named_wire =
         match pins with
         | [] -> assert false
-        | pinindex :: _ -> let _,_,_,_,vt = List.assoc pinindex pin_data in vt
+        | pinindex :: _ -> 
+          let _,_,_,_,vt = List.assoc pinindex pin_data in 
+          let nw = Array.get named_wire_con pinindex in
+          vt,nw
       in
       let name = "pin_" ^ string_of_int index in
       let stype = Flx_btype.btyp_inst (schannel, [vt]) in
@@ -242,8 +305,24 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be cs =
       print_endline ("Created channel variable " ^ name ^ " index " ^ 
         string_of_int index ^ " for wire " ^ string_of_int wireno ^ " value type " ^ sbt bsym_table vt);
 *)
-      let channel_value = Flx_bexpr.bexpr_apply stype (mk_schannel vt,Flx_bexpr.bexpr_unit) in
-      let init = Flx_bexe.bexe_init (sr,index,channel_value) in
+      let channel_value = 
+        match maybe_named_wire with
+        | Some ((_,typ) as e) -> 
+          begin 
+            let i,dir,vt' = cal_channel bsym_table (schannel,ischannel,oschannel) sr typ in
+            if vt <> vt' then
+              clierr sr 
+              (
+                "Wire of value type "^ sbt bsym_table vt' ^ 
+                " connected to pins of value type "^ sbt  bsym_table vt
+              )
+            else e 
+          end
+        | None -> Flx_bexpr.bexpr_apply stype (mk_schannel vt,Flx_bexpr.bexpr_unit) 
+      in
+      
+      (* FIXME: initialise to named wire if one exists *)
+      let init =  Flx_bexe.bexe_init (sr,index,channel_value) in
 (*
       print_endline ("Init " ^ string_of_bexe bsym_table 0 init);
 *)
@@ -297,5 +376,6 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be cs =
     )
     devices;
     bexe_comment (sr, "create circuit") :: List.rev !exes
+
 
 

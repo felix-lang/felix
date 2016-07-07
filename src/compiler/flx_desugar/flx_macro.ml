@@ -610,7 +610,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_record_type (sr,_)
   | EXPR_polyrecord_type (sr,_,_)
   | EXPR_variant_type (sr,_) ->
-     clierr sr "Record, variant, or extension type cannot be used as an expression"
+     clierrx "[flx_desugar/flx_macro.ml:613: E333] " sr "Record, variant, or extension type cannot be used as an expression"
 
   | EXPR_arrayof (sr, es) -> EXPR_arrayof (sr, List.map me es)
   | EXPR_coercion (sr, (e1, t)) -> EXPR_coercion (sr, (me e1,mt sr t))
@@ -1288,7 +1288,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
         in
         match d with
         | Some (MName x) -> [x]
-        | Some(_) -> [name] (* clierr sr "Name list required" *)
+        | Some(_) -> [name] (* clierrx "[flx_desugar/flx_macro.ml:1291: E334] " sr "Name list required" *)
         | None -> [name]
       )
       names
@@ -1333,11 +1333,11 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       let vs =
         match e with
         | EXPR_tuple (_,ls) -> ls
-        | _ -> clierr sr "Unpack non-tuple"
+        | _ -> clierrx "[flx_desugar/flx_macro.ml:1336: E335] " sr "Unpack non-tuple"
       in
       let m = List.length vs in
       if m <> n then
-        clierr sr
+        clierrx "[flx_desugar/flx_macro.ml:1340: E336] " sr
         (
           "Tuple is wrong length, got " ^
           si n ^ " variables, only " ^
@@ -1373,11 +1373,11 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
           let vs =
             match e with
             | EXPR_tuple (_,ls) -> ls
-            | _ -> clierr sr ("Unpack non-tuple " ^ string_of_expr e)
+            | _ -> clierrx "[flx_desugar/flx_macro.ml:1376: E337] " sr ("Unpack non-tuple " ^ string_of_expr e)
           in
           let m = List.length vs in
           if m <> n then
-            clierr sr
+            clierrx "[flx_desugar/flx_macro.ml:1380: E338] " sr
             (
               "Tuple is wrong length, got " ^
               si n ^ " variables, only " ^
@@ -1471,3 +1471,4 @@ let make_macro_state ?(recursion_limit=5000) local_prefix seq =
     ref_macros = ref [];
     macros = [];
   }
+

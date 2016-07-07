@@ -137,7 +137,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | EXPR_literal (sr, ({Flx_literal.felix_type=t; internal_value=v} as l) ) ->
     if t <> "int"
     then
-      clierr sr
+      clierrx "[flx_core/flx_typing2.ml:140: E264] " sr
       (
         "Only plain integer can be used as a type, got '" ^
        string_of_literal l ^
@@ -146,10 +146,10 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
     else
     let v = ref
       begin try int_of_string v
-      with _ -> clierr sr "Integer used as type out of range"
+      with _ -> clierrx "[flx_core/flx_typing2.ml:149: E265] " sr "Integer used as type out of range"
       end
     in
-      if !v <0 then clierr sr "Negative int not allowed as type"
+      if !v <0 then clierrx "[flx_core/flx_typing2.ml:152: E266] " sr "Negative int not allowed as type"
       else if !v = 0 then TYP_void sr
       else if !v = 1 then TYP_tuple []
       else TYP_unitsum !v
@@ -213,16 +213,16 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
                TYP_typefun (params, ret, t)
 
            with _ ->
-             clierr sr
+             clierrx "[flx_core/flx_typing2.ml:216: E267] " sr
              "Type lambda must return type expression"
          end
 
        | _ ->
-         clierr sr
+         clierrx "[flx_core/flx_typing2.ml:221: E268] " sr
          "Type lambda must just be 'return type_expr'"
        end
      | _ ->
-       clierr sr
+       clierrx "[flx_core/flx_typing2.ml:225: E269] " sr
        "Type lambda only allowed one argument (arity=1)"
      end
 
@@ -239,7 +239,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
 
   | _ ->
     let sr = src_of_expr e in
-    clierr sr ("Type expression expected, got " ^ string_of_expr e)
+    clierrx "[flx_core/flx_typing2.ml:242: E270] " sr ("Type expression expected, got " ^ string_of_expr e)
 
 (** Conversion function from TYP expression to EXPR expression *)
 (* passing in a default source location (dsr) can fill in some missing info *)
@@ -247,13 +247,13 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
   match t with 
 
   (* The following cannot be converted. There's no analagous expression in EXPR. *)
-  | TYP_label -> clierr dsr ("expr_of_typecode: TYP_label")
-  | TYP_none -> clierr dsr ("expr_of_typecode: TYP_none")
-  | TYP_type -> clierr dsr ("expr_of_typecode: TYP_type")
-  | TYP_generic _  -> clierr dsr ("expr_of_typecode: TYP_generic")
-  | TYP_var _ -> clierr dsr ("expr_of_typecode: TYP_var")
-  | TYP_defer _ -> clierr dsr ("expr_of_typecode: TYP_defer")
-  | TYP_dual _ -> clierr dsr ("expr_of_typecode: TYP_dual")
+  | TYP_label -> clierrx "[flx_core/flx_typing2.ml:250: E271] " dsr ("expr_of_typecode: TYP_label")
+  | TYP_none -> clierrx "[flx_core/flx_typing2.ml:251: E272] " dsr ("expr_of_typecode: TYP_none")
+  | TYP_type -> clierrx "[flx_core/flx_typing2.ml:252: E273] " dsr ("expr_of_typecode: TYP_type")
+  | TYP_generic _  -> clierrx "[flx_core/flx_typing2.ml:253: E274] " dsr ("expr_of_typecode: TYP_generic")
+  | TYP_var _ -> clierrx "[flx_core/flx_typing2.ml:254: E275] " dsr ("expr_of_typecode: TYP_var")
+  | TYP_defer _ -> clierrx "[flx_core/flx_typing2.ml:255: E276] " dsr ("expr_of_typecode: TYP_defer")
+  | TYP_dual _ -> clierrx "[flx_core/flx_typing2.ml:256: E277] " dsr ("expr_of_typecode: TYP_dual")
 
   | TYP_cfunction (t1,t2) -> 
       let e1 = (expr_of_typecode dsr t1) in
@@ -279,7 +279,7 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
         (expr_of_typecode dsr extension))
 
   | TYP_variant _ ->
-      clierr dsr ("Unable to convert " 
+      clierrx "[flx_core/flx_typing2.ml:282: E278] " dsr ("Unable to convert " 
         ^ (string_of_typecode t)  
         ^ " to an expression. Seems incompatible.")
 
@@ -398,7 +398,7 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
 
   | TYP_setintersection _
   | TYP_setunion _ -> 
-      clierr dsr "expr_of_typecode: ignoring this case for now."
+      clierrx "[flx_core/flx_typing2.ml:401: E279] " dsr "expr_of_typecode: ignoring this case for now."
       
 let string_of_type_name (t:typecode_t) = match t with
   | TYP_label -> "TYP_label"
@@ -443,3 +443,4 @@ let string_of_type_name (t:typecode_t) = match t with
   | TYP_type_extension _ -> "TYP_type_extension"
   | TYP_tuple_cons _ -> "TYP_tuple_cons"
   | TYP_typeof _ -> "TYP_typeof"
+

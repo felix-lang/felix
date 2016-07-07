@@ -180,3 +180,4 @@ let optimize_bsym_table syms bsym_table root_proc =
   optimize_bsym_table' syms bsym_table root_proc 
 end
 
+

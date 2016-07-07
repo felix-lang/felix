@@ -264,3 +264,4 @@ let expr_uses_unrestricted syms descend usage e =
 let expr_uses syms descend usage restrict e =
   let u = expr_uses_unrestricted syms descend usage e in
   BidSet.inter restrict u
+

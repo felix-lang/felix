@@ -103,3 +103,4 @@ let bind state sym_table bsym_table module_name start_counter asms =
   in
 
   root_proc
+

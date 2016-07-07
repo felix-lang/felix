@@ -12,3 +12,4 @@ let _ = if !string_ref = "" then
   let _ = print_string "usage: tinyML [-v] [-s \"syntax_file\"] file_name.tiny\n" in exit 0
 
 let verbose = !verbose_ref
+

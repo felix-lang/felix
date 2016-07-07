@@ -75,3 +75,4 @@ let _ = Arg.parse list_arg process_argument "usage: dypgen [-v] [--merge-warning
 
 let _ = if !string_ref = "" then
   let _ = print_string "usage: dypgen [-v] [--merge-warning] [--Werror] [--pv-obj] [--pv-token] [--noemit-token-type] [--no-pp] [--no-obj-type] [--no-undef-nt] [--ocamlc \"options\" | --command \"command\"] [--no-mli] [--use-rule-order] [--use-all-actions] [--cpp | --cpp-options \"options\"] file_name.dyp\n" in exit 0
+

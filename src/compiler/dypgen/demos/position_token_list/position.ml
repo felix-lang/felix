@@ -36,3 +36,4 @@ let lexfun2 lb = match lb.token_list with
 let pf = Position_parser.main lexfun2 lexbuf2
 
 let _ = print_forest (List.map (fun (x,_) -> x) pf)
+

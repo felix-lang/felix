@@ -40,3 +40,4 @@ let rec token = lexer
   | "," -> COMMA
   | "->" -> ARROW
   | eof -> EOF
+

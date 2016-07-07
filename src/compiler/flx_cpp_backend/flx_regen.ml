@@ -143,3 +143,4 @@ let regen b sr (alpha, nstates, cases, matrix) kind ge =
   tack ("    case 0: FLX_MATCH_FAILURE("^s^");\n");
   tack ("    default: FLX_MATCH_FAILURE("^s^");\n");
   tack "  }\n";
+

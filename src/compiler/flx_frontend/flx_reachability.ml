@@ -130,7 +130,7 @@ let check_reachability_exes bsym_table label_info idx sr name rt exes =
     print_endline (long_string_of_src sr);
 *)
 (*
-    Flx_exceptions.clierr sr ("[check_reachability] Function " ^ name ^ " drops thru end")
+    Flx_exceptions.clierrx "[flx_frontend/flx_reachability.ml:133: E355] " sr ("[check_reachability] Function " ^ name ^ " drops thru end")
 *)
   end
   ;
@@ -170,3 +170,4 @@ let check_reachability bsym_table = ()
   )
   bsym_table
 *)
+

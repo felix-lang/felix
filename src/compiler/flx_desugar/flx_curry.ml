@@ -149,9 +149,9 @@ let mkcurry seq sr name vs args return_type effects kind body props =
 
   (* preflight checks *)
   if List.mem `Lvalue props then
-    clierr sr "Felix function cannot return lvalue";
+    clierrx "[flx_desugar/flx_curry.ml:152: E318] " sr "Felix function cannot return lvalue";
   if List.mem `Pure props && match return_type with  | TYP_void _,_ -> true | _ -> false then
-    clierr sr "Felix procedure cannot be pure";
+    clierrx "[flx_desugar/flx_curry.ml:154: E319] " sr "Felix procedure cannot be pure";
 
   (* Manipulate the type variables ----- *)
 
@@ -244,7 +244,7 @@ let mkcurry seq sr name vs args return_type effects kind body props =
             in
             STMT_lazy_decl (sr, synthname n, vs, rt, Some e)
           | _ ->
-            clierr sr "Function with no arguments"
+            clierrx "[flx_desugar/flx_curry.ml:247: E320] " sr "Function with no arguments"
           end
         end
 
@@ -261,8 +261,8 @@ let mkcurry seq sr name vs args return_type effects kind body props =
             print_endline ("Statement " ^ Flx_print.string_of_statement 2 st);
             *)
             match st with
-            | STMT_fun_return _ -> clierr sr "FOUND function RETURN in Object";
-            | STMT_proc_return _ -> clierr sr "FOUND procedure RETURN in Object";
+            | STMT_fun_return _ -> clierrx "[flx_desugar/flx_curry.ml:264: E321] " sr "FOUND function RETURN in Object";
+            | STMT_proc_return _ -> clierrx "[flx_desugar/flx_curry.ml:265: E322] " sr "FOUND procedure RETURN in Object";
             | STMT_curry (_,name, vs, pss, (res,traint) , effects, kind, adjectives, ss)
                 when kind = `Method || kind = `GeneratorMethod -> 
                 methods := name :: !methods
@@ -314,5 +314,6 @@ let mkcurry seq sr name vs args return_type effects kind body props =
       STMT_function (sr, synthname m, vs, h, (rettype t effects,postcondition), noeffects,`Generated "curry"::props, body)
 
    in aux args vs (cal_props kind props)
+
 
 

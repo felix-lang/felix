@@ -37,7 +37,7 @@ let gen_fun_header syms bsym_table kind index export_name modulename =
     | BBDCL_fun (props,vs,(ps,traint),ret,effects,_) ->
       let display = get_display_list bsym_table index in
       if length display <> 0
-      then clierr (Flx_bsym.sr bsym) ("Can't export nested function " ^ export_name);
+      then clierrx "[flx_cpp_backend/flx_gen_biface.ml:40: E290] " (Flx_bsym.sr bsym) ("Can't export nested function " ^ export_name);
 
       let arglist =
         List.map
@@ -123,11 +123,11 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,vs,(ps,traint),BTYP_void,effects,_) ->
       if length vs <> 0
-      then clierr sr ("Can't export generic procedure " ^ Flx_bsym.id bsym)
+      then clierrx "[flx_cpp_backend/flx_gen_biface.ml:126: E291] " sr ("Can't export generic procedure " ^ Flx_bsym.id bsym)
       ;
       let display = get_display_list bsym_table index in
       if length display <> 0
-      then clierr (Flx_bsym.sr bsym) "Can't export nested function";
+      then clierrx "[flx_cpp_backend/flx_gen_biface.ml:130: E292] " (Flx_bsym.sr bsym) "Can't export nested function";
 
       let args = rev (fold_left (fun args
         ({ptyp=t; pid=name; pindex=pidx} as arg) ->
@@ -181,7 +181,7 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
            let bug = 
              "Function exported as " ^ export_name ^ " is neither stackable " ^
              " nor has a heap closure -- no way to call it" 
-           in clierr sr bug
+           in clierrx "[flx_cpp_backend/flx_gen_biface.ml:184: E293] " sr bug
       in
       let requires_ptf = mem `Requires_ptf props in
 
@@ -201,7 +201,7 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
               then "FLX_APAR_PASS_ONLY "
               else "FLX_APAR_PASS "
             | `Cfun -> 
-              clierr (Flx_bsym.sr bsym) ("Attempt to export procedure requiring thread frame with C interface: "^ Flx_bsym.id bsym)
+              clierrx "[flx_cpp_backend/flx_gen_biface.ml:204: E294] " (Flx_bsym.sr bsym) ("Attempt to export procedure requiring thread frame with C interface: "^ Flx_bsym.id bsym)
             end
             else ""
           )
@@ -216,7 +216,7 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
             begin match kind with
             | `Fun -> "_PTFV"
             | `Cfun -> 
-              clierr (Flx_bsym.sr bsym) ("Attempt to export procedure requiring thread frame with C interface: "^ Flx_bsym.id bsym)
+              clierrx "[flx_cpp_backend/flx_gen_biface.ml:219: E295] " (Flx_bsym.sr bsym) ("Attempt to export procedure requiring thread frame with C interface: "^ Flx_bsym.id bsym)
             end
             else ""
           )
@@ -235,11 +235,11 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
 
     | BBDCL_fun (props,vs,(ps,traint),ret,effects,_) ->
       if length vs <> 0
-      then clierr (Flx_bsym.sr bsym) ("Can't export generic function " ^ Flx_bsym.id bsym)
+      then clierrx "[flx_cpp_backend/flx_gen_biface.ml:238: E296] " (Flx_bsym.sr bsym) ("Can't export generic function " ^ Flx_bsym.id bsym)
       ;
       let display = get_display_list bsym_table index in
       if length display <> 0
-      then clierr sr "Can't export nested function";
+      then clierrx "[flx_cpp_backend/flx_gen_biface.ml:242: E297] " sr "Can't export nested function";
       let arglist =
         List.map
         (fun {ptyp=t; pid=name} -> cpp_typename syms bsym_table t ^ " " ^ name)
@@ -267,7 +267,7 @@ print_endline ("Export " ^ export_name ^ " properties " ^ string_of_properties p
            let bug = 
              "Function exported as " ^ export_name ^ " is neither stackable " ^
              " nor has a heap closure -- no way to call it" 
-           in clierr sr bug
+           in clierrx "[flx_cpp_backend/flx_gen_biface.ml:270: E298] " sr bug
       in
       let requires_ptf = mem `Requires_ptf props in
 
@@ -346,7 +346,7 @@ let gen_felix_binding syms bsym_table kind index export_name modulename =
   | BBDCL_fun (props,vs,(ps,traint),ret,effects,_) ->
     let display = get_display_list bsym_table index in
     if length display <> 0
-    then clierr (Flx_bsym.sr bsym) ("Can't export nested function " ^ export_name);
+    then clierrx "[flx_cpp_backend/flx_gen_biface.ml:349: E299] " (Flx_bsym.sr bsym) ("Can't export nested function " ^ export_name);
 
     (* THIS BIT FOR DOCO ONLY *)
     let n = List.length ps in
@@ -526,4 +526,5 @@ let gen_biface_felix syms bsym_table bifaces modulename =
   "  ''';\n" ^
   cat "" (List.map (gen_biface_felix1 syms bsym_table modulename) bifaces) ^
   "}\n"
+
 

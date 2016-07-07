@@ -103,7 +103,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
     let result = List.fold_left (fun acc exe -> 
       match exe with
       | Exe (sr,asm) -> Exe (sr, EXE_type_error asm) :: acc 
-      | a -> clierr sr ("type-error statement must be purely executable got " ^ string_of_asm 0 a)
+      | a -> clierrx "[flx_desugar/flx_desugar.ml:106: E323] " sr ("type-error statement must be purely executable got " ^ string_of_asm 0 a)
     ) [] asms
     in  
     let result = List.rev result in
@@ -565,7 +565,7 @@ print_endline ("Translating Lazy Declaration " ^ name);
 
             | EXPR_name (_,n,[]) ->
               [STMT_val_decl (sr,n,dfltvs,t,Some r)]
-            | x -> clierr sr ("identifier required in val init, got " ^ string_of_expr x)
+            | x -> clierrx "[flx_desugar/flx_desugar.ml:568: E324] " sr ("identifier required in val init, got " ^ string_of_expr x)
           else
             [assign sr fid e r]
         end
@@ -650,7 +650,7 @@ print_endline ("Translating Lazy Declaration " ^ name);
   | STMT_scheme_string _
     -> assert false
 
-  | STMT_invariant (sr, _) -> clierr sr "'invariant' not valid outside an object definition"
+  | STMT_invariant (sr, _) -> clierrx "[flx_desugar/flx_desugar.ml:653: E325] " sr "'invariant' not valid outside an object definition"
 
 (** Desugar all the statements in a compilation unit. *)
 let rec desugar_stmts state curpath stmts =
@@ -680,4 +680,5 @@ let rec desugar_stmts state curpath stmts =
   state.Flx_desugar_expr.include_file_cache <- [];
 
   include_files, asms
+
 

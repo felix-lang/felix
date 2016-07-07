@@ -282,7 +282,7 @@ bcat s ("\n//ABSTRACT TYPE " ^ name ^"\n");
             bcat s ("//Use "^name^"_ptr_map\n");
           end
         else
-          clierr (Flx_bsym.sr bsym)
+          clierrx "[flx_cpp_backend/flx_ogen.ml:285: E311] " (Flx_bsym.sr bsym)
           ("[ogen] attempt to allocate an incomplete type: '" ^ Flx_bsym.id bsym ^"'")
 
       | BBDCL_union (vs,[id,n,t']) -> 
@@ -523,3 +523,4 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
   bcat s ("extern \"C\" FLX_EXPORT ::flx::gc::generic::gc_shape_t * const " ^ cid_of_flxid module_name ^ "_head_shape;\n");
   bcat s ("::flx::gc::generic::gc_shape_t * const " ^ cid_of_flxid module_name ^ "_head_shape=" ^ !last_ptr_map ^ ";\n");
   !last_ptr_map,Buffer.contents s
+

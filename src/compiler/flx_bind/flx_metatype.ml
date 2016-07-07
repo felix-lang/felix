@@ -36,7 +36,7 @@ print_endline ("Metatyping term " ^ st term);
       let rt = metatype sym_table bsym_table rs sr c in
       if b<>rt
       then
-        clierr sr
+        clierrx "[flx_bind/flx_metatype.ml:39: E239] " sr
         (
           "In abstraction\n" ^
           st term ^
@@ -58,7 +58,7 @@ print_endline ("Metatyping term " ^ st term);
       | BTYP_function (x,y) ->
         if x = tb then y
         else
-          clierr sr (
+          clierrx "[flx_bind/flx_metatype.ml:61: E240] " sr (
             "Metatype error: type term " ^
              st term ^
             "\nfunction argument wrong metatype, expected:\n" ^
@@ -67,7 +67,7 @@ print_endline ("Metatyping term " ^ st term);
             st tb
           )
 
-      | _ -> clierr sr
+      | _ -> clierrx "[flx_bind/flx_metatype.ml:70: E241] " sr
         (
           "Metatype error: function required for LHS of application:\n"^
           sbt bsym_table term ^
@@ -111,21 +111,21 @@ print_endline ("Metatyping term " ^ st term);
       | SYMDEF_abs _ -> btyp_type 0
       | SYMDEF_newtype _ -> btyp_type 0 
 (*
-          clierr sr ("Unexpected argument to metatype, newtype : " ^
+          clierrx "[flx_bind/flx_metatype.ml:114: E242] " sr ("Unexpected argument to metatype, newtype : " ^
             sbt bsym_table term)
 *)
       | SYMDEF_struct _ 
       | SYMDEF_cstruct _ -> btyp_type 0
 (*
-          clierr sr ("Unexpected argument to metatype, struct or cstruct : " ^
+          clierrx "[flx_bind/flx_metatype.ml:120: E243] " sr ("Unexpected argument to metatype, struct or cstruct : " ^
             sbt bsym_table term)
 *)
       | SYMDEF_type_alias _ -> 
-          clierr sr ("Unexpected argument to metatype, type alias: " ^
+          clierrx "[flx_bind/flx_metatype.ml:124: E244] " sr ("Unexpected argument to metatype, type alias: " ^
             sbt bsym_table term)
 
       | _ ->
-          clierr sr ("Unexpected argument to metatype: " ^
+          clierrx "[flx_bind/flx_metatype.ml:128: E245] " sr ("Unexpected argument to metatype: " ^
             sbt bsym_table term)
       end
 
@@ -177,6 +177,7 @@ print_endline ("Metatyping term " ^ st term);
   | BTYP_type_set_intersection _
   | BTYP_none
     ->
-    clierr sr ("No meta type for type-like term " ^ sbt bsym_table term)
+    clierrx "[flx_bind/flx_metatype.ml:180: E246] " sr ("No meta type for type-like term " ^ sbt bsym_table term)
+
 
 

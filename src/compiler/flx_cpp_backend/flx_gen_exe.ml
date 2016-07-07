@@ -164,7 +164,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
           | Function ->
             if is_jump && not is_ehandler
             then
-              clierr sr ("[gen_exe] can't jump inside function " ^ caller_name ^" to " ^ called_name ^ 
+              clierrx "[flx_cpp_backend/flx_gen_exe.ml:167: E300] " sr ("[gen_exe] can't jump inside function " ^ caller_name ^" to " ^ called_name ^ 
                ", return type " ^ sbt bsym_table ret)
             else if stack_call then ""
             else "0"
@@ -277,7 +277,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         will fail
       *)
       if length vs <> length ts then
-      clierr sr "[gen_prim_call] Wrong number of type arguments"
+      clierrx "[flx_cpp_backend/flx_gen_exe.ml:280: E301] " sr "[gen_prim_call] Wrong number of type arguments"
       ;
       let wc s =
         (if with_comments then "      // " ^ src_str ^ "\n" else "") ^
@@ -311,7 +311,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       assert (not is_jump);
 
       if length vs <> length ts then
-      clierr sr "[gen_prim_call] Wrong number of type arguments"
+      clierrx "[flx_cpp_backend/flx_gen_exe.ml:314: E302] " sr "[gen_prim_call] Wrong number of type arguments"
       ;
       let wc s = 
         (if with_comments then "      // " ^ src_str ^ "\n" else "") ^
@@ -336,7 +336,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       assert (ret = btyp_void ());
 
       if length vs <> length ts then
-      clierr sr "[gen_prim_call] Wrong number of type arguments"
+      clierrx "[flx_cpp_backend/flx_gen_exe.ml:339: E303] " sr "[gen_prim_call] Wrong number of type arguments"
       ;
       let s = Flx_bsym.id bsym ^ "($a);" in
       let s =
@@ -405,7 +405,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
   in
   let forget_template sr s = match s with
   | CS.Identity -> syserr sr "Identity proc is nonsense(2)!"
-  | CS.Virtual -> clierr sr "Instantiate virtual procedure(2)!"
+  | CS.Virtual -> clierrx "[flx_cpp_backend/flx_gen_exe.ml:408: E304] " sr "Instantiate virtual procedure(2)!"
   | CS.Str s -> s
   | CS.Str_template s -> s
   in
@@ -528,7 +528,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         let frame = get_label_frame bsym_table idx in
         gen_nonlocal_goto pc frame idx
       | `Unreachable ->
-        clierr sr ("Unconditional Jump to Unreachable label " ^ string_of_int idx)
+        clierrx "[flx_cpp_backend/flx_gen_exe.ml:531: E305] " sr ("Unconditional Jump to Unreachable label " ^ string_of_int idx)
       end
 
     | BEXE_ifgoto (sr,e,idx) ->
@@ -797,7 +797,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         else
         "      FLX_RETURN // procedure return\n"
       | Function ->
-        clierr sr "Function contains procedure return";
+        clierrx "[flx_cpp_backend/flx_gen_exe.ml:800: E306] " sr "Function contains procedure return";
       end
 
     | BEXE_svc (sr,index) ->
@@ -820,9 +820,9 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         "      return this;\n" ^
         "    FLX_CASE_LABEL(" ^ cid_of_bid n ^ ")\n"
       | true,Procedure ->
-        clierr sr ("Stackable procedure contains service call")
+        clierrx "[flx_cpp_backend/flx_gen_exe.ml:823: E307] " sr ("Stackable procedure contains service call")
       | _,Function ->
-        clierr sr ("Function contains service call")
+        clierrx "[flx_cpp_backend/flx_gen_exe.ml:825: E308] " sr ("Function contains service call")
       end
 
     | BEXE_yield (sr,e) ->
@@ -923,7 +923,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
           else let t' = snd e in ge' sr e,t',trail
         | x -> 
           print_endline src_str;
-          clierr sr ("lvalue required on lhs of assignment got lhs = " ^ sbe bsym_table x)
+          clierrx "[flx_cpp_backend/flx_gen_exe.ml:926: E309] " sr ("lvalue required on lhs of assignment got lhs = " ^ sbe bsym_table x)
       in
       let lv,lvt,prjs = split e1 [] in
       begin match prjs with
@@ -1172,4 +1172,5 @@ let gen_exes
     print_endline ("Error generating code for "^cxx_name^"  exes=\n");
     List.iter (fun exe -> print_endline (Flx_print.string_of_bexe bsym_table 2 exe)) exes;
   raise exn
+
 

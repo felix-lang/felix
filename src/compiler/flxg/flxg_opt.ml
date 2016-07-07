@@ -24,3 +24,4 @@ let optimize state bsym_table (root_proc:int option) =
     print_endline "//OPTIMIZATION OK";
 
   bsym_table
+

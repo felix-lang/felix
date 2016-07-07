@@ -185,7 +185,7 @@ let varmap_subst varmap t =
 let mk_varmap sr vs ts =
   if List.length ts <> List.length vs
   then
-    clierr sr 
+    clierrx "[flx_core/flx_unify.ml:188: E280] " sr 
     (
       "[mk_varmap] wrong number of type args, expected vs=" ^
       si (List.length vs) ^
@@ -1404,5 +1404,6 @@ let expr_maybe_matches bsym_table counter tvars evars le re =
   *)
   try Some (expr_unification bsym_table counter eqns tvars evars)
   with Not_found -> None
+
 
 

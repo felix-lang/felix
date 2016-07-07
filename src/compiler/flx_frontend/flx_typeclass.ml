@@ -205,7 +205,7 @@ in the typeclass might be used instead. This routine only handles actual instanc
         let tc_ptv = length tck_bvs - length tc_bvs in
         let inst_ptv = length inst_funbvs - length inst_vs in
         if inst_ptv <> tc_ptv then
-        clierr sr ("Wrong number of type parameters in instance fun!\n" ^
+        clierrx "[flx_frontend/flx_typeclass.ml:208: E361] " sr ("Wrong number of type parameters in instance fun!\n" ^
           "Expected " ^ si tc_ptv ^ "\n" ^
           "Got " ^ si inst_ptv
         );
@@ -226,14 +226,14 @@ in the typeclass might be used instead. This routine only handles actual instanc
         in
         let entry = inst_vs, inst_constraint, inst_ts, i in
         if mem entry old then
-          clierr sr "Instance already registered??"
+          clierrx "[flx_frontend/flx_typeclass.ml:229: E362] " sr "Instance already registered??"
         else begin
 (* finally, add the instance to the virtual to instance mapping table for subsequent lookups *)
           Hashtbl.replace syms.virtual_to_instances tck (entry :: old);
         end
 
       | _ ->
-        clierr sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
+        clierrx "[flx_frontend/flx_typeclass.ml:236: E363] " sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
     in
 
     Flx_types.BidSet.iter begin fun tck ->
@@ -258,7 +258,7 @@ in the typeclass might be used instead. This routine only handles actual instanc
       | BBDCL_reduce -> ()
       | _ ->
         (*
-        clierr tcksr "Typeclass entry must be virtual function or procedure"
+        clierrx "[flx_frontend/flx_typeclass.ml:261: E364] " tcksr "Typeclass entry must be virtual function or procedure"
         *)
         (*
         print_endline ("Warning: typeclass " ^ Flx_bsym.id tc_bsym ^ " entry " ^
@@ -406,7 +406,7 @@ let build_typeclass_to_instance_table syms bsym_table : unit =
 
 let tcinst_chk syms bsym_table id sr i ts (inst_vs, inst_constraint, inst_ts, j)  =
      if length inst_ts > length ts then
-       clierr sr (
+       clierrx "[flx_frontend/flx_typeclass.ml:409: E365] " sr (
          "Not enough ts given, expected at least " ^
          si (length inst_ts) ^ ", got " ^ si (length ts)
        )
@@ -738,7 +738,7 @@ print_endline "Discard r";
        print_endline ("  defined: " ^ Flx_srcref.long_string_of_src (Flx_bsym.sr bsym))
       end candidates;
 
-      clierr sr "No most specialised instance!"
+      clierrx "[flx_frontend/flx_typeclass.ml:741: E366] " sr "No most specialised instance!"
 
 let id x = x
 
@@ -749,13 +749,14 @@ let tcsubst syms bsym_table sr i ts =
   | `CannotMatch, i,ts ->
      let bsym = Flx_bsym_table.find bsym_table i in
      let id = Flx_bsym.id bsym in
-     clierr sr ("[Cannotmatch] Cannot instantiate virtual " ^ id ^ "<" ^ si i ^ ">[" ^catmap "," (sbt bsym_table) ts^ "]")
+     clierrx "[flx_frontend/flx_typeclass.ml:752: E367] " sr ("[Cannotmatch] Cannot instantiate virtual " ^ id ^ "<" ^ si i ^ ">[" ^catmap "," (sbt bsym_table) ts^ "]")
   | `MaybeMatchesLater, i,ts ->
      let bsym = Flx_bsym_table.find bsym_table i in
      let id = Flx_bsym.id bsym in
-     clierr sr ("[MaybeMatchesLater] Cannot instantiate virtual " ^ id ^ "<" ^ si i ^ ">[" ^catmap "," (sbt bsym_table) ts^ "]")
+     clierrx "[flx_frontend/flx_typeclass.ml:756: E368] " sr ("[MaybeMatchesLater] Cannot instantiate virtual " ^ id ^ "<" ^ si i ^ ">[" ^catmap "," (sbt bsym_table) ts^ "]")
 
 
 let fixup_typeclass_instance syms bsym_table sr i ts =
   tcsubst syms bsym_table sr i ts
+
 

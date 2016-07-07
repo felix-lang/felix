@@ -154,7 +154,7 @@ print_endline "Cal call, types don't match ..";
           | _ -> bexpr_tuple (btyp_tuple (map snd xs)) xs
           end
         | None ->
-          clierr sr
+          clierrx "[flx_bind/flx_bind_bexe.ml:157: E9] " sr
           (
             "[cal_call] Procedure " ^
             sbe bsym_table tbe1 ^
@@ -190,7 +190,7 @@ print_endline "Cal call, types don't match ..";
     bexe_call a
 
   | _ ->
-    clierr sr ("[cal_call] call non procedure, "^
+    clierrx "[flx_bind/flx_bind_bexe.ml:193: E10] " sr ("[cal_call] call non procedure, "^
     sbe bsym_table tbe1
     ^"\ntype=" ^ sbt bsym_table t1)
 
@@ -209,16 +209,16 @@ let cal_loop sym_table sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
           BEXE_call_direct (sr,i, ts, tbe2)
           *)
         else
-          clierr sr
+          clierrx "[flx_bind/flx_bind_bexe.ml:212: E11] " sr
           "[cal_loop] Loop target must be self or parent"
 
       | _ ->
-        clierr sr (
+        clierrx "[flx_bind/flx_bind_bexe.ml:216: E12] " sr (
           "[cal_loop] Expected procedure closure, got "^
           sbe bsym_table (p,pt)
         )
     else
-      clierr sr
+      clierrx "[flx_bind/flx_bind_bexe.ml:221: E13] " sr
       (
         "[cal_loop] Procedure " ^
         sbe bsym_table tbe1 ^
@@ -233,7 +233,7 @@ let cal_loop sym_table sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
       )
 
   | _ ->
-    clierr sr ("[cal_loop] loop to non procedure, "^
+    clierrx "[flx_bind/flx_bind_bexe.ml:236: E14] " sr ("[cal_loop] loop to non procedure, "^
     sbe bsym_table (p,pt)
     ^"\ntype=" ^ sbt bsym_table pt)
 
@@ -292,14 +292,14 @@ print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_typ
     let result = try Some (bind_exe state bsym_table (sr, x)) with _ -> None
     in begin match result with
     | None -> []
-    | Some _ -> clierr sr ("type_error expected, statement compiled! " ^ string_of_exe 0 exe);
+    | Some _ -> clierrx "[flx_bind/flx_bind_bexe.ml:295: E15] " sr ("type_error expected, statement compiled! " ^ string_of_exe 0 exe);
     end
 
   | EXE_label s ->
       state.reachable <- true;
       let maybe_index = lookup_label_in_env state.lookup_state bsym_table state.env sr s in
       begin match maybe_index with
-      | None -> clierr sr ("[bind_exe:EXE_label] Can't find label " ^ s)
+      | None -> clierrx "[flx_bind/flx_bind_bexe.ml:302: E16] " sr ("[bind_exe:EXE_label] Can't find label " ^ s)
       | Some i -> [bexe_label (sr,i)] 
       end
 
@@ -307,7 +307,7 @@ print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_typ
       state.reachable <- false;
       let maybe_index = lookup_label_in_env state.lookup_state bsym_table state.env sr s in
       begin match maybe_index with
-      | None -> clierr sr ("bind_exe:EXE_goto] Can't find label " ^ s)
+      | None -> clierrx "[flx_bind/flx_bind_bexe.ml:310: E17] " sr ("bind_exe:EXE_goto] Can't find label " ^ s)
       | Some i -> [bexe_goto (sr,i)] 
       end
 
@@ -324,7 +324,7 @@ print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_typ
       | _ -> [(bexe_cgoto (sr,x))]
       end
     else
-      clierr (src_of_expr e)
+      clierrx "[flx_bind/flx_bind_bexe.ml:327: E18] " (src_of_expr e)
       (
         "[bind_exes:ifcgoto] Computed goto require LABEL argument, got " ^
         sbt bsym_table t
@@ -346,13 +346,13 @@ print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_typ
         | _ -> [(bexe_ifcgoto (sr,x1,x2))]
         end
       else
-        clierr (src_of_expr e2)
+        clierrx "[flx_bind/flx_bind_bexe.ml:349: E19] " (src_of_expr e2)
         (
           "[bind_exes:ifcgoto] Computed goto require LABEL argument, got " ^
           sbt bsym_table t2
         )
     else
-      clierr (src_of_expr e1)
+      clierrx "[flx_bind/flx_bind_bexe.ml:355: E20] " (src_of_expr e1)
       (
         "[bind_exes:ifgoto] Conditional requires bool argument, got " ^
         sbt bsym_table t1
@@ -364,7 +364,7 @@ print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_typ
     let label_name = "_endof_" ^ s in
     let maybe_index = lookup_label_in_env state.lookup_state bsym_table state.env sr label_name in
     begin match maybe_index with
-    | None -> clierr sr ("[bind_exe:EXE_proc_return_from] Can't find label " ^ s)
+    | None -> clierrx "[flx_bind/flx_bind_bexe.ml:367: E21] " sr ("[bind_exe:EXE_proc_return_from] Can't find label " ^ s)
     | Some i -> [bexe_goto (sr,i)] 
     end
 
@@ -374,11 +374,11 @@ print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_typ
     then
       let maybe_index = lookup_label_in_env state.lookup_state bsym_table state.env sr s in
       begin match maybe_index with
-      | None -> clierr sr ("[bind_exe:EXE_if_goto] Can't find label " ^ s)
+      | None -> clierrx "[flx_bind/flx_bind_bexe.ml:377: E22] " sr ("[bind_exe:EXE_if_goto] Can't find label " ^ s)
       | Some i -> [bexe_ifgoto (sr,(e',t),i)] 
       end
     else
-      clierr (src_of_expr e)
+      clierrx "[flx_bind/flx_bind_bexe.ml:381: E23] " (src_of_expr e)
       (
         "[bind_exes:ifgoto] Conditional requires bool argument, got " ^
         sbt bsym_table t
@@ -401,7 +401,7 @@ print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_typ
 
     let index =
       match state.parent with
-      | None -> clierr (src_of_expr e2) "no parent specified"
+      | None -> clierrx "[flx_bind/flx_bind_bexe.ml:404: E24] " (src_of_expr e2) "no parent specified"
       | Some index -> index
     in
 
@@ -517,9 +517,9 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
       in
       begin match entry with
       | SYMDEF_var _ -> ()
-      | SYMDEF_val _ -> clierr sr ("Can't svc into value " ^ id)
-      | SYMDEF_parameter _ -> clierr sr ("Can't svc into parameter value " ^ id)
-      | _ -> clierr sr ("[bexe] svc requires variable, got " ^ id)
+      | SYMDEF_val _ -> clierrx "[flx_bind/flx_bind_bexe.ml:520: E25] " sr ("Can't svc into value " ^ id)
+      | SYMDEF_parameter _ -> clierrx "[flx_bind/flx_bind_bexe.ml:521: E26] " sr ("Can't svc into parameter value " ^ id)
+      | _ -> clierrx "[flx_bind/flx_bind_bexe.ml:522: E27] " sr ("[bexe] svc requires variable, got " ^ id)
       end
       ;
       [(bexe_svc (sr,index))]
@@ -537,7 +537,7 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
         [(bexe_proc_return sr)]
       end
     else
-      clierr sr
+      clierrx "[flx_bind/flx_bind_bexe.ml:540: E28] " sr
       (
         "function " ^ state.id ^ " has void return type"
       )
@@ -581,7 +581,7 @@ print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
       begin match e' with
       | BEXPR_apply (f,a) -> [(bexe_jump (sr,f,a))]
       | _ ->
-        clierr sr
+        clierrx "[flx_bind/flx_bind_bexe.ml:584: E29] " sr
           (
             "[bind_exe: fun_return ] return expression \n" ^
             sbe bsym_table e ^
@@ -590,7 +590,7 @@ print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
       end
 *)
     end
-    else clierr sr
+    else clierrx "[flx_bind/flx_bind_bexe.ml:593: E30] " sr
       (
         "[bind_exe: fun_return ] return expression \n" ^
         sbe bsym_table e ^
@@ -609,7 +609,7 @@ print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
     if type_match bsym_table state.counter state.ret_type t' then
       [(bexe_yield (sr,(e',t')))]
     else
-      clierr sr
+      clierrx "[flx_bind/flx_bind_bexe.ml:612: E31] " sr
       (
         "In " ^ string_of_exe 0 exe ^ "\n" ^
         "Wrong return type,\nexpected : " ^
@@ -632,7 +632,7 @@ print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
       let (x,t) as e' = be e in
       if t = flx_bbool
       then [(bexe_assert (sr,e'))]
-      else clierr sr
+      else clierrx "[flx_bind/flx_bind_bexe.ml:635: E32] " sr
       (
         "assert requires bool argument, got " ^
         sbt bsym_table t
@@ -666,7 +666,7 @@ print_endline ("Bind EXE_iinit "^s);
             print_endline ("Index = " ^ si index ^ " initexpr=" ^ sbe bsym_table (e',rhst) ^ " type of variable is " ^ sbt bsym_table rhst);
 *)
             [bexe]
-      end else clierr sr
+      end else clierrx "[flx_bind/flx_bind_bexe.ml:669: E33] " sr
       (
         "[bind_exe: iinit] LHS[" ^ s ^ "<" ^ string_of_bid index ^ ">]:\n" ^
         sbt bsym_table lhst^
@@ -683,7 +683,7 @@ print_endline ("Bind EXE_iinit "^s);
 print_endline ("Bind EXE_init "^s);
 *)
       begin match lun sr s with
-      | FunctionEntry _ -> clierr sr "Can't init function constant"
+      | FunctionEntry _ -> clierrx "[flx_bind/flx_bind_bexe.ml:686: E34] " sr "Can't init function constant"
       | NonFunctionEntry (index) ->
           let index = sye index in
           let e',rhst = be e in
@@ -721,7 +721,7 @@ print_endline ("Bind EXE_init "^s);
             print_endline ("Index = " ^ si index ^ " initexpr=" ^ sbe bsym_table (e',rhst) ^ " type of variable is " ^ sbt bsym_table rhst);
 *)
             [bexe]
-          end else clierr sr
+          end else clierrx "[flx_bind/flx_bind_bexe.ml:724: E35] " sr
           (
             "[bind_exe: init] LHS[" ^ s ^ "<" ^ string_of_bid index ^ ">]:\n" ^
             sbt bsym_table lhst^
@@ -762,7 +762,7 @@ print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
 *)
       if type_match bsym_table state.counter lhst rhst
       then [(bexe_assign (sr,lx,rx))]
-      else clierr sr
+      else clierrx "[flx_bind/flx_bind_bexe.ml:765: E36] " sr
       (
         "[bind_exe: assign ] Assignment "^
           sbe bsym_table lx^"="^
@@ -833,7 +833,7 @@ let bind_exes state bsym_table sr exes : Flx_btype.t * Flx_bexe.t list  =
     then
       state.ret_type <- varmap_subst (get_varmap state.lookup_state) state.ret_type
     else
-      clierr sr
+      clierrx "[flx_bind/flx_bind_bexe.ml:836: E37] " sr
       (
         "procedure " ^ state.id ^ " has non-void return type " ^ sbt bsym_table state.ret_type
       )
@@ -871,7 +871,7 @@ let bind_exes state bsym_table sr exes : Flx_btype.t * Flx_bexe.t list  =
       end bound_exes;
 *)
       (*
-      clierr sr
+      clierrx "[flx_bind/flx_bind_bexe.ml:874: E38] " sr
       *)
 (*
       print_endline
@@ -891,4 +891,5 @@ let bind_exes state bsym_table sr exes : Flx_btype.t * Flx_bexe.t list  =
   end
   ;
   state.ret_type, bound_exes
+
 

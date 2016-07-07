@@ -19,5 +19,6 @@ exception FunctionNameNotFound of Flx_srcref.t * string * string * string list
 
 val clierrn: Flx_srcref.t list -> string -> 'a
 val clierr: Flx_srcref.t -> string -> 'a
+val clierrx: string -> Flx_srcref.t -> string -> 'a
 val clierr2: Flx_srcref.t -> Flx_srcref.t -> string -> 'a
 val syserr: Flx_srcref.t -> string -> 'a

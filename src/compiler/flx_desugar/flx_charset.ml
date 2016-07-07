@@ -68,3 +68,4 @@ let regexp_dot =
       (charset_of_int_range 0 (eol - 1))
       (charset_of_int_range (eol + 1) 255)
   )
+

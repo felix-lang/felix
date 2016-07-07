@@ -235,3 +235,4 @@ let passign syms bsym_table (pinits:aentry_t list) sr =
     tmplist := tl !tmplist
   done;
   !parameters, !result
+

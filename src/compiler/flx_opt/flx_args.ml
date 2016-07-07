@@ -66,3 +66,4 @@ let append_args syms bsym_table f a b =
   match args with
   | [x] -> x
   | _ -> bexpr_tuple (btyp_tuple (map snd args)) args
+

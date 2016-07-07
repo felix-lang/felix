@@ -236,7 +236,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
       let tss = map tn ts in
       let instance =
         match ct with
-        | CS.Virtual -> clierr (Flx_bsym.sr bsym) "Instantiate virtual type!"
+        | CS.Virtual -> clierrx "[flx_cpp_backend/flx_tgen.ml:239: E312] " (Flx_bsym.sr bsym) "Instantiate virtual type!"
         | CS.Identity -> syserr (Flx_bsym.sr bsym) "Idendity type is nonsense!"
         | CS.Str c -> c
         | CS.Str_template c ->
@@ -575,3 +575,4 @@ let gen_types syms bsym_table ts =
   )
   ts;
   Buffer.contents s
+

@@ -119,3 +119,4 @@ print_endline ("Calculating heap closures");
   BidSet.iter (set_closure bsym_table) !all_closures
 
 
+

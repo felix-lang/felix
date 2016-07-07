@@ -575,7 +575,7 @@ if id = "accumulate" then print_endline "solve_mgu";
     print_endline (
     "WARNING: experimental feature coming up\n" ^
     "Below would be an error, but we try now to do more work\n" ^
-    (* clierr call_sr ( *)
+    (* clierrx "[flx_bind/flx_overload.ml:578: E247] " call_sr ( *)
       "[resolve_overload] In application of " ^ id ^
       " cannot resolve:\n" ^
       report_unresolved ^
@@ -806,7 +806,7 @@ if id = "accumulate" then
         (*
         print_endline ("At " ^ Flx_srcref.short_string_of_src call_sr);
         (*
-        clierr call_sr
+        clierrx "[flx_bind/flx_overload.ml:809: E248] " call_sr
         *)
         print_endline
         (
@@ -893,7 +893,7 @@ if id = "accumulate" then
           print_endline ("Fun traint = " ^ sbt bsym_table reduced_constraint);
           print_endline ("Implication result = " ^ if implied then "true" else "false");
 
-          clierr sr ("[overload] Cannot resolve type constraint! " ^
+          clierrx "[flx_bind/flx_overload.ml:896: E249] " sr ("[overload] Cannot resolve type constraint! " ^
             sbt bsym_table type_constraint ^
             "\nReduced to " ^ sbt bsym_table x)
         end
@@ -1025,7 +1025,7 @@ if name = "accumulate" then print_endline "Considering function .. ";
   let spec_result =
     try specialize_domain sr base_vs entry_kind.sub_ts base_result
     with Not_found ->
-      clierr sr ("Failed to bind candidate return type! fn='" ^ name ^
+      clierrx "[flx_bind/flx_overload.ml:1028: E250] " sr ("Failed to bind candidate return type! fn='" ^ name ^
         "', type=" ^ sbt bsym_table base_result)
   in
 (*
@@ -1302,7 +1302,7 @@ if name = "accumulate" then print_endline "Failed to find result";
   | [Unique (i,t,rtyp,mgu,ts)] -> Some (i,t,rtyp,mgu,ts)
   | [] -> None
   | _ ->
-      clierr call_sr
+      clierrx "[flx_bind/flx_overload.ml:1305: E251] " call_sr
       (
         "Too many candidates match in overloading " ^ name ^
         " with argument types " ^ catmap "," (sbt bsym_table) sufs ^
@@ -1325,3 +1325,4 @@ in a deeper scope: then if there is a conflict between signatures
 (equal or unordered) the closest is taken if that resolves the
 conflict
 *)
+

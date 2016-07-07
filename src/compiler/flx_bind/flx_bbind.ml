@@ -163,8 +163,8 @@ let bind_reqs bt state bsym_table env sr reqs =
     let res = aux reqs in
     let res = fold_left (fun acc r -> match r with 
       | Satisfied (i,ts) -> (i,ts)::acc
-      | Fail None -> clierr sr "Explicit requirements failure"
-      | Fail (Some q) -> clierr sr ("Cannot find requirement for " ^ Flx_print.string_of_qualified_name q)
+      | Fail None -> clierrx "[flx_bind/flx_bbind.ml:166: E0] " sr "Explicit requirements failure"
+      | Fail (Some q) -> clierrx "[flx_bind/flx_bbind.ml:167: E1] " sr ("Cannot find requirement for " ^ Flx_print.string_of_qualified_name q)
       ) 
       [] res 
     in
@@ -329,7 +329,7 @@ print_endline (" &&&&&& bind_type_uses calling BBIND_SYMBOL");
           sym.Flx_sym.sr
           (fst ivs)
       with Not_found ->
-        clierr sym.Flx_sym.sr "Can't build type constraints, type binding failed"
+        clierrx "[flx_bind/flx_bbind.ml:332: E2] " sym.Flx_sym.sr "Can't build type constraints, type binding failed"
     in
     let {raw_type_constraint=icons} = snd ivs in
     let icons = bt icons in
@@ -941,7 +941,7 @@ let bind_interface (state:bbind_state_t) bsym_table = function
       in
       if ts = [] then
         BIFACE_export_fun (sr,index, cpp_name)
-      else clierr sr
+      else clierrx "[flx_bind/flx_bbind.ml:944: E3] " sr
       (
         "Can't export generic entity " ^
         string_of_suffixed_name sn ^ " as a function"
@@ -957,7 +957,7 @@ let bind_interface (state:bbind_state_t) bsym_table = function
       in
       if ts = [] then
         BIFACE_export_cfun (sr,index, cpp_name)
-      else clierr sr
+      else clierrx "[flx_bind/flx_bbind.ml:960: E4] " sr
       (
         "Can't export generic entity " ^
         string_of_suffixed_name sn ^ " as a C function"
@@ -974,7 +974,7 @@ let bind_interface (state:bbind_state_t) bsym_table = function
       in
       if ts = [] then
         BIFACE_export_python_fun (sr,index, cpp_name)
-      else clierr sr
+      else clierrx "[flx_bind/flx_bbind.ml:977: E5] " sr
       (
         "Can't export generic entity " ^
         string_of_suffixed_name sn ^ " as a python function"
@@ -990,7 +990,7 @@ let bind_interface (state:bbind_state_t) bsym_table = function
         typ
       in
       if try var_occurs bsym_table t with _ -> true then
-      clierr sr
+      clierrx "[flx_bind/flx_bbind.ml:993: E6] " sr
       (
         "Can't export generic- or meta- type " ^
         sbt bsym_table t
@@ -1009,7 +1009,7 @@ let bind_interface (state:bbind_state_t) bsym_table = function
         begin match bbdcl with
         | BBDCL_struct _ -> BIFACE_export_struct (sr,index)
         | _ ->
-          clierr sr ("Attempt to export struct "^name^
+          clierrx "[flx_bind/flx_bbind.ml:1012: E7] " sr ("Attempt to export struct "^name^
           " which isn't a non-polymorphic struct, got entry : " ^ 
           Flx_print.string_of_bbdcl bsym_table bbdcl index)
         end
@@ -1025,7 +1025,7 @@ let bind_interface (state:bbind_state_t) bsym_table = function
       in
       if ts = [] then
         BIFACE_export_union (sr,index, cpp_name)
-      else clierr sr
+      else clierrx "[flx_bind/flx_bbind.ml:1028: E8] " sr
       (
         "Can't export generic union " ^
         string_of_suffixed_name flx_name ^ " as C datatype"
@@ -1036,5 +1036,6 @@ let bind_interface (state:bbind_state_t) bsym_table = function
       let bt t = Flx_lookup.bind_type state.lookup_state bsym_table env sr t in
       let breqs = bind_reqs bt state bsym_table env sr reqs in
       BIFACE_export_requirement (sr,breqs)
+
 
 

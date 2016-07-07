@@ -106,7 +106,7 @@ let handle_constant_projection bsym_table sr a ta n =
   | BTYP_tuple ls ->
     let m = List.length ls in
     if n < 0 || n >= m then
-      clierr sr ("AST_dot, tuple index "^ string_of_int n ^ 
+      clierrx "[flx_bind/flx_dot.ml:109: E70] " sr ("AST_dot, tuple index "^ string_of_int n ^ 
       " out of range 0 to " ^ string_of_int (m-1) ^
       " for type " ^ sbt bsym_table ta
       )
@@ -124,7 +124,7 @@ let handle_constant_projection bsym_table sr a ta n =
     | BTYP_tuple (h::ts) ->
       cal_prj h (btyp_tuple ts) (i-1)
     | _ ->
-      clierr sr ("AST_dot, tuple index "^ string_of_int n ^ 
+      clierrx "[flx_bind/flx_dot.ml:127: E71] " sr ("AST_dot, tuple index "^ string_of_int n ^ 
       " out of range for type " ^ sbt bsym_table ta
       )
     in 
@@ -133,7 +133,7 @@ let handle_constant_projection bsym_table sr a ta n =
 
   | BTYP_array (t,BTYP_unitsum m) ->
     if n < 0 || n >= m then
-      clierr sr ("AST_dot, constant array index "^ string_of_int n ^ 
+      clierrx "[flx_bind/flx_dot.ml:136: E72] " sr ("AST_dot, constant array index "^ string_of_int n ^ 
       " out of range 0 to " ^ string_of_int (m-1) ^
       " for type " ^ sbt bsym_table ta
       )
@@ -143,7 +143,7 @@ let handle_constant_projection bsym_table sr a ta n =
   | BTYP_pointer (BTYP_tuple ls) ->
     let m = List.length ls in
     if n < 0 || n >= m then
-      clierr sr ("AST_dot, tuple index "^ string_of_int n ^ 
+      clierrx "[flx_bind/flx_dot.ml:146: E73] " sr ("AST_dot, tuple index "^ string_of_int n ^ 
       " out of range 0 to " ^ string_of_int (m-1) ^
       " for type " ^ sbt bsym_table ta
       )
@@ -152,7 +152,7 @@ let handle_constant_projection bsym_table sr a ta n =
 
   | BTYP_pointer (BTYP_array (t,BTYP_unitsum m)) -> 
     if n < 0 || n >= m then
-      clierr sr ("AST_dot, constant array index "^ string_of_int n ^ 
+      clierrx "[flx_bind/flx_dot.ml:155: E74] " sr ("AST_dot, constant array index "^ string_of_int n ^ 
       " out of range 0 to " ^ string_of_int (m-1) ^
       " for type " ^ sbt bsym_table ta
       )
@@ -181,4 +181,5 @@ let handle_array_projection bsym_table int_t sr a ta n =
     assert (snd n = ixt);
     bexpr_apply (BTYP_pointer vt) (bexpr_aprj n ta vt, a)
   | _ -> assert false
+
 

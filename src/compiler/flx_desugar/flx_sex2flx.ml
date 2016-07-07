@@ -599,7 +599,22 @@ and xstruct_component sr = function
   | x -> err x "struct component"
 
 and xconnection_t sr = function
-  | Lst[Lst[ld;lp]; Lst[rd;rp]] -> (xid ld,xid lp),(xid rd, xid rp)
+  | Lst[Id kind; first; second] ->
+    begin match kind with
+    | "connect" -> 
+      begin match first,second with
+      | Lst[ld;lp], Lst[rd;rp] -> 
+        Connect ((xid ld,xid lp),(xid rd, xid rp))
+      | x,y -> err (Lst[x;y]) "connect specification"
+      end
+    | "wire" -> 
+      begin match first,second with
+      | e,Lst[rd;rp] ->
+        Wire  (xexpr_t sr e, (xid rd, xid rp))
+      | x,y -> err (Lst[x;y]) "wire specification"
+      end
+    | _ -> assert false
+    end
   | x -> err x "connection specification"
 
 and xstatement_t sr x : statement_t =
@@ -942,3 +957,4 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
    STMT_stmt_match (sr, (ex sr e,pss))
 
   | x -> err x "statement"
+

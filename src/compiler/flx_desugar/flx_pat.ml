@@ -27,7 +27,7 @@ let rec check_match_literal pats =
     | PAT_when (_,pat,_) -> check pat
     | _ ->
         let sr = src_of_pat pat in
-        clierr sr "Literal pattern expected"
+        clierrx "[flx_desugar/flx_pat.ml:30: E344] " sr "Literal pattern expected"
   in
   List.iter check pats
 
@@ -47,7 +47,7 @@ let rec check_match_range pats =
 
     | _ ->
         let sr = src_of_pat pat in
-        clierr sr "Literal range pattern expected"
+        clierrx "[flx_desugar/flx_pat.ml:50: E345] " sr "Literal range pattern expected"
   in
   List.iter check pats
 
@@ -68,7 +68,7 @@ and check_match_record pats =
 
     | _ ->
         let sr = src_of_pat pat in
-        clierr sr "Record pattern expected"
+        clierrx "[flx_desugar/flx_pat.ml:71: E346] " sr "Record pattern expected"
   in
   List.iter check pats
 
@@ -82,7 +82,7 @@ and check_match_tuple n pats =
     | PAT_tuple (sr,pats) ->
         if List.length pats = n then () else
         let sr = src_of_pat pat in
-        clierr sr "Tuple pattern wrong length"
+        clierrx "[flx_desugar/flx_pat.ml:85: E347] " sr "Tuple pattern wrong length"
 
     | PAT_coercion (_,pat,_)
     | PAT_as (_,pat,_)
@@ -91,7 +91,7 @@ and check_match_tuple n pats =
 
     | _ ->
         let sr = src_of_pat pat in
-        clierr sr "Tuple pattern expected"
+        clierrx "[flx_desugar/flx_pat.ml:94: E348] " sr "Tuple pattern expected"
   in
 
   List.iter (check n) pats;
@@ -108,7 +108,7 @@ and check_match_tuple n pats =
     | PAT_tuple (_,ps) -> ps
     | _ ->
         let sr = src_of_pat pat in
-        clierr sr "Tuple pattern expected"
+        clierrx "[flx_desugar/flx_pat.ml:111: E349] " sr "Tuple pattern expected"
   in
   let tpats =
     try
@@ -139,7 +139,7 @@ and check_match_tuple_cons pats =
     | PAT_coercion (_,pat,_) -> check pat
     | _ ->
         let sr = src_of_pat pat in
-        clierr sr
+        clierrx "[flx_desugar/flx_pat.ml:142: E350] " sr
         (
           Flx_srcref.short_string_of_src (src_of_pat pat) ^
           ": tuple cons pattern (,,) expected, got " ^ string_of_pattern pat
@@ -165,7 +165,7 @@ and check_match_union pats =
 
     | _ ->
         let sr = src_of_pat pat in
-        clierr sr
+        clierrx "[flx_desugar/flx_pat.ml:168: E351] " sr
         (
           Flx_srcref.short_string_of_src (src_of_pat pat) ^
           ": union pattern expected, got " ^ string_of_pattern pat
@@ -190,7 +190,7 @@ and check_match_variant pats =
 
     | _ ->
         let sr = src_of_pat pat in
-        clierr sr
+        clierrx "[flx_desugar/flx_pat.ml:193: E352] " sr
         (
           Flx_srcref.short_string_of_src (src_of_pat pat) ^
           ": variant pattern expected, got " ^ string_of_pattern pat
@@ -293,5 +293,6 @@ let validate_patterns pats =
     | PAT_none sr -> assert false
     | _ -> ()
   end (List.tl pats)
+
 
 

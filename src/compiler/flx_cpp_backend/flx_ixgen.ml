@@ -447,3 +447,4 @@ print_endline ("rendered lineralised index .. C index = " ^ string_of_cexpr cidx
     ce_array (ce_dot (ge' a) "data") cidx 
 
 
+

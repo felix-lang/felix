@@ -314,3 +314,4 @@ let check_all_used used ii =
 let check_global_vars_all_used bsym_table used =
   let ii = find_global_vars bsym_table in
   check_all_used used ii
+

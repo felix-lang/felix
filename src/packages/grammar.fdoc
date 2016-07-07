@@ -4959,6 +4959,12 @@ syntax variables {
     `(ast_val_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
      """;
 
+  stmt := "device" sdeclname "=" sexpr ";" =>#
+    """
+    `(ast_val_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
+     """;
+
+
   //$ Value binder, single, with type.
   stmt := "val" sdeclname ":" stypeexpr "=" sexpr ";" =>#
     """
@@ -5059,7 +5065,8 @@ syntax chips {
     """;
 
   stmt := "circuit" sconnection+ "endcircuit" =># "`(ast_circuit ,_sr ,_2)";
-   sconnection := "connect" sname "." sname "to" sname "." sname =># "`((,_2 ,_4) (,_6 ,_8))";
+   sconnection := "connect" sname "." sname "to" sname "." sname =># "`(connect (,_2 ,_4) (,_6 ,_8))";
+   sconnection := "wire" stypeexpr "to" sname "." sname =># "`(wire ,_2 (,_4 ,_6))";
 
 }
 @

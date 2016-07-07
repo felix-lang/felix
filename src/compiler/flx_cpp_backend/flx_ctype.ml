@@ -74,3 +74,4 @@ let string_of_cdecl_type n t =
   | `Cdt_cref t -> aux t ("const &" ^n)
   | `Cdt_vref t -> aux t ("volatile &"^n)
   | `Cdt_cvref t -> aux t ("const volatile &"^n)
+

@@ -47,3 +47,4 @@ let rem_prop bsym_table p i =
       update_bsym (bbdcl_external_fun (props,vs,ps,ret,ct,reqs,prec))
 
   | _ -> ()
+

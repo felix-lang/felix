@@ -588,3 +588,4 @@ print_endline ("Calculated isrec= " ^ if isrec then "true" else "false");
         *)
         adjust bsym_table t'
       with Not_found -> btyp_type_match (tt,pts)
+

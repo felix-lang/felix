@@ -119,3 +119,4 @@ end
 module Op_map = Map.Make(Ordered_op)
 
 type associativity = Non_assoc | Left_assoc | Right_assoc
+

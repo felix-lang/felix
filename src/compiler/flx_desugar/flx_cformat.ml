@@ -118,7 +118,7 @@ let ast i =
 let numval ch = index "0123456789" ch
 
 let types_of_cformat_string sr s =
-  let err i msg = clierr sr ("In format, pos="^si i^"\n"^string_of_string s^"\n "^ast i^"\n"^msg) in
+  let err i msg = clierrx "[flx_desugar/flx_cformat.ml:121: E313] " sr ("In format, pos="^si i^"\n"^string_of_string s^"\n "^ast i^"\n"^msg) in
   let outfmt = ref "" in
   let tent = ref "" in
   let types = ref [] in
@@ -239,8 +239,9 @@ let types_of_cformat_string sr s =
       end
 
       else
-        clierr sr ("unsupported format '" ^ !fmt ^ strchr ch ^ "'")
+        clierrx "[flx_desugar/flx_cformat.ml:242: E314] " sr ("unsupported format '" ^ !fmt ^ strchr ch ^ "'")
   done;
   commit();
   !outfmt,
   rev_map (fun (i,s) -> i,TYP_name (sr,s,[])) !types
+

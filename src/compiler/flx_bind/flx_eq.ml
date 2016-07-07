@@ -60,7 +60,7 @@ let bind_eq bsym_table state inner_lookup_name_in_env be rs sr env pair =
     let a,b = 
       match pair with
       | EXPR_tuple (sr,[a;b]) -> a,b
-      | _ -> Flx_exceptions.clierr sr ("polyadic _eq function requires explicit argument pair")
+      | _ -> Flx_exceptions.clierrx "[flx_bind/flx_eq.ml:63: E75] " sr ("polyadic _eq function requires explicit argument pair")
     in
     begin try 
       let result = be rs (EXPR_apply (sr, (EXPR_name (sr,"__eq",[]), pair))) in
@@ -76,7 +76,7 @@ let bind_eq bsym_table state inner_lookup_name_in_env be rs sr env pair =
       let (_,tb) as bb = be rs b in
       let same_type = Flx_unify.type_eq bsym_table state.Flx_lookup_state.counter ta tb in 
       if not same_type then
-         Flx_exceptions.clierr sr ("builtin equality requires arguments to be the same type\n" ^
+         Flx_exceptions.clierrx "[flx_bind/flx_eq.ml:79: E76] " sr ("builtin equality requires arguments to be the same type\n" ^
            "got a=" ^ Flx_print.sbt bsym_table ta ^ "\n" ^
            "and b=" ^ Flx_print.sbt bsym_table tb)
       ;
@@ -149,6 +149,7 @@ print_endline ("Added overload of __eq to lookup table!");
 *)
       result
     end
+
 
 
 

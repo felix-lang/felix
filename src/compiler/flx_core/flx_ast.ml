@@ -372,7 +372,11 @@ and ast_term_t =
   | Keyword_term of string
   | Apply_term of ast_term_t * ast_term_t list
 
-and connection_t = (string * string) * (string * string)
+and conkind_t = [`Wire | `Connect]
+
+and connection_t =  
+  | Connect of (string * string) * (string * string)
+  | Wire of expr_t * (string * string)
 
 and statement_t =
   | STMT_circuit of Flx_srcref.t * connection_t list
@@ -917,4 +921,5 @@ let dfltvs_aux =
 
 (** Define a default vs_list_t. *)
 let dfltvs = [], dfltvs_aux
+
 

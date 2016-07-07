@@ -493,3 +493,4 @@ and cpp_typename syms bsym_table t =
   | _ -> cpp_type_classname syms bsym_table t
 
 let cpp_ltypename syms bsym_table t = cpp_typename syms bsym_table t
+

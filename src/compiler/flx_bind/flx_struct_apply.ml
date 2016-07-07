@@ -17,7 +17,7 @@ let cal_struct_apply
   in
   let nf = List.length fls in
   let na = List.length alst in
-  if nf <> na then Flx_exceptions.clierr sr
+  if nf <> na then Flx_exceptions.clierrx "[flx_bind/flx_struct_apply.ml:20: E252] " sr
     (
       "Wrong number of components matching record argument to struct"
     )
@@ -33,13 +33,13 @@ let cal_struct_apply
     List.map (fun (name,ct)->
       let (t,j) =
         try List.assoc name ialst
-        with Not_found -> Flx_exceptions.clierr sr ("struct component " ^ name ^ " not provided by record")
+        with Not_found -> Flx_exceptions.clierrx "[flx_bind/flx_struct_apply.ml:36: E253] " sr ("struct component " ^ name ^ " not provided by record")
       in
     let ct = bind_type' state bsym_table env' Flx_lookup_state.rsground sr ct bvs mkenv in
     let ct = Flx_unify.tsubst sr vs' ts' ct in
       if Flx_unify.type_eq bsym_table state.Flx_lookup_state.counter ct t then begin
         bexpr_get_n t j a
-      end else Flx_exceptions.clierr sr ("Component " ^ name ^
+      end else Flx_exceptions.clierrx "[flx_bind/flx_struct_apply.ml:42: E254] " sr ("Component " ^ name ^
         " struct component type " ^ Flx_print.sbt bsym_table ct ^
         "\ndoesn't match record type " ^ Flx_print.sbt bsym_table t
       )
@@ -50,4 +50,5 @@ let cal_struct_apply
   let t = match cts with [t] -> t | _ -> btyp_tuple cts in
   let a = match a with [x,_] -> x,t | _ -> bexpr_tuple t a in
   cal_apply state bsym_table sr rs f a
+
 

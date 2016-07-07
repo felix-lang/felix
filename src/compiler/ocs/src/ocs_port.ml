@@ -221,3 +221,4 @@ let string_input_port s =
 let string_output_port () =
   mkport (mkbuf ()) None false true false
 ;;
+

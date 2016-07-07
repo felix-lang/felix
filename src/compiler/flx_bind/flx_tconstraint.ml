@@ -43,10 +43,10 @@ let build_constraint_element counter bt sr i p1 =
     it is tricky because they'd have to be introduced 'in scope':
   *)
   (*
-  if eqns1 <> [] then clierr sr
+  if eqns1 <> [] then clierrx "[flx_bind/flx_tconstraint.ml:46: E260] " sr
     "Type variable constraint may not have 'as' terms"
   ;
-  if explicit_vars1 <> [] then clierr sr
+  if explicit_vars1 <> [] then clierrx "[flx_bind/flx_tconstraint.ml:49: E261] " sr
     "Type variable constraint may not have named pattern variables"
   ;
   *)
@@ -119,3 +119,4 @@ if name = "accumulate" then print_endline ("type variable " ^ s ^ " constraint =
     print_endline ("Type constraints = " ^ sbt bsym_table tc);
     *)
     tc
+

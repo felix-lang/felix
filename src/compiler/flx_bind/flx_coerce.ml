@@ -25,7 +25,7 @@ let record_coercion state bsym_table sr x' n t' t'' ls' ls'' =
         let tt = List.assoc s ls' in
         if type_eq bsym_table state.Flx_lookup_state.counter t tt then
           s,(bexpr_get_n t j x')
-        else clierr sr (
+        else clierrx "[flx_bind/flx_coerce.ml:28: E43] " sr (
           "Source Record field '" ^ s ^ "' has type:\n" ^
           sbt bsym_table tt ^ "\n" ^
           "but coercion target has the different type:\n" ^
@@ -37,7 +37,7 @@ let record_coercion state bsym_table sr x' n t' t'' ls' ls'' =
     ls''
   )
   with Not_found ->
-    clierr sr
+    clierrx "[flx_bind/flx_coerce.ml:40: E44] " sr
      (
      "Record coercion dst requires subset of fields of src:\n" ^
      sbe bsym_table x' ^ " has type " ^ sbt bsym_table t' ^
@@ -52,7 +52,7 @@ let variant_coercion state bsym_table sr x' t' t'' lhs rhs =
       | Some j ->
         let tt = List.assoc s rhs in
         if not (type_eq bsym_table state.counter t tt) then
-        clierr sr (
+        clierrx "[flx_bind/flx_coerce.ml:55: E45] " sr (
           "Source Variant field '" ^ s ^ "' has type:\n" ^
           sbt bsym_table t ^ "\n" ^
           "but coercion target has the different type:\n" ^
@@ -68,7 +68,7 @@ let variant_coercion state bsym_table sr x' t' t'' lhs rhs =
 *)
     bexpr_coerce (x',t'')
   with Not_found ->
-    clierr sr
+    clierrx "[flx_bind/flx_coerce.ml:71: E46] " sr
      (
      "Variant coercion src requires subset of fields of dst:\n" ^
      sbe bsym_table x' ^ " has type " ^ sbt bsym_table t' ^
@@ -134,12 +134,12 @@ print_endline "Coercion from int literal";
 *)
           let m =
             try int_of_string big
-            with _ -> clierr sr "Integer is too large for unitsum"
+            with _ -> clierrx "[flx_bind/flx_coerce.ml:137: E47] " sr "Integer is too large for unitsum"
           in
           if m >=0 && m < n then
             bexpr_unitsum_case m n
           else
-            clierr sr "Integer is out of range for unitsum"
+            clierrx "[flx_bind/flx_coerce.ml:142: E48] " sr "Integer is out of range for unitsum"
         | _ ->
 (*
 print_endline "Coercion from int expression ";
@@ -158,7 +158,7 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
           r
         end
       | _ ->
-        clierr sr ("Attempt to to coerce type:\n"^
+        clierrx "[flx_bind/flx_coerce.ml:161: E49] " sr ("Attempt to to coerce type:\n"^
         sbt bsym_table t'
         ^"to unitsum " ^ si n)
       end
@@ -171,7 +171,7 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
         Flx_bexpr.bexpr_coerce (x',inttype)
 
       | _ ->
-        clierr sr ("Attempt to to coerce unitsum "^si n^" to type:\n"^
+        clierrx "[flx_bind/flx_coerce.ml:174: E50] " sr ("Attempt to to coerce unitsum "^si n^" to type:\n"^
         sbt bsym_table t')
       end
 
@@ -211,7 +211,7 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       print_endline ("Coercion: trial check " ^ (if result then "true" else "false"));
 *)
       if not result then
-        clierr sr ("Incompatible types in array coercion: " ^
+        clierrx "[flx_bind/flx_coerce.ml:214: E51] " sr ("Incompatible types in array coercion: " ^
           sbt bsym_table t' ^ " is not isomorphic to " ^ sbt bsym_table t''
         )
       else 
@@ -229,7 +229,7 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       print_endline ("Coercion: trial check " ^ (if result then "true" else "false"));
 *)
       if not result then
-        clierr sr ("Incompatible types in array coercion: " ^
+        clierrx "[flx_bind/flx_coerce.ml:232: E52] " sr ("Incompatible types in array coercion: " ^
           sbt bsym_table t' ^ " is not isomorphic to " ^ sbt bsym_table t''
         )
       else 
@@ -243,11 +243,11 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       print_endline ("Coercion: trial check " ^ (if result then "true" else "false"))
       ;
       if v <> v' then
-        clierr sr ("Coercion: source array of arrays value type " ^ sbt bsym_table v ^
+        clierrx "[flx_bind/flx_coerce.ml:246: E53] " sr ("Coercion: source array of arrays value type " ^ sbt bsym_table v ^
          " not equal to target value type " ^ sbt bsym_table v')
       ;
       if ix1 <> ix1' || ix2 <> ix2' then
-        clierr sr ("Coercion: source array of arrays value index types " ^ 
+        clierrx "[flx_bind/flx_coerce.ml:250: E54] " sr ("Coercion: source array of arrays value index types " ^ 
           sbt bsym_table ix1 ^ " and " ^ sbt bsym_table ix2 ^ 
           " not equal to target index types " ^ 
           sbt bsym_table ix2' ^ " and " ^ sbt bsym_table ix2')
@@ -259,11 +259,11 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       print_endline ("Coercion: trial check " ^ (if result then "true" else "false"))
       ;
       if v <> v' then
-        clierr sr ("Coercion: source array of arrays value type " ^ sbt bsym_table v ^
+        clierrx "[flx_bind/flx_coerce.ml:262: E55] " sr ("Coercion: source array of arrays value type " ^ sbt bsym_table v ^
          " not equal to target value type " ^ sbt bsym_table v')
       ;
       if ix1 <> ix' || ix2 <> ix' then
-        clierr sr ("Coercion: source array of arrays value index types " ^ 
+        clierrx "[flx_bind/flx_coerce.ml:266: E56] " sr ("Coercion: source array of arrays value index types " ^ 
           sbt bsym_table ix1 ^ " and " ^ sbt bsym_table ix2 ^ 
           " not equal to target index types " ^ 
           sbt bsym_table ix' ^ " and " ^ sbt bsym_table ix')
@@ -276,11 +276,11 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       print_endline ("Coercion: trial check " ^ (if result then "true" else "false"))
       ;
       if v <> v' then
-        clierr sr ("Coercion: source array value type " ^ sbt bsym_table v ^
+        clierrx "[flx_bind/flx_coerce.ml:279: E57] " sr ("Coercion: source array value type " ^ sbt bsym_table v ^
          " not equal to target value type " ^ sbt bsym_table v')
       ;
       if ix1 <> ix1' || ix2 <> ix2' then
-        clierr sr ("Coercion: source array value index types " ^ 
+        clierrx "[flx_bind/flx_coerce.ml:283: E58] " sr ("Coercion: source array value index types " ^ 
           sbt bsym_table ix1' ^ " and " ^ sbt bsym_table ix2' ^ 
           " not equal to target index types " ^ 
           sbt bsym_table ix1 ^ " and " ^ sbt bsym_table ix2)
@@ -292,11 +292,11 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       print_endline ("Coercion: trial check " ^ (if result then "true" else "false"))
       ;
       if v <> v' then
-        clierr sr ("Coercion: source array value type " ^ sbt bsym_table v ^
+        clierrx "[flx_bind/flx_coerce.ml:295: E59] " sr ("Coercion: source array value type " ^ sbt bsym_table v ^
          " not equal to target value type " ^ sbt bsym_table v')
       ;
       if ix1 <> ix' || ix2 <> ix' then
-        clierr sr ("Coercion: source array value index types " ^ 
+        clierrx "[flx_bind/flx_coerce.ml:299: E60] " sr ("Coercion: source array value index types " ^ 
           sbt bsym_table ix' ^ " and " ^ sbt bsym_table ix' ^ 
           " not equal to target index types " ^ 
           sbt bsym_table ix1 ^ " and " ^ sbt bsym_table ix2)
@@ -309,11 +309,11 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       print_endline ("Coercion: trial check " ^ (if result then "true" else "false"))
       ;
       if v <> v' then
-        clierr sr ("Coercion: source array of arrays value type " ^ sbt bsym_table v ^
+        clierrx "[flx_bind/flx_coerce.ml:312: E61] " sr ("Coercion: source array of arrays value type " ^ sbt bsym_table v ^
          " not equal to target value type " ^ sbt bsym_table v')
       ;
       if ix1 <> ix1' || ix2 <> ix2' then
-        clierr sr ("Coercion: source array of arrays value index types " ^ 
+        clierrx "[flx_bind/flx_coerce.ml:316: E62] " sr ("Coercion: source array of arrays value index types " ^ 
           sbt bsym_table ix1 ^ " and " ^ sbt bsym_table ix2 ^ 
           " not equal to target index types " ^ 
           sbt bsym_table ix2' ^ " and " ^ sbt bsym_table ix2')
@@ -325,11 +325,11 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       print_endline ("Coercion: trial check " ^ (if result then "true" else "false"))
       ;
       if v <> v' then
-        clierr sr ("Coercion: source array of arrays value type " ^ sbt bsym_table v ^
+        clierrx "[flx_bind/flx_coerce.ml:328: E63] " sr ("Coercion: source array of arrays value type " ^ sbt bsym_table v ^
          " not equal to target value type " ^ sbt bsym_table v')
       ;
       if ix1 <> ix' || ix2 <> ix' then
-        clierr sr ("Coercion: source array of arrays value index types " ^ 
+        clierrx "[flx_bind/flx_coerce.ml:332: E64] " sr ("Coercion: source array of arrays value index types " ^ 
           sbt bsym_table ix1 ^ " and " ^ sbt bsym_table ix2 ^ 
           " not equal to target index types " ^ 
           sbt bsym_table ix' ^ " and " ^ sbt bsym_table ix')
@@ -342,11 +342,11 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       print_endline ("Coercion: trial check " ^ (if result then "true" else "false"))
       ;
       if v <> v' then
-        clierr sr ("Coercion: source array value type " ^ sbt bsym_table v ^
+        clierrx "[flx_bind/flx_coerce.ml:345: E65] " sr ("Coercion: source array value type " ^ sbt bsym_table v ^
          " not equal to target value type " ^ sbt bsym_table v')
       ;
       if ix1 <> ix1' || ix2 <> ix2' then
-        clierr sr ("Coercion: source array value index types " ^ 
+        clierrx "[flx_bind/flx_coerce.ml:349: E66] " sr ("Coercion: source array value index types " ^ 
           sbt bsym_table ix1' ^ " and " ^ sbt bsym_table ix2' ^ 
           " not equal to target index types " ^ 
           sbt bsym_table ix1 ^ " and " ^ sbt bsym_table ix2)
@@ -358,11 +358,11 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       print_endline ("Coercion: trial check " ^ (if result then "true" else "false"))
       ;
       if v <> v' then
-        clierr sr ("Coercion: source array value type " ^ sbt bsym_table v ^
+        clierrx "[flx_bind/flx_coerce.ml:361: E67] " sr ("Coercion: source array value type " ^ sbt bsym_table v ^
          " not equal to target value type " ^ sbt bsym_table v')
       ;
       if ix1 <> ix' || ix2 <> ix' then
-        clierr sr ("Coercion: source array value index types " ^ 
+        clierrx "[flx_bind/flx_coerce.ml:365: E68] " sr ("Coercion: source array value index types " ^ 
           sbt bsym_table ix' ^ " and " ^ sbt bsym_table ix' ^ 
           " not equal to target index types " ^ 
           sbt bsym_table ix1 ^ " and " ^ sbt bsym_table ix2)
@@ -373,7 +373,7 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
 
 
     | _ ->
-      (* clierr sr *)
+      (* clierrx "[flx_bind/flx_coerce.ml:376: E69] " sr *)
       (*
       print_endline ("WARNING: " ^
       (
@@ -385,5 +385,6 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       *)
       bexpr_coerce (x',t'')
     end
+
 
 

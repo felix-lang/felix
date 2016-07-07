@@ -74,7 +74,7 @@ let codegen_bsyms
         | CS.Str ""
         | CS.Str_template "" -> ()
         | CS.Virtual ->
-            clierr (Flx_bsym.sr bsym) "Instantiate virtual insertion!"
+            clierrx "[flxg/flxg_codegen.ml:77: E372] " (Flx_bsym.sr bsym) "Instantiate virtual insertion!"
         | _ ->
             let s =
               match s with
@@ -560,4 +560,5 @@ let codegen state bsym_table (root_proc: int option) =
     "Flxg_codegen.codegen_bsyms"
     (codegen_bsyms state bsym_table label_info)
     top_data
+
 

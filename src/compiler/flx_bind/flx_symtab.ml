@@ -227,7 +227,7 @@ let full_replace_function counter_ref sym_table sr (vs:ivs_list_t) table key val
       Hashtbl.replace table key (FunctionEntry [mkentry counter_ref vs value])
 
     | FunctionEntry fs ->
-        Flx_exceptions.clierr sr (
+        Flx_exceptions.clierrx "[flx_bind/flx_symtab.ml:230: E255] " sr (
           "[build_tables] Cannot replace non-singleton set of functions with " ^
           key ^ "<" ^ Flx_print.string_of_bid value ^ ">")
 
@@ -521,7 +521,7 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
       let mt = match tpat with
       | TYP_patany _ -> TYP_type (* default/unspecified *)
       | TYP_none -> TYP_type
-      | TYP_ellipsis -> Flx_exceptions.clierr sr "Ellipsis ... as metatype"
+      | TYP_ellipsis -> Flx_exceptions.clierrx "[flx_bind/flx_symtab.ml:524: E256] " sr "Ellipsis ... as metatype"
       | _ -> tpat
       in
 
@@ -817,7 +817,7 @@ print_endline ("Checking parent's public map");
       try
         let entry = Hashtbl.find pub_name_map id in
         match entry with
-        | FunctionEntry _ -> Flx_exceptions.clierr sr ("Library name "^id^" already used for function")
+        | FunctionEntry _ -> Flx_exceptions.clierrx "[flx_bind/flx_symtab.ml:820: E257] " sr ("Library name "^id^" already used for function")
         | NonFunctionEntry { base_sym=old_index } ->  
 (*
           print_endline ("Name already exists, index= " ^ string_of_int old_index);
@@ -833,7 +833,7 @@ print_endline ("Checking parent's public map");
 *)
             false, old_pubmap, old_privmap, old_index
 
-          | _ -> Flx_exceptions.clierr sr ("Old definition of " ^ id ^ " must be a library")
+          | _ -> Flx_exceptions.clierrx "[flx_bind/flx_symtab.ml:836: E258] " sr ("Old definition of " ^ id ^ " must be a library")
       with Not_found -> 
 (*
         print_endline ("OK, not found");
@@ -1067,7 +1067,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
           asms
       in
       if (List.length exes <> 0) then
-        Flx_exceptions.clierr sr ("Type class instance is not allowed to directly contain code");
+        Flx_exceptions.clierrx "[flx_bind/flx_symtab.ml:1070: E259] " sr ("Type class instance is not allowed to directly contain code");
 
       (* Add typeclass instance to the sym_table. *)
       add_symbol ~pubtab ~privtab ~dirs symbol_index id (SYMDEF_instance qn);
@@ -1482,3 +1482,4 @@ print_endline ("SYMBOL TABLE: Init procs = " ^ string_of_int (List.length inits)
 (*
 ;print_endline ("Add asms .. exports: " ^ string_of_int (List.length symbol_table.exports));
 *)
+

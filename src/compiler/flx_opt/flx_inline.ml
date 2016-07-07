@@ -644,7 +644,7 @@ let inline_check syms bsym_table uses srcall caller callee props exes =
 
   if mem `NoInline props && mem `Inline props 
   then begin
-    clierr srdef ("Function " ^ id ^ ": Conflicting properties inline and noinline")
+    clierrx "[flx_opt/flx_inline.ml:647: E371] " srdef ("Function " ^ id ^ ": Conflicting properties inline and noinline")
   end 
   ;
   if mem `Inline props &&
@@ -1367,3 +1367,4 @@ of C, and not the same function. So we try to inline into C',
 and inlining A is allowed there .. which causes an infinite
 recursion.
 *)
+

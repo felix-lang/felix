@@ -151,3 +151,4 @@ let init e =
   set_pf1 e char_upcase "char-upcase";
   set_pf1 e char_downcase "char-downcase";
 ;;
+

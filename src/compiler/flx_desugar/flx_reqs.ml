@@ -59,7 +59,7 @@ let mkprop sr s = match s with
     | "pure" -> `Pure
     | "generator" -> `Generator
     | "virtual" -> `Virtual
-    | x -> clierr sr ("Unknown property " ^ x)
+    | x -> clierrx "[flx_desugar/flx_reqs.ml:62: E353] " sr ("Unknown property " ^ x)
 
 let mkreqs state access parent_ts sr (rqs :raw_req_expr_t) : type_qual_t list *property_t list * asm_t list * named_req_expr_t =
     let ix = None in
@@ -118,4 +118,5 @@ let mkreqs state access parent_ts sr (rqs :raw_req_expr_t) : type_qual_t list *p
     in
     let r = aux rqs in
     !quals, !props, !decls, r
+
 

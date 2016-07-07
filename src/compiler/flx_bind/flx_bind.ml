@@ -109,3 +109,4 @@ let find_root_module_init_function_from_sym_table syms =
 let find_root_module_init_function_from_bind_state bind_state =
  find_root_module_init_function_from_sym_table bind_state.sym_table
 
+

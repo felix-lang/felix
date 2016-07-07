@@ -84,7 +84,7 @@ let const_fold' e sr name arg =
     let r =
       try div x y
       with Division_by_zero ->
-        clierr sr "[constfld] Division by zero"
+        clierrx "[flx_desugar/flx_constfld.ml:87: E315] " sr "[constfld] Division by zero"
     in
     mkint r
 
@@ -98,7 +98,7 @@ let const_fold' e sr name arg =
     let r =
       try modu x y
       with Division_by_zero ->
-        clierr sr "[constfld] Division by zero"
+        clierrx "[flx_desugar/flx_constfld.ml:101: E316] " sr "[constfld] Division by zero"
     in
     mkint r
 
@@ -176,7 +176,7 @@ let const_fold' e sr name arg =
     let y =
       try
         int_of_string y
-      with _ -> clierr sr "String repeat count too large"
+      with _ -> clierrx "[flx_desugar/flx_constfld.ml:179: E317] " sr "String repeat count too large"
     in
     if String.length x = 1 then
       let r = String.make y x.[0] in
@@ -254,4 +254,5 @@ let rec const_fold e =
     const_fold' e sr "add" (EXPR_tuple (sr,[x;y]))
 
   | _ -> e'
+
 

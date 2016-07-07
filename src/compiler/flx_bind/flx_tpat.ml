@@ -142,7 +142,7 @@ let bind_type_match bsym_table counter bt btp params sr t ps ubt =
          * don't see why one would ever code such a case, except as a
          * mistake. *)
         (*
-        clierr sr
+        clierrx "[flx_bind/flx_tpat.ml:145: E262] " sr
           ("[bind_type'] type match argument\n" ^
           sbt bsym_table t ^
           "\nwill never unify with pattern\n" ^
@@ -167,4 +167,5 @@ let bind_type_match bsym_table counter bt btp params sr t ps ubt =
   let pts = List.rev !pts in
 
   btyp_type_match (t,pts)
+
 

@@ -124,7 +124,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
   | EXPR_intersect _
   | EXPR_isin _
     ->
-    clierr sr ("[rex] Unexpected " ^ string_of_expr e)
+    clierrx "[flx_desugar/flx_desugar_expr.ml:127: E326] " sr ("[rex] Unexpected " ^ string_of_expr e)
 
 
   | EXPR_void (x) -> [], EXPR_void x
@@ -286,7 +286,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
                   end 
                 else if s.[!i+1] <> '(' then 
                   begin
-                    clierr sr ("In q'" ^ s   ^"' require ( after $ at pos " ^ si (!i))
+                    clierrx "[flx_desugar/flx_desugar_expr.ml:289: E327] " sr ("In q'" ^ s   ^"' require ( after $ at pos " ^ si (!i))
                   end
                 else 
                   begin (* $( *)
@@ -300,7 +300,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
               end             
             else
               begin
-                clierr sr ("In q'" ^ s   ^"' require ( after $ , got eos")
+                clierrx "[flx_desugar/flx_desugar_expr.ml:303: E328] " sr ("In q'" ^ s   ^"' require ( after $ , got eos")
               end
           end
       | `Expr 0 ->
@@ -322,7 +322,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
       outexpr := "";
       mode := `Char
     | `Expr k ->
-      clierr sr ("In q'" ^ s   ^"' require closing ) after $expr , got eos at level " ^ si k)
+      clierrx "[flx_desugar/flx_desugar_expr.ml:325: E329] " sr ("In q'" ^ s   ^"' require closing ) after $expr , got eos at level " ^ si k)
     | `Char -> ()
     end
     ;
@@ -330,7 +330,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     let outexprs = List.rev_map 
       (fun x ->  
         let n = String.length x in
-        if n < 3 then clierr sr ("in q'" ^ s ^ "', require $(ident)");
+        if n < 3 then clierrx "[flx_desugar/flx_desugar_expr.ml:333: E330] " sr ("in q'" ^ s ^ "', require $(ident)");
         String.sub x 1 (n-2)
       )
       (!outexprs) 
@@ -366,13 +366,13 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
       (fun (i,s) ->
         if a.(i-1) = TYP_none then a.(i-1) <-s
         else if a.(i-1) = s then ()
-        else clierr sr ("Conflicting types for argument " ^ si i)
+        else clierrx "[flx_desugar/flx_desugar_expr.ml:369: E331] " sr ("Conflicting types for argument " ^ si i)
       )
       its
       ;
       for i = 1 to n do
         if a.(i-1) = TYP_none then
-          clierr sr ("Missing format for argument " ^ si i)
+          clierrx "[flx_desugar/flx_desugar_expr.ml:375: E332] " sr ("Missing format for argument " ^ si i)
       done
       ;
       Array.to_list a
@@ -549,4 +549,5 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
 
 (* remove blocks *)
 (* parent vs is containing module vs .. only for modules *)
+
 

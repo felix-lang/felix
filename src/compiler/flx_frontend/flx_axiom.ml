@@ -177,3 +177,4 @@ let fixup_exes syms bsym_table gen bexes =
 
 let axiom_check syms bsym_table gen =
   Flx_bsym_table.update_bexes (fixup_exes syms bsym_table gen) bsym_table
+

@@ -105,3 +105,4 @@ let rec eval fresh env x =
   | Id y as z -> (try assoc y env with Not_found -> z)
   | Lst xs -> Lst (map (eval fresh env) xs)
   | x -> x
+

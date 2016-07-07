@@ -109,7 +109,7 @@ let is_gc_pointer syms bsym_table sr t =
   | BTYP_inst (i,_) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i with Not_found ->
-        clierr sr ("[is_gc_pointer] Can't find nominal type " ^
+        clierrx "[flx_cpp_backend/flx_gen_helper.ml:112: E310] " sr ("[is_gc_pointer] Can't find nominal type " ^
           string_of_bid i);
     in
     begin match Flx_bsym.bbdcl bsym with
@@ -130,4 +130,5 @@ let is_closure_var bsym_table index =
   match var_type bsym_table index with
   | BTYP_function _ -> true
   | _ -> false
+
 

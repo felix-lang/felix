@@ -74,3 +74,4 @@ let gen_ctor syms bsym_table name display funs extra_args extra_inits ts props =
     extra_inits
   )) ^
   " {}\n"
+

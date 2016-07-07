@@ -1166,10 +1166,16 @@ and string_of_statement level s =
 
   | STMT_circuit (_,cs) ->
     spaces level ^ "connections\n" ^
-    fold_left (fun acc ((ld,lp),(rd,rp)) -> 
-      acc ^ spaces (level + 1) ^ "connect " ^ 
+    fold_left (fun acc con ->
+      acc ^ spaces (level + 1) ^ ( 
+      match con with
+      | Connect ((ld,lp),(rd,rp)) -> 
+        "connect " ^ 
         ld ^ "." ^ lp ^ " to " ^ 
         rd ^ "." ^ rp ^ "\n"
+      | Wire (e,(rd,rp)) ->
+        "wire " ^ string_of_expr e ^ " to " ^ rd ^ "." ^ rp ^ "\n"
+      )
    )
    ""
    cs
@@ -1809,10 +1815,15 @@ and string_of_exe level s =
 
   | EXE_circuit cs ->
     "connections\n" ^
-    fold_left (fun acc ((ld,lp),(rd,rp)) -> 
-      acc ^ "  connect " ^ 
-         ld ^ "." ^ lp ^ " to " ^ 
-         rd ^ "." ^ rp ^ "\n"
+    fold_left (fun acc con ->
+      (match con with
+      | Connect ((ld,lp),(rd,rp)) -> 
+        "connect " ^ 
+        ld ^ "." ^ lp ^ " to " ^ 
+        rd ^ "." ^ rp ^ "\n"
+      | Wire (e,(rd,rp)) ->
+        "wire " ^ string_of_expr e ^ " to " ^ rd ^ "." ^ rp ^ "\n"
+      )
    )
    ""
    cs
@@ -2787,3 +2798,4 @@ let print_bsym_table bsym_table =
   let bsyms = List.sort (fun (k1,_) (k2,_) -> compare k1 k2) bsyms in
 
   List.iter (fun (bid, _) -> print_bsym bsym_table bid) bsyms
+

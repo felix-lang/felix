@@ -85,3 +85,4 @@ let terminate rrp exc =
   | x ->
     print_endline ("Fatal error: exception " ^ (Printexc.to_string x));
     exit (if return_parity then 1 else 0)
+

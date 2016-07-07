@@ -22,7 +22,7 @@ let make_match_handler sr rex pat match_var_name match_var_index body =
 let gen_match rex seq name sr e pss =
 (* print_endline ("Generating expr match " ^ name ^ ", expr=" ^ string_of_expr e); *)
 
-    if List.length pss = 0 then clierr sr "Empty Pattern";
+    if List.length pss = 0 then clierrx "[flx_desugar/flx_match.ml:25: E339] " sr "Empty Pattern";
 
     (* step 1: evaluate e *)
     let d,x = rex e in
@@ -240,7 +240,7 @@ let gen_stmt_match seq rex rsts name parent_vs access sr e pss =
 (*
 print_endline ("Generating stmt match " ^ name ^ ", expr=" ^ string_of_expr e);
 *)
-    if List.length pss = 0 then clierr sr "Empty Pattern";
+    if List.length pss = 0 then clierrx "[flx_desugar/flx_match.ml:243: E340] " sr "Empty Pattern";
 
     (* step 1: evaluate e *)
     let d,x = rex e in
@@ -416,5 +416,6 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
     )
     in
     match_function_body
+
 
 

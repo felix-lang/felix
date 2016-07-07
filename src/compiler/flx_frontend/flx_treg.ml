@@ -120,10 +120,10 @@ print_endline ("Register type r " ^ sbt bsym_table t);
   | BTYP_label -> ()
   | BTYP_void -> ()
   | BTYP_fix (0,_) -> ()
-  | BTYP_fix (i,_) -> clierr sr ("[register_type_r] Fixpoint "^si i^" encountered")
-  | BTYP_polyrecord _ -> clierr sr ("[register_type_r] attempt to bind polyrecord type")
+  | BTYP_fix (i,_) -> clierrx "[flx_frontend/flx_treg.ml:123: E356] " sr ("[register_type_r] Fixpoint "^si i^" encountered")
+  | BTYP_polyrecord _ -> clierrx "[flx_frontend/flx_treg.ml:124: E357] " sr ("[register_type_r] attempt to bind polyrecord type")
   (*
-  | BTYP_type_var (i,mt) -> clierr sr ("Attempt to register type variable " ^ si i ^":"^sbt sym_table mt)
+  | BTYP_type_var (i,mt) -> clierrx "[flx_frontend/flx_treg.ml:126: E358] " sr ("Attempt to register type variable " ^ si i ^":"^sbt sym_table mt)
   *)
   | BTYP_type_var (i,mt) ->
     (*
@@ -264,7 +264,7 @@ print_endline ("External primitive instance, registering whole type " ^ sbt bsym
       end
 
     | _ ->
-      clierr sr
+      clierrx "[flx_frontend/flx_treg.ml:267: E359] " sr
       (
         "[register_type_r] expected type declaration, got " ^
         string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) i
@@ -284,8 +284,9 @@ print_endline ("External primitive instance, registering whole type " ^ sbt bsym
   | BTYP_type_set_union _
   | BTYP_type_set_intersection _
     ->
-    clierr sr
+    clierrx "[flx_frontend/flx_treg.ml:287: E360] " sr
     (
       "Unexpected kind in register type: " ^
       sbt bsym_table t
     )
+

@@ -39,7 +39,7 @@ let rec generic_map_proc bsym_table bind_exe be sr fn b =
     let xs = List.map (bind_exe bsym_table) xs in
     List.concat xs
 
-  | _ -> Flx_exceptions.clierr sr ("_map procedure not implemented for this type " ^ Flx_print.sbt bsym_table argt);
+  | _ -> Flx_exceptions.clierrx "[flx_bind/flx_gmap.ml:42: E79] " sr ("_map procedure not implemented for this type " ^ Flx_print.sbt bsym_table argt);
 
 (*
   | BTYP_array (t,_) ->
@@ -51,4 +51,5 @@ let rec generic_map_proc bsym_table bind_exe be sr fn b =
   | _ -> 
     be rs (EXPR_apply (sr, (EXPR_apply (sr,(EXPR_name (sr,"map",[]),EXPR_name (sr,fn,[]))),b)))
 *)
+
 

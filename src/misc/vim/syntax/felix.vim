@@ -172,7 +172,11 @@ syn keyword felixStatement the
 syn keyword felixStatement true
 syn keyword felixStatement typematch
 syn keyword felixStatement typecase
-syn keyword felixStatement unless
+syn keyword felixStatement chip
+syn keyword felixStatement connect
+syn keyword felixStatement circuit
+syn keyword felixStatement endcircuit
+syn keyword felixStatement pins
 syn keyword felixStatement _
 " all the felix keywords ..
 " directives
@@ -304,6 +308,8 @@ syn keyword felixType string
 syn keyword felixType ustring
 
 syn keyword felixType cont
+
+syn keyword felixType pin
 
 syn keyword felixConstant true false
 

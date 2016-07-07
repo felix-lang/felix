@@ -180,7 +180,7 @@ if name = "ff" then print_endline ("Lookup name in table dirs " ^ name);
             end opens;
             print_endline ("[lookup_name_in_table_dirs] Conflicting nonfunction definitions for "^
               name ^" found in open modules");
-            clierr sr ("[lookup_name_in_table_dirs] Conflicting nonfunction definitions for "^
+            clierrx "[flx_bind/flx_lookup.ml:183: E80] " sr ("[lookup_name_in_table_dirs] Conflicting nonfunction definitions for "^
               name ^" found in open modules"
             )
           end
@@ -285,11 +285,11 @@ and inner_lookup_name_in_env state bsym_table env rs sr name : entry_set_t =
     | None ->
 (*
 print_endline ("[lookup_name_in_env]: Can't find name " ^ name ^ " in env "); print_env env; 
-print_endline ("Issuing clierr .. why isn't it trapped?");
+print_endline ("Issuing clierrx "[flx_bind/flx_lookup.ml:288: E81] " .. why isn't it trapped?");
 *)
      raise (SimpleNameNotFound (sr,name,"inner_lookup_name_in_env"))
 (*
-      clierr sr
+      clierrx "[flx_bind/flx_lookup.ml:292: E82] " sr
       (
         "[lookup_name_in_env]: Name '" ^
         name ^
@@ -314,13 +314,13 @@ and lookup_qn_in_env2'
   print_endline ("[lookup_qn_in_env2] qn=" ^ string_of_qualified_name qn);
   *)
   match qn with
-  | `AST_callback (sr,qn) -> clierr sr "[lookup_qn_in_env2] qualified name is callback [not implemented yet]"
-  | `AST_void sr -> clierr sr "[lookup_qn_in_env2] qualified name is void"
-  | `AST_case_tag (sr,_) -> clierr sr "[lookup_qn_in_env2] Can't lookup a case tag"
-  | `AST_typed_case (sr,_,_) -> clierr sr "[lookup_qn_in_env2] Can't lookup a typed case tag"
+  | `AST_callback (sr,qn) -> clierrx "[flx_bind/flx_lookup.ml:317: E83] " sr "[lookup_qn_in_env2] qualified name is callback [not implemented yet]"
+  | `AST_void sr -> clierrx "[flx_bind/flx_lookup.ml:318: E84] " sr "[lookup_qn_in_env2] qualified name is void"
+  | `AST_case_tag (sr,_) -> clierrx "[flx_bind/flx_lookup.ml:319: E85] " sr "[lookup_qn_in_env2] Can't lookup a case tag"
+  | `AST_typed_case (sr,_,_) -> clierrx "[flx_bind/flx_lookup.ml:320: E86] " sr "[lookup_qn_in_env2] Can't lookup a typed case tag"
   | `AST_index (sr,name,_) ->
     print_endline ("[lookup_qn_in_env2] synthetic name " ^ name);
-    clierr sr "[lookup_qn_in_env2] Can't lookup a synthetic name"
+    clierrx "[flx_bind/flx_lookup.ml:323: E87] " sr "[lookup_qn_in_env2] Can't lookup a synthetic name"
 
   | `AST_name (sr,name,ts) ->
     (*
@@ -342,7 +342,7 @@ and lookup_qn_in_env2'
         resolve_inherits state bsym_table rs sr entry,
         ts' @ ts
       | None ->
-        clierr sr
+        clierrx "[flx_bind/flx_lookup.ml:345: E88] " sr
         (
           "[lookup_qn_in_env2] Can't find " ^ name
         )
@@ -354,7 +354,7 @@ and lookup_qn_in_env2'
         resolve_inherits state bsym_table rs sr entry,
         ts' @ ts
       with Not_found ->
-        clierr sr
+        clierrx "[flx_bind/flx_lookup.ml:357: E89] " sr
         (
           "[lookup_qn_in_env2] Can't find " ^ name
         )
@@ -374,7 +374,7 @@ and lookup_qn_in_env'
 
     | FunctionEntry _,_ ->
       let sr = src_of_qualified_name qn in
-      clierr sr
+      clierrx "[flx_bind/flx_lookup.ml:377: E90] " sr
       (
         "[lookup_qn_in_env'] Not expecting " ^
         string_of_qualified_name qn ^
@@ -418,7 +418,7 @@ and inner_bind_type state (bsym_table:Flx_bsym_table.t) env sr rs t =
 
     with
       | Free_fixpoint b ->
-        clierr sr
+        clierrx "[flx_bind/flx_lookup.ml:421: E91] " sr
         ("Unresolvable recursive type " ^ sbt bsym_table b)
       | Not_found ->
         failwith "Bind type' failed with Not_found"
@@ -448,7 +448,7 @@ and inner_bind_expression state bsym_table env rs e  =
      x
     with
      | Free_fixpoint b ->
-       clierr sr
+       clierrx "[flx_bind/flx_lookup.ml:451: E92] " sr
        ("inner_bind_expression: Circular dependency typing expression " ^ string_of_expr e)
 
      | SystemError (sr,msg) as x ->
@@ -799,7 +799,7 @@ print_endline ("Bind type " ^ string_of_typecode t);
         match t with
         (* reverse the fields so the second one with a given name takes precedence *)
         | BTYP_record (fields) -> new_fields := List.rev fields @ (!new_fields)
-        | _ -> clierr sr ("Record extension requires bases be records too, got " ^ sbt bsym_table t)
+        | _ -> clierrx "[flx_bind/flx_lookup.ml:802: E93] " sr ("Record extension requires bases be records too, got " ^ sbt bsym_table t)
       )
       ts
       ;
@@ -830,7 +830,7 @@ print_endline ("Calling Flx_beta.adjust, possibly incorrectly, type = " ^ sbt bs
       in
       let compatible_arrays ts = 
         match ts with 
-        | [] -> clierr sr "empty extension"
+        | [] -> clierrx "[flx_bind/flx_lookup.ml:833: E94] " sr "empty extension"
         | BTYP_array (t,BTYP_unitsum n) :: ts -> check t n ts
         | t::ts -> check t 1 ts
       in
@@ -848,7 +848,7 @@ print_endline ("Calling Flx_beta.adjust, possibly incorrectly, type = " ^ sbt bs
           match t with
           | BTYP_tuple ts -> fields := !fields @ ts
           | BTYP_array (t, BTYP_unitsum n) ->
-            if n > 20 then clierr sr "Array type too big (>20) for tuple type extension"
+            if n > 20 then clierrx "[flx_bind/flx_lookup.ml:851: E95] " sr "Array type too big (>20) for tuple type extension"
             else fields := !fields @ ntimes t n
           | _ -> fields := !fields @ [t]
         )
@@ -980,7 +980,7 @@ print_endline ("Binding TYP_var " ^ si i);
           | BTYP_unitsum b -> acc + b
           | BTYP_tuple [] -> acc + 1
           | BTYP_void -> acc
-          | _ -> clierr sr "Sum of unitsums required"
+          | _ -> clierrx "[flx_bind/flx_lookup.ml:983: E96] " sr "Sum of unitsums required"
         end a t
       in
       let t2 = bt t2 in
@@ -992,14 +992,14 @@ print_endline ("Binding TYP_var " ^ si i);
               match b with
               | BTYP_sum b -> acc @ b
               | BTYP_void -> acc
-              | _ -> clierr sr "Sum of sums required"
+              | _ -> clierrx "[flx_bind/flx_lookup.ml:995: E97] " sr "Sum of sums required"
             end a t
           in
           btyp_sum ts
       | BTYP_sum (BTYP_unitsum a :: t) -> btyp_unitsum (make_ts a t)
       | BTYP_sum (BTYP_tuple [] :: t) -> btyp_unitsum (make_ts 1 t)
 
-      | _ -> clierr sr ("Cannot flatten type " ^ sbt bsym_table t2)
+      | _ -> clierrx "[flx_bind/flx_lookup.ml:1002: E98] " sr ("Cannot flatten type " ^ sbt bsym_table t2)
       end
 
   | TYP_apply (TYP_void _ as qn, t2')
@@ -1221,7 +1221,7 @@ end;
       begin match result with
       | BEXPR_closure (i,ts),_ -> bi i ts
       | _  ->
-          clierr sr
+          clierrx "[flx_bind/flx_lookup.ml:1224: E99] " sr
           (
             "[typecode_of_expr] Type expected, got: " ^
             sbe bsym_table result
@@ -1246,7 +1246,7 @@ and cal_assoc_type state (bsym_table:Flx_bsym_table.t) sr t =
     | h::t ->
       List.fold_left (fun acc t ->
         if acc <> t then
-          clierr sr ("[cal_assoc_type] typeset elements should all be assoc type " ^ sbt bsym_table acc)
+          clierrx "[flx_bind/flx_lookup.ml:1249: E100] " sr ("[cal_assoc_type] typeset elements should all be assoc type " ^ sbt bsym_table acc)
         ;
         acc
      ) h t
@@ -1280,7 +1280,7 @@ and cal_assoc_type state (bsym_table:Flx_bsym_table.t) sr t =
     let ls = List.map snd ls in
     let ls = List.map ct ls in chk ls
 
-  | _ -> clierr sr ("Don't know what to make of " ^ sbt bsym_table t)
+  | _ -> clierrx "[flx_bind/flx_lookup.ml:1283: E101] " sr ("Don't know what to make of " ^ sbt bsym_table t)
 *)
 
 and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts mkenv
@@ -1493,7 +1493,7 @@ print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table
     (*
     if List.length vs <> List.length ts
     then
-      clierr sr
+      clierrx "[flx_bind/flx_lookup.ml:1496: E102] " sr
       (
         "[bind_type_index] Wrong number of type arguments for " ^ id ^
         ", expected " ^
@@ -1588,7 +1588,7 @@ print_endline ("bind type index, struct thing " ^ si index ^ " ts=" ^ catmap ","
       btyp_inst (index,ts)
 
     | _ ->
-      clierr sr
+      clierrx "[flx_bind/flx_lookup.ml:1591: E103] " sr
       (
         "[bind_type_index] Type " ^ id ^ "<" ^ string_of_bid index ^ ">" ^
         " must be a type [alias, abstract, union, struct], got:\n" ^
@@ -1656,7 +1656,7 @@ print_endline "Abnormal exit type_of_index' in inner_type_of_index_with_ts";
   (* Make sure that we got the right number of type variables. *)
   let pvs,vs,_ = find_split_vs state.sym_table bsym_table bid in
   if (List.length ts != List.length vs + List.length pvs) then
-    clierr sr (
+    clierrx "[flx_bind/flx_lookup.ml:1659: E104] " sr (
        "inner_type_of_index_with_ts failed with ts/vs mismatch " ^
        Flx_bsym_table.find_id bsym_table bid ^ "<" ^ si bid ^ ">" ^
        "\n parent vs = " ^ string_of_plain_ivs pvs ^ 
@@ -1773,7 +1773,7 @@ print_endline ("Calling bind_epression'");
           )
           ;
           *)
-          clierr sr
+          clierrx "[flx_bind/flx_lookup.ml:1776: E105] " sr
           (
             "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<" ^
             string_of_bid index ^ ">" ^
@@ -1851,7 +1851,7 @@ and btype_of_bsym state bsym_table sr bt bid bsym =
   | BBDCL_label _ -> btyp_label ()
   | BBDCL_invalid -> assert false
   | BBDCL_module -> 
-    clierr (Flx_bsym.sr bsym) ("Attempt to find type of module or library name " ^ Flx_bsym.id bsym)
+    clierrx "[flx_bind/flx_lookup.ml:1854: E106] " (Flx_bsym.sr bsym) ("Attempt to find type of module or library name " ^ Flx_bsym.id bsym)
 
   | BBDCL_fun (_,_,(params,_),return_type,effects,_) ->
     begin match effects with
@@ -1895,7 +1895,7 @@ and btype_of_bsym state bsym_table sr bt bid bsym =
   | BBDCL_axiom 
   | BBDCL_lemma 
   | BBDCL_reduce ->
-    clierr (Flx_bsym.sr bsym) ("Use entity as if variable:" ^ Flx_bsym.id bsym)
+    clierrx "[flx_bind/flx_lookup.ml:1898: E107] " (Flx_bsym.sr bsym) ("Use entity as if variable:" ^ Flx_bsym.id bsym)
  
 
 (* -------------------------------------------------------------------------- *)
@@ -2045,7 +2045,7 @@ print_endline ("** FINISH **** Calculating Function type for function " ^ sym.Fl
       bt sym.Flx_sym.sr (TYP_function (type_of_list pts,rt))
 
   | SYMDEF_union _ ->
-      clierr sym.Flx_sym.sr ("Union " ^ sym.Flx_sym.id ^ " doesn't have a type")
+      clierrx "[flx_bind/flx_lookup.ml:2048: E108] " sym.Flx_sym.sr ("Union " ^ sym.Flx_sym.id ^ " doesn't have a type")
 
   (* struct as function *)
   | SYMDEF_cstruct (ls,_)
@@ -2065,7 +2065,7 @@ print_endline ("** FINISH **** Calculating Function type for function " ^ sym.Fl
       btyp_function (bt sym.Flx_sym.sr t, btyp_inst (index, ts))
 
   | SYMDEF_abs _ ->
-      clierr sym.Flx_sym.sr
+      clierrx "[flx_bind/flx_lookup.ml:2068: E109] " sym.Flx_sym.sr
       (
         "[type_of_index] Expected declaration of typed entity for index " ^
         string_of_bid index ^ "\ngot abstract type " ^ sym.Flx_sym.id  ^
@@ -2075,7 +2075,7 @@ print_endline ("** FINISH **** Calculating Function type for function " ^ sym.Fl
       )
 
   | _ ->
-      clierr sym.Flx_sym.sr
+      clierrx "[flx_bind/flx_lookup.ml:2078: E110] " sym.Flx_sym.sr
       (
         "[type_of_index] Expected declaration of typed entity for index "^
         string_of_bid index ^ ", got " ^ sym.Flx_sym.id
@@ -2167,7 +2167,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
       begin match reorder with
       | Some _ -> rest,reorder
       | None ->
-        clierr sr
+        clierrx "[flx_bind/flx_lookup.ml:2170: E111] " sr
         (
           "[cal_apply] Function " ^
           sbe bsym_table tbe1 ^
@@ -2190,7 +2190,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
         | SYMDEF_cstruct (cs,_) -> t1, None
         | SYMDEF_struct (cs) -> t1, None
         | _ ->
-          clierr sr
+          clierrx "[flx_bind/flx_lookup.ml:2193: E112] " sr
           (
             "[cal_apply] Attempt to apply non-struct " ^ id ^ ", type " ^
             sbt bsym_table t1 ^
@@ -2199,7 +2199,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
         end
       end
     | _ ->
-      clierr sr
+      clierrx "[flx_bind/flx_lookup.ml:2202: E113] " sr
       (
         "Attempt to apply non-function\n" ^
         sbe bsym_table tbe1 ^
@@ -2222,7 +2222,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
 
   let rest = varmap_subst state.varmap rest in
   if rest = btyp_void () then
-    clierr sr
+    clierrx "[flx_bind/flx_lookup.ml:2225: E114] " sr
     (
       "[cal_apply] Function " ^
       sbe bsym_table tbe1 ^
@@ -2246,7 +2246,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
   (*
   if var_occurs rest
   then
-    clierr sr
+    clierrx "[flx_bind/flx_lookup.ml:2249: E115] " sr
     (
       "[cal_apply] Type variable in return type applying\n" ^
         sbe bsym_table tbe1 ^
@@ -2282,7 +2282,7 @@ and koenig_lookup state bsym_table env rs sra id' name_map fn t2 ts =
   let entries =
     try Hashtbl.find name_map fn
     with Not_found ->
-      clierr sra
+      clierrx "[flx_bind/flx_lookup.ml:2285: E116] " sra
       (
         "Koenig lookup: can't find name "^
         fn^ " in " ^
@@ -2312,13 +2312,13 @@ and koenig_lookup state bsym_table env rs sra id' name_map fn t2 ts =
         in Hashtbl.iter (fun _ _ -> incr n) name_map;
         print_endline ("module defines " ^ string_of_int !n^ " entries");
         *)
-        clierr sra
+        clierrx "[flx_bind/flx_lookup.ml:2315: E117] " sra
         (
           "[flx_ebind] Koenig lookup: Can't find match for " ^ fn ^
           "\ncandidates are: " ^ full_string_of_entry_set state.sym_table bsym_table entries
         )
     end
-  | NonFunctionEntry _ -> clierr sra "Koenig lookup expected function"
+  | NonFunctionEntry _ -> clierrx "[flx_bind/flx_lookup.ml:2321: E118] " sra "Koenig lookup expected function"
 
 and lookup_qn_with_sig'
   state
@@ -2348,10 +2348,10 @@ and lookup_qn_with_sig'
     | { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs; symdef=entry } ->
       begin match entry with
       | SYMDEF_inherit_fun qn ->
-          clierr sr "Chasing functional inherit in lookup_qn_with_sig'";
+          clierrx "[flx_bind/flx_lookup.ml:2351: E119] " sr "Chasing functional inherit in lookup_qn_with_sig'";
 
       | SYMDEF_inherit qn ->
-          clierr sr "Chasing inherit in lookup_qn_with_sig'";
+          clierrx "[flx_bind/flx_lookup.ml:2354: E120] " sr "Chasing inherit in lookup_qn_with_sig'";
 
       | SYMDEF_cstruct _
       | SYMDEF_struct _ ->
@@ -2379,7 +2379,7 @@ and lookup_qn_with_sig'
               sra srn id ts index, 
             ts
           | None ->
-              clierr sra ("Struct "^id^" constructor arguments don't match member types")
+              clierrx "[flx_bind/flx_lookup.ml:2382: E121] " sra ("Struct "^id^" constructor arguments don't match member types")
         in
         assert (List.length hvs = List.length bts);
         (*
@@ -2395,7 +2395,7 @@ and lookup_qn_with_sig'
         begin match t with
         | BTYP_function (a,_) ->
           if not (type_match bsym_table state.counter a sign) then
-            clierr sr
+            clierrx "[flx_bind/flx_lookup.ml:2398: E122] " sr
             (
               "[lookup_qn_with_sig] Struct constructor for "^id^" has wrong signature, got:\n" ^
               sbt bsym_table t ^
@@ -2439,7 +2439,7 @@ and lookup_qn_with_sig'
         | BTYP_function (a,b) ->
           let sign = try List.hd signs with _ -> assert false in
           if not (type_match bsym_table state.counter a sign) then
-          clierr srn
+          clierrx "[flx_bind/flx_lookup.ml:2442: E123] " srn
           (
             "[lookup_qn_with_sig] Expected variable "^id ^
             "<" ^ string_of_bid index ^
@@ -2455,7 +2455,7 @@ print_endline ("LOOKUP 1: varname " ^ si index);
             bexpr_varname t (index, ts)
           end
         | _ ->
-          clierr srn
+          clierrx "[flx_bind/flx_lookup.ml:2458: E124] " srn
           (
             "[lookup_qn_with_sig] expected variable " ^
             id ^ "<" ^ string_of_bid index ^
@@ -2473,7 +2473,7 @@ print_endline ("LOOKUP 1: varname " ^ si index);
          * Well, the error is probably that the caller isn't
          * handling it, rather than this routine 
          *)
-        clierr sr
+        clierrx "[flx_bind/flx_lookup.ml:2476: E125] " sr
         (
           "[lookup_qn_with_sig] Named Non function entry "^id^
           " must be function type: requires struct," ^
@@ -2487,9 +2487,9 @@ print_endline ("LOOKUP 1: varname " ^ si index);
   | `AST_callback (sr,qn) ->
     failwith "[lookup_qn_with_sig] Callbacks not implemented yet"
 
-  | `AST_void _ -> clierr sra "qualified-name is void"
+  | `AST_void _ -> clierrx "[flx_bind/flx_lookup.ml:2490: E126] " sra "qualified-name is void"
 
-  | `AST_case_tag _ -> clierr sra "Can't lookup case tag here"
+  | `AST_case_tag _ -> clierrx "[flx_bind/flx_lookup.ml:2492: E127] " sra "Can't lookup case tag here"
 
   (* WEIRD .. this is a qualified name syntactically ..
     but semantically it belongs in bind_expression
@@ -2507,7 +2507,7 @@ print_endline ("LOOKUP 1: varname " ^ si index);
     begin match unfold "flx_lookup" t with
     | BTYP_unitsum k  ->
       if v<0 || v>= k
-      then clierr sra "Case index out of range of sum"
+      then clierrx "[flx_bind/flx_lookup.ml:2510: E128] " sra "Case index out of range of sum"
       else
       begin match signs with 
       | [argt] ->
@@ -2518,15 +2518,15 @@ print_endline ("LOOKUP 1: varname " ^ si index);
 *)
           x
         end else
-          clierr sr 
+          clierrx "[flx_bind/flx_lookup.ml:2521: E129] " sr 
             ("Unitsum case constructor requires argument of type unit, got " ^
              sbt bsym_table argt
             )
-      | _ -> clierr sr "Case requires exactly one argument"
+      | _ -> clierrx "[flx_bind/flx_lookup.ml:2525: E130] " sr "Case requires exactly one argument"
       end
     | BTYP_sum ls ->
       if v<0 || v >= List.length ls
-      then clierr sra "Case index out of range of sum"
+      then clierrx "[flx_bind/flx_lookup.ml:2529: E131] " sra "Case index out of range of sum"
       else let vt = List.nth ls v in
       begin match signs with
       | [argt] -> 
@@ -2537,15 +2537,15 @@ print_endline ("LOOKUP 1: varname " ^ si index);
 *)
           x
         end else
-          clierr sr 
+          clierrx "[flx_bind/flx_lookup.ml:2540: E132] " sr 
             ("Sum case constructor requires argument of type " ^
              sbt bsym_table vt ^ ", got " ^ sbt bsym_table argt
             )
-      | _ -> clierr sr "Case requires exactly one argument"
+      | _ -> clierrx "[flx_bind/flx_lookup.ml:2544: E133] " sr "Case requires exactly one argument"
       end
 
     | _ ->
-      clierr sr
+      clierrx "[flx_bind/flx_lookup.ml:2548: E134] " sr
       (
         "[lookup_qn_with_sig] Type of case must be sum, got " ^
         sbt bsym_table t
@@ -2671,7 +2671,7 @@ print_endline ("Lookup qn with sig: AST_lookup of " ^ name ^ " in " ^ string_of_
     let result = lookup_name_in_table_dirs htab tables sr name in
     begin match result with
     | None ->
-      clierr sr
+      clierrx "[flx_bind/flx_lookup.ml:2674: E135] " sr
       (
         "[lookup_qn_with_sig] AST_lookup: Simple_module: Can't find name " ^ name
       )
@@ -2700,7 +2700,7 @@ print_endline ("Lookup qn with sig: AST_lookup of " ^ name ^ " in " ^ string_of_
 
       | None ->
         try
-        clierr sra
+        clierrx "[flx_bind/flx_lookup.ml:2703: E136] " sra
         (
           "[lookup_qn_with_sig] (Simple module) Unable to resolve overload of " ^
           string_of_qualified_name qn ^
@@ -2733,10 +2733,10 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
     { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs; symdef=entry } ->
       begin match entry with
       | SYMDEF_inherit_fun qn ->
-          clierr sr "Chasing functional inherit in lookup_qn_with_sig'";
+          clierrx "[flx_bind/flx_lookup.ml:2736: E137] " sr "Chasing functional inherit in lookup_qn_with_sig'";
 
       | SYMDEF_inherit qn ->
-          clierr sr "Chasing inherit in lookup_qn_with_sig'";
+          clierrx "[flx_bind/flx_lookup.ml:2739: E138] " sr "Chasing inherit in lookup_qn_with_sig'";
 
       | SYMDEF_cstruct _
       | SYMDEF_struct _ ->
@@ -2748,7 +2748,7 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
         begin match t with
         | BTYP_function (a,_) ->
           if not (type_match bsym_table state.counter a sign) then
-            clierr sr
+            clierrx "[flx_bind/flx_lookup.ml:2751: E139] " sr
             (
               "[lookup_type_qn_with_sig] Struct constructor for "^id^" has wrong signature, got:\n" ^
               sbt bsym_table t ^
@@ -2778,10 +2778,10 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
       | SYMDEF_ref t
       | SYMDEF_parameter (_,t)
         ->
-        clierr sr (id ^ ": lookup_type_qn_with_sig: val/var/const/ref/param: not type");
+        clierrx "[flx_bind/flx_lookup.ml:2781: E140] " sr (id ^ ": lookup_type_qn_with_sig: val/var/const/ref/param: not type");
 
       | _ ->
-        clierr sr
+        clierrx "[flx_bind/flx_lookup.ml:2784: E141] " sr
         (
           "[lookup_type_qn_with_sig] Named Non function entry "^id^
           " must be type function"
@@ -2793,29 +2793,29 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
   | `AST_callback (sr,qn) ->
     failwith "[lookup_qn_with_sig] Callbacks not implemented yet"
 
-  | `AST_void _ -> clierr sra "qualified-name is void"
+  | `AST_void _ -> clierrx "[flx_bind/flx_lookup.ml:2796: E142] " sra "qualified-name is void"
 
-  | `AST_case_tag _ -> clierr sra "Can't lookup case tag here"
+  | `AST_case_tag _ -> clierrx "[flx_bind/flx_lookup.ml:2798: E143] " sra "Can't lookup case tag here"
 
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
     begin match unfold "flx_lookup" t with
     | BTYP_unitsum k ->
       if v<0 || v>= k
-      then clierr sra "Case index out of range of sum"
+      then clierrx "[flx_bind/flx_lookup.ml:2805: E144] " sra "Case index out of range of sum"
       else
         let ct = btyp_function (unit_t,t) in
         ct
 
     | BTYP_sum ls ->
       if v<0 || v >= List.length ls
-      then clierr sra "Case index out of range of sum"
+      then clierrx "[flx_bind/flx_lookup.ml:2812: E145] " sra "Case index out of range of sum"
       else let vt = List.nth ls v in
       let ct = btyp_function (vt,t) in
       ct
 
     | _ ->
-      clierr sr
+      clierrx "[flx_bind/flx_lookup.ml:2818: E146] " sr
       (
         "[lookup_qn_with_sig] Type of case must be sum, got " ^
         sbt bsym_table t
@@ -2883,7 +2883,7 @@ print_endline ("Lookup type with qn found AST_lookup of " ^ name ^ " in " ^ stri
     let result = lookup_name_in_table_dirs htab tables sr name in
     begin match result with
     | None ->
-      clierr sr
+      clierrx "[flx_bind/flx_lookup.ml:2886: E147] " sr
       (
         "[lookup_type_qn_with_sig] AST_lookup: Simple_module: Can't find name " ^ name
       )
@@ -2944,7 +2944,7 @@ print_endline "Found function entry";
         t
 *)
       | None ->
-        clierr sra
+        clierrx "[flx_bind/flx_lookup.ml:2947: E148] " sra
         (
           "[lookup_type_qn_with_sig] (Simple module) Unable to resolve overload of " ^
           string_of_qualified_name qn ^
@@ -2970,7 +2970,7 @@ and lookup_name_with_sig'
 *)
   match env with
   | [] ->
-    clierr srn
+    clierrx "[flx_bind/flx_lookup.ml:2973: E149] " srn
     (
       "[lookup_name_with_sig] Can't find " ^ name ^ "[" ^catmap "," (sbt bsym_table) ts^ "]" ^
       " of " ^ catmap "," (sbt bsym_table) t2
@@ -3194,7 +3194,7 @@ and lookup_type_name_with_sig
 *)
   match env with
   | [] ->
-    clierr srn
+    clierrx "[flx_bind/flx_lookup.ml:3197: E150] " srn
     (
       "[lookup_type_name_with_sig] Can't find " ^ name ^
       " of " ^ catmap "," (sbt bsym_table) t2
@@ -3242,7 +3242,7 @@ print_endline ("Handle type " ^ name ^ " ... bound type is " ^ sbt bsym_table t)
       t
  
   | _ ->
-      clierr sra ("[handle_type] Expected " ^ name ^ " to be function, got: " ^
+      clierrx "[flx_bind/flx_lookup.ml:3245: E151] " sra ("[handle_type] Expected " ^ name ^ " to be function, got: " ^
         string_of_symdef sym.Flx_sym.symdef name sym.Flx_sym.vs)
 
 and handle_function state bsym_table rs sra srn name ts index =
@@ -3269,7 +3269,7 @@ and handle_function state bsym_table rs sra srn name ts index =
       | BTYP_fix _ -> raise (Free_fixpoint t)
       | _ ->
           ignore (try unfold "flx_lookup" t with | _ -> raise (Free_fixpoint t));
-          clierr sra
+          clierrx "[flx_bind/flx_lookup.ml:3272: E152] " sra
           (
             "[handle_function]: closure operator expected '" ^ name ^
             "' to have function type, got '" ^
@@ -3285,7 +3285,7 @@ and handle_function state bsym_table rs sra srn name ts index =
       bexpr_closure t (index,ts)
 
   | _ ->
-      clierr sra
+      clierrx "[flx_bind/flx_lookup.ml:3288: E153] " sra
       (
         "[handle_function] Expected " ^ name ^ " to be function, got: " ^
         string_of_symdef sym.Flx_sym.symdef name sym.Flx_sym.vs
@@ -3315,7 +3315,7 @@ print_endline ("LOOKUP 2: varname " ^ si index);
         Some (bexpr_varname t (index, ts))
       end
       else
-        clierr sr
+        clierrx "[flx_bind/flx_lookup.ml:3318: E154] " sr
         (
           "[handle_variable(1)] Expected variable " ^ id ^
           "<" ^ string_of_bid index ^
@@ -3366,9 +3366,9 @@ and lookup_name_in_table_dirs_with_sig
     *)
     begin match entry with
     | SYMDEF_inherit _ ->
-      clierr sra "Woops found inherit in lookup_name_in_table_dirs_with_sig"
+      clierrx "[flx_bind/flx_lookup.ml:3369: E155] " sra "Woops found inherit in lookup_name_in_table_dirs_with_sig"
     | SYMDEF_inherit_fun _ ->
-      clierr sra "Woops found inherit function in lookup_name_in_table_dirs_with_sig"
+      clierrx "[flx_bind/flx_lookup.ml:3371: E156] " sra "Woops found inherit function in lookup_name_in_table_dirs_with_sig"
 
     | (SYMDEF_cstruct _ | SYMDEF_struct _ )
       when
@@ -3445,7 +3445,7 @@ and lookup_name_in_table_dirs_with_sig
 
     | _
       ->
-        clierr sra
+        clierrx "[flx_bind/flx_lookup.ml:3448: E157] " sra
         (
           "[lookup_name_in_table_dirs_with_sig] Expected " ^id^
           " to be struct or variable of function type, got " ^
@@ -3604,9 +3604,9 @@ and lookup_type_name_in_table_dirs_with_sig
     *)
     begin match entry with
     | SYMDEF_inherit _ ->
-      clierr sra "Woops found inherit in lookup_type_name_in_table_dirs_with_sig"
+      clierrx "[flx_bind/flx_lookup.ml:3607: E158] " sra "Woops found inherit in lookup_type_name_in_table_dirs_with_sig"
     | SYMDEF_inherit_fun _ ->
-      clierr sra "Woops found inherit function in lookup_type_name_in_table_dirs_with_sig"
+      clierrx "[flx_bind/flx_lookup.ml:3609: E159] " sra "Woops found inherit function in lookup_type_name_in_table_dirs_with_sig"
 
     | SYMDEF_struct _
     | SYMDEF_cstruct _
@@ -3683,7 +3683,7 @@ and lookup_type_name_in_table_dirs_with_sig
     | SYMDEF_reduce _
     | SYMDEF_typeclass
       ->
-        clierr sra
+        clierrx "[flx_bind/flx_lookup.ml:3686: E160] " sra
         (
           "[lookup_type_name_in_table_dirs_with_sig] Expected " ^id^
           " to be a type or functor, got " ^
@@ -3798,14 +3798,14 @@ and handle_map sr (f,ft) (a,at) =
         begin match at with
         | BTYP_inst (i,[t]) ->
           if t <> d
-          then clierr sr
+          then clierrx "[flx_bind/flx_lookup.ml:3801: E161] " sr
             ("map type of data structure index " ^
             "must agree with function domain")
           else
             btyp_inst (i,[c])
-        | _ -> clierr sr "map requires instance"
+        | _ -> clierrx "[flx_bind/flx_lookup.ml:3806: E162] " sr "map requires instance"
         end
-      | _ -> clierr sr "map non-function"
+      | _ -> clierrx "[flx_bind/flx_lookup.ml:3808: E163] " sr "map non-function"
     in
       (* actually this part is easy, it's just
       applies ((map[i] f) a) where map[i] denotes
@@ -3820,11 +3820,11 @@ and lookup_label_in_env state bsym_table env sr name : Flx_types.bid_t option =
     with _ -> None
   in
   match result with
-  | Some (FunctionEntry _) -> clierr sr ("Expected "^name^" to be a label, got function set")
+  | Some (FunctionEntry _) -> clierrx "[flx_bind/flx_lookup.ml:3823: E164] " sr ("Expected "^name^" to be a label, got function set")
   | Some (NonFunctionEntry x) -> 
     begin match hfind "lookup" state.sym_table (sye x) with
     | { Flx_sym.symdef=SYMDEF_label s} -> Some (sye x)
-    | { Flx_sym.symdef=symdef; vs=vs } -> clierr sr ("Expected " ^ name ^ " to be a label, got:\n" ^
+    | { Flx_sym.symdef=symdef; vs=vs } -> clierrx "[flx_bind/flx_lookup.ml:3827: E165] " sr ("Expected " ^ name ^ " to be a label, got:\n" ^
       string_of_symdef symdef name vs)
     end
   | None -> None
@@ -3894,7 +3894,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   | EXPR_intersect _
   | EXPR_isin _
     ->
-      clierr sr
+      clierrx "[flx_bind/flx_lookup.ml:3897: E166] " sr
      ("[bind_expression] Expected expression, got " ^ string_of_expr e)
 
   (* Use a trick! convert the casematch to a typematch
@@ -3930,7 +3930,7 @@ print_endline ("REDUCED = " ^ sbt bsym_table ix);
     | BTYP_void -> 0
     | BTYP_tuple [] -> 1
     | BTYP_unitsum n -> n
-    | _ -> clierr sr ("Unable to match typecase argument type " ^ sbt bsym_table argt ^
+    | _ -> clierrx "[flx_bind/flx_lookup.ml:3933: E167] " sr ("Unable to match typecase argument type " ^ sbt bsym_table argt ^
       " with any case in\n" ^ sbt bsym_table selector)
     in
 (*
@@ -3947,7 +3947,7 @@ print_endline ("Case number " ^ si index);
     begin match maybe_index with
     | Some index -> bexpr_label index
     | None ->
-      clierr sr ("Flx_lookup: Cannot find label " ^ label ^ " in environment");
+      clierrx "[flx_bind/flx_lookup.ml:3950: E168] " sr ("Flx_lookup: Cannot find label " ^ label ^ " in environment");
     end
 
   | EXPR_range_check (sr, mi, v, mx) ->
@@ -3962,7 +3962,7 @@ print_endline ("Case number " ^ si index);
        let ts = List.map (bt sr) ts in
        bexpr_closure (ti sr (sye index) ts) (sye index, ts)
     | NonFunctionEntry  _
-    | _ -> clierr sr
+    | _ -> clierrx "[flx_bind/flx_lookup.ml:3965: E169] " sr
       "'callback' expression denotes non-singleton function set"
     end
 
@@ -3975,28 +3975,28 @@ print_endline ("Case number " ^ si index);
     begin let mksum a b = Flx_strr.apl2 sri "land" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mksum h t)
-    | [] -> clierr sri "Not expecting empty and list"
+    | [] -> clierrx "[flx_bind/flx_lookup.ml:3978: E170] " sri "Not expecting empty and list"
     end
 
   | EXPR_orlist (sri,ls) ->
     begin let mksum a b = Flx_strr.apl2 sri "lor" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mksum h t)
-    | [] -> clierr sri "Not expecting empty or list"
+    | [] -> clierrx "[flx_bind/flx_lookup.ml:3985: E171] " sri "Not expecting empty or list"
     end
 
   | EXPR_sum (sri,ls) ->
     begin let mksum a b = Flx_strr.apl2 sri "+" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mksum h t)
-    | [] -> clierr sri "Not expecting empty product (unit)"
+    | [] -> clierrx "[flx_bind/flx_lookup.ml:3992: E172] " sri "Not expecting empty product (unit)"
     end
 
   | EXPR_product (sri,ls) ->
     begin let mkprod a b = Flx_strr.apl2 sri "*" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mkprod h t)
-    | [] -> clierr sri "Not expecting empty sum (void)"
+    | [] -> clierrx "[flx_bind/flx_lookup.ml:3999: E173] " sri "Not expecting empty sum (void)"
     end
 
   | EXPR_superscript (sri,(a,b)) ->
@@ -4111,7 +4111,7 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
     let ctyp,k = match unfold "flx_lookup" typ with
     | BTYP_array (t,BTYP_unitsum len)  ->
       if n<0 || n>len-1
-      then clierr sr
+      then clierrx "[flx_bind/flx_lookup.ml:4114: E174] " sr
         (
           "[bind_expression] Tuple index " ^
           string_of_int n ^
@@ -4124,7 +4124,7 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
       ->
       let len = List.length ts in
       if n<0 || n>len-1
-      then clierr sr
+      then clierrx "[flx_bind/flx_lookup.ml:4127: E175] " sr
         (
           "[bind_expression] Tuple index " ^
           string_of_int n ^
@@ -4136,7 +4136,7 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
     | BTYP_tuple_cons (t1,_) ->
       if n = 0 then t1,2 (* HACK! We dunno the length of the tuple! *)
       else
-      clierr sr
+      clierrx "[flx_bind/flx_lookup.ml:4139: E176] " sr
       (
         "[bind_expression] Expected tuple " ^
         string_of_expr e' ^
@@ -4145,7 +4145,7 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
       )
 
     | _ ->
-      clierr sr
+      clierrx "[flx_bind/flx_lookup.ml:4148: E177] " sr
       (
         "[bind_expression] Expected tuple " ^
         string_of_expr e' ^
@@ -4172,7 +4172,7 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
         bexpr_apply ct (prj,x2)
       with 
         Not_found ->
-          clierr sr ("Field " ^ name ^ " is not a field of " ^ sbt bsym_table t'')
+          clierrx "[flx_bind/flx_lookup.ml:4175: E178] " sr ("Field " ^ name ^ " is not a field of " ^ sbt bsym_table t'')
       end
 
     | BTYP_record (es)
@@ -4186,7 +4186,7 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
         print_endline ("5:get_n arg" ^ sbe bsym_table x2);         
 *)
         bexpr_get_n t n x2
-      | None -> clierr sr
+      | None -> clierrx "[flx_bind/flx_lookup.ml:4189: E179] " sr
          (
            "Field " ^ field_name ^
            " is not a member of record " ^
@@ -4195,7 +4195,7 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
       end
 
     | t -> 
-     clierr sr ("[bind_expression] Projection requires record or polyrecord instance, got type:\n" ^ sbt bsym_table t)
+     clierrx "[flx_bind/flx_lookup.ml:4198: E180] " sr ("[bind_expression] Projection requires record or polyrecord instance, got type:\n" ^ sbt bsym_table t)
     end
   | EXPR_case_index (sr,e) ->
     let (e',t) as e  = be e in
@@ -4207,9 +4207,9 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
     | BTYP_inst (i,_) ->
       begin match hfind "lookup" state.sym_table i with
       | { Flx_sym.symdef=SYMDEF_union _} -> ()
-      | { Flx_sym.id=id} -> clierr sr ("Argument of caseno must be sum or union type, got abstract type " ^ id)
+      | { Flx_sym.id=id} -> clierrx "[flx_bind/flx_lookup.ml:4210: E181] " sr ("Argument of caseno must be sum or union type, got abstract type " ^ id)
       end
-    | _ -> clierr sr ("Argument of caseno must be sum or union type, got " ^ sbt bsym_table t)
+    | _ -> clierrx "[flx_bind/flx_lookup.ml:4212: E182] " sr ("Argument of caseno must be sum or union type, got " ^ sbt bsym_table t)
     end
     ;
     let int_t = bt sr (TYP_name (sr,"int",[])) in
@@ -4220,7 +4220,7 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
     end
 
   | EXPR_case_tag (sr,v) ->
-     clierr sr "plain case tag not allowed in expression (only in pattern)"
+     clierrx "[flx_bind/flx_lookup.ml:4223: E183] " sr "plain case tag not allowed in expression (only in pattern)"
 
   | EXPR_variant (sr,(s,e)) ->
     let (_,t) as e = be e in
@@ -4232,7 +4232,7 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
     | BTYP_tuple ts ->
       let n = List.length ts in
       if v < 0 || v >= n then
-        clierr sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
+        clierrx "[flx_bind/flx_lookup.ml:4235: E184] " sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
           " negative or >= " ^ si n ^ "for tuple type " ^ sbt bsym_table t)
       else
         let c = List.nth ts v in
@@ -4240,13 +4240,13 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
  
     | BTYP_array (BTYP_unitsum n,base) ->
       if v < 0 || v >= n then
-        clierr sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
+        clierrx "[flx_bind/flx_lookup.ml:4243: E185] " sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
           " negative or >= " ^ si n ^ "for array type " ^ sbt bsym_table t)
       else
         bexpr_prj v t base
 
     | _ ->
-      clierr sr ("[Flx_lookup.bind_expression] projection requires tuple or array type, got " ^ sbt bsym_table t);
+      clierrx "[flx_bind/flx_lookup.ml:4249: E186] " sr ("[Flx_lookup.bind_expression] projection requires tuple or array type, got " ^ sbt bsym_table t);
     end
 
   | EXPR_typed_case (sr,v,t) ->
@@ -4258,7 +4258,7 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
     begin match unfold "flx_lookup" t with
     | BTYP_unitsum k ->
       if v<0 || v>= k
-      then clierr sr "Case index out of range of sum"
+      then clierrx "[flx_bind/flx_lookup.ml:4261: E187] " sr "Case index out of range of sum"
       else begin
 (*
         print_endline "unitsum case";
@@ -4267,7 +4267,7 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
       end
     | BTYP_sum ls ->
       if v<0 || v>= List.length ls
-      then clierr sr "Case index out of range of sum"
+      then clierrx "[flx_bind/flx_lookup.ml:4270: E188] " sr "Case index out of range of sum"
       else let vt = List.nth ls v in
       begin match vt with
       | BTYP_tuple [] -> 
@@ -4284,7 +4284,7 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
         x
       end
     | _ ->
-      clierr sr
+      clierrx "[flx_bind/flx_lookup.ml:4287: E189] " sr
       (
         "[bind_expression] Type of case must be sum, got " ^
         sbt bsym_table t
@@ -4344,7 +4344,7 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
         print_endline ("spec_ts=" ^ catmap "," (sbt bsym_table) sub_ts);
         print_endline ("input_ts=" ^ catmap "," (sbt bsym_table) ts);
         *)
-        clierr sr "[lookup,AST_name] ts/vs mismatch"
+        clierrx "[flx_bind/flx_lookup.ml:4347: E190] " sr "[lookup,AST_name] ts/vs mismatch"
       end;
 
       let ts = List.map (tsubst sr spec_vs ts) sub_ts in
@@ -4402,11 +4402,11 @@ print_endline ("LOOKUP 5: varname " ^ si index);
 
           | BBDCL_fun _ 
             ->
-            clierr sr ("Flx_lookup: bind_expression: EXPR_name] Nonfunction entry: Expected name "^name^ 
+            clierrx "[flx_bind/flx_lookup.ml:4405: E191] " sr ("Flx_lookup: bind_expression: EXPR_name] Nonfunction entry: Expected name "^name^ 
             " of struct, cstruct, constructor, const, or variable, got function!")
  
           | _ ->
-            clierr sr ("Flx_lookup: bind_expression: EXPR_name] Nonfunction entry: Expected name "^name^ 
+            clierrx "[flx_bind/flx_lookup.ml:4409: E192] " sr ("Flx_lookup: bind_expression: EXPR_name] Nonfunction entry: Expected name "^name^ 
             " of struct, cstruct, constructor, const, or variable")
  
           end
@@ -4466,7 +4466,7 @@ print_endline ("LOOKUP 7: varname " ^ si index);
 
 
           | _ -> 
-            clierr sr ("[Flx_lookup.bind_expression: EXPR_name]: Nonfunction entry: Binding " ^ 
+            clierrx "[flx_bind/flx_lookup.ml:4469: E193] " sr ("[Flx_lookup.bind_expression: EXPR_name]: Nonfunction entry: Binding " ^ 
               name ^ "<"^si index^">"^ " requires closure or variable")
           end
       end
@@ -4490,7 +4490,7 @@ print_endline ("LOOKUP 7: varname " ^ si index);
         print_endline ("spec_ts=" ^ catmap "," (sbt bsym_table) sub_ts);
         print_endline ("input_ts=" ^ catmap "," (sbt bsym_table) ts);
         *)
-        clierr sr ( "[lookup,AST_name] ts/vs mismatch binding " ^ string_of_expr e ^ "\nName " ^ name ^
+        clierrx "[flx_bind/flx_lookup.ml:4493: E194] " sr ( "[lookup,AST_name] ts/vs mismatch binding " ^ string_of_expr e ^ "\nName " ^ name ^
                     " is bound to " ^
                     (full_string_of_entry_kind state.sym_table bsym_table f) )
       end;
@@ -4517,7 +4517,7 @@ print_endline ("lookup_name_in_table_dirs_with_sig found functions " ^ name);
           "\nCandidates are\n: " ^ catmap "\n" (full_string_of_entry_kind state.sym_table bsym_table) fs 
         );
 *)
-        clierr sr
+        clierrx "[flx_bind/flx_lookup.ml:4520: E195] " sr
         (
           "[bind_expression] Simple name " ^ name ^
           " binds to function set in\n" ^
@@ -4535,7 +4535,7 @@ print_endline ("lookup_name_in_table_dirs_with_sig found functions " ^ name);
            *)
            bexpr_closure (ti sr index ts) (index,ts)
 
-         | None -> clierr sr "Cannot resolve overload .."
+         | None -> clierrx "[flx_bind/flx_lookup.ml:4538: E196] " sr "Cannot resolve overload .."
         end
       end
     end
@@ -4587,7 +4587,7 @@ print_endline ("LOOKUP 8: varname " ^ si index);
 
 
     | _ ->
-      clierr sr ("[Flx_lookup.bind_expression: EXPR_index]: Indexed name: Binding " ^ 
+      clierrx "[flx_bind/flx_lookup.ml:4590: E197] " sr ("[Flx_lookup.bind_expression: EXPR_index]: Indexed name: Binding " ^ 
         name ^ "<"^si index^">"^ " requires closure or variable")
       (* 
       bexpr_varname t (index,ts)
@@ -4662,7 +4662,7 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
 
 
           | _ ->
-            clierr sr ("[Flx_lookup.bind_expression: EXPR_lookup] Non function entry "^name^
+            clierrx "[flx_bind/flx_lookup.ml:4665: E198] " sr ("[Flx_lookup.bind_expression: EXPR_lookup] Non function entry "^name^
             " must be const, struct, cstruct, constructor or variable  ")
 
           end
@@ -4678,13 +4678,13 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
                bexpr_closure (ti sr index ts) (index,ts)
 
             | None ->
-              clierr sr "Overload resolution failed .. "
+              clierrx "[flx_bind/flx_lookup.ml:4681: E199] " sr "Overload resolution failed .. "
             end
 
         | FunctionEntry fs ->
           begin match args with
           | [] ->
-            clierr sr
+            clierrx "[flx_bind/flx_lookup.ml:4687: E200] " sr
             (
               "[bind_expression] Qualified name " ^
               string_of_expr qn ^
@@ -4704,13 +4704,13 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
                bexpr_closure (ti sr index ts) (index,ts)
 
             | None ->
-              clierr sr "Overload resolution failed .. "
+              clierrx "[flx_bind/flx_lookup.ml:4707: E201] " sr "Overload resolution failed .. "
             end
           end
         end
 
       | None ->
-        clierr sr
+        clierrx "[flx_bind/flx_lookup.ml:4713: E202] " sr
         (
           "Can't find " ^ name
         )
@@ -4790,9 +4790,9 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
               let sym = get_data state.sym_table index in
               begin match sym.Flx_sym.symdef with
               | SYMDEF_inherit _ ->
-                  clierr srr "Woops, bindexpr yielded inherit"
+                  clierrx "[flx_bind/flx_lookup.ml:4793: E203] " srr "Woops, bindexpr yielded inherit"
               | SYMDEF_inherit_fun _ ->
-                  clierr srr "Woops, bindexpr yielded inherit fun"
+                  clierrx "[flx_bind/flx_lookup.ml:4795: E204] " srr "Woops, bindexpr yielded inherit fun"
               | SYMDEF_ref _
               | SYMDEF_var _
               | SYMDEF_parameter (`PVar,_) ->
@@ -4829,14 +4829,14 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
           in
           let name = Flx_bsym.id bsym in
           let sr2 = Flx_bsym.sr bsym in
-          clierr srr ("[bind_expression] [4]Address application of non-lvalue function " ^
+          clierrx "[flx_bind/flx_lookup.ml:4832: E205] " srr ("[bind_expression] [4]Address application of non-lvalue function " ^
             name ^ " in " ^ sbe bsym_table e ^ 
             "\ndefined here:\n" ^
             Flx_srcref.long_string_of_src sr2
           )
 
       | _ ->
-          clierr srr ("[bind_expression] [5]Address non variable " ^
+          clierrx "[flx_bind/flx_lookup.ml:4839: E206] " srr ("[bind_expression] [5]Address non variable " ^
             sbe bsym_table e)
       end
 
@@ -4853,7 +4853,7 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
     let e,t = be e in
     begin match unfold "flx_lookup" t with
     | BTYP_pointer t' -> bexpr_deref t' (e,t)
-    | _ -> clierr sr "[bind_expression'] Dereference non pointer"
+    | _ -> clierrx "[flx_bind/flx_lookup.ml:4856: E207] " sr "[bind_expression'] Dereference non pointer"
     end
 
   (* this is a bit hacky at the moment, try to cheat by using
@@ -4938,7 +4938,7 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
       let t = List.hd bts in
       List.iter
       (fun t' -> if t <> t' then
-         clierr sr
+         clierrx "[flx_bind/flx_lookup.ml:4941: E208] " sr
          (
            "Elements of this array must all be of type:\n" ^
            sbt bsym_table t ^ "\ngot:\n"^ sbt bsym_table t'
@@ -4972,7 +4972,7 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
           fields
           in
           new_fields := List.rev fields @ (!new_fields)
-        | _ -> clierr sr ("Record extension requires bases be records too, got value of type " ^ sbt bsym_table t)
+        | _ -> clierrx "[flx_bind/flx_lookup.ml:4975: E209] " sr ("Record extension requires bases be records too, got value of type " ^ sbt bsym_table t)
       )
       es
       ;
@@ -5000,13 +5000,13 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
       in
       let compatible_arrays ts = 
         match ts with 
-        | [] -> clierr sr "empty extension"
+        | [] -> clierrx "[flx_bind/flx_lookup.ml:5003: E210] " sr "empty extension"
         | BTYP_array (t,BTYP_unitsum n) :: ts -> check t n ts
         | t::ts -> check t 1 ts
       in
       match compatible_arrays (ts @ [t']) with
       | Some  _ ->
-        clierr sr "Can't extend arrays yet"
+        clierrx "[flx_bind/flx_lookup.ml:5009: E211] " sr "Can't extend arrays yet"
       | None ->
         (* if it isn't a record extension, treat it as a tuple extension *)
         let values = ref [] in
@@ -5029,7 +5029,7 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
             values := !values @ flds; 
             types := !types @ ntimes t n;
           | e, BTYP_array (t, BTYP_unitsum n) ->
-            if n > 20 then clierr sr "Array too big (>20) for tuple extension"
+            if n > 20 then clierrx "[flx_bind/flx_lookup.ml:5032: E212] " sr "Array too big (>20) for tuple extension"
             else (
               let k = ref (-1) in
               values := !values @ List.map (fun w -> incr k; 
@@ -5086,7 +5086,7 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
     | BTYP_polyrecord (flds,x) ->
       failwith "rnprj not implemented for polyrecord type argument yet"
 
-    | _ -> clierr sr ("Argument of rnprj must be record or polyrecord type, got " ^ sbt bsym_table domain)
+    | _ -> clierrx "[flx_bind/flx_lookup.ml:5089: E213] " sr ("Argument of rnprj must be record or polyrecord type, got " ^ sbt bsym_table domain)
     end
  
   | EXPR_polyrecord (sr,ls,e) ->
@@ -5165,7 +5165,7 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
               let fname = EXPR_name (sr,"_match_ctor_" ^ name,ts) in
               be (EXPR_apply ( sr, (fname,e)))
             with _ -> 
-              clierr sr ("[flx_lookup: EXPR_match_ctor]: Can't find union variant " ^ name ^ 
+              clierrx "[flx_bind/flx_lookup.ml:5168: E214] " sr ("[flx_lookup: EXPR_match_ctor]: Can't find union variant " ^ name ^ 
                  " or bind user function _match_ctor_" ^ name ^ " to arg " ^ 
                  string_of_expr e)
             end
@@ -5184,7 +5184,7 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
           let fname = EXPR_name (sr,"_match_ctor_" ^ name,ts) in
           be (EXPR_apply ( sr, (fname,e)))
 
-        (* | _ ->  clierr sr ("expected union of abstract type, got" ^ sbt bsym_table ut) *)
+        (* | _ ->  clierrx "[flx_bind/flx_lookup.ml:5187: E215] " sr ("expected union of abstract type, got" ^ sbt bsym_table ut) *)
         end
 
       (* experimental!! Allow for any type other than union *)
@@ -5193,14 +5193,14 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
         be (EXPR_apply ( sr, (fname,e)))
 
  
-      (* | _ -> clierr sr ("expected nominal type, got" ^ sbt bsym_table ut) *)
+      (* | _ -> clierrx "[flx_bind/flx_lookup.ml:5196: E216] " sr ("expected nominal type, got" ^ sbt bsym_table ut) *)
       end
 
     | `AST_typed_case (sr,v,_)
     | `AST_case_tag (sr,v) ->
        be (EXPR_match_case (sr,(v,e)))
 
-    | _ -> clierr sr "Expected variant constructor name in union decoder"
+    | _ -> clierrx "[flx_bind/flx_lookup.ml:5203: E217] " sr "Expected variant constructor name in union decoder"
     end
 
   | EXPR_variant_arg (sr,(v,e)) ->
@@ -5214,12 +5214,12 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
              if cname = v then raise (Tfound t))
              ls
            ; 
-           clierr sr ("[bind_expression] [Expr_variant_arg] " ^" Variant case " ^ v ^ 
+           clierrx "[flx_bind/flx_lookup.ml:5217: E218] " sr ("[bind_expression] [Expr_variant_arg] " ^" Variant case " ^ v ^ 
               " not found in variant type: " ^ sbt bsym_table t)
          with Tfound t -> 
            bexpr_variant_arg t (v,e')
        end
-     | _ -> clierr sr ("Expected variant type, got " ^ sbt bsym_table t)
+     | _ -> clierrx "[flx_bind/flx_lookup.ml:5222: E219] " sr ("Expected variant type, got " ^ sbt bsym_table t)
      end
 
 
@@ -5229,18 +5229,18 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
      begin match unfold "flx_lookup" t with
      | BTYP_unitsum n ->
        if v < 0 || v >= n
-       then clierr sr "Invalid sum index"
+       then clierrx "[flx_bind/flx_lookup.ml:5232: E220] " sr "Invalid sum index"
        else
          bexpr_case_arg unit_t (v, e')
 
      | BTYP_sum ls ->
        let n = List.length ls in
        if v<0 || v>=n
-       then clierr sr "Invalid sum index"
+       then clierrx "[flx_bind/flx_lookup.ml:5239: E221] " sr "Invalid sum index"
        else let t = List.nth ls v in
        bexpr_case_arg t (v, e')
 
-     | _ -> clierr sr ("Expected sum type, got " ^ sbt bsym_table t)
+     | _ -> clierrx "[flx_bind/flx_lookup.ml:5243: E222] " sr ("Expected sum type, got " ^ sbt bsym_table t)
      end
 
   | EXPR_ctor_arg (sr,(qn,e)) ->
@@ -5279,7 +5279,7 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
               let fname = EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
               be (EXPR_apply ( sr, (fname,e)))
             with _ ->
-              clierr sr ("[flx_lookup: EXPR_ctor_arg]: Can't find union variant " ^ name ^ 
+              clierrx "[flx_bind/flx_lookup.ml:5282: E223] " sr ("[flx_lookup: EXPR_ctor_arg]: Can't find union variant " ^ name ^ 
                  " or bind user function _ctor_arg_" ^ name ^ " to arg " ^ 
                  string_of_expr e)
             end
@@ -5337,7 +5337,7 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
     | `AST_case_tag (sr,v) ->
       be (EXPR_case_arg (sr,(v,e)))
 
-    | _ -> clierr sr "Expected variant constructor name in union dtor"
+    | _ -> clierrx "[flx_bind/flx_lookup.ml:5340: E224] " sr "Expected variant constructor name in union dtor"
     end
 
   | EXPR_lambda (sr,_) ->
@@ -5349,7 +5349,7 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
     )
 
   | EXPR_match (sr,_) ->
-    clierr sr
+    clierrx "[flx_bind/flx_lookup.ml:5352: E225] " sr
     (
       "[bind_expression] " ^
       "Unexpected match when binding expression (should have been lifted out)"
@@ -5413,7 +5413,7 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
           *)
           let cons = try
             Flx_tconstraint.build_type_constraints state.counter bsym_table bt id sr (fst vs)
-            with _ -> clierr sr "Can't build type constraints, type binding failed"
+            with _ -> clierrx "[flx_bind/flx_lookup.ml:5416: E226] " sr "Can't build type constraints, type binding failed"
           in
           let {raw_type_constraint=icons} = snd vs in
           let icons = bt icons in
@@ -5498,7 +5498,7 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
       !insts
 
     | `Typeclass (i,ts) :: tail ->
-      clierr call_sr ("In call of " ^ calledname ^", Multiple typeclass specialisations matching " ^
+      clierrx "[flx_bind/flx_lookup.ml:5501: E227] " call_sr ("In call of " ^ calledname ^", Multiple typeclass specialisations matching " ^
         classname ^"["^catmap "," (sbt bsym_table) ts' ^"]" ^
         " found"
       )
@@ -6139,7 +6139,7 @@ and pub_table_dir state bsym_table env (invs,i,ts) : name_map_t =
     table
 
   | _ ->
-      clierr sym.Flx_sym.sr "[map_dir] Expected module"
+      clierrx "[flx_bind/flx_lookup.ml:6142: E228] " sym.Flx_sym.sr "[map_dir] Expected module"
 
 
 and get_pub_tables state bsym_table env rs (dirs:sdir_t list) =
@@ -6400,13 +6400,13 @@ and rebind_btype state bsym_table env sr ts t =
   | BTYP_void
   | BTYP_fix _ -> t
 
-  | BTYP_type_var (i,mt) -> clierr sr ("[rebind_type] Unexpected type variable " ^ sbt bsym_table t)
+  | BTYP_type_var (i,mt) -> clierrx "[flx_bind/flx_lookup.ml:6403: E229] " sr ("[rebind_type] Unexpected type variable " ^ sbt bsym_table t)
   | BTYP_type_apply _
   | BTYP_type_function _
   | BTYP_type _
   | BTYP_type_tuple _
   | BTYP_type_match _
-    -> clierr sr ("[rebind_type] Unexpected metatype " ^ sbt bsym_table t)
+    -> clierrx "[flx_bind/flx_lookup.ml:6409: E230] " sr ("[rebind_type] Unexpected metatype " ^ sbt bsym_table t)
 
 
 and check_module state name sr entries ts =
@@ -6421,7 +6421,7 @@ and check_module state name sr entries ts =
         | SYMDEF_typeclass ->
             Flx_bind_deferred.Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
         | _ ->
-            clierr sr ("Expected '" ^ sym.Flx_sym.id ^ "' to be module in: " ^
+            clierrx "[flx_bind/flx_lookup.ml:6424: E231] " sr ("Expected '" ^ sym.Flx_sym.id ^ "' to be module in: " ^
             Flx_srcref.short_string_of_src sr ^ ", found: " ^
             Flx_srcref.short_string_of_src sym.Flx_sym.sr)
         end
@@ -6458,7 +6458,7 @@ and eval_module_expr state bsym_table env e : module_rep_t =
         | Some x ->
           check_module state name sr x (ts' @ ts)
 
-        | None -> clierr sr
+        | None -> clierrx "[flx_bind/flx_lookup.ml:6461: E232] " sr
           (
             "Can't find " ^ name ^ " in module"
           )
@@ -6468,7 +6468,7 @@ and eval_module_expr state bsym_table env e : module_rep_t =
 
   | _ ->
     let sr = src_of_expr e in
-    clierr sr
+    clierrx "[flx_bind/flx_lookup.ml:6471: E233] " sr
     (
       "Invalid module expression " ^
       string_of_expr e
@@ -6494,7 +6494,7 @@ try
     signs
 with
   | Free_fixpoint b ->
-    clierr sra
+    clierrx "[flx_bind/flx_lookup.ml:6497: E234] " sra
     ("Recursive dependency resolving name " ^ string_of_qualified_name qn)
 
 let lookup_name_in_env state bsym_table (env:env_t) sr name : entry_set_t =
@@ -6517,7 +6517,7 @@ let lookup_code_in_env state bsym_table env sr qn =
     with _ -> None
   in match result with
   | Some (NonFunctionEntry x,ts) ->
-    clierr sr
+    clierrx "[flx_bind/flx_lookup.ml:6520: E235] " sr
     (
       "[lookup_qn_in_env] Not expecting " ^
       string_of_qualified_name qn ^
@@ -6529,7 +6529,7 @@ let lookup_code_in_env state bsym_table env sr qn =
     (fun i ->
       match hfind "lookup" state.sym_table (sye i) with
       | { Flx_sym.symdef=SYMDEF_insert _} -> ()
-      | { Flx_sym.id=id; vs=vs; symdef=y} -> clierr sr
+      | { Flx_sym.id=id; vs=vs; symdef=y} -> clierrx "[flx_bind/flx_lookup.ml:6532: E236] " sr
         (
           "Expected requirement '"^
           string_of_qualified_name qn ^
@@ -6565,7 +6565,7 @@ let lookup_uniq_in_env
     | FunctionEntry [x],ts -> x,ts
     | _ ->
       let sr = src_of_qualified_name qn in
-      clierr sr
+      clierrx "[flx_bind/flx_lookup.ml:6568: E237] " sr
       (
         "[lookup_uniq_in_env] Not expecting " ^
         string_of_qualified_name qn ^
@@ -6584,7 +6584,7 @@ let lookup_function_in_env
     | FunctionEntry [x],ts -> x,ts
     | _ ->
       let sr = src_of_expr (qn:>expr_t) in
-      clierr sr
+      clierrx "[flx_bind/flx_lookup.ml:6587: E238] " sr
       (
         "[lookup_qn_in_env] Not expecting " ^
         string_of_qualified_name qn ^
@@ -6658,6 +6658,7 @@ let type_of_index_with_ts state bsym_table sr bid ts =
   try
   inner_type_of_index_with_ts state bsym_table rsground sr bid ts
   with Not_found -> failwith "type of index with ts raised Not_found [BUG]"
+
 
 
 

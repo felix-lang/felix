@@ -89,12 +89,12 @@ and uses_bexe' add bsym_table count_inits exe =
           f_bexpr e
         end
         else begin 
-          clierr (Flx_bexe.get_srcref exe)
+          clierrx "[flx_frontend/flx_use.ml:92: E369] " (Flx_bexe.get_srcref exe)
           ("Flx_use: In statement " ^ string_of_bexe bsym_table 0 exe ^ "\n" ^
           "Expected primitive " ^ Flx_bsym.id bsym ^ "<" ^ si i ^ "> to have property lvalue")
         end
       | _ -> 
-          clierr (Flx_bexe.get_srcref exe)
+          clierrx "[flx_frontend/flx_use.ml:97: E370] " (Flx_bexe.get_srcref exe)
           ("Flx_use: In statement " ^ string_of_bexe bsym_table 0 exe ^ "\n" ^
           "Lvalue required on LHS of operation "^ Flx_bsym.id bsym)
       end
@@ -437,5 +437,6 @@ let copy_used syms bsym_table =
   if syms.compiler_options.Flx_options.print_flag then
     print_endline "*** COPY DONE";
   result
+
 
 

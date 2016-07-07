@@ -361,7 +361,7 @@ and do_reqs syms bsym_table ref_insts1 sr msg vs reqs =
     iter (
       fun (i, ts)->
       if i = dummy_bid then
-        clierr sr ("Entity " ^ msg ^
+        clierrx "[flx_frontend/flx_inst.ml:364: E354] " sr ("Entity " ^ msg ^
           " has uninstantiable requirements");
       let ts' = map vs ts in
       iter rtr ts';
@@ -706,3 +706,4 @@ print_endline "  [flx_inst] Begin instantiation";
 *)
 
 (* BUG!!!!! Abstract type requirements aren't handled!! *)
+

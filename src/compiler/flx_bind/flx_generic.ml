@@ -122,7 +122,7 @@ let adjust_ts sym_table bsym_table sr index ts =
   let n = length ts in
   if n>m then begin
     let sym = Flx_sym_table.find sym_table index in
-    clierr sr
+    clierrx "[flx_bind/flx_generic.ml:125: E77] " sr
     (
       "For " ^ sym.Flx_sym.id ^ "<" ^ string_of_bid index ^
       "> Too many type subscripts, expected " ^
@@ -134,7 +134,7 @@ let adjust_ts sym_table bsym_table sr index ts =
   end;
   if n<m then begin
     let sym = Flx_sym_table.find sym_table index in
-    clierr sr
+    clierrx "[flx_bind/flx_generic.ml:137: E78] " sr
     (
       "For " ^ sym.Flx_sym.id ^ "<" ^ string_of_bid index ^
       "> [adjust_ts] Not enough type subscripts, expected " ^
@@ -163,3 +163,4 @@ let make_varmap sym_table bsym_table sr i ts =
   assert (length ts = length vs);
   let vars = map2 (fun (s,i,_) t -> i,t) vs ts in
   hashtable_of_list vars
+

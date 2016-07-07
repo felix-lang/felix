@@ -104,7 +104,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   | EXPR_typecase_match _
     ->
       let sr = src_of_expr e in
-      clierr sr ("[mbind:subst] Not expected in pattern when clause: " ^ string_of_expr e); 
+      clierrx "[flx_desugar/flx_mbind.ml:107: E341] " sr ("[mbind:subst] Not expected in pattern when clause: " ^ string_of_expr e); 
 
   | EXPR_tuple_cons (sr, eh, et) -> EXPR_tuple_cons (sr, subst eh, subst et)
   | EXPR_superscript (sr,(e1,e2)) -> EXPR_superscript (sr, (subst e1, subst e2))
@@ -167,7 +167,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   | EXPR_match_ctor _
     ->
     let sr = src_of_expr e in
-    clierr sr "[subst] not implemented in when part of pattern"
+    clierrx "[flx_desugar/flx_mbind.ml:170: E342] " sr "[subst] not implemented in when part of pattern"
 
   | EXPR_coercion _ -> failwith "subst: coercion"
 
@@ -316,7 +316,7 @@ let rec gen_match_check pat (arg:expr_t) =
   | PAT_alt _
   | PAT_expr _ -> assert false
   | PAT_literal (sr,s) -> apl2 sr "eq" (mklit sr s) arg
-  | PAT_none sr -> clierr sr "Empty pattern not allowed"
+  | PAT_none sr -> clierrx "[flx_desugar/flx_mbind.ml:319: E343] " sr "Empty pattern not allowed"
 
   (* ranges *)
   | PAT_range (sr,l1,l2) ->
@@ -439,4 +439,5 @@ let rec gen_match_check pat (arg:expr_t) =
        how many components are involved. So p2 had better be a wildcard!
     *)
     gen_match_check p1 (EXPR_get_n (sr,(0, arg)))
+
 

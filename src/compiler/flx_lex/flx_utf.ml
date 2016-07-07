@@ -336,3 +336,4 @@ let utf8_to_ucn s =
         Buffer.add_string s' ("\\U" ^ hex8 x)
   done;
   Buffer.contents s'
+

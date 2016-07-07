@@ -236,7 +236,7 @@ let rec gen_expr'
   (* This is now required for arrays of length 1 *)
 (*
   | BTYP_tuple [] -> ce_atom "(::flx::rtl::unit())/*UNIT TUPLE?*/"
-      clierr sr
+      clierrx "[flx_cpp_backend/flx_egen.ml:239: E281] " sr
      ("[egen] In "^sbe bsym_table (e,t)^":\nunit value required, should have been eliminated")
 *)
 
@@ -412,7 +412,7 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
       (BEXPR_prj (ix,(BTYP_pointer (BTYP_array (vt,aixt) as ixd)),ixc),_), 
       (_,BTYP_pointer at as a)
     ) when clt at ->
-    clierr sr "flx_egen: can't address constant component of compact linear array"
+    clierrx "[flx_cpp_backend/flx_egen.ml:415: E282] " sr "flx_egen: can't address constant component of compact linear array"
 
   (* if this is a constant projection of a non-compact linear array *) 
   | BEXPR_apply ( (BEXPR_prj (n,BTYP_array _,_),_), a) -> 
@@ -438,7 +438,7 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
 
   | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_tuple ts),_),_), ((_,at) as a)) 
     when clt at ->
-    clierr sr "flx_egen: Cannot address component of compact linear type"
+    clierrx "[flx_cpp_backend/flx_egen.ml:441: E283] " sr "flx_egen: Cannot address component of compact linear type"
 
 
   (* a constant projection of a non-compact linear tuple, just
@@ -574,7 +574,7 @@ assert false;
       (BEXPR_aprj (ix,ixd,ixc),_), 
       (_,(BTYP_pointer (BTYP_array (vt,aixt) as at)) as a)
     ) when clt at -> 
-    clierr sr "flx_egen: can't address component of compact linear array"
+    clierrx "[flx_cpp_backend/flx_egen.ml:577: E284] " sr "flx_egen: can't address component of compact linear array"
 
   (* if this is an array projection of a non-compact linear array *)
   | BEXPR_apply ( (BEXPR_aprj (idx,BTYP_array _,_),_), a ) ->
@@ -1170,7 +1170,7 @@ end
 
         | CS.Str c when c = "#this" ->
           begin match bsym_parent with
-          | None -> clierr sr "Use 'this' outside class"
+          | None -> clierrx "[flx_cpp_backend/flx_egen.ml:1173: E285] " sr "Use 'this' outside class"
           | Some p ->
             let name = cpp_instance_name syms bsym_table p ts in
             (*
@@ -1193,13 +1193,13 @@ end
               | BBDCL_cstruct (_,ls,_) -> let n = length ls in ce_atom (si n)
               | BBDCL_union (_,ls) -> let n = length ls in ce_atom (si n)
               | _ ->
-                clierr sr (
+                clierrx "[flx_cpp_backend/flx_egen.ml:1196: E286] " sr (
                   "#memcount function requires type with members to count, got: " ^
                   sbt bsym_table (hd ts)
                 )
             end
           | _ ->
-            clierr sr (
+            clierrx "[flx_cpp_backend/flx_egen.ml:1202: E287] " sr (
               "#memcount function requires type with members to count, got : " ^
               sbt bsym_table (hd ts)
             )
@@ -1213,7 +1213,7 @@ end
             let n = fold_left (fun acc elt -> acc * Flx_btype.int_of_linear_type bsym_table elt) 1 ts in
             ce_atom (si n)
           with Invalid_int_of_unitsum ->
-            clierr sr (
+            clierrx "[flx_cpp_backend/flx_egen.ml:1216: E288] " sr (
               "#arrayindexcountfunction requires type which can be used as array index, got: " ^
               catmap "," (sbt bsym_table) ts
             )
@@ -1558,10 +1558,11 @@ and gen_expr syms bsym_table shapes shape_map label_info this vs ts sr e : strin
   let e = Flx_bexpr.reduce e in
   let s =
     try gen_expr' syms bsym_table shapes shape_map label_info this vs ts sr e
-    with Unknown_prec p -> clierr sr
+    with Unknown_prec p -> clierrx "[flx_cpp_backend/flx_egen.ml:1561: E289] " sr
     ("[gen_expr] Unknown precedence name '"^p^"' in " ^ sbe bsym_table e)
   in
   string_of_cexpr s
+
 
 
 

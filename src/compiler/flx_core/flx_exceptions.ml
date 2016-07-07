@@ -21,4 +21,6 @@ exception FunctionNameNotFound of Flx_srcref.t * string * string * string list
 let clierrn srs s = raise (ClientErrorn (srs,s))
 let clierr2 sr sr2 s = raise (ClientError2 (sr,sr2,s))
 let clierr sr s = raise (ClientError (sr,s))
+let clierrx dog sr s = raise (ClientError (sr,dog^s))
 let syserr sr s = raise (SystemError (sr,s))
+
