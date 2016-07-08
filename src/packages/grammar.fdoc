@@ -5065,8 +5065,9 @@ syntax chips {
     """;
 
   stmt := "circuit" sconnection+ "endcircuit" =># "`(ast_circuit ,_sr ,_2)";
-   sconnection := "connect" sname "." sname "to" sname "." sname =># "`(connect (,_2 ,_4) (,_6 ,_8))";
-   sconnection := "wire" stypeexpr "to" sname "." sname =># "`(wire ,_2 (,_4 ,_6))";
+   spin := sname "." sname =># "`(,_1 ,_3)";
+   sconnection := "connect" list::commalist1<spin> =># "`(connect ,_2)";
+   sconnection := "wire" stypeexpr "to" sname "." sname =># "`(wire (,_2 ,_4 ,_6))";
 
 }
 @

@@ -598,20 +598,23 @@ and xstruct_component sr = function
   | Lst [id; t] -> xid id, type_of_sex sr t
   | x -> err x "struct component"
 
+and xpin_t = function
+  | Lst[d;r] -> xid d, xid r
+  | x -> err x "pin specification"
+
 and xconnection_t sr = function
-  | Lst[Id kind; first; second] ->
+  | Lst[Id kind; data] ->
     begin match kind with
-    | "connect" -> 
-      begin match first,second with
-      | Lst[ld;lp], Lst[rd;rp] -> 
-        Connect ((xid ld,xid lp),(xid rd, xid rp))
-      | x,y -> err (Lst[x;y]) "connect specification"
+    | "connect" ->  
+      begin match data with 
+      | Lst pins -> Connect (map xpin_t pins)
+      | x -> err x "connect specification"
       end
     | "wire" -> 
-      begin match first,second with
-      | e,Lst[rd;rp] ->
+      begin match data with
+      | Lst[e;rd;rp] ->
         Wire  (xexpr_t sr e, (xid rd, xid rp))
-      | x,y -> err (Lst[x;y]) "wire specification"
+      | x -> err x "wire specification"
       end
     | _ -> assert false
     end

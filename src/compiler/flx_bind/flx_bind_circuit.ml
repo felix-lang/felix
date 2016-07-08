@@ -71,10 +71,10 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
     let devices = 
       List.fold_left (fun acc term ->
         match term with
-        | Connect ((ld,_),(rd,_))->
-          let acc = if List.mem ld acc then acc else ld :: acc in
-          let acc = if List.mem rd acc then acc else rd :: acc in
-          acc
+        | Connect (pins)->
+          List.fold_left (fun acc (d,_) ->
+            if List.mem d acc then acc else d :: acc
+          ) acc pins
         | Wire (e,(rd,rp))-> 
           let acc = if List.mem rd acc then acc else rd :: acc in
            acc
@@ -168,10 +168,13 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
     (* do connections *)
     List.iter (fun term ->
       match term with
-      | Connect ((ld,lp),(rd,rp)) -> 
-        let lindex = find_index (ld,lp) in
-        let rindex = find_index (rd,rp) in
-        join lindex rindex
+      | Connect pins ->
+        begin match pins with
+        | h::t -> 
+          let index = find_index h in
+          List.iter (fun pin -> join index (find_index pin)) t
+        | [] -> assert false
+        end
       | Wire _ -> ()
       )
       cs 

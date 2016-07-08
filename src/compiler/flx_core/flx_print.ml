@@ -1169,10 +1169,7 @@ and string_of_statement level s =
     fold_left (fun acc con ->
       acc ^ spaces (level + 1) ^ ( 
       match con with
-      | Connect ((ld,lp),(rd,rp)) -> 
-        "connect " ^ 
-        ld ^ "." ^ lp ^ " to " ^ 
-        rd ^ "." ^ rp ^ "\n"
+      | Connect (pins) -> "connect " ^ catmap "," (fun (d,p) -> d^"."^p) pins
       | Wire (e,(rd,rp)) ->
         "wire " ^ string_of_expr e ^ " to " ^ rd ^ "." ^ rp ^ "\n"
       )
@@ -1816,11 +1813,9 @@ and string_of_exe level s =
   | EXE_circuit cs ->
     "connections\n" ^
     fold_left (fun acc con ->
+      acc ^
       (match con with
-      | Connect ((ld,lp),(rd,rp)) -> 
-        "connect " ^ 
-        ld ^ "." ^ lp ^ " to " ^ 
-        rd ^ "." ^ rp ^ "\n"
+      | Connect pins -> "connect " ^ catmap "," (fun (d,p) -> d^"."^p) pins
       | Wire (e,(rd,rp)) ->
         "wire " ^ string_of_expr e ^ " to " ^ rd ^ "." ^ rp ^ "\n"
       )
