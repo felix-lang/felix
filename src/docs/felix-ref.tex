@@ -9,6 +9,9 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amscd}
+\usepackage{makeidx}
+\usepackage[toc]{glossaries}
+\makeindex
 \usemintedstyle{friendly}
 \setminted{bgcolor=bg,xleftmargin=20pt}
 \usepackage{hyperref}
@@ -17,6 +20,10 @@
 \newcommand*{\fullref}[1]{\hyperref[{#1}]{\autoref*{#1} \nameref*{#1}}}
 \title{The FARM\\ Felix Annotated Reference Manual}
 \author{John Skaller}
+\makeglossaries
+\newglossaryentry{coroutine}{name=coroutine, description={a programming unit 
+which exchanges control with others on a neutral basis}}
+
 \begin{document}
 \maketitle
 \tableofcontents
@@ -67,6 +74,29 @@ as its bytecode, and compiles it to machine binary and
 executes that. Compilation times are slower, but the
 run time performace is better.
 
+\chapter{Language Features}
+\begin{itemize}
+\item higher order functions, procedures, and coroutines
+\item parametric polymorphism
+\item type constraints
+\item typeclass based polymorphism
+\item overloading
+\item generics
+\item row polymorphism
+\item tuple, record and struct product types
+\item sum, variant and union sum types
+\item rich pattern matching
+\item regular expressions
+\item java like object sublanguage
+\item circuit based coroutines\gls{coroutine}
+\item platform independent asynchronous socket I/O
+\item platform independent pre-emptive threading
+\item direct embedding of C and C++
+\item can be embedded in framework idle loops
+\item generates fast binary programs and libraries
+\item run scripts directly without makefiles
+\end{itemize}
+
 \chapter{The flavour of Felix}
 Although this is a reference manual, it seems wise to show
 the flavour of the scripting subsystem with examples, and
@@ -104,7 +134,7 @@ encoded like this:
 fun hypot (x:double, y:double) => \(\sqrt \(x^2 + y^2\)\);
 \end{minted}
 
-\section{Yielding Generators}
+\section{Yielding Generators}\index{yield}\index{generator}
 To calculate the number of rabbits using a yielding generator:
 
 \begin{minted}{felix}
@@ -128,14 +158,20 @@ done
 \end{minted}
 
 \section{Fibres}
-To parse text into words, using a coroutine pipeline:
+To parse text into words, using a coroutine pipeline.
+First a producer of characters:
 
 \begin{minted}{felix}
 proc char_stream (s:string) (out:%>char) {
   for c in s perform write (out,c);
   write (out,char "");
 }
+\end{minted}
 
+and now a transducer that converts a character
+stream into a word stream:
+
+\begin{minted}{felix}
 proc words (inp:%<char, out:%>string) {
   while true do
     var s = "";
@@ -150,14 +186,22 @@ proc words (inp:%<char, out:%>string) {
     done // nextch
   done
 }
+\end{minted}
 
+Finally we need an sink to emit the result:
+
+\begin{minted}{felix}
 proc emit (inp:%<string) {
   while true do
     var word = read inp;
     println$ "Word = " + word;
   done
 }
+\end{minted}
 
+which you can use like this:
+
+\begin{minted}{felix}
 var text = 
   "The quick, brown fox jumped "
   "over the lazy dog"
@@ -166,8 +210,98 @@ var text =
 #(char_stream (text) |-> words |-> emit);
 \end{minted}
 
+\section{Circuits}
 
-\chapter{Variable Definitions}
+Circuits generalise the capabilities of pipelines.
+Two data sources:
+
+\begin{minted}{felix}
+open syntax chips;
+
+chip w10 
+  connector pins
+     pin outpin: %>int 
+{ 
+  for i in 0..10 do 
+    write (pins.outpin,i);
+  done
+}
+
+chip w100
+  connector pins pin outpin: %>int 
+{ 
+  for i in 100..110 do 
+    write (pins.outpin,i);
+  done
+}
+\end{minted}
+
+and a data sink:
+
+\begin{minted}{felix}
+chip conout 
+  connector pins pin inpin: %<int 
+{ 
+  while true do
+    var x = read pins.inpin;
+    println$ "Read " + x.str;
+  done
+}
+\end{minted}
+
+with a transducer:
+
+\begin{minted}{felix}
+chip doubler
+  connector pins 
+    pin inpin: %<int
+    pin outpin: %>int
+{
+  while true do
+     var x = read pins.inpin;
+     write (pins.outpin, 2 * x);
+  done
+}
+\end{minted}
+
+can be combined like this:
+
+\begin{minted}{felix}
+/*
+  w10 ---\
+         \---> doubler --> conout
+  w100---/
+*/
+
+chip fred 
+  connector pins
+    pin inch:%<int
+{
+  circuit
+    connect w10.outpin to doubler.inpin
+    connect w100.outpin to doubler.inpin
+    wire pins.inch to doubler.outpin
+  endcircuit
+}
+\end{minted}
+
+to form a circuuit we can use like this:
+
+\begin{minted}{felix}
+var dummy_channel = mk_schannel[int](); 
+
+circuit
+  wire dummy_channel to fred.inch
+endcircuit
+
+while true do
+  var x = read dummy_channel;
+  println$ "Read " + x.str;
+done
+\end{minted}
+ 
+
+\chapter{Variable Definitions}\index{variable}
 \href{http://felix-lang.org/share/lib/grammar/variables.fsyn}{Syntax}
 
 A definition is a statement which defines a name, but does
@@ -186,18 +320,21 @@ var y : int;
 var z = 1;
 \end{minted}
 
-The first form specifies the type and an initialising
+\begin{enumerate}
+\item The first form specifies the type and an initialising
 expression which must be of the specified type.
 
-The second form specifies a variable of the given type
+\item The second form specifies a variable of the given type
 without an explicit initialiser, however the variable
 will be initialised anyhow with the default contructor
 for the underlying C++ type, although that constructor
 may be trivial.
 
-The third form does not specify the type, it will be deduced
+\item The third form does not specify the type, it will be deduced
 from the initialiser.
+\end{enumerate}
 
+\subsection{Semantic rules}
 If the initialiser has observable behaviour it will be observed
 if at all, when control passes through the variable statement.
 
@@ -229,6 +366,7 @@ entity is also considered used. In general this means there
 is a possible execution path from a root procedure of the
 program.
 
+\subsection{Addressing}
 A variable may have its address taken:
 
 \begin{minted}{felix}
@@ -245,7 +383,7 @@ px <- 3;
 \end{minted}
 
 
-A variable is said to name an object, not a value.
+A variable is said to name an object\index{object!variable as}, not a value.
 This basically means it is associated with the address of a typed
 storage location.
 
@@ -463,7 +601,7 @@ as indicated:
   x--; // means post_decr (&x);
 \end{minted}
 
-\section{Special Assignment}
+\section{Special Assignment}\index{assignment}
 Compound assignment form uses leadin \verb%def% to allows
 recursive decoding of tuples and a mix of variable
 initialisation, value initialisation and assignment to
@@ -482,7 +620,7 @@ may also be used.
 \end{minted}
 
 
-\section{The {\tt goto} statement and label {\tt prefix}}
+\section{The {\tt goto} statement and label {\tt prefix}}\index{goto}\index{label}
 Felix statements may be prefixed by a label
 to which control may be transfered by a \verb%goto%
 statement:
@@ -602,7 +740,7 @@ endtry
 \end{minted}
 
 
-\section{match/endmatch}
+\section{match/endmatch}\index{pattern matching}
 The form:
 
 \begin{minted}{felix}
@@ -615,7 +753,7 @@ endmatch
 
 is an extension of the C switch statement. See \fullref{Pattern Matching}.
 
-\section{if/goto}
+\section{if/goto}{conditional}
 The conditional goto is an abbreviation for 
 the more verbose conditional:
 
@@ -705,7 +843,7 @@ endmatch;
 \end{minted}
 
 
-\section{call}
+\section{call}\index{procedure call}
 The \verb%call% statement is used to invoke a procedure.
 
 \begin{minted}{felix}
@@ -786,7 +924,7 @@ fun f () : int = {
 
 Control may not fall through the end of a function.
 
-\section{yield}
+\section{yield}\index{yield}
 The yield statement returns a value from a generator
 whilst retaining the current location so that execution
 may be resumed at the point after the yield.
@@ -827,13 +965,13 @@ Otherwise the spawned fthread is suspended when the first
 write, or the first unmatched read operation occurs.
 
 
-\section{read/write/broadcast schannel}
+\section{read/write/broadcast schannel}\index{read!schannel}\index{write!schannel}
 \href{http://felix-lang.org/share/lib/std/control/schannels.flx}{Library Reference}
 
-\section{{\tt spawn\_pthread}}
+\section{{\tt spawn\_pthread}}\index{spawn}
 \href{http://felix-lang.org/share/lib/std/control/pthread.flx}{Library Reference}
 
-\section{read/write pchannel}
+\section{read/write pchannel}\index{read}\index{write}
 \href{http://felix-lang.org/share/lib/std/control/pchannels.flx}{Library Reference}
 
 \section{loops}
@@ -864,20 +1002,20 @@ done
 \end{minted}
 
 
-\subsection{redo}
+\subsection{redo}\index{redo}
 The redo statement causes control to jump to the start
 of the specified loop without incrementing the control variable.
 
-\subsection{break}
+\subsection{break}\index{break}
 The break statement causes control to jump past the end of
 the specified loop, terminating iteration.
 
-\subsection{continue}
+\subsection{continue}\index{continue}
 The continue statement causes the control variable to
 be incremented and tests and the next iteration commenced
 or the loop terminated.
 
-\subsection{for/in/upto/downto/do/done}
+\subsection{for/in/upto/downto/do/done}\index{for loop}
 A basic loop with an inclusive range.
 
 \begin{minted}{felix}
@@ -907,7 +1045,7 @@ For loops over signed types cannot span the whole range of the type.
 The loop logic takes care to ensure the control variable is not
 incremented (resp. decremented) past the end (resp.start) value.
 
-\subsection{while/do/done}
+\subsection{while/do/done}\index{while loop}
 The while loop executes the body repeatedly whilst the control
 condition is true at the start of the loop body.
 
@@ -917,7 +1055,7 @@ while i < 10 do println$ i; ++i; done
 \end{minted}
 
 
-\subsection{until loop}
+\subsection{until loop}\index{until loop}
 The until loop executes the loop body repeatedly
 until the control condition is false at the start of the loop,
 it is equivalent o a while loop with a negated condition.
@@ -943,7 +1081,7 @@ assert x > 0;
 \end{minted}
 
 
-\subsection{axiom}
+\subsection{axiom}\index{axiom}\index{assertion!axiom}
 An axiom is a relationship between functions, typically
 polymorphic, which is required to hold.
 
@@ -8847,7 +8985,7 @@ class LS_expr
 \section{Sarrays}
 \section{C arrays}
 
-
+\part{Appendices}
 \appendix
 \chapter{Special Names}
 \begin{description}
@@ -8877,9 +9015,12 @@ User defined pattern match extractor.
 \item[{\tt \_ctor\_arg\_}typename]
 User defined constructor/conversion function.
 
-
-
 \end{description}
 
+\clearpage
+\printglossaries
+\clearpage
+\addcontentsline{toc}{chapter}{Index}
+\printindex
 \backmatter
 \end{document}
