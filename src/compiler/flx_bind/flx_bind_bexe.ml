@@ -191,7 +191,8 @@ print_endline "Cal call, types don't match ..";
   | _ ->
     clierrx "[flx_bind/flx_bind_bexe.ml:193: E10] " sr ("[cal_call] call non procedure, "^
     sbe bsym_table tbe1
-    ^"\ntype=" ^ sbt bsym_table t1)
+    ^"\ntype=" ^ sbt bsym_table t1 
+    ^ "\nPerhaps you meant to assign this expression to something. ")
 
 let cal_loop sym_table sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
   match unfold "flx_bind_bexe" pt with
