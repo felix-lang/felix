@@ -173,6 +173,7 @@ syn keyword felixStatement true
 syn keyword felixStatement typematch
 syn keyword felixStatement typecase
 syn keyword felixStatement chip
+syn keyword felixStatement device
 syn keyword felixStatement connect
 syn keyword felixStatement connector
 syn keyword felixStatement circuit

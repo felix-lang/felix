@@ -373,9 +373,9 @@ and ast_term_t =
   | Apply_term of ast_term_t * ast_term_t list
 
 and conkind_t = [`Wire | `Connect]
-
+and pin_t = string * string
 and connection_t =  
-  | Connect of (string * string) * (string * string)
+  | Connect of pin_t list 
   | Wire of expr_t * (string * string)
 
 and statement_t =
