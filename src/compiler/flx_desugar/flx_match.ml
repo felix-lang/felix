@@ -11,7 +11,7 @@ let etup = EXPR_tuple (generated,[])
 
 let make_match_check sr rex pat match_var_name match_var_index =
   let params = [], None in
-  let match_expr = Flx_mbind.gen_match_check pat (EXPR_index (sr,match_var_name, match_var_index)) in
+  let match_expr = Flx_desugar_pat.gen_match_check pat (EXPR_index (sr,match_var_name, match_var_index)) in
   let stmts, e = rex match_expr in
   let asms = stmts @ [Exe (sr,EXE_fun_return e)] in
   DCL_function (params, Flx_typing.flx_bool,Flx_typing.flx_unit,[`Generated "Flx_match.make_match_check"],asms)
@@ -288,13 +288,13 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
       let match_checker_id = name ^ "_mc" ^ string_of_bid n1 in
       let match_checker = EXPR_index (patsrc,match_checker_id,n1) in
       let vars = ref [] in
-      Flx_mbind.get_pattern_vars vars pat [];
+      Flx_desugar_pat.get_pattern_vars vars pat [];
 (*
           print_endline ("PATTERN IS " ^ string_of_pattern pat ^ ", VARIABLE=" ^ match_var_name);
           print_endline "VARIABLES ARE";
           List.iter (fun vname (sr,extractor) ->
             let component =
-              Flx_mbind.gen_extractor extractor (EXPR_index (sr,match_var_name,match_var_index))
+              Flx_desugar_pat.gen_extractor extractor (EXPR_index (sr,match_var_name,match_var_index))
             in
             print_endline ("  " ^ vname ^ " := " ^ string_of_expr component);
           ) (List.rev (!vars);
@@ -303,7 +303,7 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
       List.iter
           (fun (vname, (sr,extractor)) ->
             let component =
-              Flx_mbind.gen_extractor extractor
+              Flx_desugar_pat.gen_extractor extractor
               (EXPR_index (sr,match_var_name,match_var_index))
             in
             let dcl = STMT_val_decl (sr,vname,dfltvs,None,Some component) in

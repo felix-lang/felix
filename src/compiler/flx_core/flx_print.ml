@@ -259,6 +259,10 @@ and string_of_expr (e:expr_t) =
   | EXPR_ctor_arg (_,(cn,e)) ->
     "ctor_arg " ^ sqn cn ^ "(" ^
     se e ^ ")"
+  
+  | EXPR_ho_ctor_arg (_,(cn,es)) ->
+    "ctor_arg " ^ sqn cn ^ "(" ^
+    catmap "," (fun e-> "("^se e^")") es ^ ")"
 
   | EXPR_variant_arg (_,(cn,e)) ->
     "variant_arg_case " ^ cn ^ "(" ^
@@ -275,6 +279,10 @@ and string_of_expr (e:expr_t) =
   | EXPR_match_ctor (_,(cn,e)) ->
     "match_ctor " ^ sqn cn ^ "(" ^
     se e ^ ")"
+
+  | EXPR_match_ho_ctor (_,(cn,es)) ->
+    "match_ctor " ^ sqn cn ^ "(" ^
+    catmap "," (fun e-> "(" ^ se e ^")") es^ ")"
 
   | EXPR_match_variant (_,(cn,e)) ->
     "match_variant_case " ^ cn ^ "(" ^
@@ -848,6 +856,10 @@ and string_of_pattern p =
   | PAT_setform_any _ -> "setform_any (elidable)"
   | PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s
   | PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_pattern p
+  | PAT_ho_ctor (_,s,es,p)-> 
+      "|" ^ string_of_qualified_name s ^ " "^
+       catmap "" (fun e -> "(" ^ string_of_expr e ^ ")") es ^
+       " "^ string_of_pattern p
 
   | PAT_const_variant (_,s) -> "|#case " ^ s
   | PAT_nonconst_variant (_,s,p)-> "|case " ^ s ^ " " ^ string_of_pattern p

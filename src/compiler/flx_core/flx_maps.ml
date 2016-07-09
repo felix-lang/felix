@@ -153,10 +153,12 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | EXPR_lambda _ -> e
 
   | EXPR_match_ctor (sr,(qn,x)) -> EXPR_match_ctor (sr,(qn,fe x))
+  | EXPR_match_ho_ctor (sr,(qn,es)) -> EXPR_match_ho_ctor (sr,(qn,List.map fe es))
   | EXPR_match_variant (sr,(s,x)) -> EXPR_match_variant (sr,(s,fe x))
   | EXPR_match_case (sr,(j,x)) -> EXPR_match_case (sr,(j, fe x))
 
   | EXPR_ctor_arg (sr,(qn,x)) -> EXPR_ctor_arg (sr,(qn,fe x))
+  | EXPR_ho_ctor_arg (sr,(qn,es)) -> EXPR_ho_ctor_arg (sr,(qn,List.map fe es))
   | EXPR_variant_arg (sr,(s,x)) -> EXPR_variant_arg (sr,(s, fe x))
   | EXPR_case_arg (sr,(j,x)) -> EXPR_case_arg (sr,(j, fe x))
   | EXPR_case_index (sr,x) -> EXPR_case_index (sr,fe x)
@@ -261,7 +263,9 @@ let iter_expr f (e:expr_t) =
   | EXPR_intersect (_,es)
   | EXPR_orlist (_,es)
   | EXPR_andlist (_,es)
-  | EXPR_arrayof (_, es) ->
+  | EXPR_arrayof (_, es)
+  | EXPR_match_ho_ctor (_,(_,es))
+  | EXPR_ho_ctor_arg (_,(_,es)) ->
     List.iter f es
 
   | EXPR_record (sr,es) -> List.iter (fun (s,e) -> f e) es

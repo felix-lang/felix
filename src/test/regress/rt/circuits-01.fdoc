@@ -1,0 +1,322 @@
+@h1 Test chips
+@felix
+// pretty, a colouriser
+open syntax chips;
+
+// first off we need to get files:
+
+chip filereader (filename:string)
+  connector file
+    pin outch: %>char
+{
+  var data = load filename;
+println$ "File loaded, " + data.len.str + " chars";
+  for ch in data do 
+    write (file.outch,ch);
+  done
+}
+
+chip stringreader (s:string)
+  connector file
+    pin outch: %>char
+{
+  for ch in s do 
+    write (file.outch,ch);
+  done
+}
+
+// test printer of lexemes
+chip lexeme_printer
+  connector lex
+    pin inlex: %<string
+{
+  var count = 1;
+  while true do
+    var lexeme = read lex.inlex;
+    println$ "Lexeme #"+count.str+"='"  + lexeme + "'";
+    ++count;
+  done
+}
+
+
+// this is the critical device!
+// watch carefully!
+
+chip buffer
+  connector b
+    pin backtrack: %<char
+    pin filein: %<char
+    pin charout: %>char
+{
+  var gotchar = false;
+  var ch: char;
+
+  chip reader 
+    connector con 
+      pin chan: %<char
+  {
+    while true do
+      ch = read con.chan;
+      gotchar = true;
+    done
+  }
+//println$ "Buffer starts";
+  circuit 
+    wire b.backtrack to reader.chan
+  endcircuit
+
+live: 
+  while true do
+    if gotchar do 
+//println$ "Buffer writing saved char " + ch;
+      write (b.charout,ch);
+      gotchar = false;
+    else
+      ch = read b.filein;
+      gotchar=false;
+      write (b.charout,ch); 
+    done // buffered
+  done // life
+}
+
+// now we have the hard one! lexical analysis
+
+// parse first char, dispatch to specialised
+// lexer based on that char
+chip leader
+  connector lex
+    pin inch: %<char
+    pin backtrack: %>char
+
+    pin white: %>char
+    pin identifier: %>char
+    pin tex: %>char
+    pin cxxcomment: %>char
+    pin ccomment: %>char
+    pin number: %>char
+    pin operator: %>char
+
+    pin lexemein: %<string
+    pin lexemeout: %>string
+{
+   while true do
+     var ch = read lex.inch;
+//println$ "Leader read char " + ch;
+     if ch <= char ' ' do 
+       write (lex.white,ch);
+     elif isidstart ch do 
+       write (lex.identifier,ch);
+     elif ch == char "\\" do 
+       write (lex.tex,ch);
+     elif isdigit ch do 
+       write (lex.number,ch);
+     elif ch == "/" do
+       var nextch = read lex.inch;
+       if nextch == char "/" do
+         write (lex.cxxcomment, char "/");
+         write (lex.cxxcomment, char "/");
+       elif nextch == char "*" do
+         write (lex.ccomment, char "/");
+         write (lex.ccomment, char "*");
+       else // backtrack FIRST!
+//println ("Sending back lookahead char " + nextch);
+        write (lex.backtrack, nextch);
+        write (lex.operator,char "/");
+       done
+     else
+       write (lex.operator,ch);
+     done
+     var lexeme = read (lex.lexemein);
+     write (lex.lexemeout, lexeme);
+   done
+}
+
+// one char leading, one char lookahead
+chip li1la1 (predicate: char -> bool) 
+  connector pins 
+  pin leadin:%<char pin rest:%<char pin out:%>string pin backtrack: %>char 
+{
+first:>
+  var s = string(read pins.leadin);
+next:>
+  var ch = read pins.rest;
+  if predicate ch do
+    s+=ch;
+    goto next;
+  else
+    write (pins.out,s);
+    write (pins.backtrack,ch);
+    goto first;
+  done
+}
+
+fun iswhite (x:char) => x.ord in 0..0x20;
+device white = li1la1 iswhite;
+device number = li1la1 isdigit;
+device identifier = li1la1 isflxidcont;
+device tex = li1la1 isflxidcont;
+
+// C++ comments, excludes trailing newline
+chip cxxcomment connector pins 
+  pin leadin:%<char pin rest:%<char pin out:%>string pin backtrack: %>char
+{
+first:>
+  var s = string (read pins.leadin);
+  s+= string (read pins.leadin);
+next:>
+  var ch = read pins.rest;
+  if ch != char "\n" do
+    s+=ch;
+    goto next;
+  else
+    write (pins.backtrack,ch);
+    write (pins.out,s);
+    goto first;
+  done
+}
+
+
+// A C style comment with nesting
+chip ccomment connector pins 
+  pin leadin:%<char pin rest:%<char pin out:%>string 
+{
+first:>
+  var s = string (read pins.leadin);
+  s+= read pins.leadin;
+  var nesting_depth = 1;
+  var ch = read pins.rest;
+  s+=ch;
+next:>
+  if ch == char "*" do
+    ch = read pins.rest;
+    s+=ch;
+    if ch == char "/" goto reduce_depth;
+  elif ch == "/" do
+    ch = read pins.rest;
+    s+=ch;
+    if ch == char "*" goto increase_depth;
+  else
+    ch = read pins.rest;
+    s+=ch;
+  done
+  goto next;
+
+increase_depth:>
+  ++nesting_depth;
+  goto next;
+
+reduce_depth:>
+  if nesting_depth == 1 do
+    write (pins.out,s);
+    goto first;
+  else
+    --nesting_depth;
+    goto next;
+  done
+}
+
+// cheat a bit, just a one character operator
+// anything goes
+chip operator connector pins 
+  pin leadin:%<char pin out:%>string 
+{
+next:>
+  var s = string(read pins.leadin);
+  write(pins.out,s);
+  goto next;
+}
+
+
+// to use the machinery we need an actual file reader:
+
+/*
+// get a filename from the command line
+var filename = System::argv 1;
+if filename == "" do
+  println ("Usage pretty filename");
+  System::exit 1;
+done
+*/
+
+// too lazy to actually check if its valid at the moment
+// do just make the device
+//device filein = filename;
+
+var testdata= """
+// hello
+var x = 187; /* some /* nested */ comments */
+var hello = 2;
+""";
+
+device filein = stringreader testdata;
+
+// construct circuit and run it
+circuit
+  connect filein.outch, buffer.filein
+  connect buffer.charout, leader.inch
+
+  connect leader.white, white.leadin
+  connect leader.identifier, identifier.leadin
+  connect leader.tex, tex.leadin
+  connect leader.number, number.leadin
+  connect leader.operator, operator.leadin
+  connect leader.ccomment, ccomment.leadin
+  connect leader.cxxcomment, cxxcomment.leadin
+  connect leader.backtrack, buffer.backtrack
+  connect leader.lexemeout, lexeme_printer.inlex
+
+  connect buffer.backtrack, 
+    white.backtrack,
+    identifier.backtrack,
+    tex.backtrack,
+    number.backtrack,
+    cxxcomment.backtrack
+
+  connect buffer.charout, 
+    white.rest,
+    identifier.rest,
+    tex.rest,
+    number.rest,
+    ccomment.rest,
+    cxxcomment.rest
+
+  connect leader.lexemein,
+    white.out, 
+    identifier.out,
+    tex.out, 
+    number.out,
+    operator.out,
+    ccomment.out,
+    cxxcomment.out
+
+endcircuit
+@
+@expect
+Lexeme #1='
+'
+Lexeme #2='// hello'
+Lexeme #3='
+'
+Lexeme #4='var'
+Lexeme #5=' '
+Lexeme #6='x'
+Lexeme #7=' '
+Lexeme #8='='
+Lexeme #9=' '
+Lexeme #10='187'
+Lexeme #11=';'
+Lexeme #12=' '
+Lexeme #13='/* some /* nested */ comments */'
+Lexeme #14='
+'
+Lexeme #15='var'
+Lexeme #16=' '
+Lexeme #17='hello'
+Lexeme #18=' '
+Lexeme #19='='
+Lexeme #20=' '
+Lexeme #21='2'
+Lexeme #22=';'
+@
+
+

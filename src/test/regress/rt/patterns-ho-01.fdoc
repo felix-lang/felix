@@ -1,0 +1,53 @@
+@h1 Higher Order Pattern matches
+Higher order constructors, for user
+define pattern matching only.
+@felix
+// see if we can do regexp pattern matching
+
+/*
+var re = RE2 "H(ell)o";
+
+fun _match_ctor_re (x:string) => x in re;
+
+fun _ctor_arg_re (x:string) =>
+  match Match (re, x) with
+  | None => varray[string]0uz // empty varray 
+  | Some y => y // populated varray
+  endmatch
+;
+
+match "Hello" with
+| re y=> 
+  println$ y.1;
+endmatch;
+
+match "Hello" with
+| (x when (x in re)) 
+    with v= 
+      match Match (re,x) with 
+      | Some y => y 
+      endmatch 
+   => 
+  println$ v.1;
+endmatch;
+
+*/
+
+fun _match_ctor_re (r:RE2) (x:string) => x in r;
+fun _ctor_arg_re (r:RE2) (x:string) =>
+   match Match (r,x) with
+   | Some y => y
+   // None case shouldn't happen!
+   endmatch
+;
+
+match "Hello" with
+| re "H(ell)o".RE2 y =>  println$ y.1;
+endmatch;
+
+println$ (let re "H(ell)o".RE2 y = "Hello" in y.1);
+@
+@expect
+ell
+ell
+@

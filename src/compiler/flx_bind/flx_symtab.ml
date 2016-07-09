@@ -670,12 +670,12 @@ if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int
   | DCL_match_handler (pat,(mvname,match_var_index),asms) ->
       assert (List.length (fst ivs) = 0);
       let vars = ref [] in
-      Flx_mbind.get_pattern_vars vars pat [];
+      Flx_desugar_pat.get_pattern_vars vars pat [];
 
       let new_asms = ref asms in
       List.iter begin fun (vname, (sr,extractor)) ->
         let component =
-          Flx_mbind.gen_extractor
+          Flx_desugar_pat.gen_extractor
             extractor
             (EXPR_index (sr,mvname,match_var_index))
         in

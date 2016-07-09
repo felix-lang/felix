@@ -3671,6 +3671,15 @@ syntax patterns {
   private sapplicative_pattern := sctor_name sargument_pattern =>#
     "`(pat_nonconst_ctor ,_sr ,_1 ,_2)";
 
+  private sapplicative_pattern := sctor_name stypeexpr+ sargument_pattern =>#
+    """;;(begin (display "HO PATTERN ")(display _1)(display "\n")
+       ;;(display "arguments=")(display _2) (display "\n")
+       ;;(display "pattern=")(display _3)(display "\n")
+       `(pat_ho_ctor ,_sr ,_1 ,_2 ,_3)
+       ;;)
+    """;
+
+
     //$ The sum type constructor can either be a qualified name...
     private sctor_name := sname =># "`(ast_name ,_sr ,_1 ())";
 

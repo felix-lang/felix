@@ -5203,6 +5203,25 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
     | _ -> clierrx "[flx_bind/flx_lookup.ml:5203: E217] " sr "Expected variant constructor name in union decoder"
     end
 
+  | EXPR_match_ho_ctor (sr,(qn,es)) ->
+(*
+print_endline ("match ho ctor : exprs = " ^ catmap "," string_of_expr es);
+*)
+    begin match qn with
+    | `AST_name (sr,name,ts) ->
+      let fname = EXPR_name (sr,"_match_ctor_" ^ name,ts) in
+      begin match es with
+      | [] -> assert false (* shouldn't allow less then 2 arguments! *)
+      | ls ->  
+        let e = List.fold_left (fun acc e -> EXPR_apply (sr, (acc,e))) fname es in
+(*
+print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
+*)
+        be e
+      end
+    | _ -> clierrx "[flx_bind/flx_lookup.ml:5203: E217] " sr "Expected variant constructor name in union decoder"
+    end
+
   | EXPR_variant_arg (sr,(v,e)) ->
      let (_,t) as e' = be e in
      ignore (try unfold "flx_lookup" t with _ -> failwith "AST_variant_arg unfold screwd");
@@ -5338,6 +5357,26 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
       be (EXPR_case_arg (sr,(v,e)))
 
     | _ -> clierrx "[flx_bind/flx_lookup.ml:5340: E224] " sr "Expected variant constructor name in union dtor"
+    end
+
+  | EXPR_ho_ctor_arg (sr,(qn,es)) ->
+(*
+print_endline ("ho ctor arg: exprs = " ^ catmap "," string_of_expr es);
+*)
+    begin match qn with
+    | `AST_name (sr,name,ts) ->
+      let fname = EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
+      begin match es with
+      | [] -> assert false (* shouldn't allow less then 2 arguments! *)
+      | ls ->  
+        let e = List.fold_left (fun acc e -> EXPR_apply (sr, (acc,e))) fname es in
+(*
+print_endline ("ho ctor arg: expr = " ^ string_of_expr e);
+*)
+        be e
+      end
+
+    | _ -> clierr sr "Expected variant constructor name in union dtor"
     end
 
   | EXPR_lambda (sr,_) ->

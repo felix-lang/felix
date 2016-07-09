@@ -9,6 +9,7 @@ open List
 type extract_t =
   | Proj_n of Flx_srcref.t * int             (* tuple projections 1 .. n *)
   | Udtor of Flx_srcref.t * qualified_name_t (* argument of union component s *)
+  | Hodtor of Flx_srcref.t * qualified_name_t * expr_t list     (* higher order user defined extractor *)
   | Vdtor of Flx_srcref.t * string           (* argument of variant component s *)
   | Proj_s of Flx_srcref.t * string          (* record projection name *)
   | Proj_head of Flx_srcref.t                (* tuple_cons head extractor  *)
@@ -41,6 +42,7 @@ let gen_extractor
   (fun x marg -> match x with
     | Proj_n (sr,n) -> EXPR_get_n (sr,(n,marg))
     | Udtor (sr,qn) -> EXPR_ctor_arg (sr,(qn,marg))
+    | Hodtor (sr,qn,es) -> EXPR_ho_ctor_arg (sr,(qn,es@[marg]))
     | Vdtor (sr,qn) -> EXPR_variant_arg (sr,(qn,marg))
     | Proj_s (sr,s) -> EXPR_get_named_variable (sr,(s,marg))
     | Proj_tail (sr) -> EXPR_get_tuple_tail (sr,(marg))
@@ -102,6 +104,8 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   | EXPR_rnprj _
   | EXPR_remove_fields _
   | EXPR_typecase_match _
+  | EXPR_ho_ctor_arg _
+  | EXPR_match_ho_ctor _
     ->
       let sr = src_of_expr e in
       clierrx "[flx_desugar/flx_mbind.ml:107: E341] " sr ("[mbind:subst] Not expected in pattern when clause: " ^ string_of_expr e); 
@@ -186,17 +190,33 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
 
   the extractor for x is
 
-    [Udtor "Ctor"; Proj_n 2; Proj_n 1]
+    [Proj_n 0; Proj_n 1; Udtor "Ctor"]
 
   since x is the first component of the second
   component of the argument of the constructor "Ctor"
+
+  Extractors are applied to the value argument from right to left. 
+
+  When calculating an extractor, assume we have an
+  extractor for the current term. We calculate, according to
+  the term structure, an extractor for a subterm. The complete
+  extractor for the subterm is then that extractor pushed onto
+  the front of the list of the extractors required to drill
+  down to the current term. We then recursively analyse the
+  subterm, passing it the extractor required to calculate its
+  subvalue.
+
+  When we hit a variable the extractor we have will calculate
+  the variable when applied, from right to left, to the top
+  level match expression.
+
 *)
 
 let rec get_pattern_vars
   (vars : psym_table_t ref)
   pat       (* pattern *)
   (extractor : extractor_t)
-=
+: unit =
   match pat with
   | PAT_name (sr,id) -> vars :=  (id, (sr,extractor))::!vars
 
@@ -222,6 +242,10 @@ let rec get_pattern_vars
 
   | PAT_nonconst_ctor (sr,name,pat) ->
     let extractor' = (Udtor (sr, name)) :: extractor in
+    get_pattern_vars vars pat extractor'
+
+  | PAT_ho_ctor (sr,name,es,pat) ->
+    let extractor' = (Hodtor (sr, name, es)) :: extractor in
     get_pattern_vars vars pat extractor'
 
   | PAT_nonconst_variant (sr,name,pat) ->
@@ -279,7 +303,16 @@ print_endline ("PAT_with: " ^ s ^ " = " ^ Flx_print.string_of_expr e);
     let extractor' = Polyrec_tail (sr,flds) :: extractor in 
     vars := (r, (sr,extractor'))::!vars
 
-  | _ -> ()
+  | PAT_none _
+  | PAT_literal _
+  | PAT_range _
+  | PAT_any _
+  | PAT_setform_any _
+  | PAT_const_ctor _
+  | PAT_const_variant _
+  | PAT_expr _ -> ()
+
+  | PAT_alt _ -> assert false (* should have been removed by macro processor *)
 
 let closure sr e =
   let ret = STMT_fun_return (sr,e) in 
@@ -407,6 +440,16 @@ let rec gen_match_check pat (arg:expr_t) =
   | PAT_nonconst_ctor (sr,name,pat) ->
     let check_component = EXPR_match_ctor (sr,(name,arg)) in
     let tuple = EXPR_ctor_arg (sr,(name,arg)) in
+    let check_tuple = gen_match_check pat tuple in
+    apl2 sr "andthen" check_component (closure sr check_tuple)
+
+  (* FIXME: for now, just ignore the constructor parameters! *)
+  (* so, for a regexp the ctor will be user defined, and accept
+     two arguments, the regexp and the match.
+  *)
+  | PAT_ho_ctor (sr,name,es,pat) ->
+    let check_component = EXPR_match_ho_ctor (sr,(name,es@[arg])) in
+    let tuple = EXPR_ho_ctor_arg (sr,(name,es@[arg])) in
     let check_tuple = gen_match_check pat tuple in
     apl2 sr "andthen" check_component (closure sr check_tuple)
 

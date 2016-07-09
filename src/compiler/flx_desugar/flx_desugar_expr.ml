@@ -151,11 +151,15 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     let lss,xs = List.split (List.map rex ls) in
     List.concat lss,EXPR_orlist (sr,xs)
 
-
-
   | EXPR_match_ctor (sr,(name,arg)) ->
     let l1,x1 = rex arg in
     l1, EXPR_match_ctor (sr,(name,x1))
+
+  | EXPR_match_ho_ctor (sr,(name,es)) ->
+    let lxs = List.map rex es in
+    let ls,xs = List.split lxs in
+    let ls = List.concat ls in
+    ls, EXPR_match_ho_ctor (sr,(name,xs))
 
   | EXPR_match_variant (sr,(name,arg)) ->
     let l1,x1 = rex arg in
@@ -169,6 +173,12 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
   | EXPR_ctor_arg (sr,(qn,e)) -> 
     let l1,x1 = rex e in 
     l1,EXPR_ctor_arg (sr,(qn,x1))
+
+  | EXPR_ho_ctor_arg (sr,(qn,es)) -> 
+    let lxs = List.map rex es in
+    let ls,xs = List.split lxs in
+    let ls = List.concat ls in
+    ls,EXPR_ho_ctor_arg (sr,(qn,xs))
 
   | EXPR_variant_arg (sr,(s,e)) -> 
     let l1,x1 = rex e in 
