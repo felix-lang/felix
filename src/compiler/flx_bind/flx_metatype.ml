@@ -170,11 +170,12 @@ print_endline ("Metatyping term " ^ st term);
     btyp_type 0 (* THIS ISN'T RIGHT *)
 
 *)
-
-  | BTYP_label
   | BTYP_type_set _
   | BTYP_type_set_union _
   | BTYP_type_set_intersection _
+    -> btyp_type 0 (* WRONG but lets see what happens ! *)
+
+  | BTYP_label
   | BTYP_none
     ->
     clierrx "[flx_bind/flx_metatype.ml:180: E246] " sr ("No meta type for type-like term " ^ sbt bsym_table term)

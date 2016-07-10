@@ -1199,7 +1199,10 @@ gc_shape_t *flx_collector_t::get_shape(void *memory)
   if(tracefile) 
     fprintf(tracefile,"GS: %p\n",memory);
   if(pshape==(Word_t*)PPJERR)judyerror("get_shape");
-  if(pshape==NULL) abort();
+  if(pshape==NULL) { 
+    fprintf(stderr,"get_shape %p found NULL\n",memory);
+    abort();
+  }
   return (gc_shape_t *)(*pshape & (~(uintptr_t)1));
 }
 

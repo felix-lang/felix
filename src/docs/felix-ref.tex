@@ -4867,7 +4867,7 @@ and is limited to a simple identifier.
 \chapter{Type constructors}
 \href{http://felix-lang.org/share/lib/grammar/type_decls.fsyn}{Syntax}
 
-\section{typedef}
+\section{Type aliases}
 The plain \verb%typedef% statement is used to define an alias for a type.
 It does not create a new type.
 
@@ -4884,17 +4884,38 @@ Typedef can also be polymorphic:
 typedef Cplx[T] = {x:T,y:T};
 \end{minted}
 
-\subsection{typeset typedef}
-Typedef can also be used to create a typeset:
+\section{Type Sets}
+A type set is a component of a type constraint expression
+which restricts a type variable one of a specifed list of entities. 
+Each entity may be either a type, a type predicate, or another
+type set.  Syntax like:
+
+\begin{minted}{felix}
+typesetof (short, int, long, vlong)
+\end{minted}
+
+is used for a typeset expression.
+
+The typedef statement may be used to define an alias for
+a typeset:
 
 \begin{minted}{felix}
 typedef Integers = typesetof (short, int, long, vlong);
 \end{minted}
 
+A typeset can be used with a membership test or kinding specification
+to form a constraint. For example:
+
+\begin{minted}{felix}
+fun f[T where T in Integers] (x:T) => x;
+\end{minted}
+
+
+
 See also \fullref{Integer Typesets}, \fullref{Typeset membership constraints}.
 
 \subsection{basic type functions (functors)}
-Typeset can also be used to create a type functions, or {\em functors}.
+Typedef can also be used to create a type functions, or {\em functors}.
 A basic definition is like this:
 
 \begin{minted}{felix}
@@ -9042,6 +9063,15 @@ User defined pattern match extractor.
 
 \item[{\tt \_ctor\_arg\_}typename]
 User defined constructor/conversion function.
+
+\item{{\tt TYPE}}
+The kind of all types.
+
+\item{{\tt GENERIC}}
+A psuedo kind used to qualifiy a type variable
+in a definition which causes the compiler to generate
+a fresh definition for each instance type actually
+used on demand.
 
 \end{description}
 
