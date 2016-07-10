@@ -399,6 +399,8 @@ int FELIX_MAIN (int argc, char** argv)
   catch (flx_exception_t &x) { error_exit_code = flx_exception_handler(&x); }
   catch (std::exception &x) { error_exit_code = std_exception_handler (&x); }
   catch (std::string &s) { error_exit_code = 6; fprintf(stderr, "%s\n", s.c_str()); }
+  catch (flx::rtl::con_t *p) { error_exit_code = 9; fprintf(stderr, "SYSTEM ERROR, UNCAUGHT CONTINUATION %p\n",p);}
+
   catch (...)
   {
     fprintf(stderr, "flx_run driver ends with unknown EXCEPTION\n");

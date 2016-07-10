@@ -516,6 +516,7 @@ extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
 #include "flx_rtl_shapes.hpp"
 #include "flx_compiler_support_headers.hpp"
 #include "flx_compiler_support_bodies.hpp"
+#include "flx_continuation.hpp"
 
 #include <string>
 #include <functional>
@@ -534,7 +535,8 @@ typedef int cl_t;
 // Felix system classes
 // ********************************************************
 
-struct RTL_EXTERN con_t;     // continuation
+// MOVED TO flx_exceptions
+//struct RTL_EXTERN con_t;     // continuation
 struct RTL_EXTERN jump_address_t;     // label variable type
 struct RTL_EXTERN fthread_t; // f-thread
 struct RTL_EXTERN _uctor_;   // union constructor
@@ -542,21 +544,6 @@ struct RTL_EXTERN _variant_;   // variant constructor
 struct RTL_EXTERN schannel_t;   // synchronous channel type
 struct RTL_EXTERN slist_t;   // singly linked list of void*
 struct RTL_EXTERN slist_node_t;   // singly linked list of void*
-
-// ********************************************************
-/// CONTINUATION.
-// ********************************************************
-
-struct RTL_EXTERN con_t ///< abstract base for mutable continuations
-{
-  FLX_PC_DECL               ///< interior program counter
-  _uctor_ *p_svc;           ///< pointer to service request
-
-  con_t();                  ///< initialise pc, p_svc to 0
-  virtual con_t *resume()=0;///< method to perform a computational step
-  virtual ~con_t();
-  con_t * _caller;          ///< callers continuation (return address)
-};
 
 
 // MOVE THIS TO RTL AND PROVIDE SUITABLE RTTI SO GC KNOWS ABOUT THE FRAME POINTER
@@ -716,6 +703,7 @@ RTL_EXTERN void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char const *fil
 #include "flx_exceptions.hpp"
 #include "flx_collector.hpp"
 #include "flx_serialisers.hpp"
+#include "flx_continuation.hpp"
 
 // main run time library code
 
@@ -742,21 +730,6 @@ char const *describe_service_call(int x)
 {
   if (x < 0 || x >12) return "Unknown service call";
   else return svc_desc[x];
-}
-
-// ********************************************************
-// con_t implementation
-// ********************************************************
-
-con_t::con_t() : pc(0), p_svc(0), _caller(0) {
-#if FLX_DEBUG_CONT
- fprintf(stderr,"Constructing %p\n",this);
-#endif
-}
-con_t::~con_t(){
-#if FLX_DEBUG_CONT
-  fprintf(stderr,"Destroying %p\n",this);
-#endif
 }
 
 // ********************************************************

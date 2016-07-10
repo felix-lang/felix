@@ -1,4 +1,6 @@
 @title Felix RTL Exception Handling.
+@tangler flx_continuation.hpp       = share/lib/rtl/flx_continuation.hpp
+@tangler flx_continuation.cpp       = share/src/exceptions/flx_continuation.cpp
 @tangler flx_eh.hpp                 = share/lib/rtl/flx_eh.hpp
 @tangler flx_eh.cpp                 = share/src/exceptions/flx_eh.cpp
 @tangler flx_exceptions.hpp         = share/lib/rtl/flx_exceptions.hpp
@@ -8,6 +10,54 @@
 @tangler flx_exceptions.py          = $PWD/buildsystem/flx_exceptions.py
 @tangler unix_flx_exceptions.fpc    = $PWD/src/config/unix/flx_exceptions.fpc
 @tangler win32_flx_exceptions.fpc   = $PWD/src/config/win32/flx_exceptions.fpc
+
+@h1 Continuation
+Needed here in the exceptions library because it can be
+thrown as an exception.
+
+@tangle flx_continuation.hpp
+#ifndef _FLX_CONTINUATION_HPP
+#define _FLX_CONTINUATION_HPP
+#include "flx_exceptions_config.hpp"
+#include "flx_compiler_support_headers.hpp"
+
+// ********************************************************
+/// CONTINUATION.
+// ********************************************************
+
+namespace flx {namespace rtl {
+struct FLX_EXCEPTIONS_EXTERN con_t ///< abstract base for mutable continuations
+{
+  FLX_PC_DECL               ///< interior program counter
+  struct _uctor_ *p_svc;           ///< pointer to service request
+
+  con_t();                  ///< initialise pc, p_svc to 0
+  virtual con_t *resume()=0;///< method to perform a computational step
+  virtual ~con_t();
+  con_t * _caller;          ///< callers continuation (return address)
+};
+}} //namespaces
+#endif
+@
+
+@tangle flx_continuation.cpp
+#include "flx_continuation.hpp"
+namespace flx { namespace rtl {
+// ********************************************************
+// con_t implementation
+// ********************************************************
+
+con_t::con_t() : pc(0), p_svc(0), _caller(0) {
+#if FLX_DEBUG_CONT
+ fprintf(stderr,"Constructing %p\n",this);
+#endif
+}
+con_t::~con_t(){
+#if FLX_DEBUG_CONT
+  fprintf(stderr,"Destroying %p\n",this);
+#endif
+}
+}} // namespaces
 
 @h1 Exceptions
 Felix programs can throw a number of exceptions representing errors.
@@ -62,6 +112,7 @@ struct FLX_EXCEPTIONS_EXTERN flx_link_failure_t;
 /// Mainly used to convert catches into subroutine
 /// calls which then dispatch on RTTI manually.
 // ********************************************************
+
 
 struct FLX_EXCEPTIONS_EXTERN flx_exception_t {
   virtual ~flx_exception_t()=0;
@@ -503,6 +554,7 @@ def build_runtime(phase):
     path = Path(phase.ctx.buildroot/'share'/'src/exceptions')
 
     srcs = [
+     path / 'flx_continuation.cpp',
      path / 'flx_exceptions.cpp',
      path / 'flx_eh.cpp',
      ]

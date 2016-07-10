@@ -307,6 +307,7 @@ notorious @{errno}.
 #include "flx_dl.h"
 #include "flx_dlopen.hpp"
 #include "flx_exceptions.hpp"
+#include "flx_continuation.hpp"
 
 #include <string>
 
@@ -610,7 +611,17 @@ void flx_libinst_t::create
     fprintf(stderr, "[libinst:create] thread frame CREATED %p\n", thread_frame);
   if (debug)
     fprintf(stderr, "[libinst:create] CREATING start_proc by running start_sym %p\n", lib->start_sym);
-  start_proc = lib->start_sym(thread_frame, argc, argv, stdin_,stdout_,stderr_);
+  try {
+    start_proc = lib->start_sym(thread_frame, argc, argv, stdin_,stdout_,stderr_);
+  }
+  catch (::flx::rtl::con_t *p) {
+    if (debug)
+    fprintf(stderr, 
+       "[lininst::create] setting start_proc to continuation %p thrown by start_sym %p\n",
+       p,lib->start_sym);
+    start_proc = p;
+  }
+
   if (debug)
     fprintf(stderr, "[libinst:create] start_proc CREATED %p\n", start_proc);
   if (debug)
