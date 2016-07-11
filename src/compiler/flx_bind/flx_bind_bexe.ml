@@ -419,6 +419,21 @@ print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_typ
     Flx_gmap.generic_map_proc bsym_table (bind_exe state) be sr fn arg 
 
 
+  (* do overloading here FIXME ?? *)
+  | EXE_call_with_trap (f',a') ->
+    let (ea,ta) as a = be a' in
+    let (ef,tf) as f = be f' in
+    begin match tf with
+    | BTYP_function (d,BTYP_void) ->
+      if type_eq bsym_table state.counter d ta then
+        [bexe_call_with_trap (sr,f,a)]
+      else 
+        clierr sr ("call with trap requires procedure domain and argument to be the same type\n"^
+        "got domain        " ^ sbt bsym_table d ^ "\n" ^
+        "got argument type " ^ sbt bsym_table ta)
+
+   | _ ->  clierr sr ("call with trap requires first argument to be procedure, got " ^ string_of_expr a')
+   end
 
   | EXE_call (f',a') ->
 (*

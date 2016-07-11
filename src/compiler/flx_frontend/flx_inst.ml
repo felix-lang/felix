@@ -282,6 +282,7 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
 
   | BEXE_ifcgoto (sr,e1,e2)
   | BEXE_call (sr,e1,e2)
+  | BEXE_call_with_trap (sr,e1,e2)
   | BEXE_jump (sr,e1,e2)
     -> ue sr e1; ue sr e2
 

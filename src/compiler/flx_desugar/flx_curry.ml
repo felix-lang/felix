@@ -275,11 +275,15 @@ let mkcurry seq sr name vs args return_type effects kind body props =
         let revbody = List.rev body in 
         let mkfield s = s,EXPR_name (sr,s,[]) in
         let record = EXPR_record (sr, List.map mkfield (!methods)) in
+(*
+        print_endline ("Object method record: " ^ string_of_expr record);
+*)
         let retstatement = STMT_fun_return (sr, record) in
         let revbody = retstatement :: revbody in
         let body = List.rev revbody in
-
-        (* print_endline ("Object " ^name^ " return type " ^ string_of_typecode return_type); *)
+(*
+        print_endline ("Object " ^name^ " return type " ^ string_of_typecode return_type); 
+*)
         STMT_function (sr, synthname n, vs, h, (return_type, postcondition), effects,props, body)
 
       end else 

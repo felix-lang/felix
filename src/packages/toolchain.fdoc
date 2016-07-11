@@ -506,19 +506,25 @@ class FlxLibBuild
   {
     proc dbug (x:string) => if debug call println$ '[make_lib: '+pkg+']' x;
 
+    proc ehandler () {
+      eprintln$ "toolchain: make_lib failed, temporary ehandler invoked";
+      System::exit 1;
+    }
+
+
     println$ "------------";
     println$ "Make lib " + pkg;
     println$ "------------";
-    var srcdir = db.getpkgfielddflt (pkg,"srcdir");
+    var srcdir = db.getpkgfielddflt ehandler (pkg,"srcdir");
     var srcpath = src_dir / srcdir;
 println$ "[make_lib] source directory " + srcpath;
 
-    var build_includes= db.getpkgfield (pkg,"build_includes");
+    var build_includes= db.getpkgfield ehandler (pkg,"build_includes");
     var result3,ddeps= db.query$ list$ pkg, "--keepleftmost", "--field=requires_dlibs";
     ddeps = FlxPkg::fix2word_flags ddeps;
-    var deps = db.getpkgfield(pkg,"Requires");
+    var deps = db.getpkgfield ehandler (pkg,"Requires");
     var result,depdlibs =  db.query("--field=provides_dlib"+deps); // packaged dlibs
-    var macros = db.getpkgfield(pkg,"macros");
+    var macros = db.getpkgfield ehandler (pkg,"macros");
     var result2,ccflags = db.query$ list$ pkg, "--keepleftmost", "--field=cflags";
     var config = 
       (
@@ -533,7 +539,7 @@ println$ "[make_lib] source directory " + srcpath;
     ;
     var toolchain = toolchain-maker config;
     println$ #(toolchain.whatami);
-    var headers = db.getpkgfielddflt(pkg,"headers");
+    var headers = db.getpkgfielddflt ehandler (pkg,"headers");
     if headers == "" do headers = r".*\.h(pp)?"; println$ "copying all header files"; done
     var hsrc, hdst = "","";
     match split (headers, ">") with
@@ -547,7 +553,7 @@ println$ "[make_lib] source directory " + srcpath;
     println$ "Copying headers " + hsrc + " > " + hdst;
     CopyFiles::copyfiles (srcpath, hsrc,target_dir/hdst,true, true);
 
-    var pats = db.getpkgfield(pkg,"src");
+    var pats = db.getpkgfield ehandler (pkg,"src");
     var pat = catmap '|' (fun (x:string)=>"("+x+")") pats;
   //println$ "Finding Sources in "+srcpath;
   //println$ "Matching pattern "+pat;
@@ -598,7 +604,7 @@ println$ "[make_lib] source directory " + srcpath;
 
         var objs = map objname files;
         var libname = 
-          let dlib_root = db.getpkgfield1(pkg,"provides_dlib") in
+          let dlib_root = db.getpkgfield1 ehandler (pkg,"provides_dlib") in
           if prefix (dlib_root,"-l") then "lib"+dlib_root.[2 to]
           elif prefix (dlib_root,"/DEFAULTLIB:") then dlib_root.[12 to]
           else dlib_root 
@@ -658,7 +664,7 @@ println$ "[make_lib] source directory " + srcpath;
 
       var objs = map objname files;
       var libname = 
-        let dlib_root = db.getpkgfield1(pkg,"provides_slib") in
+        let dlib_root = db.getpkgfield1 ehandler (pkg,"provides_slib") in
         if prefix (dlib_root,"-l") then  "lib"+dlib_root.[2 to]
         elif prefix (dlib_root,"/DEFAULTLIB:") then dlib_root.[12 to]
         else dlib_root 
@@ -2281,6 +2287,6 @@ A wrapper around "flx" command.
 @tangle flx_plugin.flx
 include "std/felix/flx/flx";
 export fun flx_plugin_setup(x:string)=>0;
-export fun flx_plugin (args:list[string]) : int => Flx::runflx args;
+export fun flx_plugin (args:list[string]) = { return Flx::runflx (args); }
 @
 

@@ -385,6 +385,12 @@ let expand_exe syms bsym_table u exe =
       let e2,xs2 = u sr e2 in
       bexe_call (sr,e1,e2) :: xs2 @ xs1
 
+    | BEXE_call_with_trap (sr,e1,e2) ->
+      let e1,xs1 = u sr e1 in
+      let e2,xs2 = u sr e2 in
+      bexe_call_with_trap (sr,e1,e2) :: xs2 @ xs1
+
+
     | BEXE_jump (sr,e1,e2) -> 
       let e1,xs1 = u sr e1 in
       let e2,xs2 = u sr e2 in

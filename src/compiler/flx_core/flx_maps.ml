@@ -124,10 +124,18 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | EXPR_suffix (sr,(qn,t)) -> EXPR_suffix (sr,(qn, ft t))
 
   (* these ones are types and should have been desugared out a long way back *)
+  (* BUT Garrets code reintroduces them .. *)
+(*
   | EXPR_record_type (sr,ts) -> assert false 
   | EXPR_polyrecord_type (sr,ts,v) -> assert false
   | EXPR_variant_type (sr,ts) -> assert false
   | EXPR_void sr -> assert false 
+*)
+
+  | EXPR_record_type (sr,ts) -> EXPR_record_type (sr, List.map (fun (s,t) -> s, ft t) ts) 
+  | EXPR_polyrecord_type (sr,ts,v) -> EXPR_polyrecord_type (sr, List.map (fun (s,t)-> s,ft t) ts, ft v)
+  | EXPR_variant_type (sr,ts) -> EXPR_variant_type (sr, List.map (fun (s,t) -> s, ft t) ts)
+  | EXPR_void sr -> EXPR_void sr
 
   | EXPR_ellipsis sr -> e
   | EXPR_product (sr,es) -> EXPR_product (sr, List.map fe es)
@@ -300,6 +308,7 @@ let rec map_exe fi ft fe (x:exe_t):exe_t = match x with
   | EXE_ifcgoto (e1,e2) -> EXE_ifcgoto (fe e1, fe e2)
   | EXE_ifgoto (e,s) -> EXE_ifgoto (fe e,s)
   | EXE_call (a,b) -> EXE_call (fe a, fe b)
+  | EXE_call_with_trap (a,b) -> EXE_call_with_trap (fe a, fe b)
   | EXE_jump (a,b) -> EXE_jump (fe a, fe b)
   | EXE_loop (s,e) -> EXE_loop (s, fe e)
   | EXE_svc _ -> x

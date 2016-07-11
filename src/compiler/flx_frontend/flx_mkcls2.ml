@@ -406,8 +406,13 @@ let chk_exe state bsym_table nutab exe =
       | BBDCL_fun _  -> bexe_call_direct (sr,i,ts, ce sr e2)
       | _ -> assert false
     end
+
   | BEXE_call (sr,e1,e2) -> 
     bexe_call (sr, ce sr e1, ce sr e2)
+
+  | BEXE_call_with_trap (sr,e1,e2) -> 
+    bexe_call_with_trap (sr, ce sr e1, ce sr e2)
+
 
   | BEXE_jump (sr,(BEXPR_closure (i,ts),t),e2) -> 
     begin

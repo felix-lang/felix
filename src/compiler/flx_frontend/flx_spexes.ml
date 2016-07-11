@@ -238,6 +238,7 @@ let gen_body syms uses bsym_table id
 
   | BEXE_call_stack (sr,i,ts,e2)  -> assert false
   | BEXE_call (sr,e1,e2)  -> [bexe_call (sr,ge e1, ge e2)]
+  | BEXE_call_with_trap (sr,e1,e2)  -> [bexe_call_with_trap (sr,ge e1, ge e2)]
   | BEXE_jump (sr,e1,e2)  -> [bexe_jump (sr, ge e1, ge e2)]
   | BEXE_assert (sr,e) -> [bexe_assert (sr, ge e)]
   | BEXE_axiom_check2 (sr,sr2,e1,e2) ->

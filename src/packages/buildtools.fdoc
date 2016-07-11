@@ -1006,6 +1006,12 @@ class FlxRtlBuild
 
   private fun / (x:string,y:string) => Filename::join(x,y);
 
+  proc ehandler () {
+    eprintln$ "Flx_buildtools:FlxRtlBuild flx_pkgconfig temporary ehandler invoked";
+    System::exit 1;
+  }
+
+
   proc make_rtl (
     build:string, target:string,
     boot_package:string, 
@@ -1028,18 +1034,17 @@ class FlxRtlBuild
 
     var db = FlxPkgConfig::FlxPkgConfigQuery (list[string] pkgdir);
 
-    gen getbootfield (field:string) => db.getpkgfield1 (boot_package, field);
-    gen gettoolchain () => db.getpkgfield1 ("toolchain","toolchain");
+    gen getbootfield (field:string) => db.getpkgfield1 ehandler (boot_package, field);
+    gen gettoolchain () => db.getpkgfield1 ehandler ("toolchain","toolchain");
     var toolchain = gettoolchain();
     println$ "toolchain    : " + str toolchain;
 
-
-    var allpkgs = db.getclosure boot_package;
+    var allpkgs = db.getclosure ehandler boot_package;
     //println$ "Closure      : " + str allpkgs;
 
     for pkg in allpkgs begin 
-      var lib = db.getpkgfielddflt (pkg,"library");
-      var srcdir = db.getpkgfielddflt (pkg,"srcdir");
+      var lib = db.getpkgfielddflt ehandler (pkg,"library");
+      var srcdir = db.getpkgfielddflt ehandler (pkg,"srcdir");
       println$ f"%15S %20S %20S" (pkg,lib,srcdir);
     end 
 
@@ -1052,9 +1057,9 @@ class FlxRtlBuild
       )
     ;
     for pkg in allpkgs begin
-      var library = db.getpkgfielddflt (pkg,"library");
-      var srcdir = db.getpkgfielddflt (pkg,"srcdir");
-      var src = db.getpkgfield(pkg,"src");
+      var library = db.getpkgfielddflt ehandler (pkg,"library");
+      var srcdir = db.getpkgfielddflt ehandler (pkg,"srcdir");
+      var src = db.getpkgfield ehandler (pkg,"src");
       if library != "" do
         if srcdir == "" do
           println$ "Package error, package " + pkg + " library " + library + " No srcdir specified";
@@ -1338,6 +1343,12 @@ class FlxCoreBuild
 
   fun / (x:string,y:string) => Filename::join(x,y);
 
+  proc ehandler () {
+    eprintln$ "Flx_buildtools:FlxCoreBuild flx_pkgconfig temporary ehandler invoked";
+    System::exit 1;
+  }
+
+
   proc build_plugins(target_dir:string, target_bin:string, plugins:list[string])
   {
     for plugin in plugins do
@@ -1480,7 +1491,7 @@ class FlxCoreBuild
     println$ "bootpkg=" + cmd.boot_package;
     var pkgdir = Filename::join (cmd.target_dir, cmd.target_bin, "config");
     var db = FlxPkgConfig::FlxPkgConfigQuery (list[string] pkgdir);
-    gen getbootfields (field:string) => db.getpkgfield (cmd.boot_package, field);
+    gen getbootfields (field:string) => db.getpkgfield  ehandler (cmd.boot_package, field);
     var toolchain_plugins = getbootfields ("toolchain_plugin");
     var cygwin_toolchain_plugins = getbootfields ("cygwin_toolchain_plugin");
     var web_plugins = getbootfields ("web_plugin");

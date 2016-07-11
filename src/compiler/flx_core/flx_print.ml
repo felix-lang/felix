@@ -1530,6 +1530,10 @@ and string_of_statement level s =
     spaces level
     ^ "call " ^ se pr ^ " " ^ se args ^ ";"
 
+  | STMT_call_with_trap (_,pr, args) ->
+    spaces level
+    ^ "call_with_trap " ^ se pr ^ " " ^ se args ^ ";"
+
   | STMT_assign (_,name,l,r) ->
     spaces level
     ^ "call " ^ string_of_id name ^ "(" ^ sl l ^ "," ^ se r ^ ");"
@@ -1864,6 +1868,12 @@ and string_of_exe level s =
     se p ^ " " ^
     se a ^ ";"
 
+  | EXE_call_with_trap (p,a) -> spc ^
+    "call_with_trap " ^
+    se p ^ " " ^
+    se a ^ ";"
+
+
   | EXE_jump (p,a) -> spc ^
     "jump " ^
     se p ^ " " ^
@@ -2105,6 +2115,11 @@ and string_of_bexe bsym_table level s =
 
   | BEXE_call (_,p,a) -> spc ^
     "call " ^
+    se p ^ " " ^
+    se a ^ ";"
+
+  | BEXE_call_with_trap (_,p,a) -> spc ^
+    "call_with_trap " ^
     se p ^ " " ^
     se a ^ ";"
 

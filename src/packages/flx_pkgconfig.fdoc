@@ -7,221 +7,14 @@
 @tangler flx_pkgconfig_query_interface.flx = share/lib/std/felix/flx_pkgconfig_query_interface.flx
 @tangler flx_pkgconfig_tool.flx            = $PWD/src/tools/flx_pkgconfig.flx
 
-@h1 Pkg config
-@tangle flx_pkg.flx
-include "std/felix/flx_pkgconfig";
-
-class FlxPkg
-{
-  typedef pkgconfig_inspec_t = (
-    FLX_CONFIG_DIRS: list[string],
-    FLX_TARGET_DIR:string,
-    EXT_EXE: string,
-    EXT_STATIC_OBJ: string,
-    EXT_DYNAMIC_OBJ: string,
-    STATIC: int,
-    LINKEXE: int,
-    SLINK_STRINGS: list[string],
-    DLINK_STRINGS: list[string],
-    LINKER_SWITCHES: list[string],
-    EXTRA_PACKAGES: list[string],
-    cpp_filebase : string
-  );
-
-  typedef pkgconfig_outspec_t = (
-    CFLAGS: list[string],
-    INCLUDE_FILES: list[string],
-    DRIVER_EXE: string,
-    DRIVER_OBJS: list[string],
-    LINK_STRINGS: list[string]
-  );
-
-  fun fix2word_flags (fs: list[string]) = {
-    //println$ "Fix2word, input=" + fs.str;
-    var output =  fold_left
-     (fun (acc:list[string]) (elt:string) =>
-       if prefix (elt, "---") then acc + (split (elt.[2 to], char "="))
-       else acc + elt
-       endif
-      )
-      Empty[string]
-      fs
-    ;
-    //println$ "Fix2word, output=" + output.str;
-    return output;
-  }
-
-
-  // Model:
-  // Static link exe: return the object files required, no driver exe
-  // Dynamic link exe: the same
-  // DLL: return the executable (flx_run) required to run the DLL
-  // 
-  // We provide instructions to link the target binary and how to run it.
-
-  gen map_package_requirements(spec:pkgconfig_inspec_t) : pkgconfig_outspec_t =
-  {
-
-/*
-println$ "MAP PACKAGE REQUIREMENTS: LINK " + 
-  if spec.LINKEXE==1 
-  then "EXE"  + " ("+if spec.STATIC==1 then "full" else "with DLL support" endif + ")" 
-  else "DLL"
-  endif
-; 
-*/
-    var PKGCONFIG_PATH=map 
-       (fun (s:string) => "--path+="+s) 
-       spec.FLX_CONFIG_DIRS
-    ;
-    var RESH = "@"+spec.cpp_filebase+".resh";
-
-    gen pkgconfl(args:list[string]) : list[string] =
-    {
-      if spec.EXTRA_PACKAGES != Empty[string] call
-         eprintln$ "calpackages, EXTRA_PACKAGES = " + str spec.EXTRA_PACKAGES
-      ;
-      var allargs = PKGCONFIG_PATH+args+spec.EXTRA_PACKAGES + RESH; 
-      var ret,s = FlxPkgConfig::flx_pkgconfig(allargs);
-      if ret != 0 do
-        eprintln$ "[FlxPkg:map_package_requirements] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
-        System::exit (1);
-      done
-      return s;
-    }
-    gen pkgconfs(args:list[string]) : string => cat ' ' $ pkgconfl(args);
-
-    var e = Empty[string];
-
-    // find all include directories
-    var CFLAGS=pkgconfl(e+'--field=cflags'+'--keepleftmost');
-
-    // find all include files
-    var INCLUDE_FILES=pkgconfl(e+'--field=includes'+'--keepleftmost');
-
-
-    // find the driver package
-    var DRIVER_PKG=pkgconfs(e+'--field=flx_requires_driver');
-    if DRIVER_PKG == "" do DRIVER_PKG="flx_run"; done
-
-    // find the driver entity
-    if spec.STATIC == 0 do
-      // dynamic linkage: the driver executable
-      if spec.LINKEXE == 0 do
-        var DRIVER_EXE= Filename::join$ list (
-          spec.FLX_TARGET_DIR,
-          "bin",
-          DRIVER_PKG+spec.EXT_EXE
-        );
-        var DRIVER_OBJS = Empty[string];
-      else
-      // dynamic linkage: the object files for executable with DLL support
-        DRIVER_OBJS =list(
-          Filename::join (list (
-            spec.FLX_TARGET_DIR,
-            "lib",
-            "rtl",
-            DRIVER_PKG+"_lib_static"+
-            spec.EXT_DYNAMIC_OBJ)),
-          Filename::join (list (
-            spec.FLX_TARGET_DIR,
-            "lib",
-            "rtl",
-            DRIVER_PKG+"_main"+spec.EXT_DYNAMIC_OBJ))
-        );
-        DRIVER_EXE = "";
-      done
-    else
-      // static linkage: the object files for full static link
-      DRIVER_OBJS =list(
-        Filename::join (list (
-          spec.FLX_TARGET_DIR,
-          "lib",
-          "rtl",
-          DRIVER_PKG+"_lib_static"+
-          spec.EXT_STATIC_OBJ)),
-        Filename::join (list (
-          spec.FLX_TARGET_DIR,
-          "lib",
-          "rtl",
-          DRIVER_PKG+"_main"+spec.EXT_STATIC_OBJ))
-      );
-      DRIVER_EXE = "";
-    done
-
-    if spec.STATIC == 0 do
-      if spec.LINKEXE == 0 do
-        // Linking a DLL
-        var LINK_STRINGS =
-          spec.DLINK_STRINGS+
-          spec.LINKER_SWITCHES+
-          pkgconfl(e+'-r'+'--keeprightmost'+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
-      else
-        // Linking an EXE (with DLL support)
-        LINK_STRINGS =
-          spec.DLINK_STRINGS +
-          spec.LINKER_SWITCHES+
-          pkgconfl(e+'-r'+'--keepleftmost'+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
-      done
-    else
-      // static linkage: all the libraries required by the application and driver
-      // This has to be recursive to find the closure.
-      // Linking an EXE (fully static)
-      LINK_STRINGS =
-        spec.SLINK_STRINGS+
-        spec.LINKER_SWITCHES+
-        pkgconfl(e+'-r'+'--keeprightmost'+'--field=provides_slib'+'--field=requires_slibs'+DRIVER_PKG);
-    done
-    LINK_STRINGS = fold_left
-      (fun (acc:list[string]) (elt:string) =>
-        if prefix (elt, "---") then
-         acc + split (elt.[2 to], char "=")
-        else acc + elt
-        endif
-      )
-      Empty[string]
-      LINK_STRINGS
-    ;
-
-    return ( 
-      CFLAGS = CFLAGS,
-      INCLUDE_FILES = INCLUDE_FILES,
-      DRIVER_EXE = DRIVER_EXE,
-      DRIVER_OBJS = DRIVER_OBJS,
-      LINK_STRINGS = LINK_STRINGS
-    );
-  }
-
-  proc write_include_file(path:string, INCLUDE_FILES:list[string]) {
-    var f = fopen_output(path+".includes");
-    List::iter  
-      (proc (i:string) { writeln$ f, "#include " + i; })
-      INCLUDE_FILES
-    ;
-    fclose f;
-  }
-
-}
-
-@
-@tangle flx_pkgconfig.flx
-include "std/felix/flx_pkgconfig_core";
-include "std/felix/flx_pkgconfig_query_interface";
-include "std/felix/flx_pkgconfig_query";
-
-class FlxPkgConfig
-{
-  inherit FlxPkgConfig_core;
-  inherit FlxPkgConfigQuery_interface;
-  inherit FlxPkgConfig_query;
-}
-@
-
 @h1 Command Line Interface
 Provides function to handle generic shell style call with
 parsed arguments, supporting calls from either inside
 ordinary Felix code or from a stub execuatble which
 just parses the command line.
+
+This code always returns, it cannot fail EXCEPT if --help
+is given.
 
 @tangle flx_pkgconfig_core.flx
 class FlxPkgConfig_core
@@ -407,6 +200,7 @@ class FlxPkgConfig_core
 
           elif "--help" == arg do
             print_help;
+            // FIXME
             System::exit(0);
 
           elif "@" == arg.[0 to 1] do
@@ -593,155 +387,12 @@ class FlxPkgConfig_core
 
 @
 
-@h1 Database Manager Library
-Export thunks to support separate compilation
-of the flx_pkgconfig database query library.
-
-@tangle flx_pkgconfig_export.flx
-include "std/felix/flx_pkgconfig";
-
-export FlxPkgConfig::flx_pkgconfig of (list[string]) as "flx_pkgconfig";
-
-export struct FlxPkgConfigQuery_struct 
-{
-    query:           list[string] -> int * list[string];
-    getpkgfield:     string * string -> list[string];
-    getpkgfield1:    string * string -> string;
-    getpkgfieldopt:  string * string -> opt[string];
-    getpkgfielddflt: string * string ->  string;
-    getclosure:      string -> list[string];
-}
-
-gen mk_pkgconfig_query (a:FlxPkgConfigQuery_struct) => 
-  FlxPkgConfig::FlxPkgConfigQuery (
-    query=a.query,
-    getpkgfield=a.getpkgfield,
-    getpkgfield1=a.getpkgfield1,
-    getpkgfieldopt=a.getpkgfieldopt,
-    getpkgfielddflt=a.getpkgfielddflt,
-    getclosure=a.getclosure
-  )
-;
-
-export mk_pkgconfig_query
-  of (FlxPkgConfigQuery_struct)
-  as "flx_pkgconfig_query"
-;
- 
-@
-
-@h1 Database Query Object
-@tangle flx_pkgconfig_query.flx
-include "std/felix/flx_pkgconfig_core";
-include "std/felix/flx_pkgconfig_query_interface";
-
-class FlxPkgConfig_query
-{
-  object FlxPkgConfigQuery (path:list[string]) implements FlxPkgConfigQuery_interface::FlxPkgConfigQuery_t = 
-  {
-    var paths = 
-      match path with
-      | #Empty => Empty[string]
-      | Cons (h,t) => 
-        let 
-          fun aux (lst:list[string]) (out:list[string]) => 
-          match lst with
-          | #Empty => rev out
-          | Cons (h,t) => aux t (("--path+="+h)!out) 
-          endmatch
-        in
-        ("--path="+h) ! aux t Empty[string]
-    ;
-    match path with | #Empty => assert false; | _ => ; endmatch;
-
-
-    method gen query (args:list[string]) =>
-      FlxPkgConfig_core::flx_pkgconfig (paths + args)
-    ;
-
-    // Get all the values of a field in a particular package
-    method gen getpkgfield (pkg:string, field:string) : list[string] = {
-      var result,values = query$ list$ ("--field="+field, pkg);
-      if result != 0 do
-        println$ "Can't find package " + pkg;
-        println$ "Searching in paths:";
-        for path in paths do
-          println$ "  " + path;
-        done
-        System::exit(1);
-      done
-      return values;
-    }
-    
-    // Get the single value of a field in a particular package.
-    // Bug out if missing or multiple values.
-    method gen getpkgfield1 (pkg:string, field:string) : string = {
-      var values = getpkgfield (pkg,field);
-      match values with
-      | Cons (h,#Empty) => return h;
-      | #Empty => 
-        println$ "Required field " + field + " not found in package "+pkg;
-        System::exit(1);
-      | _ =>
-        println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
-        System::exit(1);
-      endmatch;
-    }
-
-    // Get the single value of a field in a particular package.
-    // Bug out if multiple values.
-    method gen getpkgfieldopt (pkg:string, field:string) : opt[string] = {
-      var values = getpkgfield (pkg,field);
-      match values with
-      | Cons (h,#Empty) => return Some h;
-      | #Empty => return None[string];
-      | _ =>
-        println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
-        System::exit(1);
-      endmatch;
-    }
-
-    method gen getpkgfielddflt (pkg:string, field:string) : string =>
-      match getpkgfieldopt (pkg, field) with
-      | Some h => h
-      | #None => ""
-      endmatch
-    ;
-
-    //$ Get Requires closure.
-    //$ Result is topologically sorted with each package listed
-    //$ after ones it requires.
-    method gen getclosure (pkg:string) : list[string] = {
-      var result,values = FlxPkgConfig_core::flx_pkgconfig $ paths +
-        "--keeprightmost" + "--rec" + "--list" +  pkg
-      ;
-      if result != 0 do
-        println$ "missing package for closure of " + pkg;
-        System::exit(1);
-      done
-      return rev values;
-    }
-  }
-}
-
-@
-@h1 Database query object interface.
-@tangle flx_pkgconfig_query_interface.flx
-class FlxPkgConfigQuery_interface
-{
-  interface FlxPkgConfigQuery_t {
-    query:           list[string] -> int * list[string];
-    getpkgfield:     string * string -> list[string];
-    getpkgfield1:    string * string -> string;
-    getpkgfieldopt:  string * string -> opt[string];
-    getpkgfielddflt: string * string ->  string;
-    getclosure:      string -> list[string];
-   }
-}
-
-@
 
 @h1 Tool executable.
+This the actual command line tool.
+It depends on only the flx_pkgconfig function.
+It exits with the return code that function returns.
+
 @tangle flx_pkgconfig_tool.flx
 include "std/felix/flx_pkgconfig";
 
@@ -781,4 +432,416 @@ System::exit return_code;
 
 @
 
+@h1 Database query object.
+This code provides an object wrapper around the
+flx_pkgconfig CLI interface function to allow
+low level queries about specific fields of specific
+packages.
+
+@h2 Database query object interface.
+@tangle flx_pkgconfig_query_interface.flx
+class FlxPkgConfigQuery_interface
+{
+  interface FlxPkgConfigQuery_t {
+    query:           list[string] -> int * list[string];
+    getpkgfield:     (1->0) -> string * string -> list[string];
+    getpkgfield1:    (1->0) -> string * string -> string;
+    getpkgfieldopt:  (1->0) -> string * string -> opt[string];
+    getpkgfielddflt: (1->0) -> string * string ->  string;
+    getclosure:      (1->0) -> string -> list[string];
+   }
+}
+
+@
+
+@h2 Database query object implementation.
+Depends on on the CLI function interface.
+@tangle flx_pkgconfig_query.flx
+include "std/felix/flx_pkgconfig_core";
+include "std/felix/flx_pkgconfig_query_interface";
+
+class FlxPkgConfig_query
+{
+  object FlxPkgConfigQuery (path:list[string]) implements FlxPkgConfigQuery_interface::FlxPkgConfigQuery_t = 
+  {
+    var paths = 
+      match path with
+      | #Empty => Empty[string]
+      | Cons (h,t) => 
+        let 
+          fun aux (lst:list[string]) (out:list[string]) => 
+          match lst with
+          | #Empty => rev out
+          | Cons (h,t) => aux t (("--path+="+h)!out) 
+          endmatch
+        in
+        ("--path="+h) ! aux t Empty[string]
+    ;
+    match path with | #Empty => assert false; | _ => ; endmatch;
+
+
+    method gen query (args:list[string]) =>
+      FlxPkgConfig_core::flx_pkgconfig (paths + args)
+    ;
+
+    // Get all the values of a field in a particular package
+    method gen getpkgfield (ehandler:1->0) (pkg:string, field:string) : list[string] = {
+      var result,values = query$ list$ ("--field="+field, pkg);
+      if result != 0 do
+        println$ "Can't find package " + pkg;
+        println$ "Searching in paths:";
+        for path in paths do
+          println$ "  " + path;
+        done
+        // FIXME
+        // System::exit(1);
+        throw_continuation ehandler;
+      done
+      return values;
+    }
+    
+    // Get the single value of a field in a particular package.
+    // Bug out if missing or multiple values.
+    method gen getpkgfield1 (ehandler:1->0) (pkg:string, field:string) : string = {
+      var values = getpkgfield ehandler (pkg,field);
+      match values with
+      | Cons (h,#Empty) => return h;
+      | #Empty => 
+        println$ "Required field " + field + " not found in package "+pkg;
+        // FIXME
+        // System::exit(1);
+        throw_continuation ehandler;
+
+      | _ =>
+        println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
+        // FIXME
+        // System::exit(1);
+        throw_continuation ehandler;
+      endmatch;
+    }
+
+    // Get the single value of a field in a particular package.
+    // Bug out if multiple values.
+    method gen getpkgfieldopt (ehandler:1->0) (pkg:string, field:string) : opt[string] = {
+      var values = getpkgfield ehandler (pkg,field);
+      match values with
+      | Cons (h,#Empty) => return Some h;
+      | #Empty => return None[string];
+      | _ =>
+        println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
+        // FIXME
+        // System::exit(1);
+        throw_continuation ehandler;
+      endmatch;
+    }
+
+    method gen getpkgfielddflt (ehandler:1->0) (pkg:string, field:string) : string =>
+      match getpkgfieldopt ehandler (pkg, field) with
+      | Some h => h
+      | #None => ""
+      endmatch
+    ;
+
+    //$ Get Requires closure.
+    //$ Result is topologically sorted with each package listed
+    //$ after ones it requires.
+    method gen getclosure (ehandler:1->0) (pkg:string) : list[string] = {
+      var result,values = FlxPkgConfig_core::flx_pkgconfig $ paths +
+        "--keeprightmost" + "--rec" + "--list" +  pkg
+      ;
+      if result != 0 do
+        println$ "missing package for closure of " + pkg;
+        // FIXME
+        // System::exit(1);
+        throw_continuation ehandler;
+      done
+      return rev values;
+    }
+  }
+}
+
+@
+
+
+@h1 Database Manager Library
+Export thunks to support separate compilation
+of the flx_pkgconfig database query library.
+This allows the code to be dynamically loaded
+or statically linked against as if a foreign C library.
+
+The support does not reach the level of a plugin, however.
+
+@h2 Compendium class.
+This class provides both of the core CLI function
+and the object based query wrapper, wrapped in a 
+single include file and with a single wrapping namespace.
+
+@tangle flx_pkgconfig.flx
+include "std/felix/flx_pkgconfig_core";
+include "std/felix/flx_pkgconfig_query_interface";
+include "std/felix/flx_pkgconfig_query";
+
+class FlxPkgConfig
+{
+  inherit FlxPkgConfig_core;
+  inherit FlxPkgConfigQuery_interface;
+  inherit FlxPkgConfig_query;
+}
+@
+
+
+@h2 Separate compilation wrapper.
+This file provides the separate compilation wrapper.
+We provide a struct wrapper around the underlying
+record type, because it is a nominal type and can be 
+exported.
+
+@tangle flx_pkgconfig_export.flx
+include "std/felix/flx_pkgconfig";
+
+export FlxPkgConfig::flx_pkgconfig of (list[string]) as "flx_pkgconfig";
+
+export struct FlxPkgConfigQuery_struct 
+{
+    query:           list[string] -> int * list[string];
+    getpkgfield:     (1->0) -> string * string -> list[string];
+    getpkgfield1:    (1->0) -> string * string -> string;
+    getpkgfieldopt:  (1->0) -> string * string -> opt[string];
+    getpkgfielddflt: (1->0) -> string * string ->  string;
+    getclosure:      (1->0) -> string -> list[string];
+}
+
+gen mk_pkgconfig_query (a:FlxPkgConfigQuery_struct) => 
+  FlxPkgConfig::FlxPkgConfigQuery (
+    query=a.query,
+    getpkgfield=a.getpkgfield,
+    getpkgfield1=a.getpkgfield1,
+    getpkgfieldopt=a.getpkgfieldopt,
+    getpkgfielddflt=a.getpkgfielddflt,
+    getclosure=a.getclosure
+  )
+;
+
+export mk_pkgconfig_query
+  of (FlxPkgConfigQuery_struct)
+  as "flx_pkgconfig_query"
+;
+ 
+@
+
+
+@h1 Pkg config
+This code provides a class wrapper around the command 
+line function flx_pkgconfig AND the object based query system,
+designed solely to simplify access from the flx tool.
+
+This code can do a System::exit which also exits the flx
+process using it.
+
+This has to be FIXED so flx can run in non-stop mode.
+
+@tangle flx_pkg.flx
+include "std/felix/flx_pkgconfig";
+
+class FlxPkg
+{
+  typedef pkgconfig_inspec_t = (
+    FLX_CONFIG_DIRS: list[string],
+    FLX_TARGET_DIR:string,
+    EXT_EXE: string,
+    EXT_STATIC_OBJ: string,
+    EXT_DYNAMIC_OBJ: string,
+    STATIC: int,
+    LINKEXE: int,
+    SLINK_STRINGS: list[string],
+    DLINK_STRINGS: list[string],
+    LINKER_SWITCHES: list[string],
+    EXTRA_PACKAGES: list[string],
+    cpp_filebase : string
+  );
+
+  typedef pkgconfig_outspec_t = (
+    CFLAGS: list[string],
+    INCLUDE_FILES: list[string],
+    DRIVER_EXE: string,
+    DRIVER_OBJS: list[string],
+    LINK_STRINGS: list[string]
+  );
+
+  fun fix2word_flags (fs: list[string]) = {
+    //println$ "Fix2word, input=" + fs.str;
+    var output =  fold_left
+     (fun (acc:list[string]) (elt:string) =>
+       if prefix (elt, "---") then acc + (split (elt.[2 to], char "="))
+       else acc + elt
+       endif
+      )
+      Empty[string]
+      fs
+    ;
+    //println$ "Fix2word, output=" + output.str;
+    return output;
+  }
+
+
+  // Model:
+  // Static link exe: return the object files required, no driver exe
+  // Dynamic link exe: the same
+  // DLL: return the executable (flx_run) required to run the DLL
+  // 
+  // We provide instructions to link the target binary and how to run it.
+
+/*
+  proc ehandler () {
+    eprintln$ "Flx_pkgconfig: map_package_requirements: failed, temporary ehandler invoked";
+    System::exit 1;
+  }
+*/
+  gen map_package_requirements (ehandler:1->0) (spec:pkgconfig_inspec_t) : pkgconfig_outspec_t =
+  {
+
+/*
+println$ "MAP PACKAGE REQUIREMENTS: LINK " + 
+  if spec.LINKEXE==1 
+  then "EXE"  + " ("+if spec.STATIC==1 then "full" else "with DLL support" endif + ")" 
+  else "DLL"
+  endif
+; 
+*/
+    var PKGCONFIG_PATH=map 
+       (fun (s:string) => "--path+="+s) 
+       spec.FLX_CONFIG_DIRS
+    ;
+    var RESH = "@"+spec.cpp_filebase+".resh";
+
+    gen pkgconfl(args:list[string]) : list[string] =
+    {
+      if spec.EXTRA_PACKAGES != Empty[string] call
+         eprintln$ "calpackages, EXTRA_PACKAGES = " + str spec.EXTRA_PACKAGES
+      ;
+      var allargs = PKGCONFIG_PATH+args+spec.EXTRA_PACKAGES + RESH; 
+      var ret,s = FlxPkgConfig::flx_pkgconfig(allargs);
+      if ret != 0 do
+        eprintln$ "[FlxPkg:map_package_requirements] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
+        // FIXME
+        //System::exit (1);
+        throw_continuation ehandler;
+      done
+      return s;
+    }
+    gen pkgconfs(args:list[string]) : string => cat ' ' $ pkgconfl(args);
+
+    var e = Empty[string];
+
+    // find all include directories
+    var CFLAGS=pkgconfl(e+'--field=cflags'+'--keepleftmost');
+
+    // find all include files
+    var INCLUDE_FILES=pkgconfl(e+'--field=includes'+'--keepleftmost');
+
+
+    // find the driver package
+    var DRIVER_PKG=pkgconfs(e+'--field=flx_requires_driver');
+    if DRIVER_PKG == "" do DRIVER_PKG="flx_run"; done
+
+    // find the driver entity
+    if spec.STATIC == 0 do
+      // dynamic linkage: the driver executable
+      if spec.LINKEXE == 0 do
+        var DRIVER_EXE= Filename::join$ list (
+          spec.FLX_TARGET_DIR,
+          "bin",
+          DRIVER_PKG+spec.EXT_EXE
+        );
+        var DRIVER_OBJS = Empty[string];
+      else
+      // dynamic linkage: the object files for executable with DLL support
+        DRIVER_OBJS =list(
+          Filename::join (list (
+            spec.FLX_TARGET_DIR,
+            "lib",
+            "rtl",
+            DRIVER_PKG+"_lib_static"+
+            spec.EXT_DYNAMIC_OBJ)),
+          Filename::join (list (
+            spec.FLX_TARGET_DIR,
+            "lib",
+            "rtl",
+            DRIVER_PKG+"_main"+spec.EXT_DYNAMIC_OBJ))
+        );
+        DRIVER_EXE = "";
+      done
+    else
+      // static linkage: the object files for full static link
+      DRIVER_OBJS =list(
+        Filename::join (list (
+          spec.FLX_TARGET_DIR,
+          "lib",
+          "rtl",
+          DRIVER_PKG+"_lib_static"+
+          spec.EXT_STATIC_OBJ)),
+        Filename::join (list (
+          spec.FLX_TARGET_DIR,
+          "lib",
+          "rtl",
+          DRIVER_PKG+"_main"+spec.EXT_STATIC_OBJ))
+      );
+      DRIVER_EXE = "";
+    done
+
+    if spec.STATIC == 0 do
+      if spec.LINKEXE == 0 do
+        // Linking a DLL
+        var LINK_STRINGS =
+          spec.DLINK_STRINGS+
+          spec.LINKER_SWITCHES+
+          pkgconfl(e+'-r'+'--keeprightmost'+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
+      else
+        // Linking an EXE (with DLL support)
+        LINK_STRINGS =
+          spec.DLINK_STRINGS +
+          spec.LINKER_SWITCHES+
+          pkgconfl(e+'-r'+'--keepleftmost'+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
+      done
+    else
+      // static linkage: all the libraries required by the application and driver
+      // This has to be recursive to find the closure.
+      // Linking an EXE (fully static)
+      LINK_STRINGS =
+        spec.SLINK_STRINGS+
+        spec.LINKER_SWITCHES+
+        pkgconfl(e+'-r'+'--keeprightmost'+'--field=provides_slib'+'--field=requires_slibs'+DRIVER_PKG);
+    done
+    LINK_STRINGS = fold_left
+      (fun (acc:list[string]) (elt:string) =>
+        if prefix (elt, "---") then
+         acc + split (elt.[2 to], char "=")
+        else acc + elt
+        endif
+      )
+      Empty[string]
+      LINK_STRINGS
+    ;
+
+    return ( 
+      CFLAGS = CFLAGS,
+      INCLUDE_FILES = INCLUDE_FILES,
+      DRIVER_EXE = DRIVER_EXE,
+      DRIVER_OBJS = DRIVER_OBJS,
+      LINK_STRINGS = LINK_STRINGS
+    );
+  }
+
+  proc write_include_file(path:string, INCLUDE_FILES:list[string]) {
+    var f = fopen_output(path+".includes");
+    List::iter  
+      (proc (i:string) { writeln$ f, "#include " + i; })
+      INCLUDE_FILES
+    ;
+    fclose f;
+  }
+
+}
+
+@
 

@@ -90,6 +90,7 @@ class FlxCache
       var filetime = FileStat::dfiletime(file,0.0);
       if filetime == 0.0 do
         println$ "Grammar include file '" + file "' doesn't exist, exiting";
+        // this one is pretty fatal :-)
         System::exit 1;
       done
       debugln$ "Grammar include file '" + file + "' time=" + FileStat::strfiletime(filetime);
@@ -105,6 +106,7 @@ class FlxCache
       filetime = FileStat::dfiletime(file,0.0);
       if filetime == 0.0 do
         println$ "Grammar file " + file " doesn't exist, exiting";
+        // this one is pretty fatal :-)
         System::exit 1;
       done
       debugln$ "Grammar file " + file + " time=" + FileStat::strfiletime(filetime);
@@ -246,6 +248,7 @@ class FlxCache
         println "WILL NOT DELETE CACHES";
         println$ "output cache " + spec.OUTPUT_DIR;
         println$ "binary cache " + spec.CACHE_DIR;
+        // INTENTIONAL EXIT
         System::exit(1);
       done
 
@@ -392,7 +395,8 @@ class FlxProfile
         endif
     ;
     if HOME == "" do
-        eprintln$ "HOME (or USERPROFILE on WIN32) environment variable is not set.  Please set HOME before building."; 
+      eprintln$ "HOME (or USERPROFILE on WIN32) environment variable is not set.  Please set HOME before building."; 
+      // this one is pretty fatal :-)
       System::exit 1;
     done 
 
@@ -542,6 +546,7 @@ class Config {
             cascade_FLX_TARGET_DIR cfg (FLX_INSTALL_DIR / a);
           else
             eprintln$ "Cannot set FLX_TARGET_SUBDIR without setting FLX_INSTALL_DIR";
+            // this one is pretty fatal :-)
             System::exit 1;
           done
 
@@ -2033,12 +2038,18 @@ object processing_env(
 
   var calpackages_run = false;
 
-  proc calpackages 
+/*
+  proc ehandler () {
+    eprintln$ "Flx: calpackages : failed, temporary ehandler invoked";
+    System::exit 1;
+  }
+*/
+  proc calpackages (ehandler:1->0) 
   {
     debugln$ "[flx:calpackages] Calculating package requirements (calpackages_run="+str calpackages_run +")";
     if not calpackages_run  do
       var tc = toolchain dflt_clang_config;
-      var x = FlxPkg::map_package_requirements 
+      var x = FlxPkg::map_package_requirements ehandler
       (
          FLX_TARGET_DIR = config.FLX_TARGET_DIR,
          FLX_CONFIG_DIRS = config.FLX_CONFIG_DIRS,
@@ -2154,7 +2165,7 @@ object processing_env(
     done
   }
 
-  gen run_felix_compiler_if_required () : int = 
+  gen run_felix_compiler_if_required (ehandler:1->0) : int = 
   {
     var result = 0;
     var uptodate = check_cxx_uptodate ();
@@ -2189,7 +2200,7 @@ object processing_env(
       showtime("Felix flxg   : "+dvars.cpp_filebase, t0);
       if result == 0 do
         debugln$ "Felix compilation succeeded";
-        calpackages;
+        calpackages ehandler;
         FlxPkg::write_include_file(dvars.cpp_filebase, control.EXTRA_INCLUDE_FILES);
       done
     else
@@ -2202,7 +2213,7 @@ object processing_env(
 //----------------------------------------------------------------------------
 
   // C++ dynamic (one file)
-  gen cxx_compile_dynamic1(src:string, dst:string) : int =
+  gen cxx_compile_dynamic1 (ehandler:1->0) (src:string, dst:string) : int =
   {
     var t0 = #Time::time;
     var pkgs = find_cxx_pkgs src;
@@ -2218,7 +2229,9 @@ object processing_env(
       var ret,mycflags = FlxPkgConfig::flx_pkgconfig(allargs);
       if ret != 0 do
         eprintln$ "[flx:cxx_compile_dynamic1] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
-        System::exit (1);
+        // FIXME
+        //System::exit (1);
+        throw_continuation ehandler;
       done
       pkg_cflags = mycflags;
     done
@@ -2242,7 +2255,7 @@ object processing_env(
   }
 
   // C++ dynamic (many files)
-  gen cxx_compile_dynamic () : int =
+  gen cxx_compile_dynamic (ehandler:1->0) : int =
   {
     var EXT_SHARED_OBJ = #((toolchain dflt_clang_config).dynamic_object_extension);
     if
@@ -2252,7 +2265,7 @@ object processing_env(
       control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 0)
     do
 //println$ "Compiling thunk";
-      var result = cxx_compile_dynamic1
+      var result = cxx_compile_dynamic1 ehandler
       (
         dvars.cpp_filebase+"_static_link_thunk.cpp",
         dvars.cpp_filebase+"_static_link_thunk"+EXT_SHARED_OBJ
@@ -2262,17 +2275,17 @@ object processing_env(
 
     if control.CXXONLY == 0 do
       if control.LINKIT == 0 do
-        result = cxx_compile_dynamic1 (dvars.cpp_filebase+".cpp", control.LINKER_OUTPUT_FILENAME);
+        result = cxx_compile_dynamic1 ehandler (dvars.cpp_filebase+".cpp", control.LINKER_OUTPUT_FILENAME);
         if result != 0 return result;
       else
-        result = cxx_compile_dynamic1 (dvars.cpp_filebase+".cpp", dvars.cpp_filebase+EXT_SHARED_OBJ);
+        result = cxx_compile_dynamic1 ehandler (dvars.cpp_filebase+".cpp", dvars.cpp_filebase+EXT_SHARED_OBJ);
         if result != 0 return result;
       done
     done
 
     for src in control.cpps do
       var dst = Filename::strip_extension src + EXT_SHARED_OBJ;
-      result = cxx_compile_dynamic1 (src,dst);
+      result = cxx_compile_dynamic1 ehandler (src,dst);
       if result != 0 return result;
       *&control.cppos += dst;
     done
@@ -2280,7 +2293,7 @@ object processing_env(
   }
 
   // C++ static (one file)
-  gen cxx_compile_static () : int = 
+  gen cxx_compile_static (ehandler:1->0) : int = 
   {
     // we only need the thunk if we're linking OR -o switch was NOT specified
     // i.e. skip compiling the thunk the output name was specified and 
@@ -2294,7 +2307,7 @@ object processing_env(
       control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 0)
     do
 //println$ "Compiling thunk";
-      var result = cxx_compile_static1
+      var result = cxx_compile_static1 ehandler
       (
         dvars.cpp_filebase+"_static_link_thunk.cpp",
         dvars.cpp_filebase+"_static_link_thunk"+EXT_STATIC_OBJ
@@ -2304,7 +2317,7 @@ object processing_env(
 
     for src in control.cpps do
       var dst = Filename::strip_extension src +EXT_STATIC_OBJ;
-      result = cxx_compile_static1 (src,dst);
+      result = cxx_compile_static1 ehandler (src,dst);
       if result != 0 return result;
       *&control.cppos += dst;
     done
@@ -2313,11 +2326,13 @@ object processing_env(
       if control.LINKIT == 0 do
   //println$ "Compile only " + control.LINKER_OUTPUT_FILENAME;
         // compile only
-        return cxx_compile_static1 (dvars.cpp_filebase+".cpp",control.LINKER_OUTPUT_FILENAME);
+        return cxx_compile_static1 ehandler
+          (dvars.cpp_filebase+".cpp",control.LINKER_OUTPUT_FILENAME);
       else 
         // compile and link
   //println$ "Compile and link " + dvars.cpp_filebase+EXT_STATIC_OBJ;
-        return cxx_compile_static1 (dvars.cpp_filebase+".cpp",dvars.cpp_filebase+EXT_STATIC_OBJ);
+        return cxx_compile_static1 ehandler
+          (dvars.cpp_filebase+".cpp",dvars.cpp_filebase+EXT_STATIC_OBJ);
       done
     else
       return 0;
@@ -2325,7 +2340,7 @@ object processing_env(
   }
 
   // C++ static (many files)
-  gen cxx_compile_static1 (src: string, dst: string) : int = 
+  gen cxx_compile_static1 ehandler (src: string, dst: string) : int = 
   {
 //println$ "cxx_compile_static1: " + src " -> " + dst;
     var t0 = #Time::time;
@@ -2342,6 +2357,7 @@ object processing_env(
       var ret,mycflags = FlxPkgConfig::flx_pkgconfig(allargs);
       if ret != 0 do
         eprintln$ "[flx:cxx_compile_static1] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
+        // FIXME
         System::exit (1);
       done
       pkg_cflags = mycflags;
@@ -2371,27 +2387,27 @@ object processing_env(
   }
 
   // C++ (many files)
-  gen run_cxx_compiler_if_required () : int = 
+  gen run_cxx_compiler_if_required (ehandler:1->0) : int = 
   {
     var result = 0;
     if control.STATIC == 0 do
       debugln "Dynamic linkage";
-      result = #cxx_compile_dynamic;
+      result = cxx_compile_dynamic ehandler;
     else
       debugln "Static linkage";
-      result = #cxx_compile_static;
+      result = cxx_compile_static ehandler;
     done
     return result;
   }
 
- gen ocaml_compile1 (deps:list[string], s:string) = {
+ gen ocaml_compile1 (ehandler:1->0) (deps:list[string], s:string) = {
     var xqt = dxqt (control.ECHO == 1 or control.DEBUG_FLX);
     var result = xqt("ocamlopt.opt -c " + cat " " deps + " "+ s);
     C_hack::ignore(result);
     return 0;
  }
 
- gen ocaml_compile () = {
+ gen ocaml_compile (ehandler:1->0) = {
     var deps = Empty[string];
     for src in control.ocamls do
       if suffix(src,".cmi") 
@@ -2399,7 +2415,7 @@ object processing_env(
       do
         deps+=src;
       else
-        var result = ocaml_compile1 (deps,src);
+        var result = ocaml_compile1 ehandler (deps,src);
         if result != 0 return result;
         if suffix(src,".mli") do
           deps+= src.[..-5]+".cmi";
@@ -2411,9 +2427,9 @@ object processing_env(
     return 0;
  }
 
- gen run_ocaml_compiler_if_required () : int =
+ gen run_ocaml_compiler_if_required (ehandler:1->0) : int =
  {
-   return #ocaml_compile;
+   return ocaml_compile ehandler;
  }
 
 /*
@@ -2459,7 +2475,7 @@ object processing_env(
   // ------------------------------------------------------------------
   // Link shared library (dll)
   // ------------------------------------------------------------------
-  gen cxx_link_shared_library () : int =
+  gen cxx_link_shared_library (ehandler:1->0) : int =
   {
     var t0 = #Time::time;
     var pkg_dstrings= Empty[string];
@@ -2474,7 +2490,9 @@ object processing_env(
       var ret,mydstrings = FlxPkgConfig::flx_pkgconfig(allargs);
       if ret != 0 do
         eprintln$ "[flx:cxx_link_shared_library] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
-        System::exit (1);
+        // FIXME
+        //System::exit (1);
+        throw_continuation ehandler;
       done
       pkg_dstrings = mydstrings;
     done
@@ -2511,16 +2529,16 @@ object processing_env(
     return result;
   }
 
-  gen cxx_link_shared_library_with_calpackages () : int = 
+  gen cxx_link_shared_library_with_calpackages (ehandler:1->0) : int = 
   {
-    calpackages;
-    return #cxx_link_shared_library;
+    calpackages ehandler;
+    return cxx_link_shared_library ehandler;
   }
 
   // ------------------------------------------------------------------
   // Link shared exe
   // ------------------------------------------------------------------
-  gen cxx_link_shared_exe () : int = 
+  gen cxx_link_shared_exe (ehandler:1->0) : int = 
   {
     var t0 = #Time::time;
     var pkg_dstrings= Empty[string];
@@ -2535,7 +2553,9 @@ object processing_env(
       var ret,mydstrings = FlxPkgConfig::flx_pkgconfig(allargs);
       if ret != 0 do
         eprintln$ "[flx:cxx_link_shared_exe] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
-        System::exit (1);
+        // FIXME
+        //System::exit (1);
+        throw_continuation ehandler;
       done
       pkg_dstrings = mydstrings;
     done
@@ -2581,16 +2601,16 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
     return result;
   }
 
-  gen cxx_link_shared_exe_with_calpackages() :  int = 
+  gen cxx_link_shared_exe_with_calpackages(ehandler:1->0) :  int = 
   {
-    calpackages;
-    return #cxx_link_shared_exe;
+    calpackages ehandler;
+    return cxx_link_shared_exe ehandler;
   }
 
   // ------------------------------------------------------------------
   // Link static exe
   // ------------------------------------------------------------------
-  gen cxx_link_static_exe () : int = 
+  gen cxx_link_static_exe (ehandler:1->0) : int = 
   {
     var t0 = #Time::time;
     var pkg_sstrings= Empty[string];
@@ -2605,7 +2625,9 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
       var ret,mysstrings = FlxPkgConfig::flx_pkgconfig(allargs);
       if ret != 0 do
         eprintln$ "[flx:cxx_link_static] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
-        System::exit (1);
+        // FIXME
+        //System::exit (1);
+        throw_continuation ehandler;
       done
       pkg_sstrings = mysstrings;
     done
@@ -2646,17 +2668,17 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
     return result;
   }
 
-  gen cxx_link_static_exe_with_calpackages() :  int = 
+  gen cxx_link_static_exe_with_calpackages(ehandler:1->0) :  int = 
   {
-    calpackages;
-    return #cxx_link_static_exe;
+    calpackages ehandler;
+    return cxx_link_static_exe ehandler;
   }
 
   // ------------------------------------------------------------------
   // Link static (archive) library
   // ------------------------------------------------------------------
 
-  gen cxx_static_library () : int = 
+  gen cxx_static_library (ehandler:1->0) : int = 
   {
     var t0 = #Time::time;
     var tc = toolchain  
@@ -2737,7 +2759,7 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
   }
 
 
-  gen run_linker_if_required() : int = 
+  gen run_linker_if_required(ehandler:1->0) : int = 
   {
     var result = 0;
     if control.CCOMPILEIT == 0 do
@@ -2750,16 +2772,16 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
         if control.STATIC == 0 do
           debugln "Dynamic linkage";
           if control.LINKEXE == 1 do
-            result = #cxx_link_shared_exe_with_calpackages;
+            result = cxx_link_shared_exe_with_calpackages ehandler;
           else
-            result = #cxx_link_shared_library_with_calpackages;
+            result = cxx_link_shared_library_with_calpackages ehandler;
           done
         else
           debugln "Static linkage";
           if control.STATICLIB == 1 do
-            result = #cxx_static_library;
+            result = cxx_static_library ehandler;
           else
-            result = #cxx_link_static_exe_with_calpackages;
+            result = cxx_link_static_exe_with_calpackages ehandler;
           done
         done
       done
@@ -2786,7 +2808,7 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
 // EXECUTION
 //----------------------------------------------------------------------------
   
-  gen run_program_dynamic () : int =
+  gen run_program_dynamic (ehandler:1->0) : int =
   {
     var result = 0;
     if control.CXXONLY == 0 do
@@ -2809,7 +2831,7 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
     return result;
   }
 
-  gen run_program_static () : int = 
+  gen run_program_static (ehandler:1->0) : int = 
   {
     var result = 0;
     var CMD = 
@@ -2826,23 +2848,23 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
   }
 
 
-  gen run_dynamic_with_calpackages () : int = 
+  gen run_dynamic_with_calpackages (ehandler:1->0) : int = 
   {
-    calpackages;
-    return #run_program_dynamic;
+    calpackages ehandler;
+    return run_program_dynamic ehandler;
   }
 
-  gen run_program_if_required () : int = 
+  gen run_program_if_required (ehandler:1->0) : int = 
   {
     var result = 0;
     if control.STATIC == 0 do
       debugln$ "Running dynamic program";
-      result = #run_dynamic_with_calpackages;
+      result = run_dynamic_with_calpackages ehandler;
     else
       // NOTE: since Felix sets environment variable for plugin loads ..
       // doesn't even a static program need calpackages?
       debugln$ "Running static program";
-      result = #run_program_static;
+      result = run_program_static ehandler;
     done
     return result;
   }
@@ -2881,10 +2903,10 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
 // ORDER OF OPERATION
 //----------------------------------------------------------------------------
 
-  method gen runit() : int = {
+  method gen runit(ehandler:1->0) : int = {
     var result = 0;
     if control.FELIX == 1 do
-      result = #run_felix_compiler_if_required;
+      result = run_felix_compiler_if_required ehandler;
       if result != 0 return result;
     else
       debugln$ "Felix compilation skipped by switch";
@@ -2894,33 +2916,33 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
     // for driver (needed to run dynamic program) and headers etc
     // (needed after flxg to complete C++ code gen) and link stuff
     // (needed for linkage)
-    calpackages;
+    calpackages ehandler;
     if control.LINKER_OUTPUT_FILENAME != "" do
        Directory::mkdirs (Filename::dirname control.LINKER_OUTPUT_FILENAME);
     done
 
     if control.CCOMPILEIT == 1 do
-      result = #run_cxx_compiler_if_required;
+      result = run_cxx_compiler_if_required ehandler;
       if result != 0 return result;
     else
       debugln "C++ compilation (and linking and running) skipped by switch";
     done
 
     if control.CCOMPILEIT == 1 do // use this switch for Ocaml compiles too
-      result = #run_ocaml_compiler_if_required;
+      result = run_ocaml_compiler_if_required ehandler;
     else 
       debugln "Ocaml compilation skipped by switch";
     done
 
     if control.LINKIT == 1 do
-      result = #run_linker_if_required;
+      result = run_linker_if_required ehandler;
       if result != 0 return result;
     else
       debugln "Link step skipped by switch";
     done
 
     if control.RUNIT == 1 do
-      result = #run_program_if_required;
+      result = run_program_if_required ehandler;
       if result != 0 return result;
     else
       debugln "Running program skipped by switch";
@@ -3024,15 +3046,21 @@ class Flx
     do
       if control*.CLEAR_CACHE != 1 do
         println "usage: flx [options] filename";
+        // TOP LEVEL FLX, OK
         System::exit(1);
       done
+      // TOP LEVEL FLX, OK
       System::exit(0);
     done
 
     var pkgconfig = FlxPkgConfig::FlxPkgConfigQuery$ config*.FLX_CONFIG_DIRS;
-    
+    proc ehandler () {
+      eprintln$ "Flx: default ehandler: temporary ehandler invoked";
+      System::exit 1;
+    }
+ 
     var toolchain_name = 
-      if control*.FLX_TOOLCHAIN == "" then pkgconfig.getpkgfield1 ("toolchain", "toolchain")
+      if control*.FLX_TOOLCHAIN == "" then pkgconfig.getpkgfield1 ehandler ("toolchain", "toolchain")
       else control*.FLX_TOOLCHAIN
     ;
 
@@ -3078,7 +3106,11 @@ class Flx
           var dvars = FlxDepvars::cal_depvars(toolchain,*config,control,*loopctl);
           println$ f"Processing [%02d/%02d]: %S" (i, n, file);
           var pe = processing_env(toolchain,*config,*control,dvars);
-          result = pe.runit();
+proc ehandler() {
+  eprintln("BATCH MODE ERROR HANDLER");
+  System::exit 1;
+}
+          result = pe.runit(ehandler);
           if result == 0 do ++pass; else ++fail; done
           if control*.NONSTOP==0 and  result != 0 goto endoff;
           ++i;
@@ -3093,10 +3125,11 @@ class Flx
         if not feof (stdin) do
           var dvars = FlxDepvars::cal_depvars(toolchain,*config,control, *loopctl);
           var pe = processing_env(toolchain,*config,*control,dvars);
-          result = pe.runit();
+          result = pe.runit(ehandler);
           goto again;
         else
           println$ "Bye!";
+          // TOP LEVEL REPL, OK
           System::exit 0;
         done
       end
@@ -3111,7 +3144,7 @@ class Flx
         done
         var dvars = FlxDepvars::cal_depvars(toolchain,*config,control, *loopctl);
         var pe = processing_env(toolchain,*config,*control,dvars);
-        result = pe.runit();
+        result = pe.runit(ehandler);
       end 
     done
 endoff:>
@@ -3184,16 +3217,21 @@ class BootFlx
     if loopctl*.base == "" and control*.INREGEX == "" do
       if control*.CLEAR_CACHE != 1 do
         println "usage: flx [options] filename";
+        // TOP LEVEL FLX, OK
         System::exit(1);
       done
+      // TOP LEVEL FLX, OK
       System::exit(0);
     done
 
-
+    proc ehandler () {
+      eprintln$ "BOOTFLX: Flx_pkgconfig getpkgfiled1 failed, temporary ehandler invoked";
+      System::exit 1;
+    }
     var dbdir = config*.FLX_TARGET_DIR / "config";
     var pkgconfig = FlxPkgConfig::FlxPkgConfigQuery$ list[string] dbdir;
     var toolchain_name = 
-      if control*.FLX_TOOLCHAIN == "" then pkgconfig.getpkgfield1 ("toolchain", "toolchain")
+      if control*.FLX_TOOLCHAIN == "" then pkgconfig.getpkgfield1 ehandler ("toolchain", "toolchain")
       else control*.FLX_TOOLCHAIN
     ;
 
@@ -3237,7 +3275,7 @@ class BootFlx
           var dvars = FlxDepvars::cal_depvars(toolchain,*config,control,*loopctl);
           println$ f"Processing [%02d/%02d]: %S" (i, n, file);
           var pe = processing_env(toolchain,*config,*control,dvars);
-          result = pe.runit();
+          result = pe.runit(ehandler);
           if result != 0 goto endoff;
           ++i;
         done 
@@ -3253,7 +3291,7 @@ class BootFlx
         done
         var dvars = FlxDepvars::cal_depvars(toolchain,*config,control, *loopctl);
         var pe = processing_env(toolchain,*config,*control,dvars);
-        result = pe.runit();
+        result = pe.runit(ehandler);
       end 
     done
 endoff:>

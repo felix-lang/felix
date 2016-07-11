@@ -617,8 +617,13 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_record_type (sr,_)
   | EXPR_polyrecord_type (sr,_,_)
   | EXPR_variant_type (sr,_) ->
-     clierrx "[flx_desugar/flx_macro.ml:613: E333] " sr "Record, variant, or extension type cannot be used as an expression"
+     clierrx "[flx_desugar/flx_macro.ml:613: E333] " sr "Record, polyrecord or variant type cannot be used as an expression"
 
+(*
+  | EXPR_record_type (sr,flds) -> EXPR_record_type (sr, List.map (fun (s,t) -> s, mt sr t) flds)
+  | EXPR_polyrecord_type (sr,flds,v) -> EXPR_polyrecord_type (sr, List.map (fun (s,t) -> s, mt sr t) flds, mt sr v)
+  | EXPR_variant_type (sr,flds) -> EXPR_variant_type (sr, List.map (fun (s,t) -> s, mt sr t) flds)
+*)
   | EXPR_arrayof (sr, es) -> EXPR_arrayof (sr, List.map me es)
   | EXPR_coercion (sr, (e1, t)) -> EXPR_coercion (sr, (me e1,mt sr t))
   | EXPR_suffix (sr, (qn, t)) ->
@@ -1187,6 +1192,9 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       reachable := !r1 || !r2
     end
 
+
+  | STMT_call_with_trap (sr, e1, e2) ->
+    ctack (STMT_call_with_trap (sr, me e1, me e2));
 
   | STMT_jump (sr, e1, e2) ->
     ctack (STMT_jump (sr, me e1, me e2));

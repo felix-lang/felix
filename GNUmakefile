@@ -243,7 +243,9 @@ tutopt-check: tutopt-dir
 	# to use it.
 	# ============================================================
 	#
-	-FLX_INSTALL_DIR=${BUILDROOT} ${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --input --nonstop --indir=${BUILDROOT}/test/tutopt --regex='.*\.flx' ${BUILDROOT}/test/tutopt
+	-FLX_INSTALL_DIR=${BUILDROOT} ${BUILDROOT}/host/bin/flx --felix=build.fpc \
+		--usage=prototype --expect --input --nonstop \
+		--indir=${BUILDROOT}/test/tutopt --regex='.*\.flx' ${BUILDROOT}/test/tutopt
 
 
 test: regress-check tut-check tutopt-check extras-check

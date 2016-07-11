@@ -321,6 +321,7 @@ let fold_vars syms bsym_table uses i ps exes : Flx_bexe.t list =
           | BEXE_jump_direct _
           | BEXE_call_prim _
           | BEXE_call _
+          | BEXE_call_with_trap _
           | BEXE_call_direct _
           | BEXE_call_stack _
              -> subs := false; elimi exe

@@ -11,6 +11,7 @@ type t =
   | BEXE_ifgoto of Flx_srcref.t * Flx_bexpr.t * Flx_types.bid_t (* for internal use only *)
   | BEXE_ifcgoto of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
   | BEXE_call of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
+  | BEXE_call_with_trap of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
   | BEXE_call_direct of Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t
   | BEXE_call_stack of Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t
   | BEXE_call_prim of Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t
@@ -47,6 +48,7 @@ let bexe_cgoto (sr,e) = BEXE_cgoto (sr,e)
 let bexe_ifcgoto (sr,e1,e2) = BEXE_ifcgoto (sr,e1,e2)
 let bexe_ifgoto (sr,e,i) = BEXE_ifgoto (sr,e,i)
 let bexe_call (sr,e1,e2) = BEXE_call (sr,e1,e2)
+let bexe_call_with_trap (sr,e1,e2) = BEXE_call_with_trap (sr,e1,e2)
 let bexe_call_direct (sr,bid,ts,e) = BEXE_call_direct (sr,bid,ts,e)
 let bexe_call_stack (sr,bid,ts,e) = BEXE_call_stack (sr,bid,ts,e)
 let bexe_call_prim (sr,bid,ts,e) = BEXE_call_prim (sr,bid,ts,e)
@@ -89,6 +91,7 @@ let get_srcref = function
   | BEXE_label (sr,_)
   | BEXE_comment (sr,_)
   | BEXE_call (sr,_,_)
+  | BEXE_call_with_trap (sr,_,_)
   | BEXE_call_direct (sr,_,_,_)
   | BEXE_jump_direct (sr,_,_,_)
   | BEXE_call_stack (sr,_,_,_)
@@ -141,6 +144,7 @@ let iter
       f_bexpr e2
   | BEXE_assign (sr,e1,e2)
   | BEXE_call (sr,e1,e2)
+  | BEXE_call_with_trap (sr,e1,e2)
   | BEXE_jump (sr,e1,e2) ->
       f_bexpr e1;
       f_bexpr e2
@@ -198,6 +202,7 @@ let map
       BEXE_jump_direct (sr,f_bid i,List.map f_btype ts,f_bexpr e2)
   | BEXE_assign (sr,e1,e2) -> BEXE_assign (sr,f_bexpr e1,f_bexpr e2)
   | BEXE_call (sr,e1,e2) -> BEXE_call (sr,f_bexpr e1,f_bexpr e2)
+  | BEXE_call_with_trap (sr,e1,e2) -> BEXE_call_with_trap (sr,f_bexpr e1,f_bexpr e2)
   | BEXE_jump (sr,e1,e2) -> BEXE_jump (sr,f_bexpr e1,f_bexpr e2)
   | BEXE_ifgoto (sr,e,idx) -> BEXE_ifgoto (sr,f_bexpr e, f_bid idx)
   | BEXE_label (sr,idx) -> BEXE_label (sr, f_bid idx)

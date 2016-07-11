@@ -541,6 +541,7 @@ and statement_t =
   | STMT_invariant of Flx_srcref.t * expr_t
   | STMT_ifdo of Flx_srcref.t * expr_t * statement_t list * statement_t list
   | STMT_call of Flx_srcref.t * expr_t * expr_t
+  | STMT_call_with_trap of Flx_srcref.t * expr_t * expr_t
   | STMT_assign of Flx_srcref.t * Flx_id.t * tlvalue_t * expr_t
   | STMT_cassign of Flx_srcref.t * expr_t * expr_t
   | STMT_jump of Flx_srcref.t * expr_t * expr_t
@@ -633,6 +634,7 @@ type exe_t =
   | EXE_ifcgoto of expr_t * expr_t (* for internal use only *)
   | EXE_ifgoto of expr_t * string  (* for internal use only *)
   | EXE_call of expr_t * expr_t
+  | EXE_call_with_trap of expr_t * expr_t
   | EXE_jump of expr_t * expr_t
   | EXE_loop of Flx_id.t * expr_t
   | EXE_svc of Flx_id.t
@@ -828,6 +830,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_assign (s,_,_,_)
   | STMT_cassign (s, _,_)
   | STMT_call (s,_,_)
+  | STMT_call_with_trap (s,_,_)
   | STMT_jump (s,_,_)
   | STMT_loop (s,_,_)
   | STMT_svc (s,_)

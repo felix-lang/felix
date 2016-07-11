@@ -164,7 +164,8 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
           | Function ->
             if is_jump && not is_ehandler
             then
-              clierrx "[flx_cpp_backend/flx_gen_exe.ml:167: E300] " sr ("[gen_exe] can't jump inside function " ^ caller_name ^" to " ^ called_name ^ 
+              clierrx "[flx_cpp_backend/flx_gen_exe.ml:167: E300] " 
+                sr ("[gen_exe] can't jump inside function " ^ caller_name ^" to " ^ called_name ^ 
                ", return type " ^ sbt bsym_table ret)
             else if stack_call then ""
             else "0"
@@ -701,13 +702,33 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       let ts = List.map tsub ts in
       handle_closure sr true index ts subs x false
 
-    (* If p is a variable containing a closure,
-       and p recursively invokes the same closure,
-       then the program counter and other state
-       of the closure would be lost, so we clone it
-       instead .. the closure variables is never
-       used (a waste if it isn't re-entered .. oh well)
-     *)
+    (* Note: same semantics in both functions and procedures.
+       so call with trap CANNOT handle service calls
+    *)
+    | BEXE_call_with_trap (sr,p,a) ->
+      let args =
+        let this = "0" in
+        match a with
+          | _,BTYP_tuple [] -> this
+          | _ -> this ^ ", " ^ ge sr a
+      in
+      (if with_comments then
+        "      //run procedure " ^ src_str ^ "\n"
+      else "") ^
+        "      {\n" ^
+        "        ::flx::rtl::con_t *_p = ("^ge sr p ^ ")->clone()\n      ->call("^args^");\n" ^
+        "        retry: while(_p) {\n" ^
+        "          if(_p->p_svc) {\n" ^
+        "            int svc = _p->p_svc->variant;\n" ^
+        "            fprintf(stderr,\"call_with_trap procedure which does service call %d: %s\\n\",\n"^
+        "                svc,::flx::rtl::describe_service_call(svc));\n"^
+        "            abort();\n" ^
+        "          }\n"^
+        "          try { _p=_p->resume(); } \n" ^
+        "          catch (::flx::rtl::con_t *_q) { _p = _q; goto retry; }\n" ^
+        "        }\n"^
+        "      }\n"
+
 
     | BEXE_call (sr,p,a) ->
       let args =
@@ -754,7 +775,15 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         else "") ^
         "      {\n" ^
         "        ::flx::rtl::con_t *_p = ("^ge sr p ^ ")->clone()\n      ->call("^args^");\n" ^
-        "        while(_p) _p=_p->resume();\n" ^
+        "        while(_p) {\n" ^
+        "          if(_p->p_svc) {\n" ^
+        "            int svc = _p->p_svc->variant;\n" ^
+        "            fprintf(stderr,\"Function calls procedure which does service call %d: %s\\n\",\n"^
+        "                svc,::flx::rtl::describe_service_call(svc));\n"^
+        "            abort();\n" ^
+        "          }\n"^
+        "          _p=_p->resume();\n" ^
+        "        }\n"^
         "      }\n"
 
 

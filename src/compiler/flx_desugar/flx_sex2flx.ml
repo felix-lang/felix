@@ -854,6 +854,7 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
 
   | Lst [Id "ast_ifdo"; sr; e; sts1; sts2] -> let sr = xsr sr in STMT_ifdo (sr,ex sr e, xsts sr sts1, xsts sr sts2)
   | Lst [Id "ast_call"; sr; f; a] -> let sr = xsr sr in STMT_call (sr,ex sr f,ex sr a)
+  | Lst [Id "ast_call_with_trap"; sr; f; a] -> let sr = xsr sr in STMT_call_with_trap (sr,ex sr f,ex sr a)
   | Lst [Id "ast_assign"; sr; id; tlv; a] -> let sr = xsr sr in 
       STMT_assign (sr, xid id, xtlv sr tlv, ex sr a)
   | Lst [Id "ast_cassign"; sr; e1; e2] -> let sr = xsr sr in STMT_cassign (sr,ex sr e1, ex sr e2)

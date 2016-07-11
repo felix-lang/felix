@@ -479,6 +479,7 @@ let rec can_stack_proc
 
 
     | BEXE_call _
+    | BEXE_call_with_trap _
        ->
        (*
        print_endline (id ^ " does nasty call");

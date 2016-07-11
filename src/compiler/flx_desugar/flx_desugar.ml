@@ -610,6 +610,12 @@ print_endline ("Translating Lazy Declaration " ^ name);
     let d2,x2 = rex arg in
     d1 @ d2 @ [Exe (sr,EXE_call (x1,x2))]
 
+  | STMT_call_with_trap (sr,proc, arg) ->
+    let d1,x1 = rex proc in
+    let d2,x2 = rex arg in
+    d1 @ d2 @ [Exe (sr,EXE_call_with_trap (x1,x2))]
+
+
   | STMT_init (sr,v,e) ->
     let d,x = rex e in
     d @ [Exe (sr,EXE_init (v,e))]
