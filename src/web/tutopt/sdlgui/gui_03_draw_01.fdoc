@@ -1,3 +1,5 @@
+@title basic drawing
+@felix
 include "gui/__init__";
 open FlxGui;
 
@@ -33,4 +35,5 @@ w.update();
 w.show();
 
 Faio::sleep(clock,15.0);
+@
 

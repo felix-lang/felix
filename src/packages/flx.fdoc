@@ -3106,11 +3106,15 @@ class Flx
           var dvars = FlxDepvars::cal_depvars(toolchain,*config,control,*loopctl);
           println$ f"Processing [%02d/%02d]: %S" (i, n, file);
           var pe = processing_env(toolchain,*config,*control,dvars);
-proc ehandler() {
-  eprintln("BATCH MODE ERROR HANDLER");
-  System::exit 1;
-}
-          result = pe.runit(ehandler);
+          call_with_trap {
+            proc ehandler() {
+              eprintln("BATCH MODE ERROR HANDLER");
+              result = 1;
+              goto err;
+             }
+             result = pe.runit(ehandler);
+           err:>
+          };
           if result == 0 do ++pass; else ++fail; done
           if control*.NONSTOP==0 and  result != 0 goto endoff;
           ++i;
