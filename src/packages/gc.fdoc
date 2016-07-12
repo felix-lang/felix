@@ -885,7 +885,8 @@ private:
   FILE *tracefile;
 public:
   void scan_object(void *memory, int reclimit);
-  void *j_tmp;
+  //void *j_tmp;
+   ::std::set<Word_t> j_tmp;
   JError_t je;
 };
 
@@ -1057,7 +1058,7 @@ flx_collector_t::flx_collector_t(
   ,j_shape(0)
   ,j_nalloc(0)
   ,j_nused(0)
-  ,j_tmp(0)
+  //,j_tmp(0)
   ,tracefile(tf)
 {
   if(tf)
@@ -1280,7 +1281,8 @@ void flx_collector_t::unlink(void *fp)
 
 void flx_collector_t::post_delete(void *fp)
 {
-  Judy1Set(&j_tmp,(Word_t)fp,&je);
+  j_tmp.insert ((Word_t)fp);
+  //Judy1Set(&j_tmp,(Word_t)fp,&je);
   if(tracefile)
     fprintf(tracefile,"IT: %p\n",fp);
 
@@ -1295,17 +1297,22 @@ size_t flx_collector_t::reap ()
 {
   size_t count = 0;
   Word_t next=(Word_t)NULL;
-  int res = Judy1First(j_tmp,&next,&je);
+  //int res = Judy1First(j_tmp,&next,&je);
+  auto it = j_tmp.begin();
+  auto ite = j_tmp.end();
   if(tracefile)
     fprintf(tracefile,"FT: %p\n",next);
-  while(res) {
+  //while(res) {
+  for (;it!=ite; ++it) {
+    next = *it;
     delete_frame((void*)next);
     ++count;
-    res = Judy1Next(j_tmp,&next,&je);
+    //res = Judy1Next(j_tmp,&next,&je);
     if(tracefile)
       fprintf(tracefile,"NT: %p\n",next);
   }
-  Judy1FreeArray(&j_tmp,&je);
+  //Judy1FreeArray(&j_tmp,&je);
+  j_tmp.clear();
   if(tracefile)
     fprintf(tracefile,"CT:\n");
   if(debug) 
@@ -1358,7 +1365,8 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
   // them in this set rather than examining them immediately.
   // Later we come back and examine them. This buffers the recursion
   // a bit. The set has to be empty initially.
-  assert(j_tmp == 0);
+  //assert(j_tmp == 0);
+  assert(j_tmp.empty());
 
   // px is a set of memory ranges representing the stacks
   // of all pthreads including this one at the point the
@@ -1427,21 +1435,24 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
   //
   // Note: Judy1First finds the first key greater than or equal to the given one,
   // it returns 0 if there is no such key.
-  Word_t toscan = 0;
-  int res = Judy1First(j_tmp,&toscan,&je); // get one object scheduled for scanning
-  if(tracefile)
-    fprintf(tracefile,"FT: %p\n",toscan);
-  while(res) {
-    Judy1Unset(&j_tmp,toscan,&je);         // remove it immediately
+  //Word_t toscan = 0;
+  //int res = Judy1First(j_tmp,&toscan,&je); // get one object scheduled for scanning
+  //if(tracefile)
+  //  fprintf(tracefile,"FT: %p\n",toscan);
+  //while(res) {
+  while(!(j_tmp.empty())) {
+    //Judy1Unset(&j_tmp,toscan,&je);         // remove it immediately
+    Word_t toscan = *(j_tmp.begin());
+    j_tmp.erase (j_tmp.begin());
     if(tracefile)
       fprintf(tracefile,"DT: %p\n",toscan);
     scan_object((void*)toscan, reclimit);  // scan it, it will either be marked or discarded
-    toscan = 0;
-    res = Judy1First(j_tmp,&toscan,&je); 
+    //toscan = 0;
+    //res = Judy1First(j_tmp,&toscan,&je); 
     if(tracefile)
       fprintf(tracefile,"FT: %p\n",toscan);
   }                                     
-  assert(j_tmp == 0);                  
+  //assert(j_tmp == 0);                  
 
   if(debug)
     fprintf(stderr, "[gc] Done Scanning roots\n");
@@ -1575,7 +1586,8 @@ void flx_collector_t::register_pointer(void *q, int reclimit)
 {
   if(reclimit==0) 
   {
-    Judy1Set(&j_tmp,(Word_t)q,&je);
+    //Judy1Set(&j_tmp,(Word_t)q,&je);
+    j_tmp.insert((Word_t)q);
     if(tracefile)
       fprintf(tracefile,"IT: %p\n",q);
   }
@@ -1696,7 +1708,8 @@ again:
       if(debug)
       //  fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
       if(reclimit==0) {
-        Judy1Set(&j_tmp,(Word_t)*i,&je);
+        //Judy1Set(&j_tmp,(Word_t)*i,&je);
+        j_tmp.insert((Word_t)*i);
         if(tracefile)
           fprintf(tracefile,"IT: %p\n",*i);
       }
