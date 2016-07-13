@@ -1,0 +1,18 @@
+
+@h1 object-invariant-01.flx
+
+@felix
+
+object A
+  (var x:int when x > 0) =
+{
+  method proc setX(x2:int) { x = x2; }
+  method fun getX() => x;
+}
+var it = A 3;
+it.setX(2);
+println$ it.getX();
+
+@expect
+2
+@

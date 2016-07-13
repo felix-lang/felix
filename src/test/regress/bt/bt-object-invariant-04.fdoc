@@ -1,0 +1,18 @@
+
+@h1 bt-object-invariant-04.flx
+
+@felix
+
+object A
+  (var x:int when x > 0) 
+  (var y:int when y > 0) =
+{
+  method proc setX(x2:int) { x = x2; }
+  method proc setY(y2:int) { y = y2; }
+  method fun getX() => x;
+  method fun getY() => y;
+}
+var it = A 0 3;
+
+@expect
+@

@@ -81,8 +81,13 @@ let propagate_invariants body invariants sr =
     (* propagate invariants to deeper levels (i.e. object -> method) *)
     | STMT_curry (sr, name, vs, pss, (res,traint) , effects, kind, adjectives, ss)
             when kind = `Method || kind = `GeneratorMethod -> 
-
         let inv2 = addpost traint invariants in 
+        (*
+        print_endline ("Propagating invariants to child STMT_curry: " ^ name ^ " constraints=" ^ 
+          match inv2 with
+          | Some (t) -> string_of_expr t
+          | None -> "");
+        *)
         newstatements := 
           STMT_curry (sr,name, vs, pss, (res,inv2) , effects, kind, adjectives, ss)
           :: !newstatements
@@ -149,9 +154,9 @@ let mkcurry seq sr name vs args return_type effects kind body props =
 
   (* preflight checks *)
   if List.mem `Lvalue props then
-    clierrx "[flx_desugar/flx_curry.ml:152: E318] " sr "Felix function cannot return lvalue";
+    clierrx "[flx_desugar/flx_curry.ml:157: E318] " sr "Felix function cannot return lvalue";
   if List.mem `Pure props && match return_type with  | TYP_void _,_ -> true | _ -> false then
-    clierrx "[flx_desugar/flx_curry.ml:154: E319] " sr "Felix procedure cannot be pure";
+    clierrx "[flx_desugar/flx_curry.ml:159: E319] " sr "Felix procedure cannot be pure";
 
   (* Manipulate the type variables ----- *)
 
@@ -200,13 +205,20 @@ let mkcurry seq sr name vs args return_type effects kind body props =
   in
 
   let isobject = kind = `Object in
-  let rec aux (args:params_t list) (vs:vs_list_t) props =
+  let rec aux (args:params_t list) (vs:vs_list_t) props (detached_args:params_t list) = 
 
     (* Gather invariants from: param constraints and from invariant statements *)
     let _,traints = List.split args in
     let pre_inv = match traints with | Some(h) :: t -> Some(h) | _ -> None in
     let post_inv = invariants_of_stmts body sr in 
     let invariants = inv_join pre_inv post_inv sr in
+
+    (* Don't forget to propagate the invariants from params that are dropped when currying. *)
+    if List.length detached_args > 1 then 
+        clierrx "[flx_desugar/flx_curry.ml:218: E320_2] " sr "Detached args expected to be of length 0 or 1";
+    let _,traints = List.split detached_args in
+    let pre_inv = match traints with | Some(h) :: t -> Some(h) | _ -> None in
+    let invariants = inv_join pre_inv invariants sr in
 
     (* propagate invariants into child functions *)
     let body = propagate_invariants body invariants sr in
@@ -244,7 +256,7 @@ let mkcurry seq sr name vs args return_type effects kind body props =
             in
             STMT_lazy_decl (sr, synthname n, vs, rt, Some e)
           | _ ->
-            clierrx "[flx_desugar/flx_curry.ml:247: E320] " sr "Function with no arguments"
+            clierrx "[flx_desugar/flx_curry.ml:260: E320] " sr "Function with no arguments"
           end
         end
 
@@ -261,8 +273,8 @@ let mkcurry seq sr name vs args return_type effects kind body props =
             print_endline ("Statement " ^ Flx_print.string_of_statement 2 st);
             *)
             match st with
-            | STMT_fun_return _ -> clierrx "[flx_desugar/flx_curry.ml:264: E321] " sr "FOUND function RETURN in Object";
-            | STMT_proc_return _ -> clierrx "[flx_desugar/flx_curry.ml:265: E322] " sr "FOUND procedure RETURN in Object";
+            | STMT_fun_return _ -> clierrx "[flx_desugar/flx_curry.ml:277: E321] " sr "FOUND function RETURN in Object";
+            | STMT_proc_return _ -> clierrx "[flx_desugar/flx_curry.ml:278: E322] " sr "FOUND procedure RETURN in Object";
             | STMT_curry (_,name, vs, pss, (res,traint) , effects, kind, adjectives, ss)
                 when kind = `Method || kind = `GeneratorMethod -> 
                 methods := name :: !methods
@@ -311,13 +323,13 @@ let mkcurry seq sr name vs args return_type effects kind body props =
       in
       let m = List.length args in
       let body = [ 
-        aux t dfltvs []; 
+        aux t dfltvs [] [h];
         STMT_fun_return ( sr, EXPR_suffix ( sr, ( `AST_name (sr,synthname (m-1),[]),argt))) ] 
       in
       let noeffects = Flx_typing.flx_unit in
       STMT_function (sr, synthname m, vs, h, (rettype t effects,postcondition), noeffects,`Generated "curry"::props, body)
 
-   in aux args vs (cal_props kind props)
+   in aux args vs (cal_props kind props) []
 
 
 

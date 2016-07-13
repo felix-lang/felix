@@ -222,7 +222,13 @@ regress-check: test-dir
 	# RUNNING REGRESSION TESTS
 	#
 	# ============================================================
+	@echo "--------------------------------------"
+	@echo "All of the following tests should fail"
+	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/regress/bt --regex='.*\.flx' ${BUILDROOT}/test 2>&1 | egrep "Processing|Batch|Felix location"
+	@echo "--------------------------------------"
+	@echo "All of the following tests should pass"
 	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/regress/rt --regex='.*\.flx' ${BUILDROOT}/test
+
 
 tut-check: tut-dir
 	# ============================================================
