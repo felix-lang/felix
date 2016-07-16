@@ -410,7 +410,7 @@ struct GC_EXTERN collector_t
   // Integrity check for the data structure being managed.
   // array management
   virtual void set_used(void *memory, size_t)=0;
-  virtual void incr_used(void *memory, size_t)=0;
+  virtual void incr_used(void *memory, ptrdiff_t)=0;
   virtual size_t get_used(void *memory)=0;
   virtual size_t get_count(void *memory)=0;
   virtual void *create_empty_array( gc_shape_t *shape, size_t count)=0;
@@ -808,7 +808,7 @@ struct GC_EXTERN flx_collector_t : public collector_t
   void impl_free_all_mem(); // clear all roots, sweep.
 
   void set_used(void *memory, size_t);
-  void incr_used(void *memory, size_t);
+  void incr_used(void *memory, ptrdiff_t);
   size_t get_used(void *memory);
   size_t get_count(void *memory);
   void *create_empty_array( gc_shape_t *shape, size_t count);
@@ -1151,12 +1151,19 @@ void flx_collector_t::set_used(void *memory, size_t n)
   *p = (Word_t)n;
 }
 
-void flx_collector_t::incr_used(void *memory, size_t n)
+void flx_collector_t::incr_used(void *memory, ptrdiff_t n)
 {
   assert(memory);
-  assert(n>=0);
   //fprintf(stderr,"Incr used of %p by %zu\n",memory,n);
-  assert(get_used(memory) + n <= get_count(memory));
+  //assert(get_used(memory) + n <= get_count(memory));
+  ptrdiff_t newused = (ptrdiff_t)get_used(memory) + n;
+  if (newused < 0 || newused > get_count(memory)) {
+    fprintf(stderr,"Address %p count %d used %d increment %d\n",
+      memory,(int)get_count(memory), (int)get_used(memory),(int)n);
+    fprintf(stderr,"Type %s\n",get_shape(memory)->cname);
+    assert(false);
+  }
+
   Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
   if(tracefile) 
     fprintf(tracefile,"GU: %p\n",memory);
@@ -1168,9 +1175,9 @@ void flx_collector_t::incr_used(void *memory, size_t n)
     if(tracefile) 
       fprintf(tracefile,"IU: %p\n",memory);
     if(p==(Word_t*)PPJERR)judyerror("incr_used: new slot");
-    *p = n+1;
+    *p = newused;
   }
-  else *p+=n;
+  else *p=newused;
 }
 
 // actual number of used slots in an array
@@ -1670,7 +1677,7 @@ flx_collector_t::memdata_t flx_collector_t::check_interior (void *p)
   gc_shape_t *pshape = SHAPE(*ppshape);
 
   // calculate the length of the candidate object in bytes
-  size_t exterior_count = get_used((void*)head);
+  size_t exterior_count = get_count((void*)head);
   size_t n = exterior_count * pshape->count * pshape->amt;
 
   // if our pointer is greater than or equal to the "one past the end"
