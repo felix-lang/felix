@@ -176,6 +176,7 @@ public:
 #define __FLX_GC_H__
 
 #include <cstdlib>
+#include <stddef.h>
 #include "flx_gc_config.hpp"
 #include "pthread_thread_control_base.hpp"
 #include <string>
