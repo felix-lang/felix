@@ -54,24 +54,6 @@ class Flx(fbuild.db.PersistentObject):
         return self.ctx.execute(cmd, *args, **kwargs)
 
     def check_flags(self, flags=[]):
-        if flags:
-            self.ctx.logger.check('checking %s with %s' %
-                (self, ' '.join(flags)))
-        else:
-            self.ctx.logger.check('checking %s' % self)
-
-        with tempfile('', suffix='.flx') as src:
-            try:
-                self(src, flags=flags, quieter=1)
-            except fbuild.ExecutionError as e:
-                self.ctx.logger.failed()
-                if e.stdout:
-                    self.ctx.logger.log(e.stdout.decode())
-                if e.stderr:
-                    self.ctx.logger.log(e.stderr.decode())
-                return False
-
-        self.ctx.logger.passed()
         return True
 
     def __str__(self):
