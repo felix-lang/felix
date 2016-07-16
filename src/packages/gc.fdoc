@@ -861,7 +861,10 @@ private:
   size_t root_count;
   size_t allocation_amt;
 
+  uintptr_t minptr;
+  uintptr_t maxptr;
 
+  bool inrange(void *p) { return minptr <= uintptr_t(p) && uintptr_t(p) < maxptr; }
   void unlink(void *frame);
   void v_finalise(void *frame);
   void post_delete(void *frame);
@@ -884,9 +887,14 @@ private:
   void *j_nused;
   FILE *tracefile;
 public:
+  struct memdata_t {
+    void *head;
+    gc_shape_t *pshape;
+    size_t nbytes;
+  };
   void scan_object(void *memory, int reclimit);
-  //void *j_tmp;
-   ::std::set<Word_t> j_tmp;
+  memdata_t check_interior (void *memory);
+  void *j_tmp;
   JError_t je;
 };
 
@@ -1058,7 +1066,9 @@ flx_collector_t::flx_collector_t(
   ,j_shape(0)
   ,j_nalloc(0)
   ,j_nused(0)
-  //,j_tmp(0)
+  ,j_tmp(0)
+  ,minptr(~uintptr_t(0))
+  ,maxptr(0)
   ,tracefile(tf)
 {
   if(tf)
@@ -1110,6 +1120,8 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
   allocation_amt += amt;
   //fprintf(stderr,"ADDING %zu to allocation amt, result %zu\n",amt,allocation_amt);
   // return client memory pointer
+  minptr=::std::min(minptr,uintptr_t(fp));
+  maxptr=::std::max(maxptr,uintptr_t(fp)+amt);
   return fp;
 }
 
@@ -1281,8 +1293,7 @@ void flx_collector_t::unlink(void *fp)
 
 void flx_collector_t::post_delete(void *fp)
 {
-  j_tmp.insert ((Word_t)fp);
-  //Judy1Set(&j_tmp,(Word_t)fp,&je);
+  Judy1Set(&j_tmp,(Word_t)fp,&je);
   if(tracefile)
     fprintf(tracefile,"IT: %p\n",fp);
 
@@ -1297,22 +1308,17 @@ size_t flx_collector_t::reap ()
 {
   size_t count = 0;
   Word_t next=(Word_t)NULL;
-  //int res = Judy1First(j_tmp,&next,&je);
-  auto it = j_tmp.begin();
-  auto ite = j_tmp.end();
+  int res = Judy1First(j_tmp,&next,&je);
   if(tracefile)
     fprintf(tracefile,"FT: %p\n",next);
-  //while(res) {
-  for (;it!=ite; ++it) {
-    next = *it;
+  while(res) {
     delete_frame((void*)next);
     ++count;
-    //res = Judy1Next(j_tmp,&next,&je);
+    res = Judy1Next(j_tmp,&next,&je);
     if(tracefile)
       fprintf(tracefile,"NT: %p\n",next);
   }
-  //Judy1FreeArray(&j_tmp,&je);
-  j_tmp.clear();
+  Judy1FreeArray(&j_tmp,&je);
   if(tracefile)
     fprintf(tracefile,"CT:\n");
   if(debug) 
@@ -1365,8 +1371,7 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
   // them in this set rather than examining them immediately.
   // Later we come back and examine them. This buffers the recursion
   // a bit. The set has to be empty initially.
-  //assert(j_tmp == 0);
-  assert(j_tmp.empty());
+  assert(j_tmp == 0);
 
   // px is a set of memory ranges representing the stacks
   // of all pthreads including this one at the point the
@@ -1435,24 +1440,21 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
   //
   // Note: Judy1First finds the first key greater than or equal to the given one,
   // it returns 0 if there is no such key.
-  //Word_t toscan = 0;
-  //int res = Judy1First(j_tmp,&toscan,&je); // get one object scheduled for scanning
+  Word_t toscan = 0;
+  int res = Judy1First(j_tmp,&toscan,&je); // get one object scheduled for scanning
   //if(tracefile)
   //  fprintf(tracefile,"FT: %p\n",toscan);
-  //while(res) {
-  while(!(j_tmp.empty())) {
-    //Judy1Unset(&j_tmp,toscan,&je);         // remove it immediately
-    Word_t toscan = *(j_tmp.begin());
-    j_tmp.erase (j_tmp.begin());
+  while(res) {
+    Judy1Unset(&j_tmp,toscan,&je);         // remove it immediately
     if(tracefile)
       fprintf(tracefile,"DT: %p\n",toscan);
     scan_object((void*)toscan, reclimit);  // scan it, it will either be marked or discarded
-    //toscan = 0;
-    //res = Judy1First(j_tmp,&toscan,&je); 
+    toscan = 0;
+    res = Judy1First(j_tmp,&toscan,&je); 
     if(tracefile)
       fprintf(tracefile,"FT: %p\n",toscan);
   }                                     
-  //assert(j_tmp == 0);                  
+  assert(j_tmp == 0);                  
 
   if(debug)
     fprintf(stderr, "[gc] Done Scanning roots\n");
@@ -1584,14 +1586,15 @@ void flx_collector_t::impl_remove_root(void *memory)
 
 void flx_collector_t::register_pointer(void *q, int reclimit)
 {
-  if(reclimit==0) 
-  {
-    //Judy1Set(&j_tmp,(Word_t)q,&je);
-    j_tmp.insert((Word_t)q);
-    if(tracefile)
-      fprintf(tracefile,"IT: %p\n",q);
+  if (inrange(q)) {
+    if(reclimit==0) 
+    {
+      Judy1Set(&j_tmp,(Word_t)q,&je);
+      if(tracefile)
+        fprintf(tracefile,"IT: %p\n",q);
+    }
+    else scan_object(q, reclimit-1);
   }
-  else scan_object(q, reclimit-1);
 }
 
 ::flx::gc::generic::pointer_data_t flx_collector_t::get_pointer_data (void *p)
@@ -1628,6 +1631,61 @@ void flx_collector_t::register_pointer(void *q, int reclimit)
  * reachable so it won't be reaped
  */
 
+// if a pointer is interior, then
+// if marked reachable already return NULL,NULL
+// else mark as reachable and return head,shape
+flx_collector_t::memdata_t flx_collector_t::check_interior (void *p)
+{
+  Word_t reachable = (parity & (uintptr_t)1) ^ (uintptr_t)1;
+  if(debug)
+    fprintf(stderr,"[gc] Scan object %p, reachable bit value = %d\n",p,(int)reachable);
+
+  // Now find the shape of the object into which the pointer points,
+  // if it is a Felix allocated object. First, we use JudyLLast
+  // which finds the value less than or equal to the given key.
+  if (!inrange(p)) return memdata_t{NULL,NULL,0};
+  Word_t cand = (Word_t)p;
+  Word_t head=cand;
+  Word_t *ppshape = (Word_t*)JudyLLast(j_shape,&head,&je);
+  if(ppshape==(Word_t*)PPJERR)judyerror("check_interior");
+
+  // if the pointer returned by Judy is NULL, there is no
+  // allocated object at or lower then the given address so exit
+  if(ppshape == NULL) return memdata_t{NULL,NULL,0}; // no lower object
+  /*
+  if(debug)
+  {
+    fprintf(stderr,"Found candidate object %p, &shape=%p, shape(1) %p\n",(void*)fp,(void*)w,(void*)(*w));
+    fprintf(stderr," .. type=%s!\n",((gc_shape_t*)(*w & ~(uintptr_t)1))->cname);
+  }
+  */
+
+  // if the object lower then the given pointer is already
+  // marked reachable, there's nothing to do (all the pointers
+  // it reaches should also be marked) so just exit.
+  if( (*ppshape & (uintptr_t)1) == reachable) return memdata_t {NULL,NULL,0};   // already handled
+
+  // get the actual shape of the candidate object
+  // don't forget to mask out the low bit which is the reachability flag
+  gc_shape_t *pshape = SHAPE(*ppshape);
+
+  // calculate the length of the candidate object in bytes
+  size_t exterior_count = get_used((void*)head);
+  size_t n = exterior_count * pshape->count * pshape->amt;
+
+  // if our pointer is greater than or equal to the "one past the end"
+  // pointer of the object, it is not a pointer interior to that object
+  // but a foreign pointer and must be ignored
+  if(cand >= (Word_t)(void*)((unsigned char*)(void*)head+n)) return memdata_t{NULL,NULL,0}; // not interior
+  if(debug)
+    fprintf(stderr,"[gc] MARKING object %p, shape %p, type=%s\n",(void*)head,pshape,pshape->cname);
+
+  // otherwise we have an iterior or head pointer to the object
+  // so set the reachable flag in the judy shape array
+  *ppshape = (*ppshape & ~(uintptr_t)1) | reachable;
+  return memdata_t {(void*)head,pshape,n};
+}
+
 void flx_collector_t::scan_object(void *p, int reclimit)
 {
 
@@ -1642,14 +1700,18 @@ void flx_collector_t::scan_object(void *p, int reclimit)
   // marking to mean unreachable next time, then flip the bit for each
   // reachable object. The value parity records the sense and is flipped
   // at the start of each GC pass.
-  Word_t reachable = (parity & (uintptr_t)1) ^ (uintptr_t)1;
+  //Word_t reachable = (parity & (uintptr_t)1) ^ (uintptr_t)1;
 again:
+   memdata_t memdata = check_interior(p);
+   if(memdata.head == NULL) return;
+/*
   //if(debug)
   //  fprintf(stderr,"[gc] Scan object %p, reachable bit value = %d\n",p,(int)reachable);
 
   // Now find the shape of the object into which the pointer points,
   // if it is a Felix allocated object. First, we use JudyLLast
   // which finds the value less than or equal to the given key.
+  if (!inrange(p)) return;
   Word_t cand = (Word_t)p;
   Word_t head=cand;
   Word_t *ppshape = (Word_t*)JudyLLast(j_shape,&head,&je);
@@ -1658,13 +1720,13 @@ again:
   // if the pointer returned by Judy is NULL, there is no
   // allocated object at or lower then the given address so exit
   if(ppshape == NULL) return; // no lower object
-  /*
-  if(debug)
-  {
-    fprintf(stderr,"Found candidate object %p, &shape=%p, shape(1) %p\n",(void*)fp,(void*)w,(void*)(*w));
-    fprintf(stderr," .. type=%s!\n",((gc_shape_t*)(*w & ~(uintptr_t)1))->cname);
-  }
-  */
+  
+  //if(debug)
+  //{
+  //  fprintf(stderr,"Found candidate object %p, &shape=%p, shape(1) %p\n",(void*)fp,(void*)w,(void*)(*w));
+  //  fprintf(stderr," .. type=%s!\n",((gc_shape_t*)(*w & ~(uintptr_t)1))->cname);
+  //}
+  //
 
   // if the object lower then the given pointer is already
   // marked reachable, there's nothing to do (all the pointers
@@ -1688,28 +1750,27 @@ again:
   // otherwise we have an iterior or head pointer to the object
   // so set the reachable flag in the judy shape array
   *ppshape = (*ppshape & ~(uintptr_t)1) | reachable;
-
+*/
 
   // Now we have to look for pointers contained in the object
  
   // The first branch here is not used at the moment,
   // and is a hard coded way to do a conservative scan on the object
 
-  if(pshape->flags & gc_flags_conservative)
+  if(memdata.pshape->flags & gc_flags_conservative)
   {
-    size_t n_used = get_used((void*)head) * pshape->count;
+    size_t n_used = get_used((void*)memdata.head) * memdata.pshape->count;
     // end of object, rounded down to size of a void*
     void **end = (void**)(
-      (unsigned char*)(void*)head +
-      n_used * n / sizeof(void*) * sizeof(void*)
+      (unsigned char*)(void*)memdata.head +
+      n_used * memdata.nbytes / sizeof(void*) * sizeof(void*)
     );
-    for ( void **i = (void**)head; i != end; i = i+1)
+    for ( void **i = (void**)memdata.head; i != end; i = i+1)
     {
       if(debug)
       //  fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
       if(reclimit==0) {
-        //Judy1Set(&j_tmp,(Word_t)*i,&je);
-        j_tmp.insert((Word_t)*i);
+        Judy1Set(&j_tmp,(Word_t)*i,&je);
         if(tracefile)
           fprintf(tracefile,"IT: %p\n",*i);
       }
@@ -1724,13 +1785,13 @@ again:
     // Calculate the dynamic count of used elements in the object.
     // All Felix objects are varrays which have an allocated and used
     // element count. The RTTI object always describes one element.
-    size_t dyncount = get_used((void*)head);
+    size_t dyncount = get_used((void*)memdata.head);
 
     // if don't have a scanner for the object it is atomic,
     // that is it contains no pointers.
     // Otherwise call the scanner.
-    if(pshape->scanner) {
-      void *r = pshape->scanner(this, pshape, (void*)head,dyncount,reclimit);
+    if(memdata.pshape->scanner) {
+      void *r = memdata.pshape->scanner(this, memdata.pshape,memdata.head,dyncount,reclimit);
       // If the scanner returns a non-zero value it is the sole pointer
       // in the object. So reset our argument and jump to the start of
       // this routine: self-tail-recursion optimisation.
