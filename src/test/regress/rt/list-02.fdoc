@@ -1,9 +1,9 @@
 
 @h1 list-02.flx
 @felix
-// 2 million list element
+// 1 million list element
 var ls = list (1,2);
-var i:int; for i in 0 upto 19 do
+var i:int; for i in 0 upto 18 do
   ls = rev (fold_left (fun (acc:list[int]) (x:int) => Cons(x,acc)) (rev ls) ls);
   println$ str i + " " + str (len ls);
 done
@@ -29,5 +29,6 @@ done
 16 262144
 17 524288
 18 1048576
-19 2097152
 @
+19 2097152
+

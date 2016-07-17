@@ -262,6 +262,8 @@ struct GC_EXTERN gc_shape_t
   size_t deallocations;
 };
 
+GC_EXTERN extern gc_shape_t _ptr_void_map;
+
 @h3 Standard Scanner
 The standard scanner @{scan_by_offsets} uses an array 
 containing offsets into an object where pointers are located.
@@ -538,6 +540,19 @@ GC_EXTERN void operator delete(
 namespace flx {
 namespace gc {
 namespace generic {
+gc_shape_t _ptr_void_map = {
+  NULL,
+  "void",
+  0,0,
+  0, // no finaliser
+  0, // fcops
+  0,
+  0,
+  0,
+  0,
+  gc::generic::gc_flags_default,
+  0UL, 0UL
+};
 
 allocator_t::~allocator_t(){}
 collector_t::~collector_t(){}
@@ -1110,10 +1125,19 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
   *p = ((Word_t)(void*)shape) | (parity & 1);
   if (nobj != (uintptr_t)1) // array
   {
+//fprintf(stderr, "Inserting into j_nalloc=%p\n",j_nalloc);
     Word_t *p = (Word_t*)(void*)JudyLIns(&j_nalloc,(Word_t)fp,&je);
+//fprintf(stderr, "  new j_nalloc=%p\n",j_nalloc);
+//fprintf(stderr, "  slot for insert=%p\n",p);
     if(tracefile) 
        fprintf(tracefile,"IA: %p\n",fp);
     *p = nobj;
+  }
+  if (nobj != get_count(fp)) {
+//fprintf(stderr, "Insertion into j_nalloc (%p) failed: address %p, nobj=%zu\n",
+//    j_nalloc,
+//    fp,nobj);
+    assert (nobj == get_count(fp));
   }
 
   // update statistics
@@ -1131,8 +1155,8 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
 // indeed, set_used always creates an entry
 void flx_collector_t::set_used(void *memory, size_t n)
 {
+  if (memory == NULL && n==0) return;
   assert(memory);
-  assert(n>=0);
 
   // this check is expensive, but set_used is not used often
   assert(n<=get_count(memory));
@@ -1154,6 +1178,7 @@ void flx_collector_t::set_used(void *memory, size_t n)
 
 void flx_collector_t::incr_used(void *memory, ptrdiff_t n)
 {
+  if (n==0) return;
   assert(memory);
   //fprintf(stderr,"Incr used of %p by %zu\n",memory,n);
   //assert(get_used(memory) + n <= get_count(memory));
@@ -1184,7 +1209,7 @@ void flx_collector_t::incr_used(void *memory, ptrdiff_t n)
 // actual number of used slots in an array
 size_t flx_collector_t::get_used(void *memory)
 {
-  assert(memory);
+  if(memory==NULL) return 0;
   //fprintf(stderr, "Get used of %p\n",memory);
   Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
   if(tracefile) 
@@ -1199,7 +1224,7 @@ size_t flx_collector_t::get_used(void *memory)
 // max number of available slots in an array
 size_t flx_collector_t::get_count(void *memory)
 {
-  assert(memory);
+  if(memory==NULL) return 0;
   //fprintf(stderr, "Get count of %p\n",memory);
   Word_t *p = (Word_t*)(void*)JudyLGet(j_nalloc,(Word_t)memory,&je);
   if(tracefile) 
@@ -1207,13 +1232,14 @@ size_t flx_collector_t::get_count(void *memory)
   if(p==(Word_t*)PPJERR)judyerror("get_count");
   //fprintf(stderr, "Count slot at address %p\n",p);
   size_t z = p!=NULL?*p:1; // defaults to 1 for non-array support
-  //fprintf(stderr,"Count of %p is %zu\n",memory,z);
+  //fprintf(stderr,"Count of %p is %zu\n\n",memory,z);
   return z;
 }
 
 // REQUIRES memory to be head pointer (not interior)
 gc_shape_t *flx_collector_t::get_shape(void *memory)
 {
+  if(memory == NULL) return &::flx::gc::generic::_ptr_void_map;
   assert(memory);
   //fprintf(stderr, "Get shape of %p\n",memory);
   Word_t *pshape= (Word_t*)JudyLGet(j_shape,(Word_t)memory,&je);
@@ -1232,13 +1258,13 @@ void *flx_collector_t::create_empty_array(
   size_t count
 )
 {
+  if (count==0) return NULL;
   void *p = allocate(shape,count);
   assert(p);
   set_used (p, 0); // make sure to override default 1 slot usage
   if(get_used(p) != 0 || get_count(p) != count) {
-    fprintf(stderr,"create empty array length %zu type %s shape amt=%zu, shapecnt=%zu\n",
-     count,shape->cname, shape->amt, shape->count);
-    fprintf(stderr,"Array at %p, used = %zu, max=%zu\n",p,get_used(p), get_count(p));
+    fprintf(stderr,"create empty array type %s address %p request count=%zu, actual count=%zu ,used=%zu\n",
+     p,shape->cname, count, get_count(p), get_used(p));
     fprintf(stderr, "FATAL CONSTRUCTOR FAILURE\n");
     assert (false);
   }

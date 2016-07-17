@@ -69,7 +69,7 @@ class MinHeap[T with Tord[T]]
     if h.len.int == 0 return None[T];
       var min = h.0;
       set(h,0,h.(h.len.int - 1));
-      h.pop; 
+      h.pop_back; 
       bubble_down (h,0); 
       return Some min;
   }

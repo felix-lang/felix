@@ -609,6 +609,7 @@ open[T,N] ArrayValue[&array[T,N], &T];
 @tangle varray.flx
 
 //$ Bounded Variable length arrays, bound set at construction time.
+//$ A bound of 0 is allowed, the result is a NULL pointer.
 
 open class Varray
 {
@@ -771,7 +772,7 @@ open class Varray
 
   //$ Pop an element off the end of a varray.
   //$ Aborts if the array is empty.
-  proc pop[t] : varray[t] = """
+  proc pop_back[t] : varray[t] = """
     { // pop varray
       ?1 * _p = $1;
       size_t n = PTF gcp->collector->get_used(_p);
@@ -973,7 +974,7 @@ number of elements and the new bound.
 This procedure is analogous to the C++ string @{reserve} function,
 however it is primarily intended for internal use. If this function
 is called the new bound will be adjusted on the next size changing
-operation such as a @{push_back} or @{pop}.
+operation such as a @{push_back} or @{pop_back}.
 @tangle darray.flx
   //$ Force a resize.
   //$ Similar to C++ vector reserve function.
@@ -1029,15 +1030,13 @@ operation such as a @{push_back} or @{pop}.
   }
 
 @h2 Size changing mutators.
-The function @{pop} should have been called @{pop_back}.
 There's no @{push_front} but there should be.
-There's no @{insert} operator.
 Generally, this class is very incomplete.
 @tangle darray.flx
   //$ Pop a value from the end.
   //$ Same as pop_back in C++.
-  proc pop[t](a:darray[t]) {
-    pop (_repr_ a)*.a;
+  proc pop_back[t](a:darray[t]) {
+    pop_back (_repr_ a)*.a;
     newsize := (_repr_ a)*.resize (maxlen (_repr_ a)*.a, len (_repr_ a)*.a);
     if newsize != maxlen (_repr_ a)*.a call do_resize (a,newsize);
   }
