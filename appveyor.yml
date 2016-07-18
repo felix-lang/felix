@@ -10,8 +10,8 @@ install:
   - set PWD=.
   - set PATH=build\release\host\bin;build\release\host\lib\rtl;%PATH%
   - set FLX_MIN_MEM=10000
-  - curl -fsS -o tarball.zip "https://github.com/felix-lang/felix/releases/download/2016.07.12-rc1/felix-2016.07.12-rc1-msvc-win64.zip"
-  - 7z x tarball.zip -obuild\release
+  - git clone -q https://github.com/felix-lang/win32binary.git
+  - move win32binary\build build
 
 platform: 
   - x64
