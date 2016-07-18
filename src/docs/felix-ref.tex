@@ -6482,7 +6482,7 @@ does no useful work.
 pod type metres = "double";
 \end{minted}
 
-\subsection{{\tt _gc_pointer} types}
+\subsection{{\tt \_gc\_pointer} types}
 The \verb%_gc_pointer_% adjective tells Felix that the
 type is a pointer which could be a pointer to an heap
 allocated object managed by the GC.
@@ -6517,7 +6517,7 @@ be constructed but not copied. Since Felix always initialised
 variables with assignments, uncopyable type are useful only
 for heap construction yielding a pointer.
 
-\subsection{{\tt _gc_type T} types}
+\subsection{{\tt \_gc\_type T} types}
 This adjective is for gurus only! In conjunction
 with \verb%_gc_pointer% it is used to permit
 contruction of an immobile C++ type whilst at the same
@@ -6762,7 +6762,7 @@ Packages are a collection of platform
 dependent resources which are configured so
 that the abstract requirement is used to locate
 the resource descriptors in a database managed by
-the flx_pkgconfig system,  mapping the abstract
+the \verb%flx_pkgconfig% system,  mapping the abstract
 platform independent name to platform dependent names.
 
 Packages can be used to add header files to compiler

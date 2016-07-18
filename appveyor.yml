@@ -13,6 +13,10 @@ install:
   - git clone -q https://github.com/felix-lang/win32binary.git
   - move win32binary\build build
 
+environment:
+  access_token:
+    secure: Mh/B12zvz5BIkV7bDrjj9WOc2UR5fI0ZCpmwehs/PNsHGkzwMIHnvBDlSpumKlmz
+
 platform: 
   - x64
 
@@ -32,6 +36,17 @@ after_build:
   - tmp.bat
   - 7z a felix-%FLX_VERSION%-msvc-win64.zip build\release\share build\release\host win32install.bat win32setup.bat hello.flx INSTALL > tmp.bat
 
+on_success:
+  - git config --global credential.helper store
+  - ps: Add-Content "$env:USERPROFILE\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
+  - git config --global user.email "skaller@users.sourceforge.net"
+  - git config --global user.name "skaller"
+  - rd /S /Q win32binary\build
+  - move build win32binary build
+  - cd win32binary
+  - git commit -a
+  - git push
+ 
 artifacts:
   - path: felix-$(FLX_VERSION)-msvc-win64.zip
     name: felix-$(FLX_VERSION)-msvc-win64.zip
