@@ -43,7 +43,7 @@ on_success:
   - git config --global user.name "skaller"
   - move build win32binary\build
   - cd win32binary
-  - git commit -a
+  - git commit -a -m "Appveyor rebuild"
   - git push
  
 artifacts:
