@@ -76,7 +76,7 @@ interfaces  is one of the things that makes writing script simpler.
 
 Although out of logical order, we present the basic statements,
 expressions, and definitions first, because together with examples
-that is enough to get most programmers writing scipt.
+that is enough to get most programmers writing script.
 
 Felix code, like most other languages, is compiled before
 execution. However it differs from many other systems which
@@ -473,8 +473,7 @@ val c,d = m;
 With this syntax, no type annotation may be given.
 
 
-\chapter{Statements}
-\section{Assignment}
+\chapter{Assignment Statements}
 \href{http://felix-lang.org/share/lib/grammar/assignment.fsyn}{Syntax}
 
 \section{Basic Assignment}
@@ -631,6 +630,7 @@ may also be used.
 \end{minted}
 
 
+\chapter{Control Flow Statements}
 \section{The {\tt goto} statement and label {\tt prefix}}\index{goto}\index{label}
 Felix statements may be prefixed by a label
 to which control may be transfered by a \verb%goto%
@@ -956,6 +956,42 @@ var counter1 = counter;
 var zero = counter1 ();
 var one = counter1 ();
 println$ zero, one;
+\end{minted}
+
+\section{{\tt call\_with\_trap} and {\tt throw\_continuation}}\index{trap}
+\index{continuation}\index{throw}\index{call\_with\_trap}
+The \verb%call_with_trap% statement calls a procedure,
+catching any uncaught thrown continuation, if there is one.
+
+If control returns normally, it continues normally.
+
+A procedure of type \verb%1->0% may be thrown with a
+\verb%throw_continuation% statment. It will be caught by
+the closest dynamically enclosing \verb%call_with_trap% 
+statement or the top level scheduler.
+
+Such a trapped continuation then replaces the currently
+running procedure and begins execution.
+
+\begin{minted}{felix}
+fun divide (error:1->0) (a:int, b:int) = {
+  if b == 0 perform throw_continuation error;
+  return a/b;
+}
+
+proc demo() {
+  proc divide_by_zero () {
+    println$ "Divide by zero";
+    goto bad;
+  }
+  var q = divide divide_by_zero (1,0);
+  println$ "Quotient " + q.str;
+  return;
+bad:>
+  println$ "Error Handled";
+}
+call_with_trap demo;
+println$ "Done";
 \end{minted}
 
 
@@ -4306,6 +4342,48 @@ last component returns a function set.
 Overload resolution is then performed on the function set.
 The result is final.
 
+\chapter{Libraries}
+The \verb%library% statement may be used to form extensible
+groups of named definitions.
+
+\begin{minted}{felix}
+library A {
+  proc f(x:int) => println$ "A::f " + x.str;
+}
+library B {
+  proc f(x:int) => println$ "B::f " + x.str;
+}
+library A {
+  proc g(x:int) => println$ "A::g ";
+}
+
+open A;
+f 1;
+B::f 1;
+\end{minted}
+
+Unlike classes and modules, libraries are extensible
+and so may span multiple files (however the library 
+statement may not!).
+
+Libraries cannot be polymorphic, and may not contain
+virtual functions or procedures directly.
+
+Libraries must be at the top level or nested in
+other libraries.
+
+Statements within a library statement are executed in
+order. Statements in multiple library statements for
+the same library in the same file are executed in order.
+
+Statements in a library statement nested in a library statement
+are executed before any statements in the enclosing library statement.
+
+Top level code not enclosed in a library statement is treated
+as if enclosed in an anonymous library.
+
+Otherwise the order of execution is unspecified.
+
 \chapter{Classes}
 \href{http://felix-lang.org/share/lib/grammar/namespaces.fsyn}{Syntax}
 
@@ -6345,16 +6423,374 @@ This has no impact when passing arguments to C++ functions.
 However it may be necessary to cast a pointer returned from
 a primitive function in order for the generated code to type check.
 
+\section{Basic {\tt type} statement}\index{type!statement}
+The type statement is used to lift a C++ type into Felix.
+
+The simplest example:
+
+\begin{minted}{felix}
+type metres = "double";
+type Z = "long";
+\end{minted}
+
+creates a Felix type \verb%metres% based on C++ type
+{\tt double}.
+
+Polymorphic types can be created too:
+
+\begin{minted}{felix}
+type pair[T,U] = "::std::pair<?1,?2>";
+\end{minted}
+
+The names of the type variables $T$ and $U$ are not used
+in the binding, but serve as placeholders. Instead the
+encoding \verb%?1% and \verb%?2% is used to refer to the first
+and second type variables. The Felix type \verb%pair[metres,Z]%
+will become C++ type \verb%::std::pair<double,long>% in the
+generated code.
+
+Please be sure to always fully qualify C++ names including
+leading \verb%::% since you do not know the namespace context
+in which the generated code will reside.
+
+\subsection{Semantics}
+Unless otherwise noted all types lifted into Felix with
+the type binding statement must be first class. This means
+that they must have a publically accessible 
+default initialiser, copy constructor, copy assignment operator, 
+and destructor.
+
+To lift a type which is immobile, lift a pointer to the type
+instead. Please see below.
+
+\section{Adjectives}
+Felix needs to know some things about types to handle
+them properly, it uses a system of adjectives to provide
+some basic information.
+
+\subsection{{\tt pod} types}
+A \verb%pod% type is a {\em plain old data type} of the kind
+common in C. In Felix the annotation is used for optimisation:
+calls to the destructor are not made by the Felix garbage collector
+when an object of this type is finalised. This will have no impact
+provided the type has a trivial destuctor in C++.
+
+Do not specify this adjective unless you are sure the destructor
+does no useful work.
+
+\begin{minted}{felix}
+pod type metres = "double";
+\end{minted}
+
+\subsection{{\tt _gc_pointer} types}
+The \verb%_gc_pointer_% adjective tells Felix that the
+type is a pointer which could be a pointer to an heap
+allocated object managed by the GC.
+
+When a value of this type is included in a larger objects,
+the run time type description will include the offset
+of this subobject in the array of offsets which might
+contain managed pointers.
+
+It is always safe to use this annotation if the C++ types
+is a pointer.
+
+\subsection{{\tt incomplete} types}
+The adjective \verb%incomplete% may be used to specify the
+type denoted may not be constructed. If the C++ type being
+bound is incomplete, for example \verb%void%, or an
+incomplete C struct, this annotation will cause a type error
+in Felix if an attempt is made to construct values of the type.
+
+The primary reason for introducing incomplete types is to
+permit a Felix pointer to be formed to it, in Felix.
+For example
+
+\begin{minted}{felix}
+incomplete type MyVoid = "void";
+typedef MyVoidPointer = &MyVoid;
+\end{minted}
+
+\subsection{{\tt uncopyable} types}
+This annotation may be used if a value of the type can
+be constructed but not copied. Since Felix always initialised
+variables with assignments, uncopyable type are useful only
+for heap construction yielding a pointer.
+
+\subsection{{\tt _gc_type T} types}
+This adjective is for gurus only! In conjunction
+with \verb%_gc_pointer% it is used to permit
+contruction of an immobile C++ type whilst at the same
+time ensuring that the type garbage collected.
+
+The method is fraught with peril and use of C++ smart pointers
+is recommended instead.
+
+\begin{minted}{felix}
+  private uncopyable type bQ_ = "::flx::pthread::bound_queue_t";
+  _gc_pointer _gc_type bQ_ type ts_bound_queue_t[T] = "::flx::pthread::bound_queue_t*" 
+    requires 
+     package "flx_bound_queue",
+     scanner "::flx::pthread::bound_queue_scanner"
+  ;
+  ctor[T] ts_bound_queue_t[T]: !ints = 
+    """
+      new (*PTF gcp, @0, false) ::flx::pthread::bound_queue_t(
+      PTF gcp->collector->get_thread_control(), (size_t)$1)
+    """ requires property "needs_ptf";
+\end{minted}
+
+In this example from the library, we define the thread safe bound
+queue as type \verb%bQ_% and mark it private and uncopyable 
+to protect it. The C++ type is defined the Felix run time library.
+
+The type the user gets is a ponter, which is defined by a binding
+to C++ again, declared to be a pointer, and declared to point 
+to \verb%bQ_%.
+
+What this actually does is seen in the constructor which,
+in C++, constructs the object on the heap, passing the magic
+encoding \verb%@0% to the second argument of the new expression.
+
+This encoding {\em normally} denotes the pointer to the shape (RTTI) for the
+return type of the function. However that type, \verb%ts_bound_queue%
+has the attribute \verb%_gc_type bQ_% which tells Felix to use
+the shape object for that type instead. We need to do this because the
+heap value is represented by a pointer to the type, but we want the
+garbage collector to be able to map such a pointer to the type of the
+heap object at run time.
 
 
 \section{Expression bindings}
-TBD
-\section{Function bindings}
-TBD
+Felix has a simple method for introducing constants and expressions
+from C++ using the \verb%const% statement:
+
+\begin{minted}{felix}
+type metres = "double";
+const zero_metres: metres = "0.0";
+const one_metre: metres = "1.0";
+\end{minted}
+
+Const statements cannot be polymorphic.
+
+\section{Function bindings}\index{binding!function}
+In order to use types lifted from C++, Felix has a special
+form of function definition:
+
+\begin{minted}{felix}
+type metres = "double";
+const zero_metres: metres = "0.0";
+const one_metre: metres = "1.0";
+fun +: metres * metres -> metres = "$1+$2";
+fun *: metres * double-> metres = "$1*$2";
+fun *: double * metres -> metres = "$1*$2";
+fun todouble: metres -> double = "$1";
+var len = one_metre * 3.7;
+var len2 = len + len;
+println$ "length " + len2.todouble.str;
+\end{minted}
+
+Here the encodings \verb%$1% and \verb%$2% refer to the first
+and second components of the argument tuple type.
+
+Felix instantiates such functions by substituting the C++
+encoding of the argument component into the text string of the function
+at the position nominated location, possibly adding parentheses
+to ensure precedence rules do not interfere with the intended
+semantics.
+
+There is a special set of strings for which Felix knows
+the precedence. You must use exactly these strings to trigger
+the rules. It is also possible to manually specify the precedence.
+If Felix does not understand the precedence then parentheses
+will be inserted. The purpose of the precedence controls is 
+entirely to reduce the need for the generated C++ to be 
+be littered with parentheses.
+
+[Put table of special strings here]
+[Put list of precedence names here]
+
+It is sometimes necessary to refer to other entities
+than the argument components.
+
+[Put table of binding encodings here]
+
+\section{Conversion bindings}\index{binding!function}
+A special form is allowed for conversion function:
+
+\begin{minted}{felix}
+type metres = "double";
+ctor metres: double = "$1";
+ctor double: metres = "$1";
+\end{minted}
+
+This is exactly the same as:
+
+\begin{minted}{felix}
+fun _ctor_metres: double -> metres = "$1";
+fun _ctor_double: metres -> double = "$1";
+\end{minted}
+
+so that the syntax makes it easier to see a conversion
+is being defined and what is being converted.
+
+Conversion statements can be polymorphic, but the type
+variables must be introduced like this:
+
+\begin{minted}{felix}
+type vect[T] = "::std::vector<?1>" 
+  requires header '#include <vector>';
+fun len[T]: vect[T]->size = "$1.size()";
+ctor[T] vect[T]: size = "::std::vector<?1>($1)";
+var x = vect[int] 42uz;
+println$ x.len;
+\end{minted}
+
+When Felix is seeking a function, if it finds a type name
+instead, it retries the lookup with \verb%_ctor_% prefixed
+to the type name. This only works with actual names! 
+However the name may be the defined name of a type or
+a typedef alias.
+
+Despite the spelling, a \verb%ctor% is a conversion operator
+and not a type constructor.
+
+\section{Procedure bindings}
+Procedure bindings work the same as function bindings,
+by emitting the C++ string specified with substitutions.
+
+The primary difference is that procedure bindings must
+generate one or more C++ statements.
+
 \section{Floating insertions}
-TBD
+Felix has a sophisticated system of {\em floating insertions}
+which are primarily designed to ensure that if a C++ binding
+is used, the appropriate C++ header files are included so
+the binding code is well defined. For example:
+
+\begin{minted}{felix}
+type vect[T] = "::std::vector<?1>" 
+  requires header '#include <vector>';
+\end{minted}
+
+Floating insertions can be directly introduced as
+indicated for inclusion in either the C++ \verb%header%
+file or \verb%body% file Felix generates.
+
+Floating insertions {\em float} to near the top of the
+relevant file. Insertions specified in a single file
+appear in order of writing, if they appear at all,
+and at most once. The actual insertion strings are
+checked to prevent duplication.
+
+Insertions can be named:
+
+\begin{minted}{felix}
+header vector_h ='#include <vector>';
+type vect[T] = "::std::vector<?1>" 
+  requires vector_h
+;
+\end{minted}
+
+so that a requires clause may specify the name
+of an insertion. Duplication of names is permitted:
+
+\begin{minted}{felix}
+header vector_h ='#include <vector>';
+header vector_h ='#include <stdlib.h>';
+type vect[T] = "::std::vector<?1>" 
+  requires vector_h
+;
+\end{minted}
+
+A floating insertion is included if, and only if,
+a C binding is actually used.
+
+Floating insertions themselves may have dependencies
+expressed with requires clause:
+
+\begin{minted}{felix}
+header algo_h ='#include <algorithm>';
+header vector_h ='#include <vector'
+  requires algo_h
+;
+\end{minted}
+
+Insertions can also be polymorphic.
+
+\begin{minted}{felix}
+body sho[T] ='show<?1>();';
+\end{minted}
+
+A module or non-polymorphic class may contain
+a naked requires statement:
+
+\begin{minted}{felix}
+class Vect { 
+  requires algo_h;
+  type vect[T] = 'vector<?1>';
+\end{minted}
+
+The effect is to apply the requirement to all bindings
+in the class or module. Note: the specified insertion
+if only emitted if a C binding is used!
+
+\section{Property requirements}
+A requires clause may also specify properties:
+
+\begin{minted}{felix}
+  fun f: int -> int = "f($1)" 
+    requires property "needs_ptf"
+  ;
+\end{minted}
+
+This provide a flexible tagging system in addition
+to the use of adjectives.
+
+[List of properties here]
+
 \section{Package requirements}
-TBD
+A requires clause may specify a package requirement:
+
+\begin{minted}{felix}
+  fun f: int -> int = "f($1)"
+    requires packahe "mylib"
+  ; 
+\end{minted}
+
+Packages are a collection of platform
+dependent resources which are configured so
+that the abstract requirement is used to locate
+the resource descriptors in a database managed by
+the flx_pkgconfig system,  mapping the abstract
+platform independent name to platform dependent names.
+
+Packages can be used to add header files to compiler
+C++ output, and to find and link support libraries.
+In some cases, they can also help build the package.
+
+The package system requires the user to supply a search
+path consisting of a list of directories which are searched
+to find the file with the package name and extension \verb%.fpc%.
+
+A typical file looks like this:
+
+\begin{minted}{text}
+Name: SDL2
+Description: Simple Direct Media Layer 2.0
+cflags: -I/usr/local/include/SDL2
+includes: '"SDL.h"'
+provides_dlib: -L/usr/local/lib -lSDL2
+provides_slib: -L/usr/local/lib -lSDL2
+\end{minted}
+
+This description allows Felix to compile and link programs
+using the SDL2 library without any special switches on the
+flx command line.
+
+The standard location for an installed Felix configuration
+is in the subdirectory \verb%host/config% on Unix or \verb%host\config%
+on Windows.
 
 \chapter{Embedding}
 \section{C Callable libraries}
