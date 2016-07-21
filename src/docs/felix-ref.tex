@@ -34,6 +34,10 @@ on the argument type}}
 which runs concurrently with others and which may be suspended and resumed
 by the operating system at any time}}
 
+\newglossaryentry{setwise lookup}{name=setwise lookup, description={
+a method of lookup where a symbol may be used before or after it is
+defined
+}}
 
 \begin{document}
 \maketitle
@@ -1414,7 +1418,7 @@ var x = match 1 with a => a + 1 endmatch
 \end{minted}
 
 
-\subsection{Function let}
+\subsection{Function let}\index{let fun}
 A let form which makes a function available in the
 expression
 
@@ -1746,7 +1750,7 @@ var x = a ^ ix;
 \end{minted}
 
 
-\section{Function composition}
+\section{Function composition}\index{composition}\index{\(\circ\)}
 Standard math notation. Left associative. Same precedence as
 exponentiation. Spelled \verb%\}@{circ%.
 
@@ -1755,7 +1759,7 @@ var x = f \circ g;
 \end{minted}
 
 
-\section{Dereference}
+\section{Dereference}\index{dereference}
 For function \verb%deref%.
 
 \begin{minted}{felix}
@@ -1792,7 +1796,7 @@ var x = sin y;
 \end{minted}
 
 
-\subsection{Caseno operator}
+\subsection{Caseno operator}\index{casenp}
 Returns the integer tag value of the value of an anonymous sum, 
 union, or variant  type.
 
@@ -1802,7 +1806,7 @@ var x = caseno (Some 43); // 1
 \end{minted}
 
 
-\subsection{Likelyhood}
+\subsection{Likelyhood}\index{likely}
 Indicaties if a bool valued expression is likely
 or unlikely to be true. Used to generate the corresponding
 gcc optimisation hints, if available.
@@ -1813,7 +1817,7 @@ if unlikely (d) goto loopend;
 \end{minted}
 
 
-\section{Coercion operator}
+\section{Coercion operator}\index{coercion}
 left associative. The right operand is a type.
 
 \begin{minted}{felix}
@@ -1821,7 +1825,7 @@ var x = 1L :>> int; // cast
 \end{minted}
 
 
-\section{Suffixed name}
+\section{Suffixed name}\index{name!suffixed}
 The most general form of a name:
 
 \begin{minted}{felix}
@@ -1832,7 +1836,7 @@ Used to name functions, with the right operand specifying
 the function argument type.
 
 \section{Factors}
-\subsection{Subscript}
+\subsection{Subscript}\index{subscript}
 Used for array and string subscripting. Calls function \verb%subscript%.
 For strings, returns a character. If the subscript is out of range
 after adjustment of negative index, returns \verb%char 0% and thus
@@ -1843,7 +1847,7 @@ var x = a . [ i ]; // i'th element
 \end{minted}
 
 
-\subsection{Subsstring}
+\subsection{Subsstring}\index{substring}
 Calls function \verb%substring%. Negative indices may be used to
 offset from end, i.e. -1 is the index of the last element.
 Out of range indices (past the end or before the start, after
@@ -1874,7 +1878,7 @@ var x = a . [to past]; // from the first
 \end{minted}
 
 
-\subsection{Reverse application}
+\subsection{Reverse application}\index{application!reverse}
 Left associative.
 
 \begin{minted}{felix}
@@ -1883,7 +1887,7 @@ var x = f y;
 \end{minted}
 
 
-\subsection{Reverse application with deref}
+\subsection{Reverse application with deref}\index{application!reverse with deref}
 Left associative
 
 \begin{minted}{felix}
@@ -1892,7 +1896,7 @@ var x = (*p) . k;
 \end{minted}
 
 
-\subsection{Reverse application with addressing}
+\subsection{Reverse application with addressing}\index{application!reverse with address}
 Left associative
 
 \begin{minted}{felix}
@@ -1901,7 +1905,7 @@ var x = (&v) . k;
 \end{minted}
 
 
-\subsection{Unit application}
+\subsection{Unit application}\index{application!unit}
 Prefix operator applies argument to empty tuple.
 
 \begin{minted}{felix}
@@ -1910,7 +1914,7 @@ var x = f ();
 \end{minted}
 
 
-\subsection{Addressing}
+\subsection{Addressing}\index{address!variable}
 Finds the pointer address of a variable.
 Means pointer to in type language.
 
@@ -1922,7 +1926,7 @@ var px : &int = &x;
 \end{minted}
 
 
-\subsection{C pointer}
+\subsection{C pointer}\index{pointer!C}
 Used in type language for pointer to type or NULL.
 
 \begin{minted}{felix}
@@ -1934,25 +1938,6 @@ Note that this symbol is also used in fdoc as a markup
 indicator. Please keep out of column 1, do not follow
 with a left brace.
 
-\subsection{Label address}
-Used to find the machine address in the code text of
-a label. Used with computed goto instruction.
-
-\begin{minted}{felix}
-proc f (a: int) {
-  var target: LABEL = 
-    if a < 0 then label_address neg
-    elif a > 0 then label_address pos
-    else label_address zer
-  ;
-  goto-indirect target;
-  pos:> println$ "pos"; return;
-  neg:> println$ "neg"; return;
-  zer:> println$ "zer"; return;
-}
-\end{minted}
-
-
 \subsection{Macro freezer}
 Used to disable macro expansion of a symbol.
 
@@ -1963,7 +1948,7 @@ var x = joe + fred;
 \end{minted}
 
 
-\subsection{Pattern variable}
+\subsection{Pattern variable}\index{pattern!variable}
 Notation \verb%v% Used in patterns to designate a val variable
 to be bound in the pattern matching.
 
@@ -1976,11 +1961,11 @@ var x =
 \end{minted}
 
 
-\subsection{Parser argument}
+\subsection{Parser argument}\index{argument!parser}
 Notation \verb%n} for some integer @{n%. In user defined syntax designates
 the n'th term of a syntax production.
 
-\section{Qualified name}
+\section{Qualified name}\index{name!qualified}
 A name in Felix has the form:
 
 \begin{minted}{felix}
@@ -1992,7 +1977,7 @@ This is the same as C++ except we use \verb%[]} instead of @{<>%
 for template argument types.
 
 \chapter{Atoms}
-\section{Record expression}
+\section{Record expression}\index{record!expression}
 
 \begin{minted}{felix}
 var x = (name="Hello", age=42);
@@ -2024,7 +2009,7 @@ var x :
 \end{minted}
 
 
-\section{Wildcard pattern}
+\section{Wildcard pattern}\index{pattern!wildcard}
 Used in a pattern match, matches anything.
 
 \begin{minted}{felix}
@@ -2032,7 +2017,7 @@ Used in a pattern match, matches anything.
 \end{minted}
 
 
-\section{Ellipsis}
+\section{Ellipsis}\index{ellipsis}\index{varargs}
 Used only in C bindings to denote varags.
 
 \begin{minted}{felix}
@@ -2040,7 +2025,7 @@ Used only in C bindings to denote varags.
 \end{minted}
 
 
-\section{Truth constants}
+\section{Truth constants}\index{true}\index{false}\index{bool}
 
 \begin{minted}{felix}
   false // alias for case 0 of 2
@@ -2065,7 +2050,7 @@ var x = f ();
 \end{minted}
 
 
-\section{Sequencing}
+\section{Sequencing}\index{sequencing}
 Function dependent on final expression.
 
 \begin{minted}{felix}
@@ -2074,7 +2059,7 @@ var x = #{ var y = 1; var z = y + y; return z + 1; };
 \end{minted}
 
 
-\section{Procedure of unit.}
+\section{Procedure of unit.}\index{procedure!unit}
 
 \begin{minted}{felix}
 var p = { println$ "Hello"; } // procedure
@@ -2085,7 +2070,7 @@ var x = f ();
 \end{minted}
 
 
-\section{Grouping}
+\section{Grouping}\index{grouping!parentheses}\index{parentheses!grouping}
 Parentheses are used for grouping.
 
 \begin{minted}{felix}
@@ -2100,7 +2085,7 @@ var x = extend a,b with c end;
 \end{minted}
 
 
-\section{Conditional expression}
+\section{Conditional expression}\index{conditional}
 
 \begin{minted}{felix}
 var x =
@@ -2108,7 +2093,7 @@ var x =
 ;
 \end{minted}
 
-\chapter{Pattern Matching}
+\chapter{Pattern Matching}\index{pattern!matching}
 The patterns
 are composed of these forms:
 
@@ -2139,7 +2124,7 @@ endmatch
 \end{minted}
 
 
-The tuple as list cons match is a form of row polymorphism
+The tuple as list cons match is a form of row polymorphism\index{polymorphism!row}
 where the first element of a tuple and the remaining elements
 considered as a tuple are matched.
 
@@ -2147,7 +2132,7 @@ A good example of this is found in the library \href{http://felix-lang.org/share
 which allows printing a tuple of arbitrary number of components, indeed,
 this facility was implemented precisely to allow this definition in the library.
 
-Record matches succeed with any record containing a superset
+Record\index{record!matching} matches succeed with any record containing a superset
 of the specified fields.
 
 As well as integer and string matches, a literal of any type with an
@@ -2156,10 +2141,10 @@ if there is a less than or equal operator \verb%<=% an inclusive
 range match can be specified.
 
 
-\chapter{Definitions}
+\chapter{Definitions}\index{definitions|textbf}
 \href{http://felix-lang.org/share/lib/grammar/functions.fsyn}{Syntax}
 
-\section{Functions }
+\section{Functions}\index{function!definition|textbf}
 A felix function definition takes one of three basic forms:
 
 \begin{minted}{felix}
@@ -2191,9 +2176,9 @@ fun g (x:int) :int => x + x + 1;
 \end{minted}
 
 
-Functions may not have side effects.
+Functions may not have side effects.\index{side-effect!function}
 
-All these function have a type:
+All these function have a type:\index{type!function}\index{function!type}
 
 \begin{minted}{felix}
 D -> C
@@ -2242,7 +2227,9 @@ This hash operator binds more tightly than operator dot so
 
 
 
-\section{Pre- and post-conditions}
+\section{Pre- and post-conditions}\index{precondition!function}\index{postcondition!function}
+\index{function!precondition}\index{function!postcondition}\index{expect!function}\index{function!when}
+\index{function!result}
 A function using one of the first two forms
 may have pre-conditions, post-conditions, or both:
 
@@ -2260,7 +2247,7 @@ to prove a pre- or post-condition must hold and elide it.
 The special identifier \verb%result% is used to indicate the return
 value of the function.
 
-\section{Higher order functions}
+\section{Higher order functions}\index{function!higher order}
 A function may be written like
 
 \begin{minted}{felix}
@@ -2268,7 +2255,7 @@ fun hof (x:int) (y:int) : int = { return x + y; }
 fun hof (x:int) (y:int) => x + y;
 \end{minted}
 
-These are called higher order functions of arity 2.
+These are called higher order functions of arity 2.\index{function!arity}\index{arity!function}
 They have the type
 
 \begin{minted}{felix}
@@ -2297,7 +2284,7 @@ hof 1 2 // or equivalently
 
 since whitespace application is left associative.
 
-\section{Procedures}
+\section{Procedures}\index{procedure!definition}
 A function which returns control but no value is called a procedure.
 Procedures may have side effects.
 
@@ -2384,7 +2371,7 @@ Therefore even if twice is inlined we end up with the argument
 to \verb%println} being @{tmp+tmp} and not @{#seq+#seq% which would
 print an odd number.
 
-\subsection{Yielding Generators}
+\subsection{Yielding Generators}\index{yield}\index{generator!yielding}
 A generator may contain a \verb%yield% statement:
 
 \begin{minted}{felix}
@@ -2438,7 +2425,7 @@ that the initial state is fresh.
 Yielding generators are primarily intended to implement iterators,
 that is, to provide lazy lists or streams.
 
-\section{Constructors}
+\section{Conversion Operators}\index{conversion}\index{constructor}
 Felix provides a special notation which allows an identifier
 naming a type to return a value of that type:
 
@@ -2452,7 +2439,8 @@ ctor polar (r: double, theta: double) =>
 var z = cart (20.0,15.0) + polar (25.8, 0.7 * pi);
 \end{minted}
 
-The constructions are equivalent to
+Such conversion operators are sometimes (incorrectly) called
+constructors.  The constructions are equivalent to
 
 \begin{minted}{felix}
 fun _ctor_cart (x:double, y:double) : cart => dcomplex (x,y);
@@ -2469,7 +2457,7 @@ Note that Felix generates a constructor for struct and cstruct types
 automatically with argument type the product of the types of the
 structure fields.
 
-\section{Special function {\tt apply}}
+\section{Special function {\tt apply}}\index{apply!non-function}
 When Felix finds and application
 
 \begin{minted}{felix}
@@ -2493,7 +2481,7 @@ var x = "hello " "world"; // apply a string to a string
 
 
 \section{Dynanic Objects}
-\label{Dynamic Objects}
+\label{Dynamic Objects}\index{object!dynamic}
 Felix provides an object system with syntax based on Java,
 and technology based on CLOS.
 
@@ -2582,7 +2570,7 @@ Parse units can be and are parsed independently.
 The contents of a parse unit cannot influence the
 parsing of another.
 
-\section{Include Directive}
+\section{Include Directive}\index{include!directive}
 \subsection{Syntax}
 An include directive has the syntax:
 
@@ -2762,7 +2750,7 @@ The Felix standard library actually defines
 $\lceil e \rceil$ to the function \verb%ceil%
 so we couldn't use them in the example.
 
-\subsection{Scheme Actions}
+\subsection{Scheme Actions}\index{scheme!action}\index{action!scheme}
 Provided the returned AST is acceptable to subsequent
 processing steps, this mechanism is safe provided the
 executed Scheme code is purely functional.
@@ -2951,7 +2939,7 @@ syntax macros {
 }
 \end{minted}
 
-\subsection{{\tt requires} statement}
+\subsection{{\tt requires} statement}\index{requires!grammar}
 Within a dssl definition, the requires statement
 consists of the word \verb%requires% followed by a comma
 separated list of identifiers, and terminated by a semi-colon.
@@ -2961,7 +2949,7 @@ dssl depends, so that subsequently activating the dssl
 will also cause the dependent dssls, recursively, to be
 activated.
 
-\subsection{Priority statement}
+\subsection{Priority statement}\index{priority!grammar}
 The \verb%priority% statement introduces a set of priority
 names which can be used for indexed non-terminals,
 and specifies a total ordering between them,
@@ -3013,7 +3001,7 @@ in the Felix grammar, lower priority means weaker binding:
 \end{minted}
 
 
-\subsection{Non-terminal definition}
+\subsection{Non-terminal definition}\index{non-terminal!grammar}
 A nonterminal definition, in its most basic
 form, consists of the non-terminal name,
 followed by \verb":=" followed by a list of alternatives
@@ -3078,7 +3066,7 @@ occurence of a macro parameter with the correponding argument
 of the call.
 \end{itemize}
 
-\subsection{Grammar Macros}
+\subsection{Grammar Macros}\index{macros!grammar}
 A grammar macro is defined by the same syntax as a non-terminal,
 except that a sequence of parameter names is added on the lhs after
 the first name. The first name may not be indexed.
@@ -3149,7 +3137,7 @@ This method obeys the Open/Closed principle because each closure
 is specific and cannot be further extended, yet the open part of
 the system remaims open for extension.
 
-\subsection{{\tt regdef} statement}
+\subsection{{\tt regdef} statement}\index{regdef!grammar}
 The \verb%regdef% statement defines an alias
 for a regular expression. A regular expression
 may consist of:
@@ -3190,7 +3178,7 @@ each being a sequence
   regdef bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +;
 \end{minted}
 
-\subsection{{\tt literal} statement}
+\subsection{{\tt literal} statement}\index{literal!grammar}
 The \verb%literal% statement associates a non-terminal with
 a regular expression.
 
@@ -3230,7 +3218,7 @@ of the literal. The third field is the internal representation
 of the value. The last field is a string representing
 the value in C++.
 
-\subsection{{\tt open syntax} statement}
+\subsection{{\tt open syntax} statement}\index{open syntax!grammar}
 The \verb%open syntax% statement consists of the words
 \verb%open syntax% followed by a comma separated list of names.
 
@@ -3253,7 +3241,7 @@ The mangling replaces characters in the filename with
 other characters so that the module name is a valid
 ISO C identifier.
 
-\section{Special procedure {\tt flx\_main}}
+\section{Special procedure {\tt flx\_main}}\index{flx\_main}
 A program module may contain at most one top level
 procedure with no arguments, exported as \verb%flx_main%. 
 After initialisation code suspends or terminates, this procedure is invoked
@@ -3300,12 +3288,12 @@ an include directive being present.
 
 
 % =====================================
-\chapter{Lexicology}
+\chapter{Lexicology}\index{utf8}\index{UTF-8}\index{Unicode}
 All Felix files are considered to be UTF-8 encoded Unicode.
 
 Felix uses a scannerless parser, there are no keywords.
 
-\section{Comments}
+\section{Comments}\index{comments!grammar}
 There are lexical commenting methods for \verb%*.flx% files.
 Comments are treated as white space separators. For example
 
@@ -3317,11 +3305,11 @@ The two forms of lexical comments are exclusive, once the
 parser is scanning one kind of comment the other is not
 recognised.
 
-\subsection{C++ comments}
+\subsection{C++ comments}\index{C++ comments!grammar}
 C++ style comments consist of \verb%//% followed by all the characters
 up to and including the next newline charcter.
 
-\subsection{Nested C comments}
+\subsection{Nested C comments}\index{C comments!grammar}\index{comments!nested}
 C style comments consist of the lead in sequence
 \verb%/*% followed by all the characters
 up to and including the balancing exit sequence \verb%*/%. 
@@ -3330,12 +3318,12 @@ multiple lines and can be nested. When scanning comments
 lead in and exit sequences are recognised as such even
 in strings.
 
-\section{Layout}
+\section{Layout}\index{layout!grammar}
 Felix treats code points 0 through 32 (space) as whitespace
 which may be used freely between symbols. Whitespace is significant
 in strings, however, and newline is a terminator for C++ style comments.
 
-\section{File inclusion}
+\section{File inclusion}\index{include!grammar}
 There is (deliberately) no support in the Felix language 
 for lexical (physical)  file inclusion. Inclusions are processed at 
 the AST level instead, allowing files to be parsed independently of other files. 
@@ -3343,7 +3331,7 @@ However command line switches can be used to prepend files or sets
 of files to the command input file, in particular the grammar
 and some standard macros are notionally inserted.
 
-\section{fdoc files}
+\section{fdoc files}\index{fdoc}
 As well as \verb%*.flx% files, the Felix language processor
 can directly process \verb%*.fdoc% files using a limited
 subset of available \verb%fdoc% commands.
@@ -3352,7 +3340,7 @@ subset of available \verb%fdoc% commands.
 The translator begins treating the file in comment mode, so all text
 is ignored up to a Felix leadin code.
 
-\subsection{Uncomments}
+\subsection{Uncomments}\index{uncomment}
 A felix uncomment switches to processing lines as Felix program code.
 It consists of the line \verb%@felix%, and is terminated by any
 line starting with \verb%@%. 
@@ -3371,7 +3359,7 @@ println$ x;
 which prints it.
 \end{minted}
 
-\subsection{{\tt \#line} directive}
+\subsection{{\tt \#line} directive}\index{\#line!directive}
 Felix provides support for programs that generate Felix code
 by allowing C style \verb%#line% directives. Such a directive
 consists of the characters \verb%#line% at the start of a line,
@@ -3425,7 +3413,7 @@ This is the standard way to refer to the most recent version of Felix
 installed on Unix systems. Note the path name to the translator
 on Unix systems must be an absolute path for security reasons.
 
-\section{Identifiers}
+\section{Identifiers}\index{identifier!grammar}
 
 \href{http://felix-lang.org/share/lib/grammar/grammar_ident_lexer.fsyn}{Library Reference}
 
@@ -3454,7 +3442,7 @@ Identifiers are uniquely identified by their sequence of
 ISO-10646 (Unicode) code points, alternate encodings of the same 
 glyph are distinct.
 
-\subsection{TeX Identifiers}
+\subsection{TeX Identifiers}\index{identifier!TeX}
 A TeX identifier starts with a slosh and is followed by a sequence
 of letters. 
 
@@ -3463,7 +3451,7 @@ Here is a partial table of
 recognised by the grammar as identifiers with undefined semantics
 but pre-assigned kind and precedence.
 
-\section{Operator Identifiers}
+\section{Operator Identifiers}\index{identifier!operator}
 Felix allows some operators to be used as an identifier.
 For example you can write:
 
@@ -3485,7 +3473,7 @@ positions where an identifier is expected:
     <  >  ==  !=  <=  >=  <<  >> 
 \end{verbatim}
 
-\subsection{Special identifiers}
+\subsection{Special identifiers}\index{identifier!arbitrary}
 The special string literal with a "n" or "N" prefix is a way to encode
 an arbitrary sequence of characters as an identifer in a context
 where the parser might interpret it otherwise.
@@ -3496,10 +3484,10 @@ For example:
 typedef fun n"@" (T:TYPE) : TYPE => cptr[T];
 \end{minted}
 
-\section{Boolean Literals}
+\section{Boolean Literals}\index{literal!bool}\index{bool!literal}
 There are two literals of type \verb%bool%, namely \verb%true% and \verb%false%.
 
-\section{Integer Literals}
+\section{Integer Literals}\index{literal!integer}\index{integer!literal}
 
 \href{http://felix-lang.org/share/lib/grammar/grammar_int_lexer.fsyn}{Library Reference}
 
@@ -3578,7 +3566,7 @@ type.
 
 There is a table of the operators \fullref{Floating Operators}.
 
-\section{String like literals}
+\section{String like literals}\index{literal!string}\index{string!literal}
 \href{http://felix-lang.org/share/lib/grammar/grammar_string_lexer.fsyn}{Library Reference}
 
 \subsection{Standard string literals}
@@ -3597,7 +3585,7 @@ characters.
 The complete list of special escapes is shown in table \fullref{String Escapes}.
 
 \begin{table}
-\caption{String Escapes\label{String Escapes}}
+\caption{String Escapes\label{String Escapes}}\index{string!escape}
 \centering
 \begin{tabular}[c]{lll}
 \multicolumn{3}{c}{Basic}\\
@@ -3864,7 +3852,7 @@ constructions.
 \section{Kinds of Names}
 Felix has several kinds of names which can find two kinds of entities.
 
-\subsection{Simple Names}
+\subsection{Simple Names}\index{name!simple}
 A {\em simple name} is just an identifier.
 
 \begin{minted}{felix}
@@ -3872,7 +3860,7 @@ A {\em simple name} is just an identifier.
   joe
 \end{minted}
 
-\subsection{Simple Indexed Names}
+\subsection{Simple Indexed Names}\index{name!indexed}
 An {\em simple indexed name} is an identifier followed by an
 open square bracket \verb%[%, a possibly empty comma separated list of type
 expressions, followed by a close square bracket \verb%]%. If the list
@@ -3884,13 +3872,13 @@ is empty, the name is equivalent to a simple name.
   fred[int,string]
 \end{minted}
 
-\subsection{Unqualified Names}
+\subsection{Unqualified Names}\index{name!unqualified}
 An {\em unqualified name} is a simple name or simple
 indexed name. Because indexed names with an empty index list
 are equivalent to simple unindexed names, all unqualified names
 are notionally simple indexed names.
 
-\subsection{Qualified Names}
+\subsection{Qualified Names}\index{name!qualified}
 A {\em qualified name} is sequence of at least two unqualified names
 separated by two colons \verb%::%.
 
@@ -3900,15 +3888,15 @@ separated by two colons \verb%::%.
   root::B
 \end{minted}
 
-\subsection{Special name {\tt root}}
+\subsection{Special name {\tt root}}\index{root}
 The special name \verb%root% is an alias for the top level module
 name and may be used to force qualified name lookup  starting with the top
 level module.
 
-\subsection{Unsuffixed Name}
+\subsection{Unsuffixed Name}\index{name!unsuffixed}
 An {\em unsuffixed name} is a qualified or unqualified name.
 
-\subsection{Suffixed Name}
+\subsection{Suffixed Name}\index{name!suffixed}
 A {\em suffixed name} is an unsuffixed name followed by a suffix consisting
 of the word \verb%of% followed either by a simple name, or a possibly empty
 comma separated list of type expressions enclosed in parentheses \verb%(% and
@@ -3926,14 +3914,14 @@ from an overloaded set.
 \section{Symbol Tables}
 Felix represents scopes using symbol tables. There are two kinds of symbol table.
 
-\subsection{Symbol definition table}
+\subsection{Symbol definition table}\index{table!symbol definition}
 Every symbol defined is allocated a unique integer representative and 
 the definition is stored in a hash table keyed by this integer, 
 this is the {\em symbol definition table}. 
 The definition includes a reference to the parent if any, and, a name lookup table if the
 defined entity contains a scope.
 
-\subsection{Name lookup table}
+\subsection{Name lookup table}\index{symbol table!lookup}
 For each scope, another kind of hash table called a {\em name lookup table}
 is used which maps a string name to a single entry which is one of two
 kinds: either the entry is a non-function entry or a function entry.
@@ -3942,18 +3930,18 @@ function entries contain a list of views.
 
 Each scope is associated with two name lookup tables.
 
-\subsubsection{Private name lookup table}
+\subsubsection{Private name lookup table}\index{symbol table!private}
 This table maps all the names defined in the scope
 to all the definitions in the scope. It is used for
 unqualified lookup within the scope or any children of the scope.
 
-\subsubsection{Public name lookup table}
+\subsubsection{Public name lookup table}\index{symbol table!public}
 This table contains mappings of the names of all
 definitions in the scope which are not marked private
 to those definitions. It is used for qualified lookup
 into the scope from outside the scope.
 
-\subsection{Views}
+\subsection{Views}\index{symbol!view}\index{view!symbol}
 A {\em view} of a symbol consists of the index of the definition in the
 symbol definition table together with a list of type variables and a list
 of type expressions using these type variables, this list of
@@ -4000,7 +3988,7 @@ setwise union.
 
 This is effected as follows by overload resolution.
 
-\subsection{Name lookup environments}
+\subsection{Name lookup environments}\index{environment!lookup}
 A name lookup environment consists of a stack of pairs
 of name lookup tables. The top of the stack represents
 the current, innermost scope. This is where searching
@@ -4013,30 +4001,30 @@ which has no parent.
 The two name lookup tables at each level are the primary
 name lookup table and the shadow name lookup table.
 
-\subsubsection{Primary name lookup table}
+\subsubsection{Primary name lookup table}\index{symbol table!primary}
 The primary name lookup table contains mappings for
 all the symbols defined in the scope or injected
 into the scope with a \verb%inherit% or \verb%rename% directives.
 
-\subsubsection{Shadow name lookup table}
+\subsubsection{Shadow name lookup table}\index{symbol table!shadow}\index{shadow!symbol table}
 The shadow name lookup table contains mappings for
-all the symbols made available by an \verb%open% directive
-or by the \verb%with% clause of the type variable specification
+all the symbols made available by an \verb%open%\index{open!directive} directive
+or by the \verb%with%\index{with!clause} clause of the type variable specification
 of a definition.
 
 \verb%open% directives make the public names defined
 in, or inherited into, a class available via a view.
 
-The name lookup algorithms always search the primary
+The name lookup algorithms\index{algorithm!lookup} always search the primary
 lookup table first, if that fails they try the shadow
 table. This ensures any definitions in a scope can be used
 to hide names provided by an open, which ensures it is
 possible to resolve ambiguities or modify semantics
 for a particular name, whilst retaining the other names.
 
-\section{Overload Resolution}
+\section{Overload Resolution}\index{overload!resolution}
 Overload resolution proceeeds as follows. We start with the result
-of a function lookup which returns a set of views called candidates.
+of a function lookup which returns a set of views called candidates.\index{overload!candidate}
 Our aim is to select a unique function, together with assignments to
 the type variables of the definition, which cause the signature
 of the call to equal the signature of the function, and any constraints
@@ -4045,15 +4033,16 @@ specified for the function to be satisfied.
 \begin{itemize}
 \item During overload resolution, a subset of the
 candidates views is selected which match the supplied name and signatures.
+\index{overload!signature}
 
 \item Constraints are now applied to eliminate candidates additional candidates.
-See \fullref{Type Constraints} for more details.
+See \fullref{Type Constraints} for more details.\index{overload!type constraint}
 
 \item The subset is then reduced by eliminating views which are strictly less
-specialised than another. 
+specialised than another. \index{overload!specialisation}
 
 \item If the result of this reduction consists of a set
-of more than one view of the same function, then they must map to the same
+of more than one view\index{overload!view} of the same function, then they must map to the same
 specialisation of the function, and overload resolution has succeeded. 
 \end{itemize}
 
@@ -4109,16 +4098,16 @@ In this case, there is no overloading to consider since the
 particular function in each instance is already selected:
 we only need consider the specialisation lattice. }
 
-\section{Lookup}
+\section{Lookup}\index{lookup!name|textbf}
 Names refer either to a function set or single non-function entity.
 Finding the entity a particular use of a name refers to is called
 {\em name lookup} or {\em name binding}.
 
-Note that unlike C++, Felix has no automatic type conversions.
-Matching of signatures in Felix must be exact.
+Note that unlike C++, Felix has no automatic type conversions.\index{conversion!automatic}
+Matching of signatures in Felix must be exact.\index{matching!exact}
 (However see \fullref{Row Polymorphism}).
 
-\subsection{Unqualified name lookup}
+\subsection{Unqualified name lookup}\index{lookup!unqualified name|textbf}
 Unqualified name lookup is performed using one of 
 two base general algorithms, depending on the kind
 of name required.
@@ -4133,9 +4122,9 @@ the compiler aborts with a diagnostic message.
 
 If the name is not found, it then looks in the special
 shadow scope of the current context which contains symbols
-inserted by \verb%open% or \verb%rename% directives.
+inserted by \verb%open%\index{open!directive} or \verb%rename% directives.
 
-If an \verb%open% or \verb%rename% directive introduces
+If an \verb%open% or \verb%rename%\index{rename!directive} directive introduces
 the same non-function name into the same shadow scope
 and it refers to the same non-function, with the equivalent
 indices, one entry is discarded to prevent an ambiguous
@@ -4198,11 +4187,11 @@ fun f() => 1;
 var closure = f; // only one f, OK
 \end{minted}
 
-\subsection{Lookup with signatures}
+\subsection{Lookup with signatures}\index{lookup!signature}
 Felix can find a list of signatures for a function
 lookup in two contexts.
 
-If the name is a suffixed name, the suffix supplies
+If the name is a suffixed name\index{lookup!suffixed name}, the suffix supplies
 the sole signature:
 
 \begin{minted}{felix}
@@ -4249,7 +4238,8 @@ fun itod (x:int): double => x.double;
 \end{minted}
 
 
-\subsection{Unqualified function lookup with signatures}
+\subsection{Unqualified function lookup with signatures}\index{lookup!signature}
+\index{lookup!unqualified!function}
 When seeking a function with signatures, 
 felix follows similar rules to non-functions, except as follows. 
 
@@ -4261,7 +4251,7 @@ If there is no match at all, it proceeds with the next step.
 If there is more than one match, and no match is most specialised,
 it aborts with a diagnostic message.
 
-Lookup in the shadow scope is performed similarly.
+Lookup in the shadow scope is performed similarly.\index{lookup!shadow}
 Function names introduced from multiple opens are merged
 prior to the shadow scope lookup. This merger ensures that
 if the same name is present in two opens, refers to the same
@@ -4301,7 +4291,7 @@ Note that this algorithms is not the same as C++.
 Felix has fixed the design fault.
 
    
-\subsection{Qualified non-funtion name lookup}
+\subsection{Qualified non-funtion name lookup}\index{lookup!qualified!non-function}
 Qualified name lookup for a non-function proceeds by
 first performing an unqualified name lookup on the first
 component of the qualified name, ignoring indices.
@@ -4327,7 +4317,7 @@ kind sought.
 Finally the complete sequence of type index parameters is checked
 for length against the entity's definition.
 
-\subsection{Qualified function name lookup}
+\subsection{Qualified function name lookup}\index{lookup!qualified!function}
 Searching for a qualified name of a function is the same
 as for a non-function, except that a set of overloaded
 functions may be returned. 
@@ -4342,7 +4332,7 @@ last component returns a function set.
 Overload resolution is then performed on the function set.
 The result is final.
 
-\chapter{Libraries}
+\chapter{Libraries}\index{library!statement}
 The \verb%library% statement may be used to form extensible
 groups of named definitions.
 
@@ -4384,10 +4374,103 @@ as if enclosed in an anonymous library.
 
 Otherwise the order of execution is unspecified.
 
+\chapter{Abstract Types}\index{type!abstract|textbf}
+An abstract type is a type for which a specific implementation
+is given, but which can only be accessed by specified methods.
+
+\subsection{Syntax}
+An abstract type is created like this, taken
+from the standard library. First define the type
+in terms of another type:
+
+\begin{minted}{felix}
+open class Darray {
+  private struct darray_ctl[T]
+  {
+    a: varray[T];
+    resize: size * size --> size;
+  }
+  type darray[T] = new &darray_ctl[T];
+\end{minted}
+
+Now, we provide a constructor for the abstract type:
+
+\begin{minted}{felix}
+  //$ Make an empty darray, give it 20 slots 
+  //$ for no particular reason.
+  ctor[T] darray[T] () => 
+    _make_darray[T]$ new darray_ctl[T](
+      varray[T] 20uz , dflt_resize
+  );
+\end{minted}
+
+We use the special name \verb%_make_darray% for the constructor.
+It constructs a value of the abstraction implementation secretly
+and casts it to the abstract type.
+
+Now we need some methods defined on the abstract type:
+
+\begin{minted}{felix}
+  // resize
+  proc do_resize[T] (pd: darray[T], new_size: size)
+  {
+    var old = (_repr_ pd)*.a;
+    (_repr_ pd).a <- 
+      varray[T] (new_size, (len old), (fun(i:size)=>old.i));
+  }
+
+  // pop head
+  proc pop[t](a:darray[t]) {
+    pop (_repr_ a)*.a;
+    newsize := (_repr_ a)*.resize 
+      (maxlen (_repr_ a)*.a, len (_repr_ a)*.a)
+    ;
+    if newsize != maxlen (_repr_ a)*.a 
+      call do_resize (a,newsize)
+    ;
+  }
+} // end Darray class
+\end{minted}
+
+These methods use the special name \verb%_repr_% to cast the abstract
+type to its implementation.
+
+So, the statement
+
+\begin{minted}{felix}
+  type darray[T] = new &darray_ctl[T];
+\end{minted}
+
+defines a new, abstract, polymorphic type, \verb%darray[T]%
+implemented as a pointer to a \verb%struct% containing an 
+bounded array \verb%varray% and a \verb%resize% function.
+
+In order to construct a \verb%darray%, we first create pointer
+to a \verb%darray_ctl% objects, and then cast it to the
+abstract type using special name \verb%_make_darray%.
+The cast from the representation to the abstract type is the
+name of the abstract type constructor prefixed by \verb%_make_%.
+
+To access the implementation, which is needed to define methods
+on the abstract type, we use the cast \verb%_repr_%, which 
+converts the abstract type back to its implementation.
+
+Both these casts are private to the containing class \verb%Darray%,
+so they can only be used in the class defining the abstract type,
+because private names of a class are only accessible within
+the class (and it descendants of course).
+
+Therefore, the mechanism provides a way to rigorously protect
+the implementation of the abstract type. The privacy of
+the representation type in the example is not necessary, but is used
+to prevent namespace pollution.
+
+
+
 \chapter{Classes}
 \href{http://felix-lang.org/share/lib/grammar/namespaces.fsyn}{Syntax}
 
-\section{Class Statement}
+\section{Class Statement}\index{class!statement|textbf}
 The top level Felix module can contain submodules 
 which are specified by a non-polymorphic class
 statement:
@@ -4396,7 +4479,7 @@ statement:
 class classname { ... }
 \end{minted}
 
-\subsection{Qualified Names}
+\subsection{Qualified Names}\index{name!qualified}
 The effect is to produce a qualified name to be used
 outside the class:
 
@@ -4405,7 +4488,7 @@ class classname { proc f () {} }
 classname::f (); 
 \end{minted}
 
-\subsection{Nested Classes}
+\subsection{Nested Classes}\index{class!nested}
 Classes may be nested.
 
 \begin{minted}{felix}
@@ -4419,7 +4502,7 @@ class A {
 A::B::f (); 
 \end{minted}
 
-\subsection{Private definitions}
+\subsection{Private definitions}\index{definition!private}
 A class may contain private definitions,
 if a symbol is marked private it is only visible
 in the scope class in which it is defined,
@@ -4445,10 +4528,11 @@ A class must be specified within a single file.
 Classes are not extensible, a definition of a class
 with the same name in the same scope is not permitted.
 
-\subsection{Setwise Lookup}
+\subsection{Setwise Lookup}\index{lookup!setwise}
 The body of a class forms a nested scope. Within
 a class all symbols defined in the class are visible,
 along with all those visible in the enclosing context.
+This is called \gls{setwise lookup}.
 
 \begin{minted}{felix}
 var x = "Hello";
@@ -4474,7 +4558,7 @@ class A { var x = root::x; }
 
 \section{Polymorphic Classes}
 
-\subsection{Parametric Polymorphism}
+\subsection{Parametric Polymorphism}\index{polymorphism!parametric|textbf}
 A class may be specified with one or more type variables.
 Such a class is said to be a polymorphic class.
 
@@ -4942,7 +5026,7 @@ Unlike the rename directive the new name cannot be polymorphic
 and is limited to a simple identifier.
 
 \part{Type System}
-\chapter{Type constructors}
+\chapter{{\tt typedef} statement}\index{typedef}
 \href{http://felix-lang.org/share/lib/grammar/type_decls.fsyn}{Syntax}
 
 \section{Type aliases}
@@ -5070,6 +5154,7 @@ The \verb%M% above accepts a functor, \verb%Maybe% in the instance.
 We can't use \verb%opt% directly because it is an indexed type,
 not a functor.
 
+\chapter{Products}
 \section{Tuples}
 Tuple types are well known: a tuple is just a Cartesian Product
 with components identified by position, starting at 0. 
@@ -5484,7 +5569,8 @@ var di = a . diag;
 Note we can't form a closure for \verb%get2x% without an explicit wrapper,
 i.e. eta-expansion.
 
-\section{Sums}
+\chapter{Sums}
+\section{Anonymous Sum Types}
 Sum types are the dual of tuples. They represent a sequence
 of possible cases, potentially with arguments.  For example
 the sum type:
@@ -5702,6 +5788,203 @@ The type being coerced must be super type of the coercion type,
 this means it must have subset of the cases of the coercion type.
 
 
+\chapter{Exponentials}
+\section{Functions}
+Felix provides four core function types.
+
+\subsection{Function}
+Functions use infix operator \verb%->% to denote a function,
+where the LHS is called the domain, and the RHS the codomain:
+
+\begin{minted}{felix}
+var f : int -> long = fun (x:int)=>x.long;
+\end{minted}
+
+The operator is right associative so that
+
+\begin{minted}{felix}
+var f : int -> long -> string = 
+  fun (x:int) => 
+    fun (y:long)=> 
+      (x.long + y).str
+;
+// equivalent to
+var f : int -> (long -> string) = 
+  fun (x:int) (y:long) => 
+      (x.long + y).str
+;
+\end{minted}
+
+If a function returns a function, it is a higher order functions.
+The number of \verb%->% symbols in the type is known as the
+{\em arity} of the function.
+
+Function defined with \verb%fun% binder may not have side effects.
+
+Functions are slaves which accept data and control, perform
+a calculation, and return a result and control to the 
+caller, which is the master. The master/slave relationship may
+also be expressed as a client/server relationship.
+
+Felix uses the machine stack to save and retrieve the
+master return address for a function.
+
+At run time a function closure is represented by a single machine
+address which is nominally a pointer to a heap allocated C++
+object which retains the function local variables and
+provides an \verb%apply()% method.
+
+Functions which depend only on their arguments and
+any constants in their context are said to be {\em pure},
+those which depend on external variables are {\em impure}.
+The kind can be noted with an adjectival descriptor on
+the definition:
+
+\begin{minted}{felix}
+pure fun sin: double -> double = "sin($1)";
+var x = 1;
+impure fun get_x() => x;
+\end{minted}
+
+Impure functions are sometimes called observers or accessors.
+
+\section{Generators}
+A generator is a function which is permitted to have side effects.
+It is defined with the \verb%gen% binder instead of \verb%fun%.
+
+Generators have the same type as functions.
+
+The exemplar generator is of course \verb%rand()% which
+returns a different value each call, depending on some
+external state.
+
+\section{Yielding Generators}
+Generators may contain a yield statement which returns a value
+and control, but also records the current location in the local
+state, to allow the generator to be resumed where it left off.
+
+To use a yielding generator a closure must be stored in a variable.
+
+Yielding generators are a special case of coroutines, implemented
+in a special way.
+
+\begin{minted}{felix}
+gen integers () = {
+  var i = 0;
+next:>
+  yield i;
+  ++i;
+  goto next;
+}
+
+var counter = integers; 
+var zero = counter();
+var one = counter();
+\end{minted}
+
+\subsection{Procedure}
+A procedure is given the type of a function with the codomain
+set to 0 (aka void). Procedures are not functions, they return
+control but not a value. Technically a procedure is a delimited
+continuation.
+
+Although procedures look like functions, in Felix they are utterly
+different because they do not use the machine stack to store the
+return address. Instead, procedures use a heap allocated data frame,
+with pointers to ancestral context and the caller continuation
+return address, and save the current location in a special variable
+in the data frame.
+
+Thus procedures may cooperatively swap themselves out in favour
+of another procedure. 
+
+A procedure with its ancestral context, call chain, and current
+location is called a fibre. It represents an exchangeable locus
+of contol.
+
+\subsection{C function}
+Felix can deal with C functions too. The infix operator 
+\verb%-->% is used to denote a C function type. C functions
+can be defined directly in Felix like:
+
+\begin{minted}{felix}
+cfun f(x:int)=>x + x;
+\end{minted}
+
+Felix will represent this function like:
+
+\begin{minted}{c}
+ int f(int x) { return x + x; }
+\end{minted}
+
+which has a C function type. The Felix C function type is
+a C function closure, in C a pointer to the C function.
+
+If a \verb%cfun% uses the thread frame or garbage collector,
+it will fail to compile at C++ compile time because Felix
+always passes a pointer to the thread frame explicitly.
+
+We provide \verb%cfun% primarily to allow construction of C data
+types used by drivers as callback functions.
+
+However they can also be used to define an interface to a C callable
+library written in Felix.
+
+Note that Felix knows that C functions accept multiple arguments
+rather than tuples and automatically unpacks a tuple passed
+to a C function.
+
+\subsection{C procedure}
+Felix can deal with C procedures too, the type is the same
+as a C function with the codomain set to void.
+
+\begin{minted}{felix}
+var y = 1;
+cproc f(x:int) {y = x}
+\end{minted}
+
+Felix will represent this like:
+
+\begin{minted}{c}
+ void f(int x) { y = x; }
+\end{minted}
+
+which has a C function type. The Felix C function type is
+a C function closure, in C a pointer to the C function.
+
+If a \verb%cfun% uses the thread frame or garbage collector,
+it will fail to compile at C++ compile time because Felix
+always passes a pointer to the thread frame explicitly.
+
+\subsection{Type indexed functions}
+Felix has an extension which allows function types to
+be indexed by types. For example:
+
+\begin{minted}{felix}
+struct IO {};
+fun f(x:int) :[IO] int = {
+  println$ x; return x;
+}
+var clos : int ->[IO] int = f;
+\end{minted}
+
+The indexing type is known as the {\em effects} type
+of the function. For functions without effects annotations,
+the effects type defaults to \verb%unit%.
+
+By combining effects types, row polymorphism, and typematches,
+Felix provides tools to manage various effects. For example:
+
+\begin{minted}{felix}
+fun map[T,U] (f:T->[G] U) (list[T]) : [G] list[U] => ..
+\end{minted}
+
+says that the higher order function map, given a function f
+with effect G, will itself have effect G.
+
+This is an experimental feature that is not yet utilised by
+the library.
+
 \section{Array}
 Felix has various kinds of array. The term is abused and sometimes
 refers to the abstract concept, and sometimes the statically
@@ -5852,6 +6135,156 @@ in C by doing your own index calculations at run time and using
 casts, however Felix does these calculations for you based on the
 type so they're always correct.
 
+\chapter{Type Recursion}
+Felix provides two mechanisms to allow type recursion:
+implicit recursion by self reference, and explicit recursion
+using pointers.
+
+\section{The {\tt as} combinator}
+We can express the type of a list without a definition using
+the \verb%as% combinator:
+
+\begin{minted}{felix}
+typedef intlist = 1 + int * X as X;
+\end{minted}
+
+The \verb%as% combinator has low precedence and introduces
+a binding variable similar to a $\mu$ binder in type theory,
+however the variable is visible outside the scope it controls
+as well. The inner use of the variable is known as a {\em fixoint}
+and is a place where whole term controlled by the binder
+may be substituted, resulting, if repeated, in an infinnite
+recursion. The use of the binder therefore allows infinite
+data types to be represented finitely.
+
+In the list case above, a list is either a unit, or a pair
+consisting of an int and another list.
+
+Type recursion in Felix may be written anywhere but will not
+work correctly unless a box intervenes. A box is either any
+sum type or a pointer.
+
+\section{Pointers}\index{pointers|textbf}
+Pointers provide another mechanism for implementing type recursion
+explicitly. Pointers are more powerful than fixpoints, which is
+not always an advantage.
+
+The notation for a pointer to an object of type T is
+either
+
+\begin{minted}{felix}
+&T
+ptr[T] // alias for &T
+\end{minted}
+
+Values of pointer type can originate in two primary ways:
+from the address of a variable:
+
+\begin{minted}{felix}
+var x = 1;
+var px : &int = &x;
+\end{minted}
+
+or by constructing an object on the heap. The \verb%new%
+operator copies a value to a heap object and returns its
+address as a pointer:
+
+\begin{minted}{felix}
+var px : &int = new 1;
+\end{minted}
+
+The basic Felix pointer type cannot be NULL, cannot be
+incremented, and always points to a single object.
+It is therefore always safe to dereference to fetch
+the value stored at the pointer with the prefix
+dereference operator \verb%*%:
+
+\begin{minted}{felix}
+var px : &int = new 1;
+var x = *px;
+\end{minted}
+
+Objects located by pointers are intrinsically mutable.
+A new value can be stored with the store at operator:
+
+\begin{minted}{felix}
+var px : &int = new 1;
+px <- 2;
+\end{minted}
+
+Pointers to products have special properties. More precisely,
+for each value projection $p$ which extracts a the value of
+a product component, there is a corresponding pointer projection
+which accepts a pointer to a product object and returns a pointer
+to the component;
+
+\begin{minted}{felix}
+var pair = 1,"Hello";
+var s = pair . 1; // value projection
+var ps = &pair . 1; // pointer projection
+ps <- "Bye";  // pair is now 1,"Bye"
+\end{minted}
+
+This machinery eliminates the need for the concept of addressable
+lvalues. Thus you cannot take the address of a product component:
+
+\begin{minted}{felix}
+var pair = 1,"Hello";
+// var ps = &(pair.1); // ERROR
+\end{minted}
+
+because \verb%pair.1% is a value, and values do not have
+public addresses. Instead Felix provides some sugar:
+
+\begin{minted}{felix}
+var pair = 1,"Hello";
+var ps = pair&.1; // means (&pair).1
+var &p = &pair;
+var s = p*.1; // means (*p).1
+\end{minted}
+
+\section{Maybe NULL pointers}
+Felix also has a pointer type that could perhaps be NULL.
+It is defined in the library by:
+
+\begin{minted}{felix}
+  union cptr[T] = | nullptr | Ptr of &T;
+\end{minted}
+
+and the alias
+
+\begin{minted}{felix}
+@T
+\end{minted}
+
+may also be used. Due to implementation magic, this type
+is compatible with C/C++ pointers, that is, Felix \verb%nullptr%
+is C \verb%NULL%. In particular, one should write, for example:
+
+\begin{minted}{felix}
+gen malloc: size -> @T = "malloc($1)";
+\end{minted}
+
+because \verb%malloc% could return NULL. Strict adherence to 
+correctly typing C functions is necessary to ensure the
+guarrantee dereferencing Felix pointers is safe.
+
+Note that dereferencing C pointers, even if not NULL, need
+not be safe because the pointed at object may not be live.
+Felix guarrantees to keep heap allocated objects to which
+Felix pointers exist live.
+
+Note that a \verb%cptr[T]% obtained from a \verb%ptr[T]%
+has this guarrantee as well.
+
+\section{Incrementable Pointers}
+Felix also has C style incrementable pointers given the
+type \verb%carray[T]% or alias \verb%+T%. Pointers of this
+type are not intrinsically safe to use. They can be NULL.
+
+The \verb%carray% is provided as a model of C arrays so that
+they can be manipulated in Felix, even if such operations
+are risky.
 
 \chapter{Meta-typing}
 Felix provides some facilities for meta-typing.
@@ -5872,7 +6305,7 @@ of all types.
 Applications of type functions must be resolved during binding, since
 the result may influence overloading.
 
-\section{typematch}
+\section{{\tt typematch} expression}
 \label{typematch}
 Felix has a facility to inspect and decode types at compile time.
 
@@ -5908,43 +6341,103 @@ typedef fun promote (T:TYPE): TYPE =>
 This functor does integral promotions of signed integer types 
 corresponding to ISO C rules.
 
-\section{type sets}
-TBD
-
-\chapter{Abstract types}
-Felix provides abstract types as demonstrated in this example.
+\section{Type Sets}
+A type set is a component of a type constraint expression
+which restricts a type variable one of a specifed list of entities. 
+Each entity may be either a type, a type predicate, or another
+type set.  Syntax like:
 
 \begin{minted}{felix}
-class Rat {
-  type rat = new (num:int, den:int);
-  ctor rat (x:int, y:int) =>  
-    let d = gcd (x,y) in
-    _make_rat (num=x/d, den-y/d)
-  ;
-
-  fun + (a:rat, b:rat) => 
-    let a = _repr_ a in
-    let b = _repr_ b in
-    _make_rat ( 
-      a.num * b.den + b.num * a.den,
-      a.den * b.den
-    )
-  ;
-}
+typesetof (short, int, long, vlong)
 \end{minted}
 
-Here, the abstract type \verb%rat% is represented by a record of
-two integers, \verb%num} and @{den%, but this type is hidden.
+is used for a typeset expression.
 
-Inside the class \verb%Rat} the operator @{_make_rat% 
-casts the implementation value to an abstract value,
-and the operator \verb%_repr_% casts the abstract value to its implementation.
+The typedef statement may be used to define an alias for
+a typeset:
 
-These casts cannot be used outside the class, thereby hiding the implementation
-outside the class.
+\begin{minted}{felix}
+typedef Integers = typesetof (short, int, long, vlong);
+\end{minted}
+
+\subsection{Union and Intersection}
+Two operators are provided for typesets, union and intersection
+which are spelled \verb%\cup% and \verb%cap% respectively and
+are printed as set theoretic union and intersection symbols $\cup$ and $\cap$.
+
+\begin{minted}[escapeinside=||]{felix}
+typedef sints = typesetof (int,long);
+typedef uints = typesetof (uint,ulong);
+typedef ints = sints |$\cup$| uints;
+typedef shorts = typesetof (short,int,long);
+typedef ssints =  ints |$\cap$| shorts;
+\end{minted}
+
+
+\subsection{Membership}
+The membership operator tests if a type is a member
+of a typeset, it is spelled \verb%in% or \verb%\in%, the latter
+being typeset as the set theoretic symbol $\in$. It serves to define the semantics
+of a typeset as a typematch.
+
+\begin{minted}[escapeinside=||]{felix}
+typedef ints = typesetof(short,int,long);
+typedef result = int |$\in$| ints;
+\end{minted}
+
+The membership test above is precisely equivalent to
+
+\begin{minted}{felix}
+typedef result = typematch int with
+  | short => 1
+  | int => 1
+  | long => 1
+  | _ => 0
+endmatch;
+\end{minted}
+
+
+
+\subsection{Typeset membership constraints}
+\label{Typeset membership constraints}
+Typesets were introduced to Felix to simplify bindings to C functions.
+For example:
+
+\begin{minted}{felix}
+typedef someints = typesetof (int, long);
+typedef someuints = typesetof (uint, ulong);
+fun someadd[T in someints] : T * T -> T = "$1+$2";
+fun someadd[T in someuints] : T * T -> T = "$1+$2";
+println$ someadd (1,2); // OK, first function
+println$ someadd (1u,2u); // OK, second function
+// println$ someadd (1,2u); // fails
+\end{minted}
+
+In this example, a call to \verb%someadd% will only work if
+the arguments types are the same and both either \verb%int% or \verb%long%.
+Overload resolution first treats the functions as if there were no constraints.
+Then, any candidate which fails the constraint it thrown out of the set.
+
+This method saves writing out all the cases individually,
+which may be exponential in the number of individual types involved,
+whilst at the same time preventing invalid cases which an unconstrained
+binding would allow.
+
+If two candidates exist with the same signatures, and one has
+a constraint and the other does not (or has the constant constraint true),
+the constrained candidate is considered more specialised than the
+unconstrained one.
+
+However in general, constraints cannot be compared to see which is
+most specialised. In particular if for all values of type variables
+constraint A implies constraint B, A is more specialised, however
+there is no operational method for measuring this in general
+(halting problem!).
+
+
 
 \chapter{Polymorphism}
-\section{Type Constraints}
+\section{Type Constraints}\index{constraints!type}
 \label{Type Constraints}
 Felix provides 4 kinds of type constraints.
 \subsection{Type class constraints}
@@ -6319,79 +6812,8 @@ able to reduce the typematch like that because it looks only
 at the top branch to begin, and continues only on definite failure.
 
 
-\chapter{Abstract Types}
-An abstract type is a type for which a specific implementation
-is given, but which can only be accessed by specified methods.
-
-\subsection{Syntax}
-An abstract type is created like this, taken
-from the standard library: 
-
-\begin{minted}{felix}
-open class Darray {
-  private struct darray_ctl[T]
-  {
-    a: varray[T];
-    resize: size * size --> size;
-  }
-  type darray[T] = new &darray_ctl[T];
-
-  //$ Make an empty darray, give it 20 slots for no particular reason.
-  ctor[T] darray[T] () => 
-    _make_darray[T]$ new darray_ctl[T](varray[T] 20uz , dflt_resize);
-
-  // resize
-  proc do_resize[T] (pd: darray[T], new_size: size)
-  {
-    var old = (_repr_ pd)*.a;
-    (_repr_ pd).a <- 
-      varray[T] (new_size, (len old), (fun(i:size)=>old.i));
-  }
-
-  // pop head
-  proc pop[t](a:darray[t]) {
-    pop (_repr_ a)*.a;
-    newsize := (_repr_ a)*.resize 
-      (maxlen (_repr_ a)*.a, len (_repr_ a)*.a)
-    ;
-    if newsize != maxlen (_repr_ a)*.a call do_resize (a,newsize);
-  }
-}
-
-The statement
-
-\begin{minted}{felix}
-  type darray[T] = new &darray_ctl[T];
-\end{minted}
-
-defines a new, abstract, polymorphic type, \verb%darray[T]%
-implemented as a pointer to a \verb%struct% containing an 
-bounded array \verb%varray% and a \verb%resize% function.
-
-In order to construct a \verb%darray%, we first create pointer
-to a \verb%darray_ctl% objects, and then cast it to the
-abstract type using special name \verb%_make_darray%.
-The cast from the representation to the abstract type is the
-name of the abstract type constructor prefixed by \verb%_make_%.
-
-To access the implementation, which is needed to define methods
-on the abstract type, we use the cast \verb%_repr_%, which 
-converts the abstract type back to its implementation.
-
-Both these casts are private to the containing class \verb%Darray%,
-so they can only be used in the class defining the abstract type,
-because private names of a class are only accessible within
-the class (and it descendants of course).
-
-Therefore, the mechanism provides a way to rigorously protect
-the implementation of the abstract type. The privacy of
-the representation type in the example is not necessary, but is used
-to prevent namespace pollution.
-
-
-
 \part{Interfacing}
-\chapter{C bindings}
+\chapter{C bindings}\index{binding!C|textbf}
 Felix is specifically designed to provide almost seamless integration
 with C and C++.
 
@@ -6402,7 +6824,7 @@ However Felix has a stronger and stricter type system than C++
 and a much better syntax, so binding specifications which lift
 C++ entities into Felix typically require some static glue.
 
-\section{Type bindings}
+\section{Type bindings}\index{binding!type|textbf}
 In general, Felix requires all primitive types to be first class,
 that is, they must be default initialisable, copy constructible,
 assignable, and destructible. Assignment to a default initialised
@@ -6423,7 +6845,7 @@ This has no impact when passing arguments to C++ functions.
 However it may be necessary to cast a pointer returned from
 a primitive function in order for the generated code to type check.
 
-\section{Basic {\tt type} statement}\index{type!statement}
+\section{Basic {\tt type} statement}\index{type!statement}\index{type!statement}
 The type statement is used to lift a C++ type into Felix.
 
 The simplest example:
@@ -6468,7 +6890,7 @@ Felix needs to know some things about types to handle
 them properly, it uses a system of adjectives to provide
 some basic information.
 
-\subsection{{\tt pod} types}
+\subsection{{\tt pod} types}\index{type!pod}
 A \verb%pod% type is a {\em plain old data type} of the kind
 common in C. In Felix the annotation is used for optimisation:
 calls to the destructor are not made by the Felix garbage collector
@@ -6482,7 +6904,7 @@ does no useful work.
 pod type metres = "double";
 \end{minted}
 
-\subsection{{\tt \_gc\_pointer} types}
+\subsection{{\tt \_gc\_pointer} types}\index{type!\_gc\_pointer}
 The \verb%_gc_pointer_% adjective tells Felix that the
 type is a pointer which could be a pointer to an heap
 allocated object managed by the GC.
@@ -6495,7 +6917,7 @@ contain managed pointers.
 It is always safe to use this annotation if the C++ types
 is a pointer.
 
-\subsection{{\tt incomplete} types}
+\subsection{{\tt incomplete} types}\index{type!incomplete}
 The adjective \verb%incomplete% may be used to specify the
 type denoted may not be constructed. If the C++ type being
 bound is incomplete, for example \verb%void%, or an
@@ -6511,13 +6933,13 @@ incomplete type MyVoid = "void";
 typedef MyVoidPointer = &MyVoid;
 \end{minted}
 
-\subsection{{\tt uncopyable} types}
+\subsection{{\tt uncopyable} types}\index{type!uncopyable}
 This annotation may be used if a value of the type can
 be constructed but not copied. Since Felix always initialised
 variables with assignments, uncopyable type are useful only
 for heap construction yielding a pointer.
 
-\subsection{{\tt \_gc\_type T} types}
+\subsection{{\tt \_gc\_type T} types}\index{type!\_gc\_type}
 This adjective is for gurus only! In conjunction
 with \verb%_gc_pointer% it is used to permit
 contruction of an immobile C++ type whilst at the same
@@ -6527,8 +6949,11 @@ The method is fraught with peril and use of C++ smart pointers
 is recommended instead.
 
 \begin{minted}{felix}
-  private uncopyable type bQ_ = "::flx::pthread::bound_queue_t";
-  _gc_pointer _gc_type bQ_ type ts_bound_queue_t[T] = "::flx::pthread::bound_queue_t*" 
+  private uncopyable type bQ_ = 
+    "::flx::pthread::bound_queue_t"
+  ;
+  _gc_pointer _gc_type bQ_ type ts_bound_queue_t[T] = 
+    "::flx::pthread::bound_queue_t*" 
     requires 
      package "flx_bound_queue",
      scanner "::flx::pthread::bound_queue_scanner"
@@ -6560,8 +6985,60 @@ heap value is represented by a pointer to the type, but we want the
 garbage collector to be able to map such a pointer to the type of the
 heap object at run time.
 
+\subsection{{\tt finaliser} clause}\index{finaliser!clause}
+A primitive type may have a \verb%finaliser% clause with
+string argument which must specify a C++ function with type
 
-\section{Expression bindings}
+\begin{minted}{c}
+typedef void finaliser_t (collector_t*, void*); 
+\end{minted}
+
+which is used to destroy objects of the type. If not specified
+the C++ destructor is used, unless the type is a \verb%pod%
+in which case no finaliser is deployed. The finaliser
+is called by the collector after an object is determined
+to be unreachable, before the underlying storage is reclaimed.
+
+\subsection{{\tt scanner} clause}\index{scanner!clause}
+A primitive type may have a \verb%scanner% clause with  string
+argument which must specify the name of a C++ function with type
+\verb%::flx::gc::generic::scanner_t% given by the typedef
+
+\begin{minted}{c}
+typedef void *scanner_t(
+  collector_t*, gc_shape_t *, void *, size_t, int
+);
+\end{minted}
+
+This is a custom function respondible for finding all the 
+pointers in a data type.
+
+\subsection{{\tt encoder} clause}\index{encoder!clause}\index{serialisation!encoder}
+A primitive type may have an \verb%encoder% clause with  string
+argument which must specify the name of a C++ function with type
+\verb%::flx::gc::generic::encoder_t_t% given by the typedef
+
+\begin{minted}{c}
+typedef ::std::string encoder_t (void *);
+\end{minted}
+
+This is a custom function respondible for encoding the type
+in a string for serialisation.
+
+\subsection{{\tt decoder} clause}\index{decoder!clause}\index{serialisation!decoder}
+A primitive type may have an \verb%decoder% clause with  string
+argument which must specify the name of a C++ function with type
+\verb%::flx::gc::generic::decoder_t% given by the typedef
+
+\begin{minted}{c}
+typedef ::std::size_t decoder_t(void *, char *, ::std::size_t);
+\end{minted}
+
+This is a custom function respondible for decoding a string encoded
+by the corresponding encoder and building an object of the specified
+type on the heap.
+
+\section{Expression bindings}\index{const!statement}
 Felix has a simple method for introducing constants and expressions
 from C++ using the \verb%const% statement:
 
@@ -6573,7 +7050,7 @@ const one_metre: metres = "1.0";
 
 Const statements cannot be polymorphic.
 
-\section{Function bindings}\index{binding!function}
+\section{Function bindings}\index{function!binding}
 In order to use types lifted from C++, Felix has a special
 form of function definition:
 
@@ -6615,7 +7092,7 @@ than the argument components.
 
 [Put table of binding encodings here]
 
-\section{Conversion bindings}\index{binding!function}
+\section{Conversion bindings}\index{conversion!binding}\index{conversion!operator}
 A special form is allowed for conversion function:
 
 \begin{minted}{felix}
@@ -6655,14 +7132,40 @@ a typedef alias.
 Despite the spelling, a \verb%ctor% is a conversion operator
 and not a type constructor.
 
-\section{Procedure bindings}
+\section{Procedure bindings}\index{procedure!binding}
 Procedure bindings work the same as function bindings,
 by emitting the C++ string specified with substitutions.
 
 The primary difference is that procedure bindings must
 generate one or more C++ statements.
 
-\section{Floating insertions}
+\section{{\tt cstruct} bindings}\index{struct!binding}
+A \verb%cstruct% definition has the same syntax as
+a \verb%struct% and provides the same facilities,
+except that the compiler does not actually emit a C++
+structure definition.
+
+Instead the statement is used to lift an existing C
+type into Felix. It can be used for structs or unions.
+
+The compiler provides projection and pointer projections
+and a memberwise constructor.
+
+{\em Be warned against using the memberwise constructor
+if the definition is not complete, for example for 
+certain standard C and Posix types which are incompletely
+specified.}
+
+[It is not currently possible to turn this off]
+[It currently is only possible to bind to names in the global namespace]
+
+\section{{\tt cenum} bindings}\index{enum!binding}
+Blah.
+
+\section{{\tt cflags} bindings}\index{cflags!binding}
+Blah.
+
+\section{Floating insertions}\index{insertion!floating}\index{floating insertion!textbf}
 Felix has a sophisticated system of {\em floating insertions}
 which are primarily designed to ensure that if a C++ binding
 is used, the appropriate C++ header files are included so
@@ -6675,7 +7178,8 @@ type vect[T] = "::std::vector<?1>"
 
 Floating insertions can be directly introduced as
 indicated for inclusion in either the C++ \verb%header%
-file or \verb%body% file Felix generates.
+file or \verb%body% file Felix generates.\index{header!floating insertion}
+\index{body!floating insertion}
 
 Floating insertions {\em float} to near the top of the
 relevant file. Insertions specified in a single file
@@ -6683,7 +7187,7 @@ appear in order of writing, if they appear at all,
 and at most once. The actual insertion strings are
 checked to prevent duplication.
 
-Insertions can be named:
+Insertions can be named:\index{floating insertion!named}
 
 \begin{minted}{felix}
 header vector_h ='#include <vector>';
@@ -6692,7 +7196,7 @@ type vect[T] = "::std::vector<?1>"
 ;
 \end{minted}
 
-so that a requires clause may specify the name
+so that a requires clause\index{requires!clause} may specify the name
 of an insertion. Duplication of names is permitted:
 
 \begin{minted}{felix}
@@ -6716,7 +7220,7 @@ header vector_h ='#include <vector'
 ;
 \end{minted}
 
-Insertions can also be polymorphic.
+Insertions can also be polymorphic.\index{floating insertion!polymorphic}
 
 \begin{minted}{felix}
 body sho[T] ='show<?1>();';
@@ -6731,11 +7235,11 @@ class Vect {
   type vect[T] = 'vector<?1>';
 \end{minted}
 
-The effect is to apply the requirement to all bindings
+The effect is to apply the requirement to all C++ bindings
 in the class or module. Note: the specified insertion
-if only emitted if a C binding is used!
+if only emitted if a C++ binding is used!
 
-\section{Property requirements}
+\section{Property requirements}\index{requirement!property!textbf}
 A requires clause may also specify properties:
 
 \begin{minted}{felix}
@@ -6749,7 +7253,7 @@ to the use of adjectives.
 
 [List of properties here]
 
-\section{Package requirements}
+\section{Package requirements}\index{requirement!package}\index{package!requirement}
 A requires clause may specify a package requirement:
 
 \begin{minted}{felix}
@@ -6794,7 +7298,7 @@ on Windows.
 
 \chapter{Embedding}
 \section{C Callable libraries}
-\section{Export directives}
+\section{Export directives}\index{export!directive}
 The \verb%export% directives make the exported symbol a root
 of the symbol graph. 
 
@@ -6843,7 +7347,7 @@ is the same as if an export statement has been written.
 \part{Library}
 \chapter{Core Primitive Types}
 
-\section{Boolean type}
+\section{Boolean type}\index{bool!type}
 The type \verb%bool% which is also called \verb%2% provides the
 usual boolean logic values \verb%false% and \verb%true%. 
 The name \verb%bool% is actually an alias for type %2% the
@@ -6853,7 +7357,7 @@ is an alternate name for the value \verb%case 1 of 2%.
 
 See \fullref{Unit sum} for more information.
 
-\section{Integer types}
+\section{Integer types}\index{integer!type}
 \href{http://felix-lang.org/share/lib/std/scalar/ctypedefs.flx}{Library Reference}
 
 There is a table of the types \fullref{Integer Types}.
@@ -6933,7 +7437,7 @@ The number of bits is 8, 16, 32, or 64 or 128 for all unsigned types.
 There is a table of the operators \fullref{Integer Operators}.
 
 \begin{table}
-\caption{Integer Operators\label{Integer Operators}}
+\caption{Integer Operators\label{Integer Operators}}\index{integer!operator}
 \centering
 \begin{tabular}[c]{llll}
 \hline
@@ -7011,7 +7515,7 @@ of the pointer are zero.
 \end{itemize}
 
 \begin{table}
-\caption{Integer Typesets\label{Integer Typesets}}
+\caption{Integer Typesets\label{Integer Typesets}}\index{integer!typeset}
 \centering
 \begin{tabular}[c]{ll}
 \hline
@@ -7060,7 +7564,7 @@ propagated. It simply saves writing out all the finite
 combinations when genericity in the C or C++ target
 code means the C code would be the same in each case.
 
-\section{Floating point types}
+\section{Floating point types}\index{floating point!type}
 \href{http://felix-lang.org/share/lib/std/scalar/float\_math.flx}{Library Reference}
 
 There is a table of the operators \fullref{Floating Operators},
@@ -7145,7 +7649,7 @@ symbol&kind&type&semantics\\
 \end{tabular}
 \end{table}
 
-\section{Complex types}
+\section{Complex types}\index{complex!type}\index{fcomplex}\index{dcomplex}\index{lcomplex}
 
 There are three complex types, \verb%fcomplex%, \verb%dcomplex%
 and \verb%lcomplex% corresponding to cartesian representation
@@ -7202,7 +7706,7 @@ symbol&kind&type&semantics\\
 \end{table}
 
 
-\section{Quaternion type}
+\section{Quaternion type}\index{quaternion!type}
 There is a table of the operators \fullref{Quaternion Operators}.
 
 \begin{table}
@@ -7237,7 +7741,7 @@ symbol&kind&type&semantics\\
 
 
 
-\section{Char Type}
+\section{Char Type}\index{char!type}
 Felix has a type \verb%char% corresponding to C's \verb%char%.
 There are no literals of type \verb%char%, instead there
 is a function, also called \verb%char% to construct a \verb%char%
@@ -7258,7 +7762,7 @@ ISO-10646 (Unicode) code points via the UTF-8 encoding method.
 ASCII characters in the range 0 through 127 agree with Unicode
 interpretation.
 
-\subsection{ASCII classification functions}
+\subsection{ASCII classification functions}\index{ascii!classification}
 There is a set of \fullref{ASCII classification functions}
 used to test the ASCII class of char.
 
@@ -7324,7 +7828,7 @@ symbol&type&semantics\\
 \end{tabular}
 \end{table}
 
-\chapter{Algebraic Structure of numeric types}
+\chapter{Algebraic Structure of numeric types}\index{algebra!numeric types}
 \href{http://felix-lang.org/share/src/packages/algebra.fdoc}{Basic Algebra Package}
 \href{http://felix-lang.org/share/src/packages/numbers.fdoc}{Number Package}
 
@@ -7339,7 +7843,7 @@ and also a rich set of alternate names for operators utilising
 the presence of LaTeX symbols: this allows for pleasant typesetting
 but usually doesn't provide essential semantic operations.
 
-\section{Equality}
+\section{Equality}\index{equality!numeric}
 We start with class \verb$Eq$ which models equality based
 on the notion it is an equivalent relation:
 
@@ -7361,7 +7865,7 @@ can also provide the inequality, as this is sometimes more efficient.
 Conformance to the axioms in instances is required, these axioms define the
 required semantics.
 
-\section{Total Ordering}
+\section{Total Ordering}\index{ordering!total}
 Now we can define a total order:
 
 \begin{minted}{felix}
@@ -7393,7 +7897,7 @@ The semantics are specified by the axioms which define
 a total ordering: reflexivity, anti-symmetry, transitivity,
 and finally totallity.
 
-\section{Addition}
+\section{Addition}\index{addition!numeric}
 Now we define addition in two steps. First we define approximate
 addition
 
@@ -7472,7 +7976,7 @@ with integers do not overflow, however there are a few very
 nasty cases.
 
 \chapter{More core types}
-\section{Slices}
+\section{Slices}\index{slice!type}
 A basic slice is just a compact subset of the integers.
 
 \subsection{Slice Definition}
@@ -7509,7 +8013,7 @@ var ilt12 = ..<12;    // 0..11
 
 The syntax with \verb%<99% was stolen from Apple's Swift language.
 
-\subsection{Iterators}
+\subsection{Iterators}\index{iterator!slice}\index{slice!iterator}
 The slice type has an iterator method which allows 
 you to enumerate the slice from its lower bound
 in increasing order. The iterator returns an option
@@ -7532,7 +8036,7 @@ outputs:
 (3, None)
 \end{minted}
 
-\subsection{String slices}
+\subsection{String slices}\index{slice!string}\index{string!slice}
 Slices can be used with strings to extract substrings.
 
 \begin{minted}{felix}
@@ -7562,7 +8066,7 @@ Note that the substring slicing operation cannot fail.
 [TODO: slices can be applied to arrays as well but this is not
 yet implemented]
 
-\subsection{Generalised Slices}
+\subsection{Generalised Slices}\index{slice!generalised}
 A generalised slice is an arbitrary sequence of integers
 built by adding slices together. They also support
 mapping of slices.
@@ -7601,10 +8105,10 @@ Generalised slices are not supported by any high level mathematical
 concept, they're just a grab bag of convenient tools for generating
 sequences of integers.
 
-\subsection{Slice addition}
+\subsection{Slice addition}\index{slice!addition}
 Slices and generalised slices can be added to return a generalised slice.
 
-\subsection{Generalised String slicing}
+\subsection{Generalised String slicing}\index{slice!string}
 Strings can be mapped by generalised slices:
 
 \begin{minted}{felix}
@@ -7618,7 +8122,7 @@ println$ yank,oz,nip;
 generalised slices]
 
 
-\section{String Type}
+\section{String Type}\index{string!type|textbf}
 \subsection{Equality and total ordering}
 \begin{minted}{felix}
   fun == (s:string, c:string): bool
@@ -7628,7 +8132,7 @@ generalised slices]
   fun >= (s:string, c:string): bool
 \end{minted}
 
-\subsection{Equality of {\tt string} and {\tt char}}
+\subsection{Equality of {\tt string} and {\tt char}}\index{string!equality}
 \begin{minted}{felix}
   fun == (s:string, c:char): bool
   fun == (c:char, s:string): bool
@@ -7636,14 +8140,14 @@ generalised slices]
   fun != (c:char, s:string): bool
 \end{minted}
 
-\subsection{Append to {\tt string} object}
+\subsection{Append to {\tt string} object}\index{string!append}\index{append!string}
 \begin{minted}{felix}
   proc  += : &string * string 
   proc  += : &string * +char
   proc  += : &string * char
 \end{minted}
 
-\subsection{Length of {\\ string}}
+\subsection{Length of {\\ string}}\index{string!length}\index{length!string}
 \begin{minted}{felix}
   fun len: string -> size
 \end{minted}
@@ -7694,12 +8198,12 @@ Returns nul char (code 0) if the string is empty.
   proc store: &string * !ints * char
 \end{minted}
 
-\subsection{Map a string {\tt char} by {\tt char}}
+\subsection{Map a string {\tt char} by {\tt char}}\index{string!map}
 \begin{minted}{felix}
   fun map (f:char->char) (var x:string): string = {
 \end{minted}
 
-\subsection{STL string functions}
+\subsection{STL string functions}\index{string!stl}
 These come in two flavours: the standard C++ operations
 which return \verb%stl_npos% on failure, and a more Felix
 like variant which uses an @{option} type.
@@ -7857,16 +8361,16 @@ like variant which uses an @{option} type.
 
 \chapter{Introspection}
 
-\chapter{Serialisation}
+\chapter{Serialisation}\index{serialisation|textbf}
 Felix allows certain data structures to be serialised into a string,
 so that the data structure can be recovered from the string.
 
 \section{Operation}
-\subsection{{\tt encode\_varray}}
+\subsection{{\tt encode\_varray}}\index{serialisation!encode}
 This function accepts the address of a serialisable object,
 and returns a string containing the serialised contents of the object.
 
-\subsection{{\tt deccode\_varray}}
+\subsection{{\tt deccode\_varray}}\index{serialisation!decode}
 This accepts a string previously serialised by \verb%encode_varray%,
 rebuilds a copy of the data structure it encoded, and returns the
 address of the object.
@@ -8298,7 +8802,115 @@ gets what it wrote first.
 
 Buffers are mandatory for a feedback.
 
-\chapter{Asychronous Events}
+\chapter{Circuits}
+Felix provides a high level general purpose {\em chips and wires} sublanguage
+which is designed to modularise use and deployment of safer iteracting
+fibre based processing systems.
+
+\section{Chip definition}
+A chip is designated like:
+
+\begin{minted}{felix}
+open syntax chips;
+
+chip filereader (filename:string)
+  connector file
+    pin outch: %>char
+{
+  var data = load filename;
+  for ch in data do 
+    write (file.outch,ch);
+  done
+}
+\end{minted}
+
+A chip is an ordinary procedure, which may have parameters 
+such as \verb%filename% in the example. The parser creates another argument 
+for you: designated the \verb%connector%,
+and named \verb%file% in the example,
+has the type of a record whose fields are the connectors \verb%pin%s,
+in this case there is only one pin, \verb%outch%, which has type 
+\verb$%>char$ which is an abbreviation for \verb%oschannel[char]%
+and is therefore a synchronous output channel of \verb%char%.
+
+Here is an output device which emits the characters of a string instead:
+
+\begin{minted}{felix}
+chip stringreader (s:string)
+  connector file
+    pin outch: %>char
+{
+  for ch in s do 
+    write (file.outch,ch);
+  done
+}
+\end{minted}
+
+Such output devices are called {\em sources} or {\em suppliers}.
+
+Now, we want to parse the data stream into words, so we will
+make a transducer chip.
+
+\begin{minted}{felix}
+chip parser 
+  connector pins
+    pin inchar: %<char
+    pin outword: %>string
+{
+    var ch = read inchar;
+  while true do
+    while isspace ch perform
+      ch = read inchar
+    ;
+    var s = ""+ch;
+    while not (isspace ch) do
+      s += ch;
+      ch = read inchar;
+    done
+    write (outword,s);
+  done 
+}
+\end{minted}
+
+Notice that if the input is exhausted in the middle of a word,
+the final word is not emitted. This transducer will process
+and character streams sent to it and then block waiting for
+data that is not coming. This is the correct way to design
+circuits. The absence is a explicit termination is the mark
+of a good design. Circuits should simply collapse when there
+is no work to do.
+
+To complete the job, we will provide a simple sink or consumer
+chip:
+
+\begin{minted}{felix}
+chip printer 
+  connector pins
+    pin inword: %<string
+{
+  while true do
+    var s = read inword;
+    println s;
+  end
+}
+\end{minted}
+
+Now, we have all the devices we need so lets wire them
+together:
+
+\begin{minted}{felix}
+device src = string_reader "Hello World\n";
+circuit
+  connect src.outch,parser.inchar
+  connect parser.outch, printer.inword
+endcircuit
+\end{minted}
+
+Thats it!
+
+[document wire clause and making a chip out of chips]
+
+\chapter{Asychronous Events}\index{event!asynchronous|textbf}\index{asynchronous!event|textbf}
 Felix uses asynchronous I/O with fibres to provide access to asynchronous
 events. Currently two kinds of events are supported: alarm clock timeout events
 and socket I/O buffer and connection events. 
@@ -8306,7 +8918,7 @@ and socket I/O buffer and connection events.
 Waiting for an event blocks the current fibre, but it does not
 block other fibres in the same pthread.
 
-\section{Event Service {\tt demux}}
+\section{Event Service {\tt demux}}\index{event!demux}
 The event delivery service is called \verb%demux% and runs in a
 separate premptive thread. It interfaces with the OS native event
 delivery services as shown in \fullref{Event Delivery Service Providers}.
@@ -8382,7 +8994,7 @@ Operation&Used By&Provider class\\
 \end{tabular}
 \end{table}
 
-\section{How Async I/O works}
+\section{How Async I/O works}\index{asynchronous!IO}
 Asynchronous I/O is performed as follows.
 First an fthread
 
@@ -8478,7 +9090,7 @@ concurrently (
 );
 \end{minted}
 
-\section{Atomics}
+\section{Atomics}\index{type!atomic}\index{atomic!type}
 Felix atomics utilise the C++11 standard library atomics.
 Atomic variables are not managed by the GC. 
 

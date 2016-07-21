@@ -157,14 +157,14 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   (* NOTE SPECIAL NAME HANDLING HACKS!! *)
   | EXPR_apply (sr, (e1, e2)) ->
       begin match e1 with
-      | EXPR_name (_, "_isin", []) ->
+      | EXPR_name (_, "\\in", []) ->
           begin match typecode_of_expr e2 with
           | TYP_type_tuple [memt; sett] -> TYP_isin (memt, sett)
           | _ ->
               (* this can be fixed by taking projections but I can't be bothered
                * atm *)
               failwith (
-                "Implementation limitation, 'isin' operator requires two " ^
+                "Implementation limitation, 'in' operator requires two " ^
                 "explicit arguments")
           end
       | EXPR_name (_, "~", []) -> TYP_dual (typecode_of_expr e2)

@@ -638,11 +638,11 @@ class FlxGuiWindow
   }
 
   gen create_fixed_window (title:string, x:int, y:int, width:int, height:int) : window_t =>
-    window (title, x,y,width,height, SDL_WINDOW_SHOWN)
+    window (title, x,y,width,height, SDL_WINDOW_SHOWN \| SDL_ALLOW_HIGHDPI)
   ;
 
   gen create_resizable_window (title:string, x:int, y:int, width:int, height:int) : window_t =>
-    window (title, x,y,width,height, SDL_WINDOW_RESIZABLE)
+    window (title, x,y,width,height, SDL_WINDOW_RESIZABLE \| SDL_ALLOW_HIGHDPI)
   ;
 
 

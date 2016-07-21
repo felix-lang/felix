@@ -3571,6 +3571,7 @@ open class SDL_video_h
   const SDL_WINDOW_INPUT_FOCUS : uint32;
   const SDL_WINDOW_MOUSE_FOCUS : uint32;
   const SDL_WINDOW_FOREIGN: uint32;
+  const SDL_WINDOW_ALLOW_HIGHDPI: uint32;
 
   type SDL_Window = "SDL_Window*";
   gen SDL_CreateWindow: string * int * int * int * int * uint32 -> SDL_Window =
