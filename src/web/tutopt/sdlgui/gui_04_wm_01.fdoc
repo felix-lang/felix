@@ -40,11 +40,12 @@ begin
   while e.type.SDL_EventType != SDL_QUIT do
     // print a diagnostic
     var s = 
-      if e.type.SDL_EventType == SDL_WINDOWEVENT then
-        e.type.SDL_EventType.str + ": " + e.window.event.SDL_WindowEventID.str + " wid=" + e.window.windowID.str
-      elif e.type.SDL_EventType != SDL_MOUSEMOTION then
-        e.type.SDL_EventType.str
-      else ""
+      match e with
+      | WINDOWEVENT we =>
+        we.type.SDL_EventType.str + ": " + we.event.SDL_WindowEventID.str + " wid=" + we.windowID.str
+      | MOUSEMOTION me =>
+        me.type.SDL_EventType.str
+      | _ => ""
     ; 
     var linepos = 100 + 4 * lineskip;
     if s != "" do

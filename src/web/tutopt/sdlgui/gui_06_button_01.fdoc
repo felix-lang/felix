@@ -3,6 +3,7 @@
 
 include "gui/__init__";
 open FlxGui;
+open syntax chips;
 
 println$ "Basic Button Test";
 
@@ -28,13 +29,13 @@ proc ehandler
   while e.window.event.SDL_WindowEventID != SDL_WINDOWEVENT_CLOSE  do
     // print a diagnostic
     var s = 
-      if e.type.SDL_EventType == SDL_WINDOWEVENT then
-        e.type.SDL_EventType.str + ": " + e.window.event.SDL_WindowEventID.str + " wid=" + e.window.windowID.str
-      elif e.type.SDL_EventType != SDL_MOUSEMOTION then
-        e.type.SDL_EventType.str
-      else ""
-    ; 
-
+      match e with
+      | WINDOWEVENT we =>
+        we.type.SDL_EventType.str + ": " + we.event.SDL_WindowEventID.str + " wid=" + we.windowID.str
+      | MOUSEMOTION me =>
+        me.type.SDL_EventType.str
+      | _ => ""
+    ;
     for but in buts do
       write$ but.0,e;
       match read but.1 with
@@ -97,7 +98,11 @@ proc mkbutton (
   var ich,och = #mk_ioschannel_pair[event_t];
 
   // start the button controller
-  spawn_fthread$ button_controller (bm, bd, ich, oresp); 
+  device b = button_controller (bm,bd);
+  circuit
+    wire ich to b.ec
+    wire oresp to b.response
+  endcircuit
 
   // return button display and event channel
   pbd <- bd ;
