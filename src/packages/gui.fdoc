@@ -1,6 +1,8 @@
 @title GUI
 @tangler __init__.flx                                  = share/lib/gui/__init__.flx
 @tangler types.flx                                     = share/lib/gui/types.flx
+@tangler events.flx                                    = share/lib/gui/events.flx
+
 @tangler init.flx                                      = share/lib/gui/init.flx
 @tangler font.flx                                      = share/lib/gui/font.flx
 @tangler color.flx                                     = share/lib/gui/color.flx
@@ -35,6 +37,7 @@ The basic SDL initialisation stuff.
 @tangle __init__.flx
 include "gui/init";
 include "gui/types";
+include "gui/events";
 include "gui/font";
 @
 Basic GUI abstractions. Felix uses the Model-View-Controller (MVC)
@@ -103,6 +106,7 @@ class FlxGui
 {
  inherit FlxGuiInit;
  inherit FlxGuiTypes;
+ inherit FlxGuiEvents;
  inherit FlxGuiFont;
  inherit FlxGuiColor;
  inherit FlxGuiSurface;
@@ -147,7 +151,13 @@ class FlxGuiTypes
   typedef rect_t = SDL_Rect;
 
   ctor rect_t (x:int, y:int, w:int, h:int) => SDL_Rect (x,y,w,h);
+}
 
+@
+
+@tangle events.flx
+class FlxGuiEvents
+{
   typedef event_t = SDL_Event;
 
   fun _match_ctor_QUIT (e:event_t) => e.type == SDL_QUIT.uint32;
@@ -178,6 +188,25 @@ class FlxGuiTypes
   fun _match_ctor_TEXTEDITING (e:event_t) => e.type == SDL_TEXTEDITING.uint32;
   fun _ctor_arg_TEXTEDITING (e:event_t) => e.edit;
 
+  chip event_source
+    connector events
+      pin src : %> event_t
+  {
+      var e : SDL_Event;
+      // dummy first event
+      e.type = SDL_FIRSTEVENT.uint32;
+      write$ events.src,e;
+      SDL_PumpEvents;
+      C_hack::ignore$ SDL_WaitEvent$ &e;
+      while e.type.SDL_EventType != SDL_QUIT do
+        write$ events.src, e;
+        SDL_PumpEvents;
+        C_hack::ignore$ SDL_WaitEvent$ &e;
+      done
+      println$ "SDL_QUIT seen!";
+      write$ events.src, e;
+      return;
+  } // chip event_source
 }
 @
 
@@ -819,33 +848,17 @@ object window_manager () =
     endmatch;
   }
 
-  // this is a global source for all events
-  gen create_event_source () : ischannel[event_t]  =
+  chip window_event_dispatcher 
+   connector events
+     pin eventin : %<event_t
   {
-    var imsgs,omsgs = #mk_ioschannel_pair[SDL_Event]; 
-    proc driver ()
-    {
-      var e : SDL_Event;
-      // dummy first event
-      e.type = SDL_FIRSTEVENT.uint32;
-      write$ omsgs,e;
-      SDL_PumpEvents;
-      C_hack::ignore$ SDL_WaitEvent$ &e;
-      while e.type.SDL_EventType != SDL_QUIT do
-        write$ omsgs, e;
-        SDL_PumpEvents;
-        C_hack::ignore$ SDL_WaitEvent$ &e;
-      done
-      println$ "SDL_QUIT seen!";
-      write$ omsgs, e;
-      return;
-    }
-    spawn_fthread driver;
-    return imsgs;
+    forever:while true do
+      var e = read events.eventin;
+      if e.type.SDL_EventType == SDL_QUIT break forever
+      dispatch_window_event e;
+    done
   }
-
-  var imsgs = create_event_source ();
-  method fun get_event_source () => imsgs;
+  method fun get_window_event_dispatcher () => window_event_dispatcher;
   method proc dispatch_window_event (e:event_t) 
   {
     match SDL_GetWindowID e with
@@ -883,6 +896,14 @@ object window_manager () =
   }
 }
 
+gen create_SDL_event_source () : ischannel[event_t]  =
+{
+  var imsgs, omsgs = mk_ioschannel_pair[event_t]();
+  circuit
+    wire omsgs to event_source.src
+  endcircuit
+  return imsgs;
+}
 }
 
 @

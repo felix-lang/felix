@@ -265,32 +265,45 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
     (* validate I/O directions *)
     List.iter (fun (wireno,pins) -> 
       let reads = ref 0 and writes = ref 0 and ios = ref 0 in
-      begin match pins with
-      | [] -> assert false
-      | [pinindex] -> 
+      let check_named_wire pinindex pc =
         let nw = Array.get named_wire_con pinindex in
         begin match nw with
         | None ->
-          let device,pin,dir,_,vt = List.assoc pinindex pin_data in
-          print_endline ("WARNING: " ^ device ^ "." ^ pin ^ " is not connected")
+          begin match pc with 
+          | `Solo ->
+            let device,pin,dir,_,vt = List.assoc pinindex pin_data in
+            print_endline ("WARNING: " ^ device ^ "." ^ pin ^ " is not connected")
+          | _ -> ()
+          end
         | Some (_,typ) -> 
           let i,dir,vt = cal_channel bsym_table (schannel,ischannel,oschannel) sr typ in
+          (* polarity is backwards for wires *)
           begin match dir with
-          | "input" -> incr reads
-          | "output" -> incr writes
+          | "input" -> incr writes 
+          | "output" -> incr reads
           | "io" -> incr ios
           | _ -> assert false
           end
         end
-
-      | pins ->
-        List.iter (fun pinindex ->
-          let device,pin,dir,_,vt = List.assoc pinindex (pin_data) in
+      in
+      let handle_pin pinindex =
+        let device,pin,dir,_,vt = List.assoc pinindex (pin_data) in
           match dir with
           | "input" -> incr reads
           | "output" -> incr writes
           | "io" -> incr ios
           | _ -> assert false
+      in
+      begin match pins with
+      | [] -> assert false
+      | [pinindex] -> 
+        check_named_wire pinindex `Solo;
+        handle_pin pinindex 
+
+      | pins ->
+        List.iter (fun pinindex ->
+          check_named_wire pinindex `Multi;
+          handle_pin pinindex 
         ) pins
       end;
       if !ios = 0 && !reads = 0 then

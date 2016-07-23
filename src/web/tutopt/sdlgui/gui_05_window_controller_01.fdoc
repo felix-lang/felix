@@ -65,6 +65,7 @@ proc ehandler
 
 begin
   //create a window manager
+ 
   var wm = window_manager();
 
   // create a window controller for our window
@@ -78,20 +79,10 @@ begin
   // USE variable wno or Felix will elide the call!
   println$ "Window number " + wno.str;
 
-  // get the channel to read events from
-  var input = wm.get_event_source();
-    
-  // read an event
-  var e= read input;
-
-  while e.type.SDL_EventType != SDL_QUIT do
-
-    // dispatch the event to the window it is associated with
-    wm.dispatch_window_event e;
-
-    // get another event
-    e= read input;
-  done
+  device wd = wm.get_window_event_dispatcher ();
+  circuit
+    connect wd.eventin, event_source.src
+  endcircuit 
 
   // we must have got a quit ..
   println$ "QUIT EVENT";
