@@ -136,7 +136,9 @@ let gen_prim_call
   let ts = map rtn ts in
   let carg () =
     match unfold "flx_pgen1" argt with
-    | BTYP_tuple []  -> ce_atom "(::flx::rtl::unit())/*UNIT_VALUE_ERROR?*/"
+    | BTYP_tuple []  -> 
+(* print_endline ("Flx_pgen: unit argument, ct = " ^ ct); *)
+      ce_atom "0/*[gen_prim_call]CLT:UNIT*/"
     | x -> ge sr a 
 (*
       try ge sr a 

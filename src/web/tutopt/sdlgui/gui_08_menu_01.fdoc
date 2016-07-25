@@ -48,7 +48,13 @@ proc mk_menu
   var md = MenuDisplay ("mymenu",mm,w,x,y,font, text_colour,disabled_colour,selected_colour, submenu_icon);
   mm.set_state init;
   md.display();
-  spawn_fthread$ menu_controller (mm,md,ievent,oresp);
+
+  device mio = menu_controller (mm,md);
+  circuit
+    wire ievent to mio.ec
+    wire oresp to mio.response
+  endcircuit
+
   pmm <- mm;
   pmd <- md;
   poevent <- oevent;
@@ -93,13 +99,14 @@ proc display (w:window_t)
 }
  
 // make an event handler for our window
-proc ehandler 
+chip ehandler 
   (w:window_t)
   (menu_out: oschannel[event_t], menu_in:ischannel[menu_action_t])
-  (input:ischannel[event_t])  () 
+connector pins
+  pin input: %<event_t
 {
    // get a first event from the window manager
-  var e: event_t = read input;
+  var e: event_t = read pins.input;
 
   // while the event isn't a quit event ..
   while e.window.event.SDL_WindowEventID != SDL_WINDOWEVENT_CLOSE  do
@@ -127,7 +134,7 @@ proc ehandler
     | SelectedAction s => println$ "Menu Selection made: " + s;
     endmatch; 
     // get another event
-    e= read input;
+    e= read pins.input;
   done
 
   // we must have got a quit ..
@@ -161,16 +168,9 @@ begin
 
   // refresh window now
   w1.update();
-  device wd = wm.get_window_event_dispatcher ();
-  circuit
-    connect wd.eventin, event_source.src
-  endcircuit 
 
-
-  // we must have got a quit ..
-  println$ "QUIT EVENT";
-  wm.delete_all();
-  println$ "Windows deleted, quitting";
+  wm.run_with_timeout 15.0;
+  println$ "gui_08_menu_01 quitting";
 end
 
 

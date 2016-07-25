@@ -545,7 +545,6 @@ struct RTL_EXTERN schannel_t;   // synchronous channel type
 struct RTL_EXTERN slist_t;   // singly linked list of void*
 struct RTL_EXTERN slist_node_t;   // singly linked list of void*
 
-
 // MOVE THIS TO RTL AND PROVIDE SUITABLE RTTI SO GC KNOWS ABOUT THE FRAME POINTER
 struct RTL_EXTERN jump_address_t
 {

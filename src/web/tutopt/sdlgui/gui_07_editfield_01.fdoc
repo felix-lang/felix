@@ -30,33 +30,36 @@ proc mk_field
   dc <- line_buffer_display_controller (window,tag,font,colour,bgcolour,x,y,editor);
   dc*.display();
   var ich,och = #(mk_ioschannel_pair[event_t]);
-  var controller = line_edit editor (*dc) ich;
-  spawn_fthread controller; 
+
+  device medit = line_edit editor (*dc);
+  circuit
+    wire ich to medit.ec
+  endcircuit
+
   println$ "mkfield: controller spawned";
   ed <- editor;
   o <- och;
 }
 
 // make an event handler for our window
-proc ehandler 
+chip ehandler 
 (
   fields: varray[oschannel[event_t] * line_buffer_display_controller_interface] 
 ) 
-(input:ischannel[event_t])  () 
+connector pins
+  pin input: %<event_t
 {
   println$ "Window event handler running";
   var selected_field = 0;
   var run = true;
   var ev2: SDL_Event;
   while run do
-    var ev: event_t = read input;
+    var ev: event_t = read pins.input;
     //if ev.type.SDL_EventType != SDL_MOUSEMOTION do
     //  println$ "  WINDOW specific EVENT: " + ev.window.event.SDL_WindowEventID.str;
     //done
-    if 
-      ev.type.SDL_EventType == SDL_KEYDOWN and 
-      ev.key.keysym.sym \in (SDLK_TAB, SDLK_RETURN) 
-    do
+    match ev with
+    | KEYDOWN kd when kd.keysym.sym \in (SDLK_TAB, SDLK_RETURN) =>
       var sel :SDL_Event;
       &sel.type <- SDL_WINDOWEVENT.uint32;
       sel.window.event = SDL_WINDOWEVENT_FOCUS_LOST.uint8;
@@ -64,10 +67,10 @@ proc ehandler
       selected_field = (selected_field + 1) % fields.len.int;
       sel.window.event = SDL_WINDOWEVENT_FOCUS_GAINED.uint8;
       write$ fields.selected_field.0,sel;
-    elif ev.type.SDL_EventType == SDL_MOUSEBUTTONDOWN do
+    | MOUSEBUTTONDOWN mbd =>
       for i in 0 ..< fields.len.int do
         var d = fields.i.1;
-        var x,y = ev.button.x, ev.button.y;
+        var x,y = mbd.x, mbd.y;
         if SDL_Point (x.int, y.int) \in d.get_client_rect() do
           //println$ "[Evt handler] Button down in client rect of line edit " + d.get_tag();
           ev2.type = SDL_WINDOWEVENT.uint32;
@@ -81,9 +84,9 @@ proc ehandler
           write$ fields.i.0,ev2; 
         done
       done
-    else
+    | _ =>
       write$ fields.selected_field.0, ev;
-    done
+    endmatch;
     run = ev.window.event.SDL_WindowEventID != SDL_WINDOWEVENT_CLOSE ;
   done
   println$ "Terminating window event processing loop";
@@ -129,21 +132,13 @@ begin
   // USE variable wno or Felix will elide the call!
   println$ "Window number " + wno.str;
 
-  device wd = wm.get_window_event_dispatcher ();
-  circuit
-    connect wd.eventin, event_source.src
-  endcircuit 
-
+  wm.run_with_timeout 10.0;
 
   println$ "ED1='"+ed1.get()+ "'";
   println$ "ED2='"+ed2.get()+ "'";
   println$ "ED3='"+ed3.get()+ "'";
 
-
-  // we must have got a quit ..
-  println$ "QUIT EVENT";
-  wm.delete_all();
-  println$ "Windows deleted, quitting";
+  println$ "gui_07, quitting";
 end
 
 

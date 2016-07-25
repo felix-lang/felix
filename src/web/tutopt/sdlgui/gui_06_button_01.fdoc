@@ -3,7 +3,6 @@
 
 include "gui/__init__";
 open FlxGui;
-open syntax chips;
 
 println$ "Basic Button Test";
 
@@ -17,13 +16,14 @@ var font : font_t = get_font(font_name, 12);
 var lineskip = get_lineskip font;
 
 // make an event handler for our window
-proc ehandler 
+chip ehandler 
   (w:window_t)
   (buts: varray[oschannel[event_t] * ischannel[button_action_t]])
-  (input:ischannel[event_t])  () 
+connector pins
+  pin input: %<event_t
 {
    // get a first event from the window manager
-  var e: event_t = read input;
+  var e: event_t = read pins.input;
 
   // while the event isn't a quit event ..
   while e.window.event.SDL_WindowEventID != SDL_WINDOWEVENT_CLOSE  do
@@ -45,7 +45,7 @@ proc ehandler
     done
 
     // get another event
-    e= read input;
+    e= read pins.input;
   done
 
   // we must have got a quit ..
@@ -139,16 +139,8 @@ begin
   // USE variable wno or Felix will elide the call!
   println$ "Window number " + wno.str;
 
-  device wd = wm.get_window_event_dispatcher ();
-  circuit
-    connect wd.eventin, event_source.src
-  endcircuit 
-
-
-  // we must have got a quit ..
-  println$ "QUIT EVENT";
-  wm.delete_all();
-  println$ "Windows deleted, quitting";
+  wm.run_with_timeout 15.0;
+  println$ "gui_06 quitting";
 end
 
 

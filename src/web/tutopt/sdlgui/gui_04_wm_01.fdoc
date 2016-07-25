@@ -3,7 +3,7 @@
 include "gui/__init__";
 open FlxGui;
 
-println$ "Basic Window Manager Test";
+println$ "Basic Window Test (no Window manager)";
 
 var clock = Faio::mk_alarm_clock();
 
@@ -29,6 +29,7 @@ w.show();
 chip event_displayer (w:window_t)
   connector pins
     pin inevent : %<event_t
+    pin quit: %>int
 {
   while true do
    var e = read pins.inevent;
@@ -53,11 +54,18 @@ chip event_displayer (w:window_t)
 }
  
 begin
-
+  var qin,qout = mk_ioschannel_pair[int]();
   device windisp = event_displayer w;
   circuit
     connect windisp.inevent, event_source.src 
+    wire qout to windisp.quit
   endcircuit
+
+  var quit = false;
+  spawn_fthread$ demo_timer &quit 10.0;
+  C_hack::ignore(read qin);
+  quit = true;
+
 
   // we must have got a quit ..
   println$ "QUIT EVENT";

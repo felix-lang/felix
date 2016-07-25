@@ -5,8 +5,6 @@ open FlxGui;
 
 println$ "Basic Window Controller Test";
 
-var clock = Faio::mk_alarm_clock();
-
 // Initialise the SDL system (SDL + TTF + IMAGE)
 FlxGui::init();
 
@@ -17,24 +15,24 @@ var lineskip = get_lineskip font;
 
 var w1 = create_resizable_window("Felix:gui_05_window_controller_01",100,100,400,400);
 w1.add$ mk_drawable FlxGui::clear lightgrey;
-w1.add$ mk_drawable FlxGui::write (100,100,font,black,"Basic Window Controller Test");
-w1.update();
+w1.add$ mk_drawable FlxGui::write (100,100,font,black,"Basic Window Controller Test#1");
 w1.show();
+w1.update();
 
 var w2 = create_resizable_window("WINDOW 2",400,100,400,400);
 w2.add$ mk_drawable FlxGui::clear blue;
-w2.add$ mk_drawable FlxGui::write (100,100,font,black,"Basic Window Controller Test");
-w2.update();
+w2.add$ mk_drawable FlxGui::write (100,100,font,black,"Basic Window Controller Test#2");
 w2.show();
+w2.update();
 
 // make an event handler for our window
-proc ehandler 
-  (w:window_t)
-  (input:ischannel[event_t])  () 
+chip ehandler 
+  (var w:window_t)
+connector pins
+  pin input : %<event_t
 {
    // get a first event from the window manager
-  var e: event_t = read input;
-
+  var e: event_t = read pins.input;
   // while the event isn't a quit event ..
   while e.window.event.SDL_WindowEventID != SDL_WINDOWEVENT_CLOSE  do
     // print a diagnostic
@@ -42,9 +40,8 @@ proc ehandler
       match e with
       | WINDOWEVENT we =>
         we.type.SDL_EventType.str + ": " + we.event.SDL_WindowEventID.str + " wid=" + we.windowID.str
-      | MOUSEMOTION me =>
-        me.type.SDL_EventType.str
-      | _ => ""
+      | _ => 
+        e.type.SDL_EventType.str
     ;
     var linepos = 100 + 4 * lineskip;
     if s != "" do
@@ -54,13 +51,12 @@ proc ehandler
       w.add$ mk_drawable FlxGui::write (100,linepos,font,black,"EVENT: "+ s);
       w.update();
     done
-
     // get another event
-    e= read input;
+    e= read pins.input;
   done
 
   // we must have got a quit ..
-  println$ "CLOSE EVENT";
+  println$ "++++++CLOSE EVENT";
 } 
 
 begin
@@ -69,25 +65,18 @@ begin
   var wm = window_manager();
 
   // create a window controller for our window
-  var wc1 = window_controller (w1, ehandler w1);
-  var wc2 = window_controller (w2, ehandler w2);
+  var eh1 = ehandler w1;
+  var wc1 = window_controller (w1, eh1);
+  var eh2 = ehandler w2;
+  var wc2 = window_controller (w2, eh2);
 
   // attach controller to window manager
   var wno = wm.add_window wc1;
-  wno = wm.add_window wc2;
-
-  // USE variable wno or Felix will elide the call!
   println$ "Window number " + wno.str;
-
-  device wd = wm.get_window_event_dispatcher ();
-  circuit
-    connect wd.eventin, event_source.src
-  endcircuit 
-
-  // we must have got a quit ..
-  println$ "QUIT EVENT";
-  wm.delete_all();
-  println$ "Windows deleted, quitting";
+  wno = wm.add_window wc2;
+  println$ "Window number " + wno.str;
+  wm.run_with_timeout 10.0;
+  println$ "gui_05 quitting";
 end
 
 

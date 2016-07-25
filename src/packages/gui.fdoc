@@ -192,21 +192,48 @@ class FlxGuiEvents
     connector events
       pin src : %> event_t
   {
+      var clock = Faio::mk_alarm_clock();
       var e : SDL_Event;
       // dummy first event
       e.type = SDL_FIRSTEVENT.uint32;
       write$ events.src,e;
-      SDL_PumpEvents;
-      C_hack::ignore$ SDL_WaitEvent$ &e;
+      proc waitevent()
+      {
+      nexte:>
+        var result = SDL_PollEvent$ &e;
+        if result == 0 do
+          Faio::sleep(clock,0.1);
+          goto nexte;
+        done
+      }
+      waitevent;
       while e.type.SDL_EventType != SDL_QUIT do
+//println$ "SDL EVENT: " + e.type.SDL_EventType.str + " SDL window #" + e.window.windowID.str;
         write$ events.src, e;
-        SDL_PumpEvents;
-        C_hack::ignore$ SDL_WaitEvent$ &e;
+        waitevent;
       done
-      println$ "SDL_QUIT seen!";
+      println$ "[event_source] SDL_QUIT seen!";
       write$ events.src, e;
       return;
   } // chip event_source
+
+  proc demo_timer (quit:&bool) (var d:double) ()
+  {
+    var delta = 0.1;
+    var clock = Faio::mk_alarm_clock();
+  again:>
+    Faio::sleep(clock,delta);
+    d -= delta;
+    if *quit goto doquit;
+    if d > 0.0 goto again;
+    quit <- true;
+    var quitmsg : SDL_Event;
+    quitmsg.type = SDL_QUIT.uint32;
+println$ "TIMEOUT";
+    C_hack::ignore(SDL_PushEvent(&quitmsg)); 
+doquit:>
+  }
+
 }
 @
 
@@ -749,7 +776,7 @@ class FlxGuiWindowController
   object window_controller 
   (
     w:window_t, 
-    p:ischannel[event_t] -> 1->0
+    p:(input:ischannel[event_t]) -> 1->0 // chip interface
   ) 
     implements window_controller_interface = 
   {
@@ -759,7 +786,10 @@ class FlxGuiWindowController
     method proc destroy_window () => w.destroy ();
     method fun get_oschannel () => omsgs;
     method proc display() { w.update(); }
-    spawn_fthread (p imsgs);
+    circuit
+      wire imsgs to p.input
+    endcircuit
+    //spawn_fthread (p imsgs);
   }
 }
 @
@@ -814,13 +844,16 @@ object window_manager () =
   method gen add_window (w:window_controller_interface) : int = 
   { 
     windows += w; 
+println$ "add_window: index = " + (windows.len.int - 1  ).str + " SDL windows id = " + #(w.get_window_id).str;
     return windows.len.int - 1; 
   }
 
   fun find_window(wid: uint32) : opt[window_controller_interface] =
   {
     for wobj in windows do
-      if wid == #(wobj.get_window_id) return Some wobj;
+      if wid == #(wobj.get_window_id) do
+        return Some wobj;
+      done
     done
     return None[window_controller_interface];
   }
@@ -851,12 +884,14 @@ object window_manager () =
   chip window_event_dispatcher 
    connector events
      pin eventin : %<event_t
+     pin quit: %>int
   {
     forever:while true do
       var e = read events.eventin;
       if e.type.SDL_EventType == SDL_QUIT break forever
       dispatch_window_event e;
     done
+    write$ events.quit,1;
   }
   method fun get_window_event_dispatcher () => window_event_dispatcher;
   method proc dispatch_window_event (e:event_t) 
@@ -875,10 +910,10 @@ object window_manager () =
         else
           wobj.display();
         done
-        | #None => println$ "Can't find window ID = " + str wid;
-        endmatch;
-      | #None => println$ "No window for message: Event type " + e.type.SDL_EventType.str;
+      | #None => println$ "Can't find window ID = " + str wid;
       endmatch;
+    | #None => println$ "No window for message: Event type " + e.type.SDL_EventType.str;
+    endmatch;
   }
 
   method proc delete_all() 
@@ -890,9 +925,61 @@ object window_manager () =
     for wobj in windows do 
       var omsgs = #(wobj.get_oschannel);
       e.window.windowID = #(wobj.get_window_id);
-      //write (omsgs, e);
+      write (omsgs, e);
     done
     // note: not bothering to delete the darray :)
+  }
+
+  // the quit channel is deliberately connected to a dummy channel
+  // (a dummy is used to suppress compiler non-connection warning)
+  // the WM will suicide when it gets a SDL_QUIT message
+  method proc start ()
+  {
+    var qin,qout = mk_ioschannel_pair[int]();
+    circuit
+      connect window_event_dispatcher.eventin, event_source.src
+      wire qout to window_event_dispatcher.quit
+    endcircuit 
+  }
+
+  // start WM, wait until SDL_QUIT seen
+  // closes windows before returning
+  method proc run_until_quit ()
+  {
+    var qin,qout = mk_ioschannel_pair[int]();
+
+    circuit
+      connect window_event_dispatcher.eventin, event_source.src
+      wire qout to window_event_dispatcher.quit
+    endcircuit 
+
+    C_hack::ignore(read qin);
+
+    // we must have got a quit ..
+    println$ "QUIT EVENT, deleting all windows";
+    delete_all();
+  }
+
+  // start WM, wait until SDL_QUIT issued by either
+  // the user or the timer
+  // closes windows before returning
+  method proc run_with_timeout (var timeout: double)
+  {
+    var qin,qout = mk_ioschannel_pair[int]();
+
+    circuit
+      connect window_event_dispatcher.eventin, event_source.src
+      wire qout to window_event_dispatcher.quit
+    endcircuit 
+
+    var quit = false;
+    spawn_fthread$ demo_timer &quit timeout;
+    C_hack::ignore(read qin);
+    quit = true;
+
+    // we must have got a quit ..
+    println$ "QUIT EVENT, deleting all windows";
+    delete_all();
   }
 }
 
@@ -911,8 +998,6 @@ gen create_SDL_event_source () : ischannel[event_t]  =
 @h1 Widgets
 @h2 Simple Click Button
 @tangle button.flx
-open syntax chips;
-
 class FlxGuiButton
 {
   union button_state_t =  
@@ -1646,26 +1731,27 @@ class FlxGuiMenu
   // ===============================================================================
 
 
-  proc menu_controller 
+  chip menu_controller 
   (
     mm: menu_model_t,
-    md: menu_display_t,
-    ec: ischannel[event_t],
-    response: oschannel[menu_action_t]
-  ) ()
+    md: menu_display_t
+  )
+  connector mio
+    pin ec: %<event_t
+    pin response: %>menu_action_t
   {
     md.display();
     var run = true;
-    var e = read ec;
+    var e = read mio.ec;
     while run do
       match e.type.SDL_EventType with
       | $(SDL_WINDOWEVENT) =>
         match e.window.event.SDL_WindowEventID with
         | $(SDL_WINDOWEVENT_RESIZED) =>
           md.display();
-          write$ response, NoAction;
+          write$ mio.response, NoAction;
 
-        | _ => write$ response, NoAction;
+        | _ => write$ mio.response, NoAction;
         endmatch;
 
       | $(SDL_MOUSEMOTION) =>
@@ -1675,18 +1761,18 @@ class FlxGuiMenu
         var x,y = e.motion.x,e.motion.y; //int32
         match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
         | #None =>
-          write$ response, NoAction;
+          write$ mio.response, NoAction;
         | Some pos =>
           println$ "Mouse Move Position " + pos.str;
           match #(mm.get_state) with
           | #Closed =>
-            write$ response, ChangedPosition;
+            write$ mio.response, ChangedPosition;
           | Open oldpos =>
             if oldpos == pos do
-              write$ response, NoAction;
+              write$ mio.response, NoAction;
             else
               mm.set_state (Open pos);
-              write$ response, ChangedPosition;
+              write$ mio.response, ChangedPosition;
             done
           endmatch;
         endmatch;
@@ -1696,18 +1782,18 @@ class FlxGuiMenu
         x,y = e.button.x,e.button.y; //int32
         match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
         | #None =>
-          write$ response, NoAction;
+          write$ mio.response, NoAction;
         | Some pos =>
           println$ "Mouse down Position " + pos.str;
           match #(mm.get_state) with
           | #Closed =>
-            write$ response, ChangedPosition;
+            write$ mio.response, ChangedPosition;
           | Open oldpos =>
             if oldpos == pos do
-              write$ response, NoAction;
+              write$ mio.response, NoAction;
             else
               mm.set_state (Open pos);
-              write$ response, ChangedPosition;
+              write$ mio.response, ChangedPosition;
             done
           endmatch;
         endmatch;
@@ -1717,19 +1803,19 @@ class FlxGuiMenu
         x,y = e.button.x,e.button.y; //int32
         match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
         | #None =>
-          write$ response, NoAction;
+          write$ mio.response, NoAction;
         | Some pos =>
           println$ "Mouse up Position " + pos.str;
           match #(mm.get_state) with
           | #Closed =>
-            write$ response, ChangedPosition;
+            write$ mio.response, ChangedPosition;
           | Open oldpos =>
             if oldpos == pos do
               var selected_tag = #(mm.get_current_tag);
-              write$ response, SelectedAction selected_tag;
+              write$ mio.response, SelectedAction selected_tag;
             else
               mm.set_state (Open pos);
-              write$ response, ChangedPosition;
+              write$ mio.response, ChangedPosition;
             done
           endmatch;
         endmatch;
@@ -1737,12 +1823,12 @@ class FlxGuiMenu
 
 
       | $(SDL_WINDOWEVENT) when e.window.event == SDL_WINDOWEVENT_LEAVE.uint8  =>
-        write$ response, NoAction;
+        write$ mio.response, NoAction;
 
       | _ => 
-        write$ response, NoAction;
+        write$ mio.response, NoAction;
       endmatch;
-      e = read ec;
+      e = read mio.ec;
     done
 
   }
@@ -1938,16 +2024,16 @@ class FlxGuiLineBuffer
 @tangle line_editor.flx
 class FlxGuiLineEditor
 {
-proc line_edit 
-  (b:line_buffer_interface) 
+chip line_edit 
+  (b:line_buffer_interface)
   (d:line_buffer_display_controller_interface) 
-  (ec:ischannel[event_t]) 
-  ()
+  connector lin
+    pin ec: %<event_t
 {
   //println$ "Line buffer running";
   d.display();
   var run = true;
-  var e : event_t = read ec;
+  var e : event_t = read lin.ec;
   while run do
     match e.type.SDL_EventType with
     | $(SDL_WINDOWEVENT) =>
@@ -1995,10 +2081,10 @@ proc line_edit
       run = false;
     | _ => ;
     endmatch;
-    e = read ec;
+    e = read lin.ec;
   done
-}
-}
+} //chip
+} //class
  
 @
 
