@@ -258,6 +258,19 @@ open class Schannel
   //$ Read an item from an input channel.
   inline gen read[T] (chan:ischannel[T]) => read$ C_hack::cast[schannel[T]] chan;
 
+  //$ Test if channel is read for a read.
+  inline gen ready[T] :ischannel[T] -> bool = "$1->waiting_to_write!=NULL";
+  inline gen ready[T] : schannel[T] -> bool = "$1->waiting_to_write!=NULL";
+
+  //$ Return Some value if ready, otherwise None
+  inline gen maybe_read[T] (chan:ischannel[T]) =>
+    if chan.ready then Some chan.read else None[T]
+  ;
+
+  inline gen maybe_read[T] (chan:schannel[T]) =>
+    if chan.ready then Some chan.read else None[T]
+  ;
+
   //$ Write an item to a bidirectional channel.
   proc write[T] (chan:schannel[T], v:T) {
     var ps = C_hack::cast[root::address]$ new v;
@@ -291,6 +304,20 @@ open class Schannel
     | None => return y;
     done
   }
+
+  // Here is a subroutine call, assuming the
+  // fibre is already created
+  inline gen subcall[r,w] (chout:%>w, chin:%<r) (arg:w):r =
+  {
+    write (chout,arg);
+    return read chin;
+  }
+
+  // Now, we can use the channels AS a function:
+  inline fun apply[r,w] (ch:(%>w * %<r), arg:w):r =>
+    subcall ch arg
+  ;
+
 }
 
 @h1 Synchronous multiplexor

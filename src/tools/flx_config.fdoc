@@ -1,13 +1,10 @@
 @title Configuration Tool
 @felix
-// configuration tool
 include "sdl/SDL_image";
 include "gui/__init__";
 open FlxGui;
 
-println$ "flx_config";
-
-var clock = Faio::mk_alarm_clock();
+println$ "Basic Menu Test";
 
 // Initialise the SDL system (SDL + TTF + IMAGE)
 FlxGui::init();
@@ -32,27 +29,26 @@ var open_icon_file = #Config::std_config.FLX_SHARE_DIR / "src"/"web"/"images"/"m
 var open_icon = IMG_Load (open_icon_file.cstr);
 var closed_icon_file = #Config::std_config.FLX_SHARE_DIR / "src"/"web"/"images"/"plus.gif";
 var closed_icon = IMG_Load (closed_icon_file.cstr);
-var submenu_icon = (open_icon=open_icon, closed_icon=closed_icon);
+var submenu_icon = (open_icon=surface open_icon, closed_icon=surface closed_icon);
 
 proc mk_menu
 (
   w:window_t, x:int, y:int,
   m:menu_data_t, init: menu_state_t,
-  oresp: oschannel[menu_action_t],
-  pmm: &menu_model_t,
-  pmd: &menu_display_t,
-  poevent: &oschannel[event_t]
+  oresp: %>menu_action_t,
+  ievent: %<event_t
 ) 
 {
-  var ievent,oevent = #mk_ioschannel_pair[event_t];
   var mm = MenuModel m;
-  var md = MenuBarDisplay (mm,w,x,y,font, text_colour,disabled_colour,selected_colour, submenu_icon);
+  var md = MenuBarDisplay ("mymenu",mm,w,x,y,font, text_colour,disabled_colour,selected_colour, submenu_icon);
   mm.set_state init;
   md.display();
-  spawn_fthread$ menu_controller (mm,md,ievent,oresp);
-  pmm <- mm;
-  pmd <- md;
-  poevent <- oevent;
+
+  device mio = menu_controller (mm,md);
+  circuit
+    wire ievent to mio.ec
+    wire oresp to mio.response
+  endcircuit
 }
 
 open LS_expr;
@@ -146,7 +142,7 @@ var config = (
 );
 
 typedef config_t = typeof config;
-
+/*
 // Base display routine
 proc display (w:window_t) (config:config_t)
 {
@@ -408,28 +404,159 @@ proc mk_field
 }
 
 
+*/
+
+// Base display routine
+proc display (w:window_t)
+{
+  var surf = get_surface w;
+  w.remove "bg";
+  w.add$ mk_drawable "bg" 0u32 FlxGui::clear lightgrey;
+  w.add$ mk_drawable "bg" 0u32 FlxGui::write (100,10,font,black,"Basic Menu Test");
+}
+
+proc mk_field 
+(
+  window:window_t, x:int, y:int, 
+  font:font_t, colour: colour_t, bgcolour:colour_t, 
+  dflt:string,
+  ed: &line_buffer_interface,
+  dc: &line_buffer_display_controller_interface,
+  o:&oschannel[event_t]
+) 
+{
+  var tag = dflt;
+  println$ "mk_field ("+x.str +"," + y.str+")="+tag;
+  var editor = line_buffer (dflt.len.int, dflt);
+  dc <- line_buffer_display_controller (window,tag,font,colour,bgcolour,x,y,editor);
+  dc*.display();
+  var ich,och = #(mk_ioschannel_pair[event_t]);
+
+  device medit = line_edit editor (*dc);
+  circuit
+    wire ich to medit.ec
+  endcircuit
+
+  println$ "mkfield: controller spawned";
+  ed <- editor;
+  o <- och;
+}
+
+typedef field_data_t = %>event_t * line_buffer_display_controller_interface;
+typedef handler_data_t = (
+  w : window_t,
+  menu_event_write: %>event_t ,
+  menu_response_read: %<menu_action_t,
+  fields : varray[field_data_t]
+);
+ 
+// make an event handler for our window
+chip ehandler (h:handler_data_t)
+connector pins
+  pin input: %<event_t
+{
+  var selected_field = 0;
+  var ev2: SDL_Event;
+  var e: event_t = read pins.input;
+
+  // while the event isn't a quit event ..
+  while e.window.event.SDL_WindowEventID != SDL_WINDOWEVENT_CLOSE  do
+    // print a diagnostic
+    var s = 
+      if e.type.SDL_EventType == SDL_WINDOWEVENT then
+        e.type.SDL_EventType.str + ": " + e.window.event.SDL_WindowEventID.str + " wid=" + e.window.windowID.str
+      elif e.type.SDL_EventType != SDL_MOUSEMOTION then
+        e.type.SDL_EventType.str
+      else ""
+    ; 
+    match e with
+    | KEYDOWN kd when kd.keysym.sym \in (SDLK_TAB, SDLK_RETURN) =>
+      var sel :SDL_Event;
+      &sel.type <- SDL_WINDOWEVENT.uint32;
+      sel.window.event = SDL_WINDOWEVENT_FOCUS_LOST.uint8;
+      write$ h.fields.selected_field.0,sel;
+      selected_field = (selected_field + 1) % h.fields.len.int;
+      sel.window.event = SDL_WINDOWEVENT_FOCUS_GAINED.uint8;
+      write$ h.fields.selected_field.0,sel;
+    | MOUSEBUTTONDOWN mbd =>
+      for i in 0 ..< h.fields.len.int do
+        var d = h.fields.i.1;
+        var x,y = mbd.x, mbd.y;
+        if SDL_Point (x.int, y.int) \in d.get_client_rect() do
+          //println$ "[Evt handler] Button down in client rect of line edit " + d.get_tag();
+          ev2.type = SDL_WINDOWEVENT.uint32;
+          ev2.window.event = SDL_WINDOWEVENT_FOCUS_GAINED.uint8;
+          write$ h.fields.i.0, ev2;
+          write$ h.fields.i.0, e;
+          selected_field = i;
+        else
+          ev2.type = SDL_WINDOWEVENT.uint32;
+          ev2.window.event = SDL_WINDOWEVENT_FOCUS_LOST.uint8;
+          write$ h.fields.i.0,ev2; 
+        done
+      done
+    | _ =>
+      write$ h.fields.selected_field.0, e;
+    endmatch;
+
+    var response = (h.menu_event_write,h.menu_response_read) e;
+    match response with
+    | #NoAction => ;
+    | #ChangedPosition => 
+      h.w.display; // redraw whole window base
+      var resize_event: event_t; // hack, only fill out some fields
+      &resize_event.type <- SDL_WINDOWEVENT.uint32;
+      &resize_event.window.event <- SDL_WINDOWEVENT_RESIZED.uint8;
+      write$ h.menu_event_write, resize_event;
+      response = read h.menu_response_read; //ignored
+      h.w.update();
+
+    | SelectedAction s => println$ "Menu Selection made: " + s;
+    endmatch; 
+    // get another event
+    e= read pins.input;
+  done
+
+  // we must have got a quit ..
+  println$ "CLOSE EVENT";
+} 
+
+
 
 begin
   //create a window manager
   var wm = window_manager();
 
   // create a window
-  var w1 = window_t("flx_config",50,50,800,600);
-  w1.display config;
+  var w1 = create_resizable_window("Config Manager",100,100,800,400);
+  w1.display ();
 
   var iresp,oresp = #mk_ioschannel_pair[menu_action_t];
+  var ievent,oevent = #mk_ioschannel_pair[event_t];
 
-  var oevent: oschannel[event_t];
-  var mm: menu_model_t;
-  var md: menu_display_t;
-  mk_menu (w1, 10,30, menu, init_state, oresp, &mm, &md, &oevent);
-
+  mk_menu (w1, 1,103, menu, init_state, oresp, ievent);
+/*
   // create an edit field for the target directory name
   var edit_ch1: oschannel[event_t]; var edit_buffer1: line_buffer_interface;
   mk_field (w1, 200, 15, font, black, white, "build/release/host", &edit_buffer1, &edit_ch1);
+*/
+  var ch1: oschannel[event_t]; 
+  var ed1: line_buffer_interface; 
+  var dc1: line_buffer_display_controller_interface;
+  mk_field (w1, 50, 50, font, black, white, "EDITFIELD ONE", &ed1, &dc1, &ch1);
   
+  var handler_data : handler_data_t = (
+    w = w1,
+    menu_event_write = oevent,
+    menu_response_read = iresp,
+    fields = varray[field_data_t] (1uz,(ch1,dc1))
+  );
+    
+  var ehandle = ehandler handler_data;
+ 
   // create a window controller for our window
-  var wc1 = window_controller (w1, ehandler w1 (oevent, iresp) (edit_buffer1,edit_ch1));
+  var wc1 = window_controller (w1, ehandle);
+
 
   // attach controller to window manager
   var wno = wm.add_window wc1;
@@ -437,27 +564,11 @@ begin
   // USE variable wno or Felix will elide the call!
   println$ "Window number " + wno.str;
 
-  // get the channel to read events from
-  var input = wm.get_event_source();
-    
   // refresh window now
-  w1.update;
-  // read an event
-  var e= read input;
+  w1.update ();
 
-  while e.type.SDL_EventType != SDL_QUIT do
-
-    // dispatch the event to the window it is associated with
-    wm.dispatch_window_event e;
-
-    // get another event
-    e= read input;
-  done
-
-  // we must have got a quit ..
-  println$ "QUIT EVENT";
-  wm.delete_all();
-  println$ "Windows deleted, quitting";
+  // run
+  wm.run_with_timeout 60.0;
+  println$ "Flx_config quitting";
 end
-
 

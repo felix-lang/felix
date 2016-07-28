@@ -89,7 +89,7 @@ print_endline ("Check (" ^ sbt bsym_table v0 ^ ") ^ (" ^ sbt bsym_table ix0 ^ ")
   sbt bsym_table v ^ ") ^ ( " ^ catmap " * " (sbt bsym_table) ls ^ ")")
 ;
 *)
-let ls = List.rev ls in
+(* let ls = List.rev ls in *)
   if List.length ls = 0 then v = v0 && ix0 = Flx_btype.btyp_tuple [] else
   let rec aux v0 ix0 ls = 
     if List.length ls = 1 then 

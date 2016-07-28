@@ -7,8 +7,6 @@ open FlxGui;
 
 println$ "Basic Menu Test";
 
-var clock = Faio::mk_alarm_clock();
-
 // Initialise the SDL system (SDL + TTF + IMAGE)
 FlxGui::init();
 
@@ -38,13 +36,10 @@ proc mk_menu
 (
   w:window_t, x:int, y:int,
   m:menu_data_t, init: menu_state_t,
-  oresp: oschannel[menu_action_t],
-  pmm: &menu_model_t,
-  pmd: &menu_display_t,
-  poevent: &oschannel[event_t]
+  oresp: %>menu_action_t,
+  ievent: %<event_t
 ) 
 {
-  var ievent,oevent = #mk_ioschannel_pair[event_t];
   var mm = MenuModel m;
   var md = MenuBarDisplay ("mymenu",mm,w,x,y,font, text_colour,disabled_colour,selected_colour, submenu_icon);
   mm.set_state init;
@@ -55,10 +50,6 @@ proc mk_menu
     wire ievent to mio.ec
     wire oresp to mio.response
   endcircuit
-
-  pmm <- mm;
-  pmd <- md;
-  poevent <- oevent;
 }
 
 open LS_expr;
@@ -120,8 +111,7 @@ connector pins
         e.type.SDL_EventType.str
       else ""
     ; 
-    write$ menu_out, e;
-    var response = read menu_in;
+    var response = (menu_out,menu_in) e;
     match response with
     | #NoAction => ;
     | #ChangedPosition => 
@@ -154,10 +144,9 @@ begin
 
   var iresp,oresp = #mk_ioschannel_pair[menu_action_t];
 
-  var oevent: oschannel[event_t];
-  var mm: menu_model_t;
-  var md: menu_display_t;
-  mk_menu (w1, 50,50, menu, init_state, oresp, &mm, &md, &oevent);
+  var ievent,oevent = #mk_ioschannel_pair[event_t];
+  mk_menu (w1, 50,50, menu, init_state, oresp, ievent);
+
 
   // create a window controller for our window
   var wc1 = window_controller (w1, ehandler w1 (oevent, iresp) );

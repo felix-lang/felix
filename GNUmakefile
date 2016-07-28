@@ -114,7 +114,7 @@ configure: extract
 	#
 	$(PYTHON) fbuild/fbuild-light configure --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
 
-fbuild:
+do-fbuild:
 	#
 	# ============================================================
 	#
@@ -126,6 +126,18 @@ fbuild:
 	#
 	$(PYTHON) fbuild/fbuild-light build --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
 
+clean-fbuild:
+	rm -rf ${BUILDROOT}/exe*
+	rm -rf ${BUILDROOT}/temp*
+	rm -rf ${BUILDROOT}/obj*
+	rm -rf ${BUILDROOT}/lib*
+	rm -rf ${BUILDROOT}/__init__.py
+	rm -rf ${BUILDROOT}/tut
+	rm -rf ${BUILDROOT}/tutopt
+	rm -rf ${BUILDROOT}/pyconfig
+	rm -rf ${BUILDROOT}/cache
+
+fbuild: do-fbuild clean-fbuild
 
 packages:
 	# =========================================================
@@ -272,4 +284,4 @@ install:
 .PHONY : doc install websites-linux  release install-bin
 .PHONY : copy-doc gen-doc gendoc fbuild speed tarball
 .PHONY : weblink flx tools web-plugins toolchain-plugins rtl copy lib
-.PHONY : sdltest src
+.PHONY : sdltest src do-fbuild clean-fbuild

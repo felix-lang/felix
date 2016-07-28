@@ -6,19 +6,20 @@ open FlxGui;
 
 println$ "Basic Button Test";
 
-var clock = Faio::mk_alarm_clock();
-
 // Initialise the SDL system (SDL + TTF + IMAGE)
 FlxGui::init();
 
-var font_name = dflt_sans_serif_font();
-var font : font_t = get_font(font_name, 12);
-var lineskip = get_lineskip font;
+var font : font_t = 
+  let font_name = dflt_sans_serif_font() in
+  get_font(font_name, 12)
+;
+
+typedef butio_t = (butout: %>event_t, butresp: %<button_action_t);
 
 // make an event handler for our window
 chip ehandler 
   (w:window_t)
-  (buts: varray[oschannel[event_t] * ischannel[button_action_t]])
+  (buts: varray[butio_t])
 connector pins
   pin input: %<event_t
 {
@@ -37,8 +38,9 @@ connector pins
       | _ => ""
     ;
     for but in buts do
-      write$ but.0,e;
-      match read but.1 with
+      // subroutine call on channels
+      var result = (but.butout, but.butresp) e;
+      match result with
       | #NoAction => ;
       | ClickAction s => println$ "Button Clicked: " + s;
       endmatch;
@@ -53,49 +55,40 @@ connector pins
 } 
 
 // Button colours
-var bsup = (label_colour=red, bg_colour=white,top_colour=blue,
-  left_colour=blue, bottom_colour=red,right_colour=red);
+var skin = 
+  let bsup = (label_colour=red, bg_colour=white,top_colour=blue,
+    left_colour=blue, bottom_colour=red,right_colour=red)
+  in
 
-var bsdown = (label_colour=red, bg_colour=blue,top_colour=darkgrey,
-  left_colour=darkgrey, bottom_colour=lightgrey,right_colour=lightgrey);
+  let bsdown = (label_colour=red, bg_colour=blue,top_colour=darkgrey,
+    left_colour=darkgrey, bottom_colour=lightgrey,right_colour=lightgrey)
+  in
 
-var bsdis = (label_colour=red, bg_colour=black,top_colour=lightgrey,
-  left_colour=lightgrey, bottom_colour=darkgrey,right_colour=darkgrey);
+  let bsdis = (label_colour=red, bg_colour=black,top_colour=lightgrey,
+    left_colour=lightgrey, bottom_colour=darkgrey,right_colour=darkgrey)
+  in
 
-var bsmover = (label_colour=red, bg_colour=yellow,top_colour=blue,
-  left_colour=blue, bottom_colour=red,right_colour=red);
+  let bsmover = (label_colour=red, bg_colour=yellow,top_colour=blue,
+    left_colour=blue, bottom_colour=red,right_colour=red)
+  in
+  (up=bsup, down=bsdown, mouseover=bsmover, disabled=bsdis)
+;
 
 
 proc mkbutton (
-
-  // window to put button on
-  w:window_t, 
-
-  // where to put button in window
-  x:int, y:int, 
-
-  // button label and font 
-  label:string, font:font_t, 
-
-  // channel for button to send action on 
-  oresp: oschannel[button_action_t], 
-
-  // address to store button display object
-  pbd: &button_display_t,
-
-  // address of channel for sending events to button
-  pos: &oschannel[event_t]
-)
+  w:window_t,                  // window to put button on
+  x:int, y:int,                // where to put button in window
+  label:string, font:font_t,   // button label and font 
+  oresp: %>button_action_t,    // channel for button to send action on 
+  ich: %<event_t               // channel for sending events to button
+) 
 {
   // button state object
   var bm = ButtonModel (label,Up);
 
   // button display object
-  var bd = ButtonDisplay (bm) (w, font, label, label, bsup, bsdown, bsdis, bsmover,
-    x,y, x+100,y+20,x+5,y+15);
-
-  // channel for sending events to button
-  var ich,och = #mk_ioschannel_pair[event_t];
+  var bd = ButtonDisplay (bm) (w, font, label, label, skin,
+    rect_t(x,y,100,20),point_t(x+5,y+15));
 
   // start the button controller
   device b = button_controller (bm,bd);
@@ -103,10 +96,6 @@ proc mkbutton (
     wire ich to b.ec
     wire oresp to b.response
   endcircuit
-
-  // return button display and event channel
-  pbd <- bd ;
-  pos <- och;
 }
 
 begin
@@ -122,16 +111,17 @@ begin
 
   var iresp,oresp = #mk_ioschannel_pair[button_action_t];
 
-  var bd1 : button_display_t; var b1: oschannel[event_t];
-  mkbutton(w1,100,250,"Button 1",font, oresp, &bd1, &b1);
+  var ich1,b1 = #mk_ioschannel_pair[event_t];
+  mkbutton(w1,100,250,"Button 1",font, oresp, ich1);
 
-  var bd2 : button_display_t; var b2: oschannel[event_t];
-  mkbutton(w1,100,300,"Button 2",font, oresp, &bd2, &b2);
+  var ich2,b2 = #mk_ioschannel_pair[event_t];
+  mkbutton(w1,100,300,"Button 2",font, oresp, ich2);
 
-  var buttons=varray((b1, iresp), (b2,iresp));
+  var buttons=varray((butout=b1, butresp=iresp), (butout=b2,butresp=iresp));
 
- // create a window controller for our window
-  var wc1 = window_controller (w1, ehandler w1 buttons);
+  // create a window controller for our window
+  var event_handler = ehandler w1 buttons;
+  var wc1 = window_controller (w1, event_handler);
 
   // attach controller to window manager
   var wno = wm.add_window wc1;

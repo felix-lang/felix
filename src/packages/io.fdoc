@@ -1228,17 +1228,22 @@ class Faio {
       //println$ "Reset len to bytes done ..";
   }
 
-  type sleep_request = 'flx::faio::sleep_request' requires package "timer";
-  type alarm_clock = 'flx::demux::timer_queue*' requires package "timer"; 
+  type sleep_request_t = 'flx::faio::sleep_request' requires package "timer";
+  type alarm_clock_t = 'flx::demux::timer_queue*' requires package "timer"; 
 
-  fun mk_alarm_clock: 1 -> alarm_clock = '::flx::demux::mk_timer_queue()';
-  fun mk_sleep_request: alarm_clock * double -> sleep_request = '::flx::faio::sleep_request($1,$2)';
+  fun mk_alarm_clock: 1 -> alarm_clock_t = '::flx::demux::mk_timer_queue()';
+  fun mk_sleep_request: alarm_clock_t * double -> sleep_request_t = '::flx::faio::sleep_request($1,$2)';
 
-  proc sleep(clock: alarm_clock, delta: double)
+  proc sleep(clock: alarm_clock_t, delta: double)
   {
     var sr = mk_sleep_request$ clock,delta;
     faio_req$ &sr;
   }
+
+  // this should be deleted if not used!
+  var clock = mk_alarm_clock();
+  proc sleep (delta:double) { sleep (clock,delta); }
+
 } // class faio
 
 @h1 Posix Faio
