@@ -234,6 +234,8 @@ let bexpr_record es : t =
 let cal_removal e ts ss =
   let _,domain = e in
   let mkprj fld seq fldt : t = bexpr_rnprj fld seq domain fldt in
+
+  (* calculate which fields to remove, and how many times *)
   let flds2remove = Hashtbl.create (List.length ss) in
   List.iter (fun s -> 
     if Hashtbl.mem flds2remove s 
@@ -243,33 +245,34 @@ let cal_removal e ts ss =
   ss
   ;
 
+  (* result, reversed order *)
   let components = ref [] in
-  let fldscopied = Hashtbl.create (List.length ts) in
+
+  (* fields scanned, and how many times *)
+  let fldsscanned= Hashtbl.create (List.length ts) in
+  let add_scan field = 
+    if Hashtbl.mem fldsscanned field then
+      Hashtbl.replace fldsscanned field (Hashtbl.find fldsscanned field + 1)
+    else
+      Hashtbl.add fldsscanned field 1
+  in
+
+  (* for each field entry *)
   List.iter  (fun (name,fldt) ->
+    add_scan name;
+
+    (* if we have to remove this field, skip over it *)
     if Hashtbl.mem flds2remove name
     then begin let count = Hashtbl.find flds2remove name in
+      (* if there's only one more time to skip the field, delete from table *)
       if count = 1 
       then Hashtbl.remove flds2remove name 
+      (* otherwise just decrement the count *)
       else Hashtbl.replace flds2remove name (count - 1)
     end else begin
-      let seq : int = 
-        if Hashtbl.mem fldscopied name
-        then begin let count = Hashtbl.find fldscopied name in
-          Hashtbl.replace fldscopied name (count + 1);
-          count
-        end else begin
-          Hashtbl.add fldscopied name 1;
-          0
-        end
-      in
+      let seq = Hashtbl.find fldsscanned name - 1 in
       let prj = mkprj name seq fldt in
-(*
-print_endline ("cal_remove ..");
-*)
       let component = bexpr_apply fldt (prj,e) in
-(*
-print_endline (" .. cal_remove done");
-*)
       components := (name,component) :: !components
     end
   )

@@ -33,6 +33,15 @@ let cal_bind_apply
     print_endline ("Bound argument " ^ sbe bsym_table a);
 *)
       (* ---------------------------------------------------------- *)
+      (* tie *) 
+      (* ---------------------------------------------------------- *)
+      try match f' with
+      | EXPR_name (sr,"_tie",[]) ->
+        Flx_dot.try_bind_tie bsym_table state.Flx_lookup_state.counter sr a
+      | _ ->  raise Flx_dot.OverloadResolutionError
+      with Flx_dot.OverloadResolutionError ->
+
+      (* ---------------------------------------------------------- *)
       (* special case, product of functions *) 
       (* ---------------------------------------------------------- *)
       try match f' with

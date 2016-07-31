@@ -103,10 +103,36 @@ let handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_
 
 let handle_constant_projection bsym_table sr a ta n =
   begin match unfold "flx_lookup" ta with
+  | BTYP_record fs 
+  | BTYP_polyrecord (fs,_) ->
+    let m = List.fold_left (fun acc (s,_) -> acc + (if s = "" then 1 else 0)) 0 fs in
+    if n < 0 || n >= m then
+      clierrx "[flx_bind/flx_dot.ml: E70A] " sr ("AST_dot, record index "^ string_of_int n ^ 
+      " out of range 0 to " ^ string_of_int (m-1) ^
+      " for type " ^ sbt bsym_table ta ^ "\n" ^
+      " only blank fields can be indexed!"
+      )
+    else
+    bexpr_get_n (snd (List.nth fs n)) n a
+
+  | BTYP_pointer (BTYP_record fs)
+  | BTYP_pointer (BTYP_polyrecord (fs,_)) ->
+    let m = List.fold_left (fun acc (s,_) -> acc + (if s = "" then 1 else 0)) 0 fs in
+    if n < 0 || n >= m then
+      clierrx "[flx_bind/flx_dot.ml: E70A] " sr ("AST_dot, record index "^ string_of_int n ^ 
+      " out of range 0 to " ^ string_of_int (m-1) ^
+      " for type " ^ sbt bsym_table ta ^ "\n" ^
+      " only blank fields can be indexed!"
+      )
+    else
+    bexpr_get_n (btyp_pointer (snd (List.nth fs n))) n a
+
+
+
   | BTYP_tuple ls ->
     let m = List.length ls in
     if n < 0 || n >= m then
-      clierrx "[flx_bind/flx_dot.ml:109: E70] " sr ("AST_dot, tuple index "^ string_of_int n ^ 
+      clierrx "[flx_bind/flx_dot.ml:109: E70B] " sr ("AST_dot, tuple index "^ string_of_int n ^ 
       " out of range 0 to " ^ string_of_int (m-1) ^
       " for type " ^ sbt bsym_table ta
       )
@@ -138,7 +164,7 @@ let handle_constant_projection bsym_table sr a ta n =
       " for type " ^ sbt bsym_table ta
       )
     else
-     bexpr_get_n t n a
+      bexpr_get_n t n a
 
   | BTYP_pointer (BTYP_tuple ls) ->
     let m = List.length ls in
@@ -148,7 +174,7 @@ let handle_constant_projection bsym_table sr a ta n =
       " for type " ^ sbt bsym_table ta
       )
     else
-     bexpr_get_n (btyp_pointer (List.nth ls n)) n a
+      bexpr_get_n (btyp_pointer (List.nth ls n)) n a
 
   | BTYP_pointer (BTYP_array (t,BTYP_unitsum m)) -> 
     if n < 0 || n >= m then
@@ -181,5 +207,40 @@ let handle_array_projection bsym_table int_t sr a ta n =
     assert (snd n = ixt);
     bexpr_apply (BTYP_pointer vt) (bexpr_aprj n ta vt, a)
   | _ -> assert false
+
+
+let try_bind_tie bsym_table counter sr ((_,ta) as a) =
+  match ta with
+  | BTYP_pointer (BTYP_tuple ls) ->
+    let n = List.length ls in
+    let ts = List.map (fun t -> btyp_pointer t) ls in
+    let t = btyp_tuple ts in
+    let es = List.map2 (fun t i -> bexpr_get_n (btyp_pointer t) i a) ls (Flx_list.nlist n) in
+    bexpr_tuple t es
+ 
+  | BTYP_pointer (BTYP_array (bt,ixt)) -> 
+    begin match ixt with
+    | BTYP_unitsum n when n<20 ->
+      let t = (btyp_array (btyp_pointer bt, ixt)) in
+      let es = List.map (fun i -> bexpr_get_n (btyp_pointer bt) i a) (Flx_list.nlist n) in
+      bexpr_tuple t es
+
+    | BTYP_unitsum _ -> clierr sr ("compiler restriction: " ^ 
+      "tie of array requires unitsum less than 20, got " ^
+      sbt bsym_table ixt)
+    | _ -> clierr sr ("compiler restriction: " ^ 
+      "tie of array requires index to be a unitsum, got " ^
+      sbt bsym_table ixt)
+    end
+    
+  | BTYP_pointer (BTYP_record fs) -> 
+    let n = List.length fs in
+    let es = List.map2 (fun (s,t) i -> s,bexpr_get_n (btyp_pointer t) i a) fs (Flx_list.nlist n) in
+    bexpr_record es
+ 
+
+  | _ -> raise OverloadResolutionError
+
+
 
 
