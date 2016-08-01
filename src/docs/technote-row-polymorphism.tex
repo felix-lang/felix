@@ -33,6 +33,7 @@ var r : (a:int,b:string) = (a=1,b="Hello");
 The order of the fields fields with different names
 is irrelevant.
 
+\subsection{Named value projections}
 The names of the fields can be used as projections:
 
 \begin{minted}{felix}
@@ -47,6 +48,7 @@ var p = a of (a:int,b:string);
 var i = p r;
 \end{minted}
 
+\subsection{Pointer projections}
 Pointer projections are also supported:
 
 \begin{minted}{felix}
@@ -58,6 +60,7 @@ var p = a of &(a:int,b:string);
 var i2 = *(p &r);
 \end{minted}
 
+\subsection{Repeated field names}
 Record field names may be repeated:
 
 \begin{minted}{felix}
@@ -70,7 +73,7 @@ In this case projections refer to the leftmost field of
 the given name. The order of fields with the same name
 matters.
 
-
+\subsection{Blank field names}
 One can also use blank field names. The grammar allows the name 
 \verb%n""% to be used. Alternatively, the name can be omitted,
 or both the name and \verb%=% sign can be omitted, except for
@@ -82,6 +85,7 @@ var x = (a=1,=2,n""=3);
 println$ x._strr;
 \end{minted}
 
+\subsection{Tuples}
 If all the field names are blank, you can also omit the \verb%=% sign
 from the first entry, and, if precedence allows, the parentheses:
 
@@ -90,7 +94,12 @@ var x : int * int * string = 1,2,"hello";
 println$ x._strr;
 \end{minted}
 
-in which case the record called a tuple. Plain decimal integer
+in which case the record called a tuple.  Note the distinct
+type syntax using n-fix operator \verb%*%. 
+
+\subsection{Tuple value projections}
+
+Plain decimal integer
 literals can be used for tuple projections:
 
 \begin{minted}{felix}
@@ -106,6 +115,18 @@ var prj1 = proj 1 of (int * int * string);
 println$ prj1 x;
 \end{minted}
 
+\subsection{Tuple pointer projections}
+Since tuples are a special case of records we
+also have pointer projections.
+
+\begin{minted}{felix}
+var x = 1,2,"Hello";
+var px = &x;
+var p2 = px . 1;
+var two = *ps;
+\end{minted}
+
+\subsection{Arrays}
 If the types of a tuple are all the same, it is called an array:
 
 \begin{minted}{felix}
@@ -113,6 +134,7 @@ var x : int ^ 3 = 1,2,3;
 println$ x._strr;
 \end{minted}
 
+\subsection{Array Value projections}
 In this case the projections can be either an integer expression,
 or an expression of the type of the array index:
 
@@ -127,20 +149,104 @@ If the projection is an integer it is bounds checked at
 run time. If it is a compact linear type which is the type
 of the array index, no bounds check is required.
 
-\section{Addition}
-Records and tuples can be concatenated with infix operator \verb%+%.
-Duplicate fields retain their order.
+\subsection{Array pointer projections}
+And of course arrays have pointer projections:
+
+\begin{minted}{felix}
+var x : int ^ 3 = 1,2,3;
+var px = &x;
+var one = 1;
+var p2 = px . one;
+var v2 = *p2;
+\end{minted}
+
+\section{Ties}
+A tie is a natural transformation which can be applied to any data functor.
+Given a functor $F: {\mathtt TYPE} \rightarrow {\mathtt TYPE}$, there is an associated functor 
+$$\&F T = F \&T$$
+which for each type $T$ builds a data structure of pointers to $T$.
+
+The operator $\mathrm \_tie$ maps each $F$ to $\&F$. For records we have
+
+\begin{minted}{felix}
+// record tie
+var rec : (a:int, a:int, b:int) = (a=1,a=2,b=3);
+var prec : &(a:int, a:int, b:int) = &rec;
+var tierec : (a:&int, a:&int, b:&int) = _tie prec;
+println$ *(tierec.a), *(tierec.b);
+\end{minted}
+
+which maps a pointer to a record object to a record of pointers to its
+components. For tuples we have
+
+\begin{minted}{felix}
+// tuple tie
+var tup : int * int * string = (1,2,"Hello");
+var ptup : &(int * int * string) = &tup;
+var tietup : &int * &int * &string= _tie ptup;
+println$ *(tietup.0), *(tietup.1);
+\end{minted}
+
+which maps a pointer to a tuple to a tuples of pointers to its
+components, and finally, for small arrays we have
+
+\begin{minted}{felix}
+// array tie
+var arr = (1,2,3);
+var parr = &arr;
+var tiearr = _tie parr;
+println$ *(tiearr.0), *(tiearr.1);
+\end{minted}
+
+which maps a pointer to an array to an array of pointers to its components.
+
+Ties obey the rule:
+$$ ({\mathrm \_tie} p) . \pi = p . \pi$$
+where p is a pointer to a product type and $\pi$ is a projection.
+
+\subsection{Supertype coercion}
+A record can be coerced to a record with less fields:
+
+\begin{minted}{felix}
+var x = (a=1,a=2,b=3,c=4);
+typedef ab = (a:int,b;int);
+var y = x :>> ab; 
+  //  (a=1,b=3)
+\end{minted}
+
+A supertype coercion works by copying the required fields
+as encountered in a left to right scan of the sorted fields:
+if a field is repeated the leading fields are retained
+and the trailing fields lost.
 
 \section{Polyrecords}
-A list of fields may be added to any type with a polyrecord
-expression:
+A list of fields may be pushed onto the left of any 
+type with a polyrecord expression:
 
 \begin{minted}{felix}
 var x = (a=1,b=2);
-var y = (a=3,d=2 | x);
+var y = (a=3,d=2 | x); // (a=3,a=1,b=2,d=2)
 \end{minted}
 
 The type of the result is a record if the RHS term is a record, including
-tuples or unit tuple.
+tuples or unit tuple. 
+
+A polyrecord type can be used as or in a function parameter with
+a type variable in the poly slot:
+
+\begin{minted}{felix}
+fun move[T] (p:(x:int,y:int | T)) =>
+  (x=p.x+1,y=p.y+1 | (p without x y))
+;
+var circle = (x=0,y=0,r=1);
+var c = move circle;
+println$ c.x,c.y,c.r; // r not lost
+
+var square = (x=0,y=0,w=1,h=1);
+var s = move square;
+println$ c.x,c.y,c.r; // r not lost
+\end{minted}
+
+This is row polymorphism!
 
 \end{document}

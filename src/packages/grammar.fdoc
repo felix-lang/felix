@@ -1704,8 +1704,10 @@ syntax expressions {
       `(ast_apply ,_sr (,object (ast_tuple ,_sr ())))
     )
     """;
+
   satom := "{" setform  "}" =># "_2";
   satom := "\{" setform  "\}" =># "_2";
+
 
 
 }

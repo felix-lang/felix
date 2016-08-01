@@ -514,9 +514,11 @@ assert false;
       in
       ce_dot (ge' a) (cid_of_flxid name)
 
-      | _ -> failwith ("[flx_egen] Expr "^sbe bsym_table (e,t)^ " type " ^ sbt bsym_table t ^
-        " object " ^ sbe bsym_table a ^ " type " ^ sbt bsym_table at ^ 
-        " Instance of " ^string_of_int i^ " expected to be (c)struct")
+    | t when n = 0 -> ge' a (* identity projection *)
+
+    | _ -> failwith ("[flx_egen] Expr "^sbe bsym_table (e,t)^ " type " ^ sbt bsym_table t ^
+      " object " ^ sbe bsym_table a ^ " type " ^ sbt bsym_table at ^ 
+      " Instance of " ^string_of_int i^ " expected to be (c)struct")
     end
 
   (* pointer to struct or cstruct projection *)
@@ -531,9 +533,11 @@ assert false;
       in
       ce_prefix "&" (ce_arrow (ge' a) (cid_of_flxid name))
 
-      | _ -> failwith ("[flx_egen] Expr "^sbe bsym_table (e,t)^ " type " ^ sbt bsym_table t ^
-        " object " ^ sbe bsym_table a ^ " type " ^ sbt bsym_table at ^ 
-        " Instance of " ^string_of_int i^ " expected to be (c)struct")
+    | t when n = 0 -> ce_prefix "&" (ge' a) (* identity projection *)
+
+    | _ -> failwith ("[flx_egen] Expr "^sbe bsym_table (e,t)^ " type " ^ sbt bsym_table t ^
+      " object " ^ sbe bsym_table a ^ " type " ^ sbt bsym_table at ^ 
+      " Instance of " ^string_of_int i^ " expected to be (c)struct")
     end
 
   (* that's it, there are no more *)
