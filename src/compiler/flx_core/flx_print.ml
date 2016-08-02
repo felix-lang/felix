@@ -215,6 +215,11 @@ and string_of_expr (e:expr_t) =
       " | " ^ se e ^
       ")"
 
+  | EXPR_replace_fields (_,e,es) ->
+      "(" ^ se e ^ " with " ^ 
+      catmap ", " (fun (s,e) -> string_of_id s ^ "=" ^ se e ) es ^
+      ")"
+
 
   | EXPR_record_type (_,ts) ->
       "(" ^

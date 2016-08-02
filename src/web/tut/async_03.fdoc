@@ -9,9 +9,9 @@ First our baseline wait routine:
 include "std/io/faio";
 
 proc wait_until (
-    clock:Faio::alarm_clock,
+    clock:Faio::alarm_clock_t,
     delta:double,
-    p:Faio::alarm_clock->0)
+    p:Faio::alarm_clock_t->0)
 {
   Faio::sleep (clock, delta);
   p clock;
@@ -19,7 +19,7 @@ proc wait_until (
 @
 Now our client routine has "two arguments" instead of one.
 @felix
-proc p (pcount:&int) (clock:Faio::alarm_clock)
+proc p (pcount:&int) (clock:Faio::alarm_clock_t)
 {
   if *pcount < 5 do
     println$ *pcount;

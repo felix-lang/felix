@@ -606,6 +606,10 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   | EXPR_polyrecord (sr, es,e) ->
     EXPR_polyrecord (sr, List.map (fun (s,e)-> s, me e) es, me e)
+
+  | EXPR_replace_fields (sr, e, es) ->
+    EXPR_replace_fields (sr, me e, List.map (fun (s,e) -> s, me e) es)
+
   | EXPR_remove_fields (sr,e,ss) ->
     EXPR_remove_fields (sr, me e, ss)
 

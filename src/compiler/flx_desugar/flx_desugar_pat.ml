@@ -106,6 +106,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   | EXPR_typecase_match _
   | EXPR_ho_ctor_arg _
   | EXPR_match_ho_ctor _
+  | EXPR_replace_fields _
     ->
       let sr = src_of_expr e in
       clierrx "[flx_desugar/flx_mbind.ml:107: E341] " sr ("[mbind:subst] Not expected in pattern when clause: " ^ string_of_expr e); 

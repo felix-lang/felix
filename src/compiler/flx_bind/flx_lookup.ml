@@ -5097,6 +5097,36 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
   | EXPR_remove_fields (sr,e,ss) ->
     bexpr_remove_fields (be e) ss
 
+  | EXPR_replace_fields (sr, e, fs) ->
+    let fs = List.map (fun (s,e) -> s,be e) fs in
+    let cmp (s1,e1) (s2,e2) = compare s1 s2 in
+    let fs = List.stable_sort cmp fs in
+    let (_,t) as e = be e in
+    let check ls = 
+      let rec aux ls fs = match ls,fs with
+      | _,[] -> ()
+      | (s1,t1)::tail1,(s2,e2)::tail2 when s1 = s2 -> 
+        if type_eq bsym_table state.counter t1 (snd e2) 
+        then aux tail1 tail2
+        else 
+         clierr sr ("Flx_lookup: Attempt to replace field " ^ s1 ^
+         " of type " ^ sbt bsym_table t1 ^
+         " with field of wrong type " ^  sbt bsym_table (snd e2)
+         )
+
+      | _::tail1,fs -> aux tail1 fs
+
+      | _,(s2,_)::_ -> clierr sr ("Flx_lookup: Attempt to replace field " ^ s2 ^
+        " which is not present in record of type " ^
+        sbt bsym_table t)
+      in aux ls fs
+    in
+    begin match t with
+    | BTYP_record ls -> check ls
+    | BTYP_polyrecord (ls,_) -> check ls
+    | _ -> clierr sr ("flx_lookup: replace fields in non record type " ^ sbt bsym_table t)
+    end;
+    bexpr_polyrecord fs (bexpr_remove_fields e (List.map fst fs))
 
   | EXPR_tuple (_,es) ->
     let bets = List.map be es in

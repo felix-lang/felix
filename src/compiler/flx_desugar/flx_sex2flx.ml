@@ -165,6 +165,15 @@ and xexpr_t sr x =
      rs
    in EXPR_polyrecord (xsr sr,rs, ex e)
 
+  | Lst [Id "ast_replace_fields";  sr; e; Lst rs] ->
+   let rs =
+     map (function
+     | Lst [Str s; e] -> s, xexpr_t (xsr sr) e
+     | x -> err x "Error in AST_replace_fields"
+     )
+     rs
+   in EXPR_replace_fields (xsr sr, ex e, rs)
+
   | Lst [Id "ast_remove_fields";  sr; e; Lst ss] ->
    let ss =
      map (function

@@ -15,9 +15,9 @@ the mainline fthread to continue.
 include "std/io/faio";
 
 proc async_do_after (
-    clock:Faio::alarm_clock,
+    clock:Faio::alarm_clock_t,
     delta:double,
-    p:Faio::alarm_clock->0 )
+    p:Faio::alarm_clock_t->0 )
 {
   proc fthread () {
     Faio::sleep (clock, delta);
@@ -26,7 +26,7 @@ proc async_do_after (
   spawn_fthread fthread;
 }
 
-proc p (clock:Faio::alarm_clock)
+proc p (clock:Faio::alarm_clock_t)
 {
   println$ "Hello world!";
 }

@@ -249,4 +249,72 @@ println$ c.x,c.y,c.r; // r not lost
 
 This is row polymorphism!
 
+\section{Dynamic Objects}
+Felix provides a Java like API for dynamic construction
+of objects. An interface definition is just an alias
+for a record:
+
+\begin{minted}{felix}
+interface X_t = { 
+  get: unit -> int;
+  set: int -> 0;
+}
+// typedef X_t = (
+// get: unit -> int,
+// set: int -> 0
+// );
+\end{minted}
+
+An object definition is just a function which 
+returns a record of function closures:
+
+\begin{minted}{felix}
+object X (var x:int) implements X_t =
+{
+   method fun get () => x;
+   method proc set (a:int) => x = a;
+}
+\end{minted}
+
+Here, the \verb%implements% clause specifies the
+return type of the function, and the \verb%object%
+statement is sugar for a function which returns a
+record consisting of closures of the functions 
+marked \verb%method%.
+
+This provides the object system with the full power
+of structurally typed record manipulations, whilst also
+providing complete encapsulation via functional abstraction.
+
+The return type specification is optional. 
+
+Interfaces can be derived from others by extension:
+
+\begin{minted}{felix}
+interface XPos { get_x: unit -> int; }
+interface YPos { get_y: int -> int; }
+interface Square extends XPos, YPos {
+  get_w: unit -> int;
+  get_h: unit -> int;
+}
+\end{minted}
+
+An extension expression can also be written:
+
+\begin{minted}{felix}
+var r = 
+  extend 
+   (a=1,a=2,b=3),
+   (a=99,a=88) 
+  with 
+    (a=11,a=22,c=4) 
+  end
+  // (a=11,b=3,c=4)
+;
+\end{minted}
+
+Extenions aggregates the first field of a name
+in each record, for each record, replacing
+any duplicates in a left to right scan.
+
 \end{document}
