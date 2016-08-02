@@ -1,7 +1,10 @@
 @title Control
+
 @h1 Procedural control
-@h2 Conditional
-The basic conditional is like this:
+
+@h2 If/do
+
+The basic conditional looks like this:
 
 @felix
 proc f(x:int) 
@@ -15,10 +18,13 @@ proc f(x:int)
   done
 }
 @
-The elif and else clauses are optional.
+
+The @{elif} and @{else} clauses are optional.
 
 @h2 While loop
-And here's a standard while loop:
+
+And here's a standard @{while} loop:
+
 @felix
 proc f(x:int) 
 {
@@ -30,7 +36,8 @@ proc f(x:int)
 @
 
 @h2 For loop
-Felix for loop uses an inclusive range:
+
+Felix @{for} loop uses an inclusive range:
 
 @felix
 proc f (n:int)
@@ -41,17 +48,18 @@ proc f (n:int)
   println$ i;
 }
 @
-Note the control variable is available outside the loop.
-You must leave out the @{var} if the variable is defined elsewhere
-in the same scope.
 
-This form of for loop requires the upper limit to be greater than
-or equal to the initial value. It is guaranteed to work for all signed
-and unsigned integer types and can span the whole range of these types
+Note the control variable is available outside the loop.
+You must leave out the @{var} if the variable is defined elsewhere in the same scope.
+
+This form of for loop requires the upper limit to be greater than or equal to the initial value. 
+It is guaranteed to work for all signed and unsigned integer types and can span the whole range of these types 
 but does not support an empty range with zero iterations.
 
 @h2 C like for loop
+
 Felix also provides a more flexible basic loop similar to C:
+
 @felix
 proc f (n:int)
 {
@@ -59,11 +67,14 @@ proc f (n:int)
     println$ i; 
 }
 @
+
 Note the @{;} after the @{++i}.
 
 @h2 Return
+
 Return from a procedure. A procedure returns automatically
 if control drops through the end.
+
 @felix
 proc f(n:int)
 {
@@ -77,7 +88,12 @@ proc f(n:int)
 }
 
 @h3 Goto
+
+The conventional understanding in computer science is that @{goto} is considered harmful.
+We agree, but eliminating it from the language entirely is a severe reaction.
+
 If you really need to:
+
 @felix
 proc f(n:int)
 {
