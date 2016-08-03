@@ -5104,7 +5104,7 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
     let (_,t) as e = be e in
     let check ls = 
       let rec aux ls fs = match ls,fs with
-      | _,[] -> ()
+      | _,[] -> () (* exhausted replacement list *)
       | (s1,t1)::tail1,(s2,e2)::tail2 when s1 = s2 -> 
         if type_eq bsym_table state.counter t1 (snd e2) 
         then aux tail1 tail2

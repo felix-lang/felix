@@ -28,10 +28,15 @@ Felix has structurally typed records as illustrated below:
 
 \begin{minted}{felix}
 var r : (a:int,b:string) = (a=1,b="Hello");
+println$ r._strr;
 \end{minted}
 
 The order of the fields fields with different names
 is irrelevant.
+
+The generic \verb%_strr% can be used to convert a record
+to a string, provided values of the field types can also
+be converted, either with \verb%_strr% or \verb%str%.
 
 \subsection{Named value projections}
 The names of the fields can be used as projections:
@@ -166,7 +171,10 @@ Given a functor $F: {\mathtt TYPE} \rightarrow {\mathtt TYPE}$, there is an asso
 $$\&F T = F \&T$$
 which for each type $T$ builds a data structure of pointers to $T$.
 
-The operator $\mathrm \_tie$ maps each $F$ to $\&F$. For records we have
+The operator $\mathrm \_tie$ maps each $F$ to $\&F$. 
+
+\subsection{Record tie}
+For records we have
 
 \begin{minted}{felix}
 // record tie
@@ -177,7 +185,10 @@ println$ *(tierec.a), *(tierec.b);
 \end{minted}
 
 which maps a pointer to a record object to a record of pointers to its
-components. For tuples we have
+components. 
+
+\subsection{Tuple tie}
+For tuples we have
 
 \begin{minted}{felix}
 // tuple tie
@@ -188,7 +199,10 @@ println$ *(tietup.0), *(tietup.1);
 \end{minted}
 
 which maps a pointer to a tuple to a tuples of pointers to its
-components, and finally, for small arrays we have
+components, 
+
+\subsection{Array tie}
+For small arrays, length less than 20, we have
 
 \begin{minted}{felix}
 // array tie
@@ -204,7 +218,22 @@ Ties obey the rule:
 $$ ({\mathrm \_tie} p) . \pi = p . \pi$$
 where p is a pointer to a product type and $\pi$ is a projection.
 
-\subsection{Supertype coercion}
+\section{Record pattern match}
+A record can be pattern matched using a record pattern
+consisting of some of the fields of the record:
+
+\begin{minted}{felix}
+var x = (a=1,b=2,c=3);
+match x with
+| (a=va, c=vc) =>  println$ va, vc;
+endmatch;
+\end{minted}
+
+Only the first of a duplicated field can be accessed.
+If a field name is repeated, both associated variables
+refer to the same leftmost field.
+
+\section{Supertype coercion}
 A record can be coerced to a record with less fields:
 
 \begin{minted}{felix}
@@ -219,6 +248,38 @@ as encountered in a left to right scan of the sorted fields:
 if a field is repeated the leading fields are retained
 and the trailing fields lost.
 
+\section{Field removal}
+A record can be constructed from another by removing
+selected fields:
+
+\begin{minted}{felix}
+var x = (a=1,a=2,b=3,c=4);
+var y = (x without a a c);
+\end{minted}
+
+In a record with duplicated fields, the left most field is removed
+for each field name in the removal list, so two fields of the
+same name are removed in succession by repetition in the removal
+list.
+
+\section{Functional update}
+A record can be constructed from another with some field
+values being replaced:
+
+\begin{minted}{felix}
+var x = (a=1,a=77,a=66,b=2,c=3);
+var y = (x with a=99,a=44);
+println$ y._strr;
+\end{minted}
+
+If the record has duplicated fields, repeated replacements
+replace the values of successive duplicates.
+
+The type of the replacement value is checked and must be
+the same as in the record. Consequently the updated record
+will have the same type as the original record.
+
+
 \section{Polyrecords}
 A list of fields may be pushed onto the left of any 
 type with a polyrecord expression:
@@ -231,17 +292,27 @@ var y = (a=3,d=2 | x); // (a=3,a=1,b=2,d=2)
 The type of the result is a record if the RHS term is a record, including
 tuples or unit tuple. 
 
+\section{Row polymorphic function parameters}
 A polyrecord type can be used as or in a function parameter with
-a type variable in the poly slot:
+a type variable in the poly slot.
 
 \begin{minted}{felix}
 fun move[T] (p:(x:int,y:int | T)) =>
   (x=p.x+1,y=p.y+1 | (p without x y))
 ;
+\end{minted}
+
+Now we can move a circle:
+
+\begin{minted}{felix}
 var circle = (x=0,y=0,r=1);
 var c = move circle;
 println$ c.x,c.y,c.r; // r not lost
+\end{minted}
 
+or a square:
+
+\begin{minted}{felix}
 var square = (x=0,y=0,w=1,h=1);
 var s = move square;
 println$ c.x,c.y,c.r; // r not lost
@@ -316,5 +387,6 @@ var r =
 Extenions aggregates the first field of a name
 in each record, for each record, replacing
 any duplicates in a left to right scan.
+
 
 \end{document}
