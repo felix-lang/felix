@@ -1,0 +1,143 @@
+fun preamble (title:string) => r"""
+\documentclass{article}
+\usepackage{color}
+\definecolor{bg}{rgb}{0.95,0.95,0.95}
+\definecolor{emphcolor}{rgb}{0.5,0.0,0.0}
+\newcommand{\empha}{\bf\color{emphcolor}}
+\usepackage{parskip}
+\usepackage{minted}
+\usepackage{caption}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amscd}
+\usepackage{makeidx}
+\makeindex
+\usemintedstyle{friendly}
+\setminted{bgcolor=bg,xleftmargin=20pt}
+\usepackage{hyperref}
+\hypersetup{pdftex,colorlinks=true,allcolors=blue}
+\usepackage{hypcap}
+\newcommand*{\fullref}[1]{\hyperref[{#1}]{\autoref*{#1} \nameref*{#1}}}
+\DeclareMathOperator{\quot}{div}
+\DeclareMathOperator{\rmd}{rmd}
+\title{""" +title + r"""}
+\author{John Skaller}
+\begin{document}
+\maketitle
+""";
+
+var postamble = r"""
+\end{document}
+""";
+
+
+var basename = System::argv 1;
+if basename == "" do
+  println$ "Usage: fdoc2latex basename";
+  System::exit 1;
+done
+
+println$ "fdoc2latex " + basename;
+var filename = basename + ".fdoc";
+var outfile = basename + ".tex";
+
+
+var text = load filename;
+var lines = split (text,"\n");
+if lines == Empty[string] do
+  println$ "Empty file";
+  System::exit 1;
+else
+  for line in lines do
+     println$ line;
+  done
+done
+
+
+var out = fopen_output outfile;
+
+union mode_t = Text | Code;
+var mode = Text;
+
+write$ out,preamble basename;
+
+for line in lines do
+  if line.[0] == '@' do
+    handle_fdoc line;
+  else
+    var d = repl_verb line;
+    d = repl_link d;
+    writeln$ out,d;
+  done
+done
+
+write$ out, postamble;
+
+fclose out;
+
+fun repl_us (s:string) =>
+  search_and_replace (s,0uz,RE2 "_",r"\_")
+;
+
+/* won't work if two @{} on one line .. */
+fun repl_verb (s:string) =>
+  search_and_replace (s,0uz,RE2 "@{(.+)}",r"\verb%\1%")
+;
+
+fun repl_verb_robust (s:string) =>
+  search_and_replace (s,0uz,RE2 "@{(.+)}",r"{\tt \1}")
+;
+
+fun repl_link (s:string) =>
+  search_and_replace (s,0uz,RE2 "<a href=(.+)>(.+)</a>",r"\href{\1}{\2}")
+;
+
+
+//------------------------------------------------
+proc handle_fdoc (line:string)
+{
+  match mode with
+  | Text =>
+    if line == "@felix" do
+      mode = Code;
+      writeln$ out,"";
+      writeln$ out, r"\begin{minted}{felix}";
+    elif line == "@pre" do
+      mode = Code;
+      writeln$ out,"";
+      writeln$ out, r"\begin{minted}{text}";
+    else
+      var m = Match(RE2 r"@([A-Za-z][A-Za-z0-9]+) *(.*)",line);
+      match m with
+      | None => 
+        println$ "Unknown command " + line;
+      | Some v =>
+        var cmd = v.1;
+        var data = v.2;
+        match cmd with
+        | "h1" => 
+          var d = repl_us data;
+          d = repl_verb_robust d;
+          writeln$ out,r"\section{"+d"}";
+        | "h2" => 
+          d = repl_us data;
+          d = repl_verb_robust d;
+          writeln$ out,r"\subsection{"+d+"}";
+        | "h3" => 
+          d = repl_us data;
+          d = repl_verb_robust d;
+          writeln$ out,r"\subsubsection{"+d+"}";
+
+        | _ =>
+          println$ "Unknown Cmd=" + cmd + ", data=" + data;
+        endmatch;
+      endmatch;
+    done
+
+  | Code =>
+    mode = Text;
+    writeln$ out, r"\end{minted}";
+    writeln$ out, r"";
+
+  endmatch; 
+}
