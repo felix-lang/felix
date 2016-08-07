@@ -1163,6 +1163,7 @@ struct A {
 These functions are precisely equivalent to:
 @felix
 fun get2x (self:A) => 2 * self.x;
+fun get2y (self:A) () => 2 * self.y;
 proc diag (self: &A) (d:int) { self.x <-d; self.y <-d; }
 @
 Note that for a function @{self} is a value, for a procedure @{self}
@@ -1171,8 +1172,22 @@ is a pointer.
 Because of these definitions, we can form object closures over a struct:
 @felix
 var a = A(1,2);
+var x2 = a.get2x;
+var y2 = a. get2y ();
+&a . diag 77;
+
+println$ a._strr;
+println$ x2;
+println$ y2;
+println$ a.get2x, a.get2y();
+
+// closures:
 var g2y = a. get2y;
-var di = a . diag;
+var di = a . di;
+
+println$ g2y();
+di 33;
+println$ g2y();
 @
 Note we can't form a closure for @{get2x} without an explicit wrapper,
 i.e. eta-expansion.

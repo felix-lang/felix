@@ -1069,8 +1069,6 @@ class FlxRtlBuild
           println$ "Package error, package " + pkg + " library " + library + " No src files specified";
           System::exit(1);
         done
-        //println$ "QUEUING LIBRARY BUILDER JOB FOR " +  library; 
-        //ThreadPool::queue_job$ make_lib (db,toolchain-maker, build, target, pkg,tmpdir, static_only, debug);
         var src_dir =  build / 'share';
         var share_rtl = src_dir / 'lib' / 'rtl';
         var target_dir =  build / target / 'lib' / 'rtl';
@@ -1085,7 +1083,6 @@ class FlxRtlBuild
         println$ "------------";
       done
     end 
-    ThreadPool::stop;
 
     // make drivers
     begin

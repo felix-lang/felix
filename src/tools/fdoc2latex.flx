@@ -80,13 +80,69 @@ fun repl_us (s:string) =>
 ;
 
 /* won't work if two @{} on one line .. */
-fun repl_verb (s:string) =>
-  search_and_replace (s,0uz,RE2 "@{(.+)}",r"\verb%\1%")
-;
+fun repl_verb (s:string) = {
+  union state_t = Copy | ExpectLP | ExpectRP;
+  var state = Copy;
+  var out = "";
+  for ch in s do
+    match state with
+    | Copy =>
+      if ch == char "@" do
+        state = ExpectLP;
+      else
+        out+=ch;
+      done
+    | ExpectLP =>
+      if ch == char "{" do
+        state = ExpectRP;
+        out += r"\verb%";
+      else
+        out += "@{"; // latex error!
+      done
 
-fun repl_verb_robust (s:string) =>
-  search_and_replace (s,0uz,RE2 "@{(.+)}",r"{\tt \1}")
-;
+    | ExpectRP =>
+      if ch == char "}" do
+        state = Copy;
+        out += "%";
+      else
+        out += ch;
+      done
+    endmatch;
+  done
+  return out;
+}
+
+fun repl_verb_robust (s:string) = {
+  union state_t = Copy | ExpectLP | ExpectRP;
+  var state = Copy;
+  var out = "";
+  for ch in s do
+    match state with
+    | Copy =>
+      if ch == char "@" do
+        state = ExpectLP;
+      else
+        out+=ch;
+      done
+    | ExpectLP =>
+      if ch == char "{" do
+        state = ExpectRP;
+        out += r"{\tt ";
+      else
+        out += "@{"; // latex error!
+      done
+
+    | ExpectRP =>
+      if ch == char "}" do
+        state = Copy;
+        out += "}";
+      else
+        out += ch;
+      done
+    endmatch;
+  done
+  return out;
+}
 
 fun repl_link (s:string) =>
   search_and_replace (s,0uz,RE2 "<a href=(.+)>(.+)</a>",r"\href{\1}{\2}")

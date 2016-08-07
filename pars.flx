@@ -1,0 +1,211 @@
+// Grammar
+
+// A simple parser for BNF
+
+union Sym =
+  | Term of string
+  | Nonterm of string
+;
+
+instance Str[Sym] {
+  fun str: Sym -> string =
+  | Term s => '"' + s + '"'
+  | Nonterm s => s
+  ;
+}
+
+typedef prod_t = (nt:string, rhs: list[Sym]);
+typedef grammar_t = list[prod_t];
+
+union token_t =
+  | Name of string
+  | Strng of string
+  | Semi
+  | Produces // ::=
+  | Eof
+;
+
+instance Str[token_t] {
+  fun str : token_t -> string =
+  | Name s => "Name " + s
+  | Strng s => "String " + s
+  | Semi => ";"
+  | Produces => "::="
+  | Eof => "EOF"
+  ;
+}
+
+struct Buffer 
+{
+  s: string;
+  i: int;
+  fun atend => self.s.[self.i] == char "";
+  fun get => self.s.[self.i];
+  proc next  { 
+    if self*.get != char "" perform 
+      self.i.pre_incr; 
+  }
+}
+
+gen tokenise (b:&Buffer) : token_t = 
+{
+skipwhite:>
+  if b*.get == char "" return Eof;
+
+  if b*.get.ord <= " ".char.ord do
+    b.next;
+    goto skipwhite;
+  done
+
+  if isidstart b*.get do
+    var id = "" + b*.get;
+    b.next;
+    while iscidcont b*.get do
+      id += b*.get;
+      b.next;
+    done
+    return Name id;
+
+  elif b*.get == char ";" do
+    b.next;
+    return Semi;
+
+  elif b*.get == char ":" do
+    b.next;
+    if b*.get != char ":" do
+      println$ "Expected : to follow :";
+      System::exit 1;
+    done
+    b.next;
+    if b*.get != char "=" do
+      println$ "Expected = to follow ::";
+      System::exit 1;
+    done
+    b.next;
+    return Produces;
+
+  elif b*.get == char '"' do
+    b.next;
+    var s = "";
+    while b*.get != char '"' do // add escapes later
+      s += b*.get;
+      b.next;
+    done
+    b.next;
+    return Strng s;
+
+  else 
+    println$ "Error char " + b*.get + " at pos " + b*.i.str;
+    System::exit 1;
+  done
+
+}
+chip tsrc (b: &Buffer)
+  connector tif
+    pin out : %>token_t
+{
+  while not b*.atend do
+    var token = tokenise b;
+    write (tif.out,token);
+  done
+}
+
+chip ptoks 
+  connector tif
+    pin inp : %<token_t
+{
+  while true do
+    var token = read tif.inp;
+    print$ token.str;
+    match token with
+    | Eof
+    | Semi => println$ "";
+    | _ => print " ";
+    endmatch;
+  done 
+}
+
+// test
+
+var sample = """
+  Abba ::= "Hello" X Y ;
+  B ::= Care "bears" ;
+""";
+
+
+begin
+  println$ "TEST 1, tokenision";
+  var b = Buffer (sample,0);
+  device tsamp  = tsrc &b;
+  circuit
+    connect tsamp.out, ptoks.inp
+  endcircuit
+end
+
+chip parseprod
+  connector tif
+    pin inp : %<token_t
+    pin out: %>prod_t
+{
+restart:>
+   var token = read tif.inp;
+   match token with
+   | Eof => return;
+   | Name s =>
+     var name = s;
+     goto l2;
+
+   | _ => 
+     println$ "Error, expected name on LHS of production";
+     return; // suicide
+   endmatch;
+
+l2:>
+   token = read tif.inp;
+   match token with
+   | Produces =>
+     goto l3;
+   | _ =>
+     println$ "Error, expected ::= after LHS of production";
+     return;
+   endmatch;
+
+l3:>
+   var symbols =  Empty[Sym];
+l4:>
+   token = read tif.inp;
+   match token with
+   | Semi => 
+     write (tif.out, (nt = name, rhs = rev symbols));
+     goto restart;
+   | Name s =>
+     symbols = Nonterm s ! symbols;
+     goto l4;
+   | Strng s =>
+     symbols = Term s ! symbols;
+     goto l4;
+   | _ => 
+     println$ "Error, expected Name, String, or Semicolon in RHS of production";
+     return;
+   endmatch;
+}
+
+chip printprod
+  connector pr
+    pin inp : %<prod_t
+{
+  while true do
+    var p = read pr.inp;
+    println$ p.nt + " ::= " + catmap " " (str of Sym) p.rhs + ";"; 
+  done 
+}
+
+begin
+  println$ "TEST 2, parsing";
+  var b = Buffer (sample,0);
+  device tsamp  = tsrc &b;
+  circuit
+    connect tsamp.out, parseprod.inp 
+    connect parseprod.out, printprod.inp
+  endcircuit
+end

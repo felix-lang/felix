@@ -105,7 +105,6 @@ error.
 //$ cannot proceed until both parties agree data exchange is complete.
 //$ Unlike schannels, both reader and writer can subsequently
 //$ continue concurrently after the exchange.
-
 open class Pchannel
 {
   requires package "flx_pthread";
@@ -295,6 +294,7 @@ open class Ppipe {
 
 @h1 Fork/Join.
 @tangle forkjoin.flx
+include "std/pthread/pchannels";
 
 //$ Implement fork/join protocol.
 open class ForkJoin 
@@ -304,8 +304,8 @@ open class ForkJoin
   proc concurrently_by_iterator (var it:1 -> opt[1->0]) 
   {
      // Make a channel to signal termination.
-     var iterm,oterm = mk_iopchannel_pair[unit]();
-     noinline proc manager (var p: 1->0) () { p(); write (oterm, ()); }
+     var iterm,oterm = mk_iopchannel_pair[int](); // should be unit but that bugs out at the moment
+     noinline proc manager (var p: 1->0) () { p(); write (oterm, 1); }
      // Count the number of pthreads.
      var count = 0;
    again:>

@@ -47,6 +47,7 @@ let rec uses_btype add bsym_table count_inits t =
   | _ -> Flx_btype.flat_iter ~f_btype t
 
 and uses_bexe' add bsym_table count_inits exe =
+  let sr = Flx_bexe.get_srcref exe in
   let f_bexpr e = uses_bexpr add bsym_table count_inits e in
 
   let rec chkl e = 
@@ -114,6 +115,7 @@ and uses_bexe' add bsym_table count_inits exe =
     | _ -> 
       print_endline ("[Flx_use] Unexpected " ^ sbe bsym_table e);
       print_endline ("[Flx_use] In assignment " ^ string_of_bexe bsym_table 0 exe);
+      print_endline ("[flx_use] In\n" ^ Flx_srcref.long_string_of_src sr);
       assert false
   in
   match exe,count_inits with
