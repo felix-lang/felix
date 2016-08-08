@@ -134,9 +134,23 @@ chip ptoks
 // test
 
 var sample = """
-  Abba ::= "Hello" X Y ;
-  B ::= Care "bears" ;
-  B ::= Bad "Pokemons";
+  Grammar ::= Prods ;
+  Prods ::= Prod ;
+  Prods ::= Prod Prods;
+  Prod ::= Name "::=" Syms ;
+  Syms ::= Sym ;
+  Syms ::= Sym Syms ;
+  Sym ::= Terminal ;
+  Sym ::= Name ;
+  Terminal ::= "::=" ;
+  Terminal ::= ";";
+  Name ::= "Grammar";
+  Name ::= "Prods";
+  Name ::= "Prod";
+  Name ::= "Syms";
+  Name ::= "Sym";
+  Name ::= "Terminal";
+  Name ::= "Name";
 """;
 
 
@@ -357,14 +371,16 @@ chip showbuf
   connector buf
     pin inp: %<Buffer
 {
-  var b = read buf.inp;
-  println$ "Buffer pos = " + b.i.str;
+  while true do
+    var b = read buf.inp;
+    println$ "Buffer pos = " + b.i.str;
+  done
 }
 
 // test white, string, re matching
 // forced sequence protocol
 begin
-  println$ "TEST 4, white, string, re matches, manual sequence";
+  println$ "TEST 5, white, string, re matches, manual sequence";
   var b = Buffer (&sample);
 
   device bsrc = sendbuf b;
@@ -390,17 +406,17 @@ chip pipeline[T] (v: varray [(inp:%<T, out:%>T) -> 1 -> 0])
     pin inp: %<T
     pin out: %>T
 {
-  var inp = io.inp;
+  var input = io.inp;
   for i in 0..(v.len.int - 2) do
     var nextinp,out = mk_ioschannel_pair[T]();
-    spawn_fthread (v.i (inp=inp,out=out));
-    inp = nextinp;
+    spawn_fthread (v.i (inp=input,out=out));
+    input = nextinp;
   done
-  spawn_fthread (v.(v.len.int - 1) (inp=inp, out=io.out));
+  spawn_fthread (v.(v.len.int - 1) (inp=input, out=io.out));
 }
 
 begin
-  println$ "TEST 5, pipeline";
+  println$ "TEST 6, pipeline";
   var b = Buffer (&sample);
   device bsrc = sendbuf b;
 
@@ -431,4 +447,161 @@ chip latch[T]
   done
 }
 
+chip tee[T,U] (v: varray [(inp:%<T, out: %>U) -> 1 -> 0])
+  connector io
+    pin inp: %<T
+    pin out: %>U
+{
+   device l = latch[T];
+   var lread,lout = mk_ioschannel_pair[T]();
+   circuit 
+     wire io.inp to l.inp
+     wire lout to l.out
+   endcircuit
 
+   for p in v do
+     spawn_pthread (p (inp=lread, out=io.out));
+   done
+}
+
+begin
+  println$ "TEST 7, alternatives";
+  var b = Buffer (&sample);
+  device bsrc = sendbuf b;
+
+  with
+    device white1 = skip_white;
+    device identifier = parse_regex (RE2 "[A-Za-z][A-Za-z0-9]*");
+    device white2 = skip_white;
+    device produces = parse_strng ("::=");
+    device white3 = skip_white;
+    device hello = parse_strng('"Hello"');
+    var seq = varray( white1, identifier,white2,produces, white3,hello);
+  do
+    device p1 = pipeline seq;
+  done
+
+  with
+    device white1 = skip_white;
+    device identifier = parse_regex (RE2 "[A-Za-z][A-Za-z0-9]*");
+    device white2 = skip_white;
+    device produces = parse_strng ("::=");
+    device white3 = skip_white;
+    device hello = parse_strng('"Bye"');
+    var seq = varray( white1, identifier,white2,produces, white3,hello);
+  do
+    device p2 = pipeline seq;
+  done
+
+  var alts = varray (p1,p2);
+  device talts = tee alts;
+  circuit 
+   connect bsrc.out, talts.inp
+   connect talts.out, showbuf.inp
+  endcircuit
+end
+
+// This chip is interesting! It translates a Sym
+// into a recognizer chip for that Sym!
+//
+// We do this so we can feed a sequence of Syms to it,
+// and get back a sequence of chips we can pipeline
+// together which is then a parser for that sequence of Syms!
+
+typedef recognizer_t = (inp: %<Buffer, out: %>Buffer) -> 1 -> 0;
+
+chip parse_nonterm (g:grammar_t) (s:string)
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+}
+
+chip xlat_Sym  (g:grammar_t)
+  connector io
+    pin inp: %<Sym
+    pin out: %>recognizer_t
+{
+  while true do
+    var sym = read io.inp;
+    match sym with
+    | Term s =>
+      device d = parse_strng s;
+      write (io.out, d);
+
+    | Nonterm s =>
+      // NOTE: LAZY! VITAL!
+      device p = parse_nonterm g s;
+      write (io.out, p);
+    endmatch;
+  done
+}
+
+chip xlat_prod (g:grammar_t) 
+  connector io
+    pin inp: %<list[Sym]
+    pin out: %>varray[recognizer_t]
+{
+  var syms = read io.inp;
+  var v = varray[recognizer_t] (syms.len);
+  var isym,osym = mk_ioschannel_pair[Sym]();
+  var irek,orek = mk_ioschannel_pair[recognizer_t]();
+  device xlat = xlat_Sym g;
+  circuit
+    wire isym to xlat.inp
+    wire orek to xlat.out 
+  endcircuit
+  for sym in syms do
+    write (osym, sym);
+    var r = read irek;
+    push_back(v,r);
+  done
+  write (io.out, v);
+}
+
+
+chip parse (gram:grammar_t) 
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  var start, g = gram;
+  var b = read io.inp;
+  var maybe_alts = get g start;
+  match maybe_alts with 
+  | None => println$ "Error, can't find start symbol " + start;
+  | Some alts =>
+    println$ "Got alternatives for start symbol " + start;
+    for alt in alts do
+      println$ alt;
+    done
+   // Each alternative is a list of Sym
+   // We have to translate each alternative to a varray of chips
+   for alt in alts do
+     for sym in alt do
+     done
+   done
+  endmatch;
+}
+
+begin
+  println$ "TEST 8, grammar";
+  var b = Buffer (&sample);
+  device tsamp  = tsrc &b;
+  var gram_in, gram_out = mk_ioschannel_pair[grammar_t]();
+  circuit
+    connect tsamp.out, parseprod.inp
+    connect parseprod.out, collate.inp 
+    connect collate.out, check_closure.inp
+    wire gram_out to check_closure.out
+  endcircuit
+
+  var g = read gram_in;
+  println$ "GRAMMAR " + g.str;
+  device parser = parse g;
+  device bsrc = sendbuf b;
+  circuit
+    connect bsrc.out, parser.inp
+    connect parser.out, showbuf.inp
+  endcircuit 
+end

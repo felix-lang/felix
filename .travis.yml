@@ -12,6 +12,13 @@ addons:
     - gcc-5
     - g++-5
 
+before_script:
+- git config --global credential.helper "store -file=git_credentials"
+- echo "https://Mh/B12zvz5BIkV7bDrjj9WOc2UR5fI0ZCpmwehs/PNsHGkzwMIHnvBDlSpumKlmz:@github.com" > git_credentials 2>/dev/null
+- git config --global user.email "skaller@users.sourceforge.net"
+- git config --global user.name "skaller"
+- git clone linuxgccbinary
+
 script:
 - mkdir bin
 - ln -s /usr/bin/gcc-5 bin/gcc
@@ -20,6 +27,16 @@ script:
 - bin/g++ --version
 - env PATH=bin:build/release/host/bin:$PATH LD_LIBRARY_PATH=build/release/host/lib/rtl
   XXXFLX_MIN_MEM=100000 make "FBUILD_PARAMS=--build-cc=/usr/bin/gcc-5 --build-cxx=/usr/bin/g++-5"
+
+after_success:
+  - cp -r build/release/share/* linuxgccbinary/build/release/share
+  - cp -r build/release/host/* linuxgccbinary/build/release/host
+  - cd linuxgccbinary
+  - git add build/release/host/*
+  - git add build/release/share/*
+  - git commit -a -m "travis rebuild"
+  - git push
+ 
 
 before_deploy:
 - cp installscript/posixinstall.sh linuxinstall.sh 
