@@ -13,7 +13,7 @@ addons:
     - g++-5
 
 before_script:
-- git config --global credential.helper "store -file=git_credentials"
+- git config --global credential.helper "store --file=git_credentials"
 - echo "https://Mh/B12zvz5BIkV7bDrjj9WOc2UR5fI0ZCpmwehs/PNsHGkzwMIHnvBDlSpumKlmz:@github.com" > git_credentials 2>/dev/null
 - git config --global user.email "skaller@users.sourceforge.net"
 - git config --global user.name "skaller"
