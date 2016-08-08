@@ -15,7 +15,6 @@ instance Str[Sym] {
 }
 
 typedef prod_t = (nt:string, rhs: list[Sym]);
-typedef grammar_t = list[prod_t];
 
 union token_t =
   | Name of string
@@ -37,15 +36,21 @@ instance Str[token_t] {
 
 struct Buffer 
 {
-  s: string;
-  i: int;
-  fun atend => self.s.[self.i] == char "";
-  fun get => self.s.[self.i];
+  s: StringPiece;
+  i: size;
+  fun atend => self.i >= self.s.len;
+  fun get => 
+    if self.atend then char "" 
+    else *(self.s.data+self.i)
+  ;
   proc next  { 
-    if self*.get != char "" perform 
-      self.i.pre_incr; 
+    if self*.i < self*.s.len perform pre_incr self.i;
   }
 }
+
+ctor Buffer (s:&string) =>
+  Buffer (StringPiece s, 0uz)
+;
 
 gen tokenise (b:&Buffer) : token_t = 
 {
@@ -100,6 +105,7 @@ skipwhite:>
   done
 
 }
+
 chip tsrc (b: &Buffer)
   connector tif
     pin out : %>token_t
@@ -130,12 +136,13 @@ chip ptoks
 var sample = """
   Abba ::= "Hello" X Y ;
   B ::= Care "bears" ;
+  B ::= Bad "Pokemons";
 """;
 
 
 begin
   println$ "TEST 1, tokenision";
-  var b = Buffer (sample,0);
+  var b = Buffer (&sample);
   device tsamp  = tsrc &b;
   circuit
     connect tsamp.out, ptoks.inp
@@ -145,12 +152,15 @@ end
 chip parseprod
   connector tif
     pin inp : %<token_t
-    pin out: %>prod_t
+    pin out: %>opt[prod_t]
 {
 restart:>
    var token = read tif.inp;
    match token with
-   | Eof => return;
+   | Eof => 
+     write(tif.out, None[prod_t]); 
+     return;
+
    | Name s =>
      var name = s;
      goto l2;
@@ -176,7 +186,7 @@ l4:>
    token = read tif.inp;
    match token with
    | Semi => 
-     write (tif.out, (nt = name, rhs = rev symbols));
+     write (tif.out, Some (nt = name, rhs = rev symbols));
      goto restart;
    | Name s =>
      symbols = Nonterm s ! symbols;
@@ -192,20 +202,233 @@ l4:>
 
 chip printprod
   connector pr
-    pin inp : %<prod_t
+    pin inp : %<opt[prod_t]
 {
   while true do
     var p = read pr.inp;
-    println$ p.nt + " ::= " + catmap " " (str of Sym) p.rhs + ";"; 
+    match p with
+    | None => println$ "Eof";
+    | Some p => 
+      println$ p.nt + " ::= " + catmap " " (str of Sym) p.rhs + ";"; 
+    endmatch;
   done 
 }
 
 begin
   println$ "TEST 2, parsing";
-  var b = Buffer (sample,0);
+  var b = Buffer (&sample);
   device tsamp  = tsrc &b;
   circuit
     connect tsamp.out, parseprod.inp 
     connect parseprod.out, printprod.inp
   endcircuit
 end
+
+typedef alts_t = list[list[Sym]];
+typedef grammar_t = string * strdict[alts_t];
+
+chip collate
+  connector pr
+    pin inp : %<opt[prod_t]
+    pin out : %>grammar_t
+{
+nextg:>
+  var start = "";
+  var g = strdict[alts_t]();
+nextp:>
+  var p = read pr.inp;
+  match p with 
+  | None => 
+    write(pr.out,(start,g));
+    goto nextg;
+
+  | Some p =>
+    if start == "" perform start = p.nt;
+    var alts = get_dflt g (p.nt, Empty[list[Sym]]);
+    add g p.nt (p.rhs ! alts);
+    goto nextp;
+  endmatch;
+}
+
+chip pgram 
+  connector gr
+    pin inp : %<grammar_t
+{
+  while true do
+    var g = read gr.inp;
+    println$ g.str;
+  done
+}
+
+begin
+  println$ "TEST 3, collation";
+  var b = Buffer (&sample);
+  device tsamp  = tsrc &b;
+  circuit
+    connect tsamp.out, parseprod.inp
+    connect parseprod.out, collate.inp 
+    connect collate.out, pgram.inp
+  endcircuit
+end
+
+chip check_closure
+  connector gr
+   pin inp : %<grammar_t
+   pin out : %>grammar_t
+{
+  var ok = true;
+  var start,g = read gr.inp;
+  for alt in g 
+    for prod in alt.1 
+      for sym in prod do
+        match sym with
+        | Term _ => ;
+        | Nonterm s =>
+          if not (haskey g s) do
+            println$ "Nontermial " + s + " not defined";
+            ok = false;
+          done
+        endmatch;
+      done
+  if ok call
+    write (gr.out, (start,g));
+}
+
+begin
+  println$ "TEST 4, closure";
+  var b = Buffer (&sample);
+  device tsamp  = tsrc &b;
+  circuit
+    connect tsamp.out, parseprod.inp
+    connect parseprod.out, collate.inp 
+    connect collate.out, check_closure.inp
+    connect check_closure.out, pgram.inp
+  endcircuit
+end
+
+// upgrade to skip C++ comments later
+chip skip_white 
+  connector buf
+    pin inp : %<Buffer
+    pin out : %>Buffer
+{
+  var b = read buf.inp;
+  while b.get <= char ' ' and b.get != char "" perform b&.next;
+  write (buf.out, b);
+}
+
+chip parse_strng (s:string)
+  connector buf
+    pin inp : %<Buffer
+    pin out : %>Buffer 
+{
+  var b = read buf.inp;
+  for ch in s do
+    if ch != b.get return;
+    &b.next;
+  done
+  println$ "string "+s+"  matched";
+  write (buf.out, b); 
+}
+
+chip parse_regex (re:RE2)
+  connector buf
+    pin inp : %<Buffer
+    pin out : %>Buffer 
+{
+  var b = read buf.inp;
+  var v = StringPiece "";
+  var result = Match (re, b.s, b.i.int, ANCHOR_START, (+&v), 1);
+  if result do 
+    println$ "Re matched " + v.str;
+    b&.i <- b.i + v.len;
+    write (buf.out, b); 
+  done
+}
+
+chip sendbuf (b:Buffer)
+  connector buf
+    pin out: %>Buffer
+{
+  write (buf.out,b);
+}
+
+chip showbuf 
+  connector buf
+    pin inp: %<Buffer
+{
+  var b = read buf.inp;
+  println$ "Buffer pos = " + b.i.str;
+}
+
+// test white, string, re matching
+// forced sequence protocol
+begin
+  println$ "TEST 4, white, string, re matches, manual sequence";
+  var b = Buffer (&sample);
+
+  device bsrc = sendbuf b;
+  device white1 = skip_white;
+  device identifier = parse_regex (RE2 "[A-Za-z][A-Za-z0-9]*");
+  device white2 = skip_white;
+  device produces = parse_strng ("::=");
+  device white3 = skip_white;
+  device hello = parse_strng('"Hello"');
+  circuit
+     connect bsrc.out, white1.inp
+     connect white1.out, identifier.inp
+     connect identifier.out, white2.inp
+     connect white2.out, produces.inp
+     connect produces.out, white3.inp
+     connect white3.out, hello.inp
+     connect hello.out, showbuf.inp
+  endcircuit
+end
+
+chip pipeline[T] (v: varray [(inp:%<T, out:%>T) -> 1 -> 0]) 
+  connector io
+    pin inp: %<T
+    pin out: %>T
+{
+  var inp = io.inp;
+  for i in 0..(v.len.int - 2) do
+    var nextinp,out = mk_ioschannel_pair[T]();
+    spawn_fthread (v.i (inp=inp,out=out));
+    inp = nextinp;
+  done
+  spawn_fthread (v.(v.len.int - 1) (inp=inp, out=io.out));
+}
+
+begin
+  println$ "TEST 5, pipeline";
+  var b = Buffer (&sample);
+  device bsrc = sendbuf b;
+
+  device white1 = skip_white;
+  device identifier = parse_regex (RE2 "[A-Za-z][A-Za-z0-9]*");
+  device white2 = skip_white;
+  device produces = parse_strng ("::=");
+  device white3 = skip_white;
+  device hello = parse_strng('"Hello"');
+  var seq = varray( white1, identifier,white2,produces, white3,hello);
+  device p = pipeline seq;
+  circuit
+    connect bsrc.out, p.inp
+    connect p.out, showbuf.inp
+  endcircuit
+end
+
+// latch reads a value and writes to all
+// connected readers
+chip latch[T] 
+  connector lat
+    pin inp: %<T
+    pin out: %>T
+{
+  var x = read lat.inp;
+  while true do
+    write (lat.out,x);
+  done
+}
+
+
