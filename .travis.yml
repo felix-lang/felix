@@ -17,6 +17,7 @@ before_script:
 - echo "https://Mh/B12zvz5BIkV7bDrjj9WOc2UR5fI0ZCpmwehs/PNsHGkzwMIHnvBDlSpumKlmz:@github.com" > git_credentials 2>/dev/null
 - git config --global user.email "skaller@users.sourceforge.net"
 - git config --global user.name "skaller"
+- git config --global push.default simple 
 - git clone -q https://github.com/felix-lang/linuxgccbinary.git
 
 script:

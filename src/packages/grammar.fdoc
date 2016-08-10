@@ -5077,7 +5077,7 @@ syntax chips {
           (args (append args `(,pinsargs (() none))))
         )
         `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects
-         Function () ,body)
+         NoInlineFunction (NoInlineFunction) ,body)
       )
     """;
 
