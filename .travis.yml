@@ -53,5 +53,6 @@ deploy:
     tags: true
 notifications:
   email: felix-builds@googlegroups.com
-dd:
-  secure: CpczlvUAvmOtLiBUzq9sTfWvfOeJ9ClKvTi3Mt1BM8wlYbyc4oUG7A1TQHvsf3h9hPYIArEXJiQC3yGXnE+6cUQOljNDX8ju3UvBYxR0FFVoxyvlwe+zCSAojB0rsmc6sEFKE/rDLj2vo1FHoRVYnOfl9YvIqAjlB2rKsrwg9OE=
+env:
+  global:
+    secure: l2FEMgK9dogawsN45lgOMVuUchtVyyFdgJcBeJncCnF5Mz7lIVl1qwGbgZDV6fnWcunh7snaG5o7sUg5+g9ywFc4E9CYCyx/H7Xjcr4y1wHk9RV+K3EkSWtR1DoJnayl6n4vSvP+0o+JzLqJQS65bMNMIjDdkit8CrtEnjIpSas=
