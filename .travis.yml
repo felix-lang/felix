@@ -15,7 +15,7 @@ before_script:
 - git config --global user.email "skaller@users.sourceforge.net"
 - git config --global user.name "skaller"
 - git config --global push.default simple
-- git clone -q https://github.com/felix-lang/linuxgccbinary.git
+- git clone -q https://skaller:${GITHUB_TOKEN}@github.com/felix-lang/linuxgccbinary.git
 script:
 - mkdir bin
 - ln -s /usr/bin/gcc-5 bin/gcc
@@ -35,7 +35,7 @@ after_success:
 - git add build/release/host/*
 - git add build/release/share/*
 - git commit -a -m "travis rebuild"
-- git push
+- git -fq push
 before_deploy:
 - cp installscript/posixinstall.sh linuxinstall.sh
 - cp installscript/linuxsetup.sh .
