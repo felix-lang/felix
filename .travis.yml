@@ -35,7 +35,7 @@ after_success:
 - git add build/release/host/*
 - git add build/release/share/*
 - git commit -a -m "travis rebuild"
-- git -fq push
+- git push
 before_deploy:
 - cp installscript/posixinstall.sh linuxinstall.sh
 - cp installscript/linuxsetup.sh .
