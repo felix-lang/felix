@@ -12,6 +12,7 @@ addons:
 before_script:
 - git config --global credential.helper "store --file=git_credentials"
 - echo ${GITHUB_TOKEN}  > git_credentials 2>/dev/null
+- echo ${GITHUB_TOKEN}
 - git config --global user.email "skaller@users.sourceforge.net"
 - git config --global user.name "skaller"
 - git config --global push.default simple
