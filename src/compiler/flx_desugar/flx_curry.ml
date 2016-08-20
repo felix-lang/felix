@@ -121,7 +121,11 @@ let fix_params sr seq ps =
 
       (* Add our new type in to the sequence. It has the new type of TYP_patany
          which should trigger future processing for type binding. *)
-      ((v,TYP_patany sr)::vs),((kind,id,vt,expr)::ps) (* a bit HACKY *)
+       (* 
+       ((v,TYP_patany sr)::vs),((kind,id,vt,expr)::ps) (* a bit HACKY *)
+       *)
+
+       ((v,TYP_generic sr)::vs),((kind,id,vt,expr)::ps) (* a bit HACKY *)
 
     (* General case: Recurse assmbling the fixed type variables (vs). *)
     | h :: t ->

@@ -4,8 +4,8 @@
 //Check polymorphism
 open List;
 
-fun snd(x,y)=>y;
-fun fst(x,y)=>x;
+fun snd[A,B] (x:A,y:B)=>y;
+fun fst[A,B](x:A,y:B)=>x;
 
 fun index[t] (l:list[t]) = {
   fun f(il:int * list [int * t]) (e: t) =>
