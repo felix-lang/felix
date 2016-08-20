@@ -24,6 +24,8 @@ script:
 - bin/gcc --version
 - bin/g++ --version
 - export PATH=bin:build/release/host/bin:$PATH LD_LIBRARY_PATH=build/release/host/lib/rtl
+- gcc --version
+- g++ --version
 - # XXXFLX_MIN_MEM=100000 make "FBUILD_PARAMS=--build-cc=/usr/bin/gcc-5 --build-cxx=/usr/bin/g++-5"
 - make rebuild uproot
 after_success:
@@ -34,6 +36,7 @@ after_success:
 - cp -r build/release/share/* linuxgccbinary/build/release/share
 - cp -r build/release/host/* linuxgccbinary/build/release/host
 - cd linuxgccbinary
+- nm build/release/host/lib/rtl/libflx_static.a | c++filt | grep ioutil::write | grep FILE 
 - git add build/release/host/*
 - git add build/release/share/*
 - git commit -a -m "travis rebuild"
