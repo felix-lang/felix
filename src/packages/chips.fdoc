@@ -1,0 +1,396 @@
+@tangler chips.flx      = share/lib/std/control/chips.flx
+@tangler parsers.flx = share/lib/std/strings/parsers.flx
+
+@title Chips.
+@h1 Standard components
+@h2 Write block.
+Blocks reader.
+@tangle chips.flx
+chip writeblock[T]
+  connector io
+    pin inp : %<T
+{
+}
+
+@h2 Read block.
+Blocks writer.
+@tangle chips.flx
+chip readblock[T]
+  connector io
+    pin inp: %>T
+{
+}
+
+
+@h2 Universal sink
+Reads input forever.
+@tangle chips.flx
+chip sink[T]
+  connector io
+    pin inp : %<T
+{
+  while true do
+    var x = read (io.inp);
+    C_hack::ignore (x);
+  done
+}
+
+@h2 Constant Source.
+Write fixed value forever.
+@tangle chips.flx
+chip source[T] (a:T)
+  connector io
+    pin out: %>T
+{
+  while true do
+    write (io.out, a);
+  done
+}
+
+@h2 Function adaptor.
+Converts function to chip.
+@tangle chips.flx
+chip function[D,C] (f:D->C)
+  connector io
+    pin inp: %<D
+    pin out: %>C
+{
+  while true do
+    var x = read io.inp;
+    var y = f x; 
+    write (io.out, y);
+  done
+}
+
+@h2 Buffer.
+One step buffer. Same as a function adaptor passed identity.
+@tangle chips.flx
+chip buffer [T]
+  connector io
+    pin inp: %<T
+    pin out: %>T
+{
+  while true do
+    var x = read io.inp;
+    write (io.out, x);
+  done
+}
+
+@h2 Debug Buffer.
+
+@tangle chips.flx
+chip debug_buffer [T with Str[T]] (tag:string)
+  connector io
+    pin inp: %<T
+    pin out: %>T
+{
+  while true do
+    var x = read io.inp;
+    println$ "Debug buffer [" + tag + "] " + x.str;
+    write (io.out, x);
+  done
+}
+
+@h2 One Shot.
+A one shot buffer.  
+@tangle chips.flx
+chip oneshot [T]
+  connector io
+    pin inp: %<T
+    pin out: %>T
+{
+  var x = read io.inp;
+  write (io.out, x);
+}
+
+@h2 Store
+Stores read values in a variable.
+@tangle chips.flx
+chip store[T] (p:&T)
+  connector io
+    pin inp: %<T
+{
+  while true do
+    var x = read io.inp;
+    p <- x;
+  done
+}
+
+@h2 Fetch
+Writes current value of a variable.
+@tangle chips.flx
+chip fetch[T] (p:&T)
+  connector io
+    pin out: %>T
+{
+  while true do
+    write (io.out, *p);
+  done
+}
+
+@h2 Printer
+Writes input to console.
+
+@tangle chips.flx
+chip debug_sink [T with Str[T]] (s:string)
+  connector io
+    pin inp: %<T
+{
+  while true do
+    var x = read io.inp;
+    println$ "Debug sink ["+s+"] "+x.str;
+  done
+}
+
+
+@h2 Asynchronous Latch.
+Satisfied all reads with the last
+value written. Blocks readers until at least
+one value is written.
+@tangle chips.flx
+chip latch[T]
+  connector io
+    pin inp: %<T
+    pin out: %>T
+{
+   var x = read io.inp;
+   device w = fetch &x;
+   device r = store &x;
+   circuit
+     wire io.inp to r.inp
+     wire io.out to w.out
+   endcircuit
+} 
+
+@h2 Serialise.
+Read values in sequence from a sequence of channels,
+write each one out on a single channel. Repeat.
+The input channels are fixed by supplying them as
+an argument.
+
+@tangle chips.flx
+chip serialise_chan_list[T] (a: list[%<T])
+ connector io
+   pin out: %>T
+{
+  while true do
+    var current = a;
+next:>
+    match current with
+    | Cons (h,t) =>
+      var x = read h;
+      write (io.out, x);
+      current = t;
+      goto next;
+    | Empty => ;
+    endmatch;
+  done
+}
+
+typedef iopair_t[D,C] = (inp: %<D, out: %>C);
+typedef iochip_t[D,C] = iopair_t[D,C] -> 1 -> 0;
+
+// NOTE: this is currently a one-shot!
+chip pipeline_list[T] (a: list[iochip_t[T,T]])
+  connector io
+    pin inp: %<T
+    pin out: %>T
+{
+  proc aux (lst:list[iochip_t[T,T]]) (inp: %<T) {
+    match lst with
+    | h1 ! h2 ! tail =>
+      var inchan,outchan = mk_ioschannel_pair[T]();
+      spawn_fthread$  h1 (inp=inp, out=outchan);
+      aux (h2!tail) inchan;
+    | h1 ! _ =>
+      spawn_fthread$  h1 (inp=inp, out=io.out);
+    endmatch;
+  }
+  aux a io.inp;
+}
+
+// NOTE: this is currently a one-shot!
+chip tryall_list[D,C] (a: list[iochip_t[D,C]]) 
+  connector io
+    pin inp: %<D
+    pin out: %>C
+{
+  // get some input and start a source writing it
+  var x = read io.inp;
+  // now, start each device in turn, connected to
+  // the source and output
+  for h in a do
+    var lin,lout = mk_ioschannel_pair[D]();
+    spawn_fthread (h (inp=lin, out=io.out));
+    write (lout,x);
+  done
+}
+
+@h1 Parsing
+Chips to providing parsing functions.
+
+@h2 Buffer type
+Parsers work on an array of chars in memory. We use a Google
+StringPiece to represent it. 
+
+@tangle parsers.flx
+struct Buffer
+{
+  sp: StringPiece;
+  pos: int;
+
+  fun atend => self.pos >= self.sp.len.int;
+
+  fun get => 
+    if self.atend then char "" 
+    else (self.sp.data) . (self.pos)
+  ;
+
+  proc next { 
+    if not self*.atend do
+      pre_incr self.pos;
+    done
+  }
+
+  fun advanced =>
+    if self.atend then self
+    else Buffer (self.sp, self.pos + 1)
+  ;
+}
+
+ctor Buffer (p:&string) =>
+  Buffer (p.StringPiece,0)
+;
+
+instance Str[Buffer] {
+  fun str (b:Buffer) => "@"+b.pos.str;
+}
+
+@h2 A string matcher.
+
+@tangle parsers.flx
+chip match_string (s:string)
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+nextmatch:>
+  var b = read io.inp;
+  for i in 0..< s.len.int do 
+    if s.[i] != b.get goto nextmatch;
+    b&.next;
+  done
+  write (io.out, b);
+  goto nextmatch;  
+}
+
+@h2 Whitespace matcher.
+@tangle parsers.flx
+chip match_white 
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  while true do
+    var b = read io.inp;
+    while not b.atend and b.get <= char ' ' perform b&.next;
+    write (io.out,b);
+  done
+}
+
+@h2 regex matcher.
+
+@tangle parsers.flx
+chip match_regex (r:RE2)
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  while true do
+    var b = read io.inp;
+    var matched = varray[StringPiece] (1uz,StringPiece());
+    var result = Match(r,b.sp,b.pos,ANCHOR_START,matched.stl_begin,1);
+    if result do
+      write(io.out,Buffer(b.sp,b.pos + matched.0.len.int));
+    done
+  done
+}
+
+@h2 Identifier matcher.
+For C like identifiers.
+
+@tangle parsers.flx
+device cident_matcher = match_regex (RE2 "[A-Za-z][A-Za-z0-9_]*");
+
+@h2 Integer matcher.
+For plain identifiers.
+
+@tangle parsers.flx
+device decimal_integer_matcher = match_regex (RE2 "[0-9]+");
+
+@h2 Optional matcher.
+Matches given matcher if possible otherwise epsilon.
+This is a full backtracking matcher. The non-epsilon
+case is tried first.
+
+Note as a backtracking device, the epsilon will be tried
+if the device OR its continuation fails.
+
+@tangle parsers.flx
+chip optional (p:iochip_t[Buffer,Buffer])
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  var b = read io.inp;
+  device src = source b;
+  device both = tryall_list (
+    pipeline_list (oneshot[Buffer],p).list,
+    pipeline_list (oneshot[Buffer], debug_buffer[Buffer] "Epsilon").list
+  ).list;
+  circuit
+    connect src.out, both.inp
+    wire io.out to both.out
+  endcircuit
+}
+
+@h2 No backtrack.
+If the matcher matches, the result is
+final. There is no backtracking. We ensure this by
+sticking a one-shot after the device.
+
+@tangle parsers.flx
+chip nobacktrack (p:iochip_t[Buffer,Buffer])
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  device q = pipeline_list(p,oneshot[Buffer]).list;
+  circuit
+    wire io.inp to q.inp
+    wire io.out to q.out
+  endcircuit
+}
+
+
+@h2 Grammar processing
+@tangle parsers.flx
+
+union symbol_t =
+  | Terminal of string
+  | Nonterminal of string 
+;
+
+typedef production_t = list[symbol_t];
+typedef alternatives_t = list[production_t];
+
+typedef grammar_t = (start:string, strdict[alternatives_t]);
+
+chip parse_simple_grammar 
+  connector io
+    pin inp: %<string
+    pin out: %>grammar_t
+{
+}
+
+
