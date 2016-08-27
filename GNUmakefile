@@ -186,7 +186,7 @@ rtl:
 	# =========================================================
 	# rebuild rtl
 	# =========================================================
-	flx_build_rtl --target-dir=build/release --target-bin=trial
+	LD_LIBRARY_PATH=build/release/host/lib/rtl flx_build_rtl --target-dir=build/release --target-bin=trial
 
 
 target: prep flxg rtl boot
@@ -195,7 +195,7 @@ boot:
 	# =========================================================
 	# rebuild flx build tools and plugins
 	# =========================================================
-	flx_build_boot --target-dir=build/release --target-bin=trial --build-all
+	LD_LIBRARY_PATH=build/release/host/lib/rtl flx_build_boot --target-dir=build/release --target-bin=trial --build-all
 
 rebuild: extract target uproot
 
