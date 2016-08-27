@@ -541,8 +541,10 @@ on the LHS is not applied to a value of tuple type, but
 a value of type pointer to a tuple type!
 
 \begin{minted}{felix}
-  double * double -> double        // type of RHS projection function
-  &(double * double) -> &double    // type of LHS projection function
+  double * double -> double        
+    // type of RHS projection function
+  &(double * double) -> &double    
+    // type of LHS projection function
 \end{minted}
 
 Felix overloads the meaning of projections, so that a projection
@@ -555,7 +557,7 @@ the notion of lvalues, and ensure the underlying semantics
 is entirely based on values. 
 
 \begin{center}
-{\em Pointers provide the bridge
+\framebox{\em Pointers provide the bridge
 between objects and values. }
 \end{center}
 
@@ -594,6 +596,7 @@ when calling the procedure. Therefore, the LHS must be a simple variable.
 \section{Swap operator}
 Felix provides a swap operator
 to swap the contents of two variables.
+The variables must be of the same type.
 
 \begin{minted}{felix}
   var x = 1;
@@ -718,7 +721,7 @@ to an already returned frame is undefined.
 Built on top of label adressing and indirect gotos,
 the \verb%branch-and-link% instruction is conceptually
 the most fundamental control instruction. The library
-implementation is in 
+implementation is 
 
 \begin{minted}{felix}
 inline proc branch-and-link (target:LABEL, save:LABEL)
@@ -844,7 +847,7 @@ else
 done
 \end{minted}
 
-One or more statements may be givn in the selected control path.
+One or more statements may be given in the selected control path.
 
 A simple conditional is an abbreviation for a statement match:
 
@@ -1029,7 +1032,7 @@ description.
 \section{{\tt spawn\_pthread}}\index{spawn}
 \href{http://felix-lang.org/share/lib/std/control/pthread.flx}{Library Reference}
 
-Spawns a new pthread\gls{pthread} which executes the argument procedure.
+Spawns a new \gls{pthread} which executes the argument procedure.
 
 See \fullref{Preemptive Threading} for a more complete
 description.
@@ -2093,7 +2096,7 @@ var x =
 ;
 \end{minted}
 
-\chapter{Pattern Matching}\index{pattern!matching}
+\chapter{Pattern Matching}\label{Pattern Matching}\index{pattern!matching}
 The patterns
 are composed of these forms:
 
