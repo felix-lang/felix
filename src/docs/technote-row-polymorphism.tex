@@ -167,11 +167,12 @@ var v2 = *p2;
 
 \section{Ties}
 A tie is a natural transformation which can be applied to any data functor.
-Given a functor $F: {\mathtt TYPE} \rightarrow {\mathtt TYPE}$, there is an associated functor 
-$$\&F T = F \&T$$
-which for each type $T$ builds a data structure of pointers to $T$.
+Given a functor $F: {\tt TYPE} \rightarrow {\tt TYPE}$, there is an associated functor 
+$$(\&F) T = F (\&T)$$
+which for each type $T$ is the same data structure of values of type pointer to $T$.
 
-The operator $\mathrm \_tie$ maps each $F$ to $\&F$. 
+The generic operator \verb%_tie% maps a pointer to a product value to a product of pointers.
+The argument must be a pointer so the components are addressable.
 
 \subsection{Record tie}
 For records we have
@@ -215,7 +216,7 @@ println$ *(tiearr.0), *(tiearr.1);
 which maps a pointer to an array to an array of pointers to its components.
 
 Ties obey the rule:
-$$ ({\mathrm \_tie} p) . \pi = p . \pi$$
+$$ ({\rm \_tie}\ p) . \pi = p . \pi$$
 where p is a pointer to a product type and $\pi$ is a projection.
 
 \section{Record pattern match}

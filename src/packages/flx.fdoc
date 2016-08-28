@@ -787,7 +787,8 @@ private proc print_help() {
   println "--repl               : enter REPL mode saving stuff in session.flx and library.flx";
   println "--test               : use felix installation in current directory";
   println "--test=dir           : use felix installation in dir";
-  println "--target=dir         : subdir of install dir containing target configuration (default 'host')";
+  println "--target-subdir=dir  : subdir of install dir containing target configuration (default 'host')";
+  println "--target-dir=dir     : dir containing target configuration (default '$FLX_INSTALL_DIR/host')";
   println "--pkgconfig-path+=dir: prepend extra flx_pkgconfig search directory to standard path";
   println "--toolchain=toolchain: pick a non-default C++ compiler toolchain";
   println "--felix=file         : get installation details from file";
@@ -3070,6 +3071,9 @@ class Flx
          Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] ( dll-name=x, setup-str="")
        endmatch
     ;
+
+    //println$ "[flx] Toolchain set to " + toolchain_name;
+
     if control*.INREGEX != "" do 
 
       begin
@@ -3304,6 +3308,7 @@ endoff:>
 
   gen runflx(args:list[string]) : int = 
   {
+println$ "[bootflx] " + strcat " " args;
     var config = #Config::std_config;
     var control = #FlxControl::dflt_control;
     var loopctl = #FlxControl::init_loopctl;
