@@ -25,65 +25,63 @@
 \author{John Skaller}
 \begin{document}
 \maketitle
+
 \section{Subroutines}
-All modern language make use of an artefact known as a subroutine
-which amounts to the following: in order to reuse a piece of code
-we designate a fixed starting address known as the entry
-point. The subroutine takes a value parameter which is passed by
-the caller of the subroutine on the processor machine stack.
 
-The caller also passes on the machine stack, the address after the 
-subroutine call which is known as the current continuation or return address, 
-then jumps to the subroutine entry point.
+All modern programming languages make use of an artefact known as the {\em subroutine}. 
+A subroutine is designed to form a reusable component of code.  
+It is a sequence of instructions that a computer can execute to accomplish a particular task.
+By being both reusable and modular, it simplifies the practice of building and maintaing programs.
 
-The subroutine then uses a crucial device: it allocates space 
-for local variables on the machine stack by advancing the stack pointer.
-Now the subroutine may perform calculations dependent on the 
-argument on the machine stack. When it is complete it simultaneously
-removes argument and return address, pushes the result back on the
-stack, if any, and jumps to the return address supplied by the caller.
+A subroutine consists of a few important details: 
+it has a fixed starting address known as the {\em entry point}; 
+it takes a value parameter, which is provided (or passed) by the caller; 
+and it uses the processor's {\em machine stack} as temporary storage (this is where it holds parameters and short term variables).
 
-The subroutine itself may also call other subroutines to do its work.
+When a processor executes a subroutine, it starts with a {\tt call} instruction.
+This instruction does two things simultaneously: 
+It moves the instruction pointer to the subroutine entry point (akin to a {\tt jump}), 
+and it saves a pointer to the {\em return address} (or calling location)---this 
+is like a trail of breadcrumbs the CPU can use to find its way back out of a maze of procedure calls.
 
-The integrated control and data stack so described couples control
-flow with data flow, the coupling establishing a caller/callee
-relationship which may also be termed a master/slave or client/server
-relationship.
+Once inside the subroutine, the processor advances the stack pointer and allocates space for local variables on the machine stack.
+The subroutine itself may perform calculations or even call other subroutines to do its work.
 
-What makes this machinery popular is that it is effected by precisely
-two machine registers: the program counter and stack pointer, and
-it is highly efficient, allowing storage for the argument, return
-address, subroutine local storage, and return value to be allocated
-and deallocated with addition or subtraction of constants to a 
-fast register.
+When the subroutine is done executing, it 
+1) cleans up temporary data (parameters, local variables, and extinct return addresses), 
+2) saves a return value to the machine stack, and 
+3) passes control (jumps) to the return address supplied by the caller.
 
-Furthermore the mechanism supports writing re-entrant code meaning
-subroutines may be recursive and reused simultaneously by many
-threads of control or concurrent processes by allocating each 
-its own stack.
+What we've described, so far, is a stack-based machine. 
+It's a bit like an onion, with interleaving nested layers of data and control information, growing outward.
+Calling a subroutine adds a layer, and returning from a subroutine peels off a layer.
 
-However the mechanism does have some downsides, and the almost universal
-use of it to exclusion of others has twisted modern programming
-into an extremely ugly shape.
+The important point, insofar as this paper is concerned, is that the control and data information are tightly integrated, coupling control flow with data flow. 
+This coupling demands a caller/callee (or master/slave, client/server, etc.) relationship which, as we shall see, may not be necessary or beneficial.
 
-The biggest problem of this machinery is no more evident in simple
-programs than the lack of local data was when implementing simple
-state machines using instead global data for storage. Such code is
-not re-entrant, hard to parametise, and cannot recurse, but finite
-state machines do not use recursion, and global store can be used
-to save arguments. Writing such code was and still is a problem
-for C programmers and a necessity for operating system implementors.
+What makes this machinery popular is that it is affected by precisely two machine registers: 
+  the {\em program counter} and the {\em stack pointer}.
+It is also highly efficient, allowing immediate storage for 
+  parameters, subroutine locals, return addresses, and return values.
 
-With integrated linear stacks, the serious deficiencies of the machinery
-only exhibit with more complex problems in which a subroutine is repeatedly
-called but requires state calculated from the last call. This is 
-evident with message handling callbacks in GUI systems, and functional
-programming using higher order functions.
+Furthermore the mechanism supports writing {\em re-entrant} code.
+That is, subroutines which may be recursive and reused simultaneously by many threads of control.
+Each thread allocates its own stack and can execute independent of the other threads.
+In most programming systems, this is how you get concurrency.
+Threads operate independently, with their own local stacks, and they communicate via global data on the {\em heap}.
 
-Our working example of the serious deficiencies of the subroutine
-call model will be a functional fold and a equivalent 
-procedural iteration, but first we must study an important
-code refactoring technique known as {\em control inversion}.
+Despite being successful, this mechanism does have some downsides. 
+The almost universal adoption, to exclusion of others models, has twisted modern programming into an extremely ugly shape.
+
+The serious deficiencies of the machinery often exhibit with complex problems.
+Subroutines are repeatedly called but require little more than state calculations from prior calls. 
+Message handling callbacks (e.g. in GUI systems) and functional programming with higher order functions, often exhibit evidence of this.
+
+In this paper we will work through two examples which highlight the serious deficiencies of the subroutine call model.
+These examples are:
+1) a study on a code refactoring technique known as {\em control inversion} and
+2) a functional {\em fold} with an equivalent procedural iteration.
+
 
 \section{Control Inversion}
 Control inversion is a refactoring technique which is used
