@@ -43,6 +43,7 @@ This instruction does two things simultaneously:
 It moves the instruction pointer to the subroutine entry point (akin to a {\tt jump}), 
 and it saves a pointer to the {\em return address} (or calling location)---this 
 is like a trail of breadcrumbs the CPU can use to find its way back out of a maze of procedure calls.
+When we talk about {\em control}, or {\em control flow}, we mean this trail of crumbs.
 
 Once inside the subroutine, the processor advances the stack pointer and allocates space for local variables on the machine stack.
 The subroutine itself may perform calculations or even call other subroutines to do its work.
@@ -56,7 +57,7 @@ What we've described, so far, is a stack-based machine.
 It's a bit like an onion, with interleaving nested layers of data and control information, growing outward.
 Calling a subroutine adds a layer, and returning from a subroutine peels off a layer.
 
-The important point, insofar as this paper is concerned, is that the control and data information are tightly integrated, coupling control flow with data flow. 
+The important point, insofar as this paper is concerned, is that the control and data information are tightly integrated, coupling {\em control flow} with {\em data flow}. 
 This coupling demands a caller/callee (or master/slave, client/server, etc.) relationship which, as we shall see, may not be necessary or beneficial.
 
 What makes this machinery popular is that it is affected by precisely two machine registers: 
@@ -84,12 +85,10 @@ These examples are:
 
 
 \section{Control Inversion}
-Control inversion is a refactoring technique which is used
-to reverse a master/slave relationship so that with a master subroutine
-calling a slave subroutine, the roles are reversed. The slave becomes
-the master, and the master the slave. Whilst demonstrating this keep
-in mind that this reverses the direction of control flow
-exhibited by the call/return protocol.
+
+{\em Control inversion} is a refactoring technique which is used to reverse a master/slave relationship.
+The slave becomes the master, and the master the slave. 
+Whilst demonstrating this keep in mind that this reverses the direction of control flow exhibited by the call/return protocol.
 
 \begin{minted}{felix}
 proc slave1 () { println$ "slave1"; }
@@ -102,11 +101,9 @@ proc master () {
 }
 \end{minted}
 
-Let us begin with the simple situation illustrated above, in which
-a master and three slaves are used to effect a fixed sequence
-of effects. We will show how to {\em control invert} the subroutine
-call to \verb%slave2% so that it becomes the master and the 
-master a slave:
+Let us begin with the simple situation illustrated above. 
+A master procedure calls three slaves, which are used to produce a fixed sequence of effects. 
+We will show how to {\em control invert} the subroutine call to \verb%slave2% so that it becomes the master and the master a slave:
 
 \begin{minted}{felix}
 proc slave1 () { println$ "slave1"; }
@@ -118,14 +115,17 @@ proc newmaster () {
 }
 \end{minted}
 
-What we have done here is as follows: the new master
-must first perform all the tasks that the master previously
-performed up to the point where it was called. Then it does
-its own work, and finally, all the work the master would have
-done after it returned.
+What we have done here is as follows: 
+1) {\tt newmaster} must first perform all the tasks 
+   that {\tt master} previously performed up to the point where {\tt slave2} was called;
+2) Then it does its own work; and 
+3) finally, all the work {\tt master} would have done after {\tt slave2} returned.
 
-Let us study a slighly more difficult problem, where the utility
-of this procedure becomes a little more evident.
+Let us study a slighly more difficult problem, where the utility of this procedure becomes a little more evident.
+The following code could be used to draw a series of line segments on a canvas.
+You will notice that there is a variable called {\tt first}, along with {\tt last_x} and {\tt last_y}. 
+Naturally, since a line consists of two points, we cannot hope to draw anything until the second point.
+
 
 \begin{minted}{felix}
 proc dispatcher() {
@@ -148,11 +148,12 @@ proc draw(x:int, y:int) {
 }
 \end{minted}
 
-The slave routine here illustrate very bad programming style:
-it saves essential state in global variables and hence is 
-not re-entrant. But there is no alternative whilst the master
-dispatcher insists on calling it without an auxilliary state
-variable to hold the data. 
+The slave routine here ({\tt draw}) illustrates very bad programming style:
+  it saves essential state ({\tt first}, {\tt last_x}, and {\tt last_y}) in global variables 
+  and hence is not re-entrant. 
+But there is no alternative 
+  whilst the master dispatcher insists on calling it 
+  without an auxilliary state variable to hold the data. 
 
 Let us see what happens with control inversion:
 
