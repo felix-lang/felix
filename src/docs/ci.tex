@@ -115,15 +115,17 @@ proc newmaster () {
 }
 \end{minted}
 
-What we have done here is as follows: 
-1) {\tt newmaster} must first perform all the tasks 
+What we have done here is as follows:
+\begin{enumerate}
+\item {\tt newmaster} must first perform all the tasks 
    that {\tt master} previously performed up to the point where {\tt slave2} was called;
-2) Then it does its own work; and 
-3) finally, all the work {\tt master} would have done after {\tt slave2} returned.
+\item Then it does its own work; and 
+\item finally, all the work {\tt master} would have done after {\tt slave2} returned.
+\end{enumerate}
 
 Let us study a slighly more difficult problem, where the utility of this procedure becomes a little more evident.
 The following code could be used to draw a series of line segments on a canvas.
-You will notice that there is a variable called {\tt first}, along with {\tt last_x} and {\tt last_y}. 
+You will notice that there is a variable called \verb%first%, along with \verb%last_x% and \verb%last_y%. 
 Naturally, since a line consists of two points, we cannot hope to draw anything until the second point.
 
 
@@ -148,8 +150,8 @@ proc draw(x:int, y:int) {
 }
 \end{minted}
 
-The slave routine here ({\tt draw}) illustrates very bad programming style:
-  it saves essential state ({\tt first}, {\tt last_x}, and {\tt last_y}) in global variables 
+The slave routine here (\verb%draw%) illustrates very bad programming style:
+  it saves essential state (\verb%first%, \verb%last_x%, and \verb%ast_y%) in global variables 
   and hence is not re-entrant. 
 But there is no alternative 
   whilst the master dispatcher insists on calling it 
@@ -244,7 +246,7 @@ of elements in the list:
 \begin{minted}{felix}
 var lst = (1,2,3,4).list;
 var sum = fold_left 
-  (fun init elt => init + elt.double)
+  (fun (init:double) (elt:int) => init + elt.double)
   0.0
   lst
 ;
