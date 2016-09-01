@@ -284,4 +284,4 @@ install:
 .PHONY : doc install websites-linux  release install-bin
 .PHONY : copy-doc gen-doc gendoc fbuild speed tarball
 .PHONY : weblink flx tools web-plugins toolchain-plugins rtl copy lib
-.PHONY : sdltest src do-fbuild clean-fbuild
+.PHONY : sdltest src do-fbuild clean-fbuild uproot
