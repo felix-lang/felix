@@ -17,7 +17,7 @@ before_script:
 - git config --global push.default simple
 - git clone -q https://skaller:${GITHUB_TOKEN}@github.com/felix-lang/linuxgccbinary.git
 - mkdir -p build
-- cp -r linuxgccbinary/build/* build
+- # cp -r linuxgccbinary/build/* build
 script:
 - mkdir bin
 - ln -s /usr/bin/gcc-6 bin/gcc
@@ -28,7 +28,7 @@ script:
 - export FLX_SHELL_ECHO=1
 - gcc --version
 - g++ --version
-- ## XXXFLX_MIN_MEM=100000 make "FBUILD_PARAMS=--build-cc=/usr/bin/gcc --build-cxx=/usr/bin/g++"
+- XXXFLX_MIN_MEM=100000 make "FBUILD_PARAMS=--build-cc=/usr/bin/gcc --build-cxx=/usr/bin/g++"
 - make rebuild uproot
 after_success:
 - mkdir linuxgccbinary/build
