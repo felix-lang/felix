@@ -1,5 +1,5 @@
 
-sudo: false
+sudo: true
 dist: trusty
 addons:
   apt:
@@ -11,6 +11,7 @@ addons:
     - gcc-6
     - g++-6
 before_script:
+- apt-get remove g++
 - git config --global user.email "skaller@users.sourceforge.net"
 - git config --global user.name "skaller"
 - git config --global push.default simple

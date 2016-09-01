@@ -435,8 +435,9 @@ def src_dir(ctx):
 
 # ------------------------------------------------------------------------------
 
+# SHOULD USE REGEXP
 def hack_toolchain_name(s):
-  if s in ["gcc-5",]: return "gcc"
+  if s in ["gcc-5","gcc-6","gcc-7"]: return "gcc"
   if s in ["clang","gcc"]: return s
   return s
 
