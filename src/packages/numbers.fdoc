@@ -629,8 +629,7 @@ class Random {
     private ctor random_engine: random_device =
         "new ::std::default_random_engine{(*$1)()}";
     private gen generate_canonical: random_engine -> double =
-        "::std::generate_canonical<double,\
-            ::std::numeric_limits<float>::digits>(*$1)"
+        "::std::generate_canonical<double, ::std::numeric_limits<float>::digits>(*$1)"
         requires Cxx_headers::limits;
 
     private struct random_ctl {
