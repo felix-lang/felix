@@ -6,6 +6,9 @@
   'felix-mode                     ;; name of the mode
   '("//")                         ;; comments delimiter
   '(
+    "chip" "pin" "read" "write"
+    "circuit" "endcircuit" "connector" "connect" "device"
+    "export"
      "union"
      "pod"
      "ctor"
@@ -50,6 +53,7 @@
      "syntax"
      "struct"
    )                              ;; some keywords
+
   '(("=" . 'font-lock-operator-face) 
     (":" . 'font-lock-operator-face)
     ("$" . 'font-lock-operator-face)
@@ -59,7 +63,7 @@
     (">" . 'font-lock-operator-face)
     ("[0-9]+" . 'font-lock-variable-name-face)
     (";" . 'font-lock-builtin-face))   ;; a built-in 
-  '("\\.$")                       ;; files that trigger this mode
+  '("\\.flx$")                       ;; files that trigger this mode
    nil                            ;; any other functions to call
   "Felix highlighting mode"       ;; doc string
 )
@@ -350,12 +354,12 @@
                         (window-buffer
                         (minibuffer-selected-window)))))
 
-    (comint-check-source file-name) ; Check to see if buffer needs
+    ;;(comint-check-source file-name) ; Check to see if buffer needs
                                     ; saved first
 
     (message                        ; send output to a new buffer
      (shell-command-to-string       ; capture output
-      (concat "flx " file-name " 2>/dev/null"))))) ; build command
+      (concat "flx " file-name))))) ; build command
 
 ; bind keyboard shortcuts 
 (add-hook 'felix-mode-hook
@@ -363,6 +367,7 @@
           (lambda () (progn
                   (modify-syntax-entry ?\[ "-")
                   (modify-syntax-entry ?\] "-")
+	    (modify-syntax-entry ?\` "-")
                   (local-set-key (kbd "C-c C-l") #'felix-load-file))))
 
 
