@@ -1406,6 +1406,9 @@ syntax expressions {
   //$ Low precedence left associative reverse application.
   x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[stuple_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
 
+  //$ Haskell style infix notation of standard functions   foo(x,y) => x `foo` y
+  x[stuple_pri]  := x[stuple_pri] "`" sname "`" sexpr =># " `(ast_apply ,_sr ( ,(nos _3) (,_1 ,_5)))";
+
   //$ Named temporary value.
   x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";
 
