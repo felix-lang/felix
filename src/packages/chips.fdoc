@@ -210,19 +210,26 @@ chip pipeline_list[T] (a: list[iochip_t[T,T]])
 }
 
 // NOTE: this is currently a one-shot!
-chip tryall_list[D,C] (a: list[iochip_t[D,C]]) 
+chip tryall_list[D,C with Str[D]] (a: list[iochip_t[D,C]]) 
   connector io
     pin inp: %<D
     pin out: %>C
 {
   // get some input and start a source writing it
+println$ "Try all, reading value";
   var x = read io.inp;
+println$ "Try all, got value " + x.str;
   // now, start each device in turn, connected to
   // the source and output
+println$ "Try all writing to " + a.len.str " chips";
+var n = 0;
   for h in a do
+println$ "Tryall, making channels and spawning fibre #"+n.str;
     var lin,lout = mk_ioschannel_pair[D]();
     spawn_fthread (h (inp=lin, out=io.out));
+println$ "Tryall, writing value to fibre";
     write (lout,x);
+    ++n;
   done
 }
 
@@ -308,10 +315,15 @@ chip match_regex (r:RE2)
 {
   while true do
     var b = read io.inp;
+//println$ "Match regex " + r.str;
     var matched = varray[StringPiece] (1uz,StringPiece());
     var result = Match(r,b.sp,b.pos,ANCHOR_START,matched.stl_begin,1);
+//println$ "Match result " + result.str;
     if result do
-      write(io.out,Buffer(b.sp,b.pos + matched.0.len.int));
+//println$ "Matched OK, match len = " + matched.0.len.str;
+      var b2 = Buffer (b.sp,b.pos+matched.0.len.int);
+//println$ "Writing buffer = " + b2.str;
+      write(io.out,b2);
     done
   done
 }

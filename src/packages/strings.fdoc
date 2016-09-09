@@ -1030,6 +1030,10 @@ open class Re2 {
     const ANCHOR_BOTH: Anchor = "::re2::RE2::ANCHOR_BOTH";
 
   fun pattern: RE2 -> string = "$1->pattern()";
+  instance Str[RE2] {
+    fun str (r:RE2) => r.pattern;
+  }
+
   fun error: RE2 -> string = "$1->error()";
   fun error_code: RE2 -> ErrorCode = "$1->error_code()";
   fun error_arg: RE2 -> string = "$1->error_arg()";

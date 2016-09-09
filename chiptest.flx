@@ -1,0 +1,159 @@
+include "std/strings/parsers";
+include "std/control/chips";
+
+var sample = "The quick brown fox.";
+var b = Buffer (&sample);
+println$ b.get;
+b&.next;
+println$ b.get;
+
+proc test (s:string) (d:iochip_t[Buffer,Buffer]) (b:Buffer)
+{
+  println$ "-" * 20;
+  println$ "TEST " + s;
+  var startinp,startout= mk_ioschannel_pair[Buffer]();
+  var endinp,endout= mk_ioschannel_pair[Buffer]();
+  circuit
+    wire startinp to d.inp
+    wire endout to d.out
+  endcircuit
+  write (startout,b);
+  spawn_fthread {
+    while true do
+      var res = read endinp;
+      println$ "RESULT: "+ res.str;
+    done
+  };
+  Faio::sleep(1.0);
+}
+
+///////////////////// string match
+begin
+  // reset
+  b=Buffer(&sample);
+  device match_the = match_string "The";
+  test "string match" match_the b;
+end
+
+///////////////////// regexp match
+
+begin
+  // reset
+  b=Buffer(&sample);
+  device match_the = match_regex (RE2 "The");
+  test "regexp match" match_the b;
+end
+
+///////////////////// pipeline
+
+begin
+  b=Buffer(&sample);
+  device match_the = match_regex (RE2 "The");
+  device match_quick = match_regex (RE2 "quick");
+  device match_brown= match_regex (RE2 "brown");
+  var parse = list (
+    debug_buffer[Buffer] "start",
+    match_the, 
+    match_white, 
+    match_quick, 
+    match_white, 
+    debug_buffer[Buffer] "Before brown", 
+    match_brown)
+  ;
+  device pl = pipeline_list parse;
+  test "pipeline" pl b;
+end
+
+///////////////////// Quick alts
+begin
+  b=Buffer(&sample);
+  device match_the = match_regex (RE2 "The");
+  device match_quick = match_regex (RE2 "quick");
+  device ta = tryall_list (list (match_the, match_quick));
+  test "Quick alts" ta b;
+end
+
+///////////////////// optional the, present 
+begin 
+  b = Buffer(&sample);
+  device match_the = match_regex (RE2 "The");
+  device match_quick = match_regex (RE2 "quick");
+  device maybe = optional (pipeline_list (
+    match_the, 
+    match_white, 
+    debug_buffer[Buffer] "before quick", 
+    match_quick,
+    debug_buffer[Buffer] "After quick").list);
+  test "optional the, present" maybe b;
+end
+
+///////////////////// optional the, absent
+begin
+  b=Buffer(&sample);
+  device match_the = match_regex (RE2 "The");
+  device match_quick = match_regex (RE2 "quick");
+  device match_brown= match_regex (RE2 "brown");
+
+  var parse1 = list (
+    debug_buffer[Buffer] "start1",
+    match_the, 
+    match_white, 
+    match_quick, 
+    match_white, 
+    debug_buffer[Buffer] "Before brown1", 
+    match_brown)
+  ;
+  device pl1 = pipeline_list parse1;
+
+  var parse2 = list (
+    debug_buffer[Buffer] "start2",
+    match_the, 
+    match_white, 
+    match_quick, 
+    match_white, 
+    debug_buffer[Buffer] "Before brown2", 
+    match_brown)
+  ;
+  device pl2 = pipeline_list parse2;
+
+  var parse3 = list (
+    debug_buffer[Buffer] "bugged3",
+    match_the, 
+    match_quick, 
+    match_white, 
+    debug_buffer[Buffer] "Before brown3", 
+    match_brown)
+  ;
+  device pl3 = pipeline_list parse3;
+
+  var alts = list (pl1,pl2,pl3);
+  device ta = tryall_list alts;
+
+  test "Alternatives" ta b;
+end
+
+///////////////////// AAAB
+begin
+ var AAAB = "AAAB"; 
+ b = Buffer(&AAAB);
+ device A = match_string("A");
+ device B = match_string("B");
+ chip As 
+  connector chans 
+    pin inp: %<Buffer 
+    pin out: %>Buffer
+  {
+   device As2 = pipeline_list (A,As).list; 
+   device Ass = tryall_list (A, As2).list;
+   circuit
+     wire chans.inp to Ass.inp
+     wire chans.out to Ass.out
+   endcircuit
+ }
+ device AsB = pipeline_list (As,B).list;
+ test "AAAB" AsB b;
+end
+
+
+
+
