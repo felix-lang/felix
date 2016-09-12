@@ -672,7 +672,13 @@ instance[T with Show[T]] Str[List::list[T]] {
 syntax listexpr
 {
   //$ List cons, right associative.
-  x[sarrow_pri] := x[>sarrow_pri] "!" x[sarrow_pri] =># '''`(ast_apply ,_sr (,(nos "Snoc") (,_3 ,_1)))''';
+  x[sarrow_pri] := x[>sarrow_pri] "!" x[sarrow_pri] =># 
+    '''`(ast_apply ,_sr (,(nos "Snoc") (,_3 ,_1)))'''
+  ;
+
+  satom := "(" "[" stypeexpr_comma_list "]" ")" =># 
+    '''`(ast_apply ,_sr (,(nos "list") (ast_tuple ,_sr ,_3)))'''
+  ; 
 }
 
 @h1 Association List

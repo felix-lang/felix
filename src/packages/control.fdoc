@@ -130,7 +130,7 @@ open class Control
   /*7*/ | svc_sread               of _schannel * &address
   /*8*/ | svc_swrite              of _schannel * &address
   /*9*/ | svc_kill                of fthread
-  /*10*/ | svc_reserved2
+  /*10*/ | svc_swait
   /*11*/ | svc_multi_swrite       of _schannel * &address 
   /*12*/ | svc_schedule_detached  of fthread
   ;

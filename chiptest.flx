@@ -24,7 +24,7 @@ proc test (s:string) (d:iochip_t[Buffer,Buffer]) (b:Buffer)
       println$ "RESULT: "+ res.str;
     done
   };
-  Faio::sleep(1.0);
+  swait();
 }
 
 ///////////////////// string match
@@ -134,26 +134,85 @@ end
 
 ///////////////////// AAAB
 begin
- var AAAB = "AAAB"; 
- b = Buffer(&AAAB);
- device A = match_string("A");
- device B = match_string("B");
- chip As 
-  connector chans 
-    pin inp: %<Buffer 
-    pin out: %>Buffer
+  var AAAB = "AAAB"; 
+  b = Buffer(&AAAB);
+  device A = match_string("A");
+  device B = match_string("B");
+  chip As 
+    connector chans 
+      pin inp: %<Buffer 
+      pin out: %>Buffer
   {
-   device As2 = pipeline_list (A,As).list; 
-   device Ass = tryall_list (A, As2).list;
-   circuit
-     wire chans.inp to Ass.inp
-     wire chans.out to Ass.out
-   endcircuit
- }
- device AsB = pipeline_list (As,B).list;
- test "AAAB" AsB b;
+    device As2 = pipeline_list (A,As).list; 
+    device Ass = tryall_list (A, As2).list;
+    circuit
+      wire chans.inp to Ass.inp
+      wire chans.out to Ass.out
+    endcircuit
+  }
+  device AsB = pipeline_list (As,B).list;
+  test "AAAB" AsB b;
+end
+
+///////////////////// AAAB (oneormore_matcher)
+begin
+  var AAAB = "AAAB"; 
+  b = Buffer(&AAAB);
+  device A = match_string("A");
+  device B = match_string("B");
+  device As = oneormore_matcher A;
+  device AsB = pipeline_list (As,B).list;
+  test "AAAB (oneormore_matcher)" AsB b;
+end
+
+///////////////////// grammar production
+begin
+  var X = "X = A 'A' A B;";
+  var b = Buffer(&X);
+
+  device id = cident_matcher;
+  device eq = match_string("=");
+  device semi = match_string(";");
+  device str = match_string_literal;
+  device w = match_white;
+  device sym = tryall_list ([id,str]);
+  device wsym = pipeline_list ([w,sym]);
+  device wsyms = oneormore_matcher wsym;
+  device prod = pipeline_list 
+    ([
+      w,id,w,eq,wsyms,w,semi
+    ])
+  ;
+  test "grammar production" prod b;
 end
 
 
+///////////////////// capture string match
+begin
+  // reset
+  b=Buffer(&sample);
+  device match_the = match_string "The";
+  gen show_lexeme (first: Buffer * int, last: Buffer) : Buffer * int =
+  {
+     var i = first.1;
+     var b0 = first.0;
+     var sp = b0.sp;
+     var s = sp.string;
+     var p0 = b0.pos;
+     var p1 = last.pos;
+     var lexeme = sp.[p0..<p1].string;
+     println$ "Lexeme = '" + lexeme+"'";
+     return last,i + 42;
+  }
 
+  device captured_the = leaf_capture[int] (match_the,show_lexeme); 
+  var state = b,99;
+  var rin,rout = mk_ioschannel_pair[Buffer * int]();
+  var win,wout = mk_ioschannel_pair[Buffer * int]();
+  spawn_fthread (captured_the (inp=rin,out=wout));
+  write (rout,state);
+  var newstate = read win;
+  println$ "New state int = " + newstate.1.str;
+end
+swait;
 

@@ -15,6 +15,7 @@ chip writeblock[T]
 @h2 Read block.
 Blocks writer.
 @tangle chips.flx
+  union lsexpr[T,L] = | Leaf of T | Tree of L * list[lsexpr[T,L]]; 
 chip readblock[T]
   connector io
     pin inp: %>T
@@ -216,18 +217,18 @@ chip tryall_list[D,C with Str[D]] (a: list[iochip_t[D,C]])
     pin out: %>C
 {
   // get some input and start a source writing it
-println$ "Try all, reading value";
+//println$ "Try all, reading value";
   var x = read io.inp;
-println$ "Try all, got value " + x.str;
+//println$ "Try all, got value " + x.str;
   // now, start each device in turn, connected to
   // the source and output
-println$ "Try all writing to " + a.len.str " chips";
+//println$ "Try all writing to " + a.len.str " chips";
 var n = 0;
   for h in a do
-println$ "Tryall, making channels and spawning fibre #"+n.str;
+//println$ "Tryall, making channels and spawning fibre #"+n.str;
     var lin,lout = mk_ioschannel_pair[D]();
     spawn_fthread (h (inp=lin, out=io.out));
-println$ "Tryall, writing value to fibre";
+//println$ "Tryall, writing value to fibre";
     write (lout,x);
     ++n;
   done
@@ -340,6 +341,64 @@ For plain identifiers.
 @tangle parsers.flx
 device decimal_integer_matcher = match_regex (RE2 "[0-9]+");
 
+@h2 String Literal matcher.
+One shot. Simple, matches single or double quoted
+string not spanning lines, with no escape codes, 
+@tangle parsers.flx
+chip match_string_literal 
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  var b = read io.inp;
+  if b.atend return; // end of data
+  var leadin = b.get;
+//println$ "string literal matcher got char " + leadin.str;
+  if not (leadin in (char '"', char "'")) return;
+//println$ "Got valid string start .. ";
+  b&.next; 
+  if b.atend return;
+  var ch = b.get;
+  while ch != leadin do
+    b&.next;
+    if b.atend return;
+    ch = b.get;
+    if ch == char "\n" return; // end of line
+  done
+  b&.next;
+  io.out `write` b;  
+}
+
+@h2 Capturing wrappers
+Given a Buffer->Buffer scanner chip 'scan',
+and a state updater 'newstate' which takes the
+old state and the end position of the scanned lexeme
+and produces a new state, run the scan chip
+to match a lexeme and output the updated state.
+@tangle parsers.flx
+typedef pardat_t[T] = Buffer * T;
+
+chip leaf_capture[T] 
+  (
+    scan: iochip_t[Buffer,Buffer],
+    newstate: pardat_t[T] * Buffer -> pardat_t[T]
+  )
+  connector io
+    pin inp: %<pardat_t[T]
+    pin out: %>pardat_t[T]
+{
+  var b,pd = read io.inp;
+  var rin,win= mk_ioschannel_pair[Buffer]();
+  var rout,wout= mk_ioschannel_pair[Buffer]();
+  spawn_fthread (scan (inp=rin,out=wout));
+  write(win,b);
+  var b2 = read rout;
+  var s = newstate ((b,pd),b2);
+  write (io.out,s);
+}
+
+
+
 @h2 Optional matcher.
 Matches given matcher if possible otherwise epsilon.
 This is a full backtracking matcher. The non-epsilon
@@ -366,24 +425,22 @@ chip optional (p:iochip_t[Buffer,Buffer])
   endcircuit
 }
 
-@h2 No backtrack.
-If the matcher matches, the result is
-final. There is no backtracking. We ensure this by
-sticking a one-shot after the device.
-
+@h2 One or more matcher
 @tangle parsers.flx
-chip nobacktrack (p:iochip_t[Buffer,Buffer])
-  connector io
-    pin inp: %<Buffer
-    pin out: %>Buffer
-{
-  device q = pipeline_list(p,oneshot[Buffer]).list;
-  circuit
-    wire io.inp to q.inp
-    wire io.out to q.out
-  endcircuit
-}
 
+chip oneormore_matcher (A:iochip_t[Buffer,Buffer]) 
+connector chans 
+  pin inp: %<Buffer 
+  pin out: %>Buffer
+{
+ device As = oneormore_matcher A;
+ device As2 = pipeline_list (A,As).list; 
+ device Ass = tryall_list (A, As2).list;
+ circuit
+   wire chans.inp to Ass.inp
+   wire chans.out to Ass.out
+ endcircuit
+}
 
 @h2 Grammar processing
 @tangle parsers.flx

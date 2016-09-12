@@ -944,6 +944,8 @@ open class Re2 {
     ctor StringPiece: &string = "::re2::StringPiece(*$1)"; // Argument must be reference to variable!
     ctor StringPiece: string = "::re2::StringPiece($1)"; // DANGEROUS DEPRECATE
     ctor StringPiece: unit = "::re2::StringPiece()";
+    ctor StringPiece: StringPiece = "::re2::StringPiece($1)"; // copy constructor
+    ctor StringPiece: +char * !ints = "::re2::StringPiece($1,$2)"; // array and length
     ctor string: StringPiece = "$1.as_string()";
     fun len: StringPiece -> size = "(size_t)$1.length()";
     fun data: StringPiece -> +char = "(char*)$1.data()"; // cast away const
@@ -961,6 +963,36 @@ open class Re2 {
     instance Str[StringPiece] {
       fun str: StringPiece -> string ="$1.as_string()";
     }
+
+  fun subscript (x:StringPiece, s:slice[int]):StringPiece =>
+    match s with
+    | #Slice_all => x
+
+    | Slice_from (start) => 
+      // unsafe, FIXME
+      StringPiece (x.data + start.size, x.len.int - start)
+
+    | Slice_to_incl (xend) =>
+      // unsafe, FIXME
+      StringPiece (x.data, xend + 1)
+
+    | Slice_to_excl (xend) => 
+      // unsafe, FIXME
+      StringPiece (x.data, xend)
+
+    | Slice_range_incl (start, xend) => 
+      // unsafe, FIXME
+      StringPiece (x.data + start.size, xend - start+1)
+
+    | Slice_range_excl (start, xend) => 
+      // unsafe, FIXME
+      StringPiece (x.data + start, xend - start)
+
+    | Slice_one (index) =>
+      // unsafe, FIXME
+      StringPiece (x.data + index, 1)
+    endmatch
+  ;
 
   type Arg = "::re2::Arg";
 

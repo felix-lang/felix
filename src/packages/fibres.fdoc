@@ -60,6 +60,7 @@ open class Fibres
       svc$ svc_schedule_detached fthr;
   }
 
+  proc swait() { svc$ svc_swait; }
 
   proc chain : cont = "return $1;";
 

@@ -36,7 +36,7 @@ representing an n position system, and $c_j$ representing the number of digits
 in the j'th position.
 
 Decoding is given by 
-$$x_i = (a \rmd \prod^{n-2}_i c_j) \quot \prod^{i-1}_{j=0} c_j$$
+$$x_i = (a \rmd \prod^{n-2}_{j=i} c_j) \quot \prod^{i-1}_{j=0} c_j$$
 
 \section{Application to types}
 Let the symbol decimal integer $n$ represent the sum of $n$ units,
