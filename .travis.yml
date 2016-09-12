@@ -17,7 +17,7 @@ before_script:
 - git config --global push.default simple
 - git clone -q https://skaller:${GITHUB_TOKEN}@github.com/felix-lang/linuxgccbinary.git
 - mkdir -p build
-- # cp -r linuxgccbinary/build/* build
+- cp -r linuxgccbinary/build/* build
 script:
 - mkdir bin
 - ln -s /usr/bin/gcc-6 bin/gcc
