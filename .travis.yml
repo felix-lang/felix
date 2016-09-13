@@ -29,7 +29,7 @@ script:
 - gcc --version
 - g++ --version
 - echo '#include <string>' > test.cpp
-- echo 'void f(string s) {}' >> test.cpp
+- echo 'void f(std::string s) {}' >> test.cpp
 - cat test.cpp
 - g++ -std=gnu++11 -c -o test.o test.cpp
 - nm test.o | c++filt
