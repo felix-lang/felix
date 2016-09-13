@@ -204,7 +204,7 @@ void sync_sched::do_yield()
 void sync_sched::do_swait()
     {
       if(debug_driver)
-         fprintf(stderr,"[sync: svc_swait] swait");
+         fprintf(stderr,"[sync: svc_swait] swait\n");
       if(active->size() > 0) {
         if (waiting==0) waiting = new ::std::list<fthread_t*>;
         waiting->push_back(ft);
@@ -331,20 +331,13 @@ sync_sched::fstate_t sync_sched::frun()
   if (debug_driver)
      fprintf(stderr,"[sync] frun: entry ft=%p, active size=%zu\n", ft,active->size());
 dispatch:
-  if (ft == 0) 
-  {
-    if (active->size() == 0)  // out of active fthreads
-    {
-      return blocked;
-    }
-    ft = active->front();     // grab next fthread
-    active->pop_front();
-  }
+  if (ft == 0) pop_current();
+  if (ft == 0) return blocked; 
   request = ft->run();        // run fthread to get request
   if(request == 0)            // euthenasia request
   {
     if(debug_driver)
-      fprintf(stderr,"unrooting fthread %p\n",ft);
+      fprintf(stderr,"[sync] unrooting fthread %p\n",ft);
     collector->remove_root(ft);
     ft = 0;
     goto dispatch;

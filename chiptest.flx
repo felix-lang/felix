@@ -75,7 +75,7 @@ end
 
 ///////////////////// optional the, present 
 begin 
-  b = Buffer(&sample);
+  var b = Buffer(&sample);
   device match_the = match_regex (RE2 "The");
   device match_quick = match_regex (RE2 "quick");
   device maybe = optional (pipeline_list (
@@ -135,7 +135,7 @@ end
 ///////////////////// AAAB
 begin
   var AAAB = "AAAB"; 
-  b = Buffer(&AAAB);
+  var b = Buffer(&AAAB);
   device A = match_string("A");
   device B = match_string("B");
   chip As 
@@ -157,7 +157,7 @@ end
 ///////////////////// AAAB (oneormore_matcher)
 begin
   var AAAB = "AAAB"; 
-  b = Buffer(&AAAB);
+  var b = Buffer(&AAAB);
   device A = match_string("A");
   device B = match_string("B");
   device As = oneormore_matcher A;
@@ -186,11 +186,11 @@ begin
   test "grammar production" prod b;
 end
 
-
 ///////////////////// capture string match
 begin
-  // reset
-  b=Buffer(&sample);
+  println$ "-" * 20;
+  println$ "TEST " + "Capture string match (manual)";
+  var b=Buffer(&sample);
   device match_the = match_string "The";
   gen show_lexeme (first: Buffer * int, last: Buffer) : Buffer * int =
   {
@@ -213,6 +213,200 @@ begin
   write (rout,state);
   var newstate = read win;
   println$ "New state int = " + newstate.1.str;
+  swait;
 end
-swait;
+
+////////////////// captured test (manual)
+proc captured_test[T] (s:string) (d:iochip_t[Buffer * T,Buffer * T]) (b:Buffer * T)
+{
+  println$ "-" * 20;
+  println$ "TEST " + s;
+  var startinp,startout= mk_ioschannel_pair[Buffer * T]();
+  var endinp,endout= mk_ioschannel_pair[Buffer * T]();
+  circuit
+    wire startinp to d.inp
+    wire endout to d.out
+  endcircuit
+  write (startout,b);
+  spawn_fthread {
+    while true do
+      var res = read endinp;
+      println$ "RESULT: "+ res.str;
+    done
+  };
+  swait;
+}
+
+///////////////////// capture string match (auto)
+begin
+  var b=Buffer(&sample);
+  device match_the = match_string "The";
+  gen show_lexeme (first: Buffer * int, last: Buffer) : Buffer * int =
+  {
+     var i = first.1;
+     var b0 = first.0;
+     var sp = b0.sp;
+     var s = sp.string;
+     var p0 = b0.pos;
+     var p1 = last.pos;
+     var lexeme = sp.[p0..<p1].string;
+     println$ "Lexeme = '" + lexeme+"'";
+     return last,i + 42;
+  }
+
+  device captured_the = leaf_capture[int] (match_the,show_lexeme); 
+  captured_test[int] "Captured string match (auto)" captured_the (b,99); 
+end
+
+///////////////////// capture pipeline 
+
+begin
+  var b=Buffer(&sample);
+  device match_the = match_regex (RE2 "The");
+  device match_quick = match_regex (RE2 "quick");
+  device match_brown= match_regex (RE2 "brown");
+
+  gen show_lexeme (first: Buffer * int, last: Buffer) : Buffer * int =
+  {
+     var i = first.1;
+     var b0 = first.0;
+     var sp = b0.sp;
+     var s = sp.string;
+     var p0 = b0.pos;
+     var p1 = last.pos;
+     var lexeme = sp.[p0..<p1].string;
+     println$ "Lexeme = '" + lexeme+"'";
+     return last,i + 42;
+  }
+
+  device captured_the = leaf_capture[int] (match_the,show_lexeme); 
+  device captured_white = leaf_capture[int] (match_white,show_lexeme); 
+  device captured_quick = leaf_capture[int] (match_quick,show_lexeme); 
+  device captured_brown = leaf_capture[int] (match_brown,show_lexeme); 
+
+
+  var parse = list (
+    captured_the, 
+    captured_white, 
+    captured_quick, 
+    captured_white, 
+    captured_brown)
+  ;
+  device pl = pipeline_list parse;
+  captured_test[int] "pipeline" pl (b,99);
+end
+
+///////////////////// capture pipeline lsexpr
+//include "std/datatype/lsexpr";
+//open LS_expr;
+
+typedef lsexpr_t = lsexpr[string,string];
+instance Str[lsexpr_t] {
+  fun str (x:lsexpr_t) =>
+     match x with 
+      | Leaf a => str a
+      | Tree (a,b) => str a + "(" + str b  + ")"
+    ;
+}
+open Str[lsexpr_t];
+
+begin
+  var b=Buffer(&sample);
+  device match_the = match_regex (RE2 "The");
+  device match_quick = match_regex (RE2 "quick");
+  device match_brown= match_regex (RE2 "brown");
+
+
+  typedef ll_t = list[lsexpr_t];
+
+  gen push_entry (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =
+  {
+     var lst = first.1;
+     var b0 = first.0;
+     var sp = b0.sp;
+     var s = sp.string;
+     var p0 = b0.pos;
+     var p1 = last.pos;
+     var lexeme = sp.[p0..<p1].string;
+     println$ "Lexeme = '" + lexeme+"'";
+     var entry = Leaf[string,string] lexeme;
+     var newstate = Cons (entry, lst);
+     return last, newstate;
+  }
+  gen skip_entry (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =
+  {
+    return last, first.1;
+  }
+
+
+  device captured_the = leaf_capture[ll_t] (match_the,push_entry); 
+  device captured_white = leaf_capture[ll_t] (match_white,skip_entry); 
+  device captured_quick = leaf_capture[ll_t] (match_quick,push_entry); 
+  device captured_brown = leaf_capture[ll_t] (match_brown,push_entry); 
+
+
+  var parse = list (
+    captured_the, 
+    captured_white, 
+    captured_quick, 
+    captured_white, 
+    captured_brown)
+  ;
+  device pl = pipeline_list parse;
+  var init = Empty[lsexpr_t];
+  captured_test[ll_t] "pipeline lsexpr" pl (b,init);
+end
+
+///////////////////// ambiguous expression 
+begin
+  var sample = "1+2+3-4;";
+  var b = Buffer &sample;
+  device plus = match_string "+";
+  device minus = match_string "-";
+  device semi = match_string ";";
+  device digit = match_regex "[0-9]".RE2;
+
+  typedef ll_t = list[lsexpr_t];
+
+  gen push_entry (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =
+  {
+     var lst = first.1;
+     var b0 = first.0;
+     var sp = b0.sp;
+     var s = sp.string;
+     var p0 = b0.pos;
+     var p1 = last.pos;
+     var lexeme = sp.[p0..<p1].string;
+     println$ "Lexeme = '" + lexeme+"'";
+     var entry = Leaf[string,string] lexeme;
+     var newstate = Cons (entry, lst);
+     return last, newstate;
+  }
+  gen skip_entry (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =
+  {
+    return last, first.1;
+  }
+
+  device cap_plus = leaf_capture[ll_t] (plus,push_entry);
+  device cap_minus = leaf_capture[ll_t] (minus,push_entry);
+  device cap_int = leaf_capture[ll_t] (digit,push_entry);
+  device cap_semi = leaf_capture[ll_t] (semi,push_entry);
+
+  chip expr
+    connector io
+      pin inp: %< (Buffer * ll_t)
+      pin out: %> (Buffer * ll_t)
+  {
+    device add = pipeline_list ([cap_int,cap_plus,expr]);
+    device sub = pipeline_list ([cap_int,cap_minus,expr]);
+    device expr1 = tryall_list ([cap_int, add, sub]);
+    circuit
+      wire io.inp to expr1.inp
+      wire io.out to expr1.out
+    endcircuit
+  }
+  device statement = pipeline_list ([expr, cap_semi]);
+  var init = Empty[lsexpr_t];
+  captured_test[ll_t] "Ambiguous expression" expr (b,init);
+end
 
