@@ -33,7 +33,6 @@ script:
 - cat test.cpp
 - g++ -std=gnu++11 -c -o test.o test.cpp
 - nm test.o | c++filt
-- exit
 - ##XXXFLX_MIN_MEM=100000 make "FBUILD_PARAMS=--build-cc=/usr/bin/gcc --build-cxx=/usr/bin/g++"
 - ##XXXFLX_MIN_MEM=100000 make 
 - make rebuild uproot

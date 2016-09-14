@@ -172,7 +172,7 @@ begin
 
   device id = cident_matcher;
   device eq = match_string("=");
-  device semi = match_string(";");
+  device semi = pipeline_list ([debug_buffer[Buffer] "before semi",match_string(";"), debug_buffer[Buffer] "after semi"]);
   device str = match_string_literal;
   device w = match_white;
   device sym = tryall_list ([id,str]);
@@ -363,8 +363,8 @@ begin
   var b = Buffer &sample;
   device plus = match_string "+";
   device minus = match_string "-";
-  device semi = match_string ";";
   device digit = match_regex "[0-9]".RE2;
+  device semi = pipeline_list ([debug_buffer[Buffer] "before semi",match_string(";"), debug_buffer[Buffer] "after semi"]);
 
   typedef ll_t = list[lsexpr_t];
 
@@ -407,6 +407,6 @@ begin
   }
   device statement = pipeline_list ([expr, cap_semi]);
   var init = Empty[lsexpr_t];
-  captured_test[ll_t] "Ambiguous expression" expr (b,init);
+  captured_test[ll_t] "Ambiguous expression" statement (b,init);
 end
 

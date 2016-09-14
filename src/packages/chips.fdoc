@@ -192,6 +192,14 @@ typedef iopair_t[D,C] = (inp: %<D, out: %>C);
 typedef iochip_t[D,C] = iopair_t[D,C] -> 1 -> 0;
 
 // NOTE: this is currently a one-shot!
+// .. Well sort of!
+// It can do multiple reads if its first chip
+// cycles. If the pipeline drops dead, it will
+// not be reuable.
+//
+// To be reusable, components should not return,
+// instead loop back to reading without writing.
+
 chip pipeline_list[T] (a: list[iochip_t[T,T]])
   connector io
     pin inp: %<T
@@ -210,27 +218,32 @@ chip pipeline_list[T] (a: list[iochip_t[T,T]])
   aux a io.inp;
 }
 
-// NOTE: this is currently a one-shot!
+// This loops, but only by repeatedly spawning
+// the alternative set. The alternatives are restricted
+// to a single read on each iteration. The chips are
+// respawned because they might be locked up, in which
+// case the whole thing locks up.
+//
+// NOTE: if one of the alternatives starts, and does not
+// read the input, everything locks up. This is because
+// the implementation ACTUALLY progresses serially.
+//
+// this COULD be fixed by adding a buffer to the front of
+// each. Actually better, add a one shot source based
+// on the input.
 chip tryall_list[D,C with Str[D]] (a: list[iochip_t[D,C]]) 
   connector io
     pin inp: %<D
     pin out: %>C
 {
-  // get some input and start a source writing it
-//println$ "Try all, reading value";
-  var x = read io.inp;
-//println$ "Try all, got value " + x.str;
-  // now, start each device in turn, connected to
-  // the source and output
-//println$ "Try all writing to " + a.len.str " chips";
-var n = 0;
-  for h in a do
-//println$ "Tryall, making channels and spawning fibre #"+n.str;
-    var lin,lout = mk_ioschannel_pair[D]();
-    spawn_fthread (h (inp=lin, out=io.out));
-//println$ "Tryall, writing value to fibre";
-    write (lout,x);
-    ++n;
+  while true do
+    var x = read io.inp;
+println$ "Tryall read " + x.str;
+    for h in a do
+      var lin,lout = mk_ioschannel_pair[D]();
+      spawn_fthread (h (inp=lin, out=io.out));
+      write (lout,x);
+    done
   done
 }
 
@@ -350,23 +363,25 @@ chip match_string_literal
     pin inp: %<Buffer
     pin out: %>Buffer
 {
+restart:>
   var b = read io.inp;
-  if b.atend return; // end of data
+  if b.atend goto restart; // end of data
   var leadin = b.get;
 //println$ "string literal matcher got char " + leadin.str;
-  if not (leadin in (char '"', char "'")) return;
+  if not (leadin in (char '"', char "'")) goto restart;
 //println$ "Got valid string start .. ";
   b&.next; 
-  if b.atend return;
+  if b.atend goto restart;
   var ch = b.get;
   while ch != leadin do
     b&.next;
-    if b.atend return;
+    if b.atend goto restart;
     ch = b.get;
-    if ch == char "\n" return; // end of line
+    if ch == char "\n" goto restart; // end of line
   done
   b&.next;
   io.out `write` b;  
+  goto restart;
 }
 
 @h2 Capturing wrappers
@@ -387,6 +402,7 @@ chip leaf_capture[T]
     pin inp: %<pardat_t[T]
     pin out: %>pardat_t[T]
 {
+while true do
   var b,pd = read io.inp;
   var rin,win= mk_ioschannel_pair[Buffer]();
   var rout,wout= mk_ioschannel_pair[Buffer]();
@@ -395,17 +411,14 @@ chip leaf_capture[T]
   var b2 = read rout;
   var s = newstate ((b,pd),b2);
   write (io.out,s);
+done
 }
 
 
 
 @h2 Optional matcher.
-Matches given matcher if possible otherwise epsilon.
-This is a full backtracking matcher. The non-epsilon
-case is tried first.
-
-Note as a backtracking device, the epsilon will be tried
-if the device OR its continuation fails.
+Matches given matcher if possible and epsilon.
+Note the epsilon match is ALWAYS output!
 
 @tangle parsers.flx
 chip optional (p:iochip_t[Buffer,Buffer])
@@ -413,14 +426,12 @@ chip optional (p:iochip_t[Buffer,Buffer])
     pin inp: %<Buffer
     pin out: %>Buffer
 {
-  var b = read io.inp;
-  device src = source b;
   device both = tryall_list (
     pipeline_list (oneshot[Buffer],p).list,
     pipeline_list (oneshot[Buffer], debug_buffer[Buffer] "Epsilon").list
   ).list;
   circuit
-    connect src.out, both.inp
+    wire io.inp to both.inp
     wire io.out to both.out
   endcircuit
 }
