@@ -172,7 +172,13 @@ begin
 
   device id = cident_matcher;
   device eq = match_string("=");
-  device semi = pipeline_list ([debug_buffer[Buffer] "before semi",match_string(";"), debug_buffer[Buffer] "after semi"]);
+  device semi = pipeline_list 
+    ([
+      debug_buffer[Buffer] "before semi",
+      match_string(";"), 
+      debug_buffer[Buffer] "after semi"
+    ])
+  ;
   device str = match_string_literal;
   device w = match_white;
   device sym = tryall_list ([id,str]);
@@ -201,7 +207,7 @@ begin
      var p0 = b0.pos;
      var p1 = last.pos;
      var lexeme = sp.[p0..<p1].string;
-     println$ "Lexeme = '" + lexeme+"'";
+     //println$ "Lexeme = '" + lexeme+"'";
      return last,i + 42;
   }
 
@@ -250,7 +256,7 @@ begin
      var p0 = b0.pos;
      var p1 = last.pos;
      var lexeme = sp.[p0..<p1].string;
-     println$ "Lexeme = '" + lexeme+"'";
+     //println$ "Lexeme = '" + lexeme+"'";
      return last,i + 42;
   }
 
@@ -275,7 +281,7 @@ begin
      var p0 = b0.pos;
      var p1 = last.pos;
      var lexeme = sp.[p0..<p1].string;
-     println$ "Lexeme = '" + lexeme+"'";
+     //println$ "Lexeme = '" + lexeme+"'";
      return last,i + 42;
   }
 
@@ -297,10 +303,10 @@ begin
 end
 
 ///////////////////// capture pipeline lsexpr
-//include "std/datatype/lsexpr";
+include "std/datatype/lsexpr";
 //open LS_expr;
 
-typedef lsexpr_t = lsexpr[string,string];
+typedef lsexpr_t = LS_expr::lsexpr[string,string];
 instance Str[lsexpr_t] {
   fun str (x:lsexpr_t) =>
      match x with 
@@ -328,8 +334,8 @@ begin
      var p0 = b0.pos;
      var p1 = last.pos;
      var lexeme = sp.[p0..<p1].string;
-     println$ "Lexeme = '" + lexeme+"'";
-     var entry = Leaf[string,string] lexeme;
+     //println$ "Lexeme = '" + lexeme+"'";
+     var entry = LS_expr::Leaf[string,string] lexeme;
      var newstate = Cons (entry, lst);
      return last, newstate;
   }
@@ -357,14 +363,14 @@ begin
   captured_test[ll_t] "pipeline lsexpr" pl (b,init);
 end
 
-///////////////////// ambiguous expression 
+///////////////////// expression  statement (recognize and tokenise)
 begin
   var sample = "1+2+3-4;";
   var b = Buffer &sample;
   device plus = match_string "+";
   device minus = match_string "-";
   device digit = match_regex "[0-9]".RE2;
-  device semi = pipeline_list ([debug_buffer[Buffer] "before semi",match_string(";"), debug_buffer[Buffer] "after semi"]);
+  device semi = match_string(";"); 
 
   typedef ll_t = list[lsexpr_t];
 
@@ -377,14 +383,10 @@ begin
      var p0 = b0.pos;
      var p1 = last.pos;
      var lexeme = sp.[p0..<p1].string;
-     println$ "Lexeme = '" + lexeme+"'";
-     var entry = Leaf[string,string] lexeme;
+     //println$ "Lexeme = '" + lexeme+"'";
+     var entry = LS_expr::Leaf[string,string] lexeme;
      var newstate = Cons (entry, lst);
      return last, newstate;
-  }
-  gen skip_entry (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =
-  {
-    return last, first.1;
   }
 
   device cap_plus = leaf_capture[ll_t] (plus,push_entry);
@@ -405,8 +407,216 @@ begin
       wire io.out to expr1.out
     endcircuit
   }
-  device statement = pipeline_list ([expr, cap_semi]);
+  device statement = pipeline_list ([expr,cap_semi]);
   var init = Empty[lsexpr_t];
-  captured_test[ll_t] "Ambiguous expression" statement (b,init);
+  captured_test[ll_t] "Expression statement (recognize and tokenize)" statement (b,init);
 end
+///////////////////// expression  statement (parse to AST)
+
+begin
+  var sample = "1+2+3-4;";
+  var b = Buffer &sample;
+  device plus = match_string "+";
+  device minus = match_string "-";
+  device digit = match_regex "[0-9]".RE2;
+  device semi = match_string(";"); 
+
+  typedef ll_t = list[lsexpr_t];
+
+  // SHIFT action
+  gen push_entry (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =
+  {
+     var lst = first.1;
+     var b0 = first.0;
+     var sp = b0.sp;
+     var s = sp.string;
+     var p0 = b0.pos;
+     var p1 = last.pos;
+     var lexeme = sp.[p0..<p1].string;
+     //println$ "Lexeme = '" + lexeme+"'";
+     var entry = LS_expr::Leaf[string,string] lexeme;
+     var newstate = Cons (entry, lst);
+     return last, newstate;
+  }
+
+  device cap_plus = leaf_capture[ll_t] (plus,push_entry);
+  device cap_minus = leaf_capture[ll_t] (minus,push_entry);
+  device cap_int = leaf_capture[ll_t] (digit,push_entry);
+  device cap_semi = leaf_capture[ll_t] (semi,push_entry);
+
+  // pop 3 elements off the parser stack and push
+  // one on; REDUCE action
+  fun ntgroup (lab: string, lst: ll_t): ll_t =>
+    match lst with
+    | l!op!r!rest =>
+    LS_expr::Tree (lab, ([r,l])) ! rest
+  ;
+
+  chip capnt (s:string)
+    connector io
+    pin inp: %< (Buffer * ll_t)
+    pin out: %> (Buffer * ll_t)
+  {
+    while true do
+      var b,lst = read io.inp;
+      write (io.out, (b,ntgroup (s,lst)));
+    done
+  }
+
+  chip expr (rcnt:int)
+    connector io
+      pin inp: %< (Buffer * ll_t)
+      pin out: %> (Buffer * ll_t)
+  {
+    //println$ "Expr level " + rcnt.str;
+    if rcnt > 5 return; // Fail .. will this crap something out??
+    device expr_action = capnt "EXPR";
+    device add = pipeline_list ([expr (rcnt+1),cap_plus, cap_int, capnt "ADD"]);
+    device sub = pipeline_list ([expr (rcnt+1),cap_minus,cap_int, capnt "SUB"]);
+    device expr1 = tryall_list ([cap_int, add, sub]);
+    circuit
+      wire io.inp to expr1.inp
+      wire io.out to expr1.out
+    endcircuit
+  }
+  device statement = pipeline_list ([expr 0,cap_semi]);
+  var init = Empty[lsexpr_t];
+  captured_test[ll_t] "Expression statement (parse)" statement (b,init);
+end
+
+// test a memo chip
+// Given a chip which repeatedly reads an input and writes 0 or more
+// outputs, we aim to produce a memo wrapper chip which records
+// all the outputs for each given input.
+//
+// if the input is records, the chip replays the recording, otherwise
+// it runs the argument chip, collecting the outputs, records them,
+// and emits them
+//
+// For this to work the input type D must be equality comparable at least.
+//
+// Concerning the outputs of type C, we have an issue: what happens if
+// some output is repeated? Do we have to replay the outputs in order?
+//
+// I say yes for the moment.
+//
+// Now, a technical problem: how to gather all outputs?
+// We ONLY have one tool for that, swait.
+
+// Our memo is a global mutable cache so we have to use a pointer
+// to it
+
+// The cache is a list of pairs, the first being a unique D value,
+// and the second being a list of C.
+
+chip replay[D,C with Eq[D]] (memo: &list[D * list[C]]) (a: iochip_t[D,C])
+  connector io
+    pin inp: %<D
+    pin out: %>C
+{
+println$ "Replay running .. ";
+  while true do
+println$ "Replay reading an input";
+    var x = read io.inp;
+    var maybe : opt[list[C]] = find (*memo) x;
+    match maybe with 
+    | Some lst =>
+println$ "Using memo " + x.str;
+      for y in lst perform write (io.out,y);
+    | None =>
+      var rin,win = mk_ioschannel_pair[D]();
+      var rout,wout = mk_ioschannel_pair[C]();
+      spawn_fthread (a (inp=rin,out=wout));
+      var gather = Empty[C];
+      spawn_fthread { 
+        while true do 
+          var x = read rout;
+          gather = x ! gather; // cons onto output store
+        done
+      };
+      write (win, x);
+      swait;
+      gather = rev gather; // reverse list 
+println$ "Saving memo " + x.str + " -> " + gather.str;
+      memo <- (x,gather) ! *memo;
+      for y in gather perform write (io.out,y);
+    endmatch;
+  done
+}
+
+// Now to test it we use a dumb idea: lets make a chip
+// that takes a memo and replays it. The idea, simply,
+// is to then wrap that chip in our reply chip, and it should
+// produce related memo as follows: each actual input
+// generates an entry. If all the keys in the original
+// memo are sent as inputs, we should get the same output memo.
+// If we send an input NOT in the original memo, the output
+// memo will contain additional entries whose key selects
+// an empty list as data.
+
+chip alist [D,C with Eq[D]] (m: list[D * list[C]])
+  connector io
+    pin inp: %<D
+    pin out: %>C
+{
+  while true do
+    var x = read io.inp;
+    var maybe : opt[list[C]]= find m x;
+    match maybe with
+    | None => ; // no output
+    | Some lst => 
+      for y in lst perform write (io.out,y);
+    endmatch;
+  done
+}
+
+// first test alist
+begin
+  var sample = ([0,1,2,3]);
+  var response  = ([
+    (0,Empty[int]),
+    (1,([10])),
+    (2,([20,21])),
+    (3,([30,31,32]))
+  ]);
+  device src = source_from_list sample;
+  device z = alist response;
+  device sink = debug_sink[int] "Result";
+  circuit
+    connect src.out, z.inp
+    connect z.out, sink.inp
+  endcircuit
+  swait;
+end
+
+// now run it through memoiser 
+
+begin
+  var sample = ([0,1,2,3,2,4,2,1]);
+  var response  = ([
+    (0,Empty[int]),
+    (1,([10])),
+    (2,([20,21])),
+    (3,([30,31,32]))
+  ]);
+  var memo = Empty[int * list[int]];
+
+  device target = alist response;
+  device rep = replay &memo target;
+  device src = source_from_list sample;
+  device sink = debug_sink[int] "WResult";
+  circuit
+    connect src.out, rep.inp
+    connect rep.out, sink.inp
+  endcircuit
+  swait;
+  println$ "Memo = " + memo.str;
+  swait;
+  println$ "Memo = " + memo.str;
+end
+
+swait;
+println$ "Done";
+
+
 

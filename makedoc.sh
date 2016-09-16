@@ -17,4 +17,8 @@ pdflatex -shell-escape src/docs/ci.tex
 pdflatex -shell-escape src/docs/ci.tex
 cp ci.pdf ~/Desktop
 
+pdflatex -shell-escape src/docs/coroutines.tex
+pdflatex -shell-escape src/docs/coroutines.tex
+cp coroutines.pdf ~/Desktop
+
 

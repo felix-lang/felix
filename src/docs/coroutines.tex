@@ -1,0 +1,148 @@
+\documentclass{article}
+\usepackage{color}
+\definecolor{bg}{rgb}{0.95,0.95,0.95}
+\definecolor{emphcolor}{rgb}{0.5,0.0,0.0}
+\newcommand{\empha}{\bf\color{emphcolor}}
+\usepackage{parskip}
+\usepackage{minted}
+\usepackage{caption}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amscd}
+\usepackage{makeidx}
+\makeindex
+\usemintedstyle{friendly}
+\setminted{bgcolor=bg,xleftmargin=20pt}
+\usepackage{hyperref}
+\hypersetup{pdftex,colorlinks=true,allcolors=blue}
+\usepackage{hypcap}
+\newcommand*{\fullref}[1]{\hyperref[{#1}]{\autoref*{#1} \nameref*{#1}}}
+\DeclareMathOperator{\quot}{div}
+\DeclareMathOperator{\rmd}{rmd}
+\title{Exchange of Control}
+\author{John Skaller}
+\begin{document}
+\maketitle
+
+\section{Basics}
+This document attempts to discus coroutines and fibres in both an
+abstract setting, and using the particular encoding in the
+Felix programming languages for exposition.
+
+The Felix system provides two well developed common programming
+systems: functions and functional programming, and procedures and
+imperative programming. It also provides the less well understood
+system of communicating sequential coroutines (CSC) which is 
+roughly a non-concurrent version of Hoare's communicating 
+sequential processes (CSP).
+
+
+In Felix, a special procedure call is used to wrap a system
+service call which launches a new {\em fibre}, taking as an argument
+a procedural closure of type \verb%1->0%; that is, a procedure
+accepting the unit argument \verb%()%.
+
+\begin{minted}{felix}
+proc hello() { println$ "Hello"; }
+spawn_fthread hello;
+println$ "Spawn done";
+\end{minted}
+
+The fibre launched by \verb%spawn_fthread% is logical thread
+of control, which shares a single physical thread of control
+with other fibres. 
+
+The procedure \verb%hello% above is {\em spawned} as a {\em coroutine}
+rather than being {\em called} as a {\em subroutine}. The principal
+difference is this: with a subroutine call, the current thread of
+control is temporarily suspended and the called procedure is
+given control. When that procedure completes, it returns control
+to the caller. Thus, the caller and caller form an asymmetrical 
+{\em master/slave} or {\em client/server} relationship, captured
+by the {\em sub} in the term {\em subroutine}.
+
+With the fibre, on the other hand, it is indeterminate whether
+the spawning routine continues execution, or hands control to the
+spawned coroutine: the relationship is a {\em peer/peer} relation
+and is thus symmetrical. The spawner and spawnee are therefore
+consider as equals, captured in the {\em co} in {\em coroutine}.
+
+Unlike threads or processes, however, either the spawner or spawnee
+definitely proceeds first, whilst the other is blocked from
+progressing: there is only one physical thread of control,
+and there is no sharing by pre-emption. The coroutine which
+actually gains control is called the {\em current coroutine}.
+At least within a single pthread there is only ever one current
+coroutine. However there can be a set of coroutines waiting
+to run and these are said to be {\em active}.
+
+Coroutines cooperate by use of a device known as
+a synchronous channel. Synchronous channels support two
+operations: {\em read} and {\em write}. 
+
+We will extend our example to show interleaving of control
+and data transmission facilitated by synchronous channels:
+
+\begin{minted}{felix}
+begin
+  println$ "[main] starts";
+  var rinp,winp = mk_ioschannel_pair[string]();
+  var rout,wout = mk_ioschannel_pair[string]();
+  proc hello() { 
+     println$ "[hello] starts";
+     var x = read rinp;
+     println$ "[hello] read " + x;
+     write (wout, "OK");
+     println$ "[hello] done"; 
+  }
+  spawn_fthread hello;
+  var data = "from main";
+  println$ "[main] writes " + data;
+  write (winp, data);
+  println$ "[main] reads ";
+  var result = read rout; 
+  println$ "[main] done, result " + result;
+end
+\end{minted}
+
+So we have created two channels which can be used to
+read and write a string: the \verb%mk_ioschannel_pair%
+function constructs a single channel but returns two
+copies of it, one typed for reading and the other for
+writing.
+ 
+At the point of spawning,
+either the hello routine starts, or the mainline continues.
+
+If hello starts, then it will do a read and block, because
+there is no data written yet. Then the mainline must
+continue, and it writes the required data.
+
+If the mainline continued on spawning, then it does a write
+and blocks, because there is no read to accept the data.
+Then the hello routine must continnue, and it performs
+the required read.
+
+At this point, we have a matching read and write operation
+on the  first schannel. One of the coroutines, either the 
+read or write, will become the current fibre at this point
+and the other will become active, it is indeterminate
+which.
+
+The way channels work is that a channel has three possible states:
+it is empty, it has a non-empty set of fibres which have made read
+requests, or it has a non-empty set of fibres which have made
+write requests.
+
+If the channel is empty the fibre making the first I/O request is 
+added to the channel. If the channel has readers the fibre making
+a read request will be added to the channel, if the channel has
+writers then if a fibre makes a read request, the one writer
+is removed from the channel and either that writer or the reader
+becomes the current fibre and the other becomes active.
+
+The situation is dual for a write request.
+
+
+
+\end{document}

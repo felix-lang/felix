@@ -15,7 +15,6 @@ chip writeblock[T]
 @h2 Read block.
 Blocks writer.
 @tangle chips.flx
-  union lsexpr[T,L] = | Leaf of T | Tree of L * list[lsexpr[T,L]]; 
 chip readblock[T]
   connector io
     pin inp: %>T
@@ -46,6 +45,15 @@ chip source[T] (a:T)
   while true do
     write (io.out, a);
   done
+}
+
+@h2 Source from list
+@tangle chips.flx
+chip source_from_list[T] (a:list[T])
+  connector io
+    pin out: %>T
+{
+  for y in a perform write (io.out,y);
 }
 
 @h2 Function adaptor.
@@ -86,9 +94,11 @@ chip debug_buffer [T with Str[T]] (tag:string)
     pin out: %>T
 {
   while true do
+    println$ "Debug buffer [" + tag + "] READ";
     var x = read io.inp;
-    println$ "Debug buffer [" + tag + "] " + x.str;
+    println$ "Debug buffer [" + tag + "] read " + x.str;
     write (io.out, x);
+    println$ "Debug buffer [" + tag + "] written " + x.str;
   done
 }
 
@@ -238,7 +248,7 @@ chip tryall_list[D,C with Str[D]] (a: list[iochip_t[D,C]])
 {
   while true do
     var x = read io.inp;
-println$ "Tryall read " + x.str;
+//println$ "Tryall read " + x.str;
     for h in a do
       var lin,lout = mk_ioschannel_pair[D]();
       spawn_fthread (h (inp=lin, out=io.out));
@@ -390,6 +400,21 @@ and a state updater 'newstate' which takes the
 old state and the end position of the scanned lexeme
 and produces a new state, run the scan chip
 to match a lexeme and output the updated state.
+
+The design of this chip is a bit weird and requires
+explanation!
+
+The captured device is expected to have signature (read+ write)+,
+and so must the capturing device. So we cannot just read then
+write and loop, because the captured scanner may fail, and this
+would block the capturer. Instead, we have to spawn a fibre
+that does a write and read on the captured device for every
+input, which will fail if the scanner fails.
+
+We have to make sure the handler parameter is bound to the
+correct x, because it may be suspended when another input
+comes in! So the closure y is formed to ensure capture.
+
 @tangle parsers.flx
 typedef pardat_t[T] = Buffer * T;
 
@@ -403,14 +428,19 @@ chip leaf_capture[T]
     pin out: %>pardat_t[T]
 {
 while true do
-  var b,pd = read io.inp;
-  var rin,win= mk_ioschannel_pair[Buffer]();
-  var rout,wout= mk_ioschannel_pair[Buffer]();
-  spawn_fthread (scan (inp=rin,out=wout));
-  write(win,b);
-  var b2 = read rout;
-  var s = newstate ((b,pd),b2);
-  write (io.out,s);
+  var x = read io.inp;
+  noinline proc handler (var x: pardat_t[T]) () {
+    var b,pd = x;
+    var rin,win= mk_ioschannel_pair[Buffer]();
+    var rout,wout= mk_ioschannel_pair[Buffer]();
+    spawn_fthread (scan (inp=rin,out=wout));
+    write(win,b);
+    var b2 = read rout; // this can block forever if scan fails
+    var s = newstate ((b,pd),b2);
+    write (io.out,s);
+  }
+  var y = handler x;
+  spawn_fthread y;
 done
 }
 
@@ -426,10 +456,10 @@ chip optional (p:iochip_t[Buffer,Buffer])
     pin inp: %<Buffer
     pin out: %>Buffer
 {
-  device both = tryall_list (
-    pipeline_list (oneshot[Buffer],p).list,
-    pipeline_list (oneshot[Buffer], debug_buffer[Buffer] "Epsilon").list
-  ).list;
+  device both = tryall_list ([
+    p,
+    debug_buffer[Buffer] "Epsilon"
+  ]);
   circuit
     wire io.inp to both.inp
     wire io.out to both.out
