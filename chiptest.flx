@@ -316,6 +316,14 @@ instance Str[lsexpr_t] {
 }
 open Str[lsexpr_t];
 
+instance Eq[lsexpr_t] {
+  fun ==: lsexpr_t * lsexpr_t -> bool=
+  | Leaf a, Leaf b => a == b
+  | Tree (a,x), Tree (b,y) => a == b and x == y
+  ; 
+}
+
+
 begin
   var b=Buffer(&sample);
   device match_the = match_regex (RE2 "The");
@@ -514,30 +522,32 @@ chip replay[D,C with Eq[D]] (memo: &list[D * list[C]]) (a: iochip_t[D,C])
     pin inp: %<D
     pin out: %>C
 {
-println$ "Replay running .. ";
+//println$ "Replay running .. ";
   while true do
-println$ "Replay reading an input";
+//println$ "Replay reading an input";
     var x = read io.inp;
     var maybe : opt[list[C]] = find (*memo) x;
     match maybe with 
     | Some lst =>
-println$ "Using memo " + x.str;
+//println$ "Using memo " + x.str;
       for y in lst perform write (io.out,y);
     | None =>
+      var sched = fibre_scheduler ();
       var rin,win = mk_ioschannel_pair[D]();
       var rout,wout = mk_ioschannel_pair[C]();
-      spawn_fthread (a (inp=rin,out=wout));
+      spawn_fthread sched (a (inp=rin,out=wout));
       var gather = Empty[C];
-      spawn_fthread { 
+      spawn_fthread sched { 
         while true do 
           var x = read rout;
           gather = x ! gather; // cons onto output store
         done
       };
-      write (win, x);
-      swait;
+      spawn_fthread sched {write (win, x);};
+      sched.run;
+      delete_fibre_scheduler sched;
       gather = rev gather; // reverse list 
-println$ "Saving memo " + x.str + " -> " + gather.str;
+//println$ "Saving memo " + x.str + " -> " + gather.str;
       memo <- (x,gather) ! *memo;
       for y in gather perform write (io.out,y);
     endmatch;
@@ -615,8 +625,85 @@ begin
   println$ "Memo = " + memo.str;
 end
 
-swait;
-println$ "Done";
+///////////////////// expression  statement (parse to AST, memo)
 
+begin
+  var sample = "1+2+3-4;";
+  var b = Buffer &sample;
+  device plus = match_string "+";
+  device minus = match_string "-";
+  device digit = match_regex "[0-9]".RE2;
+  device semi = match_string(";"); 
+
+  typedef ll_t = list[lsexpr_t];
+
+  // SHIFT action
+  gen push_entry (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =
+  {
+     var lst = first.1;
+     var b0 = first.0;
+     var sp = b0.sp;
+     var s = sp.string;
+     var p0 = b0.pos;
+     var p1 = last.pos;
+     var lexeme = sp.[p0..<p1].string;
+     //println$ "Lexeme = '" + lexeme+"'";
+     var entry = LS_expr::Leaf[string,string] lexeme;
+     var newstate = Cons (entry, lst);
+     return last, newstate;
+  }
+
+  device cap_plus = leaf_capture[ll_t] (plus,push_entry);
+  device cap_minus = leaf_capture[ll_t] (minus,push_entry);
+  device cap_int = leaf_capture[ll_t] (digit,push_entry);
+  device cap_semi = leaf_capture[ll_t] (semi,push_entry);
+
+  // pop 3 elements off the parser stack and push
+  // one on; REDUCE action
+  fun ntgroup (lab: string, lst: ll_t): ll_t =>
+    match lst with
+    | l!op!r!rest =>
+    LS_expr::Tree (lab, ([r,l])) ! rest
+  ;
+
+  chip capnt (s:string)
+    connector io
+    pin inp: %< (Buffer * ll_t)
+    pin out: %> (Buffer * ll_t)
+  {
+    while true do
+      var b,lst = read io.inp;
+      write (io.out, (b,ntgroup (s,lst)));
+    done
+  }
+
+  typedef memo_key_t = Buffer * ll_t;
+  typedef memo_data_t = memo_key_t;
+  typedef memo_pair_t = memo_key_t * list[memo_data_t];
+  typedef memo_t = list[memo_pair_t];
+ 
+  var memo : memo_t = Empty [memo_pair_t];
+
+  chip expr (rcnt:int)
+    connector io
+      pin inp: %< (Buffer * ll_t)
+      pin out: %> (Buffer * ll_t)
+  {
+    //println$ "Expr level " + rcnt.str;
+    if rcnt > 200 return; // Fail .. will this crap something out??
+    device expr_action = capnt "EXPR";
+    device mexpr = replay[memo_key_t, memo_data_t] &memo (expr (rcnt+1));
+    device add = pipeline_list ([mexpr,cap_plus, cap_int, capnt "ADD"]);
+    device sub = pipeline_list ([mexpr,cap_minus,cap_int, capnt "SUB"]);
+    device expr1 = tryall_list ([cap_int, add, sub]);
+    circuit
+      wire io.inp to expr1.inp
+      wire io.out to expr1.out
+    endcircuit
+  }
+  device statement = pipeline_list ([expr 0,cap_semi]);
+  var init = Empty[lsexpr_t];
+  captured_test[ll_t] "Expression statement (parse, memo)" statement (b,init);
+end
 
 

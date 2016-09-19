@@ -297,6 +297,12 @@ instance Str[Buffer] {
   fun str (b:Buffer) => "@"+b.pos.str;
 }
 
+// hack, ignore underlying data.. FIXME
+instance Eq[Buffer] {
+  fun == (a:Buffer, b:Buffer) => a.pos == b.pos;
+}
+
+
 @h2 A string matcher.
 
 @tangle parsers.flx
