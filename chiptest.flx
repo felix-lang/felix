@@ -699,11 +699,13 @@ begin
   var expr_memo : memo_t = Empty [memo_pair_t];
   var factor_memo : memo_t = Empty [memo_pair_t];
 
+  var expr_cnt = 0;
   chip expr (rcnt:int)
     connector io
       pin inp: %< (Buffer * ll_t)
       pin out: %> (Buffer * ll_t)
   {
+   ++expr_cnt;
 //println$ "Expr " + rcnt.str;
     if rcnt > 200 return; // Fail .. will this crap something out??
     device mexpr = replay[memo_key_t, memo_data_t] "expr" &expr_memo (expr (rcnt+1));
@@ -716,11 +718,13 @@ begin
     endcircuit
   }
 
+  var factor_cnt=0;
   chip factor (rcnt:int)
     connector io
       pin inp: %< (Buffer * ll_t)
       pin out: %> (Buffer * ll_t)
   {
+    ++factor_cnt;
 //println$ "Factor " + rcnt.str;
     if rcnt > 200 return; // Fail .. will this crap something out??
     device mfactor = replay[memo_key_t, memo_data_t] "factor" &factor_memo (factor (rcnt+1));
@@ -739,6 +743,7 @@ begin
   captured_test[ll_t] "Expression2 statement (parse, memo)" statement (b,init);
   var tend = time();
   println$ f"elapsed time %3.3f" (tend - tstart);
+  println$ "exprcnt=" + expr_cnt.str +", factorcnt=" + factor_cnt.str;
 end
 
 

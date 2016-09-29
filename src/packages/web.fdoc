@@ -1880,7 +1880,7 @@ class SimpleConfig {
     print$ "[Config Data]\n" + config_text+"[End Config Data]\n";
     var config = Cons(('INSTALL_ROOT',#Config::std_config.FLX_SHARE_DIR.[to -6]),
                       Empty[string^2]);
-    iter (proc (line:string) {config = config + parse(line);})  
+    iter (proc (line:string) {config = config + xparse(line);})  
              (split(str(config_text),"\n"));
     return apply_param_vars(config);
   }    
@@ -1935,7 +1935,7 @@ class SimpleConfig {
   fun apply_param_vars_to (par:list[string*string],l:list[string]):list[string] =>
     (map (fun (s:string) => apply_param_vars_to (par,s)) (l));
 
-  private fun parse(line:string):list[string*string] =>
+  private fun xparse(line:string):list[string*string] =>
     if startswith (strip line) (char '#') then
       Empty[string*string]
     else

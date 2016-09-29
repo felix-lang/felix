@@ -20,5 +20,12 @@ cp ci.pdf ~/Desktop
 pdflatex -shell-escape src/docs/coroutines.tex
 pdflatex -shell-escape src/docs/coroutines.tex
 cp coroutines.pdf ~/Desktop
+#
+pdflatex -shell-escape src/docs/modern_programming.tex
+pdflatex -shell-escape src/docs/modern_programming.tex
+makeindex modern_programming
+makeglossaries modern_programming
+pdflatex -shell-escape src/docs/modern_programming.tex
+cp modern_programming.pdf ~/Desktop
 
 
