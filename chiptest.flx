@@ -689,8 +689,7 @@ begin
     done
   }
 
-  fun binop (s:string) => capnt_gRESULT: (@8, list(;, SUB(list(ADD(list(ADD(list(1, 2)), 3)), 4))))
-elapsed time 0.221eneral s reduce_binop;
+  fun binop (s:string) => capnt_general s reduce_binop;
 
   typedef memo_key_t = Buffer * ll_t;
   typedef memo_data_t = memo_key_t;
