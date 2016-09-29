@@ -1761,6 +1761,7 @@ syntax felix {
     patterns,
     cbind,
     regexps,
+    parsers,
     macros,
     plugins,
     debug,
