@@ -746,4 +746,233 @@ begin
   println$ "exprcnt=" + expr_cnt.str +", factorcnt=" + factor_cnt.str;
 end
 
+///////////////////// deref test
+begin
+  var tstart = time();
+  var sample = "1-2*3/7-3;";
+  var b = Buffer &sample;
+  device digit = match_regex "[0-9]".RE2;
+
+  device cap_int = leaf_capture[Buffer,ll_t] (digit,push_entry);
+
+  // pop 3 elements off the parser stack and push
+  // one on; REDUCE action
+  fun reduce_binop (lab: string) (lst: ll_t): ll_t =>
+    match lst with
+    | l!op!r!rest =>
+    LS_expr::Tree (lab, ([r,l])) ! rest
+  ;
+
+  chip capnt_general (s:string) (ntgroup: string -> ll_t -> ll_t)
+    connector io
+    pin inp: %< (Buffer * ll_t)
+    pin out: %> (Buffer * ll_t)
+  {
+    while true do
+      var b,lst = read io.inp;
+      write (io.out, (b,ntgroup s lst));
+    done
+  }
+
+  fun binop (s:string) => capnt_general s reduce_binop;
+
+  typedef io_t = Buffer * ll_t;
+  typedef parser_t = iochip_t[io_t,io_t];
+
+  parser add : parser_t =  &factor  "+" &expr {binop "ADD"};
+  parser sub : parser_t =  &factor  "-" &expr {binop "SUB"};
+  parser expr : parser_t = add | sub | &factor;
+  parser mul : parser_t = cap_int "*" &factor {binop "MUL"};
+  parser div : parser_t = cap_int "/"  &factor {binop "DIV"};
+  parser factor : parser_t = mul | div | cap_int;
+
+  parser statement : parser_t = expr ";";
+  var init = Empty[lsexpr_t];
+  captured_test[ll_t] "deref test" statement (b,init);
+  var tend = time();
+  println$ f"elapsed time %3.3f" (tend - tstart);
+end
+
+///////////////////// EBNF test
+begin
+  var tstart = time();
+  var sample = "1-2*3/F(7-3);";
+  var b = Buffer &sample;
+  device digit = match_regex "[0-9]".RE2;
+  device letter= match_regex "[A-Z]".RE2;
+
+  device cap_int = leaf_capture[Buffer,ll_t] (digit,push_entry);
+  device cap_letter = leaf_capture[Buffer,ll_t] (letter,push_entry);
+
+  // pop 3 elements off the parser stack and push
+  // one on; REDUCE action
+  fun reduce_binop (lab: string) (lst: ll_t): ll_t =>
+    match lst with
+    | l!op!r!rest =>
+    LS_expr::Tree (lab, ([r,l])) ! rest
+  ;
+
+  // pop 3 elements off the parser stack and push
+  // one on; REDUCE action
+  fun reduce_middle (lab: string) (lst: ll_t): ll_t =>
+    match lst with
+    | l!op!r!rest =>
+    LS_expr::Tree (lab, ([op])) ! rest
+  ;
+
+  fun reduce_apply(lab: string) (lst: ll_t): ll_t =>
+    match lst with
+    | l!r!rest =>
+    LS_expr::Tree (lab, ([l,r])) ! rest
+  ;
+
+
+  chip capnt_general (s:string) (ntgroup: string -> ll_t -> ll_t)
+    connector io
+    pin inp: %< (Buffer * ll_t)
+    pin out: %> (Buffer * ll_t)
+  {
+    while true do
+      var b,lst = read io.inp;
+      write (io.out, (b,ntgroup s lst));
+    done
+  }
+
+  fun binop (s:string) => capnt_general s reduce_binop;
+  fun middle (s:string) => capnt_general s reduce_middle;
+  fun application (s:string) => capnt_general s reduce_apply;
+
+  typedef io_t = Buffer * ll_t;
+  typedef parser_t = iochip_t[io_t,io_t];
+
+  parser add : parser_t =  &factor  "+" &expr {binop "ADD"};
+  parser sub : parser_t =  &factor  "-" &expr {binop "SUB"};
+  parser expr : parser_t = add | sub | &factor;
+  parser mul : parser_t = &appl "*" &factor {binop "MUL"};
+  parser div : parser_t = &appl "/"  &factor {binop "DIV"};
+  parser factor : parser_t = mul | div | &appl;
+  parser appl : parser_t = &atom &atom {application "APPLY"} | &atom;
+  parser atom : parser_t = cap_int | cap_letter | "(" &expr ")" {middle "GROUP"};
+
+
+  parser statement : parser_t = expr ";";
+  var init = Empty[lsexpr_t];
+  captured_test[ll_t] "EBNF test" statement (b,init);
+  var tend = time();
+  println$ f"elapsed time %3.3f" (tend - tstart);
+end
+
+///////////////////// EBNF parser
+begin
+  var tstart = time();
+  var sample = 
+    """
+    silly = A B 'hello' `regularity` C | X Y 'fred';
+    X = X Y | X;
+    END
+    """;
+  var b = Buffer &sample;
+
+  chip capnt_general (s:string) (ntgroup: string -> ll_t -> ll_t)
+    connector io
+    pin inp: %< (Buffer * ll_t)
+    pin out: %> (Buffer * ll_t)
+  {
+    while true do
+      var b,lst = read io.inp;
+      write (io.out, (b,ntgroup s lst));
+    done
+  }
+
+  gen push_mark (s:string) (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =>
+    last, LS_expr::Leaf[string,string] s ! first.1 
+  ;
+
+  gen pop_mark (s:string) (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =
+  {
+    var lst = first.1;
+    var cap = Empty[lsexpr_t];
+    fun aux (x:ll_t) (y:ll_t) =>
+      match x with
+      | Empty => fun_fail[Buffer * ll_t] ("pop_mark can't find mark '"+s+"'")
+      | Cons (h,t) =>
+        match h with
+        | Leaf lab when lab == s =>
+         last, LS_expr::Tree[string,string] (s,y) ! t 
+        | _ => aux t (h!y)
+        endmatch
+      endmatch
+    ;
+    return aux lst cap;
+  }
+
+  fun reduce_binop (lab: string) (lst: ll_t): ll_t =>
+    match lst with
+    | l!op!r!rest =>
+    LS_expr::Tree (lab, ([r,l])) ! rest
+  ;
+
+  fun pop_stack (i:int) (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =
+  {
+    var lst = first.1;
+    fun aux (j:int) (stk:ll_t) : ll_t => 
+      if j == 0 then stk 
+      else 
+        match stk with 
+        | Empty => fun_fail[ll_t] ("pop empty parser stack")
+        | h ! t => aux (j - 1) t
+        endmatch
+      endif
+    ;
+    return last,aux i lst;
+  }
+
+  fun reduce_terminal (lab: string) (lst: ll_t): ll_t =>
+    match lst with
+    | h ! t => LS_expr::Tree[string,string] (lab,([h])) ! t
+  ;
+  fun terminal (s:string) => capnt_general s reduce_terminal;
+
+  fun binop (s:string) => capnt_general s reduce_binop;
+
+  device begin_seq = leaf_capture[Buffer,ll_t] (epsilon[Buffer], push_mark "SEQ");
+  device end_seq = leaf_capture[Buffer,ll_t] (epsilon[Buffer], pop_mark "SEQ");
+  device begin_alt = leaf_capture[Buffer,ll_t] (epsilon[Buffer], push_mark "ALT");
+  device end_alt = leaf_capture[Buffer,ll_t] (epsilon[Buffer], pop_mark "ALT");
+  device begin_stmts = leaf_capture[Buffer,ll_t] (epsilon[Buffer], push_mark "GRAMMAR");
+  device end_stmts = leaf_capture[Buffer,ll_t] (epsilon[Buffer], pop_mark "GRAMMAR");
+
+
+  device pop = leaf_capture[Buffer,ll_t] (epsilon[Buffer], pop_stack 1);
+
+  device skip_white = leaf_capture[Buffer,ll_t] (match_white,skip_entry);
+  device cap_str = leaf_capture[Buffer,ll_t] (match_string_literal,push_entry);
+  device cap_reg = leaf_capture[Buffer,ll_t] (match_string_literal_backquote,push_entry);
+  device cap_name = leaf_capture[Buffer,ll_t] (cident_matcher,push_entry);
+  device cap_eps = leaf_capture[Buffer,ll_t] (match_string "\\eps",push_entry);
+ 
+  typedef io_t = Buffer * ll_t;
+  typedef parser_t = iochip_t[io_t,io_t];
+ 
+  parser str = skip_white cap_str {terminal "STRING"};
+  parser reg = skip_white cap_reg {terminal "REGEX"};
+  parser nt = skip_white cap_name;
+  parser eps = skip_white cap_eps;
+  parser vbar = skip_white "|" pop;
+
+  parser sym = str | reg | nt | eps;
+  parser xsyms : parser_t = sym &xsyms | sym;
+  parser syms = begin_seq xsyms end_seq; 
+  parser xalts : parser_t = syms vbar &xalts | syms;
+  parser alts = begin_alt xalts end_alt;
+
+  parser statement : parser_t = skip_white nt skip_white "=" alts {binop "DEFINE"} skip_white ";" pop;
+  parser xstmts : parser_t = statement &xstmts | statement;
+  parser stmts = begin_stmts xstmts end_stmts skip_white "END" pop;
+
+  var init = Empty[lsexpr_t];
+  captured_test[ll_t] "EBNF parser test" stmts (b,init);
+  var tend = time();
+  println$ f"elapsed time %3.3f" (tend - tstart);
+end
 

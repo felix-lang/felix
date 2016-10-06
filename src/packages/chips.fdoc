@@ -258,6 +258,38 @@ chip tryall_list[D,C with Str[D]] (a: list[iochip_t[D,C]])
   done
 }
 
+@h2 Deref
+This version spawns a clone of p for each input. 
+In particular it delays the spawn until there is an input.
+@tangle chips.flx
+chip deref_each_read[D,C] (p:&iochip_t[D,C]) 
+  connector io
+    pin inp: %<D
+    pin out: %>C
+{
+  while true do
+    var x = read io.inp;
+    var rinp,rout = mk_ioschannel_pair[D]();
+    spawn_fthread ((*p) (inp=rinp, out=io.out));
+    write (rout,x);
+  done
+}
+
+chip deref_first_read[D,C] (p:&iochip_t[D,C]) 
+  connector io
+    pin inp: %<D
+    pin out: %>C
+{
+  var x = read io.inp;
+  var rinp,rout = mk_ioschannel_pair[D]();
+  spawn_fthread ((*p) (inp=rinp, out=io.out));
+  write (rout,x);
+  while true do
+    x = read io.inp;
+    write (rout,x);
+  done
+}
+
 @h1 Parsing
 Chips to providing parsing functions.
 
@@ -315,7 +347,7 @@ instance Str[lsexpr_t] {
   fun str (x:lsexpr_t) =>
      match x with 
       | Leaf a => str a
-      | Tree (a,b) => str a + "(" + str b  + ")"
+      | Tree (a,b) => str a + "(" + List::catmap ","  (str of lsexpr_t) b  + ")"
     ;
 }
 open Str[lsexpr_t];
@@ -446,6 +478,33 @@ restart:>
   io.out `write` b;  
   goto restart;
 }
+
+chip match_string_literal_backquote
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+restart:>
+  var b = read io.inp;
+  if b.atend goto restart; // end of data
+  var leadin = b.get;
+//println$ "string literal matcher got char " + leadin.str;
+  if leadin != char '`' goto restart;
+//println$ "Got valid string start .. ";
+  b&.next; 
+  if b.atend goto restart;
+  var ch = b.get;
+  while ch != leadin do
+    b&.next;
+    if b.atend goto restart;
+    ch = b.get;
+    if ch == char "\n" goto restart; // end of line
+  done
+  b&.next;
+  io.out `write` b;  
+  goto restart;
+}
+
 
 @h2 Capturing wrappers
 Given a Buffer->Buffer scanner chip 'scan',
@@ -582,8 +641,15 @@ syntax parsers {
   //$ Define a non-terminal
   stmt := "parser" sdeclname "=" sparser[palt_pri] ";" =># 
     """
-    `(ast_val_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
+    `(ast_var_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
     """;
+
+  //$ Define a non-terminal
+  stmt := "parser" sdeclname ":" stypeexpr "=" sparser[palt_pri] ";" =># 
+    """
+    `(ast_var_decl ,_sr ,(first _2) ,(second _2) (some ,_4) (some ,_6))
+    """;
+
 
   //$ Inline regular expression.
   //$ Can be used anywhere in Felix code.
@@ -631,15 +697,21 @@ syntax parsers {
     """`(ast_apply ,_sr ( ,(noi 'string_parser) ,_1)) """
   ;
 
-  //$ The regex psuedo function.
-  //$ Treat the argument Felix expression of type Regdef::regex
-  //$ as a regular expression.
   private sparser[patom_pri] :=  "{" sexpr "}" =># "_2";
 
   //$ Identifier.
-  //$ Must name a previously defined variable of type Regdef:;regex.
-  //$ For example, the LHS of a regdef binder.
   private sparser[patom_pri] := sname=># "`(ast_name ,_sr ,_1 ())";
+
+  //$ Indirection
+  //$ For example, the LHS of a regdef binder.
+  private sparser[patom_pri] := "&" sname=># """
+    `(ast_apply ,_sr 
+      (
+        ,(noi 'deref_first_read)
+        (ast_ref ,_sr ,(nos _2))
+      )
+    )
+  """;
  
 }
 
