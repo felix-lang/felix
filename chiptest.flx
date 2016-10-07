@@ -954,13 +954,13 @@ begin
   typedef io_t = Buffer * ll_t;
   typedef parser_t = iochip_t[io_t,io_t];
  
-  parser str = skip_white cap_str {terminal "STRING"};
+  parser strng = skip_white cap_str {terminal "STRING"};
   parser reg = skip_white cap_reg {terminal "REGEX"};
   parser nt = skip_white cap_name;
   parser eps = skip_white cap_eps;
   parser vbar = skip_white "|" pop;
 
-  parser sym = str | reg | nt | eps;
+  parser sym = strng | reg | nt | eps;
   parser xsyms : parser_t = sym &xsyms | sym;
   parser syms = begin_seq xsyms end_seq; 
   parser xalts : parser_t = syms vbar &xalts | syms;
@@ -974,5 +974,90 @@ begin
   captured_test[ll_t] "EBNF parser test" stmts (b,init);
   var tend = time();
   println$ f"elapsed time %3.3f" (tend - tstart);
+
+  // Do it again
+
+  var parse_tree : list[lsexpr_t];
+  begin
+    var b = Buffer &sample;
+    var startinp,startout= mk_ioschannel_pair[Buffer * list[lsexpr_t]]();
+    var endinp,endout= mk_ioschannel_pair[Buffer * list[lsexpr_t]]();
+    circuit
+      wire startinp to stmts.inp
+      wire endout to stmts.out
+    endcircuit
+    write (startout,(b,init));
+    var res = read endinp; // we only want the first one :)
+    parse_tree = res.1;
+  end
+
+  union sym_t = 
+  | Regex of string
+  | Strng of string
+  | Nonterminal of string
+  | Epsilon
+  ;
+
+  instance Str[sym_t] { 
+    fun str(x:sym_t)=> x._strr;
+  }
+
+  typedef ast_t = list[list[sym_t]];
+
+  // translate the "parse tree" into an AST
+  var gramlib = strdict[ast_t] ();
+
+  fun map_sym (sym: lsexpr_t) => match sym with 
+    | Tree ("STRING",Cons (Leaf lexeme, Empty)) => Strng lexeme
+    | Tree ("REGEX",Cons (Leaf lexeme, Empty)) => Regex lexeme
+    | Leaf name => Nonterminal name
+  ;
+
+  fun xlat_alt (alt: lsexpr_t) : list[sym_t] = {
+    match alt with
+    | Tree ("SEQ", syms) => 
+      println$ "Got production symbols " + syms.str;
+      var terms = map map_sym syms;
+      return terms;
+
+    | _ =>  
+      println alt;
+      proc_fail  "Expected SEQ";
+    endmatch;
+  }
+
+  fun xlat_alts (alts: list[lsexpr_t]) : ast_t =>
+    map xlat_alt alts
+  ;
+    
+  proc xlat_dfn (dfn: lsexpr_t) {
+    match dfn with
+    | Leaf _ => proc_fail  "Not expecting leaf";
+    | Tree 
+      (
+        "DEFINE", 
+        (Leaf name ! Tree ("ALT",alts) ! Empty)
+      ) 
+      =>
+      if gramlib.haskey name perform proc_fail ("Library already contains " + name);
+      var v = xlat_alts alts;
+      gramlib.add name v;
+      println$ "Defined " + name;
+    | _ => proc_fail  "Expecting DEFINE(name,ALT(..))";
+    endmatch;
+  }
+  proc xlat_dfns (dfns: list[lsexpr_t]) {
+    iter xlat_dfn dfns;
+  }
+  proc xlat_result (x:list[lsexpr_t]) {
+    match x with
+    | Leaf _ ! _ => proc_fail  "Not expecting leaf";
+    | Tree ("GRAMMAR",dfns) ! _ => xlat_dfns dfns;
+    endmatch;
+  }
+
+  xlat_result parse_tree;
+  println$ "----- LIBRARY -------";
+  println gramlib;
 end
 
