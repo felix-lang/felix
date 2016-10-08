@@ -1,3 +1,4 @@
+include "std/strings/recognisers";
 include "std/strings/parsers";
 include "std/control/chips";
 

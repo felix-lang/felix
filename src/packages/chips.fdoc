@@ -1,6 +1,4 @@
 @tangler chips.flx      = share/lib/std/control/chips.flx
-@tangler parsers.flx = share/lib/std/strings/parsers.flx
-@tangler parsers.fsyn = share/lib/std/strings/parsers.fsyn
 
 @title Chips.
 @h1 Standard components
@@ -289,281 +287,10 @@ chip deref_first_read[D,C] (p:&iochip_t[D,C])
     write (rout,x);
   done
 }
-
-@h1 Parsing
-Chips to providing parsing functions.
-
-@h2 Buffer type
-Parsers work on an array of chars in memory. We use a Google
-StringPiece to represent it. 
-
-@tangle parsers.flx
-struct Buffer
-{
-  sp: StringPiece;
-  pos: int;
-
-  fun atend => self.pos >= self.sp.len.int;
-
-  fun get => 
-    if self.atend then char "" 
-    else (self.sp.data) . (self.pos)
-  ;
-
-  proc next { 
-    if not self*.atend do
-      pre_incr self.pos;
-    done
-  }
-
-  fun advanced =>
-    if self.atend then self
-    else Buffer (self.sp, self.pos + 1)
-  ;
-}
-
-ctor Buffer (p:&string) =>
-  Buffer (p.StringPiece,0)
-;
-
-instance Str[Buffer] {
-  fun str (b:Buffer) => "@"+b.pos.str;
-}
-
-// hack, ignore underlying data.. FIXME
-instance Eq[Buffer] {
-  fun == (a:Buffer, b:Buffer) => a.pos == b.pos;
-}
-
-@h2 Parser State 
-Uses LS-expr type.
-@tangle parsers.flx
-
-///////////////////// capture pipeline lsexpr
-include "std/datatype/lsexpr";
-
-typedef lsexpr_t = LS_expr::lsexpr[string,string];
-instance Str[lsexpr_t] {
-  fun str (x:lsexpr_t) =>
-     match x with 
-      | Leaf a => str a
-      | Tree (a,b) => str a + "(" + List::catmap ","  (str of lsexpr_t) b  + ")"
-    ;
-}
-open Str[lsexpr_t];
-
-instance Eq[lsexpr_t] {
-  fun ==: lsexpr_t * lsexpr_t -> bool=
-  | Leaf a, Leaf b => a == b
-  | Tree (a,x), Tree (b,y) => a == b and x == y
-  ; 
-}
-
-typedef ll_t = list[lsexpr_t];
-
-// parser SHIFT action
-gen push_entry (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =
-{
-   var lst = first.1;
-   var b0 = first.0;
-   var sp = b0.sp;
-   var s = sp.string;
-   var p0 = b0.pos;
-   var p1 = last.pos;
-   var lexeme = sp.[p0..<p1].string;
-   //println$ "Lexeme = '" + lexeme+"'";
-   var entry = LS_expr::Leaf[string,string] lexeme;
-   var newstate = Cons (entry, lst);
-   return last, newstate;
-}
-
-gen skip_entry (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =
-{
-  return last, first.1;
-}
-
-@h2 A string matcher.
-
-@tangle parsers.flx
-chip match_string (s:string)
-  connector io
-    pin inp: %<Buffer
-    pin out: %>Buffer
-{
-nextmatch:>
-  var b = read io.inp;
-  for i in 0..< s.len.int do 
-    if s.[i] != b.get goto nextmatch;
-    b&.next;
-  done
-  write (io.out, b);
-  goto nextmatch;  
-}
-
-@h2 Whitespace matcher.
-@tangle parsers.flx
-chip match_white 
-  connector io
-    pin inp: %<Buffer
-    pin out: %>Buffer
-{
-  while true do
-    var b = read io.inp;
-    while not b.atend and b.get <= char ' ' perform b&.next;
-    write (io.out,b);
-  done
-}
-
-@h2 regex matcher.
-
-@tangle parsers.flx
-chip match_regex (r:RE2)
-  connector io
-    pin inp: %<Buffer
-    pin out: %>Buffer
-{
-  while true do
-    var b = read io.inp;
-//println$ "Match regex " + r.str;
-    var matched = varray[StringPiece] (1uz,StringPiece());
-    var result = Match(r,b.sp,b.pos,ANCHOR_START,matched.stl_begin,1);
-//println$ "Match result " + result.str;
-    if result do
-//println$ "Matched OK, match len = " + matched.0.len.str;
-      var b2 = Buffer (b.sp,b.pos+matched.0.len.int);
-//println$ "Writing buffer = " + b2.str;
-      write(io.out,b2);
-    done
-  done
-}
-
-@h2 Identifier matcher.
-For C like identifiers.
-
-@tangle parsers.flx
-device cident_matcher = match_regex (RE2 "[A-Za-z][A-Za-z0-9_]*");
-
-@h2 Integer matcher.
-For plain identifiers.
-
-@tangle parsers.flx
-device decimal_integer_matcher = match_regex (RE2 "[0-9]+");
-
-@h2 String Literal matcher.
-One shot. Simple, matches single or double quoted
-string not spanning lines, with no escape codes, 
-@tangle parsers.flx
-chip match_string_literal 
-  connector io
-    pin inp: %<Buffer
-    pin out: %>Buffer
-{
-restart:>
-  var b = read io.inp;
-  if b.atend goto restart; // end of data
-  var leadin = b.get;
-//println$ "string literal matcher got char " + leadin.str;
-  if not (leadin in (char '"', char "'")) goto restart;
-//println$ "Got valid string start .. ";
-  b&.next; 
-  if b.atend goto restart;
-  var ch = b.get;
-  while ch != leadin do
-    b&.next;
-    if b.atend goto restart;
-    ch = b.get;
-    if ch == char "\n" goto restart; // end of line
-  done
-  b&.next;
-  io.out `write` b;  
-  goto restart;
-}
-
-chip match_string_literal_backquote
-  connector io
-    pin inp: %<Buffer
-    pin out: %>Buffer
-{
-restart:>
-  var b = read io.inp;
-  if b.atend goto restart; // end of data
-  var leadin = b.get;
-//println$ "string literal matcher got char " + leadin.str;
-  if leadin != char '`' goto restart;
-//println$ "Got valid string start .. ";
-  b&.next; 
-  if b.atend goto restart;
-  var ch = b.get;
-  while ch != leadin do
-    b&.next;
-    if b.atend goto restart;
-    ch = b.get;
-    if ch == char "\n" goto restart; // end of line
-  done
-  b&.next;
-  io.out `write` b;  
-  goto restart;
-}
-
-
-@h2 Capturing wrappers
-Given a Buffer->Buffer scanner chip 'scan',
-and a state updater 'newstate' which takes the
-old state and the end position of the scanned lexeme
-and produces a new state, run the scan chip
-to match a lexeme and output the updated state.
-
-The design of this chip is a bit weird and requires
-explanation!
-
-The captured device is expected to have signature (read+ write)+,
-and so must the capturing device. So we cannot just read then
-write and loop, because the captured scanner may fail, and this
-would block the capturer. Instead, we have to spawn a fibre
-that does a write and read on the captured device for every
-input, which will fail if the scanner fails.
-
-We have to make sure the handler parameter is bound to the
-correct x, because it may be suspended when another input
-comes in! So the closure y is formed to ensure capture.
-
-@tangle parsers.flx
-typedef pardat_t[B,T] = B * T;
-
-chip leaf_capture[B,T] 
-  (
-    scan: iochip_t[B,B],
-    newstate: pardat_t[B,T] * B -> pardat_t[B,T]
-  )
-  connector io
-    pin inp: %<pardat_t[B,T]
-    pin out: %>pardat_t[B,T]
-{
-while true do
-  var x = read io.inp;
-  noinline proc handler (var x: pardat_t[B,T]) () {
-    var b,pd = x;
-    var rin,win= mk_ioschannel_pair[B]();
-    var rout,wout= mk_ioschannel_pair[B]();
-    spawn_fthread (scan (inp=rin,out=wout));
-    write(win,b);
-    var b2 = read rout; // this can block forever if scan fails
-    var s = newstate ((b,pd),b2);
-    write (io.out,s);
-  }
-  var y = handler x;
-  spawn_fthread y;
-done
-}
-
-fun string_parser (s:string) =>
-  leaf_capture (match_string s,push_entry)
-;
-
 @h2 Epsilon
 Identity chip.
 
-@tangle parsers.flx
+@tangle chips.flx
 chip epsilon[T]
   connector io
    pin inp: %<T
@@ -578,7 +305,7 @@ chip epsilon[T]
 Matches given matcher if possible and epsilon.
 Note the epsilon match is ALWAYS output!
 
-@tangle parsers.flx
+@tangle chips.flx
 chip optional[T] (p:iochip_t[T,T])
   connector io
     pin inp: %<T
@@ -595,7 +322,7 @@ chip optional[T] (p:iochip_t[T,T])
 }
 
 @h2 One or more matcher
-@tangle parsers.flx
+@tangle chips.flx
 
 chip oneormore_matcher[T] (A:iochip_t[T,T]) 
 connector chans 
@@ -612,7 +339,7 @@ connector chans
 }
 
 @h2 Zero or more matcher
-@tangle parsers.flx
+@tangle chips.flx
 
 chip zeroormore_matcher[T] (A:iochip_t[T,T]) 
 connector chans 
@@ -626,93 +353,4 @@ connector chans
    wire chans.out to Ass.out
  endcircuit
 }
-
-@h1 Syntax
-@tangle parsers.fsyn
-
-syntax parsers {
-  priority 
-    palt_pri <
-    pseq_pri <
-    ppostfix_pri <
-    patom_pri
-  ;
- 
-  //$ Define a non-terminal
-  stmt := "parser" sdeclname "=" sparser[palt_pri] ";" =># 
-    """
-    `(ast_var_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
-    """;
-
-  //$ Define a non-terminal
-  stmt := "parser" sdeclname ":" stypeexpr "=" sparser[palt_pri] ";" =># 
-    """
-    `(ast_var_decl ,_sr ,(first _2) ,(second _2) (some ,_4) (some ,_6))
-    """;
-
-
-  //$ Inline regular expression.
-  //$ Can be used anywhere in Felix code.
-  //$ Returns a a value of type Regdef::regex.
-  x[sapplication_pri] := "parse" "(" sparser[palt_pri] ")" =># "_3";
-
-  //$ Alternatives.
-  private sparser[palt_pri] := sparser[>palt_pri] ("|" sparser[>palt_pri])+ =># 
-    """`(ast_apply ,_sr ( ,(noi 'tryall_list) 
-      (ast_apply ,_sr (,(noi 'list) ,(cons _1 (map second _2))))))"""
-  ;
-
-  //$ Sequential concatenation.
-  private sparser[pseq_pri] := sparser[>pseq_pri] (sparser[>pseq_pri])+ =># 
-    """`(ast_apply ,_sr ( ,(noi 'pipeline_list)
-      (ast_apply ,_sr (,(noi 'list) ,(cons _1 _2)))))"""
-  ;
-
-
-  //$ Postfix star (*).
-  //$ Kleene closure: zero or more repetitions.
-  private sparser[ppostfix_pri] := sparser[ppostfix_pri] "*" =># 
-    """`(ast_apply ,_sr ( ,(noi 'zeroormore_matcher) ,_1 ))"""
-  ;
-
-  //$ Postfix plus (+).
-  //$ One or more repetitions.
-  private sparser[ppostfix_pri] := sparser[ppostfix_pri] "+" =>#
-    """`(ast_apply ,_sr ( ,(noi 'oneormore_matcher) ,_1 ))"""
-  ;
-
-  //$ Postfix question mark (?).
-  //$ Optional. Zero or one repetitions.
-  private sparser[ppostfix_pri] := sparser[ppostfix_pri] "?" =>#
-    """`(ast_apply ,_sr (,(noi 'optional) ,_1 ))"""
-  ;
-
-  //$ Group psuedo function.
-  private sparser[patom_pri] := "(" sparser[palt_pri] ")" =># '_2'; 
-
-  //$ The string literal.
-  //$ The given sequence of characters.
-  //$ Any valid Felix string can be used here.
-  private sparser[patom_pri] := String =># 
-    """`(ast_apply ,_sr ( ,(noi 'string_parser) ,_1)) """
-  ;
-
-  private sparser[patom_pri] :=  "{" sexpr "}" =># "_2";
-
-  //$ Identifier.
-  private sparser[patom_pri] := sname=># "`(ast_name ,_sr ,_1 ())";
-
-  //$ Indirection
-  //$ For example, the LHS of a regdef binder.
-  private sparser[patom_pri] := "&" sname=># """
-    `(ast_apply ,_sr 
-      (
-        ,(noi 'deref_first_read)
-        (ast_ref ,_sr ,(nos _2))
-      )
-    )
-  """;
- 
-}
-
 

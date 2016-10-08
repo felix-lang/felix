@@ -1,0 +1,174 @@
+@tangler recognisers.flx = share/lib/std/strings/recognisers.flx
+
+@title String Matching recognisers
+@h1 Recognisers
+A recogniser is a component which tries to match the prefix of a string.
+If it succeeds it returns the position of the first character not matched.
+
+@h2 Buffer type
+Recognisers work on an array of chars in memory. We use a Google
+StringPiece to represent it. 
+
+@tangle recognisers.flx
+struct Buffer
+{
+  sp: StringPiece;
+  pos: int;
+
+  fun atend => self.pos >= self.sp.len.int;
+
+  fun get => 
+    if self.atend then char "" 
+    else (self.sp.data) . (self.pos)
+  ;
+
+  proc next { 
+    if not self*.atend do
+      pre_incr self.pos;
+    done
+  }
+
+  fun advanced =>
+    if self.atend then self
+    else Buffer (self.sp, self.pos + 1)
+  ;
+}
+
+ctor Buffer (p:&string) =>
+  Buffer (p.StringPiece,0)
+;
+
+instance Str[Buffer] {
+  fun str (b:Buffer) => "@"+b.pos.str;
+}
+
+// hack, ignore underlying data.. FIXME
+instance Eq[Buffer] {
+  fun == (a:Buffer, b:Buffer) => a.pos == b.pos;
+}
+
+
+@h2 A string matcher.
+
+@tangle recognisers.flx
+chip match_string (s:string)
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+nextmatch:>
+  var b = read io.inp;
+  for i in 0..< s.len.int do 
+    if s.[i] != b.get goto nextmatch;
+    b&.next;
+  done
+  write (io.out, b);
+  goto nextmatch;  
+}
+
+@h2 Whitespace matcher.
+@tangle recognisers.flx
+chip match_white 
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  while true do
+    var b = read io.inp;
+    while not b.atend and b.get <= char ' ' perform b&.next;
+    write (io.out,b);
+  done
+}
+
+@h2 regex matcher.
+
+@tangle recognisers.flx
+chip match_regex (r:RE2)
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  while true do
+    var b = read io.inp;
+//println$ "Match regex " + r.str;
+    var matched = varray[StringPiece] (1uz,StringPiece());
+    var result = Match(r,b.sp,b.pos,ANCHOR_START,matched.stl_begin,1);
+//println$ "Match result " + result.str;
+    if result do
+//println$ "Matched OK, match len = " + matched.0.len.str;
+      var b2 = Buffer (b.sp,b.pos+matched.0.len.int);
+//println$ "Writing buffer = " + b2.str;
+      write(io.out,b2);
+    done
+  done
+}
+
+@h2 Identifier matcher.
+For C like identifiers.
+
+@tangle recognisers.flx
+device cident_matcher = match_regex (RE2 "[A-Za-z][A-Za-z0-9_]*");
+
+@h2 Integer matcher.
+For plain identifiers.
+
+@tangle recognisers.flx
+device decimal_integer_matcher = match_regex (RE2 "[0-9]+");
+
+@h2 String Literal matcher.
+One shot. Simple, matches single or double quoted
+string not spanning lines, with no escape codes, 
+@tangle recognisers.flx
+chip match_string_literal 
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+restart:>
+  var b = read io.inp;
+  if b.atend goto restart; // end of data
+  var leadin = b.get;
+//println$ "string literal matcher got char " + leadin.str;
+  if not (leadin in (char '"', char "'")) goto restart;
+//println$ "Got valid string start .. ";
+  b&.next; 
+  if b.atend goto restart;
+  var ch = b.get;
+  while ch != leadin do
+    b&.next;
+    if b.atend goto restart;
+    ch = b.get;
+    if ch == char "\n" goto restart; // end of line
+  done
+  b&.next;
+  io.out `write` b;  
+  goto restart;
+}
+
+chip match_string_literal_backquote
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+restart:>
+  var b = read io.inp;
+  if b.atend goto restart; // end of data
+  var leadin = b.get;
+//println$ "string literal matcher got char " + leadin.str;
+  if leadin != char '`' goto restart;
+//println$ "Got valid string start .. ";
+  b&.next; 
+  if b.atend goto restart;
+  var ch = b.get;
+  while ch != leadin do
+    b&.next;
+    if b.atend goto restart;
+    ch = b.get;
+    if ch == char "\n" goto restart; // end of line
+  done
+  b&.next;
+  io.out `write` b;  
+  goto restart;
+}
+
+
