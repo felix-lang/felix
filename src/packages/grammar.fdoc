@@ -2369,6 +2369,7 @@ SCHEME """
   ;; name term constructor
   (define (nos x)`(ast_name ,_sr ,x ()))
   (define (noi x)`(ast_name ,_sr ,(symbol->string x) ()))
+  (define (qnoi c x)`(ast_lookup (,(noi c) ,(symbol->string x) ())))
 
   ;; polymorphic parameters
   (define (typesoftvarlist x) (map nos (map first (first x))))

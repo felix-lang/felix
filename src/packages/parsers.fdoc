@@ -3,54 +3,10 @@
 
 @h1 Parsing
 Chips to providing parsing functions.
-@h2 Parser State 
-Uses LS-expr type.
+
 @tangle parsers.flx
 
-///////////////////// capture pipeline lsexpr
-include "std/datatype/lsexpr";
-
-typedef lsexpr_t = LS_expr::lsexpr[string,string];
-instance Str[lsexpr_t] {
-  fun str (x:lsexpr_t) =>
-     match x with 
-      | Leaf a => str a
-      | Tree (a,b) => str a + "(" + List::catmap ","  (str of lsexpr_t) b  + ")"
-    ;
-}
-open Str[lsexpr_t];
-
-instance Eq[lsexpr_t] {
-  fun ==: lsexpr_t * lsexpr_t -> bool=
-  | Leaf a, Leaf b => a == b
-  | Tree (a,x), Tree (b,y) => a == b and x == y
-  ; 
-}
-
-typedef ll_t = list[lsexpr_t];
-
-// parser SHIFT action
-gen push_entry (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =
-{
-   var lst = first.1;
-   var b0 = first.0;
-   var sp = b0.sp;
-   var s = sp.string;
-   var p0 = b0.pos;
-   var p1 = last.pos;
-   var lexeme = sp.[p0..<p1].string;
-   //println$ "Lexeme = '" + lexeme+"'";
-   var entry = LS_expr::Leaf[string,string] lexeme;
-   var newstate = Cons (entry, lst);
-   return last, newstate;
-}
-
-gen skip_entry (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =
-{
-  return last, first.1;
-}
-
-@h2 Capturing wrappers
+@h1 Capturing wrappers
 Given a Buffer->Buffer scanner chip 'scan',
 and a state updater 'newstate' which takes the
 old state and the end position of the scanned lexeme
@@ -71,37 +27,114 @@ We have to make sure the handler parameter is bound to the
 correct x, because it may be suspended when another input
 comes in! So the closure y is formed to ensure capture.
 
-@tangle parsers.flx
-typedef pardat_t[B,T] = B * T;
+NOTE: the code is is completely generic. There's nothing
+specific to parsers here.
 
-chip leaf_capture[B,T] 
+@tangle parsers.flx
+
+chip gmonad[B,C,T,U] 
   (
-    scan: iochip_t[B,B],
-    newstate: pardat_t[B,T] * B -> pardat_t[B,T]
+    scan: BaseChips::iochip_t[B,C],
+    newstate: (B * T) * C -> U
   )
   connector io
-    pin inp: %<pardat_t[B,T]
-    pin out: %>pardat_t[B,T]
+    pin inp: %<(B * T)
+    pin out: %>(C * U)
 {
 while true do
   var x = read io.inp;
-  noinline proc handler (var x: pardat_t[B,T]) () {
+  noinline proc handler (var x: B * T) () {
     var b,pd = x;
     var rin,win= mk_ioschannel_pair[B]();
-    var rout,wout= mk_ioschannel_pair[B]();
+    var rout,wout= mk_ioschannel_pair[C]();
     spawn_fthread (scan (inp=rin,out=wout));
     write(win,b);
-    var b2 = read rout; // this can block forever if scan fails
-    var s = newstate ((b,pd),b2);
-    write (io.out,s);
+    var c : C = read rout; // this can block forever if scan fails
+    var s : U = newstate((b,pd),c);
+    write (io.out,(c,s));
   }
   var y = handler x;
   spawn_fthread y;
 done
 }
 
-fun string_parser (s:string) =>
-  leaf_capture (match_string s,push_entry)
+fun monad[B,C,T] 
+  (
+    scan: BaseChips::iochip_t[B,C],
+    newstate: (B * T) * C -> T
+  )
+=> 
+  gmonad [B,C,T,T] (scan,newstate)
+;
+
+@h2 Accumulating monad
+This is a special case of a generalised monad. The problem is that
+in a shift/reduce parser for a production
+
+    E = A B C
+
+we would normally shift the attributes of A, then B, then C, then
+at the end we pop them off the stack and combine them into an E term
+and push that on the stack: the reduce step. A plain monad cannot
+handle that with type safety using a list as the stack, because the
+terms for A,B,C have distinct types.
+
+Instead we use a generalised monad, where the output type changes
+on each step. The way to gather the data is to use a lazy function:
+
+    E = A -> B -> C
+
+We start by passing the first wrapper e: A -> B -> C -> E, and
+applying it to A, which yields a function B -> C -> E. We pass
+that closure to the next nonterminal parser which applies it to
+the B value, pass that to the next one which applies it to the C
+value and finally we have our E value.
+
+This is type safe. So the trick is to write the E constructor
+function in curried form and pass that. Changing notation,
+our inital state T is now X -> Y, and the output state is just Y.
+We split out the attribute constructor B * C -> X which is no longer
+allowed to be dependent on the input state. For a terminal, this
+is the terminal's attribute constructor. For a nonterminal, its the
+identity function.
+
+@tangle parsers.fsyn
+// This function returns a chip which acts as a binder for terminal
+// symbols in a grammar, where scan is a chip representing a function
+// from B to C, usually B = C = position in string.
+//
+// The att_ctor is a constructor accepting the two positions in the string,
+// which returns a value of the terminal representation type X.
+//
+// The chip reads a function of type X -> T along with the initial
+// buffer position, applies the scanner to get the final buffer
+// position, and then applies the constructor it read to the
+// terminal attribute, and sends the result along with the final
+// position to the next chip.
+
+fun terminal_binder[B,C,X,Y] 
+  (
+    scan: BaseChips::iochip_t[B,C],
+    att_ctor: B * C -> X
+  )
+=>
+  let newstate (data:B * (X -> Y), c: C) : Y =
+    let b = data.0 in
+    let cls = data.1 in
+    cls (att_ctor (b,c)) 
+  in
+  gmonad[B,C,X->Y,Y] (scan, newstate)
+;
+
+fun epsilon_binder[B,C,X,Y]
+  (
+    scan: BaseChips::iochip_t[B,C]
+  )
+=>
+  let newstate (data:B * (X -> Y), c: C) : X-> Y =
+    let cls = data.1 in cls
+  in
+  gmonad[B,C,X->Y,Y] (scan, newstate)
 ;
 
 
@@ -135,57 +168,63 @@ syntax parsers {
   x[sapplication_pri] := "parse" "(" sparser[palt_pri] ")" =># "_3";
 
   //$ Alternatives.
-  private sparser[palt_pri] := sparser[>palt_pri] ("|" sparser[>palt_pri])+ =># 
-    """`(ast_apply ,_sr ( ,(noi 'tryall_list) 
+  sparser[palt_pri] := sparser[>palt_pri] ("|" sparser[>palt_pri])+ =># 
+    """`(ast_apply ,_sr ( ,(qnoi 'BaseChips 'tryall_list) 
       (ast_apply ,_sr (,(noi 'list) ,(cons _1 (map second _2))))))"""
   ;
 
   //$ Sequential concatenation.
-  private sparser[pseq_pri] := sparser[>pseq_pri] (sparser[>pseq_pri])+ =># 
-    """`(ast_apply ,_sr ( ,(noi 'pipeline_list)
+  sparser[pseq_pri] := sparser[>pseq_pri] (sparser[>pseq_pri])+ =># 
+    """`(ast_apply ,_sr ( ,(qnoi 'BaseChips 'pipeline_list)
       (ast_apply ,_sr (,(noi 'list) ,(cons _1 _2)))))"""
   ;
 
+/////////
+// THESE COMBINATORS SEEM USELESS BECAUSE THERE IS NO WELL DEFINED
+// RESULT. 
+//
+// That is, when parsing, they're not defined to say, push a list
+// onto the parser stack.
+//
+// They can be used by pushing a mark before and popping to the mark
+// to do a reduce. Works fine. But depends on being able to put
+// a mark on the stack, which means the type of terms on the stack
+// has to include a mark term.
 
   //$ Postfix star (*).
   //$ Kleene closure: zero or more repetitions.
-  private sparser[ppostfix_pri] := sparser[ppostfix_pri] "*" =># 
-    """`(ast_apply ,_sr ( ,(noi 'zeroormore_matcher) ,_1 ))"""
+  sparser[ppostfix_pri] := sparser[ppostfix_pri] "*" =># 
+    """`(ast_apply ,_sr ( ,(qnoi 'BaseChips 'zeroormore_matcher) ,_1 ))"""
   ;
 
   //$ Postfix plus (+).
   //$ One or more repetitions.
-  private sparser[ppostfix_pri] := sparser[ppostfix_pri] "+" =>#
-    """`(ast_apply ,_sr ( ,(noi 'oneormore_matcher) ,_1 ))"""
+  sparser[ppostfix_pri] := sparser[ppostfix_pri] "+" =>#
+    """`(ast_apply ,_sr ( ,(qnoi 'BaseChips 'oneormore_matcher) ,_1 ))"""
   ;
 
   //$ Postfix question mark (?).
   //$ Optional. Zero or one repetitions.
-  private sparser[ppostfix_pri] := sparser[ppostfix_pri] "?" =>#
-    """`(ast_apply ,_sr (,(noi 'optional) ,_1 ))"""
+  sparser[ppostfix_pri] := sparser[ppostfix_pri] "?" =>#
+    """`(ast_apply ,_sr (,(qnoi 'BaseChips 'optional) ,_1 ))"""
   ;
+// end suspect combinators
+/////////
 
   //$ Group psuedo function.
-  private sparser[patom_pri] := "(" sparser[palt_pri] ")" =># '_2'; 
+  sparser[patom_pri] := "(" sparser[palt_pri] ")" =># '_2'; 
 
-  //$ The string literal.
-  //$ The given sequence of characters.
-  //$ Any valid Felix string can be used here.
-  private sparser[patom_pri] := String =># 
-    """`(ast_apply ,_sr ( ,(noi 'string_parser) ,_1)) """
-  ;
-
-  private sparser[patom_pri] :=  "{" sexpr "}" =># "_2";
+  sparser[patom_pri] :=  "{" sexpr "}" =># "_2";
 
   //$ Identifier.
-  private sparser[patom_pri] := sname=># "`(ast_name ,_sr ,_1 ())";
+  sparser[patom_pri] := sname=># "`(ast_name ,_sr ,_1 ())";
 
   //$ Indirection
   //$ For example, the LHS of a regdef binder.
-  private sparser[patom_pri] := "&" sname=># """
+  sparser[patom_pri] := "&" sname=># """
     `(ast_apply ,_sr 
       (
-        ,(noi 'deref_first_read)
+        ,(qnoi 'BaseChips 'deref_first_read)
         (ast_ref ,_sr ,(nos _2))
       )
     )

@@ -5,6 +5,9 @@
 @h2 Write block.
 Blocks reader.
 @tangle chips.flx
+class BaseChips
+{
+
 chip writeblock[T]
   connector io
     pin inp : %<T
@@ -353,4 +356,8 @@ connector chans
    wire chans.out to Ass.out
  endcircuit
 }
+@
+
+@tangle chips.flx
+} // end class BaseChips
 

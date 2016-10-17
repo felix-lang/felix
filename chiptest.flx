@@ -2,6 +2,69 @@ include "std/strings/recognisers";
 include "std/strings/parsers";
 include "std/control/chips";
 
+///////////////////// capture pipeline lsexpr
+include "std/datatype/lsexpr";
+
+typedef lsexpr_t = LS_expr::lsexpr[string,string];
+instance Str[lsexpr_t] {
+  fun str (x:lsexpr_t) =>
+     match x with 
+      | Leaf a => str a
+      | Tree (a,b) => str a + "(" + List::catmap ","  (str of lsexpr_t) b  + ")"
+    ;
+}
+open Str[lsexpr_t];
+
+instance Eq[lsexpr_t] {
+  fun ==: lsexpr_t * lsexpr_t -> bool=
+  | Leaf a, Leaf b => a == b
+  | Tree (a,x), Tree (b,y) => a == b and x == y
+  ; 
+}
+
+typedef ll_t = list[lsexpr_t];
+
+// parser SHIFT action
+gen push_entry (first: Buffer * ll_t, last: Buffer) :  ll_t =
+{
+   var lst = first.1;
+   var b0 = first.0;
+   var sp = b0.sp;
+   var s = sp.string;
+   var p0 = b0.pos;
+   var p1 = last.pos;
+   var lexeme = sp.[p0..<p1].string;
+   //println$ "Lexeme = '" + lexeme+"'";
+   var entry = LS_expr::Leaf[string,string] lexeme;
+   var newstate = Cons (entry, lst);
+   return newstate;
+}
+
+gen skip_entry (first: Buffer * ll_t, last: Buffer) : ll_t =
+{
+  return  first.1;
+}
+
+
+fun string_parser (s:string) =>
+  monad (match_string s,push_entry)
+;
+
+syntax string_parser_extension
+{
+  requires parsers;
+
+  //$ The string literal.
+  //$ The given sequence of characters.
+  //$ Any valid Felix string can be used here.
+  sparser[patom_pri] := String =># 
+    """`(ast_apply ,_sr ( ,(noi 'string_parser) ,_1)) """
+  ;
+}
+open syntax string_parser_extension;
+
+open BaseChips;
+
 var sample = "The quick brown fox.";
 var b = Buffer (&sample);
 println$ b.get;
@@ -199,7 +262,7 @@ begin
   println$ "TEST " + "Capture string match (manual)";
   var b=Buffer(&sample);
   device match_the = match_string "The";
-  gen show_lexeme (first: Buffer * int, last: Buffer) : Buffer * int =
+  gen show_lexeme (first: Buffer * int, last: Buffer) : int =
   {
      var i = first.1;
      var b0 = first.0;
@@ -209,10 +272,10 @@ begin
      var p1 = last.pos;
      var lexeme = sp.[p0..<p1].string;
      //println$ "Lexeme = '" + lexeme+"'";
-     return last,i + 42;
+     return i + 42;
   }
 
-  device captured_the = leaf_capture[Buffer,int] (match_the,show_lexeme); 
+  device captured_the = monad[Buffer,Buffer,int] (match_the,show_lexeme); 
   var state = b,99;
   var rin,rout = mk_ioschannel_pair[Buffer * int]();
   var win,wout = mk_ioschannel_pair[Buffer * int]();
@@ -248,7 +311,7 @@ proc captured_test[T] (s:string) (d:iochip_t[Buffer * T,Buffer * T]) (b:Buffer *
 begin
   var b=Buffer(&sample);
   device match_the = match_string "The";
-  gen show_lexeme (first: Buffer * int, last: Buffer) : Buffer * int =
+  gen show_lexeme (first: Buffer * int, last: Buffer) :  int =
   {
      var i = first.1;
      var b0 = first.0;
@@ -258,10 +321,10 @@ begin
      var p1 = last.pos;
      var lexeme = sp.[p0..<p1].string;
      //println$ "Lexeme = '" + lexeme+"'";
-     return last,i + 42;
+     return i + 42;
   }
 
-  device captured_the = leaf_capture[Buffer,int] (match_the,show_lexeme); 
+  device captured_the = monad[Buffer,Buffer,int] (match_the,show_lexeme); 
   captured_test[int] "Captured string match (auto)" captured_the (b,99); 
 end
 
@@ -273,7 +336,7 @@ begin
   device match_quick = match_regex (RE2 "quick");
   device match_brown= match_regex (RE2 "brown");
 
-  gen show_lexeme (first: Buffer * int, last: Buffer) : Buffer * int =
+  gen show_lexeme (first: Buffer * int, last: Buffer) : int =
   {
      var i = first.1;
      var b0 = first.0;
@@ -283,13 +346,13 @@ begin
      var p1 = last.pos;
      var lexeme = sp.[p0..<p1].string;
      //println$ "Lexeme = '" + lexeme+"'";
-     return last,i + 42;
+     return i + 42;
   }
 
-  device captured_the = leaf_capture[Buffer,int] (match_the,show_lexeme); 
-  device captured_white = leaf_capture[Buffer,int] (match_white,show_lexeme); 
-  device captured_quick = leaf_capture[Buffer,int] (match_quick,show_lexeme); 
-  device captured_brown = leaf_capture[Buffer,int] (match_brown,show_lexeme); 
+  device captured_the = monad[Buffer,Buffer,int] (match_the,show_lexeme); 
+  device captured_white = monad[Buffer,Buffer,int] (match_white,show_lexeme); 
+  device captured_quick = monad[Buffer,Buffer,int] (match_quick,show_lexeme); 
+  device captured_brown = monad[Buffer,Buffer,int] (match_brown,show_lexeme); 
 
 
   var parse = list (
@@ -311,10 +374,10 @@ begin
 
 
 
-  device captured_the = leaf_capture[Buffer,ll_t] (match_the,push_entry); 
-  device captured_white = leaf_capture[Buffer,ll_t] (match_white,skip_entry); 
-  device captured_quick = leaf_capture[Buffer,ll_t] (match_quick,push_entry); 
-  device captured_brown = leaf_capture[Buffer,ll_t] (match_brown,push_entry); 
+  device captured_the = monad[Buffer,Buffer,ll_t] (match_the,push_entry); 
+  device captured_white = monad[Buffer,Buffer,ll_t] (match_white,skip_entry); 
+  device captured_quick = monad[Buffer,Buffer,ll_t] (match_quick,push_entry); 
+  device captured_brown = monad[Buffer,Buffer,ll_t] (match_brown,push_entry); 
 
 
   var parse = list (
@@ -338,10 +401,10 @@ begin
   device digit = match_regex "[0-9]".RE2;
   device semi = match_string(";"); 
 
-  device cap_plus = leaf_capture[Buffer,ll_t] (plus,push_entry);
-  device cap_minus = leaf_capture[Buffer,ll_t] (minus,push_entry);
-  device cap_int = leaf_capture[Buffer,ll_t] (digit,push_entry);
-  device cap_semi = leaf_capture[Buffer,ll_t] (semi,push_entry);
+  device cap_plus = monad[Buffer,Buffer,ll_t] (plus,push_entry);
+  device cap_minus = monad[Buffer,Buffer,ll_t] (minus,push_entry);
+  device cap_int = monad[Buffer,Buffer,ll_t] (digit,push_entry);
+  device cap_semi = monad[Buffer,Buffer,ll_t] (semi,push_entry);
 
   chip expr
     connector io
@@ -370,10 +433,10 @@ begin
   device digit = match_regex "[0-9]".RE2;
   device semi = match_string(";"); 
 
-  device cap_plus = leaf_capture[Buffer,ll_t] (plus,push_entry);
-  device cap_minus = leaf_capture[Buffer,ll_t] (minus,push_entry);
-  device cap_int = leaf_capture[Buffer,ll_t] (digit,push_entry);
-  device cap_semi = leaf_capture[Buffer,ll_t] (semi,push_entry);
+  device cap_plus = monad[Buffer,Buffer,ll_t] (plus,push_entry);
+  device cap_minus = monad[Buffer,Buffer,ll_t] (minus,push_entry);
+  device cap_int = monad[Buffer,Buffer,ll_t] (digit,push_entry);
+  device cap_semi = monad[Buffer,Buffer,ll_t] (semi,push_entry);
 
   // pop 3 elements off the parser stack and push
   // one on; REDUCE action
@@ -598,11 +661,11 @@ begin
   device digit = match_regex "[0-9]".RE2;
   device semi = match_string(";"); 
 
-  //device cap_plus = leaf_capture[Buffer,ll_t] (plus,push_entry);
+  //device cap_plus = monad[Buffer,Buffer,ll_t] (plus,push_entry);
   parser cap_plus = "+";
-  device cap_minus = leaf_capture[Buffer,ll_t] (minus,push_entry);
-  device cap_int = leaf_capture[Buffer,ll_t] (digit,push_entry);
-  device cap_semi = leaf_capture[Buffer,ll_t] (semi,push_entry);
+  device cap_minus = monad[Buffer,Buffer,ll_t] (minus,push_entry);
+  device cap_int = monad[Buffer,Buffer,ll_t] (digit,push_entry);
+  device cap_semi = monad[Buffer,Buffer,ll_t] (semi,push_entry);
 
   // pop 3 elements off the parser stack and push
   // one on; REDUCE action
@@ -669,7 +732,7 @@ begin
   var b = Buffer &sample;
   device digit = match_regex "[0-9]".RE2;
 
-  device cap_int = leaf_capture[Buffer,ll_t] (digit,push_entry);
+  device cap_int = monad[Buffer,Buffer,ll_t] (digit,push_entry);
 
   // pop 3 elements off the parser stack and push
   // one on; REDUCE action
@@ -754,7 +817,7 @@ begin
   var b = Buffer &sample;
   device digit = match_regex "[0-9]".RE2;
 
-  device cap_int = leaf_capture[Buffer,ll_t] (digit,push_entry);
+  device cap_int = monad[Buffer,Buffer,ll_t] (digit,push_entry);
 
   // pop 3 elements off the parser stack and push
   // one on; REDUCE action
@@ -802,8 +865,8 @@ begin
   device digit = match_regex "[0-9]".RE2;
   device letter= match_regex "[A-Z]".RE2;
 
-  device cap_int = leaf_capture[Buffer,ll_t] (digit,push_entry);
-  device cap_letter = leaf_capture[Buffer,ll_t] (letter,push_entry);
+  device cap_int = monad[Buffer,Buffer,ll_t] (digit,push_entry);
+  device cap_letter = monad[Buffer,Buffer,ll_t] (letter,push_entry);
 
   // pop 3 elements off the parser stack and push
   // one on; REDUCE action
@@ -885,21 +948,21 @@ begin
     done
   }
 
-  gen push_mark (s:string) (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =>
-    last, LS_expr::Leaf[string,string] s ! first.1 
+  gen push_mark (s:string) (first: Buffer * ll_t, last: Buffer) : ll_t =>
+    LS_expr::Leaf[string,string] s ! first.1 
   ;
 
-  gen pop_mark (s:string) (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =
+  gen pop_mark (s:string) (first: Buffer * ll_t, last: Buffer) : ll_t =
   {
     var lst = first.1;
     var cap = Empty[lsexpr_t];
     fun aux (x:ll_t) (y:ll_t) =>
       match x with
-      | Empty => fun_fail[Buffer * ll_t] ("pop_mark can't find mark '"+s+"'")
+      | Empty => fun_fail[ll_t] ("pop_mark can't find mark '"+s+"'")
       | Cons (h,t) =>
         match h with
         | Leaf lab when lab == s =>
-         last, LS_expr::Tree[string,string] (s,y) ! t 
+         LS_expr::Tree[string,string] (s,y) ! t 
         | _ => aux t (h!y)
         endmatch
       endmatch
@@ -913,7 +976,7 @@ begin
     LS_expr::Tree (lab, ([r,l])) ! rest
   ;
 
-  fun pop_stack (i:int) (first: Buffer * ll_t, last: Buffer) : Buffer * ll_t =
+  fun pop_stack (i:int) (first: Buffer * ll_t, last: Buffer) : ll_t =
   {
     var lst = first.1;
     fun aux (j:int) (stk:ll_t) : ll_t => 
@@ -925,7 +988,7 @@ begin
         endmatch
       endif
     ;
-    return last,aux i lst;
+    return aux i lst;
   }
 
   fun reduce_terminal (lab: string) (lst: ll_t): ll_t =>
@@ -936,21 +999,21 @@ begin
 
   fun binop (s:string) => capnt_general s reduce_binop;
 
-  device begin_seq = leaf_capture[Buffer,ll_t] (epsilon[Buffer], push_mark "SEQ");
-  device end_seq = leaf_capture[Buffer,ll_t] (epsilon[Buffer], pop_mark "SEQ");
-  device begin_alt = leaf_capture[Buffer,ll_t] (epsilon[Buffer], push_mark "ALT");
-  device end_alt = leaf_capture[Buffer,ll_t] (epsilon[Buffer], pop_mark "ALT");
-  device begin_stmts = leaf_capture[Buffer,ll_t] (epsilon[Buffer], push_mark "GRAMMAR");
-  device end_stmts = leaf_capture[Buffer,ll_t] (epsilon[Buffer], pop_mark "GRAMMAR");
+  device begin_seq = monad[Buffer,Buffer,ll_t] (epsilon[Buffer], push_mark "SEQ");
+  device end_seq = monad[Buffer,Buffer,ll_t] (epsilon[Buffer], pop_mark "SEQ");
+  device begin_alt = monad[Buffer,Buffer,ll_t] (epsilon[Buffer], push_mark "ALT");
+  device end_alt = monad[Buffer,Buffer,ll_t] (epsilon[Buffer], pop_mark "ALT");
+  device begin_stmts = monad[Buffer,Buffer,ll_t] (epsilon[Buffer], push_mark "GRAMMAR");
+  device end_stmts = monad[Buffer,Buffer,ll_t] (epsilon[Buffer], pop_mark "GRAMMAR");
 
 
-  device pop = leaf_capture[Buffer,ll_t] (epsilon[Buffer], pop_stack 1);
+  device pop = monad[Buffer,Buffer,ll_t] (epsilon[Buffer], pop_stack 1);
 
-  device skip_white = leaf_capture[Buffer,ll_t] (match_white,skip_entry);
-  device cap_str = leaf_capture[Buffer,ll_t] (match_string_literal,push_entry);
-  device cap_reg = leaf_capture[Buffer,ll_t] (match_string_literal_backquote,push_entry);
-  device cap_name = leaf_capture[Buffer,ll_t] (cident_matcher,push_entry);
-  device cap_eps = leaf_capture[Buffer,ll_t] (match_string "\\eps",push_entry);
+  device skip_white = monad[Buffer,Buffer,ll_t] (match_white,skip_entry);
+  device cap_str = monad[Buffer,Buffer,ll_t] (match_string_literal,push_entry);
+  device cap_reg = monad[Buffer,Buffer,ll_t] (match_string_literal_backquote,push_entry);
+  device cap_name = monad[Buffer,Buffer,ll_t] (cident_matcher,push_entry);
+  device cap_eps = monad[Buffer,Buffer,ll_t] (match_string "\\eps",push_entry);
  
   typedef io_t = Buffer * ll_t;
   typedef parser_t = iochip_t[io_t,io_t];
@@ -1062,3 +1125,258 @@ begin
   println gramlib;
 end
 
+/*
+///////////////////// EBNF parser2
+//
+// Do it again using the AST directly instead of LS_expr
+
+begin
+  var tstart = time();
+  var sample = 
+    """
+    silly = A B 'hello' `regularity` C | X Y 'fred';
+    X = X Y | X;
+    END
+    """;
+  var b = Buffer &sample;
+
+  union sym_t = 
+  | Regex of string
+  | Strng of string
+  | Nonterminal of string
+  | Epsilon
+  ;
+  fun mk_Epsilon (s:string) => Epsilon;
+
+  instance Str[sym_t] { 
+    fun str(x:sym_t)=> x._strr;
+  }
+
+  typedef seq_t = list[sym_t];
+  typedef alts_t = list[seq_t];
+  typedef ntdef_t = string * alts_t;
+  typedef gramlib_t = list[ntdef_t];
+
+  union ast_t =
+  | Sym of sym_t
+  | Seq of seq_t
+  | Alts of alts_t
+  | Ntdef of ntdef_t
+  | Gramlib of gramlib_t
+  | Mark of string // not really, just for the parser
+  ;
+
+  instance Str[ast_t] {
+    fun str(x:ast_t) => x._strr;
+  }
+  // -----------------------------------------
+  // Terminals
+  gen push_terminal (ct:string->ast_t) (first: Buffer, last: Buffer) :  sym_t =
+  {
+     var lst = first.1;
+     var b0 = first.0;
+     var sp = b0.sp;
+     var s = sp.string;
+     var p0 = b0.pos;
+     var p1 = last.pos;
+     var lexeme = sp.[p0..<p1].string;
+     //println$ "Lexeme = '" + lexeme+"'";
+     var entry = ct lexeme;
+    return entry;
+  }
+
+  gen skip_terminal (first: Buffer, last: Buffer) : ll_t =
+  {
+    return  first.1;
+  }
+
+  device skip_white = epsilon_binder match_white;
+  device cap_str = terminal_binder[Buffer,Buffer,ll_t] (match_string_literal,push_terminal Strng \odot Sym);
+  device cap_reg = monad[Buffer,Buffer,ll_t] (match_string_literal_backquote,push_terminal Regex \odot Sym);
+  device cap_name = monad[Buffer,Buffer,ll_t] (cident_matcher,push_terminal Nonterminal \odot Sym);
+  device cap_eps = monad[Buffer,Buffer,ll_t] (match_string "\\eps",push_terminal mk_Epsilon \odot Sym);
+ 
+  // Marks
+  gen push_mark (s:string) (first: Buffer * ll_t, last: Buffer) : ll_t =>
+    Mark s ! first.1 
+  ;
+
+  gen pop_mark 
+    (s:string)  // mark to pop to
+    (ct: ll_t -> ast_t) // constructor function
+    (first: Buffer * ll_t, last: Buffer) : ll_t =
+  {
+    var lst = first.1;
+    var cap = Empty[ast_t];
+    fun aux (x:ll_t) (y:ll_t) =>
+      match x with
+      | Empty => fun_fail[ll_t] ("pop_mark can't find mark '"+s+"'")
+      | Cons (h,t) =>
+        match h with
+        | Mark lab when lab == s =>
+         ct y ! t 
+        | _ => aux t (h!y)
+        endmatch
+      endmatch
+    ;
+    return aux lst cap;
+  }
+
+/*
+  // monadic extension of epsilon recognizer to parser
+  device begin_seq = monad[Buffer,Buffer,ll_t] (epsilon[Buffer], push_mark "SEQ");
+  device end_seq = monad[Buffer,Buffer,ll_t] (epsilon[Buffer], pop_mark "SEQ" Seq);
+  device begin_alt = monad[Buffer,Buffer,ll_t] (epsilon[Buffer], push_mark "ALT");
+  device end_alt = monad[Buffer,Buffer,ll_t] (epsilon[Buffer], pop_mark "ALT" Alts);
+  device begin_stmts = monad[Buffer,Buffer,ll_t] (epsilon[Buffer], push_mark "GRAMMAR");
+  device end_stmts = monad[Buffer,Buffer,ll_t] (epsilon[Buffer], pop_mark "GRAMMAR" Gramlib);
+
+  chip capnt_general (s:string) (ntgroup: string -> ll_t -> ll_t)
+    connector io
+    pin inp: %< (Buffer * ll_t)
+    pin out: %> (Buffer * ll_t)
+  {
+    while true do
+      var b,lst = read io.inp;
+      write (io.out, (b,ntgroup s lst));
+    done
+  }
+
+  fun reduce_binop (lab: string) (lst: ll_t): ll_t =>
+    match lst with
+    | l!op!r!rest =>
+    LS_expr::Tree (lab, ([r,l])) ! rest
+  ;
+
+  fun pop_stack (i:int) (first: Buffer * ll_t, last: Buffer) : ll_t =
+  {
+    var lst = first.1;
+    fun aux (j:int) (stk:ll_t) : ll_t => 
+      if j == 0 then stk 
+      else 
+        match stk with 
+        | Empty => fun_fail[ll_t] ("pop empty parser stack")
+        | h ! t => aux (j - 1) t
+        endmatch
+      endif
+    ;
+    return aux i lst;
+  }
+
+  fun reduce_terminal (lab: string) (lst: ll_t): ll_t =>
+    match lst with
+    | h ! t => LS_expr::Tree[string,string] (lab,([h])) ! t
+  ;
+  fun terminal (s:string) => capnt_general s reduce_terminal;
+
+  fun binop (s:string) => capnt_general s reduce_binop;
+
+
+  device pop = monad[Buffer,Buffer,ll_t] (epsilon[Buffer], pop_stack 1);
+
+  typedef io_t = Buffer * ll_t;
+  typedef parser_t = iochip_t[io_t,io_t];
+ 
+  parser strng = skip_white cap_str {terminal "STRING"};
+  parser reg = skip_white cap_reg {terminal "REGEX"};
+  parser nt = skip_white cap_name;
+  parser eps = skip_white cap_eps;
+  parser vbar = skip_white "|" pop;
+
+  parser sym = strng | reg | nt | eps;
+  parser xsyms : parser_t = sym &xsyms | sym;
+  parser syms = begin_seq xsyms end_seq; 
+  parser xalts : parser_t = syms vbar &xalts | syms;
+  parser alts = begin_alt xalts end_alt;
+
+  parser statement : parser_t = skip_white nt skip_white "=" alts {binop "DEFINE"} skip_white ";" pop;
+  parser xstmts : parser_t = statement &xstmts | statement;
+  parser stmts = begin_stmts xstmts end_stmts skip_white "END" pop;
+
+  var init = Empty[lsexpr_t];
+  captured_test[ll_t] "EBNF parser test" stmts (b,init);
+  var tend = time();
+  println$ f"elapsed time %3.3f" (tend - tstart);
+
+  // Do it again
+
+  var parse_tree : list[lsexpr_t];
+  begin
+    var b = Buffer &sample;
+    var startinp,startout= mk_ioschannel_pair[Buffer * list[lsexpr_t]]();
+    var endinp,endout= mk_ioschannel_pair[Buffer * list[lsexpr_t]]();
+    circuit
+      wire startinp to stmts.inp
+      wire endout to stmts.out
+    endcircuit
+    write (startout,(b,init));
+    var res = read endinp; // we only want the first one :)
+    parse_tree = res.1;
+  end
+
+  union sym_t = 
+  | Regex of string
+  | Strng of string
+  | Nonterminal of string
+  | Epsilon
+  ;
+
+
+  // translate the "parse tree" into an AST
+  var gramlib = strdict[ast_t] ();
+
+  fun map_sym (sym: lsexpr_t) => match sym with 
+    | Tree ("STRING",Cons (Leaf lexeme, Empty)) => Strng lexeme
+    | Tree ("REGEX",Cons (Leaf lexeme, Empty)) => Regex lexeme
+    | Leaf name => Nonterminal name
+  ;
+
+  fun xlat_alt (alt: lsexpr_t) : list[sym_t] = {
+    match alt with
+    | Tree ("SEQ", syms) => 
+      println$ "Got production symbols " + syms.str;
+      var terms = map map_sym syms;
+      return terms;
+
+    | _ =>  
+      println alt;
+      proc_fail  "Expected SEQ";
+    endmatch;
+  }
+
+  fun xlat_alts (alts: list[lsexpr_t]) : ast_t =>
+    map xlat_alt alts
+  ;
+    
+  proc xlat_dfn (dfn: lsexpr_t) {
+    match dfn with
+    | Leaf _ => proc_fail  "Not expecting leaf";
+    | Tree 
+      (
+        "DEFINE", 
+        (Leaf name ! Tree ("ALT",alts) ! Empty)
+      ) 
+      =>
+      if gramlib.haskey name perform proc_fail ("Library already contains " + name);
+      var v = xlat_alts alts;
+      gramlib.add name v;
+      println$ "Defined " + name;
+    | _ => proc_fail  "Expecting DEFINE(name,ALT(..))";
+    endmatch;
+  }
+  proc xlat_dfns (dfns: list[lsexpr_t]) {
+    iter xlat_dfn dfns;
+  }
+  proc xlat_result (x:list[lsexpr_t]) {
+    match x with
+    | Leaf _ ! _ => proc_fail  "Not expecting leaf";
+    | Tree ("GRAMMAR",dfns) ! _ => xlat_dfns dfns;
+    endmatch;
+  }
+
+  xlat_result parse_tree;
+  println$ "----- LIBRARY -------";
+  println gramlib;
+*/
+end
+*/
