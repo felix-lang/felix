@@ -1,0 +1,112 @@
+fun f0 () : 1 => ();
+fun f[T,U] (a:U) (b:T) => a,b;
+println$ () . f0 . (f "hello") . (f 42.1) . (f "pye") . _strr;
+
+include "std/strings/recognisers";
+include "std/strings/parsers";
+include "std/control/chips";
+
+// So .. what if for each recognizer we read and write a Buffer
+// and write the desired AST term on ANOTHER channel
+// This would apply to both terminals and non-terminals!
+
+// Using the above method, we aggregate the channel output points
+// The final epsilon executable reads the channels to construct
+// its term, then writes the result (on its third channel).
+
+chip pstring (s:string) (term: %>string)
+  connector io
+  pin inp:%<Buffer
+  pin out:%>Buffer
+{
+  device cs = match_string s;
+  var rin,win= mk_ioschannel_pair[Buffer](); 
+  var rout,wout = mk_ioschannel_pair[Buffer](); 
+  spawn_fthread$ cs (inp=rin, out=wout);
+  while true do
+    var b = read io.inp;
+    write (win,b);
+    var e = read rout;
+    var lexeme = b.sp.[b.pos..<e.pos].string;
+    write (io.out,e);
+    write (term,lexeme);
+  done
+}
+open BaseChips;
+
+
+begin
+  var s = "hello world";
+  var p = Buffer &s;
+  var ra,wa = mk_ioschannel_pair[string]();
+  var rb,wb = mk_ioschannel_pair[string]();
+  parser x =  {pstring "hello " wa} {pstring "world" wb};
+
+  var startinp,startout= mk_ioschannel_pair[Buffer]();
+  var endinp,endout= mk_ioschannel_pair[Buffer]();
+  circuit
+    wire startinp to x.inp
+    wire endout to x.out
+  endcircuit
+  write (startout,p);
+  spawn_fthread {
+    while true do
+      var res = read endinp;
+      println$ "RESULT: "+ res.str;
+      var s1 = read ra; 
+      var s2 = read rb;
+      println$ "Parsed " + s1 + s2; 
+    done
+  };
+  swait();
+end
+
+chip pint (term: %>int)
+  connector io
+  pin inp:%<Buffer
+  pin out:%>Buffer
+{
+  device cs = decimal_integer_matcher;
+  var rin,win= mk_ioschannel_pair[Buffer](); 
+  var rout,wout = mk_ioschannel_pair[Buffer](); 
+  spawn_fthread$ cs (inp=rin, out=wout);
+  while true do
+    var b = read io.inp;
+    write (win,b);
+    var e = read rout;
+    var lexeme = b.sp.[b.pos..<e.pos].string;
+    write (io.out,e);
+    var i = atoi lexeme;
+    write (term,i);
+  done
+}
+
+begin
+  var s = "hello 67world";
+  var p = Buffer &s;
+  var ra,wa = mk_ioschannel_pair[string]();
+  var rb,wb = mk_ioschannel_pair[int]();
+  var rc,wc = mk_ioschannel_pair[string]();
+  parser x =  {pstring "hello " wa} {pint wb} {pstring "world" wc};
+
+  var startinp,startout= mk_ioschannel_pair[Buffer]();
+  var endinp,endout= mk_ioschannel_pair[Buffer]();
+  circuit
+    wire startinp to x.inp
+    wire endout to x.out
+  endcircuit
+  write (startout,p);
+  spawn_fthread {
+    while true do
+      var res = read endinp;
+      println$ "RESULT: "+ res.str;
+      var s1 = read ra; 
+      var s2 = read rb;
+      var s3 = read rc;
+      println$ "Parsed " + s1 + s2.str+s3; 
+    done
+  };
+  swait();
+end
+
+
