@@ -19,6 +19,7 @@ chip pstring (s:string) (term: %>string)
   pin inp:%<Buffer
   pin out:%>Buffer
 {
+println$ "Parse " + s;
   device cs = match_string s;
   var rin,win= mk_ioschannel_pair[Buffer](); 
   var rout,wout = mk_ioschannel_pair[Buffer](); 
@@ -28,6 +29,7 @@ chip pstring (s:string) (term: %>string)
     write (win,b);
     var e = read rout;
     var lexeme = b.sp.[b.pos..<e.pos].string;
+println$ "string lexeme = " + lexeme;
     write (io.out,e);
     write (term,lexeme);
   done
@@ -72,22 +74,196 @@ chip pint (term: %>int)
   spawn_fthread$ cs (inp=rin, out=wout);
   while true do
     var b = read io.inp;
+println$ "Int parse sending to recognizer";
     write (win,b);
     var e = read rout;
+println$ "Int parse getting from recognizer";
     var lexeme = b.sp.[b.pos..<e.pos].string;
+println$ "Int lexeme = " + lexeme;
     write (io.out,e);
     var i = atoi lexeme;
     write (term,i);
   done
 }
+// ------------ generic combinators ---------------
+// X * X
+fun comb[X] 
+  (var ax : X, var bx:X) 
+  :list[X] 
+  => list (bx,ax)
+;
+
+// AX * BX
+fun comb[X,A,B] 
+  (var ax : A * X, var bx: B * X) 
+  : (B * A) * list[X] 
+  => (bx.0,ax.0), list (bx.1,ax.1)
+;
+
+// X * BX
+fun comb[X,B] 
+  (var ax : X, var bx: B * X) 
+  : B  * list[X] 
+  => bx.0, list (bx.1,ax)
+;
+
+// AX * X
+fun comb[X,A] 
+  (var ax : A * X, var bx: X) 
+  : A * list[X] 
+  => ax.0, list (bx,ax.1)
+;
+
+// AXs * BX
+fun comb[X,A,B] 
+  (var axs: A * list[X], var bx: B * X) 
+  : (B ** A) * list[X] 
+= {
+  return (bx.0,,axs.0), Cons (bx.1, axs.1) ;
+}
+
+// AXs * X
+fun comb[X,A] (
+  var axs: A * list[X], 
+  var bx:X
+) : A * list[X] 
+= {
+  return axs.0, Cons (bx, axs.1) ;
+}
+
+
+// Xs * BX
+fun comb[X,B] 
+  (var axs: unit * list[X], var bx: B * X) 
+  : B * list[X] 
+= {
+  return (bx.0,,axs.0), Cons (bx.1, axs.1) ;
+}
+
+// Xs * X
+fun comb[X] 
+  (var axs: list[X], var bx:  X) 
+  : list[X] 
+= {
+  return Cons (bx.1, axs.1) ;
+}
+
+//---------- wrapping combinators ---------
+
+fun wrap[B,T] (
+  x:(%>T) -> iochip_t[B,B]
+) 
+: (%<T) * iochip_t[B,B] 
+= {
+  var i,o = mk_ioschannel_pair[T]();
+  return i,x o;
+}
+
+ 
+// AX * BX
+fun combw[X,A,B] (
+  var ax : (%>A)-> iochip_t[X,X], 
+  var bx : (%>B) -> iochip_t[X,X]
+) 
+: ((%<B) * (%<A)) * list[iochip_t[X,X]] 
+=
+{
+   var wax = wrap ax; 
+   var wbx = wrap bx;  
+   return comb (wax,wbx);
+}
+
+// X * BX
+fun combw[X,B] (
+  var ax : iochip_t[X,X], 
+  var bx : (%>B) -> iochip_t[X,X]
+) 
+: (%<B)  * list[iochip_t[X,X]] 
+=
+{
+   var wbx = wrap bx;  
+   return comb (ax,wbx);
+}
+
+// AX * X
+fun combw[X,A] (
+  var ax : (%>A)-> iochip_t[X,X], 
+  var bx : iochip_t[X,X]
+) 
+: (%<A) * list[iochip_t[X,X]] 
+=
+{
+   var wax = wrap ax; 
+   return comb (wax,bx);
+}
+
+
+
+fun combw[X,A,B] (
+  var axs: A * list[iochip_t[X,X]],
+  var bx : (%>B) -> iochip_t[X,X]
+) 
+: ((%<B) ** A) * list[iochip_t[X,X]] 
+=
+{
+  var wbx = wrap bx;
+  return comb (axs, wbx);
+}
+
+
+union abc_t = Abc of string * int * string;
+instance Str[abc_t] {
+  fun str : abc_t -> string =
+  | Abc (a,b,c) => "ABC("+a+","+b.str+","+c+")"
+  ;
+}
+
+chip abc_parser 
+  (rc:%<string, rb:%<int, ra:%<string) 
+  (term: %>abc_t)
+  connector io
+    pin inp:%<Buffer
+    pin out:%>Buffer
+{
+println$ "Start abc parser";
+  while true do
+    var x = read io.inp;
+println$ "abc read pos";
+    var a = read ra;
+    var b = read rb;
+    var c = read rc;
+println$ "A=" + a;
+println$ "b=" + b.str;
+println$ "c=" + c;
+    var d = Abc (a,b,c);
+    write (io.out,x);
+    write (term, d);
+  done
+}
+
+
+fun combw[X,A,T] (
+   hiworld: A * list[iochip_t[X,X]],
+   abc_parser : A -> (%>T) -> iochip_t[X,X]
+) : (%<T) * list[iochip_t[X,X]]
+=>
+  let abc_tuple, pipeline = hiworld in
+  let rd, abc_chip = wrap (abc_parser abc_tuple) in
+  rd, (abc_chip ! pipeline)
+;
+
+syntax Combw {
+  x[spipe_apply_pri] := x[spipe_apply_pri] "#>" x[stuple_pri] =># "(infix 'combw)";
+}
+open syntax Combw;
 
 begin
+println$ "PART 2 ---------";
   var s = "hello 67world";
   var p = Buffer &s;
-  var ra,wa = mk_ioschannel_pair[string]();
-  var rb,wb = mk_ioschannel_pair[int]();
-  var rc,wc = mk_ioschannel_pair[string]();
-  parser x =  {pstring "hello " wa} {pint wb} {pstring "world" wc};
+  println$ "building pipeline";
+  var rd,xl =  pstring "hello " #> pint #> pstring "world" #> abc_parser;
+  var x = pipeline_list (rev xl);
 
   var startinp,startout= mk_ioschannel_pair[Buffer]();
   var endinp,endout= mk_ioschannel_pair[Buffer]();
@@ -100,10 +276,8 @@ begin
     while true do
       var res = read endinp;
       println$ "RESULT: "+ res.str;
-      var s1 = read ra; 
-      var s2 = read rb;
-      var s3 = read rc;
-      println$ "Parsed " + s1 + s2.str+s3; 
+      var d = read rd; 
+      println$ "Parsed " + d.str;
     done
   };
   swait();
