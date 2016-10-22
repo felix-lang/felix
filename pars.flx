@@ -134,10 +134,10 @@ fun comb[X,A] (
 
 // Xs * BX
 fun comb[X,B] 
-  (var axs: unit * list[X], var bx: B * X) 
+  (var axs: list[X], var bx: B * X) 
   : B * list[X] 
 = {
-  return (bx.0,,axs.0), Cons (bx.1, axs.1) ;
+  return bx.0,Cons (bx.1,axs);
 }
 
 // Xs * X
@@ -145,7 +145,7 @@ fun comb[X]
   (var axs: list[X], var bx:  X) 
   : list[X] 
 = {
-  return Cons (bx.1, axs.1) ;
+  return Cons (bx, axs) ;
 }
 
 //---------- wrapping combinators ---------
@@ -218,8 +218,11 @@ instance Str[abc_t] {
   ;
 }
 
+fun tread[T:GENERIC] (x:T) => _rev_map read x;
+
+
 chip abc_parser 
-  (rc:%<string, rb:%<int, ra:%<string) 
+  (rcba:(%<string * %<int *%<string)) 
   (term: %>abc_t)
   connector io
     pin inp:%<Buffer
@@ -229,6 +232,7 @@ println$ "Start abc parser";
   while true do
     var x = read io.inp;
 println$ "abc read pos";
+/*
     var a = read ra;
     var b = read rb;
     var c = read rc;
@@ -236,11 +240,13 @@ println$ "A=" + a;
 println$ "b=" + b.str;
 println$ "c=" + c;
     var d = Abc (a,b,c);
+*/
+    var abc = tread rcba;
+    var d = Abc abc;
     write (io.out,x);
     write (term, d);
   done
 }
-
 
 fun combw[X,A,T] (
    hiworld: A * list[iochip_t[X,X]],

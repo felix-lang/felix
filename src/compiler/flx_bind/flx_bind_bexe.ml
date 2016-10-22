@@ -418,6 +418,10 @@ print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_typ
   | EXE_call (EXPR_apply(_,(EXPR_name (_,"_iter",[]), EXPR_name (_,fn,[]))),arg) ->
     Flx_gmap.generic_map_proc bsym_table (bind_exe state) be sr fn arg 
 
+  | EXE_call (EXPR_apply(_,(EXPR_name (_,"_rev_iter",[]), EXPR_name (_,fn,[]))),arg) ->
+    Flx_gmap.generic_rev_map_proc bsym_table (bind_exe state) be sr fn arg 
+
+
 
   (* do overloading here FIXME ?? *)
   | EXE_call_with_trap (f',a') ->

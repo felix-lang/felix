@@ -4917,6 +4917,17 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
     let be rs e = bind_expression' state bsym_table env rs e [] in
     Flx_gmap.generic_map bsym_table state.counter be rs sr env func b
 
+  | EXPR_apply 
+    (
+      sr,
+      (
+        EXPR_apply (_,(EXPR_name (_,"_rev_map",[]), EXPR_name (_,func,[]))),
+        b
+      )
+    ) ->
+    let be rs e = bind_expression' state bsym_table env rs e [] in
+    Flx_gmap.generic_rev_map bsym_table state.counter be rs sr env func b
+
   | EXPR_apply (sr,(f',a')) -> 
 (*
 print_endline ("Bind_expression apply " ^ string_of_expr e);
