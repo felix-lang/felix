@@ -1102,6 +1102,26 @@ Generally, this class is very incomplete.
     return o;
   }
 
+@h2 Enable filter on darray objects
+@tangle darray.flx
+
+  //$ Return a sub list with elements satisfying the given predicate.
+  fun filter[T] (P:T -> bool) (arr:darray[T]) : darray[T] =
+  {
+    var o = darray[T]();
+
+    if arr.len > 0uz do
+      for var i in 0uz upto arr.len - 1uz do
+        if (P(arr.i)) do
+      	  push_back (o, arr.i);
+        done
+      done
+    done
+    
+    return o;
+  }
+
+
 }
 
 @h2 As a set
