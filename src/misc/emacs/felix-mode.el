@@ -8,7 +8,12 @@
   '(
     "chip" "pin" "read" "write"
     "circuit" "endcircuit" "connector" "connect" "device"
+    "axiom" "lemma" "in"
+    "object" "implements" "interface"
     "export"
+    "perform"
+    "method"
+    "array" "darray" "varray" "opt" "int" "uint" "string"
      "union"
      "pod"
      "ctor"
@@ -372,4 +377,32 @@
 
 
 
+;; Flymake for Felix
+(require 'flymake)
+
+;; I don't like the default colors :)
+;;(set-face-background 'flymake-errline "yellow")
+;;(set-face-background 'flymake-warnline "dark slate blue")
+
+
+;; Invoke felix with '-c --nocc' to get syntax checking
+(defun flymake-felix-init ()
+  (let* ((temp-file   (flymake-init-create-temp-buffer-copy
+                       'flymake-create-temp-inplace))
+	 (local-file  (file-relative-name
+                       temp-file
+                       (file-name-directory buffer-file-name))))
+    (list "flx" (list "-c" "--nocc" local-file))))
+
+(push '(".+\\.flx$"  flymake-felix-init) flymake-allowed-file-name-masks)
+(push '(".+\\.fdoc$" flymake-felix-init) flymake-allowed-file-name-masks)
+
+(add-to-list 'flymake-err-line-patterns '("\\(.*\\.flx\\): line \\([0-9]+\\).*$" 1 2 nil))
+(add-to-list 'flymake-err-line-patterns '("See also \\(.*\\.flx\\): line \\([0-9]+\\).*$" 1 2 nil))
+(add-to-list 'flymake-err-line-patterns '("See: \\(.*\\.flx\\): line \\([0-9]+\\).*$" 1 2 nil))
+(add-to-list 'flymake-err-line-patterns '("In \\(.*\\.flx\\): line \\([0-9]+\\).*$" 1 2 nil))
+(add-to-list 'flymake-err-line-patterns '("Fatal error.*$" nil))
+
+
+(add-hook 'felix-mode-hook 'flymake-mode)
 
