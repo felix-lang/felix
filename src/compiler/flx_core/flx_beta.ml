@@ -309,6 +309,8 @@ print_endline "Type list index returned None";
   | BTYP_tuple_cons (t1,t2) -> btyp_tuple_cons (br t1) (br t2)
   | BTYP_inst (i,ts) -> btyp_inst (i, List.map br ts)
   | BTYP_tuple ls -> btyp_tuple (List.map br ls)
+  | BTYP_rev t -> btyp_rev (br t)
+
   | BTYP_array (i,t) -> btyp_array (br i, br t)
   | BTYP_sum ls -> btyp_sum (List.map br ls)
   | BTYP_record (ts) ->
@@ -411,6 +413,21 @@ print_endline "Type list index returned None";
   | BTYP_void -> t
   | BTYP_type _ -> t
   | BTYP_unitsum _ -> t
+
+  (* beta reduce map of function on explicit tuple as tuple of
+     beta-reduced applications of function to tuple components
+  *)
+  | BTYP_type_map (t1,BTYP_tuple ls) ->
+    let rs = 
+      List.map (fun argt ->
+        br (btyp_type_apply (t1,argt))
+      )
+      ls 
+    in 
+    btyp_tuple rs
+
+  (* can't reduce *)
+  | BTYP_type_map (t1,t2) -> btyp_type_map (br t1, br t2)
 
   | BTYP_type_apply (t1,t2) ->
 (* NOT clear if this is OK or not *)

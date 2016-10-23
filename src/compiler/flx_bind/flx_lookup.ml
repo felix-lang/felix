@@ -973,6 +973,20 @@ print_endline ("Binding TYP_var " ^ si i);
 
       btyp_type_function (bparams, bt r, bbody)
 
+  | TYP_apply (TYP_name (_,"_rev",[]),t2) ->
+    let t2 = bt t2 in
+    begin match t2 with
+    | BTYP_tuple ts -> btyp_tuple (List.rev ts)
+    | _ -> btyp_rev t2
+    end
+
+  | TYP_apply (TYP_apply (TYP_name (_,"_map",[]), funct), t2) ->
+    let bfunct = bt funct in
+    let bt2 = bt t2 in
+print_endline ("type _map functor = " ^ sbt bsym_table bfunct);
+print_endline ("type _map datatype = " ^ sbt bsym_table bt2);
+    btyp_type_map (bfunct, bt2)
+
   | TYP_apply (TYP_name (_,"_flatten",[]),t2) ->
       let make_ts a t =
         List.fold_left begin fun acc b ->
@@ -4928,6 +4942,18 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
     let be rs e = bind_expression' state bsym_table env rs e [] in
     Flx_gmap.generic_rev_map bsym_table state.counter be rs sr env func b
 
+  | EXPR_apply 
+    (
+      sr,
+      (
+        EXPR_name (_,"_rev",[]), 
+        b
+      )
+    ) ->
+    let be rs e = bind_expression' state bsym_table env rs e [] in
+    Flx_gmap.generic_rev bsym_table state.counter be rs sr env b
+
+
   | EXPR_apply (sr,(f',a')) -> 
 (*
 print_endline ("Bind_expression apply " ^ string_of_expr e);
@@ -6472,6 +6498,7 @@ and rebind_btype state bsym_table env sr ts t =
   | BTYP_effector (a,e,r) -> btyp_effector (rbt a, rbt e, rbt r)
   | BTYP_cfunction (a,r) -> btyp_cfunction (rbt a, rbt r)
   | BTYP_pointer t -> btyp_pointer (rbt t)
+  | BTYP_rev t -> btyp_rev (rbt t)
   | BTYP_array (t1,t2) -> btyp_array (rbt t1, rbt t2)
 
   | BTYP_int
@@ -6482,6 +6509,7 @@ and rebind_btype state bsym_table env sr ts t =
 
   | BTYP_type_var (i,mt) -> clierrx "[flx_bind/flx_lookup.ml:6403: E229] " sr ("[rebind_type] Unexpected type variable " ^ sbt bsym_table t)
   | BTYP_type_apply _
+  | BTYP_type_map _
   | BTYP_type_function _
   | BTYP_type _
   | BTYP_type_tuple _

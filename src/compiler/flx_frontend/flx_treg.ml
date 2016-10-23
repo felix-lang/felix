@@ -116,6 +116,7 @@ print_endline ("Register type r " ^ sbt bsym_table t);
   *)
   match t' with
   | BTYP_hole -> assert false
+  | BTYP_rev _ -> assert false (* should have been eliminated *)
   | BTYP_int -> ()
   | BTYP_label -> ()
   | BTYP_void -> ()
@@ -278,6 +279,7 @@ print_endline ("External primitive instance, registering whole type " ^ sbt bsym
   | BTYP_type_tuple _
   | BTYP_type_function _
   | BTYP_type_apply _
+  | BTYP_type_map _
   | BTYP_type_match _
 
   | BTYP_type_set _

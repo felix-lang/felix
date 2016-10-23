@@ -315,6 +315,7 @@ let fix i t =
     | BTYP_cfunction (a,b) -> btyp_cfunction (aux a, aux b)
     | BTYP_pointer a -> btyp_pointer (aux a)
     | BTYP_array (a,b) -> btyp_array (aux a, aux b)
+    | BTYP_rev t -> btyp_rev (aux t)
 
     | BTYP_record (ts) ->
        btyp_record (List.map (fun (s,t) -> s, aux t) ts)
@@ -331,6 +332,7 @@ let fix i t =
     | BTYP_void
     | BTYP_fix _
     | BTYP_type_apply _
+    | BTYP_type_map _
     | BTYP_type_function _
     | BTYP_type _
     | BTYP_type_tuple _
@@ -435,6 +437,10 @@ let rec unification bsym_table counter eqns dvars =
       let lhs = unfold "unification" lhs in
       let rhs = unfold "unification" rhs in
       begin match lhs,rhs with
+      | BTYP_rev t1, BTYP_rev t2 ->
+        add_eqn (t1,t2)
+
+
       | (BTYP_type_var (i,mi) as ti), (BTYP_type_var (j,mj) as tj)->
         (*
         print_endline ("Equated variables " ^ si i ^ " <-> " ^ si j);
@@ -476,6 +482,17 @@ let rec unification bsym_table counter eqns dvars =
           *)
           s := Some (i,t)
         end
+
+      (* Note: the t here cannot be a BTYP_rev term, nor a type variable!
+       * the first case is rev t = rev u previously eliminated,
+       * the second case rev t = u also previously eliminated
+       * therefore this operation cannot cause an infinite loop
+       * note the laws rev(rev x) = x and rev x = y implies x = rev y
+       *)
+      | BTYP_rev (BTYP_type_var (i,m) as tvar),t 
+      | t,BTYP_rev (BTYP_type_var (i,m) as tvar) ->
+        add_eqn (tvar,btyp_rev t)
+ 
 
       | BTYP_intersect ts,t
       | t,BTYP_intersect ts ->
@@ -700,6 +717,11 @@ print_endline ("Converted LHS body=" ^ sbt bsym_table b1);
 print_endline "Trying to unify type application";
         add_eqn (f1,f2); add_eqn (a1,a2)
 
+      | BTYP_type_map (f1,a1), BTYP_type_map (f2,a2)  ->
+print_endline "Trying to unify type map";
+        add_eqn (f1,f2); add_eqn (a1,a2)
+
+
       | x,y ->
 (*
         print_endline ("Terms do not match: " ^ sbt bsym_table x ^ " <-> " ^ sbt bsym_table y);
@@ -899,6 +921,7 @@ let rec type_eq' bsym_table counter ltrail ldepth rtrail rdepth trail t1 t2 =
   | BTYP_function (s1,d1),BTYP_function (s2,d2)
   | BTYP_cfunction (s1,d1),BTYP_cfunction (s2,d2)
   | BTYP_type_apply(s1,d1),BTYP_type_apply(s2,d2)
+  | BTYP_type_map(s1,d1),BTYP_type_map(s2,d2)
   | BTYP_tuple_cons (s1,d1),BTYP_tuple_cons (s2,d2)
     -> te s1 s2 && te d1 d2
 
@@ -1030,6 +1053,8 @@ let fold bsym_table counter t =
     | BTYP_cfunction (a,b) -> ax a; ax b
 
     | BTYP_pointer a -> ax a
+    | BTYP_rev a -> ax a
+
     | BTYP_tuple_cons (a,b) -> ax a; ax b
 
     | BTYP_hole
@@ -1050,6 +1075,7 @@ let fold bsym_table counter t =
       end
 
     | BTYP_type_apply (a,b) -> ax a; ax b
+    | BTYP_type_map(a,b) -> ax a; ax b
 
     | BTYP_type_set_intersection _
     | BTYP_type_set_union _
@@ -1063,6 +1089,7 @@ let fold bsym_table counter t =
     try aux [] 0 t; t
     with Found t -> t
 
+(* 
 exception Discard of int * int 
 
 let wrap bsym_table counter t =
@@ -1189,6 +1216,7 @@ let wrap bsym_table counter t =
     in
     aux [] 0 t
 
+*)
 
 (* produces a unique minimal representation of a type
 by folding at every node *)
@@ -1225,6 +1253,7 @@ let var_occurs bsym_table t =
     | BTYP_cfunction (a,b) -> aux a; aux b
 
     | BTYP_pointer a  -> aux a
+    | BTYP_rev a -> aux a
 
     | BTYP_label
     | BTYP_unitsum _
@@ -1236,6 +1265,7 @@ let var_occurs bsym_table t =
       aux' (List.map fst p @ excl) b
     
     | BTYP_type_apply (a,b) -> aux a; aux b
+    | BTYP_type_map (a,b) -> aux a; aux b
     | BTYP_tuple_cons (a,b) -> aux a; aux b
     | _ -> 
       print_endline ("[var_occurs] unexpected metatype " ^ sbt bsym_table t);

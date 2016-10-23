@@ -344,6 +344,7 @@ let rec cpp_type_classname syms bsym_table t =
     else
       "_poly_" ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
   end
+  | BTYP_rev _
   | BTYP_polyrecord _
   | BTYP_intersect _
 
@@ -351,6 +352,7 @@ let rec cpp_type_classname syms bsym_table t =
   | BTYP_type_tuple _
   | BTYP_type_function _
   | BTYP_type_apply _
+  | BTYP_type_map _
   | BTYP_type_match _
 
   | BTYP_type_set _

@@ -211,7 +211,10 @@ fun combw[X,A,B] (
 }
 
 
-union abc_t = Abc of string * int * string;
+union abc_t = 
+  | Abc of string * int * string
+  | Xyz of int
+;
 instance Str[abc_t] {
   fun str : abc_t -> string =
   | Abc (a,b,c) => "ABC("+a+","+b.str+","+c+")"
@@ -231,22 +234,29 @@ chip abc_parser
 println$ "Start abc parser";
   while true do
     var x = read io.inp;
-println$ "abc read pos";
-/*
-    var a = read ra;
-    var b = read rb;
-    var c = read rc;
-println$ "A=" + a;
-println$ "b=" + b.str;
-println$ "c=" + c;
-    var d = Abc (a,b,c);
-*/
     var abc = tread rcba;
     var d = Abc abc;
     write (io.out,x);
     write (term, d);
   done
 }
+
+typedef fun ischannel_f(T:TYPE):TYPE => %<T;
+
+chip action_reduce[T:GENERIC,E]
+  (f:T -> E)
+  (inchans: _map ischannel_f (_rev T))
+  (term: %>E)
+  connector io
+    pin inp:%<Buffer
+    pin out:%>Buffer
+{
+  while true do
+    write (io.out,read io.inp);
+    write (term, f (_rev_map read inchans));
+  done
+}
+
 
 fun combw[X,A,T] (
    hiworld: A * list[iochip_t[X,X]],
@@ -263,12 +273,15 @@ syntax Combw {
 }
 open syntax Combw;
 
+fun mkabc (x: string * int * string) => Abc x;
+
 begin
 println$ "PART 2 ---------";
   var s = "hello 67world";
   var p = Buffer &s;
   println$ "building pipeline";
-  var rd,xl =  pstring "hello " #> pint #> pstring "world" #> abc_parser;
+  //var rd,xl =  pstring "hello " #> pint #> pstring "world" #> abc_parser;
+  var rd,xl =  pstring "hello " #> pint #> pstring "world" #> action_reduce Abc;
   var x = pipeline_list (rev xl);
 
   var startinp,startout= mk_ioschannel_pair[Buffer]();

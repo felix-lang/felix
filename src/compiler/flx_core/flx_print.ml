@@ -653,6 +653,9 @@ and sb bsym_table depth fixlist counter prec tc =
       | _ -> 4,cat " * " (map (sbt 4) ls)
       end
 
+    | BTYP_rev t -> 0, "_rev(" ^ sbt 0 t ^ ")"
+      
+
     | BTYP_record (ls) ->
       begin match ls with
       | [] -> 0,"record_unit"
@@ -737,6 +740,7 @@ and sb bsym_table depth fixlist counter prec tc =
     | BTYP_void -> 0,"void"
 
     | BTYP_type_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2
+    | BTYP_type_map (t1,t2) -> 2,"_map " ^ sbt 2 t1 ^ " " ^ sbt 2 t2
     | BTYP_type i -> 0,"TYPE " ^ si i
     | BTYP_type_tuple ls ->
       begin match ls with

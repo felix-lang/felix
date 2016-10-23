@@ -8,8 +8,20 @@ let apl (sr:Flx_srcref.t) (fn : string) (arg:expr_t) =
 let call (sr:Flx_srcref.t) (fn : string) (arg:expr_t) =
   EXE_call ( EXPR_name (sr,fn,[]), arg)
 
+let generic_rev bsym_table counter be rs sr env b =
+  let argx,argt as arg = be rs b in
+  match argt with
+  | BTYP_tuple ls ->
+    let ints = Flx_list.nlist (List.length ls) in
+    let xs = List.map (fun i ->  EXPR_get_n (sr,(i,b))) ints in
+    let xs = List.rev xs in
+    let e = EXPR_tuple (sr,xs) in
+    be rs e
 
-let rec generic_map bsym_table counter be rs sr env fn b =
+  | _ ->
+    be rs (EXPR_apply (sr, (EXPR_name (sr,"rev",[]),b)))
+ 
+let generic_map bsym_table counter be rs sr env fn b =
   let argx,argt as arg = be rs b in
   match argt with
   | BTYP_tuple ls ->
@@ -43,7 +55,7 @@ let generic_map_proc bsym_table bind_exe be sr fn b =
    ("_map procedure not implemented for this type " ^ Flx_print.sbt bsym_table argt)
 
 
-let rec generic_rev_map bsym_table counter be rs sr env fn b =
+let generic_rev_map bsym_table counter be rs sr env fn b =
   let argx,argt as arg = be rs b in
   match argt with
   | BTYP_tuple ls ->
