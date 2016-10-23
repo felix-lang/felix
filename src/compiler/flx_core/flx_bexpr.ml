@@ -26,6 +26,7 @@ type bexpr_t =
   | BEXPR_remove_fields of t * string list
   | BEXPR_variant of string * t
   | BEXPR_closure of Flx_types.bid_t * Flx_btype.t list
+  | BEXPR_identity_function of Flx_btype.t
 
 (* value of union constant constructor *)
   | BEXPR_case of int * Flx_btype.t
@@ -89,6 +90,8 @@ let bexpr_cond ((_,ct) as c) ((_,tt) as t) ((_,ft) as f) =
    assert  (ct = (Flx_btype.BTYP_unitsum 2)); 
    assert (tt = ft);
    BEXPR_cond (c,t,f),complete_check tt
+
+let bexpr_identity_function t = BEXPR_identity_function t, btyp_function (t,t)
 
 let bexpr_unit = BEXPR_unit,Flx_btype.BTYP_tuple []
 let bexpr_unitptr = BEXPR_unitptr, Flx_btype.BTYP_pointer (Flx_btype.BTYP_tuple [])
@@ -577,6 +580,9 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_lrbrack e, BEXPR_lrbrack e' ->
     cmp e e'
 
+  | BEXPR_identity_function t1, BEXPR_identity_function t2 ->
+    t1 = t2 
+
   | _ -> false
 
 (* -------------------------------------------------------------------------- *)
@@ -634,6 +640,8 @@ let flat_iter
   | BEXPR_closure (i,ts) ->
       f_bid i;
       List.iter f_btype ts
+  | BEXPR_identity_function t -> f_btype t
+
   | BEXPR_varname (i,ts) ->
       f_bid i;
       List.iter f_btype ts
@@ -720,6 +728,9 @@ let map
   | BEXPR_variant (s,e),t -> BEXPR_variant (s, f_bexpr e),f_btype t
   | BEXPR_closure (i,ts),t ->
       BEXPR_closure (f_bid i, List.map f_btype ts),f_btype t
+  | BEXPR_identity_function t,ft -> 
+    BEXPR_identity_function (f_btype t),f_btype ft
+
   | BEXPR_varname (i,ts),t -> BEXPR_varname (f_bid i, List.map f_btype ts), f_btype t
   | BEXPR_case (i,t'),t -> BEXPR_case (i, f_btype t'),f_btype t
   | BEXPR_match_case (i,e),t -> BEXPR_match_case (i, f_bexpr e),f_btype t
@@ -763,6 +774,8 @@ let rec reduce e =
     | BEXPR_deref (BEXPR_ref (i,ts),_),t -> BEXPR_varname (i,ts),t
     | BEXPR_deref (BEXPR_address (e,t),_),_ -> (e,t)
     | BEXPR_address (BEXPR_deref (e,t),_),_ -> (e,t)
+    | BEXPR_apply ((BEXPR_identity_function _,_),e),_ -> e
+
     | BEXPR_apply 
       (
        (BEXPR_compose( (_,Flx_btype.BTYP_function (_,b) as f1), f2),_),

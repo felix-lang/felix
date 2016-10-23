@@ -213,7 +213,7 @@ fun combw[X,A,B] (
 
 union abc_t = 
   | Abc of string * int * string
-  | Xyz of int
+/*  | Xyz of int */
 ;
 instance Str[abc_t] {
   fun str : abc_t -> string =

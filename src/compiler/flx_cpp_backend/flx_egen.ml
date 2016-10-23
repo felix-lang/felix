@@ -1259,6 +1259,8 @@ end
         )
     end
 
+  | BEXPR_identity_function t -> assert false
+ 
   | BEXPR_closure (index,ts') ->
 (*
     print_endline ("Generating closure of " ^ si index);

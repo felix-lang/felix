@@ -390,6 +390,24 @@ end;
     Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
     bexpr_closure t (closure_bid, [])
 
+  | BEXPR_identity_function t,_ ->
+(*
+print_endline ("[flx_mkcls2] Generating identity for " ^ sbt bsym_table t);
+*)
+    let ft = btyp_function (t,t) in
+    let closure_bid = fresh_bid state.syms.counter in
+    let closure_name = ("_id_" ^ string_of_int closure_bid) in
+    Flx_bsym_table.add nutab closure_bid None 
+      (Flx_bsym.create ~sr:sr closure_name (bbdcl_invalid ()))
+    ;
+
+    let param, arg = make_inner_function state nutab closure_bid sr [] [] [t] in
+    let exes = [bexe_fun_return (sr,arg) ] in
+    let bbdcl = bbdcl_fun ([],[],([param],None),t,noeffects,exes) in
+    Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
+
+    bexpr_closure ft (closure_bid, [])
+
 
   | e -> 
     let e = Flx_bexpr.map ~f_bexpr:ce e in

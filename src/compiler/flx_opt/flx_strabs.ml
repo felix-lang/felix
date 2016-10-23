@@ -119,6 +119,8 @@ let fixreqs bsym_table reqs = map (fixreq bsym_table) reqs
 the solo union detectors work
 *)
 let rec fixexpr' bsym_table e =
+(* print_endline ("OMG fix expr " ^ sbe bsym_table e); *)
+
     let f_btype t = fixtype bsym_table t in 
     let f_bexpr e = fixexpr' bsym_table e in
     match e with
@@ -133,16 +135,12 @@ let rec fixexpr' bsym_table e =
 
 (* for union U with one constant constructor C, replace C with unit *)
     | BEXPR_case (_,ut),_ when is_solo_union bsym_table ut -> 
-(*
       print_endline "  ** [fixexpr] Replace constant constructor of solo SUM with unit";
-*)
       Flx_bexpr.bexpr_unit
 
 (* for union U with one non-constant constructor C, replace C a with a *)
     | BEXPR_apply ((BEXPR_inj (idx, ct,ut),_), a),_ when is_solo_union bsym_table ut -> 
-(*
-      print_endline "  ** [fixexpr] Replace non-constant constructor of solo union (INJECTION) with argument";
-*)
+      print_endline "  ** [fixexpr] Replace application of non-constant constructor of solo union (INJECTION) with argument";
       f_bexpr a
 
 (* DEPRECATED CASE! Should use injection now *)
@@ -150,9 +148,7 @@ let rec fixexpr' bsym_table e =
     | BEXPR_apply ((BEXPR_varname (k,ts),BTYP_function (atyp1,ut)), a),ut2 
       when is_solo_union bsym_table ut && is_nonconst_ctor bsym_table k
       -> 
-(*
-      print_endline "  ** [fixexpr] Replace non-constant constructor of solo union (VARNAME) with argument";
-*)
+      print_endline "  ** [fixexpr]xx Replace application of non-constant constructor of solo union (VARNAME) with argument";
       f_bexpr a
 
 (* for union U with one non-constant constructor C, replace C a with a *)
@@ -160,15 +156,13 @@ let rec fixexpr' bsym_table e =
       when is_solo_union bsym_table ut && is_nonconst_ctor bsym_table k
       -> 
 (*
-      print_endline "  ** [fixexpr] Replace non-constant constructor of solo union (CLOSURE) with argument";
+      print_endline "  ** [fixexpr]yy Replace application of non-constant constructor of solo union (CLOSURE) with argument";
 *)
       f_bexpr a
 
 
     | BEXPR_case_index (x,ut),_ when is_solo_union bsym_table ut -> 
-(*
       print_endline ("  ** [fixexpr] Woops, case index of solo union, should be 0 but of what type? Let try int");
-*)
       Flx_bexpr.bexpr_int 0
 
 
@@ -187,21 +181,37 @@ let rec fixexpr' bsym_table e =
 *)
       f_bexpr (x,ut)
 
-    | BEXPR_closure (i,ts),t when is_solo_union bsym_table t ->
-      let ct = get_solo_union_ctor_arg_type bsym_table t in
+    | ((BEXPR_inj (idx, ct,ut),_)) when is_solo_union bsym_table ut -> 
+print_endline ("FIXME: Found constructor of solo union used as injection style closure");
+      assert false
+
+    | BEXPR_closure (i,ts),BTYP_function (argt,ut) when 
+      is_solo_union bsym_table ut &&
+      is_nonconst_ctor bsym_table i
+      ->
+      let t = f_btype argt in
+(*
+print_endline ("[  ** [fixexp] Found constructor of solo union used as closure using identity type " ^ 
+  sbt bsym_table argt ^ " ==? " ^
+  sbt bsym_table t
+);
+*)
+      (* let ct = get_solo_union_ctor_arg_type bsym_table t in *)
+      bexpr_identity_function t
+
+(*
       begin match ct with
       | BTYP_void
       | BTYP_tuple [] ->
-(*
         print_endline ("  ** [fixexpr] Replace closure " ^ si i^ " of solo UNION type " ^ 
           sbt bsym_table t ^ " with unit");
-*)
         Flx_bexpr.bexpr_unit
       | _ ->
         print_endline ("  ** [fixexpr] Replace closure " ^ si i ^ " of solo UNION type "^ 
           sbt bsym_table t ^ " with nonconst ctor of type " ^ sbt bsym_table ct ^ " with closure of that type");
         Flx_bexpr.bexpr_closure ct (i, ts)
       end
+*)
 
     | BEXPR_varname (i,ts),t when is_solo_union bsym_table t ->
       let ct = get_solo_union_ctor_arg_type bsym_table t in
@@ -303,12 +313,12 @@ let strabs_symbol bsym_table index parent bsym bsym_table' =
   | BBDCL_external_code (bvs, c, ikind, breqs) ->
       h (bbdcl_external_code (bvs, c, ikind, fb breqs))
 
+(*
   (* eliminate unions with solo constructors *)
   | BBDCL_union (bvs, [id,idx,ct]) -> 
-(*
 print_endline ("Removing entry for index = "^si index^" : union " ^Flx_bsym.id bsym ^ " with solo constructor " ^ id);
-*)
     ()
+*)
 
   | BBDCL_union (bvs, cts) ->
       let cts = map (fun (s,j,t) -> s,j,ft t) cts in
@@ -321,25 +331,20 @@ print_endline ("Removing entry for index = "^si index^" : union " ^Flx_bsym.id b
   | BBDCL_cstruct (bvs, cts, breqs) ->
       let cts = map (fun (s,t) -> s,ft t) cts in
       h (bbdcl_cstruct (bvs, cts, fb breqs))
-
-  
+(*  
   | BBDCL_const_ctor (bvs, j, t1, k, evs, etraint) when is_solo_union bsym_table t1 -> 
-(*
 print_endline ("Removing entry for index = "^si index^
 " : const constructor index "^si k^ " name " ^ Flx_bsym.id bsym ^
 " for union " ^sbt bsym_table t1 ^ " (solo constructor)");
-*)
     ()
 
   | BBDCL_nonconst_ctor (bvs, j, t1, k,t2, evs, etraint) when is_solo_union bsym_table t1 ->
-(*
 print_endline ("Removing entry for index = "^si index^
 " : nonconst constructor index "^si k^ " name " ^ Flx_bsym.id bsym ^
 " arg type " ^ sbt bsym_table t2 ^
 " for union " ^sbt bsym_table t1 ^ " (solo constructor)");
-*)
     ()
-
+*)
 
   | BBDCL_const_ctor (bvs, j, t1, k, evs, etraint) ->
       h (bbdcl_const_ctor (bvs, j, ft t1, k, evs, ft etraint))

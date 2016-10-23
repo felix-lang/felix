@@ -983,8 +983,10 @@ print_endline ("Binding TYP_var " ^ si i);
   | TYP_apply (TYP_apply (TYP_name (_,"_map",[]), funct), t2) ->
     let bfunct = bt funct in
     let bt2 = bt t2 in
+(*
 print_endline ("type _map functor = " ^ sbt bsym_table bfunct);
 print_endline ("type _map datatype = " ^ sbt bsym_table bt2);
+*)
     btyp_type_map (bfunct, bt2)
 
   | TYP_apply (TYP_name (_,"_flatten",[]),t2) ->

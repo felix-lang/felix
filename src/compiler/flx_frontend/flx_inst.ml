@@ -217,6 +217,10 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_rprj (_,_,d,c) 
   | BEXPR_inj (_,d,c) -> ut (vs (BTYP_function (d,c)))
 
+  | BEXPR_identity_function t -> 
+    let t = vs t in
+    ut (btyp_function (t,t))
+
   | BEXPR_ref (i,ts)
   | BEXPR_varname (i,ts)
   | BEXPR_closure (i,ts)

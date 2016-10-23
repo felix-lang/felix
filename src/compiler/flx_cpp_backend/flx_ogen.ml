@@ -60,6 +60,14 @@ let scan_bexpr syms bsym_table allocable_types e : unit =
       in
       Hashtbl.replace allocable_types cls index;
 
+    | BEXPR_identity_function t,ft -> 
+      let index = 
+        try Flx_treg.find_type_index syms bsym_table ft
+        with Not_found -> failwith ("[scan_expr] Can't find identity function of type " ^
+         sbt bsym_table ft ^ " in registry")
+      in
+      Hashtbl.replace allocable_types ft index;
+
     | x -> ()
   in
   Flx_bexpr.iter ~f_bexpr:aux e

@@ -1972,6 +1972,7 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_deref e -> "*("^ se e ^ ")"
   | BEXPR_varname (i,ts) -> sid i ^ string_of_inst "varname" bsym_table ts
   | BEXPR_closure (i,ts) -> sid i ^ string_of_inst "closure" bsym_table ts
+  | BEXPR_identity_function t -> "identity_function["^sbt bsym_table t^"]"
   | BEXPR_ref (i,ts) -> "&" ^ sid i ^ string_of_inst "ref" bsym_table ts
   | BEXPR_new e -> "new " ^ se e
   | BEXPR_class_new (t,e) -> "new " ^ sbt bsym_table t ^ "(" ^ se e ^ ")"
