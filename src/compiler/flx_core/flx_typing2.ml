@@ -174,6 +174,14 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
           | EXPR_tuple (_,[s1;s2]) -> TYP_tuple_cons ( sr, typecode_of_expr s1, typecode_of_expr s2)
           | _ -> assert false
           end
+
+      | EXPR_name (sr, "tuple_snoc", []) -> 
+          begin match e2 with
+          | EXPR_tuple (_,[s1;s2]) -> TYP_tuple_snoc ( sr, typecode_of_expr s1, typecode_of_expr s2)
+          | _ -> assert false
+          end
+
+
       | EXPR_name (_, "\\cap", []) -> 
           begin match e2 with
           | EXPR_tuple (_,[s1;s2]) -> TYP_setintersection[typecode_of_expr s1; typecode_of_expr s2]
@@ -370,6 +378,14 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
       in
       EXPR_apply (dsr, (e1, e2))
 
+  | TYP_tuple_snoc (sr, t1, t2) -> 
+      let e1 = EXPR_name (dsr, "tuple_snoc", []) in
+      let e2 = EXPR_tuple (dsr, 
+        [(expr_of_typecode dsr t1);
+         (expr_of_typecode dsr t2)]) 
+      in
+      EXPR_apply (dsr, (e1, e2))
+
   | TYP_setunion [t1;t2] -> 
       let e1 = EXPR_name (dsr, "\\cup", []) in
       let e2 = EXPR_tuple (dsr, 
@@ -442,5 +458,6 @@ let string_of_type_name (t:typecode_t) = match t with
   | TYP_type_match _ -> "TYP_type_match"
   | TYP_type_extension _ -> "TYP_type_extension"
   | TYP_tuple_cons _ -> "TYP_tuple_cons"
+  | TYP_tuple_snoc _ -> "TYP_tuple_snoc"
   | TYP_typeof _ -> "TYP_typeof"
 

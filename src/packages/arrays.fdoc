@@ -460,7 +460,10 @@ open class Farray
     return o;
   }
 
-
+  // not very efficient!
+  fun rev_map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N] => 
+    rev (map _f x)
+  ;
 
   // Note: for many loops below, note we're using unsigned values
   // iterating from 0 to N-1. Subtraction N-1 fails for n == 0

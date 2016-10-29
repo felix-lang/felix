@@ -14,6 +14,8 @@ type extract_t =
   | Proj_s of Flx_srcref.t * string          (* record projection name *)
   | Proj_head of Flx_srcref.t                (* tuple_cons head extractor  *)
   | Proj_tail of Flx_srcref.t                (* tuple_cons tail extractor  *)
+  | Proj_body of Flx_srcref.t                (* tuple_snoc body extractor  *)
+  | Proj_last of Flx_srcref.t                (* tuple_snoc last extractor  *)
   | Polyrec_tail of Flx_srcref.t * string list (* list of fields to exclude! *)
   | Expr of Flx_srcref.t * expr_t
 
@@ -47,6 +49,8 @@ let gen_extractor
     | Proj_s (sr,s) -> EXPR_get_named_variable (sr,(s,marg))
     | Proj_tail (sr) -> EXPR_get_tuple_tail (sr,(marg))
     | Proj_head (sr) -> EXPR_get_tuple_head (sr,(marg))
+    | Proj_body (sr) -> EXPR_get_tuple_body (sr,(marg))
+    | Proj_last (sr) -> EXPR_get_tuple_last (sr,(marg))
     | Polyrec_tail (sr,flds) -> EXPR_remove_fields (sr,marg,flds)
     | Expr (sr,e) -> e
   )
@@ -100,6 +104,8 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   | EXPR_extension _
   | EXPR_get_tuple_tail _
   | EXPR_get_tuple_head _
+  | EXPR_get_tuple_body _
+  | EXPR_get_tuple_last _
   | EXPR_label _
   | EXPR_rnprj _
   | EXPR_remove_fields _
@@ -112,6 +118,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
       clierrx "[flx_desugar/flx_mbind.ml:107: E341] " sr ("[mbind:subst] Not expected in pattern when clause: " ^ string_of_expr e); 
 
   | EXPR_tuple_cons (sr, eh, et) -> EXPR_tuple_cons (sr, subst eh, subst et)
+  | EXPR_tuple_snoc (sr, eh, et) -> EXPR_tuple_snoc (sr, subst eh, subst et)
   | EXPR_superscript (sr,(e1,e2)) -> EXPR_superscript (sr, (subst e1, subst e2))
   | EXPR_product (sr,ls) -> EXPR_product (sr,map subst ls)
   | EXPR_sum (sr,ls) -> EXPR_sum (sr, map subst ls)
@@ -239,6 +246,16 @@ let rec get_pattern_vars
 
     let sr = src_of_pat pat2 in
     let extractor' = Proj_tail (sr) :: extractor in
+    get_pattern_vars vars pat2 extractor'
+
+
+  | PAT_tuple_snoc (sr,pat1,pat2) ->
+    let sr = src_of_pat pat1 in
+    let extractor' = Proj_body (sr) :: extractor in
+    get_pattern_vars vars pat1 extractor';
+
+    let sr = src_of_pat pat2 in
+    let extractor' = Proj_last (sr) :: extractor in
     get_pattern_vars vars pat2 extractor'
 
   | PAT_nonconst_ctor (sr,name,pat) ->
@@ -483,5 +500,14 @@ let rec gen_match_check pat (arg:expr_t) =
        how many components are involved. So p2 had better be a wildcard!
     *)
     gen_match_check p1 (EXPR_get_n (sr,(0, arg)))
+
+  | PAT_tuple_snoc (sr, p1, p2) -> 
+    (* Not clear how to check p2 matches the rest of the argument,
+       since we don't know the type of the argument, we don't know
+       how many components are involved. So p1 had better be a wildcard!
+    *)
+    
+(* OUCH! We need get_n to work with -1, meaning last component *)
+    gen_match_check p2 (EXPR_get_n (sr,(-1, arg)))
 
 

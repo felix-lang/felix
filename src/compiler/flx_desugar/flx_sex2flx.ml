@@ -129,6 +129,7 @@ and xexpr_t sr x =
   | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> EXPR_apply(xsr sr,(xexpr_t (xsr sr) e1, xexpr_t (xsr sr) e2))
   | Lst [Id "ast_tuple";  sr; Lst es] -> EXPR_tuple (xsr sr,map (xexpr_t (xsr sr)) es)
   | Lst [Id "ast_tuple_cons";  sr; eh; et] -> EXPR_tuple_cons (xsr sr, xexpr_t (xsr sr) eh, xexpr_t (xsr sr) et)
+  | Lst [Id "ast_tuple_snoc";  sr; eh; et] -> EXPR_tuple_snoc (xsr sr, xexpr_t (xsr sr) eh, xexpr_t (xsr sr) et)
   | Lst [Id "ast_record";  sr; Lst rs] ->
    let rs =
      map (function
@@ -348,6 +349,7 @@ and xpattern_t x =
   | Lst [Id "pat_name"; sr; id] -> PAT_name (xsr sr, xid id)
   | Lst [Id "pat_tuple"; sr; Lst ps] -> PAT_tuple (xsr sr, map xp ps)
   | Lst [Id "pat_tuple_cons"; sr; a; b] -> PAT_tuple_cons (xsr sr, xp a, xp b)
+  | Lst [Id "pat_tuple_snoc"; sr; a; b] -> PAT_tuple_snoc (xsr sr, xp a, xp b)
 
   | Lst [Id "pat_any"; sr] -> PAT_any (xsr sr)
   | Lst [Id "pat_setform_any"; sr] -> PAT_setform_any (xsr sr)

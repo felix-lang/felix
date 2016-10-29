@@ -51,6 +51,7 @@ and t =
   | BTYP_type_match of t * (btpattern_t * t) list
 
   | BTYP_tuple_cons of t * t 
+  | BTYP_tuple_snoc of t * t 
 
   (* type sets *)
   | BTYP_type_set of t list (** open union *)
@@ -105,6 +106,7 @@ let rec str_of_btype typ =
   | BTYP_type_map (f,t) -> "BTYP_type_map(" ^ s f ^"," ^s t^")"
 
   | BTYP_tuple_cons (h,t) -> "BTYP_tuple_cons (" ^ s h ^"**" ^ s t^")"
+  | BTYP_tuple_snoc (h,t) -> "BTYP_tuple_snoc (" ^ s h ^"<**>" ^ s t^")"
 
   (* type sets *)
   | BTYP_type_set ts -> "BTYP_type_set(" ^ss ts^ ")"
@@ -255,6 +257,12 @@ let btyp_tuple_cons head tail =
   match tail with
   | BTYP_tuple ts -> btyp_tuple (head::ts)
   | _ -> BTYP_tuple_cons (head,tail)
+
+let btyp_tuple_snoc body last = 
+  match body with
+  | BTYP_tuple ts -> btyp_tuple (ts@[last])
+  | _ -> BTYP_tuple_snoc (body,last)
+
 
 (** Construct a BTYP_array type. *)
 let btyp_array (t, n) =
@@ -494,6 +502,7 @@ let flat_iter
   | BTYP_fix _ -> ()
   | BTYP_type _ -> ()
   | BTYP_tuple_cons (a,b) -> f_btype a; f_btype b
+  | BTYP_tuple_snoc (a,b) -> f_btype a; f_btype b
   | BTYP_type_tuple ts -> List.iter f_btype ts
   | BTYP_type_function (its, a, b) ->
       (* The first argument of [its] is an index, not a bid. *)
@@ -558,6 +567,7 @@ let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_void as x -> x
   | BTYP_fix _ as x -> x
   | BTYP_tuple_cons (a,b) -> btyp_tuple_cons (f_btype a) (f_btype b)
+  | BTYP_tuple_snoc (a,b) -> btyp_tuple_snoc (f_btype a) (f_btype b)
   | BTYP_type _ as x -> x
   | BTYP_type_tuple ts -> btyp_type_tuple (List.map f_btype ts)
   | BTYP_type_function (its, a, b) ->

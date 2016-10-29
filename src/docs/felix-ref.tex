@@ -10091,12 +10091,51 @@ class LS_expr
 \begin{description}
 \item[{\tt \_make\_}typename]
 Cast the representation of an abstract type to the abstract type.
+
 \item[{\tt \_repr\_}]
 Cast an abstract type to its representation.
+
 \item[{\tt \_map}]
 Generic map.
+
 \item[{\tt \_eq}]
 Generic equality.
+
+\item[{\tt \_rev}]
+Tuple and tuple type reversal. 
+Applied after monomorphisation.
+Works on arrays too using library function.
+
+\item[{\tt \_map}]
+Tuple map and tuple type map. 
+Applied after monomorphisation.
+Works on arrays too.
+
+\item[{\tt \_rev\_map}]
+Reversing tuple map and tuple type map. 
+Applied after monomorphisation.
+Works on arrays too using library function.
+
+\item[{\tt \_strr}]
+Generic conversion to string.
+Supports records and tuples.
+Delegates primitives and arrays to library function \verb%str%.
+
+\item[{\tt \_tie}]
+Converts a pointer to a tuple, to a tuple of pointers to the
+components of the original tuple.
+
+\item[$\prod$]
+Product of functions. Prefix quantifier over tuple.
+
+\item[$\sum$]
+Sum of functions. Prefix quantifier over tuple.
+
+\item[$\langle\cdot\rangle$]
+Mediating morphism of product of functions.
+
+\item[$\lbrack\cdot\rbrack$]
+Mediating morphism of sum of functions.
 
 \item[{\tt apply}]
 User defined application.

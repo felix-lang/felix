@@ -31,6 +31,13 @@ let generic_map bsym_table counter be rs sr env fn b =
     let e = EXPR_tuple (sr,xs) in
     be rs e
 
+  | BTYP_array (t,BTYP_unitsum n) when n < 20 ->
+    let ints = Flx_list.nlist n in
+    let xs = List.map (fun i ->  EXPR_get_n (sr,(i,b))) ints in
+    let xs = List.map (apl sr fn) xs in
+    let e = EXPR_tuple (sr,xs) in
+    be rs e
+
   | BTYP_array (t,_) ->
     (* print_endline ("Cheating, array element type " ^ Flx_print.sbt bsym_table t); *)
     let ubt = Flx_typecode_of_btype.typecode_of_btype bsym_table counter sr t in
@@ -65,6 +72,15 @@ let generic_rev_map bsym_table counter be rs sr env fn b =
     let xs = List.rev xs in
     let e = EXPR_tuple (sr,xs) in
     be rs e
+
+  | BTYP_array (t,BTYP_unitsum n) when n < 20 ->
+    let ints = Flx_list.nlist n in
+    let xs = List.map (fun i ->  EXPR_get_n (sr,(i,b))) ints in
+    let xs = List.map (apl sr fn) xs in
+    let e = EXPR_tuple (sr,xs) in
+    let xs = List.rev xs in
+    be rs e
+
 
   | BTYP_array (t,_) ->
     (* print_endline ("Cheating, array element type " ^ Flx_print.sbt bsym_table t); *)

@@ -66,6 +66,8 @@ let map_type f (t:typecode_t):typecode_t = match t with
     TYP_type_match (f t, ps)
 
   | TYP_tuple_cons (sr,t1,t2) -> TYP_tuple_cons (sr, f t1, f t2)
+  | TYP_tuple_snoc (sr,t1,t2) -> TYP_tuple_snoc (sr, f t1, f t2)
+
   (* meta constructors *)
   | TYP_apply (a,b) -> TYP_apply (f a, f b)
   | TYP_typefun (ps, a, b) -> TYP_typefun (ps, f a, f b)
@@ -114,7 +116,6 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | EXPR_lookup (sr,(x,s,ts)) -> EXPR_lookup (sr,(fe x, s, List.map ft ts))
   | EXPR_apply (sr,(a,b)) -> EXPR_apply (sr,(fe a, fe b))
   | EXPR_tuple (sr,es) -> EXPR_tuple (sr, List.map fe es)
-  | EXPR_tuple_cons (sr,eh, et) -> EXPR_tuple_cons (sr, fe eh, fe et)
   | EXPR_record (sr,es) -> EXPR_record (sr, List.map (fun (s,e) -> s,fe e) es)
   | EXPR_polyrecord (sr,es,e) -> EXPR_polyrecord (sr, List.map (fun (s,e) -> s,fe e) es, fe e)
   | EXPR_replace_fields (sr,e,ss) -> 
@@ -194,8 +195,15 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | EXPR_range_check (sr,mi,v,mx) -> EXPR_range_check (sr, fe mi, fe v, fe mx)
   | EXPR_not (sr,e) -> EXPR_not (sr, fe e)
   | EXPR_extension (sr,es,e) -> EXPR_extension (sr, List.map fe es, fe e)
+
+  | EXPR_tuple_cons (sr,eh, et) -> EXPR_tuple_cons (sr, fe eh, fe et)
   | EXPR_get_tuple_tail (sr,e) -> EXPR_get_tuple_tail (sr, fe e)
   | EXPR_get_tuple_head (sr,e) -> EXPR_get_tuple_head (sr, fe e)
+
+  | EXPR_tuple_snoc (sr,eh, et) -> EXPR_tuple_snoc (sr, fe eh, fe et)
+  | EXPR_get_tuple_body (sr,e) -> EXPR_get_tuple_body (sr, fe e)
+  | EXPR_get_tuple_last (sr,e) -> EXPR_get_tuple_last (sr, fe e)
+
 
 let idf x = x 
 let map_expr fe (e:expr_t):expr_t = full_map_expr idf idf fe e
@@ -251,6 +259,8 @@ let iter_expr f (e:expr_t) =
   | EXPR_not (_,x) 
   | EXPR_get_tuple_tail (_,x)
   | EXPR_get_tuple_head (_,x)
+  | EXPR_get_tuple_body (_,x)
+  | EXPR_get_tuple_last (_,x)
   | EXPR_remove_fields (_,x,_)
     -> f x
 
@@ -262,6 +272,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_apply (_,(a,b))
   | EXPR_isin (_,(a,b))
   | EXPR_tuple_cons (_, a, b) 
+  | EXPR_tuple_snoc (_, a, b) 
     -> f a; f b
 
   | EXPR_effector (_,(a,e,b))

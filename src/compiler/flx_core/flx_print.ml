@@ -202,7 +202,10 @@ and string_of_expr (e:expr_t) =
   | EXPR_tuple (_,t) -> "(" ^ catmap ", " se t ^ ")"
   | EXPR_get_tuple_tail (_,t) -> "get_tuple_tail(" ^ se t ^ ")"
   | EXPR_get_tuple_head (_,t) -> "get_tuple_head(" ^ se t ^ ")"
+  | EXPR_get_tuple_body(_,t) -> "get_tuple_body(" ^ se t ^ ")"
+  | EXPR_get_tuple_last(_,t) -> "get_tuple_last(" ^ se t ^ ")"
   | EXPR_tuple_cons (_,eh, et) -> "tuple_cons (" ^ se eh ^ "," ^ se et ^ ")"
+  | EXPR_tuple_snoc (_,eh, et) -> "tuple_snoc (" ^ se eh ^ "," ^ se et ^ ")"
 
   | EXPR_record (_,ts) ->
       "(" ^
@@ -370,6 +373,7 @@ and st prec tc : string =
       | Some t -> 0,"(DEFER:"^string_of_typecode t^")" 
       end
     | TYP_tuple_cons (sr, t1, t2) -> 6, st 4 t1 ^ "**" ^ st 4 t2
+    | TYP_tuple_snoc (sr, t1, t2) -> 6, st 4 t1 ^ "<**>" ^ st 4 t2
 
     | TYP_index (sr,name,idx) -> 0, name ^ "<" ^ string_of_bid idx ^ ">"
     | TYP_label -> 0, "LABEL"
@@ -605,6 +609,9 @@ and sb bsym_table depth fixlist counter prec tc =
     | BTYP_label -> 0,"label"
     | BTYP_tuple_cons (t1,t2) -> 
       5,(sbt 5 t1) ^ " ** " ^ (sbt 5 t2)
+
+    | BTYP_tuple_snoc (t1,t2) -> 
+      5,(sbt 5 t1) ^ " <**> " ^ (sbt 5 t2)
 
     | BTYP_type_match (t,ps) ->
       0,
@@ -861,6 +868,7 @@ and string_of_pattern p =
   | PAT_tuple (_,ps) -> "(" ^ catmap ", "  string_of_pattern ps ^ ")"
   | PAT_alt (_,ps) -> "(" ^ catmap " | "  string_of_pattern ps ^ ")"
   | PAT_tuple_cons (_,a,b) -> string_of_pattern a ^ ",," ^ string_of_pattern b
+  | PAT_tuple_snoc (_,a,b) -> string_of_pattern a ^ "<,,>" ^ string_of_pattern b
   | PAT_any _ -> "any"
   | PAT_setform_any _ -> "setform_any (elidable)"
   | PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s
@@ -1961,7 +1969,10 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_label (i) -> sid i ^ "label"
   | BEXPR_tuple_head e -> "tuple_head ("^ se e ^")"
   | BEXPR_tuple_tail e -> "tuple_tail("^ se e ^")"
+  | BEXPR_tuple_body e -> "tuple_body("^ se e ^")"
+  | BEXPR_tuple_last e -> "tuple_last("^ se e ^")"
   | BEXPR_tuple_cons (eh,et) -> "tuple_cons("^ se eh ^"," ^ se et ^")"
+  | BEXPR_tuple_snoc (eh,et) -> "tuple_snoc ("^ se eh ^"," ^ se et ^")"
   | BEXPR_aprj (ix,d,c) -> "aprj("^se ix^")"
   | BEXPR_rprj (ix,n,d,c) -> "rprj_"^string_of_int n^"("^ix^")"
   | BEXPR_prj (n,d,c) -> "(prj"^ si n^":"^sbt bsym_table d ^ " -> " ^ sbt bsym_table c^ ")"

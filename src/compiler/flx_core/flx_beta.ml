@@ -307,6 +307,7 @@ print_endline "Type list index returned None";
   *)
 
   | BTYP_tuple_cons (t1,t2) -> btyp_tuple_cons (br t1) (br t2)
+  | BTYP_tuple_snoc (t1,t2) -> btyp_tuple_snoc (br t1) (br t2)
   | BTYP_inst (i,ts) -> btyp_inst (i, List.map br ts)
   | BTYP_tuple ls -> btyp_tuple (List.map br ls)
   | BTYP_rev t -> btyp_rev (br t)
@@ -425,6 +426,11 @@ print_endline "Type list index returned None";
       ls 
     in 
     btyp_tuple rs
+
+  (* a bit hacky !!! Doesn't apply function to index type*)
+  | BTYP_type_map (t1,BTYP_array (b,n)) ->
+    let rb = br (btyp_type_apply (t1,b)) in
+    btyp_array (rb,n)
 
   (* can't reduce *)
   | BTYP_type_map (t1,t2) -> btyp_type_map (br t1, br t2)

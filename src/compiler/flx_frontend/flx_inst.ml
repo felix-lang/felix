@@ -191,9 +191,21 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
     ue e;
     register_tuple syms bsym_table (vs t) (* NOTE: this is the type of the tail! *)
 
+  | BEXPR_tuple_last e ->
+    ue e
+
+  | BEXPR_tuple_body e ->
+    ue e;
+    register_tuple syms bsym_table (vs t) (* NOTE: this is the type of the body! *)
+
   | BEXPR_tuple_cons (eh, et) ->
     ue eh; ue et; 
     register_tuple syms bsym_table (vs t)
+
+  | BEXPR_tuple_snoc (eh, et) ->
+    ue eh; ue et; 
+    register_tuple syms bsym_table (vs t)
+
 
   | BEXPR_record es ->
     let ss,es = split es in

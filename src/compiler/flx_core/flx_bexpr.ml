@@ -51,6 +51,9 @@ type bexpr_t =
   | BEXPR_tuple_tail of t
   | BEXPR_tuple_head of t
   | BEXPR_tuple_cons of t * t
+  | BEXPR_tuple_body of t
+  | BEXPR_tuple_last of t
+  | BEXPR_tuple_snoc of t * t
   | BEXPR_prj of int * Flx_btype.t * Flx_btype.t
   | BEXPR_rprj of string * int * Flx_btype.t * Flx_btype.t
   | BEXPR_aprj of t * Flx_btype.t * Flx_btype.t
@@ -100,10 +103,15 @@ let bexpr_true = bexpr_bool true
 let bexpr_false = bexpr_bool false
 
 let bexpr_label i = BEXPR_label (i), Flx_btype.btyp_label ()
+
 let bexpr_tuple_tail t e = BEXPR_tuple_tail e, complete_check t
 let bexpr_tuple_head t e = BEXPR_tuple_head e, complete_check t
-
 let bexpr_tuple_cons t (eh,et) = BEXPR_tuple_cons (eh,et), complete_check t
+
+let bexpr_tuple_body t e = BEXPR_tuple_body e, complete_check t
+let bexpr_tuple_last t e = BEXPR_tuple_last e, complete_check t
+let bexpr_tuple_snoc t (eh,et) = BEXPR_tuple_snoc (eh,et), complete_check t
+
 
 let bexpr_deref t e : t = 
   match t with
@@ -180,7 +188,12 @@ let bexpr_coerce (e, t) = BEXPR_coerce (e, t), complete_check t
 let bexpr_prj n d c = 
   begin match d with
   | BTYP_record ls -> assert (n < List.length ls)
-  | BTYP_tuple ls -> assert (n < List.length ls)
+  | BTYP_tuple ls -> 
+    if n>= List.length ls then
+      failwith ("Tuple length " ^ string_of_int (List.length ls) ^ " projection index " ^
+      string_of_int n ^ " is out of range"
+    )
+
   | _ -> ()
   end;
   BEXPR_prj (n,d,c),complete_check (Flx_btype.BTYP_function (d,c))
@@ -556,8 +569,13 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_tuple_head e1, BEXPR_tuple_head e2
   | BEXPR_tuple_tail e1, BEXPR_tuple_tail e2 ->
     cmp e1 e2
-
   | BEXPR_tuple_cons (eh,et), BEXPR_tuple_cons (eh',et') ->
+    cmp eh eh' && cmp et et'
+
+  | BEXPR_tuple_body e1, BEXPR_tuple_body e2
+  | BEXPR_tuple_last e1, BEXPR_tuple_last e2 ->
+    cmp e1 e2
+  | BEXPR_tuple_snoc (eh,et), BEXPR_tuple_snoc (eh',et') ->
     cmp eh eh' && cmp et et'
 
   | BEXPR_aprj (ix,d,c), BEXPR_aprj (ix',d',c') ->
@@ -660,9 +678,16 @@ let flat_iter
   | BEXPR_coerce (e,t) ->
       f_bexpr e;
       f_btype t
+
   | BEXPR_tuple_tail e -> f_bexpr e
   | BEXPR_tuple_head e -> f_bexpr e
   | BEXPR_tuple_cons (eh,et) -> f_bexpr eh; f_bexpr et
+
+  | BEXPR_tuple_body e -> f_bexpr e
+  | BEXPR_tuple_last e -> f_bexpr e
+  | BEXPR_tuple_snoc (eh,et) -> f_bexpr eh; f_bexpr et
+
+
   | BEXPR_aprj (ix,d,c) -> f_bexpr ix; f_btype d; f_btype c
   | BEXPR_rprj (ix,n,d,c) -> f_btype d; f_btype c
   | BEXPR_prj (n,d,c) -> f_btype d; f_btype c
@@ -743,9 +768,16 @@ let map
   | BEXPR_range_check (e1,e2,e3),t ->
       BEXPR_range_check (f_bexpr e1, f_bexpr e2, f_bexpr e3), f_btype t
   | BEXPR_coerce (e,t'),t -> BEXPR_coerce (f_bexpr e, f_btype t'), f_btype t
+
   | BEXPR_tuple_tail e,t -> BEXPR_tuple_tail (f_bexpr e), f_btype t
   | BEXPR_tuple_head e,t -> BEXPR_tuple_head (f_bexpr e), f_btype t
   | BEXPR_tuple_cons (eh,et),t -> BEXPR_tuple_cons (f_bexpr eh, f_bexpr et), f_btype t
+
+  | BEXPR_tuple_body e,t -> BEXPR_tuple_body (f_bexpr e), f_btype t
+  | BEXPR_tuple_last e,t -> BEXPR_tuple_last (f_bexpr e), f_btype t
+  | BEXPR_tuple_snoc (eh,et),t -> BEXPR_tuple_snoc (f_bexpr eh, f_bexpr et), f_btype t
+
+
   | BEXPR_rprj (ix,n,d,c),t -> BEXPR_rprj (ix, n, f_btype d, f_btype c), f_btype t
   | BEXPR_aprj (ix,d,c),t -> BEXPR_aprj (f_bexpr ix, f_btype d, f_btype c), f_btype t
   | BEXPR_prj (n,d,c),t -> BEXPR_prj (n, f_btype d, f_btype c), f_btype t

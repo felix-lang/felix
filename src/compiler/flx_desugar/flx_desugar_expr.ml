@@ -192,6 +192,15 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     let l1,x1 = rex e in 
     l1,EXPR_get_tuple_head (sr,x1)
 
+  | EXPR_get_tuple_body (sr, e) ->
+    let l1,x1 = rex e in 
+    l1,EXPR_get_tuple_body (sr,x1)
+
+  | EXPR_get_tuple_last (sr, e) ->
+    let l1,x1 = rex e in 
+    l1,EXPR_get_tuple_last (sr,x1)
+
+
   | EXPR_as_var (sr,(e,name)) ->
     let l1,x1 = rex e in
     let dcl = Dcl (sr, name, None, `Private, dfltvs, DCL_value (TYP_typeof x1,`Var)) in
@@ -453,6 +462,10 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     let l2,x2 = rex et in
     l1 @ l2, EXPR_tuple_cons (sr,x1,x2)
 
+  | EXPR_tuple_snoc (sr,eh,et) ->
+    let l1,x1 = rex eh in
+    let l2,x2 = rex et in
+    l1 @ l2, EXPR_tuple_snoc (sr,x1,x2)
 
   | EXPR_record (sr,es) ->
     let ss,es = List.split es in

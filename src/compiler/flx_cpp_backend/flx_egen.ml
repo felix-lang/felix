@@ -904,6 +904,35 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
 *)
     ge' e
 
+  | BEXPR_tuple_snoc ((et', tt' as xt'),(eh',th' as xh') ) ->
+    let ntt = normalise_tuple_cons bsym_table tt' in
+    let tts = match ntt with
+    | BTYP_tuple tts -> tts
+    | BTYP_array (t,BTYP_unitsum n) -> 
+      let tts = ref [] in
+      for i = 0 to n - 1 do
+        tts := t :: !tts;
+      done;
+      !tts
+    | _ -> assert false
+    in 
+    let n = List.length tts in
+    let es = match et' with
+    | BEXPR_tuple es -> es 
+    | _ -> 
+      let counter = ref 0 in
+      List.map 
+        (fun t-> 
+          let i = !counter in incr counter;
+          bexpr_get_n t i xt'
+        )
+        tts
+    in
+    let es = es @[xh'] in
+    let t = normalise_tuple_cons bsym_table t in
+    let e = BEXPR_tuple es, t in
+    ge' e
+
   | BEXPR_tuple_head (e',t' as x') ->
 (*
     print_endline ("Tuple head of expression " ^ sbe bsym_table x');
@@ -927,6 +956,25 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
  
     | _ -> 
       print_endline ("Expected head to apply to a tuple, got " ^ 
+        sbt bsym_table t' ^ " ->(normalised)-> " ^ sbt bsym_table t'');
+      assert false
+    end
+
+  | BEXPR_tuple_last (e',t' as x') ->
+    let t'' = normalise_tuple_cons bsym_table t' in
+    begin match t'' with 
+    | BTYP_tuple [] -> assert false
+    | BTYP_tuple ts -> 
+      let eltt = List.hd (List.rev ts) in
+      let n = List.length ts in
+      ge' (bexpr_get_n eltt (n-1) x')
+
+    | BTYP_array (eltt,BTYP_unitsum n) ->
+      assert (n > 0);
+      ge' (bexpr_get_n eltt (n-1) x')
+ 
+    | _ -> 
+      print_endline ("Expected tuple_last to apply to a tuple, got " ^ 
         sbt bsym_table t' ^ " ->(normalised)-> " ^ sbt bsym_table t'');
       assert false
     end
@@ -966,6 +1014,36 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
     in
     let tail = match es with [x] -> x | es -> bexpr_tuple t es in
     ge' tail
+
+  | BEXPR_tuple_body (e',t' as x') ->
+    let t'' = normalise_tuple_cons bsym_table t' in
+    let ts = match t'' with 
+    | BTYP_tuple ts ->  ts
+    | BTYP_array (t, BTYP_unitsum n) -> 
+      let tts = ref [] in
+      for i = 0 to n - 1 do
+        tts := t :: !tts;
+      done;
+      !tts
+
+    | _ -> 
+      print_endline ("Expected tuple_body to be tuple, got " ^ 
+        sbt bsym_table t' ^ " ->(normalised)-> " ^ sbt bsym_table t'');
+      assert false
+    in
+    let n = List.length ts in
+    let counter = ref 0 in
+    let es = 
+      List.map (fun t-> 
+        let x = bexpr_get_n t (!counter) x' in
+        incr counter;
+        x
+     ) 
+     (List.rev (List.tl (List.rev ts))) 
+    in
+    let body = match es with [x] -> x | es -> bexpr_tuple t es in
+    ge' body
+
 
   | BEXPR_match_case (n,((e',t') as e)) ->
     let t' = beta_reduce "flx_egen get_n: match_case" syms.Flx_mtypes2.counter bsym_table sr t' in

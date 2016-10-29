@@ -161,4 +161,309 @@ syntax parsers {
  
 }
 
+syntax Combw {
+  x[ssetintersection_pri] := x[ssetintersection_pri] "#>" x[>ssetintersection_pri] =># "(infix 'combw)";
+  x[ssetunion_pri] := x[ssetunion_pri] "#|" x[>ssetunion_pri] =># "(infix 'alts)";
+}
+@
+@tangle parsers.flx
+// ------------ generic combinators ---------------
+// X * X
+fun comb[X] 
+  (var ax : X, var bx:X) 
+  :list[X] 
+  => list (bx,ax)
+;
+
+// AX * BX
+fun comb[X,A,B] 
+  (var ax : A * X, var bx: B * X) 
+  : (B * A) * list[X] 
+  => (bx.0,ax.0), list (bx.1,ax.1)
+;
+
+// X * BX
+fun comb[X,B] 
+  (var ax : X, var bx: B * X) 
+  : B  * list[X] 
+  => bx.0, list (bx.1,ax)
+;
+
+// AX * X
+fun comb[X,A] 
+  (var ax : A * X, var bx: X) 
+  : A * list[X] 
+  => ax.0, list (bx,ax.1)
+;
+
+// AXs * BX
+fun comb[X,A,B] 
+  (var axs: A * list[X], var bx: B * X) 
+  : (B ** A) * list[X] 
+= {
+  return (bx.0,,axs.0), Cons (bx.1, axs.1) ;
+}
+
+// AXs * X
+fun comb[X,A] (
+  var axs: A * list[X], 
+  var bx:X
+) : A * list[X] 
+= {
+  return axs.0, Cons (bx, axs.1) ;
+}
+
+
+// Xs * BX
+fun comb[X,B] 
+  (var axs: list[X], var bx: B * X) 
+  : B * list[X] 
+= {
+  return bx.0,Cons (bx.1,axs);
+}
+
+// Xs * X
+fun comb[X] 
+  (var axs: list[X], var bx:  X) 
+  : list[X] 
+= {
+  return Cons (bx, axs) ;
+}
+
+// AX * BXs
+fun comb[X,A,B] 
+  (var ax: A * X, var bxs: B * list[X]) 
+  : (B <**> A) * list[X] 
+= {
+  var lst : list[X] = rev (ax.1 ! rev bxs.1);
+  return (bxs.0<,,>ax.0), lst; 
+}
+
+
+//---------- wrapping combinators ---------
+
+fun wrap[B,T] (
+  x:(%>T) -> iochip_t[B,B]
+) 
+: (%<T) * iochip_t[B,B] 
+= {
+  var i,o = mk_ioschannel_pair[T]();
+  return i,x o;
+}
+
+ 
+// AX * BX
+fun combw[X,A,B] (
+  var ax : (%>A)-> iochip_t[X,X], 
+  var bx : (%>B) -> iochip_t[X,X]
+) 
+: ((%<B) * (%<A)) * list[iochip_t[X,X]] 
+=
+{
+   var wax = wrap ax; 
+   var wbx = wrap bx;  
+   return comb (wax,wbx);
+}
+
+// X * BX
+fun combw[X,B] (
+  var ax : iochip_t[X,X], 
+  var bx : (%>B) -> iochip_t[X,X]
+) 
+: (%<B)  * list[iochip_t[X,X]] 
+=
+{
+   var wbx = wrap bx;  
+   return comb (ax,wbx);
+}
+
+// AX * X
+fun combw[X,A] (
+  var ax : (%>A)-> iochip_t[X,X], 
+  var bx : iochip_t[X,X]
+) 
+: (%<A) * list[iochip_t[X,X]] 
+=
+{
+   var wax = wrap ax; 
+   return comb (wax,bx);
+}
+
+// AXs * BX
+fun combw[X,A,B] (
+  var axs: A * list[iochip_t[X,X]],
+  var bx : (%>B) -> iochip_t[X,X]
+) 
+: ((%<B) ** A) * list[iochip_t[X,X]] 
+=
+{
+  var wbx = wrap bx;
+  return comb (axs, wbx);
+}
+
+// AX * BXs
+fun combw[X,A,B] (
+  var ax : (%>A) -> iochip_t[X,X],
+  var bxs: B * list[iochip_t[X,X]]
+) 
+: (B <**> (%<A)) * list[iochip_t[X,X]] 
+=
+{
+  var wax = wrap ax;
+  return comb (wax, bxs);
+}
+
+
+typedef fun ischannel_f(T:TYPE):TYPE => %<T;
+
+chip action_reduce[T:GENERIC,E]
+  (f:T -> E)
+  (inchans: _map ischannel_f (_rev T))
+  (term: %>E)
+  connector io
+    pin inp:%<Buffer
+    pin out:%>Buffer
+{
+  while true do
+    write (io.out,read io.inp);
+    write (term, f (_rev_map read inchans));
+  done
+}
+
+
+fun combw[X,A,T] (
+   hiworld: A * list[iochip_t[X,X]],
+   abc_parser : A -> (%>T) -> iochip_t[X,X]
+) : (%<T) * list[iochip_t[X,X]]
+=>
+  let abc_tuple, pipeline = hiworld in
+  let rd, abc_chip = wrap (abc_parser abc_tuple) in
+  rd, (abc_chip ! pipeline)
+;
+
+
+
+chip deref_first_read[D,C,T] (p:&(%>T -> iochip_t[D,C])) 
+  (term: %>T)
+  connector io
+    pin inp: %<D
+    pin out: %>C
+{
+  var x = read io.inp;
+  var rinp,rout = mk_ioschannel_pair[D]();
+  spawn_fthread ((*p) term (inp=rinp, out=io.out));
+  write (rout,x);
+  while true do
+    x = read io.inp;
+    write (rout,x);
+  done
+}
+ 
+
+proc merge [term_t] (wd: %>term_t) (rds:list[%<term_t])
+{
+  iter proc (ch: %<term_t) {
+    device b = buffer[term_t];
+    circuit
+      wire ch to b.inp
+      wire wd to b.out
+    endcircuit
+  }
+  rds;
+}
+
+fun first[A,B] (x:A,y:B) => x;
+fun second[A,B] (x:A,y:B) => y;
+ 
+chip runalts [term_t]
+  (wd:%>term_t)
+  (alts : list[%<term_t * list[iochip_t[Buffer, Buffer]]])
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  var chans = map first [%<term_t, list[iochip_t[Buffer,Buffer]]] alts;
+  var pipes = map second[%<term_t, list[iochip_t[Buffer,Buffer]]] alts;
+  merge wd chans;
+  var ps = Empty[iochip_t[Buffer,Buffer]];
+  iter proc (p: list[iochip_t[Buffer,Buffer]]) {
+    ps = (pipeline_list p.rev) ! ps;
+  }
+  pipes;
+  var paser : iochip_t[Buffer,Buffer] = tryall_list (rev ps);
+  circuit
+    wire io.inp to paser.inp
+    wire io.out to paser.out
+  endcircuit
+}
+
+// combinators
+fun alts [term_t] 
+  (alts : list[%<term_t * list[iochip_t[Buffer, Buffer]]])
+: %<term_t * iochip_t[Buffer,Buffer]
+=
+{
+  var rd,wd = mk_ioschannel_pair[term_t]();
+  var x = runalts wd alts;
+  return rd,x;
+}
+
+fun alts[term_t] 
+  (
+    a1: %<term_t * list[iochip_t[Buffer, Buffer]],
+    a2: %<term_t * list[iochip_t[Buffer, Buffer]]
+  )
+=> alts ([a1,a2]);
+
+fun alts[term_t] 
+  (
+    var a1: %<term_t * iochip_t[Buffer, Buffer],
+    a2: %<term_t * list[iochip_t[Buffer, Buffer]]
+  )
+=> alts ([(a1.0,list(a1.1)),a2]);
+
+chip pstring (s:string) (term: %>string)
+  connector io
+  pin inp:%<Buffer
+  pin out:%>Buffer
+{
+println$ "Parse " + s;
+  device cs = match_string s;
+  var rin,win= mk_ioschannel_pair[Buffer](); 
+  var rout,wout = mk_ioschannel_pair[Buffer](); 
+  spawn_fthread$ cs (inp=rin, out=wout);
+  while true do
+    var b = read io.inp;
+    write (win,b);
+    var e = read rout;
+    var lexeme = b.sp.[b.pos..<e.pos].string;
+println$ "string lexeme = " + lexeme;
+    write (io.out,e);
+    write (term,lexeme);
+  done
+}
+
+chip pint (term: %>int)
+  connector io
+  pin inp:%<Buffer
+  pin out:%>Buffer
+{
+  device cs = decimal_integer_matcher;
+  var rin,win= mk_ioschannel_pair[Buffer](); 
+  var rout,wout = mk_ioschannel_pair[Buffer](); 
+  spawn_fthread$ cs (inp=rin, out=wout);
+  while true do
+    var b = read io.inp;
+println$ "Int parse sending to recognizer";
+    write (win,b);
+    var e = read rout;
+println$ "Int parse getting from recognizer";
+    var lexeme = b.sp.[b.pos..<e.pos].string;
+println$ "Int lexeme = " + lexeme;
+    write (io.out,e);
+    var i = atoi lexeme;
+    write (term,i);
+  done
+}
+
 

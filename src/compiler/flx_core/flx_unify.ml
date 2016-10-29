@@ -29,6 +29,24 @@ let normalise_tuple_cons bsym_table t =
       let ts = arr n [] in
       let r = btyp_tuple (t1 :: ts) in
       r
+
+    | BTYP_tuple_snoc (BTYP_tuple ls,t1) ->
+      let r = btyp_tuple (ls@[t1]) in
+      r
+
+    | BTYP_tuple_snoc (BTYP_array (t2, BTYP_unitsum n),t1) when t1 = t2 ->
+      let r = btyp_array (t1, BTYP_unitsum (n+1)) in
+      r
+
+    | BTYP_tuple_cons (BTYP_array (t2, BTYP_unitsum n),t1) ->
+      assert (n < 50);
+      let rec arr n ts = match n with 0 -> ts | _ -> arr (n-1) (t2::ts) in
+      let ts = arr n [] in
+      let r = btyp_tuple (ts@[t1]) in
+      r
+
+
+
 (*
 
     | BTYP_tuple_cons (t1, (BTYP_type_var _ )) as x ->
@@ -303,6 +321,7 @@ let fix i t =
     match t with
     | BTYP_hole -> assert false
     | BTYP_tuple_cons _ -> assert false
+    | BTYP_tuple_snoc _ -> assert false
     | BTYP_none -> assert false
     | BTYP_type_var (k,mt) -> if k = i then btyp_fix n mt else t
     | BTYP_inst (k,ts) -> btyp_inst (k, List.map aux ts)
@@ -657,11 +676,22 @@ print_endline "Trying to unify instances (2)";
 
       | BTYP_tuple_cons (t0,ts), BTYP_tuple_cons (t0',ts') ->
         add_eqn (t0,t0'); add_eqn (ts,ts')
+      | BTYP_tuple_snoc (ts,t0), BTYP_tuple_snoc (ts',t0') ->
+        add_eqn (t0,t0'); add_eqn (ts,ts')
 
       | BTYP_tuple (t0::ts1::ts2::ts), BTYP_tuple_cons (t0',ts')
       | BTYP_tuple_cons (t0',ts'), BTYP_tuple (t0::ts1::ts2::ts) ->
         add_eqn (t0,t0'); add_eqn (BTYP_tuple (ts1::ts2::ts), ts')
 
+      | BTYP_tuple (ts), BTYP_tuple_snoc (ts',t0')
+      | BTYP_tuple_snoc (ts',t0'), BTYP_tuple (ts) ->
+        begin match List.rev ts with
+        | t0::ts1::ts2::rts ->
+          add_eqn (t0,t0'); 
+          let ts = List.rev (ts1::ts2::rts) in 
+          add_eqn (BTYP_tuple (ts), ts')
+        | _ -> ()
+        end
 (*
       (* T ^ N = T by setting N = 1 *)
       | BTYP_array (t11, (BTYP_type_var (i,_) as tv)), t21 
@@ -925,6 +955,10 @@ let rec type_eq' bsym_table counter ltrail ldepth rtrail rdepth trail t1 t2 =
   | BTYP_tuple_cons (s1,d1),BTYP_tuple_cons (s2,d2)
     -> te s1 s2 && te d1 d2
 
+  | BTYP_tuple_snoc (s1,d1),BTYP_tuple_snoc (s2,d2)
+    -> te s1 s2 && te d1 d2
+
+
   | BTYP_effector (s1,e1,d1),BTYP_effector (s2,e2,d2)
     -> te s1 s2 && te d1 d2 && te e1 e2
 
@@ -1056,6 +1090,7 @@ let fold bsym_table counter t =
     | BTYP_rev a -> ax a
 
     | BTYP_tuple_cons (a,b) -> ax a; ax b
+    | BTYP_tuple_snoc (a,b) -> ax a; ax b
 
     | BTYP_hole
     | BTYP_label 
@@ -1267,6 +1302,8 @@ let var_occurs bsym_table t =
     | BTYP_type_apply (a,b) -> aux a; aux b
     | BTYP_type_map (a,b) -> aux a; aux b
     | BTYP_tuple_cons (a,b) -> aux a; aux b
+    | BTYP_tuple_snoc (a,b) -> aux a; aux b
+
     | _ -> 
       print_endline ("[var_occurs] unexpected metatype " ^ sbt bsym_table t);
       failwith ("[var_occurs] unexpected metatype " ^ sbt bsym_table t)

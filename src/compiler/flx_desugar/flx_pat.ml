@@ -148,6 +148,29 @@ and check_match_tuple_cons pats =
   in
   List.iter check pats
 
+and check_match_tuple_snoc pats =
+(* This should really do the transpose trick tuple does but I'm too lazy *)
+  let rec check pat =
+    match pat with
+    | PAT_any _ 
+    | PAT_setform_any _ 
+    | PAT_name _ -> ()
+    | PAT_tuple_snoc (_,p1,p2) -> check p1
+    | PAT_as (_,pat,_)
+    | PAT_when (_,pat,_)
+    | PAT_with (_,pat,_)
+    | PAT_coercion (_,pat,_) -> check pat
+    | _ ->
+        let sr = src_of_pat pat in
+        clierrx "[flx_desugar/flx_pat.ml:142: E350] " sr
+        (
+          Flx_srcref.short_string_of_src (src_of_pat pat) ^
+          ": tuple snoc pattern (<,,>) expected, got " ^ string_of_pattern pat
+        )
+
+  in
+  List.iter check pats
+
 
 and check_match_union pats =
   let rec check pat =
@@ -223,6 +246,7 @@ and find_match_type pat =
   | PAT_name _ -> renaming
   | PAT_tuple (_,pats) -> check_match_tuple (List.length pats)
   | PAT_tuple_cons (_,p1,p2) -> check_match_tuple_cons 
+  | PAT_tuple_snoc (_,p1,p2) -> check_match_tuple_snoc
   | PAT_any _ -> renaming
   | PAT_setform_any _ -> renaming
   | PAT_const_ctor _ -> check_match_union
@@ -253,6 +277,7 @@ let rec is_irrefutable pat =
   | PAT_name _ -> true
   | PAT_tuple (_,pats) -> fold_left (fun acc v -> acc && irf v) true pats
   | PAT_tuple_cons (_,p1,p2) -> irf p1 && irf p2
+  | PAT_tuple_snoc (_,p1,p2) -> irf p1 && irf p2
   | PAT_any _ -> true
   | PAT_setform_any _ -> true
   | PAT_const_ctor _ -> false

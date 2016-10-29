@@ -35,7 +35,8 @@ let typecode_of_btype bsym_table counter sr t0 =
       | BTYP_inst (i,ts) ->
         let id = Flx_bsym_table.find_id bsym_table i in 
         TYP_name (sr,id, (List.map tc ts))
-      | _ -> assert false
+      | _ -> failwith ("typecode_of_btype can't handle type : " ^ Flx_print.sbt bsym_table t)
+
     in
     if isrecursive then 
        let label = match mutrail with (_,label)::_ -> label | _ -> assert false in

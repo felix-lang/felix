@@ -153,6 +153,7 @@ print_endline ("Metatyping term " ^ st term);
   | BTYP_polyrecord (_, _)
   | BTYP_type_match (_, _)
   | BTYP_tuple_cons (_, _)
+  | BTYP_tuple_snoc (_, _)
   | BTYP_unitsum _ -> btyp_type 0
   | BTYP_fix (i,mt) -> 
 (*

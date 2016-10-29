@@ -1472,6 +1472,7 @@ syntax expressions {
 
   //$ Fortran power.
   x[spower_pri] := x[ssuperscript_pri] "**" x[sprefixed_pri] =># "(infix 'pow)";
+  x[spower_pri] := x[ssuperscript_pri] "<**>" x[sprefixed_pri] =># "(infix 'tuple_snoc)";
 
   //$ Superscript, exponential.
   x[ssuperscript_pri] := x[ssuperscript_pri] "^" x[srefr_pri] =># "`(ast_superscript (,_1 ,_3))";
@@ -3643,7 +3644,10 @@ syntax patterns {
   //$ The RHS is the rest of the tuple.
   private stuple_cons_pattern := stuple_pattern ",," stuple_cons_pattern =>#
     "`(pat_tuple_cons ,_sr ,_1 ,_3)";
+  private stuple_cons_pattern := stuple_pattern "<,,>" stuple_cons_pattern =>#
+    "`(pat_tuple_snoc ,_sr ,_1 ,_3)";
   private stuple_cons_pattern := stuple_pattern =># "_1";
+
 
   //$ Match a tuple with 2 or more components.
   private stuple_pattern := scoercive_pattern ("," scoercive_pattern )* =>#

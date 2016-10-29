@@ -178,6 +178,7 @@ print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table
 
   | BTYP_tuple ps -> iter rr ps; rnr t
   | BTYP_tuple_cons (t1,t2) ->  assert false
+  | BTYP_tuple_snoc (t1,t2) ->  assert false
 
   | BTYP_record (ps) -> iter (fun (s,t)->rr t) ps; rnr t
   | BTYP_variant ps -> iter (fun (s,t)->rr t) ps; rnr t

@@ -927,6 +927,7 @@ print_endline ("Binding TYP_var " ^ si i);
 
   | TYP_tuple ts -> btyp_tuple (List.map bt ts)
   | TYP_tuple_cons (_,t1,t2) -> btyp_tuple_cons (bt t1) (bt t2)
+  | TYP_tuple_snoc (_,t1,t2) -> btyp_tuple_snoc (bt t1) (bt t2)
   | TYP_unitsum k ->
       begin match k with
       | 0 -> btyp_void ()
@@ -1422,6 +1423,7 @@ end;
 
             | TYP_defer _ -> print_endline "Guess metatype: defered type found"; assert false
             | TYP_tuple_cons (sr,t1,t2) -> assert false
+            | TYP_tuple_snoc (sr,t1,t2) -> assert false
             | TYP_type_tuple _ -> print_endline "A type tuple"; assert false
             | TYP_typefun (d,c,body) -> 
         (*
@@ -4036,6 +4038,19 @@ print_endline ("Bound tuple cons " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
 *)
       x
 
+  | EXPR_tuple_snoc (_, eh, et) ->
+    let _,eht' as xh' = be eh in
+    let _,ett' as xt' = be et in
+    let t = btyp_tuple_snoc eht' ett' in
+(*
+    print_endline ("Type of tuple cons is " ^ sbt bsym_table t);
+*)
+    let _,t as x = bexpr_tuple_snoc t (xh',xt') in
+(*
+print_endline ("Bound tuple cons " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_table t);
+*)
+      x
+
 
   | EXPR_get_tuple_tail (sr,e) ->
 (*
@@ -4088,6 +4103,58 @@ print_endline ("Bound tuple tail " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
     | _ ->  print_endline ("tuple tail of type " ^ sbt bsym_table t'); assert false
     end
 
+  | EXPR_get_tuple_body (sr,e) ->
+(*
+print_endline "Binding tuple tail";
+*)
+    let (e',t') as x' = be e in
+    begin match t' with
+    | BTYP_tuple [] -> x'
+    | BTYP_tuple ts ->
+      let n = List.length ts in
+      let ts' = List.rev (List.tl (List.rev ts)) in
+      let counter = ref 0 in
+      let es' = List.map (fun t-> 
+        let x = bexpr_get_n t (!counter) x' in
+        incr counter; 
+        x
+      ) ts'
+      in 
+      let _,t as x = bexpr_tuple (btyp_tuple ts') es' in
+(*
+print_endline ("Bound tuple tail " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_table t);
+*)
+      x
+
+    | BTYP_array (at,BTYP_unitsum n) ->
+      if n>20 then begin
+        print_endline ("Array type " ^ sbt bsym_table t' ^ " size " ^ string_of_int n ^ 
+          " too long to get tuple body"); 
+        assert false
+      end else begin
+        let ts' = repeat at (n-1) in
+        let counter = ref 0 in
+        let es' = List.map (fun t-> 
+          let x = bexpr_get_n t (!counter) x' in
+          incr counter; 
+          x
+        ) ts'
+      in 
+      let _,t as x = bexpr_tuple (btyp_tuple ts') es' in
+      x
+      end
+
+    | BTYP_tuple_snoc (t1,t2) -> 
+      let _,t as x = bexpr_tuple_body t1 x' in
+(*
+print_endline ("Bound tuple tail " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_table t);
+*)
+      x
+
+    | _ ->  print_endline ("tuple body of type " ^ sbt bsym_table t'); assert false
+    end
+
+
   | EXPR_get_tuple_head (sr,e) ->
     let (e',t') as x' = be e in
     begin match t' with
@@ -4122,10 +4189,46 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
     | _ ->  print_endline ("tuple head of type " ^ sbt bsym_table t'); assert false
     end
 
+  | EXPR_get_tuple_last (sr,e) ->
+    let (e',t') as x' = be e in
+    begin match t' with
+    | BTYP_tuple [] -> assert false
+    | BTYP_tuple ts ->
+      let ht = List.hd (List.rev ts) in
+      let _,t as x  = 
+(*
+        print_endline ("3:get_n arg" ^ sbe bsym_table x');         
+*)
+        bexpr_get_n ht (List.length ts - 1) x'  
+      in
+(*
+print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_table t);
+*)
+      x
+
+    | BTYP_array (at,BTYP_unitsum n) ->
+      let _,t as x  = 
+        bexpr_get_n at (n-1) x'  
+      in
+      x
+
+
+    | BTYP_tuple_snoc (t1,t2) -> 
+      let _,t as x = bexpr_tuple_last t1 x' in
+(*
+print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_table t);
+*)
+      x
+
+    | _ ->  print_endline ("tuple last of type " ^ sbt bsym_table t'); assert false
+    end
+
+
   | EXPR_get_n (sr,(n,e')) ->
     let expr,typ = be e' in
     let ctyp,k = match unfold "flx_lookup" typ with
     | BTYP_array (t,BTYP_unitsum len)  ->
+      let n = if n = -1 then n + len else n in
       if n<0 || n>len-1
       then clierrx "[flx_bind/flx_lookup.ml:4114: E174] " sr
         (
@@ -4139,6 +4242,7 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
     | BTYP_tuple ts
       ->
       let len = List.length ts in
+      let n = if n = -1 then n + len else n in
       if n<0 || n>len-1
       then clierrx "[flx_bind/flx_lookup.ml:4127: E175] " sr
         (
@@ -4159,6 +4263,18 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
         " to have tuple type, got tuple cons " ^
         sbt bsym_table typ ^ " with non-zero projection " ^ si n
       )
+
+    | BTYP_tuple_snoc (_,t1) ->
+      if n = -1 then t1,2 (* HACK! We dunno the length of the tuple! *)
+      else
+      clierrx "[flx_bind/flx_lookup.ml:4139: E176] " sr
+      (
+        "[bind_expression] Expected tuple " ^
+        string_of_expr e' ^
+        " to have tuple type, got tuple snoc " ^
+        sbt bsym_table typ ^ " with non-minus-one projection " ^ si n
+      )
+
 
     | _ ->
       clierrx "[flx_bind/flx_lookup.ml:4148: E177] " sr
@@ -6461,6 +6577,7 @@ and rebind_btype state bsym_table env sr ts t =
   match t with
   | BTYP_hole -> assert false
   | BTYP_tuple_cons _ -> assert false
+  | BTYP_tuple_snoc _ -> assert false
   | BTYP_none -> assert false
   | BTYP_inst (i,_) ->
     begin match get_data state.sym_table i with

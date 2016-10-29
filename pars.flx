@@ -14,26 +14,6 @@ include "std/control/chips";
 // The final epsilon executable reads the channels to construct
 // its term, then writes the result (on its third channel).
 
-chip pstring (s:string) (term: %>string)
-  connector io
-  pin inp:%<Buffer
-  pin out:%>Buffer
-{
-println$ "Parse " + s;
-  device cs = match_string s;
-  var rin,win= mk_ioschannel_pair[Buffer](); 
-  var rout,wout = mk_ioschannel_pair[Buffer](); 
-  spawn_fthread$ cs (inp=rin, out=wout);
-  while true do
-    var b = read io.inp;
-    write (win,b);
-    var e = read rout;
-    var lexeme = b.sp.[b.pos..<e.pos].string;
-println$ "string lexeme = " + lexeme;
-    write (io.out,e);
-    write (term,lexeme);
-  done
-}
 open BaseChips;
 
 
@@ -47,7 +27,7 @@ begin
   var startinp,startout= mk_ioschannel_pair[Buffer]();
   var endinp,endout= mk_ioschannel_pair[Buffer]();
   circuit
-    wire startinp to x.inp
+    wire startinp to x.inp        
     wire endout to x.out
   endcircuit
   write (startout,p);
@@ -63,157 +43,8 @@ begin
   swait();
 end
 
-chip pint (term: %>int)
-  connector io
-  pin inp:%<Buffer
-  pin out:%>Buffer
-{
-  device cs = decimal_integer_matcher;
-  var rin,win= mk_ioschannel_pair[Buffer](); 
-  var rout,wout = mk_ioschannel_pair[Buffer](); 
-  spawn_fthread$ cs (inp=rin, out=wout);
-  while true do
-    var b = read io.inp;
-println$ "Int parse sending to recognizer";
-    write (win,b);
-    var e = read rout;
-println$ "Int parse getting from recognizer";
-    var lexeme = b.sp.[b.pos..<e.pos].string;
-println$ "Int lexeme = " + lexeme;
-    write (io.out,e);
-    var i = atoi lexeme;
-    write (term,i);
-  done
-}
-// ------------ generic combinators ---------------
-// X * X
-fun comb[X] 
-  (var ax : X, var bx:X) 
-  :list[X] 
-  => list (bx,ax)
-;
-
-// AX * BX
-fun comb[X,A,B] 
-  (var ax : A * X, var bx: B * X) 
-  : (B * A) * list[X] 
-  => (bx.0,ax.0), list (bx.1,ax.1)
-;
-
-// X * BX
-fun comb[X,B] 
-  (var ax : X, var bx: B * X) 
-  : B  * list[X] 
-  => bx.0, list (bx.1,ax)
-;
-
-// AX * X
-fun comb[X,A] 
-  (var ax : A * X, var bx: X) 
-  : A * list[X] 
-  => ax.0, list (bx,ax.1)
-;
-
-// AXs * BX
-fun comb[X,A,B] 
-  (var axs: A * list[X], var bx: B * X) 
-  : (B ** A) * list[X] 
-= {
-  return (bx.0,,axs.0), Cons (bx.1, axs.1) ;
-}
-
-// AXs * X
-fun comb[X,A] (
-  var axs: A * list[X], 
-  var bx:X
-) : A * list[X] 
-= {
-  return axs.0, Cons (bx, axs.1) ;
-}
-
-
-// Xs * BX
-fun comb[X,B] 
-  (var axs: list[X], var bx: B * X) 
-  : B * list[X] 
-= {
-  return bx.0,Cons (bx.1,axs);
-}
-
-// Xs * X
-fun comb[X] 
-  (var axs: list[X], var bx:  X) 
-  : list[X] 
-= {
-  return Cons (bx, axs) ;
-}
-
-//---------- wrapping combinators ---------
-
-fun wrap[B,T] (
-  x:(%>T) -> iochip_t[B,B]
-) 
-: (%<T) * iochip_t[B,B] 
-= {
-  var i,o = mk_ioschannel_pair[T]();
-  return i,x o;
-}
-
- 
-// AX * BX
-fun combw[X,A,B] (
-  var ax : (%>A)-> iochip_t[X,X], 
-  var bx : (%>B) -> iochip_t[X,X]
-) 
-: ((%<B) * (%<A)) * list[iochip_t[X,X]] 
-=
-{
-   var wax = wrap ax; 
-   var wbx = wrap bx;  
-   return comb (wax,wbx);
-}
-
-// X * BX
-fun combw[X,B] (
-  var ax : iochip_t[X,X], 
-  var bx : (%>B) -> iochip_t[X,X]
-) 
-: (%<B)  * list[iochip_t[X,X]] 
-=
-{
-   var wbx = wrap bx;  
-   return comb (ax,wbx);
-}
-
-// AX * X
-fun combw[X,A] (
-  var ax : (%>A)-> iochip_t[X,X], 
-  var bx : iochip_t[X,X]
-) 
-: (%<A) * list[iochip_t[X,X]] 
-=
-{
-   var wax = wrap ax; 
-   return comb (wax,bx);
-}
-
-
-
-fun combw[X,A,B] (
-  var axs: A * list[iochip_t[X,X]],
-  var bx : (%>B) -> iochip_t[X,X]
-) 
-: ((%<B) ** A) * list[iochip_t[X,X]] 
-=
-{
-  var wbx = wrap bx;
-  return comb (axs, wbx);
-}
-
-
 union abc_t = 
   | Abc of string * int * string
-/*  | Xyz of int */
 ;
 instance Str[abc_t] {
   fun str : abc_t -> string =
@@ -240,55 +71,14 @@ println$ "Start abc parser";
     write (term, d);
   done
 }
-
-typedef fun ischannel_f(T:TYPE):TYPE => %<T;
-
-chip action_reduce[T:GENERIC,E]
-  (f:T -> E)
-  (inchans: _map ischannel_f (_rev T))
-  (term: %>E)
-  connector io
-    pin inp:%<Buffer
-    pin out:%>Buffer
-{
-  while true do
-    write (io.out,read io.inp);
-    write (term, f (_rev_map read inchans));
-  done
-}
-
-
-fun combw[X,A,T] (
-   hiworld: A * list[iochip_t[X,X]],
-   abc_parser : A -> (%>T) -> iochip_t[X,X]
-) : (%<T) * list[iochip_t[X,X]]
-=>
-  let abc_tuple, pipeline = hiworld in
-  let rd, abc_chip = wrap (abc_parser abc_tuple) in
-  rd, (abc_chip ! pipeline)
-;
-
-syntax Combw {
-  x[spipe_apply_pri] := x[spipe_apply_pri] "#>" x[stuple_pri] =># "(infix 'combw)";
-}
 open syntax Combw;
-
-fun mkabc (x: string * int * string) => Abc x;
-
-begin
-println$ "PART 2 ---------";
-  var s = "hello 67world";
-  var p = Buffer &s;
-  println$ "building pipeline";
-  //var rd,xl =  pstring "hello " #> pint #> pstring "world" #> abc_parser;
-  var rd,xl =  pstring "hello " #> pint #> pstring "world" #> action_reduce Abc;
-  var x = pipeline_list (rev xl);
-
+proc pcheck (rd,x12,p)
+{
   var startinp,startout= mk_ioschannel_pair[Buffer]();
   var endinp,endout= mk_ioschannel_pair[Buffer]();
   circuit
-    wire startinp to x.inp
-    wire endout to x.out
+    wire startinp to x12.inp
+    wire endout to x12.out
   endcircuit
   write (startout,p);
   spawn_fthread {
@@ -300,6 +90,34 @@ println$ "PART 2 ---------";
     done
   };
   swait();
+}
+
+begin
+println$ "PART 2 ---------";
+  var s = "hello 67world";
+  var p = Buffer &s;
+
+  var hi = pstring "hello " #> pint;
+  var world = pstring "world";
+
+  var rd,x12 = 
+    pstring "hello " #> pint #> pstring "world" #> action_reduce Abc 
+  #|
+    pstring "hello " #> (pint #> pstring "world") #> action_reduce Abc 
+  #|
+    hi #> deref_first_read &world #> action_reduce Abc
+  #|
+    pstring "hello 6" #> pint #> pstring "world" #> action_reduce Abc
+  #|
+    pstring "hello 6" #> pint #> pstring "world" #> action_reduce Abc
+  #|
+    pstring "hello 67" #> pstring "world" #> 
+      action_reduce (fun (s1:string,s2:string) : abc_t => Abc (s1,99,s2))
+  #| 
+     pstring "hello" #> match_white #> pint #> pstring "world" #> action_reduce Abc
+  ;
+
+  pcheck$ rd,x12,p;
 end
 
 

@@ -146,6 +146,7 @@ let fix_pattern counter pat =
   | PAT_coercion (sr, p, t) -> PAT_coercion (sr, aux p, t)
   | PAT_tuple (sr,ps) -> PAT_tuple (sr,List.map aux ps)
   | PAT_tuple_cons (sr,a,b) -> PAT_tuple_cons (sr,aux a,aux b)
+  | PAT_tuple_snoc (sr,a,b) -> PAT_tuple_snoc (sr,aux a,aux b)
   | PAT_nonconst_ctor (sr,qn,p) -> PAT_nonconst_ctor (sr,qn,aux p)
   | PAT_ho_ctor (sr,qn,es,p) -> PAT_ho_ctor (sr,qn,es,aux p)
   | PAT_nonconst_variant (sr,s,p) -> PAT_nonconst_variant (sr,s,aux p)
@@ -178,6 +179,7 @@ let rec get_pattern_vars pat =
   | PAT_nonconst_variant (_,_,p) -> get_pattern_vars p
   | PAT_tuple (_,ps) -> List.concat (List.map get_pattern_vars ps)
   | PAT_tuple_cons (sr,a,b) -> get_pattern_vars a @ get_pattern_vars b
+  | PAT_tuple_snoc (sr,a,b) -> get_pattern_vars a @ get_pattern_vars b
   | PAT_record (_,ps) -> List.concat(List.map get_pattern_vars (List.map snd ps))
   | PAT_polyrecord (_,ps,r) -> r :: List.concat(List.map get_pattern_vars (List.map snd ps))
   | PAT_alt _ -> assert false
@@ -241,6 +243,10 @@ let expand_pattern_branches pes =
     | PAT_tuple_cons (sr,a,b) ->  
       map (fun (a,b) -> PAT_tuple_cons (sr,a,b)) (cart2 (aux a) (aux b))
 
+    | PAT_tuple_snoc (sr,a,b) ->  
+      map (fun (a,b) -> PAT_tuple_snoc (sr,a,b)) (cart2 (aux a) (aux b))
+
+
     | PAT_nonconst_ctor (sr,qn,p) -> map (fun p->PAT_nonconst_ctor (sr,qn,p)) (aux p)
     | PAT_ho_ctor (sr,qn,es,p) -> map (fun p->PAT_ho_ctor (sr,qn,es,p)) (aux p)
     | PAT_nonconst_variant (sr,s,p) -> map (fun p->PAT_nonconst_variant (sr,s,p)) (aux p)
@@ -287,6 +293,7 @@ let alpha_pat local_prefix seq fast_remap remap expand_expr pat =
   | PAT_nonconst_variant (sr,n,p) -> PAT_nonconst_variant (sr, n, aux p)
   | PAT_tuple (sr,ps) -> PAT_tuple (sr, List.map aux ps)
   | PAT_tuple_cons (sr,a,b) -> PAT_tuple_cons (sr, aux a, aux b)
+  | PAT_tuple_snoc (sr,a,b) -> PAT_tuple_snoc (sr, aux a, aux b)
   | PAT_record (sr, ps) -> PAT_record (sr, List.map (fun (id,p) -> id, aux p) ps)
   | PAT_polyrecord (sr, ps, r) -> PAT_polyrecord (sr, List.map (fun (id,p) -> id, aux p) ps, ren r)
   | p -> p
@@ -585,8 +592,11 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_index (sr, n, i) -> EXPR_index (sr,n,i)
   | EXPR_intersect (sr, es) -> EXPR_intersect (sr, List.map me es)
   | EXPR_isin (sr,(a,b)) -> EXPR_isin (sr, (me a, me b))
+
   | EXPR_get_tuple_tail (sr, e) -> EXPR_get_tuple_tail (sr, me e)
   | EXPR_get_tuple_head (sr, e) -> EXPR_get_tuple_head (sr, me e)
+  | EXPR_get_tuple_body (sr, e) -> EXPR_get_tuple_body (sr, me e)
+  | EXPR_get_tuple_last (sr, e) -> EXPR_get_tuple_last (sr, me e)
 
   | EXPR_lookup (sr, (e1, name,ts)) ->
       EXPR_lookup (sr,(me e1, mi sr name, List.map (mt sr) ts))
@@ -599,6 +609,8 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   | EXPR_tuple (sr, es) -> EXPR_tuple (sr, List.map me es)
   | EXPR_tuple_cons (sr, eh, et) -> EXPR_tuple_cons (sr, me eh, me et)
+  | EXPR_tuple_snoc (sr, eh, et) -> EXPR_tuple_snoc (sr, me eh, me et)
+
   | EXPR_record (sr, es) ->
     let all_blank = fold_left (fun acc (s,_) -> acc && s = "") true es in
     if all_blank then EXPR_tuple (sr, List.map snd es) 
