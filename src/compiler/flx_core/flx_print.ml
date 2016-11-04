@@ -1339,10 +1339,12 @@ and string_of_statement level s =
     string_of_compound level sts
 
   | STMT_union (_,name, vs,cs) ->
-    let string_of_union_component (name,cval, vs,ty) =
+    let string_of_union_component (name,cval, vs,d,c) =
       (spaces (level+1)) ^ "|" ^ string_of_id name ^
       (match cval with None -> "" | Some i -> "="^ si i) ^
-      special_string_of_typecode ty
+      special_string_of_typecode d ^ 
+      (match c with None -> "" | Some c -> " => " ^
+      string_of_typecode c)
     in
     spaces level ^ "union " ^ string_of_id name ^ string_of_vs vs ^ " = " ^
     spaces level ^ "{\n" ^
@@ -1675,13 +1677,13 @@ and string_of_symdef entry name vs =
 
   | SYMDEF_const_ctor (uidx,ut,idx,vs') ->
      st ut ^ "  const_ctor: " ^
-     string_of_id name ^ string_of_ivs vs ^
+     string_of_id name ^ string_of_ivs vs ^ " => " ^ st ut ^
      ";"
 
   | SYMDEF_nonconst_ctor (uidx,ut,idx,vs',argt) ->
      st ut ^ "  nonconst_ctor: " ^
      string_of_id name ^ string_of_ivs vs ^
-     " of " ^ st argt ^
+     " of " ^ st argt ^ " => " ^ st ut^ 
      ";"
 
   | SYMDEF_type_alias t ->
@@ -2268,11 +2270,12 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     string_of_asm_compound level asms
 
   | DCL_union (cs) ->
-    let string_of_union_component (name,v,vs,ty) =
+    let string_of_union_component (name,v,vs,d,c) =
       (spaces (level+1)) ^
       "|" ^ string_of_id name ^
       (match v with | None -> "" | Some i -> "="^si i) ^
-      special_string_of_typecode ty
+      special_string_of_typecode d ^ (match c with | None -> "" | Some c -> " => " ^
+        string_of_typecode c)
     in
     sl ^ "union " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     " = " ^
@@ -2537,10 +2540,11 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     ":"
 
   | BBDCL_union (vs,cs) ->
-    let string_of_union_component (name,v,ty) =
+    let string_of_union_component (name,v,d,c) =
       "  " ^ "| " ^ string_of_id name ^
      "="^si v^
-      special_string_of_btypecode bsym_table ty
+      special_string_of_btypecode bsym_table d ^ " => " ^
+      sobt c 
     in
     "union " ^ name ^ string_of_bvs vs ^ " = " ^
     "{\n" ^

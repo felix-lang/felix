@@ -222,7 +222,7 @@ print_endline ("Register type r: union -----------" ^ Flx_bsym.id bsym);
 print_endline ("vs len = " ^ si (List.length vs));
 print_endline ("ts len = " ^ si (List.length ts));
 *)
-      let cts = map (fun (_,_,t) -> t) cs in
+      let cts = map (fun (_,_,d,c) -> d) cs in
       let cts = map (tsubst (Flx_bsym.sr bsym) vs ts) cts in
       iter rr cts;
       rnr t

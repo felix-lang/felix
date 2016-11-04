@@ -466,7 +466,7 @@ and statement_t =
       Flx_srcref.t *
       Flx_id.t *
       vs_list_t *
-      (Flx_id.t * int option * vs_list_t * typecode_t) list
+      (Flx_id.t * int option * vs_list_t * typecode_t * typecode_t option) list
   | STMT_struct of
       Flx_srcref.t *
       Flx_id.t *

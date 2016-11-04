@@ -4813,6 +4813,7 @@ syntax type_decls {
 
   // shared by both union decl forms..
     stype_sum_item := sname sopt_value stvarlist "of" sexpr =># "`(,_1 ,_2 ,_3 ,_5)";
+    stype_sum_item := sname sopt_value stvarlist "of" sexpr "=>" sexpr =># "`(,_1 ,_2 ,_3 ,_5 ,_7)";
     stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 (ast_void ,_sr))";
     stype_sum_item := "#" sname sopt_value stvarlist =># "`(,_2 ,_3 ,_4 (ast_void ,_sr))";
 

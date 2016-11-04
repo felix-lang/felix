@@ -1298,14 +1298,15 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       let utype = TYP_name (sr, id, tvars) in
       let its =
         let ccount = ref 0 in (* count component constructors *)
-        List.map begin fun (component_name,v,vs,t) ->
+        List.map begin fun (component_name,v,vs,d,c) ->
           (* ctor sequence in union *)
           let ctor_idx = match v with
           | None ->  !ccount
           | Some i -> ccount := i; i
           in
           incr ccount;
-          component_name, ctor_idx, vs, t
+          let c = match c with None -> utype | Some c -> c in
+          component_name, ctor_idx, vs, d,c
         end its
       in
 
@@ -1319,11 +1320,11 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       add_unique priv_name_map id symbol_index;
 
       let unit_sum =
-        List.fold_left begin fun v (_,_,_,t) ->
-          v && (match t with TYP_void _ -> true | _ -> false)
+        List.fold_left begin fun v (_,_,_,d,c) ->
+          v && (match d with TYP_void _ -> true | _ -> false)
         end true its
       in
-      List.iter begin fun (component_name, ctor_idx, vs, t) ->
+      List.iter begin fun (component_name, ctor_idx, vs, d,c) ->
         let dfn_idx = Flx_mtypes2.fresh_bid counter_ref in (* constructor *)
         let match_idx = Flx_mtypes2.fresh_bid counter_ref in (* matcher *)
 
@@ -1334,23 +1335,23 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
           if unit_sum then begin
             if access = `Public then add_unique pub_name_map component_name dfn_idx;
             add_unique priv_name_map component_name dfn_idx;
-            SYMDEF_const_ctor (symbol_index, utype, ctor_idx, evs)
+            SYMDEF_const_ctor (symbol_index, c, ctor_idx, evs)
           end else
-            match t with
+            match d with
             | TYP_void _ -> (* constant constructor *)
                 if access = `Public then add_unique pub_name_map component_name dfn_idx;
                 add_unique priv_name_map component_name dfn_idx;
-                SYMDEF_const_ctor (symbol_index, utype, ctor_idx, evs)
+                SYMDEF_const_ctor (symbol_index, c, ctor_idx, evs)
 
             | TYP_tuple ts -> (* non-constant constructor or 2 or more arguments *)
                 if access = `Public then add_function pub_name_map component_name dfn_idx;
                 add_function priv_name_map component_name dfn_idx;
-                SYMDEF_nonconst_ctor (symbol_index, utype, ctor_idx, evs, t)
+                SYMDEF_nonconst_ctor (symbol_index, c, ctor_idx, evs, d)
 
             | _ -> (* non-constant constructor of 1 argument *)
                 if access = `Public then add_function pub_name_map component_name dfn_idx;
                 add_function priv_name_map component_name dfn_idx;
-                SYMDEF_nonconst_ctor (symbol_index, utype, ctor_idx, evs, t)
+                SYMDEF_nonconst_ctor (symbol_index, c, ctor_idx, evs, d)
         in
 
         if print_flag then

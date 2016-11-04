@@ -263,8 +263,6 @@ let rec bind_exe (state: Flx_bexe_state.bexe_state_t) bsym_table (sr, exe) : bex
 (*
 print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_type);
   print_endline ("EXE="^string_of_exe 1 exe);
-*)
-(*
   if not state.reachable then
   begin
     match exe with
@@ -822,8 +820,14 @@ let bind_exes state bsym_table sr exes : Flx_btype.t * Flx_bexe.t list  =
 *)
 
   let bound_exes = List.fold_left (fun acc exe ->
-    let result = bind_exe state bsym_table  exe in
-    List.rev result @ acc
+    try
+      let result = bind_exe state bsym_table  exe in
+      List.rev result @ acc
+    with GadtUnificationFailure ->
+(*
+print_endline ("GADT UNIFICATION FAILURE generating exe " ^ string_of_exe 2 (snd exe));
+*)
+      acc
   )
   [] exes 
   in

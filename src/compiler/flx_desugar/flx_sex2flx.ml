@@ -606,7 +606,8 @@ and xunion_component sr x =
   let xi = function | Int i -> ii i | x -> err x "int" in
   let ti x = type_of_sex sr x in
   match x with
-  | Lst [id; io; vs; t] -> xid id, opt "union component" xi io, xvs vs, ti t
+  | Lst [id; io; vs; d; c] -> xid id, opt "union component" xi io, xvs vs, ti d, Some (ti c)
+  | Lst [id; io; vs; d] -> xid id, opt "union component" xi io, xvs vs, ti d, None
   | x -> err x "union component"
 
 and xstruct_component sr = function

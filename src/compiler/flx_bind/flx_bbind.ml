@@ -378,10 +378,10 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
     end
 *)
   in
-  (*
+(*
   print_endline ("******Binding " ^ qname ^ "="^ string_of_symdef
   sym.Flx_sym.symdef qname ivs);
-  *)
+*)
   begin match sym.Flx_sym.symdef with
   (* Pure declarations of functions, modules, and type don't generate anything.
    * Variable dcls do, however. *)
@@ -576,7 +576,14 @@ print_endline ("flx_bind: Adding label " ^ s ^ " index " ^ string_of_int symbol_
     add_bsym None (bbdcl_nonconst_ctor (bvs,uidx,ut,ctor_idx,argt,evs,btraint))
 
   | SYMDEF_val t ->
-    let t = type_of_index symbol_index in
+    let t = 
+      try type_of_index symbol_index 
+      with Flx_lookup.GadtUnificationFailure ->
+(*
+        print_endline ("GADT UNIFICATION FAILURE BINDING TYPE OF VARIABLE " ^ sym.Flx_sym.id);
+*)
+        btyp_void ()
+    in
 
     if state.print_flag then
       print_endline ("//bound val " ^ sym.Flx_sym.id ^ "<" ^
@@ -780,7 +787,8 @@ print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid 
   | SYMDEF_union (cs) ->
     if state.print_flag then
       print_endline ("//Binding union " ^ si symbol_index ^ " --> " ^ sym.Flx_sym.id);
-    let cs' = List.map (fun (n,v,vs',t) -> n, v,bt t) cs in
+    let ut = btyp_inst (symbol_index, List.map (fun (s,i) -> btyp_type_var (i,btyp_type 0)) bvs) in
+    let cs' = List.map (fun (n,v,vs',d,c) -> n, v,bt d, bt c) cs in
     add_bsym None (bbdcl_union (bvs, cs'))
 
   | SYMDEF_struct cs ->

@@ -293,7 +293,7 @@ bcat s ("\n//ABSTRACT TYPE " ^ name ^"\n");
           clierrx "[flx_cpp_backend/flx_ogen.ml:285: E311] " (Flx_bsym.sr bsym)
           ("[ogen] attempt to allocate an incomplete type: '" ^ Flx_bsym.id bsym ^"'")
 
-      | BBDCL_union (vs,[id,n,t']) -> 
+      | BBDCL_union (vs,[id,n,t',_]) -> 
 print_endline ("\n//One component union TYPE " ^ name ^" ctor name = "^id^
 " index=" ^ si n^ 
 ", argtype = "^
@@ -496,7 +496,7 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
       *)
       | BBDCL_union (vs,args) ->
         let varmap = mk_varmap (Flx_bsym.sr bsym) vs ts in
-        let args = map (fun (_,_,t)->t) args in
+        let args = map (fun (_,_,t,_)->t) args in
         let args = map (varmap_subst varmap) args in
         iter begin fun t ->
           match t with

@@ -77,6 +77,9 @@ let mono_type syms bsym_table vars sr t =
 print_endline (" ** begin mono_type " ^ sbt bsym_table t);
 *)
   let t = Flx_unify.list_subst syms.counter vars t in
+(*
+print_endline (" ** mono_type after variable replacement " ^ sbt bsym_table t);
+*)
   let t = Flx_beta.beta_reduce "mono_type"
     syms.Flx_mtypes2.counter
     bsym_table
@@ -665,7 +668,11 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
   | BBDCL_union (vs,cps) -> 
     assert (List.length vs = List.length ts);
     let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
-    let cps = List.map (fun (name,index,argt) -> name,index, mt vars argt) cps in
+(* HACK?? *)
+(*
+let vars2 = List.map2 (fun (s,i) t -> i,BTYP_tuple []) vs ts in
+*)
+    let cps = List.map (fun (name,index,argt, resultt) -> name,index, mt vars argt, BTYP_none (*mt vars2 resultt*)) cps in
     Some (bbdcl_union ([], cps))
 
   | BBDCL_cstruct (vs,cps, reqs) -> 

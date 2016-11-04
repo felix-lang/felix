@@ -19,6 +19,8 @@ open Flx_overload
 open Flx_tpat
 open Flx_lookup_state
 
+exception GadtUnificationFailure
+
 let svs (s,i,mt) = s ^ "<" ^ si i ^ ">:"^ string_of_typecode mt
 
 type bfres_t = 
@@ -480,6 +482,8 @@ and inner_bind_expression state bsym_table env rs e  =
        print_endline ("inner_bind_expression raised Not_found [BUG] e="^
        string_of_expr e);
        failwith "bind_expression' raised Not_found [BUG]"
+
+     | GadtUnificationFailure as x -> raise x
 
      | exn ->
        print_endline ("inner_bind_expression: unknown exception " ^  Printexc.to_string exn); 
@@ -1816,6 +1820,7 @@ print_endline ("Calling bind_epression'");
         | ClientError2 (sr,sr2,s) as e -> 
           print_endline ("ClientError2 Whilst calculating return type:\n"^s);
           raise e
+        | GadtUnificationFailure -> ()
         | x ->
         print_endline ("  .. Unable to compute type of " ^ string_of_expr e);
         print_endline ("Reason: " ^ Printexc.to_string x);
@@ -1886,7 +1891,7 @@ and btype_of_bsym state bsym_table sr bt bid bsym =
       btyp_function (btyp_tuple params, return_type)
   | BBDCL_external_code _ -> assert false
   | BBDCL_union (_,ls) ->
-      btyp_variant (List.map (fun (n,_,t) -> n,t) ls)
+      btyp_variant (List.map (fun (n,_,d,c) -> n,d) ls)
   | BBDCL_struct (_,ls)
   | BBDCL_cstruct (_,ls,_) ->
      let _,vs,_ = find_split_vs state.sym_table bsym_table bid in
@@ -5334,7 +5339,7 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
           let vidx =
             let rec scan = function
             | [] -> None
-            | (vn,vidx,vs',vat)::_ when vn = name -> Some vidx
+            | (vn,vidx,vs',vat,vct)::_ when vn = name -> Some vidx
             | _:: t -> scan t
             in scan ls
           in
@@ -5454,26 +5459,31 @@ print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
 
     begin match qn with
     | `AST_name (sr,name,ts) ->
-(*      print_endline ("Constructor to extract: " ^ name ^ "[" ^ catmap "," string_of_typecode ts ^ "]"); *)
+(*
+      print_endline ("Constructor to extract: " ^ name ^ "[" ^ catmap "," string_of_typecode ts ^ "]"); 
+*)
       begin match ut with
       | BTYP_inst (i,ts') ->
         begin match hfind "lookup" state.sym_table i with
         | { Flx_sym.id=id; symdef=SYMDEF_union ls } ->
           let _,vs,_  = find_split_vs state.sym_table bsym_table i in
 (*
-        print_endline (
-            "OK got union type " ^ id ^ "<"^si i ^ "> vs= " ^ 
-            catmap "," (fun (id,j,_)-> id^"<"^si j^">") (fst vs) 
+        print_endline ( "OK got union type " ^ id ^ "<"^si i ^ "> vs= " ^ catmap "," (fun (id,j,_)-> id^"<"^si j^">") vs 
              ^ "instance ts = [" ^catmap "," (sbt bsym_table) ts'^ "]"
         );
 *)
-(* print_endline ("Constructor to extract " ^ name ^ " should agree with encoded constuctor " ^ id); *)
-(* print_endline ("Union parent vs = " ^ catmap "," (fun (s,_,_) -> s) parent_vs ^ " local vs = " ^ catmap "," (fun (s,_,_) -> si i) vs''); *)
+(*
+print_endline ("Constructor to extract " ^ name ^ " should agree with encoded constuctor of union " ^ id); 
+*)
+(*
+print_endline ("Union parent vs = " ^  catmap "," (fun (s,_,_) -> s) parent_vs ^ 
+  " local vs = " ^ catmap "," (fun (s,_,_) -> si i) vs'');
+*)
 
           let result =
             let rec scan = function
             | [] -> None
-            | (vn,vidx,vs',vt)::_ when vn = name -> Some (vidx,vs',vt)
+            | (vn,vidx,vs',vt,vct)::_ when vn = name -> Some (vidx,vs',vt,vct)
             | _:: t -> scan t
             in scan ls
           in
@@ -5489,29 +5499,65 @@ print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
             end
 (* failwith ("EXPR_ctor_arg: Can't find union variant " ^ name); *)
 
-          | Some ( vidx,vs', vt) ->
-
-(*          print_endline ("Constructor Index is " ^ si vidx ^ " vs'=" ^ catmap "," fst (fst vs')); *)
-            let vt =
+          | Some ( vidx,vs', vt,vct) ->
+(*
+          print_endline ("Constructor Index is " ^ si vidx ^ " vs'=" ^ catmap "," fst (fst vs')); 
+*)
+            let vt,vct =
               let bvs = List.map
                 (fun (n,i,_) -> n, btyp_type_var (i, btyp_type 0))
                 vs
               in
-(*            print_endline ("Binding ctor arg type = " ^ string_of_typecode vt); *)
-              let env' = build_env state bsym_table (Some i) in
-              bind_type' state bsym_table env' rsground sr vt bvs mkenv
-            in
-(*          print_endline ("Bound polymorphic arg type = " ^ sbt bsym_table vt); *)
-            let vs' = List.map (fun (s,i,tp) -> s,i) vs in
-(*          print_endline ("vs in union type = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs'); *)
-(*          print_endline ("ts' to bind to them = " ^ catmap "," (sbt bsym_table) ts'); *)
 (*
+            print_endline ("Binding ctor arg type = " ^ string_of_typecode vt); 
+*)
+              let env' = build_env state bsym_table (Some i) in
+              bind_type' state bsym_table env' rsground sr vt bvs mkenv,
+              bind_type' state bsym_table env' rsground sr vct bvs mkenv
+            in
+(*
+          print_endline ("-----+++>>");
+          print_endline ("Bound polymorphic ctor arg type = " ^ sbt bsym_table vt); 
+          print_endline ("Bound polymorphic ctor result type = " ^ sbt bsym_table vct); 
+          print_endline ("Bound polymorphic union value type = " ^ sbt bsym_table ut);
+          print_endline ("-----+++>>");
+
+print_endline ("Unification of result type with union value type\n");
+*)
+          let dvars = ref BidSet.empty in
+          List.iter (fun (_,i,_) -> dvars := BidSet.add i (!dvars)) vs;
+(*
+print_endline ("Dependent variables to solve for = " ^ catmap "," (fun (_,i,_) -> string_of_int i) vs);
+*)
+          let maybe_mgu = 
+            let eqns = [vct,ut] in
+            try Some (unification bsym_table state.counter eqns !dvars)
+            with Not_found -> None
+          in
+          begin match maybe_mgu with
+          | None -> raise GadtUnificationFailure
+          | Some mgu ->
+(*
+            print_endline ("MGU=");
+            List.iter (fun (j,t) -> print_endline ("  ** tvar " ^ string_of_int i ^ " --> " ^ sbt bsym_table t))
+            mgu;
+*)
+          let varmap = Hashtbl.create 3 in
+          List.iter (fun (j,t) -> Hashtbl.add varmap j t) mgu;
+          let vt = varmap_subst varmap vt in
+(*
+          let vs' = List.map (fun (s,i,tp) -> s,i) vs in
+          print_endline ("vs in union type = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs'); 
+          print_endline ("ts' to bind to them = " ^ catmap "," (sbt bsym_table) ts'); 
           let ts' = adjust_ts state.sym_table bsym_table sr i ts' in
           print_endline ("ts' to bind to them after adjust = " ^ catmap "," (sbt bsym_table) ts');
-*)
             let vt = tsubst sr vs' ts' vt in
-(*          print_endline ("Instantiated type = " ^ sbt bsym_table vt); *)
+*)
+(*
+          print_endline ("Instantiated type of constructor argument = " ^ sbt bsym_table vt); 
+*)
             bexpr_case_arg vt (vidx,ue)
+            end
           end
         (* this handles the case of a C type we want to model
         as a union by provding _ctor_arg style function
@@ -6859,7 +6905,9 @@ let bind_type state bsym_table env sr t =
 let bind_expression state bsym_table env e  =
   try
   inner_bind_expression state bsym_table env rsground e
-  with Not_found -> failwith "xxxx bind expression raised Not_found [BUG]"
+  with 
+  | Not_found -> failwith "xxxx bind expression raised Not_found [BUG]"
+  | GadtUnificationFailure as x -> raise x
   | exn ->  
     print_endline ("Inner bind expression failed binding " ^ string_of_expr e);
     raise exn

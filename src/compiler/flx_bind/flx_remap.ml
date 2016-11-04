@@ -113,7 +113,7 @@ let remap_bbdcl offset bbdcl =
 
   | BBDCL_union (vs, cs) ->
       let vs = remap_bvs vs in
-      let cs = List.map (fun (n,v,t) -> n,v,remap_btype t) cs in
+      let cs = List.map (fun (n,v,d,c) -> n,v,remap_btype d, remap_btype c) cs in
       bbdcl_union (vs, cs)
 
   | BBDCL_struct (vs, cs) ->

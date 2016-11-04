@@ -835,7 +835,10 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | STMT_comment _  ->  tack st
 
   | STMT_union (sr, id, vs, idts ) ->
-    let idts = List.map (fun (id,v,vs,t) -> id,v,vs,mt sr t) idts in
+    let idts = List.map (fun (id,v,vs,d,c) -> 
+      id,v,vs,mt sr d, (match c with | None-> None | Some c -> Some (mt sr c))) 
+      idts 
+    in
     tack (STMT_union (sr, mi sr id, vs, idts))
 
   | STMT_struct (sr, id, vs, idts) ->
