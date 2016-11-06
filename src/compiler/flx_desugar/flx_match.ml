@@ -132,6 +132,10 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
         Exe (patsrc,EXE_comment ("match case " ^ si !match_caseno^":" ^ string_of_pattern pat))
         ]
         @
+        [
+        Exe (patsrc,EXE_begin_match_case)
+        ]
+        @
         (if !iswild then [] else
         [
           Exe
@@ -164,7 +168,12 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
         (let label = "_ml"^string_of_bid (!n2) in
         [
         Exe (patsrc,EXE_label label)
-        ])
+        ]
+        @
+        [
+        Exe (patsrc,EXE_end_match_case)
+        ]
+        )
       ;
       incr match_caseno
     )

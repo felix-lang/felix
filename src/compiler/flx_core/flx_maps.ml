@@ -310,6 +310,9 @@ let scan_expr e =
   Flx_list.uniq_list !ls
 
 let rec map_exe fi ft fe (x:exe_t):exe_t = match x with
+  | EXE_begin_match_case
+  | EXE_end_match_case -> x
+
   | EXE_circuit cs -> x 
   | EXE_type_error (x) -> EXE_type_error (map_exe fi ft fe x)
   | EXE_code (c,e) -> EXE_code (c, fe e)

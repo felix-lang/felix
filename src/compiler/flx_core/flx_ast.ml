@@ -659,6 +659,8 @@ type exe_t =
   | EXE_endtry
   | EXE_catch of Flx_id.t * typecode_t
   | EXE_proc_return_from of string
+  | EXE_begin_match_case
+  | EXE_end_match_case
 
 type sexe_t = Flx_srcref.t * exe_t
 

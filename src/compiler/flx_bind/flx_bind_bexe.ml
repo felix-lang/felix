@@ -281,6 +281,8 @@ print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_typ
   ;
 *)
   match exe with
+  | EXE_begin_match_case
+  | EXE_end_match_case -> assert false
   | EXE_circuit cs -> Flx_bind_circuit.bind_circuit bsym_table state sr be cs 
 
   | EXE_comment s ->
@@ -819,19 +821,53 @@ let bind_exes state bsym_table sr exes : Flx_btype.t * Flx_bexe.t list  =
   print_endline "-------------------";
 *)
 
+  let rec get_subextent (exes : sexe_t list) : bexe_t list * sexe_t list =
+    let rec bind (exes: sexe_t list) (result : bexe_t list) : bexe_t list * sexe_t list  =
+      match exes with
+      | [] -> result, []
+      | (_,EXE_end_match_case) :: tail -> result, tail
+      | (_,EXE_begin_match_case) :: tail ->
+        begin try
+          let processed, tail = get_subextent tail in
+          bind tail (result @ processed) 
+        with GadtUnificationFailure ->
+          (* skip up to end of match case, take account of 
+             any nested match cases too, this should drop
+             the WHOLE subextent containing a unification
+             failure
+          *)
+          let rec skip (ls: sexe_t list): sexe_t list = 
+            match ls with 
+            | [] -> assert false
+            | (_,EXE_end_match_case) :: tail -> tail
+            | (_,EXE_begin_match_case) :: tail -> 
+              skip (skip tail)
+            | h :: tail -> skip tail
+          in
+          bind (skip tail) result
+        end
+
+      | exe :: tail -> 
+        let bs =  (bind_exe state bsym_table exe) in
+        bind tail (result @ bs)
+    in
+    bind exes [] 
+  in
+  let bound_exes, tail = get_subextent exes in
+  assert (List.length tail = 0);
+(*
   let bound_exes = List.fold_left (fun acc exe ->
     try
       let result = bind_exe state bsym_table  exe in
       List.rev result @ acc
     with GadtUnificationFailure ->
-(*
 print_endline ("GADT UNIFICATION FAILURE generating exe " ^ string_of_exe 2 (snd exe));
-*)
       acc
   )
   [] exes 
   in
   let bound_exes = List.rev bound_exes in
+*)
 (*
   print_endline ""
   ;

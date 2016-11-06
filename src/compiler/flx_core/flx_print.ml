@@ -1844,6 +1844,8 @@ and string_of_exe level s =
   and se e = string_of_expr e
   in
   match s with
+  | EXE_begin_match_case -> "begin_match_case"
+  | EXE_end_match_case -> "end_match_case"
 
   | EXE_circuit cs ->
     "connections\n" ^
