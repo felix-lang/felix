@@ -644,7 +644,7 @@ print_endline ("Translating Lazy Declaration " ^ name);
     d @ [Exe (sr,EXE_noreturn_code (s,x))]
 
   | STMT_stmt_match (sr,(e,pss)) -> 
-    Flx_match.gen_stmt_match seq rex rsts name parent_vs access sr e pss
+    Flx_match.gen_stmt_match seq rex (rsts name parent_vs access) name sr e pss
 
   (* split into multiple declarations *)
 

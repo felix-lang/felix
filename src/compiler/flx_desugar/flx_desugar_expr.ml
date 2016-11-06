@@ -107,9 +107,7 @@ let rec rett_fixparams rex ps sr =
 
 let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t list * expr_t =
   let rex e = rex rst mkreqs map_reqs state name e in
-(*
   let rsts sts = List.concat (List.map (rst state name `Private dfltvs) sts) in
-*)
   let sr = src_of_expr e in
   let seq () = state.fresh_bid () in
   match e with
@@ -574,7 +572,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
   *)
 
   | EXPR_match (sr,(e,pss)) ->
-    Flx_match.gen_match rex seq name sr e pss
+    Flx_match.gen_match rex rsts seq name sr e pss
 
 (* remove blocks *)
 (* parent vs is containing module vs .. only for modules *)

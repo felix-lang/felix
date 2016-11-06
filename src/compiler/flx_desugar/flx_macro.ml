@@ -679,21 +679,34 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_variant_arg (sr, (s, e1)) -> EXPR_variant_arg (sr,(s, me e1))
   | EXPR_case_arg (sr, (i, e1)) ->  EXPR_case_arg (sr,(i,me e1))
   | EXPR_letin (sr, (pat, e1, e2)) -> 
-    let e1 = me e1 in
     let pes = [pat, e2] in
     let pes = expand_pattern_branches pes in
     let pes =
       List.map
       (fun (pat,e) ->
         let pat = fix_pattern seq pat in
-        pat,
         let pvs = get_pattern_vars pat in
-        let pr = protect sr pvs in
-        expand_expr recursion_limit local_prefix seq (pr @ macros) e
+        let pvs' =  (* new parameter names *)
+          List.map
+          (fun s -> let b = !seq in incr seq; s^"_param_" ^ local_prefix ^ "_" ^ string_of_int b)
+          pvs
+        in
+        let fast_remap = List.combine pvs pvs' in
+        let remap = 
+          List.map2
+          (fun x y -> (x,MName y))
+          pvs pvs'
+        in
+        (* alpha convert pattern variable names *)
+        let pat' = alpha_pat local_prefix seq fast_remap remap expand_expr pat in
+        (* let pr = protect sr pvs in *)
+        let e' = expand_expr recursion_limit local_prefix seq (remap @ macros) e in
+        pat',e'
       )
       pes
     in
-    EXPR_match (sr,(e1, pes))
+    EXPR_match (sr,(me e1, pes))
+
 
   | EXPR_get_n (sr, (i, e1)) ->  EXPR_get_n (sr,(i,me e1))
   | EXPR_get_named_variable (sr, (i, e1)) ->  EXPR_get_named_variable (sr,(i,me e1))
@@ -706,10 +719,23 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       List.map
       (fun (pat,e) ->
         let pat = fix_pattern seq pat in
-        pat,
         let pvs = get_pattern_vars pat in
-        let pr = protect sr pvs in
-        expand_expr recursion_limit local_prefix seq (pr @ macros) e
+        let pvs' =  (* new parameter names *)
+          List.map
+          (fun s -> let b = !seq in incr seq; s^"_param_" ^ local_prefix ^ "_" ^ string_of_int b)
+          pvs
+        in
+        let fast_remap = List.combine pvs pvs' in
+        let remap = 
+          List.map2
+          (fun x y -> (x,MName y))
+          pvs pvs'
+        in
+        (* alpha convert pattern variable names *)
+        let pat' = alpha_pat local_prefix seq fast_remap remap expand_expr pat in
+        (* let pr = protect sr pvs in *)
+        let e' = expand_expr recursion_limit local_prefix seq (remap @ macros) e in
+        pat',e'
       )
       pes
     in
