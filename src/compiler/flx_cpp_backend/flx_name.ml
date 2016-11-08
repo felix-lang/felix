@@ -285,7 +285,8 @@ let rec cpp_type_classname syms bsym_table t =
       | _ -> "_unk_"
     in
     begin match bbdcl with 
-    | BBDCL_union (vs, [id,n,t',_]) -> 
+    | BBDCL_union (vs, [id,n,[],t',_]) -> 
+print_endline ("[flx_name] One component union should have been removed");
       let t'' = tsubst sr vs ts t' in
       cpp_type_classname syms bsym_table t''
 
@@ -434,7 +435,8 @@ and cpp_structure_name syms bsym_table t =
       | _ -> "_unk_"
     in
     begin match bbdcl with 
-    | BBDCL_union (vs, [id,n,t',_]) -> 
+    (* should have been removed by strabs *)
+    | BBDCL_union (vs, [id,n,[],t',_]) -> 
       let t'' = tsubst sr vs ts t' in
       cpp_type_classname syms bsym_table t''
 
@@ -487,7 +489,7 @@ and cpp_typename syms bsym_table t =
     let bbdcl = Flx_bsym.bbdcl bsym in
     let sr = Flx_bsym.sr bsym in
     begin match bbdcl with
-    | BBDCL_union (vs, [id,n,t',_]) -> 
+    | BBDCL_union (vs, [id,n,[],t',_]) -> 
       let t'' = tsubst sr vs ts t' in
       cpp_typename  syms bsym_table t''
     | _ -> cpp_type_classname syms bsym_table t

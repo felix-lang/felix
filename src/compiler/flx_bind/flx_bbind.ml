@@ -788,7 +788,11 @@ print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid 
     if state.print_flag then
       print_endline ("//Binding union " ^ si symbol_index ^ " --> " ^ sym.Flx_sym.id);
     let ut = btyp_inst (symbol_index, List.map (fun (s,i) -> btyp_type_var (i,btyp_type 0)) bvs) in
-    let cs' = List.map (fun (n,v,vs',d,c) -> n, v,bt d, bt c) cs in
+    let cs' = List.map (fun (n,v,vs',d,c) -> 
+      let evs = List.map (fun (s,i,_) -> s,i) (fst vs') in
+      n, v, evs, bt d, bt c
+    ) cs 
+    in
     add_bsym None (bbdcl_union (bvs, cs'))
 
   | SYMDEF_struct cs ->

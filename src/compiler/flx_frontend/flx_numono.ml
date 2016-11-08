@@ -672,7 +672,9 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
 (*
 let vars2 = List.map2 (fun (s,i) t -> i,BTYP_tuple []) vs ts in
 *)
-    let cps = List.map (fun (name,index,argt, resultt) -> name,index, mt vars argt, BTYP_none (*mt vars2 resultt*)) cps in
+    let cps = List.map (fun (name,index,evs,argt, resultt) -> 
+      name,index, evs, mt vars argt, BTYP_none (*mt vars2 resultt*)) cps 
+    in
     Some (bbdcl_union ([], cps))
 
   | BBDCL_cstruct (vs,cps, reqs) -> 

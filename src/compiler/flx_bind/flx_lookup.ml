@@ -1891,7 +1891,7 @@ and btype_of_bsym state bsym_table sr bt bid bsym =
       btyp_function (btyp_tuple params, return_type)
   | BBDCL_external_code _ -> assert false
   | BBDCL_union (_,ls) ->
-      btyp_variant (List.map (fun (n,_,d,c) -> n,d) ls)
+      btyp_variant (List.map (fun (n,_,evs,d,c) -> n,d) ls)
   | BBDCL_struct (_,ls)
   | BBDCL_cstruct (_,ls,_) ->
      let _,vs,_ = find_split_vs state.sym_table bsym_table bid in

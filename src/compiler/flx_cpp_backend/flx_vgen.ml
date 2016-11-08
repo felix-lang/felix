@@ -58,7 +58,7 @@ print_endline "cal_case_type";
     | BBDCL_union (bvs,cts) -> 
       let ct = 
         try 
-          List.iter (fun (s,i,ct,_)-> if i = n then raise (Found_type ct)) cts; 
+          List.iter (fun (s,i,evs,ct,_)-> if i = n then raise (Found_type ct)) cts; 
           assert false 
         with Found_type ct -> ct 
       in

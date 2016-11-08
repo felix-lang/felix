@@ -1306,7 +1306,9 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
           in
           incr ccount;
           let c = match c with None -> utype | Some c -> c in
-          component_name, ctor_idx, vs, d,c
+          (* existential type variables *)
+          let evs = make_ivs vs in
+          component_name, ctor_idx, evs, d,c
         end its
       in
 
@@ -1324,13 +1326,11 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
           v && (match d with TYP_void _ -> true | _ -> false)
         end true its
       in
-      List.iter begin fun (component_name, ctor_idx, vs, d,c) ->
+      List.iter begin fun (component_name, ctor_idx, evs, d,c) ->
         let dfn_idx = Flx_mtypes2.fresh_bid counter_ref in (* constructor *)
         let match_idx = Flx_mtypes2.fresh_bid counter_ref in (* matcher *)
-
-        (* existential type variables *)
-        let evs = make_ivs vs in
         add_tvars' (Some dfn_idx) privtab evs;
+
         let ctor_dcl2 =
           if unit_sum then begin
             if access = `Public then add_unique pub_name_map component_name dfn_idx;

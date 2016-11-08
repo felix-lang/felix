@@ -25,7 +25,8 @@ let rec shape_of' use_assoc_type syms bsym_table tn t =
   | BTYP_inst (i,ts) ->
     let bsym = Flx_bsym_table.find bsym_table i in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_union (vs,[id,n,t',_]) -> 
+    | BBDCL_union (vs,[id,n,[],t',_]) -> 
+print_endline ("[flx_pgen] One component union should have been removed");
       let t'' = tsubst (Flx_bsym.sr bsym) vs ts t' in
       shape_of' use_assoc_type syms bsym_table tn t''
 

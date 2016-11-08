@@ -925,7 +925,8 @@ and special_string_of_typecode ty =  (* used for constructors *)
   | TYP_tuple [] -> ""
   | _ -> " of " ^ string_of_typecode ty
 
-and special_string_of_btypecode bsym_table ty =  (* used for constructors *)
+and special_string_of_btypecode bsym_table evs ty =  (* used for constructors *)
+  string_of_bvs evs ^
   match ty with
   | BTYP_tuple [] -> ""
   | _ -> " of " ^ string_of_btypecode (Some bsym_table) ty
@@ -2542,10 +2543,10 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     ":"
 
   | BBDCL_union (vs,cs) ->
-    let string_of_union_component (name,v,d,c) =
+    let string_of_union_component (name,v,evs,d,c) =
       "  " ^ "| " ^ string_of_id name ^
      "="^si v^
-      special_string_of_btypecode bsym_table d ^ " => " ^
+      special_string_of_btypecode bsym_table evs d ^ " => " ^
       sobt c 
     in
     "union " ^ name ^ string_of_bvs vs ^ " = " ^
