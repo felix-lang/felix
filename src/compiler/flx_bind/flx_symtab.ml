@@ -1331,6 +1331,9 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
         let match_idx = Flx_mtypes2.fresh_bid counter_ref in (* matcher *)
         add_tvars' (Some dfn_idx) privtab evs;
 
+        let allivs = merge_ivs ivs inherit_ivs in
+        let allivs = merge_ivs allivs evs in
+
         let ctor_dcl2 =
           if unit_sum then begin
             if access = `Public then add_unique pub_name_map component_name dfn_idx;
@@ -1342,16 +1345,13 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
                 if access = `Public then add_unique pub_name_map component_name dfn_idx;
                 add_unique priv_name_map component_name dfn_idx;
                 SYMDEF_const_ctor (symbol_index, c, ctor_idx, evs)
-
-            | TYP_tuple ts -> (* non-constant constructor or 2 or more arguments *)
-                if access = `Public then add_function pub_name_map component_name dfn_idx;
-                add_function priv_name_map component_name dfn_idx;
+            | _ -> 
+                if access = `Public then 
+                  full_add_function counter_ref sym_table sr allivs pub_name_map component_name dfn_idx;
+                full_add_function counter_ref sym_table sr allivs priv_name_map component_name dfn_idx;
                 SYMDEF_nonconst_ctor (symbol_index, c, ctor_idx, evs, d)
 
-            | _ -> (* non-constant constructor of 1 argument *)
-                if access = `Public then add_function pub_name_map component_name dfn_idx;
-                add_function priv_name_map component_name dfn_idx;
-                SYMDEF_nonconst_ctor (symbol_index, c, ctor_idx, evs, d)
+
         in
 
         if print_flag then
@@ -1359,7 +1359,8 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
             " -> " ^ component_name);
 
         (* Add the component to the sym_table. *)
-        add_symbol ~pubtab ~privtab dfn_idx component_name ctor_dcl2;
+        let local_ivs = merge_ivs ivs evs in 
+        add_symbol ~pubtab ~privtab ~ivs:local_ivs dfn_idx component_name ctor_dcl2;
       end its;
 
       (* Add type variables to the private symbol table. *)

@@ -567,7 +567,7 @@ print_endline ("flx_bind: Adding label " ^ s ^ " index " ^ string_of_int symbol_
     let argt = bt argt in
     let ut = bt ut in
     let btraint = bind_type_constraint vs' in
-    let evs = map (fun (s,i,__) -> s,i) (fst vs') in
+    let evs = map (fun (s,i,_) -> s,i) (fst vs') in
 
     if state.print_flag then
       print_endline ("//bound nonconst ctor " ^ sym.Flx_sym.id ^ "<" ^
@@ -578,7 +578,7 @@ print_endline ("flx_bind: Adding label " ^ s ^ " index " ^ string_of_int symbol_
   | SYMDEF_val t ->
     let t = 
       try type_of_index symbol_index 
-      with Flx_lookup.GadtUnificationFailure ->
+      with GadtUnificationFailure ->
 (*
         print_endline ("GADT UNIFICATION FAILURE BINDING TYPE OF VARIABLE " ^ sym.Flx_sym.id);
 *)

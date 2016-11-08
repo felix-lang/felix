@@ -19,8 +19,6 @@ open Flx_overload
 open Flx_tpat
 open Flx_lookup_state
 
-exception GadtUnificationFailure
-
 let svs (s,i,mt) = s ^ "<" ^ si i ^ ">:"^ string_of_typecode mt
 
 type bfres_t = 

@@ -2,6 +2,8 @@
 
 open Flx_ast
 open Flx_types
+exception GadtUnificationFailure
+
 exception SyntaxError of string
 exception ParseError of string
 exception TokenError of string
