@@ -457,7 +457,8 @@ let fixup_qual vars mt qual =
 let monomap_compare (i,ts) (i',ts') = 
   let counter = ref 1 in (* HACK *)
   let dummy = Flx_bsym_table.create () in 
-  if i = i' && List.fold_left2 (fun r t t' -> r && Flx_unify.type_eq dummy counter t t') true ts ts'
+  if i = i' && List.length ts = List.length ts' &&
+    List.fold_left2 (fun r t t' -> r && Flx_unify.type_eq dummy counter t t') true ts ts'
   then 0 else compare (i,ts) (i',ts') 
 
 module MonoMap = Map.Make (
@@ -666,16 +667,20 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
     Some (bbdcl_external_code (vs,cs,ikind,reqs))
 
   | BBDCL_union (vs,cps) -> 
-    assert (List.length vs = List.length ts);
-    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
-(* HACK?? *)
-(*
-let vars2 = List.map2 (fun (s,i) t -> i,BTYP_tuple []) vs ts in
-*)
+    if List.length vs <> List.length ts then begin
+      print_endline ("Monomorphise union " ^ sbt bsym_table (btyp_inst (i,ts)) ^ 
+      " with ts/vs mismatch, expected " ^ string_of_int (List.length vs) ^
+      " type variables to match " ^ string_of_int (List.length ts) ^ " arguments");
+      print_endline "Probably a GADT?";
+    end;
+
     List.iter (fun t -> if not (Flx_btype.complete_type  t) then 
     print_endline ("type variable substitution type is not complete " ^ 
       sbt bsym_table t)) ts;
-(*
+    let gadt = List.fold_left (fun acc (name,index,evs,d,c) -> 
+       List.length evs <> 0 || acc) false cps
+    in
+if gadt then
 begin
     let ut = btyp_inst (i,ts) in
 print_endline ("Monomorphising union " ^ sbt bsym_table ut);
@@ -693,6 +698,9 @@ print_endline ("    Examining constructor " ^ name ^ "<" ^ string_of_int index ^
       List.iter (fun (_,i) -> dvars := BidSet.add i (!dvars)) evs;
       let maybe_mgu = 
         let eqns = [c,ut] in
+print_endline ("Attempting unification: " ^ sbt bsym_table c ^ " =? " ^ sbt bsym_table ut);
+print_endline ("Dependent variables:"); 
+  BidSet.iter (fun i -> print_endline ("DVAR=" ^ string_of_int i)) (!dvars);
         try Some (Flx_unify.unification bsym_table syms.counter eqns !dvars)
         with 
           | Free_fixpoint _ -> print_endline ("Free fixpoint"); None 
@@ -708,9 +716,13 @@ print_endline ("    Examining constructor " ^ name ^ "<" ^ string_of_int index ^
           string_of_int i ^ "->" ^ sbt bsym_table t) mgu);
 
 (* NOTE: for non GADT, this should agree with the argument var -> ts binding!! *)
+    if (List.length vs = List.length ts) then begin
+      let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
         print_endline ("      ORIGINAL ASSIGN=" ^ catmap "," (fun (i,t) ->
           string_of_int i ^ "->" ^ sbt bsym_table t) vars);
-
+    end else begin
+       print_endline  ("      ORIGINAL ASSIGN WOULD FAIL TO MONOMORPHISE (ts/vs mismatch due to GADT)");    
+    end;
 (*
         let varmap = Hashtbl.create 3 in
         List.iter (fun (j,t) -> Hashtbl.add varmap j t) mgu;
@@ -721,6 +733,9 @@ print_endline ("    Examining constructor " ^ name ^ "<" ^ string_of_int index ^
 (*
         let d = unfold "union monomorphisation" d in
         print_endline ("      ctor domain (unfolded) = " ^ sbt bsym_table d);
+*)
+(*
+        let d = Flx_unify.list_subst syms.counter mgu d in
 *)
         let d = mt mgu d in
         print_endline ("      ctor domain (mono) = " ^ sbt bsym_table d);
@@ -733,18 +748,20 @@ print_endline ("    Examining constructor " ^ name ^ "<" ^ string_of_int index ^
     let cps = List.fold_left (fun acc x -> 
       match x with Some x -> x::acc | None -> acc) [] cps
     in
-    ()
-end;
-*)
+print_endline ("Finished union by GADT **");
+    Some (bbdcl_union ([], cps))
+end else begin
+    assert (List.length vs = List.length ts);
+    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
     let cps = List.map (fun (name,index,ivs,argt, resultt) -> 
       name,index, [],mt vars argt, BTYP_none (*mt vars2 resultt*)
       ) cps 
     in
 (*
-print_endline ("Finished union **");
+print_endline ("Finished union by non GADT **");
 *)
     Some (bbdcl_union ([], cps))
-
+end
 
   | BBDCL_cstruct (vs,cps, reqs) -> 
     assert (List.length vs = List.length ts);

@@ -524,7 +524,8 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_varname (i,ts),BEXPR_varname (i',ts')
   | BEXPR_ref (i,ts),BEXPR_ref (i',ts')
   | BEXPR_closure (i,ts),BEXPR_closure (i',ts') ->
-     i = i' && List.fold_left2 (fun r a b -> r && a = b) true ts ts'
+     i = i' && List.length ts = List.length ts' &&
+     List.fold_left2 (fun r a b -> r && a = b) true ts ts'
 
   (* Note any two distinct new expressions are distinct ...
    * not sure what is really needed here *)
@@ -546,6 +547,7 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_apply_struct (i,ts,b),BEXPR_apply_struct (i',ts',b')
   | BEXPR_apply_stack (i,ts,b),BEXPR_apply_stack (i',ts',b') ->
      i = i' &&
+     List.length ts = List.length ts' &&
      List.fold_left2 (fun r a b -> r && a = b) true ts ts' &&
      cmp b b'
 
@@ -553,6 +555,7 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_unit,BEXPR_tuple [] -> true
 
   | BEXPR_tuple ls,BEXPR_tuple ls' ->
+     List.length ls = List.length ls' &&
      List.fold_left2 (fun r a b -> r && cmp a b) true ls ls'
 
   | BEXPR_case_arg (i,e),BEXPR_case_arg (i',e')

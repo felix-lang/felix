@@ -190,6 +190,7 @@ let rec gen_expr'
       (*
       print_endline ("Arg to C function is tuple " ^ sbe bsym_table a);
       *)
+      assert (List.length xs = List.length ps);
       fold_left2
       (fun s ((x,t) as xt) {pindex=ix} ->
         let x =
