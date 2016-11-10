@@ -18,7 +18,7 @@ type desugar_state_t = {
   name: string;
   macro_state: Flx_macro.macro_state_t;
   fresh_bid: unit -> bid_t;
-  mutable include_file_cache: string list;
+  mutable include_file_cache: (Flx_srcref.t * string) list;
 }
 
 (** Construct a desugar state value needed for desugaring. *)

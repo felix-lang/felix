@@ -120,7 +120,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
   | STMT_seq _ -> assert false
   | STMT_private (sr,st) -> rst state name `Private parent_vs st
   | STMT_include (sr,inspec) ->
-      state.Flx_desugar_expr.include_file_cache <- inspec :: state.Flx_desugar_expr.include_file_cache;
+      state.Flx_desugar_expr.include_file_cache <- (sr, inspec) :: state.Flx_desugar_expr.include_file_cache;
       []
   | STMT_label (sr,s) -> [Exe (sr,EXE_label s)]
   | STMT_proc_return sr -> [Exe (sr,EXE_proc_return)]

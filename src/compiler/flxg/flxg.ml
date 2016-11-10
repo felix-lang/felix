@@ -263,34 +263,34 @@ let main () =
   begin try
     begin match compiler_options.compiler_phase with
       | Phase_parse ->
-          let _, _, _, stmts = handle_parse state main_prog module_name in
+          let _, _, _, stmts = handle_parse state (Flx_srcref.dummy_sr, main_prog) module_name in
           print_endline (Flx_print.string_of_compilation_unit stmts)
 
       | Phase_desugar ->
-          let _, _, _, asms = handle_desugar state main_prog module_name in
+          let _, _, _, asms = handle_desugar state (Flx_srcref.dummy_sr, main_prog) module_name in
           print_endline (Flx_print.string_of_desugared asms)
 
       | Phase_bind ->
 d "[flxg] Begin binding";
-          let bsym_table, _ = handle_bind state main_prog module_name in
+          let bsym_table, _ = handle_bind state (Flx_srcref.dummy_sr, main_prog) module_name in
 d "[flxg] End binding";
           Flx_print.print_bsym_table bsym_table
 
       | Phase_optimize ->
 d "[flxg] Begin optimisation";
-          let bsym_table, _ = handle_optimize state main_prog module_name in
+          let bsym_table, _ = handle_optimize state (Flx_srcref.dummy_sr, main_prog) module_name in
 d "[flxg] End optimisation";
           Flx_print.print_bsym_table bsym_table
 
       | Phase_lower ->
 d "[flxg] Begin lowering";
-          let bsym_table, _ = handle_lower state main_prog module_name in
+          let bsym_table, _ = handle_lower state (Flx_srcref.dummy_sr, main_prog) module_name in
 d "[flxg] End lowering";
           Flx_print.print_bsym_table bsym_table
 
       | Phase_codegen ->
 d "[flxg] Begin codegen";
-          handle_codegen state main_prog module_name;
+          handle_codegen state (Flx_srcref.dummy_sr, main_prog) module_name;
 d "[flxg] End codegen";
 
           (* Not working at the moment for unknown reason, chucks Not_found.

@@ -1,5 +1,6 @@
 open Flx_ast
 open Flx_mtypes2
+open Flx_exceptions
 open Flx_options
 open Flx_types
 open Flxg_state
@@ -27,7 +28,9 @@ type t = ub_entry_t list
    names. (?)
 *)
 
-type include_entry_t = Search of string | NoSearch of string
+type include_entry_t = 
+      Search of (Flx_srcref.t * string) 
+    | NoSearch of (Flx_srcref.t * string)
 
 (* if an including_file_base "a/b" in including_file_dir "c/d" includes
    with string
@@ -35,7 +38,7 @@ type include_entry_t = Search of string | NoSearch of string
    "./f" then we use NoSearch "c/d/a/f" (sibling of including file)
 *)
 
-let make_include_entry including_file_dir including_file_base include_string =
+let make_include_entry including_file_dir including_file_base (sr, include_string) =
   let n = String.length include_string in
   if n > 1 then
     if String.sub include_string 0 2 = "./"
@@ -45,9 +48,9 @@ let make_include_entry including_file_dir including_file_base include_string =
       let dir = Flx_filesys.join including_file_dir dirpart  in
       let basepart = String.sub include_string 2 (n-2) in
       let fullname = Flx_filesys.join dir basepart in
-      NoSearch fullname
-    end else Search include_string
-  else Search include_string
+      NoSearch (sr, fullname)
+    end else Search (sr, include_string)
+  else Search (sr, include_string)
 
 
 (* make_assembly does NOT modify anything at all in the symbol state
@@ -108,7 +111,7 @@ let assemble state parser_state exclusions module_name input =
     (* Resolve the filename. *)
     let filedir,filename,source_file_extension=
       match candidate with
-      | Search s ->
+      | Search (sr, s) ->
         let fdoc_filedir,fdoc_filename,fdoc_filetime = 
         try
           let f = 
@@ -132,12 +135,12 @@ let assemble state parser_state exclusions module_name input =
         with Flx_filesys.Missing_path _ ->  "","",0.0
         in
         if fdoc_filetime = 0.0 && flx_filetime = 0.0 then 
-          raise (Flx_filesys.Missing_path (s ^ ".(flx|fdoc)"))
+          clierr sr ("Specified include path doesn't exist: " ^ s ^ ".(flx|fdoc)")
         ;
         if fdoc_filetime > flx_filetime 
         then fdoc_filedir, fdoc_filename,".fdoc"
         else flx_filedir, flx_filename,".flx"
-      | NoSearch s -> "",s,""
+      | NoSearch (sr, s) -> "",s,""
     in
 (*
 print_endline ("DEBUG: Flxg_assembly.assemble dir=" ^ filedir ^ ", file=" ^ filename ^ ", extn=" ^ source_file_extension);

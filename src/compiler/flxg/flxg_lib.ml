@@ -126,7 +126,7 @@ let process_lib
           parser_state
           !excls
           lib
-          (Flxg_assembly.Search lib)
+          (Flxg_assembly.Search (Flx_srcref.dummy_sr, lib))
         in
 
         (* already in the right order now *)
