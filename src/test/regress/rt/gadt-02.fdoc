@@ -1,0 +1,26 @@
+@title GADT test
+GADT with existential: parametrised constructor.
+@felix
+union pair[T] =
+| PUnit of unit => pair[unit]
+| Pair[U] of U * pair[T] => pair[U * pair[T]]
+;
+
+var x1 = #PUnit[unit];
+var x2 = Pair (22,x1);
+var x3 = Pair (99.76,x2);
+
+fun f[T:GENERIC] (x:T) = {
+  match x with
+  | Pair (a,b) => return a.str + ","+b.f;
+  | PUnit => return "UNIT";
+  endmatch;
+}
+
+println$ f x3;
+@
+
+@expect
+99.76,22,UNIT
+@
+

@@ -1,0 +1,65 @@
+@title GADT tests
+Basic GADT
+@felix
+union pair[T] =
+| PUnit of unit => pair[unit]
+| PInt of int * pair[T] => pair[int * pair[T]]
+| PFloat of float * pair[T] => pair[float * pair[T]]
+| PString of string * pair[T] => pair[string * pair[T]]
+;
+
+var x1 : pair[unit] = #PUnit[unit];
+var x2 : pair[int * pair[unit]] = PInt (1,x1);
+var x3 = PFloat (42.33f, x2);
+
+fun show [W:GENERIC] (x:W):string=
+{
+ match x with
+ | PUnit => return "PUnit";
+ | PInt (head, tail) => return "PInt(" + head.str+", " + tail.show+ ")";
+ | PString (head, tail) => return "PString(" + head+", " + tail.show+ ")";
+ | PFloat (head, tail) => return "PFloat(" + head.str+", " + tail.show+ ")";
+ endmatch;
+}
+
+println$ "x3=" + x3.show;
+
+proc pshow [W:GENERIC] (x:W)=
+{
+ match x with
+ | PUnit => print$ "PUnit";
+ | PInt (head, tail) => print$ "PInt(" + head.str+", "; pshow tail; print ")";
+ | PString (head, tail) => print$ "PString(" + head+", "; pshow tail; print ")";
+ | PFloat (head, tail) => print$ "PFloat(" + head.str+", "; pshow tail; print ")";
+ endmatch;
+}
+
+print "x3="; pshow x3; println$ "";
+
+fun xshow [W:GENERIC] (x:W):string=>
+ match x with
+ | PUnit => "PUnit"
+ | PInt (head, tail) => "PInt(" + head.str+", " + tail.xshow+ ")"
+ | PString (head, tail) => "PString(" + head+", " + tail.xshow+ ")"
+ | PFloat (head, tail) => "PFloat(" + head.str+", " + tail.xshow+ ")"
+ endmatch
+;
+
+println$ "x3=" + x3.xshow;
+
+fun yshow [W:GENERIC] : W -> string =
+ | PUnit => "PUnit"
+ | PInt (head, tail) => "PInt(" + head.str+", " + tail.yshow+ ")"
+ | PString (head, tail) => "PString(" + head+", " + tail.yshow+ ")"
+ | PFloat (head, tail) => "PFloat(" + head.str+", " + tail.yshow+ ")"
+;
+
+println$ "x3=" + x3.yshow;
+@
+
+@expect
+x3=PFloat(42.33, PInt(1, PUnit))
+x3=PFloat(42.33, PInt(1, PUnit))
+x3=PFloat(42.33, PInt(1, PUnit))
+x3=PFloat(42.33, PInt(1, PUnit))
+@
