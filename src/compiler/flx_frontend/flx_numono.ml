@@ -96,12 +96,14 @@ print_endline (" ** end Mono_type " ^ sbt bsym_table t);
 let rec mono_expr syms bsym_table vars sr e =
 (*
 print_endline (" ** begin mono_expr " ^ sbe bsym_table e);
+print_endline (" ** begin mono_expr: type " ^ sbt bsym_table (snd e));
 *)
   let f_btype t = mono_type syms bsym_table vars sr t in
   let f_bexpr e = mono_expr syms bsym_table vars sr e in
   let e = Flx_bexpr.map ~f_btype ~f_bexpr e in
 (*
 print_endline (" ** end mono_expr " ^ sbe bsym_table e);
+print_endline (" ** end mono_expr: type " ^ sbt bsym_table (snd e));
 *)
   e
 
@@ -356,6 +358,7 @@ let fixup_req syms bsym_table vars polyinst sr (i,ts) : Flx_types.bid_t * Flx_bt
 let fixup_reqs syms bsym_table vars polyinst sr reqs : Flx_btype.breqs_t = 
   List.map (fixup_req syms bsym_table vars polyinst sr) reqs
 
+(* HUH? Never called??? Oh, yes, used in constraints .. *) 
 let fixup_expr syms bsym_table monotype virtualinst polyinst sr e =
   print_endline ("[fixup_expr] input               : " ^ sbe bsym_table e);
   (* monomorphise the code by eliminating type variables *)
@@ -410,8 +413,6 @@ let fixup_exes syms bsym_table vars virtualinst polyinst parent_ts exes =
   in
 (*
   print_endline ("Monomorphised:\n" ^ show_exes bsym_table (List.rev rexes));
-*)
-(*
   print_endline ("VARS=" ^ showvars bsym_table vars);
 *)
   (* eliminate virtual calls by mapping to instances *)
@@ -611,6 +612,9 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
     end
 
   | BBDCL_val (vs,t,kind) ->
+(*
+print_endline ("Monomorphising variable "^Flx_bsym.id bsym ^" polytype " ^ sbt bsym_table t);
+*)
     assert (List.length vs = List.length ts);
     let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
@@ -667,13 +671,14 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
     Some (bbdcl_external_code (vs,cs,ikind,reqs))
 
   | BBDCL_union (vs,cps) -> 
+(*
     if List.length vs <> List.length ts then begin
       print_endline ("Monomorphise union " ^ sbt bsym_table (btyp_inst (i,ts)) ^ 
       " with ts/vs mismatch, expected " ^ string_of_int (List.length vs) ^
       " type variables to match " ^ string_of_int (List.length ts) ^ " arguments");
       print_endline "Probably a GADT?";
     end;
-
+*)
     List.iter (fun t -> if not (Flx_btype.complete_type  t) then 
     print_endline ("type variable substitution type is not complete " ^ 
       sbt bsym_table t)) ts;
@@ -683,39 +688,52 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
 if gadt then
 begin
     let ut = btyp_inst (i,ts) in
+(*
 print_endline ("Monomorphising union " ^ sbt bsym_table ut);
 print_endline ("  Polymorphic union index = " ^ string_of_int i);
 print_endline ("  Union universal type variable instances = " ^ catmap "," (fun t -> sbt bsym_table t) ts);
 print_endline ("  Target monomorphic index = " ^ string_of_int j);
-
+*)
     let try_cal_ctor (name,index,evs,d,c) =
+(*
 print_endline ("    Examining constructor " ^ name ^ "<" ^ string_of_int index ^">[" ^
   catmap "," (fun (s,k) -> s^"<"^string_of_int k^">") evs ^ "] of " ^ 
   sbt bsym_table d ^ " => " ^ sbt bsym_table c);
+*)
 
       let dvars = ref BidSet.empty in
       List.iter (fun (_,i) -> dvars := BidSet.add i (!dvars)) vs;
       List.iter (fun (_,i) -> dvars := BidSet.add i (!dvars)) evs;
       let maybe_mgu = 
         let eqns = [c,ut] in
+(*
 print_endline ("Attempting unification: " ^ sbt bsym_table c ^ " =? " ^ sbt bsym_table ut);
 print_endline ("Dependent variables:"); 
   BidSet.iter (fun i -> print_endline ("DVAR=" ^ string_of_int i)) (!dvars);
+*)
         try Some (Flx_unify.unification bsym_table syms.counter eqns !dvars)
         with 
           | Free_fixpoint _ -> print_endline ("Free fixpoint"); None 
           | Not_found -> None
       in
       match maybe_mgu with
-      | None -> print_endline ("      Unification FAILED"); raise Flx_exceptions.GadtUnificationFailure
+      | None -> 
+(*
+        print_endline ("      Unification FAILED"); 
+*)
+        raise Flx_exceptions.GadtUnificationFailure
       | Some mgu ->
+(*
         print_endline ("      Unified with MGU=" ^ catmap "," (fun (i,t) ->
           string_of_int i ^ "->" ^ sbt bsym_table t) mgu);
+*)
         let mgu = List.map (fun (i,t) -> i, Flx_unify.minimise bsym_table syms.counter t) mgu in
+(*
         print_endline ("      Miniused MGU   =" ^ catmap "," (fun (i,t) ->
           string_of_int i ^ "->" ^ sbt bsym_table t) mgu);
-
+*)
 (* NOTE: for non GADT, this should agree with the argument var -> ts binding!! *)
+(*
     if (List.length vs = List.length ts) then begin
       let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
         print_endline ("      ORIGINAL ASSIGN=" ^ catmap "," (fun (i,t) ->
@@ -723,6 +741,7 @@ print_endline ("Dependent variables:");
     end else begin
        print_endline  ("      ORIGINAL ASSIGN WOULD FAIL TO MONOMORPHISE (ts/vs mismatch due to GADT)");    
     end;
+*)
 (*
         let varmap = Hashtbl.create 3 in
         List.iter (fun (j,t) -> Hashtbl.add varmap j t) mgu;
@@ -738,7 +757,9 @@ print_endline ("Dependent variables:");
         let d = Flx_unify.list_subst syms.counter mgu d in
 *)
         let d = mt mgu d in
+(*
         print_endline ("      ctor domain (mono) = " ^ sbt bsym_table d);
+*)
         name,index,[],d,(btyp_void ())
     in
     let cal_ctor x = try Some (try_cal_ctor x) 
@@ -748,7 +769,9 @@ print_endline ("Dependent variables:");
     let cps = List.fold_left (fun acc x -> 
       match x with Some x -> x::acc | None -> acc) [] cps
     in
+(*
 print_endline ("Finished union by GADT **");
+*)
     Some (bbdcl_union ([], cps))
 end else begin
     assert (List.length vs = List.length ts);
@@ -778,6 +801,9 @@ end
 
 
   | BBDCL_const_ctor (vs,uidx,ut,ctor_idx,evs,etraint) ->
+(*
+print_endline "Monomorphising constant constructor?";
+*)
     assert (List.length vs = List.length ts);
     let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
     let ut = mt vars ut in
@@ -786,10 +812,18 @@ end
  
   | BBDCL_nonconst_ctor (vs,uidx,ut,ctor_idx,ctor_argt,evs,etraint) ->
     assert (List.length vs = List.length ts);
+(*
+print_endline ("Monomorphising nonconst ctor argt=: " ^ sbt bsym_table ctor_argt ^ " => " ^
+   sbt bsym_table ut);
+*)
     let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
     let ut = mt vars ut in
     let uidx = find_felix_inst syms bsym_table processed to_process nubids uidx ts in
     let ctor_argt = mt vars ctor_argt in
+(*
+print_endline ("Monomorphised nonconst ctor argt=: " ^ sbt bsym_table ctor_argt ^ " => " ^
+   sbt bsym_table ut);
+*)
     Some (bbdcl_nonconst_ctor ([],uidx, ut,ctor_idx,ctor_argt,evs,etraint)) (* ignore GADT stuff *)
  
 
@@ -904,7 +938,7 @@ print_endline ("Parent ts = " ^ catmap "," (sbt bsym_table) pts);
     in
     begin match maybebbdcl with
     | Some nubbdcl -> 
-      (* NOTE: we don't use [] here because it's confusing with polymorphism *)
+      (* NOTE: we don't use [] here bpair[unit, int]ecause it's confusing with polymorphism *)
       let nuname = Flx_bsym.id sym (* ^ ( 
         if List.length ts = 0 then "" 
          else "{" ^ catmap "," (sbt bsym_table) ts ^ "}")  *)

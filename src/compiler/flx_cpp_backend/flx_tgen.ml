@@ -285,11 +285,12 @@ let rec gen_type_name syms bsym_table (index,typ) =
       let name = cn typ in
       descr ^ "struct " ^ name ^ ";\n"
 
+(*
     | BBDCL_union (vs,[id,_,[],t',_]) -> 
 print_endline ("[flx_tgen] One component union should have been removed");
       let t'' = tsubst sr vs ts t' in
       gen_type_name syms bsym_table (index,t'')
-
+*)
     | BBDCL_union (vs,ls) -> ""
 (*
       let descr =
@@ -509,12 +510,14 @@ let rec gen_type syms bsym_table (index,typ) =
       ^
       "};\n"
 
+(*
     | BBDCL_union (vs,[id,n,[],t',_]) -> 
 print_endline ("[flx_tgen2] One component union should have been removed");
       (* ("\n// Skipping solo union " ^ Flx_bsym.id bsym) *)
       "\n// SOLO UNION tgen\n" ^
       let t'' = tsubst sr vs ts t' in
       gen_type syms bsym_table (index,t'')
+*)
 
     | BBDCL_union _ -> ""
 

@@ -5316,24 +5316,24 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
   | EXPR_match_ctor (sr,(qn,e)) ->
     begin match qn with
     | `AST_name (sr,name,ts) ->
-      (*
+(*
       print_endline ("WARNING(deprecate): match constructor by name! " ^ name);
-      *)
+*)
       let (_,ut) as ue = be e in
       let ut = rt ut in
-      (*
+(*
       print_endline ("Union type is " ^ sbt bsym_table ut);
-      *)
+*)
       begin match ut with
       | BTYP_inst (i,ts') ->
-        (*
+(*
         print_endline ("OK got type " ^ si i);
-        *)
+*)
         begin match hfind "lookup" state.sym_table i with
         | { Flx_sym.id=id; symdef=SYMDEF_union ls } ->
-          (*
+(*
           print_endline ("UNION TYPE! " ^ id);
-          *)
+*)
           let vidx =
             let rec scan = function
             | [] -> None
@@ -5343,9 +5343,9 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
           in
           begin match vidx with
           | Some vidx ->
-            (*
+(*
             print_endline ("Index is " ^ si vidx);
-            *)
+*)
             bexpr_match_case (vidx,ue)
 
           | None->
@@ -5458,7 +5458,7 @@ print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
     begin match qn with
     | `AST_name (sr,name,ts) ->
 (*
-      print_endline ("Constructor to extract: " ^ name ^ "[" ^ catmap "," string_of_typecode ts ^ "]"); 
+      print_endline ("ctor_arg: Constructor to extract: " ^ name ^ "[" ^ catmap "," string_of_typecode ts ^ "]"); 
 *)
       begin match ut with
       | BTYP_inst (i,ts') ->
@@ -5499,7 +5499,7 @@ print_endline ("Union parent vs = " ^  catmap "," (fun (s,_,_) -> s) parent_vs ^
 
           | Some ( vidx,vs', vt,vct) ->
 (*
-          print_endline ("Constructor Index is " ^ si vidx ^ " vs'=" ^ catmap "," fst (fst vs')); 
+          print_endline ("Constructor Index is " ^ si vidx ^ " vs'=" ^ catmap "," (fun (name,idx,_) -> name) (fst vs')); 
 *)
             let vt,vct =
               let bvs = List.map
@@ -5508,6 +5508,7 @@ print_endline ("Union parent vs = " ^  catmap "," (fun (s,_,_) -> s) parent_vs ^
               in
 (*
             print_endline ("Binding ctor arg type = " ^ string_of_typecode vt); 
+            print_endline ("Binding ctor result type = " ^ string_of_typecode vct); 
 *)
               let env' = build_env state bsym_table (Some i) in
               bind_type' state bsym_table env' rsground sr vt bvs mkenv,
@@ -5520,12 +5521,16 @@ print_endline ("Union parent vs = " ^  catmap "," (fun (s,_,_) -> s) parent_vs ^
           print_endline ("Bound polymorphic union value type = " ^ sbt bsym_table ut);
           print_endline ("-----+++>>");
 
+*)
+(*
 print_endline ("Unification of result type with union value type\n");
 *)
           let dvars = ref BidSet.empty in
           List.iter (fun (_,i,_) -> dvars := BidSet.add i (!dvars)) vs;
+          List.iter (fun (_,i,_) -> dvars := BidSet.add i (!dvars)) (fst vs');
 (*
-print_endline ("Dependent variables to solve for = " ^ catmap "," (fun (_,i,_) -> string_of_int i) vs);
+print_endline ("Dependent variables to solve for = ");
+          BidSet.iter (fun i-> print_endline ("DVAR= " ^ string_of_int i)) !dvars;
 *)
           let maybe_mgu = 
             let eqns = [vct,ut] in
@@ -5537,24 +5542,32 @@ print_endline ("Dependent variables to solve for = " ^ catmap "," (fun (_,i,_) -
           | Some mgu ->
 (*
             print_endline ("MGU=");
-            List.iter (fun (j,t) -> print_endline ("  ** tvar " ^ string_of_int i ^ " --> " ^ sbt bsym_table t))
+            List.iter (fun (j,t) -> print_endline ("  ** tvar " ^ string_of_int j ^ " --> " ^ sbt bsym_table t))
             mgu;
 *)
           let varmap = Hashtbl.create 3 in
           List.iter (fun (j,t) -> Hashtbl.add varmap j t) mgu;
           let vt = varmap_subst varmap vt in
-(*
           let vs' = List.map (fun (s,i,tp) -> s,i) vs in
+(*
           print_endline ("vs in union type = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs'); 
           print_endline ("ts' to bind to them = " ^ catmap "," (sbt bsym_table) ts'); 
+*)
           let ts' = adjust_ts state.sym_table bsym_table sr i ts' in
-          print_endline ("ts' to bind to them after adjust = " ^ catmap "," (sbt bsym_table) ts');
-            let vt = tsubst sr vs' ts' vt in
-*)
 (*
-          print_endline ("Instantiated type of constructor argument = " ^ sbt bsym_table vt); 
+          print_endline ("ts' to bind to them after adjust = " ^ catmap "," (sbt bsym_table) ts');
 *)
-            bexpr_case_arg vt (vidx,ue)
+            let vt = tsubst sr vs' ts' vt in
+(*
+            print_endline ("  && BOUND CASE ARG: Instantiated type of constructor argument = " ^ sbt bsym_table vt); 
+            print_endline ("  && BOUND CASE ARG: Constructor index " ^ si vidx);
+            print_endline ("  && BOUND CASE ARG: Union type to deconstruct: " ^ sbt bsym_table (snd ue));
+*)
+            let x = bexpr_case_arg vt (vidx,ue) in
+(*
+            print_endline ("  && BOUND CASE ARG: function type: " ^ sbt bsym_table (snd x));
+*)
+            x 
             end
           end
         (* this handles the case of a C type we want to model

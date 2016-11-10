@@ -354,10 +354,16 @@ let replace_calls syms bsym_table uncurry_map =
 
 
 let uncurry_gen syms bsym_table =
+(*
+print_endline "start uncurrying";
+*)
   let uncurry_map = make_uncurry_map syms bsym_table in
 
   synthesize_functions syms bsym_table uncurry_map;
   replace_calls syms bsym_table uncurry_map;
+(*
+print_endline "finish uncurrying";
+*)
 
   (* Return how many new functions we've created. *)
   Hashtbl.length uncurry_map

@@ -95,6 +95,20 @@ let weird_unit bsym_table t = match t with
     end
   | _ -> false
 
+let is_gadt bsym_table t = match t with
+  | BTYP_inst (i,_) ->
+    let bsym =
+      try Flx_bsym_table.find bsym_table i with Not_found -> assert false
+    in
+    begin match Flx_bsym.bbdcl bsym with
+    | BBDCL_union (bvs,cps) -> 
+      List.fold_left (fun acc (id,idx,evs,d,c) -> match c with BTYP_void -> true | _ -> acc) false cps
+    | _ -> false
+    end
+  | _ -> false
+
+
+
 type variant_rep = 
   | VR_self       (* only one ctor so the union is just the argument *)
   | VR_int        (* all constant ctors, just need the index *) 
@@ -115,6 +129,7 @@ let string_of_variant_rep = function
 
 
 let cal_variant_rep bsym_table t =
+  if is_gadt bsym_table t then VR_uctor else
   match t with BTYP_variant _ -> VR_uctor | _ ->
   if isnullptr bsym_table t then 
     VR_nullptr

@@ -157,10 +157,12 @@ let bexpr_apply t (e1, e2) =
   | BTYP_function (d,c)
   | BTYP_cfunction (d,c) ->
     if d <> at then begin
-       print_endline ("Warning: bexpr_apply: function domain\n"^ st d ^ "\ndoesn't agree with argtype\n" ^ st at);
-       failwith ("SYSTEM ERROR: bexpr_apply: function domain\n"^ st d ^ "\ndoesn't agree with argtype\n" ^ st at);
+      print_endline ("Warning: bexpr_apply: function type: " ^ st ft);
+      print_endline ("Warning: bexpr_apply: function domain\n"^ st d ^ "\ndoesn't agree with argtype\n" ^ st at);
+      failwith ("SYSTEM ERROR: bexpr_apply: function domain\n"^ st d ^ "\ndoesn't agree with argtype\n" ^ st at);
     end; 
     if c <> t then begin
+      print_endline ("Warning: bexpr_apply: function type: " ^ st ft);
       print_endline ("Warning: bexpr_apply: function codomain\n"^ st c ^ "\ndoesn't agree with applytype\n" ^ st t);
       failwith("SYSTEM ERROR: bexpr_apply: function codomain\n"^ st c ^ "\ndoesn't agree with applytype\n" ^ st t);
     end
@@ -196,6 +198,9 @@ let bexpr_prj n d c =
 
   | _ -> ()
   end;
+(*
+print_endline ("Constructing projection : " ^ st d ^ " -> " ^ st c);
+*)
   BEXPR_prj (n,d,c),complete_check (Flx_btype.BTYP_function (d,c))
 
 let bexpr_rnprj name seq d c =
@@ -783,7 +788,13 @@ let map
 
   | BEXPR_rprj (ix,n,d,c),t -> BEXPR_rprj (ix, n, f_btype d, f_btype c), f_btype t
   | BEXPR_aprj (ix,d,c),t -> BEXPR_aprj (f_bexpr ix, f_btype d, f_btype c), f_btype t
-  | BEXPR_prj (n,d,c),t -> BEXPR_prj (n, f_btype d, f_btype c), f_btype t
+  | BEXPR_prj (n,d,c),t -> 
+(*
+    print_endline ("Mapping projection: " ^ st d ^ " -> " ^ st c);
+*)
+    bexpr_prj n (f_btype d) (f_btype c)
+    (* BEXPR_prj (n, f_btype d, f_btype c), f_btype t *)
+
   | BEXPR_inj (n,d,c),t -> BEXPR_inj (n, f_btype d, f_btype c), f_btype t
   | BEXPR_funprod e, t -> BEXPR_funprod (f_bexpr e), f_btype t
   | BEXPR_funsum e, t -> BEXPR_funsum (f_bexpr e), f_btype t

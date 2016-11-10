@@ -35,6 +35,11 @@ let find_variable_indices syms bsym_table index =
     with Not_found -> bids
   end children []
 
+(*
+let is_gadt cps = 
+ List.fold_left (fun acc (id,idx,evs,d,c) -> match c with BTYP_void -> true | _ -> acc) false cps
+*)
+
 let get_variable_typename syms bsym_table i ts =
   let bsym =
     try Flx_bsym_table.find bsym_table i with Not_found ->
@@ -54,8 +59,46 @@ let get_variable_typename syms bsym_table i ts =
           si (length ts)
         )
       end;
+(*
+print_endline ("--- variable generator --- " ^ Flx_bsym.id bsym);
+assert (List.length vs = 0);
+assert (List.length ts = 0);
+print_endline ("Original type " ^ sbt bsym_table t);
+begin match t with 
+| BTYP_inst (i,_) -> 
+  print_endline ("Nominal type index " ^ string_of_int i);
+  begin match Flx_bsym_table.find_bbdcl bsym_table i with
+  | BBDCL_union (_,cps) -> 
+    print_endline "Nominal type is union";
+    print_endline (if is_gadt cps then " ** GADT" else "  ** not GADT")
+  | _ -> ()
+  end
+| _ -> ()
+end;
+*)
       let t = rt vs t in
-      cpp_typename syms bsym_table t
+(*
+print_endline ("Reduced type " ^ sbt bsym_table t);
+begin match t with 
+| BTYP_inst (i,_) -> 
+  print_endline ("Nominal type index " ^ string_of_int i);
+  begin match Flx_bsym_table.find_bbdcl bsym_table i with
+  | BBDCL_union (_,cps) -> 
+    print_endline "Nominal type is union";
+    print_endline (if is_gadt cps then " ** GADT" else "  ** not GADT")
+  | _ -> ()
+  end
+| _ -> ()
+end;
+*)
+
+      let tname = cpp_typename syms bsym_table t in
+(*
+print_endline ("Variable generator: variable " ^ 
+  Flx_bsym.id bsym ^ ", type=" ^ sbt bsym_table t ^ ", C++type=" ^ tname
+);
+*)
+      tname
 
   | _ ->
       failwith "[get_variable_typename] Expected variable"

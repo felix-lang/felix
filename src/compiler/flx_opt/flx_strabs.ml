@@ -30,7 +30,7 @@ let is_solo_union bsym_table t =
     in
     let entry =  Flx_bsym.bbdcl bsym in
     begin match entry with
-    | BBDCL_union (vs,[id,idx,[],dt,ct]) -> true
+    | BBDCL_union (vs,[id,idx,[],dt,ct]) -> (* HACK GADT detector *) ct <> BTYP_void (* true *)
     | _ -> false
     end
   | _ -> false
@@ -77,7 +77,7 @@ assert (vs = []);
         t'
       
 (* Eliminate unions with one constructor *)
-      | BBDCL_union (vs,[id,idx,[],dt,ct]) ->
+      | BBDCL_union (vs,[id,idx,[],dt,ct]) when ct <> BTYP_void ->
 (*
 print_endline ("[flx_strabs] Eliminating union with one constructor: union name="  ^
   Flx_bsym.id bsym ^
@@ -171,7 +171,9 @@ let rec fixexpr' bsym_table e =
        print_endline ("  ** [fixexpr] match case index= " ^ si idx^ " of solo union type "^sbt bsym_table ut^
         ", constructor " ^ si idx);
 *)
+(*
       assert (idx = 0);
+*)
       Flx_bexpr.bexpr_true
 
     | BEXPR_case_arg (idx,(x,ut)),argt as y when is_solo_union bsym_table ut ->

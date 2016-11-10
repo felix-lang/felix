@@ -13,7 +13,7 @@ let cal_bind_apply
 =
     let sigs = List.map snd args in
     begin (* apply *)
-    (*
+(*
     print_endline ("[bind_expression] GENERAL APPLY " ^ Flx_print.string_of_expr f' ^ " to " ^  Flx_print.string_of_expr a');
     print_env env;
     *)
