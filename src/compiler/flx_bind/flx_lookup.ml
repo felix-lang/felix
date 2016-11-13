@@ -776,6 +776,7 @@ print_endline ("Bind type " ^ string_of_typecode t);
   | TYP_patany _ -> failwith "Not implemented patany in typecode"
 
   | TYP_intersect ts -> btyp_intersect (List.map bt ts)
+  | TYP_union ts -> btyp_union (List.map bt ts)
   | TYP_record ts -> btyp_record (List.map (fun (s,t) -> s,bt t) ts)
   | TYP_polyrecord (ts,v) -> btyp_polyrecord (List.map (fun (s,t) -> s,bt t) ts) (bt v)
   | TYP_variant ts -> btyp_variant (List.map (fun (s,t) -> s,bt t) ts)
@@ -1458,6 +1459,7 @@ end;
             | TYP_unitsum _
             | TYP_sum _
             | TYP_intersect _
+            | TYP_union _
             | TYP_record _
             | TYP_polyrecord _
             | TYP_variant _
@@ -3913,6 +3915,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   | EXPR_longarrow _
   | EXPR_ellipsis _
   | EXPR_intersect _
+  | EXPR_union _
   | EXPR_isin _
     ->
       clierrx "[flx_bind/flx_lookup.ml:3897: E166] " sr
@@ -5709,14 +5712,13 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
           *)
           match cons with
           | BTYP_tuple [] -> true
+          | BTYP_fix (0, _) -> true (* any *)
           | BTYP_void -> false
           | _ ->
-             (*
               print_endline (
                "[instance_check] Can't reduce instance type constraint " ^
                sbt bsym_table cons
              );
-             *)
              true
       in
 
@@ -6662,6 +6664,7 @@ and rebind_btype state bsym_table env sr ts t =
 
   | BTYP_type_set ts -> btyp_type_set (List.map rbt ts)
   | BTYP_intersect ts -> btyp_intersect (List.map rbt ts)
+  | BTYP_union ts -> btyp_union (List.map rbt ts)
 
   | BTYP_sum ts ->
     let ts = List.map rbt ts in

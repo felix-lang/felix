@@ -591,6 +591,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   (* the name here is just for diagnostics *)
   | EXPR_index (sr, n, i) -> EXPR_index (sr,n,i)
   | EXPR_intersect (sr, es) -> EXPR_intersect (sr, List.map me es)
+  | EXPR_union (sr, es) -> EXPR_union (sr, List.map me es)
   | EXPR_isin (sr,(a,b)) -> EXPR_isin (sr, (me a, me b))
 
   | EXPR_get_tuple_tail (sr, e) -> EXPR_get_tuple_tail (sr, me e)

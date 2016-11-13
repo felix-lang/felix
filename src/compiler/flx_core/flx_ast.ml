@@ -67,6 +67,7 @@ and typecode_t =
   | TYP_unitsum of int                         (** sum of units  *)
   | TYP_sum of typecode_t list                 (** numbered sum type *)
   | TYP_intersect of typecode_t list           (** intersection type *)
+  | TYP_union of typecode_t list               (** union type *)
   | TYP_record of (Flx_id.t * typecode_t) list
   | TYP_polyrecord of (Flx_id.t * typecode_t) list * typecode_t
   | TYP_variant of (Flx_id.t * typecode_t) list (** anon sum *)
@@ -153,6 +154,7 @@ and expr_t =
   | EXPR_product of Flx_srcref.t * expr_t list
   | EXPR_sum of Flx_srcref.t * expr_t list
   | EXPR_intersect of Flx_srcref.t * expr_t list
+  | EXPR_union of Flx_srcref.t * expr_t list
   | EXPR_isin of Flx_srcref.t * (expr_t * expr_t)
   | EXPR_orlist of Flx_srcref.t * expr_t list
   | EXPR_andlist of Flx_srcref.t * expr_t list
@@ -706,6 +708,7 @@ let src_of_typecode = function
   | TYP_unitsum _
   | TYP_sum _
   | TYP_intersect _
+  | TYP_union _
   | TYP_record _
   | TYP_polyrecord _
   | TYP_variant _
@@ -752,6 +755,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_product (s,_)
   | EXPR_sum (s,_)
   | EXPR_intersect (s,_)
+  | EXPR_union (s,_)
   | EXPR_isin (s,_)
   | EXPR_orlist (s,_)
   | EXPR_andlist (s,_)

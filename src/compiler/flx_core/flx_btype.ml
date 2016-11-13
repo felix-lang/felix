@@ -21,6 +21,7 @@ and t =
   | BTYP_sum of t list
   | BTYP_unitsum of int
   | BTYP_intersect of t list (** intersection type *)
+  | BTYP_union of t list (** intersection type *)
   | BTYP_inst of bid_t * t list
   | BTYP_tuple of t list
   | BTYP_array of t * t
@@ -78,6 +79,7 @@ let rec str_of_btype typ =
   | BTYP_sum ts -> "BTYP_sum(" ^ ss ts ^")"
   | BTYP_unitsum n -> string_of_int n
   | BTYP_intersect ts -> "BTYP_intersect(" ^ ss ts ^ ")"
+  | BTYP_union ts -> "BTYP_union (" ^ ss ts ^ ")"
   | BTYP_inst (i,ts) -> "BTYP_inst("^string_of_int i^"["^ss ts^"])"
   | BTYP_tuple ts -> "BTYP_tuple(" ^ ss ts ^ ")"
   | BTYP_array (b,x) -> "BTYP_array(" ^ s b ^"," ^s x^")"
@@ -209,6 +211,9 @@ let btyp_unit () =
 let btyp_bool () = 
   BTYP_unitsum 2
 
+let btyp_any () =
+  BTYP_fix (0, BTYP_type 0)
+
 (** Construct a BTYP_sum type. *)
 let btyp_sum ts =
   match ts with 
@@ -229,7 +234,27 @@ let btyp_unitsum n =
 
 (** Construct a BTYP_intersect type. *)
 let btyp_intersect ts =
-  BTYP_intersect ts
+  let void_t = btyp_void () in
+  let any_t = btyp_any () in
+  if List.mem void_t ls then void_t
+  else let ls = List.filter (fun i -> i <> any_t) ls in
+  let ls = Flx_list.uniq_list ls in (* mandatory for type constraints to work *)
+  match ls with
+  | [] -> any_t
+  | [t] -> t
+  | ls -> BTYP_intersect ts
+
+(** Construct a BTYP_intersect type. *)
+let btyp_union ts =
+  let void_t = btyp_void () in
+  let any_t = btyp_any () in
+  if List.mem any_t ls then any_t 
+  else let ls = List.filter (fun i -> i <> void_t ) ls in
+  let ls = Flx_list.uniq_list ls in 
+  match ls with
+  | [] -> void_t
+  | [t] -> t
+  | ls -> BTYP_union ts
 
 let btyp_inst (bid, ts) =
   BTYP_inst (bid, ts)
@@ -237,7 +262,7 @@ let btyp_inst (bid, ts) =
 (** Construct a BTYP_tuple type. *)
 let btyp_tuple ts = 
   match ts with
-  | [] -> BTYP_tuple []
+  | [] -> btyp_unit () 
   | [t] -> t
   | (head :: tail) as ts ->
       (* If all the types are the same, reduce the type to a BTYP_array. *)
@@ -487,6 +512,7 @@ let flat_iter
       let unitrep = BTYP_tuple [] in
       for i = 1 to k do f_btype unitrep done
   | BTYP_intersect ts -> List.iter f_btype ts
+  | BTYP_union ts -> List.iter f_btype ts
   | BTYP_inst (i,ts) -> f_bid i; List.iter f_btype ts
   | BTYP_tuple ts -> List.iter f_btype ts
   | BTYP_array (t1,t2)->  f_btype t1; f_btype t2
@@ -553,6 +579,7 @@ let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
     | _ -> BTYP_sum (Flx_list.repeat mapped_unit k)
     end
   | BTYP_intersect ts -> btyp_intersect (List.map f_btype ts)
+  | BTYP_union ts -> btyp_union (List.map f_btype ts)
   | BTYP_inst (i,ts) -> btyp_inst (f_bid i, List.map f_btype ts)
   | BTYP_tuple ts -> btyp_tuple (List.map f_btype ts)
   | BTYP_array (t1,t2) -> btyp_array (f_btype t1, f_btype t2)

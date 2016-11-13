@@ -99,7 +99,8 @@ let rec dual t =
     btyp_tuple (aux [] k)
 
   | BTYP_type_set ts -> btyp_intersect (List.map dual ts)
-  | BTYP_intersect ts -> btyp_type_set (List.map dual ts)
+  | BTYP_intersect ts -> btyp_union (List.map dual ts)
+  | BTYP_union ts -> btyp_intersect (List.map dual ts)
   | BTYP_record (ts) -> btyp_variant ts
   | t -> t
 
@@ -328,6 +329,7 @@ let fix i t =
     | BTYP_tuple ts -> btyp_tuple (List.map aux ts)
     | BTYP_sum ts -> btyp_sum (List.map aux ts)
     | BTYP_intersect ts -> btyp_intersect (List.map aux ts)
+    | BTYP_union ts -> btyp_union (List.map aux ts)
     | BTYP_type_set ts -> btyp_type_set (List.map aux ts)
     | BTYP_function (a,b) -> btyp_function (aux a, aux b)
     | BTYP_effector (a,e,b) -> btyp_effector (aux a, aux e, aux b)
@@ -516,6 +518,11 @@ let rec unification bsym_table counter eqns dvars =
       | BTYP_intersect ts,t
       | t,BTYP_intersect ts ->
         List.iter (function t' -> add_eqn (t,t')) ts
+
+      | BTYP_union ts,t
+      | t,BTYP_union ts ->
+        print_endline ("Unify union type not implemented");
+        assert false
 
       | BTYP_pointer t1, BTYP_pointer t2 ->
         add_eqn (t1,t2)
@@ -1074,6 +1081,7 @@ let fold bsym_table counter t =
     let ax t = aux ((depth,t')::trail) (depth+1) t in
     match t' with
     | BTYP_intersect ls
+    | BTYP_union ls
     | BTYP_sum ls
     | BTYP_inst (_,ls)
     | BTYP_tuple ls -> List.iter ax ls

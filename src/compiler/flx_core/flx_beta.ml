@@ -334,6 +334,9 @@ print_endline "Type list index returned None";
      otherwise return the intersection of non units
      (at least two)
   *)
+
+(*
+  (* FIXME: this is WRONG WRONG WRONG. *)
   | BTYP_intersect ls ->
     let ls = List.map br ls in
     let void_t = btyp_void () in
@@ -344,6 +347,15 @@ print_endline "Type list index returned None";
     | [t] -> t
     | ls -> btyp_intersect ls
     end
+*)
+
+  | BTYP_intersect ls -> 
+    let ls = List.map br ls in
+    btyp_intersect ls
+
+  | BTYP_union ls -> 
+    let ls = List.map br ls in
+    btyp_union ls
 
   | BTYP_type_set ls -> btyp_type_set (List.map br ls)
 

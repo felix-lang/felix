@@ -96,6 +96,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   | EXPR_longarrow _
   | EXPR_ellipsis _
   | EXPR_intersect _
+  | EXPR_union _
   | EXPR_isin _ (* only used in type constraints *)
   | EXPR_callback _
   | EXPR_record_type _

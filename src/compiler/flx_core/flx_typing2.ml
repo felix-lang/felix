@@ -95,6 +95,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
 
   | EXPR_product (_,ts) -> TYP_tuple (map te ts)
   | EXPR_intersect (_,ts) -> TYP_intersect (map te ts)
+  | EXPR_union (_,ts) -> TYP_union (map te ts)
   | EXPR_isin (_,(a,b)) -> TYP_isin (te a, te b)
   | EXPR_arrow (_,(a,b)) -> TYP_function (te a, te b)
   | EXPR_effector (_,(a,e,b)) -> TYP_effector (te a, te e, te b)
@@ -196,6 +197,17 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
           begin match typecode_of_expr e2 with
           | TYP_type_tuple ls -> TYP_typeset ls
           | x -> TYP_typeset [x]
+          end
+
+      | EXPR_name (_, "\\&", []) -> 
+          begin match e2 with
+          | EXPR_tuple (_,[s1;s2]) -> TYP_intersect[typecode_of_expr s1; typecode_of_expr s2]
+          | _ -> assert false
+          end
+      | EXPR_name (_, "\\|", []) -> 
+          begin match e2 with
+          | EXPR_tuple (_, [s1;s2]) -> TYP_union [typecode_of_expr s1; typecode_of_expr s2]
+          | _ -> assert false
           end
       | _ ->
           TYP_apply (typecode_of_expr e1, typecode_of_expr e2)
@@ -341,6 +353,10 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
   | TYP_intersect (ts) -> 
       let exprs = (List.map (expr_of_typecode dsr) ts) in
       EXPR_intersect (dsr, exprs)
+
+   | TYP_union (ts) -> 
+      let exprs = (List.map (expr_of_typecode dsr) ts) in
+      EXPR_union (dsr, exprs)
   
   | TYP_record (ids_and_ts) -> 
       EXPR_record_type (dsr, ids_and_ts)
@@ -435,6 +451,7 @@ let string_of_type_name (t:typecode_t) = match t with
   | TYP_unitsum _ -> "TYP_unitsum"
   | TYP_sum _ -> "TYP_sum"
   | TYP_intersect _ -> "TYP_intersect"
+  | TYP_union _ -> "TYP_union"
   | TYP_record _ -> "TYP_record"
   | TYP_polyrecord _ -> "TYP_polyrecord"
   | TYP_variant _ -> "TYP_variant"

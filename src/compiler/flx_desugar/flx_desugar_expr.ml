@@ -120,6 +120,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
   | EXPR_effector _
   | EXPR_ellipsis _
   | EXPR_intersect _
+  | EXPR_union _
   | EXPR_isin _
     ->
     clierrx "[flx_desugar/flx_desugar_expr.ml:127: E326] " sr ("[rex] Unexpected " ^ string_of_expr e)

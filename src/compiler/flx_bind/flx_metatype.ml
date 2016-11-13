@@ -150,6 +150,7 @@ print_endline ("Metatyping term " ^ st term);
 
   | BTYP_int
   | BTYP_intersect _
+  | BTYP_union _
   | BTYP_polyrecord (_, _)
   | BTYP_type_match (_, _)
   | BTYP_tuple_cons (_, _)

@@ -350,6 +350,7 @@ print_endline ("[flx_name] One component union should have been removed");
   | BTYP_rev _
   | BTYP_polyrecord _
   | BTYP_intersect _
+  | BTYP_union _
 
   | BTYP_type _
   | BTYP_type_tuple _

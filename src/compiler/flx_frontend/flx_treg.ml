@@ -275,6 +275,7 @@ print_endline ("External primitive instance, registering whole type " ^ sbt bsym
 
   | BTYP_none
   | BTYP_intersect _
+  | BTYP_union _
 
   | BTYP_type _
   | BTYP_type_tuple _

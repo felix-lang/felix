@@ -176,7 +176,11 @@ and string_of_expr (e:expr_t) =
      cat "+" (map se ts)
 
   | EXPR_intersect (_,ts) ->
-     cat "&" (map se ts)
+     cat "\\&" (map se ts)
+
+  | EXPR_union (_,ts) ->
+     cat "\\|" (map se ts)
+
 
   | EXPR_isin (_,(a,b)) ->
      se a ^ " isin " ^ se b
@@ -474,9 +478,17 @@ and st prec tc : string =
     | TYP_intersect ls ->
       let ls = filter (fun t -> t <> TYP_tuple []) ls in
       begin match ls with
-      | [] -> 0,"unit"
-      | _ -> 9,cat " & " (map (st 9) ls)
+      | [] -> 0,"void"
+      | _ -> 9,cat " \\& " (map (st 9) ls)
       end
+
+    | TYP_union ls ->
+      let ls = filter (fun t -> match t with | TYP_void _ -> false | _ -> true) ls in
+      begin match ls with
+      | [] -> 0,"any"
+      | _ -> 9,cat " \\& " (map (st 9) ls)
+      end
+
 
     | TYP_setintersection ls ->
       begin match ls with
@@ -713,6 +725,14 @@ and sb bsym_table depth fixlist counter prec tc =
           4,cat " and " (map (sbt 5) ls)
       end
 
+    | BTYP_union ls ->
+      begin match ls with
+      | [] -> 9,"/*union*/any"
+      | _ ->
+          4,cat " and " (map (sbt 5) ls)
+      end
+
+
     | BTYP_type_set_intersection ls ->
       begin match ls with
       | [] -> 9,"/*typesetintersect*/void"
@@ -945,7 +965,7 @@ and string_of_tconstraint = function
   | TYP_tuple [] -> ""
   | TYP_intersect [TYP_tuple []] -> ""
   | t -> let x = string_of_typecode t in
-    if x <> "unit" then " where " ^ x else ""
+    if x <> "any" then " where " ^ x else ""
 
 and string_of_tclass_req qn = string_of_qualified_name qn
 
