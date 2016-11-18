@@ -23,4 +23,11 @@ val map_exe:
   (expr_t -> expr_t) -> (* expr map *)
   exe_t -> exe_t
 
+val iter_exe:
+   (Flx_types.bid_t -> unit) ->
+   (typecode_t -> unit) ->
+   (expr_t -> unit) -> 
+   exe_t ->
+   unit
+
 val scan_expr: expr_t -> Flx_srcref.t list

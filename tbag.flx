@@ -36,7 +36,7 @@ noinline proc consumer (i:size)  ()
    println$ "CONSUMER " + i.str + " FINISHED";
 }
 
-for i in 0 .. N call
+for i in 0 .. N do 
   spawn_pthread$ consumer i.size;
 
 for i in 0 .. N call

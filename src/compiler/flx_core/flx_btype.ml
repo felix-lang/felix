@@ -233,7 +233,7 @@ let btyp_unitsum n =
   | _ ->  BTYP_unitsum n
 
 (** Construct a BTYP_intersect type. *)
-let btyp_intersect ts =
+let btyp_intersect ls =
   let void_t = btyp_void () in
   let any_t = btyp_any () in
   if List.mem void_t ls then void_t
@@ -242,10 +242,10 @@ let btyp_intersect ts =
   match ls with
   | [] -> any_t
   | [t] -> t
-  | ls -> BTYP_intersect ts
+  | ls -> BTYP_intersect ls
 
 (** Construct a BTYP_intersect type. *)
-let btyp_union ts =
+let btyp_union ls =
   let void_t = btyp_void () in
   let any_t = btyp_any () in
   if List.mem any_t ls then any_t 
@@ -254,7 +254,7 @@ let btyp_union ts =
   match ls with
   | [] -> void_t
   | [t] -> t
-  | ls -> BTYP_union ts
+  | ls -> BTYP_union ls
 
 let btyp_inst (bid, ts) =
   BTYP_inst (bid, ts)
