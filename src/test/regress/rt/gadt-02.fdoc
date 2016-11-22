@@ -3,7 +3,7 @@ GADT with existential: parametrised constructor.
 @felix
 union pair[T] =
 | PUnit of unit => pair[unit]
-| Pair[U] of U * pair[T] => pair[U * pair[T]]
+| Pair[T,U] of U * pair[T] => pair[U * pair[T]]
 ;
 
 var x1 = #PUnit[unit];

@@ -523,12 +523,13 @@ let solve_mgu
   spec_result
   env_traint
 =
+let name = id in
 (*
   print_endline "Specialisation detected";
-  print_endline (" .. mgu = " ^ string_of_varlist bsym_table mgu);
 *)
 (*
-if id = "accumulate" then print_endline "solve_mgu";
+if name = "EInt" then
+  print_endline (" solve_mgu .. mgu = " ^ string_of_varlist bsym_table mgu);
 *)
   let mgu = ref mgu in
   (* each universally quantified variable must be fixed
@@ -570,29 +571,6 @@ if id = "accumulate" then print_endline "solve_mgu";
         "]" ^ Flx_print.string_of_maybe_typecode tp ^ "\n"
     end "" !unresolved
   in
-  (*
-  if List.length !unresolved > 0 then
-    print_endline (
-    "WARNING: experimental feature coming up\n" ^
-    "Below would be an error, but we try now to do more work\n" ^
-    (* clierrx "[flx_bind/flx_overload.ml:578: E247] " call_sr ( *)
-      "[resolve_overload] In application of " ^ id ^
-      " cannot resolve:\n" ^
-      report_unresolved ^
-     "Try using explicit subscript" ^
-     "\nMost General Unifier(mgu)=\n" ^ string_of_varlist sym_table !mgu
-    )
-  ;
-  *)
-  (*
-  if List.length !unresolved > 0 then None else
-  *)
-
-  (* HACKERY to try to get more values from type patterns*)
-  (*
-  if List.length !unresolved > 0 then
-  *)
-
   begin
     (* convert mgu from spec vars to base vars *)
     let basemap = List.map2
@@ -795,10 +773,10 @@ if id = "accumulate" then print_endline "solve_mgu";
         end ur
   end;
 (*
-if id = "accumulate" then
+if id = "EInt" || id == "EEqual" then
   print_endline ("Unresolved variables: " ^ si (List.length (!unresolved)));
 *)
-  if List.length !unresolved > 0 then None else begin
+  if (* id <> "EInt" && id <> "EEqual" && *) List.length !unresolved > 0 then None else begin
     let ok = ref true in
     List.iter begin fun sign ->
       if sign <> list_subst counter !mgu sign then begin
@@ -919,9 +897,7 @@ let consider
   (* Helper function to simplify the bind type function. *)
   let bt sr t = bt sr entry_kind.base_sym t in
 
-(*
-if name = "accumulate" then print_endline ("Considering ..");
-*)
+if name = "" then print_endline ("Considering .." ^ name);
   let id, sr, base_vs, parent_vs, con, domain, base_result, arg_types =
     resolve sym_table bsym_table entry_kind.base_sym bt be arg_types 
   in
@@ -1028,9 +1004,7 @@ if name = "accumulate" then print_endline "Considering function .. ";
       clierrx "[flx_bind/flx_overload.ml:1028: E250] " sr ("Failed to bind candidate return type! fn='" ^ name ^
         "', type=" ^ sbt bsym_table base_result)
   in
-(*
-if name = "accumulate" then print_endline "Making equations";
-*)
+if name = "Eint" then print_endline "Making equations";
   (* Step1: make equations for the ts *)
   let mgu = make_equations
     counter
@@ -1044,7 +1018,7 @@ if name = "accumulate" then print_endline "Making equations";
     spec_result
   in
 (*
-if name = "accumulate" then print_endline "maybe got mgu ..";
+if name = "EInt" then print_endline "maybe got mgu ..";
 *)
 (*
   let mgu = maybe_specialisation counter bsym_table mgu in
@@ -1060,7 +1034,7 @@ if name = "accumulate" then print_endline "maybe got mgu ..";
   match mgu with
   | Some mgu ->
 (*
-if name = "accumulate" then
+if name = "EInt" then
 print_endline "solving mgu";
 *)
       solve_mgu
@@ -1082,7 +1056,7 @@ print_endline "solving mgu";
 
   | None ->
 (*
-if name = "accumulate" then
+if name = "EInt" then
       print_endline "No match";
 *)
       None
@@ -1106,7 +1080,7 @@ let overload
   overload_result option
 =
 (*
-if name = "accumulate" then
+if name = "EInt" then
 begin
   print_endline ("Overload " ^ name);
   print_endline ("Argument sigs are " ^ catmap ", " (sbt bsym_table) sufs);
@@ -1148,12 +1122,12 @@ end;
     with
     | Some x -> 
 (*
-if name = "accumulate" then print_endline "Found unique result";
+if name = "EInt" then print_endline "Found unique result";
 *)
       Unique x
     | None -> 
 (*
-if name = "accumulate" then print_endline "Failed to find result";
+if name = "EInt" then print_endline "Failed to find result";
 *)
       Fail
   in
@@ -1167,7 +1141,7 @@ if name = "accumulate" then print_endline "Failed to find result";
     end fun_defs
   in
 (*
-  if name = "accumulate" then
+  if name = "EInt" then
     print_endline ("First stage: matching Candidates are:\n" ^ 
       catmap ",\n" (show_result bsym_table) candidates^"\n");
 *)

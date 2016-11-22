@@ -2563,11 +2563,11 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     ":"
 
   | BBDCL_union (vs,cs) ->
-    let string_of_union_component (name,v,evs,d,c) =
+    let string_of_union_component (name,v,evs,d,c,gadt) =
       "  " ^ "| " ^ string_of_id name ^
      "="^si v^
       special_string_of_btypecode bsym_table evs d ^ " => " ^
-      sobt c 
+      sobt c ^ (match gadt with | true -> ": GADT" | false -> "")
     in
     "union " ^ name ^ string_of_bvs vs ^ " = " ^
     "{\n" ^

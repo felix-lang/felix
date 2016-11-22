@@ -1975,7 +1975,7 @@ and btype_of_bsym state bsym_table sr bt bid bsym =
       btyp_function (btyp_tuple params, return_type)
   | BBDCL_external_code _ -> assert false
   | BBDCL_union (_,ls) ->
-      btyp_variant (List.map (fun (n,_,evs,d,c) -> n,d) ls)
+      btyp_variant (List.map (fun (n,_,evs,d,c,gadt) -> n,d) ls)
   | BBDCL_struct (_,ls)
   | BBDCL_cstruct (_,ls,_) ->
      let _,vs,_ = find_split_vs state.sym_table bsym_table bid in
@@ -2677,7 +2677,11 @@ print_endline ("lookup_qn_with_sig' [AST_name] " ^ name ^ ", sigs=" ^ catmap ","
           sra srn
           env env rs name ts signs
       with
-      | Free_fixpoint _ as x -> raise x
+      | Free_fixpoint _ as x -> 
+(*
+print_endline ("Free fixpoint");
+*)
+        raise x
       | OverloadKindError (sr1,s1) ->
 (*
 print_endline ("OverloadKindError .. (trying ctor hack)");
@@ -2693,9 +2697,7 @@ print_endline ("OverloadKindError .. (trying ctor hack)");
               sra srn
               env env rs ("_ctor_" ^ name) ts signs
           with ClientError (sr2,s2) ->
-(*
 print_endline ("ctor hack failed (client error)");
-*)
              clierr2 sr1 sr2
              (
              "attempting name lookup of " ^ name ^ " got Overload Kind ERROR1: " ^ s1 ^
@@ -2706,9 +2708,9 @@ print_endline ("ctor hack failed (client error)");
       | ClientError (sr1,s1) as x ->
 (*
 print_endline ("Client Error (trying ctor hack)?");
-*)
-(*
-    print_endline ("Client Error: Lookup simple name " ^ name ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "] sig=" ^ catmap "," (sbt bsym_table) signs);
+    print_endline ("Client Error: Lookup simple name " ^ name ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "] sig=" ^ 
+      catmap "," (sbt bsym_table) signs);
+     print_endline ("Client error message: " ^ s1);
     print_env_long state.sym_table bsym_table env;
 *)
         begin
@@ -2727,7 +2729,11 @@ print_endline ("ctor hack failed (client error)");
 *)
            raise x
         end
-      | x -> raise x
+      | x -> 
+(*
+print_endline ("Error lookup name with sig .. " ^ Printexc.to_string x);
+*)
+        raise x
     end
 
   | `AST_index (sr,name,index) as x ->
@@ -3071,6 +3077,7 @@ and lookup_name_with_sig'
   t2
 =
 (*
+if name = "EInt" then
   print_endline ("[lookup_name_with_sig'] " ^ name ^
     " of " ^ catmap "," (sbt bsym_table) t2)
   ;
@@ -3451,14 +3458,15 @@ and lookup_name_in_table_dirs_with_sig
   caller_env env rs
   sra srn name ts t2
 =
-  (*
+(*
+if name = "EInt" then
   print_endline
   (
     "LOOKUP NAME "^name ^"["^
     catmap "," (sbt bsym_table) ts ^
     "] IN TABLE DIRS WITH SIG " ^ catmap "," (sbt bsym_table) t2
   );
-  *)
+*)
   let result:entry_set_t =
     match lookup_name_in_htab table name with
     | Some x -> x
@@ -3468,9 +3476,10 @@ and lookup_name_in_table_dirs_with_sig
   | NonFunctionEntry (index) ->
     begin match get_data state.sym_table (sye index) with
     { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry }->
-    (*
-    print_endline ("FOUND " ^ id);
-    *)
+(*
+if name = "EInt" then
+    print_endline ("FOUND nonfunction " ^ id);
+*)
     begin match entry with
     | SYMDEF_inherit _ ->
       clierrx "[flx_bind/flx_lookup.ml:3369: E155] " sra "Woops found inherit in lookup_name_in_table_dirs_with_sig"
@@ -3497,10 +3506,13 @@ and lookup_name_in_table_dirs_with_sig
     | SYMDEF_cstruct _
     | SYMDEF_nonconst_ctor _
       ->
-        (*
+(*
+if name = "EInt" then begin
         print_endline ("lookup_name_in_table_dirs_with_sig finds struct constructor " ^ id);
         print_endline ("Argument types are " ^ catmap "," (sbt bsym_table) t2);
-        *)
+        print_endline ("Doing overload resolution");
+end;
+*)
         let ro =
           resolve_overload
           state bsym_table caller_env rs sra [index] name t2 ts
@@ -3518,7 +3530,11 @@ and lookup_name_in_table_dirs_with_sig
               sra srn name ts index
             in
               Some tb
-          | None -> None
+          | None -> 
+(*
+            if name = "EInt" then print_endline "Overload resolution failed";
+*)
+            None
           end
     | SYMDEF_newtype _
     | SYMDEF_abs _
@@ -3563,7 +3579,7 @@ and lookup_name_in_table_dirs_with_sig
 
   | FunctionEntry fs ->
 (*
-    if name = "accumulate" then
+    if name = "EInt" then
     print_endline ("Lookup_name_in_table_dirs_with_sig Found function set size " ^ si (List.length fs));
 *)
     let ro =
@@ -3573,7 +3589,7 @@ and lookup_name_in_table_dirs_with_sig
     match ro with
       | Some (index,t,ret,mgu,ts) ->
 (*
-    if name = "accumulate" then begin 
+    if name = "EInt" then begin 
        print_endline ("Overload resolved to index " ^ si index);
        print_endline ("handle_function (3) ts=" ^ catmap "," (sbt bsym_table) ts);
     end;
@@ -3599,9 +3615,9 @@ and lookup_name_in_table_dirs_with_sig
           Some tb
 
       | None ->
-        (*
-        print_endline "Can't overload: Trying opens";
-        *)
+(*
+        if name = "EInt" then print_endline "Can't overload: Trying opens";
+*)
         let opens : entry_set_t list =
           uniq_cat []
           (
@@ -5424,7 +5440,7 @@ print_endline ("Bind_expression apply " ^ string_of_expr e);
           let vidx =
             let rec scan = function
             | [] -> None
-            | (vn,vidx,vs',vat,vct)::_ when vn = name -> Some vidx
+            | (vn,vidx,vs',vat,vct,gadt)::_ when vn = name -> Some vidx
             | _:: t -> scan t
             in scan ls
           in
@@ -5568,7 +5584,7 @@ print_endline ("Union parent vs = " ^  catmap "," (fun (s,_,_) -> s) parent_vs ^
           let result =
             let rec scan = function
             | [] -> None
-            | (vn,vidx,vs',vt,vct)::_ when vn = name -> Some (vidx,vs',vt,vct)
+            | (vn,vidx,vs',vt,vct,gadt)::_ when vn = name -> Some (vidx,vs',vt,vct)
             | _:: t -> scan t
             in scan ls
           in
@@ -5973,6 +5989,9 @@ and resolve_overload
   sufs
   ts
 =
+(*
+if name = "EInt" then print_endline ("Trying to resolve overload for " ^ name);
+*)
   if List.length fs = 0 then None else
   let env i =
     (*
@@ -5988,14 +6007,22 @@ and resolve_overload
   in
   let luqn2 i qn = lookup_qn_in_env2' state bsym_table (env i) rs qn in
   let fs = trclose state bsym_table rs sr fs in
+
+(*
+if name = "EInt" then print_endline ("Calling overload for " ^ name);
+*)
   let result : overload_result option =
     overload state.counter state.sym_table bsym_table caller_env rs bt be luqn2 sr fs name sufs ts
   in
   begin match result with
-  | None -> None 
+  | None -> 
+(*
+if name = "EInt" then print_endline ("FAILED overload for " ^ name);
+*)
+    None 
   | Some (index,sign,ret,mgu,ts) ->
 (*
-if name = "accumulate" then begin
+if name = "EInt" then begin
     print_endline ("RESOLVED OVERLOAD OF " ^ name);
     print_endline (" .. mgu = " ^ string_of_varlist bsym_table mgu);
     print_endline ("Resolve ts = " ^ catmap "," (sbt bsym_table) ts);

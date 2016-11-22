@@ -438,9 +438,11 @@ and cpp_structure_name syms bsym_table t =
     in
     begin match bbdcl with 
     (* should have been removed by strabs *)
-    | BBDCL_union (vs, [id,n,[],t',_]) -> 
+    | BBDCL_union (vs, [id,n,[],t',_,false]) -> assert false
+(*
       let t'' = tsubst sr vs ts t' in
       cpp_type_classname syms bsym_table t''
+*)
 
     | BBDCL_union _ ->
       begin match Flx_vrep.cal_variant_rep bsym_table t with

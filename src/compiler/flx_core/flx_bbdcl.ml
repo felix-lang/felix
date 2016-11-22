@@ -45,7 +45,7 @@ type t =
   | BBDCL_external_code of
                         bvs_t * CS.t * ikind_t * Flx_btype.breqs_t
 
-  | BBDCL_union of      bvs_t * (Flx_id.t * int * bvs_t * Flx_btype.t * Flx_btype.t) list
+  | BBDCL_union of      bvs_t * (Flx_id.t * int * bvs_t * Flx_btype.t * Flx_btype.t * bool) list 
   | BBDCL_struct of     bvs_t * (Flx_id.t * Flx_btype.t) list
   | BBDCL_cstruct of    bvs_t * (Flx_id.t * Flx_btype.t) list * Flx_btype.breqs_t
   | BBDCL_typeclass of  property_t list * bvs_t
@@ -231,7 +231,7 @@ let iter
   | BBDCL_external_code (_,_,_,breqs) ->
       f_breqs breqs
   | BBDCL_union (_,cs) ->
-      List.iter (fun (_,_,evs,d,c) -> f_btype d; f_btype c) cs
+      List.iter (fun (_,_,evs,d,c,_) -> f_btype d; f_btype c) cs
   | BBDCL_struct (_,cs) ->
       List.iter (fun (n,t) -> f_btype t) cs
   | BBDCL_cstruct (_,cs,breqs) ->
@@ -313,7 +313,7 @@ let map
   | BBDCL_external_code (bvs,code,ikind,breqs) ->
       BBDCL_external_code (bvs,code,ikind,f_breqs breqs)
   | BBDCL_union (bvs,cs) ->
-      BBDCL_union (bvs,List.map (fun (n,i,evs,d,c) -> n,i,evs,f_btype d,f_btype c) cs)
+      BBDCL_union (bvs,List.map (fun (n,i,evs,d,c,gadt) -> n,i,evs,f_btype d,f_btype c,gadt) cs)
   | BBDCL_struct (bvs,cs) ->
       BBDCL_struct (bvs,List.map (fun (n,t) -> n,f_btype t) cs)
   | BBDCL_cstruct (bvs,cs, breqs) ->

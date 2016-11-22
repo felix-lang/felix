@@ -206,7 +206,7 @@ print_endline ("_strr Variant type " ^ Flx_print.sbt bsym_table t);
           EXPR_cond (sr, (cond,u,other)) 
         in 
         let e = 
-          List.fold_left (fun acc (cname,ix,vs,d,c) -> 
+          List.fold_left (fun acc (cname,ix,vs,d,c,gadt) -> 
             condu cname d acc 
           )
           (mks "MATCHFAILURE")

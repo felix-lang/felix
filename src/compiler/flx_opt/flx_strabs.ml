@@ -30,7 +30,7 @@ let is_solo_union bsym_table t =
     in
     let entry =  Flx_bsym.bbdcl bsym in
     begin match entry with
-    | BBDCL_union (vs,[id,idx,[],dt,ct]) -> (* HACK GADT detector *) ct <> BTYP_void (* true *)
+    | BBDCL_union (vs,[id,idx,[],dt,ct,gadt]) -> not gadt
     | _ -> false
     end
   | _ -> false
@@ -50,7 +50,7 @@ let get_solo_union_ctor_arg_type bsym_table t =
     in
     let entry =  Flx_bsym.bbdcl bsym in
     begin match entry with
-    | BBDCL_union (vs,[id,idx,[],dt,ct]) -> dt
+    | BBDCL_union (vs,[id,idx,[],dt,ct,gadt]) -> dt
     | _ -> assert false
     end
   | _ -> assert false
@@ -77,7 +77,7 @@ assert (vs = []);
         t'
       
 (* Eliminate unions with one constructor *)
-      | BBDCL_union (vs,[id,idx,[],dt,ct]) when ct <> BTYP_void ->
+      | BBDCL_union (vs,[id,idx,[],dt,ct,gadt]) when not gadt ->
 (*
 print_endline ("[flx_strabs] Eliminating union with one constructor: union name="  ^
   Flx_bsym.id bsym ^
@@ -323,7 +323,7 @@ print_endline ("Removing entry for index = "^si index^" : union " ^Flx_bsym.id b
 *)
 
   | BBDCL_union (bvs, cts) ->
-      let cts = map (fun (s,j,evs,d,c) -> s,j,evs,ft d, ft c) cts in
+      let cts = map (fun (s,j,evs,d,c,gadt) -> s,j,evs,ft d, ft c,gadt) cts in
       h (bbdcl_union (bvs, cts))
 
   | BBDCL_struct (bvs, cts) ->

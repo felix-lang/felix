@@ -424,7 +424,7 @@ let gen_felix_union_export syms bsym_table idx modulename =
     | BBDCL_union ([],fields) -> fields
     | _ -> assert false
   in
-  let mkmem (id,seq,evs,t,_) = "     | " ^ id ^ " = " ^ string_of_int seq ^ " " ^ 
+  let mkmem (id,seq,evs,t,_,_) = "     | " ^ id ^ " = " ^ string_of_int seq ^ " " ^ 
      (match t with BTYP_void -> "" | _ -> " of "^ sbt bsym_table t) ^ "\n" 
   in
   let mems = catmap "" mkmem fields in

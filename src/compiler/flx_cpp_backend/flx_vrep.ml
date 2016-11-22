@@ -19,7 +19,7 @@ let cal_variant_cases bsym_table t =
      * since we're calculating a case count, an 0 .. n is n+1 cases. We're assuming non-negative
      * values here .. urrggg.. review this!
      *)
-    | BBDCL_union (bvs,cts) -> List.fold_left (fun a (s,i,evs,t,_) -> max a (i+1)) (List.length cts) cts
+    | BBDCL_union (bvs,cts) -> List.fold_left (fun a (s,i,evs,t,_,gadt) -> max a (i+1)) (List.length cts) cts
     | x -> failwith 
         ("cal variant cases of non-variant nominal type " ^ 
           Flx_print.string_of_bbdcl bsym_table x i 
@@ -61,7 +61,7 @@ let cal_variant_maxarg bsym_table t =
        * if a type variable were instantiated with a small size, but
        * hopefully this will be consistent!
        *)
-      List.fold_left (fun r (_,_,evs,t,_) -> max r (size t)) 0  cts
+      List.fold_left (fun r (_,_,evs,t,_,_) -> max r (size t)) 0  cts
     | _ -> assert false 
     end
   | _ -> assert false 
@@ -77,8 +77,8 @@ let isnullptr bsym_table t = match t with
        constructor to take a unit argument because a pointer to a unit
        is encoded as a NULL
     *)
-    | BBDCL_union (bvs,[id1,0,[],BTYP_void,_; id2, 1, [],BTYP_tuple [],_]) -> false
-    | BBDCL_union (bvs,[id1,0,[],BTYP_void,_; id2, 1, [],t2,_]) -> true
+    | BBDCL_union (bvs,[id1,0,[],BTYP_void,_,false; id2, 1, [],BTYP_tuple [],_,false]) -> false
+    | BBDCL_union (bvs,[id1,0,[],BTYP_void,_,false; id2, 1, [],t2,_,false]) -> true
 
     | _ -> false
     end
@@ -90,7 +90,7 @@ let weird_unit bsym_table t = match t with
       try Flx_bsym_table.find bsym_table i with Not_found -> assert false
     in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_union (bvs,[id1,0,[],BTYP_void,_; id2, 1, [],BTYP_tuple [],_]) -> true
+    | BBDCL_union (bvs,[id1,0,[],BTYP_void,_,_; id2, 1, [],BTYP_tuple [],_,_]) -> true
     | _ -> false
     end
   | _ -> false
@@ -102,7 +102,7 @@ let is_gadt bsym_table t = match t with
     in
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_union (bvs,cps) -> 
-      List.fold_left (fun acc (id,idx,evs,d,c) -> match c with BTYP_void -> true | _ -> acc) false cps
+      List.fold_left (fun acc (id,idx,evs,d,c,gadt) -> gadt || acc) false cps
     | _ -> false
     end
   | _ -> false

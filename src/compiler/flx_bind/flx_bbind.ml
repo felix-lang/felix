@@ -185,7 +185,6 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
 (*
   print_endline (" ^^^^ BBIND_SYMBOL (subroutine) : Binding symbol "^sym.Flx_sym.id^" index=" ^ string_of_int symbol_index);
 *)
-
   (* If we've already processed this bid, exit early. We do this so we can avoid
    * any infinite loops in the symbols. *)
   if Hashtbl.mem state.visited symbol_index then () else begin
@@ -788,9 +787,9 @@ print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid 
     if state.print_flag then
       print_endline ("//Binding union " ^ si symbol_index ^ " --> " ^ sym.Flx_sym.id);
     let ut = btyp_inst (symbol_index, List.map (fun (s,i) -> btyp_type_var (i,btyp_type 0)) bvs) in
-    let cs' = List.map (fun (n,v,vs',d,c) -> 
+    let cs' = List.map (fun (n,v,vs',d,c,gadt) -> 
       let evs = List.map (fun (s,i,_) -> s,i) (fst vs') in
-      n, v, evs, bt d, bt c
+      n, v, evs, bt d, bt c, gadt
     ) cs 
     in
     add_bsym None (bbdcl_union (bvs, cs'))

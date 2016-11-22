@@ -682,8 +682,8 @@ print_endline ("Monomorphising variable "^Flx_bsym.id bsym ^" polytype " ^ sbt b
     List.iter (fun t -> if not (Flx_btype.complete_type  t) then 
     print_endline ("type variable substitution type is not complete " ^ 
       sbt bsym_table t)) ts;
-    let gadt = List.fold_left (fun acc (name,index,evs,d,c) -> 
-       List.length evs <> 0 || acc) false cps
+    let gadt = List.fold_left (fun acc (name,index,evs,d,c,gadt) -> 
+       gadt || acc) false cps
     in
 if gadt then
 begin
@@ -694,7 +694,7 @@ print_endline ("  Polymorphic union index = " ^ string_of_int i);
 print_endline ("  Union universal type variable instances = " ^ catmap "," (fun t -> sbt bsym_table t) ts);
 print_endline ("  Target monomorphic index = " ^ string_of_int j);
 *)
-    let try_cal_ctor (name,index,evs,d,c) =
+    let try_cal_ctor (name,index,evs,d,c,gadt) =
 (*
 print_endline ("    Examining constructor " ^ name ^ "<" ^ string_of_int index ^">[" ^
   catmap "," (fun (s,k) -> s^"<"^string_of_int k^">") evs ^ "] of " ^ 
@@ -760,7 +760,7 @@ print_endline ("Dependent variables:");
 (*
         print_endline ("      ctor domain (mono) = " ^ sbt bsym_table d);
 *)
-        name,index,[],d,(btyp_void ())
+        name,index,[],d,(btyp_void ()),gadt
     in
     let cal_ctor x = try Some (try_cal_ctor x) 
       with Flx_exceptions.GadtUnificationFailure -> None 
@@ -774,10 +774,14 @@ print_endline ("Finished union by GADT **");
 *)
     Some (bbdcl_union ([], cps))
 end else begin
+if (List.length vs <> List.length ts) then
+  print_endline ("Union "^sbt bsym_table (btyp_inst (i,ts))^ " vs length " ^ string_of_int (List.length vs) ^ 
+  " doesn't agree with ts length " ^ string_of_int (List.length ts));
+
     assert (List.length vs = List.length ts);
     let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
-    let cps = List.map (fun (name,index,ivs,argt, resultt) -> 
-      name,index, [],mt vars argt, BTYP_none (*mt vars2 resultt*)
+    let cps = List.map (fun (name,index,ivs,argt, resultt,gadt) -> 
+      name,index, [],mt vars argt, BTYP_none,gadt 
       ) cps 
     in
 (*

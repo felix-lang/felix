@@ -145,7 +145,7 @@ type symbol_definition_t =
   | SYMDEF_fun of property_t list * typecode_t list * typecode_t * Flx_code_spec.t  * named_req_expr_t * prec_t
   | SYMDEF_callback of property_t list * typecode_t list * typecode_t * named_req_expr_t
   | SYMDEF_insert of Flx_code_spec.t  * ikind_t * named_req_expr_t
-  | SYMDEF_union of (Flx_id.t * int *  ivs_list_t * typecode_t * typecode_t) list
+  | SYMDEF_union of (Flx_id.t * int *  ivs_list_t * typecode_t * typecode_t * bool) list
   | SYMDEF_struct of (Flx_id.t * typecode_t) list
   | SYMDEF_cstruct of (Flx_id.t * typecode_t) list * named_req_expr_t 
   | SYMDEF_type_alias of typecode_t

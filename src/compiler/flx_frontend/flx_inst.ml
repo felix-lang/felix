@@ -434,7 +434,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
       ts
 
   | BBDCL_union (vs,ps) ->
-    let argtypes = map (fun (_,_,evs,argt,rest)->argt) ps in
+    let argtypes = map (fun (_,_,evs,argt,rest,_)->argt) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
