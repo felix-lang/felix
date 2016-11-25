@@ -1,0 +1,42 @@
+@title recog check
+@felix
+include "std/strings/recognisers";
+
+spawn_fthread {
+  var test = "hello";
+  var b = Buffer &test;
+  var ri,wi = mk_ioschannel_pair[Buffer]();
+  var ro,wo = mk_ioschannel_pair[Buffer]();
+  spawn_fthread (match_string "hello" (inp=ri, out=wo));
+  write (wi,b);
+  var result = read ro;
+  println$ "Test1: End pos (should be 5)=" + result.str;
+};
+
+spawn_fthread {
+  var ri,wi = mk_ioschannel_pair[Buffer]();
+  var ro,wo = mk_ioschannel_pair[Buffer]();
+  spawn_fthread (match_string "hello" (inp=ri, out=wo));
+  for s in ("hello", "hello world", "bad input") do
+    var sv = s;
+    write (wi,Buffer &sv);
+    var result = read ro;
+    println$ "Test2: End pos (should be 5)=" + result.str;
+  done
+};
+
+
+  var test = "hello";
+  var b = Buffer &test;
+  var i,o = mk_ioschannel_pair[Buffer]();
+  spawn_fthread (match_string "FAIL" (inp=i, out=o));
+  write (o,b);
+  var result = read i;
+  println$ "WOOPS FAILED!" + result.str;
+
+
+@expect
+Test1: End pos (should be 5)=@5
+Test2: End pos (should be 5)=@5
+Test2: End pos (should be 5)=@5@
+

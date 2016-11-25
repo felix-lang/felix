@@ -1,0 +1,22 @@
+@title GADTs
+@h1 From Wikipedia
+@felix
+@
+union Expr[T] =
+  | EBool of bool => Expr[bool]
+  | EInt of int => Expr[int]
+  | EEqual of Expr[int] * Expr[int] => Expr[bool]
+;
+
+fun eval e => match e with
+  | EBool a => a
+  | EInt a => a
+  | EEqual (a,b) => eval a == eval b
+  endmatch
+;
+
+var expr1 = EEqual (EInt 2, EInt 3);
+println$ eval expr1;
+@expect
+false
+@

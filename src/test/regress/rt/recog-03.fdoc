@@ -1,0 +1,39 @@
+
+@title recog check
+@felix
+include "std/strings/recognisers";
+include "std/control/chips";
+
+spawn_fthread {
+
+  device hello = match_string "hello";
+  device world = match_string "world!";
+
+  var hello_or_world = BaseChips::tryall_list (hello, world).list;
+
+  var r0,w0 = mk_ioschannel_pair[Buffer]();
+  var r2,w2 = mk_ioschannel_pair[Buffer]();
+  circuit
+    wire r0 to hello_or_world.inp
+    wire w2 to hello_or_world.out
+  endcircuit
+
+  spawn_fthread {
+    while true do
+      var result = read r2;
+      println$ "Test: End pos=" + result.str;
+    done
+  };
+
+  var tests = "hello","bad","world!";
+  for s in tests do
+    var sv = s;
+    var b = Buffer &sv;
+    write (w0,b);
+  done
+};
+
+
+@expect
+@
+

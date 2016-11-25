@@ -1,0 +1,101 @@
+
+@title recog check
+@felix
+include "std/strings/recognisers";
+include "std/control/chips";
+
+spawn_fthread {
+  var test = "hello world";
+  var b = Buffer &test;
+  var r0,w0 = mk_ioschannel_pair[Buffer]();
+  var r1,w1 = mk_ioschannel_pair[Buffer]();
+  var r2,w2 = mk_ioschannel_pair[Buffer]();
+  var r3,w3 = mk_ioschannel_pair[Buffer]();
+  spawn_fthread (match_string "hello" (inp=r0, out=w1));
+  spawn_fthread (match_white (inp=r1, out=w2));
+  spawn_fthread (match_string "world" (inp=r2, out=w3));
+  write (w0,b);
+  var result = read r3;
+  println$ "Test1: End pos (should be 11)=" + result.str;
+};
+
+proc connect_pipeline (pinp: &(%>Buffer), pout: &(%<Buffer))
+{
+  var r0,w0 = mk_ioschannel_pair[Buffer]();
+  var r1,w1 = mk_ioschannel_pair[Buffer]();
+  var r2,w2 = mk_ioschannel_pair[Buffer]();
+  var r3,w3 = mk_ioschannel_pair[Buffer]();
+  spawn_fthread (match_string "hello" (inp=r0, out=w1));
+  spawn_fthread (match_white (inp=r1, out=w2));
+  spawn_fthread (match_string "world" (inp=r2, out=w3));
+  pinp <- w0;
+  pout <- r3;
+}
+
+spawn_fthread {
+  var test = "hello world";
+  var b = Buffer &test;
+  var w0: %>Buffer;
+  var r3: %<Buffer;
+  connect_pipeline (&w0, &r3);
+
+  write (w0,b);
+  var result = read r3;
+  println$ "Test2: End pos (should be 11)=" + result.str;
+};
+
+
+spawn_fthread {
+  var test = "hello world";
+  var b = Buffer &test;
+
+  device hello = match_string "hello";
+  device white = match_white;
+  device world = match_string "world";
+
+  var r0,w0 = mk_ioschannel_pair[Buffer]();
+  var r3,w3 = mk_ioschannel_pair[Buffer]();
+
+  circuit
+    wire r0 to hello.inp
+    connect hello.out, white.inp
+    connect white.out, world.inp
+    wire w3 to world.out
+  endcircuit
+
+  write (w0,b);
+  var result = read r3;
+  println$ "Test3: End pos (should be 11)=" + result.str;
+};
+
+
+spawn_fthread {
+  var test = "hello world";
+  var b = Buffer &test;
+
+  device hello = match_string "hello";
+  device white = match_white;
+  device world = match_string "world";
+
+  var hello_world = BaseChips::pipeline_list (hello, white, world).list;
+
+  var r0,w0 = mk_ioschannel_pair[Buffer]();
+  var r3,w3 = mk_ioschannel_pair[Buffer]();
+  circuit
+    wire r0 to hello_world.inp
+    wire w3 to hello_world.out
+  endcircuit
+
+  write (w0,b);
+  var result = read r3;
+  println$ "Test4: End pos (should be 11)=" + result.str;
+};
+
+
+@expect
+Test1: End pos (should be 11)=@11
+Test2: End pos (should be 11)=@11
+Test3: End pos (should be 11)=@11
+Test4: End pos (should be 11)=@11
+@
+
