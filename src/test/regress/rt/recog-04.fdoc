@@ -1,0 +1,54 @@
+
+@title recog check
+@felix
+include "std/strings/recognisers";
+include "std/control/chips";
+
+spawn_fthread {
+
+  device A = match_string "A";
+  device B = match_string "B";
+  device C = match_string "C";
+  device E = match_string "E";
+
+  // AB*C?A+C
+  var reg = 
+     BaseChips::pipeline_list ([
+       A,
+       BaseChips::zeroormore_matcher B,
+       BaseChips::optional C,
+       BaseChips::oneormore_matcher A,
+       C,
+       E
+     ])
+  ; 
+
+  var r0,w0 = mk_ioschannel_pair[Buffer]();
+  var r2,w2 = mk_ioschannel_pair[Buffer]();
+  circuit
+    wire r0 to reg.inp
+    wire w2 to reg.out
+  endcircuit
+
+  spawn_fthread {
+    while true do
+      var result = read r2;
+      println$ "Test: End pos=" + result.str;
+    done
+  };
+
+  var tests = "ABBBCAACE","AACE","ACAACE";
+  for s in tests do
+    var sv = s;
+    var b = Buffer &sv;
+    write (w0,b);
+  done
+};
+
+
+@expect
+Test: End pos=@9
+Test: End pos=@4
+Test: End pos=@6
+@
+

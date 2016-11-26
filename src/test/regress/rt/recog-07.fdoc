@@ -1,0 +1,66 @@
+
+@title recog check
+@felix
+include "std/strings/recognisers";
+include "std/control/chips";
+
+spawn_fthread {
+  open BaseChips;
+
+  device L = match_string "(";
+  device R = match_string ")";
+  device E = match_string "E";
+
+  // Grammar:
+  // p = epsilon
+  // p = (p)p
+  // s = pE
+  chip p_flat (q:iochip_t[Buffer,Buffer]) 
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+   {
+     device y = 
+       tryall_list ([
+         epsilon[Buffer],
+         pipeline_list ([ L, q, R, q ])
+       ])
+     ;
+     circuit
+       wire io.inp to y.inp
+       wire io.out to y.out
+     endcircuit
+  }
+
+  var p = fix p_flat;
+  var parens = pipeline_list ([p,E]);
+
+  var r0,w0 = mk_ioschannel_pair[Buffer]();
+  var r2,w2 = mk_ioschannel_pair[Buffer]();
+  circuit
+    wire r0 to parens.inp
+    wire w2 to parens.out
+  endcircuit
+
+  spawn_fthread {
+    while true do
+      var result = read r2;
+      println$ "Test: End pos=" + result.str;
+    done
+  };
+
+  var tests = "(()(()))E","E","()E";
+  for s in tests do
+    var sv = s;
+    var b = Buffer &sv;
+    write (w0,b);
+  done
+};
+
+
+@expect
+Test: End pos=@9
+Test: End pos=@1
+Test: End pos=@3
+@
+
