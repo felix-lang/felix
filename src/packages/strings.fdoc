@@ -946,6 +946,7 @@ open class Re2 {
     ctor StringPiece: unit = "::re2::StringPiece()";
     ctor StringPiece: StringPiece = "::re2::StringPiece($1)"; // copy constructor
     ctor StringPiece: +char * !ints = "::re2::StringPiece($1,$2)"; // array and length
+    ctor StringPiece (x:varray[char]) => StringPiece(x.stl_begin,x.len);
     ctor string: StringPiece = "$1.as_string()";
     fun len: StringPiece -> size = "(size_t)$1.length()";
     fun data: StringPiece -> +char = "(char*)$1.data()"; // cast away const

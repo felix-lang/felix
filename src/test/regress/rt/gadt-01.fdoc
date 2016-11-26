@@ -3,9 +3,9 @@ Basic GADT
 @felix
 union pair[T] =
 | PUnit of unit => pair[unit]
-| PInt of int * pair[T] => pair[int * pair[T]]
-| PFloat of float * pair[T] => pair[float * pair[T]]
-| PString of string * pair[T] => pair[string * pair[T]]
+| PInt[T] of int * pair[T] => pair[int * pair[T]]
+| PFloat[T] of float * pair[T] => pair[float * pair[T]]
+| PString[T] of string * pair[T] => pair[string * pair[T]]
 ;
 
 var x1 : pair[unit] = #PUnit[unit];

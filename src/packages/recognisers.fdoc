@@ -12,14 +12,14 @@ StringPiece to represent it.
 @tangle recognisers.flx
 struct Buffer
 {
-  sp: StringPiece;
+  sp: varray[char];
   pos: int;
 
   fun atend => self.pos >= self.sp.len.int;
 
   fun get => 
     if self.atend then char "" 
-    else (self.sp.data) . (self.pos)
+    else (self.sp) . (self.pos)
   ;
 
   proc next { 
@@ -34,8 +34,17 @@ struct Buffer
   ;
 }
 
-ctor Buffer (p:&string) =>
-  Buffer (p.StringPiece,0)
+
+ctor Buffer (p:varray[char]) =>
+  Buffer (p,0)
+;
+
+ctor Buffer (p:string) =>
+  Buffer (p.varray[char],0)
+;
+
+ctor Buffer (p: &string) =>
+  Buffer (*p)
 ;
 
 instance Str[Buffer] {
@@ -92,7 +101,7 @@ chip match_regex (r:RE2)
     var b = read io.inp;
 //println$ "Match regex " + r.str;
     var matched = varray[StringPiece] (1uz,StringPiece());
-    var result = Match(r,b.sp,b.pos,ANCHOR_START,matched.stl_begin,1);
+    var result = Match(r,StringPiece(b.sp),b.pos,ANCHOR_START,matched.stl_begin,1);
 //println$ "Match result " + result.str;
     if result do
 //println$ "Matched OK, match len = " + matched.0.len.str;
