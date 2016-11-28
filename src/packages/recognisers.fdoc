@@ -10,6 +10,8 @@ Recognisers work on an array of chars in memory. We use a Google
 StringPiece to represent it. 
 
 @tangle recognisers.flx
+include "std/control/chips";
+
 struct Buffer
 {
   sp: varray[char];
@@ -180,4 +182,152 @@ restart:>
   goto restart;
 }
 
+@h1 Lazy Syntactic form
+@tangle recognisers.flx
 
+class RecogGrammar {
+union prod_t =
+| Strng of string
+| Nonterminal of string
+| Epsilon
+| Seq of list[prod_t]
+| Alt of list[prod_t]
+;
+
+instance Str[prod_t] 
+{
+  fun str: prod_t -> string =
+  | Strng s => '"' + s + '"'
+  | Nonterminal name => name
+  | Epsilon => "Eps"
+  | Seq ss => "(" + catmap " " (str of prod_t) ss + ")"
+  | Alt ss => "(" + catmap " | " (str of prod_t) ss + ")"
+  ;
+}
+
+typedef gramentry_t = string * prod_t;
+typedef gramlib_t = list[gramentry_t];
+typedef grammar_t = string * gramlib_t;
+
+fun add_unique (acc:list[string]) (elt:string) : list[string] =>
+  if elt in acc then acc else Cons (elt,acc)
+;
+
+fun add_prod (acc:list[string]) (p: prod_t) : list[string] =>
+  match p with
+  | Strng _ => acc
+  | Nonterminal name => Cons (name, acc) 
+  | Epsilon => acc
+  | Seq ps => fold_left add_prod acc ps
+  | Alt ps => fold_left add_prod acc ps
+  endmatch
+;
+
+fun cls (lib:gramlib_t) 
+  (unprocessed: list[string]) 
+  (processed:list[string])
+: list[string] 
+=>
+  match unprocessed with
+  | Empty => processed
+  | Cons (h,tail) =>
+    if h in processed then cls lib tail processed else
+    let Some p = find lib h in
+    let unprocessed = add_prod tail p in
+    cls lib unprocessed (Cons (h,processed))
+  endmatch
+;
+
+fun closure : grammar_t -> list[string] =
+| start, lib => cls lib ([start]) Empty[string]
+;
+
+
+typedef recog_t = BaseChips::iochip_t[Buffer,Buffer];
+// rendering lazy terms to actual recognizer
+
+// this is a function, so it cannot construct pipeline
+// chips, because they actually spawn the components internally
+// and functions can't do service calls.
+//
+// So instead we just return a function 1->recog_t which does the
+// job on invocation.
+
+typedef ntdef_t = string * recog_t;
+
+fun find (v:varray[ntdef_t]) (nt:string) : size = 
+{
+  for i in 0uz ..< v.len do
+    if v.i.0 == nt return i;
+  done
+  assert false;
+}
+
+fun render_prod 
+  (lib:gramlib_t,v:varray[ntdef_t]) 
+  (p:prod_t) 
+: 1 -> recog_t =>
+  match p with
+  | Strng s => { match_string s }
+  | Epsilon => { BaseChips::epsilon[Buffer] }
+  | Seq ps => { BaseChips::pipeline_list (
+      map (fun (p:prod_t) => #(render_prod (lib,v) p)) ps) }
+  | Alt ps =>  { BaseChips::tryall_list (
+      map (fun (p:prod_t) => #(render_prod (lib,v) p)) ps) }
+  | Nonterminal nt => 
+     { 
+       var idx : size = find v nt;
+       var pslot : &ntdef_t = -(v.stl_begin + idx); 
+       var pchip : &recog_t = pslot . 1;
+       return BaseChips::deref_first_read pchip;
+     }
+  endmatch
+;
+
+chip make_recogniser_from_grammar
+  connector io
+    pin inp: %<grammar_t
+    pin out: %>recog_t
+{
+
+  while true do
+    // read in the grammar
+    var start, lib = read io.inp;
+
+    // calculate the transitive closure of nonterminals
+    // from the start symbol
+    var cl = closure (start,lib);
+
+    // allocate a varray with a slot for each nonterminal
+    var n = cl.len;
+    var v = varray[string * recog_t] n;
+
+    // populate the varray with the terminal names and a dummy chip
+    for nt in cl call // initialise array
+      push_back (v,(nt,BaseChips::epsilon[Buffer]))
+    ;
+
+    // now assign the real recognisers to the array
+    var index = 0uz;
+    for nt in cl do
+      match find lib nt with
+      | None => assert false;
+      | Some prod =>
+        // get wrapped recogniser
+        var xprod_closure = render_prod (lib, v) prod;
+
+        // undo the wrappingt
+        var entry = #xprod_closure;
+
+        // address of the slot
+        var pentry : &recog_t = (-(v.stl_begin+index)).1;
+
+        // overwrite dummy value
+        pentry <- entry;
+      endmatch;
+      ++index;
+    done
+    write (io.out, (v.(find v start).1));
+  done
+}
+} // RecogGrammar

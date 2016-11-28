@@ -73,6 +73,32 @@ chip function[D,C] (f:D->C)
   done
 }
 
+@h2 Procedure adaptor.
+Converts a procedure to a sink.
+@tangle chips.flx
+chip procedure[D] (p:D->0)
+  connector io
+    pin inp: %<D
+{
+  while true do 
+    var x = read io.inp;
+    p x;
+  done
+}
+
+@h2 Sink to list
+@tangle chips.flx
+chip sink_to_list[T] (p: &list[T])
+  connector io
+    pin inp : %<T
+{
+  while true do
+    var x = read (io.inp);
+    p <- Cons (x,*p);
+  done
+}
+
+
 @h2 Buffer.
 One step buffer. Same as a function adaptor passed identity.
 @tangle chips.flx
@@ -86,6 +112,56 @@ chip buffer [T]
     write (io.out, x);
   done
 }
+
+@h2 Connector symbol
+The syntax |-> is parsed to pipe (a,b).
+We add overloads for chips with pins
+named io.inp, io.out.
+
+@tangle chips.flx
+// two transducers
+chip pipe[T,U,V] (a:iochip_t[T,U],b:iochip_t[U,V])
+ connector io
+   pin inp: %<T
+   pin out: %>V
+{
+  circuit
+    connect a.out,b.inp
+    wire io.inp to a.inp
+    wire io.out to b.out
+  endcircuit
+}
+
+// source to transducer
+chip pipe[T,U] (a:ochip_t[T],b:iochip_t[T,U])
+ connector io
+   pin out: %>U
+{
+  circuit
+    connect a.out,b.inp
+    wire io.out to b.out
+  endcircuit
+}
+
+// transducer to sink
+chip pipe[T,U] (a:iochip_t[T,U],b:ichip_t[U])
+ connector io
+   pin inp: %<T
+{
+  circuit
+    connect a.out,b.inp
+    wire io.inp to a.inp
+  endcircuit
+}
+
+// source to sink
+proc pipe[T] (a:ochip_t[T],b:ichip_t[T]) ()
+{
+  circuit
+    connect a.out,b.inp
+  endcircuit
+}
+
 
 @h2 Debug Buffer.
 
@@ -201,7 +277,15 @@ next:>
 }
 
 typedef iopair_t[D,C] = (inp: %<D, out: %>C);
+
+// transducer
 typedef iochip_t[D,C] = iopair_t[D,C] -> 1 -> 0;
+
+// sink
+typedef ichip_t[T] = (inp: %<T) -> 1 -> 0;
+
+// source
+typedef ochip_t[T] = (out: %>T) -> 1 -> 0;
 
 // NOTE: this is currently a one-shot!
 // .. Well sort of!

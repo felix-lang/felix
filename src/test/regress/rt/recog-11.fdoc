@@ -1,0 +1,67 @@
+@title lazy recogniser
+@felix
+include "std/strings/recognisers";
+
+// silly sample grammar, right associative operators +, * ^ parens () and 
+// value 9 only
+
+open RecogGrammar;
+
+var xprod = Alt([
+  Seq ([Nonterminal "term", Strng "+", Nonterminal "expr"]),
+  Nonterminal "term"]);
+   
+var tprod = Alt ([
+  Seq ([Nonterminal "factor", Strng "*", Nonterminal "term"]),
+  Nonterminal "factor"]);
+
+var fprod = Alt ([Seq ([Nonterminal "atom", Strng "^", Nonterminal "factor"]),
+  Nonterminal "atom"]);
+
+var atom = Alt ([
+  Seq ([Strng "(", Nonterminal "expr", Strng ")"]),
+  Strng "9"]);
+
+
+// library
+var xlib = ([
+  ("expr",xprod),
+  ("term",tprod),
+  ("factor",fprod),
+  ("atom",atom)
+]);
+
+println$ "Xlib=" + xlib.str;
+
+var clx = closure ("expr",xlib);
+println$ "Closure="  + clx.str;
+
+
+var gri,gwi = mk_ioschannel_pair[grammar_t]();
+var gro,gwo = mk_ioschannel_pair[recog_t]();
+spawn_fthread (make_recogniser_from_grammar (inp=gri,out=gwo));
+write (gwi, ("expr",xlib));
+var parsr = read gro;
+println$ "Got parser";
+
+var test = "9+9*9^(9+9)";
+var b = Buffer test;
+var ri,wi = mk_ioschannel_pair[Buffer]();
+var ro,wo = mk_ioschannel_pair[Buffer]();
+spawn_fthread (parsr (inp=ri, out=wo));
+write (wi,b);
+spawn_fthread { 
+  while true do
+    var result = read ro;
+    println$ "Test1: End pos (should be 11)=" + result.str;
+  done
+};
+@expect
+Xlib=list((expr, ((term "+" expr) | term)), (term, ((factor "*" term) | factor)), (factor, ((atom "^" factor) | atom)), (atom, (("(" expr ")") | "9")))
+Closure=list('atom', 'factor', 'term', 'expr')
+Got parser
+Test1: End pos (should be 11)=@1
+Test1: End pos (should be 11)=@3
+Test1: End pos (should be 11)=@5
+Test1: End pos (should be 11)=@11
+@
