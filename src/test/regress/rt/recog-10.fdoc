@@ -1,0 +1,58 @@
+@title recog check
+@felix
+include "std/strings/recognisers";
+include "std/control/chips";
+
+open BaseChips;
+
+device L = match_string "(";
+device R = match_string ")";
+device E = match_string "E";
+
+// Grammar:
+// p = epsilon
+// p = (p)p
+// s = pE
+var p = fix (proc (q:iochip_t[Buffer,Buffer]) 
+  (io: (
+    inp: %<Buffer,
+    out: %>Buffer
+  )) ()
+ {
+   device y = tryall_list ([
+       epsilon[Buffer],
+       L |-> q |-> R |-> q
+     ])
+   ;
+   circuit
+     wire io.inp to y.inp
+     wire io.out to y.out
+   endcircuit
+});
+
+device parens = p |-> E;
+
+fun get_result () =
+{
+  var result = Empty[Buffer];
+  device store_result = sink_to_list &result;
+
+  device tests = source_from_list (["(()(()))E", "E", "()E"]);
+  device toBuffer = function (fun (s:string)=> Buffer s);
+
+  device pipeline = tests |-> toBuffer |-> parens |-> store_result;
+
+  var sched = fibre_scheduler();
+  spawn_fthread sched pipeline;
+  sched.run;
+  delete_fibre_scheduler sched;
+
+  return result;
+}
+
+println$ "Result=" + #get_result.str; 
+
+@expect
+Result=list(@3, @1, @9)
+@
+

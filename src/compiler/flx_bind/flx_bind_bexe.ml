@@ -244,7 +244,7 @@ let print_vs vs =
 
 type bexe_t = Flx_bexe.t
 
-let rec bind_exe (state: Flx_bexe_state.bexe_state_t) bsym_table (sr, exe) : bexe_t list =
+let rec bind_exe' (state: Flx_bexe_state.bexe_state_t) bsym_table (sr, exe) : bexe_t list =
   let be e =
     bind_expression
       state.lookup_state
@@ -289,7 +289,7 @@ print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_typ
       [bexe_comment (sr,s)]
 
   | EXE_type_error x ->
-    let result = try Some (bind_exe state bsym_table (sr, x)) with _ -> None
+    let result = try Some (bind_exe' state bsym_table (sr, x)) with _ -> None
     in begin match result with
     | None -> []
     | Some _ -> clierrx "[flx_bind/flx_bind_bexe.ml:295: E15] " sr ("type_error expected, statement compiled! " ^ string_of_exe 0 exe);
@@ -409,17 +409,17 @@ print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_typ
     [(cal_loop state.sym_table sr tbe1 (be2,t2) index)]
 
   | EXE_jump (a,b) ->
-    bind_exe state bsym_table (sr, EXE_call (a, b)) @
-    bind_exe state bsym_table (sr, EXE_proc_return) 
+    bind_exe' state bsym_table (sr, EXE_call (a, b)) @
+    bind_exe' state bsym_table (sr, EXE_proc_return) 
 
   | EXE_call (EXPR_name (_,"axiom_check",[]), e2) ->
     [(bexe_axiom_check (sr,be e2))]
 
   | EXE_call (EXPR_apply(_,(EXPR_name (_,"_iter",[]), EXPR_name (_,fn,[]))),arg) ->
-    Flx_gmap.generic_map_proc bsym_table (bind_exe state) be sr fn arg 
+    Flx_gmap.generic_map_proc bsym_table (bind_exe' state) be sr fn arg 
 
   | EXE_call (EXPR_apply(_,(EXPR_name (_,"_rev_iter",[]), EXPR_name (_,fn,[]))),arg) ->
-    Flx_gmap.generic_rev_map_proc bsym_table (bind_exe state) be sr fn arg 
+    Flx_gmap.generic_rev_map_proc bsym_table (bind_exe' state) be sr fn arg 
 
 
 
@@ -490,7 +490,7 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
       with exn ->
       try
       let apl name =
-        bind_exe state bsym_table 
+        bind_exe' state bsym_table 
           (
             sr,
             EXE_call
@@ -505,7 +505,7 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
       end
     | _ ->
       let apl name =
-        bind_exe state bsym_table 
+        bind_exe' state bsym_table 
           (
             sr,
             EXE_call
@@ -521,7 +521,7 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
       begin try 
         match f',a' with
         | EXPR_apply (sr,(f'',a'')), EXPR_tuple (_,[]) -> 
-          bind_exe state bsym_table (sr, EXE_call (f'',a''))
+          bind_exe' state bsym_table (sr, EXE_call (f'',a''))
         | _ -> raise x
       with _ -> raise x
       end
@@ -803,6 +803,13 @@ print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
      state.reachable <- true;
      let t = bind_type state.lookup_state bsym_table state.env sr t in
      [(bexe_catch sr s t)]
+
+let rec bind_exe (state: Flx_bexe_state.bexe_state_t) bsym_table (sr, exe) : bexe_t list =
+  try bind_exe' state bsym_table (sr,exe)
+  with Flx_dot.OverloadResolutionError as exn ->
+     print_endline  ("Overload resolution error binding exe: " ^ string_of_exe 2 exe);
+     print_endline (Flx_srcref.long_string_of_src sr);
+     raise exn
 
 let bind_exes state bsym_table sr exes : Flx_btype.t * Flx_bexe.t list  =
 (*
