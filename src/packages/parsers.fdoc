@@ -1,469 +1,93 @@
 @tangler parsers.flx = share/lib/std/strings/parsers.flx
-@tangler parsers.fsyn = share/lib/std/strings/parsers.fsyn
 
 @h1 Parsing
 Chips to providing parsing functions.
 
 @tangle parsers.flx
-
-@h1 Capturing wrappers
-Given a Buffer->Buffer scanner chip 'scan',
-and a state updater 'newstate' which takes the
-old state and the end position of the scanned lexeme
-and produces a new state, run the scan chip
-to match a lexeme and output the updated state.
-
-The design of this chip is a bit weird and requires
-explanation!
-
-The captured device is expected to have signature (read+ write)+,
-and so must the capturing device. So we cannot just read then
-write and loop, because the captured scanner may fail, and this
-would block the capturer. Instead, we have to spawn a fibre
-that does a write and read on the captured device for every
-input, which will fail if the scanner fails.
-
-We have to make sure the handler parameter is bound to the
-correct x, because it may be suspended when another input
-comes in! So the closure y is formed to ensure capture.
-
-NOTE: the code is is completely generic. There's nothing
-specific to parsers here.
-
-@tangle parsers.flx
-
-chip gmonad[B,C,T,U] 
-  (
-    scan: BaseChips::iochip_t[B,C],
-    newstate: (B * T) * C -> U
-  )
-  connector io
-    pin inp: %<(B * T)
-    pin out: %>(C * U)
+include "std/control/chips";
+include "std/strings/recognisers";
+class Grammars
 {
-while true do
-  var x = read io.inp;
-  noinline proc handler (var x: B * T) () {
-    var b,pd = x;
-    var rin,win= mk_ioschannel_pair[B]();
-    var rout,wout= mk_ioschannel_pair[C]();
-    spawn_fthread (scan (inp=rin,out=wout));
-    write(win,b);
-    var c : C = read rout; // this can block forever if scan fails
-    var s : U = newstate((b,pd),c);
-    write (io.out,(c,s));
-  }
-  var y = handler x;
-  spawn_fthread y;
-done
+  open RecogGrammar;
+
+fun unpack (fresh:1->string) (head:string, p:prod_t) : gramlib_t =
+{
+ var out = Empty[gramentry_t];
+ match p with
+ | Epsilon => out = ([head,p]);
+ | Strng _ => out = ([head,Seq ([p])]);
+ | Nonterminal s => out= ([head,Seq ([p])]);
+
+ | Seq ps =>
+   var newseq = Empty[prod_t];
+   for term in ps do
+     match term with
+     | Epsilon => ;
+     | Nonterminal _ => newseq = term ! newseq;
+     | Strng _ => newseq = term ! newseq;
+     | _ =>
+       var newhead = fresh();
+       newseq = Nonterminal newhead ! newseq;
+       out = unpack fresh (newhead,term);
+     endmatch;
+   done
+
+   match newseq with 
+   | Empty => out = (head,Epsilon) ! out;
+   | _ => out = (head,Seq (rev newseq)) ! out;
+   endmatch;
+
+ | Alt ps =>
+   iter (proc (p:prod_t) { out = unpack fresh (head,p) + out; }) ps;
+ endmatch;
+ return out;
 }
 
-fun monad[B,C,T] 
-  (
-    scan: BaseChips::iochip_t[B,C],
-    newstate: (B * T) * C -> T
-  )
-=> 
-  gmonad [B,C,T,T] (scan,newstate)
+fun normalise_lib (fresh:1->string) (lib:gramlib_t) = {
+ var normalised = Empty[gramentry_t];
+ for p in lib perform
+   normalised = unpack fresh p + normalised;
+ return normalised; 
+}
+
+fun sort_merge (g:gramlib_t) : gramlib_t =>
+ let fun enlt (a:gramentry_t, b:gramentry_t) : bool => a.0 < b.0 in
+ merge (sort enlt g)
 ;
 
-@h1 Syntax
-@tangle parsers.fsyn
+fun merge (var p:gramlib_t): gramlib_t =
+{
+ if p.len == 0uz return p;
 
-syntax parsers {
-  priority 
-    palt_pri <
-    pseq_pri <
-    ppostfix_pri <
-    patom_pri
-  ;
- 
-  //$ Define a non-terminal
-  stmt := "parser" sdeclname "=" sparser[palt_pri] ";" =># 
-    """
-    `(ast_var_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
-    """;
+ var out: gramlib_t;
 
-  //$ Define a non-terminal
-  stmt := "parser" sdeclname ":" stypeexpr "=" sparser[palt_pri] ";" =># 
-    """
-    `(ast_var_decl ,_sr ,(first _2) ,(second _2) (some ,_4) (some ,_6))
-    """;
+ var key: string;
+ var alts = Empty[prod_t];
+ var cur: gramentry_t;
 
+ proc fetch() { 
+   match p with 
+   | Cons (head,tail) => cur = head; p = tail; 
+   | Empty => assert false;
+   endmatch;
+ }
 
-  //$ Inline regular expression.
-  //$ Can be used anywhere in Felix code.
-  //$ Returns a a value of type Regdef::regex.
-  x[sapplication_pri] := "parse" "(" sparser[palt_pri] ")" =># "_3";
+ proc dohead() { key = cur.0; alts = Empty[prod_t]; }
+ proc dofoot() { out = (key,Alt alts) ! out;  }
+ proc dobreak() { dofoot; dohead; }
+ proc check() { if key != cur.0 call dobreak; }
 
-  //$ Alternatives.
-  sparser[palt_pri] := sparser[>palt_pri] ("|" sparser[>palt_pri])+ =># 
-    """`(ast_apply ,_sr ( ,(qnoi 'BaseChips 'tryall_list) 
-      (ast_apply ,_sr (,(noi 'list) ,(cons _1 (map second _2))))))"""
-  ;
-
-  //$ Sequential concatenation.
-  sparser[pseq_pri] := sparser[>pseq_pri] (sparser[>pseq_pri])+ =># 
-    """`(ast_apply ,_sr ( ,(qnoi 'BaseChips 'pipeline_list)
-      (ast_apply ,_sr (,(noi 'list) ,(cons _1 _2)))))"""
-  ;
-
-/////////
-// THESE COMBINATORS SEEM USELESS BECAUSE THERE IS NO WELL DEFINED
-// RESULT. 
-//
-// That is, when parsing, they're not defined to say, push a list
-// onto the parser stack.
-//
-// They can be used by pushing a mark before and popping to the mark
-// to do a reduce. Works fine. But depends on being able to put
-// a mark on the stack, which means the type of terms on the stack
-// has to include a mark term.
-
-  //$ Postfix star (*).
-  //$ Kleene closure: zero or more repetitions.
-  sparser[ppostfix_pri] := sparser[ppostfix_pri] "*" =># 
-    """`(ast_apply ,_sr ( ,(qnoi 'BaseChips 'zeroormore_matcher) ,_1 ))"""
-  ;
-
-  //$ Postfix plus (+).
-  //$ One or more repetitions.
-  sparser[ppostfix_pri] := sparser[ppostfix_pri] "+" =>#
-    """`(ast_apply ,_sr ( ,(qnoi 'BaseChips 'oneormore_matcher) ,_1 ))"""
-  ;
-
-  //$ Postfix question mark (?).
-  //$ Optional. Zero or one repetitions.
-  sparser[ppostfix_pri] := sparser[ppostfix_pri] "?" =>#
-    """`(ast_apply ,_sr (,(qnoi 'BaseChips 'optional) ,_1 ))"""
-  ;
-// end suspect combinators
-/////////
-
-  //$ Group psuedo function.
-  sparser[patom_pri] := "(" sparser[palt_pri] ")" =># '_2'; 
-
-  sparser[patom_pri] :=  "{" sexpr "}" =># "_2";
-
-  //$ Identifier.
-  sparser[patom_pri] := sname=># "`(ast_name ,_sr ,_1 ())";
-
-  //$ Indirection
-  //$ For example, the LHS of a regdef binder.
-  sparser[patom_pri] := "&" sname=># """
-    `(ast_apply ,_sr 
-      (
-        ,(qnoi 'BaseChips 'deref_first_read)
-        (ast_ref ,_sr ,(nos _2))
-      )
-    )
-  """;
- 
+ fetch;
+ dohead;
+ while p.len > 0uz do
+   check;
+   alts = cur.1 ! alts;
+   fetch;
+ done
+ check;
+ alts = cur.1 ! alts;
+ dofoot;
+ return out;
 }
-
-syntax Combw {
-  x[ssetintersection_pri] := x[ssetintersection_pri] "#>" x[>ssetintersection_pri] =># "(infix 'combw)";
-  x[ssetunion_pri] := x[ssetunion_pri] "#|" x[>ssetunion_pri] =># "(infix 'alts)";
-}
+} // class
 @
-@tangle parsers.flx
-// ------------ generic combinators ---------------
-// X * X
-fun comb[X] 
-  (var ax : X, var bx:X) 
-  :list[X] 
-  => list (bx,ax)
-;
-
-// AX * BX
-fun comb[X,A,B] 
-  (var ax : A * X, var bx: B * X) 
-  : (B * A) * list[X] 
-  => (bx.0,ax.0), list (bx.1,ax.1)
-;
-
-// X * BX
-fun comb[X,B] 
-  (var ax : X, var bx: B * X) 
-  : B  * list[X] 
-  => bx.0, list (bx.1,ax)
-;
-
-// AX * X
-fun comb[X,A] 
-  (var ax : A * X, var bx: X) 
-  : A * list[X] 
-  => ax.0, list (bx,ax.1)
-;
-
-// AXs * BX
-fun comb[X,A,B] 
-  (var axs: A * list[X], var bx: B * X) 
-  : (B ** A) * list[X] 
-= {
-  return (bx.0,,axs.0), Cons (bx.1, axs.1) ;
-}
-
-// AXs * X
-fun comb[X,A] (
-  var axs: A * list[X], 
-  var bx:X
-) : A * list[X] 
-= {
-  return axs.0, Cons (bx, axs.1) ;
-}
-
-
-// Xs * BX
-fun comb[X,B] 
-  (var axs: list[X], var bx: B * X) 
-  : B * list[X] 
-= {
-  return bx.0,Cons (bx.1,axs);
-}
-
-// Xs * X
-fun comb[X] 
-  (var axs: list[X], var bx:  X) 
-  : list[X] 
-= {
-  return Cons (bx, axs) ;
-}
-
-// AX * BXs
-fun comb[X,A,B] 
-  (var ax: A * X, var bxs: B * list[X]) 
-  : (B <**> A) * list[X] 
-= {
-  var lst : list[X] = rev (ax.1 ! rev bxs.1);
-  return (bxs.0<,,>ax.0), lst; 
-}
-
-
-//---------- wrapping combinators ---------
-
-fun wrap[B,T] (
-  x:(%>T) -> iochip_t[B,B]
-) 
-: (%<T) * iochip_t[B,B] 
-= {
-  var i,o = mk_ioschannel_pair[T]();
-  return i,x o;
-}
-
- 
-// AX * BX
-fun combw[X,A,B] (
-  var ax : (%>A)-> iochip_t[X,X], 
-  var bx : (%>B) -> iochip_t[X,X]
-) 
-: ((%<B) * (%<A)) * list[iochip_t[X,X]] 
-=
-{
-   var wax = wrap ax; 
-   var wbx = wrap bx;  
-   return comb (wax,wbx);
-}
-
-// X * BX
-fun combw[X,B] (
-  var ax : iochip_t[X,X], 
-  var bx : (%>B) -> iochip_t[X,X]
-) 
-: (%<B)  * list[iochip_t[X,X]] 
-=
-{
-   var wbx = wrap bx;  
-   return comb (ax,wbx);
-}
-
-// AX * X
-fun combw[X,A] (
-  var ax : (%>A)-> iochip_t[X,X], 
-  var bx : iochip_t[X,X]
-) 
-: (%<A) * list[iochip_t[X,X]] 
-=
-{
-   var wax = wrap ax; 
-   return comb (wax,bx);
-}
-
-// AXs * BX
-fun combw[X,A,B] (
-  var axs: A * list[iochip_t[X,X]],
-  var bx : (%>B) -> iochip_t[X,X]
-) 
-: ((%<B) ** A) * list[iochip_t[X,X]] 
-=
-{
-  var wbx = wrap bx;
-  return comb (axs, wbx);
-}
-
-// AX * BXs
-fun combw[X,A,B] (
-  var ax : (%>A) -> iochip_t[X,X],
-  var bxs: B * list[iochip_t[X,X]]
-) 
-: (B <**> (%<A)) * list[iochip_t[X,X]] 
-=
-{
-  var wax = wrap ax;
-  return comb (wax, bxs);
-}
-
-
-typedef fun ischannel_f(T:TYPE):TYPE => %<T;
-
-chip action_reduce[T:GENERIC,E]
-  (f:T -> E)
-  (inchans: _map ischannel_f (_rev T))
-  (term: %>E)
-  connector io
-    pin inp:%<Buffer
-    pin out:%>Buffer
-{
-  while true do
-    write (io.out,read io.inp);
-    write (term, f (_rev_map read inchans));
-  done
-}
-
-
-fun combw[X,A,T] (
-   hiworld: A * list[iochip_t[X,X]],
-   abc_parser : A -> (%>T) -> iochip_t[X,X]
-) : (%<T) * list[iochip_t[X,X]]
-=>
-  let abc_tuple, pipeline = hiworld in
-  let rd, abc_chip = wrap (abc_parser abc_tuple) in
-  rd, (abc_chip ! pipeline)
-;
-
-
-
-chip deref_first_read[D,C,T] (p:&(%>T -> iochip_t[D,C])) 
-  (term: %>T)
-  connector io
-    pin inp: %<D
-    pin out: %>C
-{
-  var x = read io.inp;
-  var rinp,rout = mk_ioschannel_pair[D]();
-  spawn_fthread ((*p) term (inp=rinp, out=io.out));
-  write (rout,x);
-  while true do
-    x = read io.inp;
-    write (rout,x);
-  done
-}
- 
-
-proc merge [term_t] (wd: %>term_t) (rds:list[%<term_t])
-{
-  iter proc (ch: %<term_t) {
-    device b = buffer[term_t];
-    circuit
-      wire ch to b.inp
-      wire wd to b.out
-    endcircuit
-  }
-  rds;
-}
-
-fun first[A,B] (x:A,y:B) => x;
-fun second[A,B] (x:A,y:B) => y;
- 
-chip runalts [term_t]
-  (wd:%>term_t)
-  (alts : list[%<term_t * list[iochip_t[Buffer, Buffer]]])
-  connector io
-    pin inp: %<Buffer
-    pin out: %>Buffer
-{
-  var chans = map first [%<term_t, list[iochip_t[Buffer,Buffer]]] alts;
-  var pipes = map second[%<term_t, list[iochip_t[Buffer,Buffer]]] alts;
-  merge wd chans;
-  var ps = Empty[iochip_t[Buffer,Buffer]];
-  iter proc (p: list[iochip_t[Buffer,Buffer]]) {
-    ps = (pipeline_list p.rev) ! ps;
-  }
-  pipes;
-  var paser : iochip_t[Buffer,Buffer] = tryall_list (rev ps);
-  circuit
-    wire io.inp to paser.inp
-    wire io.out to paser.out
-  endcircuit
-}
-
-// combinators
-fun alts [term_t] 
-  (alts : list[%<term_t * list[iochip_t[Buffer, Buffer]]])
-: %<term_t * iochip_t[Buffer,Buffer]
-=
-{
-  var rd,wd = mk_ioschannel_pair[term_t]();
-  var x = runalts wd alts;
-  return rd,x;
-}
-
-fun alts[term_t] 
-  (
-    a1: %<term_t * list[iochip_t[Buffer, Buffer]],
-    a2: %<term_t * list[iochip_t[Buffer, Buffer]]
-  )
-=> alts ([a1,a2]);
-
-fun alts[term_t] 
-  (
-    var a1: %<term_t * iochip_t[Buffer, Buffer],
-    a2: %<term_t * list[iochip_t[Buffer, Buffer]]
-  )
-=> alts ([(a1.0,list(a1.1)),a2]);
-
-chip pstring (s:string) (term: %>string)
-  connector io
-  pin inp:%<Buffer
-  pin out:%>Buffer
-{
-println$ "Parse " + s;
-  device cs = match_string s;
-  var rin,win= mk_ioschannel_pair[Buffer](); 
-  var rout,wout = mk_ioschannel_pair[Buffer](); 
-  spawn_fthread$ cs (inp=rin, out=wout);
-  while true do
-    var b = read io.inp;
-    write (win,b);
-    var e = read rout;
-    var lexeme = b.sp.[b.pos..<e.pos].string;
-println$ "string lexeme = " + lexeme;
-    write (io.out,e);
-    write (term,lexeme);
-  done
-}
-
-chip pint (term: %>int)
-  connector io
-  pin inp:%<Buffer
-  pin out:%>Buffer
-{
-  device cs = decimal_integer_matcher;
-  var rin,win= mk_ioschannel_pair[Buffer](); 
-  var rout,wout = mk_ioschannel_pair[Buffer](); 
-  spawn_fthread$ cs (inp=rin, out=wout);
-  while true do
-    var b = read io.inp;
-println$ "Int parse sending to recognizer";
-    write (win,b);
-    var e = read rout;
-println$ "Int parse getting from recognizer";
-    var lexeme = b.sp.[b.pos..<e.pos].string;
-println$ "Int lexeme = " + lexeme;
-    write (io.out,e);
-    var i = atoi lexeme;
-    write (term,i);
-  done
-}
-
-

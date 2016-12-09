@@ -56,7 +56,7 @@ print_endline ("Register type nr " ^ sbt bsym_table t);
     let t = minimise bsym_table syms.counter t in
     if not (registered_type syms bsym_table t)
     then begin
-      let () = check_recursion t in
+      let () = check_recursion bsym_table t in
       let n = fresh_bid syms.counter in
       if syms.compiler_options.Flx_options.print_flag then
       print_endline ("//Register type " ^ string_of_bid n ^ ": " ^
@@ -93,7 +93,7 @@ let register_tuple syms bsym_table t =
 print_endline ("flx_treg: Try to register tuple " ^ sbt bsym_table t);
     assert false
 
-let rec register_type_r ui syms bsym_table exclude sr t =
+let rec register_type_r' ui syms bsym_table exclude sr t =
   let t = normalise_tuple_cons bsym_table t in
 (*
 print_endline ("Register type r " ^ sbt bsym_table t);
@@ -108,7 +108,7 @@ print_endline ("Register type r " ^ sbt bsym_table t);
   if not (registered_type syms bsym_table t) then
   if not (mem t exclude) then
   if complete_type t then
-  let rr t' = register_type_r ui syms bsym_table (t :: exclude) sr t' in
+  let rr t' = register_type_r' ui syms bsym_table (t :: exclude) sr t' in
   let rnr t = register_type_nr syms bsym_table t in
   let t' = unfold "flx_treg" t in
   (*
@@ -293,4 +293,14 @@ print_endline ("External primitive instance, registering whole type " ^ sbt bsym
       "Unexpected kind in register type: " ^
       sbt bsym_table t
     )
+
+let register_type_r ui syms bsym_table exclude sr t =
+  try 
+    register_type_r' ui syms bsym_table exclude sr t
+  with 
+  | Bad_recursion ->
+    clierr sr ("[register_type_r] illegal fixpoint in type " ^ 
+     sbt bsym_table t)
+
+
 

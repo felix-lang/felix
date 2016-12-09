@@ -210,14 +210,19 @@ ts, then the ts get analysed. Otherwise, we'd get new symbols
 in the ts and there's be no match on the replacement table
 *)
 
-let rec rec_poly_fixup_type syms bsym_table polyinst sr t =
-  let t = flat_poly_fixup_type syms bsym_table polyinst sr t in
-  let f_btype t = rec_poly_fixup_type syms bsym_table polyinst sr t in
-  let t = Flx_btype.map ~f_btype t in
-  t
+let rec rec_poly_fixup_type trail syms bsym_table polyinst sr t =
+  let level = Flx_list.list_index trail t in
+  match level with
+  | Some i -> btyp_fix (-i-1) (btyp_type 0)
+  | None ->
+  let t' = unfold "rec_poly_fixup_type" t in
+  let t' = flat_poly_fixup_type syms bsym_table polyinst sr t' in
+  let f_btype t' = rec_poly_fixup_type (t::trail) syms bsym_table polyinst sr t' in
+  let t' = Flx_btype.map ~f_btype t' in
+  t'
 
 let poly_fixup_type syms bsym_table polyinst sr t =
- let t' = rec_poly_fixup_type syms bsym_table polyinst sr t in
+ let t' = rec_poly_fixup_type [] syms bsym_table polyinst sr t in
 (*
  print_endline ("POLY FIXUP TYPE: " ^ sbt bsym_table t ^ " --> " ^ sbt bsym_table t');
 *)
@@ -539,15 +544,31 @@ let strip_empty_calls bsym_table exes =
 
 let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst ts bsym i j =
 (*
+if List.length ts > 0 then begin
   print_endline ("[mono_bbdcl] " ^ Flx_bsym.id bsym);
   print_endline ("ts=[" ^ catmap "," (sbt bsym_table) ts ^ "]");
   List.iter (fun t -> if not (complete_type t) then 
     print_endline ("Argument not complete!!!!!!!!!!!!!!!!!!!!!!!")
   )
   ts;
+end;
 *)
   let sr = Flx_srcref.make_dummy ("[mono_bbdcl] " ^ Flx_bsym.id bsym) in 
   begin try List.iter (check_mono bsym_table sr) ts with _ -> assert false end;
+
+  let original_instance_type = BTYP_inst (i,ts) in
+  let unfolded_instance_type = 
+    try 
+      unfold "unfold instance in numono" original_instance_type
+    with 
+    | _ -> 
+      print_endline ("Unfold instance failed! " ^ sbt bsym_table original_instance_type); 
+      assert false
+  in
+  let ts' = match unfolded_instance_type with
+    | BTYP_inst (_, ts') -> ts'
+    | _ -> assert false
+  in
 
   let mt vars t = fixup_type syms bsym_table vars bsym virtualinst polyinst sr t in
   let bbdcl = Flx_bsym.bbdcl bsym in
@@ -685,9 +706,9 @@ print_endline ("Monomorphising variable "^Flx_bsym.id bsym ^" polytype " ^ sbt b
     let gadt = List.fold_left (fun acc (name,index,evs,d,c,gadt) -> 
        gadt || acc) false cps
     in
+    let ut = btyp_inst (i,ts) in
 if gadt then
 begin
-    let ut = btyp_inst (i,ts) in
 (*
 print_endline ("Monomorphising union " ^ sbt bsym_table ut);
 print_endline ("  Polymorphic union index = " ^ string_of_int i);
@@ -774,20 +795,71 @@ print_endline ("Finished union by GADT **");
 *)
     Some (bbdcl_union ([], cps))
 end else begin
-if (List.length vs <> List.length ts) then
-  print_endline ("Union "^sbt bsym_table (btyp_inst (i,ts))^ " vs length " ^ string_of_int (List.length vs) ^ 
-  " doesn't agree with ts length " ^ string_of_int (List.length ts));
-
-    assert (List.length vs = List.length ts);
-    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
-    let cps = List.map (fun (name,index,ivs,argt, resultt,gadt) -> 
-      name,index, [],mt vars argt, BTYP_none,gadt 
-      ) cps 
+  if (List.length vs <> List.length ts) then
+    print_endline ("Union "^sbt bsym_table ut ^ " vs length " ^ string_of_int (List.length vs) ^ 
+    " doesn't agree with ts length " ^ string_of_int (List.length ts));
+  assert (List.length vs = List.length ts);
+(*
+       print_endline ("******* Union "^sbt bsym_table ut);
+*)
+(*
+    if Flx_unify.is_recursive_type ut then
+       print_endline ("Union "^sbt bsym_table ut ^" is recursive");
+    List.iter (fun t -> if not (Flx_btype.complete_type  t) then 
+    print_endline ("non-gadt: Union: "^sbt bsym_table (btyp_inst (i,ts))^ ",type variable substitution type is not complete " ^ 
+      sbt bsym_table t)) ts;
+*)
+(* THIS IS A HACK, it only works with fix-1, i.e. an argument
+which is precisely a pointer to the union type. We need to fix this
+so if the recursion is more deeply embedded it also works
+*)
+(*
+  let ut' = 
+    try 
+      unfold "unfold recursive union in numono" ut 
+    with 
+    | _ -> print_endline "Unfold union failed!"; assert false
+  in
+  let ts' = match ut' with
+    | BTYP_inst (_, ts') -> ts'
+    | _ -> assert false
+  in
+*)
+(*
+    if Flx_unify.is_recursive_type ut then
+    print_endline ("Unfolded union = " ^ sbt bsym_table ut');
+*)
+(*
+    let ts = List.map (fun t -> match t with 
+    | BTYP_fix (-1,_) -> ut
+    | t -> t) ts
     in
+*)
+  let vars = List.map2 (fun (s,i) t -> i,t) vs ts' in
+
+
+(*
+if Flx_unify.is_recursive_type ut then
+begin
+  print_endline ("Recursive Union type " ^ sbt bsym_table ut ^
+  " should be replaced by assigned monomorphic type " ^ sbt bsym_table (mt vars ut))
+end;
+*)
+  let cps = List.map (fun (name,index,ivs,argt, resultt,gadt) -> 
+(*
+if Flx_unify.is_recursive_type ut then begin
+  print_endline ("Recursive Union type " ^ sbt bsym_table ut ^
+  " constructor " ^ name ^ ": argument type " ^ sbt bsym_table argt ^ 
+  " will be replaced by monomorphic type " ^ sbt bsym_table (mt vars argt))
+end;
+*)
+    name,index, [],mt vars argt, BTYP_none,gadt 
+    ) cps 
+  in
 (*
 print_endline ("Finished union by non GADT **");
 *)
-    Some (bbdcl_union ([], cps))
+  Some (bbdcl_union ([], cps))
 end
 
   | BBDCL_cstruct (vs,cps, reqs) -> 
@@ -799,7 +871,7 @@ end
 
   | BBDCL_struct (vs,cps)  -> 
     assert (List.length vs = List.length ts);
-    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
+    let vars = List.map2 (fun (s,i) t -> i,t) vs ts' in
     let cps = List.map (fun (name,argt) -> name,mt vars argt) cps in
     Some (bbdcl_struct ([], cps))
 

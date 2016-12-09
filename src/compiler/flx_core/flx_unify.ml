@@ -105,7 +105,7 @@ let rec dual t =
   | t -> t
 
 (* top down check for fix point not under sum or pointer *)
-let rec check_recursion t = match t with
+let rec check_rec t = match t with
    | BTYP_pointer _
    | BTYP_sum _
    | BTYP_function _
@@ -116,7 +116,16 @@ let rec check_recursion t = match t with
    | BTYP_fix (i,_)
      -> raise Bad_recursion
 
-   | x -> Flx_btype.flat_iter ~f_btype:check_recursion x
+   | x -> Flx_btype.flat_iter ~f_btype:check_rec x
+
+let check_recursion bsym_table t =
+  try check_rec t
+  with 
+  | Bad_recursion ->
+    print_endline ("Flx-unify: check_recursion: Bad_recursion " ^ 
+      str_of_btype t ^ " = " ^ 
+      sbt bsym_table t);
+    raise Bad_recursion 
 
 let is_recursive_type t = 
   let rec ir j t = 

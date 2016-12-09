@@ -186,28 +186,35 @@ restart:>
 @tangle recognisers.flx
 
 class RecogGrammar {
-union prod_t =
+union open_prod_t[T] =
 | Strng of string
 | Nonterminal of string
 | Epsilon
-| Seq of list[prod_t]
-| Alt of list[prod_t]
+| Seq of list[T]
+| Alt of list[T]
 ;
 
-instance Str[prod_t] 
+typedef prod_t = open_prod_t[prod_t];
+
+instance[T with Str[T]] Str[open_prod_t[T]] 
 {
-  fun str: prod_t -> string =
+  fun str: open_prod_t[T] -> string =
   | Strng s => '"' + s + '"'
   | Nonterminal name => name
   | Epsilon => "Eps"
-  | Seq ss => "(" + catmap " " (str of prod_t) ss + ")"
-  | Alt ss => "(" + catmap " | " (str of prod_t) ss + ")"
+  | Seq ss => "(" + catmap " " (str of T) ss + ")"
+  | Alt ss => "(" + catmap " | " (str of T) ss + ")"
   ;
 }
 
-typedef gramentry_t = string * prod_t;
-typedef gramlib_t = list[gramentry_t];
-typedef grammar_t = string * gramlib_t;
+typedef open_gramentry_t[T] = string * open_prod_t[T];
+typedef open_gramlib_t[T] = list[open_gramentry_t[T]];
+typedef open_grammar_t[T] = string * open_gramlib_t[T];
+
+typedef gramentry_t = open_gramentry_t[prod_t];
+typedef gramlib_t = open_gramlib_t[prod_t];
+typedef grammar_t = open_grammar_t[prod_t];
+
 
 fun add_unique (acc:list[string]) (elt:string) : list[string] =>
   if elt in acc then acc else Cons (elt,acc)
