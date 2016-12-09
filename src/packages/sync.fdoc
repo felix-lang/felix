@@ -134,7 +134,7 @@ char const *sync_sched::get_fpc_desc()
   else
   {
     if (active->size() > 0) return "Next fthread pos";
-    if (waiting->size() > 0) return "Pop Waiting fthreads pos";
+    if (waiting && waiting->size() > 0) return "Pop Waiting fthreads pos";
     else return "Out of active and waiting threads";
   }
 }
