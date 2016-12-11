@@ -1173,7 +1173,7 @@ class FlxRtlBuild
           System::exit 1;
         done
         if noexes do
-          printlln$ "Skipping executable link due to flag";
+          println$ "Skipping executable link due to flag";
         else
           result = toolchain.dynamic_executable_linker(srcs=objs+libs, dst=exe);
           if result != 0 do
