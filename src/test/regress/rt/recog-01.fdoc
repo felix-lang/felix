@@ -1,6 +1,7 @@
 @title recog check
 @felix
 include "std/strings/recognisers";
+open Recognisers;
 
 spawn_fthread {
   var test = "hello";

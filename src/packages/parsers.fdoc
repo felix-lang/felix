@@ -6,88 +6,8 @@ Chips to providing parsing functions.
 @tangle parsers.flx
 include "std/control/chips";
 include "std/strings/recognisers";
-class Grammars
+class Parsers 
 {
-  open RecogGrammar;
 
-fun unpack (fresh:1->string) (head:string, p:prod_t) : gramlib_t =
-{
- var out = Empty[gramentry_t];
- match p with
- | Epsilon => out = ([head,p]);
- | Strng _ => out = ([head,Seq ([p])]);
- | Nonterminal s => out= ([head,Seq ([p])]);
-
- | Seq ps =>
-   var newseq = Empty[prod_t];
-   for term in ps do
-     match term with
-     | Epsilon => ;
-     | Nonterminal _ => newseq = term ! newseq;
-     | Strng _ => newseq = term ! newseq;
-     | _ =>
-       var newhead = fresh();
-       newseq = Nonterminal newhead ! newseq;
-       out = unpack fresh (newhead,term);
-     endmatch;
-   done
-
-   match newseq with 
-   | Empty => out = (head,Epsilon) ! out;
-   | _ => out = (head,Seq (rev newseq)) ! out;
-   endmatch;
-
- | Alt ps =>
-   iter (proc (p:prod_t) { out = unpack fresh (head,p) + out; }) ps;
- endmatch;
- return out;
-}
-
-fun normalise_lib (fresh:1->string) (lib:gramlib_t) = {
- var normalised = Empty[gramentry_t];
- for p in lib perform
-   normalised = unpack fresh p + normalised;
- return normalised; 
-}
-
-fun sort_merge (g:gramlib_t) : gramlib_t =>
- let fun enlt (a:gramentry_t, b:gramentry_t) : bool => a.0 < b.0 in
- merge (sort enlt g)
-;
-
-fun merge (var p:gramlib_t): gramlib_t =
-{
- if p.len == 0uz return p;
-
- var out: gramlib_t;
-
- var key: string;
- var alts = Empty[prod_t];
- var cur: gramentry_t;
-
- proc fetch() { 
-   match p with 
-   | Cons (head,tail) => cur = head; p = tail; 
-   | Empty => assert false;
-   endmatch;
- }
-
- proc dohead() { key = cur.0; alts = Empty[prod_t]; }
- proc dofoot() { out = (key,Alt alts) ! out;  }
- proc dobreak() { dofoot; dohead; }
- proc check() { if key != cur.0 call dobreak; }
-
- fetch;
- dohead;
- while p.len > 0uz do
-   check;
-   alts = cur.1 ! alts;
-   fetch;
- done
- check;
- alts = cur.1 ! alts;
- dofoot;
- return out;
-}
 } // class
 @

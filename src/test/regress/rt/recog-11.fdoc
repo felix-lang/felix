@@ -1,11 +1,11 @@
 @title lazy recogniser
 @felix
 include "std/strings/recognisers";
+open Recognisers;
+open Grammars;
 
 // silly sample grammar, right associative operators +, * ^ parens () and 
 // value 9 only
-
-open RecogGrammar;
 
 var xprod = Alt([
   Seq ([Nonterminal[prod_t] "term", Strng[prod_t] "+", Nonterminal[prod_t] "expr"]),

@@ -2,6 +2,7 @@
 @felix
 include "std/strings/recognisers";
 include "std/control/chips";
+open Recognisers;
 
 spawn_fthread {
   open BaseChips;

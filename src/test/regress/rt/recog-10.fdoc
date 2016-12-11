@@ -4,6 +4,7 @@ include "std/strings/recognisers";
 include "std/control/chips";
 
 open BaseChips;
+open Recognisers;
 
 device L = match_string "(";
 device R = match_string ")";

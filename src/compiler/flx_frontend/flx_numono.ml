@@ -547,15 +547,16 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
 if List.length ts > 0 then begin
   print_endline ("[mono_bbdcl] " ^ Flx_bsym.id bsym);
   print_endline ("ts=[" ^ catmap "," (sbt bsym_table) ts ^ "]");
+end;
+*)
   List.iter (fun t -> if not (complete_type t) then 
     print_endline ("Argument not complete!!!!!!!!!!!!!!!!!!!!!!!")
   )
   ts;
-end;
-*)
   let sr = Flx_srcref.make_dummy ("[mono_bbdcl] " ^ Flx_bsym.id bsym) in 
   begin try List.iter (check_mono bsym_table sr) ts with _ -> assert false end;
 
+(*
   let original_instance_type = BTYP_inst (i,ts) in
   let unfolded_instance_type = 
     try 
@@ -569,6 +570,7 @@ end;
     | BTYP_inst (_, ts') -> ts'
     | _ -> assert false
   in
+*)
 
   let mt vars t = fixup_type syms bsym_table vars bsym virtualinst polyinst sr t in
   let bbdcl = Flx_bsym.bbdcl bsym in
@@ -835,7 +837,10 @@ so if the recursion is more deeply embedded it also works
     | t -> t) ts
     in
 *)
+(*
   let vars = List.map2 (fun (s,i) t -> i,t) vs ts' in
+*)
+  let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
 
 
 (*
@@ -871,7 +876,7 @@ end
 
   | BBDCL_struct (vs,cps)  -> 
     assert (List.length vs = List.length ts);
-    let vars = List.map2 (fun (s,i) t -> i,t) vs ts' in
+    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
     let cps = List.map (fun (name,argt) -> name,mt vars argt) cps in
     Some (bbdcl_struct ([], cps))
 
