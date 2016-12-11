@@ -161,7 +161,6 @@ bootstrap-tools:
 	# This is to be done right after building the bootstrap.
 	# The tools are placed in the host.
 	# =========================================================
-
 	build/release/host/bin/flx --felix=build.fpc --static -c -od build/release/host/bin src/tools/flx_build_flxg.flx
 	build/release/host/bin/flx --felix=build.fpc --static -c -od build/release/host/bin src/tools/flx_build_prep.flx
 	build/release/host/bin/flx --felix=build.fpc --static -c -od build/release/host/bin src/tools/flx_build_rtl.flx
@@ -186,7 +185,7 @@ rtl:
 	# =========================================================
 	# rebuild rtl
 	# =========================================================
-	LD_LIBRARY_PATH=build/release/host/lib/rtl flx_build_rtl --target-dir=build/release --target-bin=trial
+	${LPATH}=build/release/host/lib/rtl flx_build_rtl --target-dir=build/release --target-bin=trial
 
 
 target: prep flxg rtl boot
@@ -212,9 +211,21 @@ iphonesimulator:
 	flx_build_prep --target-dir=build/release --target-bin=iphonesimulator --source-dir=build/release \
 	       	--source-bin=host --clean-target-bin-dir --copy-compiler --copy-pkg-db \
 	       	--copy-config-headers --toolchain=toolchain_iphonesimulator --debug
+	rm -rf build/rtl-tmp
 	# build rtl
 	DYLD_LIBRARY_PATH=build/release/host/lib/rtl flx_build_rtl \
-		--target-dir=build/release --target-bin=iphonesimulator
+		--target-dir=build/release --target-bin=iphonesimulator --static --noexes
+
+
+iphoneos:
+	# prepare directory
+	flx_build_prep --target-dir=build/release --target-bin=iphoneos --source-dir=build/release \
+	       	--source-bin=host --clean-target-bin-dir --copy-compiler --copy-pkg-db \
+	       	--copy-config-headers --toolchain=toolchain_iphoneos --debug
+	rm -rf build/rtl-tmp
+	# build rtl
+	DYLD_LIBRARY_PATH=build/release/host/lib/rtl flx_build_rtl \
+		--target-dir=build/release --target-bin=iphoneos --static --noexes
 
 
 #

@@ -1017,6 +1017,7 @@ class FlxRtlBuild
     boot_package:string, 
     tmpdir:string,
     static_only:bool,
+    noexes:bool,
     debug: bool
   )
   {
@@ -1122,14 +1123,18 @@ class FlxRtlBuild
       }
       proc cobj_dynamic (s:string,dst:string) {
         var src = srcdir/s;
-        println$ "Compiling [static] " + src + " -> " + dst;
-        var fresh = cxx_depcheck (toolchain, src, dst);
-        var result = if fresh then 0 else 
-          toolchain.cxx_dynamic_object_compiler(src=src, dst=dst)
-        ;
-        if result != 0 do
-          println$ "Driver compile "+ s + " -> " + dst +" FAILED";
-          System::exit 1;
+        if static_only do
+          println$ "Skipping [dynamic] " + src + " -> " + dst + " due to flag";
+        else
+          println$ "Compiling [dynamic] " + src + " -> " + dst;
+          var fresh = cxx_depcheck (toolchain, src, dst);
+          var result = if fresh then 0 else 
+            toolchain.cxx_dynamic_object_compiler(src=src, dst=dst)
+          ;
+          if result != 0 do
+            println$ "Driver compile "+ s + " -> " + dst +" FAILED";
+            System::exit 1;
+          done
         done
       }
 
@@ -1167,10 +1172,14 @@ class FlxRtlBuild
           println$ "Driver pkgconfig query for "+ file+" FAILED";
           System::exit 1;
         done
-        result = toolchain.dynamic_executable_linker(srcs=objs+libs, dst=exe);
-        if result != 0 do
-          println$ "Driver link  "+ file+" FAILED";
-          System::exit 1;
+        if noexes do
+          printlln$ "Skipping executable link due to flag";
+        else
+          result = toolchain.dynamic_executable_linker(srcs=objs+libs, dst=exe);
+          if result != 0 do
+            println$ "Driver link  "+ file+" FAILED";
+            System::exit 1;
+          done
         done
       }
       prg("flx_run");
@@ -1180,7 +1189,7 @@ class FlxRtlBuild
 
   proc flx_build(cmd: cmd_type)
   {
-    make_rtl ( cmd.target_dir, cmd.target_bin, cmd.boot_package, cmd.tmp_dir, cmd.static_only, cmd.debug);
+    make_rtl ( cmd.target_dir, cmd.target_bin, cmd.boot_package, cmd.tmp_dir, cmd.static_only, cmd.noexes, cmd.debug);
     println$ "Build Complete";
   }
 
@@ -1195,6 +1204,7 @@ class FlxRtlBuild
     println$ "  --target-bin=target_bin     default: host";
     println$ "  --tmp-dir=tmp               default: build/rtl-tmp";
     println$ "  --static                    static link libraries only";
+    println$ "  --noexes                    libraries only";
     println$ "";
     println$ "  --debug                     do stuff verbosely";
     println$ "";
@@ -1224,6 +1234,7 @@ class FlxRtlBuild
        target_bin="host",
        tmp_dir="build"/"rtl-tmp",
        static_only=false,
+       noexes=false,
        debug = false
      );
 
@@ -1239,6 +1250,8 @@ class FlxRtlBuild
          &cmd.tmp_dir <- arg.[10 to];
        elif arg == "--static" do
          &cmd.static_only <- true;
+       elif arg == "--noexes" do
+         &cmd.noexes<- true;
        elif arg == "--debug" do
          &cmd.debug <- true;
 
@@ -1262,11 +1275,13 @@ class FlxRtlBuild
       System::exit(1);
     done
     var cmd = parse_args (tail xargs);
-    println$ "flx_build_rtl v1.7";
+    println$ "flx_build_rtl v1.8";
     println$ "  build-package = " + cmd.boot_package;
     println$ "  target-dir    = " + cmd.target_dir;
     println$ "  target-bin    = " + cmd.target_bin;
     println$ "  tmp-dir       = " + cmd.tmp_dir;
+    println$ "  static only   = " + cmd.static_only.str;
+    println$ "  no executables= " + cmd.noexes.str;
     flx_build (cmd);
   }
 
