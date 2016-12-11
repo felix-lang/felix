@@ -195,7 +195,7 @@ boot:
 	# =========================================================
 	# rebuild flx build tools and plugins
 	# =========================================================
-	LD_LIBRARY_PATH=build/release/host/lib/rtl flx_build_boot --target-dir=build/release --target-bin=trial --build-all
+	${LPATH}=build/release/host/lib/rtl flx_build_boot --target-dir=build/release --target-bin=trial --build-all
 
 rebuild: extract target uproot
 
@@ -206,6 +206,16 @@ uproot:
 src:
 	mkdir -p ${BUILDROOT}/share/
 	cp -r src ${BUILDROOT}/share
+
+iphonesimulator:
+	# prepare directory
+	flx_build_prep --target-dir=build/release --target-bin=iphonesimulator --source-dir=build/release \
+	       	--source-bin=host --clean-target-bin-dir --copy-compiler --copy-pkg-db \
+	       	--copy-config-headers --toolchain=toolchain_iphonesimulator --debug
+	# build rtl
+	DYLD_LIBRARY_PATH=build/release/host/lib/rtl flx_build_rtl \
+		--target-dir=build/release --target-bin=iphonesimulator
+
 
 #
 # regression test on release image

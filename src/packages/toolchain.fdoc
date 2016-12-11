@@ -1937,7 +1937,7 @@ include "std/felix/flx_cxx";
 object toolchain_clang_apple_iOS_maker (sdk_tag:string, archs:list[string])
   (config:clang_config_t) implements toolchain_t = 
 {
-  eprintln$ "toolchain_clang_apple_iOS_maker sdk=" + sdk_tag + ", arches=" + archs.str;
+  //eprintln$ "toolchain_clang_apple_iOS_maker sdk=" + sdk_tag + ", arches=" + archs.str;
   gen get (s:string):string = {
     var err, res = System::get_stdout s;
     if err != 0 do
@@ -1952,9 +1952,9 @@ object toolchain_clang_apple_iOS_maker (sdk_tag:string, archs:list[string])
   var clangxx = strip(get("xcrun --sdk " + sdk_tag + " --find clang++"));
   var sdk = strip(get("xcrun --sdk " + sdk_tag + " --show-sdk-path"));
 
-  eprintln$ "C compiler " + clang;
-  eprintln$ "C++ compiler " + clangxx;
-  eprintln$ "sdk path " + sdk;
+  //eprintln$ "C compiler " + clang;
+  //eprintln$ "C++ compiler " + clangxx;
+  //eprintln$ "sdk path " + sdk;
 
   var cxx_compile_warning_flags = list$ 
     "-w", // turn off all the warnings (but not hard errors)
@@ -2196,7 +2196,6 @@ gen toolchain_clang_apple_iPhoneOS_armv7_arm64 (config:clang_config_t) : toolcha
 ;
 
 gen toolchain_clang_apple_iPhoneSimulator (config:clang_config_t) : toolchain_t = {
-  eprintln$ "Calling toolchain clang apple iOS maker .. ";
   return toolchain_clang_apple_iOS_maker ("iphonesimulator",(["x86_64","i386"])) config;
 }
 
