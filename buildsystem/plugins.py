@@ -27,6 +27,8 @@ def build(phase, felix):
       "toolchain_gcc_osx",
       "toolchain_gcc_linux",
       "toolchain_msvc_win32",
+      "toolchain_iphoneos",
+      "toolchain_iphonesimulator",
       "flx_plugin",
       ]
     for base in plugins:

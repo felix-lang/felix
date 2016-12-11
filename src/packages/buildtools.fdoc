@@ -1303,7 +1303,8 @@ web_plugin:      ocaml2html
 web_plugin:      py2html
 toolchain_plugin:      toolchain_clang_linux
 toolchain_plugin:      toolchain_clang_osx
-toolchain_plugin:      toolchain_clang_iphoneos
+toolchain_plugin:      toolchain_iphoneos
+toolchain_plugin:      toolchain_iphonesimulator
 toolchain_plugin:      toolchain_gcc_linux
 toolchain_plugin:      toolchain_gcc_osx
 toolchain_plugin:      toolchain_msvc_win32

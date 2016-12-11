@@ -9,7 +9,7 @@
 @tangler gcc_osx.flx                  = share/lib/std/felix/toolchain/gcc_osx.flx 
 @tangler clang_linux.flx              = share/lib/std/felix/toolchain/clang_linux.flx
 @tangler clang_osx.flx                = share/lib/std/felix/toolchain/clang_osx.flx
-@tangler clang_iphoneos.flx           = share/lib/std/felix/toolchain/clang_iphoneos.flx
+@tangler clang_iOS_generic.flx        = share/lib/std/felix/toolchain/clang_iOS_generic.flx
 @tangler msvc_win32.flx               = share/lib/std/felix/toolchain/msvc_win32.flx
 @tangler cygwin.fpc                   = $PWD/src/config/cygwin.fpc
 @tangler cygwin.flx                   = share/lib/std/cygwin/cygwin.flx
@@ -18,7 +18,8 @@
 @tangler toolchain_gcc_osx.flx        = share/lib/plugins/toolchain_gcc_osx.flx 
 @tangler toolchain_clang_linux.flx    = share/lib/plugins/toolchain_clang_linux.flx
 @tangler toolchain_clang_osx.flx      = share/lib/plugins/toolchain_clang_osx.flx
-@tangler toolchain_clang_iphoneos.flx = share/lib/plugins/toolchain_clang_iphoneos.flx
+@tangler toolchain_iphoneos.flx       = share/lib/plugins/toolchain_iphoneos.flx
+@tangler toolchain_iphonesimulator.flx= share/lib/plugins/toolchain_iphonesimulator.flx
 @tangler toolchain_msvc_win32.flx     = share/lib/plugins/toolchain_msvc_win32.flx
 @tangler flx_plugin.flx               = share/lib/plugins/flx_plugin.flx
 
@@ -1927,14 +1928,33 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
 
 @
 
-@h2 Object for clang on iPhone
-@tangle clang_iphoneos.flx
+@h2 Object for clang on iOS
+@tangle clang_iOS_generic.flx
 include "std/felix/toolchain_interface";
 include "std/felix/toolchain_clang_config";
 include "std/felix/flx_cxx";
 
-object toolchain_clang_iphoneos (config:clang_config_t) implements toolchain_t = 
+object toolchain_clang_apple_iOS_maker (sdk_tag:string, archs:list[string])
+  (config:clang_config_t) implements toolchain_t = 
 {
+  eprintln$ "toolchain_clang_apple_iOS_maker sdk=" + sdk_tag + ", arches=" + archs.str;
+  gen get (s:string):string = {
+    var err, res = System::get_stdout s;
+    if err != 0 do
+      var msg = "Abort: Error executing shell command " + s;
+      eprintln$ msg; 
+      System::abort;
+    done
+    return res;
+  }
+
+  var clang = strip(get("xcrun --sdk " + sdk_tag + " --find clang"));
+  var clangxx = strip(get("xcrun --sdk " + sdk_tag + " --find clang++"));
+  var sdk = strip(get("xcrun --sdk " + sdk_tag + " --show-sdk-path"));
+
+  eprintln$ "C compiler " + clang;
+  eprintln$ "C++ compiler " + clangxx;
+  eprintln$ "sdk path " + sdk;
 
   var cxx_compile_warning_flags = list$ 
     "-w", // turn off all the warnings (but not hard errors)
@@ -1947,24 +1967,26 @@ object toolchain_clang_iphoneos (config:clang_config_t) implements toolchain_t =
     "-Wno-array-bounds"
   ;
 
-  var sdk = Env::getenv "SDK";
-  var arch = Env::getenv "ARCH";
-  var c_compiler = "clang";
-  var cxx_compiler = "clang++";
-  var linker = "clang++";
+  var c_compiler = clang;
+  var cxx_compiler = clangxx;
+  var linker = clangxx;
+  var archlist = rev (fold_left (fun (acc:list[string]) (arch:string) => arch ! "-arch" ! acc) Empty[string] archs);
 
-  var ccflags_for_dynamic_link = list[string]("-dynamiclib", "-arch", arch, "-isysroot", sdk);
-  // should be $(xcrun --sdk iphoneos --show-sdk-path). how to choose other SDK?
+  var ccflags_for_dynamic_link = list[string]("-dynamiclib", "-isysroot", sdk) + archlist;
   var base_c_compile_flags = 
-    "-g"! "-c" ! "-arch" ! arch ! "-isysroot" ! sdk ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
+    "-g"! "-c" ! "-isysroot" ! sdk ! "-O1" ! 
+    "-fno-common"! "-fno-strict-aliasing" ! "-fembed-bitcode" ! 
+    (archlist + c_compile_warning_flags+config.ccflags)
   ;
   var base_cxx_compile_flags = 
-    "-g"! "-c" ! "-arch" ! arch ! "-isysroot" ! sdk ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++11" !  (cxx_compile_warning_flags+config.ccflags)
+    "-g"! "-c" ! "-isysroot" ! sdk ! "-O1" ! 
+    "-fno-common"! "-fno-strict-aliasing" ! "-fembed-bitcode" ! "-std=c++11" !  
+    (archlist + cxx_compile_warning_flags+config.ccflags)
   ;
 
-  method fun whatami () => "toolchain_clang_iphoneos (version 2)";
+  method fun whatami () => "toolchain_clang_apple_iOS sdk="+sdk_tag+", archs="+cat "," archs;
   method fun host_os () => "OSX";
-  method fun target_os () => "iPhoneOS";
+  method fun target_os () => "iOS";
   method fun cxx_compiler_vendor () => "clang";
 
   method fun dependency_extension () => ".d";
@@ -2169,6 +2191,15 @@ object toolchain_clang_iphoneos (config:clang_config_t) implements toolchain_t =
   }
 }
 
+gen toolchain_clang_apple_iPhoneOS_armv7_arm64 (config:clang_config_t) : toolchain_t =>
+  toolchain_clang_apple_iOS_maker ("iphoneos",(["armv7","arm64"])) config
+;
+
+gen toolchain_clang_apple_iPhoneSimulator (config:clang_config_t) : toolchain_t = {
+  eprintln$ "Calling toolchain clang apple iOS maker .. ";
+  return toolchain_clang_apple_iOS_maker ("iphonesimulator",(["x86_64","i386"])) config;
+}
+
 @
 
 @h1 Toolchain Plugins
@@ -2179,6 +2210,41 @@ and loading of binary shared libraries (DLLs).
 
 The MSVC++ plugin for Windows is missing because the object
 implementing it is only a stub.
+
+@h2 iPhone Plugin
+@tangle toolchain_iphoneos.flx
+include "std/felix/toolchain/clang_iOS_generic";
+
+// varies osx vs linus,  gcc vs clang
+
+export fun toolchain_clang_apple_iPhoneOS_armv7_arm64 of (clang_config_t) as "toolchain_iphoneos";
+
+fun setup(config_data:string) = {
+   C_hack::ignore (config_data); // due to bug in Felix
+  eprintln$ "Setup toolchain iphoneos " + config_data;
+  return 0;
+}
+
+export fun setup of (string) as "toolchain_iphoneos_setup";
+@
+
+@tangle toolchain_iphonesimulator.flx
+include "std/felix/toolchain/clang_iOS_generic";
+
+// varies osx vs linus,  gcc vs clang
+
+export fun toolchain_clang_apple_iPhoneSimulator of (clang_config_t) as "toolchain_iphonesimulator";
+
+fun setup(config_data:string) = {
+   C_hack::ignore (config_data); // due to bug in Felix
+  eprintln$ "Setup toolchain iphonesimulator " + config_data;
+  return 0;
+}
+
+export fun setup of (string) as "toolchain_iphonesimulator_setup";
+@
+
+
 
 @h2 Plugin for gcc on Linux 
 @tangle toolchain_gcc_linux.flx
@@ -2246,23 +2312,6 @@ fun setup(config_data:string) = {
 }
 
 export fun setup of (string) as "toolchain_clang_osx_setup";
-@
-
-@h2 iPhone Plugin
-@tangle toolchain_clang_iphoneos.flx
-include "std/felix/toolchain/clang_iphoneos";
-
-// varies osx vs linus,  gcc vs clang
-
-export fun toolchain_clang_iphoneos of (clang_config_t) as "toolchain_clang_iphoneos";
-
-fun setup(config_data:string) = {
-   C_hack::ignore (config_data); // due to bug in Felix
-  //eprintln$ "Setup toolchain clang_iphoneos " + config_data;
-  return 0;
-}
-
-export fun setup of (string) as "toolchain_clang_iphoneos_setup";
 @
 
 @h2 MSVC++ Plugin for Win32

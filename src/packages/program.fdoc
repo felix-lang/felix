@@ -683,7 +683,7 @@ class System
   gen system (cmd:string) : int => Shell::system(cmd);
   gen exit: int -> any = '::std::exit($1)' requires Cxx_headers::cstdlib;
   gen abort: 1 -> any = 
-    '(fprintf(stderr,"Felix code calling abort\\n"),:std::abort())' 
+    '(fprintf(stderr,"Felix code calling abort\\n"),::std::abort())' 
     requires Cxx_headers::cstdlib;
   _gc_pointer type ptf_t = "thread_frame_t*";
   const ptf:ptf_t = "ptf" requires property "needs_ptf";
