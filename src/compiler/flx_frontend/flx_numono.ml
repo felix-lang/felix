@@ -459,20 +459,39 @@ let fixup_qual vars mt qual =
   | `Bound_needs_shape t -> `Bound_needs_shape (mt vars t)
   | x -> x
  
-
+(*
 let monomap_compare (i,ts) (i',ts') = 
   let counter = ref 1 in (* HACK *)
   let dummy = Flx_bsym_table.create () in 
   if i = i' && List.length ts = List.length ts' &&
     List.fold_left2 (fun r t t' -> r && Flx_unify.type_eq dummy counter t t') true ts ts'
   then 0 else compare (i,ts) (i',ts') 
+*)
 
-module MonoMap = Map.Make (
+module MonoMap = 
   struct 
-    type t = int * Flx_btype.t list 
-    let compare = monomap_compare 
+    type key = int * Flx_btype.t list 
+    type target = int
+    type kv = key * target
+    type data = kv list
+
+    let counter = ref 1 (* HACK *)
+    let dummy = Flx_bsym_table.create ()  
+    let cmp (i,ts) (i',ts') =
+      i = i' && List.length ts = List.length ts' &&
+      List.fold_left2 (fun r t t' -> r && Flx_unify.type_eq dummy counter t t') true ts ts'
+
+    let ecmp k (k',_) = cmp k k'
+
+    let mem k d = List.exists (ecmp k) d
+    let find (k:key) (d:data):target = snd (List.find (ecmp k) d)
+    let choose d = List.hd d
+    let remove k d =
+      List.filter (fun (k',_) -> not (cmp k k')) d
+    let empty = []
+    let is_empty d = d = []
+    let add k v d = (k,v) :: d (* unchecked! *)
   end
-)
 
 let find_felix_inst syms bsym_table processed to_process nubids i ts : int =
   let find_inst syms processed to_process i ts =

@@ -421,6 +421,26 @@ O(N) slow.
   //$ Append element to tail of list (slow!).
   proc += [T] (x:&list[T], y:T) { x <- *x + y; }
 
+@h2 Outer product.
+Given a list of lists of T named x and 
+a list of lists of T named y, 
+return a list of lists of T, consisting of every 
+combination xelt + yelt where e in x, f in y.
+
+Note: this is a special case of a second order fold.
+@tangle list.flx
+
+noinline fun outer_product[T] (x:list[list[T]]) (y:list[list[T]]): list[list[T]] =
+{
+  var res = Empty[list[T]];
+
+  for xelt in x
+  for yelt in y 
+    perform res = (xelt + yelt) ! res;
+  return res;
+}
+
+
 @h2 Concatenate a list of lists @{cat}
 @tangle list.flx
   //$ Concatenate all the lists in a list of lists.
