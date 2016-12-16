@@ -8,6 +8,256 @@ include "std/control/chips";
 include "std/strings/recognisers";
 class Parsers 
 {
+  open Recognisers;
+  open Grammars;
+  
+  union action_t =  
+  | Reduce of string * int
+  | Scroll of int
+  | Unscroll of int
+  | Pack of int
+  | Unpack
+  | Sequence of list[action_t]
+  ;
+
+  instance Str[action_t] {
+    fun str: action_t -> string =
+    | Reduce (s,n) => "Reduce(" + s + ","+n.str+")"
+    | Scroll n => "Scroll " + n.str
+    | Unscroll n => "Unscroll " + n.str
+    | Pack n => "Pack " + n.str
+    | Sequence aa =>
+      "Seq(" + catmap "," (str of action_t) aa + ")"
+    ;
+  }
+
+  union open_pgram_t[T] = 
+  | Action of action_t
+  | Recog of open_prod_t[T]
+  ;
+
+  instance[T with Str[T]] Str[open_pgram_t[T]] 
+  {
+    fun str: open_pgram_t[T] -> string =
+    | Action a => "{" + a.str + "}"
+    | Recog r => r.str
+    ;
+  }
+
+    
+  typedef pgram_t = open_pgram_t[pgram_t];
+
+  typedef open_pgramentry_t[T] = string * open_pgram_t[T];
+  typedef open_pgramlib_t[T] = list[open_pgramentry_t[T]];
+  typedef open_pgrammar_t[T] = string * open_pgramlib_t[T];
+
+  typedef pgramentry_t = open_pgramentry_t[pgram_t];
+  typedef pgramlib_t = open_pgramlib_t[pgram_t];
+  typedef pgrammar_t = open_pgrammar_t[pgram_t];
+
+  typedef lexeme = (start:Buffer, finish:Buffer);
+
+  union stack_node_t = 
+  | RTerminal of string * lexeme
+  | RNonterminal of string * list[stack_node_t]
+  ;
+
+  instance Str[stack_node_t] {
+    fun str: stack_node_t -> string =
+    | RTerminal (s,x) => '"'+s+'"'
+    | RNonterminal (s,xs) => 
+      s + "(" + catmap "," (str of stack_node_t) xs + ")"
+    ;
+  }
+
+  typedef parser_stack_t = list[stack_node_t];
+
+  instance Str[parser_stack_t] {
+    fun str (x:parser_stack_t) => 
+      catmap "; " (str of stack_node_t) x
+    ;
+  }
+
+  typedef parser_state_t =
+  (
+    pos: Buffer,
+    stack: parser_stack_t
+  );
+
+  instance Str[parser_state_t] {
+    fun str (x:parser_state_t) =>
+      x.pos.str + ":  " + x.stack.str
+    ;
+  }
+
+  typedef parser_t = BaseChips::iochip_t[parser_state_t,parser_state_t];
+
+  chip ActionShift (label:string) (r: recog_t)
+    connector io
+      pin inp: %<parser_state_t
+      pin out: %>parser_state_t
+   {
+     var ri,wi = #mk_ioschannel_pair[Buffer];
+     var ro,wo = #mk_ioschannel_pair[Buffer];
+     circuit 
+       wire ri to r.inp
+       wire wo to r.out
+     endcircuit
+
+     while true do
+       var inp = read io.inp;
+       var ipos = inp.pos;
+       write (wi, ipos);
+       var opos = read ro;
+       var entry = RTerminal (label, (start = ipos, finish = opos));
+       write (io.out, (pos = opos, stack = entry ! inp.stack));
+     done
+   }
+
+  fun doaction (aux: parser_stack_t,s:parser_stack_t) (a:action_t) =>
+    match a with
+    | Reduce (label,n) => 
+      let revhead,tail = revsplit n s in
+      aux,RNonterminal (label,revhead) ! tail
+
+    | Scroll n => scroll (s,aux) n
+    | Unscroll n => scroll (aux,s) n
+
+    | Pack n => 
+      let revhead,tail = revsplit n s in
+      aux,RNonterminal ("_Tuple",revhead) ! tail
+
+    | Unpack => 
+      match s with
+      | RNonterminal (_,ss) ! tail => aux, ss + tail
+      | _ => aux,s
+      endmatch
+ 
+    | Sequence actions =>
+      fold_left (fun (aux:parser_stack_t,s:parser_stack_t) (a:action_t) => 
+        doaction (aux,s) a) 
+        (aux,s) 
+        actions
+
+    endmatch
+  ;
+
+  fun doaction (s:parser_stack_t) (a:action_t) =>
+    let _,s = doaction (Empty[stack_node_t], s) a in
+    s
+  ;
+
+  chip ActionGeneral (a:action_t)
+    connector io
+      pin inp: %<parser_state_t
+      pin out: %>parser_state_t
+  {
+    while true do
+      var i = read io.inp;
+      var pos = i.pos;
+      var stack = doaction i.stack a;
+      write (io.out, (pos=pos, stack=stack)); 
+    done
+  }
+
+  typedef pntdef_t = string * parser_t;
+
+  fun find (v:varray[pntdef_t]) (nt:string) : size = 
+  {
+    for i in 0uz ..< v.len do
+      if v.i.0 == nt return i;
+    done
+    assert false;
+  }
+
+  fun render_pgram
+    (lib:pgramlib_t,v:varray[pntdef_t]) 
+    (p:pgram_t) 
+  : 1 -> parser_t =>
+    match p with
+    | Recog r => 
+      match r with
+      | Strng s => { ActionShift s (match_string s) }
+      | Epsilon => { BaseChips::epsilon[parser_state_t] }
+      | Seq ps => { BaseChips::pipeline_list (
+          map (fun (p:pgram_t) => #(render_pgram (lib,v) p)) ps) }
+      | Alt ps =>  { BaseChips::tryall_list (
+          map (fun (p:pgram_t) => #(render_pgram (lib,v) p)) ps) }
+      | Nonterminal nt => 
+         { 
+           var idx : size = find v nt;
+           var pslot : &pntdef_t = -(v.stl_begin + idx); 
+           var pchip : &parser_t = pslot . 1;
+           return BaseChips::deref_first_read pchip;
+         }
+      endmatch
+    | Action a => { ActionGeneral a }
+  ;
+
+  fun open_add_pgram[T] 
+    (aux: list[string] -> T -> list[string])
+    (acc:list[string]) (p: open_pgram_t[T]) 
+  : list[string] =>
+    match p with
+    | Recog r => open_add_prod[T] aux acc r
+    | Action a => acc
+    endmatch
+  ;
+
+  fun add_pgram (acc:list[string]) (p:pgram_t) : list[string] =>
+    fix open_add_pgram[pgram_t] acc p
+  ;
+
+  fun closure (g:pgrammar_t): list[string] =>
+    generic_closure[pgram_t] add_pgram g
+  ;
+
+  chip make_parser_from_grammar
+    connector io
+      pin inp: %<pgrammar_t
+      pin out: %>parser_t
+  {
+
+    while true do
+      // read in the grammar
+      var start, lib = read io.inp;
+
+      // calculate the transitive closure of nonterminals
+      // from the start symbol
+      var cl = closure (start,lib);
+
+      // allocate a varray with a slot for each nonterminal
+      var n = cl.len;
+      var v = varray[string * parser_t] n;
+
+      // populate the varray with the terminal names and a dummy chip
+      for nt in cl call // initialise array
+        push_back (v,(nt,BaseChips::epsilon[parser_state_t]))
+      ;
+
+      // now assign the real recognisers to the array
+      var index = 0uz;
+      for nt in cl do
+        match find lib nt with
+        | None => assert false;
+        | Some prod =>
+          // get wrapped parser 
+          var xprod_closure = render_pgram (lib, v) prod;
+
+          // undo the wrappingt
+          var entry = #xprod_closure;
+
+          // address of the slot
+          var pentry : &parser_t = (-(v.stl_begin+index)).1;
+
+          // overwrite dummy value
+          pentry <- entry;
+        endmatch;
+        ++index;
+      done
+      write (io.out, (v.(find v start).1));
+    done
+  }
 
 } // class
 @

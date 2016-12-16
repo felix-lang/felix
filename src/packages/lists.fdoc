@@ -607,6 +607,30 @@ Returns option.
         | Snoc(xs,x) => drop (k - 1) xs
     endif
   ;
+
+  fun scroll1[T] (left: list[T], right: list[T]) =>
+    match left with
+    | h ! t => t, h ! right
+    | _ => left, right
+  ;
+  fun scroll[T] (lr:list[T] * list[T]) (n:int) =>
+    if n <= 0 then lr else
+    scroll (scroll1 lr) (n - 1)
+  ;
+
+  // return revhead, tail where revhead is first k elements
+  // of lst, in reverse order, and tail is what is left over
+  // cannot fail: if k is not big enough the tail just ends
+  // up empty and the function is equivalent to rev.
+  fun revsplit[T] (k:int) (lst:list[T]) : list[T] * list[T] =>
+    let fun aux (k:int) (revhead:list[T]) (tail:list[T]) =>
+      if k <=0 then revhead,tail
+      else match tail with
+      | #Empty => revhead, tail
+      | h ! t => aux (k - 1) (h!revhead) t
+      endmatch
+    in aux k Empty[T] lst
+  ;
  
   fun list_eq[T with Eq[T]] (a:list[T], b:list[T]): bool =>
     match a, b with
