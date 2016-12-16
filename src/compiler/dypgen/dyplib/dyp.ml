@@ -1,4 +1,4 @@
-let version = "20120528"
+let version = "20120619"
 
 let list_map f l = List.rev (List.rev_map f l)
 
@@ -3821,6 +3821,28 @@ let add_inherited_val sn0 sn1 argll nt =
   else (*let _ = output_string !log_channel "bnt_array = false\n" in*) argll
 
 
+(*let rec find_end_node_pos snd_node_lexer_pos sn_lexer_pos = function
+  | (pos,_)::tl ->
+    if pos = snd_node_lexer_pos
+    then find_end_node_pos snd_node_lexer_pos sn_lexer_pos tl
+    else pos
+  | [] -> sn_lexer_pos*)
+
+
+let find_end_node_pos sn_lexer_pos path =
+  let rec aux last_pos = function
+  | e::tl ->
+    if last_pos = e.dest.lexer_pos
+    then aux e.e_lexer_pos tl
+    else last_pos
+  | [] -> last_pos
+  in
+  match path with
+  | e::tl -> aux e.e_lexer_pos tl
+  | [] -> sn_lexer_pos
+
+
+
 let compute_inherited_values sn ppar next_lexeme =
   (*print_endline "compute_inherited_values";*)
   let state_id = sn.state_nb in
@@ -3841,10 +3863,11 @@ let compute_inherited_values sn ppar next_lexeme =
     let argll = collect_objs path sn in
     let argll = add_inherited_val sn0 sn argll lhs in
     let position_list = position_map path sn in
-    let end_node_pos = match position_list with
+    (*let end_node_pos = match position_list with
       | (pos, _)::_ -> pos
       | [] -> sn.lexer_pos
-    in
+    in*)
+    let end_node_pos = find_end_node_pos sn.lexer_pos path in
     let start_node_pos = sn.lexer_pos in
     let symbol_pos = (end_node_pos, start_node_pos) in
     let pp = {
@@ -4300,13 +4323,10 @@ let reduceViaPath (((start_node,p,tnb),(ind,rhs),rn) as pr) rl mm topmost parse_
     flush_all ());
   
   let position_list = position_map p start_node in
-  let end_node_pos = match position_list with
+  (*let end_node_pos = match position_list with
     | (pos, _)::_ -> pos
     | [] -> start_node.lexer_pos
-  in
-  let start_node_pos = start_node.lexer_pos in
-  let symbol_pos = (end_node_pos, start_node_pos) in
-  (* ^ this is the good order actually ^ *)
+  in*)
   (*add_to_reduction_list path counters.count_token;*)
   (*set_edge_reduced p;*)
   let leftSib, snd_node = match p with
@@ -4314,6 +4334,10 @@ let reduceViaPath (((start_node,p,tnb),(ind,rhs),rn) as pr) rl mm topmost parse_
     | [h] -> h.dest, start_node
     | h1::h2::_ -> h1.dest, h2.dest
   in
+  let end_node_pos = find_end_node_pos start_node.lexer_pos p in
+  let start_node_pos = start_node.lexer_pos in
+  let symbol_pos = (end_node_pos, start_node_pos) in
+  (* ^ this is the good order actually ^ *)
   let pt =
     if !dypgen_verbose>2 then
       (let pdev = start_node.pdev in
@@ -5274,5 +5298,4 @@ let import_functions cl_pdev pp ra_list =
 
 
 let is_re_name pp s = Hashtbl.mem pp.pp_dev.regexp_decl s
-
 

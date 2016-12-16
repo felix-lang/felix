@@ -1,0 +1,71 @@
+\BOOKMARK [1][-]{section.1}{Introduction to dypgen}{}
+\BOOKMARK [2][-]{subsection.1.1}{The calculator example}{section.1}
+\BOOKMARK [2][-]{subsection.1.2}{BNF grammars}{section.1}
+\BOOKMARK [2][-]{subsection.1.3}{Priorities}{section.1}
+\BOOKMARK [2][-]{subsection.1.4}{Semantical actions}{section.1}
+\BOOKMARK [2][-]{subsection.1.5}{The calculator with dypgen lexer generator}{section.1}
+\BOOKMARK [1][-]{section.2}{Lexer generators}{}
+\BOOKMARK [2][-]{subsection.2.1}{dypgen lexer generator}{section.2}
+\BOOKMARK [2][-]{subsection.2.2}{External lexer generators}{section.2}
+\BOOKMARK [2][-]{subsection.2.3}{Using a lexer generator different from ocamllex or dypgen}{section.2}
+\BOOKMARK [2][-]{subsection.2.4}{Position of the lexer}{section.2}
+\BOOKMARK [2][-]{subsection.2.5}{Extending the lexer}{section.2}
+\BOOKMARK [1][-]{section.3}{Resolving ambiguities}{}
+\BOOKMARK [2][-]{subsection.3.1}{Priorities with relations}{section.3}
+\BOOKMARK [2][-]{subsection.3.2}{Merge functions and keeping several trees}{section.3}
+\BOOKMARK [3][-]{subsubsection.3.2.1}{Specific merge functions}{subsection.3.2}
+\BOOKMARK [3][-]{subsubsection.3.2.2}{Example}{subsection.3.2}
+\BOOKMARK [3][-]{subsubsection.3.2.3}{Global and generic merge functions}{subsection.3.2}
+\BOOKMARK [3][-]{subsubsection.3.2.4}{Merging on different global and local data}{subsection.3.2}
+\BOOKMARK [3][-]{subsubsection.3.2.5}{Self-derivable non terminals and empty reductions}{subsection.3.2}
+\BOOKMARK [3][-]{subsubsection.3.2.6}{Merge warning}{subsection.3.2}
+\BOOKMARK [2][-]{subsection.3.3}{Giving up a reduction}{section.3}
+\BOOKMARK [2][-]{subsection.3.4}{Preventing a shift}{section.3}
+\BOOKMARK [1][-]{section.4}{Auxiliary data}{}
+\BOOKMARK [2][-]{subsection.4.1}{The fields global\137data and local\137data}{section.4}
+\BOOKMARK [2][-]{subsection.4.2}{Example with local\137data}{section.4}
+\BOOKMARK [2][-]{subsection.4.3}{Equality between data}{section.4}
+\BOOKMARK [2][-]{subsection.4.4}{Example with global\137data}{section.4}
+\BOOKMARK [2][-]{subsection.4.5}{Extending the scope of local\137data}{section.4}
+\BOOKMARK [1][-]{section.5}{User actions and rules}{}
+\BOOKMARK [2][-]{subsection.5.1}{Several actions for a rule}{section.5}
+\BOOKMARK [2][-]{subsection.5.2}{Pattern matching on symbols}{section.5}
+\BOOKMARK [2][-]{subsection.5.3}{Nested rules}{section.5}
+\BOOKMARK [2][-]{subsection.5.4}{Inherited attributes}{section.5}
+\BOOKMARK [2][-]{subsection.5.5}{Early actions}{section.5}
+\BOOKMARK [2][-]{subsection.5.6}{The operators *, + and ?}{section.5}
+\BOOKMARK [2][-]{subsection.5.7}{Preventing layout characters to be matched with ! and -}{section.5}
+\BOOKMARK [2][-]{subsection.5.8}{Knowing the next lexeme in a user action}{section.5}
+\BOOKMARK [1][-]{section.6}{Dynamic extension of the grammar}{}
+\BOOKMARK [2][-]{subsection.6.1}{Adding rules}{section.6}
+\BOOKMARK [2][-]{subsection.6.2}{The type obj}{section.6}
+\BOOKMARK [2][-]{subsection.6.3}{Example}{section.6}
+\BOOKMARK [2][-]{subsection.6.4}{Scope of the changes}{section.6}
+\BOOKMARK [2][-]{subsection.6.5}{Adding new non terminals}{section.6}
+\BOOKMARK [2][-]{subsection.6.6}{Extending dynamically priority data}{section.6}
+\BOOKMARK [1][-]{section.7}{Parsing control structures}{}
+\BOOKMARK [2][-]{subsection.7.1}{The record dyp and the type dypgen\137toolbox}{section.7}
+\BOOKMARK [2][-]{subsection.7.2}{The parser commands list and the type dyp\137action}{section.7}
+\BOOKMARK [2][-]{subsection.7.3}{parser\137pilot, parse, lexparse and update\137pp}{section.7}
+\BOOKMARK [2][-]{subsection.7.4}{Saving and loading a parser}{section.7}
+\BOOKMARK [1][-]{section.8}{Names defined by dypgen}{}
+\BOOKMARK [2][-]{subsection.8.1}{Types and values defined in the .ml file}{section.8}
+\BOOKMARK [2][-]{subsection.8.2}{Types and values defined in the .mli file}{section.8}
+\BOOKMARK [2][-]{subsection.8.3}{Adding code to the .mli file and at the top of the .ml file}{section.8}
+\BOOKMARK [2][-]{subsection.8.4}{No generation of the .mli file and other options}{section.8}
+\BOOKMARK [2][-]{subsection.8.5}{Defining the token type in a separate file}{section.8}
+\BOOKMARK [2][-]{subsection.8.6}{The module Dyp of the library}{section.8}
+\BOOKMARK [1][-]{section.9}{Other features}{}
+\BOOKMARK [2][-]{subsection.9.1}{Preprocessing with cpp}{section.9}
+\BOOKMARK [2][-]{subsection.9.2}{Generated documentation of the grammar}{section.9}
+\BOOKMARK [2][-]{subsection.9.3}{Information about the parsing}{section.9}
+\BOOKMARK [2][-]{subsection.9.4}{Warnings}{section.9}
+\BOOKMARK [2][-]{subsection.9.5}{Error}{section.9}
+\BOOKMARK [2][-]{subsection.9.6}{Maximum number of constructors and using polymorphic variants}{section.9}
+\BOOKMARK [2][-]{subsection.9.7}{Command-line options for ocamlc and include paths}{section.9}
+\BOOKMARK [2][-]{subsection.9.8}{Longest and shortest match for the parser}{section.9}
+\BOOKMARK [2][-]{subsection.9.9}{Building with ocamlbuild}{section.9}
+\BOOKMARK [1][-]{section.10}{Demonstration programs}{}
+\BOOKMARK [1][-]{appendix.A}{Acknowledgements}{}
+\BOOKMARK [1][-]{appendix.B}{Migration from ocamlyacc}{}
+\BOOKMARK [1][-]{appendix.C}{A complete example of grammar extension}{}

@@ -146,4 +146,3 @@ let print_res env prog =
   env
 
 let _ = List.fold_left print_res String_map.empty (List.rev prog)
-

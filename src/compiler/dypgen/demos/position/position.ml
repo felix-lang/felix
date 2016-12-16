@@ -12,4 +12,3 @@ let _ = std_lb.lex_curr_p <-
 let pf = Position_parser.main lexbuf
 
 let _ = print_forest (List.map (fun (x,_) -> x) pf)
-

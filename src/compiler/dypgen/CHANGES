@@ -1,3 +1,11 @@
+2012/06/19
+
+Fixed a bug that made the parser return wrong beginning positions for the
+matched symbols when the right hand side of the rule to reduce with would
+begin with nullable non terminal symbols.
+Section 2.4 of the manual has been updated.
+
+__________________________________________________________________________
 2012/05/28
 
 Fixed a bug that made the parser return wrong beginning positions for the

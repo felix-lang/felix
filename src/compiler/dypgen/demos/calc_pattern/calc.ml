@@ -39,4 +39,3 @@ let _ =
       flush stdout
     done
   with Calc_lexer.Eof -> exit 0
-

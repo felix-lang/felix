@@ -60,4 +60,3 @@ let rec eval (env:env) exp = match exp with
 (*let _ = print_endline ("prog:\n"^(str_expr prog))*)
 let s = str_expr (eval String_map.empty prog)
 let () = Printf.printf "= %s\n" s
-

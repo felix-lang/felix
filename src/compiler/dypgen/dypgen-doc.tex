@@ -2,6 +2,14 @@
 \usepackage[utf8]{inputenc}
 \usepackage{geometry}
 \geometry{ hmargin=2cm, vmargin=2cm }
+\usepackage{hyperref}
+\hypersetup{
+colorlinks=true,       % false: boxed links; true: colored links
+    linkcolor=black,          % color of internal links
+    citecolor=black,        % color of links to bibliography
+    filecolor=black,      % color of file links
+    urlcolor=blue           % color of external links
+}
 \title{\texttt{dypgen} User's Manual}
 \author{Emmanuel Onzon}
 
@@ -567,7 +575,25 @@ type position = {
 
 The demo program \verb|position_token_list| is the same as \verb|position| except that it first uses ocamllex to make a list of tokens and then uses dypgen to parse this list of tokens. It makes use of \verb|dypgen_lexbuf_position|.\\
 
-Note: the following abbreviations are available in the \verb|.dyp| file: \verb|$<| for \verb|dyp.Dyp.rhs_start_pos| and \verb|$>| for \verb|dyp.Dyp.rhs_end_pos|.
+Note: the following abbreviations are available in the \verb|.dyp| file: \verb|$<| for \verb|dyp.Dyp.rhs_start_pos| and \verb|$>| for \verb|dyp.Dyp.rhs_end_pos|.\\
+
+Remark that in some instances, the position returned by \verb|symbol_start| and \verb|symbol_start_pos| looks inconsistent with the position returned by the functions for the right-hand side. This may be the case when the right-hand side of the rule, which is used to reduce, begins with nullable non terminals. In such a case the position returned by \verb|rhs_start| and \verb|rhs_end| for these symbols may be smaller than the position returned by \verb|symbol_start|. This is the case when there are layout characters before the characters matched by the first non nullable symbol of the right-hand side of the rule. Here is an example.
+\begin{verbatim}
+%start main
+%layout ' '
+%parser
+main: eps "abc"
+  { Printf.printf "eps start: %d, eps end: %d, main start: %d\n"
+     (dyp.Dyp.rhs_start 1) (dyp.Dyp.rhs_end 1)
+     (dyp.Dyp.symbol_start ());
+    0 }
+eps: { 0 }
+\end{verbatim}
+Parsing the string \verb|"   abc"|, where the string begins with 3 spaces, returns
+\begin{verbatim}
+eps start: 0, eps end: 0, main start: 4
+\end{verbatim}
+The reason for this inconsistency is that no layout character is read before reducing with a rule with an empty right-end side, therefore the 3 spaces are not read. But those layout characters are not included when computing the start of \verb|main|. This seems to be the most useful convention.
 
 
 \subsection{Extending the lexer}

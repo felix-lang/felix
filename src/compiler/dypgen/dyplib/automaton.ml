@@ -1278,4 +1278,3 @@ let build_automaton is_trace gram_rhs gram_lhs gram_lhs' (gram_parnt:(int * int)
     (!countst) (!count_trans+1) (time2-.time1);
     flush stdout) else ();
   state_list, !countst, stations, entry_points, is_trace
-

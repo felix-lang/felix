@@ -33,4 +33,3 @@ let _ =
       flush stdout
     done
   with Failure _ -> exit 0
-

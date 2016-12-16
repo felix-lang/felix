@@ -1701,4 +1701,3 @@ let () = if !Argument.no_mli then () else
   let dest_file = open_out output_file in
   output_string dest_file parser_code;
   close_out dest_file)
-
