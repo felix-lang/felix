@@ -278,10 +278,14 @@ fun direct_left_recursion_elimination
        match alt with
        | Recog (Seq (Cons (Recog (Nonterminal $(nt)),tail))) => alphas = tail ! alphas;
        | Recog (Seq b) => betas = b ! betas;
-       | x => println$ "EDLR, unexpected alternative " + x.str; assert false;
+       | x => betas = ([x]) ! betas;
+
+       //| x => println$ "EDLR, unexpected alternative " + x.str; assert false;
        endmatch;
      done
-   | x => println$ "EDLR, unexpected expr " + x.str; assert false;
+   | x => betas = ([x]) ! betas;
+
+   //| x => println$ "EDLR, unexpected expr " + x.str; assert false;
    endmatch;
    if alphas.len == 0uz do
      outgram = (nt,expr) ! outgram;
