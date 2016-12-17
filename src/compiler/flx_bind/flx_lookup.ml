@@ -2371,6 +2371,10 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
     | [x]-> x
     | _ -> bexpr_tuple (btyp_tuple (List.map snd xs)) xs
   in
+  let be2,t2 = x2 in
+  let t2 = Flx_unify.minimise bsym_table state.counter t2 in
+  let x2 = be2,t2 in
+
 (*
 print_endline ("ABout to bind apply result type=" ^ sbt bsym_table rest);
 print_endline ("ABout to bind apply function type=" ^ sbt bsym_table t1);

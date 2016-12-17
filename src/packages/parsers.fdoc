@@ -259,5 +259,42 @@ class Parsers
     done
   }
 
+// direct left recursion eliminator
+// assumes A = A alpha | beta form
+fun direct_left_recursion_elimination 
+ (fresh:1->string) 
+ (lib:pgramlib_t) 
+=
+{
+ var outgram = Empty[pgramentry_t];
+ for ntdef in lib do
+   var nt,expr = ntdef;
+   var alphas = Empty[list[pgram_t]];
+   var betas = Empty[list[pgram_t]];
+// where does Epsilon go??
+   match expr with
+   | Recog (Alt alts) =>
+     for alt in alts do
+       match alt with
+       | Recog (Seq (Cons (Recog (Nonterminal $(nt)),tail))) => alphas = tail ! alphas;
+       | Recog (Seq b) => betas = b ! betas;
+       | x => println$ "EDLR, unexpected alternative " + x.str; assert false;
+       endmatch;
+     done
+   | x => println$ "EDLR, unexpected expr " + x.str; assert false;
+   endmatch;
+   if alphas.len == 0uz do
+     outgram = (nt,expr) ! outgram;
+   else 
+     var newntname = fresh();
+     var newnt = Recog (Nonterminal[pgram_t] newntname); 
+     var alts = map (fun (b:list[pgram_t]) => Recog (Seq (b + newnt))) betas;
+     outgram =  (nt, Recog (Alt alts)) !  outgram ;
+     alts = map (fun (a:list[pgram_t]) => Recog (Seq (a + newnt))) alphas + Recog (Epsilon[pgram_t]);
+     outgram = (newntname, Recog (Alt alts)) ! outgram;
+   done
+ done
+ return outgram;
+}
 } // class
 @
