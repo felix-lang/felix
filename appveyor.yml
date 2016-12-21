@@ -10,7 +10,7 @@ install:
   - set PWD=.
   - set PATH=build\release\host\bin;build\release\host\lib\rtl;%PATH%
   - set FLX_MIN_MEM=10000
-  - git clone -q https://github.com/felix-lang/win32binary.git
+  - git clone -q --depth 1 https://github.com/felix-lang/win32binary.git
   - move win32binary\build build
 
 environment:
