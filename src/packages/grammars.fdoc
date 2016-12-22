@@ -20,9 +20,13 @@ fun generic_cls[T]
   | Empty => processed
   | Cons (h,tail) =>
     if h in processed then generic_cls generic_add lib tail processed else
-    let Some p = find lib h in
-    let unprocessed = generic_add tail p in
-    generic_cls generic_add lib unprocessed (Cons (h,processed))
+    match find lib h with
+    | Some p =>
+      let unprocessed = generic_add tail p in
+      generic_cls generic_add lib unprocessed (Cons (h,processed))
+    | None => 
+      fun_fail[list[string]] ("MISSING NONTERMINAL " + h)
+    endmatch
   endmatch
 ;
 
@@ -51,7 +55,7 @@ instance[T with Str[T]] Str[open_prod_t[T]]
   | Nonterminal name => name
   | Epsilon => "Eps"
   | Seq ss => "(" + catmap " " (str of T) ss + ")"
-  | Alt ss => "(" + catmap " | " (str of T) ss + ")"
+  | Alt ss => "[" + catmap " | " (str of T) ss + "]"
   ;
 }
 

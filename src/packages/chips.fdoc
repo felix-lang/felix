@@ -334,12 +334,16 @@ chip tryall_list[D,C with Str[D]] (a: list[iochip_t[D,C]])
 {
   while true do
     var x = read io.inp;
-//println$ "Tryall read " + x.str;
+println$ "Tryall read " + a.len.str + " alternatives: " + x.str;
+var counter = 1;
     for h in a do
+println$ "    Trying alternative #" + counter.str + "/"+a.len.str;
+++counter;
       var lin,lout = mk_ioschannel_pair[D]();
       spawn_fthread (h (inp=lin, out=io.out));
       write (lout,x);
     done
+println$ "Tryall read done";
   done
 }
 

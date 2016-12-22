@@ -253,7 +253,8 @@ open class Schannel
   inline gen read[T] (chan:schannel[T]) = {
     var loc: &T;
     svc$ svc_sread$ C_hack::cast[_schannel] chan, C_hack::reinterpret[&root::address] (&loc);
-    return deref loc;
+    var x = deref loc;
+    return x;
   }
 
   //$ Read an item from an input channel.
