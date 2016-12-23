@@ -112,6 +112,9 @@ class Parsers
       pin inp: %<parser_state_t
       pin out: %>parser_state_t
    {
+     // We need to use a secondary chip so that if the recogniser
+     // writes no output, this chip will block on it and die
+     // without killing off the ActionShift chip.
      chip handler 
        connector inner
          pin inp: %<parser_state_t
@@ -442,6 +445,12 @@ class Parsers
     return direct_left_recursion_elimination fresh lib;
   }
 
+  fun make_seq (a:pgram_t) (b:list[pgram_t]) =>
+    match a with
+    | Recog (Seq a) => Recog (Seq (a + b))
+    | _ => Recog (Seq (a ! b))
+  ; 
+
   // requires one entry per non-terminal, sorted for performance
   // must be in form Alt (Seq (nt, ...)) or Seq (nt, ...) or sym
   // right is the original grammar which i scans thru
@@ -483,7 +492,7 @@ println$ "    checking if " + rnt + " = " + rprod.str + " has left corner A_j=" 
 println$ "      YES: replace";
                toremove = counter ! toremove;
                for beta in lprods perform 
-                 toadd  = Recog (Seq (beta + alpha)) ! toadd;
+                 toadd  = make_seq beta alpha ! toadd;
              else // not of form A_i = A_j alpha
 println$ "      NO: keep";
              done
