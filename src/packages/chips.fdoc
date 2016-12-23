@@ -334,16 +334,15 @@ chip tryall_list[D,C with Str[D]] (a: list[iochip_t[D,C]])
 {
   while true do
     var x = read io.inp;
-println$ "Tryall read " + a.len.str + " alternatives: " + x.str;
-var counter = 1;
+    //println$ "Tryall read " + a.len.str + " alternatives: " + x.str;
+    //var counter = 1;
     for h in a do
-println$ "    Trying alternative #" + counter.str + "/"+a.len.str;
-++counter;
+      //println$ "Trying alternative #" + counter.str + "/"+a.len.str;
       var lin,lout = mk_ioschannel_pair[D]();
       spawn_fthread (h (inp=lin, out=io.out));
+      //println$ "Tryall_list write " + lout.address.str;
       write (lout,x);
     done
-println$ "Tryall read done";
   done
 }
 
@@ -360,6 +359,7 @@ chip deref_each_read[D,C] (p:&iochip_t[D,C])
     var x = read io.inp;
     var rinp,rout = mk_ioschannel_pair[D]();
     spawn_fthread ((*p) (inp=rinp, out=io.out));
+    // println$ "Deref_each_read: write " + io.out.address.str;
     write (rout,x);
   done
 }
@@ -389,6 +389,7 @@ chip epsilon[T]
 {
   while true do
     var x = read io.inp;
+    //println$ "Epsilon: write " + io.out.address.str;
     write (io.out, x);
   done
 }

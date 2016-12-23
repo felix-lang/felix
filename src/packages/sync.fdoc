@@ -99,7 +99,7 @@ protected:
   void do_swrite();
   void do_multi_swrite();
   void do_kill();
-
+  void show_state();
 };
 
 }}
@@ -152,14 +152,10 @@ sync_sched::sync_sched (
   ft(0)
 {}
 
-void sync_sched::forget_current()
-  {
-     if(ft) 
-     {
-       collector->remove_root(ft);
-       pop_current();
-    }
-  }
+// if the active list is not empty,
+// take the top of the active list and make it current,
+// popping it off the active list.
+// If the active list is empty, make the current NULL.
 
 void sync_sched::pop_current()
   {
@@ -177,20 +173,44 @@ void sync_sched::pop_current()
          waiting=0;
        }
      }
-else
+     else
        ft = 0;
   }
 
-void sync_sched::push_new(fthread_t *f)
-  {
-    collector->add_root(f);
-    push_old(f);
+  void sync_sched::show_state () {
+    if (debug_driver)
+      fprintf(stderr, "CUR[%p] ACT[%p]\n",ft,
+        active->size()?active->front():NULL);
   }
 
+// if the current fibre is not NULL, forget it,
+// then set the current fibre to the top of the
+// active list and pop it
+void sync_sched::forget_current()
+  {
+    if(ft) 
+    {
+       collector->remove_root(ft);
+       pop_current();
+    }
+  }
+
+
+// make the argument f the current fibre
+// if there was a non-NULL current fibre before,
+// push it onto the active list
 void sync_sched::push_old(fthread_t *f)
   {
     if(ft) active->push_front(ft);
     ft = f;
+  }
+
+// same as push_old except the argument is fresh
+// so it is made a root first
+void sync_sched::push_new(fthread_t *f)
+  {
+    collector->add_root(f);
+    push_old(f);
   }
 
 void sync_sched::do_yield()
@@ -235,7 +255,7 @@ void sync_sched::do_sread()
       readreq_t * pr = (readreq_t*)request->data;
       schannel_t *chan = pr->chan;
       if(debug_driver)
-        fprintf(stderr,"[sync: svc_read] Request to read on channel %p\n",chan);
+        fprintf(stderr,"[sync: svc_read] Fibre %p Request to read on channel %p\n",ft,chan);
       if(chan==NULL) goto svc_read_none;
     svc_read_next:
       {
@@ -247,17 +267,23 @@ void sync_sched::do_sread()
           fprintf(stderr,"[sync: svc_read] Writer @%p=%p, read into %p\n", 
             pw->variable,*(void**)pw->variable, pr->variable);
         *(void**)pr->variable = *(void**)pw->variable;
-        // reader goes first!
+        if(debug_driver)
+          fprintf(stderr,"[sync: svc_read] current fibre %p FED, fibre %p UNBLOCKED\n",ft, writer);
+
+        // WE are the reader, stay current, push writer
+        // onto active list
         active->push_front(writer);
         collector->add_root(writer);
+show_state();
         return;
       }
 
     svc_read_none:
       if(debug_driver)
-        fprintf(stderr,"[sync: svc_read] No writers on channel %p: BLOCKING\n",chan);
+        fprintf(stderr,"[sync: svc_read] No writers on channel %p: fibre %p HUNGRY\n",chan,ft);
       chan->push_reader(ft);
       forget_current();
+show_state();
       return;
     }
 
@@ -266,7 +292,7 @@ void sync_sched::do_swrite()
       readreq_t * pw = (readreq_t*)request->data;
       schannel_t *chan = pw->chan;
       if(debug_driver)
-         fprintf(stderr,"[sync: svc_write] Request to write on channel %p\n",chan);
+         fprintf(stderr,"[sync: svc_write] Fibre %p Request to write on channel %p\n",ft,chan);
       if(chan==NULL)goto svc_write_none;
     svc_write_next:
       {
@@ -278,14 +304,21 @@ void sync_sched::do_swrite()
           fprintf(stderr,"[sync: svc_write] Writer @%p=%p, read into %p\n", 
             pw->variable,*(void**)pw->variable, pr->variable);
         *(void**)pr->variable = *(void**)pw->variable;
+        if(debug_driver)
+          fprintf(stderr,"[sync: svc_write] hungry fibre %p FED\n",reader);
+
+        // WE are the writer, push us onto the active list
+        // and make the reader on the channel current
         push_new (reader);
+show_state();
         return;
       }
     svc_write_none:
       if(debug_driver)
-        fprintf(stderr,"[sync: svc_write] No readers on channel %p: BLOCKING\n",chan);
+        fprintf(stderr,"[sync: svc_write] No readers on channel %p: fibre %p BLOCKING\n",chan,ft);
       chan->push_writer(ft);
       forget_current();
+show_state();
       return;
     }
 

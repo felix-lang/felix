@@ -329,7 +329,7 @@ begin
 
     println$ "Got parser";
 
-    var test = "9^9 ;";
+    var test = "9^9;";
     var results = run_parser_on_string parsr test;
 
     match results with 

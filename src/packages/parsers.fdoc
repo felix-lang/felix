@@ -112,20 +112,34 @@ class Parsers
       pin inp: %<parser_state_t
       pin out: %>parser_state_t
    {
-     var ri,wi = #mk_ioschannel_pair[Buffer];
-     var ro,wo = #mk_ioschannel_pair[Buffer];
-     circuit 
-       wire ri to r.inp
-       wire wo to r.out
-     endcircuit
+     chip handler 
+       connector inner
+         pin inp: %<parser_state_t
+     {
+       var inp = read inner.inp;
 
-     while true do
-       var inp = read io.inp;
+       var ri,wi = #mk_ioschannel_pair[Buffer];
+       var ro,wo = #mk_ioschannel_pair[Buffer];
+       circuit 
+         wire ri to r.inp
+         wire wo to r.out
+       endcircuit
+
        var ipos = inp.pos;
        write (wi, ipos);
        var opos = read ro;
        var entry = RTerminal (label, (start = ipos, finish = opos));
+       //println$ "ActionShift " + label + " write " + io.out.address.str;
        write (io.out, (pos = opos, stack = entry ! inp.stack));
+     }
+
+     while true do
+       var inp = read io.inp;
+       var ri,wi = #mk_ioschannel_pair[parser_state_t];
+      circuit
+         wire wi to handler.inp
+       endcircuit
+       write (wi, inp);
      done
    }
 
@@ -134,19 +148,24 @@ class Parsers
       pin inp: %<parser_state_t
       pin out: %>parser_state_t
    {
-     var ri1,wi1 = #mk_ioschannel_pair[Buffer];
-     var ro1,wo1 = #mk_ioschannel_pair[Buffer];
-     var ri2,wi2 = #mk_ioschannel_pair[Buffer];
-     var ro2,wo2 = #mk_ioschannel_pair[Buffer];
-     circuit 
-       wire ri1 to r1.inp
-       wire wo1 to r1.out
-       wire ri2 to r2.inp
-       wire wo2 to r2.out
-     endcircuit
 
-     while true do
-       var inp = read io.inp;
+     chip handler 
+       connector inner
+         pin inp: %<parser_state_t
+     {
+       var inp = read inner.inp;
+
+       var ri1,wi1 = #mk_ioschannel_pair[Buffer];
+       var ro1,wo1 = #mk_ioschannel_pair[Buffer];
+       var ri2,wi2 = #mk_ioschannel_pair[Buffer];
+       var ro2,wo2 = #mk_ioschannel_pair[Buffer];
+       circuit 
+         wire ri1 to r1.inp
+         wire wo1 to r1.out
+         wire ri2 to r2.inp
+         wire wo2 to r2.out
+       endcircuit
+
        // whitespace
        var pos1 = inp.pos;
        write (wi1, pos1);
@@ -157,7 +176,17 @@ class Parsers
        var pos3 = read ro2;
 
        var entry = RTerminal (label, (start = pos2, finish = pos3));
+       //println$ "ActionSecond " + label + " write " + io.out.address.str;
        write (io.out, (pos = pos3, stack = entry ! inp.stack));
+     }
+
+     while true do
+       var inp = read io.inp;
+       var ri,wi = #mk_ioschannel_pair[parser_state_t];
+       circuit
+         wire wi to handler.inp
+       endcircuit
+       write (wi, inp);
      done
    }
 
@@ -203,6 +232,7 @@ class Parsers
       var i = read io.inp;
       var pos = i.pos;
       var stack = doaction i.stack a;
+      //println$ "ActionGeneral ["+a.str+"] write " + io.out.address.str;
       write (io.out, (pos=pos, stack=stack)); 
     done
   }

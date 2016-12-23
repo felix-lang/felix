@@ -69,9 +69,13 @@ open class Fibres
 
   //$ Construct a fibre scheduler.
   //$  NOTE: NOT GARBAGE COLLECTED!
-  ctor fibre_scheduler: 1 = """new ::flx::run::sync_sched(false, PTF gcp, 
-    new ::std::list<::flx::rtl::fthread_t*>)""";
+  ctor fibre_scheduler: bool = """new ::flx::run::sync_sched($1, PTF gcp, 
+    new ::std::list<::flx::rtl::fthread_t*>)"""
   ;
+  ctor fibre_scheduler () =>
+    fibre_scheduler (Env::getenv "FLX_DEBUG_DRIVER" != "")
+  ;
+     
 
   // NOTE: all this derooting shouldn't be required
   // because normally the deletion balances the construction
@@ -223,6 +227,9 @@ open class Schannel
   //$ Necessary for killing off schannels,
   //$ so as to make them unreachable, so the gc can reap them.
   gen mk_null_oschannel[t]: 1->oschannel[t] = "NULL";
+
+  ctor[T] address: oschannel[T] = "$1";
+  ctor[T] address: ischannel[T] = "$1";
 
   //$ Check if an schannel is NULL.
   fun isNULL[T] :schannel[T] -> bool = "NULL==$1";

@@ -74,12 +74,12 @@ chip match_string (s:string)
 {
 nextmatch:>
   var b = read io.inp;
-println$ "Match " + s + " at " + b.str;
+  //println$ "Match " + s + " at " + b.str;
   for i in 0..< s.len.int do 
     if s.[i] != b.get goto nextmatch;
     b&.next;
   done
-println$ "Matched " + s + " to " + b.str;
+  //println$ "Matched " + s + " to " + b.str;
   write (io.out, b);
   goto nextmatch;  
 }
