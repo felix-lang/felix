@@ -23,126 +23,556 @@
 \author{John Skaller}
 \begin{document}
 \maketitle
+\section{Objects}
+A coroutine system consists of the following types of objects:
+\begin{description}
+\item[Scheduler] A device to hold a set of active fibres and
+select one to be current.
+\item[Channels] An object to support synchronisation and data transfer.
+\item[Fibres] A thread of control which can be suspended and resumed.
+\item[Continuations] An object representing the future of a coroutine.
+\end{description}
 
-\section{Basics}
-This document attempts to discus coroutines and fibres in both an
-abstract setting, and using the particular encoding in the
-Felix programming languages for exposition.
+\subsection{Fibre States}
+Each fibre is in one of these states:
+\begin{description}
+\item[Running] Exactly one fibre (per pthread) is always running.
+\item[Active] Fibes which are ready to run but not running.
+\item[Hungry] Fibres suspended waiting for input on a channel.
+\item[Blocked] Fibres suspended waiting to perform output on a channel.
+\item[Dead] A fibre for which there is no longer a current continuation.
+\end{description}
 
-The Felix system provides two well developed common programming
-systems: functions and functional programming, and procedures and
-imperative programming. It also provides the less well understood
-system of communicating sequential coroutines (CSC) which is 
-roughly a non-concurrent version of Hoare's communicating 
-sequential processes (CSP).
+\subsection{Channel States}
+Each channel is in one of these states:
+\begin{description}
+\item[Empty] There are no fibres associated with the channel.
+\item[Hungry] A set of hungry fibres are waiting for input on the channel.
+\item[Blocked] A set of blocked fibres are waiting to perform output on the channel.
+\end{description}
+
+\section{Abstract Operations}
+Several operations are specific to a fibrated system.
+\subsection{Spawn} 
+The spawn operation takes as an argument a unit procedure and makes
+a closure thereof the initial continuation
+of a new fibre.  Of the pair consisting of the currently running
+fibre (the spawner) and the new fibre (the spawnee) one will have Active
+state and the other will be Running. It is not specified which
+of the pair is Running.
+
+\subsection{Create channel}
+A function which creates a channel.
+
+\subsection{Read}
+The read operation takes as an argument a channel.
+
+\begin{enumerate}
+\item If the channel is Empty, the Running fibre performing the read
+changes state to Hungry, the channel changes state to Hungry,
+and the fibre is associated with the channel.
+
+If there are no active fibres, the program terminates,
+otherwise the scheduler selects an Active fibre and
+changes its state to Running.  It is not specified which active 
+fibre is chosen.
+
+\item If the channel is Hungry, the Running fibre changes state
+to Hungry, and the fibre is associated with the channel.
+
+If there are no active fibres, the program terminates,
+otherwise the scheduler selects an Active fibre and
+changes its state to Running.  It is not specified which active 
+fibre is chosen.
+
+\item If the channel is Blocked, one of the associated Blocked fibres
+is selected, and dissociated from the channel. Of these two
+fibres, one is changed to state Active and the other to Running.
+It is not specified which fibre is chosen to be Running.
+
+The value supplied to the write operation of the Blocked
+fibre will be pass to the Hungry fibre when it transitions
+to Running state.
+\end{enumerate}
 
 
-In Felix, a special procedure call is used to wrap a system
-service call which launches a new {\em fibre}, taking as an argument
-a procedural closure of type \verb%1->0%; that is, a procedure
-accepting the unit argument \verb%()%.
+\subsection{Write}
+The write operation takes two arguments, a channel and a value
+to be written.
 
-\begin{minted}{felix}
-proc hello() { println$ "Hello"; }
-spawn_fthread hello;
-println$ "Spawn done";
-\end{minted}
+\begin{enumerate}
+\item If the channel is Empty, the Running fibre performing the write
+changes state to Blocked, the channel changes state to Blocked,
+and the fibre is associated with the channel.
 
-The fibre launched by \verb%spawn_fthread% is logical thread
-of control, which shares a single physical thread of control
-with other fibres. 
+If there are no active fibres, the program terminates,
+otherwise the scheduler selects an Active fibre and
+changes its state to Running.  It is not specified which active 
+fibre is chosen.
 
-The procedure \verb%hello% above is {\em spawned} as a {\em coroutine}
-rather than being {\em called} as a {\em subroutine}. The principal
-difference is this: with a subroutine call, the current thread of
-control is temporarily suspended and the called procedure is
-given control. When that procedure completes, it returns control
-to the caller. Thus, the caller and caller form an asymmetrical 
-{\em master/slave} or {\em client/server} relationship, captured
-by the {\em sub} in the term {\em subroutine}.
+\item If the channel is Blocked, the Running fibre changes state
+to Blocked, and the fibre is associated with the channel.
 
-With the fibre, on the other hand, it is indeterminate whether
-the spawning routine continues execution, or hands control to the
-spawned coroutine: the relationship is a {\em peer/peer} relation
-and is thus symmetrical. The spawner and spawnee are therefore
-consider as equals, captured in the {\em co} in {\em coroutine}.
+If there are no active fibres, the program terminates,
+otherwise the scheduler selects an Active fibre and
+changes its state to Running.  It is not specified which active 
+fibre is chosen.
 
-Unlike threads or processes, however, either the spawner or spawnee
-definitely proceeds first, whilst the other is blocked from
-progressing: there is only one physical thread of control,
-and there is no sharing by pre-emption. The coroutine which
-actually gains control is called the {\em current coroutine}.
-At least within a single pthread there is only ever one current
-coroutine. However there can be a set of coroutines waiting
-to run and these are said to be {\em active}.
+\item If the channel is Hungry, one of the associated Hungry fibres
+is selected, and dissociated from the channel. Of these two
+fibres, one is changed to state Active and the other to Running.
+It is not specified which fibre is chosen to be Running.
 
-Coroutines cooperate by use of a device known as
-a synchronous channel. Synchronous channels support two
-operations: {\em read} and {\em write}. 
+The value supplied by the write operation of the Blocked
+fibre will be pass to the Hungry fibre when it transitions
+to Running state.
+\end{enumerate}
 
-We will extend our example to show interleaving of control
-and data transmission facilitated by synchronous channels:
+\subsection{Reachability}
+The Running, and, each Active fibre and its associated call chain of 
+continuations are deemed to be Reachable.
 
-\begin{minted}{felix}
-begin
-  println$ "[main] starts";
-  var rinp,winp = mk_ioschannel_pair[string]();
-  var rout,wout = mk_ioschannel_pair[string]();
-  proc hello() { 
-     println$ "[hello] starts";
-     var x = read rinp;
-     println$ "[hello] read " + x;
-     write (wout, "OK");
-     println$ "[hello] done"; 
-  }
-  spawn_fthread hello;
-  var data = "from main";
-  println$ "[main] writes " + data;
-  write (winp, data);
-  println$ "[main] reads ";
-  var result = read rout; 
-  println$ "[main] done, result " + result;
-end
-\end{minted}
+If a channel is known to reachable fibre, it is also reachable.
 
-So we have created two channels which can be used to
-read and write a string: the \verb%mk_ioschannel_pair%
-function constructs a single channel but returns two
-copies of it, one typed for reading and the other for
-writing.
+Each fibre associated with a reachable channel is reachable.
+
+The transitive closure of the reachability relation consists
+of a closed, finite, collection or channels and fibres which
+are reachable.
+
+Unreachable fibres and channels are automtically garbage
+collected.
+
+\subsection{Elimination}
+Fibres and channels are eliminated when they are 
+no longer reachable.
+
+A fibre may become unreachable in three ways.
+
+\subsubsection{Suicide}
+A fibre for the the initial continuation returns acquires
+the Dead state. If there are no longer any Active fibres,
+the program returns, otherwise the scheduler picks
+one Active fibre and changes its state to Running.
+
+A fibre in the Dead state should eventually become unreachable
+if it is not unreachable when it becomes Dead.
+
+\subsubsection{Starvation}
+A fibre in the Hungry state may become unreachable,
+in which case it is marked Dead and is no longer
+part of the fibration system.
+
+\subsubsection{Blockage}
+A fibre in the Blocked state may become unreachable 
+in which case it is marked Dead and is no longer
+part of the fibration system.
+
+\section{LiveLock}
+If a fibre is Hungry (or Blocked) on a reachable channel
+but no future Running fibre will write (or read) that
+channel, the fibre is said to be livelocked. The fibre
+will never proceed but it cannot be removed from
+the system because it is reachable via the channel.
+
+A livelock is considered to transition to a deadlock
+if the channel becomes unreachable, in which case
+the fibre will become Dead through Starvation (or Blockage),
+disolving the deadlock. In other words, fibres cannot deadlock.
+
+A livelock which persists will hang the program.
+
+
+\section{Fibre Structure}
+Each fibre consists of a single current continuation.
+Each continuation may have an associated continuation
+known as its caller. The initial continuation of a freshly
+spawned fibre has no caller.
+
+The closure of the caller relation leads to a linear
+sequence of continuations starting with the current
+continuation and ending with the initial continuation
+of a freshly spawned fibre.
+
+The main program consists of an initially Running
+fibre with a specified initial continuation.
+
+Continuations have the usual operations of a procedure.
+They may return, call another procedure, spawn new
+fibres, create channels, and read and write channels,
+as well as the other usual operations of a procedure
+in a general purpose programming language.
+
+A continuation is reachable if it is the current
+continuation of a reachable fibre, or the caller
+of a reachable continuation.
+
+\section{Continuation Structure}
+\subsection{Continuation Data}
+A continuation has associated with it the following
+data:
+
+\begin{description}
+\item[caller] Another continuation of the same fibre which is
+suspended until this continuation returns.
+\item[data frame] Sometimes called the stack frame, contains
+local variables the continuation may access.
+\item[program counter] A location in the program code representing
+the current point of this continuations execution or suspension
+\end{description}
+
+\subsection{Continuation operations}
+The current continuation of a fibre executes a wide range of
+operations including channel I/O, spawning new fibres,
+calling a procedure, and returning.
+
+\begin{description}
+\item[call] Calling a procedure creates a new continuation
+with its program counter set at the procedure entry point,
+and a fresh data frame. The new continuation becomes the
+current continuation, the current continuation suspends,
+and the caller of the new continuation is set to the current
+continuation. The current continuation program counter is set
+to the pointer after the call instruction.
+
+\item[return] Returning from the current continuation causes
+the owning fibres current continuation to be set to the
+current continuations caller, if one exists, or the 
+fibre to be marked Dead if there is no caller. Execution
+of the suspended caller continues at its program counter.
+
+\item[read/write] Channel I/O suspends the current continuation
+of a fibre until a matching operation from another fibre
+synchronises with it. A read is matched by a write, and a write
+is matched by a read.
+\end{description}
+
+By the rules of state change, channel I/O should be viewed
+as performing a peer to peer neutral exchange of control:
+the current fibre becomes suspended without losing its position
+and hands control to another fibre. Later, control is handed
+back and the fibre continues.
+
+Coroutine based systems, therefore, operate by repeated exchanges
+of control accompanied by data transfers in a direction independent
+of the control flow, which sets coroutines aside from functions.
+
+\section{Events}
+Each state transfer of the fibration system may be considered
+an event. However the key events are
+\begin{itemize}
+\item spawning
+\item suicide
+\item entry to a read operation
+\item return from a read operation
+\item entry to a write operation
+\item return from a write operation
+\end{itemize}
+
+I/O synchronisation consists of suspension on entry
+to a read or write operation, and simultaneously release
+of suspension, or resumption, on matching write or read.
+
+I/O suspension occurs when a fibre becomes Hungry or Blocked,
+and resumption when it becomes Running or Active.
+
+Fibrated systems are characterised by a simple rule: events are
+totally ordered. The order may not be determinate. 
+
+\section{Control Type}
+The control type of a coroutine is defined as follows.
+We assume the coroutine is spawned as a fibre, and each
+and every read request is satisfied by a random value of
+the legal input type. Write requests are also satisfied.
+We cojoin entry and return from read into a single read
+event, and entry and return from write into a single
+write event, since we are only interested in the behaviour
+of the fibre.
+
+The sequence of all possible events which the fibre
+may exhibit is the coroutines control type. Note, the
+control type is a property of the coroutine (procedure).
+
+\section{Encoding Control Types}
+In general, the control type of a coroutine can be quite
+complex. However for special cases, a simple encoding
+can be given.
+
+\subsection{One shots}
+A one-shot coutine is one that exhibits a bounded number
+of events before suiciding. The three most common one
+shots are:
+
+\begin{description}
+\item[Value: type W] A coroutine which writes a single value to
+a channel and then exits.
+\item[Result: type R] A coroutine which reads a single value to
+from channel and then exits.
+\item[Function: type RW] A couroutine which reads one value
+from a channel, calculates an answer, writes that
+down a channel and then exits.
+\end{description}
+
+\subsection{Continuous devices}
+A continuous coroutine is one which does not exit.
+It can therefore terminate only by starvation or blockage.
+The three most common kinds of such devices are
+\begin{description}
+\item[Source: type W+] Writes a continuous stream of values
+to a channel.
+\item[Sink: type R+] Reads a continuous stream of values
+from a channel.
+\item[Transducer] Reads and writes.
+\end{description}
+
+Because the sequence of events is a stream, we may use
+convenient notations to describe control types.
+If possible, a regular expression will be used.
+Sometimes, a grammar will be required. In other cases
+there is no simple notation for the behaviour of a coroutine.
+
+We will use postfix \verb%+% for repetition.
  
-At the point of spawning,
-either the hello routine starts, or the mainline continues.
+\subsection{Transducer Types}
+A transducer which read a value, write a value, then loops
+back and repeats is called a {\em functional transducer},
+it may be given the type (RW)+.
 
-If hello starts, then it will do a read and block, because
-there is no data written yet. Then the mainline must
-continue, and it writes the required data.
+In a functional language, a partial function has no natural
+encoding. There are two common solutions. The first is to
+return an option type, say Some v, if there is a result,
+or None if there is not. This solution involves modifying
+the codomain. The other solution is to restrict the domain so
+that the subroutine is a function.
 
-If the mainline continued on spawning, then it does a write
-and blocks, because there is no read to accept the data.
-Then the hello routine must continnue, and it performs
-the required read.
+Coroutines, however, represent partial functions naturally.
+If a value is read for which there is no result, none is written!
+The type of a {\em partial function transducer} is therefore
+given by ((R+)W)+, in other words multiple reads may occur
+for each write. Note that two write may not occur in succession.
 
-At this point, we have a matching read and write operation
-on the  first schannel. One of the coroutines, either the 
-read or write, will become the current fibre at this point
-and the other will become active, it is indeterminate
-which.
+This type may also be applied to many other coroutines,
+for example the list filter higher order function.
 
-The way channels work is that a channel has three possible states:
-it is empty, it has a non-empty set of fibres which have made read
-requests, or it has a non-empty set of fibres which have made
-write requests.
+\subsection{Duality}
+Coroutines are dual to functions. The core difference is that
+they operate in time not space. Thus, in the dual space
+a spatial product type becomes a temporal sequence.
 
-If the channel is empty the fibre making the first I/O request is 
-added to the channel. If the channel has readers the fibre making
-a read request will be added to the channel, if the channel has
-writers then if a fibre makes a read request, the one writer
-is removed from the channel and either that writer or the reader
-becomes the current fibre and the other becomes active.
+Coroutines are ideal for processing streams. Whereas
+function code cannot construct streams without laziness,
+and cannot deconstruct them without eagerness, coroutines
+are neither eager nor lazy.
 
-The situation is dual for a write request.
+One may view an eager functional application as driving a
+value into a function to get a result, and a lazy application
+as pulling a values into a function. Pushing value implies
+eagerly evaluating it, pulling implies the value is calculated
+on demand.
 
+Coroutine simultaneously push and pull values across channels
+and so eliminate the evaluation model dichotomy that plagues
+functional programming. This coherence does not come for
+free: it is replaced by indeterminate event ordering.
 
+\section{Composition}
+By far the biggest advantage of coroutine modelling is the 
+ultimate flexibility of composition. Coroutines provide
+far better modularity and reusability than functions,
+but this comes at the price of complexity. You will observe
+considerably more housekeeping is required to compose
+coroutines that procedures or functions, because, simply,
+there are more way to compose them.
 
+A collection of coroutines can be regarded as black boxes
+resembling chips on a circuit board, with the wires
+connecting pins representing channels. So instead of using
+variables and binding constructions, we can construct more
+or less arbitrary networks.
+
+\subsection{Pipelines}
+The simplest kind of composition is the pipeline. It is a sequence
+of transduces wired together with the output of one transducer
+connected by a channel to the input of the next.
+
+If the pipeline consists entirely of transducers is is an open
+pipeline. If there is a source at one end and a sink at the other
+it is a closed pipeline. Partially open pipelines can also exist.
+
+The composition of two transducers has a type dependent on
+the left and right transducer types. If these types are functional,
+the result is functional. However for the more general case
+of two transducers of type ((R1+)W1+) and ((R2+)W2+) the result
+is somewhat suprising.
+
+Connecting two transducers with a channel involves a theoretical
+abstraction operator which removes the write of the left transducer
+and the read of the right transducer from the behaviour of the pair:
+the combined transducer is has two unconnected channels, so it
+is still a two pin device. You may think the control type is
+((R1+)W2+) but this is not the case!
+
+The following behaviour is conforming: First we have left
+reading on R1, then writing W1. Right then reads R2.
+Now, left proceeds and reads R2, then writes W1. At this
+point right goes off and write W2, goes back, reads R2
+again, goes off, and writes W2.
+
+So what we have observed is: R1, R1, W2, W2 which is not
+recognised by ((R1+)W2)+ because that requires R1 immediately
+after a W2. The problem is, each coroutine has memory,
+and acts as a buffer for at least a single value, so when
+two fibres are composed, there is one extra step of 
+indeterminacy! The correct type is, in fact ((R1+)W2?W2)+
+where the question mark (?) indicates an optional operation.
+
+It is clearer with a functional transducer, the composition
+of (R1W1)+ with (R2W2)+ is in fact ((R1?R1)(W2?W2))+, meaning
+you can get two reads or two writes in a row. In fact this
+composite type is overly permissive, since the number
+of reads is at most two more than the number of writes 
+at any time.
+
+For a pipeline o N functional transducers, the output can be out of phase
+with the input by up to N-1/2 cycles. We put the 1/2 there because
+there is always at least a half cycle delay between reading and writing,
+even with a tight loop. What happens depends on how the pipeline is driven.
+
+If in the environment we write the left end then read the right end,
+the input and ouput are always coupled. However we can pump N values
+into the pipeline before reading. The reads out of the right end
+always correspond in sequence with the writes into the left end,
+but the coupling between reads and writes is sloppy.
+
+This problem makes things much more difficult in more advanced
+topologies, for example if two sources are driving a pipeline,
+there is no way to tell which input corresponds with which
+outputs. We cannot tell which source provided the data, even
+with a single functional transducer.
+
+\subsection{Clocks}
+Electronics designers know all about this problem and have
+a solution: clocking. If we add to each transducer an
+extra clock input which must be read prior to reading data,
+and add at the end a special feedback routine which writes
+the result first, then sends an acknowledge on the feedback
+channel, then we can construct a clock which reads the feedback,
+then writes a clock pulse to each transducer. This prevents
+the leftmost transducer reading any more input until the
+output is written. A one shot is used to bootstrap the process.
+
+We can also organise things so that each transducer buffers
+a value, ensuring the pipeline is fully saturated.
+
+\subsection{Buffers}
+A transducer which simply copies its input to its output
+has no functional significance on a calculation, however
+it provides a one value buffer.
+
+A more sophisticated device is called a {\em dynamic buffer}.
+For each input read by the buffer, a new fibre is spawned
+with a connecting channel which the input is written to.
+The new fibre is a one shot buffer which then writes the
+value and suicides. Such a buffer is equivalent to an unbounded
+set, where the word "set" implies a lack of ordering.
+All the dynamic buffers created try to write on the same channel
+so there is no assurance which will go first. 
+
+Such an unbounded set can, of course, grow forever unless
+the environment ensures this cannot happen. In a parser,
+for example, a dynamic buffer can be used for recursion
+in the same way a functional program uses the machine stack.
+Although both can overflow, both are bounded by the size
+and structure of the input being parsed.
+
+\section{Felix Implementation}
+The following functions and procedures are provided in Felix:
+
+\begin{minted}{felix}
+spawn_fthread: 1 -> 0
+mk_ioschannel_pair[T]: 1 -> ischannel[T] * oschannel[T];
+read[T]: ischannel[T] -> T
+write[T]: oschannel[T] * T -> 0
+\end{minted}
+
+In the abstract, channels are bidirectional and untyped.
+However we will restrict our attention to channels
+typed to support either read (ischannel) or write (oschannel)
+of a value of a fixed data type.
+
+The following shorthand types are available:
+
+\begin{minted}{felix}
+%<T    ischannel[T]
+%>T    oschannel[T]
+\end{minted}
+
+More advanced typing exploiting channel capabilities are
+discussed later.
+
+Simple example program:
+
+\begin{minted}{felix}
+proc demo () {
+  var inp, out = mk_ioschannel_pair[int]();
+
+  proc source () {
+    for i in 1..10 perform write (out,i);
+  }
+
+  proc sink () {
+    while true do
+      var j = read inp;
+      println$ j;
+    done
+  }
+
+  spawn_fthread source;
+  spawn_fthread sink;
+}
+demo();
+\end{minted}
+
+In this program, we create a channel with an input and
+output end typed to transfer an int. The source coroutine
+writes the integers from 1 through to 10 inclusive to
+the write end of the channel, the sink coroutine
+reads integers from the channel and prints them.
+
+The main fibre calls the demo procedure which launches
+two fibres with initial continuations the closures of
+the source and sink procedures.
+
+When demo returns, the main fibre's current continuation
+no longer knows the channel, so the channel is not reachable
+from the main fibre. 
+
+The source coroutine returns after sending 10 integers to
+the sink via the channel.  When a fibre no longer has
+a current continuation, returning to the non-existent
+caller causes the fibre to no longer have a legal
+state. This is known as suicide.
+
+After the sink has read the 
+last value, it becomes permanently Hungry. The sink 
+procedure dies by starvation.
+
+All fibres which die do so either by suicide, starvation,
+or blockage. Dead fibres will be reaped by the garbage
+collector provided they're unreachable. It is important
+for the creator of fibres and their connecting channels
+to forget the channels to ensure this occurs.
+
+Unlike typical pre-emptive threading systems, deadlock
+is not an error. However a lock up which should lead to
+reaping of fibres but which fails to do so because
+they remain reachable is univerally an error. This is
+known as a livelock: it leads to zombie fibres.
+
+This usually occurs because some other fibre is statically
+capable of resolving the lockup, but does not do so 
+dynamically. To prevent livelocks, variables holding
+channel values to which no I/O will occur dynamically
+should also go out of scope.
+ 
 \end{document}
