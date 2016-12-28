@@ -61,6 +61,17 @@ instance Eq[Buffer] {
   fun == (a:Buffer, b:Buffer) => a.pos == b.pos;
 }
 
+open Eq[Buffer];
+
+ctor string (a:Buffer, b:Buffer) =
+{
+  var x = "";
+  for i in a.pos ..< b.pos do
+    x += a.sp.i;
+  done
+  return x;
+}
+
 typedef recog_t = BaseChips::iochip_t[Buffer,Buffer];
 // rendering lazy terms to actual recognizer
 
@@ -85,6 +96,7 @@ nextmatch:>
 }
 
 @h2 Whitespace matcher.
+Note: never fails.
 @tangle recognisers.flx
 chip match_white 
   connector io
@@ -96,6 +108,113 @@ chip match_white
     while not b.atend and b.get <= char ' ' perform b&.next;
     write (io.out,b);
   done
+}
+
+@h2 C++ comment matcher
+Note: cannot fail.
+@tangle recognisers.flx
+chip match_cxx_comment 
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+again:>
+  var b = read io.inp;
+  var b_saved = b;
+
+  if b.get != char "/" goto bad;
+  b&.next;
+
+  if b.get != char "/" goto bad;
+  b&.next;
+
+  while not b.atend and not (b.get == char "\n")  perform b&.next;
+  b&.next; // works fine even if atend
+ok:>
+  write (io.out,b);
+  goto again;
+bad:>
+  write (io.out,b_saved);
+  goto again;
+}
+
+@h2 Nested C comment matcher
+Note: cannot fail.
+@tangle recognisers.flx
+chip match_nested_c_comment 
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+again:>
+  var depth = 0;
+  var b = read io.inp;
+  var b_saved = b;
+  if b.get != char "/" goto bad;
+  b&.next;
+  if b.get != char "*" goto bad;
+
+nest:>
+  b&.next;
+  ++depth;
+
+scan:>
+  if b.get == "/" do // start nested comment
+    b&.next;
+    if b.get == "*" goto nest;
+    goto scan;
+  done
+
+  if b.get == "*" do // end comment group
+    b&.next;
+    if b.get == "/" goto unnest;
+    goto scan;
+  done
+
+  b&.next;
+  goto scan;
+
+unnest:>
+  b&.next;
+  --depth;
+  if depth > 0 goto scan;
+  write (io.out,b);
+  goto again; 
+
+bad:>
+  write (io.out,b_saved);
+  goto again;
+}
+
+@h2 Felix comments
+Note: can fail.
+@tangle recognisers.flx
+
+chip match_felix_white
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  var ri,wi= #mk_ioschannel_pair[Buffer];
+  var ro,wo= #mk_ioschannel_pair[Buffer];
+  device w = BaseChips::pipeline_list ([match_white, match_nested_c_comment, match_cxx_comment]);
+  circuit
+     wire ri to w.inp
+     wire wo to w.out
+  endcircuit
+
+again:>    
+  var start = read io.inp;
+more:>
+  write (wi, start);
+  var fin = read ro;
+  if fin != start do
+    start = fin;
+    goto more;
+  done
+
+  write (io.out, fin);
+  goto again;
 }
 
 @h2 regex matcher.

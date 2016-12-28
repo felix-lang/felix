@@ -325,7 +325,7 @@ begin
     println$ "Closure="  + clx.str;
 
 
-    var parsr = make_parser_from_grammar ("stmt", xlib);
+    var parsr = make_parser_from_grammar ("stmt", xlib) Recognisers::match_white;
 
     println$ "Got parser";
 

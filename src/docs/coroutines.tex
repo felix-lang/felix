@@ -180,8 +180,6 @@ if the channel becomes unreachable, in which case
 the fibre will become Dead through Starvation (or Blockage),
 disolving the deadlock. In other words, fibres cannot deadlock.
 
-A livelock which persists will hang the program.
-
 
 \section{Fibre Structure}
 Each fibre consists of a single current continuation.
@@ -230,16 +228,20 @@ calling a procedure, and returning.
 \item[call] Calling a procedure creates a new continuation
 with its program counter set at the procedure entry point,
 and a fresh data frame. The new continuation becomes the
-current continuation, the current continuation suspends,
-and the caller of the new continuation is set to the current
-continuation. The current continuation program counter is set
+current continuation, the current continuation suspends.
+The new continuations caller field is set to the caller.
+The current continuation program counter is set
 to the pointer after the call instruction.
+
+The effect is push an entry onto the fibres continuation chain.
 
 \item[return] Returning from the current continuation causes
 the owning fibres current continuation to be set to the
 current continuations caller, if one exists, or the 
 fibre to be marked Dead if there is no caller. Execution
 of the suspended caller continues at its program counter.
+
+The effect is to pop an entry off the fibre's continuation chain.
 
 \item[read/write] Channel I/O suspends the current continuation
 of a fibre until a matching operation from another fibre
@@ -349,7 +351,7 @@ Coroutines, however, represent partial functions naturally.
 If a value is read for which there is no result, none is written!
 The type of a {\em partial function transducer} is therefore
 given by ((R+)W)+, in other words multiple reads may occur
-for each write. Note that two write may not occur in succession.
+for each write. Note that two writes may not occur in succession.
 
 This type may also be applied to many other coroutines,
 for example the list filter higher order function.
@@ -366,7 +368,7 @@ are neither eager nor lazy.
 
 One may view an eager functional application as driving a
 value into a function to get a result, and a lazy application
-as pulling a values into a function. Pushing value implies
+as pulling a value into a function. Pushing value implies
 eagerly evaluating it, pulling implies the value is calculated
 on demand.
 
@@ -381,7 +383,7 @@ ultimate flexibility of composition. Coroutines provide
 far better modularity and reusability than functions,
 but this comes at the price of complexity. You will observe
 considerably more housekeeping is required to compose
-coroutines that procedures or functions, because, simply,
+coroutines than procedures or functions, because, simply,
 there are more way to compose them.
 
 A collection of coroutines can be regarded as black boxes
@@ -400,90 +402,42 @@ pipeline. If there is a source at one end and a sink at the other
 it is a closed pipeline. Partially open pipelines can also exist.
 
 The composition of two transducers has a type dependent on
-the left and right transducer types. If these types are functional,
-the result is functional. However for the more general case
-of two transducers of type ((R1+)W1+) and ((R2+)W2+) the result
-is somewhat suprising.
+the left and right transducer types. 
 
-Connecting two transducers with a channel involves a theoretical
-abstraction operator which removes the write of the left transducer
-and the read of the right transducer from the behaviour of the pair:
-the combined transducer is has two unconnected channels, so it
-is still a two pin device. You may think the control type is
-((R1+)W2+) but this is not the case!
+With a functional transducer, you would expect the composition
+of (R1W1)+ with (R2W2)+ to be (R1W2)+ but this is not the case!
 
-The following behaviour is conforming: First we have left
-reading on R1, then writing W1. Right then reads R2.
-Now, left proceeds and reads R2, then writes W1. At this
-point right goes off and write W2, goes back, reads R2
-again, goes off, and writes W2.
+Consider, the left transducer performs R1, then W1, then right
+performs R2. At this point it is not determinate whether left
+or right proceeds. If left proceeds, we have R1 again, then W1.
+then right proceeds and performs W2 before coming back to read R2,
+and what happens next is again indeterminate. The sequence is
+therefore R1, W1/R2, R1, W1/R2 which shows R1 can be read twice
+before W2 is observed. We have written w/r here to indicate synchronised
+events which are abstracted away when describing the observable
+behaviour of the composite.
 
-So what we have observed is: R1, R1, W2, W2 which is not
-recognised by ((R1+)W2)+ because that requires R1 immediately
-after a W2. The problem is, each coroutine has memory,
-and acts as a buffer for at least a single value, so when
-two fibres are composed, there is one extra step of 
-indeterminacy! The correct type is, in fact ((R1+)W2?W2)+
-where the question mark (?) indicates an optional operation.
+Clearly, (R1?R1W2?W2)+ contains the set of possible event sequences,
+but then (R1+R2+)+ contains it, and therefore the set of possible
+event sequences as well. So we should seek the most precise, or
+{\em principal} type of the composite.
 
-It is clearer with a functional transducer, the composition
-of (R1W1)+ with (R2W2)+ is in fact ((R1?R1)(W2?W2))+, meaning
-you can get two reads or two writes in a row. In fact this
-composite type is overly permissive, since the number
-of reads is at most two more than the number of writes 
-at any time.
+We can calculate the type from the operational semantics.
+At any point in time, the system must be in one of a finite
+number of states. Where we have indeterminacy, the transitions
+out of a given state are not fully specified. The result is
+clearly a non-deterministic finite state automaton.
 
-For a pipeline o N functional transducers, the output can be out of phase
-with the input by up to N-1/2 cycles. We put the 1/2 there because
-there is always at least a half cycle delay between reading and writing,
-even with a tight loop. What happens depends on how the pipeline is driven.
+We must observe, such an automaton corresponds to (one or more) 
+larger deterministic finite state automata. This is an important
+result because it has practical implications: it means we can
+pick a DFA and use it to optimise away abstracted synchronisation
+points. In other words, we build a fast model of the system
+by inlining and using shared variables instead of channels,
+and then eliminate the variables by functional composition.
 
-If in the environment we write the left end then read the right end,
-the input and ouput are always coupled. However we can pump N values
-into the pipeline before reading. The reads out of the right end
-always correspond in sequence with the writes into the left end,
-but the coupling between reads and writes is sloppy.
-
-This problem makes things much more difficult in more advanced
-topologies, for example if two sources are driving a pipeline,
-there is no way to tell which input corresponds with which
-outputs. We cannot tell which source provided the data, even
-with a single functional transducer.
-
-\subsection{Clocks}
-Electronics designers know all about this problem and have
-a solution: clocking. If we add to each transducer an
-extra clock input which must be read prior to reading data,
-and add at the end a special feedback routine which writes
-the result first, then sends an acknowledge on the feedback
-channel, then we can construct a clock which reads the feedback,
-then writes a clock pulse to each transducer. This prevents
-the leftmost transducer reading any more input until the
-output is written. A one shot is used to bootstrap the process.
-
-We can also organise things so that each transducer buffers
-a value, ensuring the pipeline is fully saturated.
-
-\subsection{Buffers}
-A transducer which simply copies its input to its output
-has no functional significance on a calculation, however
-it provides a one value buffer.
-
-A more sophisticated device is called a {\em dynamic buffer}.
-For each input read by the buffer, a new fibre is spawned
-with a connecting channel which the input is written to.
-The new fibre is a one shot buffer which then writes the
-value and suicides. Such a buffer is equivalent to an unbounded
-set, where the word "set" implies a lack of ordering.
-All the dynamic buffers created try to write on the same channel
-so there is no assurance which will go first. 
-
-Such an unbounded set can, of course, grow forever unless
-the environment ensures this cannot happen. In a parser,
-for example, a dynamic buffer can be used for recursion
-in the same way a functional program uses the machine stack.
-Although both can overflow, both are bounded by the size
-and structure of the input being parsed.
+This is the primary reason we insist on indeterminate behaviour:
+it allows composition to be subject to a reduction calculus.
 
 \section{Felix Implementation}
 The following functions and procedures are provided in Felix:

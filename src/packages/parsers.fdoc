@@ -251,18 +251,19 @@ class Parsers
   }
 
   fun render_pgram
-    (lib:pgramlib_t,v:varray[pntdef_t]) 
+    (lib:pgramlib_t,v:varray[pntdef_t])
+    (white:recog_t)
     (p:pgram_t) 
   : 1 -> parser_t =>
     match p with
     | Recog r => 
       match r with
-      | Strng s => { ActionSecond s match_white (match_string s) }
+      | Strng s => { ActionSecond s white (match_string s) }
       | Epsilon => { BaseChips::epsilon[parser_state_t] }
       | Seq ps => { BaseChips::pipeline_list (
-          map (fun (p:pgram_t) => #(render_pgram (lib,v) p)) ps) }
+          map (fun (p:pgram_t) => #(render_pgram (lib,v) white p)) ps) }
       | Alt ps =>  { BaseChips::tryall_list (
-          map (fun (p:pgram_t) => #(render_pgram (lib,v) p)) ps) }
+          map (fun (p:pgram_t) => #(render_pgram (lib,v) white p)) ps) }
       | Nonterminal nt => 
          { 
            var idx : size = find v nt;
@@ -292,7 +293,7 @@ class Parsers
     generic_closure[pgram_t] add_pgram g
   ;
 
-  chip make_parser_from_grammar
+  chip make_parser_from_grammar (white:recog_t)
     connector io
       pin inp: %<pgrammar_t
       pin out: %>parser_t
@@ -322,7 +323,7 @@ class Parsers
         | None => assert false;
         | Some prod =>
           // get wrapped parser 
-          var xprod_closure = render_pgram (lib, v) prod;
+          var xprod_closure = render_pgram (lib, v) white prod;
 
           // undo the wrappingt
           var entry = #xprod_closure;
@@ -339,14 +340,14 @@ class Parsers
     done
   }
 
-  gen make_parser_from_grammar (g:pgrammar_t) : parser_t =
+  gen make_parser_from_grammar (g:pgrammar_t) (white:recog_t) : parser_t =
   {
     var parsr: parser_t;
     var sched = #fibre_scheduler; 
     spawn_fthread sched {
       var gri,gwi = mk_ioschannel_pair[pgrammar_t]();
       var gro,gwo = mk_ioschannel_pair[parser_t]();
-      spawn_fthread (make_parser_from_grammar (inp=gri,out=gwo));
+      spawn_fthread (make_parser_from_grammar white (inp=gri,out=gwo));
       write (gwi, g);
       parsr = read gro;
     };
