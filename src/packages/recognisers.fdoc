@@ -326,6 +326,94 @@ bad:>
   goto nexttry;
 }
 
+@h2 Felix float matcher.
+//$ Follows ISO C89, except that we allow underscores;
+//$ AND we require both leading and trailing digits so that
+//$ x.0 works for tuple projections and 0.f is a function
+//$ application
+@tangle recognisers.flx
+chip felix_float_literal_matcher 
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+nexttry:>
+  var b = read io.inp;
+  var ch = b.get;
+  if ch == char "0" do
+    b&.next;
+    ch = b.get;
+//println$ "felix_integer got leading 0, next char " + ch;
+    if ch in "dD0123456789_" goto nextdecimal;
+    if ch in "xX" goto nexthex;
+//println$ "Bad radix";
+    goto bad;
+  done
+  goto decimal;
+
+
+nextdecimal:>
+  b&.next;
+decimal:>
+  ch = b.get;
+  if ch in "_0123456789" goto nextdecimal;
+  if b.get != char "." goto bad;
+  b&.next;
+  if b.get not in "0123456789" goto bad;
+  b&.next;
+
+nextdecimalfrac:>
+  b&.next;
+decimalfrac:>
+  ch = b.get;
+  if ch in "_0123456789" goto nexthexfrac;
+  if ch not in "Ee" goto ok;
+  b&.next;
+  if b.get == char "-" perform b&.next;
+  if b.get not in "0123456789" goto bad;
+nextdecexp:>
+  b&.next;
+  if b.get not in "0123456789" goto suffix;
+  goto nextdecexp;
+
+nexthex:>
+  b&.next;
+hex:>
+  ch = b.get;
+  if ch in "_0123456789ABCDEFabcdef" goto nexthex;
+  if b.get != char "." goto bad;
+  b&.next;
+  if b.get not in "0123456789ABCDEFabcdef" goto bad;
+  b&.next;
+
+nexthexfrac:>
+  b&.next;
+hexfrac:>
+  ch = b.get;
+  if ch in "_0123456789ABCDEFabcdef" goto nexthexfrac;
+  if ch not in "Pp" goto ok;
+  b&.next;
+  if b.get == char "-" perform b&.next;
+  if b.get not in "0123456789" goto bad;
+nexthexexp:>
+  b&.next;
+  if b.get not in "0123456789" goto suffix;
+  goto nexthexexp;
+
+suffix:>
+  if b.get in "fFlL" perform b&.next;
+
+ok:>
+//println$ "Felix float ok";
+  write (io.out,b);
+  goto nexttry;
+
+bad:>
+//println$ "Felix integer bad";
+  goto nexttry;
+}
+
+
 @h2 String Literal matcher.
 One shot. Simple, matches single or double quoted
 string not spanning lines, with no escape codes, 
