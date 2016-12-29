@@ -37,6 +37,12 @@ struct Buffer
     if self.atend then self
     else Buffer (self.sp, self.pos + 1)
   ;
+
+  fun lookahead (i:int) =>
+    if self.pos + i > self.sp.len.int then char ""
+    elif self.pos + i < 0 then char ""
+    else (self.sp) . (self.pos + i)
+  ;
 }
 
 
@@ -375,6 +381,87 @@ restart:>
   io.out `write` b;  
   goto restart;
 }
+
+chip felix_string_literal_matcher
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+restart:>
+  var b = read io.inp;
+  var triple = false; // single quoted
+  var escape = char ""; // no escape
+
+  // r: raw string, f: function, c: C string
+  // add others here
+
+  // check for raw prefix r
+  if b.get in "r" do
+    if b.lookahead 1 != char '"' goto bad;
+    b&.next;
+    goto strlit;
+  done
+
+  // check for other prefixen
+  if b.get in "cf" do
+    if b.lookahead 1 != char '"' goto bad;
+    b&.next;
+  done
+
+  // normal escaping on
+  escape = char "\\";
+
+strlit:>
+  if b.get not in "'\"" goto bad;
+  var first_leadin = b.get;
+  b&.next;
+  if b.get == first_leadin and b.lookahead 1 == first_leadin do
+    triple = true;
+    b&.next; 
+    b&.next; 
+  done
+
+//println$ "Leadin=" + first_leadin + ", triple=" + triple.str + ", escape=" + escape.str;
+
+eatup:>
+//println$ "Eatup " + b.get;
+
+  if b.get == escape goto doescape;
+  if not triple and b.get == "\n"  goto bad; // newline in string
+  if not triple and b.get == first_leadin do
+    b&.next;
+    goto ok;
+  done
+
+  if triple and 
+    b.get == first_leadin and 
+    b.lookahead 1 == first_leadin and 
+    b.lookahead 2 == first_leadin
+  do
+    b&.next;
+    b&.next;
+    b&.next;
+    goto ok;
+  done
+
+  b&.next;
+  goto eatup;
+
+
+doescape:>
+//println$ "Escape";
+  b&.next;
+  b&.next;
+  goto eatup;
+
+ok:>
+  write (io.out, b);
+  goto restart;
+
+bad:>
+  goto restart;
+}
+
 
 @h1 Lazy Syntactic form
 @tangle recognisers.flx
