@@ -39,7 +39,7 @@ fun generic_closure[T]
 ;
 
 union open_prod_t[T] =
-| Strng of string
+| Terminal of string * Recognisers::recog_t
 | Nonterminal of string
 | Epsilon
 | Seq of list[T]
@@ -51,7 +51,7 @@ typedef prod_t = open_prod_t[prod_t];
 instance[T with Str[T]] Str[open_prod_t[T]] 
 {
   fun str: open_prod_t[T] -> string =
-  | Strng s => '"' + s + '"'
+  | Terminal (s,r) => '"' + s + '"'
   | Nonterminal name => name
   | Epsilon => "Eps"
   | Seq ss => "(" + catmap " " (str of T) ss + ")"
@@ -81,7 +81,7 @@ fun open_add_prod[T]
   (acc:list[string]) (p: open_prod_t[T]) 
 : list[string] =>
   match p with
-  | Strng _ => acc
+  | Terminal _ => acc
   | Nonterminal name => Cons (name, acc) 
   | Epsilon => acc
   | Seq ps => fold_left aux acc ps
@@ -99,7 +99,7 @@ fun closure (g:grammar_t): list[string] =>
 
 fun nullable_prod (lib:gramlib_t) (e:prod_t) (trail:list[string]) =>
   match e with
-  | Strng _ => false
+  | Terminal _ => false
   | Seq es => fold_left (fun (acc:bool) (sym:prod_t) => 
       acc and (nullable_prod lib sym trail)) true es
 
@@ -127,7 +127,7 @@ fun is_nullable_nt (lib:gramlib_t) (nt:string) =>
 
 fun recursive_prod (lib:gramlib_t) (e:prod_t) (orig:string) (trail:list[string]) =>
   match e with
-  | Strng _ => false
+  | Terminal _ => false
   | Seq es => fold_left (fun (acc:bool) (sym:prod_t) => 
       acc or (recursive_prod lib sym orig trail)) false es
 
@@ -152,7 +152,7 @@ fun is_recursive_nt (lib:gramlib_t) (nt:string) =>
 
 fun left_recursive_prod (lib:gramlib_t) (e:prod_t) (orig:string) (trail:list[string]) =>
   match e with
-  | Strng _ => false
+  | Terminal _ => false
 
   | Seq es =>
     let fun aux (es:list[prod_t]) =>
@@ -194,7 +194,7 @@ fun unpack (fresh:1->string) (head:string, p:prod_t) : gramlib_t =
  var out = Empty[gramentry_t];
  match p with
  | Epsilon => out = ([head,p]);
- | Strng _ => out = ([head,Seq ([p])]);
+ | Terminal _ => out = ([head,Seq ([p])]);
  | Nonterminal s => out= ([head,Seq ([p])]);
 
  | Seq ps =>
@@ -203,7 +203,7 @@ fun unpack (fresh:1->string) (head:string, p:prod_t) : gramlib_t =
      match term with
      | Epsilon => ;
      | Nonterminal _ => newseq = term ! newseq;
-     | Strng _ => newseq = term ! newseq;
+     | Terminal _ => newseq = term ! newseq;
      | _ =>
        var newhead = fresh();
        newseq = Nonterminal[prod_t] newhead ! newseq;

@@ -67,7 +67,7 @@ class Parsers
 
   instance Str[stack_node_t] {
     fun str: stack_node_t -> string =
-    | RTerminal (s,x) => '"'+s+'"'
+    | RTerminal (s,x) => s+"("+string (x.start,x.finish)+")"
     | RNonterminal (s,xs) => 
       s + "(" + catmap "," (str of stack_node_t) xs + ")"
     ;
@@ -258,7 +258,7 @@ class Parsers
     match p with
     | Recog r => 
       match r with
-      | Strng s => { ActionSecond s white (match_string s) }
+      | Terminal (s,r) => { ActionSecond s white r }
       | Epsilon => { BaseChips::epsilon[parser_state_t] }
       | Seq ps => { BaseChips::pipeline_list (
           map (fun (p:pgram_t) => #(render_pgram (lib,v) white p)) ps) }
@@ -600,7 +600,8 @@ class Parser_synlib
   open Parsers;
   open Grammars;
   fun NT (s:string) => Recog (Nonterminal [pgram_t] s);
-  fun STR (s:string) => Recog (Strng [pgram_t] s);
+  fun TERM (s:string, r:Recognisers::recog_t) => Recog (Terminal [pgram_t] (s,r));
+  fun STR (s:string) => Recog (Terminal [pgram_t] ("TOKEN", (Recognisers::match_string s)));
   fun REDUCE (s:string, n:int) => Action[pgram_t] (Reduce (s,n));
   fun ALT (ls: list[pgram_t]) => Recog (Alt[pgram_t] ls);
   fun SEQ (ls: list[pgram_t]) => Recog (Seq[pgram_t] ls);
