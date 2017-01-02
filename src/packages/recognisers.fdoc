@@ -251,6 +251,50 @@ For C like identifiers.
 
 @tangle recognisers.flx
 device cident_matcher = match_regex (RE2 "[A-Za-z][A-Za-z0-9_]*");
+device flxident_matcher = match_regex (RE2 "[A-Za-z_][A-Za-z0-9_']*");
+device texident_matcher = match_regex (RE2 "\\\\[A-Za-z]+");
+
+chip flx_n_ident_matcher
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+nextnident:>
+  var b = read io.inp;
+  if b.get != char "n" goto nextnident;
+  b&.next;
+  if b.get == char "'" do
+    b&.next;
+    while not b.atend and b.get != char "'" perform b&.next;
+    b&.next;
+    write (io.out, b);
+  elif b.get == char '"' do
+    b&.next;
+    while not b.atend and b.get != char '"' perform b&.next;
+    b&.next;
+    write (io.out, b);
+  done
+  goto nextnident;
+}
+
+chip felix_identifier_matcher 
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  device x = BaseChips::tryall_list 
+    ([
+      flxident_matcher, 
+      texident_matcher,
+      flx_n_ident_matcher
+    ])
+  ;
+  circuit
+    wire io.inp to x.inp
+    wire io.out to x.out
+  endcircuit
+}
+
 
 @h2 Integer matcher.
 For plain identifiers.
@@ -273,7 +317,10 @@ chip felix_integer_matcher
 {
 nexttry:>
   var b = read io.inp;
+//println$ "Felix integer matcher "+b.str;
   var ch = b.get;
+  if ch not in "0123456789" goto bad;
+
   if ch == char "0" do
     b&.next;
     ch = b.get;
@@ -292,14 +339,14 @@ nextbinary:>
 binary:>
   ch = b.get;
   if ch in "_01234567" goto nextbinary;
-  goto ok;
+  goto suffix;
 
 nextoctal:>
   b&.next;
 octal:>
   ch = b.get;
   if ch in "_01234567" goto nextoctal;
-  goto ok;
+  goto suffix;
 
 
 nextdecimal:>
@@ -307,13 +354,54 @@ nextdecimal:>
 decimal:>
   ch = b.get;
   if ch in "_0123456789" goto nextdecimal;
-  goto ok;
+  goto suffix;
 
 nexthex:>
   b&.next;
 hex:>
   ch = b.get;
   if ch in "_0123456789ABCDEFabcdef" goto nexthex;
+  goto suffix;
+
+suffix:>
+  // 3 char suffix
+  if "" + toupper (b.get) + toupper (b.lookahead 1) + toupper (b.lookahead 2) in 
+    ([
+      "I16", "I32","I64",
+      "U16", "U32","U64"
+    ])
+  do
+    b&.next;
+    b&.next;
+    b&.next;
+
+  // 2 char suffix
+  elif "" + toupper (b.get) + toupper (b.lookahead 1) in
+    ([
+      "LL","I8","U8",
+      "UT","US","UD","UL","UV","UZ","UJ",
+      "TU","SU","DU","LU","VU","ZU","JU"
+    ])
+  do
+    b&.next;
+    b&.next;
+
+  // one char suffix
+  elif "" + toupper (b.get) in
+    ([
+      'T', // tiny
+      'S', // short
+      'I', // int
+      'L', // long
+      'V', // long long
+      "Z", // size
+      "J", // intmax
+      "P", // intptr
+      "D"  // ptrdiff
+    ])
+  do
+    b&.next;
+  done 
   goto ok;
 
 ok:>

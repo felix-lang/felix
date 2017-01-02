@@ -51,8 +51,84 @@ Each channel is in one of these states:
 \item[Blocked] A set of blocked fibres are waiting to perform output on the channel.
 \end{description}
 
+
 \section{Abstract Operations}
-Several operations are specific to a fibrated system.
+\subsection{State Data by Sets}
+Several operations are specific to a fibrated system. Let $\mathcal F$ be the
+set of fibres at any one time, and let $\mathcal C$ be the set of channels
+at anyone time. Let $R$ be the currently running fibre, let $\mathcal A$ be the set
+of Active fibres.
+
+Let $\mathcal H \subset \mathcal F \times \mathcal C$ be a set
+of pairs associating a Hungry fibre with a Hungry channel, let 
+$\mathcal B \subset \mathcal F \times \mathcal C$ be the set of pairs
+associating a Blocked fibre with a Blocked channel, and 
+let $\mathcal E \subset \mathcal C$
+be the set of Empty channels.
+
+Let the set 
+\begin{equation}
+\mathcal F_{\mathcal H} = \{f \mid \exists c . (f,c) \in \mathcal H\}
+\end{equation}
+be the set of Hungry fibres and 
+\begin{equation}
+\mathcal C_{\mathcal H} = \{ c \mid \exists f . (f,c) \in \mathcal H\}
+\end{equation}
+be the set of Hungry channels, and let the set 
+\begin{equation}
+\mathcal F_{\mathcal B} = \{f \mid \exists c . (f,c) \in \mathcal B\}
+\end{equation}
+be the set of Blocked fibres and
+\begin{equation}
+\mathcal C_{\mathcal B} = \{ c \mid \exists f . (f,c) \in \mathcal B\}
+\end{equation}
+be the set of Blocked channels. We require the following invariants:
+\begin{align}
+\forall c ( \exists f . (f,c) \in \mathcal H . (f,c') \in \mathcal H \implies c = c')\\
+\forall c ( \exists f . (f,c) \in \mathcal B . (f,c') \in \mathcal B \implies c = c')
+\end{align}
+in other words no fibre can be Hungry or Blocked on more than on channel, and
+\begin{equation}
+\mathcal F = \{R\} \uplus \mathcal A \uplus \mathcal F_{\mathcal H} \uplus \mathcal F_{\mathcal B}
+\end{equation}
+forms a partition of all fibres and
+\begin{equation}
+\mathcal C = \mathcal E \uplus \mathcal C_{\mathcal H} \uplus \mathcal C_{\mathcal B}
+\end{equation}
+forms a partition of all channels.
+
+For convenience we define
+the set of fibres Hungry on a channel $c$ by
+\begin{equation}
+\mathcal H_c = \{f \mid (f,c) \in \mathcal H\}
+\end{equation}
+and the set of fibres Blocked on a channel $c$.
+\begin{equation}
+\mathcal B_c = \{f \mid (f,c) \in \mathcal B\}
+\end{equation}
+
+\subsection{State Data by ML}
+Using an ML like description may make the state data easier
+to visualise.
+
+\begin{minted}{felix}
+scheduler =
+  Run: fibre | NULL, 
+  Active: Set[fibre]
+
+channel = 
+  | Empty 
+  | Hungry: NonemptySet[fibre]
+  | Blocked: NonemptySet[fibre]
+
+fibre = (current: continuation)
+
+continuation = 
+  caller: continuation | NULL,
+  PC: codeaddress,
+  local: data
+\end{minted}
+
 \subsection{Spawn} 
 The spawn operation takes as an argument a unit procedure and makes
 a closure thereof the initial continuation
@@ -61,39 +137,105 @@ fibre (the spawner) and the new fibre (the spawnee) one will have Active
 state and the other will be Running. It is not specified which
 of the pair is Running.
 
+\begin{equation}
+{\mathcal F} \leftarrow {\mathcal F} \cup \{f\}
+\end{equation}
+
+where f is a fresh fibre and
+
+\begin{equation}
+R,{\mathcal A} \leftarrow
+\begin{cases}
+R,{\mathcal A} \cup \{f\} \\
+f,{\mathcal A} \cup \{R\} \\
+\end{cases}
+\end{equation}
+
+and the choice between the two cases is indeterminate.
+
 \subsection{Create channel}
 A function which creates a channel.
 
+\begin{align}
+{\mathcal C} \leftarrow {\mathcal C} \cup \{c\}\\
+{\mathcal E} \leftarrow {\mathcal E} \cup \{c\}
+\end{align}
+where c is a fresh channel.
+
 \subsection{Read}
-The read operation takes as an argument a channel.
+The read operation from fibre $f$ takes as an argument a channel $c$.
 
 \begin{enumerate}
 \item If the channel is Empty, the Running fibre performing the read
 changes state to Hungry, the channel changes state to Hungry,
 and the fibre is associated with the channel.
+\begin{align}
+{\mathcal H}&\leftarrow {\mathcal H} \cup \{(f,c)\}\\
+{\mathcal E} &\leftarrow {\mathcal E} \setminus \{c\}\\
+\end{align}
 
 If there are no active fibres, the program terminates,
 otherwise the scheduler selects an Active fibre and
 changes its state to Running.  It is not specified which active 
 fibre is chosen.
+
+\begin{equation}
+R,{\mathcal A} \leftarrow
+\begin{cases}
+\epsilon,{\mathcal A}& {\rm if} A=\emptyset \\
+r,{\mathcal A} \setminus \{r\} & {\rm some\ } r\in A
+\end{cases}
+\end{equation}
+
 
 \item If the channel is Hungry, the Running fibre changes state
 to Hungry, and the fibre is associated with the channel.
 
+\begin{align}
+{\mathcal H}&\leftarrow {\mathcal H} \cup \{(f,c)\}\\
+\end{align}
+
 If there are no active fibres, the program terminates,
 otherwise the scheduler selects an Active fibre and
 changes its state to Running.  It is not specified which active 
 fibre is chosen.
 
+\begin{equation}
+R,{\mathcal A} \leftarrow
+\begin{cases}
+\epsilon,{\mathcal A}& {\rm if} A=\emptyset \\
+r,{\mathcal A} \setminus \{r\} & {\rm some\ } r\in A
+\end{cases}
+\end{equation}
+
+
 \item If the channel is Blocked, one of the associated Blocked fibres
-is selected, and dissociated from the channel. Of these two
+is selected, and dissociated from the channel. 
+
+\begin{equation}
+{\mathcal B} \leftarrow {\mathcal B}\setminus (w,c)\\ 
+\end{equation}
+
+Of these two
 fibres, one is changed to state Active and the other to Running.
 It is not specified which fibre is chosen to be Running.
+
+\begin{equation}
+R,{\mathcal A} \leftarrow
+\begin{cases}
+R,{\mathcal A} \cup \{w\} \\
+w,{\mathcal A} \cup \{R\} \\
+\end{cases}
+\end{equation}
+
 
 The value supplied to the write operation of the Blocked
 fibre will be pass to the Hungry fibre when it transitions
 to Running state.
+
+
 \end{enumerate}
+
 
 
 \subsection{Write}

@@ -20,6 +20,8 @@ class Parsers
   | Unscroll of int
   | Pack of int
   | Unpack
+  | Drop of int
+  | Swap
   | Sequence of list[action_t]
   ;
 
@@ -29,6 +31,8 @@ class Parsers
     | Scroll n => "Scroll " + n.str
     | Unscroll n => "Unscroll " + n.str
     | Pack n => "Pack " + n.str
+    | Drop n => "Drop " + n.str
+    | Swap => "Swap"
     | Sequence aa =>
       "Seq(" + catmap "," (str of action_t) aa + ")"
     ;
@@ -199,7 +203,15 @@ class Parsers
       let revhead,tail = revsplit n s in
       aux,RNonterminal (label,revhead) ! tail
 
-    | Scroll n => scroll (s,aux) n
+    | Drop n => aux,drop n s
+
+    | Swap => aux,
+      match s with 
+      | e1 ! e2 ! tail => e2 ! e1 ! tail 
+      | _ => s
+      endmatch
+
+    | Scroll n => let s,a = scroll (s,aux) n in a,s
     | Unscroll n => scroll (aux,s) n
 
     | Pack n => 
@@ -601,8 +613,11 @@ class Parser_synlib
   open Grammars;
   fun NT (s:string) => Recog (Nonterminal [pgram_t] s);
   fun TERM (s:string, r:Recognisers::recog_t) => Recog (Terminal [pgram_t] (s,r));
-  fun STR (s:string) => Recog (Terminal [pgram_t] ("TOKEN", (Recognisers::match_string s)));
+  fun STR (s:string) => Recog (Terminal [pgram_t] (s, (Recognisers::match_string s)));
   fun REDUCE (s:string, n:int) => Action[pgram_t] (Reduce (s,n));
+  fun BINOP(s:string) => Action[pgram_t] (Sequence ([Swap, Drop 1, (Reduce (s,2))]));
+  fun SWAP () => Action[pgram_t] (Swap);
+  fun DROP (n:int) => Action[pgram_t] (Drop n);
   fun ALT (ls: list[pgram_t]) => Recog (Alt[pgram_t] ls);
   fun SEQ (ls: list[pgram_t]) => Recog (Seq[pgram_t] ls);
   fun EPS () => Recog (Epsilon[pgram_t]);
