@@ -105,6 +105,14 @@ open class Fibres
   ;
 
   proc run: fibre_scheduler = "$1->frun();";
+
+  proc run (p: 1 -> 0) {
+    var s = fibre_scheduler();
+    spawn_fthread s p;
+    s.run;
+    delete_fibre_scheduler s;
+  }
+
  
   //$ The type of the stop state of the fibre scheduler.
   //$ terminated: the scheduler is terminated.

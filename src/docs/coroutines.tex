@@ -19,7 +19,7 @@
 \newcommand*{\fullref}[1]{\hyperref[{#1}]{\autoref*{#1} \nameref*{#1}}}
 \DeclareMathOperator{\quot}{div}
 \DeclareMathOperator{\rmd}{rmd}
-\title{Exchange of Control}
+\title{Coroutines}
 \author{John Skaller}
 \begin{document}
 \maketitle
@@ -33,14 +33,21 @@ select one to be current.
 \item[Continuations] An object representing the future of a coroutine.
 \end{description}
 
+\subsection{Scheduler States}
+A scheduler is in one of two states:
+\begin{description}
+\item[Current] The currently running scheduler
+\item[Suspended] A scheduler for which the Running fibre is
+executing another scheduler.
+\end{description}
+
 \subsection{Fibre States}
 Each fibre is in one of these states:
 \begin{description}
-\item[Running] Exactly one fibre (per pthread) is always running.
-\item[Active] Fibes which are ready to run but not running.
+\item[Running] Exactly one fibre per scheduler is always running.
+\item[Active] Fibes which are ready to run but not running on a particular scheduler.
 \item[Hungry] Fibres suspended waiting for input on a channel.
 \item[Blocked] Fibres suspended waiting to perform output on a channel.
-\item[Dead] A fibre for which there is no longer a current continuation.
 \end{description}
 
 \subsection{Channel States}
@@ -52,60 +59,42 @@ Each channel is in one of these states:
 \end{description}
 
 
-\section{Abstract Operations}
+\section{Abstract State}
 \subsection{State Data by Sets}
-Several operations are specific to a fibrated system. Let $\mathcal F$ be the
-set of fibres at any one time, and let $\mathcal C$ be the set of channels
-at anyone time. Let $R$ be the currently running fibre, let $\mathcal A$ be the set
-of Active fibres.
+A fibration system consists of 
+\begin{enumerate}
+\item A set of fibres $\mathcal F$
+\item A set of channels $\mathcal C$
+\item An integer $k$
+\item An indexed set of schedulers $\mathcal S= \{s_i\}{\rm\ for\ }i=1 {\rm\ to\ }k$  
+\end{enumerate}
+and the following relations:
+\begin{enumerate}
+\item for each $i=1 {\rm\ to\ }k$ a pair $(R_i, \mathcal A_i)$ where $R_i$ is a fibre
+and $\mathcal A_i$ is a set of fibres, these fibres being associated with
+scheduler $s_i$, $R_i$ is the currently Running fibre of the scheduler,
+and $\mathcal A_i$ is the set of Active fibres;
+\item for each channel $c$ a set $\mathcal H_c$ of Hungry fibres
+and a set $\mathcal B_c$ of Blocked fibres, such that one of these sets
+is empty, if both sets are empty, the channel is said to be Empty,
+otherwise it is said to be Hungry or Blocked depending on whether
+the Hungry or Blocked set is nonempty;
 
-Let $\mathcal H \subset \mathcal F \times \mathcal C$ be a set
-of pairs associating a Hungry fibre with a Hungry channel, let 
-$\mathcal B \subset \mathcal F \times \mathcal C$ be the set of pairs
-associating a Blocked fibre with a Blocked channel, and 
-let $\mathcal E \subset \mathcal C$
-be the set of Empty channels.
+\item A reachability relation to be described below
+\end{enumerate}
+with the requirement that each fibre is in precisely one of the sets $\{R_i\}$,
+$A_i$, $H_c$ or $B_c$.
 
-Let the set 
-\begin{equation}
-\mathcal F_{\mathcal H} = \{f \mid \exists c . (f,c) \in \mathcal H\}
-\end{equation}
-be the set of Hungry fibres and 
-\begin{equation}
-\mathcal C_{\mathcal H} = \{ c \mid \exists f . (f,c) \in \mathcal H\}
-\end{equation}
-be the set of Hungry channels, and let the set 
-\begin{equation}
-\mathcal F_{\mathcal B} = \{f \mid \exists c . (f,c) \in \mathcal B\}
-\end{equation}
-be the set of Blocked fibres and
-\begin{equation}
-\mathcal C_{\mathcal B} = \{ c \mid \exists f . (f,c) \in \mathcal B\}
-\end{equation}
-be the set of Blocked channels. We require the following invariants:
+We define the relation 
 \begin{align}
-\forall c ( \exists f . (f,c) \in \mathcal H . (f,c') \in \mathcal H \implies c = c')\\
-\forall c ( \exists f . (f,c) \in \mathcal B . (f,c') \in \mathcal B \implies c = c')
+\mathrel H &= \{(f,c) \mid f \in \mathrel H_c\}&\rm Hunger\\
+\mathrel B &= \{(f,c) \mid f \in \mathrel B_c\}&\rm Blockage\\
+\mathcal F_{\mathcal H} &= \{f \mid \exists c . (f,c) \in \mathcal H\}&\rm Hungry\ Fibres\\
+\mathcal F_{\mathcal B} &= \{f \mid \exists c . (f,c) \in \mathcal B\}&\rm Blocked\ Fibres\\
+\mathcal C_{\mathcal H} &= \{ c \mid \exists f . (f,c) \in \mathcal H\}&\rm Hungry\ Channels\\
+\mathcal C_{\mathcal B} &= \{ c \mid \exists f . (f,c) \in \mathcal B\}&\rm Blocked\ Channels\\
+\mathcal E &= \{c \mid | \mathcal H_c = \mathcal B_c = \emptyset \}&\rm Empty\ Channels
 \end{align}
-in other words no fibre can be Hungry or Blocked on more than on channel, and
-\begin{equation}
-\mathcal F = \{R\} \uplus \mathcal A \uplus \mathcal F_{\mathcal H} \uplus \mathcal F_{\mathcal B}
-\end{equation}
-forms a partition of all fibres and
-\begin{equation}
-\mathcal C = \mathcal E \uplus \mathcal C_{\mathcal H} \uplus \mathcal C_{\mathcal B}
-\end{equation}
-forms a partition of all channels.
-
-For convenience we define
-the set of fibres Hungry on a channel $c$ by
-\begin{equation}
-\mathcal H_c = \{f \mid (f,c) \in \mathcal H\}
-\end{equation}
-and the set of fibres Blocked on a channel $c$.
-\begin{equation}
-\mathcal B_c = \{f \mid (f,c) \in \mathcal B\}
-\end{equation}
 
 \subsection{State Data by ML}
 Using an ML like description may make the state data easier
@@ -129,6 +118,8 @@ continuation =
   local: data
 \end{minted}
 
+\section{Operations}
+
 \subsection{Spawn} 
 The spawn operation takes as an argument a unit procedure and makes
 a closure thereof the initial continuation
@@ -144,14 +135,50 @@ of the pair is Running.
 where f is a fresh fibre and
 
 \begin{equation}
-R,{\mathcal A} \leftarrow
+R_k,{\mathcal A_k} \leftarrow
 \begin{cases}
-R,{\mathcal A} \cup \{f\} \\
-f,{\mathcal A} \cup \{R\} \\
+R_k,{\mathcal A_k} \cup \{f\} \\
+f,{\mathcal A_k} \cup \{R_s\} \\
 \end{cases}
 \end{equation}
 
-and the choice between the two cases is indeterminate.
+where the choice between the two cases is indeterminate.
+
+\subsection{Run} 
+The run operation is a subroutine. It increments $k$ and creates
+a new scheduler $s_k$. The scheduler $s_{k-1}$ is Suspended. 
+
+\begin{equation}
+k \leftarrow k + 1
+\end{equation}
+
+
+It then takes as an argument a unit procedure and makes
+a closure thereof the initial continuation
+of a new fibre $f$ and makes that the running fibre $R_k$ of
+the new current scheduler. The set of active fibres $A_k$
+is set to $\emptyset$. 
+
+ 
+\begin{equation}
+{\mathcal F} \leftarrow {\mathcal F} \cup \{f\}
+\end{equation}
+
+where f is a fresh fibre and
+
+\begin{equation}
+R_k,\mathcal A_k \leftarrow
+f,\emptyset
+\end{equation}
+
+The scheduler is then run as a subroutine. It returns when there
+is no running fibre, which implies also there are no active
+fibres left. $k$ is then decremented, scheduler $s_k$ again becomes Current, 
+and the the
+current continuation of its running fibre resumes.
+\begin{equation}
+k \leftarrow k - 1
+\end{equation}
 
 \subsection{Create channel}
 A function which creates a channel.
@@ -163,15 +190,15 @@ A function which creates a channel.
 where c is a fresh channel.
 
 \subsection{Read}
-The read operation from fibre $f$ takes as an argument a channel $c$.
+The read operation from fibre $r$ takes as an argument a channel $c$.
 
 \begin{enumerate}
 \item If the channel is Empty, the Running fibre performing the read
 changes state to Hungry, the channel changes state to Hungry,
 and the fibre is associated with the channel.
 \begin{align}
-{\mathcal H}&\leftarrow {\mathcal H} \cup \{(f,c)\}\\
-{\mathcal E} &\leftarrow {\mathcal E} \setminus \{c\}\\
+{\mathcal H}&\leftarrow {\mathcal H} \cup \{(r,c)\}\\
+{\mathcal E} &\leftarrow {\mathcal E} \setminus \{c\}
 \end{align}
 
 If there are no active fibres, the program terminates,
@@ -180,10 +207,10 @@ changes its state to Running.  It is not specified which active
 fibre is chosen.
 
 \begin{equation}
-R,{\mathcal A} \leftarrow
+R_k,{\mathcal A_k} \leftarrow
 \begin{cases}
-\epsilon,{\mathcal A}& {\rm if} A=\emptyset \\
-r,{\mathcal A} \setminus \{r\} & {\rm some\ } r\in A
+\epsilon,{\mathcal A_k}& {\rm if\ } A_k=\emptyset \\
+a,{\mathcal A_k} \setminus \{a\} & {\rm some\ } a\in A
 \end{cases}
 \end{equation}
 
@@ -192,7 +219,7 @@ r,{\mathcal A} \setminus \{r\} & {\rm some\ } r\in A
 to Hungry, and the fibre is associated with the channel.
 
 \begin{align}
-{\mathcal H}&\leftarrow {\mathcal H} \cup \{(f,c)\}\\
+{\mathcal H}&\leftarrow {\mathcal H} \cup \{(r,c)\}\\
 \end{align}
 
 If there are no active fibres, the program terminates,
@@ -201,15 +228,15 @@ changes its state to Running.  It is not specified which active
 fibre is chosen.
 
 \begin{equation}
-R,{\mathcal A} \leftarrow
+R_k,{\mathcal A_k} \leftarrow
 \begin{cases}
-\epsilon,{\mathcal A}& {\rm if} A=\emptyset \\
-r,{\mathcal A} \setminus \{r\} & {\rm some\ } r\in A
+\epsilon,{\mathcal A_k}& {\rm if} A_k=\emptyset \\
+a,{\mathcal A_k} \setminus \{a\} & {\rm some\ } a\in A_k
 \end{cases}
 \end{equation}
 
 
-\item If the channel is Blocked, one of the associated Blocked fibres
+\item If the channel is Blocked, one of the associated Blocked fibres $w$
 is selected, and dissociated from the channel. 
 
 \begin{equation}
@@ -221,13 +248,12 @@ fibres, one is changed to state Active and the other to Running.
 It is not specified which fibre is chosen to be Running.
 
 \begin{equation}
-R,{\mathcal A} \leftarrow
+R_k,{\mathcal A_k} \leftarrow
 \begin{cases}
-R,{\mathcal A} \cup \{w\} \\
-w,{\mathcal A} \cup \{R\} \\
+R_k,{\mathcal A_k} \cup \{w\} \\
+w,{\mathcal A_k} \cup \{R\} \\
 \end{cases}
 \end{equation}
-
 
 The value supplied to the write operation of the Blocked
 fibre will be pass to the Hungry fibre when it transitions
@@ -239,31 +265,75 @@ to Running state.
 
 
 \subsection{Write}
-The write operation takes two arguments, a channel and a value
+The write operation performed by fibre $w$ takes two arguments, a channel and a value
 to be written.
 
 \begin{enumerate}
 \item If the channel is Empty, the Running fibre performing the write
 changes state to Blocked, the channel changes state to Blocked,
 and the fibre is associated with the channel.
+\begin{align}
+{\mathcal B}&\leftarrow {\mathcal B} \cup \{(w,c)\}\\
+{\mathcal E} &\leftarrow {\mathcal E} \setminus \{c\}
+\end{align}
+
 
 If there are no active fibres, the program terminates,
 otherwise the scheduler selects an Active fibre and
 changes its state to Running.  It is not specified which active 
 fibre is chosen.
+
+\begin{equation}
+R_k,{\mathcal A_k} \leftarrow
+\begin{cases}
+\epsilon,{\mathcal A_k}& {\rm if\ } A_k=\emptyset \\
+a,{\mathcal A_k} \setminus \{a\} & {\rm some\ } a\in A
+\end{cases}
+\end{equation}
+
 
 \item If the channel is Blocked, the Running fibre changes state
 to Blocked, and the fibre is associated with the channel.
 
+\begin{align}
+{\mathcal B}&\leftarrow {\mathcal B} \cup \{(w,c)\}\\
+\end{align}
+
+
 If there are no active fibres, the program terminates,
 otherwise the scheduler selects an Active fibre and
 changes its state to Running.  It is not specified which active 
 fibre is chosen.
 
-\item If the channel is Hungry, one of the associated Hungry fibres
-is selected, and dissociated from the channel. Of these two
+\begin{equation}
+R_k,{\mathcal A_k} \leftarrow
+\begin{cases}
+\epsilon,{\mathcal A_k}& {\rm if\ } A_k=\emptyset \\
+a,{\mathcal A_k} \setminus \{a\} & {\rm some\ } a\in A
+\end{cases}
+\end{equation}
+
+
+\item If the channel is Hungry, one of the associated Hungry fibres $r$
+is selected, and dissociated from the channel.
+
+\begin{equation}
+{\mathcal H} \leftarrow {\mathcal H}\setminus (r,c)\\ 
+\end{equation}
+
+
+Of these two
 fibres, one is changed to state Active and the other to Running.
 It is not specified which fibre is chosen to be Running.
+
+\begin{equation}
+R_k,{\mathcal A_k} \leftarrow
+\begin{cases}
+R_k,{\mathcal A_k} \cup \{r\} \\
+r,{\mathcal A_k} \cup \{R\} \\
+\end{cases}
+\end{equation}
+
 
 The value supplied by the write operation of the Blocked
 fibre will be pass to the Hungry fibre when it transitions
@@ -275,6 +345,10 @@ The Running, and, each Active fibre and its associated call chain of
 continuations are deemed to be Reachable.
 
 If a channel is known to reachable fibre, it is also reachable.
+A channel may be known because its address is stored in the local
+data of a continuation of a fibre, or, it is reachable via some object
+which can be reached from local data. The exact rules are 
+programming language dependent.
 
 Each fibre associated with a reachable channel is reachable.
 
@@ -292,23 +366,18 @@ no longer reachable.
 A fibre may become unreachable in three ways.
 
 \subsubsection{Suicide}
-A fibre for the the initial continuation returns acquires
-the Dead state. If there are no longer any Active fibres,
+A fibre for which the initial continuation returns is said to be
+dead, and  becomes unreachable. If there are no longer any Active fibres,
 the program returns, otherwise the scheduler picks
 one Active fibre and changes its state to Running.
 
-A fibre in the Dead state should eventually become unreachable
-if it is not unreachable when it becomes Dead.
-
 \subsubsection{Starvation}
-A fibre in the Hungry state may become unreachable,
-in which case it is marked Dead and is no longer
-part of the fibration system.
+A fibre in the Hungry state becomes unreachable when the
+channel on which it is waiting becomes unreachable.
 
 \subsubsection{Blockage}
-A fibre in the Blocked state may become unreachable 
-in which case it is marked Dead and is no longer
-part of the fibration system.
+A fibre in the Blocked state becomes unreachable 
+when the channel on which it is waiting becomes unreachable.
 
 \section{LiveLock}
 If a fibre is Hungry (or Blocked) on a reachable channel
@@ -319,7 +388,8 @@ the system because it is reachable via the channel.
 
 A livelock is considered to transition to a deadlock
 if the channel becomes unreachable, in which case
-the fibre will become Dead through Starvation (or Blockage),
+the fibre will becomes unreachable and is said to
+die through Starvation (or Blockage),
 disolving the deadlock. In other words, fibres cannot deadlock.
 
 
@@ -346,6 +416,29 @@ in a general purpose programming language.
 A continuation is reachable if it is the current
 continuation of a reachable fibre, or the caller
 of a reachable continuation.
+
+A continuation is formed by calling a procedure,
+which causes a data frame to be constructed which
+contains the return address of the caller,
+parameters and local variables of the procedure,
+and a program counter containing the current
+locus of control (code address) within the procedure.
+The program counter is initially set to the specified
+entry point of the procedure.
+
+A coroutine is a procedure which directly or indirectly
+performs channel I/O. Coroutines may be called by 
+other coroutines, but not by procedures or functions.
+Instead, a coroutine may be spawned by a procedure,
+or run by a procedure or function. This creates a
+fibre which hosts the created continuation.
+
+Note: the set of fibres and channels created directly
+or indirectly by a run subroutine called inside
+a function should be isolated from all other fibres
+and channels to ensure the function has no side-effects.
+
+
 
 \section{Continuation Structure}
 \subsection{Continuation Data}
@@ -585,7 +678,8 @@ it allows composition to be subject to a reduction calculus.
 The following functions and procedures are provided in Felix:
 
 \begin{minted}{felix}
-spawn_fthread: 1 -> 0
+spawn_fthread: (1 -> 0) -> 0;
+run: (1 -> 0) -> 0;
 mk_ioschannel_pair[T]: 1 -> ischannel[T] * oschannel[T];
 read[T]: ischannel[T] -> T
 write[T]: oschannel[T] * T -> 0
