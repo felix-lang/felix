@@ -1,0 +1,40 @@
+@title Botan Interface
+@tangler botan_unix.fpc  =  $PWD/src/config/unix/botan.fpc
+@tangler rng.fpc  =  $PWD/src/config/botan_rng.fpc
+@tangler system_rng.fpc  =  $PWD/src/config/botan_system_rng.fpc
+@tangler rng.flx = share/lib/botan/rng.flx
+
+@h1 Random number generators.
+@tangle rng.flx
+class Rng
+{
+  requires package "botan_rng", package "botan_system_rng";
+  type RandomNumberGenerator = "Botan::RandomNumberGenerator*";
+  fun System_RNG: 1 -> RandomNumberGenerator = "new Botan::System_RNG()";
+  proc randomize: RandomNumberGenerator * +byte * size = "$1->randomize($2,$3);";
+}
+@
+
+
+@tangle botan_unix.fpc
+@tangle botan_unix.fpc
+Name: botan 
+Platform: Unix 
+Description: Botan Crypto Library 
+provides_dlib: -L/usr/local/lib -lbotan-2
+provides_slib: -L/usr/local/lib -lbotan-2
+cflags: -I/usr/local/include/botan-2.0
+@
+
+@tangle rng.fpc
+Requires: botan
+includes: '"botan/rng.h"'
+cflags: -I/usr/local/include/botan-2.0
+@
+
+
+@tangle system_rng.fpc
+Requires: botan
+includes: '"botan/system_rng.h"'
+cflags: -I/usr/local/include/botan-2.0
+@
