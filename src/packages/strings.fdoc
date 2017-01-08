@@ -930,8 +930,10 @@ open class Re2 {
     return i;
   }
   """; 
+/*
   private type RE2_ = "::re2::RE2" 
   ;
+*/
   type RE2 = "::std::shared_ptr< ::re2::RE2>" 
     requires Cxx11_headers::memory,
     RE2_serial, encoder "RE2_encoder", decoder "RE2_decoder"

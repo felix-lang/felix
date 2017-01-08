@@ -1,8 +1,11 @@
 @title Botan Interface
-@tangler botan_unix.fpc  =  $PWD/src/config/unix/botan.fpc
-@tangler rng.fpc  =  $PWD/src/config/botan_rng.fpc
-@tangler system_rng.fpc  =  $PWD/src/config/botan_system_rng.fpc
-@tangler rng.flx = share/lib/botan/rng.flx
+@tangler botan_unix.fpc        = $PWD/src/config/unix/botan.fpc
+@tangler rng.fpc               = $PWD/src/config/botan_rng.fpc
+@tangler system_rng.fpc        = $PWD/src/config/botan_system_rng.fpc
+@tangler rng.flx               = share/lib/botan/rng.flx
+
+@tangler bigint.flx            = share/lib/botan/bigint.flx
+@tangler bigint.fpc            = $PWD/src/config/botan_bigint.fpc
 
 @h1 Random number generators.
 @tangle rng.flx
@@ -15,6 +18,92 @@ class Rng
 }
 @
 
+@h1 Big Integers
+@tangle bigint.flx
+class BigInt
+{
+  requires package "botan_bigint";
+  type bigint = "Botan::BigInt";
+  body strbigint = """
+    static ::std::string strbigint (Botan::BigInt const &pi) {
+      ::std::stringstream s;
+      s << pi;
+      return s.str();
+    }
+  """;
+
+  ctor bigint : string = "Botan::BigInt ($1)";
+
+  instance Forward[bigint] {
+    fun succ: bigint -> bigint = "$1+Botan::BigInt(1)";
+    proc pre_incr: &bigint = "$1->operator++();";
+    proc post_incr: &bigint = "$1->operator++();";
+  }
+  instance Bidirectional[bigint] {
+    fun pred: bigint -> bigint = "$1-Botan::BigInt(1)";
+    proc pre_decr: &bigint = "$1->operator--();";
+    proc post_decr: &bigint = "$1->operator--();";
+  }
+
+  instance FloatAddgrp[bigint] {
+    fun zero: 1 -> bigint = "Botan::Bigint(0)";
+    fun neg: bigint -> bigint = "-$1";
+    proc += : &bigint * bigint = "$1->operator+= ($2);";
+    proc -= : &bigint * bigint = "$1->operator-=($2);";
+
+    fun + : bigint * bigint -> bigint = "$1+$2";
+    fun - : bigint * bigint -> bigint = "$1-$2";
+  }
+  instance FloatMultSemi1[bigint] {
+    fun one : 1 -> bigint = "Botan::BigInt(1)";
+    fun * : bigint * bigint -> bigint = "$1*$2";
+    proc *= : &bigint * bigint = "$1->operator*=($2);";
+  }
+  instance FloatDring[bigint] {
+    fun / : bigint * bigint -> bigint = "$1/$2";
+    fun % : bigint * bigint -> bigint = "$1%$2";
+    proc /= : &bigint * bigint = "$1->operator/=($2);";
+    proc %= : &bigint * bigint = "$1->operator%=($2);";
+  }
+  instance Integer[bigint] {
+    body bigintshl = """
+       // throws if right argument abs value is too big
+       static Botan::BigInt shl(Botan::BigInt const &l, Botan::BigInt r) {
+         if (r.is_negative()) {
+            r = -r;
+            ::std::size_t rr = r.to_u32bit();
+            return l >> rr;
+         } else {
+           ::std::size_t rr = r.to_u32bit();
+           return l << rr;
+         }
+       }
+    """;
+    fun << : bigint * bigint -> bigint = "bigint_shl($1,$2)" requires bigintshl; 
+    fun >> : bigint * bigint -> bigint = "bigint_shl($1,-$2)" requires bigintshl; 
+  }
+  instance Signed_integer[bigint] {
+    fun abs: bigint -> bigint = "$1.abs()";
+    fun sgn: bigint -> int = "$1.is_zero()? 0 : ($1.is_positive() ? 1 : -1)";
+  }
+  inherit Signed_integer[bigint];
+
+  instance Eq[bigint] {
+    fun == : bigint * bigint -> bool = "$1==$2";
+  }
+  instance Tord[bigint] {
+    fun < : bigint * bigint -> bool = "$1<$2";
+    fun <= : bigint * bigint -> bool = "$1<=$2";
+    fun > : bigint * bigint -> bool = "$1>$2";
+    fun >= : bigint * bigint -> bool = "$1>=$2";
+  }
+  inherit Tord[bigint]; // includes Eq
+  instance Str[bigint] {
+    fun str: bigint -> string = "strbigint($1)" requires strbigint;
+  }
+}
+
+@
 
 @tangle botan_unix.fpc
 @tangle botan_unix.fpc
@@ -38,3 +127,12 @@ Requires: botan
 includes: '"botan/system_rng.h"'
 cflags: -I/usr/local/include/botan-2.0
 @
+
+@tangle bigint.fpc
+Requires: botan
+includes: '"botan/bigint.h"'
+cflags: -I/usr/local/include/botan-2.0
+@
+
+
+
