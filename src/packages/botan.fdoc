@@ -7,20 +7,33 @@
 @tangler bigint.flx            = share/lib/botan/bigint.flx
 @tangler bigint.fpc            = $PWD/src/config/botan_bigint.fpc
 
+@tangler hash.flx            = share/lib/botan/hash.flx
+@tangler hash.fpc            = $PWD/src/config/botan_hash.fpc
+
 @h1 Random number generators.
 @tangle rng.flx
-class Rng
+library Botan { class Rng
 {
   requires package "botan_rng", package "botan_system_rng";
   type RandomNumberGenerator = "Botan::RandomNumberGenerator*";
   fun System_RNG: 1 -> RandomNumberGenerator = "new Botan::System_RNG()";
-  proc randomize: RandomNumberGenerator * +byte * size = "$1->randomize($2,$3);";
-}
+  proc add_entropy: RandomNumberGenerator * +byte * size = "$1->add_entropy($2,$3);";
+  proc randomize_with_input: 
+    RandomNumberGenerator * +byte * size * +byte * size=
+    "$1->add_entropy($2,$3,$4,$5);"
+  ;
+  proc randomize_with_ts_input: RandomNumberGenerator * +byte * size = 
+    "$1->randomize_with_ts_input($2,$3);"
+  ;
+  proc randomize: RandomNumberGenerator * +byte * size = 
+    "$1->randomize_with_input($2,$3);"
+  ;
+}}
 @
 
 @h1 Big Integers
 @tangle bigint.flx
-class BigInt
+library Botan { class BigInt
 {
   requires package "botan_bigint";
   type bigint = "Botan::BigInt";
@@ -101,8 +114,26 @@ class BigInt
   instance Str[bigint] {
     fun str: bigint -> string = "strbigint($1)" requires strbigint;
   }
-}
+  fun gcd: bigint * bigint -> bigint = "Botan::gcd($1,$2)";
+  fun lcm: bigint * bigint -> bigint = "Botan::lcm($1,$2)";
+  fun jacobi: bigint * bigint -> bigint = "Botan::jacobi($1,$2)";
 
+  // b^x % m
+  fun power_mod: bigint * bigint * bigint -> bigint = "Botan::power_mod($1,$2,$3)";
+}}
+
+@
+
+@h1 Hash functions
+@tangle hash.flx
+library Botan { class Hash {
+  type BufferedComputation = "::Botan::BufferedComputation*";
+  fun output_length : BufferedComputation -> size = "$1->output_length()";
+  proc update : BufferedComputation * +byte * size = "$1->update($2,$3);";
+  proc update : BufferedComputation * byte = "$1->update($2);";
+  proc final: BufferedComputation * +byte = "$1->final($2);";
+
+}}
 @
 
 @tangle botan_unix.fpc
@@ -130,7 +161,7 @@ cflags: -I/usr/local/include/botan-2.0
 
 @tangle bigint.fpc
 Requires: botan
-includes: '"botan/bigint.h"'
+includes: '"botan/bigint.h"' '"botan/numthry.h"'
 cflags: -I/usr/local/include/botan-2.0
 @
 
