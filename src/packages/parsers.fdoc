@@ -388,6 +388,41 @@ class Parsers
     return results;
   }
 
+  // replace internal sub-expressions with fresh nonterminals
+  fun unpack (fresh:1->string) (head:string, p:pgram_t) : pgramlib_t =
+  {
+   var out = Empty[pgramentry_t];
+   match p with
+   | Action a => out = ([head,p]); 
+   | Recog Epsilon => out = ([head,p]);
+   | Recog (Terminal _) => out = ([head,Recog (Seq[pgram_t] ([p]))]);
+   | Recog (Nonterminal s) => out= ([head,Recog (Seq[pgram_t] ([p]))]);
+
+   | Recog (Seq ps) =>
+     var newseq = Empty[pgram_t];
+     for term in ps do
+       match term with
+       | Action _ => newseq = term ! newseq;
+       | Recog Epsilon => ;
+       | Recog (Nonterminal _) => newseq = term ! newseq;
+       | Recog (Terminal _) => newseq = term ! newseq;
+       | _ =>
+         var newhead = fresh();
+         newseq = Recog (Nonterminal[pgram_t] newhead) ! newseq;
+         out = unpack fresh (newhead,term);
+       endmatch;
+     done
+
+     match newseq with 
+     | Empty => out = (head,Recog (Epsilon[pgram_t])) ! out;
+     | _ => out = (head,Recog (Seq[pgram_t] (rev newseq))) ! out;
+     endmatch;
+
+   | Recog (Alt ps) =>
+     iter (proc (p:pgram_t) { out = unpack fresh (head,p) + out; }) ps;
+   endmatch;
+   return out;
+  }
 
 // direct left recursion eliminator
 // assumes A = A alpha | beta form
