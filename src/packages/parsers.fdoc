@@ -424,6 +424,50 @@ class Parsers
    return out;
   }
 
+  // expand internal sub-expressions, return a list of symbol sequences
+  // the outer list are the alternatives and the inner ones sequences
+  // IN REVERSE ORDER! 
+  fun expand_aux (p:pgram_t) : list[list[pgram_t]] =
+  {
+   var out = ([Empty[pgram_t]]);
+   match p with
+   // add symbol to each alternative
+   | Recog Epsilon => ;
+   | ( Action a  
+   | Recog (Terminal _) 
+   | Recog (Nonterminal s)) => 
+     out = map (fun (ss: list[pgram_t]) => Cons (p,ss)) out; 
+
+   // A sequence is unpacked by successively unpacking each
+   // symbol. The result is then prepended to each alternative.
+   | Recog (Seq ps) =>
+     for term in ps do
+       var tmp = expand_aux term;
+       var out2 = Empty[list[pgram_t]];
+       for left in tmp perform 
+         for right in out perform
+           out2 += left + right;
+       out = out2;
+     done
+ 
+   | Recog (Alt ps) =>
+     var alts = cat (map expand_aux ps);
+     out2 = Empty[list[pgram_t]];
+     for left in alts perform
+       for right in out perform
+         out2 += left + right;
+     out = out2;
+
+   endmatch;
+   return out;
+  }
+
+  fun expand (p:pgram_t) : pgram_t =>
+    let ps = expand_aux p in
+    Recog (Alt[pgram_t] (map (fun (seqs: list[pgram_t]) => Recog (Seq[pgram_t] (rev seqs))) ps))
+  ;
+
+
 // direct left recursion eliminator
 // assumes A = A alpha | beta form
 // outputs
