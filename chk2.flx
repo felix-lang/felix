@@ -1,0 +1,146 @@
+include "std/strings/parsers";
+open syntax parser_syn;
+
+begin
+  open Parser_synlib;
+  open Parsers;
+
+  var intterm : pgram_t = TERM ("int",Recognisers::felix_integer_matcher);
+  var fstring : pgram_t = TERM ("string",Recognisers::felix_string_literal_matcher);
+  var ffloat : pgram_t = TERM ("float",Recognisers::felix_float_literal_matcher);
+  var fident : pgram_t = TERM ("ident",Recognisers::felix_identifier_matcher);
+
+  gramlib xlib {
+    stmts =
+      | stmt stmts {REDUCE ("_Cons",2)} 
+      | "#END" { REDUCE ("_Empty",1) }
+    ;
+
+    stmt = varstmt;
+
+    varstmt = "var" {fident} ":" expr "=" expr ";" {
+      Action[pgram_t] (Parsers::Sequence[pgram_t] ([
+        Drop[pgram_t] 1, /*;*/ Scroll[pgram_t] 1, // rhs
+        Drop[pgram_t] 1, /*=*/ Scroll[pgram_t] 1, // type
+        Drop[pgram_t] 1, /*:*/ Scroll[pgram_t] 1, // ident
+        Drop[pgram_t] 1, /*var*/ Unscroll[pgram_t] 3,
+        Reduce[pgram_t] ("Vardef",3)
+      ]))
+    };
+
+    expr = tuple;
+
+    tuple = 
+      | disjunct "," tuple {BINOP("Pair")} 
+      | disjunct
+    ;
+
+    disjunct = 
+      | disjunct "or" conjunct { BINOP("Or") }
+      | conjunct
+    ;
+
+    conjunct = 
+      | conjunct "and" notted { BINOP("And") }
+      | notted
+    ;
+ 
+    notted = 
+      | "not" notted { BINOP("Not")} 
+      | comparison
+    ;
+
+    comparison = 
+      | term "<" term { BINOP ("Lt") }
+      | term "<=" term { BINOP("Le") }
+      | term ">" term { BINOP("Gt") }
+      | term ">=" term { BINOP("Ge") }
+      | term "==" term { BINOP("Eq") }
+      | term "!=" term { BINOP("Ne") }
+      | term
+    ;
+ 
+    term = 
+      | term "+" factor { BINOP("Add")}
+      | term "-" factor { BINOP("Sub")}
+      | factor
+    ;
+
+    factor = 
+      | factor "*" factor { BINOP("Mul")}
+      | factor "/" factor { BINOP("Div")}
+      | factor "%" factor { BINOP("Mod")}
+      | prefix  
+    ;
+  
+    prefix = 
+      | "-" power {REDUCE ("Neg",2)} 
+      | power
+    ;
+
+    power = 
+      | application "^" prefix {REDUCE ("Exp", 3)} 
+      | application
+    ;
+
+    application = 
+      | application dot {REDUCE ("Apply",2)} 
+      | dot
+    ;
+
+    dot = 
+      | dot "." hash {BINOP("Dot")}
+      | hash 
+    ;
+
+    hash = 
+      | "#" atom {REDUCE ("Hash",2)}
+      | atom 
+    ;
+
+    atom = 
+      | "(" expr ")" {REDUCE ("Group",3)}
+      | { intterm } 
+      | { fstring } 
+      | { ffloat } 
+      | { fident }
+    ;
+  }
+
+
+  println$ "xlib (before left rec elim)\n"+xlib.str;
+  xlib = Parsers::left_recursion_elimination Parsers::fresh xlib;
+  println$ "xlib (after left rec elim)\n"+xlib.str;
+
+  var clx = Parsers::closure ("stmts",xlib);
+  println$ "Closure="  + clx.str;
+
+
+  var parsr = Parsers::make_parser_from_grammar ("stmts", xlib) Recognisers::match_felix_white;
+
+  println$ "Got parser";
+
+  var test = r"""  
+    // hello
+    /* blah */ 
+    var x : int = y + 2 ^ -3uz + z * 42 ;
+    var y : string = "Hello" + world;
+    var b : bool = a < b and c == d;
+    #END
+   ;"""
+  ;
+  var results = Parsers::run_parser_on_string parsr test;
+
+  match results with 
+  | Empty => println$ "Parse Failed";
+  | Cons (h,Empty) => println$ "Unique result " + h.str;
+  | _ => 
+    println$ "Multiple results";
+    iter (proc (result:Parsers::parser_state_t) { 
+      println$ "Test1: End pos (should be 14)=" + result.str;
+    })
+    results;
+  endmatch;
+end
+
+
