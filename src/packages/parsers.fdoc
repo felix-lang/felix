@@ -467,6 +467,15 @@ class Parsers
     Recog (Alt[pgram_t] (map (fun (seqs: list[pgram_t]) => Recog (Seq[pgram_t] (rev seqs))) ps))
   ;
 
+  // in p replace nonterminal name with value (where q=name,value)
+  fun substitute (q:pgramentry_t) (p:pgram_t)=>
+    let name,value = q in
+    match p with
+    | Recog (Nonterminal s) when name == s => value
+    | Recog (Seq ls) => Recog (Seq[pgram_t] (map (substitute q) ls))
+    | Recog (Alt ls) => Recog (Alt[pgram_t] (map (substitute q) ls))
+    | _ => p
+  ;
 
 // direct left recursion eliminator
 // assumes A = A alpha | beta form

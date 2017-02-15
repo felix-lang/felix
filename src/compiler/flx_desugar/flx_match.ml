@@ -75,12 +75,12 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
 (*
           print_endline ("PATTERN IS " ^ string_of_pattern pat ^ ", VARIABLE=" ^ match_var_name);
           print_endline "VARIABLES ARE";
-          List.iter (fun vname (sr,extractor) ->
+          List.iter (fun (vname, (sr,extractor)) ->
             let component =
               Flx_desugar_pat.gen_extractor extractor (EXPR_index (sr,match_var_name,match_var_index))
             in
             print_endline ("  " ^ vname ^ " := " ^ string_of_expr component);
-          ) (List.rev (!vars);
+          ) (List.rev (!vars));
 *)
       let new_sts = ref sts in
       List.iter
@@ -99,6 +99,10 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
 *)
         rsts (* name parent_vs access *) !new_sts
       in
+(*
+print_endline ("Body=");
+List.iter (fun st -> print_endline (string_of_asm 2 st)) body;
+*)
       (* hacky attempt to elide useless jumps at the end of each case
        * doesn't account for non-returning calls, trailing comments or non
        * executable statements, or complicated statements (such as nested matches)

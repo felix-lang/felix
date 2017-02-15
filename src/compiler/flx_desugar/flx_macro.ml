@@ -699,7 +699,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
           pvs pvs'
         in
         (* alpha convert pattern variable names *)
-        let pat' = alpha_pat local_prefix seq fast_remap remap expand_expr pat in
+        let pat' = alpha_pat local_prefix seq fast_remap (remap @ macros) expand_expr pat in
         (* let pr = protect sr pvs in *)
         let e' = expand_expr recursion_limit local_prefix seq (remap @ macros) e in
         pat',e'
@@ -733,7 +733,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
           pvs pvs'
         in
         (* alpha convert pattern variable names *)
-        let pat' = alpha_pat local_prefix seq fast_remap remap expand_expr pat in
+        let pat' = alpha_pat local_prefix seq fast_remap (remap @ macros) expand_expr pat in
         (* let pr = protect sr pvs in *)
         let e' = expand_expr recursion_limit local_prefix seq (remap @ macros) e in
         pat',e'
