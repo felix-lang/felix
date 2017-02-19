@@ -79,13 +79,26 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
      name the types of the arguments now)
   *)
   match e with
-  | EXPR_patvar _
-  | EXPR_patany _
+  | EXPR_noexpand (_,e) -> subst e
+
+  | EXPR_patvar _ 
+  | EXPR_patany _ ->
+    let sr = src_of_expr e in
+    syserr sr ("flx_desugar/flx_desugar_pat:subst]1 found EXPR_patvar or EXPR_patany " ^
+    "in pattern when clause\n" ^
+    "should have been translated by compiler earlier")
+
   | EXPR_vsprintf _
   | EXPR_interpolate _
-  | EXPR_type_match _
-  | EXPR_noexpand _
-  | EXPR_expr _
+  | EXPR_type_match _ ->
+      let sr = src_of_expr e in
+      clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
+      ("[desugar_pat:subst]4 Not expected in pattern when clause: " ^ string_of_expr e); 
+  | EXPR_expr _ ->
+      let sr = src_of_expr e in
+      clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
+      ("[desugar_pat:subst]6 Not expected EXPR_expr in pattern when clause: " ^ string_of_expr e); 
+
   | EXPR_typeof _
   | EXPR_void _
   | EXPR_typed_case _
@@ -99,6 +112,11 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   | EXPR_union _
   | EXPR_isin _ (* only used in type constraints *)
   | EXPR_callback _
+    ->
+      let sr = src_of_expr e in
+      clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
+      ("[desugar_pat:subst]7 Not expected in pattern when clause: " ^ string_of_expr e); 
+
   | EXPR_record_type _
   | EXPR_polyrecord_type _
   | EXPR_variant_type _
@@ -109,6 +127,11 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   | EXPR_get_tuple_last _
   | EXPR_label _
   | EXPR_rnprj _
+    ->
+      let sr = src_of_expr e in
+      clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
+      ("[desugar_pat:subst]8 Not expected in pattern when clause: " ^ string_of_expr e); 
+
   | EXPR_remove_fields _
   | EXPR_typecase_match _
   | EXPR_ho_ctor_arg _
@@ -116,7 +139,8 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   | EXPR_replace_fields _
     ->
       let sr = src_of_expr e in
-      clierrx "[flx_desugar/flx_mbind.ml:107: E341] " sr ("[mbind:subst] Not expected in pattern when clause: " ^ string_of_expr e); 
+      clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
+      ("[desugar_pat:subst]9 Not expected in pattern when clause: " ^ string_of_expr e); 
 
   | EXPR_tuple_cons (sr, eh, et) -> EXPR_tuple_cons (sr, subst eh, subst et)
   | EXPR_tuple_snoc (sr, eh, et) -> EXPR_tuple_snoc (sr, subst eh, subst et)
@@ -180,7 +204,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   | EXPR_match_ctor _
     ->
     let sr = src_of_expr e in
-    clierrx "[flx_desugar/flx_mbind.ml:170: E342] " sr "[subst] not implemented in when part of pattern"
+    clierrx "[flx_desugar/flx_desugar_pat.ml:170: E342] " sr "[subst] not implemented in when part of pattern"
 
   | EXPR_coercion _ -> failwith "subst: coercion"
 
@@ -368,7 +392,7 @@ let rec gen_match_check pat (arg:expr_t) =
   | PAT_alt _
   | PAT_expr _ -> assert false
   | PAT_literal (sr,s) -> apl2 sr "eq" (mklit sr s) arg
-  | PAT_none sr -> clierrx "[flx_desugar/flx_mbind.ml:319: E343] " sr "Empty pattern not allowed"
+  | PAT_none sr -> clierrx "[flx_desugar/flx_desugar_pat.ml:319: E343] " sr "Empty pattern not allowed"
 
   (* ranges *)
   | PAT_range (sr,l1,l2) ->
