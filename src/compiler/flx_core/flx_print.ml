@@ -1989,8 +1989,12 @@ and string_of_bound_expression' bsym_table se e =
   match fst e with
 
   | BEXPR_cond (c,t,f) -> "if " ^ se c ^ " then " ^ se t ^ " else " ^ se f ^ " endif"
-  | BEXPR_unit -> "()"
-  | BEXPR_unitptr -> "NULL"
+  | BEXPR_unitptr k -> 
+    begin match k with 
+    | 0 -> "()" 
+    | 1 -> "NULL" 
+    | _ -> "NULL<"^string_of_int k^">" 
+    end
   | BEXPR_label (i) -> sid i ^ "label"
   | BEXPR_tuple_head e -> "tuple_head ("^ se e ^")"
   | BEXPR_tuple_tail e -> "tuple_tail("^ se e ^")"
@@ -2497,7 +2501,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     (if is_proc then "proc " else "fun ") ^
     name ^ string_of_bvs vs ^
     "(" ^ (string_of_bparameters bsym_table ps) ^ ")" ^
-    (if effects = BTYP_tuple [] then
+    (if effects = Flx_btype.btyp_unit () then
       (if is_proc then "" else ": " ^ sobt res)
      else
       (if is_proc then "["^sobt effects^"]" else ":["^sobt effects^"] " ^ sobt res)

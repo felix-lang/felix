@@ -108,8 +108,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_label (i) ->  ui i []
 
   | BEXPR_int _ -> ()
-  | BEXPR_unit -> ()
-  | BEXPR_unitptr -> ()
+  | BEXPR_unitptr _ -> ()
 
   | BEXPR_cond (c,t,f) -> ue c; ue t; ue f
   | BEXPR_not e
@@ -122,7 +121,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
     -> ue e
   | BEXPR_aprj (e,d,c) ->
     ue e;
-    ut (vs (BTYP_function (d,c)))
+    ut (vs (btyp_function (d,c)))
 
   | BEXPR_apply_prim (index,ts,a)
   | BEXPR_apply_direct (index,ts,a)
@@ -227,7 +226,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
 
   | BEXPR_prj (_,d,c) 
   | BEXPR_rprj (_,_,d,c) 
-  | BEXPR_inj (_,d,c) -> ut (vs (BTYP_function (d,c)))
+  | BEXPR_inj (_,d,c) -> ut (vs (btyp_function (d,c)))
 
   | BEXPR_identity_function t -> 
     let t = vs t in

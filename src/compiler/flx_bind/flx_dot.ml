@@ -205,7 +205,7 @@ let handle_array_projection bsym_table int_t sr a ta n =
 
   | BTYP_pointer (BTYP_array (vt,ixt)) ->
     assert (snd n = ixt);
-    bexpr_apply (BTYP_pointer vt) (bexpr_aprj n ta vt, a)
+    bexpr_apply (btyp_pointer vt) (bexpr_aprj n ta vt, a)
   | _ -> assert false
 
 

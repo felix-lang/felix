@@ -877,7 +877,7 @@ if Flx_unify.is_recursive_type ut then begin
   " will be replaced by monomorphic type " ^ sbt bsym_table (mt vars argt))
 end;
 *)
-    name,index, [],mt vars argt, BTYP_none,gadt 
+    name,index, [],mt vars argt, btyp_none (),gadt 
     ) cps 
   in
 (*

@@ -4,7 +4,7 @@
 
 This is a tutorial implementing an interpreter of arithmetic
 expressions. No code generation tools are employed, the program is
-self-contained. Lexical analysis is performed using parser
+self-contained. Lexical analysis is performed using parsa
 combinators, evaluation by the method of environments. An interactive
 program for testing the interpreter is also provided.
 
@@ -31,28 +31,28 @@ union parsed[A, B] =
 Parsers are functions.
 
 @felix
-//Type of a parser
-typedef parser[A, B] = list[A] -> parsed[A, B];
+//Type of a parsa
+typedef parsa[A, B] = list[A] -> parsed[A, B];
 @
 
-For example, the @{empty} parser recognizes the empty string. It
+For example, the @{empty} parsa recognizes the empty string. It
 always returns a value and never consumes any tokens. The value it
 returns is @{v}, the first argument.
 
 @felix
-//Emtpy string parser
+//Emtpy string parsa
 fun empty[A, B] (v:B)(toks:list[A]):parsed[A, B] => 
   Returns (v, toks)
   ;
 @
 
-@{token} takes a predicate argument and returns a parser. The parser
+@{token} takes a predicate argument and returns a parsa. The parsa
 succeeds (or not) by testing the predicate on the head token of the
 token list.
 
 @felix
-//Given a predicate, produce a parser
-fun token[A, B](test:A->opt[B]):parser[A,B] =>
+//Given a predicate, produce a parsa
+fun token[A, B](test:A->opt[B]):parsa[A,B] =>
   fun (l:list[A]):parsed[A, B] => 
     match l with
     | Cons (t, ts) =>
@@ -65,28 +65,28 @@ fun token[A, B](test:A->opt[B]):parser[A,B] =>
   ;
 @
 
-@{char_} is a function that computes a parser to match a specific
+@{char_} is a function that computes a parsa to match a specific
 token.
 
 @felix
 //Parser of a specific token
-fun char_[A with Eq[A]] (ch:A):parser[A, A] =>
+fun char_[A with Eq[A]] (ch:A):parsa[A, A] =>
   token (
   fun (tok:A):opt[A] =>
     match tok with
-       | $(ch) => Some ch
+      | $(ch) => Some ch
       | _ => None[A]
     endmatch
   )
   ;
 @
 
-The <em>disjunction</em> of two parsers @{p} and @{q} say, is the
-parser @{p} "or else" @{q}.
+The <em>disjunction</em> of two parsas @{p} and @{q} say, is the
+parsa @{p} "or else" @{q}.
 
 @felix
 //Parser disjunction
-fun orelse[A, B] (p1:parser[A, B], p2:parser[A, B]):parser[A, B] =>
+fun orelse[A, B] (p1:parsa[A, B], p2:parsa[A, B]):parsa[A, B] =>
    fun (toks:list[A]):parsed[A, B] =>
       match p1 toks with
         | #Parse_failed => p2 toks
@@ -95,12 +95,12 @@ fun orelse[A, B] (p1:parser[A, B], p2:parser[A, B]):parser[A, B] =>
   ;
 @
 
-The <em>conjunction</em> of two parsers @{p} and @{q} say, is the
-parser @{p} "and then" @{q}.
+The <em>conjunction</em> of two parsas @{p} and @{q} say, is the
+parsa @{p} "and then" @{q}.
 
 @felix
 //Parser conjunction
-fun andalso[A, B, C] (p1:parser[A, B],p2:parser[A, C]):parser[A, (B * C)] =>
+fun andalso[A, B, C] (p1:parsa[A, B],p2:parsa[A, C]):parsa[A, (B * C)] =>
   fun (toks:list[A]) : parsed[A, (B * C)]=>
     match p1 toks with
       | Returns (r1, toks1) =>
@@ -113,14 +113,14 @@ fun andalso[A, B, C] (p1:parser[A, B],p2:parser[A, C]):parser[A, (B * C)] =>
   ;
 @
 
-The function @{gives} takes a parser @{p} and a function @{f}. It
+The function @{gives} takes a parsa @{p} and a function @{f}. It
 parses with @{p} and applies @{f} to the parse result. This provides a
 facility to transform simple parse results into more complicated
 abstract syntax trees.
 
 @felix
 //Transform the result of a parse
-fun gives[A, B, C] (p:parser[A, B], f:B -> C):parser[A, C] =>
+fun gives[A, B, C] (p:parsa[A, B], f:B -> C):parsa[A, C] =>
   fun (toks:list[A]):parsed[A, C] =>
     match p toks with
       | Returns (v, toks1) => Returns (f v, toks1)
@@ -174,8 +174,8 @@ That is,
 </table>
 
 The last one, "given to", has not been defined yet. It's for when
-parser is computed as a parse result and parsing resumes with that
-parser on the tokens remanining. In Felix there is no problem
+parsa is computed as a parse result and parsing resumes with that
+parsa on the tokens remanining. In Felix there is no problem
 referring to a definition that follows later in the program.
 
 To implement the next combinator, we need to enlist the help of some
@@ -192,7 +192,7 @@ With these we can write the "Kleene 'star'" operator", @{*}.
 
 @felix
 //Kleene '*'
-fun zero_or_more[A, B] (p:parser[A, B]): parser[A, list[B]] =>
+fun zero_or_more[A, B] (p:parsa[A, B]): parsa[A, list[B]] =>
   fun (toks:list[A]) : parsed[A, list[B]] =>
    ( (p &~ zero_or_more p >=~ Cons[B])
    |~ (empty[A, list[B]] (list[B]())) ) toks
@@ -215,7 +215,7 @@ open syntax prefix_c;
 
 @h2 Alphanumeric
 
-This <em>is not</em> a parser, this is a function that tests a @{char}
+This <em>is not</em> a parsa, this is a function that tests a @{char}
 for membership in a list of ranges like @{['a'-'z']['A'-'Z']}.
 
 @felix
@@ -230,11 +230,11 @@ fun char_range (c:char)(l:list[char * char]):bool =>
 @
 
 The function @{letter} on the other hand, <em>is</em> a
-parser. Analysis succeeds for alphabetic characters.
+parsa. Analysis succeeds for alphabetic characters.
 
 @felix
 //An element of the alphabet
-var letter : parser[char, char] =
+var letter : parsa[char, char] =
   token (fun (c:char) => 
            if char_range c 
             (list[char*char](
@@ -244,11 +244,11 @@ var letter : parser[char, char] =
   ;
 @
 
-This next function is a digit parser.
+This next function is a digit parsa.
 
 @felix
-//Digit parser
-var digit : parser[char, char] = 
+//Digit parsa
+var digit : parsa[char, char] = 
   token (fun (c:char) : opt[char] => 
   if isdigit c then Some c else None[char] 
   )
@@ -263,7 +263,7 @@ leading digit.
 
 @felix
 //Parser of a sequence of digit
-var digits : parser[char, list[char]] = 
+var digits : parsa[char, list[char]] = 
   (digit &~ *digit) >=~ Cons[char]
   ;
 @
@@ -280,7 +280,7 @@ Next up, floating point numbers. Here's the grammar.
 
 @felix
 // '-' | '+' | eps
-var optsign : parser[char, list[char]] =
+var optsign : parsa[char, list[char]] =
   token (fun (c:char):opt[list[char]] =>
     match c with
     | c when c == char '-' => Some (list[char] (c))
@@ -290,13 +290,13 @@ var optsign : parser[char, list[char]] =
   ;
 
 // '.' digit* | eps
-var optfrac : parser[char, list[char]] =
+var optfrac : parsa[char, list[char]] =
   ( char_ (char '.') &~ *digit >=~ Cons[char])
   |~ empty[char, list[char]] (list[char] ())
   ;
 
 //(('e'|'E') optsign digits)|eps
-var optexp : parser[char, list[char]] =
+var optexp : parsa[char, list[char]] =
   (((((char_ (char 'e') |~ char_ (char 'E')) &~ optsign) 
     >=~ Cons[char]) &~ digits) 
     >=~ (fun (x:list[char], y:list[char]) : list[char] => x + y)) 
@@ -364,7 +364,7 @@ instance Str[token_t] {
 
 @felix
 //Number token
-var number:parser[char, token_t] =
+var number:parsa[char, token_t] =
   (digits &~ optfrac &~ optexp) >=~
     (fun (p:list[char] * list[char], cse:list[char]):token_t =>
       T_num (atof (implode (p.0 + p.1 + cse))))
@@ -375,19 +375,19 @@ var number:parser[char, token_t] =
 
 @felix
 //Identifier token
-var identifier : parser[char, token_t] =
+var identifier : parsa[char, token_t] =
   (letter &~ (zero_or_more letter)) >=~ 
     (fun (c:char, cs:list[char]):token_t => 
        T_ident (implode (Cons (c, cs))))
   ;
 @
 
-The following set of parsers deals with the remaining single character
+The following set of parsas deals with the remaining single character
 token types.
 
 @felix
 //Operator token
-var operator : parser[char, token_t] =
+var operator : parsa[char, token_t] =
   token (
     fun (ch:char) : opt[token_t] =>
       match ch with
@@ -400,7 +400,7 @@ var operator : parser[char, token_t] =
   );
 
 //Parenthesis token
-var paren : parser[char, token_t] =
+var paren : parsa[char, token_t] =
   token (
     fun (ch:char) : opt[token_t] =>
       match ch with
@@ -411,7 +411,7 @@ var paren : parser[char, token_t] =
   );
 
 //Equal token
-var equal : parser[char, token_t] =
+var equal : parsa[char, token_t] =
   token (
    fun (ch:char) : opt[token_t] =>
       match ch with
@@ -421,7 +421,7 @@ var equal : parser[char, token_t] =
   );
 
 //Semicolon token
-var semicolon : parser[char, token_t] =
+var semicolon : parsa[char, token_t] =
   token (
     fun (ch:char) : opt[token_t] =>
       match ch with
@@ -431,12 +431,12 @@ var semicolon : parser[char, token_t] =
   );
 @
 
-A parser of white space consumes a space character but produces no
+A parsa of white space consumes a space character but produces no
 significant information.
 
 @felix
 //Parse a whitespace character
-var space_ : parser[char, unit] =
+var space_ : parsa[char, unit] =
  token (fun (ch:char) : opt[unit] =>
    match ch with
      | c when c == char ' ' => Some ()
@@ -448,7 +448,7 @@ var space_ : parser[char, unit] =
   );
 @
 
-A parser of spaces follows easily.
+A parsa of spaces follows easily.
 
 @felix
 //Parser of whitespace
@@ -513,12 +513,12 @@ fun str (ast : ast_t) : string =>
   ;
 @
 
-The first in this set of functions, @{num}, is a parser of number
+The first in this set of functions, @{num}, is a parsa of number
 tokens producing (literal) number expressions.
 
 @felix
 //Constants
-val num:parser[token_t, ast_t] =
+val num:parsa[token_t, ast_t] =
   token (
     fun (t:token_t):opt[ast_t] =>
       match t with
@@ -528,11 +528,11 @@ val num:parser[token_t, ast_t] =
   );
 @
 
-@{ident} is a parser of "identifier" expressions.
+@{ident} is a parsa of "identifier" expressions.
 
 @felix
 //Identifiers
-val ident:parser[token_t, ast_t] =
+val ident:parsa[token_t, ast_t] =
   token (
     fun (t:token_t):opt[ast_t] =>
       match t with
@@ -541,11 +541,11 @@ val ident:parser[token_t, ast_t] =
   );
 @
 
-@{addop} is the parser of additive expressions.
+@{addop} is the parsa of additive expressions.
 
 @felix
 //Addition, subtraction operators
-val addop:parser[token_t, ast_t -> ast_t -> ast_t] =
+val addop:parsa[token_t, ast_t -> ast_t -> ast_t] =
   token (
     fun (t:token_t):opt[ast_t -> ast_t -> ast_t] =>
       match t with
@@ -556,11 +556,11 @@ val addop:parser[token_t, ast_t -> ast_t -> ast_t] =
   );
 @
 
-@{mulop} the parser of multiplicative expressions.
+@{mulop} the parsa of multiplicative expressions.
 
 @felix
 //Multiplication, division operators
-val mulop:parser[token_t, ast_t -> ast_t -> ast_t] =
+val mulop:parsa[token_t, ast_t -> ast_t -> ast_t] =
   token (
     fun (t:token_t):opt[ast_t -> ast_t -> ast_t] =>
       match t with
@@ -574,14 +574,14 @@ val mulop:parser[token_t, ast_t -> ast_t -> ast_t] =
 Note that @{addop} amd @{mulop} produce <em>functions</em> on a
 successful parse.
 
-The result of a parser @{p} say, can be used to compute a new parser
+The result of a parsa @{p} say, can be used to compute a new parsa
 @{q} that then attempts a parse on the remains. Informally we might
 say this as @{p} "given to" @{q}. This function has infix operator
 form @{&gt;&gt;=~}
 
 @felix
-//A parser that feeds its result into another
-fun givento[A, B, C] (p1:parser[A, B], p2:B -> parser[A, C]) : parser[A, C] =>
+//A parsa that feeds its result into another
+fun givento[A, B, C] (p1:parsa[A, B], p2:B -> parsa[A, C]) : parsa[A, C] =>
   fun (toks : list[A]) : parsed[A, C] =>
      match p1 toks with
       | Returns (r1, toks1) => p2 r1 toks1
@@ -600,10 +600,10 @@ expr := term (op term)*
 @felix
 //Build left-associative trees e.g. expr := term (op term)*
 fun left_assoc[A, B] 
-  (term : parser[A, B]) 
-  (op : parser[A, B -> B-> B]) : parser[A, B] =>
+  (term : parsa[A, B]) 
+  (op : parsa[A, B -> B-> B]) : parsa[A, B] =>
   let 
-    fun sequence (t1:B) : parser [A, B] =>
+    fun sequence (t1:B) : parsa [A, B] =>
       let fn = fun (f:B -> B -> B, t2:B) => f t1 t2 in
       (op &~ term >=~ fn >>=~ sequence of (B)) |~ (empty[A, B] t1)
   in
@@ -611,13 +611,13 @@ fun left_assoc[A, B]
 ;
 @
 
-These are all the single token parsers that don't don't map to actual
+These are all the single token parsas that don't don't map to actual
 expressions (their occurrences do not result in nodes in the abstract
 syntax tree).
 
 @felix
 //Opening paren
-var open_paren : parser[token_t, unit] =
+var open_paren : parsa[token_t, unit] =
   let fun t (tok : token_t) : opt[unit] =>
     match tok with
     | #T_lparen => Some ()
@@ -626,7 +626,7 @@ var open_paren : parser[token_t, unit] =
 ;
 
 //Closing paren
-var close_paren : parser[token_t, unit] =
+var close_paren : parsa[token_t, unit] =
   let fun t (tok : token_t) : opt[unit] =>
     match tok with
     | #T_rparen => Some ()
@@ -635,7 +635,7 @@ var close_paren : parser[token_t, unit] =
 ;
 
 //Semi-colon
-var semi : parser[token_t, unit] =
+var semi : parsa[token_t, unit] =
   let fun t (tok : token_t) : opt[unit] =>
     match tok with
     | #T_semicolon => Some ()
@@ -644,7 +644,7 @@ var semi : parser[token_t, unit] =
 ;
 
 //Equals sign
-var equals : parser[token_t, unit] =
+var equals : parsa[token_t, unit] =
   let fun t (tok : token_t) : opt[unit] =>
     match tok with
     | #T_equal => Some ()
@@ -653,7 +653,7 @@ var equals : parser[token_t, unit] =
 ;
 @
 
-@h2 The "parser"
+@h2 The "parsa"
 
 The language of arithmetic expressions will be defined by the
 following grammar:
@@ -677,7 +677,7 @@ fact :=
 
 @felix
 //expr_list := expr (';' expr)*
-var expr_list : parser[token_t, list[ast_t]] = 
+var expr_list : parsa[token_t, list[ast_t]] = 
   ((expr &~ *((semi &~ expr) >=~ snd[unit, ast_t])
      >=~ Cons[ast_t]))
    |~empty[token_t, list[ast_t]] (list[ast_t]())
@@ -704,7 +704,7 @@ bind := identifier '=' expr
 @
 
 @felix
-var bind : parser[token_t, ast_t] =
+var bind : parsa[token_t, ast_t] =
    (((ident &~ equals) >=~ fst[ast_t, unit]) &~ expr) >=~ 
    (fun (p : ast_t * ast_t) : ast_t => 
       match p.0 with
@@ -719,7 +719,7 @@ term := fact (['*'|'/'] fact)*
 @
 
 @felix
-var term : parser[token_t, ast_t] = left_assoc[token_t, ast_t] fact mulop ;
+var term : parsa[token_t, ast_t] = left_assoc[token_t, ast_t] fact mulop ;
 @
 
 The fule for factors:

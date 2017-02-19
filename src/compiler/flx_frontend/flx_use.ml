@@ -35,10 +35,9 @@ changing the data structures.
 
 exception NotFoundDefn of int
 
-let rec istriv t = match t with
-  | BTYP_tuple [] -> true
-  | BTYP_pointer t -> istriv t
-  | _ -> false
+let rec istriv t = match Flx_btype.trivorder t with
+  | Some _ -> true
+  | None -> false
 
 let rec uses_btype add bsym_table count_inits t =
   let f_btype t = uses_btype add bsym_table count_inits t in

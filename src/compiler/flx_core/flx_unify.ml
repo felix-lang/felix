@@ -20,7 +20,7 @@ let normalise_tuple_cons bsym_table t =
       r
 
     | BTYP_tuple_cons (t1, BTYP_array (t2, BTYP_unitsum n)) when t1 = t2 ->
-      let r = btyp_array (t1, BTYP_unitsum (n+1)) in
+      let r = btyp_array (t1, btyp_unitsum (n+1)) in
       r
 
     | BTYP_tuple_cons (t1, BTYP_array (t2, BTYP_unitsum n)) ->
@@ -35,7 +35,7 @@ let normalise_tuple_cons bsym_table t =
       r
 
     | BTYP_tuple_snoc (BTYP_array (t2, BTYP_unitsum n),t1) when t1 = t2 ->
-      let r = btyp_array (t1, BTYP_unitsum (n+1)) in
+      let r = btyp_array (t1, btyp_unitsum (n+1)) in
       r
 
     | BTYP_tuple_cons (BTYP_array (t2, BTYP_unitsum n),t1) ->
@@ -697,7 +697,7 @@ print_endline "Trying to unify instances (2)";
 
       | BTYP_tuple (t0::ts1::ts2::ts), BTYP_tuple_cons (t0',ts')
       | BTYP_tuple_cons (t0',ts'), BTYP_tuple (t0::ts1::ts2::ts) ->
-        add_eqn (t0,t0'); add_eqn (BTYP_tuple (ts1::ts2::ts), ts')
+        add_eqn (t0,t0'); add_eqn (btyp_tuple (ts1::ts2::ts), ts')
 
       | BTYP_tuple (ts), BTYP_tuple_snoc (ts',t0')
       | BTYP_tuple_snoc (ts',t0'), BTYP_tuple (ts) ->
@@ -705,7 +705,7 @@ print_endline "Trying to unify instances (2)";
         | t0::ts1::ts2::rts ->
           add_eqn (t0,t0'); 
           let ts = List.rev (ts1::ts2::rts) in 
-          add_eqn (BTYP_tuple (ts), ts')
+          add_eqn (btyp_tuple (ts), ts')
         | _ -> ()
         end
 (*

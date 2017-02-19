@@ -66,7 +66,24 @@ type overload_result =
  (bid_t * t) list * (* mgu *)
  t list (* ts *)
 
+let rec trivorder t = match t with
+  | BTYP_tuple [] -> Some 0
+  | BTYP_pointer t -> 
+    begin match trivorder t with
+    | Some k -> Some (k + 1)
+    | None -> None
+    end
+  | _ -> None
 
+let rec istriv t =
+  match trivorder t with
+  | None -> false
+  | Some _ -> true
+
+let rec trivtype i = match i with
+  | 0 -> BTYP_tuple []
+  | _ -> BTYP_pointer (trivtype (i - 1))
+  
 let catmap sep f ls = String.concat sep (List.map f ls) 
 
 let rec str_of_btype typ = 

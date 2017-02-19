@@ -63,8 +63,7 @@ type bexpr_t =
     (* first arg = constructor index, second arg domain = ctor type, third arg codomain = union type *)
 
   | BEXPR_label of Flx_types.bid_t
-  | BEXPR_unit 
-  | BEXPR_unitptr
+  | BEXPR_unitptr of int
   | BEXPR_cond of t * t * t (* conditional *)
 
   (* This term is the product of a tuple or array of functions,
@@ -90,14 +89,15 @@ let complete_check t =
 let complete_check_list ts = List.map complete_check ts
 
 let bexpr_cond ((_,ct) as c) ((_,tt) as t) ((_,ft) as f) =
-   assert  (ct = (Flx_btype.BTYP_unitsum 2)); 
+   assert  (ct = (Flx_btype.btyp_unitsum 2)); 
    assert (tt = ft);
    BEXPR_cond (c,t,f),complete_check tt
 
 let bexpr_identity_function t = BEXPR_identity_function t, btyp_function (t,t)
 
-let bexpr_unit = BEXPR_unit,Flx_btype.BTYP_tuple []
-let bexpr_unitptr = BEXPR_unitptr, Flx_btype.BTYP_pointer (Flx_btype.BTYP_tuple [])
+let bexpr_unitptr i = BEXPR_unitptr i, Flx_btype.trivtype i
+let bexpr_unit = bexpr_unitptr 0
+
 let bexpr_bool b = BEXPR_case ((if b then 1 else 0), Flx_btype.btyp_bool ()),Flx_btype.btyp_bool ()
 let bexpr_true = bexpr_bool true
 let bexpr_false = bexpr_bool false
@@ -114,11 +114,11 @@ let bexpr_tuple_snoc t (eh,et) = BEXPR_tuple_snoc (eh,et), complete_check t
 
 
 let bexpr_deref t e : t = 
-  match t with
-  | Flx_btype.BTYP_tuple [] -> bexpr_unitptr
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr k
   | _ -> BEXPR_deref e, complete_check t
 
-let bexpr_int i = BEXPR_int i, BTYP_int
+let bexpr_int i = BEXPR_int i, Flx_btype.btyp_int ()
 
 let bexpr_not (e,t) : t = BEXPR_not (e,t), complete_check t
 
@@ -126,11 +126,13 @@ let bexpr_varname t (bid, ts) =
 (*
   print_endline ("Creating varname term " ^ string_of_int bid);
 *)
-  BEXPR_varname (bid, complete_check_list ts), complete_check t
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr k
+  | _ ->   BEXPR_varname (bid, complete_check_list ts), complete_check t
 
 let bexpr_ref t (bid, ts) = 
-  match t with 
-  | Flx_btype.BTYP_tuple [] -> bexpr_unitptr 
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr k
   | _ -> BEXPR_ref (bid, complete_check_list ts), complete_check t
 
 let bexpr_likely ((_,t) as e) = BEXPR_likely e, complete_check t
@@ -138,13 +140,13 @@ let bexpr_likely ((_,t) as e) = BEXPR_likely e, complete_check t
 let bexpr_unlikely ((_,t) as e) = BEXPR_unlikely e, complete_check t
 
 let bexpr_address ((_,t) as e) = 
-  match t with 
-  | Flx_btype.BTYP_tuple [] -> bexpr_unitptr 
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr (k + 1)
   | _ -> BEXPR_address e, complete_check (Flx_btype.btyp_pointer t)
 
 let bexpr_new ((_,t) as e) = 
-  match t with 
-  | Flx_btype.BTYP_tuple [] -> bexpr_unitptr 
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr (k + 1)
   | _ -> BEXPR_new e, complete_check (Flx_btype.btyp_pointer t)
 
 let bexpr_class_new cl e = BEXPR_class_new (cl,e), complete_check (Flx_btype.btyp_pointer cl)
@@ -170,22 +172,37 @@ let bexpr_apply t (e1, e2) =
   | BTYP_inst _ -> () (* can't check without lookup! *)
   | _ -> print_endline ("WARNING: bexpr_apply: unknown function type " ^ st t);
   end;
-  BEXPR_apply (e1, e2), complete_check t
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr k
+  | _ -> BEXPR_apply (e1, e2), complete_check t
 
-let bexpr_apply_prim t (bid, ts, e) = BEXPR_apply_prim (bid, complete_check_list ts, e), complete_check t
+let bexpr_apply_prim t (bid, ts, e) = 
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr k
+  | _ -> BEXPR_apply_prim (bid, complete_check_list ts, e), complete_check t
 
-let bexpr_apply_direct t (bid, ts, e) = BEXPR_apply_direct (bid, complete_check_list ts, e), complete_check t
+let bexpr_apply_direct t (bid, ts, e) = 
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr k
+  | _ -> BEXPR_apply_direct (bid, complete_check_list ts, e), complete_check t
 
-let bexpr_apply_stack t (bid, ts, e) = BEXPR_apply_stack (bid, complete_check_list ts, e), complete_check t
+let bexpr_apply_stack t (bid, ts, e) = 
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr k
+  | _ -> BEXPR_apply_stack (bid, complete_check_list ts, e), complete_check t
 
-let bexpr_apply_struct t (bid, ts, e) = BEXPR_apply_struct (bid, complete_check_list ts, e), complete_check t
+let bexpr_apply_struct t (bid, ts, e) = 
+  BEXPR_apply_struct (bid, complete_check_list ts, e), complete_check t
 
 let bexpr_tuple t es = 
   match es with 
   | [] -> bexpr_unit 
   | _ -> BEXPR_tuple es, complete_check t
 
-let bexpr_coerce (e, t) = BEXPR_coerce (e, t), complete_check t
+let bexpr_coerce (e, t) = 
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr k
+  | _ ->  BEXPR_coerce (e, t), complete_check t
 
 let bexpr_prj n d c = 
   begin match d with
@@ -201,7 +218,7 @@ let bexpr_prj n d c =
 (*
 print_endline ("Constructing projection : " ^ st d ^ " -> " ^ st c);
 *)
-  BEXPR_prj (n,d,c),complete_check (Flx_btype.BTYP_function (d,c))
+  BEXPR_prj (n,d,c),complete_check (Flx_btype.btyp_function (d,c))
 
 let bexpr_rnprj name seq d c =
 (*
@@ -236,7 +253,7 @@ print_endline ("rnprj: Projection type=" ^ st t);
     end
 
   | _ -> 
-    BEXPR_rprj (name,seq,d,c),complete_check (Flx_btype.BTYP_function (d,c))
+    BEXPR_rprj (name,seq,d,c),complete_check (Flx_btype.btyp_function (d,c))
 
 let bexpr_rprj name d c = bexpr_rnprj name 0 d c
 
@@ -442,10 +459,16 @@ print_endline ("Core = " ^ st (snd reduced_e));
 let bexpr_variant t (n, e) = BEXPR_variant (n, e), complete_check t
 
 
-let bexpr_aprj ix d c = BEXPR_aprj (ix,d,c),complete_check (Flx_btype.BTYP_function (d,c))
-let bexpr_inj n d c = BEXPR_inj (n,d,c),complete_check (Flx_btype.BTYP_function (d,c))
-let bexpr_get_n c n (e,d) =  BEXPR_apply ( bexpr_prj n d c, (e,d) ), complete_check c
+let bexpr_aprj ix d c = 
+  BEXPR_aprj (ix,d,c),complete_check (Flx_btype.btyp_function (d,c))
 
+let bexpr_inj n d c = 
+  BEXPR_inj (n,d,c),complete_check (Flx_btype.btyp_function (d,c))
+
+let bexpr_get_n c n (e,d) =  
+  match Flx_btype.trivorder c with
+  | Some k -> bexpr_unitptr k
+  | _ -> BEXPR_apply ( bexpr_prj n d c, (e,d) ), complete_check c
 
 let bexpr_closure t (bid, ts) = 
 (*
@@ -455,20 +478,32 @@ let bexpr_closure t (bid, ts) =
 
 let bexpr_const_case (i, t) = BEXPR_case (i, t), complete_check t
 
-let bexpr_nonconst_case argt (i, sumt) = BEXPR_inj (i, argt, sumt), 
+let bexpr_nonconst_case argt (i, sumt) = 
+  BEXPR_inj (i, argt, sumt), 
   complete_check (Flx_btype.btyp_function (argt,sumt))
 
-let bexpr_match_case (i, e) = BEXPR_match_case (i, e), Flx_btype.btyp_unitsum 2
+let bexpr_match_case (i, e) = 
+  BEXPR_match_case (i, e), Flx_btype.btyp_unitsum 2
 
-let bexpr_match_variant (s, e) = BEXPR_match_variant (s, e), Flx_btype.btyp_unitsum 2 
+let bexpr_match_variant (s, e) = 
+  BEXPR_match_variant (s, e), Flx_btype.btyp_unitsum 2 
 
-let bexpr_case_arg t (i, e) = BEXPR_case_arg (i, e), complete_check t
+let bexpr_case_arg t (i, e) = 
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr k
+  | _ ->    BEXPR_case_arg (i, e), complete_check t
 
-let bexpr_variant_arg t (v, e) = BEXPR_variant_arg (v, e), complete_check t
+let bexpr_variant_arg t (v, e) = 
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr k
+  | _ ->  BEXPR_variant_arg (v, e), complete_check t
 
 let bexpr_case_index t e = BEXPR_case_index e, complete_check t
 
-let bexpr_expr (s, t, e) = BEXPR_expr (s, t, e), complete_check t
+let bexpr_expr (s, t, e) = 
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr k
+  | _ ->  BEXPR_expr (s, t, e), complete_check t
 
 let bexpr_range_check t (e1, e2, e3) = BEXPR_range_check (e1, e2, e3), complete_check t
 
@@ -556,8 +591,8 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
      List.fold_left2 (fun r a b -> r && a = b) true ts ts' &&
      cmp b b'
 
-  | BEXPR_tuple [], BEXPR_unit
-  | BEXPR_unit,BEXPR_tuple [] -> true
+  | BEXPR_tuple [], BEXPR_unitptr 0
+  | BEXPR_unitptr 0,BEXPR_tuple [] -> true
 
   | BEXPR_tuple ls,BEXPR_tuple ls' ->
      List.length ls = List.length ls' &&
@@ -704,8 +739,7 @@ let flat_iter
   | BEXPR_funsum e -> f_bexpr e
   | BEXPR_lrangle e -> f_bexpr e
   | BEXPR_lrbrack e -> f_bexpr e
-  | BEXPR_unit -> ()
-  | BEXPR_unitptr -> ()
+  | BEXPR_unitptr _ -> ()
 
 (* this is a self-recursing version of the above routine: the argument to this
  * routine must NOT recursively apply itself! *)
@@ -800,8 +834,7 @@ let map
   | BEXPR_funsum e, t -> BEXPR_funsum (f_bexpr e), f_btype t
   | BEXPR_lrangle e, t -> BEXPR_lrangle (f_bexpr e), f_btype t
   | BEXPR_lrbrack e, t -> BEXPR_lrbrack (f_bexpr e), f_btype t
-  | BEXPR_unit,t -> BEXPR_unit, f_btype t
-  | BEXPR_unitptr,t -> BEXPR_unitptr, f_btype t
+  | BEXPR_unitptr i,t -> BEXPR_unitptr i, f_btype t
 
 (* -------------------------------------------------------------------------- *)
 
@@ -809,12 +842,6 @@ let map
 let rec reduce e =
   let rec f_bexpr e =
     match map ~f_bexpr:f_bexpr e with
-    (*
-    | BEXPR_apply ((BEXPR_closure (i,ts),_),a),t ->
-        BEXPR_apply_direct (i,ts,a),t
-    *)
-    | _,Flx_btype.BTYP_tuple [] -> bexpr_unit
-    | _, Flx_btype.BTYP_pointer (Flx_btype.BTYP_tuple []) -> bexpr_unitptr
     | BEXPR_not (BEXPR_not (e,t1),t2),t3 when t1 = t2 && t2 = t3 -> e,t1 (* had better be bool! *)
     | BEXPR_apply ((BEXPR_prj (n, _,_),_),((BEXPR_tuple ls),_)),_ -> List.nth ls n
     | BEXPR_deref (BEXPR_ref (i,ts),_),t -> BEXPR_varname (i,ts),t
@@ -827,8 +854,7 @@ let rec reduce e =
        (BEXPR_compose( (_,Flx_btype.BTYP_function (_,b) as f1), f2),_),
        e
       ),t ->
-        (* print_endline "Eliminating composition"; *)
-        BEXPR_apply(f2,(BEXPR_apply(f1,e),b)),t
+      bexpr_apply t (f2, bexpr_apply b (f1,e))
     | BEXPR_apply((BEXPR_compose _,_),_),_ -> print_endline "Bugged composition"; assert false
     | BEXPR_cond ((BEXPR_case (0,Flx_btype.BTYP_unitsum 2),Flx_btype.BTYP_unitsum 2), _, fa),_ -> fa
     | BEXPR_cond ((BEXPR_case (1,Flx_btype.BTYP_unitsum 2),Flx_btype.BTYP_unitsum 2), tr, _),_ -> tr

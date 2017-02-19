@@ -379,7 +379,7 @@ if name = "accumulate" then
     in
     let base_result = 
      try bt sym.Flx_sym.sr base_result 
-     with _ -> print_endline ("Can't bind base result type " ^ string_of_typecode base_result); BTYP_none
+     with _ -> print_endline ("Can't bind base result type " ^ string_of_typecode base_result); btyp_none()
     in
     domain,base_result
   in

@@ -128,7 +128,7 @@ let eq_entry_kinds y1 y2 =
      if List.length vs1 <> List.length vs2 then false else
      let nvs = List.length vs1 in
      (* just hope these variables aren't used, since they're low indices this should be safe *)
-     let nuvs = List.map (fun i -> btyp_type_var (i, BTYP_type 0)) (Flx_list.nlist nvs) in
+     let nuvs = List.map (fun i -> btyp_type_var (i, btyp_type 0)) (Flx_list.nlist nvs) in
      let sr = dummy_sr in 
      let ts1 = List.map (fun t-> Flx_unify.tsubst sr vs1 nuvs t) ts1 in
      let ts2 = List.map (fun t-> Flx_unify.tsubst sr vs2 nuvs t) ts2 in
@@ -771,7 +771,7 @@ print_endline ("Bind type " ^ string_of_typecode t);
     | Some t -> bt t
     end
 
-  | TYP_label -> BTYP_label
+  | TYP_label -> btyp_label ()
   | TYP_patvar _ -> failwith "Not implemented patvar in typecode"
   | TYP_patany _ -> failwith "Not implemented patany in typecode"
 
@@ -3206,7 +3206,7 @@ and lookup_name_with_sig
              try tsubst (Flx_bsym.sr bsym) vs ts' ft 
              with _ -> print_endline "[lookup_name_with_sig] Hassle replacing vs with ts??"; assert false
            in
-           Some (bexpr_prj k d (BTYP_pointer ft)) 
+           Some (bexpr_prj k d (btyp_pointer ft)) 
          | None -> None
          end
        | _ -> None
@@ -3263,7 +3263,7 @@ and lookup_name_with_sig
 (*
        print_endline ("projection: FOUND RECORD POINTER FIELD " ^ name);
 *)
-       Some (bexpr_prj k d (BTYP_pointer ft))
+       Some (bexpr_prj k d (btyp_pointer ft))
      | None -> None
      end
 
@@ -3271,7 +3271,7 @@ and lookup_name_with_sig
      if List.mem_assoc name fields 
      then 
       let ft = List.assoc name fields in
-      Some (bexpr_rprj name d (BTYP_pointer ft))  (* MIGHT REQUIRE FIXPOINT FIXUP! *)
+      Some (bexpr_rprj name d (btyp_pointer ft))  (* MIGHT REQUIRE FIXPOINT FIXUP! *)
      else None
 
    | _ -> None
@@ -4995,6 +4995,7 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
       in
       let e = be e in
       begin match e with
+      | _,t when Flx_btype.istriv t -> bexpr_address e
       | BEXPR_deref e,_ -> e
 
       | BEXPR_varname (index,ts),_ ->

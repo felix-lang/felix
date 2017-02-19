@@ -592,7 +592,7 @@ print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
     if match maybe_matches bsym_table state.counter [state.ret_type, t'] with Some _ -> true | _ -> false then
 *)
       [(bexe_fun_return (sr,(e',t')))]
-    else if t' = BTYP_fix (0, BTYP_type 0) then begin
+    else if t' = btyp_fix 0 (btyp_type 0) then begin
       print_endline "Converting return of 'any' type to procedure call";
       state.reachable <- false;
       [(bexe_fun_return (sr,(e',state.ret_type)))]

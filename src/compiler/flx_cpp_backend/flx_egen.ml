@@ -247,8 +247,11 @@ let rec gen_expr'
   | BEXPR_int i -> ce_atom (si i)
   | BEXPR_polyrecord _ -> print_endline "Attempt to generate polyrecord value, should have been factored out"; assert false
   | BEXPR_remove_fields _ -> print_endline "Attempt to generate remove fields, should have been factored out"; assert false
-  | BEXPR_unit -> print_endline "Generating unit expr"; ce_atom "0/*[gen_expr']CLT:UNIT*/" (* ce_atom "(::flx::rtl::unit())/*UNIT TUPLE?*/" *)
-  | BEXPR_unitptr -> print_endline "Generating unitptr expr"; ce_atom "NULL/*UNITPTR*/"
+  | BEXPR_unitptr k -> 
+    begin match k with
+    | 0 -> print_endline "Generating unit expr"; ce_atom "0/*[gen_expr']CLT:UNIT*/"
+    | _ -> print_endline "Generating unitptr expr"; ce_atom ("NULL/*UNITPTR<"^string_of_int k^">*/")
+    end
   | BEXPR_funprod _ -> assert false
   | BEXPR_funsum _ -> assert false
   | BEXPR_lrangle _ -> assert false
