@@ -60,7 +60,7 @@ spawn_fthread {
   done
 };
 @expect
-Xlib=list((expr, ((term "+" expr) | term)), (term, ((factor "*" term) | factor)), (factor, ((atom "^" factor) | atom)), (atom, (("(" expr ")") | "9")))
+Xlib=list((expr, [(term "+" expr) | term]), (term, [(factor "*" term) | factor]), (factor, [(atom "^" factor) | atom]), (atom, [("(" expr ")") | "9"]))
 Closure=list('atom', 'factor', 'term', 'expr')
 Got parser
 Test1: End pos (should be 11)=@1
