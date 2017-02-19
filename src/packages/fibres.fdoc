@@ -264,13 +264,26 @@ open class Schannel
     mk_ioschannel_pair[t]$ mk_schannel[t] ()
   ;
 
+  // pass in address of location to put the pointer to the T data
+  proc read[T] (chan:schannel[T], loc: &&T) {
+    svc$ svc_sread$ C_hack::cast[_schannel] chan, C_hack::reinterpret[&root::address] (loc);
+  }
+
+  // pass in address of location to put the T data
+  proc read[T] (chan:schannel[T], p: &T) {
+    var loc: &T;
+    read (chan, &loc);
+    p <- *loc;
+  }
+
   //$ Read an item from a bidirectional channel.
   inline gen read[T] (chan:schannel[T]) = {
     var loc: &T;
-    svc$ svc_sread$ C_hack::cast[_schannel] chan, C_hack::reinterpret[&root::address] (&loc);
-    var x = deref loc;
-    return x;
+    read (chan, &loc);
+    return *loc;
   }
+  proc read[T] (chan:ischannel[T], loc: &&T) { read (C_hack::cast[schannel[T]] chan, loc); }
+  proc read[T] (chan:ischannel[T], p: &T) { read (C_hack::cast[schannel[T]] chan, p); }
 
   //$ Read an item from an input channel.
   inline gen read[T] (chan:ischannel[T]) => read$ C_hack::cast[schannel[T]] chan;
