@@ -333,7 +333,7 @@ let unpack_args syms bsym_table shapes shape_table label_info index vs ts sr arg
 (*
 print_endline ("Handling compact linear parameter");
 *)
-          let arg = BEXPR_literal {Flx_literal.felix_type="";internal_value=""; c_value="_arg"},argtype in 
+          let arg = bexpr_literal argtype {Flx_literal.felix_type="";internal_value=""; c_value="_arg"} in 
           let component = match argtype with
           | BTYP_array (v,idxt) -> 
             let index = bexpr_const_case (n,idxt) in

@@ -901,7 +901,7 @@ print_endline "Apply struct";
     in
     let es = xh' :: es in
     let t = normalise_tuple_cons bsym_table t in
-    let e = BEXPR_tuple es, t in
+    let e = bexpr_tuple t es in
 (*
 print_endline ("Normalised expression " ^ sbe bsym_table e);
 print_endline ("Normalised type " ^ sbt bsym_table t);
@@ -934,7 +934,7 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
     in
     let es = es @[xh'] in
     let t = normalise_tuple_cons bsym_table t in
-    let e = BEXPR_tuple es, t in
+    let e = bexpr_tuple t es in
     ge' e
 
   | BEXPR_tuple_head (e',t' as x') ->
