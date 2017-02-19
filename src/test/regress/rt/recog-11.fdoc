@@ -1,26 +1,29 @@
 @title lazy recogniser
 @felix
 include "std/strings/recognisers";
+include "std/strings/parsers";
 open Recognisers;
 open Grammars;
+open Parsers;
 
 // silly sample grammar, right associative operators +, * ^ parens () and 
 // value 9 only
+fun strng (s:string) => Terminal[prod_t] (s, match_string s);
 
 var xprod = Alt([
-  Seq ([Nonterminal[prod_t] "term", Strng[prod_t] "+", Nonterminal[prod_t] "expr"]),
+  Seq ([Nonterminal[prod_t] "term", strng "+", Nonterminal[prod_t] "expr"]),
   Nonterminal[prod_t] "term"]);
    
 var tprod = Alt ([
-  Seq ([Nonterminal[prod_t] "factor", Strng[prod_t] "*", Nonterminal[prod_t] "term"]),
+  Seq ([Nonterminal[prod_t] "factor", strng "*", Nonterminal[prod_t] "term"]),
   Nonterminal[prod_t] "factor"]);
 
-var fprod = Alt ([Seq ([Nonterminal[prod_t] "atom", Strng[prod_t] "^", Nonterminal[prod_t] "factor"]),
+var fprod = Alt ([Seq ([Nonterminal[prod_t] "atom", strng "^", Nonterminal[prod_t] "factor"]),
   Nonterminal[prod_t] "atom"]);
 
 var atom = Alt ([
-  Seq ([Strng[prod_t] "(", Nonterminal[prod_t] "expr", Strng[prod_t] ")"]),
-  Strng[prod_t] "9"]);
+  Seq ([strng "(", Nonterminal[prod_t] "expr", strng ")"]),
+  strng "9"]);
 
 
 // library
