@@ -959,9 +959,13 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | STMT_trace (sr,v,s)  ->  ctack st
   | STMT_nop (sr, s) ->  ()
 
-  | STMT_reduce (sr, id, vs, ps, e1, e2) ->
-    let ps = List.map (fun (s,t)-> s,mt sr t) ps in
-    tack(STMT_reduce (sr, mi sr id, vs, ps, me e1, me e2))
+  | STMT_reduce (sr, id, reds) ->
+    let reds = map (fun (vs, ps, e1, e2) -> 
+      let ps = List.map (fun (s,t)-> s,mt sr t) ps in
+      vs,ps,me e1, me e2)
+    reds 
+    in 
+    tack(STMT_reduce (sr, mi sr id, reds))
 
   | STMT_axiom (sr, id, vs, psp, e1) ->
     let e1 = match e1 with

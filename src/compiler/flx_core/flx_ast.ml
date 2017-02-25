@@ -414,10 +414,13 @@ and statement_t =
   | STMT_reduce of
       Flx_srcref.t *
       Flx_id.t *
-      vs_list_t *
-      simple_parameter_t list *
-      expr_t *
-      expr_t
+      (
+        vs_list_t *
+        simple_parameter_t list *
+        expr_t *
+        expr_t
+      ) list
+
   | STMT_axiom of
       Flx_srcref.t *
       Flx_id.t *
@@ -832,7 +835,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_assert (s,_)
   | STMT_init (s,_,_)
   | STMT_function (s,_,_,_,_,_,_,_)
-  | STMT_reduce (s,_,_,_,_,_)
+  | STMT_reduce (s,_,_)
   | STMT_axiom (s,_,_,_,_)
   | STMT_lemma (s,_,_,_,_)
   | STMT_curry (s,_,_,_,_,_,_,_,_)

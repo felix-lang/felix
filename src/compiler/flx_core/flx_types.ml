@@ -66,7 +66,7 @@ type dcl_t =
   (* data structures *)
   | DCL_axiom of         params_t * axiom_method_t
   | DCL_lemma of         params_t * axiom_method_t
-  | DCL_reduce of        simple_parameter_t list * expr_t * expr_t
+  | DCL_reduce of        (vs_list_t * simple_parameter_t list * expr_t * expr_t) list
   | DCL_function of      params_t * typecode_t * typecode_t * property_t list * asm_t list
   | DCL_union of         (Flx_id.t * int option * vs_list_t * typecode_t * typecode_t option) list
   | DCL_struct of        (Flx_id.t * typecode_t) list
@@ -127,7 +127,7 @@ type symbol_definition_t =
   | SYMDEF_typevar of typecode_t (* usually type TYPE *)
   | SYMDEF_axiom of params_t * axiom_method_t
   | SYMDEF_lemma of params_t * axiom_method_t
-  | SYMDEF_reduce of parameter_t list * expr_t * expr_t
+  | SYMDEF_reduce of (ivs_list_t * parameter_t list * expr_t * expr_t) list
   | SYMDEF_function of params_t * typecode_t * typecode_t * property_t list * sexe_t list
 
   | SYMDEF_root of bid_t option (* initialiser procedure *)

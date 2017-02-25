@@ -365,8 +365,8 @@ print_endline ("Translating Lazy Declaration " ^ name);
     
 
   (* functions *)
-  | STMT_reduce (sr,name,vs,params, rsrc,rdst) ->
-    [ Dcl (sr,name,None,access,vs,DCL_reduce (params,rsrc,rdst)) ]
+  | STMT_reduce (sr,name,reds) ->
+    [ Dcl (sr,name,None,access,dfltvs,DCL_reduce (reds)) ]
 
   | STMT_axiom (sr,name,vs,params, rsrc) ->
     [ Dcl (sr,name,None,access,vs,DCL_axiom (params,rsrc)) ]

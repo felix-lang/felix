@@ -44,12 +44,14 @@ type axiom_t =
   Flx_bparams.t *
   baxiom_method_t
 
-type reduction_t =
-  Flx_id.t *
+type reduction_case_t =
   Flx_types.bvs_t *
   Flx_bparameter.t list *
   Flx_bexpr.t *
   Flx_bexpr.t
+
+type reduction_t = 
+  Flx_id.t * reduction_case_t list
 
 type sym_state_t =
 {

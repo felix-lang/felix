@@ -1101,7 +1101,12 @@ let monomorphise2 debug syms bsym_table =
   Hashtbl.clear syms.instances_of_typeclass;
   Hashtbl.clear syms.virtual_to_instances;
   syms.axioms := [];
+(*
   syms.reductions := [];
+*)
+(*
+print_endline ("Allowing " ^ string_of_int (List.length !(syms.reductions)) ^ " reductions");
+*)
   if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then 
   begin
     print_endline "";

@@ -67,6 +67,9 @@ let stack_calls syms bsym_table =
 let optimize_bsym_table' syms bsym_table (root_proc: int option) =
   print_debug syms "//OPTIMISING";
 
+  print_time syms "[flx_opt]; Performing reductions" begin fun () ->
+  Flx_reduce.reduce_all syms bsym_table end; 
+
   print_time syms "[flx_opt]; Finding roots" begin fun () ->
   (* Find the root and exported functions and types. *)
   Flx_use.find_roots syms bsym_table root_proc syms.Flx_mtypes2.bifaces end;

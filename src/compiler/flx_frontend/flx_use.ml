@@ -272,6 +272,18 @@ assert (List.length entries = 0); (* THIS IS OLD CODE ... ? *)
     end entries
   end syms.instances_of_typeclass;
   
+(*
+
+THIS CRAP IS HERE FOR THIS REASON: A symbol X may be unused,
+but a reduction Y -> X performed later then makes X used.
+So if we're going to apply reductions, the symbols on the RHS
+of the reduction have to be retained if the symbols on the LHS
+are, in case the LHS matches.
+
+I'm going to skip this for the moment!
+
+
+
   (* process reductions. assume temporarily that useless ones
     have been removed. Check later this is right. This is a 
     nasty routine here, adds stuff that cannot match because it
@@ -287,10 +299,11 @@ assert (List.length entries = 0); (* THIS IS OLD CODE ... ? *)
   let maybe_add ignores j = 
     if not (List.mem j ignores) then add j
   in
+(*
   if List.length (!(syms.reductions)) <> 0 then
      failwith ("Reductions exist!!")
   ;
-
+*)
   List.iter
   (fun (id,bvs,bps,lhs, rhs) ->
     let ignorelist = List.map (fun p -> p.Flx_bparameter.pindex) bps in
@@ -298,6 +311,7 @@ assert (List.length entries = 0); (* THIS IS OLD CODE ... ? *)
   )
   !(syms.reductions)
   ;
+*)
 
   while not (BidSet.is_empty !untraced) do
     let bid = BidSet.choose !untraced in

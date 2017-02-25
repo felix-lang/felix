@@ -134,11 +134,15 @@ syntax assertions {
   //$ before and after inlining, since that can destroy
   //$ or create candidate patterns.
 
-  private assertion_stmt  := "reduce" sdeclname sreduce_args ":" sexpr "=>" sexpr ";" =>#
+  private assertion_stmt  := "reduce" sname "|"? sreductions ";"  =>#
     """
-      `(ast_reduce ,_sr ,(first _2) ,(second _2) ,_3 ,_5 ,_7)
+      `(ast_reduce ,_sr ,_2 ,_4)
     """;
-      sreduce_args := "(" stypeparameter_comma_list ")" =># "_2";
+
+     private sreduce_args := "(" stypeparameter_comma_list ")" =># "_2";
+     private sreduction := stvarlist sreduce_args ":" sexpr "=>" sexpr =># "`(,_1 ,_2 ,_4 ,_6)";
+     private sreductions := sreduction =># "`(,_1)";
+     private sreductions := sreduction "|" sreductions =># "(cons _1 _3)";  
 }
 
 @

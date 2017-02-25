@@ -1200,6 +1200,7 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
       (* inline into all children first *)
       let children = Flx_bsym_table.find_children bsym_table i in
       BidSet.iter (fun i-> heavily_inline_bbdcl syms uses bsym_table excludes i) children;
+
 (*
       let exes = check_reductions syms bsym_table exes in (* user reductions *)
 *)

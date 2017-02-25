@@ -658,6 +658,11 @@ and xstatement_t sr x : statement_t =
   let xucmp sr x = xunion_component sr x in
   let xscmp sr x = xstruct_component sr x in
   let xp x = xpattern_t x in
+  let xred sr x = match x with
+  | Lst [vs; spl; e1; e2] -> xvs sr vs, xpvs sr spl, ex sr e1, ex sr e2 
+  | _ -> err x "reduction format" 
+  in
+
   let lnot sr x = EXPR_not (sr, x) in
   match x with
   | Lst [Id "ast_circuit"; sr; Lst cs] -> let sr = xsr sr in
@@ -676,14 +681,12 @@ and xstatement_t sr x : statement_t =
   | Lst [Id "ast_comment"; sr; Str s] -> let sr = xsr sr in STMT_comment (sr, s)
   | Lst [Id "ast_private"; sr; x] -> let sr = xsr sr in STMT_private (sr, xs sr x)
 
-  | Lst [Id "ast_reduce"; sr; id; vs; spl; e1; e2] -> let sr = xsr sr in 
+  | Lst [Id "ast_reduce"; sr; id; Lst reductions]  -> let sr = xsr sr in 
     STMT_reduce (
       sr,
       xid id,
-      xvs sr vs,
-      xpvs sr spl,
-      ex sr e1,
-      ex sr e2)
+      map (xred sr) reductions 
+      )
 
   | Lst [Id "ast_axiom"; sr; id; vs; ps; axm] -> let sr = xsr sr in 
     STMT_axiom (

@@ -406,16 +406,23 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
     add_bsym true_parent (bbdcl_typeclass ([], bvs))
 
 
-  | SYMDEF_reduce (ps,e1,e2) ->
-    let bps = bind_basic_ps ps in
-    let be1 = be e1 in
-    let be2 = be e2 in
-    state.reductions := 
-      (sym.Flx_sym.id,bvs,bps,be1,be2) :: !(state.reductions);
+  | SYMDEF_reduce reds -> 
+    let reds =
+      List.map (fun (ivs,ps,e1,e2) ->
+        let bps = bind_basic_ps ps in
+        let be1 = be e1 in
+        let be2 = be e2 in
+        let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in
+        bvs,bps,be1,be2
+      )
+      reds
+    in
+    let r = sym.Flx_sym.id,reds in
+    state.reductions := r :: !(state.reductions);
 
     if state.print_flag then
       print_endline ("//bound reduction  " ^ sym.Flx_sym.id ^ "<" ^
-        string_of_bid symbol_index ^ ">" ^ print_bvs bvs);
+        string_of_bid symbol_index ^ ">" );
 
     add_bsym true_parent (bbdcl_reduce ())
 

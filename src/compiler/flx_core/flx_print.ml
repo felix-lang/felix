@@ -1432,11 +1432,16 @@ and string_of_statement level s =
   | STMT_noreturn_code (_,s,e) ->
     "noreturn_code \n" ^ string_of_long_code_spec s ^ " "^ se e^";\n"
 
-  | STMT_reduce (_,name, vs, ps, rsrc, rdst) ->
+  | STMT_reduce (_,name, reds) ->
     spaces level ^
-    "reduce " ^ string_of_id name ^ string_of_vs vs ^
-    "("^string_of_basic_parameters ps^"): "^
-    string_of_expr rsrc ^ " => " ^ string_of_expr rdst ^
+    "reduce " ^ string_of_id name ^ 
+    String.concat ("\n" ^ spaces level ^ " | ") (List.map (fun (vs, ps, rsrc, rdst) ->
+      "\n| " ^ string_of_vs vs ^
+      "("^string_of_basic_parameters ps^"): "^
+      string_of_expr rsrc ^ " => " ^ string_of_expr rdst 
+    )
+    reds)
+    ^
     ";\n"
 
   | STMT_axiom (_,name, vs, ps, a) ->
@@ -1819,8 +1824,13 @@ and string_of_symdef entry name vs =
      string_of_named_reqs reqs ^
     ";\n"
 
-  | SYMDEF_reduce (ps,e1,e2) ->
-    "reduce " ^ string_of_id name ^ string_of_ivs vs ^ ";"
+  | SYMDEF_reduce reds->
+    "reduce " ^ string_of_id name ^ 
+    catmap "| " (fun (ivs,ps,e1,e2) ->
+       string_of_ivs ivs ^ " ... "
+    )
+    reds 
+     ^ ";"
 
   | SYMDEF_axiom (ps,e1) ->
     "axiom " ^ string_of_id name ^ string_of_ivs vs ^ ";"
@@ -2363,11 +2373,16 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     string_of_named_reqs reqs ^
     ";"
 
-  | DCL_reduce (ps, e1,e2) ->
+  | DCL_reduce reds ->
     sl ^
-    "reduce " ^ string_of_id name ^ seq ^ string_of_vs vs ^
-    "("^ string_of_basic_parameters ps ^"): " ^
-    string_of_expr e1 ^ " => " ^ string_of_expr e2 ^ ";"
+    "reduce " ^ string_of_id name ^ seq ^ 
+    catmap ("\n  | ") (fun (vs, ps, e1,e2) ->
+      string_of_vs vs ^
+      "("^ string_of_basic_parameters ps ^"): " ^
+      string_of_expr e1 ^ " => " ^ string_of_expr e2 
+    )
+    reds
+    ^ ";"
 
   | DCL_axiom (ps, e1) ->
     sl ^

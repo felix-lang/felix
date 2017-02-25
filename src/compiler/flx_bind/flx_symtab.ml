@@ -589,11 +589,18 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
   (* Add the declarations to the symbol table. *)
   begin match (dcl:Flx_types.dcl_t) with
 
-  | DCL_reduce (ps, e1, e2) ->
-      let ips = add_simple_parameters pubtab privtab (Some symbol_index) ps in
-
+  | DCL_reduce reds ->
+      let reds = 
+        List.map (fun (vs, ps, e1, e2) ->
+          let ips: parameter_t list = add_simple_parameters pubtab privtab (Some symbol_index) ps in
+          let ivs : ivs_list_t = make_ivs vs in
+          add_tvars' (Some symbol_index) privtab ivs;
+          (ivs,ips, e1, e2)
+        )
+        reds
+      in
       (* Add the symbol to the symbol table. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_reduce (ips, e1, e2));
+      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_reduce reds);
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
