@@ -1978,8 +1978,13 @@ and btype_of_bsym state bsym_table sr bt bid bsym =
       btyp_variant (List.map (fun (n,_,evs,d,c,gadt) -> n,d) ls)
   | BBDCL_struct (_,ls)
   | BBDCL_cstruct (_,ls,_) ->
+(*
+print_endline "Type of struct, considered as constructor function";
+*)
      let _,vs,_ = find_split_vs state.sym_table bsym_table bid in
-(* print_endline ("btype of bsym struct " ^ Flx_bsym.id bsym ^ "<" ^ si bid ^ ">, #vs =" ^ si (List.length vs)); *)
+(*
+print_endline ("btype of bsym struct " ^ Flx_bsym.id bsym ^ "<" ^ si bid ^ ">, #vs =" ^ si (List.length vs));
+*)
       (* Lower a struct type into a function that creates the struct. *)
       let ts = List.map
         (fun (s,i,_) -> TYP_name (Flx_bsym.sr bsym,s,[]))
@@ -1994,7 +1999,11 @@ and btype_of_bsym state bsym_table sr bt bid bsym =
         ts
       in
       let t = btyp_tuple (List.map snd ls) in
-      btyp_function (t, btyp_inst (bid, ts))
+      let result = btyp_function (t, btyp_inst (bid, ts)) in
+(*
+print_endline ("struct as function [btype_of_bsym] " ^ sbt bsym_table result);
+*)
+      result
   | BBDCL_typeclass _ 
   | BBDCL_instance _ 
   | BBDCL_const_ctor _ 
@@ -2169,7 +2178,11 @@ print_endline ("** FINISH **** Calculating Function type for function " ^ sym.Fl
       let ts = adjust_ts state.sym_table bsym_table sym.Flx_sym.sr index ts in
 (* print_endline "inner type of index .. struct .. adjust ts done"; *)
       let t = type_of_list (List.map snd ls) in
-      btyp_function (bt sym.Flx_sym.sr t, btyp_inst (index, ts))
+      let result = btyp_function (bt sym.Flx_sym.sr t, btyp_inst (index, ts)) in
+(*
+print_endline ("struct as function [inner_type_of_index] " ^ sbt bsym_table result);
+*)
+      result
 
   | SYMDEF_abs _ ->
       clierrx "[flx_bind/flx_lookup.ml:2068: E109] " sym.Flx_sym.sr
@@ -2493,8 +2506,8 @@ and lookup_qn_with_sig'
               clierrx "[flx_bind/flx_lookup.ml:2382: E121] " sra ("Struct "^id^" constructor arguments don't match member types")
         in
         assert (List.length hvs = List.length bts);
-        (*
         print_endline ("Struct constructor found, type= " ^ sbt bsym_table t);
+        (*
         print_endline ("Vs len= " ^ si (List.length hvs) ^ " ts len= " ^ si (List.length bts));
         *)
         (*
@@ -2859,9 +2872,7 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
       | SYMDEF_struct _ ->
         let sign = try List.hd signs with _ -> assert false in
         let t = inner_type_of_index_with_ts state bsym_table rs sr index ts in
-        (*
         print_endline ("[lookup_type_qn_with_sig] Struct constructor found, type= " ^ sbt bsym_table t);
-        *)
         begin match t with
         | BTYP_function (a,_) ->
           if not (type_match bsym_table state.counter a sign) then

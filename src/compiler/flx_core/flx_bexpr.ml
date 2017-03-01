@@ -1,5 +1,3 @@
-open Flx_btype
-type btype = t
 type bexpr_t =
   | BEXPR_int of int
   | BEXPR_not of t
@@ -93,7 +91,7 @@ let bexpr_cond ((_,ct) as c) ((_,tt) as t) ((_,ft) as f) =
    assert (tt = ft);
    BEXPR_cond (c,t,f),complete_check tt
 
-let bexpr_identity_function t = BEXPR_identity_function t, btyp_function (t,t)
+let bexpr_identity_function t = BEXPR_identity_function t, Flx_btype.btyp_function (t,t)
 
 let bexpr_unitptr i = BEXPR_unitptr i, Flx_btype.trivtype i
 let bexpr_unit = bexpr_unitptr 0
@@ -155,22 +153,22 @@ let bexpr_literal t l = BEXPR_literal l, complete_check t
 
 let bexpr_apply t (e1, e2) = 
   let _,ft = e1 and _,at = e2 in
-  begin match unfold "Flx_bexpr:bexpr_apply" ft with
-  | BTYP_function (d,c)
-  | BTYP_cfunction (d,c) ->
+  begin match Flx_btype.unfold "Flx_bexpr:bexpr_apply" ft with
+  | Flx_btype.BTYP_function (d,c)
+  | Flx_btype.BTYP_cfunction (d,c) ->
     if d <> at then begin
-      print_endline ("Warning: bexpr_apply: function type: " ^ st ft);
-      print_endline ("Warning: bexpr_apply: function domain\n"^ st d ^ "\ndoesn't agree with argtype\n" ^ st at);
-      failwith ("SYSTEM ERROR: bexpr_apply: function domain\n"^ st d ^ "\ndoesn't agree with argtype\n" ^ st at);
+      print_endline ("Warning: bexpr_apply: function type: " ^ Flx_btype.st ft);
+      print_endline ("Warning: bexpr_apply: function domain\n"^ Flx_btype.st d ^ "\ndoesn't agree with argtype\n" ^ Flx_btype.st at);
+      failwith ("SYSTEM ERROR: bexpr_apply: function domain\n"^ Flx_btype.st d ^ "\ndoesn't agree with argtype\n" ^ Flx_btype.st at);
     end; 
     if c <> t then begin
-      print_endline ("Warning: bexpr_apply: function type: " ^ st ft);
-      print_endline ("Warning: bexpr_apply: function codomain\n"^ st c ^ "\ndoesn't agree with applytype\n" ^ st t);
-      failwith("SYSTEM ERROR: bexpr_apply: function codomain\n"^ st c ^ "\ndoesn't agree with applytype\n" ^ st t);
+      print_endline ("Warning: bexpr_apply: function type: " ^ Flx_btype.st ft);
+      print_endline ("Warning: bexpr_apply: function codomain\n"^ Flx_btype.st c ^ "\ndoesn't agree with applytype\n" ^ Flx_btype.st t);
+      failwith("SYSTEM ERROR: bexpr_apply: function codomain\n"^ Flx_btype.st c ^ "\ndoesn't agree with applytype\n" ^ Flx_btype.st t);
     end
 
-  | BTYP_inst _ -> () (* can't check without lookup! *)
-  | _ -> print_endline ("WARNING: bexpr_apply: unknown function type " ^ st t);
+  | Flx_btype.BTYP_inst _ -> () (* can't check without lookup! *)
+  | _ -> print_endline ("WARNING: bexpr_apply: unknown function type " ^ Flx_btype.st t);
   end;
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
@@ -206,8 +204,8 @@ let bexpr_coerce (e, t) =
 
 let bexpr_prj n d c = 
   begin match d with
-  | BTYP_record ls -> assert (n < List.length ls)
-  | BTYP_tuple ls -> 
+  | Flx_btype.BTYP_record ls -> assert (n < List.length ls)
+  | Flx_btype.BTYP_tuple ls -> 
     if n>= List.length ls then
       failwith ("Tuple length " ^ string_of_int (List.length ls) ^ " projection index " ^
       string_of_int n ^ " is out of range"
@@ -225,7 +223,7 @@ let bexpr_rnprj name seq d c =
 print_endline ("Construction rnprj " ^ name ^ "[" ^ string_of_int seq ^ "]: " ^ st d ^ "->" ^ st c);
 *)
   match d with
-  | BTYP_record ts ->
+  | Flx_btype.BTYP_record ts ->
     let dcnt = ref 0 in
     let idx = ref 0 in
     begin
@@ -259,7 +257,7 @@ let bexpr_rprj name d c = bexpr_rnprj name 0 d c
 
 let bexpr_record es : t = 
   let all_blank = List.fold_left (fun acc (s,_) -> acc && s = "") true es in
-  if all_blank then bexpr_tuple (btyp_tuple (List.map (fun (s,(e,t))->t) es)) (List.map snd es) else
+  if all_blank then bexpr_tuple (Flx_btype.btyp_tuple (List.map (fun (s,(e,t))->t) es)) (List.map snd es) else
   let cmp (s1,e1) (s2,e2) = compare s1 s2 in
   let es = List.stable_sort cmp es in
   let ts = List.map (fun (s,(_,t)) -> s,t) es in
@@ -324,7 +322,7 @@ print_endline "Remove fields";
 *)
   let _,domain = e in
   match domain with
-  | BTYP_record ts ->
+  | Flx_btype.BTYP_record ts ->
 (*
 print_endline "Type record";
 *)
@@ -332,13 +330,13 @@ print_endline "Type record";
     let result = bexpr_record components in
     result
  
-  | BTYP_polyrecord (ts,t) ->
+  | Flx_btype.BTYP_polyrecord (ts,t) ->
 (*
 print_endline "Type poly record";
 *)
     let components = cal_removal e ts ss in
     let field_types = List.map (fun (name,(_,t)) -> name,t) components in
-    let result_type = btyp_polyrecord field_types t in
+    let result_type = Flx_btype.btyp_polyrecord field_types t in
 (*
 print_endline ("Type is " ^ st result_type);
 *)
@@ -346,7 +344,7 @@ print_endline ("Type is " ^ st result_type);
  
   | _ -> 
 print_endline "type BUGGED";
-    failwith ("BUG: caller should have checked! remove fields from non-(poly)record type " ^ st domain)
+    failwith ("BUG: caller should have checked! remove fields from non-(poly)record type " ^ Flx_btype.st domain)
 
 (************************ POLYRECORD **************************)
 let bexpr_polyrecord (es: (string * t) list) ((e',t') as e) =
@@ -355,15 +353,15 @@ print_endline ("[bexpr_polyrecord] Constructing polyrecord: extension fields = "
 print_endline ("[bexpr_polyrecord] Constructing polyrecord: core type= " ^ st t');
 *)
   let fldts = List.map (fun (s,(_,t)) -> s,t) es in
-  let result_type : btype = complete_check (Flx_btype.btyp_polyrecord fldts t') in
+  let result_type : Flx_btype.t = complete_check (Flx_btype.btyp_polyrecord fldts t') in
 (*
 print_endline ("[bexpr_polyrecord] expected result type = " ^ st domain);  
 *)
   let mkprj fld seq fldt : t = bexpr_rnprj fld seq t' fldt in
   match t' with
-  | BTYP_tuple [] -> bexpr_record es
+  | Flx_btype.BTYP_tuple [] -> bexpr_record es
 
-  | BTYP_record flds ->
+  | Flx_btype.BTYP_record flds ->
 (*
 print_endline ("polyrecord core is record: fields = " ^ String.concat "," (List.map (fun (s,t) -> s^":"^st t) flds));
 *)
@@ -398,7 +396,7 @@ print_endline ("[bexpr_polyrecord] actual result type = " ^ st t);
 *)
     e
 
-  | BTYP_polyrecord (flds,v) ->
+  | Flx_btype.BTYP_polyrecord (flds,v) ->
 (*
 print_endline "Constructing polyrecord value";
 *)
@@ -443,7 +441,7 @@ print_endline ("Core = " ^ st (snd reduced_e));
 *)
     e
 
-  | BTYP_type_var _ ->
+  | Flx_btype.BTYP_type_var _ ->
     let cmp (s1,e1) (s2,e2) = compare s1 s2 in
     let es = List.stable_sort cmp es in
     BEXPR_polyrecord (es,e), result_type 
@@ -468,7 +466,7 @@ let bexpr_inj n d c =
 let bexpr_get_n c n (e,d) =  
   match Flx_btype.trivorder c with
   | Some k -> bexpr_unitptr k
-  | _ -> BEXPR_apply ( bexpr_prj n d c, (e,d) ), complete_check c
+  | _ -> bexpr_apply c ( bexpr_prj n d c, (e,d) )
 
 let bexpr_closure t (bid, ts) = 
 (*
@@ -760,9 +758,9 @@ let map
   ?(f_bid=fun i -> i)
   ?(f_btype=fun t -> t)
   ?(f_bexpr=fun e -> e)
-  (e,t)
+  (e,t')
 =
-  let t = f_btype t in
+  let t = f_btype t' in
   match e with
   | BEXPR_cond (c,tr,fa) -> bexpr_cond (f_bexpr c) (f_bexpr tr) (f_bexpr fa)
   | BEXPR_label (i) -> bexpr_label (f_bid i)
@@ -776,7 +774,22 @@ let map
   | BEXPR_address e -> bexpr_address (f_bexpr e)
   | BEXPR_likely e -> bexpr_likely (f_bexpr e)
   | BEXPR_unlikely e -> bexpr_unlikely (f_bexpr e)
-  | BEXPR_apply (e1,e2) -> bexpr_apply t (f_bexpr e1, f_bexpr e2)
+  | BEXPR_apply (e1',e2') -> 
+     let e1 = f_bexpr e1' and e2 = f_bexpr e2' in
+     begin 
+       try 
+         bexpr_apply t (e1,e2)
+     with exn -> 
+       print_endline ("[Flx_bexpr:map] Error mapping apply term!");
+       print_endline ("Input Function type " ^ Flx_btype.st (snd e1'));
+       print_endline ("Input Argument type " ^ Flx_btype.st (snd  e2'));
+       print_endline ("Input term type " ^ Flx_btype.st t');
+       print_endline ("Output Function type " ^ Flx_btype.st (snd e1));
+       print_endline ("Output Argument type " ^ Flx_btype.st (snd e2));
+       print_endline ("Output term type= " ^ Flx_btype.st t);
+       raise exn
+     end
+
   | BEXPR_compose (e1,e2) -> bexpr_compose t (f_bexpr e1, f_bexpr e2)
   | BEXPR_apply_prim (i,ts,e2) ->
       bexpr_apply_prim t (f_bid i, List.map f_btype ts, f_bexpr e2)
@@ -840,7 +853,7 @@ let map
 (* -------------------------------------------------------------------------- *)
 
 (** Simplify the bound expression. *)
-let rec reduce e =
+let rec reduce e = 
   let rec f_bexpr e =
     match map ~f_bexpr:f_bexpr e with
     | BEXPR_not (BEXPR_not (e,t1),t2),t3 when t1 = t2 && t2 = t3 -> e,t1 (* had better be bool! *)
@@ -865,5 +878,4 @@ let rec reduce e =
       bexpr_remove_fields e ss
     | x -> x
   in f_bexpr e
-
 

@@ -1,5 +1,3 @@
-
-type btype = Flx_btype.t
 type bexpr_t = private
     BEXPR_int of int
   | BEXPR_not of t
@@ -108,7 +106,7 @@ val cal_removal :
   (string * Flx_btype.t) list ->
   string list -> (string * (bexpr_t * Flx_btype.t)) list
 val bexpr_remove_fields : t -> string list -> t
-val bexpr_polyrecord : (string * t) list -> bexpr_t * btype -> t
+val bexpr_polyrecord : (string * t) list -> bexpr_t * Flx_btype.t -> t
 val bexpr_variant : Flx_btype.t -> string * t -> bexpr_t * Flx_btype.t
 val bexpr_aprj : t -> Flx_btype.t -> Flx_btype.t -> bexpr_t * Flx_btype.t
 val bexpr_inj : int -> Flx_btype.t -> Flx_btype.t -> bexpr_t * Flx_btype.t

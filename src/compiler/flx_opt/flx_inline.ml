@@ -687,23 +687,31 @@ let rec special_inline syms uses bsym_table caller hic excludes sr e =
     failwith ("special_inline, n'th failure listlen=" ^ string_of_int n ^
     ", index=" ^ string_of_int (List.length ls))
   in
-  (*
-  print_endline ("Special inline " ^ sbe bsym_table e);
-  *)
+(*
+  print_endline ("Special inline " ^ sbe bsym_table e ^ " type " ^ sbt bsym_table (snd e));
+*)
   let exes' = ref [] in
   let id x = x in
   let rec aux e =
-  (*
+(*
   print_endline (" ... Special inline subexpr: " ^ sbe bsym_table e);
-  *)
+*)
+  let result = 
+(* THIS IS THE MAP THATS CAUSING THE FAILURE BUT I DONT KNOW WHY YET *)
   match Flx_bexpr.map ~f_bexpr:aux e with
   | BEXPR_apply ((BEXPR_prj (n,_,_),_),(BEXPR_tuple ls,_)),_ -> 
+(*
+print_endline "Apply prj/tuple";
+*)
     begin try nth ls n with exn ->
       print_endline "projection of tuple";
       raise exn
     end
 
   | BEXPR_apply ((BEXPR_prj (n,_,_),_),(BEXPR_record ls,_)),_ -> 
+(*
+print_endline "Apply prj/record";
+*)
     begin try snd (nth ls n) with exn ->
       print_endline "projection of record";
       raise exn
@@ -713,12 +721,15 @@ let rec special_inline syms uses bsym_table caller hic excludes sr e =
   | BEXPR_apply (
       (BEXPR_prj (n,_,_),_),
       (BEXPR_apply_struct (bid,ts,(BEXPR_tuple ls,_)),_)
-    ),_ -> 
+    ),_ as x -> 
+(*
+print_endline "Apply prj/struct/tuple";
+*)
     let bbdcl = Flx_bsym_table.find_bbdcl bsym_table bid in
     begin match bbdcl with 
     | BBDCL_struct _
     | BBDCL_cstruct _ -> nth ls n
-    | _ ->  e
+    | _ ->  x
     end
 
   | BEXPR_closure (callee,_),_ as x ->
@@ -729,6 +740,9 @@ let rec special_inline syms uses bsym_table caller hic excludes sr e =
     -> assert false
 
   | ((BEXPR_apply_prim (callee,ts,a),t) as e) ->
+(*
+print_endline "Apply prim";
+*)
     let bsym = Flx_bsym_table.find bsym_table callee in
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_external_fun (props,_,_,_,_,_,_) ->
@@ -755,10 +769,17 @@ let rec special_inline syms uses bsym_table caller hic excludes sr e =
   | (((BEXPR_apply(  (BEXPR_closure (callee,ts),_) ,a)),t) as e)
   | ((BEXPR_apply_direct (callee,ts,a),t) as e) 
     ->
+(*
+print_endline ("apply closure/direct callee=" ^ string_of_int callee ^ " arg=" ^ sbe bsym_table a);
+*)
       assert (ts=[]);
       if not (mem callee excludes) then begin
         heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
         let bsym = Flx_bsym_table.find bsym_table callee in
+        let id = Flx_bsym.id bsym in
+(*
+print_endline ("Callee=" ^ id);
+*)
         begin match Flx_bsym.bbdcl bsym with
         | BBDCL_fun (props,_,_,_,_,_)  
           when mem `Generator props && not (mem `Inline props)
@@ -779,6 +800,9 @@ let rec special_inline syms uses bsym_table caller hic excludes sr e =
           exes' := cll :: !exes';
 
 
+(*
+print_endline ("fresh variable type " ^ sbt bsym_table t);
+*)
           (* replace application with the variable *)
           bexpr_varname t (urv,[])
 
@@ -889,6 +913,9 @@ let rec special_inline syms uses bsym_table caller hic excludes sr e =
                     *)
                     let tail = hic revariable callee (rev tail) in
                     exes' := rev tail @ !exes';
+(*
+print_endline ("New expr = " ^ sbe bsym_table e' ^ " type " ^ sbt bsym_table (snd e'));
+*)
                     e'
 
                   | rxs ->
@@ -899,21 +926,24 @@ let rec special_inline syms uses bsym_table caller hic excludes sr e =
 
                     let rxs = hic revariable callee xs in
                     exes' := rev rxs @ !exes';
+(*
+print_endline ("new var type " ^ sbt bsym_table t);
+*)
                     bexpr_varname t (urv,[])
                 end
                 else
                 begin
-                  (*
+(*
                   print_endline ("***> Didn't inline " ^ id);
-                  *)
+*)
                   e
                 end
               end
           else
           begin
-            (*
+(*
             print_endline ("***> Didn't inline " ^ id);
-            *)
+*)
             e
           end
         | _ -> assert false (* e *)
@@ -921,6 +951,11 @@ let rec special_inline syms uses bsym_table caller hic excludes sr e =
       end else e
 
   | x -> x
+  in
+(*
+  print_endline (" ... Special inline result: " ^ sbe bsym_table result);
+*)
+  result
   in
    let e = aux e in (* we need left to right evaluation here ..*)
    e,!exes'
@@ -1081,6 +1116,9 @@ and heavy_inline_calls
     | BEXE_init (sr,i,(BEXPR_apply ((BEXPR_closure(callee,ts),_),a),_))
     | BEXE_init (sr,i,(BEXPR_apply_direct (callee,ts,a),_))
       when not (mem callee excludes)  ->
+(*
+print_endline "init apply closure/direct";
+*)
       assert (ts=[]);
       heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
@@ -1119,6 +1157,9 @@ and heavy_inline_calls
     | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure(callee,ts),_),a),_))
     | BEXE_fun_return (sr,(BEXPR_apply_direct (callee,ts,a),_))
       when not (mem callee excludes)  ->
+(*
+print_endline "return apply/closure/direct";
+*)
       assert (ts=[]);
       heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in

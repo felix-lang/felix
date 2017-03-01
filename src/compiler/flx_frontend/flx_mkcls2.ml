@@ -236,13 +236,17 @@ end;
         let param, arg = make_inner_function state nutab closure_bid fsr vs ts (List.map snd ps) in
 
         (* Generate a call to the wrapped function. *)
+        let ret = btyp_inst (i,ts) in 
         let exes =
-           let e = bexpr_apply_struct t (i, ts, arg) in
+           let e = bexpr_apply_struct ret (i, ts, arg) in
            [ bexe_fun_return (fsr, e) ]
         in
-        let ret = btyp_inst (i,ts) in 
         let bbdcl = bbdcl_fun ([],[],([param],None),ret,noeffects,exes) in
         Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
+(*
+print_endline ("Struct ctor wrapper: constructor type = " ^ sbt bsym_table t);
+print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
+*)
         bexpr_closure t (closure_bid, [])
 
       | BBDCL_cstruct (vs,ps,_) ->
@@ -260,12 +264,12 @@ end;
         let param, arg = make_inner_function state nutab closure_bid fsr vs ts (List.map snd ps) in
 
         (* Generate a call to the wrapped function. *)
+        let ret = btyp_inst (i,ts) in 
         let exes =
-           let e = bexpr_apply_struct t (i, ts, arg) in
+           let e = bexpr_apply_struct ret (i, ts, arg) in
            [ bexe_fun_return (fsr, e) ]
         in
 
-        let ret = btyp_inst (i,ts) in 
         let bbdcl = bbdcl_fun ([],[],([param],None),ret,noeffects,exes) in
         Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
         bexpr_closure t (closure_bid, [])
