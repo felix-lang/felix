@@ -204,50 +204,76 @@ let bexpr_coerce (e, t) =
 
 let bexpr_prj n d c = 
   begin match d with
-  | Flx_btype.BTYP_record ls -> assert (n < List.length ls)
-  | Flx_btype.BTYP_tuple ls -> 
-    if n>= List.length ls then
-      failwith ("Tuple length " ^ string_of_int (List.length ls) ^ " projection index " ^
+  (* Arrays with unitsum indices *)
+  | Flx_btype.BTYP_pointer ( Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
+  |Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m) ->
+    if n>= m then
+      failwith ("Array length " ^ string_of_int m ^ 
+      " projection index " ^
       string_of_int n ^ " is out of range"
     )
 
-  | _ -> ()
+  (* Tuples *)
+  | Flx_btype.BTYP_pointer ( Flx_btype.BTYP_tuple ls)
+  | Flx_btype.BTYP_tuple ls -> 
+    if n>= List.length ls then
+      failwith ("Tuple length " ^ string_of_int (List.length ls) ^ 
+      " projection index " ^
+      string_of_int n ^ " is out of range"
+    )
+
+  (* Records *)
+  | Flx_btype.BTYP_pointer (Flx_btype.BTYP_record ls)
+  | Flx_btype.BTYP_record ls ->
+    if n>= List.length ls then
+      failwith ("Record length " ^ string_of_int (List.length ls) ^ 
+      " projection index " ^
+      string_of_int n ^ " is out of range"
+    )
+
+  (* Structs and cstructs but we can't check without lookup *)
+  | Flx_btype.BTYP_pointer (Flx_btype.BTYP_inst _ )
+  | Flx_btype.BTYP_inst _ -> ()
+
+  (* polyrecords and anything else aren't allowed *)
+  | _ -> 
+    print_endline ("Indexed projection " ^ string_of_int n ^
+    " bad domain " ^ Flx_btype.st d);
+    assert false
   end;
-(*
-print_endline ("Constructing projection : " ^ st d ^ " -> " ^ st c);
-*)
+
   BEXPR_prj (n,d,c),complete_check (Flx_btype.btyp_function (d,c))
 
+(* note, inefficiency, if we find a field key
+  and start counting down sequence numbers,
+  and run out of fields of the right name,
+  we continue down the tail and fail at the end,
+  instead of failing right away.
+
+  Note: this algo works whether the keys are sorted or not,
+  but the result is only stable if the order is stable
+*)
+let find_seq name seq fs : (int * Flx_btype.t) option =
+  let rec aux idx seq fs =
+    match fs with
+    | [] -> None
+    | (key,t) :: _  when key = name && seq == 0 -> Some (idx,t)
+    | (key,_) :: tail when key = name -> aux (idx + 1) (seq - 1) tail
+    | (key,_) :: tail -> aux (idx + 1) seq tail
+  in aux 0 seq fs
+
 let bexpr_rnprj name seq d c =
-(*
-print_endline ("Construction rnprj " ^ name ^ "[" ^ string_of_int seq ^ "]: " ^ st d ^ "->" ^ st c);
-*)
   match d with
+  | Flx_btype.BTYP_pointer (Flx_btype.BTYP_record ts) 
   | Flx_btype.BTYP_record ts ->
-    let dcnt = ref 0 in
-    let idx = ref 0 in
-    begin
-      try
-        List.iter (fun (s,t) -> 
-          if s <> name then incr idx else
-          if (!dcnt) = seq then raise Not_found 
-          else begin incr idx; incr dcnt end
-        ) 
-        ts;
-        print_endline ("Invalid named projection " ^ name ^ ", seq=" ^ string_of_int seq ^ ", fields=" ^
+    begin match find_seq name seq ts with
+    | Some (idx,t) -> bexpr_prj idx d c
+    | None ->
+      print_endline ("Invalid named projection " ^ name ^ 
+        ", seq=" ^ string_of_int seq ^ ", fields=" ^
           String.concat ","(List.map fst ts)
-        );
-        assert false
-      with Not_found ->
-(*
-print_endline ("Translating name " ^ name ^ " seq " ^ string_of_int seq ^ " to index " ^ string_of_int (!idx));
-*)
-        assert (!idx < List.length ts);
-        let (_,t) as e = bexpr_prj (!idx) d c in
-(*
-print_endline ("rnprj: Projection type=" ^ st t);
-*)
-        e
+      );
+      assert false
     end
 
   | _ -> 

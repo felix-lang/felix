@@ -25,7 +25,8 @@ match unfold "flx_lookup" ta with
   end
 
 (* pointer to record *)
-| BTYP_pointer (BTYP_record _ as r) ->
+| BTYP_pointer (BTYP_record _ as r) 
+| BTYP_pointer (BTYP_polyrecord _ as r) ->
   begin match unfold "flx_lookup" r with
   | BTYP_polyrecord (es,_) 
   | BTYP_record (es) ->
