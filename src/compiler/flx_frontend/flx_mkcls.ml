@@ -28,9 +28,17 @@ let rec add_cls bsym_table all_closures i =
 (* processes closures *)
 let cls syms bsym_table all_closures sr e =
   match e with
-  | BEXPR_closure (i,ts),t as x -> add_cls bsym_table all_closures i
+  | BEXPR_closure (i,ts),t as x -> 
+(*
+print_endline ("mkcls  closure " ^ string_of_int i);
+*)
+    add_cls bsym_table all_closures i
 
-  | BEXPR_apply_direct (i,ts,a),t as x -> add_cls bsym_table all_closures i
+  | BEXPR_apply_direct (i,ts,a),t as x -> 
+(*
+print_endline ("mkcls2  apply direct " ^ string_of_int i);
+*)
+    add_cls bsym_table all_closures i
    (* Direct calls to non-stacked functions require heap but not a clone. *)
 
   | x -> ()
@@ -99,9 +107,12 @@ let process_exe ue syms bsym_table all_closures exe =
 let process_exes ue syms bsym_table all_closures exes =
   List.iter (process_exe ue syms bsym_table all_closures) exes
 
-let process_entry ue syms bsym_table all_closures i bbdcl =
-  match bbdcl with
+let process_entry ue syms bsym_table all_closures i bsym=
+  match bsym.bbdcl with
   | BBDCL_fun (props,vs,ps,ret,effects,exes) ->
+(*
+print_endline ("Process " ^ Flx_bsym.id bsym);
+*)
     process_exes ue syms bsym_table all_closures exes
 
   | _ -> ()
@@ -114,7 +125,7 @@ print_endline ("Calculating heap closures");
 *)
   let all_closures = ref BidSet.empty in
   Flx_bsym_table.iter 
-   (fun i _ bsym -> process_entry adj_cls syms bsym_table all_closures i bsym.bbdcl) 
+   (fun i _ bsym -> process_entry adj_cls syms bsym_table all_closures i bsym) 
     bsym_table
   ;
   BidSet.iter (set_closure bsym_table) !all_closures

@@ -182,13 +182,13 @@ print_endline "DONE Dead code elim";
 *)
   Flx_svc.svc_check syms bsym_table;
 
-  print_time syms "[flx_opt]; Mark heap closures" begin fun () ->
-  Flx_mkcls.mark_heap_closures syms bsym_table end;
-
   let bsym_table = print_time syms "[flx_opt]; Do stack call optimisation" begin fun () ->
   (* Convert functions into stack calls. *)
   stack_calls syms bsym_table end
   in
+
+  print_time syms "[flx_opt]; Mark heap closures" begin fun () ->
+  Flx_mkcls.mark_heap_closures syms bsym_table end;
 
   bsym_table
 

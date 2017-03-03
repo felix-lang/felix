@@ -755,6 +755,9 @@ print_endline "Apply struct";
     end
 
   | BEXPR_apply_direct (index,ts,a) ->
+(*
+print_endline ("Apply direct ");
+*)
     let bsym = Flx_bsym_table.find bsym_table index in
     let ts = map tsub ts in
     let bsym =
@@ -764,8 +767,8 @@ print_endline "Apply struct";
     in
     begin
     (*
-    print_endline ("apply closure of "^ id );
-    print_endline ("  .. argument is " ^ string_of_bound_expression sym_table a);
+    print_endline ("apply closure of "^ Flx_bsym.id bsym );
+    print_endline ("  .. argument is " ^ sbe bsym_table a);
     *)
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,_,_,_,_,_) ->
@@ -784,9 +787,32 @@ print_endline "Apply struct";
       in
       let name = cpp_instance_name syms bsym_table index ts in
       if mem `Cfun props
-      then  (* this is probably wrong because it doesn't split arguments up *)
-        ce_call (ce_atom name) [ce_atom (ge_arg a)]
-      else
+      then begin (* this is probably wrong because it doesn't split arguments up *)
+        let d = snd a in
+        match d with
+        | BTYP_tuple ts ->
+          begin match a with
+          | BEXPR_tuple xs,_ ->
+            let s = String.concat ", " (List.map (fun x -> ge x) xs) in
+            ce_atom ( name ^"(" ^ s ^ ")")
+          | _ ->
+           failwith "[flx_egen][tuple] can't split up arg to C function yet"
+          end
+        | BTYP_array (t,BTYP_unitsum n) ->
+          let ts = 
+           let rec aux ts n = if n = 0 then ts else aux (t::ts) (n-1) in
+           aux [] n
+          in
+          begin match a with
+          | BEXPR_tuple xs,_ ->
+            let s = String.concat ", " (List.map (fun x -> ge x) xs) in
+            ce_atom ( name ^"(" ^ s ^ ")")
+          | _ ->
+            failwith "[flx_egen][array] can't split up arg to C function yet"
+          end
+        | _ ->
+          ce_call (ce_atom name) [ce_atom (ge_arg a)]
+      end else
         ce_atom (
         "(FLX_NEWP("^name^")"^ Flx_gen_display.strd the_display props ^")"^
         "\n      ->apply(" ^ ge_arg a ^ ")"
@@ -806,6 +832,9 @@ print_endline "Apply struct";
     end
 
   | BEXPR_apply_stack (index,ts,a) ->
+(*
+print_endline ("Apply stack");
+*)
     let bsym = Flx_bsym_table.find bsym_table index in
     let ts = map tsub ts in
     let bsym =
