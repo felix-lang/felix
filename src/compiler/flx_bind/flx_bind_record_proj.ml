@@ -18,7 +18,7 @@ match unfold "flx_lookup" ta with
   begin match Flx_list.list_index (List.map fst es) field_name with
   | Some n -> 
     let t = List.assoc field_name es in
-    let t = bexpr_get_n t n a in
+    let t = bexpr_get_named t name a in
     t
   | None -> 
     raise Flx_dot.OverloadResolutionError
@@ -35,7 +35,7 @@ match unfold "flx_lookup" ta with
     begin match Flx_list.list_index (List.map fst es) field_name with
     | Some n -> 
       let t = List.assoc field_name es in
-      let t = bexpr_get_n (btyp_pointer t) n a in
+      let t = bexpr_get_named (btyp_pointer t) name a in
       t
     | None -> 
       raise Flx_dot.OverloadResolutionError

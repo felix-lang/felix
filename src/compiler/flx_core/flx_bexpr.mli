@@ -110,8 +110,13 @@ val bexpr_polyrecord : (string * t) list -> bexpr_t * Flx_btype.t -> t
 val bexpr_variant : Flx_btype.t -> string * t -> bexpr_t * Flx_btype.t
 val bexpr_aprj : t -> Flx_btype.t -> Flx_btype.t -> bexpr_t * Flx_btype.t
 val bexpr_inj : int -> Flx_btype.t -> Flx_btype.t -> bexpr_t * Flx_btype.t
+
 val bexpr_get_n :
   Flx_btype.t -> int -> bexpr_t * Flx_btype.t -> bexpr_t * Flx_btype.t
+val bexpr_get_named :
+  Flx_btype.t -> string -> bexpr_t * Flx_btype.t -> bexpr_t * Flx_btype.t
+
+
 val bexpr_closure : Flx_btype.t -> Flx_types.bid_t * Flx_btype.t list -> bexpr_t * Flx_btype.t
 val bexpr_const_case : int * Flx_btype.t -> bexpr_t * Flx_btype.t
 val bexpr_nonconst_case :

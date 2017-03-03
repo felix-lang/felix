@@ -468,6 +468,12 @@ let bexpr_get_n c n (e,d) =
   | Some k -> bexpr_unitptr k
   | _ -> bexpr_apply c ( bexpr_prj n d c, (e,d) )
 
+let bexpr_get_named c name (e,d) =
+  match Flx_btype.trivorder c with
+  | Some k -> bexpr_unitptr k
+  | _ -> bexpr_apply c ( bexpr_rprj name d c, (e,d) )
+
+
 let bexpr_closure t (bid, ts) = 
 (*
   print_endline ("Creating closure term " ^ string_of_int bid);

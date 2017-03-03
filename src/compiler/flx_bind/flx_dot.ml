@@ -103,8 +103,7 @@ let handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_
 
 let handle_constant_projection bsym_table sr a ta n =
   begin match unfold "flx_lookup" ta with
-  | BTYP_record fs 
-  | BTYP_polyrecord (fs,_) ->
+  | BTYP_record fs -> 
     let m = List.fold_left (fun acc (s,_) -> acc + (if s = "" then 1 else 0)) 0 fs in
     if n < 0 || n >= m then
       clierrx "[flx_bind/flx_dot.ml: E70A] " sr ("AST_dot, record index "^ string_of_int n ^ 
@@ -115,8 +114,7 @@ let handle_constant_projection bsym_table sr a ta n =
     else
     bexpr_get_n (snd (List.nth fs n)) n a
 
-  | BTYP_pointer (BTYP_record fs)
-  | BTYP_pointer (BTYP_polyrecord (fs,_)) ->
+  | BTYP_pointer (BTYP_record fs) ->
     let m = List.fold_left (fun acc (s,_) -> acc + (if s = "" then 1 else 0)) 0 fs in
     if n < 0 || n >= m then
       clierrx "[flx_bind/flx_dot.ml: E70A] " sr ("AST_dot, record index "^ string_of_int n ^ 
