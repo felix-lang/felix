@@ -33,7 +33,7 @@ void eval_AtA_times_u(int N, const double u[], double AtAu[]) {
 int main(int argc, char *argv[])
 {
     int i;
-    int N = 2000;
+    int N = 4000;
     double u[N],v[N],vBv,vv;
     double result;
     for(i=0;i<N;i++) u[i]=1.0;

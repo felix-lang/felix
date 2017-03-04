@@ -9,7 +9,7 @@ double Tak (double x, double y, double z)
 
 int main(int argc, char* argv[])
 {
-    int n = 10;
+    int n = 12;
     double r = Tak(n*3.0, n*2.0, n*1.0);
     printf("%.2f\n", r);
     return 0;

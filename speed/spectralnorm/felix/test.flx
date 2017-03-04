@@ -31,7 +31,7 @@ proc eval_AtA_times_u(N:int, u:V, AtAu:V) {
 
 proc main () {
   var i:int;
-  var N = 2000;
+  var N = 4000;
 
   val u = array_alloc[double] N;
   val v = array_alloc[double] N;

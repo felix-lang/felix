@@ -23,7 +23,7 @@ let eval_AtA_times_u u v =
   eval_A_times_u u w; eval_At_times_u w v
 
 let () =
-  let n = 2000 in
+  let n = 4000 in
   let u = Array.make n 1.0  and  v = Array.make n 0.0 in
   for i = 0 to 9 do
     eval_AtA_times_u u v; eval_AtA_times_u v u
