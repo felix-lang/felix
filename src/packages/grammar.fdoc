@@ -1211,6 +1211,24 @@ syntax control
   //$ Call a procedure (verbose).
   block := "call" sexpr  ";" =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
   block := "call_with_trap" sexpr  ";" =># """(cons 'ast_call_with_trap (cons _sr (splitapply _2)))""";
+  block := "callcc" sexpr  ";" =># """
+    (let* 
+      (
+        (labstring (fresh_name "_callcclab_"))
+        (lab (nos labstring))
+        (sa (splitapply _2))
+        (fun (first sa))
+        (arg (second sa))
+        (apl `(ast_apply ,_sr (,fun ,lab)))
+      )
+      `(ast_seq ,_sr 
+        (
+          (ast_jump ,_sr ,apl ,arg)
+          (ast_label ,_sr ,labstring)
+        )
+      )
+    )
+  """;
 
   //$ Procedure return.
   block := "return" ";" =># "`(ast_proc_return ,_sr)";

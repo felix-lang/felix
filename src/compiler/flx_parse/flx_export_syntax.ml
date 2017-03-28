@@ -226,7 +226,14 @@ print_endline ("sr of reduction is " ^ Flx_srcref.short_string_of_src sr);
       let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = ssr } in
       *)
       Ocs_env.set_glob env v1 (xsr sr);
-      let filebase = Filename.basename (Flx_srcref.file sr) in
+      let filebase = 
+(* this should NOT be necessary because "munge" below should remove the dot (.) 
+   but it doesn't .. no idea why not
+*)
+        let b = Filename.basename (Flx_srcref.file sr) in
+        let b = try Filename.chop_extension b with _ -> b in
+        b
+      in
       let filenase = munge filebase in 
       Ocs_env.set_glob env v2 (Sstring filebase)
     end
