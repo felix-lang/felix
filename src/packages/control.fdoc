@@ -88,6 +88,10 @@ open class Control
   //$ Do not confuse this with the Felix type of the procedure.
   _gc_pointer type cont = "::flx::rtl::con_t*";
 
+  fun entry_label : cont -> LABEL = "::flx::rtl::jump_address_t($1)";
+  fun current_position : cont -> LABEL = "::flx::rtl::jump_address_t($1,$1->pc)";
+  fun entry_label[T] (p:T->0):LABEL => entry_label (C_hack::cast[cont] p);
+
   //$ This is a hack to get the procedural continuation
   //$ currently executing, it is just the procedures
   //$ C++ this pointer.

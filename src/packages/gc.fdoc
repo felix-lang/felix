@@ -814,10 +814,18 @@ struct GC_EXTERN tracing_allocator : public virtual allocator_t
 };
 
 
+struct mark_thread_context_t
+{
+  flx_collector_t *collector;
+  pthread::memory_ranges_t *px;
+  int reclimit;
+};
+
+
 /// Naive Mark and Sweep Collector.
 struct GC_EXTERN flx_collector_t : public collector_t
 {
-  flx_collector_t(allocator_t *, flx::pthread::thread_control_base_t *, FILE *tf);
+  flx_collector_t(allocator_t *, flx::pthread::thread_control_base_t *, int _gcthreads, FILE *tf);
   ~flx_collector_t();
 
   // RF: added to allow implementation of non-leaky drivers.
@@ -887,7 +895,22 @@ private:
   void delete_frame(void *frame);
   size_t reap();
 
+  // top level mark, calls mark_single or mark_multi
   void mark(pthread::memory_ranges_t*);
+
+  // single threaded mark
+  void mark_single(pthread::memory_ranges_t*, int);
+
+  // multithreaded mark: single thread enters and creates
+  // worker threads which run mark_thread routine below
+  void mark_multi(pthread::memory_ranges_t*,int reclimit, int nthreads);
+
+public: // unfortunately, due to dispatch machinery
+  // worker thread
+  void mark_thread(mark_thread_context_t *);
+
+private:
+  int gcthreads;
   size_t sweep(); // calls scan_object
 
   typedef std::map<void *,size_t, std::less<void *> > rootmap_t;
@@ -1070,6 +1093,7 @@ size_t flx_collector_t::impl_get_allocation_amt()const
 flx_collector_t::flx_collector_t(
   allocator_t *a, 
   pthread::thread_control_base_t *tc,
+  int _gcthreads,
   FILE *tf
 )
   :
@@ -1086,6 +1110,7 @@ flx_collector_t::flx_collector_t(
   ,minptr(~uintptr_t(0))
   ,maxptr(0)
   ,tracefile(tf)
+  ,gcthreads(_gcthreads)
 {
   if(tf)
     fprintf(stderr, "[flx_collector_t] Tracefile active\n");
@@ -1406,7 +1431,126 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
   // Later we come back and examine them. This buffers the recursion
   // a bit. The set has to be empty initially.
   assert(j_tmp == 0);
+  if (gcthreads < 2)
+    mark_single(px,reclimit);
+  else 
+    mark_multi(px,reclimit,gcthreads);
+}
 
+static void run_mark_thread(mark_thread_context_t *mtc)
+{
+  mtc->collector->mark_thread(mtc); 
+}
+
+void flx_collector_t::mark_multi(pthread::memory_ranges_t *px,int reclimit, int nthreads)
+{
+fprintf(stderr, "starting %d mark threads\n", nthreads);
+  mark_thread_context_t mtc {this,px, reclimit};
+  ::std::vector< ::std::thread> mark_threads;
+  for (int i=0; i<gcthreads; ++i)
+    mark_threads.push_back (::std::thread (run_mark_thread, &mtc));
+  for (int i=0; i<gcthreads; ++i)
+    mark_threads[i].join();
+fprintf(stderr, "multithread mark finished\n");
+}
+
+// this method is run simultaneously by multiple threads
+void flx_collector_t::mark_thread(mark_thread_context_t *mtc)
+{
+fprintf(stderr, "multithread mark thread running\n");
+  int reclimit = mtc->reclimit;
+  pthread::memory_ranges_t *px  = mtc->px;
+  // px is a set of memory ranges representing the stacks
+  // of all pthreads including this one at the point the
+  // collector got invoked. All the other threads than this
+  // one must be stopped. The stack are found by recording the
+  // base stack value when launching the thread, and using
+  // the value when a thread stops to allow collection as the
+  // high value. The stack contains all the machine registers
+  // at this point too, since we used a long_jmp into a local
+  // variable to put the registers on the stack.
+  if(px)
+  {
+    // for all pthreads
+    std::vector<pthread::memory_range_t>::iterator end = (*px).end();
+    for(
+      std::vector<pthread::memory_range_t>::iterator i = (*px).begin();
+      i != end;
+      ++i
+    )
+    {
+      // get the stack extent for one pthread
+      pthread::memory_range_t range = *i;
+      if(debug)
+      {
+        size_t n = (char*)range.e - (char*)range.b;
+        fprintf(stderr, "[gc] Conservate scan of memory %p->%p, %zu bytes\n",range.b, range.e, n);
+      }
+      //VALGRIND_MAKE_MEM_DEFINED(range.b, (char*)range.e-(char*)range.b);
+      void *end = range.e;
+      // for all machine words on the stack
+      // this WILL FAIL if the stack isn't an exact multiple
+      // of the size of a machine word
+      for ( void *i = range.b; i != end; i = (void*)((void**)i+1))
+      {
+        //if(debug)
+        // fprintf(stderr, "[gc] Check if *%p=%p is a pointer\n",i,*(void**)i);
+        // conservative scan of every word on every stack
+        scan_object(*(void**)i, reclimit);
+      }
+      if(debug)
+        fprintf(stderr, "[gc] DONE: Conservate scan of memory %p->%p\n",range.b, range.e);
+    }
+  }
+
+  // Now scan all the registered roots
+  if(debug)
+    fprintf(stderr, "[gc] Scanning roots\n");
+  rootmap_t::iterator const end = roots.end();
+  for(
+    rootmap_t::iterator i = roots.begin();
+    i != end;
+    ++i
+  )
+  {
+    if(debug)
+      fprintf(stderr, "[gc] Scanning root %p\n", (*i).first);
+    scan_object((*i).first, reclimit);
+  }
+
+  // Now, scan the temporary set in j_tmp  until it is empty
+  // When we're processing an object with scan_object
+  // if its an actual Felix object we mark it reachable
+  // and then scan all the pointers in it: usually those pointers
+  // are not scanned immediately by scan object but simply put
+  // into the set j_tmp to schedule them for scanning.
+  //
+  // Note: Judy1First finds the first key greater than or equal to the given one,
+  // it returns 0 if there is no such key.
+  Word_t toscan = 0;
+  int res = Judy1First(j_tmp,&toscan,&je); // get one object scheduled for scanning
+  //if(tracefile)
+  //  fprintf(tracefile,"FT: %p\n",toscan);
+  while(res) {
+    Judy1Unset(&j_tmp,toscan,&je);         // remove it immediately
+    if(tracefile)
+      fprintf(tracefile,"DT: %p\n",toscan);
+    scan_object((void*)toscan, reclimit);  // scan it, it will either be marked or discarded
+    toscan = 0;
+    res = Judy1First(j_tmp,&toscan,&je); 
+    if(tracefile)
+      fprintf(tracefile,"FT: %p\n",toscan);
+  }                                     
+  assert(j_tmp == 0);                  
+
+  if(debug)
+    fprintf(stderr, "[gc] Done Scanning roots\n");
+}
+
+
+
+void flx_collector_t::mark_single(pthread::memory_ranges_t *px, int reclimit)
+{
   // px is a set of memory ranges representing the stacks
   // of all pthreads including this one at the point the
   // collector got invoked. All the other threads than this
@@ -1623,7 +1767,9 @@ void flx_collector_t::register_pointer(void *q, int reclimit)
   if (inrange(q)) {
     if(reclimit==0) 
     {
+// LOCK REQUIRED XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
       Judy1Set(&j_tmp,(Word_t)q,&je);
+// END LOCK XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
       if(tracefile)
         fprintf(tracefile,"IT: %p\n",q);
     }
@@ -1804,7 +1950,10 @@ again:
       if(debug)
       //  fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
       if(reclimit==0) {
+
+// LOCK REQUIRED XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
         Judy1Set(&j_tmp,(Word_t)*i,&je);
+// END LOCK XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
         if(tracefile)
           fprintf(tracefile,"IT: %p\n",*i);
       }

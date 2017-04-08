@@ -778,6 +778,7 @@ class PTHREAD_EXTERN flx_ts_counter_t {
   flx_ts_counter_t(flx_ts_counter_t const &);
 public:
   flx_ts_counter_t();
+  flx_ts_counter_t(long);
   ~flx_ts_counter_t();
   long pre_incr(); // value AFTER increment
   long pre_decr(); // value AFTER decrement
@@ -795,6 +796,7 @@ public:
   long operator--(int) { return post_decr(); }
   long operator*() { return get(); }
   long operator=(long a) { return set(a); }
+  void decr_wait_zero();
 };
 }}
 
@@ -809,6 +811,7 @@ namespace flx { namespace pthread {
 
 
 flx_ts_counter_t::flx_ts_counter_t() : x(0) {}
+flx_ts_counter_t::flx_ts_counter_t(long init) : x(init) {}
 
 flx_ts_counter_t::~flx_ts_counter_t() {
   wait_zero();
@@ -872,6 +875,12 @@ void flx_ts_counter_t::wait_zero() {
     if(x==0)return;
     c.wait(m);
   }
+}
+
+void flx_ts_counter_t::decr_wait_zero() {
+  ::std::unique_lock< ::std::mutex> l(m);
+   --x;
+   while (x>0) c.wait(m);
 }
 
 }}
@@ -1659,7 +1668,7 @@ namespace collector {
 struct PTHREAD_EXTERN flx_ts_collector_t :
   public flx::gc::collector::flx_collector_t
 {
-  flx_ts_collector_t(allocator_t *, flx::pthread::thread_control_t *, FILE*);
+  flx_ts_collector_t(allocator_t *, flx::pthread::thread_control_t *, int _gcthreads, FILE*);
   ~flx_ts_collector_t();
 
 private:
@@ -1696,8 +1705,8 @@ namespace flx {
 namespace gc {
 namespace collector {
 
-flx_ts_collector_t::flx_ts_collector_t(allocator_t *a, flx::pthread::thread_control_t *tc,FILE *tf) :
-  flx_collector_t(a,tc,tf)
+flx_ts_collector_t::flx_ts_collector_t(allocator_t *a, flx::pthread::thread_control_t *tc,int _gcthreads, FILE *tf) :
+  flx_collector_t(a,tc,_gcthreads,tf)
 {}
 
 flx_ts_collector_t::~flx_ts_collector_t(){}

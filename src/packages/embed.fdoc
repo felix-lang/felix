@@ -55,6 +55,7 @@ public:
   size_t gc_freq;
   size_t min_mem;
   size_t max_mem;
+  int gcthreads;
 
   double free_factor;
 
@@ -198,6 +199,10 @@ flx_config::init(int argc, char **argv) {
   allow_collection_anywhere = (bool)egetv("FLX_ALLOW_COLLECTION_ANYWHERE", 1);
   if (debug)
     fprintf(stderr, "[FLX_ALLOW_COLLECTION_ANYWHERE] %s\n", allow_collection_anywhere ? "True" : "False");
+
+  gcthreads = (int)egetv("FLX_GCTHREADS",0);
+  if (debug)
+    fprintf(stderr, "[FLX_GCTHREADS] %d\n",gcthreads);
 
   if (debug) {
     for (int i=0; i<flx_argc; ++i)
@@ -459,7 +464,11 @@ int flx_world::setup(int argc, char **argv) {
     }
   }
 
-  collector = new flx::gc::collector::flx_ts_collector_t(allocator, thread_control, tracefile);
+  collector = new flx::gc::collector::flx_ts_collector_t(
+    allocator, 
+    thread_control, 
+    c->gcthreads, tracefile
+  );
   collector->set_debug(c->debug_collections);
   if(debug)
     fprintf(stderr, "[flx_world: setup] Created ts collector\n");
