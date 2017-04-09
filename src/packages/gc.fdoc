@@ -933,6 +933,10 @@ public:
   };
   void scan_object(void *memory, int reclimit);
   memdata_t check_interior (void *memory);
+
+  ::std::mutex j_tmp_lock;
+  ::std::condition_variable j_tmp_cv;
+  int j_tmp_waiting;
   void *j_tmp;
   JError_t je;
 };
@@ -1444,20 +1448,21 @@ static void run_mark_thread(mark_thread_context_t *mtc)
 
 void flx_collector_t::mark_multi(pthread::memory_ranges_t *px,int reclimit, int nthreads)
 {
-fprintf(stderr, "starting %d mark threads\n", nthreads);
+//fprintf(stderr, "starting %d mark threads\n", nthreads);
+  j_tmp_waiting = 0;
   mark_thread_context_t mtc {this,px, reclimit};
   ::std::vector< ::std::thread> mark_threads;
   for (int i=0; i<gcthreads; ++i)
     mark_threads.push_back (::std::thread (run_mark_thread, &mtc));
   for (int i=0; i<gcthreads; ++i)
     mark_threads[i].join();
-fprintf(stderr, "multithread mark finished\n");
+//fprintf(stderr, "multithread mark finished\n");
 }
 
 // this method is run simultaneously by multiple threads
 void flx_collector_t::mark_thread(mark_thread_context_t *mtc)
 {
-fprintf(stderr, "multithread mark thread running\n");
+//fprintf(stderr, "multithread mark thread running\n");
   int reclimit = mtc->reclimit;
   pthread::memory_ranges_t *px  = mtc->px;
   // px is a set of memory ranges representing the stacks
@@ -1527,20 +1532,30 @@ fprintf(stderr, "multithread mark thread running\n");
   //
   // Note: Judy1First finds the first key greater than or equal to the given one,
   // it returns 0 if there is no such key.
-  Word_t toscan = 0;
-  int res = Judy1First(j_tmp,&toscan,&je); // get one object scheduled for scanning
-  //if(tracefile)
-  //  fprintf(tracefile,"FT: %p\n",toscan);
-  while(res) {
-    Judy1Unset(&j_tmp,toscan,&je);         // remove it immediately
-    if(tracefile)
-      fprintf(tracefile,"DT: %p\n",toscan);
-    scan_object((void*)toscan, reclimit);  // scan it, it will either be marked or discarded
+  Word_t toscan;
+  int res;
+again:
+  {
+    ::std::unique_lock< ::std::mutex> dummy(j_tmp_lock);
+retry:
     toscan = 0;
-    res = Judy1First(j_tmp,&toscan,&je); 
-    if(tracefile)
-      fprintf(tracefile,"FT: %p\n",toscan);
-  }                                     
+    res = Judy1First(j_tmp,&toscan,&je); // get one object scheduled for scanning
+    if (!res) {
+       ++j_tmp_waiting;
+       if (j_tmp_waiting == gcthreads) {
+         j_tmp_cv.notify_all();
+         goto endoff;
+       }
+       j_tmp_cv.wait(dummy);
+       --j_tmp_waiting;
+       goto retry;
+    }
+    Judy1Unset(&j_tmp,toscan,&je);         // remove it immediately
+  }
+  scan_object((void*)toscan, reclimit);  // scan it, it will either be marked or discarded
+  goto again;
+
+endoff:
   assert(j_tmp == 0);                  
 
   if(debug)
@@ -1762,14 +1777,22 @@ void flx_collector_t::impl_remove_root(void *memory)
  * for later processing by the top level iterative loop
  */
 
+// unfortunately requires a dynamic test to determine
+// if we're using the threaded mark routine or not
 void flx_collector_t::register_pointer(void *q, int reclimit)
 {
   if (inrange(q)) {
     if(reclimit==0) 
     {
-// LOCK REQUIRED XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-      Judy1Set(&j_tmp,(Word_t)q,&je);
-// END LOCK XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      if(gcthreads>1) 
+      {
+        ::std::unique_lock< ::std::mutex> dummy(j_tmp_lock);
+        Judy1Set(&j_tmp,(Word_t)q,&je);
+        j_tmp_cv.notify_one();
+      } 
+      else {
+        Judy1Set(&j_tmp,(Word_t)q,&je);
+      }
       if(tracefile)
         fprintf(tracefile,"IT: %p\n",q);
     }
