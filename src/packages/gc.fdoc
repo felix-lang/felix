@@ -181,6 +181,7 @@ public:
 #include "pthread_thread_control_base.hpp"
 #include <string>
 #include "flx_compiler_support_bodies.hpp"
+#include <chrono>
 
 // we use an STL set to hold the collection of roots
 #include <set>
@@ -364,6 +365,8 @@ struct GC_EXTERN collector_t
   virtual ~collector_t();
   virtual ::flx::pthread::thread_control_base_t *get_thread_control()const =0;
   virtual void register_pointer(void *q, int reclimit)=0;
+  ::std::chrono::time_point<::std::chrono::high_resolution_clock> start_time;
+  ::std::chrono::duration<double> gc_time;
 
   // These routines just provide statistics.
   size_t get_allocation_count()const {
@@ -387,8 +390,15 @@ struct GC_EXTERN collector_t
   // The mark and sweep collector algorithm.
   size_t collect() {
     //fprintf(stderr, "Collecting\n");
+    ::std::chrono::time_point< ::std::chrono::high_resolution_clock> start_time, end_time;
+    start_time = ::std::chrono::high_resolution_clock::now();
     size_t x = v_collect();
-    //fprintf(stderr, "Collecting DONE\n");
+    end_time = ::std::chrono::high_resolution_clock::now();
+    ::std::chrono::duration<double> elapsed = end_time - start_time;
+
+    if (debug)
+      fprintf(stderr, "Collecting DONE in %10.5f seconds\n", elapsed.count());
+    gc_time += elapsed;
     return x;
   }
 
@@ -555,9 +565,24 @@ gc_shape_t _ptr_void_map = {
 };
 
 allocator_t::~allocator_t(){}
-collector_t::~collector_t(){}
+collector_t::~collector_t(){
+  if (debug)
+  {
+    ::std::chrono::duration<double> elapsed = 
+      ::std::chrono::high_resolution_clock::now() - start_time
+    ;
+    fprintf(stderr, "Deleting collector total time = %4.5f seconds, gc time = %4.5f = %3.2f%%\n", 
+      elapsed.count(), gc_time.count(), gc_time.count() * 100.0 / elapsed.count()
+    );
+  }
+}
 
-collector_t::collector_t() : debug(false), module_registry(0){}
+collector_t::collector_t() 
+  : debug(false)
+  , module_registry(0)
+  , gc_time(0.0)
+  , start_time(::std::chrono::high_resolution_clock::now())
+{}
 
 gc_profile_t::gc_profile_t (
   bool debug_driver_,
