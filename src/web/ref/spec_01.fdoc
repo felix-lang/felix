@@ -568,7 +568,7 @@ is the same as if an export statement has been written.
 <a href="/share/lib/grammar/variables.fsyn">Syntax</a>
 
 A definition is a statement which defines a name, but does
-no cause any observable behavior, or, a class statement, or, 
+not cause any observable behavior, or, a class statement, or, 
 a var or val statement. The latter two exceptions define a name
 but may also have associated behaviour.
 
@@ -2417,7 +2417,7 @@ service call to schedule the initial continuation of a procedure
 taking a unit argument as an fthread (fibre). 
 
 The spawned fthread begins executing immediately.
-If coutrol returns before yielding by a synchronous
+If control returns before yielding by a synchronous
 channel operation, the action is equivalent to calling
 the procedure.
 

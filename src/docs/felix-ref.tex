@@ -203,7 +203,7 @@ proc words (inp:%<char, out:%>string) {
 }
 \end{minted}
 
-Finally we need an sink to emit the result:
+Finally we need a sink to emit the result:
 
 \begin{minted}{felix}
 proc emit (inp:%<string) {
@@ -320,7 +320,7 @@ done
 \href{http://felix-lang.org/share/lib/grammar/variables.fsyn}{Syntax}
 
 A definition is a statement which defines a name, but does
-no cause any observable behavior, or, a class statement, or, 
+not cause any observable behavior, or, a class statement, or, 
 a var or val statement. The latter two exceptions define a name
 but may also have associated behaviour.
 
@@ -1011,7 +1011,7 @@ service call to schedule the initial continuation of a procedure
 taking a unit argument as an fthread (fibre). 
 
 The spawned fthread begins executing immediately.
-If coutrol returns before yielding by a synchronous
+If control returns before yielding by a synchronous
 channel operation, the action is equivalent to calling
 the procedure.
 
@@ -8483,7 +8483,7 @@ The new fibre begins execution immediately and continues
 until suspended by either an unmatched I/O request on
 an schannel, or a read operation matched by a write.
 
-Fibres are similar to threads, howver control exchange is
+Fibres are similar to threads, however control exchange is
 synchronous, not pre-emptive. A communicating set of fibres
 runs in a pre-emptive single thread.
 
@@ -8628,7 +8628,7 @@ Both fibres and schannels are garbage collected. Thus they
 either be reachable or unreachable.
 
 If a fibre is active it is a root, and is always 
-reachable. If a fibre is waiting for an asynchrons event
+reachable. If a fibre is waiting for an asynchronous event
 it is also always reachable.
 
 An schannel may be also be reachable if it is stored in a variable
