@@ -359,8 +359,9 @@ rules which result in a quite complex structure.
 struct GC_EXTERN collector_t
 {
   bool debug;
+  bool report_gcstats;
   void *module_registry; 
-  void set_debug(bool d){debug=d;}
+  void set_debug(bool d, bool stats){debug=d;report_gcstats=stats;}
   collector_t();
   virtual ~collector_t();
   virtual ::flx::pthread::thread_control_base_t *get_thread_control()const =0;
@@ -368,6 +369,7 @@ struct GC_EXTERN collector_t
   ::std::chrono::time_point<::std::chrono::high_resolution_clock> start_time;
   ::std::chrono::duration<double> gc_time;
 
+  virtual bool inrange(void *)const =0;
   // These routines just provide statistics.
   size_t get_allocation_count()const {
     return v_get_allocation_count();
@@ -451,7 +453,8 @@ struct GC_EXTERN gc_profile_t {
   bool debug_driver;
   bool debug_allocations;     ///< allocator debug on/off
   bool debug_collections;     ///< collector debug on/off
-  bool report_collections;     ///< collector debug on/off
+  bool report_collections;    ///< collector debug on/off
+  bool report_gcstats;        ///< print final gc statistics
   bool allow_collection_anywhere; ///< enable collect on allocate
 
   size_t gc_freq;      ///< how often to collect
@@ -481,6 +484,7 @@ struct GC_EXTERN gc_profile_t {
     bool debug_allocations_,
     bool debug_collections_,
     bool report_collections_,
+    bool report_gcstats_,
     bool allow_collection_anywhere_,
     size_t gc_freq_,
     size_t min_mem_,
@@ -566,7 +570,7 @@ gc_shape_t _ptr_void_map = {
 
 allocator_t::~allocator_t(){}
 collector_t::~collector_t(){
-  if (debug)
+  if (report_gcstats)
   {
     ::std::chrono::duration<double> elapsed = 
       ::std::chrono::high_resolution_clock::now() - start_time
@@ -579,6 +583,7 @@ collector_t::~collector_t(){
 
 collector_t::collector_t() 
   : debug(false)
+  , report_gcstats(false)
   , module_registry(0)
   , gc_time(0.0)
   , start_time(::std::chrono::high_resolution_clock::now())
@@ -589,6 +594,7 @@ gc_profile_t::gc_profile_t (
   bool debug_allocations_,
   bool debug_collections_,
   bool report_collections_,
+  bool report_gcstats_,
   bool allow_collection_anywhere_,
   size_t gc_freq_,
   size_t min_mem_,
@@ -601,6 +607,7 @@ gc_profile_t::gc_profile_t (
   debug_allocations(debug_allocations_),
   debug_collections(debug_collections_),
   report_collections(report_collections_),
+  report_gcstats(report_gcstats_),
   allow_collection_anywhere(allow_collection_anywhere_),
   gc_freq(gc_freq_),
   gc_counter(0),
@@ -748,7 +755,7 @@ void *scan_by_offsets(collector_t *collector, gc_shape_t *shape, void *p, size_t
       //fprintf(stderr, "scan by offsets %s, #%d, offset %zu, address %p, value %p\n", 
       //  shape->cname, i, offsets[i], pq, q);
       // instead of returning the pointer, register it for later processing
-      if(q)
+      if(collector->inrange(q))
       {
         collector->register_pointer(q, reclimit);
       }
@@ -913,7 +920,7 @@ private:
   uintptr_t minptr;
   uintptr_t maxptr;
 
-  bool inrange(void *p) { return minptr <= uintptr_t(p) && uintptr_t(p) < maxptr; }
+  bool inrange(void *p)const { return minptr <= uintptr_t(p) && uintptr_t(p) < maxptr; }
   void unlink(void *frame);
   void v_finalise(void *frame);
   void post_delete(void *frame);

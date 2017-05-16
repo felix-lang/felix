@@ -48,6 +48,7 @@ public:
   bool debug_allocations;
   bool debug_collections;
   bool report_collections;
+  bool report_gcstats;
 
   bool debug_driver;
   bool finalise;
@@ -154,6 +155,12 @@ flx_config::init(int argc, char **argv) {
   if (report_collections)
   {
     fprintf(stderr, "[FLX_REPORT_COLLECTIONS] Collection report enabled\n");
+  }
+
+  report_gcstats = (bool)egetv("FLX_REPORT_GCSTATS", report_collections);
+  if (report_collections)
+  {
+    fprintf(stderr, "[FLX_REPORT_GCSTATS] GC statistics report enabled\n");
   }
 
 
@@ -469,7 +476,7 @@ int flx_world::setup(int argc, char **argv) {
     thread_control, 
     c->gcthreads, tracefile
   );
-  collector->set_debug(c->debug_collections);
+  collector->set_debug(c->debug_collections, c->report_gcstats);
   if(debug)
     fprintf(stderr, "[flx_world: setup] Created ts collector\n");
 
@@ -478,6 +485,7 @@ int flx_world::setup(int argc, char **argv) {
     c->debug_allocations,
     c->debug_collections,
     c->report_collections,
+    c->report_gcstats,
     c->allow_collection_anywhere,
     c->gc_freq,
     c->min_mem,
