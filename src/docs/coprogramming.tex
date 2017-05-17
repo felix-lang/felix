@@ -1,4 +1,4 @@
-\documentclass{article}
+\documentclass{report}
 \usepackage{color}
 \definecolor{bg}{rgb}{0.95,0.95,0.95}
 \definecolor{emphcolor}{rgb}{0.5,0.0,0.0}
@@ -65,7 +65,7 @@ Next, we make a device which repeatedly reads an integer, squares it,
 and writes the result. It is an infinite loop, this coroutine never
 terminates of its own volition. This is typical of coroutines.
 
-\begin{minted}
+\begin{minted}{felix}
 proc transducer (inp: %<int, out: %>int) () {
   while true do
     var x = read inp;
@@ -395,6 +395,95 @@ Why is it better? Because with this method there are {\em two}
 stacks to hold local variables and to recurse on. So by using
 two coroutines, you have a solution which is superior because it
 eliminates the need for a stackless callback.
+
+\section{Syntax Extensions}
+Felix has two syntax extensions designed to so coroutines are easier to use.
+
+\subsection{The {\tt chip} definition}
+This extensions encourages a picture of coroutines as integrated
+circuits, even though that is not really accurate.
+
+\begin{minted}{felix}
+chip producer '
+  connector io
+    pin out: %>int
+{
+  for i in 0..<10 
+    perform write (io.out, i);
+}
+chip transducer 
+  connector io
+    pin inp: %<int
+    pin out: %>int 
+{
+  while true do
+    var x = read io.inp;
+    var y = x * x;
+    write (io.out, y);
+  done
+}
+chip consumer 
+  connector io
+    pin inp: %<int
+{
+  while true do
+    var y = read io.inp;
+    println y;
+  done
+}
+\end{minted}
+
+Here \verb%connector% names an argument to the procedure
+of record type. The fields of the record and specified with
+the \verb%pin% clause. You can have more than one connector
+phrase, each specifies a separate argument. Each \verb%chip%
+has an aditional unit argument added automatically.
+
+\subsection{The {\tt device} statement}
+You can write:
+
+\begin{minted}{felix}
+device x = y;
+\end{minted}
+
+to construct a procedure closure of type \verb%unit->void%.
+Actually, device is just a synonym for \verb%var%, and is
+provided to make your look more like an electrical engineer
+than a software engineer.
+
+
+\subsection{The {\tt circuit} statement}
+A \verb%circuit% statement can be used to connect devices
+and pins. It is an executable statement!
+
+\begin{minted}{felix}
+circuit
+  connect producer.out, transducer.inp
+  connect transducer.out, consumer.inp
+endcircuit
+\end{minted}
+
+This makes a pipeline from the chips. The connecting channels
+are automatically created, as are the procedure closures required
+to make devices. The resulting devices are then spawned.
+
+You can list any number of comma separated device/pin pairs
+in a connect clause. Felix finds the transitive closure of
+connections and makes a channel to connect all those pins together.
+The data type of all connected pins must be the same. If all are inputs
+or all are outputs, the compiler will issue a warning (but it is not
+an error!).
+
+There is also another clause you can use in a circuit statement:
+
+\begin{minted}{felix}
+circuit
+  wire ch to dev.pin
+endcircuit
+\end{minted}
+
+The \verb%wire% clause allows you to connect a known channel to a device.
+
 
 
 \chapter{Coroutine Semantics}
