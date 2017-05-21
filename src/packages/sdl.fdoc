@@ -46,6 +46,7 @@
 @tangler win32_sdl2_image.fpc        = $PWD/src/config/win32/sdl2_image.fpc
 @tangler win32_sdl2_ttf.fpc          = $PWD/src/config/win32/sdl2_ttf.fpc
 
+@tangler macosx_SDL2_gfx.fpc         = $PWD/src/config/macosx/SDL2_gfx.fpc
 
 
 @h1 SDL2.flx
@@ -3696,6 +3697,16 @@ provides_dlib: -L/usr/local/lib -lSDL2_ttf
 provides_slib: -L/usr/local/lib -lSDL2_ttf
 requires_dlibs: -lfreetype
 requires_slibs: -lfreetype
+@
+
+@tangle macosx_SDL2_gfx.fpc
+Name: SDL2_gfx
+Description: Simple Direct Media Layer 2.0: SDL2_gfx
+cflags: -I/usr/local/include/SDL2
+includes: '"SDL2_gfxPrimitives.h"'
+provides_dlib: -L/usr/local/lib -lSDL2_gfx
+provides_slib: -L/usr/local/lib -lSDL2_gfx
+
 
 @
 @tangle win32_sdl2.fpc
