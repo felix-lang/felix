@@ -1,0 +1,123 @@
+
+@title basic drawing
+@felix
+include "gui/__init__";
+open FlxGui;
+
+requires package "SDL2_gfx";
+
+println$ "Basic Drawing Test";
+
+// Initialise the SDL system (SDL + TTF + IMAGE)
+FlxGui::init();
+
+const SDL2_GFXPRIMITIVES_MAJOR:int;
+const SDL2_GFXPRIMITIVES_MINOR:int;
+const SDL2_GFXPRIMITIVES_MICRO:int;
+
+println$ "GFX version " + SDL2_GFXPRIMITIVES_MAJOR.str + "." SDL2_GFXPRIMITIVES_MINOR.str + "." + SDL2_GFXPRIMITIVES_MICRO.str;
+proc filledCircleRGBA: SDL_Renderer * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8;
+
+noinline proc draw_filledCircle(surf:&SDL_Surface)  (c:color_t, x0:int, y0:int, rad:int)
+{
+   var r: SDL_Renderer = SDL_CreateSoftwareRenderer surf;
+   filledCircleRGBA(r,x0.int16,y0.int16,rad.int16,c.r,c.g,c.b,c.a);
+   SDL_DestroyRenderer r;
+}
+var w = create_resizable_window("Felix:bill",100,100,400,600);
+w.add$ mk_drawable FlxGui::clear lightgrey;
+var font_name = dflt_sans_serif_font();
+var font : font_t = get_font(font_name, 12);
+var lineskip = get_lineskip font;
+w.add$ mk_drawable FlxGui::write (10,10,font,black,"Basic Drawing Test");
+
+
+noinline proc circle_sprite 
+(
+  colr:colour_t, 
+  radius:int, 
+  var xpos: int, var ypos: int, 
+  var xvel:int, var yvel:int
+)
+(
+  pclip : &rect_t,
+  tickin1: %<int
+) 
+()
+{
+  while true do
+    var time = read tickin1;
+    C_hack::ignore time;
+    xpos += xvel;
+    ypos += yvel;
+  // overshoot -> bounce
+    var clip = *pclip;
+    var x0 = clip.x; var x1 = clip.x+clip.w;
+    var y0 = clip.y; var y1 = clip.y+clip.h;
+    if xpos > x1 do
+      xpos = 2 * x1 - xpos;
+      xvel = -xvel;
+    elif xpos < x0 do
+      xpos = 2 * x0 - xpos;
+      xvel = -xvel;
+    done
+    if ypos > y1 do
+      ypos = 2 * y1 - ypos;
+      yvel = -yvel;
+    elif ypos < y0 do
+      ypos = 2 * y0 - ypos;
+      yvel = -yvel;
+    done
+    w.add$ mk_drawable "CIRCLE" draw_filledCircle (colr,xpos,ypos,radius);
+println$ "Pos = " + xpos.str + ", " + ypos.str;
+  done
+}
+
+
+proc runner (var tickin0: %<int, var tickout1: %>int) () {
+  while true do
+    var time = read tickin0;
+    w.remove "CIRCLE";
+//println$ "Begin broadcast " + time.str;
+    broadcast (tickout1, time);
+//println$ "End broadcast " + time.str;
+    w.update();
+    w.show();
+  done
+}
+
+var sprites = 
+(
+  (RGB (100,100,0), 5, 15, 15, 1, 1),
+  (RGB (110,100,0), 5, 10, 12, 2, 1),
+  (RGB (100,0,100), 5, 15, 15, 0, 3),
+  (RGB (170,100,0), 5, 15, 15, 7, 4),
+  (RGB (140,100,90), 5, 210, 150, -20, -3),
+  (RGB (100,100,0), 5, 15, 152, 0, -3),
+  (RGB (100,140,70), 5, 15, 157, 0, 10),
+  (RGB (100,100,40), 5, 15, 180, -2, 6)
+);
+
+var clip = rect_t (10,10,380,580);
+
+proc setup ()
+{
+  var tickin0, tickout0 = mk_ioschannel_pair[int]();
+  var tickin1, tickout1 = mk_ioschannel_pair[int]();
+  spawn_fthread {
+    for i in 0 .. 1000 do
+      write (tickout0, i);
+      Faio::sleep 0.1;
+    done
+  };
+  for s in sprites do 
+    var spr = circle_sprite s ;
+    spawn_fthread (spr (&clip, tickin1));
+  done
+  spawn_fthread (runner (tickin0, tickout1));
+}
+
+setup();
+
+@
+
