@@ -39,9 +39,11 @@
 @tangler linux_sdl2.fpc               = $PWD/src/config/linux/sdl2.fpc
 @tangler linux_sdl2_image.fpc         = $PWD/src/config/linux/sdl2_image.fpc
 @tangler linux_sdl2_ttf.fpc           = $PWD/src/config/linux/sdl2_ttf.fpc
+
 @tangler macosx_sdl2.fpc              = $PWD/src/config/macosx/sdl2.fpc
 @tangler macosx_sdl2_image.fpc        = $PWD/src/config/macosx/sdl2_image.fpc
 @tangler macosx_sdl2_ttf.fpc          = $PWD/src/config/macosx/sdl2_ttf.fpc
+
 @tangler win32_sdl2.fpc              = $PWD/src/config/win32/sdl2.fpc
 @tangler win32_sdl2_image.fpc        = $PWD/src/config/win32/sdl2_image.fpc
 @tangler win32_sdl2_ttf.fpc          = $PWD/src/config/win32/sdl2_ttf.fpc

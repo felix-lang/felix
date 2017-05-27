@@ -46,8 +46,12 @@ fibres make up a single thread, and within that only one fibre is ever
 executing. Fibration is a technique used to structure sequential programs,
 there is no concurrency involved.
 
+\section{A Simple Example}
 The best way to understand coroutines and fibration is to have a look
-at a simple example. First, we make a coroutine procedure which writes the integers
+at a simple example. 
+
+\subsection{The Producer}
+First, we make a coroutine procedure which writes the integers
 from 0 up to but excluding 10 down a channel.
 
 \begin{minted}{felix}
@@ -61,6 +65,7 @@ Notice that as well as passing the output channel argument \verb%out%,
 there is an extra unit argument \verb%()%. This procedure terminates
 after it has written 10 integers.
 
+\subsection{The Transducer}
 Next, we make a device which repeatedly reads an integer, squares it,
 and writes the result. It is an infinite loop, this coroutine never
 terminates of its own volition. This is typical of coroutines.
@@ -75,6 +80,7 @@ proc transducer (inp: %<int, out: %>int) () {
 }
 \end{minted}
 
+\subsection{The Consumer}
 Now we need a coroutine to print the results:
 
 \begin{minted}{felix}
@@ -86,7 +92,8 @@ proc consumer (inp: %<int) () {
 }
 \end{minted}
 
-The first two coroutines are pure because they depend only on their
+\subsection{Purity}
+The first two coroutines are {\em pure} because they depend only on their
 arguments, and interact with the outside world entirely through 
 synchronous channels. The do not modify variables in their environment,
 and they do not depend on variables in their environment. The consumer,
@@ -102,6 +109,7 @@ are performed on these channels, and that information should be approximated
 and symbolised by a {\em control type}. Alas, we do not have a suitable type
 system.
 
+\subsection{Synchronous Channel Construction}
 Now, let us see how we can use these coroutines in the obviously
 intended way! First we have to make some channels to connect
 the devices:
@@ -116,6 +124,7 @@ Note, we have only created two channels here! But we have
 made two interfaces to the same channel, the first input,
 and the second output.
 
+\subsection{Connecting Devices with Channels}
 Now we can connect the devices to the channels:
 
 \begin{minted}{felix}
@@ -126,8 +135,10 @@ Now we can connect the devices to the channels:
 
 We have created procedure closures which bind the channel arguments
 to the procedures so that now the three closures all have the type
-\verb%unit->void% which is required for the next step, spawning
-the coroutines to create active fibres:
+\verb%unit->void% which is required for the next step.
+
+\subsection{Spawning Fibres}
+Now we spawn active fibres from the coroutine closures:
 
 \begin{minted}{felix}
   spawn_fthread p;
@@ -141,14 +152,16 @@ What we have done here is spawn three fibres which then communicate
 via the connected channels. The configuration in a series is called
 a pipeline and corresponds directly to functional composition.
 
+\subsection{Termination}
 Now you may wonder, how does it all end? What happens is that
-when the producer terminates, the transducer tries to read a value
-which is never going to come. The transducer is said to starve.
+when the producer terminates by a procedural return which is
+called {\em suicide}. The transducer tries to read a value
+which is never going to come. The transducer is said to {\em starve}.
 The consumer also waits forever for a value from the transducer
 which is never going to come, because the transducer is starving,
 so the consumer also starves.
 
-It is also possible for a coroutine to block. This happens when
+It is also possible for a coroutine to {\em block}. This happens when
 it tries to write a value which will never be read. Lets modify
 our example to see: an infinite production stream:
 
@@ -177,7 +190,7 @@ Now, the transducer blocks when the consumer terminates, and thus
 the producer blocks because the transducer has.
 
 The astute programmer will have a number of questions!
-When a pre-emptive thread starves of blocks, it is a serious
+When a pre-emptive thread starves or blocks, it is a serious
 problem. Have we made a mistake with our fibres?
 
 Here, you start on your journey to a major paradigm shift!
@@ -185,9 +198,9 @@ Blockage and starvation are not an error with coroutines,
 its normal, expected, and desirable! This is, in fact,
 the main way that we organise termination!
 
-
 Before I can explain this, however, I have to back step a bit!
 
+\section{Garbage Collection and Reachability}
 Felix runs a garbage collector similar to most functional programming
 languages. What a collector does is maintain a specified set of root
 objects, and finds all the objects to which there is a pointer
@@ -206,7 +219,8 @@ Now, the secret of Felix coroutines is as follows: when you spawn
 a coroutine, the resulting fibre is reachable by the system,
 but it is NOT reachable from the caller. There is no "thread-id"
 returned when a coroutine is spawned, if you want to communicate
-with it you have to use a channel.
+with it you have to use a channel. The coroutine is named, the 
+fibre spawned, however, is {\em anonymous}.
 
 Now what happens is very simple but you will have to concentrate
 to get it! Coroutines passed channels can reach the channel.
@@ -227,6 +241,7 @@ the channel forgets that fibre, and {\em both} that fibre and the
 one performing the matching operation become active and reachable
 by the system.
 
+\section{Indeterminacy}
 When fibres synchronise with matching I/O operations, both become
 active but only one actually starts executing. Which one is 
 {\em indeterminate}. Felix always runs the reader first, but
@@ -244,7 +259,7 @@ which is unreachable, the starving fibre is also unreachable.
 So it is garbage collected!
 
 Note {\em very carefully} that it is {\em absolutely essential}
-that channels only be reachable by those that wil use them.
+that channels only be reachable by fibres that wil use them.
 Go back and look carefully at the \verb%doit% procedure:
 
 \begin{minted}{felix}
@@ -265,7 +280,7 @@ The four channel end points are known to this procedure, so whilst
 this procedure is active, those channels are reachable. Indeed
 the three closures \verb%p,t,c% are bound to these channels,
 and the procedure knows them too. So the fibres spawned by this
-procedure are reachable whilst the procedure itself is active.
+procedure may be reachable whilst the procedure itself is active.
 
 Now, when you spawn a fibre, what happens? Does the spawned fibre
 run immediately, or does the spawning procedure continue?
@@ -277,7 +292,7 @@ implementation detail!
 
 So what happens here is that sometime or other, the procedure
 will return, and the channels it could reach will no longer be
-reachable because the procedure itself is no longer reachable.
+reachable because the procedure's local data frame is no longer reachable.
 
 And then, the procedure's data frame will be reaped by the collector,
 and, when the spawned fibres finally terminate, starve or block, they will
@@ -299,10 +314,10 @@ are very useful. But they're a lot weaker than you think.
 Coroutines are to be treated as another technique, not a replacement
 for other techniques.
 
-We will example a critical case which shows beyond doubt
+We will exhibit a critical case which shows beyond doubt
 that your conceptions about how great functional programming
 is are completely misplaced. Functional programming is great for
-functions but not work so well when dealing with non termination
+functions but does not work so well when dealing with non termination
 or partial functions. In fact, it is so weak that the so called
 functional programming paradigm can be considered totally discreted
 along with object orientation.
@@ -313,88 +328,490 @@ way or another, and no way is natural. Coroutines fix this problem
 so you only use subroutines when they're natural. Coroutines provide
 a peer to peer relationship when that is the best way to do things.
 
+\section{Folds}
 The example I will use requires you to pretend that something simple
 could be more complicated and to envisage what that entails. 
 I am going to use the classic functional programming function,
 the fold and show that functional programming is evil, and fold is 
 perfect example of what is wrong with functional programming!
 
-There are many inductive data types which are commonly used in
-programming: lists, binary trees, s-expressions, and others.
-In fact all inductive data types are trees, lists are just
-degenerate trees. Suppose we have some container which holds
-integer values we want to add up. If the data type is inductive
-an easy way to do this is to write a recurisve function that
-scans the data structure, finds the integers, and adds up the
-values.
+\subsection{List Folds}
+First lets see a list in Felix:
 
-If we want to do something more complicated than addition,
-the order may matter. You're all familiar with breadth first
-and depth first tree visitation. We can easily write these
-using a function, and we can make the operation done a parameter.
+\begin{minted}{felix}
+union list[Element] =
+  | Empty 
+  | Cons of Element * list[Element]
+;
+\end{minted}
 
-And that's where it gets nasty. With functional programming, the
-parameter is a callback and so it has no state. It cannot remember
-the last integer sum to add to, so the visitor routine must organise
-to pass it. Using parametric polymorphism the callback has the signature
-\[Element -> State -> State\]
+Now a top down, or left fold:
 
-This is really ugly if the state is complicated. Consider that you might
-be constructing one data structure from another incrementally, then trying
-to keep up with where you're up to can be very difficult. To see how
-bad this is consider the control inverse situation as you would use with
-C++ iterators. Here the user routine is ordinary code that {\em pulls}
-values from the visitor instead of the visitor {\em pushing} them.
-This much better .. for the client routine, but it is a nightmare for
-the visitor, which has to retain enough state so it can remember where
-it is up to in the scan.
+\begin{minted}{felix}
+fun fold_left[Element, State] 
+  (acc: Element->State->State])
+  (init: State)
+  (ls: list[Element])
+=>
+  match ls with
+  | Empty => init
+  | Cons (head, tail) =>
+    fold_left acc (acc head init) tail
+;
+\end{minted}
 
-Which technique is the best? With functional programming the driver
-function can be recursive which allows automatic management of
-the state with control flow and local variables: the solution
-isn't complete but it covers a lot of territory. With the iterator
-based solution, the iterator is the callback instead or the client
-operation: the client operation can be recursive.
+I have written the routine in a functional style using recursion,
+it is in fact tail recursive. A right fold starts from the other
+end of the list and traditionally looks like this:
 
-So you see, in some circumstances the scanner should be
-the master and the client code the slave, when the master is harder
-to write. And when the client is harder, it should be the master,
-and we use an iterator for the scanner. 
+\begin{minted}{felix}
+fun fold_right[Element, State] 
+  (acc: State->Element->State)
+  (ls: list[Element])
+  (init: State)
+=>
+  match ls with
+  | Empty => init
+  | Cons (head, tail) =>
+    fold_right acc init (fold_right acc tail)
+;
+\end{minted}
 
-In Felix you can do both, but what do you do if {\em both} the scanner
-and client code are complicated? Can you make them both masters?
-Can you allow both to do recursion?
+It is not tail recursion. Instead, we recurse down to the end of
+the list and fold the elements in to the result as we pop back up.
 
-Oh yes, you can. You can use threads. Of course that is inefficient
-and difficult in itself but it is the most commonly use technique
-because most programming languages are badly designed. Just have a
-look at how many threads Firefox uses to get an idea how bad the
-situation is!
+\subsection{Tree Folds}
+A binary search tree has more useful orderings. 
 
-Both imperative and functional programming are {\em broken}.
-Badly, very very badly broken.
+\begin{minted}{felix}
+union tree [Element] =
+  | Leaf
+  | Node of Element * tree[Element] * tree[Element]
+;
+\end{minted}
 
-We need two masters. You cannot do that with subroutines.
+All tree visitors in a functional setting use a recursion, 
+however the order of visiting elements is determined by when the 
+client accumulator is called. Prefix order, or left most depth first is the easiest:
 
-Oh yes! Coroutines are peers.
+\subsection{Pre-order Fold}
+This fold visits the deepest left most element first.
 
-Here's the solution. It is universally superior to both
-functional folds and iterators:
+\begin{minted}{felix}
+fun preorder [Element, State]
+  (acc: Element -> State -> State)
+  (init: State)
+  (tr: tree[Element])
+=>
+  match tr with
+  | Leaf => init
+  | Node (elt, left, right) =>
+    let lv = preorder acc init left in
+    let v = acc elt lv in
+    preorder acc v right
+;
+\end{minted}
 
-Write your scanner with functional programming techniques,
-but replace the call to the client routine with a write operation.
-Send the element data down a channel.
+\subsection{Post-order Fold}
+A post-order fold is similar, only it visits the right branch first:
 
-Now, write your client routine with iterator based techniques.
-Use recursion if you like. But replace the call to the iterator get
-the next value with a read on a channel.
+\begin{minted}{felix}
+fun postorder [Element, State]
+  (acc: Element -> State -> State)
+  (init: State)
+  (tr: tree[Element])
+=>
+  match tr with
+  | Leaf => init
+  | Node (elt, left, right) =>
+    let rv = postorder acc init right in
+    let v = acc elt rv in
+    postorder acc v left
+;
+\end{minted}
 
-Pipeline the scanner into the client routine. Done.
 
-Why is it better? Because with this method there are {\em two}
-stacks to hold local variables and to recurse on. So by using
-two coroutines, you have a solution which is superior because it
-eliminates the need for a stackless callback.
+\subsection{Top down fold}
+This fold processes the element at
+the parent before the children:
+
+\begin{minted}{felix}
+fun midleftorder [Element, State]
+  (acc: Element -> State -> State)
+  (init: State)
+  (tr: tree[Element])
+=>
+  match tr with
+  | Leaf => init
+  | Node (elt, left, right) =>
+    let mv = acc elt init in
+    let lv = midleft acc mv left in
+    midleft acc lv right 
+;
+\end{minted}
+
+This one visits the left child first.
+
+\subsection{Breadth first fold}
+To do!
+
+\section{Iterators}
+Another way to visit values in a data structures is to use iterators.
+We will show iterators corresponding to the folds above in a style
+similar to what would be required in C++, however we will use a single
+get method to get the next value which returns an option type, so
+that the end of the data stream can be detected. We'll also use a purely
+functional style.
+
+\subsection{Left List Iterator}
+The left visitor is quite easy, we use a list of the same type
+as the input as the state:
+
+\begin{minted}{felix}
+fun first_llit[Element] 
+  (ls: list[Element]) 
+=> 
+  match ls with
+  | Empty => None[Element], Empty[Element]
+  | Cons (head, tail) => Some head, tail
+;
+
+fun next_llit[Element] => first_llit ls;
+\end{minted}
+
+
+\subsection{Right List Iterator}
+The bottom up iterator is harder:
+
+\begin{minted}{felix}
+fun first_rlit[Element] 
+  (ls: list[Element]) 
+=> 
+  first_llit (rev ls)
+;
+
+fun next_rlit[Element] => first_llit ls;
+\end{minted}
+
+The code is simple, it just uses the left iterator
+on a reversed list. There is an overhead in space and
+time which existed for the functional fold as well.
+The difference is, the iterator must maintain the state
+explicitly on the heap, whereas the fold uses the machine
+stack to hold pointers into the list implicitly.
+
+\subsection{Left Treee Iterator}
+Now the real fun starts! How must our iterator work?
+
+\begin{minted}{felix}
+union Todo[Element] = 
+  | Value of Element
+  | Tree of tree[Element]
+;
+typedef zipper[Element] = list[Todo[Element]];
+
+obj Iterata[Element] (tr: tree[Element]) =
+{
+  var path = Empty[Todo[Element]];
+  setup (tr);
+
+  proc setup (t: tree[Element]) {
+    match t with
+    | Leaf => return;
+    | Node (elt, left, right) =>
+      path = Cons (Tree right, path);
+      path = Cons (Value elt, path);
+      setup left;
+    endmatch; 
+  }
+
+  method gen next () => {
+    match path with
+    | Empty => return None[Element];
+    | Cons (Value v, tail) =>
+      path = tail;
+      return Some v;
+    | Cons (Tree t, tail) =>
+      path = tail;
+      setup t;
+      return next();
+    endmatch;
+  }
+}
+\end{minted}
+
+As you can see, this is considerably more complicated than the corresponding fold.
+In fact, it took me a couple of minutes to write the fold and many hours
+until I figured out how to write the iterator. It is basically the
+control inverse of the fold: it is the fold turned inside out.
+
+Control inversion is a key concept. The fold function is a master which
+calls the client function as a slave. The iterator, on the other hand,
+is a slave function called by the client, which is the master.
+
+The iterator above reveals the true nature of the data required by a preorder
+tree visitation: the zipper above represents a type which can hold the state.
+In the fold the use of the machine stack, recursion, and local variables
+hides the zipper: it uses the machine stack to couple the program counter with
+the local data. The iterator cannot do that, since it loses the stack each
+call. Instead it manually maintains its own stack, the path value.
+
+The iterator above is only an input iterator. We can translate the mutations
+to produce a forward iterator by using a monadic form:
+
+\begin{minted}{felix}
+fun setup(t: tree[Element]) (path: zipper[Element]) =>
+  match t with
+  | Leaf => path
+  | Node (elt, left, right) => 
+    let path2 = Cons (Tree right, path) in
+    let path3 = Cons (Value elt, path2) in
+    setup left path3
+;
+
+fun next (path: zipper[Element]) =>
+  match path with
+  | Empty => None[Element], Empty[Todo[Element]]
+  | Cons (Value v, tail) =>
+    Some v, tail
+  | Cons (Tree tr, tail) =>
+    let path2 = setup tail path in
+    next path2
+;
+\end{minted}
+
+\section{Zippers}
+For any inductive data type, there is a related type known as a zipper.
+A zipper is basically a path in the tree. It can be thought of as the
+original data type with a hole in it representing the location of
+the current visitor, that is, a way to cut off a branch forming a subtree
+and a tree with a missing branch.
+
+If we use the pure form of a tree it is a given by the formula:
+
+\begin{minted}{felix}
+typedef tree[T] = 1 + T * tree[T] * tree[T];
+\end{minted}
+
+where \verb%+% is the infix operator for an anonymous union
+or sum type, and $1$ is the unit type. This has the form of a polynomial
+
+\[1 + T X^2\]
+
+which has the derivative
+
+\[2TX\]
+
+or
+
+\begin{minted}{felix}
+typedef zipper[T] = bool * T * tree[T]
+\end{minted}
+
+In this form the boolean value is used to decide whether
+to process the value term next, or the right tree branch.
+In the zipper I presented, I split these two cases up into
+two list components \verb%Value% and \verb%Tree% and put them
+in the desired order in advance, because that was easier 
+to understand than presenting both with a selector. If the 
+selector is false, we process the value and set it to true,
+if it is true we process the tree and then discard the zipper
+node: in my implementation the value is first on the stack,
+then comes the tree, so the correct order is obtain by simply
+popping each element from the zipper as it is processed.
+
+What's critical again is that the fold and iterator both maintain
+the same data that the zipper specifies, although the encoding
+is quite different, the fold maintaining it entirely implicitly.
+
+Functional code is not always easier! If you consider a breadth
+first ordering, then both the functional and iterator versions
+must manually maintain some state. A simple functional breadth first fold could be 
+done with a recursive descent and a depth limit, so all the values at a given
+depth are processed, then all the values one level deeper, and so on.
+Arranging termination is not entirely trivial, but could be done by simply
+calculating the maximum depth, again using a recursive descent. 
+The fold itself would pass over intermediate level nodes several times,
+indeed in the degerate case of a list the top node would be scanned
+N times, for a list of length N, and the overall performance would be
+quadratic.
+
+A better algorithm could avoid rescanning by keeping track better.
+This can be done by accumulating a list of all the children, reversing
+it and scanning it processing its values, and building up the list
+for the next pass. This handles termination correctly however the
+performance advantage is questionable since the list has to be constructed
+which takes time and uses up space: when the list is discarded it
+loads up the garbage collector. A simple recursive descent in a balanced
+binary tree only doubles the cost, because the number of ancestors of
+a set of siblings is always exactly equal to the number of siblings
+minus one.
+
+\section{The Client Code}
+I have shown the fold and control inverted fold, the iterator,
+so you can see clearly that in general the fold is superior because
+it is simpler. It can use recursion and call the client code wherever
+and whenever it wants. The iterator form is at a severe disadvantage
+because it is a callback or slave subroutine.
+
+It is vital to understand that this imbalance is not because functional
+programming is better: the iterator form has a monadic functional
+equivalent, which is just as complicated as the procedural form,
+if not more so: the advantage of the functional form is that it 
+produces a forward iterator, the disadvantage is that the client
+code must maintain the state, which in our examples is the path
+representing the derivative.
+
+What you must now see is that if you use a master fold, your client
+code has a problem: it is a slave: the client argument of a fold
+function is a callback, and if it is to do something complicated,
+it must manually maintain state. It cannot use local variables,
+recursion, or the machine stack.
+
+On the other hand, the iterator form rules supreme for the client
+code. It can use recursion and the machine stack, and simply call
+the iterator whenever and wherever it wants for the next value.
+If you're using the functional forward iterator, you have to pass
+the state value around, but this is equivalent to being able
+to access the iterator object in the procedural form.
+
+You will need some imagination to see that whilst in general
+state is required with both the fold and iterator methods,
+the use of manually constructed data structures on the heap
+may be necessary in the functional form 
+if the linear machine stack is inadequate. Iterator clients
+are not necessarily trivial!
+
+However the superiority of the iterator form .. for the client
+programmer .. is easy to demonstrate unequivocably by considering
+a really simple and very old algorithm: the merge.
+
+A merge takes two sorted lists and merges them into a single
+sorted list. The algorithm is simple: look at the head of each
+list and pop off the smallest element, push it onto another list.
+Keep going until both lists are empty and reverse the result list.
+
+Simple, and easy to make purely functional but there's a minor
+problem. Its simple if the client code can choose which list to pop.
+So its simple if you have two iterators! 
+
+In fact with iterators .. the same algorithm works, even if the data
+is coming from a tree instead of a list, because the iterator is
+converting the data structure into a value stream in all cases.
+
+So how do you do a merge using a pair of folds?
+
+Er .. well you can't. The iterators are clearly and unequivocably
+superior. The writer of a fold has an advantage. The client has
+a disadvantage. In this case, the disadvantage is a killer.
+
+The way to do this is run the two folds separately to make two lists
+and then use then to feed your client code. If your language is lazily
+evaluated this is not necessarily inefficient but now we're exposing
+a well known major weakness of functional programming: the performance
+of your algorithms depends heavily on your compiler and run time
+implementation.
+
+It is indeed interesting that lazy evaluation may allow the suspension
+of two folds over two trees whose client code produces two lists which
+are then consumed by a merge. [More needs to be said here!]
+
+\section{Solving the problem with coroutines}
+It is critical at this point to understand there is a problem.
+Fold simply doesn't work, the client code is too hard to write!
+On the other hand iterator client code is easy to write, but
+the iterators are too hard to write!
+
+Neither method is any good! Both suffer from the same problem:
+slavery! Slave subroutines do not implicitly retain state on the
+machine stack synchronised with control flow as masters do.
+Masters are better! 
+
+What's the answer? It's pretty obvious, we need two stacks, and we
+need two masters. But you cannot do that with mere subroutines.
+You cannot do it with traditional procedural code nor with
+functional code. Procedures and functions are both subroutines.
+
+Since you read the title of this paper you already know the answer:
+coroutines. Coroutines cooperate as peers. They're constructed as if they're
+masters so both the visitor of the data structure and client code are
+easy. In fact we shall soon see, the data structure driver code in
+coroutine form looks exactly like the superior functional fold,
+and the client code looks exactly like the superior iterator client code.
+With coroutines, we can capture the best of both worlds!
+
+\section{Coding Visitors with coroutines}
+We're now going to attack the tree fold problem using coroutines.
+Recall the depth first functional routine:
+
+\begin{minted}{felix}
+fun preorder [Element, State]
+  (acc: Element -> State -> State)
+  (init: State)
+  (tr: tree[Element])
+=>
+  match tr with
+  | Leaf => init
+  | Node (elt, left, right) =>
+    let lv = preorder acc init left in
+    let v = acc elt lv in
+    preorder acc v right
+;
+\end{minted}
+
+Now see the coroutine, this is a full working example.
+First some test data:
+
+\begin{minted}{felix}
+union tree [Element] =
+  | Leaf
+  | Node of Element * tree[Element] * tree[Element]
+;
+
+var t = 
+  Node (10,
+    Node (5,
+      Node (1, Leaf[int], Leaf[int]),
+      Node (7, Leaf[int], Leaf[int])
+    ),
+    Node (15,
+      Node (12, Leaf[int], Node (13,Leaf[int], Leaf[int])),
+      Node (17, Node (16, Leaf[int], Leaf[int]), Leaf[int])
+    )
+  )
+;
+\end{minted}
+
+and now the coroutine:
+
+
+\begin{minted}{felix}
+proc copreorder [Element]
+ (out: %>Element)
+ (tr: tree[Element])
+{
+  match tr with
+  | Leaf => return; 
+  | Node (elt, left, right) =>
+    copreorder out left;
+    write (out, elt);
+    copreorder out right;
+  endmatch;
+}
+\end{minted}
+
+and now we need a way to check the results:
+
+\begin{minted}{felix}
+proc printer (ch: %<int) { println$ read ch; printer ch; }
+
+begin
+  var inp, out = mk_ioschannel_pair[int]();
+  spawn_fthread { copreorder out t; };
+  spawn_fthread { printer inp; };
+end
+\end{minted}
+
 
 \section{Syntax Extensions}
 Felix has two syntax extensions designed to so coroutines are easier to use.
@@ -404,7 +821,7 @@ This extensions encourages a picture of coroutines as integrated
 circuits, even though that is not really accurate.
 
 \begin{minted}{felix}
-chip producer '
+chip producer 
   connector io
     pin out: %>int
 {
@@ -483,7 +900,6 @@ endcircuit
 \end{minted}
 
 The \verb%wire% clause allows you to connect a known channel to a device.
-
 
 
 \chapter{Coroutine Semantics}

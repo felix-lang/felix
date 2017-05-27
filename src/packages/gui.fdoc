@@ -618,16 +618,16 @@ class FlxGuiDrawChain
 
     method proc draw (surf: surface_t) 
     {
-println$ "----";
+//println$ "----";
       for d in drawables do 
         d.draw surf; 
-println$ "Drawn " + d.get_tag() + " " + #(d.get_z).str;
+//println$ "Drawn " + d.get_tag() + " " + #(d.get_z).str;
       done
     }
 
     method proc remove (tag:string)  
     {
-println$ "remove " + tag;
+//println$ "remove " + tag;
       var i = 0;
       while i < drawables.len.int do
         if drawables.i.get_tag () == tag do
@@ -1025,7 +1025,7 @@ class FlxGuiButton
     | Up       // ready
     | Down     // being clicked
     | Disabled // inactive
-    | Mouseover // read and mouse is over
+    | Mouseover // ready and mouse is over
   ;
 
   union button_action_t =

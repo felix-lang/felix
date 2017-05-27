@@ -32,7 +32,7 @@ var lineskip = get_lineskip font;
 w.add$ mk_drawable FlxGui::write (10,10,font,black,"Basic Drawing Test");
 
 
-noinline proc circle_sprite 
+proc circle_sprite 
 (
   colr:colour_t, 
   radius:int, 
@@ -40,7 +40,9 @@ noinline proc circle_sprite
   var xvel:int, var yvel:int
 )
 (
-  pclip : &rect_t,
+  pclip : &rect_t
+)
+(
   tickin1: %<int
 ) 
 ()
@@ -111,13 +113,33 @@ proc setup ()
     done
   };
   for s in sprites do 
-    var spr = circle_sprite s ;
-    spawn_fthread (spr (&clip, tickin1));
+    spawn_fthread ((var circle_sprite) s &clip tickin1);
   done
   spawn_fthread (runner (tickin0, tickout1));
 }
 
 setup();
+
+open FlxGuiEvents;
+
+chip event_reporter 
+  connector events
+   pin src: %<event_t
+{
+  while true do
+    var e = read events.src;
+    match e with
+    | QUIT =>
+      println$ "QUIT EVENT"; return;
+    | _ =>
+      println$ "EVENT " + e.type.SDL_EventType.str; 
+    endmatch; 
+  done
+}
+
+circuit
+  connect event_source.src, event_reporter.src
+endcircuit
 
 @
 
