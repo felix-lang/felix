@@ -98,9 +98,11 @@ def build_runtime(phase):
 #if FLX_CGOTO
   #define FLX_LOCAL_LABEL_VARIABLE_TYPE void*
   #define FLX_PC_DECL void *pc;
+  #define FLX_KILLPC pc = &&_flx_dead_frame;
 #else
   #define FLX_PC_DECL int pc;
   #define FLX_LOCAL_LABEL_VARIABLE_TYPE int
+  #define FLX_KILLPC pc = -1;
 #endif
 
 #define t typename
@@ -362,7 +364,8 @@ struct _tt5 {
     __asm__("l"#i"_"#n"_"#x":");\
     __asm__(""::"g"(&&x));
   #define FLX_FARTARGET(n,i,x) (void*)&f##i##_##n##_##x
-  #define FLX_END_SWITCH
+  #define FLX_END_SWITCH \
+    _flx_dead_frame: throw ::flx::rtl::flx_dead_frame_failure_t(__FILE_,__LINE__);
 #else
   #define FLX_START_SWITCH _start_switch: switch(pc){case 0:;
   #define FLX_LOCAL_LABEL_ADDRESS(x) x
@@ -371,7 +374,9 @@ struct _tt5 {
   #define FLX_DECLARE_LABEL(n,i,x)
   #define FLX_LABEL(n,i,x) case n: x:;
   #define FLX_FARTARGET(n,i,x) n
-  #define FLX_END_SWITCH default: throw ::flx::rtl::flx_switch_failure_t(); }
+  #define FLX_END_SWITCH \
+    case -1: throw ::flx::rtl::flx_dead_frame_failure_t(__FILE__,__LINE__);\
+    default: throw ::flx::rtl::flx_switch_failure_t(__FILE__,__LINE__); }
 #endif
 
 //
@@ -400,6 +405,7 @@ struct _tt5 {
 
 #define FLX_RETURN \
 { \
+  FLX_KILLPC \
   con_t *tmp = _caller; \
   _caller = 0; \
   return tmp; \

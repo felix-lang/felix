@@ -516,7 +516,7 @@ open class Farray
 
   //$ Transpose and array.
   //$ Subsumes zip.
-  //$ Example: transpose ( (1,2,3), (4,5,6) ) = ( (1,4), (2,4), (3,6) ).
+  //$ Example: transpose ( (1,2,3), (4,5,6) ) = ( (1,4), (2,5), (3,6) ).
   fun transpose[T,N,M] (y:array[array[T,M],N]) : array[array[T,N],M] = {
     var o : array[array[T,N],M];
     var n = len y;

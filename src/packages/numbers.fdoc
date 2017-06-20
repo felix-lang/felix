@@ -142,6 +142,7 @@ instance[t in floats] Real[t] {
   fun floor: t -> t = "::std::floor($1)";
   fun trunc: t -> t = "::std::trunc($1)";
   fun embed: int -> t = "(?1)($1)";
+  fun atan2: t * t -> t = "::std::atan2($1,$2)";
 }
 
 class CartComplex[r] {

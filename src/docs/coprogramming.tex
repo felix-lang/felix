@@ -1,4 +1,4 @@
-\documentclass{report}
+\documentclass[oneside]{book}
 \usepackage{color}
 \definecolor{bg}{rgb}{0.95,0.95,0.95}
 \definecolor{emphcolor}{rgb}{0.5,0.0,0.0}
@@ -10,6 +10,8 @@
 \usepackage{amssymb}
 \usepackage{amscd}
 \usepackage{makeidx}
+\usepackage{tikz}
+\usetikzlibrary{shapes,shadows,arrows}
 \makeindex
 \usemintedstyle{friendly}
 \setminted{bgcolor=bg,xleftmargin=20pt}
@@ -23,6 +25,7 @@
 \author{John Skaller}
 \begin{document}
 \maketitle
+\tableofcontents
 \chapter{Introduction}
 Coroutines are not a new concept, however they have been ignored for
 far too long. They solve many programming problems in a natural way and
@@ -46,6 +49,25 @@ fibres make up a single thread, and within that only one fibre is ever
 executing. Fibration is a technique used to structure sequential programs,
 there is no concurrency involved.
 
+The most significant picture of the advantages of coroutines is thus: in a subroutine
+based language there is a single machine stack. By machine stack, I mean that
+there is an important {\em implicit} coupling of control flow and local variables.
+In the abstract, a subroutine call passes a continuation of the caller to 
+the callee which is saved along with local variables the callee allocates,
+so that the local variables can be discarded when the final result is
+calculated, and then passed to the continuation. This technique may be
+called {\em structured programming}. With coroutines, the picture is simple:
+each fibre of control has its own stack. Communication via channels exchanges data
+and control between stacks.
+
+Coroutines therefore leverage control and data coupling in a much more
+powerful and flexible manner than mere functions, reducing the need for
+state to be preserved on the heap, thereby making it easier to construct
+and reason about programs.
+
+For complex applications, the heap is always required.
+
+
 \section{A Simple Example}
 The best way to understand coroutines and fibration is to have a look
 at a simple example. 
@@ -63,7 +85,10 @@ proc producer (out: %>int) () {
 
 Notice that as well as passing the output channel argument \verb%out%,
 there is an extra unit argument \verb%()%. This procedure terminates
-after it has written 10 integers.
+after it has written 10 integers. The type of variable \verb%out% is
+denoted \verb$%>int$ which is actually short hand for \verb%ochannel[int]%,
+which is an output channel on which values of type \verb%int% may
+be written.
 
 \subsection{The Transducer}
 Next, we make a device which repeatedly reads an integer, squares it,
@@ -80,6 +105,11 @@ proc transducer (inp: %<int, out: %>int) () {
 }
 \end{minted}
 
+Here, the type of variable \verb%inp% is
+denoted \verb$%<int$ which is actually short hand for \verb%iochannel[int]%,
+which is an input channel from which values of type \verb%int% may
+be read.
+
 \subsection{The Consumer}
 Now we need a coroutine to print the results:
 
@@ -92,22 +122,60 @@ proc consumer (inp: %<int) () {
 }
 \end{minted}
 
+Each of these components is a coroutine because it is a procedure
+which may perform, directly or indirectly, I/O on one or more synchronous
+channels.
+
 \subsection{Purity}
 The first two coroutines are {\em pure} because they depend only on their
 arguments, and interact with the outside world entirely through 
-synchronous channels. The do not modify variables in their environment,
+synchronous channels. They do not modify variables in their environment,
 and they do not depend on variables in their environment. The consumer,
 however, has a side effect, namely printing values to standard output.
 
-Purity is an important property which provide modularity and encapsulation and allows
-one to reason about them locally. This is a vital information hiding property which is also
-possessed by pure functions, where it is known as functional abstraction. For coroutines,
+Purity is an important property which provides modularity and encapsulation and allows
+one to reason locally. This is a vital information hiding property which is also
+possessed by pure functions, where it is known as {\em functional abstraction}. 
+
+They key idea of functional abstraction is that an approximation of the
+function semantics is represented by the function type. For example
+the functions \verb%modulus% and \verb%argument%
+
+\begin{minted}{felix}
+fun modulus (z:dcomplex) : double => sqrt (z.x^2 + z.y^2);
+fun argument (z:dcomplex) : double => arctan2 (z.y, z.x);
+\end{minted}
+
+both have type \verb% dcomplex -> double%, so the type is only an approximation
+which forgets some details of the function, which is the usual meaning
+of abstract. Never-the-less the type is useful to allow the type checker
+to prevent calling these functions on an integer, but more importantly
+it allows for higher order functions:
+
+\begin{minted}{felix}
+fun map (x:list[dcomplex]) (f:dcomplex->double) =>
+  match x with
+  | Empty => Empty[double]
+  | Cons (head, tail) => Cons (f head, map f tail)
+  endmatch
+;
+\end{minted}
+
+This function will take a list of \verb%dcomplex% and apply either
+\verb%modulus% or \verb%argument% or any other function with
+the type \verb%dcomplex->double% to the list to produce a list
+of \verb%double% safely: the point is that this map function
+does not need to know the full semantics of the argument to which
+the parameter \verb%f% is bound, only that it has the correct type.
+
+For coroutines,
 we would call this cofunctional abstraction, however there's a problem: functions are
 abstracted to function types. However the behaviour of a coroutines depend not just
 on the data type of the channels, but also on the order in which operations
 are performed on these channels, and that information should be approximated
-and symbolised by a {\em control type}. Alas, we do not have a suitable type
-system.
+and symbolised by a {\em control type}. Alas, 
+
+\noindent {\bf we do not have a suitable type system.}
 
 \subsection{Synchronous Channel Construction}
 Now, let us see how we can use these coroutines in the obviously
@@ -150,7 +218,7 @@ doit();
 
 What we have done here is spawn three fibres which then communicate
 via the connected channels. The configuration in a series is called
-a pipeline and corresponds directly to functional composition.
+a {\em pipeline} and corresponds directly to functional composition.
 
 \subsection{Termination}
 Now you may wonder, how does it all end? What happens is that
@@ -215,9 +283,24 @@ are garbage and are deleted. There's no way to refer to such an object,
 since there are no pointers to it in the roots, or any object reachable
 from the root.
 
+\begin{figure}[h]
+\begin{center}
+\tikzstyle{cell} = [rectangle,minimum width=2cm,minimum height=1cm,text centered,draw=black]
+\tikzstyle{arrow} = [thick,->,>-stealth]
+\begin{tikzpicture}[node distance=3cm]
+\node(A)[cell]{A};
+\node(B)[cell,right of=A]{B};
+\node(C)[cell,right of=B]{C};
+\draw[arrow](A) -- (B);
+\draw[arrow](B) -- (C);
+\end{tikzpicture}
+\caption{Reachability}
+\end{center}
+\end{figure}
+
 Now, the secret of Felix coroutines is as follows: when you spawn
 a coroutine, the resulting fibre is reachable by the system,
-but it is NOT reachable from the caller. There is no "thread-id"
+but it is {\em not} reachable from the caller. There is no "thread-id"
 returned when a coroutine is spawned, if you want to communicate
 with it you have to use a channel. The coroutine is named, the 
 fibre spawned, however, is {\em anonymous}.
@@ -240,6 +323,280 @@ has already been performed by another fibre. In this case,
 the channel forgets that fibre, and {\em both} that fibre and the
 one performing the matching operation become active and reachable
 by the system.
+
+A more detailed explanation follows. A formal definition of the
+precise execution semantics is given in \fullref{Coroutine Semantics}.
+
+\section{Execution Model}
+When Felix starts your program, the machine stack is reachable,
+and so any object with a pointer on the machine stack is reachable.
+In addition, your initial mainline code is implicitly a coroutine,
+which is spawned automatically creating a fibre object
+which contains a pointer to the fibre's initial continuation.
+The fibre is running, so it is also reachable.
+
+All your top level variables are stored in an object called
+the {\em thread frame}. Continuation objects contain a pointer
+to the thread frame so that the procedure can access the global
+variables. A continuation object is also known as the procedure
+{\em activation record} or {\em data frame}, or, historically,
+its {\em stack frame}. As well as a pointer to the thread
+frame, a continuation object also contains a pointer to the
+most recent activation record of its ancestors, in fact the
+thread frame may be consider a universal ancestor.
+
+Vitally, continuation objects also contain a value known as
+the program counter. This value is the current location at which
+the continuation is executing, it always points into the code
+of the procedure the frame represents. When a subroutine is
+called, the program counter is set to the statement after the
+subroutine call, a new continuation is created for the subroutine,
+its program counter is set to the first statement, and a back pointer
+to the caller continuation is stored. The back pointer, together with
+the program counter of the caller, are together known as the subroutine
+{\em return address}. It represents the continuation which the
+subroutine resumes when the subroutine itself is complete.
+
+Then the current continuation of the fibre is 
+changed to the new continuation.
+
+\begin{figure}
+\begin{minted}{C++}
+#if FLX_CGOTO
+  #define FLX_LOCAL_LABEL_VARIABLE_TYPE void*
+  #define FLX_PC_DECL void *pc;
+#else
+  #define FLX_PC_DECL int pc;
+  #define FLX_LOCAL_LABEL_VARIABLE_TYPE int
+#endif
+
+\end{minted}
+\caption{Code Address}
+\end{figure}
+
+\begin{figure}
+\begin{minted}{C++}
+struct con_t 
+{
+  FLX_PC_DECL               // interior program counter
+  struct _uctor_ *p_svc;    // service request
+
+  virtual con_t *resume()=0;// computation step
+  con_t * _caller;          // return address
+};
+\end{minted}
+\caption{Continuation base}
+\end{figure}
+
+\begin{figure}
+\begin{minted}{C++}
+
+struct fthread_t 
+{
+  con_t *cc;                // current continuation
+};
+\end{minted}
+\caption{Fibre}
+\end{figure}
+
+\begin{figure}
+\begin{minted}{C++}
+struct slist_node_t {
+  slist_node_t *next;
+  fthread_t *data;
+};
+
+struct slist_t {
+  gc::generic::gc_profile_t *gcp; // garbage collector
+  struct slist_node_t *head;
+};
+
+struct schannel_t
+{
+  slist_t *waiting_to_read;  // fthreads waiting for a writer
+  slist_t *waiting_to_write; // fthreads waiting for a reader
+};
+\end{minted}
+\caption{Synchronous Channel}
+\end{figure}
+
+When a return statement is executed, the backpointer to the
+caller is stored into the fibre object, and execution continues
+with the caller at the statement after the subroutine call.
+
+Thus, the continuations form a singly linked list which operates
+like a stack. The continuation objects are heap allocated and
+the data structure is known as a {\em spaghetti stack}.
+In principle, a continuation also has a pointer to the most recent
+activation record of its parent, which has a pointer to its 
+parent, until the list terminates with the thread frame,
+so there are {\bf two} interleaved lists here: one representing
+the call chain, and one representing the static nesting structure:
+that is what make it a spaghetti stack. In Felix, pointers to all
+the ancestors are stored in the continuation object to improve
+access time to ancestoral variables, at the cost of passing them
+all to each child (however the optimiser does lots of magic).
+
+Each of the frame pointers mentioned is known to the garbage collector
+and so a single reachable running procedure defines a transitive
+closure of reachable objects. Note that in addition, any variable
+containing a Felix pointer obtained from a manual heap allocation
+ensures the heap object is reachable if the variable is in a 
+reachable frame. In addition, any reachable pointer which points
+anywhere into an object ensures the object is reachable.
+If the pointer is not to the first byte, it is called
+an {\em interior pointer}. Note that in Felix a pointer
+"one past the end" of an object does not make the object
+reachable!
+
+Now all this explains, technically, something easy to state
+loosely: if you can access an object it is reachable.
+In addition if the {\em system} can access the object it
+is reachable.
+
+Now what I have described so far does not explain fibres.
+The currently running fibre, and all those deemed active
+are reachable by the system. When the currently running fibre
+performs an unmatched synchronous channel I/O operation,
+either a read or a write, it is added to the channel's
+list of suspended fibres and is removed from the set of
+fibre the system can reach directly. So the fibre can now
+only be reached from the channel. So it will be garbage
+unless another active fibre can reach the channel.
+After all since the I/O operation is unmatched, if another
+fibre can't see the channel, there is no fibre that
+can satisfy the I/O request.
+
+When a fibre is suspeneded by a read or write operation,
+the program counter of its current continuation is set
+to the statement after the I/O operation. If the operation
+is later matched, the address of the data being transmitted
+is transfered from the writer to the reader, and the two
+fibres both made active so that they will continue
+at the statement after the I/O operation.
+
+What is vital to realise now is that each fibre has its
+own spaghetti stack. So when control is exchanged
+from one fibre to another:
+
+\noindent {\bf control exchange is effected by stack swapping}
+
+Of course, we mean the heap allocated spaghetti stacks.
+You can swap machine stacks too: this is done by the host
+operating system scheduler and the entities being context
+switched are known as threads. The swaps are premptive,
+and several stacks can be running at once if you have a 
+multi-core CPU. Pre-emptive threads are much harder to use
+than fibres, and the context switches are much more
+expensive. They are greatly overused in many programs
+for purpose of obtaining control inversion because
+the host language is deficient and does not support
+coroutines. This deficiency is shared by almost all
+production and research programming systems!
+
+\begin{figure}
+\tikzstyle{cell} = [rectangle,minimum width=2cm,minimum height=1cm,text centered,draw=black]
+\tikzstyle{blank} = [rectangle,minimum width=2cm,minimum height=1cm,text centered]
+\tikzstyle{arrow} = [thick,->,>-stealth]
+\begin{tikzpicture}[node distance=3cm]
+\node(sys)[cell]{System};
+\node(sys1)[blank,below of=sys]{};
+\node(sys2)[blank,below of=sys1]{};
+\node(sys3)[blank,below of=sys2]{};
+\node(sys4)[blank,below of=sys3]{};
+\node(prog)[cell,right of=sys1]{Fibre 0};
+\node(doit)[cell,right of=prog]{doit};
+\node(main)[cell,right of=doit]{Mainline};
+\node(prod)[cell,right of=sys2]{Fibre 1};
+\node(prod1)[cell,right of=prod]{producer};
+\node(sys3a)[blank,right of=sys3]{};
+\node(sys3b)[blank,right of=sys3a]{};
+\node(chan)[cell,right of=sys3b]{schannel};
+\node(cons)[cell,right of=sys4]{Fibre 2};
+\node(cons1)[cell,right of=cons]{consumer};
+\draw[arrow](sys) -- (prog);
+\draw[arrow](sys) -- (prod);
+\draw[arrow](sys) -- (cons);
+\draw[arrow](prog) -- (doit);
+\draw[arrow](doit) -- (main);
+\draw[arrow](doit) -- (chan);
+\draw[arrow](doit) -- (chan);
+\draw[arrow](prod) -- (prod1);
+\draw[arrow](cons) -- (cons1);
+\draw[arrow](prod1) -- (chan);
+\draw[arrow](cons1) -- (chan);
+\end{tikzpicture}
+\caption{Reachability: After Spawning}
+\end{figure}
+
+
+\begin{figure}
+\tikzstyle{ucell} = [rectangle,minimum width=2cm,minimum height=1cm,text centered,draw=black!20]
+\tikzstyle{cell} = [rectangle,minimum width=2cm,minimum height=1cm,text centered,draw=black]
+\tikzstyle{blank} = [rectangle,minimum width=2cm,minimum height=1cm,text centered]
+\tikzstyle{arrow} = [thick,->,>-stealth]
+\tikzstyle{uarrow} = [thick,->,>-stealth,draw=black!20]
+\begin{tikzpicture}[node distance=3cm]
+\node(sys)[cell]{System};
+\node(sys1)[blank,below of=sys]{};
+\node(sys2)[blank,below of=sys1]{};
+\node(sys3)[blank,below of=sys2]{};
+\node(sys4)[blank,below of=sys3]{};
+\node(prog)[ucell,right of=sys1]{Fibre 0};
+\node(doit)[ucell,right of=prog]{doit};
+\node(main)[ucell,right of=doit]{Mainline};
+\node(prod)[cell,right of=sys2]{Fibre 1};
+\node(prod1)[cell,right of=prod]{producer};
+\node(sys3a)[blank,right of=sys3]{};
+\node(sys3b)[blank,right of=sys3a]{};
+\node(chan)[cell,right of=sys3b]{schannel};
+\node(cons)[cell,right of=sys4]{Fibre 2};
+\node(cons1)[cell,right of=cons]{consumer};
+\draw[arrow](chan) -- (prod);
+\draw[arrow](sys) -- (cons);
+\draw[uarrow](doit) -- (chan);
+\draw[arrow](prod) -- (prod1);
+\draw[arrow](cons) -- (cons1);
+\draw[arrow](prod1) -- (chan);
+\draw[arrow](cons1) -- (chan);
+\end{tikzpicture}
+\caption{Reachability: Mainline completed, after Write, before Read}
+\end{figure}
+
+
+\begin{figure}
+\tikzstyle{ucell} = [rectangle,minimum width=2cm,minimum height=1cm,text centered,draw=black!20]
+\tikzstyle{cell} = [rectangle,minimum width=2cm,minimum height=1cm,text centered,draw=black]
+\tikzstyle{blank} = [rectangle,minimum width=2cm,minimum height=1cm,text centered]
+\tikzstyle{arrow} = [thick,->,>-stealth]
+\tikzstyle{uarrow} = [thick,->,>-stealth,draw=black!20]
+\begin{tikzpicture}[node distance=3cm]
+\node(sys)[cell]{System};
+\node(sys1)[blank,below of=sys]{};
+\node(sys2)[blank,below of=sys1]{};
+\node(sys3)[blank,below of=sys2]{};
+\node(sys4)[blank,below of=sys3]{};
+\node(prog)[ucell,right of=sys1]{Fibre 0};
+\node(doit)[ucell,right of=prog]{doit};
+\node(main)[ucell,right of=doit]{Mainline};
+\node(prod)[ucell,right of=sys2]{Fibre 1};
+\node(prod1)[ucell,right of=prod]{producer};
+\node(sys3a)[blank,right of=sys3]{};
+\node(sys3b)[blank,right of=sys3a]{};
+\node(chan)[ucell,right of=sys3b]{schannel};
+\node(cons)[ucell,right of=sys4]{Fibre 2};
+\node(cons1)[ucell,right of=cons]{consumer};
+\draw[uarrow](chan) -- (cons);
+\draw[uarrow](doit) -- (chan);
+\draw[uarrow](cons) -- (cons1);
+\draw[uarrow](prod1) -- (chan);
+\draw[uarrow](cons1) -- (chan);
+\end{tikzpicture}
+\caption{Reachability: Producer completed, Consumer starved, Program finished}
+\end{figure}
+
+
+
 
 \section{Indeterminacy}
 When fibres synchronise with matching I/O operations, both become
@@ -373,7 +730,7 @@ fun fold_right[Element, State]
   match ls with
   | Empty => init
   | Cons (head, tail) =>
-    fold_right acc init (fold_right acc tail)
+    acc (fold_right acc tail init) head
 ;
 \end{minted}
 
@@ -406,14 +763,31 @@ fun preorder [Element, State]
   match tr with
   | Leaf => init
   | Node (elt, left, right) =>
-    let lv = preorder acc init left in
     let v = acc elt lv in
+    let lv = preorder acc init left in
     preorder acc v right
 ;
 \end{minted}
 
+\subsection{In-order Fold}
+
+\begin{minted}{felix}
+fun inorder [Element, State]
+  (acc: Element -> State -> State)
+  (init: State)
+  (tr: tree[Element])
+=>
+  match tr with
+  | Leaf => init
+  | Node (elt, left, right) =>
+    let lv = inorder acc init left
+    let v = acc elt lv in
+    inorder acc v right in
+;
+\end{minted}
+
+
 \subsection{Post-order Fold}
-A post-order fold is similar, only it visits the right branch first:
 
 \begin{minted}{felix}
 fun postorder [Element, State]
@@ -424,36 +798,86 @@ fun postorder [Element, State]
   match tr with
   | Leaf => init
   | Node (elt, left, right) =>
-    let rv = postorder acc init right in
-    let v = acc elt rv in
-    postorder acc v left
+    let lv = postorder acc init left
+    let rv = postorder acc lv right in
+    acc elt rv in
 ;
 \end{minted}
 
-
-\subsection{Top down fold}
-This fold processes the element at
-the parent before the children:
+\subsection{Breadth First Fold}
+This is much harder to do efficiently. 
+A simple routine is not so hard, lets start
+with a descent which folds a single level,
+it returns the folded value and a flag which
+tells if that level is populated:
 
 \begin{minted}{felix}
-fun midleftorder [Element, State]
+fun bfn[Element, State]
+  (acc: Element -> State -> State)
+  (init: State)
+  (tr: tree[Element])
+  (n:int)
+=>
+  match tr with
+  | Leaf => init, false
+  | Node (elt, left, right) =>
+    if n > 0 then
+      let lv,lflag = bfn acc init left (n - 1) in
+      let rv, rflag = bfn acc lv right (n - 1) in
+      rv, lflag or rflag
+    else 
+      acc elt init, true
+    endif
+;
+\end{minted}
+
+The cost of this algorithm is roughly as follows: there are $2^k$ elements
+in level $k$ where k starts at 0, assuming a fully populated balanced
+tree of sufficient depth, so we have to scan $\Sigma_{k=0}^n 2^k$
+elements, including the target level $n$, but this is known
+to be just $2^{n+1}-1$.
+
+Now the idea is simply to fold level 1, then level 2, 
+then level 3, etc, until the flag tells us we hit an
+entirely unpopulated level: this is easier to do
+imperatively but we want a functional solution:
+
+
+\begin{minted}{felix}
+fun bfaux[Element, State]
+  (acc: Element -> State -> State)
+  (init: State)
+  (tr: tree[Element])
+  (n:int)
+=>
+  let v,flag = bfn acc init tr n in
+  if flag then 
+     bfaux acc init tr (n + 1)
+  else 
+    v
+  endif
+;
+
+fun bf[Element, State]
   (acc: Element -> State -> State)
   (init: State)
   (tr: tree[Element])
 =>
-  match tr with
-  | Leaf => init
-  | Node (elt, left, right) =>
-    let mv = acc elt init in
-    let lv = midleft acc mv left in
-    midleft acc lv right 
+  bfaux acc init tr 0
 ;
 \end{minted}
 
-This one visits the left child first.
+Now the total cost of folding a fully populated balanced tree to level $n$
+is $\Sigma_{k=0}^{n+1} (2^k-1)$ where we had to use $n+1$ to account for the
+fully empty level below which has to be scanned for the termination check.
+We can throw out the $-1$ here, and the result is just $2^{n+2}$ which,
+suprisingly, is only four times the number of elements in the tree. 
+The routine isn't as inefficient as you might think, and it has
+a major advantage of other routines: it uses no auxilliary storage,
+and the use of the stack is limited to some small multiple of the
+tree depth, which is insignificant if the tree is reasonable well
+shaped.
 
-\subsection{Breadth first fold}
-To do!
 
 \section{Iterators}
 Another way to visit values in a data structures is to use iterators.
@@ -581,7 +1005,7 @@ fun next (path: zipper[Element]) =>
 \end{minted}
 
 \section{Zippers}
-For any inductive data type, there is a related type known as a zipper.
+For any inductive data type, there is a related type known as a {\em zipper}.
 A zipper is basically a path in the tree. It can be thought of as the
 original data type with a hole in it representing the location of
 the current visitor, that is, a way to cut off a branch forming a subtree
@@ -901,8 +1325,9 @@ endcircuit
 
 The \verb%wire% clause allows you to connect a known channel to a device.
 
-
+\part{Appendices}
 \chapter{Coroutine Semantics}
+\label{Coroutine Semantics}
 \section{Objects}
 A coroutine system consists of the following types of objects:
 \begin{description}

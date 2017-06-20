@@ -861,6 +861,11 @@ class Real[t] {
     // tex \lfloor \rfloor defined in grammar
 
   virtual fun trunc: t -> t;
+
+  // this trig function is included here because it
+  // is not available for complex numbers
+  virtual fun atan2: t * t -> t;
+
 }
 
 

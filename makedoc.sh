@@ -28,4 +28,12 @@ makeglossaries modern_programming
 pdflatex -shell-escape src/docs/modern_programming.tex
 cp modern_programming.pdf ~/Desktop
 
+#
+pdflatex -shell-escape src/docs/coprogramming.tex
+pdflatex -shell-escape src/docs/coprogramming.tex
+makeindex coprogramming
+makeglossaries coprogramming
+pdflatex -shell-escape src/docs/coprogramming.tex
+cp coprogramming.pdf ~/Desktop
+
 
