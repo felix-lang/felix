@@ -365,7 +365,7 @@ struct _tt5 {
     __asm__(""::"g"(&&x));
   #define FLX_FARTARGET(n,i,x) (void*)&f##i##_##n##_##x
   #define FLX_END_SWITCH \
-    _flx_dead_frame: throw ::flx::rtl::flx_dead_frame_failure_t(__FILE_,__LINE__);
+    _flx_dead_frame: throw ::flx::rtl::flx_dead_frame_failure_t(__FILE__,__LINE__);
 #else
   #define FLX_START_SWITCH _start_switch: switch(pc){case 0:;
   #define FLX_LOCAL_LABEL_ADDRESS(x) x
