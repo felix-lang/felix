@@ -356,7 +356,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
             "      return; //  Callback\n"
           else
             (if !needs_switch then 
-            "      KILLPC\n" 
+            "      FLX_KILLPC\n" 
             else "") ^
             "      FLX_RETURN // Callback: procedure return\n"
         else ""
@@ -828,7 +828,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         "      return; // proc return from stackable \n"
         else
         (if !needs_switch then 
-        "      KILLPC\n" 
+        "      FLX_KILLPC\n" 
         else "") ^
         "      FLX_RETURN // procedure return\n"
       | Function ->
