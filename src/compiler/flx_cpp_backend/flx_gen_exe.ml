@@ -355,6 +355,9 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
           if stackable then
             "      return; //  Callback\n"
           else
+            (if !needs_switch then 
+            "      KILLPC\n" 
+            else "") ^
             "      FLX_RETURN // Callback: procedure return\n"
         else ""
       end
@@ -824,6 +827,9 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         if stackable then
         "      return; // proc return from stackable \n"
         else
+        (if !needs_switch then 
+        "      KILLPC\n" 
+        else "") ^
         "      FLX_RETURN // procedure return\n"
       | Function ->
         clierrx "[flx_cpp_backend/flx_gen_exe.ml:800: E306] " sr "Function contains procedure return";

@@ -405,7 +405,6 @@ struct _tt5 {
 
 #define FLX_RETURN \
 { \
-  FLX_KILLPC \
   con_t *tmp = _caller; \
   _caller = 0; \
   return tmp; \

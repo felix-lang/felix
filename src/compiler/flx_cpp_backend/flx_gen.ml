@@ -631,6 +631,9 @@ let gen_procedure_methods filename syms bsym_table
         "  FLX_START_SWITCH\n" else ""
         ) ^
         exe_string ^
+        (if needs_switch then 
+        "      KILLPC\n" 
+        else "") ^
         "    FLX_RETURN\n" ^ (* HACK .. should be in exe_string .. *)
         (if needs_switch then
         "  FLX_END_SWITCH\n" else ""
