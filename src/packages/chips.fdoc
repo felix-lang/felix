@@ -58,6 +58,15 @@ chip source_from_list[T] (a:list[T])
   for y in a perform write (io.out,y);
 }
 
+chip bound_source_from_list[T] (a:list[T])
+  connector io
+    pin out: %>opt[T]
+{
+  for y in a perform write (io.out,Some y);
+  while true perform write None[T];
+}
+
+
 @h2 Function adaptor.
 Converts function to chip.
 @tangle chips.flx

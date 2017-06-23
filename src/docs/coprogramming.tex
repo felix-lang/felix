@@ -203,7 +203,8 @@ Now we can connect the devices to the channels:
 
 We have created procedure closures which bind the channel arguments
 to the procedures so that now the three closures all have the type
-\verb%unit->void% which is required for the next step.
+\verb%1->0%, where 1 is also named as \verb%unit% and 0 is named as \verb%void%,
+which is required for the next step.
 
 \subsection{Spawning Fibres}
 Now we spawn active fibres from the coroutine closures:
@@ -661,6 +662,370 @@ is a coroutine! It is not a subroutine. In fact in Felix,
 all subroutines are, in the abstract, coroutines. The normal
 procedural subroutines are just coroutines that do not do channel I/O.
 
+\chapter{Coroutine Basics}
+
+\section{Syntax Extensions}
+Felix has two syntax extensions designed to so coroutines are easier to use.
+
+\subsection{The {\tt chip} definition}
+This extensions encourages a picture of coroutines as integrated
+circuits, even though that is not really accurate.
+
+\begin{minted}{felix}
+chip producer 
+  connector io
+    pin out: %>int
+{
+  for i in 0..<10 
+    perform write (io.out, i);
+}
+chip transducer 
+  connector io
+    pin inp: %<int
+    pin out: %>int 
+{
+  while true do
+    var x = read io.inp;
+    var y = x * x;
+    write (io.out, y);
+  done
+}
+chip consumer 
+  connector io
+    pin inp: %<int
+{
+  while true do
+    var y = read io.inp;
+    println y;
+  done
+}
+\end{minted}
+
+Here \verb%connector% names an argument to the procedure
+of record type. The fields of the record and specified with
+the \verb%pin% clause. You can have more than one connector
+phrase, each specifies a separate argument. Each \verb%chip%
+has an aditional unit argument added automatically. The signatures
+of the three chips above are:
+
+\begin{minted}{felix}
+  producer: (out: %out) -> 1 -> 0
+  transducer: (inp: %<int, out: %out) -> 1 -> 0
+  consumer: (inp: %<int) -> 1 -> 0
+\end{minted}
+
+Note that this syntax uses a record type for the connector,
+whereas our original coroutines used a plain type for one
+parameter and a tuple for the two required for the transducer.
+
+\subsection{The {\tt device} statement}
+You can write:
+
+\begin{minted}{felix}
+device x = y;
+\end{minted}
+
+to construct a procedure closure of type \verb%unit->void%.
+Actually, device is just a synonym for \verb%var%, and is
+provided to make your look more like an electrical engineer
+than a software engineer.
+
+
+\subsection{The {\tt circuit} statement}
+\subsubsection{The {\\tt connect} clause}
+A \verb%circuit% statement can be used to connect devices
+and pins. It is an executable statement!
+
+\begin{minted}{felix}
+circuit
+  connect producer.out, transducer.inp
+  connect transducer.out, consumer.inp
+endcircuit
+\end{minted}
+
+This makes a pipeline from the chips. The connecting channels
+are automatically created, as are the procedure closures required
+to make devices. The resulting devices are then spawned.
+
+You can list any number of comma separated device/pin pairs
+in a connect clause. Felix finds the transitive closure of
+connections and makes a channel to connect all those pins together.
+The data type of all connected pins must be the same. If all are inputs
+or all are outputs, the compiler will issue a warning (but it is not
+an error!).
+
+\subsubsection{The {\\tt wire} clause}
+There is also another clause you can use in a circuit statement:
+
+\begin{minted}{felix}
+circuit
+  wire ch to dev.pin
+endcircuit
+\end{minted}
+
+The \verb%wire% clause allows you to connect a known channel to a device.
+
+\chapter{Core Components}
+Every system needs a library! 
+\section{Base Components}
+\subsection{Blockers}
+Here is a device to use when you have to connected
+a writer to a channel, but want it to be unconnected.
+
+\begin{minted}{felix}
+chip writeblock[T]
+  connector io
+    pin inp : %<T
+{
+}
+\end{minted}
+
+And the corresponding reader:
+
+\begin{minted}{felix}
+chip readblock[T]
+  connector io
+    pin inp: %>T
+{
+}
+\end{minted}
+
+These coroutines suicide immediately, so a writer is blocked,
+or a reader starved, respectively.
+
+\subsection{Universals}
+This chip reads input forever but ignores it.
+
+\begin{minted}{felix}
+chip sink[T]
+  connector io
+    pin inp : %<T
+{
+  while true do
+    var x = read (io.inp);
+    C_hack::ignore (x);
+  done
+}
+\end{minted}
+
+Whereas this chip writes a fixed value forever.
+It is the analogue of a value or constant function:
+
+\begin{minted}{felix}
+chip source[T] (a:T)
+  connector io
+    pin out: %>T
+{
+  while true perform write (io.out, a);
+}
+\end{minted}
+
+\subsection{Adaptors}
+Two key adaptors provide {\em lifts}:
+
+
+\begin{minted}{felix}
+chip source_from_list[T] (a:list[T])
+  connector io
+    pin out: %>T
+{
+  for y in a perform write (io.out,y);
+}
+
+chip bound_source_from_list[T] (a:list[T])
+  connector io
+    pin out: %>opt[T]
+{
+  for y in a perform write (io.out,Some y);
+  while true perform write None[T];
+}
+\end{minted}
+
+A lift is a way to go from the imperative/function model
+of the world into the coroutine/stream model. These
+two chips lift a list into a stream.
+
+It is absolutely vital to understand how these two
+lifts differ. The first lift is a pure lift
+which simply starves any read trying to go past the
+end of the list. There is no terminal value to tell the
+reader the list has ended. Notice a finite number
+of values is written by the first device, equal to the
+number in the list. This is a {\em finite stream}.
+
+The second device generates an infinite stream
+by embedding a finite list in its head using 
+an option type. The tail of the stream is an infinite
+list of None's. The None values are terminators which
+act to bound the list.
+
+I will warn now, to understand how to use the first device
+requires a paradigm shift. Having things drop dead without
+any warning seems difficult to manage if you're used
+to dealing with inductive data types in a functional
+setting. We will see later, however, that it is natural.
+
+Next, we have a basic adaptor for a function.
+
+\begin{minted}{felix}
+chip function[D,C] (f:D->C)
+  connector io
+    pin inp: %<D
+    pin out: %>C
+{
+  while true do
+    var x = read io.inp;
+    var y = f x; 
+    write (io.out, y);
+  done
+}
+\end{minted}
+
+
+This device is an example of the generic category 
+of a {\em transducer}. 
+
+\subsection{Drops}
+A drop is a way to get out of the coroutine/stream model
+back to your imperative functional model:
+
+\begin{minted}{felix}
+chip procedure[D] (p:D->0)
+  connector io
+    pin inp: %<D
+{
+  while true do 
+    var x = read io.inp;
+    p x;
+  done
+}
+\end{minted}
+
+The device is a sink which will typically
+create side effects for each value read.
+
+A special case is a list drop:
+
+\begin{minted}{felix}
+chip sink_to_list[T] (p: &list[T])
+  connector io
+    pin inp : %<T
+{
+  while true do
+    var x = read (io.inp);
+    p <- Cons (x,*p);
+  done
+}
+\end{minted}
+
+Now, we need an example to show how to use this drop!
+
+\begin{minted}{felix}
+include "std/control/chips";
+open BaseChips;
+
+var output = Empty[int];
+
+device s = source_from_list ([1,2,3,4]);
+device tr = function (fun (x:int)=>x*x);
+device d = sink_to_list &output;
+run  { 
+  circuit
+    connect s.out, tr.inp
+    connect tr.out, d.inp
+  endcircuit
+};
+println$ output;
+\end{minted}
+ 
+The critical thing to note is the \verb%run% procedure.
+It spawns its argument procedure as the initial fibre
+of a new fibre scheduler, and then waits until that scheduler
+terminates due to a lack of active fibres.
+
+So {\em within} the fibre system, we cannot detect the end
+of the list, but from outside, we can detect it indirectly
+by the fact that our circuit is no longer active.
+
+The \verb%run% procedure first lifts out of the current
+procedural/imperative mode into fibrated stream mode,
+waits until it completes, and then drops back to procedural
+mode. In other words it interfaces the two modes.
+
+\verb%run% can be used in a procedure, in a coroutine,
+or in a function. Run, in effect,  creates and pushes a scheduler
+on a scheduler stack, waits until it completes, and then pops
+back to the current scheduler.
+
+\subsection{Avoiding lockup}
+To avoid some cases of lockup we provide the buffer device:
+
+\begin{minted}{felix}
+chip buffer [T]
+  connector io
+    pin inp: %<T
+    pin out: %>T
+{
+  while true do
+    var x = read io.inp;
+    write (io.out, x);
+  done
+}
+\end{minted}
+
+You can see this is a just a copy operation and is a special
+case of the \verb%function% chip, which uses the identity
+function. However in a fibrated setting, \verb%buffer% is not
+semantically a no operation.
+
+Here's an example:
+
+\begin{minted}{felix}
+include "std/control/chips";
+open BaseChips;
+
+chip out2
+  connector io
+    pin oa: %>int
+    pin ob: %>int
+{
+  write (io.oa, 11);
+  write (io.ob, 42);
+}
+
+chip in2 
+  connector io
+    pin ia: %<int
+    pin ib: %<int
+{
+   var a = read a;
+   var b = read b;
+   println $ a - b;
+}
+
+// WOOPS, lock up!
+//circuit
+//   connect out2.ob, in2.ia
+//   connect out2.oa, in2.ib
+//endcircuit
+
+device abuf = buffer;
+device bbuf = buffer;
+circuit
+   connect out2.ob, bufb.inp
+   connect out2.oa, bufa.inp
+   connect in2.a, bufa.out
+   connect in2.b, bufb.out
+endcircuit
+\end{minted}
+
+This is a classic deadlock for threads. The writer writes $a$
+first then $b$, then reader reads $b$ first, then $a$.
+Adding the buffers removes the ordering dependency.
+I added two buffers, although in this case only one is
+required. Can you figure out which two pins have to connected
+via a buffer?
+
 
 \chapter{Advantage of coroutines}
 You may wonder why bother with coroutines? What's wrong with
@@ -893,14 +1258,22 @@ as the input as the state:
 
 \begin{minted}{felix}
 fun first_llit[Element] 
-  (ls: list[Element]) 
+  (ls: list[Element])
+:
+  opt[Element] * list[Element] 
 => 
   match ls with
   | Empty => None[Element], Empty[Element]
   | Cons (head, tail) => Some head, tail
 ;
 
-fun next_llit[Element] => first_llit ls;
+fun next_llit[Element] 
+  (ls: list[Element]) 
+:
+  opt[Element] * list[Element] 
+=> 
+  first_llit ls
+;
 \end{minted}
 
 
@@ -910,11 +1283,19 @@ The bottom up iterator is harder:
 \begin{minted}{felix}
 fun first_rlit[Element] 
   (ls: list[Element]) 
+:
+  opt[Element] * list[Element] 
 => 
   first_llit (rev ls)
 ;
 
-fun next_rlit[Element] => first_llit ls;
+fun next_rlit[Element] 
+  (ls: list[Element]) 
+:
+  opt[Element] * list[Element] 
+=> 
+  first_llit ls
+;
 \end{minted}
 
 The code is simple, it just uses the left iterator
@@ -924,7 +1305,7 @@ The difference is, the iterator must maintain the state
 explicitly on the heap, whereas the fold uses the machine
 stack to hold pointers into the list implicitly.
 
-\subsection{Left Treee Iterator}
+\subsection{Left Tree Iterator}
 Now the real fun starts! How must our iterator work?
 
 \begin{minted}{felix}
@@ -967,10 +1348,10 @@ obj Iterata[Element] (tr: tree[Element]) =
 As you can see, this is considerably more complicated than the corresponding fold.
 In fact, it took me a couple of minutes to write the fold and many hours
 until I figured out how to write the iterator. It is basically the
-control inverse of the fold: it is the fold turned inside out.
+{\em control inverse} of the fold: it is the fold turned inside out.
 
-Control inversion is a key concept. The fold function is a master which
-calls the client function as a slave. The iterator, on the other hand,
+Control inversion is a key concept. The fold function is a {\em master} which
+calls the client function as a {\em slave}. The iterator, on the other hand,
 is a slave function called by the client, which is the master.
 
 The iterator above reveals the true nature of the data required by a preorder
@@ -1236,94 +1617,6 @@ begin
 end
 \end{minted}
 
-
-\section{Syntax Extensions}
-Felix has two syntax extensions designed to so coroutines are easier to use.
-
-\subsection{The {\tt chip} definition}
-This extensions encourages a picture of coroutines as integrated
-circuits, even though that is not really accurate.
-
-\begin{minted}{felix}
-chip producer 
-  connector io
-    pin out: %>int
-{
-  for i in 0..<10 
-    perform write (io.out, i);
-}
-chip transducer 
-  connector io
-    pin inp: %<int
-    pin out: %>int 
-{
-  while true do
-    var x = read io.inp;
-    var y = x * x;
-    write (io.out, y);
-  done
-}
-chip consumer 
-  connector io
-    pin inp: %<int
-{
-  while true do
-    var y = read io.inp;
-    println y;
-  done
-}
-\end{minted}
-
-Here \verb%connector% names an argument to the procedure
-of record type. The fields of the record and specified with
-the \verb%pin% clause. You can have more than one connector
-phrase, each specifies a separate argument. Each \verb%chip%
-has an aditional unit argument added automatically.
-
-\subsection{The {\tt device} statement}
-You can write:
-
-\begin{minted}{felix}
-device x = y;
-\end{minted}
-
-to construct a procedure closure of type \verb%unit->void%.
-Actually, device is just a synonym for \verb%var%, and is
-provided to make your look more like an electrical engineer
-than a software engineer.
-
-
-\subsection{The {\tt circuit} statement}
-A \verb%circuit% statement can be used to connect devices
-and pins. It is an executable statement!
-
-\begin{minted}{felix}
-circuit
-  connect producer.out, transducer.inp
-  connect transducer.out, consumer.inp
-endcircuit
-\end{minted}
-
-This makes a pipeline from the chips. The connecting channels
-are automatically created, as are the procedure closures required
-to make devices. The resulting devices are then spawned.
-
-You can list any number of comma separated device/pin pairs
-in a connect clause. Felix finds the transitive closure of
-connections and makes a channel to connect all those pins together.
-The data type of all connected pins must be the same. If all are inputs
-or all are outputs, the compiler will issue a warning (but it is not
-an error!).
-
-There is also another clause you can use in a circuit statement:
-
-\begin{minted}{felix}
-circuit
-  wire ch to dev.pin
-endcircuit
-\end{minted}
-
-The \verb%wire% clause allows you to connect a known channel to a device.
 
 \part{Appendices}
 \chapter{Coroutine Semantics}
