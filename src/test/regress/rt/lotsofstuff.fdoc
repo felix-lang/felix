@@ -61,7 +61,7 @@ var text =
   "over the lazy dog"
 ;
 
-#(char_stream (text) |-> words |-> emit);
+char_stream (text) |-> words |-> emit;
 
 proc int_to_string (ch: %<int%>string)  ()
 {
