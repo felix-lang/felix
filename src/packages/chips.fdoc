@@ -122,6 +122,14 @@ chip buffer [T]
   done
 }
 
+chip oneshot [T]
+  connector io
+    pin inp: %<T
+    pin out: %>T
+{
+  write (io.out, read io.inp);
+}
+
 @h2 Connector symbol
 The syntax |-> is parsed to pipe (a,b).
 We add overloads for chips with pins

@@ -1036,6 +1036,21 @@ I added two buffers, although in this case only one is
 required. Can you figure out which two pins have to connected
 via a buffer?
 
+Here is another useful chip, it copies a single value
+from input to output then suicides. It is generally useful
+to insert into pipelines that would otherwise be continuous
+when you only want a one shot operation.
+
+\begin{minted}{felix}
+chip oneshot [T]
+  connector io
+    pin inp: %<T
+    pin out: %>T
+{
+  write (io.out, read io.inp);
+}
+\end{minted}
+
 Finally here are some convenience types:
 
 \begin{minted}{felix}
@@ -1148,6 +1163,299 @@ producer |-> transducer |-> consumer;
 
 given the chips of \ref{fig:prodtranscons1}
 instead of the circuit statemnent \ref{fig:circ1}.
+
+\subsection{The lift functor}
+Pipelining is associative up to buffering. The exact structures 
+spawned may differ and the order of execution may differ, but
+the ordering always conforms to the abstract semantics.
+
+There is a mapping between function compositions and pipelines,
+and this mapping is structure preserving. Given a sequence of
+functions of types suitable for composition
+$$f_1, f_2, f_3 \dots$$
+then writing $\Phi$ for the \verb%function% chip, we have
+$$\Phi(f_1 \odot f_2 \odot f_3 \dots) \cong
+\Phi f_1 \mapsto \Phi f_2 \mapsto \Phi f_3 \dots)
+$$
+where $\odot$ is reverse function composition.
+
+In other words, it is structure preserving, and thus a categorical {\em functor}.
+It is called the {\em lift} functor because it lifts functional
+code into cofunctional code, that is, functional stuff is lifted
+into semantically equivalent coroutine based code. You can also drop
+any pipeline to a function composition, so the two systems
+are isomorphic.
+
+The key point, which we are yet to demonstrate, is that
+pipelines are not the only kind of circuits you can make.
+Cofunctional programming {\em subsumes} functional programming.
+Its more flexible and more powerful.
+
+\subsection{Linear Flow}
+Linear flow circuits are an extension of the pipeline
+concept which allows data to flow from sources to sinks
+in an acyclic network. Lets look at an example with two
+sources:
+
+\begin{minted}{felix}
+device A = source_from_list ([1,2,3]);
+device B = source_from_list ([5,6,7]);
+chip add
+  connector io
+    a: %<int
+    b: %>int
+    sum: %>int
+{
+  while true do
+    var a = read io.a;
+    var b = read io.b;
+    write (io.sum, a + b);
+  done
+}
+circuit
+  connect A.out, add.a
+  connect B.out, add.b
+  connect add.sum, consumer.inp
+endciruit
+\end{minted}
+
+where we have used our original consumer to print the results.
+There is an important thing to observe here: the order in which
+our \verb%add% chip reads it input does not matter {\em in
+this case} because it is connected to two {\em independent} sources.
+
+You can probably see that given any binary operators represented
+as chips, we can construct a calculate with a tree like structure
+to perform the calculation.
+
+\begin{minted}{felix}
+chip sub
+  connector io
+    a: %<int
+    b: %>int
+    diff: %>int
+{
+  while true do
+    var a = read io.a;
+    var b = read io.b;
+    write (io.diff, a - b);
+  done
+}
+\end{minted}
+
+
+If you are familiar with functional programming concepts, you may
+ask whether these functions are eagerly or lazily evaluated.
+Eager evaluation means the arguments are evaluated first,
+before the function is called, so if such an evaluation fails
+to terminate, the function call never happens, and we can say that
+the whole application fails to terminate.
+
+With lazy evaluation, the arguments are only evaluated when they're
+actually needed. So if an argument which would be nonterminating
+is not actually needed, the function application can still succeed.
+
+Because coroutines provide explicit control flow, the evaluation
+strategy depends on the way you write the coroutine. To put this
+another way, there is no built in preference for either eager or
+lazy evaluation. We will demonstrate by showing an important
+operator written two different ways. First the eager variant:
+
+\begin{minted}{felix}
+chip eagerconditional
+  connector io
+    pin condition: %<bool
+    pin trueval: %<int
+    pin falseval: %<int
+    pin result: %>int
+{
+  var c = read io.condition;
+  var t = read io.trueval;
+  var f = read io.falseval;
+  write (io.result, if c then t else f);
+}
+\end{minted}
+
+and now the lazy variant:
+
+\begin{minted}{felix}
+chip lazyconditional
+  connector io
+    pin condition: %<bool
+    pin trueval: %<int
+    pin falseval: %<int
+    pin result: %>int
+{
+  var c = read io.condition;
+  if c do
+    var t = read io.trueval;
+    write (io.result, t);
+  else 
+    var f = read io.falseval;
+    write (io.result, t);
+  done
+}
+\end{minted}
+
+If the eager chip starves on either the read of the true value
+or the false value, then any reader of the result also starves,
+no matter what is read for the condition. However the lazy
+chip only ever reads the value it is required to output,
+and so only starves if the the read on that channel starves.
+If it doesn't not, then it doesn't matter if a read on the
+other channel starves, because we never actually read it.
+
+Another interesting chip is this one:
+
+\begin{minted}{felix}
+chip choose
+  connector io
+    pin condition: %<bool
+    pin value: <%int
+    pin truecont: %>int
+    pin falsecont: %>int
+{
+  var c = read io.condition;
+  var v = io.value;
+  if c do
+    write (io.truecont, v);
+  else
+    write (io.falsecont, v);
+  done
+}
+\end{minted}
+
+This is a very important chip to understand! What it does is read
+a condition and a value and write that value down one of two 
+channels, depending on the condition.
+
+At the other end of the two outputs
+there may well be two different chips reading the result,
+one to handle each of the two conditions. So this chip is like
+a conditional goto chip, or a switch, in that it choses how
+the rest of the program will proceed by selecting a data
+path. Whichever path is chosen, the continuation suspended
+at the end of the channel will continue execution. So passing
+an output channel to a chip is an abstract way of passing
+a continuation.
+
+I say abstract because the actual chip which resumes control
+on reading a value from the channel is dependent entirely
+on how the circuit is connected. It doesn't depend on the
+actual channel passed directly, but what is connected to
+the other end.
+
+Critically, the \verb%choose% chip enforces lazy evaluation
+because only one of the channels is written to, what's
+connected to the other end will only be activated if its 
+input channel is selected for the write. In particular
+I want you, the reader, to see that channels are not
+merely ways to send data around, rather, they're ways to
+transmit {\em control}. In particular, networks of connected
+chips have a shape called a {\em control structure}.
+
+So now we have looked at extensions to the pipeline concept
+in which we have chips with multiple inputs and outputs,
+and we are going to demonstrate how to handle the partial
+function division:
+
+\begin{minted}{felix}
+chip divide
+  connector io
+    pin numerator: %<int
+    pin denominator: %<int
+    pin quotient: %>int
+    pin divisionbyzero: %>int
+{
+  var n = read io.numerator;
+  var d = read io.denominator;
+  if d == 0 do
+     write (io.divisionbyzero, numerator);
+  else
+     write (io.quotient, numerator/denominator);
+  done
+}
+\end{minted}
+
+This is an important chip because it shows how to handle
+a partial function correctly, by providing an error channel.
+
+Imagine we have to compute the formula:
+$${x + y\over x - y}+1$$
+We can use this:
+
+\begin{minted}{felix}
+var x = 1;
+var y = 1;
+device xc = x.source;
+device yc = y.source;
+device one = 1.source;
+
+device add1 = add;
+device add2 = add;
+
+chip error
+  connector io
+    pin inp: %>int
+{
+  var x = read io.inp;
+  println "Division of " + x.str + " by zero";
+}
+
+circuit
+  connect add1.a, xc.out
+  connect add1.b, yc.out
+  connect sub.a, xc.out
+  connect sub.b, yc.out
+  connect div.numerator, add1.sum
+  connect div.denominator, sub.diff
+  connect div.quotient, add2.a
+  connect one.out, add2.b
+  connect add.sum, consumer.inp 
+  connect div.divisionbyzero, error.inp
+endciruit
+\end{minted}
+
+\begin{figure}[h]
+\begin{center}
+\tikzstyle{cell} = [rectangle,minimum width=0.7cm,minimum height=0.5cm,text centered,draw=black]
+\tikzstyle{arrow} = [thick,->,>-stealth]
+\begin{tikzpicture}[node distance=3cm]
+\node(O)[cell]{1};
+\node(X)[cell,below of=O]{x};
+\node(Y)[cell, below of=X]{y};
+\node(A1)[cell,right of=X]{add};
+\node(S)[cell,right of=Y]{sub};
+\node(D)[cell,right of=S]{div};
+\node(A2)[cell,right of=D]{add};
+\node(C)[cell,right of=A2]{consumer};
+\node(E)[cell,below of=D]{error};
+%\node(B)[cell,right of=A]{B};
+%\node(C)[cell,right of=B]{C};
+\draw[arrow](X) -- (A1);
+\draw[arrow](Y) -- (A1);
+\draw[arrow](A1) -- (D);
+\draw[arrow](X) -- (S);
+\draw[arrow](Y) -- (S);
+\draw[arrow](S) -- (D);
+\draw[arrow](D) -- (A2);
+\draw[arrow](D) -- (E);
+\draw[arrow](O) -- (A2);
+\draw[arrow](A2) -- (C);
+\end{tikzpicture}
+\caption{Flow in simple formula}
+\label{fig:flowinsimpleformula}
+\end{center}
+\end{figure}
+
+This looks complicated, but look at the diagran shown in \ref{fig:flowinsimpleformula}.
+There are some tricks in the code: the \verb%x% and \verb%y% sources are reused, 
+which is only safe because they're constant sources, and the \verb%add%, \verb%sub%,
+and \verb%div% chips are one shots.
+
+Exercise (Hard). If we wanted to make this system accept a list of pairs and process them,
+printing the values of x and y and the quotient, or an error message,
+what would we need to do?
 
 
 \chapter{Advantage of coroutines}
