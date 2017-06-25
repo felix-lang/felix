@@ -3114,6 +3114,19 @@ syntax loops
     ))
     """;
 
+  //$ repeat loop.
+  loop_stmt := optlabel "repeat" block =>#
+    """ 
+    `(ast_seq ,_sr
+      ,(list
+        `(ast_label ,_sr ,(string-append "continue_" _1))
+        _3
+        `(ast_goto ,_sr ,(string-append "continue_" _1))
+        `(ast_label ,_sr ,(string-append "break_" _1))
+    ))
+    """;
+
+
   //$ Negated while loop.
   loop_stmt := optlabel "until" sexpr block =>#
     """

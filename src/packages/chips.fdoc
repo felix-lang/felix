@@ -63,7 +63,7 @@ chip bound_source_from_list[T] (a:list[T])
     pin out: %>opt[T]
 {
   for y in a perform write (io.out,Some y);
-  while true perform write None[T];
+  while true perform write (io.out,None[T]);
 }
 
 
@@ -164,7 +164,7 @@ chip pipe[T,U] (a:iochip_t[T,U],b:ichip_t[U])
 }
 
 // source to sink
-proc pipe[T] (a:ochip_t[T],b:ichip_t[T]) ()
+proc pipe[T] (a:ochip_t[T],b:ichip_t[T]) 
 {
   circuit
     connect a.out,b.inp

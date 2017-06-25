@@ -41,6 +41,7 @@ class FelixLexer(RegexLexer):
         'regexp', 'reglex', 'regmatch', 'rename', 'return', 'the', 'then',
         'to', 'type', 'typecase', 'typedef', 'typematch', 'typeof', 'upto',
         'when', 'whilst', 'with', 'yield',
+        'circuit','endcircuit','connect','wire','connector','pin'
     )
 
     keyword_directives = (
@@ -92,8 +93,9 @@ class FelixLexer(RegexLexer):
             include('whitespace'),
 
             # Keywords
-            (words(('axiom', 'ctor', 'fun', 'gen', 'proc', 'reduce','regdef','var','val', 
-                    'union'), suffix=r'\b'),
+            (words(('axiom', 'ctor', 'chip', 'fun', 'gen', 'proc', 'reduce','regdef',
+              'var','val', 
+              'union'), suffix=r'\b'),
              Keyword, 'funcname'),
             (words(('class', 'cclass', 'cstruct', 'obj', 'struct', 'object'), suffix=r'\b'),
              Keyword, 'funcname'),
@@ -155,7 +157,7 @@ class FelixLexer(RegexLexer):
             include('comment'),
         ],
         'operators': [
-            (r'!=|==|<<|>>|\|\||&&|[#!~+/*%=<>&^|.$-]', Operator),
+            (r'!=|==|<<|>>|\|\||&&|\|->|[#!~+/*%=<>&^|.$-]', Operator),
         ],
         'comment': [
             (r'//(.*?)\n', Comment.Single),

@@ -27,7 +27,8 @@
 //$
 
 include "std/control/schannels";
-include "std/control/spipes";
+include "std/control/chips";
+open BaseChips;
 
 // --- COMMAND LINE PROCESSING --------------------------------
 
@@ -95,50 +96,57 @@ done
 
 // ---- PIPELINE ---------------------------------
 // Source device.
-proc filesrc (file:string) (o:oschannel[string]) 
+chip filesrc (file:string) 
+  connector io
+     pin out:%>string 
 {
   var data = load file;
-  for line in split(data,"\n") do write (o, line+"\n"); done
-  write(o,"");
+  for line in split(data,"\n") do write (io.out, line+"\n"); done
+  write(io.out,"");
 }
 
 // Tangling transducer.
-proc tangle (filename:string) (tag:string) (i:ischannel[string], o:oschannel[string]) 
+chip tangle (filename:string) (tag:string)
+  connector io
+    pin inp: %<string
+    pin out: %>string
 {
   var lineno=1;
 moredoc:>
-  var x = read i;
+  var x = read io.inp;
   ++lineno;
   if x == "" goto finish;
   if strip x != "@"+tag goto moredoc;
 
   if tag == "felix" and linenos do
-    write(o,"#line " + lineno.str+ " " + '"'+filename+'"\n');
+    write(io.out,"#line " + lineno.str+ " " + '"'+filename+'"\n');
   done
 morefelix:>
-  x = read i;
+  x = read io.inp;
   ++lineno;
   if x == "" goto finish;
   if x.[0] == char "@" goto moredoc;
-  write(o,x);
+  write(io.out,x);
   goto morefelix;
 
 finish:>
-  write (o,"");
+  write (io.out,"");
 }
 
 // Concentrating transducer.
-proc grab (o:oschannel[string]) (i:ischannel[string])  
+chip grab (out:%>string)
+  connector io
+    pin inp:%<string
 {
   var s = "";
 morelines:>
-  var x = read i;
+  var x = read io.inp;
   if x == "" goto finish;
   s+=x;
   goto morelines;
 
 finish:> 
-  write(o,s);
+  write(out,s);
 }
 
 // Pipeline controller.
@@ -156,13 +164,9 @@ proc save_tangle (infile:string, outbase:string)
     var iflx,oflx = #mk_ioschannel_pair[string];
     var ixpect,oxpect = #mk_ioschannel_pair[string];
     var iinput,oinput = #mk_ioschannel_pair[string];
-    spawn_fthread$ filesrc infile |-> 
-      (
-        (tangle infile "felix" |-> grab oflx), 
-        (tangle infile "expect" |-> grab oxpect),
-        (tangle infile "input" |-> grab oinput)
-      )
-    ;
+    filesrc infile |-> tangle infile "felix" |-> grab oflx;
+    filesrc infile |-> tangle infile "expect" |-> grab oxpect;
+    filesrc infile |-> tangle infile "input" |-> grab oinput;
     var flx-result  = read iflx;
     var xpect-result  = read ixpect;
     var input-result  = read iinput;

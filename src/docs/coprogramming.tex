@@ -4,8 +4,7 @@
 \definecolor{emphcolor}{rgb}{0.5,0.0,0.0}
 \newcommand{\empha}{\bf\color{emphcolor}}
 \usepackage{parskip}
-\usepackage{minted}
-\usepackage{caption}
+\usepackage[newfloat=true]{minted}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amscd}
@@ -17,8 +16,9 @@
 \setminted{bgcolor=bg,xleftmargin=20pt}
 \usepackage{hyperref}
 \hypersetup{pdftex,colorlinks=true,allcolors=blue}
-\usepackage{hypcap}
 \newcommand*{\fullref}[1]{\hyperref[{#1}]{\autoref*{#1} \nameref*{#1}}}
+\usepackage{hypcap}
+\usepackage{caption}
 \DeclareMathOperator{\quot}{div}
 \DeclareMathOperator{\rmd}{rmd}
 \title{Programming with Coroutines}
@@ -37,10 +37,10 @@ one to experiment with: Felix will be used in this document simply
 because there isn't anything else!
 
 \section{What is a coroutine?}
-A coroutine is basically a procedure which can be spawned to begin
-a fibre of control which can be suspended and resumed under program
+A {\em coroutine} is basically a procedure which can be {\em spawned} to begin
+a {\em fibre} of control which can be {\em suspended} and {\em resumed} under program
 control at specific points. Coroutines communicate with each other
-using synchronous channels to read and write data from and to other
+using {\em synchronous channels} to read and write data from and to other
 coroutines. Read and write operations are synchronisation points,
 which are points where a fibre may be suspended or resumed.
 
@@ -671,6 +671,8 @@ Felix has two syntax extensions designed to so coroutines are easier to use.
 This extensions encourages a picture of coroutines as integrated
 circuits, even though that is not really accurate.
 
+\phantomsection
+\label{fig:prodtranscons1}
 \begin{minted}{felix}
 chip producer 
   connector io
@@ -679,6 +681,8 @@ chip producer
   for i in 0..<10 
     perform write (io.out, i);
 }
+\end{minted}
+\begin{minted}{felix}
 chip transducer 
   connector io
     pin inp: %<int
@@ -690,6 +694,8 @@ chip transducer
     write (io.out, y);
   done
 }
+\end{minted}
+\begin{minted}{felix}
 chip consumer 
   connector io
     pin inp: %<int
@@ -732,16 +738,20 @@ than a software engineer.
 
 
 \subsection{The {\tt circuit} statement}
-\subsubsection{The {\\tt connect} clause}
+\subsubsection{The {\tt connect} clause}
 A \verb%circuit% statement can be used to connect devices
 and pins. It is an executable statement!
 
+\begin{figure}[h]
 \begin{minted}{felix}
 circuit
   connect producer.out, transducer.inp
   connect transducer.out, consumer.inp
 endcircuit
 \end{minted}
+\caption{Simple circuit connection}
+\label{fig:circ1}
+\end{figure}
 
 This makes a pipeline from the chips. The connecting channels
 are automatically created, as are the procedure closures required
@@ -754,7 +764,7 @@ The data type of all connected pins must be the same. If all are inputs
 or all are outputs, the compiler will issue a warning (but it is not
 an error!).
 
-\subsubsection{The {\\tt wire} clause}
+\subsubsection{The {\tt wire} clause}
 There is also another clause you can use in a circuit statement:
 
 \begin{minted}{felix}
@@ -785,7 +795,7 @@ And the corresponding reader:
 \begin{minted}{felix}
 chip readblock[T]
   connector io
-    pin inp: %>T
+    pin out: %>T
 {
 }
 \end{minted}
@@ -1025,6 +1035,119 @@ Adding the buffers removes the ordering dependency.
 I added two buffers, although in this case only one is
 required. Can you figure out which two pins have to connected
 via a buffer?
+
+Finally here are some convenience types:
+
+\begin{minted}{felix}
+typedef iopair_t[D,C] = (inp: %<D, out: %>C);
+
+// source
+typedef ochip_t[T] = (out: %>T) -> 1 -> 0;
+
+// transducer
+typedef iochip_t[D,C] = iopair_t[D,C] -> 1 -> 0;
+
+// sink
+typedef ichip_t[T] = (inp: %<T) -> 1 -> 0;
+
+\end{minted}
+
+which specify the type of three commonly used chips.
+
+\chapter{Pipelines}
+One of the most basic control structures you can build with
+coroutines is the {\em pipeline}. This is a series connection
+of transducers, the output of the left one of a pair connected
+to the input of the right one. A pipeline of transducers is said
+to be an {\em open pipeline}.
+
+If a source is connected to the left end, and a sink to the right
+end, it is a closed pipeline.
+
+An open pipeline is semantically equivalent to a transucer with
+additional buffering. A pipline closed on the left is a source,
+and a pipeline closed on the right is a sink.
+The syntax |-> is parsed to pipe (a,b).
+We add overloads for chips with pins
+named io.inp, io.out.
+
+Here are the binary combinators:
+
+This chip connects two transducers to form a new
+transducer. Note, since we use the \verb%circuit%
+statement, the pair of component coroutines are
+actually spawned as fibres.
+
+\begin{minted}{felix}
+chip pipe[T,U,V] (a:iochip_t[T,U],b:iochip_t[U,V])
+ connector io
+   pin inp: %<T
+   pin out: %>V
+{
+  circuit
+    connect a.out,b.inp
+    wire io.inp to a.inp
+    wire io.out to b.out
+  endcircuit
+}
+\end{minted}
+
+Here we connect a source to a transducer to make
+a new source:
+
+\begin{minted}{felix}
+chip pipe[T,U] (a:ochip_t[T],b:iochip_t[T,U])
+ connector io
+   pin out: %>U
+{
+  circuit
+    connect a.out,b.inp
+    wire io.out to b.out
+  endcircuit
+}
+\end{minted}
+
+Here, a transducer is connected to a sink
+to form a new sink.
+
+\begin{minted}{felix}
+chip pipe[T,U] (a:iochip_t[T,U],b:ichip_t[U])
+ connector io
+   pin inp: %<T
+{
+  circuit
+    connect a.out,b.inp
+    wire io.inp to a.inp
+  endcircuit
+}
+\end{minted}
+
+Finally, connecting a source to a sink results in
+a closed pipeline. Closed pipelines are equivalent in
+some sense to subroutines in that they can only be observed
+for their side effects.
+
+\begin{minted}{felix}
+// source to sink
+proc pipe[T] (a:ochip_t[T],b:ichip_t[T]) ()
+{
+  circuit
+    connect a.out,b.inp
+  endcircuit
+}
+\end{minted}
+
+Note carefully, this last operator is a procedure not a chip!
+
+Felix provides the infix symbol \verb%|->% for the \verb%pipe% operator.
+An example of use, we can say:
+
+\begin{minted}{felix}
+producer |-> transducer |-> consumer;
+\end{minted}
+
+given the chips of \ref{fig:prodtranscons1}
+instead of the circuit statemnent \ref{fig:circ1}.
 
 
 \chapter{Advantage of coroutines}
@@ -2362,5 +2485,7 @@ capable of resolving the lockup, but does not do so
 dynamically. To prevent livelocks, variables holding
 channel values to which no I/O will occur dynamically
 should also go out of scope.
- 
+
+\chapter{Listings}
+\listoflistings 
 \end{document}
