@@ -95,6 +95,39 @@ chip procedure[D] (p:D->0)
   done
 }
 
+@h2 Filter
+Convert a predicate and function to a transducer.
+
+@tangle chips.flx
+chip filter[D,C] (c:D->bool) (f:D->C)
+  connector io
+    pin inp: %<D
+    pin out: %>C
+{
+  while true do
+    var x = read io.inp;
+    if c x do
+       write (io.out, f x);
+    done
+  done
+}
+
+chip filter[D,C] (f:D->opt[C])
+  connector io
+    pin inp: %<D
+    pin out: %>C
+{
+  while true do
+    var x = read io.inp;
+    match f x with
+    | Some y => write (io.out, y);
+    | None => ;
+    endmatch;
+  done
+}
+
+
+
 @h2 Sink to list
 @tangle chips.flx
 chip sink_to_list[T] (p: &list[T])
@@ -129,6 +162,20 @@ chip oneshot [T]
 {
   write (io.out, read io.inp);
 }
+
+chip dup [T]
+  connector io
+    pin inp: %<T
+    pin out1: %>T
+    pin out2: %>T
+{
+  while true do
+    var x = read io.inp;
+    write (io.out1, x);
+    write (io.out2, x);
+  done
+}
+
 
 @h2 Connector symbol
 The syntax |-> is parsed to pipe (a,b).
@@ -172,7 +219,7 @@ chip pipe[T,U] (a:iochip_t[T,U],b:ichip_t[U])
 }
 
 // source to sink
-proc pipe[T] (a:ochip_t[T],b:ichip_t[T]) 
+proc pipe[T] (a:ochip_t[T],b:ichip_t[T])  ()
 {
   circuit
     connect a.out,b.inp

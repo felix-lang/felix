@@ -41,7 +41,7 @@ fun get_result () =
   device tests = source_from_list (["(()(()))E", "E", "()E"]);
   device toBuffer = function (fun (s:string)=> Buffer s);
 
-  device pipeline = { tests |-> toBuffer |-> parens |-> store_result };
+  device pipeline = tests |-> toBuffer |-> parens |-> store_result;
 
   var sched = fibre_scheduler();
   spawn_fthread sched pipeline;

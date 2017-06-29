@@ -8,10 +8,11 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amscd}
-\usepackage{makeidx}
+\usepackage{imakeidx}
 \usepackage{tikz}
 \usetikzlibrary{shapes,shadows,arrows}
-\makeindex
+\makeindex[title=General Index]
+\makeindex[name=codeindex,title=Code Index]
 \usemintedstyle{friendly}
 \setminted{bgcolor=bg,xleftmargin=20pt}
 \usepackage{hyperref}
@@ -76,13 +77,16 @@ at a simple example.
 First, we make a coroutine procedure which writes the integers
 from 0 up to but excluding 10 down a channel.
 
+\begin{listing}
 \begin{minted}{felix}
 proc producer (out: %>int) () {
   for i in 0..<10 
     perform write (out, i);
 }
 \end{minted}
-
+\caption{Simple source}
+\label{lst:Simple source}
+\end{listing}
 Notice that as well as passing the output channel argument \verb%out%,
 there is an extra unit argument \verb%()%. This procedure terminates
 after it has written 10 integers. The type of variable \verb%out% is
@@ -95,6 +99,7 @@ Next, we make a device which repeatedly reads an integer, squares it,
 and writes the result. It is an infinite loop, this coroutine never
 terminates of its own volition. This is typical of coroutines.
 
+\begin{listing}
 \begin{minted}{felix}
 proc transducer (inp: %<int, out: %>int) () {
   while true do
@@ -104,15 +109,19 @@ proc transducer (inp: %<int, out: %>int) () {
   done
 }
 \end{minted}
+\caption{A simple transducer}
+\label{lst:A simple transducer}
+\end{listing}
 
 Here, the type of variable \verb%inp% is
-denoted \verb$%<int$ which is actually short hand for \verb%iochannel[int]%,
+denoted \verb$%<int$ which is actually short hand for \verb%ischannel[int]%,
 which is an input channel from which values of type \verb%int% may
 be read.
 
 \subsection{The Consumer}
 Now we need a coroutine to print the results:
 
+\begin{listing}
 \begin{minted}{felix}
 proc consumer (inp: %<int) () {
   while true do
@@ -121,6 +130,9 @@ proc consumer (inp: %<int) () {
   done
 }
 \end{minted}
+\caption{A simple sink}
+\label{lst: A simple sink}
+\end{listing}
 
 Each of these components is a coroutine because it is a procedure
 which may perform, directly or indirectly, I/O on one or more synchronous
@@ -182,11 +194,15 @@ Now, let us see how we can use these coroutines in the obviously
 intended way! First we have to make some channels to connect
 the devices:
 
+\begin{listing}
 \begin{minted}{felix}
 proc doit () {
   var ich1, och1 = mk_ioschannel_pair[int]();
   var ich2, och2 = mk_ioschannel_pair[int]();
 \end{minted}
+\caption{Construct channels}
+\label{lst:construct channels}
+\end{listing}
 
 Note, we have only created two channels here! But we have
 made two interfaces to the same channel, the first input,
@@ -195,11 +211,15 @@ and the second output.
 \subsection{Connecting Devices with Channels}
 Now we can connect the devices to the channels:
 
+\begin{listing}
 \begin{minted}{felix}
   var p = producer och1;
   var t = transducer (ich1, och2);
   var c = consumer (ich2);
 \end{minted}
+\caption{Bind Channel Arguments}
+\label{lst:bind channel arguments}
+\end{listing}
 
 We have created procedure closures which bind the channel arguments
 to the procedures so that now the three closures all have the type
@@ -209,6 +229,7 @@ which is required for the next step.
 \subsection{Spawning Fibres}
 Now we spawn active fibres from the coroutine closures:
 
+\begin{listing}
 \begin{minted}{felix}
   spawn_fthread p;
   spawn_fthread t;
@@ -216,6 +237,9 @@ Now we spawn active fibres from the coroutine closures:
 }
 doit();
 \end{minted}
+\caption{Spawn Fibres}
+\label{lst:spawn fibres}
+\end{listing}
 
 What we have done here is spawn three fibres which then communicate
 via the connected channels. The configuration in a series is called
@@ -234,6 +258,7 @@ It is also possible for a coroutine to {\em block}. This happens when
 it tries to write a value which will never be read. Lets modify
 our example to see: an infinite production stream:
 
+\begin{listing}
 \begin{minted}{felix}
 proc producer (out: %>int) () {
   var i = 0;
@@ -243,9 +268,13 @@ proc producer (out: %>int) () {
   done
 }
 \end{minted}
+\caption{Infinite Source}
+\label{lst:infinite source}
+\end{listing}
 
 but a limited sample of data are printed:
 
+\begin{listing}
 \begin{minted}{felix}
 proc consumer (inp: %<int) () {
   for i in 0..<10 do
@@ -254,6 +283,9 @@ proc consumer (inp: %<int) () {
   done
 }
 \end{minted}
+\caption{Finite sink}
+\label{lst:finite sink}
+\end{listing}
 
 Now, the transducer blocks when the consumer terminates, and thus
 the producer blocks because the transducer has.
@@ -361,7 +393,7 @@ subroutine resumes when the subroutine itself is complete.
 Then the current continuation of the fibre is 
 changed to the new continuation.
 
-\begin{figure}
+\begin{listing}
 \begin{minted}{C++}
 #if FLX_CGOTO
   #define FLX_LOCAL_LABEL_VARIABLE_TYPE void*
@@ -373,9 +405,10 @@ changed to the new continuation.
 
 \end{minted}
 \caption{Code Address}
-\end{figure}
+\label{lst:code address}
+\end{listing}
 
-\begin{figure}
+\begin{listing}
 \begin{minted}{C++}
 struct con_t 
 {
@@ -387,20 +420,21 @@ struct con_t
 };
 \end{minted}
 \caption{Continuation base}
-\end{figure}
+\label{lst:continuation base}
+\end{listing}
 
-\begin{figure}
+\begin{listing}
 \begin{minted}{C++}
-
 struct fthread_t 
 {
   con_t *cc;                // current continuation
 };
-\end{minted}
 \caption{Fibre}
-\end{figure}
+\label{lst:fibre}
+\end{minted}
+\end{listing}
 
-\begin{figure}
+\begin{listing}
 \begin{minted}{C++}
 struct slist_node_t {
   slist_node_t *next;
@@ -419,7 +453,8 @@ struct schannel_t
 };
 \end{minted}
 \caption{Synchronous Channel}
-\end{figure}
+\label{lst:synchronous channel}
+\end{listing}
 
 When a return statement is executed, the backpointer to the
 caller is stored into the fibre object, and execution continues
@@ -818,7 +853,31 @@ chip sink[T]
 }
 \end{minted}
 
-Whereas this chip writes a fixed value forever.
+The \verb%C_hack::ignore% procedure is a trick
+which forces the read to occur. In Felix, if a variable is unused
+it is optimised away --- along with its initialiser. In this case
+the initialiser is the read operation, which has a crucial and intended
+side effect so we don't want it optimised away. The ignore procedure
+throws away an unwanted result of a computation, without throwing
+away the computation itself. So the read will be performed,
+even though we don't care what the returned value is.
+In Felix it is always safe to throw away application of a function
+is the result is not used, since functions are not allowed to
+have any side effects. However read is a generator not a function.
+
+The result of a generator must be used otherwise the generator
+application will be thrown away. This changes the program semantics.
+Felix does this deliberately, it is not a bug but a feature.
+A particularly important case is assigning a clock to a variable.
+Doing that can dynamically load the asynchronous I/O subsystem
+and start an event monitoring thread. But if the variable is not
+used, the clock isn't constructed, and the program may run without
+requiring the asynchronous I/O system. The system is loaded on demand,
+and the semantics ensure the demand propagates from the use of a feature
+requiring the system, the semantics also ensures resources aren't
+acquired {\em unless} they're needed.
+
+This chip writes a fixed value forever.
 It is the analogue of a value or constant function:
 
 \begin{minted}{felix}
@@ -831,9 +890,11 @@ chip source[T] (a:T)
 \end{minted}
 
 \subsection{Adaptors}
-Two key adaptors provide {\em lifts}:
+Two key adaptors provide {\em lifts}\index{lift}:
 
 
+\index[codeindex]{source\_from\_list}
+\index[codeindex]{bound\_source\_from\_list}
 \begin{minted}{felix}
 chip source_from_list[T] (a:list[T])
   connector io
@@ -851,9 +912,10 @@ chip bound_source_from_list[T] (a:list[T])
 }
 \end{minted}
 
-A lift is a way to go from the imperative/function model
+A lift is a way to go from the imperative/functional model
 of the world into the coroutine/stream model. These
-two chips lift a list into a stream.
+two chips lift a list into a stream. That is, it translates
+spatial, inductive, data into temporal, coinductive, codata.
 
 It is absolutely vital to understand how these two
 lifts differ. The first lift is a pure lift
@@ -870,13 +932,14 @@ list of None's. The None values are terminators which
 act to bound the list.
 
 I will warn now, to understand how to use the first device
-requires a paradigm shift. Having things drop dead without
+requires a {\em paradigm shift}. Having things drop dead without
 any warning seems difficult to manage if you're used
 to dealing with inductive data types in a functional
 setting. We will see later, however, that it is natural.
 
 Next, we have a basic adaptor for a function.
 
+\index[codeindex]{function}
 \begin{minted}{felix}
 chip function[D,C] (f:D->C)
   connector io
@@ -893,11 +956,9 @@ chip function[D,C] (f:D->C)
 
 
 This device is an example of the generic category 
-of a {\em transducer}. 
+of a {\em transducer}.  
 
-\subsection{Drops}
-A drop is a way to get out of the coroutine/stream model
-back to your imperative functional model:
+And here is a basic adaptor for a procedure:
 
 \begin{minted}{felix}
 chip procedure[D] (p:D->0)
@@ -911,10 +972,109 @@ chip procedure[D] (p:D->0)
 }
 \end{minted}
 
-The device is a sink which will typically
-create side effects for each value read.
+which is an example of the generic category {\em sink}.
 
-A special case is a list drop:
+\subsection{Filter}
+Another useful chip is the filter, the first variant
+uses a condition on the input, if it passes then the
+function is applied to the input value to produce
+the output value, otherwise the value is ignored:
+
+\begin{minted}{felix}
+chip filter[D,C] (c:D->bool) (f:D->C)
+  connector io
+    pin inp: %<D
+    pin out: %>C
+{
+  while true do
+    var x = read io.inp;
+    if c x do
+       write (io.out, f x);
+    done
+  done
+}
+\end{minted}
+
+The second variant just uses a function with codomain
+of an option type:
+
+\begin{minted}{felix}
+chip filter[D,C] (f:D->opt[C])
+  connector io
+    pin inp: %<D
+    pin out: %>C
+{
+  while true do
+    var x = read io.inp;
+    match f x with
+    | Some y => write (io.out, y);
+    | None => ;
+    endmatch;
+  done
+}
+\end{minted}
+
+Another special filter is:
+
+\begin{minted}{felix}
+chip oneshot [T]
+  connector io
+    pin inp: %<T
+    pin out: %>T
+{
+  write (io.out, read io.inp);
+}
+\end{minted}
+
+Filters are transducers whose equivalent mathematical entity is
+a partial function. This is relation for which not all values in
+the domain have a corresponding value in the codomain.
+You can upgrade a partial function to a function in several ways,
+the two most common being to restrict the domain to the values for which
+the partial function is defined, or, to extend the codomain with an
+error value which if mapped to, indicates the original partial
+function was not defined for that argument.
+
+Unfortunately both these methods have a serious fault: they change
+the type of the partial function so it can no longer be composed
+with other functional entites. Some systems leave the type alone
+and throw an exception which turns out to be even more nasty.
+
+Other systems systematically extend all functions to include
+the error value in both domains and codomains by using a monad.
+However whilst this restores composability of the extended
+operators, the monads themselves cannot be easily combined.
+
+The correct solution for a functional language,
+and there is only one correct solution, is exactly what C
+does: nothing! It is up to the programmer, without help
+from the type system, to ensure that the partial function
+is not called with a value for which it is not defined.
+The set of defined values is sometimes represented by
+a precondition, which can be either just documentation,
+checked at run time, or in limited cases, checked at
+compile time.
+
+Dependent typing systems extend the usual limitations of the
+compile time checks by requiring the client programmer
+supply suitable proof sketches. 
+
+Felix allows preconditions written using the \verb%when%
+clause like this:
+
+\begin{minted}{felix}
+fun safe_divide (x:int, y:int when y != 0) => x/y;
+\end{minted}
+
+The precondition is checked at run time.
+
+\section{Synchronising drops with {\tt run}}
+An {\em drop}\index{drop} is the opposite of a lift.
+It translates codata into data, that it, it translates
+temporal ordering into a spatial ordering.
+
+\subsection{List drop}
+A special case of the \verb%procedure% chip is a list drop:
 
 \begin{minted}{felix}
 chip sink_to_list[T] (p: &list[T])
@@ -927,6 +1087,9 @@ chip sink_to_list[T] (p: &list[T])
   done
 }
 \end{minted}
+
+It translates a stream into a list. That is, values arriving over time
+are stored, latest first, into a spatial data type.
 
 Now, we need an example to show how to use this drop!
 
@@ -967,7 +1130,43 @@ or in a function. Run, in effect,  creates and pushes a scheduler
 on a scheduler stack, waits until it completes, and then pops
 back to the current scheduler.
 
-\subsection{Avoiding lockup}
+\section{Symmetric Model}
+We have encountered now two operations, lifts and drops,
+which translate from space to time, and time to space, respectively.
+In general a source is a lifted value, and a sink is a dropped value.
+
+In the functional world, we usually deal with three kinds of entities:
+a value of a type, which is an element of a set. We apply mysterious
+things called functions to values to obtain new values. 
+
+Values can also be fed into the computation representing the rest of the program,
+which is called a continuation. When you apply a function, 
+the code to be done afterwards, which accepts the result, is the 
+continuation of the application. In a procedural setting, the continuation
+can be thought of as being represented by the return address, which
+is invoked by the \verb%return% statement. In fact the return address
+is secretly passed to the procedure along with the argument, just
+so that the return statement know where to return to.
+
+Another view is that calling a subroutine suspends the caller,
+invokes the callee, which, when finished, resumes the caller
+just after the call. With functions, the continuation is not,
+however complete, it must be passed the result of the function
+call before it can continue.
+
+In this model of the world, we like to think about passing
+continuations to routines so they know what to do when their
+part of the job is done. When code is written such that
+continuations are explicitly passed around, it is called
+CPS or Continuation Passing Style.
+
+Having learned about coroutines and how they work you may
+begin to see how synchronous channels act to pass continuations.
+A fibre suspended on a channel, waiting for matching I/O
+operation from another fibre is precisely a continuation. 
+
+
+\section{Avoiding lockup}
 To avoid some cases of lockup we provide the buffer device:
 
 \begin{minted}{felix}
@@ -1040,16 +1239,6 @@ Here is another useful chip, it copies a single value
 from input to output then suicides. It is generally useful
 to insert into pipelines that would otherwise be continuous
 when you only want a one shot operation.
-
-\begin{minted}{felix}
-chip oneshot [T]
-  connector io
-    pin inp: %<T
-    pin out: %>T
-{
-  write (io.out, read io.inp);
-}
-\end{minted}
 
 Finally here are some convenience types:
 
@@ -1144,7 +1333,7 @@ for their side effects.
 
 \begin{minted}{felix}
 // source to sink
-proc pipe[T] (a:ochip_t[T],b:ichip_t[T]) ()
+proc pipe[T] (a:ochip_t[T],b:ichip_t[T])
 {
   circuit
     connect a.out,b.inp
@@ -1191,8 +1380,33 @@ pipelines are not the only kind of circuits you can make.
 Cofunctional programming {\em subsumes} functional programming.
 Its more flexible and more powerful.
 
-\subsection{Linear Flow}
-Linear flow circuits are an extension of the pipeline
+\subsection{Pipeline from list}
+
+This chip allows dynamic construction of an open pipeline from
+a non-empty list of transducers.
+
+\begin{minted}{felix}
+chip pipeline_list[T] (a: list[iochip_t[T,T]])
+  connector io
+    pin inp: %<T
+    pin out: %>T
+{
+  proc aux (lst:list[iochip_t[T,T]]) (inp: %<T) {
+    match lst with
+    | h1 ! h2 ! tail =>
+      var inchan,outchan = mk_ioschannel_pair[T]();
+      spawn_fthread$  h1 (inp=inp, out=outchan);
+      aux (h2!tail) inchan;
+    | h1 ! _ =>
+      spawn_fthread$  h1 (inp=inp, out=io.out);
+    endmatch;
+  }
+  aux a io.inp;
+}
+\end{minted}
+
+\section{Acyclic Flow}
+Acyclic flow circuits are an extension of the pipeline
 concept which allows data to flow from sources to sinks
 in an acyclic network. Lets look at an example with two
 sources:
@@ -1302,7 +1516,7 @@ or the false value, then any reader of the result also starves,
 no matter what is read for the condition. However the lazy
 chip only ever reads the value it is required to output,
 and so only starves if the the read on that channel starves.
-If it doesn't not, then it doesn't matter if a read on the
+If it doesn't, then it doesn't matter if a read on the
 other channel starves, because we never actually read it.
 
 Another interesting chip is this one:
@@ -1457,597 +1671,1195 @@ Exercise (Hard). If we wanted to make this system accept a list of pairs and pro
 printing the values of x and y and the quotient, or an error message,
 what would we need to do?
 
-
-\chapter{Advantage of coroutines}
-You may wonder why bother with coroutines? What's wrong with
-ordinary functions and procedures?
-
-The answer is: in the right context, functions and procedures
-are very useful. But they're a lot weaker than you think.
-Coroutines are to be treated as another technique, not a replacement
-for other techniques.
-
-We will exhibit a critical case which shows beyond doubt
-that your conceptions about how great functional programming
-is are completely misplaced. Functional programming is great for
-functions but does not work so well when dealing with non termination
-or partial functions. In fact, it is so weak that the so called
-functional programming paradigm can be considered totally discreted
-along with object orientation.
-
-These system has a shared fault: the subroutine. Subroutines involve
-a master slave relationship which skews your program design one
-way or another, and no way is natural. Coroutines fix this problem
-so you only use subroutines when they're natural. Coroutines provide
-a peer to peer relationship when that is the best way to do things.
-
-\section{Folds}
-The example I will use requires you to pretend that something simple
-could be more complicated and to envisage what that entails. 
-I am going to use the classic functional programming function,
-the fold and show that functional programming is evil, and fold is 
-perfect example of what is wrong with functional programming!
-
-\subsection{List Folds}
-First lets see a list in Felix:
+\section{Multi Writer}
+The following chip is a vital component with an interesting
+structure:
 
 \begin{minted}{felix}
-union list[Element] =
-  | Empty 
-  | Cons of Element * list[Element]
-;
-\end{minted}
-
-Now a top down, or left fold:
-
-\begin{minted}{felix}
-fun fold_left[Element, State] 
-  (acc: Element->State->State])
-  (init: State)
-  (ls: list[Element])
-=>
-  match ls with
-  | Empty => init
-  | Cons (head, tail) =>
-    fold_left acc (acc head init) tail
-;
-\end{minted}
-
-I have written the routine in a functional style using recursion,
-it is in fact tail recursive. A right fold starts from the other
-end of the list and traditionally looks like this:
-
-\begin{minted}{felix}
-fun fold_right[Element, State] 
-  (acc: State->Element->State)
-  (ls: list[Element])
-  (init: State)
-=>
-  match ls with
-  | Empty => init
-  | Cons (head, tail) =>
-    acc (fold_right acc tail init) head
-;
-\end{minted}
-
-It is not tail recursion. Instead, we recurse down to the end of
-the list and fold the elements in to the result as we pop back up.
-
-\subsection{Tree Folds}
-A binary search tree has more useful orderings. 
-
-\begin{minted}{felix}
-union tree [Element] =
-  | Leaf
-  | Node of Element * tree[Element] * tree[Element]
-;
-\end{minted}
-
-All tree visitors in a functional setting use a recursion, 
-however the order of visiting elements is determined by when the 
-client accumulator is called. Prefix order, or left most depth first is the easiest:
-
-\subsection{Pre-order Fold}
-This fold visits the deepest left most element first.
-
-\begin{minted}{felix}
-fun preorder [Element, State]
-  (acc: Element -> State -> State)
-  (init: State)
-  (tr: tree[Element])
-=>
-  match tr with
-  | Leaf => init
-  | Node (elt, left, right) =>
-    let v = acc elt lv in
-    let lv = preorder acc init left in
-    preorder acc v right
-;
-\end{minted}
-
-\subsection{In-order Fold}
-
-\begin{minted}{felix}
-fun inorder [Element, State]
-  (acc: Element -> State -> State)
-  (init: State)
-  (tr: tree[Element])
-=>
-  match tr with
-  | Leaf => init
-  | Node (elt, left, right) =>
-    let lv = inorder acc init left
-    let v = acc elt lv in
-    inorder acc v right in
-;
-\end{minted}
-
-
-\subsection{Post-order Fold}
-
-\begin{minted}{felix}
-fun postorder [Element, State]
-  (acc: Element -> State -> State)
-  (init: State)
-  (tr: tree[Element])
-=>
-  match tr with
-  | Leaf => init
-  | Node (elt, left, right) =>
-    let lv = postorder acc init left
-    let rv = postorder acc lv right in
-    acc elt rv in
-;
-\end{minted}
-
-\subsection{Breadth First Fold}
-This is much harder to do efficiently. 
-A simple routine is not so hard, lets start
-with a descent which folds a single level,
-it returns the folded value and a flag which
-tells if that level is populated:
-
-\begin{minted}{felix}
-fun bfn[Element, State]
-  (acc: Element -> State -> State)
-  (init: State)
-  (tr: tree[Element])
-  (n:int)
-=>
-  match tr with
-  | Leaf => init, false
-  | Node (elt, left, right) =>
-    if n > 0 then
-      let lv,lflag = bfn acc init left (n - 1) in
-      let rv, rflag = bfn acc lv right (n - 1) in
-      rv, lflag or rflag
-    else 
-      acc elt init, true
-    endif
-;
-\end{minted}
-
-The cost of this algorithm is roughly as follows: there are $2^k$ elements
-in level $k$ where k starts at 0, assuming a fully populated balanced
-tree of sufficient depth, so we have to scan $\Sigma_{k=0}^n 2^k$
-elements, including the target level $n$, but this is known
-to be just $2^{n+1}-1$.
-
-Now the idea is simply to fold level 1, then level 2, 
-then level 3, etc, until the flag tells us we hit an
-entirely unpopulated level: this is easier to do
-imperatively but we want a functional solution:
-
-
-\begin{minted}{felix}
-fun bfaux[Element, State]
-  (acc: Element -> State -> State)
-  (init: State)
-  (tr: tree[Element])
-  (n:int)
-=>
-  let v,flag = bfn acc init tr n in
-  if flag then 
-     bfaux acc init tr (n + 1)
-  else 
-    v
-  endif
-;
-
-fun bf[Element, State]
-  (acc: Element -> State -> State)
-  (init: State)
-  (tr: tree[Element])
-=>
-  bfaux acc init tr 0
-;
-\end{minted}
-
-Now the total cost of folding a fully populated balanced tree to level $n$
-is $\Sigma_{k=0}^{n+1} (2^k-1)$ where we had to use $n+1$ to account for the
-fully empty level below which has to be scanned for the termination check.
-We can throw out the $-1$ here, and the result is just $2^{n+2}$ which,
-suprisingly, is only four times the number of elements in the tree. 
-The routine isn't as inefficient as you might think, and it has
-a major advantage of other routines: it uses no auxilliary storage,
-and the use of the stack is limited to some small multiple of the
-tree depth, which is insignificant if the tree is reasonable well
-shaped.
-
-
-\section{Iterators}
-Another way to visit values in a data structures is to use iterators.
-We will show iterators corresponding to the folds above in a style
-similar to what would be required in C++, however we will use a single
-get method to get the next value which returns an option type, so
-that the end of the data stream can be detected. We'll also use a purely
-functional style.
-
-\subsection{Left List Iterator}
-The left visitor is quite easy, we use a list of the same type
-as the input as the state:
-
-\begin{minted}{felix}
-fun first_llit[Element] 
-  (ls: list[Element])
-:
-  opt[Element] * list[Element] 
-=> 
-  match ls with
-  | Empty => None[Element], Empty[Element]
-  | Cons (head, tail) => Some head, tail
-;
-
-fun next_llit[Element] 
-  (ls: list[Element]) 
-:
-  opt[Element] * list[Element] 
-=> 
-  first_llit ls
-;
-\end{minted}
-
-
-\subsection{Right List Iterator}
-The bottom up iterator is harder:
-
-\begin{minted}{felix}
-fun first_rlit[Element] 
-  (ls: list[Element]) 
-:
-  opt[Element] * list[Element] 
-=> 
-  first_llit (rev ls)
-;
-
-fun next_rlit[Element] 
-  (ls: list[Element]) 
-:
-  opt[Element] * list[Element] 
-=> 
-  first_llit ls
-;
-\end{minted}
-
-The code is simple, it just uses the left iterator
-on a reversed list. There is an overhead in space and
-time which existed for the functional fold as well.
-The difference is, the iterator must maintain the state
-explicitly on the heap, whereas the fold uses the machine
-stack to hold pointers into the list implicitly.
-
-\subsection{Left Tree Iterator}
-Now the real fun starts! How must our iterator work?
-
-\begin{minted}{felix}
-union Todo[Element] = 
-  | Value of Element
-  | Tree of tree[Element]
-;
-typedef zipper[Element] = list[Todo[Element]];
-
-obj Iterata[Element] (tr: tree[Element]) =
+chip tryall_list[D,C with Str[D]] (a: list[iochip_t[D,C]]) 
+  connector io
+    pin inp: %<D
+    pin out: %>C
 {
-  var path = Empty[Todo[Element]];
-  setup (tr);
+  while true do
+    var x = read io.inp;
+    for h in a do
+      var lin,lout = mk_ioschannel_pair[D]();
+      spawn_fthread (h (inp=lin, out=io.out));
+      write (lout,x);
+    done
+  done
+}
+\end{minted}
 
-  proc setup (t: tree[Element]) {
-    match t with
-    | Leaf => return;
-    | Node (elt, left, right) =>
-      path = Cons (Tree right, path);
-      path = Cons (Value elt, path);
-      setup left;
-    endmatch; 
+Clearly, it repeatedly reads a value from its input channel,
+and writes the value down all the output channels in the 
+supplied list. Getting that work as specified was not easy!
+
+You may think, you could just read a value and write down all
+the channels. But this does not work because one of the channels
+may block the write, and then the whole chip is frozen up!
+So we have to spawn a new fibre for each value and each channel
+so that if the channel is blocked, the other writes can proceed.
+
+What this means, however, is that, because the channel is reachable
+from the chip, whilst any one channel is not blocked, attempts to write
+will be stacked up for every input on every blocked channel. 
+
+\section{Filter}
+...
+
+\chapter{Base Recognisers}
+In this chapter we introduce a data structure used for scanning strings,
+some specific primitive recognisers, and some general purpose chips which
+can be used as recogniser combinators.
+
+The idea of a recogniser is that you have a string, and want to see if
+it matches a regular expression. So what we do is pass to the recogniser
+a pointer into the string. The recogniser chips reads the pointer
+and examines the string from that point to see if some of the string
+after that pointer matches what the chip is supposed to recognise,
+and if so, it writes out a pointer to the first character in the
+string which does not match.
+
+But here is where you have to make the big paradigm shift!
+If the chip doesn't recognise anything at the location the
+pointer indicates, it doesn't write anything! 
+
+This is quite different behaviour from a function! A function would
+return an option type, saying \verb%Some p% if it recognised something
+and returning a pointer \verb%p% to the first unrecognised character,
+or \verb%None% if it didn't recognise anything. Functions always have
+to output something! If they didn't, the function would be non-terminating,
+and that means an infinite loop would cause the whole program to fail.
+
+Coroutines, on the other hand, regularly report failure by keeping
+quiet! They don't know what to do, so they do nothing.
+
+\section{Buffers}
+Now, here is the kind of pointer to the string we will use,
+for some reason its called a \verb%Buffer%.
+
+
+\begin{minted}{felix}
+struct Buffer
+{
+  sp: varray[char];
+  pos: int;
+
+  fun atend => self.pos >= self.sp.len.int;
+
+  fun get => 
+    if self.atend then char "" 
+    else (self.sp) . (self.pos)
+  ;
+
+  proc next { 
+    if not self*.atend do
+      pre_incr self.pos;
+    done
   }
 
-  method gen next () => {
-    match path with
-    | Empty => return None[Element];
-    | Cons (Value v, tail) =>
-      path = tail;
-      return Some v;
-    | Cons (Tree t, tail) =>
-      path = tail;
-      setup t;
-      return next();
+  fun advanced =>
+    if self.atend then self
+    else Buffer (self.sp, self.pos + 1)
+  ;
+
+  fun lookahead (i:int) =>
+    if self.pos + i > self.sp.len.int then char ""
+    elif self.pos + i < 0 then char ""
+    else (self.sp) . (self.pos + i)
+  ;
+}
+\end{minted}
+
+Two instance variables make a \verb%Buffer%, a \verb%varray% of \verb%char% called 
+\verb%sp%, for the string and an \verb%int% named \verb%pos% for as an index into
+the string to mark the current position. The array is represented by a pointer
+and its contents will not be changed during processing.
+
+The \verb%atend% method detects if the current position is just after the last
+character. The \verb%get% method gets the current character as a string,
+or returns the empty string at the end.
+
+The \verb%next% method is mutator that increments the current position if it
+is not at the end, wherease the \verb%advanced% method returns a copy of the 
+object advanced one, or at the same position if it is at end, this method
+is purely functional.
+
+Finallyu the \verb%lookahead% method returns the character \verb%i% positions ahead
+of the current position, if there is one, or an empty string if that position is
+past the end.
+
+We also provide some constructors:
+
+\begin{minted}{felix}
+ctor Buffer (p:varray[char]) =>
+  Buffer (p,0)
+;
+
+ctor Buffer (p:string) =>
+  Buffer (p.varray[char],0)
+;
+
+ctor Buffer (p: &string) =>
+  Buffer (*p)
+;
+\end{minted}
+
+a conversion to a printable string representation:
+
+\begin{minted}{felix}
+instance Str[Buffer] {
+  fun str (b:Buffer) => "@"+b.pos.str;
+}
+\end{minted}
+
+and an equality operator which ignores the underlying
+string and just compares the positions.
+
+\begin{minted}{felix}
+// hack, ignore underlying data.. FIXME
+instance Eq[Buffer] {
+  fun == (a:Buffer, b:Buffer) => a.pos == b.pos;
+}
+\end{minted}
+
+It isn't really correct but it will do for our purposes,
+if the base strings are distinct the buffers are aren't
+really comparable.
+
+Finally a simularly hacked extractor finds the string
+between two positions, including the first position
+and excluding the second:
+
+\begin{minted}{felix}
+ctor string (a:Buffer, b:Buffer) =
+{
+  var x = "";
+  for i in a.pos ..< b.pos do
+    x += a.sp.i;
+  done
+  return x;
+}
+\end{minted}
+
+Now we have a the data type which will be transmitted along channels
+of the recogniser circuit, we can define it by
+
+\begin{minted}{felix}
+typedef recog_t = BaseChips::iochip_t[Buffer,Buffer];
+\end{minted}
+
+which says that a \verb%recog_t% is just a chip which takes
+an input \verb%Buffer% value, tries to recognise a part of the
+underlying string starting at the input position, and writes
+out the position just past the end of the recognised substring,
+if one exists. 
+
+Note that if we don't recognise anything,
+nothing is written, the chip just cycles around and tries
+again with another input. This behaviour is not evident from
+the data type, it would be approximated in the control
+type if we have a system for control types, but we don't.
+On failure, coroutines typically either do nothing or
+write on a special error channel allowing a normal or alternate
+continuation to take further action. 
+
+In our parser we specially want failures to have no consequences! 
+Unlike functional code, failure doesn't return an error code to
+the caller, requiring the caller to check it. Rather, it simply
+fails to propagate and translate information, allowing the algorithm
+to continue exploring successful paths and allowing failure paths
+to simply die off without ceremony. You don't need an exception
+to abort a computation. 
+
+In principle, this is like a non-returning function, however since
+computations are built from many interconnected {\em active}
+fibres, non-completion is not only not undesirable, it
+is the {\em prefered method} of constructing algorithms!
+
+\section{Primitives}
+We now present some basic primitive recognisers.
+\subsection{String matcher}
+This chip just matches its argument as a string.
+
+\begin{minted}{felix}
+chip match_string (s:string)
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+nextmatch:>
+  var b = read io.inp;
+  for i in 0..< s.len.int do 
+    if s.[i] != b.get goto nextmatch;
+    b&.next;
+  done
+  write (io.out, b);
+  goto nextmatch;  
+}
+\end{minted}
+
+The code reads a string position represented by a \verb%Buffer%,
+and tries to match the argument string. If it does, it writes
+out the position one past the end of the matched substring,
+otherwise it does nothing. In either case it then goes back
+and reads another position and tries again.
+
+
+
+\subsection{Whitespace matcher}
+This transducer matches a sequence of whitespace
+characters, defined as any character less that or
+equal to a space character. It always succeeds,
+that is, if there is no white space character at 
+the current position, it just returns the current 
+position. That is, it is a {\em total function}.
+
+\begin{minted}{felix}
+chip match_white 
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  while true do
+    var b = read io.inp;
+    while not b.atend and b.get <= char ' ' 
+      perform b&.next
+    ;
+    write (io.out,b);
+  done
+}
+\end{minted}
+
+\subsection{C++ comment matcher}
+Matches two \verb%/% characters in succession,
+followed by any sequence of characters, up
+to and including the first newline character,
+or, up to the end of the string.
+
+This matcher also cannot fail, if it cannot match
+a C++ comment it emits the input position.
+It is a total function.
+
+\begin{minted}{felix}
+chip match_cxx_comment 
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+again:>
+  var b = read io.inp;
+  var b_saved = b;
+
+  if b.get != char "/" goto bad;
+  b&.next;
+
+  if b.get != char "/" goto bad;
+  b&.next;
+
+  while not b.atend and not (b.get == char "\n")  perform b&.next;
+  b&.next; // works fine even if atend
+ok:>
+  write (io.out,b);
+  goto again;
+bad:>
+  write (io.out,b_saved);
+  goto again;
+}
+\end{minted}
+
+\subsection{Nested C comment matcher}
+This is another total function that matches C style comments,
+except that it also recognises nested comments. On the other hand 
+it is a bit naive in that it also finds nested delimiters in 
+enclosed C++ comments and strings.
+
+\begin{minted}{felix}
+chip match_nested_c_comment 
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+again:>
+  var depth = 0;
+  var b = read io.inp;
+  var b_saved = b;
+  if b.get != char "/" goto bad;
+  b&.next;
+  if b.get != char "*" goto bad;
+
+nest:>
+  b&.next;
+  ++depth;
+
+scan:>
+  if b.get == "/" do // start nested comment
+    b&.next;
+    if b.get == "*" goto nest;
+    goto scan;
+  done
+
+  if b.get == "*" do // end comment group
+    b&.next;
+    if b.get == "/" goto unnest;
+    goto scan;
+  done
+
+  b&.next;
+  goto scan;
+
+unnest:>
+  b&.next;
+  --depth;
+  if depth > 0 goto scan;
+  write (io.out,b);
+  goto again; 
+
+bad:>
+  write (io.out,b_saved);
+  goto again;
+}
+\end{minted}
+
+\subsection{Regular Expression matcher}
+This is a generally useful matcher that uses
+Felix system library binding of Google's RE2 package for matching. 
+
+\begin{minted}{felix}
+chip match_regex (r:RE2)
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  while true do
+    var b = read io.inp;
+    var matched = varray[StringPiece] (1uz,StringPiece());
+    var result = Match
+      (
+        r,StringPiece(b.sp),b.pos,
+        ANCHOR_START,matched.stl_begin,1
+      )
+    ;
+    if result do
+      var b2 = Buffer (b.sp,b.pos+matched.0.len.int);
+      write(io.out,b2);
+    done
+  done
+}
+
+device cident_matcher = 
+  match_regex (RE2 "[A-Za-z][A-Za-z0-9_]*")
+;
+device decimal_integer_matcher = 
+  match_regex (RE2 "[0-9]+")
+;
+\end{minted}
+
+We also included a matcher for C identifiers which uses the regexp
+matching chip, and simple decimal integer matcher.
+
+\section{Delegators}
+We present two versions of delegators, or proxies, which are chips that delegate
+processing to another chip addressed by a pointer passed as an argument.
+We will need delegation for forward referencing and recursion, when we need
+the action of a chip that hasn't been defined yet.
+
+The following transducer accepts a pointer to another chip and delegates
+processing to the pointed at chip which is dereferenced each read,
+allowing the target to be changed during processing:
+
+\begin{minted}{felix}
+chip deref_each_read[D,C] (p:&iochip_t[D,C]) 
+  connector io
+    pin inp: %<D
+    pin out: %>C
+{
+  while true do
+    var x = read io.inp;
+    var rinp,rout = mk_ioschannel_pair[D]();
+    spawn_fthread ((*p) (inp=rinp, out=io.out));
+    // println$ "Deref_each_read: write " + io.out.address.str;
+    write (rout,x);
+  done
+}
+\end{minted}
+
+Whereas this transducer also accepts a pointer to another chip
+and delegates processing to the pointed at chip, but it only
+dereferences the pointer once, after the first data is read.
+
+\begin{minted}{felix}
+chip deref_first_read[D,C] (p:&iochip_t[D,C]) 
+  connector io
+    pin inp: %<D
+    pin out: %>C
+{
+  var x = read io.inp;
+  var rinp,rout = mk_ioschannel_pair[D]();
+  spawn_fthread ((*p) (inp=rinp, out=io.out));
+  write (rout,x);
+  while true do
+    x = read io.inp;
+    write (rout,x);
+  done
+}
+\end{minted}
+
+\section{Alternatives}
+This chip is just a copy buffer with the name changed to epsilon, 
+to suggest it recognises everything.
+
+\begin{minted}{felix}
+chip epsilon[T]
+  connector io
+   pin inp: %<T
+   pin out: %>T
+{
+  while true do
+    var x = read io.inp;
+    write (io.out, x);
+  done
+}
+\end{minted}
+
+
+The optional chip uses \verb%tryall_list% to both pass some data through
+unmodified, and also to pass it through modified by an arbitrary
+transducer.
+
+\begin{minted}{felix}
+chip optional[T] (p:iochip_t[T,T])
+  connector io
+    pin inp: %<T
+    pin out: %>T
+{
+  device both = tryall_list ([
+    p,
+    epsilon[T]
+  ]);
+  circuit
+    wire io.inp to both.inp
+    wire io.out to both.out
+  endcircuit
+}
+\end{minted}
+
+The \verb%oneormore_match% matches the regular expression A+.
+It requires at least one match.
+
+\begin{minted}{felix}
+chip oneormore_matcher[T] (A:iochip_t[T,T]) 
+connector chans 
+  pin inp: %<T
+  pin out: %>T
+{
+ device As = oneormore_matcher A;
+ device As2 = pipeline_list (A,As).list; 
+ device Ass = tryall_list (A, As2).list;
+ circuit
+   wire chans.inp to Ass.inp
+   wire chans.out to Ass.out
+ endcircuit
+}
+\end{minted}
+
+And of course, this one matches A*.
+
+\begin{minted}{felix}
+chip zeroormore_matcher[T] (A:iochip_t[T,T]) 
+connector chans 
+  pin inp: %<T
+  pin out: %>T
+{
+ device As = oneormore_matcher A;
+ device Ass = tryall_list (epsilon[T], As).list;
+ circuit
+   wire chans.inp to Ass.inp
+   wire chans.out to Ass.out
+ endcircuit
+}
+\end{minted}
+
+\chapter{Grammars}
+We will now take a break from coroutines and do some functional
+programming, because this is a fairly easy way to do the job
+we have to do in preparation for the next section.
+
+What we need is a representation of a grammar, because later in this
+work we're going to show how to make a parser with coroutines.
+Just to keep you on your toes, we're going to use a very powerful
+functional programming technique known as {\em open recursion}.
+
+\section{Grammar Datatype}
+The first thing we need is a data structure representing a grammar:
+
+\begin{minted}{felix}
+typedef generic_gramentry_t[T] = string * T;
+typedef generic_gramlib_t[T] = list[generic_gramentry_t[T]];
+typedef generic_grammar_t[T] = string * generic_gramlib_t[T];
+\end{minted}
+
+What this says is that a grammar entry is a symbol, represented by
+a string, which is used as an identifier, and some other 
+information we're not specifying.  
+
+A grammar library is a set of grammar entries. 
+We're using a list because its easy. 
+
+A grammar is a pair consisting of a grammar
+library and a selected symbol called the {\em start symbol}.
+
+Now, a grammar entry is intended to be a nonterminal and a production.
+But we made the product a value of an unspecified type, \verb%T%
+so we could fill in the details later. You will be surprised how
+we do that! For now know that the secret of open recursion is to
+first use a parameter to define a structure, and then later set
+the parameter to that structure, so that initially the structure
+is flat but parametrised, and the recursion is introduced by
+setting the parameter to itself, establishing a cycle.
+
+Now we're going to show you how to use this idea to find
+the closure of the grammar. This is a list of all the symbols
+reachable from the start symbol. 
+
+The algorithm is a stock standard closure operation. Given some
+symbol $r$, we find all the symbols $s1, s2, \dots$ it knows about
+directly. We then add them to the set of known symbols, then pick
+a symbol from the set we haven't examined before, and find out
+what it knows about. We continue until we have examine all
+the symbols, so that all the symbols they know about are already
+in the set.
+
+My algorithm splits the set in two pieces: ones we have already
+examines and ones we have not. Each new symbol is added to the set
+of symbols we do not know about. However we ignore a symbol
+we have already seen, even if it isn't examined yet, since it
+is already in one of the two sets.
+
+Now you might ask .. indeed you should be asking .. how can we find
+the symbols associated directly with a symbol $r$ if the associated
+information is of an unknown type \verb%T%?
+
+And the answer is: we can't! But the caller has to know how to find
+all the symbols in a \verb%T% so we just require them to pass in
+a function that can do it!
+
+\begin{minted}{felix}
+fun generic_cls[T] 
+  (generic_add: list[string] -> T -> list[string])
+  (lib:generic_gramlib_t[T]) 
+  (unprocessed: list[string]) 
+  (processed:list[string])
+: list[string] 
+=>
+  match unprocessed with
+  | Empty => processed
+  | Cons (h,tail) =>
+    if h in processed then 
+      generic_cls generic_add lib tail processed 
+    else
+      match find lib h with
+      | Some p =>
+        let unprocessed = generic_add tail p in
+        let p = Cons (h, processed) in
+        generic_cls generic_add lib unprocessed p
+      | None => 
+        fun_fail[list[string]] ("MISSING NONTERMINAL " + h)
+      endmatch
+  endmatch
+;
+
+fun generic_closure[T] 
+  (generic_add: list[string] -> T -> list[string])
+  (g:generic_grammar_t[T]) 
+: list[string] =>
+  match g with
+  | start, lib => 
+    generic_cls generic_add lib ([start]) Empty[string]
+;
+\end{minted}
+
+You may notice this algorithm doesn't do quite what I said it would:
+we actually add all the associated symbols to the unprocessed set,
+even if some of them are already processed. The reason is that the
+check for this is done before looking for the associated symbols,
+anyhow, so its equivalent to not needing the check and because
+we didn't add the symbol to the unprocessed set. This simplifies
+the requirements on the \verb%generic_add% function.
+
+Ok, so now, we define the {\em concrete} type of a production we 
+desire in two stages. We use open recursion! First we define
+the flat, non-recursive form:
+
+\begin{minted}{felix}
+union open_prod_t[T] =
+| Terminal of string * recog_t
+| Nonterminal of string
+| Epsilon
+| Seq of list[T]
+| Alt of list[T]
+;
+\end{minted}
+
+and now we tie the recursive knot with a circular definition
+which effects a fixpoint operation:
+
+\begin{minted}{felix}
+typedef prod_t = open_prod_t[prod_t];
+\end{minted}
+
+It takes a while to grok this! You may wonder why we didn't just
+make the data type recursive in the first place. The answer is
+profound and subtle: the flat structure we chose is easy to
+extend by adding new cases, we can then fixate the extended
+type. This leaves the original fixation unaffected, but it
+makes the extended type recursive. In particular, the \verb%Seq%
+and \verb%Alt% cases would allow lists of the extended type,
+not just the original type, in other words, the extension
+is {\em covariant} meaning the extension propagates to the
+case arguments too.  This would not be the case if we extended
+the original recursive type, because the recursive knot has
+already been tied.
+
+\subsubsection{Open/Closed Principle}
+Open recursion is a technique which obeys a vital law of
+modularity known as the {\em open/closed principle}, originally
+espoused by Bertrand Meyer in Object Oriented Software Construction.
+The principle states a module must be simultaneously closed so it
+can be used, and open for extension. What is most interesting
+is that classes in Object Orientation, proposed to support
+this principle, where extension is by inheritance, actually
+fail it, and precisely if a method of an base object with
+an argument of the based type, that is, a binary operator,
+is overridden in a derived class by a method with an argument
+of the derived type, then the type system is unsound: the argument
+must in fact be contravariant, but the requirement is for covariance.
+This is known as the covariance problem and it destroys, utterly
+and completely, the belief that object orientation is the basis
+of a sound software development paradigm.
+
+\subsubsection{Pretty Printer}
+\begin{minted}{felix}
+instance[T with Str[T]] Str[open_prod_t[T]] 
+{
+  fun str: open_prod_t[T] -> string =
+  | Terminal (s,r) => '"' + s + '"'
+  | Nonterminal name => name
+  | Epsilon => "Eps"
+  | Seq ss => "(" + catmap " " (str of T) ss + ")"
+  | Alt ss => "[" + catmap " | " (str of T) ss + "]"
+  ;
+}
+\end{minted}
+
+\subsubsection{Reification}
+\begin{minted}{felix}
+typedef open_gramentry_t[T] = string * open_prod_t[T];
+typedef open_gramlib_t[T] = list[open_gramentry_t[T]];
+typedef open_grammar_t[T] = string * open_gramlib_t[T];
+
+
+typedef gramentry_t = open_gramentry_t[prod_t];
+typedef gramlib_t = open_gramlib_t[prod_t];
+typedef grammar_t = open_grammar_t[prod_t];
+\end{minted}
+
+\begin{minted}{felix}
+fun open_add_prod[T] 
+  (aux: list[string] -> T -> list[string])
+  (acc:list[string]) (p: open_prod_t[T]) 
+: list[string] =>
+  match p with
+  | Terminal _ => acc
+  | Nonterminal name => Cons (name, acc) 
+  | Epsilon => acc
+  | Seq ps => fold_left aux acc ps
+  | Alt ps => fold_left aux acc ps
+  endmatch
+;
+\end{minted}
+
+\subsubsection{Construction}
+\begin{minted}{felix}
+fun add_prod(acc:list[string]) (p:prod_t) : list[string] =>
+  fix open_add_prod[prod_t] acc p
+;
+
+\subsubsection{Reified Closure}
+\begin{minted}{felix}
+fun closure (g:grammar_t): list[string] =>
+  generic_closure[prod_t] add_prod g
+;
+\end{minted}
+
+\subsubsection{Nullable property}
+A nonterminal is said to be {\em nullable} if it can produce
+the empty string. We can calculate this inductively by observing
+a nonterminal is nullable if one of its alternatives is the empty
+string $\epsilon$ or a nullable nonterminal. Note this algorithm
+assumes terminals can't be null!
+
+In a conventional grammar, terminals are symbols, so it would be a
+category error to even ask if they could be null, since they're not
+strings by characters, a completely different type. However
+we are constructing a scannerless parser, without tokenisation,
+and a terminal is any computable nonempty string.
+
+
+Calculate if a production RHS is nullable, depends on
+knowing if a nonterminal is nullable.
+
+\begin{minted}{felix}
+fun nullable_prod 
+  (lib:gramlib_t) 
+  (e:prod_t) 
+  (trail:list[string]) 
+=>
+  match e with
+  | Terminal _ => false
+  | Seq es => fold_left (fun (acc:bool) (sym:prod_t) => 
+      acc and (nullable_prod lib sym trail)) true es
+
+  | Alt es => fold_left (fun (acc:bool) (sym:prod_t) => 
+      acc or (nullable_prod lib sym trail)) false es
+
+  | Nonterminal nt => nullable_nt lib nt trail
+  | Epsilon => true
+;
+\end{minted}
+
+Calculate if a nonterminal is nullable, which depends on
+knowing if a production is nullable.
+
+\begin{minted}{felix}
+fun nullable_nt 
+  (lib: gramlib_t) 
+  (nt:string) 
+  (trail:list[string]) 
+: bool =>
+  if nt in trail then false else
+  match find lib nt with
+  | None => false
+  | Some e => nullable_prod lib e (nt ! trail)
+;
+\end{minted}
+
+Close the inductions with a base case.
+
+\begin{minted}{felix}
+fun is_nullable_prod (lib:gramlib_t) (e:prod_t) => 
+  nullable_prod lib e Empty[string]
+;
+
+fun is_nullable_nt (lib:gramlib_t) (nt:string) => 
+  nullable_nt lib nt Empty[string]
+;
+\end{minted}
+
+\begin{minted}{felix}
+fun recursive_prod 
+  (lib:gramlib_t) 
+  (e:prod_t) 
+  (orig:string) 
+  (trail:list[string]) 
+=>
+  match e with
+  | Terminal _ => false
+  | Seq es => 
+    fold_left (fun (acc:bool) (sym:prod_t) => 
+      acc or (recursive_prod lib sym orig trail)) false es
+
+  | Alt es => 
+    fold_left (fun (acc:bool) (sym:prod_t) => 
+      acc or (recursive_prod lib sym orig trail)) false es
+
+  | Nonterminal nt => 
+    if nt == orig then true 
+    else recursive_nt lib nt orig trail
+
+  | Epsilon => false
+;
+\end{minted}
+
+\subsection{Recursive Property}
+A nonterminal is recursive if it can produce a sentential
+form containing itself.
+
+\begin{minted}{felix}
+fun recursive_nt
+  (lib: gramlib_t) 
+  (nt:string) 
+  (orig:string) 
+  (trail:list[string]) 
+: bool =>
+  if nt in trail then false else
+  match find lib nt with
+  | None => false
+  | Some e => recursive_prod lib e orig (nt ! trail)
+;
+
+
+fun is_recursive_nt (lib:gramlib_t) (nt:string) =>
+  recursive_nt lib nt nt Empty[string]
+;
+\end{minted}
+
+\subsection{Left Recursive Property}
+A nonterminal is left recursive if it can produce a sentential
+form in which the first symbol is itself.
+
+\begin{minted}{felix}
+fun left_recursive_prod 
+  (lib:gramlib_t) 
+  (e:prod_t) 
+  (orig:string) 
+  (trail:list[string]) 
+=>
+  match e with
+  | Terminal _ => false
+
+  | Seq es =>
+    let fun aux (es:list[prod_t]) =>
+      match es with
+      | Empty => false
+      | Cons (head, tail) => 
+        if left_recursive_prod lib head orig trail then true
+        elif is_nullable_prod lib head then aux tail
+        else false
+      endmatch
+    in
+    aux es
+
+  | Alt es => fold_left (fun (acc:bool) (sym:prod_t) => 
+      acc or (left_recursive_prod lib sym orig trail)) false es
+
+  | Nonterminal nt => 
+    if nt == orig then true 
+    else left_recursive_nt lib nt orig trail
+
+  | Epsilon => false 
+;
+
+fun left_recursive_nt 
+  (lib: gramlib_t) 
+  (nt:string) 
+  (orig:string) 
+  (trail:list[string]) 
+: bool =>
+  if nt in trail then false else
+  match find lib nt with
+  | None => false
+  | Some e => left_recursive_prod lib e orig (nt ! trail)
+;
+
+
+fun is_left_recursive_nt (
+  lib:gramlib_t) 
+  (nt:string) 
+=>
+  left_recursive_nt lib nt nt Empty[string]
+;
+\end{minted}
+
+\section{Normal Forms}
+Our grammar uses a weakened EBNF form in which
+we allow productions to contain expressions
+using the \verb%Seq% and \verb%Alt% constructors.
+However a conventional grammar requires production RHS
+to only consist of a sequence of symbols, where
+a symbol is either a terminal or nonterminal.
+Optionally, some specifications also allow $\epsilon$
+as the RHS of a nonterminal other than the start symbol.
+
+The following routine unpacks a production library into a normal
+form in which all \verb%Seq% and \verb%Alt% combinators have been
+removed at the cost of introducing some fresh nonterminals with
+synthesised names.
+
+We do this by replacing each \verb%Seq% expression with a fresh 
+nonterminal, and defining it to be the contents of the constructor.
+An \verb%Alt% expression is also replaced by a fresh nonterminal,
+which is defined by a series of productions of that nonterminal,
+one RHS for each alternative.
+
+The process is repeated until no \verb%Seq% or \verb%Alt% terms are left,
+which leaves only epsilons, terminals, and nonterminals in
+the library. The library is then said to be {\em flat} because
+all the nesting is eliminated.
+
+
+\begin{minted}{felix}
+fun unpack 
+  (fresh:1->string) 
+  (head:string, p:prod_t) 
+: gramlib_t =
+{
+ var out = Empty[gramentry_t];
+ match p with
+ | Epsilon => out = ([head,p]);
+ | Terminal _ => out = ([head,Seq ([p])]);
+ | Nonterminal s => out= ([head,Seq ([p])]);
+
+ | Seq ps =>
+   var newseq = Empty[prod_t];
+   for term in ps do
+     match term with
+     | Epsilon => ;
+     | Nonterminal _ => newseq = term ! newseq;
+     | Terminal _ => newseq = term ! newseq;
+     | _ =>
+       var newhead = fresh();
+       newseq = Nonterminal[prod_t] newhead ! newseq;
+       out = unpack fresh (newhead,term);
+     endmatch;
+   done
+
+   match newseq with 
+   | Empty => out = (head,Epsilon[prod_t]) ! out;
+   | _ => out = (head,Seq[prod_t] (rev newseq)) ! out;
+   endmatch;
+
+ | Alt ps =>
+   iter 
+     (proc (p:prod_t) { 
+       out = unpack fresh (head,p) + out; 
+     }) 
+     ps
+   ;
+ endmatch;
+ return out;
+}
+
+fun normalise_lib (fresh:1->string) (lib:gramlib_t) = {
+  var normalised = Empty[gramentry_t];
+  for p in lib perform
+    normalised = unpack fresh p + normalised;
+  return normalised; 
+}
+
+\end{minted}
+
+\subsection{Another normal form}
+The normal form produced above allows multiple alternatives
+for a nonterminal to be scattered throughout the library,
+making it hard to find a complete definition.
+
+To fix this we provide another normal form in which
+each symbol is defined exactly once. In principle,
+the RHS of each definition will be a \verb%Alt%
+term, however, we replace an empty \verb%Alt% with
+$\epsilon$ and a singleton with only one alternative
+with that alternative.
+
+If the input to our routine is normalised by our first normalisation
+procedure, then the output has the property that each of these
+alternatives will be a non-empty list of symbols.
+
+The result is then unique up to the order of the alternatives.
+
+\begin{minted}{felix}
+fun sort_merge (g:gramlib_t) : gramlib_t =>
+ let 
+   fun enlt 
+     (a:gramentry_t, b:gramentry_t) 
+   : bool => 
+     a.0 < b.0 
+ in
+ merge (sort enlt g)
+;
+\end{minted}
+
+\begin{minted}{felix}
+fun merge (var p:gramlib_t): gramlib_t =
+{
+  if p.len == 0uz return p;
+
+  var out: gramlib_t;
+
+  var key: string;
+  var alts = Empty[prod_t];
+  var cur: gramentry_t;
+
+  proc fetch() { 
+    match p with 
+    | Cons (head,tail) => cur = head; p = tail; 
+    | Empty => assert false;
     endmatch;
   }
+
+  proc dohead() { key = cur.0; alts = Empty[prod_t]; }
+  proc dofoot() { out = (key,Alt alts) ! out;  }
+  proc dobreak() { dofoot; dohead; }
+  proc check() { if key != cur.0 call dobreak; }
+
+  fetch;
+  dohead;
+  while p.len > 0uz do
+    check;
+    alts = cur.1 ! alts;
+    fetch;
+  done
+  check;
+  alts = cur.1 ! alts;
+  dofoot;
+  return out;
 }
 \end{minted}
 
-As you can see, this is considerably more complicated than the corresponding fold.
-In fact, it took me a couple of minutes to write the fold and many hours
-until I figured out how to write the iterator. It is basically the
-{\em control inverse} of the fold: it is the fold turned inside out.
+\chapter{Recogniser from Grammar}
+We are now read for the big job: to build a recogniser from
+a grammar.
 
-Control inversion is a key concept. The fold function is a {\em master} which
-calls the client function as a {\em slave}. The iterator, on the other hand,
-is a slave function called by the client, which is the master.
-
-The iterator above reveals the true nature of the data required by a preorder
-tree visitation: the zipper above represents a type which can hold the state.
-In the fold the use of the machine stack, recursion, and local variables
-hides the zipper: it uses the machine stack to couple the program counter with
-the local data. The iterator cannot do that, since it loses the stack each
-call. Instead it manually maintains its own stack, the path value.
-
-The iterator above is only an input iterator. We can translate the mutations
-to produce a forward iterator by using a monadic form:
+First we need a helper which finds the index of a 
+nonterminal definition in an array of definition:
 
 \begin{minted}{felix}
-fun setup(t: tree[Element]) (path: zipper[Element]) =>
-  match t with
-  | Leaf => path
-  | Node (elt, left, right) => 
-    let path2 = Cons (Tree right, path) in
-    let path3 = Cons (Value elt, path2) in
-    setup left path3
-;
-
-fun next (path: zipper[Element]) =>
-  match path with
-  | Empty => None[Element], Empty[Todo[Element]]
-  | Cons (Value v, tail) =>
-    Some v, tail
-  | Cons (Tree tr, tail) =>
-    let path2 = setup tail path in
-    next path2
-;
-\end{minted}
-
-\section{Zippers}
-For any inductive data type, there is a related type known as a {\em zipper}.
-A zipper is basically a path in the tree. It can be thought of as the
-original data type with a hole in it representing the location of
-the current visitor, that is, a way to cut off a branch forming a subtree
-and a tree with a missing branch.
-
-If we use the pure form of a tree it is a given by the formula:
-
-\begin{minted}{felix}
-typedef tree[T] = 1 + T * tree[T] * tree[T];
-\end{minted}
-
-where \verb%+% is the infix operator for an anonymous union
-or sum type, and $1$ is the unit type. This has the form of a polynomial
-
-\[1 + T X^2\]
-
-which has the derivative
-
-\[2TX\]
-
-or
-
-\begin{minted}{felix}
-typedef zipper[T] = bool * T * tree[T]
-\end{minted}
-
-In this form the boolean value is used to decide whether
-to process the value term next, or the right tree branch.
-In the zipper I presented, I split these two cases up into
-two list components \verb%Value% and \verb%Tree% and put them
-in the desired order in advance, because that was easier 
-to understand than presenting both with a selector. If the 
-selector is false, we process the value and set it to true,
-if it is true we process the tree and then discard the zipper
-node: in my implementation the value is first on the stack,
-then comes the tree, so the correct order is obtain by simply
-popping each element from the zipper as it is processed.
-
-What's critical again is that the fold and iterator both maintain
-the same data that the zipper specifies, although the encoding
-is quite different, the fold maintaining it entirely implicitly.
-
-Functional code is not always easier! If you consider a breadth
-first ordering, then both the functional and iterator versions
-must manually maintain some state. A simple functional breadth first fold could be 
-done with a recursive descent and a depth limit, so all the values at a given
-depth are processed, then all the values one level deeper, and so on.
-Arranging termination is not entirely trivial, but could be done by simply
-calculating the maximum depth, again using a recursive descent. 
-The fold itself would pass over intermediate level nodes several times,
-indeed in the degerate case of a list the top node would be scanned
-N times, for a list of length N, and the overall performance would be
-quadratic.
-
-A better algorithm could avoid rescanning by keeping track better.
-This can be done by accumulating a list of all the children, reversing
-it and scanning it processing its values, and building up the list
-for the next pass. This handles termination correctly however the
-performance advantage is questionable since the list has to be constructed
-which takes time and uses up space: when the list is discarded it
-loads up the garbage collector. A simple recursive descent in a balanced
-binary tree only doubles the cost, because the number of ancestors of
-a set of siblings is always exactly equal to the number of siblings
-minus one.
-
-\section{The Client Code}
-I have shown the fold and control inverted fold, the iterator,
-so you can see clearly that in general the fold is superior because
-it is simpler. It can use recursion and call the client code wherever
-and whenever it wants. The iterator form is at a severe disadvantage
-because it is a callback or slave subroutine.
-
-It is vital to understand that this imbalance is not because functional
-programming is better: the iterator form has a monadic functional
-equivalent, which is just as complicated as the procedural form,
-if not more so: the advantage of the functional form is that it 
-produces a forward iterator, the disadvantage is that the client
-code must maintain the state, which in our examples is the path
-representing the derivative.
-
-What you must now see is that if you use a master fold, your client
-code has a problem: it is a slave: the client argument of a fold
-function is a callback, and if it is to do something complicated,
-it must manually maintain state. It cannot use local variables,
-recursion, or the machine stack.
-
-On the other hand, the iterator form rules supreme for the client
-code. It can use recursion and the machine stack, and simply call
-the iterator whenever and wherever it wants for the next value.
-If you're using the functional forward iterator, you have to pass
-the state value around, but this is equivalent to being able
-to access the iterator object in the procedural form.
-
-You will need some imagination to see that whilst in general
-state is required with both the fold and iterator methods,
-the use of manually constructed data structures on the heap
-may be necessary in the functional form 
-if the linear machine stack is inadequate. Iterator clients
-are not necessarily trivial!
-
-However the superiority of the iterator form .. for the client
-programmer .. is easy to demonstrate unequivocably by considering
-a really simple and very old algorithm: the merge.
-
-A merge takes two sorted lists and merges them into a single
-sorted list. The algorithm is simple: look at the head of each
-list and pop off the smallest element, push it onto another list.
-Keep going until both lists are empty and reverse the result list.
-
-Simple, and easy to make purely functional but there's a minor
-problem. Its simple if the client code can choose which list to pop.
-So its simple if you have two iterators! 
-
-In fact with iterators .. the same algorithm works, even if the data
-is coming from a tree instead of a list, because the iterator is
-converting the data structure into a value stream in all cases.
-
-So how do you do a merge using a pair of folds?
-
-Er .. well you can't. The iterators are clearly and unequivocably
-superior. The writer of a fold has an advantage. The client has
-a disadvantage. In this case, the disadvantage is a killer.
-
-The way to do this is run the two folds separately to make two lists
-and then use then to feed your client code. If your language is lazily
-evaluated this is not necessarily inefficient but now we're exposing
-a well known major weakness of functional programming: the performance
-of your algorithms depends heavily on your compiler and run time
-implementation.
-
-It is indeed interesting that lazy evaluation may allow the suspension
-of two folds over two trees whose client code produces two lists which
-are then consumed by a merge. [More needs to be said here!]
-
-\section{Solving the problem with coroutines}
-It is critical at this point to understand there is a problem.
-Fold simply doesn't work, the client code is too hard to write!
-On the other hand iterator client code is easy to write, but
-the iterators are too hard to write!
-
-Neither method is any good! Both suffer from the same problem:
-slavery! Slave subroutines do not implicitly retain state on the
-machine stack synchronised with control flow as masters do.
-Masters are better! 
-
-What's the answer? It's pretty obvious, we need two stacks, and we
-need two masters. But you cannot do that with mere subroutines.
-You cannot do it with traditional procedural code nor with
-functional code. Procedures and functions are both subroutines.
-
-Since you read the title of this paper you already know the answer:
-coroutines. Coroutines cooperate as peers. They're constructed as if they're
-masters so both the visitor of the data structure and client code are
-easy. In fact we shall soon see, the data structure driver code in
-coroutine form looks exactly like the superior functional fold,
-and the client code looks exactly like the superior iterator client code.
-With coroutines, we can capture the best of both worlds!
-
-\section{Coding Visitors with coroutines}
-We're now going to attack the tree fold problem using coroutines.
-Recall the depth first functional routine:
-
-\begin{minted}{felix}
-fun preorder [Element, State]
-  (acc: Element -> State -> State)
-  (init: State)
-  (tr: tree[Element])
-=>
-  match tr with
-  | Leaf => init
-  | Node (elt, left, right) =>
-    let lv = preorder acc init left in
-    let v = acc elt lv in
-    preorder acc v right
-;
-\end{minted}
-
-Now see the coroutine, this is a full working example.
-First some test data:
-
-\begin{minted}{felix}
-union tree [Element] =
-  | Leaf
-  | Node of Element * tree[Element] * tree[Element]
-;
-
-var t = 
-  Node (10,
-    Node (5,
-      Node (1, Leaf[int], Leaf[int]),
-      Node (7, Leaf[int], Leaf[int])
-    ),
-    Node (15,
-      Node (12, Leaf[int], Node (13,Leaf[int], Leaf[int])),
-      Node (17, Node (16, Leaf[int], Leaf[int]), Leaf[int])
-    )
-  )
-;
-\end{minted}
-
-and now the coroutine:
-
-
-\begin{minted}{felix}
-proc copreorder [Element]
- (out: %>Element)
- (tr: tree[Element])
+fun find (v:varray[ntdef_t]) (nt:string) : size = 
 {
-  match tr with
-  | Leaf => return; 
-  | Node (elt, left, right) =>
-    copreorder out left;
-    write (out, elt);
-    copreorder out right;
-  endmatch;
+  for i in 0uz ..< v.len do
+    if v.i.0 == nt return i;
+  done
+  assert false;
 }
 \end{minted}
 
-and now we need a way to check the results:
+
+Now the core function, which converts a production expression
+into a recogniser. Because a function cannot use chip combinators
+or fibration primitives, the function uses lazy evaluation: it
+returns a procedure which when executed will do the appropriate
+operations.
 
 \begin{minted}{felix}
-proc printer (ch: %<int) { println$ read ch; printer ch; }
-
-begin
-  var inp, out = mk_ioschannel_pair[int]();
-  spawn_fthread { copreorder out t; };
-  spawn_fthread { printer inp; };
-end
+fun render_prod 
+  (lib:gramlib_t,v:varray[ntdef_t]) 
+  (p:prod_t) 
+: 1 -> recog_t =>
+  match p with
+  | Terminal (s,r) => { r }
+  | Epsilon => { BaseChips::epsilon[Buffer] }
+  | Seq ps => { BaseChips::pipeline_list (
+      map (fun (p:prod_t) => #(render_prod (lib,v) p)) ps) }
+  | Alt ps =>  { BaseChips::tryall_list (
+      map (fun (p:prod_t) => #(render_prod (lib,v) p)) ps) }
+  | Nonterminal nt => 
+     { 
+       var idx : size = find v nt;
+       var pslot : &ntdef_t = -(v.stl_begin + idx); 
+       var pchip : &recog_t = pslot . 1;
+       return BaseChips::deref_first_read pchip;
+     }
+  endmatch
+;
 \end{minted}
 
+Since a terminal is defined with a debugging string $s$ and
+a recogniser $r$, we just return the recogniser in that case.
+
+If we have a sequence, we return a pipeline of the chips corresponding
+to the entries in the sequence: we make the chips by recursively
+mapping the render function over the entries in the list.
+
+If we have alternatives, we do the same mapping but combine the chips
+using the \verb%tryall_list% combinator instead of a pipeline.
+
+The hard case is the nonterminal. We cannot just looklup the nonterminal
+and substitute its definition, because grammars can be recursive.
+
+Every problem can be solved by adding yet another level
+of indirection! So what we do if find the index position of the
+definition of the nonterminal, calculate the address in the output
+arrayu $v$ that where the definition will eventually be put,
+and then use the magical \verb%deref_first_read% chip which will delegate
+its actions to the chip at the end of the pointer, but will only
+do so on demand, after its first data is read.
+
+\subsection{The generator chip}
+Since we have to combine coroutines inside a coroutine, not a function,
+we will make a chip which does the job.
+
+This chip reads a whole grammar, and writes the corresponding
+recogniser.
+
+First we find the transitive closure of the nonterminals
+reachable from the designated start symbol, since our data is
+a library of nonterminal definitions,
+not all the components in the library may be required
+for the specified start symbol.
+
+We make an array to store the chips for each nonterminal
+in the closure and initialise them to the \verb%epsilon% chip
+to expand the \verb%varray% to the right size, and to assign
+the names of the nonterminals into the array.
+
+Now we run the \verb%render_prod% function for each nonterminal,
+and execute the returned generator to produce the chip we want,
+which we then store in the array.
+
+Then we just write the chip associated with the start symbol,
+that's our recogniser. Note that the varray storing the nonterminals
+and their recogniser is not lost, since it is reachable from
+the starting chip.
+
+\begin{minted}{felix}
+chip make_recogniser_from_grammar
+  connector io
+    pin inp: %<grammar_t
+    pin out: %>recog_t
+{
+
+  while true do
+    // read in the grammar
+    var start, lib = read io.inp;
+
+    // calculate the transitive closure of nonterminals
+    // from the start symbol
+    var cl = closure (start,lib);
+
+    // allocate a varray with a slot for each nonterminal
+    var n = cl.len;
+    var v = varray[string * recog_t] n;
+
+    // populate the varray with the terminal names and a dummy chip
+    for nt in cl call // initialise array
+      push_back (v,(nt,BaseChips::epsilon[Buffer]))
+    ;
+
+    // now assign the real recognisers to the array
+    var index = 0uz;
+    for nt in cl do
+      match find lib nt with
+      | None => assert false;
+      | Some prod =>
+        // get wrapped recogniser
+        var xprod_closure = render_prod (lib, v) prod;
+
+        // undo the wrappingt
+        var entry = #xprod_closure;
+
+        // address of the slot
+        var pentry : &recog_t = (-(v.stl_begin+index)).1;
+
+        // overwrite dummy value
+        pentry <- entry;
+      endmatch;
+      ++index;
+    done
+    write (io.out, (v.(find v start).1));
+  done
+}
+\end{minted}
+
+NOTE: I have no idea how this can possibly work since the \verb%render_prod%
+function actually returns a generator function, not a procedure. That generator
+must fail if anything it does makes a service call. In particular \verb%pipeline_list%,
+for example, spawns all the component chips after connecting them,
+and spawn requires a service call. However the test case works! Why?
+Felix isn't smart enough to do the double level of inlining to achieve
+this is it??
+ 
 
 \part{Appendices}
 \chapter{Coroutine Semantics}
@@ -2794,6 +3606,8 @@ dynamically. To prevent livelocks, variables holding
 channel values to which no I/O will occur dynamically
 should also go out of scope.
 
-\chapter{Listings}
-\listoflistings 
+\listoflistings
+\indexprologue{Index of code names}
+\printindex[codeindex] 
+\printindex
 \end{document}

@@ -94,12 +94,12 @@ class FelixLexer(RegexLexer):
 
             # Keywords
             (words(('axiom', 'ctor', 'chip', 'fun', 'gen', 'proc', 'reduce','regdef',
-              'var','val', 
+              'var','val','typedef',
               'union'), suffix=r'\b'),
              Keyword, 'funcname'),
             (words(('class', 'cclass', 'cstruct', 'obj', 'struct', 'object'), suffix=r'\b'),
              Keyword, 'funcname'),
-            (r'(instance|module|typeclass|interface)\b', Keyword, 'funcname'),
+            (r'(module|typeclass|interface)\b', Keyword, 'funcname'),
 
             (words(keywords, suffix=r'\b'), Keyword),
             (words(keyword_directives, suffix=r'\b'), Name.Decorator),
