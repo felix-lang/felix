@@ -663,21 +663,19 @@ fun find (v:varray[ntdef_t]) (nt:string) : size =
 fun render_prod 
   (lib:gramlib_t,v:varray[ntdef_t]) 
   (p:prod_t) 
-: 1 -> recog_t =>
+: recog_t =>
   match p with
-  | Terminal (s,r) => { r }
-  | Epsilon => { BaseChips::epsilon[Buffer] }
-  | Seq ps => { BaseChips::pipeline_list (
-      map (fun (p:prod_t) => #(render_prod (lib,v) p)) ps) }
-  | Alt ps =>  { BaseChips::tryall_list (
-      map (fun (p:prod_t) => #(render_prod (lib,v) p)) ps) }
+  | Terminal (s,r) => r 
+  | Epsilon =>  BaseChips::epsilon[Buffer] 
+  | Seq ps =>  BaseChips::pipeline_list (
+      map (fun (p:prod_t) => (render_prod (lib,v) p)) ps) 
+  | Alt ps =>   BaseChips::tryall_list (
+      map (fun (p:prod_t) => (render_prod (lib,v) p)) ps) 
   | Nonterminal nt => 
-     { 
-       var idx : size = find v nt;
-       var pslot : &ntdef_t = -(v.stl_begin + idx); 
-       var pchip : &recog_t = pslot . 1;
-       return BaseChips::deref_first_read pchip;
-     }
+    let idx = find v nt in
+    let pslot = -(v.stl_begin + idx) in
+    let pchip = pslot . 1 in
+    BaseChips::deref_first_read pchip
   endmatch
 ;
 
@@ -711,10 +709,7 @@ chip make_recogniser_from_grammar
       | None => assert false;
       | Some prod =>
         // get wrapped recogniser
-        var xprod_closure = render_prod (lib, v) prod;
-
-        // undo the wrappingt
-        var entry = #xprod_closure;
+        var entry = render_prod (lib, v) prod;
 
         // address of the slot
         var pentry : &recog_t = (-(v.stl_begin+index)).1;

@@ -3692,6 +3692,12 @@ syntax patterns {
   //$ If it matches the result is coerced to the RHS type expression. 
   private scoercive_pattern := sapplicative_pattern "|>" x[sarrow_pri] =>#
     "`(pat_coercion ,_sr ,_1 ,_3)";
+
+
+  // NOTE THIS IS A HACK I just wanted var x : t = expr to be
+  // convertable to let x : t = expr in, i.e. without having to delete the type
+  private scoercive_pattern := sapplicative_pattern ":" x[sarrow_pri] =>#
+    "`(pat_coercion ,_sr ,_1 ,_3)";
   private scoercive_pattern := sapplicative_pattern =># "_1";
 
   //$ Match a non-constant sum type constructor

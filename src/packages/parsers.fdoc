@@ -266,25 +266,23 @@ class Parsers
     (lib:pgramlib_t,v:varray[pntdef_t])
     (white:recog_t)
     (p:pgram_t) 
-  : 1 -> parser_t =>
+  : parser_t =>
     match p with
     | Recog r => 
       match r with
-      | Terminal (s,r) => { ActionSecond s white r }
-      | Epsilon => { BaseChips::epsilon[parser_state_t] }
-      | Seq ps => { BaseChips::pipeline_list (
-          map (fun (p:pgram_t) => #(render_pgram (lib,v) white p)) ps) }
-      | Alt ps =>  { BaseChips::tryall_list (
-          map (fun (p:pgram_t) => #(render_pgram (lib,v) white p)) ps) }
+      | Terminal (s,r) => ActionSecond s white r 
+      | Epsilon => BaseChips::epsilon[parser_state_t] 
+      | Seq ps => BaseChips::pipeline_list (
+          map (fun (p:pgram_t) => render_pgram (lib,v) white p)) ps 
+      | Alt ps =>  BaseChips::tryall_list (
+          map (fun (p:pgram_t) => render_pgram (lib,v) white p)) ps 
       | Nonterminal nt => 
-         { 
-           var idx : size = find v nt;
-           var pslot : &pntdef_t = -(v.stl_begin + idx); 
-           var pchip : &parser_t = pslot . 1;
-           return BaseChips::deref_each_read pchip;
-         }
+         let idx : size = find v nt in
+         let pslot : &pntdef_t = -(v.stl_begin + idx) in
+         let pchip : &parser_t = pslot . 1 in
+         BaseChips::deref_each_read pchip
       endmatch
-    | Action a => { ActionGeneral a }
+    | Action a => ActionGeneral a
   ;
 
   fun open_add_pgram[T] 
@@ -335,10 +333,7 @@ class Parsers
         | None => assert false;
         | Some prod =>
           // get wrapped parser 
-          var xprod_closure = render_pgram (lib, v) white prod;
-
-          // undo the wrappingt
-          var entry = #xprod_closure;
+          var entry = render_pgram (lib, v) white prod;
 
           // address of the slot
           var pentry : &parser_t = (-(v.stl_begin+index)).1;
