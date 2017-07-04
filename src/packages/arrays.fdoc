@@ -704,6 +704,18 @@ open class Varray
     return v;
   } 
 
+  //$ Construct a varray from a string.
+  //$ Exclude trailing nul byte.
+  fun varray_nonul (var x:string) = {
+    var n = x.len; var p = x._unsafe_cstr;
+    var v = varray[char] (n);
+    var q = v.stl_begin;
+    memcpy (q.address, p.address, n);
+    set_used (v,n);
+    return v;
+  } 
+
+
   private proc set_used[t]: varray[t] * size =
     "PTF gcp->collector->set_used($1,$2);"
     requires property "needs_gc"

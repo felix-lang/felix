@@ -51,7 +51,7 @@ ctor Buffer (p:varray[char]) =>
 ;
 
 ctor Buffer (p:string) =>
-  Buffer (p.varray[char],0)
+  Buffer (p.varray_nonul,0)
 ;
 
 ctor Buffer (p: &string) =>
@@ -636,6 +636,19 @@ ok:>
 
 bad:>
   goto restart;
+}
+
+@h2 End of string matcher
+@tangle recognisers.flx
+chip eos_matcher 
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  while true do
+    var x = read io.inp;
+    if x.atend perform write (io.out,x);
+  done
 }
 
 

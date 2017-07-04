@@ -1,6 +1,8 @@
 \documentclass[oneside]{book}
 \usepackage{color}
-\definecolor{bg}{rgb}{0.95,0.95,0.95}
+\definecolor{cxxbg}{rgb}{0.95,0.85,0.95}
+\definecolor{felixbg}{rgb}{0.95,0.95,0.95}
+\definecolor{felixlibbg}{rgb}{0.95,0.95,0.85}
 \definecolor{emphcolor}{rgb}{0.5,0.0,0.0}
 \newcommand{\empha}{\bf\color{emphcolor}}
 \usepackage{parskip}
@@ -15,7 +17,7 @@
 \makeindex[title=General Index]
 \makeindex[name=codeindex,title=Code Index]
 \usemintedstyle{friendly}
-\setminted{bgcolor=bg,xleftmargin=20pt}
+\setminted{bgcolor=felixlibbg,xleftmargin=20pt}
 \usepackage{hyperref}
 \hypersetup{pdftex,colorlinks=true,allcolors=blue}
 \newcommand*{\fullref}[1]{\hyperref[{#1}]{\autoref*{#1} \nameref*{#1}}}
@@ -79,7 +81,7 @@ First, we make a coroutine procedure which writes the integers
 from 0 up to but excluding 10 down a channel.
 
 \begin{listing}
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 proc producer (out: %>int) () {
   for i in 0..<10 
     perform write (out, i);
@@ -101,7 +103,7 @@ and writes the result. It is an infinite loop, this coroutine never
 terminates of its own volition. This is typical of coroutines.
 
 \begin{listing}
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 proc transducer (inp: %<int, out: %>int) () {
   while true do
     var x = read inp;
@@ -123,7 +125,7 @@ be read.
 Now we need a coroutine to print the results:
 
 \begin{listing}
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 proc consumer (inp: %<int) () {
   while true do
     var y = read inp;
@@ -154,7 +156,7 @@ They key idea of functional abstraction is that an approximation of the
 function semantics is represented by the function type. For example
 the functions \verb%modulus% and \verb%argument%
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 fun modulus (z:dcomplex) : double => sqrt (z.x^2 + z.y^2);
 fun argument (z:dcomplex) : double => arctan2 (z.y, z.x);
 \end{minted}
@@ -165,7 +167,7 @@ of abstract. Never-the-less the type is useful to allow the type checker
 to prevent calling these functions on an integer, but more importantly
 it allows for higher order functions:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 fun map (x:list[dcomplex]) (f:dcomplex->double) =>
   match x with
   | Empty => Empty[double]
@@ -196,7 +198,7 @@ intended way! First we have to make some channels to connect
 the devices:
 
 \begin{listing}
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 proc doit () {
   var ich1, och1 = mk_ioschannel_pair[int]();
   var ich2, och2 = mk_ioschannel_pair[int]();
@@ -213,7 +215,7 @@ and the second output.
 Now we can connect the devices to the channels:
 
 \begin{listing}
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
   var p = producer och1;
   var t = transducer (ich1, och2);
   var c = consumer (ich2);
@@ -231,7 +233,7 @@ which is required for the next step.
 Now we spawn active fibres from the coroutine closures:
 
 \begin{listing}
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
   spawn_fthread p;
   spawn_fthread t;
   spawn_fthread c;
@@ -260,7 +262,7 @@ it tries to write a value which will never be read. Lets modify
 our example to see: an infinite production stream:
 
 \begin{listing}[h]
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 proc producer (out: %>int) () {
   var i = 0;
   while true do
@@ -276,7 +278,7 @@ proc producer (out: %>int) () {
 but a limited sample of data are printed:
 
 \begin{listing}
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 proc consumer (inp: %<int) () {
   for i in 0..<10 do
     var y = read inp;
@@ -395,7 +397,7 @@ Then the current continuation of the fibre is
 changed to the new continuation.
 
 \begin{listing}
-\begin{minted}{C++}
+\begin{minted}[bgcolor=cxxbg]{C++}
 #if FLX_CGOTO
   #define FLX_LOCAL_LABEL_VARIABLE_TYPE void*
   #define FLX_PC_DECL void *pc;
@@ -423,7 +425,7 @@ in the function doing the computed goto, but it could.
 \end{listing}
 
 \begin{listing}
-\begin{minted}{C++}
+\begin{minted}[bgcolor=cxxbg]{C++}
 struct con_t 
 {
   FLX_PC_DECL               // interior program counter
@@ -438,7 +440,7 @@ struct con_t
 \end{listing}
 
 \begin{listing}
-\begin{minted}{C++}
+\begin{minted}[bgcolor=cxxbg]{C++}
 struct fthread_t 
 {
   con_t *cc;                // current continuation
@@ -449,7 +451,7 @@ struct fthread_t
 \end{listing}
 
 \begin{listing}
-\begin{minted}{C++}
+\begin{minted}[bgcolor=cxxbg]{C++}
 struct slist_node_t {
   slist_node_t *next;
   fthread_t *data;
@@ -669,7 +671,7 @@ Note {\em very carefully} that it is {\em absolutely essential}
 that channels only be reachable by fibres that wil use them.
 Go back and look carefully at the \verb%doit% procedure:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 proc doit () {
   var ich1, och1 = mk_ioschannel_pair[int]();
   var ich2, och2 = mk_ioschannel_pair[int]();
@@ -722,7 +724,7 @@ circuits, even though that is not really accurate.
 
 \phantomsection
 \label{fig:prodtranscons1}
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 chip producer 
   connector io
     pin out: %>int
@@ -731,7 +733,7 @@ chip producer
     perform write (io.out, i);
 }
 \end{minted}
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 chip transducer 
   connector io
     pin inp: %<int
@@ -744,7 +746,7 @@ chip transducer
   done
 }
 \end{minted}
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 chip consumer 
   connector io
     pin inp: %<int
@@ -763,7 +765,7 @@ phrase, each specifies a separate argument. Each \verb%chip%
 has an aditional unit argument added automatically. The signatures
 of the three chips above are:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
   producer: (out: %out) -> 1 -> 0
   transducer: (inp: %<int, out: %out) -> 1 -> 0
   consumer: (inp: %<int) -> 1 -> 0
@@ -776,7 +778,7 @@ parameter and a tuple for the two required for the transducer.
 \subsection{The {\tt device} statement}
 You can write:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 device x = y;
 \end{minted}
 
@@ -792,7 +794,7 @@ A \verb%circuit% statement can be used to connect devices
 and pins. It is an executable statement!
 
 \begin{figure}[h]
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 circuit
   connect producer.out, transducer.inp
   connect transducer.out, consumer.inp
@@ -816,7 +818,7 @@ an error!).
 \subsubsection{The {\tt wire} clause}
 There is also another clause you can use in a circuit statement:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 circuit
   wire ch to dev.pin
 endcircuit
@@ -828,7 +830,7 @@ The \verb%wire% clause allows you to connect a known channel to a device.
 It is critical to understand {\em when} the code of a chip is
 run! Consider simple chip:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 chip simple (n:int) 
   connector io
     pin out: %>int
@@ -839,7 +841,7 @@ chip simple (n:int)
 
 The type of this chip is:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 int -> (out: %>int) -> 1 -> 0
 \end{minted}
 
@@ -849,7 +851,7 @@ returning a procedure which accepts the unit argument ().
 
 Now if we say:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 device  s1 = simple 10;
 \end{minted}
 
@@ -857,7 +859,7 @@ we have created an object with the parameter $n$ fixed to 10.
 We say the object is a closure, because the parameter $n$
 is now fixed. The closure now has type
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 (out: %>int) -> 1 -> 0
 \end{minted}
 
@@ -865,14 +867,14 @@ As you can see, this is still a function!
 
 We can again create a closure of that value by:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 var s2 = s1 (out=ch);
 \end{minted}
 
 where \verb%ch% is a channel on which you can write an int.
 The closure \verb$s2$ has type:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 1 -> 0
 \end{minted}
 
@@ -885,7 +887,7 @@ called or spawned, the code does not execute.
 
 The chip is equivalent to this:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 proc simple (n:int) 
   (io: ( pin out: %>int) )
   ()
@@ -896,7 +898,7 @@ proc simple (n:int)
 
 which in turn is equivalent to this:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 fun simple (n:int)  =>
   fun (io: ( pin out: %>int) ) =>
     proc () {
@@ -1170,7 +1172,7 @@ supply suitable proof sketches.
 Felix allows preconditions written using the \verb%when%
 clause like this:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 fun safe_divide (x:int, y:int when y != 0) => x/y;
 \end{minted}
 
@@ -1299,7 +1301,7 @@ semantically a no operation.
 
 Here's an example:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 include "std/control/chips";
 open BaseChips;
 
@@ -1385,9 +1387,9 @@ end, it is a closed pipeline.
 An open pipeline is semantically equivalent to a transucer with
 additional buffering. A pipline closed on the left is a source,
 and a pipeline closed on the right is a sink.
-The syntax |-> is parsed to pipe (a,b).
+The syntax \verb%|->% is parsed to \verb%pipe (a,b)%.
 We add overloads for chips with pins
-named io.inp, io.out.
+named \verb%io.inp%, \verb%io.out%.
 
 Here are the binary combinators:
 
@@ -1694,7 +1696,7 @@ in which we have chips with multiple inputs and outputs,
 and we are going to demonstrate how to handle the partial
 function division:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 chip divide
   connector io
     pin numerator: %<int
@@ -1719,7 +1721,7 @@ Imagine we have to compute the formula:
 $${x + y\over x - y}+1$$
 We can use this:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 var x = 1;
 var y = 1;
 device xc = x.source;
@@ -1755,7 +1757,7 @@ endciruit
 \begin{center}
 \tikzstyle{cell} = [rectangle,minimum width=0.7cm,minimum height=0.5cm,text centered,draw=black]
 \tikzstyle{arrow} = [thick,->,>-stealth]
-\begin{tikzpicture}[node distance=3cm]
+\begin{tikzpicture}[node distance=2cm]
 \node(O)[cell]{1};
 \node(X)[cell,below of=O]{x};
 \node(Y)[cell, below of=X]{y};
@@ -1860,6 +1862,7 @@ Now, here is the kind of pointer to the string we will use,
 for some reason its called a \verb%Buffer%.
 
 
+\begin{figure}[h]
 \index[codeindex]{Buffer}
 \begin{minted}{felix}
 struct Buffer
@@ -1892,6 +1895,8 @@ struct Buffer
   ;
 }
 \end{minted}
+\caption{lst:Type Buffer (lib Recog)}
+\end{figure}
 
 Two instance variables make a \verb%Buffer%, a \verb%varray% of \verb%char% called 
 \verb%sp%, for the string and an \verb%int% named \verb%pos% for as an index into
@@ -1907,7 +1912,7 @@ is not at the end, wherease the \verb%advanced% method returns a copy of the
 object advanced one, or at the same position if it is at end, this method
 is purely functional.
 
-Finallyu the \verb%lookahead% method returns the character \verb%i% positions ahead
+Finally the \verb%lookahead% method returns the character \verb%i% positions ahead
 of the current position, if there is one, or an empty string if that position is
 past the end.
 
@@ -1918,8 +1923,9 @@ ctor Buffer (p:varray[char]) =>
   Buffer (p,0)
 ;
 
+// excludes a trailing nul byte!
 ctor Buffer (p:string) =>
-  Buffer (p.varray[char],0)
+  Buffer (p.varray_nonul,0)
 ;
 
 ctor Buffer (p: &string) =>
@@ -1935,13 +1941,16 @@ instance Str[Buffer] {
 }
 \end{minted}
 
-and an equality operator which ignores the underlying
-string and just compares the positions.
+and an equality and total ordering operator which ignores the underlying
+string and just compares the positions: these operators only work
+correctly for the same underlying array.
 
 \begin{minted}{felix}
-// hack, ignore underlying data.. FIXME
 instance Eq[Buffer] {
   fun == (a:Buffer, b:Buffer) => a.pos == b.pos;
+}
+instance Tord[Buffer] {
+  fun < (a:Buffer, b:Buffer) => a.pos < b.pos;
 }
 \end{minted}
 
@@ -2149,12 +2158,14 @@ bad:>
 \end{minted}
 
 \subsection{Regular Expression matcher}
+\index{regular expression matcher}
 This is a generally useful matcher that uses
 Felix system library binding of Google's RE2 package for matching. 
 
 \index[codeindex]{match\_regex}
 \index[codeindex]{cident\_matcher}
 \index[codeindex]{decimal\_integer\_matcher}
+\index[codeindex]{decimal\_float\_matcher}
 \begin{minted}{felix}
 chip match_regex (r:RE2)
   connector io
@@ -2183,10 +2194,37 @@ device cident_matcher =
 device decimal_integer_matcher = 
   match_regex (RE2 "[0-9]+")
 ;
+device decimal_float_matcher = 
+  match_regex (RE2 "[0-9]+\\.[0-9]+")
+;
 \end{minted}
 
 We also included a matcher for C identifiers which uses the regexp
 matching chip, and simple decimal integer matcher.
+
+
+\subsection{End of String matcher}
+A particularly interesting chip! It reads a position
+and writes it out if, and only if, its at the end of the 
+string.
+
+By adding this chip to the end of a pipline you can force
+the whole string to be matched by the rest of the pipeline,
+instead of just a prefix.
+
+\index[codeindex]{match\_regex}
+\begin{minted}{felix}
+chip eos_matcher 
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  while true do
+    var x = read io.inp;
+    if x.atend perform write (io,out,x);
+  done
+}
+\end{minted}
 
 \section{Delegators}
 We present two versions of delegators, or proxies, which are chips that delegate
@@ -2278,7 +2316,7 @@ chip optional[T] (p:iochip_t[T,T])
 }
 \end{minted}
 
-The \verb%oneormore_match% matches the regular expression A+.
+The \verb%oneormore_match% matches the regular expression \verb%A+%.
 It requires at least one match.
 
 \index[codeindex]{oneormore\_matcher}
@@ -2298,7 +2336,7 @@ connector chans
 }
 \end{minted}
 
-And of course, this one matches A*.
+And of course, this one matches \verb%A*%.
 
 \index[codeindex]{zeroormore\_matcher}
 \begin{minted}{felix}
@@ -2316,6 +2354,175 @@ connector chans
 }
 \end{minted}
 
+\subsection{Handling Ambiguity}
+In the \fullref{regular expression matcher} we provided a matcher for integers
+and a simplified floating point format without an exponent part. Now
+consider matching the string:
+
+\begin{minted}{text}
+"42.78"
+\end{minted}
+
+Lets build a ciruit which tries to detect if the prefix of a string matches
+a number. 
+
+\begin{minted}{felix}
+chip number
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  device num = tryall_list 
+    ([
+      decimal_integer_matcher,
+      decimal_float_matcher
+    ])
+  ;
+  circuit
+     wire io.inp to num.inp
+     wire io.out to num.out
+  endcircuit
+}
+\end{minted}
+
+The problem is that the input produces two outputs: the whole string
+is a float but the first two characters are also an integer.
+
+What can we do? One common specification for recognisers is that
+only the longest match should be used. You should note that this
+strategy will eliminate possible parses prematurely; that is,
+by excluding what is currently ambiguous, later elimination
+of the longest match will lead to failure, while keeping
+both matches might succeed.
+
+Nevertheless, longest match may be required, so the question
+becomes how to implement it. If we were using functional code
+we would get a set with all the matches, and just select
+the longest one. But we're using coroutines not functions,
+do we can't do that.
+
+Right? Well .. actually we can! 
+
+\begin{minted}{felix}
+// UNTESTED: TESTME
+chip longest (a: list[iochip_t[Buffer,Buffer]])
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  var x = read io.inp;
+  var wi,wo = mk_ioschannel_pair[Buffer];
+  var results = Empty[Buffer];
+  var processor = pipeline_list ([number,drop &results]);
+  circuit
+     wire wi to processor.inp;
+  endcircuit
+  run { write (wo, x); };
+
+  // find longest match, if any
+  match results with
+  | Empty => ; // no match do nothing
+  | head ! tail =>
+     var big = head;
+     for elt in tail do 
+       if elt > big do big = elt; done
+     done
+     write (io.out, big);
+   endmatch;
+}
+\end{minted}
+
+The trick is that the \verb%run% operation on a pipeline
+terminated by a drop will capture all the results,
+as if the code were functional. Indeed, \verb%run%
+is an ordinary subroutine!
+
+What we have done here, in terms of exploring a tree
+of parses, is commonly known as a {\em cut}, in which
+we prematurely prune whole subtrees based on some
+predictive heuristic. In this case, it's not an optimisation
+but a requirement of the specification.
+
+In general, a cuts are a technique for finding the spatial
+form of a finite temporal sequence. The \verb%run% subroutine
+is the key because it returns control when the fibre
+scheduler it has invoked no longer has any work to perform,
+in other words, when it can no longer reach any active
+fibres. Active fibres may still exist on the scheduler
+that called it, and it could create fibres itself which
+are suspended on channels it called knows about.
+
+As this would be a side-effect were the run nested in a function,
+the programmer must take care in that case to capture all
+such effects. Generators are allowed to have side effects,
+so it may be useful to use a generator instead. However,
+generators are really only intended to have internal mutable
+state which should not escape the generator abstraction.
+In particular generators have the same type as functions,
+so generator closures might accidentally be passed to
+a function which expected a functional, not generative,
+argument.
+
+In our example, our code is safe, and indeed the \verb%longest%
+chip is pure. The reasoning is that the \verb%processor% 
+pipeline only reads data from the channel with endpoints
+\verb%wi,wo% which is local to the chip, and the drop
+only occurs to \verb%results% which is also local. So no effects
+escape from the \verb%longest% chip: what it writes is purely
+a function of what it reads, no other behaviour can be detected
+by a circuit that uses it.
+
+The other side of purity reasoning is cleanup reasoning.
+We need to know that, should this chip become unreachable,
+then anything it creates also becomes unreachable. This means
+no references to anything it creates can escape the chip.
+The local variable \verb%results% is addressed, which is
+dangerous, but the address is passed only to the \verb%drop%
+chip which itself becomes unreachable at the end of the
+\verb%run% operation, except for its inclusion in the
+\verb%process% pipeline which is a local variable which is
+not addressed, and therefore is only locally reachable.
+
+Reachability reasoning is vital in functional programs
+too so this is not a new burden on programmers,
+however the reasoning is complicated by the need to consider
+fibres and channels as potentially reachable objects.
+
+It's vital to understand that the \verb%cicruit% statement
+does something more than just relieve the programmer of 
+mundane channel creation and spawning tasks. Critically,
+it hides the names of the channels and in making the secret
+{\em prevents} the programmer from inadvertantly reaching
+them, thereby ensuring that the blocked or starved circuit
+components will be reaped by the garbage collector.
+In other words, it provides a kind of abstraction through
+anonymity which helps keep components pure.
+
+\section{Recogniser test harness}
+We need to test our primitives, and later, combinations
+of them. What would a test harness look like?
+
+The first thing is to write a simple function.
+
+\index[codeindex]{tr}
+\begin{minted}[bgcolor=felixbg]{felix}
+fun tr (r: recog_t) (s:string) : bool =
+{
+  var result = false;
+  run (
+    source (Buffer s) 
+    |-> oneshot[Buffer] 
+    |-> r 
+    |-> eos_matcher 
+    |-> function (fun (x:Buffer) => true)
+    |-> store &result
+  );
+  return result;
+}
+\end{minted}
+
+
+
 \chapter{Grammars}
 We will now take a break from coroutines and do some functional
 programming, because this is a fairly easy way to do the job
@@ -2325,6 +2532,27 @@ What we need is a representation of a grammar, because later in this
 work we're going to show how to make a parser with coroutines.
 Just to keep you on your toes, we're going to use a very powerful
 functional programming technique known as {\em open recursion}.
+
+\begin{figure}[h]
+\begin{center}
+\tikzstyle{cell} = [rectangle,minimum width=0.7cm,minimum height=0.5cm,text centered,draw=black]
+\tikzstyle{arrow} = [thick,->,>-stealth]
+\begin{tikzpicture}[node distance=3cm]
+\node(genericgrammar)[cell]{generic\_grammar};
+\node(opengrammar)[cell,below of=genericgrammar]{open\_grammar};
+\node(grammar)[cell,right of=opengrammar]{grammar};
+\node(openpgrammar)[cell, below of=opengrammar]{open\_pgrammar};
+\node(pgrammar)[cell,right of=openpgrammar]{pgrammar};
+\draw[arrow](genericgrammar) -- (opengrammar) node[midway,right]{specialise};
+\draw[arrow](opengrammar) -- (grammar) node[midway,above]{fix};
+\draw[arrow](opengrammar) -- (openpgrammar) node[midway,right]{extend};
+\draw[arrow](openpgrammar) -- (pgrammar) node[midway, above]{fix};
+\end{tikzpicture}
+\caption{Grammar Development}
+\label{fig:grammar development}
+\end{center}
+\end{figure}
+
 
 \section{Grammar Datatype}
 The first thing we need is a data structure representing a grammar:

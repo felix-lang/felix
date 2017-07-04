@@ -155,14 +155,6 @@ chip buffer [T]
   done
 }
 
-chip oneshot [T]
-  connector io
-    pin inp: %<T
-    pin out: %>T
-{
-  write (io.out, read io.inp);
-}
-
 chip dup [T]
   connector io
     pin inp: %<T
