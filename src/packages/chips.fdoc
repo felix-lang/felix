@@ -48,6 +48,16 @@ chip source[T] (a:T)
     write (io.out, a);
   done
 }
+@h2 One shot source
+
+@tangle chips.flx
+chip value[T] (a:T)
+  connector io 
+    pin out: %>T
+{
+  write (io.out, a);
+}
+
 
 @h2 Source from list
 @tangle chips.flx
@@ -126,8 +136,6 @@ chip filter[D,C] (f:D->opt[C])
   done
 }
 
-
-
 @h2 Sink to list
 @tangle chips.flx
 chip sink_to_list[T] (p: &list[T])
@@ -139,6 +147,21 @@ chip sink_to_list[T] (p: &list[T])
     p <- Cons (x,*p);
   done
 }
+
+@h2 Sink to unique list
+@tangle chips.flx
+chip sink_to_unique_list[T with Eq[T]] (p: &list[T])
+  connector io
+    pin inp : %<T
+{
+  while true do
+    var x = read (io.inp);
+    if not (x in *p) perform 
+      p <- Cons (x,*p)
+    ;
+  done
+}
+
 
 
 @h2 Buffer.

@@ -41,6 +41,13 @@ one to experiment with: Felix will be used in this document simply
 because there isn't anything else!
 
 \section{What is a coroutine?}
+\index{coroutine}
+\index{spawn}
+\index{fibre}
+\index{suspend}
+\index{resume}
+\index{synchronous}
+\index{channel}
 A {\em coroutine} is basically a procedure which can be {\em spawned} to begin
 a {\em fibre} of control which can be {\em suspended} and {\em resumed} under program
 control at specific points. Coroutines communicate with each other
@@ -53,6 +60,11 @@ fibres make up a single thread, and within that only one fibre is ever
 executing. Fibration is a technique used to structure sequential programs,
 there is no concurrency involved.
 
+\index{implicit coupling}
+\index{control flow}
+\index{subroutine}
+\index{local variable}
+\index{structured programming}
 The most significant picture of the advantages of coroutines is thus: in a subroutine
 based language there is a single machine stack. By machine stack, I mean that
 there is an important {\em implicit} coupling of control flow and local variables.
@@ -80,6 +92,7 @@ at a simple example.
 First, we make a coroutine procedure which writes the integers
 from 0 up to but excluding 10 down a channel.
 
+\index{source}
 \begin{listing}
 \begin{minted}[bgcolor=felixbg]{felix}
 proc producer (out: %>int) () {
@@ -90,6 +103,7 @@ proc producer (out: %>int) () {
 \caption{Simple source}
 \label{lst:Simple source}
 \end{listing}
+
 Notice that as well as passing the output channel argument \verb%out%,
 there is an extra unit argument \verb%()%. This procedure terminates
 after it has written 10 integers. The type of variable \verb%out% is
@@ -98,6 +112,7 @@ which is an output channel on which values of type \verb%int% may
 be written.
 
 \subsection{The Transducer}
+\index{transducer}
 Next, we make a device which repeatedly reads an integer, squares it,
 and writes the result. It is an infinite loop, this coroutine never
 terminates of its own volition. This is typical of coroutines.
@@ -124,6 +139,7 @@ be read.
 \subsection{The Consumer}
 Now we need a coroutine to print the results:
 
+\index{sink}
 \begin{listing}
 \begin{minted}[bgcolor=felixbg]{felix}
 proc consumer (inp: %<int) () {
@@ -142,12 +158,17 @@ which may perform, directly or indirectly, I/O on one or more synchronous
 channels.
 
 \subsection{Purity}
+\index{pure}
 The first two coroutines are {\em pure} because they depend only on their
 arguments, and interact with the outside world entirely through 
 synchronous channels. They do not modify variables in their environment,
 and they do not depend on variables in their environment. The consumer,
 however, has a side effect, namely printing values to standard output.
 
+\index{modularity}
+\index{encapsulation}
+\index{abstraction}
+\index{information hiding}
 Purity is an important property which provides modularity and encapsulation and allows
 one to reason locally. This is a vital information hiding property which is also
 possessed by pure functions, where it is known as {\em functional abstraction}. 
@@ -197,6 +218,7 @@ Now, let us see how we can use these coroutines in the obviously
 intended way! First we have to make some channels to connect
 the devices:
 
+\index{channel,construction}
 \begin{listing}
 \begin{minted}[bgcolor=felixbg]{felix}
 proc doit () {
@@ -224,12 +246,14 @@ Now we can connect the devices to the channels:
 \label{lst:bind channel arguments}
 \end{listing}
 
+\index{closure}
 We have created procedure closures which bind the channel arguments
 to the procedures so that now the three closures all have the type
 \verb%1->0%, where 1 is also named as \verb%unit% and 0 is named as \verb%void%,
 which is required for the next step.
 
 \subsection{Spawning Fibres}
+\index{spawn}
 Now we spawn active fibres from the coroutine closures:
 
 \begin{listing}
@@ -249,15 +273,16 @@ via the connected channels. The configuration in a series is called
 a {\em pipeline} and corresponds directly to functional composition.
 
 \subsection{Termination}
+\index{termination}
 Now you may wonder, how does it all end? What happens is that
 when the producer terminates by a procedural return which is
-called {\em suicide}. The transducer tries to read a value
-which is never going to come. The transducer is said to {\em starve}.
+called {\em suicide}\index{suicide}. The transducer tries to read a value
+which is never going to come. The transducer is said to {\em starve}.\index{starve}
 The consumer also waits forever for a value from the transducer
 which is never going to come, because the transducer is starving,
 so the consumer also starves.
 
-It is also possible for a coroutine to {\em block}. This happens when
+It is also possible for a coroutine to {\em block}\index{block}. This happens when
 it tries to write a value which will never be read. Lets modify
 our example to see: an infinite production stream:
 
@@ -305,6 +330,8 @@ the main way that we organise termination!
 Before I can explain this, however, I have to back step a bit!
 
 \section{Garbage Collection and Reachability}
+\index{reachability}
+\index{garbage,collection}
 Felix runs a garbage collector similar to most functional programming
 languages. What a collector does is maintain a specified set of root
 objects, and finds all the objects to which there is a pointer
@@ -372,17 +399,18 @@ which contains a pointer to the fibre's initial continuation.
 The fibre is running, so it is also reachable.
 
 All your top level variables are stored in an object called
-the {\em thread frame}. Continuation objects contain a pointer
+the {\em thread frame}\index{thread frame}. Continuation objects\index{continuation}
+contain a pointer
 to the thread frame so that the procedure can access the global
 variables. A continuation object is also known as the procedure
-{\em activation record} or {\em data frame}, or, historically,
+{\em activation record}\index{activation record} or {\em data frame}, or, historically,
 its {\em stack frame}. As well as a pointer to the thread
 frame, a continuation object also contains a pointer to the
 most recent activation record of its ancestors, in fact the
 thread frame may be consider a universal ancestor.
 
 Vitally, continuation objects also contain a value known as
-the {\em program counter}. This value is the current location at which
+the {\em program counter}\index{program counter}. This value is the current location at which
 the continuation is executing, it always points into the code
 of the procedure the frame represents. When a subroutine is
 called, the program counter is set to the statement after the
@@ -478,7 +506,7 @@ with the caller at the statement after the subroutine call.
 
 Thus, the continuations form a singly linked list which operates
 like a stack. The continuation objects are heap allocated and
-the data structure is known as a {\em spaghetti stack}.
+the data structure is known as a {\em spaghetti stack}\index{spaghetti stack}.
 In principle, a continuation also has a pointer to the most recent
 activation record of its parent, which has a pointer to its 
 parent, until the list terminates with the thread frame,
@@ -651,6 +679,9 @@ production and research programming systems!
 
 
 \section{Indeterminacy}
+\index{indeterminacy}
+\index{synchronisation}
+\index{matching I/O}
 When fibres synchronise with matching I/O operations, both become
 active but only one actually starts executing. Which one is 
 {\em indeterminate}. Felix always runs the reader first, but
@@ -719,6 +750,7 @@ procedural subroutines are just coroutines that do not do channel I/O.
 Felix has two syntax extensions designed to so coroutines are easier to use.
 
 \subsection{The {\tt chip} definition}
+\index{chip, syntax}
 This extensions encourages a picture of coroutines as integrated
 circuits, even though that is not really accurate.
 
@@ -986,12 +1018,26 @@ acquired {\em unless} they're needed.
 This chip writes a fixed value forever.
 It is the analogue of a value or constant function:
 
+\index[codeindex]{source}
 \begin{minted}{felix}
 chip source[T] (a:T)
   connector io
     pin out: %>T
 {
   while true perform write (io.out, a);
+}
+\end{minted}
+
+Here's a oneshot version of it:
+
+\index{oneshot}
+\index[codeindex]{value}
+\begin{minted}{felix}
+chip value[T] (a:T)
+  connector io 
+    pin out: %>T
+{
+  write (io.out, a);
 }
 \end{minted}
 
@@ -1045,6 +1091,7 @@ setting. We will see later, however, that it is natural.
 
 Next, we have a basic adaptor for a function.
 
+\index{function}
 \index[codeindex]{function}
 \begin{minted}{felix}
 chip function[D,C] (f:D->C)
@@ -2404,32 +2451,28 @@ do we can't do that.
 Right? Well .. actually we can! 
 
 \begin{minted}{felix}
-// UNTESTED: TESTME
-chip longest (a: list[iochip_t[Buffer,Buffer]])
+chip longest_match (a: list[iochip_t[Buffer,Buffer]])
   connector io
     pin inp: %<Buffer
     pin out: %>Buffer
 {
   var x = read io.inp;
-  var wi,wo = mk_ioschannel_pair[Buffer];
-  var results = Empty[Buffer];
-  var processor = pipeline_list ([number,drop &results]);
-  circuit
-     wire wi to processor.inp;
-  endcircuit
-  run { write (wo, x); };
-
-  // find longest match, if any
+  var results = None[Buffer];
+  proc storemax[T with Tord [T]] (p: &opt[T]) (a:T) {
+    match *p with
+    | None => p <- Some a;
+    | Some v => if a > v perform p <- Some a;
+    endmatch;
+  }
+  for r in a call
+    run (x.value |-> r |-> (storemax &results).procedure)
+  ;
   match results with
-  | Empty => ; // no match do nothing
-  | head ! tail =>
-     var big = head;
-     for elt in tail do 
-       if elt > big do big = elt; done
-     done
-     write (io.out, big);
-   endmatch;
+  | None => ;
+  | Some answer => write (io.out, answer);
+  endmatch;
 }
+
 \end{minted}
 
 The trick is that the \verb%run% operation on a pipeline
@@ -2521,7 +2564,65 @@ fun tr (r: recog_t) (s:string) : bool =
 }
 \end{minted}
 
+The pipline starts with a source emitting the initial Buffer repeatedly
+which is cut down by the oneshot to a single output. Then we run
+the recogniser. After that we run a check that we have reached the
+end of the string. Then we have a chip that reads the resulting
+end position and ignores it, writing true instead, which the 
+store sink puts in the result variable.
 
+So if the match goes through, and matches the whole string,
+the function \verb%tr% returns true. If the pipeline dies, \verb%run% 
+returns control without the initial value of false being modified, 
+and so \verb%tr% returns false.
+
+This shows a lift using the \verb%source% chip, and a drop using the \verb%store%
+chip, terminated by the \verb%run% procedure, which returns when there are
+no active fibres left. You will note, the drop is in two parts:
+the data drop is done by the \verb%store% chip, the control drop is
+done by verb%run% returning control to its called. The two parts
+of the drop, data and control, are not automatically synchronised.
+
+\subsection{A paradigm shift}
+One of the key themes in this work is that fibration extends
+conventional functional and imperative programming styles.
+The new technology does not replace the old methods, but should
+be used in conjunction with them. Understanding coroutines
+requires a paradigm shift, but this does not mean abandoning
+the old ways, just recognising they do not form a complete
+development methodology. So too, fibration is not the last word,
+but it adds something vital missing to the old techniques:
+symmetry.
+
+Technically, the dual of a function is a cofunction, which is
+basically an iterator. General coroutines, having multiple
+channels, are dual to OO style objects: we have multiple
+synchronisation vehicles instead of multiple methods,
+we have a common thread of control instead of an object
+shared between methods. OO isolates the data using functional
+abstraction, so access is limited to the use of the fixed
+set of methods. Coroutines isolate their state using channels
+instead.
+
+Objects are passive slaves providing methods as services
+to the client of the object, supporing observers that report
+state and mutators that change it. Objects are reactive.
+
+Coroutines are active threads of control. They also isolate
+the client from their state, but fibres actively cooperate
+with their environment as peers. Instead of calling a method,
+and the method responding, fibres accept requests and send
+data and the system behavior is determined by circuit connectivity.
+
+Both object methods and coroutines need to obey invariants,
+however the object invariants are imposed on their spatial
+state, whereas the coroutines invariants are temporal:
+they reflect ordering rules.
+
+When something is broken, objects panic: typically by throwing
+an exception or terminating the program. Fibres, on the other
+hand, simply ignore faults. So bad OO programs blow up,
+whereas bad circuits simply die.
 
 \chapter{Grammars}
 We will now take a break from coroutines and do some functional

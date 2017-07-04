@@ -66,8 +66,12 @@ instance Str[Buffer] {
 instance Eq[Buffer] {
   fun == (a:Buffer, b:Buffer) => a.pos == b.pos;
 }
+instance Tord[Buffer] {
+  fun < (a:Buffer, b:Buffer) => a.pos < b.pos;
+}
 
 open Eq[Buffer];
+open Tord[Buffer];
 
 ctor string (a:Buffer, b:Buffer) =
 {
@@ -649,6 +653,30 @@ chip eos_matcher
     var x = read io.inp;
     if x.atend perform write (io.out,x);
   done
+}
+
+@h2 Longest match
+@tangle recognisers.flx
+chip longest_match (a: list[iochip_t[Buffer,Buffer]])
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  var x = read io.inp;
+  var results = None[Buffer];
+  proc storemax[T with Tord [T]] (p: &opt[T]) (a:T) {
+    match *p with
+    | None => p <- Some a;
+    | Some v => if a > v perform p <- Some a;
+    endmatch;
+  }
+  for r in a call
+    run (x.value |-> r |-> (storemax &results).procedure)
+  ;
+  match results with
+  | None => ;
+  | Some answer => write (io.out, answer);
+  endmatch;
 }
 
 
