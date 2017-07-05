@@ -12,6 +12,7 @@
 \usepackage{amssymb}
 \usepackage{amscd}
 \usepackage{imakeidx}
+\usepackage[chapter]{tocbibind}
 \usepackage{tikz}
 \usetikzlibrary{shapes,shadows,arrows}
 \makeindex[title=General Index]
@@ -60,11 +61,37 @@ fibres make up a single thread, and within that only one fibre is ever
 executing. Fibration is a technique used to structure sequential programs,
 there is no concurrency involved.
 
+In the abstract theoretical sense, the fundamental property possessed by
+coroutines can be stated like this: within any thread, there exists some
+total ordering of all events. The ordering may not be determinate, but of any two
+events which occur, one definitely occurs before the other.
+
+In addition, events associated with one fibre which occur between two synchronisation
+points, are never interleaved by events from another fibre of the same thread.
+All interleaving must occur interior to the synchronisation point, that is,
+after it commences and before it completes. In other words, given a sequence
+of events from one fibre prior to a synchronisation point, and a sequence of
+event from another after a synchronisation point, all the events of each
+sequence occur before or after all the events of the other.
+
+Premptive threads, on the other hand, allow arbitrary interleaving of
+each threads sequence of events, up to and after any shared synchronisation.
+Mutual exclusion locks provide serialisation, which is the default behaviour
+of coroutines.
+
+Therefore, fibre based programming can proceed where general code
+may assume exclusive access to memory and other resources over all
+local time periods not bisected by a volutary synchronisation event;
+threads, on the other hand, can only assume exclusive access in the
+scope of a held mutex.
+
+
 \index{implicit coupling}
 \index{control flow}
 \index{subroutine}
 \index{local variable}
 \index{structured programming}
+\index{continuation}
 The most significant picture of the advantages of coroutines is thus: in a subroutine
 based language there is a single machine stack. By machine stack, I mean that
 there is an important {\em implicit} coupling of control flow and local variables.
@@ -107,7 +134,7 @@ proc producer (out: %>int) () {
 Notice that as well as passing the output channel argument \verb%out%,
 there is an extra unit argument \verb%()%. This procedure terminates
 after it has written 10 integers. The type of variable \verb%out% is
-denoted \verb$%>int$ which is actually short hand for \verb%ochannel[int]%,
+denoted \verb$%>int$ which is actually short hand for \verb%oschannel[int]%,
 which is an output channel on which values of type \verb%int% may
 be written.
 
@@ -5099,8 +5126,53 @@ dynamically. To prevent livelocks, variables holding
 channel values to which no I/O will occur dynamically
 should also go out of scope.
 
+\chapter{Installing Felix}
+\section{Prerequisites}
+Ocaml optimising native code compiler 4.03 or higher.
+Python 3.4 or higher. Either g++ or clang++ with C++11.
+
+\subsection{Optional}
+SDL2, GMP.
+
+\subsection{Unix}
+For general Unix, Linux, Windows Subsystem for Linux, Cygwin:
+Binutils, GNUmake. If both clang++ and g++ are installed,
+the bootstrap will use g++.
+
+\begin{minted}{text}
+. buildscript/linuxsetup.sh
+make
+sudo make install #optional
+\end{minted}
+
+\subsection{OSX}
+Binutils, GNUmake. If both clang++ and g++ are installed
+the bootstrap will use clang++.
+
+\begin{minted}{text}
+. buildscript/osxsetup.sh
+make
+sudo make install #optional
+\end{minted}
+
+\subsection{Windows}
+Binutils, nmake. You also need Ocaml and MSVC++.
+Please examine the file \verb$appveyor.yml$ which does
+a complete build on the Appveyor continuous integration
+server. If you have an uptodate Windows 10 with Bash for
+Windows (WSL), that may be easier to use.
+
+\clearpage
+\phantomsection
+\indexprologue{Listing Index}
 \listoflistings
-\indexprologue{Index of code names}
+%
+\clearpage
+\phantomsection
 \printindex[codeindex] 
+%
+\clearpage
+\phantomsection
 \printindex
+%
 \end{document}
