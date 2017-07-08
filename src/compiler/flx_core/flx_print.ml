@@ -817,6 +817,7 @@ and string_of_basic_parameters (ps: simple_parameter_t list) =
     (map (fun (x,y) -> string_of_id x ^ ": " ^ (string_of_typecode y)) ps)
 
 and string_of_param_kind = function
+  | `POnce -> "once"
   | `PVal -> "val"
   | `PVar -> "var"
 
@@ -1514,6 +1515,23 @@ and string_of_statement level s =
     )
     ^ ";"
 
+  | STMT_once_decl (_,name, vs,ty, value) ->
+    spaces level ^
+    "once " ^ string_of_id name ^
+    (
+      match ty with
+      | Some t -> ": " ^ string_of_typecode t
+      | None -> ""
+    )
+    ^
+    (
+      match value with
+      | Some e -> " = " ^ (se e)
+      | None -> ""
+    )
+    ^ ";"
+
+
   | STMT_ref_decl (_,name, vs,ty, value) ->
     spaces level ^
     "ref " ^ string_of_id name ^
@@ -1740,6 +1758,9 @@ and string_of_symdef entry name vs =
 
   | SYMDEF_val (t) ->
     "val " ^ string_of_id name ^ string_of_ivs vs ^":"^ st t ^ ";"
+
+  | SYMDEF_once (t) ->
+    "once " ^ string_of_id name ^ string_of_ivs vs ^":"^ st t ^ ";"
 
   | SYMDEF_ref (t) ->
     "ref " ^ string_of_id name ^ string_of_ivs vs ^":"^ st t ^ ";"
@@ -2416,6 +2437,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     in
     sl ^
     begin match kind with
+    | `Once -> "once " ^ make_suffix ()
     | `Val -> "val " ^ make_suffix ()
     | `Var -> "var " ^ make_suffix ()
     | `Ref -> "ref " ^ make_suffix ()
@@ -2527,6 +2549,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
 
   | BBDCL_val (vs,ty,kind) ->
     begin match kind with
+    | `Once -> "once "
     | `Val -> "val "
     | `Var -> "var "
     | `Ref -> "ref "
@@ -2783,6 +2806,7 @@ let print_symbols bsym_table =
     | BBDCL_val (bvs,t,kind) ->
         let kind =
           match kind with
+          | `Once -> "ONCE"
           | `Val -> "VALUE"
           | `Var -> "VARIABLE"
           | `Ref -> "REFERENCE"

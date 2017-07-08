@@ -526,6 +526,7 @@ print_endline "BINDING PARAMETER";
         ->
         let t = type_of_index symbol_index in
         let bbdcl = match k with
+        | `POnce -> bbdcl_val (bvs,t,`Once)
         | `PVal -> bbdcl_val (bvs,t,`Val)
         | `PVar -> bbdcl_val (bvs,t,`Var)
         in
@@ -597,6 +598,23 @@ print_endline ("flx_bind: Adding label " ^ s ^ " index " ^ string_of_int symbol_
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
     add_bsym true_parent (bbdcl_val (bvs, t, `Val))
+
+  | SYMDEF_once t ->
+    let t = 
+      try type_of_index symbol_index 
+      with GadtUnificationFailure ->
+(*
+        print_endline ("GADT UNIFICATION FAILURE BINDING TYPE OF VARIABLE " ^ sym.Flx_sym.id);
+*)
+        btyp_void ()
+    in
+
+    if state.print_flag then
+      print_endline ("//bound val " ^ sym.Flx_sym.id ^ "<" ^
+        string_of_bid symbol_index ^ ">" ^
+        print_bvs bvs ^ ":" ^ sbt bsym_table t);
+
+    add_bsym true_parent (bbdcl_val (bvs, t, `Once))
 
   | SYMDEF_var t ->
     let t = type_of_index symbol_index in

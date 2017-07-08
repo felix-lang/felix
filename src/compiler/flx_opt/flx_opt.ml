@@ -98,7 +98,9 @@ let optimize_bsym_table' syms bsym_table (root_proc: int option) =
   bsym_table
   end;
 
-  
+  print_time syms "[flx_opt]; Simplify requirements" begin fun () ->
+  Flx_breqs.simplify_reqs bsym_table end;
+ 
   (* eliminate funprods, replace by calls to generated funs *)
   let bsym_table = Flx_funprod.elim_funprods syms bsym_table in
   (* eliminate funsums , replace by calls to generated funs *)

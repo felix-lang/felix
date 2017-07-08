@@ -223,6 +223,7 @@ syntax assignment {
     slexprs := stlelement "," slexprs =># "(cons _1 _3)";
     slexprs := stlelement =># "`(,_1)";
 
+    slelement := "once" sname =># "`(Once ,_sr ,_2)";
     slelement := "val" sname =># "`(Val ,_sr ,_2)";
     slelement := "var" sname =># "`(Var ,_sr ,_2)";
     slelement := sname =># "`(Name ,_sr ,_1)";
@@ -1939,6 +1940,9 @@ syntax functions {
 
   //$ Parameter qualifier: val.
   private sparam_qual := "val" =># "'PVal";
+
+  //$ Parameter qualifier: once.
+  private sparam_qual := "once" =># "'POnce";
 
   //$ Parameter qualifier: var.
   private sparam_qual := "var" =># "'PVar";
@@ -5004,6 +5008,13 @@ syntax variables {
     """
     `(ast_val_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
      """;
+
+  //$ Once binder, single.
+  stmt := "once " sdeclname "=" sexpr ";" =>#
+    """
+    `(ast_once_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
+     """;
+
 
   stmt := "device" sdeclname "=" sexpr ";" =>#
     """

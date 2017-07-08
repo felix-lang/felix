@@ -1130,6 +1130,7 @@ print_endline "init apply closure/direct";
             begin match Flx_bsym.bbdcl bsymv with
             | BBDCL_val (vs,t,`Tmp) ->
                 assert (vs=[]);
+print_endline ("Downgrading temporary to val: " ^ Flx_bsym.id bsymv);
                 (* Downgrading temporary *)
                 (* should this be a VAR or a VAL? *)
                 Flx_bsym_table.update_bbdcl

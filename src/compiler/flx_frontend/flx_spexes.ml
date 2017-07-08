@@ -316,6 +316,7 @@ let gen_body syms uses bsym_table id
          prolog := x :: !prolog
       in
       match kind with
+      | `POnce
       | `PVal ->
           if inline_method = `Lazy 
           then Hashtbl.add argmap index argument

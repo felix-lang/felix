@@ -174,7 +174,7 @@ let gen_C_function_body filename syms bsym_table
                 string_of_bid bid);
           in
           match Flx_bsym.bbdcl bsym with
-          | BBDCL_val (vs,t,(`Val | `Var)) when not (List.mem bid params) ->
+          | BBDCL_val (vs,t,(`Val | `Var | `Once)) when not (List.mem bid params) ->
               (bid, rt vs t) :: lst
           | BBDCL_val (vs,t,`Ref) when not (List.mem bid params) ->
               (bid, btyp_pointer (rt vs t)) :: lst
@@ -295,7 +295,7 @@ let gen_C_procedure_body filename syms bsym_table
                 string_of_bid bid);
           in
           match Flx_bsym.bbdcl bsym with
-          | BBDCL_val (vs,t,(`Val | `Var)) when not (mem bid params) ->
+          | BBDCL_val (vs,t,(`Val | `Var | `Once)) when not (mem bid params) ->
               (bid, rt vs t) :: lst
           | BBDCL_val (vs,t,`Ref) when not (mem bid params) ->
               (bid, btyp_pointer (rt vs t)) :: lst

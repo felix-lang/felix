@@ -1,0 +1,172 @@
+\documentclass[oneside]{book}
+\usepackage{color}
+\definecolor{cxxbg}{rgb}{0.95,0.85,0.95}
+\definecolor{felixbg}{rgb}{0.95,0.95,0.95}
+\definecolor{felixlibbg}{rgb}{0.95,0.95,0.85}
+\definecolor{emphcolor}{rgb}{0.5,0.0,0.0}
+\newcommand{\empha}{\bf\color{emphcolor}}
+\usepackage{parskip}
+\usepackage{framed}
+\usepackage[newfloat=true]{minted}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amscd}
+\usepackage{imakeidx}
+\usepackage[chapter]{tocbibind}
+\usepackage{tikz}
+\usetikzlibrary{shapes,shadows,arrows}
+\makeindex[title=General Index]
+\makeindex[name=codeindex,title=Code Index]
+\usemintedstyle{friendly}
+\setminted{bgcolor=felixlibbg,xleftmargin=20pt}
+\usepackage{hyperref}
+\hypersetup{pdftex,colorlinks=true,allcolors=blue}
+\newcommand*{\fullref}[1]{\hyperref[{#1}]{\autoref*{#1} \nameref*{#1}}}
+\usepackage{hypcap}
+\usepackage{caption}
+\DeclareMathOperator{\quot}{div}
+\DeclareMathOperator{\rmd}{rmd}
+\title{Felix Dependency Processing}
+\author{John Skaller}
+\begin{document}
+\maketitle
+\tableofcontents
+\chapter{Introduction}
+Felix has several different subsystems and features which can loosely
+be described as dependency processing.
+
+\chapter{Symbol dependencies}
+
+In Felix when you use an identifier, you create a dependency on
+that symbol's definition. You top level code is wrapped in a dummy
+procedure \verb%_init_% which is considered the root symbol,
+and then any symbols are also considered used. The consideration
+is recursive, so Felix finds the transitive closure of the usage
+dependency and deletes all the unused symbols, so as to reduce
+the total amount of code it eventually generates. This is, of course,
+a kind of garbage collection.
+
+There is a vital question here: exactly what does it mean for
+a symbol to be used?
+
+With a special exception, it means that the symbol appears in
+an expression, is a parameter, is the type of any used variable,
+the type of a function, etc. Note, taking the address of a 
+variable is considered a use (even if the address is not used
+to access the variable dynamically).
+
+The special exception is this: if a variable is assigned to or
+initialised by is not used in an expression, it is not considered
+to be used. Instead, the assignment or initialisation statement
+is deleted. In turn, any variables which are only used in that
+assignment now become unused, since the assignment was deleted.
+After all the assigment is useless since the variable assigned
+to is not used.
+
+Felix guarrantees any unused variable will be deleted, along
+with its initialisation, however note that parameters are
+considered to be used, because deleting them would change
+the type of the function that they are parameters of.
+
+This has no impact, except to improve performance, if the
+initialiser or RHS of an assignment is side effect free.
+
+However if the initialiser or assignment RHS has a side effect
+which is allowed if it contains the application of a generator,
+that side effect will be lost.
+
+This is not a design fault, but a deliberate design choice.
+The specific use case which guides this choice is the assignment
+of a real time alarm clock to a global variable. If the clock
+is not used, the variable is removed, the assignment deleted,
+and the construction of the clock bypassed. This is important
+because alarm clocks use the asynchronous I/O subsystem,
+which is loaded on demand if you use dynamic linkage.
+What's more, the subsystem starts a pre-emptive thread which
+monitors the operating systems event queue, which is a lot
+of overhead for a clock you do not use.
+
+With the elision assured, it is safe to construct variables
+refering to expensive resources, knowing the construction
+will be elided unless you use the resource via the variable.
+
+\section{C++ Dependencies}
+Felix is a C++ code generator which is specially designed to allow
+the programmer to leverage existing C and C++ code, and to blend
+in C and C++ code right into a Felix program.
+
+Consider for example you want a function \verb%myffun% to perform a 
+calculation which you want to write in C++. The first thing you need to do
+is create a binding to the function:
+
+\begin{minted}{felix}
+fun myffun : double -> double = "::std::sin (mycfun($1))";
+\end{minted}
+
+Unfortunately, this is probably not going to work because it
+needs the C++ math function \verb%sin% and to get use that 
+function we have to include the C++ header \verb%cmath%.
+Lets do that first:
+
+
+\begin{minted}{felix}
+fun myffun : double -> double = "::std::sin (mycfun($1))"
+  requires header '#include <cmath>';
+\end{minted}
+
+What this does is that, if the Felix function \verb%myffun%
+is used, then, Felix will automatically include the line
+
+\begin{minted}{c}
+#include <cmath>
+\end{minted}
+
+in the C++ program it generates, in particular in the file
+with the basename of the Felix filename and extension \verb%.hpp%.
+This file is normally written into the cache prior to use during
+the C++ compilation phase.
+
+So now the \verb%sin% bit works, but what about the C function
+you were going to write. Lets write it:
+
+\begin{minted}{felix}
+body mycfun_def =
+"""
+double mycfun (double x) { return x + 1.0; }
+""";
+\end{minted}
+
+Here we have written the C function \verb%mycfun% inside a string.
+We used triple quotes to support multiline strings.
+We also tagged the string \verb%mycfun_def% and told Felix it
+has to go in the body file it generates, which as a \verb%.cpp%
+extension.
+
+If you put this before the binding of \verb%myfffun% however,
+the program still won't run, because the C function is not
+included in the output!
+
+The reason of course is that you did not create a dependency
+on it, and the cure is to do so:
+
+\begin{minted}{felix}
+fun myffun : double -> double = "::std::sin (mycfun($1))"
+  requires header '#include <cmath>', mycfun_def;
+\end{minted}
+
+
+
+\clearpage
+\phantomsection
+\indexprologue{Listing Index}
+\listoflistings
+%
+\clearpage
+\phantomsection
+\printindex[codeindex] 
+%
+\clearpage
+\phantomsection
+\printindex
+%
+\end{document}

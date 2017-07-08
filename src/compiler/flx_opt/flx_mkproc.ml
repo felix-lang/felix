@@ -285,6 +285,7 @@ let mkproc_gen syms bsym_table =
             if pi <> 0 then begin
               let n = revar pi in
               let bbdcl = match pk with
+              | `POnce -> bbdcl_val (vs,t,`Once)
               | `PVal -> bbdcl_val (vs,t,`Val)
               | `PVar -> bbdcl_val (vs,t,`Var)
               in

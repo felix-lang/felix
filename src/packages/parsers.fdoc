@@ -273,9 +273,9 @@ class Parsers
       | Terminal (s,r) => ActionSecond s white r 
       | Epsilon => BaseChips::epsilon[parser_state_t] 
       | Seq ps => BaseChips::pipeline_list (
-          map (fun (p:pgram_t) => render_pgram (lib,v) white p)) ps 
+          map (fun (p:pgram_t) => render_pgram (lib,v) white p) ps) 
       | Alt ps =>  BaseChips::tryall_list (
-          map (fun (p:pgram_t) => render_pgram (lib,v) white p)) ps 
+          map (fun (p:pgram_t) => render_pgram (lib,v) white p) ps)
       | Nonterminal nt => 
          let idx : size = find v nt in
          let pslot : &pntdef_t = -(v.stl_begin + idx) in

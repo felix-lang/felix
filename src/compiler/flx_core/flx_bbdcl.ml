@@ -14,7 +14,8 @@ type btype_qual_t = [
 
 
 (** Used to represent all the different value types. *)
-type value_kind_t = [`Val | `Var | `Ref | `Tmp]
+(** Once means linear type, it has to be a val *)
+type value_kind_t = [`Val | `Var | `Ref | `Tmp | `Once]
 
 (** Used to represent all the different external function types. *)
 type external_fun_kind_t = [

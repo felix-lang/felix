@@ -1103,6 +1103,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
 
       let symdef =
         match kind with
+        | `Once -> SYMDEF_once t
         | `Val -> SYMDEF_val t
         | `Var -> SYMDEF_var t
         | `Ref -> SYMDEF_ref t

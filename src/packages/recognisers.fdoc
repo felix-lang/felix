@@ -43,6 +43,9 @@ struct Buffer
     elif self.pos + i < 0 then char ""
     else (self.sp) . (self.pos + i)
   ;
+
+  fun stl_end => Buffer (self.sp,self.sp.len.int);
+
 }
 
 
@@ -657,7 +660,7 @@ chip eos_matcher
 
 @h2 Longest match
 @tangle recognisers.flx
-chip longest_match (a: list[iochip_t[Buffer,Buffer]])
+chip longest_match (a: list[recog_t])
   connector io
     pin inp: %<Buffer
     pin out: %>Buffer
@@ -678,6 +681,21 @@ chip longest_match (a: list[iochip_t[Buffer,Buffer]])
   | Some answer => write (io.out, answer);
   endmatch;
 }
+
+@h2 Match to eos
+Equivalent to .* but faster.
+@tangle recognisers.flx
+chip toeos_matcher 
+  connector io
+    pin inp: %<Buffer
+    pin out: %>Buffer
+{
+  while true do
+    var x = read io.inp;
+    write (io.out,x.stl_end);
+  done
+}
+
 
 
 @h1 Lazy Syntactic form
@@ -709,9 +727,9 @@ fun render_prod
   | Terminal (s,r) => r 
   | Epsilon =>  BaseChips::epsilon[Buffer] 
   | Seq ps =>  BaseChips::pipeline_list (
-      map (fun (p:prod_t) => (render_prod (lib,v) p)) ps) 
+      map (fun (p:prod_t) => render_prod (lib,v) p) ps) 
   | Alt ps =>   BaseChips::tryall_list (
-      map (fun (p:prod_t) => (render_prod (lib,v) p)) ps) 
+      map (fun (p:prod_t) => render_prod (lib,v) p) ps) 
   | Nonterminal nt => 
     let idx = find v nt in
     let pslot = -(v.stl_begin + idx) in
@@ -762,6 +780,13 @@ chip make_recogniser_from_grammar
     done
     write (io.out, (v.(find v start).1));
   done
+}
+
+fun recogniser (g:grammar_t) : recog_t =
+{
+  var r: recog_t;
+  run (g.value |-> make_recogniser_from_grammar |-> store &r);
+  return r;
 }
 
 } // Recognisers

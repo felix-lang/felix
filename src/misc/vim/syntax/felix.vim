@@ -146,6 +146,7 @@ syn keyword felixStatement union
 syn keyword felixStatement use
 syn keyword felixStatement val
 syn keyword felixStatement var
+syn keyword felixStatement once
 syn keyword felixStatement virtual
 syn keyword felixStatement where
 syn keyword felixStatement when
@@ -221,7 +222,6 @@ syn keyword felixStatement raise ref regexp return regdef parse parser
 syn keyword felixStatement struct
 syn keyword felixStatement to type typedef typeof
 syn keyword felixStatement union
-syn keyword felixStatement val var
 syn keyword felixStatement when with
 syn keyword felixStatement _
 

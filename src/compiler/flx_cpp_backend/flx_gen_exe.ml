@@ -844,7 +844,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         in
         let t =
           match Flx_bsym.bbdcl bsym with
-          | BBDCL_val (_,t,(`Val | `Var)) -> t
+          | BBDCL_val (_,t,(`Val | `Var | `Once)) -> t
           | _ -> syserr (Flx_bsym.sr bsym) "Expected read argument to be variable"
         in
         let n = fresh_bid counter in

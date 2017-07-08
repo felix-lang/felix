@@ -30,7 +30,7 @@ let find_variable_indices syms bsym_table index =
   let children = Flx_bsym_table.find_children bsym_table index in
   Flx_types.BidSet.fold begin fun bid bids ->
     try match Flx_bsym_table.find_bbdcl bsym_table bid with
-      | BBDCL_val (_,_,(`Val | `Var | `Ref)) -> bid :: bids
+      | BBDCL_val (_,_,(`Val | `Var | `Ref | `Once)) -> bid :: bids
       | _ -> bids
     with Not_found -> bids
   end children []
@@ -167,7 +167,7 @@ let is_closure_var bsym_table index =
       try Hashtbl.find bsym_table index
       with Not_found -> failwith ("[var_type] ]Can't get index " ^ si index)
     in match entry with
-    | BBDCL_val (_,t,(`Val | `Var | `Ref)) -> t
+    | BBDCL_val (_,t,(`Val | `Var | `Ref | `Once)) -> t
     | _ -> failwith ("[var_type] expected "^id^" to be variable")
   in
   match var_type bsym_table index with

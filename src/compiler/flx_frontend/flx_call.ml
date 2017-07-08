@@ -183,6 +183,7 @@ let call_report syms bsym_table (uses,usedby) f k =
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (_,_,_,BTYP_void,_,_) -> "proc "
     | BBDCL_fun (_,_,_,_,_,_) -> "fun "
+    | BBDCL_val (_,_,`Once) -> "once "
     | BBDCL_val (_,_,`Val) -> "val "
     | BBDCL_val (_,_,`Var) -> "var "
     | BBDCL_label _ -> "label "
@@ -197,7 +198,7 @@ let call_report syms bsym_table (uses,usedby) f k =
     try match Flx_bsym_table.find_bbdcl bsym_table i with
       | BBDCL_label _
       | BBDCL_fun _
-      | BBDCL_val (_,_,(`Val | `Var)) -> x := i :: !x
+      | BBDCL_val (_,_,(`Val | `Var | `Once)) -> x := i :: !x
       | _ -> ()
     with Not_found -> ()
   end
@@ -218,7 +219,7 @@ let print_call_report' syms bsym_table usage f =
     match Flx_bsym.bbdcl bsym with
     | BBDCL_label _
     | BBDCL_fun _
-    | BBDCL_val (_,_,(`Val | `Var)) -> x := k :: !x
+    | BBDCL_val (_,_,(`Val | `Var | `Once )) -> x := k :: !x
     | _ -> ()
   end bsym_table;
   List.iter

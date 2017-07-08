@@ -42,7 +42,7 @@ let get_var_frame syms bsym_table this index ts : string =
   in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_label _ 
-  | BBDCL_val (_,_,(`Val | `Var | `Ref)) ->
+  | BBDCL_val (_,_,(`Val | `Var | `Ref | `Once)) ->
       begin match bsym_parent with
       | None -> "ptf"
       | Some i ->
@@ -62,7 +62,7 @@ let get_var_ref syms bsym_table this index ts : string =
       failwith ("[get_var_ref] Can't find index " ^ string_of_bid index)
   in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_val (vs,t,(`Val | `Var | `Ref)) ->
+  | BBDCL_val (vs,t,(`Val | `Var | `Ref | `Once)) ->
       begin match bsym_parent with
       | None -> "PTF " ^ cpp_instance_name syms bsym_table index ts
       | Some i ->
@@ -85,7 +85,7 @@ let get_ref_ref syms bsym_table this index ts : string =
       failwith ("[get_var_ref] Can't find index " ^ string_of_bid index)
   in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_val (vs,t,(`Val | `Var | `Ref)) ->
+  | BBDCL_val (vs,t,(`Val | `Var | `Ref | `Once )) ->
       begin match bsym_parent with
       | None ->
           "PTF " ^ cpp_instance_name syms bsym_table index ts
@@ -1255,7 +1255,8 @@ end
     in
     let ts = map tsub ts' in
     begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_val (_,BTYP_function (BTYP_void,_),`Val)  ->
+      | BBDCL_val (_,BTYP_function (BTYP_void,_),`Val) 
+      | BBDCL_val (_,BTYP_function (BTYP_void,_),`Once)  ->
           let ptr = (get_var_ref syms bsym_table this index ts) in
           ce_call (ce_arrow (ce_atom ptr) "apply") []
 

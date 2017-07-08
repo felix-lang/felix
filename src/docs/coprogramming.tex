@@ -1904,6 +1904,101 @@ What this means, however, is that, because the channel is reachable
 from the chip, whilst any one channel is not blocked, attempts to write
 will be stacked up for every input on every blocked channel. 
 
+\section{Feedback}
+Circuits with feedback create a cyclic flow. Lets try an experiment.
+
+\begin{minted}[bgcolor=felixbg]{felix}
+chip fibit 
+  connector io
+    pin inp1: %<int
+    pin inp2: %<int
+    pin out1: %>int
+    pin out2: %>int
+    pin result: %>int
+{
+  while true do
+  var x1 = read io.inp1;
+  var x2 = read io.inp2;
+  var x3 = x1 + x2;
+  write (io.out1, x2);
+  write (io.out2, x3);
+  write (io.result, x3);
+  done
+
+}
+
+device v1 = value 1;
+device v2 = value 1;
+device printer = procedure println[int];
+circuit
+  connect v1.out, fibit.inp1
+  connect v2.out, fibit.inp2
+  connect fibit.out1, fibit.inp1
+  connect fibit.out2, fibit.inp2
+  connect fibit.result, printer
+endciruit
+\end{minted}
+
+This is an attempt to run the fibonacci series in which starts with
+the values 1, then 1, thereafter each value is the sum of the two
+previous ones.
+
+We start with two oneshot values to get the circuit running.
+We read them, the older one first, then the newer one,
+add them up, then write the newer one to the older pin,
+and the sum to the newer pin. We also write the sum to the result pin.
+
+But .. nothing happens! The problem is that the chip is writing
+to itself, and that never works, because the write can't return
+until after a matching read is done, but the read can't happen
+because the device is suspended in the write.
+
+The solution is to add buffers.
+
+\begin{minted}[bgcolor=felixbg]{felix}
+device v1 = value 1;
+device v2 = value 1;
+device b1 = buffer;
+device b2 = buffer;
+device printer = procedure println[int];
+circuit
+  connect v1.out, fibit.inp1
+  connect v2.out, fibit.inp2
+  connect fibit.out1, b1.inp // out1->inp1 via buffer
+  connect b1.out, fibit.inp1
+  connect fibit.out2, b2.inp // out2->inp2 via buffer
+  connect b2.out, fibit.inp2
+  connect fibit.result, printer
+endciruit
+\end{minted}
+
+There is another way to do this, using a spatial store instead
+of a temporal one:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+chip fibit  (var inp1:int, var inp2:int)
+  connector io
+    pin result: %>int
+{
+  while true do
+    var x1 = inp1;
+    var x2 = inp2;
+    var x3 = x1 + x2;
+    inp1 = x2;
+    inp2 = x3;
+    write (io.result, x3);
+  done
+}
+\end{minted}
+
+We just used variables instead of buffers. They're storage locations,
+which are of course ways to hold values over time, which is of course
+what a buffer is. Indeed the buffer chip does exactly that,
+it reads the value into a variable then writes it. Effectively
+we just optimised the calculation!
+
+
+
 \chapter{Base Recognisers}
 In this chapter we introduce a data structure used for scanning strings,
 some specific primitive recognisers, and some general purpose chips which
@@ -1967,6 +2062,8 @@ struct Buffer
     elif self.pos + i < 0 then char ""
     else (self.sp) . (self.pos + i)
   ;
+
+  fun stl_end => Buffer (self.sp,self.sp.len.int);
 }
 \end{minted}
 \caption{lst:Type Buffer (lib Recog)}
@@ -2478,7 +2575,7 @@ do we can't do that.
 Right? Well .. actually we can! 
 
 \begin{minted}{felix}
-chip longest_match (a: list[iochip_t[Buffer,Buffer]])
+chip longest_match (a: list[recog_t])
   connector io
     pin inp: %<Buffer
     pin out: %>Buffer
@@ -3228,9 +3325,11 @@ fun merge (var p:gramlib_t): gramlib_t =
 \end{minted}
 
 \chapter{Recogniser from Grammar}
+\section{Building a Recogniser}
 We are now read for the big job: to build a recogniser from
 a grammar.
 
+\subsection{Helper}
 First we need a helper which finds the index of a 
 nonterminal definition in an array of definition:
 
@@ -3246,6 +3345,7 @@ fun find (v:varray[ntdef_t]) (nt:string) : size =
 \end{minted}
 
 
+\subsection{Primary Renderer}
 Now the core function, which converts a production expression
 into a recogniser. Because a function cannot use chip combinators
 or fibration primitives, the function uses lazy evaluation: it
@@ -3260,31 +3360,44 @@ fun render_prod
 : recog_t =>
   match p with
   | Terminal (s,r) => r 
-  | Epsilon => BaseChips::epsilon[Buffer] 
-  | Seq ps => BaseChips::pipeline_list (
-      map (fun (p:prod_t) => (render_prod (lib,v) p)) ps) 
-  | Alt ps =>   BaseChips::tryall_list (
-      map (fun (p:prod_t) => (render_prod (lib,v) p)) ps) 
+
+  | Epsilon => epsilon[Buffer] 
+
+  | Seq ps => pipeline_list ([
+      map (fun (p:prod_t) => (render_prod (lib,v) p)) ps]) 
+
+  | Alt ps => tryall_list ([
+      map (fun (p:prod_t) => (render_prod (lib,v) p)) ps]) 
+
   | Nonterminal nt => 
     let idx = find v nt in
     let pslot = -(v.stl_begin + idx) in
     let pchip = pslot . 1 in
-    BaseChips::deref_first_read pchip
+    deref_first_read pchip
   endmatch
 ;
 \end{minted}
 
+Here is a detailed explanation.
+
+\subsubsection{Terminal}
 Since a terminal is defined with a debugging string $s$ and
 a recogniser $r$, we just return the recogniser in that case.
 
+\subsubsection{Epsilon}
+Just returns \verb%epsilon% which recognises a null string.
+
+\subsubsection{Seq}
 If we have a sequence, we return a pipeline of the chips corresponding
 to the entries in the sequence: we make the chips by recursively
 mapping the render function over the entries in the list.
 
+\subsubsection{Alt}
 If we have alternatives, we do the same mapping but combine the chips
 using the \verb%tryall_list% combinator instead of a pipeline.
 
-The hard case is the nonterminal. We cannot just looklup the nonterminal
+\subsubsection{Nonterminal}
+The hard case is the nonterminal. We cannot just lookup the nonterminal
 and substitute its definition, because grammars can be recursive.
 
 Every problem can be solved by adding yet another level
@@ -3294,6 +3407,24 @@ arrayu $v$ that where the definition will eventually be put,
 and then use the magical \verb%deref_first_read% chip which will delegate
 its actions to the chip at the end of the pointer, but will only
 do so on demand, after its first data is read.
+
+{\small The varray access is messy. The \verb%stl_begin% method returns
+an incrementable pointer to which we add the index \verb%idx% we previously
+found using the \verb%find% helper. We must then downgrade the resulting
+incrementable pointer to a non-incrementable pointer to which we can
+add the offset of the second component. The downgrade conversion
+is represented by the prefix \verb%-% sign, it is statically, but not
+dynamically safe. The component selection is done by applying a
+pointer-to-tuple projection which returns a pointer to one of the tuple
+components. Components of tuples are numbered from 0 up, zero origin,
+so the component with index 1 is actually the second component.
+Due to a shortcut, we can just use a plain integer literal to designate
+the projection. Finally we can pass the pointer to the second
+component to the \verb%deref_first_read% chip. The slot we have
+pointed at may not contain the correct chip at this time, however
+it should be filled in by the complete rendering process before it
+completes. This is why the dereference is delayed until the first
+data is read by the chip, since that is after the rendering is finished.}
 
 \subsection{The generator chip}
 Since we have to combine coroutines inside a coroutine, not a function,
@@ -3314,7 +3445,6 @@ to expand the \verb%varray% to the right size, and to assign
 the names of the nonterminals into the array.
 
 Now we run the \verb%render_prod% function for each nonterminal,
-and execute the returned generator to produce the chip we want,
 which we then store in the array.
 
 Then we just write the chip associated with the start symbol,
@@ -3367,7 +3497,32 @@ chip make_recogniser_from_grammar
     write (io.out, (v.(find v start).1));
   done
 }
+
+fun recogniser (g:grammar_t) : recog_t =
+{
+  var r: recog_t;
+  run (g.value |-> make_recogniser_from_grammar |-> store &r);
+  return r;
+}
+
+fun in (s:string) (g:grammar_t) =
+{
+  chip false_if_got (pr: &bool)
+     connector io
+       pin inp: %<Buffer
+  {
+    C_hack::ignore$ read io.inp;
+    pr <- true;
+  }
+  var r = recogniers g;
+  var result = false;
+  run (s.value |-> r |-> eos_matcher |-> false_if_got &result);
+  return result;
+}
 \end{minted}
+
+\section{Testing}
+
 \chapter{Parsing}
 We are now ready to build our parser.
 We are going to this in a difficult way, leveraging

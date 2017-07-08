@@ -60,7 +60,7 @@ type dir_t =
 type sdir_t = Flx_srcref.t * dir_t
 
 (** Used to represent all the different value types. *)
-type value_kind_t = [ `Val | `Var | `Ref | `Lazy of expr_t ]
+type value_kind_t = [ `Val | `Var | `Ref | `Once | `Lazy of expr_t ]
 
 type dcl_t =
   (* data structures *)
@@ -139,6 +139,7 @@ type symbol_definition_t =
   | SYMDEF_nonconst_ctor of bid_t * typecode_t * int * ivs_list_t * typecode_t 
   | SYMDEF_const of property_t list * typecode_t * Flx_code_spec.t * named_req_expr_t
   | SYMDEF_var of typecode_t
+  | SYMDEF_once of typecode_t
   | SYMDEF_val of typecode_t
   | SYMDEF_ref of typecode_t
   | SYMDEF_lazy of typecode_t * expr_t

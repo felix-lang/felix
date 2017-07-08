@@ -1011,6 +1011,26 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     in
       tack (STMT_val_decl (sr, mi sr id, vs, optt, opte))
 
+  | STMT_once_decl (sr, id, vs, optt, opte) ->
+    let opte = match opte with
+    | Some x -> Some (me x)
+        (*
+          this *will be* an error if unreachable,
+          provided the containing function is used
+        *)
+    | None -> None
+        (* this is actually a syntax error in a module,
+          but not in an interface: unfortunately,
+          we can't tell the difference here
+        *)
+    in
+    let optt = match optt with
+    | Some t -> Some (mt sr t)
+    | None -> None
+    in
+      tack (STMT_once_decl (sr, mi sr id, vs, optt, opte))
+
+
   | STMT_ref_decl (sr, id, vs, optt, opte) ->
     let opte = match opte with
     | Some x -> Some (me x)

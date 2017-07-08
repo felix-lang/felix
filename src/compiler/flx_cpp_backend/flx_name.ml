@@ -101,10 +101,10 @@ let cpp_kind_prefix bsym =
   | BBDCL_fun (_,_,_,BTYP_fix (0,_),_,_) -> "_nrtf"
   | BBDCL_fun (_,_,_,_,_,_) -> "_f"
   | BBDCL_external_fun (_,_,_,_,_,_,`Callback _) -> "_cf"
-  | BBDCL_val (_,_,(`Val | `Var | `Ref)) -> "_v"
+  | BBDCL_val (_,_,(`Val | `Var | `Ref | `Once)) -> "_v"
   | BBDCL_val (_,_,`Tmp) -> "_tmp"
   | _ ->
-      syserr (Flx_bsym.sr bsym) "cpp_name expected func,proc,var,val,ref, or tmp"
+      syserr (Flx_bsym.sr bsym) "cpp_name expected func,proc,var,val,ref,once or tmp"
 
 (* basic name mangler *)
 let cpp_name bsym_table index = (* "_flxN_" ^ string_of_int index *)

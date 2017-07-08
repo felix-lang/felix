@@ -237,6 +237,7 @@ let fixup_function
     if pi <> 0 then begin
       let n = revar pi in
       let bbdcl = match pk with
+      | `POnce -> bbdcl_val ([],t,`Once)
       | `PVal -> bbdcl_val ([],t,`Val)
       | `PVar -> bbdcl_val ([],t,`Var)
       in

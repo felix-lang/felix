@@ -473,6 +473,7 @@ and xparam_kind_t def_val sr x : param_kind_t =
   match x with
   | Id "PVal" -> `PVal
   | Id "PVar" -> `PVar
+  | Id "POnce" -> `POnce
   | Id "PDef" -> def_val
   | x -> err x "param_kind_t"
 
@@ -782,8 +783,21 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
       STMT_inherit_fun (sr, xid id, xvs sr vs, xq sr "ast_inherit_fun" qn)
 
   | Lst [Id "ast_val_decl"; sr; id; vs; ot; oe] -> let sr = xsr sr in 
-      STMT_val_decl (sr, xid id, xvs sr vs, opt "val_decl" (ti sr) ot, 
+      STMT_val_decl (
+        sr, 
+        xid id, 
+        xvs sr vs, 
+        opt "val_decl" (ti sr) ot, 
         opt "val_decl" (ex sr) oe)
+
+  | Lst [Id "ast_once_decl"; sr; id; vs; ot; oe] -> let sr = xsr sr in 
+      STMT_once_decl (
+        sr, 
+        xid id, 
+        xvs sr vs, 
+        opt "once_decl" (ti sr) ot, 
+        opt "once_decl" (ex sr) oe)
+
 
   | Lst [Id "ast_lazy_decl"; sr; id; vs; ot; oe] -> let sr = xsr sr in 
       STMT_lazy_decl (

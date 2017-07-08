@@ -2144,12 +2144,14 @@ print_endline ("** FINISH **** Calculating Function type for function " ^ sym.Fl
       ft
 
   | SYMDEF_const (_,t,_,_)
+  | SYMDEF_once t
   | SYMDEF_val t
   | SYMDEF_var t -> bt sym.Flx_sym.sr t
   | SYMDEF_ref t -> btyp_pointer (bt sym.Flx_sym.sr t)
 
   | SYMDEF_lazy (t,x) -> bt sym.Flx_sym.sr t
 
+  | SYMDEF_parameter (`POnce,t)
   | SYMDEF_parameter (`PVal,t)
   | SYMDEF_parameter (`PVar,t) -> bt sym.Flx_sym.sr t
 
@@ -2547,6 +2549,7 @@ and lookup_qn_with_sig'
         lookup_qn_with_sig' state bsym_table sra srn env rs qn signs
 
       | SYMDEF_const (_,t,_,_)
+      | SYMDEF_once t
       | SYMDEF_val t
       | SYMDEF_var t
       | SYMDEF_ref t
@@ -2901,6 +2904,7 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
         lookup_type_qn_with_sig' state bsym_table sra srn env rs qn signs
 
       | SYMDEF_const (_,t,_,_)
+      | SYMDEF_once t
       | SYMDEF_val t
       | SYMDEF_var t
       | SYMDEF_ref t
@@ -3573,6 +3577,7 @@ end;
 
     | SYMDEF_const_ctor (_,t,_,_)
     | SYMDEF_const (_,t,_,_)
+    | SYMDEF_once t
     | SYMDEF_var t
     | SYMDEF_ref t
     | SYMDEF_val t
@@ -3806,6 +3811,7 @@ and lookup_type_name_in_table_dirs_with_sig
     | SYMDEF_var _
     | SYMDEF_ref _
     | SYMDEF_val _
+    | SYMDEF_once _
     | SYMDEF_parameter _
     | SYMDEF_axiom _
     | SYMDEF_lemma _
@@ -4700,6 +4706,7 @@ print_endline ("LOOKUP 6: varname " ^ si index);
           | { Flx_sym.symdef=SYMDEF_const  _ }
           | { Flx_sym.symdef=SYMDEF_var _ }
           | { Flx_sym.symdef=SYMDEF_val _ }
+          | { Flx_sym.symdef=SYMDEF_once _ }
           | { Flx_sym.symdef=SYMDEF_parameter _ }
             ->
             (*
@@ -4824,6 +4831,7 @@ print_endline ("lookup_name_in_table_dirs_with_sig found functions " ^ name);
     | { Flx_sym.symdef=SYMDEF_const  _ }
     | { Flx_sym.symdef=SYMDEF_var _ }
     | { Flx_sym.symdef=SYMDEF_val _ }
+    | { Flx_sym.symdef=SYMDEF_once _ }
     | { Flx_sym.symdef=SYMDEF_parameter _ }
       ->
       (*
@@ -4895,6 +4903,7 @@ print_endline ("LOOKUP 8: varname " ^ si index);
 
           | { Flx_sym.sr=srn; symdef=SYMDEF_var _} 
           | { Flx_sym.sr=srn; symdef=SYMDEF_val _} 
+          | { Flx_sym.sr=srn; symdef=SYMDEF_once _} 
           | { Flx_sym.sr=srn; symdef=SYMDEF_parameter _} 
           | { Flx_sym.sr=srn; symdef=SYMDEF_const _} 
             ->
@@ -5064,6 +5073,7 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
                   clierr2 srr sym.Flx_sym.sr ("[bind_expression] [2]Address " ^
                     "value parameter " ^ sym.Flx_sym.id)
               | SYMDEF_const _
+              | SYMDEF_once _
               | SYMDEF_val _ ->
                   clierr2 srr sym.Flx_sym.sr ("[bind_expression] " ^
                     "Can't address a value or const " ^ sym.Flx_sym.id)
@@ -5958,6 +5968,12 @@ print_endline ("New private name map = " ^ string_of_name_map nuprivmap);
           print_endline ("Cloned VAL type = " ^ string_of_typecode t);
 *)
           SYMDEF_val (t)
+        | SYMDEF_once t -> 
+          let t = ft t in
+(*
+          print_endline ("Cloned ONCE type = " ^ string_of_typecode t);
+*)
+          SYMDEF_once (t)
         | SYMDEF_ref t -> 
           let t = ft t in
 (*

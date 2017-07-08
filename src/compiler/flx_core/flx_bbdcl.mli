@@ -11,7 +11,7 @@ type btype_qual_t = [
 ]
 
 (** Used to represent all the different value types. *)
-type value_kind_t = [`Val | `Var | `Ref | `Tmp]
+type value_kind_t = [`Val | `Var | `Ref | `Tmp| `Once]
 
 
 (** Used to represent all the different external function types. *)

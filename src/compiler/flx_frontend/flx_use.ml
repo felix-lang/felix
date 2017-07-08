@@ -156,7 +156,7 @@ and uses_bexpr add bsym_table count_inits ((e,t) as x) =
     ~f_btype:(uses_btype add bsym_table count_inits)
     x
 
-and uses add bsym_table count_inits i =
+and uses_symbol add bsym_table count_inits i =
     let xbbdcl =
       try Some (let bsym = Flx_bsym_table.find bsym_table i in bsym,Flx_bsym.bbdcl bsym)
       with Not_found -> None
@@ -175,10 +175,27 @@ print_endline ("  VVVV START Flx_use.uses processing index " ^ si i ^ " symbol "
 (*
 print_endline ("  ^^^^ END   Flx_use.uses processing index " ^ si i ^ " symbol " ^ Flx_bsym.id bsym);
 *)
-
       
     | None ->
         raise (NotFoundDefn i)
+
+let is_param bsym_table idx =
+  let parent,bsym = Flx_bsym_table.find_with_parent bsym_table idx in
+  let bbdcl = Flx_bsym.bbdcl bsym in
+  match bbdcl with
+  | BBDCL_val _ ->
+    begin match parent with
+    | Some p when p <> 0 ->
+      let bbdcl = Flx_bsym_table.find_bbdcl bsym_table p in
+      begin match bbdcl with
+      | BBDCL_fun (_,_,(bps,_),_,_,_) ->
+        let bids = Flx_bparameter.get_bids bps in
+        List.mem idx bids
+      | _ -> false
+      end
+    | _ -> false
+    end
+  | _ -> false
 
 let find_roots syms bsym_table (root: int option) bifaces =
   (* make a list of the root and all exported functions,
@@ -211,8 +228,63 @@ let find_roots syms bsym_table (root: int option) bifaces =
 
 let cal_use_closure syms bsym_table (count_inits:bool) =
 (*
+print_endline ("---------------------------------");
 print_endline ("Cal use closure...");
 *)
+  let usecount = Hashtbl.create 97 in
+  let addcount i = 
+     Hashtbl.replace usecount i 
+      begin try Hashtbl.find usecount i + 1 
+       with Not_found -> 1
+      end
+  in
+  let check_table () =
+(*
+print_endline ("Once check");
+*)
+    Hashtbl.iter 
+      (fun idx count ->  
+        begin let bsym = Flx_bsym_table.find bsym_table idx in
+          let bbdcl = Flx_bsym.bbdcl bsym in
+          match bbdcl, count with
+          | BBDCL_val (_,_,`Once), n -> 
+(*
+print_endline ("once variable " ^ Flx_bsym.id bsym ^ " counted " ^
+string_of_int count ^ " times, count_inits = " ^ string_of_bool count_inits ^
+", isparam= " ^ string_of_bool (is_param bsym_table idx));
+*)
+            let uses = 
+              n - 
+              (if count_inits || is_param bsym_table idx then 1 else 0)
+            in
+            begin
+(*
+              print_endline ("Once variable " ^ Flx_bsym.id bsym ^ 
+              " used " ^ string_of_int uses ^ " times");
+*)
+              if uses <> 1 then begin
+(*
+                Flx_print.print_bsym_table bsym_table;
+*)
+                clierr (Flx_bsym.sr bsym) 
+                  ("Once variable " ^ Flx_bsym.id bsym ^ "<" ^ string_of_int idx ^ ">" ^
+                  " used " ^ string_of_int uses ^ " times")
+              end
+            end
+(*
+        | BBDCL_fun (_,_,(ps,_),_,_,_),n ->
+          print_endline ("Function " ^ Flx_bsym.id bsym ^ "<" ^Flx_bsym.id bsym ^ ">");
+*)
+(*
+          | BBDCL_val (_,_,_), n -> ()
+              print_endline ("Ordinary variable "^ Flx_bsym.id bsym ^
+              " used " ^ string_of_int n ^ " times"); ()
+*)
+          | _ -> ()
+        end
+    ) 
+    usecount
+  in
   let traced = ref BidSet.empty in (* final set of used symbols *)
   let v : BidSet.t = !(syms.roots) in (* used but not traced yet *)
   let untraced = ref v in
@@ -225,9 +297,16 @@ print_endline ("Cal use closure...");
   ;
 *)
   let add' bid =
+(*
+if Flx_bsym_table.find_id bsym_table bid = "yyyy" then
+print_endline ("Add count for " ^ Flx_bsym_table.find_id bsym_table bid  ^ "<"^string_of_int bid^">" ^
+", isparam= " ^ string_of_bool (is_param bsym_table bid)
+);
+*)
+    addcount bid;
     if not (BidSet.mem bid !traced) && not (BidSet.mem bid !untraced) then begin
 (*
-      print_endline ("Keeping " ^ string_of_int bid);
+      print_endline ("Keeping " ^ string_of_int bid );
 *)
       begin try
         let bsym = Flx_bsym_table.find bsym_table bid in
@@ -244,6 +323,7 @@ print_endline ("Cal use closure...");
 print_endline ("Flx_use:cal_use_closure: Adding bid " ^ si bid);
 *)
       add' bid;
+(*
       try 
         let entries = Hashtbl.find syms.virtual_to_instances bid in
 assert (List.length entries = 0); (* THIS IS OLD CODE ... ? *)
@@ -253,6 +333,7 @@ assert (List.length entries = 0); (* THIS IS OLD CODE ... ? *)
           List.iter ut ts
         end entries
       with Not_found -> ()
+*)
     end
   in
 
@@ -260,6 +341,7 @@ assert (List.length entries = 0); (* THIS IS OLD CODE ... ? *)
 (*
   print_endline "Instance of typeclass";
 *)
+(*
   if (Hashtbl.length syms.instances_of_typeclass) <> 0 then
     failwith "Typeclasses not eliminated"
   ;
@@ -271,7 +353,7 @@ assert (List.length entries = 0); (* THIS IS OLD CODE ... ? *)
       List.iter ut ts
     end entries
   end syms.instances_of_typeclass;
-  
+*) 
 (*
 
 THIS CRAP IS HERE FOR THIS REASON: A symbol X may be unused,
@@ -320,11 +402,12 @@ I'm going to skip this for the moment!
 *)
     untraced := BidSet.remove bid !untraced;
     traced := BidSet.add bid !traced;
-    uses add bsym_table count_inits bid
+    uses_symbol add bsym_table count_inits bid
   done;
 (*
 print_endline ("DONE cal_use_closure <<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
 *)
+  check_table ();
   !traced
 
 let full_use_closure syms bsym_table =

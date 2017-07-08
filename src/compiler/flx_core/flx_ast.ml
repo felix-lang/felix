@@ -266,7 +266,7 @@ and pattern_t =
 (** {7 Statements}
  *
  * Statements; that is, the procedural sequence control system. *)
-and param_kind_t = [`PVal | `PVar ]
+and param_kind_t = [`PVal | `PVar | `POnce]
 and simple_parameter_t = Flx_id.t * typecode_t
 and parameter_t = param_kind_t * Flx_id.t * typecode_t * expr_t option
 and lvalue_t = [
@@ -489,6 +489,13 @@ and statement_t =
 
   (* variables *)
   | STMT_val_decl of
+      Flx_srcref.t *
+      Flx_id.t *
+      vs_list_t *
+      typecode_t option *
+      expr_t option
+
+  | STMT_once_decl of
       Flx_srcref.t *
       Flx_id.t *
       vs_list_t *
@@ -842,6 +849,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_macro_val (s,_,_)
   | STMT_macro_forall (s,_,_,_)
   | STMT_val_decl (s,_,_,_,_)
+  | STMT_once_decl (s,_,_,_,_)
   | STMT_lazy_decl (s,_,_,_,_)
   | STMT_var_decl (s,_,_,_,_)
   | STMT_ref_decl (s,_,_,_,_)

@@ -8,6 +8,11 @@ type t =
   | Virtual
   | Identity
 
+let isempty = function
+  | Str_template "" 
+  | Str "" -> true
+  | _ -> false
+
 (*
 (** Prints out a code specification to a formatter. *)
 let print ppf = function

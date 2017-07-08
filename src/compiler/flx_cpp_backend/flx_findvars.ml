@@ -19,7 +19,7 @@ let find_thread_vars_with_type bsym_table =
   let vars = ref [] in
   Flx_bsym_table.iter begin fun k parent bsym ->
     match parent, Flx_bsym.bbdcl bsym with
-    | None,BBDCL_val (_,t,(`Val | `Var)) -> vars := (k,t) :: !vars
+    | None,BBDCL_val (_,t,(`Val | `Var | `Once)) -> vars := (k,t) :: !vars
     | None,BBDCL_val (_,t,`Ref) -> vars := (k, btyp_pointer t) :: !vars
     | _ -> ()
   end bsym_table;
@@ -38,7 +38,7 @@ let find_references syms bsym_table index ts =
     try
       let bsym = Flx_bsym_table.find bsym_table idx in
       match Flx_bsym.bbdcl bsym with
-      | BBDCL_val (vs,t,(`Val | `Var | `Ref)) ->
+      | BBDCL_val (vs,t,(`Val | `Var | `Ref | `Once )) ->
           if length ts <> length vs then begin
             failwith
             (

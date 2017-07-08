@@ -208,7 +208,7 @@ let is_variable bsym_table bid =
 let is_global_var bsym_table bid =
   let elt = find_elt bsym_table bid in
   match elt.parent, Flx_bsym.bbdcl elt.bsym with
-  | None,Flx_bbdcl.BBDCL_val (_,_,(`Val | `Var)) -> true
+  | None,Flx_bbdcl.BBDCL_val (_,_,(`Val | `Var | `Once)) -> true
   | _ -> false
 
 (** Return if the bound symbol index is an identity function. *)
