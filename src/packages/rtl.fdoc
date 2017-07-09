@@ -473,7 +473,7 @@ extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
   __ptf->flx_stdin = stdin_;\
   __ptf->flx_stdout = stdout_;\
   __ptf->flx_stderr = stderr_;\
-  x(__ptf).stack_call();\
+  mname::x(__ptf).stack_call();\
   return 0;\
 }
 
