@@ -473,7 +473,7 @@ extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
   __ptf->flx_stdin = stdin_;\
   __ptf->flx_stdout = stdout_;\
   __ptf->flx_stderr = stderr_;\
-  mname::x(__ptf).stack_call();\
+  x(__ptf).stack_call();\
   return 0;\
 }
 
@@ -501,19 +501,19 @@ extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
 // init is a C procedure, passed PTF
 #define FLX_C_START_WRAPPER_PTF(mname,name,x)\
 extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
-  mname::thread_frame_t *ptf,\
+  mname::thread_frame_t *__ptf,\
   int argc,\
   char **argv,\
   FILE *stdin_,\
   FILE *stdout_,\
   FILE *stderr_\
 ) {\
-  ptf->argc = argc;\
-  ptf->argv = argv;\
-  ptf->flx_stdin = stdin_;\
-  ptf->flx_stdout = stdout_;\
-  ptf->flx_stderr = stderr_;\
-  mname::x(ptf);\
+  __ptf->argc = argc;\
+  __ptf->argv = argv;\
+  __ptf->flx_stdin = stdin_;\
+  __ptf->flx_stdout = stdout_;\
+  __ptf->flx_stderr = stderr_;\
+  mname::x(__ptf);\
   return 0;\
 }
 
