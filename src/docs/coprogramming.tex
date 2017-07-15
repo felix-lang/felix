@@ -1602,7 +1602,100 @@ chip pipeline_list[T] (a: list[iochip_t[T,T]])
 }
 \end{minted}
 
-\section{Acyclic Flow}
+\section{Relation to option monad}
+Consider a sequence of functions:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+f:A -> opt[B]
+g:B -> opt[C]
+h:C -> opt[D]
+\end{minted}
+
+Felix has monads:
+
+\begin{minted}{felix}
+class Monad [M: TYPE->TYPE] {
+  virtual fun bind[a,b]: M a * (a -> M b) -> M b;
+  virtual fun ret[a]: a -> M a;
+}
+\end{minted}
+
+and we can define the option monad:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+typedef fun opt_f (T:TYPE):TYPE=>opt[T];
+
+instance Monad[opt_f]
+{
+  fun ret[T] (x:T)=>Some x;
+  fun bind[U,V] (init:opt[U], f:U->opt[V]) =>
+    match init with
+    | None => None[V]
+    | Some u => f u
+  ;
+}
+\end{minted}
+
+Now, we can use the monad to compose the functions:
+
+\begin{minted}{felix}
+//Override the right shift assignment operator.
+syntax monad 
+{
+  x[ssetunion_pri] := 
+    x[ssetunion_pri] ">>=" x[>ssetunion_pri] =># 
+    "`(ast_apply ,_sr (bind (,_1 ,_3)))"
+  ;
+}
+open syntax monad;
+
+var r : opt[D] = ret a >>= f >>= g >>= h;
+\end{minted}
+
+Here, the \verb%ret% is a lift of a plain value to the monad type,
+we would do a match to drop the monadic value r back.
+A partial function \verb%A->B% can be lifted to a total function
+\verb%A->opt[B]% by returning an option type. 
+
+But there is another way:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+var r = None[D];
+run (a.value |-> f.filter |-> g.filter |-> h.filter 
+  |-> Some.function |-> store &r
+);
+\end{minted}
+
+using coroutines. Recall the \verb%value% chip is a oneshot lift
+equivalent to the monadic \verb%ret%, the pipeline operator is
+equivalent to monadic \verb%bind%, and we tailed the pipeline
+with a conversion to an option type and a store.
+
+The \verb%filter% chip converts the option returning
+function to a transducer which does nothing on failure,
+but writes the result out on success, in other words,
+it takes the total function and converts it back 
+to a partial function.
+
+The pipeline operator will combine chips which directly
+implement partial functions, in the sense that they write
+the result out if there is one and do nothing if there is not.
+Unlike functions, chips can represent partial functions
+naturally.
+
+Monads are sometimes considered to be way to do imperative
+programming in a functional language, that is, to sequence
+operations.
+ 
+On the other hand, with coroutines, pipelines and channels
+are semantically defined to sequence events because coroutine
+semantics are entirely about event ordering. What we have
+shown here is that, at least for modelling partial functions,
+you do not actually need either option type or monads.
+Pipelines are intrinsically monadic.
+
+
+\chapter{Acyclic Flow}
 Acyclic flow circuits are an extension of the pipeline
 concept which allows data to flow from sources to sinks
 in an acyclic network. Lets look at an example with two
@@ -3452,20 +3545,11 @@ that's our recogniser. Note that the varray storing the nonterminals
 and their recogniser is not lost, since it is reachable from
 the starting chip.
 
-\index[codeindex]{make\_recogniser\_from\_grammar}
+\index[codeindex]{recogniser}
 \begin{minted}{felix}
-chip make_recogniser_from_grammar
-  connector io
-    pin inp: %<grammar_t
-    pin out: %>recog_t
+fun recogniser
+  (start:string, lib:gramlib_t) : recog_t =
 {
-
-  while true do
-    // read in the grammar
-    var start, lib = read io.inp;
-
-    // calculate the transitive closure of nonterminals
-    // from the start symbol
     var cl = closure (start,lib);
 
     // allocate a varray with a slot for each nonterminal
@@ -3477,7 +3561,7 @@ chip make_recogniser_from_grammar
       push_back (v,(nt,BaseChips::epsilon[Buffer]))
     ;
 
-    // now assign the real recognisers to the array
+    // now assign the real recogniser_base to the array
     var index = 0uz;
     for nt in cl do
       match find lib nt with
@@ -3494,17 +3578,14 @@ chip make_recogniser_from_grammar
       endmatch;
       ++index;
     done
-    write (io.out, (v.(find v start).1));
-  done
+    return v.(find v start).1;
 }
+\end{minted}
 
-fun recogniser (g:grammar_t) : recog_t =
-{
-  var r: recog_t;
-  run (g.value |-> make_recogniser_from_grammar |-> store &r);
-  return r;
-}
+And here's a simple function that checks if a string \verb$s$
+is a member of the language specified by a grammar:
 
+\begin{minted}{felix}
 fun in (s:string) (g:grammar_t) =
 {
   chip false_if_got (pr: &bool)

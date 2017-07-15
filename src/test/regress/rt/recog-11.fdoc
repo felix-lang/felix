@@ -40,11 +40,7 @@ var clx = closure ("expr",xlib);
 println$ "Closure="  + clx.str;
 
 
-var gri,gwi = mk_ioschannel_pair[grammar_t]();
-var gro,gwo = mk_ioschannel_pair[recog_t]();
-spawn_fthread (make_recogniser_from_grammar (inp=gri,out=gwo));
-write (gwi, ("expr",xlib));
-var parsr = read gro;
+var parsr = recogniser("expr",xlib);
 println$ "Got parser";
 
 var test = "9+9*9^(9+9)";

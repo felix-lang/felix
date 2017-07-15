@@ -1,6 +1,7 @@
+@tangler recogniser_base.flx = share/lib/std/strings/recogniser_base.flx
 @tangler recognisers.flx = share/lib/std/strings/recognisers.flx
 
-@title String Matching recognisers
+@title String Matching recogniser_base
 @h1 Recognisers
 A recogniser is a component which tries to match the prefix of a string.
 If it succeeds it returns the position of the first character not matched.
@@ -9,10 +10,9 @@ If it succeeds it returns the position of the first character not matched.
 Recognisers work on an array of chars in memory. We use a Google
 StringPiece to represent it. 
 
-@tangle recognisers.flx
+@tangle recogniser_base.flx
 include "std/control/chips";
-include "std/strings/grammars";
-class Recognisers
+class RecogniserBase
 {
 open BaseChips; //needed for pipe symbol to work
 
@@ -91,7 +91,7 @@ typedef recog_t = BaseChips::iochip_t[Buffer,Buffer];
 
 @h2 A string matcher.
 
-@tangle recognisers.flx
+@tangle recogniser_base.flx
 chip match_string (s:string)
   connector io
     pin inp: %<Buffer
@@ -111,7 +111,7 @@ nextmatch:>
 
 @h2 Whitespace matcher.
 Note: never fails.
-@tangle recognisers.flx
+@tangle recogniser_base.flx
 chip match_white 
   connector io
     pin inp: %<Buffer
@@ -126,7 +126,7 @@ chip match_white
 
 @h2 C++ comment matcher
 Note: cannot fail.
-@tangle recognisers.flx
+@tangle recogniser_base.flx
 chip match_cxx_comment 
   connector io
     pin inp: %<Buffer
@@ -154,7 +154,7 @@ bad:>
 
 @h2 Nested C comment matcher
 Note: cannot fail.
-@tangle recognisers.flx
+@tangle recogniser_base.flx
 chip match_nested_c_comment 
   connector io
     pin inp: %<Buffer
@@ -202,7 +202,7 @@ bad:>
 
 @h2 Felix comments
 Note: can fail.
-@tangle recognisers.flx
+@tangle recogniser_base.flx
 
 chip match_felix_white
   connector io
@@ -233,7 +233,7 @@ more:>
 
 @h2 regex matcher.
 
-@tangle recognisers.flx
+@tangle recogniser_base.flx
 chip match_regex (r:RE2)
   connector io
     pin inp: %<Buffer
@@ -257,7 +257,7 @@ chip match_regex (r:RE2)
 @h2 Identifier matcher.
 For C like identifiers.
 
-@tangle recognisers.flx
+@tangle recogniser_base.flx
 device cident_matcher = match_regex (RE2 "[A-Za-z][A-Za-z0-9_]*");
 device flxident_matcher = match_regex (RE2 "[A-Za-z_][A-Za-z0-9_']*");
 device texident_matcher = match_regex (RE2 "\\\\[A-Za-z]+");
@@ -307,7 +307,7 @@ chip felix_identifier_matcher
 @h2 Integer matcher.
 For plain identifiers.
 
-@tangle recognisers.flx
+@tangle recogniser_base.flx
 device decimal_integer_matcher = match_regex (RE2 "[0-9]+");
 
 @h2 Felix integer matcher.
@@ -316,7 +316,7 @@ Will recognise repeated underscores and trailing
 underscores even though these are not allowed.
 I mean, what should we do if we find them?
 
-@tangle recognisers.flx
+@tangle recogniser_base.flx
 
 chip felix_integer_matcher 
   connector io
@@ -427,7 +427,7 @@ bad:>
 //$ AND we require both leading and trailing digits so that
 //$ x.0 works for tuple projections and 0.f is a function
 //$ application
-@tangle recognisers.flx
+@tangle recogniser_base.flx
 chip felix_float_literal_matcher 
   connector io
     pin inp: %<Buffer
@@ -513,7 +513,7 @@ bad:>
 @h2 String Literal matcher.
 One shot. Simple, matches single or double quoted
 string not spanning lines, with no escape codes, 
-@tangle recognisers.flx
+@tangle recogniser_base.flx
 chip match_string_literal 
   connector io
     pin inp: %<Buffer
@@ -647,7 +647,7 @@ bad:>
 }
 
 @h2 End of string matcher
-@tangle recognisers.flx
+@tangle recogniser_base.flx
 chip eos_matcher 
   connector io
     pin inp: %<Buffer
@@ -660,7 +660,7 @@ chip eos_matcher
 }
 
 @h2 Longest match
-@tangle recognisers.flx
+@tangle recogniser_base.flx
 chip longest_match (a: list[recog_t])
   connector io
     pin inp: %<Buffer
@@ -685,7 +685,7 @@ chip longest_match (a: list[recog_t])
 
 @h2 Match to eos
 Equivalent to .* but faster.
-@tangle recognisers.flx
+@tangle recogniser_base.flx
 chip toeos_matcher 
   connector io
     pin inp: %<Buffer
@@ -696,7 +696,7 @@ chip toeos_matcher
     write (io.out,x.stl_end);
   done
 }
-
+}
 
 
 @h1 Lazy Syntactic form
@@ -707,6 +707,14 @@ chip toeos_matcher
 //
 // So instead we just return a function 1->recog_t which does the
 // job on invocation.
+include "std/strings/recogniser_base";
+include "std/strings/grammars";
+
+class Recognisers
+{
+inherit RecogniserBase;
+open BaseChips;
+
 open Grammars;
 
 typedef ntdef_t = string * recog_t;
@@ -726,10 +734,10 @@ fun render_prod
 : recog_t =>
   match p with
   | Terminal (s,r) => r 
-  | Epsilon =>  BaseChips::epsilon[Buffer] 
-  | Seq ps =>  BaseChips::pipeline_list (
+  | Epsilon =>  epsilon[Buffer] 
+  | Seq ps =>  pipeline_list (
       map (fun (p:prod_t) => render_prod (lib,v) p) ps) 
-  | Alt ps =>   BaseChips::tryall_list (
+  | Alt ps =>   tryall_list (
       map (fun (p:prod_t) => render_prod (lib,v) p) ps) 
   | Nonterminal nt => 
     let idx = find v nt in
@@ -739,18 +747,9 @@ fun render_prod
   endmatch
 ;
 
-chip make_recogniser_from_grammar
-  connector io
-    pin inp: %<grammar_t
-    pin out: %>recog_t
+fun recogniser
+  (start:string, lib:gramlib_t) : recog_t =
 {
-
-  while true do
-    // read in the grammar
-    var start, lib = read io.inp;
-
-    // calculate the transitive closure of nonterminals
-    // from the start symbol
     var cl = closure (start,lib);
 
     // allocate a varray with a slot for each nonterminal
@@ -762,7 +761,7 @@ chip make_recogniser_from_grammar
       push_back (v,(nt,BaseChips::epsilon[Buffer]))
     ;
 
-    // now assign the real recognisers to the array
+    // now assign the real recogniser_base to the array
     var index = 0uz;
     for nt in cl do
       match find lib nt with
@@ -779,15 +778,22 @@ chip make_recogniser_from_grammar
       endmatch;
       ++index;
     done
-    write (io.out, (v.(find v start).1));
-  done
+    return v.(find v start).1;
 }
 
-fun recogniser (g:grammar_t) : recog_t =
+fun in (s:string) (g:grammar_t) =
 {
-  var r: recog_t;
-  run (g.value |-> make_recogniser_from_grammar |-> store &r);
-  return r;
+  chip false_if_got (pr: &bool)
+     connector io
+       pin inp: %<Buffer
+  {
+    C_hack::ignore$ read io.inp;
+    pr <- true;
+  }
+  var r = recogniers g;
+  var result = false;
+  run (s.value |-> r |-> eos_matcher |-> false_if_got &result);
+  return result;
 }
 
 } // Recognisers
