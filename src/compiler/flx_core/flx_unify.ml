@@ -477,7 +477,10 @@ let rec unification bsym_table counter eqns dvars =
         *)
 
         (* meta type have to agree *)
-        if mi <> mj then raise Not_found;
+        if mi <> mj then begin
+          print_endline ("Unify: metatype mismatch " ^str_of_btype mi ^ " != " ^ str_of_btype mj);
+          raise Not_found;
+        end;
 
         if i <> j then
           if BidSet.mem i dvars then

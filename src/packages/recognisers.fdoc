@@ -790,7 +790,7 @@ fun in (s:string) (g:grammar_t) =
     C_hack::ignore$ read io.inp;
     pr <- true;
   }
-  var r = recogniers g;
+  var r = recogniser g;
   var result = false;
   run (s.value |-> r |-> eos_matcher |-> false_if_got &result);
   return result;

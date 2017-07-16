@@ -772,7 +772,6 @@ all subroutines are, in the abstract, coroutines. The normal
 procedural subroutines are just coroutines that do not do channel I/O.
 
 \chapter{Coroutine Basics}
-
 \section{Syntax Extensions}
 Felix has two syntax extensions designed to so coroutines are easier to use.
 
@@ -1603,13 +1602,51 @@ chip pipeline_list[T] (a: list[iochip_t[T,T]])
 \end{minted}
 
 \section{Relation to option monad}
-Consider a sequence of functions:
+Consider a sequence of partial functions:
 
 \begin{minted}[bgcolor=felixbg]{felix}
-f:A -> opt[B]
-g:B -> opt[C]
-h:C -> opt[D]
+pf:A -> B
+pg:B -> C
+ph:C -> D
 \end{minted}
+
+The composition chain
+
+\begin{minted}[bgcolor=felixbg]{felix}
+pf \odot pg \odot ph
+\end{minted}
+
+is also a partial function. Since functional programming can't
+handle partial functions, we can lift these partial functions to
+
+\begin{minted}[bgcolor=felixbg]{felix}
+tf:A -> opt[B]
+tg:B -> opt[C]
+th:C -> opt[D]
+\end{minted}
+
+where the function returns \verb%None% if the underlying partial function
+is undefined, or \verb%Some v% is it is, and the result would be \verb%v%.
+For example the partial function \verb%p_recip%
+
+\begin{minted}[bgcolor=felixbg]{felix}
+fun p_recip (d:double) => 1.0 / d;
+\end{felix}
+
+can be lifted to the total function
+
+\begin{minted}[bgcolor=felixbg]{felix}
+fun t_recip (d:double) => 
+  if d == 0.0 then None[double] 
+  else Some (1.0 / d)
+;
+\end{felix}
+
+Unfortunately, such totalised function cannot now be combined
+by ordinary composition because the codomain of one is no longer
+the domain of the next. To solve this problem, we need a new
+kind of composition, and I will show now one way to solve this
+problem.  
 
 Felix has monads:
 
@@ -1620,7 +1657,22 @@ class Monad [M: TYPE->TYPE] {
 }
 \end{minted}
 
-and we can define the option monad:
+It is conventional to use an infix operator for \verb%bind%
+which we provide by a user defined syntax extension:
+
+\begin{minted}[bgcolor=felxbg]{felix}
+//Override the right shift assignment operator.
+syntax monad 
+{
+  x[ssetunion_pri] := 
+    x[ssetunion_pri] ">>=" x[>ssetunion_pri] =># 
+    "`(ast_apply ,_sr (bind (,_1 ,_3)))"
+  ;
+}
+open syntax monad;
+\end{minted}
+
+We can define the option monad:
 
 \begin{minted}[bgcolor=felixbg]{felix}
 typedef fun opt_f (T:TYPE):TYPE=>opt[T];
@@ -1638,30 +1690,17 @@ instance Monad[opt_f]
 
 Now, we can use the monad to compose the functions:
 
-\begin{minted}{felix}
-//Override the right shift assignment operator.
-syntax monad 
-{
-  x[ssetunion_pri] := 
-    x[ssetunion_pri] ">>=" x[>ssetunion_pri] =># 
-    "`(ast_apply ,_sr (bind (,_1 ,_3)))"
-  ;
-}
-open syntax monad;
 
-var r : opt[D] = ret a >>= f >>= g >>= h;
+\begin{minted}[bgcolor=felixbg]{felix}
+var r : opt[D] = ret a >>= tf >>= tg >>= th;
 \end{minted}
 
-Here, the \verb%ret% is a lift of a plain value to the monad type,
-we would do a match to drop the monadic value r back.
-A partial function \verb%A->B% can be lifted to a total function
-\verb%A->opt[B]% by returning an option type. 
-
+Here, the \verb%ret% is a lift of a plain value to the monad type.
 But there is another way:
 
 \begin{minted}[bgcolor=felixbg]{felix}
 var r = None[D];
-run (a.value |-> f.filter |-> g.filter |-> h.filter 
+run (a.value |-> tf.filter |-> tg.filter |-> th.filter 
   |-> Some.function |-> store &r
 );
 \end{minted}
@@ -1677,11 +1716,33 @@ but writes the result out on success, in other words,
 it takes the total function and converts it back 
 to a partial function.
 
+It would be natural to represent the original partial functions
+directly as coroutines: there is no need to go through the
+totalising lift, only to throw it away again with the
+\verb%filter% chip. For example:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+chip co_recip 
+  connector io
+    pin inp: %<double
+    pin out: %>double
+{
+  var d = read inp;
+  if x != 0.0 perform write (io.out, 1/d);
+}
+\end{minted}
+
+This chip is a transducer, but it is not a functional
+transducer because it does not write an output for
+every input. I showed a oneshot but you can add a loop
+to make it continuous.
+
 The pipeline operator will combine chips which directly
 implement partial functions, in the sense that they write
 the result out if there is one and do nothing if there is not.
 Unlike functions, chips can represent partial functions
-naturally.
+naturally. We don't need the totalisation or the option
+monad \verb%bind% combinator.
 
 Monads are sometimes considered to be way to do imperative
 programming in a functional language, that is, to sequence
@@ -3550,35 +3611,35 @@ the starting chip.
 fun recogniser
   (start:string, lib:gramlib_t) : recog_t =
 {
-    var cl = closure (start,lib);
+  var cl = closure (start,lib);
 
-    // allocate a varray with a slot for each nonterminal
-    var n = cl.len;
-    var v = varray[string * recog_t] n;
+  // allocate a varray with a slot for each nonterminal
+  var n = cl.len;
+  var v = varray[string * recog_t] n;
 
-    // populate the varray with the terminal names and a dummy chip
-    for nt in cl call // initialise array
-      push_back (v,(nt,BaseChips::epsilon[Buffer]))
-    ;
+  // populate the varray with the terminal names and a dummy chip
+  for nt in cl call // initialise array
+    push_back (v,(nt,BaseChips::epsilon[Buffer]))
+  ;
 
-    // now assign the real recogniser_base to the array
-    var index = 0uz;
-    for nt in cl do
-      match find lib nt with
-      | None => assert false;
-      | Some prod =>
-        // get wrapped recogniser
-        var entry = render_prod (lib, v) prod;
+  // now assign the real recogniser_base to the array
+  var index = 0uz;
+  for nt in cl do
+    match find lib nt with
+    | None => assert false;
+    | Some prod =>
+      // get wrapped recogniser
+      var entry = render_prod (lib, v) prod;
 
-        // address of the slot
-        var pentry : &recog_t = (-(v.stl_begin+index)).1;
+      // address of the slot
+      var pentry : &recog_t = (-(v.stl_begin+index)).1;
 
-        // overwrite dummy value
-        pentry <- entry;
-      endmatch;
-      ++index;
-    done
-    return v.(find v start).1;
+      // overwrite dummy value
+      pentry <- entry;
+    endmatch;
+    ++index;
+  done
+  return v.(find v start).1;
 }
 \end{minted}
 
