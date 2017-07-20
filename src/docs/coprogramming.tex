@@ -772,8 +772,8 @@ all subroutines are, in the abstract, coroutines. The normal
 procedural subroutines are just coroutines that do not do channel I/O.
 
 \chapter{Coroutine Basics}
-\section{Syntax Extensions}
-Felix has two syntax extensions designed to so coroutines are easier to use.
+\section{Syntax}
+Felix has syntax designed to so coroutines are easier to use.
 
 \subsection{The {\tt chip} definition}
 \index{chip, syntax}
@@ -883,6 +883,44 @@ endcircuit
 \end{minted}
 
 The \verb%wire% clause allows you to connect a known channel to a device.
+
+\subsubsection{Constraints}
+If you include a device in your circuit statement, it must have the type
+of a function accepting a record of synchronous channels, and returning
+a unit procedure. All the pins must be connected. The circuit
+statement ensures all connected devices are fully connected, and,
+it spawns all of these coroutines before completing. Thus,
+it simultaneously connects and activates a complete
+circuit, and does so whilst preventing the client from
+knowing any of the channels it constructs to perform
+the connections.
+
+All pins connected together must either be input or output
+channels for the same type. If all the pins are output,
+or all the pins are input, a warning will be generated,
+but the compilation will proceed. Writing to any pin
+connected to channel with all other pins output
+necessarily blocks, if all are input, any read
+necessarily starves.
+
+
+\subsection{The {\tt return from} statement}
+This statement is a variant of the \verb%return% statement which
+causes the resumption of the continuation passed to the most recent
+activation of an ancestor procedure. The transfer of control may
+not span a function call. 
+
+\subsection{The {\tt suicide} procedure}
+This library procedure causes the immediate termination of the current fibre.
+
+\begin{figure}[h]
+\begin{minted}[bgcolor=felixbg]{felix}
+suicide;
+\end{minted}
+\caption{Suicide}
+\label{fig:circ1}
+\end{figure}
+
 
 \section{Laziness}
 It is critical to understand {\em when} the code of a chip is
@@ -1610,7 +1648,13 @@ pg:B -> C
 ph:C -> D
 \end{minted}
 
-The composition chain
+The reverse functional composition chain
+
+\begin{minted}[bgcolor=felixbg,escapeinside=||]{felix}
+pf |$\odot$| pg |$\odot$| ph
+\end{minted}
+
+which is spelled:
 
 \begin{minted}[bgcolor=felixbg]{felix}
 pf \odot pg \odot ph
@@ -1631,7 +1675,7 @@ For example the partial function \verb%p_recip%
 
 \begin{minted}[bgcolor=felixbg]{felix}
 fun p_recip (d:double) => 1.0 / d;
-\end{felix}
+\end{minted}
 
 can be lifted to the total function
 
@@ -1640,7 +1684,7 @@ fun t_recip (d:double) =>
   if d == 0.0 then None[double] 
   else Some (1.0 / d)
 ;
-\end{felix}
+\end{minted}
 
 Unfortunately, such totalised function cannot now be combined
 by ordinary composition because the codomain of one is no longer
@@ -1657,22 +1701,8 @@ class Monad [M: TYPE->TYPE] {
 }
 \end{minted}
 
-It is conventional to use an infix operator for \verb%bind%
-which we provide by a user defined syntax extension:
-
-\begin{minted}[bgcolor=felxbg]{felix}
-//Override the right shift assignment operator.
-syntax monad 
-{
-  x[ssetunion_pri] := 
-    x[ssetunion_pri] ">>=" x[>ssetunion_pri] =># 
-    "`(ast_apply ,_sr (bind (,_1 ,_3)))"
-  ;
-}
-open syntax monad;
-\end{minted}
-
-We can define the option monad:
+It is conventional to use the infix operator \verb%>>=%
+for \verb%bind%.  We can define the option monad:
 
 \begin{minted}[bgcolor=felixbg]{felix}
 typedef fun opt_f (T:TYPE):TYPE=>opt[T];
@@ -2058,6 +2088,7 @@ What this means, however, is that, because the channel is reachable
 from the chip, whilst any one channel is not blocked, attempts to write
 will be stacked up for every input on every blocked channel. 
 
+\chapter{Cyclic Flow}
 \section{Feedback}
 Circuits with feedback create a cyclic flow. Lets try an experiment.
 
@@ -2185,7 +2216,7 @@ Now, here is the kind of pointer to the string we will use,
 for some reason its called a \verb%Buffer%.
 
 
-\begin{figure}[h]
+\begin{figure}[H]
 \index[codeindex]{Buffer}
 \begin{minted}{felix}
 struct Buffer
@@ -2417,7 +2448,9 @@ again:>
   if b.get != char "/" goto bad;
   b&.next;
 
-  while not b.atend and not (b.get == char "\n")  perform b&.next;
+  while not b.atend and not (b.get == char "\n")  
+     perform b&.next
+  ;
   b&.next; // works fine even if atend
 ok:>
   write (io.out,b);
@@ -2618,10 +2651,38 @@ chip epsilon[T]
 }
 \end{minted}
 
+\subsection{Optional}
 
 The optional chip uses \verb%tryall_list% to both pass some data through
 unmodified, and also to pass it through modified by an arbitrary
-transducer.
+transducer. Models regular expression A?
+
+\begin{figure}[h]
+\begin{center}
+\tikzstyle{cell} = [rectangle,minimum width=1cm,minimum height=5mm,text centered,draw=black]
+\tikzstyle{circ} = [circle,radius=2mm,draw=black]
+\tikzstyle{dup} = [regular polygon,regular polygon sides=3,draw=black]
+\tikzstyle{arrow} = [thick,->,>-stealth]
+\begin{tikzpicture}[node distance=1.5cm]
+\node(A)[circ]{};
+\node(B)[dup,right of=A]{};
+\node(C)[cell,right of=B]{p};
+\node(D)[circ,=2mm,right of=C]{};
+\node(E)[circ,right of=D]{};
+\node(F)[circ,below of=B]{};
+\node(G)[circ,below of=D]{};
+\draw[arrow](A) -- (B);
+\draw[arrow](B) -- (C);
+\draw[arrow](C) -- (D);
+\draw[arrow](D) -- (E);
+\draw[arrow](B) -- (F);
+\draw[arrow](F) -- (G);
+\draw[arrow](G) -- (D);
+\end{tikzpicture}
+\caption{optional}
+\end{center}
+\end{figure}
+
 
 \index[codeindex]{optional}
 \begin{minted}{felix}
@@ -2641,8 +2702,33 @@ chip optional[T] (p:iochip_t[T,T])
 }
 \end{minted}
 
+\subsection{One or More}
 The \verb%oneormore_match% matches the regular expression \verb%A+%.
 It requires at least one match.
+
+\begin{figure}[h]
+\begin{center}
+\tikzstyle{cell} = [rectangle,minimum width=1cm,minimum height=5mm,text centered,draw=black]
+\tikzstyle{circ} = [circle,radius=2mm,draw=black]
+\tikzstyle{dup} = [regular polygon,regular polygon sides=3,draw=black]
+\tikzstyle{arrow} = [thick,->,>-stealth]
+\begin{tikzpicture}[node distance=2cm]
+\node(A)[circ]{};
+\node(B)[cell,right of=A]{A};
+\node(C)[dup,right of=B]{};
+\node(D)[circ,below of=C]{};
+\node(E)[cell,right of=C]{A};
+\node(F)[circ,above of=E]{};
+\draw[arrow](A) -- (B);
+\draw[arrow](B) -- (C);
+\draw[arrow](C) -- (E);
+\draw[arrow](C) -- (D);
+\draw[arrow](E) -- (F) -- (C);
+\end{tikzpicture}
+\caption{oneormore}
+\end{center}
+\end{figure}
+
 
 \index[codeindex]{oneormore\_matcher}
 \begin{minted}{felix}
@@ -2663,6 +2749,7 @@ connector chans
 
 And of course, this one matches \verb%A*%.
 
+\subsection{Zero or More}
 \index[codeindex]{zeroormore\_matcher}
 \begin{minted}{felix}
 chip zeroormore_matcher[T] (A:iochip_t[T,T]) 
@@ -2903,6 +2990,184 @@ hand, simply ignore faults. So bad OO programs blow up,
 whereas bad circuits simply die.
 
 \chapter{Grammars}
+\section{Theory}
+Given a set of symbols $\Sigma$ the set of all finite sequences of
+these symbols is denoted by $\Sigma^\ast$, which is called the
+{\em Kleene closure} of the set. A {\em language} on $\Sigma$ is any
+subset of $\Sigma^\ast$. The elements of $\Sigma$ are called
+{\em terminal symbols}. The strings of a language are called
+{\em sentences} in the language.
+
+A {\em production grammar} is a machine which can generate languages.
+We start by introducing a set of symbols $N$ disjoint from $\Sigma$, called
+{\em nonterminal symbols}, and defining $S=\Sigma\cup N$,
+the set of symbols. A {\em production sequence} $P$ is a sequence of symbols, 
+and a {\em grammar library} $G$ is a mapping $$G: S\rightarrow 2^{\mathbf P}$$ where $\mathbf P$ is the
+set of all possible production sequences on $S$, so that $2^{\mathbf P}$ is the power set,
+or set of all subsets of $\mathbf P$. A grammar is a grammar library and a 
+selected nonterminal $s$ which is called the {\em start symbol}.
+A {\em production} is the association of a nonterminal symbol $n$ and one
+of the production sequences $p$ in the set of production sequences $G(p)$.
+
+In other words, a grammar associates each nonterminal symbol with a set
+of productions, and selects a particular nonterminal as special. 
+
+We can use the grammar to generate a language as follows: beginning with
+the start symbol, select an associated production and write it down.
+This is known as a {\em sential form}. Now, pick any nonterminal symbol
+in the sential form, and replace it with one of the productions with
+which it is associated. This is known as a {\em production step}
+or {\em derivation step.}
+
+We say the sentential form produced is {\em directly derived} from
+the original one. You can repeat this procedure a number of times,
+any sentential form so obtained is said to be {\em derived} from the
+any previous one in the sequence of expansions.
+
+You may eventually end up with a sentential form containing no
+nonterminals, such a form is then specified to be a sentence
+of the language generated by the grammar. We can then define
+the language generated by a grammar as the set of all sentences
+which can be derived from the start symbol.
+
+There are some things to note here. Our definition of a grammar
+is slightly unconventional in that we start with a grammar library
+and pair it with a start symbol. This means that some of the 
+library entries will be useless because, begining with the start 
+symbol, no sentential form we derive can possibly contain that
+nonterminal. Such a nonterminal is said to be {\em unreachable.}
+The set of all nonterminals which can appear in some sential form
+after some sequence of derivations is performed is known as the
+{\em closure} of the start symbol, the other nonterminals
+are said to be {\em garbage}.
+
+There may also be productions which simply associate a nonterminal
+with the singlton sequence consisting of the nonterminal itself.
+If used in a derivation step, the resulting sentential form
+is unchanged. Such a production is said to be {\em useless} 
+since it achieves no progress in deriving a sentence. A nonterminal
+$X$ might also be associated with singleton production $Y$ which
+in turn is associated again with $X$, so that whilst replacing
+$X$ once with $Y$ derives a new sentential form, replacing that
+$Y$ again with $X$ leaves us back where we started. Such a
+deriviation sequence is said to be {\em cyclic}. We will come back
+to this issue later because the solutions for plain and labelled
+grammars are different!
+
+Two grammars may produce the same language, in which case
+they are said to be {\em equivalent.}
+
+If, presented with a sentential form, one always chooses to
+replace the left most nonterminal, the resulting sequence
+of derivations is called a {\em leftmost derivation}. Chosing
+the rightmost, unsurprisingly, is a {\em rightmost derivation}.
+One can also choose replacements for all the nonterminals
+and replace them simultaneously, or, at least, in a fixed
+order such as left to right, this is a {\em breadth first}
+derivation. Two derivation sequences may be considered
+equivalent if the production replacing each particular
+nonterminal in a sentential form is the same, irrespective
+of the order of the actual substitution. The equivalence
+class of such derivation sequences exhibits a structure
+common to all of them, and different from any other,
+which has the hierachical shape and is known as a 
+{\em derivation tree}.
+
+You can picture a derivation tree by considering a
+sentential form and under each nonterminal writing
+the production sequence replacing it, with an arrow
+from the nonterminal to its associated sequence.
+Begin with the start symbol and apply the rule recursively
+until there are no more nonterminals to replace. 
+
+\subsection{Labelled Grammars}
+
+We will now introduce a small modification to the notion of
+a grammar called a {\em labelled grammar}. This is the same
+as a grammar except a name is attached to each production.
+As usually the names will all be distinct from each other,
+and distinct from any terminal or nonterminal symbol.
+
+The label is useful, when generating strings, to annotate
+the resulting sentence with pairs of markers representing
+the production which was chosen: you can put a start marker
+indexed by the label and an end marker indexed by the label
+at the start and end of each production which is included
+in the generated sentential form, but ignored when
+considing the final sentence generated.
+
+Equivalently, in the production tree, the label can be attached
+to each node node.
+
+If we closely examine a labelled grammar a suprising fact emerges.
+Consider
+
+\begin{minted}[bgcolor=felixbg]{text}
+S -> L
+L -> I L
+L -> E
+E -> unit
+I -> int
+\end{minted}
+
+You may not recognise this yet but let me rewrite it
+as a labeled grammar:
+
+\begin{minted}[bgcolor=felixbg]{text}
+S -> List: L
+L -> Cons: I L
+L -> Empty: E
+E -> Unit: unit
+I -> Integer: int
+\end{minted}
+
+and now again, with different syntax:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+union S = List of L;
+union L =
+  | Cons of I * L
+  | Empty of E
+;
+union I = Integer of int;
+union E = Unit of unit;
+\end{minted}
+
+What this basically shows is that we should consider a nonterminal
+associated with a type of the same name, and the labels as
+type constructors. The production for each constructor is just 
+the type of the constructor argument. In this model, each terminal
+is a primitive type.
+
+It is not hard to see now that every inductive type corresponds
+to a (labelled) grammar, and every labelled grammar to a type.
+Of course, the labelled derivation tree is then just a value
+of the type.
+
+Given any grammar, it is possible to refactor the grammar to
+create another, equivalent grammar. We may want, for example,
+to remove the possibility of cyclic derivations. Unfortunately,
+our ability to do this and allow a recogniser for the language
+to produce the desired result, it is much more difficult if
+we wish to produce a derivation tree because we are no longer
+free to add productions or nonterminals, since if used,
+unrecognised nodes in the tree would be created.
+
+We will present a solution to this problem later, by upgrading
+again our notion of a labelled grammar to an {\em action grammar}
+specifically designed so that it may be refactored but still
+allow a parser to produce the expected derivation tree.
+Roughly speaking an action grammar is a labelled grammar equiped
+with additional codes which allow refactoring steps to be invertible,
+so that the parser can parse the modified grammar, but the tree building
+process translates the tree from the modified to original form in
+the process of building it. Unlike other parsing machinery, the tree does
+not need to be translated after being built. The critical refactoring
+step which is supported is left recursion elimination, however cycle
+removal is possible as well.
+
+
+\section{Representation}
 We will now take a break from coroutines and do some functional
 programming, because this is a fairly easy way to do the job
 we have to do in preparation for the next section.
@@ -2933,7 +3198,7 @@ functional programming technique known as {\em open recursion}.
 \end{figure}
 
 
-\section{Grammar Datatype}
+\section{Generic Grammar Datatype}
 The first thing we need is a data structure representing a grammar:
 
 \begin{minted}{felix}
@@ -2947,7 +3212,9 @@ a string, which is used as an identifier, and some other
 information we're not specifying.  
 
 A grammar library is a set of grammar entries. 
-We're using a list because its easy. 
+We're using a list because its easy. We need to take care the list
+entries are unique, so it represents a set, and similarly that
+we do not inadventently depend on the ordering the list exhibits. 
 
 A grammar is a pair consisting of a grammar
 library and a selected symbol called the {\em start symbol}.
@@ -2961,6 +3228,7 @@ the parameter to that structure, so that initially the structure
 is flat but parametrised, and the recursion is introduced by
 setting the parameter to itself, establishing a cycle.
 
+\section{Generic Closure Algorithm}
 Now we're going to show you how to use this idea to find
 the closure of the grammar. This is a list of all the symbols
 reachable from the start symbol. 
@@ -2987,6 +3255,8 @@ And the answer is: we can't! But the caller has to know how to find
 all the symbols in a \verb%T% so we just require them to pass in
 a function that can do it!
 
+First, we have a recursive induction step:
+
 \index[codeindex]{generic\_closure}
 \begin{minted}{felix}
 fun generic_cls[T] 
@@ -3012,7 +3282,11 @@ fun generic_cls[T]
       endmatch
   endmatch
 ;
+\end{minted}
 
+Now we complete the induction with an initial case:
+
+\begin{minted}{felix}
 fun generic_closure[T] 
   (generic_add: list[string] -> T -> list[string])
   (g:generic_grammar_t[T]) 
@@ -3031,9 +3305,10 @@ anyhow, so its equivalent to not needing the check and because
 we didn't add the symbol to the unprocessed set. This simplifies
 the requirements on the \verb%generic_add% function.
 
+\section{Open Grammar}
 Ok, so now, we define the {\em concrete} type of a production we 
 desire in two stages. We use open recursion! First we define
-the flat, non-recursive form:
+the flat, non-recursive, {\em open} form:
 
 \index[codeindex]{open\_prod\_t}
 \begin{minted}{felix}
@@ -3046,74 +3321,17 @@ union open_prod_t[T] =
 ;
 \end{minted}
 
-and now we tie the recursive knot with a circular definition
-which effects a fixpoint operation:
-
-\index[codeindex]{open\_prod\_t}
-\begin{minted}{felix}
-typedef prod_t = open_prod_t[prod_t];
-\end{minted}
-
-It takes a while to grok this! You may wonder why we didn't just
-make the data type recursive in the first place. The answer is
-profound and subtle: the flat structure we chose is easy to
-extend by adding new cases, we can then fixate the extended
-type. This leaves the original fixation unaffected, but it
-makes the extended type recursive. In particular, the \verb%Seq%
-and \verb%Alt% cases would allow lists of the extended type,
-not just the original type, in other words, the extension
-is {\em covariant} meaning the extension propagates to the
-case arguments too.  This would not be the case if we extended
-the original recursive type, because the recursive knot has
-already been tied.
-
-\subsubsection{Open/Closed Principle}
-Open recursion is a technique which obeys a vital law of
-modularity known as the {\em open/closed principle}, originally
-espoused by Bertrand Meyer in Object Oriented Software Construction.
-The principle states a module must be simultaneously closed so it
-can be used, and open for extension. What is most interesting
-is that classes in Object Orientation, proposed to support
-this principle, where extension is by inheritance, actually
-fail it, and precisely if a method of an base object with
-an argument of the based type, that is, a binary operator,
-is overridden in a derived class by a method with an argument
-of the derived type, then the type system is unsound: the argument
-must in fact be contravariant, but the requirement is for covariance.
-This is known as the covariance problem and it destroys, utterly
-and completely, the belief that object orientation is the basis
-of a sound software development paradigm.
-
-\subsubsection{Pretty Printer}
-\begin{minted}{felix}
-instance[T with Str[T]] Str[open_prod_t[T]] 
-{
-  fun str: open_prod_t[T] -> string =
-  | Terminal (s,r) => '"' + s + '"'
-  | Nonterminal name => name
-  | Epsilon => "Eps"
-  | Seq ss => "(" + catmap " " (str of T) ss + ")"
-  | Alt ss => "[" + catmap " | " (str of T) ss + "]"
-  ;
-}
-\end{minted}
-
-\subsubsection{Reification}
 \index[codeindex]{open\_gramentry\_t}
 \index[codeindex]{open\_gramlib\_t}
 \index[codeindex]{open\_grammar\_t}
-\index[codeindex]{gramentry\_t}
-\index[codeindex]{gramlib\_t}
-\index[codeindex]{grammar\_t}
 \begin{minted}{felix}
 typedef open_gramentry_t[T] = string * open_prod_t[T];
 typedef open_gramlib_t[T] = list[open_gramentry_t[T]];
 typedef open_grammar_t[T] = string * open_gramlib_t[T];
-
-typedef gramentry_t = open_gramentry_t[prod_t];
-typedef gramlib_t = open_gramlib_t[prod_t];
-typedef grammar_t = open_grammar_t[prod_t];
 \end{minted}
+
+This function takes a grammar library and a new entry,
+and returns a new grammar library with the entry added.
 
 \index[codeindex]{open\_add\_prod}
 \begin{minted}{felix}
@@ -3131,12 +3349,53 @@ fun open_add_prod[T]
 ;
 \end{minted}
 
+And here's the obligatory pretty printer:
+
+\subsubsection{Pretty Printer}
+\begin{minted}{felix}
+instance[T with Str[T]] Str[open_prod_t[T]] 
+{
+  fun str: open_prod_t[T] -> string =
+  | Terminal (s,r) => '"' + s + '"'
+  | Nonterminal name => name
+  | Epsilon => "Eps"
+  | Seq ss => "(" + catmap " " (str of T) ss + ")"
+  | Alt ss => "[" + catmap " | " (str of T) ss + "]"
+  ;
+}
+\end{minted}
+
+
+\section{Closed Grammar}
+Now we tie the recursive knot with a circular definition
+which effects a fixpoint operation:
+
+\begin{minted}{felix}
+typedef gramentry_t = open_gramentry_t[prod_t];
+typedef gramlib_t = open_gramlib_t[prod_t];
+typedef grammar_t = open_grammar_t[prod_t];
+\end{minted}
+
+It takes a while to grok this! You may wonder why we didn't just
+make the data type recursive in the first place. The answer is
+profound and subtle: the flat structure we chose is easy to
+extend by adding new cases, we can then fixate the extended
+type. This leaves the original fixation unaffected, but it
+makes the extended type recursive. In particular, the \verb%Seq%
+and \verb%Alt% cases would allow lists of the extended type,
+not just the original type, in other words, the extension
+is {\em covariant} meaning the extension propagates to the
+case arguments too.  This would not be so if we extended
+the original recursive type, because the recursive knot has
+already been tied.
+
 \subsubsection{Construction}
 \index[codeindex]{add\_prod}
 \begin{minted}{felix}
 fun add_prod(acc:list[string]) (p:prod_t) : list[string] =>
   fix open_add_prod[prod_t] acc p
 ;
+\end{minted}
 
 \subsubsection{Reified Closure}
 \index[codeindex]{closure (of grammar\_t)}
@@ -3146,7 +3405,25 @@ fun closure (g:grammar_t): list[string] =>
 ;
 \end{minted}
 
-\subsubsection{Nullable property}
+\section{Open/Closed Principle}
+Open recursion is a technique which obeys a vital law of
+modularity known as the {\em open/closed principle}, originally
+espoused by Bertrand Meyer in Object Oriented Software Construction.
+The principle states a module must be simultaneously closed so it
+can be used, and open for extension. What is most interesting
+is that classes in Object Orientation, proposed to support
+this principle, where extension is by inheritance, actually
+fail it, and precisely if a method of an base object with
+an argument of the based type, that is, a binary operator,
+is overridden in a derived class by a method with an argument
+of the derived type, then the type system is unsound: the argument
+must in fact be contravariant, but the requirement is for covariance.
+This is known as the covariance problem and it destroys, utterly
+and completely, the belief that object orientation is the basis
+of a sound software development paradigm.
+
+\section{Properties}
+\subsection{Nullable property}
 A nonterminal is said to be {\em nullable} if it can produce
 the empty string. We can calculate this inductively by observing
 a nonterminal is nullable if one of its alternatives is the empty
