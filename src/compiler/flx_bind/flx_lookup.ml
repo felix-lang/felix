@@ -3799,11 +3799,12 @@ and lookup_type_name_in_table_dirs_with_sig
 
     | SYMDEF_newtype _
     | SYMDEF_abs _
-    | SYMDEF_union _
-    | SYMDEF_type_alias _ ->
-      print_endline "Found abs,union or alias";
+    | SYMDEF_union _ ->
+      print_endline "Found abs,union or newtype";
       Some (btyp_inst (sye index, ts))
 
+    | SYMDEF_type_alias t -> 
+      Some (bt sr t)
 
     | SYMDEF_label _
     | SYMDEF_const_ctor _
