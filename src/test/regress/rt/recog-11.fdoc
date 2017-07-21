@@ -5,6 +5,7 @@ include "std/strings/parsers";
 open Recognisers;
 open Grammars;
 open Parsers;
+open BaseChips;
 
 // silly sample grammar, right associative operators +, * ^ parens () and 
 // value 9 only

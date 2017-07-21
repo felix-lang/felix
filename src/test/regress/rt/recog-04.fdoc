@@ -4,6 +4,7 @@
 include "std/strings/recognisers";
 include "std/control/chips";
 open Recognisers;
+open BaseChips;
 
 spawn_fthread {
 

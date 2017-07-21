@@ -76,6 +76,13 @@ type bexpr_t =
 
 and t = bexpr_t * Flx_btype.t
 
+let sbt typ = Flx_btype.str_of_btype typ
+
+(* HACK: NOT REENTRANT and might clash with the actual global
+  counter .. oh well 
+*)
+let counter = ref 1 
+
 (* -------------------------------------------------------------------------- *)
 
 let complete_check t = 
@@ -156,12 +163,12 @@ let bexpr_apply t (e1, e2) =
   begin match Flx_btype.unfold "Flx_bexpr:bexpr_apply" ft with
   | Flx_btype.BTYP_function (d,c)
   | Flx_btype.BTYP_cfunction (d,c) ->
-    if d <> at then begin
+    if not (Flx_typeeq.type_eq Flx_btype.st counter d at) then begin
       print_endline ("Warning: bexpr_apply: function type: " ^ Flx_btype.st ft);
       print_endline ("Warning: bexpr_apply: function domain\n"^ Flx_btype.st d ^ "\ndoesn't agree with argtype\n" ^ Flx_btype.st at);
       failwith ("SYSTEM ERROR: bexpr_apply: function domain\n"^ Flx_btype.st d ^ "\ndoesn't agree with argtype\n" ^ Flx_btype.st at);
     end; 
-    if c <> t then begin
+    if not (Flx_typeeq.type_eq Flx_btype.st counter c t) then begin
       print_endline ("Warning: bexpr_apply: function type: " ^ Flx_btype.st ft);
       print_endline ("Warning: bexpr_apply: function codomain\n"^ Flx_btype.st c ^ "\ndoesn't agree with applytype\n" ^ Flx_btype.st t);
       failwith("SYSTEM ERROR: bexpr_apply: function codomain\n"^ Flx_btype.st c ^ "\ndoesn't agree with applytype\n" ^ Flx_btype.st t);

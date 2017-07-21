@@ -2185,12 +2185,46 @@ we just optimised the calculation!
 
 
 \chapter{Base Recognisers}
+\section{Recognisers}
+A {\em recogniser} for a language $L \subset \Sigma^\ast$ is a machine
+which can decide if a string $s\in \Sigma^\ast$ is an element of $L$;
+in other words determine the truth of the predicate $s\in L$.
+
 In this chapter we introduce a data structure used for scanning strings,
 some specific primitive recognisers, and some general purpose chips which
 can be used as recogniser combinators.
 
-The idea of a recogniser is that you have a string, and want to see if
-it matches a regular expression. So what we do is pass to the recogniser
+The idea of a base recogniser is that you have a string, and want to see if
+it matches a some simple specification. We then form the ability to recognise
+more complex specifications by providing ways to combine these base recognisers
+called {\em combinators}. The idea is that combinators are simple to use,
+the combinations derived have easily predictable behaviour, and finally that
+the combined components have good, predictable, executable performance.
+
+\section{Reasoning Principles}
+Decoupling and recoupling components allows a complex problem to be
+broken down into local reasoning about the behaviour of the base
+components and the combinators, so that together with standard
+rules of inference we can deduce the behaviour of combinations.
+We should note there are two aspects of this: reading and writing.
+Reading is analytical reasoning: given a combination, try to calculate
+what it does. Writing is synthetic reasoning: given a problem, 
+try to calculate a combination which solves the problem.
+
+A well designed system must support both inspection and construction,
+since software development is an interactive cycle requiring alternate
+and simultaneous application of both skills. Conventional regular
+expressions, for example, are easy to construct but impossible to
+read and so fail this test: regular definitions are clearly a 
+superior technology.
+
+
+Our system will use basic coroutines as our base unit of computation,
+and will use circuit constructors as the combinators used to
+combine them.
+
+\section{Abstraction}
+What we do is pass to the recogniser
 a pointer into the string. The recogniser chips reads the pointer
 and examines the string from that point to see if some of the string
 after that pointer matches what the chip is supposed to recognise,
@@ -2210,6 +2244,10 @@ and that means an infinite loop would cause the whole program to fail.
 
 Coroutines, on the other hand, regularly report failure by keeping
 quiet! They don't know what to do, so they do nothing.
+
+The abstraction here allows us to understand not only how to 
+design base recognisers but also what the results of applying
+combinators to them should be.
 
 \section{Buffers}
 Now, here is the kind of pointer to the string we will use,
@@ -2584,7 +2622,8 @@ chip eos_matcher
 }
 \end{minted}
 
-\section{Delegators}
+\section{Combinators}
+\subsection{Delegators}
 We present two versions of delegators, or proxies, which are chips that delegate
 processing to another chip addressed by a pointer passed as an argument.
 We will need delegation for forward referencing and recursion, when we need
@@ -3166,6 +3205,22 @@ not need to be translated after being built. The critical refactoring
 step which is supported is left recursion elimination, however cycle
 removal is possible as well.
 
+\section{Partially Labelled Grammars}
+We will briefly introduce another extension, the partially
+labelled grammar. Roughly, sometimes a grammar production
+has common sequences we would like to factor out. In a grammar,
+we can simply introduce a new nonterminal associated with
+the common subsequence, and replace occurences of the subsequence
+with the new nonterminal. Note, the new nonterminal supports
+exactly one alternative.
+
+Unfortunately we cannot do this in a labelled grammar,
+because we would have to introduce a new type and type constructor,
+which would change the derivation tree. To get around this we add
+yet another kind of symbol, disjoint from the others, called
+a {\em macro symbol}, which is used like a nonterminal.
+Exactly one production must be associated with the macro,
+and it is not given a constructor label.
 
 \section{Representation}
 We will now take a break from coroutines and do some functional

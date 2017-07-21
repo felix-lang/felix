@@ -792,7 +792,7 @@ fun in (s:string) (g:grammar_t) =
   }
   var r = recogniser g;
   var result = false;
-  run (s.value |-> r |-> eos_matcher |-> false_if_got &result);
+  run (s.Buffer.value |-> r |-> eos_matcher |-> false_if_got &result);
   return result;
 }
 
