@@ -1,10 +1,12 @@
+open Flx_bid
+
 type elt = {
   sym: Flx_sym.t;                 (** The symbol. *)
-  parent: Flx_types.bid_t option; (** The parent of the symbol. *)
+  parent: bid_t option; (** The parent of the symbol. *)
 }
 
 (** The type of the symbol table. *)
-type t = (Flx_types.bid_t, elt) Hashtbl.t
+type t = (bid_t, elt) Hashtbl.t
 
 (** debugging info *)
 let summary x = 
@@ -85,7 +87,7 @@ let find_children sym_table i =
   in
   fold add_kid sym_table []
 
-let rec is_descendant sym_table (parent:Flx_types.bid_t) (candidate:Flx_types.bid_t) =
+let rec is_descendant sym_table (parent:bid_t) (candidate:bid_t) =
   let p = find_parent sym_table candidate in
   match p with 
   | None -> false

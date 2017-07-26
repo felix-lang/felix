@@ -2,6 +2,7 @@ open Flx_types
 open Flx_bbdcl
 open Flx_util
 open Flx_mtypes2
+open Flx_bid
 
 (* This routine calculates the display a routine with
   a given PARENT requires, which includes that parent

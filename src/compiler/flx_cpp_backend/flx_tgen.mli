@@ -1,5 +1,5 @@
 (** Type generator *)
-
+open Flx_bid
 open Flx_types
 open Flx_mtypes2
 

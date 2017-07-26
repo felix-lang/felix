@@ -17,7 +17,7 @@ open Flx_exceptions
 open Flx_use
 open Flx_reparent
 open Flx_call
-
+open Flx_bid
 
 type submode_t = [`Eager | `Lazy]
 

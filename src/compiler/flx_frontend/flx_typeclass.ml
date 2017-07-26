@@ -15,11 +15,8 @@ open Flx_maps
 open Flx_exceptions
 open Flx_use
 open Flx_beta
-
-let str_of_bidset x = 
-  let elts = ref [] in
-  BidSet.iter (fun i -> elts := i::!elts) x;
-  catmap "," si (!elts)
+open Flx_bid
+open Flx_type_aux
 
 module CS = Flx_code_spec
 
@@ -78,7 +75,7 @@ end;
 (* list all the kids of the type class *)
     let tc_kids =
       try Flx_bsym_table.find_children bsym_table tc
-      with Not_found -> Flx_types.BidSet.empty
+      with Not_found -> BidSet.empty
     in
 (*
 if inst_id = "X" then 
@@ -91,7 +88,7 @@ end;
 (* list all the kids of the instance *)
     let inst_kids =
       try Flx_bsym_table.find_children bsym_table inst
-      with Not_found -> Flx_types.BidSet.empty
+      with Not_found -> BidSet.empty
     in
 (*
 if inst_id = "X" then
@@ -105,7 +102,7 @@ end;
   mapping the function name to the index and function type
 *)
     let inst_map =
-      Flx_types.BidSet.fold begin fun i acc ->
+      BidSet.fold begin fun i acc ->
         let bsym = Flx_bsym_table.find bsym_table i in
         match Flx_bsym.bbdcl bsym with
         | BBDCL_external_fun (_,bvs,params,ret,_,_,_) ->
@@ -236,7 +233,7 @@ in the typeclass might be used instead. This routine only handles actual instanc
         clierrx "[flx_frontend/flx_typeclass.ml:236: E363] " sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
     in
 
-    Flx_types.BidSet.iter begin fun tck ->
+    BidSet.iter begin fun tck ->
       let tck_bsym = Flx_bsym_table.find bsym_table tck in
       match Flx_bsym.bbdcl tck_bsym with
       | BBDCL_external_fun (_,bvs,params,ret,_,_,`Code Flx_code_spec.Virtual) ->
@@ -443,7 +440,7 @@ let tcinst_chk syms bsym_table id sr i ts (inst_vs, inst_constraint, inst_ts, j)
        catmap "\n" (fun (a,b) -> si a ^ " = " ^ sbt bsym_table b ) assigns
      );
 *)
-     let eqns = map (fun (l,r) -> Flx_unify.list_subst syms.counter assigns l, Flx_unify.list_subst syms.counter assigns r) rest in
+     let eqns = map (fun (l,r) -> list_subst syms.counter assigns l, list_subst syms.counter assigns r) rest in
 (*
      print_endline (id ^ " After quick subst: Solving equations\n " ^
        catmap "\n" (fun (a,b) -> sbt bsym_table a ^ " = " ^ sbt bsym_table b ) eqns

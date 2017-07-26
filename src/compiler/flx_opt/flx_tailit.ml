@@ -19,6 +19,7 @@ open Flx_typing
 open Flx_unify
 open Flx_use
 open Flx_util
+open Flx_bid
 
 let add_xclosure syms cls e =
   (*
@@ -140,10 +141,10 @@ let tailit syms bsym_table uses id this sr ps exes =
   let descend = Flx_bsym_table.find_descendants bsym_table this in
   let children =
     try Flx_bsym_table.find_children bsym_table this
-    with Not_found -> Flx_types.BidSet.empty
+    with Not_found -> BidSet.empty
   in
   let can_loop () =
-    let varlist = Flx_types.BidSet.filter
+    let varlist = BidSet.filter
       (Flx_bsym_table.is_variable bsym_table)
       children
     in

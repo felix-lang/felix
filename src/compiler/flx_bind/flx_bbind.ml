@@ -13,6 +13,8 @@ open Flx_exceptions
 open List
 open Flx_generic
 open Flx_tpat
+open Flx_name_map
+open Flx_bid
 
 type bbind_state_t = {
   counter: bid_t ref;
@@ -27,7 +29,7 @@ type bbind_state_t = {
   lookup_state: Flx_lookup_state.lookup_state_t;
 
   (* Used to cache which symbols we've already processed. *)
-  visited: (Flx_types.bid_t, unit) Hashtbl.t;
+  visited: (bid_t, unit) Hashtbl.t;
 }
 
 (** The state needed for binding. *)

@@ -19,6 +19,7 @@ open Flx_exceptions
 open Flx_use
 open Flx_spexes
 open Flx_args
+open Flx_bid
 
 let has_svc_field es = 
   try

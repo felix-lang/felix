@@ -2,6 +2,7 @@ open Flx_util
 open Flx_list
 open Flx_name
 open List
+open Flx_bid
 
 let gen_ctor syms bsym_table name display funs extra_args extra_inits ts props =
   let requires_ptf = mem `Requires_ptf props in

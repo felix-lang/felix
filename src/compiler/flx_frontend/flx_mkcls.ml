@@ -16,6 +16,7 @@ open Flx_exceptions
 open Flx_use
 open Flx_prop
 open Flx_bsym
+open Flx_bid
 
 let rec add_cls bsym_table all_closures i =
   all_closures := BidSet.add i !all_closures;

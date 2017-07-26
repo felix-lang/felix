@@ -22,6 +22,7 @@ open Flx_types
 open Flx_set
 open Flx_mtypes2
 open Flx_call
+open Flx_bid
 
 val set_globals:
   Flx_bsym_table.t ->

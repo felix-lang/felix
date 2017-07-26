@@ -1,3 +1,5 @@
+open Flx_bid
+
 type lower_state_t = {
   syms: Flx_mtypes2.sym_state_t;
   use: Flx_call.usage_table_t;
@@ -75,7 +77,7 @@ print_endline "RUNNING OLD LOWER PROCESS";
      then they need a heap closure -- wrappers require
      one or the other *)
   (* JS: Change 2 sept 2012: also for functions! *)
-  Flx_types.BidSet.iter begin fun i ->
+  BidSet.iter begin fun i ->
     let bsym = Flx_bsym_table.find bsym_table i in
     match Flx_bsym.bbdcl bsym with
     | Flx_bbdcl.BBDCL_fun (props,vs,p,ret,effects,exes) ->

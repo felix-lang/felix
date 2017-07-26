@@ -1,5 +1,6 @@
 open Flx_ast
 open Flx_types
+open Flx_bid
 
 exception Invalid_int_of_unitsum
 
@@ -137,25 +138,7 @@ let st t = str_of_btype t
 let sts ts = catmap "," st ts
 
 exception Free_fixpoint of t
-
-type entry_kind_t = {
-  (* the function *)
-  base_sym: bid_t;
-
-  (* the type variables of the specialisation *)
-  spec_vs: (string * bid_t) list;
-
-  (* types to replace the old type variables expressed in terms of the new
-   * ones *)
-  sub_ts: t list
-}
-
-type entry_set_t =
-  | FunctionEntry of entry_kind_t list
-  | NonFunctionEntry of entry_kind_t
-
-type name_map_t = (string, entry_set_t) Hashtbl.t
-type breqs_t = (Flx_types.bid_t * t list) list
+type breqs_t = (bid_t * t list) list
 
 type biface_t =
   | BIFACE_export_fun of Flx_srcref.t * bid_t * string
@@ -416,6 +399,17 @@ let btyp_type_set_union ts =
 let btyp_type_set_intersection ts =
   BTYP_type_set_intersection ts
 
+
+(* -------------------------------------------------------------------------- *)
+(* a HACK *) 
+
+let rec bmt mt = match mt with
+  | Flx_ast.TYP_type -> btyp_type 0
+  | Flx_ast.TYP_function (t1,t2) -> btyp_function (bmt t1, bmt t2)
+  | Flx_ast.TYP_tuple(ts) -> btyp_tuple(List.map bmt ts)
+  | _ -> btyp_type 0
+
+
 (* -------------------------------------------------------------------------- *)
 let unfold msg t =
   let rec aux depth t' =
@@ -643,26 +637,4 @@ let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_type_set_union ls -> btyp_type_set_union (List.map f_btype ls)
   | BTYP_type_set_intersection ls ->
       btyp_type_set_intersection (List.map f_btype ls)
-
-let map_entry fi ft {base_sym=base_sym; spec_vs=spec_vs; sub_ts=sub_ts } =
- {
-   base_sym=fi base_sym; 
-   spec_vs=List.map (fun (s,i) -> s, fi i) spec_vs; 
-   sub_ts=List.map ft sub_ts
- }
-
-
-let map_name_map fi ft nm =
-  let me k = map_entry fi ft k in
-  let numap = Hashtbl.create 97 in
-  Hashtbl.iter (fun name es -> 
-    let es = match es with
-    | NonFunctionEntry ek -> NonFunctionEntry (me ek)
-    | FunctionEntry eks -> FunctionEntry (List.map me eks)
-    in
-    Hashtbl.add numap name es
-  ) 
-  nm;
-  numap
-
 

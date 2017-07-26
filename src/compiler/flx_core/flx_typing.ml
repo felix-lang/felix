@@ -1,5 +1,6 @@
 open Flx_ast
 open Flx_types
+open Flx_bid
 
 (* MOVED FROM PARSER so flx_sex2flx can do the nasty work
    -- too lazy to implement this in Scheme at the moment --
@@ -33,7 +34,7 @@ let mktypefun sr name vs args return_type body =
   )
 
 
-let sye { Flx_btype.base_sym=i } = i
+let sye { Flx_name_map.base_sym=i } = i
 
 exception UnificationError of Flx_btype.t * Flx_btype.t
 

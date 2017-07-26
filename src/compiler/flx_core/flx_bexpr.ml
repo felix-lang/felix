@@ -1,12 +1,13 @@
+open Flx_bid
 type bexpr_t =
   | BEXPR_int of int
   | BEXPR_not of t
   | BEXPR_deref of t
 
   (* name of a variable OR a constant including union constant constructor? *)
-  | BEXPR_varname of Flx_types.bid_t * Flx_btype.t list
+  | BEXPR_varname of bid_t * Flx_btype.t list
 
-  | BEXPR_ref of Flx_types.bid_t * Flx_btype.t list
+  | BEXPR_ref of bid_t * Flx_btype.t list
   | BEXPR_likely of t
   | BEXPR_unlikely of t
   | BEXPR_address of t
@@ -14,16 +15,16 @@ type bexpr_t =
   | BEXPR_class_new of Flx_btype.t * t
   | BEXPR_literal of Flx_literal.literal_t
   | BEXPR_apply of t * t
-  | BEXPR_apply_prim of Flx_types.bid_t * Flx_btype.t list * t
-  | BEXPR_apply_direct of Flx_types.bid_t * Flx_btype.t list * t
-  | BEXPR_apply_stack of Flx_types.bid_t * Flx_btype.t list * t
-  | BEXPR_apply_struct of Flx_types.bid_t * Flx_btype.t list * t
+  | BEXPR_apply_prim of bid_t * Flx_btype.t list * t
+  | BEXPR_apply_direct of bid_t * Flx_btype.t list * t
+  | BEXPR_apply_stack of bid_t * Flx_btype.t list * t
+  | BEXPR_apply_struct of bid_t * Flx_btype.t list * t
   | BEXPR_tuple of t list
   | BEXPR_record of (string * t) list
   | BEXPR_polyrecord of (string * t) list * t
   | BEXPR_remove_fields of t * string list
   | BEXPR_variant of string * t
-  | BEXPR_closure of Flx_types.bid_t * Flx_btype.t list
+  | BEXPR_closure of bid_t * Flx_btype.t list
   | BEXPR_identity_function of Flx_btype.t
 
 (* value of union constant constructor *)
@@ -60,7 +61,7 @@ type bexpr_t =
   | BEXPR_inj of int * Flx_btype.t * Flx_btype.t 
     (* first arg = constructor index, second arg domain = ctor type, third arg codomain = union type *)
 
-  | BEXPR_label of Flx_types.bid_t
+  | BEXPR_label of bid_t
   | BEXPR_unitptr of int
   | BEXPR_cond of t * t * t (* conditional *)
 

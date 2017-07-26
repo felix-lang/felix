@@ -82,8 +82,8 @@ print_endline ("Metatyping term " ^ st term);
         )
     end
   | BTYP_type_var (i,mt) ->
-    (*
-    print_endline ("Type variable " ^ si i^ " has encoded meta type " ^
+(*
+    print_endline ("Type variable " ^ string_of_int i^ " has encoded meta type " ^
       sbt bsym_table mt);
     (
       try
@@ -95,7 +95,7 @@ print_endline ("Metatyping term " ^ st term);
       with Not_found ->
         print_endline "Cannot find type variable in symbol table"
     );
-    *)
+*)
     mt
 
   | BTYP_type i -> btyp_type (i+1)

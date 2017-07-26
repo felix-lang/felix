@@ -15,7 +15,11 @@ open Flx_generic
 open Flx_tconstraint
 open Flx_tpat
 open Flx_maps
+open Flx_name_map
+open Flx_bid
+open Flx_type_aux
 
+(* a hack *)
 exception OverloadKindError of Flx_srcref.t * string
 
 let is_typeset tss1 =
@@ -311,6 +315,10 @@ if name = "accumulate" then print_endline "Attempting to resolve accumulate";
   let pvs, vs, { raw_type_constraint=con } =
     find_split_vs sym_table bsym_table base_sym
   in
+(*
+    print_endline ("SPLITVS: PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") pvs);
+    print_endline ("SPLITVS: base   VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") vs);
+*)
   let base_domain, base_result, pnames = sig_of_symdef
     sym.Flx_sym.symdef
     sym.Flx_sym.sr
@@ -440,7 +448,11 @@ let make_equations
   (* equations for user specified assignments *)
   let lhsi = List.map (fun (n,i) -> i) entry_kind.spec_vs in
   let lhs = List.map
-    (fun (n,i) -> btyp_type_var ((i), btyp_type 0))
+    (fun (n,i) -> 
+(*
+print_endline ("flx_overload: FUDGE METATYPE? lookup map entry vs does not have kind! make equations: "^n^"=T<"^string_of_int i^">");
+*)
+btyp_type_var ((i), btyp_type 0))
     entry_kind.spec_vs
   in
   let n = min (List.length entry_kind.spec_vs) (List.length input_ts) in
@@ -490,8 +502,9 @@ let make_equations
   List.iter (fun (t1,t2) -> print_endline (sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2))
   eqns
   ;
-
+*)
   (* WRONG!! dunno why, but it is! *)
+(*
   print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
     (BidSet.fold (fun i l-> i::l) !dvars []));
   print_endline "...";
@@ -524,6 +537,17 @@ let solve_mgu
   env_traint
 =
 let name = id in
+(*
+print_endline ("Solve mgu, for "^id^", parent_vs= " ^
+catmap "," (fun (name,i,mt) -> name ^"<"^string_of_int i^">:"^ string_of_typecode mt)
+parent_vs)
+;
+print_endline ("Solve mgu, for "^id^", = base_vs= " ^
+catmap "," (fun (name,i,mt) -> name ^"<"^string_of_int i^">:"^ string_of_typecode mt)
+base_vs)
+;
+print_endline (" solve_mgu .. mgu = " ^ string_of_varlist bsym_table mgu);
+*)
 (*
   print_endline "Specialisation detected";
 *)
@@ -739,6 +763,9 @@ if name = "EInt" then
       try Some (unification bsym_table counter !extra_eqns !dvars)
       with Not_found -> None
     in
+(*
+print_endline "Constraint unification done";
+*)
     match maybe_extra_mgu with
     | None ->  (* print_endline "COULDN'T RESOLVE EQUATIONS"; *) ()
     | Some extra_mgu ->
@@ -825,8 +852,19 @@ if id = "accumulate" then print_endline ("base_ts = " ^ catmap "," (sbt bsym_tab
       in the corresponding ts values. First we need to build
       a map of the correspondence
     *)
+(*
+print_endline ("SOLVE MGU " ^ name);
+*)
     let parent_ts = List.map
-      (fun (n,i,_) -> btyp_type_var (i, btyp_type 0))
+      (fun (n,i,mt) -> 
+(*
+print_endline ("flx_overload: solve mgu : "^n^"=T<"^string_of_int i^"> kind="^string_of_typecode mt);
+*)
+   let mt = bt sr mt in
+(*
+print_endline ("Bound meta type = " ^ Flx_btype.st mt); 
+*)
+btyp_type_var (i,mt))
       parent_vs
     in
     let type_constraint = build_type_constraints counter bsym_table (bt sr) id sr base_vs in
@@ -853,7 +891,7 @@ if id = "accumulate" then
         None
     | BTYP_tuple [] ->
         let parent_ts = List.map
-          (fun (n,i,_) -> btyp_type_var (i, btyp_type 0))
+          (fun (n,i,mt) -> btyp_type_var (i, bmt mt))
           parent_vs
         in
         Some (entry_kind.base_sym,domain,spec_result,!mgu,parent_ts @ base_ts)
@@ -862,7 +900,11 @@ if id = "accumulate" then
         let implied = constraint_implies bsym_table counter env_traint reduced_constraint in
         if implied then 
           let parent_ts = List.map
-            (fun (n,i,_) -> btyp_type_var (i, btyp_type 0))
+            (fun (n,i,mt) -> 
+(*
+print_endline ("flx_overload: solve mgu2 : "^n^"=T<"^string_of_int i^">");
+*)
+btyp_type_var (i, bmt mt))
             parent_vs in
           Some (entry_kind.base_sym,domain,spec_result,!mgu,parent_ts @ base_ts)
         else begin
@@ -920,18 +962,19 @@ if name = "" then print_endline ("Considering .." ^ name);
   end
   ;
   *)
-  (*
-  print_endline (id ^ "|-> " ^string_of_myentry bsym_table entry_kind);
+(*
+  print_endline ("CONSIDER: " ^ id ^ "|-> " ^string_of_myentry bsym_table entry_kind);
+*)
+(*
   begin
-    print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") parent_vs);
-    print_endline ("base VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") base_vs);
+    print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,mt)->s^"<"^si i^">:" ^ string_of_typecode mt) parent_vs);
+    print_endline ("base VS=" ^ catmap "," (fun (s,i,mt)->s^"<"^si i^">" ^ string_of_typecode mt) base_vs);
     print_endline ("sub TS=" ^ catmap "," (sbt bsym_table) entry_kind.sub_ts);
     print_endline ("spec VS=" ^ catmap "," (fun (s,i)->s^"<"^si i^">") entry_kind.spec_vs);
     print_endline ("input TS=" ^ catmap "," (sbt bsym_table) input_ts);
   end
   ;
-  *)
-
+*)
   (* these are wrong .. ? or is it just shitty table?
      or is the mismatch due to unresolved variables? *)
   if (List.length base_vs != List.length entry_kind.sub_ts) then begin
@@ -1004,7 +1047,10 @@ if name = "accumulate" then print_endline "Considering function .. ";
       clierrx "[flx_bind/flx_overload.ml:1028: E250] " sr ("Failed to bind candidate return type! fn='" ^ name ^
         "', type=" ^ sbt bsym_table base_result)
   in
-if name = "Eint" then print_endline "Making equations";
+(*
+if name = "Eint" then 
+print_endline "Making equations";
+*)
   (* Step1: make equations for the ts *)
   let mgu = make_equations
     counter
@@ -1018,7 +1064,8 @@ if name = "Eint" then print_endline "Making equations";
     spec_result
   in
 (*
-if name = "EInt" then print_endline "maybe got mgu ..";
+if name = "EInt" then 
+print_endline "maybe got mgu ..";
 *)
 (*
   let mgu = maybe_specialisation counter bsym_table mgu in

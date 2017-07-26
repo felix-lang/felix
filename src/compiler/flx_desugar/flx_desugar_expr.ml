@@ -11,6 +11,7 @@ open Flx_typing2
 open Flx_pat
 open Flx_exceptions
 open Flx_curry
+open Flx_bid
 
 module CS = Flx_code_spec
 

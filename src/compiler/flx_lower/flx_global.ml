@@ -13,6 +13,7 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 open Flx_use
+open Flx_bid
 
 (* Garbage collector usage. The gc is required for non-stacked
   procedure calls, applications, closure formations,

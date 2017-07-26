@@ -1,3 +1,4 @@
+open Flx_type_aux
 
 (* returns true if a and b have an mgu,
    and also adds each element of the mgu to
@@ -14,8 +15,8 @@
    instantiated to multiple values .. ..])
 *)
 let do_unify counter varmap sym_table bsym_table a b =
-  let a' = Flx_unify.varmap_subst varmap a in
-  let b' = Flx_unify.varmap_subst varmap b in
+  let a' = varmap_subst varmap a in
+  let b' = varmap_subst varmap b in
   let eqns = [a',b'] in
 (*
   print_endline ("Calling unification " ^ Flx_print.sbt bsym_table a' ^ " ==? " ^ Flx_print.sbt bsym_table b');

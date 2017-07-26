@@ -1,19 +1,20 @@
 open Flx_set
 open Flx_types
 open List
+open Flx_bid
 
-type generic_rebind_entry_t = Flx_types.bid_t * Flx_btype.t
+type generic_rebind_entry_t = bid_t * Flx_btype.t
 type generic_cache_t =
-  (Flx_types.bid_t * generic_rebind_entry_t list,  Flx_btype.overload_result) Hashtbl.t
+  (bid_t * generic_rebind_entry_t list,  Flx_btype.overload_result) Hashtbl.t
 
 (* generic entity instances: functions, variables *)
 type instance_registry_t = (
-  Flx_types.bid_t * Flx_btype.t list,
-  Flx_types.bid_t
+  bid_t * Flx_btype.t list,
+  bid_t
 ) Hashtbl.t
 
-type type_registry_t = (Flx_btype.t * Flx_types.bid_t) list
-type type_array_as_tuple_registry_t = (Flx_types.bid_t, unit) Hashtbl.t
+type type_registry_t = (Flx_btype.t * bid_t) list
+type type_array_as_tuple_registry_t = (bid_t, unit) Hashtbl.t
 
 (* used when indexing concatenated arrays to find the offset
   of the n'th array.
@@ -22,7 +23,7 @@ type array_sum_offset_data_t = string * int list (* name, values *)
 type array_sum_offset_table_t = (Flx_btype.t, array_sum_offset_data_t) Hashtbl.t
 type power_table_t = (int,int list) Hashtbl.t
 
-type typevarmap_t = (Flx_types.bid_t, Flx_btype.t) Hashtbl.t
+type typevarmap_t = (bid_t, Flx_btype.t) Hashtbl.t
 
 type baxiom_method_t = [
   | `BPredicate of Flx_bexpr.t
@@ -30,17 +31,17 @@ type baxiom_method_t = [
 ]
 
 type env_t = (
-  Flx_types.bid_t *           (** container index *)
+  bid_t *           (** container index *)
   string *                    (** name *)
-  Flx_btype.name_map_t *      (** primary symbol map *)
-  Flx_btype.name_map_t list * (** directives *)
+  Flx_name_map.name_map_t *      (** primary symbol map *)
+  Flx_name_map.name_map_t list * (** directives *)
   Flx_ast.typecode_t          (** type constraint *)
 ) list
 
 type axiom_t =
   Flx_id.t *
   Flx_srcref.t *
-  Flx_types.bid_t option *
+  bid_t option *
   Flx_ast.axiom_kind_t *
   Flx_types.bvs_t *
   Flx_bparams.t *

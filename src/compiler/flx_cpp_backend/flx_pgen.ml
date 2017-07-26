@@ -15,6 +15,7 @@ open Flx_cexpr
 open Flx_maps
 open Flx_util
 open Flx_print
+open Flx_type_aux
 
 exception Found of Flx_btype.t
 

@@ -8,6 +8,7 @@ open Flx_exceptions
 open List
 open Flx_print
 open Flx_list
+open Flx_bid
 
 (* A type constraint written in a vs list is a simplification.
    The form

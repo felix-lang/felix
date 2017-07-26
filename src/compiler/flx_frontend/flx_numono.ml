@@ -9,6 +9,9 @@ open Flx_bbdcl
 open Flx_bexpr
 open Flx_bexe
 open Flx_bparameter
+open Flx_type_aux
+open Flx_bid
+
 module CS = Flx_code_spec
 
 (* NOTES
@@ -76,7 +79,7 @@ let mono_type syms bsym_table vars sr t =
 (*
 print_endline (" ** begin mono_type " ^ sbt bsym_table t);
 *)
-  let t = Flx_unify.list_subst syms.counter vars t in
+  let t = list_subst syms.counter vars t in
 (*
 print_endline (" ** mono_type after variable replacement " ^ sbt bsym_table t);
 *)
@@ -354,7 +357,7 @@ let fixup_type syms bsym_table vars bsym virtualinst polyinst sr t =
 *)
   t
 
-let fixup_req syms bsym_table vars polyinst sr (i,ts) : Flx_types.bid_t * Flx_btype.t list =
+let fixup_req syms bsym_table vars polyinst sr (i,ts) : bid_t * Flx_btype.t list =
   let ts = List.map (mono_type syms bsym_table vars sr) ts in
   let j,ts = polyinst sr i ts in
   let ts = List.map (poly_fixup_type syms bsym_table polyinst sr) ts in

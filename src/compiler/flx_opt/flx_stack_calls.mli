@@ -1,6 +1,7 @@
 (** Make stack calls
  *
  * Name binding pass 2 *)
+open Flx_bid
 
 val make_stack_calls:
   Flx_mtypes2.sym_state_t ->
@@ -13,5 +14,5 @@ val can_stack_func:
   Flx_bsym_table.t ->
   (Flx_btype.t, [`Recurse | `Safe | `Unsafe]) Hashtbl.t ->
   (Flx_btype.t, [`Recurse | `Safe | `Unsafe]) Hashtbl.t ->
-  Flx_types.bid_t ->
+  bid_t ->
   bool

@@ -26,6 +26,7 @@ open Flx_typing
 open Flx_unify
 open Flx_util
 open Flx_gen_helper
+open Flx_type_aux
 
 (* vs here is the (name,index) list of type variables *)
 let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =

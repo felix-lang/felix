@@ -9,6 +9,7 @@ open Flx_set
 open Flx_types
 open Flx_unify
 open Flx_util
+open Flx_type_aux
 
 let id x = x
 (*

@@ -10,6 +10,7 @@ open Flx_maps
 open Flx_util
 open Flx_print
 open Flx_mtypes2
+open Flx_bid
 
 (* NOTE: THIS CODE LARGELY DUPLICATES CODE IN flx_use.ml *)
 

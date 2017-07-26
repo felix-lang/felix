@@ -7,7 +7,9 @@ open Flx_bexe
 open Flx_bparameter
 open Flx_bbdcl
 open Flx_typing
+open Flx_name_map
 open List
+open Flx_bid
 
 module L = Flx_literal
 

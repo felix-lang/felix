@@ -14,6 +14,8 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 open Flx_label
+open Flx_bid
+open Flx_type_aux
 
 module CS = Flx_code_spec
 

@@ -42,4 +42,4 @@ val get_bparams: t -> Flx_bparams.t
 val get_bvs: t -> Flx_types.bvs_t
 
 (** Calls the function over every bid inside the bound symbol. *)
-val iter_uses : (Flx_types.bid_t -> unit) -> t -> unit
+val iter_uses : (Flx_bid.bid_t -> unit) -> t -> unit

@@ -1,14 +1,15 @@
+open Flx_bid
 type lookup_state_t = {
-  counter : Flx_types.bid_t ref;
+  counter : bid_t ref;
   print_flag: bool;
-  ticache : (Flx_types.bid_t, Flx_btype.t) Hashtbl.t;
+  ticache : (bid_t, Flx_btype.t) Hashtbl.t;
   varmap: Flx_mtypes2.typevarmap_t; 
     (* used by unification to fix the return types of functions
      * MUST be a reference to the global one because that's used
      * in the front and back ends extensively..
      *)
   sym_table: Flx_sym_table.t;
-  env_cache: (Flx_types.bid_t, Flx_mtypes2.env_t) Hashtbl.t;
+  env_cache: (bid_t, Flx_mtypes2.env_t) Hashtbl.t;
   generic_cache: Flx_mtypes2.generic_cache_t;
 }
 

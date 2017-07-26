@@ -8,6 +8,7 @@ open List
 open Flx_util
 open Flx_print
 open Flx_bsym
+open Flx_bid
 
 (* parent -> label index *)
 type labels_by_proc_t =

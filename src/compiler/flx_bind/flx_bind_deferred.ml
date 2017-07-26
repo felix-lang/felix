@@ -3,6 +3,8 @@ open Flx_btype
 open Flx_bexpr
 open Flx_lookup_state
 open Flx_types
+open Flx_name_map
+open Flx_bid
 
 type module_rep_t =
   | Simple_module of bid_t * typecode_t list * name_map_t * sdir_t list

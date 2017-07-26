@@ -1,5 +1,6 @@
 open Flx_ast
 open Flx_types
+open Flx_bid
 
 module CS = Flx_code_spec
 

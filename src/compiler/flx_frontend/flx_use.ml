@@ -12,6 +12,7 @@ open Flx_mtypes2
 open Flx_typing
 open Flx_unify
 open Flx_exceptions
+open Flx_bid
 
 (* These routines find the absolute use closure of a symbol,
 in particular they include variables which are initialised
@@ -462,7 +463,7 @@ print_endline ("copy used ... ");
         | Some parent ->
             (* Only add the parent if we're in the use list. Otherwiser, just
              * turn the symbol into a top level symbol. *)
-            if Flx_types.BidSet.mem parent bidset then begin
+            if BidSet.mem parent bidset then begin
               aux parent;
               Some parent
 
@@ -519,7 +520,7 @@ print_endline ("Flx_use: END   Handling function " ^ Flx_bsym.id bsym);
   in
 
   (* Add all the symbols to the new symbol bsym_table. *)
-  Flx_types.BidSet.iter aux bidset;
+  BidSet.iter aux bidset;
 
   (* Return the new symbol bsym_table. *)
   new_bsym_table

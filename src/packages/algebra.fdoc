@@ -934,8 +934,9 @@ open class Quantifiers_add_mul {
 @tangle monad.flx
 
 class Monad [M: TYPE->TYPE] {
-  virtual fun bind[a,b]: M a * (a -> M b) -> M b;
   virtual fun ret[a]: a -> M a;
+  virtual fun bind[a,b]: M a * (a -> M b) -> M b;
+  fun join[a] (n: M (M a)): M a => bind (n , (fun (x:M a):M a=>x));
 }
 
 

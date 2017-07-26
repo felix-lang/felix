@@ -1,14 +1,15 @@
 open Flx_ast
 open Flx_types
+open Flx_bid
 
 type t =
-  | BEXE_label of Flx_srcref.t * Flx_types.bid_t
+  | BEXE_label of Flx_srcref.t * bid_t
   | BEXE_comment of Flx_srcref.t * string (* for documenting generated code *)
   | BEXE_halt of Flx_srcref.t * string  (* for internal use only *)
   | BEXE_trace of Flx_srcref.t * string * string  (* for internal use only *)
-  | BEXE_goto of Flx_srcref.t * Flx_types.bid_t  (* for internal use only *)
+  | BEXE_goto of Flx_srcref.t * bid_t  (* for internal use only *)
   | BEXE_cgoto of Flx_srcref.t * Flx_bexpr.t (* computed goto *)
-  | BEXE_ifgoto of Flx_srcref.t * Flx_bexpr.t * Flx_types.bid_t (* for internal use only *)
+  | BEXE_ifgoto of Flx_srcref.t * Flx_bexpr.t * bid_t (* for internal use only *)
   | BEXE_ifcgoto of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
   | BEXE_call of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
   | BEXE_call_with_trap of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t

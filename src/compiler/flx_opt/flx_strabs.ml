@@ -12,6 +12,7 @@ open List
 open Flx_unify
 open Flx_maps
 open Flx_exceptions
+open Flx_type_aux
 
 
 (* this module, strabs, is responsible for upgrading an abstract

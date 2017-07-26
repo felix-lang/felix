@@ -1,10 +1,12 @@
+open Flx_bid
+
 val gen_expr:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
   Flx_set.StringSet.t ref ->
   (string, Flx_btype.t) Hashtbl.t ->
   Flx_label.label_info_t ->
-  Flx_types.bid_t ->
+  bid_t ->
   Flx_types.bvs_t ->
   Flx_btype.t list ->
   Flx_srcref.t ->
@@ -17,7 +19,7 @@ val gen_expr':
   Flx_set.StringSet.t ref ->
   (string, Flx_btype.t) Hashtbl.t ->
   Flx_label.label_info_t ->
-  Flx_types.bid_t ->
+  bid_t ->
   Flx_types.bvs_t ->
   Flx_btype.t list ->
   Flx_srcref.t ->
@@ -28,8 +30,8 @@ val gen_expr':
 val get_var_ref:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
-  Flx_types.bid_t ->
-  Flx_types.bid_t ->
+  bid_t ->
+  bid_t ->
   Flx_btype.t list ->
   string
 
@@ -37,7 +39,7 @@ val get_var_ref:
 val get_ref_ref:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
-  Flx_types.bid_t ->
-  Flx_types.bid_t ->
+  bid_t ->
+  bid_t ->
   Flx_btype.t list ->
   string

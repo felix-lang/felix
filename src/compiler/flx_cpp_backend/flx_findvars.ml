@@ -14,6 +14,8 @@ open Flx_print
 open Flx_exceptions
 open Flx_maps
 open Flx_name
+open Flx_bid
+open Flx_type_aux
 
 let find_thread_vars_with_type bsym_table =
   let vars = ref [] in
@@ -30,11 +32,11 @@ let find_references syms bsym_table index ts =
   let children =
     try
       Flx_bsym_table.find_children bsym_table index
-    with Not_found -> Flx_types.BidSet.empty
+    with Not_found -> BidSet.empty
   in
   let references = ref [] in
 
-  Flx_types.BidSet.iter begin fun idx ->
+  BidSet.iter begin fun idx ->
     try
       let bsym = Flx_bsym_table.find bsym_table idx in
       match Flx_bsym.bbdcl bsym with

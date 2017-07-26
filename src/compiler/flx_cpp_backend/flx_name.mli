@@ -1,5 +1,6 @@
 open Flx_types
 open Flx_mtypes2
+open Flx_bid
 
 val cpp_name :
   Flx_bsym_table.t ->

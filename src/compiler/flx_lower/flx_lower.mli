@@ -1,4 +1,5 @@
 type lower_state_t
+open Flx_bid
 
 (** Create the state needed for the frontend. *)
 val make_lower_state :
@@ -11,7 +12,7 @@ val make_lower_state :
 val lower_bsym_table :
   lower_state_t ->    (** The felix state. *)
   Flx_bsym_table.t -> (** The bound symbol table. *)
-  Flx_types.bid_t option ->  (** The root symbol. *)
+  bid_t option ->  (** The root symbol. *)
   Flx_bsym_table.t
 
 

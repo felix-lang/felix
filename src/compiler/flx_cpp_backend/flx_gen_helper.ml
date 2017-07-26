@@ -25,10 +25,12 @@ open Flx_types
 open Flx_typing
 open Flx_unify
 open Flx_util
+open Flx_bid
+open Flx_type_aux
 
 let find_variable_indices syms bsym_table index =
   let children = Flx_bsym_table.find_children bsym_table index in
-  Flx_types.BidSet.fold begin fun bid bids ->
+  BidSet.fold begin fun bid bids ->
     try match Flx_bsym_table.find_bbdcl bsym_table bid with
       | BBDCL_val (_,_,(`Val | `Var | `Ref | `Once)) -> bid :: bids
       | _ -> bids

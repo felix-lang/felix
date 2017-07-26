@@ -18,6 +18,7 @@ open Flx_typing
 open Flx_unify
 open Flx_use
 open Flx_util
+open Flx_bid
 
 let string_of_bidset s =
   "{ " ^

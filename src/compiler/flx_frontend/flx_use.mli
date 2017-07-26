@@ -1,11 +1,12 @@
 (** Elide unused entries
  *
  * Name binding pass 2. *)
+open Flx_bid
 
 val find_roots:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
-  Flx_types.bid_t option ->
+  bid_t option ->
   Flx_btype.biface_t list ->
   unit
 
@@ -13,14 +14,14 @@ val find_roots:
 val full_use_closure:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
-  Flx_types.BidSet.t
+  BidSet.t
 
 (* conditionally count initialisation as use *)
 val cal_use_closure:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
   bool ->
-  Flx_types.BidSet.t
+  BidSet.t
 
 val copy_used:
   Flx_mtypes2.sym_state_t ->

@@ -4,6 +4,7 @@ open Flx_ast
 open Flx_types
 open Flx_pat
 open Flx_util
+open Flx_bid
 
  
 let generated = Flx_srcref.make_dummy "[flx_match] generated"

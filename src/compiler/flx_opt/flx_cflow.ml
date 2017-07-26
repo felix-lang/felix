@@ -5,6 +5,7 @@ open Flx_util
 open Flx_mtypes2
 open Flx_print
 open Flx_label
+open Flx_bid
 
 let rec find_label tail label =
   match tail with

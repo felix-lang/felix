@@ -26,6 +26,8 @@ open Flx_typing
 open Flx_unify
 open Flx_util
 open Flx_gen_helper
+open Flx_bid
+open Flx_type_aux
 
 (*
 let gen_class syms bsym_table props index id sr vs ts instance_no =

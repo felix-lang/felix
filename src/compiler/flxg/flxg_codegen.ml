@@ -7,6 +7,7 @@ open Flx_print
 open Flx_util
 open Flx_version
 open Flxg_state
+open Flx_bid
 
 module CS = Flx_code_spec
 

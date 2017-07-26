@@ -1,7 +1,7 @@
 (** Optimisation stuff
  *
  * Name binding pass 2. *)
-
+open Flx_bid
 open Flx_ast
 open Flx_types
 open Flx_set

@@ -12,6 +12,7 @@ open List
 open Flx_print
 open Flx_exceptions
 open Flx_maps
+open Flx_type_aux
 
 (* EVERYTHING is a plain old data type, except primitives
    which are not declared as such, non-pod primitives

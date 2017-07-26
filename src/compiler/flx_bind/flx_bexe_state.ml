@@ -1,11 +1,12 @@
+open Flx_bid
 
 type bexe_state_t = {
-  counter: Flx_types.bid_t ref;
+  counter: bid_t ref;
   sym_table: Flx_sym_table.t;
   lookup_state: Flx_lookup_state.lookup_state_t;
   env: Flx_mtypes2.env_t;
   id: string;
-  parent: Flx_types.bid_t option;
+  parent: bid_t option;
   parent_vs: Flx_types.bvs_t;
   mutable ret_type: Flx_btype.t;
   mutable reachable: bool;

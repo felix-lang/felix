@@ -3,6 +3,7 @@ open Flx_types
 open Flx_set
 open Flx_mtypes2
 open Flx_call
+open Flx_bid
 
 type aentry_t =
   bid_t *

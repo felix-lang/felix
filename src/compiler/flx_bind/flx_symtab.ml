@@ -5,6 +5,8 @@
 open Flx_ast
 open Flx_types
 open Flx_btype
+open Flx_name_map
+open Flx_bid
 
 (* do NOT put stuff in this! *)
 let dummy_hashtab = Hashtbl.create 0
@@ -15,8 +17,8 @@ let str_parent x = match x with | Some p -> string_of_int p | None -> "None"
 
 type t = {
   sym_table: Flx_sym_table.t;
-  pub_name_map: (string, Flx_btype.entry_set_t) Hashtbl.t;
-  priv_name_map: (string, Flx_btype.entry_set_t) Hashtbl.t;
+  pub_name_map: (string, entry_set_t) Hashtbl.t;
+  priv_name_map: (string, entry_set_t) Hashtbl.t;
   inits_ref: int list ref;
   mutable exports: bound_iface_t list;
   mutable directives: sdir_t list;
@@ -36,8 +38,8 @@ let summary x =
 
 let detail x = 
   let dsp v = match v with
-  | NonFunctionEntry i -> string_of_int i.Flx_btype.base_sym
-  | FunctionEntry ls -> "{" ^ String.concat "," (List.map (fun k -> string_of_int k.Flx_btype.base_sym) ls) ^ "}"
+  | NonFunctionEntry i -> string_of_int i.base_sym
+  | FunctionEntry ls -> "{" ^ String.concat "," (List.map (fun k -> string_of_int k.base_sym) ls) ^ "}"
   in
 
   Flx_sym_table.detail x.sym_table ^"\n" ^
@@ -108,7 +110,7 @@ let mkentry counter_ref (vs:ivs_list_t) i =
   in
   let ts = List.map (fun i -> btyp_type_var (i, btyp_type 0)) is in
   let vs = List.map2 (fun i (n,_,_) -> n,i) is (fst vs) in
-  { Flx_btype.base_sym=i; spec_vs=vs; sub_ts=ts }
+  { base_sym=i; spec_vs=vs; sub_ts=ts }
 
 
 let merge_ivs
@@ -1001,8 +1003,8 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
       (* fudge the private view to remove the vs *)
       let fixup e =
         { e with
-          Flx_btype.spec_vs=drop e.Flx_btype.spec_vs;
-          sub_ts=nts @ drop e.Flx_btype.sub_ts }
+          spec_vs=drop e.spec_vs;
+          sub_ts=nts @ drop e.sub_ts }
       in
 
       Hashtbl.iter begin fun s es ->

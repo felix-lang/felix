@@ -1,4 +1,5 @@
 (** C++ code generator *)
+open Flx_bid
 
 val gen_function_names:
   Flx_mtypes2.sym_state_t ->
@@ -19,7 +20,7 @@ val gen_execute_methods:
   Flx_set.StringSet.t ref ->
   (string, Flx_btype.t) Hashtbl.t ->
   Flx_label.label_info_t ->
-  Flx_types.bid_t ref ->
+  bid_t ref ->
   out_channel ->
   out_channel ->
   unit

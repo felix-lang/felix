@@ -1,6 +1,8 @@
 (** Generate the C++ code. *)
+open Flx_bid
+
 val codegen:
   Flxg_state.t ->
   Flx_bsym_table.t ->
-  Flx_types.bid_t option ->
+  bid_t option ->
   unit

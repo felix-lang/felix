@@ -1,12 +1,14 @@
+open Flx_bid
+
 type elt = {
   bsym: Flx_bsym.t;               (** The symbol. *)
-  parent: Flx_types.bid_t option; (** The parent of the symbol. *)
+  parent: bid_t option; (** The parent of the symbol. *)
 }
 
 (** The type of the bound symbol table. *)
 type t = {
-  table: (Flx_types.bid_t, elt) Hashtbl.t;
-  childmap: (int, Flx_types.BidSet.t) Hashtbl.t; (** All of this bsym table's roots. *)
+  table: (bid_t, elt) Hashtbl.t;
+  childmap: (int, BidSet.t) Hashtbl.t; (** All of this bsym table's roots. *)
 }
 
 (** Construct a bound symbol table. *)
@@ -43,14 +45,14 @@ let find_parent bsym_table bid = (find_elt bsym_table bid).parent
 (** Searches the bound symbol table for the given symbol's children. *)
 let find_children bsym_table bid = 
    try Hashtbl.find bsym_table.childmap bid
-   with Not_found -> Flx_types.BidSet.empty
+   with Not_found -> BidSet.empty
 
 (** Finds all the descendants of the given symbol. *)
 let rec find_descendants bsym_table bid =
   let children = find_children bsym_table bid in
   let d = ref children in
-  Flx_types.BidSet.iter begin fun bid ->
-    d := Flx_types.BidSet.union !d (find_descendants bsym_table bid)
+  BidSet.iter begin fun bid ->
+    d := BidSet.union !d (find_descendants bsym_table bid)
   end children;
   !d
 
@@ -79,7 +81,7 @@ let add_bid_to_parent bsym_table parent bid =
   | None -> ()
   | Some parent ->
     (* assert (parent <> 0); FAILS .. WHY? *)
-    Hashtbl.replace bsym_table.childmap parent (Flx_types.BidSet.add bid (find_children bsym_table parent))
+    Hashtbl.replace bsym_table.childmap parent (BidSet.add bid (find_children bsym_table parent))
 
 (** Helper to remove a bid from the table roots or it's parent's children. *)
 let remove_bid_from_parent bsym_table parent bid =
@@ -90,10 +92,10 @@ let remove_bid_from_parent bsym_table parent bid =
     assert (parent <> 0);
     let kids = 
       try Hashtbl.find bsym_table.childmap parent 
-      with Not_found -> Flx_types.BidSet.empty 
+      with Not_found -> BidSet.empty 
     in
-    let kids = Flx_types.BidSet.remove bid kids in
-    if Flx_types.BidSet.is_empty kids then Hashtbl.remove bsym_table.childmap parent 
+    let kids = BidSet.remove bid kids in
+    if BidSet.is_empty kids then Hashtbl.remove bsym_table.childmap parent 
     else Hashtbl.replace bsym_table.childmap parent kids
 
 (** Adds the bound symbol with the index to the symbol table. *)
@@ -140,7 +142,7 @@ let rec remove bsym_table bid =
     Hashtbl.remove bsym_table.table bid;
 
     (* Finally, remove all our children as well. *)
-    Flx_types.BidSet.iter (remove bsym_table) (find_children bsym_table bid)
+    BidSet.iter (remove bsym_table) (find_children bsym_table bid)
   end
 
 (** Copies the bound symbol table. *)
@@ -181,7 +183,7 @@ let fold f bsym_table init =
 (** Returns whether or not one symbol is a child of another. *)
 let is_child bsym_table parent child =
   assert (child <> 0);
-  Flx_types.BidSet.mem child (find_children bsym_table parent)
+  BidSet.mem child (find_children bsym_table parent)
 
 (** Returns whether or not one symbol is an ancestor of another. *)
 let is_ancestor bsym_table child anc =

@@ -33,12 +33,14 @@ open Flx_unify
 open Flx_exceptions
 open Flx_use
 open Flx_prop
+open Flx_bid
+open Flx_type_aux
 
 let noeffects = Flx_btype.btyp_unit ()
 
 type closure_state_t = {
   syms: Flx_mtypes2.sym_state_t;
-  wrappers : (Flx_types.bid_t, Flx_types.bid_t) Hashtbl.t;
+  wrappers : (bid_t, bid_t) Hashtbl.t;
 }
 
 

@@ -1,3 +1,4 @@
+open Flx_bid
 
 (** Types
  *
@@ -14,24 +15,6 @@ type partial_order_result_t =
 ]
 
 open Flx_ast
-
-(** bid_t is the bound symbol index type, which is used to uniquely identifies
- * the symbol. *)
-type bid_t = int
-
-let dummy_bid = 0
-
-(** Create a set type for bound symbol indices. *)
-module BidSet = Flx_set.Make (
-  struct
-    type t = bid_t
-    let compare = compare
-  end
-)
-
-(** Convert a list of bids into a bid set. *)
-let bidset_of_list ii =
-  List.fold_left (fun ii i -> BidSet.add i ii) BidSet.empty ii
 
 type plain_ivs_list_t = (Flx_id.t * bid_t * typecode_t) list
 type ivs_list_t = plain_ivs_list_t * vs_aux_t

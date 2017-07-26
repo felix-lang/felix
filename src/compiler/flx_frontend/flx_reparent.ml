@@ -46,6 +46,7 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 open Flx_use
+open Flx_bid
 
 let mk_remap counter d =
   let m = Hashtbl.create 97 in

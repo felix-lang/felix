@@ -13,6 +13,7 @@ open Flx_maps
 open Flx_exceptions
 open Flx_use
 open Flx_call
+open Flx_bid
 
 type aentry_t =
   bid_t *

@@ -21,6 +21,7 @@ open Flx_maps
 open Flx_pgen
 open Flx_beta
 open Flx_label
+open Flx_type_aux
 
 module CS = Flx_code_spec
 module L = Flx_literal

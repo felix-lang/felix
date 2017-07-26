@@ -1,9 +1,10 @@
+open Flx_bid
 type bexpr_t = private
     BEXPR_int of int
   | BEXPR_not of t
   | BEXPR_deref of t
-  | BEXPR_varname of Flx_types.bid_t * Flx_btype.t list
-  | BEXPR_ref of Flx_types.bid_t * Flx_btype.t list
+  | BEXPR_varname of bid_t * Flx_btype.t list
+  | BEXPR_ref of bid_t * Flx_btype.t list
   | BEXPR_likely of t
   | BEXPR_unlikely of t
   | BEXPR_address of t
@@ -11,16 +12,16 @@ type bexpr_t = private
   | BEXPR_class_new of Flx_btype.t * t
   | BEXPR_literal of Flx_literal.literal_t
   | BEXPR_apply of t * t
-  | BEXPR_apply_prim of Flx_types.bid_t * Flx_btype.t list * t
-  | BEXPR_apply_direct of Flx_types.bid_t * Flx_btype.t list * t
-  | BEXPR_apply_stack of Flx_types.bid_t * Flx_btype.t list * t
-  | BEXPR_apply_struct of Flx_types.bid_t * Flx_btype.t list * t
+  | BEXPR_apply_prim of bid_t * Flx_btype.t list * t
+  | BEXPR_apply_direct of bid_t * Flx_btype.t list * t
+  | BEXPR_apply_stack of bid_t * Flx_btype.t list * t
+  | BEXPR_apply_struct of bid_t * Flx_btype.t list * t
   | BEXPR_tuple of t list
   | BEXPR_record of (string * t) list
   | BEXPR_polyrecord of (string * t) list * t
   | BEXPR_remove_fields of t * string list
   | BEXPR_variant of string * t
-  | BEXPR_closure of Flx_types.bid_t * Flx_btype.t list
+  | BEXPR_closure of bid_t * Flx_btype.t list
   | BEXPR_identity_function of Flx_btype.t
   | BEXPR_case of int * Flx_btype.t
   | BEXPR_match_case of int * t
@@ -42,7 +43,7 @@ type bexpr_t = private
   | BEXPR_rprj of string * int * Flx_btype.t * Flx_btype.t
   | BEXPR_aprj of t * Flx_btype.t * Flx_btype.t
   | BEXPR_inj of int * Flx_btype.t * Flx_btype.t
-  | BEXPR_label of Flx_types.bid_t
+  | BEXPR_label of bid_t
   | BEXPR_unitptr of int
   | BEXPR_cond of t * t * t
   | BEXPR_funprod of t
@@ -61,7 +62,7 @@ val bexpr_unit : bexpr_t * Flx_btype.t
 val bexpr_bool : bool -> bexpr_t * Flx_btype.t
 val bexpr_true : bexpr_t * Flx_btype.t
 val bexpr_false : bexpr_t * Flx_btype.t
-val bexpr_label : Flx_types.bid_t -> bexpr_t * Flx_btype.t
+val bexpr_label : bid_t -> bexpr_t * Flx_btype.t
 val bexpr_tuple_tail : Flx_btype.t -> t -> bexpr_t * Flx_btype.t
 val bexpr_tuple_head : Flx_btype.t -> t -> bexpr_t * Flx_btype.t
 val bexpr_tuple_cons : Flx_btype.t -> t * t -> bexpr_t * Flx_btype.t
@@ -72,9 +73,9 @@ val bexpr_deref : Flx_btype.t -> t -> t
 val bexpr_int : int -> bexpr_t * Flx_btype.t
 val bexpr_not : bexpr_t * Flx_btype.t -> t
 val bexpr_varname :
-  Flx_btype.t -> Flx_types.bid_t * Flx_btype.t list -> bexpr_t * Flx_btype.t
+  Flx_btype.t -> bid_t * Flx_btype.t list -> bexpr_t * Flx_btype.t
 val bexpr_ref :
-  Flx_btype.t -> Flx_types.bid_t * Flx_btype.t list -> bexpr_t * Flx_btype.t
+  Flx_btype.t -> bid_t * Flx_btype.t list -> bexpr_t * Flx_btype.t
 val bexpr_likely : bexpr_t * Flx_btype.t -> bexpr_t * Flx_btype.t
 val bexpr_unlikely : bexpr_t * Flx_btype.t -> bexpr_t * Flx_btype.t
 val bexpr_address : bexpr_t * Flx_btype.t -> bexpr_t * Flx_btype.t
@@ -84,15 +85,15 @@ val bexpr_literal : Flx_btype.t -> Flx_literal.literal_t -> bexpr_t * Flx_btype.
 val bexpr_apply : Flx_btype.t -> t * t -> bexpr_t * Flx_btype.t
 val bexpr_apply_prim :
   Flx_btype.t ->
-  Flx_types.bid_t * Flx_btype.t list * t -> bexpr_t * Flx_btype.t
+  bid_t * Flx_btype.t list * t -> bexpr_t * Flx_btype.t
 val bexpr_apply_direct :
   Flx_btype.t ->
-  Flx_types.bid_t * Flx_btype.t list * t -> bexpr_t * Flx_btype.t
+  bid_t * Flx_btype.t list * t -> bexpr_t * Flx_btype.t
 val bexpr_apply_stack :
   Flx_btype.t ->
-  Flx_types.bid_t * Flx_btype.t list * t -> bexpr_t * Flx_btype.t
+  bid_t * Flx_btype.t list * t -> bexpr_t * Flx_btype.t
 val bexpr_apply_struct :
-  Flx_btype.t -> Flx_types.bid_t * Flx_btype.t list * t -> bexpr_t * Flx_btype.t
+  Flx_btype.t -> bid_t * Flx_btype.t list * t -> bexpr_t * Flx_btype.t
 val bexpr_tuple : Flx_btype.t -> t list -> bexpr_t * Flx_btype.t
 val bexpr_coerce : t * Flx_btype.t -> bexpr_t * Flx_btype.t
 val bexpr_prj : int -> Flx_btype.t -> Flx_btype.t -> bexpr_t * Flx_btype.t
@@ -117,7 +118,7 @@ val bexpr_get_named :
   Flx_btype.t -> string -> bexpr_t * Flx_btype.t -> bexpr_t * Flx_btype.t
 
 
-val bexpr_closure : Flx_btype.t -> Flx_types.bid_t * Flx_btype.t list -> bexpr_t * Flx_btype.t
+val bexpr_closure : Flx_btype.t -> bid_t * Flx_btype.t list -> bexpr_t * Flx_btype.t
 val bexpr_const_case : int * Flx_btype.t -> bexpr_t * Flx_btype.t
 val bexpr_nonconst_case :
   Flx_btype.t -> int * Flx_btype.t -> bexpr_t * Flx_btype.t
@@ -137,17 +138,17 @@ val bexpr_lrbrack : Flx_btype.t -> t -> bexpr_t * Flx_btype.t
 val get_ts : bexpr_t * Flx_btype.t -> Flx_btype.t list
 val cmp : t -> t -> bool
 val flat_iter :
-  ?f_bid:(Flx_types.bid_t -> unit) ->
+  ?f_bid:(bid_t -> unit) ->
   ?f_btype:(Flx_btype.t -> unit) ->
   ?f_bexpr:(t -> unit) ->
-  ?f_label:(Flx_types.bid_t -> unit) -> bexpr_t * Flx_btype.t -> unit
+  ?f_label:(bid_t -> unit) -> bexpr_t * Flx_btype.t -> unit
 val iter :
-  ?f_bid:(Flx_types.bid_t -> unit) ->
+  ?f_bid:(bid_t -> unit) ->
   ?f_btype:(Flx_btype.t -> unit) ->
   ?f_bexpr:(bexpr_t * Flx_btype.t -> unit) ->
-  ?f_label:(Flx_types.bid_t -> unit) -> t -> unit
+  ?f_label:(bid_t -> unit) -> t -> unit
 val map :
-  ?f_bid:(Flx_types.bid_t -> Flx_types.bid_t) ->
+  ?f_bid:(bid_t -> bid_t) ->
   ?f_btype:(Flx_btype.t -> Flx_btype.t) ->
   ?f_bexpr:(t -> t) -> bexpr_t * Flx_btype.t -> bexpr_t * Flx_btype.t
 val reduce : t -> t

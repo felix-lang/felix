@@ -18,6 +18,9 @@ open Flx_generic
 open Flx_overload
 open Flx_tpat
 open Flx_lookup_state
+open Flx_name_map
+open Flx_type_aux
+open Flx_bid
 
 let svs (s,i,mt) = s ^ "<" ^ si i ^ ">:"^ string_of_typecode mt
 
@@ -50,13 +53,12 @@ let mkentry state (vs:ivs_list_t) i =
     (fun _ -> fresh_bid state.counter)
     (fst vs)
   in
-  let ts = List.map (fun i ->
-    (*
-    print_endline ("[mkentry] Fudging type variable type " ^ si i);
-    *)
-    btyp_type_var (i, btyp_type 0)) is
+  let ts = List.map2 (fun i (n,_,mt) ->
+    let mt = bmt mt in
+    btyp_type_var (i, mt)) is (fst vs)
   in
-  let vs = List.map2 (fun i (n,_,_) -> n,i) is (fst vs) in
+  let vs = List.map2 (fun i (n,_,_) -> 
+  n,i) is (fst vs) in
   {base_sym=i; spec_vs=vs; sub_ts=ts}
 
 
@@ -130,8 +132,8 @@ let eq_entry_kinds y1 y2 =
      (* just hope these variables aren't used, since they're low indices this should be safe *)
      let nuvs = List.map (fun i -> btyp_type_var (i, btyp_type 0)) (Flx_list.nlist nvs) in
      let sr = dummy_sr in 
-     let ts1 = List.map (fun t-> Flx_unify.tsubst sr vs1 nuvs t) ts1 in
-     let ts2 = List.map (fun t-> Flx_unify.tsubst sr vs2 nuvs t) ts2 in
+     let ts1 = List.map (fun t-> tsubst sr vs1 nuvs t) ts1 in
+     let ts2 = List.map (fun t-> tsubst sr vs2 nuvs t) ts2 in
      (* OK, a bit hacky! should use type_eq but that requires counter and bsym_table *)
      (btyp_type_tuple ts1) = (btyp_type_tuple ts2)
    end
@@ -892,7 +894,7 @@ print_endline ("Calling Flx_beta.adjust, possibly incorrectly, type = " ^ sbt bs
 
   | TYP_var i ->
 (*
-print_endline ("Binding TYP_var " ^ si i);
+print_endline ("FUDGE: Binding TYP_var " ^ si i);
 *)
       (* HACK .. assume variable is type TYPE *)
       btyp_type_var (i, btyp_type 0)
@@ -1168,14 +1170,14 @@ end;
 (*
 if string_of_qualified_name x = "digraph_t" then begin
         print_endline ("bind_type': Type "^string_of_typecode t^"=Qualified name "^string_of_qualified_name x^" lookup finds index " ^
-          string_of_bid entry_kind.Flx_btype.base_sym);
+          string_of_bid entry_kind.base_sym);
         print_endline ("Kind=" ^ match t with | TYP_name (_,s,ts) -> "TYP_name ("^s^"["^catmap ","string_of_typecode ts^"])" | _ -> "TYP_*");
         print_endline ("spec_vs=" ^
           catmap ","
             (fun (s,j)-> s ^ "<" ^ string_of_bid j ^ ">")
-            entry_kind.Flx_btype.spec_vs);
+            entry_kind.spec_vs);
         print_endline ("sub_ts=" ^
-          catmap "," (sbt bsym_table) entry_kind.Flx_btype.sub_ts);
+          catmap "," (sbt bsym_table) entry_kind.sub_ts);
 end;
 *)
       let ts = List.map bt ts in
@@ -1185,8 +1187,8 @@ if string_of_qualified_name x = "digraph_t" then begin
 end;
 *)
       let baset = bi
-        entry_kind.Flx_btype.base_sym
-        entry_kind.Flx_btype.sub_ts
+        entry_kind.base_sym
+        entry_kind.sub_ts
       in
 (*
 if string_of_qualified_name x = "digraph_t" then begin
@@ -1194,20 +1196,20 @@ if string_of_qualified_name x = "digraph_t" then begin
 end;
 *)
       (* SHOULD BE CLIENT ERROR not assertion *)
-      if List.length ts != List.length entry_kind.Flx_btype.spec_vs then 
+      if List.length ts != List.length entry_kind.spec_vs then 
       begin
         print_endline ("bind_type': Type "^string_of_typecode t^"=Qualified name "^string_of_qualified_name x^" lookup finds index " ^
-          string_of_bid entry_kind.Flx_btype.base_sym);
+          string_of_bid entry_kind.base_sym);
         print_endline ("Kind=" ^ match t with | TYP_name (_,s,ts) -> "TYP_name ("^s^"["^catmap ","string_of_typecode ts^"])" | _ -> "TYP_*");
         print_endline ("spec_vs=" ^
           catmap ","
             (fun (s,j)-> s ^ "<" ^ string_of_bid j ^ ">")
-            entry_kind.Flx_btype.spec_vs);
+            entry_kind.spec_vs);
         print_endline ("spec_ts=" ^
-          catmap "," (sbt bsym_table) entry_kind.Flx_btype.sub_ts);
+          catmap "," (sbt bsym_table) entry_kind.sub_ts);
         print_endline ("input_ts=" ^ catmap "," (sbt bsym_table) ts);
         begin match
-          hfind "lookup" state.sym_table entry_kind.Flx_btype.base_sym
+          hfind "lookup" state.sym_table entry_kind.base_sym
         with
           | { Flx_sym.id=id; vs=vs; symdef=SYMDEF_typevar _ } ->
             print_endline (id ^ " is a typevariable, vs=" ^
@@ -1220,12 +1222,12 @@ end;
 
         clierr2 sr sr2
           ("Wrong number of type variables, expected " ^
-          si (List.length entry_kind.Flx_btype.spec_vs) ^ ", but got " ^
+          si (List.length entry_kind.spec_vs) ^ ", but got " ^
           si (List.length ts))
       end;
 
-      assert (List.length ts = List.length entry_kind.Flx_btype.spec_vs);
-      let t = tsubst sr entry_kind.Flx_btype.spec_vs ts baset in
+      assert (List.length ts = List.length entry_kind.spec_vs);
+      let t = tsubst sr entry_kind.spec_vs ts baset in
 (*
 if string_of_qualified_name x = "digraph_t" then begin
       print_endline ("Base type bound with input ts replacing spec type variables " ^ sbt bsym_table t);
@@ -1817,8 +1819,12 @@ print_endline ("Calling bind_epression'");
               e []
             )
         in
-(* print_endline "Bound the expression .. "; *)
-        if Flx_do_unify.do_unify
+(*
+print_endline "Flx_lookup: about to check calculated and registered return type";
+print_endline ("Return type = " ^ Flx_btype.st !ret_type);
+print_endline ("Return expression type = " ^ Flx_btype.st t);
+*)
+        let result = Flx_do_unify.do_unify
           state.counter
           state.varmap
           state.sym_table
@@ -1826,7 +1832,8 @@ print_endline ("Calling bind_epression'");
           !ret_type
           t
           (* the argument order is crucial *)
-        then
+        in 
+       if result then
           let t' = varmap_subst state.varmap !ret_type in
 (*
 print_endline (" %%%%% Setting return type to " ^ sbt bsym_table t');
@@ -1916,6 +1923,9 @@ print_endline (" %%%%% Setting return type to " ^ sbt bsym_table t');
     ;
     if !return_counter = 0 then (* it's a procedure .. *)
     begin
+(*
+print_endline ("Flx_lookup about to do unify[2]");
+*)
       let mgu = Flx_do_unify.do_unify
         state.counter
         state.varmap
@@ -2492,7 +2502,7 @@ and lookup_qn_with_sig'
         *)
         let hack_vs,_ = vs in
         let hvs = List.map (fun (id,index,kind) -> id,index) hack_vs in
-        let hts = List.map (fun (_,index) -> Flx_btype.btyp_type_var (index,Flx_btype.btyp_type 0)) hvs in
+        let hts = List.map (fun (_,index,kind) -> Flx_btype.btyp_type_var (index,bmt kind)) hack_vs in
         let hacked_entry = { base_sym=index; spec_vs=hvs; sub_ts=hts } in
         let ro = resolve_overload state bsym_table env rs sra [hacked_entry] id signs ts in
         let (_,t),bts =
@@ -2768,7 +2778,11 @@ print_endline ("Error lookup name with sig .. " ^ Printexc.to_string x);
       ->
       let vs = find_vs state.sym_table bsym_table index in
       let ts = List.map
-        (fun (_,i,_) -> btyp_type_var (i,btyp_type 0))
+        (fun (name,i,kind) -> 
+(*
+print_endline ("AST_index(function): "^name^"=T<"^string_of_int i^">");
+*)
+          btyp_type_var (i,bmt kind))
         (fst vs)
       in
       let x = bexpr_closure
@@ -2778,11 +2792,15 @@ print_endline ("Error lookup name with sig .. " ^ Printexc.to_string x);
       x
 
     | _ ->
-      (*
-      print_endline "Non function ..";
-      *)
+(*
+      print_endline ("Non function (guess metatype) " ^ name);
+*)
       let ts = List.map
-        (fun (_,i,_) -> btyp_type_var (i,btyp_type 0))
+        (fun (_,i,kind) ->
+(*
+print_endline ("AST_index (nonfunction): "^name^"=T<"^string_of_int i^">");
+*)
+ btyp_type_var (i,bmt kind))
         (fst vs)
       in
       handle_nonfunction_index index ts
@@ -2975,7 +2993,9 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
       ->
       let vs = find_vs state.sym_table bsym_table index in
       let ts = List.map
-        (fun (_,i,_) -> btyp_type_var (i, btyp_type 0))
+        (fun (name,i,kind) ->
+print_endline ("AST_name: "^name^"=T<"^string_of_int i^">");
+ btyp_type_var (i, bmt kind))
         (fst vs)
       in
       begin try 
@@ -2993,7 +3013,9 @@ print_endline "Abnormal exit inner_type_of_index from `AST_index";
       print_endline "Non function ..";
       *)
       let ts = List.map
-        (fun (_,i,_) -> btyp_type_var (i, btyp_type 0))
+        (fun (name,i,kind) ->
+print_endline ("AST_name: "^name^"=T<"^string_of_int i^">");
+ btyp_type_var (i, bmt kind))
         (fst vs)
       in
       handle_nonfunction_index index ts
@@ -3958,7 +3980,7 @@ and handle_map sr (f,ft) (a,at) =
       *)
       failwith "MAP NOT IMPLEMENTED"
 
-and lookup_label_in_env state bsym_table env sr name : Flx_types.bid_t option =
+and lookup_label_in_env state bsym_table env sr name : bid_t option =
   let result = 
     try 
       Some (inner_lookup_name_in_env state bsym_table (env:env_t) rsground sr name)
@@ -5633,7 +5655,11 @@ print_endline ("Union parent vs = " ^  catmap "," (fun (s,_,_) -> s) parent_vs ^
 *)
             let vt,vct =
               let bvs = List.map
-                (fun (n,i,_) -> n, btyp_type_var (i, btyp_type 0))
+                (fun (name,i,kind) -> 
+(*
+print_endline ("AST_name(BTYP_inst): "^name^"=T<"^string_of_int i^">");
+*)
+                 name, btyp_type_var (i, bmt kind))
                 vs
               in
 (*
@@ -5671,7 +5697,7 @@ print_endline ("Dependent variables to solve for = ");
           | None -> raise GadtUnificationFailure
           | Some mgu ->
 (*
-            print_endline ("MGU=");
+            print_endline ("Flx_lookup unification manual: MGU=");
             List.iter (fun (j,t) -> print_endline ("  ** tvar " ^ string_of_int j ^ " --> " ^ sbt bsym_table t))
             mgu;
 *)
@@ -5923,8 +5949,8 @@ and clone state bsym_table fi ft fbt fe fx new_vs generic_alias index =
 (*
       print_endline ("CLONING SYMBOL " ^ id ^"<"^si index^">");
 *)
-      let nupubmap = Flx_btype.map_name_map fi fbt pubmap in 
-      let nuprivmap = Flx_btype.map_name_map fi fbt privmap in
+      let nupubmap =map_name_map fi fbt pubmap in 
+      let nuprivmap = map_name_map fi fbt privmap in
       Hashtbl.iter (fun key value -> Hashtbl.replace nuprivmap key value)
       generic_alias;
 (*
@@ -6217,7 +6243,7 @@ print_endline ("Trying to bind type name=" ^ tname);
 (*
 print_endline ("Adding alias " ^ s ^ "<"^si alias_index^"> -> " ^ string_of_typecode t);
 *)
-      let entry = NonFunctionEntry {Flx_btype.base_sym=alias_index; spec_vs=[]; sub_ts=[]} in
+      let entry = NonFunctionEntry {base_sym=alias_index; spec_vs=[]; sub_ts=[]} in
       Hashtbl.add generic_alias s entry;
       let symdef = SYMDEF_type_alias t in
       let sym = {Flx_sym.id=s;sr=sr;vs=dfltvs;pubmap=noalias; privmap=noalias;dirs=[];symdef=symdef} in
@@ -6360,7 +6386,11 @@ print_endline ("Includes, id = " ^ id);
             with Not_found -> failwith "QN NOT FOUND"
           in
             let mkenv i = mk_bare_env state bsym_table i in
-            let args = List.map (fun (n,k,_) -> n,btyp_type_var (k,btyp_type 0)) (fst invs2) in
+            let args = List.map (fun (n,k,kind) -> 
+(*
+print_endline ("FUDGE: get includes: "^n^"=T<"^string_of_int k^">");
+*)
+              n,btyp_type_var (k,bmt kind)) (fst invs2) in
             let bt t = bind_type' state bsym_table env rs sr t args mkenv in
             let ts'' = List.map bt ts'' in
             let ts'' = List.map (tsubst sr vs ts) ts'' in
@@ -6499,6 +6529,9 @@ and review_entry state bsym_table name sr vs ts {base_sym=i; spec_vs=vs'; sub_ts
          (*
          print_endline ("SYNTHESISE FRESH VIEW VARIABLE "^si i^" for missing ts");
          *)
+(*
+print_endline ("FUDGE: review entry: "^name^"=T<"^string_of_int i^">");
+*)
          let h' = btyp_type_var (i, btyp_type 0) in
          (*
          let h' = let (_,i) = h in btyp_type_var (i, btyp_type 0) in

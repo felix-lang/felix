@@ -1,11 +1,12 @@
 open Flx_sym
 open Flx_ast
+open Flx_bid
 
 type bind_state_t = {
   syms: Flx_mtypes2.sym_state_t;
   sym_table: Flx_sym_table.t;
   symtab: Flx_symtab.t;
-  parent: Flx_types.bid_t option;
+  parent: bid_t option;
   bexe_state: Flx_bexe_state.bexe_state_t;
   lookup_state: Flx_lookup_state.lookup_state_t;
   bbind_state: Flx_bbind.bbind_state_t;
@@ -13,7 +14,7 @@ type bind_state_t = {
 
 type bound_t =
   | Bound_exe of Flx_bexe.t
-  | Bound_symbol of (Flx_types.bid_t * Flx_bsym.t)
+  | Bound_symbol of (bid_t * Flx_bsym.t)
 
 (** Constructs the bind state needed for a batch compiler. *)
 let make_bind_state syms sym_table =

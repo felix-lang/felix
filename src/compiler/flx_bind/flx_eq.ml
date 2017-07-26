@@ -1,6 +1,7 @@
 open Flx_ast
 open Flx_btype
 open Flx_types
+open Flx_name_map
 
 let apl2 (sr:Flx_srcref.t) (fn : string) (tup:expr_t list) =
   EXPR_apply
