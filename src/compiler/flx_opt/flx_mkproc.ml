@@ -18,6 +18,7 @@ open Flx_exceptions
 open Flx_use
 open Flx_spexes
 open Flx_args
+open Flx_bid
 
 let ident x = x
 

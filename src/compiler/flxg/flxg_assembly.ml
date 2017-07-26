@@ -4,6 +4,7 @@ open Flx_exceptions
 open Flx_options
 open Flx_types
 open Flxg_state
+open Flx_bid
 
 module CS = Flx_code_spec
 
@@ -96,7 +97,7 @@ print_endline ("  ..  timestamp #include file '" ^ include_file ^ "'");
 *)
 
 let assemble state parser_state exclusions module_name input =
-  let fresh_bid () = Flx_mtypes2.fresh_bid state.syms.counter in
+  let fresh_bid () = fresh_bid state.syms.counter in
   let outputs = ref [] in
 
   (* PARSE THE IMPLEMENTATION FILES *)

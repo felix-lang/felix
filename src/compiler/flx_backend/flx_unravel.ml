@@ -1,6 +1,7 @@
 open Flx_types
 open Flx_bexpr
 open Flx_bbdcl
+open Flx_bid
 
 let rec eassoc x l = match l with
   | [] -> raise Not_found
@@ -16,7 +17,7 @@ let unravel syms bsym_table e =
   let get e =
     try eassoc e !sube
     with Not_found ->
-      let n = Flx_mtypes2.fresh_bid syms.Flx_mtypes2.counter in
+      let n = fresh_bid syms.Flx_mtypes2.counter in
       let name = "_tmp" ^ Flx_print.string_of_bid n in
       sube := (e, name) :: !sube;
       name

@@ -101,18 +101,6 @@ print_endline ("Merge entry " ^ k);
     Hashtbl.add htab k v
   end
 
-
-(* use fresh variables, but preserve names *)
-let mkentry counter_ref (vs:ivs_list_t) i =
-  let is = List.map
-    (fun _ -> Flx_mtypes2.fresh_bid counter_ref)
-    (fst vs)
-  in
-  let ts = List.map (fun i -> btyp_type_var (i, btyp_type 0)) is in
-  let vs = List.map2 (fun i (n,_,_) -> n,i) is (fst vs) in
-  { base_sym=i; spec_vs=vs; sub_ts=ts }
-
-
 let merge_ivs
   (vs1,{ raw_type_constraint=con1; raw_typeclass_reqs=rtcr1 })
   (vs2,{ raw_type_constraint=con2; raw_typeclass_reqs=rtcr2 }) :
@@ -244,7 +232,7 @@ let full_replace_function counter_ref sym_table sr (vs:ivs_list_t) table key val
 let make_ivs ?(print=false) level counter_ref (vs, con) : ivs_list_t =
   let ivs =
     List.map begin fun (tid, tpat) ->
-      let n = Flx_mtypes2.fresh_bid counter_ref in
+      let n = fresh_bid counter_ref in
       if print then
         print_endline ("//  " ^ Flx_util.spaces level ^
           Flx_print.string_of_bid n ^ " -> " ^ tid ^ " (type variable)");
@@ -400,7 +388,7 @@ and build_table_for_dcl
   let symbol_index =
     match seq with
     | Some n -> n
-    | None -> Flx_mtypes2.fresh_bid counter_ref
+    | None -> fresh_bid counter_ref
   in
 
   if print_flag then
@@ -538,7 +526,7 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
   let add_tvars table = add_tvars' (Some symbol_index) table ivs in
 
   let add_parameter pubtab privtab parent (k, name, typ, dflt) =
-    let n = Flx_mtypes2.fresh_bid counter_ref in
+    let n = fresh_bid counter_ref in
 
     if print_flag then
       print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n ^ " -> " ^
@@ -572,7 +560,7 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
   let add_labels parent privtab exes = 
     List.iter (fun exe -> match exe with
       | sr,EXE_label name -> 
-        let lidx = Flx_mtypes2.fresh_bid counter_ref in
+        let lidx = fresh_bid counter_ref in
         if print_flag then
           print_endline ("//  " ^ spc ^ Flx_print.string_of_bid lidx ^ " -> " ^
             name ^ " (label of "^string_of_int symbol_index^")");
@@ -780,7 +768,7 @@ print_endline ("ROOT: Init procs = " ^ string_of_int (List.length inner_inits));
           | SYMDEF_root old_init_proc -> 
             let new_init_proc =
               if List.length exes > 0 then begin
-                let init_fun = Flx_mtypes2.fresh_bid counter_ref in
+                let init_fun = fresh_bid counter_ref in
                 let init_privtab = Hashtbl.create 97 in
                 add_labels init_fun init_privtab exes;
 
@@ -872,7 +860,7 @@ print_endline ("Checking parent's public map");
 
       let exes = (make_calls sr (List.rev !capture_inits)) @ exes in
       if List.length exes > 0 then begin
-        let init_fun = Flx_mtypes2.fresh_bid counter_ref in
+        let init_fun = fresh_bid counter_ref in
         inits_ref := init_fun :: !inits_ref;
         let init_privtab = Hashtbl.create 97 in
         add_labels init_fun init_privtab exes;
@@ -930,7 +918,7 @@ print_endline ("MODULE "^name^" Init procs = " ^ string_of_int (List.length inne
         (if complete_vs = dfltvs then exes else []) 
       in
       if List.length exes > 0 then begin
-        let init_fun = Flx_mtypes2.fresh_bid counter_ref in
+        let init_fun = fresh_bid counter_ref in
         inits_ref := init_fun :: !inits_ref;
         let init_privtab = Hashtbl.create 97 in
         add_labels init_fun init_privtab exes;
@@ -1025,7 +1013,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
         (if complete_vs = dfltvs then exes else []) 
       in
       if List.length exes > 0 then begin
-        let init_fun = Flx_mtypes2.fresh_bid counter_ref in
+        let init_fun = fresh_bid counter_ref in
         inits_ref := init_fun :: !inits_ref;
         let init_privtab = Hashtbl.create 97 in
         add_labels init_fun init_privtab exes;
@@ -1208,7 +1196,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
 
       (* XXX: What's the _repr_ function for? *)
       (* ANS: it gets the representation of the abstract type *)
-      let n_repr = Flx_mtypes2.fresh_bid counter_ref in
+      let n_repr = fresh_bid counter_ref in
 
       (* Add the _repr_ function to the symbol table. *)
       add_symbol ~pubtab ~privtab n_repr "_repr_" (SYMDEF_fun (
@@ -1225,7 +1213,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
 
       (* XXX: What's the _make_ function for? *)
       (* ANS: its a type constructor for the abstract type, made from representation *)
-      let n_make = Flx_mtypes2.fresh_bid counter_ref in
+      let n_make = fresh_bid counter_ref in
 
       (* Add the _make_ function to the symbol table. *)
       add_symbol ~pubtab ~privtab n_make ("_make_" ^ id) (SYMDEF_fun (
@@ -1346,8 +1334,8 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       in
 
       List.iter begin fun (component_name, ctor_idx, evs, d,c,gadt) ->
-        let dfn_idx = Flx_mtypes2.fresh_bid counter_ref in (* constructor *)
-        let match_idx = Flx_mtypes2.fresh_bid counter_ref in (* matcher *)
+        let dfn_idx = fresh_bid counter_ref in (* constructor *)
+        let match_idx = fresh_bid counter_ref in (* matcher *)
 
         (* name lookup tables owned by constructor, for type variables *)
         let ctorprivtab = Hashtbl.create 3 in

@@ -34,6 +34,7 @@ module L = Flx_literal
 
 type module_rep_t = Flx_bind_deferred.module_rep_t
 
+let mkentry counter_ref vs i = Flx_name_map.mkentry counter_ref vs i
 
   (*
 (*
@@ -46,21 +47,6 @@ let bsym_table = Flx_bsym_table.create ()
 let dummy_sr = Flx_srcref.make_dummy "[flx_lookup] generated"
 
 let unit_t = btyp_tuple []
-
-(* use fresh variables, but preserve names *)
-let mkentry state (vs:ivs_list_t) i =
-  let is = List.map
-    (fun _ -> fresh_bid state.counter)
-    (fst vs)
-  in
-  let ts = List.map2 (fun i (n,_,mt) ->
-    let mt = bmt mt in
-    btyp_type_var (i, mt)) is (fst vs)
-  in
-  let vs = List.map2 (fun i (n,_,_) -> 
-  n,i) is (fst vs) in
-  {base_sym=i; spec_vs=vs; sub_ts=ts}
-
 
 exception Found of int
 exception Tfound of Flx_btype.t
@@ -3649,7 +3635,7 @@ end;
           sra srn name ts index
         in
           (*
-          print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind state.sym_table (mkentry state dfltvs index));
+          print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind state.sym_table (mkentry state.counter dfltvs index));
           print_endline ("Value of ts is " ^ catmap "," (sbt bsym_table) ts);
           print_endline ("Instantiated closure value is " ^ sbe bsym_table tb);
           print_endline ("type is " ^ sbt bsym_table tt);
@@ -3884,7 +3870,7 @@ and lookup_type_name_in_table_dirs_with_sig
           sra srn name ts index
         in
 (*
-          print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind state.sym_table bsym_table (mkentry state dfltvs index));
+          print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind state.sym_table bsym_table (mkentry state.counter dfltvs index));
           print_endline ("Value of ts is " ^ catmap "," (sbt bsym_table) ts);
           print_endline ("Instantiated type is " ^ sbt bsym_table tb);
 *)
@@ -6164,7 +6150,7 @@ end;
     print_endline "*** Calculating new rebinding";
 *)
     let sym = Flx_sym_table.find state.sym_table index in
-    let fresh () = Flx_mtypes2.fresh_bid state.counter in
+    let fresh () = fresh_bid state.counter in
     let remap_table = Hashtbl.create 97 in 
     let add i = let j = fresh() in (Hashtbl.add remap_table i j);j in
     let fi i = try Hashtbl.find remap_table i with Not_found -> i in
@@ -6487,80 +6473,11 @@ and bind_dir
   *)
   vs,i,ts'
 
-and review_entry state bsym_table name sr vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts'} : entry_kind_t =
-   (* vs is the set of type variables at the call point,
-     there are vs in the given ts,
-     ts is the instantiation of another view,
-     the number of these should agree with the view variables vs',
-     we're going to plug these into formula got thru that view
-     to form the next one.
-     ts' may contain type variables of vs'.
-     The ts' are ready to plug into the base objects type variables
-     and should agree in number.
-
-     SO .. we have to replace the vs' in each ts' using the given
-     ts, and then record that the result contains vs variables
-     to allow for the next composition .. whew!
-   *)
-
-   (* if vs' is has extra variables,
-      (*
-      tack them on to the ts
-      *)
-      synthesise a new vs/ts pair
-      if vs' doesn't have enough variables, just drop the extra ts
-   *)
-    (*
-    print_endline ("Review entry " ^ name ^ "<" ^ si i ^">");
-    print_endline ("input vs="^catmap "," (fun (s,i)->s^"<"^si i^">") vs^
-      ", input ts="^catmap "," (sbt bsym_table) ts);
-    print_endline ("old vs="^catmap "," (fun (s,i)->s^"<"^si i^">") vs'^
-      ", old ts="^catmap "," (sbt bsym_table) ts');
-   *)
-   let vs = ref (List.rev vs) in
-   let vs',ts =
-     let rec aux invs ints outvs outts =
-       match invs,ints with
-       | h::t,h'::t' -> aux t t' (h::outvs) (h'::outts)
-       | h::t,[] ->
-         let i = fresh_bid state.counter in
-         let (name,_) = h in
-         vs := (name,i)::!vs;
-         (*
-         print_endline ("SYNTHESISE FRESH VIEW VARIABLE "^si i^" for missing ts");
-         *)
-(*
-print_endline ("FUDGE: review entry: "^name^"=T<"^string_of_int i^">");
-*)
-         let h' = btyp_type_var (i, btyp_type 0) in
-         (*
-         let h' = let (_,i) = h in btyp_type_var (i, btyp_type 0) in
-         *)
-         aux t [] (h::outvs) (h'::outts)
-       | [],h::t -> 
-         (* NOT seem to happen in practice .. *)
-         print_endline ("Extra ts dropped, not enough vs");
-         List.rev outvs, List.rev outts
-       | [],[] -> List.rev outvs, List.rev outts
-     in aux vs' ts [] []
-   in
-   let vs = List.rev !vs in
-   let ts' = List.map (tsubst sr vs' ts) ts' in
-   (*
-   print_endline ("output vs="^catmap "," (fun (s,i)->s^"<"^si i^">") vs^
-   ", output ts="^catmap "," (sbt bsym_table) ts');
-   *)
-   {base_sym=i; spec_vs=vs; sub_ts=ts'}
-
-and review_entry_set state bsym_table k v sr vs ts : entry_set_t = match v with
-  | NonFunctionEntry i -> NonFunctionEntry (review_entry state bsym_table k sr vs ts i)
-  | FunctionEntry fs -> FunctionEntry (List.map (review_entry state bsym_table k sr vs ts) fs)
-
 and make_view_table state bsym_table table sr vs ts : name_map_t =
   let h = Hashtbl.create 97 in
   Hashtbl.iter
   (fun k v ->
-    let v = review_entry_set state bsym_table k v sr vs ts in
+    let v = review_entry_set state.counter k v sr vs ts in
     Hashtbl.add h k v
   )
   table
@@ -6590,8 +6507,8 @@ and pub_table_dir state bsym_table env (invs,i,ts) : name_map_t =
     (* a bit hacky .. add the type class specialisation view
        to its contents as an instance
     *)
-    let inst = mkentry state sym.Flx_sym.vs i in
-    let inst = review_entry state bsym_table sym.Flx_sym.id sym.Flx_sym.sr invs ts inst in
+    let inst = mkentry state.counter sym.Flx_sym.vs i in
+    let inst = review_entry state.counter sym.Flx_sym.id sym.Flx_sym.sr invs ts inst in
     let inst_name = "_inst_" ^ sym.Flx_sym.id in
 
     (* add inst thing to table *)
@@ -6807,7 +6724,7 @@ and build_env state bsym_table parent : env_t =
 *)
 
 (* THIS ROUTINE APPEARS TO BE UNUSED! *)
-
+(*
 and rebind_btype state bsym_table env sr ts t =
   let rbt t = rebind_btype state bsym_table env sr ts t in
   match t with
@@ -6872,6 +6789,7 @@ and rebind_btype state bsym_table env sr ts t =
   | BTYP_type_match _
     -> clierrx "[flx_bind/flx_lookup.ml:6409: E230] " sr ("[rebind_type] Unexpected metatype " ^ sbt bsym_table t)
 
+*)
 
 and check_module state name sr entries ts =
     begin match entries with

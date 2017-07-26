@@ -107,16 +107,6 @@ let make_syms options =
     power_table = Hashtbl.create 97;
   }
 
-let fresh_bid counter =
-  let bid = !counter in
-  incr counter;
-  bid
-
-let iter_bids f start_bid end_bid =
-  for bid = start_bid to end_bid do
-    f bid
-  done
-
 module TypecodeSet = Set.Make(
   struct type t = Flx_ast.typecode_t let compare = compare end
 )

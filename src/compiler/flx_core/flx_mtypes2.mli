@@ -82,11 +82,3 @@ type sym_state_t =
 
 val make_syms: Flx_options.t -> sym_state_t
 
-val fresh_bid: bid_t ref -> bid_t
-
-val iter_bids:
-  (bid_t -> unit) ->
-  bid_t ->
-  bid_t ->
-  unit
-

@@ -22,3 +22,14 @@ let str_of_bidset x =
   String.concat "," (List.map string_of_int (!elts))
 
 
+let fresh_bid counter =
+  let bid = !counter in
+  incr counter;
+  bid
+
+let iter_bids f start_bid end_bid =
+  for bid = start_bid to end_bid do
+    f bid
+  done
+
+

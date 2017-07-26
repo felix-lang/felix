@@ -21,6 +21,7 @@ open Flx_typing
 open Flx_unify
 open Flx_use
 open Flx_util
+open Flx_bid
 
 let find_uncurry_expr syms bsym_table uncurry_map e =
   let aux e = match e with
