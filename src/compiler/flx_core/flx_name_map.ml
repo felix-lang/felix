@@ -87,11 +87,11 @@ print_endline ("FUDGE: review entry: "^name^"=T<"^string_of_int i^">");
    let ts' = List.map (Flx_type_aux.tsubst sr vs' ts) ts' in
    {base_sym=i; spec_vs=vs; sub_ts=ts'}
 
-let review_entry_set counter_ref k v sr vs ts : entry_set_t = 
+let review_entry_set counter_ref name v sr vs ts : entry_set_t = 
   match v with
   | NonFunctionEntry i -> 
-    NonFunctionEntry (review_entry counter_ref k sr vs ts i)
+    NonFunctionEntry (review_entry counter_ref name sr vs ts i)
   | FunctionEntry fs -> 
-    FunctionEntry (List.map (review_entry counter_ref k sr vs ts) fs)
+    FunctionEntry (List.map (review_entry counter_ref name sr vs ts) fs)
 
 
