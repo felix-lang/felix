@@ -44,6 +44,11 @@ let generic_map bsym_table counter be rs sr env fn b =
     let fname = EXPR_suffix(sr, (`AST_name (sr,fn,[]),ubt)) in
     be rs (EXPR_apply (sr, (EXPR_apply (sr,(EXPR_name (sr,"map",[]),fname)),b)))
 
+  | BTYP_record ls ->
+    let xs = List.map (fun (s,_) ->  s,apl sr fn (EXPR_get_named_variable (sr,(s,b)))) ls in
+    let e = EXPR_record (sr,xs) in
+    be rs e
+  
   | _ -> 
     be rs (EXPR_apply (sr, (EXPR_apply (sr,(EXPR_name (sr,"map",[]),EXPR_name (sr,fn,[]))),b)))
 
