@@ -68,6 +68,21 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
       in 
       be rs e
 
+    | BTYP_array (vl,BTYP_unitsum n) when n < 20 -> 
+      let count = ref 0 in
+      let e = cats (
+        List.fold_left (fun acc _ -> 
+          let res = if (!count) = 0 then vrep1 (!count) a else vrep2 (!count) a in
+          incr count;
+          cats acc res
+        )
+        (mks "(")
+        (Flx_list.nlist n) 
+        ) (mks ")") 
+      in 
+      be rs e
+
+      
     | BTYP_tuple ls ->
       let count = ref 0 in
       let e = cats (
@@ -167,6 +182,9 @@ print_endline ("_strr Variant type " ^ Flx_print.sbt bsym_table t);
 
  
     | BTYP_inst (i,ts) ->
+(*
+print_endline ("Strr on nominal type");
+*)
       begin match Flx_lookup_state.hfind "lookup:_strr" sym_table i with
       | { Flx_sym.id=name; Flx_sym.vs=(vs,_); Flx_sym.symdef=Flx_types.SYMDEF_struct ls } -> 
         let first = ref true in
@@ -182,20 +200,32 @@ print_endline ("_strr Variant type " ^ Flx_print.sbt bsym_table t);
         in 
         be rs e
       | { Flx_sym.id=name; Flx_sym.vs=(vs,_); Flx_sym.symdef=Flx_types.SYMDEF_union ls } -> 
+(*
+print_endline ("Strr on union " ^ name);
+*)
         let limit = rs.Flx_types.strr_limit - 1 in
         if limit = 0 then be rs (mks "...") else
         let rs = { rs with Flx_types.strr_limit = limit } in
         let urep cname t =  
           match t with
           | TYP_void _ ->
+(*
+print_endline ("Constant ctor");
+*)
             mks cname
 
           | TYP_tuple _ ->
+(*
+print_endline ("Tuple ctor");
+*)
             let arg = EXPR_ctor_arg (sr, (qn cname,a)) in
             let strarg = apl2 sr "_strr" [arg] in
             cats (mks (cname^" ")) strarg
 
           | _ ->
+(*
+print_endline ("Other ctor");
+*)
             let arg = EXPR_ctor_arg (sr, (qn cname,a)) in
             let strarg = apl2 sr "_strr" [arg] in
             cats (cats (mks (cname^" (")) strarg) (mks ")")
@@ -207,17 +237,35 @@ print_endline ("_strr Variant type " ^ Flx_print.sbt bsym_table t);
         in 
         let e = 
           List.fold_left (fun acc (cname,ix,vs,d,c,gadt) -> 
+(*
+print_endline ("Processing for constructor " ^ cname);
+*)
             condu cname d acc 
           )
           (mks "MATCHFAILURE")
           ls
         in 
-        be rs e
+        let result = 
+           try be rs e 
+           with exn -> print_endline ("Binding failed"); raise exn
+        in
+(*
+print_endline ("Bound _strr!");
+*)
+        result
 
-      | _ -> be rs (apl2 sr "repr" [a]) 
+      | _ -> 
+(*
+       print_endline ("_strr: Cant handle1 nominal type " ^ Flx_btype.st t ^ ": using repr"); 
+*)
+       be rs (apl2 sr "repr" [a]) 
       end
 
-    | _ -> be rs (apl2 sr "repr" [a])
+    | _ ->
+(*
+       print_endline ("_strr: Cant handle2 nominal type " ^ Flx_btype.st t ^ ": using repr"); 
+*)
+      be rs (apl2 sr "repr" [a])
     end
 
 let strr bsym_table sym_table counter be rs sr a =
