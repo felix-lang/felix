@@ -70,4 +70,3 @@ deploy:
   on:
     appveyor_repo_tag: true
 
-
