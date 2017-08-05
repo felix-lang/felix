@@ -366,15 +366,6 @@ typedef ichip_t[T] = (inp: %<T) -> 1 -> 0;
 // source
 typedef ochip_t[T] = (out: %>T) -> 1 -> 0;
 
-// NOTE: this is currently a one-shot!
-// .. Well sort of!
-// It can do multiple reads if its first chip
-// cycles. If the pipeline drops dead, it will
-// not be reuable.
-//
-// To be reusable, components should not return,
-// instead loop back to reading without writing.
-
 chip pipeline_list[T] (a: list[iochip_t[T,T]])
   connector io
     pin inp: %<T
@@ -388,6 +379,8 @@ chip pipeline_list[T] (a: list[iochip_t[T,T]])
       aux (h2!tail) inchan;
     | h1 ! _ =>
       spawn_fthread$  h1 (inp=inp, out=io.out);
+    | Empty => 
+      spawn_fthread$ buffer (inp=io.inp, out=io.out);
     endmatch;
   }
   aux a io.inp;

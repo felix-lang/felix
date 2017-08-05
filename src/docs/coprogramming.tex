@@ -544,6 +544,10 @@ the ancestors are stored in the continuation object to improve
 access time to ancestoral variables, at the cost of passing them
 all to each child (however the optimiser does lots of magic).
 
+The stack of pointers to the most recent activation record
+of the lexical ancestors has a technical name, it is called
+a {\em display}.
+
 Each of the frame pointers mentioned is known to the garbage collector
 and so a single reachable running procedure defines a transitive
 closure of reachable objects. Note that in addition, any variable
@@ -777,7 +781,7 @@ Felix has syntax designed to so coroutines are easier to use.
 
 \subsection{The {\tt chip} definition}
 \index{chip, syntax}
-This extensions encourages a picture of coroutines as integrated
+This extension encourages a picture of coroutines as integrated
 circuits, even though that is not really accurate.
 
 \phantomsection
@@ -824,8 +828,8 @@ has an aditional unit argument added automatically. The signatures
 of the three chips above are:
 
 \begin{minted}[bgcolor=felixbg]{felix}
-  producer: (out: %out) -> 1 -> 0
-  transducer: (inp: %<int, out: %out) -> 1 -> 0
+  producer: (out: %<int) -> 1 -> 0
+  transducer: (inp: %<int, out: %>int) -> 1 -> 0
   consumer: (inp: %<int) -> 1 -> 0
 \end{minted}
 
@@ -842,7 +846,7 @@ device x = y;
 
 to construct a procedure closure of type \verb%unit->void%.
 Actually, device is just a synonym for \verb%var%, and is
-provided to make your look more like an electrical engineer
+provided to make you look more like an electrical engineer
 than a software engineer.
 
 
@@ -862,7 +866,7 @@ endcircuit
 \label{fig:circ1}
 \end{figure}
 
-This makes a pipeline from the chips. The connecting channels
+The example \ref{fig:circ1} makes a pipeline from the chips. The connecting channels
 are automatically created, as are the procedure closures required
 to make devices. The resulting devices are then spawned.
 
@@ -903,13 +907,6 @@ connected to channel with all other pins output
 necessarily blocks, if all are input, any read
 necessarily starves.
 
-
-\subsection{The {\tt return from} statement}
-This statement is a variant of the \verb%return% statement which
-causes the resumption of the continuation passed to the most recent
-activation of an ancestor procedure. The transfer of control may
-not span a function call. 
-
 \subsection{The {\tt suicide} procedure}
 This library procedure causes the immediate termination of the current fibre.
 
@@ -918,7 +915,7 @@ This library procedure causes the immediate termination of the current fibre.
 suicide;
 \end{minted}
 \caption{Suicide}
-\label{fig:circ1}
+\label{fig:suicide}
 \end{figure}
 
 
@@ -1016,7 +1013,7 @@ hasn't yet been connected to a power source!
 Every system needs a library! 
 \section{Base Components}
 \subsection{Blockers}
-Here is a device to use when you have to connected
+Here is a device to use when you have to connect
 a writer to a channel, but want it to be unconnected.
 
 \begin{minted}{felix}
@@ -1055,6 +1052,7 @@ chip sink[T]
 }
 \end{minted}
 
+\begin{framed}\small
 The \verb%C_hack::ignore% procedure is a trick
 which forces the read to occur. In Felix, if a variable is unused
 it is optimised away --- along with its initialiser. In this case
@@ -1064,7 +1062,7 @@ throws away an unwanted result of a computation, without throwing
 away the computation itself. So the read will be performed,
 even though we don't care what the returned value is.
 In Felix it is always safe to throw away application of a function
-is the result is not used, since functions are not allowed to
+if the result is not used, since functions are not allowed to
 have any side effects. However read is a generator not a function.
 
 The result of a generator must be used otherwise the generator
@@ -1078,6 +1076,7 @@ requiring the asynchronous I/O system. The system is loaded on demand,
 and the semantics ensure the demand propagates from the use of a feature
 requiring the system, the semantics also ensures resources aren't
 acquired {\em unless} they're needed.
+\end{framed}
 
 This chip writes a fixed value forever.
 It is the analogue of a value or constant function:
@@ -1315,7 +1314,7 @@ are stored, latest first, into a spatial data type.
 
 Now, we need an example to show how to use this drop!
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 include "std/control/chips";
 open BaseChips;
 
@@ -1455,13 +1454,8 @@ This is a classic deadlock for threads. The writer writes $a$
 first then $b$, then reader reads $b$ first, then $a$.
 Adding the buffers removes the ordering dependency.
 I added two buffers, although in this case only one is
-required. Can you figure out which two pins have to connected
+required. Can you figure out which two pins have to be connected
 via a buffer?
-
-Here is another useful chip, it copies a single value
-from input to output then suicides. It is generally useful
-to insert into pipelines that would otherwise be continuous
-when you only want a one shot operation.
 
 Finally here are some convenience types:
 
@@ -1493,9 +1487,9 @@ to the input of the right one. A pipeline of transducers is said
 to be an {\em open pipeline}.
 
 If a source is connected to the left end, and a sink to the right
-end, it is a closed pipeline.
+end, it is a {\em closed} pipeline.
 
-An open pipeline is semantically equivalent to a transucer with
+An open pipeline is semantically equivalent to a transducer with
 additional buffering. A pipline closed on the left is a source,
 and a pipeline closed on the right is a sink.
 The syntax \verb%|->% is parsed to \verb%pipe (a,b)%.
@@ -1576,15 +1570,35 @@ Note carefully, this last operator is a procedure not a chip!
 It produces a closed chip, that is, one with no channels to connect.
 It is ready to call or spawn.
 
-Felix provides the infix symbol \verb%|->% for the \verb%pipe% operator.
 An example of use, we can say:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 #(producer |-> transducer |-> consumer);
 \end{minted}
 
 given the chips of \ref{fig:prodtranscons1}
 instead of the circuit statemnent \ref{fig:circ1}.
+Note that this calls the pipeline, which causes it to begin
+execution sometime, not necessarily immediately. The effect is
+subtly different to this:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+spawn_fthread (producer |-> transducer |-> consumer);
+\end{minted}
+
+which spawns a fibre that itself then spawns the pipeline.
+If you want to force the pipeline to run immediately you
+have to do this:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+run _fthread (producer |-> transducer |-> consumer);
+\end{minted}
+
+This works because \verb%run% is an ordinary subroutine specified
+to spawn its argument on a nested scheduler, and to return only
+when there are no active fibres on the scheduler, which occurs
+when the pipline is dead: all the fibres have suicided, starved
+or are blocked.
 
 \subsection{The lift functor}
 Pipelining is associative up to buffering. The exact structures 
@@ -1594,11 +1608,14 @@ the ordering always conforms to the abstract semantics.
 There is a mapping between function compositions and pipelines,
 and this mapping is structure preserving. Given a sequence of
 functions of types suitable for composition
-$$f_1, f_2, f_3 \dots$$
+\begin{equation}
+f_1, f_2, f_3 \dots
+\end{equation}
 then writing $\Phi$ for the \verb%function% chip, we have
-$$\Phi(f_1 \odot f_2 \odot f_3 \dots) \cong
-\Phi f_1 \mapsto \Phi f_2 \mapsto \Phi f_3 \dots)
-$$
+\begin{equation}\label{eqn:lift functor}
+\Phi(f_1 \odot f_2 \odot f_3 \dots) \cong
+\Phi f_1 \mapsto \Phi f_2 \mapsto \Phi f_3 \dots
+\end{equation}
 where $\odot$ is reverse function composition.
 
 In other words, it is structure preserving, and thus a categorical {\em functor}.
@@ -1633,11 +1650,18 @@ chip pipeline_list[T] (a: list[iochip_t[T,T]])
       aux (h2!tail) inchan;
     | h1 ! _ =>
       spawn_fthread$  h1 (inp=inp, out=io.out);
+    | Empty => 
+      spawn_fthread$ buffer (inp=io.inp, out=io.out);
     endmatch;
   }
   aux a io.inp;
 }
 \end{minted}
+\begin{framed}\small
+Note that the empty check in \verb%aux% can only succeed
+if the initial list \verb%a% is empty because the singleton
+case in the second branch does not recurse.
+\end{framed}
 
 \section{Relation to option monad}
 Consider a sequence of partial functions:
@@ -1670,7 +1694,7 @@ th:C -> opt[D]
 \end{minted}
 
 where the function returns \verb%None% if the underlying partial function
-is undefined, or \verb%Some v% is it is, and the result would be \verb%v%.
+is undefined, or \verb%Some v% if it is, and the result would be \verb%v%.
 For example the partial function \verb%p_recip%
 
 \begin{minted}[bgcolor=felixbg]{felix}
