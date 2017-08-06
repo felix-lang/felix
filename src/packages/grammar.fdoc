@@ -1916,7 +1916,7 @@ syntax functions {
   fun_return_type := ":" "[" sexpr "]" "expect" sexpr =># "`((,(noi 'typ_none) (some ,_6)) ,_3)";
 
   //$ No return type.
-  fun_return_type := ":" "[" sexpr "]" =># "`((,(noi 'typ_none) none) ,dflteffects)";
+  fun_return_type := ":" "[" sexpr "]" =># "`((,(noi 'typ_none) none) ,_3)";
   fun_return_type := sepsilon =># "`((,(noi 'typ_none) none) ,dflteffects)";
 
   //$ Object factory return type.

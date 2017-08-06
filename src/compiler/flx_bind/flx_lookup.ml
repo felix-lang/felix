@@ -126,7 +126,7 @@ let eq_entry_kinds y1 y2 =
 
 let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
 (*
-if name = "ff" then print_endline ("Lookup name in table dirs " ^ name);
+if name = "hhhhh" then print_endline ("Lookup name in table dirs " ^ name);
 *)
   match lookup_name_in_htab table name with
   | Some x as y -> 
@@ -1620,11 +1620,18 @@ and type_of_literal state bsym_table env sr v =
  * for this index. *)
 and type_of_index' state bsym_table rs sr bid =
   try
-    Hashtbl.find state.ticache bid
+    let result = Hashtbl.find state.ticache bid in
+(*
+print_endline ("Found type of index " ^ si bid ^ " in cache, type=" ^ Flx_btype.st result);
+*)
+    result
   with Not_found ->
     let t =
       try 
         let result =  inner_type_of_index state bsym_table sr rs bid in
+(*
+print_endline ("Adding type of index " ^ si bid ^ " to cache, type=" ^ Flx_btype.st result);
+*)
         result
       with | exn ->
 (*
@@ -1740,6 +1747,9 @@ print_endline ("Cal ret type of " ^ id ^ "<" ^ string_of_int index ^ "> at " ^ F
     let rt = beta_reduce "flx_lookup: cal_ret_type" state.counter bsym_table sr rt in
     let ret_type = ref rt in
     let return_counter = ref 0 in
+(*
+print_endline ("+++++ return type is " ^ sbt bsym_table rt);
+*)
 
 (* HACK! We skip instructions when the match skip level is > 0, except
   for begin/end match cases. This means once we have a GadtUnificationFailure,
@@ -2021,7 +2031,7 @@ print_endline ("***** Enter inner_type_of_index " ^ si index);
 *)
   let result = inner_type_of_index' state bsym_table sr rs index in
 (*
-print_endline ("***** normal exit inner_type_of_index " ^ si index);
+print_endline ("***** normal exit inner_type_of_index " ^ si index ^ ", type=" ^Flx_btype.st result);
 *)
   result
 with exn ->
@@ -2217,6 +2227,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
 *)
   let rest,reorder =
     match unfold "flx_lookup" t1 with
+    | BTYP_effector(argt,_,rest)
     | BTYP_function (argt,rest)
     | BTYP_cfunction (argt,rest) ->
       if type_match bsym_table state.counter argt t2
@@ -3446,6 +3457,7 @@ and handle_variable state bsym_table env rs index id sr ts t t2 =
 print_endline ("Handle variable " ^ si index ^ "=" ^ id);
 *)
   match t with
+  | BTYP_effector (d,_,c)
   | BTYP_cfunction (d,c)
   | BTYP_function (d,c) ->
       if type_match bsym_table state.counter d t2 then
@@ -3591,6 +3603,9 @@ end;
     | SYMDEF_val t
     | SYMDEF_parameter (_,t)
       ->
+(*
+print_endline("Found var or param of type " ^ sbt bsym_table t);
+*)
       let sign = try List.hd t2 with _ -> assert false in
       handle_variable state bsym_table env rs (sye index) id srn ts t sign
 
@@ -4560,6 +4575,11 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
     end
 
   | EXPR_name (sr,name,ts) ->
+
+(*
+if name = "hhhhh" then 
+print_endline ("In bind_expression: Lookup name hhhhh");
+*)
     if name = "_felix_type_name" then
        let sname = catmap "," string_of_typecode ts in
        let x = EXPR_literal (sr, {Flx_literal.felix_type="string"; internal_value=sname; c_value=Flx_string.c_quote_of_string sname}) in
@@ -4742,6 +4762,10 @@ print_endline ("LOOKUP 7: varname " ^ si index);
 
     | FunctionEntry [{base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts} as f]
     ->
+(*
+if name = "hhhhh" then
+print_endline ("Found solo function entry for index " ^ si index);
+*)
       (* should be a client error not an assertion *)
       if List.length spec_vs <> List.length ts then begin
         (*
@@ -4767,6 +4791,10 @@ print_endline ("LOOKUP 7: varname " ^ si index);
       let ts = List.map (tsubst sr spec_vs ts) sub_ts in
       let ts = adjust_ts state.sym_table bsym_table sr index ts in
       let t = ti sr index ts in
+(*
+if name = "hhhhh" then
+print_endline ("Returning closure type " ^ Flx_btype.st t);
+*)
       bexpr_closure t (index,ts)
 
 

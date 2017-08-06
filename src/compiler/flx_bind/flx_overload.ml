@@ -1127,7 +1127,7 @@ let overload
   overload_result option
 =
 (*
-if name = "EInt" then
+if name = "map" then
 begin
   print_endline ("Overload " ^ name);
   print_endline ("Argument sigs are " ^ catmap ", " (sbt bsym_table) sufs);

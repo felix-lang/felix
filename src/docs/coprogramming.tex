@@ -1816,7 +1816,7 @@ concept which allows data to flow from sources to sinks
 in an acyclic network. Lets look at an example with two
 sources:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 device A = source_from_list ([1,2,3]);
 device B = source_from_list ([5,6,7]);
 chip add
@@ -1847,7 +1847,7 @@ You can probably see that given any binary operators represented
 as chips, we can construct a calculate with a tree like structure
 to perform the calculation.
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 chip sub
   connector io
     a: %<int
@@ -1880,7 +1880,7 @@ another way, there is no built in preference for either eager or
 lazy evaluation. We will demonstrate by showing an important
 operator written two different ways. First the eager variant:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 chip eagerconditional
   connector io
     pin condition: %<bool
@@ -1897,7 +1897,7 @@ chip eagerconditional
 
 and now the lazy variant:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 chip lazyconditional
   connector io
     pin condition: %<bool
@@ -1911,7 +1911,7 @@ chip lazyconditional
     write (io.result, t);
   else 
     var f = read io.falseval;
-    write (io.result, t);
+    write (io.result, f);
   done
 }
 \end{minted}
@@ -1926,7 +1926,7 @@ other channel starves, because we never actually read it.
 
 Another interesting chip is this one:
 
-\begin{minted}{felix}
+\begin{minted}[bgcolor=felixbg]{felix}
 chip choose
   connector io
     pin condition: %<bool

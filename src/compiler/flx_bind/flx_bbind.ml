@@ -472,7 +472,7 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
 
   | SYMDEF_function (ps,rt,effects,props,exes) ->
 (*
-    print_endline (" ... Binding function");
+print_endline ("Binding function " ^ sym.Flx_sym.id);
     print_endline (" ... Binding parameters");
 *)
     let bps = bindps ps in
@@ -484,6 +484,10 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
     (* We don't need to bind the intermediary type. *)
     let brt = bt' rt in
     let beffects = bt' effects in
+(*
+if sym.Flx_sym.id = "hhhhh" then
+print_endline ("Effects = " ^ Flx_btype.st beffects);
+*)
     let brt, bbexes = bexes exes brt symbol_index bvs in
     let bbdcl = bbdcl_fun (props,bvs,bps,brt,beffects,bbexes) in
 
@@ -496,6 +500,9 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
         else btyp_effector (d,beffects,brt)
       in
       let t = fold bsym_table state.counter ft in
+(*
+print_endline ("Flx_bbind: Adding type of index " ^ si symbol_index ^ " to cache, type=" ^ Flx_btype.st t);
+*)
       Hashtbl.add state.ticache symbol_index t
     end;
 

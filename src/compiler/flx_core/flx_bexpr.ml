@@ -162,6 +162,7 @@ let bexpr_literal t l = BEXPR_literal l, complete_check t
 let bexpr_apply t (e1, e2) = 
   let _,ft = e1 and _,at = e2 in
   begin match Flx_btype.unfold "Flx_bexpr:bexpr_apply" ft with
+  | Flx_btype.BTYP_effector (d,_,c)
   | Flx_btype.BTYP_function (d,c)
   | Flx_btype.BTYP_cfunction (d,c) ->
     if not (Flx_typeeq.type_eq Flx_btype.st counter d at) then begin

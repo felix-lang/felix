@@ -721,6 +721,9 @@ and xstatement_t sr x : statement_t =
       xsts sr sts)
 
   | Lst [Id "ast_curry_effects"; sr; id; vs; Lst pss; ret; effects; fk; Lst props; sts] -> let sr = xsr sr in 
+(*
+print_endline ("ast_curry effects " ^ xid id ^ ", effects=" ^ Flx_print.string_of_typecode (ti sr effects));
+*)
     let fret = xret sr ret in
     let rett, _ = fret in 
     let pdef = (*  match rett with TYP_void _ -> `PVar | _ ->*)  `PVal in

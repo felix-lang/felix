@@ -28,9 +28,7 @@ let cal_bind_apply
 (*
     if not (complete_type ta) then
       print_endline ("*************>>>>>>>>> reduced Apply argument type is not complete!!" ^ sbt bsym_table ta);
-*)
-(*
-    print_endline ("Bound argument " ^ sbe bsym_table a);
+    print_endline ("Bound argument " ^ Flx_print.sbe bsym_table a ^ " type=" ^ Flx_btype.st ta);
 *)
       (* ---------------------------------------------------------- *)
       (* tie *) 
@@ -194,6 +192,7 @@ end;
             print_endline ("ta=" ^ sbt bsym_table ta);
         *)
         begin match tf with
+        | BTYP_effector _ 
         | BTYP_cfunction _ 
         | BTYP_function _ ->
             cal_apply state bsym_table sr rs f a 
