@@ -11,6 +11,8 @@ type lookup_state_t = {
   sym_table: Flx_sym_table.t;
   env_cache: (bid_t, Flx_mtypes2.env_t) Hashtbl.t;
   generic_cache: Flx_mtypes2.generic_cache_t;
+  mutable decoder_cache: ((int * Flx_btype.t list) * Flx_bexpr.t) list;
+    (* assoc list of union index, ts pair -> decoder procedure closure *)
 }
 
 let make_lookup_state print_flag counter varmap ticache generic_cache sym_table =
@@ -22,6 +24,7 @@ let make_lookup_state print_flag counter varmap ticache generic_cache sym_table 
     sym_table = sym_table;
     env_cache = Hashtbl.create 97;
     generic_cache = generic_cache;
+    decoder_cache = [];
   }
 
 let hfind msg h k =
