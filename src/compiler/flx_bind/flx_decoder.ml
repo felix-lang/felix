@@ -6,7 +6,13 @@ let gen_decoder (state: Flx_lookup_state.lookup_state_t) bsym_table bt lookup_na
   let counter = state.Flx_lookup_state.counter in
     begin (*4*)match ts with
     | [ut] ->
+(*
+print_endline("Binding type " ^ Flx_print.string_of_typecode ut);
+*)
       let but = bt sr ut in
+(*
+print_endline("Bound type " ^ Flx_print.sbt bsym_table but);
+*)
       begin (*6*)match but with
       | BTYP_inst (index, ts) ->
         begin
@@ -27,18 +33,21 @@ let gen_decoder (state: Flx_lookup_state.lookup_state_t) bsym_table bt lookup_na
           let ischannel_t = bt sr (Flx_ast.TYP_name (sr,"ischannel", [ut])) in
           let oschannel_t ubt = bt sr (Flx_ast.TYP_name (sr,"oschannel",[ubt])) in
 (*
-          print_endline ("ischannel type = " ^ sbt bsym_table ischannel_t);
+print_endline ("ischannel type = " ^ Flx_print.sbt bsym_table ischannel_t);
 *)
           let outer_fun_name = "_decoder_" ^ uname in
           let inner_proc_name = "_inner_"^outer_fun_name in
           let ubt t = Flx_typecode_of_btype.typecode_of_btype bsym_table counter sr t in
           let flds = List.map (fun (name,v,vs',d,c,gadt) -> name,d) flds in
+          (* fudge constant constructors to use unit argument *)
+          let flds = List.map (fun (s,t) -> s,(match t with BTYP_void -> btyp_tuple [] | _ -> t)) flds in
+          let flds = List.map (fun (s,t) -> s,Flx_type_aux.tsubst sr ubvs ts t) flds in
 (*
-          print_endline ("Field types " ^ catmap "," (fun (s,t) -> s ^ ":" ^ sbt bsym_table t) flds);
+print_endline ("Field types " ^ catmap "," (fun (s,t) -> s ^ ":" ^ Flx_print.sbt bsym_table t) flds);
 *)
           let ochans = List.map (fun (s,d) -> s,oschannel_t (ubt d)) flds in
 (*
-          print_endline ("Output channel fields " ^ catmap "," (fun (s,t) -> s ^ ":" ^ sbt bsym_table t) ochans);
+print_endline ("Output channel fields " ^ catmap "," (fun (s,t) -> s ^ ":" ^ Flx_print.sbt bsym_table t) ochans);
 *)
           let outer_fun_index = Flx_bid.fresh_bid counter in
           let inner_proc_index = Flx_bid.fresh_bid counter in
@@ -63,12 +72,12 @@ let gen_decoder (state: Flx_lookup_state.lookup_state_t) bsym_table bt lookup_na
 
           let read_expr = bexpr_apply but (read_fun, read_pin) in
 (*
-print_endline ("Read expr = " ^ sbe bsym_table read_expr);
+print_endline ("Read expr = " ^ Flx_print.sbe bsym_table read_expr);
 *)
           let read_op = bexe_assign (sr,read_var, read_expr) in
           let case k = 
 (*
-print_endline ("Case " ^ si k);
+print_endline ("Case " ^ string_of_int k);
 *)
             let next_label_index = Flx_bid.fresh_bid state.Flx_lookup_state.counter in
             let field_name, field_t = List.nth flds k in
@@ -125,7 +134,7 @@ print_endline ("Exes =\n" ^ String.concat "\n" (List.map (Flx_print.string_of_be
 
           let outer_fun_type = btyp_function (param_type, unit_proc_type) in
           let result = bexpr_closure outer_fun_type (outer_fun_index,[]) in
-          state.Flx_lookup_state.decoder_cache <- ((index, ts), result) :: state.decoder_cache;
+          state.Flx_lookup_state.decoder_cache <- ((index, ts), result) :: state.Flx_lookup_state.decoder_cache;
           result
 
         | _ -> Flx_exceptions.clierr2 sr (Flx_bsym.sr bsym) ("_decoder requires union argument, got " ^ Flx_bsym.id bsym);
