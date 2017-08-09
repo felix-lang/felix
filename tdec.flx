@@ -1,0 +1,48 @@
+begin
+  union U[T] = AA of T | BB of string;
+  var d = _decoder[U[int]]; // <=======================
+
+  var ur,uw = mk_ioschannel_pair[U[int]]();
+  var ir,iw = mk_ioschannel_pair[int]();
+  var sr, sw = mk_ioschannel_pair[string]();
+
+  circuit
+   wire ur to d.U
+   wire iw to d.AA
+   wire sw to d.BB
+  endcircuit
+
+  write (uw, AA 42);
+  var x = read ir;
+  println$ x;
+  write (uw, BB[int] "Hello");
+  var s = read sr;
+  println$ s;
+  println$ "Done";
+end
+
+proc f[K with Str[K]] (k:K) {
+  union U = AA of K | BB of string;
+  var d = _decoder[U]; // <=======================
+
+  var ur,uw = mk_ioschannel_pair[U]();
+  var ir,iw = mk_ioschannel_pair[K]();
+  var sr, sw = mk_ioschannel_pair[string]();
+
+  circuit
+   wire ur to d.U
+   wire iw to d.AA
+   wire sw to d.BB
+  endcircuit
+
+  write (uw, AA k);
+  var x = read ir;
+  println$ x;
+  write (uw, BB "Hello");
+  var s = read sr;
+  println$ s;
+  println$ "Done";
+}
+
+f[int] 42;
+

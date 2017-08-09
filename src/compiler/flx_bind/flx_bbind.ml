@@ -787,6 +787,44 @@ print_endline ("Flx_bbind.bbind *********************** ");
    * binding new symbols can be added to the end of the table, so the terminating
    * index is not known in advance. It had better converge!
    *)
+
+  (* PASS 1, TYPE ONLY *)
+  let counter = ref start_counter in
+  while !counter < !ref_counter do
+    let i = !counter in
+    begin match
+      try Some (Flx_sym_table.find_with_parent state.sym_table i)
+      with Not_found -> None
+    with
+    | None -> (* print_endline "bbind: Symbol not found"; *) ()
+    | Some (parent, sym) ->
+(*
+print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
+*)
+      begin match sym.Flx_sym.symdef with
+      | Flx_types.SYMDEF_union _
+      | Flx_types.SYMDEF_struct _
+      | Flx_types.SYMDEF_cstruct _ 
+      | Flx_types.SYMDEF_abs _ 
+      | Flx_types.SYMDEF_const_ctor _
+      | Flx_types.SYMDEF_nonconst_ctor _
+      | Flx_types.SYMDEF_newtype _
+      ->
+        begin try bbind_symbol state bsym_table i parent sym
+        with Not_found ->
+          try match hfind "bbind" state.sym_table i with { Flx_sym.id=id } ->
+            failwith ("Binding error, Not_found thrown binding " ^ id ^ " index " ^
+              string_of_bid i ^ " parent " ^ (match parent with | None -> "NONE" | Some p -> string_of_int p))
+          with Not_found ->
+            failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
+        end
+      | _ -> ()
+      end
+    end;
+    incr counter
+  done
+  ;
+  (* PASS 2, NON DEFERRED FUNCTIONS *)
   let defered = ref [] in
   let counter = ref start_counter in
   while !counter < !ref_counter do
@@ -826,6 +864,7 @@ print_endline ("Binding symbol " ^ symdef.Flx_sym.id ^ "<" ^ si i ^ ">");
   done
   ;
 
+  (* PASS 3 DEFERRED FUNCTIONS *)
 if (List.length (!defered) <> 0) then begin
 print_endline ("DEFERED PROCESSING STARTS");
 

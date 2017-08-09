@@ -1,7 +1,7 @@
 open Flx_btype
 open Flx_ast
 
-let typecode_of_btype bsym_table counter sr t0 = 
+let typecode_of_btype ?sym_table:(sym_table=None) bsym_table counter sr t0 = 
   let rec tc depth mutrail t =
     let isrecursive = Flx_unify.is_recursive_type t in
     let mutrail = 
@@ -35,6 +35,23 @@ let typecode_of_btype bsym_table counter sr t0 =
       | BTYP_inst (i,ts) ->
         let id = Flx_bsym_table.find_id bsym_table i in 
         TYP_name (sr,id, (List.map tc ts))
+      | BTYP_type_var (i,_) -> TYP_var i
+(*
+        begin match sym_table with 
+        | None -> TYP_var i 
+          (* failwith ("Can't lookup type variable "^string_of_int i ^" , no unbound symbol table available"); *)
+        | Some sym_table ->
+          begin try 
+            let id = Flx_sym_table.find_id sym_table i in 
+            TYP_name (Flx_srcref.dummy_sr,id,[]) 
+          with _ -> 
+            TYP_var i
+            (*
+            failwith ("Can't find type variable " ^ string_of_int i ^ " in unbound symbol table") 
+            *)
+          end
+        end
+*)
       | _ -> failwith ("typecode_of_btype can't handle type : " ^ Flx_print.sbt bsym_table t)
 
     in

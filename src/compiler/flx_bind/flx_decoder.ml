@@ -29,8 +29,11 @@ print_endline("Bound type " ^ Flx_print.sbt bsym_table but);
         begin (* 8*)match bbdcl with
         | Flx_bbdcl.BBDCL_union (ubvs, flds)  -> 
           let uname = Flx_bsym.id bsym in
-          print_endline ("Generating union decoder chip _decoder_" ^ uname); 
-          let ischannel_t = bt sr (Flx_ast.TYP_name (sr,"ischannel", [ut])) in
+(*
+print_endline ("Generating union decoder chip _decoder_" ^ uname); 
+print_endline ("ubvs = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^">") ubvs);
+*)
+          let ischannel_t = Flx_type_aux.tsubst sr ubvs ts (bt sr (Flx_ast.TYP_name (sr,"ischannel", [ut]))) in
           let oschannel_t ubt = bt sr (Flx_ast.TYP_name (sr,"oschannel",[ubt])) in
 (*
 print_endline ("ischannel type = " ^ Flx_print.sbt bsym_table ischannel_t);
@@ -59,14 +62,14 @@ print_endline ("Output channel fields " ^ catmap "," (fun (s,t) -> s ^ ":" ^ Flx
           let param = {  Flx_bparameter.pid = param_name; pindex = param_index; pkind = `PVal; ptyp= param_type }  in
 
           let props = [] in
-          let bvs = [] in
+          let bvs = ubvs in
           let effects = btyp_unit () in
           let inner_proc_ret = btyp_function ( btyp_unit (), btyp_void () ) in
           let label_index = Flx_bid.fresh_bid counter in
-          let param_var = bexpr_varname param_type (param_index,[]) in
+          let param_var = bexpr_varname param_type (param_index,ts) in
           (* read input channel *)
           let read_var_index = Flx_bid.fresh_bid counter in
-          let read_var = bexpr_varname but (read_var_index, []) in 
+          let read_var = bexpr_varname but (read_var_index, ts) in 
           let read_pin = bexpr_apply ischannel_t (bexpr_rprj uname param_type ischannel_t, param_var) in
           let read_fun = lookup_name_with_sig state bsym_table sr sr env env rs "read" [] [ischannel_t] in
 
@@ -105,7 +108,7 @@ print_endline ("Case " ^ string_of_int k);
 print_endline ("Exes =\n" ^ String.concat "\n" (List.map (Flx_print.string_of_bexe bsym_table 1) exes));
 *)
           (* add read var to symbol table *)
-          let read_var_bbdcl = Flx_bbdcl.bbdcl_val ([], but, `Val) in 
+          let read_var_bbdcl = Flx_bbdcl.bbdcl_val (bvs, but, `Val) in 
           let read_var_bsym = Flx_bsym.create ~sr "_r" read_var_bbdcl in
           Flx_bsym_table.add bsym_table read_var_index (Some inner_proc_index) read_var_bsym;
 
@@ -120,21 +123,24 @@ print_endline ("Exes =\n" ^ String.concat "\n" (List.map (Flx_print.string_of_be
           Flx_bsym_table.add bsym_table inner_proc_index (Some outer_fun_index) inner_proc_bsym;
 
           (* add parameter to symbol table *)
-          let param_bbdcl = Flx_bbdcl.bbdcl_val ([], param_type, `Val) in 
+          let param_bbdcl = Flx_bbdcl.bbdcl_val (bvs, param_type, `Val) in 
           let param_bsym = Flx_bsym.create ~sr param_name param_bbdcl in
           Flx_bsym_table.add bsym_table param_index (Some outer_fun_index) param_bsym;
 
           (* add outer function to symbol table, type params -> (1->0) *)
           let unit_proc_type = btyp_function (btyp_unit (), btyp_void ()) in
-          let outer_fun_exes = [bexe_fun_return (sr, bexpr_closure unit_proc_type (inner_proc_index,[]))] in
+          let outer_fun_exes = [bexe_fun_return (sr, bexpr_closure unit_proc_type (inner_proc_index,ts))] in
           let outer_fun_ret = btyp_function (param_type, unit_proc_type) in
           let outer_fun_bbdcl = Flx_bbdcl.bbdcl_fun (props, bvs, ([param], None), unit_proc_type, effects, outer_fun_exes) in
           let outer_fun_bsym = Flx_bsym.create ~sr outer_fun_name outer_fun_bbdcl in
           Flx_bsym_table.add bsym_table outer_fun_index None outer_fun_bsym;
 
           let outer_fun_type = btyp_function (param_type, unit_proc_type) in
-          let result = bexpr_closure outer_fun_type (outer_fun_index,[]) in
+          let result = bexpr_closure outer_fun_type (outer_fun_index,ts) in
           state.Flx_lookup_state.decoder_cache <- ((index, ts), result) :: state.Flx_lookup_state.decoder_cache;
+(*
+print_endline "Decoder generated";
+*)
           result
 
         | _ -> Flx_exceptions.clierr2 sr (Flx_bsym.sr bsym) ("_decoder requires union argument, got " ^ Flx_bsym.id bsym);
