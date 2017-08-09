@@ -9,7 +9,7 @@ type bind_state_t = {
   parent: bid_t option;
   bexe_state: Flx_bexe_state.bexe_state_t;
   lookup_state: Flx_lookup_state.lookup_state_t;
-  bbind_state: Flx_bbind.bbind_state_t;
+  bbind_state: Flx_bbind_state.bbind_state_t;
 }
 
 type bound_t =
@@ -27,7 +27,7 @@ let make_bind_state syms sym_table =
       syms.Flx_mtypes2.generic_cache
       sym_table 
   in
-  let bbind_state = Flx_bbind.make_bbind_state 
+  let bbind_state = Flx_bbind_state.make_bbind_state 
    ~print_flag:syms.Flx_mtypes2.compiler_options.Flx_options.print_flag
    ~counter:syms.Flx_mtypes2.counter
    ~sym_table 
