@@ -22,7 +22,7 @@ let flxg_bind_asms state sym_table bsym_table start_counter asms =
   if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//BINDING";
 
-  let bind_state = Flx_bind.make_bind_state state.syms sym_table in
+  let bind_state = Flx_bind_state.make_bind_state state.syms sym_table in
   Flx_bind.bind_asms bind_state bsym_table start_counter asms;
 
   if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
