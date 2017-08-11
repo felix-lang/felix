@@ -2112,6 +2112,354 @@ What this means, however, is that, because the channel is reachable
 from the chip, whilst any one channel is not blocked, attempts to write
 will be stacked up for every input on every blocked channel. 
 
+\section{Encoding and Decoding Unions}
+We will now examine two fundamental devices that correspond to construction and
+decoding of algebraic sum types. We will consider an example union:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+union U = A of int | B of string;
+\end{minted}
+
+In a functional setting values of type U are specified by using the
+injection functions 
+
+\begin{minted}[bgcolor=felixbg]{felix}
+A: int -> U
+B: string -> U
+\end{minted}
+
+and decoded with a pattern match:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+var a = A 42;
+var b = B "Hello";
+proc p(u:U) {
+  match u with
+  | A i => println$ "A argument is " + i.str;
+  | B s => println$ "B argument is " + s;
+  endmatch;
+}
+p a;
+p b;
+\end{minted}
+
+Our aim is to show the analogue of these operations using coroutines.
+Encoding a union is easy:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+chip encodeU 
+  connector io
+    pin inpA: %<int
+    pin inpB: %<string
+    pin outU: %>U
+{
+   device wrapA = A.function;
+   device wrapB = B.function;
+   circuit
+     wire io.inpA to wrapA.inp
+     wire io.inpB to wrapB.inp
+     wire io.outU to wrapA.out
+     wire io.outU to wrapB.out
+  endciruict
+}
+\end{minted}
+
+The \verb%wrapA% device is a transducer that reads an int \verb%i% and writes
+the U value \verb%A i%, the \verb%wrapB% device is a transducer that reads a string \verb%s%
+and writes the U value \verb%B s%. These transducers both write their U value to the
+same output pin. Each value fed to either of the encoder input pins is written
+out wrapped as a U to the output pin.
+
+To decode the stream of U's created we reverse the procedure:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+chip decodeU
+  connector io
+    pin outA: %>int
+    pin outB: %>string
+    pin inpU: %<U
+{
+  while true do
+    var u = read io.inpU;
+    match u with
+    | A i => write (io.outA, i);
+    | B s => write (io.outB, s);
+    endmatch;
+  done   
+}
+\end{minted}
+
+Here, we read a U, decode it with a pattern match, and write the argument
+out down one of two channels, depending on which constructor was used.
+
+It's easy to generalise this to an arbitrary union. There is only one
+trick, which is that the \verb%read% generator cannot be used for
+a unit value, so the read procedure has to be used instead, for example:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+  var u: unit;
+  read (channel, &u);
+\end{minted}
+
+to prevent the read being discarded by the optimiser. The variable u above
+will actually be discarded: there's only one value of type unit so
+there's no need to store it in a variable.
+
+A more difficult issue arises from constant constructors.
+For example in:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+union opt[T] = None | Some of T;
+\end{minted}
+
+Here, \verb%None% appears to have a void argument. In fact,
+it is not a constructor, rather the constructor is:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+None'[T] : unit -> opt[T]
+val None[T] = None'[T] ();
+\end{minted}
+
+In other words, so called constant constructors actually name the result
+of applying a constructor function which accepts a unit to a unit value.
+They can do this because the result of applying a pure function to a unit
+is necessarily invariant.
+
+So it is sensible, given a constant constructor, for the encoder
+to write a unit value, and the decoder to try to read one.
+However there is also an interpretation where we would write a
+void instead, which means, not actually writing anything,
+the reader, expecting nothing, simply skips any attempt to read.
+In this interpretation, the constants are lost from the streams,
+indeed the corresponding channels can be removed.
+
+The former interpretation is closer to the functional model,
+the latter is a purer interpretation. The pure interpretation
+doesn't make a lot of sense unless chips are {\em clocked}
+so that the missing events are reintroduced by synchronised
+timing. We will see a bit later than in translating a list
+into a stream and vice versa both interpretations are useful.
+
+ 
+\section{Decoding and Encoding Product Types}
+In order to fully decode a union we also need to encode
+and decode tuples and records: cartesian products.
+Products are dual to sums, they are characterised by 
+projection functions:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+typedef P = int * string;
+pi0: P -> int;
+pi1: P -> string;
+var p: P = (42,"Hello");
+
+typedef R = (A:int, B: string);
+piA: R -> int
+piB: B -> string
+var r: R = (A=42, B="Hello");
+\end{minted}
+
+We will deal with tuples first. To construct a tuple we need both
+the A and B values. We will read them in order in this example
+from two distinct channels. This is enough if the sources
+are independent. In a purely functional setting this is guarranteed
+since the argument expressions may not have side effects.
+
+\begin{minted}[bgcolor=felixbg]{felix}
+chip encodeP 
+  connector io
+    pin i0: %<int
+    pin i1: %<string
+    pin P: %>int * string
+{
+  while true do 
+    var a = read io.i0;
+    var b = read io.i1;
+    write (io.P, (a,b));
+  done
+}
+\end{minted}
+
+A record constructor is similar. To decode a tuple means to extract
+both its values:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+chip decodeP 
+  connector io
+    pin o0: %>int
+    pin o1: %>string
+    pin P: %<int * string
+{
+  while true do 
+    var a,b = read io.P;
+    write (io.o0, a);
+    write (io.o1, b);
+  done
+}
+\end{minted}
+
+and again, the record case is similar. We can also split the projections:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+chip decode0
+  connector io
+    pin o0: %>int
+    pin P: %<int * string
+{
+  while true do 
+    var a,b = read io.P;
+    write (io.o0, a);
+  done
+}
+
+chip decode1
+  connector io
+    pin o0: %>int
+    pin P: %<int * string
+{
+  while true do 
+    var a,b = read io.P;
+    write (io.o1, b);
+  done
+}
+\end{minted}
+
+\section{Duality of products and sums}
+THIS BIT IS TOO WAFFLY.
+
+We can also define our original decoder using a duplicator
+and two projections:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+chip dup[T] 
+  connector io
+    pin inp: %<T
+    pin out1: %>T
+    pin out2: %>T
+{
+  while true do 
+    var x = read inp;
+    write (io.out1, x);
+    write (io.out2, x);;
+  done
+} 
+\end{minted}
+
+and now we just connect the two projection filters to the two channels.
+The \verb%dup% chip is also known as the diagonal operator 
+and written in greek as $\Delta$. In imperative programming, it is 
+called \verb%copy% or \verb%clone%.
+
+There is a dual chip named \verb%merge% which reads two channels
+of the same type, and outputs the result on a single channel,
+the mathematical name is $\nabla$ which pronounced Nabla,
+is an upside down delta, it is squashs a sum type all of whose 
+constructors take the same argument by removing the constructors.
+
+In order to understand more deeply the categorical relationship
+between products and sums, we will consider the notion of
+a heterogenous array containing strings and integers.
+Of course the array has to be homogenous so we do this:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+union U = A of int | B of string;
+var a : U ^ 3 = A 1, B "Hello", A 42;
+\end{minted}
+
+Now we can index the array with values of the sum type 3,
+which is the sum of three units, and the result is a U,
+which can then be decoded. However it is possible to
+directly index a heterogenous array:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+var a : int * string * int = 1, "Hello", 42;
+var v0 : int = a.0;
+var v1 : string = a.1;
+var v2 : int = a.2;
+\end{minted}
+
+but the results have different types. We can fix this by unifying
+them:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+var a : int * string * int = 1, "Hello", 42;
+fun idx (a: int * string * int) (i:int) : U => 
+  match i with
+  | 0 => A a.0
+  | 1 => B a.1
+  | 2 => A a.2
+;
+for i in 0..<3 do
+  var x : U = idx (a,i);
+  ..
+done
+\end{minted}
+
+More generally, any tuple can be dynamically indexed by using
+a generalised projection which returns the dual of the tuple
+type:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+pi: int * string * int -> 3 -> int + string + int
+\end{minted}
+
+where the RHS is an anonymous sum with numbered constructors.
+In Felix the notation is ugly, the results of the projection
+in order would be:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+typedef S = int + string + int;
+case 0 of S (1)
+case 1 of S ("Hello")
+case 2 of S (42)
+\end{minted}
+
+We can pattern match these anonymous sums:
+
+\begin{minted}[bgcolor=felixbg]{felix}
+match s with
+| case 0 i => println$ "Case 0, int=" + i.str;
+| case 1 s => println$ "Case 1, int=" + s;
+| case 2 i => println$ "Case 2, int=" + i.str;
+\end{minted}
+
+Now the point is that if all the sums have the same argument type,
+we can squash the constructor away, and that is precisely
+what happens with ordinary array indexing. In particular,
+this is a special case because for an arbitrary tuple
+you can't squash the constructor. The key is that the
+core indexing operation applies to any product and returns
+a value of the dual sum type.
+
+The important thing here is that the fields of a product and
+constructors of a sum are perfectly dualised and indexable,
+the special case of arrays is handled using N-ary versions
+of $\Delta$ and $\nabla$ to introduce and eliminate indexes.
+
+The categorical relations here are crucial for understanding
+the translations of these operations to the temporal domain. We begin
+to picture that the decoder chip is a real sum, which is used
+to lift the functional sum type into a temporal one.
+The functional sum is a cheat, the real sum is the temporal one.
+
+With products, we actually have a drop instead of a lift. 
+The functional product is a spatial one, and the temporal
+version of it feels unnatural. The reason is that what we
+really want for a temporal product is a sequence of data
+going down a channel, as for a list source.
+
+In fact, you can write any values you want down channels,
+they do not have to be the same type. The result is not
+ill-typed, provided the reader expects the values to have
+the correct type.
+
+In the temporal domain we do not need to wrap the 
+values in constructors to unify them, we just need to check
+that the type sequence the reader and writer use agree.
+We don't have a type checker that can do that at the moment!
+
+
+
 \chapter{Cyclic Flow}
 \section{Feedback}
 Circuits with feedback create a cyclic flow. Lets try an experiment.

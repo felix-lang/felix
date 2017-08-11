@@ -4578,6 +4578,9 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
   | EXPR_name (sr,"_decoder",ts) ->
     Flx_decoder.gen_decoder state bsym_table bt lookup_name_with_sig env rs sr ts
 
+  | EXPR_name (sr,"_encoder",ts) ->
+    Flx_encoder.gen_encoder state bsym_table bt lookup_name_with_sig env rs sr ts
+
   | EXPR_name (sr,name,ts) ->
 
 (*

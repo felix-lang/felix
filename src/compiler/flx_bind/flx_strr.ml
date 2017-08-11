@@ -210,13 +210,17 @@ print_endline ("Strr on union " ^ name);
           match t with
           | TYP_void _ ->
 (*
-print_endline ("Constant ctor");
+print_endline ("Constant ctor " ^ cname);
 *)
-            mks cname
+            let result =  mks cname in
+(*
+print_endline (Flx_print.string_of_expr result);
+*)
+            result
 
           | TYP_tuple _ ->
 (*
-print_endline ("Tuple ctor");
+print_endline ("Tuple ctor " ^ cname);
 *)
             let arg = EXPR_ctor_arg (sr, (qn cname,a)) in
             let strarg = apl2 sr "_strr" [arg] in
@@ -224,7 +228,7 @@ print_endline ("Tuple ctor");
 
           | _ ->
 (*
-print_endline ("Other ctor");
+print_endline ("Other ctor " ^ cname);
 *)
             let arg = EXPR_ctor_arg (sr, (qn cname,a)) in
             let strarg = apl2 sr "_strr" [arg] in
