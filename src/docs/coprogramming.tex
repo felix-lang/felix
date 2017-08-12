@@ -2144,6 +2144,9 @@ p b;
 \end{minted}
 
 Our aim is to show the analogue of these operations using coroutines.
+
+\subsection{Encoding}
+\subsubsection{Example}
 Encoding a union is easy:
 
 \begin{minted}[bgcolor=felixbg]{felix}
@@ -2170,6 +2173,47 @@ and writes the U value \verb%B s%. These transducers both write their U value to
 same output pin. Each value fed to either of the encoder input pins is written
 out wrapped as a U to the output pin.
 
+\begin{figure}[h]
+\begin{center}
+\tikzstyle{cell} = [rectangle,minimum width=1cm,minimum height=0.5cm,text centered,draw=black]
+\tikzstyle{circ} = [circle,radius=2mm,draw=black]
+\tikzstyle{blank} = [rectangle,minimum width=1cm,minimum height=0.5cm,text centered]
+\tikzstyle{arrow} = [thick,->,>-stealth]
+\begin{tikzpicture}[node distance=3cm]
+\node(LA)[blank]{};
+\node(LM)[blank,below of=LA]{};
+\node(LB)[blank,below of=LM]{};
+\node(A)[cell,right of=LA]{A};
+\node(M)[blank,right of=LM]{};
+\node(B)[cell,right of=LB]{B};
+\node(D)[circ,right of=M]{+};
+\node(RD)[blank,right of=D]{};
+\draw[arrow](LA) -- (A)node[midway,above]{int}node[midway,below]{i};
+\draw[arrow](LB) -- (B)node[midway,above]{string}node[midway,below]{s};
+\draw[arrow](A) -- (D)node[midway,right]{A i};
+\draw[arrow](B) -- (D)node[midway,right]{B s};
+\draw[arrow](D) -- (RD)node[midway,above]{U};
+\end{tikzpicture}
+\caption{Encoder}
+\end{center}
+\end{figure}
+
+\subsubsection{Generic Encoder {\tt \_encode[U]}}
+Felix provides a generic union encoder \verb%_encode[U]%
+which requires a union type \verb%U% as an argument
+and produces an encoder with N input pins labelled
+with the constructor names, and an output pin labelled with
+the union base name. Note that if the union is polymorphic
+it must be instantiated, possibly with an existential
+type variable.
+
+If a union type has a constant constructor,
+it will be treated as if it had a unit argument.
+
+
+\subsection{Decoding}
+
+\subsubsection{Example}
 To decode the stream of U's created we reverse the procedure:
 
 \begin{minted}[bgcolor=felixbg]{felix}
@@ -2191,6 +2235,35 @@ chip decodeU
 
 Here, we read a U, decode it with a pattern match, and write the argument
 out down one of two channels, depending on which constructor was used.
+
+\begin{figure}[h]
+\begin{center}
+\tikzstyle{cell} = [rectangle,minimum width=1cm,minimum height=0.5cm,text centered,draw=black]
+\tikzstyle{circ} = [circle,radius=2mm,draw=black]
+\tikzstyle{blank} = [rectangle,minimum width=1cm,minimum height=0.5cm,text centered]
+\tikzstyle{arrow} = [thick,->,>-stealth]
+\begin{tikzpicture}[node distance=3cm]
+\node(LA)[blank]{};
+\node(LM)[blank,below of=LA]{};
+\node(LB)[blank,below of=LM]{};
+\node(A)[cell,left of=LA]{A?};
+\node(M)[blank,left of=LM]{};
+\node(B)[cell,left of=LB]{B?};
+\node(D)[circ,left of=M]{$\Delta$};
+\node(RD)[blank,left of=D]{};
+\draw[arrow](A) -- (LA)node[midway,above]{int};
+\draw[arrow](B) -- (LB)node[midway,above]{string};
+\draw[arrow](D) -- (A)node[midway,right]{u};
+\draw[arrow](D) -- (B)node[midway,right]{u};
+\draw[arrow](RD) -- (D)node[midway,above]{U}node[midway,below]{u};
+\end{tikzpicture}
+\caption{Decoder}
+\begin{framed}
+\small Alternate implementation with duplicator and selective filters.
+\end{framed}
+\end{center}
+\end{figure}
+
 
 It's easy to generalise this to an arbitrary union. There is only one
 trick, which is that the \verb%read% generator cannot be used for
@@ -2240,7 +2313,29 @@ so that the missing events are reintroduced by synchronised
 timing. We will see a bit later than in translating a list
 into a stream and vice versa both interpretations are useful.
 
- 
+\subsubsection{Generic Decoder {\tt \_decode[U]}}
+Felix provides a generic union decoder \verb%_decode[U]%
+which requires a union type \verb%U% as an argument
+and produces an decoder with N output pins labelled
+with the constructor names, and an input pin labelled with
+the union base name. Note that if the union is polymorphic
+it must be instantiated, possibly with an existential
+type variable.
+
+If a union type has a constant constructor,
+it will be treated as if it had a unit argument.
+
+\subsection{Symmetry of Encoders and Decoders}
+Encoders and Decoders for a given union type U are inverses.
+
+Encoding a union from multiple channels and connecting the
+output to the corresponding decoder produces pins supplying
+the same output data as a set of buffers, one for each channel.
+
+Similarly, decoding a union from a single channel and connecting
+its outputs to the corresponding input pins of an encoder
+produces the same effect as a buffer of the union type.
+
 \section{Decoding and Encoding Product Types}
 In order to fully decode a union we also need to encode
 and decode tuples and records: cartesian products.

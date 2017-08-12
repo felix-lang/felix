@@ -700,6 +700,9 @@ let rec special_inline syms uses bsym_table caller hic excludes sr e =
   let result = 
 (* THIS IS THE MAP THATS CAUSING THE FAILURE BUT I DONT KNOW WHY YET *)
   match Flx_bexpr.map ~f_bexpr:aux e with
+(* ????
+  | BEXPR_cond (c,tr,fa),_ as x -> x
+*)
   | BEXPR_apply ((BEXPR_prj (n,_,_),_),(BEXPR_tuple ls,_)),_ -> 
 (*
 print_endline "Apply prj/tuple";
