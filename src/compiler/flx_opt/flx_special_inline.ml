@@ -21,7 +21,14 @@ open Flx_use
 open Flx_util
 open Flx_bid
 
-let rec special_inline syms uses bsym_table caller heavily_inline_bbdcl hic excludes sr e =
+(* Returns and expression e in which subexpressions are replaced by variables,
+  and the variables are initialised in the executable instructions,
+  so the exe containing this expression, after replacement, has to run
+  after the exes it returns.
+
+  The exes returned are in reverse order. Called by Flx_inline_calls.
+*)
+let special_inline syms uses bsym_table caller heavily_inline_bbdcl hic excludes sr e =
   let nth ls n = try List.nth ls n with _ -> 
     failwith ("special_inline, n'th failure listlen=" ^ string_of_int n ^
     ", index=" ^ string_of_int (List.length ls))
@@ -36,7 +43,20 @@ let rec special_inline syms uses bsym_table caller heavily_inline_bbdcl hic excl
   print_endline (" ... Special inline subexpr: " ^ sbe bsym_table e);
 *)
   let result = 
-(* THIS IS THE MAP THATS CAUSING THE FAILURE BUT I DONT KNOW WHY YET *)
+
+(* Here is our problem!
+
+   This is a bottom up scan. This means the first things pushed are leaves,
+   and we work upwards.  After the caller reverses this list of exes
+   the leaf initialisations happen first, which is essential, since node
+   initialisations dependent on their kids contains variables that
+   must be initialised first.
+
+   The PROBLEM is we have to use a top down scan to handle BEXPR_cond,
+   so we can skip initialising variables for expressions in the branches,
+   since these initialisation can fail: we have to evaluated them
+   on demand, i.e. lazily.
+*)
   match Flx_bexpr.map ~f_bexpr:aux e with
 (* ????
   | BEXPR_cond (c,tr,fa),_ as x -> x
@@ -245,7 +265,7 @@ print_endline ("fresh variable type " ^ sbt bsym_table t);
                     To do this right we need to see a double application.
                   *)
                   | [] -> assert false
-                  | BEXE_init (sr,j,e') :: tail ->
+                  | BEXE_init (sr,j,e') :: rev_tail ->
                     assert (j==urv);
                     (*
                     print_endline "DETECTED SPECIAL CASE";
@@ -253,7 +273,7 @@ print_endline ("fresh variable type " ^ sbt bsym_table t);
                     List.iter (fun x -> print_endline (string_of_bexe bsym_table 0 x)) (rev tail);
                     print_endline ("Expr: " ^ sbe bsym_table e');
                     *)
-                    let tail = hic revariable callee (rev tail) in
+                    let tail = hic revariable callee (rev rev_tail) in
                     exes' := rev tail @ !exes';
 (*
 print_endline ("New expr = " ^ sbe bsym_table e' ^ " type " ^ sbt bsym_table (snd e'));

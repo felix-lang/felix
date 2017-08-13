@@ -22,6 +22,16 @@ open Flx_use
 open Flx_util
 open Flx_bid
 
+(* the function u expands an expression into an expression and some exes
+which must be executed before the exe containing it, it has to
+return these exes in REVERSE order because each case pushes the
+base exe onto the top of the list.
+
+The function u wraps special_inline.
+
+At the end this function reverses the order so it returns the
+expansion in FORWARD order.
+*)
 let expand_exe syms bsym_table u exe =
   let xs =
     (*

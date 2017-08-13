@@ -22,6 +22,10 @@ open Flx_use
 open Flx_util
 open Flx_bid
 
+(* this function stacks up exes in reverse order, then reverses the
+result so it returns exes in forward order
+*)
+
 let rec heavy_inline_calls
   syms
   bsym_table
@@ -41,6 +45,8 @@ let rec heavy_inline_calls
     not (Flx_call.is_recursive_call uses caller callee)
     *)
   in
+
+  (* Rescanning currently enabled, set true to disable *)
   let hic revariable callee exes = if false then exes else
     (*
     print_endline "Rescanning ..";
@@ -67,7 +73,9 @@ let rec heavy_inline_calls
     (that is, inside out).
   *)
 
-  let sinl sr e = Flx_special_inline.special_inline syms uses bsym_table caller inline_bbdcl hic (caller::excludes) sr e in
+  let sinl sr e = Flx_special_inline.special_inline 
+    syms uses bsym_table caller inline_bbdcl hic (caller::excludes) sr e 
+  in
 
   let ee exe = Flx_expand_exe.expand_exe syms bsym_table sinl exe in
   let exes' = ref [] in (* reverse order *)
