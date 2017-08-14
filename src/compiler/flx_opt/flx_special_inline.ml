@@ -56,28 +56,35 @@ let special_inline syms uses bsym_table caller heavily_inline_bbdcl hic excludes
    so we can skip initialising variables for expressions in the branches,
    since these initialisation can fail: we have to evaluated them
    on demand, i.e. lazily.
+
+
+   FIRST: change the ordering so the analysis is FLAT, i.e. it only
+   applies to the top level expression which is a special case.
+   Non-special cases are analysed by mapping their subterms.
 *)
+  match e with
+  | BEXPR_cond (c,tr,fa),_  -> 
+    let c = Flx_bexpr.map ~f_bexpr:aux c in bexpr_cond c tr fa
+  | _ ->
+
   match Flx_bexpr.map ~f_bexpr:aux e with
-(* ????
-  | BEXPR_cond (c,tr,fa),_ as x -> x
-*)
   | BEXPR_apply ((BEXPR_prj (n,_,_),_),(BEXPR_tuple ls,_)),_ -> 
 (*
 print_endline "Apply prj/tuple";
 *)
-    begin try nth ls n with exn ->
+    let e = try nth ls n with exn ->
       print_endline "projection of tuple";
       raise exn
-    end
+    in e
 
   | BEXPR_apply ((BEXPR_prj (n,_,_),_),(BEXPR_record ls,_)),_ -> 
 (*
 print_endline "Apply prj/record";
 *)
-    begin try snd (nth ls n) with exn ->
+    let e = try snd (nth ls n) with exn ->
       print_endline "projection of record";
       raise exn
-    end
+    in e
 
   (* get_n on a struct apply to an explicit tuple .. *)
   | BEXPR_apply (
@@ -90,8 +97,10 @@ print_endline "Apply prj/struct/tuple";
     let bbdcl = Flx_bsym_table.find_bbdcl bsym_table bid in
     begin match bbdcl with 
     | BBDCL_struct _
-    | BBDCL_cstruct _ -> nth ls n
-    | _ ->  x
+    | BBDCL_cstruct _ -> let e = nth ls n in e
+    | _ -> 
+       print_endline ("Apply projection to apply of struct constructor to tuple: index not struct!"); 
+       assert false (* Flx_bexpr.map ~f_bexpr:aux x *)
     end
 
   | BEXPR_closure (callee,_),_ as x ->
@@ -102,9 +111,6 @@ print_endline "Apply prj/struct/tuple";
     -> assert false
 
   | ((BEXPR_apply_prim (callee,ts,a),t) as e) ->
-(*
-print_endline "Apply prim";
-*)
     let bsym = Flx_bsym_table.find bsym_table callee in
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_external_fun (props,_,_,_,_,_,_) ->
@@ -124,7 +130,9 @@ print_endline "Apply prim";
         (* replace application with the variable *)
         bexpr_varname t (urv,[])
 
-      end else e
+      end else begin
+      e
+      end
     | _ -> assert false
     end
 
@@ -310,7 +318,8 @@ print_endline ("new var type " ^ sbt bsym_table t);
           end
         | _ -> assert false (* e *)
         end
-      end else e
+      end 
+      else e
 
   | x -> x
   in
