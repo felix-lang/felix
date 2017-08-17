@@ -144,7 +144,13 @@ let once_check bsym_table bid name once_kids bexes =
      bexes 
    in
    print_endline ("Calculated once use per instruction of " ^ name ^ ":" ^ string_of_int bid);
-   flow [] BidSet.empty bexes;
+   let bparams = Flx_bsym_table.find_bparams bsym_table bid in 
+   let ps =  List.filter is_once (Flx_bparameter.get_bids (fst bparams)) in
+   let once_params = BidSet.of_list ps in
+   if not (BidSet.is_empty once_params) then 
+     print_endline ("Once parameter starts initialised");
+
+   flow [] once_params bexes;
    print_endline ("Flow of " ^ name ^ ":" ^ string_of_int bid ^ " checked")
 
 
