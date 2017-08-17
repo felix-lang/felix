@@ -408,7 +408,9 @@ I'm going to skip this for the moment!
 (*
 print_endline ("DONE cal_use_closure <<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
 *)
+(*
   check_table ();
+*)
   !traced
 
 let full_use_closure syms bsym_table =

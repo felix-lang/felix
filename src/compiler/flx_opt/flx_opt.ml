@@ -192,6 +192,9 @@ print_endline "DONE Dead code elim";
   print_time syms "[flx_opt]; Mark heap closures" begin fun () ->
   Flx_mkcls.mark_heap_closures syms bsym_table end;
 
+  (* new once check by control flow analysis *)
+  Flx_once.once_bsym_table bsym_table;
+
   bsym_table
 
 
