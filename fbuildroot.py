@@ -235,6 +235,12 @@ def make_c_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
                 ],
             'flags': ['-fno-common','-fvisibility=hidden'] + flags,
             'optimize_flags': ['-fomit-frame-pointer']}),
+        ({'bsd'}, {
+            'warnings': ['all', 'fatal-errors', 'no-constant-logical-operand', 'no-array-bounds', ],
+            'flags': ['-std=c++11', '-fno-common','-fvisibility=hidden'] + flags,
+            'link_flags' : ['-lpthread'],
+            'link_flags-': ['-ldl'],
+            'optimize_flags': ['-fomit-frame-pointer']}),
         ({'posix'},
             {'warnings': ['all', 'fatal-errors'],
             'flags': ['-std=gnu89', '-fno-common', '-fvisibility=hidden', '-fno-strict-aliasing'] + flags,
@@ -281,6 +287,12 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
         #    'flags': ['-std=gnu++11', '-w',
         #     '-fno-common', '-fvisibility=hidden', '-fno-strict-aliasing'] + flags,
         #    'optimize_flags': ['-fomit-frame-pointer']}),
+        ({'bsd'}, {
+            'warnings': ['all', 'fatal-errors', 'no-constant-logical-operand', 'no-array-bounds', ],
+            'flags': ['-std=c++11', '-fno-common','-fvisibility=hidden'] + flags,
+            'link_flags' : ['-lpthread'],
+            'link_flags-': ['-ldl'],
+            'optimize_flags': ['-fomit-frame-pointer']}),
         ({'posix'}, {
             'warnings': ['fatal-errors', 'no-invalid-offsetof','no-parentheses'],
             'flags': ['-std=gnu++11', '-D_POSIX', '-w',
