@@ -8,6 +8,17 @@ open Flx_bexpr
 type once_data_t = {gets: BidSet.t; sets: BidSet.t}
 type augexe_t = Flx_bexe.t * once_data_t 
 
+type label_t = bid_t * BidSet.t
+type stack_frame_t = {index: bid_t; code: augexe_t list; mutable visited: label_t list}
+
+(* current position in a control path *)
+type continuation_t = {current: augexe_t list; liveness: BidSet.t; frame: stack_frame_t}
+type stack_t = continuation_t list
+
+(* simulate labels at the start and end of a routine *)
+let entry_label = -1
+let exit_label = -2
+
 let make_augexes bsym_table once_kids get_sets get_gets bexes : augexe_t list=
   List.map 
   (
@@ -20,23 +31,14 @@ let make_augexes bsym_table once_kids get_sets get_gets bexes : augexe_t list=
   ) 
   bexes 
 
+let make_stack index liveness exes =
+  [{current=exes; liveness=liveness; frame= {index=index; code=exes; visited=[]}}]
 
 
-module BidSetSet = Flx_set.Make (
-  struct 
-    type t = BidSet.t
-    let compare = compare
-  end
-)
-
-(* return the instructions following a label
-  if the label isn't found, well fine, there are
-  no instructions after it
-*)
 let rec find_label augexes lab = 
   match augexes with
-  | [] -> [] 
-  | (BEXE_label (_,cand), data) :: tail when lab = cand -> tail
+  | [] -> None
+  | (BEXE_label (_,cand), data) :: tail when lab = cand -> Some tail
   | _ :: tail -> find_label tail lab
 
 (* Fixup diagnostics later *)
@@ -68,102 +70,78 @@ print_endline ("Newlive= " ^ Flx_bid.str_of_bidset live);
 *)
   live
 
-let check_liveness liveset =
+let check_liveness bsym_table liveset : stack_t =
   if not (BidSet.is_empty liveset) then begin
     print_endline ("Once error: Once variables unused!");
+    BidSet.iter (fun idx -> 
+      let parent, bsym = Flx_bsym_table.find_with_parent bsym_table idx in
+      print_endline ("Variable " ^ Flx_bsym.id bsym ^ 
+        " defined at\n" ^ Flx_srcref.long_string_of_src (Flx_bsym.sr bsym))
+    ) liveset;
     assert false
-  end
+  end;
+  [] (* end of path *)
 
-let check_reentry previous current label =
-  let d = BidSet.diff previous current in
-  if not (BidSet.is_empty d) then begin
+let check_reentry bsym_table previous current label : stack_t=
+  if previous <> current then begin
     print_endline ("Once error: Inconsistent liveness re-entering path at label " ^ string_of_int label);
+    let diffset = BidSet.diff (BidSet.union previous current) (BidSet.inter previous current) in
+    BidSet.iter (fun idx -> 
+      let parent, bsym = Flx_bsym_table.find_with_parent bsym_table idx in
+      print_endline ("Variable " ^ Flx_bsym.id bsym ^ 
+        " defined at\n" ^ Flx_srcref.long_string_of_src (Flx_bsym.sr bsym))
+    ) diffset;
     assert false
-  end
+  end;
+  [] (* end of path *)
 
-(* this is basically a copy of the mainline flow routine,
-however we have to handle a few things differently.
+(* handle gotos, including nonlocal gotos *)
+let rec goto bsym_table (stack:stack_t) (liveness:BidSet.t) (label:bid_t) : stack_t =
+  match stack with
+  | [] -> check_liveness bsym_table liveness  (* exit *)
+  | head :: tail -> 
+    match find_label head.frame.code label with
+    | Some bexes -> 
+      let visited = head.frame.visited in
+      if List.mem_assoc label visited then
+        let old_liveness = List.assoc label visited in
+        check_reentry bsym_table old_liveness liveness label (* path merge *)
+      else
+        let _ = head.frame.visited <- (label,liveness)::visited in (* continue recording liveness at label *)
+        { head with current=bexes; liveness=liveness } :: tail
+    | None -> goto bsym_table tail liveness label (* look for label in parent *)
 
-First note, child_flow is interested ONLY in the parent's
-once variables, not those defined in the child itself!
-
-When we hit a return we just return the liveness set,
-we don't check it because it need not be empty.
-
-In fact, there could be multiple possible liveness sets,
-so we have to actually return a set of liveness sets,
-the caller then processes each as a distinct control
-flow path.
-
-*)
-
-let add_liveness liveset final_livesets = 
-  BidSetSet.add liveset final_livesets 
-
-let merge_liveness livesets1 livesets2 = 
-  BidSetSet.union livesets1 livesets2 
-
-let rec child_flow bsym_table visited liveset final_livesets augexes : BidSetSet.t =
-(*
-print_endline ("CHILD FLOW: " ^ (match augexes with | []-> "END" 
-  | (bexe,{sets=sets; gets=gets}) ::_ -> Flx_print.string_of_bexe bsym_table 0 bexe ^ 
-  "\nInput liveness= " ^ Flx_bid.str_of_bidset liveset^
-  "\nSets= " ^ Flx_bid.str_of_bidset sets ^ ", gets= " ^ Flx_bid.str_of_bidset gets));
-*)
-  let child_flow visited liveset final_livesets augexes = child_flow bsym_table visited liveset final_livesets augexes in
-  match augexes with
-  (* exists without usage *)
-  | [] 
-  | (BEXE_proc_return _,_)::_ ->
-    add_liveness liveset final_livesets
-
-  (* exists with possible usage *)
-  | (BEXE_jump_direct (_,_,_,_),deltalife)::_ 
-  | (BEXE_jump (_,_,_),deltalife)::_ 
-  | (BEXE_nonreturn_code (_,_,_),deltalife)::_ 
-  | (BEXE_fun_return (_,_),deltalife)::_ ->
-    let liveset = live liveset deltalife in
-    add_liveness liveset final_livesets
-
-  | (BEXE_goto (_,lidx),_)::_ ->
-    if List.mem_assoc lidx visited then begin
-      check_reentry (List.assoc lidx visited) liveset lidx;
-      add_liveness liveset final_livesets
-    end else 
-      child_flow ((lidx,liveset)::visited) liveset final_livesets (find_label augexes lidx)
-
-  | (BEXE_ifgoto (_,c,lidx),deltalife)::tail ->
-    let liveset = live liveset deltalife in
-
-    let skipped = child_flow visited liveset final_livesets tail in
-    if List.mem_assoc lidx visited then begin
-      check_reentry (List.assoc lidx visited) liveset lidx;
-      add_liveness liveset final_livesets
-    end else
-      let taken = 
-        child_flow ((lidx,liveset)::visited) liveset final_livesets (find_label augexes lidx)
-      in 
-      merge_liveness skipped taken
-      
-  | (BEXE_label (_,lidx),_)::tail ->
-    child_flow ((lidx,liveset)::visited) liveset final_livesets tail
-
-  | (_,deltalife)::tail -> 
-    let liveset = live liveset deltalife in
-    child_flow visited liveset final_livesets tail
-
-
+(* handle return instruction *)
+let return bsym_table (stack:stack_t) (liveness:BidSet.t) : stack_t =
+  match stack with 
+  | [] -> assert false
+  | callee :: [] -> check_liveness bsym_table liveness
+  | callee :: caller :: chain ->
+    let visited = callee.frame.visited in
+    if List.mem_assoc exit_label visited then
+      let old_liveness = List.assoc exit_label visited in
+      check_reentry bsym_table old_liveness liveness exit_label (* path merge *)
+    else
+      let _ = callee.frame.visited <- (exit_label,liveness)::visited in
+      let caller = { caller with liveness=liveness } in (* fix fudge! *)
+      caller :: chain
+ 
+  
+(*********************************************************************) 
 (* flow analysis *)
-let rec flow make_augexes bsym_table idx visited liveset augexes =
-  let flow visited liveset augexes = flow make_augexes bsym_table idx visited liveset augexes in
-
-  match augexes with
+let rec flow make_augexes bsym_table stack : unit =
+  let flow stack = flow make_augexes bsym_table stack in
+  match stack with 
+  | [] -> () (* finished *)
+  | cc :: caller ->
+  match cc.current with
   (* exists without usage *)
   | [] 
   | (BEXE_proc_return _,_)::_ ->
-    check_liveness liveset
+    flow (return bsym_table stack cc.liveness)
 
   (* exists with possible usage *)
+  (* FIXME: could be a call to a child! *)
   | (BEXE_jump_direct (_,_,_,_),deltalife)::_ 
   | (BEXE_jump (_,_,_),deltalife)::_ 
   | (BEXE_nonreturn_code (_,_,_),deltalife)::_ 
@@ -171,25 +149,29 @@ let rec flow make_augexes bsym_table idx visited liveset augexes =
 (*
 print_endline ("DETECTED JUMP or noret code or fun ret");
 *)
-    let liveset = live liveset deltalife in
-    check_liveness liveset
+    let liveset = live cc.liveness deltalife in
+    flow (check_liveness bsym_table liveset)
 
   | (BEXE_goto (_,lidx),_)::_ ->
-    if List.mem_assoc lidx visited then
-      check_reentry (List.assoc lidx visited) liveset lidx
-    else 
-     flow ((lidx,liveset)::visited) liveset (find_label augexes lidx)
+    flow (goto bsym_table stack cc.liveness lidx)
 
   | (BEXE_ifgoto (_,c,lidx),deltalife)::tail ->
-    let liveset = live liveset deltalife in
-    flow visited liveset tail;
-    if List.mem_assoc lidx visited then
-      check_reentry (List.assoc lidx visited) liveset lidx
-    else
-      flow ((lidx,liveset)::visited) liveset (find_label augexes lidx)
+    let liveset = live cc.liveness deltalife in
+    (* branch not taken case *)
+    flow ({cc with current=tail; liveness=liveset} :: caller);
+
+    (* branch taken case *)
+    flow (goto bsym_table stack liveset lidx)
       
   | (BEXE_label (_,lidx),_)::tail ->
-    flow ((lidx,liveset)::visited) liveset tail
+    let liveset = cc.liveness in
+    let visited = cc.frame.visited in
+    if List.mem_assoc lidx visited then
+      let old_liveness = List.assoc lidx visited in
+      flow (check_reentry bsym_table old_liveness liveset lidx) (* path merge *)
+    else
+      let _ = cc.frame.visited <- (lidx,liveset)::visited in (* continue recording liveness at label *)
+      flow ({cc with current=tail; liveness=liveset} :: caller)
 
   | (BEXE_call (_,(BEXPR_closure(pidx,_),_),_),deltalife)::tail
   | (BEXE_call_stack (_,pidx,_,_),deltalife)::tail 
@@ -197,24 +179,25 @@ print_endline ("DETECTED JUMP or noret code or fun ret");
 (*
 print_endline ("DETECTED PROCEDURE CALL");
 *)
-    let liveset = live liveset deltalife in
+    let liveset = live cc.liveness deltalife in
     let parent,bsym = Flx_bsym_table.find_with_parent bsym_table pidx in
     begin match parent with
-    | Some idx2 when idx = idx2 ->
+    | Some idx2 when cc.frame.index = idx2 ->
       let bbdcl = Flx_bsym.bbdcl bsym in
       begin match bbdcl with
       | BBDCL_fun (prop, bvs, ps, res, effects, bexes) ->
+        (* the liveness here is WRONG! We don't actually know what it is yet! *)
+        let continuation = {cc with current=tail; liveness=liveset} in
         let augexes = make_augexes bexes in 
-        let final_livesets = 
-          child_flow bsym_table visited liveset BidSetSet.empty augexes     
-        in 
-        let f liveset = flow visited liveset tail in
-        BidSetSet.iter f final_livesets
+        let new_frame = {index=pidx; code=augexes; visited=[] } in
+        let entry = {current=augexes; liveness=liveset; frame=new_frame} in
+        let stack = entry :: continuation :: caller in
+        flow stack 
 
       (* must  be external function *)
-      | _ -> flow visited liveset tail
+      | _ -> flow ({cc with current=tail; liveness=liveset} :: caller)
       end
-    | _ -> flow visited liveset tail
+    | _ -> flow ({cc with current=tail; liveness=liveset} :: caller)
     end
 
   (* FIXME: temporary hack for concept testing, handle all the
@@ -224,8 +207,9 @@ print_endline ("DETECTED PROCEDURE CALL");
 (*
 print_endline ("Normall processing for " ^ Flx_print.string_of_bexe bsym_table 0 bexe);
 *)
-    let liveset = live liveset deltalife in
-    flow visited liveset tail
+    let liveset = live cc.liveness deltalife in
+    flow ({cc with current=tail; liveness=liveset} :: caller)
+
 
 let is_once bsym_table bid = 
   match Flx_bsym_table.find_bbdcl bsym_table bid with
@@ -290,7 +274,8 @@ let once_check bsym_table bid name once_kids bexes =
 (*
     print_endline ("Once parameter starts initialised");
 *)
-  flow make_augexes bsym_table bid [] once_params bexes
+  let stack = make_stack bid once_params bexes in
+  flow make_augexes bsym_table stack
 (*
   print_endline ("Flow of " ^ name ^ ":" ^ string_of_int bid ^ " checked")
 *)
