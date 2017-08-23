@@ -181,11 +181,13 @@ let fold f bsym_table init =
     init
 
 (** Returns whether or not one symbol is a child of another. *)
+(** WARNING: ridiculously expensive! *)
 let is_child bsym_table parent child =
   assert (child <> 0);
   BidSet.mem child (find_children bsym_table parent)
 
 (** Returns whether or not one symbol is an ancestor of another. *)
+(** WARNING: the logic is backards here, should be called is_descendant *)
 let is_ancestor bsym_table child anc =
   assert (child <> 0);
   assert (anc <> 0);

@@ -375,7 +375,9 @@ let rec unification bsym_table counter eqns dvars =
 
         (* meta type have to agree *)
         if mi <> mj then begin
+(*
           print_endline ("Unify: metatype mismatch T<"^string_of_int i^">" ^str_of_btype mi ^ " != T<"^string_of_int j^">" ^ str_of_btype mj);
+*)
 (* META TYPE ARE BUGGED *)
 (*
           raise Not_found;
