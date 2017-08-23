@@ -108,12 +108,12 @@ let propagate_invariants body invariants sr =
 let fix_params sr seq ps =
 
   let rec aux ps =
-    (* ps : (param_kind_t * Flx_id.t * typecode_t * expr_t option) *)
+    (* ps : (sr * param_kind_t * Flx_id.t * typecode_t * expr_t option) *)
     match ps with
 
     (* The case where the param type is none. 
        This is where things like 'could not match type "_v4029" with "int" in "x + 3"' originate *)
-    | (kind,id,TYP_none,expr) :: t ->
+    | (sr,kind,id,TYP_none,expr) :: t ->
 
       let v = "_v" ^ string_of_bid (seq()) in  (* Create a fresh identifier *)
       let vt = TYP_name (generated,v,[]) in    (* Create a new type variable w/ dummy source ref. *)
@@ -125,7 +125,7 @@ let fix_params sr seq ps =
        ((v,TYP_patany sr)::vs),((kind,id,vt,expr)::ps) (* a bit HACKY *)
        *)
 
-       ((v,TYP_generic sr)::vs),((kind,id,vt,expr)::ps) (* a bit HACKY *)
+       ((v,TYP_generic sr)::vs),((sr,kind,id,vt,expr)::ps) (* a bit HACKY *)
 
     (* General case: Recurse assmbling the fixed type variables (vs). *)
     | h :: t ->
@@ -189,7 +189,7 @@ let mkcurry seq sr name vs args return_type effects kind body props =
     TYP_effector 
       ((typeoflist 
         (List.map 
-          (fun(x,y,z,d)->z) 
+          (fun(sr,x,y,z,d)->z) 
           (fst arg))),
       eff,
       ret)
@@ -323,7 +323,7 @@ let mkcurry seq sr name vs args return_type effects kind body props =
       let argt =
         let hdt = List.hd t in
         let xargs,traint = hdt in
-        typeoflist (List.map (fun (x,y,z,d) -> z) xargs)
+        typeoflist (List.map (fun (sr,x,y,z,d) -> z) xargs)
       in
       let m = List.length args in
       let body = [ 

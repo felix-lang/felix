@@ -435,6 +435,7 @@ and build_table_for_dcl
     ?(dirs=[])
     index
     id
+    sr
     symdef
   =
 (*
@@ -477,6 +478,7 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
     ?(dirs=[])
     index
     id
+    sr
     symdef
   =
 (*
@@ -519,21 +521,21 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
       in
 
       (* Add the type variable to the symbol table. *)
-      add_symbol ~ivs:dfltvs index tvid (SYMDEF_typevar mt);
+      add_symbol ~ivs:dfltvs index tvid sr (SYMDEF_typevar mt);
       full_add_typevar counter_ref sym_table sr table tvid index;
     end (fst ivs)
   in
   let add_tvars table = add_tvars' (Some symbol_index) table ivs in
 
-  let add_parameter pubtab privtab parent (k, name, typ, dflt) =
+  let add_parameter pubtab privtab parent (sr,k, name, typ, dflt) =
     let n = fresh_bid counter_ref in
 
     if print_flag then
       print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n ^ " -> " ^
-        name ^ " (parameter)");
+        name ^ " (parameter) at " ^ Flx_srcref.short_string_of_src sr);
 
     (* Add the paramater to the symbol table. *)
-    add_symbol ~parent ~ivs:dfltvs n name (SYMDEF_parameter (k, typ));
+    add_symbol ~parent ~ivs:dfltvs n name sr (SYMDEF_parameter (k, typ));
 
     (* Possibly add the parameter to the public symbol table. *)
     if access = `Public then
@@ -542,7 +544,7 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
     (* Add the parameter to the private symbol table. *)
     full_add_unique counter_ref sym_table sr dfltvs privtab name n;
 
-    (k, name, typ, dflt)
+    (sr,k, name, typ, dflt)
   in
 
   (* Add parameters to the symbol table. *)
@@ -553,7 +555,7 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
   (* Add simple parameters to the symbol table. *)
   let add_simple_parameters pubtab privtab parent =
     List.map begin fun (name, typ) ->
-      add_parameter pubtab privtab parent (`PVal, name, typ, None)
+      add_parameter pubtab privtab parent (sr,`PVal, name, typ, None)
     end
   in
 
@@ -564,7 +566,7 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
         if print_flag then
           print_endline ("//  " ^ spc ^ Flx_print.string_of_bid lidx ^ " -> " ^
             name ^ " (label of "^string_of_int symbol_index^")");
-        add_symbol ~parent:(Some parent) ~ivs:dfltvs lidx name (SYMDEF_label name);
+        add_symbol ~parent:(Some parent) ~ivs:dfltvs lidx name sr (SYMDEF_label name);
         full_add_unique counter_ref sym_table sr dfltvs privtab name lidx
       | _ -> ()
     ) exes
@@ -590,7 +592,7 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
         reds
       in
       (* Add the symbol to the symbol table. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_reduce reds);
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_reduce reds);
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
@@ -599,7 +601,7 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
       let ips = add_parameters pubtab privtab (Some symbol_index) ps in
 
       (* Add the symbol to the symbol table. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_axiom ((ips, pre),e1));
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_axiom ((ips, pre),e1));
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
@@ -608,7 +610,7 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
       let ips = add_parameters pubtab privtab (Some symbol_index) ps in
 
       (* Add the symbol to the symbol table. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_lemma ((ips, pre), e1));
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_lemma ((ips, pre), e1));
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
@@ -651,8 +653,17 @@ if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int
       let ips = add_parameters pubtab privtab (Some symbol_index) ps in
 
       (* Add the symbols to the sym_table. *)
+(*
+print_endline ("Adding function " ^ id ^ " at " ^ Flx_srcref.short_string_of_src sr);
+*)
+(*
+print_endline ("Parameters:");
+List.iter ( fun (sr,kind,name,typ,init) -> 
+  print_endline ("  " ^ name ^ " at " ^ Flx_srcref.short_string_of_src sr))
+ps;
+*)
       add_symbol ~pubtab ~privtab ~dirs
-        symbol_index id (SYMDEF_function ((ips, pre), t, effects, props, exes));
+        symbol_index id sr (SYMDEF_function ((ips, pre), t, effects, props, exes));
       add_labels symbol_index privtab exes;
 
       (* Possibly add the function to the public symbol table. *)
@@ -702,7 +713,7 @@ if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int
       in
 
       (* Add symbols to sym_table. *)
-      add_symbol ~pubtab ~privtab ~dirs symbol_index id (SYMDEF_function (
+      add_symbol ~pubtab ~privtab ~dirs symbol_index id sr (SYMDEF_function (
           ([],None),
           TYP_var symbol_index,
           noeffects,
@@ -724,7 +735,7 @@ if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int
       add_tvars privtab
 
   | DCL_insert (s,ikind,reqs) ->
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_insert (s,ikind,reqs));
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_insert (s,ikind,reqs));
 
       (* Possibly add the inserted function to the public symbol table. *)
       if access = `Public then add_function pub_name_map id symbol_index;
@@ -787,7 +798,7 @@ print_endline ("ROOT: Init procs = " ^ string_of_int (List.length inner_inits));
                   " -> _init_  (module " ^ id ^ ")");
 
                 (* Add the _init_ function to the sym_table. *)
-                add_symbol ~privtab:init_privtab ~parent:(Some 0) init_fun "_init_" init_def;
+                add_symbol ~privtab:init_privtab ~parent:(Some 0) init_fun "_init_" sr init_def;
                 (* Possibly add the _init_ function to the public symbol table. *)
                 if access = `Public then add_function pubtab "_init_" init_fun;
 
@@ -876,13 +887,13 @@ print_endline ("Checking parent's public map");
           " -> _init_  (library " ^ id ^ ")");
 
         (* Add the _init_ function to the sym_table. *)
-        add_symbol ~privtab:init_privtab ~parent:(Some library_index) init_fun "_init_" init_def;
+        add_symbol ~privtab:init_privtab ~parent:(Some library_index) init_fun "_init_" sr init_def;
 
       end;
 
       (* Add the module to the sym_table. *)
       if fresh then begin
-        add_symbol ~pubtab ~privtab ~dirs symbol_index id (SYMDEF_library);
+        add_symbol ~pubtab ~privtab ~dirs symbol_index id sr (SYMDEF_library);
         if access = `Public then add_unique pub_name_map id library_index;
         add_unique priv_name_map id library_index;
       end;
@@ -934,13 +945,13 @@ print_endline ("MODULE "^name^" Init procs = " ^ string_of_int (List.length inne
           " -> _init_  (module " ^ id ^ ")");
 
         (* Add the _init_ function to the sym_table. *)
-        add_symbol ~privtab:init_privtab ~parent:(Some symbol_index) init_fun "_init_" init_def;
+        add_symbol ~privtab:init_privtab ~parent:(Some symbol_index) init_fun "_init_" sr init_def;
       end;
       (* Add the module to the sym_table. *)
 (*
 print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p -> string_of_int p | None -> "None"));
 *)
-      add_symbol ~pubtab ~privtab ~dirs symbol_index id (SYMDEF_module);
+      add_symbol ~pubtab ~privtab ~dirs symbol_index id sr (SYMDEF_module);
 
       (* Possibly add module to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
@@ -1029,7 +1040,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
           " -> _init_  (typeclass " ^ id ^ ")");
 
         (* Add the _init_ function to the sym_table. *)
-        add_symbol ~privtab:init_privtab ~parent:(Some symbol_index) init_fun "_init_" init_def;
+        add_symbol ~privtab:init_privtab ~parent:(Some symbol_index) init_fun "_init_" sr init_def;
       end; 
 
       (* Add the typeclass to the sym_table. *)
@@ -1037,7 +1048,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
         ~pubtab
         ~privtab:fudged_privtab
         ~dirs
-        symbol_index id (SYMDEF_typeclass);
+        symbol_index id sr (SYMDEF_typeclass);
 
       (* Possibly add the typeclass to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
@@ -1070,7 +1081,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
         Flx_exceptions.clierrx "[flx_bind/flx_symtab.ml:1070: E259] " sr ("Type class instance is not allowed to directly contain code");
 
       (* Add typeclass instance to the sym_table. *)
-      add_symbol ~pubtab ~privtab ~dirs symbol_index id (SYMDEF_instance qn);
+      add_symbol ~pubtab ~privtab ~dirs symbol_index id sr (SYMDEF_instance qn);
 
       (* Prepend _inst_ to the name of the instance.
        * XXX: Why do we need this? *)
@@ -1101,7 +1112,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       in
 
       (* Add the value to the dnfs. *)
-      add_symbol ~pubtab ~privtab symbol_index id symdef;
+      add_symbol ~pubtab ~privtab symbol_index id sr symdef;
 
       (* Possibly add the value to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
@@ -1117,7 +1128,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
 (* print_endline ("Flx_symtab: add DCL_type_alias " ^ id ^ "<" ^ string_of_int symbol_index^ "> type=" ^ Flx_print.string_of_typecode t); *)
 
       (* Add the type alias to the sym_table. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_type_alias t);
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_type_alias t);
 
       (* this is a hack, checking for a type function this way, since it will
        * also incorrectly recognize a type lambda like:
@@ -1162,7 +1173,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
 
   | DCL_inherit qn ->
       (* Add the inherited typeclass to the dnfs. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_inherit qn);
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_inherit qn);
 
       (* Possibly add the inherited typeclass to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
@@ -1175,7 +1186,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
 
   | DCL_inherit_fun qn ->
       (* Add the inherited function to the dnfs. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_inherit_fun qn);
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_inherit_fun qn);
 
       (* Possibly add the inherited function to the public symbol table. *)
       if access = `Public then add_function pub_name_map id symbol_index;
@@ -1188,7 +1199,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
 
   | DCL_newtype t ->
       (* Add the newtype to the sym_table. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_newtype t);
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_newtype t);
 
       (* Create an identity function that doesn't do anything. *)
       let ts = List.map (fun (n,_) -> TYP_name (sr,n,[])) (fst vs) in
@@ -1199,7 +1210,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       let n_repr = fresh_bid counter_ref in
 
       (* Add the _repr_ function to the symbol table. *)
-      add_symbol ~pubtab ~privtab n_repr "_repr_" (SYMDEF_fun (
+      add_symbol ~pubtab ~privtab n_repr "_repr_" sr (SYMDEF_fun (
         [],
         [piname],
         t,
@@ -1216,7 +1227,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       let n_make = fresh_bid counter_ref in
 
       (* Add the _make_ function to the symbol table. *)
-      add_symbol ~pubtab ~privtab n_make ("_make_" ^ id) (SYMDEF_fun (
+      add_symbol ~pubtab ~privtab n_make ("_make_" ^ id) sr (SYMDEF_fun (
         [],
         [t],
         piname,
@@ -1238,7 +1249,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
 
   | DCL_abs (quals, c, reqs) ->
       (* Add the abs to the sym_table. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_abs (quals, c, reqs));
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_abs (quals, c, reqs));
 
       (* Possibly add the abs to the private symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
@@ -1253,7 +1264,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       let t = if t = TYP_none then TYP_var symbol_index else t in
 
       (* Add the const to the sym_table. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_const (props, t, c, reqs));
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_const (props, t, c, reqs));
 
       (* Possibly add the const to the private symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
@@ -1266,7 +1277,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
 
   | DCL_fun (props, ts,t,c,reqs,prec) ->
       (* Add the function to the sym_table. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_fun (props, ts, t, c, reqs, prec));
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_fun (props, ts, t, c, reqs, prec));
 
       (* Possibly add the function to the public symbol table. *)
       if access = `Public then add_function pub_name_map id symbol_index;
@@ -1283,7 +1294,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
    * as the C function, with this void* dropped. *)
   | DCL_callback (props, ts,t,reqs) ->
       (* Add the callback to the sym_table. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_callback (props, ts, t, reqs));
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_callback (props, ts, t, reqs));
 
       (* Possibly add the callback to the public symbol table. *)
       if access = `Public then add_function pub_name_map id symbol_index;
@@ -1318,7 +1329,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       in
 
       (* Add union to sym_table. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_union its');
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_union its');
 
       (* Add type variables to symbol table and the private name lookup table of union. *)
       add_tvars privtab;
@@ -1344,7 +1355,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
         (* add extra type variables to symbol table *)
         List.iter (fun (tvid,index,mt) -> 
            add_symbol ~pubtab:dummy_hashtab ~privtab:dummy_hashtab 
-             ~parent:(Some dfn_idx) ~ivs:dfltvs index tvid (SYMDEF_typevar mt)) 
+             ~parent:(Some dfn_idx) ~ivs:dfltvs index tvid sr (SYMDEF_typevar mt)) 
            (fst evs)
         ;
 
@@ -1412,7 +1423,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
             " -> " ^ component_name);
 
         (* Add the component to the sym_table.  *)
-        add_symbol ~pubtab:ctorpubtab ~privtab:ctorprivtab ~ivs:localivs dfn_idx component_name ctor_dcl2
+        add_symbol ~pubtab:ctorpubtab ~privtab:ctorprivtab ~ivs:localivs dfn_idx component_name sr ctor_dcl2
       end its'
 
   | DCL_cstruct (sts, reqs) ->
@@ -1420,7 +1431,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       let stype = `AST_name(sr, id, tvars) in
 
       (* Add symbols to sym_table *)
-      add_symbol ~pubtab ~privtab symbol_index id ( SYMDEF_cstruct (sts, reqs));
+      add_symbol ~pubtab ~privtab symbol_index id sr ( SYMDEF_cstruct (sts, reqs));
 
       (* Possibly add the struct to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
@@ -1437,7 +1448,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       let stype = `AST_name(sr, id, tvars) in
 
       (* Add symbols to sym_table *)
-      add_symbol ~pubtab ~privtab symbol_index id ( SYMDEF_struct sts);
+      add_symbol ~pubtab ~privtab symbol_index id sr ( SYMDEF_struct sts);
 
       (* Possibly add the struct to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;

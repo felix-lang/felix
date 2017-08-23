@@ -75,14 +75,14 @@ let set_deferred_type
       | _ -> raise Flx_dot.OverloadResolutionError 
       end 
     | EXPR_suffix (sr,(qn,TYP_defer (sr2,dt))) -> 
-      [`PVal,"defered-lambda-param",TYP_defer (sr2,dt),None],None
+      [sr,`PVal,"defered-lambda-param",TYP_defer (sr2,dt),None],None
     | EXPR_suffix _ -> raise Flx_dot.OverloadResolutionError 
     | _ -> 
       raise Flx_dot.OverloadResolutionError
   in 
 
   match pss with
-  | [kind,pid,TYP_defer (_,tref),_],None -> 
+  | [sr,kind,pid,TYP_defer (_,tref),_],None -> 
     begin match !tref with
     | Some t -> print_endline ("DEFERED TYPE IS ALREADY SET")
     | None -> 

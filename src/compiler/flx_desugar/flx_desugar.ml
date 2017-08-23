@@ -396,10 +396,18 @@ print_endline ("Translating Lazy Declaration " ^ name);
     [ Dcl (sr,name,None,access,vs,DCL_lemma (params,rsrc)) ]
 
   | STMT_function (sr,name', vs, params, (res,postcondition), effects, props, sts) ->
+(*
+    print_endline ("Desugar: STMT_function "^name'^" to DCL_function " ^ Flx_srcref.short_string_of_src sr);
+*)
     (*
     print_endline (string_of_statement 0 st);
     *)
     let ps,traint = params in
+(*
+print_endline ("Desugar params=");
+List.iter  (fun (sr,kind,name,typ,init) -> print_endline (name ^ " at " ^ Flx_srcref.short_string_of_src sr))
+ps;
+*)
     begin match traint,postcondition with
     | None,None ->
 
@@ -413,7 +421,12 @@ print_endline ("Translating Lazy Declaration " ^ name);
       let asms = bridge name' sr :: asms in
 
       (* Fix params with type level lifting *)
-      let asms',ps = Flx_desugar_expr.rett_fixparams rex ps sr in
+      let asms',ps = Flx_desugar_expr.rett_fixparams rex ps in
+(*
+print_endline ("Fixed params=");
+List.iter  (fun (sr,kind,name,typ,init) -> print_endline (name ^ " at " ^ Flx_srcref.short_string_of_src sr))
+ps;
+*)
       let params = ps,traint in
       let asms = asms' @ asms in
 
@@ -472,7 +485,7 @@ print_endline ("Translating Lazy Declaration " ^ name);
       in
 
       (* Fix params with type level lifting *)
-      let asms,ps = Flx_desugar_expr.rett_fixparams rex ps sr in
+      let asms,ps = Flx_desugar_expr.rett_fixparams rex ps in
 
       let st =
         STMT_function (sr,name',vs,(ps,None),(res,None),effects,props,sts)

@@ -5,6 +5,35 @@ open Flx_bid
 open Flx_bexe
 open Flx_bexpr
 
+let str_of_vars bsym_table bidset =
+  BidSet.fold (fun idx acc -> 
+    let parent, bsym = Flx_bsym_table.find_with_parent bsym_table idx in
+    acc ^
+    "Variable " ^ Flx_bsym.id bsym ^ 
+      " defined at\n" ^ Flx_srcref.long_string_of_src (Flx_bsym.sr bsym)
+    ^ "\n"
+  ) 
+  bidset
+  ""
+
+(* simulate labels at the start and end of a routine *)
+let entry_label = -1
+let exit_label = -2
+
+let str_of_label bsym_table lidx = 
+  match lidx with
+  | _ when lidx = entry_label -> "Routine Entry"
+  | _ when lidx = exit_label -> "Routine Exit"
+  | _ -> 
+    let parent, bsym = Flx_bsym_table.find_with_parent bsym_table lidx in
+    Flx_bsym.id bsym ^
+    "\nDefined at\n" ^
+    Flx_srcref.long_string_of_src (Flx_bsym.sr bsym)
+
+
+(* symmetric difference A \cup B - A \cap B *)
+let symdiff a b = BidSet.diff (BidSet.union a b) (BidSet.inter a b)
+
 type once_data_t = {gets: BidSet.t; sets: BidSet.t}
 type augexe_t = Flx_bexe.t * once_data_t 
 
@@ -14,11 +43,6 @@ type stack_frame_t = {index: bid_t; code: augexe_t list; mutable visited: label_
 (* current position in a control path *)
 type continuation_t = {current: augexe_t list; liveness: BidSet.t; frame: stack_frame_t}
 type stack_t = continuation_t list
-
-(* simulate labels at the start and end of a routine *)
-let entry_label = -1
-let exit_label = -2
-
 let make_augexes bsym_table once_kids get_sets get_gets bexes : augexe_t list=
   List.map 
   (
@@ -42,7 +66,7 @@ let rec find_label augexes lab =
   | _ :: tail -> find_label tail lab
 
 (* Fixup diagnostics later *)
-let live old {sets=set; gets=get} =
+let live bsym_table old {sets=set; gets=get} =
 (*
 print_endline ("Calculate liveness: old= " ^ Flx_bid.str_of_bidset old ^ ", gets=" ^
   Flx_bid.str_of_bidset get ^ " set=" ^ str_of_bidset set);
@@ -51,6 +75,8 @@ print_endline ("Calculate liveness: old= " ^ Flx_bid.str_of_bidset old ^ ", gets
   (* Order matters, check gets on old live values first *)
   if not (BidSet.subset get old) then begin
     print_endline ("Once error: Using uninitialised or already used once variable");
+    let getdead = BidSet.diff get old in
+    print_endline (str_of_vars bsym_table getdead);
     assert false;
   end;
 
@@ -60,6 +86,8 @@ print_endline ("Calculate liveness: old= " ^ Flx_bid.str_of_bidset old ^ ", gets
   (* check we're not setting an already live variable *)
   if not (BidSet.is_empty (BidSet.inter newlive set)) then begin
     print_endline ("Once error: Resetting live variable");
+    let reset = BidSet.diff set newlive in
+    print_endline (str_of_vars bsym_table reset);
     assert false;
   end;
 
@@ -73,24 +101,18 @@ print_endline ("Newlive= " ^ Flx_bid.str_of_bidset live);
 let check_liveness bsym_table liveset : stack_t =
   if not (BidSet.is_empty liveset) then begin
     print_endline ("Once error: Once variables unused!");
-    BidSet.iter (fun idx -> 
-      let parent, bsym = Flx_bsym_table.find_with_parent bsym_table idx in
-      print_endline ("Variable " ^ Flx_bsym.id bsym ^ 
-        " defined at\n" ^ Flx_srcref.long_string_of_src (Flx_bsym.sr bsym))
-    ) liveset;
+    print_endline (str_of_vars bsym_table liveset);
     assert false
   end;
   [] (* end of path *)
 
 let check_reentry bsym_table previous current label : stack_t=
   if previous <> current then begin
-    print_endline ("Once error: Inconsistent liveness re-entering path at label " ^ string_of_int label);
+    print_endline ("Once error: Inconsistent liveness re-entering path at label " ^ 
+      string_of_int label ^ " "^ str_of_label bsym_table label 
+    );
     let diffset = BidSet.diff (BidSet.union previous current) (BidSet.inter previous current) in
-    BidSet.iter (fun idx -> 
-      let parent, bsym = Flx_bsym_table.find_with_parent bsym_table idx in
-      print_endline ("Variable " ^ Flx_bsym.id bsym ^ 
-        " defined at\n" ^ Flx_srcref.long_string_of_src (Flx_bsym.sr bsym))
-    ) diffset;
+    print_endline (str_of_vars bsym_table diffset);
     assert false
   end;
   [] (* end of path *)
@@ -149,14 +171,14 @@ let rec flow make_augexes bsym_table stack : unit =
 (*
 print_endline ("DETECTED JUMP or noret code or fun ret");
 *)
-    let liveset = live cc.liveness deltalife in
+    let liveset = live bsym_table cc.liveness deltalife in
     flow (check_liveness bsym_table liveset)
 
   | (BEXE_goto (_,lidx),_)::_ ->
     flow (goto bsym_table stack cc.liveness lidx)
 
   | (BEXE_ifgoto (_,c,lidx),deltalife)::tail ->
-    let liveset = live cc.liveness deltalife in
+    let liveset = live bsym_table cc.liveness deltalife in
     (* branch not taken case *)
     flow ({cc with current=tail; liveness=liveset} :: caller);
 
@@ -179,7 +201,7 @@ print_endline ("DETECTED JUMP or noret code or fun ret");
 (*
 print_endline ("DETECTED PROCEDURE CALL");
 *)
-    let liveset = live cc.liveness deltalife in
+    let liveset = live bsym_table cc.liveness deltalife in
     let parent,bsym = Flx_bsym_table.find_with_parent bsym_table pidx in
     begin match parent with
     | Some idx2 when cc.frame.index = idx2 ->
@@ -207,7 +229,7 @@ print_endline ("DETECTED PROCEDURE CALL");
 (*
 print_endline ("Normall processing for " ^ Flx_print.string_of_bexe bsym_table 0 bexe);
 *)
-    let liveset = live cc.liveness deltalife in
+    let liveset = live bsym_table cc.liveness deltalife in
     flow ({cc with current=tail; liveness=liveset} :: caller)
 
 
@@ -225,6 +247,7 @@ let get_sets bsym_table once_kids bexe =
 *)
     if BidSet.mem i !bidset then begin
       print_endline ("Once variable set twice in instruction " ^ Flx_print.string_of_bexe bsym_table 0 bexe);
+      print_endline (str_of_vars bsym_table (BidSet.singleton i));
       assert false
     end;
     bidset := BidSet.add i !bidset 
@@ -244,6 +267,7 @@ let get_gets bsym_table once_kids bexe =
 *)
     if BidSet.mem i !bidset then begin
       print_endline ("Once variable used twice in instruction " ^ Flx_print.string_of_bexe bsym_table 0 bexe);
+      print_endline (str_of_vars bsym_table (BidSet.singleton i));
       assert false
     end;
     bidset := BidSet.add i !bidset 

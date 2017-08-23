@@ -65,9 +65,14 @@ print_endline ("Found " ^ s ^ " as global name");
 let silly_strtoken k = Flx_prelex.string_of_token k
 
 
+(* Changed JS 23 Aug 2017. Backwards list for src ref to Ocs,
+  f-file, fl-first line, fc-first column, ll-last line, lc-last column
+  should read lc,ll,fc,fl,f
+  but did read lc,ll,fc,**ll**,f
+*)
 let xsr sr =
   match Flx_srcref.to_tuple sr with f,fl,fc,ll,lc ->
-  Ocs_misc.make_slist Snull ((Sint lc) :: (Sint ll) :: (Sint fc) :: (Sint ll) :: (Sstring f) :: [])
+  Ocs_misc.make_slist Snull ((Sint lc) :: (Sint ll) :: (Sint fc) :: (Sint fl) :: (Sstring f) :: [])
 
 let buffer_add_ocs b r = Ocs_print.print_to_buffer b false r
 

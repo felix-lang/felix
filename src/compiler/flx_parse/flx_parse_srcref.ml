@@ -70,7 +70,7 @@ end;
       s.pos_lnum,
       s.pos_cnum - s.pos_bol + 1,
       e.pos_lnum,
-      e.pos_cnum - e.pos_bol)
+      e.pos_cnum - e.pos_bol + 1) (* recent change by symmetry not thinking *)
   end else assert false
 
 let incr_lineno lexbuf= 

@@ -94,8 +94,8 @@ print_endline ("Got return expression " ^ Flx_print.string_of_expr retexpr);
 (*
 print_endline ("Unbound type = " ^ string_of_typecode ubt);
 *)
-      let p1 = `PVal,"_a",ubt,None in
-      let p2 = `PVal,"_b",ubt,None in
+      let p1 = sr,`PVal,"_a",ubt,None in
+      let p2 = sr,`PVal,"_b",ubt,None in
       let params = [p1;p2], None in 
       let typecode = TYP_unitsum 2 in
       let properties = [] in

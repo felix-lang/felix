@@ -224,7 +224,7 @@ print_endline (" &&&&&& bind_type_uses calling BBIND_SYMBOL");
   in
   let bind_quals quals = bind_quals bt quals in
   let bind_basic_ps ps =
-    List.map (fun (k,s,t,_) ->
+    List.map (fun (sr,k,s,t,_) ->
       let i = find_param sym.Flx_sym.privmap s in
       let t =
         let t = bt t in
@@ -434,7 +434,8 @@ print_endline "BINDING PARAMETER";
 (*
 print_endline ("flx_bind: Adding label " ^ s ^ " index " ^ string_of_int symbol_index ^ " parent " ^
   (match true_parent with | None -> "None" | Some x -> string_of_int x));
-*) 
+  print_endline ("Current srcref = " ^ Flx_srcref.short_string_of_src sym.sr);
+*)
     add_bsym true_parent (bbdcl_label s) 
 
   | SYMDEF_const_ctor (uidx,ut,ctor_idx,vs') ->
@@ -839,7 +840,7 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
 print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
 *)
       begin match sym.Flx_sym.symdef with
-      | Flx_types.SYMDEF_function (([kind,pid,TYP_defer _,_],None),ret,effects,props,exes) ->
+      | Flx_types.SYMDEF_function (([psr,kind,pid,TYP_defer _,_],None),ret,effects,props,exes) ->
 print_endline ("[flx_bbind] bind_symbol FUNCTION " ^ sym.Flx_sym.id ^ " .. DEFERED");
         defered := i :: !defered
       | Flx_types.SYMDEF_parameter (kind,TYP_defer _) ->

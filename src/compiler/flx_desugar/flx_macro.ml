@@ -579,7 +579,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   (* Lambda hook *)
   | EXPR_lambda (sr, (kind,vs,pss, t, sts)) ->
     let pr = List.concat (
-      List.map (List.map (fun(x,y,z,d)->y)) (List.map fst pss))
+      List.map (List.map (fun(sr,x,y,z,d)->y)) (List.map fst pss))
     in
     let pr = protect sr pr in
     let sts =
@@ -797,7 +797,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   let mt sr e = expand_type_expr sr recursion_limit local_prefix seq macros e in
   let me e = expand_expr recursion_limit local_prefix seq macros e in
   let meopt e = match e with | None -> None | Some x -> Some (me x) in
-  let mps sr ps = List.map (fun (k,id,t,d) -> k,id,mt sr t,meopt d) ps in
+  let mps sr ps = List.map (fun (sr,k,id,t,d) -> sr,k,id,mt sr t,meopt d) ps in
   let mpsp sr (ps,pre) = mps sr ps,meopt pre in
   let rqmap req = rqmap me req in
   let ms s = recurse recursion_limit local_prefix seq (ref true) macros s in
@@ -982,12 +982,12 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     tack(STMT_lemma (sr, mi sr id, vs, mpsp sr psp, e1))
 
   | STMT_function (sr, id, vs, psp, (t,post), effects, props, sts ) ->
-    let pr = List.map (fun (x,y,z,d)->y) (fst psp) in
+    let pr = List.map (fun (sr,x,y,z,d)->y) (fst psp) in
     let post = meopt post in
     tack(STMT_function (sr, mi sr id, vs, mpsp sr psp, (mt sr t, post), mt sr effects, props, msp sr pr sts ))
 
   | STMT_curry (sr,id,vs,pss,(ret,post),effects,kind,adjs,sts) ->
-    let pr = List.map (fun(x,y,z,d)->y) (List.concat (List.map fst pss)) in
+    let pr = List.map (fun(sr,x,y,z,d)->y) (List.concat (List.map fst pss)) in
     let post = match post with | None -> None | Some x -> Some (me x) in
     let pss = List.map (fun psp -> mpsp sr psp) pss in
     tack(STMT_curry(sr, mi sr id, vs, pss, (ret,post),effects,kind, adjs, msp sr pr sts ))

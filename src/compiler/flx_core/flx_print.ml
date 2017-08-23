@@ -828,7 +828,7 @@ and string_of_parameters (ps:params_t) =
   cat
     ", "
     (map
-      (fun (k,x,y,d)->
+      (fun (sr,k,x,y,d)->
         string_of_param_kind k^ " " ^
         string_of_id x ^ ": "^(string_of_typecode y) ^
         (match d with None -> "" | Some e -> "="^ string_of_expr e)
@@ -1870,7 +1870,7 @@ and string_of_symdef entry name vs =
       TYP_effector
       (
         (
-          match map (fun (x,y,z,d) -> z) ps with
+          match map (fun (sr,x,y,z,d) -> z) ps with
           | [x] -> x
           | x -> TYP_tuple x
         ),

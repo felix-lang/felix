@@ -482,7 +482,9 @@ and xparameter_t sr def_val x : parameter_t =
   let ti x = type_of_sex sr x in
   let xpk x = xparam_kind_t def_val sr x in
   match x with
-  | Lst [pk; id; t; e] -> xpk pk, xid id, ti t, opt "dflt_arg" ex e
+  | Lst [sr; pk; id; t; e] -> 
+    let sr = xsr sr in
+    sr, xpk pk, xid id, ti t, opt "dflt_arg" ex e
   | x -> err x "parameter_t"
 
 and xparams_t def_val sr x : params_t =
@@ -706,6 +708,9 @@ and xstatement_t sr x : statement_t =
       xam sr axm)
 
   | Lst [Id "ast_curry"; sr; id; vs; Lst pss; ret; fk; Lst props; sts] -> let sr = xsr sr in 
+(*
+print_endline ("sex2flx: ast_curry (function def) " ^ xid id ^ "sr=" ^ Flx_srcref.short_string_of_src sr);
+*)
     let fret = xret sr ret in
     let rett, _ = fret in 
     let pdef = (*  match rett with TYP_void _ -> `PVar | _ ->*)  `PVal in
@@ -721,6 +726,9 @@ and xstatement_t sr x : statement_t =
       xsts sr sts)
 
   | Lst [Id "ast_curry_effects"; sr; id; vs; Lst pss; ret; effects; fk; Lst props; sts] -> let sr = xsr sr in 
+(*
+print_endline ("sex2flx: ast_curry_effects (function def) " ^ xid id ^ " sr=" ^ Flx_srcref.short_string_of_src sr);
+*)
 (*
 print_endline ("ast_curry effects " ^ xid id ^ ", effects=" ^ Flx_print.string_of_typecode (ti sr effects));
 *)

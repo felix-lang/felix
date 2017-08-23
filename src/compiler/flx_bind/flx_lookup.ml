@@ -2101,7 +2101,7 @@ print_endline ("bind_type_index finds: Type alias name " ^ sym.Flx_sym.id);
 (*
 print_endline ("** BEGIN ** Calculating Function type for function " ^ sym.Flx_sym.id ^ " index "^si index);
 *)
-      let pts = List.map (fun (_,_,t,_) -> t) ps in
+      let pts = List.map (fun (sr,_,_,t,_) -> t) ps in
 
       (* Calculate the return type. *)
       let rt =
@@ -2254,7 +2254,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
                 match hfind "lookup" state.sym_table i with
                 | { Flx_sym.symdef=SYMDEF_function (ps,_,_,_,_) } ->
                   List.map 
-                    begin fun (_,name,_,d) -> name, 
+                    begin fun (sr,_,name,_,d) -> name, 
                       match d with 
                       | None -> None 
                       | Some e -> Some (be i e) 
@@ -5985,8 +5985,8 @@ print_endline ("New private name map = " ^ string_of_name_map nuprivmap);
         match symdef with
         | SYMDEF_function (params,rett,effects,props,sexes) -> 
           let paramlist, ptraint = params in
-          let nuparamlist = List.map (fun (pkind,pname,ptyp,pinitopt) -> 
-            pkind,pname,ft ptyp, pinitopt (* HACK *)) 
+          let nuparamlist = List.map (fun (sr,pkind,pname,ptyp,pinitopt) -> 
+            sr,pkind,pname,ft ptyp, pinitopt (* HACK *)) 
             paramlist
           in
           let nuptraint = match ptraint with | None -> None | Some e -> Some (fe e) in

@@ -1392,7 +1392,7 @@ syntax expressions {
           (
             (argt (caadr t))
             (ret (cadadr t))
-            (params `((((PVal _a ,argt none)) none))) ;; parameters
+            (params `((((,_sr PVal _a ,argt none)) none))) ;; parameters
             (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,matching)))))
             (fun_decl `(ast_curry ,_sr ,name ,tvars ,params
                (,ret ,traint)
@@ -1723,7 +1723,7 @@ syntax expressions {
          (ret (nos "bool"))
          (matchings `((,_1 ,_5)((pat_setform_any ,_sr)(ast_typed_case 0 2))))
          (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,matchings)))))
-         (param `(PVal _a ,argt none)) ;; one parameter
+         (param `(,_sr PVal _a ,argt none)) ;; one parameter
          (params `(,param))            ;; parameter tuple list
          (paramsx `(,params none))     ;; parameter tuple list with precondition
          (paramsxs `(,paramsx))        ;; curry parameters 
@@ -1926,14 +1926,14 @@ syntax functions {
   sfunction := "invariant" sexpr ";" =># "`(ast_invariant, _sr, _2)";
 
   //$ Function parameter with type and default value.
-  private sparameter := sparam_qual sname ":" x[sarrow_pri] "=" x[sor_condition_pri] =># "`(,_1 ,_2 ,_4 (some ,_6))";
+  private sparameter := sparam_qual sname ":" x[sarrow_pri] "=" x[sor_condition_pri] =># "`(,_sr ,_1 ,_2 ,_4 (some ,_6))";
 
   //$ Function parameter with type.
-  private sparameter := sparam_qual sname ":" x[sarrow_pri] =># "`(,_1 ,_2 ,_4 none)";
+  private sparameter := sparam_qual sname ":" x[sarrow_pri] =># "`(,_sr ,_1 ,_2 ,_4 none)";
  
   //$ Function parameter without type.
   //$ Defaults to polymorphic in unnamed type variable.
-  private sparameter := sparam_qual sname =># "`(,_1 ,_2 ,(noi 'typ_none) none)";
+  private sparameter := sparam_qual sname =># "`(,_sr ,_1 ,_2 ,(noi 'typ_none) none)";
 
   //$ Empty parameter tuple.
   private sparameter_comma_list = list::commalist0<sparameter>;
@@ -1957,7 +1957,7 @@ syntax functions {
   sfun_arg :=  "(" sparameter_comma_list ")" =># "`(,_2 none)";
 
   //$ Short form function parameter single polymorphic variable.
-  sfun_arg :=  sname =># "`(((PVal ,_1 ,(noi 'typ_none) none)) none)";
+  sfun_arg :=  sname =># "`(((,_sr PVal ,_1 ,(noi 'typ_none) none)) none)";
 
   //$ Function binder: C function.
   //$ A function with C function type.
@@ -2068,7 +2068,7 @@ syntax functions {
           )
           `(ast_curry ,_sr ,(first _3) ,(second _3)
             (
-              (((PVal _a ,argt none)) none)
+              (((,_sr PVal _a ,argt none)) none)
             )
             (,ret ,traint)
             ,(cal_funkind _1 _2) ,_1 ,body)
@@ -2095,7 +2095,7 @@ syntax functions {
           )
           `(ast_curry ,_sr ,(first _3) ,(second _3)
             (
-              (((PVal _a ,argt none)) none)
+              (((,_sr PVal _a ,argt none)) none)
             )
             (,ret none)
             ,(cal_funkind _1 _2) ,_1 ,body)
@@ -2117,7 +2117,7 @@ syntax functions {
           (body `((ast_fun_return ,_sr ,apl )))
           (result `(ast_curry ,_sr ,(first _3) ,(second _3)
             (
-              (((PVal _a ,argt none)) none)
+              (((,_sr PVal _a ,argt none)) none)
             )
             (,ret ,traint)
             ,(cal_funkind _1 _2) ,_1 ,body)
@@ -4770,7 +4770,7 @@ syntax type_decls {
                    `(ast_name ,_sr ,struct-name ,struct-pvs)
                  )
                )
-               (self-arg `(PVal ,self-name ,self-type none)) 
+               (self-arg `(,_sr PVal ,self-name ,self-type none)) 
                (self-args `((,self-arg) none))
                (args (cons self-args t4))
              ) 
@@ -5112,7 +5112,7 @@ syntax chips {
           (traint 'none)
           (body _7)
           (pinstype `(ast_record_type ,_6))
-          (pinsarg `(PVal ,_5 ,pinstype none))
+          (pinsarg `(,_sr PVal ,_5 ,pinstype none))
           (pinsargs `((,pinsarg) none))
           (args (append args `(,pinsargs (() none))))
         )

@@ -122,7 +122,7 @@ print_endline "Cal call, types don't match ..";
             in
             begin let pnames = match hfind "bexe" state.sym_table i with
             | { Flx_sym.symdef=SYMDEF_function (ps,_,_,_,_)} ->
-              map (fun (_,name,_,d)->
+              map (fun (sr,_,name,_,d)->
                 name,
                 match d with None -> None | Some e -> Some (be i e)
               ) (fst ps)

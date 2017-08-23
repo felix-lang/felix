@@ -52,24 +52,24 @@ let rec rett rex typ sr =
 
 
 (* Take one param and try to lift expressions out of the type *)
-let rett_fixparam rex (kind,id,typ,expr) sr = 
+let rett_fixparam rex (sr,kind,id,typ,expr) = 
   let decls,typ' = rett rex typ sr in    (* try to lift lambdas from type expressions *)
-  let param' = (kind, id, typ', expr) in (* rebuild param (with new type) for return *)
+  let param' = (sr,kind, id, typ', expr) in (* rebuild param (with new type) for return *)
   decls,param'
     
 
 (* Iterate over params and lift lambdas out of types. 
    Returns a tuple: (list of declarations, list of params) *)
-let rec rett_fixparams rex ps sr = 
+let rec rett_fixparams rex ps = 
   match ps with
 
   (* Inductive case: destructure head element and fix it *)
   | param :: ps_tail ->
-    let decls,param' = rett_fixparam rex param sr in
+    let decls,param' = rett_fixparam rex param in
 
     (* work on the other cases before wrapping up. *)
     let other_decls, other_ps = 
-      rett_fixparams rex ps_tail sr in
+      rett_fixparams rex ps_tail in
 
     decls @ other_decls, (param' :: other_ps)
 
@@ -542,7 +542,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
       (mkcurry seq sr name' vs pps (ret,None) Flx_typing.flx_unit kind sts [`Generated "lambda"])
     in
     if List.length pps = 0 then syserr sr "[rex] Lambda with no arguments?" else
-    let t = type_of_argtypes (List.map (fun(x,y,z,d)->z) (fst (List.hd pps))) in
+    let t = type_of_argtypes (List.map (fun(sr,x,y,z,d)->z) (fst (List.hd pps))) in
     let e =
       EXPR_suffix
       (

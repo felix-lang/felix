@@ -47,7 +47,7 @@ let type_of_list = function
 
 let paramtype (params : parameter_t list) =
   let typlist params =
-    map (fun (k,_,t,_) -> t) params
+    map (fun (_,k,_,t,_) -> t) params
   in
   type_of_list (typlist params)
 
@@ -229,7 +229,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
                TYP_function (TYP_tuple [],t)
 
              | _ ->
-               let params = map (fun (x,y,z,d)-> y,z) params in
+               let params = map (fun (_,x,y,z,d)-> y,z) params in
                TYP_typefun (params, ret, t)
 
            with _ ->
@@ -315,7 +315,7 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
   (* Also a hack. Treat with caution. *)
   | TYP_typefun (params, ret, t) -> 
 
-      let params = map (fun (y,z)-> (`PVal,y,z,None)) params in
+      let params = map (fun (y,z)-> (dsr,`PVal,y,z,None)) params in
       EXPR_lambda (dsr,
         (`GeneratedInlineFunction,
         dfltvs,
