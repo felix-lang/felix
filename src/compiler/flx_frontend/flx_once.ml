@@ -5,6 +5,9 @@ open Flx_bid
 open Flx_bexe
 open Flx_bexpr
 
+exception CompleteFlow
+exception IncompletePriorFlow
+
 let str_of_vars bsym_table bidset =
   BidSet.fold (fun idx acc -> 
     let parent, bsym = Flx_bsym_table.find_with_parent bsym_table idx in
@@ -194,11 +197,23 @@ print_endline ("DETECTED JUMP or noret code or fun ret");
 
   | (BEXE_ifgoto (_,c,lidx),deltalife)::tail ->
     let liveness = live bsym_table liveness deltalife in
-    (* branch not taken case *)
-    flow liveness ({cc with current=tail} :: caller);
+    begin try
+      (* branch not taken case *)
+      flow liveness ({cc with current=tail} :: caller);
+      raise CompleteFlow
+    with 
+    | IncompletePriorFlow ->
+      begin
+        (* branch taken case *)
+        flow liveness (goto bsym_table stack liveness lidx);
+        (* branch not taken case *)
+        flow liveness ({cc with current=tail} :: caller)
+      end
+    | CompleteFlow ->
+      (* branch taken case *)
+      flow liveness (goto bsym_table stack liveness lidx)
+    end
 
-    (* branch taken case *)
-    flow liveness (goto bsym_table stack liveness lidx)
       
   | (BEXE_label (_,lidx),_)::tail ->
     let visited = cc.frame.visited in
@@ -235,8 +250,10 @@ print_endline "Recursion detected";
         | Some liveness ->
           flow liveness ({cc with current=tail} :: caller)
         | None ->
+(*
           print_endline ("Recursive path didn't terminate: put non-recursive branch first!");
-          assert false
+*)
+          raise IncompletePriorFlow
         end
 
       | None ->
@@ -338,7 +355,11 @@ let once_check bsym_table bid name once_kids bexes =
     print_endline ("Once parameter starts initialised")
 *)
   let stack = make_stack bid bexes in
-  flow  make_augexes bsym_table bid once_params stack
+  try
+    flow  make_augexes bsym_table bid once_params stack
+  with IncompletePriorFlow -> 
+    print_endline ("Recursive routine requires non-recursive branch for once analysis");
+    assert false
 
 let once_bsym bsym_table bid parent bsym =
   let bbdcl = Flx_bsym.bbdcl bsym in
