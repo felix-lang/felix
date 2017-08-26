@@ -14,6 +14,7 @@ install:
   - move win32binary\build build
   - cmd.exe /C mkdir build\rtl-tmp\crap
   - cmd.exe /C mkdir build\flxg-tmp\crap
+  - cmd.exe /C mkdir build\test\crap
   - cmd.exe /C rmdir /Q /S build\rtl-tmp
   - cmd.exe /C rmdir /Q /S build\flxg-tmp
   - cmd.exe /C rmdir /Q /S build\test
