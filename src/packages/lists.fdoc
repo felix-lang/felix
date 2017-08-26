@@ -468,12 +468,13 @@ noinline fun outer_product[T] (x:list[list[T]]) (y:list[list[T]]): list[list[T]]
     | #Empty => return r;
     | Snoc (tail, head) => 
       r = head;
+      var tl = tail;
   next:>
-      match tail with
+      match tl with
       | #Empty => return r;
       | Snoc(t,h) =>
         r += sep + h;
-        tail = t;
+        tl = t;
         goto next;
       endmatch;
     endmatch;

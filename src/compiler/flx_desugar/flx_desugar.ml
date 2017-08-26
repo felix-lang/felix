@@ -169,41 +169,45 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
     dcls @ [Iface (sr, IFACE_export_requirement (reqs))]
 
   | STMT_var_decl (sr,name,vs,typ,expr) ->
+    (* 
     let vs_exprs = List.map (fun (s,_)->TYP_name (sr,s,[])) (fst vs) in
+    *)
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
       d @ [
         Dcl (sr,name,None,access,vs,DCL_value (t, `Var));
         (* Exe (sr,EXE_init (name,x))] *)
-        Exe (sr,EXE_assign ( EXPR_name (sr,name,vs_exprs) ,x))]
+        Exe (sr,EXE_init (name,x))]
     | None, Some e ->
       let d,x = rex e in
       d @ [
         Dcl (
           sr,name,None,access,vs,DCL_value (TYP_typeof x, `Var));
         (* Exe (sr,EXE_init (name,x))] *)
-        Exe (sr,EXE_assign ( EXPR_name (sr,name,vs_exprs) ,x))]
+        Exe (sr,EXE_init (name,x))]
     | Some t,None ->
         [Dcl (sr,name,None,access,vs,DCL_value (t, `Var))]
     | None,None -> failwith "Expected variable to have type or initialiser"
     end
 
   | STMT_val_decl (sr,name,vs,typ,expr) ->
+    (*
     let vs_exprs = List.map (fun (s,_)->TYP_name (sr,s,[])) (fst vs) in
+    *)
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
       d @ [
         Dcl (sr,name,None,access,vs,DCL_value (t, `Val));
         (* Exe (sr,EXE_init (name,x))] *)
-        Exe (sr,EXE_assign ( EXPR_name (sr,name,vs_exprs) ,x))]
+        Exe (sr,EXE_init ( name,x))]
     | None, Some e ->
       let d,x = rex e in
       d @ [
         Dcl (sr,name,None,access,vs,DCL_value (TYP_typeof x, `Val));
         (* Exe (sr,EXE_init (name,x))] *)
-        Exe (sr,EXE_assign ( EXPR_name (sr,name,vs_exprs) ,x))]
+        Exe (sr,EXE_init ( name,x))]
     | Some t, None ->
         (* allowed in interfaces *)
         [Dcl (sr,name,None,access,vs,DCL_value (t, `Val))]
