@@ -180,6 +180,7 @@ print_endline "Cal call, types don't match ..";
   | BTYP_function (t, BTYP_fix (0,_)) 
   | BTYP_effector (t, _, BTYP_fix (0,_)) 
     ->
+print_endline ("Return type any found");
     let a = genargs t in
     bexe_jump a
 
@@ -555,6 +556,11 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
     then
       begin
         state.ret_type <- varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type;
+        [(bexe_proc_return sr)]
+      end
+    else if state.ret_type = btyp_any () then
+      begin
+        print_endline ("Routine found (extraneous procedure return included)");
         [(bexe_proc_return sr)]
       end
     else

@@ -2199,6 +2199,20 @@ syntax functions {
       `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) ,(first _5)) ,(second _5) 
          ,(cal_funkind _1 _2) ,_1 (,_7))
     """;
+
+  //$ Routine definition, general form.
+  sfunction := sadjectives "routine" sdeclname sfun_arg* sopt_traint_eq scompound =>#
+    """
+      `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 (,(noi 'any) ,(first _5)) ,(second _5)
+         Function ,_1 ,_6)
+    """;
+
+  //$ Routine definition, short form (one statement).
+  sfunction := sadjectives "routine" sdeclname sfun_arg* sopt_traint "=>" stmt =>#
+    """
+      `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 (,(noi 'any) ,(first _5)) ,(second _5) 
+         Function ,_1 (,_7))
+    """;
 }
 
 @

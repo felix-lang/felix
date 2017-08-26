@@ -89,4 +89,15 @@ let long_string_of_src (f,l1,c1,l2,c2) =
 
 let file (f,_,_,_,_) = f
 
+let first_line_no (_,l,_,_,_) = l 
+
+let first_line (f,l,_,_,_) =
+  try
+    let f = open_in f in
+    for i = 1 to l-1 do ignore(input_line f) done;
+    let line = string_of_int l ^ ": " ^ input_line f in
+    close_in f;
+    line
+  with _ ->
+    "line " ^ string_of_int l
 

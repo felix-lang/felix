@@ -34,3 +34,7 @@ val dummy_sr: t
 
 (** Get the file of a srcref *)
 val file : t -> string
+
+val first_line_no : t -> int
+val first_line : t -> string
+
