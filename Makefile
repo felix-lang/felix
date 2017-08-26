@@ -14,7 +14,7 @@ all: showversion bootstrap tools target uproot test
 showversion:
 	python showversion.py
 
-rebuild: copy extract tools target uproot
+rebuild: extract copy tools target uproot
 
 extract:
 	python src\tools\flx_iscr.py -q -d src\packages build\release
