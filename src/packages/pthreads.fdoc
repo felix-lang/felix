@@ -677,8 +677,8 @@ class ThreadPool
     if pforrunning.load == 0 and N >= nthreads and nthreads > 0 do
       pforrunning.store 1;
       for var counter in 0 upto nt - 2 do
-        val sfirst = first + (N * counter) / nt;
-        val slast = first + (N * (counter + 1)) / nt - 1;
+        var sfirst = first + (N * counter) / nt;
+        var slast = first + (N * (counter + 1)) / nt - 1;
 //  println$ "QUEUE JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
         ThreadPool::queue_job$ lbody (sfirst, slast);
       done

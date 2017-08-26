@@ -180,7 +180,9 @@ print_endline "Cal call, types don't match ..";
   | BTYP_function (t, BTYP_fix (0,_)) 
   | BTYP_effector (t, _, BTYP_fix (0,_)) 
     ->
+(*
 print_endline ("Return type any found");
+*)
     let a = genargs t in
     bexe_jump a
 
