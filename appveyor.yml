@@ -16,6 +16,7 @@ install:
   - cmd.exe /C mkdir build\flxg-tmp\crap
   - cmd.exe /C rmdir /Q /S build\rtl-tmp
   - cmd.exe /C rmdir /Q /S build\flxg-tmp
+  - cmd.exe /C rmdir /Q /S build\test
 
 environment:
   access_token:

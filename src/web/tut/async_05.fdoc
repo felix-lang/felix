@@ -19,9 +19,9 @@ transfers control back to the server.
 @felix
 proc client (x:ischannel[il_t], y:oschannel[il_t])
 {
-  p, l := read x;
+  var p, l = read x;
   l = List::filter (fun (e:int) => (e%p != 0 or e/p == 1)) l;
-  val r = List::find (fun (e:int) => e > p) l;
+  var r = List::find (fun (e:int) => e > p) l;
   match r with 
   | #None => 
     write$ y, (0, l); //We're done
