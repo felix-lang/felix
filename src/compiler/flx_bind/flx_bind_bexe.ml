@@ -767,7 +767,17 @@ print_endline ("Bind EXE_init "^s);
 print_endline ("BINDING ASSIGNMENT " ^ string_of_exe 0 exe);
 *)
       (* trick to generate diagnostic if l isn't an lvalue *)
-      let _,lhst as lx = be l in
+      let lexpr,lhst as lx = be l in
+      begin match lexpr with
+      | BEXPR_varname (i,_) ->
+        let sym = Flx_sym_table.find state.lookup_state.sym_table i in
+        begin match sym.symdef with
+        | SYMDEF_val _ ->
+          clierr sr ("Assign to val " ^ sym.id ^ " not allowed");
+        | _ -> ()
+        end 
+      | _ -> ()
+      end;
       let _,rhst as rx = be r in
 (*
 print_endline ("assign: LHS=" ^ sbe bsym_table lx ^ ", LHST = " ^ sbt bsym_table lhst);

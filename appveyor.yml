@@ -12,7 +12,6 @@ install:
   - set FLX_MIN_MEM=10000
   - git clone -q --depth 1 https://github.com/felix-lang/win32binary.git
   - move win32binary\build build
-  - cmd.exe /C mkdir build\crap
   - cmd.exe /C mkdir build\rtl-tmp\crap
   - cmd.exe /C mkdir build\flxg-tmp\crap
   - cmd.exe /C rmdir /Q /S build\rtl-tmp
@@ -47,7 +46,6 @@ on_success:
   - ps: Add-Content "$env:USERPROFILE\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
   - git config --global user.email "skaller@users.sourceforge.net"
   - git config --global user.name "skaller"
-  - cmd.exe /C mkdir build\crap
   - cmd.exe /C mkdir build\rtl-tmp\crap
   - cmd.exe /C mkdir build\flxg-tmp\crap
   - cmd.exe /C rmdir /Q /S build\rtl-tmp
