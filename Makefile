@@ -65,6 +65,7 @@ mktestdir:
 
 regress:
 	flx_tangle --indir=build\release\share\src\test --outdir=build\release\test
+	for %%file in (src\test\regress\rt\*.fdoc) do flx_iscr %%file build\release\test
 	flx --felix=wbuild.fpc --usage=prototype --expect --nonstop \
 		--indir=build\release\test\regress\rt --regex=".*\.flx" build\release\test
 
