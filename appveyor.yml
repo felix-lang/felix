@@ -56,7 +56,6 @@ on_success:
   - cmd.exe /C rmdir /Q /S build\flxg-tmp
   - move build win32binary\build
   - cd win32binary
-  - git add --all
   - git commit -a -m "Appveyor rebuild"
   - git push
  
