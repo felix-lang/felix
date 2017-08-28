@@ -200,6 +200,10 @@ print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table
      WRONG! What if have a varray of pointers?
    *)
 
+  (* GUESS! *)
+  | BTYP_uniq t' -> assert false; rr t'
+
+
   | BTYP_pointer t' -> rr t'; rnr t
 
   | BTYP_inst (i,ts)->

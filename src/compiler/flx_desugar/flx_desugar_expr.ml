@@ -234,6 +234,10 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     let l1,x1 = rex e in
     l1, EXPR_ref (sr,x1)
 
+  | EXPR_uniq (sr,e) ->
+    let l1,x1 = rex e in
+    l1, EXPR_uniq (sr,x1)
+
   | EXPR_not (sr,e) ->
     let l1, x1 = rex e in
     l1, EXPR_not (sr,x1)

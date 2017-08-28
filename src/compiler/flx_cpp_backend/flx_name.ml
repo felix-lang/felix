@@ -224,6 +224,8 @@ let rec cpp_type_classname syms bsym_table t =
   try match t' with
 
   | BTYP_hole -> assert false
+  | BTYP_uniq _ -> assert false
+
   | BTYP_int -> "int"
   | BTYP_type_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^

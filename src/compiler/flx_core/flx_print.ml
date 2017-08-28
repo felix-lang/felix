@@ -162,6 +162,8 @@ and string_of_expr (e:expr_t) =
   | EXPR_map (_,f,e) -> "map (" ^ se f ^ ") (" ^ se e ^ ")"
   | EXPR_deref (_,e) -> "*(" ^ se e ^ ")"
   | EXPR_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
+  | EXPR_uniq (_,e) -> "uniq(" ^ se e ^ ")"
+
   | EXPR_likely (_,e) -> "likely" ^ "(" ^ se e ^ ")"
   | EXPR_unlikely (_,e) -> "unlikely" ^ "(" ^ se e ^ ")"
   | EXPR_new (_,e) -> "new " ^ "(" ^ se e ^ ")"
@@ -517,6 +519,8 @@ and st prec tc : string =
     | TYP_array (vt,it) -> 3, st 1 vt ^ "^" ^ st 3 it
 
     | TYP_pointer t -> 1,"&" ^ st 1 t
+    | TYP_uniq t -> 1,"uniq[" ^ st 0 t ^ "]"
+
 (*    | TYP_lvalue t -> 0,"lvalue[" ^ st 1 t ^"]" *)
 
     | TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
@@ -675,6 +679,7 @@ and sb bsym_table depth fixlist counter prec tc =
       end
 
     | BTYP_rev t -> 0, "_rev(" ^ sbt 0 t ^ ")"
+    | BTYP_uniq t -> 0, "uniq(" ^ sbt 0 t ^ ")"
       
 
     | BTYP_record (ls) ->

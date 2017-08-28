@@ -312,6 +312,7 @@ print_endline "Type list index returned None";
   | BTYP_inst (i,ts) -> btyp_inst (i, List.map br ts)
   | BTYP_tuple ls -> btyp_tuple (List.map br ls)
   | BTYP_rev t -> btyp_rev (br t)
+  | BTYP_uniq t -> btyp_uniq (br t)
 
   | BTYP_array (i,t) -> btyp_array (br i, br t)
   | BTYP_sum ls -> btyp_sum (List.map br ls)

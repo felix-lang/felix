@@ -23,6 +23,8 @@ let rec is_pod bsym_table t =
   let is_pod t = is_pod bsym_table t in
   match t with
   | BTYP_hole -> assert false
+  | BTYP_uniq _ -> assert false
+
   | BTYP_int
   | BTYP_label
   | BTYP_unitsum _ 
@@ -65,6 +67,7 @@ let rec get_offsets' syms bsym_table typ : string list =
   match t' with
   | BTYP_hole -> assert false
   | BTYP_rev _ -> assert false
+  | BTYP_uniq _ -> assert false
   | BTYP_int -> []
   | BTYP_pointer t -> ["0"]
 

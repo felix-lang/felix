@@ -37,6 +37,7 @@ and t =
   | BTYP_label (* type of a label *)
   | BTYP_fix of int * t (* meta type *)
   | BTYP_rev of t
+  | BTYP_uniq of t (* unique type *)
 
   | BTYP_type of int
   | BTYP_type_tuple of t list
@@ -109,6 +110,7 @@ let rec str_of_btype typ =
   | BTYP_cfunction (d,c) -> "BTYP_cfunction(" ^ s d ^ " --> " ^ s c ^")"
   | BTYP_effector (d,e,c) -> "BTYP_effector(" ^ s d ^ " ->["^s e^"] " ^ s c ^")"
   | BTYP_rev t -> "BTYP_rev("^ s t ^")" 
+  | BTYP_uniq t -> "BTYP_uniq(" ^ s t ^ ")"
 
   | BTYP_void -> "BTYP_void"
   | BTYP_label -> "BTYP_label" (* type of a label *)
@@ -182,6 +184,7 @@ let complete_type t =
         uf b
  
     | BTYP_rev t -> uf t
+    | BTYP_uniq t -> uf t
  
     | BTYP_type_match (a,tts) ->
         uf a;
@@ -277,6 +280,9 @@ let btyp_rev t =
   | BTYP_tuple ts -> btyp_tuple (List.rev ts)
   | BTYP_array _ -> t
   | _ -> BTYP_rev t
+
+let btyp_uniq t = 
+  BTYP_uniq t
 
 let btyp_tuple_cons head tail = 
   match tail with
@@ -535,6 +541,8 @@ let flat_iter
   | BTYP_effector (a,e,b) -> f_btype a; f_btype e; f_btype b
   | BTYP_cfunction (a,b) -> f_btype a; f_btype b
   | BTYP_rev t -> f_btype t
+  | BTYP_uniq t -> f_btype t
+
   | BTYP_void -> ()
   | BTYP_fix _ -> ()
   | BTYP_type _ -> ()
@@ -602,6 +610,8 @@ let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_effector (a,e,b) -> btyp_effector (f_btype a, f_btype e, f_btype b)
   | BTYP_cfunction (a,b) -> btyp_cfunction (f_btype a, f_btype b)
   | BTYP_rev t -> btyp_rev (f_btype t)
+  | BTYP_uniq t -> btyp_uniq (f_btype t)
+
   | BTYP_void as x -> x
   | BTYP_fix _ as x -> x
   | BTYP_tuple_cons (a,b) -> btyp_tuple_cons (f_btype a) (f_btype b)

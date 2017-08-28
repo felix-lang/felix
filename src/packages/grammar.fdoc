@@ -1561,6 +1561,10 @@ syntax expressions {
   //$ Felix pointer type and address of operator.
   x[sthename_pri] := "&" x[sthename_pri] =># "`(ast_ref ,_sr ,_2)";
 
+  //$ Felix pointer type and address of operator.
+  x[sthename_pri] := "uniq" x[sthename_pri] =># "`(ast_uniq ,_sr ,_2)";
+
+
   //$ Felix address of operator.
   x[sthename_pri] := "label_address" sname =># "`(ast_label_ref ,_sr ,_2)";
 

@@ -46,6 +46,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | TYP_effector (a,e,b) -> TYP_effector (f a, f e, f b)
   | TYP_cfunction (a,b) -> TYP_cfunction (f a, f b)
   | TYP_pointer t -> TYP_pointer (f t)
+  | TYP_uniq t -> TYP_uniq (f t)
   | TYP_array (t1, t2) -> TYP_array (f t1, f t2)
   | TYP_as (t,s) -> TYP_as (f t,s)
 
@@ -126,6 +127,8 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | EXPR_arrayof (sr, es) -> EXPR_arrayof (sr, List.map fe es)
   | EXPR_coercion (sr, (x,t)) -> EXPR_coercion (sr,(fe x, ft t))
   | EXPR_suffix (sr,(qn,t)) -> EXPR_suffix (sr,(qn, ft t))
+  | EXPR_uniq (sr,e) -> EXPR_uniq (sr, fe e)
+
 
   (* these ones are types and should have been desugared out a long way back *)
   (* BUT Garrets code reintroduces them .. *)
@@ -264,6 +267,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_get_tuple_body (_,x)
   | EXPR_get_tuple_last (_,x)
   | EXPR_remove_fields (_,x,_)
+  | EXPR_uniq (_,x)
     -> f x
 
   | EXPR_letin (_,(_,a,b))

@@ -937,6 +937,8 @@ print_endline ("FUDGE: Binding TYP_var " ^ si i);
   | TYP_effector (d,e,c) -> btyp_effector (bt d, bt e,bt c)
   | TYP_cfunction (d,c) -> btyp_cfunction (bt d, bt c)
   | TYP_pointer t -> btyp_pointer (bt t)
+  | TYP_uniq t -> btyp_uniq (bt t)
+
   | TYP_void _ -> btyp_void ()
 
   | TYP_typefun (ps,r,body) ->
@@ -1438,6 +1440,7 @@ end;
             | TYP_as _ -> print_endline "A type as (recursion)?"; assert false
 
             (* usually actual types! *)
+            | TYP_uniq _
             | TYP_void _ 
             | TYP_case_tag _ 
             | TYP_typed_case _
@@ -4111,6 +4114,10 @@ print_endline ("Case number " ^ si index);
 
   | EXPR_cond (sr,(c,t,f)) ->
     bexpr_cond (be c) (be t) (be f)
+
+  | EXPR_uniq (sr,e) ->
+    let x,t = be e in
+    x, btyp_uniq t
 
   | EXPR_label (sr,label) -> 
     let maybe_index = lookup_label_in_env state bsym_table env sr label in

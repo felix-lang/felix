@@ -91,53 +91,6 @@ let rec vars_in t =
   f_btype t;
   !vs
 
-let fix i t =
-  let rec aux n t =
-    let aux t = aux (n - 1) t in
-    match t with
-    | BTYP_hole -> assert false
-    | BTYP_tuple_cons _ -> assert false
-    | BTYP_tuple_snoc _ -> assert false
-    | BTYP_none -> assert false
-    | BTYP_type_var (k,mt) -> if k = i then btyp_fix n mt else t
-    | BTYP_inst (k,ts) -> btyp_inst (k, List.map aux ts)
-    | BTYP_tuple ts -> btyp_tuple (List.map aux ts)
-    | BTYP_sum ts -> btyp_sum (List.map aux ts)
-    | BTYP_intersect ts -> btyp_intersect (List.map aux ts)
-    | BTYP_union ts -> btyp_union (List.map aux ts)
-    | BTYP_type_set ts -> btyp_type_set (List.map aux ts)
-    | BTYP_function (a,b) -> btyp_function (aux a, aux b)
-    | BTYP_effector (a,e,b) -> btyp_effector (aux a, aux e, aux b)
-    | BTYP_cfunction (a,b) -> btyp_cfunction (aux a, aux b)
-    | BTYP_pointer a -> btyp_pointer (aux a)
-    | BTYP_array (a,b) -> btyp_array (aux a, aux b)
-    | BTYP_rev t -> btyp_rev (aux t)
-
-    | BTYP_record (ts) ->
-       btyp_record (List.map (fun (s,t) -> s, aux t) ts)
-
-    | BTYP_polyrecord (ts,v) ->
-       btyp_polyrecord (List.map (fun (s,t) -> s, aux t) ts) (aux v)
-
-    | BTYP_variant ts ->
-       btyp_variant (List.map (fun (s,t) -> s, aux t) ts)
-
-    | BTYP_int 
-    | BTYP_label 
-    | BTYP_unitsum _
-    | BTYP_void
-    | BTYP_fix _
-    | BTYP_type_apply _
-    | BTYP_type_map _
-    | BTYP_type_function _
-    | BTYP_type _
-    | BTYP_type_tuple _
-    | BTYP_type_match _
-    | BTYP_type_set_union _ -> t
-    | BTYP_type_set_intersection _ -> t
-  in
-    aux 0 t
-
 let var_list_occurs ls t =
   let yes = ref false in
   List.iter (fun i -> yes := !yes || var_i_occurs i t) ls;
@@ -327,6 +280,7 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
     when List.length ts = n ->
     List.fold_left (fun tr t -> tr && te t ta) true ts
 
+  | BTYP_uniq p1,BTYP_uniq p2
   | BTYP_pointer p1,BTYP_pointer p2
     -> te p1 p2
 

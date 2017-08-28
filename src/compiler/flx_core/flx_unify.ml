@@ -243,6 +243,7 @@ let fix i t =
     | BTYP_pointer a -> btyp_pointer (aux a)
     | BTYP_array (a,b) -> btyp_array (aux a, aux b)
     | BTYP_rev t -> btyp_rev (aux t)
+    | BTYP_uniq t -> btyp_uniq (aux t)
 
     | BTYP_record (ts) ->
        btyp_record (List.map (fun (s,t) -> s, aux t) ts)
@@ -440,6 +441,10 @@ let rec unification bsym_table counter eqns dvars =
 
       | BTYP_pointer t1, BTYP_pointer t2 ->
         add_eqn (t1,t2)
+
+      | BTYP_uniq t1, BTYP_uniq t2 ->
+        add_eqn (t1,t2)
+
 
       | BTYP_unitsum i, BTYP_unitsum j when i = j -> ()
 
@@ -807,6 +812,7 @@ let fold bsym_table counter t =
 
     | BTYP_pointer a -> ax a
     | BTYP_rev a -> ax a
+    | BTYP_uniq a -> ax a
 
     | BTYP_tuple_cons (a,b) -> ax a; ax b
     | BTYP_tuple_snoc (a,b) -> ax a; ax b
@@ -1008,6 +1014,7 @@ let var_occurs bsym_table t =
 
     | BTYP_pointer a  -> aux a
     | BTYP_rev a -> aux a
+    | BTYP_uniq a -> aux a
 
     | BTYP_label
     | BTYP_unitsum _

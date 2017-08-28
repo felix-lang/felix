@@ -103,6 +103,8 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | EXPR_superscript (_,(a,b)) -> TYP_array (te a, te b)
 (*  | EXPR_lvalue (sr,e) -> TYP_lvalue (te e) *)
   | EXPR_ref (sr,e) -> TYP_pointer (te e)
+  | EXPR_uniq (sr,e) -> TYP_uniq (te e)
+
   | EXPR_sum (_,ts) ->
     let ts = map te ts in
     if all_tunits ts then
@@ -325,6 +327,8 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
 
   (* The following can be converted *)
   | TYP_pointer t -> EXPR_ref (dsr,(expr_of_typecode dsr t))
+  | TYP_uniq t -> EXPR_uniq (dsr, (expr_of_typecode dsr t))
+
   | TYP_void (sr) -> EXPR_void (sr)
   | TYP_name (sr, id, ts) -> EXPR_name (sr, id, ts)
   | TYP_case_tag (sr, i) -> EXPR_case_tag (sr, i)
@@ -459,6 +463,7 @@ let string_of_type_name (t:typecode_t) = match t with
   | TYP_effector _ -> "TYP_effector"
   | TYP_cfunction _ -> "TYP_cfunction"
   | TYP_pointer _ -> "TYP_pointer"
+  | TYP_uniq _-> "TYP_uniq"
   | TYP_array _ -> "TYP_array"
   | TYP_as _ -> "TYP_as"
   | TYP_type -> "TYP_type"

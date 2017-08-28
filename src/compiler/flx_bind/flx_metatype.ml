@@ -147,6 +147,7 @@ print_endline ("Metatyping term " ^ st term);
   | BTYP_tuple _
   | BTYP_void
   | BTYP_rev _
+  | BTYP_uniq _
 
   | BTYP_int
   | BTYP_intersect _
