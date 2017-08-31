@@ -253,6 +253,7 @@ let rec gen_expr'
     | 0 -> print_endline "Generating unit expr"; ce_atom "0/*[gen_expr']CLT:UNIT*/"
     | _ -> print_endline "Generating unitptr expr"; ce_atom ("NULL/*UNITPTR<"^string_of_int k^">*/")
     end
+  | BEXPR_uniq _ -> assert false
   | BEXPR_funprod _ -> assert false
   | BEXPR_funsum _ -> assert false
   | BEXPR_lrangle _ -> assert false
@@ -1422,6 +1423,8 @@ end
       Flx_bsym.id bsym ^ "' in expression")
     end
 
+  (* downgraded semantics, rvalue reference is same as pointer now *)
+  | BEXPR_rref (index,ts') 
   | BEXPR_ref (index,ts') ->
     let ts = map tsub ts' in
     let ref_type = tn t in

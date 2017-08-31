@@ -183,6 +183,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
 
   | EXPR_deref (sr,e') -> EXPR_deref (sr,subst e')
   | EXPR_ref (sr,e') -> EXPR_ref (sr,subst e')
+  | EXPR_rref (sr,e') -> EXPR_rref (sr,subst e')
   | EXPR_likely (sr,e') -> EXPR_likely (sr,subst e')
   | EXPR_unlikely (sr,e') -> EXPR_unlikely (sr,subst e')
   | EXPR_new (sr,e') -> EXPR_new (sr,subst e')

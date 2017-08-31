@@ -20,6 +20,7 @@ and t = private
   | BTYP_polyrecord of (string * t) list * t
   | BTYP_variant of (string * t) list
   | BTYP_pointer of t
+  | BTYP_rref of t
   | BTYP_function of t * t
   | BTYP_effector of t * t * t
   | BTYP_cfunction of t * t
@@ -83,6 +84,7 @@ val btyp_record : (string * t) list -> t
 val btyp_polyrecord : (string * t) list -> t -> t
 val btyp_variant : (string * t) list -> t
 val btyp_pointer : t -> t
+val btyp_rref : t -> t
 val btyp_function : t * t -> t
 val btyp_effector : t * t * t -> t
 val btyp_cfunction : t * t -> t

@@ -107,6 +107,8 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_funsum _ -> assert false
   | BEXPR_lrangle _ -> assert false
   | BEXPR_lrbrack _ -> assert false
+  | BEXPR_uniq _ -> assert false
+
   | BEXPR_label (i) ->  ui i []
 
   | BEXPR_int _ -> ()
@@ -235,6 +237,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
     ut (btyp_function (t,t))
 
   | BEXPR_ref (i,ts)
+  | BEXPR_rref (i,ts)
   | BEXPR_varname (i,ts)
   | BEXPR_closure (i,ts)
     ->

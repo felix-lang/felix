@@ -61,8 +61,6 @@ let fixtype bsym_table t =
   let rec f_btype t =
     let t = Flx_btype.map ~f_btype t in
     match t with 
-(* Remove uniqueness types *)
-    | BTYP_uniq t -> t
     | BTYP_inst (i,ts) ->  (* ts already upgraded by the Flx_btype.map *)
       let bsym =
         try Flx_bsym_table.find bsym_table i 

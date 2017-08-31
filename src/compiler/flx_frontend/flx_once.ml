@@ -412,7 +412,9 @@ if debug then print_endline ("flow: normal= processing for " ^ Flx_print.string_
 
 let is_once bsym_table bid = 
   match Flx_bsym_table.find_bbdcl bsym_table bid with
-  | BBDCL_val (_,_,`Once) -> true
+  (* | BBDCL_val (_,_,`Once) -> true *)
+  | BBDCL_val (_,BTYP_uniq _,_)
+  | BBDCL_val (_,BTYP_rref _,_) -> true
   | _ -> false
 
 
@@ -489,7 +491,8 @@ let once_bsym bsym_table bid parent bsym =
     let kids = Flx_bsym_table.find_children bsym_table bid in
     let once_kids = BidSet.filter (is_once bsym_table) kids in
 (*
-print_endline ("Once check examining " ^ Flx_bsym.id bsym);
+print_endline ("Once check examining " ^ Flx_bsym.id bsym ^ " kids=" ^ str_of_vars bsym_table kids);
+print_endline ("Once kids = " ^ str_of_vars bsym_table once_kids);
 *)
     if not (BidSet.is_empty once_kids) then
       once_check bsym_table bid (Flx_bsym.id bsym) once_kids exes 

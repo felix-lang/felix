@@ -422,6 +422,7 @@ print_endline "Type list index returned None";
   | BTYP_effector (a,e,b) -> btyp_effector (br a, br e, br b)
   | BTYP_cfunction (a,b) -> btyp_cfunction (br a, br b)
   | BTYP_pointer a -> btyp_pointer (br a)
+  | BTYP_rref a -> btyp_rref (br a)
 (*  | BTYP_lvalue a -> btyp_lvalue (br a) *)
 
   | BTYP_label -> t

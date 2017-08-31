@@ -202,6 +202,7 @@ print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table
 
   (* GUESS! *)
   | BTYP_uniq t' -> assert false; rr t'
+  | BTYP_rref t' -> assert false; rr t'
 
 
   | BTYP_pointer t' -> rr t'; rnr t

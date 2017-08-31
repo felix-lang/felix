@@ -75,6 +75,7 @@ and typecode_t =
   | TYP_effector of typecode_t * typecode_t * typecode_t    (** function type *)
   | TYP_cfunction of typecode_t * typecode_t   (** C function type *)
   | TYP_pointer of typecode_t                  (** pointer type *)
+  | TYP_rref of typecode_t                     (** read pointer type *)
   | TYP_uniq of typecode_t                     (** uniq type *)
   | TYP_array of typecode_t * typecode_t       (** array type base ^ index *)
   | TYP_as of typecode_t * Flx_id.t            (** fixpoint *)
@@ -166,6 +167,7 @@ and expr_t =
   | EXPR_literal of Flx_srcref.t * Flx_literal.literal_t
   | EXPR_deref of Flx_srcref.t * expr_t
   | EXPR_ref of Flx_srcref.t * expr_t
+  | EXPR_rref of Flx_srcref.t * expr_t
   | EXPR_uniq of Flx_srcref.t * expr_t
   | EXPR_likely of Flx_srcref.t * expr_t
   | EXPR_unlikely of Flx_srcref.t * expr_t
@@ -728,6 +730,7 @@ let src_of_typecode = function
   | TYP_effector _
   | TYP_cfunction _
   | TYP_pointer _
+  | TYP_rref _
   | TYP_uniq _
   | TYP_array _
   | TYP_as _
@@ -781,6 +784,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_deref (s,_)
   | EXPR_new (s,_)
   | EXPR_ref (s,_)
+  | EXPR_rref (s,_)
   | EXPR_uniq (s,_)
   | EXPR_likely (s,_)
   | EXPR_unlikely (s,_)

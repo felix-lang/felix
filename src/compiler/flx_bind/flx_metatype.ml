@@ -140,6 +140,7 @@ print_endline ("Metatyping term " ^ st term);
   | BTYP_function _
   | BTYP_effector _
   | BTYP_pointer _
+  | BTYP_rref _
   | BTYP_variant _
   | BTYP_record _
   | BTYP_sum _

@@ -46,6 +46,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | TYP_effector (a,e,b) -> TYP_effector (f a, f e, f b)
   | TYP_cfunction (a,b) -> TYP_cfunction (f a, f b)
   | TYP_pointer t -> TYP_pointer (f t)
+  | TYP_rref t -> TYP_rref (f t)
   | TYP_uniq t -> TYP_uniq (f t)
   | TYP_array (t1, t2) -> TYP_array (f t1, f t2)
   | TYP_as (t,s) -> TYP_as (f t,s)
@@ -160,6 +161,7 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | EXPR_literal _ -> e
   | EXPR_deref (sr,x) -> EXPR_deref (sr,fe x)
   | EXPR_ref (sr,x) -> EXPR_ref (sr, fe x)
+  | EXPR_rref (sr,x) -> EXPR_rref (sr, fe x)
   | EXPR_likely (sr,x) -> EXPR_likely (sr, fe x)
   | EXPR_unlikely (sr,x) -> EXPR_unlikely (sr, fe x)
   | EXPR_new (sr,x) -> EXPR_new (sr, fe x)
@@ -256,6 +258,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_match_case (_,(_,x))
   | EXPR_deref (_,x)
   | EXPR_ref (_,x)
+  | EXPR_rref (_,x)
   | EXPR_likely (_,x)
   | EXPR_unlikely (_,x)
   | EXPR_new (_,x)

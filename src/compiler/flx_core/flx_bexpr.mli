@@ -5,6 +5,8 @@ type bexpr_t = private
   | BEXPR_deref of t
   | BEXPR_varname of bid_t * Flx_btype.t list
   | BEXPR_ref of bid_t * Flx_btype.t list
+  | BEXPR_rref of bid_t * Flx_btype.t list
+  | BEXPR_uniq of t
   | BEXPR_likely of t
   | BEXPR_unlikely of t
   | BEXPR_address of t
@@ -74,8 +76,15 @@ val bexpr_int : int -> bexpr_t * Flx_btype.t
 val bexpr_not : bexpr_t * Flx_btype.t -> t
 val bexpr_varname :
   Flx_btype.t -> bid_t * Flx_btype.t list -> bexpr_t * Flx_btype.t
+
 val bexpr_ref :
   Flx_btype.t -> bid_t * Flx_btype.t list -> bexpr_t * Flx_btype.t
+
+val bexpr_rref :
+  Flx_btype.t -> bid_t * Flx_btype.t list -> bexpr_t * Flx_btype.t
+
+val bexpr_uniq: bexpr_t * Flx_btype.t -> bexpr_t * Flx_btype.t
+
 val bexpr_likely : bexpr_t * Flx_btype.t -> bexpr_t * Flx_btype.t
 val bexpr_unlikely : bexpr_t * Flx_btype.t -> bexpr_t * Flx_btype.t
 val bexpr_address : bexpr_t * Flx_btype.t -> bexpr_t * Flx_btype.t

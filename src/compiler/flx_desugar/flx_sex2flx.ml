@@ -230,6 +230,7 @@ and xexpr_t sr x =
  | Lst [Id "ast_deref"; sr; e] -> EXPR_deref (xsr sr,ex e)
  | Lst [Id "ast_ref"; sr; e] -> EXPR_ref (xsr sr,ex e)
  | Lst [Id "ast_uniq"; sr; e] -> EXPR_uniq (xsr sr, ex e)
+ | Lst [Id "ast_rref"; sr; e] -> EXPR_rref(xsr sr, ex e)
 
  | Lst [Id "ast_label_ref"; sr; id] -> EXPR_label (xsr sr,xid id)
  | Lst [Id "ast_new"; sr; e] -> EXPR_new (xsr sr,ex e)

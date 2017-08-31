@@ -41,6 +41,7 @@ let lower_bsym_table state bsym_table root_proc =
 (*
 print_endline "RUNNING OLD LOWER PROCESS";
 *)
+
   (* We have to remove module parents before we can do code generation. *)
   (* remove_module_parents bsym_table; *)
 
@@ -54,6 +55,10 @@ print_endline "RUNNING OLD LOWER PROCESS";
 
   (* Remove unused symbols. *)
   let bsym_table = Flx_use.copy_used state.syms bsym_table in
+
+  (* strip uniq types out *)
+  let bsym_table = Flx_struniq.struniq bsym_table in
+
 
   (* Mark all the global functions and values. *)
   Flx_global.set_globals bsym_table;

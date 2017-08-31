@@ -281,6 +281,7 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
     List.fold_left (fun tr t -> tr && te t ta) true ts
 
   | BTYP_uniq p1,BTYP_uniq p2
+  | BTYP_rref p1,BTYP_rref p2
   | BTYP_pointer p1,BTYP_pointer p2
     -> te p1 p2
 

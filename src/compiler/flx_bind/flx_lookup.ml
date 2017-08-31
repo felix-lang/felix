@@ -937,6 +937,7 @@ print_endline ("FUDGE: Binding TYP_var " ^ si i);
   | TYP_effector (d,e,c) -> btyp_effector (bt d, bt e,bt c)
   | TYP_cfunction (d,c) -> btyp_cfunction (bt d, bt c)
   | TYP_pointer t -> btyp_pointer (bt t)
+  | TYP_rref t -> btyp_rref (bt t)
   | TYP_uniq t -> btyp_uniq (bt t)
 
   | TYP_void _ -> btyp_void ()
@@ -1456,6 +1457,7 @@ end;
             | TYP_variant _
             | TYP_cfunction _
             | TYP_pointer _
+            | TYP_rref _
             | TYP_type_extension _
             | TYP_array _ -> btyp_type 0
 
@@ -2155,7 +2157,10 @@ print_endline ("** FINISH **** Calculating Function type for function " ^ sym.Fl
   | SYMDEF_const (_,t,_,_)
   | SYMDEF_once t
   | SYMDEF_val t
-  | SYMDEF_var t -> bt sym.Flx_sym.sr t
+  | SYMDEF_var t -> 
+    let t' = bt sym.Flx_sym.sr t in
+    t'
+
   | SYMDEF_ref t -> btyp_pointer (bt sym.Flx_sym.sr t)
 
   | SYMDEF_lazy (t,x) -> bt sym.Flx_sym.sr t
@@ -4115,9 +4120,7 @@ print_endline ("Case number " ^ si index);
   | EXPR_cond (sr,(c,t,f)) ->
     bexpr_cond (be c) (be t) (be f)
 
-  | EXPR_uniq (sr,e) ->
-    let x,t = be e in
-    x, btyp_uniq t
+  | EXPR_uniq (sr,e) -> bexpr_uniq (be e)
 
   | EXPR_label (sr,label) -> 
     let maybe_index = lookup_label_in_env state bsym_table env sr label in
@@ -5155,6 +5158,22 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
             sbe bsym_table e)
       end
 
+  | EXPR_rref (_,e) -> 
+(*
+    print_endline ("Binding rref");
+*)
+    let x = be e in
+    begin match x with
+    | BEXPR_varname (index,ts),vt ->
+      begin match vt with
+      | BTYP_uniq vt ->
+        let pt = btyp_rref vt in
+        bexpr_rref pt (index, ts)  
+      | _ -> clierr sr ("Rvalue reference requires argument be uniq type")
+      end
+    | _ -> clierr sr ("Rvalue reference requires argument be variable (of uniq type)")
+    end
+
   | EXPR_deref (_,(EXPR_ref (sr,e) as x)) ->
     begin 
       try ignore (be x) 
@@ -5164,10 +5183,14 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
     end;
     be e
 
-  | EXPR_deref (sr,e) ->
-    let e,t = be e in
+  | EXPR_deref (sr,e') ->
+(*
+print_endline ("Binding _deref .. " ^ string_of_expr e);
+*)
+    let e,t = be e' in
     begin match unfold "flx_lookup" t with
     | BTYP_pointer t' -> bexpr_deref t' (e,t)
+    | BTYP_rref t' -> let ut = btyp_uniq t' in bexpr_deref ut (e,t)
     | _ -> clierrx "[flx_bind/flx_lookup.ml:4856: E207] " sr "[bind_expression'] Dereference non pointer"
     end
 

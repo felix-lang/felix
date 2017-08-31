@@ -8,6 +8,8 @@ type bexpr_t =
   | BEXPR_varname of bid_t * Flx_btype.t list
 
   | BEXPR_ref of bid_t * Flx_btype.t list
+  | BEXPR_rref of bid_t * Flx_btype.t list
+  | BEXPR_uniq of t
   | BEXPR_likely of t
   | BEXPR_unlikely of t
   | BEXPR_address of t
@@ -140,6 +142,13 @@ let bexpr_ref t (bid, ts) =
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
   | _ -> BEXPR_ref (bid, complete_check_list ts), complete_check t
+
+let bexpr_uniq ((x,t) as e) = BEXPR_uniq e, Flx_btype.btyp_uniq t
+
+let bexpr_rref t (bid, ts) = 
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr k
+  | _ -> BEXPR_rref (bid, complete_check_list ts), complete_check t
 
 let bexpr_likely ((_,t) as e) = BEXPR_likely e, complete_check t
 
@@ -565,6 +574,7 @@ let get_ts (e,_) =
   | BEXPR_varname (_, ts)
   | BEXPR_closure (_, ts)
   | BEXPR_ref (_, ts)
+  | BEXPR_rref (_, ts)
   | BEXPR_apply_prim (_, ts, _)
   | BEXPR_apply_direct (_, ts, _)
   | BEXPR_apply_struct (_, ts, _) -> ts
@@ -602,9 +612,11 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
 
   | BEXPR_varname (i,ts),BEXPR_varname (i',ts')
   | BEXPR_ref (i,ts),BEXPR_ref (i',ts')
+  | BEXPR_rref (i,ts),BEXPR_rref (i',ts')
   | BEXPR_closure (i,ts),BEXPR_closure (i',ts') ->
      i = i' && List.length ts = List.length ts' &&
      List.fold_left2 (fun r a b -> r && a = b) true ts ts'
+  | BEXPR_uniq e1, BEXPR_uniq e2 -> e1 = e2
 
   (* Note any two distinct new expressions are distinct ...
    * not sure what is really needed here *)
@@ -705,7 +717,13 @@ let flat_iter
   | BEXPR_ref (i,ts) ->
       f_bid i;
       List.iter f_btype ts
+  | BEXPR_rref (i,ts) ->
+      f_bid i;
+      List.iter f_btype ts
+
+  | BEXPR_uniq e -> f_bexpr e
   | BEXPR_likely e -> f_bexpr e
+
   | BEXPR_unlikely e -> f_bexpr e
   | BEXPR_address e -> f_bexpr e
   | BEXPR_new e -> f_bexpr e
@@ -810,6 +828,8 @@ let map
 
   | BEXPR_deref e -> bexpr_deref t (f_bexpr e)
   | BEXPR_ref (i,ts) -> bexpr_ref t (f_bid i, List.map f_btype ts)
+  | BEXPR_rref (i,ts) -> bexpr_rref t (f_bid i, List.map f_btype ts)
+  | BEXPR_uniq e -> bexpr_uniq (f_bexpr e)
   | BEXPR_new e -> bexpr_new (f_bexpr e)
   | BEXPR_class_new (cl,e) ->  bexpr_class_new (f_btype cl) (f_bexpr e)
   | BEXPR_address e -> bexpr_address (f_bexpr e)
