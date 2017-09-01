@@ -98,33 +98,37 @@ let rec find_label augexes lab =
   | _ :: tail -> find_label tail lab
 
 (* Fixup diagnostics later *)
-let live bsym_table old {sets=set; gets=get} =
+let live bsym_table sr bexe live {sets=set; gets=get} =
 (*
 print_endline ("Calculate liveness: old= " ^ Flx_bid.str_of_bidset old ^ ", gets=" ^
   Flx_bid.str_of_bidset get ^ " set=" ^ str_of_bidset set);
 *)
 
   (* Order matters, check gets on old live values first *)
-  if not (BidSet.subset get old) then begin
+  let getdead = BidSet.diff get live in
+  if not (BidSet.is_empty getdead) then begin
     print_endline ("Once error: Using uninitialised or already used once variable");
-    let getdead = BidSet.diff get old in
     print_endline (def_of_vars bsym_table getdead);
+    print_endline ("In instruction " ^ Flx_print.string_of_bexe bsym_table 0 bexe);
+    print_endline ("Detected at" ^ Flx_srcref.long_string_of_src sr);
     assert false;
   end;
 
   (* kill used variables *)
-  let newlive =BidSet.diff old get in 
+  let live =BidSet.diff live get in 
 
   (* check we're not setting an already live variable *)
-  if not (BidSet.is_empty (BidSet.inter newlive set)) then begin
+  let reset = BidSet.inter live set in
+  if not (BidSet.is_empty reset) then begin
     print_endline ("Once error: Resetting live variable");
-    let reset = BidSet.diff set newlive in
     print_endline (def_of_vars bsym_table reset);
+    print_endline ("In instruction " ^ Flx_print.string_of_bexe bsym_table 0 bexe);
+    print_endline ("Detected at" ^ Flx_srcref.long_string_of_src sr);
     assert false;
   end;
 
   (* Add newly set variables *)
-  let live = BidSet.union newlive set  in
+  let live = BidSet.union live set  in
 (*
 print_endline ("Newlive= " ^ Flx_bid.str_of_bidset live);
 *)
@@ -180,7 +184,8 @@ let return bsym_table (stack:stack_t) (liveness:BidSet.t) : stack_t =
       caller :: chain
  
 let debug = false 
-  
+let show_getset = false
+ 
 (*********************************************************************) 
 (* flow analysis *)
 let rec flow seq make_augexes bsym_table master liveness stack : unit =
@@ -202,11 +207,11 @@ if debug then print_endline ("flow: end of procedure or return");
     flow liveness (return bsym_table stack liveness)
 
   | (bexe,deltalife) :: tail ->
-  let liveness = live bsym_table liveness deltalife in
+  let sr = get_srcref bexe in
+  let liveness = live bsym_table sr bexe liveness deltalife in
   let next () =  flow liveness ({cc with current=tail} :: caller) in
   let final () = flow liveness (check_liveness bsym_table liveness) in
 
-  let sr = get_srcref bexe in
   let lno = Flx_srcref.first_line_no sr in
 if debug then print_endline (string_of_int seq ^"@"^string_of_int lno^ " " ^ Flx_print.string_of_bexe bsym_table 0 bexe);
 if debug then print_endline (string_of_int seq ^"@"^string_of_int lno^ " " ^ str_of_vars bsym_table liveness);
@@ -413,10 +418,12 @@ if debug then print_endline ("flow: normal= processing for " ^ Flx_print.string_
 let is_once bsym_table bid = 
   match Flx_bsym_table.find_bbdcl bsym_table bid with
   (* | BBDCL_val (_,_,`Once) -> true *)
-  | BBDCL_val (_,BTYP_uniq _,_)
-  | BBDCL_val (_,BTYP_rref _,_) -> true
+  | BBDCL_val (_,Flx_btype.BTYP_uniq _,_)
+  | BBDCL_val (_,Flx_btype.BTYP_rref _,_) 
+  | BBDCL_val (_,Flx_btype.BTYP_pointer (Flx_btype.BTYP_uniq _),_) -> true
   | _ -> false
 
+(* Get and Set detectors for instructions *)
 
 let get_sets bsym_table once_kids bexe =
   let bidset = ref BidSet.empty in
@@ -431,11 +438,25 @@ let get_sets bsym_table once_kids bexe =
     end;
     bidset := BidSet.add i !bidset 
   in
+  let add_once i = if BidSet.mem i once_kids then add i in
+  let rec f_bexpr e = 
+     match e with
+     (* taking the address of a uniq variable is considered equivalent to setting it *)
+     | BEXPR_ref (i,_),Flx_btype.BTYP_pointer (Flx_btype.BTYP_uniq _) -> add_once i
+     | BEXPR_rref (i,_),_ -> () 
+     | _ ->
+       Flx_bexpr.flat_iter ~f_bexpr e 
+  in
   begin match bexe with 
-  | BEXE_assign (_,(BEXPR_varname (i,_),_),_) 
-  | BEXE_init (_,i,_) when BidSet.mem i once_kids -> add i
-  | _ -> ()
+  | BEXE_assign (_,(BEXPR_varname (i,_),_),e) -> add_once i; f_bexpr e 
+  | BEXE_init (_,i,e) -> add_once i; f_bexpr e
+  | _ -> Flx_bexe.iter ~f_bexpr bexe 
   end;
+if show_getset then
+  print_endline ("SETS: instruction " ^ 
+    Flx_print.string_of_bexe bsym_table 0 bexe ^ " -> " ^
+    str_of_vars bsym_table (!bidset);
+  );
   !bidset
 
 let get_gets bsym_table once_kids bexe = 
@@ -452,12 +473,28 @@ let get_gets bsym_table once_kids bexe =
     bidset := BidSet.add i !bidset 
   in
   let add_once i = if BidSet.mem i once_kids then add i in
-  let f_bexpr e = Flx_bexpr.iter ~f_bid:add_once e in
+  let rec f_bexpr e = 
+     match e with
+     | BEXPR_ref (i,_),Flx_btype.BTYP_pointer (Flx_btype.BTYP_uniq _) -> ()
+     (* taking the rvalue address of a once variable is considered
+       equivalent to getting it
+     *)
+     | BEXPR_rref (i,_),_ -> add_once i
+     | _ ->
+       Flx_bexpr.flat_iter ~f_bid:add_once ~f_bexpr e 
+  in
   begin match bexe with 
+  (* if the target of an assignment is a variable, is not a get *)
   | BEXE_assign (_,(BEXPR_varname _,_),e) 
+  (* nor is the target of an initialisation *)
   | BEXE_init (_,_,e) -> f_bexpr e
   | _ -> Flx_bexe.iter ~f_bexpr bexe
   end;
+if show_getset then
+  print_endline ("GETS: instruction " ^ 
+    Flx_print.string_of_bexe bsym_table 0 bexe ^ " -> " ^
+    str_of_vars bsym_table (!bidset);
+  );
   !bidset
 
 let once_check bsym_table bid name once_kids bexes = 
