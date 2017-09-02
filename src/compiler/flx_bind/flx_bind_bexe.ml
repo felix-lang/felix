@@ -773,9 +773,9 @@ print_endline ("BINDING ASSIGNMENT " ^ string_of_exe 0 exe);
       begin match lexpr with
       | BEXPR_varname (i,_) ->
         let sym = Flx_sym_table.find state.lookup_state.sym_table i in
-        begin match sym.symdef with
+        begin match sym.Flx_sym.symdef with
         | SYMDEF_val _ ->
-          clierr sr ("Assign to val " ^ sym.id ^ " not allowed");
+          clierr sr ("Assign to val " ^ sym.Flx_sym.id ^ " not allowed");
         | _ -> ()
         end 
       | _ -> ()
@@ -812,14 +812,62 @@ print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
         record_field_diag bsym_table lhst rhst
       )
 
-   | EXE_try -> 
+  | EXE_storeat (l,r) ->
+    let _,lhst as lx = be l in
+    let _,rhst as rx = be r in
+(*
+print_endline ("storeat : LHS=" ^ sbe bsym_table lx ^ ", LHST = " ^ sbt bsym_table lhst);
+*)
+    let lhst = minimise bsym_table state.counter lhst in
+    let lhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_assign lhst" state.counter bsym_table sr lhst in
+    let lhst = Flx_unify.normalise_tuple_cons bsym_table lhst in
+(*
+print_endline ("assign after beta-reduction: LHST = " ^ sbt bsym_table lhst);
+*)
+(*
+print_endline ("assign:  RHS=" ^ sbe bsym_table rx ^ ",RHST = " ^ sbt bsym_table rhst);
+*)
+    let rhst = minimise bsym_table state.counter rhst in
+    let rhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_assign rhst" state.counter bsym_table sr rhst in
+    let rhst = Flx_unify.normalise_tuple_cons bsym_table rhst in
+(*
+print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
+*)
+       
+    let lhsvt = 
+      match lhst with
+      | BTYP_pointer t -> t
+      | BTYP_wref t -> t
+      | _ -> 
+        clierrx "[flx_bind/flx_bind_bexe.ml:765: E36A] " sr 
+          (
+            "[bind_exe: assign ] Storeat first arg must be pointer or wref, arg "^
+             sbe bsym_table lx^ 
+             "\nhas type: " ^ sbt bsym_table lhst
+          )
+    in
+    if type_match bsym_table state.counter lhsvt rhst
+    then [(bexe_storeat (sr,lx,rx))]
+    else clierrx "[flx_bind/flx_bind_bexe.ml:765: E36B] " sr
+      (
+        "[bind_exe: assign ] Storeat "^
+          sbe bsym_table lx^"="^
+          sbe bsym_table rx^";\n"^
+        "LHS store type: " ^ sbt bsym_table lhsvt^
+        "\nmust have same type as\n"^
+        "RHS type: " ^ sbt bsym_table rhst ^
+        record_field_diag bsym_table lhsvt rhst
+      )
+
+
+  | EXE_try -> 
      state.reachable <- true;
      [(bexe_try sr)]
 
-   | EXE_endtry -> 
+  | EXE_endtry -> 
      [(bexe_endtry sr)]
 
-   | EXE_catch (s,t) -> 
+  | EXE_catch (s,t) -> 
      state.reachable <- true;
      let t = bind_type state.lookup_state bsym_table state.env sr t in
      [(bexe_catch sr s t)]

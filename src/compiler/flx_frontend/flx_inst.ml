@@ -238,6 +238,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
 
   | BEXPR_ref (i,ts)
   | BEXPR_rref (i,ts)
+  | BEXPR_wref (i,ts)
   | BEXPR_varname (i,ts)
   | BEXPR_closure (i,ts)
     ->
@@ -342,6 +343,9 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
     ue sr e
 
   | BEXE_assign (sr,e1,e2) -> 
+    ue sr e1; ue sr e2
+
+  | BEXE_storeat (sr,e1,e2) -> 
     ue sr e1; ue sr e2
 
   | BEXE_svc (sr,i) ->

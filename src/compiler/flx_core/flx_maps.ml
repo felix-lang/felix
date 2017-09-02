@@ -47,6 +47,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | TYP_cfunction (a,b) -> TYP_cfunction (f a, f b)
   | TYP_pointer t -> TYP_pointer (f t)
   | TYP_rref t -> TYP_rref (f t)
+  | TYP_wref t -> TYP_wref (f t)
   | TYP_uniq t -> TYP_uniq (f t)
   | TYP_array (t1, t2) -> TYP_array (f t1, f t2)
   | TYP_as (t,s) -> TYP_as (f t,s)
@@ -162,6 +163,7 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | EXPR_deref (sr,x) -> EXPR_deref (sr,fe x)
   | EXPR_ref (sr,x) -> EXPR_ref (sr, fe x)
   | EXPR_rref (sr,x) -> EXPR_rref (sr, fe x)
+  | EXPR_wref (sr,x) -> EXPR_wref (sr, fe x)
   | EXPR_likely (sr,x) -> EXPR_likely (sr, fe x)
   | EXPR_unlikely (sr,x) -> EXPR_unlikely (sr, fe x)
   | EXPR_new (sr,x) -> EXPR_new (sr, fe x)
@@ -259,6 +261,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_deref (_,x)
   | EXPR_ref (_,x)
   | EXPR_rref (_,x)
+  | EXPR_wref (_,x)
   | EXPR_likely (_,x)
   | EXPR_unlikely (_,x)
   | EXPR_new (_,x)
@@ -348,6 +351,7 @@ let rec map_exe fi ft fe (x:exe_t):exe_t = match x with
   | EXE_init (name,e) -> EXE_init (name, fe e)
   | EXE_iinit ((name,idx),e) -> EXE_iinit ((name, fi idx), fe e)
   | EXE_assign (a,b) -> EXE_assign (fe a, fe b)
+  | EXE_storeat (a,b) -> EXE_storeat (fe a, fe b)
   | EXE_assert e -> EXE_assert (fe e)
   | EXE_try  -> x
   | EXE_endtry -> x
@@ -384,6 +388,7 @@ let rec iter_exe fi ft fe (x:exe_t):unit = match x with
   | EXE_init (name,e) -> fe e
   | EXE_iinit ((name,idx),e) -> fi idx; fe e
   | EXE_assign (a,b) -> fe a; fe b
+  | EXE_storeat (a,b) -> fe a; fe b
   | EXE_assert e -> fe e
   | EXE_try  -> ()
   | EXE_endtry -> ()

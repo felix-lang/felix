@@ -472,6 +472,7 @@ let chk_exe state bsym_table nutab exe =
 
   | BEXE_init (sr,i,e) -> bexe_init (sr,i,ce sr e)
   | BEXE_assign (sr,e1,e2) -> bexe_assign (sr, ce sr e1, ce sr e2)
+  | BEXE_storeat (sr,e1,e2) -> bexe_storeat (sr, ce sr e1, ce sr e2)
   | BEXE_assert (sr,e) -> bexe_assert (sr, ce sr e)
   | BEXE_axiom_check2 (sr,sr2,e1,e2) ->
     let e1 = match e1 with Some e -> Some (ce sr e) | None -> None in

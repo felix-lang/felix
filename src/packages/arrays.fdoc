@@ -699,7 +699,7 @@ open class Varray
     var v = varray[char] (n + 1uz);
     var q = v.stl_begin;
     memcpy (q.address, p.address, n);
-    q+n <- char "";
+    set(q,n, char "");
     set_used (v,n + 1uz);
     return v;
   } 

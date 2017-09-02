@@ -162,7 +162,8 @@ and string_of_expr (e:expr_t) =
   | EXPR_map (_,f,e) -> "map (" ^ se f ^ ") (" ^ se e ^ ")"
   | EXPR_deref (_,e) -> "*(" ^ se e ^ ")"
   | EXPR_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
-  | EXPR_rref (_,e) -> "rval" ^ "(" ^ se e ^ ")"
+  | EXPR_rref (_,e) -> "rref" ^ "(" ^ se e ^ ")"
+  | EXPR_wref (_,e) -> "wref" ^ "(" ^ se e ^ ")"
   | EXPR_uniq (_,e) -> "uniq(" ^ se e ^ ")"
 
   | EXPR_likely (_,e) -> "likely" ^ "(" ^ se e ^ ")"
@@ -520,7 +521,8 @@ and st prec tc : string =
     | TYP_array (vt,it) -> 3, st 1 vt ^ "^" ^ st 3 it
 
     | TYP_pointer t -> 1,"&" ^ st 1 t
-    | TYP_rref t -> 1,"rval[" ^ st 1 t ^ "]"
+    | TYP_rref t -> 1,"rref[" ^ st 1 t ^ "]"
+    | TYP_wref t -> 1,"wref[" ^ st 1 t ^ "]"
     | TYP_uniq t -> 1,"uniq[" ^ st 0 t ^ "]"
 
 (*    | TYP_lvalue t -> 0,"lvalue[" ^ st 1 t ^"]" *)
@@ -773,7 +775,8 @@ and sb bsym_table depth fixlist counter prec tc =
       end
 
     | BTYP_pointer t -> 1,"&" ^ sbt 1 t
-    | BTYP_rref t -> 1,"rval (" ^ sbt 1 t ^ ")"
+    | BTYP_rref t -> 1,"rref(" ^ sbt 1 t ^ ")"
+    | BTYP_wref t -> 1,"wref(" ^ sbt 1 t ^ ")"
     | BTYP_void -> 0,"void"
 
     | BTYP_type_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2
@@ -1615,6 +1618,11 @@ and string_of_statement level s =
     spaces level ^
     se l ^ " = " ^ se r ^ ";"
 
+  | STMT_storeat (_,l,r) ->
+    spaces level ^
+    se l ^ " <- " ^ se r ^ ";"
+
+
   | STMT_jump (_,pr, args) ->
     spaces level
     ^ "jump " ^ se pr ^ " " ^ se args ^ ";"
@@ -2004,6 +2012,10 @@ and string_of_exe level s =
   | EXE_assign (l,r) -> spc ^
     se l ^ " = " ^ se r ^ ";"
 
+  | EXE_storeat (l,r) -> spc ^
+    se l ^ " <- " ^ se r ^ ";"
+
+
 and sbe bsym_table e =
   string_of_bound_expression bsym_table e
 
@@ -2055,7 +2067,8 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_closure (i,ts) -> sid i ^ string_of_inst "closure" bsym_table ts
   | BEXPR_identity_function t -> "identity_function["^sbt bsym_table t^"]"
   | BEXPR_ref (i,ts) -> "&" ^ sid i ^ string_of_inst "ref" bsym_table ts
-  | BEXPR_rref (i,ts) -> "rval(" ^ sid i ^ string_of_inst "rref" bsym_table ts^")"
+  | BEXPR_rref (i,ts) -> "rref(" ^ sid i ^ string_of_inst "rref" bsym_table ts^")"
+  | BEXPR_wref (i,ts) -> "wref(" ^ sid i ^ string_of_inst "wref" bsym_table ts^")"
   | BEXPR_uniq e -> "uniq(" ^ se e ^ ")"
   | BEXPR_new e -> "new " ^ se e
   | BEXPR_class_new (t,e) -> "new " ^ sbt bsym_table t ^ "(" ^ se e ^ ")"
@@ -2266,6 +2279,9 @@ and string_of_bexe bsym_table level s =
 
   | BEXE_assign (_,l,r) -> spc ^
     se l ^ " = " ^ se r ^ ";"
+
+  | BEXE_storeat (_,l,r) -> spc ^
+    se l ^ " <- " ^ se r ^ ";"
 
   | BEXE_init (_,l,r) -> spc ^
     sid l ^ " := " ^ se r ^ ";"

@@ -20,10 +20,7 @@ let generated = Flx_srcref.make_dummy "[flx_desugar] generated"
 let assign sr op l r =
   match op with
   | "_set" ->  STMT_cassign (sr,l,r)
-  | "_pset" -> 
-    let deref = EXPR_name (sr, "deref", []) in
-    let deref_l = EXPR_apply (sr, (deref, l)) in
-    STMT_cassign (sr,deref_l,r)
+  | "_pset" -> STMT_storeat (sr,l,r) 
   | _ ->
   STMT_call
   (
@@ -564,6 +561,12 @@ ps;
      let l1,x1 = rex l in
      let l2,x2 = rex r in
      l1 @ l2 @ [Exe (sr,EXE_assign (x1,x2))]
+
+  | STMT_storeat (sr,l,r) ->
+     let l1,x1 = rex l in
+     let l2,x2 = rex r in
+     l1 @ l2 @ [Exe (sr,EXE_storeat (x1,x2))]
+
 
   (* STMT_assign translates to many things, including
      STMT_cassign (via the function assign) but never

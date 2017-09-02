@@ -282,6 +282,7 @@ let fold_vars syms bsym_table uses i ps exes : Flx_bexe.t list =
 
           (* conditional, check if y depends on init (tail rec) *)
 
+          | BEXE_storeat (_,(BEXPR_varname (k,_),_),_)
           | BEXE_assign (_,(BEXPR_varname (k,_),_),_)
           | BEXE_svc (_,k)
           | BEXE_init (_,k,_) ->
@@ -316,6 +317,7 @@ let fold_vars syms bsym_table uses i ps exes : Flx_bexe.t list =
 
           (* terminate substitution, return modified instr *)
           | BEXE_assign _
+          | BEXE_storeat _
           | BEXE_fun_return _
           | BEXE_yield _
           | BEXE_jump _

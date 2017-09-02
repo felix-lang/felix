@@ -1425,6 +1425,7 @@ end
 
   (* downgraded semantics, rvalue reference is same as pointer now *)
   | BEXPR_rref (index,ts') 
+  | BEXPR_wref (index,ts') 
   | BEXPR_ref (index,ts') ->
     let ts = map tsub ts' in
     let ref_type = tn t in

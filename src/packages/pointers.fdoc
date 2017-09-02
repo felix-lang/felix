@@ -253,7 +253,7 @@ open[T] Tord[carray[T]];
 
 var a : +int = array_alloc[int] 10;
 for var i in 0 upto 9 do
-  a + i <- i * i;
+  set(a, i, i * i);
   ++a.[i];
 done
 for i in 0 upto 9 do

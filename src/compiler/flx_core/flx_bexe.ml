@@ -25,8 +25,11 @@ type t =
   | BEXE_nop of Flx_srcref.t * string
   | BEXE_code of Flx_srcref.t * Flx_code_spec.t * Flx_bexpr.t
   | BEXE_nonreturn_code of Flx_srcref.t * Flx_code_spec.t * Flx_bexpr.t
+
   | BEXE_assign of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
   | BEXE_init of Flx_srcref.t * bid_t * Flx_bexpr.t
+  | BEXE_storeat of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
+
   | BEXE_begin
   | BEXE_end
   | BEXE_assert of Flx_srcref.t * Flx_bexpr.t
@@ -64,6 +67,7 @@ let bexe_code (sr,code,e) = BEXE_code (sr,code,e)
 let bexe_nonreturn_code (sr,code,e) = BEXE_nonreturn_code (sr,code,e)
 let bexe_assign (sr,e1,e2) = BEXE_assign (sr,e1,e2)
 let bexe_init (sr,bid,e) = BEXE_init (sr,bid,e)
+let bexe_storeat (sr,e1,e2) = BEXE_storeat (sr,e1,e2)
 let bexe_begin () = BEXE_begin
 let bexe_end () = BEXE_end
 let bexe_assert (sr,e) = BEXE_assert (sr,e)
@@ -107,6 +111,7 @@ let get_srcref = function
   | BEXE_nonreturn_code (sr,_,_)
   | BEXE_assign (sr,_,_)
   | BEXE_init (sr,_,_) -> sr
+  | BEXE_storeat (sr,_,_) -> sr
   | BEXE_begin
   | BEXE_end -> Flx_srcref.dummy_sr
 
@@ -144,6 +149,7 @@ let iter
       List.iter f_btype ts;
       f_bexpr e2
   | BEXE_assign (sr,e1,e2)
+  | BEXE_storeat (sr,e1,e2)
   | BEXE_call (sr,e1,e2)
   | BEXE_call_with_trap (sr,e1,e2)
   | BEXE_jump (sr,e1,e2) ->
@@ -202,6 +208,7 @@ let map
   | BEXE_jump_direct (sr,i,ts,e2) ->
       BEXE_jump_direct (sr,f_bid i,List.map f_btype ts,f_bexpr e2)
   | BEXE_assign (sr,e1,e2) -> BEXE_assign (sr,f_bexpr e1,f_bexpr e2)
+  | BEXE_storeat(sr,e1,e2) -> BEXE_storeat(sr,f_bexpr e1,f_bexpr e2)
   | BEXE_call (sr,e1,e2) -> BEXE_call (sr,f_bexpr e1,f_bexpr e2)
   | BEXE_call_with_trap (sr,e1,e2) -> BEXE_call_with_trap (sr,f_bexpr e1,f_bexpr e2)
   | BEXE_jump (sr,e1,e2) -> BEXE_jump (sr,f_bexpr e1,f_bexpr e2)

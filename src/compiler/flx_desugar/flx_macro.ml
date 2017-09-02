@@ -669,6 +669,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_deref (sr, e1) -> EXPR_deref (sr, me e1)
   | EXPR_ref (sr, e1) ->  EXPR_ref (sr, me e1)
   | EXPR_rref (sr, e1) ->  EXPR_rref (sr, me e1)
+  | EXPR_wref (sr, e1) ->  EXPR_wref (sr, me e1)
   | EXPR_uniq (sr, e1) ->  EXPR_uniq (sr, me e1)
   | EXPR_likely (sr, e1) ->  EXPR_likely (sr, me e1)
   | EXPR_unlikely (sr, e1) ->  EXPR_unlikely (sr, me e1)
@@ -853,6 +854,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | STMT_use (sr, id, qn) -> tack (STMT_use (sr,mi sr id,qn))
 
   | STMT_cassign (sr,l,r) -> tack (STMT_cassign (sr, me l, me r))
+  | STMT_storeat (sr,l,r) -> tack (STMT_storeat (sr, me l, me r))
 
   | STMT_assign (sr,name,l,r) ->
     let l = match l with

@@ -389,6 +389,7 @@ if debug then print_endline ("flow: first entry at label  " ^ str_of_label bsym_
     assert false
 
   (* handled by diffset *)
+  | BEXE_storeat _
   | BEXE_assign _
   | BEXE_init _
   | BEXE_call_prim _
@@ -420,7 +421,7 @@ let is_once bsym_table bid =
   (* | BBDCL_val (_,_,`Once) -> true *)
   | BBDCL_val (_,Flx_btype.BTYP_uniq _,_)
   | BBDCL_val (_,Flx_btype.BTYP_rref _,_) 
-  | BBDCL_val (_,Flx_btype.BTYP_pointer (Flx_btype.BTYP_uniq _),_) -> true
+  | BBDCL_val (_,Flx_btype.BTYP_wref _,_) -> true
   | _ -> false
 
 (* Get and Set detectors for instructions *)
@@ -442,13 +443,15 @@ let get_sets bsym_table once_kids bexe =
   let rec f_bexpr e = 
      match e with
      (* taking the address of a uniq variable is considered equivalent to setting it *)
-     | BEXPR_ref (i,_),Flx_btype.BTYP_pointer (Flx_btype.BTYP_uniq _) -> add_once i
+     | BEXPR_wref (i,_),_ -> add_once i
      | BEXPR_rref (i,_),_ -> () 
      | _ ->
        Flx_bexpr.flat_iter ~f_bexpr e 
   in
   begin match bexe with 
   | BEXE_assign (_,(BEXPR_varname (i,_),_),e) -> add_once i; f_bexpr e 
+  | BEXE_storeat (_,(BEXPR_varname (i,_),_),e) -> add_once i; f_bexpr e 
+  | BEXE_assign (_,(BEXPR_deref(BEXPR_varname (i,_),_),_),e) -> add_once i; f_bexpr e 
   | BEXE_init (_,i,e) -> add_once i; f_bexpr e
   | _ -> Flx_bexe.iter ~f_bexpr bexe 
   end;
@@ -475,7 +478,7 @@ let get_gets bsym_table once_kids bexe =
   let add_once i = if BidSet.mem i once_kids then add i in
   let rec f_bexpr e = 
      match e with
-     | BEXPR_ref (i,_),Flx_btype.BTYP_pointer (Flx_btype.BTYP_uniq _) -> ()
+     | BEXPR_wref (i,_),_ -> ()
      (* taking the rvalue address of a once variable is considered
        equivalent to getting it
      *)
@@ -486,6 +489,8 @@ let get_gets bsym_table once_kids bexe =
   begin match bexe with 
   (* if the target of an assignment is a variable, is not a get *)
   | BEXE_assign (_,(BEXPR_varname _,_),e) 
+  | BEXE_storeat (_,(BEXPR_varname _,_),e) 
+  | BEXE_assign (_,(BEXPR_deref (BEXPR_varname _,_),_),e) 
   (* nor is the target of an initialisation *)
   | BEXE_init (_,_,e) -> f_bexpr e
   | _ -> Flx_bexe.iter ~f_bexpr bexe

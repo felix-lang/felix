@@ -22,8 +22,9 @@ let fixtype bsym_table t =
     match t with 
 (* Remove uniqueness types *)
     | BTYP_uniq t -> t
-(* downgrade read pointers to ordinary pointers *)
+(* downgrade read and write pointers to ordinary pointers *)
     | BTYP_rref t -> btyp_pointer t
+    | BTYP_wref t -> btyp_pointer t
     | _ -> t
   in
   f_btype t

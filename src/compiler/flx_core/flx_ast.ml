@@ -76,6 +76,7 @@ and typecode_t =
   | TYP_cfunction of typecode_t * typecode_t   (** C function type *)
   | TYP_pointer of typecode_t                  (** pointer type *)
   | TYP_rref of typecode_t                     (** read pointer type *)
+  | TYP_wref of typecode_t                     (** write pointer type *)
   | TYP_uniq of typecode_t                     (** uniq type *)
   | TYP_array of typecode_t * typecode_t       (** array type base ^ index *)
   | TYP_as of typecode_t * Flx_id.t            (** fixpoint *)
@@ -168,6 +169,7 @@ and expr_t =
   | EXPR_deref of Flx_srcref.t * expr_t
   | EXPR_ref of Flx_srcref.t * expr_t
   | EXPR_rref of Flx_srcref.t * expr_t
+  | EXPR_wref of Flx_srcref.t * expr_t
   | EXPR_uniq of Flx_srcref.t * expr_t
   | EXPR_likely of Flx_srcref.t * expr_t
   | EXPR_unlikely of Flx_srcref.t * expr_t
@@ -566,6 +568,7 @@ and statement_t =
   | STMT_call of Flx_srcref.t * expr_t * expr_t
   | STMT_call_with_trap of Flx_srcref.t * expr_t * expr_t
   | STMT_assign of Flx_srcref.t * Flx_id.t * tlvalue_t * expr_t
+  | STMT_storeat of Flx_srcref.t * expr_t * expr_t
   | STMT_cassign of Flx_srcref.t * expr_t * expr_t
   | STMT_jump of Flx_srcref.t * expr_t * expr_t
   | STMT_loop of Flx_srcref.t * Flx_id.t * expr_t
@@ -670,6 +673,7 @@ type exe_t =
   | EXE_init of Flx_id.t * expr_t
   | EXE_iinit of (Flx_id.t * index_t) * expr_t
   | EXE_assign of expr_t * expr_t
+  | EXE_storeat of expr_t * expr_t
   | EXE_assert of expr_t
   | EXE_try 
   | EXE_endtry
@@ -731,6 +735,7 @@ let src_of_typecode = function
   | TYP_cfunction _
   | TYP_pointer _
   | TYP_rref _
+  | TYP_wref _
   | TYP_uniq _
   | TYP_array _
   | TYP_as _
@@ -785,6 +790,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_new (s,_)
   | EXPR_ref (s,_)
   | EXPR_rref (s,_)
+  | EXPR_wref (s,_)
   | EXPR_uniq (s,_)
   | EXPR_likely (s,_)
   | EXPR_unlikely (s,_)
@@ -866,6 +872,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_inherit_fun (s,_,_,_)
   | STMT_nop (s,_)
   | STMT_assign (s,_,_,_)
+  | STMT_storeat (s,_,_)
   | STMT_cassign (s, _,_)
   | STMT_call (s,_,_)
   | STMT_call_with_trap (s,_,_)

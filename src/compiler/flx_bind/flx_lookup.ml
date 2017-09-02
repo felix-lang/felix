@@ -938,6 +938,7 @@ print_endline ("FUDGE: Binding TYP_var " ^ si i);
   | TYP_cfunction (d,c) -> btyp_cfunction (bt d, bt c)
   | TYP_pointer t -> btyp_pointer (bt t)
   | TYP_rref t -> btyp_rref (bt t)
+  | TYP_wref t -> btyp_wref (bt t)
   | TYP_uniq t -> btyp_uniq (bt t)
 
   | TYP_void _ -> btyp_void ()
@@ -1458,6 +1459,7 @@ end;
             | TYP_cfunction _
             | TYP_pointer _
             | TYP_rref _
+            | TYP_wref _
             | TYP_type_extension _
             | TYP_array _ -> btyp_type 0
 
@@ -5169,9 +5171,25 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
       | BTYP_uniq vt ->
         let pt = btyp_rref vt in
         bexpr_rref pt (index, ts)  
-      | _ -> clierr sr ("Rvalue reference requires argument be uniq type")
+      | _ -> clierr sr ("Read pointer requires argument be uniq type")
       end
-    | _ -> clierr sr ("Rvalue reference requires argument be variable (of uniq type)")
+    | _ -> clierr sr ("Read pointer requires argument be variable (of uniq type)")
+    end
+
+  | EXPR_wref (_,e) -> 
+(*
+    print_endline ("Binding rref");
+*)
+    let x = be e in
+    begin match x with
+    | BEXPR_varname (index,ts),vt ->
+      begin match vt with
+      | BTYP_uniq vt ->
+        let pt = btyp_wref vt in
+        bexpr_wref pt (index, ts)  
+      | _ -> clierr sr ("Write pointer requires argument be uniq type")
+      end
+    | _ -> clierr sr ("Write pointer reference requires argument be variable (of uniq type)")
     end
 
   | EXPR_deref (_,(EXPR_ref (sr,e) as x)) ->
@@ -5191,7 +5209,8 @@ print_endline ("Binding _deref .. " ^ string_of_expr e);
     begin match unfold "flx_lookup" t with
     | BTYP_pointer t' -> bexpr_deref t' (e,t)
     | BTYP_rref t' -> let ut = btyp_uniq t' in bexpr_deref ut (e,t)
-    | _ -> clierrx "[flx_bind/flx_lookup.ml:4856: E207] " sr "[bind_expression'] Dereference non pointer"
+    | _ -> clierrx "[flx_bind/flx_lookup.ml:4856: E207] " sr 
+     ("[bind_expression'] Dereference non pointer, type " ^ sbt bsym_table t)
     end
 
   (* this is a bit hacky at the moment, try to cheat by using

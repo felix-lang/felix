@@ -110,6 +110,7 @@ let rec dual t =
 let rec check_rec t = match t with
    | BTYP_pointer _
    | BTYP_rref _
+   | BTYP_wref _
    | BTYP_sum _
    | BTYP_function _
    | BTYP_effector _
@@ -243,6 +244,7 @@ let fix i t =
     | BTYP_cfunction (a,b) -> btyp_cfunction (aux a, aux b)
     | BTYP_pointer a -> btyp_pointer (aux a)
     | BTYP_rref a -> btyp_rref (aux a)
+    | BTYP_wref a -> btyp_wref (aux a)
     | BTYP_array (a,b) -> btyp_array (aux a, aux b)
     | BTYP_rev t -> btyp_rev (aux t)
     | BTYP_uniq t -> btyp_uniq (aux t)
@@ -444,6 +446,7 @@ let rec unification bsym_table counter eqns dvars =
       | BTYP_pointer t1, BTYP_pointer t2 ->
         add_eqn (t1,t2)
 
+      | BTYP_wref t1, BTYP_wref t2
       | BTYP_rref t1, BTYP_rref t2 ->
         add_eqn (t1,t2)
 
@@ -818,6 +821,7 @@ let fold bsym_table counter t =
 
     | BTYP_pointer a -> ax a
     | BTYP_rref a -> ax a
+    | BTYP_wref a -> ax a
     | BTYP_rev a -> ax a
     | BTYP_uniq a -> ax a
 
@@ -1021,6 +1025,7 @@ let var_occurs bsym_table t =
 
     | BTYP_pointer a  -> aux a
     | BTYP_rref a  -> aux a
+    | BTYP_wref a  -> aux a
     | BTYP_rev a -> aux a
     | BTYP_uniq a -> aux a
 

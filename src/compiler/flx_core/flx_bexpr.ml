@@ -9,6 +9,7 @@ type bexpr_t =
 
   | BEXPR_ref of bid_t * Flx_btype.t list
   | BEXPR_rref of bid_t * Flx_btype.t list
+  | BEXPR_wref of bid_t * Flx_btype.t list
   | BEXPR_uniq of t
   | BEXPR_likely of t
   | BEXPR_unlikely of t
@@ -149,6 +150,12 @@ let bexpr_rref t (bid, ts) =
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
   | _ -> BEXPR_rref (bid, complete_check_list ts), complete_check t
+
+let bexpr_wref t (bid, ts) = 
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr k
+  | _ -> BEXPR_wref (bid, complete_check_list ts), complete_check t
+
 
 let bexpr_likely ((_,t) as e) = BEXPR_likely e, complete_check t
 
@@ -575,6 +582,7 @@ let get_ts (e,_) =
   | BEXPR_closure (_, ts)
   | BEXPR_ref (_, ts)
   | BEXPR_rref (_, ts)
+  | BEXPR_wref (_, ts)
   | BEXPR_apply_prim (_, ts, _)
   | BEXPR_apply_direct (_, ts, _)
   | BEXPR_apply_struct (_, ts, _) -> ts
@@ -613,6 +621,7 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_varname (i,ts),BEXPR_varname (i',ts')
   | BEXPR_ref (i,ts),BEXPR_ref (i',ts')
   | BEXPR_rref (i,ts),BEXPR_rref (i',ts')
+  | BEXPR_wref (i,ts),BEXPR_wref (i',ts')
   | BEXPR_closure (i,ts),BEXPR_closure (i',ts') ->
      i = i' && List.length ts = List.length ts' &&
      List.fold_left2 (fun r a b -> r && a = b) true ts ts'
@@ -717,6 +726,7 @@ let flat_iter
   | BEXPR_ref (i,ts) ->
       f_bid i;
       List.iter f_btype ts
+  | BEXPR_wref (i,ts)
   | BEXPR_rref (i,ts) ->
       f_bid i;
       List.iter f_btype ts
@@ -829,6 +839,7 @@ let map
   | BEXPR_deref e -> bexpr_deref t (f_bexpr e)
   | BEXPR_ref (i,ts) -> bexpr_ref t (f_bid i, List.map f_btype ts)
   | BEXPR_rref (i,ts) -> bexpr_rref t (f_bid i, List.map f_btype ts)
+  | BEXPR_wref (i,ts) -> bexpr_wref t (f_bid i, List.map f_btype ts)
   | BEXPR_uniq e -> bexpr_uniq (f_bexpr e)
   | BEXPR_new e -> bexpr_new (f_bexpr e)
   | BEXPR_class_new (cl,e) ->  bexpr_class_new (f_btype cl) (f_bexpr e)

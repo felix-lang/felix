@@ -226,6 +226,7 @@ let rec cpp_type_classname syms bsym_table t =
   | BTYP_hole -> assert false
   | BTYP_uniq _ -> assert false
   | BTYP_rref _ -> assert false
+  | BTYP_wref _ -> assert false
 
   | BTYP_int -> "int"
   | BTYP_type_var (i,mt) ->

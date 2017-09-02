@@ -27,6 +27,7 @@ type t = private
   | BEXE_nonreturn_code of Flx_srcref.t * Flx_code_spec.t * Flx_bexpr.t
   | BEXE_assign of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
   | BEXE_init of Flx_srcref.t * bid_t * Flx_bexpr.t
+  | BEXE_storeat of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
   | BEXE_begin
   | BEXE_end
   | BEXE_assert of Flx_srcref.t * Flx_bexpr.t
@@ -63,6 +64,7 @@ val bexe_nop : Flx_srcref.t * string -> t
 val bexe_code : Flx_srcref.t * Flx_code_spec.t * Flx_bexpr.t -> t
 val bexe_nonreturn_code : Flx_srcref.t * Flx_code_spec.t * Flx_bexpr.t -> t
 val bexe_assign : Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t -> t
+val bexe_storeat : Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t -> t
 val bexe_init : Flx_srcref.t * bid_t * Flx_bexpr.t -> t
 val bexe_begin : unit -> t
 val bexe_end : unit -> t

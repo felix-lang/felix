@@ -31,6 +31,7 @@ and t =
   | BTYP_variant of (string * t) list
   | BTYP_pointer of t
   | BTYP_rref of t
+  | BTYP_wref of t
   | BTYP_function of t * t
   | BTYP_effector of t * t * t
   | BTYP_cfunction of t * t
@@ -108,6 +109,7 @@ let rec str_of_btype typ =
   | BTYP_variant (ls) -> "BTYP_variant(" ^String.concat " | " (List.map (fun (name,t)->name^" of "^s t) ls)^")"
   | BTYP_pointer t -> "BTYP_pointer("^s t^")"
   | BTYP_rref t -> "BTYP_rref("^s t^")"
+  | BTYP_wref t -> "BTYP_wref("^s t^")"
   | BTYP_function (d,c) -> "BTYP_function(" ^ s d ^ " -> " ^ s c ^")"
   | BTYP_cfunction (d,c) -> "BTYP_cfunction(" ^ s d ^ " --> " ^ s c ^")"
   | BTYP_effector (d,e,c) -> "BTYP_effector(" ^ s d ^ " ->["^s e^"] " ^ s c ^")"
@@ -354,6 +356,10 @@ rvalue, or just const pointer or something similar *)
 let btyp_rref ts =
   BTYP_rref ts
 
+let btyp_wref ts =
+  BTYP_wref ts
+
+
 
 (** Construct a BTYP_function type. *)
 let btyp_function (args, ret) =
@@ -546,6 +552,7 @@ let flat_iter
   | BTYP_variant ts -> List.iter (fun (s,t) -> f_btype t) ts
   | BTYP_pointer t -> f_btype t
   | BTYP_rref t -> f_btype t
+  | BTYP_wref t -> f_btype t
   | BTYP_function (a,b) -> f_btype a; f_btype b
   | BTYP_effector (a,e,b) -> f_btype a; f_btype e; f_btype b
   | BTYP_cfunction (a,b) -> f_btype a; f_btype b
@@ -616,6 +623,7 @@ let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_variant ts -> btyp_variant (List.map (fun (s,t) -> s, f_btype t) ts)
   | BTYP_pointer t -> btyp_pointer (f_btype t)
   | BTYP_rref t -> btyp_rref (f_btype t)
+  | BTYP_wref t -> btyp_wref (f_btype t)
   | BTYP_function (a,b) -> btyp_function (f_btype a, f_btype b)
   | BTYP_effector (a,e,b) -> btyp_effector (f_btype a, f_btype e, f_btype b)
   | BTYP_cfunction (a,b) -> btyp_cfunction (f_btype a, f_btype b)
