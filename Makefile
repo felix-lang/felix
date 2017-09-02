@@ -17,7 +17,6 @@ showversion:
 rebuild: extract copy tools target uproot
 
 extract:
-	cmd.exe /C rmdir /Q /S build\release\test
 	python src\tools\flx_iscr.py -q -d src\packages build\release
 	python src\tools\flx_find_grammar_files.py build\release
 
@@ -57,6 +56,7 @@ target:
 	flx_build_boot --target-dir=build\release --target-bin=win32 --build-flx-web
 
 uproot:
+	cmd.exe /C if exist build\release\test rmdir /Q /S build\release\test
 	cmd.exe /C rmdir /Q /S build\release\host
 	cmd.exe /C move build\release\win32 build\release\host
 
