@@ -60,8 +60,7 @@ uproot:
 	cmd.exe /C move build\release\win32 build\release\host
 
 mktestdir:
-	cmd.exe /C rmdir /Q /S build\release\test
-	cmd.exe /C mkdir build\release\test
+	cmd.exe /C if not exist build\release\test mkdir build\release\test
 
 regress:
 	flx_tangle --indir=build\release\share\src\test --outdir=build\release\test
