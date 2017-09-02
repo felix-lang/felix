@@ -450,7 +450,6 @@ let get_sets bsym_table once_kids bexe =
   in
   begin match bexe with 
   | BEXE_assign (_,(BEXPR_varname (i,_),_),e) -> add_once i; f_bexpr e 
-  | BEXE_storeat (_,(BEXPR_varname (i,_),_),e) -> add_once i; f_bexpr e 
   | BEXE_assign (_,(BEXPR_deref(BEXPR_varname (i,_),_),_),e) -> add_once i; f_bexpr e 
   | BEXE_init (_,i,e) -> add_once i; f_bexpr e
   | _ -> Flx_bexe.iter ~f_bexpr bexe 
@@ -478,8 +477,11 @@ let get_gets bsym_table once_kids bexe =
   let add_once i = if BidSet.mem i once_kids then add i in
   let rec f_bexpr e = 
      match e with
+     (* taking the write address of a once variable is considered
+       equivalent to setting it
+     *)
      | BEXPR_wref (i,_),_ -> ()
-     (* taking the rvalue address of a once variable is considered
+     (* taking the read address of a once variable is considered
        equivalent to getting it
      *)
      | BEXPR_rref (i,_),_ -> add_once i
@@ -487,10 +489,13 @@ let get_gets bsym_table once_kids bexe =
        Flx_bexpr.flat_iter ~f_bid:add_once ~f_bexpr e 
   in
   begin match bexe with 
+  (* storing at a pointer is still a get on the pointer! *)
+  | BEXE_storeat (_,(BEXPR_varname (i,_),_),e)  -> add_once i; f_bexpr e
+
   (* if the target of an assignment is a variable, is not a get *)
   | BEXE_assign (_,(BEXPR_varname _,_),e) 
-  | BEXE_storeat (_,(BEXPR_varname _,_),e) 
   | BEXE_assign (_,(BEXPR_deref (BEXPR_varname _,_),_),e) 
+
   (* nor is the target of an initialisation *)
   | BEXE_init (_,_,e) -> f_bexpr e
   | _ -> Flx_bexe.iter ~f_bexpr bexe

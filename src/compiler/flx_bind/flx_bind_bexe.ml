@@ -837,7 +837,7 @@ print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
     let lhsvt = 
       match lhst with
       | BTYP_pointer t -> t
-      | BTYP_wref t -> t
+      | BTYP_wref t -> btyp_uniq t
       | _ -> 
         clierrx "[flx_bind/flx_bind_bexe.ml:765: E36A] " sr 
           (
