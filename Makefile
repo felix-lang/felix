@@ -17,6 +17,7 @@ showversion:
 rebuild: extract copy tools target uproot
 
 extract:
+	cmd.exe /C rmdir /Q /S build\release\test
 	python src\tools\flx_iscr.py -q -d src\packages build\release
 	python src\tools\flx_find_grammar_files.py build\release
 
