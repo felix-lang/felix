@@ -56,7 +56,6 @@ target:
 	flx_build_boot --target-dir=build\release --target-bin=win32 --build-flx-web
 
 uproot:
-	cmd.exe /C if exist build\release\test rmdir /Q /S build\release\test
 	cmd.exe /C rmdir /Q /S build\release\host
 	cmd.exe /C move build\release\win32 build\release\host
 
