@@ -34,6 +34,15 @@ changing the data structures.
 
 *)
 
+(* COPIED FROM flx_once .. factor out copy! *)
+let is_once bsym_table bid = 
+  match Flx_bsym_table.find_bbdcl bsym_table bid with
+  (* | BBDCL_val (_,_,`Once) -> true *)
+  | BBDCL_val (_,Flx_btype.BTYP_uniq _,_)
+  | BBDCL_val (_,Flx_btype.BTYP_rref _,_) 
+  | BBDCL_val (_,Flx_btype.BTYP_wref _,_) -> true
+  | _ -> false
+
 exception NotFoundDefn of int
 
 let rec istriv t = match Flx_btype.trivorder t with
@@ -126,13 +135,18 @@ and uses_bexe' add bsym_table count_inits exe =
 
   in
   match exe,count_inits with
-  | BEXE_init (_,i,e),false -> f_bexpr e
-  | BEXE_label _,false -> ()
+  | BEXE_init (_,i,rhs),false 
+  | BEXE_assign (_,(BEXPR_varname (i,[]),_),rhs),false ->
+    if is_once bsym_table i then add i;
+    f_bexpr rhs 
+
   | BEXE_assign (_,lhs,rhs),_ ->
       (* check is a term is a tuple projection of a variable *)
       if count_inits then f_bexpr lhs
       else chkl lhs;
       f_bexpr rhs
+
+  | BEXE_label _,false -> ()
   | _ ->
 
       Flx_bexe.iter
@@ -256,7 +270,9 @@ string_of_int count ^ " times, count_inits = " ^ string_of_bool count_inits ^
 *)
             let uses = 
               n - 
-              (if count_inits || is_param bsym_table idx then 1 else 0)
+              (if count_inits || is_param bsym_table idx || is_once bsym_table idx 
+                then 1 else 0
+              )
             in
             begin
 (*
