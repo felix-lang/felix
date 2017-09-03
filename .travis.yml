@@ -11,11 +11,10 @@ addons:
     - gcc-6
     - g++-6
 before_script:
-- sudo apt-get remove g++
 - git config --global user.email "skaller@users.sourceforge.net"
 - git config --global user.name "skaller"
 - git config --global push.default simple
-- git clone -q https://skaller:${GITHUB_TOKEN}@github.com/felix-lang/linuxgccbinary.git
+- git clone -q --depth=1 https://skaller:${GITHUB_TOKEN}@github.com/felix-lang/linuxgccbinary.git
 - mkdir -p build
 - cp -r linuxgccbinary/build/* build
 script:
