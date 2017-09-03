@@ -13,7 +13,7 @@ before_script:
 - sudo apt-get remove g++
 - echo "Getting Ocaml 4.02.3 binary"
 - wget https://1drv.ms/u/s!ApkcXCjMeRgzh0yHxAR4SzQeFyfw
-- tar -xzf 4.02.3.tar.gz --directory /usr/local
+- tar -xzf s!ApkcXCjMeRgzh0yHxAR4SzQeFyfw --directory /usr/local
 - git config --global user.email "skaller@users.sourceforge.net"
 - git config --global user.name "skaller"
 - git config --global push.default simple
