@@ -1,6 +1,6 @@
 
 sudo: true
-dist: xenial
+dist: trusty
 addons:
   apt:
     sources:
@@ -21,8 +21,8 @@ script:
 - mkdir bin
 - ln -s /usr/bin/gcc-6 bin/gcc
 - ln -s /usr/bin/g++-6 bin/g++
-- gcc --version
-- g++ --version
+- bin/gcc --version
+- bin/g++ --version
 - export PATH=bin:build/release/host/bin:$PATH LD_LIBRARY_PATH=build/release/host/lib/rtl
 - #export FLX_SHELL_ECHO=1
 - gcc --version
