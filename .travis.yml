@@ -12,7 +12,7 @@ addons:
 before_script:
 - sudo apt-get remove g++
 - echo "Getting Ocaml 4.02.3 binary"
-- wget -O ocaml402-binary.tar.gz https://7xcqna.dm2302.livefilestore.com/y4my8xEqP-7t9SpZNuqalw0gNGnZ8wxkdZNhM28OvPDeocHx3rUlp3V0WovffJ2TeB76NDC4n1-5wKn5FDlEWzFQa5hMBk9ZINB9T2unTTWRVpgUr_I6GKoMc82YvDYZV0b0ZzBvOnXOCkGnaNmMorscZLpIB15x6ExPtH6uTfDTomP088KEGdZvyp5Rgo3iYLw/ocaml402-binary.tar.gz?download&psid=1
+- wget -O ocaml402-binary.tar.gz https://github.com/gbluma/ocaml-binaries/blob/master/ubuntu/ocaml402-binary.tar.gz?raw=true
 - tar -xzf ocaml402-binary.tar.gz --directory /usr/local
 - git config --global user.email "skaller@users.sourceforge.net"
 - git config --global user.name "skaller"
