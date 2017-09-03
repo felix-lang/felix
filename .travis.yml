@@ -12,8 +12,8 @@ addons:
 before_script:
 - sudo apt-get remove g++
 - echo "Getting Ocaml 4.02.3 binary"
-- wget https://1drv.ms/u/s!ApkcXCjMeRgzh0yHxAR4SzQeFyfw
-- tar -xzf s!ApkcXCjMeRgzh0yHxAR4SzQeFyfw --directory /usr/local
+- wget -O ocaml402-binary.tar.gz https://1drv.ms/u/s!ApkcXCjMeRgzh0yHxAR4SzQeFyfw
+- tar -xzf ocaml402-binary.tar.gz --directory /usr/local
 - git config --global user.email "skaller@users.sourceforge.net"
 - git config --global user.name "skaller"
 - git config --global push.default simple
