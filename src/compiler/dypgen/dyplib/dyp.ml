@@ -1104,7 +1104,7 @@ let print_nt_ntl_array outchan nt_ntl_array str_non_ter =
   for i=0 to Array.length nt_ntl_array -1 do
     output_string outchan (str_non_ter.(i)^" : ");
     output_string outchan
-      (String.concat " "
+      (Bytes.concat " "
       (Int_set.fold (fun nt l -> str_non_ter.(nt)::l) nt_ntl_array.(i) []));
     output_string outchan "\n"
   done
@@ -4348,7 +4348,7 @@ let reduceViaPath (((start_node,p,tnb),(ind,rhs),rn) as pr) rl mm topmost parse_
       in
       Printf.fprintf !log_channel "  %s%s\n" lhs_s
         (str_rhs_reduction start_node p pdev.gram_rhs.(rn) pdev.str_non_ter);
-      let pt_rhs = String.concat " " (List.map (fun e -> e.parse_tree) p) in
+      let pt_rhs = Bytes.concat " " (List.map (fun e -> e.parse_tree) p) in
       let pt = "("^lhs_s^pt_rhs^")" in
       output_string !log_channel (pt^"\n");
       pt)
@@ -4928,7 +4928,7 @@ let select_token topmost lexbuf all_token reset_start_pos select_unexpected layo
     | x ->
     let x = no_double (List.sort Pervasives.compare x) in
         (*Printf.printf "list x = %s\n"
-        (String.concat " " (List.map (fun i -> string_of_int i) x));*)
+        (Bytes.concat " " (List.map (fun i -> string_of_int i) x));*)
         Some ((if all_token then x else [select_act_id x]), pdev)
   in
   let rec find_match2 aid_pdev_layout accu_layout = function
@@ -5066,20 +5066,20 @@ let next_lexeme_precur_lb_pdev lexbuf pdev gd ld =
         res
     | None, (Some ((action_id_l, pdev, _),_)) ->
       let lexeme =
-        try String.sub lexbuf.lb_lexbuf.lex_buffer prev_curr_pos len
-        with Invalid_argument("String.sub") ->
+        try Bytes.sub lexbuf.lb_lexbuf.lex_buffer prev_curr_pos len
+        with Invalid_argument("Bytes.sub") ->
           (Printf.printf "1; %s\n" lexbuf.lb_lexbuf.lex_buffer;
-          raise (Invalid_argument("String.sub")))
+          raise (Invalid_argument("Bytes.sub")))
       in
        (if !dypgen_verbose>2 then
          output_string !log_channel "next_lexeme called bis\n";
        next_token (lexeme::res))
     | (Some ((action_id_l, pdev, _),_)), _ ->
       let lexeme =
-        try String.sub lexbuf.lb_lexbuf.lex_buffer prev_curr_pos len
-        with Invalid_argument("String.sub") ->
+        try Bytes.sub lexbuf.lb_lexbuf.lex_buffer prev_curr_pos len
+        with Invalid_argument("Bytes.sub") ->
           (Printf.printf "2; %i, %i\n" prev_curr_pos len;
-          raise (Invalid_argument("String.sub")))
+          raise (Invalid_argument("Bytes.sub")))
       in
         (lexbuf.lb_lexbuf.lex_curr_pos <- first_curr_pos;
         (*Printf.printf "next_lexeme, lex_curr_pos=%d, lex_start_pos=%d, lex_abs_pos=%d\n"

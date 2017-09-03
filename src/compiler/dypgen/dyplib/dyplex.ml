@@ -27,7 +27,7 @@ let regexp_of_string s =
   let rec aux i l = if i= -1 then l else
     aux (i-1) ((RE_Char s.[i])::l)
   in
-  let len = String.length s in
+  let len = Bytes.length s in
   if len = 0 then
     failwith "Lexer generator: empty string in regular expression"
   else RE_Seq (aux (len-1) [])
@@ -50,14 +50,14 @@ let disjoint cs = match cs with [] | [_] -> cs | _ ->
 
 let str_int_list l =
   let l = List.map (fun i -> string_of_int i) l in
-  String.concat " " l
+  Bytes.concat " " l
 
 let list_of_set s = Int_set.fold (fun x l -> x::l) s []
 
 let str_int_set s = str_int_list (list_of_set s)
 
 let str_intc_list l =
-  String.concat " "
+  Bytes.concat " "
   (List.map (fun (a,b) ->
     (string_of_int a)^"-"^(string_of_int b)) l)
 
@@ -68,10 +68,10 @@ let str_eps n =
   Printf.sprintf "\n    <%d>" n.id
 
 let str_trans_list l =
-  String.concat "" (List.map str_trans l)
+  Bytes.concat "" (List.map str_trans l)
 
 let str_eps_list l =
-  String.concat "" (List.map str_eps l)
+  Bytes.concat "" (List.map str_eps l)
 
 
 let print_node s =
@@ -593,7 +593,7 @@ let lex_engine is_main_lexer tbl_list (lexbuf:Lexing.lexbuf) reset_start_pos =
         -> (Printf.printf "%d, %d, %s, %d, %d\n"
          lexbuf.lex_curr_pos lexbuf.lex_buffer_len
          (string_of_bool reset_start_pos)
-         p (String.length lexbuf.lex_buffer);
+         p (Bytes.length lexbuf.lex_buffer);
         raise (Invalid_argument("index out of bounds")))
     in
     let aux_lex (new_state_list,valid_lex) tbl state =

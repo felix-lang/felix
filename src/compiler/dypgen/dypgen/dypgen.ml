@@ -201,8 +201,8 @@ let ($) = append_string_to_buffer
 let string_list sl =
   let aux code s = code^s^";" in
   let code = List.fold_left aux "[" sl in
-  let string_length = String.length code in
-  (if code="" then "" else String.sub code 0 (string_length-1))^"]"
+  let string_length = Bytes.length code in
+  (if code="" then "" else Bytes.sub code 0 (string_length-1))^"]"
 
 
 let dummy_code = "", Lexing.dummy_pos
@@ -277,7 +277,7 @@ let insert_line_number_mli = "\n# insert-line-number \""^output_file_mli^"\"\n"
 let sharp_line_number fname = function 0 | -1 -> "\n"
   | lnum -> "\n# "^(string_of_int lnum)^" \""^fname^"\"\n"
 
-let space_string n = String.make (max n 0) ' '
+let space_string n = Bytes.make (max n 0) ' '
 
 
 let dummy_line = "\nlet _ = () (* dummy line to improve OCaml error location *)"
@@ -438,7 +438,7 @@ let code_get_token_name, code_str_token, code_str_token_name, code_token_name_ar
       List.fold_left aux_dummy_tok "" non_terminal_start_list
     in
     "  let token_name_array =\n  [|\"token_epsilon\";\n"^dummy_tok_l^
-    (String.concat ";\n" (String_map.fold aux token_map []))^"|]\n",*)
+    (Bytes.concat ";\n" (String_map.fold aux token_map []))^"|]\n",*)
     
     let name_array = Array.make token_nb "-unknown token-" in
     String_map.iter
@@ -446,7 +446,7 @@ let code_get_token_name, code_str_token, code_str_token_name, code_token_name_ar
     let rec aux l i = if i = -1 then l else
       aux (("\""^name_array.(i)^"\"")::l) (i-1) in
     "  let token_name_array =\n  [|"^
-    (String.concat ";\n    " (aux [] (token_nb-1)))^"|]\n",
+    (Bytes.concat ";\n    " (aux [] (token_nb-1)))^"|]\n",
     "  let str_token_name t = Dyp_symbols_array.token_name_array.(t)\n"
   in
   code_get_token_name, code_str_token, code_str_token_name,
@@ -463,7 +463,7 @@ let (*code_ter_of_string,*) code_ter_string_list =
   (*"  let ter_of_string =
       List.fold_left (fun tsm (s,i) -> String_ter_map.add s i tsm)
            String_ter_map.empty ter_string_list\n",*)
-  String.concat "" code_list
+  Bytes.concat "" code_list
 
 
 
@@ -514,7 +514,7 @@ let grammar, nt_par_set =
             then "_0, _1"::l
             else "_1"::l
           in
-          "("^(String.concat ", " l)^")"
+          "("^(Bytes.concat ", " l)^")"
       | i when i>1 -> make_inh_code (("_"^(string_of_int i))::l) (i-1)
       | _ -> assert false
     in
@@ -763,13 +763,13 @@ let code_main_lexer =
     | _ -> l1, l2
   in
   "(["^
-  (String.concat ";" l1)^"],\n["^
+  (Bytes.concat ";" l1)^"],\n["^
   (*(if !Dypgen_parser.use_dyplex then
     " 0,(fun _ -> "^obj_pref^"Lexeme_matched \"\");"
   (* dummy line added to avoid a type error:
   Dyp.lexbuf, contains type variables that cannot be generalized *)
   else "")^*)
-  (String.concat ";" l2)^"])"
+  (Bytes.concat ";" l2)^"])"
 
 
 
@@ -798,7 +798,7 @@ let code_aux_lexer =
            "("^obj_pref^cons^" ("^arg^":'dypgen__"^cons^"))"
           with Not_found -> assert false) aux_args
         in
-        String.concat ";" l
+        Bytes.concat ";" l
       in
       "(fun __dypgen_av_list lexbuf -> (match __dypgen_av_list with ["^
       code_var_list^"] -> "^obj_pref^cons^
@@ -809,12 +809,12 @@ let code_aux_lexer =
       ) aux_def
     in
     "(\""^aux_name^"\",(["^
-    (String.concat ";" l1)^"],["^
-    (String.concat ";" l2)^"]))"
+    (Bytes.concat ";" l1)^"],["^
+    (Bytes.concat ";" l2)^"]))"
     ) aux_lexer
   in
   "["^
-  (String.concat ";" aux_lex_list)^"]\n\n"
+  (Bytes.concat ";" aux_lex_list)^"]\n\n"
 
 
 
@@ -825,7 +825,7 @@ let code_regexp_decl =
     regexp_decl
   in
   "let __dypgen_regexp_decl = ["^
-  (String.concat ";" l)^"]\n\n"
+  (Bytes.concat ";" l)^"]\n\n"
 
 
 
@@ -843,8 +843,8 @@ let code_aux_lexer_fun =
       in
       let l1, l2 = List.fold_left
         (fun (k,l) (x,y) -> x::k,y::l) ([],[]) l in
-      String.concat ";" l1,
-      String.concat " " l2
+      Bytes.concat ";" l1,
+      Bytes.concat " " l2
     in
     let cons = Str2_map.find (name,"") var_cons_map in
     "let "^name^" "^args_string^" lexbuf =\n"^
@@ -858,8 +858,8 @@ let code_aux_lexer_fun =
   in
   (*let l1, l2 = List.fold_left
     (fun (k,l) (x,y) -> x::k,y::l) ([],[]) l in*)
-  String.concat "" l
-  (*String.concat "" l2*)
+  Bytes.concat "" l
+  (*Bytes.concat "" l2*)
 
 
 
@@ -883,9 +883,9 @@ let code_entry_points =
     str^"    \""^nts^"\";\n"
   in
   let nts_list = List.fold_left aux "" non_terminal_start_list in
-  let string_length = String.length nts_list in
+  let string_length = Bytes.length nts_list in
   let nts_list =  if nts_list="" then ""
-    else String.sub nts_list 0 (string_length-1) in
+    else Bytes.sub nts_list 0 (string_length-1) in
   "  let entry_points = [\n"^nts_list^"]\n"
 
 
@@ -1005,7 +1005,7 @@ let code_nt_cons_list, (*cons_of_nt,*) cons_map, cons_set, cons_array, code_test
   in
   
   let code = List.rev ("|]\n\n"::(List.tl code)) in
-  let code_tc = String.concat "" code in
+  let code_tc = Bytes.concat "" code in
   
   (*let cons_of_nt =
     Array.make ((String_set.cardinal non_terminal_set)+1) 0
@@ -1023,7 +1023,7 @@ let code_nt_cons_list, (*cons_of_nt,*) cons_map, cons_set, cons_array, code_test
   let code_ntcl = "  let nt_cons_list =\n  [\n" in
   let code,_ = String_map.fold aux3 symb_cons_map ([code_ntcl],1) in
   let code = List.rev ("]\n"::(List.tl code)) in
-  let code_ntcl = String.concat "" code in
+  let code_ntcl = Bytes.concat "" code in
   code_ntcl, (*cons_of_nt,*) cons_map, s, cons_array, code_tc
 
 
@@ -1071,8 +1071,8 @@ let code_cons_array =
 
 let make_type_var cons =
   try
-    let pref = String.sub cons 4 14 in
-    let symb = String.sub cons 19 (String.length cons - 19) in
+    let pref = Bytes.sub cons 4 14 in
+    let symb = Bytes.sub cons 19 (Bytes.length cons - 19) in
     if not (String_set.mem symb non_terminal_set) then cons else
     let cons1 = String_map.find symb symb_cons_map in
     match pref with
@@ -1124,11 +1124,11 @@ let code_parser =
     
     let code_literal_list = List.fold_left aux2 "" symb_list in
     
-    let string_length = (String.length code_literal_list) in
+    let string_length = (Bytes.length code_literal_list) in
     let code_literal_list =
       if string_length = 0 then code_literal_list
       else if code_literal_list="" then ""
-        else String.sub code_literal_list 0 (string_length-1)
+        else Bytes.sub code_literal_list 0 (string_length-1)
     in
     let rule_options =
       "["^(if allow_layout_inside then "" else "Dyp.No_layout_inside;")^
@@ -1196,8 +1196,8 @@ let code_parser =
             let code_iv =
               if code = "" then code_iv else
                 let typ = "'dypgen__"^(String_map.find nt inh_cons_map) in
-                let code_var_list = String.concat ";" (List.rev code_vl) in
-                (String.concat ""
+                let code_var_list = Bytes.concat ";" (List.rev code_vl) in
+                (Bytes.concat ""
                   [(string_of_int n')^",\n(fun __dypgen_ol __dypgen_pos";
                   " __dypgen_posl __dypgen_gd __dypgen_ld __dypgen_lld";
                   " __dypgen_di __dypgen_p __dypgen_nl ->\n";
@@ -1247,14 +1247,14 @@ let code_parser =
               i+1)
             ([], 0) lhs_pat_l
           in
-          let pat = String.concat ",\n" (List.rev patl) in
+          let pat = Bytes.concat ",\n" (List.rev patl) in
           [obj_pref^(String_map.find lhs_nt inh_cons_map)^"("^pat^")"]
         else []
       in
       let code_vl, code_iv, _, _ =
         List.fold_left f (code_vl,[],1,1) symb_list in
-      let code_vl = String.concat ";" (List.rev code_vl) in
-      let code_iv = String.concat ";" (List.rev code_iv) in
+      let code_vl = Bytes.concat ";" (List.rev code_vl) in
+      let code_iv = Bytes.concat ";" (List.rev code_iv) in
       code_vl, code_iv
     in
 
@@ -1266,7 +1266,7 @@ let code_parser =
         with Not_found -> "'dypgen__"^
           (make_type_var_aux lhs_nt)
       in
-      String.concat ""
+      Bytes.concat ""
         (if b then
           ["Dyp.Dypgen_action (fun __dypgen_ol __dypgen_pos __dypgen_posl";
           " __dypgen_gd __dypgen_ld __dypgen_lld __dypgen_di __dypgen_p";
@@ -1315,7 +1315,7 @@ let code_parser =
         )
     in
     
-    String.concat ""
+    Bytes.concat ""
       ["(";code_rule;",\n";code_action;",\n[";code_inherited_val;"])"]
   in
   let list_code_rapf = List.map aux grammar in
@@ -1325,12 +1325,12 @@ let code_parser =
     | [] -> failwith "empty grammar"
   in
   let list_code_rapf = aux ["]"] list_code_rapf in
-  String.concat "" list_code_rapf
+  Bytes.concat "" list_code_rapf
 
 
 
 let code_parser_lexer =
-  String.concat ",\n\n"
+  Bytes.concat ",\n\n"
   ["let __dypgen_ra_list, __dypgen_main_lexer, __dypgen_aux_lexer =\n"^
   code_aux_lexer_fun^
   code_parser; code_main_lexer; code_aux_lexer(*^code_aux_lexer_dummy_fun*)]
@@ -1414,12 +1414,12 @@ let code_type_obj, cons_no_type_array =
   let code_obj =
     let use_type_var cons =
       try
-        let pref = String.sub cons 4 14 in
+        let pref = Bytes.sub cons 4 14 in
         match pref with
           | "dypgen__star__"
           | "dypgen__plus__"
           | "dypgen__option" ->
-            let symb = String.sub cons 19 (String.length cons - 19) in
+            let symb = Bytes.sub cons 19 (Bytes.length cons - 19) in
             not (String_set.mem symb non_terminal_set)
           | _ -> true
       with Invalid_argument _ -> true
@@ -1441,7 +1441,7 @@ let code_type_obj, cons_no_type_array =
         String_set.fold aux cons_no_type_set (["type ("],0)
       in
       let codl = List.rev (") obj ="::(List.tl codl)) in
-      String.concat "" codl
+      Bytes.concat "" codl
   in
   
   let aux cons codl =
@@ -1461,7 +1461,7 @@ let code_type_obj, cons_no_type_array =
       ("  | "^obj_pref^"Dypgen__dummy_obj_cons\n")::codl
     else codl
   in
-  let code = String.concat "" (List.rev codl) in
+  let code = Bytes.concat "" (List.rev codl) in
   
   code_obj^
   (if !Argument.pv_obj then " [\n" else "\n")^
@@ -1517,7 +1517,7 @@ let code_merge_array =
     ("]\n\n"::(List.tl (String_map.fold aux2 cons_map
      ["let __dypgen_merge_list = ["])))
   in
-  let code_merge_array = String.concat "" merge_array_l in
+  let code_merge_array = Bytes.concat "" merge_array_l in
   
   (String_map.fold aux1 cons_map "")^"\n"^
   code_merge_array^"\n\n"
@@ -1616,11 +1616,11 @@ let parser_codl = [
   code_main_2;
   trailer_main]
 
-let parser_code = String.concat "" parser_codl
+let parser_code = Bytes.concat "" parser_codl
 
 
 
-let () = Insert_linenum.buffer := String.copy parser_code
+let () = Insert_linenum.buffer := Bytes.copy parser_code
 let lexbuf = Lexing.from_string parser_code
 let parser_code = Insert_linenum.insert_linenum lexbuf
 
@@ -1677,7 +1677,7 @@ let () = if !Argument.no_mli then () else
       in
       let lexbuf2 = Lexing.from_string fun_type in
       let slist = List.rev (remove_tpar [] lexbuf2) in
-      let fun_type = String.concat "" slist in
+      let fun_type = Bytes.concat "" slist in
       str^"val "^nts^" :"^fun_type^"\n"
     in
     topmli_code^
@@ -1689,7 +1689,7 @@ let () = if !Argument.no_mli then () else
     (List.fold_left aux "" non_terminal_start_list)^
     mli_code
   in
-  Insert_linenum.buffer := String.copy parser_code_mli;
+  Insert_linenum.buffer := Bytes.copy parser_code_mli;
   let lexbuf = Lexing.from_string parser_code_mli in
   let parser_code_mli = Insert_linenum.insert_linenum lexbuf in
   let dest_file_mli = open_out output_file_mli in

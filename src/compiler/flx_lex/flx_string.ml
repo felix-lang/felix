@@ -7,53 +7,53 @@ let hexchar_of_int i =
 
 let hex8 i =
   let j = ref i in
-  let s = String.create 8 in
+  let s = Bytes.create 8 in
   for k = 0 to 7 do
-    s.[7-k]  <- hexchar_of_int (!j mod 16);
+    Bytes.set s (7-k) (hexchar_of_int (!j mod 16));
     j := !j / 16
   done;
   s
 
 let hex4 i =
   let j = ref i in
-  let s = String.create 4 in
+  let s = Bytes.create 4 in
   for k = 0 to 3 do
-    s.[3-k]  <- hexchar_of_int (!j mod 16);
+    Bytes.set s (3-k) (hexchar_of_int (!j mod 16));
     j := !j / 16
   done;
   s
 
 let hex2 i =
   let j = ref i in
-  let s = String.create 2 in
+  let s = Bytes.create 2 in
   for k = 0 to 1 do
-    s.[1-k]  <- hexchar_of_int (!j mod 16);
+    Bytes.set s (1-k) (hexchar_of_int (!j mod 16));
     j := !j / 16
   done;
   s
 
 let escape_of_char quote ch =
   if ch = '\\' then "\\\\"
-  else if ch = quote then "\\" ^ (String.make 1 quote)
+  else if ch = quote then "\\" ^ (Bytes.make 1 quote)
   else if ch = '\n' then "\\n"
   else if ch < ' '
   || ch > char_of_int 126
   then "\\x" ^ (hex2 (Char.code ch))
-  else String.make 1 ch
+  else Bytes.make 1 ch
 
 let escape_of_string quote x =
   let esc = escape_of_char quote in
   let res = ref "" in
-  for i = 0 to (String.length x -1) do
+  for i = 0 to (Bytes.length x -1) do
     res := !res ^ (esc x.[i])
   done;
-  (String.make 1) quote ^ !res ^ (String.make 1 quote)
+  (Bytes.make 1) quote ^ !res ^ (Bytes.make 1 quote)
 
 let py_dquote_of_string = escape_of_string '"';;
 let c_quote_of_string = escape_of_string '"';;
 let py_quote_of_string = escape_of_string '\'';;
 
-let string_of_char c = String.make 1 c;;
+let string_of_char c = Bytes.make 1 c;;
 
 let bin_char2int s =
   let c = Char.code s in
@@ -88,7 +88,7 @@ let hex_char2int s =
   | _ -> raise (StringError ("'" ^ (string_of_char s) ^ "' not hexadecimal digit"))
 
 
-let len = String.length;;
+let len = Bytes.length;;
 
 let binint_of_string s =
   let len = len s in
@@ -176,15 +176,15 @@ let hexbig_int_of_string s =
 
 let floating_of_string s' =
   let dst = ref 0 in
-  let s = String.copy s' in
-  for src = 0 to (String.length s) - 1 do
+  let s = Bytes.copy s' in
+  for src = 0 to (Bytes.length s) - 1 do
     if s.[src] <> '_'
     then begin
-      s.[!dst] <- s.[src];
+      Bytes.set s (!dst) (s.[src]);
       incr dst
     end
   done;
-  float_of_string (String.sub s 0 !dst)
+  float_of_string (Bytes.sub s 0 !dst)
 
 (* WARNING: THIS CODE WILL NOT WORK FOR THE HIGHER PLANES
   BECAUSE OCAML ONLY SUPPORTS 31 bit signed integers;
@@ -216,13 +216,13 @@ let floating_of_string s' =
 
 let parse_utf8 (s : string)  (i : int) : int * int =
   let ord = int_of_char
-  and n = (String.length s)  - i
+  and n = (Bytes.length s)  - i
   in
   if n <= 0 then
     failwith
     (
       "parse_utf8: index "^ string_of_int i^
-      " >= "^string_of_int (String.length s)^
+      " >= "^string_of_int (Bytes.length s)^
       " = length of '" ^ s ^ "'"
     )
   else let lead = ord (s.[i]) in
@@ -257,7 +257,7 @@ let parse_utf8 (s : string)  (i : int) : int * int =
 
 (* convert an integer into a utf-8 encoded string of bytes *)
 let utf8_of_int i =
-  let chr x = String.make 1 (Char.chr x) in
+  let chr x = Bytes.make 1 (Char.chr x) in
   if i < 0x80 then
      chr(i)
   else if i < 0x800 then
@@ -298,7 +298,7 @@ let unescape s =
     if ch = ' ' then incr deferred
     else begin
       if !deferred<>0 then begin
-        Buffer.add_string s' (String.make !deferred ' ');
+        Buffer.add_string s' (Bytes.make !deferred ' ');
         deferred := 0
       end;
       Buffer.add_char s' ch
@@ -308,7 +308,7 @@ let unescape s =
   (* tack string always flushes deferred characters *)
   let tack_string ss =
     if !deferred<> 0 then begin
-       Buffer.add_string s' (String.make !deferred ' ');
+       Buffer.add_string s' (Bytes.make !deferred ' ');
        deferred := 0
      end;
      Buffer.add_string s' ss
@@ -360,7 +360,7 @@ let unescape s =
           while
             (!i < n) &&
             (!j < hex_limit) &&
-            (String.contains "0123456789ABCDEFabcdef" s.[!i]) do
+            (Bytes.contains "0123456789ABCDEFabcdef" s.[!i]) do
             value := !value * 16 + (hex_char2int s.[!i]);
             incr i;
             incr j
@@ -374,7 +374,7 @@ let unescape s =
           while
             (!i < n) &&
             (!j < 4) &&
-            (String.contains "0123456789ABCDEFabcdef" s.[!i]) do
+            (Bytes.contains "0123456789ABCDEFabcdef" s.[!i]) do
             value := !value * 16 + (hex_char2int s.[!i]);
             incr i;
             incr j
@@ -388,7 +388,7 @@ let unescape s =
           while
             (!i < n) &&
             (!j < 8) &&
-            (String.contains "0123456789ABCDEFabcdef" s.[!i]) do
+            (Bytes.contains "0123456789ABCDEFabcdef" s.[!i]) do
             value := !value * 16 + (hex_char2int s.[!i]);
             incr i;
             incr j
@@ -402,7 +402,7 @@ let unescape s =
           while
             (!i < n) &&
             (!j < 3) &&
-            (String.contains "0123456789" s.[!i]) do
+            (Bytes.contains "0123456789" s.[!i]) do
             value := !value * 10 + (dec_char2int s.[!i]);
             incr i;
             incr j
@@ -416,7 +416,7 @@ let unescape s =
           while
             (!i < n) &&
             (!j < 3) &&
-            (String.contains "01234567" s.[!i]) do
+            (Bytes.contains "01234567" s.[!i]) do
             value := !value * 8 + (oct_char2int s.[!i]);
             incr i;
             incr j

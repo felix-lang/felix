@@ -112,7 +112,7 @@ let strchr ch = String.make 1 ch
 
 let ast i =
   let s = String.make (i+1) ' 'in
-  s.[i] <- '*';
+  Bytes.set s i '*';
   s
 
 let numval ch = index "0123456789" ch

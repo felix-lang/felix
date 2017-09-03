@@ -2,11 +2,11 @@
 
 (* Source location (file, line) *)
 type location =
-  string * int
+  bytes * int
 
 (* These errors indicate non-fatal run-time errors that should be
    reported, generally interactively.  *)
-exception Error of string
-exception ErrorL of location * string
+exception Error of bytes
+exception ErrorL of location * bytes
 
 

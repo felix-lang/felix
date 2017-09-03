@@ -223,12 +223,12 @@ let list_to_string =
     Snull -> Sstring ""
   | Spair _ as l ->
       let n = safe_length l in
-      let s = String.create n in
+      let s = Bytes.create n in
       let rec loop i l =
 	if i < n then
 	  begin
 	    match l with
-	      Spair { car = Schar c; cdr = t } -> s.[i] <- c; loop (i + 1) t
+	      Spair { car = Schar c; cdr = t } -> Bytes.set s i c; loop (i + 1) t
 	    | _ -> raise (Error "list->string: non-characters in list")
 	  end
 	else

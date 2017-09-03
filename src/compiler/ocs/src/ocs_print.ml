@@ -6,7 +6,7 @@ open Ocs_numstr
 
 let store_string putc puts s =
   putc '\"';
-  for i = 0 to String.length s - 1 do
+  for i = 0 to Bytes.length s - 1 do
     match s.[i] with
       '\n' -> puts "\\n"
     | '\r' -> puts "\\r"

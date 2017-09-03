@@ -80,7 +80,7 @@ let symbol_to_string =
 
 let string_to_symbol =
   function
-    Sstring s -> get_symbol (String.copy s)
+    Sstring s -> get_symbol (Bytes.copy s)
   | _ -> raise (Error "string->symbol: not a string")
 ;;
 

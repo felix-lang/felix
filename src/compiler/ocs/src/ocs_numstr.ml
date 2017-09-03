@@ -18,7 +18,7 @@ type sbuf = {
 }
 
 let speek s =
-  if s.s_pos < String.length s.s_str then
+  if s.s_pos < Bytes.length s.s_str then
     Some s.s_str.[s.s_pos]
   else
     None
@@ -35,7 +35,7 @@ let sget s =
 ;;
 
 let ssleft s =
-  (String.length s.s_str) - s.s_pos
+  (Bytes.length s.s_str) - s.s_pos
 ;;
 
 (* Converting strings to numbers is fairly complex.  We have a lot of
@@ -73,7 +73,7 @@ let parse_prefix s =
 ;;
 
 let strtobi s base =
-  let n = String.length s
+  let n = Bytes.length s
   and am v i = add_int_big_int i (mult_int_big_int base v) in
   let rec loop i v =
     if i >= n then
@@ -134,7 +134,7 @@ let parse_num s base =
 	    else
 	      Sint i
 	| (_, true) ->
-	    Sbigint (read_bigint (String.sub s.s_str sp (s.s_pos - sp)) base)
+	    Sbigint (read_bigint (Bytes.sub s.s_str sp (s.s_pos - sp)) base)
     in
       let num = readn () in
 	match speek s with
@@ -166,11 +166,11 @@ let parse_flo10 s =
 	      skip s; skipd true
 	  | _ -> ()
       end;
-      let t = String.sub s.s_str sp (s.s_pos - sp) in
-	for i = 0 to String.length t - 1 do
+      let t = Bytes.sub s.s_str sp (s.s_pos - sp) in
+	for i = 0 to Bytes.length t - 1 do
 	  match t.[i] with
-	    '#' -> t.[i] <- '0'
-	  | 'F' | 'f' | 'D' | 'd' | 'S' | 's' | 'L' | 'l' -> t.[i] <- 'e'
+	    '#' -> Bytes.set t i '0'
+	  | 'F' | 'f' | 'D' | 'd' | 'S' | 's' | 'L' | 'l' -> Bytes.set t i 'e'
 	  | _ -> ()
 	done;
 	  try
@@ -286,7 +286,7 @@ let string_of_real_s r =
 
 let string_of_real r =
   let s = string_of_real_s r in
-  let n = String.length s in
+  let n = Bytes.length s in
   let rec loop i =
     if i >= n then s ^ ".0"
     else if s.[i] = '.' || s.[i] = 'e' then s
@@ -321,12 +321,12 @@ let ichr i =
 
 let string_of_list l =
   let n = List.length l in
-  let s = String.create n in
+  let s = Bytes.create n in
   let rec loop i l =
     if i < n then
       begin
 	match l with
-	  c::t -> s.[i] <- c; loop (i + 1) t
+	  c::t -> Bytes.set s i c; loop (i + 1) t
 	| _ -> assert false
       end
     else

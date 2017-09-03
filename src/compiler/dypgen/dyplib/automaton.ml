@@ -201,10 +201,10 @@ let compare_is is1 is2 =
 
 let soc c = Char.escaped c
 let pr_cil l =
-  String.concat ";"
+  Bytes.concat ";"
   (List.map (fun (a,b) -> "('"^(soc a)^"','"^(soc b)^"')") l)
 let pr_pretty_cil l =
-  String.concat ""
+  Bytes.concat ""
   (List.map (fun (a,b) ->
     if a=b then "'"^(soc a)^"'" else
    "'"^(soc a)^"'-'"^(soc b)^"'") l)
@@ -212,11 +212,11 @@ let rec print_regexp = function
   | RE_Char c -> "Dyp.RE_Char '"^(soc c)^"'"
   | RE_Char_set l -> "Dyp.RE_Char_set ["^(pr_cil l)^"]"
   | RE_Char_set_exclu l -> "Dyp.RE_Char_set_exclu ["^(pr_cil l)^"]"
-  | RE_String s -> "Dyp.RE_String \""^(String.escaped s)^"\""
+  | RE_String s -> "Dyp.RE_String \""^(Bytes.escaped s)^"\""
   | RE_Alt rl -> let sl = List.map print_regexp rl in
-      "Dyp.RE_Alt ["^(String.concat ";" sl)^"]"
+      "Dyp.RE_Alt ["^(Bytes.concat ";" sl)^"]"
   | RE_Seq rl -> let sl = List.map print_regexp rl in
-      "Dyp.RE_Seq ["^(String.concat ";" sl)^"]"
+      "Dyp.RE_Seq ["^(Bytes.concat ";" sl)^"]"
   | RE_Star r -> "Dyp.RE_Star ("^(print_regexp r)^")"
   | RE_Plus r -> "Dyp.RE_Plus ("^(print_regexp r)^")"
   | RE_Option r -> "Dyp.RE_Option ("^(print_regexp r)^")"
@@ -228,11 +228,11 @@ let rec print_pretty_regexp = function
   | RE_Char c -> "'"^(soc c)^"'"
   | RE_Char_set l -> "["^(pr_pretty_cil l)^"]"
   | RE_Char_set_exclu l -> "[^"^(pr_pretty_cil l)^"]"
-  | RE_String s -> "\""^(String.escaped s)^"\""
+  | RE_String s -> "\""^(Bytes.escaped s)^"\""
   | RE_Alt rl -> let sl = List.map print_pretty_regexp rl in
-      String.concat "|" sl
+      Bytes.concat "|" sl
   | RE_Seq rl -> let sl = List.map print_pretty_regexp rl in
-      String.concat " " sl
+      Bytes.concat " " sl
   | RE_Star r -> "("^(print_pretty_regexp r)^")*"
   | RE_Plus r -> "("^(print_pretty_regexp r)^")+"
   | RE_Option r -> "("^(print_pretty_regexp r)^")?"
@@ -269,8 +269,8 @@ let rec print_pretty_regexp = function
     let f tn str = str^(try str_ter.(tn) with _ -> (Printf.sprintf "<regexp:%d>" tn))^"," in
     let str = TNS.fold f tns "" in
     if str = "" then "" else
-    let string_length = (String.length str) in
-    String.sub str 0 (string_length-1)
+    let string_length = (Bytes.length str) in
+    Bytes.sub str 0 (string_length-1)
 
   (*let print_item ((nt,litl,length),dp) (tns:TNS.t) =
     Printf.fprintf !log_channel "   %s -> %s, (%s) ; length=%d\n" (str_lhs nt)

@@ -12,7 +12,7 @@ open Ocs_error
    descriptor.  *)
 
 type port = {
-  mutable p_buf : string;
+  mutable p_buf : bytes;
   mutable p_pos : int;
   mutable p_wend : int;
   mutable p_rend : int;
@@ -29,7 +29,7 @@ type port_flag =
   | Pf_close
 
 let mkbuf () =
-  String.create 1024
+  Bytes.create 1024
 ;;
 
 let mkport buf fd inf outf cl =
@@ -68,14 +68,14 @@ let wrflush p =
 	      raise (Error ("write error: " ^ Unix.error_message e))
 	end;
       p.p_pos <- 0;
-      p.p_wend <- String.length p.p_buf
+      p.p_wend <- Bytes.length p.p_buf
   | None ->
       if p.p_pos = p.p_wend then
-	let n = String.length p.p_buf in
-	let nbuf = String.create (n * 2) in
-	  String.blit p.p_buf 0 nbuf 0 n;
+	let n = Bytes.length p.p_buf in
+	let nbuf = Bytes.create (n * 2) in
+	  Bytes.blit p.p_buf 0 nbuf 0 n;
 	  p.p_buf <- nbuf;
-	  p.p_wend <- String.length p.p_buf
+	  p.p_wend <- Bytes.length p.p_buf
 ;;
 
 let rdfill p =
@@ -90,7 +90,7 @@ let rdfill p =
     Some fd ->
       begin
 	try
-	  p.p_rend <- Unix.read fd p.p_buf 0 (String.length p.p_buf)
+	  p.p_rend <- Unix.read fd p.p_buf 0 (Bytes.length p.p_buf)
 	with
 	  Unix.Unix_error (e, _, _) ->
 	    raise (Error ("read error: " ^ Unix.error_message e))
@@ -155,19 +155,19 @@ let putc p c =
   if p.p_wend = 0 || p.p_pos >= p.p_wend then
     wrflush p;
   assert (p.p_pos < p.p_wend);
-  p.p_buf.[p.p_pos] <- c;
+  Bytes.set (p.p_buf) (p.p_pos) c;
   p.p_pos <- p.p_pos + 1
 ;;
 
 let puts p s =
-  let n = String.length s in
+  let n = Bytes.length s in
     if n > 0 && p.p_rend - p.p_pos >= n then
       begin
-	String.blit s 0 p.p_buf p.p_pos n;
+	Bytes.blit s 0 p.p_buf p.p_pos n;
 	p.p_pos <- p.p_pos + n
       end
     else
-      String.iter (fun c -> putc p c) s
+      Bytes.iter (fun c -> putc p c) s
 ;;
 
 let fd_port fd flags =
@@ -214,7 +214,7 @@ let open_output_port name =
 
 let string_input_port s =
   let p = mkport s None true false false in
-    p.p_rend <- String.length s;
+    p.p_rend <- Bytes.length s;
     p
 ;;
 

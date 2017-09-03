@@ -30,7 +30,7 @@ let char_short_names =
 ;;
 
 let name_to_char name =
-  let name = (String.lowercase name)
+  let name = (Bytes.lowercase name)
   and ln = Array.length char_long_names
   and sn = Array.length char_short_names in
   let rec lloop i =
@@ -53,7 +53,7 @@ let char_to_name =
   | ' ' -> "space"
   | '\127' -> "del"
   | '\000' .. '\031' as c -> char_short_names.(int_of_char c)
-  | '\033' .. '\126' as c -> String.make 1 c
+  | '\033' .. '\126' as c -> Bytes.make 1 c
   | c -> Printf.sprintf "x%02x" (int_of_char c)
 ;;
 

@@ -6,17 +6,17 @@ open Ocs_env
 
 let make_string =
   function 
-    [| Sint k |] -> Sstring (String.create k)
-  | [| Sint k; Schar c |] -> Sstring (String.make k c)
+    [| Sint k |] -> Sstring (Bytes.create k)
+  | [| Sint k; Schar c |] -> Sstring (Bytes.make k c)
   | _ -> raise (Error "make-string: bad args")
 ;;
 
 let string_of av =
   let n = Array.length av in
-  let s = String.create n in
+  let s = Bytes.create n in
     for i = 0 to n - 1 do
       match av.(i) with
-	Schar c -> s.[i] <- c
+	      Schar c -> Bytes.set s i c
       | _ -> raise (Error "string: bad args")
     done;
     Sstring s
@@ -24,14 +24,14 @@ let string_of av =
 
 let string_length =
   function
-    Sstring s -> Sint (String.length s)
+    Sstring s -> Sint (Bytes.length s)
   | _ -> raise (Error "string-length: not a string")
 ;;
 
 let string_ref s k =
   match (s, k) with
     (Sstring s, Sint k) ->
-      if k >= 0 && k < String.length s then
+      if k >= 0 && k < Bytes.length s then
 	Schar s.[k]
       else
 	raise (Error "string-ref: out of bounds")
@@ -41,9 +41,9 @@ let string_ref s k =
 let string_set s k c =
   match (s, k, c) with
     (Sstring s, Sint k, Schar c) ->
-      if k >= 0 && k < String.length s then
+      if k >= 0 && k < Bytes.length s then
 	begin
-	  s.[k] <- c; Sunspec
+	  Bytes.set s k c; Sunspec
 	end
       else
 	raise (Error "string-set!: out of bounds")
@@ -65,7 +65,7 @@ let string_ge = string_cmp (>=);;
 let string_ci_cmp op s1 s2 =
   match (s1, s2) with
     (Sstring s1, Sstring s2) ->
-      if op (String.lowercase s1) (String.lowercase s2) then Strue else Sfalse
+      if op (Bytes.lowercase s1) (Bytes.lowercase s2) then Strue else Sfalse
   | _ -> raise (Error "bad args")
 ;;
 
@@ -86,9 +86,9 @@ let string_append av =
 let substring s sp ep =
   match (s, sp, ep) with
     (Sstring s, Sint sp, Sint ep) ->
-      let n = String.length s in
+      let n = Bytes.length s in
 	if sp >= 0 && sp <= ep && ep <= n then
-	  Sstring (String.sub s sp (ep - sp))
+	  Sstring (Bytes.sub s sp (ep - sp))
 	else
 	  raise (Error "substring: out of bounds")
   | _ -> raise (Error "substring: bad args")
@@ -102,21 +102,21 @@ let string_to_list =
 	  if i < 0 then r
 	  else loop (i - 1) (Spair { car = Schar s.[i]; cdr = r })
 	in
-	  loop (String.length s - 1) Snull
+	  loop (Bytes.length s - 1) Snull
       end
   | _ -> raise (Error "string->list: not a string")
 ;;
 
 let string_copy =
   function
-    Sstring s -> Sstring (String.copy s)
+    Sstring s -> Sstring (Bytes.copy s)
   | _ -> raise (Error "string-copy: not a string")
 ;;
 
 let string_fill s c =
   match (s, c) with
     (Sstring s, Schar c) ->
-      String.fill s 0 (String.length s) c; Sunspec
+      Bytes.fill s 0 (Bytes.length s) c; Sunspec
   | _ -> raise (Error "string-fill!: bad args")
 ;;
 

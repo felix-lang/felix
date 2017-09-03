@@ -56,7 +56,7 @@ let char_for_backslash = function
   | 'r' -> '\r'
   | c   -> c
 
-let string_of_char c = let x = " " in x.[0] <- c; x
+let string_of_char c = let x = " " in Bytes.set x 0 c; x
 
 }
 
@@ -205,7 +205,7 @@ and string = parse
     '"'
     { () }
    | '\\' ("\010" | "\013" | "\013\010") ([' ' '\009'] * as spaces)
-    { update_loc lexbuf None 1 false (String.length spaces);
+    { update_loc lexbuf None 1 false (Bytes.length spaces);
       string lexbuf }
   | '\\' (backslash_escapes as c)
     { string_buf $ (string_of_char(char_for_backslash c));
@@ -265,7 +265,7 @@ and ocaml_code = parse
             (*if (!paren_count) = 0 then start_ocaml_code := dummy_pos
             else
               let _ = ocaml_code_buffer $
-                (String.make 1 (Lexing.lexeme_char lexbuf 0)) in
+                (Bytes.make 1 (Lexing.lexeme_char lexbuf 0)) in
               let _ = paren_count := ((!paren_count)-1) in
               ocaml_code lexbuf*)
           end
@@ -335,12 +335,12 @@ and ocaml_code = parse
   | newline
       { update_loc lexbuf None 1 false 0;
         ocaml_code_buffer $
-          (String.make 1 (Lexing.lexeme_char lexbuf 0));
+          (Bytes.make 1 (Lexing.lexeme_char lexbuf 0));
         ocaml_code lexbuf
       }
   | _
       { ocaml_code_buffer $
-          (String.make 1 (Lexing.lexeme_char lexbuf 0));
+          (Bytes.make 1 (Lexing.lexeme_char lexbuf 0));
         ocaml_code lexbuf
       }
 
@@ -353,11 +353,11 @@ and ocaml_type = parse
   | newline
       { update_loc lexbuf None 1 false 0;
         ocaml_code_buffer $
-          (String.make 1 (Lexing.lexeme_char lexbuf 0));
+          (Bytes.make 1 (Lexing.lexeme_char lexbuf 0));
         ocaml_type lexbuf
       }
   | _
       { ocaml_code_buffer $
-          (String.make 1 (Lexing.lexeme_char lexbuf 0));
+          (Bytes.make 1 (Lexing.lexeme_char lexbuf 0));
         ocaml_type lexbuf
       }
