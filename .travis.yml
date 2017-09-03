@@ -7,10 +7,18 @@ addons:
     - ubuntu-toolchain-r-test
     packages:
     - python3
-    - ocaml-native-compilers
     - gcc-6
     - g++-6
 before_script:
+- sudo apt-get remove g++
+- wget https://github.com/ocaml/ocaml/archive/4.05.0.tar.gz
+- tar -xzf 4.05.0.tar.gz
+- cd ocaml-4.05.0
+- ./configure
+- make world
+- make world.opt
+- make install
+- cd -
 - git config --global user.email "skaller@users.sourceforge.net"
 - git config --global user.name "skaller"
 - git config --global push.default simple
