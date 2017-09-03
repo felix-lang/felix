@@ -17,7 +17,7 @@ before_script:
 - ./configure
 - make world
 - make world.opt
-- make install
+- sudo make install
 - cd -
 - git config --global user.email "skaller@users.sourceforge.net"
 - git config --global user.name "skaller"
