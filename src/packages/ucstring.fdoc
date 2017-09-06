@@ -48,18 +48,23 @@ open class UniqueCStrings
 
   typedef ustr = uniq (+char);
   // Constructors
-  ctor ustr (s:string) => uniq (s._unsafe_cstr.strdup);
-  ctor ustr (s:+char) => uniq (s.strdup);
+  ctor ustr (s:string) = {
+     var p =  (s._unsafe_cstr.strdup);
+     println$ "Creating " + p.repr + " @" + p.address.repr;
+     return uniq p;
+  }
+
+  //ctor ustr (s:+char) => uniq (s.strdup);
 
   // deletes the store
-  proc delete : ustr = "free($1);";
+  proc delete (p:ustr) {
+    var q = ununiq p;
+    println$ "Deleting " + q.address.repr;
+    free q;
+  } 
 
   // length
-  fun len(s:ustr) : ustr * size = {
-    var y = ununiq s;
-    var n = strlen y;
-    return uniq y, n;
-  } 
+  fun len(s:&ustr) : size => s.peek.strlen;
 
   // modify one char
   fun set (s:ustr, i:int, c:char) : ustr =  {
@@ -69,7 +74,7 @@ open class UniqueCStrings
   }
 
   private gen realloc : +char * size -> +char = 
-    "::std::realloc($1,$2)"
+    "(char*)::std::realloc($1,$2)"
     requires Cxx_headers::cstdlib
   ; 
 
@@ -84,9 +89,34 @@ open class UniqueCStrings
     var cy = ununiq y;
     var lx = cx.len;
     var ly = cy.len;
-    cx = realloc (cx, lx+ly+1);
-    strncpy (cx+lx,cy,ly+1);
+    var r = realloc (cx, lx+ly+1);
+    strncpy (r+lx,cy,ly+1);
+    println$ "Realloc @" + cx.address.repr + " -> " + r.address.repr;
+    println$ "Free @" + cy.address.repr;
     free cy;
-    return uniq cx;
+    return uniq r;
   } 
+
+  // append: doesnt consume y
+  noinline fun append (x:ustr, py:&ustr): ustr = {
+    var cx = ununiq x;
+    var cy = py.peek;
+    var lx = cx.len;
+    var ly = cy.len;
+    var r = realloc (cx, lx+ly+1);
+    println$ "Realloc @" + cx.address.repr + " -> " + r.address.repr;
+    strncpy (r+lx,cy,ly+1);
+    return uniq r;
+  } 
+
+  // nicer appends
+  fun + (x:ustr, y:ustr) => append (x,y);
+  fun + (x:ustr, py:&ustr) => append (x,py);
+
+  proc += (lhs: &ustr, rhs: ustr) => 
+    *lhs = append (*lhs,rhs)
+  ;
+  proc += (lhs: &ustr, rhs: &ustr) => 
+    *lhs = append (*lhs,rhs)
+  ;
 }

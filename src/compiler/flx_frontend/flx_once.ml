@@ -505,6 +505,10 @@ let get_gets bsym_table once_kids bexe =
        equivalent to getting it
      *)
      | BEXPR_rref (i,_),_ -> add_once i
+
+     (* taking the ordinary address of a once variable has no impact *)
+     | BEXPR_ref (i,_),_ -> ()
+
      | _ ->
        Flx_bexpr.flat_iter ~f_bid:add_once ~f_bexpr e 
   in
