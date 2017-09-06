@@ -54,7 +54,7 @@ open class UniqueCStrings
      return uniq p;
   }
 
-  //ctor ustr (s:+char) => uniq (s.strdup);
+  ctor ustr (s:+char) => uniq (s.strdup);
 
   // deletes the store
   proc delete (p:ustr) {
