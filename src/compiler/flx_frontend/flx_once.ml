@@ -4,6 +4,7 @@ open Flx_bbdcl
 open Flx_bid
 open Flx_bexe
 open Flx_bexpr
+open Flx_btype
 
 exception CompleteFlow
 exception IncompletePriorFlow
@@ -419,9 +420,23 @@ if debug then print_endline ("flow: normal= processing for " ^ Flx_print.string_
 let is_once bsym_table bid = 
   match Flx_bsym_table.find_bbdcl bsym_table bid with
   (* | BBDCL_val (_,_,`Once) -> true *)
-  | BBDCL_val (_,Flx_btype.BTYP_uniq _,_)
-  | BBDCL_val (_,Flx_btype.BTYP_rref _,_) 
-  | BBDCL_val (_,Flx_btype.BTYP_wref _,_) -> true
+  | BBDCL_val (_,BTYP_uniq _,_)
+  | BBDCL_val (_,BTYP_rref _,_) 
+  | BBDCL_val (_,BTYP_wref _,_) -> true
+  | _ -> false
+
+let rec uniq_type t =
+  match t with
+  | BTYP_uniq _ 
+  | BTYP_rref _ 
+  | BTYP_wref _ -> true
+  | BTYP_tuple ls ->
+    List.fold_left (fun acc t -> acc || uniq_type t) false ls
+  | _ -> false
+
+let uniq_proj e =
+  match e with
+  | BEXPR_prj (_,d,_),_ when uniq_type d -> true
   | _ -> false
 
 (* Get and Set detectors for instructions *)
@@ -454,6 +469,7 @@ let get_sets bsym_table once_kids bexe =
   | BEXE_init (_,i,e) -> add_once i; f_bexpr e
   | _ -> Flx_bexe.iter ~f_bexpr bexe 
   end;
+
 if show_getset then
   print_endline ("SETS: instruction " ^ 
     Flx_print.string_of_bexe bsym_table 0 bexe ^ " -> " ^
@@ -476,6 +492,10 @@ let get_gets bsym_table once_kids bexe =
   in
   let add_once i = if BidSet.mem i once_kids then add i in
   let rec f_bexpr e = 
+     if uniq_proj e then begin 
+       print_endline ("Flx_once: Warning, projection of tuple containing uniq componented detected");
+       print_endline ("Type " ^ Flx_print.sbt bsym_table (snd e));
+     end; 
      match e with
      (* taking the write address of a once variable is considered
        equivalent to setting it
@@ -500,6 +520,7 @@ let get_gets bsym_table once_kids bexe =
   | BEXE_init (_,_,e) -> f_bexpr e
   | _ -> Flx_bexe.iter ~f_bexpr bexe
   end;
+
 if show_getset then
   print_endline ("GETS: instruction " ^ 
     Flx_print.string_of_bexe bsym_table 0 bexe ^ " -> " ^

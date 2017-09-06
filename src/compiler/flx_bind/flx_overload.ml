@@ -381,8 +381,9 @@ if name = "accumulate" then
 *)
     let domain = 
       try bt sym.Flx_sym.sr base_domain 
-      with _ -> 
+      with exn -> 
        print_endline ("Can't bind base domain type " ^ string_of_typecode base_domain);
+       print_endline (Printexc.to_string exn);
        assert false
     in
     let base_result = 

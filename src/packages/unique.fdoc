@@ -1,0 +1,20 @@
+@title General Unique Facilities
+@tangler unique.flx = share/lib/std/control/unique.flx
+@h1 General Facilities
+@tangle unique.flx
+open class Unique 
+{
+  fun uniq [T] : T -> _uniq T = "$1";
+  fun ununiq [T] : _uniq T -> T = "$1";
+  typedef fun uniq (T:TYPE):TYPE => _uniq T;
+ 
+  instance[T with Repr[T]] Repr[uniq T] {
+    fun repr(x:uniq T) => "uniq " + x.ununiq.repr;
+  }
+
+  instance[T with Str[T]] Str[uniq T] {
+    fun str(x:uniq T) => x.ununiq.str;
+  }
+}
+
+

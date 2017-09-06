@@ -106,6 +106,8 @@ include "std/strings/re2";
 include "std/strings/tre";
 include "std/strings/regdef";
 include "std/strings/lexer";
+include "std/strings/cstring";
+include "std/strings/ustr";
 
 @h1 Strings
 We have three string like things. @{cstring} is just 

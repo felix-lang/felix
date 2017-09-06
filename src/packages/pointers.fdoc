@@ -82,6 +82,11 @@ is an incrementable, non-NULL pointer to a contiguous store.
 
 @tangle carray.flx
 
+
+// For some reason this functor must be in global scope
+//$ Define prefix + notation.
+typedef fun prefix_plus(T:TYPE) : TYPE => Carray::carray[T]; 
+
 //$ A carray[T] = +T is an incrementable, non-NULL, pointer.
 open class Carray
 {
@@ -90,9 +95,6 @@ open class Carray
 
   //$ The carray type.
   type carray[T] = new &T;
-
-  //$ Define prefix + notation.
-  typedef fun prefix_plus(T:TYPE) : TYPE => carray[T]; 
 
 @h2 Allocation
 These allocators use raw @{malloc}/@{calloc}/@{free} and therefore
@@ -225,23 +227,6 @@ of lvalues in general: this is a very special case.
 
   // Unsafe C string functions for NTBS.
   // move to where they should be (if it isn't here .. :)
-
-  //$ C strcpy.
-  proc strcpy: carray[char] * carray[char] = "(void)::std::strcpy($1,$2);" requires Cxx_headers::cstring;
-
-  //$ C strncpy.
-  proc strncpy: carray[char] * carray[char] * !ints = "(void)::std::strncpy($1,$2,$3);" requires Cxx_headers::cstring;
-
-  //$ C strlen: NTBS length.
-  fun strlen: carray[char] ->size = "::std::strlen($1)" requires Cxx_headers::cstring;
-
-  //$ Traditional NTBS strdup.
-  gen strdup(s:carray[char]) = {
-    val n = strlen s;
-    var out=array_alloc[char] (n+1uz);
-    strcpy(out,s);
-    return out;
-  }
 }
 
 open[T] Eq[carray[T]];

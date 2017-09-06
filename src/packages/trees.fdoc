@@ -1305,7 +1305,7 @@ class StrDict[T] {
      var err: JError_t;
      var slot : && T; 
      var k = array_alloc[char]$ JUDY_SL_MAXLEN+1; 
-     strncpy (k,key.cstr, JUDY_SL_MAXLEN);
+     CString::strncpy (k,key.cstr, JUDY_SL_MAXLEN);
      var result = charp_get_ge x k;
      match result with
      | Some v =>
@@ -1338,7 +1338,7 @@ class StrDict[T] {
      var err: JError_t;
      var slot : && T; 
      var k = array_alloc[char]$ JUDY_SL_MAXLEN+1; 
-     strncpy (k,key.cstr, JUDY_SL_MAXLEN);
+     CString::strncpy (k,key.cstr, JUDY_SL_MAXLEN);
      var result = charp_get_gt x k;
      match result with
      | Some v =>
@@ -1371,7 +1371,7 @@ class StrDict[T] {
      var err: JError_t;
      var slot : && T; 
      var k = array_alloc[char]$ JUDY_SL_MAXLEN+1; 
-     strncpy (k,key.cstr, JUDY_SL_MAXLEN);
+     CString::strncpy (k,key.cstr, JUDY_SL_MAXLEN);
      var result = charp_get_le x k;
      match result with
      | Some v =>
@@ -1404,7 +1404,7 @@ class StrDict[T] {
      var err: JError_t;
      var slot : && T; 
      var k = array_alloc[char]$ JUDY_SL_MAXLEN+1; 
-     strncpy (k,key.cstr, JUDY_SL_MAXLEN);
+     CString::strncpy (k,key.cstr, JUDY_SL_MAXLEN);
      var result = charp_get_lt x k;
      match result with
      | Some v =>

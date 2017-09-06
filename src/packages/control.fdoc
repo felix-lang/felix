@@ -6,6 +6,7 @@
 @tangle __init__.flx
 // stream is part of datatype, included in std/datatype/__init__
 include "std/control/control";
+include "std/control/unique";
 include "std/control/iterator";
 include "std/control/schannels";
 include "std/control/fibres";

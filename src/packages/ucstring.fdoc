@@ -1,0 +1,92 @@
+@title Unique C String
+@tangler cstring.flx = share/lib/std/strings/cstring.flx
+@tangler ustr.flx = share/lib/std/strings/ustr.flx
+@h1 Traditional C Strings
+
+Primitive operations on C strings, distinct from 
+corresponding byte operations in that they depend on
+or involve the null terminator.
+
+@tangle cstring.flx
+// Primitives
+class CString
+{
+  //$ C strcpy.
+  proc strcpy: +char * +char = "(void)::std::strcpy($1,$2);" 
+    requires Cxx_headers::cstring
+  ;
+
+  //$ C strncpy.
+  proc strncpy: +char * +char * !ints = "(void)::std::strncpy($1,$2,$3);" 
+    requires Cxx_headers::cstring
+  ;
+
+  //$ C strlen: NTBS length.
+  fun strlen: +char -> size = "::std::strlen($1)" 
+    requires Cxx_headers::cstring
+  ;
+
+  fun len (s:+char) => strlen s;
+
+  //$ Traditional NTBS strdup.
+  gen strdup(s:carray[char]) = {
+    val n = strlen s;
+    var out=array_alloc[char] (n+1uz);
+    strcpy(out,s);
+    return out;
+  }
+}
+
+@h1 Unique C Strings 
+A safer way to handle NTBS, using uniq typing to transfer
+owenership. Doesn't require GC.
+
+@tangle ustr.flx
+open class UniqueCStrings
+{
+  open CString;
+
+  typedef ustr = uniq (+char);
+  // Constructors
+  ctor ustr (s:string) => uniq (s._unsafe_cstr.strdup);
+  ctor ustr (s:+char) => uniq (s.strdup);
+
+  // deletes the store
+  proc delete : ustr = "free($1);";
+
+  // length
+  fun len(s:ustr) : ustr * size = {
+    var y = ununiq s;
+    var n = strlen y;
+    return uniq y, n;
+  } 
+
+  // modify one char
+  fun set (s:ustr, i:int, c:char) : ustr =  {
+    var cs = ununiq s;
+    set (cs, i, c); // Carray::set
+    return uniq cs;
+  }
+
+  private gen realloc : +char * size -> +char = 
+    "::std::realloc($1,$2)"
+    requires Cxx_headers::cstdlib
+  ; 
+
+  // reserve storage 
+  fun reserve (s:ustr, n:size) : ustr =>
+    uniq (realloc (ununiq s,n))
+  ;
+
+  // append: consumes y
+  fun append (x:ustr, y:ustr): ustr = {
+    var cx = ununiq x;
+    var cy = ununiq y;
+    var lx = cx.len;
+    var ly = cy.len;
+    cx = realloc (cx, lx+ly+1);
+    strncpy (cx+lx,cy,ly+1);
+    free cy;
+    return uniq cx;
+  } 
+}
