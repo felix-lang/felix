@@ -119,4 +119,27 @@ open class UniqueCStrings
   proc += (lhs: &ustr, rhs: &ustr) => 
     *lhs = append (*lhs,rhs)
   ;
+
+  fun strmov (x:ustr) (var f:int, var l:int) : ustr = {
+    var p = x.ununiq;
+    var n = p.strlen.int;
+    if f < 0 perform f = 0; 
+    if f > n perform f = n;
+    if l < 0 perform l = f;
+    if l > n perform l = n;
+    if f != l perform strcpy (p+f, p+l); 
+    return uniq p;
+  }
+ 
+  fun erase (x:ustr) (sl:slice[int]) : ustr =>
+    match sl with
+    | Slice_all => set (x,0,char "")
+    | Slice_from idx => set (x,idx, char "")
+    | Slice_from_counted (first,len) => strmov x (first,first+len)
+    | Slice_to_incl incl => strmov x (0,incl)
+    | Slice_to_excl excl => strmov x (0, excl - 1)
+    | Slice_range_incl (first, last) => strmov x (first, last+1)
+    | Slice_range_excl (first, last) => strmov x (first, last) 
+    | Slice_one pos => strmov x (pos, pos+1)
+  ;
 }

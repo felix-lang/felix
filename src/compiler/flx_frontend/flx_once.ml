@@ -212,6 +212,7 @@ if debug then print_endline ("flow: end of procedure or return");
   let liveness = live bsym_table sr bexe liveness deltalife in
   let next () =  flow liveness ({cc with current=tail} :: caller) in
   let final () = flow liveness (check_liveness bsym_table liveness) in
+  let abort () = flow liveness [] in
 
   let lno = Flx_srcref.first_line_no sr in
 if debug then print_endline (string_of_int seq ^"@"^string_of_int lno^ " " ^ Flx_print.string_of_bexe bsym_table 0 bexe);
@@ -368,7 +369,7 @@ if debug then print_endline ("flow: first entry at label  " ^ str_of_label bsym_
     flow liveness (return bsym_table stack liveness)
 
   | BEXE_nonreturn_code (_,_,_) ->
-    final ()
+    abort ()
 
   (* FIXME: temporary hack for concept testing, handle all the
     other cases now!
@@ -380,8 +381,7 @@ if debug then print_endline ("flow: first entry at label  " ^ str_of_label bsym_
 
   | BEXE_halt _
     -> 
-    print_endline ("Once analysis can't handle halt yet"); 
-    assert false
+    final ()
 
   | BEXE_cgoto _
   | BEXE_ifcgoto _

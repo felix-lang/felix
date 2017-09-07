@@ -642,6 +642,9 @@ let rec enstack_applies syms bsym_table fn_cache ptr_cache x =
        BEXPR_apply ((BEXPR_closure(i,ts),_),b),t
      | BEXPR_apply_direct (i,ts,b),t
     ) as x ->
+(*
+      print_endline ("Enstack_applies: Found apply closure " ^ sbe bsym_table x);
+*)
       begin
         match Flx_bsym_table.find_bbdcl bsym_table i with
         | BBDCL_fun (props,_,_,_,_,_) ->
@@ -655,7 +658,12 @@ let rec enstack_applies syms bsym_table fn_cache ptr_cache x =
         | BBDCL_nonconst_ctor  _ -> bexpr_apply_struct t (i,ts,b)
         | _ -> x
       end
-  | x -> x
+  | x 
+    -> 
+(*
+    print_endline ("Enstack_applies: Found other expr " ^ sbe bsym_table x);
+*)
+    x
 
 let mark_stackable syms bsym_table fn_cache ptr_cache label_info =
   Flx_bsym_table.iter begin fun i _ bsym ->
@@ -693,6 +701,9 @@ let mark_stackable syms bsym_table fn_cache ptr_cache label_info =
   end bsym_table
 
 let enstack_calls syms bsym_table fn_cache ptr_cache self exes =
+(*
+print_endline ("Enstack "^string_of_int self ^" exes = \n  " ^ catmap "\n  " (sbx bsym_table) exes);
+*)
   let ea e = enstack_applies syms bsym_table fn_cache ptr_cache e in
   let id x = x in
   List.map begin fun exe ->
@@ -742,9 +753,7 @@ let make_stack_calls
   bsym_table
   label_info
 =
-(*
 print_endline ("Calculating stack calls\n");
-*)
   let fn_cache, ptr_cache = Hashtbl.create 97 , Hashtbl.create 97 in
   let ea e = enstack_applies syms bsym_table fn_cache ptr_cache e in
 
