@@ -1,16 +1,9 @@
 open Flx_btype
 open Flx_exceptions
 open Flx_bid
+
 let si x = string_of_int x
-let string_of_bid x = si x
 
-let unit_t = btyp_tuple []
-
-let fresh_bid counter =
-  let bid = !counter in
-  incr counter;
-  bid
- 
 let var_subst t (i, j) =
   let rec f_btype t =
     match t with

@@ -376,7 +376,7 @@ print_endline ("Effects = " ^ Flx_btype.st beffects);
         then btyp_cfunction (d,brt)
         else btyp_effector (d,beffects,brt)
       in
-      let t = fold bsym_table state.counter ft in
+      let t = Flx_fold.fold bsym_table state.counter ft in
 (*
 print_endline ("Flx_bbind: Adding type of index " ^ si symbol_index ^ " to cache, type=" ^ Flx_btype.st t);
 *)
@@ -562,7 +562,7 @@ print_endline ("flx_bind: Adding label " ^ s ^ " index " ^ string_of_int symbol_
 
     (* Cache the type of the function. *)
     if not (Hashtbl.mem state.ticache symbol_index) then begin
-      let t = fold bsym_table state.counter (btyp_function (btyp_tuple ts, bret)) in
+      let t = Flx_fold.fold bsym_table state.counter (btyp_function (btyp_tuple ts, bret)) in
       Hashtbl.add state.ticache symbol_index t
     end;
 
@@ -675,7 +675,7 @@ print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid 
      * fresh names for type variables
      *)
     if not (Hashtbl.mem state.ticache symbol_index) then begin
-      let t = fold bsym_table state.counter (btyp_cfunction (btyp_tuple ts_cf, bret)) in
+      let t = Flx_fold.fold bsym_table state.counter (btyp_cfunction (btyp_tuple ts_cf, bret)) in
       Hashtbl.add state.ticache symbol_index t
     end;
 

@@ -80,7 +80,7 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
   let ret = rt' vs ret' in
   if ret = btyp_tuple [] then "// elided (returns unit)\n" else
 
-  let funtype = fold bsym_table syms.counter (btyp_function (argtype, ret)) in
+  let funtype = Flx_fold.fold bsym_table syms.counter (btyp_function (argtype, ret)) in
 
   let argtypename = cpp_typename syms bsym_table argtype in
   let funtypename =

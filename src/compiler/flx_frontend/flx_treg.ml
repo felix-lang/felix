@@ -55,7 +55,7 @@ print_endline ("Register type nr " ^ sbt bsym_table t);
     -> ()
   | _
     ->
-    let t = minimise bsym_table syms.counter t in
+    let t = Flx_fold.minimise bsym_table syms.counter t in
     if not (registered_type syms bsym_table t)
     then begin
       let () = check_recursion bsym_table t in
@@ -69,7 +69,7 @@ print_endline ("Register type nr " ^ sbt bsym_table t);
 
 let register_tuple syms bsym_table t =
   let t = normalise_tuple_cons bsym_table t in
-  let t = minimise bsym_table syms.counter t in
+  let t = Flx_fold.minimise bsym_table syms.counter t in
   let record_tuple t =
     register_type_nr syms bsym_table t;
     try Hashtbl.replace syms.array_as_tuple_registry (find_type_index syms bsym_table t) ()
@@ -106,7 +106,7 @@ print_endline ("Register type r " ^ sbt bsym_table t);
   print_endline (sp ^ "Register type " ^ sbt sym_table t);
   if (mem t exclude) then print_endline (sp ^ "Excluded ..");
   *)
-  let t = minimise bsym_table syms.counter t in
+  let t = Flx_fold.minimise bsym_table syms.counter t in
   if not (registered_type syms bsym_table t) then
   if not (mem t exclude) then
   if complete_type t then

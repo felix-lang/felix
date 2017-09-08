@@ -3,7 +3,7 @@ open Flx_ast
 
 let typecode_of_btype ?sym_table:(sym_table=None) bsym_table counter sr t0 = 
   let rec tc depth mutrail t =
-    let isrecursive = Flx_unify.is_recursive_type t in
+    let isrecursive = Flx_btype_rec.is_recursive_type t in
     let mutrail = 
       if isrecursive then 
         let label = "_fix_"^string_of_int (!counter) in 

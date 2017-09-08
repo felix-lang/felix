@@ -32,4 +32,5 @@ let iter_bids f start_bid end_bid =
     f bid
   done
 
+let string_of_bid x = string_of_int x
 

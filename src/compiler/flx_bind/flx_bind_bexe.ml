@@ -591,7 +591,7 @@ print_endline ("++++++++ EXE_fun_return1: Return expression raw " ^ string_of_ex
 (*
 print_endline ("+++++++++EXE_fun_return2: Function return value has type " ^ sbt bsym_table t');
 *)
-    let t' = minimise bsym_table state.counter t' in
+    let t' = Flx_fold.minimise bsym_table state.counter t' in
 (*
 print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
 *)
@@ -632,7 +632,7 @@ print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
   | EXE_yield e ->
     state.return_count <- state.return_count + 1;
     let e',t' = be e in
-    let t' = minimise bsym_table state.counter t' in
+    let t' = Flx_fold.minimise bsym_table state.counter t' in
     ignore (do_unify state bsym_table state.ret_type t');
     state.ret_type <- varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type;
     if type_match bsym_table state.counter state.ret_type t' then
@@ -686,7 +686,7 @@ print_endline ("Bind EXE_iinit "^s);
           parent_ts
       in
       let lhst = Flx_unify.normalise_tuple_cons bsym_table lhst in
-      let rhst = minimise bsym_table state.counter rhst in
+      let rhst = Flx_fold.minimise bsym_table state.counter rhst in
       let rhst = Flx_unify.normalise_tuple_cons bsym_table rhst in
       if type_match bsym_table state.counter lhst rhst
       then begin 
@@ -730,7 +730,7 @@ print_endline ("Bind EXE_init "^s);
               parent_ts
           in
           let lhst = Flx_unify.normalise_tuple_cons bsym_table lhst in
-          let rhst = minimise bsym_table state.counter rhst in
+          let rhst = Flx_fold.minimise bsym_table state.counter rhst in
           let rhst = Flx_unify.normalise_tuple_cons bsym_table rhst in
           (*
           print_endline ("Checking type match " ^ sbt state.sym_table lhst ^ " ?= " ^ sbt state.sym_table rhst);
@@ -784,7 +784,7 @@ print_endline ("BINDING ASSIGNMENT " ^ string_of_exe 0 exe);
 (*
 print_endline ("assign: LHS=" ^ sbe bsym_table lx ^ ", LHST = " ^ sbt bsym_table lhst);
 *)
-      let lhst = minimise bsym_table state.counter lhst in
+      let lhst = Flx_fold.minimise bsym_table state.counter lhst in
       let lhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_assign lhst" state.counter bsym_table sr lhst in
       let lhst = Flx_unify.normalise_tuple_cons bsym_table lhst in
 (*
@@ -793,7 +793,7 @@ print_endline ("assign after beta-reduction: LHST = " ^ sbt bsym_table lhst);
 (*
 print_endline ("assign:  RHS=" ^ sbe bsym_table rx ^ ",RHST = " ^ sbt bsym_table rhst);
 *)
-      let rhst = minimise bsym_table state.counter rhst in
+      let rhst = Flx_fold.minimise bsym_table state.counter rhst in
       let rhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_assign rhst" state.counter bsym_table sr rhst in
       let rhst = Flx_unify.normalise_tuple_cons bsym_table rhst in
 (*
@@ -818,7 +818,7 @@ print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
 (*
 print_endline ("storeat : LHS=" ^ sbe bsym_table lx ^ ", LHST = " ^ sbt bsym_table lhst);
 *)
-    let lhst = minimise bsym_table state.counter lhst in
+    let lhst = Flx_fold.minimise bsym_table state.counter lhst in
     let lhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_assign lhst" state.counter bsym_table sr lhst in
     let lhst = Flx_unify.normalise_tuple_cons bsym_table lhst in
 (*
@@ -827,7 +827,7 @@ print_endline ("assign after beta-reduction: LHST = " ^ sbt bsym_table lhst);
 (*
 print_endline ("assign:  RHS=" ^ sbe bsym_table rx ^ ",RHST = " ^ sbt bsym_table rhst);
 *)
-    let rhst = minimise bsym_table state.counter rhst in
+    let rhst = Flx_fold.minimise bsym_table state.counter rhst in
     let rhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_assign rhst" state.counter bsym_table sr rhst in
     let rhst = Flx_unify.normalise_tuple_cons bsym_table rhst in
 (*

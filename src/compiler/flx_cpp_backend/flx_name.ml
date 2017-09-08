@@ -205,7 +205,7 @@ let tix msg syms bsym_table t =
     | BTYP_function (BTYP_void,cod) -> btyp_function (btyp_tuple [],cod)
     | x -> x
   in
-  let t' = minimise bsym_table syms.counter t in
+  let t' = Flx_fold.minimise bsym_table syms.counter t in
   try Flx_treg.find_type_index syms bsym_table t'
   with Not_found ->
     if t = t' then
@@ -218,7 +218,7 @@ let tix msg syms bsym_table t =
 let rec cpp_type_classname syms bsym_table t =
   let tn t = cpp_typename syms bsym_table t in
   let tix t = tix "[flx_name:cpp_type_classname" syms bsym_table t in
-  let t = fold bsym_table syms.counter t in
+  let t = Flx_fold.fold bsym_table syms.counter t in
   let t = normalise_tuple_cons bsym_table t in
   let t' = unfold "flx_name: cpp_type_classname" t in
   try match t' with
@@ -384,7 +384,7 @@ and cpp_structure_name syms bsym_table t =
   let tn t = cpp_typename syms bsym_table t in
   let tix t = tix "[flx_name:cpp_structure_name]" syms bsym_table t in
   let t = normalise_tuple_cons bsym_table t in
-  let t = fold bsym_table syms.counter t in
+  let t = Flx_fold.fold bsym_table syms.counter t in
   let t' = unfold "flx_name: cpp_structure_name" t in
   try match t' with
   | BTYP_type_var (i,mt) ->

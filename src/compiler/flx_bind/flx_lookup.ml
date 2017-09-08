@@ -859,7 +859,7 @@ print_endline ("Calling Flx_beta.adjust, possibly incorrectly, type = " ^ sbt bs
     let t = bt t in
     bind_type_match bsym_table state.counter bt btp params sr t ps ubt 
 
-  | TYP_dual t -> dual (bt t)
+  | TYP_dual t -> Flx_btype_dual.dual (bt t)
 
   | TYP_ellipsis ->
     failwith "Unexpected TYP_ellipsis (...) in bind type"
@@ -2404,7 +2404,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
     | _ -> bexpr_tuple (btyp_tuple (List.map snd xs)) xs
   in
   let be2,t2 = x2 in
-  let t2 = Flx_unify.minimise bsym_table state.counter t2 in
+  let t2 = Flx_fold.minimise bsym_table state.counter t2 in
   let x2 = be2,t2 in
 
 (*
