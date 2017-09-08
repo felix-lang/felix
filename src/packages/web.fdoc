@@ -284,13 +284,13 @@ class HTTPRequest {
     var eof=false;
     var params:assoc_list[string,string] = Empty[string*string];
     if olen > 0 do
-      var buf = C_hack::cast[+char] (C_hack::malloc(len+1));
+      var buf = C_hack::cast[+char] (Memory::malloc(len+1));
       var buf_a = address(buf);
       read(conn.sock,&len,buf_a,&eof);
       if len > 0 do
         params = get_params(string(buf,len));
       done
-      C_hack::free(buf_a);
+      Memory::free(buf_a);
     done
     *request.entity_params = params;
     return ; 
@@ -302,11 +302,11 @@ fun read_bytes(conn:http_connection,olen:int) = {
     
     var ret:string = "";
     if olen > 0 do
-      var buf = C_hack::cast[+char] (C_hack::malloc(len+1));
+      var buf = C_hack::cast[+char] (Memory::malloc(len+1));
       var buf_a = address(buf);
       read(conn.sock,&len,buf_a,&eof);
       ret= str(buf);
-      C_hack::free(buf_a);
+      Memory::free(buf_a);
      done
      return ret; 
   }
@@ -1305,10 +1305,10 @@ if PLAT_WIN32 do
   body """
     string asctime_helper(struct tm const * ti) {
       int len = 64;
-      char *fmted = (char*) malloc(sizeof(char)*64);
+      char *fmted = (char*) ::std::malloc(sizeof(char)*64);
       asctime_s(fmted,64,ti);
       string s = string(fmted);
-      free(fmted);
+      ::std::free(fmted);
       return s;
     }
   """;
@@ -1316,10 +1316,10 @@ else
   body """
     string asctime_helper(struct tm const * ti) {
       int len = 64;
-      char *fmted = (char*) malloc(sizeof(char)*64);
+      char *fmted = (char*) ::std::malloc(sizeof(char)*64);
       asctime_r(ti,fmted);
       string s = string(fmted);
-      free(fmted);
+      ::std::free(fmted);
       return s;
     }
   """;
@@ -1335,10 +1335,10 @@ done
   body """
     string strftime_helper(const char *pat,    const struct tm * ti) {
       int len = 64;
-      char *fmted = (char*) malloc(sizeof(char)*64);
+      char *fmted = (char*) ::std::malloc(sizeof(char)*64);
       strftime(fmted,len,pat,ti);
       string s = string(fmted);
-      free(fmted);
+      ::std::free(fmted);
       return s;
     }
   """;
