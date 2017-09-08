@@ -179,7 +179,7 @@ class Serialise
   //$ Decode a type
   gen unblit[T] (p: &T, s: +char, i:size) : size = 
   {
-     memcpy(p.address,(s+i).address,C_hack::sizeof[T]);
+     Memory::memcpy(p.address,(s+i).address,C_hack::sizeof[T]);
      return i + C_hack::sizeof[T];
   } 
   

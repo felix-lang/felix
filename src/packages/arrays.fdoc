@@ -698,7 +698,7 @@ open class Varray
     var n = x.len; var p = x._unsafe_cstr;
     var v = varray[char] (n + 1uz);
     var q = v.stl_begin;
-    memcpy (q.address, p.address, n);
+    Memory::memcpy (q.address, p.address, n);
     set(q,n, char "");
     set_used (v,n + 1uz);
     return v;
@@ -710,7 +710,7 @@ open class Varray
     var n = x.len; var p = x._unsafe_cstr;
     var v = varray[char] (n);
     var q = v.stl_begin;
-    memcpy (q.address, p.address, n);
+    Memory::memcpy (q.address, p.address, n);
     set_used (v,n);
     return v;
   } 
