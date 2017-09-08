@@ -26,7 +26,7 @@ open Flx_typing
 open Flx_unify
 open Flx_util
 open Flx_bid
-open Flx_type_aux
+open Flx_btype_subst
 
 let find_variable_indices syms bsym_table index =
   let children = Flx_bsym_table.find_children bsym_table index in

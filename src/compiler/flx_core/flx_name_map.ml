@@ -84,7 +84,7 @@ print_endline ("FUDGE: review entry: "^name^"=T<"^string_of_int i^">");
      in aux vs' ts [] []
    in
    let vs = List.rev !vs in
-   let ts' = List.map (Flx_type_aux.tsubst sr vs' ts) ts' in
+   let ts' = List.map (Flx_btype_subst.tsubst sr vs' ts) ts' in
    {base_sym=i; spec_vs=vs; sub_ts=ts'}
 
 let review_entry_set counter_ref name v sr vs ts : entry_set_t = 

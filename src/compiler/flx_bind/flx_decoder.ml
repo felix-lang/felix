@@ -33,7 +33,7 @@ print_endline("Bound type " ^ Flx_print.sbt bsym_table but);
 print_endline ("Generating union decoder chip _decoder_" ^ uname); 
 print_endline ("ubvs = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^">") ubvs);
 *)
-          let ischannel_t = Flx_type_aux.tsubst sr ubvs ts (bt sr (Flx_ast.TYP_name (sr,"ischannel", [ut]))) in
+          let ischannel_t = Flx_btype_subst.tsubst sr ubvs ts (bt sr (Flx_ast.TYP_name (sr,"ischannel", [ut]))) in
           let oschannel_t ubt = bt sr (Flx_ast.TYP_name (sr,"oschannel",[ubt])) in
 (*
 print_endline ("ischannel type = " ^ Flx_print.sbt bsym_table ischannel_t);
@@ -44,7 +44,7 @@ print_endline ("ischannel type = " ^ Flx_print.sbt bsym_table ischannel_t);
           let flds = List.map (fun (name,v,vs',d,c,gadt) -> name,d) flds in
           (* fudge constant constructors to use unit argument *)
           let flds = List.map (fun (s,t) -> s,(match t with BTYP_void -> btyp_tuple [] | _ -> t)) flds in
-          let flds = List.map (fun (s,t) -> s,Flx_type_aux.tsubst sr ubvs ts t) flds in
+          let flds = List.map (fun (s,t) -> s,Flx_btype_subst.tsubst sr ubvs ts t) flds in
 (*
 print_endline ("Field types " ^ catmap "," (fun (s,t) -> s ^ ":" ^ Flx_print.sbt bsym_table t) flds);
 *)

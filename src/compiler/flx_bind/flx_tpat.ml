@@ -6,7 +6,7 @@ open Flx_types
 open Flx_btype
 open Flx_unify
 open Flx_print
-open Flx_type_aux
+open Flx_btype_subst
 open Flx_bid
 
 let dummy_sr = Flx_srcref.make_dummy "[flx_tpat] generated"

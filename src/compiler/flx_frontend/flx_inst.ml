@@ -35,7 +35,7 @@ open Flx_maps
 open Flx_prop
 open Flx_beta
 open Flx_bid
-open Flx_type_aux
+open Flx_btype_subst
 
 let dummy_sr = Flx_srcref.make_dummy "[flx_inst] generated"
 

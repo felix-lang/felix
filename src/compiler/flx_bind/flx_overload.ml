@@ -17,7 +17,7 @@ open Flx_tpat
 open Flx_maps
 open Flx_name_map
 open Flx_bid
-open Flx_type_aux
+open Flx_btype_subst
 
 (* a hack *)
 exception OverloadKindError of Flx_srcref.t * string

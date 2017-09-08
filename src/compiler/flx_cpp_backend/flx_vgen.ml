@@ -4,7 +4,7 @@ open Flx_cexpr
 open Flx_ctypes
 open Flx_vrep
 open Flx_print
-open Flx_type_aux
+open Flx_btype_subst
 
 let si = string_of_int
 exception Found_type of Flx_btype.t

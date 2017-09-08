@@ -9,7 +9,7 @@ open Flx_bbdcl
 open Flx_bexpr
 open Flx_bexe
 open Flx_bparameter
-open Flx_type_aux
+open Flx_btype_subst
 open Flx_bid
 
 module CS = Flx_code_spec

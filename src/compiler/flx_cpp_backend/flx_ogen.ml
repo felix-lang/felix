@@ -27,7 +27,7 @@ open Flx_cal_fun_offsets
 open Flx_cal_threadframe_offsets
 open Flx_findvars
 open Flx_gen_shape
-open Flx_type_aux
+open Flx_btype_subst
 
 
 let comma_sub s =

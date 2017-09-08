@@ -18,7 +18,7 @@ open Flx_maps
 open Flx_lookup_state
 open Flx_bexe_state
 open Flx_name_map
-open Flx_type_aux
+open Flx_btype_subst
 
 type pin_descr_t = string * (string * int * Flx_btype.t)
 type device_descr_t = string * pin_descr_t list

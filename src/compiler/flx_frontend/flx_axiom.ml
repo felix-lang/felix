@@ -40,7 +40,7 @@ open Flx_maps
 open Flx_exceptions
 open Flx_use
 open Flx_typeclass
-open Flx_type_aux
+open Flx_btype_subst
 
 let string_of_bvs bvs =
   catmap "," (fun (s,i)->s^"<"^si i^">") bvs

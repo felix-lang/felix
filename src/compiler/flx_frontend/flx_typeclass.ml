@@ -16,7 +16,7 @@ open Flx_exceptions
 open Flx_use
 open Flx_beta
 open Flx_bid
-open Flx_type_aux
+open Flx_btype_subst
 
 module CS = Flx_code_spec
 

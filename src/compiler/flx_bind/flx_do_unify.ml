@@ -1,4 +1,4 @@
-open Flx_type_aux
+open Flx_btype_subst
 
 (* returns true if a and b have an mgu,
    and also adds each element of the mgu to

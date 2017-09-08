@@ -13,7 +13,7 @@ open List
 open Flx_unify
 open Flx_maps
 open Flx_exceptions
-open Flx_type_aux
+open Flx_btype_subst
 
 
 let fixtype bsym_table t =

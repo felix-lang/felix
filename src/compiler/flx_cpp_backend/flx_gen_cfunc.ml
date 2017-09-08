@@ -26,7 +26,7 @@ open Flx_typing
 open Flx_unify
 open Flx_util
 open Flx_gen_helper
-open Flx_type_aux
+open Flx_btype_subst
 open Flx_bid
 
 let gen_C_function syms bsym_table (shapes:Flx_set.StringSet.t ref) shape_map props index id sr vs bps ret' ts instance_no =

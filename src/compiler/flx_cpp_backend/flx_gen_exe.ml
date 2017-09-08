@@ -26,7 +26,7 @@ open Flx_typing
 open Flx_unify
 open Flx_util
 open Flx_gen_helper
-open Flx_type_aux
+open Flx_btype_subst
 open Flx_bid
 
 module CS = Flx_code_spec

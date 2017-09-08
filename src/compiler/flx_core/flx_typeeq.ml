@@ -5,7 +5,7 @@ open Flx_util
 open Flx_list
 open Flx_exceptions
 open Flx_bid
-open Flx_type_aux
+open Flx_btype_subst
 let rec memq trail (a,b) = match trail with
   | [] -> false
   | (i,j)::t -> i == a && j == b || memq t (a,b)

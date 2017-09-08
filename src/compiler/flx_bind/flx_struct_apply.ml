@@ -1,6 +1,6 @@
 open Flx_btype
 open Flx_bexpr
-open Flx_type_aux
+open Flx_btype_subst
 
 let cal_struct_apply 
   bsym_table state bind_type' mkenv build_env cal_apply

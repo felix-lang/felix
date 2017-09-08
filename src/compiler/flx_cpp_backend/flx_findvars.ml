@@ -15,7 +15,7 @@ open Flx_exceptions
 open Flx_maps
 open Flx_name
 open Flx_bid
-open Flx_type_aux
+open Flx_btype_subst
 
 let find_thread_vars_with_type bsym_table =
   let vars = ref [] in

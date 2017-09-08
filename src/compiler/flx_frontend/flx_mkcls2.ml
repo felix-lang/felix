@@ -34,7 +34,7 @@ open Flx_exceptions
 open Flx_use
 open Flx_prop
 open Flx_bid
-open Flx_type_aux
+open Flx_btype_subst
 
 let noeffects = Flx_btype.btyp_unit ()
 

@@ -9,7 +9,7 @@ open Flx_print
 open Flx_typing
 open Flx_unify
 open Flx_maps
-open Flx_type_aux
+open Flx_btype_subst
 
 (* fixpoint reduction: reduce
    Fix f. Lam x. e ==> Lam x. Fix z. e [f x -> z]

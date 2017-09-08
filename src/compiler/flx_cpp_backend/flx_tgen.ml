@@ -14,7 +14,7 @@ open Flx_exceptions
 open List
 open Flx_ctype
 open Flx_maps
-open Flx_type_aux
+open Flx_btype_subst
 
 module CS = Flx_code_spec
 

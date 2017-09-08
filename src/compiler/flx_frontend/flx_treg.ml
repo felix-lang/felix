@@ -12,7 +12,7 @@ open List
 open Flx_maps
 open Flx_beta
 open Flx_bid
-open Flx_type_aux
+open Flx_btype_subst
 
 exception Found of Flx_btype.t * bid_t
 let find_equivalent_type_entry syms bsym_table t =

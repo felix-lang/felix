@@ -19,7 +19,7 @@ open Flx_overload
 open Flx_tpat
 open Flx_lookup_state
 open Flx_name_map
-open Flx_type_aux
+open Flx_btype_subst
 open Flx_bid
 
 let svs (s,i,mt) = s ^ "<" ^ si i ^ ">:"^ string_of_typecode mt

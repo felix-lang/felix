@@ -8,7 +8,7 @@ open Flx_maps
 open Flx_util
 open Flx_list
 open Flx_exceptions
-open Flx_type_aux
+open Flx_btype_subst
 open Flx_bid
 
 let unit_t = btyp_tuple []
