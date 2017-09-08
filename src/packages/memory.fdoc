@@ -63,7 +63,7 @@ open Tord[address];
 @
 
 @tangle memory.flx
-open class Memory
+class Memory
 {
   proc memcpy: address * address * !ints =
     "{if($1 && $2 && $3)::std::memcpy($1,$2,$3);}"
