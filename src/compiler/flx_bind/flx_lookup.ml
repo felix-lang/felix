@@ -19,6 +19,7 @@ open Flx_overload
 open Flx_tpat
 open Flx_lookup_state
 open Flx_name_map
+open Flx_btype_occurs
 open Flx_btype_subst
 open Flx_bid
 

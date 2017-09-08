@@ -41,6 +41,7 @@ open Flx_exceptions
 open Flx_use
 open Flx_typeclass
 open Flx_btype_subst
+open Flx_unify_expr
 
 let string_of_bvs bvs =
   catmap "," (fun (s,i)->s^"<"^si i^">") bvs

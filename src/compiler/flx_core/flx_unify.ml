@@ -8,6 +8,7 @@ open Flx_maps
 open Flx_util
 open Flx_list
 open Flx_exceptions
+open Flx_btype_occurs
 open Flx_btype_subst
 open Flx_bid
 
@@ -141,84 +142,6 @@ let check_recursion bsym_table t =
   v with a fixpoint operator.
 
 *)
-
-let var_i_occurs i t =
-  let rec f_btype t =
-    match t with
-    | BTYP_type_var (j,_) when i = j -> raise Not_found
-    | _ -> Flx_btype.flat_iter ~f_btype t
- in
-   try
-     f_btype t;
-     false
-   with Not_found -> true
-
-let rec vars_in t =
-  let vs = ref BidSet.empty in
-  let add_var i = vs := BidSet.add i !vs in
-  let rec f_btype t =
-    match t with
-    | BTYP_type_var (i,_) -> add_var i
-    | _ -> Flx_btype.flat_iter ~f_btype t
-  in
-  f_btype t;
-  !vs
-
-let fix i t =
-  let rec aux n t =
-    let aux t = aux (n - 1) t in
-    match t with
-    | BTYP_hole -> assert false
-    | BTYP_tuple_cons _ -> assert false
-    | BTYP_tuple_snoc _ -> assert false
-    | BTYP_none -> assert false
-    | BTYP_type_var (k,mt) -> if k = i then btyp_fix n mt else t
-    | BTYP_inst (k,ts) -> btyp_inst (k, List.map aux ts)
-    | BTYP_tuple ts -> btyp_tuple (List.map aux ts)
-    | BTYP_sum ts -> btyp_sum (List.map aux ts)
-    | BTYP_intersect ts -> btyp_intersect (List.map aux ts)
-    | BTYP_union ts -> btyp_union (List.map aux ts)
-    | BTYP_type_set ts -> btyp_type_set (List.map aux ts)
-    | BTYP_function (a,b) -> btyp_function (aux a, aux b)
-    | BTYP_effector (a,e,b) -> btyp_effector (aux a, aux e, aux b)
-    | BTYP_cfunction (a,b) -> btyp_cfunction (aux a, aux b)
-    | BTYP_pointer a -> btyp_pointer (aux a)
-    | BTYP_rref a -> btyp_rref (aux a)
-    | BTYP_wref a -> btyp_wref (aux a)
-    | BTYP_array (a,b) -> btyp_array (aux a, aux b)
-    | BTYP_rev t -> btyp_rev (aux t)
-    | BTYP_uniq t -> btyp_uniq (aux t)
-
-    | BTYP_record (ts) ->
-       btyp_record (List.map (fun (s,t) -> s, aux t) ts)
-
-    | BTYP_polyrecord (ts,v) ->
-       btyp_polyrecord (List.map (fun (s,t) -> s, aux t) ts) (aux v)
-
-    | BTYP_variant ts ->
-       btyp_variant (List.map (fun (s,t) -> s, aux t) ts)
-
-    | BTYP_int 
-    | BTYP_label 
-    | BTYP_unitsum _
-    | BTYP_void
-    | BTYP_fix _
-    | BTYP_type_apply _
-    | BTYP_type_map _
-    | BTYP_type_function _
-    | BTYP_type _
-    | BTYP_type_tuple _
-    | BTYP_type_match _
-    | BTYP_type_set_union _ -> t
-    | BTYP_type_set_intersection _ -> t
-  in
-    aux 0 t
-
-let var_list_occurs ls t =
-  let yes = ref false in
-  List.iter (fun i -> yes := !yes || var_i_occurs i t) ls;
-  !yes
-
 (* NOTE: this algorithm unifies EQUATIONS
   not inequations, therefore it doesn't
   handle any subtyping
@@ -355,7 +278,7 @@ let rec unification bsym_table counter eqns dvars =
             sbt sym_table a ^ " = " ^ sbt sym_table b
           );
           *)
-          s := Some (i, fix i t)
+          s := Some (i, Flx_btype_rec.fix i t)
         end else begin
           (*
           print_endline "Adding substitution";
@@ -792,168 +715,4 @@ let ident x = x
 
   Also won't substitute into LHS of things like direct_apply.
 *)
-let expr_term_subst e1 i e2 =
-  let rec f_bexpr e =
-    match Flx_bexpr.map ~f_bexpr e with
-    | BEXPR_varname (j,_),_ when i = j -> e2
-    | e -> e
-  in
-  f_bexpr e1
-
-let rec expr_unification bsym_table counter
-  eqns
-  tdvars
-  edvars
-=
-  (*
-  print_endline ( "Tdvars = { " ^ catmap ", " si (BidSet.elements tdvars) ^ "}");
-  print_endline ( "Edvars = { " ^ catmap ", " si (BidSet.elements edvars) ^ "}");
-  *)
-  let teqns = ref [] in
-  let eqns = ref eqns in
-  let mgu = ref [] in
-  let rec loop () : unit =
-    match !eqns with
-    | [] -> ()
-    | h :: t ->
-      eqns := t;
-      let s = ref None in
-      let (lhse,lhst),(rhse,rhst) = h in
-      teqns := (lhst,rhst) :: !teqns;
-
-      (* WE COULD UNIFY TYPES HERE -- but there is no need!
-         if the terms unify, the types MUST
-         We DO need to unify the types -- but only after
-         we've found matching terms.
-
-         Note: the types in the ts lists DO have to be
-         unified! It's only the types OF terms that
-         don't require processing .. since they're just
-         convenience caches of the term type, which can
-         be computed directly from the term.
-      *)
-      begin match (lhse,rhse) with
-      | (BEXPR_varname (i,[]) as ei), (BEXPR_varname (j,[]) as ej) ->
-        (*
-        print_endline ("Equated variables " ^ si i ^ " <-> " ^ si j);
-        *)
-
-        if i <> j then
-          if BidSet.mem i edvars then
-            s := Some (i,(ej,rhst))
-          else if BidSet.mem j edvars then
-            s := Some (j,(ei,lhst))
-          else raise Not_found
-
-      | BEXPR_varname (i,_),x ->
-        if not (BidSet.mem i edvars) then raise Not_found;
-        s := Some (i,(x,rhst))
-
-      | x, BEXPR_varname (i,_) ->
-        if not (BidSet.mem i edvars) then raise Not_found;
-        s := Some (i,(x,lhst))
-
-      | BEXPR_apply (f1,e1), BEXPR_apply (f2,e2) ->
-        (*
-        print_endline "matched applications";
-        *)
-        eqns := (f1,f2) :: (e1,e2) :: !eqns
-
-      | BEXPR_closure (i,ts1), BEXPR_closure (j,ts2) when i = j -> ()
-
-(*
-      | BEXPR_apply_prim _, _
-      | BEXPR_apply_direct _, _
-      | BEXPR_apply_stack _, _
-      | _, BEXPR_apply_prim _
-      | _, BEXPR_apply_direct _
-      | _, BEXPR_apply_stack _
-         -> assert false
-*)
-      | BEXPR_apply_prim (i,ts1,e1),BEXPR_apply_prim(j,ts2,e2)
-      | BEXPR_apply_direct (i,ts1,e1),BEXPR_apply_direct(j,ts2,e2)
-      | BEXPR_apply_stack(i,ts1,e1),BEXPR_apply_stack(j,ts2,e2)
-        when i = j
-        ->
-        assert (List.length ts1 = List.length ts2);
-        teqns := List.combine ts1 ts2 @ !teqns;
-        eqns := (e1,e2) :: !eqns
-
-      | BEXPR_coerce (e,t), BEXPR_coerce (e',t') ->
-        teqns := (t,t') :: !teqns;
-        eqns := (e,e') :: !eqns
-
-      | BEXPR_aprj (ix,d,c), BEXPR_aprj (ix',d',c') ->
-        teqns := (d,d') :: (c,c') :: !teqns;
-        eqns := (ix,ix') :: !eqns
-
-      | BEXPR_prj (n,d,c), BEXPR_prj (n',d',c')
-      | BEXPR_inj (n,d,c), BEXPR_inj (n',d',c') ->
-        teqns := (d,d') :: (c,c') :: !teqns;
-        if n <> n' then raise Not_found
- 
-      | BEXPR_deref e1, BEXPR_deref e2  ->
-        eqns := (e1,e2) :: !eqns
-
-      (* CHEAT HERE .. ignore ts .. fix later *)
-      | BEXPR_ref (i1,ts1), BEXPR_ref (i2,ts2) when i1 = i2 -> ()
-
-      | (BEXPR_tuple ls1, BEXPR_tuple ls2)
-        when List.length ls1 = List.length ls2 ->
-        begin
-            List.iter2 (fun a b -> eqns := (a,b) :: !eqns) ls1 ls2;
-            s := None
-        end
-
-      | x,y ->
-        (* the BTYP_void is a hack .. *)
-        (*
-        print_endline ("Terms do not match: " ^ sbe sym_table (x,BTYP_void) ^ " <-> " ^ sbe sym_table (y,BTYP_void));
-        *)
-        raise Not_found
-      end
-      ;
-      begin match !s with
-      | None -> ()
-      | Some (i,t) ->
-        (*
-        print_endline ("Substituting " ^ si i ^ " -> " ^ sbt sym_table t);
-        *)
-        eqns :=
-          List.map
-          (fun (a,b) ->
-            expr_term_subst a i t,
-            expr_term_subst b i t
-          )
-          !eqns
-        ;
-        assert(not (List.mem_assoc i !mgu));
-        mgu :=
-          (i,t) ::
-          (List.map
-            (fun (j,t') -> j,expr_term_subst t' i t)
-            !mgu
-          )
-      end
-      ;
-      loop ()
-    in
-      loop ();
-      let tmgu = unification bsym_table counter !teqns tdvars in
-      tmgu,
-      !mgu
-
-let setoflist ls = List.fold_left (fun s i -> BidSet.add i s) BidSet.empty ls
-
-let expr_maybe_matches bsym_table counter tvars evars le re =
-  let tvars = setoflist tvars in
-  let evars = setoflist evars in
-  let eqns = [le,re] in
-  (*
-  print_endline ("Expr unify: le = " ^ sbe sym_table le ^  "\nre = " ^ sbe sym_table re);
-  *)
-  try Some (expr_unification bsym_table counter eqns tvars evars)
-  with Not_found -> None
-
-
 

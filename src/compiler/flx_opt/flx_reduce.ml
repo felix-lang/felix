@@ -48,14 +48,14 @@ let ematch syms bsym_table name tvars evars e1 e2 e : bool * Flx_bexpr.t =
   (*
   print_endline ("Matching " ^ sbe bsym_table e ^ " with " ^ sbe bsym_table e1);
   *)
-  match Flx_unify.expr_maybe_matches bsym_table syms.counter tvars evars e1 e with
+  match Flx_unify_expr.expr_maybe_matches bsym_table syms.counter tvars evars e1 e with
   | Some (tmgu,emgu) ->
 (*
       print_endline (name^" REDUCTION: FOUND A MATCH, candidate " ^ sbe bsym_table e^" with reduced LHS " ^ sbe bsym_table e1);
       print_endline ("EMGU=" ^catmap ", " (fun (i,e')-> si i ^ " --> " ^ sbe bsym_table e') emgu);
       print_endline ("TMGU=" ^catmap ", " (fun (i,t')-> si i ^ " --> " ^ sbt bsym_table t') tmgu);
 *)
-    let e = fold_left (fun e (i,e') -> Flx_unify.expr_term_subst e i e') e2 emgu in
+    let e = fold_left (fun e (i,e') -> Flx_unify_expr.expr_term_subst e i e') e2 emgu in
     let rec s e = Flx_bexpr.map ~f_btype:(list_subst syms.counter tmgu) ~f_bexpr:s e in
     let e' = s e in
 (*
