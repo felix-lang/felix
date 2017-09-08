@@ -35,6 +35,7 @@ class CString
     strcpy(out,s);
     return out;
   }
+
 }
 
 @h1 Unique C Strings 
@@ -45,6 +46,7 @@ owenership. Doesn't require GC.
 open class UniqueCStrings
 {
   open CString;
+  open Memory;
 
   typedef ustr = uniq (+char);
   // Constructors
@@ -73,7 +75,7 @@ open class UniqueCStrings
     return uniq cs;
   }
 
-  private gen realloc : +char * size -> +char = 
+  private gen realloc : +char * !ints -> +char = 
     "(char*)::std::realloc($1,$2)"
     requires Cxx_headers::cstdlib
   ; 
@@ -142,4 +144,20 @@ open class UniqueCStrings
     | Slice_range_excl (first, last) => strmov x (first, last) 
     | Slice_one pos => strmov x (pos, pos+1)
   ;
+
+  fun insert (x:ustr) (var pos: int, y:ustr) : ustr =
+  {
+    var px = ununiq x;
+    var py = ununiq y;
+    var n = px.strlen.int;
+    var m = py.strlen.int; 
+    if pos < 0 perform pos = pos + n;
+    if pos > n perform pos = n;
+    if pos < 0 perform pos = 0;
+    px = realloc (px, m + n + 1);
+    memmove (px.address + pos, px.address + pos + m, m);
+    free py;
+    return uniq px;
+  }
+    
 }

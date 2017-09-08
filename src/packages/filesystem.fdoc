@@ -725,7 +725,7 @@ class PosixFileSystem
       return false; 
     done
     bsiz := size (4096 * 1024); // 4 Meg
-    var buffer = C_hack::cast[&char] (C_hack::malloc(bsiz)); // 4 MEG
+    var buffer = C_hack::cast[&char] (Memory::malloc(bsiz)); // 4 MEG
     var bread = read (fsrc, buffer, bsiz);
     while bread > size 0 do
       var bwrite = write (fdst,buffer,bread);
@@ -754,7 +754,7 @@ class PosixFileSystem
       eprintln$ "[PosixFileSystem::filecopy] close on dst " + dst + " failed: " + str errno + "=" + #strerror;
     done
     C_hack::ignore(PosixFileStat::utime(dst,now,last_modification));
-    C_hack::free(C_hack::cast[address] buffer);
+    Memory::free(C_hack::cast[address] buffer);
     return true;
   }
 
@@ -881,7 +881,7 @@ class Win32FileSystem
       return false; 
     done
     bsiz := size (4096 * 1024); // 4 Meg
-    var buffer = C_hack::cast[&char] (C_hack::malloc(bsiz)); // 4 MEG
+    var buffer = C_hack::cast[&char] (Memory::malloc(bsiz)); // 4 MEG
     var bread = read (fsrc, buffer, bsiz);
     while bread > size 0 do
       var bwrite = write (fdst,buffer,bread);
@@ -910,7 +910,7 @@ class Win32FileSystem
       eprintln$ "In filesystem::filecopy close on dst " + dst + " failed: " + str errno + "=" + #strerror;
     done
     C_hack::ignore(Win32FileStat::utime(dst,now,last_modification));
-    C_hack::free(C_hack::cast[address] buffer);
+    Memory::free(C_hack::cast[address] buffer);
     return true;
   }
   
@@ -1024,14 +1024,14 @@ class PosixDirectory
     fun filesin(dname:string): opt[List::list[string]] = {
       //println$ "filesin " + dname;
       var d:DIR_t;
-      var e: dirent_t = C_hack::cast[dirent_t]$ C_hack::malloc 5000;
+      var e: dirent_t = C_hack::cast[dirent_t]$ Memory::malloc 5000;
       var eret = e;
       var err:int = 0;
       var files = List::Empty[string];
       opendir(dname,&d);
       if isNULL d do 
         println "Error opening dir"; 
-        C_hack::free$ C_hack::cast[address] e; 
+        Memory::free$ C_hack::cast[address] e; 
         return None[List::list[string]];
       else
       //println$ "Opened dir " + dname;
@@ -1040,12 +1040,12 @@ class PosixDirectory
         if err != 0 do 
           println "Error reading dir"; fflush;
           closedir d; 
-          C_hack::free$ C_hack::cast[address] e; 
+          Memory::free$ C_hack::cast[address] e; 
           return None[List::list[string]];
         elif isNULL eret do 
           //println "End of dir"; 
           closedir d; 
-          C_hack::free$ C_hack::cast[address] e; 
+          Memory::free$ C_hack::cast[address] e; 
           return Some files;
         else 
           //println "Think we got a file?";

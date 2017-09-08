@@ -2,7 +2,7 @@
 @tangler carray.flx         = share/lib/std/c/carray.flx
 @tangler cptr.flx           = share/lib/std/c/cptr.flx
 @tangler shared_ptr.flx     = share/lib/std/c/shared_ptr.flx
-@tangler address.flx        = share/lib/std/scalar/address.flx
+
 @tangler sort.flx           = share/lib/std/datatype/sort.flx
 @tangler posix_mmap.flx     = share/lib/std/posix/mmap.flx
 @tangler carray_test.flx    = test/regress/rt/carray_test.flx
@@ -209,24 +209,6 @@ of lvalues in general: this is a very special case.
 
   //$ Convert C array to Felix array.
   fun array_of[T,N]: carray[T] -> &array[T,N] = "*(#0*)(void*)$1";
-
-@h2 Misplaced
-@tangle carray.flx
-
-  //$ Fast byte-wise copy from address to address.
-  //$ WHY IS THIS HERE?
-  proc memcpy: address * address * size =
-    "{if($1 && $2 && $3)::std::memcpy($1,$2,$3);}"
-    requires Cxx_headers::cstring
-  ;
-  //$ Fast bytewise comparison from address to address.
-  //$ WHY IS THIS HERE?
-  fun memcmp: address * address * size -> int = "::std::memcmp($1,$2,$3)"
-    requires Cxx_headers::cstring
-  ;
-
-  // Unsafe C string functions for NTBS.
-  // move to where they should be (if it isn't here .. :)
 }
 
 open[T] Eq[carray[T]];
@@ -258,70 +240,6 @@ free a;
 (65, 65, 65)
 (82, 82, 82)
 @
-@h1 Raw Address
-@tangle address.flx
-
-//$ Core operations on addresses.
-open class Address {
-  //$ Construct from Felix object pointer.
-  ctor[T] address: &T = "(void*)$1";
-
-  //$ Construct from possibly NULL pointer.
-  ctor[T] address: cptr[T] = "(void*)$1"; //@
-
-  //$ Construct from possibly array element pointer.
-  ctor[T] address: +T = "(void*)$1";
-
-  //$ Construct from C function
-  ctor[D,C] address: D --> C = "(void*)$1";
-
-
-  //$ Check is an address is NULL.
-  fun isNULL: address -> bool = "(0==$1)";
-
-  //$ Define NULL address.
-  const NULL : address = "NULL";
-
-  instance Eq[address] {
-    fun == : address * address -> bool = "$1==$2";
-  }
-  instance Tord[address] {
-    fun < : address * address -> bool = "::std::less<void*>()($1,$2)";
-  }
-
-  const addrstrfmt : +char = '"%" PRIxPTR' requires C99_headers::inttypes_h;
-  const addrreprfmt : +char = '"0x%" PRIxPTR' requires C99_headers::inttypes_h;
-
-  instance Str[address] {
-    fun str (t:address) : string => vsprintf (addrstrfmt, C_hack::cast[uintptr] t);
-  }
-  instance Repr[address] {
-    fun repr (t:address) : string => vsprintf (addrreprfmt, C_hack::cast[uintptr] t);
-  }
-
-
-  instance Str[byte] {
-    fun str (t:byte) : string => vsprintf (c"%02x", C_hack::cast[uint] t);
-  }
-
-  instance Repr[byte] {
-    fun repr (t:byte) : string => vsprintf (c"0x%02x", t);
-  }
-
-
-  fun + : address * !ints -> address = "(void*)((char*)$1+$2)";
-  fun - : address * !ints -> address = "(void*)((char*)$1-$2)";
-  fun - : address * address -> ptrdiff = "(char*)$1-(char*)$2";
-}
-
-// Do we want this to be hex?
-//instance[T in addressing] Repr[T] {
-//  fun repr (t:T) : string => vsprintf (c"%p" t);
-//}
-
-open Eq[byte];
-
-open Tord[address];
 
 @h1 Array sort
 Sort an array using STL sort.

@@ -183,7 +183,7 @@ next:
   // read up to n bytes
   string raw_read (FILE *fi, ::std::size_t n)
   {
-    void *buffer = malloc(n);
+    void *buffer = Memory::malloc(n);
     ::std::size_t m = fread (buffer, 1, n, fi);
     string s((char const*)buffer,m);
     free(buffer);
@@ -832,12 +832,12 @@ class IOStream {
     ostream: ostr)
   {
     val BUFSIZE = 100000;
-    var buf = C_hack::malloc(BUFSIZE);
+    var buf = Memory::malloc(BUFSIZE);
 
     // that's some nice error checking
     cat (istream, ostream, buf, BUFSIZE);
 
-    C_hack::free (buf);
+    Memory::free (buf);
   }
 
   publish "Read all the input streams to the output stream."
@@ -876,7 +876,7 @@ class IOStream {
 
       // It's very unfortunate that memcmp doesn't return the position of the
       // first non-equality
-      cmp = Carray::memcmp(buf1, buf2, size len);
+      cmp = Memory::memcmp(buf1, buf2, size len);
 
       if cmp == 0 do
         cmp = len1 - len2;
@@ -906,11 +906,11 @@ class IOStream {
     res: &int)
   {
     val BUFSIZE = 100000;
-    var buf1 = C_hack::malloc(BUFSIZE);
-    var buf2 = C_hack::malloc(BUFSIZE);
+    var buf1 = Memory::malloc(BUFSIZE);
+    var buf2 = Memory::malloc(BUFSIZE);
     stream_cmp(istream1, istream2, buf1, buf2, BUFSIZE, res);
-    C_hack::free(buf1);
-    C_hack::free(buf2);
+    Memory::free(buf1);
+    Memory::free(buf2);
   }
 
   publish "Read the results of a stream back into it's stream."
@@ -935,7 +935,7 @@ class IOStream {
     var len: int;
 
     val BUFSIZE = 10*1024;
-    var buf = C_hack::malloc(BUFSIZE);
+    var buf = Memory::malloc(BUFSIZE);
 
     // don't hammer!
     while not reof and not weof1 and not weof2 do
@@ -945,7 +945,7 @@ class IOStream {
       write (ostream2, &len, buf, &weof2);
     done
 
-    C_hack::free buf;
+    Memory::free buf;
   }
 
   // highly inefficient!
@@ -1077,7 +1077,7 @@ class PosixSocket
         //Faio_posix::shutdown(s,2);
         //Faio::sleep (Faio::sys_clock,5.0);
         /*
-        var len = 1; var eof = false; var buf = C_hack::malloc(1);
+        var len = 1; var eof = false; var buf = Memory::malloc(1);
         Faio_posix::async_read(s, &len, buf, &eof);
         fprint (cstderr,q"STREAM:socket $s, eof=$eof\n");
         Faio_posix::shutdown(s,0);
@@ -1374,7 +1374,7 @@ fun getpeername (s: socket_t) : string =
   match family with
   | $(AF_INET) =>
     begin
-      var buffer = C_hack::cast[+char] (C_hack::malloc INET_ADDRSTRLEN.int);
+      var buffer = C_hack::cast[+char] (Memory::malloc INET_ADDRSTRLEN.int);
       // cast to IPv4 socket address
       var inet_sockaddr = C_hack::cast[&sockaddr_in_t] paddr;
       // extract pointer to IPv4 internet address
@@ -1388,12 +1388,12 @@ fun getpeername (s: socket_t) : string =
         )
       ;
       if not p.isNULL do ips = str p; done
-      C_hack::free (C_hack::cast[address] buffer);
+      Memory::free (C_hack::cast[address] buffer);
     end
 
   | $(AF_INET6) =>
     begin
-      var buffer = C_hack::cast[+char] (C_hack::malloc INET6_ADDRSTRLEN.int);
+      var buffer = C_hack::cast[+char] (Memory::malloc INET6_ADDRSTRLEN.int);
       // cast to IPv6 socket address
       var inet6_sockaddr = C_hack::cast[&sockaddr_in6_t] paddr;
       // extract IPv6 internet address (address of a byte array)
@@ -1407,7 +1407,7 @@ fun getpeername (s: socket_t) : string =
         )
       ;
       if not p.isNULL do ips = str p; done
-      C_hack::free (C_hack::cast[address] buffer);
+      Memory::free (C_hack::cast[address] buffer);
     end
 
   | _ => ;

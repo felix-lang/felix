@@ -28,7 +28,7 @@ proc test [T with Str[T]] (p: &T) {
 
   // Allocate new storage for a copy of the data.
   var slen = C_hack::sizeof[T];
-  var store = C_hack::malloc (slen);
+  var store = Memory::malloc (slen);
 
   // decode the encoded data into the store.
   var endix = decoder (store, sarr, 0uz);

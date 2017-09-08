@@ -753,7 +753,9 @@ let make_stack_calls
   bsym_table
   label_info
 =
+(*
 print_endline ("Calculating stack calls\n");
+*)
   let fn_cache, ptr_cache = Hashtbl.create 97 , Hashtbl.create 97 in
   let ea e = enstack_applies syms bsym_table fn_cache ptr_cache e in
 

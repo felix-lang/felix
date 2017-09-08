@@ -8,7 +8,6 @@
 @tangler linux_smaps.flx    = share/lib/std/linux/smaps.flx
 @tangler win32              = share/lib/std/win32/__init__.flx
 @tangler c                  = share/lib/std/c/__init__.flx
-@tangler rawc.flx           = share/lib/std/c/rawc.flx
 @tangler cstdlib.flx        = share/lib/std/c/cstdlib.flx
 @tangler c_hack.flx         = share/lib/std/c/c_hack.flx
 @tangler platindep.flxh     = share/lib/std/plat/platindep.flxh
@@ -243,25 +242,6 @@ class C_hack
   fun dflt[t]:1->t = "dflt<?1>()" requires header
     "template<class T> T dflt() { return T(); }";
 
-  body checked_malloc = """
-    void *checked_malloc(size_t n) {
-      void *p = ::std::malloc(n);
-      if(p) return p;
-      else throw "out of memory";
-    }
-  """; 
-
-  //$ Raw unchecked malloc.
-  //$ Used typed malloc in carray if possible.
-  gen raw_malloc: !ints -> address = '::std::malloc($1)' requires Cxx_headers::cstdlib;
-
-  //$ Malloc with out of memory check.
-  //$ Throws c"out of memory" if out of memory.
-  gen malloc: !ints -> address = 'checked_malloc($1)' requires Cxx_headers::cstdlib, checked_malloc;
-
-  //$ Raw unchecked free.
-  proc free: address = '::std::free($1);' requires Cxx_headers::cstdlib;
-
   //$ Invoke C++ destructor
   proc destroy[T] : &T = "::destroy($1);/*C_hack*/"; // from flx_compiler_support_bodies
 }
@@ -287,53 +267,6 @@ open class Cstdlib
 }
 
 
-@
-@h1 Raw C interfaces
-Raw functions.
-@tangle rawc.flx
-
-// This file contains raw, low level bindings to C functions.
-// It is not intended to be used by application code.
-// It is provided for library code to use so there's a central place
-// that does C interfacing.
-//
-// Note that since Felix doesn't have const, arguments will normally
-// not needs any casts, but const pointer returns will.
-
-// TODO: We should break this up according to what in which
-// header file. Also we should put a URL in to Open Group
-// definition page. This will allow browsing clients
-// of the interface to lookup the Posix definitions.
-
-// INSTRUCTIONS TO DEVELOPERS: DO NOT USE THIS INTERFACE
-// YET! See above, it's likely to change.
-
-class Raw_C
-{
-  open Cxx_headers;
-  typedef ntbs = &char; // hackery: Null Terminated Byte String 
-
-  // memory allocation
-  gen malloc:size -> address = "::std::malloc($1)" requires cstdlib;
-  proc free:address = "::std::free($1);" requires cstdlib;
-  gen realloc:address * size -> address = "::std::realloc($a)" requires cstdlib;
-  proc calloc:size = "::std::calloc($a)" requires cstdlib;
-
-  // memory init and copy
-  gen memset:address * int * size -> address = "::std::memset($a)" requires cstring;
-  gen memcpy:address * address * size -> address = "::std::memcpy($a)" requires cstring;
-  gen memmove:address * address * size -> address = "::std::memmove($a)" requires cstring;
-
-  // NTBS
-  gen strlen: ntbs -> size = "::std::strlen($1)" requires cstring;
-  gen strcpy:ntbs * ntbs -> ntbs = "::std::strcpy($a)" requires cstring;
-  gen strncpy:ntbs * ntbs * size -> ntbs = "::std::strncpy($a)" requires cstring;
-  gen strdup:ntbs -> ntbs = "::std::strdup($a)" requires cstring;
-  gen strcat:ntbs * ntbs -> ntbs = "::std::strcat($a)" requires cstring;
-  gen strchr:ntbs * int -> ntbs = "::std::strchr($a)" requires cstring;
-  gen strcmp:ntbs * ntbs-> int = "::std::strcmp($a)" requires cstring;
-
-}
 @
 
 @h1 OSX platform tag
