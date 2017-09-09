@@ -2241,14 +2241,20 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
     | BTYP_effector(argt,_,rest)
     | BTYP_function (argt,rest)
     | BTYP_cfunction (argt,rest) ->
+      begin
+(*
       if type_match bsym_table state.counter argt t2
-      then begin 
+*)
+      let rel = Flx_unify.compare_sigs bsym_table state.counter argt t2 in
+      match rel with
+      | `Equal -> rest, `None
 (*
         print_endline "Type of function parameter agrees with type of argument";
-*)
-        rest, None
-      end
-      else
+*) 
+      | `Greater ->
+        print_endline "Type of function parameter supertype of argument";
+        rest, `Coerce (t2,argt)
+      | _ ->
       let reorder =
         match be1 with
         | BEXPR_closure (i,ts) ->
@@ -2276,8 +2282,9 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
               let n = List.length rs in
               let rs = List.map2 (fun (name,t) j -> name,(j,t)) rs (nlist n) in
 
+              (* calculate argument component reordering based on names *)
               begin try
-                Some 
+                `Reorder 
                   (List.map 
                     begin fun (name,d) ->
                       try
@@ -2294,19 +2301,18 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
                     end 
                     pnames
                   )
-                with Not_found -> None
+                with Not_found -> `None
               end
-            | _ -> None
+            | _ -> `None
           end
-        | _ -> print_endline "WOOPS WHAT IF BE1 is NOT A CLOSURE?"; None
+        | _ -> print_endline "WOOPS WHAT IF BE1 is NOT A CLOSURE?"; `None
       in
 (*
       print_endline "Type of function parameter DOES NOT agree with type of argument";
       print_endline ("Paramt = " ^ sbt bsym_table argt ^ " argt = " ^ sbt bsym_table t2);
 *)
       begin match reorder with
-      | Some _ -> rest,reorder
-      | None ->
+      | `None ->
         clierrx "[flx_bind/flx_lookup.ml:2170: E111] " sr
         (
           "[cal_apply] Function " ^
@@ -2320,15 +2326,17 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
           "\nwhich doesn't agree with parameter type\n" ^
           sbt bsym_table argt
         )
+      | _ -> rest, reorder
       end
+    end (* functions *)
 
     (* HACKERY TO SUPPORT STRUCT CONSTRUCTORS *)
     | BTYP_inst (index,ts) ->
       begin match get_data state.sym_table index with
       { Flx_sym.id=id; symdef=entry } ->
         begin match entry with
-        | SYMDEF_cstruct (cs,_) -> t1, None
-        | SYMDEF_struct (cs) -> t1, None
+        | SYMDEF_cstruct (cs,_) -> t1, `None
+        | SYMDEF_struct (cs) -> t1, `None
         | _ ->
           clierrx "[flx_bind/flx_lookup.ml:2193: E112] " sr
           (
@@ -2398,8 +2406,11 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
   ;
   *)
   let x2 = match reorder with
-  | None -> be2,t2
-  | Some xs ->
+  | `None -> be2,t2
+  | `Coerce (arg,param) -> 
+    print_endline ("Coercion required from " ^ sbt bsym_table arg ^ " to " ^ sbt bsym_table param); 
+    bexpr_coerce ((be2,t2), param) 
+  | `Reorder xs ->
     match xs with
     | [x]-> x
     | _ -> bexpr_tuple (btyp_tuple (List.map snd xs)) xs

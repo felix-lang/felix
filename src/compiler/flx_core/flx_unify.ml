@@ -81,29 +81,80 @@ let check_recursion bsym_table t =
       sbt bsym_table t);
     raise Bad_recursion 
 
-let rec unification bsym_table counter eqns dvars =
-  (*
-  print_endline ( "Dvars = { " ^ catmap ", " si (BidSet.elements dvars) ^ "}");
+type relmode_t = [`Eq | `Ge]
+type tpair_t = Flx_btype.t * Flx_btype.t
+type rel_t = relmode_t * tpair_t
+type rels_t = rel_t list
+type vassign_t = int * Flx_btype.t
+type mgu_t = vassign_t list
+type maybe_vassign_t = vassign_t option
+type reladd_t = tpair_t -> unit
+type dvars_t = BidSet.t
+
+(* LHS ge RHS, parameter supertype of argument *)
+let rec solve_subtypes bsym_table counter lhs rhs dvars (s:vassign_t option ref) (add_eq:reladd_t) (add_ge:reladd_t) =
+  match lhs, rhs with
+  | BTYP_function (dl,cl), BTYP_function (dr,cr) ->
+    add_ge (dr, dl); (* contravariant *)
+    add_ge (cl, cr) (* covariant *)
+
+  (* This rule isn't variant but should be!
+     The rule basically says, the parameter type is a super type
+     of the argument type if the argument type is one of the types
+     in the union. This will only work if the union is monomorphic.
+
+     The correct rule is the same as overloading and is very complex.
+     The rule should be to first calculate ALL of the union components
+     that the argument type is a subtype of, keeping track of the 
+     resultant MGUs. Then, of all the candidates we have to find
+     the most specialised one, so we have to recursively apply
+     the unification engine and matching stuff as in overloading.
+
+     An ambiguous result is a problem. It means, we have to unify,
+     but the problem now is that we have to inject the MGU into
+     the solutions obtained so far, but now we have a choice
+     of MGUs.
   *)
-  let history = ref eqns in
-  let eqns = ref eqns in
-  let mgu = ref [] in
-  let add_eqn eqn =
-    if List.mem eqn (!history) then ()
-    else begin
-       eqns := eqn :: (!eqns);
-       history := eqn :: (!history)
-    end
-  in
-  let rec loop () : unit =
-    match !eqns with
-    | [] -> ()
-    | h :: t ->
-      eqns := t;
-      let s = ref None in
-      let lhs,rhs = h in 
-      let lhs = unfold "unification" lhs in
-      let rhs = unfold "unification" rhs in
+  | BTYP_union lhs, t ->
+    if List.mem t lhs then () else raise Not_found
+
+  (* This rule says that the parameter is of type 5, we can pass
+    an argument of type 3. At C time they're both plain integers
+    of some kind so there's no work to do with any conversions
+    in the code generator. However Felix will need a coercion
+    which will have to be applied automatically, that promotes
+    a value of type 3 to a value of type 5. It's really not
+    clear this is justified.
+  *)
+  | BTYP_unitsum l, BTYP_unitsum r ->
+(*
+print_endline ("Subtype sums, param= " ^ string_of_int l ^ ", arg = " ^ string_of_int r);
+*)
+    if l >= r then () else raise Not_found
+
+  (* invariant fields for the moment : width subtyping only *)
+  (* if a field of the parameter is not present in the argument,
+    List.assoc throws Not_found which is what we want anyhow
+  *)
+  | BTYP_record lhs, BTYP_record rhs ->
+    List.iter (fun (field,ltyp) ->
+      add_eq (ltyp, List.assoc field rhs)
+    )
+    lhs
+
+  (*  variants work backwards from records *)
+  | BTYP_variant lhs, BTYP_variant rhs ->
+    List.iter (fun (field,rtyp) ->
+      add_eq (rtyp, List.assoc field lhs)
+    )
+    rhs
+
+
+
+  | _ ->  
+    solve_subsumption bsym_table counter lhs rhs dvars s add_eq
+
+and solve_subsumption bsym_table counter lhs rhs  dvars (s:vassign_t option ref) (add_eqn:reladd_t) =
       begin match lhs,rhs with
       | BTYP_rev t1, BTYP_rev t2 ->
         add_eqn (t1,t2)
@@ -434,6 +485,36 @@ print_endline "Trying to unify type map";
 *)
         raise Not_found
       end
+
+let unif bsym_table counter (inrels: rels_t) (dvars:dvars_t) =
+  (*
+  print_endline ( "Dvars = { " ^ catmap ", " si (BidSet.elements dvars) ^ "}");
+  *)
+  let history : rels_t ref = ref inrels in
+  let rels : rels_t ref = ref inrels in
+  let mgu : mgu_t ref = ref [] in
+  let add_rel (rel:rel_t) =
+    if List.mem rel (!history) then ()
+    else begin
+       rels := rel :: (!rels);
+       history := rel :: (!history)
+    end
+  in
+  let add_eq x = add_rel (`Eq, x) in
+  let add_ge x = add_rel (`Ge, x) in
+  let rec loop () : unit =
+    match !rels with
+    | [] -> ()
+    | h :: t ->
+      rels := t;
+      let s: vassign_t option ref = ref None in
+      let (mode,(lhs,rhs)): rel_t = h in 
+      let lhs = unfold "unification" lhs in
+      let rhs = unfold "unification" rhs in
+      begin match mode with
+      | `Eq -> solve_subsumption bsym_table counter lhs rhs dvars s add_eq add_ge
+      | `Ge -> solve_subtypes bsym_table counter lhs rhs dvars s add_ge
+      end
       ;
       begin match !s with
       | None -> ()
@@ -441,13 +522,14 @@ print_endline "Trying to unify type map";
         (*
         print_endline ("Substituting " ^ si i ^ " -> " ^ sbt sym_table t);
         *)
-        eqns :=
+        rels :=
           List.map
-          (fun (a,b) ->
-            term_subst counter a i t,
-            term_subst counter b i t
+          (fun (mode,(a,b)) ->
+            mode,
+            (term_subst counter a i t,
+            term_subst counter b i t)
           )
-          !eqns
+          !rels
         ;
         assert(not (List.mem_assoc i !mgu));
         mgu :=
@@ -463,6 +545,7 @@ print_endline "Trying to unify type map";
       loop ();
       !mgu
 
+
 let find_vars_eqns eqns =
   let lhs_vars = ref BidSet.empty in
   let rhs_vars = ref BidSet.empty in
@@ -474,22 +557,34 @@ let find_vars_eqns eqns =
   ;
   !lhs_vars,!rhs_vars
 
+let unification bsym_table counter eqns dvars =
+  let eqns = List.map (fun x -> `Eq, x) eqns in
+  unif bsym_table counter eqns dvars
+
 let maybe_unification bsym_table counter eqns =
   let l,r = find_vars_eqns eqns in
   let dvars = BidSet.union l r in
-  try Some (unification bsym_table counter eqns dvars)
+  let eqns = List.map (fun x -> `Eq, x) eqns in
+  try Some (unif bsym_table counter eqns dvars)
   with Not_found -> None
 
+(* same as unifies so why is this here? *)
 let maybe_matches bsym_table counter eqns =
   let l,r = find_vars_eqns eqns in
   let dvars = BidSet.union l r in
-  try Some (unification bsym_table counter eqns dvars)
+  let eqns = List.map (fun x -> `Eq, x) eqns in
+  try Some (unif bsym_table counter eqns dvars)
+  with Not_found -> None
+
+(* LHS is parameter, RHS is argument, we require LHS >= RHS *)
+let maybe_specialisation_with_dvars bsym_table counter eqns dvars =
+  let eqns = List.map (fun x -> `Ge, x) eqns in
+  try Some (unif bsym_table counter eqns dvars)
   with Not_found -> None
 
 let maybe_specialisation bsym_table counter eqns =
   let l,_ = find_vars_eqns eqns in
-  try Some (unification bsym_table counter eqns l)
-  with Not_found -> None
+  maybe_specialisation_with_dvars bsym_table counter eqns l
 
 let unifies bsym_table counter t1 t2 =
   let eqns = [t1,t2] in
@@ -501,7 +596,9 @@ let ge bsym_table counter a b =
 (*
   print_endline ("Compare terms " ^ sbt bsym_table a ^ " >? " ^ sbt bsym_table b);
 *)
-  match maybe_specialisation bsym_table counter [a,b] with
+  let eqns = [a,b] in
+  let l,_ = find_vars_eqns eqns in
+  match maybe_specialisation bsym_table counter eqns with
   | None -> (* print_endline "    ** false"; *) false
   | Some mgu ->
 (*

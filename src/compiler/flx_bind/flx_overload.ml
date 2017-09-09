@@ -19,6 +19,8 @@ open Flx_name_map
 open Flx_bid
 open Flx_btype_subst
 
+let debugid = ""
+
 (* a hack *)
 exception OverloadKindError of Flx_srcref.t * string
 
@@ -307,9 +309,7 @@ let fixup_argtypes be bid pnames base_domain argt rs =
 let resolve sym_table bsym_table base_sym bt be arg_types =
   let sym = Flx_sym_table.find sym_table base_sym in
   let name = sym.Flx_sym.id in
-(*
-if name = "accumulate" then print_endline "Attempting to resolve accumulate";
-*)
+if name = debugid then print_endline ("Attempting to resolve " ^ name);
   let opt_bsym = try Some (Flx_bsym_table.find bsym_table base_sym) with Not_found -> None in
 
   let pvs, vs, { raw_type_constraint=con } =
@@ -364,9 +364,7 @@ if name = "accumulate" then
    *)
   match opt_bsym with
   | Some {Flx_bsym.id=id;sr=sr;bbdcl=Flx_bbdcl.BBDCL_fun (props,base_bvs,ps,rt,effects,_)} ->
-(*
-    print_endline ("Found function binding for " ^ id);
-*)
+if name = debugid then print_endline ("Found function binding for " ^ id);
     let domain = Flx_bparams.get_btype ps in
     let base_result = rt in
     domain, base_result
@@ -375,10 +373,7 @@ if name = "accumulate" then
 (*
 print_endline ("Warning: didn't find function binding for " ^ sym.Flx_sym.id);
 *)
-(*
-if name = "accumulate" then 
-  print_endline ("Can't find bound symbol table entry, binding:");
-*)
+if name = debugid then print_endline ("Can't find bound symbol table entry, binding:");
     let domain = 
       try bt sym.Flx_sym.sr base_domain 
       with exn -> 
@@ -392,6 +387,7 @@ if name = "accumulate" then
     in
     domain,base_result
   in
+if name = debugid then print_endline "Resolve complete";
   sym.Flx_sym.id, sym.Flx_sym.sr, vs, pvs, con, domain, base_result, arg_types
 
 
@@ -431,10 +427,10 @@ let make_equations
   spec_domain
   spec_result
 =
-(*
+  let name = id in
+if name = debugid then
   print_endline ("BASE Return type of function " ^ id ^ "<" ^
     si entry_kind.base_sym ^ ">=" ^ sbt bsym_table spec_result);
-*)
   (* unravel function a->b->c->d->..->z into domains a,b,c,..y
      to match curry argument list *)
   let curry_domains =
@@ -498,25 +494,31 @@ btyp_type_var ((i), btyp_type 0))
 
   let dvars = ref BidSet.empty in
   List.iter (fun (_,i)-> dvars := BidSet.add i !dvars) entry_kind.spec_vs;
-(*
+if name = debugid then begin
   print_endline "EQUATIONS ARE:";
   List.iter (fun (t1,t2) -> print_endline (sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2))
   eqns
-  ;
-*)
+end;
   (* WRONG!! dunno why, but it is! *)
 (*
   print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
     (BidSet.fold (fun i l-> i::l) !dvars []));
   print_endline "...";
 *)
-  let result = try Some (unification bsym_table counter eqns !dvars) with Not_found -> None in
+if name = debugid then print_endline "Trying unification";
+  let result = 
 (*
+    if name = debugid then 
+*)
+    if true then 
+      maybe_specialisation_with_dvars bsym_table counter eqns !dvars 
+    else try Some (unification bsym_table counter eqns !dvars) with Not_found -> None
+  in
+if name = debugid then
   begin match result with
   | None -> print_endline "Does not unify"
   | Some mgu -> print_endline ("UNIFIES with MGU = " ^ string_of_varlist bsym_table mgu)
   end;
-*)
   result
 
 
@@ -940,11 +942,11 @@ let consider
   (* Helper function to simplify the bind type function. *)
   let bt sr t = bt sr entry_kind.base_sym t in
 
-if name = "" then print_endline ("Considering .." ^ name);
+if name = debugid then print_endline ("Considering .." ^ name);
   let id, sr, base_vs, parent_vs, con, domain, base_result, arg_types =
     resolve sym_table bsym_table entry_kind.base_sym bt be arg_types 
   in
-
+if name = debugid then print_endline ("Resolve done for " ^ name);
   (*
   if List.length rtcr > 0 then begin
     (*
@@ -1048,10 +1050,8 @@ if name = "accumulate" then print_endline "Considering function .. ";
       clierrx "[flx_bind/flx_overload.ml:1028: E250] " sr ("Failed to bind candidate return type! fn='" ^ name ^
         "', type=" ^ sbt bsym_table base_result)
   in
-(*
-if name = "Eint" then 
-print_endline "Making equations";
-*)
+if name = debugid then 
+print_endline "Making equations for ts";
   (* Step1: make equations for the ts *)
   let mgu = make_equations
     counter
@@ -1064,10 +1064,8 @@ print_endline "Making equations";
     (specialize_domain sr base_vs entry_kind.sub_ts domain)
     spec_result
   in
-(*
-if name = "EInt" then 
+if name = debugid then 
 print_endline "maybe got mgu ..";
-*)
 (*
   let mgu = maybe_specialisation counter bsym_table mgu in
 *)
@@ -1081,10 +1079,8 @@ print_endline "maybe got mgu ..";
      already by the instance match .. hmm .. *)
   match mgu with
   | Some mgu ->
-(*
-if name = "EInt" then
+if name = debugid then
 print_endline "solving mgu";
-*)
       solve_mgu
         counter
         bsym_table
@@ -1127,8 +1123,7 @@ let overload
 :
   overload_result option
 =
-(*
-if name = "map" then
+if name = debugid then
 begin
   print_endline ("Overload " ^ name);
   print_endline ("Argument sigs are " ^ catmap ", " (sbt bsym_table) sufs);
@@ -1137,7 +1132,6 @@ begin
     catmap ",\n" (full_string_of_entry_kind sym_table bsym_table) fs ^ "\n");
   print_endline ("Input ts = " ^ catmap ", " (sbt bsym_table) ts);
 end;
-*)
   let env_traint = btyp_intersect (
     filter_out_units  
     (List.map
@@ -1188,11 +1182,9 @@ if name = "EInt" then print_endline "Failed to find result";
       | Fail -> false
     end fun_defs
   in
-(*
-  if name = "EInt" then
+  if name = debugid then
     print_endline ("First stage: matching Candidates are:\n" ^ 
       catmap ",\n" (show_result bsym_table) candidates^"\n");
-*)
     (*
     print_endline "Got matching candidates .. ";
     *)
