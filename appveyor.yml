@@ -20,6 +20,7 @@ install:
   - cmd.exe /C rmdir /Q /S build\flxg-tmp
   - cmd.exe /C rmdir /Q /S build\release\test
   - cmd.exe /C rmdir /Q /S build\release\src
+  - cmd.exe /C rmdir /Q /S build\release\share\src\test
 
 environment:
   access_token:

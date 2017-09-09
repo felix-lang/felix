@@ -25,6 +25,7 @@ before_script:
 - git clone -q --depth=1 https://skaller:${GITHUB_TOKEN}@github.com/felix-lang/linuxgccbinary.git
 - mkdir -p build
 - cp -r linuxgccbinary/build/* build
+- rm -rf build/release/share/lib/
 script:
 - mkdir bin
 - ln -s /usr/bin/gcc-6 bin/gcc
