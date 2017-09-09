@@ -512,8 +512,8 @@ let unif bsym_table counter (inrels: rels_t) (dvars:dvars_t) =
       let lhs = unfold "unification" lhs in
       let rhs = unfold "unification" rhs in
       begin match mode with
-      | `Eq -> solve_subsumption bsym_table counter lhs rhs dvars s add_eq add_ge
-      | `Ge -> solve_subtypes bsym_table counter lhs rhs dvars s add_ge
+      | `Eq -> solve_subsumption bsym_table counter lhs rhs dvars s add_eq 
+      | `Ge -> solve_subtypes bsym_table counter lhs rhs dvars s add_eq add_ge
       end
       ;
       begin match !s with
