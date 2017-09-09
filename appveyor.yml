@@ -21,6 +21,7 @@ install:
   - cmd.exe /C rmdir /Q /S build\release\test
   - cmd.exe /C rmdir /Q /S build\release\src
   - cmd.exe /C rmdir /Q /S build\release\share\src\test
+  - cmd.exe /C rmdir /Q /S build\release\share\lib
 
 environment:
   access_token:
