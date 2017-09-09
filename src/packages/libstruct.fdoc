@@ -57,6 +57,9 @@ include "std/codec/__init__";
 include "std/datatype/__init__";
 include "std/strings/__init__";
 
+// regexes
+include "std/regex/__init__";
+
 // database REMOVED
 //include "std/db/__init__";
 

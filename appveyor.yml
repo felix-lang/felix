@@ -20,6 +20,8 @@ install:
   - cmd.exe /C rmdir /Q /S build\flxg-tmp
   - cmd.exe /C rmdir /Q /S build\release\test
   - cmd.exe /C rmdir /Q /S build\release\src
+  - cmd.exe /C rmdir /Q /S build\release\share\src\test
+  - cmd.exe /C del build\release\share\lib\std\strings\regexps.fsyn
 
 environment:
   access_token:
