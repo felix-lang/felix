@@ -16,7 +16,7 @@ before_script:
 - sudo mkdir -p /opt/ocaml
 - sudo tar -xzf ocaml402-binary.tar.gz --directory /opt/ocaml/
 - export PATH=/opt/ocaml/bin/:$PATH
-- export OCAMLLIB=/opt/ocaml/lib
+- export OCAMLLIB=/opt/ocaml/lib/ocaml
 - git config --global user.email "skaller@users.sourceforge.net"
 - git config --global user.name "skaller"
 - git config --global push.default simple
