@@ -11,12 +11,14 @@ addons:
     - g++-6
 before_script:
 - sudo apt-get remove g++
-- echo "Getting Ocaml 4.02.3 binary"
-- wget -O ocaml402-binary.tar.gz https://github.com/gbluma/ocaml-binaries/blob/master/ubuntu/ocaml402-binary.tar.gz?raw=true
-- sudo mkdir -p /opt/ocaml
-- sudo tar -xzf ocaml402-binary.tar.gz --directory /opt/ocaml/
-- export PATH=/opt/ocaml/bin/:$PATH
-- export OCAMLLIB=/opt/ocaml/lib/ocaml
+- wget https://github.com/ocaml/ocaml/archive/4.02.3.tar.gz
+- tar -xzf 4.02.3.tar.gz
+- cd ocaml-4.02.3
+- ./configure
+- make world
+- make world.opt
+- sudo make install
+- cd -
 - git config --global user.email "skaller@users.sourceforge.net"
 - git config --global user.name "skaller"
 - git config --global push.default simple
@@ -40,7 +42,7 @@ script:
 - g++ -std=gnu++11 -c -o test.o test.cpp
 - nm test.o | c++filt
 - #FLX_MIN_MEM=100000 make "FBUILD_PARAMS=--build-cc=/usr/bin/gcc --build-cxx=/usr/bin/g++"
-- FLX_MIN_MEM=100000 make build "FBUILD_PARAMS=--verbose"
+- FLX_MIN_MEM=100000 make build 
 - #make rebuild uproot
 after_success:
 - mkdir linuxgccbinary/build
