@@ -11,14 +11,12 @@ addons:
     - g++-6
 before_script:
 - sudo apt-get remove g++
-- wget https://github.com/ocaml/ocaml/archive/4.02.3.tar.gz
-- tar -xzf 4.02.3.tar.gz
-- cd ocaml-4.02.3
-- ./configure
-- make world
-- make world.opt
-- sudo make install
-- cd -
+- echo "Getting Ocaml 4.02.3 binary"
+- wget -O ocaml402-binary.tar.gz https://github.com/gbluma/ocaml-binaries/blob/master/ubuntu/ocaml402-binary.tar.gz?raw=true
+- sudo mkdir -p /opt/ocaml
+- sudo tar -xzf ocaml402-binary.tar.gz --directory /opt/ocaml/
+- export PATH=/opt/ocaml/bin/:$PATH
+- export OCAMLLIB=/opt/ocaml/lib
 - git config --global user.email "skaller@users.sourceforge.net"
 - git config --global user.name "skaller"
 - git config --global push.default simple
