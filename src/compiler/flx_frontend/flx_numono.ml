@@ -48,7 +48,7 @@ let showvars bsym_table vars =
 (* ----------------------------------------------------------- *)
 
 let check_mono bsym_table sr t =
-  if Flx_unify.var_occurs bsym_table t then begin
+  if Flx_btype_occurs.var_occurs bsym_table t then begin
     print_endline (" **** Failed to monomorphise type " ^ sbt bsym_table t);
     print_endline (" **** got type " ^ sbt bsym_table t);
     assert false

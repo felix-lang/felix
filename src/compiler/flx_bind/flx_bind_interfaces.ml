@@ -77,7 +77,7 @@ let bind_interface (state:bbind_state_t) bsym_table = function
         Flx_srcref.dummy_sr
         typ
       in
-      if try var_occurs bsym_table t with _ -> true then
+      if try Flx_btype_occurs.var_occurs bsym_table t with _ -> true then
       clierrx "[flx_bind/flx_bbind.ml:993: E6] " sr
       (
         "Can't export generic- or meta- type " ^

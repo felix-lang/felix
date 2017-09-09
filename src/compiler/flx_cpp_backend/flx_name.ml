@@ -131,7 +131,7 @@ print_endline "Cannot find entry";
     in
     let has_variables =
       List.fold_left
-      (fun truth t -> truth || var_occurs bsym_table t)
+      (fun truth t -> truth || Flx_btype_occurs.var_occurs bsym_table t)
       false
       ts
     in

@@ -65,7 +65,7 @@ let add_inst syms bsym_table ref_insts1 sr (i,ts) =
     let has_variables =
       fold_left
       (fun truth t -> truth ||
-        try var_occurs bsym_table t
+        try Flx_btype_occurs.var_occurs bsym_table t
         with _ -> failwith ("[add_inst] metatype in var_occurs for " ^ sbt bsym_table t)
       )
       false
