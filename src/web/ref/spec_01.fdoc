@@ -479,6 +479,8 @@ if that class is opened.
 Inheriting is transtitive.
 
 If a name is inherited it will clash with a local definition.
+
+If an inherited package is part of another class (even if opened), the full qualified name will be required.
 @felix
 class A { var a = 1; }
 class B { inherit A; }
