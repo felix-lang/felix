@@ -26,6 +26,8 @@ include "std/__init__";
 @h1 Default includes for Standard library.
 @tangle std
 
+open String;
+
 // ISO C++99 standard header tags
 include "std/c/__init__";
 
