@@ -479,6 +479,8 @@ if that class is opened.
 Inheriting is transtitive.
 
 If a name is inherited it will clash with a local definition.
+
+If an inherited class is part of another class (even if already opened), the full qualified name will be required.
 @felix
 class A { var a = 1; }
 class B { inherit A; }
@@ -513,6 +515,8 @@ class B { rename g[T] = A::f[T]; }
 
 @h2 Use directive
 This is a short form of the rename directive:
+
+If referring to a nested class, he full qualified name will be required.
 @felix
 class A { var a = 1; }
 class B { use A::a; use b = A::a; }
