@@ -48,11 +48,14 @@ open class UniqueCStrings
   open CString;
   open Memory;
 
+  private var debug = false;
+
   typedef ustr = uniq (+char);
   // Constructors
   ctor ustr (s:string) = {
      var p =  (s._unsafe_cstr.strdup);
-     println$ "Creating " + p.repr + " @" + p.address.repr;
+     if debug perform
+       println$ "Creating " + p.repr + " @" + p.address.repr;
      return uniq p;
   }
 
@@ -61,7 +64,8 @@ open class UniqueCStrings
   // deletes the store
   proc delete (p:ustr) {
     var q = ununiq p;
-    println$ "Deleting " + q.address.repr;
+    if debug perform
+      println$ "Deleting " + q.address.repr;
     free q;
   } 
 
@@ -93,8 +97,10 @@ open class UniqueCStrings
     var ly = cy.len;
     var r = realloc (cx, lx+ly+1);
     strncpy (r+lx,cy,ly+1);
-    println$ "Realloc @" + cx.address.repr + " -> " + r.address.repr;
-    println$ "Free @" + cy.address.repr;
+    if debug do
+      println$ "Realloc @" + cx.address.repr + " -> " + r.address.repr;
+      println$ "Free @" + cy.address.repr;
+    done
     free cy;
     return uniq r;
   } 
@@ -106,7 +112,8 @@ open class UniqueCStrings
     var lx = cx.len;
     var ly = cy.len;
     var r = realloc (cx, lx+ly+1);
-    println$ "Realloc @" + cx.address.repr + " -> " + r.address.repr;
+    if debug perform
+      println$ "Realloc @" + cx.address.repr + " -> " + r.address.repr;
     strncpy (r+lx,cy,ly+1);
     return uniq r;
   } 
@@ -159,5 +166,4 @@ open class UniqueCStrings
     free py;
     return uniq px;
   }
-    
 }

@@ -1476,6 +1476,49 @@ print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ s
 print_endline ("Coercion is variant to variant, ignore");
 *)
       ge' srce (* safe, already checked, universal rep *)
+
+    | BTYP_record ls, BTYP_record rs ->
+      begin try
+        let prjs = List.map (fun ( name,t) -> name, bexpr_get_named t name srce) rs in
+        let r = bexpr_record prjs in
+        ge' r 
+      with _ -> 
+       failwith ("Bad record coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
+      end
+
+    (* C should handle integer to compact linear type ok *)
+    (* could be some other type to unit sum but checking for
+       an integer is nasty
+    *)
+    | t, _ when clt t ->
+(*
+print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
+*)
+      ge' srce
+
+
+    | _, t when clt t ->
+(*
+print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
+*)
+      ge' srce
+
+    | BTYP_array (_,t), _ when clt t ->
+(*
+print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
+*)
+      ge' srce
+
+
+    | _, BTYP_array (_,t) when clt t ->
+(*
+print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
+*)
+      ge' srce
+
+
+
+
     | _ -> 
 print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
 print_endline ("Coercion uses reinterpret cast!");

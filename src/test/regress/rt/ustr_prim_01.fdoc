@@ -1,0 +1,15 @@
+@h1 ustr_prim_01.flx
+@felix
+proc test() {
+  var s = ustr "Hello";
+  println$ &s;
+  s = set (s, 0, char "E"); 
+  println$ &s;
+  delete s;
+}
+test();
+
+@expect
+Hello
+Eello
+@

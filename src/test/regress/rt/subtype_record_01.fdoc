@@ -1,0 +1,8 @@
+@h1 Subtyping: records
+@felix
+var x = (a=1, b="hello", c=44.44);
+fun f( y: (c:double, b:string) ) => y._strr;
+println$ f x;
+@expect
+(b='hello',c=44.44)
+@
