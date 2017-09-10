@@ -26,7 +26,6 @@ type bexpr_t =
   | BEXPR_record of (string * t) list
   | BEXPR_polyrecord of (string * t) list * t
   | BEXPR_remove_fields of t * string list
-  | BEXPR_variant of string * t
   | BEXPR_closure of bid_t * Flx_btype.t list
   | BEXPR_identity_function of Flx_btype.t
 
@@ -36,11 +35,9 @@ type bexpr_t =
 
 (* test if case index matches constructor index *)
   | BEXPR_match_case of int * t
-  | BEXPR_match_variant of string * t
 
 (* decoding of union/sum value *)
   | BEXPR_case_arg of int * t
-  | BEXPR_variant_arg of string * t 
 
   | BEXPR_case_index of t
 
@@ -504,15 +501,21 @@ print_endline ("Core = " ^ st (snd reduced_e));
 
 
 (************************ END POLYRECORD **************************)
-
-let bexpr_variant t (n, e) = BEXPR_variant (n, e), complete_check t
-
-
 let bexpr_aprj ix d c = 
   BEXPR_aprj (ix,d,c),complete_check (Flx_btype.btyp_function (d,c))
 
 let bexpr_inj n d c = 
   BEXPR_inj (n,d,c),complete_check (Flx_btype.btyp_function (d,c))
+
+let bexpr_variant t (name, ((_,argt) as arg)) = 
+  match t with
+  | Flx_btype.BTYP_variant ls ->
+    let h = Flx_btype.vhash (name, argt) in
+    let inj = bexpr_inj h argt t in
+    bexpr_apply t (inj,arg)
+
+  | _ -> failwith ("bexpr_variant requires variant type, got " ^ Flx_btype.st t)
+
 
 let bexpr_get_n c n (e,d) =  
   match Flx_btype.trivorder c with
@@ -534,26 +537,38 @@ let bexpr_closure t (bid, ts) =
 let bexpr_const_case (i, t) = BEXPR_case (i, t), complete_check t
 
 let bexpr_nonconst_case argt (i, sumt) = 
-  BEXPR_inj (i, argt, sumt), 
-  complete_check (Flx_btype.btyp_function (argt,sumt))
+  bexpr_inj i argt sumt 
 
 let bexpr_match_case (i, e) = 
   BEXPR_match_case (i, e), Flx_btype.btyp_unitsum 2
 
-let bexpr_match_variant (s, e) = 
-  BEXPR_match_variant (s, e), Flx_btype.btyp_unitsum 2 
+(* finds the first one in the list if it exists *)
+let bexpr_match_variant (s,((_,v_t) as v)) = 
+  match v_t with
+  | Flx_btype.BTYP_variant ls -> 
+    let argt = match Flx_btype.maybe_vfind_argtype ls s with
+      | Some argt -> argt
+      | None -> failwith ("Variant does not contain constructor named " ^ s)
+    in 
+    let h = Flx_btype.vhash (s,argt) in 
+    BEXPR_match_case (h,v), Flx_btype.btyp_unitsum 2
+  | _ -> failwith ("match_variant requires variant type")
 
 let bexpr_case_arg t (i, e) = 
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
-  | _ ->    BEXPR_case_arg (i, e), complete_check t
+  | _ ->   
+    BEXPR_case_arg (i, e), complete_check t
 
-let bexpr_variant_arg t (v, e) = 
-  match Flx_btype.trivorder t with
+let bexpr_variant_arg argt (name, ((_,vt) as v)) = 
+  match Flx_btype.trivorder argt with
   | Some k -> bexpr_unitptr k
-  | _ ->  BEXPR_variant_arg (v, e), complete_check t
+  | _ ->  
+    let h = Flx_btype.vhash (name,argt) in 
+    BEXPR_case_arg (h, v), complete_check argt
 
-let bexpr_case_index t e = BEXPR_case_index e, complete_check t
+let bexpr_case_index t e = 
+  BEXPR_case_index e, complete_check t
 
 let bexpr_expr (s, t, e) = 
   match Flx_btype.trivorder t with
@@ -609,9 +624,6 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
     List.map fst ts = List.map fst ts' &&
     List.fold_left2 (fun r a b -> r && a = b)
       true (List.map snd ts) (List.map snd ts')
-
-  | BEXPR_variant (s,e),BEXPR_variant (s',e') ->
-    s = s' && cmp e e'
 
   | BEXPR_int (e),BEXPR_int (e') -> e = e'
 
@@ -764,7 +776,6 @@ let flat_iter
   | BEXPR_record es -> List.iter (fun (s,e) -> f_bexpr e) es
   | BEXPR_polyrecord (es,e) -> List.iter (fun (s,e) -> f_bexpr e) es; f_bexpr e
   | BEXPR_remove_fields (e,ss) -> f_bexpr e
-  | BEXPR_variant (s,e) -> f_bexpr e
   | BEXPR_closure (i,ts) ->
       f_bid i;
       List.iter f_btype ts
@@ -775,9 +786,7 @@ let flat_iter
       List.iter f_btype ts
   | BEXPR_case (i,t') -> f_btype t'
   | BEXPR_match_case (i,e) -> f_bexpr e
-  | BEXPR_match_variant (s,e) -> f_bexpr e
   | BEXPR_case_arg (i,e) -> f_bexpr e
-  | BEXPR_variant_arg (v,e) -> f_bexpr e
   | BEXPR_case_index e -> f_bexpr e
   | BEXPR_literal x -> f_btype t
   | BEXPR_expr (s,t1,e) -> f_btype t1; f_bexpr e
@@ -878,7 +887,6 @@ let map
       bexpr_polyrecord (List.map (fun (s,e) -> s, f_bexpr e) es) (f_bexpr e)
   | BEXPR_remove_fields (e,ss) -> bexpr_remove_fields (f_bexpr e) ss
 
-  | BEXPR_variant (s,e) -> bexpr_variant t (s, f_bexpr e)
   | BEXPR_closure (i,ts) ->
       bexpr_closure t (f_bid i, List.map f_btype ts)
   | BEXPR_identity_function t -> 
@@ -887,9 +895,7 @@ let map
   | BEXPR_varname (i,ts) -> bexpr_varname t (f_bid i, List.map f_btype ts)
   | BEXPR_case (i,t) -> bexpr_const_case (i,f_btype t)
   | BEXPR_match_case (i,e) -> bexpr_match_case (i, f_bexpr e)
-  | BEXPR_match_variant(s,e) -> bexpr_match_variant (s, f_bexpr e)
   | BEXPR_case_arg (i,e) -> bexpr_case_arg t (i, f_bexpr e)
-  | BEXPR_variant_arg (s,e) -> bexpr_variant_arg t (s, f_bexpr e)
   | BEXPR_case_index e -> bexpr_case_index t (f_bexpr e)
   | BEXPR_literal x -> bexpr_literal t x
   | BEXPR_expr (s,t,e) -> bexpr_expr (s, f_btype t, f_bexpr e)

@@ -96,7 +96,7 @@ let mk_varmap sr vs ts =
       si (List.length vs) ^
       ", got ts=" ^
       si (List.length ts) ^
-      "\nvs= " ^ catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") vs
+      "\nvs= " ^ Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") vs
     )
   ;
   let varmap = Hashtbl.create 97 in

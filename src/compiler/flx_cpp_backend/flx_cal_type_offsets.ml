@@ -76,7 +76,7 @@ let rec get_offsets' syms bsym_table typ : string list =
   | BTYP_pointer t -> ["0"]
 
   | BTYP_variant _ ->
-    ["offsetof("^tname^",vdata)"]
+    ["offsetof("^tname^",data)"]
 
   (* need to fix the rule for optimisation here .. *)
   | BTYP_sum _ ->

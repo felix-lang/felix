@@ -47,10 +47,17 @@ type overload_result =
 val trivorder : t -> int option
 val istriv : t -> bool
 val trivtype : int -> t
-val catmap : string -> ('a -> string) -> 'a list -> string
 val str_of_btype : t -> string
 val st : t -> string
 val sts : t list -> string
+
+val vhash: string * t -> int
+val hash_variants: (string * t) list -> (int * (string * t)) list
+val find_vdata: (string * t) list -> int -> string * t
+val maybe_find_vdata: (string * t) list -> int -> (string * t) option
+val vfind_argtype: (string * t) list -> string -> t
+val maybe_vfind_argtype: (string * t) list -> string -> t option
+ 
 exception Free_fixpoint of t
 type breqs_t = (bid_t * t list) list
 type biface_t =

@@ -699,7 +699,8 @@ and sb bsym_table depth fixlist counter prec tc =
     | BTYP_variant ls ->
       begin match ls with
       | [] -> 0,"void"
-      | _ -> 0,"("^catmap "| " (fun (s,t)->"case " ^ s^" of "^sbt 0 t) ls ^")"
+      | _ -> 0,"("^catmap "| " 
+       (fun (s,t)->"case " ^ s^"<"^string_of_int (vhash (s,t)) ^"> of "^sbt 0 t) ls ^")"
       end
 
     | BTYP_unitsum k ->
@@ -2118,23 +2119,14 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_remove_fields (e,ss) ->
      "(" ^ se e ^ " minus fields " ^ String.concat "," ss ^ ")"
 
-  | BEXPR_variant (s,e) -> "case " ^ s ^ " of (" ^ se e ^ ")"
-
   | BEXPR_case (v,t) ->
     "(case " ^ si v ^ " of " ^ string_of_btypecode (Some bsym_table) t ^ ")"
 
   | BEXPR_match_case (v,e) ->
     "(match case " ^ si v ^ ")(" ^ se e ^ ")"
 
-  | BEXPR_match_variant (v,e) ->
-    "(match variant " ^ v ^ ")(" ^ se e ^ ")"
-
-
   | BEXPR_case_arg (v,e) ->
     "(arg of case " ^ si v ^ " of " ^ se e ^ ")"
-
-  | BEXPR_variant_arg (v,e) ->
-    "(arg of variant " ^ v ^ " of " ^ se e ^ ")"
 
   | BEXPR_case_index e ->
     "caseno (" ^ se e ^ ")"

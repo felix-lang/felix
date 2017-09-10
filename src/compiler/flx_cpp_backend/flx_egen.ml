@@ -381,7 +381,12 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
     assert (d = argt);
     assert (c = t);
     assert (not (clt c)); 
-    Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table shape_map c v a
+    let cx = Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table shape_map c v a in
+(*
+print_endline ("Generated application of injection application " ^ sbe bsym_table (e,t) ^ " as " ^ string_of_cexpr cx);
+*)
+    cx
+
 
 (* -------------- CONSTANT PROJECTIONS ----------------------------- *)
   (* if this is a constant projection of a compact linear array *) 
@@ -1085,14 +1090,6 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
     let x = Flx_vgen.gen_get_case_index ge' bsym_table e in
     ce_infix "==" x (ce_atom (si n))
 
-  | BEXPR_match_variant(s,((e',t') as e)) ->
-    let t' = beta_reduce "flx_egen get_n: match_case" syms.Flx_mtypes2.counter bsym_table sr t' in
-    ce_call (ce_atom "!strcmp") [ce_atom ("\"" ^ s ^ "\""); ce_dot (ge' e) "vname"]
-
-  | BEXPR_variant_arg (s,e) ->
-    let ptname = tn (btyp_pointer t) in
-    ce_prefix "*" (ce_cast ptname (ce_dot (ge' e) "vdata"))
-
   | BEXPR_not (BEXPR_match_case (n,((e',t') as e)),_) ->
     let t' = beta_reduce "flx_egen: not" syms.Flx_mtypes2.counter bsym_table sr t' in
     let x = Flx_vgen.gen_get_case_index ge' bsym_table e in
@@ -1204,6 +1201,7 @@ print_endline ("egen:BEXPR_case: rendered lineralised index .. C index = " ^ str
 begin (* print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^ 
 " ctor#= " ^ si v ^ " union type = " ^ sbt bsym_table t);
 *)
+    print_endline ("making constant ctor");
     Flx_vgen.gen_make_const_ctor bsym_table (e,t)
 end
     (* 
@@ -1468,22 +1466,20 @@ end
      arguments to be applied to a unit anyhow
   *)
 
-  | BEXPR_variant (s,((_,t') as e)) -> 
-    let arg_typename = tn t' in
-    let aval =
-      "new (*PTF gcp, "^arg_typename^"_ptr_map,true) " ^
-      arg_typename ^ "(" ^ ge_arg e ^ ")"
-    in
-    let uval = "::flx::rtl::_variant_(\""^s^"\"," ^ aval ^")"  in
-    ce_atom uval
-
   | BEXPR_coerce ((srcx,srct) as srce,dstt) -> 
 (*
-print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " -> " ^ sbt bsym_table dstt);
+print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
 *)
     begin match srct,dstt with
-    | BTYP_variant _, BTYP_variant _ -> ge' srce (* safe, already checked, universal rep *)
-    | _ -> ce_atom ("reinterpret<"^tn dstt^">("^ge srce^")")
+    | BTYP_variant _, BTYP_variant _ -> 
+(*
+print_endline ("Coercion is variant to variant, ignore");
+*)
+      ge' srce (* safe, already checked, universal rep *)
+    | _ -> 
+print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
+print_endline ("Coercion uses reinterpret cast!");
+     ce_atom ("reinterpret<"^tn dstt^">("^ge srce^")")
     end
 
   | BEXPR_compose _ -> failwith "Flx_egen:Can't handle closure of composition yet"

@@ -23,14 +23,11 @@ type bexpr_t = private
   | BEXPR_record of (string * t) list
   | BEXPR_polyrecord of (string * t) list * t
   | BEXPR_remove_fields of t * string list
-  | BEXPR_variant of string * t
   | BEXPR_closure of bid_t * Flx_btype.t list
   | BEXPR_identity_function of Flx_btype.t
   | BEXPR_case of int * Flx_btype.t
   | BEXPR_match_case of int * t
-  | BEXPR_match_variant of string * t
   | BEXPR_case_arg of int * t
-  | BEXPR_variant_arg of string * t
   | BEXPR_case_index of t
   | BEXPR_expr of Flx_code_spec.t * Flx_btype.t * t
   | BEXPR_range_check of t * t * t

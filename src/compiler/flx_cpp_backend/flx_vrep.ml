@@ -130,6 +130,7 @@ let string_of_variant_rep = function
 
 let cal_variant_rep bsym_table t =
   if is_gadt bsym_table t then VR_uctor else
+  (* variant types universally use _uctor_ since they're open *)
   match t with BTYP_variant _ -> VR_uctor | _ ->
   if isnullptr bsym_table t then 
     VR_nullptr

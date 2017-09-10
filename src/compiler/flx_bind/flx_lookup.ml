@@ -4532,6 +4532,10 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
 
   | EXPR_variant (sr,(s,e)) ->
     let (_,t) as e = be e in
+(*
+print_endline ("binding variant " ^ s ^ " argument " ^ sbe bsym_table e ^ ", argt=" ^ 
+sbt bsym_table t);
+*)
     bexpr_variant (btyp_variant [s,t]) (s,e)
 
   | EXPR_projection (sr,v,t) -> 
@@ -5681,6 +5685,33 @@ print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
        else let t = List.nth ls v in
        bexpr_case_arg t (v, e')
 
+     (* EXPR_case_arg is used for variants with an integer index producted from
+        the field name with a hash of the field name and type. We do this so a variant
+        run time representation is the same as a union 
+     *)
+     | BTYP_variant ts ->
+(*
+       print_endline ("Argument of variant with hash code " ^ string_of_int v);
+       print_endline ("Variant type is " ^ Flx_print.sbt bsym_table t);
+       print_endline ("cofields are: ");
+       List.iter (fun ((s,t) as x) -> 
+         print_endline (s ^ " of " ^ sbt bsym_table t ^ " HASH: " ^ string_of_int (Hashtbl.hash x))
+       ) 
+       ts;
+*)
+       let vsh = List.map (fun ((s,t) as x) -> Hashtbl.hash x,x) ts in
+       let _,vt = 
+         try List.assoc v vsh 
+         with Not_found ->
+           clierr sr ("flx_bind/flx_lookup: case_arg of variant: Hashcode " ^ string_of_int v ^
+           " not found in variant type:\n" ^
+           List.fold_left (fun acc (h,(s,t)) -> 
+              acc ^ s ^ " of " ^ sbt bsym_table t ^ " HASH: " ^ string_of_int h ^ "\n")
+           ""
+           vsh)
+       in
+       bexpr_case_arg vt (v,e')
+ 
      | _ -> clierrx "[flx_bind/flx_lookup.ml:5243: E222] " sr ("Expected sum type, got " ^ sbt bsym_table t)
      end
 

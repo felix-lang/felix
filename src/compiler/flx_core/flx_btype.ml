@@ -338,9 +338,16 @@ print_endline ("   ... core = " ^ st v);
      let ts = List.stable_sort cmp ts in
      BTYP_polyrecord (ts,v)
 
+let vhash ((s,t) as x) = Hashtbl.hash x
+let hash_variants ls = List.map (fun x -> vhash x,x) ls
+let find_vdata ls h = List.assoc h (hash_variants ls)
+let maybe_find_vdata ls h = try Some (find_vdata ls h) with Not_found -> None
+let vfind_argtype ls s = List.assoc s ls
+let maybe_vfind_argtype ls s = try Some (vfind_argtype ls s) with Not_found -> None
 
 (** Construct a BTYP_variant type. *)
-let btyp_variant = function
+let btyp_variant ls = 
+  match ls with
   | [] -> BTYP_void
   | ts ->
       (* Make sure all the elements are sorted by name. *)
