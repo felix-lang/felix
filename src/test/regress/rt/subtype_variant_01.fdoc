@@ -1,0 +1,38 @@
+@h1 Subtyping: variants
+@felix
+typedef variants_t = (case Fred of int | case Joe of string | case Max);
+var y : variants_t = (case Fred 43) :>> variants_t;
+println$ y._strr;
+var z  = (#case Max) :>> variants_t;
+println$ z._strr;
+
+var a = case Joe "Hello";
+println$ a._strr;
+
+fun h(v:variants_t) => v._strr;
+
+println$ h y;
+println$ h z;
+println$ h a;
+
+fun k(v:variants_t) =>
+  match v with
+  | case Fred j => "Fred " + j.str
+  | case Max () => "Max"
+  | _ => "some other variant"
+;
+println$ k y;
+println$ k z;
+println$ k a;
+
+@expect
+case Fred (43)
+#case Max
+case Joe ('Hello')
+case Fred (43)
+#case Max
+case Joe ('Hello')
+Fred 43
+Max
+some other variant
+@
