@@ -1467,6 +1467,9 @@ end
   *)
 
   | BEXPR_coerce ((srcx,srct) as srce,dstt) -> 
+    if Flx_typeeq.type_eq (sbt bsym_table) syms.Flx_mtypes2.counter srct dstt
+    then ge' srce
+    else
 (*
 print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
 *)
@@ -1478,8 +1481,35 @@ print_endline ("Coercion is variant to variant, ignore");
       ge' srce (* safe, already checked, universal rep *)
 
     | BTYP_record ls, BTYP_record rs ->
+      (* count duplicate fields in target *)
+      let counts = Hashtbl.create 97 in
+      let get_rel_seq name = 
+        let n = try Hashtbl.find counts name + 1 with Not_found -> 0 in
+        Hashtbl.replace counts name n;
+        n
+      in
       begin try
-        let prjs = List.map (fun ( name,t) -> name, bexpr_get_named t name srce) rs in
+        let prjs = List.map (fun ( name,rtyp) -> name,
+          begin  
+            let rel_seq = get_rel_seq name in
+(*
+print_endline ("Dst Field " ^ name ^ ", rel_seq=" ^ string_of_int rel_seq ^ ",type=" ^sbt bsym_table rtyp);
+*)
+            let maybe = find_seq name rel_seq ls in
+            match maybe with
+            | None -> print_endline ("Missing field " ^ name); assert false 
+            | Some (idx,ltyp) ->
+(*
+print_endline ("src field idx=" ^ string_of_int idx ^ ", type=" ^ sbt bsym_table ltyp);          
+*)
+            let prj = bexpr_prj idx srct ltyp in
+            let raw_dst = bexpr_apply ltyp (prj,srce) in
+            let final_dst = bexpr_coerce (raw_dst,rtyp) in
+            final_dst
+          end
+          ) 
+          rs 
+        in
         let r = bexpr_record prjs in
         ge' r 
       with _ -> 
@@ -1507,14 +1537,14 @@ print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ s
 (*
 print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
 *)
-      ge' srce
+      ce_atom ("reinterpret<"^tn dstt^">("^ge srce^")")
 
 
     | _, BTYP_array (_,t) when clt t ->
 (*
 print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
 *)
-      ge' srce
+      ce_atom ("reinterpret<"^tn dstt^">("^ge srce^")")
 
 
 

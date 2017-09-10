@@ -121,6 +121,13 @@ val bexpr_variant : Flx_btype.t -> string * t -> bexpr_t * Flx_btype.t
 val bexpr_aprj : t -> Flx_btype.t -> Flx_btype.t -> bexpr_t * Flx_btype.t
 val bexpr_inj : int -> Flx_btype.t -> Flx_btype.t -> bexpr_t * Flx_btype.t
 
+val find_seq: 
+  string -> (* field name *)
+  int -> (* sequence number for name *)
+  (string * Flx_btype.t) list -> (* record data *)
+  (int * Flx_btype.t) option (* absolute field index and type *)
+
+
 val bexpr_get_n :
   Flx_btype.t -> int -> bexpr_t * Flx_btype.t -> bexpr_t * Flx_btype.t
 val bexpr_get_named :

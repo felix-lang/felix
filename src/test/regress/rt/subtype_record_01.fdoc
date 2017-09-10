@@ -3,6 +3,19 @@
 var x = (a=1, b="hello", c=44.44);
 fun f( y: (c:double, b:string) ) => y._strr;
 println$ f x;
+
+// covariant case
+var cv = (out1=1, out2=x, out3="lost");
+fun g(y: (out3:string, out2:(c:double,b:string)) ) => y._strr;
+println$ g cv;
+
+// duplicate labels, corresponding
+var d = (a=1,a=2.2,a=3,b=4,c="gh");
+fun k(y: (a:int,a:double,c:string)) => y._strr;
+println$ k d;
+
 @expect
 (b='hello',c=44.44)
+(out2=(b='hello',c=44.44),out3='lost')
+(a=1,a=2.2,c='gh')
 @

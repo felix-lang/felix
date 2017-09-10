@@ -132,13 +132,33 @@ print_endline ("Subtype sums, param= " ^ string_of_int l ^ ", arg = " ^ string_o
 *)
     if l >= r then () else raise Not_found
 
-  (* invariant fields for the moment : width subtyping only *)
   (* if a field of the parameter is not present in the argument,
     List.assoc throws Not_found which is what we want anyhow
   *)
   | BTYP_record lhs, BTYP_record rhs ->
-    List.iter (fun (field,ltyp) ->
-      add_eq (ltyp, List.assoc field rhs)
+    let counts = Hashtbl.create 97 in
+    let get_rel_seq name = 
+      let n = try Hashtbl.find counts name + 1 with Not_found -> 0 in
+      Hashtbl.replace counts name n;
+      n
+    in
+    List.iter (fun (name,ltyp) ->
+      let rel_seq = get_rel_seq name in
+(*
+print_endline ("Unify: Param Field " ^ name ^ ", rel_seq=" ^ string_of_int rel_seq ^ ",type=" ^ str_of_btype ltyp);
+*)
+      let maybe = find_seq name rel_seq rhs in
+      match maybe with
+      | None -> 
+(*
+print_endline ("Unify: not found in Argument!");
+*)
+        raise Not_found 
+      | Some (_,rtyp) -> 
+(*
+print_endline ("Found in argument, type=" ^ str_of_btype rtyp);
+*)
+        add_ge (ltyp, rtyp) (* covariant *)
     )
     lhs
 
