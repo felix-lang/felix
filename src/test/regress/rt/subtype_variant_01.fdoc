@@ -25,6 +25,11 @@ println$ k y;
 println$ k z;
 println$ k a;
 
+// simple case of covariant arguments
+var cv = case June (a=1,b="Hello");
+fun ck (v: (case June of (a:int))) => v._strr;
+println$ ck cv;
+
 @expect
 case Fred (43)
 #case Max
@@ -35,4 +40,5 @@ case Joe ('Hello')
 Fred 43
 Max
 some other variant
+case June ((a=1))
 @
