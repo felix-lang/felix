@@ -1430,7 +1430,7 @@ syntax expressions {
   x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[stuple_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
 
   //$ Haskell style infix notation of standard functions   foo(x,y) => x `foo` y
-  x[stuple_pri]  := x[stuple_pri] "`" sexpr "`" sexpr =># " `(ast_apply ,_sr ( ,_3 (,_1 ,_5)))";
+  x[stuple_pri]  := x[stuple_pri] "`(" sexpr ")" sexpr =># " `(ast_apply ,_sr ( ,_3 (,_1 ,_5)))";
 
   //$ Named temporary value.
   x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";
