@@ -26,6 +26,7 @@ open Flx_btype_subst
 module CS = Flx_code_spec
 module L = Flx_literal
 exception Recname of string
+exception Vfound (* for variants, Found already used elsewhere *)
 
 let string_of_string = Flx_string.c_quote_of_string
 let nth lst idx = 
@@ -1474,11 +1475,102 @@ end
 print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
 *)
     begin match srct,dstt with
-    | BTYP_variant _, BTYP_variant _ -> 
+    | BTYP_variant ls, BTYP_variant rs -> 
 (*
 print_endline ("Coercion is variant to variant, ignore");
+
+THIS IS NO LONGER CORRECT. UNFORTUNATELY ITS A F'ING MESS TO DO RIGHT.
+The problem is we HAVE to coerce the input argument's constructor 
+argument value, which actually creates a new variant. To do this
+we have to match on all possible cases of the argument's type
+to find the one we need, get the value out of it, convert it,
+and rebuild the variant with the same constructor name, but
+a the new value of the new coerced type. The coercion is covariant
+as for records. 
+
+There is ALSO a problem here in that there is no encoding in the
+variant of the sequence number of the variant, for variants of 
+the same argument type. The type IS encoded at run time by virtue
+of the hashcode.
+
+There's one more thing, an optimisation: if we only have width subtyping,
+there's no need to do anything at all due to the universal representation.
+This also applies to covariant argument width subtyping on variants
+recursively.
 *)
-      ge' srce (* safe, already checked, universal rep *)
+
+      (* check for the special case where the argument constructors all
+      have the same type as the corresponding parameters
+      *)
+      begin try 
+        List.iter (fun (name, ltyp) ->
+          (* find ALL the parameter constructors of the same name
+          at least one of them has to have the same type *)
+          begin try List.iter (fun (rname, rtyp) ->
+            if name = rname 
+            &&  Flx_typeeq.type_eq (sbt bsym_table) syms.Flx_mtypes2.counter ltyp rtyp  
+            then raise Vfound
+            ) rs;
+            raise Not_found
+          with Vfound -> () 
+          end
+        ) ls; 
+        ge' srce (* safe, already checked, universal rep *)
+      with 
+      | Not_found -> 
+      (* OK, now lets handle the special case where there's no choice
+         because the target has only ONE constructor with a given name
+         In fact, I am going to cheat, and just use the first name
+         every time, which will crash is there isn't actually 
+         a coercion for it .. we could then fix that by trying to
+         generate the coercion, and if that fails, try the next
+         case. What we really should do may be to pick the most
+         general target type, but even that seems problematic at the moment.
+         The first case is not bad, because there's currently no way
+         to pattern match variant types with duplicated constructors,
+         to make that work you would have to specify which one with
+         the type. If there were duplicates with the same type,
+         you'd have to go even further and allow a pattern match
+         to repeat the same case. The first branch uses seq 0,
+         the second seq 1, etc. Then the sequence has to also be
+         encoded in the tag, and, the compiler has to analyse the
+         pattern match and add in the sequence number, or, provide
+         syntax for the user to do so.
+      *)
+        begin (* check the target for uniqueness of names *)
+          let counts = Hashtbl.create 97 in
+          let get_rel_seq name = 
+            let n = try Hashtbl.find counts name + 1 with Not_found -> 0 in
+            Hashtbl.replace counts name n;
+            n
+          in
+          List.iter (fun (name,_) -> ignore (get_rel_seq name)) rs;
+          Hashtbl.iter (fun name count -> 
+            if count <> 0 then 
+              print_endline ("Warning: Variant coercion target duplicates name " ^ 
+                name ^ ", will use first one for coercion")
+          ) counts;
+          let coercions = List.map (fun (name, ltyp) ->
+            let condition = bexpr_match_variant (name,srce) in
+            let extracted = bexpr_variant_arg ltyp (name,srce) in
+            (* just use first one .. later we could try next one if it fails *)
+            let rtyp = List.assoc name rs in
+            let coerced = bexpr_coerce (extracted,rtyp) in
+            let new_variant = bexpr_variant dstt (name, coerced) in 
+            condition, new_variant
+            ) ls 
+          in
+          let rec chain cs = 
+            match cs with
+            | (cond,variant) :: second :: tail ->
+               bexpr_cond cond variant (chain (second :: tail))
+            | [_, variant] -> variant (* dubious, skipping check due to exhaustion *)
+            | [] -> assert false
+          in 
+          let result = chain coercions in
+          ge' result
+        end
+      end
 
     | BTYP_record ls, BTYP_record rs ->
       (* count duplicate fields in target *)

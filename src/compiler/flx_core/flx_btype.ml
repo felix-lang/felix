@@ -351,7 +351,8 @@ let btyp_variant ls =
   | [] -> BTYP_void
   | ts ->
       (* Make sure all the elements are sorted by name. *)
-      let ts = List.sort compare ts in
+      let cmp (s1,t1) (s2, t2) = compare s1 s2 in
+      let ts = List.stable_sort compare ts in
       BTYP_variant ts
 
 (** Construct a BTYP_pointer type. *)
