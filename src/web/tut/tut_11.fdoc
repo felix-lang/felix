@@ -1,55 +1,86 @@
 @title Calling Subroutines.
+
 @h1 Application and call operators
 
+So far, we've been assuming the syntax is mostly the same as conventional langauges. 
+But Felix is different in this respect, and we should clear up some details.
+
 @h2 Operator whitespace 
+
 You may have noticed that you can write:
+
 @felix-unchecked
 fflush stdout;
 @
-which is equivalent to
+
+And also
+
 @felix-unchecked
 fflush (stdout);
 @
-Parentheses are not required for function application or procedure
-calls, just for grouping. 
-It's fun to call juxtaposition "operator whitspace".
+
+The two are equivalent.
+
+Parentheses are not required for function application or for procedure calls, just for grouping.
+What this means is @{fflush (stdout)} is only using whitespace for calling the procedure, and the parameter is just a grouping of one element.
+
 
 @h2 Operator dot
-Those with an OO background may find this more pleasing:
+
+Those with familiarity with object-oriented languages (e.g. Java, C#) may find this more pleasing:
+
 @felix-unchecked
 val name = stdin.readln.strip;
 @
-It means exactly the same as before, the operator @{.} is nothing
-more than reverse application. Postfix application binds more tightly
-than prefix application so
+
+It means exactly the same as before, the dot operator (@{.}) is nothing more than reverse application. 
+Postfix application binds more tightly than prefix application so
+
+It means the same as 
+
+@felix-unchecked
+val name = strip(readln(stdin));
+@
+
+You can also mix the dot operator and regular functions.
+
 @felix-unchecked
 f x.g
 @
-means to apply @{g} to @{x} first, then @{f} to the result.
 
-@h2 Operator dollar
-And those with a Haskell background will readily understand that in
+This means we apply @{g} to @{x} first, then @{f} to the result.
+
+@h2 The dollar-sign ($) Operator
+
+Okay. This one should look familiar, and not just because it comes before numbers.
+We've already been using it, and those with a Haskell background can probably guess what it does here.
+
 @felix-unchecked
 val name = strip $ readln $ stdin;
 @
-the {$} is just a low precedence forward application, so 
-it is also the same as before. It is typically used for
-procedural commands to save writing brackets around arguments:
-@felix-unchecked
-println$ "Hello "+name; // println ("Hello"+name)
-@
-because whitespace application has a higher precedence than 
-infix @{+}.
 
-@h2 Operator pipe
-A low precedence left associative reverse application operator:
+The {$} is typically used for procedural commands to save writing brackets around arguments:
+It takes everything that comes after it (up until the semicolon) and wraps it in an imaginary pair of parentheses.
+That is, the following two lines are equivalent.
+
 @felix-unchecked
-val name = stdin |> s readkb |> strip;
+println$ "Hello "+name;
+println ("Hello "+name);
 @
 
-@h2 Operator hash 
-Finally if a function takes only the unit argument {()}:
-you can use the very high precedence prefix @{#} operator to call it:
+@h2 The Pipe Operator
+
+The pipe operator ({|>}) is very similar to the dollar sign ({$}) one, except it works in reverse nesting everything to its left in parentheses.
+
+@felix-unchecked
+val name = stdin |> readln |> strip;
+@
+
+@h2 Hash Operator
+
+Finally if a function takes only the unit argument {()},
+you can use the very high precedence prefix @{#} operator to call it.
+
 @felix-unchecked
 fun pi() => 22.0/7.0;
 println$ "Pi=" + str #pi;
@@ -58,17 +89,18 @@ println$ "Pi=" + str #pi;
 [See next chapter for explanation of @{unit} type]
 
 @h2 Implied procedure call 
+
 And there's a special case for procedures with no arguments:
+
 @felix-unchecked
 proc doit() { println "Done"; }
 doit;
 @
-allowing you to omit the unit argument. This is an example
-of <em>type based syntactic sugar</em> which is used a quite
-a bit in Felix to provide shortcuts. A statement which is an
-expression of a type other than @{void} is not normally allowed.
-In this special case, however, if the type is {unit->void} 
-then the compiler translates it into an application
-of the expression to {()}.
+
+allowing you to omit the unit argument. 
+
+This is an example of <em>type based syntactic sugar</em> which is used a quite a bit in Felix to provide shortcuts. 
+A statement which is an expression of a type other than @{void} is not normally allowed.
+In this special case, however, if the type is {unit->void} then the compiler translates it into an application of the expression to {()}.
 
 
