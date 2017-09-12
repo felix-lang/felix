@@ -211,10 +211,10 @@ class HTTPRequest {
   } 
       
   private proc copy_request(orig:&http_request,cpy:&http_request) = {
-    *cpy.hmethod = *orig.hmethod;
-    *cpy.uri = *orig.uri;
-    *cpy.path = *orig.path;
-    *cpy.params = *orig.params;
+    cpy.hmethod <- *orig.hmethod;
+    cpy.uri <- *orig.uri;
+    cpy.path <- *orig.path;
+    cpy.params <- *orig.params;
   }
 
   publish """
@@ -234,7 +234,7 @@ class HTTPRequest {
       get_line(conn.sock, &line); 
       match split(line,':') with
         | Cons(key,value) =>
-              *headers = Cons((uri_decode(strip(key)),   
+              headers <- Cons((uri_decode(strip(key)),   
 	      uri_decode(strip(fold_left (fun(x:string) (y:string):string => x + y) "" value))),
               *headers);
          | x => println("WARNING:Possible malformed request headerline:"+x); 
@@ -266,9 +266,9 @@ class HTTPRequest {
     endmatch;  
     var headers = Empty[string^2];
     get_headers(conn,&headers);
-    got.headers = headers;
+    got&.headers <- headers;
     copy_request(&got,request); 
-    *request.headers=headers;
+    request.headers <- headers;
   }
 
 
@@ -292,7 +292,7 @@ class HTTPRequest {
       done
       Memory::free(buf_a);
     done
-    *request.entity_params = params;
+    request.entity_params <- params;
     return ; 
   }
 
@@ -317,7 +317,7 @@ fun read_bytes(conn:http_connection,olen:int) = {
     val llen = match get_header(*request,"Content-Length") with |Some s=> int(s) |_ => 0 endmatch;
     var rest = read_bytes(conn,llen);
     write(conn,HTTPResponse::make_continue());
-    *conn.dirty=false;
+    conn.dirty <- false;
 
     match (find (fun (s:string) => s == "boundary") attribs) with
       |Some b => { get_line(conn.sock, &line); 
@@ -326,7 +326,7 @@ fun read_bytes(conn:http_connection,olen:int) = {
       }
      |_ => {conn.config.log(DEBUG,"No Boundry"); }
     endmatch;
-     *request.entity_params=Empty[string*string];
+     request.entity_params <- Empty[string*string];
   }
 
   fun get_fname(request:http_request) ={
@@ -686,7 +686,7 @@ class HTTPConnection {
     return http_connection(config,sock,&b);
   }
   proc set_dirty(conn:http_connection,state:bool) {
-    *conn.dirty = state;
+    conn.dirty <- state;
   }
 
   noinline proc write(var conn:http_connection,var content:string) {
@@ -1212,7 +1212,7 @@ class Cookie {
   }
 
   fun _ctor_cookie (n:string,v:string) = {
-    var c:cookie;c.name=n;c.value=v;return c;}
+    var c:cookie;c&.name<-n;c&.value<-v;return c;}
 
 
 
@@ -1229,9 +1229,6 @@ class Cookie {
   fun set_cookies (c:list[cookie]):string*string => ("Set-Cookie",
     fold_left (fun(x:string) (y:string):string => y +"\r"+ x) "" 
       (map (fun(z:cookie):string => str(z)) c));
-
-
-
 
 }
 @

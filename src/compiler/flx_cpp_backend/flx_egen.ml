@@ -1475,7 +1475,7 @@ end
 print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
 *)
     begin match srct,dstt with
-    | BTYP_variant ls, BTYP_variant rs -> 
+    | BTYP_variant ls, BTYP_variant rs -> assert false; 
 (*
 print_endline ("Coercion is variant to variant, ignore");
 
@@ -1572,7 +1572,7 @@ recursively.
         end
       end
 
-    | BTYP_record ls, BTYP_record rs ->
+    | BTYP_record ls, BTYP_record rs -> assert false;
       (* count duplicate fields in target *)
       let counts = Hashtbl.create 97 in
       let get_rel_seq name = 

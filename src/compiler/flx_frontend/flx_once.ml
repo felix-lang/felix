@@ -420,16 +420,20 @@ if debug then print_endline ("flow: normal= processing for " ^ Flx_print.string_
 let is_once bsym_table bid = 
   match Flx_bsym_table.find_bbdcl bsym_table bid with
   (* | BBDCL_val (_,_,`Once) -> true *)
-  | BBDCL_val (_,BTYP_uniq _,_)
+  | BBDCL_val (_,BTYP_uniq _,_) -> true
+(*
   | BBDCL_val (_,BTYP_rref _,_) 
   | BBDCL_val (_,BTYP_wref _,_) -> true
+*)
   | _ -> false
 
 let rec uniq_type t =
   match t with
-  | BTYP_uniq _ 
+  | BTYP_uniq _  -> true
+(*
   | BTYP_rref _ 
   | BTYP_wref _ -> true
+*)
   | BTYP_tuple ls ->
     List.fold_left (fun acc t -> acc || uniq_type t) false ls
   | _ -> false
@@ -457,9 +461,11 @@ let get_sets bsym_table once_kids bexe =
   let add_once i = if BidSet.mem i once_kids then add i in
   let rec f_bexpr e = 
      match e with
+(*
      (* taking the address of a uniq variable is considered equivalent to setting it *)
      | BEXPR_wref (i,_),_ -> add_once i
      | BEXPR_rref (i,_),_ -> () 
+*)
      | _ ->
        Flx_bexpr.flat_iter ~f_bexpr e 
   in
@@ -500,12 +506,14 @@ let get_gets bsym_table once_kids bexe =
      (* taking the write address of a once variable is considered
        equivalent to setting it
      *)
+(*
      | BEXPR_wref (i,_),_ -> ()
      (* taking the read address of a once variable is considered
        equivalent to getting it
      *)
      | BEXPR_rref (i,_),_ -> add_once i
 
+*)
      (* taking the ordinary address of a once variable has no impact *)
      | BEXPR_ref (i,_),_ -> ()
 
