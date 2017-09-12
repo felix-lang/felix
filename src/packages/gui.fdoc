@@ -211,7 +211,7 @@ class FlxGuiEvents
       var clock = Faio::mk_alarm_clock();
       var e : SDL_Event;
       // dummy first event
-      e.type = SDL_FIRSTEVENT.uint32;
+      e&.type <- SDL_FIRSTEVENT.uint32;
       write$ events.src,e;
       proc waitevent()
       {
@@ -244,7 +244,7 @@ class FlxGuiEvents
     if d > 0.0 goto again;
     quit <- true;
     var quitmsg : SDL_Event;
-    quitmsg.type = SDL_QUIT.uint32;
+    quitmsg&.type <- SDL_QUIT.uint32;
 println$ "TIMEOUT";
     C_hack::ignore(SDL_PushEvent(&quitmsg)); 
 doquit:>
@@ -472,8 +472,8 @@ class FlxGuiSurface
     var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
     C_hack::ignore$ TTF_GlyphMetrics(font,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
     
-    rect.x = x + (min (minx,0));
-    rect.y = y - maxy;
+    rect&.x <- x + (min (minx,0));
+    rect&.y <- y - maxy;
     var nullRect = C_hack::null[SDL_Rect];
 
     var result = SDL_BlitSurface (rendered, nullRect, surf, &rect); 
@@ -941,11 +941,11 @@ println$ "add_window: index = " + (windows.len.int - 1  ).str + " SDL windows id
   {
     println$ "Delete all";
     var e : SDL_Event;
-    e.type = SDL_WINDOWEVENT.uint32;
-    e.window.event = SDL_WINDOWEVENT_CLOSE.uint8;
+    e&.type <- SDL_WINDOWEVENT.uint32;
+    e&.window.event <- SDL_WINDOWEVENT_CLOSE.uint8;
     for wobj in windows do 
       var omsgs = #(wobj.get_oschannel);
-      e.window.windowID = #(wobj.get_window_id);
+      e&.window.windowID <- #(wobj.get_window_id);
       write (omsgs, e);
     done
     // note: not bothering to delete the darray :)
