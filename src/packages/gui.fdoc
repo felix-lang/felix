@@ -1917,9 +1917,9 @@ implements line_buffer_display_controller_interface =
     var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
     C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
       
-    viewport.x = bbox.x + min(minx,0) + 2; 
-    viewport.y = bbox.y + 2; // actually y + font.ascent + 2
-    viewport.h =  bbox.h;
+    viewport&.x <- bbox.x + min(minx,0) + 2; 
+    viewport&.y <- bbox.y + 2; // actually y + font.ascent + 2
+    viewport&.h <-  bbox.h;
 //println$ "Viewpos for ("+x.str+","+y.str+")=("+viewport.x.str+","+viewport.y.str;
     w.add$ mk_drawable tag blit (viewport.x, viewport.y, text_rendered); 
     //SDL_FreeSurface text_rendered;
