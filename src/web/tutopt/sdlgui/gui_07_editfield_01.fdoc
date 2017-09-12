@@ -62,10 +62,10 @@ connector pins
     | KEYDOWN kd when kd.keysym.sym \in (SDLK_TAB, SDLK_RETURN) =>
       var sel :SDL_Event;
       &sel.type <- SDL_WINDOWEVENT.uint32;
-      sel.window.event = SDL_WINDOWEVENT_FOCUS_LOST.uint8;
+      &sel.window.event <- SDL_WINDOWEVENT_FOCUS_LOST.uint8;
       write$ fields.selected_field.0,sel;
       selected_field = (selected_field + 1) % fields.len.int;
-      sel.window.event = SDL_WINDOWEVENT_FOCUS_GAINED.uint8;
+      &sel.window.event <- SDL_WINDOWEVENT_FOCUS_GAINED.uint8;
       write$ fields.selected_field.0,sel;
     | MOUSEBUTTONDOWN mbd =>
       for i in 0 ..< fields.len.int do
@@ -73,14 +73,14 @@ connector pins
         var x,y = mbd.x, mbd.y;
         if SDL_Point (x.int, y.int) \in d.get_client_rect() do
           //println$ "[Evt handler] Button down in client rect of line edit " + d.get_tag();
-          ev2.type = SDL_WINDOWEVENT.uint32;
-          ev2.window.event = SDL_WINDOWEVENT_FOCUS_GAINED.uint8;
+          ev2&.type <- SDL_WINDOWEVENT.uint32;
+          ev2&.window.event <- SDL_WINDOWEVENT_FOCUS_GAINED.uint8;
           write$ fields.i.0, ev2;
           write$ fields.i.0, ev;
           selected_field = i;
         else
-          ev2.type = SDL_WINDOWEVENT.uint32;
-          ev2.window.event = SDL_WINDOWEVENT_FOCUS_LOST.uint8;
+          ev2&.type <- SDL_WINDOWEVENT.uint32;
+          ev2&.window.event <- SDL_WINDOWEVENT_FOCUS_LOST.uint8;
           write$ fields.i.0,ev2; 
         done
       done
