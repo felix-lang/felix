@@ -98,14 +98,7 @@ and uses_bexe' add bsym_table count_inits exe =
       let bbdcl = Flx_bsym.bbdcl bsym in 
       begin match  bbdcl with
       | Flx_bbdcl.BBDCL_external_fun (props,_,_,_,_,_,_) ->
-        if List.mem `Lvalue  props then begin
-          (*
-          print_endline ("[Flx_use.uses_bexe:assign:lhs] Unexpected apply prim ret lvalue " ^ sbe bsym_table e);
-          print_endline ("In assignment " ^ string_of_bexe bsym_table 0 exe);
-          *) 
-          f_bexpr e
-        end
-        else begin 
+        begin 
           clierrx "[flx_frontend/flx_use.ml:92: E369] " (Flx_bexe.get_srcref exe)
           ("Flx_use: In statement " ^ string_of_bexe bsym_table 0 exe ^ "\n" ^
           "Expected primitive " ^ Flx_bsym.id bsym ^ "<" ^ si i ^ "> to have property lvalue")
@@ -113,7 +106,7 @@ and uses_bexe' add bsym_table count_inits exe =
       | _ -> 
           clierrx "[flx_frontend/flx_use.ml:97: E370] " (Flx_bexe.get_srcref exe)
           ("Flx_use: In statement " ^ string_of_bexe bsym_table 0 exe ^ "\n" ^
-          "Lvalue required on LHS of operation "^ Flx_bsym.id bsym)
+          "variable required on LHS of operation "^ Flx_bsym.id bsym)
       end
 
     | BEXPR_apply ((BEXPR_prj _,_),b),_ -> chkl b

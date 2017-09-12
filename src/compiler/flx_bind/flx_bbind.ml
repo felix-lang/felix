@@ -568,9 +568,8 @@ print_endline ("flx_bind: Adding label " ^ s ^ " index " ^ string_of_int symbol_
 
     if state.print_flag then 
     begin
-      let lvalue = if List.mem `Lvalue props then "lvalue " else "" in
       let atyp = btyp_tuple ts in
-      print_endline ("//bound "^lvalue^"fun " ^ sym.Flx_sym.id ^ "<" ^
+      print_endline ("//bound fun " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table (btyp_function (atyp, bret)))
     end;

@@ -157,8 +157,6 @@ let cal_props kind props = match kind with
 let mkcurry seq sr name vs args return_type effects kind body props =
 
   (* preflight checks *)
-  if List.mem `Lvalue props then
-    clierrx "[flx_desugar/flx_curry.ml:157: E318] " sr "Felix function cannot return lvalue";
   if List.mem `Pure props && match return_type with  | TYP_void _,_ -> true | _ -> false then
     clierrx "[flx_desugar/flx_curry.ml:159: E319] " sr "Felix procedure cannot be pure";
 

@@ -93,10 +93,6 @@ let mkreqs state access parent_ts sr (rqs :raw_req_expr_t) : type_qual_t list *p
         props := `Virtual:: !props;
         NREQ_true
 
-      | Property_req "lvalue" ->
-        props := `Lvalue:: !props;
-        NREQ_true
-
       | Property_req s ->
         props := mkprop sr s :: !props;
         NREQ_true

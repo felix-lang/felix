@@ -123,10 +123,10 @@ open class UniqueCStrings
   fun + (x:ustr, py:&ustr) => append (x,py);
 
   proc += (lhs: &ustr, rhs: ustr) => 
-    *lhs = append (*lhs,rhs)
+    lhs <- append (*lhs,rhs)
   ;
   proc += (lhs: &ustr, rhs: &ustr) => 
-    *lhs = append (*lhs,rhs)
+    lhs <- append (*lhs,rhs)
   ;
 
   fun strmov (x:ustr) (var f:int, var l:int) : ustr = {

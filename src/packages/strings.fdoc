@@ -583,7 +583,7 @@ like variant which uses an @{option} type.
     // ignore mismatched quotes and backslashes.
     match state.mode with 
     | #skipping => ;
-    | _ => state.parsed = state.parsed + state.current;
+    | _ => &state.parsed <- state.parsed + state.current;
     endmatch;
     return state.parsed;
  

@@ -424,7 +424,6 @@ print_endline "Type list index returned None";
   | BTYP_pointer a -> btyp_pointer (br a)
   | BTYP_rref a -> btyp_rref (br a)
   | BTYP_wref a -> btyp_wref (br a)
-(*  | BTYP_lvalue a -> btyp_lvalue (br a) *)
 
   | BTYP_label -> t
   | BTYP_void -> t

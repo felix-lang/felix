@@ -24,7 +24,8 @@ open class Cptr
   typedef ptr[T] = &T;
 
   //$ Dereference a Felx pointer.
-  lvalue fun deref[T]: &T -> T = "*$1";
+  //lvalue fun deref[T]: &T -> T = "*$1";
+  fun deref[T]: &T -> T = "*$1";
 
   //$ Type of a C pointer.
   //$ Either pointes to an object or is NULL.
@@ -134,10 +135,12 @@ familiar with C notation. Felix does not support the notion
 of lvalues in general: this is a very special case.
 @tangle carray.flx
   //$ Lvalue reference to element by index position. Unsafe.
-  lvalue fun subscript[T]: carray[T] * !ints -> T = '$1[$2]';
+  //lvalue fun subscript[T]: carray[T] * !ints -> T = '$1[$2]';
+  fun subscript[T]: carray[T] * !ints -> T = '$1[$2]';
 
   //$ Lvalue reference to element by pointer.
-  lvalue fun deref[T]: carray[T] -> T = '*$1';
+  //lvalue fun deref[T]: carray[T] -> T = '*$1';
+  fun deref[T]: carray[T] -> T = '*$1';
 
 @h2 Pointer operators
 @tangle carray.flx
@@ -221,7 +224,7 @@ open[T] Tord[carray[T]];
 var a : +int = array_alloc[int] 10;
 for var i in 0 upto 9 do
   set(a, i, i * i);
-  ++a.[i];
+  set(a,i,get(a,i)+1);
 done
 for i in 0 upto 9 do
   println$  a.[i], *(a+i), a.i;

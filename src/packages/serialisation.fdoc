@@ -412,7 +412,7 @@ class Serialise
         var pd2 = Collector::get_pointer_data newhead2.address;
         var nbytes = pd2.shape.bytes_per_element * pd2.max_elements.size * pd2.shape.number_of_elements;
         if oldptr < oldhead.address + nbytes do
-           *pptr = newhead2.address + (oldptr - oldhead.address);
+           pptr <- newhead2.address + (oldptr - oldhead.address);
         done
       done
     }

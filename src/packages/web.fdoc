@@ -2028,13 +2028,13 @@ class ServerConfig {
       arg = System::argv argno;
       println$ "ARG=" + arg;
       if prefix(arg,"--document_root=") do
-        cfg.document_root = arg.[16 to];
+        cfg&.document_root <- arg.[16 to];
       elif prefix(arg,"--server_root=") do
-        cfg.server_root = arg.[14 to];
+        cfg&.server_root <- arg.[14 to];
       elif prefix(arg,"--port=") do
-        cfg.port = atoi arg.[7 to];
+        cfg&.port <- atoi arg.[7 to];
       elif prefix(arg,"--config=") do
-        cfg.file_name = arg.[9 to];
+        cfg&.file_name <- arg.[9 to];
         if( not (FileStat::fileexists(cfg.file_name))) do
           proc_fail("unable to open config file:"+cfg.file_name); 
         done
@@ -2046,7 +2046,7 @@ class ServerConfig {
         else
           dbg_log = console_logger(DEBUG);
         done;
-        cfg.log = logger(console_logger(INFO)+console_logger(ERROR)+dbg_log);
+        cfg&.log <- logger(console_logger(INFO)+console_logger(ERROR)+dbg_log);
       elif prefix(arg,"--help") do
         println("Usage: "+(System::argv 0)+""" [OPTION]
   --document-root=PATH    Path to document root directory defaults to ./html
@@ -2066,7 +2066,7 @@ class ServerConfig {
   private fun toupper: char->char = "(char)::std::toupper($1)" requires Cxx_headers::cctype ;
 
 
-  fun enhance_with_config_file(config:server_config):opt[server_config]*string = {
+  fun enhance_with_config_file(var config:server_config):opt[server_config]*string = {
     var cfg = config;
     val config_file_default = Filename::join("config","server_config.cfg");
     val enviro_config = Env::getenv((map toupper cfg.application)+"_CFG","");
@@ -2074,7 +2074,7 @@ class ServerConfig {
         if enviro_config  == "" do
             var cwd_config = Filename::join(".",config_file_default);
             if FileStat::fileexists(cwd_config) do 
-                cfg.file_name = cwd_config;
+                cfg&.file_name <- cwd_config;
             else
                 var home = Env::getenv("HOME","");
                 if home == "" do
@@ -2083,7 +2083,7 @@ class ServerConfig {
                     var home_config = Filename::join(home,
                     Filename::join(".felix",Filename::join(cfg.application,config_file_default)));
                     if FileStat::fileexists(home_config) do
-                        cfg.file_name = home_config;
+                        cfg&.file_name <- home_config;
                     else
                         return None[server_config],("Unable to open configurationfile:" + home_config);
                     done
@@ -2091,7 +2091,7 @@ class ServerConfig {
             done
         else 
             if FileStat::fileexists(enviro_config) do
-                cfg.file_name = enviro_config;
+                cfg&.file_name <- enviro_config;
             else
                 return None[server_config],("Unable to open configurationfile:" + enviro_config);
             done
@@ -2106,21 +2106,21 @@ class ServerConfig {
   }
 
   proc set_params(cfg:&server_config,params:list[string^2]) {
-    *cfg.params = params;
+    cfg.params <- params;
     match find (fun (a:string,b:string) => eq(a,b)) params "port" with 
-      |Some s => *cfg.port = int(s);
+      |Some s => cfg.port <- int(s);
       |_ => {}();
     endmatch;
     match find (fun (a:string,b:string) => eq(a,b)) params "server_root" with 
-      |Some s => *cfg.server_root = s;
+      |Some s => cfg.server_root <- s;
       |_ => {}();
     endmatch;
     match find (fun (a:string,b:string) => eq(a,b)) params "document_root" with 
-      |Some s => *cfg.document_root = s;
+      |Some s => cfg.document_root <- s;
       |_ => {}();
     endmatch;
     match find (fun (a:string,b:string) => eq(a,b)) params "delay" with 
-      |Some s => *cfg.delay = double(s);
+      |Some s => cfg.delay <- double(s);
       |_ => {}();
     endmatch;
 

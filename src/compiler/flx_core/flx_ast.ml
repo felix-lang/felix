@@ -84,7 +84,6 @@ and typecode_t =
   | TYP_var of index_t                         (** unknown type *)
   | TYP_none                                   (** unspecified *)
   | TYP_ellipsis                               (** ... for varargs *)
-(*  | TYP_lvalue of typecode_t *)                  (** ... lvalue annotation *)
   | TYP_isin of typecode_t * typecode_t        (** typeset membership *)
 
   | TYP_defer of Flx_srcref.t * typecode_t option ref
@@ -324,7 +323,6 @@ and property_t = [
   | `Generator           (* Generator: fun with internal state *)
   | `Yields              (* Yielding generator *)
   | `Cfun                (* C function *)
-  | `Lvalue              (* primitive returns lvalue *)
 
   (* one of the below must be set before code generation *)
   | `Requires_ptf        (* a pointer to thread frame is needed *)

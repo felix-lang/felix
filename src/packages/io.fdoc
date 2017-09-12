@@ -702,15 +702,15 @@ class IOStream {
   instance IByteStream[devnull_t]
   {
     proc read(strm: devnull_t, len: &int, buf: address, eof: &bool) {
-      *len = 0;
-      *eof = true;
+      len <- 0;
+      eof <- true;
     }
   }
 
   instance OByteStream[devnull_t]
   {
     proc write(strm: devnull_t, len: &int, buf: address, eof: &bool) {
-      *eof = false;
+      eof <- false;
     }
   }
 
@@ -895,7 +895,7 @@ class IOStream {
       done
     done
 
-    *sign = cmp;
+    sign <- cmp;
   }
 
 
@@ -973,7 +973,7 @@ class IOStream {
         st += c;
       done
     done
-    *s = st;  // pass back result
+    s <- st;  // pass back result
   }
 
   proc write_string[ostr with OByteStream[ostr]] (
@@ -1222,9 +1222,9 @@ class Faio {
       var bytes_done = pb.get_bytes_done;
       //println$ "Bytes done = "+ str bytes_done;
       //println$ "Req len= "+ str (*len);
-      *eof = (bytes_done != *len);
+      eof <- (bytes_done != *len);
       //println$ "Eof = " + str (*eof);
-      *len = bytes_done;
+      len <- bytes_done;
       //println$ "Reset len to bytes done ..";
   }
 
@@ -1467,8 +1467,8 @@ proc connect(s: &socket_t, addr: +char, port: int, err: &int)
 {
     var ac = mk_async_connect(sys_demux,addr, port);
     faio_req$ &ac;
-    *err = ac.get_err;
-    *s = ac.get_socket;
+    err <- ac.get_err;
+    s <- ac.get_socket;
 }
 
 type accept_request = "::flx::faio::accept_request";
@@ -1484,7 +1484,7 @@ proc accept(s: &socket_t, listener: socket_t)
 {
     var acc = mk_accept$ sys_demux,listener;
     faio_req$ &acc;
-    *s = acc.get_socket;
+    s <- acc.get_socket;
 }
 
 } // class faio_posix
@@ -1533,7 +1533,7 @@ fun cmk_socket : unit -> SOCKET = '::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)';
 // must associate with iocp to do overlapped io with s (WSASend/Recv)
 proc mk_socket(s: &SOCKET)
 {
-    *s = cmk_socket();
+    s <- cmk_socket();
     associate_with_iocp(*s);                // associate with iocp (errors?).
 }
 
@@ -1554,7 +1554,7 @@ proc Accept(success: &bool, listener: SOCKET, accepted: SOCKET)
 {
     var acc = mk_accept(sys_demux,listener, accepted);
     faio_req$ &acc;    // causes AcceptEx to be called
-    *success = get_success(acc);
+    success <- get_success(acc);
 }
 
 type connect_ex="flx::faio::connect_ex";

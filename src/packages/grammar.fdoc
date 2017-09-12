@@ -392,19 +392,13 @@ syntax cbind {
             `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
             reqs))
       )
-      (let (
-        (reqs
-          (if (memv 'Lvalue _1)
-            `(rreq_and (rreq_atom (Property_req "lvalue")) ,reqs)
-            reqs))
-      )
       (if (eq? 'ast_arrow (first t))
         (let (
           (argt (caadr t))
           (ret (cadadr t)))
         `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
         )
-        (giveup)))))
+        (giveup))))
     """;
 
   //$ Define a constructor function by a C expression.
@@ -1475,6 +1469,8 @@ syntax expressions {
   //$ Variant value.
   x[scase_literal_pri] := "#" "case" sname =># "`(ast_variant (,_3 ()))";
   x[scase_literal_pri] := "case" sname x[ssum_pri] =># "`(ast_variant (,_2 ,_3))";
+  x[scase_literal_pri] := "#" "`" sname =># "`(ast_variant (,_3 ()))";
+  x[scase_literal_pri] := "`" sname x[ssum_pri] =># "`(ast_variant (,_2 ,_3))";
 
   //$ multiplication: right associative
   x[sproduct_pri] := x[>sproduct_pri] "\otimes" x[sproduct_pri] =># "(Infix)";
@@ -1563,8 +1559,10 @@ syntax expressions {
 
   //$ Felix pointer type and address of operator.
   x[sthename_pri] := "_uniq" x[sthename_pri] =># "`(ast_uniq ,_sr ,_2)";
-  x[sthename_pri] := "rref" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
-  x[sthename_pri] := "wref" x[sthename_pri] =># "`(ast_wref ,_sr ,_2)";
+  x[sthename_pri] := "_rref" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
+  x[sthename_pri] := "&<" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
+  x[sthename_pri] := "_wref" x[sthename_pri] =># "`(ast_wref ,_sr ,_2)";
+  x[sthename_pri] := "&>" x[sthename_pri] =># "`(ast_wref ,_sr ,_2)";
 
 
   //$ Felix address of operator.
@@ -1658,6 +1656,8 @@ syntax expressions {
   satom := "(" stype_variant_items ")" =># "`(ast_variant_type ,_2)";
     stype_variant_item := "case" sname "of" sexpr =># "`(,_2 ,_4)";
     stype_variant_item := "case" sname =># "`(,_2 ,(noi 'unit))";
+    stype_variant_item := "`" sname sexpr =># "`(,_2 ,_3)";
+    stype_variant_item := "`" sname =># "`(,_2 ,(noi 'unit))";
 
     stype_variant_item_bar := "|" stype_variant_item =># "_2";
     stype_variant_items := stype_variant_item stype_variant_item_bar* =># "(cons _1 _2)";
@@ -1862,11 +1862,6 @@ syntax functions {
   //$ Function adjective (prefix property) virtual.
   //$ In classes only. Specifies an overrideable function.
   sadjective := "virtual" =># "'Virtual";
-
-  //$ Function adjective (prefix property) lvalue.
-  //$ C function bindings only.
-  //$ Allows result of function call to be addressed.
-  sadjective := "lvalue" =># "'Lvalue";
 
   //$ Function dependent on its arguments only,
   //$ not dependent on any variables in its enclosing context.

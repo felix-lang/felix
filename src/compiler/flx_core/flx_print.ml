@@ -525,8 +525,6 @@ and st prec tc : string =
     | TYP_wref t -> 1,"wref[" ^ st 1 t ^ "]"
     | TYP_uniq t -> 1,"uniq[" ^ st 0 t ^ "]"
 
-(*    | TYP_lvalue t -> 0,"lvalue[" ^ st 1 t ^"]" *)
-
     | TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
     | TYP_as (t,s) -> 0, "([" ^ st 0 t ^ "] as " ^ string_of_id s ^ ")"
 
@@ -1082,7 +1080,6 @@ and string_of_property = function
 | `Yields -> "yields"
 | `Virtual -> "virtual"
 | `Cfun -> "cfun"
-| `Lvalue -> "lvalue"
 | `Tag s -> "Tag " ^ s
 | `Export -> "export"
 | `NamedExport s -> "export "^ string_of_string s

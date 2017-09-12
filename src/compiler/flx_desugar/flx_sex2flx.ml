@@ -524,7 +524,6 @@ and xadjective_t x : property_t =
   | Id "InlineFunction" -> `Inline
   | Id "NoInlineFunction" -> `NoInline
   | Id "Virtual" -> `Virtual 
-  | Id "Lvalue"  -> `Lvalue
   | Id "Impure"  -> `ImPure
   | Id "Pure"  -> `Pure
   | Id "Strict"  -> `Strict

@@ -224,7 +224,7 @@ open class CmdOpt
     nonk = parse-key-multi-value spec.multi-valued-keys-spec result.multi-valued-keys nonk;
     nonk = parse-key-single-value spec.single-valued-keys-spec result.single-valued-keys nonk;
     nonk = parse-key spec.switches-spec result.switches nonk;
-    result.positional = parse-switches spec.short-switch-map-spec result.switches nonk;
+    &result.positional <- parse-switches spec.short-switch-map-spec result.switches nonk;
     return result;
   }
 }

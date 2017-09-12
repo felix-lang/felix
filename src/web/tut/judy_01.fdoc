@@ -63,11 +63,11 @@ var pwres = &wres;
   var pv : &word; // pointer to space in the array to put value
   var ppv = &pv;
   JudyLIns(ja,word 1,je,ppv);
-  *pv = word 11;
+  pv <- word 11;
   JudyLIns(ja,word 7,je,ppv);
-  *pv = word 77;
+  pv <- word 77;
   JudyLIns(ja,word 23,je,ppv);
-  *pv = word 2323;
+  pv <- word 2323;
 
   JudyLGet(ja,word 1,je,ppv);
   print "1->"; println$ int$ *pv;

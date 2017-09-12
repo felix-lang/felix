@@ -173,7 +173,7 @@ class FlxCache
   // changes the automaton must be rebuilt. 
 
   // returns cache time
-  gen validate_cache  (spec: cache_validation_spec_t) : int * double =
+  gen validate_cache  (var spec: cache_validation_spec_t) : int * double =
   {
 
     // ensure the cache directory exists
@@ -227,7 +227,7 @@ class FlxCache
         (spec.CACHE_DIR == "/" or spec.CACHE_DIR == "" or spec.CACHE_DIR == ".")
       )
       do 
-        spec.CLEAR_CACHE = 1;
+        spec&.CLEAR_CACHE <- 1;
       done
 
     // If the automaton exists and the grammar is newer than the automaton
@@ -236,7 +236,7 @@ class FlxCache
       println$ "Cache may be out of date due to grammar upgrade!";
       println$ "Grammar time stamp          =" + FileStat::strfiletime(grammar_time);
       println$ "Automaton.syntax time stamp =" + FileStat::strfiletime(automaton_time);
-      spec.CLEAR_CACHE = 1;
+      spec&.CLEAR_CACHE <- 1;
     done
 
     // FFF BE CAREFUL! The value "/" for these caches is perfectly good
@@ -1335,8 +1335,12 @@ private noinline proc handle_filename
   }
 
   ploopctl.progname <- arg;
-  ploopctl*.path,ploopctl*.ext = Filename::split_extension(arg);
-  ploopctl*.dir,ploopctl*.base = Filename::split1(ploopctl*.path);
+  var path,ext = Filename::split_extension(arg);
+  ploopctl.path <- path;
+  ploopctl.ext <- ext;
+  var dir,base = Filename::split1(ploopctl*.path);
+  ploopctl.dir <- dir;
+  ploopctl.base <- base;
 
   match check_ext $ Filename::get_extension arg with
   | "compile" => 
@@ -1509,8 +1513,8 @@ noinline proc processing_stage1
 
   // Grab program arguments.
   while xloopctl*.argno < vargs.len.int do 
-    *(control.USER_ARGS) += vargs . (xloopctl*.argno); 
-    ++*xloopctl.argno; 
+    control.USER_ARGS `(+=) vargs . (xloopctl*.argno); 
+    pre_incr (xloopctl.argno); 
   done
   debugln$ "USER_ARGS=" + str control*.USER_ARGS;
 
@@ -1784,14 +1788,14 @@ gen cal_depvars(
     System::exit(1);
   done
 
-  control*.FLX_INTERFACE_FILENAME = 
+  control.FLX_INTERFACE_FILENAME <- 
     match control*.BUNDLE_DIR with
     | Some dir => Filename::join(dir,Filename::basename filebase+"_interface.flx")
     | #None => cache_join (config.FLX_OUTPUT_DIR,filebase+"_interface.flx")
     endmatch;         
   debugln$ "Flx interface filename is " + control*.FLX_INTERFACE_FILENAME;
 
-  control*.CXX_INTERFACE_FILENAME = 
+  control.CXX_INTERFACE_FILENAME <- 
     match control*.BUNDLE_DIR with
     | Some dir => Filename::join(dir,Filename::basename filebase+".hpp")
     | #None => cache_join (config.FLX_OUTPUT_DIR,filebase+".hpp")
@@ -1818,26 +1822,26 @@ gen cal_depvars(
         f = filebase+EXT_SHARED_OBJ;
       done
     done
-    control*.LINKER_OUTPUT_FILENAME = cache_join (config.FLX_CACHE_DIR,f);
+    control.LINKER_OUTPUT_FILENAME <- cache_join (config.FLX_CACHE_DIR,f);
     debugln$ "Felx writing output binary to " + control*.LINKER_OUTPUT_FILENAME;
   elif control*.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 1 do
     if control*.LINKIT == 1 or control*.RUNONLY == 1 do
       if control*.STATICLIB == 1 do
-        *control.LINKER_OUTPUT_FILENAME += EXT_LIB;
+        control.LINKER_OUTPUT_FILENAME `(+=) EXT_LIB;
       elif control*.STATIC == 0 do // dynamic
         if control*.LINKEXE == 1 do
-          *control.LINKER_OUTPUT_FILENAME += EXT_EXE;
+          control.LINKER_OUTPUT_FILENAME `(+=) EXT_EXE;
         else
-          *control.LINKER_OUTPUT_FILENAME += EXT_SHLIB;
+          control.LINKER_OUTPUT_FILENAME `(+=) EXT_SHLIB;
         done
       else
-        *control.LINKER_OUTPUT_FILENAME += EXT_EXE;
+        control.LINKER_OUTPUT_FILENAME `(+=) EXT_EXE;
       done
     else // No link, name specifies object file only.
       if control*.STATIC == 1 do
-        *control.LINKER_OUTPUT_FILENAME += EXT_STATIC_OBJ;
+        control.LINKER_OUTPUT_FILENAME `(+=) EXT_STATIC_OBJ;
       else
-        *control.LINKER_OUTPUT_FILENAME += EXT_SHARED_OBJ;
+        control.LINKER_OUTPUT_FILENAME `(+=) EXT_SHARED_OBJ;
       done
     done
   elif control*.OUTPUT_DIRECTORY_SPECIFIED == 1 do
@@ -1970,7 +1974,7 @@ proc check_cache(
   config:&Config::config_type, 
   control:&FlxControl::control_type)
 {
-  control*.CLEAR_CACHE, control*.cache_time = validate_cache (
+  var cc,ct = validate_cache (
     FLX_SHARE_DIR = config*.FLX_SHARE_DIR,
     AUTOMATON = control*.AUTOMATON,
     GRAMMAR_DIR = control*.GRAMMAR_DIR,
@@ -1983,6 +1987,8 @@ proc check_cache(
     xqt = dxqt (control*.ECHO == 1 or control*.DEBUG_FLX),
     quote = Shell::quote_arg
   );
+  control.CLEAR_CACHE <- cc;
+  control.cache_time <-  ct;
 }
 
 object processing_env(
@@ -2067,11 +2073,11 @@ object processing_env(
          EXTRA_PACKAGES = control.pkgs
       );
       //control.EXTRA_CCFLAGS = control.EXTRA_CCFLAGS + x.CFLAGS;
-      control.CCFLAGS = control.CCFLAGS + x.CFLAGS;
-      control.EXTRA_INCLUDE_FILES = x.INCLUDE_FILES;
-      control.DRIVER_EXE = x.DRIVER_EXE;
-      control.DRIVER_OBJS = x.DRIVER_OBJS;
-      control.LINK_STRINGS = x.LINK_STRINGS;
+      &control.CCFLAGS <- control.CCFLAGS + x.CFLAGS;
+      &control.EXTRA_INCLUDE_FILES <- x.INCLUDE_FILES;
+      &control.DRIVER_EXE <- x.DRIVER_EXE;
+      &control.DRIVER_OBJS <- x.DRIVER_OBJS;
+      &control.LINK_STRINGS <- x.LINK_STRINGS;
       //println$ "LINK STRINGS = " + x.LINK_STRINGS;
       calpackages_run = true;
     done
@@ -2289,7 +2295,7 @@ object processing_env(
       var dst = Filename::strip_extension src + EXT_SHARED_OBJ;
       result = cxx_compile_dynamic1 ehandler (src,dst);
       if result != 0 return result;
-      *&control.cppos += dst;
+      += (&control.cppos, dst);
     done
     return 0;
   }
@@ -2321,7 +2327,7 @@ object processing_env(
       var dst = Filename::strip_extension src +EXT_STATIC_OBJ;
       result = cxx_compile_static1 ehandler (src,dst);
       if result != 0 return result;
-      *&control.cppos += dst;
+      += (&control.cppos,dst);
     done
    
     if control.CXXONLY == 0 do
@@ -3100,8 +3106,12 @@ class Flx
         files = sort files;
         for file in files do
           var arg = Filename::join (control*.INDIR, file);
-          loopctl*.path,loopctl*.ext = Filename::split_extension(arg);
-          loopctl*.dir,loopctl*.base = Filename::split1(loopctl*.path);
+          var path,ext = Filename::split_extension(arg);
+          loopctl.path <- path;
+          loopctl.ext <- ext;
+          var dir,base = Filename::split1(loopctl*.path);
+          loopctl.dir <- dir;
+          loopctl.base <- base;
           // temporary hack, to force reset of the linker filename, stdout, and expect
           // file names in cal_depvars so they depend on the current file.
           control.LINKER_OUTPUT_FILENAME <- "";
@@ -3277,8 +3287,12 @@ class BootFlx
         var i = 1;
         for file in files do
           var arg = Filename::join (control*.INDIR, file);
-          loopctl*.path,loopctl*.ext = Filename::split_extension(arg);
-          loopctl*.dir,loopctl*.base = Filename::split1(loopctl*.path);
+          var path,ext = Filename::split_extension(arg);
+          loopctl.path <- path;
+          loopctl.ext <- ext;
+          var dir,base = Filename::split1(loopctl*.path);
+          loopctl.dir <- dir;
+          loopctl.base <- base;
           // temporary hack, to force reset of the linker filename, stdout, and expect
           // file names in cal_depvars so they depend on the current file.
           control.LINKER_OUTPUT_FILENAME <- "";

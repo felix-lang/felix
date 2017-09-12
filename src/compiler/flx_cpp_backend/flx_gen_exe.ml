@@ -91,13 +91,6 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
   print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs);
   print_endline ("ts = " ^ catmap ","  (sbt bsym_table) ts);
 *)
-  let islvalueprim i = 
-    let bsym = Flx_bsym_table.find bsym_table i in
-    match Flx_bsym.bbdcl bsym with
-    | BBDCL_external_fun (props,_,_,_,_,_,_) ->
-      List.mem `Lvalue props
-    | _ -> false
-  in
   let tsub t = beta_reduce "gen_exe" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr vs ts t) in
   let ge = gen_expr syms bsym_table shapes shape_map label_info this vs ts in
   let ge' = gen_expr' syms bsym_table shapes shape_map label_info this vs ts in
@@ -954,16 +947,13 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         | BEXPR_deref _,t ->
           let t' = snd e in ge' sr e, t', trail
 
-        | BEXPR_apply_prim (i,_,_),t when islvalueprim i -> 
-          let t' = snd e in ge' sr e, t', trail
-
         | BEXPR_apply ((BEXPR_prj (_,d,_),_ as p), arg ),t
         | BEXPR_apply ((BEXPR_aprj (_,d,_),_ as p), arg ),t-> 
           if islinear_type bsym_table d then split arg ((p,t)::trail)
           else let t' = snd e in ge' sr e,t',trail
         | x -> 
           print_endline src_str;
-          clierrx "[flx_cpp_backend/flx_gen_exe.ml:926: E309] " sr ("lvalue required on lhs of assignment got lhs = " ^ sbe bsym_table x)
+          clierrx "[flx_cpp_backend/flx_gen_exe.ml:926: E309] " sr ("variable required on lhs of assignment got lhs = " ^ sbe bsym_table x)
       in
       let lv,lvt,prjs = split e1 [] in
       begin match prjs with

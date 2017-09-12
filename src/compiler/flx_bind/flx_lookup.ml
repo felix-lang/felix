@@ -5155,9 +5155,6 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
               end
           end
 
-      | BEXPR_apply ((BEXPR_closure (i,ts),_),a),_ when has_property i `Lvalue ->
-          bexpr_address e
-
       | BEXPR_apply ((BEXPR_closure (i,ts),_),a),_  ->
           let bsym = try Some (Flx_bsym_table.find bsym_table i) with Not_found -> None in
           let bsym = match bsym with | Some bsym -> bsym 
@@ -5165,7 +5162,7 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
           in
           let name = Flx_bsym.id bsym in
           let sr2 = Flx_bsym.sr bsym in
-          clierrx "[flx_bind/flx_lookup.ml:4832: E205] " srr ("[bind_expression] [4]Address application of non-lvalue function " ^
+          clierrx "[flx_bind/flx_lookup.ml:4832: E205] " srr ("[bind_expression] [4]Address application of function " ^
             name ^ " in " ^ sbe bsym_table e ^ 
             "\ndefined here:\n" ^
             Flx_srcref.long_string_of_src sr2

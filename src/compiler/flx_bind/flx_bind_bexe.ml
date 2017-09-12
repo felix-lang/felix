@@ -778,7 +778,8 @@ print_endline ("BINDING ASSIGNMENT " ^ string_of_exe 0 exe);
           clierr sr ("Assign to val " ^ sym.Flx_sym.id ^ " not allowed");
         | _ -> ()
         end 
-      | _ -> ()
+      | _ -> 
+        clierr sr ("Assign to expression " ^ Flx_print.sbe bsym_table lx ^ " not allowed");
       end;
       let _,rhst as rx = be r in
 (*

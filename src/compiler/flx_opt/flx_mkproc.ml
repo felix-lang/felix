@@ -326,7 +326,6 @@ let mkproc_gen syms bsym_table =
       (* and actually convert it *)
       let ts = List.map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
       assert (ts = []);
-      (* let dv = BEXPR_deref (BEXPR_varname (vix,ts),btyp_pointer * ret),btyp_lvalue ret in *)
       let dv = bexpr_deref ret (bexpr_varname (btyp_pointer ret) (vix,ts)) in
       let exes = proc_exes syms bsym_table dv exes in
 

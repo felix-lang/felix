@@ -81,13 +81,15 @@ class Stl_Vector[t]
     proc push_back : stl_vector *  t  = "$1.push_back($2);";
     fun front : stl_vector -> t = "$1.front()";
     fun front : stl_vector -> t = "$1.front()";
-    lvalue fun subscript : stl_vector * size -> t = "$1.at($2)";
+    //lvalue fun subscript : stl_vector * size -> t = "$1.at($2)";
+    fun subscript : stl_vector * size -> t = "$1.at($2)";
     proc reserve: stl_vector * size -> t = "$1.reserve($2);";
     fun add: stl_vector_iterator * int -> stl_vector_iterator = "$1+$2";
     fun sub: stl_vector_iterator * int -> stl_vector_iterator = "$1-$2";
     proc pluseq: &stl_vector_iterator * int = "*$1+=$2;";
     proc minuseq: &stl_vector_iterator * int = "*$1-=$2;";
-    lvalue fun subscript: stl_vector_iterator * size -> t = "$1[$2]";
+    //lvalue fun subscript: stl_vector_iterator * size -> t = "$1[$2]";
+    fun subscript: stl_vector_iterator * size -> t = "$1[$2]";
 // Stl_Vector
   instance Eq[stl_vector] {
     fun == : stl_vector * stl_vector -> bool = "$1==$2";
@@ -358,7 +360,8 @@ class Stl_Map[k,v]
     type stl_map_iterator = "::std::map<?1,?2>::iterator";
     type stl_map_reverse_iterator = "::std::map<?1,?2>::reverse_iterator";
     fun create : unit -> stl_map = "(FLX_GXX_PARSER_HACK std::map<?1,?2>())";
-    lvalue fun subscript: stl_map * k -> v = "$1[$2]";
+    //lvalue fun subscript: stl_map * k -> v = "$1[$2]";
+    fun subscript: stl_map * k -> v = "$1[$2]";
     fun find : stl_map * k ->  stl_map_iterator = "$1.find($2)";
     fun mem : stl_map * k -> bool = "$1.find($2) != $1.end()";
     proc insert : stl_map * k * v = "$1.insert(std::make_pair($2,$3));";
