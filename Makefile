@@ -32,7 +32,7 @@ clean:
 	cmd.exe /C rmdir /Q /S build
 
 bootstrap:
-	python fbuild\fbuild-light
+	python fbuild\fbuild-light --verbose
 	copy build\release\host\bin\bootflx.exe build\release\host\bin\flx.exe
 
 tools:
