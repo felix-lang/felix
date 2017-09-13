@@ -29,12 +29,9 @@ class CString
   fun len (s:+char) => strlen s;
 
   //$ Traditional NTBS strdup.
-  noinline gen strdup(s:carray[char]) = {
-    val n = strlen s;
-    var out=array_alloc[char] (n+1uz);
-    strcpy(out,s);
-    return out;
-  }
+  gen strdup: +char -> +char = "::flx::rtl::strutil::flx_strdup($1)"
+    requires package "flx_strutil"
+  ; 
 
 }
 
@@ -52,8 +49,8 @@ open class UniqueCStrings
 
   typedef ustr = uniq (+char);
   // Constructors
-  ctor ustr (s:string) = {
-     var p =  (s._unsafe_cstr.strdup);
+  ctor ustr (var s:string) = {
+     var p =  s._unsafe_cstr;
      if debug perform
        println$ "Creating " + p.repr + " @" + p.address.repr;
      return uniq p;

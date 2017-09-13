@@ -729,16 +729,20 @@ Uses Google RE2 engine.
 
 @h2 Fetch underlying cstring.
 @tangle string.flx
-  // Entirely unsafe because string could be an rvalue.
-  fun _unsafe_cstr: string -> +char = "((char*)$1.c_str())" is atom;
+  // safely returns a malloc()'d copy, not garbage collected 
+  fun _unsafe_cstr: string -> +char = "::flx::rtl::strutil::flx_cstr($1)" is atom;
 
   // partially unsafe because the string could be modified.
   fun stl_begin: &string -> +char = "((char*)$1->c_str())" is atom;
   fun stl_end: &string -> +char = "((char*)($1->c_str()+$1->size()))" is atom;
 
-  // this operation is entirely safe because the char array
-  // provided is copied (and garbage collected)
-  fun cstr (x:string) : +char => (varray[char] x).stl_begin;
+  // this operation returns a char pointer to GC managed storage
+  fun noinline cstr (s:string) : +char = { 
+    var p = s._unsafe_cstr;
+    var v = varray[char] p;
+    Memory::free p;
+    return v.stl_begin;
+  }
 
 @h2 Polymorphic vsprintf hack
 @tangle string.flx

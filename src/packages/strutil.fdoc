@@ -99,6 +99,8 @@ namespace flx { namespace rtl { namespace strutil {
   STRUTIL_EXTERN string flxid_to_cid(string const&);
   STRUTIL_EXTERN string filename_to_modulename (string const&);
   STRUTIL_EXTERN size_t string_hash(string const &s); 
+  STRUTIL_EXTERN char *flx_strdup(char const *); 
+  STRUTIL_EXTERN char *flx_cstr(::std::basic_string<char> const&); 
 
 }}}
 
@@ -113,6 +115,18 @@ namespace flx { namespace rtl { namespace strutil {
 #include "flx_strutil.hpp"
 
 namespace flx { namespace rtl { namespace strutil {
+
+  char *flx_strdup(char const *p) {
+    if (p==0) return NULL; 
+    auto n = ::std::strlen (p);
+    auto q = (char*) ::std::malloc(n+1);
+    strcpy (q,p);
+    return q;
+  }
+
+  char *flx_cstr(::std::basic_string<char> const& s) {
+    return strdup (s.c_str());
+  }
 
   string atostr(char const *a) {
     if(a) return a;

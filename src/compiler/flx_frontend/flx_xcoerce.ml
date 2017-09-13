@@ -1,13 +1,53 @@
 open Flx_btype
 open Flx_bexpr
+open Flx_bid
+
 exception Vfound (* for variants, Found already used elsewhere *)
 
-let rec expand_coercion new_bsym_table bsym_table counter remap ((srcx,srct) as srce) dstt =
-  if Flx_typeeq.type_eq (Flx_print.sbt bsym_table) counter srct dstt
-  then srce
-  else
-  match srct,dstt with
-    | BTYP_variant ls, BTYP_variant rs -> 
+let rec function_coercion new_table bsym_table counter remap ((srcx,srct) as srce) dstt ld lc rd rc =
+  (* coerce function argument value to function parameter value 
+     value subtype of parameter
+     domain contravariant, codomain covariant
+   *)
+
+   let fidx = fresh_bid counter in
+   let pidx = fresh_bid counter in
+
+   let bbdcl = Flx_bbdcl.bbdcl_val ([],rd, `Val)  in
+   let pname = "_coerce_param" ^ string_of_int pidx in
+   let bsym = Flx_bsym.create pname bbdcl in
+   Flx_bsym_table.add new_table pidx (Some fidx) bsym;
+
+   let p = bexpr_varname rd (pidx, []) in 
+   let cp = remap (bexpr_coerce (p, ld)) in
+   let exe = 
+     match lc with
+     | BTYP_void -> assert (lc = rc);
+       [
+         Flx_bexe.bexe_call (Flx_srcref.dummy_sr, srce, cp);
+         Flx_bexe.bexe_proc_return (Flx_srcref.dummy_sr)
+       ]
+       
+     | _ ->
+       let calc = bexpr_apply lc (srce, cp) in
+       let r = remap (bexpr_coerce (calc,rc)) in
+       [Flx_bexe.bexe_fun_return (Flx_srcref.dummy_sr, r)]
+   in 
+
+   let param = {Flx_bparameter.pid=pname;pindex=pidx;pkind=`PVal;ptyp=rd} in
+   let params = [param], None in
+   let bbdcl = Flx_bbdcl.bbdcl_fun ([],[],params,rc,Flx_btype.btyp_unit(),exe) in
+   let bsym = Flx_bsym.create ("_coerce" ^ string_of_int fidx) bbdcl in
+   Flx_bsym_table.add new_table  fidx None bsym;
+   let effects = Flx_btype.btyp_unit () in
+   let bbdcl  = Flx_bbdcl.bbdcl_fun ([],[],params,rc,effects,exe) in
+   let bsym = Flx_bsym.create ("_coerce" ^ string_of_int fidx) bbdcl in
+   Flx_bsym_table.add new_table  fidx None bsym;
+   let coerced_function = bexpr_closure  (btyp_function (rd,rc)) (fidx,[]) in
+   coerced_function
+   
+and variant_coercion new_table bsym_table counter remap ((srcx,srct) as srce) dstt ls rs =
+ 
 (*
 print_endline ("Coercion is variant to variant, ignore");
 
@@ -104,7 +144,8 @@ recursively.
         end
       end
 
-    | BTYP_record ls, BTYP_record rs ->
+
+and record_coercion new_table bsym_table counter remap ((srcx,srct) as srce) dstt ls rs =
       (* count duplicate fields in target *)
       let counts = Hashtbl.create 97 in
       let get_rel_seq name = 
@@ -140,7 +181,30 @@ print_endline ("src field idx=" ^ string_of_int idx ^ ", type=" ^ Flx_print.sbt 
        failwith ("Bad record coercion in egen " ^ Flx_print.sbt bsym_table srct ^ " ===> " ^ Flx_print.sbt bsym_table dstt);
       end
 
-  | _ -> Flx_bexpr.bexpr_coerce (srce, dstt)
+
+
+(* this routine assumes coercions were introduces only when they're
+justified by theory, it doesn't check if, for example, that
+compact linear type transformations are actually isomorphisms, etc
+*)
+and expand_coercion new_table bsym_table counter remap ((srcx,srct) as srce) dstt =
+  if Flx_typeeq.type_eq (Flx_print.sbt bsym_table) counter srct dstt
+  then srce
+  else
+  match srct,dstt with
+  | BTYP_function (ld,lc) , BTYP_function (rd,rc)  ->
+    function_coercion new_table bsym_table counter remap srce dstt ld lc rd rc
+
+  | BTYP_variant ls, BTYP_variant rs ->
+    variant_coercion new_table bsym_table counter remap srce dstt ls rs
+  | BTYP_record ls, BTYP_record rs ->
+    record_coercion new_table bsym_table counter remap srce dstt ls rs
+  | _ -> 
+    (* not currently reducible, becomes a reinterpret cast in flx_egen,
+    should really be a distinct term so that we're assured all coercions
+    are eliminated
+    *)
+    Flx_bexpr.bexpr_coerce (srce, dstt)
 
 and process_expr new_table bsym_table counter expr = 
   let f_bexpr expr = process_expr new_table bsym_table counter expr in
