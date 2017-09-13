@@ -37,8 +37,8 @@ build_script:
   - ocaml -version
   - mkdir tmp
   - set TEMP=tmp
-  - nmake extract copy tools target uproot regress-test
-  #- nmake
+  #- nmake extract copy tools target uproot regress-test
+  - nmake
 
 after_build:
   - copy installscript\win32install.bat .
