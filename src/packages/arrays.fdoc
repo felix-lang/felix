@@ -702,7 +702,7 @@ open class Varray
     Memory::memcpy (q.address, p.address, n);
     set(q,n, char "");
     set_used (v,n + 1uz);
-    Memory::free p;
+    Memory::free p.address;
     return v;
   } 
 
@@ -715,7 +715,7 @@ open class Varray
     var q = v.stl_begin;
     Memory::memcpy (q.address, p.address, n);
     set_used (v,n);
-    Memory::free p;
+    Memory::free p.address;
     return v;
   } 
 
