@@ -50,7 +50,7 @@ open class UniqueCStrings
   typedef ustr = uniq (+char);
   // Constructors
   ctor ustr (var s:string) = {
-     var p =  s._unsafe_cstr;
+     var p =  s._unsafe_cstr; // malloc'd copy of string contents
      if debug perform
        println$ "Creating " + p.repr + " @" + p.address.repr;
      return uniq p;

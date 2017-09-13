@@ -737,12 +737,7 @@ Uses Google RE2 engine.
   fun stl_end: &string -> +char = "((char*)($1->c_str()+$1->size()))" is atom;
 
   // this operation returns a char pointer to GC managed storage
-  fun noinline cstr (s:string) : +char = { 
-    var p = s._unsafe_cstr;
-    var v = varray[char] p;
-    Memory::free p;
-    return v.stl_begin;
-  }
+  fun cstr (var s:string) => s.varray[char].stl_begin;
 
 @h2 Polymorphic vsprintf hack
 @tangle string.flx

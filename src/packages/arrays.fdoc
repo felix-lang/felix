@@ -695,23 +695,27 @@ open class Varray
   //$ Construct a varray from a string.
   //$ Include a trailing nul byte.
   ctor varray[char] (var x:string) = {
-    var n = x.len; var p = x._unsafe_cstr;
+    var n = x.len; 
+    var p = x._unsafe_cstr;
     var v = varray[char] (n + 1uz);
     var q = v.stl_begin;
     Memory::memcpy (q.address, p.address, n);
     set(q,n, char "");
     set_used (v,n + 1uz);
+    Memory::free p;
     return v;
   } 
 
   //$ Construct a varray from a string.
   //$ Exclude trailing nul byte.
   fun varray_nonul (var x:string) = {
-    var n = x.len; var p = x._unsafe_cstr;
+    var n = x.len; 
+    var p = x._unsafe_cstr;
     var v = varray[char] (n);
     var q = v.stl_begin;
     Memory::memcpy (q.address, p.address, n);
     set_used (v,n);
+    Memory::free p;
     return v;
   } 
 
