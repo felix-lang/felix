@@ -12,16 +12,16 @@ install:
   - set FLX_MIN_MEM=10000
   #- git clone -q --depth 1 https://github.com/felix-lang/win32binary.git
   #- move win32binary\build build
-  - cmd.exe /C mkdir build\release\src\crap
-  - cmd.exe /C mkdir build\release\test\crap
-  - cmd.exe /C mkdir build\rtl-tmp\crap
-  - cmd.exe /C mkdir build\flxg-tmp\crap
-  - cmd.exe /C rmdir /Q /S build\rtl-tmp
-  - cmd.exe /C rmdir /Q /S build\flxg-tmp
-  - cmd.exe /C rmdir /Q /S build\release\test
-  - cmd.exe /C rmdir /Q /S build\release\src
-  - cmd.exe /C rmdir /Q /S build\release\share\src\test
-  - cmd.exe /C del build\release\share\lib\std\strings\regexps.fsyn
+  #- cmd.exe /C mkdir build\release\src\crap
+  #- cmd.exe /C mkdir build\release\test\crap
+  #- cmd.exe /C mkdir build\rtl-tmp\crap
+  #- cmd.exe /C mkdir build\flxg-tmp\crap
+  #- cmd.exe /C rmdir /Q /S build\rtl-tmp
+  #- cmd.exe /C rmdir /Q /S build\flxg-tmp
+  #- cmd.exe /C rmdir /Q /S build\release\test
+  #- cmd.exe /C rmdir /Q /S build\release\src
+  #- cmd.exe /C rmdir /Q /S build\release\share\src\test
+  #- cmd.exe /C del build\release\share\lib\std\strings\regexps.fsyn
 
 environment:
   access_token:
