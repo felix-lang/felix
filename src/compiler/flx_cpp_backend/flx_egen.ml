@@ -1467,6 +1467,9 @@ end
      arguments to be applied to a unit anyhow
   *)
 
+  | BEXPR_reinterpret_cast ((srcx,srct) as srce,dstt) -> 
+    ce_atom ("reinterpret<"^tn dstt^">("^ge srce^")")
+
   | BEXPR_coerce ((srcx,srct) as srce,dstt) -> 
     if Flx_typeeq.type_eq (sbt bsym_table) syms.Flx_mtypes2.counter srct dstt
     then ge' srce
@@ -1475,7 +1478,10 @@ end
 print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
 *)
     begin match srct,dstt with
-    | BTYP_variant ls, BTYP_variant rs -> assert false; 
+    | BTYP_variant ls, BTYP_variant rs -> 
+      print_endline ("Found variant coercion, should have been be eliminted");
+      print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
+      assert false; 
 (*
 print_endline ("Coercion is variant to variant, ignore");
 
@@ -1572,7 +1578,10 @@ recursively.
         end
       end
 
-    | BTYP_record ls, BTYP_record rs -> assert false;
+    | BTYP_record ls, BTYP_record rs ->
+      print_endline ("Found record coercion, should have been be eliminted");
+      print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
+      assert false;
       (* count duplicate fields in target *)
       let counts = Hashtbl.create 97 in
       let get_rel_seq name = 

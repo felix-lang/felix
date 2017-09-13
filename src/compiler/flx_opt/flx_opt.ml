@@ -101,11 +101,6 @@ let optimize_bsym_table' syms bsym_table (root_proc: int option) =
   print_time syms "[flx_opt]; Simplify requirements" begin fun () ->
   Flx_breqs.simplify_reqs bsym_table end;
 
-  let bsym_table = print_time syms "[flx_opt]; Expanding Coercions (new)" begin fun () ->
-  (* make wrappers for non-function functional values *)
-  Flx_xcoerce.expand_coercions syms bsym_table end
-  in
-
  
   (* eliminate funprods, replace by calls to generated funs *)
   let bsym_table = Flx_funprod.elim_funprods syms bsym_table in
@@ -166,6 +161,12 @@ print_endline "Wrapper generation DONE";
   (* Clean up the symbol table. *)
   Flx_use.copy_used syms bsym_table end
   in
+
+  let bsym_table = print_time syms "[flx_opt]; Expanding Coercions (new)" begin fun () ->
+  (* make wrappers for non-function functional values *)
+  Flx_xcoerce.expand_coercions syms bsym_table end
+  in
+
 
 (*
 print_endline "Unused symbols removed";

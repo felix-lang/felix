@@ -5,6 +5,7 @@ open Flx_bid
 exception Vfound (* for variants, Found already used elsewhere *)
 
 let rec function_coercion new_table bsym_table counter remap ((srcx,srct) as srce) dstt ld lc rd rc =
+  let coerce e dstt = expand_coercion new_table bsym_table counter remap e dstt in
   (* coerce function argument value to function parameter value 
      value subtype of parameter
      domain contravariant, codomain covariant
@@ -13,40 +14,44 @@ let rec function_coercion new_table bsym_table counter remap ((srcx,srct) as src
    let fidx = fresh_bid counter in
    let pidx = fresh_bid counter in
 
+   (* parameter symbol table entry *)
    let bbdcl = Flx_bbdcl.bbdcl_val ([],rd, `Val)  in
    let pname = "_coerce_param" ^ string_of_int pidx in
    let bsym = Flx_bsym.create pname bbdcl in
    Flx_bsym_table.add new_table pidx (Some fidx) bsym;
 
+   (* code for wrapper function *)
    let p = bexpr_varname rd (pidx, []) in 
-   let cp = remap (bexpr_coerce (p, ld)) in
+   let cp = coerce p ld in
+   let e = remap srce in
    let exe = 
      match lc with
      | BTYP_void -> assert (lc = rc);
        [
-         Flx_bexe.bexe_call (Flx_srcref.dummy_sr, srce, cp);
+         Flx_bexe.bexe_call (Flx_srcref.dummy_sr, e, cp);
          Flx_bexe.bexe_proc_return (Flx_srcref.dummy_sr)
        ]
        
      | _ ->
-       let calc = bexpr_apply lc (srce, cp) in
-       let r = remap (bexpr_coerce (calc,rc)) in
+       let calc = bexpr_apply lc (e, cp) in
+       let r = coerce calc rc in
        [Flx_bexe.bexe_fun_return (Flx_srcref.dummy_sr, r)]
    in 
 
+   (* wrapper function *)
+   let effects = Flx_btype.btyp_unit () in
    let param = {Flx_bparameter.pid=pname;pindex=pidx;pkind=`PVal;ptyp=rd} in
    let params = [param], None in
-   let bbdcl = Flx_bbdcl.bbdcl_fun ([],[],params,rc,Flx_btype.btyp_unit(),exe) in
+   let bbdcl = Flx_bbdcl.bbdcl_fun ([],[],params,rc,effects,exe) in
    let bsym = Flx_bsym.create ("_coerce" ^ string_of_int fidx) bbdcl in
    Flx_bsym_table.add new_table  fidx None bsym;
-   let effects = Flx_btype.btyp_unit () in
-   let bbdcl  = Flx_bbdcl.bbdcl_fun ([],[],params,rc,effects,exe) in
-   let bsym = Flx_bsym.create ("_coerce" ^ string_of_int fidx) bbdcl in
-   Flx_bsym_table.add new_table  fidx None bsym;
+
+   (* expanded coercion is closure of wrapper function *)
    let coerced_function = bexpr_closure  (btyp_function (rd,rc)) (fidx,[]) in
    coerced_function
    
 and variant_coercion new_table bsym_table counter remap ((srcx,srct) as srce) dstt ls rs =
+  let coerce e dstt = expand_coercion new_table bsym_table counter remap e dstt in
  
 (*
 print_endline ("Coercion is variant to variant, ignore");
@@ -73,6 +78,8 @@ recursively.
 
       (* check for the special case where the argument constructors all
       have the same type as the corresponding parameters
+      This is a CHEAT, we use a reinterpret case, doing this 
+      depends on knowing the backend representation!
       *)
       begin try 
         List.iter (fun (name, ltyp) ->
@@ -87,7 +94,8 @@ recursively.
           with Vfound -> () 
           end
         ) ls; 
-        remap srce (* safe, already checked, universal rep *)
+        let e = remap srce in
+        bexpr_reinterpret_cast (e,dstt)
       with 
       | Not_found -> 
       (* OK, now lets handle the special case where there's no choice
@@ -127,7 +135,7 @@ recursively.
             let extracted = bexpr_variant_arg ltyp (name,srce) in
             (* just use first one .. later we could try next one if it fails *)
             let rtyp = List.assoc name rs in
-            let coerced = bexpr_coerce (extracted,rtyp) in
+            let coerced = coerce extracted rtyp in
             let new_variant = bexpr_variant dstt (name, coerced) in 
             condition, new_variant
             ) ls 
@@ -146,6 +154,7 @@ recursively.
 
 
 and record_coercion new_table bsym_table counter remap ((srcx,srct) as srce) dstt ls rs =
+  let coerce e dstt = expand_coercion new_table bsym_table counter remap e dstt in
       (* count duplicate fields in target *)
       let counts = Hashtbl.create 97 in
       let get_rel_seq name = 
@@ -169,7 +178,7 @@ print_endline ("src field idx=" ^ string_of_int idx ^ ", type=" ^ Flx_print.sbt 
 *)
             let prj = bexpr_prj idx srct ltyp in
             let raw_dst = bexpr_apply ltyp (prj,srce) in
-            let final_dst = bexpr_coerce (raw_dst,rtyp) in
+            let final_dst = coerce raw_dst rtyp in
             final_dst
           end
           ) 
@@ -178,7 +187,7 @@ print_endline ("src field idx=" ^ string_of_int idx ^ ", type=" ^ Flx_print.sbt 
         let r = bexpr_record prjs in
         remap r 
       with _ -> 
-       failwith ("Bad record coercion in egen " ^ Flx_print.sbt bsym_table srct ^ " ===> " ^ Flx_print.sbt bsym_table dstt);
+       failwith ("Bad record coercion in xcoerce " ^ Flx_print.sbt bsym_table srct ^ " ===> " ^ Flx_print.sbt bsym_table dstt);
       end
 
 
@@ -191,10 +200,13 @@ and expand_coercion new_table bsym_table counter remap ((srcx,srct) as srce) dst
   if Flx_typeeq.type_eq (Flx_print.sbt bsym_table) counter srct dstt
   then srce
   else
+  (* each of these reductions can introduce new coercions, so each must
+  re-expand any parts of its return value that could contain these
+  new coercions, to eliminate them if possible
+  *)
   match srct,dstt with
   | BTYP_function (ld,lc) , BTYP_function (rd,rc)  ->
     function_coercion new_table bsym_table counter remap srce dstt ld lc rd rc
-
   | BTYP_variant ls, BTYP_variant rs ->
     variant_coercion new_table bsym_table counter remap srce dstt ls rs
   | BTYP_record ls, BTYP_record rs ->
@@ -209,14 +221,30 @@ and expand_coercion new_table bsym_table counter remap ((srcx,srct) as srce) dst
 and process_expr new_table bsym_table counter expr = 
   let f_bexpr expr = process_expr new_table bsym_table counter expr in
   let remap expr = Flx_bexpr.map ~f_bexpr expr in
-  match remap expr with
+  (* perform bottom up expansion, upto subparts of expression *)
+  let e = remap expr in
+  match e with
+  (* coercion with argument free of reducible coercions *)
   | BEXPR_coerce ((srcx,srct) as srce,dstt),_ -> 
-    expand_coercion new_table bsym_table counter remap srce dstt
+(*
+    print_endline ("Examining coercion " ^ Flx_print.sbe bsym_table e );
+*)
+    let e' = expand_coercion new_table bsym_table counter remap srce dstt in
+(*
+    print_endline ("Expanded to " ^ Flx_print.sbe bsym_table e');
+*)
+    e'
 
-  | _ -> expr
+  (* no reducible coercions left *)
+  | _ -> e
 
 let process_exe new_table bsym_table counter exe =
-  Flx_bexe.map ~f_bexpr:(process_expr new_table bsym_table counter) exe
+  let newexe = Flx_bexe.map ~f_bexpr:(process_expr new_table bsym_table counter) exe in
+(*
+  print_endline ("Old bexe=" ^ Flx_print.sbx bsym_table exe);
+  print_endline ("New bexe=" ^ Flx_print.sbx bsym_table newexe);
+*)
+  newexe
 
 
 let process_exes new_table bsym_table counter exes =
@@ -225,9 +253,12 @@ let process_exes new_table bsym_table counter exes =
 let process_entry new_table bsym_table counter parent i (bsym : Flx_bsym.t) =
   match bsym.bbdcl with
   | Flx_bbdcl.BBDCL_fun (props,vs,ps,ret,effects,exes) ->
+(*
+print_endline ("Processing function " ^ Flx_bsym.id bsym);
+*)
     let exes = process_exes new_table bsym_table counter exes in
     let bbdcl = Flx_bbdcl.bbdcl_fun (props, vs, ps, ret,effects, exes) in 
-    let sym = Flx_bsym.replace_bbdcl bsym bbdcl in
+    let bsym = Flx_bsym.replace_bbdcl bsym bbdcl in
     Flx_bsym_table.add new_table i parent bsym 
 
   | bbdcl -> Flx_bsym_table.add new_table i parent bsym

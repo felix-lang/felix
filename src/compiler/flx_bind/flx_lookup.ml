@@ -2252,7 +2252,9 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
         print_endline "Type of function parameter agrees with type of argument";
 *) 
       | `Greater ->
+(*
         print_endline "Type of function parameter supertype of argument";
+*)
         rest, `Coerce (t2,argt)
       | _ ->
       let reorder =
@@ -2408,7 +2410,9 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
   let x2 = match reorder with
   | `None -> be2,t2
   | `Coerce (arg,param) -> 
+(*
     print_endline ("Coercion required from " ^ sbt bsym_table arg ^ " to " ^ sbt bsym_table param); 
+*)
     bexpr_coerce ((be2,t2), param) 
   | `Reorder xs ->
     match xs with

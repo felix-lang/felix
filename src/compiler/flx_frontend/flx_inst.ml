@@ -264,6 +264,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_expr (_,t,e) -> ut t; ue e
   | BEXPR_range_check (e1,e2,e3) -> ue e1; ue e2; ue e3
   | BEXPR_coerce (e,t) -> ue e; ut t
+  | BEXPR_reinterpret_cast(e,t) -> ue e; ut t
   end
 
 and process_exe syms bsym_table ref_insts1 ts hvarmap exe =

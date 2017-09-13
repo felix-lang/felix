@@ -131,7 +131,7 @@ let is_terminating = function
 
 (* -------------------------------------------------------------------------- *)
 
-(** Recursively iterate over each bound exe and call the function on it. *)
+(** iterate over each bound exe and call the function on it. *)
 let iter
   ?(f_bid=fun _ -> ())
   ?(f_btype=fun _ -> ())
@@ -190,8 +190,6 @@ let iter
   | BEXE_begin
   | BEXE_end -> ()
 
-(** Recursively iterate over each bound type and transform it with the
- * function. *)
 let map
   ?(f_bid=fun i -> i)
   ?(f_btype=fun t -> t)

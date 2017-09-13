@@ -32,6 +32,7 @@ type bexpr_t = private
   | BEXPR_expr of Flx_code_spec.t * Flx_btype.t * t
   | BEXPR_range_check of t * t * t
   | BEXPR_coerce of t * Flx_btype.t
+  | BEXPR_reinterpret_cast of t * Flx_btype.t
   | BEXPR_compose of t * t
   | BEXPR_tuple_tail of t
   | BEXPR_tuple_head of t
@@ -105,6 +106,7 @@ val bexpr_apply_struct :
   Flx_btype.t -> bid_t * Flx_btype.t list * t -> bexpr_t * Flx_btype.t
 val bexpr_tuple : Flx_btype.t -> t list -> bexpr_t * Flx_btype.t
 val bexpr_coerce : t * Flx_btype.t -> bexpr_t * Flx_btype.t
+val bexpr_reinterpret_cast : t * Flx_btype.t -> bexpr_t * Flx_btype.t
 val bexpr_prj : int -> Flx_btype.t -> Flx_btype.t -> bexpr_t * Flx_btype.t
 val bexpr_rnprj :
   string -> int -> Flx_btype.t -> Flx_btype.t -> bexpr_t * Flx_btype.t

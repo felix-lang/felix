@@ -2134,7 +2134,8 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_range_check (e1,e2,e3) ->
     "range_check(" ^ se e1 ^"<=" ^ se e2 ^"<" ^se e3 ^ ")"
 
-  | BEXPR_coerce (e,t) -> se e ^ " : " ^ string_of_btypecode (Some bsym_table) t
+  | BEXPR_coerce (e,t) -> "(" ^ se e ^ " :>> " ^ string_of_btypecode (Some bsym_table) t ^")"
+  | BEXPR_reinterpret_cast (e,t) -> "reinterpret_cast<"^string_of_btypecode (Some bsym_table) t^">(" ^ se e ^ ")"
 
   | BEXPR_funprod e -> "\\prod (" ^ se e ^ ")"
   | BEXPR_funsum e -> "\\sum (" ^ se e ^ ")"

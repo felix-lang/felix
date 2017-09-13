@@ -46,6 +46,8 @@ type bexpr_t =
 
   | BEXPR_range_check of t * t * t
   | BEXPR_coerce of t * Flx_btype.t
+  | BEXPR_reinterpret_cast of t * Flx_btype.t
+   
   | BEXPR_compose of t * t
   | BEXPR_tuple_tail of t
   | BEXPR_tuple_head of t
@@ -223,6 +225,12 @@ let bexpr_coerce (e, t) =
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
   | _ ->  BEXPR_coerce (e, t), complete_check t
+
+let bexpr_reinterpret_cast (e, t) = 
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr k
+  | _ ->  BEXPR_reinterpret_cast (e, t), complete_check t
+
 
 let bexpr_prj n d c = 
   begin match d with
@@ -615,7 +623,8 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
     cmp c c' && cmp t t' && cmp f f'
 
   | BEXPR_label (i), BEXPR_label (i') -> i = i'
-  | BEXPR_coerce (e,t),BEXPR_coerce (e',t') ->
+  | BEXPR_coerce (e,t),BEXPR_coerce (e',t') 
+  | BEXPR_reinterpret_cast (e,t),BEXPR_reinterpret_cast (e',t') ->
     (* not really right .. *)
     cmp e e'
 
@@ -794,7 +803,12 @@ let flat_iter
       f_bexpr e1;
       f_bexpr e2;
       f_bexpr e3
+
   | BEXPR_coerce (e,t) ->
+      f_bexpr e;
+      f_btype t
+
+  | BEXPR_reinterpret_cast (e,t) ->
       f_bexpr e;
       f_btype t
 
@@ -902,6 +916,7 @@ let map
   | BEXPR_range_check (e1,e2,e3) ->
       bexpr_range_check t (f_bexpr e1, f_bexpr e2, f_bexpr e3)
   | BEXPR_coerce (e,t) -> bexpr_coerce (f_bexpr e, f_btype t)
+  | BEXPR_reinterpret_cast (e,t) -> bexpr_reinterpret_cast (f_bexpr e, f_btype t)
 
   | BEXPR_tuple_tail e -> bexpr_tuple_tail t (f_bexpr e)
   | BEXPR_tuple_head e -> bexpr_tuple_head t (f_bexpr e)
