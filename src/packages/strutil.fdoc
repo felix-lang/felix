@@ -18,8 +18,10 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-#include <stdarg.h>
-#include <stdlib.h>
+#include <cstdarg>
+#include <cstdlib>
+#include <cstring>
+
 
 #include "flx_strutil_config.hpp"
 
@@ -110,7 +112,7 @@ namespace flx { namespace rtl { namespace strutil {
 @tangle flx_strutil.cpp
 
 #include <stdio.h>
-#include <stdint.h>
+#include <cstdint>
 
 #include "flx_strutil.hpp"
 
