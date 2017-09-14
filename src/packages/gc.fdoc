@@ -1194,11 +1194,15 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
        fprintf(tracefile,"IA: %p\n",fp);
     *p = nobj;
   }
-  if (nobj != get_count(fp)) {
-//fprintf(stderr, "Insertion into j_nalloc (%p) failed: address %p, nobj=%zu\n",
-//    j_nalloc,
-//    fp,nobj);
-    assert (nobj == get_count(fp));
+
+  size_t n_objects = get_count(fp);
+  if (nobj != n_objects) 
+  {
+    fprintf(stderr, 
+        "Insertion into j_nalloc (%p) failed: address %p, [nobj=%zu != get_count(fp)=%zu]\n",
+        j_nalloc, fp, nobj, n_objects);
+
+    assert (nobj == n_objects);
   }
 
   // update statistics
