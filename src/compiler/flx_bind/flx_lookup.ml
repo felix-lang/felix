@@ -2257,58 +2257,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
 *)
         rest, `Coerce (t2,argt)
       | _ ->
-      let reorder =
-        match be1 with
-        | BEXPR_closure (i,ts) ->
-          begin match t2 with
-            (* a bit of a hack .. *)
-            | BTYP_record _
-            | BTYP_tuple [] ->
-              let rs = match t2 with
-                | BTYP_record (rs) -> rs
-                | BTYP_tuple [] -> []
-                | _ -> assert false
-              in
-              let pnames =
-                match hfind "lookup" state.sym_table i with
-                | { Flx_sym.symdef=SYMDEF_function (ps,_,_,_,_) } ->
-                  List.map 
-                    begin fun (sr,_,name,_,d) -> name, 
-                      match d with 
-                      | None -> None 
-                      | Some e -> Some (be i e) 
-                    end 
-                    (fst ps)
-                | _ -> assert false
-              in
-              let n = List.length rs in
-              let rs = List.map2 (fun (name,t) j -> name,(j,t)) rs (nlist n) in
-
-              (* calculate argument component reordering based on names *)
-              begin try
-                `Reorder 
-                  (List.map 
-                    begin fun (name,d) ->
-                      try
-                        match List.assoc name rs with
-                        | j,t -> 
-(*
-                          print_endline ("1:get_n arg" ^ sbe bsym_table tbe2); 
-*)
-                          bexpr_get_n t j tbe2
-                      with Not_found ->
-                        match d with
-                        | Some d ->d
-                        | None -> raise Not_found
-                    end 
-                    pnames
-                  )
-                with Not_found -> `None
-              end
-            | _ -> `None
-          end
-        | _ -> print_endline "WOOPS WHAT IF BE1 is NOT A CLOSURE?"; `None
-      in
+      let reorder = Flx_reorder.reorder state.sym_table sr be tbe1 tbe2 in
 (*
       print_endline "Type of function parameter DOES NOT agree with type of argument";
       print_endline ("Paramt = " ^ sbt bsym_table argt ^ " argt = " ^ sbt bsym_table t2);
@@ -5316,7 +5265,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
 
   | EXPR_apply (sr,(f',a')) -> 
 (*
-print_endline ("Bind_expression apply " ^ string_of_expr e);
+print_endline ("Bind_expression general apply " ^ string_of_expr e);
 *)
     Flx_bind_apply.cal_bind_apply 
       bsym_table state be bt env build_env

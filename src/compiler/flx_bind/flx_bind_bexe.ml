@@ -84,78 +84,31 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
       (build_env state.lookup_state bsym_table (Some i))
       e
   in
-  let genargs t =
-    if type_match bsym_table state.counter t t2
-    then
-      (
-        (*
-        match p with
-        | BEXPR_closure (i,ts) ->
-          begin match hfind "bexe" sym_table i with
-          | { Flx_sym.symdef=SYMDEF_fun _ }
-          | { Flx_sym.symdef=SYMDEF_callback _ }
-            ->
-            BEXE_call_prim (sr,i,ts,tbe2)
-
-          | { Flx_sym.symdef=SYMDEF_function _} ->
-            BEXE_call_direct (sr,i,ts,tbe2)
-
-          | _ -> assert false
-          end
-        | _ ->
-        *)
-          (sr,tbe1,tbe2)
-      )
-    else
-    begin
-print_endline "Cal call, types don't match ..";
-      let reorder =
-        match be1 with
-        | BEXPR_closure (i,ts) ->
-          begin match t2 with
-          (* a bit of a hack .. *)
-          | BTYP_record _ | BTYP_tuple [] ->
-            let rs = match t2 with
-              | BTYP_record (rs) -> rs
-              | BTYP_tuple [] -> []
-              | _ -> assert false
-            in
-            begin let pnames = match hfind "bexe" state.sym_table i with
-            | { Flx_sym.symdef=SYMDEF_function (ps,_,_,_,_)} ->
-              map (fun (sr,_,name,_,d)->
-                name,
-                match d with None -> None | Some e -> Some (be i e)
-              ) (fst ps)
-            | _ -> assert false
-            in
-            let n = length rs in
-            let rs = map2 (fun (name,t) j -> name,(j,t)) rs (nlist n) in
-            try Some (map
-              (fun (name,d) ->
-                try (match assoc name rs with
-                | j,t-> bexpr_get_n t j tbe2)
-                with Not_found ->
-                match d with
-                | Some d ->d
-                | None -> raise Not_found
-              )
-              pnames
-            )
-            with Not_found -> None
-            end
-
-          | _ -> None
-          end
-        | _ -> None
-      in
-      let x2 = match reorder with
-        | Some xs ->
-          begin match xs with
-          | [x]-> x
-          | _ -> bexpr_tuple (btyp_tuple (map snd xs)) xs
-          end
-        | None ->
-          clierrx "[flx_bind/flx_bind_bexe.ml:157: E9] " sr
+  let genargs argt =
+    let reorder = 
+(*
+      if type_match bsym_table state.counter argt t2
+*)
+      let rel = Flx_unify.compare_sigs bsym_table state.counter argt t2 in
+      match rel with
+      | `Equal -> `None
+(*
+        print_endline "Type of function parameter agrees with type of argument";
+*) 
+      | `Greater ->
+(*
+        print_endline "Type of function parameter supertype of argument";
+*)
+        `Coerce (t2,argt)
+      | _ ->
+      let reorder = Flx_reorder.reorder state.sym_table sr be tbe1 tbe2 in
+(*
+      print_endline "Type of procedure parameter DOES NOT agree with type of argument";
+      print_endline ("Paramt = " ^ sbt bsym_table argt ^ " argt = " ^ sbt bsym_table t2);
+*)
+      begin match reorder with
+      | `None ->
+         clierrx "[flx_bind/flx_bind_bexe.ml:157: E9] " sr
           (
             "[cal_call] Procedure " ^
             sbe bsym_table tbe1 ^
@@ -166,9 +119,21 @@ print_endline "Cal call, types don't match ..";
             "\n of type " ^
             sbt bsym_table t2 ^
             "\nwhich doesn't agree with parameter type\n" ^
-            sbt bsym_table t
+            sbt bsym_table argt
           )
-      in (sr,tbe1,x2)
+
+      | _ -> reorder
+      end
+    in
+    begin match reorder with
+    | `None -> (sr,tbe1,tbe2)
+    | `Coerce (arg,param) -> 
+       ( sr,tbe1,bexpr_coerce (tbe2, param) )
+    | `Reorder xs ->
+      begin match xs with
+      | [x]-> (sr,tbe1,x)
+      | _ -> (sr,tbe1,bexpr_tuple (btyp_tuple (map snd xs)) xs)
+      end
     end
   in
   match unfold "flx_bind_bexe" t1 with
