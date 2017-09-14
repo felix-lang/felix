@@ -190,6 +190,14 @@ print_endline ("src field idx=" ^ string_of_int idx ^ ", type=" ^ Flx_print.sbt 
        failwith ("Bad record coercion in xcoerce " ^ Flx_print.sbt bsym_table srct ^ " ===> " ^ Flx_print.sbt bsym_table dstt);
       end
 
+and tuple_coercion new_table bsym_table counter remap ((srcx,srct) as srce) dstt ls rs =
+  let n = List.length ls in
+  let m = List.length rs in
+  assert (n=m);
+  let nlst = Flx_list.nlist n in
+  let prjs = List.map2 (fun i t-> bexpr_get_n  t i srce) nlst ls in
+  let prjs = List.map2 (fun p t-> bexpr_coerce (p,t)) prjs rs in
+  remap (bexpr_tuple dstt prjs)
 
 
 (* this routine assumes coercions were introduces only when they're
@@ -207,10 +215,33 @@ and expand_coercion new_table bsym_table counter remap ((srcx,srct) as srce) dst
   match srct,dstt with
   | BTYP_function (ld,lc) , BTYP_function (rd,rc)  ->
     function_coercion new_table bsym_table counter remap srce dstt ld lc rd rc
+
   | BTYP_variant ls, BTYP_variant rs ->
     variant_coercion new_table bsym_table counter remap srce dstt ls rs
+
   | BTYP_record ls, BTYP_record rs ->
     record_coercion new_table bsym_table counter remap srce dstt ls rs
+
+  | BTYP_tuple ls, BTYP_tuple rs ->
+    tuple_coercion new_table bsym_table counter remap srce dstt ls rs
+
+  | BTYP_tuple ls, BTYP_array (r, BTYP_unitsum n) ->
+    let rs = Flx_list.repeat r n in
+    tuple_coercion new_table bsym_table counter remap srce dstt ls rs
+
+  | BTYP_array (l, BTYP_unitsum n), BTYP_tuple rs  ->
+    let ls = Flx_list.repeat l n in
+    tuple_coercion new_table bsym_table counter remap srce dstt ls rs
+
+  | BTYP_array (l, BTYP_unitsum n), BTYP_array(r,BTYP_unitsum m)  ->
+    if n > 20 then begin
+      print_endline ("Can't coerce arrays longer than 20 yet");
+      assert false
+    end;
+    let ls = Flx_list.repeat l n in
+    let rs = Flx_list.repeat r n in
+    tuple_coercion new_table bsym_table counter remap srce dstt ls rs
+
   | _ -> 
     (* not currently reducible, becomes a reinterpret cast in flx_egen,
     should really be a distinct term so that we're assured all coercions

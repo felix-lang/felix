@@ -94,6 +94,24 @@ type dvars_t = BidSet.t
 (* LHS ge RHS, parameter supertype of argument *)
 let rec solve_subtypes bsym_table counter lhs rhs dvars (s:vassign_t option ref) (add_eq:reladd_t) (add_ge:reladd_t) =
   match lhs, rhs with
+  (* arrays and tuples, must be the same length, covariant by element *)
+  | BTYP_tuple ls, BTYP_tuple rs ->
+    if List.length ls <> List.length rs then raise Not_found;
+    List.iter2 (fun l r -> add_ge(l,r)) ls rs
+
+  | BTYP_tuple ls, BTYP_array (r,BTYP_unitsum n) ->
+    if List.length ls <> n then raise Not_found;
+    List.iter (fun l -> add_ge(l,r)) ls
+    
+  | BTYP_array (l, BTYP_unitsum n), BTYP_tuple rs ->
+    if List.length rs <> n then raise Not_found;
+    List.iter (fun r -> add_ge(l,r)) rs
+
+  | BTYP_array (l, BTYP_unitsum n), BTYP_array (r, BTYP_unitsum m) ->
+    if m <> n then raise Not_found;
+    add_ge (l,r)
+
+     
   | BTYP_function (dl,cl), BTYP_function (dr,cr) ->
     add_ge (dr, dl); (* contravariant *)
     add_ge (cl, cr) (* covariant *)
