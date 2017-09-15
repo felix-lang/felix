@@ -2039,6 +2039,7 @@ and string_of_bound_expression' bsym_table se e =
   let sid n = bound_name_of_bindex bsym_table n in
   match fst e with
 
+  | BEXPR_lambda (i,t,e) -> "lamda<"^si i^":"^sbt bsym_table t^">(" ^se e^")"
   | BEXPR_cond (c,t,f) -> "if " ^ se c ^ " then " ^ se t ^ " else " ^ se f ^ " endif"
   | BEXPR_unitptr k -> 
     begin match k with 

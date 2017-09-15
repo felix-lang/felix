@@ -1,5 +1,6 @@
 open Flx_bid
 type bexpr_t =
+  | BEXPR_lambda of bid_t * Flx_btype.t * (bexpr_t * Flx_btype.t)
   | BEXPR_int of int
   | BEXPR_not of t
   | BEXPR_deref of t
@@ -125,6 +126,9 @@ let bexpr_deref t e : t =
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
   | _ -> BEXPR_deref e, complete_check t
+
+let bexpr_lambda i vt ((x,rt) as e)  = 
+  BEXPR_lambda (i,vt,e),Flx_btype.btyp_function (vt,rt)
 
 let bexpr_int i = BEXPR_int i, Flx_btype.btyp_int ()
 
@@ -635,6 +639,9 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
       true (List.map snd ts) (List.map snd ts')
 
   | BEXPR_int (e),BEXPR_int (e') -> e = e'
+  | BEXPR_lambda (i,vt,e),BEXPR_lambda (i',vt',e') -> 
+    (* don't bother with alpha conversion here *)
+    i=i' && vt=vt' && e = e'
 
   | BEXPR_not (e),BEXPR_not (e') 
   | BEXPR_deref e,BEXPR_deref e' -> cmp e e'
@@ -738,6 +745,7 @@ let flat_iter
   ?(f_label=fun _ -> ())
   ((x,t) as e) =
   match x with
+  | BEXPR_lambda (i,vt,e) -> f_bid i; f_btype vt; f_bexpr e
   | BEXPR_cond (c,t,f) -> f_bexpr c; f_bexpr t; f_bexpr f
   | BEXPR_label (i) -> f_label i; f_bid i
   | BEXPR_not e -> f_bexpr e
@@ -854,6 +862,7 @@ let map
 =
   let t = f_btype t' in
   match e with
+  | BEXPR_lambda (i,vt,e) -> bexpr_lambda (f_bid i) (f_btype vt) (f_bexpr e)
   | BEXPR_cond (c,tr,fa) -> bexpr_cond (f_bexpr c) (f_bexpr tr) (f_bexpr fa)
   | BEXPR_label (i) -> bexpr_label (f_bid i)
   | BEXPR_not e -> bexpr_not (f_bexpr e)

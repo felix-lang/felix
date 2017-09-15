@@ -167,6 +167,11 @@ print_endline "Wrapper generation DONE";
   Flx_xcoerce.expand_coercions syms bsym_table end
   in
 
+  let bsym_table = print_time syms "[flx_opt]; Stripping Lambdas (new)" begin fun () ->
+  (* make wrappers for non-function functional values *)
+  Flx_lambda.strip_lambdas syms bsym_table end
+  in
+
 
 (*
 print_endline "Unused symbols removed";

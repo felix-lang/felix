@@ -254,6 +254,7 @@ let rec gen_expr'
     | 0 -> print_endline "Generating unit expr"; ce_atom "0/*[gen_expr']CLT:UNIT*/"
     | _ -> print_endline "Generating unitptr expr"; ce_atom ("NULL/*UNITPTR<"^string_of_int k^">*/")
     end
+  | BEXPR_lambda _ -> assert false
   | BEXPR_uniq _ -> assert false
   | BEXPR_funprod _ -> assert false
   | BEXPR_funsum _ -> assert false
