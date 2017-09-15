@@ -25,17 +25,22 @@ Features:
 - thread safe garbage collection
 - strictly statically typed
 - overloading
-- first order parametric polymorphism
-- polymorphism with constraints
-- multitype Haskell style type classes
-- type classes with real semantic specification
-- semantics can be checked by theorem provers
 - strong functional subsystem
-- pattern matching
-- first class function, sum, and product types
-- Tre based regexp processing built in
-- bindings to Gnu GMP and Gnu GSL included
+  * first order parametric polymorphism
+  * polymorphism with constraints
+  * multitype Haskell style type classes
+  * type classes with real semantic specification
+  * pattern matching
+  * first class function, sum, and product types
 - user definabled and inline extensible grammar
 - builds on all platforms
 - runs on all platforms
 - open source FFAU (free for any use) licence
+
+Bindings:
+- Google RE2 based regexp processing built
+  * syntax support for regular definitions
+- bindings to Gnu GMP and Gnu GSL included
+- SDL: Simple Direct Media Layer
+  * SDL based platform independent GUI 
+
