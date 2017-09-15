@@ -1731,7 +1731,7 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
             Pjlwnew[0] = 1 - 1;         // pop0 = 0.
             Pjlwnew[1] = Index;
 
-            fprintf(stderr, "Updating gc root because: valid empty array\n");
+            fprintf(stderr, "Updating gc root because: valid empty array (%p)\n", (Pvoid_t)Pjlwnew);
             *PPArray = (Pvoid_t) Pjlwnew;
             DBGCODE(JudyCheckPop(*PPArray);)
 
@@ -1802,7 +1802,7 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
 
                 j__udyFreeJLW(Pjlw, pop1, NULL);
 
-                fprintf(stderr, "Updating gc root because: growing to a larger leaf\n");
+                fprintf(stderr, "Updating gc root because: growing to a larger leaf (%p)\n", (Pvoid_t)Pljwnew );
                 *PPArray = (Pvoid_t) Pjlwnew;
                 DBGCODE(JudyCheckPop(*PPArray);)
 
@@ -1835,7 +1835,7 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
 // counted in a JPM at all:
 
             j__udyFreeJLW(Pjlw, cJU_LEAFW_MAXPOP1, NULL);
-            fprintf(stderr, "Updating gc root because: leaf is at max size\n");
+            fprintf(stderr, "Updating gc root because: leaf is at max size (%p)\n", (Pvoid_t)Pjpm );
             *PPArray = (Pvoid_t) Pjpm;
 
         } // JU_LEAFW
