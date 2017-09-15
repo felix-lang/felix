@@ -1186,10 +1186,10 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
   *p = ((Word_t)(void*)shape) | (parity & 1);
   if (nobj != (uintptr_t)1) // array
   {
-//fprintf(stderr, "Inserting into j_nalloc=%p\n",j_nalloc);
+fprintf(stderr, "Inserting into j_nalloc=%p\n",j_nalloc);
     Word_t *p = (Word_t*)(void*)JudyLIns(&j_nalloc,(Word_t)fp,&je);
-//fprintf(stderr, "  new j_nalloc=%p\n",j_nalloc);
-//fprintf(stderr, "  slot for insert=%p\n",p);
+fprintf(stderr, "  new j_nalloc=%p\n",j_nalloc);
+fprintf(stderr, "  slot for insert=%p\n",p);
     if(tracefile) 
        fprintf(tracefile,"IA: %p\n",fp);
     *p = nobj;
