@@ -260,7 +260,7 @@ typedef enum            // uint8_t -- but C does not support this type of enum.
 
 #ifndef JU_64BIT // 32-bit
 
-#define J_L_MAXB                (sizeof(Word_t) * 64)
+#define J_L_MAXB                (sizeof(Word_t) * 128)
 #define ALLOCSIZES { 3, 5, 7, 11, 15, 23, 32, 47, 64, TERMINATOR } // in words.
 #define cJL_LEAF1_MAXWORDS               (32)   // max Leaf1 size in words.
 
