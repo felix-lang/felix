@@ -286,6 +286,7 @@ JudyBranchL:
 
             offset = j__udySearchLeaf1((Pjll_t) (Pjbl->jbl_Expanse), numJPs,
                                        digit);
+fprintf(stderr, "j__udySearchLeaf1 offset =%d\n",offset);
 
 // If Index is found, offset is into an array of 1..cJU_BRANCHLMAXJPS JPs:
 
@@ -301,6 +302,7 @@ JudyBranchL:
             if (numJPs < cJU_BRANCHLMAXJPS)
             {
                 offset = ~offset;       // insertion offset.
+fprintf(stderr, "flipped offset =%d\n",offset);
 
                 JU_JPSETADT(&newJP, 0, Index,
                         JU_JPTYPE(Pjp) + cJU_JPIMMED_1_01-cJU_JPBRANCH_L2);
@@ -1700,7 +1702,6 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
         int       offset;       // position in which to store new Index.
         Pjlw_t    Pjlw;
 
-fprintf(stderr, "pos of new index: offset=%d\n",offset);
 // CHECK FOR NULL POINTER (error by caller):
 
         if (PPArray == (PPvoid_t) NULL)
@@ -1756,6 +1757,7 @@ fprintf(stderr, "pos of new index: offset=%d\n",offset);
             Pjv = JL_LEAFWVALUEAREA(Pjlw, pop1);
 #endif
             offset = j__udySearchLeafW(Pjlw + 1, pop1, Index);
+fprintf(stderr, "j__udySearchLeafW offset=%d\n",offset);
 
             if (offset >= 0)            // index is already valid:
             {
@@ -1765,6 +1767,7 @@ fprintf(stderr, "pos of new index: offset=%d\n",offset);
             }
 
             offset = ~offset;
+fprintf(stderr, "flipped offset=%d\n",offset);
 
 // Insert index in cases where no new memory is needed:
 
@@ -1793,6 +1796,7 @@ fprintf(stderr, "pos of new index: offset=%d\n",offset);
 
                 Pjlwnew[0] = pop1;              // set pop0 in new leaf.
 
+fprintf(stderr, "JU_INSERTCOPY offset =%d\n",offset);
                 JU_INSERTCOPY(Pjlwnew + 1, Pjlw + 1, pop1, offset, Index);
 #ifdef JUDYL
                 Pjvnew = JL_LEAFWVALUEAREA(Pjlwnew, pop1 + 1);
