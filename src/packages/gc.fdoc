@@ -1176,9 +1176,12 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
   assert(fp); // Got some memory!
 
   //++shape->allocations;
-  if(debug)
-    fprintf(stderr,"[gc] Allocated %p, shape=%s[%zd][%zu][#a=%zu,#d=%zu]\n", 
-      fp,shape->cname,shape->count,nobj,shape->allocations,shape->deallocations);
+
+  // for use when things go wrong
+  char error_buffer[2048];
+  snprintf(&error_buffer, 2047, 
+    "[gc] Allocated %p, shape=%s[%zd][%zu][#a=%zu,#d=%zu]\n", 
+    fp,shape->cname,shape->count,nobj,shape->allocations,shape->deallocations);
 
   Word_t *p = (Word_t*)(void*)JudyLIns(&j_shape,(Word_t)fp,&je);
   if(tracefile) 
@@ -1209,6 +1212,9 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
           "  p==NULL: %s\n", 
           ((p == NULL) ? "true" : "false") );
     }
+
+    // finally output error_buffer if there's an error
+    fprintf(stderr, &error_buffer);
 
     assert (nobj == n_objects);
   }
