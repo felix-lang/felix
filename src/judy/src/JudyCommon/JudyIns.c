@@ -1802,7 +1802,7 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
 
                 j__udyFreeJLW(Pjlw, pop1, NULL);
 
-                fprintf(stderr, "Updating gc root because: growing to a larger leaf (%p)\n", (Pvoid_t)Pljwnew );
+                fprintf(stderr, "Updating gc root because: growing to a larger leaf (%p)\n", (Pvoid_t)Pjlwnew );
                 *PPArray = (Pvoid_t) Pjlwnew;
                 DBGCODE(JudyCheckPop(*PPArray);)
 
