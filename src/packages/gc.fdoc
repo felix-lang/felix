@@ -1198,9 +1198,17 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
   size_t n_objects = get_count(fp);
   if (nobj != n_objects) 
   {
+
     fprintf(stderr, 
         "Insertion into j_nalloc (%p) failed: address %p, [nobj=%zu != get_count(fp)=%zu]\n",
         j_nalloc, fp, nobj, n_objects);
+    
+    { // get_count(fp) conflates size 1 with NULL pointer, the following will disambiguate
+      Word_t *p = (Word_t*)(void*)JudyLGet(j_nalloc,(Word_t)fp,&je);
+      fprintf(stderr, 
+          "  p==NULL: %s\n", 
+          ((p == NULL) ? "true" : "false") );
+    }
 
     assert (nobj == n_objects);
   }
