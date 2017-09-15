@@ -1700,7 +1700,7 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
         int       offset;       // position in which to store new Index.
         Pjlw_t    Pjlw;
 
-
+fprintf(stderr, "pos of new index: offset=%d\n",offset);
 // CHECK FOR NULL POINTER (error by caller):
 
         if (PPArray == (PPvoid_t) NULL)
