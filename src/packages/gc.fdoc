@@ -1179,7 +1179,7 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
 
   // for use when things go wrong
   char error_buffer[2048];
-  snprintf(&error_buffer, 2047, 
+  snprintf(error_buffer, 2047, 
     "[gc] Allocated %p, shape=%s[%zd][%zu][#a=%zu,#d=%zu]\n", 
     fp,shape->cname,shape->count,nobj,shape->allocations,shape->deallocations);
 
@@ -1214,7 +1214,7 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
     }
 
     // finally output error_buffer if there's an error
-    fprintf(stderr, &error_buffer);
+    fprintf(stderr, "%s", error_buffer);
 
     assert (nobj == n_objects);
   }
