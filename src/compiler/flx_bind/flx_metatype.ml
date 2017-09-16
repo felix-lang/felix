@@ -151,7 +151,6 @@ print_endline ("Metatyping term " ^ st term);
   | BTYP_rev _
   | BTYP_uniq _
 
-  | BTYP_int
   | BTYP_intersect _
   | BTYP_union _
   | BTYP_polyrecord (_, _)

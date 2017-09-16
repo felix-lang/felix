@@ -1,6 +1,7 @@
 (** bid_t is the bound symbol index type, which is used to uniquely identifies
  * the symbol. *)
 type bid_t = int
+let start_counter = 2000
 
 let dummy_bid = 0
 

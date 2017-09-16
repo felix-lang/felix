@@ -222,18 +222,18 @@ and expand_coercion new_table bsym_table counter remap ((srcx,srct) as srce) dst
   | BTYP_record ls, BTYP_record rs ->
     record_coercion new_table bsym_table counter remap srce dstt ls rs
 
-  | BTYP_tuple ls, BTYP_tuple rs ->
+  | BTYP_tuple ls, BTYP_tuple rs when List.length ls = List.length rs ->
     tuple_coercion new_table bsym_table counter remap srce dstt ls rs
 
-  | BTYP_tuple ls, BTYP_array (r, BTYP_unitsum n) ->
+  | BTYP_tuple ls, BTYP_array (r, BTYP_unitsum n) when List.length ls = n ->
     let rs = Flx_list.repeat r n in
     tuple_coercion new_table bsym_table counter remap srce dstt ls rs
 
-  | BTYP_array (l, BTYP_unitsum n), BTYP_tuple rs  ->
+  | BTYP_array (l, BTYP_unitsum n), BTYP_tuple rs when List.length rs = n ->
     let ls = Flx_list.repeat l n in
     tuple_coercion new_table bsym_table counter remap srce dstt ls rs
 
-  | BTYP_array (l, BTYP_unitsum n), BTYP_array(r,BTYP_unitsum m)  ->
+  | BTYP_array (l, BTYP_unitsum n), BTYP_array(r,BTYP_unitsum m) when n = m ->
     if n > 20 then begin
       print_endline ("Can't coerce arrays longer than 20 yet");
       assert false
@@ -247,6 +247,11 @@ and expand_coercion new_table bsym_table counter remap ((srcx,srct) as srce) dst
     should really be a distinct term so that we're assured all coercions
     are eliminated
     *)
+(*
+print_endline ("Unable to expand coercion: " ^ Flx_print.sbe bsym_table srce ^ " {type=" ^
+  Flx_print.sbt bsym_table srct ^
+"} :>> " ^ Flx_print.sbt bsym_table dstt);
+*)
     Flx_bexpr.bexpr_coerce (srce, dstt)
 
 and process_expr new_table bsym_table counter expr = 

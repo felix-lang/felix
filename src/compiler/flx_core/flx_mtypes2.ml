@@ -84,7 +84,7 @@ type sym_state_t =
 
 let make_syms options =
   {
-    counter = ref 10;
+    counter = ref Flx_bid.start_counter;
     varmap = Hashtbl.create 97;
     ticache = Hashtbl.create 97;
     generic_cache = Hashtbl.create 97;

@@ -61,7 +61,7 @@ let handle_assembly state main_prog module_name =
   in
 
   (* print_endline "Flxg.HANDLE ASSEMBLY"; *)
-  let start_counter = ref 2 in
+  let start_counter = ref Flx_bid.start_counter in
 
   (* Load libs. Build them if necessary. *)
   let deps, excls, sym_table, bsym_table = Flxg_lib.process_libs

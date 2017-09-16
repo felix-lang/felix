@@ -48,7 +48,6 @@ print_endline ("Register type nr " ^ sbt bsym_table t);
   *)
   match t with
   | BTYP_hole -> assert false
-  | BTYP_int -> ()
   | BTYP_label -> ()
   | BTYP_fix _
   | BTYP_tuple []
@@ -119,7 +118,6 @@ print_endline ("Register type r " ^ sbt bsym_table t);
   match t' with
   | BTYP_hole -> assert false
   | BTYP_rev _ -> assert false (* should have been eliminated *)
-  | BTYP_int -> ()
   | BTYP_label -> ()
   | BTYP_void -> ()
   | BTYP_fix (0,_) -> ()

@@ -765,6 +765,8 @@ and rqmap me reqs =
   let r req = rqmap me req in
   match reqs with
   | RREQ_or (a,b) -> RREQ_or (r a, r b)
+  | RREQ_and (RREQ_true,b) -> r b
+  | RREQ_and (a,RREQ_true) -> r a
   | RREQ_and (a,b) -> RREQ_and (r a, r b)
   | RREQ_true -> RREQ_true
   | RREQ_false -> RREQ_false

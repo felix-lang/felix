@@ -61,7 +61,13 @@ let mkprop sr s = match s with
     | "virtual" -> `Virtual
     | x -> clierrx "[flx_desugar/flx_reqs.ml:62: E353] " sr ("Unknown property " ^ x)
 
-let mkreqs state access parent_ts sr (rqs :raw_req_expr_t) : type_qual_t list *property_t list * asm_t list * named_req_expr_t =
+let mkreqs state access parent_ts sr (rqs :raw_req_expr_t) : 
+  int option * 
+  type_qual_t list *
+  property_t list * 
+  asm_t list * 
+  named_req_expr_t 
+=
     let ix = None in
     let quals = ref [] in
     let props = ref [] in
@@ -73,6 +79,7 @@ let mkreqs state access parent_ts sr (rqs :raw_req_expr_t) : type_qual_t list *p
       decls := dcl :: !decls;
       NREQ_atom (`AST_name (sr,n,parent_ts sr))
     in
+    let index = ref None in
     let rec aux rqs = match rqs with
     | RREQ_or (a,b) -> NREQ_or (aux a, aux b)
     | RREQ_and (a,b) -> NREQ_and (aux a, aux b)
@@ -111,8 +118,12 @@ let mkreqs state access parent_ts sr (rqs :raw_req_expr_t) : type_qual_t list *p
       | Decoder_req s ->
         quals := `Decoder s :: !quals;
         NREQ_true
+
+      | Index_req i ->
+        index := Some i;
+        NREQ_true
     in
     let r = aux rqs in
-    !quals, !props, !decls, r
+    !index, !quals, !props, !decls, r
 
 

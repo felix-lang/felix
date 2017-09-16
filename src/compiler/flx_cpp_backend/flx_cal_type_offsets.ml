@@ -27,7 +27,6 @@ let rec is_pod bsym_table t =
   | BTYP_rref _ -> assert false
   | BTYP_wref _ -> assert false
 
-  | BTYP_int
   | BTYP_label
   | BTYP_unitsum _ 
   | BTYP_sum _ 
@@ -72,7 +71,6 @@ let rec get_offsets' syms bsym_table typ : string list =
   | BTYP_uniq _ -> assert false
   | BTYP_rref _ -> assert false
   | BTYP_wref _ -> assert false
-  | BTYP_int -> []
   | BTYP_pointer t -> ["0"]
 
   | BTYP_variant _ ->

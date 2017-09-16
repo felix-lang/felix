@@ -17,7 +17,6 @@ type btpattern_t = {
 (** general typing *)
 and t = 
   | BTYP_hole
-  | BTYP_int (* type of a C++ int, so we don't have to look it up *)
   | BTYP_none
   | BTYP_sum of t list
   | BTYP_unitsum of int
@@ -95,7 +94,6 @@ let rec str_of_btype typ =
   let ss ts = String.concat "," (List.map str_of_btype ts) in
   match typ with
   | BTYP_hole -> "BTYP_hole"
-  | BTYP_int -> "BTYP_int"
   | BTYP_none -> "BTYP_none"
   | BTYP_sum ts -> "BTYP_sum(" ^ ss ts ^")"
   | BTYP_unitsum n -> string_of_int n
@@ -206,7 +204,6 @@ let btyp_label () = BTYP_label
 let btyp_none () =
   BTYP_none
 
-let btyp_int () = BTYP_int
 
 (** The void type. *)
 let btyp_void () =
@@ -265,6 +262,8 @@ let btyp_union ls =
 
 let btyp_inst (bid, ts) =
   BTYP_inst (bid, ts)
+
+let btyp_int () = btyp_inst (Flx_concordance.flx_int, [])
 
 (** Construct a BTYP_tuple type. *)
 let btyp_tuple ts = 
@@ -543,7 +542,6 @@ let flat_iter
 =
   match btype with
   | BTYP_hole -> ()
-  | BTYP_int -> ()
   | BTYP_label -> ()
   | BTYP_none -> ()
   | BTYP_sum ts -> List.iter f_btype ts
@@ -611,7 +609,6 @@ let rec iter
  * function. *)
 let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_hole as x -> x
-  | BTYP_int as x -> x
   | BTYP_label as x -> x
   | BTYP_none as x -> x
   | BTYP_sum ts -> btyp_sum (List.map f_btype ts)

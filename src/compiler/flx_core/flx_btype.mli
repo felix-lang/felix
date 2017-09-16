@@ -7,7 +7,6 @@ type btpattern_t = {
 }
 and t = private
     BTYP_hole
-  | BTYP_int
   | BTYP_none
   | BTYP_sum of t list
   | BTYP_unitsum of int

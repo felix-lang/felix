@@ -34,7 +34,6 @@ let fold (bsym_table: Flx_bsym_table.t) counter t =
     | BTYP_hole
     | BTYP_label 
     | BTYP_none
-    | BTYP_int
     | BTYP_void
     | BTYP_unitsum _
     | BTYP_type_var _

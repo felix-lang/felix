@@ -63,7 +63,6 @@ let fix i t =
     | BTYP_variant ts ->
        btyp_variant (List.map (fun (s,t) -> s, aux t) ts)
 
-    | BTYP_int 
     | BTYP_label 
     | BTYP_unitsum _
     | BTYP_void

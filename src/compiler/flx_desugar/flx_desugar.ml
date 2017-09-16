@@ -28,8 +28,6 @@ let assign sr op l r =
     EXPR_name (sr, op,[]),
     EXPR_tuple (sr, [EXPR_ref (sr,l); r])
   )
-
-
 (* -------------------------------------------------------------------------- *)
 (* SHOULD BE UNUSED NOW ... *)
 let gen_call_init sr name' =
@@ -162,7 +160,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
 
   | STMT_export_requirement (sr,reqs) ->
     print_endline ("Export requirement " ^ string_of_raw_reqs reqs);
-    let _,props, dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
+    let _,_,props, dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
     dcls @ [Iface (sr, IFACE_export_requirement (reqs))]
 
   | STMT_var_decl (sr,name,vs,typ,expr) ->
@@ -261,14 +259,14 @@ print_endline ("Translating Lazy Declaration " ^ name);
     end
 
   | STMT_const_decl (sr,name, vs,typ, s, reqs) ->
-    let _,props,dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
-    Dcl (sr,name,None,access,vs,DCL_const (props,typ,s, Flx_reqs.map_reqs rqname' sr reqs))
+    let index, _,props,dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
+    Dcl (sr,name,index,access,vs,DCL_const (props,typ,s, Flx_reqs.map_reqs rqname' sr reqs))
     :: dcls
 
   (* types *)
   | STMT_abs_decl (sr,name,vs,quals,s, reqs) ->
-    let quals',props,dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
-    Dcl (sr,name,None,access,vs,DCL_abs (quals' @ quals,s,Flx_reqs.map_reqs rqname' sr reqs))
+    let index,quals',props,dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
+    Dcl (sr,name,index,access,vs,DCL_abs (quals' @ quals,s,Flx_reqs.map_reqs rqname' sr reqs))
     :: dcls
 
   | STMT_newtype (sr,name,vs,t) ->
@@ -277,8 +275,8 @@ print_endline ("Translating Lazy Declaration " ^ name);
   | STMT_union (sr,name, vs, components) -> [Dcl (sr,name,None,access,vs,DCL_union (components))]
   | STMT_struct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,DCL_struct (components))]
   | STMT_cstruct (sr,name, vs, components, reqs) ->  
-    let _,props,dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
-    Dcl (sr,name,None,access,vs,DCL_cstruct (components, Flx_reqs.map_reqs rqname' sr reqs)) :: dcls
+    let index,_,props,dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
+    Dcl (sr,name,index,access,vs,DCL_cstruct (components, Flx_reqs.map_reqs rqname' sr reqs)) :: dcls
 
   | STMT_typeclass (sr,name, vs, sts) ->
     let asms = rsts name (Flx_merge_vs.merge_vs parent_vs vs) `Public sts in
@@ -499,7 +497,7 @@ ps;
     print_endline (string_of_statement 0 st);
     *)
     let vs,con = vs in
-    let _,props, dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
+    let index,_,props, dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
     (* hackery *)
     let vs,args = List.fold_left begin fun (vs,args) arg ->
       match arg with
@@ -518,22 +516,22 @@ ps;
       | x -> vs, x::args
     end (List.rev vs, []) args
     in
-    Dcl (sr, name', None, access, (List.rev vs, con),
+    Dcl (sr, name', index, access, (List.rev vs, con),
       DCL_fun (props, List.rev args, result, code, Flx_reqs.map_reqs rqname' sr reqs, prec))
     :: dcls
 
   | STMT_callback_decl (sr,name',args,result,reqs) ->
-    let _,props, dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
-    Dcl (sr,name',None,access,dfltvs,
+    let index,_,props, dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
+    Dcl (sr,name',index,access,dfltvs,
       DCL_callback (props,args,result,Flx_reqs.map_reqs rqname' sr reqs))
     :: dcls
 
   (* misc *)
   | STMT_insert (sr,name',vs,s,kind,reqs) ->
-    let _,props, dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
+    let index,_,props, dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
     (* SPECIAL case: insertion requires insertion use filo order *)
     dcls @ [
-      Dcl (sr,Flx_reqs.map_req name name',None,access,vs,DCL_insert (s, kind, Flx_reqs.map_reqs rqname' sr reqs))
+      Dcl (sr,Flx_reqs.map_req name name',index,access,vs,DCL_insert (s, kind, Flx_reqs.map_reqs rqname' sr reqs))
     ]
 
   (* executable *)

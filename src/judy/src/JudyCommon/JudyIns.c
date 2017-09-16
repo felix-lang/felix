@@ -286,7 +286,7 @@ JudyBranchL:
 
             offset = j__udySearchLeaf1((Pjll_t) (Pjbl->jbl_Expanse), numJPs,
                                        digit);
-fprintf(stderr, "j__udySearchLeaf1 offset =%d\n",offset);
+//fprintf(stderr, "j__udySearchLeaf1 offset =%d\n",offset);
 
 // If Index is found, offset is into an array of 1..cJU_BRANCHLMAXJPS JPs:
 
@@ -302,7 +302,7 @@ fprintf(stderr, "j__udySearchLeaf1 offset =%d\n",offset);
             if (numJPs < cJU_BRANCHLMAXJPS)
             {
                 offset = ~offset;       // insertion offset.
-fprintf(stderr, "flipped offset =%d\n",offset);
+//fprintf(stderr, "flipped offset =%d\n",offset);
 
                 JU_JPSETADT(&newJP, 0, Index,
                         JU_JPTYPE(Pjp) + cJU_JPIMMED_1_01-cJU_JPBRANCH_L2);
@@ -1732,7 +1732,7 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
             Pjlwnew[0] = 1 - 1;         // pop0 = 0.
             Pjlwnew[1] = Index;
 
-            fprintf(stderr, "Updating gc root because: valid empty array (%p)\n", (Pvoid_t)Pjlwnew);
+            //fprintf(stderr, "Updating gc root because: valid empty array (%p)\n", (Pvoid_t)Pjlwnew);
             *PPArray = (Pvoid_t) Pjlwnew;
             DBGCODE(JudyCheckPop(*PPArray);)
 
@@ -1757,7 +1757,7 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
             Pjv = JL_LEAFWVALUEAREA(Pjlw, pop1);
 #endif
             offset = j__udySearchLeafW(Pjlw + 1, pop1, Index);
-fprintf(stderr, "j__udySearchLeafW offset=%d\n",offset);
+//fprintf(stderr, "j__udySearchLeafW offset=%d\n",offset);
 
             if (offset >= 0)            // index is already valid:
             {
@@ -1767,7 +1767,7 @@ fprintf(stderr, "j__udySearchLeafW offset=%d\n",offset);
             }
 
             offset = ~offset;
-fprintf(stderr, "flipped offset=%d\n",offset);
+//fprintf(stderr, "flipped offset=%d\n",offset);
 
 // Insert index in cases where no new memory is needed:
 
@@ -1796,7 +1796,7 @@ fprintf(stderr, "flipped offset=%d\n",offset);
 
                 Pjlwnew[0] = pop1;              // set pop0 in new leaf.
 
-fprintf(stderr, "JU_INSERTCOPY offset =%d\n",offset);
+//fprintf(stderr, "JU_INSERTCOPY offset =%d\n",offset);
                 JU_INSERTCOPY(Pjlwnew + 1, Pjlw + 1, pop1, offset, Index);
 #ifdef JUDYL
                 Pjvnew = JL_LEAFWVALUEAREA(Pjlwnew, pop1 + 1);
@@ -1806,7 +1806,7 @@ fprintf(stderr, "JU_INSERTCOPY offset =%d\n",offset);
 
                 j__udyFreeJLW(Pjlw, pop1, NULL);
 
-                fprintf(stderr, "Updating gc root because: growing to a larger leaf (%p)\n", (Pvoid_t)Pjlwnew );
+                //fprintf(stderr, "Updating gc root because: growing to a larger leaf (%p)\n", (Pvoid_t)Pjlwnew );
                 *PPArray = (Pvoid_t) Pjlwnew;
                 DBGCODE(JudyCheckPop(*PPArray);)
 
@@ -1839,7 +1839,7 @@ fprintf(stderr, "JU_INSERTCOPY offset =%d\n",offset);
 // counted in a JPM at all:
 
             j__udyFreeJLW(Pjlw, cJU_LEAFW_MAXPOP1, NULL);
-            fprintf(stderr, "Updating gc root because: leaf is at max size (%p)\n", (Pvoid_t)Pjpm );
+            //fprintf(stderr, "Updating gc root because: leaf is at max size (%p)\n", (Pvoid_t)Pjpm );
             *PPArray = (Pvoid_t) Pjpm;
 
         } // JU_LEAFW

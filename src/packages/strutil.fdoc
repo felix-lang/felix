@@ -113,6 +113,7 @@ namespace flx { namespace rtl { namespace strutil {
 
 #include <stdio.h>
 #include <cstdint>
+#include <cstring>
 
 #include "flx_strutil.hpp"
 
@@ -127,7 +128,12 @@ namespace flx { namespace rtl { namespace strutil {
   }
 
   char *flx_cstr(::std::basic_string<char> const& s) {
-    return strdup (s.c_str());
+    auto n = s.size();
+    auto q = (char*) ::std::malloc(n+1);
+    auto p = s.c_str();
+    ::std::memcpy(q,p,n);
+    q[n] = 0;
+    return q; 
   }
 
   string atostr(char const *a) {

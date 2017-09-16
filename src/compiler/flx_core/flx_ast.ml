@@ -356,6 +356,7 @@ and requirement_t =
   | Finaliser_req of CS.t
   | Encoder_req of CS.t
   | Decoder_req of CS.t
+  | Index_req of int
 
 and ikind_t = [
   | `Header

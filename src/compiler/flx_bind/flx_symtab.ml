@@ -390,8 +390,9 @@ and build_table_for_dcl
     | Some n -> n
     | None -> fresh_bid counter_ref
   in
-
-  if print_flag then
+  if print_flag 
+    (* || symbol_index < 2000 *)
+  then
     print_endline ("Flx_symtab: Adding " ^ id^"="^string_of_int symbol_index)
   ;
   (* Update the type variable list to include the index. *)

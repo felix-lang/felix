@@ -1748,7 +1748,7 @@ JUDYLCODE(Pjv_t	   Pjv;)	// value area of leaf.
 		Pjll_t Pjll;
       JUDYLCODE(Pjv_t  Pjvnew;)		// value area of new leaf.
 
-fprintf(stderr,"Cascade: compress 1 expanse\n");
+//fprintf(stderr,"Cascade: compress 1 expanse\n");
 //		Get the common expanse to all elements in Leaf
 		StageExp[0] = JU_DIGITATSTATE(CIndex, cJU_ROOTSTATE);
 
@@ -1803,7 +1803,7 @@ fprintf(stderr,"Cascade: compress 1 expanse\n");
 	}
 
 //  Else in 2+ expanses, splay Leaf into smaller leaves at higher compression
-fprintf(stderr,"Cascade: 2+ expanses\n");
+//fprintf(stderr,"Cascade: 2+ expanses\n");
 
 	StageJBB = StageJBBZero;       // zero staged bitmap branch
 	ZEROJP(SubJPCount);

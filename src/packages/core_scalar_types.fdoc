@@ -68,16 +68,16 @@ lengths and in particular can span byte arrays as large
 as can be addressed.
 
 @tangle scalar.flx
-pod type tiny = "signed char";
-pod type short = "short";
-pod type int = "int";
-pod type long = "long";
-pod type vlong = "long long";
-pod type utiny = "unsigned char";
-pod type ushort = "unsigned short";
-pod type uint = "unsigned int";
-pod type ulong = "unsigned long";
-pod type uvlong = "unsigned long long";
+pod type tiny = "signed char" requires index 100;
+pod type short = "short" requires index 101;
+pod type int = "int" requires index 102;
+pod type long = "long" requires index 103;
+pod type vlong = "long long" requires index 104;
+pod type utiny = "unsigned char" requires index 105;
+pod type ushort = "unsigned short" requires index 106;
+pod type uint = "unsigned int" requires index 107;
+pod type ulong = "unsigned long" requires index 108;
+pod type uvlong = "unsigned long long" requires index 109;
 
 pod type intmax = "intmax_t" requires C99_headers::stdint_h;
 pod type uintmax = "uintmax_t" requires C99_headers::stdint_h;

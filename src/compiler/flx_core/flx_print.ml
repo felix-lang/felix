@@ -624,7 +624,6 @@ and sb bsym_table depth fixlist counter prec tc =
   let iprec, term =
     match tc with
     | BTYP_hole -> 0, "BTYP_hole"
-    | BTYP_int -> 0,"builtin_int"
     | BTYP_none -> 0,"none"
     | BTYP_label -> 0,"label"
     | BTYP_tuple_cons (t1,t2) -> 
@@ -1118,6 +1117,7 @@ and string_of_raw_req = function
   | Finaliser_req c -> "finaliser " ^ string_of_code_spec c
   | Encoder_req c -> "encoder " ^ string_of_code_spec c
   | Decoder_req c -> "decoder " ^ string_of_code_spec c
+  | Index_req idx -> "index " ^ string_of_int idx
 
 (* fairly lame excess brackets here *)
 and string_of_raw_req_expr = function
