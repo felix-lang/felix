@@ -41,6 +41,7 @@ type t = private
 
 (* -------------------------------------------------------------------------- *)
 
+val bexe_storeat : Flx_srcref.t * t * t
 val bexe_label : Flx_srcref.t * bid_t -> t
 val bexe_comment : Flx_srcref.t * string -> t
 val bexe_halt : Flx_srcref.t * string -> t

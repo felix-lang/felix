@@ -232,6 +232,15 @@ let find_roots syms bsym_table (root: int option) bifaces =
      breqs 
   end bifaces;
 
+  (* keep primitives in concordance *)
+  for i= 100 to Flx_bid.start_counter - 1 do
+    if Flx_bsym_table.mem bsym_table i then begin
+(*
+print_endline ("Concordance index " ^ string_of_int i ^ " made root");
+*)
+      add i
+    end
+  done;
   syms.roots := !roots
 
 let cal_use_closure syms bsym_table (count_inits:bool) =

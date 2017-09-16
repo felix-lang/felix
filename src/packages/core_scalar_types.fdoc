@@ -84,6 +84,13 @@ pod type uintmax = "uintmax_t" requires C99_headers::stdint_h;
 pod type size = "size_t" requires C89_headers::stddef_h;
 pod type ssize = "ssize_t" requires C89_headers::stddef_h;
 
+/* for concordance, required to generated loops */
+class PervasiveInts {
+  private const zero: int = "0" requires index 200;
+  private fun isneg:  int -> 2 = "$1<0" requires index 201;
+  private fun isnonneg:  int -> 2= "$1>=0" requires index 202;
+  private proc decr:  &int = "--*$1;" requires index 203;
+}
 
 @h1 Exact Integer types
 Here are the usual exact integer types.

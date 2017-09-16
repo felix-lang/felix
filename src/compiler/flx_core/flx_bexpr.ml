@@ -178,6 +178,12 @@ let bexpr_class_new cl e = BEXPR_class_new (cl,e), complete_check (Flx_btype.bty
 
 let bexpr_literal t l = BEXPR_literal l, complete_check t
 
+let bexpr_literal_int n =
+  let v = string_of_int n in
+  let literal = {Flx_literal.felix_type="int"; internal_value=v; c_value=v} in
+  let int_t = Flx_btype.btyp_int () in
+  bexpr_literal int_t literal
+
 let bexpr_apply t (e1, e2) = 
   let _,ft = e1 and _,at = e2 in
   begin match Flx_btype.unfold "Flx_bexpr:bexpr_apply" ft with

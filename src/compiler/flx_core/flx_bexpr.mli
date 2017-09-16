@@ -94,6 +94,7 @@ val bexpr_address : t -> t
 val bexpr_new : t -> t
 val bexpr_class_new : Flx_btype.t -> t -> t
 val bexpr_literal : Flx_btype.t -> Flx_literal.literal_t -> t
+val bexpr_literal_int : int -> t
 val bexpr_apply : Flx_btype.t -> t * t -> t
 val bexpr_apply_prim :
   Flx_btype.t ->

@@ -199,6 +199,16 @@ and tuple_coercion new_table bsym_table counter remap ((srcx,srct) as srce) dstt
   let prjs = List.map2 (fun p t-> bexpr_coerce (p,t)) prjs rs in
   remap (bexpr_tuple dstt prjs)
 
+and array_coercion new_table bsym_table counter remap ((_,srct) as srce) dstt l r n =
+  let coerce e t = expand_coercion new_table bsym_table counter remap e t in
+  let fidx = Flx_bid.fresh_bid counter in
+  let ix = Flx_bid.fresh_bid counter in
+  let ixval = bexpr_varname l (ix,[]) in
+  let mapping = coerce ixval r in
+  let lam = bexpr_lambda ix l mapping in
+  let acidx = Flx_lambda.add_array_map new_table counter fidx srce lam in
+  let ft = btyp_function (srct, dstt) in
+  bexpr_apply dstt (bexpr_closure ft (acidx,[]), srce)
 
 (* this routine assumes coercions were introduces only when they're
 justified by theory, it doesn't check if, for example, that
@@ -235,9 +245,10 @@ and expand_coercion new_table bsym_table counter remap ((srcx,srct) as srce) dst
 
   | BTYP_array (l, BTYP_unitsum n), BTYP_array(r,BTYP_unitsum m) when n = m ->
     if n > 20 then begin
-      print_endline ("Can't coerce arrays longer than 20 yet");
-      assert false
-    end;
+      print_endline ("oerce array longer than 20");
+      array_coercion new_table bsym_table counter remap srce dstt l r n
+    end
+    else
     let ls = Flx_list.repeat l n in
     let rs = Flx_list.repeat r n in
     tuple_coercion new_table bsym_table counter remap srce dstt ls rs
