@@ -1,0 +1,40 @@
+
+@h1 Subtyping: tuples and arrays
+@felix
+var ta = (a=1,b=2),(c=3,d=4);
+fun ft(x: (a:int) * (d:int)) => x._strr;
+println$ ft ta;
+
+var aa : ((a:int,b:int) * (c:int,d:int)) ^ 22 = 
+  (ta,ta,ta,ta,ta,ta,ta,ta,ta,ta,ta,ta,ta,ta,ta,ta,ta,ta,ta,ta,ta,ta)
+;
+fun fafa (x: ((a:int) * (d:int)) ^ 22) => x;
+val bbbb = fafa aa;
+for i in 0..<22 perform
+  println$ i.str + " => " + bbbb.i._strr;
+
+@expect
+((a=1),(d=4))
+0 => ((a=1),(d=4))
+1 => ((a=1),(d=4))
+2 => ((a=1),(d=4))
+3 => ((a=1),(d=4))
+4 => ((a=1),(d=4))
+5 => ((a=1),(d=4))
+6 => ((a=1),(d=4))
+7 => ((a=1),(d=4))
+8 => ((a=1),(d=4))
+9 => ((a=1),(d=4))
+10 => ((a=1),(d=4))
+11 => ((a=1),(d=4))
+12 => ((a=1),(d=4))
+13 => ((a=1),(d=4))
+14 => ((a=1),(d=4))
+15 => ((a=1),(d=4))
+16 => ((a=1),(d=4))
+17 => ((a=1),(d=4))
+18 => ((a=1),(d=4))
+19 => ((a=1),(d=4))
+20 => ((a=1),(d=4))
+21 => ((a=1),(d=4))
+@
