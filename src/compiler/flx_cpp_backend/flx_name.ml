@@ -219,7 +219,7 @@ let rec cpp_type_classname syms bsym_table t =
   let tn t = cpp_typename syms bsym_table t in
   let tix t = tix "[flx_name:cpp_type_classname" syms bsym_table t in
   let t = Flx_fold.fold bsym_table syms.counter t in
-  let t = normalise_tuple_cons bsym_table t in
+  let t = Flx_tuplecons.normalise_tuple_cons bsym_table t in
   let t' = unfold "flx_name: cpp_type_classname" t in
   try match t' with
 
@@ -385,7 +385,7 @@ print_endline ("[flx_name] One component union should have been removed");
 and cpp_structure_name syms bsym_table t =
   let tn t = cpp_typename syms bsym_table t in
   let tix t = tix "[flx_name:cpp_structure_name]" syms bsym_table t in
-  let t = normalise_tuple_cons bsym_table t in
+  let t = Flx_tuplecons.normalise_tuple_cons bsym_table t in
   let t = Flx_fold.fold bsym_table syms.counter t in
   let t' = unfold "flx_name: cpp_structure_name" t in
   try match t' with

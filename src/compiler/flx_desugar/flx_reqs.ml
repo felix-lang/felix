@@ -54,6 +54,7 @@ let map_reqs rqname' sr (reqs : named_req_expr_t) : named_req_expr_t =
 
   (* name literal requirements *)
 let mkprop sr s = match s with
+    | "heap_closure" -> `Heap_closure
     | "needs_gc" -> `Uses_gc
     | "needs_ptf" -> `Requires_ptf
     | "pure" -> `Pure

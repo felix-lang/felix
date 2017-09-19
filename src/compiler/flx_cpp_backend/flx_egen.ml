@@ -152,7 +152,7 @@ let rec gen_expr'
 (*
   print_endline ("Gen_expr': " ^ sbe bsym_table (e,t));
 *)
-  let rec f_bexpr e = Flx_bexpr.map ~f_bexpr ~f_btype:(Flx_unify.normalise_tuple_cons bsym_table) e in
+  let rec f_bexpr e = Flx_bexpr.map ~f_bexpr ~f_btype:(Flx_tuplecons.normalise_tuple_cons bsym_table) e in
   let e,t = f_bexpr (e,t) in
   match e with
   (* replace heap allocation of a unit with NULL pointer *)
@@ -910,7 +910,7 @@ print_endline ("Apply stack");
     print_endline ("Head Type " ^ sbt bsym_table th');
     print_endline ("Tail Type " ^ sbt bsym_table tt');
 *)
-    let ntt = normalise_tuple_cons bsym_table tt' in
+    let ntt = Flx_tuplecons.normalise_tuple_cons bsym_table tt' in
     let tts = match ntt with
     | BTYP_tuple tts -> tts
     | BTYP_array (t,BTYP_unitsum n) -> 
@@ -938,7 +938,7 @@ print_endline ("Apply stack");
         tts
     in
     let es = xh' :: es in
-    let t = normalise_tuple_cons bsym_table t in
+    let t = Flx_tuplecons.normalise_tuple_cons bsym_table t in
     let e = bexpr_tuple t es in
 (*
 print_endline ("Normalised expression " ^ sbe bsym_table e);
@@ -947,7 +947,7 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
     ge' e
 
   | BEXPR_tuple_snoc ((et', tt' as xt'),(eh',th' as xh') ) ->
-    let ntt = normalise_tuple_cons bsym_table tt' in
+    let ntt = Flx_tuplecons.normalise_tuple_cons bsym_table tt' in
     let tts = match ntt with
     | BTYP_tuple tts -> tts
     | BTYP_array (t,BTYP_unitsum n) -> 
@@ -971,7 +971,7 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
         tts
     in
     let es = es @[xh'] in
-    let t = normalise_tuple_cons bsym_table t in
+    let t = Flx_tuplecons.normalise_tuple_cons bsym_table t in
     let e = bexpr_tuple t es in
     ge' e
 
@@ -980,7 +980,7 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
     print_endline ("Tuple head of expression " ^ sbe bsym_table x');
     print_endline ("Type " ^ sbt bsym_table t');
 *)
-    let t'' = normalise_tuple_cons bsym_table t' in
+    let t'' = Flx_tuplecons.normalise_tuple_cons bsym_table t' in
 (*
     print_endline ("Normalised Type " ^ sbt bsym_table t');
     print_endline ("Tail Type " ^ sbt bsym_table t);
@@ -1003,7 +1003,7 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
     end
 
   | BEXPR_tuple_last (e',t' as x') ->
-    let t'' = normalise_tuple_cons bsym_table t' in
+    let t'' = Flx_tuplecons.normalise_tuple_cons bsym_table t' in
     begin match t'' with 
     | BTYP_tuple [] -> assert false
     | BTYP_tuple ts -> 
@@ -1026,7 +1026,7 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
     print_endline ("Tuple tail of expression " ^ sbe bsym_table x');
     print_endline ("Type " ^ sbt bsym_table t');
 *)
-    let t'' = normalise_tuple_cons bsym_table t' in
+    let t'' = Flx_tuplecons.normalise_tuple_cons bsym_table t' in
 (*
     print_endline ("Normalised Type " ^ sbt bsym_table t');
     print_endline ("Tail Type " ^ sbt bsym_table t);
@@ -1058,7 +1058,7 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
     ge' tail
 
   | BEXPR_tuple_body (e',t' as x') ->
-    let t'' = normalise_tuple_cons bsym_table t' in
+    let t'' = Flx_tuplecons.normalise_tuple_cons bsym_table t' in
     let ts = match t'' with 
     | BTYP_tuple ts ->  ts
     | BTYP_array (t, BTYP_unitsum n) -> 

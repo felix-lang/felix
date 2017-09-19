@@ -64,7 +64,7 @@ open class Fibres
 
   proc swait() { svc$ svc_swait; }
 
-  proc chain : cont = "return $1;";
+  proc chain : cont = "return $1;" requires property "heap_closure";
 
   //$ The type of a fibre scheduler.
   type fibre_scheduler = "::flx::run::sync_sched*" requires header '#include "flx_sync.hpp"';

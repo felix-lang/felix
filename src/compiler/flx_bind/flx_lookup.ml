@@ -2227,8 +2227,8 @@ and cal_apply state bsym_table sr rs ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
   r
 
 and cal_apply' state bsym_table be sr ((be1,t1') as tbe1) ((be2,t2') as tbe2) =
-  let t1 = normalise_tuple_cons bsym_table t1' in
-  let t2 = normalise_tuple_cons bsym_table t2' in
+  let t1 = Flx_tuplecons.normalise_tuple_cons bsym_table t1' in
+  let t2 = Flx_tuplecons.normalise_tuple_cons bsym_table t2' in
 (*
   if t1 <> t1' || t2 <> t2' then begin
 print_endline ("cal_apply' BEFORE NORMALISE, fn = " ^ sbt bsym_table t1' ^ " arg=" ^ sbt bsym_table t2');
@@ -5133,13 +5133,9 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
     let x = be e in
     begin match x with
     | BEXPR_varname (index,ts),vt ->
-      begin match vt with
-      | BTYP_uniq vt ->
-        let pt = btyp_rref vt in
-        bexpr_rref pt (index, ts)  
-      | _ -> clierr sr ("Read pointer requires argument be uniq type")
-      end
-    | _ -> clierr sr ("Read pointer requires argument be variable (of uniq type)")
+      let pt = btyp_rref vt in
+      bexpr_rref pt (index, ts)  
+    | _ -> clierr sr ("Read pointer requires argument be variable")
     end
 
   | EXPR_wref (_,e) -> 
@@ -5149,13 +5145,9 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
     let x = be e in
     begin match x with
     | BEXPR_varname (index,ts),vt ->
-      begin match vt with
-      | BTYP_uniq vt ->
-        let pt = btyp_wref vt in
-        bexpr_wref pt (index, ts)  
-      | _ -> clierr sr ("Write pointer requires argument be uniq type")
-      end
-    | _ -> clierr sr ("Write pointer reference requires argument be variable (of uniq type)")
+      let pt = btyp_wref vt in
+      bexpr_wref pt (index, ts)  
+    | _ -> clierr sr ("Write pointer reference requires argument be variable")
     end
 
   | EXPR_deref (_,(EXPR_ref (sr,e) as x)) ->
@@ -5173,8 +5165,8 @@ print_endline ("Binding _deref .. " ^ string_of_expr e);
 *)
     let e,t = be e' in
     begin match unfold "flx_lookup" t with
+    | BTYP_rref t' 
     | BTYP_pointer t' -> bexpr_deref t' (e,t)
-    | BTYP_rref t' -> let ut = btyp_uniq t' in bexpr_deref ut (e,t)
     | _ -> clierrx "[flx_bind/flx_lookup.ml:4856: E207] " sr 
      ("[bind_expression'] Dereference non pointer, type " ^ sbt bsym_table t)
     end

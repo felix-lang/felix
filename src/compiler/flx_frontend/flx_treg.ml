@@ -34,7 +34,7 @@ let registered_type syms bsym_table t =
   | Some (_,i) -> true
   
 let register_type_nr syms bsym_table t =
-let t = normalise_tuple_cons bsym_table t in
+let t = Flx_tuplecons.normalise_tuple_cons bsym_table t in
 (*
   if Flx_unify.is_recursive_type t 
     then print_endline ("Register type nr: recursive type " ^ sbt bsym_table t)
@@ -67,7 +67,7 @@ print_endline ("Register type nr " ^ sbt bsym_table t);
 
 
 let register_tuple syms bsym_table t =
-  let t = normalise_tuple_cons bsym_table t in
+  let t = Flx_tuplecons.normalise_tuple_cons bsym_table t in
   let t = Flx_fold.minimise bsym_table syms.counter t in
   let record_tuple t =
     register_type_nr syms bsym_table t;
@@ -95,7 +95,7 @@ print_endline ("flx_treg: Try to register tuple " ^ sbt bsym_table t);
     assert false
 
 let rec register_type_r' ui syms bsym_table exclude sr t =
-  let t = normalise_tuple_cons bsym_table t in
+  let t = Flx_tuplecons.normalise_tuple_cons bsym_table t in
 (*
 print_endline ("Register type r " ^ sbt bsym_table t);
 *)

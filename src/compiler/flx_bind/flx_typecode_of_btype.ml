@@ -36,6 +36,7 @@ let typecode_of_btype ?sym_table:(sym_table=None) bsym_table counter sr t0 =
         let id = Flx_bsym_table.find_id bsym_table i in 
         TYP_name (sr,id, (List.map tc ts))
       | BTYP_type_var (i,_) -> TYP_var i
+      | BTYP_uniq t -> TYP_uniq (tc t)
 (*
         begin match sym_table with 
         | None -> TYP_var i 

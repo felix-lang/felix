@@ -650,9 +650,9 @@ print_endline ("Bind EXE_iinit "^s);
           index
           parent_ts
       in
-      let lhst = Flx_unify.normalise_tuple_cons bsym_table lhst in
+      let lhst = Flx_tuplecons.normalise_tuple_cons bsym_table lhst in
       let rhst = Flx_fold.minimise bsym_table state.counter rhst in
-      let rhst = Flx_unify.normalise_tuple_cons bsym_table rhst in
+      let rhst = Flx_tuplecons.normalise_tuple_cons bsym_table rhst in
       if type_match bsym_table state.counter lhst rhst
       then begin 
             let bexe = bexe_init (sr,index,(e',rhst)) in
@@ -694,9 +694,9 @@ print_endline ("Bind EXE_init "^s);
               index
               parent_ts
           in
-          let lhst = Flx_unify.normalise_tuple_cons bsym_table lhst in
+          let lhst = Flx_tuplecons.normalise_tuple_cons bsym_table lhst in
           let rhst = Flx_fold.minimise bsym_table state.counter rhst in
-          let rhst = Flx_unify.normalise_tuple_cons bsym_table rhst in
+          let rhst = Flx_tuplecons.normalise_tuple_cons bsym_table rhst in
           (*
           print_endline ("Checking type match " ^ sbt state.sym_table lhst ^ " ?= " ^ sbt state.sym_table rhst);
           *)
@@ -752,7 +752,7 @@ print_endline ("assign: LHS=" ^ sbe bsym_table lx ^ ", LHST = " ^ sbt bsym_table
 *)
       let lhst = Flx_fold.minimise bsym_table state.counter lhst in
       let lhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_assign lhst" state.counter bsym_table sr lhst in
-      let lhst = Flx_unify.normalise_tuple_cons bsym_table lhst in
+      let lhst = Flx_tuplecons.normalise_tuple_cons bsym_table lhst in
 (*
 print_endline ("assign after beta-reduction: LHST = " ^ sbt bsym_table lhst);
 *)
@@ -761,7 +761,7 @@ print_endline ("assign:  RHS=" ^ sbe bsym_table rx ^ ",RHST = " ^ sbt bsym_table
 *)
       let rhst = Flx_fold.minimise bsym_table state.counter rhst in
       let rhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_assign rhst" state.counter bsym_table sr rhst in
-      let rhst = Flx_unify.normalise_tuple_cons bsym_table rhst in
+      let rhst = Flx_tuplecons.normalise_tuple_cons bsym_table rhst in
 (*
 print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
 *)
@@ -786,7 +786,7 @@ print_endline ("storeat : LHS=" ^ sbe bsym_table lx ^ ", LHST = " ^ sbt bsym_tab
 *)
     let lhst = Flx_fold.minimise bsym_table state.counter lhst in
     let lhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_assign lhst" state.counter bsym_table sr lhst in
-    let lhst = Flx_unify.normalise_tuple_cons bsym_table lhst in
+    let lhst = Flx_tuplecons.normalise_tuple_cons bsym_table lhst in
 (*
 print_endline ("assign after beta-reduction: LHST = " ^ sbt bsym_table lhst);
 *)
@@ -795,7 +795,7 @@ print_endline ("assign:  RHS=" ^ sbe bsym_table rx ^ ",RHST = " ^ sbt bsym_table
 *)
     let rhst = Flx_fold.minimise bsym_table state.counter rhst in
     let rhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_assign rhst" state.counter bsym_table sr rhst in
-    let rhst = Flx_unify.normalise_tuple_cons bsym_table rhst in
+    let rhst = Flx_tuplecons.normalise_tuple_cons bsym_table rhst in
 (*
 print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
 *)
@@ -803,7 +803,7 @@ print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
     let lhsvt = 
       match lhst with
       | BTYP_pointer t -> t
-      | BTYP_wref t -> btyp_uniq t
+      | BTYP_wref t -> t
       | _ -> 
         clierrx "[flx_bind/flx_bind_bexe.ml:765: E36A] " sr 
           (

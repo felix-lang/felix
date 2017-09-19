@@ -89,7 +89,7 @@ print_endline (" ** mono_type after variable replacement " ^ sbt bsym_table t);
     Flx_srcref.dummy_sr
     t
   in 
-  let t = Flx_unify.normalise_tuple_cons bsym_table t in
+  let t = Flx_tuplecons.normalise_tuple_cons bsym_table t in
   begin try check_mono bsym_table sr t with _ -> assert false end;
 (*
 print_endline (" ** end Mono_type " ^ sbt bsym_table t);

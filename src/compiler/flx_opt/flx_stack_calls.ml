@@ -590,7 +590,8 @@ and check_stackable_proc
   if mem i recstop then true else
   let bsym = Flx_bsym_table.find bsym_table i in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_external_fun (_,_,_,_,_,_,kind) ->
+  | BBDCL_external_fun (props,_,_,_,_,_,kind) ->
+    if mem `Heap_closure props then false else
     begin match kind with
     | `Code ct -> ct <> CS.Virtual
     | `Callback _ ->
@@ -605,9 +606,9 @@ and check_stackable_proc
       else if mem `Unstackable props then false
       else if can_stack_proc syms bsym_table fn_cache ptr_cache label_info  i recstop
       then begin
-        (*
-        print_endline ("MARKING PROCEDURE " ^ id ^ " stackable!");
-        *)
+(*
+        print_endline ("MARKING PROCEDURE " ^ Flx_bsym.id bsym ^ " stackable!");
+*)
         let props = `Stackable :: props in
         let props =
           if is_pure syms bsym_table i then `Pure :: props else props

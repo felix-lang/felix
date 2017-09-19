@@ -20,7 +20,15 @@ let generated = Flx_srcref.make_dummy "[flx_desugar] generated"
 let assign sr op l r =
   match op with
   | "_set" ->  STMT_cassign (sr,l,r)
-  | "_pset" -> STMT_storeat (sr,l,r) 
+ (* | "_pset" -> STMT_storeat (sr,l,r)  *)
+  | "storeat" ->
+  STMT_call
+  (
+    sr,
+    EXPR_name (sr, op,[]),
+    EXPR_tuple (sr, [l; r])
+  )
+
   | _ ->
   STMT_call
   (
