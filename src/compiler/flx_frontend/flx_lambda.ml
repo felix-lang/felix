@@ -18,7 +18,7 @@ let add_var_param new_table fidx pidx dt =
   Flx_bsym_table.add new_table pidx (Some fidx) bsym;
   pname 
 
-let add_wrapper_function new_table fidx pidx dt effects ct exes = 
+let add_wrapper_function new_table parent fidx pidx dt effects ct exes = 
   let pname = add_var_param new_table fidx pidx dt in
   (* wrapper function *)
   let effects = Flx_btype.btyp_unit () in
@@ -27,7 +27,7 @@ let add_wrapper_function new_table fidx pidx dt effects ct exes =
   let bbdcl = Flx_bbdcl.bbdcl_fun ([],[],params,ct,effects,exes) in
   let fname = "_lambda" ^ string_of_int fidx in
   let bsym = Flx_bsym.create fname bbdcl in
-  Flx_bsym_table.add new_table fidx None bsym;
+  Flx_bsym_table.add new_table fidx parent bsym;
   fname
 
 let add_label new_table sr fidx label_index =
@@ -37,7 +37,7 @@ let add_label new_table sr fidx label_index =
   Flx_bsym_table.add new_table label_index (Some fidx) bsym;
   s
  
-let add_array_map new_table counter fidx src lambda = 
+let add_array_map new_table counter parent fidx src lambda = 
   match src,lambda with
   | (_,(BTYP_array (elt_t, BTYP_unitsum n) as srct)),
     (_,BTYP_function (d,c)) 
@@ -96,14 +96,14 @@ let add_array_map new_table counter fidx src lambda =
      bexe_fun_return (sr,(bexpr_varname dstt (didx,[])))
   ]
   in
-  let fname = add_wrapper_function new_table fidx pidx srct effects dstt exes in
+  let fname = add_wrapper_function new_table parent fidx pidx srct effects dstt exes in
   fidx
   | _ -> 
    print_endline ("Bad array map");
    assert false
 
-let rec process_expr new_table bsym_table counter expr = 
-  let f_bexpr expr = process_expr new_table bsym_table counter expr in
+let rec process_expr new_table bsym_table counter parent expr = 
+  let f_bexpr expr = process_expr new_table bsym_table counter parent expr in
   let remap expr = Flx_bexpr.map ~f_bexpr expr in
   (* perform top down expansion, required for normal order *)
   match expr with
@@ -120,7 +120,7 @@ let rec process_expr new_table bsym_table counter expr =
     let exes = 
        [Flx_bexe.bexe_fun_return (Flx_srcref.dummy_sr, expr)]
     in 
-    let fname = add_wrapper_function new_table fidx pidx dt effects ct exes in
+    let fname = add_wrapper_function new_table parent fidx pidx dt effects ct exes in
     let f = bexpr_closure ft (fidx,[]) in
     f
 
@@ -128,8 +128,8 @@ let rec process_expr new_table bsym_table counter expr =
   | _ -> remap expr
 
 
-let process_exe new_table bsym_table counter exe =
-  let newexe = Flx_bexe.map ~f_bexpr:(process_expr new_table bsym_table counter) exe in
+let process_exe new_table bsym_table counter parent exe =
+  let newexe = Flx_bexe.map ~f_bexpr:(process_expr new_table bsym_table counter parent) exe in
 (*
   print_endline ("Old bexe=" ^ Flx_print.sbx bsym_table exe);
   print_endline ("New bexe=" ^ Flx_print.sbx bsym_table newexe);
@@ -137,8 +137,8 @@ let process_exe new_table bsym_table counter exe =
   newexe
 
 
-let process_exes new_table bsym_table counter exes =
-  List.map (process_exe new_table bsym_table counter) exes 
+let process_exes new_table bsym_table counter parent exes =
+  List.map (process_exe new_table bsym_table counter parent) exes 
 
 let process_entry new_table bsym_table counter parent i (bsym : Flx_bsym.t) =
   match bsym.Flx_bsym.bbdcl with
@@ -146,7 +146,7 @@ let process_entry new_table bsym_table counter parent i (bsym : Flx_bsym.t) =
 (*
 print_endline ("Processing function " ^ Flx_bsym.id bsym);
 *)
-    let exes = process_exes new_table bsym_table counter exes in
+    let exes = process_exes new_table bsym_table counter parent exes in
     let bbdcl = Flx_bbdcl.bbdcl_fun (props, vs, ps, ret,effects, exes) in 
     let bsym = Flx_bsym.replace_bbdcl bsym bbdcl in
     Flx_bsym_table.add new_table i parent bsym 

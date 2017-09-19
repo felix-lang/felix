@@ -191,11 +191,18 @@ let gen_functions syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_table 
       if length ts = 0 then "" else
       "[" ^ catmap "," (sbt bsym_table) ts^ "]"
     in
-    let bsym =
-      try Flx_bsym_table.find bsym_table index with Not_found ->
+    let parent, bsym =
+      try Flx_bsym_table.find_with_parent bsym_table index with Not_found ->
         failwith ("[gen_functions] can't find index " ^ string_of_bid index)
     in
     let sr = Flx_bsym.sr bsym in
+    let parent_name = 
+      match parent with
+      | None -> "None"
+      | Some p -> 
+       let parent_bsym = Flx_bsym_table.find bsym_table p 
+       in Flx_bsym.id parent_bsym ^ "<" ^ string_of_int p ^ ">"
+    in
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,vs,(ps,traint),ret,effects,_) ->
       let is_proc = match ret with | BTYP_void | BTYP_fix (0,_) -> true | _ -> false in
@@ -223,6 +230,7 @@ let gen_functions syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_table 
       end else begin
         bcat s ("//" ^ name ^ " <" ^ string_of_bid index ^ ">: " ^
           qualified_name_of_bindex bsym_table index ^ tss ^ " " ^ sbt bsym_table ft ^
+          "\n//    parent = " ^ parent_name ^
           "\n");
         bcat s
         (Flx_gen_func.gen_function
