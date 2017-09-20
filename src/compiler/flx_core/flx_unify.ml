@@ -86,21 +86,7 @@ let rec solve_subtypes bsym_table counter lhs rhs dvars (s:vassign_t option ref)
   | BTYP_union lhs, t ->
     if List.mem t lhs then () else raise Not_found
 
-  (* This rule says that the parameter is of type 5, we can pass
-    an argument of type 3. At C time they're both plain integers
-    of some kind so there's no work to do with any conversions
-    in the code generator. However Felix will need a coercion
-    which will have to be applied automatically, that promotes
-    a value of type 3 to a value of type 5. It's really not
-    clear this is justified.
-  *)
-  | BTYP_unitsum l, BTYP_unitsum r ->
-(*
-print_endline ("Subtype sums, param= " ^ string_of_int l ^ ", arg = " ^ string_of_int r);
-*)
-    if l >= r then () else raise Not_found
-
-   | BTYP_record lhs, BTYP_record rhs ->
+  | BTYP_record lhs, BTYP_record rhs ->
     let counts = Hashtbl.create 97 in
     let get_rel_seq name = 
       let n = try Hashtbl.find counts name + 1 with Not_found -> 0 in

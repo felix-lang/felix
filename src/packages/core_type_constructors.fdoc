@@ -419,7 +419,6 @@ open Eq[unit];
 
 // -----------------------------------------------------------------------------
 
-/*
 typedef unitsums = typesetof (3,4,5,6,7,8,9,10,11,12,13,14,15,16);
 
 instance[T in unitsums] Eq[T] {
@@ -428,7 +427,7 @@ instance[T in unitsums] Eq[T] {
 
 instance[T in unitsums] FloatAddgrp[T] {
   fun zero () => 0 :>> T;
-  fun - (x:T) => (sub (memcount[T].int , caseno x)) :>> T;
+  fun neg (x:T) => (sub (memcount[T].int , caseno x)) :>> T;
   fun + (x:T, y:T) : T => (add ((caseno x , caseno y)) % memcount[T].int) :>> T;
   fun - (x:T, y:T) : T => (add (memcount[T].int, sub(caseno x , caseno y)) % memcount[T].int) :>> T;
 }
@@ -479,7 +478,6 @@ open Str[13];
 open Str[14];
 open Str[15];
 open Str[16];
-*/
 
 @h1 Category Theoretic Functional Operations
 @tangle functional.flx

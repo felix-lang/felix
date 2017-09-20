@@ -11,6 +11,21 @@
 @h1 C pointer
 @tangle cptr.flx
 
+// move to separate file later.
+open class AbstractPointers
+{
+  typedef fun rptr (T:TYPE) : TYPE =>  (get: 1 -> T);
+  typedef fun wptr (T:TYPE) : TYPE =>  (set : T -> 0);
+  typedef fun rwptr (T:TYPE) : TYPE => (get: 1 -> T, set : T -> 0);
+
+  fun mkr[T] (p:&<T) => (get= { *p });
+  fun mkw[T] (p:&>T) => (set = proc (v:T) { p<-v; });
+  fun mkrw[T] (p:&T) => mkr p + mkw p;
+
+  fun deref[T] (p: rptr T) => p.get ();
+  proc storeat[T] (p: wptr T, v: T) { p.set v; }
+}
+
 //$ Felix and C pointers.
 //$ Felix pointer ptr[T] = &T.
 //$ C pointer cptr[T] = &T.
