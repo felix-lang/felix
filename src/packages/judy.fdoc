@@ -78,7 +78,7 @@ def build_runtime(phase):
    
     macros.append('BUILD_JUDY') #Apply this to all source files.
 
-    macros.append('DEBUG') #Apply this to all source files.
+    #macros.append('DEBUG') #Apply this to all source files.
     # above fails with link error because the debug routines
     # simply don't exist
 
