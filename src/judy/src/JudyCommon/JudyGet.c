@@ -19,6 +19,9 @@
 //
 // Judy1Test() and JudyLGet() functions for Judy1 and JudyL.
 // Compile with one of -DJUDY1 or -DJUDYL.
+#ifndef JU_64BIT
+#error 64 bit build expected by macro not set. This is a debug hack.
+#endif
 
 #if (! (defined(JUDY1) || defined(JUDYL)))
 #error:  One of -DJUDY1 or -DJUDYL must be specified.
