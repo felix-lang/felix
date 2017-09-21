@@ -72,9 +72,9 @@ def build_runtime(phase):
     types = config_call('fbuild.config.c.c99.types',
         phase.platform, phase.c.static)
 
-    if types.voidp.size == 8:
-        macros = ['JU_64BIT']
-        print ("64 bit JUDY")
+    #if types.voidp.size == 8:
+    macros = ['JU_64BIT']
+    print ("64 bit JUDY")
    
     macros.append('BUILD_JUDY') #Apply this to all source files.
 
