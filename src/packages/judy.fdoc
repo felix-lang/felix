@@ -74,7 +74,9 @@ def build_runtime(phase):
 
     if types.voidp.size == 8:
         macros = ['JU_64BIT']
+        print ("64 bit JUDY")
     else:
+        print ("32 bit JUDY")
         macros = ['JU_32BIT']
 
     macros.append('BUILD_JUDY') #Apply this to all source files.

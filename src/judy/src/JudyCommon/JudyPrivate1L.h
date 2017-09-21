@@ -45,6 +45,9 @@
 // enum values, although this is also not an issue if the calculations are only
 // within each cJ*_JPIMMED_*_* class and the members are packed within the
 // class.
+#if !(defined(JU_64BIT) || defined(JU_32BIT))
+#error "One of JU_32bit or JU64BIT must be defined"
+#endif
 
 #ifdef JUDY1
 
