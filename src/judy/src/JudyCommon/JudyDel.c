@@ -145,7 +145,7 @@ extern Word_t   j__udyLLeaf7ToLeafW(Pjlw_t,     Pjv_t, Pjp_t, Word_t, Pvoid_t);
 //    single JP, which should be compressed into the parent branch (if there
 //    is one, which is not the case for a top-level branch under a JPM)
 
-DBGCODE(uint8_t parentJPtype;)          // parent branch JP type.
+DBGCODE(static uint8_t parentJPtype;)          // parent branch JP type.
 
 FUNCTION static int j__udyDelWalk(
         Pjp_t   Pjp,            // current JP under which to delete.

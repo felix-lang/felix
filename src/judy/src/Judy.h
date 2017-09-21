@@ -309,6 +309,22 @@ extern Word_t JUDY_EXTERN JudyMallocVirtual(Word_t);        // words reqd => wor
 extern void   JUDY_EXTERN JudyFree(Pvoid_t, Word_t);        // free, size in words.
 extern void   JUDY_EXTERN JudyFreeVirtual(Pvoid_t, Word_t); // free, size in words.
 
+#ifdef DEBUG
+extern void JUDY_EXTERN Judy1CheckPop ( Pvoid_t PArray);
+extern void JUDY_EXTERN JudyLCheckPop ( Pvoid_t PArray);
+extern void JUDY_EXTERN Judy1CheckSorted (
+	Pvoid_t x,		// leaf or list to check.
+	Word_t y,		// number of indexes to check.
+	long z// bytes per index in list.
+);	
+extern void JUDY_EXTERN JudyLCheckSorted ( 
+	Pvoid_t x,		// leaf or list to check.
+	Word_t y,		// number of indexes to check.
+	long z// bytes per index in list.
+);	
+#endif
+
+
 #define JLAP_INVALID    0x1     /* flag to mark pointer "not a Judy array" */
 
 // ****************************************************************************

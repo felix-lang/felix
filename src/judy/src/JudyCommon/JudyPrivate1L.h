@@ -355,6 +355,7 @@
 
 #ifdef DEBUG
 #define	JudyCheckPop		Judy1CheckPop
+#define	JudyCheckSorted		Judy1CheckSorted
 #endif
 
 #else // JUDYL ****************************************************************
@@ -478,6 +479,8 @@
 
 #ifdef DEBUG
 #define	JudyCheckPop		JudyLCheckPop
+#define	JudyCheckSorted		JudyLCheckSorted
+
 #endif
 
 #endif // JUDYL
