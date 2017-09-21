@@ -480,7 +480,6 @@
 #ifdef DEBUG
 #define	JudyCheckPop		JudyLCheckPop
 #define	JudyCheckSorted		JudyLCheckSorted
-
 #endif
 
 #endif // JUDYL

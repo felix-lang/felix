@@ -1147,7 +1147,9 @@ FUNCTION void JUDY_EXTERN JudyCheckSorted(
 	case 7:	JU_CHECKSORTED_ODD(JU_COPY7_PINDEX_TO_LONG);
 	case 8:	JU_CHECKSORTED(Pjlw_t);
 #endif
-	default:  assert(FALSE);	// invalid IndexSize.
+	default:  
+        fprintf(stderr, "JU_CHECKSORTED_ODD: Bad index size %ld\n",IndexSize);
+        assert(FALSE);	// invalid IndexSize.
 	}
 
 } // JudyCheckSorted()
