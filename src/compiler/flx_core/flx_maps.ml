@@ -22,6 +22,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | TYP_polyrecord (ts,v) -> TYP_polyrecord (List.map (fun (s,t) -> s,f t) ts, f v)
   | TYP_variant ts -> TYP_variant (List.map (fun (s,t) -> s,f t) ts)
   | TYP_isin (a,b) -> TYP_isin (f a, f b)
+  | TYP_pclt (a,b) -> TYP_pclt (f a, f b)
 
   (* we have to do this, so that a large unitsum
      can be specified without overflowing the compiler
@@ -141,6 +142,8 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | EXPR_void sr -> assert false 
 *)
 
+  | EXPR_pclt_type (sr,a,b) -> EXPR_pclt_type (sr, ft a, ft b)
+
   | EXPR_record_type (sr,ts) -> EXPR_record_type (sr, List.map (fun (s,t) -> s, ft t) ts) 
   | EXPR_polyrecord_type (sr,ts,v) -> EXPR_polyrecord_type (sr, List.map (fun (s,t)-> s,ft t) ts, ft v)
   | EXPR_variant_type (sr,ts) -> EXPR_variant_type (sr, List.map (fun (s,t) -> s, ft t) ts)
@@ -241,6 +244,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_literal _
   | EXPR_lambda _
   | EXPR_type_match _
+  | EXPR_pclt_type _
     -> ()
 
   | EXPR_expr (_,_,_,x)

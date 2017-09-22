@@ -240,6 +240,11 @@ let rec cpp_type_classname syms bsym_table t =
 
   | BTYP_pointer t' -> cpp_type_classname syms bsym_table t' ^ "*"
 
+  | BTYP_cltpointer (d,c)
+  | BTYP_cltrref (d,c)
+  | BTYP_cltwref (d,c) ->
+      "::flx::rtl::clptr_t";
+
   | BTYP_effector (d,e,c) -> 
     print_endline ("[Flx_name:cpp_type_classname] Attempt to name effector type in code generator:" ^ sbt bsym_table t');
     print_endline (" .. using equivalent function type instead");
@@ -417,6 +422,12 @@ and cpp_structure_name syms bsym_table t =
 *)
   | BTYP_variant _ -> "::flx::rtl::_uctor_"
 
+  | BTYP_cltpointer (d,c)
+  | BTYP_cltrref (d,c)
+  | BTYP_cltwref (d,c) ->
+      "::flx::rtl::clptr_t";
+
+
   | BTYP_sum _ ->
     begin match Flx_vrep.cal_variant_rep bsym_table t with
     | Flx_vrep.VR_self -> print_endline ("WARNING cpp_structure_name of VR_self (1)"); assert false
@@ -476,13 +487,13 @@ and cpp_structure_name syms bsym_table t =
   | _ ->
     failwith
     (
-      "[cpp_type_classname] Unexpected " ^
+      "[cpp_structure_name] Unexpected " ^
       sbt bsym_table t
     )
   with Not_found ->
     failwith
     (
-      "[cpp_type_classname] Expected type "^
+      "[cpp_structure_name] Expected type "^
       sbt bsym_table t ^
       " to be in registry"
     )

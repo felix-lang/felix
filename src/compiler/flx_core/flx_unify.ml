@@ -228,6 +228,14 @@ and solve_subsumption bsym_table counter lhs rhs  dvars (s:vassign_t option ref)
       | BTYP_rref t1, BTYP_rref t2 ->
         add_eqn (t1,t2)
 
+      (* Compact linear type pointers, invariant on both params
+         for now
+      *)
+      | BTYP_cltpointer (d1,c1), BTYP_cltpointer (d2,c2)
+      | BTYP_cltrref(d1,c1), BTYP_cltrref (d2,c2)
+      | BTYP_cltwref(d1,c1), BTYP_cltwref(d2,c2) ->
+        add_eqn (d1,d2);
+        add_eqn (c1,c2);
 
       | BTYP_uniq t1, BTYP_uniq t2 ->
         add_eqn (t1,t2)

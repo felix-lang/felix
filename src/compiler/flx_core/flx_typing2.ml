@@ -65,6 +65,7 @@ let all_tunits ts =
 let rec typecode_of_expr (e:expr_t) :typecode_t =
   let te e = typecode_of_expr e in
   match e with
+  | EXPR_pclt_type (_,d,c) -> TYP_pclt (d,c)
   | EXPR_name (_,"TYPE",[]) -> TYP_type
   | EXPR_name (sr,"GENERIC",[]) -> TYP_generic sr
   | EXPR_name (_,"LABEL",[]) -> TYP_label
@@ -271,6 +272,8 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
   match t with 
 
   (* The following cannot be converted. There's no analagous expression in EXPR. *)
+  | TYP_pclt (a,b) -> EXPR_pclt_type (dsr, a, b)
+
   | TYP_label -> clierrx "[flx_core/flx_typing2.ml:250: E271] " dsr ("expr_of_typecode: TYP_label")
   | TYP_none -> clierrx "[flx_core/flx_typing2.ml:251: E272] " dsr ("expr_of_typecode: TYP_none")
   | TYP_type -> clierrx "[flx_core/flx_typing2.ml:252: E273] " dsr ("expr_of_typecode: TYP_type")
@@ -441,6 +444,7 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
       clierrx "[flx_core/flx_typing2.ml:401: E279] " dsr "expr_of_typecode: ignoring this case for now."
       
 let string_of_type_name (t:typecode_t) = match t with
+  | TYP_pclt _ -> "TYP_pclt"
   | TYP_label -> "TYP_label"
   | TYP_none -> " TYP_none"
   | TYP_ellipsis -> "TYP_ellipsis"

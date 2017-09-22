@@ -18,9 +18,15 @@ and t = private
   | BTYP_record of (string * t) list
   | BTYP_polyrecord of (string * t) list * t
   | BTYP_variant of (string * t) list
+
   | BTYP_pointer of t
   | BTYP_rref of t
   | BTYP_wref of t
+
+  | BTYP_cltpointer of t * t
+  | BTYP_cltrref of t * t
+  | BTYP_cltwref of t * t
+
   | BTYP_function of t * t
   | BTYP_effector of t * t * t
   | BTYP_cfunction of t * t
@@ -90,9 +96,16 @@ val btyp_array : t * t -> t
 val btyp_record : (string * t) list -> t
 val btyp_polyrecord : (string * t) list -> t -> t
 val btyp_variant : (string * t) list -> t
+
 val btyp_pointer : t -> t
 val btyp_rref : t -> t
 val btyp_wref : t -> t
+
+val btyp_cltpointer : t -> t -> t
+val btyp_cltrref : t -> t -> t
+val btyp_cltwref : t -> t -> t
+
+
 val btyp_function : t * t -> t
 val btyp_effector : t * t * t -> t
 val btyp_cfunction : t * t -> t
@@ -120,6 +133,7 @@ val ipow : int -> int -> int
 val int_of_linear_type : 'a -> t -> int
 val islinear_type : 'a -> t -> bool
 val sizeof_linear_type : 'a -> t -> int
+val iscompact_linear_product: t -> bool
 val ncases_of_sum : 'a -> t -> int
 val flat_iter :
   ?f_bid:(bid_t -> unit) -> ?f_btype:(t -> unit) -> t -> unit

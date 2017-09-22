@@ -631,10 +631,13 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   | EXPR_extension (sr, es,e) -> EXPR_extension (sr, List.map me es, me e)
 
+  | EXPR_pclt_type (sr,_,_)
   | EXPR_record_type (sr,_)
   | EXPR_polyrecord_type (sr,_,_)
   | EXPR_variant_type (sr,_) ->
-     clierrx "[flx_desugar/flx_macro.ml:613: E333] " sr "Record, polyrecord or variant type cannot be used as an expression"
+     clierrx "[flx_desugar/flx_macro.ml:613: E333] " sr 
+     ("Record, polyrecord, variant or pointer to compact linear type types\n" ^
+     "cannot be used as an expression")
 
 (*
   | EXPR_record_type (sr,flds) -> EXPR_record_type (sr, List.map (fun (s,t) -> s, mt sr t) flds)

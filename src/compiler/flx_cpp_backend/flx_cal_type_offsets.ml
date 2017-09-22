@@ -31,6 +31,9 @@ let rec is_pod bsym_table t =
   | BTYP_unitsum _ 
   | BTYP_sum _ 
   | BTYP_pointer _
+  | BTYP_cltpointer _
+  | BTYP_cltrref _
+  | BTYP_cltwref _
   | BTYP_function _
   | BTYP_cfunction _
   | BTYP_variant _ -> true
@@ -72,6 +75,11 @@ let rec get_offsets' syms bsym_table typ : string list =
   | BTYP_rref _ -> assert false
   | BTYP_wref _ -> assert false
   | BTYP_pointer t -> ["0"]
+
+  | BTYP_cltpointer _
+  | BTYP_cltrref _
+  | BTYP_cltwref _ -> assert false (* RTL rep *)
+
 
   | BTYP_variant _ ->
     ["offsetof("^tname^",data)"]

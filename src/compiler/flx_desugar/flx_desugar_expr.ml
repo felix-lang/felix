@@ -507,6 +507,9 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     let l,x = rex e in
     l @ List.concat lss,EXPR_extension (sr, xs, x)
 
+  | EXPR_pclt_type (sr,a,b) -> [],e (* I'm lazy *)
+
+
   | EXPR_record_type (sr,ts) ->
     let to_expr (id,t) = (id, (expr_of_typecode sr t)) in
     let to_type (id,e) = (id, (typecode_of_expr e)) in

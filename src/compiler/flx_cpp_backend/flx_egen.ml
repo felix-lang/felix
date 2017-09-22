@@ -246,6 +246,15 @@ let rec gen_expr'
      (* ce_atom ("UNIT_ERROR") *)
   | _ ->
   match e with
+  | BEXPR_cltpointer (d,c,p,v) ->
+    let n = Flx_btype.sizeof_linear_type () c in
+    ce_call (ce_atom "::flx::rtl::clptr_t") [ge' p; ce_int v; ce_int n]
+
+  | BEXPR_cltpointer_prj (d,c,v) -> 
+    let n = Flx_btype.sizeof_linear_type () c in
+    ce_call (ce_atom "::flx::rtl::clprj_t") [ce_int v; ce_int n]
+ 
+
   | BEXPR_int i -> ce_atom (si i)
   | BEXPR_polyrecord _ -> print_endline "Attempt to generate polyrecord value, should have been factored out"; assert false
   | BEXPR_remove_fields _ -> print_endline "Attempt to generate remove fields, should have been factored out"; assert false
@@ -389,6 +398,13 @@ print_endline ("Generated application of injection application " ^ sbe bsym_tabl
 *)
     cx
 
+  | BEXPR_apply (
+     (BEXPR_cltpointer_prj (jd,jc,v1),_),
+     (BEXPR_cltpointer (pd,pc,ptr,v2),_)
+   ) ->
+    print_endline ("Special case apply clt projection to clt pointer ");
+    assert (jd = pd);
+    ge' (bexpr_cltpointer pd jc ptr (v1 * v2))
 
 (* -------------- CONSTANT PROJECTIONS ----------------------------- *)
   (* if this is a constant projection of a compact linear array *) 

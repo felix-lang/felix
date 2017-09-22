@@ -51,6 +51,11 @@ let var_occurs bsym_table t =
     | BTYP_rref a  -> aux a
     | BTYP_wref a  -> aux a
     | BTYP_rev a -> aux a
+
+    | BTYP_cltpointer (a,b) -> aux a; aux b
+    | BTYP_cltwref (a,b) -> aux a; aux b
+    | BTYP_cltrref (a,b) -> aux a; aux b
+
     | BTYP_uniq a -> aux a
 
     | BTYP_label

@@ -51,6 +51,7 @@ and suffixed_name_t =
 
 (** type of a type *)
 and typecode_t =
+  | TYP_pclt of typecode_t * typecode_t
   | TYP_generic of Flx_srcref.t
   | TYP_label 
   | TYP_void of Flx_srcref.t                   (** void type *)
@@ -124,6 +125,7 @@ and axiom_method_t = Predicate of expr_t | Equation of expr_t * expr_t
  *
  * Raw expression terms. *)
 and expr_t =
+  | EXPR_pclt_type of Flx_srcref.t * typecode_t * typecode_t
   | EXPR_label of Flx_srcref.t * string
   | EXPR_vsprintf of Flx_srcref.t * string
   | EXPR_interpolate of Flx_srcref.t * string
@@ -720,6 +722,7 @@ let src_of_typecode = function
   | TYP_tuple_snoc (s,_,_)
   -> s
 
+  | TYP_pclt _
   | TYP_label
   | TYP_tuple _
   | TYP_unitsum _
@@ -755,6 +758,7 @@ let src_of_typecode = function
   -> Flx_srcref.dummy_sr
 
 let src_of_expr (e : expr_t) = match e with
+  | EXPR_pclt_type (s,_,_)
   | EXPR_label (s,_)
   | EXPR_void s
   | EXPR_name (s,_,_)

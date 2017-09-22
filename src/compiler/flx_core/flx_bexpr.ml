@@ -11,6 +11,22 @@ type bexpr_t =
   | BEXPR_ref of bid_t * Flx_btype.t list
   | BEXPR_rref of bid_t * Flx_btype.t list
   | BEXPR_wref of bid_t * Flx_btype.t list
+
+  (* Compact linear pointer:
+     first argument: base value type of machine pointer
+     second argument: result value type
+     third argument: machine pointer value, type: BTYP_pointer (base value type)
+     fourth argument: divisor
+  *)
+  | BEXPR_cltpointer of Flx_btype.t * Flx_btype.t * t * int 
+
+  (* Compact linear pointer projection term:
+     first argument: base value type
+     second argument: result value type
+     third argument: divisor required for value projection
+  *)
+  | BEXPR_cltpointer_prj of Flx_btype.t * Flx_btype.t * int
+
   | BEXPR_uniq of t
   | BEXPR_likely of t
   | BEXPR_unlikely of t
@@ -159,6 +175,25 @@ let bexpr_wref t (bid, ts) =
   | Some k -> bexpr_unitptr k
   | _ -> BEXPR_wref (bid, complete_check_list ts), complete_check t
 
+let bexpr_cltpointer d c p v =
+  let t = Flx_btype.btyp_cltpointer d c in 
+  BEXPR_cltpointer (d,c,p,v), complete_check t
+
+let bexpr_cltpointer_of_pointer ((_,pt) as p) =
+  match pt with
+  | Flx_btype.BTYP_pointer vt ->
+    if Flx_btype.islinear_type () vt then
+      bexpr_cltpointer vt vt p 1
+    else
+      failwith "cltpointer_of_pointer requires (pointer to) compact linear type as argument"
+  | _ -> 
+    failwith "cltpointer_of_pointer requires pointer (to compact linear type) as argument"
+ 
+let bexpr_cltpointer_prj base_value_type target_value_type divisor =
+  let d = Flx_btype.btyp_cltpointer base_value_type base_value_type in
+  let c = Flx_btype.btyp_cltpointer base_value_type target_value_type in
+  let t = Flx_btype.btyp_function (d,c) in
+  BEXPR_cltpointer_prj (base_value_type, target_value_type, divisor), complete_check t
 
 let bexpr_likely ((_,t) as e) = BEXPR_likely e, complete_check t
 
@@ -185,7 +220,18 @@ let bexpr_literal_int n =
   bexpr_literal int_t literal
 
 let bexpr_apply t (e1, e2) = 
-  let _,ft = e1 and _,at = e2 in
+  let xf,ft = e1 and xa,at = e2 in
+  match xf,xa with
+  | BEXPR_cltpointer_prj (fd,fc,fv), BEXPR_cltpointer (ad,ac,p,av) ->
+    if not (Flx_typeeq.type_eq Flx_btype.st counter fd ac) then begin
+      print_endline ("Warning: bexpr_apply: clt projection domain\n"^ Flx_btype.st fd ^ 
+        "\ndoesn't agree with clt pointer codomain\n" ^ Flx_btype.st ac);
+      failwith ("SYSTEM ERROR: bexpr_apply: clt projection domain\n"^ Flx_btype.st fd ^ 
+        "\ndoesn't agree with clt pointer codomain\n" ^ Flx_btype.st ac);
+    end;
+    bexpr_cltpointer ad fc p (fv * av)
+
+  | _ ->
   begin match Flx_btype.unfold "Flx_bexpr:bexpr_apply" ft with
   | Flx_btype.BTYP_effector (d,_,c)
   | Flx_btype.BTYP_function (d,c)
@@ -766,6 +812,15 @@ let flat_iter
       f_bid i;
       List.iter f_btype ts
 
+  (* v is just an integer, not a bid *)
+  | BEXPR_cltpointer (a,b,p,v) ->
+    f_btype a; f_btype b; f_bexpr p
+
+  (* v is just an integer, not a bid *)
+  | BEXPR_cltpointer_prj (a,b,v) ->
+    f_btype a;
+    f_btype b
+
   | BEXPR_uniq e -> f_bexpr e
   | BEXPR_likely e -> f_bexpr e
 
@@ -878,6 +933,11 @@ let map
   | BEXPR_ref (i,ts) -> bexpr_ref t (f_bid i, List.map f_btype ts)
   | BEXPR_rref (i,ts) -> bexpr_rref t (f_bid i, List.map f_btype ts)
   | BEXPR_wref (i,ts) -> bexpr_wref t (f_bid i, List.map f_btype ts)
+
+  (* this mapping is wonky, because the map might need to change divisor *)
+  | BEXPR_cltpointer (d,c,p,divisor) -> bexpr_cltpointer (f_btype d) (f_btype c) (f_bexpr p) divisor
+  | BEXPR_cltpointer_prj (d,c,divisor) -> bexpr_cltpointer_prj (f_btype d) (f_btype c) divisor
+
   | BEXPR_uniq e -> bexpr_uniq (f_bexpr e)
   | BEXPR_new e -> bexpr_new (f_bexpr e)
   | BEXPR_class_new (cl,e) ->  bexpr_class_new (f_btype cl) (f_bexpr e)

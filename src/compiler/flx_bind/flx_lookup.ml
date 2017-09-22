@@ -746,6 +746,7 @@ print_endline ("Bind type " ^ string_of_typecode t);
 
   let t =
   match t with
+  | TYP_pclt (d,c) -> btyp_cltpointer (bt d) (bt c)
   | TYP_generic sr -> 
 (*
     print_endline ("[bind_type'] trying to bind TYP_generic"); 
@@ -1443,6 +1444,7 @@ end;
             | TYP_as _ -> print_endline "A type as (recursion)?"; assert false
 
             (* usually actual types! *)
+            | TYP_pclt _
             | TYP_uniq _
             | TYP_void _ 
             | TYP_case_tag _ 
@@ -4020,6 +4022,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   let rt t = beta_reduce "flx_lookup: bind_expression'(2)" state.counter bsym_table sr t in
   let sr = src_of_expr e in
   match e with
+  | EXPR_pclt_type _
   | EXPR_patvar _
   | EXPR_patany _
   | EXPR_vsprintf _

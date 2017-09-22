@@ -420,6 +420,11 @@ print_endline "Type list index returned None";
   | BTYP_function (a,b) -> btyp_function (br a, br b)
   | BTYP_effector (a,e,b) -> btyp_effector (br a, br e, br b)
   | BTYP_cfunction (a,b) -> btyp_cfunction (br a, br b)
+
+  | BTYP_cltpointer (d,c) -> btyp_cltpointer (br d) (br c)
+  | BTYP_cltrref(d,c) -> btyp_cltrref (br d) (br c)
+  | BTYP_cltwref(d,c) -> btyp_cltwref (br d) (br c)
+
   | BTYP_pointer a -> btyp_pointer (br a)
   | BTYP_rref a -> btyp_rref (br a)
   | BTYP_wref a -> btyp_wref (br a)

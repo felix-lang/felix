@@ -139,6 +139,9 @@ print_endline ("Metatyping term " ^ st term);
   | BTYP_cfunction _
   | BTYP_function _
   | BTYP_effector _
+  | BTYP_cltpointer _
+  | BTYP_cltrref _
+  | BTYP_cltwref _
   | BTYP_pointer _
   | BTYP_rref _
   | BTYP_wref _

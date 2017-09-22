@@ -47,9 +47,17 @@ let fix i t =
     | BTYP_function (a,b) -> btyp_function (aux a, aux b)
     | BTYP_effector (a,e,b) -> btyp_effector (aux a, aux e, aux b)
     | BTYP_cfunction (a,b) -> btyp_cfunction (aux a, aux b)
+
     | BTYP_pointer a -> btyp_pointer (aux a)
     | BTYP_rref a -> btyp_rref (aux a)
     | BTYP_wref a -> btyp_wref (aux a)
+
+    | BTYP_cltpointer (d,c) -> btyp_cltpointer (aux d) (aux c)
+    | BTYP_cltrref (d,c) -> btyp_cltrref (aux d) (aux c)
+    | BTYP_cltwref (d,c) -> btyp_cltwref (aux d) (aux c)
+
+
+
     | BTYP_array (a,b) -> btyp_array (aux a, aux b)
     | BTYP_rev t -> btyp_rev (aux t)
     | BTYP_uniq t -> btyp_uniq (aux t)

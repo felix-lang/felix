@@ -94,6 +94,8 @@ and string_of_expr (e:expr_t) =
   let se e = string_of_expr e in
   let sqn e = string_of_qualified_name e in
   match e with
+  | EXPR_pclt_type (_,a,b) -> "pclt_type<" ^ st a ^ "," ^ st b ^ ">"
+
   | EXPR_label (_,s) -> "(&&" ^ s ^ ")"
   | EXPR_not (sr,e) -> "not(" ^ se e ^ ")"
   | EXPR_index (sr,name,idx) -> name ^ "<" ^ string_of_bid idx ^ ">"
@@ -384,7 +386,7 @@ and st prec tc : string =
       end
     | TYP_tuple_cons (sr, t1, t2) -> 6, st 4 t1 ^ "**" ^ st 4 t2
     | TYP_tuple_snoc (sr, t1, t2) -> 6, st 4 t1 ^ "<**>" ^ st 4 t2
-
+    | TYP_pclt (a,b) -> 0, "_pclt<" ^ string_of_typecode a ^ "," ^ string_of_typecode b ^ ">"
     | TYP_index (sr,name,idx) -> 0, name ^ "<" ^ string_of_bid idx ^ ">"
     | TYP_label -> 0, "LABEL"
     | TYP_generic _ -> 0, "GENERIC"
@@ -775,6 +777,14 @@ and sb bsym_table depth fixlist counter prec tc =
     | BTYP_pointer t -> 1,"&" ^ sbt 1 t
     | BTYP_rref t -> 1,"rref(" ^ sbt 1 t ^ ")"
     | BTYP_wref t -> 1,"wref(" ^ sbt 1 t ^ ")"
+
+    | BTYP_cltpointer (d,c) -> 1,"cltref(" ^ sbt 1 d ^","^  sbt 1 c ^")"
+    | BTYP_cltrref (d,c) -> 1,"cltrref(" ^ sbt 1 d ^ "," ^ sbt 1 c ^")"
+    | BTYP_cltwref (d,c) -> 1,"cltwref(" ^ sbt 1 d ^ "," ^ sbt 1 c ^")"
+
+
+
+
     | BTYP_void -> 0,"void"
 
     | BTYP_type_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2
@@ -2036,9 +2046,11 @@ and string_of_bound_expression' bsym_table se e =
   let sid n = qualified_name_of_bindex bsym_table n in
   let sid n = fst (get_name_parent bsym_table n) in
   *)
+  let st t = sbt bsym_table t in
   let sid n = bound_name_of_bindex bsym_table n in
   match fst e with
-
+  | BEXPR_cltpointer (d,c,p,v) -> "cltpointer(" ^ se p ^ ":" ^ st d ^"," ^ si v ^"(" ^ st c ^"))"
+  | BEXPR_cltpointer_prj (d,c,v) -> "cltpointer_prj(" ^ st d ^ "," ^ st c ^ "," ^ si v^")"
   | BEXPR_lambda (i,t,e) -> "lamda<"^si i^":"^sbt bsym_table t^">(" ^se e^")"
   | BEXPR_cond (c,t,f) -> "if " ^ se c ^ " then " ^ se t ^ " else " ^ se f ^ " endif"
   | BEXPR_unitptr k -> 

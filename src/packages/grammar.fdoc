@@ -1605,6 +1605,10 @@ syntax expressions {
 //------------------------------------------------------------------------
   x[satomic_pri] := satom =># "_1";
 
+  satom := "_pclt<" stypeexpr "," stypeexpr ">" =>#
+    "`(ast_pclt ,_sr ,_2 ,_4)"
+  ;
+
   //$ record value (comma separated).
   satom := "(" rassign ("," rassign2 )* ")" =>#
     "`(ast_record ,_sr ,(cons _2 (map second _3)))"

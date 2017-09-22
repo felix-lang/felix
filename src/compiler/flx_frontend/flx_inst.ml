@@ -126,6 +126,13 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
     ue e;
     ut (vs (btyp_function (d,c)))
 
+  | BEXPR_cltpointer (d,c,p,v) ->
+    ue p; ut d; ut c
+
+  | BEXPR_cltpointer_prj (d,c,v) ->
+    ut d; ut c
+
+
   | BEXPR_apply_prim (index,ts,a)
   | BEXPR_apply_direct (index,ts,a)
   | BEXPR_apply_struct (index,ts,a)

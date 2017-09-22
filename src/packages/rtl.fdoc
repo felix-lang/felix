@@ -561,7 +561,6 @@ typedef void *void_pointer;
 // ********************************************************
 
 typedef ::std::uint64_t cl_t; 
-typedef ::std::uint64_t clprj_t;
 
 // ********************************************************
 // Felix system classes
@@ -577,6 +576,7 @@ struct RTL_EXTERN schannel_t;   // synchronous channel type
 struct RTL_EXTERN slist_t;   // singly linked list of void*
 struct RTL_EXTERN slist_node_t;   // singly linked list of void*
 struct RTL_EXTERN clptr_t;  // pointer to compact linear product component
+struct RTL_EXTERN clprj_t;  // compact linear projection
 
 // MOVE THIS TO RTL AND PROVIDE SUITABLE RTTI SO GC KNOWS ABOUT THE FRAME POINTER
 struct RTL_EXTERN jump_address_t
@@ -684,6 +684,30 @@ struct RTL_EXTERN _variant_
 };
 */
 
+
+// ********************************************************
+/// COMPACT LINEAR PROJECTIONS 
+// ********************************************************
+
+struct RTL_EXTERN clprj_t 
+{
+  cl_t divisor;
+  cl_t modulus;
+  clprj_t () : divisor(1), modulus(-1) {}
+  clprj_t (cl_t d, cl_t m) : divisor (d), modulus (m) {}
+
+};
+
+// reverse compose projections left \odot right
+inline clprj_t rcompose (clprj_t left, clprj_t right) {
+  return clprj_t (left.divisor * right.divisor, right.modulus);
+}
+
+// apply projection to value
+inline cl_t apply (clprj_t prj, cl_t v) {
+  return v / prj.divisor % prj.modulus;
+}
+
 // ********************************************************
 /// COMPACT LINEAR POINTERS
 // ********************************************************
@@ -692,19 +716,27 @@ struct RTL_EXTERN clptr_t
 {
   cl_t *p;
   cl_t divisor;
-  clptr_t () : p(0), divisor(1) {}
+  cl_t modulus;
+  clptr_t () : p(0), divisor(1),modulus(-1) {}
+  clptr_t (cl_t *_p, cl_t d, cl_t m) : p(_p), divisor(d),modulus(m) {}
+
   // upgrade from ordinary pointer
-  clptr_t (cl_t *_p) : p (_p), divisor(1) {}
-  // apply projection
-  clptr_t (clptr_t cp, clprj_t d) : p(cp.p), divisor (d * cp.divisor) {}
-  // dereference
-  cl_t deref(::std::size_t tsize) const { return *p / divisor % tsize; }
-  // storeat
-  void storeat (::std::size_t tsize, cl_t v) {
-    *p -= (*p / divisor % tsize + v) * divisor;
-  }
+  clptr_t (cl_t *_p, cl_t siz) : p (_p), divisor(1), modulus(siz) {}
 };
 
+// apply projection to pointer
+inline clptr_t applyprj (clptr_t cp, clprj_t d)  {
+  return  clptr_t (cp.p, d.divisor * cp.divisor, d.modulus);
+}
+
+// dereference
+inline cl_t deref(clptr_t q) { return *q.p / q.divisor % q.modulus; }
+
+// storeat
+inline void storeat (clptr_t q, cl_t v) {
+    *q.p = *q.p - (*q.p / q.divisor % q.modulus) * q.divisor + v * q.divisor;
+    //*q.p -= ((*q.p / q.divisor % q.modulus) - v) * q.divisor; //???
+}
 
 // ********************************************************
 // SERVICE REQUEST CODE
@@ -1126,7 +1158,8 @@ RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _address_ptr_map;
 //RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _caddress_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t slist_node_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t slist_ptr_map;
-RTL_EXTERN extern ::flx::gc::generic::gc_shape_t clptr__t_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t clptr_t_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t clprj_t_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t jump_address_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t cl_t_ptr_map;
 
@@ -1380,11 +1413,35 @@ static const std::size_t _clptr_t_offsets[1]={ 0 };
   1,
   sizeof(clptr_t),
   0, // finaliser
-  &cl_t_fcops, // fcops
+  &clptr_t_fcops, // fcops
   &_clptr_t_offset_data, // scanner data
   ::flx::gc::generic::scan_by_offsets, // scanner
   ::flx::gc::generic::tblit<clptr_t>,
   ::flx::gc::generic::tunblit<clptr_t>, 
+  gc::generic::gc_flags_default,
+  0UL, 0UL
+};
+
+// ********************************************************
+// clprj_t implementation
+// ********************************************************
+
+static CxxValueType<clprj_t> clprj_t_fcops {};
+
+::flx::gc::generic::offset_data_t const _clprj_t_offset_data = { 0, NULL };
+
+
+::flx::gc::generic::gc_shape_t clprj_t_ptr_map = {
+  &clptr_t_ptr_map,
+  "rtl::clprj_t",
+  1,
+  sizeof(clprj_t),
+  0, // finaliser
+  &clprj_t_fcops, // fcops
+  0, // scanner data
+  ::flx::gc::generic::scan_by_offsets, // scanner
+  ::flx::gc::generic::tblit<clprj_t>,
+  ::flx::gc::generic::tunblit<clprj_t>, 
   gc::generic::gc_flags_default,
   0UL, 0UL
 };
@@ -1413,7 +1470,7 @@ static size_t address_decoder (void *p, char *s, size_t i) {
 // ********************************************************
 
 ::flx::gc::generic::gc_shape_t _address_ptr_map = {
-  &clptr_t_ptr_map,
+  &clprj_t_ptr_map,
   "rtl::address",
   1,
   sizeof(void*),

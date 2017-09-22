@@ -339,6 +339,10 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
     Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
     bexpr_closure t (closure_bid, [])
 
+  | BEXPR_cltpointer_prj _,_ ->
+    print_endline ("in exe=" ^ sbx exe ^ "\nCLT Projection passed as argument " ^ sbe bsym_table e);
+    assert false
+
   | BEXPR_prj (n,d,c),t as x ->
 (*
     print_endline ("in exe=" ^ sbx exe ^ "\nProjection passed as argument " ^ sbe bsym_table e);

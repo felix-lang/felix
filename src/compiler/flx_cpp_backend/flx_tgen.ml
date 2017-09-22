@@ -170,7 +170,10 @@ let rec gen_type_name syms bsym_table (index,typ) =
   | BTYP_fix (i,_) -> ""
   | BTYP_type_var (i,mt) -> failwith "[gen_type_name] Can't gen name of type variable"
 
-  | BTYP_pointer b -> ""
+  | BTYP_cltpointer _ 
+  | BTYP_cltwref _
+  | BTYP_cltrref _
+  | BTYP_pointer _ -> ""
     (* NEW *)
     (*
     descr ^
@@ -332,7 +335,7 @@ print_endline ("[flx_tgen] One component union should have been removed");
       )
     end
 
-  | _ -> failwith ("Unexpected metatype "^ sbt bsym_table t ^ " in gen_type_name")
+  | _ -> failwith ("[Flx_tgen] Unexpected metatype "^ sbt bsym_table t ^ " in gen_type_name")
 
 let mk_listwise_ctor syms i name typ cts ctss =
   if length cts = 1 then
@@ -417,7 +420,10 @@ let rec gen_type syms bsym_table (index,typ) =
      descr ^
      gen_record (cn typ) tn ts
 
-  | BTYP_pointer t ->
+  | BTYP_cltpointer _
+  | BTYP_cltrref _
+  | BTYP_cltwref _
+  | BTYP_pointer _ ->
     ""
     (*
     let name = tn typ in

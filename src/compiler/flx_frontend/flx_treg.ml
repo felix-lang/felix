@@ -205,6 +205,11 @@ print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table
 
 
   | BTYP_pointer t' -> rr t'; rnr t
+  | BTYP_cltpointer (d,c) -> rr d; rr c; rnr t
+
+  (* I wonder if these should be here .. probably not *)
+  | BTYP_cltrref (d,c) -> rr d; rr c; rnr t
+  | BTYP_cltwref (d,c) -> rr d; rr c; rnr t
 
   | BTYP_inst (i,ts)->
 (*

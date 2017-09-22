@@ -24,6 +24,10 @@ open class AbstractPointers
 
   fun deref[T] (p: rptr T) => p.get ();
   proc storeat[T] (p: wptr T, v: T) { p.set v; }
+
+  // concrete compact linear type pointers
+  proc storeat[D,C] : _pclt< D, C >  * C = "storeat ($1,$2);";
+
 }
 
 //$ Felix and C pointers.

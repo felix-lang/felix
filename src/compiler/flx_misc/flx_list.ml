@@ -76,12 +76,9 @@ let list_split lst n =
     else rev nl,ol
   in aux lst [] n
 
-
-let list_tail lst n =
-  let rec aux ol il n =
-    if n > 0 then aux (hd il::ol) (tl il) (n-1)
-    else rev ol
-  in aux [] lst n
+let rec list_tail lst n =
+  if n > 0 then list_tail (tl lst) (n-1)
+  else lst
 
 let splice_tail hlst tlst =
   let n = length hlst in
