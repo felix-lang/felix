@@ -1152,6 +1152,7 @@ FUNCTION void JUDY_EXTERN JudyCheckSorted(
 #endif
 	default:  
         fprintf(stderr, "JU_CHECKSORTED_ODD: Bad index size %ld\n",IndexSize);
+        fprintf(stderr, "IS_64_BIT: %d\n", JU_64BIT);
         assert(FALSE);	// invalid IndexSize.
 	}
 
