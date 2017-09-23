@@ -123,6 +123,15 @@ let mkreqs state access parent_ts sr (rqs :raw_req_expr_t) :
       | Index_req i ->
         index := Some i;
         NREQ_true
+
+      | Named_index_req s ->
+        print_endline ("Named index requirement " ^ s ^ 
+        " for symbol should have be removed by macro processor.\n" ^
+        "A macro with that name defined as an integer\n" ^
+        "is required for the concordance which allows the compiler\n"  ^
+        "to refer directly to symbols defined in the library\n");
+        clierr sr ("Unspecified value for concordance macro " ^ s);
+
     in
     let r = aux rqs in
     !index, !quals, !props, !decls, r

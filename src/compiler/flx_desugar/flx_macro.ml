@@ -764,8 +764,8 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_not (sr,e) -> EXPR_not (sr, me e)
   | EXPR_label (sr,s) -> EXPR_label (sr, mi sr s)
 
-and rqmap me reqs =
-  let r req = rqmap me req in
+and rqmap me sr reqs =
+  let r req = rqmap me sr req in
   match reqs with
   | RREQ_or (a,b) -> RREQ_or (r a, r b)
   | RREQ_and (RREQ_true,b) -> r b
@@ -782,6 +782,24 @@ and rqmap me reqs =
             | None -> assert false
           in
           RREQ_atom (Named_req qn)
+      | Named_index_req s ->
+        let x = me (EXPR_name (sr,s,[])) in
+        begin try
+          match x with
+          | EXPR_literal (_,{Flx_literal.internal_value=v}) ->   
+            let n = int_of_string v in
+            RREQ_atom (Index_req n) 
+          | _ -> raise Not_found
+        with _ ->
+        let err = "[Flx_reqs] rqmap: Named index requirement " ^ s ^ " not defined\n" ^
+          "A macro with that name defined as an integer\n" ^
+          "is required for the concordance which allows the compiler\n"  ^
+          "to refer directly to symbols defined in the library\n"
+        in 
+          clierr sr err
+        end
+
+
       | x -> RREQ_atom x
 
 (* ---------------------------------------------------------------------
@@ -807,7 +825,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   let meopt e = match e with | None -> None | Some x -> Some (me x) in
   let mps sr ps = List.map (fun (sr,k,id,t,d) -> sr,k,id,mt sr t,meopt d) ps in
   let mpsp sr (ps,pre) = mps sr ps,meopt pre in
-  let rqmap req = rqmap me req in
+  let rqmap sr req = rqmap me sr req in
   let ms s = recurse recursion_limit local_prefix seq (ref true) macros s in
   let msp sr ps ss =
     let pr = protect sr ps in
@@ -883,7 +901,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   | STMT_cstruct (sr, id, vs, idts, reqs) ->
     let idts = List.map (fun (id,t) -> id,mt sr t) idts in
-    tack (STMT_cstruct (sr, mi sr id, vs, idts, rqmap reqs))
+    tack (STMT_cstruct (sr, mi sr id, vs, idts, rqmap sr reqs))
 
   | STMT_typeclass (sr, id, vs, sts) ->
     tack (STMT_typeclass (sr, mi sr id, vs, ms sts))
@@ -904,29 +922,29 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
         dfltvs,
         qs,
         Flx_code_spec.Str ("::"^id),
-        rqmap reqs)
+        rqmap sr reqs)
       in
       tack st
     )
     ids
 
   | STMT_abs_decl (sr,id,vs,typs,v,rqs) ->
-    tack (STMT_abs_decl (sr,mi sr id,vs,typs,v, rqmap rqs))
+    tack (STMT_abs_decl (sr,mi sr id,vs,typs,v, rqmap sr rqs))
 
   | STMT_newtype (sr,id,vs,t) ->
     tack (STMT_newtype (sr,mi sr id,vs,mt sr t))
 
   | STMT_callback_decl (sr,id,args,ret,rqs) ->
-    tack (STMT_callback_decl (sr,mi sr id, List.map (mt sr) args,mt sr ret,rqmap rqs))
+    tack (STMT_callback_decl (sr,mi sr id, List.map (mt sr) args,mt sr ret,rqmap sr rqs))
 
   | STMT_const_decl (sr, id, vs, t, c, reqs) ->
-     tack (STMT_const_decl (sr, mi sr id, vs, mt sr t, c, rqmap reqs))
+     tack (STMT_const_decl (sr, mi sr id, vs, mt sr t, c, rqmap sr reqs))
 
   | STMT_fun_decl (sr, id, vs, ts, t, c, reqs,prec) ->
-    tack (STMT_fun_decl (sr, mi sr id, vs, List.map (mt sr) ts, mt sr t, c, rqmap reqs,prec))
+    tack (STMT_fun_decl (sr, mi sr id, vs, List.map (mt sr) ts, mt sr t, c, rqmap sr reqs,prec))
 
   | STMT_insert (sr, n, vs, s, ikind, reqs) ->
-    tack (STMT_insert (sr,n,vs,s, ikind, rqmap reqs))
+    tack (STMT_insert (sr,n,vs,s, ikind, rqmap sr reqs))
 
     (*
       NOTE: c code is embedded even  though it isn't

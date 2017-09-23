@@ -359,6 +359,7 @@ and requirement_t =
   | Encoder_req of CS.t
   | Decoder_req of CS.t
   | Index_req of int
+  | Named_index_req of string
 
 and ikind_t = [
   | `Header

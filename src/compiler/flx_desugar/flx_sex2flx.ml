@@ -594,6 +594,7 @@ and xrequirement_t sr x : requirement_t =
   | Lst [Id "Encoder_req"; ct] -> Encoder_req (xct ct)
   | Lst [Id "Decoder_req"; ct] -> Decoder_req (xct ct)
   | Lst [Id "Index_req"; Int indx] -> Index_req (int_of_string indx)
+  | Lst [Id "Named_index_req"; Str sindx] -> Named_index_req (sindx)
   | x -> err x "requirement_t"
 
 and xraw_req_expr_t sr x : raw_req_expr_t =

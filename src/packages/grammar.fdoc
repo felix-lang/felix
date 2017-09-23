@@ -4020,6 +4020,7 @@ syntax requirements {
   private srequirement :=  "decoder" scode_spec =># "`(Decoder_req ,_2)";
 
   private srequirement :=  "index" sinteger =># "`(Index_req ,_2)";
+  private srequirement :=  "index" sname =># "`(Named_index_req ,_2)";
 
   //$ Requirement expressions. Deprecated.
   private srequirement_atom:= srequirement =># "`(rreq_atom ,_1)";

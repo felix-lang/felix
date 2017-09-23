@@ -1128,6 +1128,7 @@ and string_of_raw_req = function
   | Encoder_req c -> "encoder " ^ string_of_code_spec c
   | Decoder_req c -> "decoder " ^ string_of_code_spec c
   | Index_req idx -> "index " ^ string_of_int idx
+  | Named_index_req sidx -> "index " ^ sidx
 
 (* fairly lame excess brackets here *)
 and string_of_raw_req_expr = function
