@@ -1,0 +1,46 @@
+@tangler concordance.flxh = share/lib/concordance/concordance.flxh 
+@tangler concordance_check.flx = $PWD/concordance_check.flx
+
+@title Concordance
+@h1 Concordance
+The concordance allows the Felix compiler flxg to access
+symbols defined in the library.
+
+Currently only C bindings are supported. The requirements of the
+form @requires index 201@ or @requires index name@ are added
+to the bindings. The macro processor will try to replaced
+named indices with literal integers by using the usual
+macro processing process. 
+
+The compiler will then add the symbols to the symbol table 
+with the specified numerical index. Values in the range
+200-2000 are currenly reserved for the concordance indices.
+
+The compiler itself contains an Ocaml file which binds
+symbolic names to integers, allowing the compiler to 
+find specified symbols in the symbol table without
+doing the usual name based lookup.
+
+To make this work, we put all the macros we need
+in a single file to ease maintenance. The compiler
+will be told to load this file by the command line
+harness.
+
+Down the track, the compiler concordance.ml file will
+have to be here too, and down the track again,
+a single Python program will be used to generate
+both concordance files, thereby ensuring that,
+in fact, they agree.
+
+@h1 Felix library concordance macros
+@tangle concordance.flxh
+macro val FLX_CONCORDANCE_LOADED=true;
+// put other things here later when it is working.
+@
+
+@tangle concordance_check.flx
+// if this compiles it should run.
+println$ "Checking concordance is loaded";
+println$ "Concordance loaded = " + FLX_CONCORDANCE_LOADED.str;
+@
+

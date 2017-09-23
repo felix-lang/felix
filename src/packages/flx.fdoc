@@ -630,7 +630,7 @@ proc print_options(control:control_type) {
     println$ "NOSTDLIB           = "+str control.NOSTDLIB;
     println$ "DEBUG              = "+str control.DEBUG;
     println$ "DEBUG_COMPILER     = "+str control.DEBUG_COMPILER;
-    println$ "STDIMPORT          = "+str control.STDIMPORT;
+    println$ "STDIMPORTS          = "+str control.STDIMPORTS;
     println$ "STDGRAMMAR         = "+str control.STDGRAMMAR;
     println$ "IMPORTS            = "+str control.IMPORTS;
     println$ "RECOMPILE          = "+str control.RECOMPILE;
@@ -733,7 +733,7 @@ fun dflt_control () =>
     var STDIN="";
     var GRAMMAR_DIR="";
     var STDGRAMMAR="";
-    var STDIMPORT="plat/flx.flxh";
+    var STDIMPORTS=(["plat/flx.flxh", "concordance/concordance.flxh"]);
     var CMDLINE_INPUT=false;
     var REPL_MODE=false;
     var AUTOMATON="";
@@ -943,7 +943,7 @@ proc setup-from-file (debugln: string -> 0)
       | "grammar" => debugln$ "set Felix grammar (in stdlib) "+data; 
           control.STDGRAMMAR <- data;
       | "std-import" => debugln$ "set Felix standard import (in stdlib) "+data; 
-          control.STDIMPORT <- data;
+          control.STDIMPORTS <- data ! control*.STDIMPORTS;
       | "extra-import" => debugln$ "set Felix extra import (in stdlib) "+data; 
           control.IMPORTS <- control*.IMPORTS + data;
       | "extra-cpp" => debugln$ "set Felix extra C++ file "+data; 
@@ -986,7 +986,7 @@ private noinline proc handle_switch
     // Note: currently, Felix compiler generates code that REQUIRES
     // the standard library, eg the driver passes a gc_profile_t record
     // and the compiler generates _uctor_ objects, etc etc
-    control.STDIMPORT <- "";
+    control.STDIMPORTS <- list[string]();
 
   elif prefix(arg,"--import=") do
    debugln "Add import";
@@ -2195,7 +2195,7 @@ object processing_env(
         // flxg expects file in standard library
         STDGRAMMAR = "@"+control.STDGRAMMAR, 
         AUTOMATON = control.AUTOMATON,
-        IMPORTS = control.STDIMPORT + control.IMPORTS,
+        IMPORTS = control.STDIMPORTS + control.IMPORTS,
         FLXLIBS = dvars.FLX_STD_LIBS,
         INCLUDE_DIRS = config.FLX_LIB_DIRS,
         filebase = dvars.filebase,
