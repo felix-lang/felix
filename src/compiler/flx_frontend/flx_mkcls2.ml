@@ -339,9 +339,41 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
     Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
     bexpr_closure t (closure_bid, [])
 
-  | BEXPR_cltpointer_prj _,_ ->
+  (* in the cltpointer projection the domain and codomain value types
+     are the compact linear types of the values the pointer points AT.
+     The type of the projection is a map from a cltpointer to another cltpointer
+     where the pointer codomain types agree with the comain and codomain
+     value types of the projection.
+
+     The projection itself is independent of the base domain type
+     of the pointer. However, as a function, it maps pointers to
+     pointers and the base domain type of these pointers is the
+     same, and must be known. It can only be recovered from
+     the type of the projection.
+  *)
+  | BEXPR_cltpointer_prj (domain_value_type,codomain_value_type,divisor),
+    (BTYP_function(
+      (BTYP_cltpointer (base_type,domain_value_type2) as fdomain),
+      (BTYP_cltpointer (base_type2, codomain_value_type2) as fcodomain)
+    ) as t) as x ->
     print_endline ("in exe=" ^ sbx exe ^ "\nCLT Projection passed as argument " ^ sbe bsym_table e);
-    assert false
+    let closure_bid = fresh_bid state.syms.counter in
+    let closure_name = ("_a" ^ string_of_int closure_bid ^ "_strtyp") in
+    Flx_bsym_table.add nutab closure_bid None 
+      (Flx_bsym.create ~sr:sr closure_name (bbdcl_invalid ()))
+    ;
+    let param, arg = make_inner_function state nutab closure_bid sr [] [] [fdomain] in
+
+    (* Generate a call to the wrapped function. *)
+    let exes =
+       let e = bexpr_apply fcodomain (x, arg) in
+       [ bexe_fun_return (sr, e) ]
+    in
+
+    let bbdcl = bbdcl_fun ([],[],([param],None),fcodomain,noeffects,exes) in
+    Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
+    bexpr_closure t (closure_bid, [])
+
 
   | BEXPR_prj (n,d,c),t as x ->
 (*

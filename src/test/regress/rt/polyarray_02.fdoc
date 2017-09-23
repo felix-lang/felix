@@ -46,7 +46,7 @@ for var ii in 0 upto 2 do
 done
 
 println$ str ijk;
-ijk.1 = case 2 of 4;
+&ijk.1 <- case 2 of 4;
 println$ str ijk;
 
 println$ "Decoding test";
@@ -65,9 +65,9 @@ for ii in 0 upto 2 do
     j = jj :>> 4;
     for kk in 0 upto 4 do
       k = kk :>> 5;
-      ijk.0 = i;
-      ijk.1 = j;
-      ijk.2 = k;
+      &ijk.0 <- i;
+      &ijk.1 <- j;
+      &ijk.2 <- k;
       println$ ijk.0.str + "," + ijk.1.str + "," + ijk.2.str+" encoding=" + (ijk :>>int) .str;
       assert 20 * (i:>>int) + 5 * (j:>>int) + (k:>>int) == ijk :>>int;
     done
