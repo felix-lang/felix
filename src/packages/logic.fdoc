@@ -4,12 +4,30 @@
 @tangler predicate.flx = share/lib/std/algebra/predicate.flx
 
 @h1 Boolean Logic
+
+We have two kinds of boolean, cbool is the binding to C/C++
+bool type which is usually a single byte.
+
+The other kind, bool, is a synonym for type 2, which is
+a compact linear type and will use a a 64 bit word.
+
+We provide the same operations on both, since as values
+they're compatible. However the Felix bool is the standard
+type.
+
+Pointers to these two types are not compatible.
+Although a sole bool is much bigger than a cbool,
+64 bools can fit in a single machine word, as opposed
+to only 8 cbools.
+
 @tangle bool.flx
 typedef bool = 2;
+type cbool = "bool" requires index TYPE_cbool; 
 
-//$ Standard operations on boolean type.
 open class Bool
 {
+  ctor bool:cbool="$1";
+
   //$ Short cut and via closure
   noinline fun andthen (x: bool, y:1->bool) : bool => 
     if x then #y else false
@@ -50,11 +68,59 @@ open class Bool
   reduce dneg(x:bool,y:bool): lnot (nor(x,y)) => lor(x,y);
 }
 
-instance FloatAddgrp[2] {
-  fun zero () => 0 :>> 2;
-  fun - (x:2) => (sub (2, caseno x)) :>> 2;
-  fun + (x:2, y:2) : 2 => (add ((caseno x , caseno y)) % 2) :>> 2;
-  fun - (x:2, y:2) : 2 => (add (2, sub(caseno x , caseno y)) % 2) :>> 2;
+//$ Standard operations on cboolean type.
+open class CBool
+{
+  ctor cbool:bool="$1";
+  const cfalse: cbool="false";
+  const ctrue: cbool="true";
+
+  //$ Short cut and via closure
+  noinline fun andthen (x: cbool, y:1->cbool) : cbool => 
+    if x then #y else cfalse
+  ;
+ 
+  //$ Disjunction: logical and.
+  fun land: cbool * cbool -> cbool = "$1&&$2";      // x and y
+
+  //$ Negated and.
+  fun nand: cbool * cbool -> cbool = "!($1&&$2)";   // not (x and y)
+
+  //$ Conjunction: logical or.
+  fun lor: cbool * cbool -> cbool = "$1||$2";       // x or y
+
+  //$ Negated or.
+  fun nor: cbool * cbool -> cbool = "!($1||$2)";    // not (x or y)
+
+  //$ Logical exclusive or.
+  fun xor: cbool * cbool -> cbool = "$1!=$2";       // (x or y) and not (x and y)
+
+  //$ Logical negation.
+  fun lnot: cbool -> cbool = "!$1";                // not x
+
+  //$ Logical implication.
+  fun implies: cbool * cbool -> cbool = "!$1||$2";  // not x or y
+
+  //$ Mutating or.
+  proc |= : &cbool * cbool = "*$1|=$2;";  
+
+  //$ Mutating and.
+  proc &= : &cbool * cbool = "*$1&=$2;";  
+
+  // Elide double negations.
+  reduce dneg(x:cbool): lnot (lnot x) => x;       
+  // Elide double negations.
+  reduce dneg(x:cbool,y:cbool): lnot (nand(x,y)) => land(x,y); 
+  // Elide double negations.
+  reduce dneg(x:cbool,y:cbool): lnot (nor(x,y)) => lor(x,y);
+}
+
+
+instance FloatAddgrp[bool] {
+  fun zero () => 0 :>> bool;
+  fun - (x:bool) => (sub (2, caseno x)) :>> bool;
+  fun + (x:bool, y:bool) : bool => (add ((caseno x , caseno y)) % 2) :>> bool;
+  fun - (x:bool, y:bool) : bool => (add (2, sub(caseno x , caseno y)) % 2) :>> bool;
 }
 
 instance Str[bool] {
@@ -71,6 +137,20 @@ instance Tord[bool] {
 open Tord[bool];
 open Show[bool];
 open Addgrp[bool];
+
+instance Str[cbool] {
+  //$ Convert cbool to string.
+  fun str (b:cbool) : string => if b then "ctrue" else "cfalse" endif;
+}
+
+instance Tord[cbool] {
+  //$ Total ordering of cbools, false < true.
+  //$ Note that x < y is equivalent to x implies y.
+  fun < : cbool * cbool -> cbool = "$1<$2";
+}
+
+open Tord[cbool];
+open Show[cbool];
 
 @h1 Syntax
 @tangle boolexpr.fsyn
