@@ -98,6 +98,7 @@ class Builder(fbuild.db.PersistentObject):
         syntaxes = list(syntaxes)
         if include_std:
             imports.insert(0, 'plat/flx.flxh')               # Unix filename correct here
+            imports.insert(0, 'concordance/concordance.flxh')# Unix filename correct here
             syntaxes.insert(0, '@grammar/grammar.files')     # Unix filename correct here
 
         cmd.extend('-I' + i for i in sorted(includes) if Path.exists(i))

@@ -51,6 +51,14 @@ type macro_t =
 
 type macro_dfn_t = Flx_id.t * macro_t
 
+let print_macros macros = 
+  List.iter  (fun (id,x) -> print_endline (
+   id ^ " = " ^ (match x with
+   | MVal e -> string_of_expr e 
+   | MName id -> id
+   ) ^ ":"))
+  macros
+
 type macro_state_t = {
   recursion_limit: int;
   local_prefix: string;
@@ -784,6 +792,9 @@ and rqmap me sr reqs =
           RREQ_atom (Named_req qn)
       | Named_index_req s ->
         let x = me (EXPR_name (sr,s,[])) in
+(*
+print_endline ("named req " ^ s ^ " expanded to " ^ string_of_expr x);
+*)
         begin try
           match x with
           | EXPR_literal (_,{Flx_literal.internal_value=v}) ->   

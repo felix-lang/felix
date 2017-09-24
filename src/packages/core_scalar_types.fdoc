@@ -68,28 +68,28 @@ lengths and in particular can span byte arrays as large
 as can be addressed.
 
 @tangle scalar.flx
-pod type tiny = "signed char" requires index 100;
-pod type short = "short" requires index 101;
-pod type int = "int" requires index 102;
-pod type long = "long" requires index 103;
-pod type vlong = "long long" requires index 104;
-pod type utiny = "unsigned char" requires index 105;
-pod type ushort = "unsigned short" requires index 106;
-pod type uint = "unsigned int" requires index 107;
-pod type ulong = "unsigned long" requires index 108;
-pod type uvlong = "unsigned long long" requires index 109;
+pod type tiny = "signed char" requires index TYPE_tiny;
+pod type short = "short" requires index TYPE_short;
+pod type int = "int" requires index TYPE_int;
+pod type long = "long" requires index TYPE_long;
+pod type vlong = "long long" requires index TYPE_vlong;
+pod type utiny = "unsigned char" requires index TYPE_utiny;
+pod type ushort = "unsigned short" requires index TYPE_ushort;
+pod type uint = "unsigned int" requires index TYPE_uint;
+pod type ulong = "unsigned long" requires index TYPE_ulong;
+pod type uvlong = "unsigned long long" requires index TYPE_uvlong;
 
-pod type intmax = "intmax_t" requires C99_headers::stdint_h;
-pod type uintmax = "uintmax_t" requires C99_headers::stdint_h;
-pod type size = "size_t" requires C89_headers::stddef_h;
-pod type ssize = "ssize_t" requires C89_headers::stddef_h;
+pod type intmax = "intmax_t" requires C99_headers::stdint_h, index TYPE_intmax;
+pod type uintmax = "uintmax_t" requires C99_headers::stdint_h, index TYPE_uintmax;
+pod type size = "size_t" requires C89_headers::stddef_h, index TYPE_size;
+pod type ssize = "ssize_t" requires C89_headers::stddef_h, index TYPE_ssize;
 
 /* for concordance, required to generated loops */
 class PervasiveInts {
-  private const zero: int = "0" requires index 200;
-  private fun isneg:  int -> 2 = "$1<0" requires index 201;
-  private fun isnonneg:  int -> 2= "$1>=0" requires index 202;
-  private proc decr:  &int = "--*$1;" requires index 203;
+  private const zero: int = "0" requires index CONST_zero;
+  private fun isneg:  int -> 2 = "$1<0" requires index FUN_isneg;
+  private fun isnonneg:  int -> 2= "$1>=0" requires index FUN_isnonneg;
+  private proc decr:  &int = "--*$1;" requires index PROC_decr;
 }
 
 @h1 Exact Integer types
@@ -100,14 +100,14 @@ defined. This includes 64 bit signed and unsigned integers,
 even on a 32 bit machine.
 
 @tangle scalar.flx
-pod type int8 = "int8_t" requires C99_headers::stdint_h;
-pod type int16 = "int16_t" requires C99_headers::stdint_h;
-pod type int32 = "int32_t" requires C99_headers::stdint_h;
-pod type int64 = "int64_t" requires C99_headers::stdint_h;
-pod type uint8 = "uint8_t" requires C99_headers::stdint_h;
-pod type uint16 = "uint16_t" requires C99_headers::stdint_h;
-pod type uint32 = "uint32_t" requires C99_headers::stdint_h;
-pod type uint64 = "uint64_t" requires C99_headers::stdint_h;
+pod type int8 = "int8_t" requires C99_headers::stdint_h, index TYPE_int8;
+pod type int16 = "int16_t" requires C99_headers::stdint_h, index TYPE_int16;
+pod type int32 = "int32_t" requires C99_headers::stdint_h, index TYPE_int32;
+pod type int64 = "int64_t" requires C99_headers::stdint_h, index TYPE_int64;
+pod type uint8 = "uint8_t" requires C99_headers::stdint_h, index TYPE_uint8;
+pod type uint16 = "uint16_t" requires C99_headers::stdint_h, index TYPE_uint16;
+pod type uint32 = "uint32_t" requires C99_headers::stdint_h, index TYPE_uint32;
+pod type uint64 = "uint64_t" requires C99_headers::stdint_h, index TYPE_uint64;
 
 @h1 Raw Memory
 Raw memory operations provide an uninterpreted byte and
@@ -122,14 +122,14 @@ size as addresses and pointers which can be used to perform
 arbitrary integer operations.
 
 @tangle scalar.flx
-pod type byte = "unsigned char";
+pod type byte = "unsigned char" requires index TYPE_byte;
 type caddress = "void *";
-_gc_pointer type address = "void *";
+_gc_pointer type address = "void *" requires index TYPE_address;
 
-pod type ptrdiff = "ptrdiff_t" requires C89_headers::stddef_h;
+pod type ptrdiff = "ptrdiff_t" requires C89_headers::stddef_h, index TYPE_ptrdiff;
 
-pod type intptr = "intptr_t" requires C99_headers::stdint_h;
-pod type uintptr = "uintptr_t" requires C99_headers::stdint_h;
+pod type intptr = "intptr_t" requires C99_headers::stdint_h, index TYPE_intptr;
+pod type uintptr = "uintptr_t" requires C99_headers::stdint_h, index TYPE_uintptr;
 @
 
 @h1 Integer literal constructors.
@@ -402,12 +402,12 @@ Note that Felix requires the long double type from C99.
 Also note that the complex types are taken from C++ and
 not C!
 @tangle scalar.flx
-pod type float = "float";
-pod type double = "double";
-pod type ldouble = "long double";
-pod type fcomplex = "::std::complex<float>" requires Cxx_headers::complex;
-pod type dcomplex = "::std::complex<double>" requires Cxx_headers::complex;
-pod type lcomplex = "::std::complex<long double>" requires Cxx_headers::complex;
+pod type float = "float" requires index TYPE_float;
+pod type double = "double" requires index TYPE_double;
+pod type ldouble = "long double" requires index TYPE_ldouble;
+pod type fcomplex = "::std::complex<float>" requires Cxx_headers::complex, index TYPE_fcomplex;
+pod type dcomplex = "::std::complex<double>" requires Cxx_headers::complex, index TYPE_dcomplex;
+pod type lcomplex = "::std::complex<long double>" requires Cxx_headers::complex, index TYPE_lcomplex;
 
 
 @h1 Float literal constructors
