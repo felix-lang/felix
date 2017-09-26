@@ -3809,6 +3809,13 @@ syntax patterns {
   //$
   private satomic_pattern := "$" "(" sexpr ")" =># "`(pat_expr ,_sr ,_3)";
 
+  //$ Matches a list with simpler syntax
+  //$ Probably a bit of a hack.
+  //$ Equivalence
+  //$ 
+  //$   $( (1,2,3).list ) == [1,2,3]
+  private satomic_pattern := "[" sexpr "]" =># '''`(pat_expr ,_sr (ast_apply ,_sr ( ,(nos "list") ,_2)))''';
+
   //$ Match against any literal value.
   //$ This includes integers, strings, whatever.
   //$ The underlying type must support equality operator (==).
