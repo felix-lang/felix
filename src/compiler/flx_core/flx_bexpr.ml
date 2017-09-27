@@ -290,6 +290,9 @@ let bexpr_reinterpret_cast (e, t) =
 
 let bexpr_prj n d c = 
   begin match d with
+  | Flx_btype.BTYP_uniq _ ->
+    failwith ("Projection from unique type " ^ Flx_btype.st d ^ " not allowed")
+ 
   (* Arrays with unitsum indices *)
   | Flx_btype.BTYP_pointer ( Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
   |Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m) ->

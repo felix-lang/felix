@@ -1,5 +1,8 @@
 (** Generic list functions *)
 
+(** true if first list is equal to or a prefix of the second *)
+val has_prefix: 'a list -> 'a list -> bool
+
 (** Transpose a matrix list of lists.
  * [[1; 2]; [3; 4]] -> [[1; 3]; [2; 4]] *)
 val transpose: 'a list list -> 'a list list

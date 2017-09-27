@@ -22,9 +22,10 @@ let strr' bsym_table sym_table counter be rs sr a =
     let apls a b = EXPR_apply (sr,(EXPR_name (sr,a,[]),b)) in
     let cats a b =  apl2 sr "+" [a;b] in
     let catss ls = List.fold_left (fun acc e -> apl2 sr "+" [acc;e]) (List.hd ls) (List.tl ls) in
-    let prj fld a = apl2 sr fld [a] in
+    let prj fld a = apls fld a in
     let rprj fld seq a = EXPR_rnprj (sr,fld,seq,a) in
-    let str x = apl2 sr "_strr" [x] in
+    let str x = apls "_strr" x in
+    let repr x = apls "repr" x in
     let strf fld a = str (prj fld a) in
     let rstrf fld seq a = str (rprj fld seq a) in
     let stri fld a = str (apl (intlit fld) a) in
@@ -45,7 +46,7 @@ print_endline ("strr bound arg expression = " ^ Flx_print.sbe bsym_table ba);
     begin match t with
     | BTYP_type_var _ -> 
       print_endline "Type variable?"; 
-      be rs (cats (mks "typevar?:") (apl2 sr "repr" [a]))
+      be rs (cats (mks "typevar?:") (repr a))
  
     | BTYP_record ls ->
 (*
@@ -117,12 +118,12 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
 
         | BTYP_tuple _ ->
           let arg = EXPR_case_arg (sr, (index,a)) in
-          let strarg = apl2 sr "_strr" [arg] in
+          let strarg = str arg in
           cats (mks ("case " ^ string_of_int index^" ")) strarg
 
         | _ ->
           let arg = EXPR_case_arg (sr, (index,a)) in
-          let strarg = apl2 sr "_strr" [arg] in
+          let strarg = str arg in
           cats (cats (mks ("case "^ string_of_int index^" (")) strarg) (mks ")")
       in 
       let condu index t other =
@@ -157,12 +158,12 @@ print_endline ("_strr Variant type " ^ Flx_print.sbt bsym_table t);
 
         | BTYP_tuple _ ->
           let arg = EXPR_case_arg (sr, (hashcode,a)) in
-          let strarg = apl2 sr "_strr" [arg] in
+          let strarg = str arg in
           cats (mks ("case "^ cname^" ")) strarg
 
         | _ ->
           let arg = EXPR_case_arg (sr, (hashcode,a)) in
-          let strarg = apl2 sr "_strr" [arg] in
+          let strarg = str arg in
           cats (cats (mks ("case "^ cname^" (")) strarg) (mks ")")
       in 
       let condu cname t other =
@@ -223,7 +224,7 @@ print_endline (Flx_print.string_of_expr result);
 print_endline ("Tuple ctor " ^ cname);
 *)
             let arg = EXPR_ctor_arg (sr, (qn cname,a)) in
-            let strarg = apl2 sr "_strr" [arg] in
+            let strarg = str arg in
             cats (mks (cname^" ")) strarg
 
           | _ ->
@@ -231,7 +232,7 @@ print_endline ("Tuple ctor " ^ cname);
 print_endline ("Other ctor " ^ cname);
 *)
             let arg = EXPR_ctor_arg (sr, (qn cname,a)) in
-            let strarg = apl2 sr "_strr" [arg] in
+            let strarg = str arg in
             cats (cats (mks (cname^" (")) strarg) (mks ")")
         in 
         let condu cname t other =
@@ -262,14 +263,14 @@ print_endline ("Bound _strr!");
 (*
        print_endline ("_strr: Cant handle1 nominal type " ^ Flx_btype.st t ^ ": using repr"); 
 *)
-       be rs (apl2 sr "repr" [a]) 
+       be rs (repr a) 
       end
 
     | _ ->
 (*
-       print_endline ("_strr: Cant handle2 nominal type " ^ Flx_btype.st t ^ ": using repr"); 
+       print_endline ("_strr: Cant handle2 structural type " ^ Flx_btype.st t ^ ": using repr"); 
 *)
-      be rs (apl2 sr "repr" [a])
+      be rs (repr a)
     end
 
 let strr bsym_table sym_table counter be rs sr a =

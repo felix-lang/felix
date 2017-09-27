@@ -1,4 +1,9 @@
 open List
+let rec has_prefix prefix lst = 
+  match prefix,lst with
+  | [],_ -> true
+  | ph::pt, lh::lt -> ph = lh && has_prefix pt lt
+  | _ -> false
 
 let transpose x =
   let dtor ls =

@@ -120,7 +120,13 @@ let csubst (shape_registry:Flx_set.StringSet.t ref) sr sr2 ct
   *)
   let n = length args in
   assert (n = length typs);
-  (* print_endline ("CSUBST " ^ ct ^ ", count="^si n^", result prec=" ^ prec); *)
+
+(*
+  print_endline ("CSUBST " ^ ct ^ ", count="^si n^", result prec=" ^ prec);
+  print_endline ("  csubst $t -> tuple= " ^ string_of_cexpr (arg()));
+  print_endline ("  csubst $a would be  " ^ catmap "," string_of_cexpr args);
+  print_endline ("  ^^^^^");
+*)
   let len = String.length ct in
   let buf = Buffer.create (n * 2 + 20) in
   let bcat s = Buffer.add_string buf s in
@@ -187,6 +193,11 @@ let csubst (shape_registry:Flx_set.StringSet.t ref) sr sr2 ct
         mode := Normal
 
       | 't' ->
+(*
+print_endline ("csubst $t -> tuple= " ^ string_of_cexpr (arg()));
+print_endline ("csubst $a would be  " ^ catmap "," string_of_cexpr args);
+print_endline "";
+*)
         bcat (string_of_cexpr (arg ()));
         (*
         bcat ( argtyp ^ "(" ^ catmap "," string_of_cexpr args ^ ")");
@@ -325,6 +336,14 @@ let csubst (shape_registry:Flx_set.StringSet.t ref) sr sr2 ct
         else begin
           let s' = nth args (!digits-1) in
           let s' = string_of_cexpr s' in
+(*
+if !digits = 1 then begin
+  print_endline ("csubst $1 -> 1arg = " ^ s');
+  print_endline ("csubst $t -> tuple= " ^ string_of_cexpr (arg()));
+  print_endline ("csubst $a would be  " ^ catmap "," string_of_cexpr args);
+  print_endline "";
+end;
+*)
           if is_atomic s' then bcat s'
           else bcat ("(" ^ s' ^ ")");
           mode := Normal;

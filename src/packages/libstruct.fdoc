@@ -206,24 +206,24 @@ class C_hack
   proc ignore[t]:t = "(void)$t;";
 
   //$ C style cast.
-  fun cast[dst,src]: src->dst = '(?1)($1:assign)' is cast;
+  fun cast[dst,src]: src->dst = '(?1)($t/*cast*/)' is cast;
 
   //$ C++ static cast.
-  fun static_cast[dst,src]: src->dst = 'static_cast<?1>($1)' is postfix;
+  fun static_cast[dst,src]: src->dst = 'static_cast<?1>($t)' is postfix;
 
   //$ C++ dynamic cast.
-  fun dynamic_cast[dst,src]: src->dst = 'dynamic_cast<?1>($1)' is postfix;
+  fun dynamic_cast[dst,src]: src->dst = 'dynamic_cast<?1>($t)' is postfix;
 
   //$ C++ const cast.
-  fun const_cast[dst,src]: src->dst = 'const_cast<?1>($1)' is postfix;
+  fun const_cast[dst,src]: src->dst = 'const_cast<?1>($t)' is postfix;
 
   //$ C++ reinterpret cast.
-  fun reinterpret_cast[dst,src]: src->dst = 'reinterpret_cast<?1>($1)' is postfix;
+  fun reinterpret_cast[dst,src]: src->dst = 'reinterpret_cast<?1>($t)' is postfix;
 
   //$ Felix reinterpret cast.
   //$ More powerful than C++ reinterpret cast.
   //$ Allows casting an rvalue to an lvalue.
-  fun reinterpret[dst,src]: src->dst = 'reinterpret<?1>($1)' is postfix;
+  fun reinterpret[dst,src]: src->dst = 'reinterpret<?1>($t)' is postfix;
 
   const sizeof[t]:size = 'sizeof(?1)';
 

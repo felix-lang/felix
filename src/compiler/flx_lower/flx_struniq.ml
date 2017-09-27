@@ -180,7 +180,7 @@ let struniq bsym_table =
       try
         fix_symbol bsym_table bid parent sym bsym_table'
       with Not_found ->
-        failwith ("Strabs chucked not found processing " ^ string_of_int bid)
+        failwith ("Struniq chucked not found processing " ^ string_of_int bid)
     )
     bsym_table
   ;

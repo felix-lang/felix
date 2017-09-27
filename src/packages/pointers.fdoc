@@ -44,7 +44,7 @@ open class Cptr
 
   //$ Dereference a Felx pointer.
   //lvalue fun deref[T]: &T -> T = "*$1";
-  fun _deref[T]: &<T -> T = "*$1";
+  fun _deref[T]: &<T -> T = "*$t";
   fun deref[T] (p:&<T) => _deref p;
   proc _storeat[T]: &>T * T = "*$1=$2;";
   proc storeat[T] (p: &>T, v:T) { _storeat (p,v); }
@@ -55,7 +55,7 @@ open class Cptr
   union cptr[T] = | nullptr | Ptr of &T;
 
   //$ Demote a Felix pointer to a C pointer. Safe.
-  ctor[T] cptr[T]: &T = "$1";
+  ctor[T] cptr[T]: &T = "$t";
 
   //$ Promote a C pointer to a Felix pointer.
   //$ Conversion is checked.
@@ -222,13 +222,13 @@ of lvalues in general: this is a very special case.
   fun stl_begin[T,N]: carray[array[T,N]] -> carray[T] = "(?1*)&($1->data)";
 
   //$ Unsafe conversion of Felix pointer to carray.
-  fun prefix_plus [T]:&T -> carray[T] = "$1"; // unsafe
+  fun prefix_plus [T]:&T -> carray[T] = "$t"; // unsafe
 
   //$ Demote carray to Felix pointer (safe unless off the end).
-  fun neg [T]: carray[T] -> &T = "$1"; // safe (unless we allow +T to be NULL later ..)
+  fun neg [T]: carray[T] -> &T = "$t"; // safe (unless we allow +T to be NULL later ..)
 
   //$ Unsafe conversion of Felix pointer to carray.
-  ctor[T] carray[T] : &T = "$1";
+  ctor[T] carray[T] : &T = "$t";
 
   //$ Get a carray from a Felix array object.
   ctor[T,N] carray[T]: &array[T,N] = "($1)->data";

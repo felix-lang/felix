@@ -204,7 +204,7 @@ print_endline "DONE Dead code elim";
   Flx_mkcls.mark_heap_closures syms bsym_table end;
 
   (* new once check by control flow analysis *)
-  Flx_once.once_bsym_table bsym_table;
+  Flx_once.once_bsym_table bsym_table syms.counter;
 
   bsym_table
 

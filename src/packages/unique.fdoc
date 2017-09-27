@@ -5,10 +5,10 @@
 open class Unique 
 {
   // box up a value as a unique thing
-  fun uniq [T] : T -> _uniq T = "$1";
+  fun uniq [T] : T -> _uniq T = "($t)";
 
   // unsafely unpack the unique box
-  fun ununiq [T] : _uniq T -> T = "$1";
+  fun ununiq [T] : _uniq T -> T = "($t)";
 
   // kill a live unique value
   proc kill[T] : uniq T = ";";
@@ -17,9 +17,17 @@ open class Unique
   typedef fun uniq (T:TYPE):TYPE => _uniq T;
 
   // peek inside the box without changing livenes state
-  fun peek[T] : &(uniq T) -> T = "*$1";
+  fun peek[T] : &(uniq T) -> T = "*($t)";
  
   // string representions
+  instance[T] Repr[uniq T] {
+    fun repr(x:uniq T) => "uniq " + (C_hack::cast[T] x).str;
+  }
+
+  instance[T] Str[uniq T] {
+    fun str(x:uniq T) => "uniq " + (C_hack::cast[T] x).str;
+  }
+
   instance[T with Repr[T]] Repr[&(uniq T)] {
     fun repr(x:&(uniq T)) => "uniq " + x.peek.repr;
   }
@@ -27,6 +35,7 @@ open class Unique
   instance[T with Str[T]] Str[&(uniq T)] {
     fun str(x:&(uniq T)) => x.peek.str;
   }
+
 }
 
 
