@@ -59,7 +59,7 @@ open class UniqueCStrings
   ctor ustr (s:+char) => uniq (s.strdup);
 
   // deletes the store
-  proc delete (p:ustr) {
+  proc delete (var p:ustr) {
     var q = ununiq p;
     if debug perform
       println$ "Deleting " + q.address.repr;
@@ -67,10 +67,10 @@ open class UniqueCStrings
   } 
 
   // length
-  fun len(s:&ustr) : size => s.peek.strlen;
+  fun len(var s:&ustr) : size => s.peek.strlen;
 
   // modify one char
-  fun set (s:ustr, i:int, c:char) : ustr =  {
+  fun set (var s:ustr, i:int, c:char) : ustr =  {
     var cs = ununiq s;
     set (cs, i, c); // Carray::set
     return uniq cs;
@@ -82,12 +82,12 @@ open class UniqueCStrings
   ; 
 
   // reserve storage 
-  fun reserve (s:ustr, n:size) : ustr =>
+  fun reserve (var s:ustr, n:size) : ustr =>
     uniq (realloc (ununiq s,n))
   ;
 
   // append: consumes y
-  fun append (x:ustr, y:ustr): ustr = {
+  fun append (var x:ustr, var y:ustr): ustr = {
     var cx = ununiq x;
     var cy = ununiq y;
     var lx = cx.len;
@@ -103,7 +103,7 @@ open class UniqueCStrings
   } 
 
   // append: doesnt consume y
-  noinline fun append (x:ustr, py:&ustr): ustr = {
+  noinline fun append (var x:ustr, var py:&ustr): ustr = {
     var cx = ununiq x;
     var cy = py.peek;
     var lx = cx.len;
@@ -116,17 +116,17 @@ open class UniqueCStrings
   } 
 
   // nicer appends
-  fun + (x:ustr, y:ustr) => append (x,y);
-  fun + (x:ustr, py:&ustr) => append (x,py);
+  fun + (var x:ustr, var y:ustr) => append (x,y);
+  fun + (var x:ustr, var py:&ustr) => append (x,py);
 
-  proc += (lhs: &ustr, rhs: ustr) => 
+  proc += (var lhs: &ustr, var rhs: ustr) => 
     lhs <- append (*lhs,rhs)
   ;
-  proc += (lhs: &ustr, rhs: &ustr) => 
+  proc += (var lhs: &ustr, var rhs: &ustr) => 
     lhs <- append (*lhs,rhs)
   ;
 
-  fun strmov (x:ustr) (var f:int, var l:int) : ustr = {
+  fun strmov (var x:ustr) (var f:int, var l:int) : ustr = {
     var p = x.ununiq;
     var n = p.strlen.int;
     if f < 0 perform f = 0; 
@@ -137,7 +137,7 @@ open class UniqueCStrings
     return uniq p;
   }
  
-  fun erase (x:ustr) (sl:slice[int]) : ustr =>
+  fun erase (var x:ustr) (sl:slice[int]) : ustr =>
     match sl with
     | Slice_all => set (x,0,char "")
     | Slice_from idx => set (x,idx, char "")
@@ -149,7 +149,7 @@ open class UniqueCStrings
     | Slice_one pos => strmov x (pos, pos+1)
   ;
 
-  fun insert (x:ustr) (var pos: int, y:ustr) : ustr =
+  fun insert (var x:ustr) (var pos: int, var y:ustr) : ustr =
   {
     var px = ununiq x;
     var py = ununiq y;

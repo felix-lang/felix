@@ -124,7 +124,8 @@ let check_proj_wrap_closure syms bsym_table descend usage n i e =
   BidSet.iter (check_proj_wrap_entry syms bsym_table n i) u
 
 let tailit syms bsym_table uses id this sr ps exes =
-  if syms.compiler_options.print_flag then begin
+  if syms.compiler_options.print_flag then
+  begin
     print_endline ("======= Tailing " ^ id ^ "<" ^ si this ^ "> exes=====");
     List.iter (fun x -> print_endline (string_of_bexe bsym_table 0 x)) exes;
     print_endline "======== END BODY ========";
@@ -307,8 +308,26 @@ let tailit syms bsym_table uses id this sr ps exes =
     let k = List.length ls in
     List.map2
     (fun (e,t' as x) j ->
+      let t = btyp_pointer t in
+      let t' = btyp_pointer t' in
+      bexe_storeat
+      (
+(*
+print_endline ("tailit:asgn2 assign to projection: fixed");
+*)
+        sr,
+        (bexpr_get_n t' j (bexpr_ref t (i,[]))),
+        x
+      )
+    )
+    ls
+    (nlist k)
+(*
+    List.map2
+    (fun (e,t' as x) j ->
       bexe_assign
       (
+print_endline ("tailit:asgn2 assign to projection");
         sr,
         (bexpr_get_n t' j (bexpr_varname t (i,[]))),
         x
@@ -316,6 +335,7 @@ let tailit syms bsym_table uses id this sr ps exes =
     )
     ls
     (nlist k)
+*)
   in
   let rec aux inp res =
     let cal_par' i t ls h tail =
@@ -500,10 +520,8 @@ let tailit syms bsym_table uses id this sr ps exes =
       | x -> x
       in
       let ls = List.map unproj ls in
-      (*
       print_endline "DETECTED PARALLEL ASSIGN WITH LHS EXPR";
       print_endline (string_of_bexe bsym_table 0 h);
-      *)
       let i = !(syms.counter) in incr (syms.counter);
       let n = length ls in
       let pbase = !(syms.counter) in syms.counter := !(syms.counter) + n;
@@ -576,6 +594,7 @@ let tailit syms bsym_table uses id this sr ps exes =
         | BEXE_init (sr,j,e) when j >= pbase && j < pbase + n ->
           let k = j - pbase in
           let _,t' = nth ls k in
+print_endline ("tailit: assign to projection: FIXME");
           bexe_assign (sr,(bexpr_get_n t' k x),undo_expr e)
 
         | x -> Flx_bexe.map ~f_bexpr:undo_expr x
@@ -621,7 +640,8 @@ print_endline ("flx_tailit: adding label " ^ start_label ^ "<" ^ string_of_int l
         end
         else exes
       in
-      if syms.compiler_options.print_flag then begin
+      if syms.compiler_options.print_flag then
+      begin
         print_endline ("Tailed exes = ");
         List.iter (fun exe -> print_endline (string_of_bexe bsym_table 0 exe)) exes;
       end

@@ -21,19 +21,19 @@ open class Unique
  
   // string representions
   instance[T] Repr[uniq T] {
-    fun repr(x:uniq T) => "uniq " + (C_hack::cast[T] x).str;
+    fun repr(var x:uniq T) => "uniq " + (C_hack::cast[T] x).str;
   }
 
   instance[T] Str[uniq T] {
-    fun str(x:uniq T) => "uniq " + (C_hack::cast[T] x).str;
+    fun str(var x:uniq T) => "uniq " + (C_hack::cast[T] x).str;
   }
 
   instance[T with Repr[T]] Repr[&(uniq T)] {
-    fun repr(x:&(uniq T)) => "uniq " + x.peek.repr;
+    fun repr(var x:&(uniq T)) => "uniq " + x.peek.repr;
   }
 
   instance[T with Str[T]] Str[&(uniq T)] {
-    fun str(x:&(uniq T)) => x.peek.str;
+    fun str(var x:&(uniq T)) => x.peek.str;
   }
 
 }

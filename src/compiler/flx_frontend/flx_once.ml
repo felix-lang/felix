@@ -182,6 +182,28 @@ print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e);
 
   | x -> Flx_bexpr.flat_iter ~f_bexpr:(find_once bsym_table chain2ix path b) x
 
+let rec find_ponce bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : unit =
+(*
+print_endline ("Find pointers to once for expresssion " ^ Flx_print.sbe bsym_table e);
+*)
+  match e with
+  | BEXPR_wref (i,[]),_  
+  | BEXPR_ref (i,[]),_ -> 
+    let prefix = List.rev path in
+    List.iter  (fun ((j,path),ix) ->
+      if j = i then
+        if Flx_list.has_prefix prefix path then 
+          b := BidSet.add ix !b;
+      )
+    chain2ix
+
+  | BEXPR_apply ( (BEXPR_prj (n,_,_),_), base ),_ ->
+    let path = `Tup n :: path in
+    find_ponce bsym_table chain2ix path b base 
+
+  | x -> Flx_bexpr.flat_iter ~f_bexpr:(find_ponce bsym_table chain2ix path b) x
+
+
 
 let show_getset = true
 
@@ -193,6 +215,8 @@ let get_sets bsym_table chain2ix ix2chain bexe =
   begin match bexe with 
   | BEXE_assign (_,l,_) -> f_bexpr l
   | BEXE_init (_,i,(_,vt as e)) -> f_bexpr (bexpr_varname vt (i,[]))
+  | BEXE_storeat (_,l,r) -> 
+    find_ponce bsym_table chain2ix [] bidset l
   | _ ->  () 
   end;
 

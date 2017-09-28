@@ -252,7 +252,13 @@ let bexpr_apply t (e1, e2) =
   end;
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
-  | _ -> BEXPR_apply (e1, e2), complete_check t
+  | _ -> 
+  match e1, e2 with
+  | (BEXPR_prj (n,d,c),_), (BEXPR_tuple es,_) ->
+    assert (0<=n && n < List.length es);
+    List.nth es n
+  | _ ->
+    BEXPR_apply (e1, e2), complete_check t
 
 let bexpr_apply_prim t (bid, ts, e) = 
   match Flx_btype.trivorder t with

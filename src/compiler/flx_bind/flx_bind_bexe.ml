@@ -382,6 +382,24 @@ print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_typ
     bind_exe' state bsym_table (sr, EXE_call (a, b)) @
     bind_exe' state bsym_table (sr, EXE_proc_return) 
 
+  | EXE_call (EXPR_name (_,"_storeat",[]), e2) ->
+    let (_,t) as be2 = be e2 in
+    begin match t with
+    | BTYP_tuple [pt; vt] ->
+      begin match pt with
+      | BTYP_pointer pat
+      | BTYP_wref pat -> 
+        if Flx_typeeq.type_eq (Flx_print.sbt bsym_table) state.counter vt pat then
+         let lhs = bexpr_apply pt ((bexpr_prj 0 t pt), be2) in
+         let rhs = bexpr_apply vt ((bexpr_prj 1 t vt), be2) in
+         [bexe_storeat (sr,lhs, rhs)]
+        else
+         clierr sr ("_storeat intrinsic requires pair of type &T * T, or &>T * T:  got " ^ Flx_btype.st t) 
+      | _ -> clierr sr ("_storeat intrinsic requires pair of type &T * T, or &>T * T:  got " ^ Flx_btype.st t) 
+      end
+    | _ -> clierr sr ("_storeat intrinsic requires pair of type &T * T, got " ^ Flx_btype.st t)
+    end
+
   | EXE_call (EXPR_name (_,"axiom_check",[]), e2) ->
     [(bexe_axiom_check (sr,be e2))]
 

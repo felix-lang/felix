@@ -718,3 +718,11 @@ let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_type_set_intersection ls ->
       btyp_type_set_intersection (List.map f_btype ls)
 
+let contains_uniq t =
+  let rec aux t = 
+    match t with
+    | BTYP_uniq _ -> raise Not_found
+    | x -> flat_iter ~f_btype:aux x
+  in
+  try aux t; false with Not_found -> true 
+

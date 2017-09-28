@@ -65,9 +65,20 @@ let bexe_proc_return sr = BEXE_proc_return sr
 let bexe_nop (sr,s) = BEXE_nop (sr,s)
 let bexe_code (sr,code,e) = BEXE_code (sr,code,e)
 let bexe_nonreturn_code (sr,code,e) = BEXE_nonreturn_code (sr,code,e)
-let bexe_assign (sr,e1,e2) = BEXE_assign (sr,e1,e2)
+let bexe_assign (sr,e1,e2) = 
+  begin match e1 with
+  | Flx_bexpr.BEXPR_varname _, _ -> ()
+  | _ -> print_endline ("Warning, assign to non-variable")
+  end;
+  BEXE_assign (sr,e1,e2)
+
 let bexe_init (sr,bid,e) = BEXE_init (sr,bid,e)
-let bexe_storeat (sr,e1,e2) = BEXE_storeat (sr,e1,e2)
+
+let bexe_storeat (sr,((_,pt) as e1),e2) = 
+  match Flx_btype.trivorder pt with
+  | Some _ -> bexe_nop (sr,"Trivassign elided") 
+  | _ -> BEXE_storeat (sr,e1,e2)
+
 let bexe_begin () = BEXE_begin
 let bexe_end () = BEXE_end
 let bexe_assert (sr,e) = BEXE_assert (sr,e)

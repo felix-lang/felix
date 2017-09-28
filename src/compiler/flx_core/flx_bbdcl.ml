@@ -79,7 +79,12 @@ let bbdcl_fun (prop, bvs, ps, res, effects, es) =
 
 
 let bbdcl_val (bvs, t, kind) =
-  BBDCL_val (bvs, t, kind)
+  match kind with
+  | `Val when Flx_btype.contains_uniq t ->
+     failwith ("Error, val's may not be or contain uniq values, use a var : type = " ^ 
+       Flx_btype.st t)
+  | _ -> 
+    BBDCL_val (bvs, t, kind)
 
 let bbdcl_newtype (bvs, t) =
   BBDCL_newtype (bvs, t)

@@ -141,4 +141,5 @@ val iter :
   ?f_bid:(bid_t -> unit) -> ?f_btype:(t -> unit) -> t -> unit
 val map :
   ?f_bid:(bid_t -> bid_t) -> ?f_btype:(t -> t) -> t -> t
+val contains_uniq: t -> bool
 
