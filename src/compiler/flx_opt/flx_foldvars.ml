@@ -196,7 +196,7 @@ let fold_vars syms bsym_table uses i ps exes : Flx_bexe.t list =
         let isvar =
           match Flx_bsym_table.find_bbdcl bsym_table j with
           | BBDCL_val (_,_,(`Var | `Ref | `Tmp)) -> true
-          | BBDCL_val (_,_,(`Val | `Once)) -> false
+          | BBDCL_val (_,t,(`Val | `Once)) -> Flx_btype.contains_uniq t
           | _ -> assert false
         in
 

@@ -311,11 +311,12 @@ let gen_body syms uses bsym_table id
       )
     *)
     in
-    let handle_arg prolog argmap index argument kind =      
+    let handle_arg prolog argmap index argument typ kind =      
       let eagerly () =
          let x = bexe_init (sr,index,argument) in
          prolog := x :: !prolog
       in
+      if Flx_btype.contains_uniq typ then eagerly () else
       match kind with
       | `POnce
       | `PVal ->
@@ -402,9 +403,9 @@ let gen_body syms uses bsym_table id
     let argmap = Hashtbl.create 97 in
     begin match ps with
     | [] -> ()
-    | [{pkind=kind; pindex=k}] ->
+    | [{pkind=kind; ptyp=typ; pindex=k}] ->
       let index = revar k in
-      handle_arg b argmap index argument kind
+      handle_arg b argmap index argument typ kind
     | _ ->
       (* create a variable for the parameter *)
       let parameter = fresh_bid syms.counter in
@@ -434,7 +435,7 @@ let gen_body syms uses bsym_table id
         *)
         let prj = pj in
         let index = revar ix in
-        handle_arg b argmap index prj kind;
+        handle_arg b argmap index prj prjt kind;
         incr n
       )
       ps

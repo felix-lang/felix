@@ -34,16 +34,34 @@ changing the data structures.
 
 *)
 
-(* COPIED FROM flx_once .. factor out copy! *)
-let is_once bsym_table bid = 
-  match Flx_bsym_table.find_bbdcl bsym_table bid with
-  (* | BBDCL_val (_,_,`Once) -> true *)
-  | BBDCL_val (_,Flx_btype.BTYP_uniq _,_)
-  | BBDCL_val (_,Flx_btype.BTYP_rref _,_) 
-  | BBDCL_val (_,Flx_btype.BTYP_wref _,_) -> true
+exception NotFoundDefn of int
+
+let is_param bsym_table idx =
+  let parent,bsym = Flx_bsym_table.find_with_parent bsym_table idx in
+  let bbdcl = Flx_bsym.bbdcl bsym in
+  match bbdcl with
+  | BBDCL_val _ ->
+    begin match parent with
+    | Some p when p <> 0 ->
+      let bbdcl = Flx_bsym_table.find_bbdcl bsym_table p in
+      begin match bbdcl with
+      | BBDCL_fun (_,_,(bps,_),_,_,_) ->
+        let bids = Flx_bparameter.get_bids bps in
+        List.mem idx bids
+      | _ -> false
+      end
+    | _ -> false
+    end
   | _ -> false
 
-exception NotFoundDefn of int
+let is_once_param bsym_table idx =
+  let parent,bsym = Flx_bsym_table.find_with_parent bsym_table idx in
+  let bbdcl = Flx_bsym.bbdcl bsym in
+  match bbdcl with
+  | BBDCL_val (_,t,_) ->
+    Flx_btype.contains_uniq t && is_param bsym_table idx 
+  | _ -> false
+
 
 let rec istriv t = match Flx_btype.trivorder t with
   | Some _ -> true
@@ -128,16 +146,18 @@ and uses_bexe' add bsym_table count_inits exe =
 
   in
   match exe,count_inits with
-  | BEXE_init (_,i,rhs),false 
-  | BEXE_assign (_,(BEXPR_varname (i,[]),_),rhs),false ->
-    if is_once bsym_table i then add i;
+  | BEXE_init (_,i,rhs),_ 
+  | BEXE_assign (_,(BEXPR_varname (i,[]),_),rhs),_ ->
+    if count_inits || is_once_param bsym_table i then add i;
     f_bexpr rhs 
 
   | BEXE_assign (_,lhs,rhs),_ ->
-      (* check is a term is a tuple projection of a variable *)
-      if count_inits then f_bexpr lhs
-      else chkl lhs;
-      f_bexpr rhs
+print_endline ("Flx_use: Assign to non variable detected!");
+print_endline (sbx bsym_table exe);
+    (* check is a term is a tuple projection of a variable *)
+    if count_inits then f_bexpr lhs
+    else chkl lhs;
+    f_bexpr rhs
 
   | BEXE_label _,false -> ()
   | _ ->
@@ -186,24 +206,6 @@ print_endline ("  ^^^^ END   Flx_use.uses processing index " ^ si i ^ " symbol "
       
     | None ->
         raise (NotFoundDefn i)
-
-let is_param bsym_table idx =
-  let parent,bsym = Flx_bsym_table.find_with_parent bsym_table idx in
-  let bbdcl = Flx_bsym.bbdcl bsym in
-  match bbdcl with
-  | BBDCL_val _ ->
-    begin match parent with
-    | Some p when p <> 0 ->
-      let bbdcl = Flx_bsym_table.find_bbdcl bsym_table p in
-      begin match bbdcl with
-      | BBDCL_fun (_,_,(bps,_),_,_,_) ->
-        let bids = Flx_bparameter.get_bids bps in
-        List.mem idx bids
-      | _ -> false
-      end
-    | _ -> false
-    end
-  | _ -> false
 
 let find_roots syms bsym_table (root: int option) bifaces =
   (* make a list of the root and all exported functions,
@@ -254,55 +256,6 @@ print_endline ("Cal use closure...");
       begin try Hashtbl.find usecount i + 1 
        with Not_found -> 1
       end
-  in
-  let check_table () =
-(*
-print_endline ("Once check");
-*)
-    Hashtbl.iter 
-      (fun idx count ->  
-        begin let bsym = Flx_bsym_table.find bsym_table idx in
-          let bbdcl = Flx_bsym.bbdcl bsym in
-          match bbdcl, count with
-          | BBDCL_val (_,_,`Once), n -> 
-(*
-print_endline ("once variable " ^ Flx_bsym.id bsym ^ " counted " ^
-string_of_int count ^ " times, count_inits = " ^ string_of_bool count_inits ^
-", isparam= " ^ string_of_bool (is_param bsym_table idx));
-*)
-            let uses = 
-              n - 
-              (if count_inits || is_param bsym_table idx || is_once bsym_table idx 
-                then 1 else 0
-              )
-            in
-            begin
-(*
-              print_endline ("Once variable " ^ Flx_bsym.id bsym ^ 
-              " used " ^ string_of_int uses ^ " times");
-*)
-              if uses <> 1 then begin
-(*
-                Flx_print.print_bsym_table bsym_table;
-*)
-                clierr (Flx_bsym.sr bsym) 
-                  ("Once variable " ^ Flx_bsym.id bsym ^ "<" ^ string_of_int idx ^ ">" ^
-                  " used " ^ string_of_int uses ^ " times")
-              end
-            end
-(*
-        | BBDCL_fun (_,_,(ps,_),_,_,_),n ->
-          print_endline ("Function " ^ Flx_bsym.id bsym ^ "<" ^Flx_bsym.id bsym ^ ">");
-*)
-(*
-          | BBDCL_val (_,_,_), n -> ()
-              print_endline ("Ordinary variable "^ Flx_bsym.id bsym ^
-              " used " ^ string_of_int n ^ " times"); ()
-*)
-          | _ -> ()
-        end
-    ) 
-    usecount
   in
   let traced = ref BidSet.empty in (* final set of used symbols *)
   let v : BidSet.t = !(syms.roots) in (* used but not traced yet *)
@@ -425,9 +378,6 @@ I'm going to skip this for the moment!
   done;
 (*
 print_endline ("DONE cal_use_closure <<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
-*)
-(*
-  check_table ();
 *)
   !traced
 

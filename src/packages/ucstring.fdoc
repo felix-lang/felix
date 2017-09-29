@@ -39,6 +39,33 @@ class CString
 A safer way to handle NTBS, using uniq typing to transfer
 owenership. Doesn't require GC.
 
+Synopsis:
+
+  ctor          : string -> ustr
+  ctor          : +char -> ustr (unsafe)
+  proc delete   : ustr
+  fun  len      : ustr -> size
+  fun  set      : ustr * int * char -> ustr
+  fun  reserve  : ustr * size -> ustr
+  fun  append   : ustr * ustr -> ustr
+  fun  append   : ustr * &ustr -> ustr           doesn't consume second arg
+  fun  +        : ustr * ustr -> ustr
+  fun  +        : ustr * &ustr -> ustr           doesn't consume second arg
+  proc +=       : &ustr * &ustr -> ustr          modifies first arg, doesn't consume second
+  fun erase     : ustr -> slice[int] -> ustr
+  fun insert    : ustr -> int * ustr -> ustr     inserts second arg into first at pos
+
+This one is private:
+
+  fun strmov    : ustr -> int * int -> ustr  
+
+strmov u (f,l) returns a the original string with the tail
+starting at position l moved left to position f. Right moves
+will fail, possibly causing corruption, so we require f <= l.
+f and l are clipped up to zero if negative and down to the
+string length if they exceed it.
+
+
 @tangle ustr.flx
 open class UniqueCStrings
 {
@@ -126,7 +153,7 @@ open class UniqueCStrings
     lhs <- append (*lhs,rhs)
   ;
 
-  fun strmov (var x:ustr) (var f:int, var l:int) : ustr = {
+  private fun strmov (var x:ustr) (var f:int, var l:int) : ustr = {
     var p = x.ununiq;
     var n = p.strlen.int;
     if f < 0 perform f = 0; 

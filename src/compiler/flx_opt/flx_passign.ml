@@ -104,6 +104,9 @@ Output:
 *)
 
 let passign syms bsym_table (pinits:aentry_t list) sr =
+(*
+print_endline ("Running parallel assignment routine");
+*)
   let parameters = ref [] in
   (* strip trivial assignments like x = x *)
   let pinits =

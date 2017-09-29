@@ -414,10 +414,17 @@ print_endline "BINDING PARAMETER";
         let bbdcl = match k with
         | `POnce -> bbdcl_val (bvs,t,`Once)
         | `PVal ->  
-           if Flx_btype.contains_uniq t then 
+           if Flx_btype.contains_uniq t then begin
+             print_endline ("Flx_bbind: WARNING: Parameter " ^ sym.Flx_sym.id ^ 
+               " type " ^ sbt bsym_table t ^
+               " is or contains uniq specified or defaults to val, var recommended");
+             print_endline (Flx_srcref.long_string_of_src sym.Flx_sym.sr)
+(*
              clierr sym.Flx_sym.sr ("Parameter " ^ sym.Flx_sym.id ^ 
                " is or contains uniq specified or defaults to val, var is required")
-           else bbdcl_val (bvs,t,`Val)
+*)
+           end;
+           bbdcl_val (bvs,t,`Val)
         | `PVar -> bbdcl_val (bvs,t,`Var)
         in
         Hashtbl.add state.varmap symbol_index t;
@@ -482,10 +489,15 @@ print_endline ("flx_bind: Adding label " ^ s ^ " index " ^ string_of_int symbol_
 *)
         btyp_void ()
     in
-    if Flx_btype.contains_uniq t then 
+    if Flx_btype.contains_uniq t then begin
+      print_endline ("Flx_bbind: WARNING: Local val " ^ sym.Flx_sym.id ^ " type " ^ sbt bsym_table t ^
+        " is or contains uniq, var is recommended");
+      print_endline (Flx_srcref.long_string_of_src sym.Flx_sym.sr)
+(*
       clierr sym.Flx_sym.sr ("Local val " ^ sym.Flx_sym.id ^ 
         " is or contains uniq, var is required")
-    ;
+*)
+    end;
 
     if state.print_flag then
       print_endline ("//bound val " ^ sym.Flx_sym.id ^ "<" ^

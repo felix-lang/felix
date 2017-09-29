@@ -718,11 +718,18 @@ let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_type_set_intersection ls ->
       btyp_type_set_intersection (List.map f_btype ls)
 
+(* this is a hack, it fails to account for nominal types *)
 let contains_uniq t =
   let rec aux t = 
     match t with
     | BTYP_uniq _ -> raise Not_found
-    | x -> flat_iter ~f_btype:aux x
+    | BTYP_tuple _
+    | BTYP_array _
+    | BTYP_record _
+    | BTYP_sum _
+    | BTYP_variant _
+      -> flat_iter ~f_btype:aux t
+    | _ -> () (* functions, pointers, etc, are ignored *)
   in
   try aux t; false with Not_found -> true 
 
