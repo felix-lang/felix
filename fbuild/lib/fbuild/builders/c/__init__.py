@@ -375,7 +375,10 @@ def _guess_builder(name, compilers, functions, ctx, *args,
                             elif func == '-':
                                 lst = list(curval)
                                 for x in v:
-                                    lst.pop(lst.index(x))
+                                    if x in lst:
+                                        lst.pop(lst.index(x))
+                                    else:
+                                        print("Warning: Cannot remove " + str(x) + " from compiler flag, it's already missing")
                                 if isinstance(curval, str):
                                     curval = ''.join(lst)
                                 else:

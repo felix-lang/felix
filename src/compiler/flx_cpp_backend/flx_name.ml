@@ -19,7 +19,9 @@ module CS = Flx_code_spec
 *)
 let string_hash s =
   let hash = ref 5381 in
-  String.iter (fun ch -> hash := ((!hash) * 33 + Char.code ch) mod 1073741823 (* 2^30-1*) ) s;
+  String.iter (fun ch -> 
+    let tmp = ((!hash) * 33 + Char.code ch) mod 1073741823 (* 2^30-1*) in
+    hash := if tmp < 0 then (tmp * -1) else tmp) s;
   !hash
 
 let fixups = [
