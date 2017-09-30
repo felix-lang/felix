@@ -54,6 +54,8 @@ Synopsis:
   proc +=       : &ustr * &ustr -> ustr          modifies first arg, doesn't consume second
   fun erase     : ustr -> slice[int] -> ustr
   fun insert    : ustr -> int * ustr -> ustr     inserts second arg into first at pos
+  fun dup       : ustr -> ustr * ustr            destructive dup
+  fun dup       : &ustr -> ustr * ustr           nondestructive dup
 
 This one is private:
 
@@ -66,7 +68,7 @@ f and l are clipped up to zero if negative and down to the
 string length if they exceed it.
 
 
-@tangle ustr.flx
+@tangle ucstr.flx
 open class UniqueCStrings
 {
   open CString;
@@ -75,27 +77,27 @@ open class UniqueCStrings
   private var debug = Env::issetenv "FLX_TRACE_USTR";
 
   // abstract representation
-  private type _ustr = new +char;
+  private type _ucstr = new +char;
 
   // make it uniq
-  typedef ustr = uniq _ustr;
+  typedef ucstr = uniq _ucstr;
 
   // privatise access to representation
-  private fun unpack (var p: ustr) : +char => p.ununiq._repr_;
-  private fun pack (p: +char) => p._make__ustr.uniq;
+  private fun unpack (var p: ucstr) : +char => p.ununiq._repr_;
+  private fun pack (p: +char) => p._make__ucstr.uniq;
 
   // Constructors
-  ctor ustr (var s:string) = {
+  ctor ucstr (var s:string) = {
      var p =  s._unsafe_cstr; // malloc'd copy of string contents
      if debug perform
        println$ "Creating " + p.repr + " @" + p.address.repr;
      return pack p;
   }
 
-  ctor ustr (s:+char) => s.strdup.pack;
+  ctor ucstr (s:+char) => s.strdup.pack;
 
-  // duplicate value
-  fun dup (var s:ustr) : ustr * ustr = {
+  // duplicate value, destructive
+  fun dup (var s:ucstr) : ucstr * ucstr = {
     var p = unpack s;
     var q = strdup p;
     if debug perform
@@ -103,8 +105,8 @@ open class UniqueCStrings
     return p.pack,q.pack;
   }
 
-  // duplicate variable
-  fun dup (s:&<ustr) : ustr = {
+  // duplicate variable, non destructive
+  fun dup (s:&<ucstr) : ucstr = {
     var p = s.peek._repr_.strdup;
     if debug perform
       println$ "Creating " + p.repr + " @" + p.address.repr;
@@ -112,23 +114,23 @@ open class UniqueCStrings
   }
 
   // deletes the store
-  proc delete (var p:ustr) {
+  proc delete (var p:ucstr) {
     var q = unpack p;
     if debug perform
       println$ "Deleting " + q.address.repr;
     free q;
   } 
 
-  inherit Str[_ustr];
-  inherit Repr[_ustr];
-  instance Str[_ustr] { fun str(p:_ustr)=>p._repr_.str; }
-  instance Repr[_ustr] { fun repr(p:_ustr)=>p._repr_.repr; }
+  inherit Str[_ucstr];
+  inherit Repr[_ucstr];
+  instance Str[_ucstr] { fun str(p:_ucstr)=>p._repr_.str; }
+  instance Repr[_ucstr] { fun repr(p:_ucstr)=>p._repr_.repr; }
 
   // length
-  fun len(var s:&<ustr) : size => s.peek._repr_.strlen;
+  fun len(var s:&<ucstr) : size => s.peek._repr_.strlen;
 
   // modify one char
-  fun set (var s:ustr, i:int, c:char) : ustr =  {
+  fun set (var s:ucstr, i:int, c:char) : ucstr =  {
     var cs = unpack s;
     Carray::set (cs, i, c); 
     return cs.pack;
@@ -140,12 +142,12 @@ open class UniqueCStrings
   ; 
 
   // reserve storage 
-  fun reserve (var s:ustr, n:size) : ustr =>
+  fun reserve (var s:ucstr, n:size) : ucstr =>
     pack (realloc (unpack s,n))
   ;
 
   // append: consumes y
-  fun append (var x:ustr, var y:ustr): ustr = {
+  fun append (var x:ucstr, var y:ucstr): ucstr = {
     var cx = unpack x;
     var cy = unpack y;
     var lx = cx.len;
@@ -161,7 +163,7 @@ open class UniqueCStrings
   } 
 
   // append: doesnt consume y
-  noinline fun append (var x:ustr, var py:&ustr): ustr = {
+  noinline fun append (var x:ucstr, var py:&ucstr): ucstr = {
     var cx = unpack x;
     var cy = py.peek._repr_;
     var lx = cx.len;
@@ -174,17 +176,17 @@ open class UniqueCStrings
   } 
 
   // nicer appends
-  fun + (var x:ustr, var y:ustr) => append (x,y);
-  fun + (var x:ustr, var py:&ustr) => append (x,py);
+  fun + (var x:ucstr, var y:ucstr) => append (x,y);
+  fun + (var x:ucstr, var py:&ucstr) => append (x,py);
 
-  proc += (var lhs: &ustr, var rhs: ustr) => 
+  proc += (var lhs: &ucstr, var rhs: ucstr) => 
     lhs <- append (*lhs,rhs)
   ;
-  proc += (var lhs: &ustr, var rhs: &ustr) => 
+  proc += (var lhs: &ucstr, var rhs: &ucstr) => 
     lhs <- append (*lhs,rhs)
   ;
 
-  private fun strmov (var x:ustr) (var f:int, var l:int) : ustr = {
+  private fun strmov (var x:ucstr) (var f:int, var l:int) : ucstr = {
     var p = x.unpack;
     var n = p.strlen.int;
     if f < 0 perform f = 0; 
@@ -195,7 +197,7 @@ open class UniqueCStrings
     return pack p;
   }
  
-  fun erase (var x:ustr) (sl:slice[int]) : ustr =>
+  fun erase (var x:ucstr) (sl:slice[int]) : ucstr =>
     match sl with
     | Slice_all => set (x,0,char "")
     | Slice_from idx => set (x,idx, char "")
@@ -207,7 +209,7 @@ open class UniqueCStrings
     | Slice_one pos => strmov x (pos, pos+1)
   ;
 
-  fun insert (var x:ustr) (var pos: int, var y:ustr) : ustr =
+  fun insert (var x:ucstr) (var pos: int, var y:ucstr) : ucstr =
   {
     var px = unpack x;
     var py = unpack y;
@@ -222,7 +224,7 @@ open class UniqueCStrings
     return pack px;
   }
 
-  fun search (var s: &<ustr, var pat: &<ustr) : size =
+  fun search (var s: &<ucstr, var pat: &<ucstr) : size =
   {
     var p = s*.unpack;
     var q = pat*.unpack;
