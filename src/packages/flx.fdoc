@@ -877,8 +877,12 @@ private proc print_help() {
   println "  FLX_FILE_MONITOR=1      : reports on every file open (felix and flxg)";
   println "  FLX_REPORT_FILECOPY=1   : reports on every file copy (felix)";
   println "  FLX_DEBUG_FLX=1         : debug flx (as if --debug-flx set)";
+  println "";
   println "Flxg compiler";
   println "  FLX_DEBUG_PARSER=1      : emit debug info from the Felix parser";
+  println "  FLX_DEBUG_COMPILER_UNIQ=1  : emit debug of uniq flow analyser, instruction and flow analysis";
+  println "  FLX_DEBUG_COMPILER_UNIQ_GETSET=1  : emit debug of uniq flow analyser, instruction analysis";
+  println "";
   println "Run time system (affects flx as well as any binary run)";
   println "  FLX_DEBUG               : enable debugging traces (default off)";
   println "  FLX_DEBUG_ALLOCATIONS   : enable debugging allocator (default FLX_DEBUG)";
@@ -886,6 +890,7 @@ private proc print_help() {
   println "  FLX_REPORT_COLLECTIONS  : report collections (default FLX_DEBUG)";
   println "  FLX_DEBUG_THREADS       : enable debugging collector (default FLX_DEBUG)";
   println "  FLX_DEBUG_DRIVER        : enable debugging driver (default FLX_DEBUG)";
+  println "";
   println "Run time GC tuning (affects flx as well as any binary run)";
   println "  FLX_FINALISE            : whether to cleanup on termination (default NO)";
   println "  FLX_GC_FREQ=n           : how often to call garbage collector (default 1000)";
@@ -893,6 +898,10 @@ private proc print_help() {
   println "  FLX_MAX_MEM=n           : maximum memory n Meg (default -1 = infinite)";
   println "  FLX_FREE_FACTOR=n.m     : reset FLX_MIN_MEM to actual usage by n.m after gc (default 1.1)";
   println "  FLX_ALLOW_COLLECTION_ANYWHERE # (default yes)";
+  println "";
+  println "Felix Developer debugging";
+  println "  FLX_DEBUG_USTR=1        : # Show malloc/realloc/free in ustr (default no)";
+
 
 }
 

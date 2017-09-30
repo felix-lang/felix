@@ -72,35 +72,66 @@ open class UniqueCStrings
   open CString;
   open Memory;
 
-  private var debug = false;
+  private var debug = Env::issetenv "FLX_TRACE_USTR";
 
-  typedef ustr = uniq (+char);
+  // abstract representation
+  private type _ustr = new +char;
+
+  // make it uniq
+  typedef ustr = uniq _ustr;
+
+  // privatise access to representation
+  private fun unpack (var p: ustr) : +char => p.ununiq._repr_;
+  private fun pack (p: +char) => p._make__ustr.uniq;
+
   // Constructors
   ctor ustr (var s:string) = {
      var p =  s._unsafe_cstr; // malloc'd copy of string contents
      if debug perform
        println$ "Creating " + p.repr + " @" + p.address.repr;
-     return uniq p;
+     return pack p;
   }
 
-  ctor ustr (s:+char) => uniq (s.strdup);
+  ctor ustr (s:+char) => s.strdup.pack;
+
+  // duplicate value
+  fun dup (var s:ustr) : ustr * ustr = {
+    var p = unpack s;
+    var q = strdup p;
+    if debug perform
+      println$ "Creating " + q.repr + " @" + q.address.repr;
+    return p.pack,q.pack;
+  }
+
+  // duplicate variable
+  fun dup (s:&<ustr) : ustr = {
+    var p = s.peek._repr_.strdup;
+    if debug perform
+      println$ "Creating " + p.repr + " @" + p.address.repr;
+    return p.pack;
+  }
 
   // deletes the store
   proc delete (var p:ustr) {
-    var q = ununiq p;
+    var q = unpack p;
     if debug perform
       println$ "Deleting " + q.address.repr;
     free q;
   } 
 
+  inherit Str[_ustr];
+  inherit Repr[_ustr];
+  instance Str[_ustr] { fun str(p:_ustr)=>p._repr_.str; }
+  instance Repr[_ustr] { fun repr(p:_ustr)=>p._repr_.repr; }
+
   // length
-  fun len(var s:&ustr) : size => s.peek.strlen;
+  fun len(var s:&<ustr) : size => s.peek._repr_.strlen;
 
   // modify one char
   fun set (var s:ustr, i:int, c:char) : ustr =  {
-    var cs = ununiq s;
-    set (cs, i, c); // Carray::set
-    return uniq cs;
+    var cs = unpack s;
+    Carray::set (cs, i, c); 
+    return cs.pack;
   }
 
   private gen realloc : +char * !ints -> +char = 
@@ -110,13 +141,13 @@ open class UniqueCStrings
 
   // reserve storage 
   fun reserve (var s:ustr, n:size) : ustr =>
-    uniq (realloc (ununiq s,n))
+    pack (realloc (unpack s,n))
   ;
 
   // append: consumes y
   fun append (var x:ustr, var y:ustr): ustr = {
-    var cx = ununiq x;
-    var cy = ununiq y;
+    var cx = unpack x;
+    var cy = unpack y;
     var lx = cx.len;
     var ly = cy.len;
     var r = realloc (cx, lx+ly+1);
@@ -126,20 +157,20 @@ open class UniqueCStrings
       println$ "Free @" + cy.address.repr;
     done
     free cy;
-    return uniq r;
+    return pack r;
   } 
 
   // append: doesnt consume y
   noinline fun append (var x:ustr, var py:&ustr): ustr = {
-    var cx = ununiq x;
-    var cy = py.peek;
+    var cx = unpack x;
+    var cy = py.peek._repr_;
     var lx = cx.len;
     var ly = cy.len;
     var r = realloc (cx, lx+ly+1);
     if debug perform
       println$ "Realloc @" + cx.address.repr + " -> " + r.address.repr;
     strncpy (r+lx,cy,ly+1);
-    return uniq r;
+    return pack r;
   } 
 
   // nicer appends
@@ -154,14 +185,14 @@ open class UniqueCStrings
   ;
 
   private fun strmov (var x:ustr) (var f:int, var l:int) : ustr = {
-    var p = x.ununiq;
+    var p = x.unpack;
     var n = p.strlen.int;
     if f < 0 perform f = 0; 
     if f > n perform f = n;
     if l < 0 perform l = f;
     if l > n perform l = n;
     if f != l perform strcpy (p+f, p+l); 
-    return uniq p;
+    return pack p;
   }
  
   fun erase (var x:ustr) (sl:slice[int]) : ustr =>
@@ -178,8 +209,8 @@ open class UniqueCStrings
 
   fun insert (var x:ustr) (var pos: int, var y:ustr) : ustr =
   {
-    var px = ununiq x;
-    var py = ununiq y;
+    var px = unpack x;
+    var py = unpack y;
     var n = px.strlen.int;
     var m = py.strlen.int; 
     if pos < 0 perform pos = pos + n;
@@ -188,6 +219,18 @@ open class UniqueCStrings
     px = realloc (px, m + n + 1);
     memmove (px.address + pos, px.address + pos + m, m);
     free py;
-    return uniq px;
+    return pack px;
   }
+
+  fun search (var s: &<ustr, var pat: &<ustr) : size =
+  {
+    var p = s*.unpack;
+    var q = pat*.unpack;
+    var n = strlen p;
+    var m = strlen q;
+    var pr = Memory::search (p.address,(p+n).address,q.address,(q+m).address);
+    val r = (pr - p.address).size;
+    return r;
+  }
+    
 }

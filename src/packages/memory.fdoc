@@ -127,6 +127,19 @@ class Memory
     requires Cxx_headers::cstdlib, checked_malloc
   ;
 
+  // Standard C++ Search algorithm, 
+  // returns address of found string
+  // or $2 = pointer past end on fail
+  fun search: address ^ 4 -> address = 
+    """
+    (void*)::std::search(
+      (::std::uint8_t*)$1,
+      (::std::uint8_t*)$2,
+      (::std::uint8_t*)$3,
+      (::std::uint8_t*)$4)
+    """
+    requires Cxx_headers::algorithm
+  ;
 }
 
 

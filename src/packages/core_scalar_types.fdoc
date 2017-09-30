@@ -326,11 +326,11 @@ SCHEME """
 
 syntax felix_int_lexer {
   /* integers */
-  regdef bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +;
-  regdef oct_lit  = '0' ('o' | 'O') (underscore? octdigit) +;
-  regdef dec_lit  = '0' ('d' | 'D') (underscore? digit) +;
-  regdef dflt_dec_lit  =  digit (underscore? digit) *;
-  regdef hex_lit  = '0' ('x' | 'X') (underscore? hexdigit)  +;
+  regdef bin_lit  = '0' ('b' | 'B') (underscore ? bindigit) +;
+  regdef oct_lit  = '0' ('o' | 'O') (underscore ? octdigit) +;
+  regdef dec_lit  = '0' ('d' | 'D') (underscore ? digit) +;
+  regdef dflt_dec_lit  =  digit (underscore ? digit) *;
+  regdef hex_lit  = '0' ('x' | 'X') (underscore ? hexdigit)  +;
   regdef int_prefix = bin_lit | oct_lit | dec_lit | dflt_dec_lit | hex_lit;
 
   regdef fastint_type_suffix = 
@@ -420,8 +420,8 @@ pod type lcomplex = "::std::complex<long double>" requires Cxx_headers::complex,
 //$ x.0 works for tuple projections and 0.f is a function
 //$ application
 syntax felix_float_lexer {
-  regdef decimal_string = digit (underscore? digit) *;
-  regdef hexadecimal_string = hexdigit (underscore? hexdigit) *;
+  regdef decimal_string = digit (underscore ? digit) *;
+  regdef hexadecimal_string = hexdigit (underscore ? hexdigit) *;
 
   regdef decimal_fractional_constant =
     decimal_string '.' decimal_string;
@@ -436,10 +436,10 @@ syntax felix_float_lexer {
   regdef floating_suffix = 'L' | 'l' | 'F' | 'f' | 'D' | 'd';
   regdef floating_literal =
     (
-      decimal_fractional_constant decimal_exponent? |
-      hexadecimal_fractional_constant binary_exponent?
+      decimal_fractional_constant decimal_exponent ? |
+      hexadecimal_fractional_constant binary_exponent ?
     )
-    floating_suffix?;
+    floating_suffix ?;
 
  // Floating constant.
   regdef sfloat = floating_literal;

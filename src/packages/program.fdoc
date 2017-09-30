@@ -40,6 +40,8 @@ class Env_class[os]
     "::flx::rtl::strutil::atostr(std::getenv($1.c_str()))"
     requires package "flx_strutil", Cxx_headers::cstdlib;
 
+  fun issetenv(s:string)=> getenv s != "";
+
   //$ Get the value of a given variable.
   //$ Returns specified default if the variable doesn't exist.
   fun getenv(name:string,dflt:string):string=>let result = getenv(name) in 

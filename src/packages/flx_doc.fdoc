@@ -25,12 +25,12 @@ regdef letter = charset "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 regdef digit = charset "0123456789";
 regdef id1 = letter | "_";
 regdef id2 = id1 | digit | "-" | "'";
-regdef id = id1 id2*;
+regdef id = id1 id2* "?"?;
 
 regdef spaces = " "*;
 regdef prio =  "[" id "]";
  
-regdef production = group(spaces? id prio? spaces? ":=" spaces? anychar*) "=>#" anychar*;
+regdef production = group(spaces ? id prio ? spaces ? ":=" spaces ? anychar*) "=>#" anychar*;
 regdef dssl = spaces group ("syntax" spaces id) anychar*;
 
 var lregex = (regexp (dssl | production)) . render;
@@ -139,7 +139,7 @@ regdef binder = "fun" | "proc" | "gen" | "class" | "union" | "struct" | "type" |
 regdef indent2 = "  ";
 
 regdef classbind= group ("class" | "open class");
-regdef otherbind= indent2? group (adjective* spaces binder);
+regdef otherbind= indent2 ? group (adjective* spaces binder);
 
 // Group 1 = class
 // Group 2 = other 
@@ -254,7 +254,7 @@ Lists symbols alphabetically.
 var ishtml = System::argv 1 == "--html";
 var dir =  Filename::join ("src", "lib", "std");
 var fregex = ".*\\.(flx|fdoc)";
-var lregex = "^ *(virtual|noinline)* *(proc|fun|class|ctor|gen) *(([A-Z]|[a-z])([A-Z]|[a-z]|[0-9]|-|_)*).*";
+var lregex = "^ *(virtual|noinline)* *(proc|fun|class|ctor|gen) *(([A-Z]|[a-z])([A-Z]|[a-z]|[0-9]|-|_)*[?]?).*";
 var lgrep = RE2 lregex;
 var n = NumberOfCapturingGroups(lgrep)+1;
 var v = varray[StringPiece] (n.size,StringPiece "");

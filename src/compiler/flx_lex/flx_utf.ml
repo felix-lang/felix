@@ -325,6 +325,7 @@ let utf8_to_ucn s =
       i := i';
       if (u <> 0x27) (* apostrophe *)
       && (u <> 0x5F) (* underscore *)
+      && (u <> 0x3F) (* question mark *)
       && ((u < 0x30) || (u > 0x39)) (* digits *)
       then check_code u;
       match u with

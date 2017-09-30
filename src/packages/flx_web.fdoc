@@ -560,7 +560,7 @@ fun find_defs (lines:string) : darray[int * int * string] =
   regdef indent2 = "  ";
 
   regdef classbind= group ("class" | "open class");
-  regdef otherbind= indent2? group (adjective* spaces binder);
+  regdef otherbind= indent2 ? group (adjective* spaces binder);
 
   // Group 1 = class
   // Group 2 = other 

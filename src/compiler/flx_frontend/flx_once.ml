@@ -8,6 +8,18 @@ open Flx_btype
 
 exception CompleteFlow
 exception IncompletePriorFlow
+ 
+let debug = 
+  try let _ = Sys.getenv "FLX_COMPILER_DEBUG_UNIQ" in true  
+  with Not_found -> false 
+
+let show_getset_only = 
+  try let _ = Sys.getenv "FLX_COMPILER_DEBUG_UNIQ_GETSET" in true  
+  with Not_found -> false 
+
+
+let show_getset = debug || show_getset_only
+ 
 
 type item_t = [`Uniq | `Tup of int]
 type path_t = item_t list 
@@ -204,8 +216,6 @@ print_endline ("Find pointers to once for expresssion " ^ Flx_print.sbe bsym_tab
   | x -> Flx_bexpr.flat_iter ~f_bexpr:(find_ponce bsym_table chain2ix path b) x
 
 
-
-let show_getset = true
 
 (* Get and Set detectors for instructions *)
 
@@ -405,9 +415,7 @@ let return bsym_table ix2chain (stack:stack_t) (liveness:BidSet.t) : stack_t =
     else
       let _ = callee.frame.visited <- (exit_label,liveness)::visited in
       caller :: chain
- 
-let debug = false 
- 
+
 (*********************************************************************) 
 (* flow analysis *)
 let rec flow seq make_augexes bsym_table chain2ix ix2chain master liveness stack : unit =
@@ -639,10 +647,12 @@ if debug then print_endline ("flow: normal= processing for " ^ Flx_print.string_
     next()
 
 let once_check bsym_table ix2chain chain2ix  bid name  bexes = 
-  print_endline ("Once_check: Detected once variable of function " ^ name);
+  if debug then
+    print_endline ("Once_check: Detected once variable of function " ^ name);
   let make_augexes bexes = make_augexes bsym_table chain2ix ix2chain get_sets get_gets bexes in
   let bexes = make_augexes bexes in
-  print_endline ("Calculated once use per instruction of " ^ name ^ ":" ^ string_of_int bid);
+  if debug then
+    print_endline ("Calculated once use per instruction of " ^ name ^ ":" ^ string_of_int bid);
   (* Calculate initially live indexes: those associated with a parameter are
      assumed live initially
   *)
