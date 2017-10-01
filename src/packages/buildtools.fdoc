@@ -1336,6 +1336,7 @@ tool:      flx_libcontents
 tool:      flx_mktutindex
 tool:      flx_renumber
 tool:      flx_iscr
+tool:      flx_pretty
 flx_tool: flx_pkgconfig
 flx_tool: flx_build_prep
 flx_tool: flx_build_rtl
