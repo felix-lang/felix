@@ -17,7 +17,7 @@ open class Unique
   typedef fun uniq (T:TYPE):TYPE => _uniq T;
 
   // peek inside the box without changing livenes state
-  fun peek[T] : &(uniq T) -> T = "*($t)";
+  fun peek[T] : &<(uniq T) -> T = "*($t)";
  
   // string representions
   instance[T] Repr[uniq T] {
@@ -28,12 +28,12 @@ open class Unique
     fun str(var x:uniq T) => "uniq " + (C_hack::cast[T] x).str;
   }
 
-  instance[T with Repr[T]] Repr[&(uniq T)] {
-    fun repr(var x:&(uniq T)) => "uniq " + x.peek.repr;
+  instance[T with Repr[T]] Repr[&<(uniq T)] {
+    fun repr(var x:&<(uniq T)) => "uniq " + x.peek.repr;
   }
 
-  instance[T with Str[T]] Str[&(uniq T)] {
-    fun str(var x:&(uniq T)) => x.peek.str;
+  instance[T with Str[T]] Str[&<(uniq T)] {
+    fun str(var x:&<(uniq T)) => x.peek.str;
   }
 
 }

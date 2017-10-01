@@ -1,7 +1,6 @@
-@title Unique C String
-@tangler cstring.flx = share/lib/std/strings/cstring.flx
-@tangler ustr.flx = share/lib/std/strings/ustr.flx
+@title Unique Strings
 @h1 Traditional C Strings
+@tangler cstring.flx = share/lib/std/strings/cstring.flx
 
 Primitive operations on C strings, distinct from 
 corresponding byte operations in that they depend on
@@ -36,30 +35,34 @@ class CString
 }
 
 @h1 Unique C Strings 
+@tangler ucstr.flx = share/lib/std/strings/ucstr.flx
+@tangler ucstr_prim_01.flx = src/test/regress/rt/ucstr_prim_01.flx
+@tangler ucstr_prim_01.expect = src/test/regress/rt/ucstr_prim_01.expect
+
 A safer way to handle NTBS, using uniq typing to transfer
 owenership. Doesn't require GC.
 
 Synopsis:
 
-  ctor          : string -> ustr
-  ctor          : +char -> ustr (unsafe)
-  proc delete   : ustr
-  fun  len      : ustr -> size
-  fun  set      : ustr * int * char -> ustr
-  fun  reserve  : ustr * size -> ustr
-  fun  append   : ustr * ustr -> ustr
-  fun  append   : ustr * &ustr -> ustr           doesn't consume second arg
-  fun  +        : ustr * ustr -> ustr
-  fun  +        : ustr * &ustr -> ustr           doesn't consume second arg
-  proc +=       : &ustr * &ustr -> ustr          modifies first arg, doesn't consume second
-  fun erase     : ustr -> slice[int] -> ustr
-  fun insert    : ustr -> int * ustr -> ustr     inserts second arg into first at pos
-  fun dup       : ustr -> ustr * ustr            destructive dup
-  fun dup       : &ustr -> ustr * ustr           nondestructive dup
+  ctor          : string -> ucstr
+  ctor          : +char -> ucstr (unsafe)
+  proc delete   : ucstr
+  fun  len      : ucstr -> size
+  fun  set      : ucstr * int * char -> ucstr
+  fun  reserve  : ucstr * size -> ucstr
+  fun  append   : ucstr * ucstr -> ucstr
+  fun  append   : ucstr * &ucstr -> ucstr           doesn't consume second arg
+  fun  +        : ucstr * ucstr -> ucstr
+  fun  +        : ucstr * &ucstr -> ucstr           doesn't consume second arg
+  proc +=       : &ucstr * &ucstr -> ucstr          modifies first arg, doesn't consume second
+  fun erase     : ucstr -> slice[int] -> ucstr
+  fun insert    : ucstr -> int * ucstr -> ucstr     inserts second arg into first at pos
+  fun dup       : ucstr -> ucstr * ucstr            destructive dup
+  fun dup       : &ucstr -> ucstr * ucstr           nondestructive dup
 
 This one is private:
 
-  fun strmov    : ustr -> int * int -> ustr  
+  fun strmov    : ucstr -> int * int -> ucstr  
 
 strmov u (f,l) returns a the original string with the tail
 starting at position l moved left to position f. Right moves
@@ -74,7 +77,7 @@ open class UniqueCStrings
   open CString;
   open Memory;
 
-  private var debug = Env::issetenv "FLX_TRACE_USTR";
+  private var debug = Env::issetenv "FLX_TRACE_UCSTR";
 
   // abstract representation
   private type _ucstr = new +char;
@@ -236,3 +239,245 @@ open class UniqueCStrings
   }
     
 }
+
+@h1 ucstr_prim_01.flx
+@tangle ucstr_prim_01.flx
+proc test() {
+  var s = ucstr "hello";
+  println$ &s;
+  s = set (s, 0, char "e"); 
+  println$ &s;
+  delete s;
+}
+test();
+@
+@tangle ucstr_prim_01.expect
+hello
+eello
+@
+
+
+
+@h1 Unique Counted Strings 
+@tangler ustr.flx = share/lib/std/strings/ustr.flx
+@tangler ustr_prim_01.flx = src/test/regress/rt/ustr_prim_01.flx
+@tangler ustr_prim_01.expect = src/test/regress/rt/ustr_prim_01.flx
+
+A safer way to handle counted strings using uniq typing to transfer
+owenership. Doesn't require GC.
+
+Synopsis:
+
+  ctor          : string -> ustr
+  ctor          : +char -> ustr (unsafe)
+  proc delete   : ustr
+  fun  len      : ustr -> size
+  fun  set      : ustr * int * char -> ustr
+  fun  reserve  : ustr * size -> ustr
+  fun  append   : ustr * ustr -> ustr
+  fun  append   : ustr * &ustr -> ustr           doesn't consume second arg
+  fun  +        : ustr * ustr -> ustr
+  fun  +        : ustr * &ustr -> ustr           doesn't consume second arg
+  proc +=       : &ustr * &ustr -> ustr          modifies first arg, doesn't consume second
+  fun erase     : ustr -> slice[int] -> ustr
+  fun insert    : ustr -> int * ustr -> ustr     inserts second arg into first at pos
+  fun dup       : ustr -> ustr * ustr            destructive dup
+  fun dup       : &ustr -> ustr * ustr           nondestructive dup
+
+This one is private:
+
+  fun strmov    : ustr -> int * int -> ustr  
+
+strmov u (f,l) returns a the original string with the tail
+starting at position l moved left to position f. Right moves
+will fail, possibly causing corruption, so we require f <= l.
+f and l are clipped up to zero if negative and down to the
+string length if they exceed it.
+
+
+@tangle ustr.flx
+open class UniqueCountedStrings
+{
+  open CString;
+  open Memory;
+
+  private var debug = Env::issetenv "FLX_TRACE_UCSTR";
+
+  // abstract representation
+  private type _ustr = new +char;
+
+  // make it uniq
+  typedef ustr = uniq _ustr;
+
+  // privatise access to representation
+  private fun unpack (var p: ustr) : +char => p.ununiq._repr_;
+  private fun pack (p: +char) => p._make__ustr.uniq;
+
+  // Constructors
+  ctor ustr (var s:string) = {
+     var p =  s._unsafe_cstr; // malloc'd copy of string contents
+     if debug perform
+       println$ "Creating " + p.repr + " @" + p.address.repr;
+     return pack p;
+  }
+
+  ctor ustr (s:+char) => s.strdup.pack;
+
+  // duplicate value, destructive
+  fun dup (var s:ustr) : ustr * ustr = {
+    var p = unpack s;
+    var q = strdup p;
+    if debug perform
+      println$ "Creating " + q.repr + " @" + q.address.repr;
+    return p.pack,q.pack;
+  }
+
+  // duplicate variable, non destructive
+  fun dup (s:&<ustr) : ustr = {
+    var p = s.peek._repr_.strdup;
+    if debug perform
+      println$ "Creating " + p.repr + " @" + p.address.repr;
+    return p.pack;
+  }
+
+  // deletes the store
+  proc delete (var p:ustr) {
+    var q = unpack p;
+    if debug perform
+      println$ "Deleting " + q.address.repr;
+    free q;
+  } 
+
+  inherit Str[_ustr];
+  inherit Repr[_ustr];
+  instance Str[_ustr] { fun str(p:_ustr)=>p._repr_.str; }
+  instance Repr[_ustr] { fun repr(p:_ustr)=>p._repr_.repr; }
+
+  // length
+  fun len(var s:&<ustr) : size => s.peek._repr_.strlen;
+
+  // modify one char
+  fun set (var s:ustr, i:int, c:char) : ustr =  {
+    var cs = unpack s;
+    Carray::set (cs, i, c); 
+    return cs.pack;
+  }
+
+  private gen realloc : +char * !ints -> +char = 
+    "(char*)::std::realloc($1,$2)"
+    requires Cxx_headers::cstdlib
+  ; 
+
+  // reserve storage 
+  fun reserve (var s:ustr, n:size) : ustr =>
+    pack (realloc (unpack s,n))
+  ;
+
+  // append: consumes y
+  fun append (var x:ustr, var y:ustr): ustr = {
+    var cx = unpack x;
+    var cy = unpack y;
+    var lx = cx.len;
+    var ly = cy.len;
+    var r = realloc (cx, lx+ly+1);
+    strncpy (r+lx,cy,ly+1);
+    if debug do
+      println$ "Realloc @" + cx.address.repr + " -> " + r.address.repr;
+      println$ "Free @" + cy.address.repr;
+    done
+    free cy;
+    return pack r;
+  } 
+
+  // append: doesnt consume y
+  noinline fun append (var x:ustr, var py:&ustr): ustr = {
+    var cx = unpack x;
+    var cy = py.peek._repr_;
+    var lx = cx.len;
+    var ly = cy.len;
+    var r = realloc (cx, lx+ly+1);
+    if debug perform
+      println$ "Realloc @" + cx.address.repr + " -> " + r.address.repr;
+    strncpy (r+lx,cy,ly+1);
+    return pack r;
+  } 
+
+  // nicer appends
+  fun + (var x:ustr, var y:ustr) => append (x,y);
+  fun + (var x:ustr, var py:&ustr) => append (x,py);
+
+  proc += (var lhs: &ustr, var rhs: ustr) => 
+    lhs <- append (*lhs,rhs)
+  ;
+  proc += (var lhs: &ustr, var rhs: &ustr) => 
+    lhs <- append (*lhs,rhs)
+  ;
+
+  private fun strmov (var x:ustr) (var f:int, var l:int) : ustr = {
+    var p = x.unpack;
+    var n = p.strlen.int;
+    if f < 0 perform f = 0; 
+    if f > n perform f = n;
+    if l < 0 perform l = f;
+    if l > n perform l = n;
+    if f != l perform strcpy (p+f, p+l); 
+    return pack p;
+  }
+ 
+  fun erase (var x:ustr) (sl:slice[int]) : ustr =>
+    match sl with
+    | Slice_all => set (x,0,char "")
+    | Slice_from idx => set (x,idx, char "")
+    | Slice_from_counted (first,len) => strmov x (first,first+len)
+    | Slice_to_incl incl => strmov x (0,incl)
+    | Slice_to_excl excl => strmov x (0, excl - 1)
+    | Slice_range_incl (first, last) => strmov x (first, last+1)
+    | Slice_range_excl (first, last) => strmov x (first, last) 
+    | Slice_one pos => strmov x (pos, pos+1)
+  ;
+
+  fun insert (var x:ustr) (var pos: int, var y:ustr) : ustr =
+  {
+    var px = unpack x;
+    var py = unpack y;
+    var n = px.strlen.int;
+    var m = py.strlen.int; 
+    if pos < 0 perform pos = pos + n;
+    if pos > n perform pos = n;
+    if pos < 0 perform pos = 0;
+    px = realloc (px, m + n + 1);
+    memmove (px.address + pos, px.address + pos + m, m);
+    free py;
+    return pack px;
+  }
+
+  fun search (var s: &<ustr, var pat: &<ustr) : size =
+  {
+    var p = s*.unpack;
+    var q = pat*.unpack;
+    var n = strlen p;
+    var m = strlen q;
+    var pr = Memory::search (p.address,(p+n).address,q.address,(q+m).address);
+    val r = (pr - p.address).size;
+    return r;
+  }
+    
+}
+
+@h1 ustr_prim_01.flx
+@tangle ustr_prim_01.flx
+proc test() {
+  var s = ustr "hello";
+  println$ &s;
+  s = set (s, 0, char "e"); 
+  println$ &s;
+  delete s;
+}
+test();
+@
+@tangle ustr_prim_01.expect
+hello
+eello
+@
+
+
