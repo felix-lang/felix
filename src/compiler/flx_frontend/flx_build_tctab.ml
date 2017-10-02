@@ -150,6 +150,7 @@ end;
 
         (* this doesn't really belong here, its a type, not a typed entity *)
         | BBDCL_instance_type (bvs,ret) ->
+print_endline ("Scanning instance, found instance type " ^ Flx_bsym.id bsym ^ " -> " ^ sbt bsym_table ret); 
           let qt = bvs,ret in
           (Flx_bsym.id bsym,(i,qt)) :: acc
 
