@@ -26,6 +26,7 @@ type external_fun_kind_t = [
 
 (** Bound declarations. *)
 type t =
+  | BBDCL_virtual_type of bvs_t
   | BBDCL_invalid
   | BBDCL_module
   | BBDCL_label of      string
@@ -36,6 +37,7 @@ type t =
 
   (* binding structures [prolog] *)
   | BBDCL_newtype of    bvs_t * Flx_btype.t
+  | BBDCL_instance_type of    bvs_t * Flx_btype.t
   | BBDCL_external_type of
                         bvs_t * btype_qual_t list * CS.t * Flx_btype.breqs_t
   | BBDCL_external_const of
@@ -92,6 +94,10 @@ let bbdcl_val (bvs, t, kind) =
 let bbdcl_newtype (bvs, t) =
   BBDCL_newtype (bvs, t)
 
+let bbdcl_instance_type (bvs, t) =
+  BBDCL_instance_type (bvs, t)
+
+
 let bbdcl_external_type (bvs, quals, code, breqs) =
   BBDCL_external_type (bvs, quals, code, breqs)
 
@@ -134,6 +140,9 @@ let bbdcl_reduce () =
 let bbdcl_lemma () =
   BBDCL_lemma
 
+let bbdcl_virtual_type bvs = 
+  BBDCL_virtual_type bvs
+
 (* -------------------------------------------------------------------------- *)
 
 (** Extract the parameters of a bound declaration. *)
@@ -150,11 +159,13 @@ let get_ts = function
 
 (** Extract the bound type variables of a bound declaration. *)
 let get_bvs = function
+  | BBDCL_virtual_type bvs -> bvs
   | BBDCL_invalid -> assert false
   | BBDCL_module -> []
   | BBDCL_fun (_, bvs, _, _, _,_) -> bvs
   | BBDCL_val (bvs, _, _) -> bvs
   | BBDCL_newtype (bvs, _) -> bvs
+  | BBDCL_instance_type (bvs, _) -> bvs
   | BBDCL_external_type (bvs, _, _, _) -> bvs
   | BBDCL_external_const (_, bvs, _, _, _) -> bvs
   | BBDCL_external_fun (_, bvs, _, _, _, _, _) -> bvs
@@ -223,7 +234,10 @@ let iter
       List.iter f_bexe es
   | BBDCL_val (_,t,`Ref) -> f_btype (Flx_btype.btyp_pointer t)
   | BBDCL_val (_,t,_) -> f_btype t
+  | BBDCL_virtual_type bvs -> ()
+
   | BBDCL_newtype (_,t) -> f_btype t
+  | BBDCL_instance_type (_,t) -> f_btype t
   | BBDCL_external_type (_,quals,_,breqs) ->
       List.iter f_btype_qual quals;
       f_breqs breqs
@@ -304,6 +318,9 @@ let map
       bbdcl_val (bvs,f_btype (Flx_btype.btyp_pointer t),`Ref)
   | BBDCL_val (bvs,t,kind) -> bbdcl_val (bvs,f_btype t,kind)
   | BBDCL_newtype (bvs,t) -> BBDCL_newtype (bvs,f_btype t)
+  | BBDCL_instance_type (bvs,t) -> BBDCL_instance_type (bvs,f_btype t)
+  | BBDCL_virtual_type bvs -> BBDCL_virtual_type bvs
+
   | BBDCL_external_type (bvs,quals,code,breqs) ->
       BBDCL_external_type (bvs,List.map f_btype_qual quals,code,f_breqs breqs)
   | BBDCL_external_const (props,bvs,t,code,breqs) ->

@@ -1410,6 +1410,7 @@ end;
         let data = get_data state.sym_table index in
         match data with { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs; symdef=entry } ->
         match entry with
+        | SYMDEF_instance_type t
         | SYMDEF_type_alias t  -> 
           (*
           print_endline ("Index " ^ si index ^ " is a type alias " ^id ^ " = " ^ string_of_typecode t);
@@ -1573,6 +1574,7 @@ print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table
       btyp_type_var (index,mt)
 
     (* type alias RECURSE *)
+    | SYMDEF_instance_type t
     | SYMDEF_type_alias t ->
 (*
       if id = "digraph_t" then
@@ -1588,11 +1590,13 @@ print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table
     | SYMDEF_abs _ ->
       btyp_inst (index,ts)
 
+    | SYMDEF_virtual_type  ->
+      btyp_inst (index,ts)
+
     | SYMDEF_newtype _
     | SYMDEF_union _
     | SYMDEF_struct _
     | SYMDEF_cstruct _
-    | SYMDEF_typeclass
       ->
 (*
 print_endline ("bind type index, struct thing " ^ si index ^ " ts=" ^ catmap "," (sbt bsym_table) ts);
@@ -1607,11 +1611,33 @@ print_endline ("bind type index, struct thing " ^ si index ^ " ts=" ^ catmap ","
     | SYMDEF_nonconst_ctor (uidx,ut,idx,vs',argt) ->
       btyp_inst (index,ts)
 
-    | _ ->
+    | SYMDEF_typeclass 
+    | SYMDEF_module 
+    | SYMDEF_library
+    | SYMDEF_label _
+    | SYMDEF_parameter _
+    | SYMDEF_axiom _
+    | SYMDEF_lemma _
+    | SYMDEF_reduce _
+    | SYMDEF_function _
+    | SYMDEF_root _
+    | SYMDEF_const _
+    | SYMDEF_var _
+    | SYMDEF_once _
+    | SYMDEF_val _
+    | SYMDEF_ref _
+    | SYMDEF_lazy _
+    | SYMDEF_fun _
+    | SYMDEF_callback _
+    | SYMDEF_insert _
+    | SYMDEF_inherit _
+    | SYMDEF_inherit_fun _
+    | SYMDEF_instance _
+      ->
       clierrx "[flx_bind/flx_lookup.ml:1591: E103] " sr
       (
         "[bind_type_index] Type " ^ id ^ "<" ^ string_of_bid index ^ ">" ^
-        " must be a type [alias, abstract, union, struct], got:\n" ^
+        " must be a type [alias, abstract, union, struct, virtual type], got:\n" ^
         string_of_symdef entry id vs
       )
   end
@@ -2020,6 +2046,9 @@ print_endline ("btype of bsym struct " ^ Flx_bsym.id bsym ^ "<" ^ si bid ^ ">, #
 print_endline ("struct as function [btype_of_bsym] " ^ sbt bsym_table result);
 *)
       result
+
+  | BBDCL_instance_type _
+  | BBDCL_virtual_type _
   | BBDCL_typeclass _ 
   | BBDCL_instance _ 
   | BBDCL_const_ctor _ 
@@ -2027,7 +2056,8 @@ print_endline ("struct as function [btype_of_bsym] " ^ sbt bsym_table result);
   | BBDCL_axiom 
   | BBDCL_lemma 
   | BBDCL_reduce ->
-    clierrx "[flx_bind/flx_lookup.ml:1898: E107] " (Flx_bsym.sr bsym) ("Use entity as if variable:" ^ Flx_bsym.id bsym)
+    clierrx "[flx_bind/flx_lookup.ml:1898: E107] " (Flx_bsym.sr bsym) 
+    ("Use entity as if variable:" ^ Flx_bsym.id bsym)
  
 
 (* -------------------------------------------------------------------------- *)
@@ -2100,6 +2130,7 @@ if index = 37461 then print_env env;
   | SYMDEF_inherit_fun qn ->
       failwith ("Woops inner_type_of_index found inherit fun!! " ^
         string_of_bid index)
+  | SYMDEF_instance_type t
   | SYMDEF_type_alias t ->
 (*
 print_endline ("bind_type_index finds: Type alias name " ^ sym.Flx_sym.id);
@@ -2521,6 +2552,7 @@ and lookup_qn_with_sig'
       | SYMDEF_newtype _
       | SYMDEF_union _
       | SYMDEF_abs _
+      | SYMDEF_instance_type _ 
       | SYMDEF_type_alias _ ->
         (*
         print_endline "mapping type name to _ctor_type [2]";
@@ -2884,6 +2916,7 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
         t
 
       | SYMDEF_union _
+      | SYMDEF_instance_type _
       | SYMDEF_type_alias _ ->
         (*
         print_endline "mapping type name to _ctor_type [2]";
@@ -3360,6 +3393,7 @@ and handle_type state bsym_table rs sra srn name ts index =
   | SYMDEF_cstruct _
   | SYMDEF_nonconst_ctor _
   | SYMDEF_callback _ -> btyp_inst (index,ts)
+  | SYMDEF_instance_type _
   | SYMDEF_type_alias _ ->
 (*
 print_endline ("Handle type " ^ name ^ " ... binding type index " ^ string_of_int index);
@@ -3556,6 +3590,7 @@ end;
     | SYMDEF_newtype _
     | SYMDEF_abs _
     | SYMDEF_union _
+    | SYMDEF_instance_type _
     | SYMDEF_type_alias _ ->
 
       (* recursively lookup using "_ctor_" ^ name :
@@ -3798,12 +3833,15 @@ and lookup_type_name_in_table_dirs_with_sig
         "\ngot " ^ sbt bsym_table mt
       ); None)
 
+    | SYMDEF_virtual_type 
     | SYMDEF_newtype _
     | SYMDEF_abs _
     | SYMDEF_union _ ->
-      print_endline "Found abs,union or newtype";
+      print_endline "Found abs,union, virtual type or newtype";
       Some (btyp_inst (sye index, ts))
 
+    (* an instance type is just like a type alias in phase 1 *)
+    | SYMDEF_instance_type t
     | SYMDEF_type_alias t -> 
       Some (bt sr t)
 

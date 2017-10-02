@@ -930,6 +930,7 @@ print_endline ("Monomorphised nonconst ctor argt=: " ^ sbt bsym_table ctor_argt 
     Some (bbdcl_nonconst_ctor ([],uidx, ut,ctor_idx,ctor_argt,evs,etraint)) (* ignore GADT stuff *)
  
 
+  | BBDCL_virtual_type _ -> assert false
   | BBDCL_typeclass _ -> assert false
   | BBDCL_instance _ -> assert false
 
@@ -938,6 +939,8 @@ print_endline ("Monomorphised nonconst ctor argt=: " ^ sbt bsym_table ctor_argt 
   | BBDCL_reduce -> assert false 
 
   | BBDCL_invalid  -> assert false
+
+  | BBDCL_instance_type _ -> assert false
 
   | BBDCL_newtype (vs,t) ->  
 (*
@@ -982,6 +985,10 @@ let rec mono_element debug syms to_process processed bsym_table nutab nubids i t
     | Some sym ->
     let {Flx_bsym.id=id;sr=sr; bbdcl=bbdcl} = sym in
     match bbdcl with
+    | BBDCL_virtual_type _ -> 
+      print_endline ("Polyinst hit virtual type " ^ id ^ "<" ^ si i ^ ">");
+      assert false
+
     | BBDCL_external_type _ 
     | BBDCL_external_const _ 
     | BBDCL_external_fun _ 

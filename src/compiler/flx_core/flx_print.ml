@@ -1237,6 +1237,8 @@ and string_of_statement level s =
   let sqn n = string_of_qualified_name n in
   match s with
 
+  | STMT_virtual_type (_,s) -> spaces level ^ "virtual type " ^ s ^ ";"
+
   | STMT_circuit (_,cs) ->
     spaces level ^ "connections\n" ^
     fold_left (fun acc con ->
@@ -1411,6 +1413,11 @@ and string_of_statement level s =
   | STMT_newtype (_,t,vs, nt) -> spaces level ^
     "type " ^ string_of_id t ^ string_of_vs vs ^
     " = new " ^ string_of_typecode nt ^
+    ";"
+
+  | STMT_instance_type (_,t,vs, nt) -> spaces level ^
+    "instance type " ^ string_of_id t ^ string_of_vs vs ^
+    " = " ^ string_of_typecode nt ^
     ";"
 
   | STMT_callback_decl (_,name,args,result, reqs) -> spaces level ^
@@ -1740,6 +1747,7 @@ and string_of_symdef entry name vs =
   let se e = string_of_expr e in
   let st t = string_of_typecode t in
   match entry with
+  | SYMDEF_virtual_type -> "virtual type " ^ name ^ ";"
   | SYMDEF_label s -> "label " ^ s ^ "\n"
 
   | SYMDEF_instance qn ->
@@ -1779,6 +1787,12 @@ and string_of_symdef entry name vs =
     "type " ^ string_of_id name ^ string_of_ivs vs ^
     " = new " ^ st nt ^
     ";"
+
+  | SYMDEF_instance_type (nt) ->
+    "instance type " ^ string_of_id name ^ string_of_ivs vs ^
+    " = " ^ st nt ^
+    ";"
+
 
   | SYMDEF_var (t) ->
     "var " ^ string_of_id name ^ string_of_ivs vs ^":"^ st t ^ ";"
@@ -2303,6 +2317,9 @@ and string_of_dcl level name seq vs (s:dcl_t) =
   let sl = spaces level in
   let seq = match seq with Some i -> "<" ^ string_of_bid i ^ ">" | None -> "" in
   match s with
+  | DCL_virtual_type -> 
+    sl ^ "virtual type " ^ string_of_id name ^ seq ^ ";"
+
   | DCL_type_alias (t2) ->
     sl ^ "typedef " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     " = " ^ st t2 ^ ";"
@@ -2376,6 +2393,11 @@ and string_of_dcl level name seq vs (s:dcl_t) =
   | DCL_newtype (nt)-> sl ^
     "type " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     " = new " ^ st nt ^ ";"
+
+  | DCL_instance_type (nt)-> sl ^
+    "instance type " ^ string_of_id name ^ seq ^ string_of_vs vs ^
+    " = " ^ st nt ^ ";"
+
 
   | DCL_abs (quals, code, reqs) -> sl ^
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
@@ -2558,6 +2580,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
   let se e = string_of_bound_expression bsym_table e in
   let un = btyp_tuple [] in
   match bbdcl with
+
   | BBDCL_label s -> "label " ^ s
   | BBDCL_invalid -> assert false
 
@@ -2589,9 +2612,16 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     end ^ name ^ string_of_bvs vs ^ ": " ^ sobt ty ^ ";"
 
   (* binding structures [prolog] *)
+  | BBDCL_virtual_type bvs -> 
+    "virtual type " ^ name ^ string_of_bvs bvs ^ ";"
+
   | BBDCL_newtype (vs,t) ->
     "type " ^ name ^  string_of_bvs vs ^
     " = new " ^ sobt t ^ ";"
+
+  | BBDCL_instance_type (vs,t) ->
+    "instance type " ^ name ^  string_of_bvs vs ^
+    " = " ^ sobt t ^ ";"
 
   | BBDCL_external_type (vs,quals,code,reqs) ->
     (match quals with [] ->"" | _ -> string_of_bquals bsym_table quals ^ " ") ^
@@ -2826,6 +2856,9 @@ let print_symbols bsym_table =
   Flx_bsym_table.iter begin fun i _ bsym ->
     let id = Flx_bsym.id bsym in
     match Flx_bsym.bbdcl bsym with
+    | BBDCL_virtual_type bvs ->
+      print_endline ("VIRTUAL_TYPE " ^ id)
+
     | BBDCL_label s -> print_endline ("label " ^ s)
     | BBDCL_fun (_,bvs,ps,ret,effects,exes) ->
         print_function_body
@@ -2850,9 +2883,10 @@ let print_symbols bsym_table =
           (string_of_bid i)
           (catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs)
           (sbt bsym_table t)
-    | BBDCL_invalid -> print_endline (("INVALID  " ^ id) ^ id)
+    | BBDCL_invalid -> print_endline ("INVALID  " ^ id)
     | BBDCL_module -> print_endline ("MODULE " ^ id)
     | BBDCL_newtype _ -> print_endline ("NEWTYPE " ^ id)
+    | BBDCL_instance_type _ -> print_endline ("INSTANCE TYPE " ^ id)
     | BBDCL_external_type _ -> print_endline ("EXTERNAL_TYPE " ^ id)
     | BBDCL_external_const _ -> print_endline ("EXTERNAL_CONST " ^ id)
     | BBDCL_external_fun _ -> print_endline ("EXTERNAL_FUN " ^ id)

@@ -587,6 +587,9 @@ and statement_t =
   | STMT_stmt_match of Flx_srcref.t * (expr_t * (pattern_t * statement_t list) list)
 
   | STMT_newtype of Flx_srcref.t * Flx_id.t * vs_list_t * typecode_t
+  | STMT_instance_type of Flx_srcref.t * Flx_id.t * vs_list_t * typecode_t
+  | STMT_virtual_type of Flx_srcref.t * Flx_id.t
+
   | STMT_export_requirement of Flx_srcref.t * raw_req_expr_t
 
   (* binding structures [prolog] *)
@@ -847,6 +850,7 @@ let src_of_stmt (e : statement_t) = match e with
   (*
   | STMT_public (s,_,_)
   *)
+  | STMT_virtual_type (s,_)
   | STMT_circuit (s,_)
   | STMT_type_error (s,_)
   | STMT_try s
@@ -899,6 +903,7 @@ let src_of_stmt (e : statement_t) = match e with
   *)
   | STMT_abs_decl (s,_,_,_,_,_)
   | STMT_newtype (s,_,_,_)
+  | STMT_instance_type (s,_,_,_)
   | STMT_ctypes (s,_,_,_)
   | STMT_const_decl (s,_,_,_,_,_)
   | STMT_fun_decl (s,_,_,_,_,_,_,_)

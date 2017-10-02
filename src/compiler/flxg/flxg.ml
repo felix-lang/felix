@@ -150,7 +150,7 @@ let handle_bind state main_prog module_name =
   in
 
   (* Build table for tracking virtual typeclasses to their instances. *)
-  Flx_typeclass.build_typeclass_to_instance_table state.syms bsym_table;
+  Flx_build_tctab.build_typeclass_to_instance_table state.syms bsym_table;
 
   (* generate axiom checks *)
   (* or not: the routine must be run to strip axiom checks out of the code *)

@@ -284,7 +284,9 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
   | SYMDEF_typeclass ->
     add_bsym true_parent (bbdcl_typeclass ([], bvs))
 
-
+  | SYMDEF_virtual_type ->
+    add_bsym true_parent (bbdcl_virtual_type bvs)
+ 
   | SYMDEF_reduce reds -> 
     let reds =
       List.map (fun (ivs,ps,e1,e2) ->
@@ -781,6 +783,11 @@ print_endline (" &&&&&& SYMDEF_instance calling BBIND_SYMBOL");
   | SYMDEF_newtype t ->
     let t = bt t in
     add_bsym None (bbdcl_newtype (bvs, t))
+
+  | SYMDEF_instance_type t ->
+    let t = bt t in
+    add_bsym None (bbdcl_instance_type (bvs, t))
+
 
   | SYMDEF_insert (ct,ikind,reqs) ->
     if state.print_flag then 

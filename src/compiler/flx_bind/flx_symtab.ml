@@ -583,7 +583,6 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
 
   (* Add the declarations to the symbol table. *)
   begin match (dcl:Flx_types.dcl_t) with
-
   | DCL_reduce reds ->
       let reds = 
         List.map (fun (vs, ps, e1, e2) ->
@@ -1250,6 +1249,20 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
+  | DCL_instance_type t ->
+print_endline ("Adding instance type " ^ id ^ "=" ^ Flx_print.string_of_typecode t ^ " to symbol table");
+      (* Add the newtype to the sym_table. *)
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_instance_type t);
+
+      (* Possibly add the abs to the private symbol table. *)
+      if access = `Public then add_unique pub_name_map id symbol_index;
+
+      (* Add the abs to the public symbol table. *)
+      add_unique priv_name_map id symbol_index;
+
+      (* Add the type variables to the private symbol table. *)
+      add_tvars privtab
+
   | DCL_abs (quals, c, reqs) ->
       (* Add the abs to the sym_table. *)
       add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_abs (quals, c, reqs));
@@ -1262,6 +1275,20 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
+
+  | DCL_virtual_type ->
+print_endline ("Adding virtual type " ^ id ^ " to symbol table");
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_virtual_type);
+
+      (* Possibly add the abs to the private symbol table. *)
+      if access = `Public then add_unique pub_name_map id symbol_index;
+
+      (* Add the abs to the public symbol table. *)
+      add_unique priv_name_map id symbol_index;
+
+      (* Add the type variables to the private symbol table. (shouldn't be any!) *)
+      add_tvars privtab
+
 
   | DCL_const (props, t, c, reqs) ->
       let t = if t = TYP_none then TYP_var symbol_index else t in

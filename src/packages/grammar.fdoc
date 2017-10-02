@@ -424,6 +424,10 @@ syntax cbind {
     )
     """;
 
+  cbind_stmt:= "virtual" "type" sname ";" =># 
+    "`(ast_virtual_type ,_sr ,_3)"
+  ;
+
   //$ Define a type by a C type expression.
   private cbind_stmt:= stype_qual* "type" sdeclname "=" scode_spec srequires_clause ";" =>#
     """
@@ -4196,6 +4200,12 @@ syntax statements {
     """
     `(ast_newtype ,_sr ,(first _3) ,(second _3) ,_6)
     """;
+
+  stmt := "instance" "type" sdeclname "=" sexpr ";" =>#
+    """
+    `(ast_instance_type ,_sr ,(first _3) ,(second _3) ,_5)
+    """;
+
 
   //$ Type constraint syntax.
   //$ Type constraints are ways to constrain possible types

@@ -418,9 +418,6 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     "<" ^ string_of_bid i ^ ">[" ^
     catmap "," (sbt bsym_table) ts ^ "]");
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_label s -> ()
-  | BBDCL_invalid -> assert false
-  | BBDCL_module -> ()
   | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
     let argtypes = Flx_bparameter.get_btypes ps in
     assert (length vs = length ts);
@@ -610,11 +607,19 @@ print_endline ("arg types c " ^ catmap "," (sbt bsym_table) tss);
     let ctor_argt = varmap_subst hvarmap ctor_argt in
     rtr ctor_argt
 
-  | BBDCL_typeclass _ -> ()
-  | BBDCL_instance (props,vs,con,tc,ts) -> ()
-  | BBDCL_axiom -> ()
-  | BBDCL_lemma -> ()
-  | BBDCL_reduce -> ()
+
+  | BBDCL_label s -> ()
+  | BBDCL_invalid -> assert false
+
+  | BBDCL_instance_type _ -> print_endline ("flx_inst:process_inst hit instance type"); ()
+  | BBDCL_virtual_type _ -> print_endline ("flx_inst:process_inst hit virtual type"); ()
+  | BBDCL_module -> print_endline ("flx_inst:process_inst hit module");()
+
+  | BBDCL_typeclass _ -> print_endline ("flx_inst:process_inst hit typeclass");()
+  | BBDCL_instance (props,vs,con,tc,ts) -> print_endline ("flx_inst:process_inst hit instance");()
+  | BBDCL_axiom -> print_endline ("flx_inst:process_inst hit axiom");()
+  | BBDCL_lemma -> print_endline ("flx_inst:process_inst hit lemma");()
+  | BBDCL_reduce -> print_endline ("flx_inst:process_inst hit reduce");()
 
 (*
   This routine creates the instance tables.

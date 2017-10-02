@@ -856,6 +856,8 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   let cf e = const_fold e in
 
   begin match st with
+  | STMT_virtual_type (sr, name) -> tack (STMT_virtual_type (sr, mi sr name))
+
   | STMT_circuit (sr,cs) -> tack st
     
   | STMT_try _ -> tack st
@@ -944,6 +946,9 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   | STMT_newtype (sr,id,vs,t) ->
     tack (STMT_newtype (sr,mi sr id,vs,mt sr t))
+
+  | STMT_instance_type (sr,id,vs,t) ->
+    tack (STMT_instance_type (sr,mi sr id,vs,mt sr t))
 
   | STMT_callback_decl (sr,id,args,ret,rqs) ->
     tack (STMT_callback_decl (sr,mi sr id, List.map (mt sr) args,mt sr ret,rqmap sr rqs))

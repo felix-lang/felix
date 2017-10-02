@@ -276,9 +276,16 @@ print_endline ("Translating Lazy Declaration " ^ name);
     let index,quals',props,dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
     Dcl (sr,name,index,access,vs,DCL_abs (quals' @ quals,s,Flx_reqs.map_reqs rqname' sr reqs))
     :: dcls
+   
+  | STMT_virtual_type (sr,name) ->
+    [Dcl (sr,name,None,access,dfltvs,DCL_virtual_type)]
 
   | STMT_newtype (sr,name,vs,t) ->
     [Dcl (sr,name,None,access,vs,DCL_newtype t)]
+
+  | STMT_instance_type (sr,name,vs,t) ->
+    [Dcl (sr,name,None,access,vs,DCL_instance_type t)]
+
 
   | STMT_union (sr,name, vs, components) -> [Dcl (sr,name,None,access,vs,DCL_union (components))]
   | STMT_struct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,DCL_struct (components))]

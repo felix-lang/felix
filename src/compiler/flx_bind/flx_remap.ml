@@ -63,6 +63,8 @@ let remap_bbdcl offset bbdcl =
   | BBDCL_module ->
       bbdcl_module ()
 
+  | BBDCL_virtual_type bvs -> bbdcl_virtual_type (remap_bvs bvs)
+
   | BBDCL_fun (props, vs, ps, res, effects, es) ->
       let vs = remap_bvs vs in
       let ps = remap_bparams ps in
@@ -76,6 +78,10 @@ let remap_bbdcl offset bbdcl =
 
   | BBDCL_newtype (vs, ty) ->
       bbdcl_newtype (remap_bvs vs, remap_btype ty)
+
+  | BBDCL_instance_type (vs, ty) ->
+      bbdcl_instance_type (remap_bvs vs, remap_btype ty)
+
 
   | BBDCL_external_type (vs, quals, code, reqs) ->
       let vs = remap_bvs vs in

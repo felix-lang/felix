@@ -47,6 +47,7 @@ type value_kind_t = [ `Val | `Var | `Ref | `Once | `Lazy of expr_t ]
 
 type dcl_t =
   (* data structures *)
+  | DCL_virtual_type
   | DCL_axiom of         params_t * axiom_method_t
   | DCL_lemma of         params_t * axiom_method_t
   | DCL_reduce of        (vs_list_t * simple_parameter_t list * expr_t * expr_t) list
@@ -71,6 +72,7 @@ type dcl_t =
 
   (* binding structures [prolog] *)
   | DCL_newtype of       typecode_t
+  | DCL_instance_type of typecode_t
   | DCL_abs of           type_qual_t list * Flx_code_spec.t * named_req_expr_t
   | DCL_const of         property_t list * typecode_t * Flx_code_spec.t * named_req_expr_t
   | DCL_fun of           property_t list * typecode_t list * typecode_t * Flx_code_spec.t * named_req_expr_t * prec_t
@@ -103,8 +105,10 @@ type bound_iface_t = Flx_srcref.t * iface_t * bid_t option
 type bvs_t = (string * bid_t) list
 
 type symbol_definition_t =
+  | SYMDEF_virtual_type
   | SYMDEF_label of string
   | SYMDEF_newtype of typecode_t
+  | SYMDEF_instance_type of typecode_t
   | SYMDEF_abs of type_qual_t list * Flx_code_spec.t * named_req_expr_t
   | SYMDEF_parameter of  param_kind_t * typecode_t
   | SYMDEF_typevar of typecode_t (* usually type TYPE *)

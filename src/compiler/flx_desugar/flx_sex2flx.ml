@@ -919,8 +919,16 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
   | Lst [Id "ast_nop"; sr; Str s] -> let sr = xsr sr in STMT_nop (sr,s)
   | Lst [Id "ast_assert"; sr; e] -> let sr = xsr sr in STMT_assert (sr,ex sr e)
   | Lst [Id "ast_init"; sr; id; e] -> let sr = xsr sr in STMT_init (sr, xid id, ex sr e)
+
   | Lst [Id "ast_newtype"; sr; id; vs; t] -> let sr = xsr sr in 
       STMT_newtype (sr, xid id, xvs sr vs, ti sr t)
+
+  | Lst [Id "ast_instance_type"; sr; id; vs; t] -> let sr = xsr sr in 
+      STMT_instance_type (sr, xid id, xvs sr vs, ti sr t)
+
+  | Lst [Id "ast_virtual_type"; sr; id] -> let sr = xsr sr in 
+      STMT_virtual_type (sr, xid id)
+
   | Lst [Id "ast_abs_decl"; sr; id; vs; tqs; ct; req] -> let sr = xsr sr in 
       STMT_abs_decl (sr, xid id, xvs sr vs, xtqs sr tqs, xc sr ct, xrr sr req)
 
