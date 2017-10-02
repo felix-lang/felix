@@ -1,5 +1,5 @@
 @tangler concordance.flxh = share/lib/concordance/concordance.flxh 
-@tangler concordance.ml = $PWD/src/compiler/flx_core/concordance.ml
+@tangler concordance.ml = $PWD/src/compiler/flx_core/flx_concordance.ml
 @tangler concordance_check.flx = $PWD/concordance_check.flx
 
 @title Concordance
