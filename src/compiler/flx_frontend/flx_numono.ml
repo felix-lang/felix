@@ -31,6 +31,7 @@ module CS = Flx_code_spec
 
 *)
 
+let debug = false 
 
 let show bsym_table i = 
   try 
@@ -200,12 +201,34 @@ let flat_poly_fixup_type syms bsym_table polyinst sr t =
 
   match t with
   | BTYP_inst (i,ts) ->
-    let i',ts' = polyinst sr i ts in
-    let t' = btyp_inst (i',ts') in
-(*
-print_endline ("poly_fixup_type: " ^ showts bsym_table i ts ^ " --> " ^ showts bsym_table i' ts');
-*)
-    t'
+    let parent,bsym = Flx_bsym_table.find_with_parent bsym_table i in
+if debug then print_endline ("flat_poly_fixup_type is using polyinst to instantiate type " ^ Flx_bsym.id bsym ^
+   "<"^ si i^">[" ^catmap "," (sbt bsym_table) ts^ "]"
+);
+    begin match Flx_bsym.bbdcl bsym with
+    | BBDCL_virtual_type bvs ->
+      if debug then print_endline ("  *** VIRTUAL TYPE");
+      begin match parent with
+      | None -> assert false
+      | Some tc ->
+        if debug then print_endline ("   *** parent type class " ^ si tc);
+        let t' = Flx_build_tctab.remap_virtual_types syms bsym_table (* tc *) t in
+        if debug then print_endline ("   *** mapped to " ^ sbt bsym_table t');
+        t'
+      end
+
+    | BBDCL_instance_type (bvs,repr) -> 
+      if debug then print_endline ("  *** INSTANCE TYPE, bvs=" ^
+        catmap "," (fun (s,j) -> s) bvs^ 
+        " repr=" ^ sbt bsym_table repr);
+      repr
+    | _ -> 
+      if debug then print_endline ("OTHER TYPE");
+      let i',ts' = polyinst sr i ts in
+      let t' = btyp_inst (i',ts') in
+if debug then print_endline ("poly_fixup_type: " ^ showts bsym_table i ts ^ " --> " ^ showts bsym_table i' ts');
+      t'
+      end
   | x -> x
 
 (* this has to be top down, so instances i,ts use the original
@@ -986,8 +1009,11 @@ let rec mono_element debug syms to_process processed bsym_table nutab nubids i t
     let {Flx_bsym.id=id;sr=sr; bbdcl=bbdcl} = sym in
     match bbdcl with
     | BBDCL_virtual_type _ -> 
-      print_endline ("Polyinst hit virtual type " ^ id ^ "<" ^ si i ^ ">");
-      assert false
+      print_endline ("Polyinst hit virtual type " ^ id ^ "<" ^ si i ^ ">["^
+        catmap "," (sbt bsym_table) ts ^"]");
+      let j = find_felix_inst syms bsym_table processed to_process nubids i ts in
+      print_endline ("Remapping to mono type " ^ si j);
+      j,[]
 
     | BBDCL_external_type _ 
     | BBDCL_external_const _ 

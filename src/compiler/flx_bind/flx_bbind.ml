@@ -786,7 +786,7 @@ print_endline (" &&&&&& SYMDEF_instance calling BBIND_SYMBOL");
 
   | SYMDEF_instance_type t ->
     let t = bt t in
-    add_bsym None (bbdcl_instance_type (bvs, t))
+    add_bsym true_parent (bbdcl_instance_type (bvs, t))
 
 
   | SYMDEF_insert (ct,ikind,reqs) ->

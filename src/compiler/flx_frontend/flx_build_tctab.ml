@@ -5,6 +5,8 @@ open Flx_print
 open Flx_bid
 open Flx_btype
 
+let debug = false
+
 (* Here we build two mappings:
 
   mutable instances_of_typeclass: 
@@ -47,6 +49,216 @@ let rec drop l n =
 let drop l n = Flx_list.list_tail l n
 
 let vs2ts vs = List.map (fun (s,i) -> btyp_type_var (i, btyp_type 0)) vs
+
+let remap_virtual_types x = Flx_remap_vtypes.remap_virtual_types x
+
+let check_binding syms bsym_table (inst, inst_id, inst_vs, inst_ts, inst_sr, inst_map, inst_constraint) tc tc_bvs tck sr id tck_bvs tctype =
+  let sigmatch i inst_funbvs t =
+    (* typeclass X[t1,t2] { virtual fun f[t3] .. }
+       Instance[i1, i2, i3] X[..,..] { fun f[i4] 
+
+       typeclass fun poly vars = all fun vars - typeclass vars = 3 - 1 = 1
+       inst fun poly vars = all fun vars - inst vars = 4 - 3 = 1
+    *)
+
+    let tc_ptv = List.length tck_bvs - List.length tc_bvs in
+    let inst_ptv = List.length inst_funbvs - List.length inst_vs in
+if id = "f" then
+begin
+print_endline ("Type class has " ^ si (List.length tc_bvs) ^ " type variables");
+print_endline ("Virtual has " ^ si (List.length tck_bvs) ^ " type variables (total)");
+print_endline ("Virtual has " ^ si tc_ptv ^ " type variables (local)");
+print_endline ("Instance has " ^ si (List.length inst_vs) ^ " type variables (total)");
+print_endline ("Virtual instance function has " ^ si (List.length inst_funbvs) ^ " type variables (total)");
+print_endline ("Virtual instance function has " ^ si inst_ptv ^ " type variables (local)");
+end;
+    if inst_ptv <> tc_ptv then (
+if id = "f" then
+      print_endline ("Wrong no args: inst_ptv="^ si inst_ptv^"<>"^si tc_ptv);
+      false
+    )
+    else
+    let inst_funts = inst_ts @ vs2ts (drop inst_funbvs (List.length inst_vs)) in
+    assert (List.length tck_bvs = List.length inst_funts);
+    let tctype' = (Flx_btype_subst.tsubst inst_sr tck_bvs inst_funts tctype) in
+    let tct = Flx_beta.beta_reduce "flx_typeclass: check_instance"
+      syms.Flx_mtypes2.counter
+      bsym_table
+      sr
+      tctype'
+    in
+let tct = remap_virtual_types syms bsym_table (* tc *) tct in
+if id = "f" then
+print_endline ("Virtual type: " ^ sbt bsym_table tct ^ ", instance type: " ^ sbt bsym_table t);
+    let matches =  tct = t in
+if id = "f" then
+print_endline ("Matches= " ^ string_of_bool matches);
+    matches
+  in
+
+(* strip out all the instance kids with the wrong name, or for which the signatures don't agree *)
+  let entries = 
+    List.filter 
+    (fun (name,(i,(inst_funbvs,t))) -> 
+       if name = id then begin
+        let m = sigmatch i inst_funbvs t in
+if id = "f" then
+        print_endline ("  ... filtering functions found name: " ^ name ^ " sigmatch = " ^ string_of_bool m);
+        m
+       end else false
+    )
+    inst_map 
+  in
+if inst_id = "X" then
+print_endline ("We have " ^ si (List.length entries) ^ " functions left");
+
+(* see what we have left *)
+  match entries with
+
+(* if there's nothing left that's fine! The virtual might never be called. Alternatively a default
+in the typeclass might be used instead. This routine only handles actual instances!
+*)
+  | [] -> 
+if inst_id = "X" then
+begin
+  print_endline ("     ** function: No binding found");
+end;
+    ()
+
+  | [_,(i,(inst_funbvs,t))] ->
+    let tc_ptv = List.length tck_bvs - List.length tc_bvs in
+    let inst_ptv = List.length inst_funbvs - List.length inst_vs in
+    if inst_ptv <> tc_ptv then
+    clierrx "[flx_frontend/flx_typeclass.ml:208: E361] " sr ("Wrong number of type parameters in instance fun!\n" ^
+      "Expected " ^ si tc_ptv ^ "\n" ^
+      "Got " ^ si inst_ptv
+    );
+
+    let inst_funts = inst_ts @ vs2ts (drop inst_funbvs (List.length inst_vs)) in
+
+    assert (List.length tck_bvs = List.length inst_funts);
+
+    let tct = Flx_beta.beta_reduce "flx_typeclass: check instance (2)"
+      syms.Flx_mtypes2.counter
+      bsym_table
+      sr
+      (Flx_btype_subst.tsubst inst_sr tck_bvs inst_funts tctype)
+    in
+    let old =
+      try Hashtbl.find syms.virtual_to_instances tck
+      with Not_found -> []
+    in
+    let entry = inst_vs, inst_constraint, inst_ts, i in
+    if List.mem entry old then
+      clierrx "[flx_frontend/flx_typeclass.ml:229: E362] " sr "Instance already registered??"
+    else begin
+if inst_id = "X" then
+begin
+  print_endline ("      ** function: add virtual to instance binding")
+end;
+(* finally, add the instance to the virtual to instance mapping table for subsequent lookups *)
+      Hashtbl.replace syms.virtual_to_instances tck (entry :: old);
+    end
+
+  | _ ->
+    clierrx "[flx_frontend/flx_typeclass.ml:236: E363] " sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
+
+let check_type_binding syms bsym_table (inst, inst_id, inst_vs, inst_ts, inst_sr, inst_map, inst_constraint) tc tc_bvs tck sr id tck_bvs  =
+(* strip out all the instance kids with the wrong name, or for which the signatures don't agree *)
+  let entries = 
+    List.filter 
+    (fun (name,(i,(inst_funbvs,t))) -> name = id ) 
+    inst_map 
+  in
+if inst_id = "X" then
+print_endline ("We have " ^ si (List.length entries) ^ " types left");
+
+(* see what we have left *)
+  match entries with
+
+(* if there's nothing left that's fine! The virtual might never be called. Alternatively a default
+in the typeclass might be used instead. This routine only handles actual instances!
+*)
+  | [] ->
+if inst_id = "X" then
+begin
+  print_endline ("     ** type: No binding found");
+end;
+  ()
+
+  | [_,(i,(inst_funbvs,t))] ->
+    let tc_ptv = List.length tck_bvs - List.length tc_bvs in
+    let inst_ptv = List.length inst_funbvs - List.length inst_vs in
+    if inst_ptv <> tc_ptv then
+    clierrx "[flx_frontend/flx_typeclass.ml:208: E361] " sr ("Wrong number of type parameters in instance fun!\n" ^
+      "Expected " ^ si tc_ptv ^ "\n" ^
+      "Got " ^ si inst_ptv
+    );
+
+    let inst_funts = inst_ts @ vs2ts (drop inst_funbvs (List.length inst_vs)) in
+
+    assert (List.length tck_bvs = List.length inst_funts);
+
+(*
+    let tct = Flx_beta.beta_reduce "flx_typeclass: check instance (2)"
+      syms.Flx_mtypes2.counter
+      bsym_table
+      sr
+      (Flx_btype_subst.tsubst inst_sr tck_bvs inst_funts tctype)
+    in
+*)
+    let old =
+      try Hashtbl.find syms.virtual_to_instances tck
+      with Not_found -> []
+    in
+    let entry = inst_vs, inst_constraint, inst_ts, i in
+    if List.mem entry old then
+      clierrx "[flx_frontend/flx_typeclass.ml:229: E362] " sr "Instance already registered??"
+    else begin
+(* finally, add the instance to the virtual to instance mapping table for subsequent lookups *)
+if inst_id = "X" then
+begin
+  print_endline ("      ** type: add virtual to instance binding")
+end;
+      Hashtbl.replace syms.virtual_to_instances tck (entry :: old);
+    end
+
+  | _ ->
+    clierrx "[flx_frontend/flx_typeclass.ml:236: E363] " sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
+
+let build_inst_map bsym_table inst_kids =
+  BidSet.fold begin fun i acc ->
+    let bsym = Flx_bsym_table.find bsym_table i in
+    match Flx_bsym.bbdcl bsym with
+    | BBDCL_external_fun (_,bvs,params,ret,_,_,_) ->
+        let argt = btyp_tuple params in
+        let qt = bvs, btyp_function (argt,ret) in
+        (Flx_bsym.id bsym,(i,qt)) :: acc
+
+    | BBDCL_fun (_,bvs,bps,ret,effects,_) ->
+        let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
+        let qt = bvs, btyp_function (argt,ret) in
+        (Flx_bsym.id bsym,(i,qt)) :: acc
+
+    | BBDCL_external_const (_,bvs,ret,_,_) ->
+        let qt = bvs,ret in
+        (Flx_bsym.id bsym,(i,qt)) :: acc
+
+    | BBDCL_val (bvs,ret,`Val) ->
+        let qt = bvs,ret in
+        (Flx_bsym.id bsym,(i,qt)) :: acc
+
+    | BBDCL_virtual_type bvs ->
+      clierr (Flx_bsym.sr bsym) ("Virtual type not allowed in type class instance")
+
+    (* this doesn't really belong here, its a type, not a typed entity *)
+    | BBDCL_instance_type (bvs,ret) ->
+print_endline ("Scanning instance, found instance type " ^ Flx_bsym.id bsym ^ " -> " ^ sbt bsym_table ret); 
+      let qt = bvs,ret in
+      (Flx_bsym.id bsym,(i,qt)) :: acc
+
+    | _ -> acc
+  end inst_kids []
 
 let check_instance
   (syms:Flx_mtypes2.sym_state_t)
@@ -123,179 +335,80 @@ end;
 (* transform the instance kid list into an associatiion list
   mapping the function name to the index and function type
 *)
-    let inst_map =
-      BidSet.fold begin fun i acc ->
-        let bsym = Flx_bsym_table.find bsym_table i in
-        match Flx_bsym.bbdcl bsym with
-        | BBDCL_external_fun (_,bvs,params,ret,_,_,_) ->
-            let argt = btyp_tuple params in
-            let qt = bvs, btyp_function (argt,ret) in
-            (Flx_bsym.id bsym,(i,qt)) :: acc
-
-        | BBDCL_fun (_,bvs,bps,ret,effects,_) ->
-            let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
-            let qt = bvs, btyp_function (argt,ret) in
-            (Flx_bsym.id bsym,(i,qt)) :: acc
-
-        | BBDCL_external_const (_,bvs,ret,_,_) ->
-            let qt = bvs,ret in
-            (Flx_bsym.id bsym,(i,qt)) :: acc
-
-        | BBDCL_val (bvs,ret,`Val) ->
-            let qt = bvs,ret in
-            (Flx_bsym.id bsym,(i,qt)) :: acc
-
-        | BBDCL_virtual_type bvs ->
-          clierr (Flx_bsym.sr bsym) ("Virtual type not allowed in type class instance")
-
-        (* this doesn't really belong here, its a type, not a typed entity *)
-        | BBDCL_instance_type (bvs,ret) ->
-print_endline ("Scanning instance, found instance type " ^ Flx_bsym.id bsym ^ " -> " ^ sbt bsym_table ret); 
-          let qt = bvs,ret in
-          (Flx_bsym.id bsym,(i,qt)) :: acc
-
-        | _ -> acc
-      end inst_kids []
-    in
-(*
+    let inst_map = build_inst_map bsym_table inst_kids in
 if inst_id = "X" then
 begin
+  print_endline ("Instance map for " ^ inst_id ^ "[" ^ catmap "," (sbt bsym_table) inst_ts ^ "]");
   List.iter (fun (name,(index,(bvs,typ))) ->
     print_endline (name ^"<" ^ si index ^ ">: " ^ sbt bsym_table typ);
   )
   inst_map
 end;
-*)
 
 (* check the polymorphic binding of the virtual function id[tck,tck_bvs] type tctype
    matches the given instance 
 *)
-    let check_binding tck sr id tck_bvs tctype =
-      let sigmatch i inst_funbvs t =
-        (* typeclass X[t1,t2] { virtual fun f[t3] .. }
-           Instance[i1, i2, i3] X[..,..] { fun f[i4] 
-
-           typeclass fun poly vars = all fun vars - typeclass vars = 3 - 1 = 1
-           inst fun poly vars = all fun vars - inst vars = 4 - 3 = 1
-        *)
-
-        let tc_ptv = List.length tck_bvs - List.length tc_bvs in
-        let inst_ptv = List.length inst_funbvs - List.length inst_vs in
-(*
-if id = "g" then
-begin
-  print_endline ("Type class has " ^ si (List.length tc_bvs) ^ " type variables");
-  print_endline ("Virtual has " ^ si (List.length tck_bvs) ^ " type variables (total)");
-  print_endline ("Virtual has " ^ si tc_ptv ^ " type variables (local)");
-  print_endline ("Instance has " ^ si (List.length inst_vs) ^ " type variables (total)");
-  print_endline ("Virtual instance function has " ^ si (List.length inst_funbvs) ^ " type variables (total)");
-  print_endline ("Virtual instance function has " ^ si inst_ptv ^ " type variables (local)");
-end;
-*)
-        if inst_ptv <> tc_ptv then (
-(*
-if id = "g" then
-          print_endline ("Wrong no args: inst_ptv="^ si inst_ptv^"<>"^si tc_ptv);
-*)
-          false
-        )
-        else
-        let inst_funts = inst_ts @ vs2ts (drop inst_funbvs (List.length inst_vs)) in
-        assert (List.length tck_bvs = List.length inst_funts);
-        let tct = Flx_beta.beta_reduce "flx_typeclass: check_instance"
-          syms.Flx_mtypes2.counter
-          bsym_table
-          sr
-          (Flx_btype_subst.tsubst inst_sr tck_bvs inst_funts tctype)
-        in
-(*
-if id = "g" then
-  print_endline ("Virtual type: " ^ sbt bsym_table tct ^ ", instance type: " ^ sbt bsym_table t);
-*)
-        let matches =  tct = t in
-        matches
-      in
-
-(* strip out all the instance kids with the wrong name, or for which the signatures don't agree *)
-      let entries = 
-        List.filter 
-        (fun (name,(i,(inst_funbvs,t))) -> name = id && sigmatch i inst_funbvs t) 
-        inst_map 
-      in
-(*
 if inst_id = "X" then
-  print_endline ("We have " ^ si (List.length entries) ^ " functions left");
-*)
-(* see what we have left *)
-      match entries with
+begin
+  print_endline ("Scanning type class " ^ si tc ^ " children");
+end;
+    let inst_data =  (inst, inst_id, inst_vs, inst_ts, inst_sr, inst_map, inst_constraint) in
 
-(* if there's nothing left that's fine! The virtual might never be called. Alternatively a default
-in the typeclass might be used instead. This routine only handles actual instances!
-*)
-      | [] -> ()
-
-      | [_,(i,(inst_funbvs,t))] ->
-        let tc_ptv = List.length tck_bvs - List.length tc_bvs in
-        let inst_ptv = List.length inst_funbvs - List.length inst_vs in
-        if inst_ptv <> tc_ptv then
-        clierrx "[flx_frontend/flx_typeclass.ml:208: E361] " sr ("Wrong number of type parameters in instance fun!\n" ^
-          "Expected " ^ si tc_ptv ^ "\n" ^
-          "Got " ^ si inst_ptv
-        );
-
-        let inst_funts = inst_ts @ vs2ts (drop inst_funbvs (List.length inst_vs)) in
-
-        assert (List.length tck_bvs = List.length inst_funts);
-
-        let tct = Flx_beta.beta_reduce "flx_typeclass: check instance (2)"
-          syms.Flx_mtypes2.counter
-          bsym_table
-          sr
-          (Flx_btype_subst.tsubst inst_sr tck_bvs inst_funts tctype)
-        in
-        let old =
-          try Hashtbl.find syms.virtual_to_instances tck
-          with Not_found -> []
-        in
-        let entry = inst_vs, inst_constraint, inst_ts, i in
-        if List.mem entry old then
-          clierrx "[flx_frontend/flx_typeclass.ml:229: E362] " sr "Instance already registered??"
-        else begin
-(* finally, add the instance to the virtual to instance mapping table for subsequent lookups *)
-          Hashtbl.replace syms.virtual_to_instances tck (entry :: old);
-        end
-
-      | _ ->
-        clierrx "[flx_frontend/flx_typeclass.ml:236: E363] " sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
-    in
-
+(* We need two passes, because the function bindings depend on the type bindings *)
+(* PASS 1, map virtual types to instance types *)
     BidSet.iter begin fun tck ->
       let tck_bsym = Flx_bsym_table.find bsym_table tck in
+if inst_id = "X" then
+begin
+  print_endline ("   type class child " ^ Flx_bsym.id tck_bsym);
+end;
+
+      match Flx_bsym.bbdcl tck_bsym with
+      | BBDCL_virtual_type bvs -> 
+if inst_id = "X" 
+then print_endline ("       virtual type");
+        check_type_binding syms bsym_table inst_data tc tc_bvs tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs 
+      | _ -> ()
+    end 
+    tc_kids
+  ;
+
+(* PASS 2, map virtual functins to instance functions *)
+    BidSet.iter begin fun tck ->
+      let tck_bsym = Flx_bsym_table.find bsym_table tck in
+if inst_id = "X" then
+begin
+  print_endline ("   type class child " ^ Flx_bsym.id tck_bsym);
+end;
+
       match Flx_bsym.bbdcl tck_bsym with
       | BBDCL_external_fun (_,bvs,params,ret,_,_,`Code Flx_code_spec.Virtual) ->
+if inst_id = "X" 
+then print_endline ("       virtual extern function");
         let ft = btyp_function (btyp_tuple params,ret) in
-        check_binding tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
+        check_binding syms bsym_table inst_data tc tc_bvs tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
 
       | BBDCL_fun (props,bvs,bps,ret,effects,_) when List.mem `Virtual props ->
+if inst_id = "X" 
+then print_endline ("       virtual felix function");
         let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
         (* ignore effects for now! *)
         let ft = btyp_function (argt,ret) in
-        check_binding tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
+        check_binding syms bsym_table inst_data tc tc_bvs tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
 
       | BBDCL_external_const (props,bvs,ret,_,_) when List.mem `Virtual props ->
-        check_binding tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ret
+if inst_id = "X" 
+then print_endline ("       virtual extern const");
+        check_binding syms bsym_table inst_data tc tc_bvs tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ret
 
-      | BBDCL_virtual_type bvs ->
-        failwith "Don't know what to do scanning type class kids on hitting virtual type"
+      | BBDCL_virtual_type bvs ->  ()
 
       | BBDCL_instance_type _ ->
         clierr (Flx_bsym.sr tck_bsym) ("instance type not allowed in type class?")
 
-      | BBDCL_external_code _ -> ()
-      | BBDCL_axiom -> ()
-      | BBDCL_lemma -> ()
-      | BBDCL_reduce -> ()
       | _ ->
+if inst_id = "X" 
+then print_endline ("       non virtual entry");
         (*
         clierrx "[flx_frontend/flx_typeclass.ml:261: E364] " tcksr "Typeclass entry must be virtual function or procedure"
         *)
@@ -304,7 +417,8 @@ in the typeclass might be used instead. This routine only handles actual instanc
           Flx_bsym.id tck_bsym ^ " is not virtual");
         *)
         ()
-    end tc_kids
+    end 
+    tc_kids
 
   | _ ->
     clierr2 inst_sr (Flx_bsym.sr tc_bsym) ("Expected " ^ inst_id ^ "<" ^
@@ -359,11 +473,15 @@ let build_typeclass_to_instance_table syms bsym_table : unit =
         ts
 
   | BBDCL_virtual_type _ ->
-    print_endline ("build type class instance table, don't know what to do with virtual type " ^ id);
+(*
+    print_endline ("build type class instance table, IGNORING virtual type " ^ id);
+*)
     ()
 
   | BBDCL_instance_type _ ->
-    print_endline ("build type class instance table, don't know what to do with instance type " ^ id);
+(*
+    print_endline ("build type class instance table, IGNORING instance type " ^ id);
+*)
     ()
 
   (* virtual with default *)

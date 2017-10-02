@@ -395,6 +395,7 @@ print_endline "Discard r";
 let id x = x
 
 let tcsubst syms bsym_table sr i ts =
+  let ts = List.map (Flx_remap_vtypes.remap_virtual_types syms bsym_table) ts in
   match fixup_typeclass_instance' syms bsym_table sr i ts with
   | `NonVirtual,i,ts->i,ts
   | `MatchesNow,i,ts->i,ts
