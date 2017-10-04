@@ -4196,15 +4196,7 @@ print_endline ("Case number " ^ si index);
   | EXPR_tuple_cons (_, eh, et) ->
     let _,eht' as xh' = be eh in
     let _,ett' as xt' = be et in
-    let t = btyp_tuple_cons eht' ett' in
-(*
-    print_endline ("Type of tuple cons is " ^ sbt bsym_table t);
-*)
-    let _,t as x = bexpr_tuple_cons t (xh',xt') in
-(*
-print_endline ("Bound tuple cons " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_table t);
-*)
-      x
+    bexpr_tuple_cons (xh',xt') 
 
   | EXPR_tuple_snoc (_, eh, et) ->
     let _,eht' as xh' = be eh in

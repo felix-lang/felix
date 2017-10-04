@@ -72,7 +72,7 @@ val bexpr_false : t
 val bexpr_label : bid_t -> t
 val bexpr_tuple_tail : Flx_btype.t -> t -> t
 val bexpr_tuple_head : Flx_btype.t -> t -> t
-val bexpr_tuple_cons : Flx_btype.t -> t * t -> t
+val bexpr_tuple_cons : t * t -> t
 val bexpr_tuple_body : Flx_btype.t -> t -> t
 val bexpr_tuple_last : Flx_btype.t -> t -> t
 val bexpr_tuple_snoc : Flx_btype.t -> t * t -> t
