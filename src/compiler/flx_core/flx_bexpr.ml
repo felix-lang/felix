@@ -654,8 +654,42 @@ let bexpr_lrangle t e = BEXPR_lrangle e,t
 let bexpr_lrbrack t e = BEXPR_lrbrack e,t
 
 
-let bexpr_tuple_tail t e = BEXPR_tuple_tail e, complete_check t
-let bexpr_tuple_head t e = BEXPR_tuple_head e, complete_check t
+let bexpr_tuple_tail t (_,et as e) = 
+  (* FIXME: handle arrays too *)
+  match et with
+  | Flx_btype.BTYP_tuple_cons (h,t) ->
+    begin match e with
+    | BEXPR_tuple_cons (head,tail),_ -> tail
+    | _ -> BEXPR_tuple_tail e,complete_check t
+    end
+  | Flx_btype.BTYP_tuple (ht::tt) ->
+    begin match e with
+    | BEXPR_tuple (head::tail),_ ->
+      bexpr_tuple (Flx_btype.btyp_tuple tt) tail
+    | _ ->
+      let apls = List.map2 (fun i c -> bexpr_get_n c (i+1) e ) 
+        (Flx_list.nlist (List.length tt)) tt
+      in
+      bexpr_tuple (Flx_btype.btyp_tuple tt) apls
+    end
+  | _ -> BEXPR_tuple_tail e, complete_check t
+
+let bexpr_tuple_head t (_,et as e) = 
+  (* FIXME: handle arrays too *)
+  match et with
+  | Flx_btype.BTYP_tuple_cons (ht,tt) ->
+    begin match e with
+    | BEXPR_tuple_cons (eh,et),_ -> eh
+    | _ ->
+      BEXPR_tuple_head e, complete_check t
+    end
+  | Flx_btype.BTYP_tuple (ht::tt) ->
+    begin match e with
+    | BEXPR_tuple (head::tail),_ -> head
+    | _ -> bexpr_get_n ht 0 e
+    end
+  | _ ->
+    BEXPR_tuple_head e, complete_check t
 
 let bexpr_tuple_cons (_,th as eh,( _,tt as et)) = 
   let t  = Flx_btype.btyp_tuple_cons th tt in

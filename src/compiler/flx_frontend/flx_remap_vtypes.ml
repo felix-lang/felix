@@ -17,12 +17,22 @@ let rec remap_virtual_types' syms bsym_table (* tc *) t =
 print_endline ("Remap virtual types " ^ Flx_btype.st t);
 *)
   match t with
-  | BTYP_inst (i,ts) ->
+  (* the i here is the index of the virtual type, the ts are the 
+     types specialising the type class since currently we don't
+     allow a virtual type to be indexed
+  *)
+  | BTYP_vinst (i,ts) ->
     begin
       (* STEP 1: Find parent type class *)
       let parent,bsym = Flx_bsym_table.find_with_parent bsym_table i in
       let maybe_tc =
         begin match Flx_bsym.bbdcl bsym with
+        (* The bvs here are the type variables inherited from
+          the typeclass instance definition, as in 
+          instance[vs] C[inst_ts]
+          The inst_ts must match the type class vs, however they
+          contain instance vs variables which we have to find.
+        *)
         | BBDCL_virtual_type bvs -> 
           if debug then print_endline ("Remap: virtual type!" ^ Flx_bsym.id bsym ^ 
            "<" ^si i ^ ">["^
@@ -55,7 +65,28 @@ print_endline ("Remap virtual types " ^ Flx_btype.st t);
         if debug then print_endline ("Remap Found type class kid type " ^ Flx_bsym.id bsym ^ "<" ^si i ^ ">" ^
            "["^catmap "," (sbt bsym_table) ts ^"]" );
 
-      (* STEP2: grab all the instances of the virtual *)
+      (* STEP2: grab all the instances of the virtual 
+         this is a list:
+
+         inst_vs,inst_constraint,inst_ts, inst_idx 
+
+         The inst_vs should agree with the virtual type bvs.
+         We're ignoring constraints for now.
+         The inst_ts corresponds to the instance's ts corresponding
+         to the type class vs. However the ts for the virtual type binding
+         must be at least as specialised as the instance ts.
+
+         TO find the correct instance, we try to unify the inst_ts
+         of the instance as the parameter, with the ts of the BTYP_vinst
+         as the argument, which should produce an MGU with bindings
+         for the inst_vs.
+      
+         If more than one instance matches, we choose the most specialised
+         based on the respective inst_vs, if no most specialised instance
+         matches we barf. This is the standard algorithm. It's a pity
+         we have to keep writing it out! 
+ 
+      *)
         let entries = try Hashtbl.find syms.virtual_to_instances i with Not_found -> [] in
         if debug then print_endline ("instances of virtual type are:");
         if debug then List.iter (fun (inst_vs, inst_constraint, inst_ts, inst_idx)  ->

@@ -63,7 +63,7 @@ let check_binding syms bsym_table (inst, inst_id, inst_vs, inst_ts, inst_sr, ins
 
     let tc_ptv = List.length tck_bvs - List.length tc_bvs in
     let inst_ptv = List.length inst_funbvs - List.length inst_vs in
-if id = "f" then
+if debug && id = "f" then
 begin
 print_endline ("Type class has " ^ si (List.length tc_bvs) ^ " type variables");
 print_endline ("Virtual has " ^ si (List.length tck_bvs) ^ " type variables (total)");
@@ -73,7 +73,7 @@ print_endline ("Virtual instance function has " ^ si (List.length inst_funbvs) ^
 print_endline ("Virtual instance function has " ^ si inst_ptv ^ " type variables (local)");
 end;
     if inst_ptv <> tc_ptv then (
-if id = "f" then
+if debug && id = "f" then
       print_endline ("Wrong no args: inst_ptv="^ si inst_ptv^"<>"^si tc_ptv);
       false
     )
@@ -88,10 +88,10 @@ if id = "f" then
       tctype'
     in
 let tct = remap_virtual_types syms bsym_table (* tc *) tct in
-if id = "f" then
+if debug && id = "f" then
 print_endline ("Virtual type: " ^ sbt bsym_table tct ^ ", instance type: " ^ sbt bsym_table t);
     let matches =  tct = t in
-if id = "f" then
+if debug && id = "f" then
 print_endline ("Matches= " ^ string_of_bool matches);
     matches
   in
@@ -102,14 +102,14 @@ print_endline ("Matches= " ^ string_of_bool matches);
     (fun (name,(i,(inst_funbvs,t))) -> 
        if name = id then begin
         let m = sigmatch i inst_funbvs t in
-if id = "f" then
+if debug && id = "f" then
         print_endline ("  ... filtering functions found name: " ^ name ^ " sigmatch = " ^ string_of_bool m);
         m
        end else false
     )
     inst_map 
   in
-if inst_id = "X" then
+if debug && inst_id = "X" then
 print_endline ("We have " ^ si (List.length entries) ^ " functions left");
 
 (* see what we have left *)
@@ -119,7 +119,7 @@ print_endline ("We have " ^ si (List.length entries) ^ " functions left");
 in the typeclass might be used instead. This routine only handles actual instances!
 *)
   | [] -> 
-if inst_id = "X" then
+if debug && inst_id = "X" then
 begin
   print_endline ("     ** function: No binding found");
 end;
@@ -152,7 +152,7 @@ end;
     if List.mem entry old then
       clierrx "[flx_frontend/flx_typeclass.ml:229: E362] " sr "Instance already registered??"
     else begin
-if inst_id = "X" then
+if debug && inst_id = "X" then
 begin
   print_endline ("      ** function: add virtual to instance binding")
 end;
@@ -170,7 +170,7 @@ let check_type_binding syms bsym_table (inst, inst_id, inst_vs, inst_ts, inst_sr
     (fun (name,(i,(inst_funbvs,t))) -> name = id ) 
     inst_map 
   in
-if inst_id = "X" then
+if debug && inst_id = "X" then
 print_endline ("We have " ^ si (List.length entries) ^ " types left");
 
 (* see what we have left *)
@@ -180,7 +180,7 @@ print_endline ("We have " ^ si (List.length entries) ^ " types left");
 in the typeclass might be used instead. This routine only handles actual instances!
 *)
   | [] ->
-if inst_id = "X" then
+if debug && inst_id = "X" then
 begin
   print_endline ("     ** type: No binding found");
 end;
@@ -216,7 +216,7 @@ end;
       clierrx "[flx_frontend/flx_typeclass.ml:229: E362] " sr "Instance already registered??"
     else begin
 (* finally, add the instance to the virtual to instance mapping table for subsequent lookups *)
-if inst_id = "X" then
+if debug && inst_id = "X" then
 begin
   print_endline ("      ** type: add virtual to instance binding")
 end;
@@ -253,6 +253,7 @@ let build_inst_map bsym_table inst_kids =
 
     (* this doesn't really belong here, its a type, not a typed entity *)
     | BBDCL_instance_type (bvs,ret) ->
+if debug then
 print_endline ("Scanning instance, found instance type " ^ Flx_bsym.id bsym ^ " -> " ^ sbt bsym_table ret); 
       let qt = bvs,ret in
       (Flx_bsym.id bsym,(i,qt)) :: acc
@@ -273,7 +274,7 @@ let check_instance
   inst_ts
 =
 (*
-if inst_id = "X" then
+if debug && inst_id = "X" then
   print_endline ("Check instance, inst_constraint=" ^ sbt bsym_table inst_constraint);
 *)
 (* STEP 1: find the typeclass *)
@@ -282,7 +283,7 @@ if inst_id = "X" then
   match Flx_bsym.bbdcl tc_bsym with
   | BBDCL_typeclass (tc_props, tc_bvs) ->
 (*
-if inst_id = "X" then
+if debug && inst_id = "X" then
 begin
     print_endline ("Found " ^ inst_id ^ "<"^si inst ^ ">" ^
     "[" ^ catmap "," (sbt bsym_table) inst_ts ^ "]" ^
@@ -312,7 +313,7 @@ end;
       with Not_found -> BidSet.empty
     in
 (*
-if inst_id = "X" then 
+if debug && inst_id = "X" then 
 begin
   print_string ("Typeclass has children " );
   BidSet.iter (fun i-> print_string (si i ^ ",")) tc_kids;
@@ -325,7 +326,7 @@ end;
       with Not_found -> BidSet.empty
     in
 (*
-if inst_id = "X" then
+if debug && inst_id = "X" then
 begin
   print_string ("Instance has children ");
   BidSet.iter (fun i-> print_string (si i ^ ",")) inst_kids;
@@ -337,7 +338,7 @@ end;
 *)
     let inst_map = build_inst_map bsym_table inst_kids in
 (*
-if inst_id = "X" then
+if debug && inst_id = "X" then
 begin
   print_endline ("Instance map for " ^ inst_id ^ "[" ^ catmap "," (sbt bsym_table) inst_ts ^ "]");
   List.iter (fun (name,(index,(bvs,typ))) ->
@@ -350,7 +351,7 @@ end;
    matches the given instance 
 *)
 (*
-if inst_id = "X" then
+if debug && inst_id = "X" then
 begin
   print_endline ("Scanning type class " ^ si tc ^ " children");
 end;
@@ -361,7 +362,7 @@ end;
 (* PASS 1, map virtual types to instance types *)
     BidSet.iter begin fun tck ->
       let tck_bsym = Flx_bsym_table.find bsym_table tck in
-if inst_id = "X" then
+if debug && inst_id = "X" then
 begin
   print_endline ("   type class child " ^ Flx_bsym.id tck_bsym);
 end;
@@ -369,7 +370,7 @@ end;
       match Flx_bsym.bbdcl tck_bsym with
       | BBDCL_virtual_type bvs -> 
 (*
-if inst_id = "X" 
+if debug && inst_id = "X" 
 then print_endline ("       virtual type");
 *)
         check_type_binding syms bsym_table inst_data tc tc_bvs tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs 
@@ -382,7 +383,7 @@ then print_endline ("       virtual type");
     BidSet.iter begin fun tck ->
       let tck_bsym = Flx_bsym_table.find bsym_table tck in
 (*
-if inst_id = "X" then
+if debug && inst_id = "X" then
 begin
   print_endline ("   type class child " ^ Flx_bsym.id tck_bsym);
 end;
@@ -390,7 +391,7 @@ end;
       match Flx_bsym.bbdcl tck_bsym with
       | BBDCL_external_fun (_,bvs,params,ret,_,_,`Code Flx_code_spec.Virtual) ->
 (*
-if inst_id = "X" 
+if debug && inst_id = "X" 
 then print_endline ("       virtual extern function");
 *)
         let ft = btyp_function (btyp_tuple params,ret) in
@@ -398,7 +399,7 @@ then print_endline ("       virtual extern function");
 
       | BBDCL_fun (props,bvs,bps,ret,effects,_) when List.mem `Virtual props ->
 (*
-if inst_id = "X" 
+if debug && inst_id = "X" 
 then print_endline ("       virtual felix function");
 *)
         let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
@@ -408,7 +409,7 @@ then print_endline ("       virtual felix function");
 
       | BBDCL_external_const (props,bvs,ret,_,_) when List.mem `Virtual props ->
 (*
-if inst_id = "X" 
+if debug && inst_id = "X" 
 then print_endline ("       virtual extern const");
 *)
         check_binding syms bsym_table inst_data tc tc_bvs tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ret
@@ -419,7 +420,7 @@ then print_endline ("       virtual extern const");
         clierr (Flx_bsym.sr tck_bsym) ("instance type not allowed in type class?")
 
       | _ ->
-if inst_id = "X" 
+if debug && inst_id = "X" 
 then print_endline ("       non virtual entry");
         (*
         clierrx "[flx_frontend/flx_typeclass.ml:261: E364] " tcksr "Typeclass entry must be virtual function or procedure"
@@ -469,7 +470,7 @@ let build_typeclass_to_instance_table syms bsym_table : unit =
   
     let inst_id = Flx_bsym.id bsym in
 (*
-    if inst_id = "X" then
+    if debug && inst_id = "X" then
     print_endline ("Typeclass: " ^ Flx_bsym.id bsym ^"<"^ si tc ^ "> instance " ^ si i );
 *)
       check_instance
