@@ -304,6 +304,7 @@ print_endline "Type list index returned None";
   | BTYP_tuple_cons (t1,t2) -> btyp_tuple_cons (br t1) (br t2)
   | BTYP_tuple_snoc (t1,t2) -> btyp_tuple_snoc (br t1) (br t2)
   | BTYP_inst (i,ts) -> btyp_inst (i, List.map br ts)
+  | BTYP_vinst (i,ts) -> btyp_vinst (i, List.map br ts)
   | BTYP_tuple ls -> btyp_tuple (List.map br ls)
   | BTYP_rev t -> btyp_rev (br t)
   | BTYP_uniq t -> btyp_uniq (br t)

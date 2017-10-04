@@ -366,6 +366,7 @@ print_endline ("Polyrecord/record unification " ^ sbt bsym_table lhs ^ " = " ^ s
       | BTYP_type i,BTYP_type j when i = j -> ()
       | BTYP_void,BTYP_void -> ()
 
+      | BTYP_vinst (i1,ts1),BTYP_vinst (i2,ts2) 
       | BTYP_inst (i1,ts1),BTYP_inst (i2,ts2) ->
 (*
 print_endline "Trying to unify instances (1)";

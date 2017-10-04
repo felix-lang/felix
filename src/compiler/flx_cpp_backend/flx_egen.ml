@@ -920,12 +920,11 @@ print_endline ("Apply stack");
 
 
   | BEXPR_tuple_cons ((eh',th' as xh'), (et', tt' as xt')) -> 
-    print_endline ("BACKEND GOT TUPLE CONS SHOULD HAVE BEEN REMOVED");
-    print_endline ("Tuple_cons (" ^ sbe bsym_table xh' ^ " , " ^ sbe bsym_table xt');
+    print_endline ("Flx_egen: Tuple_cons (" ^ sbe bsym_table xh' ^ " , " ^ sbe bsym_table xt');
     print_endline ("Type " ^ sbt bsym_table t);
     print_endline ("Head Type " ^ sbt bsym_table th');
     print_endline ("Tail Type " ^ sbt bsym_table tt');
-    assert false;
+    print_endline ("Should be eliminated");
     let tts = match tt' with
     | BTYP_tuple tts -> tts
     | BTYP_array (t,BTYP_unitsum n) -> 
@@ -989,9 +988,9 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
     ge' e
 
   | BEXPR_tuple_head (e',t' as x') ->
-    print_endline ("Tuple head of expression " ^ sbe bsym_table x');
+    print_endline ("Flx_egen: WARNING Tuple head of expression " ^ sbe bsym_table x');
     print_endline ("Type " ^ sbt bsym_table t');
-    assert false;
+    print_endline ("Should be eliminated");
 (*
     print_endline ("Normalised Type " ^ sbt bsym_table t');
     print_endline ("Tail Type " ^ sbt bsym_table t);

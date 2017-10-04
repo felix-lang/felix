@@ -40,6 +40,8 @@ let rec is_pod bsym_table t =
   | BTYP_tuple cps ->fold_left (fun acc t -> acc && is_pod t) true cps 
   | BTYP_record (cps) ->fold_left (fun acc (_,t) -> acc && is_pod t) true cps 
   | BTYP_array (t,_) -> is_pod t
+  | BTYP_vinst (k,ts) -> assert false
+
   | BTYP_inst (k,ts) ->
     let bsym = Flx_bsym_table.find bsym_table k in
     let bbdcl = Flx_bsym.bbdcl bsym in
@@ -92,6 +94,8 @@ let rec get_offsets' syms bsym_table typ : string list =
     | Flx_vrep.VR_packed -> ["0"]
     | Flx_vrep.VR_uctor -> ["offsetof("^tname^",data)"]
     end
+
+  | BTYP_vinst _ -> assert false
 
   | BTYP_inst (i,ts) ->
     let bsym =
@@ -251,6 +255,7 @@ let rec get_encoder' syms bsym_table p typ : string list =
   then
     ["b+=::flx::gc::generic::blit("^p^",sizeof("^tname^")); // pod"]
   else match t' with
+  | BTYP_vinst _ -> assert false
   | BTYP_inst (i,ts) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i
@@ -342,6 +347,7 @@ let rec get_decoder' syms bsym_table p typ : string list =
   then
     ["i=::flx::gc::generic::unblit("^p^",sizeof("^tname^"),s,i); // pod"]
   else match t' with
+  | BTYP_vinst _ -> assert false
   | BTYP_inst (i,ts) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i

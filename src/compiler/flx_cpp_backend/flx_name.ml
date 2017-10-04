@@ -281,6 +281,8 @@ let rec cpp_type_classname syms bsym_table t =
 
   | BTYP_unitsum k -> "_us" ^ string_of_int k
 
+  | BTYP_vinst (i,ts) -> assert false
+
   | BTYP_inst (i,ts) ->
     let bsym = Flx_bsym_table.find bsym_table i in
     let fname = Flx_bsym.id bsym in
@@ -438,6 +440,8 @@ and cpp_structure_name syms bsym_table t =
     end
 
   | BTYP_unitsum k -> "_us" ^ string_of_int k
+
+  | BTYP_vinst _ -> assert false
 
   | BTYP_inst (i,ts) ->
     let bsym = Flx_bsym_table.find bsym_table i in

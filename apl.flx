@@ -1,0 +1,50 @@
+class Apl[D] {
+ virtual type C;
+ virtual fun fmap: D -> C;
+}
+
+instance Apl[int] {
+ instance type C = double;
+ fun fmap (x:int) => x.double + 0.42;
+}
+
+instance Apl[double] {
+ instance type C = string;
+ fun fmap (x:double) => x.str + "!!";
+}
+
+instance Apl[string] {
+ instance type C = string;
+ fun fmap (x:string) => "'" + x.str + "'";
+}
+
+
+open[T] Apl[T];
+
+var p1 = (23, 3.413);
+var p2 =  fmap p1.0, fmap p1.1;
+println$ p1;
+println$ p2;
+
+instance[T,U with Apl[T],Apl[U]] Apl[T * U] { // int * double
+ instance type C = Apl[T]::C * Apl[U]::C; // double * string
+ fun fmap : (T * U)  -> C =
+ | (x1,y1) => fmap x1, fmap y1
+ ;
+}
+/*
+var p3 = fmap p2;
+println$ p3;
+var pp = (12, (61, 33.7));
+println$ fmap pp;
+
+instance [T,U with Apl[T], Apl[U]] Apl[T ** U] {
+ instance type C = Apl[T]::C ** Apl[U]::C;
+ fun fmap : (T ** U)  -> C =
+ | (ah ,, at) => fmap ah ,, fmap at
+ ;
+}
+
+var p = 23,3.412,"hello";
+println$ fmap p;
+*/

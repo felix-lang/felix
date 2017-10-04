@@ -1591,7 +1591,7 @@ print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table
       btyp_inst (index,ts)
 
     | SYMDEF_virtual_type  ->
-      btyp_inst (index,ts)
+      btyp_vinst (index,ts)
 
     | SYMDEF_newtype _
     | SYMDEF_union _
@@ -3831,11 +3831,14 @@ and lookup_type_name_in_table_dirs_with_sig
         "\ngot " ^ sbt bsym_table mt
       ); None)
 
-    | SYMDEF_virtual_type 
+    | SYMDEF_virtual_type _ ->
+      print_endline "Found virtual type";
+      Some (btyp_vinst (sye index, ts))
+
     | SYMDEF_newtype _
     | SYMDEF_abs _
     | SYMDEF_union _ ->
-      print_endline "Found abs,union, virtual type or newtype";
+      print_endline "Found abs,union,or newtype";
       Some (btyp_inst (sye index, ts))
 
     (* an instance type is just like a type alias in phase 1 *)
@@ -3938,6 +3941,20 @@ and lookup_type_name_in_table_dirs_with_sig
               | _ -> false
            ) ->
            Some (btyp_inst (sye i, ts))
+
+        | [NonFunctionEntry i] when
+          (
+              match get_data state.sym_table (sye i) with
+              { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry }->
+              (*
+              print_endline ("FOUND " ^ id);
+              *)
+              match entry with
+              | SYMDEF_virtual_type _ -> true
+              | _ -> false
+           ) ->
+           Some (btyp_vinst (sye i, ts))
+
 
         | _ ->
         let fs =

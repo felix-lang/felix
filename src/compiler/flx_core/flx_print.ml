@@ -674,6 +674,16 @@ and sb bsym_table depth fixlist counter prec tc =
       "[" ^cat ", " (map (sbt 9) ts) ^ "]"
       )
 
+    | BTYP_vinst (i,ts) ->
+      0, (match bsym_table with 
+        | Some tab -> let name = qualified_name_of_bindex tab i in
+          (* print_endline ("DEBUG: flx_print: BTYP_inst " ^ si i ^ ": " ^ name);  *)
+          name
+        | None -> "<Virtual type " ^ si i^">") ^
+      (if List.length ts = 0 then "" else
+      "[" ^cat ", " (map (sbt 9) ts) ^ "]"
+      )
+
     | BTYP_tuple ls ->
       begin match ls with
       | [] -> 0,"unit"

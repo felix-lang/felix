@@ -99,6 +99,7 @@ print_endline ("Metatyping term " ^ st term);
     mt
 
   | BTYP_type i -> btyp_type (i+1)
+  | BTYP_vinst (index,ts) -> btyp_type 0
   | BTYP_inst (index,ts) ->
       let sym =
         try Flx_sym_table.find sym_table index with Not_found ->
