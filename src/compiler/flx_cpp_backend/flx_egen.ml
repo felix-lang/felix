@@ -1033,10 +1033,12 @@ assert false;
     end
 
   | BEXPR_tuple_tail (e',t' as x') ->
-    print_endline ("Tuple tail of expression " ^ sbe bsym_table x');
+    print_endline ("Flx_egen: Tuple tail of expression " ^ sbe bsym_table x');
     print_endline ("Type " ^ sbt bsym_table t');
+    print_endline ("Should be eliminated");
+(*
     assert false;
-
+*)
 (*
     print_endline ("Normalised Type " ^ sbt bsym_table t');
     print_endline ("Tail Type " ^ sbt bsym_table t);

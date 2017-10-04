@@ -131,7 +131,16 @@ let bexpr_label i = BEXPR_label (i), Flx_btype.btyp_label ()
 
 let bexpr_tuple_tail t e = BEXPR_tuple_tail e, complete_check t
 let bexpr_tuple_head t e = BEXPR_tuple_head e, complete_check t
-let bexpr_tuple_cons t (eh,et) = BEXPR_tuple_cons (eh,et), complete_check t
+
+let bexpr_tuple_cons (_,th as eh,( _,tt as et)) = 
+  (match et with
+  | BEXPR_tuple es,_ -> bexpr_tuple [eh @ es]
+  | _, BTYP_tuple ts -> 
+    let apls = List.map2 (fun i c -> bexpr_get_n c i et ) (Flx_list.nlist (List.length ts)) ts
+    bexpr_tuple [ah @ apls]
+  | _ -> BEXPR_tuple_cons (eh,et)
+  )
+  , btyp_tuple_cons th tt 
 
 let bexpr_tuple_body t e = BEXPR_tuple_body e, complete_check t
 let bexpr_tuple_last t e = BEXPR_tuple_last e, complete_check t

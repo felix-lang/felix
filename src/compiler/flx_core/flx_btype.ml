@@ -722,9 +722,25 @@ and adjust_fixpoint t =
     | x -> x
   in adj 0 t
 
+(* tell if a complete type is recursive *)
+and is_recursive_type t = 
+  let rec ir j t = 
+    match t with
+    | BTYP_fix (i,_) when i = j -> raise Not_found (* means yes *)
+    | _ ->
+      let f_btype t = ir (j-1) t in
+      flat_iter ~f_btype t
+  in try ir 0 t; false with Not_found -> true
+
 
 
 and btyp_tuple_cons head tail =
+  if is_recursive_type tail then begin
+    print_endline ("Flx_btype: btyp_tuple_cons WARNING: recursive type for tail of tuple_cons");
+    print_endline ("Type with recursive tail " ^ st tail ^ " cannot ever be reduced");
+    print_endline ("Useful only if the head is later eliminated, failing constructor for now");
+    assert false
+  end;
   match head, tail with 
   | t1, BTYP_tuple ls ->
     let ls = List.map adjust_fixpoint ls in
@@ -751,7 +767,10 @@ and btyp_tuple_cons head tail =
     let r = btyp_tuple (ts@[t1]) in
     r
 
-  | _,(BTYP_tuple_cons _ as tv) -> BTYP_tuple_cons (head,tail)
+  (* Cons onto another irreducible cons is irreducibe *)
+  | _,(BTYP_tuple_cons _ ) -> BTYP_tuple_cons (head,tail)
+
+  (* Irreducible until variable replaced *)
   | _,(BTYP_type_var _ as tv) -> BTYP_tuple_cons (head,tail)
 
   | _,_ ->
