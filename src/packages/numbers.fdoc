@@ -240,7 +240,7 @@ instance Str[float] {
   fun xstr: float -> string = "::flx::rtl::strutil::str<#1>($1)" requires package "flx_strutil";
 
   //$ Default format float, also supports nan, +inf, -inf.
-  fun str(x:float):string =>
+  noinline fun str(x:float):string =>
     if Float::isnan x then "nan"
     elif Float::isinf x then
       if x > 0.0f then "+inf" else "-inf" endif
@@ -253,7 +253,7 @@ instance Str[double] {
   fun xstr: double -> string = "::flx::rtl::strutil::str<#1>($1)" requires package "flx_strutil";
 
   //$ Default format double, also supports nan, +inf, -inf.
-  fun str(x:double):string =>
+  noinline fun str(x:double):string =>
     if Double::isnan x then "nan"
     elif Double::isinf x then
       if x > 0.0 then "+inf" else "-inf" endif
@@ -266,7 +266,7 @@ instance Str[ldouble] {
   fun xstr: ldouble -> string = "::flx::rtl::strutil::str<#1>($1)" requires package "flx_strutil";
 
   //$ Default format long double, also supports nan, +inf, -inf.
-  fun str(x:ldouble):string =>
+  noinline fun str(x:ldouble):string =>
     if Ldouble::isnan x then "nan"
     elif Ldouble::isinf x then
       if x > 0.0l then "+inf" else "-inf" endif

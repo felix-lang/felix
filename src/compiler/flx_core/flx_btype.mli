@@ -142,4 +142,5 @@ val iter :
 val map :
   ?f_bid:(bid_t -> bid_t) -> ?f_btype:(t -> t) -> t -> t
 val contains_uniq: t -> bool
+val adjust_fixpoint: t -> t
 

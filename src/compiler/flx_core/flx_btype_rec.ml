@@ -28,6 +28,7 @@ let is_recursive_type t =
       Flx_btype.flat_iter ~f_btype t
   in try ir 0 t; false with Not_found -> true
  
+let adjust_fixpoint t = Flx_btype.adjust_fixpoint t
 
 let fix i t =
   let rec aux n t =

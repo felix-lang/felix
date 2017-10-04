@@ -60,7 +60,6 @@ let add_inst syms bsym_table ref_insts1 sr (i,ts) =
       catmap ", " (sbt bsym_table) ts ^ "]");
     let ts = map (fun t -> beta_reduce "flx_inst: add_inst" syms.Flx_mtypes2.counter bsym_table dummy_sr t) ts in
 
-    let ts = List.map (Flx_tuplecons.normalise_tuple_cons bsym_table) ts in
     let x = i, ts in
     let has_variables =
       fold_left
@@ -717,7 +716,6 @@ print_endline "  [flx_inst] Begin instantiation";
      have to be monomorphic anyhow
   *)
   let add_instance i ts =
-    let ts = List.map (Flx_tuplecons.normalise_tuple_cons bsym_table) ts in
     let n =
       match ts with
       | [] -> i

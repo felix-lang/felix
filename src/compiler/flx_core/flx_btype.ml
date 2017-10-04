@@ -305,11 +305,6 @@ let btyp_rev t =
 let btyp_uniq t = 
   BTYP_uniq t
 
-let btyp_tuple_cons head tail = 
-  match tail with
-  | BTYP_tuple ts -> btyp_tuple (head::ts)
-  | _ -> BTYP_tuple_cons (head,tail)
-
 let btyp_tuple_snoc body last = 
   match body with
   | BTYP_tuple ts -> btyp_tuple (ts@[last])
@@ -647,7 +642,7 @@ let rec iter
 
 (** Recursively iterate over each bound type and transform it with the
  * function. *)
-let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
+let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_hole as x -> x
   | BTYP_label as x -> x
   | BTYP_none as x -> x
@@ -717,6 +712,54 @@ let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_type_set_union ls -> btyp_type_set_union (List.map f_btype ls)
   | BTYP_type_set_intersection ls ->
       btyp_type_set_intersection (List.map f_btype ls)
+
+
+and adjust_fixpoint t =
+  let rec adj depth t =
+    let fx t = adj (depth + 1) t in
+    match map ~f_btype:fx t with
+    | BTYP_fix (i, mt) when i + depth < 0 -> btyp_fix (i+1) mt
+    | x -> x
+  in adj 0 t
+
+
+
+and btyp_tuple_cons head tail =
+  match head, tail with 
+  | t1, BTYP_tuple ls ->
+    let ls = List.map adjust_fixpoint ls in
+    let r = btyp_tuple (t1 :: ls) in
+    r
+
+  | t1, BTYP_array (t2, BTYP_unitsum n) when t1 = t2 ->
+    let r = btyp_array (t1, btyp_unitsum (n+1)) in
+    r
+
+  | t1, BTYP_array (t2, BTYP_unitsum n) ->
+    assert (n < 50);
+    let t2 = adjust_fixpoint t2 in
+    let rec arr n ts = match n with 0 -> ts | _ -> arr (n-1) (t2::ts) in
+    let ts = arr n [] in
+    let r = btyp_tuple (t1 :: ts) in
+    r
+
+  | BTYP_array (t2, BTYP_unitsum n),t1 ->
+    assert (n < 50);
+    let t1 = adjust_fixpoint t1 in
+    let rec arr n ts = match n with 0 -> ts | _ -> arr (n-1) (t2::ts) in
+    let ts = arr n [] in
+    let r = btyp_tuple (ts@[t1]) in
+    r
+
+  | _,(BTYP_tuple_cons _ as tv) -> BTYP_tuple_cons (head,tail)
+  | _,(BTYP_type_var _ as tv) -> BTYP_tuple_cons (head,tail)
+
+  | _,_ ->
+    print_endline ("Second argument of tuple_cons type must be tuple, array, or type variable");
+    print_endline ("Got tail=" ^ st tail);
+    failwith ("Type constructor error: btyp_tuple_cons(" ^st head ^"," ^ st tail ^ ")")
+
+
 
 (* this is a hack, it fails to account for nominal types *)
 let contains_uniq t =

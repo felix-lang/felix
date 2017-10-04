@@ -66,7 +66,6 @@ let unitsum bsym_table t =
  *)
 let rec get_offsets' syms bsym_table typ : string list =
   let tname = cpp_typename syms bsym_table typ in
-  let typ = Flx_tuplecons.normalise_tuple_cons bsym_table typ in
   let t' = unfold "flx_cal_type_offsets: get_offsets" typ in
   match t' with
   | BTYP_hole -> assert false
@@ -247,7 +246,6 @@ exception Scanner of CS.t
 
 let rec get_encoder' syms bsym_table p typ : string list =
   let tname = cpp_typename syms bsym_table typ in
-  let typ = Flx_tuplecons.normalise_tuple_cons bsym_table typ in
   let t' = unfold "flx_cal_type_offsets: encoder" typ in
   if is_pod bsym_table typ
   then
@@ -339,7 +337,6 @@ let rec get_encoder' syms bsym_table p typ : string list =
 
 let rec get_decoder' syms bsym_table p typ : string list =
   let tname = cpp_typename syms bsym_table typ in
-  let typ = Flx_tuplecons.normalise_tuple_cons bsym_table typ in
   let t' = unfold "flx_cal_type_offsets: get_decoder" typ in
   if is_pod bsym_table typ
   then

@@ -152,7 +152,7 @@ let rec gen_expr'
 (*
   print_endline ("Gen_expr': " ^ sbe bsym_table (e,t));
 *)
-  let rec f_bexpr e = Flx_bexpr.map ~f_bexpr ~f_btype:(Flx_tuplecons.normalise_tuple_cons bsym_table) e in
+  let rec f_bexpr e = Flx_bexpr.map ~f_bexpr e in
   let e,t = f_bexpr (e,t) in
   match e with
   (* replace heap allocation of a unit with NULL pointer *)
@@ -919,15 +919,14 @@ print_endline ("Apply stack");
     end
 
 
-  | BEXPR_tuple_cons ((eh',th' as xh'), (et', tt' as xt')) ->
-(*
+  | BEXPR_tuple_cons ((eh',th' as xh'), (et', tt' as xt')) -> 
+    print_endline ("BACKEND GOT TUPLE CONS SHOULD HAVE BEEN REMOVED");
     print_endline ("Tuple_cons (" ^ sbe bsym_table xh' ^ " , " ^ sbe bsym_table xt');
     print_endline ("Type " ^ sbt bsym_table t);
     print_endline ("Head Type " ^ sbt bsym_table th');
     print_endline ("Tail Type " ^ sbt bsym_table tt');
-*)
-    let ntt = Flx_tuplecons.normalise_tuple_cons bsym_table tt' in
-    let tts = match ntt with
+    assert false;
+    let tts = match tt' with
     | BTYP_tuple tts -> tts
     | BTYP_array (t,BTYP_unitsum n) -> 
       let tts = ref [] in
@@ -954,7 +953,6 @@ print_endline ("Apply stack");
         tts
     in
     let es = xh' :: es in
-    let t = Flx_tuplecons.normalise_tuple_cons bsym_table t in
     let e = bexpr_tuple t es in
 (*
 print_endline ("Normalised expression " ^ sbe bsym_table e);
@@ -963,8 +961,8 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
     ge' e
 
   | BEXPR_tuple_snoc ((et', tt' as xt'),(eh',th' as xh') ) ->
-    let ntt = Flx_tuplecons.normalise_tuple_cons bsym_table tt' in
-    let tts = match ntt with
+    assert false;
+    let tts = match tt' with
     | BTYP_tuple tts -> tts
     | BTYP_array (t,BTYP_unitsum n) -> 
       let tts = ref [] in
@@ -987,21 +985,18 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
         tts
     in
     let es = es @[xh'] in
-    let t = Flx_tuplecons.normalise_tuple_cons bsym_table t in
     let e = bexpr_tuple t es in
     ge' e
 
   | BEXPR_tuple_head (e',t' as x') ->
-(*
     print_endline ("Tuple head of expression " ^ sbe bsym_table x');
     print_endline ("Type " ^ sbt bsym_table t');
-*)
-    let t'' = Flx_tuplecons.normalise_tuple_cons bsym_table t' in
+    assert false;
 (*
     print_endline ("Normalised Type " ^ sbt bsym_table t');
     print_endline ("Tail Type " ^ sbt bsym_table t);
 *)
-    begin match t'' with 
+    begin match t' with 
     | BTYP_tuple [] -> assert false
     | BTYP_tuple ts -> 
       let eltt = List.hd ts in
@@ -1014,13 +1009,13 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
  
     | _ -> 
       print_endline ("Expected head to apply to a tuple, got " ^ 
-        sbt bsym_table t' ^ " ->(normalised)-> " ^ sbt bsym_table t'');
+        sbt bsym_table t');
       assert false
     end
 
   | BEXPR_tuple_last (e',t' as x') ->
-    let t'' = Flx_tuplecons.normalise_tuple_cons bsym_table t' in
-    begin match t'' with 
+assert false;
+    begin match t' with 
     | BTYP_tuple [] -> assert false
     | BTYP_tuple ts -> 
       let eltt = List.hd (List.rev ts) in
@@ -1033,21 +1028,20 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
  
     | _ -> 
       print_endline ("Expected tuple_last to apply to a tuple, got " ^ 
-        sbt bsym_table t' ^ " ->(normalised)-> " ^ sbt bsym_table t'');
+        sbt bsym_table t' );
       assert false
     end
 
   | BEXPR_tuple_tail (e',t' as x') ->
-(*
     print_endline ("Tuple tail of expression " ^ sbe bsym_table x');
     print_endline ("Type " ^ sbt bsym_table t');
-*)
-    let t'' = Flx_tuplecons.normalise_tuple_cons bsym_table t' in
+    assert false;
+
 (*
     print_endline ("Normalised Type " ^ sbt bsym_table t');
     print_endline ("Tail Type " ^ sbt bsym_table t);
 *)
-    let ts = match t'' with 
+    let ts = match t' with 
     | BTYP_tuple ts ->  ts
     | BTYP_array (t, BTYP_unitsum n) -> 
       let tts = ref [] in
@@ -1058,7 +1052,7 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
 
     | _ -> 
       print_endline ("Expected tail to be tuple, got " ^ 
-        sbt bsym_table t' ^ " ->(normalised)-> " ^ sbt bsym_table t'');
+        sbt bsym_table t');
       assert false
     in
     let n = List.length ts in
@@ -1074,8 +1068,8 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
     ge' tail
 
   | BEXPR_tuple_body (e',t' as x') ->
-    let t'' = Flx_tuplecons.normalise_tuple_cons bsym_table t' in
-    let ts = match t'' with 
+assert false;
+    let ts = match t' with 
     | BTYP_tuple ts ->  ts
     | BTYP_array (t, BTYP_unitsum n) -> 
       let tts = ref [] in
@@ -1086,7 +1080,7 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
 
     | _ -> 
       print_endline ("Expected tuple_body to be tuple, got " ^ 
-        sbt bsym_table t' ^ " ->(normalised)-> " ^ sbt bsym_table t'');
+        sbt bsym_table t' );
       assert false
     in
     let n = List.length ts in

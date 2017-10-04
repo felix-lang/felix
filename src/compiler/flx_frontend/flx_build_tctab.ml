@@ -336,6 +336,7 @@ end;
   mapping the function name to the index and function type
 *)
     let inst_map = build_inst_map bsym_table inst_kids in
+(*
 if inst_id = "X" then
 begin
   print_endline ("Instance map for " ^ inst_id ^ "[" ^ catmap "," (sbt bsym_table) inst_ts ^ "]");
@@ -344,14 +345,16 @@ begin
   )
   inst_map
 end;
-
+*)
 (* check the polymorphic binding of the virtual function id[tck,tck_bvs] type tctype
    matches the given instance 
 *)
+(*
 if inst_id = "X" then
 begin
   print_endline ("Scanning type class " ^ si tc ^ " children");
 end;
+*)
     let inst_data =  (inst, inst_id, inst_vs, inst_ts, inst_sr, inst_map, inst_constraint) in
 
 (* We need two passes, because the function bindings depend on the type bindings *)
@@ -365,8 +368,10 @@ end;
 
       match Flx_bsym.bbdcl tck_bsym with
       | BBDCL_virtual_type bvs -> 
+(*
 if inst_id = "X" 
 then print_endline ("       virtual type");
+*)
         check_type_binding syms bsym_table inst_data tc tc_bvs tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs 
       | _ -> ()
     end 
@@ -376,29 +381,36 @@ then print_endline ("       virtual type");
 (* PASS 2, map virtual functins to instance functions *)
     BidSet.iter begin fun tck ->
       let tck_bsym = Flx_bsym_table.find bsym_table tck in
+(*
 if inst_id = "X" then
 begin
   print_endline ("   type class child " ^ Flx_bsym.id tck_bsym);
 end;
-
+*)
       match Flx_bsym.bbdcl tck_bsym with
       | BBDCL_external_fun (_,bvs,params,ret,_,_,`Code Flx_code_spec.Virtual) ->
+(*
 if inst_id = "X" 
 then print_endline ("       virtual extern function");
+*)
         let ft = btyp_function (btyp_tuple params,ret) in
         check_binding syms bsym_table inst_data tc tc_bvs tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
 
       | BBDCL_fun (props,bvs,bps,ret,effects,_) when List.mem `Virtual props ->
+(*
 if inst_id = "X" 
 then print_endline ("       virtual felix function");
+*)
         let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
         (* ignore effects for now! *)
         let ft = btyp_function (argt,ret) in
         check_binding syms bsym_table inst_data tc tc_bvs tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
 
       | BBDCL_external_const (props,bvs,ret,_,_) when List.mem `Virtual props ->
+(*
 if inst_id = "X" 
 then print_endline ("       virtual extern const");
+*)
         check_binding syms bsym_table inst_data tc tc_bvs tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ret
 
       | BBDCL_virtual_type bvs ->  ()

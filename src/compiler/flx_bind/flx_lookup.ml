@@ -2259,9 +2259,7 @@ and cal_apply state bsym_table sr rs ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
   let ((re,rt) as r) = cal_apply' state bsym_table be sr tbe1 tbe2 in
   r
 
-and cal_apply' state bsym_table be sr ((be1,t1') as tbe1) ((be2,t2') as tbe2) =
-  let t1 = Flx_tuplecons.normalise_tuple_cons bsym_table t1' in
-  let t2 = Flx_tuplecons.normalise_tuple_cons bsym_table t2' in
+and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
 (*
   if t1 <> t1' || t2 <> t2' then begin
 print_endline ("cal_apply' BEFORE NORMALISE, fn = " ^ sbt bsym_table t1' ^ " arg=" ^ sbt bsym_table t2');

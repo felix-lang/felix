@@ -106,6 +106,12 @@ let mk_varmap sr vs ts =
   ;
   varmap
 
+let varmap_of_mgu mgu = 
+  let varmap = Hashtbl.create 97 in
+  List.iter (fun (varidx, typ) -> Hashtbl.add varmap varidx typ) mgu;
+  varmap
+
+
 let tsubst sr vs ts t =
   varmap_subst (mk_varmap sr vs ts) t
 

@@ -166,12 +166,7 @@ and adjust bsym_table t =
 (*
 print_endline ("Fixpoint adjust " ^ sbt bsym_table t);
 *)
-  let rec adj depth t =
-    let fx t = adj (depth + 1) t in
-    match Flx_btype.map ~f_btype:fx t with
-    | BTYP_fix (i, mt) when i + depth < 0 -> btyp_fix (i+1) mt
-    | x -> x
-  in adj 0 t
+  Flx_btype_rec.adjust_fixpoint t
 
 and mk_prim_type_inst i args =
   print_endline "MK_PRIM_TYPE";

@@ -1250,7 +1250,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       add_tvars privtab
 
   | DCL_instance_type t ->
-print_endline ("Adding instance type " ^ id ^ "=" ^ Flx_print.string_of_typecode t ^ " to symbol table");
+print_endline (string_of_int symbol_index ^ " Adding instance type " ^ id ^ "=" ^ Flx_print.string_of_typecode t ^ " to symbol table");
       (* Add the newtype to the sym_table. *)
       add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_instance_type t);
 
@@ -1277,7 +1277,7 @@ print_endline ("Adding instance type " ^ id ^ "=" ^ Flx_print.string_of_typecode
       add_tvars privtab
 
   | DCL_virtual_type ->
-print_endline ("Adding virtual type " ^ id ^ " to symbol table");
+print_endline (string_of_int symbol_index ^ " Adding virtual type " ^ id ^ " to symbol table");
       add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_virtual_type);
 
       (* Possibly add the abs to the private symbol table. *)
