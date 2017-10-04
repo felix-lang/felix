@@ -38,7 +38,7 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
 
   | BTYP_label,BTYP_label -> true
   | BTYP_type i, BTYP_type j -> i = j
-  | BTYP_vinst (i1,ts1),BTYP_vinst (i2,ts2) ->
+  | BTYP_vinst (i1,ts1),BTYP_vinst (i2,ts2)
   | BTYP_inst (i1,ts1),BTYP_inst (i2,ts2) ->
     i1 = i2 &&
     List.length ts1 = List.length ts2 &&
