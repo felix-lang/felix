@@ -10,7 +10,7 @@ instance Apl[int] {
 
 instance Apl[double] {
  instance type C = string;
- fun fmap (x:double) => x.str + "!!";
+ noinline fun fmap (x:double) => x.str + "!!";
 }
 
 instance Apl[string] {
@@ -20,12 +20,12 @@ instance Apl[string] {
 
 
 open[T] Apl[T];
-
+/*
 var p1 = (23, 3.413);
 var p2 =  fmap p1.0, fmap p1.1;
 println$ p1;
 println$ p2;
-
+*/
 instance[T,U with Apl[T],Apl[U]] Apl[T * U] { // int * double
  instance type C = Apl[T]::C * Apl[U]::C; // double * string
  fun fmap (x1:T,y1:U) : C = {
@@ -35,15 +35,17 @@ println$ (x1,y1).str + "-->" + (rx,ry).str;
  return rx, ry;
  }
 }
+/*
 println$ fmap p1;
 println$ p2.fmap.fmap.fmap.fmap;
 var p3 = fmap p2;
 println$ p3;
+*/
 var pp = (12, (61, 33.7));
 var px = fmap pp;
-println$ fmap pp;
-println$ px;
-
+var aa = px.str;
+println$ aa;
+/*
 instance [T,U with Apl[T], Apl[U]] Apl[T ** U] {
  instance type C = Apl[T]::C ** Apl[U]::C;
  fun fmap (a:(T ** U)) : C = {
@@ -59,3 +61,4 @@ instance [T,U with Apl[T], Apl[U]] Apl[T ** U] {
 
 var p = 23,3.412,"hello";
 println$ fmap p;
+*/

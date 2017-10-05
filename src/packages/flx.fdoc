@@ -1902,10 +1902,10 @@ gen cal_depvars(
   var AUTOMATON = Directory::mk_absolute_filename control*.AUTOMATON;
 
   var DEBUGSWITCH=Empty[string];
-  if control*.DEBUG_COMPILER == 1 do DEBUGSWITCH=list[string]$ "--debug"; done
+  if control*.DEBUG == 1 do DEBUGSWITCH=list[string]$ "--debug"; done
 
   var STATIC_ENV=Empty[string];
-  if control*.DEBUG_COMPILER == 1 do STATIC_ENV=list[string] ("env","FLX_DEBUG=1"); done
+  if control*.DEBUG == 1 do STATIC_ENV=list[string] ("env","FLX_DEBUG=1"); done
 
   debugln$ "RECOMPILE="+str control*.RECOMPILE;
   debugln$ "RUNIT="+str control*.RUNIT;

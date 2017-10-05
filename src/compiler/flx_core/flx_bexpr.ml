@@ -737,11 +737,19 @@ let bexpr_tuple_head t (_,et as e) =
     BEXPR_tuple_head e, complete_check "bexpr_tuple_head(client2)" t
 
 let bexpr_tuple_cons (_,th as eh,( _,tt as et)) = 
+(*
+if debug then 
   let th = force_complete_check "bexpr_tuple_cons(head)" th in
   let tt = force_complete_check "bexpr_tuple_cons(tail)" tt in
+  ()
+;
+*)
+if debug then
 print_endline ("Tuple cons, head:  " ^ Flx_btype.st th);
+if debug then
 print_endline ("Tuple cons, tail:  " ^ Flx_btype.st tt);
   let t  = Flx_btype.btyp_tuple_cons th tt in (* must be complete because args are *)
+if debug then
 print_endline ("Tuple cons:  " ^ Flx_btype.st t);
   let tt = Flx_btype.unfold "Flx_bexpr: bexpr_tuple_cons (tail)" tt in
   match tt with

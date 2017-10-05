@@ -154,9 +154,11 @@ and uses_bexe' add bsym_table count_inits exe =
   | BEXE_assign (_,lhs,rhs),_ ->
 print_endline ("Flx_use: Assign to non variable detected!");
 print_endline (sbx bsym_table exe);
+assert false;
     (* check is a term is a tuple projection of a variable *)
-    if count_inits then f_bexpr lhs
-    else chkl lhs;
+    (*if count_inits then *) f_bexpr lhs
+    (* else chkl lhs *)
+    ;
     f_bexpr rhs
 
   | BEXE_label _,false -> ()

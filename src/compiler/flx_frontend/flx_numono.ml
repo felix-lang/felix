@@ -48,81 +48,13 @@ let showvars bsym_table vars =
 (* ROUTINES FOR REPLACING TYPE VARIABLES IN TYPES              *)
 (* ----------------------------------------------------------- *)
 
-let check_mono bsym_table sr t =
-  if Flx_btype_occurs.var_occurs bsym_table t then begin
-    print_endline (" **** Failed to monomorphise type " ^ sbt bsym_table t);
-    print_endline (" **** got type " ^ sbt bsym_table t);
-    assert false
-  end
-  ;
-  match t with
-  | BTYP_none 
-  | BTYP_type_apply _
-  | BTYP_type_function _
-  | BTYP_type_tuple _
-  | BTYP_type_match _
-  | BTYP_type_set _
-  | BTYP_type_set_union _
-  | BTYP_type_set_intersection _
-    -> 
-    (* print_endline ("[flx_numono:check_mono]: Unexpected type expression" ^ sbt bsym_table t); *)
-     ()
-  | _ -> ()
-
-  
+(* 
 let check_mono_vars bsym_table vars sr t =
-  try check_mono bsym_table sr t
+  try Flx_monocheck.check_mono bsym_table sr t
   with _ -> 
     print_endline (" **** using varmap " ^ showvars bsym_table vars);
     assert false
-
-let mono_type syms bsym_table vars sr t = 
-(*
-print_endline (" ** begin mono_type " ^ sbt bsym_table t);
 *)
-  let t = list_subst syms.counter vars t in
-(*
-print_endline (" ** mono_type after variable replacement " ^ sbt bsym_table t);
-*)
-  let t = Flx_beta.beta_reduce "mono_type"
-    syms.Flx_mtypes2.counter
-    bsym_table
-    Flx_srcref.dummy_sr
-    t
-  in 
-  let t = Flx_build_tctab.remap_virtual_types syms bsym_table (* tc *) t in
-  begin try check_mono bsym_table sr t with _ -> assert false end;
-(*
-print_endline (" ** end Mono_type " ^ sbt bsym_table t);
-*)
-  t
-
-let rec mono_expr syms bsym_table vars sr e =
-(*
-print_endline (" ** begin mono_expr " ^ sbe bsym_table e);
-print_endline (" ** begin mono_expr: type " ^ sbt bsym_table (snd e));
-*)
-  let f_btype t = mono_type syms bsym_table vars sr t in
-  let f_bexpr e = mono_expr syms bsym_table vars sr e in
-  let e = Flx_bexpr.map ~f_btype ~f_bexpr e in
-(*
-print_endline (" ** end mono_expr " ^ sbe bsym_table e);
-print_endline (" ** end mono_expr: type " ^ sbt bsym_table (snd e));
-*)
-  e
-
-let rec mono_exe syms bsym_table vars exe =
-(*
-print_endline (" ** begin mono_exe " ^ string_of_bexe bsym_table 0 exe);
-*)
-  let sr = Flx_bexe.get_srcref exe in
-  let f_btype t = mono_type syms bsym_table vars sr t in
-  let f_bexpr e = mono_expr syms bsym_table vars sr e in
-  let exe = Flx_bexe.map ~f_btype ~f_bexpr exe in
-(*
-print_endline (" ** end mono_exe " ^ string_of_bexe bsym_table 0 exe);
-*)
-  exe
 
 (* ----------------------------------------------------------- *)
 (* ROUTINES FOR REPLACING REFS TO VIRTUALS WITH INSTANCES      *)
@@ -364,7 +296,7 @@ let fixup_type syms bsym_table vars bsym virtualinst polyinst sr t =
 (*
   print_endline ("    ** mono_type " ^ sbt bsym_table t);
 *)
-  let t = mono_type syms bsym_table vars sr t in
+  let t = Flx_monosubs.mono_type syms bsym_table vars sr t in
 (*
   print_endline ("    ** typeclass_fixup_type " ^ sbt bsym_table t);
 *)
@@ -388,7 +320,7 @@ let fixup_type syms bsym_table vars bsym virtualinst polyinst sr t =
   t
 
 let fixup_req syms bsym_table vars polyinst sr (i,ts) : bid_t * Flx_btype.t list =
-  let ts = List.map (mono_type syms bsym_table vars sr) ts in
+  let ts = List.map (Flx_monosubs.mono_type syms bsym_table vars sr) ts in
   let j,ts = polyinst sr i ts in
   let ts = List.map (poly_fixup_type syms bsym_table polyinst sr) ts in
   j,ts
@@ -425,7 +357,7 @@ let show_exes bsym_table exes = catmap "\n" (show_exe bsym_table) exes
 (* completely process a list of exes *)
 (* rewrite to do in one pass *)
 let fixup_exes syms bsym_table vars virtualinst polyinst parent_ts exes =
- let mt t = mono_type syms bsym_table vars t in
+ let mt t = Flx_monosubs.mono_type syms bsym_table vars t in
 
  (* monomorphise the code by eliminating type variables *)
 (*
@@ -442,9 +374,9 @@ let fixup_exes syms bsym_table vars virtualinst polyinst parent_ts exes =
            table a little earlier.
         *) 
         | BBDCL_fun (props,_,_,_,_,[]) when not (List.mem `Virtual props) -> oexes 
-        | _ -> mono_exe syms bsym_table vars iexe :: oexes
+        | _ -> Flx_monosubs.mono_exe syms bsym_table vars iexe :: oexes
         end 
-      | _ ->  mono_exe syms bsym_table vars iexe :: oexes
+      | _ ->  Flx_monosubs.mono_exe syms bsym_table vars iexe :: oexes
     ) 
     [] 
     exes 
@@ -606,7 +538,7 @@ end;
   )
   ts;
   let sr = Flx_srcref.make_dummy ("[mono_bbdcl] " ^ Flx_bsym.id bsym) in 
-  begin try List.iter (check_mono bsym_table sr) ts with _ -> assert false end;
+  begin try List.iter (Flx_monocheck.check_mono bsym_table sr) ts with _ -> assert false end;
 
 (*
   let original_instance_type = BTYP_inst (i,ts) in
@@ -1033,7 +965,7 @@ let rec mono_element debug syms to_process processed bsym_table nutab nubids i t
       j,[]
   in
   let sr = Flx_srcref.make_dummy "[mono_element]" in
-  begin try List.iter (check_mono bsym_table sr) ts with _ -> assert false end;
+  begin try List.iter (Flx_monocheck.check_mono bsym_table sr) ts with _ -> assert false end;
   try
     let parent,sym = 
       try Flx_bsym_table.find_with_parent bsym_table i 
@@ -1126,7 +1058,7 @@ let monomorphise2 debug syms bsym_table =
   while not (MonoMap.is_empty (!to_process)) do
     let (i,ts),j = MonoMap.choose (!to_process) in
     assert (not (MonoMap.mem (i,ts) (!processed) ));
-    begin try List.iter (check_mono bsym_table sr) ts with _ -> assert false end;
+    begin try List.iter (Flx_monocheck.check_mono bsym_table sr) ts with _ -> assert false end;
 
     to_process := MonoMap.remove (i,ts) (!to_process);
     processed := MonoMap.add (i,ts) j (!processed);
