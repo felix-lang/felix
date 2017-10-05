@@ -246,5 +246,13 @@ let validate bsym_table =
     Flx_bbdcl.iter ~f_bid ~f_btype ~f_bexpr ~f_bexe bbdcl
   end bsym_table
 
+let validate_types f_btype bsym_table =
+  iter begin fun bid _ bsym ->
+    let bbdcl = Flx_bsym.bbdcl bsym in
+
+    Flx_bbdcl.iter ~f_btype bbdcl
+  end bsym_table
+
+
 
 

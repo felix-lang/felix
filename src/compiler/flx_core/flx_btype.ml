@@ -724,6 +724,27 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
       btyp_type_set_intersection (List.map f_btype ls)
 
 
+(* this routine adds 1 to the fixpoint counter of free fixpoints,
+thereby allowing a subterm of a type to be lifted up one level
+It must ONLY be used when reducing an existing correctly leveled type.
+For example consider a tuple type
+
+  BTYP_tuple_cons (H, T) and suppose T is replaced by BTYP_tuple [C;D]
+
+then the reduction rule should be to:
+
+  BTYP_tuple [H; adjust_fixpoint C; adjust_fixpoint D]
+
+because the distance up from C in the term
+
+  BTYP_tuple_cons (H, BTYP_tuple [C;D])
+
+is one less in the reduced term. Of course this assumes the fixpoint
+is set in the term BTYP_tuple [C;D] assuming it will be dropped
+two levels down by the subtitution: the correction is because it
+only got dropped one level.
+*)
+
 and adjust_fixpoint t =
   let rec adj depth t =
     let fx t = adj (depth + 1) t in

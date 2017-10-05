@@ -28,23 +28,34 @@ println$ p2;
 
 instance[T,U with Apl[T],Apl[U]] Apl[T * U] { // int * double
  instance type C = Apl[T]::C * Apl[U]::C; // double * string
- fun fmap : (T * U)  -> C =
- | (x1,y1) => fmap x1, fmap y1
- ;
+ fun fmap (x1:T,y1:U) : C = {
+var rx = fmap x1;
+var ry = fmap y1;
+println$ (x1,y1).str + "-->" + (rx,ry).str;
+ return rx, ry;
+ }
 }
-/*
+println$ fmap p1;
+println$ p2.fmap.fmap.fmap.fmap;
 var p3 = fmap p2;
 println$ p3;
 var pp = (12, (61, 33.7));
+var px = fmap pp;
 println$ fmap pp;
+println$ px;
 
 instance [T,U with Apl[T], Apl[U]] Apl[T ** U] {
  instance type C = Apl[T]::C ** Apl[U]::C;
- fun fmap : (T ** U)  -> C =
- | (ah ,, at) => fmap ah ,, fmap at
- ;
+ fun fmap (a:(T ** U)) : C = {
+ match a with
+ | (ah ,, at) => 
+   var xh = fmap ah;
+   var xt = fmap at;
+   println$ "(" + ah.str + ",," + at.str + ")" + " --> " + "(" + xh.str + ",," + xt.str +")";
+   return  xh ,, xt ;
+ endmatch;
+ }
 }
 
 var p = 23,3.412,"hello";
 println$ fmap p;
-*/

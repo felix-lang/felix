@@ -8,7 +8,7 @@ open Flx_btype
 let catmap x = Flx_util.catmap x
 let si i = string_of_int i
 
-let debug = false
+let debug = false 
 
 (* make recursive later *)
 let rec remap_virtual_types' syms bsym_table (* tc *) t =
@@ -16,12 +16,14 @@ let rec remap_virtual_types' syms bsym_table (* tc *) t =
 (*
 print_endline ("Remap virtual types " ^ Flx_btype.st t);
 *)
+  let t = Flx_btype.map ~f_btype t in
   match t with
   (* the i here is the index of the virtual type, the ts are the 
      types specialising the type class since currently we don't
      allow a virtual type to be indexed
   *)
   | BTYP_vinst (i,ts) ->
+    (* let ts = List.map f_btype ts in *)
     begin
       (* STEP 1: Find parent type class *)
       let parent,bsym = Flx_bsym_table.find_with_parent bsym_table i in
@@ -34,7 +36,7 @@ print_endline ("Remap virtual types " ^ Flx_btype.st t);
           contain instance vs variables which we have to find.
         *)
         | BBDCL_virtual_type bvs -> 
-          if debug then print_endline ("Remap: virtual type!" ^ Flx_bsym.id bsym ^ 
+          if debug then print_endline ("Remap: virtual type! " ^ Flx_bsym.id bsym ^ 
            "<" ^si i ^ ">["^
            catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") bvs^"]["^
            catmap "," (sbt bsym_table) ts^"]");
@@ -173,7 +175,7 @@ if debug then print_endline ("n_inst_ts <> n_ts");
       end (* maybe tc *)
     end (* nominal type *)
 
-   | _ -> Flx_btype.map ~f_btype t
+   | _ -> t (* Flx_btype.map ~f_btype t *)
 
 let remap_virtual_types syms bsym_table (* tc *) t =
   if debug then print_endline ("---------------------");

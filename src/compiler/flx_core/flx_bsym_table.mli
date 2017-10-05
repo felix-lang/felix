@@ -100,3 +100,5 @@ val is_function : t -> bid_t -> bool
 
 (** Assert that the bound symbol table is well formed. *)
 val validate : t -> unit
+val validate_types: (Flx_btype.t -> unit) -> t -> unit
+

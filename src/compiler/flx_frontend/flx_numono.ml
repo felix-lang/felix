@@ -200,14 +200,15 @@ let flat_poly_fixup_type syms bsym_table polyinst sr t =
 *)
 
   match t with
-  | BTYP_inst (i,ts) ->
+  | BTYP_vinst (i,ts) ->
     let parent,bsym = Flx_bsym_table.find_with_parent bsym_table i in
-if debug then print_endline ("flat_poly_fixup_type is using polyinst to instantiate type " ^ Flx_bsym.id bsym ^
-   "<"^ si i^">[" ^catmap "," (sbt bsym_table) ts^ "]"
-);
+    if debug then
+    print_endline ("Virt: flat_poly_fixup_type is using polyinst to instantiate type " ^ Flx_bsym.id bsym ^
+    "<"^ si i^">[" ^catmap "," (sbt bsym_table) ts^ "]");
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_virtual_type bvs ->
-      if debug then print_endline ("  *** VIRTUAL TYPE");
+      if debug then
+      print_endline ("  Virt: *** VIRTUAL TYPE");
       begin match parent with
       | None -> assert false
       | Some tc ->
@@ -216,17 +217,23 @@ if debug then print_endline ("flat_poly_fixup_type is using polyinst to instanti
         if debug then print_endline ("   *** mapped to " ^ sbt bsym_table t');
         t'
       end
-
-    | BBDCL_instance_type (bvs,repr) -> 
-      if debug then print_endline ("  *** INSTANCE TYPE, bvs=" ^
-        catmap "," (fun (s,j) -> s) bvs^ 
-        " repr=" ^ sbt bsym_table repr);
-      repr
+    | _ -> assert false; 
+    end
+  | BTYP_inst (i,ts) ->
+    let parent,bsym = Flx_bsym_table.find_with_parent bsym_table i in
+    if debug then
+    print_endline ("Inst: flat_poly_fixup_type is using polyinst to instantiate type " ^ Flx_bsym.id bsym ^
+    "<"^ si i^">[" ^catmap "," (sbt bsym_table) ts^ "]");
+    begin match Flx_bsym.bbdcl bsym with
+    | BBDCL_virtual_type _
+    | BBDCL_instance_type _ ->  assert false;
     | _ -> 
-      if debug then print_endline ("OTHER TYPE");
+      if debug then  
+      print_endline ("Inst: OTHER TYPE");
       let i',ts' = polyinst sr i ts in
       let t' = btyp_inst (i',ts') in
-if debug then print_endline ("poly_fixup_type: " ^ showts bsym_table i ts ^ " --> " ^ showts bsym_table i' ts');
+      if debug then
+      print_endline ("poly_fixup_type: " ^ showts bsym_table i ts ^ " --> " ^ showts bsym_table i' ts');
       t'
       end
   | x -> x

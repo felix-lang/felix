@@ -1,4 +1,5 @@
 open Flx_bid
+let debug = false
 type bexpr_t =
   | BEXPR_lambda of bid_t * Flx_btype.t * (bexpr_t * Flx_btype.t)
   | BEXPR_int of int
@@ -105,18 +106,42 @@ let counter = ref 1
 
 (* -------------------------------------------------------------------------- *)
 
-let complete_check t = 
-(*
-  if Flx_btype.complete_type t then t else
-  let () = print_endline "WARNING: expression type has free fixpoint" in
+(* All expressions should be accompanied by complete types...
+
+  EXCEPT DURING TENTATIVE BINDING.
+
+  if the client supplies a type for the expression it should be checked
+  for completeness. If that type is analysed and the component subtypes
+  are used to build a result type, the client type should be unfolded before
+  analysis to ensure that they are complete.
+
+  Types extracted from arguments should always be complete. If they're
+  analysed for the purpose of constructing result types, they should
+  be unfolded in case they're recursive.
+
+  A type built from complete types is constructively neccessarily complete.
+
+  The type constructors must be allowed to build types from incomplete
+  components, otherwise recursive types could not be constructed 
+  (it is the very construction using incomplete types that eventually
+  creates a complete, recursive type)
+  So no check is possible during type construction.
 *)
+let force_complete_check msg t =
+  if Flx_btype.complete_type t then t else
+  let () = print_endline ("WARNING: in " ^ msg ^ " expression type has free fixpoint: " ^ Flx_btype.st t) in
   t
-let complete_check_list ts = List.map complete_check ts
+
+let complete_check msg t = 
+  if debug then force_complete_check msg t
+  else t
+
+let complete_check_list ts = List.map (complete_check "ts") ts
 
 let bexpr_cond ((_,ct) as c) ((_,tt) as t) ((_,ft) as f) =
    assert  (ct = (Flx_btype.btyp_unitsum 2)); 
    assert (tt = ft);
-   BEXPR_cond (c,t,f),complete_check tt
+   BEXPR_cond (c,t,f),complete_check "bexpr_cond" tt
 
 let bexpr_identity_function t = BEXPR_identity_function t, Flx_btype.btyp_function (t,t)
 
@@ -133,43 +158,44 @@ let bexpr_label i = BEXPR_label (i), Flx_btype.btyp_label ()
 let bexpr_deref t e : t = 
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
-  | _ -> BEXPR_deref e, complete_check t
+  | _ -> BEXPR_deref e, complete_check "bexpr_deref" t
 
 let bexpr_lambda i vt ((x,rt) as e)  = 
   BEXPR_lambda (i,vt,e),Flx_btype.btyp_function (vt,rt)
 
 let bexpr_int i = BEXPR_int i, Flx_btype.btyp_int ()
 
-let bexpr_not (e,t) : t = BEXPR_not (e,t), complete_check t
+let bexpr_not (e,t) : t = BEXPR_not (e,t), complete_check "bexpr_not" t
 
 let bexpr_varname t (bid, ts) = 
+  let _ = List.map (complete_check "bexpr_varname(index)") ts in 
 (*
   print_endline ("Creating varname term " ^ string_of_int bid);
 *)
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
-  | _ ->   BEXPR_varname (bid, complete_check_list ts), complete_check t
+  | _ ->   BEXPR_varname (bid, complete_check_list ts), complete_check "bexpr_varname" t
 
 let bexpr_ref t (bid, ts) = 
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
-  | _ -> BEXPR_ref (bid, complete_check_list ts), complete_check t
+  | _ -> BEXPR_ref (bid, complete_check_list ts), complete_check "bexpr_ref" t
 
 let bexpr_uniq ((x,t) as e) = BEXPR_uniq e, Flx_btype.btyp_uniq t
 
 let bexpr_rref t (bid, ts) = 
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
-  | _ -> BEXPR_rref (bid, complete_check_list ts), complete_check t
+  | _ -> BEXPR_rref (bid, complete_check_list ts), complete_check "bexpr_rref" t
 
 let bexpr_wref t (bid, ts) = 
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
-  | _ -> BEXPR_wref (bid, complete_check_list ts), complete_check t
+  | _ -> BEXPR_wref (bid, complete_check_list ts), complete_check "bexpr_wref" t
 
 let bexpr_cltpointer d c p v =
   let t = Flx_btype.btyp_cltpointer d c in 
-  BEXPR_cltpointer (d,c,p,v), complete_check t
+  BEXPR_cltpointer (d,c,p,v), complete_check "bexpr_cltpointer" t
 
 let bexpr_cltpointer_of_pointer ((_,pt) as p) =
   match pt with
@@ -185,25 +211,25 @@ let bexpr_cltpointer_prj base_value_type target_value_type divisor =
   let d = Flx_btype.btyp_cltpointer base_value_type base_value_type in
   let c = Flx_btype.btyp_cltpointer base_value_type target_value_type in
   let t = Flx_btype.btyp_function (d,c) in
-  BEXPR_cltpointer_prj (base_value_type, target_value_type, divisor), complete_check t
+  BEXPR_cltpointer_prj (base_value_type, target_value_type, divisor), complete_check "bexpr_cltpointer_prj" t
 
-let bexpr_likely ((_,t) as e) = BEXPR_likely e, complete_check t
+let bexpr_likely ((_,t) as e) = BEXPR_likely e, complete_check "bexpr_likely" t
 
-let bexpr_unlikely ((_,t) as e) = BEXPR_unlikely e, complete_check t
+let bexpr_unlikely ((_,t) as e) = BEXPR_unlikely e, complete_check "bexpr_unlikely" t
 
 let bexpr_address ((_,t) as e) = 
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr (k + 1)
-  | _ -> BEXPR_address e, complete_check (Flx_btype.btyp_pointer t)
+  | _ -> BEXPR_address e, complete_check "bexpr_address" (Flx_btype.btyp_pointer t)
 
 let bexpr_new ((_,t) as e) = 
   match Flx_btype.trivorder t with
   | Some k ->bexpr_unitptr (k + 1)
-  | _ -> BEXPR_new e, complete_check (Flx_btype.btyp_pointer t)
+  | _ -> BEXPR_new e, complete_check "bexpr_new" (Flx_btype.btyp_pointer t)
 
-let bexpr_class_new cl e = BEXPR_class_new (cl,e), complete_check (Flx_btype.btyp_pointer cl)
+let bexpr_class_new cl e = BEXPR_class_new (cl,e), complete_check "bexpr_class_new" (Flx_btype.btyp_pointer cl)
 
-let bexpr_literal t l = BEXPR_literal l, complete_check t
+let bexpr_literal t l = BEXPR_literal l, complete_check "bexpr_literal" t
 
 let bexpr_literal_int n =
   let v = string_of_int n in
@@ -250,40 +276,42 @@ let bexpr_apply t (e1, e2) =
     assert (0<=n && n < List.length es);
     List.nth es n
   | _ ->
-    BEXPR_apply (e1, e2), complete_check t
+    BEXPR_apply (e1, e2), complete_check "bexpr_apply" t
 
 let bexpr_apply_prim t (bid, ts, e) = 
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
-  | _ -> BEXPR_apply_prim (bid, complete_check_list ts, e), complete_check t
+  | _ -> BEXPR_apply_prim (bid, complete_check_list ts, e), complete_check "apply_prim" t
 
 let bexpr_apply_direct t (bid, ts, e) = 
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
-  | _ -> BEXPR_apply_direct (bid, complete_check_list ts, e), complete_check t
+  | _ -> BEXPR_apply_direct (bid, complete_check_list ts, e), complete_check "apply_direct" t
 
 let bexpr_apply_stack t (bid, ts, e) = 
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
-  | _ -> BEXPR_apply_stack (bid, complete_check_list ts, e), complete_check t
+  | _ -> BEXPR_apply_stack (bid, complete_check_list ts, e), complete_check "bexpr_apply_stack" t
 
 let bexpr_apply_struct t (bid, ts, e) = 
-  BEXPR_apply_struct (bid, complete_check_list ts, e), complete_check t
+  BEXPR_apply_struct (bid, complete_check_list ts, e), complete_check "bexpr_apply_struct" t
 
 let bexpr_tuple t es = 
+  let ts = List.map snd es in
+  let _ = List.map (complete_check "bexpr_tuple(component)") ts in 
   match es with 
   | [] -> bexpr_unit 
-  | _ -> BEXPR_tuple es, complete_check t
+  | _ -> BEXPR_tuple es, complete_check "bexpr_tuple(client)" t
 
 let bexpr_coerce (e, t) = 
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
-  | _ ->  BEXPR_coerce (e, t), complete_check t
+  | _ ->  BEXPR_coerce (e, t), complete_check "bexpr_coerce" t
 
 let bexpr_reinterpret_cast (e, t) = 
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
-  | _ ->  BEXPR_reinterpret_cast (e, t), complete_check t
+  | _ ->  BEXPR_reinterpret_cast (e, t), complete_check "bexpr_reinterpret_cast" t
 
 
 let bexpr_prj n d c = 
@@ -329,7 +357,7 @@ let bexpr_prj n d c =
     assert false
   end;
 
-  BEXPR_prj (n,d,c),complete_check (Flx_btype.btyp_function (d,c))
+  BEXPR_prj (n,d,c),complete_check "bexpr_prj" (Flx_btype.btyp_function (d,c))
 
 (* note, inefficiency, if we find a field key
   and start counting down sequence numbers,
@@ -364,7 +392,7 @@ let bexpr_rnprj name seq d c =
     end
 
   | _ -> 
-    BEXPR_rprj (name,seq,d,c),complete_check (Flx_btype.btyp_function (d,c))
+    BEXPR_rprj (name,seq,d,c),complete_check "bexpr_rnprj" (Flx_btype.btyp_function (d,c))
 
 let bexpr_rprj name d c = bexpr_rnprj name 0 d c
 
@@ -374,7 +402,7 @@ let bexpr_record es : t =
   let cmp (s1,e1) (s2,e2) = compare s1 s2 in
   let es = List.stable_sort cmp es in
   let ts = List.map (fun (s,(_,t)) -> s,t) es in
-  BEXPR_record es, complete_check (Flx_btype.btyp_record ts)
+  BEXPR_record es, complete_check "bexpr_record" (Flx_btype.btyp_record ts)
 
 (* NOTE: you can only remove known fields! Just like you can only
    do projections of known fields 
@@ -466,7 +494,7 @@ print_endline ("[bexpr_polyrecord] Constructing polyrecord: extension fields = "
 print_endline ("[bexpr_polyrecord] Constructing polyrecord: core type= " ^ st t');
 *)
   let fldts = List.map (fun (s,(_,t)) -> s,t) es in
-  let result_type : Flx_btype.t = complete_check (Flx_btype.btyp_polyrecord fldts t') in
+  let result_type : Flx_btype.t = complete_check "bexpr_polyrecord" (Flx_btype.btyp_polyrecord fldts t') in
 (*
 print_endline ("[bexpr_polyrecord] expected result type = " ^ st domain);  
 *)
@@ -567,10 +595,10 @@ print_endline ("Core = " ^ st (snd reduced_e));
 
 (************************ END POLYRECORD **************************)
 let bexpr_aprj ix d c = 
-  BEXPR_aprj (ix,d,c),complete_check (Flx_btype.btyp_function (d,c))
+  BEXPR_aprj (ix,d,c),complete_check "bexpr_aprj" (Flx_btype.btyp_function (d,c))
 
 let bexpr_inj n d c = 
-  BEXPR_inj (n,d,c),complete_check (Flx_btype.btyp_function (d,c))
+  BEXPR_inj (n,d,c),complete_check "bexpr_inj" (Flx_btype.btyp_function (d,c))
 
 let bexpr_variant t (name, ((_,argt) as arg)) = 
   match t with
@@ -594,12 +622,13 @@ let bexpr_get_named c name (e,d) =
 
 
 let bexpr_closure t (bid, ts) = 
+  let _ = List.map (complete_check "bexpr_closure(index)") ts in 
 (*
   print_endline ("Creating closure term " ^ string_of_int bid);
 *)
-  BEXPR_closure (bid, complete_check_list ts), complete_check t
+  BEXPR_closure (bid, complete_check_list ts), complete_check "bexpr_closure" t
 
-let bexpr_const_case (i, t) = BEXPR_case (i, t), complete_check t
+let bexpr_const_case (i, t) = BEXPR_case (i, t), complete_check "bexpr_const_case" t
 
 let bexpr_nonconst_case argt (i, sumt) = 
   bexpr_inj i argt sumt 
@@ -623,26 +652,26 @@ let bexpr_case_arg t (i, e) =
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
   | _ ->   
-    BEXPR_case_arg (i, e), complete_check t
+    BEXPR_case_arg (i, e), complete_check "bexpr_case_arg" t
 
 let bexpr_variant_arg argt (name, ((_,vt) as v)) = 
   match Flx_btype.trivorder argt with
   | Some k -> bexpr_unitptr k
   | _ ->  
     let h = Flx_btype.vhash (name,argt) in 
-    BEXPR_case_arg (h, v), complete_check argt
+    BEXPR_case_arg (h, v), complete_check "bexpr_variant_arg" argt
 
 let bexpr_case_index t e = 
-  BEXPR_case_index e, complete_check t
+  BEXPR_case_index e, complete_check "bexpr_case_index" t
 
 let bexpr_expr (s, t, e) = 
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
-  | _ ->  BEXPR_expr (s, t, e), complete_check t
+  | _ ->  BEXPR_expr (s, t, e), complete_check "bexpr_expr" t
 
-let bexpr_range_check t (e1, e2, e3) = BEXPR_range_check (e1, e2, e3), complete_check t
+let bexpr_range_check t (e1, e2, e3) = BEXPR_range_check (e1, e2, e3), complete_check "bexpr_range_check" t
 
-let bexpr_compose t (e1, e2) = BEXPR_compose (e1, e2), complete_check t
+let bexpr_compose t (e1, e2) = BEXPR_compose (e1, e2), complete_check "bexpr_compose" t
 
 let bexpr_unitsum_case i j =
   let case_type = Flx_btype.btyp_unitsum j in
@@ -655,13 +684,14 @@ let bexpr_lrbrack t e = BEXPR_lrbrack e,t
 
 
 let bexpr_tuple_tail t (_,et as e) = 
-  (* FIXME: handle arrays too *)
+  let et = Flx_btype.unfold "Flx_bexpr: bexpr_tuple_tail"  et in
   match et with
   | Flx_btype.BTYP_tuple_cons (h,t) ->
     begin match e with
     | BEXPR_tuple_cons (head,tail),_ -> tail
-    | _ -> BEXPR_tuple_tail e,complete_check t
+    | _ -> BEXPR_tuple_tail e,complete_check "bexpr_tuple_tail" t
     end
+
   | Flx_btype.BTYP_tuple (ht::tt) ->
     begin match e with
     | BEXPR_tuple (head::tail),_ ->
@@ -672,38 +702,62 @@ let bexpr_tuple_tail t (_,et as e) =
       in
       bexpr_tuple (Flx_btype.btyp_tuple tt) apls
     end
-  | _ -> BEXPR_tuple_tail e, complete_check t
+  | Flx_btype.BTYP_array (elt,Flx_btype.BTYP_unitsum n) ->
+    let tail_t = (Flx_btype.btyp_array (elt,Flx_btype.btyp_unitsum (n-1))) in
+    begin match e with
+    | BEXPR_tuple (head::tail),_ ->
+      bexpr_tuple tail_t tail
+    | _ ->
+      let apls = List.map (fun i -> bexpr_get_n elt (i+1) e ) 
+        (Flx_list.nlist (n-1))
+      in
+      bexpr_tuple tail_t apls
+    end
+
+  | _ -> BEXPR_tuple_tail e, complete_check "bexpr_tuple_tail" t
 
 let bexpr_tuple_head t (_,et as e) = 
-  (* FIXME: handle arrays too *)
+  let et = Flx_btype.unfold "Flx_bexpr: bexpr_tuple_head(arg)"  et in
   match et with
   | Flx_btype.BTYP_tuple_cons (ht,tt) ->
     begin match e with
     | BEXPR_tuple_cons (eh,et),_ -> eh
     | _ ->
-      BEXPR_tuple_head e, complete_check t
+      BEXPR_tuple_head e, complete_check "bexpr_tuple_head(client)" t
     end
   | Flx_btype.BTYP_tuple (ht::tt) ->
     begin match e with
     | BEXPR_tuple (head::tail),_ -> head
     | _ -> bexpr_get_n ht 0 e
     end
+  | Flx_btype.BTYP_array (elt,Flx_btype.BTYP_unitsum n) ->
+    assert (n>0);
+    bexpr_get_n elt 0 e
   | _ ->
-    BEXPR_tuple_head e, complete_check t
+    BEXPR_tuple_head e, complete_check "bexpr_tuple_head(client2)" t
 
 let bexpr_tuple_cons (_,th as eh,( _,tt as et)) = 
-  let t  = Flx_btype.btyp_tuple_cons th tt in
-  (* FIXME: handle arrays too *)
-  match et with
-  | BEXPR_tuple es,_ -> bexpr_tuple t (eh :: es)
-  | _, Flx_btype.BTYP_tuple ts -> 
+  let th = force_complete_check "bexpr_tuple_cons(head)" th in
+  let tt = force_complete_check "bexpr_tuple_cons(tail)" tt in
+print_endline ("Tuple cons, head:  " ^ Flx_btype.st th);
+print_endline ("Tuple cons, tail:  " ^ Flx_btype.st tt);
+  let t  = Flx_btype.btyp_tuple_cons th tt in (* must be complete because args are *)
+print_endline ("Tuple cons:  " ^ Flx_btype.st t);
+  let tt = Flx_btype.unfold "Flx_bexpr: bexpr_tuple_cons (tail)" tt in
+  match tt with
+  | Flx_btype.BTYP_tuple ts ->
     let apls = List.map2 (fun i c -> bexpr_get_n c i et ) (Flx_list.nlist (List.length ts)) ts in
     bexpr_tuple t (eh :: apls)
+
+  | Flx_btype.BTYP_array (elt,Flx_btype.BTYP_unitsum n) -> 
+    let apls = List.map (fun i -> bexpr_get_n elt i et ) (Flx_list.nlist n) in
+    bexpr_tuple t (eh :: apls)
+
   | _ -> BEXPR_tuple_cons (eh,et), t
 
-let bexpr_tuple_body t e = BEXPR_tuple_body e, complete_check t
-let bexpr_tuple_last t e = BEXPR_tuple_last e, complete_check t
-let bexpr_tuple_snoc t (eh,et) = BEXPR_tuple_snoc (eh,et), complete_check t
+let bexpr_tuple_body t e = BEXPR_tuple_body e, complete_check "bexpr_tuple_body" t
+let bexpr_tuple_last t e = BEXPR_tuple_last e, complete_check "bexpr_tuple_last" t
+let bexpr_tuple_snoc t (eh,et) = BEXPR_tuple_snoc (eh,et), complete_check "bexpr_tuple_snoc" t
 
 
 

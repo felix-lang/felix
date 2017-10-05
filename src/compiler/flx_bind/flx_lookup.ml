@@ -23,6 +23,8 @@ open Flx_btype_occurs
 open Flx_btype_subst
 open Flx_bid
 
+let debug = false 
+
 let svs (s,i,mt) = s ^ "<" ^ si i ^ ">:"^ string_of_typecode mt
 
 type bfres_t = 
@@ -907,7 +909,12 @@ print_endline ("FUDGE: Binding TYP_var " ^ si i);
 (* HACK metatype guess *)
         btyp_fix fixdepth (btyp_type 0)
       end else begin
-        snd (bind_expression' state bsym_table env rs e [])
+if debug then
+print_endline ("Start tentative binding of typeof (" ^ string_of_expr e ^ ")");
+        let t = snd (bind_expression' state bsym_table env rs e []) in
+if debug then
+print_endline ("end tentative binding of typeof (" ^string_of_expr e^ ")");
+        t
       end
 
   | TYP_array (t1,t2)->
@@ -2084,17 +2091,18 @@ raise exn
 and inner_type_of_index' state bsym_table sr rs index =
 (*
   if index = 37461 then
-     print_endline ("Inner type of index " ^ si index ^ "=pve");
 *)
+if debug then
+     print_endline ("Inner type of index " ^ si index ^ "=pve");
+
   (* Check if we've already cached this index. *)
   try Hashtbl.find state.ticache index with Not_found ->
 
   (* Check index recursion. If so, return a fix type. *)
 (*  HACK: metatype guess *)
   if List.mem index rs.idx_fixlist then begin
-(*
+if debug then
 print_endline "inner_typeof+index returning fixpoint";
-*)
     btyp_fix (-rs.depth) (btyp_type 0) 
   end else
 
@@ -2441,6 +2449,8 @@ and koenig_lookup state bsym_table env rs sra id' name_map fn t2 ts =
       (*
       print_endline "Overload resolution OK";
       *)
+if debug then
+print_endline ("flx_lookup.koenig_lookup.bexpr_closure");
       bexpr_closure
         (inner_type_of_index_with_ts state bsym_table rs sra index'' ts)
         (index'',ts)
@@ -2545,6 +2555,8 @@ and lookup_qn_with_sig'
         end
         ;
         (* actally the 'handle_function' call above already returns this .. *)
+if debug then
+print_endline ("flx_lookup.handle_nonfunction.bexpr_closure");
         bexpr_closure t (index,bts)
 
       | SYMDEF_newtype _
@@ -2789,6 +2801,8 @@ print_endline ("AST_index(function): "^name^"=T<"^string_of_int i^">");
           btyp_type_var (i,bmt kind))
         (fst vs)
       in
+if debug then
+print_endline ("flx_lookup.Ast_index.bexpr_closure");
       let x = bexpr_closure
         (inner_type_of_index state bsym_table sr rs index)
         (index,ts)
@@ -2849,6 +2863,8 @@ print_endline ("Lookup qn with sig: AST_lookup of " ^ name ^ " in " ^ string_of_
         (*
         let ts = adjust_ts state.sym_table sr index ts in
         *)
+if debug then
+print_endline ("flx_lookup.FunctionEntry.bexpr_closure");
         bexpr_closure
           (inner_type_of_index_with_ts state bsym_table rs sr index ts)
           (index,ts)
@@ -3439,11 +3455,15 @@ and handle_function state bsym_table rs sra srn name ts index =
           )
       end;
 
+if debug then
+print_endline ("flx_lookup.handle_function.bexpr_closure");
       bexpr_closure t (index,ts)
 
   | SYMDEF_type_alias (TYP_typefun _) ->
       (* THIS IS A HACK .. WE KNOW THE TYPE IS NOT NEEDED BY THE CALLER .. *)
       let t = btyp_function (btyp_type 0, btyp_type 0) in
+if debug then
+print_endline ("flx_lookup.SYMDEF_type_alias.bexpr_closure");
       bexpr_closure t (index,ts)
 
   | _ ->
@@ -3546,6 +3566,8 @@ if name = "EInt" then
         print_endline ("lookup_name_in_table_dirs_with_sig finds struct constructor " ^ id);
         print_endline ("Record Argument type is " ^ catmap "," (sbt bsym_table) t2);
         *)
+if debug then
+print_endline ("flx_lookup.SYMDEF_type_alias.bexpr_closure");
         Some (bexpr_closure (btyp_inst (sye index,ts)) (sye index,ts))
         (*
         failwith "NOT IMPLEMENTED YET"
@@ -4163,6 +4185,8 @@ print_endline ("Case number " ^ si index);
     | FunctionEntry [index] ->
        print_endline "Callback closure ..";
        let ts = List.map (bt sr) ts in
+if debug then
+print_endline ("flx_lookup.EXPR_callback.bexpr_closure");
        bexpr_closure (ti sr (sye index) ts) (sye index, ts)
     | NonFunctionEntry  _
     | _ -> clierrx "[flx_bind/flx_lookup.ml:3965: E169] " sr
@@ -4702,10 +4726,14 @@ print_endline ("LOOKUP 4: varname " ^ si index);
           | BBDCL_struct _
           | BBDCL_cstruct _
             ->
+if debug then
+print_endline ("flx_lookup.BBDCL_struct.bexpr_closure");
             bexpr_closure t (index, ts)
 
 (* DEPRECATED *)
           | BBDCL_nonconst_ctor _ ->
+if debug then
+print_endline ("flx_lookup.BBDCL_nonconst_ctor.bexpr_closure");
             bexpr_closure t (index, ts)
 
 
@@ -4715,10 +4743,14 @@ print_endline ("LOOKUP 4: varname " ^ si index);
 (*
 print_endline ("LOOKUP 5: varname " ^ si index);
 *)
+if debug then
+print_endline ("flx_lookup.BBDCL_val.bexpr_varname");
             bexpr_varname t (index, ts)
 
 (* DEPRECATED!! *)
           | BBDCL_const_ctor _  ->
+if debug then
+print_endline ("flx_lookup.BBDCL_const_ctor.bexpr_varname");
             bexpr_varname t (index, ts)
 
           | BBDCL_label _ ->
@@ -4750,6 +4782,8 @@ print_endline ("LOOKUP 5: varname " ^ si index);
 (*
 print_endline ("LOOKUP 6: varname " ^ si index);
 *)
+if debug then
+print_endline ("flx_lookup.indexed_name(ref).bexpr_varname");
               bexpr_deref t' (bexpr_varname t (index, ts))
 
           (* these should have function entries *)
@@ -4762,10 +4796,14 @@ print_endline ("LOOKUP 6: varname " ^ si index);
             (*
             print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to closure");
             *)
+if debug then
+print_endline ("flx_lookup.indexed_name(function).bexpr_closure");
             bexpr_closure t (index,ts)
 
 (* DEPRECATED *)
           | { Flx_sym.symdef=SYMDEF_nonconst_ctor _ } ->
+if debug then
+print_endline ("flx_lookup.indexed_name(nonfunction).bexpr_closure");
             bexpr_closure t (index,ts)
 
           | { Flx_sym.symdef=SYMDEF_const  _ }
@@ -4824,13 +4862,26 @@ print_endline ("Found solo function entry for index " ^ si index);
                     (full_string_of_entry_kind state.sym_table bsym_table f) )
       end;
 
+if debug then
+print_endline ("Flx_looup.nonfunction) ts= " ^ catmap "," (sbt bsym_table) ts);
+if debug then
+print_endline ("Flx_looup.nonfunction) sub_ts= " ^ catmap "," (sbt bsym_table) sub_ts);
       let ts = List.map (tsubst sr spec_vs ts) sub_ts in
+if debug then
+print_endline ("Flx_looup.nonfunction) After sub: ts= " ^ catmap "," (sbt bsym_table) ts);
       let ts = adjust_ts state.sym_table bsym_table sr index ts in
+if debug then
+print_endline ("Flx_looup.nonfunction) After adjust: ts= " ^ catmap "," (sbt bsym_table) ts);
       let t = ti sr index ts in
+if debug then
+print_endline ("Flx_looup.nonfunction) indexed type t= " ^sbt bsym_table t);
 (*
 if name = "hhhhh" then
 print_endline ("Returning closure type " ^ Flx_btype.st t);
 *)
+if debug then
+print_endline ("flx_lookup.nonfunction).bexpr_closure");
+let _ = Flx_bexpr.complete_check "Flx_lookup.nonfunction).bexpr_closiure" t in
       bexpr_closure t (index,ts)
 
 
@@ -4866,6 +4917,8 @@ print_endline ("lookup_name_in_table_dirs_with_sig found functions " ^ name);
            (*
            print_endline "OK, overload resolved!!";
            *)
+if debug then
+print_endline ("flx_lookup.function).bexpr_closure");
            bexpr_closure (ti sr index ts) (index,ts)
 
          | None -> clierrx "[flx_bind/flx_lookup.ml:4538: E196] " sr "Cannot resolve overload .."
@@ -4894,11 +4947,15 @@ print_endline ("lookup_name_in_table_dirs_with_sig found functions " ^ name);
       (*
       print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to closure");
       *)
+if debug then
+print_endline ("flx_lookup.EXPR_index1.bexpr_closure");
       bexpr_closure t (index,ts)
 
 (* DEPRECATED *)
     | { Flx_sym.symdef=SYMDEF_nonconst_ctor _ }
       ->
+if debug then
+print_endline ("flx_lookup.EXPR_index2.bexpr_closure");
       bexpr_closure t (index,ts)
 
     | { Flx_sym.symdef=SYMDEF_const  _ }
@@ -4913,6 +4970,8 @@ print_endline ("lookup_name_in_table_dirs_with_sig found functions " ^ name);
 (*
 print_endline ("LOOKUP 8: varname " ^ si index);
 *)
+if debug then
+print_endline ("flx_lookup.EXPR_index3.bexpr_varname");
       bexpr_varname t (index,ts)
 
 (* DEPRECATED *)

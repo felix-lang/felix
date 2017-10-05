@@ -3,24 +3,26 @@ open Flx_ast
 open Flx_bid
 open Flx_bind_state
 
+let debug = false 
+
 let bind_asms bind_state bsym_table start_counter asms =
-(*
+if debug then
 print_endline "Flx_bind.bind_asms: Binding asms ..";
-*)
+
   (* Add the symbols to the symtab. *)
   let print_flag = bind_state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag in
   let counter_ref = bind_state.syms.Flx_mtypes2.counter in
   Flx_symtab.add_asms print_flag counter_ref bind_state.symtab "root" 0 None asms;
-(*
+
+if debug then
 print_endline "Flx_bind.bind_asms: Making symbol table done";
-*)
 (*
   let exes = Flx_symtab.get_init_exes bind_state.symtab in
 *)
   let ifaces = Flx_symtab.get_exports bind_state.symtab in
-(*
-print_endline ("Bind_asms: ifaces = " ^ string_of_int (List.length ifaces));
-*)
+
+if debug then
+print_endline ("Flx_bind.bind_asms: binding " ^ string_of_int (List.length ifaces) ^ " ifaces");
 
 (*
 print_endline "Flx_bind.bind_asms: built symbol table";
@@ -28,14 +30,39 @@ print_endline "Flx_bind.bind_asms: built symbol table";
 (*
 print_endline (Flx_symtab.detail bind_state.symtab);
 *)
+if debug then
+print_endline "Flx_bind.bind_asms: binding symbol table";
+
   (* Now, bind all the symbols. *)
   Flx_bbind.bbind bind_state.bbind_state start_counter counter_ref bsym_table;
-(*
-print_endline "Flx_bind.bind_asms: bbind done";
-*)
+
+if debug then
+print_endline ("Flx_bind.bind_asms: bsym_table created with " ^ 
+string_of_int (Flx_bsym_table.length bsym_table));
+
   (* Bind the interfaces. *)
   bind_state.syms.Flx_mtypes2.bifaces <- bind_state.syms.Flx_mtypes2.bifaces @ List.map
-    (Flx_bind_interfaces.bind_interface bind_state.bbind_state bsym_table) ifaces
+    (Flx_bind_interfaces.bind_interface bind_state.bbind_state bsym_table) ifaces;
+
+if debug then
+print_endline "Flx_bind.bind_asms: interfaces bound";
+
+Flx_breqs.simplify_reqs bsym_table;
+
+if debug then
+print_endline "Flx_bind.bind_asms: requirements simplified";
+
+if debug then
+print_endline "Flx_bind.bind_asms: start validation of bsym_table";
+
+let f_btype t = if Flx_btype.complete_type t then () else
+  print_endline ("BSYM_TABLE CONTAINS INCOMPLETE TYPE " ^ Flx_print.sbt bsym_table t ^ " = " ^ Flx_btype.st t)
+in
+Flx_bsym_table.validate bsym_table;
+Flx_bsym_table.validate_types f_btype bsym_table;
+
+if debug then
+print_endline "Flx_bind.bind_asms: binding complete, validated closure, types"
  
 (*
 ;print_endline ("Flx_bind.bind_asms: " ^string_of_int (List.length bind_state.syms.Flx_mtypes2.bifaces)^ 
