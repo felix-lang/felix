@@ -44,142 +44,6 @@ let check_mono_vars bsym_table vars sr t =
     print_endline (" **** using varmap " ^ showvars bsym_table vars);
     assert false
 *)
-(* ----------------------------------------------------------- *)
-(* COMPLETE PROCESSING ROUTINES                                *)
-(* ----------------------------------------------------------- *)
-
-let fixup_type syms bsym_table vars bsym virtualinst polyinst sr t =
-(*
-  print_endline ("    ** mono_type " ^ sbt bsym_table t);
-*)
-  let t = Flx_monosubs.mono_type syms bsym_table vars sr t in
-(*
-  print_endline ("    ** typeclass_fixup_type " ^ sbt bsym_table t);
-*)
-  let t = Flx_monoclass.typeclass_fixup_type syms bsym_table virtualinst sr  t in
-(*
-  print_endline ("    ** Betareduce " ^ sbt bsym_table t);
-*)
-  let t = Flx_beta.beta_reduce "flx_mono: mono, metatype"
-    syms.Flx_mtypes2.counter
-    bsym_table
-    (Flx_bsym.sr bsym)
-    t
-  in 
-(*
-  print_endline ("    ** poly_fixup_type " ^ sbt bsym_table t);
-*)
-  let t = Flx_polyinst.poly_fixup_type syms bsym_table polyinst sr t in
-(*
-  print_endline ("    ** Polyfixedup" ^ sbt bsym_table t );
-*)
-  t
-
-let fixup_req syms bsym_table vars polyinst sr (i,ts) : bid_t * Flx_btype.t list =
-  let ts = List.map (Flx_monosubs.mono_type syms bsym_table vars sr) ts in
-  let j,ts = polyinst sr i ts in
-  let ts = List.map (Flx_polyinst.poly_fixup_type syms bsym_table polyinst sr) ts in
-  j,ts
-
-let fixup_reqs syms bsym_table vars polyinst sr reqs : Flx_btype.breqs_t = 
-  List.map (fixup_req syms bsym_table vars polyinst sr) reqs
-
-(* HUH? Never called??? Oh, yes, used in constraints .. *) 
-let fixup_expr syms bsym_table monotype virtualinst polyinst sr e =
-  print_endline ("[fixup_expr] input               : " ^ sbe bsym_table e);
-  (* monomorphise the code by eliminating type variables *)
-  let e = Flx_bexpr.map ~f_btype:monotype e in
-(*
-  print_endline ("[fixup_expr] monomorphised       : " ^ sbe bsym_table e);
-*)
-  (* eliminate virtual calls by mapping to instances *)
-  let e = Flx_monoclass.typeclass_fixup_expr syms bsym_table virtualinst sr e in
-(*
-  print_endline ("[fixup_expr] virtuals eliminated : " ^ sbe bsym_table e);
-*)
-  (* replace applications of polymorphic function (or variable)
-    with applications of new monomorphic ones
-  *)
-  let e = Flx_polyinst.poly_fixup_expr syms bsym_table polyinst sr e in
-(*
-  print_endline ("[fixup_expr] polysyms eliminated : " ^ sbe bsym_table e);
-*)
-  e
-
-let show_exe bsym_table exe = string_of_bexe bsym_table 4 exe
-let show_exes bsym_table exes = catmap "\n" (show_exe bsym_table) exes
-
-
-(* completely process a list of exes *)
-(* rewrite to do in one pass *)
-let fixup_exes syms bsym_table vars virtualinst polyinst parent_ts exes =
- let mt t = Flx_monosubs.mono_type syms bsym_table vars t in
-
- (* monomorphise the code by eliminating type variables *)
-(*
-  print_endline ("To fixup exes:\n" ^ show_exes bsym_table exes);
-*)
-  let rexes = List.fold_left 
-    (fun oexes iexe -> 
-      match iexe with
-      | BEXE_call (sr,(BEXPR_closure (f,[]),_),_) ->
-        begin match Flx_bsym_table.find_bbdcl bsym_table f with
-        (* elide calls to empty non-virtual procedures 
-           Inlining does this anyhow, but this cleans up the
-           diagnostic prints and reduces the crap in the symbol
-           table a little earlier.
-        *) 
-        | BBDCL_fun (props,_,_,_,_,[]) when not (List.mem `Virtual props) -> oexes 
-        | _ -> Flx_monosubs.mono_exe syms bsym_table vars iexe :: oexes
-        end 
-      | _ ->  Flx_monosubs.mono_exe syms bsym_table vars iexe :: oexes
-    ) 
-    [] 
-    exes 
-  in
-(*
-  print_endline ("Monomorphised:\n" ^ show_exes bsym_table (List.rev rexes));
-  print_endline ("VARS=" ^ showvars bsym_table vars);
-*)
-  (* eliminate virtual calls by mapping to instances *)
-  (* order doesn't matter here *)
-  let exes = List.rev_map 
-    (fun exe -> 
-      let sr = Flx_bexe.get_srcref exe in 
-      Flx_bexe.map ~f_bexpr:(Flx_monoclass.typeclass_fixup_expr syms bsym_table virtualinst sr) 
-      exe
-    ) 
-    rexes 
-  in
-  let rexes = List.rev_map (fun exe -> Flx_monoclass.flat_typeclass_fixup_exe syms bsym_table virtualinst mt exe) exes in
-(*
-  print_endline ("Virtuals Instantiated:\n" ^ show_exes bsym_table (List.rev exes));
-*)
-  let exes = List.rev_map (Flx_polyinst.flat_poly_fixup_exe syms bsym_table polyinst parent_ts mt)  rexes in
-(*
-  print_endline ("Special calls monomorphised:\n" ^ show_exes bsym_table exes);
-*)
-  (* replace applications of polymorphic function (or variable)
-    with applications of new monomorphic ones
-  *)
-  let exes = List.map 
-    (
-      fun exe -> let sr = Flx_bexe.get_srcref exe in
-      Flx_bexe.map ~f_bexpr:(Flx_polyinst.poly_fixup_expr syms bsym_table polyinst sr) 
-      exe
-    ) 
-    exes 
-  in
-(*
-  print_endline ("Applies polyinst:\n" ^ show_exes bsym_table exes);
-*)
-  exes
-
-let fixup_qual vars mt qual = 
-  match qual with
-  | `Bound_needs_shape t -> `Bound_needs_shape (mt vars t)
-  | x -> x
- 
 (*
 let monomap_compare (i,ts) (i',ts') = 
   let counter = ref 1 in (* HACK *)
@@ -188,100 +52,6 @@ let monomap_compare (i,ts) (i',ts') =
     List.fold_left2 (fun r t t' -> r && Flx_unify.type_eq dummy counter t t') true ts ts'
   then 0 else compare (i,ts) (i',ts') 
 *)
-
-module MonoMap = 
-  struct 
-    type key = int * Flx_btype.t list 
-    type target = int
-    type kv = key * target
-    type data = kv list
-
-    let counter = ref 1 (* HACK *)
-    let dummy = Flx_bsym_table.create ()  
-    let cmp (i,ts) (i',ts') =
-      i = i' && List.length ts = List.length ts' &&
-      List.fold_left2 (fun r t t' -> r && Flx_unify.type_eq dummy counter t t') true ts ts'
-
-    let ecmp k (k',_) = cmp k k'
-
-    let mem k d = List.exists (ecmp k) d
-    let find (k:key) (d:data):target = snd (List.find (ecmp k) d)
-    let choose d = List.hd d
-    let remove k d =
-      List.filter (fun (k',_) -> not (cmp k k')) d
-    let empty = []
-    let is_empty d = d = []
-    let add k v d = (k,v) :: d (* unchecked! *)
-  end
-
-let find_felix_inst syms bsym_table processed to_process nubids i ts : int =
-  let find_inst syms processed to_process i ts =
-    try 
-      Some (MonoMap.find (i,ts) !processed)
-    with Not_found ->
-    try
-      Some (MonoMap.find (i,ts) !to_process)
-    with Not_found -> None
-  in
-  match find_inst syms processed to_process i ts with
-  | None ->
-    let k = 
-      if List.length ts = 0 then i else  
-       let nubid = fresh_bid syms.counter  in
-       nubids := BidSet.add nubid (!nubids);
-       nubid
-    in
-    let target = k in
-    to_process := MonoMap.add (i,ts) target !to_process;
-    (*
-    if i <> k then
-      print_endline ("Add inst to process: " ^ showts bsym_table i ts ^ " --> "^si k);
-    *)
-    k
-  | Some (k) -> k
-
-let notunitassign exe = match exe with
-  | BEXE_assign (_,_,(_,BTYP_tuple [])) 
-  | BEXE_init (_,_, (_,BTYP_tuple []))
-    -> false
-  | _ -> true
-
-let rec notemptycall (bsym_table:Flx_bsym_table.t) (trail: int list) exe : bool = 
-  match exe with
-  | BEXE_call (sr,(BEXPR_closure (f,ts),_),(_,BTYP_tuple[])) ->
-    if List.mem f trail then false (* INFINITE RECURSION! *)
-    else
-    begin 
-      let bsym = Flx_bsym_table.find bsym_table f in
-      match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (_,_,_,_,_,exes)  ->
-        begin match exes with
-        | [BEXE_proc_return _] -> false
-        | ls  ->
-          begin try List.iter 
-            (fun exe -> 
-              if notemptycall bsym_table (f::trail) exe 
-              then raise Not_found
-              else ()
-            )
-            ls;
-            false
-          with Not_found -> true
-          end
-        end
-      | _ -> true
-    end 
-  | _ -> true
-
-let strip_unit_assigns exes = List.filter notunitassign exes 
-
-(* remove calls to procedures that do nothing. Do NOT remove
-the procedures, let the GC do that: they might be passed as arguments
-to some HOF
-*)
-let strip_empty_calls bsym_table exes = 
-  List.filter (notemptycall bsym_table []) exes 
-
 let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst ts bsym i j =
 (*
 if List.length ts > 0 then begin
@@ -312,7 +82,7 @@ end;
   in
 *)
 
-  let mt vars t = fixup_type syms bsym_table vars bsym virtualinst polyinst sr t in
+  let mt vars t = Flx_monofixup_base.fixup_type syms bsym_table vars bsym virtualinst polyinst sr t in
   let bbdcl = Flx_bsym.bbdcl bsym in
   match bbdcl with
   | BBDCL_label s -> Some (bbdcl_label s)
@@ -359,14 +129,14 @@ end;
       let traint =
         match traint with
         | None -> None
-        | Some x -> Some (fixup_expr syms bsym_table (mt vars) virtualinst polyinst sr x)
+        | Some x -> Some (Flx_monofixup_base.fixup_expr syms bsym_table (mt vars) virtualinst polyinst sr x)
       in
-      let exes = strip_empty_calls bsym_table exes in
+      let exes = Flx_monostrip.strip_empty_calls bsym_table exes in
       let exes = 
-        try fixup_exes syms bsym_table vars virtualinst polyinst ts exes 
+        try Flx_monofixup_base.fixup_exes syms bsym_table vars virtualinst polyinst ts exes 
         with Not_found -> assert false
       in
-      let exes = strip_unit_assigns exes in
+      let exes = Flx_monostrip.strip_unit_assigns exes in
       let exes = List.map (fun exe -> Flx_bexe.map ~f_bexpr:Flx_bexpr.reduce exe) exes in
       let props = List.filter (fun p -> p <> `Virtual) props in
       Some (bbdcl_fun (props,[],(ps,traint),ret,effects,exes))
@@ -402,7 +172,7 @@ print_endline ("Monomorphising variable "^Flx_bsym.id bsym ^" polytype " ^ sbt b
     let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
     let argtypes = List.map (mt vars) argtypes in
     let ret = mt vars ret in
-    let reqs = fixup_reqs syms bsym_table vars polyinst sr reqs in
+    let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
     let props = List.filter (fun p -> p <> `Virtual) props in
     Some (bbdcl_external_fun (props,vs,argtypes,ret,reqs,prec,fkind))
 
@@ -410,27 +180,27 @@ print_endline ("Monomorphising variable "^Flx_bsym.id bsym ^" polytype " ^ sbt b
     assert (List.length vs = List.length ts);
     let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
     let _ = mt vars t in
-    let reqs = fixup_reqs syms bsym_table vars polyinst sr reqs in
+    let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
     Some (bbdcl_external_const (props, [], t, CS.Str "#this", reqs))
 
   | BBDCL_external_const (props, vs, t,cs, reqs) ->
     assert (List.length vs = List.length ts);
     let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    let reqs = fixup_reqs syms bsym_table vars polyinst sr reqs in
+    let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
     Some (bbdcl_external_const (props,vs, t, cs, reqs))
  
   | BBDCL_external_type (vs,quals,cs,reqs)  -> 
     assert (List.length vs = List.length ts);
     let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
-    let reqs = fixup_reqs syms bsym_table vars polyinst sr reqs in
-    let quals = List.map (fixup_qual vars mt) quals in
+    let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
+    let quals = List.map (Flx_monofixup_base.fixup_qual vars mt) quals in
     Some (bbdcl_external_type (vs,quals,cs, reqs))
 
   | BBDCL_external_code (vs,cs,ikind,reqs)   -> 
     assert (List.length vs = List.length ts);
     let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
-    let reqs = fixup_reqs syms bsym_table vars polyinst sr reqs in
+    let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
     Some (bbdcl_external_code (vs,cs,ikind,reqs))
 
   | BBDCL_union (vs,cps) -> 
@@ -611,7 +381,7 @@ end
     assert (List.length vs = List.length ts);
     let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
     let cps = List.map (fun (name,argt) -> name,mt vars argt) cps in
-    let reqs = fixup_reqs syms bsym_table vars polyinst sr reqs in
+    let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
     Some (bbdcl_cstruct ([], cps, reqs))
 
   | BBDCL_struct (vs,cps)  -> 
@@ -628,7 +398,7 @@ print_endline "Monomorphising constant constructor?";
     assert (List.length vs = List.length ts);
     let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
     let ut = mt vars ut in
-    let uidx = find_felix_inst syms bsym_table processed to_process nubids uidx ts in
+    let uidx = Flx_monomap.find_felix_inst syms bsym_table processed to_process nubids uidx ts in
     Some (bbdcl_const_ctor ([],uidx,ut,ctor_idx,evs,etraint)) (* ignore GADT stuff *)
  
   | BBDCL_nonconst_ctor (vs,uidx,ut,ctor_idx,ctor_argt,evs,etraint) ->
@@ -639,7 +409,7 @@ print_endline ("Monomorphising nonconst ctor argt=: " ^ sbt bsym_table ctor_argt
 *)
     let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
     let ut = mt vars ut in
-    let uidx = find_felix_inst syms bsym_table processed to_process nubids uidx ts in
+    let uidx = Flx_monomap.find_felix_inst syms bsym_table processed to_process nubids uidx ts in
     let ctor_argt = mt vars ctor_argt in
 (*
 print_endline ("Monomorphised nonconst ctor argt=: " ^ sbt bsym_table ctor_argt ^ " => " ^
@@ -706,7 +476,7 @@ let rec mono_element debug syms to_process processed bsym_table nutab nubids i t
     | BBDCL_virtual_type _ -> 
       print_endline ("Polyinst hit virtual type " ^ id ^ "<" ^ si i ^ ">["^
         catmap "," (sbt bsym_table) ts ^"]");
-      let j = find_felix_inst syms bsym_table processed to_process nubids i ts in
+      let j = Flx_monomap.find_felix_inst syms bsym_table processed to_process nubids i ts in
       print_endline ("Remapping to mono type " ^ si j);
       j,[]
 
@@ -714,10 +484,10 @@ let rec mono_element debug syms to_process processed bsym_table nutab nubids i t
     | BBDCL_external_const _ 
     | BBDCL_external_fun _ 
     | BBDCL_external_code _  -> 
-      let j = find_felix_inst syms bsym_table processed to_process nubids i ts in
+      let j = Flx_monomap.find_felix_inst syms bsym_table processed to_process nubids i ts in
       j,ts
     | _ ->
-      let j = find_felix_inst syms bsym_table processed to_process nubids i ts in
+      let j = Flx_monomap.find_felix_inst syms bsym_table processed to_process nubids i ts in
       j,[]
   in
   let sr = Flx_srcref.make_dummy "[mono_element]" in
@@ -751,7 +521,7 @@ print_endline ("Parent ts = " ^ catmap "," (sbt bsym_table) pts);
 (*
           print_endline ("  mono_element: adding parent " ^ si p ^" = " ^ id ^ ", ts=" ^ catmap "," (sbt bsym_table) pts);
 *)
-          let nuparent = find_felix_inst syms bsym_table processed to_process nubids p pts in
+          let nuparent = Flx_monomap.find_felix_inst syms bsym_table processed to_process nubids p pts in
 (*
           print_endline ("Nu parent: " ^ si nuparent);
 *)
@@ -799,10 +569,10 @@ let monomorphise2 debug syms bsym_table =
   (* to_process is the set of symbols yet to be scanned
      searching for symbols to monomorphise
   *)
-  let to_process = ref MonoMap.empty in
-  BidSet.iter (fun i -> to_process := MonoMap.add (i,[]) (i) (!to_process)) roots;
+  let to_process = ref Flx_monomap.MonoMap.empty in
+  BidSet.iter (fun i -> to_process := Flx_monomap.MonoMap.add (i,[]) (i) (!to_process)) roots;
   
-  let processed = ref MonoMap.empty in
+  let processed = ref Flx_monomap.MonoMap.empty in
 
   (* new bsym_table *)
   let nutab = Flx_bsym_table.create () in
@@ -811,13 +581,13 @@ let monomorphise2 debug syms bsym_table =
   let nubids = ref  BidSet.empty in 
 
   let sr = Flx_srcref.make_dummy "[monomorphise2]" in
-  while not (MonoMap.is_empty (!to_process)) do
-    let (i,ts),j = MonoMap.choose (!to_process) in
-    assert (not (MonoMap.mem (i,ts) (!processed) ));
+  while not (Flx_monomap.MonoMap.is_empty (!to_process)) do
+    let (i,ts),j = Flx_monomap.MonoMap.choose (!to_process) in
+    assert (not (Flx_monomap.MonoMap.mem (i,ts) (!processed) ));
     begin try List.iter (Flx_monocheck.check_mono bsym_table sr) ts with _ -> assert false end;
 
-    to_process := MonoMap.remove (i,ts) (!to_process);
-    processed := MonoMap.add (i,ts) j (!processed);
+    to_process := Flx_monomap.MonoMap.remove (i,ts) (!to_process);
+    processed := Flx_monomap.MonoMap.add (i,ts) j (!processed);
 
     (*
     (* if i <> j then *)
