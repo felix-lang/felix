@@ -41,6 +41,11 @@ let strip_unit_assigns exes = List.filter notunitassign exes
 the procedures, let the GC do that: they might be passed as arguments
 to some HOF
 *)
+
+
+(* THIS ROUTINE DOES LOOKUP!  So it must be run BEFORE monofixup
+on the original table.
+*)
 let strip_empty_calls bsym_table exes = 
   List.filter (notemptycall bsym_table []) exes 
 
