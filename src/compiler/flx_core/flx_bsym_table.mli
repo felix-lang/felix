@@ -7,21 +7,30 @@ type t
 (** Construct a bound symbol table. *)
 val create : unit -> t
 
-(** Returns how many items are in the bound symbol table. *)
-val length : t -> int
-
+(* TABLE MUTATORS *)
 (** Adds the bound symbol with the index to the symbol table. *)
 val add : t -> bid_t -> bid_t option -> Flx_bsym.t -> unit
 
+(** Remove a binding from the bound symbol table. *)
+val remove : t -> bid_t -> unit
+
+(* UNSAFE
 (** Updates a bound symbol in place while preserving the child-parent
  * relationships. *)
 val update : t -> bid_t -> Flx_bsym.t -> unit
+*)
 
+(* ENTRY MUTATORS -- DONT CHANGE TABLE STRUCTURE *)
 (** Update a bound symbol's bbdcl in place. *)
 val update_bbdcl : t -> bid_t -> Flx_bbdcl.t -> unit
 
 (** Update all the bound function and procedure's bound exes. *)
 val update_bexes : (Flx_bexe.t list -> Flx_bexe.t list) -> t -> unit
+
+(* ACCESSORS *)
+
+(** Returns how many items are in the bound symbol table. *)
+val length : t -> int
 
 (** Returns if the bound index is in the bound symbol table. *)
 val mem : t -> bid_t -> bool
@@ -59,14 +68,13 @@ val find_bparams : t -> bid_t -> Flx_bparams.t
 (** Searches the bound symbol table for the given symbol's bvs. *)
 val find_bvs : t -> bid_t -> Flx_types.bvs_t
 
-(** Remove a binding from the bound symbol table. *)
-val remove : t -> bid_t -> unit
-
 (** Copies the bound symbol table. *)
 val copy : t -> t
 
+(* UNSAFE
 (** Set's a symbol's parent. *)
 val set_parent : t -> bid_t -> bid_t option -> unit
+*)
 
 (** Iterate over all the items in the bound symbol table. *)
 val iter :

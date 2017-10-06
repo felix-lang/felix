@@ -2965,12 +2965,12 @@ let string_of_bsym bsym_table bid =
 let print_bsym bsym_table bid =
   let parent, bsym = Flx_bsym_table.find_with_parent bsym_table bid in
 
-  print_endline ("index: " ^ string_of_bid bid);
-  print_endline ("id: " ^ string_of_id (Flx_bsym.id bsym));
-  print_endline ("parent: " ^ 
-    match parent with
+  print_endline ("----\nindex: " ^ string_of_bid bid ^
+  ", parent: " ^ 
+    (match parent with
     | Some parent -> string_of_bid parent
-    | None -> "");
+    | None -> "None") ^
+  ", id: " ^ string_of_id (Flx_bsym.id bsym));
 
   print_endline ("bbdcl: " ^ (string_of_bbdcl
     bsym_table 
@@ -2986,5 +2986,6 @@ let print_bsym_table bsym_table =
   in
   let bsyms = List.sort (fun (k1,_) (k2,_) -> compare k1 k2) bsyms in
 
-  List.iter (fun (bid, _) -> print_bsym bsym_table bid) bsyms
+  List.iter (fun (bid, _) -> print_bsym bsym_table bid) bsyms;
+  print_endline ("=============  END TABLE ======================");
 

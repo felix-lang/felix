@@ -66,7 +66,7 @@ let make_specialisation syms uses bsym_table
 *)
 
 
-let heavy_inlining syms bsym_table =
+let heavy_inlining syms bsym_table = (* if true then () else  *)
   let used = ref (!(syms.roots)) in
   let (uses,usedby) = Flx_call.call_data bsym_table in
 

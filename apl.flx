@@ -5,47 +5,46 @@ class Apl[D] {
 
 instance Apl[int] {
  instance type C = double;
- fun fmap (x:int) => x.double + 0.42;
+ fun fmap (var x:int) => x.double + 0.42;
 }
 
 instance Apl[double] {
  instance type C = string;
- noinline fun fmap (x:double) => x.str + "!!";
+ fun fmap (var x:double) => x.str + "!!";
 }
 
 instance Apl[string] {
  instance type C = string;
- fun fmap (x:string) => "'" + x.str + "'";
+ fun fmap (var x:string) => "'" + x.str + "'";
 }
 
 
 open[T] Apl[T];
-/*
 var p1 = (23, 3.413);
 var p2 =  fmap p1.0, fmap p1.1;
 println$ p1;
 println$ p2;
-*/
 instance[T,U with Apl[T],Apl[U]] Apl[T * U] { // int * double
  instance type C = Apl[T]::C * Apl[U]::C; // double * string
- fun fmap (x1:T,y1:U) : C = {
+ fun fmap (var x1:T,var y1:U) : C = {
 var rx = fmap x1;
 var ry = fmap y1;
+/*
 println$ (x1,y1).str + "-->" + (rx,ry).str;
+*/
  return rx, ry;
  }
 }
-/*
 println$ fmap p1;
 println$ p2.fmap.fmap.fmap.fmap;
 var p3 = fmap p2;
 println$ p3;
-*/
+
 var pp = (12, (61, 33.7));
 var px = fmap pp;
 var aa = px.str;
 println$ aa;
-/*
+
 instance [T,U with Apl[T], Apl[U]] Apl[T ** U] {
  instance type C = Apl[T]::C ** Apl[U]::C;
  fun fmap (a:(T ** U)) : C = {
@@ -53,7 +52,9 @@ instance [T,U with Apl[T], Apl[U]] Apl[T ** U] {
  | (ah ,, at) => 
    var xh = fmap ah;
    var xt = fmap at;
+/*
    println$ "(" + ah.str + ",," + at.str + ")" + " --> " + "(" + xh.str + ",," + xt.str +")";
+*/
    return  xh ,, xt ;
  endmatch;
  }
@@ -61,4 +62,3 @@ instance [T,U with Apl[T], Apl[U]] Apl[T ** U] {
 
 var p = 23,3.412,"hello";
 println$ fmap p;
-*/

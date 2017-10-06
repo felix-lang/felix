@@ -8,6 +8,8 @@ open Flx_btype
 open Flx_name_map
 open Flx_bid
 
+let debug = false 
+
 (* do NOT put stuff in this! *)
 let dummy_hashtab = Hashtbl.create 0
 
@@ -535,7 +537,8 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
 
     if print_flag then
       print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n ^ " -> " ^
-        name ^ " (parameter) at " ^ Flx_srcref.short_string_of_src sr);
+        name ^ " (parameter) of "^str_parent parent ^
+        "  at " ^ Flx_srcref.short_string_of_src sr);
 
     (* Add the paramater to the symbol table. *)
     add_symbol ~parent ~ivs:dfltvs n name sr (SYMDEF_parameter (k, typ));
@@ -757,7 +760,7 @@ ps;
           id
           (merge_ivs inherit_ivs ivs)
           (level + 1)
-          (Some 0)
+          (Some 0) (* Note None does NOT work here for some reason *)
           capture_inits 
           asms
       in
@@ -1250,6 +1253,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       add_tvars privtab
 
   | DCL_instance_type t ->
+if debug then
 print_endline (string_of_int symbol_index ^ " Adding instance type " ^ id ^ "=" ^ Flx_print.string_of_typecode t ^ " to symbol table");
       (* Add the newtype to the sym_table. *)
       add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_instance_type t);
@@ -1277,6 +1281,7 @@ print_endline (string_of_int symbol_index ^ " Adding instance type " ^ id ^ "=" 
       add_tvars privtab
 
   | DCL_virtual_type ->
+if debug then
 print_endline (string_of_int symbol_index ^ " Adding virtual type " ^ id ^ " to symbol table");
       add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_virtual_type);
 

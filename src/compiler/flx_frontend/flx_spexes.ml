@@ -108,8 +108,9 @@ let gen_body syms uses bsym_table id
   sr caller callee inline_method props
 =
   if syms.compiler_options.Flx_options.print_flag then
-  print_endline ("Gen body caller = " ^ string_of_bid caller ^
-    ", callee=" ^ id ^ "<" ^ string_of_bid callee ^ ">"
+  print_endline ("Gen body caller = " ^ Flx_bsym.id (Flx_bsym_table.find bsym_table caller) ^ 
+    "<" ^string_of_bid caller ^
+    ">, callee=" ^ id ^ "<" ^ string_of_bid callee ^ ">"
   );
   (*
   let argument = Flx_bexpr.reduce bsym_table argument in

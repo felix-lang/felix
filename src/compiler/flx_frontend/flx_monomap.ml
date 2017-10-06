@@ -23,9 +23,12 @@ module MonoMap =
     let empty = []
     let is_empty d = d = []
     let add k v d = (k,v) :: d (* unchecked! *)
+    let iter f d = List.iter f d
   end
 
 let find_felix_inst syms bsym_table processed to_process nubids i ts : int =
+  (* is this right? Is the result always monomorphic? *)
+  let ts = List.map (Flx_remap_vtypes.remap_virtual_types syms bsym_table) ts  in
   let find_inst syms processed to_process i ts =
     try 
       Some (MonoMap.find (i,ts) !processed)

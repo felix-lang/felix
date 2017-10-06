@@ -237,7 +237,11 @@ print_endline ("Allowing " ^ string_of_int (List.length !(syms.reductions)) ^ " 
     print_endline "POST NUMONO";
     print_endline "---------------------------";
     print_endline "";
-
+    print_endline (" +++ REMAP INDEX +++ ");
+    MM.iter (fun ((i,ts), j) ->
+      print_endline ("   " ^ si i ^ "[" ^ catmap "," (sbt bsym_table) ts ^"] --> " ^ si j ))
+    !processed
+    ;
     Flx_print.print_bsym_table  nutab
   end;
   nutab
