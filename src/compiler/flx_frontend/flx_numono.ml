@@ -33,17 +33,6 @@ module CS = Flx_code_spec
 
 let debug = false 
 
-let show bsym_table i = 
-  try 
-    Flx_bsym_table.find_id bsym_table i ^ "<" ^ si i ^ ">"
-   with Not_found -> "index_" ^ si i
-
-let showts bsym_table i ts =
-  show bsym_table i ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
-
-let showvars bsym_table vars = 
-  catmap "," (fun (i,t)-> si i ^ " |-> " ^ sbt bsym_table t) vars
-
 (* ----------------------------------------------------------- *)
 (* ROUTINES FOR REPLACING TYPE VARIABLES IN TYPES              *)
 (* ----------------------------------------------------------- *)
@@ -55,239 +44,6 @@ let check_mono_vars bsym_table vars sr t =
     print_endline (" **** using varmap " ^ showvars bsym_table vars);
     assert false
 *)
-
-(* ----------------------------------------------------------- *)
-(* ROUTINES FOR REPLACING REFS TO VIRTUALS WITH INSTANCES      *)
-(* ----------------------------------------------------------- *)
-
-let flat_typeclass_fixup_type syms bsym_table virtualinst sr t =
-  match t with
-  | BTYP_inst (i,ts) ->
-    let i',ts' = virtualinst sr i ts in
-    let t = btyp_inst (i',ts') in
-    t
-  | x -> x
-
-let rec typeclass_fixup_type syms bsym_table virtualinst sr t =
-  let f_btype t = typeclass_fixup_type syms bsym_table virtualinst sr t in
-  let t = Flx_btype.map ~f_btype t in
-  let t = flat_typeclass_fixup_type syms bsym_table virtualinst sr t in
-  t
-
-let flat_typeclass_fixup_expr syms bsym_table virtualinst sr (e,t) =
-  let x = match e with
-  | BEXPR_apply_prim (i',ts,a) -> assert false
-  | BEXPR_apply_direct (i,ts,a) -> assert false
-  | BEXPR_apply_struct (i,ts,a) -> assert false
-  | BEXPR_apply_stack (i,ts,a) -> assert false
-  | BEXPR_ref (i,ts)  ->
-    let i,ts = virtualinst sr i ts in
-    bexpr_ref t (i,ts)
-
-  | BEXPR_varname (i',ts') ->
-    let i,ts = virtualinst sr i' ts' in
-    bexpr_varname t (i,ts)
-
-  | BEXPR_closure (i,ts) ->
-    let i,ts = virtualinst sr i ts in
-    bexpr_closure t (i,ts)
-
-  | x -> x, t
-  in
-  x
-
-let rec typeclass_fixup_expr syms bsym_table virtualinst sr e =
-  let f_bexpr e = typeclass_fixup_expr  syms bsym_table virtualinst sr e in
-  let e = flat_typeclass_fixup_expr syms bsym_table virtualinst sr e in
-  let e = Flx_bexpr.map ~f_bexpr e in
-  e 
-
-(* mt is only used to fixup svc and init hacks *)
-let flat_typeclass_fixup_exe syms bsym_table polyinst mt exe =
-(*
-  print_endline ("TYPECLASS FIXUP EXE[In] =" ^ string_of_bexe bsym_table 0 exe);
-*)
-  let result =
-  match exe with
-  | BEXE_call_direct (sr, i,ts,a) -> assert false
-  | BEXE_jump_direct (sr, i,ts,a) -> assert false
-  | BEXE_call_prim (sr, i',ts,a) -> assert false
-  | BEXE_call_stack (sr, i,ts,a) -> assert false
-
-  | x -> x
-  in
-  (*
-  print_endline ("FIXUP EXE[Out]=" ^ string_of_bexe sym_table 0 result);
-  *)
-  result
-
-(* ----------------------------------------------------------- *)
-(* ROUTINES FOR REPLACING REFS TO POLYMORPHS WITH MONOS        *)
-(* ----------------------------------------------------------- *)
-
-let flat_poly_fixup_type syms bsym_table polyinst sr t =
-(*
-  if not (complete_type t) then
-    print_endline ("flat_poly_fixup_type: type isn't complete " ^ sbt bsym_table t);
-*)
-
-  match t with
-  | BTYP_vinst (i,ts) ->
-    let parent,bsym = Flx_bsym_table.find_with_parent bsym_table i in
-    if debug then
-    print_endline ("Virt: flat_poly_fixup_type is using polyinst to instantiate type " ^ Flx_bsym.id bsym ^
-    "<"^ si i^">[" ^catmap "," (sbt bsym_table) ts^ "]");
-    begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_virtual_type bvs ->
-      if debug then
-      print_endline ("  Virt: *** VIRTUAL TYPE");
-      begin match parent with
-      | None -> assert false
-      | Some tc ->
-        if debug then print_endline ("   *** parent type class " ^ si tc);
-        let t' = Flx_build_tctab.remap_virtual_types syms bsym_table (* tc *) t in
-        if debug then print_endline ("   *** mapped to " ^ sbt bsym_table t');
-        t'
-      end
-    | _ -> assert false; 
-    end
-  | BTYP_inst (i,ts) ->
-    let parent,bsym = Flx_bsym_table.find_with_parent bsym_table i in
-    if debug then
-    print_endline ("Inst: flat_poly_fixup_type is using polyinst to instantiate type " ^ Flx_bsym.id bsym ^
-    "<"^ si i^">[" ^catmap "," (sbt bsym_table) ts^ "]");
-    begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_virtual_type _
-    | BBDCL_instance_type _ ->  assert false;
-    | _ -> 
-      if debug then  
-      print_endline ("Inst: OTHER TYPE");
-      let i',ts' = polyinst sr i ts in
-      let t' = btyp_inst (i',ts') in
-      if debug then
-      print_endline ("poly_fixup_type: " ^ showts bsym_table i ts ^ " --> " ^ showts bsym_table i' ts');
-      t'
-      end
-  | x -> x
-
-(* this has to be top down, so instances i,ts use the original
-ts, then the ts get analysed. Otherwise, we'd get new symbols
-in the ts and there's be no match on the replacement table
-*)
-
-let rec rec_poly_fixup_type trail syms bsym_table polyinst sr t =
-  let level = Flx_list.list_index trail t in
-  match level with
-  | Some i -> btyp_fix (-i-1) (btyp_type 0)
-  | None ->
-  let t' = unfold "rec_poly_fixup_type" t in
-  let t' = flat_poly_fixup_type syms bsym_table polyinst sr t' in
-  let f_btype t' = rec_poly_fixup_type (t::trail) syms bsym_table polyinst sr t' in
-  let t' = Flx_btype.map ~f_btype t' in
-  t'
-
-let poly_fixup_type syms bsym_table polyinst sr t =
- let t' = rec_poly_fixup_type [] syms bsym_table polyinst sr t in
-(*
- print_endline ("POLY FIXUP TYPE: " ^ sbt bsym_table t ^ " --> " ^ sbt bsym_table t');
-*)
- t'
-
-let flat_poly_fixup_expr syms bsym_table polyinst sr (e,t) =
-  let x = match e with
-  | BEXPR_apply_prim (i',ts,a) -> assert false
-  | BEXPR_apply_direct (i,ts,a) -> assert false
-  | BEXPR_apply_struct (i,ts,a) -> assert false
-  | BEXPR_apply_stack (i,ts,a) -> assert false
-  | BEXPR_ref (i,ts)  ->
-    let i,ts = polyinst sr i ts in
-    bexpr_ref t (i,ts)
-
-  | BEXPR_varname (i',ts') ->
-    let i,ts = polyinst sr i' ts' in
-    bexpr_varname t (i,ts)
-
-  | BEXPR_closure (i,ts) ->
-    let i,ts = polyinst sr i ts in
-    bexpr_closure t (i,ts)
-
-  | x -> x, t
-  in
-  x
-
-let rec poly_fixup_expr syms bsym_table polyinst sr e =
-  let f_bexpr e = poly_fixup_expr  syms bsym_table polyinst sr e in
-  let f_btype t = poly_fixup_type syms bsym_table polyinst sr t in
-  let e = flat_poly_fixup_expr syms bsym_table polyinst sr e in
-  let e = Flx_bexpr.map ~f_bexpr ~f_btype e in
-  e 
-
-(* mt is only used to fixup svc and init hacks *)
-let flat_poly_fixup_exe syms bsym_table polyinst parent_ts mt exe =
-(*
-  print_endline ("TYPECLASS FIXUP EXE[In] =" ^ string_of_bexe bsym_table 0 exe);
-*)
-  let result =
-  match exe with
-  | BEXE_call_direct (sr, i,ts,a) -> assert false
-  | BEXE_jump_direct (sr, i,ts,a) -> assert false
-  | BEXE_call_prim (sr, i',ts,a) -> assert false
-  | BEXE_call_stack (sr, i,ts,a) -> assert false
-
-  (* this is deviant case: implied ts is vs of parent! *)
-  | BEXE_init (sr,i,e) ->
-(*
-    print_endline ("[flat_poly_fixup_exe: init] Deviant case variable " ^ si i);
-*)
-    let vs = 
-      try Flx_bsym_table.find_bvs bsym_table i 
-      with Not_found -> assert false
-    in
-    assert (List.length vs = List.length parent_ts);
-    let j,ts = polyinst sr i parent_ts in
-(*
-    if i <> j then 
-      print_endline ("[init] Remapped deviant variable to " ^ si j);
-*)
-    bexe_init (sr,j,e)
-
-  | BEXE_svc (sr,i) ->
-    (*
-    print_endline ("[flat_poly_fixup_exe: svc] Deviant case variable " ^ si i);
-    *)
-    let vs = 
-      try Flx_bsym_table.find_bvs bsym_table i 
-      with Not_found -> assert false
-    in
-    assert (List.length vs = List.length parent_ts);
-    let j,ts = polyinst sr i parent_ts in
-    (*
-      if i <> j then
-        print_endline ("[svc] Remapped deviant variable to " ^ si j);
-    *)
-    bexe_svc (sr,j)
-
-  | BEXE_label (sr,i) ->
-    let j,ts = polyinst sr i parent_ts in
-    bexe_label (sr,j)
-
-  | BEXE_goto  (sr,i) ->
-    let j,ts = polyinst sr i parent_ts in
-    bexe_goto (sr,j)
-
-  | BEXE_ifgoto (sr,e,i) ->
-    let j,ts = polyinst sr i parent_ts in
-    bexe_ifgoto (sr,e,j)
-
-
-
-  | x -> x
-  in
-  (*
-  print_endline ("FIXUP EXE[Out]=" ^ string_of_bexe sym_table 0 result);
-  *)
-  result
-
 (* ----------------------------------------------------------- *)
 (* COMPLETE PROCESSING ROUTINES                                *)
 (* ----------------------------------------------------------- *)
@@ -300,7 +56,7 @@ let fixup_type syms bsym_table vars bsym virtualinst polyinst sr t =
 (*
   print_endline ("    ** typeclass_fixup_type " ^ sbt bsym_table t);
 *)
-  let t = typeclass_fixup_type syms bsym_table virtualinst sr  t in
+  let t = Flx_monoclass.typeclass_fixup_type syms bsym_table virtualinst sr  t in
 (*
   print_endline ("    ** Betareduce " ^ sbt bsym_table t);
 *)
@@ -313,7 +69,7 @@ let fixup_type syms bsym_table vars bsym virtualinst polyinst sr t =
 (*
   print_endline ("    ** poly_fixup_type " ^ sbt bsym_table t);
 *)
-  let t = poly_fixup_type syms bsym_table polyinst sr t in
+  let t = Flx_polyinst.poly_fixup_type syms bsym_table polyinst sr t in
 (*
   print_endline ("    ** Polyfixedup" ^ sbt bsym_table t );
 *)
@@ -322,7 +78,7 @@ let fixup_type syms bsym_table vars bsym virtualinst polyinst sr t =
 let fixup_req syms bsym_table vars polyinst sr (i,ts) : bid_t * Flx_btype.t list =
   let ts = List.map (Flx_monosubs.mono_type syms bsym_table vars sr) ts in
   let j,ts = polyinst sr i ts in
-  let ts = List.map (poly_fixup_type syms bsym_table polyinst sr) ts in
+  let ts = List.map (Flx_polyinst.poly_fixup_type syms bsym_table polyinst sr) ts in
   j,ts
 
 let fixup_reqs syms bsym_table vars polyinst sr reqs : Flx_btype.breqs_t = 
@@ -337,14 +93,14 @@ let fixup_expr syms bsym_table monotype virtualinst polyinst sr e =
   print_endline ("[fixup_expr] monomorphised       : " ^ sbe bsym_table e);
 *)
   (* eliminate virtual calls by mapping to instances *)
-  let e = typeclass_fixup_expr syms bsym_table virtualinst sr e in
+  let e = Flx_monoclass.typeclass_fixup_expr syms bsym_table virtualinst sr e in
 (*
   print_endline ("[fixup_expr] virtuals eliminated : " ^ sbe bsym_table e);
 *)
   (* replace applications of polymorphic function (or variable)
     with applications of new monomorphic ones
   *)
-  let e = poly_fixup_expr syms bsym_table polyinst sr e in
+  let e = Flx_polyinst.poly_fixup_expr syms bsym_table polyinst sr e in
 (*
   print_endline ("[fixup_expr] polysyms eliminated : " ^ sbe bsym_table e);
 *)
@@ -390,16 +146,16 @@ let fixup_exes syms bsym_table vars virtualinst polyinst parent_ts exes =
   let exes = List.rev_map 
     (fun exe -> 
       let sr = Flx_bexe.get_srcref exe in 
-      Flx_bexe.map ~f_bexpr:(typeclass_fixup_expr syms bsym_table virtualinst sr) 
+      Flx_bexe.map ~f_bexpr:(Flx_monoclass.typeclass_fixup_expr syms bsym_table virtualinst sr) 
       exe
     ) 
     rexes 
   in
-  let rexes = List.rev_map (fun exe -> flat_typeclass_fixup_exe syms bsym_table virtualinst mt exe) exes in
+  let rexes = List.rev_map (fun exe -> Flx_monoclass.flat_typeclass_fixup_exe syms bsym_table virtualinst mt exe) exes in
 (*
   print_endline ("Virtuals Instantiated:\n" ^ show_exes bsym_table (List.rev exes));
 *)
-  let exes = List.rev_map (flat_poly_fixup_exe syms bsym_table polyinst parent_ts mt)  rexes in
+  let exes = List.rev_map (Flx_polyinst.flat_poly_fixup_exe syms bsym_table polyinst parent_ts mt)  rexes in
 (*
   print_endline ("Special calls monomorphised:\n" ^ show_exes bsym_table exes);
 *)
@@ -409,7 +165,7 @@ let fixup_exes syms bsym_table vars virtualinst polyinst parent_ts exes =
   let exes = List.map 
     (
       fun exe -> let sr = Flx_bexe.get_srcref exe in
-      Flx_bexe.map ~f_bexpr:(poly_fixup_expr syms bsym_table polyinst sr) 
+      Flx_bexe.map ~f_bexpr:(Flx_polyinst.poly_fixup_expr syms bsym_table polyinst sr) 
       exe
     ) 
     exes 

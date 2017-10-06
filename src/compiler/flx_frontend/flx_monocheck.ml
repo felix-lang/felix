@@ -1,3 +1,4 @@
+open Flx_btype
 
 (* Checks a type is monomorphic, that is, does not contain
   any type variables. The type MAY contain references to 
