@@ -1,6 +1,7 @@
 open Flx_bexe
 open Flx_btype
 open Flx_bbdcl
+open Flx_bexpr
 
 let notunitassign exe = match exe with
   | BEXE_assign (_,_,(_,BTYP_tuple [])) 

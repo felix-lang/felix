@@ -1,5 +1,6 @@
 (** The type of the bound symbol table. *)
 open Flx_bid
+exception IncompleteBsymTable of int * string
 
 type t
 
@@ -99,6 +100,6 @@ val is_global_var : t -> bid_t -> bool
 val is_function : t -> bid_t -> bool
 
 (** Assert that the bound symbol table is well formed. *)
-val validate : t -> unit
+val validate : string -> t -> unit
 val validate_types: (Flx_btype.t -> unit) -> t -> unit
 

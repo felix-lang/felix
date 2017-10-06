@@ -180,10 +180,10 @@ let monomorphise2 debug syms bsym_table =
   (* to_process is the set of symbols yet to be scanned
      searching for symbols to monomorphise
   *)
-  let to_process = ref Flx_monomap.MonoMap.empty in
-  BidSet.iter (fun i -> to_process := Flx_monomap.MonoMap.add (i,[]) (i) (!to_process)) roots;
+  let to_process = ref MM.empty in
+  BidSet.iter (fun i -> to_process := MM.add (i,[]) (i) (!to_process)) roots;
   
-  let processed = ref Flx_monomap.MonoMap.empty in
+  let processed = ref MM.empty in
 
   (* new bsym_table *)
   let nutab = Flx_bsym_table.create () in
@@ -192,13 +192,13 @@ let monomorphise2 debug syms bsym_table =
   let nubids = ref  BidSet.empty in 
 
   let sr = Flx_srcref.make_dummy "[monomorphise2]" in
-  while not (Flx_monomap.MonoMap.is_empty (!to_process)) do
-    let (i,ts),j = Flx_monomap.MonoMap.choose (!to_process) in
-    assert (not (Flx_monomap.MonoMap.mem (i,ts) (!processed) ));
+  while not (MM.is_empty (!to_process)) do
+    let (i,ts),j = MM.choose (!to_process) in
+    assert (not (MM.mem (i,ts) (!processed) ));
     begin try List.iter (Flx_monocheck.check_mono bsym_table sr) ts with _ -> assert false end;
 
-    to_process := Flx_monomap.MonoMap.remove (i,ts) (!to_process);
-    processed := Flx_monomap.MonoMap.add (i,ts) j (!processed);
+    to_process := MM.remove (i,ts) (!to_process);
+    processed := MM.add (i,ts) j (!processed);
 
     (*
     (* if i <> j then *)
@@ -213,12 +213,23 @@ let monomorphise2 debug syms bsym_table =
   Hashtbl.clear syms.instances_of_typeclass;
   Hashtbl.clear syms.virtual_to_instances;
   syms.axioms := [];
+
 (*
   syms.reductions := [];
 *)
 (*
 print_endline ("Allowing " ^ string_of_int (List.length !(syms.reductions)) ^ " reductions");
 *)
+  begin try
+    Flx_bsym_table.validate "post-monomorphisation" nutab
+  with Flx_bsym_table.IncompleteBsymTable (bid,_) ->
+    print_endline ("Post monomorphisation, symbol " ^string_of_int bid 
+       ^ " missing from bound symbol table"
+    );
+    Flx_print.print_bsym_table  nutab;
+    failwith "SYSTEM ERROR: monomorphisation failed"
+  end;
+
   if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then 
   begin
     print_endline "";
@@ -227,7 +238,7 @@ print_endline ("Allowing " ^ string_of_int (List.length !(syms.reductions)) ^ " 
     print_endline "---------------------------";
     print_endline "";
 
-    Flx_print.print_bsym_table nutab
+    Flx_print.print_bsym_table  nutab
   end;
   nutab
 

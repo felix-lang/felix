@@ -1,4 +1,5 @@
 open Flx_bid
+exception IncompleteBsymTable of int * string
 
 type elt = {
   bsym: Flx_bsym.t;               (** The symbol. *)
@@ -231,7 +232,7 @@ let update_bexes f bsym_table =
   end bsym_table
 
 (** Assert that the bound symbol table is well formed. *)
-let validate bsym_table =
+let validate msg bsym_table =
   iter begin fun bid _ bsym ->
     let bbdcl = Flx_bsym.bbdcl bsym in
 
@@ -239,7 +240,9 @@ let validate bsym_table =
     assert (Flx_bbdcl.is_valid bbdcl);
 
     (* Make sure the referenced bid is in the bsym_table. *)
-    let f_bid bid = assert (mem bsym_table bid) in
+    let f_bid bid = if not (bid = 0 || mem bsym_table bid) then
+       raise (IncompleteBsymTable (bid, msg)) else ()
+    in 
     let f_btype = Flx_btype.iter ~f_bid in
     let f_bexpr = Flx_bexpr.iter ~f_bid ~f_btype in
     let f_bexe = Flx_bexe.iter ~f_bid ~f_btype ~f_bexpr in
@@ -249,7 +252,6 @@ let validate bsym_table =
 let validate_types f_btype bsym_table =
   iter begin fun bid _ bsym ->
     let bbdcl = Flx_bsym.bbdcl bsym in
-
     Flx_bbdcl.iter ~f_btype bbdcl
   end bsym_table
 

@@ -521,6 +521,7 @@ let copy_used syms bsym_table =
   let result =  aux bsym_table (Flx_bsym_table.length bsym_table) in
   if syms.compiler_options.Flx_options.print_flag then
     print_endline "*** COPY DONE";
+  Flx_bsym_table.validate "Flx_use: copy_used" result;
   result
 
 

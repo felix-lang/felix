@@ -18,158 +18,64 @@ The output is fully monomorphic and contains references ONLY
 to the new symbol table.
 *)
 
-let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst ts bsym i j =
-(*
-if List.length ts > 0 then begin
-  print_endline ("[mono_bbdcl] " ^ Flx_bsym.id bsym);
-  print_endline ("ts=[" ^ catmap "," (sbt bsym_table) ts ^ "]");
-end;
-*)
-  List.iter (fun t -> if not (complete_type t) then 
-    print_endline ("Argument not complete!!!!!!!!!!!!!!!!!!!!!!!")
-  )
-  ts;
-  let sr = Flx_srcref.make_dummy ("[mono_bbdcl] " ^ Flx_bsym.id bsym) in 
-  begin try List.iter (Flx_monocheck.check_mono bsym_table sr) ts with _ -> assert false end;
-
-(*
-  let original_instance_type = BTYP_inst (i,ts) in
-  let unfolded_instance_type = 
-    try 
-      unfold "unfold instance in numono" original_instance_type
-    with 
-    | _ -> 
-      print_endline ("Unfold instance failed! " ^ sbt bsym_table original_instance_type); 
-      assert false
+let mono_fun syms bsym_table virtualinst polyinst  mt bsym sr ts (props,vs,(ps,traint),ret,effects,exes) =
+begin try
+  let props = List.filter (fun p -> p <> `Virtual) props in
+  if List.length vs <> List.length ts then begin try
+    print_endline ("[mono] vs/ts mismatch in " ^ Flx_bsym.id bsym ^ " vs=[" ^ 
+      catmap "," (fun (s,i) -> s) vs ^ "]");
+    print_endline ("ts=[" ^ catmap "," (sbt bsym_table) ts ^ "]");
+    assert false
+    with Not_found -> print_endline "Not_found printint ts?"; assert false
+  end;
+  let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
+  let ret = 
+    try mt vars ret 
+    with Not_found -> print_endline "Not_found fixing up return type"; 
+      print_endline ("Ret=" ^ sbt bsym_table ret); 
+      assert false 
   in
-  let ts' = match unfolded_instance_type with
-    | BTYP_inst (_, ts') -> ts'
-    | _ -> assert false
+  let effects = 
+    try mt vars effects
+    with Not_found -> print_endline "Not_found fixing up effects type"; 
+      print_endline ("Effects=" ^ sbt bsym_table effects); 
+      assert false 
   in
-*)
+  let ps = try
+    (*
+    print_endline ("+++processing parameters of " ^ Flx_bsym.id bsym);
+    *)
+    let ps = List.map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} ->
+    {pkind=pk;pid=s;pindex=fst (polyinst sr i ts);ptyp=mt vars t}) ps in
+    (*
+    print_endline ("+++parameters processed: " ^ Flx_bsym.id bsym);
+    *)
+    ps
+    with Not_found -> print_endline ("Not Found FIXING parameters"); assert false
+  in
+  (* fudge unit parameters *)
+  let ps = List.map (fun {pkind=pk; pid=s; pindex=i; ptyp=t} ->
+    {pkind=pk;pid=s;pindex=(match t with BTYP_tuple [] -> 0 | _ -> i);ptyp=t}) ps 
+  in
+  let traint =
+    match traint with
+    | None -> None
+    | Some x -> Some (Flx_monofixup_base.fixup_expr syms bsym_table (mt vars) virtualinst polyinst sr x)
+  in
+  let exes = Flx_monostrip.strip_empty_calls bsym_table exes in
+  let exes = 
+    try Flx_monofixup_base.fixup_exes syms bsym_table vars virtualinst polyinst ts exes 
+    with Not_found -> assert false
+  in
+  let exes = Flx_monostrip.strip_unit_assigns exes in
+  let exes = List.map (fun exe -> Flx_bexe.map ~f_bexpr:Flx_bexpr.reduce exe) exes in
+  let props = List.filter (fun p -> p <> `Virtual) props in
+  Some (bbdcl_fun (props,[],(ps,traint),ret,effects,exes))
+with Not_found ->
+  assert false
+end
 
-  let mt vars t = Flx_monofixup_base.fixup_type syms bsym_table vars bsym virtualinst polyinst sr t in
-  let bbdcl = Flx_bsym.bbdcl bsym in
-  match bbdcl with
-  | BBDCL_label s -> Some (bbdcl_label s)
-
-  | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
-    begin try
-      let props = List.filter (fun p -> p <> `Virtual) props in
-      if List.length vs <> List.length ts then begin try
-        print_endline ("[mono] vs/ts mismatch in " ^ Flx_bsym.id bsym ^ " vs=[" ^ 
-          catmap "," (fun (s,i) -> s) vs ^ "]");
-        print_endline ("ts=[" ^ catmap "," (sbt bsym_table) ts ^ "]");
-        assert false
-        with Not_found -> print_endline "Not_found printint ts?"; assert false
-      end;
-      let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
-      let ret = 
-        try mt vars ret 
-        with Not_found -> print_endline "Not_found fixing up return type"; 
-          print_endline ("Ret=" ^ sbt bsym_table ret); 
-          assert false 
-      in
-      let effects = 
-        try mt vars effects
-        with Not_found -> print_endline "Not_found fixing up effects type"; 
-          print_endline ("Effects=" ^ sbt bsym_table effects); 
-          assert false 
-      in
-      let ps = try
-        (*
-        print_endline ("+++processing parameters of " ^ Flx_bsym.id bsym);
-        *)
-        let ps = List.map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} ->
-        {pkind=pk;pid=s;pindex=fst (polyinst sr i ts);ptyp=mt vars t}) ps in
-        (*
-        print_endline ("+++parameters processed: " ^ Flx_bsym.id bsym);
-        *)
-        ps
-        with Not_found -> print_endline ("Not Found FIXING parameters"); assert false
-      in
-      (* fudge unit parameters *)
-      let ps = List.map (fun {pkind=pk; pid=s; pindex=i; ptyp=t} ->
-        {pkind=pk;pid=s;pindex=(match t with BTYP_tuple [] -> 0 | _ -> i);ptyp=t}) ps 
-      in
-      let traint =
-        match traint with
-        | None -> None
-        | Some x -> Some (Flx_monofixup_base.fixup_expr syms bsym_table (mt vars) virtualinst polyinst sr x)
-      in
-      let exes = Flx_monostrip.strip_empty_calls bsym_table exes in
-      let exes = 
-        try Flx_monofixup_base.fixup_exes syms bsym_table vars virtualinst polyinst ts exes 
-        with Not_found -> assert false
-      in
-      let exes = Flx_monostrip.strip_unit_assigns exes in
-      let exes = List.map (fun exe -> Flx_bexe.map ~f_bexpr:Flx_bexpr.reduce exe) exes in
-      let props = List.filter (fun p -> p <> `Virtual) props in
-      Some (bbdcl_fun (props,[],(ps,traint),ret,effects,exes))
-    with Not_found ->
-      assert false
-    end
-
-  | BBDCL_val (vs,t,kind) ->
-(*
-print_endline ("Monomorphising variable "^Flx_bsym.id bsym ^" polytype " ^ sbt bsym_table t);
-*)
-    assert (List.length vs = List.length ts);
-    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
-    let t = mt vars t in
-    (* eliminate unit variables *)
-    begin match t with
-    | BTYP_void -> print_endline ("Void variable?"); assert false
-    | BTYP_tuple [] -> 
-      (* print_endline ("Elim unit var " ^ Flx_bsym.id bsym ^ " old index " ^ si i ^ " new index would be " ^ si j); i*)
-      None
-    | _ -> Some (bbdcl_val ([],t,kind))
-    end
-
-  (* we have tp replace types in interfaces like Vector[int]
-    with monomorphic versions if any .. even if we don't
-    monomorphise the bbdcl itself.
-
-    This is weak .. it's redone for each instance, relies
-    on mt being idempotent..
-  *)
-  | BBDCL_external_fun (props,vs,argtypes,ret,reqs,prec, fkind) ->
-    assert (List.length vs = List.length ts);
-    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
-    let argtypes = List.map (mt vars) argtypes in
-    let ret = mt vars ret in
-    let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
-    let props = List.filter (fun p -> p <> `Virtual) props in
-    Some (bbdcl_external_fun (props,vs,argtypes,ret,reqs,prec,fkind))
-
-  | BBDCL_external_const (props, vs, t, CS.Str "#this", reqs) ->
-    assert (List.length vs = List.length ts);
-    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
-    let _ = mt vars t in
-    let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
-    Some (bbdcl_external_const (props, [], t, CS.Str "#this", reqs))
-
-  | BBDCL_external_const (props, vs, t,cs, reqs) ->
-    assert (List.length vs = List.length ts);
-    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
-    let t = mt vars t in
-    let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
-    Some (bbdcl_external_const (props,vs, t, cs, reqs))
- 
-  | BBDCL_external_type (vs,quals,cs,reqs)  -> 
-    assert (List.length vs = List.length ts);
-    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
-    let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
-    let quals = List.map (Flx_monofixup_base.fixup_qual vars mt) quals in
-    Some (bbdcl_external_type (vs,quals,cs, reqs))
-
-  | BBDCL_external_code (vs,cs,ikind,reqs)   -> 
-    assert (List.length vs = List.length ts);
-    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
-    let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
-    Some (bbdcl_external_code (vs,cs,ikind,reqs))
-
-  | BBDCL_union (vs,cps) -> 
+let mono_union syms bsym_table virtualinst polyinst  mt bsym sr i ts (vs,cps) =
 (*
     if List.length vs <> List.length ts then begin
       print_endline ("Monomorphise union " ^ sbt bsym_table (btyp_inst (i,ts)) ^ 
@@ -210,7 +116,7 @@ print_endline ("Attempting unification: " ^ sbt bsym_table c ^ " =? " ^ sbt bsym
 print_endline ("Dependent variables:"); 
   BidSet.iter (fun i -> print_endline ("DVAR=" ^ string_of_int i)) (!dvars);
 *)
-        try Some (Flx_unify.unification bsym_table syms.counter eqns !dvars)
+        try Some (Flx_unify.unification bsym_table syms.Flx_mtypes2.counter eqns !dvars)
         with 
           | Free_fixpoint _ -> print_endline ("Free fixpoint"); None 
           | Not_found -> None
@@ -226,7 +132,7 @@ print_endline ("Dependent variables:");
         print_endline ("      Unified with MGU=" ^ catmap "," (fun (i,t) ->
           string_of_int i ^ "->" ^ sbt bsym_table t) mgu);
 *)
-        let mgu = List.map (fun (i,t) -> i, Flx_fold.minimise bsym_table syms.counter t) mgu in
+        let mgu = List.map (fun (i,t) -> i, Flx_fold.minimise bsym_table syms.Flx_mtypes2.counter t) mgu in
 (*
         print_endline ("      Miniused MGU   =" ^ catmap "," (fun (i,t) ->
           string_of_int i ^ "->" ^ sbt bsym_table t) mgu);
@@ -343,6 +249,108 @@ print_endline ("Finished union by non GADT **");
   Some (bbdcl_union ([], cps))
 end
 
+
+(* the j is for diagnostics only, it's the output symbol index *)
+let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst ts bsym i j =
+(*
+if List.length ts > 0 then begin
+  print_endline ("[mono_bbdcl] " ^ Flx_bsym.id bsym);
+  print_endline ("ts=[" ^ catmap "," (sbt bsym_table) ts ^ "]");
+end;
+*)
+  List.iter (fun t -> if not (complete_type t) then 
+    print_endline ("Argument not complete!!!!!!!!!!!!!!!!!!!!!!!")
+  )
+  ts;
+  let sr = Flx_srcref.make_dummy ("[mono_bbdcl] " ^ Flx_bsym.id bsym) in 
+  begin try List.iter (Flx_monocheck.check_mono bsym_table sr) ts with _ -> assert false end;
+
+(*
+  let original_instance_type = BTYP_inst (i,ts) in
+  let unfolded_instance_type = 
+    try 
+      unfold "unfold instance in numono" original_instance_type
+    with 
+    | _ -> 
+      print_endline ("Unfold instance failed! " ^ sbt bsym_table original_instance_type); 
+      assert false
+  in
+  let ts' = match unfolded_instance_type with
+    | BTYP_inst (_, ts') -> ts'
+    | _ -> assert false
+  in
+*)
+
+  let mt vars t = Flx_monofixup_base.fixup_type syms bsym_table vars bsym virtualinst polyinst sr t in
+  let bbdcl = Flx_bsym.bbdcl bsym in
+  match bbdcl with
+  | BBDCL_label s -> Some (bbdcl_label s)
+
+  | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) -> 
+    mono_fun syms bsym_table virtualinst polyinst mt bsym sr ts (props,vs,(ps,traint),ret,effects,exes) 
+
+  | BBDCL_val (vs,t,kind) ->
+(*
+print_endline ("Monomorphising variable "^Flx_bsym.id bsym ^" polytype " ^ sbt bsym_table t);
+*)
+    assert (List.length vs = List.length ts);
+    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
+    let t = mt vars t in
+    (* eliminate unit variables *)
+    begin match t with
+    | BTYP_void -> print_endline ("Void variable?"); assert false
+    | BTYP_tuple [] -> 
+      (* print_endline ("Elim unit var " ^ Flx_bsym.id bsym ^ " old index " ^ si i ^ " new index would be " ^ si j); i*)
+      None
+    | _ -> Some (bbdcl_val ([],t,kind))
+    end
+
+  (* we have tp replace types in interfaces like Vector[int]
+    with monomorphic versions if any .. even if we don't
+    monomorphise the bbdcl itself.
+
+    This is weak .. it's redone for each instance, relies
+    on mt being idempotent..
+  *)
+  | BBDCL_external_fun (props,vs,argtypes,ret,reqs,prec, fkind) ->
+    assert (List.length vs = List.length ts);
+    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
+    let argtypes = List.map (mt vars) argtypes in
+    let ret = mt vars ret in
+    let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
+    let props = List.filter (fun p -> p <> `Virtual) props in
+    Some (bbdcl_external_fun (props,vs,argtypes,ret,reqs,prec,fkind))
+
+  | BBDCL_external_const (props, vs, t, CS.Str "#this", reqs) ->
+    assert (List.length vs = List.length ts);
+    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
+    let _ = mt vars t in
+    let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
+    Some (bbdcl_external_const (props, [], t, CS.Str "#this", reqs))
+
+  | BBDCL_external_const (props, vs, t,cs, reqs) ->
+    assert (List.length vs = List.length ts);
+    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
+    let t = mt vars t in
+    let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
+    Some (bbdcl_external_const (props,vs, t, cs, reqs))
+ 
+  | BBDCL_external_type (vs,quals,cs,reqs)  -> 
+    assert (List.length vs = List.length ts);
+    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
+    let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
+    let quals = List.map (Flx_monofixup_base.fixup_qual vars mt) quals in
+    Some (bbdcl_external_type (vs,quals,cs, reqs))
+
+  | BBDCL_external_code (vs,cs,ikind,reqs)   -> 
+    assert (List.length vs = List.length ts);
+    let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
+    let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
+    Some (bbdcl_external_code (vs,cs,ikind,reqs))
+
+  | BBDCL_union (vs,cps) ->
+    mono_union syms bsym_table virtualinst polyinst  mt bsym sr i ts (vs,cps)  
+
   | BBDCL_cstruct (vs,cps, reqs) -> 
     assert (List.length vs = List.length ts);
     let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
@@ -383,19 +391,6 @@ print_endline ("Monomorphised nonconst ctor argt=: " ^ sbt bsym_table ctor_argt 
 *)
     Some (bbdcl_nonconst_ctor ([],uidx, ut,ctor_idx,ctor_argt,evs,etraint)) (* ignore GADT stuff *)
  
-
-  | BBDCL_virtual_type _ -> assert false
-  | BBDCL_typeclass _ -> assert false
-  | BBDCL_instance _ -> assert false
-
-  | BBDCL_axiom 
-  | BBDCL_lemma 
-  | BBDCL_reduce -> assert false 
-
-  | BBDCL_invalid  -> assert false
-
-  | BBDCL_instance_type _ -> assert false
-
   | BBDCL_newtype (vs,t) ->  
 (*
 print_endline ("ADJUSTING NEWTYPE " ^Flx_bsym.id bsym );
@@ -404,8 +399,17 @@ print_endline ("ADJUSTING NEWTYPE " ^Flx_bsym.id bsym );
     let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
     Some (bbdcl_newtype ([],t))
-  
-  | BBDCL_module -> assert false
+
+  | BBDCL_virtual_type _ 
+  | BBDCL_typeclass _ 
+  | BBDCL_instance _ 
+  | BBDCL_axiom 
+  | BBDCL_lemma 
+  | BBDCL_reduce 
+  | BBDCL_invalid 
+  | BBDCL_instance_type _ 
+  | BBDCL_module 
+    -> assert false
 
 
 

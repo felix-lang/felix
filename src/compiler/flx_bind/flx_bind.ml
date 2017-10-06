@@ -58,7 +58,7 @@ print_endline "Flx_bind.bind_asms: start validation of bsym_table";
 let f_btype t = if Flx_btype.complete_type t then () else
   print_endline ("BSYM_TABLE CONTAINS INCOMPLETE TYPE " ^ Flx_print.sbt bsym_table t ^ " = " ^ Flx_btype.st t)
 in
-Flx_bsym_table.validate bsym_table;
+Flx_bsym_table.validate "post-construction" bsym_table;
 Flx_bsym_table.validate_types f_btype bsym_table;
 
 if debug then
