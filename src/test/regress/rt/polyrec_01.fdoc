@@ -1,0 +1,69 @@
+@title Polymorphic recursion
+@felix
+class Apl[D] {
+ virtual type C;
+ virtual fun fmap: D -> C;
+}
+
+instance Apl[int] {
+ instance type C = double;
+ fun fmap (var x:int) => x.double + 0.42;
+}
+
+instance Apl[double] {
+ instance type C = string;
+ fun fmap (var x:double) => x.str + "!!";
+}
+
+instance Apl[string] {
+ instance type C = string;
+ fun fmap (var x:string) => "'" + x.str + "'";
+}
+
+
+instance[T,U with Apl[T],Apl[U]] Apl[T * U] { // int * double
+ instance type C = Apl[T]::C * Apl[U]::C; // double * string
+ fun fmap : T * U -> C =
+ | t,u => fmap t, fmap u
+;
+}
+
+instance [T,U with Apl[T], Apl[U]] Apl[T ** U] {
+ instance type C = Apl[T]::C ** Apl[U]::C;
+ fun fmap: T ** U -> C =
+ | (ah ,, at) => fmap ah,,fmap at
+ ; 
+}
+
+open[T] Apl[T];
+var p1 = (23, 3.413);
+var p2 =  fmap p1.0, fmap p1.1;
+
+println$ p1;
+println$ p2;
+println$ p1.fmap;
+println$ p1.fmap.fmap.fmap.fmap;
+println$ (12, (61, 33.7)).fmap;
+println$ (23,3.412,"hello").fmap;
+
+open class FunnyEq[A,B] {
+  virtual fun == : A * B -> bool;
+}
+instance[T with Eq[T]] FunnyEq[T,T] {
+	fun ==(x:T,y:T) => Eq::eq (x, y);
+}
+
+println$ p1 == p1;
+println$ p2 == fmap p1;
+@
+@expect
+(23, 3.413)
+(23.42, 3.413!!)
+(23.42, 3.413!!)
+(''23.42!!'', '''3.413!!''')
+(12.42, (61.42, 33.7!!))
+(23.42, 3.412!!, 'hello')
+true
+true
+@
+
