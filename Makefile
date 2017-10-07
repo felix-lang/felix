@@ -9,10 +9,13 @@
 #
 # We currently make a debug build for 64 bit windows ONLY.
 
-all: showversion bootstrap tools target uproot test
+all: showversion env bootstrap tools target uproot test
 
 showversion:
 	python showversion.py
+
+env:
+	set PWD=$(MAKEDIR)
 
 rebuild: extract copy tools target uproot
 
