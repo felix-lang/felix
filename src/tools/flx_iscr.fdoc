@@ -1,6 +1,8 @@
 
 @h1 Core interscript interpreter.
+
 Define an equality for lists of strings.
+
 @felix
 fun streq : list[string] * list[string] -> bool =
   | Cons (h1, t1), Cons (h2, t2) when h1 == h2 => streq (t1,t2)
@@ -8,27 +10,41 @@ fun streq : list[string] * list[string] -> bool =
   | _ => false
 ;
 @
+
 Now define a type to hold a file buffer.
+
 @felix
 struct file_buffer = 
 {
   filename : string;
   buffer : list[string];
 @
+
 An output routine to add a new line to the buffer.
+    
 @felix
   proc output_line (line:string) =>
     self.buffer <- Cons (line, self*.buffer);
 @
+
 Now the save routine. We only write the buffer to
 the file if the contents differ from the old file.
 This is to preserve the time stamp if things don't change.
 Note if a file is non-existent, and the tangler input
 is empty, the file will not be created.
+
 @felix
   proc save (id:string)  
   {
     var filename = self*.filename;
+
+    // replace environment variable if the path starts with one.
+    if filename.[0] == '$' do
+      var endpos = stl_find(filename,"/");
+      var env_var = Env::getenv (filename.[1 to endpos]);
+      filename = env_var + filename.[endpos to];
+    done
+          
     var data = self*.buffer;
     var old = tail (rev_split (filename.load, char "\n"));
     if not streq (old , data) do // note: will NOT create an empty file!
@@ -49,19 +65,25 @@ is empty, the file will not be created.
   }
 };
 @
+
 We use a string dictionary variable to hold all the tanglers.
+
 @felix
 var tanglers = strdict[&file_buffer] ();
 @
+
 Now, define the state of the processor. It's either
 skipping over documentation, or, it's writing code
 out to some file.
+
 @felix
 union state_t = Doc | Tangling of &file_buffer; 
 var state = Doc;
 @
+
 Now we define the syntax the processor uses. We're
 using regular definitions for the parser.
+
 @felix
 open Regdef; // required
 
@@ -84,16 +106,20 @@ regdef tangler_use_regdef =
   "@tangle" white group (felt) optwhite 
 ; 
 @
+
 Now convert these regular definitions to compiled regexps.
 The render function translates the regular AST tree form
 into a Perl string, and the RE2 constructor compiles it
 using Google RE2.
+
 @felix
 var tangler_def_re2 = RE2 (Regdef::render tangler_def_regdef);
 var tangler_use_re2 = RE2 (Regdef::render tangler_use_regdef);
 @
+
 Now define the parser actions. First, a routine
 to add a new tangler (that's just a {file_buffer}).
+
 @felix
 proc def_tangler (id:string, filename:string, odir:string)
 {
@@ -107,12 +133,16 @@ proc def_tangler (id:string, filename:string, odir:string)
   endmatch;
 }
 @
+
 Now a routine to revert to document mode.
 In document mode we just skip lines.
+
 @felix
 proc set_doc() =>  state = Doc;
 @
+
 Now a routine to specify a new current tangler.
+
 @felix
 proc set_tangler (s:string) 
 {
@@ -124,6 +154,7 @@ proc set_tangler (s:string)
    endmatch;
 }
 @
+
 Now heres the main processing routine for the input file.
 We check for an @ character at the start of a line.
 If we don't find one we either write the line to the
@@ -132,6 +163,7 @@ to see what command it is: either a command to define
 a new tangler, a command to switch to a different output
 file, or a switch to document mode in which we just skip
 over the lines.
+
 @felix
 proc process_file (f:ifile) (odir:string)
 {
@@ -156,8 +188,10 @@ proc process_file (f:ifile) (odir:string)
   done
 }
 @
+
 Now for the mainline.
 First check the input file exists.
+
 @felix
 noinline proc iscr (iname:string) (var odir:string)
 {
@@ -166,14 +200,18 @@ noinline proc iscr (iname:string) (var odir:string)
     System::exit 1;
   done
 @
+
 Now check for optional directory for output.
+
 @felix
   odir = 
     if odir == "" then Directory::getcwd () 
     else Directory::mk_absolute_filename odir
   ;
 @
+
 Now, process the input file and buffer up the code.
+
 @felix
   begin 
     var f = iname.fopen_input;
@@ -181,10 +219,12 @@ Now, process the input file and buffer up the code.
     f.fclose;
   end
 @
+    
 Finally just dump the buffers to the associated
 files if the contents of the buffer and file differ.
 Do nothing if the contents are the same to avoid
 spoiling the last modification timestamp.
+
 @felix
   match id,pbuffer in tanglers do 
     pbuffer.save id;
