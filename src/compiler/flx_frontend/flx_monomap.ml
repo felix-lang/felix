@@ -7,8 +7,8 @@ module MonoMap =
     type kv = key * target
     type data = kv list
 
-    let counter = ref 1 (* HACK *)
-    let dummy = Flx_bsym_table.create ()  
+    let counter = ref 1 (* HACK, should be private *)
+    let dummy = Flx_bsym_table.create_fresh ()   (* should be private .. *)
     let cmp (i,ts) (i',ts') =
       i = i' && List.length ts = List.length ts' &&
       List.fold_left2 (fun r t t' -> r && Flx_unify.type_eq dummy counter t t') true ts ts'

@@ -10,12 +10,42 @@ type elt = {
 type t = {
   table: (bid_t, elt) Hashtbl.t;
   childmap: (int, BidSet.t) Hashtbl.t; (** All of this bsym table's roots. *)
+  mutable subtype_map: ((int * int) * int) list; (* super=cod:param, sub=dom:arg -> coercion *)
 }
 
 (** Construct a bound symbol table. *)
-let create () =
+let create_fresh () =
   { table=Hashtbl.create 97;
-    childmap=Hashtbl.create 97; }
+    childmap=Hashtbl.create 97; 
+    subtype_map = [];
+  }
+
+let create_from bsym_table =
+  { table=Hashtbl.create 97;
+    childmap=Hashtbl.create 97; 
+    subtype_map = bsym_table.subtype_map
+  }
+
+
+type coercion_t = (bid_t * bid_t) * bid_t
+
+(* temporary hackery *)
+let add_supertype bsym_table x =
+  bsym_table.subtype_map <- x :: bsym_table.subtype_map
+
+let maybe_coercion bsym_table param arg  = 
+  try Some (List.assoc (param,arg) bsym_table.subtype_map)
+  with Not_found -> None
+
+let is_supertype bsym_table param arg =
+  List.mem_assoc (param, arg) bsym_table.subtype_map
+
+let iter_coercions bsym_table f =
+  List.iter f bsym_table.subtype_map 
+
+let fold_coercions bsym_table f init =
+  List.fold_left f init bsym_table.subtype_map 
+
 
 (** Returns how many items are in the bound symbol table. *)
 let length bsym_table = Hashtbl.length bsym_table.table
@@ -150,7 +180,9 @@ let rec remove bsym_table bid =
 let copy bsym_table =
   { bsym_table with 
       table=Hashtbl.copy bsym_table.table;
-      childmap=Hashtbl.copy bsym_table.childmap }
+      childmap=Hashtbl.copy bsym_table.childmap;
+      subtype_map=bsym_table.subtype_map
+  }
 
 (** Set's a symbol's parent. *)
 let set_parent bsym_table bid parent =
@@ -174,7 +206,7 @@ let set_parent bsym_table bid parent =
 let iter f bsym_table =
   Hashtbl.iter (fun bid elt -> f bid elt.parent elt.bsym) bsym_table.table
 
-(** Fold over all the items in the bound symbol table. *)
+(** Fold over all the items in the bound symbol table. Excludes subtype map*)
 let fold f bsym_table init =
   Hashtbl.fold
     (fun bid elt init -> f bid elt.parent elt.bsym init)
@@ -240,13 +272,16 @@ let validate msg bsym_table =
     assert (Flx_bbdcl.is_valid bbdcl);
 
     (* Make sure the referenced bid is in the bsym_table. *)
-    let f_bid bid = if not (bid = 0 || mem bsym_table bid) then
+    let f_bid_msg msg bid = if not (bid = 0 || mem bsym_table bid) then
        raise (IncompleteBsymTable (bid, msg)) else ()
     in 
+    let f_bid bid = f_bid_msg ("primary table " ^ msg) bid in
     let f_btype = Flx_btype.iter ~f_bid in
     let f_bexpr = Flx_bexpr.iter ~f_bid ~f_btype in
     let f_bexe = Flx_bexe.iter ~f_bid ~f_btype ~f_bexpr in
-    Flx_bbdcl.iter ~f_bid ~f_btype ~f_bexpr ~f_bexe bbdcl
+    Flx_bbdcl.iter ~f_bid ~f_btype ~f_bexpr ~f_bexe bbdcl;
+    let f_bid bid = f_bid_msg ("Subtype table " ^ msg) bid in
+    List.iter (fun ((a,b),c) -> f_bid a; f_bid b; f_bid c) bsym_table.subtype_map
   end bsym_table
 
 let validate_types f_btype bsym_table =

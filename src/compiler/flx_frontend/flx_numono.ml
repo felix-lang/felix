@@ -177,6 +177,17 @@ let monomorphise2 debug syms bsym_table =
   assert (BidSet.cardinal roots > 0);
 
 
+  (* add coercion types and functions to roots *)
+  let roots = Flx_bsym_table.fold_coercions bsym_table
+    (fun acc ((a,b),c) -> 
+      let x = BidSet.add a acc in
+      let y = BidSet.add b x in
+      let z = BidSet.add c y in
+      z
+    )
+    roots
+  in
+
   (* to_process is the set of symbols yet to be scanned
      searching for symbols to monomorphise
   *)
@@ -186,7 +197,7 @@ let monomorphise2 debug syms bsym_table =
   let processed = ref MM.empty in
 
   (* new bsym_table *)
-  let nutab = Flx_bsym_table.create () in
+  let nutab = Flx_bsym_table.create_fresh () in
 
   (* Set of indices of NEW symbols to go or already gone into it *)
   let nubids = ref  BidSet.empty in 
@@ -220,6 +231,13 @@ let monomorphise2 debug syms bsym_table =
 (*
 print_endline ("Allowing " ^ string_of_int (List.length !(syms.reductions)) ^ " reductions");
 *)
+(* Add coercions to new table now *)
+
+  Flx_bsym_table.iter_coercions bsym_table
+    (fun (((a,b),c) as x) ->
+     Flx_bsym_table.add_supertype nutab x
+    )
+  ;
   begin try
     Flx_bsym_table.validate "post-monomorphisation" nutab
   with Flx_bsym_table.IncompleteBsymTable (bid,_) ->

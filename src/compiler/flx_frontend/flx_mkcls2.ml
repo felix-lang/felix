@@ -569,7 +569,7 @@ let process_entry state bsym_table nutab i parent bsym =
 *)
  
 let make_wrappers syms bsym_table =
-  let nutab = Flx_bsym_table.create () in
+  let nutab = Flx_bsym_table.create_from bsym_table in
   let state = make_closure_state syms in 
   Flx_bsym_table.iter (process_entry state bsym_table nutab) bsym_table;
   nutab

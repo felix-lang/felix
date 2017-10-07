@@ -4,6 +4,8 @@ open Flx_bid
 
 exception Vfound (* for variants, Found already used elsewhere *)
 
+let si x = string_of_int x
+
 let rec function_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt ld lc rd rc =
   let coerce parent e dstt = expand_coercion new_table bsym_table counter parent remap e dstt in
   (* coerce function argument value to function parameter value 
@@ -223,6 +225,26 @@ and expand_coercion new_table bsym_table counter parent remap ((srcx,srct) as sr
   new coercions, to eliminate them if possible
   *)
   match srct,dstt with
+  | BTYP_inst (src,[]), BTYP_inst (dst,[]) ->
+    print_endline ("Searching for nominal type conversion from " ^ 
+    si src  ^ " -> " ^ si dst);
+    let maybe_coercion = Flx_bsym_table.maybe_coercion bsym_table dst src in
+    begin match maybe_coercion with
+    | None -> 
+
+      print_endline ("Unable to find supertype coercion from " ^ 
+      si src ^ " to " ^ si dst);
+      Flx_bsym_table.iter_coercions bsym_table
+        (fun ((a,b),c) -> print_endline ("       " ^ si c ^ ":" ^ si b ^ "->" ^ si a))
+      ;
+      failwith ("Unable to find supertype coercion from " ^ 
+      si src ^ " to " ^ si dst);
+    | Some fn ->
+      print_endline ("Found coercion function " ^ si fn ^ " from " ^
+      si src ^ " to " ^ si dst);
+      Flx_bexpr.bexpr_apply_direct dstt (fn, [], srce)
+    end
+     
   | BTYP_function (ld,lc) , BTYP_function (rd,rc)  ->
     function_coercion new_table bsym_table counter parent remap srce dstt ld lc rd rc
 
@@ -311,8 +333,17 @@ print_endline ("Processing function " ^ Flx_bsym.id bsym);
   | bbdcl -> Flx_bsym_table.add new_table i parent bsym
 
 
+(* This function takes a bsym_table with instructions with embedded coercions
+  in them and removes all the coercions it can, producing a new table.
+  The input table must include a proper subtype_map for nominal type
+  subtyping coercions. The generated output table has no such map:
+  the coercions should be gone, and so the subtype table shoudn't
+  be needed. Its erasure is important because while it exists,
+  it drags around a bunch of types and functions that may or may
+  not be used, but cannot be eliminated in case they're used.
+*)
 let expand_coercions syms bsym_table = 
-  let new_table = Flx_bsym_table.create () in
+  let new_table = Flx_bsym_table.create_fresh () in
   Flx_bsym_table.iter 
    (fun i parent bsym -> process_entry new_table bsym_table syms.Flx_mtypes2.counter parent i bsym)
     bsym_table

@@ -18,6 +18,8 @@ open Flx_bid
 open Flx_bind_reqs
 open Flx_bbind_state
 
+let debug = true 
+
 let hfind msg h k =
   try Flx_sym_table.find h k
   with Not_found ->
@@ -851,7 +853,105 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
     incr counter
   done
   ;
-  (* PASS 2, NON DEFERRED FUNCTIONS *)
+  (* PASS 2, SUBTYPE COERCIONS ONLY *)
+  let counter = ref start_counter in
+  while !counter < !ref_counter do
+    let i = !counter in
+    begin match
+      try Some (Flx_sym_table.find_with_parent state.sym_table i)
+      with Not_found -> None
+    with
+    | None -> (* print_endline "bbind: Symbol not found"; *) ()
+    | Some (parent, sym) ->
+(*
+print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
+*)
+      let sr = sym.sr in
+      let vs = fst sym.vs in
+      begin match sym.Flx_sym.symdef with
+      | SYMDEF_function (params,ret,effect,props,_) when List.mem `Subtype props ->
+        if List.length vs <> 0 then
+          clierr sr ("   Improper subtype, no type variables allowed, got " ^
+           string_of_int (List.length vs))
+        else
+        let dom, cod = 
+          let ps = fst params in
+          begin match ps with
+          | [sr,kind,id,typ,initopt] -> typ,ret 
+          | _ ->
+             clierr sr ("Improper subtype, only one parameter allowed, got " ^ 
+               string_of_int (List.length ps))
+          end
+        in
+        begin
+          begin
+            try bbind_symbol state bsym_table i parent sym
+            with Not_found ->
+              try match hfind "bbind" state.sym_table i with { Flx_sym.id=id } ->
+                failwith ("Binding error, Not_found thrown binding " ^ id ^ " index " ^
+                  string_of_bid i ^ " parent " ^ (match parent with | None -> "NONE" | Some p -> string_of_int p))
+              with Not_found ->
+                failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
+          end;
+          (* now, bind the types dom,cod! We cheat, and just lookup the cache*)
+          print_endline ("bind dom/cod");
+          let ft =
+             try Hashtbl.find state.ticache i 
+             with Not_found -> failwith ("WOOPS, expected type of subtype function in cache");
+          in
+          print_endline ("Type of function " ^ string_of_int i ^ " is " ^ sbt bsym_table ft);
+          match ft with
+          | BTYP_function (BTYP_inst (dom,[]),BTYP_inst (cod,[])) ->
+            print_endline ("Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
+            Flx_bsym_table.add_supertype bsym_table ((cod,dom),i)
+ 
+          | _ -> clierr sr ("Subtype specification requires nonpolymorphic nominal typed function")
+        end
+
+      | SYMDEF_fun (props,ps,ret,_,_,_) when List.mem `Subtype props ->
+        if List.length vs <> 0 then
+          print_endline ("   Improper subtype, no type variables allowed, got " ^
+           string_of_int (List.length vs))
+        else
+        let dom, cod = 
+          begin match ps with
+          | [typ] -> typ,ret
+          | _ ->
+             clierr sr ("Improper subtype, only one parameter allowed, got " ^ 
+               string_of_int (List.length ps))
+          end
+        in
+        begin 
+          begin
+            try bbind_symbol state bsym_table i parent sym
+            with Not_found ->
+              try match hfind "bbind" state.sym_table i with { Flx_sym.id=id } ->
+                failwith ("Binding error, Not_found thrown binding " ^ id ^ " index " ^
+                  string_of_bid i ^ " parent " ^ (match parent with | None -> "NONE" | Some p -> string_of_int p))
+              with Not_found ->
+                failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
+          end;
+          (* now bind the types dom,cod *)
+          print_endline ("bind dom/cod");
+          let ft =
+             try Hashtbl.find state.ticache i 
+             with Not_found -> failwith ("WOOPS, expected type of subtype function in cache");
+          in
+          print_endline ("Type of function " ^ string_of_int i ^ " is " ^ sbt bsym_table ft);
+          match ft with
+          | BTYP_function (BTYP_inst (dom,[]),BTYP_inst (cod,[])) ->
+            print_endline ("Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
+            Flx_bsym_table.add_supertype bsym_table ((cod,dom),i)
+          | _ -> clierr sr ("Subtype specification requires nonpolymorphic nominal typed function")
+        end
+      | _ -> ()
+      end (* symdef *)
+    end; (* parent *)
+    incr counter
+  done
+  ;
+
+  (* PASS 3, NON DEFERRED FUNCTIONS *)
   let defered = ref [] in
   let counter = ref start_counter in
   while !counter < !ref_counter do
@@ -891,7 +991,7 @@ print_endline ("Binding symbol " ^ symdef.Flx_sym.id ^ "<" ^ si i ^ ">");
   done
   ;
 
-  (* PASS 3 DEFERRED FUNCTIONS *)
+  (* PASS 4 DEFERRED FUNCTIONS *)
 if (List.length (!defered) <> 0) then begin
 print_endline ("DEFERED PROCESSING STARTS");
 

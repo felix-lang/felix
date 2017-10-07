@@ -534,6 +534,7 @@ and xadjective_t x : property_t =
   | Id "Method"  -> `Tag "method"
   | Id "Total"  -> `Total
   | Id "Export" -> `Export
+  | Id "Subtype" -> `Subtype
   | Lst [Id "NamedExport"; Str name]  -> `NamedExport name
   | x -> err x "xadjective_t"
 
@@ -595,6 +596,7 @@ and xrequirement_t sr x : requirement_t =
   | Lst [Id "Decoder_req"; ct] -> Decoder_req (xct ct)
   | Lst [Id "Index_req"; Int indx] -> Index_req (int_of_string indx)
   | Lst [Id "Named_index_req"; Str sindx] -> Named_index_req (sindx)
+  | Lst [Id "Subtype_req"] -> Subtype_req
   | x -> err x "requirement_t"
 
 and xraw_req_expr_t sr x : raw_req_expr_t =
@@ -753,7 +755,9 @@ print_endline ("ast_curry effects " ^ xid id ^ ", effects=" ^ Flx_print.string_o
       map xadjective_t props,
       xsts sr sts)
 
-
+  (* promotion from subtype(arg) to supertype(param) <: is backwards from
+     order used in unification engine
+  *)
   | Lst [Id "ast_macro_val"; sr; ids; v] -> let sr = xsr sr in 
       STMT_macro_val (sr, lst "ast_macro_val" xid ids, ex sr v)
 

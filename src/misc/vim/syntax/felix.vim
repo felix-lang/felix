@@ -70,6 +70,8 @@ syn keyword felixStatement const
 syn keyword felixStatement cproc
 syn keyword felixStatement cstruct
 syn keyword felixStatement ctor
+syn keyword felixStatement subtype
+syn keyword felixStatement supertype
 syn keyword felixStatement ctypes
 syn keyword felixStatement def
 syn keyword felixStatement do

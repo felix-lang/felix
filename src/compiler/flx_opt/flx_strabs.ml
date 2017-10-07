@@ -358,7 +358,7 @@ print_endline ("Removing entry for index = "^si index^
       h (bbdcl_nonconst_ctor (bvs, j, ft t1, k, ft t2, evs, ft etraint))
 
 let strabs bsym_table =
-  let bsym_table' : Flx_bsym_table.t = Flx_bsym_table.create () in
+  let bsym_table' : Flx_bsym_table.t = Flx_bsym_table.create_from bsym_table in
   Flx_bsym_table.iter
     (fun bid parent sym -> 
       try

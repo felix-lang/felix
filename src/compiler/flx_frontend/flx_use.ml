@@ -260,7 +260,20 @@ print_endline ("Cal use closure...");
       end
   in
   let traced = ref BidSet.empty in (* final set of used symbols *)
-  let v : BidSet.t = !(syms.roots) in (* used but not traced yet *)
+
+  let roots = !(syms.roots) in
+  (* add coercion types and functions to roots *)
+  let roots = Flx_bsym_table.fold_coercions bsym_table
+    (fun acc ((a,b),c) -> 
+      let x = BidSet.add a acc in
+      let y = BidSet.add b x in
+      let z = BidSet.add c y in
+      z
+    )
+    roots
+  in
+
+  let v : BidSet.t = roots in (* used but not traced yet *)
   let untraced = ref v in
 (*
   print_endline "Roots";
@@ -421,7 +434,7 @@ print_endline ("copy used ... ");
   let bidset = cal_use_closure syms bsym_table false in
 
   (* Return a new bsym_table that has only the used symbols. *)
-  let new_bsym_table = Flx_bsym_table.create () in
+  let new_bsym_table = Flx_bsym_table.create_from bsym_table in
 
   (* Iterate through the used symbols and copy them to the new table. *)
   let rec aux bid =

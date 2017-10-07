@@ -98,6 +98,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
     bindings defined in this entity
   *)
   match st with
+
   | STMT_circuit (sr,cs) -> 
     [Exe (sr,(EXE_circuit (cs)))]
 

@@ -151,7 +151,10 @@ let cal_props kind props = match kind with
   | `Generator -> (* `NoInline:: *) `Generator::props
   | `GeneratorMethod -> (* `NoInline:: *) `Generator::props
   | `Virtual -> if not (List.mem `Virtual props) then `Virtual::props else props
-  | _ -> []
+
+  | `Function
+  | `Object
+  | `Method -> props
 
 (** Currying, A.K.A. Shonfinkeling *)
 let mkcurry seq sr name vs args return_type effects kind body props =

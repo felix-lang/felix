@@ -1072,6 +1072,7 @@ and string_of_lvalue (x,t) =
   end
 
 and string_of_property = function
+| `Subtype -> "subtype"
 | `Recursive -> "recursive"
 | `Inline -> "inline"
 | `GeneratedInline -> "inline(generated)"
@@ -1139,6 +1140,7 @@ and string_of_raw_req = function
   | Decoder_req c -> "decoder " ^ string_of_code_spec c
   | Index_req idx -> "index " ^ string_of_int idx
   | Named_index_req sidx -> "index " ^ sidx
+  | Subtype_req -> "subtype"
 
 (* fairly lame excess brackets here *)
 and string_of_raw_req_expr = function

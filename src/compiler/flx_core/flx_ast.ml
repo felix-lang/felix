@@ -302,6 +302,7 @@ and funkind_t = [
 ]
 
 and property_t = [
+  | `Subtype (* hackery, this is really a function kind but its easier to put in here *)
   | `Recursive
   | `Inline
   | `GeneratedInline
@@ -360,6 +361,7 @@ and requirement_t =
   | Decoder_req of CS.t
   | Index_req of int
   | Named_index_req of string
+  | Subtype_req
 
 and ikind_t = [
   | `Header

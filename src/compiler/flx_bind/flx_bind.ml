@@ -16,14 +16,15 @@ print_endline "Flx_bind.bind_asms: Binding asms ..";
 
 if debug then
 print_endline "Flx_bind.bind_asms: Making symbol table done";
+
+Flx_subtypetable.report_subtypes bind_state.symtab.sym_table;
+
+
+
 (*
   let exes = Flx_symtab.get_init_exes bind_state.symtab in
 *)
   let ifaces = Flx_symtab.get_exports bind_state.symtab in
-
-if debug then
-print_endline ("Flx_bind.bind_asms: binding " ^ string_of_int (List.length ifaces) ^ " ifaces");
-
 (*
 print_endline "Flx_bind.bind_asms: built symbol table";
 *)
@@ -40,6 +41,8 @@ if debug then
 print_endline ("Flx_bind.bind_asms: bsym_table created with " ^ 
 string_of_int (Flx_bsym_table.length bsym_table));
 
+if debug then
+print_endline ("Flx_bind.bind_asms: binding " ^ string_of_int (List.length ifaces) ^ " ifaces");
   (* Bind the interfaces. *)
   bind_state.syms.Flx_mtypes2.bifaces <- bind_state.syms.Flx_mtypes2.bifaces @ List.map
     (Flx_bind_interfaces.bind_interface bind_state.bbind_state bsym_table) ifaces;

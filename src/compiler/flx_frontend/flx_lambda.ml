@@ -155,7 +155,7 @@ print_endline ("Processing function " ^ Flx_bsym.id bsym);
 
 
 let strip_lambdas syms bsym_table = 
-  let new_table = Flx_bsym_table.create () in
+  let new_table = Flx_bsym_table.create_from bsym_table in
   Flx_bsym_table.iter 
    (fun i parent bsym -> process_entry new_table bsym_table syms.Flx_mtypes2.counter parent i bsym)
     bsym_table

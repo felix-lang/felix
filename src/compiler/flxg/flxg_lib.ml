@@ -209,7 +209,7 @@ let make_sym_table () =
 (* -------------------------------------------------------------------------- *)
 (* Create a storage object for symbol bindings during compilation phases. *)
 let make_bsym_table () =
-  Flx_bsym_table.create ()
+  Flx_bsym_table.create_fresh ()
 
 (* -------------------------------------------------------------------------- *)
 (* Build libs and configure state for program. *)

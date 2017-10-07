@@ -11,6 +11,17 @@ let sbt = Flx_print.sbt
 let sbe = Flx_print.sbe
 let si = string_of_int
 
+(* THIS IS AN OLD ROUTINE, I THINK IT IS REPLACED BY Flx_xcoerce in flx_frontend! 
+  This routine generates a coercion expression, after checking it is sane.
+  However unification driven subtyping coercions do not use this routine,
+  cal_apply in Flx_lookup generates coercions directly.
+
+  So this routine is for user written coercions, not system
+  generated ones. And it doesn't handle subtyping. So it should
+  probably be dumped, because its nonsense that implicit coercions
+  can work where explicit ones cannot.
+*)
+
 (* Forgetful functor: just drops fields. RHS fields must
 exist in LHS.
 *)

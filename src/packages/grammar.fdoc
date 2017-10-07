@@ -423,7 +423,27 @@ syntax cbind {
       `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
     )
     """;
-
+  stmt := "supertype" stvarlist squalified_name ":" stypeexpr sopt_cstring sopt_prec srequires_clause ";" =>#
+    """
+    (let*
+      (
+        (name (string-append "_ctor_" (base_of_qualified_name _3)))
+        (vs _2)
+        (ret _3)
+        (argt _5)
+        (ct
+          (if (eq? 'none _6)
+            `(StrTemplate ,(string-append "::" (base_of_qualified_name _3) "($a)"))
+            (second _6)
+          )
+        )
+        (prec _7)
+        (xreqs _8)
+        (reqs `(rreq_and (rreq_atom (Subtype_req)) ,xreqs))
+      )
+      `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
+    )
+    """;
   cbind_stmt:= "virtual" "type" sname ";" =># 
     "`(ast_virtual_type ,_sr ,_3)"
   ;
@@ -2177,6 +2197,20 @@ syntax functions {
       )
       `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects Function () ,body))
     """;
+  sfunction := "supertype" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound =>#
+    """
+    (let*
+      (
+        (name (string-append "_ctor_" (base_of_qualified_name _3)))
+        (vs _2)
+        (ret _3)
+        (traint (first _5))
+        (effects (second _5))
+        (body _6)
+        (args _4)
+      )
+      `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects Function (Subtype) ,body))
+    """;
 
   //$ Short form constructor function.
   //$ The name of the function must be a type name.
@@ -2195,6 +2229,21 @@ syntax functions {
       )
       `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects Function () ,body))
     """;
+  sfunction := "supertype" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";" =>#
+    """
+    (let*
+      (
+        (name (string-append "_ctor_" (base_of_qualified_name _3)))
+        (vs _2)
+        (ret _3)
+        (traint (first _5))
+        (effects (second _5))
+        (body `((ast_fun_return ,_sr ,_7)))
+        (args _4)
+      )
+      `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects Function (Subtype) ,body))
+    """;
+
 
   //$ Procedure definition, general form.
   sfunction := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint_eq scompound =>#

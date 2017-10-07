@@ -36,6 +36,10 @@ type dvars_t = BidSet.t
 (* LHS ge RHS, parameter supertype of argument *)
 let rec solve_subtypes bsym_table counter lhs rhs dvars (s:vassign_t option ref) (add_eq:reladd_t) (add_ge:reladd_t) =
   match lhs, rhs with
+  | BTYP_inst (l,[]),BTYP_inst(r,[]) ->
+    if l <> r && not (Flx_bsym_table.is_supertype bsym_table l r)
+    then raise Not_found
+
   (* arrays and tuples, must be the same length, covariant by element *)
   | BTYP_tuple ls, BTYP_tuple rs ->
     if List.length ls <> List.length rs then raise Not_found;

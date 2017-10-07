@@ -5,7 +5,10 @@ exception IncompleteBsymTable of int * string
 type t
 
 (** Construct a bound symbol table. *)
-val create : unit -> t
+val create_fresh : unit -> t
+
+(* copies subtype map *)
+val create_from : t -> t
 
 (* TABLE MUTATORS *)
 (** Adds the bound symbol with the index to the symbol table. *)
@@ -13,6 +16,15 @@ val add : t -> bid_t -> bid_t option -> Flx_bsym.t -> unit
 
 (** Remove a binding from the bound symbol table. *)
 val remove : t -> bid_t -> unit
+
+(* Order is: super, sub = coercion codomin, domin = parameter, arg *)
+type coercion_t = (bid_t * bid_t) * bid_t
+
+val add_supertype: t -> coercion_t -> unit
+val is_supertype: t -> bid_t -> bid_t -> bool
+val maybe_coercion: t -> bid_t -> bid_t -> bid_t option
+val iter_coercions: t -> (coercion_t -> unit) -> unit
+val fold_coercions: t -> ('a -> coercion_t -> 'a) -> 'a -> 'a
 
 (* UNSAFE
 (** Updates a bound symbol in place while preserving the child-parent

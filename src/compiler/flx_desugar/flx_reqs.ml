@@ -97,6 +97,11 @@ let mkreqs state access parent_ts sr (rqs :raw_req_expr_t) :
         props := `Generator :: !props;
         NREQ_true
 
+      | Subtype_req ->
+        props := `Subtype :: !props;
+        NREQ_true
+
+
       | Property_req "virtual" ->
         props := `Virtual:: !props;
         NREQ_true

@@ -66,7 +66,7 @@ let hfind msg h k =
   THIS IS A DUMMY BOUND SYMBOL TABLE
   REQUIRED FOR THE PRINTING OF BOUND EXPRESSIONS
 *)
-let bsym_table = Flx_bsym_table.create ()
+let bsym_table = Flx_bsym_table.create_fresh ()
 
 let rec check_if_parent sym_table child parent =
   if child = parent then true
