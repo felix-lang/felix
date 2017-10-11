@@ -258,7 +258,10 @@ and string_of_expr (e:expr_t) =
   | EXPR_variant_type (_,ts) ->
       "(" ^
       catmap "| "
-        (fun (s,t) -> "case " ^ string_of_id s ^ " of " ^ string_of_typecode t)
+        (fun x -> match x with 
+           | `Ctor (s,t) -> "`" ^ string_of_id s ^ " of " ^ string_of_typecode t
+           | `Base t -> string_of_typecode t
+        )
         ts ^
       ")"
 
@@ -466,7 +469,10 @@ and st prec tc : string =
       | [] -> 0,"void"
       | _ ->
           0, "(" ^
-          catmap "| " (fun (s,t) -> "case " ^ string_of_id s ^ " of " ^ st 0 t) ls ^
+          catmap "| " (fun x -> match x with
+           | `Ctor (s,t) -> "`" ^ string_of_id s ^ " of " ^ st 0 t
+           | `Base t -> st 0 t
+         ) ls ^
           ")"
       end
 

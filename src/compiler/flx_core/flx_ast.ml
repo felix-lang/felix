@@ -71,7 +71,7 @@ and typecode_t =
   | TYP_union of typecode_t list               (** union type *)
   | TYP_record of (Flx_id.t * typecode_t) list
   | TYP_polyrecord of (Flx_id.t * typecode_t) list * typecode_t
-  | TYP_variant of (Flx_id.t * typecode_t) list (** anon sum *)
+  | TYP_variant of variant_item_t list (** anon sum *)
   | TYP_function of typecode_t * typecode_t    (** function type *)
   | TYP_effector of typecode_t * typecode_t * typecode_t    (** function type *)
   | TYP_cfunction of typecode_t * typecode_t   (** C function type *)
@@ -124,6 +124,7 @@ and axiom_method_t = Predicate of expr_t | Equation of expr_t * expr_t
 (** {7 Expressions}
  *
  * Raw expression terms. *)
+and variant_item_t = [`Ctor of Flx_id.t * typecode_t | `Base of typecode_t]
 and expr_t =
   | EXPR_pclt_type of Flx_srcref.t * typecode_t * typecode_t
   | EXPR_label of Flx_srcref.t * string
@@ -147,7 +148,7 @@ and expr_t =
   | EXPR_replace_fields of Flx_srcref.t * expr_t * (Flx_id.t * expr_t ) list
   | EXPR_polyrecord_type of Flx_srcref.t * (Flx_id.t * typecode_t) list * typecode_t
   | EXPR_variant of Flx_srcref.t * (Flx_id.t * expr_t)
-  | EXPR_variant_type of Flx_srcref.t * (Flx_id.t * typecode_t) list
+  | EXPR_variant_type of Flx_srcref.t * variant_item_t list
   | EXPR_arrayof of Flx_srcref.t * expr_t list
   | EXPR_coercion of Flx_srcref.t * (expr_t * typecode_t)
   | EXPR_suffix of Flx_srcref.t * (qualified_name_t * typecode_t)

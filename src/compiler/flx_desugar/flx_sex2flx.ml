@@ -189,7 +189,8 @@ and xexpr_t sr x =
  | Lst [Id "ast_variant_type"; Lst rs] ->
    let rs =
      map (function
-     | Lst [Str s; e] -> s, ti e
+     | Lst [Id "ctor"; Str s; e] -> `Ctor (s, ti e)
+     | Lst [Id "base"; e] -> `Base (ti e)
      | x -> err x "Error in AST_variant_type"
      )
      rs

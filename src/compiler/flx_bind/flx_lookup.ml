@@ -440,7 +440,7 @@ and inner_bind_expression state bsym_table env rs e  =
     with
      | Free_fixpoint b ->
        clierrx "[flx_bind/flx_lookup.ml:451: E92] " sr
-       ("inner_bind_expression: Circular dependency typing expression " ^ string_of_expr e)
+       ("inner_bind_expression: Free fixpoint: Circular dependency typing expression " ^ string_of_expr e)
 
      | SystemError (sr,msg) as x ->
        print_endline ("System Error binding expression " ^ string_of_expr e);
@@ -734,9 +734,10 @@ and bind_type'
   sr t params
   mkenv
 =
-(*
-print_endline ("Bind type " ^ string_of_typecode t);
-*)
+if debug then
+print_endline ("Bind type " ^ string_of_typecode t ^ " params = " ^
+  catmap "," (fun (s,t) -> s ^ "->" ^ Flx_btype.st t) params
+);
   let btp t params = bind_type' state bsym_table env
     {rs with depth = rs.depth+1}
     sr t params mkenv
@@ -771,7 +772,53 @@ print_endline ("Bind type " ^ string_of_typecode t);
   | TYP_union ts -> btyp_union (List.map bt ts)
   | TYP_record ts -> btyp_record (List.map (fun (s,t) -> s,bt t) ts)
   | TYP_polyrecord (ts,v) -> btyp_polyrecord (List.map (fun (s,t) -> s,bt t) ts) (bt v)
-  | TYP_variant ts -> btyp_variant (List.map (fun (s,t) -> s,bt t) ts)
+  | TYP_variant ts -> 
+(*
+print_endline ("\n******\nTrying to bind variant " ^ string_of_typecode t);
+*)
+     let flds = List.fold_left  (fun acc x ->  
+       match x with 
+       | `Ctor (s,t) -> 
+(*
+          print_endline ("Trying to bind constructor " ^ s ^ " argument type " ^ string_of_typecode t);
+*)
+          let t = bt t in
+(*
+          print_endline ("Bound bind constructor " ^ s ^ " argument type " ^ Flx_btype.st t);
+*)
+          (s, t) :: acc
+       | `Base t ->
+(*
+          print_endline ("Trying to bind base type " ^ string_of_typecode t);
+*)
+          let t = bt t in
+(*
+          print_endline ("Bound base type " ^ Flx_btype.st t);
+*)
+          let t = Flx_btype.adjust_fixpoint t in
+(*
+          print_endline ("Adjusted base type " ^ Flx_btype.st t);
+*)
+          (* let t = unfold "Flx_lookup.TYP_variant" t in
+          print_endline ("Unfolded base type " ^ Flx_btype.st t);
+          *)
+          match  t with
+          | BTYP_variant ts -> 
+            List.rev ts @ acc
+          | _ -> clierr sr "Polymorphic variant case type must be polymorphic variant type"
+       )
+       []
+       ts 
+     in 
+(*
+print_endline("Bound variant components = " ^ catmap "," (fun (s,t) -> "`" ^ s ^ " of " ^ Flx_btype.st t) flds);
+*)
+     let t = btyp_variant flds in
+(*
+print_endline ("Bound variant = " ^ Flx_btype.st t);
+*)
+     t
+
   | TYP_type_extension (sr, ts, t') ->
 (*
     print_endline "Binding type extension : note THIS SCREWED UP FIXPOINTS! FIXME! -- FIXED";
@@ -890,15 +937,23 @@ print_endline ("FUDGE: Binding TYP_var " ^ si i);
       btyp_type_var (i, btyp_type 0)
 
   | TYP_as (t,s) ->
-      bind_type'
-        state
-        bsym_table
-        env
-        { rs with as_fixlist = (s,rs.depth)::rs.as_fixlist }
-        sr
-        t
-        params
-        mkenv
+(*
+print_endline ("\n\n+++++++++\nTrying to bind recursive type " ^ string_of_typecode t ^ " AS " ^ s);
+*)
+    let t = bind_type'
+      state
+      bsym_table
+      env
+      { rs with as_fixlist = (s,rs.depth)::rs.as_fixlist }
+      sr
+      t
+      params
+      mkenv
+    in
+(*
+print_endline ("\n+++++++++Bound recursive type is " ^ Flx_btype.st t^"\n\n");
+*)
+    t
 
   | TYP_typeof e ->
       if List.mem_assq e rs.expr_fixlist
@@ -1419,9 +1474,9 @@ end;
         match entry with
         | SYMDEF_instance_type t
         | SYMDEF_type_alias t  -> 
-          (*
+(*
           print_endline ("Index " ^ si index ^ " is a type alias " ^id ^ " = " ^ string_of_typecode t);
-          *)
+*)
           let rec guess_metatype t =
             match t with
             | TYP_generic _ -> syserr sr ("[bind_type_index] Attempt to bind TYP_generic]")
@@ -1583,10 +1638,8 @@ print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table
     (* type alias RECURSE *)
     | SYMDEF_instance_type t
     | SYMDEF_type_alias t ->
-(*
-      if id = "digraph_t" then
+      if debug then
       print_endline ("Bind type index: Unravelling type alias " ^ id ^ " index=" ^ si index);
-*)
       let t = bt t in
 (*
       if id = "digraph_t" then

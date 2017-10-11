@@ -20,7 +20,9 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | TYP_tuple ts -> TYP_tuple (List.map f ts)
   | TYP_record ts -> TYP_record (List.map (fun (s,t) -> s,f t) ts)
   | TYP_polyrecord (ts,v) -> TYP_polyrecord (List.map (fun (s,t) -> s,f t) ts, f v)
-  | TYP_variant ts -> TYP_variant (List.map (fun (s,t) -> s,f t) ts)
+  | TYP_variant ts -> TYP_variant (List.map (
+      fun x -> match x with `Ctor (s,t) -> `Ctor (s, f t) | `Base t -> `Base (f t)
+      ) ts)
   | TYP_isin (a,b) -> TYP_isin (f a, f b)
   | TYP_pclt (a,b) -> TYP_pclt (f a, f b)
 
@@ -146,7 +148,9 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
 
   | EXPR_record_type (sr,ts) -> EXPR_record_type (sr, List.map (fun (s,t) -> s, ft t) ts) 
   | EXPR_polyrecord_type (sr,ts,v) -> EXPR_polyrecord_type (sr, List.map (fun (s,t)-> s,ft t) ts, ft v)
-  | EXPR_variant_type (sr,ts) -> EXPR_variant_type (sr, List.map (fun (s,t) -> s, ft t) ts)
+  | EXPR_variant_type (sr,ts) -> EXPR_variant_type (sr, List.map (
+      fun x -> match x with | `Ctor (s,t) -> `Ctor (s, ft t) | `Base t -> `Base (ft t)
+    ) ts)
   | EXPR_void sr -> EXPR_void sr
 
   | EXPR_ellipsis sr -> e

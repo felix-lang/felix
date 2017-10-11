@@ -1683,12 +1683,13 @@ syntax expressions {
   // INCONSISTENT GRAMMAR (no separator between items??
   //$ Variant type.
   satom := "(" stype_variant_items ")" =># "`(ast_variant_type ,_2)";
-    stype_variant_item := "case" sname "of" sexpr =># "`(,_2 ,_4)";
-    stype_variant_item := "case" sname =># "`(,_2 ,(noi 'unit))";
-    stype_variant_item := "`" sname "of" sexpr =># "`(,_2 ,_4)";
-    stype_variant_item := "`" sname =># "`(,_2 ,(noi 'unit))";
+    stype_variant_item := "case" sname "of" sexpr =># "`(ctor ,_2 ,_4)";
+    stype_variant_item := "case" sname =># "`(ctor ,_2 ,(noi 'unit))";
+    stype_variant_item := "`" sname "of" sexpr =># "`(ctor ,_2 ,_4)";
+    stype_variant_item := "`" sname =># "`(ctor ,_2 ,(noi 'unit))";
 
     stype_variant_item_bar := "|" stype_variant_item =># "_2";
+    stype_variant_item_bar := "|" stypeexpr =># "`(base ,_2)";
     stype_variant_items := stype_variant_item stype_variant_item_bar* =># "(cons _1 _2)";
     stype_variant_items := stype_variant_item_bar+ =># "_1";
 
