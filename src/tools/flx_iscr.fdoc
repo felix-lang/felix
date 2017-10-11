@@ -40,9 +40,15 @@ is empty, the file will not be created.
 
     // replace environment variable if the path starts with one.
     if filename.[0] == '$' do
-      var endpos = stl_find(filename,"/");
-      var env_var = Env::getenv (filename.[1 to endpos]);
-      filename = env_var + filename.[endpos to];
+
+      var endpos       = stl_find(filename,"/");
+      var env_var_name = filename.[1 to endpos];
+      var env_value    = (Env::getenv (env_var_name), "$" + env_var_name);
+
+      if (env_value.0.len > 0uz) do
+        filename = env_value.0 + filename.[endpos to];
+      done
+
     done
           
     var data = self*.buffer;
