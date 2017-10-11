@@ -9,6 +9,7 @@ open Flx_exceptions
 open Flx_backend_config
 
 module CS = Flx_code_spec
+let debug =false 
 
 (* these words are either keywords or peculiar to the
    compiler code generator, so we have to avoid a clash.
@@ -218,6 +219,8 @@ let tix msg syms bsym_table t =
 
 
 let rec cpp_type_classname syms bsym_table t =
+if debug then
+print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   let tn t = cpp_typename syms bsym_table t in
   let tix t = tix "[flx_name:cpp_type_classname" syms bsym_table t in
   let t = Flx_fold.fold bsym_table syms.counter t in

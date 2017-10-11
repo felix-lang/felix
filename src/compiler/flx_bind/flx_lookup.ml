@@ -5744,11 +5744,11 @@ print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
        print_endline ("Variant type is " ^ Flx_print.sbt bsym_table t);
        print_endline ("cofields are: ");
        List.iter (fun ((s,t) as x) -> 
-         print_endline (s ^ " of " ^ sbt bsym_table t ^ " HASH: " ^ string_of_int (Hashtbl.hash x))
+         print_endline (s ^ " of " ^ sbt bsym_table t ^ " HASH: " ^ string_of_int (vhash x))
        ) 
        ts;
 *)
-       let vsh = List.map (fun ((s,t) as x) -> Hashtbl.hash x,x) ts in
+       let vsh = List.map (fun ((s,t) as x) -> vhash x,x) ts in
        let _,vt = 
          try List.assoc v vsh 
          with Not_found ->

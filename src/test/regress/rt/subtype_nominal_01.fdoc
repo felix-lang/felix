@@ -1,0 +1,44 @@
+@title User defined subtyping
+@felix
+
+typedef mylong = long;
+supertype mylong (x:int) => x.long;
+
+println$ 12.mylong;
+
+typedef mydouble = double;
+supertype mydouble : int = "(double)$1"; 
+
+println$ 42.mydouble + 0.3;
+
+proc check (x:long, y: double) { 
+  println$ "Check long,double = " + x.str + "," + y.str;
+}
+
+check$ 22L, 42.3;
+check$ 42,33;
+
+struct XX {
+  a : int;
+};
+
+struct YY {
+  b: double;
+}
+
+supertype YY (x:XX) => YY (x.a.double + 0.76);
+
+proc showYY (x:YY)  {
+  println$ "YY.b = " +  x.b.str;
+}
+
+var xx = XX (23);
+showYY xx;
+@
+@expect
+12
+42.3
+Check long,double = 22,42.3
+Check long,double = 42,33
+YY.b = 23.76
+@

@@ -357,7 +357,19 @@ print_endline ("   ... core = " ^ st v);
      let ts = List.stable_sort cmp ts in
      BTYP_polyrecord (ts,v)
 
-let vhash ((s,t) as x) = Hashtbl.hash x
+
+(* FIXME: Idiot Ocaml strikes again. We need to minimise t before hashing
+but the routine isn't defined yet, factored out and since dependent
+on types, had to be defined in a subsequent file, and now cannot
+be called. Ocaml compilation model sucks
+*)
+let vhash ((s,t) as x) = 
+  let h = Hashtbl.hash (s,t) in
+(*
+  print_endline ("Hashing `"^s ^ " of " ^ st t ^ " to " ^ string_of_int h);
+*)
+  h
+
 let hash_variants ls = List.map (fun x -> vhash x,x) ls
 let find_vdata ls h = List.assoc h (hash_variants ls)
 let maybe_find_vdata ls h = try Some (find_vdata ls h) with Not_found -> None

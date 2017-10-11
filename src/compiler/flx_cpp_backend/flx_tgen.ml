@@ -18,6 +18,7 @@ open Flx_btype_subst
 
 module CS = Flx_code_spec
 
+let debug = false
 (*
  * Now some code to generate the bases, given the hashtable. We also mangle
  * c++ abstract type names.
@@ -148,13 +149,12 @@ or struct declaration which names the type.
 *)
 
 let rec gen_type_name syms bsym_table (index,typ) =
-  (*
+  if debug then
   print_endline (
-    "GENERATING TYPE NAME " ^
+    "Flx_tgen.GENERATING TYPE NAME " ^
     string_of_bid index ^ ": " ^
-    sbt bsym_table typ
+    Flx_btype.st typ
   );
-  *)
   let cn t = cpp_type_classname syms bsym_table t in
   let tn t = cpp_typename syms bsym_table t in
   let sn t = cpp_structure_name syms bsym_table t in
@@ -162,6 +162,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
     "\n//TYPE " ^ string_of_bid index ^ ": " ^ sbt bsym_table typ ^ "\n" ^
     "// typedef " ^ sn  typ ^ " " ^ cn typ ^ ";\n"
   in
+
   let t = unfold "flx_tgen: gen_type_name" typ in
   match t with
   | t when Flx_btype.islinear_type bsym_table t -> descr 
@@ -182,7 +183,11 @@ let rec gen_type_name syms bsym_table (index,typ) =
 
   | BTYP_tuple _
   | BTYP_record _
-  | BTYP_array _
+  | BTYP_array _ ->
+    descr ^
+    let name = cn typ in
+    "struct " ^ name ^ ";\n"
+
   | BTYP_function _ ->
     descr ^
     let name = cn typ in
@@ -347,13 +352,12 @@ let mk_listwise_ctor syms i name typ cts ctss =
 
 (* This routine generates complete types when needed *)
 let rec gen_type syms bsym_table (index,typ) =
-(*
+  if debug then
   print_endline (
-    "GENERATING TYPE " ^
+    "Flx_tgen.GENERATING TYPE " ^
     string_of_bid index ^ ": " ^
     sbt bsym_table typ
   );
-*)
   let tn t = cpp_typename syms bsym_table t in
   let cn t = cpp_type_classname syms bsym_table t in
   let descr =
@@ -551,28 +555,44 @@ trick is based on the representation.
 *)
 
 let gen_type_names syms bsym_table ts =
-  (* print_endline "GENERATING TYPE NAMES"; *)
+  if debug then
+  print_endline "Flx_tgen.GENERATING TYPE NAMES";
   let s = Buffer.create 100 in
   let handled = ref [] in
   iter
   (fun (i,t) ->
+if debug then
+print_endline ("Flx_tgen.gen_type_names index = " ^
+  string_of_int i ^ ", t = " ^ Flx_btype.st t);
+
     try
-      let name = cpp_typename syms bsym_table t in
+      let name = 
+        try cpp_typename syms bsym_table t 
+        with exn -> print_endline ("gen_type_names: cpp_typename failed!"); raise exn
+      in
       if mem name !handled then
         () (* print_endline ("WOOPS ALREADY HANDLED " ^ name) *)
       else (
         handled := name :: !handled;
         Buffer.add_string s (gen_type_name syms bsym_table (i,t))
       )
-    with Not_found ->
+    with 
+    | Not_found ->
+      if debug then
+      print_endline ("Can't gen type name " ^ string_of_bid i ^ "=" ^
+        Flx_btype.st t);
       failwith ("Can't gen type name " ^ string_of_bid i ^ "=" ^
-        sbt bsym_table t)
+        Flx_btype.st t)
+    | exn -> print_endline ("Seriously screwed up!"); raise exn 
   )
   ts;
+  if debug then
+  print_endline "Flx_tgen.GENERATING TYPE NAMES -- complete";
   Buffer.contents s
 
 let gen_types syms bsym_table ts =
-  (* print_endline "GENERATING TYPES"; *)
+  if debug then
+  print_endline "Flx_tgen.GENERATING TYPES";
   let handled_names = ref [] in
   let s = Buffer.create 100 in
   iter
@@ -586,5 +606,7 @@ let gen_types syms bsym_table ts =
     )
   )
   ts;
+  if debug then
+  print_endline "Flx_tgen.GENERATING TYPES -- complete";
   Buffer.contents s
 

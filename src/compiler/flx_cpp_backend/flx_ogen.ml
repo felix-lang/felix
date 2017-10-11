@@ -382,6 +382,8 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
         bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_uctor_ptr_map;\n");
       end
 
+    | BTYP_variant _ -> ()
+
     | _ ->
       failwith
       (

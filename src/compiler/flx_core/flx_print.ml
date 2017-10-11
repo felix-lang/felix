@@ -709,7 +709,9 @@ and sb bsym_table depth fixlist counter prec tc =
       begin match ls with
       | [] -> 0,"void"
       | _ -> 0,"("^catmap "| " 
-       (fun (s,t)->"case " ^ s^"<"^string_of_int (vhash (s,t)) ^"> of "^sbt 0 t) ls ^")"
+       (fun (s,t)->
+        let hash =  try vhash (s,t)  with _ -> -1 in
+        "`" ^ s^"<"^string_of_int hash ^"> of "^sbt 0 t) ls ^")"
       end
 
     | BTYP_unitsum k ->

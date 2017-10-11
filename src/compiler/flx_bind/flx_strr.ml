@@ -43,7 +43,7 @@ print_endline ("strr bound arg type= " ^ Flx_print.sbt bsym_table t);
 print_endline ("strr bound arg type= " ^ Flx_btype.st t); 
 print_endline ("strr bound arg expression = " ^ Flx_print.sbe bsym_table ba); 
 *)
-    begin match t with
+    begin match Flx_btype.unfold "_strr" t with
     | BTYP_type_var _ -> 
       print_endline "Type variable?"; 
       be rs (cats (mks "typevar?:") (repr a))
@@ -159,15 +159,15 @@ print_endline ("_strr Variant type " ^ Flx_print.sbt bsym_table t);
         | BTYP_tuple _ ->
           let arg = EXPR_case_arg (sr, (hashcode,a)) in
           let strarg = str arg in
-          cats (mks ("case "^ cname^" ")) strarg
+          cats (mks ("`"^ cname^" ")) strarg
 
         | _ ->
           let arg = EXPR_case_arg (sr, (hashcode,a)) in
           let strarg = str arg in
-          cats (cats (mks ("case "^ cname^" (")) strarg) (mks ")")
+          cats (cats (mks ("`"^ cname^" (")) strarg) (mks ")")
       in 
       let condu cname t other =
-        let hashcode = Hashtbl.hash (cname,t) in
+        let hashcode = vhash (cname,t) in
         let cond = EXPR_match_case (sr, (hashcode,a)) in
         let u = urep cname t hashcode in
         EXPR_cond (sr, (cond,u,other)) 

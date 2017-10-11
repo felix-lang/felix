@@ -1685,7 +1685,7 @@ syntax expressions {
   satom := "(" stype_variant_items ")" =># "`(ast_variant_type ,_2)";
     stype_variant_item := "case" sname "of" sexpr =># "`(,_2 ,_4)";
     stype_variant_item := "case" sname =># "`(,_2 ,(noi 'unit))";
-    stype_variant_item := "`" sname sexpr =># "`(,_2 ,_3)";
+    stype_variant_item := "`" sname "of" sexpr =># "`(,_2 ,_4)";
     stype_variant_item := "`" sname =># "`(,_2 ,(noi 'unit))";
 
     stype_variant_item_bar := "|" stype_variant_item =># "_2";
@@ -3803,6 +3803,9 @@ syntax patterns {
 
   private sapplicative_pattern := "case" sname sargument_pattern =>#
     "`(pat_nonconst_variant ,_sr ,_2 ,_3)";
+  private sapplicative_pattern := "`" sname sargument_pattern =>#
+    "`(pat_nonconst_variant ,_sr ,_2 ,_3)";
+
 
   private sapplicative_pattern := satomic_pattern =># "_1";
   private sargument_pattern := satomic_pattern =># "_1";
@@ -3823,6 +3826,7 @@ syntax patterns {
   private satomic_pattern := "val" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
   private satomic_pattern := "#" sctor_name =># "`(pat_const_ctor ,_sr ,_2)";
   private satomic_pattern := "#" "case" sname =># "`(pat_const_variant ,_sr ,_3)";
+  private satomic_pattern := "`" sname =># "`(pat_const_variant ,_sr ,_2)";
   private satomic_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
 
 

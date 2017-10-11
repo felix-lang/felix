@@ -11,6 +11,7 @@ open Flx_bid
 
 module CS = Flx_code_spec
 
+let debug = false
 
 let instantiate state bsym_table (root_proc: int option) =
   if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
@@ -46,6 +47,10 @@ let codegen_bsyms
   label_info
   top_data
 =
+
+if debug then
+print_endline ("Flxg_codegen.codegen_bsyms");
+
   let shapes = ref Flx_set.StringSet.empty in 
   let shape_map = Hashtbl.create 97 in
   let psh s = Flxg_file.output_string state.header_file s in
@@ -60,7 +65,7 @@ let codegen_bsyms
   let plp s = psp s; psp "\n" in
   let pli s = psi s; psi "\n" in
 
-  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  if debug || state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//GENERATING Package Requirements";
 
   let instantiate_instance f insts kind (bid, ts) =
@@ -173,7 +178,7 @@ let codegen_bsyms
     "struct thread_frame_t;"
   ];
 
-  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  if debug || state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//GENERATING C++: collect types";
   let types = ref [] in
   List.iter (fun (t, index) -> types := (index, t) :: !types) state.syms.registry;
@@ -186,28 +191,28 @@ let codegen_bsyms
   ;
   *)
 
-  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
-  print_endline "//GENERATING C++: type class names";
+  if debug || state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  print_endline "//GENERATING C++: class names";
   plh "\n//-----------------------------------------";
   plh "//NAME THE TYPES";
   plh  (Flx_tgen.gen_type_names state.syms bsym_table types);
-  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  if debug || state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//DONE: NAME THE TYPES";
 
-  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  if debug || state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//GENERATING C++: type class definitions";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE THE TYPES";
   plh  (Flx_tgen.gen_types state.syms bsym_table types);
-  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  if debug || state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//DONE C++: type class definitions";
 
-  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  if debug || state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//GENERATING C++: function and procedure classes";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASS NAMES";
   plh  (Flx_gen.gen_function_names state.syms bsym_table);
-  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  if debug || state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//DONE GENERATING C++: function and procedure class names";
 
   plh "\n//-----------------------------------------";
@@ -240,7 +245,7 @@ let codegen_bsyms
   plh ("}} // namespace flxusr::" ^ Flx_name.cid_of_flxid state.module_name);
 
   (* BODY *)
-  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  if debug || state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//GENERATING C++: GC ptr maps & offsets";
 
   plb ("//Input file: " ^ state.input_filename);
@@ -353,7 +358,7 @@ let codegen_bsyms
   end
   ;
 
-  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  if debug || state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//GENERATING C++: method bodies";
 
   plb "\n//-----------------------------------------";
@@ -370,7 +375,7 @@ let codegen_bsyms
     (Flxg_file.open_out state.ctors_file);
 
 
-  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  if debug || state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//GENERATING C++: interface";
   plb "\n//-----------------------------------------";
   plb ("}} // namespace flxusr::" ^ Flx_name.cid_of_flxid state.module_name);
@@ -551,6 +556,9 @@ let codegen_bsyms
 
 
 let codegen state bsym_table (root_proc: int option) =
+if debug then
+print_endline ("Flxg_codegen.instantiate");
+
   let label_info, top_data =
     Flx_profile.call
       "Flxg_codegen.instantiate"

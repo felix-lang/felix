@@ -44,7 +44,7 @@ print_endline "cal_case_type";
   | BTYP_variant ls -> 
     let ct = 
       try 
-        List.iter (fun (s,ct)-> if Hashtbl.hash (s,ct) = n then raise (Found_type ct)) ls; 
+        List.iter (fun (s,ct)-> if vhash (s,ct) = n then raise (Found_type ct)) ls; 
 print_endline ("Cannot find variant with tag " ^ string_of_int n ^ " in " ^
 Flx_print.sbt bsym_table t);
         assert false 

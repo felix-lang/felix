@@ -10,6 +10,7 @@ let rec check_rec t = match t with
    | BTYP_function _
    | BTYP_effector _
    | BTYP_cfunction _
+   | BTYP_variant _
      -> ()
 
    | BTYP_fix (i,_)

@@ -2,6 +2,8 @@ open Flx_btype
 open Flx_bexpr
 open Flx_bid
 
+let debug = false
+
 exception Vfound (* for variants, Found already used elsewhere *)
 
 let si x = string_of_int x
@@ -54,105 +56,103 @@ let rec function_coercion new_table bsym_table counter parent remap ((srcx,srct)
    
 and variant_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt ls rs =
   let coerce parent e dstt = expand_coercion new_table bsym_table counter parent remap e dstt in
- 
-(*
-print_endline ("Coercion is variant to variant, ignore");
-
-THIS IS NO LONGER CORRECT. UNFORTUNATELY ITS A F'ING MESS TO DO RIGHT.
-The problem is we HAVE to coerce the input argument's constructor 
-argument value, which actually creates a new variant. To do this
-we have to match on all possible cases of the argument's type
-to find the one we need, get the value out of it, convert it,
-and rebuild the variant with the same constructor name, but
-a the new value of the new coerced type. The coercion is covariant
-as for records. 
-
-There is ALSO a problem here in that there is no encoding in the
-variant of the sequence number of the variant, for variants of 
-the same argument type. The type IS encoded at run time by virtue
-of the hashcode.
-
-There's one more thing, an optimisation: if we only have width subtyping,
-there's no need to do anything at all due to the universal representation.
-This also applies to covariant argument width subtyping on variants
-recursively.
-*)
-
-      (* check for the special case where the argument constructors all
-      have the same type as the corresponding parameters
-      This is a CHEAT, we use a reinterpret case, doing this 
-      depends on knowing the backend representation!
-      *)
-      begin try 
-        List.iter (fun (name, ltyp) ->
-          (* find ALL the parameter constructors of the same name
-          at least one of them has to have the same type *)
-          begin try List.iter (fun (rname, rtyp) ->
-            if name = rname 
-            &&  Flx_typeeq.type_eq (Flx_print.sbt bsym_table) counter ltyp rtyp  
-            then raise Vfound
-            ) rs;
-            raise Not_found
-          with Vfound -> () 
-          end
-        ) ls; 
-        let e = remap parent srce in
-        bexpr_reinterpret_cast (e,dstt)
-      with 
-      | Not_found -> 
-      (* OK, now lets handle the special case where there's no choice
-         because the target has only ONE constructor with a given name
-         In fact, I am going to cheat, and just use the first name
-         every time, which will crash is there isn't actually 
-         a coercion for it .. we could then fix that by trying to
-         generate the coercion, and if that fails, try the next
-         case. What we really should do may be to pick the most
-         general target type, but even that seems problematic at the moment.
-         The first case is not bad, because there's currently no way
-         to pattern match variant types with duplicated constructors,
-         to make that work you would have to specify which one with
-         the type. If there were duplicates with the same type,
-         you'd have to go even further and allow a pattern match
-         to repeat the same case. The first branch uses seq 0,
-         the second seq 1, etc. Then the sequence has to also be
-         encoded in the tag, and, the compiler has to analyse the
-         pattern match and add in the sequence number, or, provide
-         syntax for the user to do so.
-      *)
-        begin (* check the target for uniqueness of names *)
-          let counts = Hashtbl.create 97 in
-          let get_rel_seq name = 
-            let n = try Hashtbl.find counts name + 1 with Not_found -> 0 in
-            Hashtbl.replace counts name n;
-            n
-          in
-          List.iter (fun (name,_) -> ignore (get_rel_seq name)) rs;
-          Hashtbl.iter (fun name count -> 
-            if count <> 0 then 
-              print_endline ("Warning: Variant coercion target duplicates name " ^ 
-                name ^ ", will use first one for coercion")
-          ) counts;
-          let coercions = List.map (fun (name, ltyp) ->
-            let condition = bexpr_match_variant (name,srce) in
-            let extracted = bexpr_variant_arg ltyp (name,srce) in
-            (* just use first one .. later we could try next one if it fails *)
-            let rtyp = List.assoc name rs in
-            let coerced = coerce parent extracted rtyp in
-            let new_variant = bexpr_variant dstt (name, coerced) in 
-            condition, new_variant
-            ) ls 
-          in
-          let rec chain cs = 
-            match cs with
-            | (cond,variant) :: second :: tail ->
-               bexpr_cond cond variant (chain (second :: tail))
-            | [_, variant] -> variant (* dubious, skipping check due to exhaustion *)
-            | [] -> assert false
-          in 
-          let result = chain coercions in
-          remap parent result
-        end
+  if debug then
+  print_endline ("Variant coercion " ^ Flx_btype.st srct ^ " => " ^ Flx_btype.st dstt); 
+  (* check for the special case where the argument constructors all
+  have the same type as the corresponding parameters
+  This is a CHEAT, we use a reinterpret case, doing this 
+  depends on knowing the backend representation!
+  *)
+  begin try 
+    List.iter (fun (name, ltyp) ->
+      (* find ALL the parameter constructors of the same name
+      at least one of them has to have the same type *)
+      begin try List.iter (fun (rname, rtyp) ->
+        if name = rname 
+        &&  Flx_typeeq.type_eq (Flx_print.sbt bsym_table) counter ltyp rtyp  
+        then raise Vfound
+        ) rs;
+        raise Not_found
+      with Vfound -> () 
       end
+    ) ls; 
+    let e = remap parent srce in
+    if debug then
+    print_endline ("Shortcut variant coercion!");
+    bexpr_reinterpret_cast (e,dstt)
+  with 
+  | Not_found -> 
+  (* OK, now lets handle the special case where there's no choice
+     because the target has only ONE constructor with a given name
+     In fact, I am going to cheat, and just use the first name
+     every time, which will crash is there isn't actually 
+     a coercion for it .. we could then fix that by trying to
+     generate the coercion, and if that fails, try the next
+     case. What we really should do may be to pick the most
+     general target type, but even that seems problematic at the moment.
+     The first case is not bad, because there's currently no way
+     to pattern match variant types with duplicated constructors,
+     to make that work you would have to specify which one with
+     the type. If there were duplicates with the same type,
+     you'd have to go even further and allow a pattern match
+     to repeat the same case. The first branch uses seq 0,
+     the second seq 1, etc. Then the sequence has to also be
+     encoded in the tag, and, the compiler has to analyse the
+     pattern match and add in the sequence number, or, provide
+     syntax for the user to do so.
+  *)
+    begin (* check the target for uniqueness of names *)
+      let counts = Hashtbl.create 97 in
+      let get_rel_seq name = 
+        let n = try Hashtbl.find counts name + 1 with Not_found -> 0 in
+        Hashtbl.replace counts name n;
+        n
+      in
+      List.iter (fun (name,_) -> ignore (get_rel_seq name)) rs;
+      Hashtbl.iter (fun name count -> 
+        if count <> 0 then 
+          print_endline ("Warning: Variant coercion target duplicates name " ^ 
+            name ^ ", will use first one for coercion")
+      ) counts;
+      let coercions = List.map (fun (name, ltyp) ->
+        let condition = bexpr_match_variant (name,srce) in
+(*
+print_endline ("ltyp = " ^ Flx_btype.st ltyp);
+*)
+        let extracted = bexpr_variant_arg ltyp (name,srce) in
+        (* just use first one .. later we could try next one if it fails *)
+(*
+print_endline ("ltyp = " ^ Flx_btype.st ltyp);
+*)
+        let rtyp = List.assoc name rs in
+        let coerced = coerce parent extracted rtyp in
+(*
+print_endline ("dstt = " ^ Flx_btype.st dstt);
+*)
+        (* this is required if dstt was recursive and unfolded,
+           since the hash requires a minimised type.
+           Should be enforced in the hash routine but Ocaml compilation
+           model has got in the way.
+        *)
+        let dstt = Flx_fold.minimise bsym_table counter dstt in
+(*
+print_endline ("MINIMISED dstt = " ^ Flx_btype.st dstt);
+*)
+        let new_variant = bexpr_variant dstt (name, coerced) in 
+        condition, new_variant
+        ) ls 
+      in
+      let rec chain cs = 
+        match cs with
+        | (cond,variant) :: second :: tail ->
+           bexpr_cond cond variant (chain (second :: tail))
+        | [_, variant] -> variant (* dubious, skipping check due to exhaustion *)
+        | [] -> assert false
+      in 
+      let result = chain coercions in
+      remap parent result
+    end
+  end
 
 
 and record_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt ls rs =
@@ -224,8 +224,11 @@ and expand_coercion new_table bsym_table counter parent remap ((srcx,srct) as sr
   re-expand any parts of its return value that could contain these
   new coercions, to eliminate them if possible
   *)
+  let srct = unfold "expand_coercion srct" srct in
+  let dstt = unfold "expand_coercion dstt" dstt in
   match srct,dstt with
   | BTYP_inst (src,[]), BTYP_inst (dst,[]) ->
+    if debug then
     print_endline ("Searching for nominal type conversion from " ^ 
     si src  ^ " -> " ^ si dst);
     let maybe_coercion = Flx_bsym_table.maybe_coercion bsym_table dst src in
@@ -240,6 +243,7 @@ and expand_coercion new_table bsym_table counter parent remap ((srcx,srct) as sr
       failwith ("Unable to find supertype coercion from " ^ 
       si src ^ " to " ^ si dst);
     | Some fn ->
+      if debug then
       print_endline ("Found coercion function " ^ si fn ^ " from " ^
       si src ^ " to " ^ si dst);
       Flx_bexpr.bexpr_apply_direct dstt (fn, [], srce)
@@ -249,6 +253,8 @@ and expand_coercion new_table bsym_table counter parent remap ((srcx,srct) as sr
     function_coercion new_table bsym_table counter parent remap srce dstt ld lc rd rc
 
   | BTYP_variant ls, BTYP_variant rs ->
+    let ls = List.map (fun (s,t) -> s,unfold "variant ls component" t) ls in
+    let rs = List.map (fun (s,t) -> s,unfold "variant rs component" t) rs in
     variant_coercion new_table bsym_table counter parent remap srce dstt ls rs
 
   | BTYP_record ls, BTYP_record rs ->
@@ -267,7 +273,7 @@ and expand_coercion new_table bsym_table counter parent remap ((srcx,srct) as sr
 
   | BTYP_array (l, BTYP_unitsum n), BTYP_array(r,BTYP_unitsum m) when n = m ->
     if n > 20 then begin
-      print_endline ("oerce array longer than 20");
+      print_endline ("Flx_xcoerce. Coerce array longer than 20");
       array_coercion new_table bsym_table counter parent remap srce dstt l r n
     end
     else

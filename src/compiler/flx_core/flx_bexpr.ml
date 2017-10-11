@@ -602,7 +602,7 @@ let bexpr_inj n d c =
 
 let bexpr_variant t (name, ((_,argt) as arg)) = 
   match t with
-  | Flx_btype.BTYP_variant ls ->
+  | Flx_btype.BTYP_variant _ ->
     let h = Flx_btype.vhash (name, argt) in
     let inj = bexpr_inj h argt t in
     bexpr_apply t (inj,arg)
@@ -638,7 +638,7 @@ let bexpr_match_case (i, e) =
 
 (* finds the first one in the list if it exists *)
 let bexpr_match_variant (s,((_,v_t) as v)) = 
-  match v_t with
+  match Flx_btype.unfold "bexpr_match_variant" v_t with
   | Flx_btype.BTYP_variant ls -> 
     let argt = match Flx_btype.maybe_vfind_argtype ls s with
       | Some argt -> argt

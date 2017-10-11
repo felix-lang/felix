@@ -23,6 +23,7 @@ open Flx_beta
 open Flx_label
 open Flx_btype_subst
 
+let debug = false
 module CS = Flx_code_spec
 module L = Flx_literal
 exception Recname of string
@@ -149,9 +150,8 @@ let rec gen_expr'
   (e,t)
   : cexpr_t
 =
-(*
-  print_endline ("Gen_expr': " ^ sbe bsym_table (e,t));
-*)
+  if debug then
+  print_endline ("Flx_egen: Gen_expr': " ^ sbe bsym_table (e,t));
   let rec f_bexpr e = Flx_bexpr.map ~f_bexpr e in
   let e,t = f_bexpr (e,t) in
   match e with
@@ -167,7 +167,7 @@ let rec gen_expr'
       si (length this_ts)
     )
   end;
-
+  let ate t1 t2 = assert (Flx_typeeq.type_eq (sbt bsym_table) syms.counter t1 t2) in
   let ge = gen_expr syms bsym_table shapes shape_map label_info this this_vs this_ts sr in
   let ge' = gen_expr' syms bsym_table shapes shape_map label_info this this_vs this_ts sr in
   let tsub t = beta_reduce "flx_egen" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr this_vs this_ts t) in
@@ -389,8 +389,8 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
     end
 
   | BEXPR_apply ( (BEXPR_inj (v,d,c),ft' as f), (_,argt as a)) -> 
-    assert (d = argt);
-    assert (c = t);
+    ate d argt;
+    ate c t;
     assert (not (clt c)); 
     let cx = Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table shape_map c v a in
 (*
@@ -412,9 +412,9 @@ print_endline ("Generated application of injection application " ^ sbe bsym_tabl
       (BEXPR_prj (ix,(BTYP_array (vt,aixt) as ixd),ixc),_), 
       (_,at as a)
     ) when clt at ->
-    assert (ixd = at);
-    assert (ixc = vt);
-    assert (ixc = t); 
+    ate ixd  at;
+    ate ixc vt;
+    ate ixc t; 
     assert (clt ixd);
     assert (clt ixc);
     let array_len = Flx_btype.sizeof_linear_type bsym_table aixt in
@@ -580,8 +580,8 @@ assert false;
       (BEXPR_aprj (ix,ixd,ixc),_), 
       (_,(BTYP_array (vt,aixt) as at) as a)
     ) when clt at ->
-    assert (ixd = at);
-    assert (ixc = vt);
+    ate ixd  at;
+    ate ixc  vt;
     assert (clt ixd);
     assert (clt ixc);
     let array_len = Flx_btype.sizeof_linear_type bsym_table aixt in

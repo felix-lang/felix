@@ -81,6 +81,7 @@ print_endline ("[flx_pgen] One component union should have been removed");
       | Flx_vrep.VR_packed -> "::flx::rtl::_address_ptr_map"
       | Flx_vrep.VR_uctor -> "::flx::rtl::_uctor_ptr_map"
       end
+  | BTYP_variant _ -> "::flx::rtl::_uctor_ptr_map" 
 
   (* The shape of an actual function is CLASSNAME_ptr_map,
      The shape of a function **variable** is address_ptr_map, since it's
