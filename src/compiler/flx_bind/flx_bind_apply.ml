@@ -7,7 +7,7 @@ let cal_bind_apply
   koenig_lookup cal_apply bind_type' 
   lookup_qn_with_sig' mkenv
   inner_lookup_name_in_env eval_module_expr
-  mk_bare_env get_pub_tables lookup_name_in_table_dirs
+  get_pub_tables lookup_name_in_table_dirs
   bind_expression'
   rs sr f' a' args
 =
@@ -135,7 +135,7 @@ let cal_bind_apply
       try
         Flx_bind_deferred.set_deferred_type  
           bsym_table state env inner_lookup_name_in_env 
-          eval_module_expr mk_bare_env get_pub_tables
+          eval_module_expr get_pub_tables
           lookup_name_in_table_dirs
           rs 
           sr f' a

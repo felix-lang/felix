@@ -20,7 +20,7 @@ let typecode_of_btype sr x = Flx_typecode_of_btype.typecode_of_btype sr x
 *)
 let set_deferred_type 
   bsym_table state env inner_lookup_name_in_env 
-  eval_module_expr mk_bare_env get_pub_tables
+  eval_module_expr get_pub_tables
   lookup_name_in_table_dirs
   rs 
   sr f' (ea, ta as a)
@@ -51,7 +51,7 @@ let set_deferred_type
           e
         with
         | (Simple_module (impl, ts, htab,dirs)) ->
-          let env' = mk_bare_env state bsym_table impl in
+          let env' = Flx_env.mk_bare_env state bsym_table impl in
           let tables = get_pub_tables state bsym_table env' rs dirs in
           let result = lookup_name_in_table_dirs htab tables sr name in
           result
