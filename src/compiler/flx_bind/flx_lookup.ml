@@ -2482,70 +2482,13 @@ and rebind_btype state bsym_table env sr ts t =
 
 *)
 
-and check_module state name sr entries ts =
-    begin match entries with
-    | NonFunctionEntry (index) ->
-        let sym = get_data state.sym_table (sye index) in
-        begin match sym.Flx_sym.symdef with
-        | SYMDEF_root _
-        | SYMDEF_library 
-        | SYMDEF_module ->
-            Flx_bind_deferred.Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
-        | SYMDEF_typeclass ->
-            Flx_bind_deferred.Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
-        | _ ->
-            clierrx "[flx_bind/flx_lookup.ml:6424: E231] " sr ("Expected '" ^ sym.Flx_sym.id ^ "' to be module in: " ^
-            Flx_srcref.short_string_of_src sr ^ ", found: " ^
-            Flx_srcref.short_string_of_src sym.Flx_sym.sr)
-        end
-    | _ ->
-      failwith
-      (
-        "Expected non function entry for " ^ name
-      )
-    end
-
-(* the top level table only has a single entry,
-  the root module, which is the whole file
-
-  returns the root name, table index, and environment
-*)
-
 and eval_module_expr state bsym_table env e : module_rep_t =
-  (*
-  print_endline ("Eval module expr " ^ string_of_expr e);
-  *)
-  match e with
-  | EXPR_name (sr,name,ts) ->
-    let entries = inner_lookup_name_in_env state bsym_table env rsground sr name in
-    check_module state name sr entries ts
-
-  | EXPR_lookup (sr,(e,name,ts)) ->
-    let result = eval_module_expr state bsym_table env e in
-    begin match result with
-      | Flx_bind_deferred.Simple_module (index,ts',htab,dirs) ->
-      let env' = mk_bare_env state bsym_table index in
-      let tables = get_pub_tables state bsym_table env' rsground dirs in
-      let result = lookup_name_in_table_dirs htab tables sr name in
-        begin match result with
-        | Some x ->
-          check_module state name sr x (ts' @ ts)
-
-        | None -> clierrx "[flx_bind/flx_lookup.ml:6461: E232] " sr
-          (
-            "Can't find " ^ name ^ " in module"
-          )
-        end
-
-    end
-
-  | _ ->
-    let sr = src_of_expr e in
-    clierrx "[flx_bind/flx_lookup.ml:6471: E233] " sr
-    (
-      "Invalid module expression " ^
-      string_of_expr e
-    )
+  Flx_eval_module.eval_module_expr
+  inner_lookup_name_in_env
+  mk_bare_env
+  get_pub_tables
+  lookup_name_in_table_dirs
+  state bsym_table env e
 
 (* ********* THUNKS ************* *)
 (* this routine has to return a function or procedure .. *)
