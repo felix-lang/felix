@@ -25,10 +25,64 @@ open Flx_bid
 
 let debug = false 
 
+let rec expand_typeset t =
+  match t with
+  | BTYP_type_tuple ls
+  | BTYP_type_set ls
+  | BTYP_type_set_union ls -> List.fold_left (fun ls t -> expand_typeset t @ ls) [] ls
+  | x -> [x]
+
+let handle_typeset state sr elt tset =
+  let ls = expand_typeset tset in
+  (* x isin { a,b,c } is the same as
+    typematch x with
+    | a => 1
+    | b => 1
+    | c => 1
+    | _ => 0
+    endmatch
+
+    ** THIS CODE ONLY WORKS FOR BASIC TYPES **
+
+    This is because we don't know what to do with any
+    type variables in the terms of the set. The problem
+    is that 'bind type' just replaces them with bound
+    variables. We have to assume they're not pattern
+    variables at the moment, therefore they're variables
+    from the environment.
+
+    We should really allow for patterns, however bound
+    patterns aren't just types, but types with binders
+    indicating 'as' assignments and pattern variables.
+
+    Crudely -- typesets are a hack that we should get
+    rid of in the future, since a typematch is just
+    more general .. however we have no way to generalise
+    type match cases so they can be named at the moment.
+
+    This is why we have typesets.. so I need to fix them,
+    so the list of things in a typeset is actually
+    a sequence of type patterns, not types.
+
+  *)
+  let e = BidSet.empty in
+  let un = btyp_tuple [] in
+  let lss = List.rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
+  let fresh = fresh_bid state.counter in
+  let dflt =
+    {
+      pattern = btyp_type_var (fresh,btyp_type 0);
+      pattern_vars = BidSet.singleton fresh;
+      assignments=[]
+    },
+    btyp_void ()
+  in
+  let lss = List.rev (dflt :: lss) in
+  btyp_type_match (elt, lss)
+
+
 let rec bind_type'
   bind_type_index
-  expand_typeset 
-  handle_typeset
   bind_expression'
   lookup_type_qn_with_sig'
   lookup_qn_in_env'
@@ -43,8 +97,6 @@ let rec bind_type'
   let bind_type' env rs sr t params mkenv =
 bind_type'
   bind_type_index
-  expand_typeset 
-  handle_typeset
   bind_expression'
   lookup_type_qn_with_sig'
   lookup_qn_in_env'
