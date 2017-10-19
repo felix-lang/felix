@@ -7,6 +7,54 @@ let lookup_name_in_htab htab name : entry_set_t option =
   try Some (Hashtbl.find htab name)
   with Not_found -> None
 
+let rec mk_bare_env (sym_table:Flx_sym_table.t) index =
+  let parent, sym = Flx_sym_table.find_with_parent sym_table index in
+  (index, sym.Flx_sym.id, sym.Flx_sym.privmap, [], Flx_ast.TYP_tuple []) ::
+  match parent with
+  | None -> []
+  | Some index -> mk_bare_env sym_table index
+
+let split_dirs open_excludes dirs :
+    (Flx_types.ivs_list_t * Flx_ast.qualified_name_t) list *
+    (Flx_types.ivs_list_t * Flx_ast.qualified_name_t) list *
+    (string * Flx_ast.qualified_name_t) list
+=
+  let opens =
+     List.concat
+     (
+       List.map
+       (fun (sr,x) -> match x with
+         | Flx_types.DIR_open (vs,qn) -> if List.mem (vs,qn) open_excludes then [] else [vs,qn]
+         | Flx_types.DIR_inject_module _  -> []
+         | Flx_types.DIR_use _ -> []
+       )
+       dirs
+     )
+  and includes =
+     List.concat
+     (
+       List.map
+       (fun (sr,x) -> match x with
+         | Flx_types.DIR_open _-> []
+         | Flx_types.DIR_inject_module (vs,qn) -> if List.mem (vs,qn) open_excludes then [] else [vs,qn]
+         | Flx_types.DIR_use _ -> []
+       )
+       dirs
+     )
+  and uses =
+     List.concat
+     (
+       List.map
+       (fun (sr,x) -> match x with
+         | Flx_types.DIR_open _-> []
+         | Flx_types.DIR_inject_module _ -> []
+         | Flx_types.DIR_use (n,qn) -> [n,qn]
+       )
+       dirs
+     )
+  in opens, includes, uses
+
+
 let merge_functions
   (opens: entry_set_t list)
   name

@@ -27,7 +27,6 @@ let debug = false
 
 let rec bind_type_index 
   bind_type'
-  mk_bare_env
   inner_bind_type
   state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts mkenv
 =
@@ -197,7 +196,7 @@ print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table
           | Some parent ->
              print_endline ("and IT's parent is " ^ si parent);
           *)
-            let mkenv i = mk_bare_env state bsym_table i in
+            let mkenv i = Flx_name_lookup.mk_bare_env state.sym_table i in
             mkenv parent
           (*
           | None -> []

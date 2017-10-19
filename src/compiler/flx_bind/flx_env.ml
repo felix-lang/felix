@@ -22,48 +22,9 @@ open Flx_name_map
 open Flx_btype_occurs
 open Flx_btype_subst
 open Flx_bid
+open Flx_name_lookup
 
 let debug = false 
-
-let rec split_dirs open_excludes dirs :
-    (ivs_list_t * qualified_name_t) list *
-    (ivs_list_t * qualified_name_t) list *
-    (string * qualified_name_t) list
-=
-  let opens =
-     List.concat
-     (
-       List.map
-       (fun (sr,x) -> match x with
-         | DIR_open (vs,qn) -> if List.mem (vs,qn) open_excludes then [] else [vs,qn]
-         | DIR_inject_module _  -> []
-         | DIR_use _ -> []
-       )
-       dirs
-     )
-  and includes =
-     List.concat
-     (
-       List.map
-       (fun (sr,x) -> match x with
-         | DIR_open _-> []
-         | DIR_inject_module (vs,qn) -> if List.mem (vs,qn) open_excludes then [] else [vs,qn]
-         | DIR_use _ -> []
-       )
-       dirs
-     )
-  and uses =
-     List.concat
-     (
-       List.map
-       (fun (sr,x) -> match x with
-         | DIR_open _-> []
-         | DIR_inject_module _ -> []
-         | DIR_use (n,qn) -> [n,qn]
-       )
-       dirs
-     )
-  in opens, includes, uses
 
 (* calculate the transitive closure of an i,ts list
   with respect to inherit clauses.
@@ -77,7 +38,7 @@ let rec split_dirs open_excludes dirs :
   (c) the routine is only called for modules and typeclasses?
 *)
 
-and get_includes lookup_qn_in_env' bind_type' state bsym_table rs xs =
+let rec get_includes lookup_qn_in_env' bind_type' state bsym_table rs xs =
   let rec get_includes' includes (((invs: ivs_list_t),i, ts) as index) =
     if not (List.mem index !includes) then
     begin
@@ -87,7 +48,7 @@ and get_includes lookup_qn_in_env' bind_type' state bsym_table rs xs =
       ;
       *)
       includes := index :: !includes;
-      let env = mk_bare_env state bsym_table i in (* should have ts in .. *)
+      let env = mk_bare_env state.sym_table i in (* should have ts in .. *)
       let qns,sr,vs =
         match hfind "lookup" state.sym_table i with
         { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs } ->
@@ -112,7 +73,7 @@ print_endline ("Includes, id = " ^ id);
             try lookup_qn_in_env' state bsym_table env rsground qn
             with Not_found -> failwith "QN NOT FOUND"
           in
-            let mkenv i = mk_bare_env state bsym_table i in
+            let mkenv i = mk_bare_env state.sym_table i in
             let args = List.map (fun (n,k,kind) -> 
 (*
 print_endline ("FUDGE: get includes: "^n^"=T<"^string_of_int k^">");
@@ -187,7 +148,7 @@ and bind_dir
   assert (List.length vs = 0);
   assert (List.length ts = 0);
   *)
-  let mkenv i = mk_bare_env state bsym_table i in
+  let mkenv i = mk_bare_env state.sym_table i in
 (*
   print_endline ("Binding ts=" ^ catmap "," string_of_typecode ts');
 *)
@@ -215,65 +176,13 @@ and bind_dir
   *)
   vs,i,ts'
 
-and make_view_table state bsym_table table sr vs ts : name_map_t =
-  let h = Hashtbl.create 97 in
-  Hashtbl.iter
-  (fun k v ->
-    let v = review_entry_set state.counter k v sr vs ts in
-    Hashtbl.add h k v
-  )
-  table
-  ;
-  h
-
-and pub_table_dir state bsym_table env (invs,i,ts) : name_map_t =
-  let invs = List.map (fun (i,n,_)->i,n) (fst invs) in
-  let sym = get_data state.sym_table i in
-  match sym.Flx_sym.symdef with
-  | SYMDEF_root _ 
-  | SYMDEF_library 
-  | SYMDEF_module ->
-    let table = 
-      if List.length ts = 0 
-      then sym.Flx_sym.pubmap 
-      else make_view_table state bsym_table sym.Flx_sym.pubmap (sym.Flx_sym.sr) invs ts 
-    in
-    table
-
-  | SYMDEF_typeclass  ->
-    let table = 
-      if List.length ts = 0 
-      then sym.Flx_sym.pubmap 
-      else make_view_table state bsym_table sym.Flx_sym.pubmap (sym.Flx_sym.sr) invs ts 
-    in
-    (* a bit hacky .. add the type class specialisation view
-       to its contents as an instance
-    *)
-    let inst = mkentry state.counter sym.Flx_sym.vs i in
-    let inst = review_entry state.counter sym.Flx_sym.id sym.Flx_sym.sr invs ts inst in
-    let inst_name = "_inst_" ^ sym.Flx_sym.id in
-
-    (* add inst thing to table *)
-    Hashtbl.add table inst_name (FunctionEntry [inst]);
-    table
-
-  | _ ->
-      clierrx "[flx_bind/flx_lookup.ml:6142: E228] " sym.Flx_sym.sr "[map_dir] Expected module"
-
 
 and get_pub_tables lookup_qn_in_env' bind_type' state bsym_table env rs (dirs:sdir_t list) =
   let _,includes,_ = split_dirs rs.open_excludes dirs in
   let xs = uniq_list (List.map (bind_dir lookup_qn_in_env' bind_type' state bsym_table env rs) includes) in
   let includes = get_includes lookup_qn_in_env' bind_type' state bsym_table rs xs in
-  let tables = List.map (pub_table_dir state bsym_table env ) includes in
+  let tables = List.map (Flx_pubname_map.pub_table_dir state.counter state.sym_table ) includes in
   tables
-
-and mk_bare_env state bsym_table index =
-  let parent, sym = Flx_sym_table.find_with_parent state.sym_table index in
-  (index, sym.Flx_sym.id, sym.Flx_sym.privmap, [], TYP_tuple []) ::
-  match parent with
-  | None -> []
-  | Some index -> mk_bare_env state bsym_table index
 
 and merge_directives lookup_qn_in_env' bind_type' lookup_qn_in_env2' state bsym_table rs env name dirs typeclasses =
   let env = ref env in
@@ -292,7 +201,7 @@ and merge_directives lookup_qn_in_env' bind_type' lookup_qn_in_env2' state bsym_
     begin
       let u = [bind_dir lookup_qn_in_env' bind_type' state bsym_table !env rs (vs,qn)] in
       let u = get_includes lookup_qn_in_env' bind_type' state bsym_table rs u in
-      let tables = List.map (pub_table_dir  state bsym_table !env ) u in
+      let tables = List.map (Flx_pubname_map.pub_table_dir  state.counter state.sym_table) u in
       List.iter add tables
     end
   in

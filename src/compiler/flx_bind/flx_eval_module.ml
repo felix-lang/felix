@@ -56,7 +56,6 @@ let check_module state name sr entries ts =
 
 let rec eval_module_expr 
   inner_lookup_name_in_env
-  mk_bare_env
   get_pub_tables
   lookup_name_in_table_dirs
   state bsym_table env e : module_rep_t 
@@ -64,7 +63,6 @@ let rec eval_module_expr
   let eval_module_expr state bsym_table env e =
     eval_module_expr 
       inner_lookup_name_in_env
-      mk_bare_env
       get_pub_tables
       lookup_name_in_table_dirs
       state bsym_table env e 
@@ -81,7 +79,7 @@ let rec eval_module_expr
     let result = eval_module_expr state bsym_table env e in
     begin match result with
       | Flx_bind_deferred.Simple_module (index,ts',htab,dirs) ->
-      let env' = mk_bare_env state bsym_table index in
+      let env' = Flx_name_lookup.mk_bare_env state.sym_table index in
       let tables = get_pub_tables state bsym_table env' rsground dirs in
       let result = lookup_name_in_table_dirs htab tables sr name in
         begin match result with

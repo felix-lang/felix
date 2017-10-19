@@ -33,7 +33,6 @@ let rec lookup_qn_with_sig'
   lookup_name_with_sig
   inner_type_of_index
   eval_module_expr
-  mk_bare_env
   get_pub_tables
 
   state
@@ -58,7 +57,6 @@ let rec lookup_qn_with_sig'
   lookup_name_with_sig
   inner_type_of_index
   eval_module_expr
-  mk_bare_env
   get_pub_tables
 
   state
@@ -427,7 +425,7 @@ print_endline ("Lookup qn with sig: AST_lookup of " ^ name ^ " in " ^ string_of_
     (*
     print_endline ("Module " ^ si impl ^ "[" ^ catmap "," (sbt bsym_table) ts' ^"]");
     *)
-    let env' = mk_bare_env state bsym_table impl in
+    let env' = Flx_name_lookup.mk_bare_env state.sym_table impl in
     let tables = get_pub_tables state bsym_table env' rs dirs in
     let result = lookup_name_in_table_dirs htab tables sr name in
     begin match result with

@@ -32,7 +32,6 @@ let rec lookup_type_qn_with_sig'
   inner_type_of_index_with_ts
   lookup_type_name_with_sig
   eval_module_expr
-  mk_bare_env
   get_pub_tables
   resolve_overload
   state
@@ -54,7 +53,6 @@ let lookup_type_qn_with_sig'
   inner_type_of_index_with_ts
   lookup_type_name_with_sig
   eval_module_expr
-  mk_bare_env
   get_pub_tables
   resolve_overload
   state
@@ -228,7 +226,7 @@ print_endline ("Lookup type with qn found AST_lookup of " ^ name ^ " in " ^ stri
     (*
     print_endline ("Module " ^ si impl ^ "[" ^ catmap "," (sbt bsym_table) ts' ^"]");
     *)
-    let env' = mk_bare_env state bsym_table impl in
+    let env' = Flx_name_lookup.mk_bare_env state.sym_table impl in
     let tables = get_pub_tables state bsym_table env' rs dirs in
     let result = lookup_name_in_table_dirs htab tables sr name in
     begin match result with

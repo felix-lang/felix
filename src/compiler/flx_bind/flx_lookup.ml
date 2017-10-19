@@ -150,7 +150,7 @@ and lookup_qn_in_env2'
     *)
     match eval_module_expr state bsym_table env me with
     | Flx_bind_deferred.Simple_module (impl,ts', htab,dirs) ->
-      let env' = mk_bare_env state bsym_table impl in
+      let env' = mk_bare_env state.sym_table impl in
       let tables = get_pub_tables state bsym_table env' rs dirs in
       let result = lookup_name_in_table_dirs htab tables sr name in
       match result with
@@ -512,7 +512,6 @@ and bind_type_index
 =
 Flx_bind_type_index.bind_type_index
   bind_type'
-  mk_bare_env
   inner_bind_type
   state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts mkenv 
 
@@ -738,7 +737,6 @@ and lookup_qn_with_sig'
   lookup_name_with_sig
   inner_type_of_index
   eval_module_expr
-  mk_bare_env
   get_pub_tables
 
   state
@@ -767,7 +765,6 @@ and lookup_type_qn_with_sig'
   inner_type_of_index_with_ts
   lookup_type_name_with_sig
   eval_module_expr
-  mk_bare_env
   get_pub_tables
   resolve_overload
   state
@@ -1325,9 +1322,6 @@ and get_pub_tables state bsym_table env rs (dirs:sdir_t list) =
   lookup_qn_in_env' bind_type'
   state bsym_table env rs dirs
 
-and mk_bare_env state bsym_table index =
-  Flx_env.mk_bare_env state bsym_table index
-
 and inner_build_env state bsym_table rs parent : env_t =
   Flx_env.inner_build_env 
   lookup_qn_in_env' bind_type' lookup_qn_in_env2'
@@ -1420,7 +1414,6 @@ and rebind_btype state bsym_table env sr ts t =
 and eval_module_expr state bsym_table env e : module_rep_t =
   Flx_eval_module.eval_module_expr
   inner_lookup_name_in_env
-  mk_bare_env
   get_pub_tables
   lookup_name_in_table_dirs
   state bsym_table env e

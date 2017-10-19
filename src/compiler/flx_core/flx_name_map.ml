@@ -95,3 +95,15 @@ let review_entry_set counter_ref name v sr vs ts : entry_set_t =
     FunctionEntry (List.map (review_entry counter_ref name sr vs ts) fs)
 
 
+let make_view_table counter table sr vs ts : name_map_t =
+  let h = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun k v ->
+    let v = review_entry_set counter k v sr vs ts in
+    Hashtbl.add h k v
+  )
+  table
+  ;
+  h
+
+
