@@ -22,6 +22,7 @@ open Flx_name_map
 open Flx_btype_occurs
 open Flx_btype_subst
 open Flx_bid
+open Flx_name_lookup
 
 let debug = false
 
@@ -33,7 +34,6 @@ let rec lookup_type_qn_with_sig'
   eval_module_expr
   mk_bare_env
   get_pub_tables
-  lookup_name_in_table_dirs
   resolve_overload
   state
   bsym_table
@@ -56,7 +56,6 @@ let lookup_type_qn_with_sig'
   eval_module_expr
   mk_bare_env
   get_pub_tables
-  lookup_name_in_table_dirs
   resolve_overload
   state
   bsym_table

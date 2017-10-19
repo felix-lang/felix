@@ -79,7 +79,6 @@ let rec bind_expression'
   resolve_overload
   eval_module_expr
   get_pub_tables
-  lookup_name_in_table_dirs
   lookup_qn_with_sig'
   inner_bind_type
   koenig_lookup
@@ -98,7 +97,6 @@ let rec bind_expression'
     resolve_overload
     eval_module_expr
     get_pub_tables
-    lookup_name_in_table_dirs
     lookup_qn_with_sig'
     inner_bind_type
     koenig_lookup
@@ -1053,7 +1051,7 @@ print_endline ("flx_lookup.EXPR_index3.bexpr_varname");
       | (Flx_bind_deferred.Simple_module (impl, ts, htab,dirs)) ->
         let env' = Flx_env.mk_bare_env state bsym_table impl in
         let tables = get_pub_tables state bsym_table env' rs dirs in
-        let result = lookup_name_in_table_dirs htab tables sr name in
+        let result = Flx_name_lookup.lookup_name_in_table_dirs htab tables sr name in
         result
 
     in
@@ -1421,7 +1419,7 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
       koenig_lookup cal_apply bind_type' 
       lookup_qn_with_sig' mkenv
       inner_lookup_name_in_env eval_module_expr
-      get_pub_tables lookup_name_in_table_dirs
+      get_pub_tables 
       bind_expr_orig
       rs sr f' a' args
 

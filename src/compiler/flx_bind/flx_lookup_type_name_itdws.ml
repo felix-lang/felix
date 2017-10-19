@@ -25,13 +25,39 @@ open Flx_bid
 
 let debug = false
 
+let handle_type 
+  build_env
+  bind_type_index
+  state bsym_table rs sra srn name ts index =
+  let sym = get_data state.sym_table index in
+  match sym.Flx_sym.symdef with
+  | SYMDEF_function _
+  | SYMDEF_fun _
+  | SYMDEF_struct _
+  | SYMDEF_cstruct _
+  | SYMDEF_nonconst_ctor _
+  | SYMDEF_callback _ -> btyp_inst (index,ts)
+  | SYMDEF_instance_type _
+  | SYMDEF_type_alias _ ->
+(*
+print_endline ("Handle type " ^ name ^ " ... binding type index " ^ string_of_int index);
+*)
+      let mkenv i = build_env state bsym_table (Some i) in
+      let t = bind_type_index state bsym_table rs sym.Flx_sym.sr index ts mkenv in
+(*
+print_endline ("Handle type " ^ name ^ " ... bound type is " ^ sbt bsym_table t);
+*)
+      t
+ 
+  | _ ->
+      clierrx "[flx_bind/flx_lookup.ml:3245: E151] " sra ("[handle_type] Expected " ^ name ^ " to be function, got: " ^
+        string_of_symdef sym.Flx_sym.symdef name sym.Flx_sym.vs)
+
 let lookup_type_name_in_table_dirs_with_sig
   build_env
   bind_type'
-  lookup_name_in_htab
   resolve_overload
-  handle_type
-  merge_functions
+  bind_type_index
   state
   bsym_table
   table
@@ -53,7 +79,7 @@ let lookup_type_name_in_table_dirs_with_sig
   in
 
   let result:entry_set_t =
-    match lookup_name_in_htab table name  with
+    match Flx_name_lookup.lookup_name_in_htab table name  with
     | Some x -> x
     | None -> FunctionEntry []
   in
@@ -88,6 +114,8 @@ let lookup_type_name_in_table_dirs_with_sig
             *)
             let tb =
               handle_type
+              build_env
+              bind_type_index
               state
               bsym_table
               rs
@@ -181,6 +209,8 @@ let lookup_type_name_in_table_dirs_with_sig
 *)
         let tb =
           handle_type
+          build_env
+          bind_type_index
           state
           bsym_table
           rs
@@ -202,7 +232,7 @@ let lookup_type_name_in_table_dirs_with_sig
           (
             List.map
             (fun table ->
-              match lookup_name_in_htab table name with
+              match Flx_name_lookup.lookup_name_in_htab table name with
               | Some x -> [x]
               | None -> []
             )
@@ -235,7 +265,7 @@ let lookup_type_name_in_table_dirs_with_sig
               print_endline ("FOUND " ^ id);
               *)
               match entry with
-              | SYMDEF_virtual_type _ -> true
+              | SYMDEF_virtual_type -> true
               | _ -> false
            ) ->
            Some (btyp_vinst (sye i, ts))
@@ -247,7 +277,7 @@ let lookup_type_name_in_table_dirs_with_sig
           | [NonFunctionEntry i] -> [i]
           | [FunctionEntry ii] -> ii
           | _ ->
-            merge_functions opens name
+            Flx_name_lookup.merge_functions opens name
         in
           let ro =
             resolve_overload
@@ -263,6 +293,8 @@ let lookup_type_name_in_table_dirs_with_sig
             *)
             let tb =
               handle_type
+              build_env
+              bind_type_index
               state
               bsym_table
               rs
