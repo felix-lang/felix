@@ -4,3 +4,7 @@
 # exclude patterns (uncomment them if you want to use them):
 # *.[oa]
 *~
+__pycache__
+.*/__pycache__
+CRAP
+*.pdb
