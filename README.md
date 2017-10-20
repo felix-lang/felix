@@ -1,6 +1,8 @@
 
+Felix
+========
+
 Felix is an advanced high performance statically typed scripting language.
-The current annotated reference manual is felix-ref.pdf.
 
 It is as easy to run a program as Python:
 
@@ -15,6 +17,7 @@ Felix is an aggressive inliner which performs whole program
 analysis.
 
 Features:
+----------
 
 - generates highly optimised ISO C++
 - advanced resource manager organises compilation and linkage
@@ -38,9 +41,13 @@ Features:
 - open source FFAU (free for any use) licence
 
 Bindings:
+-----------
+
 - Google RE2 based regexp processing built
   * syntax support for regular definitions
 - bindings to Gnu GMP and Gnu GSL included
 - SDL: Simple Direct Media Layer
   * SDL based platform independent GUI 
+
+If you want to read more, check out the [Annotated Reference Manual](https://github.com/felix-lang/felix/raw/master/docs/felix-ref.pdf) and the [website documentation](http://felix-lang.org/share/src/web/documentation.fdoc).
 
