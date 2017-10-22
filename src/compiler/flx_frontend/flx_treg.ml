@@ -120,6 +120,7 @@ print_endline ("Register type r " ^ sbt bsym_table t);
   | BTYP_fix (0,_) -> ()
   | BTYP_fix (i,_) -> clierrx "[flx_frontend/flx_treg.ml:123: E356] " sr ("[register_type_r] Fixpoint "^si i^" encountered")
   | BTYP_polyrecord _ -> clierrx "[flx_frontend/flx_treg.ml:124: E357] " sr ("[register_type_r] attempt to bind polyrecord type")
+  | BTYP_polyvariant _ -> clierrx "[flx_frontend/flx_treg.ml:124: E357] " sr ("[register_type_r] attempt to bind polyvariant type")
   (*
   | BTYP_type_var (i,mt) -> clierrx "[flx_frontend/flx_treg.ml:126: E358] " sr ("Attempt to register type variable " ^ si i ^":"^sbt sym_table mt)
   *)

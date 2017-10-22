@@ -65,9 +65,9 @@ let variant_coercion state bsym_table sr x' t' t'' lhs rhs =
         if not (type_eq bsym_table state.counter t tt) then
         clierrx "[flx_bind/flx_coerce.ml:55: E45] " sr (
           "Source Variant field '" ^ s ^ "' has type:\n" ^
-          sbt bsym_table t ^ "\n" ^
+          sbt bsym_table t ^ "=" ^ Flx_btype.st t^"\n" ^
           "but coercion target has the different type:\n" ^
-          sbt bsym_table tt ^"\n" ^
+          sbt bsym_table tt ^"=" ^ Flx_btype.st tt^ "\n" ^
           "The types must be the same!"
         )
       | None -> raise Not_found

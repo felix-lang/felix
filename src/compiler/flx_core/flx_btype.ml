@@ -14,6 +14,8 @@ type btpattern_t = {
   assignments : (bid_t * t) list
 }
 
+and pvpiece_t = [`Ctor of (string * t) | `Base of t]
+
 (** general typing *)
 and t = 
   | BTYP_hole
@@ -29,6 +31,7 @@ and t =
   | BTYP_record of (string * t) list
   | BTYP_polyrecord of (string * t) list * t
   | BTYP_variant of (string * t) list
+  | BTYP_polyvariant of pvpiece_t list
 
   | BTYP_pointer of t
   | BTYP_rref of t
@@ -101,7 +104,11 @@ let rec trivtype i = match i with
   
 let catmap sep f ls = String.concat sep (List.map f ls) 
 
-let rec str_of_btype typ = 
+let rec str_of_pvpiece k = match k with
+  | `Ctor (s,t) -> "`" ^ s ^ " of " ^ str_of_btype t
+  | `Base t -> str_of_btype t
+
+and str_of_btype typ = 
   let s t = str_of_btype t in
   let ss ts = String.concat "," (List.map str_of_btype ts) in
   match typ with
@@ -118,6 +125,7 @@ let rec str_of_btype typ =
   | BTYP_record (ls) -> "BTYP_record("^String.concat "," (List.map (fun (name,t)->name^":"^s t) ls)^")"
   | BTYP_polyrecord (ls,t) -> "BTYP_polyrecord("^String.concat "," (List.map (fun (name,t)->name^":"^s t) ls)^" | "^s t^")"
   | BTYP_variant (ls) -> "BTYP_variant(" ^String.concat " | " (List.map (fun (name,t)->name^" of "^s t) ls)^")"
+  | BTYP_polyvariant ls -> "BTYP_polyvariant(" ^ String.concat " | " (List.map str_of_pvpiece ls) ^ ")"
 
   | BTYP_pointer t -> "BTYP_pointer("^s t^")"
   | BTYP_rref t -> "BTYP_rref("^s t^")"
@@ -192,6 +200,7 @@ let complete_type t =
     | BTYP_record (ls) -> List.iter (fun (s,t) -> uf t) ls
     | BTYP_polyrecord (ls,v) -> List.iter (fun (s,t) -> uf t) ls; uf v
     | BTYP_variant ls -> (List.iter (fun (s,t) -> uf t) ls)
+    | BTYP_polyvariant ls -> (List.iter (fun k -> match k with | `Ctor (s,t) -> uf t | `Base t -> uf t) ls)
     | BTYP_array (a,b) -> uf a; uf b
     | BTYP_function (a,b) -> uf a;uf b
     | BTYP_effector (a,e,b) -> uf a; uf e; uf b
@@ -383,8 +392,9 @@ let btyp_variant ls =
   | ts ->
       (* Make sure all the elements are sorted by name. *)
       let cmp (s1,t1) (s2, t2) = compare s1 s2 in
-      let ts = List.stable_sort compare ts in
+      let ts = List.stable_sort cmp ts in
       BTYP_variant ts
+
 
 (** Construct a BTYP_pointer type. *)
 let btyp_pointer ts =
@@ -479,45 +489,6 @@ let rec bmt mt = match mt with
   | Flx_ast.TYP_tuple(ts) -> btyp_tuple(List.map bmt ts)
   | _ -> btyp_type 0
 
-
-(* -------------------------------------------------------------------------- *)
-let unfold msg t =
-  let rec aux depth t' =
-    let uf t = aux (depth + 1) t in
-    match t' with
-    | BTYP_sum ls -> btyp_sum (List.map uf ls)
-    | BTYP_tuple ls -> btyp_tuple (List.map uf ls)
-    | BTYP_record (ls) -> btyp_record (List.map (fun (s,t) -> s,uf t) ls)
-    | BTYP_polyrecord (ls,v) -> btyp_polyrecord (List.map (fun (s,t) -> s,uf t) ls) (uf v)
-    | BTYP_variant ls -> btyp_variant (List.map (fun (s,t) -> s,uf t) ls)
-    | BTYP_array (a,b) -> btyp_array (uf a,uf b)
-    | BTYP_function (a,b) -> btyp_function (uf a,uf b)
-    | BTYP_effector (a,e, b) -> btyp_effector (uf a,uf e,uf b)
-    | BTYP_cfunction (a,b) -> btyp_cfunction (uf a,uf b)
-    | BTYP_pointer a -> btyp_pointer (uf a)
-    | BTYP_fix (i,_) when (-i) = depth -> t
-    | BTYP_fix (i,_) when (-i) > depth -> 
-(*
-        print_endline (msg ^ ": Warning:unfold free fixpoint"); 
-*)
-        raise (Free_fixpoint t')
-    | BTYP_type_apply (a,b) -> btyp_type_apply (uf a,uf b)
-    | BTYP_type_map (a,b) -> btyp_type_map (uf a,uf b)
-    | BTYP_inst (i,ts) -> btyp_inst (i,List.map uf ts)
-    | BTYP_vinst (i,ts) -> btyp_vinst (i,List.map uf ts)
-    | BTYP_type_function (p,r,b) ->
-        btyp_type_function (p,r,uf b)
-  
-    | BTYP_type_match (a,tts) ->
-        let a = uf a in
-        (* don't unfold recursions in patterns yet because we don't know what
-         * they mean *)
-        let tts = List.map (fun (p,x) -> p,uf x) tts in
-        btyp_type_match (a,tts)
-  
-    | _ -> t'
-  in aux 0 t
-
 (* -------------------------------------------------------------------------- *)
 
 (** Returns if the bound type is void. *)
@@ -606,6 +577,11 @@ let flat_iter
   | BTYP_record (ts) -> List.iter (fun (s,t) -> f_btype t) ts
   | BTYP_polyrecord (ts,v) -> List.iter (fun (s,t) -> f_btype t) ts; f_btype v
   | BTYP_variant ts -> List.iter (fun (s,t) -> f_btype t) ts
+  | BTYP_polyvariant ts -> List.iter (fun k -> 
+      match k with 
+      | `Ctor (s,t) -> f_btype t
+      | `Base t -> f_btype t
+    ) ts
 
   | BTYP_pointer t -> f_btype t
   | BTYP_rref t -> f_btype t
@@ -683,6 +659,11 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_record (ts) -> btyp_record (List.map (fun (s,t) -> s, f_btype t) ts)
   | BTYP_polyrecord (ts,v) -> btyp_polyrecord (List.map (fun (s,t) -> s, f_btype t) ts) (f_btype v)
   | BTYP_variant ts -> btyp_variant (List.map (fun (s,t) -> s, f_btype t) ts)
+  | BTYP_polyvariant ts -> btyp_polyvariant (List.map (fun k -> 
+      match k with 
+      | `Ctor (s,t) -> `Ctor (s, f_btype t) 
+      | `Base t -> `Base (f_btype t) 
+    ) ts)
 
   | BTYP_pointer t -> btyp_pointer (f_btype t)
   | BTYP_rref t -> btyp_rref (f_btype t)
@@ -757,11 +738,22 @@ two levels down by the subtitution: the correction is because it
 only got dropped one level.
 *)
 
+(* equivalent to widen_fixgap -1 *)
 and adjust_fixpoint t =
   let rec adj depth t =
     let fx t = adj (depth + 1) t in
     match map ~f_btype:fx t with
     | BTYP_fix (i, mt) when i + depth < 0 -> btyp_fix (i+1) mt
+    | x -> x
+  in adj 0 t
+
+and widen_fixgap level t =
+  let rec adj depth t =
+    let fx t = adj (depth + 1) t in
+    match map ~f_btype:fx t with
+    | BTYP_fix (i, mt) when i + depth < 0 -> 
+      print_endline ("Widening fixgap by " ^ string_of_int level);
+      btyp_fix (i-level) mt
     | x -> x
   in adj 0 t
 
@@ -824,6 +816,79 @@ and btyp_tuple_cons head tail =
     print_endline ("Got tail=" ^ st tail);
     failwith ("Type constructor error: btyp_tuple_cons(" ^st head ^"," ^ st tail ^ ")")
 
+and btyp_polyvariant ls =
+  let rec split ls =
+    List.fold_left (fun (ctors, bases) k ->
+      match k with 
+      | `Ctor x -> x::ctors, bases 
+      | `Base (BTYP_variant ts) -> 
+        List.map (fun (s,t) -> s, adjust_fixpoint t) ts @ ctors, bases
+      | `Base (BTYP_polyvariant ts) -> 
+        let ctors', bases' = split ts in
+        List.map (fun (s,t) -> s, adjust_fixpoint t) ctors' @ ctors, 
+        List.map adjust_fixpoint bases' @ bases
+      | `Base x -> ctors, x::bases
+      ) 
+    ([],[])
+    ls
+  in
+  let ctors, bases = split ls in
+  if List.length bases = 0 then
+    btyp_variant ctors
+  else
+    let cmp (s1,t1) (s2, t2) = compare s1 s2 in
+    let ctors = List.stable_sort cmp ctors in
+    let pieces =
+      List.map (fun k -> `Ctor k) ctors @
+      List.map (fun k -> `Base k) bases
+    in
+    BTYP_polyvariant pieces
+ 
+
+(* -------------------------------------------------------------------------- *)
+and unfold msg t =
+  let rec aux depth t' =
+    let uf t = aux (depth + 1) t in
+    match t' with
+    | BTYP_sum ls -> btyp_sum (List.map uf ls)
+    | BTYP_tuple ls -> btyp_tuple (List.map uf ls)
+    | BTYP_record (ls) -> btyp_record (List.map (fun (s,t) -> s,uf t) ls)
+    | BTYP_polyrecord (ls,v) -> btyp_polyrecord (List.map (fun (s,t) -> s,uf t) ls) (uf v)
+    | BTYP_variant ls -> btyp_variant (List.map (fun (s,t) -> s,uf t) ls)
+
+    | BTYP_polyvariant ls -> btyp_polyvariant (List.map (fun k ->
+        match k with
+        | `Ctor (s,t) -> `Ctor (s,uf t) 
+        | `Base t -> `Base (uf t)
+     ) ls)
+
+    | BTYP_array (a,b) -> btyp_array (uf a,uf b)
+    | BTYP_function (a,b) -> btyp_function (uf a,uf b)
+    | BTYP_effector (a,e, b) -> btyp_effector (uf a,uf e,uf b)
+    | BTYP_cfunction (a,b) -> btyp_cfunction (uf a,uf b)
+    | BTYP_pointer a -> btyp_pointer (uf a)
+    | BTYP_fix (i,_) when (-i) = depth -> t
+    | BTYP_fix (i,_) when (-i) > depth -> 
+(*
+        print_endline (msg ^ ": Warning:unfold free fixpoint"); 
+*)
+        raise (Free_fixpoint t')
+    | BTYP_type_apply (a,b) -> btyp_type_apply (uf a,uf b)
+    | BTYP_type_map (a,b) -> btyp_type_map (uf a,uf b)
+    | BTYP_inst (i,ts) -> btyp_inst (i,List.map uf ts)
+    | BTYP_vinst (i,ts) -> btyp_vinst (i,List.map uf ts)
+    | BTYP_type_function (p,r,b) ->
+        btyp_type_function (p,r,uf b)
+  
+    | BTYP_type_match (a,tts) ->
+        let a = uf a in
+        (* don't unfold recursions in patterns yet because we don't know what
+         * they mean *)
+        let tts = List.map (fun (p,x) -> p,uf x) tts in
+        btyp_type_match (a,tts)
+  
+    | _ -> t'
+  in aux 0 t
 
 
 (* this is a hack, it fails to account for nominal types *)

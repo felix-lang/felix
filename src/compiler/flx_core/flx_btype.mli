@@ -5,6 +5,7 @@ type btpattern_t = {
   pattern_vars : BidSet.t;
   assignments : (bid_t * t) list;
 }
+and pvpiece_t = [`Ctor of (string * t) | `Base of t]
 and t = private
     BTYP_hole
   | BTYP_none
@@ -19,6 +20,7 @@ and t = private
   | BTYP_record of (string * t) list
   | BTYP_polyrecord of (string * t) list * t
   | BTYP_variant of (string * t) list
+  | BTYP_polyvariant of pvpiece_t list
 
   | BTYP_pointer of t
   | BTYP_rref of t
@@ -98,6 +100,7 @@ val btyp_array : t * t -> t
 val btyp_record : (string * t) list -> t
 val btyp_polyrecord : (string * t) list -> t -> t
 val btyp_variant : (string * t) list -> t
+val btyp_polyvariant : pvpiece_t list -> t
 
 val btyp_pointer : t -> t
 val btyp_rref : t -> t
@@ -145,6 +148,7 @@ val map :
   ?f_bid:(bid_t -> bid_t) -> ?f_btype:(t -> t) -> t -> t
 val contains_uniq: t -> bool
 val adjust_fixpoint: t -> t
+val widen_fixgap : int -> t -> t
 val is_recursive_type : t -> bool
 
 

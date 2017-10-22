@@ -221,6 +221,7 @@ let rec get_offsets' syms bsym_table typ : string list =
     -> failwith "[ogen] Type set has no representation"
 
   | BTYP_polyrecord _ 
+  | BTYP_polyvariant _ 
   | BTYP_tuple_cons _ 
   | BTYP_tuple_snoc _ 
   | BTYP_none 

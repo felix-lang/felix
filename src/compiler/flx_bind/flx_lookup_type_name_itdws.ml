@@ -37,10 +37,9 @@ let handle_type
   | SYMDEF_cstruct _
   | SYMDEF_nonconst_ctor _
   | SYMDEF_callback _ -> btyp_inst (index,ts)
-  | SYMDEF_instance_type _
-  | SYMDEF_type_alias _ ->
+  | SYMDEF_instance_type _ ->
 (*
-print_endline ("Handle type " ^ name ^ " ... binding type index " ^ string_of_int index);
+print_endline ("Lookup_type_name_in_table_dirs_with_sig: Handle type " ^ name ^ " ... binding type index " ^ string_of_int index);
 *)
       let mkenv i = build_env state bsym_table (Some i) in
       let t = bind_type_index state bsym_table rs sym.Flx_sym.sr index ts mkenv in
@@ -48,6 +47,18 @@ print_endline ("Handle type " ^ name ^ " ... binding type index " ^ string_of_in
 print_endline ("Handle type " ^ name ^ " ... bound type is " ^ sbt bsym_table t);
 *)
       t
+
+  | SYMDEF_type_alias _ ->
+(*
+print_endline ("Lookup_type_name_in_table_dirs_with_sig: Handle type alias " ^ name ^ " ... binding type index " ^ string_of_int index);
+*)
+      let mkenv i = build_env state bsym_table (Some i) in
+      let t = bind_type_index state bsym_table rs sym.Flx_sym.sr index ts mkenv in
+(*
+print_endline ("Handle type " ^ name ^ " ... bound type is " ^ sbt bsym_table t);
+*)
+      t
+
  
   | _ ->
       clierrx "[flx_bind/flx_lookup.ml:3245: E151] " sra ("[handle_type] Expected " ^ name ^ " to be function, got: " ^
@@ -155,8 +166,13 @@ let lookup_type_name_in_table_dirs_with_sig
       Some (btyp_inst (sye index, ts))
 
     (* an instance type is just like a type alias in phase 1 *)
-    | SYMDEF_instance_type t
+    | SYMDEF_instance_type t ->
+      Some (bt sr t)
+
+    (* the effect of the binding depends on the mode for aliases, nominal or structural *)
     | SYMDEF_type_alias t -> 
+      let modes = if get_structural_typedefs state then "structural" else "nominal" in
+print_endline ("lookup_type_name_in_table_dirs_with_sig: Binding reference to type alias " ^ name ^ " mode=" ^ modes);
       Some (bt sr t)
 
     | SYMDEF_label _

@@ -37,6 +37,7 @@ type t =
 
   (* binding structures [prolog] *)
   | BBDCL_newtype of    bvs_t * Flx_btype.t
+  | BBDCL_type_alias of bvs_t * Flx_btype.t
   | BBDCL_instance_type of    bvs_t * Flx_btype.t
   | BBDCL_external_type of
                         bvs_t * btype_qual_t list * CS.t * Flx_btype.breqs_t
@@ -93,6 +94,10 @@ let bbdcl_val (bvs, t, kind) =
 
 let bbdcl_newtype (bvs, t) =
   BBDCL_newtype (bvs, t)
+
+let bbdcl_type_alias (bvs, t) =
+  BBDCL_type_alias (bvs, t)
+
 
 let bbdcl_instance_type (bvs, t) =
   BBDCL_instance_type (bvs, t)
@@ -165,6 +170,7 @@ let get_bvs = function
   | BBDCL_fun (_, bvs, _, _, _,_) -> bvs
   | BBDCL_val (bvs, _, _) -> bvs
   | BBDCL_newtype (bvs, _) -> bvs
+  | BBDCL_type_alias (bvs, _) -> bvs
   | BBDCL_instance_type (bvs, _) -> bvs
   | BBDCL_external_type (bvs, _, _, _) -> bvs
   | BBDCL_external_const (_, bvs, _, _, _) -> bvs
@@ -237,6 +243,7 @@ let iter
   | BBDCL_virtual_type bvs -> ()
 
   | BBDCL_newtype (_,t) -> f_btype t
+  | BBDCL_type_alias (_,t) -> f_btype t
   | BBDCL_instance_type (_,t) -> f_btype t
   | BBDCL_external_type (_,quals,_,breqs) ->
       List.iter f_btype_qual quals;
@@ -318,6 +325,7 @@ let map
       bbdcl_val (bvs,f_btype (Flx_btype.btyp_pointer t),`Ref)
   | BBDCL_val (bvs,t,kind) -> bbdcl_val (bvs,f_btype t,kind)
   | BBDCL_newtype (bvs,t) -> BBDCL_newtype (bvs,f_btype t)
+  | BBDCL_type_alias (bvs,t) -> BBDCL_type_alias (bvs,f_btype t)
   | BBDCL_instance_type (bvs,t) -> BBDCL_instance_type (bvs,f_btype t)
   | BBDCL_virtual_type bvs -> BBDCL_virtual_type bvs
 

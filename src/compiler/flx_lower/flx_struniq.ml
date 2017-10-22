@@ -96,6 +96,7 @@ let fix_symbol bsym_table index parent bsym bsym_table' =
 
   let h bbdcl = Flx_bsym_table.add bsym_table' index parent { bsym with Flx_bsym.bbdcl= bbdcl } in
   match Flx_bsym.bbdcl bsym with
+  | BBDCL_type_alias _
   | BBDCL_virtual_type _
   | BBDCL_instance_type _
   | BBDCL_invalid

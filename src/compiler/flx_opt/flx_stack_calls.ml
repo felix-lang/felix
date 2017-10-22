@@ -67,6 +67,7 @@ let rec is_pure syms bsym_table i =
 
   (* Checking purity *)
   match Flx_bsym.bbdcl bsym with
+  | BBDCL_type_alias _ -> assert false
   | BBDCL_instance_type _ -> assert false
   | BBDCL_virtual_type _ -> assert false
   | BBDCL_invalid -> assert false

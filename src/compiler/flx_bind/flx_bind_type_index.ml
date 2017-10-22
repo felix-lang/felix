@@ -213,16 +213,61 @@ print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table
       btyp_type_var (index,mt)
 
     (* type alias RECURSE *)
-    | SYMDEF_instance_type t
-    | SYMDEF_type_alias t ->
+    | SYMDEF_instance_type t ->
       if debug then
-      print_endline ("Bind type index: Unravelling type alias " ^ id ^ " index=" ^ si index);
+      print_endline ("Bind type index: Unravelling virtual type instance " ^ id ^ " index=" ^ si index);
       let t = bt t in
-(*
-      if id = "digraph_t" then
-      print_endline ("Bind type index: Alias "^id^"bound = " ^ sbt bsym_table t);
-*)
       t
+
+
+    | SYMDEF_type_alias t ->
+(*
+print_endline ("Bind type index, trying to bind " ^id ^ "<" ^string_of_int index ^ "> = " ^ string_of_typecode t);
+*)
+      if get_structural_typedefs state then begin
+(*
+        if debug then
+        print_endline ("Bind type index: Unravelling type alias " ^ id ^ " index=" ^ si index);
+*)
+        begin try
+          let bsym = Flx_bsym_table.find bsym_table index in
+          let bbdcl = Flx_bsym.bbdcl bsym in
+          begin match bbdcl with
+          | BBDCL_type_alias (bvs, alias) ->
+            let salias = Flx_btype_subst.tsubst sr bvs ts alias in
+(*
+            print_endline ("Bind type index: Unravelling type alias " ^ id ^ " index=" ^ si index ^ " to " ^
+              Flx_btype.st salias);
+*)
+            salias
+          | _ -> failwith ("Flx_bind_type expected type alias in bound symbol table " ^ id);
+          end
+        with Not_found ->
+          failwith ("Flx_bind_type. Bound type alias missing from bound symbol table " ^ id)
+        end
+
+(*
+        let t = bt t in
+*)
+(*
+        print_endline ("Bind type index: Unravelling type alias " ^ id ^ " index=" ^ si index ^ " to " ^ Flx_btype.st t);
+*)
+(*
+        t
+*)
+      end
+      else begin
+        let t = 
+          try btyp_inst (index,ts) 
+          with exn -> 
+            print_endline ("Cannot create nominal type reference!");
+            raise exn
+        in
+(*
+        print_endline ("Bind type index: nominalising type alias " ^ id ^ " index=" ^ si index ^ " to " ^ Flx_btype.st t);
+*)
+        t
+      end
 
     | SYMDEF_abs _ ->
       btyp_inst (index,ts)

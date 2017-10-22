@@ -162,7 +162,7 @@ print_endline ("\n******\nTrying to bind variant " ^ string_of_typecode t);
 (*
           print_endline ("Bound bind constructor " ^ s ^ " argument type " ^ Flx_btype.st t);
 *)
-          (s, t) :: acc
+          `Ctor (s, t) :: acc
        | `Base t ->
 (*
           print_endline ("Trying to bind base type " ^ string_of_typecode t);
@@ -171,17 +171,7 @@ print_endline ("\n******\nTrying to bind variant " ^ string_of_typecode t);
 (*
           print_endline ("Bound base type " ^ Flx_btype.st t);
 *)
-          let t = Flx_btype.adjust_fixpoint t in
-(*
-          print_endline ("Adjusted base type " ^ Flx_btype.st t);
-*)
-          (* let t = unfold "Flx_lookup.TYP_variant" t in
-          print_endline ("Unfolded base type " ^ Flx_btype.st t);
-          *)
-          match  t with
-          | BTYP_variant ts -> 
-            List.rev ts @ acc
-          | _ -> clierr sr "Polymorphic variant case type must be polymorphic variant type"
+          `Base t :: acc
        )
        []
        ts 
@@ -189,7 +179,7 @@ print_endline ("\n******\nTrying to bind variant " ^ string_of_typecode t);
 (*
 print_endline("Bound variant components = " ^ catmap "," (fun (s,t) -> "`" ^ s ^ " of " ^ Flx_btype.st t) flds);
 *)
-     let t = btyp_variant flds in
+     let t = btyp_polyvariant flds in
 (*
 print_endline ("Bound variant = " ^ Flx_btype.st t);
 *)
@@ -217,7 +207,29 @@ print_endline ("Bound variant = " ^ Flx_btype.st t);
         match t with
         (* reverse the fields so the second one with a given name takes precedence *)
         | BTYP_record (fields) -> new_fields := List.rev fields @ (!new_fields)
-        | _ -> clierrx "[flx_bind/flx_lookup.ml:802: E93] " sr ("Record extension requires bases be records too, got " ^ sbt bsym_table t)
+        | BTYP_inst (i,ts) -> (* should only happen during typedef binding in nominal type mode *)
+          begin try
+            let bsym = Flx_bsym_table.find bsym_table i in
+            let bbdcl = Flx_bsym.bbdcl bsym in
+            match bbdcl with
+            | BBDCL_type_alias (bvs,t) -> 
+              let t = Flx_btype_subst.tsubst sr bvs ts t in
+              begin match t with
+              | BTYP_record (fields) -> 
+                new_fields := List.rev fields @ (!new_fields)
+              | _ -> clierr sr ("Flx_bind_type.record extension: expected typedef of record type, got " ^
+                   Flx_btype.st t
+                )
+              end
+            | _ -> clierr sr ("Flx_bind_type.record extension: expected nominal type to be typedef, got" ^
+               Flx_print.string_of_bbdcl bsym_table bbdcl i) 
+          with _ ->
+            clierr sr ("Flx_bind_type.record extension: can't find  nominal type, expected typedef .." ^ string_of_int i)
+          end
+          
+        | _ -> clierrx "[flx_bind/flx_lookup.ml:802: E93] " sr ("Record extension requires bases be records too, got " ^ 
+          Flx_btype.st t ^ "=" ^
+          sbt bsym_table t)
       )
       ts
       ;
@@ -330,6 +342,8 @@ print_endline ("\n+++++++++Bound recursive type is " ^ Flx_btype.st t^"\n\n");
     t
 
   | TYP_typeof e ->
+if debug then
+print_endline ("Flx_bind_type.TYP_typeof(" ^ string_of_expr e ^ ")");
       if List.mem_assq e rs.expr_fixlist
       then begin
         (* Typeof is recursive *)
@@ -339,10 +353,10 @@ print_endline ("\n+++++++++Bound recursive type is " ^ Flx_btype.st t^"\n\n");
         btyp_fix fixdepth (btyp_type 0)
       end else begin
 if debug then
-print_endline ("Start tentative binding of typeof (" ^ string_of_expr e ^ ")");
+print_endline ("Flx_bind_type.TYP_typeof.Start tentative binding of typeof (" ^ string_of_expr e ^ ")");
         let t = snd (bind_expression' state bsym_table env rs e []) in
 if debug then
-print_endline ("end tentative binding of typeof (" ^string_of_expr e^ ")");
+print_endline ("Flx_bind_type.TYP_typeof.end tentative binding of typeof (" ^string_of_expr e^ ")");
         t
       end
 

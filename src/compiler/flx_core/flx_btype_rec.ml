@@ -65,6 +65,14 @@ let fix i t =
     | BTYP_variant ts ->
        btyp_variant (List.map (fun (s,t) -> s, aux t) ts)
 
+    | BTYP_polyvariant ts ->
+       btyp_polyvariant (List.map (fun k -> 
+       match k with
+       | `Ctor (s,t) -> `Ctor (s, aux t)
+       | `Base t -> `Base (aux t)
+       ) ts)
+
+
     | BTYP_label 
     | BTYP_unitsum _
     | BTYP_void

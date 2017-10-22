@@ -24,27 +24,28 @@ let rec alpha counter t =
       btyp_type_function (ps, cvt r, cvt b)
   | t -> Flx_btype.map ~f_btype:(alpha counter) t
 
-let term_subst counter t1 i t2 =
-  let rec f_btype t =
+let term_subst counter src i arg =
+  let rec aux level t =
     match t with
-    | BTYP_type_var (k,_) when k = i -> t2
+    | BTYP_type_var (k,_) when k = i -> widen_fixgap level arg 
 
     | BTYP_type_match (tt, pts) ->
-        let tt = f_btype tt in
+        let tt =  aux level tt in
         let pts =
           List.map begin fun ((bpat, x) as case) ->
             if BidSet.mem i bpat.pattern_vars then case else
-            let asgs = List.map (fun (i,t) -> i,f_btype t) bpat.assignments in
+            let asgs = (* not sure about level adjust here .. *)
+            List.map (fun (i,t) -> i,aux (level+1) t) bpat.assignments in
             { bpat with
-              pattern=f_btype bpat.pattern;
-              assignments=asgs }, f_btype x
+              pattern=aux level bpat.pattern;
+              assignments=asgs }, aux (level+1) x (* not sure about level adjust here either .. *)
           end pts
         in
         btyp_type_match (tt,pts)
 
-    | t -> Flx_btype.map ~f_btype t
+    | t -> Flx_btype.map ~f_btype:(aux (level+1)) t
   in
-  f_btype t1
+  aux 0 src 
 
 let list_subst counter x t =
   let t = alpha counter t in
@@ -90,7 +91,7 @@ let varmap_subst varmap t =
 let mk_varmap sr vs ts =
   if List.length ts <> List.length vs
   then
-    clierrx "[flx_core/flx_unify.ml:188: E280] " sr 
+    clierrx "[flx_core/flx_btype_subst.ml: E280] " sr 
     (
       "[mk_varmap] wrong number of type args, expected vs=" ^
       si (List.length vs) ^

@@ -324,6 +324,13 @@ print_endline "Type list index returned None";
      let ss,ls = List.split ts in
      btyp_variant (List.combine ss (List.map br ls))
 
+  | BTYP_polyvariant ts ->
+    btyp_polyvariant (List.map (fun k -> match k with
+      | `Ctor (s,t) -> `Ctor (s, br t)
+      | `Base t -> `Base (br t)
+    ) ts)
+
+
   (* Intersection type reduction rule: if any term is 0,
      the result is 0, otherwise the result is the intersection
      of the reduced terms with 1 terms removed: if there

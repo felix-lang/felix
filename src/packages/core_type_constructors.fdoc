@@ -79,7 +79,7 @@ open class Typing
     endmatch
   ;
 
-  typedef fun != (x:TYPE, y:TYPE):TYPE=> lnot (x , y);
+  typedef fun != (x:TYPE, y:TYPE):TYPE=> lnot (eq (x , y));
 
   typedef fun <= (x:TYPE, y:TYPE):TYPE=>
     typematch x with

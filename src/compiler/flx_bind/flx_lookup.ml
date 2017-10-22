@@ -552,7 +552,11 @@ print_endline "Abnormal exit inner_type_of_index in type_of_index'";
       let t = beta_reduce "flx_lookup: type_of_index'" state.counter bsym_table sr t in
 
       (* Finally, cache the type. *)
+      if get_structural_typedefs state then begin
+if debug then
+print_endline ("Flx_lookup: Adding type of index " ^ si bid ^ " to cache, type=" ^ Flx_btype.st t);
       Hashtbl.add state.ticache bid t;
+      end;
       t
     end 
     else
@@ -794,8 +798,10 @@ if name = "EInt" then
   | [] ->
     clierrx "[flx_bind/flx_lookup.ml:2973: E149] " srn
     (
-      "[lookup_name_with_sig] Can't find " ^ name ^ "[" ^catmap "," (sbt bsym_table) ts^ "]" ^
-      " of " ^ catmap "," (sbt bsym_table) t2
+      "[lookup_name_with_sig] Can't find " ^ name ^ "[" ^catmap "," (Flx_btype.st ) ts^ "]" ^
+      " of " ^ catmap "," (Flx_btype.st ) t2 ^ "=\n" ^
+       name ^ "[" ^catmap "," (Flx_print.sbt bsym_table) ts^ "]" ^
+      " of " ^ catmap "," (Flx_print.sbt bsym_table) t2 
     )
   | (_,_,table,dirs,_)::tail ->
     match

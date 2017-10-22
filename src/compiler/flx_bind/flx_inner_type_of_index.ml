@@ -83,7 +83,10 @@ if index = 37461 then print_env env;
   | SYMDEF_type_alias t ->
 (*
 print_endline ("bind_type_index finds: Type alias name " ^ sym.Flx_sym.id);
+  NOTE: this routine is finding the type of a type, that is, a metatype,
+  its a bit of a hack!
 *)
+print_endline ("Inner type of index trying to calculate meta type of type alias");
       let t = bt sym.Flx_sym.sr t in
       Flx_metatype.metatype state.sym_table bsym_table rs sym.Flx_sym.sr t
 

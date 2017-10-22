@@ -69,13 +69,13 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
           "[cal_apply] Function " ^
           sbe bsym_table tbe1 ^
           "\nof type " ^
-          sbt bsym_table t1 ^
+          sbt bsym_table t1 ^ "=" ^ Flx_btype.st t1 ^
           "\napplied to argument " ^
           sbe bsym_table tbe2 ^
           "\n of type " ^
-          sbt bsym_table t2 ^
+          sbt bsym_table t2 ^ "=" ^ Flx_btype.st t2 ^
           "\nwhich doesn't agree with parameter type\n" ^
-          sbt bsym_table argt
+          sbt bsym_table argt ^ "=" ^ Flx_btype.st argt
         )
       | _ -> rest, reorder
       end

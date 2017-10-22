@@ -9,12 +9,13 @@ type lookup_state_t = {
      * in the front and back ends extensively..
      *)
   sym_table: Flx_sym_table.t;
-  env_cache: (bid_t, Flx_mtypes2.env_t) Hashtbl.t;
+  mutable env_cache: (bid_t, Flx_mtypes2.env_t) Hashtbl.t;
   generic_cache: Flx_mtypes2.generic_cache_t;
   mutable decoder_cache: ((int * Flx_btype.t list) * Flx_bexpr.t) list;
     (* assoc list of union index, ts pair -> decoder fun closure *)
   mutable encoder_cache: ((int * Flx_btype.t list) * Flx_bexpr.t) list;
     (* assoc list of union index, ts pair -> encoder fun closure *)
+  mutable treat_typedefs_as_structural : bool;
 }
 
 let make_lookup_state print_flag counter varmap ticache generic_cache sym_table =
@@ -28,7 +29,12 @@ let make_lookup_state print_flag counter varmap ticache generic_cache sym_table 
     generic_cache = generic_cache;
     decoder_cache = [];
     encoder_cache = [];
+    treat_typedefs_as_structural = false;
   }
+
+let set_nominal_typedefs (state:lookup_state_t) = state.treat_typedefs_as_structural <- false 
+let set_structural_typedefs (state:lookup_state_t) = state.treat_typedefs_as_structural <- true 
+let get_structural_typedefs (state:lookup_state_t) = state.treat_typedefs_as_structural
 
 let hfind msg h k =
   try Flx_sym_table.find h k

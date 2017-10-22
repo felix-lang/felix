@@ -720,6 +720,14 @@ and sb bsym_table depth fixlist counter prec tc =
         "`" ^ s^"<"^string_of_int hash ^"> of "^sbt 0 t) ls ^")"
       end
 
+    | BTYP_polyvariant ls ->
+      0,"(" ^ catmap " | "  (fun k -> match k with 
+        | `Ctor (s,t) -> "`" ^ s ^ " of " ^ sbt 0 t
+        | `Base t -> sbt 0 t
+       ) ls ^
+      ")"
+
+
     | BTYP_unitsum k ->
       begin match k with
       | 0 -> 0,"/*unitsum*/void"
@@ -2639,6 +2647,11 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     "type " ^ name ^  string_of_bvs vs ^
     " = new " ^ sobt t ^ ";"
 
+  | BBDCL_type_alias (vs,t) ->
+    "typedef " ^ name ^  string_of_bvs vs ^
+    " = " ^ sobt t ^ ";"
+
+
   | BBDCL_instance_type (vs,t) ->
     "instance type " ^ name ^  string_of_bvs vs ^
     " = " ^ sobt t ^ ";"
@@ -2906,6 +2919,7 @@ let print_symbols bsym_table =
     | BBDCL_invalid -> print_endline ("INVALID  " ^ id)
     | BBDCL_module -> print_endline ("MODULE " ^ id)
     | BBDCL_newtype _ -> print_endline ("NEWTYPE " ^ id)
+    | BBDCL_type_alias _ -> print_endline ("TYPEDEF " ^ id)
     | BBDCL_instance_type _ -> print_endline ("INSTANCE TYPE " ^ id)
     | BBDCL_external_type _ -> print_endline ("EXTERNAL_TYPE " ^ id)
     | BBDCL_external_const _ -> print_endline ("EXTERNAL_CONST " ^ id)

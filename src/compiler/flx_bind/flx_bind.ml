@@ -17,7 +17,7 @@ print_endline "Flx_bind.bind_asms: Binding asms ..";
 if debug then
 print_endline "Flx_bind.bind_asms: Making symbol table done";
 
-Flx_subtypetable.report_subtypes bind_state.symtab.sym_table;
+Flx_subtypetable.report_subtypes bind_state.symtab.Flx_symtab.sym_table;
 
 
 

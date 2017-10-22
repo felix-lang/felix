@@ -1,4 +1,5 @@
 open Flx_types
+open Flx_name_map
 
 let pub_table_dir counter (sym_table:Flx_sym_table.t) (invs,i,ts) : Flx_name_map.name_map_t =
   let invs = List.map (fun (i,n,_)->i,n) (fst invs) in
@@ -10,7 +11,7 @@ let pub_table_dir counter (sym_table:Flx_sym_table.t) (invs,i,ts) : Flx_name_map
     let table = 
       if List.length ts = 0 
       then sym.Flx_sym.pubmap 
-      else Flx_name_map.make_view_table counter sym.Flx_sym.pubmap (sym.Flx_sym.sr) invs ts 
+      else make_view_table counter sym.Flx_sym.pubmap (sym.Flx_sym.sr) invs ts 
     in
     table
 
@@ -18,13 +19,13 @@ let pub_table_dir counter (sym_table:Flx_sym_table.t) (invs,i,ts) : Flx_name_map
     let table = 
       if List.length ts = 0 
       then sym.Flx_sym.pubmap 
-      else Flx_name_map.make_view_table counter sym.Flx_sym.pubmap (sym.Flx_sym.sr) invs ts 
+      else make_view_table counter sym.Flx_sym.pubmap (sym.Flx_sym.sr) invs ts 
     in
     (* a bit hacky .. add the type class specialisation view
        to its contents as an instance
     *)
-    let inst = Flx_name_map.mkentry counter sym.Flx_sym.vs i in
-    let inst = Flx_name_map.review_entry counter sym.Flx_sym.id sym.Flx_sym.sr invs ts inst in
+    let inst = mkentry counter sym.Flx_sym.vs i in
+    let inst = review_entry counter sym.Flx_sym.id sym.Flx_sym.sr invs ts inst in
     let inst_name = "_inst_" ^ sym.Flx_sym.id in
 
     (* add inst thing to table *)

@@ -1,9 +1,9 @@
 @h1 Subtyping: variants
 @felix
-typedef variants_t = (case Fred of int | case Joe of string | case Max);
-var y : variants_t = (case Fred 43) :>> variants_t;
+typedef variants_t = (`Fred of int | `Joe of string | `Max);
+var y : variants_t = (`Fred 43) :>> variants_t;
 println$ y._strr;
-var z  = (#case Max) :>> variants_t;
+var z  = ((#`Max) :>> variants_t);
 println$ z._strr;
 
 var a = case Joe "Hello";
@@ -17,8 +17,8 @@ println$ h a;
 
 fun k(v:variants_t) =>
   match v with
-  | case Fred j => "Fred " + j.str
-  | case Max () => "Max"
+  | `Fred j => "Fred " + j.str
+  | `Max => "Max"
   | _ => "some other variant"
 ;
 println$ k y;
@@ -26,8 +26,8 @@ println$ k z;
 println$ k a;
 
 // simple case of covariant arguments
-var cv = case June (a=1,b="Hello");
-fun ck (v: (case June of (a:int))) => v._strr;
+var cv = `June (a=1,b="Hello");
+fun ck (v: (`June of (a:int))) => v._strr;
 println$ ck cv;
 
 @expect

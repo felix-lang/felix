@@ -1,4 +1,5 @@
 open Flx_btype_subst
+let debug = false
 
 (* returns true if a and b have an mgu,
    and also adds each element of the mgu to
@@ -18,9 +19,8 @@ let do_unify counter varmap sym_table bsym_table a b =
   let a' = varmap_subst varmap a in
   let b' = varmap_subst varmap b in
   let eqns = [a',b'] in
-(*
-  print_endline ("Calling unification " ^ Flx_print.sbt bsym_table a' ^ " ==? " ^ Flx_print.sbt bsym_table b');
-*)
+  if debug then
+  print_endline ("Calling unification " ^ Flx_btype.st a' ^ " ==? " ^ Flx_btype.st b');
   match Flx_unify.maybe_unification bsym_table counter eqns with
   | None ->  (*print_endline ("Unification failed");*) false
   | Some mgu ->
@@ -60,9 +60,8 @@ let do_unify counter varmap sym_table bsym_table a b =
         in
         match sym.Flx_sym.symdef with
         | Flx_types.SYMDEF_function _ ->
-(*
-print_endline ("Adding binding for function " ^ string_of_int i ^ " ret type " ^ Flx_print.sbt bsym_table t);
-*)
+if debug then
+print_endline ("Adding binding for function " ^ string_of_int i ^ " ret type " ^ Flx_btype.st t);
             Hashtbl.add varmap i t
 
         (* if it's a declared type variable, leave it alone *)
