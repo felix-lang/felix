@@ -1031,7 +1031,6 @@ end
     incr counter
   done
   ;
-
 (*
   print_endline ("\n=====================\n TYPEDEFS before expansion\n=====================\n");
   Flx_bsym_table.iter (fun bid parent bsym ->
@@ -1043,7 +1042,6 @@ end
   ) bsym_table_dummy;  
   print_endline ("\n==========================================\n");
 *)
-
   Flx_bsym_table.iter (fun bid parent bsym ->
     let bbdcl = Flx_bsym.bbdcl bsym in
     let sr = Flx_bsym.sr bsym in
@@ -1056,7 +1054,6 @@ end
  
     | _ -> ()
   ) bsym_table_dummy;
-
 (*
   print_endline ("\n=====================\n TYPEDEFS after expansion\n=====================\n");
   Flx_bsym_table.iter (fun bid parent bsym ->
@@ -1067,7 +1064,6 @@ end
     | _ -> ()
   ) bsym_table_dummy;  
 *)
-
 (*
   print_endline ("\n=====================\n VAR CACHE (function codomains) \n=====================\n");
   Hashtbl.iter (fun i t ->
@@ -1075,7 +1071,6 @@ end
   )
   state.varmap;
 *)
-
 (*
   Hashtbl.clear state.varmap;
   Hashtbl.clear state.virtual_to_instances;
@@ -1089,7 +1084,7 @@ end
   )
   state.ticache;
 *)
-  
+ 
   state.visited <-saved_visited;
   state.lookup_state.Flx_lookup_state.env_cache <- saved_env_cache;
 
@@ -1100,9 +1095,12 @@ end
     | BBDCL_type_alias _ -> 
       Flx_bsym_table.add bsym_table bid parent bsym;
       Hashtbl.add state.visited bid ()
-    | _ -> ()
+    | _ -> 
+(*
+      print_endline ("Copy typedefs: Not copying " ^ string_of_int bid);
+*)
+      ()
   ) bsym_table_dummy;  
-
 (*
   print_endline ("\n===================\nSetting type aliases to structura\n=======================\n");
 *)

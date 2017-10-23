@@ -154,7 +154,14 @@ and str_of_btype typ =
 
   | BTYP_type_var (i,t) -> "BTYP_type_var("^string_of_int i^":"^s t^")"
   | BTYP_type_apply (f,x) -> "BTYP_type_apply("^s f^","^s x^ ")"
-  | BTYP_type_match (v,pats) -> "BTYP_type_match(too lazy)"
+  | BTYP_type_match (v,pats) -> 
+    let sa (i,t) = string_of_int i ^ " <- " ^ s t in
+    let sas a = catmap ", " sa a in
+    let sbs pvs = BidSet.fold (fun i acc -> (if acc="" then "" else acc ^ "," ) ^ string_of_int i) pvs "" in
+    let sp {pattern=pat; pattern_vars=pvs; assignments=a; }  = "forall " ^ sbs pvs ^ ". " ^ s pat ^ " with " ^ sas a in
+    let cases = String.concat "\n  | " (List.map (fun (p,t) -> sp p ^ " => " ^ s t) pats) in
+    "BTYP_type_match("^s v^",(\n" ^cases ^ "\n))\n"
+
   | BTYP_type_map (f,t) -> "BTYP_type_map(" ^ s f ^"," ^s t^")"
 
   | BTYP_tuple_cons (h,t) -> "BTYP_tuple_cons (" ^ s h ^"**" ^ s t^")"
@@ -618,7 +625,9 @@ let flat_iter
       f_btype t;
       List.iter begin fun (tp, t) ->
         f_btype tp.pattern;
+        (* Assignment variables are type variable indices not bids 
         List.iter (fun (i, t) -> f_bid i; f_btype t) tp.assignments;
+        *)
         f_btype t
       end ps
   | BTYP_type_set ts -> List.iter f_btype ts

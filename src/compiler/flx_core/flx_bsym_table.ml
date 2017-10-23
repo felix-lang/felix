@@ -1,5 +1,5 @@
 open Flx_bid
-exception IncompleteBsymTable of int * string
+exception IncompleteBsymTable of int * int * string
 
 type elt = {
   bsym: Flx_bsym.t;               (** The symbol. *)
@@ -272,17 +272,26 @@ let validate msg bsym_table =
     assert (Flx_bbdcl.is_valid bbdcl);
 
     (* Make sure the referenced bid is in the bsym_table. *)
-    let f_bid_msg msg bid = if not (bid = 0 || mem bsym_table bid) then
-       raise (IncompleteBsymTable (bid, msg)) else ()
+    let f_bid_msg msg index = if not (index = 0 || mem bsym_table index) 
+      then 
+        begin
+          print_endline (msg^ ": Missing symbol " ^ string_of_int index^ 
+          " processing symbol " ^ Flx_bsym.id bsym ^ "<"^string_of_int bid^">");
+          raise (IncompleteBsymTable (bid,index, msg)) 
+        end
+      else ()
     in 
     let f_bid bid = f_bid_msg ("primary table " ^ msg) bid in
     let f_btype = Flx_btype.iter ~f_bid in
     let f_bexpr = Flx_bexpr.iter ~f_bid ~f_btype in
     let f_bexe = Flx_bexe.iter ~f_bid ~f_btype ~f_bexpr in
     Flx_bbdcl.iter ~f_bid ~f_btype ~f_bexpr ~f_bexe bbdcl;
-    let f_bid bid = f_bid_msg ("Subtype table " ^ msg) bid in
-    List.iter (fun ((a,b),c) -> f_bid a; f_bid b; f_bid c) bsym_table.subtype_map
   end bsym_table
+  ;
+  let f_bid index = if not (index = 0 || mem bsym_table index) 
+     then raise (IncompleteBsymTable (0,index,"subtype table"))
+  in
+  List.iter (fun ((a,b),c) -> f_bid a; f_bid b; f_bid c) bsym_table.subtype_map
 
 let validate_types f_btype bsym_table =
   iter begin fun bid _ bsym ->

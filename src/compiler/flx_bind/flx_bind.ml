@@ -61,7 +61,19 @@ print_endline "Flx_bind.bind_asms: start validation of bsym_table";
 let f_btype t = if Flx_btype.complete_type t then () else
   print_endline ("BSYM_TABLE CONTAINS INCOMPLETE TYPE " ^ Flx_print.sbt bsym_table t ^ " = " ^ Flx_btype.st t)
 in
-Flx_bsym_table.validate "post-construction" bsym_table;
+begin try
+  Flx_bsym_table.validate "post-construction" bsym_table
+with Flx_bsym_table.IncompleteBsymTable (bid,bid2,_) ->
+    print_endline ("Post construction, symbol " ^string_of_int bid2 
+       ^ " used in " ^ string_of_int bid^ " missing from bound symbol table"
+    );
+    let bsym = Flx_bsym_table.find bsym_table bid in
+    let bbdcl = Flx_bsym.bbdcl bsym in
+    print_endline (Flx_print.string_of_bbdcl bsym_table bbdcl bid);
+    Flx_print.print_bsym_table bsym_table;
+    failwith "SYSTEM ERROR: construction failed"
+end;
+
 Flx_bsym_table.validate_types f_btype bsym_table;
 
 if debug then

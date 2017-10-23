@@ -586,9 +586,9 @@ print_endline ("Calculated isrec= " ^ if isrec then "true" else "false");
     end
 
   | BTYP_type_match (tt,pts) ->
-    (*
-    print_endline ("Typematch [before reduction] " ^ sbt bsym_table t);
-    *)
+(*
+    print_endline ("Typematch [before reduction] " ^ sbt bsym_table t ^ "=" ^ Flx_btype.st t);
+*)
     let tt = br tt in
     let new_matches = ref [] in
     List.iter (fun ({pattern=p; pattern_vars=dvars; assignments=eqns}, t') ->

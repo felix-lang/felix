@@ -153,7 +153,7 @@ print_endline ("_strr Variant type " ^ Flx_print.sbt bsym_table t);
           mks cname
 
         | BTYP_tuple [] ->
-          mks ("#case " ^ cname)
+          mks ("#`" ^ cname)
 
 
         | BTYP_tuple _ ->

@@ -240,9 +240,9 @@ print_endline ("Allowing " ^ string_of_int (List.length !(syms.reductions)) ^ " 
   ;
   begin try
     Flx_bsym_table.validate "post-monomorphisation" nutab
-  with Flx_bsym_table.IncompleteBsymTable (bid,_) ->
-    print_endline ("Post monomorphisation, symbol " ^string_of_int bid 
-       ^ " missing from bound symbol table"
+  with Flx_bsym_table.IncompleteBsymTable (bid,bid2,_) ->
+    print_endline ("Post monomorphisation, symbol " ^string_of_int bid2 
+       ^ "used in " ^ string_of_int bid^ " missing from bound symbol table"
     );
     Flx_print.print_bsym_table  nutab;
     failwith "SYSTEM ERROR: monomorphisation failed"

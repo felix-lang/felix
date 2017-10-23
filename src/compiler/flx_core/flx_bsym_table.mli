@@ -1,6 +1,6 @@
 (** The type of the bound symbol table. *)
 open Flx_bid
-exception IncompleteBsymTable of int * string
+exception IncompleteBsymTable of int * int * string
 
 type t
 
