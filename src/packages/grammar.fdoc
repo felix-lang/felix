@@ -3752,6 +3752,17 @@ syntax patterns {
     '''`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))''';
   private scons_pattern := stuple_cons_pattern =># "_1";
 
+  //$ Match a non-empty list using standard list syntax
+  //$ This allows for variables in the list syntax and bindings should "just work"
+  private scons_pattern :="[" slist_pattern "]" =># 
+    "_2";
+  private slist_pattern := scoercive_pattern "," slist_pattern  =># """`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))""";
+  private slist_pattern := scoercive_pattern =># 
+    """`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 
+      (pat_const_ctor ,_sr ,(nos "Empty") ))))""";
+  private slist_pattern := scoercive_pattern ",," scoercive_pattern =># """`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))""";
+  private scons_pattern :="[" "]" =># """`(pat_const_ctor ,_sr ,(nos "Empty"))""";
+
   //$ Match a tuple of at least 3 elements.
   //$ The LHS is the first element of the tuple.
   //$ The RHS is the rest of the tuple.
@@ -3867,13 +3878,6 @@ syntax patterns {
   //$  ?name when name == expr.
   //$
   private satomic_pattern := "$" "(" sexpr ")" =># "`(pat_expr ,_sr ,_3)";
-
-  //$ Matches a list with simpler syntax
-  //$ Probably a bit of a hack.
-  //$ Equivalence
-  //$ 
-  //$   $( (1,2,3).list ) == [1,2,3]
-  private satomic_pattern := "[" sexpr "]" =># '''`(pat_expr ,_sr (ast_apply ,_sr ( ,(nos "list") ,_2)))''';
 
   //$ Match against any literal value.
   //$ This includes integers, strings, whatever.
