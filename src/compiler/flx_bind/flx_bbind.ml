@@ -909,7 +909,7 @@ print_endline ("Found non-typedef" ^ Flx_bsym.id bsym ^ "<" ^ string_of_int k ^ 
             let ts = List.map (aux trail level) ts in
             btyp_inst (k,ts) 
 *)
-Flx_btype.map ~f_btype:(aux ((t,level)::trail) (level+1)) t 
+Flx_btype.map ~f_btype:(aux trail (level+1)) t 
 
           end
         with Not_found -> 
@@ -936,12 +936,12 @@ print_endline ("Found unknown <" ^ string_of_int k ^ "> trying second table");
               let ts = List.map (aux trail level) ts in
               btyp_inst (k,ts) 
   *)
-  Flx_btype.map ~f_btype:(aux ((t,level)::trail) (level+1)) t 
+  Flx_btype.map ~f_btype:(aux (trail) (level+1)) t 
 
             end
             with Not_found -> 
 
-Flx_btype.map ~f_btype:(aux ((t,level)::trail) (level+1)) t
+Flx_btype.map ~f_btype:(aux (trail) (level+1)) t
         
 (*
 print_endline ("Found unknown <" ^ string_of_int k ^ ">");
@@ -953,7 +953,7 @@ print_endline ("processed ts = " ^ catmap "," Flx_btype.st ts);
         end
       end
 
-     | _ -> Flx_btype.map ~f_btype:(aux ((t,level)::trail) (level+1)) t
+     | _ -> Flx_btype.map ~f_btype:(aux (trail) (level+1)) t
   in
 (*
   print_endline ("Top level expansion of " ^ Flx_btype.st t);
@@ -980,6 +980,7 @@ print_endline ("Flx_bbind.bbind *********************** ");
    * index is not known in advance. It had better converge!
    *)
   (* PASS 0, TYPEDEFS ONLY *)
+
 (*
 print_endline ("\n====================\nSetting type aliases to nominal\n===============\n");
 *)
@@ -1042,6 +1043,7 @@ end
   ) bsym_table_dummy;  
   print_endline ("\n==========================================\n");
 *)
+
   Flx_bsym_table.iter (fun bid parent bsym ->
     let bbdcl = Flx_bsym.bbdcl bsym in
     let sr = Flx_bsym.sr bsym in

@@ -174,7 +174,7 @@ and mk_prim_type_inst i args =
 
 and beta_reduce calltag counter bsym_table sr t1 =
 (*
-  print_endline ("---------- " ^ calltag^ " Beta reduce " ^ sbt bsym_table t1);
+  print_endline ("---------- " ^ calltag^ " Beta reduce " ^ sbt bsym_table t1 ^ "=" ^ Flx_btype.st t1);
 *)
   let t2 =
   try
@@ -184,11 +184,14 @@ and beta_reduce calltag counter bsym_table sr t1 =
         failwith ("Beta reduce called from " ^ calltag ^ " f ailed with Not_found in " ^
           sbt bsym_table t1)
     | Failure s ->
+print_endline ("Beta reduce failed with Failure");
         failwith ("beta-reduce called from " ^ calltag ^ " failed in " ^ sbt bsym_table t1 ^
           "\nmsg: " ^ s ^ "\nsr= " ^ Flx_srcref.short_string_of_src sr)
+    | exn -> print_endline ("Beta reduce failed with exn = " ^ Printexc.to_string exn);
+      raise exn
   in
 (*
-  print_endline ("============" ^ calltag^ "   reduced= " ^ sbt bsym_table t2);
+  print_endline ("============" ^ calltag^ "   reduced= " ^ sbt bsym_table t2 ^ "=" ^ Flx_btype.st t2);
 *)
   t2
 
@@ -228,7 +231,7 @@ and beta_reduce' calltag counter bsym_table sr termlist t =
   end
   ;
 *)
-  if List.length termlist > 20
+  if List.length termlist > 200
   then begin
     print_endline ("Trail=" ^ catmap "\n" (sbt bsym_table) termlist);
     failwith  ("Trail overflow, infinite expansion: BETA REDUCE " ^

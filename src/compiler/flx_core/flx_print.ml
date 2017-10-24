@@ -2649,7 +2649,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
 
   | BBDCL_type_alias (vs,t) ->
     "typedef " ^ name ^  string_of_bvs vs ^
-    " = " ^ sobt t ^ ";"
+    " = " ^ sobt t ^ "\n  = "^Flx_btype.st t^";"
 
 
   | BBDCL_instance_type (vs,t) ->

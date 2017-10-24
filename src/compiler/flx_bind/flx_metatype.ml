@@ -127,7 +127,7 @@ print_endline ("Metatyping term " ^ st term);
           clierrx "[flx_bind/flx_metatype.ml:120: E243] " sr ("Unexpected argument to metatype, struct or cstruct : " ^
             sbt bsym_table term)
 *)
-      | SYMDEF_type_alias _ ->
+      | SYMDEF_type_alias t ->
         begin try
           let bsym = Flx_bsym_table.find bsym_table index in
           let bbdcl = Flx_bsym.bbdcl bsym in
@@ -138,9 +138,8 @@ print_endline ("Metatyping term " ^ st term);
           | _ -> 
             clierrx "[flx_bind/flx_metatype.ml:124: E244] " sr ("Flx_meta-type.Expected type alias in bsym table, got " ^
             Flx_print.string_of_bbdcl bsym_table bbdcl index);
-       with _ -> 
-          clierrx "[flx_bind/flx_metatype.ml:124: E244B] " sr ("Cant find type alias " ^ string_of_int index ^
-          " in bound symbol table")
+        with _ -> 
+          Flx_guess_meta_type.guess_metatype sym.Flx_sym.sr t
        end 
       | _ ->
           clierrx "[flx_bind/flx_metatype.ml:128: E245] " sr ("Unexpected argument to metatype: " ^

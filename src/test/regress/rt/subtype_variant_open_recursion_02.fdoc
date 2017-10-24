@@ -1,0 +1,45 @@
+
+@h1 Subtyping: variants
+Open recursion with extension.
+@felix
+typedef addable' [T] = (
+ | `Val of int 
+ | `Add of T * T
+ )
+;
+typedef addable = addable'[addable];
+
+typedef subable' [T] = ( 
+| addable'[T]
+| `Sub of T * T
+);
+typedef subable = subable'[subable];
+
+fun show (x: addable) = {
+ return match x with
+ | `Val q => "Val " + q._strr
+ | `Add (a,b) => show a + " + " + show b
+ endmatch;
+}
+
+fun show2 (x: subable) = {
+ return match x with
+ | `Val q => "Val " + q._strr
+ | `Add (a,b) => show2 a + " + " + show2 b
+ | `Sub (a,b) => show2 a + " - " + show2 b
+ endmatch;
+}
+
+var x = `Add (`Val 1, `Val 2);
+println$ show x;
+
+var y = `Add (`Sub (`Val 1, `Val 2), `Val 3);
+println$ show2 x; // <============
+println$ show2 y;
+@
+
+@expect
+Val 1 + Val 2
+Val 1 + Val 2
+Val 1 - Val 2 + Val 3
+@
