@@ -417,7 +417,8 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     "<" ^ string_of_bid i ^ ">[" ^
     catmap "," (sbt bsym_table) ts ^ "]");
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_type_alias _ -> assert false
+  | BBDCL_nominal_type_alias _ -> assert false
+  | BBDCL_structural_type_alias _ -> assert false
   | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
     let argtypes = Flx_bparameter.get_btypes ps in
     assert (length vs = length ts);

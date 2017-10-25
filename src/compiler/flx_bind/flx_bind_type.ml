@@ -212,7 +212,8 @@ print_endline ("Bound variant = " ^ Flx_btype.st t);
             let bsym = Flx_bsym_table.find bsym_table i in
             let bbdcl = Flx_bsym.bbdcl bsym in
             match bbdcl with
-            | BBDCL_type_alias (bvs,t) -> 
+            | BBDCL_nominal_type_alias (bvs,t)
+            | BBDCL_structural_type_alias (bvs,t) -> 
               let t = Flx_btype_subst.tsubst sr bvs ts t in
               begin match t with
               | BTYP_record (fields) -> 

@@ -33,7 +33,8 @@ let btype_of_bsym state bsym_table sr bt bid bsym =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_label _ -> btyp_label ()
   | BBDCL_invalid -> assert false
-  | BBDCL_type_alias _ -> assert false
+  | BBDCL_nominal_type_alias _ -> assert false
+  | BBDCL_structural_type_alias _ -> assert false
   | BBDCL_module -> 
     clierrx "[flx_bind/flx_lookup.ml:1854: E106] " (Flx_bsym.sr bsym) ("Attempt to find type of module or library name " ^ Flx_bsym.id bsym)
 

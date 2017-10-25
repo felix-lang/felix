@@ -132,7 +132,8 @@ print_endline ("Metatyping term " ^ st term);
           let bsym = Flx_bsym_table.find bsym_table index in
           let bbdcl = Flx_bsym.bbdcl bsym in
           match bbdcl with
-          | Flx_bbdcl.BBDCL_type_alias (bvs, alias) -> 
+          | Flx_bbdcl.BBDCL_nominal_type_alias (bvs, alias) 
+          | Flx_bbdcl.BBDCL_structural_type_alias (bvs, alias) -> 
             let salias = Flx_btype_subst.tsubst sr bvs ts alias in
             metatype' sym_table bsym_table rs sr salias
           | _ -> 

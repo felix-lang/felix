@@ -2647,10 +2647,13 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     "type " ^ name ^  string_of_bvs vs ^
     " = new " ^ sobt t ^ ";"
 
-  | BBDCL_type_alias (vs,t) ->
-    "typedef " ^ name ^  string_of_bvs vs ^
+  | BBDCL_nominal_type_alias (vs,t) ->
+    "nominal typedef " ^ name ^  string_of_bvs vs ^
     " = " ^ sobt t ^ "\n  = "^Flx_btype.st t^";"
 
+  | BBDCL_structural_type_alias (vs,t) ->
+    "structural typedef " ^ name ^  string_of_bvs vs ^
+    " = " ^ sobt t ^ "\n  = "^Flx_btype.st t^";"
 
   | BBDCL_instance_type (vs,t) ->
     "instance type " ^ name ^  string_of_bvs vs ^
@@ -2919,7 +2922,8 @@ let print_symbols bsym_table =
     | BBDCL_invalid -> print_endline ("INVALID  " ^ id)
     | BBDCL_module -> print_endline ("MODULE " ^ id)
     | BBDCL_newtype _ -> print_endline ("NEWTYPE " ^ id)
-    | BBDCL_type_alias _ -> print_endline ("TYPEDEF " ^ id)
+    | BBDCL_nominal_type_alias _ -> print_endline ("NOMINAL TYPEDEF " ^ id)
+    | BBDCL_structural_type_alias _ -> print_endline ("STRUCTURAL TYPEDEF " ^ id)
     | BBDCL_instance_type _ -> print_endline ("INSTANCE TYPE " ^ id)
     | BBDCL_external_type _ -> print_endline ("EXTERNAL_TYPE " ^ id)
     | BBDCL_external_const _ -> print_endline ("EXTERNAL_CONST " ^ id)

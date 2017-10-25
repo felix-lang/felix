@@ -233,17 +233,17 @@ print_endline ("Bind type index, trying to bind " ^id ^ "<" ^string_of_int index
           let bsym = Flx_bsym_table.find bsym_table index in
           let bbdcl = Flx_bsym.bbdcl bsym in
           begin match bbdcl with
-          | BBDCL_type_alias (bvs, alias) ->
+          | BBDCL_structural_type_alias (bvs, alias) ->
             let salias = Flx_btype_subst.tsubst sr bvs ts alias in
 (*
             print_endline ("Bind type index: Unravelling type alias " ^ id ^ " index=" ^ si index ^ " to " ^
               Flx_btype.st salias);
 *)
             salias
-          | _ -> failwith ("Flx_bind_type expected type alias in bound symbol table " ^ id);
+          | _ -> failwith ("Flx_bind_type expected structural type alias in bound symbol table " ^ id);
           end
         with Not_found ->
-          failwith ("Flx_bind_type. Bound type alias missing from bound symbol table " ^ id)
+          failwith ("Flx_bind_type. Bound structural type alias missing from bound symbol table " ^ id)
         end
 
 (*

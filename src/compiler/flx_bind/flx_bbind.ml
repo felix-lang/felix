@@ -843,7 +843,7 @@ print_endline ("TRYING TO BIND typedef " ^ sym.Flx_sym.id ^"<"^ si symbol_index 
 (*
 print_endline ("Adding typedef " ^ sym.Flx_sym.id ^"<"^ si symbol_index ^ "> = " ^ Flx_btype.st t ^ " to bsym_table");
 *)
-    add_bsym None (bbdcl_type_alias (bvs, t))
+    add_bsym None (bbdcl_nominal_type_alias (bvs, t))
    end
 
   | SYMDEF_instance_type t ->
@@ -866,109 +866,6 @@ print_endline ("Adding typedef " ^ sym.Flx_sym.id ^"<"^ si symbol_index ^ "> = "
   *)
   end
 
-let rec find_in_list counter t lst =
-   match lst with
-   | [] -> None
-   | (h,i) :: tail ->
-     if Flx_typeeq.type_eq (Flx_btype.st) counter h t then Some i else
-     find_in_list counter t tail
-
-let rec expand bsym_table1 bsym_table2 counter sr t =
-  let rec aux trail level t =
-(*
-    print_endline ("Aux: " ^ string_of_int level ^ " t=" ^ Flx_btype.st t);
-*)
-    match find_in_list counter t trail with
-    | Some i -> 
-(*
-      print_endline ("Fixpoint found at depth " ^ string_of_int level ^ " up to level " ^ string_of_int i ^
-        "diff is " ^ string_of_int (i - level)
-      );
-*)
-      btyp_fix (i - level) (btyp_type 0) (* CHECK!! *)
-    | None ->
-      match t with
-      | BTYP_inst (k,ts) ->
-        begin try 
-          let bsym = Flx_bsym_table.find bsym_table1 k in
-          let bbdcl = Flx_bsym.bbdcl bsym in
-          begin match bbdcl with
-          | BBDCL_type_alias (bvs, alias) ->
-(*
-print_endline ("Found typedef " ^ Flx_bsym.id bsym ^ "<"^string_of_int k^"> alias=" ^ Flx_btype.st alias);
-print_endline ("bvs/tvs= " ^ catmap ", " (fun ((s,i), t) -> s^"<" ^ string_of_int i ^ "> <-- " ^ Flx_btype.st t) (List.combine bvs ts));
-*)
-            let salias = Flx_btype_subst.tsubst sr bvs ts alias in
-(*
-print_endline ("typedef " ^ Flx_bsym.id bsym ^ " after substitution =" ^ Flx_btype.st alias);
-*)
-            aux ((t,level)::trail) level salias (* NO level increment *)
-          | _ -> 
-(*
-print_endline ("Found non-typedef" ^ Flx_bsym.id bsym ^ "<" ^ string_of_int k ^ ">");
-            let ts = List.map (aux trail level) ts in
-            btyp_inst (k,ts) 
-*)
-Flx_btype.map ~f_btype:(aux trail (level+1)) t 
-
-          end
-        with Not_found -> 
-(*
-print_endline ("Found unknown <" ^ string_of_int k ^ "> trying second table");
-*)
-          begin try
-            let bsym = Flx_bsym_table.find bsym_table2 k in
-            let bbdcl = Flx_bsym.bbdcl bsym in
-            begin match bbdcl with
-            | BBDCL_type_alias (bvs, alias) ->
-  (*
-  print_endline ("Found typedef " ^ Flx_bsym.id bsym ^ "<"^string_of_int k^"> alias=" ^ Flx_btype.st alias);
-  print_endline ("bvs/tvs= " ^ catmap ", " (fun ((s,i), t) -> s^"<" ^ string_of_int i ^ "> <-- " ^ Flx_btype.st t) (List.combine bvs ts));
-  *)
-              let salias = Flx_btype_subst.tsubst sr bvs ts alias in
-  (*
-  print_endline ("typedef " ^ Flx_bsym.id bsym ^ " after substitution =" ^ Flx_btype.st alias);
-  *)
-              aux ((t,level)::trail) level salias (* NO level increment *)
-            | _ -> 
-  (*
-  print_endline ("Found non-typedef" ^ Flx_bsym.id bsym ^ "<" ^ string_of_int k ^ ">");
-              let ts = List.map (aux trail level) ts in
-              btyp_inst (k,ts) 
-  *)
-  Flx_btype.map ~f_btype:(aux (trail) (level+1)) t 
-
-            end
-            with Not_found -> 
-
-Flx_btype.map ~f_btype:(aux (trail) (level+1)) t
-        
-(*
-print_endline ("Found unknown <" ^ string_of_int k ^ ">");
-print_endline ("raw ts = " ^ catmap "," Flx_btype.st ts); 
-            let ts = List.map (aux ((t, level+1)::trail) (level+1)) ts in
-print_endline ("processed ts = " ^ catmap "," Flx_btype.st ts); 
-            btyp_inst (k,ts) 
-*)
-        end
-      end
-
-     | _ -> Flx_btype.map ~f_btype:(aux (trail) (level+1)) t
-  in
-(*
-  print_endline ("Top level expansion of " ^ Flx_btype.st t);
-*)
-  let r = aux [] 0 t in
-  if not (Flx_btype.complete_type r) then
-    failwith ("Flx_bbind.expand produced incomplete type! " ^ Flx_btype.st r)
-  else begin
-(*
-    print_endline ("Expanded to " ^ Flx_btype.st r);
-*)
-    r
-  end
-      
-
 let bbind (state:Flx_bbind_state.bbind_state_t) start_counter ref_counter bsym_table =
 (*
 print_endline ("Flx_bbind.bbind *********************** ");
@@ -987,7 +884,10 @@ print_endline ("\n====================\nSetting type aliases to nominal\n=======
   let saved_env_cache = Hashtbl.copy state.lookup_state.Flx_lookup_state.env_cache in
   let saved_visited = Hashtbl.copy state.visited in
 
+(*
   let bsym_table_dummy = Flx_bsym_table.create_fresh () in 
+*)
+  let bsym_table_dummy = bsym_table in
   set_nominal_typedefs state;
   let counter = ref start_counter in
   while !counter < !ref_counter do
@@ -1032,12 +932,13 @@ end
     incr counter
   done
   ;
+
 (*
   print_endline ("\n=====================\n TYPEDEFS before expansion\n=====================\n");
   Flx_bsym_table.iter (fun bid parent bsym ->
     let bbdcl = Flx_bsym.bbdcl bsym in
     match bbdcl with
-    | BBDCL_type_alias _ -> print_endline ("typedef " ^ string_of_int bid ^ " -> " ^
+    | BBDCL_nominal_type_alias _ -> print_endline ("typedef " ^ string_of_int bid ^ " -> " ^
       Flx_print.string_of_bbdcl bsym_table_dummy bbdcl bid)
     | _ -> ()
   ) bsym_table_dummy;  
@@ -1048,24 +949,26 @@ end
     let bbdcl = Flx_bsym.bbdcl bsym in
     let sr = Flx_bsym.sr bsym in
     match bbdcl with
-    | BBDCL_type_alias (bvs,t) -> 
+    | BBDCL_nominal_type_alias (bvs,t) -> 
       
-      let r = expand bsym_table_dummy bsym_table state.counter sr t in
-      let b = bbdcl_type_alias (bvs, r) in 
+      let r = Flx_expand_typedef.expand bsym_table state.counter sr t in
+      let b = bbdcl_structural_type_alias (bvs, r) in 
       Flx_bsym_table.update_bbdcl bsym_table_dummy bid b
  
     | _ -> ()
   ) bsym_table_dummy;
+
 (*
   print_endline ("\n=====================\n TYPEDEFS after expansion\n=====================\n");
   Flx_bsym_table.iter (fun bid parent bsym ->
     let bbdcl = Flx_bsym.bbdcl bsym in
     match bbdcl with
-    | BBDCL_type_alias _ -> print_endline ("typedef " ^ string_of_int bid ^ " -> " ^
+    | BBDCL_structural_type_alias _ -> print_endline ("typedef " ^ string_of_int bid ^ " -> " ^
       Flx_print.string_of_bbdcl bsym_table_dummy bbdcl bid)
     | _ -> ()
   ) bsym_table_dummy;  
 *)
+
 (*
   print_endline ("\n=====================\n VAR CACHE (function codomains) \n=====================\n");
   Hashtbl.iter (fun i t ->
@@ -1090,22 +993,25 @@ end
   state.visited <-saved_visited;
   state.lookup_state.Flx_lookup_state.env_cache <- saved_env_cache;
 
+(*
   (* copy the typedefs into the main symbol table *)
    Flx_bsym_table.iter (fun bid parent bsym ->
     let bbdcl = Flx_bsym.bbdcl bsym in
     match bbdcl with
-    | BBDCL_type_alias _ -> 
+    | BBDCL_structural_type_alias _ -> 
       Flx_bsym_table.add bsym_table bid parent bsym;
       Hashtbl.add state.visited bid ()
     | _ -> 
-(*
       print_endline ("Copy typedefs: Not copying " ^ string_of_int bid);
-*)
+      assert false;
       ()
   ) bsym_table_dummy;  
+*)
+
 (*
   print_endline ("\n===================\nSetting type aliases to structura\n=======================\n");
 *)
+
   (* PASS 1, TYPE ONLY *)
   set_structural_typedefs state;
   let counter = ref start_counter in
