@@ -224,6 +224,7 @@ print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table
 (*
 print_endline ("Bind type index, trying to bind " ^id ^ "<" ^string_of_int index ^ "> = " ^ string_of_typecode t);
 *)
+(*
       if get_structural_typedefs state then begin
 (*
         if debug then
@@ -267,6 +268,32 @@ print_endline ("Bind type index, trying to bind " ^id ^ "<" ^string_of_int index
         print_endline ("Bind type index: nominalising type alias " ^ id ^ " index=" ^ si index ^ " to " ^ Flx_btype.st t);
 *)
         t
+      end
+*)
+
+        begin try
+          let bsym = Flx_bsym_table.find bsym_table index in
+          let bbdcl = Flx_bsym.bbdcl bsym in
+          begin match bbdcl with
+          | BBDCL_structural_type_alias (bvs, alias) ->
+            let salias = Flx_btype_subst.tsubst sr bvs ts alias in
+(*
+            print_endline ("Bind type index: Unravelling type alias " ^ id ^ " index=" ^ si index ^ " to " ^
+              Flx_btype.st salias);
+*)
+            salias
+          | BBDCL_nominal_type_alias (bvs, alias) ->
+            let t = btyp_inst (index,ts) in
+            t
+
+          | _ -> failwith ("Flx_bind_type expected type alias in bound symbol table " ^ id);
+          end
+        with Not_found ->
+          let t = btyp_inst (index,ts) in 
+(*
+        print_endline ("Bind type index: nominalising type alias " ^ id ^ " index=" ^ si index ^ " to " ^ Flx_btype.st t);
+*)
+          t
       end
 
     | SYMDEF_abs _ ->
