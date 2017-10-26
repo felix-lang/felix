@@ -50,6 +50,10 @@ and t = private
   | BTYP_type_set of t list
   | BTYP_type_set_union of t list
   | BTYP_type_set_intersection of t list
+  (* the int is the binding context *)
+  (* used during typedef binding process transiently *)
+  | BTYP_typeof of int * Flx_ast.expr_t
+
 type overload_result =
     bid_t * t * t * (bid_t * t) list * t list
 val trivorder : t -> int option
@@ -125,6 +129,7 @@ val btyp_type_match : t * (btpattern_t * t) list -> t
 val btyp_type_set : t list -> t
 val btyp_type_set_union : t list -> t
 val btyp_type_set_intersection : t list -> t
+val btyp_typeof: (int * Flx_ast.expr_t) -> t
 
 val bmt: Flx_ast.typecode_t -> t
 

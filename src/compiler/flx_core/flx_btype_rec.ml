@@ -26,6 +26,7 @@ let fix i t =
   let rec aux n t =
     let aux t = aux (n - 1) t in
     match t with
+    | BTYP_typeof _ -> assert false
     | BTYP_hole -> assert false
     | BTYP_tuple_cons _ -> assert false
     | BTYP_tuple_snoc _ -> assert false

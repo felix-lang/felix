@@ -59,6 +59,7 @@ let fold (bsym_table: Flx_bsym_table.t) counter t =
     | BTYP_type_apply (a,b) -> ax a; ax b
     | BTYP_type_map(a,b) -> ax a; ax b
 
+    | BTYP_typeof _
     | BTYP_type_set_intersection _
     | BTYP_type_set_union _
     | BTYP_type_set _

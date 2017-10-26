@@ -113,6 +113,7 @@ print_endline ("Register type r " ^ sbt bsym_table t);
   print_endline (sp ^ "Unfolded type " ^ sbt sym_table t');
   *)
   match t' with
+  | BTYP_typeof _
   | BTYP_hole -> assert false
   | BTYP_rev _ -> assert false (* should have been eliminated *)
   | BTYP_label -> ()

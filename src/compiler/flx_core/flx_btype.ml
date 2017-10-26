@@ -77,6 +77,10 @@ and t =
   | BTYP_type_set_union of t list (** open union *)
   | BTYP_type_set_intersection of t list (** open union *)
 
+  (* the int is the binding context *)
+  (* used during typedef binding process transiently *)
+  | BTYP_typeof of int * Flx_ast.expr_t
+
 type overload_result =
  bid_t *  (* index of function *)
  t * (* type of function signature *)
@@ -112,6 +116,8 @@ and str_of_btype typ =
   let s t = str_of_btype t in
   let ss ts = String.concat "," (List.map str_of_btype ts) in
   match typ with
+  | BTYP_typeof (i,t) -> "BTYP_typeof(" ^string_of_int i ^ " unrepresentable)"
+
   | BTYP_hole -> "BTYP_hole"
   | BTYP_none -> "BTYP_none"
   | BTYP_sum ts -> "BTYP_sum(" ^ ss ts ^")"
@@ -233,6 +239,9 @@ let complete_type t =
   in try aux 0 t; true with | Free_fixpoint _ -> false
 
 (* -------------------------------------------------------------------------- *)
+
+let btyp_typeof (i,e) = BTYP_typeof (i,e)
+
 let btyp_hole = BTYP_hole
 
 let btyp_label () = BTYP_label
@@ -568,6 +577,8 @@ let flat_iter
   btype
 =
   match btype with
+  | BTYP_typeof (i, t) -> f_bid i
+
   | BTYP_hole -> ()
   | BTYP_label -> ()
   | BTYP_none -> ()
@@ -649,6 +660,8 @@ let rec iter
 (** Recursively iterate over each bound type and transform it with the
  * function. *)
 let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
+  | BTYP_typeof (i,t) -> btyp_typeof (f_bid i, t)
+
   | BTYP_hole as x -> x
   | BTYP_label as x -> x
   | BTYP_none as x -> x

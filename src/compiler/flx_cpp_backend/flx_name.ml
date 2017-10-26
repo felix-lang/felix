@@ -227,6 +227,7 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   let t' = unfold "flx_name: cpp_type_classname" t in
   try match t' with
 
+  | BTYP_typeof _ -> assert false
   | BTYP_hole -> assert false
   | BTYP_uniq _ -> assert false
   | BTYP_rref _ -> assert false

@@ -273,6 +273,7 @@ print_endline "Type list index returned None";
   let br t' = beta_reduce' calltag counter bsym_table sr (t::termlist) t' in
   let st t = sbt bsym_table t in
   match t with
+  | BTYP_typeof _ -> t
   | BTYP_hole -> assert false
   | BTYP_none -> assert false
   | BTYP_fix _ -> (* print_endline "Returning fixpoint"; *)  t

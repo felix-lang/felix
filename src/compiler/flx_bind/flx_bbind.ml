@@ -866,6 +866,20 @@ print_endline ("Adding typedef " ^ sym.Flx_sym.id ^"<"^ si symbol_index ^ "> = "
   *)
   end
 
+let rec fix_typeofs state bsym_table t = 
+  match t with
+  | BTYP_typeof (symbol_index,expr) ->
+    let env = Flx_lookup.build_env
+      state.lookup_state bsym_table (Some symbol_index)
+    in
+    let be = Flx_lookup.bind_expression
+      state.lookup_state bsym_table env expr
+    in
+    let typ = snd be in
+    typ
+  | _ -> Flx_btype.map ~f_btype:(fix_typeofs state bsym_table) t
+
+
 let bbind (state:Flx_bbind_state.bbind_state_t) start_counter ref_counter bsym_table =
 (*
 print_endline ("Flx_bbind.bbind *********************** ");
@@ -944,7 +958,6 @@ end
   ) bsym_table_dummy;  
   print_endline ("\n==========================================\n");
 *)
-
   Flx_bsym_table.iter (fun bid parent bsym ->
     let bbdcl = Flx_bsym.bbdcl bsym in
     let sr = Flx_bsym.sr bsym in
@@ -1014,6 +1027,25 @@ end
 
   (* PASS 1, TYPE ONLY *)
   set_structural_typedefs state;
+
+(*
+print_endline ("Fixing typeofs");
+*)
+  Flx_bsym_table.iter (fun bid parent bsym ->
+    let bbdcl = Flx_bsym.bbdcl bsym in
+    let sr = Flx_bsym.sr bsym in
+    match bbdcl with
+    | BBDCL_structural_type_alias (bvs,t) -> 
+      let r = fix_typeofs state bsym_table t in 
+      let b = bbdcl_structural_type_alias (bvs, r) in 
+      Flx_bsym_table.update_bbdcl bsym_table bid b
+ 
+    | _ -> ()
+  ) bsym_table_dummy;
+(*
+print_endline ("Done fixing typeofs");
+*)
+
   let counter = ref start_counter in
   while !counter < !ref_counter do
     let i = !counter in

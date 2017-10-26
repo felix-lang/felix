@@ -70,6 +70,7 @@ let rec get_offsets' syms bsym_table typ : string list =
   let tname = cpp_typename syms bsym_table typ in
   let t' = unfold "flx_cal_type_offsets: get_offsets" typ in
   match t' with
+  | BTYP_typeof _ -> assert false
   | BTYP_hole -> assert false
   | BTYP_rev _ -> assert false
   | BTYP_uniq _ -> assert false

@@ -343,8 +343,9 @@ print_endline ("\n+++++++++Bound recursive type is " ^ Flx_btype.st t^"\n\n");
     t
 
   | TYP_typeof e ->
-if debug then
-print_endline ("Flx_bind_type.TYP_typeof(" ^ string_of_expr e ^ ")");
+    if get_structural_typedefs state then begin
+      if debug then
+      print_endline ("Flx_bind_type.TYP_typeof(" ^ string_of_expr e ^ ")");
       if List.mem_assq e rs.expr_fixlist
       then begin
         (* Typeof is recursive *)
@@ -353,13 +354,20 @@ print_endline ("Flx_bind_type.TYP_typeof(" ^ string_of_expr e ^ ")");
 (* HACK metatype guess *)
         btyp_fix fixdepth (btyp_type 0)
       end else begin
-if debug then
-print_endline ("Flx_bind_type.TYP_typeof.Start tentative binding of typeof (" ^ string_of_expr e ^ ")");
+        if debug then
+        print_endline ("Flx_bind_type.TYP_typeof.Start tentative binding of typeof (" ^ string_of_expr e ^ ")");
         let t = snd (bind_expression' state bsym_table env rs e []) in
-if debug then
-print_endline ("Flx_bind_type.TYP_typeof.end tentative binding of typeof (" ^string_of_expr e^ ")");
+        if debug then
+        print_endline ("Flx_bind_type.TYP_typeof.end tentative binding of typeof (" ^string_of_expr e^ ")");
         t
       end
+    end else begin
+      match env with
+      | (parent,_,_,_,_)::_ ->
+        btyp_typeof (parent, e)
+      | [] -> 
+        btyp_typeof (0,e)
+    end
 
   | TYP_array (t1,t2)->
       let t2 =
