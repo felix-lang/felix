@@ -23,5 +23,9 @@ To run it you just say:
    
    flx hello.flx
 
-It's pretty simple.
+It's pretty simple. Felix runs programs like Python does, you run the 
+source code directly. Behind the scenes, Felix translates the program
+into C++, compiles the program, and runs it. All the generated files
+are cached in the .felix/cache subdirectory of your $HOME directory.
+
 
