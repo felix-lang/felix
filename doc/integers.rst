@@ -142,7 +142,7 @@ Operation         Operator
 ===========       =============
 Addition          infix +
 Subtraction       infix -
-Multiplication    infix *
+Multiplication    infix \*
 Division          infix /
 Remainder         infix %
 Left Shift        infix <<
@@ -177,9 +177,9 @@ They are not available for signed integers.
 Operation          Operator
 ================   ===========
 ones complement    ~ 
-bitand             infix \&
-bitor              infix \|
-bitxor             infix \^
+bitand             infix \\&
+bitor              infix \\|
+bitxor             infix \\^
 ================   ===========
 
 
