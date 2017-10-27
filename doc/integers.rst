@@ -137,17 +137,17 @@ All Integers
 
 All integer types support the following operations.
 
-===========       =============
+===============   =============
 Operation         Operator
-===========       =============
+===============   =============
 Addition          infix +
 Subtraction       infix -
 Multiplication    infix \*
 Division          infix /
-Remainder         infix %
-Left Shift        infix <<
-Right Shift       infix >>
-===========       =============
+Remainder         infix \%
+Left Shift        infix \<\<
+Right Shift       infix \>\>
+===============   =============
 
 Left and right shifts are defined as multiplication by positive
 or negative powers of 2, respectively.
@@ -155,13 +155,13 @@ or negative powers of 2, respectively.
 Signed Integers Only
 ~~~~~~~~~~~~~~~~~~~~
 
-===========    ==================
-Operation      Operator
-===========    ==================
-Negation       prefix -, neg
-Sign           sgn
-Absolute Value abs
-===========    ==================
+==============  ==================
+Operation       Operator
+==============  ==================
+Negation        prefix -, neg
+Sign            sgn
+Absolute Value  abs
+==============  ==================
 
 The `sgn` operator returns -1 for negative, 0 for zero, and 1
 for positive.
@@ -181,14 +181,5 @@ bitand             infix \\&
 bitor              infix \\|
 bitxor             infix \\^
 ================   ===========
-
-
-Test mathjax :math:`\sqrt{x^2 + y^2}`
-
-In Felix code ..
-
-.. code-block:: felix
-
-    fun f(x) = :math:`\sqrt{x^2 + y^2}`
 
 
