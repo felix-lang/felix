@@ -19,7 +19,7 @@ The record value `x` we specified above has the record type:
     (a:int, b:string, c:double)
 
 Fields
-------
+~~~~~~
 
 The fields of a record can be accessed by name:
 
