@@ -11,6 +11,7 @@ Contents:
    :maxdepth: 2
    
    manual
+   records
 
 Indices and tables
 ==================
