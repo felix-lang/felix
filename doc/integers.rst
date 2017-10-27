@@ -184,3 +184,11 @@ bitxor             infix \\^
 
 
 Test mathjax :math:`\sqrt{x^2 + y^2}`
+
+In Felix code ..
+
+.. code-block:: felix
+
+    fun f(x) = :math:`\sqrt{x^2 + y^2}`
+
+
