@@ -1484,9 +1484,12 @@ syntax expressions {
 
   //$ Case tag literal.
   x[scase_literal_pri] := "case" sinteger =># "`(ast_case_tag ,_sr ,_2))";
+  x[scase_literal_pri] := "`" sinteger =># "`(ast_case_tag ,_sr ,_2))";
 
   //$ Case value.
   x[scase_literal_pri] := "case" sinteger "of" x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
+  x[scase_literal_pri] := "`" sinteger "of" x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
+  x[scase_literal_pri] := "`" sinteger ":" x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
 
   //$ Tuple projection function.
   x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri] =># "`(ast_projection ,_2 ,_4)";
