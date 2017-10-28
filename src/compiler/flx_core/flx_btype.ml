@@ -389,7 +389,10 @@ on types, had to be defined in a subsequent file, and now cannot
 be called. Ocaml compilation model sucks
 *)
 let vhash ((s,t) as x) = 
+(*
   let h = Hashtbl.hash (s,t) in
+*)
+  let h = Hashtbl.hash s in
 (*
   print_endline ("Hashing `"^s ^ " of " ^ st t ^ " to " ^ string_of_int h);
 *)
