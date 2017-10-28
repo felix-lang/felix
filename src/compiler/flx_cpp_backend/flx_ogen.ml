@@ -520,9 +520,15 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
   syms.registry
   ;
   let need_int = ref false in
+
+  (* somehow, we can get duplicates, probably because the types are not uniquely represented *)
+  let generated = Hashtbl.create 97 in
   Hashtbl.iter
   (fun btyp index -> 
-     gen_type_shape module_name s syms bsym_table need_int last_ptr_map primitive_shapes btyp index 
+     if not (Hashtbl.mem generated index) then begin
+       Hashtbl.add generated index ();
+       gen_type_shape module_name s syms bsym_table need_int last_ptr_map primitive_shapes btyp index 
+     end
   )
   allocable_types
   ;
