@@ -152,6 +152,7 @@ let bexpr_bool b = BEXPR_case ((if b then 1 else 0), Flx_btype.btyp_bool ()),Flx
 let bexpr_true = bexpr_bool true
 let bexpr_false = bexpr_bool false
 
+
 let bexpr_label i = BEXPR_label (i), Flx_btype.btyp_label ()
 
 
@@ -302,6 +303,32 @@ let bexpr_tuple t es =
   match es with 
   | [] -> bexpr_unit 
   | _ -> BEXPR_tuple es, complete_check "bexpr_tuple(client)" t
+
+let bexpr_closure t (bid, ts) = 
+  let _ = List.map (complete_check "bexpr_closure(index)") ts in 
+(*
+  print_endline ("Creating closure term " ^ string_of_int bid);
+*)
+  BEXPR_closure (bid, complete_check_list ts), complete_check "bexpr_closure" t
+
+
+(* we can't use an apply direct here because monommorphisation won't allow it *)
+let bexpr_lor a b = 
+  let bool_t = Flx_btype.btyp_bool () in
+  let arg_t = Flx_btype.btyp_tuple [bool_t; bool_t] in
+  let fn_t = Flx_btype.btyp_function (arg_t, bool_t) in
+  let arg = bexpr_tuple arg_t [a; b] in
+  let fn = bexpr_closure fn_t (Flx_concordance.flx_lor,[]) in
+  bexpr_apply bool_t (fn,arg)
+
+let bexpr_land a b = 
+  let bool_t = Flx_btype.btyp_bool () in
+  let arg_t = Flx_btype.btyp_tuple [bool_t; bool_t] in
+  let fn_t = Flx_btype.btyp_function (arg_t, bool_t) in
+  let arg = bexpr_tuple arg_t [a; b] in
+  let fn = bexpr_closure fn_t (Flx_concordance.flx_land,[]) in
+  bexpr_apply bool_t (fn,arg)
+
 
 let bexpr_coerce (e, t) = 
   match Flx_btype.trivorder t with
@@ -619,14 +646,6 @@ let bexpr_get_named c name (e,d) =
   match Flx_btype.trivorder c with
   | Some k -> bexpr_unitptr k
   | _ -> bexpr_apply c ( bexpr_rprj name d c, (e,d) )
-
-
-let bexpr_closure t (bid, ts) = 
-  let _ = List.map (complete_check "bexpr_closure(index)") ts in 
-(*
-  print_endline ("Creating closure term " ^ string_of_int bid);
-*)
-  BEXPR_closure (bid, complete_check_list ts), complete_check "bexpr_closure" t
 
 let bexpr_const_case (i, t) = BEXPR_case (i, t), complete_check "bexpr_const_case" t
 

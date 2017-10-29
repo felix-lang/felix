@@ -353,6 +353,11 @@ and xpattern_t x =
   | Lst [Id "pat_coercion"; sr; p; t] ->
       PAT_coercion (xsr sr, xp p, ti (xsr sr) t)
 
+  (* match all the cases of a subset of polymorphic variant cases *)
+  | Lst[Id "pat_subtype"; sr; typ; id]  ->
+    PAT_subtype (xsr sr, ti (xsr sr) typ, xid id)
+
+
   | Lst [Id "pat_name"; sr; id] -> PAT_name (xsr sr, xid id)
   | Lst [Id "pat_tuple"; sr; Lst ps] -> PAT_tuple (xsr sr, map xp ps)
   | Lst [Id "pat_tuple_cons"; sr; a; b] -> PAT_tuple_cons (xsr sr, xp a, xp b)

@@ -126,6 +126,12 @@ and axiom_method_t = Predicate of expr_t | Equation of expr_t * expr_t
  * Raw expression terms. *)
 and variant_item_t = [`Ctor of Flx_id.t * typecode_t | `Base of typecode_t]
 and expr_t =
+
+  (* returns true if the expression is one of the polymorphic variant
+     cases in the specified type
+  *)
+  | EXPR_match_variant_subtype of Flx_srcref.t * (expr_t * typecode_t)
+
   | EXPR_pclt_type of Flx_srcref.t * typecode_t * typecode_t
   | EXPR_label of Flx_srcref.t * string
   | EXPR_vsprintf of Flx_srcref.t * string
@@ -151,6 +157,7 @@ and expr_t =
   | EXPR_variant_type of Flx_srcref.t * variant_item_t list
   | EXPR_arrayof of Flx_srcref.t * expr_t list
   | EXPR_coercion of Flx_srcref.t * (expr_t * typecode_t)
+  | EXPR_variant_subtype_match_coercion of Flx_srcref.t * (expr_t * typecode_t)
   | EXPR_suffix of Flx_srcref.t * (qualified_name_t * typecode_t)
   | EXPR_patvar of Flx_srcref.t * Flx_id.t
   | EXPR_patany of Flx_srcref.t
@@ -189,7 +196,7 @@ and expr_t =
 
   | EXPR_match_variant of Flx_srcref.t * (string * expr_t)
 
-  (* this boolean expression checks its argument is the nominate
+  (* this boolean expression checks its argument is the nominated
      sum variant
   *)
   | EXPR_match_case of Flx_srcref.t * (int * expr_t)
@@ -247,6 +254,7 @@ and pattern_t =
 
   (* other *)
   | PAT_coercion of Flx_srcref.t * pattern_t * typecode_t
+  | PAT_subtype of Flx_srcref.t * typecode_t * Flx_id.t
 
   | PAT_name of Flx_srcref.t * Flx_id.t
   | PAT_tuple of Flx_srcref.t * pattern_t list
@@ -765,6 +773,7 @@ let src_of_typecode = function
   -> Flx_srcref.dummy_sr
 
 let src_of_expr (e : expr_t) = match e with
+  | EXPR_match_variant_subtype (s,(_,_))
   | EXPR_pclt_type (s,_,_)
   | EXPR_label (s,_)
   | EXPR_void s
@@ -828,6 +837,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_get_n (s,_)
   | EXPR_get_named_variable (s,_)
   | EXPR_coercion (s,_)
+  | EXPR_variant_subtype_match_coercion (s,_)
   | EXPR_as (s,_)
   | EXPR_as_var (s,_)
   | EXPR_match (s, _)
@@ -939,6 +949,7 @@ let src_of_stmt (e : statement_t) = match e with
   -> s
 
 let src_of_pat (e : pattern_t) = match e with
+  | PAT_subtype (s,_,_)
   | PAT_coercion (s,_,_)
   | PAT_none s
   | PAT_literal (s,_)

@@ -92,6 +92,13 @@ class PervasiveInts {
   private proc decr:  &int = "--*$1;" requires index PROC_decr;
 }
 
+// Shouldn't really be here!
+class PervasiveLogic {
+  private fun land: bool * bool -> bool = "$1&&$2" requires index FUN_land;
+  private fun lor: bool * bool -> bool = "$1||$2" requires index FUN_lor;
+  private fun lnot: bool * bool -> bool = "!$1" requires index FUN_lnot;
+}
+
 @h1 Exact Integer types
 Here are the usual exact integer types.
 Note that Felix mandates the existence of the @{stdint.h}

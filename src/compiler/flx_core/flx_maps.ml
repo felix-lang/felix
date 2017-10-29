@@ -131,6 +131,7 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | EXPR_variant (sr,(s,e)) -> EXPR_variant (sr, (s,fe e))
   | EXPR_arrayof (sr, es) -> EXPR_arrayof (sr, List.map fe es)
   | EXPR_coercion (sr, (x,t)) -> EXPR_coercion (sr,(fe x, ft t))
+  | EXPR_variant_subtype_match_coercion (sr, (x,t)) -> EXPR_variant_subtype_match_coercion (sr,(fe x, ft t))
   | EXPR_suffix (sr,(qn,t)) -> EXPR_suffix (sr,(qn, ft t))
   | EXPR_uniq (sr,e) -> EXPR_uniq (sr, fe e)
 
@@ -179,6 +180,7 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   (* | EXPR_lambda of Flx_srcref.t * (vs_list_t * params_t list * typecode_t * statement_t list) *)
   | EXPR_lambda _ -> e
 
+  | EXPR_match_variant_subtype (sr,(e,t)) -> EXPR_match_variant_subtype (sr,(fe e, ft t))
   | EXPR_match_ctor (sr,(qn,x)) -> EXPR_match_ctor (sr,(qn,fe x))
   | EXPR_match_ho_ctor (sr,(qn,es)) -> EXPR_match_ho_ctor (sr,(qn,List.map fe es))
   | EXPR_match_variant (sr,(s,x)) -> EXPR_match_variant (sr,(s,fe x))
@@ -263,6 +265,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_variant_arg (_,(_,x))
   | EXPR_case_arg (_,(_,x))
   | EXPR_case_index (_,x)
+  | EXPR_match_variant_subtype (_,(x,_))
   | EXPR_match_ctor (_,(_,x))
   | EXPR_match_variant (_,(_,x))
   | EXPR_match_case (_,(_,x))
@@ -275,6 +278,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_new (_,x)
   | EXPR_lookup (_,(x,_,_))
   | EXPR_coercion (_, (x,_))
+  | EXPR_variant_subtype_match_coercion (_, (x,_))
   | EXPR_not (_,x) 
   | EXPR_get_tuple_tail (_,x)
   | EXPR_get_tuple_head (_,x)

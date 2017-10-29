@@ -3793,6 +3793,10 @@ syntax patterns {
     "`(pat_coercion ,_sr ,_1 ,_3)";
   private scoercive_pattern := sapplicative_pattern =># "_1";
 
+  private scoercive_pattern := stypeexpr ":>>" sname =>#
+    "`(pat_subtype ,_sr ,_1 ,_3)";
+
+
   //$ Match a non-constant sum type constructor
   //$ that is, one with an argument.
   //$ The LHS name must match the constructor used to make the value.
@@ -3820,7 +3824,6 @@ syntax patterns {
     "`(pat_nonconst_variant ,_sr ,_2 ,_3)";
   private sapplicative_pattern := "`" sname sargument_pattern =>#
     "`(pat_nonconst_variant ,_sr ,_2 ,_3)";
-
 
   private sapplicative_pattern := satomic_pattern =># "_1";
   private sargument_pattern := satomic_pattern =># "_1";

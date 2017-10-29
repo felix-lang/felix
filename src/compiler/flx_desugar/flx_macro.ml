@@ -156,6 +156,8 @@ let fix_pattern counter pat =
   | PAT_tuple_cons (sr,a,b) -> PAT_tuple_cons (sr,aux a,aux b)
   | PAT_tuple_snoc (sr,a,b) -> PAT_tuple_snoc (sr,aux a,aux b)
   | PAT_nonconst_ctor (sr,qn,p) -> PAT_nonconst_ctor (sr,qn,aux p)
+  | PAT_subtype (sr,typ,id) -> PAT_subtype (sr, typ, id)
+
   | PAT_ho_ctor (sr,qn,es,p) -> PAT_ho_ctor (sr,qn,es,aux p)
   | PAT_nonconst_variant (sr,s,p) -> PAT_nonconst_variant (sr,s,aux p)
   | PAT_as (sr,p,i) -> PAT_as (sr,aux p,i)
@@ -244,9 +246,11 @@ let expand_pattern_branches pes =
     | PAT_const_ctor _ 
     | PAT_const_variant _ 
     | PAT_expr _
+    | PAT_subtype _
       -> [p]
 
     | PAT_coercion (sr, p, t) -> map (fun p-> PAT_coercion (sr, p, t)) (aux p)
+
 
     | PAT_tuple_cons (sr,a,b) ->  
       map (fun (a,b) -> PAT_tuple_cons (sr,a,b)) (cart2 (aux a) (aux b))
@@ -654,6 +658,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 *)
   | EXPR_arrayof (sr, es) -> EXPR_arrayof (sr, List.map me es)
   | EXPR_coercion (sr, (e1, t)) -> EXPR_coercion (sr, (me e1,mt sr t))
+  | EXPR_variant_subtype_match_coercion (sr, (e1, t)) -> EXPR_variant_subtype_match_coercion (sr, (me e1,mt sr t))
   | EXPR_suffix (sr, (qn, t)) ->
     let qn =
       match qualified_name_of_expr (me (expr_of_qualified_name qn)) with
@@ -686,6 +691,9 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_unlikely (sr, e1) ->  EXPR_unlikely (sr, me e1)
   | EXPR_new (sr, e1) ->  EXPR_new (sr, me e1)
   | EXPR_match_ctor (sr, (qn, e1)) -> EXPR_match_ctor (sr,(qn,me e1))
+  | EXPR_match_variant_subtype (sr, (e, t)) -> 
+      EXPR_match_variant_subtype (sr, (me e, mt sr t))
+
   | EXPR_match_ho_ctor (sr, (qn, e1)) -> EXPR_match_ho_ctor (sr,(qn,map me e1))
   | EXPR_match_variant (sr, (s, e1)) -> EXPR_match_variant (sr,(s,me e1))
   | EXPR_match_case (sr, (i, e1)) ->  EXPR_match_case (sr,(i, me e1))

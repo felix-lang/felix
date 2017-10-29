@@ -69,6 +69,9 @@ val bexpr_unit : t
 val bexpr_bool : bool -> t
 val bexpr_true : t
 val bexpr_false : t
+val bexpr_land: t -> t -> t
+val bexpr_lor: t -> t -> t
+
 val bexpr_label : bid_t -> t
 val bexpr_tuple_tail : Flx_btype.t -> t -> t
 val bexpr_tuple_head : Flx_btype.t -> t -> t

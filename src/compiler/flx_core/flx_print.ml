@@ -141,9 +141,15 @@ and string_of_expr (e:expr_t) =
 
   | EXPR_letin (sr,(pat,e1, e2)) ->
     "let " ^ string_of_pattern pat ^ " = " ^ se e1 ^ " in " ^ se e2
+
   | EXPR_coercion (_,(e,t)) ->
     "(" ^ se e ^ ":" ^
     string_of_typecode t ^ ")"
+
+  | EXPR_variant_subtype_match_coercion (_,(e,t)) ->
+    "variant_subtype_match_coercion(" ^ se e ^ ":>>" ^
+    string_of_typecode t ^ ")"
+
 
   | EXPR_expr (_,s,t,e) ->
     "cexpr["^string_of_typecode t^"]" ^
@@ -302,6 +308,9 @@ and string_of_expr (e:expr_t) =
   | EXPR_match_ctor (_,(cn,e)) ->
     "match_ctor " ^ sqn cn ^ "(" ^
     se e ^ ")"
+
+  | EXPR_match_variant_subtype (_, (e,t)) ->
+    "match_variant_subtype(" ^ se e ^ ", " ^ string_of_typecode t ^ ")"
 
   | EXPR_match_ho_ctor (_,(cn,es)) ->
     "match_ctor " ^ sqn cn ^ "(" ^
@@ -930,6 +939,7 @@ and string_of_component level (name, typ) =
 and string_of_pattern p =
   let se e = string_of_expr e in
   match p with
+  | PAT_subtype (_,t,v) -> "(" ^ string_of_typecode t ^ ":>>" ^ v ^ ")"
   | PAT_coercion (_,p,t) -> "(" ^ string_of_pattern p ^ ":" ^ string_of_typecode t ^ ")"
   | PAT_none _ -> "<none>"
   | PAT_literal (sr,l) -> string_of_literal l

@@ -58,6 +58,10 @@ macro val FUN_isneg     = 201;
 macro val FUN_isnonneg  = 202;
 macro val PROC_decr     = 203;
 
+macro val FUN_land      = 210;
+macro val FUN_lor       = 211;
+macro val FUN_lnot      = 212;
+
 macro val TYPE_int8     = 300; 
 macro val TYPE_int16    = 301;
 macro val TYPE_int32    = 302;
@@ -107,5 +111,8 @@ let flx_zero_int = 200
 let flx_isneg_int =201
 let flx_isnonneg_int =202
 let flx_decr_int = 203
+let flx_land = 210
+let flx_lor = 211
+let flx_lnot = 212
 @
 

@@ -201,6 +201,7 @@ and check_match_union pats =
 and check_match_variant pats =
   let rec check pat =
     match pat with
+    | PAT_subtype _
     | PAT_any  _
     | PAT_setform_any  _
     | PAT_nonconst_variant _
@@ -252,6 +253,8 @@ and find_match_type pat =
   | PAT_const_ctor _ -> check_match_union
   | PAT_nonconst_ctor _ -> check_match_union
   | PAT_ho_ctor _ -> check_match_union
+
+  | PAT_subtype _
   | PAT_const_variant _ -> check_match_variant
   | PAT_nonconst_variant _ -> check_match_variant
   | PAT_record (_,_) -> check_match_record
@@ -283,6 +286,7 @@ let rec is_irrefutable pat =
   | PAT_const_ctor _ -> false
   | PAT_nonconst_ctor _ -> false
   | PAT_ho_ctor _ -> false
+  | PAT_subtype _ -> false
   | PAT_const_variant _ -> false
   | PAT_nonconst_variant _ -> false
   | PAT_record (_,rpats) 

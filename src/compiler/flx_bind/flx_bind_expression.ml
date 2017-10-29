@@ -1648,6 +1648,70 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
   | EXPR_match_variant(sr,(v,e)) ->
      bexpr_match_variant (v,be e)
 
+  (* Note this ONLY checks the tags, not the types! To be correct, 
+     the types have to work as well, the extractor must organise that
+  *)
+  | EXPR_match_variant_subtype (sr, (e,t)) ->
+(*
+print_endline ("EXPR_match_variant_subtype");
+*)
+    let t = bt sr t in
+    begin match unfold "Flx_lookup.match_variant_subtype(target)" t with
+    | BTYP_variant ls ->
+      let e = be e in
+      let arg_t = snd e in
+      begin match unfold "Flx_lookup.match_variant_subtype(src)" arg_t with
+      | BTYP_variant ts ->
+        let intersection = List.filter (fun (s,t) -> List.mem_assoc s ls) ts in
+        let matches = List.map (fun (s,_) -> bexpr_match_variant (s,e) ) intersection in
+        let match_expr = List.fold_left (fun acc term -> bexpr_lor acc term) bexpr_false matches in
+        match_expr
+      | _ -> clierr sr
+        ("Variant subtype matching requires polymorphic variant type as argument, got " ^ sbt bsym_table arg_t);
+      end
+    | _ -> clierr sr 
+      ("Variant subtype matching requires polymorphic variant type as pattern, got " ^ sbt bsym_table t);
+    end
+
+  | EXPR_variant_subtype_match_coercion (sr,(e,t)) ->
+(*
+print_endline ("EXPR_variant_subtype_match_coercion");
+*)
+    (* we need to do TWO coercions here! The first one is the unsafe
+       coercion that the pattern match checked was safe. This is a flat
+       coercion that removes cases from the argument.
+       The second coercion is applies to that and is a standard
+       conversion to a supertype, this can add cases, and also 
+       covariantly change the argument type
+    *)
+    let t = bt sr t in
+    begin match unfold "Flx_lookup.variant_subtype_match_coercion(target)" t with
+    | BTYP_variant ls ->
+      let e = be e in
+      let arg_t = snd e in
+      begin match unfold "Flx_lookup.variant_subtype_match_coercion(src)" arg_t with
+      | BTYP_variant ts ->
+        let intersection = List.filter (fun (s,t) -> List.mem_assoc s ls) ts in
+        let narrowed_src_type = Flx_btype.btyp_variant intersection in
+        (* this case is safe because the match checker ensure it *)
+        let narrowed_argument = bexpr_reinterpret_cast (e,narrowed_src_type) in
+
+        (* this coercion may not be safe, it should be a coercion to
+        a supertype. We don't bother checking that here because the coercion
+        expander should do it anyhow
+        *)
+        let final_value = bexpr_coerce  (narrowed_argument, t) in
+        final_value
+
+      | _ -> clierr sr
+        ("Variant subtype matching requires polymorphic variant type as argument, got " ^ sbt bsym_table arg_t);
+      end
+    | _ -> clierr sr 
+      ("Variant subtype matching requires polymorphic variant type as pattern, got " ^ sbt bsym_table t);
+    end
+
+
+
   | EXPR_match_ctor (sr,(qn,e)) ->
     begin match qn with
     | `AST_name (sr,name,ts) ->

@@ -18,6 +18,7 @@ type extract_t =
   | Proj_last of Flx_srcref.t                (* tuple_snoc last extractor  *)
   | Polyrec_tail of Flx_srcref.t * string list (* list of fields to exclude! *)
   | Expr of Flx_srcref.t * expr_t
+  | Subtype of Flx_srcref.t * typecode_t
 
 type extractor_t = extract_t list
 type psym_t = string * (Flx_srcref.t * extractor_t)
@@ -53,6 +54,11 @@ let gen_extractor
     | Proj_last (sr) -> EXPR_get_tuple_last (sr,(marg))
     | Polyrec_tail (sr,flds) -> EXPR_remove_fields (sr,marg,flds)
     | Expr (sr,e) -> e
+    | Subtype (sr,t) -> 
+(*
+      print_endline ("Generating variant subtype match coercion extractor");
+*)
+      EXPR_variant_subtype_match_coercion (sr, (marg,t))
   )
   extractor
   mv
@@ -199,6 +205,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
 
   | EXPR_lambda _ -> assert false
 
+  | EXPR_match_variant_subtype _
   | EXPR_match_case _
   | EXPR_match_variant _
   | EXPR_ctor_arg _
@@ -211,6 +218,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
     clierrx "[flx_desugar/flx_desugar_pat.ml:170: E342] " sr "[subst] not implemented in when part of pattern"
 
   | EXPR_coercion _ -> failwith "subst: coercion"
+  | EXPR_variant_subtype_match_coercion _ -> failwith "subst: variant_subtype_match_coercion"
 
   | EXPR_range_check (sr, mi, v, mx) -> EXPR_range_check (sr, subst mi, subst v, subst mx)
 
@@ -256,6 +264,13 @@ let rec get_pattern_vars
 : unit =
   match pat with
   | PAT_name (sr,id) -> vars :=  (id, (sr,extractor))::!vars
+
+  | PAT_subtype (sr,t,id) -> 
+(*
+    print_endline ("get pattern vars, PAT_SUBTYPE");
+*)
+    let extractor' = Subtype (sr,t) :: extractor in 
+    vars := (id, (sr,extractor'))::!vars
 
   | PAT_tuple (sr,pats) ->
     let n = ref 0 in
@@ -397,6 +412,12 @@ let rec gen_match_check pat (arg:expr_t) =
   | PAT_expr _ -> assert false
   | PAT_literal (sr,s) -> apl2 sr "eq" (mklit sr s) arg
   | PAT_none sr -> clierrx "[flx_desugar/flx_desugar_pat.ml:319: E343] " sr "Empty pattern not allowed"
+
+  | PAT_subtype (sr,t,_) ->
+(*
+print_endline ("Generating match variant subtype checker");
+*)
+    EXPR_match_variant_subtype (sr,(arg,t))
 
   (* ranges *)
   | PAT_range (sr,l1,l2) ->
