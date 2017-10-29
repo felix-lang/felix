@@ -3,15 +3,14 @@
 Felix documentation!
 ====================
 
-**THIS IS A WORK IN PROGRESS!**
-
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    
    manual
    integers
+   floats 
    tuples
    records
 
