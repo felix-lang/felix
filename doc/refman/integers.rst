@@ -35,7 +35,7 @@ ISO C Unsigned Integer Types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 All unsigned integer types provide a range of values
-from 0 to $256^n-1$ for some n. The size in bytes
+from 0 to :math:`256^n-1` for some n. The size in bytes
 is the same as the corresponding signed type.
 
 ==========  =================== ========

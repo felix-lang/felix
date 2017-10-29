@@ -13,6 +13,7 @@ Contents:
    floats 
    tuples
    records
+   pointers
 
 Indices and tables
 ==================

@@ -1,9 +1,12 @@
-Manual
-======
+Language Reference Manual
+=========================
 
-This is the Felix manual, which is aiming at being the authorative guide to using
-Fbuild in your projects. Note that this is still a work-in-progress!
-
+This is the Felix Language Reference manual, it is intended primarily
+to document the common language interface presented to the programmer.
+It is not complete or precise because the grammar and features
+the user would normally call a language are actually defined in
+user space, in the library.
+ 
 Basics: Hello 
 *************
 
