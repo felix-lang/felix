@@ -15,8 +15,11 @@ Contents:
    strings
    tuples
    records
+   structs
    pointers
    classes
+   unions
+   sums
 
 Indices and tables
 ==================
