@@ -16,6 +16,7 @@ Contents:
    tuples
    records
    pointers
+   classes
 
 Indices and tables
 ==================
