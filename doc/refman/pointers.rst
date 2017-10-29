@@ -64,7 +64,7 @@ same type:
 
 .. code-block:: felix
 
-  proc storeat[T] (p:>T, v:T) => _storeat(p,v);
+  proc storeat[T] (p:&>T, v:T) => _storeat(p,v);
 
 which can also be invoked by the syntax
 

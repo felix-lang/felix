@@ -33,7 +33,12 @@ open class Bool
     if x then #y else false
   ;
  
-  //$ Disjunction: logical and.
+  //$ Short cut and via closure
+  noinline fun orelse (x: bool, y:1->bool) : bool => 
+    if x then true else #y
+  ;
+
+   //$ Disjunction: logical and.
   fun land: bool * bool -> bool = "$1&&$2";      // x and y
 
   //$ Negated and.
@@ -78,6 +83,11 @@ open class CBool
   //$ Short cut and via closure
   noinline fun andthen (x: cbool, y:1->cbool) : cbool => 
     if x then #y else cfalse
+  ;
+
+  //$ Short cut and via closure
+  noinline fun orelse (x: cbool, y:1->cbool) : cbool => 
+    if x then ctrue else #y
   ;
  
   //$ Disjunction: logical and.

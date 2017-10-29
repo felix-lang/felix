@@ -9,8 +9,10 @@ Contents:
    :maxdepth: 1
    
    manual
+   logic
    integers
    floats 
+   strings
    tuples
    records
    pointers
