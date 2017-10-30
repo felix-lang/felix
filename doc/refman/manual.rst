@@ -34,4 +34,4 @@ are cached in the .felix/cache subdirectory of your $HOME directory.
 .. parsed-literal::
 
    println$ \(\sqrt{\alpha}^3\);
-   fun hmm;
+   fun *hmm*;
