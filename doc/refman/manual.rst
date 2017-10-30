@@ -31,4 +31,7 @@ source code directly. Behind the scenes, Felix translates the program
 into C++, compiles the program, and runs it. All the generated files
 are cached in the .felix/cache subdirectory of your $HOME directory.
 
+.. parsed-literal::
 
+   println$ \(\sqrt{\alpha}^3\);
+   fun hmm;
