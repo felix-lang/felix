@@ -20,6 +20,7 @@ Contents:
    classes
    unions
    sums
+   functions
 
 Indices and tables
 ==================

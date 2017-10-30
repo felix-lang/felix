@@ -11,18 +11,18 @@ Operator   Function Semantics
 ========== ======== =========
 or         lor      disjunction
 orelse     orelse   lazy disjunction
-           nor      negated disjunction
+\          nor      negated disjunction
 and        land     conjunction
 andthen    andthen  lazy conjunction
-           nand     negated conjunction
+\          nand     negated conjunction
 not        not      negation
 implies    implies  implication
 ========== ======== =========
 
 The lazy forms require a function of type
 :code:`1->bool` and :code:`1->cbool` respectively
-and their second argument, which is evaluated only if the 
-first argument is false.
+for their second argument, which is evaluated only if the 
+first argument is does not determine the final value.
 
 The type bool is an alias for the sum type 2,
 which is a compact linear type and will cost 64bits of store.
