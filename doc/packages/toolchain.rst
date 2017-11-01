@@ -15,71 +15,71 @@ Toolchain support
 
 .. code-block:: felix
 
-  
-  typedef clang_config_t = (
-    header_search_dirs: list[string],
-    macros : list[string],
-    library_search_dirs: list[string],
-    ccflags: list[string],
-    dynamic_libraries: list[string],
-    static_libraries: list[string],
-    debugln : string -> void
-  );
-  
-  @
+   
+   typedef clang_config_t = (
+     header_search_dirs: list[string],
+     macros : list[string],
+     library_search_dirs: list[string],
+     ccflags: list[string],
+     dynamic_libraries: list[string],
+     static_libraries: list[string],
+     debugln : string -> void
+   );
+   
+   @
 
 .. code-block:: felix
 
-  interface toolchain_t {
-    whatami : 1 -> string;
-    host_os : 1 -> string;
-    target_os : 1 -> string;
-    cxx_compiler_vendor : 1 -> string;
-  
-    // Note: this information is available for
-    // the host platform in the Filename class.
-    // and for any platform using the Filename_class[os]
-    // class. The methods below, however, reflect a cross-compilation
-    // target filesystem. For example, on Linux with shared libs .so
-    // you can target Windows with shared libs .dll if you have a
-    // cross compiler.
-    //
-    // This toolchain facility should be separated from
-    // the compiler object, even though the extensions are primarily
-    // about compiler product file names, because other tools may wish
-    // to assist building by, for example, deleting all object files.
-    // Currently you'd have to instantiate a toolchain object to find
-    // this information, needlessly providing dummy header files,
-    // macros, etc, which are primarily useful to compilers.
-    dependency_extension: 1 -> string;
-    executable_extension : 1 -> string;
-    static_object_extension: 1 -> string;
-    dynamic_object_extension: 1 -> string;
-    static_library_extension: 1 -> string;
-    dynamic_library_extension: 1 -> string;
-    pathname_separator : 1 -> string;
-    get_base_c_compile_flags: 1 -> list[string];
-    get_base_cxx_compile_flags: 1 -> list[string];
-  
-    cxx_dependency_generator : (src:string) -> int * string;
-    c_dependency_generator : (src:string) -> int * string;
-    dependency_parser : string -> list[string];
-  
-    cxx_static_object_compiler : (dst:string,src: string) -> int;
-    cxx_static_library_object_compiler : (dst:string,src: string) -> int;
-    c_static_object_compiler : (dst:string,src: string) -> int;
-    static_library_linker : (dst:string,srcs:list[string]) -> int;
-    static_executable_linker : (dst:string,srcs:list[string]) -> int;
-    dynamic_executable_linker : (dst:string,srcs:list[string]) -> int;
-  
-    cxx_dynamic_object_compiler : (dst:string,src: string) -> int;
-    c_dynamic_object_compiler : (dst:string,src: string) -> int;
-    dynamic_library_linker : (dst:string,srcs: list[string]) -> int;
-  
-    debug_flags : 1 -> list[string];
-  }
-  
-  @
+   interface toolchain_t {
+     whatami : 1 -> string;
+     host_os : 1 -> string;
+     target_os : 1 -> string;
+     cxx_compiler_vendor : 1 -> string;
+   
+     // Note: this information is available for
+     // the host platform in the Filename class.
+     // and for any platform using the Filename_class[os]
+     // class. The methods below, however, reflect a cross-compilation
+     // target filesystem. For example, on Linux with shared libs .so
+     // you can target Windows with shared libs .dll if you have a
+     // cross compiler.
+     //
+     // This toolchain facility should be separated from
+     // the compiler object, even though the extensions are primarily
+     // about compiler product file names, because other tools may wish
+     // to assist building by, for example, deleting all object files.
+     // Currently you'd have to instantiate a toolchain object to find
+     // this information, needlessly providing dummy header files,
+     // macros, etc, which are primarily useful to compilers.
+     dependency_extension: 1 -> string;
+     executable_extension : 1 -> string;
+     static_object_extension: 1 -> string;
+     dynamic_object_extension: 1 -> string;
+     static_library_extension: 1 -> string;
+     dynamic_library_extension: 1 -> string;
+     pathname_separator : 1 -> string;
+     get_base_c_compile_flags: 1 -> list[string];
+     get_base_cxx_compile_flags: 1 -> list[string];
+   
+     cxx_dependency_generator : (src:string) -> int * string;
+     c_dependency_generator : (src:string) -> int * string;
+     dependency_parser : string -> list[string];
+   
+     cxx_static_object_compiler : (dst:string,src: string) -> int;
+     cxx_static_library_object_compiler : (dst:string,src: string) -> int;
+     c_static_object_compiler : (dst:string,src: string) -> int;
+     static_library_linker : (dst:string,srcs:list[string]) -> int;
+     static_executable_linker : (dst:string,srcs:list[string]) -> int;
+     dynamic_executable_linker : (dst:string,srcs:list[string]) -> int;
+   
+     cxx_dynamic_object_compiler : (dst:string,src: string) -> int;
+     c_dynamic_object_compiler : (dst:string,src: string) -> int;
+     dynamic_library_linker : (dst:string,srcs: list[string]) -> int;
+   
+     debug_flags : 1 -> list[string];
+   }
+   
+   @
 
 Generic C/C++ compiler
 ======================
@@ -90,276 +90,276 @@ gcc and clang basically.
 
 .. code-block:: felix
 
-  class CxxCompiler
-  {
-    typedef cxx_dep_spec_t = 
-    (
-      CCDEP: string,
-      CCFLAGS: list[string],
-      INCLUDE_DIRS: list[string],
-      MACROS: list[string],
-      debugln: string -> 0
-    );
-    fun mkinc (s:string) => "-I" + s;
-    fun mkincs (ss:list[string]) => map mkinc ss;
-  
-    fun mkmac (s:string) => "-D" + s;
-    fun mkmacs (ss:list[string]) => map mkmac ss;
-  
-    //---------------------------------------------------------------
-    // Generating #include dependencies
-    //---------------------------------------------------------------
-  
-    gen generic_cxx_gen_deps (spec: cxx_dep_spec_t) (src:string) : int * string =
-    {
-      var cmd=
-        spec.CCDEP !
-        spec.CCFLAGS +
-        mkincs spec.INCLUDE_DIRS + 
-        mkmacs spec.MACROS + 
-        src
-      ;
-      var CMD = catmap ' ' Shell::quote_arg cmd;
-      spec.debugln$ "C++ generate dependencies : " + CMD;
-      var result, data = System::get_stdout(CMD);
-      if result != 0 do
-        eprintln $ "C++ command="+CMD + " FAILED";
-      done
-      return result, data;
-    }
-  
-    // parse the "make" file generated by gcc -M
-    // GIGO: this routine can't fail, but it can return rubbish
-    gen generic_dependency_parser (data:string) : list[string] =
-    {
-      var pcolon = match find (data ,':') with | Some i => i+1uz | #None => 0uz;
-      var txt = data.[pcolon to];
-      txt = search_and_replace (txt,'\\\n','');
-      var files = respectful_split txt;
-      files = map Directory::mk_absolute_filename files;
-      return files;
-    }
-  
-    //---------------------------------------------------------------
-    // Compiling object files for dynamic links
-    //---------------------------------------------------------------
-  
-    typedef cxx_dynamic_spec_t = 
-    (
-      CCOBJ_DLLIB: string,
-      CCFLAGS: list[string],
-      INCLUDE_DIRS: list[string],
-      MACROS: list[string],
-      SPEC_OBJ_FILENAME:string,
-      debugln: string -> 0
-    );
-  
-    gen generic_cxx_compile_for_dynamic (spec: cxx_dynamic_spec_t) (src:string, dst:string) : int =
-    {
-      var cmd=
-        spec.CCOBJ_DLLIB !
-        spec.CCFLAGS +
-        mkincs spec.INCLUDE_DIRS + 
-        mkmacs spec.MACROS + 
-        src
-      ;
-      var CMD = catmap ' ' Shell::quote_arg cmd + ' ' +
-        (spec.SPEC_OBJ_FILENAME+Shell::quote_arg dst)
-      ;
-     spec.debugln$ "C++ compile: " + CMD;
-      var result = System::system(CMD);
-      if result != 0 do
-        eprintln $ "C++ command="+CMD + " FAILED";
-      done
-      return result;
-    }
-  
-  
-    //---------------------------------------------------------------
-    // Compiling object files for static links
-    //---------------------------------------------------------------
-  
-    typedef cxx_compile_static_t =
-    (
-      CCOBJ_STATIC_LIB:string,
-      CCFLAGS:list[string], 
-      INCLUDE_DIRS:list[string],
-      MACROS:list[string], 
-      SPEC_OBJ_FILENAME:string,
-      debugln: string -> 0
-    );
-  
-    gen generic_cxx_compile_for_static 
-      (spec:cxx_compile_static_t)
-      (src:string, dst:string) : int =
-    {
-      var cmd=
-        spec.CCOBJ_STATIC_LIB !
-        spec.CCFLAGS +
-        mkincs spec.INCLUDE_DIRS + 
-        mkmacs spec.MACROS +
-        src
-      ;
-      var CMD = catmap ' ' Shell::quote_arg cmd + ' ' + 
-        (spec.SPEC_OBJ_FILENAME+Shell::quote_arg dst)
-      ;
-  
-      spec.debugln$ "C++ command="+CMD;
-      var result=System::system(CMD);
-  
-      if result != 0 do
-        eprintln$ "C++ compilation "+src+" failed";
-      done
-      return result;
-  
-    }
-  
-  
-    //---------------------------------------------------------------
-    // Making a shared library or DLL
-    //---------------------------------------------------------------
-  
-    typedef link_lib_dynamic_spec_t = 
-    (
-      CCLINK_DLLIB: string,
-      CCFLAGS: list[string],
-      EXT_SHARED_OBJ:string,
-      SPEC_EXE_FILENAME: string,
-      LINK_STRINGS: list[string],
-      debugln: string -> 0
-    );
-  
-    gen generic_link_lib_dynamic 
-      (spec:link_lib_dynamic_spec_t) 
-      (cppos: list[string],
-      LINKER_OUTPUT_FILENAME:string)
-    : int = 
-    {
-      var cmd =
-        spec.CCLINK_DLLIB !
-        spec.CCFLAGS +
-        cppos
-      ;
-      // This weird shit is because Unix use -o filename (space)
-      // But Windows uses /Fefilename (no space)
-      var CMD = catmap ' ' Shell::quote_arg cmd + ' ' +
-        spec.SPEC_EXE_FILENAME+Shell::quote_arg LINKER_OUTPUT_FILENAME+ ' ' +
-        catmap ' ' Shell::quote_arg spec.LINK_STRINGS
-      ;
-      spec.debugln$ "Link command="+CMD;
-      var result = System::system(CMD);
-      if result != 0 do
-        eprintln $ "Dynamic link command="+CMD + " FAILED";
-      done
-      return result;
-    }
-  
-  
-    //---------------------------------------------------------------
-    // Making a executable which uses shared libraroes
-    //---------------------------------------------------------------
-  
-    typedef generic_link_exe_dynamic_t =
-    (
-      CCLINK_STATIC: string, // yeah, weird, but it means linker for executables ..
-      CCFLAGS: list[string],
-      SPEC_EXE_FILENAME: string,
-      LINK_STRINGS: list[string],
-      debugln: string->0
-    );
-  
-    gen generic_link_exe_dynamic
-      (spec:generic_link_exe_dynamic_t) 
-      (cppos:list[string], LINKER_OUTPUT_FILENAME:string) : int =
-    {
-  /*
-  println$ "[generic_link_exe_dynamic] cppos=" + cppos.str;
-  println$ "[generic_link_exe_dynamic] link strings=" + spec.LINK_STRINGS.str;
-  */
-      var CMD =
-          Shell::quote_arg spec.CCLINK_STATIC + ' ' +
-          catmap ' ' Shell::quote_arg spec.CCFLAGS + ' ' +
-          (spec.SPEC_EXE_FILENAME+Shell::quote_arg(LINKER_OUTPUT_FILENAME)) + ' ' +
-          catmap ' ' Shell::quote_arg cppos + ' ' +
-          catmap ' ' Shell::quote_arg spec.LINK_STRINGS
-      ;
-  
-      spec.debugln$ "Link command="+CMD;
-      var result=System::system(CMD);
-      if result != 0 do
-        eprintln$ "Link command="+CMD+ " FAILED";
-      done 
-      return result;
-    }
-  
-    //---------------------------------------------------------------
-    // Making a fully linked statically executable
-    //---------------------------------------------------------------
-  
-    typedef generic_link_exe_static_t =
-    (
-      CCLINK_STATIC: string,
-      CCFLAGS: list[string],
-      SPEC_EXE_FILENAME: string,
-      LINK_STRINGS: list[string],
-      debugln: string->0
-    );
-  
-    gen generic_link_exe_static 
-      (spec:generic_link_exe_static_t) 
-      (cppos:list[string], LINKER_OUTPUT_FILENAME:string) : int =
-    {
-      var CMD =
-          Shell::quote_arg spec.CCLINK_STATIC + ' ' +
-          catmap ' ' Shell::quote_arg spec.CCFLAGS + ' ' +
-          (spec.SPEC_EXE_FILENAME+Shell::quote_arg(LINKER_OUTPUT_FILENAME)) + ' ' +
-          catmap ' ' Shell::quote_arg cppos + ' ' +
-          catmap ' ' Shell::quote_arg spec.LINK_STRINGS
-      ;
-  
-      spec.debugln$ "Link command="+CMD;
-      var result=System::system(CMD);
-      if result != 0 do
-        eprintln$ "Link command="+CMD+ " FAILED";
-      done 
-      return result;
-    }
-  
-    //---------------------------------------------------------------
-    // Making a library archive
-    //---------------------------------------------------------------
-    typedef generic_lib_static_t =
-    (
-      CCLINK_STATIC_LIB: string,
-      CCFLAGS : list[string],
-      SPEC_LIB_FILENAME: string,
-      debugln: string->0
-    );
-  
-    gen generic_static_library 
-      (spec:generic_lib_static_t) 
-      (cppos:list[string], LINKER_OUTPUT_FILENAME:string) : int =
-    {
-      var CMD =
-          Shell::quote_arg(spec.CCLINK_STATIC_LIB) + ' ' +
-          catmap ' ' Shell::quote_arg spec.CCFLAGS + ' ' +
-          (spec.SPEC_LIB_FILENAME+Shell::quote_arg(LINKER_OUTPUT_FILENAME)) + ' ' +
-          catmap ' ' Shell::quote_arg cppos
-      ;
-  
-      spec.debugln$ "Library archive command="+CMD;
-      var result=System::system(CMD);
-      if result != 0 do
-        eprintln$ "Library archive command="+CMD+ " FAILED";
-      done 
-      return result;
-    }
-  
-  
-  }
-  
-  @
-  
+   class CxxCompiler
+   {
+     typedef cxx_dep_spec_t = 
+     (
+       CCDEP: string,
+       CCFLAGS: list[string],
+       INCLUDE_DIRS: list[string],
+       MACROS: list[string],
+       debugln: string -> 0
+     );
+     fun mkinc (s:string) => "-I" + s;
+     fun mkincs (ss:list[string]) => map mkinc ss;
+   
+     fun mkmac (s:string) => "-D" + s;
+     fun mkmacs (ss:list[string]) => map mkmac ss;
+   
+     //---------------------------------------------------------------
+     // Generating #include dependencies
+     //---------------------------------------------------------------
+   
+     gen generic_cxx_gen_deps (spec: cxx_dep_spec_t) (src:string) : int * string =
+     {
+       var cmd=
+         spec.CCDEP !
+         spec.CCFLAGS +
+         mkincs spec.INCLUDE_DIRS + 
+         mkmacs spec.MACROS + 
+         src
+       ;
+       var CMD = catmap ' ' Shell::quote_arg cmd;
+       spec.debugln$ "C++ generate dependencies : " + CMD;
+       var result, data = System::get_stdout(CMD);
+       if result != 0 do
+         eprintln $ "C++ command="+CMD + " FAILED";
+       done
+       return result, data;
+     }
+   
+     // parse the "make" file generated by gcc -M
+     // GIGO: this routine can't fail, but it can return rubbish
+     gen generic_dependency_parser (data:string) : list[string] =
+     {
+       var pcolon = match find (data ,':') with | Some i => i+1uz | #None => 0uz;
+       var txt = data.[pcolon to];
+       txt = search_and_replace (txt,'\\\n','');
+       var files = respectful_split txt;
+       files = map Directory::mk_absolute_filename files;
+       return files;
+     }
+   
+     //---------------------------------------------------------------
+     // Compiling object files for dynamic links
+     //---------------------------------------------------------------
+   
+     typedef cxx_dynamic_spec_t = 
+     (
+       CCOBJ_DLLIB: string,
+       CCFLAGS: list[string],
+       INCLUDE_DIRS: list[string],
+       MACROS: list[string],
+       SPEC_OBJ_FILENAME:string,
+       debugln: string -> 0
+     );
+   
+     gen generic_cxx_compile_for_dynamic (spec: cxx_dynamic_spec_t) (src:string, dst:string) : int =
+     {
+       var cmd=
+         spec.CCOBJ_DLLIB !
+         spec.CCFLAGS +
+         mkincs spec.INCLUDE_DIRS + 
+         mkmacs spec.MACROS + 
+         src
+       ;
+       var CMD = catmap ' ' Shell::quote_arg cmd + ' ' +
+         (spec.SPEC_OBJ_FILENAME+Shell::quote_arg dst)
+       ;
+      spec.debugln$ "C++ compile: " + CMD;
+       var result = System::system(CMD);
+       if result != 0 do
+         eprintln $ "C++ command="+CMD + " FAILED";
+       done
+       return result;
+     }
+   
+   
+     //---------------------------------------------------------------
+     // Compiling object files for static links
+     //---------------------------------------------------------------
+   
+     typedef cxx_compile_static_t =
+     (
+       CCOBJ_STATIC_LIB:string,
+       CCFLAGS:list[string], 
+       INCLUDE_DIRS:list[string],
+       MACROS:list[string], 
+       SPEC_OBJ_FILENAME:string,
+       debugln: string -> 0
+     );
+   
+     gen generic_cxx_compile_for_static 
+       (spec:cxx_compile_static_t)
+       (src:string, dst:string) : int =
+     {
+       var cmd=
+         spec.CCOBJ_STATIC_LIB !
+         spec.CCFLAGS +
+         mkincs spec.INCLUDE_DIRS + 
+         mkmacs spec.MACROS +
+         src
+       ;
+       var CMD = catmap ' ' Shell::quote_arg cmd + ' ' + 
+         (spec.SPEC_OBJ_FILENAME+Shell::quote_arg dst)
+       ;
+   
+       spec.debugln$ "C++ command="+CMD;
+       var result=System::system(CMD);
+   
+       if result != 0 do
+         eprintln$ "C++ compilation "+src+" failed";
+       done
+       return result;
+   
+     }
+   
+   
+     //---------------------------------------------------------------
+     // Making a shared library or DLL
+     //---------------------------------------------------------------
+   
+     typedef link_lib_dynamic_spec_t = 
+     (
+       CCLINK_DLLIB: string,
+       CCFLAGS: list[string],
+       EXT_SHARED_OBJ:string,
+       SPEC_EXE_FILENAME: string,
+       LINK_STRINGS: list[string],
+       debugln: string -> 0
+     );
+   
+     gen generic_link_lib_dynamic 
+       (spec:link_lib_dynamic_spec_t) 
+       (cppos: list[string],
+       LINKER_OUTPUT_FILENAME:string)
+     : int = 
+     {
+       var cmd =
+         spec.CCLINK_DLLIB !
+         spec.CCFLAGS +
+         cppos
+       ;
+       // This weird shit is because Unix use -o filename (space)
+       // But Windows uses /Fefilename (no space)
+       var CMD = catmap ' ' Shell::quote_arg cmd + ' ' +
+         spec.SPEC_EXE_FILENAME+Shell::quote_arg LINKER_OUTPUT_FILENAME+ ' ' +
+         catmap ' ' Shell::quote_arg spec.LINK_STRINGS
+       ;
+       spec.debugln$ "Link command="+CMD;
+       var result = System::system(CMD);
+       if result != 0 do
+         eprintln $ "Dynamic link command="+CMD + " FAILED";
+       done
+       return result;
+     }
+   
+   
+     //---------------------------------------------------------------
+     // Making a executable which uses shared libraroes
+     //---------------------------------------------------------------
+   
+     typedef generic_link_exe_dynamic_t =
+     (
+       CCLINK_STATIC: string, // yeah, weird, but it means linker for executables ..
+       CCFLAGS: list[string],
+       SPEC_EXE_FILENAME: string,
+       LINK_STRINGS: list[string],
+       debugln: string->0
+     );
+   
+     gen generic_link_exe_dynamic
+       (spec:generic_link_exe_dynamic_t) 
+       (cppos:list[string], LINKER_OUTPUT_FILENAME:string) : int =
+     {
+   /*
+   println$ "[generic_link_exe_dynamic] cppos=" + cppos.str;
+   println$ "[generic_link_exe_dynamic] link strings=" + spec.LINK_STRINGS.str;
+   */
+       var CMD =
+           Shell::quote_arg spec.CCLINK_STATIC + ' ' +
+           catmap ' ' Shell::quote_arg spec.CCFLAGS + ' ' +
+           (spec.SPEC_EXE_FILENAME+Shell::quote_arg(LINKER_OUTPUT_FILENAME)) + ' ' +
+           catmap ' ' Shell::quote_arg cppos + ' ' +
+           catmap ' ' Shell::quote_arg spec.LINK_STRINGS
+       ;
+   
+       spec.debugln$ "Link command="+CMD;
+       var result=System::system(CMD);
+       if result != 0 do
+         eprintln$ "Link command="+CMD+ " FAILED";
+       done 
+       return result;
+     }
+   
+     //---------------------------------------------------------------
+     // Making a fully linked statically executable
+     //---------------------------------------------------------------
+   
+     typedef generic_link_exe_static_t =
+     (
+       CCLINK_STATIC: string,
+       CCFLAGS: list[string],
+       SPEC_EXE_FILENAME: string,
+       LINK_STRINGS: list[string],
+       debugln: string->0
+     );
+   
+     gen generic_link_exe_static 
+       (spec:generic_link_exe_static_t) 
+       (cppos:list[string], LINKER_OUTPUT_FILENAME:string) : int =
+     {
+       var CMD =
+           Shell::quote_arg spec.CCLINK_STATIC + ' ' +
+           catmap ' ' Shell::quote_arg spec.CCFLAGS + ' ' +
+           (spec.SPEC_EXE_FILENAME+Shell::quote_arg(LINKER_OUTPUT_FILENAME)) + ' ' +
+           catmap ' ' Shell::quote_arg cppos + ' ' +
+           catmap ' ' Shell::quote_arg spec.LINK_STRINGS
+       ;
+   
+       spec.debugln$ "Link command="+CMD;
+       var result=System::system(CMD);
+       if result != 0 do
+         eprintln$ "Link command="+CMD+ " FAILED";
+       done 
+       return result;
+     }
+   
+     //---------------------------------------------------------------
+     // Making a library archive
+     //---------------------------------------------------------------
+     typedef generic_lib_static_t =
+     (
+       CCLINK_STATIC_LIB: string,
+       CCFLAGS : list[string],
+       SPEC_LIB_FILENAME: string,
+       debugln: string->0
+     );
+   
+     gen generic_static_library 
+       (spec:generic_lib_static_t) 
+       (cppos:list[string], LINKER_OUTPUT_FILENAME:string) : int =
+     {
+       var CMD =
+           Shell::quote_arg(spec.CCLINK_STATIC_LIB) + ' ' +
+           catmap ' ' Shell::quote_arg spec.CCFLAGS + ' ' +
+           (spec.SPEC_LIB_FILENAME+Shell::quote_arg(LINKER_OUTPUT_FILENAME)) + ' ' +
+           catmap ' ' Shell::quote_arg cppos
+       ;
+   
+       spec.debugln$ "Library archive command="+CMD;
+       var result=System::system(CMD);
+       if result != 0 do
+         eprintln$ "Library archive command="+CMD+ " FAILED";
+       done 
+       return result;
+     }
+   
+   
+   }
+   
+   @
+   
 
 Dependency Checker
 ==================
@@ -375,103 +375,103 @@ by the underlying compiler, which must support this ability.
 
 .. code-block:: felix
 
-  include "std/felix/toolchain_interface";
-  
-    gen cxx_depcheck (tc: toolchain_t, src:string, dst:string) : bool = 
-    {
-      fun == (a:list[string], b:list[string]) =
-      { 
-        match a,b with
-        | #Empty,Empty => return true;
-        | Cons (h1,t1), Cons (h2,t2) => 
-           if h1 != h2 do
-             return false;
-           done
-           return t1 == t2; // tail call
-        | _ =>return false;
-        endmatch;
-      }
-  
-      fun maxf (t:double) (f:string) => max (t, FileStat::dfiletime (f, #FileStat::future_time));
-  
-      var new_switches = cat ' ' #(tc.get_base_cxx_compile_flags);
-  
-      var result, deps = tc.cxx_dependency_generator (src=src);
-      if result != 0 do
-        println$ "[flx_depchk] C++ Dependency generator FAILED on " + src;
-        return false;
-      done
-      var newdeps = tc.dependency_parser deps;
-      var depfile = dst + ".d";
-      var olddeptxt = load depfile;
-      var old_switches, olddeps = 
-        match filter (fun (s:string)=> s != "") (split (olddeptxt,"\n")) with
-        | h ! t => h,t
-        | _ => "",Empty[string]
-      ;
-  
-      var samedeps = new_switches == old_switches and newdeps == olddeps;
-      //if not samedeps do
-      //  println$ "DEPS CHANGED"; 
-      //  println$ "Old deps = " + olddeps.str;
-      //  println$ "New deps = " + newdeps.str;
-      //done
-      save$ depfile, new_switches ! newdeps;
-      var fresh = samedeps and #{
-        var t = fold_left maxf #FileStat::past_time newdeps;
-        return t < FileStat::dfiletime (dst, #FileStat::past_time);
-      };
-      //println$ "[flx] Output " + dst + " is " + if fresh then "FRESH" else "STALE" endif;
-      return fresh;
-    }
-  
-    gen c_depcheck (tc: toolchain_t, src:string, dst:string) : bool = 
-    {
-      fun == (a:list[string], b:list[string]) =
-      { 
-        match a,b with
-        | #Empty,Empty =>  return true;
-        | Cons (h1,t1), Cons (h2,t2) => 
-           if h1 != h2 do
-             return false;
-           done
-           return t1 == t2; // tail call
-        | _ => return false;
-        endmatch;
-      }
-  
-      fun maxf (t:double) (f:string) =>
-        max(t, FileStat::dfiletime (f, #FileStat::future_time))
-      ;
-  
-      var new_switches = cat ' ' #(tc.get_base_c_compile_flags);
-      var result, deps = tc.c_dependency_generator (src=src);
-      if result != 0 do
-        println$ "[flx_depchk] C Dependency generator FAILED on " + src;
-        return false;
-      done
-      var newdeps = tc.dependency_parser deps;
-      var depfile = dst + ".d";
-      var olddeptxt = load depfile;
-      var old_switches, olddeps = 
-        match filter (fun (s:string)=> s != "") (split (olddeptxt,"\n")) with
-        | h ! t => h,t
-        | _ => "",Empty[string]
-      ;
-  
-      var samedeps = new_switches == old_switches and newdeps == olddeps;
-      save$ depfile, new_switches ! newdeps;
-      var fresh = samedeps and #{
-        var t = fold_left maxf #FileStat::past_time newdeps;
-        return t < FileStat::dfiletime (dst, #FileStat::past_time);
-      };
-      //println$ "[flx] Output " + dst + " is " + if fresh then "FRESH" else "STALE" endif;
-      return fresh;
-    }
-  
-  
-  @
-  
+   include "std/felix/toolchain_interface";
+   
+     gen cxx_depcheck (tc: toolchain_t, src:string, dst:string) : bool = 
+     {
+       fun == (a:list[string], b:list[string]) =
+       { 
+         match a,b with
+         | #Empty,Empty => return true;
+         | Cons (h1,t1), Cons (h2,t2) => 
+            if h1 != h2 do
+              return false;
+            done
+            return t1 == t2; // tail call
+         | _ =>return false;
+         endmatch;
+       }
+   
+       fun maxf (t:double) (f:string) => max (t, FileStat::dfiletime (f, #FileStat::future_time));
+   
+       var new_switches = cat ' ' #(tc.get_base_cxx_compile_flags);
+   
+       var result, deps = tc.cxx_dependency_generator (src=src);
+       if result != 0 do
+         println$ "[flx_depchk] C++ Dependency generator FAILED on " + src;
+         return false;
+       done
+       var newdeps = tc.dependency_parser deps;
+       var depfile = dst + ".d";
+       var olddeptxt = load depfile;
+       var old_switches, olddeps = 
+         match filter (fun (s:string)=> s != "") (split (olddeptxt,"\n")) with
+         | h ! t => h,t
+         | _ => "",Empty[string]
+       ;
+   
+       var samedeps = new_switches == old_switches and newdeps == olddeps;
+       //if not samedeps do
+       //  println$ "DEPS CHANGED"; 
+       //  println$ "Old deps = " + olddeps.str;
+       //  println$ "New deps = " + newdeps.str;
+       //done
+       save$ depfile, new_switches ! newdeps;
+       var fresh = samedeps and #{
+         var t = fold_left maxf #FileStat::past_time newdeps;
+         return t < FileStat::dfiletime (dst, #FileStat::past_time);
+       };
+       //println$ "[flx] Output " + dst + " is " + if fresh then "FRESH" else "STALE" endif;
+       return fresh;
+     }
+   
+     gen c_depcheck (tc: toolchain_t, src:string, dst:string) : bool = 
+     {
+       fun == (a:list[string], b:list[string]) =
+       { 
+         match a,b with
+         | #Empty,Empty =>  return true;
+         | Cons (h1,t1), Cons (h2,t2) => 
+            if h1 != h2 do
+              return false;
+            done
+            return t1 == t2; // tail call
+         | _ => return false;
+         endmatch;
+       }
+   
+       fun maxf (t:double) (f:string) =>
+         max(t, FileStat::dfiletime (f, #FileStat::future_time))
+       ;
+   
+       var new_switches = cat ' ' #(tc.get_base_c_compile_flags);
+       var result, deps = tc.c_dependency_generator (src=src);
+       if result != 0 do
+         println$ "[flx_depchk] C Dependency generator FAILED on " + src;
+         return false;
+       done
+       var newdeps = tc.dependency_parser deps;
+       var depfile = dst + ".d";
+       var olddeptxt = load depfile;
+       var old_switches, olddeps = 
+         match filter (fun (s:string)=> s != "") (split (olddeptxt,"\n")) with
+         | h ! t => h,t
+         | _ => "",Empty[string]
+       ;
+   
+       var samedeps = new_switches == old_switches and newdeps == olddeps;
+       save$ depfile, new_switches ! newdeps;
+       var fresh = samedeps and #{
+         var t = fold_left maxf #FileStat::past_time newdeps;
+         return t < FileStat::dfiletime (dst, #FileStat::past_time);
+       };
+       //println$ "[flx] Output " + dst + " is " + if fresh then "FRESH" else "STALE" endif;
+       return fresh;
+     }
+   
+   
+   @
+   
 
 Library Builder
 ===============
@@ -482,211 +482,211 @@ specification. Used by the flx_build_rtl tool.
 
 .. code-block:: felix
 
-  include "std/felix/toolchain_clang_config";
-  include "std/felix/flx_pkg"; // only for "fix2word_flags"
-  include "std/felix/flx_cp";
-  include "std/felix/flx/flx_depchk";
-  
-  class FlxLibBuild
-  {
-    private fun / (x:string,y:string) => Filename::join(x,y);
-  
-    noinline gen make_lib 
-    (
-      db: FlxPkgConfig::FlxPkgConfigQuery_t,  
-      toolchain-maker: clang_config_t -> toolchain_t, 
-      src_dir:string, 
-      target_dir:string, 
-      share_rtl:string,
-      pkg:string, 
-      tmpdir:string,
-      static_only:bool,
-      debug: bool
-    ) () : bool = 
-    {
-      proc dbug (x:string) => if debug call println$ '[make_lib: '+pkg+']' x;
-  
-      proc ehandler () {
-        eprintln$ "toolchain: make_lib failed, temporary ehandler invoked";
-        System::exit 1;
-      }
-  
-  
-      println$ "------------";
-      println$ "Make lib " + pkg;
-      println$ "------------";
-      var srcdir = db.getpkgfielddflt ehandler (pkg,"srcdir");
-      var srcpath = src_dir / srcdir;
-  println$ "[make_lib] source directory " + srcpath;
-  
-      var build_includes= db.getpkgfield ehandler (pkg,"build_includes");
-      var result3,ddeps= db.query$ list$ pkg, "--keepleftmost", "--field=requires_dlibs";
-      ddeps = FlxPkg::fix2word_flags ddeps;
-      var deps = db.getpkgfield ehandler (pkg,"Requires");
-      var result,depdlibs =  db.query("--field=provides_dlib"+deps); // packaged dlibs
-      var macros = db.getpkgfield ehandler (pkg,"macros");
-      var result2,ccflags = db.query$ list$ pkg, "--keepleftmost", "--field=cflags";
-      var config = 
-        (
-          header_search_dirs= list[string] (target_dir, srcpath, share_rtl)+build_includes,
-          macros= macros,
-          ccflags = ccflags,
-          library_search_dirs= list[string] ("-L"+target_dir), // HACK!!!
-          dynamic_libraries= ddeps+depdlibs,
-          static_libraries= Empty[string],
-          debugln = dbug
-        )
-      ;
-      var toolchain = toolchain-maker config;
-      println$ #(toolchain.whatami);
-      var headers = db.getpkgfielddflt ehandler (pkg,"headers");
-      if headers == "" do headers = r".*\.h(pp)?"; println$ "copying all header files"; done
-      var hsrc, hdst = "","";
-      match split (headers, ">") with
-      | #Empty => ;
-      | Cons (h,#Empty) => hsrc = h;
-      | Cons (h,Cons (d,#Empty)) => hsrc = h; hdst = d;
-      | _ => println$ "Header file too many > characters " + headers;
-      endmatch;
-  
-      if hdst == "" do hdst = "${0}"; done
-      println$ "Copying headers " + hsrc + " > " + hdst;
-      CopyFiles::copyfiles (srcpath, hsrc,target_dir/hdst,true, true);
-  
-      var pats = db.getpkgfield ehandler (pkg,"src");
-      var pat = catmap '|' (fun (x:string)=>"("+x+")") pats;
-    //println$ "Finding Sources in "+srcpath;
-    //println$ "Matching pattern "+pat;
-      var files = FileSystem::regfilesin (srcpath,pat);
-    //println$ "Sources = " + str files;
-      if not static_only 
-      do 
-        begin
-          fun objname (file:string) => let 
-              dstobj = file.Filename::strip_extension + #(toolchain.dynamic_object_extension) in
-              tmpdir/ dstobj
-          ;
-  
-          for file in files do
-            var srcfile = srcpath/ file;
-            var dst = objname file;
-            Directory::mkdirs (Filename::dirname dst);
-            match Filename::get_extension srcfile with
-            | x when x == ".cc" or x == ".cpp" =>
-              var fresh = cxx_depcheck (toolchain, srcfile, dst);
-              if fresh do
-                println$ "C++: Up to date [dynamic] " + file " -> " + objname file;
-                result = 0;
-              else
-                println$ "C++: Compiling  [dynamic] " + file " -> " + objname file;
-                result = toolchain.cxx_dynamic_object_compiler (src=srcfile, dst=dst);
-              done
-            | ".c" =>
-              fresh = c_depcheck (toolchain, srcfile, dst);
-              if fresh do
-                println$ "C:   Up to date [dynamic] " + file " -> " + objname file;
-                result = 0;
-              else
-                println$ "C:   Compiling  [dynamic] " + file " -> " + objname file;
-                result = toolchain.c_dynamic_object_compiler (src=srcfile, dst=dst) ;
-              done
-  
-            | x => 
-              println$ "Unknown extension " + x; 
-              goto bad;
-            endmatch
-            ;
-            if result != 0 do
-              println$ "Compiler result " + str result;
-              goto bad;
-            done
-          done
-  
-          var objs = map objname files;
-          var libname = 
-            let dlib_root = db.getpkgfield1 ehandler (pkg,"provides_dlib") in
-            if prefix (dlib_root,"-l") then "lib"+dlib_root.[2 to]
-            elif prefix (dlib_root,"/DEFAULTLIB:") then dlib_root.[12 to]
-            else dlib_root 
-            endif
-            +#(toolchain.dynamic_library_extension)
-          ;
-          var dstlib = target_dir/libname;
-          println$ "Dynamic Linking library " + dstlib;
-          result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
-          if result != 0 do
-            println$ "Linker result " + str result;
-            goto bad;
-          done
-        end 
-      done
-  
-      begin
-        fun objname (file:string) => let 
-            dstobj = file.Filename::strip_extension + #(toolchain.static_object_extension) in
-            tmpdir/ dstobj
-        ;
-  
-        for file in files do
-          var srcfile = srcpath/ file;
-          var dst = objname file;
-          Directory::mkdirs (Filename::dirname dst);
-          match Filename::get_extension srcfile with
-          | x when x == ".cc" or x == ".cpp" =>
-            var fresh = cxx_depcheck (toolchain, srcfile, dst);
-            if fresh do
-              println$ "C++: Up to date [static] " + file " -> " + objname file;
-              result = 0;
-            else 
-              println$ "C++: Compiling [static] " + file " -> " + objname file;
-              result = toolchain.cxx_static_library_object_compiler (src=srcfile, dst=dst);
-            done
-          | ".c" =>
-            fresh = c_depcheck (toolchain, srcfile, dst);
-            if fresh do
-              println$ "C:   Up to date [static] " + file " -> " + objname file;
-              result = 0;
-            else
-              println$ "C:   Compiling [static] " + file " -> " + objname file;
-              result = toolchain.c_static_object_compiler (src=srcfile, dst=dst);
-            done
-          | x => println$ 
-            "Unknown extension " + x; 
-            println$ "Compiler result " + str result;
-            goto bad;
-          endmatch
-          ;
-          if result != 0 do
-            println$ "Compiler result " + str result;
-            goto bad;
-          done
-        done
-  
-        var objs = map objname files;
-        var libname = 
-          let dlib_root = db.getpkgfield1 ehandler (pkg,"provides_slib") in
-          if prefix (dlib_root,"-l") then  "lib"+dlib_root.[2 to]
-          elif prefix (dlib_root,"/DEFAULTLIB:") then dlib_root.[12 to]
-          else dlib_root 
-          endif
-          +#(toolchain.static_library_extension);
-        ;
-        var dstlib = target_dir/libname;
-        println$ "Static Linking Library " + dstlib;
-        result = toolchain.static_library_linker(srcs=objs, dst=dstlib);
-        if result != 0 do
-          println$ "Linker result " + str result;
-          goto bad;
-        done
-      end 
-      return true;
-  bad:>
-      return false;
-    }
-  }
-  
-  @
-  
+   include "std/felix/toolchain_clang_config";
+   include "std/felix/flx_pkg"; // only for "fix2word_flags"
+   include "std/felix/flx_cp";
+   include "std/felix/flx/flx_depchk";
+   
+   class FlxLibBuild
+   {
+     private fun / (x:string,y:string) => Filename::join(x,y);
+   
+     noinline gen make_lib 
+     (
+       db: FlxPkgConfig::FlxPkgConfigQuery_t,  
+       toolchain-maker: clang_config_t -> toolchain_t, 
+       src_dir:string, 
+       target_dir:string, 
+       share_rtl:string,
+       pkg:string, 
+       tmpdir:string,
+       static_only:bool,
+       debug: bool
+     ) () : bool = 
+     {
+       proc dbug (x:string) => if debug call println$ '[make_lib: '+pkg+']' x;
+   
+       proc ehandler () {
+         eprintln$ "toolchain: make_lib failed, temporary ehandler invoked";
+         System::exit 1;
+       }
+   
+   
+       println$ "------------";
+       println$ "Make lib " + pkg;
+       println$ "------------";
+       var srcdir = db.getpkgfielddflt ehandler (pkg,"srcdir");
+       var srcpath = src_dir / srcdir;
+   println$ "[make_lib] source directory " + srcpath;
+   
+       var build_includes= db.getpkgfield ehandler (pkg,"build_includes");
+       var result3,ddeps= db.query$ list$ pkg, "--keepleftmost", "--field=requires_dlibs";
+       ddeps = FlxPkg::fix2word_flags ddeps;
+       var deps = db.getpkgfield ehandler (pkg,"Requires");
+       var result,depdlibs =  db.query("--field=provides_dlib"+deps); // packaged dlibs
+       var macros = db.getpkgfield ehandler (pkg,"macros");
+       var result2,ccflags = db.query$ list$ pkg, "--keepleftmost", "--field=cflags";
+       var config = 
+         (
+           header_search_dirs= list[string] (target_dir, srcpath, share_rtl)+build_includes,
+           macros= macros,
+           ccflags = ccflags,
+           library_search_dirs= list[string] ("-L"+target_dir), // HACK!!!
+           dynamic_libraries= ddeps+depdlibs,
+           static_libraries= Empty[string],
+           debugln = dbug
+         )
+       ;
+       var toolchain = toolchain-maker config;
+       println$ #(toolchain.whatami);
+       var headers = db.getpkgfielddflt ehandler (pkg,"headers");
+       if headers == "" do headers = r".*\.h(pp)?"; println$ "copying all header files"; done
+       var hsrc, hdst = "","";
+       match split (headers, ">") with
+       | #Empty => ;
+       | Cons (h,#Empty) => hsrc = h;
+       | Cons (h,Cons (d,#Empty)) => hsrc = h; hdst = d;
+       | _ => println$ "Header file too many > characters " + headers;
+       endmatch;
+   
+       if hdst == "" do hdst = "${0}"; done
+       println$ "Copying headers " + hsrc + " > " + hdst;
+       CopyFiles::copyfiles (srcpath, hsrc,target_dir/hdst,true, true);
+   
+       var pats = db.getpkgfield ehandler (pkg,"src");
+       var pat = catmap '|' (fun (x:string)=>"("+x+")") pats;
+     //println$ "Finding Sources in "+srcpath;
+     //println$ "Matching pattern "+pat;
+       var files = FileSystem::regfilesin (srcpath,pat);
+     //println$ "Sources = " + str files;
+       if not static_only 
+       do 
+         begin
+           fun objname (file:string) => let 
+               dstobj = file.Filename::strip_extension + #(toolchain.dynamic_object_extension) in
+               tmpdir/ dstobj
+           ;
+   
+           for file in files do
+             var srcfile = srcpath/ file;
+             var dst = objname file;
+             Directory::mkdirs (Filename::dirname dst);
+             match Filename::get_extension srcfile with
+             | x when x == ".cc" or x == ".cpp" =>
+               var fresh = cxx_depcheck (toolchain, srcfile, dst);
+               if fresh do
+                 println$ "C++: Up to date [dynamic] " + file " -> " + objname file;
+                 result = 0;
+               else
+                 println$ "C++: Compiling  [dynamic] " + file " -> " + objname file;
+                 result = toolchain.cxx_dynamic_object_compiler (src=srcfile, dst=dst);
+               done
+             | ".c" =>
+               fresh = c_depcheck (toolchain, srcfile, dst);
+               if fresh do
+                 println$ "C:   Up to date [dynamic] " + file " -> " + objname file;
+                 result = 0;
+               else
+                 println$ "C:   Compiling  [dynamic] " + file " -> " + objname file;
+                 result = toolchain.c_dynamic_object_compiler (src=srcfile, dst=dst) ;
+               done
+   
+             | x => 
+               println$ "Unknown extension " + x; 
+               goto bad;
+             endmatch
+             ;
+             if result != 0 do
+               println$ "Compiler result " + str result;
+               goto bad;
+             done
+           done
+   
+           var objs = map objname files;
+           var libname = 
+             let dlib_root = db.getpkgfield1 ehandler (pkg,"provides_dlib") in
+             if prefix (dlib_root,"-l") then "lib"+dlib_root.[2 to]
+             elif prefix (dlib_root,"/DEFAULTLIB:") then dlib_root.[12 to]
+             else dlib_root 
+             endif
+             +#(toolchain.dynamic_library_extension)
+           ;
+           var dstlib = target_dir/libname;
+           println$ "Dynamic Linking library " + dstlib;
+           result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
+           if result != 0 do
+             println$ "Linker result " + str result;
+             goto bad;
+           done
+         end 
+       done
+   
+       begin
+         fun objname (file:string) => let 
+             dstobj = file.Filename::strip_extension + #(toolchain.static_object_extension) in
+             tmpdir/ dstobj
+         ;
+   
+         for file in files do
+           var srcfile = srcpath/ file;
+           var dst = objname file;
+           Directory::mkdirs (Filename::dirname dst);
+           match Filename::get_extension srcfile with
+           | x when x == ".cc" or x == ".cpp" =>
+             var fresh = cxx_depcheck (toolchain, srcfile, dst);
+             if fresh do
+               println$ "C++: Up to date [static] " + file " -> " + objname file;
+               result = 0;
+             else 
+               println$ "C++: Compiling [static] " + file " -> " + objname file;
+               result = toolchain.cxx_static_library_object_compiler (src=srcfile, dst=dst);
+             done
+           | ".c" =>
+             fresh = c_depcheck (toolchain, srcfile, dst);
+             if fresh do
+               println$ "C:   Up to date [static] " + file " -> " + objname file;
+               result = 0;
+             else
+               println$ "C:   Compiling [static] " + file " -> " + objname file;
+               result = toolchain.c_static_object_compiler (src=srcfile, dst=dst);
+             done
+           | x => println$ 
+             "Unknown extension " + x; 
+             println$ "Compiler result " + str result;
+             goto bad;
+           endmatch
+           ;
+           if result != 0 do
+             println$ "Compiler result " + str result;
+             goto bad;
+           done
+         done
+   
+         var objs = map objname files;
+         var libname = 
+           let dlib_root = db.getpkgfield1 ehandler (pkg,"provides_slib") in
+           if prefix (dlib_root,"-l") then  "lib"+dlib_root.[2 to]
+           elif prefix (dlib_root,"/DEFAULTLIB:") then dlib_root.[12 to]
+           else dlib_root 
+           endif
+           +#(toolchain.static_library_extension);
+         ;
+         var dstlib = target_dir/libname;
+         println$ "Static Linking Library " + dstlib;
+         result = toolchain.static_library_linker(srcs=objs, dst=dstlib);
+         if result != 0 do
+           println$ "Linker result " + str result;
+           goto bad;
+         done
+       end 
+       return true;
+   bad:>
+       return false;
+     }
+   }
+   
+   @
+   
 
 Toolchains
 ==========
@@ -704,246 +704,246 @@ Object for gcc on Linux
 
 .. code-block:: felix
 
-  include "std/felix/toolchain_interface";
-  include "std/felix/toolchain_clang_config";
-  include "std/felix/flx_cxx";
-  
-  object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t = 
-  {
-  
-    var cxx_compile_warning_flags = list$ "-w",
-      "-Wfatal-errors",
-      "-Wno-invalid-offsetof",
-      "-Wno-parentheses",
-      "-Wno-unused-variable",
-      "-Wno-unused-label",
-      "-Wno-unused-function",
-      "-Wno-sign-compare",
-      "-Wno-missing-braces"
-    ;
-    var c_compile_warning_flags = list[string]$ "-w", "-Wfatal-errors";
-    var c_compiler = "gcc";
-    var cxx_compiler = "g++";
-    var linker = "g++";
-    var ccflags_for_dynamic_link = list[string] ("-shared");
-    var base_c_compile_flags =
-      "-D_POSIX" ! "-g" ! "-c" ! "-O1" ! "-fno-common"
-      ! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
-    ;
-    var base_cxx_compile_flags = 
-      "-D_POSIX" ! "-g"! "-c" ! "-O1" ! "-fno-common"
-      ! "-fno-strict-aliasing" ! "-std=gnu++11" ! (cxx_compile_warning_flags+config.ccflags)
-    ;
-  
-    method fun whatami () => "toolchain_gcc_linux (version 2)";
-    method fun host_os () => "LINUX";
-    method fun target_os () => "LINUX";
-    method fun cxx_compiler_vendor () => "GNU";
-  
-    method fun dependency_extension () => ".d";
-    method fun executable_extension () => "";
-    method fun static_object_extension () => "_static.o";
-    method fun dynamic_object_extension () => "_dynamic.o";
-    method fun static_library_extension () => ".a";
-    method fun dynamic_library_extension () => ".so";
-    method fun pathname_separator () => "/";
-    method fun debug_flags () =>list[string] "-g";
-    method fun get_base_c_compile_flags () => base_c_compile_flags;
-    method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
-  
-  // Boilerplate 
-  
-    method gen c_dependency_generator (spec:(src:string)) =
-    {
-       var result, data = 
-         CxxCompiler::generic_cxx_gen_deps 
-         (
-            CCDEP=c_compiler,
-            CCFLAGS = "-MM" ! "-D_POSIX" ! config.ccflags,
-            INCLUDE_DIRS=config.header_search_dirs,
-            MACROS=config.macros,
-            debugln = config.debugln
-         )
-         (spec.src)
-       ;
-       return result, data;
-    }
-  
-    method gen cxx_dependency_generator (spec:(src:string)) =
-    {
-       var result, data = 
-         CxxCompiler::generic_cxx_gen_deps 
-         (
-            CCDEP=cxx_compiler,
-            CCFLAGS = "-MM" ! "-D_POSIX" ! "-std=gnu++11" ! config.ccflags,
-            INCLUDE_DIRS=config.header_search_dirs,
-            MACROS=config.macros,
-            debugln = config.debugln
-         )
-         (spec.src)
-       ;
-       return result, data;
-    }
-  
-    method gen dependency_parser (data:string) : list[string] =>
-       CxxCompiler::generic_dependency_parser data
-    ;
+   include "std/felix/toolchain_interface";
+   include "std/felix/toolchain_clang_config";
+   include "std/felix/flx_cxx";
    
-    method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_static
-        (
-          CCOBJ_STATIC_LIB = c_compiler, 
-          CCFLAGS = "-fvisibility=hidden" ! base_c_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_dynamic 
-        (
-          CCOBJ_DLLIB = c_compiler, 
-          CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_c_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-  
-    method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_static
-        (
-          CCOBJ_STATIC_LIB = cxx_compiler, 
-          CCFLAGS = "-fvisibility=hidden" !"-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" 
-            ! "-D_POSIX" ! "-std=gnu++11" ! "-D_GLIBCXX_USE_CXX11_ABI=1"
-            ! (cxx_compile_warning_flags+config.ccflags),
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_static
-        (
-          CCOBJ_STATIC_LIB = cxx_compiler, 
-          CCFLAGS = "-fvisibility=hidden" ! "-D_GLIBCXX_USE_CXX11_ABI=1"!base_cxx_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = "FLX_STATIC_LINK"+config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_dynamic 
-        (
-          CCOBJ_DLLIB = linker, 
-          CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! "-D_GLIBCXX_USE_CXX11_ABI=1"! base_cxx_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
-    {
-      var result =
-        CxxCompiler::generic_static_library
-        (
-          CCLINK_STATIC_LIB = "ar", 
-          CCFLAGS = list[string]("-rcs"),
-          SPEC_LIB_FILENAME = "",
-          debugln = config.debugln
-        )  
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    } 
-  
-    method gen static_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
-    {
-      var result =
-        CxxCompiler::generic_link_exe_static
-        (
-          CCLINK_STATIC = linker,
-          CCFLAGS = Empty[string],
-          SPEC_EXE_FILENAME = "-o ",
-          LINK_STRINGS = config.library_search_dirs + config.static_libraries,
-          debugln = config.debugln
-        )  
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen dynamic_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
-    {
-      var result =
-        CxxCompiler::generic_link_exe_dynamic
-        (
-          CCLINK_STATIC = linker,
-          CCFLAGS = Empty[string],
-          SPEC_EXE_FILENAME = "-o ",
-          LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries,
-          debugln = config.debugln
-        )  
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_link_lib_dynamic 
-        (
-          CCLINK_DLLIB = linker,
-          CCFLAGS = ccflags_for_dynamic_link,
-          EXT_SHARED_OBJ = #dynamic_library_extension,
-          SPEC_EXE_FILENAME = "-o ",
-          LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries, 
-          debugln = config.debugln
-        )
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    }
-  }
-  
-  @
-  
+   object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t = 
+   {
+   
+     var cxx_compile_warning_flags = list$ "-w",
+       "-Wfatal-errors",
+       "-Wno-invalid-offsetof",
+       "-Wno-parentheses",
+       "-Wno-unused-variable",
+       "-Wno-unused-label",
+       "-Wno-unused-function",
+       "-Wno-sign-compare",
+       "-Wno-missing-braces"
+     ;
+     var c_compile_warning_flags = list[string]$ "-w", "-Wfatal-errors";
+     var c_compiler = "gcc";
+     var cxx_compiler = "g++";
+     var linker = "g++";
+     var ccflags_for_dynamic_link = list[string] ("-shared");
+     var base_c_compile_flags =
+       "-D_POSIX" ! "-g" ! "-c" ! "-O1" ! "-fno-common"
+       ! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
+     ;
+     var base_cxx_compile_flags = 
+       "-D_POSIX" ! "-g"! "-c" ! "-O1" ! "-fno-common"
+       ! "-fno-strict-aliasing" ! "-std=gnu++11" ! (cxx_compile_warning_flags+config.ccflags)
+     ;
+   
+     method fun whatami () => "toolchain_gcc_linux (version 2)";
+     method fun host_os () => "LINUX";
+     method fun target_os () => "LINUX";
+     method fun cxx_compiler_vendor () => "GNU";
+   
+     method fun dependency_extension () => ".d";
+     method fun executable_extension () => "";
+     method fun static_object_extension () => "_static.o";
+     method fun dynamic_object_extension () => "_dynamic.o";
+     method fun static_library_extension () => ".a";
+     method fun dynamic_library_extension () => ".so";
+     method fun pathname_separator () => "/";
+     method fun debug_flags () =>list[string] "-g";
+     method fun get_base_c_compile_flags () => base_c_compile_flags;
+     method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
+   
+   // Boilerplate 
+   
+     method gen c_dependency_generator (spec:(src:string)) =
+     {
+        var result, data = 
+          CxxCompiler::generic_cxx_gen_deps 
+          (
+             CCDEP=c_compiler,
+             CCFLAGS = "-MM" ! "-D_POSIX" ! config.ccflags,
+             INCLUDE_DIRS=config.header_search_dirs,
+             MACROS=config.macros,
+             debugln = config.debugln
+          )
+          (spec.src)
+        ;
+        return result, data;
+     }
+   
+     method gen cxx_dependency_generator (spec:(src:string)) =
+     {
+        var result, data = 
+          CxxCompiler::generic_cxx_gen_deps 
+          (
+             CCDEP=cxx_compiler,
+             CCFLAGS = "-MM" ! "-D_POSIX" ! "-std=gnu++11" ! config.ccflags,
+             INCLUDE_DIRS=config.header_search_dirs,
+             MACROS=config.macros,
+             debugln = config.debugln
+          )
+          (spec.src)
+        ;
+        return result, data;
+     }
+   
+     method gen dependency_parser (data:string) : list[string] =>
+        CxxCompiler::generic_dependency_parser data
+     ;
+    
+     method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_static
+         (
+           CCOBJ_STATIC_LIB = c_compiler, 
+           CCFLAGS = "-fvisibility=hidden" ! base_c_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_dynamic 
+         (
+           CCOBJ_DLLIB = c_compiler, 
+           CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_c_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+   
+     method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_static
+         (
+           CCOBJ_STATIC_LIB = cxx_compiler, 
+           CCFLAGS = "-fvisibility=hidden" !"-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" 
+             ! "-D_POSIX" ! "-std=gnu++11" ! "-D_GLIBCXX_USE_CXX11_ABI=1"
+             ! (cxx_compile_warning_flags+config.ccflags),
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_static
+         (
+           CCOBJ_STATIC_LIB = cxx_compiler, 
+           CCFLAGS = "-fvisibility=hidden" ! "-D_GLIBCXX_USE_CXX11_ABI=1"!base_cxx_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = "FLX_STATIC_LINK"+config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_dynamic 
+         (
+           CCOBJ_DLLIB = linker, 
+           CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! "-D_GLIBCXX_USE_CXX11_ABI=1"! base_cxx_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
+     {
+       var result =
+         CxxCompiler::generic_static_library
+         (
+           CCLINK_STATIC_LIB = "ar", 
+           CCFLAGS = list[string]("-rcs"),
+           SPEC_LIB_FILENAME = "",
+           debugln = config.debugln
+         )  
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     } 
+   
+     method gen static_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
+     {
+       var result =
+         CxxCompiler::generic_link_exe_static
+         (
+           CCLINK_STATIC = linker,
+           CCFLAGS = Empty[string],
+           SPEC_EXE_FILENAME = "-o ",
+           LINK_STRINGS = config.library_search_dirs + config.static_libraries,
+           debugln = config.debugln
+         )  
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen dynamic_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
+     {
+       var result =
+         CxxCompiler::generic_link_exe_dynamic
+         (
+           CCLINK_STATIC = linker,
+           CCFLAGS = Empty[string],
+           SPEC_EXE_FILENAME = "-o ",
+           LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries,
+           debugln = config.debugln
+         )  
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_link_lib_dynamic 
+         (
+           CCLINK_DLLIB = linker,
+           CCFLAGS = ccflags_for_dynamic_link,
+           EXT_SHARED_OBJ = #dynamic_library_extension,
+           SPEC_EXE_FILENAME = "-o ",
+           LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries, 
+           debugln = config.debugln
+         )
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     }
+   }
+   
+   @
+   
 
 Object for gcc on OSX
 ---------------------
@@ -951,239 +951,239 @@ Object for gcc on OSX
 
 .. code-block:: felix
 
-  include "std/felix/toolchain_interface";
-  include "std/felix/toolchain_clang_config";
-  include "std/felix/flx_cxx";
-  
-  object toolchain_gcc_osx (config:clang_config_t) implements toolchain_t = 
-  {
-  
-    var cxx_compile_warning_flags = list$ "-w",
-      "-Wfatal-errors",
-      "-Wno-invalid-offsetof"
-    ;
-    var c_compile_warning_flags = list[string]$ "-w","-Wfatal-errors";
-    var c_compiler = "gcc";
-    var cxx_compiler = "g++";
-    var linker = "g++";
-    var ccflags_for_dynamic_link = list[string] ("-dynamiclib");
-  
-    var base_c_compile_flags =
-      "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
-    ;
-    var base_cxx_compile_flags =
-      "-g"! "-c" ! "-O1" ! "-std=c++11" ! "-fno-common"! "-fno-strict-aliasing" !(cxx_compile_warning_flags+config.ccflags)
-    ;
-  
-    method fun whatami () => "toolchain_gcc_osx (version 2)";
-    method fun host_os () => "OSX";
-    method fun target_os () => "OSX";
-    method fun cxx_compiler_vendor () => "GNU";
-  
-    method fun dependency_extension () => ".d";
-    method fun executable_extension () => "";
-    method fun static_object_extension () => "_static.o";
-    method fun dynamic_object_extension () => "_dynamic.o";
-    method fun static_library_extension () => ".a";
-    method fun dynamic_library_extension () => ".dylib";
-    method fun pathname_separator () => "/";
-    method fun debug_flags () => list[string] "-g";
-    method fun get_base_c_compile_flags () => base_c_compile_flags;
-    method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
-  
-  // Boilerplate 
-  
-    method gen c_dependency_generator (spec:(src:string)) =
-    {
-       var result, data = 
-         CxxCompiler::generic_cxx_gen_deps 
-         (
-            CCDEP=c_compiler,
-            CCFLAGS = "-MM" ! config.ccflags,
-            INCLUDE_DIRS=config.header_search_dirs,
-            MACROS=config.macros,
-            debugln = config.debugln
-         )
-         (spec.src)
-       ;
-       return result , data;
-    }
-  
-    method gen cxx_dependency_generator (spec:(src:string)) =
-    {
-       var result, data = 
-         CxxCompiler::generic_cxx_gen_deps 
-         (
-            CCDEP=cxx_compiler,
-            CCFLAGS = "-MM" ! '-std=c++11' ! config.ccflags,
-            INCLUDE_DIRS=config.header_search_dirs,
-            MACROS=config.macros,
-            debugln = config.debugln
-         )
-         (spec.src)
-       ;
-       return result, data;
-    }
-  
-    method gen dependency_parser (data:string) : list[string] =>
-       CxxCompiler::generic_dependency_parser data
-    ;
+   include "std/felix/toolchain_interface";
+   include "std/felix/toolchain_clang_config";
+   include "std/felix/flx_cxx";
    
-    method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_static
-        (
-          CCOBJ_STATIC_LIB = c_compiler, 
-          CCFLAGS = base_c_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_dynamic 
-        (
-          CCOBJ_DLLIB = c_compiler, 
-          CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_c_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-  
-    method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_static
-        (
-          CCOBJ_STATIC_LIB = cxx_compiler, 
-          CCFLAGS = base_cxx_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_static
-        (
-          CCOBJ_STATIC_LIB = cxx_compiler, 
-          CCFLAGS = base_cxx_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = "FLX_STATIC_LINK" + config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-  
-    method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_dynamic 
-        (
-          CCOBJ_DLLIB = linker, 
-          CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_cxx_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
-    {
-      var result =
-        CxxCompiler::generic_static_library
-        (
-          CCLINK_STATIC_LIB = "ar", 
-          CCFLAGS = list[string]("-rcs"),
-          SPEC_LIB_FILENAME = "",
-          debugln = config.debugln
-        )  
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    } 
-  
-    method gen static_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
-    {
-      var result =
-        CxxCompiler::generic_link_exe_static
-        (
-          CCLINK_STATIC = linker,
-          CCFLAGS = Empty[string],
-          SPEC_EXE_FILENAME = "-o ",
-          LINK_STRINGS = config.library_search_dirs + config.static_libraries,
-          debugln = config.debugln
-        )  
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen dynamic_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
-    {
-      var result =
-        CxxCompiler::generic_link_exe_dynamic
-        (
-          CCLINK_STATIC = linker,
-          CCFLAGS = Empty[string],
-          SPEC_EXE_FILENAME = "-o ",
-          LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries,
-          debugln = config.debugln
-        )  
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    }
-  
-  
-    method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_link_lib_dynamic 
-        (
-          CCLINK_DLLIB = linker,
-          CCFLAGS = ccflags_for_dynamic_link,
-          EXT_SHARED_OBJ = #dynamic_library_extension,
-          SPEC_EXE_FILENAME = "-o ",
-          LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries, 
-          debugln = config.debugln
-        )
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    }
-  }
-  
-  @
-  
+   object toolchain_gcc_osx (config:clang_config_t) implements toolchain_t = 
+   {
+   
+     var cxx_compile_warning_flags = list$ "-w",
+       "-Wfatal-errors",
+       "-Wno-invalid-offsetof"
+     ;
+     var c_compile_warning_flags = list[string]$ "-w","-Wfatal-errors";
+     var c_compiler = "gcc";
+     var cxx_compiler = "g++";
+     var linker = "g++";
+     var ccflags_for_dynamic_link = list[string] ("-dynamiclib");
+   
+     var base_c_compile_flags =
+       "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
+     ;
+     var base_cxx_compile_flags =
+       "-g"! "-c" ! "-O1" ! "-std=c++11" ! "-fno-common"! "-fno-strict-aliasing" !(cxx_compile_warning_flags+config.ccflags)
+     ;
+   
+     method fun whatami () => "toolchain_gcc_osx (version 2)";
+     method fun host_os () => "OSX";
+     method fun target_os () => "OSX";
+     method fun cxx_compiler_vendor () => "GNU";
+   
+     method fun dependency_extension () => ".d";
+     method fun executable_extension () => "";
+     method fun static_object_extension () => "_static.o";
+     method fun dynamic_object_extension () => "_dynamic.o";
+     method fun static_library_extension () => ".a";
+     method fun dynamic_library_extension () => ".dylib";
+     method fun pathname_separator () => "/";
+     method fun debug_flags () => list[string] "-g";
+     method fun get_base_c_compile_flags () => base_c_compile_flags;
+     method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
+   
+   // Boilerplate 
+   
+     method gen c_dependency_generator (spec:(src:string)) =
+     {
+        var result, data = 
+          CxxCompiler::generic_cxx_gen_deps 
+          (
+             CCDEP=c_compiler,
+             CCFLAGS = "-MM" ! config.ccflags,
+             INCLUDE_DIRS=config.header_search_dirs,
+             MACROS=config.macros,
+             debugln = config.debugln
+          )
+          (spec.src)
+        ;
+        return result , data;
+     }
+   
+     method gen cxx_dependency_generator (spec:(src:string)) =
+     {
+        var result, data = 
+          CxxCompiler::generic_cxx_gen_deps 
+          (
+             CCDEP=cxx_compiler,
+             CCFLAGS = "-MM" ! '-std=c++11' ! config.ccflags,
+             INCLUDE_DIRS=config.header_search_dirs,
+             MACROS=config.macros,
+             debugln = config.debugln
+          )
+          (spec.src)
+        ;
+        return result, data;
+     }
+   
+     method gen dependency_parser (data:string) : list[string] =>
+        CxxCompiler::generic_dependency_parser data
+     ;
+    
+     method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_static
+         (
+           CCOBJ_STATIC_LIB = c_compiler, 
+           CCFLAGS = base_c_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_dynamic 
+         (
+           CCOBJ_DLLIB = c_compiler, 
+           CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_c_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+   
+     method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_static
+         (
+           CCOBJ_STATIC_LIB = cxx_compiler, 
+           CCFLAGS = base_cxx_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_static
+         (
+           CCOBJ_STATIC_LIB = cxx_compiler, 
+           CCFLAGS = base_cxx_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = "FLX_STATIC_LINK" + config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+   
+     method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_dynamic 
+         (
+           CCOBJ_DLLIB = linker, 
+           CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_cxx_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
+     {
+       var result =
+         CxxCompiler::generic_static_library
+         (
+           CCLINK_STATIC_LIB = "ar", 
+           CCFLAGS = list[string]("-rcs"),
+           SPEC_LIB_FILENAME = "",
+           debugln = config.debugln
+         )  
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     } 
+   
+     method gen static_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
+     {
+       var result =
+         CxxCompiler::generic_link_exe_static
+         (
+           CCLINK_STATIC = linker,
+           CCFLAGS = Empty[string],
+           SPEC_EXE_FILENAME = "-o ",
+           LINK_STRINGS = config.library_search_dirs + config.static_libraries,
+           debugln = config.debugln
+         )  
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen dynamic_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
+     {
+       var result =
+         CxxCompiler::generic_link_exe_dynamic
+         (
+           CCLINK_STATIC = linker,
+           CCFLAGS = Empty[string],
+           SPEC_EXE_FILENAME = "-o ",
+           LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries,
+           debugln = config.debugln
+         )  
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     }
+   
+   
+     method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_link_lib_dynamic 
+         (
+           CCLINK_DLLIB = linker,
+           CCFLAGS = ccflags_for_dynamic_link,
+           EXT_SHARED_OBJ = #dynamic_library_extension,
+           SPEC_EXE_FILENAME = "-o ",
+           LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries, 
+           debugln = config.debugln
+         )
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     }
+   }
+   
+   @
+   
 
 Object for clang on Linux
 -------------------------
@@ -1191,252 +1191,252 @@ Object for clang on Linux
 
 .. code-block:: felix
 
-  include "std/felix/toolchain_interface";
-  include "std/felix/toolchain_clang_config";
-  include "std/felix/flx_cxx";
-  
-  object toolchain_clang_linux (config:clang_config_t) implements toolchain_t = 
-  {
-  
-    var cxx_compile_warning_flags = list$  "-w",
-      "-Wfatal-errors",
-      "-Wno-invalid-offsetof",
-      "-Wno-logical-op-parentheses",
-      "-Wno-bitwise-op-parentheses",
-      "-Wno-parentheses-equality",
-      "-Wno-parentheses",
-      "-Wno-return-stack-address",
-      "-Wno-tautological-compare",
-      "-Wno-return-type-c-linkage",
-      "-Wno-unused-variable",
-      "-Wno-unused-function",
-      "-Wno-c++11-narrowing",
-      "-Wno-missing-braces"
-    ;
-    var c_compile_warning_flags = list[string]$ "-w","-Wfatal-errors";
-    var c_compiler = "clang";
-    var cxx_compiler = "clang++";
-    var linker = "clang++";
-    var ccflags_for_dynamic_link = list[string] ("-shared");
-  
-    var base_cxx_compile_flags =  
-       "-std=c++11"! "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (cxx_compile_warning_flags+config.ccflags)
-    ;
-  
-    var base_c_compile_flags =  
-       "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
-    ;
-  
-  
-    method fun whatami () => "toolchain_clang_linux (version 2)";
-    method fun host_os () => "LINUX";
-    method fun target_os () => "LINUX";
-    method fun cxx_compiler_vendor () => "clang";
-  
-    method fun dependency_extension () => ".d";
-    method fun executable_extension () => "";
-    method fun static_object_extension () => "_static.o";
-    method fun dynamic_object_extension () => "_dynamic.o";
-    method fun static_library_extension () => ".a";
-    method fun dynamic_library_extension () => ".so";
-    method fun pathname_separator () => "/";
-    method fun debug_flags () => list[string] "-g";
-    method fun get_base_c_compile_flags () => base_c_compile_flags;
-    method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
-  
-  // Boilerplate 
-  
-    method gen c_dependency_generator (spec:(src:string)) =
-    {
-       var result, data = 
-         CxxCompiler::generic_cxx_gen_deps 
-         (
-            CCDEP=c_compiler,
-            CCFLAGS = "-MM" ! config.ccflags,
-            INCLUDE_DIRS=config.header_search_dirs,
-            MACROS=config.macros,
-            debugln = config.debugln
-         )
-         (spec.src)
-       ;
-       return result, data;
-    }
-  
-    method gen cxx_dependency_generator (spec:(src:string)) =
-    {
-       var result, data = 
-         CxxCompiler::generic_cxx_gen_deps 
-         (
-            CCDEP=cxx_compiler,
-            CCFLAGS = "-MM" ! "-std=c++11" ! config.ccflags,
-            INCLUDE_DIRS=config.header_search_dirs,
-            MACROS=config.macros,
-            debugln = config.debugln
-         )
-         (spec.src)
-       ;
-       return result, data;
-    }
-  
-    method gen dependency_parser (data:string) : list[string] =>
-       CxxCompiler::generic_dependency_parser data
-    ;
+   include "std/felix/toolchain_interface";
+   include "std/felix/toolchain_clang_config";
+   include "std/felix/flx_cxx";
    
-    method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_static
-        (
-          CCOBJ_STATIC_LIB = c_compiler, 
-          CCFLAGS = base_c_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_dynamic 
-        (
-          CCOBJ_DLLIB = c_compiler, 
-          CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_c_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-  
-    method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_static
-        (
-          CCOBJ_STATIC_LIB = cxx_compiler, 
-          CCFLAGS = base_cxx_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_static
-        (
-          CCOBJ_STATIC_LIB = cxx_compiler, 
-          CCFLAGS = base_cxx_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = "FLX_STATIC_LINK" + config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-  
-    method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_dynamic 
-        (
-          CCOBJ_DLLIB = linker, 
-          CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_cxx_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
-    {
-      var result =
-        CxxCompiler::generic_static_library
-        (
-          CCLINK_STATIC_LIB = "ar", 
-          CCFLAGS = list[string]("-rcs"),
-          SPEC_LIB_FILENAME = "",
-          debugln = config.debugln
-        )  
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    } 
-  
-    method gen static_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
-    {
-      var result =
-        CxxCompiler::generic_link_exe_static
-        (
-          CCLINK_STATIC = linker,
-          CCFLAGS = Empty[string],
-          SPEC_EXE_FILENAME = "-o ",
-          LINK_STRINGS = config.library_search_dirs + config.static_libraries,
-          debugln = config.debugln
-        )  
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen dynamic_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
-    {
-      var result =
-        CxxCompiler::generic_link_exe_dynamic
-        (
-          CCLINK_STATIC = linker,
-          CCFLAGS = Empty[string],
-          SPEC_EXE_FILENAME = "-o ",
-          LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries,
-          debugln = config.debugln
-        )  
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    }
-  
-  
-    method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_link_lib_dynamic 
-        (
-          CCLINK_DLLIB = linker,
-          CCFLAGS = ccflags_for_dynamic_link,
-          EXT_SHARED_OBJ = #dynamic_library_extension,
-          SPEC_EXE_FILENAME = "-o ",
-          LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries, 
-          debugln = config.debugln
-        )
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    }
-  }
-  
-  @
-  
+   object toolchain_clang_linux (config:clang_config_t) implements toolchain_t = 
+   {
+   
+     var cxx_compile_warning_flags = list$  "-w",
+       "-Wfatal-errors",
+       "-Wno-invalid-offsetof",
+       "-Wno-logical-op-parentheses",
+       "-Wno-bitwise-op-parentheses",
+       "-Wno-parentheses-equality",
+       "-Wno-parentheses",
+       "-Wno-return-stack-address",
+       "-Wno-tautological-compare",
+       "-Wno-return-type-c-linkage",
+       "-Wno-unused-variable",
+       "-Wno-unused-function",
+       "-Wno-c++11-narrowing",
+       "-Wno-missing-braces"
+     ;
+     var c_compile_warning_flags = list[string]$ "-w","-Wfatal-errors";
+     var c_compiler = "clang";
+     var cxx_compiler = "clang++";
+     var linker = "clang++";
+     var ccflags_for_dynamic_link = list[string] ("-shared");
+   
+     var base_cxx_compile_flags =  
+        "-std=c++11"! "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (cxx_compile_warning_flags+config.ccflags)
+     ;
+   
+     var base_c_compile_flags =  
+        "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
+     ;
+   
+   
+     method fun whatami () => "toolchain_clang_linux (version 2)";
+     method fun host_os () => "LINUX";
+     method fun target_os () => "LINUX";
+     method fun cxx_compiler_vendor () => "clang";
+   
+     method fun dependency_extension () => ".d";
+     method fun executable_extension () => "";
+     method fun static_object_extension () => "_static.o";
+     method fun dynamic_object_extension () => "_dynamic.o";
+     method fun static_library_extension () => ".a";
+     method fun dynamic_library_extension () => ".so";
+     method fun pathname_separator () => "/";
+     method fun debug_flags () => list[string] "-g";
+     method fun get_base_c_compile_flags () => base_c_compile_flags;
+     method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
+   
+   // Boilerplate 
+   
+     method gen c_dependency_generator (spec:(src:string)) =
+     {
+        var result, data = 
+          CxxCompiler::generic_cxx_gen_deps 
+          (
+             CCDEP=c_compiler,
+             CCFLAGS = "-MM" ! config.ccflags,
+             INCLUDE_DIRS=config.header_search_dirs,
+             MACROS=config.macros,
+             debugln = config.debugln
+          )
+          (spec.src)
+        ;
+        return result, data;
+     }
+   
+     method gen cxx_dependency_generator (spec:(src:string)) =
+     {
+        var result, data = 
+          CxxCompiler::generic_cxx_gen_deps 
+          (
+             CCDEP=cxx_compiler,
+             CCFLAGS = "-MM" ! "-std=c++11" ! config.ccflags,
+             INCLUDE_DIRS=config.header_search_dirs,
+             MACROS=config.macros,
+             debugln = config.debugln
+          )
+          (spec.src)
+        ;
+        return result, data;
+     }
+   
+     method gen dependency_parser (data:string) : list[string] =>
+        CxxCompiler::generic_dependency_parser data
+     ;
+    
+     method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_static
+         (
+           CCOBJ_STATIC_LIB = c_compiler, 
+           CCFLAGS = base_c_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_dynamic 
+         (
+           CCOBJ_DLLIB = c_compiler, 
+           CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_c_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+   
+     method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_static
+         (
+           CCOBJ_STATIC_LIB = cxx_compiler, 
+           CCFLAGS = base_cxx_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_static
+         (
+           CCOBJ_STATIC_LIB = cxx_compiler, 
+           CCFLAGS = base_cxx_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = "FLX_STATIC_LINK" + config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+   
+     method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_dynamic 
+         (
+           CCOBJ_DLLIB = linker, 
+           CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_cxx_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
+     {
+       var result =
+         CxxCompiler::generic_static_library
+         (
+           CCLINK_STATIC_LIB = "ar", 
+           CCFLAGS = list[string]("-rcs"),
+           SPEC_LIB_FILENAME = "",
+           debugln = config.debugln
+         )  
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     } 
+   
+     method gen static_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
+     {
+       var result =
+         CxxCompiler::generic_link_exe_static
+         (
+           CCLINK_STATIC = linker,
+           CCFLAGS = Empty[string],
+           SPEC_EXE_FILENAME = "-o ",
+           LINK_STRINGS = config.library_search_dirs + config.static_libraries,
+           debugln = config.debugln
+         )  
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen dynamic_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
+     {
+       var result =
+         CxxCompiler::generic_link_exe_dynamic
+         (
+           CCLINK_STATIC = linker,
+           CCFLAGS = Empty[string],
+           SPEC_EXE_FILENAME = "-o ",
+           LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries,
+           debugln = config.debugln
+         )  
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     }
+   
+   
+     method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_link_lib_dynamic 
+         (
+           CCLINK_DLLIB = linker,
+           CCFLAGS = ccflags_for_dynamic_link,
+           EXT_SHARED_OBJ = #dynamic_library_extension,
+           SPEC_EXE_FILENAME = "-o ",
+           LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries, 
+           debugln = config.debugln
+         )
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     }
+   }
+   
+   @
+   
 
 Object for clang on OSX
 -----------------------
@@ -1444,244 +1444,244 @@ Object for clang on OSX
 
 .. code-block:: felix
 
-  include "std/felix/toolchain_interface";
-  include "std/felix/toolchain_clang_config";
-  include "std/felix/flx_cxx";
-  
-  object toolchain_clang_osx (config:clang_config_t) implements toolchain_t = 
-  {
-  
-    var cxx_compile_warning_flags = list$ 
-      "-w", // turn off all the warnings (but not hard errors)
-      "-Wfatal-errors", // stop compiling on the first hard error
-      "-Wno-return-type-c-linkage",
-      "-Wno-invalid-offsetof"
-    ;
-    var c_compile_warning_flags = list$ "-w",
-      "-Wfatal-errors", 
-      "-Wno-array-bounds"
-    ;
-  
-    var c_compiler = "clang";
-    var cxx_compiler = "clang++";
-    var linker = "clang++";
-    var ccflags_for_dynamic_link = list[string] ("-dynamiclib");
-    var base_c_compile_flags = 
-      "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
-    ;
-  
-    var base_cxx_compile_flags = 
-      "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++11" ! (cxx_compile_warning_flags+config.ccflags)
-    ;
-  
-    method fun whatami () => "toolchain_clang_osx (version 2)";
-    method fun host_os () => "OSX";
-    method fun target_os () => "OSX";
-    method fun cxx_compiler_vendor () => "clang";
-  
-    method fun dependency_extension () => ".d";
-    method fun executable_extension () => "";
-    method fun static_object_extension () => "_static.o";
-    method fun dynamic_object_extension () => "_dynamic.o";
-    method fun static_library_extension () => ".a";
-    method fun dynamic_library_extension () => ".dylib";
-    method fun pathname_separator () => "/";
-    method fun debug_flags () => list[string] "-g";
-    method fun get_base_c_compile_flags () => base_c_compile_flags;
-    method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
-  
-  // Boilerplate 
-  
-    method gen c_dependency_generator (spec:(src:string)) : int * string =
-    {
-       var result, data = 
-         CxxCompiler::generic_cxx_gen_deps 
+   include "std/felix/toolchain_interface";
+   include "std/felix/toolchain_clang_config";
+   include "std/felix/flx_cxx";
+   
+   object toolchain_clang_osx (config:clang_config_t) implements toolchain_t = 
+   {
+   
+     var cxx_compile_warning_flags = list$ 
+       "-w", // turn off all the warnings (but not hard errors)
+       "-Wfatal-errors", // stop compiling on the first hard error
+       "-Wno-return-type-c-linkage",
+       "-Wno-invalid-offsetof"
+     ;
+     var c_compile_warning_flags = list$ "-w",
+       "-Wfatal-errors", 
+       "-Wno-array-bounds"
+     ;
+   
+     var c_compiler = "clang";
+     var cxx_compiler = "clang++";
+     var linker = "clang++";
+     var ccflags_for_dynamic_link = list[string] ("-dynamiclib");
+     var base_c_compile_flags = 
+       "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
+     ;
+   
+     var base_cxx_compile_flags = 
+       "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++11" ! (cxx_compile_warning_flags+config.ccflags)
+     ;
+   
+     method fun whatami () => "toolchain_clang_osx (version 2)";
+     method fun host_os () => "OSX";
+     method fun target_os () => "OSX";
+     method fun cxx_compiler_vendor () => "clang";
+   
+     method fun dependency_extension () => ".d";
+     method fun executable_extension () => "";
+     method fun static_object_extension () => "_static.o";
+     method fun dynamic_object_extension () => "_dynamic.o";
+     method fun static_library_extension () => ".a";
+     method fun dynamic_library_extension () => ".dylib";
+     method fun pathname_separator () => "/";
+     method fun debug_flags () => list[string] "-g";
+     method fun get_base_c_compile_flags () => base_c_compile_flags;
+     method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
+   
+   // Boilerplate 
+   
+     method gen c_dependency_generator (spec:(src:string)) : int * string =
+     {
+        var result, data = 
+          CxxCompiler::generic_cxx_gen_deps 
+          (
+             CCDEP=c_compiler,
+             CCFLAGS = "-MM" ! config.ccflags,
+             INCLUDE_DIRS=config.header_search_dirs,
+             MACROS=config.macros,
+             debugln = config.debugln
+          )
+          (spec.src)
+        ;
+        return result,  data;
+     }
+   
+     method gen cxx_dependency_generator (spec:(src:string)) : int * string =
+     {
+        var result, data = 
+          CxxCompiler::generic_cxx_gen_deps 
+          (
+             CCDEP=cxx_compiler,
+             CCFLAGS = "-MM" ! "-std=c++11" ! config.ccflags,
+             INCLUDE_DIRS=config.header_search_dirs,
+             MACROS=config.macros,
+             debugln = config.debugln
+          )
+          (spec.src)
+        ;
+        return result, data;
+     }
+   
+     method gen dependency_parser (data:string) : list[string] =>
+        CxxCompiler::generic_dependency_parser data
+     ;
+     
+     method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_static
          (
-            CCDEP=c_compiler,
-            CCFLAGS = "-MM" ! config.ccflags,
-            INCLUDE_DIRS=config.header_search_dirs,
-            MACROS=config.macros,
-            debugln = config.debugln
-         )
-         (spec.src)
+           CCOBJ_STATIC_LIB = c_compiler, 
+           CCFLAGS = base_c_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
        ;
-       return result,  data;
-    }
-  
-    method gen cxx_dependency_generator (spec:(src:string)) : int * string =
-    {
-       var result, data = 
-         CxxCompiler::generic_cxx_gen_deps 
+       return result;
+     }
+   
+     method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_dynamic 
          (
-            CCDEP=cxx_compiler,
-            CCFLAGS = "-MM" ! "-std=c++11" ! config.ccflags,
-            INCLUDE_DIRS=config.header_search_dirs,
-            MACROS=config.macros,
-            debugln = config.debugln
-         )
-         (spec.src)
+           CCOBJ_DLLIB = c_compiler, 
+           CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_c_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
        ;
-       return result, data;
-    }
-  
-    method gen dependency_parser (data:string) : list[string] =>
-       CxxCompiler::generic_dependency_parser data
-    ;
-    
-    method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_static
-        (
-          CCOBJ_STATIC_LIB = c_compiler, 
-          CCFLAGS = base_c_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_dynamic 
-        (
-          CCOBJ_DLLIB = c_compiler, 
-          CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_c_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-  
-    method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_static
-        (
-          CCOBJ_STATIC_LIB = cxx_compiler, 
-          CCFLAGS = base_cxx_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_static
-        (
-          CCOBJ_STATIC_LIB = cxx_compiler, 
-          CCFLAGS = base_cxx_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = "FLX_STATIC_LINK"+config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-  
-    method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_dynamic 
-        (
-          CCOBJ_DLLIB = linker, 
-          CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_cxx_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
-    {
-      var result =
-        CxxCompiler::generic_static_library
-        (
-          CCLINK_STATIC_LIB = "ar", 
-          CCFLAGS = list[string]("-rcs"),
-          SPEC_LIB_FILENAME = "",
-          debugln = config.debugln
-        )  
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    } 
-  
-    method gen static_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
-    {
-      var result =
-        CxxCompiler::generic_link_exe_static
-        (
-          CCLINK_STATIC = linker,
-          CCFLAGS = Empty[string],
-          SPEC_EXE_FILENAME = "-o ",
-          LINK_STRINGS = config.library_search_dirs + config.static_libraries,
-          debugln = config.debugln
-        )  
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen dynamic_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
-    {
-      var result =
-        CxxCompiler::generic_link_exe_dynamic
-        (
-          CCLINK_STATIC = linker,
-          CCFLAGS = Empty[string],
-          SPEC_EXE_FILENAME = "-o ",
-          LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries,
-          debugln = config.debugln
-        )  
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    }
-  
-  
-    method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_link_lib_dynamic
-        (
-          CCLINK_DLLIB = linker,
-          CCFLAGS = ccflags_for_dynamic_link,
-          EXT_SHARED_OBJ = #dynamic_library_extension,
-          SPEC_EXE_FILENAME = "-o ",
-          LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries, 
-          debugln = config.debugln
-        )
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    }
-  }
-  
-  @
+       return result;
+     }
+   
+   
+     method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_static
+         (
+           CCOBJ_STATIC_LIB = cxx_compiler, 
+           CCFLAGS = base_cxx_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_static
+         (
+           CCOBJ_STATIC_LIB = cxx_compiler, 
+           CCFLAGS = base_cxx_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = "FLX_STATIC_LINK"+config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+   
+     method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_dynamic 
+         (
+           CCOBJ_DLLIB = linker, 
+           CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_cxx_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
+     {
+       var result =
+         CxxCompiler::generic_static_library
+         (
+           CCLINK_STATIC_LIB = "ar", 
+           CCFLAGS = list[string]("-rcs"),
+           SPEC_LIB_FILENAME = "",
+           debugln = config.debugln
+         )  
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     } 
+   
+     method gen static_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
+     {
+       var result =
+         CxxCompiler::generic_link_exe_static
+         (
+           CCLINK_STATIC = linker,
+           CCFLAGS = Empty[string],
+           SPEC_EXE_FILENAME = "-o ",
+           LINK_STRINGS = config.library_search_dirs + config.static_libraries,
+           debugln = config.debugln
+         )  
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen dynamic_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
+     {
+       var result =
+         CxxCompiler::generic_link_exe_dynamic
+         (
+           CCLINK_STATIC = linker,
+           CCFLAGS = Empty[string],
+           SPEC_EXE_FILENAME = "-o ",
+           LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries,
+           debugln = config.debugln
+         )  
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     }
+   
+   
+     method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_link_lib_dynamic
+         (
+           CCLINK_DLLIB = linker,
+           CCFLAGS = ccflags_for_dynamic_link,
+           EXT_SHARED_OBJ = #dynamic_library_extension,
+           SPEC_EXE_FILENAME = "-o ",
+           LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries, 
+           debugln = config.debugln
+         )
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     }
+   }
+   
+   @
 
 Cygwin interface.
 -----------------
@@ -1689,48 +1689,48 @@ Cygwin interface.
 
 .. code-block:: felix
 
-  class Cygwin
-  {
-    requires package "cygwin";
-  
-    // outputs absolute filenames: src,dst
-    private gen p_cygwin_to_win32: +char * +char * size -> int = 
-       "cygwin_conv_path(CCP_POSIX_TO_WIN_A || CCP_ABSOLUTE,$1,$2,$3)"
-    ;
-    private gen p_win32_to_cygwin: +char * +char * size -> int = 
-      "cygwin_conv_path(CCP_WIN_TO_POSIX)A || CCP_ABSOLUTE,$1,$2,$3)"
-    ;
-  
-    // This function should ALWAYS work
-    fun cygwin_to_win32 (var s:string) = 
-    {
-       var outbuf : +char;
-       var psiz = p_cygwin_to_win32 (s.cstr,outbuf,0uz);
-       outbuf = array_alloc[char] psiz; 
-       var err = p_cygwin_to_win32 (s.cstr,outbuf,psiz.size);
-       assert err == 0; // hackery!
-       var t = string outbuf;
-       free outbuf;
-       return t;
-    }
-  
-    // This function has two kinds of output:
-    // if the win32 filename is inside C:/cygwin we get name relative to /
-    // if the filename is outside, we get /cygdrive/driveletter/rest-of-path
-    fun win32_to_cygwin(var s:string) = 
-    {
-       var outbuf : +char;
-       var psiz = p_win32_to_cygwin(s.cstr,outbuf,0uz);
-       outbuf = array_alloc[char] psiz; 
-       var err = p_win32_to_cygwin(s.cstr,outbuf,psiz.size);
-       assert err == 0; // hackery!
-       var t = string outbuf;
-       free outbuf;
-       return t;
-    }
-  }
-  @
-  
+   class Cygwin
+   {
+     requires package "cygwin";
+   
+     // outputs absolute filenames: src,dst
+     private gen p_cygwin_to_win32: +char * +char * size -> int = 
+        "cygwin_conv_path(CCP_POSIX_TO_WIN_A || CCP_ABSOLUTE,$1,$2,$3)"
+     ;
+     private gen p_win32_to_cygwin: +char * +char * size -> int = 
+       "cygwin_conv_path(CCP_WIN_TO_POSIX)A || CCP_ABSOLUTE,$1,$2,$3)"
+     ;
+   
+     // This function should ALWAYS work
+     fun cygwin_to_win32 (var s:string) = 
+     {
+        var outbuf : +char;
+        var psiz = p_cygwin_to_win32 (s.cstr,outbuf,0uz);
+        outbuf = array_alloc[char] psiz; 
+        var err = p_cygwin_to_win32 (s.cstr,outbuf,psiz.size);
+        assert err == 0; // hackery!
+        var t = string outbuf;
+        free outbuf;
+        return t;
+     }
+   
+     // This function has two kinds of output:
+     // if the win32 filename is inside C:/cygwin we get name relative to /
+     // if the filename is outside, we get /cygdrive/driveletter/rest-of-path
+     fun win32_to_cygwin(var s:string) = 
+     {
+        var outbuf : +char;
+        var psiz = p_win32_to_cygwin(s.cstr,outbuf,0uz);
+        outbuf = array_alloc[char] psiz; 
+        var err = p_win32_to_cygwin(s.cstr,outbuf,psiz.size);
+        assert err == 0; // hackery!
+        var t = string outbuf;
+        free outbuf;
+        return t;
+     }
+   }
+   @
+   
 
 Cygwin config
 -------------
@@ -1738,12 +1738,12 @@ Cygwin config
 
 .. code-block:: text
 
-  Descriptrion: Cygwin Dll
-  provides_dlib: -L/usr/bin -lcygwin
-  includes: '"sys/cygwin.h"' 
-  @
-  
-  
+   Descriptrion: Cygwin Dll
+   provides_dlib: -L/usr/bin -lcygwin
+   includes: '"sys/cygwin.h"' 
+   @
+   
+   
 
 Object for MSVC++ on Windows
 ----------------------------
@@ -1751,220 +1751,220 @@ Object for MSVC++ on Windows
 
 .. code-block:: felix
 
-  include "std/felix/toolchain_interface";
-  include "std/felix/toolchain_clang_config";
-  include "std/felix/flx_cxx";
-  
-  object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t = 
-  {
-  
-    var c_compiler = "cl";
-    var cxx_compiler = "cl";
-    var linker = "cl";
-    var base_c_compile_flags = Empty[string];
-    var base_cxx_compile_flags = Empty[string];
-  
-    method fun whatami () => "toolchain_msvc_win32 (version 2)";
-    method fun host_os () => "Win32";
-    method fun target_os () => "Win32";
-    method fun cxx_compiler_vendor () => "microsoft";
-  
-    method fun dependency_extension () => ".d";
-    method fun executable_extension () => ".exe";
-    method fun static_object_extension () => "_static.obj";
-    method fun dynamic_object_extension () => "_dynamic.obj";
-    method fun static_library_extension () => ".lib";
-    method fun dynamic_library_extension () => ".dll";
-    method fun pathname_separator () => "\\";
-    method fun debug_flags () => list[string] "-g";
-    method fun get_base_c_compile_flags () => base_c_compile_flags;
-    method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
-  
-    var include_switches = map (fun (s:string) => "/I"+s) config.header_search_dirs;
-    include_switches = include_switches + filter 
-      (fun (s:string)=> prefix (s,"/I") or prefix (s,"-I")) 
-      config.ccflags
-    ;
-  
-    var macros = map (fun (s:string) => "/D"+s) config.macros;
-    // for executable
-    var static_link_strings = 
-      let fun fixup (s:string) => if prefix (s,"-L") then "/LIBPATH:"+s.[2 to] else s in
-      map fixup (config.library_search_dirs + config.static_libraries)
-    ;
-    // for DLL
-    var dynamic_link_strings = 
-      let fun fixup (s:string) => if prefix (s,"-L") then "/LIBPATH:"+s.[2 to] else s in
-      map fixup (config.library_search_dirs + config.dynamic_libraries)
-    ;
-  
-    gen xpopen(cmd:list[string]) = {
-      //var CMD = catmap ' ' Shell::quote_arg cmd;
-      var CMD = strcat ' ' cmd;
-      var result, data = System::get_stdout(CMD);
-      if result != 0 do
-        eprintln $ "Shell command="+CMD + " FAILED";
-      done
-      return result, data;
-    }
-  
-    gen shell(cmd:list[string]) = {
-      var CMD = catmap ' ' Shell::quote_arg cmd;
-      var result = System::system(CMD);
-      if result != 0 do
-        eprintln $ "Shell command="+CMD + " FAILED";
-      done
-      return result;
-    }
-  
-    proc checkwarn (result:int, text:string)
-    {
-      if result != 0 do 
-         print text;
-      else
-        for line in split(text,char "\n") do
-          if 
-            stl_find (line,"warning") != stl_npos or 
-            stl_find (line, "note:") != stl_npos 
-          do
-            eprintln$ line;
-          done
-        done
-      done
-    }
-  
-  // Boilerplate 
-  
-    method gen c_dependency_generator (spec:(src:string)) : int * string =
-    {
-      var cmd :list[string] = ("cl.exe" ! "/nologo" ! "/MDd" ! "/Zs" ! "/showIncludes" ! "/c" ! "/Tc"+spec.src ! macros) + 
-         include_switches; 
-      var result,text =xpopen cmd;
-      return result,text;
-    }
-  
-    method gen cxx_dependency_generator (spec:(src:string)) : int * string =
-    {
-      var cmd : list[string] = ("cl.exe" ! "/nologo" ! "/wd4190" ! "/MDd" ! "/Zs" ! "/showIncludes" ! "/c" ! "/EHs" ! macros) + 
-        include_switches + (spec.src ! Empty[string]); 
-      var result,text =xpopen cmd;
-      return result,text;
-    }
-  
-    method gen dependency_parser (data:string) : list[string] = {
-     var lines = split (data, "\n");
-     var files = Empty[string];
-     for line in lines do
-       if prefix (line, "Note: including file: ") do
-         var name = strip (line.[22 to]);
-         if not prefix (name,"C:\\Program Files") 
-         and not prefix (name,"c:\\program files") 
-         do
-           if name not in files do
-             files = name ! files;
+   include "std/felix/toolchain_interface";
+   include "std/felix/toolchain_clang_config";
+   include "std/felix/flx_cxx";
+   
+   object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t = 
+   {
+   
+     var c_compiler = "cl";
+     var cxx_compiler = "cl";
+     var linker = "cl";
+     var base_c_compile_flags = Empty[string];
+     var base_cxx_compile_flags = Empty[string];
+   
+     method fun whatami () => "toolchain_msvc_win32 (version 2)";
+     method fun host_os () => "Win32";
+     method fun target_os () => "Win32";
+     method fun cxx_compiler_vendor () => "microsoft";
+   
+     method fun dependency_extension () => ".d";
+     method fun executable_extension () => ".exe";
+     method fun static_object_extension () => "_static.obj";
+     method fun dynamic_object_extension () => "_dynamic.obj";
+     method fun static_library_extension () => ".lib";
+     method fun dynamic_library_extension () => ".dll";
+     method fun pathname_separator () => "\\";
+     method fun debug_flags () => list[string] "-g";
+     method fun get_base_c_compile_flags () => base_c_compile_flags;
+     method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
+   
+     var include_switches = map (fun (s:string) => "/I"+s) config.header_search_dirs;
+     include_switches = include_switches + filter 
+       (fun (s:string)=> prefix (s,"/I") or prefix (s,"-I")) 
+       config.ccflags
+     ;
+   
+     var macros = map (fun (s:string) => "/D"+s) config.macros;
+     // for executable
+     var static_link_strings = 
+       let fun fixup (s:string) => if prefix (s,"-L") then "/LIBPATH:"+s.[2 to] else s in
+       map fixup (config.library_search_dirs + config.static_libraries)
+     ;
+     // for DLL
+     var dynamic_link_strings = 
+       let fun fixup (s:string) => if prefix (s,"-L") then "/LIBPATH:"+s.[2 to] else s in
+       map fixup (config.library_search_dirs + config.dynamic_libraries)
+     ;
+   
+     gen xpopen(cmd:list[string]) = {
+       //var CMD = catmap ' ' Shell::quote_arg cmd;
+       var CMD = strcat ' ' cmd;
+       var result, data = System::get_stdout(CMD);
+       if result != 0 do
+         eprintln $ "Shell command="+CMD + " FAILED";
+       done
+       return result, data;
+     }
+   
+     gen shell(cmd:list[string]) = {
+       var CMD = catmap ' ' Shell::quote_arg cmd;
+       var result = System::system(CMD);
+       if result != 0 do
+         eprintln $ "Shell command="+CMD + " FAILED";
+       done
+       return result;
+     }
+   
+     proc checkwarn (result:int, text:string)
+     {
+       if result != 0 do 
+          print text;
+       else
+         for line in split(text,char "\n") do
+           if 
+             stl_find (line,"warning") != stl_npos or 
+             stl_find (line, "note:") != stl_npos 
+           do
+             eprintln$ line;
            done
          done
        done
-     done
-     return rev files;
-    }
-    
-    method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result,text = xpopen$ ("cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/MDd" ! "/Zi" ! "/c" ! "/Tc"+spec.src ! macros) + 
-        include_switches + ("/Fo"+spec.dst);
-      checkwarn(result,text);
-      return result;
-    }
-  
-    method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result,text =xpopen$ ("cl.exe" ! "/nologo" ! "/MDd" ! "/Zi" ! "/c" ! "/Tc"+spec.src ! macros) + 
-         include_switches + ("/Fo"+spec.dst); 
-      checkwarn(result,text);
-      return result;
-    }
-  
-  
-    method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result,text =xpopen$ ("cl.exe" ! "/nologo" ! "/wd4190" ! "/DFLX_STATIC_LINK" ! "/MDd" ! "/Zi" ! "/c" ! "/EHs" ! macros) + 
-        include_switches + spec.src + ("/Fo"+spec.dst); 
-      checkwarn(result,text);
-      return result;
-    }
-  
-    method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result,text =xpopen$ ("cl.exe" ! "/nologo" ! "/wd4190" ! "/DFLX_STATIC_LINK" ! "/MDd" ! "/Zi" ! "/c" ! "/EHs" ! macros) + 
+     }
+   
+   // Boilerplate 
+   
+     method gen c_dependency_generator (spec:(src:string)) : int * string =
+     {
+       var cmd :list[string] = ("cl.exe" ! "/nologo" ! "/MDd" ! "/Zs" ! "/showIncludes" ! "/c" ! "/Tc"+spec.src ! macros) + 
+          include_switches; 
+       var result,text =xpopen cmd;
+       return result,text;
+     }
+   
+     method gen cxx_dependency_generator (spec:(src:string)) : int * string =
+     {
+       var cmd : list[string] = ("cl.exe" ! "/nologo" ! "/wd4190" ! "/MDd" ! "/Zs" ! "/showIncludes" ! "/c" ! "/EHs" ! macros) + 
+         include_switches + (spec.src ! Empty[string]); 
+       var result,text =xpopen cmd;
+       return result,text;
+     }
+   
+     method gen dependency_parser (data:string) : list[string] = {
+      var lines = split (data, "\n");
+      var files = Empty[string];
+      for line in lines do
+        if prefix (line, "Note: including file: ") do
+          var name = strip (line.[22 to]);
+          if not prefix (name,"C:\\Program Files") 
+          and not prefix (name,"c:\\program files") 
+          do
+            if name not in files do
+              files = name ! files;
+            done
+          done
+        done
+      done
+      return rev files;
+     }
+     
+     method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result,text = xpopen$ ("cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/MDd" ! "/Zi" ! "/c" ! "/Tc"+spec.src ! macros) + 
+         include_switches + ("/Fo"+spec.dst);
+       checkwarn(result,text);
+       return result;
+     }
+   
+     method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result,text =xpopen$ ("cl.exe" ! "/nologo" ! "/MDd" ! "/Zi" ! "/c" ! "/Tc"+spec.src ! macros) + 
+          include_switches + ("/Fo"+spec.dst); 
+       checkwarn(result,text);
+       return result;
+     }
+   
+   
+     method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result,text =xpopen$ ("cl.exe" ! "/nologo" ! "/wd4190" ! "/DFLX_STATIC_LINK" ! "/MDd" ! "/Zi" ! "/c" ! "/EHs" ! macros) + 
+         include_switches + spec.src + ("/Fo"+spec.dst); 
+       checkwarn(result,text);
+       return result;
+     }
+   
+     method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result,text =xpopen$ ("cl.exe" ! "/nologo" ! "/wd4190" ! "/DFLX_STATIC_LINK" ! "/MDd" ! "/Zi" ! "/c" ! "/EHs" ! macros) + 
+          include_switches + (spec.src ! ("/Fo"+spec.dst) ! Empty[string]); 
+       checkwarn(result,text);
+       return result;
+     }
+   
+     method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result,text =xpopen$ ("cl.exe" ! "/nologo" ! "/wd4190" ! "/MDd" ! "/Zi" ! "/c" ! "/EHs" ! macros) + 
          include_switches + (spec.src ! ("/Fo"+spec.dst) ! Empty[string]); 
-      checkwarn(result,text);
-      return result;
-    }
-  
-    method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result,text =xpopen$ ("cl.exe" ! "/nologo" ! "/wd4190" ! "/MDd" ! "/Zi" ! "/c" ! "/EHs" ! macros) + 
-        include_switches + (spec.src ! ("/Fo"+spec.dst) ! Empty[string]); 
-      checkwarn(result,text);
-      return result;
-    }
-  
-    method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
-    {
-      var result,text =xpopen$ "lib.exe" ! "/OUT:"+spec.dst ! spec.srcs; 
-      checkwarn(result,text);
-      return result;
-    } 
-  
-    method gen static_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
-    {
-      // Windows requires the object files before the /link and the libraries after
-      // our generic interface can't deal with that so we have to parse ..
-      var link_specs = Empty[string];
-      var obj_specs = Empty[string];
-      for term in spec.srcs + static_link_strings do
-        if prefix (term, "/DEFAULTLIB:") do link_specs += term;
-        elif prefix (term, "/LIBPATH:") do link_specs += term;
-        elif suffix (term, ".obj") or suffix (term, ".obj") do obj_specs += term;
-        else
-          obj_specs += term; // dunno what to do with it!
-        done
-      done
-      var result,text =xpopen$  "cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/MDd" ! obj_specs + ("/Fe"+spec.dst) + "/link" + link_specs;
-      checkwarn(result,text);
-      return result;
-    }
-  
-    method gen dynamic_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
-    {
-      // Windows requires the object files before the /link and the libraries after
-      // our generic interface can't deal with that so we have to parse ..
-      var link_specs = Empty[string];
-      var obj_specs = Empty[string];
-      for term in spec.srcs + static_link_strings do
-        if prefix (term, "/DEFAULTLIB:") do link_specs += term;
-        elif prefix (term, "/LIBPATH:") do link_specs += term;
-        elif suffix (term, ".obj") or suffix (term, ".obj") do obj_specs += term;
-        else
-          obj_specs += term; // dunno what to do with it!
-        done
-      done
-      var result,text = xpopen$ "cl.exe" ! "/nologo" ! "/MDd" ! obj_specs + ("/Fe"+spec.dst) + "/link" + link_specs;
-      checkwarn(result,text);
-      return result;
-    }
-  
-    method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
-    {
-      var result,text =xpopen$  "cl.exe" ! "/nologo" ! "/MDd" ! spec.srcs + ("/Fe"+spec.dst) +  "/link" + "/DLL" + dynamic_link_strings;
-      checkwarn(result,text);
-      return result;
-    }
-  }
-  
-  @
-  
+       checkwarn(result,text);
+       return result;
+     }
+   
+     method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
+     {
+       var result,text =xpopen$ "lib.exe" ! "/OUT:"+spec.dst ! spec.srcs; 
+       checkwarn(result,text);
+       return result;
+     } 
+   
+     method gen static_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
+     {
+       // Windows requires the object files before the /link and the libraries after
+       // our generic interface can't deal with that so we have to parse ..
+       var link_specs = Empty[string];
+       var obj_specs = Empty[string];
+       for term in spec.srcs + static_link_strings do
+         if prefix (term, "/DEFAULTLIB:") do link_specs += term;
+         elif prefix (term, "/LIBPATH:") do link_specs += term;
+         elif suffix (term, ".obj") or suffix (term, ".obj") do obj_specs += term;
+         else
+           obj_specs += term; // dunno what to do with it!
+         done
+       done
+       var result,text =xpopen$  "cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/MDd" ! obj_specs + ("/Fe"+spec.dst) + "/link" + link_specs;
+       checkwarn(result,text);
+       return result;
+     }
+   
+     method gen dynamic_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
+     {
+       // Windows requires the object files before the /link and the libraries after
+       // our generic interface can't deal with that so we have to parse ..
+       var link_specs = Empty[string];
+       var obj_specs = Empty[string];
+       for term in spec.srcs + static_link_strings do
+         if prefix (term, "/DEFAULTLIB:") do link_specs += term;
+         elif prefix (term, "/LIBPATH:") do link_specs += term;
+         elif suffix (term, ".obj") or suffix (term, ".obj") do obj_specs += term;
+         else
+           obj_specs += term; // dunno what to do with it!
+         done
+       done
+       var result,text = xpopen$ "cl.exe" ! "/nologo" ! "/MDd" ! obj_specs + ("/Fe"+spec.dst) + "/link" + link_specs;
+       checkwarn(result,text);
+       return result;
+     }
+   
+     method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
+     {
+       var result,text =xpopen$  "cl.exe" ! "/nologo" ! "/MDd" ! spec.srcs + ("/Fe"+spec.dst) +  "/link" + "/DLL" + dynamic_link_strings;
+       checkwarn(result,text);
+       return result;
+     }
+   }
+   
+   @
+   
 
 Object for clang on iOS
 -----------------------
@@ -1972,277 +1972,277 @@ Object for clang on iOS
 
 .. code-block:: felix
 
-  include "std/felix/toolchain_interface";
-  include "std/felix/toolchain_clang_config";
-  include "std/felix/flx_cxx";
-  
-  object toolchain_clang_apple_iOS_maker (sdk_tag:string, archs:list[string])
-    (config:clang_config_t) implements toolchain_t = 
-  {
-    //eprintln$ "toolchain_clang_apple_iOS_maker sdk=" + sdk_tag + ", arches=" + archs.str;
-    gen get (s:string):string = {
-      var err, res = System::get_stdout s;
-      if err != 0 do
-        var msg = "Abort: Error executing shell command " + s;
-        eprintln$ msg; 
-        System::abort;
-      done
-      return res;
-    }
-  
-    var clang = strip(get("xcrun --sdk " + sdk_tag + " --find clang"));
-    var clangxx = strip(get("xcrun --sdk " + sdk_tag + " --find clang++"));
-    var sdk = strip(get("xcrun --sdk " + sdk_tag + " --show-sdk-path"));
-  
-    //eprintln$ "C compiler " + clang;
-    //eprintln$ "C++ compiler " + clangxx;
-    //eprintln$ "sdk path " + sdk;
-  
-    var cxx_compile_warning_flags = list$ 
-      "-w", // turn off all the warnings (but not hard errors)
-      "-Wfatal-errors", // stop compiling on the first hard error
-      "-Wno-return-type-c-linkage",
-      "-Wno-invalid-offsetof"
-    ;
-    var c_compile_warning_flags = list$ "-w",
-      "-Wfatal-errors", 
-      "-Wno-array-bounds"
-    ;
-  
-    var c_compiler = clang;
-    var cxx_compiler = clangxx;
-    var linker = clangxx;
-    var archlist = rev (fold_left (fun (acc:list[string]) (arch:string) => arch ! "-arch" ! acc) Empty[string] archs);
-  
-    var ccflags_for_dynamic_link = list[string]("-dynamiclib", "-isysroot", sdk) + archlist;
-    var base_c_compile_flags = 
-      "-g"! "-c" ! "-isysroot" ! sdk ! "-O1" ! 
-      "-fno-common"! "-fno-strict-aliasing" ! "-fembed-bitcode" ! 
-      (archlist + c_compile_warning_flags+config.ccflags)
-    ;
-    var base_cxx_compile_flags = 
-      "-g"! "-c" ! "-isysroot" ! sdk ! "-O1" ! 
-      "-fno-common"! "-fno-strict-aliasing" ! "-fembed-bitcode" ! "-std=c++11" !  
-      (archlist + cxx_compile_warning_flags+config.ccflags)
-    ;
-  
-    method fun whatami () => "toolchain_clang_apple_iOS sdk="+sdk_tag+", archs="+cat "," archs;
-    method fun host_os () => "OSX";
-    method fun target_os () => "iOS";
-    method fun cxx_compiler_vendor () => "clang";
-  
-    method fun dependency_extension () => ".d";
-    method fun executable_extension () => "";
-    method fun static_object_extension () => "_static.o";
-    method fun dynamic_object_extension () => "_dynamic.o";
-    method fun static_library_extension () => ".a";
-    method fun dynamic_library_extension () => ".dylib";
-    method fun pathname_separator () => "/";
-    method fun debug_flags () => list[string] "-g";
-    method fun get_base_c_compile_flags () => base_c_compile_flags;
-    method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
-  
-  // Boilerplate 
-  
-    method gen c_dependency_generator (spec:(src:string)) : int * string =
-    {
-       var result, data = 
-         CxxCompiler::generic_cxx_gen_deps 
+   include "std/felix/toolchain_interface";
+   include "std/felix/toolchain_clang_config";
+   include "std/felix/flx_cxx";
+   
+   object toolchain_clang_apple_iOS_maker (sdk_tag:string, archs:list[string])
+     (config:clang_config_t) implements toolchain_t = 
+   {
+     //eprintln$ "toolchain_clang_apple_iOS_maker sdk=" + sdk_tag + ", arches=" + archs.str;
+     gen get (s:string):string = {
+       var err, res = System::get_stdout s;
+       if err != 0 do
+         var msg = "Abort: Error executing shell command " + s;
+         eprintln$ msg; 
+         System::abort;
+       done
+       return res;
+     }
+   
+     var clang = strip(get("xcrun --sdk " + sdk_tag + " --find clang"));
+     var clangxx = strip(get("xcrun --sdk " + sdk_tag + " --find clang++"));
+     var sdk = strip(get("xcrun --sdk " + sdk_tag + " --show-sdk-path"));
+   
+     //eprintln$ "C compiler " + clang;
+     //eprintln$ "C++ compiler " + clangxx;
+     //eprintln$ "sdk path " + sdk;
+   
+     var cxx_compile_warning_flags = list$ 
+       "-w", // turn off all the warnings (but not hard errors)
+       "-Wfatal-errors", // stop compiling on the first hard error
+       "-Wno-return-type-c-linkage",
+       "-Wno-invalid-offsetof"
+     ;
+     var c_compile_warning_flags = list$ "-w",
+       "-Wfatal-errors", 
+       "-Wno-array-bounds"
+     ;
+   
+     var c_compiler = clang;
+     var cxx_compiler = clangxx;
+     var linker = clangxx;
+     var archlist = rev (fold_left (fun (acc:list[string]) (arch:string) => arch ! "-arch" ! acc) Empty[string] archs);
+   
+     var ccflags_for_dynamic_link = list[string]("-dynamiclib", "-isysroot", sdk) + archlist;
+     var base_c_compile_flags = 
+       "-g"! "-c" ! "-isysroot" ! sdk ! "-O1" ! 
+       "-fno-common"! "-fno-strict-aliasing" ! "-fembed-bitcode" ! 
+       (archlist + c_compile_warning_flags+config.ccflags)
+     ;
+     var base_cxx_compile_flags = 
+       "-g"! "-c" ! "-isysroot" ! sdk ! "-O1" ! 
+       "-fno-common"! "-fno-strict-aliasing" ! "-fembed-bitcode" ! "-std=c++11" !  
+       (archlist + cxx_compile_warning_flags+config.ccflags)
+     ;
+   
+     method fun whatami () => "toolchain_clang_apple_iOS sdk="+sdk_tag+", archs="+cat "," archs;
+     method fun host_os () => "OSX";
+     method fun target_os () => "iOS";
+     method fun cxx_compiler_vendor () => "clang";
+   
+     method fun dependency_extension () => ".d";
+     method fun executable_extension () => "";
+     method fun static_object_extension () => "_static.o";
+     method fun dynamic_object_extension () => "_dynamic.o";
+     method fun static_library_extension () => ".a";
+     method fun dynamic_library_extension () => ".dylib";
+     method fun pathname_separator () => "/";
+     method fun debug_flags () => list[string] "-g";
+     method fun get_base_c_compile_flags () => base_c_compile_flags;
+     method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
+   
+   // Boilerplate 
+   
+     method gen c_dependency_generator (spec:(src:string)) : int * string =
+     {
+        var result, data = 
+          CxxCompiler::generic_cxx_gen_deps 
+          (
+             CCDEP=c_compiler,
+             CCFLAGS = "-isysroot" ! sdk ! "-MM" ! config.ccflags,
+             INCLUDE_DIRS=config.header_search_dirs,
+             MACROS=config.macros,
+             debugln = config.debugln
+          )
+          (spec.src)
+        ;
+        return result,  data;
+     }
+   
+     method gen cxx_dependency_generator (spec:(src:string)) : int * string =
+     {
+        var result, data = 
+          CxxCompiler::generic_cxx_gen_deps 
+          (
+             CCDEP=cxx_compiler,
+             CCFLAGS = "-std=c++11" ! "-isysroot" ! sdk ! "-MM" ! config.ccflags,
+             INCLUDE_DIRS=config.header_search_dirs,
+             MACROS=config.macros,
+             debugln = config.debugln
+          )
+          (spec.src)
+        ;
+        return result, data;
+     }
+   
+     method gen dependency_parser (data:string) : list[string] =>
+        CxxCompiler::generic_dependency_parser data
+     ;
+     
+     method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_static
          (
-            CCDEP=c_compiler,
-            CCFLAGS = "-isysroot" ! sdk ! "-MM" ! config.ccflags,
-            INCLUDE_DIRS=config.header_search_dirs,
-            MACROS=config.macros,
-            debugln = config.debugln
-         )
-         (spec.src)
+           CCOBJ_STATIC_LIB = c_compiler, 
+           CCFLAGS = base_c_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
        ;
-       return result,  data;
-    }
-  
-    method gen cxx_dependency_generator (spec:(src:string)) : int * string =
-    {
-       var result, data = 
-         CxxCompiler::generic_cxx_gen_deps 
+       return result;
+     }
+   
+     method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_dynamic 
          (
-            CCDEP=cxx_compiler,
-            CCFLAGS = "-std=c++11" ! "-isysroot" ! sdk ! "-MM" ! config.ccflags,
-            INCLUDE_DIRS=config.header_search_dirs,
-            MACROS=config.macros,
-            debugln = config.debugln
-         )
-         (spec.src)
+           CCOBJ_DLLIB = c_compiler, 
+           CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_c_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
        ;
-       return result, data;
-    }
-  
-    method gen dependency_parser (data:string) : list[string] =>
-       CxxCompiler::generic_dependency_parser data
-    ;
-    
-    method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_static
-        (
-          CCOBJ_STATIC_LIB = c_compiler, 
-          CCFLAGS = base_c_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_dynamic 
-        (
-          CCOBJ_DLLIB = c_compiler, 
-          CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_c_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-  
-    method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_static
-        (
-          CCOBJ_STATIC_LIB = cxx_compiler, 
-          CCFLAGS = base_cxx_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_static
-        (
-          CCOBJ_STATIC_LIB = cxx_compiler, 
-          CCFLAGS = base_cxx_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = "FLX_STATIC_LINK"+config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-  
-    method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_cxx_compile_for_dynamic 
-        (
-          CCOBJ_DLLIB = linker, 
-          CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_cxx_compile_flags,
-          INCLUDE_DIRS = config.header_search_dirs,
-          MACROS = config.macros,
-          SPEC_OBJ_FILENAME = "-o ",
-          debugln = config.debugln
-        ) 
-        (spec.src, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
-    {
-      var result =
-        CxxCompiler::generic_static_library
-        (
-          CCLINK_STATIC_LIB = "libtool", 
-          CCFLAGS = list[string]("-static"),
-          SPEC_LIB_FILENAME = "-o ",
-          debugln = config.debugln
-        )  
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    } 
-  
-    method gen static_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
-    {
-      var result =
-        CxxCompiler::generic_link_exe_static
-        (
-          CCLINK_STATIC = linker,
-          CCFLAGS = Empty[string],
-          SPEC_EXE_FILENAME = "-o ",
-          LINK_STRINGS = config.library_search_dirs + config.static_libraries,
-          debugln = config.debugln
-        )  
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    }
-  
-    method gen dynamic_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
-    {
-      var result =
-        CxxCompiler::generic_link_exe_dynamic
-        (
-          CCLINK_STATIC = linker,
-          CCFLAGS = Empty[string],
-          SPEC_EXE_FILENAME = "-o ",
-          LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries,
-          debugln = config.debugln
-        )  
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    }
-  
-  
-    method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
-    {
-      var result = 
-        CxxCompiler::generic_link_lib_dynamic 
-        (
-          CCLINK_DLLIB = linker,
-          CCFLAGS = ccflags_for_dynamic_link,
-          EXT_SHARED_OBJ = #dynamic_library_extension,
-          SPEC_EXE_FILENAME = "-o ",
-          LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries, 
-          debugln = config.debugln
-        )
-        (spec.srcs, spec.dst)
-      ;
-      return result;
-    }
-  }
-  
-  gen toolchain_clang_apple_iPhoneOS_armv7_arm64 (config:clang_config_t) : toolchain_t =>
-    toolchain_clang_apple_iOS_maker ("iphoneos",(["armv7","arm64"])) config
-  ;
-  
-  gen toolchain_clang_apple_iPhoneSimulator (config:clang_config_t) : toolchain_t = {
-    return toolchain_clang_apple_iOS_maker ("iphonesimulator",(["x86_64","i386"])) config;
-  }
-  
-  @
-  
+       return result;
+     }
+   
+   
+     method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_static
+         (
+           CCOBJ_STATIC_LIB = cxx_compiler, 
+           CCFLAGS = base_cxx_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_static
+         (
+           CCOBJ_STATIC_LIB = cxx_compiler, 
+           CCFLAGS = base_cxx_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = "FLX_STATIC_LINK"+config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+   
+     method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_cxx_compile_for_dynamic 
+         (
+           CCOBJ_DLLIB = linker, 
+           CCFLAGS = "-fPIC" ! "-fvisibility=hidden" ! base_cxx_compile_flags,
+           INCLUDE_DIRS = config.header_search_dirs,
+           MACROS = config.macros,
+           SPEC_OBJ_FILENAME = "-o ",
+           debugln = config.debugln
+         ) 
+         (spec.src, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
+     {
+       var result =
+         CxxCompiler::generic_static_library
+         (
+           CCLINK_STATIC_LIB = "libtool", 
+           CCFLAGS = list[string]("-static"),
+           SPEC_LIB_FILENAME = "-o ",
+           debugln = config.debugln
+         )  
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     } 
+   
+     method gen static_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
+     {
+       var result =
+         CxxCompiler::generic_link_exe_static
+         (
+           CCLINK_STATIC = linker,
+           CCFLAGS = Empty[string],
+           SPEC_EXE_FILENAME = "-o ",
+           LINK_STRINGS = config.library_search_dirs + config.static_libraries,
+           debugln = config.debugln
+         )  
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     }
+   
+     method gen dynamic_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
+     {
+       var result =
+         CxxCompiler::generic_link_exe_dynamic
+         (
+           CCLINK_STATIC = linker,
+           CCFLAGS = Empty[string],
+           SPEC_EXE_FILENAME = "-o ",
+           LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries,
+           debugln = config.debugln
+         )  
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     }
+   
+   
+     method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
+     {
+       var result = 
+         CxxCompiler::generic_link_lib_dynamic 
+         (
+           CCLINK_DLLIB = linker,
+           CCFLAGS = ccflags_for_dynamic_link,
+           EXT_SHARED_OBJ = #dynamic_library_extension,
+           SPEC_EXE_FILENAME = "-o ",
+           LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries, 
+           debugln = config.debugln
+         )
+         (spec.srcs, spec.dst)
+       ;
+       return result;
+     }
+   }
+   
+   gen toolchain_clang_apple_iPhoneOS_armv7_arm64 (config:clang_config_t) : toolchain_t =>
+     toolchain_clang_apple_iOS_maker ("iphoneos",(["armv7","arm64"])) config
+   ;
+   
+   gen toolchain_clang_apple_iPhoneSimulator (config:clang_config_t) : toolchain_t = {
+     return toolchain_clang_apple_iOS_maker ("iphonesimulator",(["x86_64","i386"])) config;
+   }
+   
+   @
+   
 
 Toolchain Plugins
 =================
@@ -2262,41 +2262,41 @@ iPhone Plugin
 
 .. code-block:: felix
 
-  include "std/felix/toolchain/clang_iOS_generic";
-  
-  // varies osx vs linus,  gcc vs clang
-  
-  export fun toolchain_clang_apple_iPhoneOS_armv7_arm64 of (clang_config_t) as "toolchain_iphoneos";
-  
-  fun setup(config_data:string) = {
-     C_hack::ignore (config_data); // due to bug in Felix
-    eprintln$ "Setup toolchain iphoneos " + config_data;
-    return 0;
-  }
-  
-  export fun setup of (string) as "toolchain_iphoneos_setup";
-  @
-  
+   include "std/felix/toolchain/clang_iOS_generic";
+   
+   // varies osx vs linus,  gcc vs clang
+   
+   export fun toolchain_clang_apple_iPhoneOS_armv7_arm64 of (clang_config_t) as "toolchain_iphoneos";
+   
+   fun setup(config_data:string) = {
+      C_hack::ignore (config_data); // due to bug in Felix
+     eprintln$ "Setup toolchain iphoneos " + config_data;
+     return 0;
+   }
+   
+   export fun setup of (string) as "toolchain_iphoneos_setup";
+   @
+   
 
 .. code-block:: felix
 
-  include "std/felix/toolchain/clang_iOS_generic";
-  
-  // varies osx vs linus,  gcc vs clang
-  
-  export fun toolchain_clang_apple_iPhoneSimulator of (clang_config_t) as "toolchain_iphonesimulator";
-  
-  fun setup(config_data:string) = {
-     C_hack::ignore (config_data); // due to bug in Felix
-    eprintln$ "Setup toolchain iphonesimulator " + config_data;
-    return 0;
-  }
-  
-  export fun setup of (string) as "toolchain_iphonesimulator_setup";
-  @
-  
-  
-  
+   include "std/felix/toolchain/clang_iOS_generic";
+   
+   // varies osx vs linus,  gcc vs clang
+   
+   export fun toolchain_clang_apple_iPhoneSimulator of (clang_config_t) as "toolchain_iphonesimulator";
+   
+   fun setup(config_data:string) = {
+      C_hack::ignore (config_data); // due to bug in Felix
+     eprintln$ "Setup toolchain iphonesimulator " + config_data;
+     return 0;
+   }
+   
+   export fun setup of (string) as "toolchain_iphonesimulator_setup";
+   @
+   
+   
+   
 
 Plugin for gcc on Linux 
 ------------------------
@@ -2304,20 +2304,20 @@ Plugin for gcc on Linux
 
 .. code-block:: felix
 
-  include "std/felix/toolchain/gcc_linux";
-  
-  export fun toolchain_gcc_linux of (clang_config_t) as "toolchain_gcc_linux";
-  
-  fun setup(config_data:string) = {
-     C_hack::ignore (config_data); // due to bug in Felix
-    //eprintln$ "Setup toolchain gcc_linux " + config_data;
-    return 0;
-  }
-  
-  export fun setup of (string) as "toolchain_gcc_linux_setup";
-  
-  @
-  
+   include "std/felix/toolchain/gcc_linux";
+   
+   export fun toolchain_gcc_linux of (clang_config_t) as "toolchain_gcc_linux";
+   
+   fun setup(config_data:string) = {
+      C_hack::ignore (config_data); // due to bug in Felix
+     //eprintln$ "Setup toolchain gcc_linux " + config_data;
+     return 0;
+   }
+   
+   export fun setup of (string) as "toolchain_gcc_linux_setup";
+   
+   @
+   
 
 Plugin for gcc on OSX
 ---------------------
@@ -2325,20 +2325,20 @@ Plugin for gcc on OSX
 
 .. code-block:: felix
 
-  include "std/felix/toolchain/gcc_osx";
-  
-  export fun toolchain_gcc_osx of (clang_config_t) as "toolchain_gcc_osx";
-  
-  fun setup(config_data:string) = {
-     C_hack::ignore (config_data); // due to bug in Felix
-    //eprintln$ "Setup toolchain gcc+osx " + config_data;
-    return 0;
-  }
-  
-  export fun setup of (string) as "toolchain_gcc_osx_setup";
-  
-  @
-  
+   include "std/felix/toolchain/gcc_osx";
+   
+   export fun toolchain_gcc_osx of (clang_config_t) as "toolchain_gcc_osx";
+   
+   fun setup(config_data:string) = {
+      C_hack::ignore (config_data); // due to bug in Felix
+     //eprintln$ "Setup toolchain gcc+osx " + config_data;
+     return 0;
+   }
+   
+   export fun setup of (string) as "toolchain_gcc_osx_setup";
+   
+   @
+   
 
 Plugin for clang on Linux 
 --------------------------
@@ -2346,23 +2346,23 @@ Plugin for clang on Linux
 
 .. code-block:: felix
 
-  include "std/felix/toolchain/clang_linux";
-  
-  // varies osx vs linus,  gcc vs clang
-  
-  export fun toolchain_clang_linux of (clang_config_t) as "toolchain_clang_linux";
-  
-  
-  fun setup(config_data:string) = {
-     C_hack::ignore (config_data); // due to bug in Felix
-    //eprintln$ "Setup toolchain clang_linux " + config_data;
-    return 0;
-  }
-  
-  export fun setup of (string) as "toolchain_clang_linux_setup";
-  
-  @
-  
+   include "std/felix/toolchain/clang_linux";
+   
+   // varies osx vs linus,  gcc vs clang
+   
+   export fun toolchain_clang_linux of (clang_config_t) as "toolchain_clang_linux";
+   
+   
+   fun setup(config_data:string) = {
+      C_hack::ignore (config_data); // due to bug in Felix
+     //eprintln$ "Setup toolchain clang_linux " + config_data;
+     return 0;
+   }
+   
+   export fun setup of (string) as "toolchain_clang_linux_setup";
+   
+   @
+   
 
 Plugin for clang on OSX
 -----------------------
@@ -2370,21 +2370,21 @@ Plugin for clang on OSX
 
 .. code-block:: felix
 
-  include "std/felix/toolchain/clang_osx";
-  
-  // varies osx vs linus,  gcc vs clang
-  
-  export fun toolchain_clang_osx of (clang_config_t) as "toolchain_clang_osx";
-  
-  fun setup(config_data:string) = {
-     C_hack::ignore (config_data); // due to bug in Felix
-    //eprintln$ "Setup toolchain clang_osx " + config_data;
-    return 0;
-  }
-  
-  export fun setup of (string) as "toolchain_clang_osx_setup";
-  @
-  
+   include "std/felix/toolchain/clang_osx";
+   
+   // varies osx vs linus,  gcc vs clang
+   
+   export fun toolchain_clang_osx of (clang_config_t) as "toolchain_clang_osx";
+   
+   fun setup(config_data:string) = {
+      C_hack::ignore (config_data); // due to bug in Felix
+     //eprintln$ "Setup toolchain clang_osx " + config_data;
+     return 0;
+   }
+   
+   export fun setup of (string) as "toolchain_clang_osx_setup";
+   @
+   
 
 MSVC++ Plugin for Win32
 -----------------------
@@ -2392,21 +2392,21 @@ MSVC++ Plugin for Win32
 
 .. code-block:: felix
 
-  include "std/felix/toolchain/msvc_win32";
-  
-  // varies osx vs linus,  gcc vs clang
-  
-  export fun toolchain_msvc_win32 of (clang_config_t) as "toolchain_msvc_win32";
-  
-  fun setup(config_data:string) = {
-     C_hack::ignore (config_data); // due to bug in Felix
-    //eprintln$ "Setup toolchain msvc_win32 " + config_data;
-    return 0;
-  }
-  
-  export fun setup of (string) as "toolchain_msvc_win32_setup";
-  @
-  
+   include "std/felix/toolchain/msvc_win32";
+   
+   // varies osx vs linus,  gcc vs clang
+   
+   export fun toolchain_msvc_win32 of (clang_config_t) as "toolchain_msvc_win32";
+   
+   fun setup(config_data:string) = {
+      C_hack::ignore (config_data); // due to bug in Felix
+     //eprintln$ "Setup toolchain msvc_win32 " + config_data;
+     return 0;
+   }
+   
+   export fun setup of (string) as "toolchain_msvc_win32_setup";
+   @
+   
 
 Flx Plugin
 ==========
@@ -2415,9 +2415,9 @@ A wrapper around "flx" command.
 
 .. code-block:: felix
 
-  include "std/felix/flx/flx";
-  export fun flx_plugin_setup(x:string)=>0;
-  export fun flx_plugin (args:list[string]) = { return Flx::runflx (args); }
-  @
-  
-  
+   include "std/felix/flx/flx";
+   export fun flx_plugin_setup(x:string)=>0;
+   export fun flx_plugin (args:list[string]) = { return Flx::runflx (args); }
+   @
+   
+   

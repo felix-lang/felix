@@ -12,97 +12,97 @@ C pointer
 
 .. code-block:: felix
 
-  
-  // move to separate file later.
-  open class AbstractPointers
-  {
-    typedef fun rptr (T:TYPE) : TYPE =>  (get: 1 -> T);
-    typedef fun wptr (T:TYPE) : TYPE =>  (set : T -> 0);
-    typedef fun rwptr (T:TYPE) : TYPE => (get: 1 -> T, set : T -> 0);
-  
-    fun mkr[T] (p:&<T) => (get= { *p });
-    fun mkw[T] (p:&>T) => (set = proc (v:T) { p<-v; });
-    fun mkrw[T] (p:&T) => mkr p + mkw p;
-  
-    fun deref[T] (p: rptr T) => p.get ();
-    proc storeat[T] (p: wptr T, v: T) { p.set v; }
-  
-    // concrete compact linear type pointers
-    proc storeat[D,C] : _pclt< D, C >  * C = "storeat ($1,$2);";
-  
-  }
-  
-  //$ Felix and C pointers.
-  //$ Felix pointer ptr[T] = &T.
-  //$ C pointer cptr[T] = &T.
-  //$ See also carray for incrementable pointers carray[T] = +T.
-  open class Cptr 
-  {
-    //$ Type of a Felix pointer.
-    //$ Always points to an object.
-    //$ Cannot be NULL.
-    //$ Cannot be incremented.
-    typedef ptr[T] = &T;
-  
-    //$ Dereference a Felx pointer.
-    //lvalue fun deref[T]: &T -> T = "*$1";
-    fun _deref[T]: &<T -> T = "*$t";
-    fun deref[T] (p:&<T) => _deref p;
-    //proc _storeat[T]: &>T * T = "*$1=$2;";
-    proc storeat[T] (p: &>T, v:T) { _storeat (p,v); }
-  
-    //$ Type of a C pointer.
-    //$ Either pointes to an object or is NULL.
-    //$ Cannot be incremented.
-    union cptr[T] = | nullptr | Ptr of &T;
-  
-    //$ Demote a Felix pointer to a C pointer. Safe.
-    ctor[T] cptr[T]: &T = "$t";
-  
-    //$ Promote a C pointer to a Felix pointer.
-    //$ Conversion is checked.
-    //$ Aborts with match failure if NULL.
-    ctor[T] ptr[T](px:cptr[T]) => 
-      let Ptr p = px in p
-     ; // match failure if null
-  
-    //$ Checked dereference of C pointer.
-    fun deref[T] (px:cptr[T])=> *(px.ptr);
-  
-    //$ Test if a C pointer is NULL.
-    fun is_nullptr[T] (px:cptr[T])=> match px with | #nullptr => true | _ => false endmatch;
-    
-    instance[T] Eq[cptr[T]] {
-      //$ Equality of C pointers.
-      fun == : cptr[T] * cptr[T] -> bool = "$1==$2";
-    }
-    instance[T] Tord[cptr[T]] {
-      //$ Total ordering of C pointer.
-      //$ NULL is the least element.
-      fun < : cptr[T] * cptr[T] -> bool = "$1<$2";
-    }
-  
-    //$ Allocate unmanaged C++ object on the heap and return pointer.
-    //$ Felix does not check the argument type, but C++ does.
-    //$ The argument must select a suitable C++ constructor.
-    gen cnew[T,A] : A -> &T = "new (?1)($a)";
-  
-    //$ Delete unmanaged C++ object from heap
-    proc delete[T] : &T = "delete $1;";
-  
-    //$ Allocate managed C++ object directly on heap.
-    //$ Felix does not check the argument type, but C++ does.
-    //$ The argument must select a suitable constructor.
-    gen gcnew[T,A] : A -> &T = "new (*PTF gcp, @?1,true) (?1)($a)";
-  
-  }
-  
-  open[T] Eq[cptr[T]];
-  open[T] Tord[cptr[T]];
-  
-  //$ Special notation @T for  type of a C pointer.
-  typedef fun n"@" (T:TYPE) : TYPE => cptr[T]; 
-  
+   
+   // move to separate file later.
+   open class AbstractPointers
+   {
+     typedef fun rptr (T:TYPE) : TYPE =>  (get: 1 -> T);
+     typedef fun wptr (T:TYPE) : TYPE =>  (set : T -> 0);
+     typedef fun rwptr (T:TYPE) : TYPE => (get: 1 -> T, set : T -> 0);
+   
+     fun mkr[T] (p:&<T) => (get= { *p });
+     fun mkw[T] (p:&>T) => (set = proc (v:T) { p<-v; });
+     fun mkrw[T] (p:&T) => mkr p + mkw p;
+   
+     fun deref[T] (p: rptr T) => p.get ();
+     proc storeat[T] (p: wptr T, v: T) { p.set v; }
+   
+     // concrete compact linear type pointers
+     proc storeat[D,C] : _pclt< D, C >  * C = "storeat ($1,$2);";
+   
+   }
+   
+   //$ Felix and C pointers.
+   //$ Felix pointer ptr[T] = &T.
+   //$ C pointer cptr[T] = &T.
+   //$ See also carray for incrementable pointers carray[T] = +T.
+   open class Cptr 
+   {
+     //$ Type of a Felix pointer.
+     //$ Always points to an object.
+     //$ Cannot be NULL.
+     //$ Cannot be incremented.
+     typedef ptr[T] = &T;
+   
+     //$ Dereference a Felx pointer.
+     //lvalue fun deref[T]: &T -> T = "*$1";
+     fun _deref[T]: &<T -> T = "*$t";
+     fun deref[T] (p:&<T) => _deref p;
+     //proc _storeat[T]: &>T * T = "*$1=$2;";
+     proc storeat[T] (p: &>T, v:T) { _storeat (p,v); }
+   
+     //$ Type of a C pointer.
+     //$ Either pointes to an object or is NULL.
+     //$ Cannot be incremented.
+     union cptr[T] = | nullptr | Ptr of &T;
+   
+     //$ Demote a Felix pointer to a C pointer. Safe.
+     ctor[T] cptr[T]: &T = "$t";
+   
+     //$ Promote a C pointer to a Felix pointer.
+     //$ Conversion is checked.
+     //$ Aborts with match failure if NULL.
+     ctor[T] ptr[T](px:cptr[T]) => 
+       let Ptr p = px in p
+      ; // match failure if null
+   
+     //$ Checked dereference of C pointer.
+     fun deref[T] (px:cptr[T])=> *(px.ptr);
+   
+     //$ Test if a C pointer is NULL.
+     fun is_nullptr[T] (px:cptr[T])=> match px with | #nullptr => true | _ => false endmatch;
+     
+     instance[T] Eq[cptr[T]] {
+       //$ Equality of C pointers.
+       fun == : cptr[T] * cptr[T] -> bool = "$1==$2";
+     }
+     instance[T] Tord[cptr[T]] {
+       //$ Total ordering of C pointer.
+       //$ NULL is the least element.
+       fun < : cptr[T] * cptr[T] -> bool = "$1<$2";
+     }
+   
+     //$ Allocate unmanaged C++ object on the heap and return pointer.
+     //$ Felix does not check the argument type, but C++ does.
+     //$ The argument must select a suitable C++ constructor.
+     gen cnew[T,A] : A -> &T = "new (?1)($a)";
+   
+     //$ Delete unmanaged C++ object from heap
+     proc delete[T] : &T = "delete $1;";
+   
+     //$ Allocate managed C++ object directly on heap.
+     //$ Felix does not check the argument type, but C++ does.
+     //$ The argument must select a suitable constructor.
+     gen gcnew[T,A] : A -> &T = "new (*PTF gcp, @?1,true) (?1)($a)";
+   
+   }
+   
+   open[T] Eq[cptr[T]];
+   open[T] Tord[cptr[T]];
+   
+   //$ Special notation @T for  type of a C pointer.
+   typedef fun n"@" (T:TYPE) : TYPE => cptr[T]; 
+   
 
 C Arrays
 ========
@@ -113,21 +113,21 @@ is an incrementable, non-NULL pointer to a contiguous store.
 
 .. code-block:: felix
 
-  
-  
-  // For some reason this functor must be in global scope
-  //$ Define prefix + notation.
-  typedef fun prefix_plus(T:TYPE) : TYPE => Carray::carray[T]; 
-  
-  //$ A carray[T] = +T is an incrementable, non-NULL, pointer.
-  open class Carray
-  {
-    requires Cxx_headers::cstdlib;
-    open C_hack;
-  
-    //$ The carray type.
-    type carray[T] = new &T;
-  
+   
+   
+   // For some reason this functor must be in global scope
+   //$ Define prefix + notation.
+   typedef fun prefix_plus(T:TYPE) : TYPE => Carray::carray[T]; 
+   
+   //$ A carray[T] = +T is an incrementable, non-NULL, pointer.
+   open class Carray
+   {
+     requires Cxx_headers::cstdlib;
+     open C_hack;
+   
+     //$ The carray type.
+     type carray[T] = new &T;
+   
 
 Allocation
 ----------
@@ -139,19 +139,19 @@ to reserve such carrays for C datatypes.
 
 .. code-block:: felix
 
-  
-    //$ Allocate a C array on the C heap (malloc).
-    //$ Unsafe: Not tracked by GC.
-    fun array_alloc[T]: !ints -> carray[T] = '(?1*)::std::malloc(sizeof(?1)*$1)';
-  
-    //$ Allocate a C array on the C heap with 0 fill (cmalloc).
-    //$ Unsafe: Not tracked by GC.
-    fun array_calloc[T]: !ints -> carray[T] = '(?1*)::std::calloc(sizeof(?1),$1)';
-  
-    //$ Free a C array (free).
-    //$ Must point to C heap allocated storage. Unsafe.
-    proc free[T]: carray[T] = "::std::free($1);";
-  
+   
+     //$ Allocate a C array on the C heap (malloc).
+     //$ Unsafe: Not tracked by GC.
+     fun array_alloc[T]: !ints -> carray[T] = '(?1*)::std::malloc(sizeof(?1)*$1)';
+   
+     //$ Allocate a C array on the C heap with 0 fill (cmalloc).
+     //$ Unsafe: Not tracked by GC.
+     fun array_calloc[T]: !ints -> carray[T] = '(?1*)::std::calloc(sizeof(?1),$1)';
+   
+     //$ Free a C array (free).
+     //$ Must point to C heap allocated storage. Unsafe.
+     proc free[T]: carray[T] = "::std::free($1);";
+   
 
 Dereference
 -----------
@@ -159,17 +159,17 @@ Dereference
 
 .. code-block:: felix
 
-  
-    //$ Functional get by index.
-    fun get[T]: carray[T] * !ints -> T = '$1[$2]';
-  
-    //$ Store value in array at index position.
-    proc set[T] : carray[T] * !ints * T = "$1[$2]=$3;";
-  
-    //$ Get by index using application.
-    //$ i x = x . i = get (x,i)
-    fun apply [T,I in ints] (i:I, x:carray[T]) => get (x,i);
-  
+   
+     //$ Functional get by index.
+     fun get[T]: carray[T] * !ints -> T = '$1[$2]';
+   
+     //$ Store value in array at index position.
+     proc set[T] : carray[T] * !ints * T = "$1[$2]=$3;";
+   
+     //$ Get by index using application.
+     //$ i x = x . i = get (x,i)
+     fun apply [T,I in ints] (i:I, x:carray[T]) => get (x,i);
+   
 
 Lvalue dereferences
 -------------------
@@ -180,14 +180,14 @@ of lvalues in general: this is a very special case.
 
 .. code-block:: felix
 
-    //$ Lvalue reference to element by index position. Unsafe.
-    //lvalue fun subscript[T]: carray[T] * !ints -> T = '$1[$2]';
-    fun subscript[T]: carray[T] * !ints -> T = '$1[$2]';
-  
-    //$ Lvalue reference to element by pointer.
-    //lvalue fun deref[T]: carray[T] -> T = '*$1';
-    fun deref[T]: carray[T] -> T = '*$1';
-  
+     //$ Lvalue reference to element by index position. Unsafe.
+     //lvalue fun subscript[T]: carray[T] * !ints -> T = '$1[$2]';
+     fun subscript[T]: carray[T] * !ints -> T = '$1[$2]';
+   
+     //$ Lvalue reference to element by pointer.
+     //lvalue fun deref[T]: carray[T] -> T = '*$1';
+     fun deref[T]: carray[T] -> T = '*$1';
+   
 
 Pointer operators
 -----------------
@@ -195,16 +195,16 @@ Pointer operators
 
 .. code-block:: felix
 
-    //$ Advance carray to next element.
-    fun + [T]: carray[T] * !ints -> carray[T]= '$1+$2';
-  
-    //$ Backup carray to previous element.
-    fun - [T]: carray[T] * !ints -> carray[T] = '$1-$2';
-  
-    //$ Calculate the offset in elements between
-    //$ two overlapping carrays.
-    fun - [T]: carray[T] * carray[T]-> ptrdiff = '$1-$2';
-  
+     //$ Advance carray to next element.
+     fun + [T]: carray[T] * !ints -> carray[T]= '$1+$2';
+   
+     //$ Backup carray to previous element.
+     fun - [T]: carray[T] * !ints -> carray[T] = '$1-$2';
+   
+     //$ Calculate the offset in elements between
+     //$ two overlapping carrays.
+     fun - [T]: carray[T] * carray[T]-> ptrdiff = '$1-$2';
+   
 
 Mutators
 --------
@@ -212,25 +212,25 @@ Mutators
 
 .. code-block:: felix
 
-  
-    //$ Mutable pre-increment ++p.
-    proc pre_incr[T]: &carray[T] = '++*$1;';
-  
-    //$ Mutable post-increment p++.
-    proc post_incr[T]: &carray[T] = '(*$1)++;';
-  
-    //$ Mutable pre-decarement --p.
-    proc pre_decr[T]: &carray[T] = '--*$1;';
-  
-    //$ Mutable post-decarement p--.
-    proc post_decr[T]: &carray[T] = '(*$1)--;';
-  
-    //$ Mutable advance by offset amount.
-    proc += [T]: &carray[T] * !ints = '*$1+=$2;';
-  
-    //$ Mutable backup by offset amount.
-    proc -= [T]: &carray[T] * !ints = '*$1-=$2;';
-  
+   
+     //$ Mutable pre-increment ++p.
+     proc pre_incr[T]: &carray[T] = '++*$1;';
+   
+     //$ Mutable post-increment p++.
+     proc post_incr[T]: &carray[T] = '(*$1)++;';
+   
+     //$ Mutable pre-decarement --p.
+     proc pre_decr[T]: &carray[T] = '--*$1;';
+   
+     //$ Mutable post-decarement p--.
+     proc post_decr[T]: &carray[T] = '(*$1)--;';
+   
+     //$ Mutable advance by offset amount.
+     proc += [T]: &carray[T] * !ints = '*$1+=$2;';
+   
+     //$ Mutable backup by offset amount.
+     proc -= [T]: &carray[T] * !ints = '*$1-=$2;';
+   
 
 Comparisons
 -----------
@@ -238,21 +238,21 @@ Comparisons
 
 .. code-block:: felix
 
-  
-    //$ Pointer equality.
-    instance[T] Eq[carray[T]] {
-      fun == : carray[T] * carray[T] -> bool = '$1==$2';
-      fun != : carray[T] * carray[T] -> bool = '$1!=$2';
-    }
-  
-    //$ Pointer total ordering.
-    instance[T] Tord[carray[T]] {
-      fun < : carray[T] * carray[T] -> bool = '$1<$2';
-      fun <= : carray[T] * carray[T] -> bool = '$1<=$2';
-      fun > : carray[T] * carray[T] -> bool = '$1>$2';
-      fun >= : carray[T] * carray[T] -> bool = '$1>=$2';
-    }
-  
+   
+     //$ Pointer equality.
+     instance[T] Eq[carray[T]] {
+       fun == : carray[T] * carray[T] -> bool = '$1==$2';
+       fun != : carray[T] * carray[T] -> bool = '$1!=$2';
+     }
+   
+     //$ Pointer total ordering.
+     instance[T] Tord[carray[T]] {
+       fun < : carray[T] * carray[T] -> bool = '$1<$2';
+       fun <= : carray[T] * carray[T] -> bool = '$1<=$2';
+       fun > : carray[T] * carray[T] -> bool = '$1>$2';
+       fun >= : carray[T] * carray[T] -> bool = '$1>=$2';
+     }
+   
 
 Conversions
 -----------
@@ -260,60 +260,60 @@ Conversions
 
 .. code-block:: felix
 
-    //$ Get carray of an array.
-    fun stl_begin[T,N]: carray[array[T,N]] -> carray[T] = "(?1*)&($1->data)";
-  
-    //$ Unsafe conversion of Felix pointer to carray.
-    fun prefix_plus [T]:&T -> carray[T] = "$t"; // unsafe
-  
-    //$ Demote carray to Felix pointer (safe unless off the end).
-    fun neg [T]: carray[T] -> &T = "$t"; // safe (unless we allow +T to be NULL later ..)
-  
-    //$ Unsafe conversion of Felix pointer to carray.
-    ctor[T] carray[T] : &T = "$t";
-  
-    //$ Get a carray from a Felix array object.
-    ctor[T,N] carray[T]: &array[T,N] = "($1)->data";
-  
-  
-    //$ Convert C array to Felix array.
-    fun array_of[T,N]: carray[T] -> &array[T,N] = "*(#0*)(void*)$1";
-  }
-  
-  open[T] Eq[carray[T]];
-  open[T] Tord[carray[T]];
-  @
-  
+     //$ Get carray of an array.
+     fun stl_begin[T,N]: carray[array[T,N]] -> carray[T] = "(?1*)&($1->data)";
+   
+     //$ Unsafe conversion of Felix pointer to carray.
+     fun prefix_plus [T]:&T -> carray[T] = "$t"; // unsafe
+   
+     //$ Demote carray to Felix pointer (safe unless off the end).
+     fun neg [T]: carray[T] -> &T = "$t"; // safe (unless we allow +T to be NULL later ..)
+   
+     //$ Unsafe conversion of Felix pointer to carray.
+     ctor[T] carray[T] : &T = "$t";
+   
+     //$ Get a carray from a Felix array object.
+     ctor[T,N] carray[T]: &array[T,N] = "($1)->data";
+   
+   
+     //$ Convert C array to Felix array.
+     fun array_of[T,N]: carray[T] -> &array[T,N] = "*(#0*)(void*)$1";
+   }
+   
+   open[T] Eq[carray[T]];
+   open[T] Tord[carray[T]];
+   @
+   
 
 .. code-block:: felix
 
-  // carray test
-  
-  var a : +int = array_alloc[int] 10;
-  for var i in 0 upto 9 do
-    set(a, i, i * i);
-    set(a,i,get(a,i)+1);
-  done
-  for i in 0 upto 9 do
-    println$  a.[i], *(a+i), a.i;
-  done
-  free a;
-  @
+   // carray test
+   
+   var a : +int = array_alloc[int] 10;
+   for var i in 0 upto 9 do
+     set(a, i, i * i);
+     set(a,i,get(a,i)+1);
+   done
+   for i in 0 upto 9 do
+     println$  a.[i], *(a+i), a.i;
+   done
+   free a;
+   @
 
 .. code-block:: text
 
-  (1, 1, 1)
-  (2, 2, 2)
-  (5, 5, 5)
-  (10, 10, 10)
-  (17, 17, 17)
-  (26, 26, 26)
-  (37, 37, 37)
-  (50, 50, 50)
-  (65, 65, 65)
-  (82, 82, 82)
-  @
-  
+   (1, 1, 1)
+   (2, 2, 2)
+   (5, 5, 5)
+   (10, 10, 10)
+   (17, 17, 17)
+   (26, 26, 26)
+   (37, 37, 37)
+   (50, 50, 50)
+   (65, 65, 65)
+   (82, 82, 82)
+   @
+   
 
 Array sort
 ==========
@@ -322,52 +322,52 @@ Sort an array using STL sort.
 
 .. code-block:: felix
 
-  
-  //$ Utility class to leverage STL sort.
-  class Sort
-  {
-    //$ STL compliant comparator object built from
-    //$ a closure of a Felix function.
-    private header stl_comparator_def = 
-    """
-    template<class CT, class FT2, class FFT>
-    struct comparator {
-      FFT cmp;
-      comparator() : cmp(0) {}
-      comparator(FFT cmp_a) : cmp(cmp_a) {}
-      bool operator ()(CT x, CT y){
-        ::std::pair<CT,CT> z(x,y); 
-        return cmp->apply(*(FT2*)(void*)&z);
-      }
-    };
-    """ requires Cxx_headers::utility;
-  
-    private type _comparator[CT,FT2,FFT] = "comparator<?1,?2,?3>" requires stl_comparator_def;
-    type stl_comparator[T] = new _comparator[T,T*T,T*T->bool];
-  
-    private fun _make_comparator[CT,FT2,FFT]: FFT -> stl_comparator[CT] = 
-      "comparator<?1,?2,?3>($1)"
-    ;
-  
-    //$ Make a C++ STL comparator object from a Felix comparison function.
-    ctor[T] stl_comparator[T] (cmp:T * T -> bool) => 
-      _make_comparator[T, T*T, T*T->bool] (cmp)
-    ;
-  
-    //$ Invoke stl sort with C++ comparator.
-    proc stl_sort[T]: stl_comparator[T] * +T * +T = "::std::sort($2, $3, $1);" 
-      requires Cxx_headers::algorithm;
-  
-    //$ Invoke stl sort with Felix comparison function.
-    inline proc stl_sort[T] (cmp: T * T -> bool, b: +T,  e:+T) => 
-      stl_sort (stl_comparator cmp, b, e)
-    ;
-  
-    //$ Invoke stl sort default comparison function.
-    inline proc stl_sort[T with Tord[T]] (b:+T, e:+T) => stl_sort ( (< of (T * T)), b, e);
-  
-  }
-  
+   
+   //$ Utility class to leverage STL sort.
+   class Sort
+   {
+     //$ STL compliant comparator object built from
+     //$ a closure of a Felix function.
+     private header stl_comparator_def = 
+     """
+     template<class CT, class FT2, class FFT>
+     struct comparator {
+       FFT cmp;
+       comparator() : cmp(0) {}
+       comparator(FFT cmp_a) : cmp(cmp_a) {}
+       bool operator ()(CT x, CT y){
+         ::std::pair<CT,CT> z(x,y); 
+         return cmp->apply(*(FT2*)(void*)&z);
+       }
+     };
+     """ requires Cxx_headers::utility;
+   
+     private type _comparator[CT,FT2,FFT] = "comparator<?1,?2,?3>" requires stl_comparator_def;
+     type stl_comparator[T] = new _comparator[T,T*T,T*T->bool];
+   
+     private fun _make_comparator[CT,FT2,FFT]: FFT -> stl_comparator[CT] = 
+       "comparator<?1,?2,?3>($1)"
+     ;
+   
+     //$ Make a C++ STL comparator object from a Felix comparison function.
+     ctor[T] stl_comparator[T] (cmp:T * T -> bool) => 
+       _make_comparator[T, T*T, T*T->bool] (cmp)
+     ;
+   
+     //$ Invoke stl sort with C++ comparator.
+     proc stl_sort[T]: stl_comparator[T] * +T * +T = "::std::sort($2, $3, $1);" 
+       requires Cxx_headers::algorithm;
+   
+     //$ Invoke stl sort with Felix comparison function.
+     inline proc stl_sort[T] (cmp: T * T -> bool, b: +T,  e:+T) => 
+       stl_sort (stl_comparator cmp, b, e)
+     ;
+   
+     //$ Invoke stl sort default comparison function.
+     inline proc stl_sort[T with Tord[T]] (b:+T, e:+T) => stl_sort ( (< of (T * T)), b, e);
+   
+   }
+   
 
 Reference counting pointer.
 ===========================
@@ -375,26 +375,26 @@ Reference counting pointer.
 
 .. code-block:: felix
 
-  open class SharedPtr
-  {
-     type shared_ptr[T] 
-       = "::std::shared_ptr<?1>"
-       requires Cxx_headers::memory
-     ;
-  
-     ctor[T] shared_ptr[T] : 1 = "::std::shared_ptr<?1>()"; // nullptr
-     ctor[T] shared_ptr[T] : &T = "::std::shared_ptr<?1>($1)";
-  
-     proc reset[T] : &shared_ptr[T] = "$1->reset();";
-     proc swap[T] : &shared_ptr[T] * &shared_ptr[T] = "$1->swap(*$2);";
-     fun get[T] : shared_ptr[T] -> &T = "$1.get()";
-     fun deref[T] : shared_ptr[T] -> T = "*$1";
-     fun use_count[T] : shared_ptr[T] -> long = "$1.use_count()";
-     fun unique[T] : shared_ptr[T] -> bool = "$1.unique";
-     fun is_null[T] : shared_ptr[T] -> bool = "(bool)$1";
-  }
-  @
-  
+   open class SharedPtr
+   {
+      type shared_ptr[T] 
+        = "::std::shared_ptr<?1>"
+        requires Cxx_headers::memory
+      ;
+   
+      ctor[T] shared_ptr[T] : 1 = "::std::shared_ptr<?1>()"; // nullptr
+      ctor[T] shared_ptr[T] : &T = "::std::shared_ptr<?1>($1)";
+   
+      proc reset[T] : &shared_ptr[T] = "$1->reset();";
+      proc swap[T] : &shared_ptr[T] * &shared_ptr[T] = "$1->swap(*$2);";
+      fun get[T] : shared_ptr[T] -> &T = "$1.get()";
+      fun deref[T] : shared_ptr[T] -> T = "*$1";
+      fun use_count[T] : shared_ptr[T] -> long = "$1.use_count()";
+      fun unique[T] : shared_ptr[T] -> bool = "$1.unique";
+      fun is_null[T] : shared_ptr[T] -> bool = "(bool)$1";
+   }
+   @
+   
 
 MMap
 ====
@@ -404,93 +404,93 @@ Windows has a similar capability we have not modelled yet.
 
 .. code-block:: felix
 
-  
-  class Mmap
-  {
-    requires package "mmap";
-    header """
-      // MAP_ANON is an older form of MAP_ANONYMOUS, and should be compatible
-      #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
-      #  define MAP_ANONYMOUS MAP_ANON
-      #endif
-    """;
-  
-    // Offset into file, should be defined elsewhere
-    typedef off_t = ulong;
-  
-    type mmap_prot = "int";
-    instance Eq[mmap_prot]{
-       fun == : mmap_prot * mmap_prot -> bool = "$1==$2"; 
-    }
-    instance Bits[mmap_prot]{}
-  
-    inherit Eq[mmap_prot];
-    inherit Bits[mmap_prot];
-  
-  
-    type mmap_flags = "int";
-    instance Eq[mmap_flags]{
-       fun == : mmap_flags * mmap_flags -> bool = "$1==$2"; 
-    }
-    instance Bits[mmap_flags]{}
-  
-    inherit Eq[mmap_flags];
-    inherit Bits[mmap_flags];
-  
-    // protection options
-    const PROT_NONE  : mmap_prot;  // Posix: inaccessible
-    const PROT_EXEC  : mmap_prot;  // Posix: allow exec
-    const PROT_READ  : mmap_prot;  // Posix: allow read (and perhaps exec)
-    const PROT_WRITE : mmap_prot;  // Posix: allow write (and perhaps write and exec)
-  
-    // Linux only
-    const MAP_DENYWRITE: mmap_flags; // Linux only
-  
-    // flags: mode
-    const MAP_FILE: mmap_flags;      // Posix: Default mode: map a file
-    const MAP_ANONYMOUS: mmap_flags; // Linux, OSX: Map from VM pool
-  
-    // flags: map address
-    const MAP_FIXED: mmap_flags;     // Posix: Client tries to fix the mapping address, 
-                              // must set address argument non-NULL
-                              // Implementation dependent
-                              // Default: system chooses address is not specified
-                              // must set address NULL 
-  
-    // flags: sharing
-    const MAP_SHARED : mmap_flags;   // Posix: write changes to backing store on msync
-    const MAP_PRIVATE : mmap_flags;  // Posix: don't write changes ever
-  
-    // System dependent:
-    const MAP_HASSEMAPHORE: mmap_flags;
-    const MAP_NORESERVE: mmap_flags;
-    const MAP_LOCKED: mmap_flags;
-    const MAP_GROWSDOWN: mmap_flags;
-    const MAP_32BIT: mmap_flags;
-    const MAP_POPULATE: mmap_flags;
-    const MAP_NONBLOCK: mmap_flags;
-  
-    // return value of mmap
-    const MAP_FAILED : address;
-  
-    // size of a page
-    const _SC_PAGESIZE : long = "sysconf(_SC_PAGESIZE)";
-  
-    // establish a mapping
-    fun mmap:
-      address * //< start address
-      size *    //< bytes to map
-      mmap_prot *     //< protection
-      mmap_flags *     //< flags
-      int *     //< file descriptor
-      off_t     //< offset into file, multiple of _SC_PAGESIZE
-      -> address; //< start of reserved address space
-  
-    // unmap a region
-    fun munmap: address * size -> int;
-  
-    // save region to backing store (MAP_SHARED only)
-    fun msync: address * size * int -> int;
-  }
-  
-  
+   
+   class Mmap
+   {
+     requires package "mmap";
+     header """
+       // MAP_ANON is an older form of MAP_ANONYMOUS, and should be compatible
+       #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+       #  define MAP_ANONYMOUS MAP_ANON
+       #endif
+     """;
+   
+     // Offset into file, should be defined elsewhere
+     typedef off_t = ulong;
+   
+     type mmap_prot = "int";
+     instance Eq[mmap_prot]{
+        fun == : mmap_prot * mmap_prot -> bool = "$1==$2"; 
+     }
+     instance Bits[mmap_prot]{}
+   
+     inherit Eq[mmap_prot];
+     inherit Bits[mmap_prot];
+   
+   
+     type mmap_flags = "int";
+     instance Eq[mmap_flags]{
+        fun == : mmap_flags * mmap_flags -> bool = "$1==$2"; 
+     }
+     instance Bits[mmap_flags]{}
+   
+     inherit Eq[mmap_flags];
+     inherit Bits[mmap_flags];
+   
+     // protection options
+     const PROT_NONE  : mmap_prot;  // Posix: inaccessible
+     const PROT_EXEC  : mmap_prot;  // Posix: allow exec
+     const PROT_READ  : mmap_prot;  // Posix: allow read (and perhaps exec)
+     const PROT_WRITE : mmap_prot;  // Posix: allow write (and perhaps write and exec)
+   
+     // Linux only
+     const MAP_DENYWRITE: mmap_flags; // Linux only
+   
+     // flags: mode
+     const MAP_FILE: mmap_flags;      // Posix: Default mode: map a file
+     const MAP_ANONYMOUS: mmap_flags; // Linux, OSX: Map from VM pool
+   
+     // flags: map address
+     const MAP_FIXED: mmap_flags;     // Posix: Client tries to fix the mapping address, 
+                               // must set address argument non-NULL
+                               // Implementation dependent
+                               // Default: system chooses address is not specified
+                               // must set address NULL 
+   
+     // flags: sharing
+     const MAP_SHARED : mmap_flags;   // Posix: write changes to backing store on msync
+     const MAP_PRIVATE : mmap_flags;  // Posix: don't write changes ever
+   
+     // System dependent:
+     const MAP_HASSEMAPHORE: mmap_flags;
+     const MAP_NORESERVE: mmap_flags;
+     const MAP_LOCKED: mmap_flags;
+     const MAP_GROWSDOWN: mmap_flags;
+     const MAP_32BIT: mmap_flags;
+     const MAP_POPULATE: mmap_flags;
+     const MAP_NONBLOCK: mmap_flags;
+   
+     // return value of mmap
+     const MAP_FAILED : address;
+   
+     // size of a page
+     const _SC_PAGESIZE : long = "sysconf(_SC_PAGESIZE)";
+   
+     // establish a mapping
+     fun mmap:
+       address * //< start address
+       size *    //< bytes to map
+       mmap_prot *     //< protection
+       mmap_flags *     //< flags
+       int *     //< file descriptor
+       off_t     //< offset into file, multiple of _SC_PAGESIZE
+       -> address; //< start of reserved address space
+   
+     // unmap a region
+     fun munmap: address * size -> int;
+   
+     // save region to backing store (MAP_SHARED only)
+     fun msync: address * size * int -> int;
+   }
+   
+   

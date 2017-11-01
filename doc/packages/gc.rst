@@ -113,61 +113,61 @@ provide one as pthreads are considered mandatory for Felix.
 
 .. code-block:: cpp
 
-  #ifndef __PTHREAD_THREAD_CONTROL_BASE_HPP__
-  #define __PTHREAD_THREAD_CONTROL_BASE_HPP__
-  
-  #include "flx_pthread_config.hpp"
-  #include <string.h>
-  #include <vector>
-  
-  namespace flx { namespace pthread {
-  
-  struct thread_data_t {
-    thread_data_t(void *b) : stack_base(b), stack_top(0), active(true) {}
-    void *stack_base;
-    void *stack_top;
-    bool active;
-  };
-  
-  struct memory_range_t {
-    memory_range_t(void *b_, void *e_) : b(b_), e(e_) {}
-    void *b;
-    void *e;
-  };
-  
-  typedef ::std::vector<memory_range_t> memory_ranges_t;
-  
-  class PTHREAD_EXTERN world_stop_notifier_t 
-  {
-  public:
-    virtual void notify_world_stop()=0;
-    virtual ~world_stop_notifier_t();
-  };
-  
-  class PTHREAD_EXTERN thread_control_base_t
-  {
-  public:
-    virtual bool get_debug() const =0;
-    virtual bool world_stop() = 0;
-    virtual void world_start() = 0;
-    virtual void resume() = 0;
-    virtual void suspend() = 0;
-    virtual void yield() = 0;
-    virtual void join_all() = 0;
-    virtual void add_thread(void*)=0;
-    virtual void remove_thread()=0;
-    virtual size_t thread_count()=0;
-    virtual void register_world_stop_notifier(world_stop_notifier_t *)=0;
-    virtual void unregister_world_stop_notifier(world_stop_notifier_t *)=0;
-  
-    virtual ~thread_control_base_t()=0;
-    virtual  memory_ranges_t *get_block_list() = 0; // caller owns result and should delete it
-  };
-  }}
-  #endif
-  @
-  
-  
+   #ifndef __PTHREAD_THREAD_CONTROL_BASE_HPP__
+   #define __PTHREAD_THREAD_CONTROL_BASE_HPP__
+   
+   #include "flx_pthread_config.hpp"
+   #include <string.h>
+   #include <vector>
+   
+   namespace flx { namespace pthread {
+   
+   struct thread_data_t {
+     thread_data_t(void *b) : stack_base(b), stack_top(0), active(true) {}
+     void *stack_base;
+     void *stack_top;
+     bool active;
+   };
+   
+   struct memory_range_t {
+     memory_range_t(void *b_, void *e_) : b(b_), e(e_) {}
+     void *b;
+     void *e;
+   };
+   
+   typedef ::std::vector<memory_range_t> memory_ranges_t;
+   
+   class PTHREAD_EXTERN world_stop_notifier_t 
+   {
+   public:
+     virtual void notify_world_stop()=0;
+     virtual ~world_stop_notifier_t();
+   };
+   
+   class PTHREAD_EXTERN thread_control_base_t
+   {
+   public:
+     virtual bool get_debug() const =0;
+     virtual bool world_stop() = 0;
+     virtual void world_start() = 0;
+     virtual void resume() = 0;
+     virtual void suspend() = 0;
+     virtual void yield() = 0;
+     virtual void join_all() = 0;
+     virtual void add_thread(void*)=0;
+     virtual void remove_thread()=0;
+     virtual size_t thread_count()=0;
+     virtual void register_world_stop_notifier(world_stop_notifier_t *)=0;
+     virtual void unregister_world_stop_notifier(world_stop_notifier_t *)=0;
+   
+     virtual ~thread_control_base_t()=0;
+     virtual  memory_ranges_t *get_block_list() = 0; // caller owns result and should delete it
+   };
+   }}
+   #endif
+   @
+   
+   
 
 Memory Management Abstraction Interface.
 ----------------------------------------
@@ -175,33 +175,32 @@ Memory Management Abstraction Interface.
 
 .. code-block:: cpp
 
-  
-  #ifndef __FLX_GC_H__
-  #define __FLX_GC_H__
-  
-  #include <cstdlib>
-  #include <stddef.h>
-  #include "flx_gc_config.hpp"
-  #include "pthread_thread_control_base.hpp"
-  #include <string>
-  #include "flx_compiler_support_bodies.hpp"
-  #include <chrono>
-  
-  // we use an STL set to hold the collection of roots
-  #include <set>
-  
-  namespace flx {
-  namespace gc {
-  namespace generic {
-  // Here are the types we refer to:
-  
-  struct GC_EXTERN gc_shape_t;      // the shape of collectable objects
-  struct GC_EXTERN collector_t;     // the collector itself
-  struct GC_EXTERN allocator_t;     // the allocator used
-  struct GC_EXTERN offset_data_t;   // private data for offset scanner
-  struct GC_EXTERN pointer_data_t;  // description of a pointer
-  
-
+   
+   #ifndef __FLX_GC_H__
+   #define __FLX_GC_H__
+   
+   #include <cstdlib>
+   #include <stddef.h>
+   #include "flx_gc_config.hpp"
+   #include "pthread_thread_control_base.hpp"
+   #include <string>
+   #include "flx_compiler_support_bodies.hpp"
+   #include <chrono>
+   
+   // we use an STL set to hold the collection of roots
+   #include <set>
+   
+   namespace flx {
+   namespace gc {
+   namespace generic {
+   // Here are the types we refer to:
+   
+   struct GC_EXTERN gc_shape_t;      // the shape of collectable objects
+   struct GC_EXTERN collector_t;     // the collector itself
+   struct GC_EXTERN allocator_t;     // the allocator used
+   struct GC_EXTERN offset_data_t;   // private data for offset scanner
+   struct GC_EXTERN pointer_data_t;  // description of a pointer
+   
 This structure is used to provide the client with information
 about a pointer. The  :code:`pointer` field is the pointer about which
 information has been requested. If this field is not interior to
@@ -218,15 +217,15 @@ object for the element type. , that is, the <em>array bound</em>.
 
 .. code-block:: cpp
 
-  struct GC_EXTERN pointer_data_t
-  {
-    void *pointer;                      //< candidate pointer
-    void *head;                         //< head object
-    size_t max_elements;         //< allocated slots
-    size_t used_elements;        //< used slots
-    gc_shape_t *shape;                  //< shape
-  };
-  
+   struct GC_EXTERN pointer_data_t
+   {
+     void *pointer;                      //< candidate pointer
+     void *head;                         //< head object
+     size_t max_elements;         //< allocated slots
+     size_t used_elements;        //< used slots
+     gc_shape_t *shape;                  //< shape
+   };
+   
 
 <tt>gc_shape_t</tt> types
 -------------------------
@@ -236,62 +235,60 @@ Types required for the RTTI object.
 
 .. code-block:: cpp
 
-  enum gc_shape_flags_t {
-    gc_flags_default    = 0,            //< collectable and mobile
-    gc_flags_immobile   = 1,            //< cannot be moved
-    gc_flags_persistent = 2,            //< cannot be deallocated
-    gc_flags_conservative = 4           //< scan whole object conservatively
-  };
-  
-  /// Describes runtime object shape.
-  typedef void finaliser_t (collector_t*, void*); 
-  typedef void *scanner_t(collector_t*, gc_shape_t *, void *, size_t, int);
-  typedef ::std::string encoder_t (void *);
-  typedef ::std::size_t decoder_t(void *, char *, ::std::size_t);
-  typedef void copier_t (void*,void*);
-  typedef void dflt_init_t (void*);
-  
-  struct GC_EXTERN gc_shape_t
-  {
-    gc_shape_t *next_shape;         ///< pointer to next shape in list or NULL
-    char const *cname;              ///< C++ typename
-    ::std::size_t count;            ///< static array element count
-    ::std::size_t amt;              ///< bytes allocated
-    finaliser_t *finaliser;         ///< finalisation function
-    ValueType *fcops;               ///< first class ops
-  /*
-    copier_t *copy_init;
-    copier_t *move_init;
-    copier_t *copy_assign;
-    copier_t *move_assign;
-  */
-    void const *private_data;       ///< private data passed to scanner
-    scanner_t *scanner;             ///< scanner function 
-    encoder_t *encoder;             ///< encoder function 
-    decoder_t *decoder;             ///< encoder function 
-    gc_shape_flags_t flags;         ///< flags
-    size_t allocations;
-    size_t deallocations;
-  };
-  
-  GC_EXTERN extern gc_shape_t _ptr_void_map;
-  
-
+   enum gc_shape_flags_t {
+     gc_flags_default    = 0,            //< collectable and mobile
+     gc_flags_immobile   = 1,            //< cannot be moved
+     gc_flags_persistent = 2,            //< cannot be deallocated
+     gc_flags_conservative = 4           //< scan whole object conservatively
+   };
+   
+   /// Describes runtime object shape.
+   typedef void finaliser_t (collector_t*, void*); 
+   typedef void *scanner_t(collector_t*, gc_shape_t *, void *, size_t, int);
+   typedef ::std::string encoder_t (void *);
+   typedef ::std::size_t decoder_t(void *, char *, ::std::size_t);
+   typedef void copier_t (void*,void*);
+   typedef void dflt_init_t (void*);
+   
+   struct GC_EXTERN gc_shape_t
+   {
+     gc_shape_t *next_shape;         ///< pointer to next shape in list or NULL
+     char const *cname;              ///< C++ typename
+     ::std::size_t count;            ///< static array element count
+     ::std::size_t amt;              ///< bytes allocated
+     finaliser_t *finaliser;         ///< finalisation function
+     ValueType *fcops;               ///< first class ops
+   /*
+     copier_t *copy_init;
+     copier_t *move_init;
+     copier_t *copy_assign;
+     copier_t *move_assign;
+   */
+     void const *private_data;       ///< private data passed to scanner
+     scanner_t *scanner;             ///< scanner function 
+     encoder_t *encoder;             ///< encoder function 
+     decoder_t *decoder;             ///< encoder function 
+     gc_shape_flags_t flags;         ///< flags
+     size_t allocations;
+     size_t deallocations;
+   };
+   
+   GC_EXTERN extern gc_shape_t _ptr_void_map;
+   
 The standard scanner  :code:`scan_by_offsets` uses an array 
 containing offsets into an object where pointers are located.
 
 
 .. code-block:: cpp
 
-  struct GC_EXTERN offset_data_t
-  {
-    ::std::size_t n_offsets;
-    ::std::size_t const *offsets;
-  };
-  
-  GC_EXTERN scanner_t scan_by_offsets;
-  
-
+   struct GC_EXTERN offset_data_t
+   {
+     ::std::size_t n_offsets;
+     ::std::size_t const *offsets;
+   };
+   
+   GC_EXTERN scanner_t scan_by_offsets;
+   
 The standard finaliser is a template which destoys an object
 using the C++ destructor. In the RTTI object if the
 finaliser is zero, this means the compiler knew the
@@ -302,33 +299,33 @@ to a do nothing finaliser function.
 
 .. code-block:: cpp
 
-  
-  /*
-   * The following template is provided as a standard wrapper
-   * for C++ class destructors. The term std_finaliser<T>
-   * denotes a function pointer to the wrapper for the destructor
-   * of class T, which can be used as a finaliser in the shape
-   * descriptor of a T. The client is cautioned than the order
-   * of finalisation may not be what is expected. Finalisers
-   * should be provided for all C++ objects managed by the Felix
-   * collector and not refering to Felix objects,
-   * but which contain pointers to other objects that need
-   * to be deleted when the main object is destroyed;
-   * for example a string class managing an array of char
-   * requires its destructor be invoked to delete the managed
-   * array, and so a finaliser wrapping the destructor must
-   * be provided.
-   *
-   * C data types may, of course, also require destruction,
-   * and Felix therefore can provide programmers with
-   * the convenience of C++ destructors, even for C data types.
-   */
-  template<class T>
-  void std_finaliser(collector_t*, void *t)
-  {
-    static_cast<T*>(t) -> ~T();
-  }
-  
+   
+   /*
+    * The following template is provided as a standard wrapper
+    * for C++ class destructors. The term std_finaliser<T>
+    * denotes a function pointer to the wrapper for the destructor
+    * of class T, which can be used as a finaliser in the shape
+    * descriptor of a T. The client is cautioned than the order
+    * of finalisation may not be what is expected. Finalisers
+    * should be provided for all C++ objects managed by the Felix
+    * collector and not refering to Felix objects,
+    * but which contain pointers to other objects that need
+    * to be deleted when the main object is destroyed;
+    * for example a string class managing an array of char
+    * requires its destructor be invoked to delete the managed
+    * array, and so a finaliser wrapping the destructor must
+    * be provided.
+    *
+    * C data types may, of course, also require destruction,
+    * and Felix therefore can provide programmers with
+    * the convenience of C++ destructors, even for C data types.
+    */
+   template<class T>
+   void std_finaliser(collector_t*, void *t)
+   {
+     static_cast<T*>(t) -> ~T();
+   }
+   
 
 Allocator Abstraction
 ---------------------
@@ -343,17 +340,17 @@ with software organisation.
 
 .. code-block:: cpp
 
-  /// Allocator abstraction.
-  
-  struct allocator_t {
-    bool debug;
-    allocator_t():debug(false){}
-    virtual void *allocate(::std::size_t)=0;
-    virtual void deallocate(void *)=0;
-    virtual ~allocator_t();
-    void set_debug(bool d){debug=d;}
-  };
-  
+   /// Allocator abstraction.
+   
+   struct allocator_t {
+     bool debug;
+     allocator_t():debug(false){}
+     virtual void *allocate(::std::size_t)=0;
+     virtual void deallocate(void *)=0;
+     virtual ~allocator_t();
+     void set_debug(bool d){debug=d;}
+   };
+   
 
 The collector abstraction
 -------------------------
@@ -379,186 +376,186 @@ rules which result in a quite complex structure.
 
 .. code-block:: cpp
 
-  
-  /// Collector abstraction.
-  struct GC_EXTERN collector_t
-  {
-    bool debug;
-    bool report_gcstats;
-    void *module_registry; 
-    void set_debug(bool d, bool stats){debug=d;report_gcstats=stats;}
-    collector_t();
-    virtual ~collector_t();
-    virtual ::flx::pthread::thread_control_base_t *get_thread_control()const =0;
-    virtual void register_pointer(void *q, int reclimit)=0;
-    ::std::chrono::time_point<::std::chrono::high_resolution_clock> start_time;
-    ::std::chrono::duration<double> gc_time;
-  
-    virtual bool inrange(void *)const =0;
-    // These routines just provide statistics.
-    size_t get_allocation_count()const {
-      return v_get_allocation_count();
-    }
-  
-    size_t get_root_count()const {
-      return v_get_root_count();
-    }
-  
-    size_t get_allocation_amt()const {
-      return v_get_allocation_amt();
-    }
-  
-    // Hooks for the supplied allocator, which operate in
-    // terms of shape objects rather than raw memory amounts.
-    void *allocate(gc_shape_t *shape, size_t x) {
-      return v_allocate(shape,x);
-    }
-  
-    // The mark and sweep collector algorithm.
-    size_t collect() {
-      //fprintf(stderr, "Collecting\n");
-      ::std::chrono::time_point< ::std::chrono::high_resolution_clock> start_time, end_time;
-      start_time = ::std::chrono::high_resolution_clock::now();
-      size_t x = v_collect();
-      end_time = ::std::chrono::high_resolution_clock::now();
-      ::std::chrono::duration<double> elapsed = end_time - start_time;
-  
-      if (debug)
-        fprintf(stderr, "Collecting DONE in %10.5f seconds\n", elapsed.count());
-      gc_time += elapsed;
-      return x;
-    }
-  
-    // Routines to add and remove roots.
-    void add_root(void *memory) {
-      v_add_root(memory);
-    }
-  
-    void remove_root(void *memory) {
-      v_remove_root(memory);
-    }
-  
-    void free_all_mem() {
-      //fprintf(stderr,"Dispatching to free all mem\n");
-      v_free_all_mem();
-    }
-  
-    void finalise(void *frame) {
-      v_finalise(frame);
-    }
-  
-    // Integrity check for the data structure being managed.
-    // array management
-    virtual void set_used(void *memory, size_t)=0;
-    virtual void incr_used(void *memory, ptrdiff_t)=0;
-    virtual size_t get_used(void *memory)=0;
-    virtual size_t get_count(void *memory)=0;
-    virtual void *create_empty_array( gc_shape_t *shape, size_t count)=0;
-  
-    virtual pointer_data_t get_pointer_data(void *)=0;
-  private:
-    virtual size_t v_get_allocation_count()const=0;
-    virtual size_t v_get_root_count()const=0;
-    virtual size_t v_get_allocation_amt()const=0;
-    virtual void *v_allocate(gc_shape_t *shape, size_t)=0;
-    virtual void v_finalise(void *fp)=0;
-    virtual size_t v_collect()=0;
-    virtual void v_add_root(void *memory)=0;
-    virtual void v_remove_root(void *memory)=0;
-    virtual void v_free_all_mem()=0;
-  
-    // It doesn't make any sense to copy collector objects
-    // about.
-    void operator=(collector_t const&);
-    collector_t(collector_t const&);
-  };
-  
-  // The gc_profile_t is a grab bag of controls related to the collector.
-  struct GC_EXTERN gc_profile_t {
-    bool debug_driver;
-    bool debug_allocations;     ///< allocator debug on/off
-    bool debug_collections;     ///< collector debug on/off
-    bool report_collections;    ///< collector debug on/off
-    bool report_gcstats;        ///< print final gc statistics
-    bool allow_collection_anywhere; ///< enable collect on allocate
-  
-    size_t gc_freq;      ///< how often to collect
-    size_t gc_counter;   ///< counter to check if time to collect
-  
-    size_t min_mem;      ///< min memory before collection
-    size_t max_mem;      ///< throw out of memory if above here
-    size_t threshhold;   ///< collection trigger point
-    double free_factor;         ///< reset threshhold to used memory
-                                ///< by this factor after collection
-  
-    size_t collections;  ///< number of collections done
-    bool finalise;              ///< whether Felix should collect on exit
-    flx::gc::generic::collector_t *collector;
-  
-    size_t maybe_collect(); ///< function which maybe collects
-    size_t actually_collect(); ///< function which actually collects
-  
-    void *allocate(
-      flx::gc::generic::gc_shape_t *shape,
-      size_t count,
-      bool allow_gc
-    );
-  
-    gc_profile_t (
-      bool debug_driver_,
-      bool debug_allocations_,
-      bool debug_collections_,
-      bool report_collections_,
-      bool report_gcstats_,
-      bool allow_collection_anywhere_,
-      size_t gc_freq_,
-      size_t min_mem_,
-      size_t max_mem_,
-      double free_factor_,
-      bool finalise_,
-      flx::gc::generic::collector_t *collector
-    );
-    ~gc_profile_t();
-  };
-  
-  }}} // end namespaces
-  
-  /*
-   * The following two routines are used to provide
-   * C++ type safe heap allocation. There are no corresponding
-   * delete routines, please use the destroy function.
-   *
-   * Note these routines are now placed
-   * in the global namespace to accomodate Metrowerks
-   * compiler on Mac OS.
-   */
-  GC_EXTERN void *operator new
-  (
-    ::std::size_t,
-    flx::gc::generic::gc_profile_t &,
-    flx::gc::generic::gc_shape_t &,
-    bool
-  );
-  
-  /*
-   * Define an empty delete to make msvc happy.
-   */
-  GC_EXTERN void operator delete(
-    void*,
-    flx::gc::generic::gc_profile_t &,
-    flx::gc::generic::gc_shape_t &,
-    bool
-  );
-  
-  #endif
-  @
+   
+   /// Collector abstraction.
+   struct GC_EXTERN collector_t
+   {
+     bool debug;
+     bool report_gcstats;
+     void *module_registry; 
+     void set_debug(bool d, bool stats){debug=d;report_gcstats=stats;}
+     collector_t();
+     virtual ~collector_t();
+     virtual ::flx::pthread::thread_control_base_t *get_thread_control()const =0;
+     virtual void register_pointer(void *q, int reclimit)=0;
+     ::std::chrono::time_point<::std::chrono::high_resolution_clock> start_time;
+     ::std::chrono::duration<double> gc_time;
+   
+     virtual bool inrange(void *)const =0;
+     // These routines just provide statistics.
+     size_t get_allocation_count()const {
+       return v_get_allocation_count();
+     }
+   
+     size_t get_root_count()const {
+       return v_get_root_count();
+     }
+   
+     size_t get_allocation_amt()const {
+       return v_get_allocation_amt();
+     }
+   
+     // Hooks for the supplied allocator, which operate in
+     // terms of shape objects rather than raw memory amounts.
+     void *allocate(gc_shape_t *shape, size_t x) {
+       return v_allocate(shape,x);
+     }
+   
+     // The mark and sweep collector algorithm.
+     size_t collect() {
+       //fprintf(stderr, "Collecting\n");
+       ::std::chrono::time_point< ::std::chrono::high_resolution_clock> start_time, end_time;
+       start_time = ::std::chrono::high_resolution_clock::now();
+       size_t x = v_collect();
+       end_time = ::std::chrono::high_resolution_clock::now();
+       ::std::chrono::duration<double> elapsed = end_time - start_time;
+   
+       if (debug)
+         fprintf(stderr, "Collecting DONE in %10.5f seconds\n", elapsed.count());
+       gc_time += elapsed;
+       return x;
+     }
+   
+     // Routines to add and remove roots.
+     void add_root(void *memory) {
+       v_add_root(memory);
+     }
+   
+     void remove_root(void *memory) {
+       v_remove_root(memory);
+     }
+   
+     void free_all_mem() {
+       //fprintf(stderr,"Dispatching to free all mem\n");
+       v_free_all_mem();
+     }
+   
+     void finalise(void *frame) {
+       v_finalise(frame);
+     }
+   
+     // Integrity check for the data structure being managed.
+     // array management
+     virtual void set_used(void *memory, size_t)=0;
+     virtual void incr_used(void *memory, ptrdiff_t)=0;
+     virtual size_t get_used(void *memory)=0;
+     virtual size_t get_count(void *memory)=0;
+     virtual void *create_empty_array( gc_shape_t *shape, size_t count)=0;
+   
+     virtual pointer_data_t get_pointer_data(void *)=0;
+   private:
+     virtual size_t v_get_allocation_count()const=0;
+     virtual size_t v_get_root_count()const=0;
+     virtual size_t v_get_allocation_amt()const=0;
+     virtual void *v_allocate(gc_shape_t *shape, size_t)=0;
+     virtual void v_finalise(void *fp)=0;
+     virtual size_t v_collect()=0;
+     virtual void v_add_root(void *memory)=0;
+     virtual void v_remove_root(void *memory)=0;
+     virtual void v_free_all_mem()=0;
+   
+     // It doesn't make any sense to copy collector objects
+     // about.
+     void operator=(collector_t const&);
+     collector_t(collector_t const&);
+   };
+   
+   // The gc_profile_t is a grab bag of controls related to the collector.
+   struct GC_EXTERN gc_profile_t {
+     bool debug_driver;
+     bool debug_allocations;     ///< allocator debug on/off
+     bool debug_collections;     ///< collector debug on/off
+     bool report_collections;    ///< collector debug on/off
+     bool report_gcstats;        ///< print final gc statistics
+     bool allow_collection_anywhere; ///< enable collect on allocate
+   
+     size_t gc_freq;      ///< how often to collect
+     size_t gc_counter;   ///< counter to check if time to collect
+   
+     size_t min_mem;      ///< min memory before collection
+     size_t max_mem;      ///< throw out of memory if above here
+     size_t threshhold;   ///< collection trigger point
+     double free_factor;         ///< reset threshhold to used memory
+                                 ///< by this factor after collection
+   
+     size_t collections;  ///< number of collections done
+     bool finalise;              ///< whether Felix should collect on exit
+     flx::gc::generic::collector_t *collector;
+   
+     size_t maybe_collect(); ///< function which maybe collects
+     size_t actually_collect(); ///< function which actually collects
+   
+     void *allocate(
+       flx::gc::generic::gc_shape_t *shape,
+       size_t count,
+       bool allow_gc
+     );
+   
+     gc_profile_t (
+       bool debug_driver_,
+       bool debug_allocations_,
+       bool debug_collections_,
+       bool report_collections_,
+       bool report_gcstats_,
+       bool allow_collection_anywhere_,
+       size_t gc_freq_,
+       size_t min_mem_,
+       size_t max_mem_,
+       double free_factor_,
+       bool finalise_,
+       flx::gc::generic::collector_t *collector
+     );
+     ~gc_profile_t();
+   };
+   
+   }}} // end namespaces
+   
+   /*
+    * The following two routines are used to provide
+    * C++ type safe heap allocation. There are no corresponding
+    * delete routines, please use the destroy function.
+    *
+    * Note these routines are now placed
+    * in the global namespace to accomodate Metrowerks
+    * compiler on Mac OS.
+    */
+   GC_EXTERN void *operator new
+   (
+     ::std::size_t,
+     flx::gc::generic::gc_profile_t &,
+     flx::gc::generic::gc_shape_t &,
+     bool
+   );
+   
+   /*
+    * Define an empty delete to make msvc happy.
+    */
+   GC_EXTERN void operator delete(
+     void*,
+     flx::gc::generic::gc_profile_t &,
+     flx::gc::generic::gc_shape_t &,
+     bool
+   );
+   
+   #endif
+   @
 
 .. code-block:: cpp
 
-  
-  #define _ROUNDUP(i,n) ((i + n - 1) / n * n)
-  #define _ALIGN(i) _ROUNDUP(i,FLX_MAX_ALIGN)
-  
+   
+   #define _ROUNDUP(i,n) ((i + n - 1) / n * n)
+   #define _ALIGN(i) _ROUNDUP(i,FLX_MAX_ALIGN)
+   
 
 Memory Management Abstraction Implementation.
 ---------------------------------------------
@@ -566,277 +563,277 @@ Memory Management Abstraction Implementation.
 
 .. code-block:: cpp
 
-  
-  #include <cstdlib>
-  #include <cstdio>
-  #include <cassert>
-  #include "flx_gc.hpp"
-  #include "flx_exceptions.hpp"
-  #include "flx_gc_private.hpp"
-  #include <Judy.h>
-  
-  // for std::max
-  #include <algorithm>
-  
-  #ifdef max
-  #undef max
-  #endif
-  
-  
-  namespace flx {
-  namespace gc {
-  namespace generic {
-  gc_shape_t _ptr_void_map = {
-    NULL,
-    "void",
-    0,0,
-    0, // no finaliser
-    0, // fcops
-    0,
-    0,
-    0,
-    0,
-    gc::generic::gc_flags_default,
-    0UL, 0UL
-  };
-  
-  allocator_t::~allocator_t(){}
-  collector_t::~collector_t(){
-    if (report_gcstats)
-    {
-      ::std::chrono::duration<double> elapsed = 
-        ::std::chrono::high_resolution_clock::now() - start_time
-      ;
-      fprintf(stderr, "Deleting collector total time = %4.5f seconds, gc time = %4.5f = %3.2f%%\n", 
-        elapsed.count(), gc_time.count(), gc_time.count() * 100.0 / elapsed.count()
-      );
-    }
-  }
-  
-  collector_t::collector_t() 
-    : debug(false)
-    , report_gcstats(false)
-    , module_registry(0)
-    , gc_time(0.0)
-    , start_time(::std::chrono::high_resolution_clock::now())
-  {}
-  
-  gc_profile_t::gc_profile_t (
-    bool debug_driver_,
-    bool debug_allocations_,
-    bool debug_collections_,
-    bool report_collections_,
-    bool report_gcstats_,
-    bool allow_collection_anywhere_,
-    size_t gc_freq_,
-    size_t min_mem_,
-    size_t max_mem_,
-    double free_factor_,
-    bool finalise_,
-    flx::gc::generic::collector_t *collector_
-  ) :
-    debug_driver(debug_driver_),
-    debug_allocations(debug_allocations_),
-    debug_collections(debug_collections_),
-    report_collections(report_collections_),
-    report_gcstats(report_gcstats_),
-    allow_collection_anywhere(allow_collection_anywhere_),
-    gc_freq(gc_freq_),
-    gc_counter(0),
-    min_mem(min_mem_),
-    max_mem(max_mem_),
-    threshhold(min_mem_),
-    free_factor(free_factor_),
-    collections(0),
-    finalise(finalise_),
-    collector(collector_)
-  {
-  }
-  
-  gc_profile_t::~gc_profile_t() { }
-  
-  size_t gc_profile_t::maybe_collect() {
-    ++gc_counter;
-    if(debug_collections) fprintf(stderr,"Maybe collect?\n");
-    if (gc_counter < gc_freq) return 0;
-    if(collector->get_allocation_amt() < threshhold) return 0;
-    return actually_collect();
-  }
-  
-  size_t gc_profile_t::actually_collect() {
-    if(debug_collections || report_collections) 
-      fprintf(stderr,"[flx_gc:gc_profile_t] actually_collect\n");
-    gc_counter = 0;
-    size_t collected = collector->collect();
-    size_t allocated = collector->get_allocation_amt();
-    if (allocated > max_mem) throw flx::rtl::flx_out_of_memory_t();
-    threshhold = std::max ( min_mem,
-      (size_t) (free_factor * (double)allocated))
-    ;
-    if(debug_collections || report_collections)
-    {
-      size_t objs = collector->get_allocation_count();
-      size_t roots = collector->get_root_count();
-      fprintf(stderr, 
-        "actually collected %zu objects, still allocated: %zu roots, %zu objects, %zu bytes\n",
-        collected, roots, objs, allocated
-      );
-    }
-    return collected;
-  }
-  
-  void *gc_profile_t::allocate(
-    flx::gc::generic::gc_shape_t *shape,
-    size_t count,
-    bool allow_gc
-  )
-  {
-    void *p = 0;
-    ::std::size_t amt = count * shape->amt * shape->count;
-    bool tried_collection = false;
-  
-    // if we would exceed the threshhold and collection is allowed, do it
-    if (amt + collector->get_allocation_amt() > threshhold && allow_collection_anywhere && allow_gc)
-    {
-      if (report_collections)
-        fprintf(stderr,"[flx_gc:gc_profile_t] Threshhold %zu would be exceeded, collecting\n", threshhold);
-      actually_collect();
-      if (report_collections)
-        fprintf(stderr,"[flx_gc:gc_profile_t] New Threshhold %zu\n", threshhold);
-      tried_collection = true;
-    }
-  
-    // now try the allocation
-    try {
-      p = collector -> allocate(shape,count);
-    }
-    // if we ran out of physical memory
-    catch (flx::rtl::flx_out_of_memory_t& exn) 
-    { 
-      if (debug_allocations || debug_collections || report_collections)
-        fprintf(stderr,"[flx_gc:gc_profile_t] Out of physical memory\n");
-  
-      if (allow_collection_anywhere && allow_gc && !tried_collection)
-      {
-        actually_collect();
-        tried_collection = true;
-        try {
-          p = collector -> allocate(shape,count);
-        }
-        catch (flx::rtl::flx_out_of_memory_t& exn) // fatal error
-        {
-           fprintf(stderr,"[flx_gc:gc_profile_t] Allocation failed [after forced collection]\n");
-           throw exn;
-        }
-      }
-      else 
-      {
-        fprintf(stderr,"[flx_gc:gc_profile_t] Allocation failed [collection not allowed or already tried]\n");
-        throw exn; // fatal error
-      }
-    }
-  
-    assert (p);
-    return p;
-  }
-  
-  /*
-   *  This is the default scanner for compiler generated RTTI objects.
-   *  It uses an array of offsets into the object to tell where the pointers are.
-   *  We must pass this routine the collector, the RTTI shape of the object,
-   *  a pointer to the head (lowest byte) of the object, a count of the number
-   *  of copies of the object are present consecutively, and a recursion limit.
-   *
-   *  The count is there because all Felix heap objects are varrays, even if they're
-   *  merely length 1. Note that this dynamic array count is the number of used
-   *  slots in the varray not the allocated length. Note also the elements of the
-   *  varray can themselves be arrays with static lengths. The actual RTTI object
-   *  describes a single element of the inner static length array, so we have to
-   *  multiply the RTTI static length by the dynamic length.
-   */
-  void *scan_by_offsets(collector_t *collector, gc_shape_t *shape, void *p, size_t dyncount, int reclimit)
-  {
-    Word_t fp = (Word_t)p;
-  
-    // calculate the absolute number of used array slots
-    size_t n_used = dyncount  * shape->count;
-  
-    // find the array of offsets
-    offset_data_t const *data = (offset_data_t const *)shape->private_data;
-    ::std::size_t n_offsets = data->n_offsets;
-    ::std::size_t const *offsets = data->offsets;
-  
-    //fprintf(stderr, "scan by offsets: shape %s has %d offsets\n", shape->cname, (int)n_offsets);
-    // if the number of used slots is one and there is only one offset
-    // then there is only one possible pointer in the object at the specified offset
-    // so just return the value stored at that offset immediately
-    if (n_used * n_offsets == 1) // tail rec optimisation
-    {
-        void **pq = (void**)(void*)((unsigned char*)fp + offsets[0]);
-        void *q = *pq;
-        if(q) return q; // tail rec optimisation
-    }
-    else
-    // otherwise we have to scan through all the offsets in every array element
-    for(size_t j=0; j<n_used; ++j)
-    {
-      for(unsigned int i=0; i<n_offsets; ++i)
-      {
-        void **pq = (void**)(void*)((unsigned char*)fp + offsets[i]);
-        void *q = *pq;
-        //fprintf(stderr, "scan by offsets %s, #%d, offset %zu, address %p, value %p\n", 
-        //  shape->cname, i, offsets[i], pq, q);
-        // instead of returning the pointer, register it for later processing
-        if(collector->inrange(q))
-        {
-          collector->register_pointer(q, reclimit);
-        }
-      }
-      // on to the next array element
-      fp=(Word_t)(void*)((unsigned char*)fp+shape->amt);
-    }
-    // return 0 to indicate we registered pointers, instead of returning just one.
-    return 0;
-  }
-  
-  }}} // end namespaces
-  
-  // in global namespace now ..
-  //
-  // NOTE: Felix arrays are two dimensional. The shape.amt field is the size of
-  // one element. The shape.count field is the number of elements for a static
-  // array type. The dynamic length is for varrays, it is stored in a judy array
-  // associated with the array address. If there is nothing in the judy array,
-  // the dynamic length is one. C++ operator new allocates arrays of dynamic length 1. 
-  //
-  void *operator new(
-    std::size_t amt,
-    flx::gc::generic::gc_profile_t &gcp,
-    flx::gc::generic::gc_shape_t &shape,
-    bool allow_gc
-  )
-  {
-    if (amt != shape.amt * shape.count)
-    {
-      fprintf(stderr,"Shape size error: allocator size = %zu\n",amt);
-      fprintf(stderr,"Shape %s element size = %zu, element count = %zu\n",shape.cname,shape.amt,shape.count);
-      abort();
-    }
-    void *p = gcp.allocate(&shape,1,allow_gc); // dynamic array count = 1
-    return p;
-  }
-  
-  void operator delete(
-    void*,
-    flx::gc::generic::gc_profile_t &,
-    flx::gc::generic::gc_shape_t &,
-    bool
-  )
-  {
-  }
-  @
-  
-  
+   
+   #include <cstdlib>
+   #include <cstdio>
+   #include <cassert>
+   #include "flx_gc.hpp"
+   #include "flx_exceptions.hpp"
+   #include "flx_gc_private.hpp"
+   #include <Judy.h>
+   
+   // for std::max
+   #include <algorithm>
+   
+   #ifdef max
+   #undef max
+   #endif
+   
+   
+   namespace flx {
+   namespace gc {
+   namespace generic {
+   gc_shape_t _ptr_void_map = {
+     NULL,
+     "void",
+     0,0,
+     0, // no finaliser
+     0, // fcops
+     0,
+     0,
+     0,
+     0,
+     gc::generic::gc_flags_default,
+     0UL, 0UL
+   };
+   
+   allocator_t::~allocator_t(){}
+   collector_t::~collector_t(){
+     if (report_gcstats)
+     {
+       ::std::chrono::duration<double> elapsed = 
+         ::std::chrono::high_resolution_clock::now() - start_time
+       ;
+       fprintf(stderr, "Deleting collector total time = %4.5f seconds, gc time = %4.5f = %3.2f%%\n", 
+         elapsed.count(), gc_time.count(), gc_time.count() * 100.0 / elapsed.count()
+       );
+     }
+   }
+   
+   collector_t::collector_t() 
+     : debug(false)
+     , report_gcstats(false)
+     , module_registry(0)
+     , gc_time(0.0)
+     , start_time(::std::chrono::high_resolution_clock::now())
+   {}
+   
+   gc_profile_t::gc_profile_t (
+     bool debug_driver_,
+     bool debug_allocations_,
+     bool debug_collections_,
+     bool report_collections_,
+     bool report_gcstats_,
+     bool allow_collection_anywhere_,
+     size_t gc_freq_,
+     size_t min_mem_,
+     size_t max_mem_,
+     double free_factor_,
+     bool finalise_,
+     flx::gc::generic::collector_t *collector_
+   ) :
+     debug_driver(debug_driver_),
+     debug_allocations(debug_allocations_),
+     debug_collections(debug_collections_),
+     report_collections(report_collections_),
+     report_gcstats(report_gcstats_),
+     allow_collection_anywhere(allow_collection_anywhere_),
+     gc_freq(gc_freq_),
+     gc_counter(0),
+     min_mem(min_mem_),
+     max_mem(max_mem_),
+     threshhold(min_mem_),
+     free_factor(free_factor_),
+     collections(0),
+     finalise(finalise_),
+     collector(collector_)
+   {
+   }
+   
+   gc_profile_t::~gc_profile_t() { }
+   
+   size_t gc_profile_t::maybe_collect() {
+     ++gc_counter;
+     if(debug_collections) fprintf(stderr,"Maybe collect?\n");
+     if (gc_counter < gc_freq) return 0;
+     if(collector->get_allocation_amt() < threshhold) return 0;
+     return actually_collect();
+   }
+   
+   size_t gc_profile_t::actually_collect() {
+     if(debug_collections || report_collections) 
+       fprintf(stderr,"[flx_gc:gc_profile_t] actually_collect\n");
+     gc_counter = 0;
+     size_t collected = collector->collect();
+     size_t allocated = collector->get_allocation_amt();
+     if (allocated > max_mem) throw flx::rtl::flx_out_of_memory_t();
+     threshhold = std::max ( min_mem,
+       (size_t) (free_factor * (double)allocated))
+     ;
+     if(debug_collections || report_collections)
+     {
+       size_t objs = collector->get_allocation_count();
+       size_t roots = collector->get_root_count();
+       fprintf(stderr, 
+         "actually collected %zu objects, still allocated: %zu roots, %zu objects, %zu bytes\n",
+         collected, roots, objs, allocated
+       );
+     }
+     return collected;
+   }
+   
+   void *gc_profile_t::allocate(
+     flx::gc::generic::gc_shape_t *shape,
+     size_t count,
+     bool allow_gc
+   )
+   {
+     void *p = 0;
+     ::std::size_t amt = count * shape->amt * shape->count;
+     bool tried_collection = false;
+   
+     // if we would exceed the threshhold and collection is allowed, do it
+     if (amt + collector->get_allocation_amt() > threshhold && allow_collection_anywhere && allow_gc)
+     {
+       if (report_collections)
+         fprintf(stderr,"[flx_gc:gc_profile_t] Threshhold %zu would be exceeded, collecting\n", threshhold);
+       actually_collect();
+       if (report_collections)
+         fprintf(stderr,"[flx_gc:gc_profile_t] New Threshhold %zu\n", threshhold);
+       tried_collection = true;
+     }
+   
+     // now try the allocation
+     try {
+       p = collector -> allocate(shape,count);
+     }
+     // if we ran out of physical memory
+     catch (flx::rtl::flx_out_of_memory_t& exn) 
+     { 
+       if (debug_allocations || debug_collections || report_collections)
+         fprintf(stderr,"[flx_gc:gc_profile_t] Out of physical memory\n");
+   
+       if (allow_collection_anywhere && allow_gc && !tried_collection)
+       {
+         actually_collect();
+         tried_collection = true;
+         try {
+           p = collector -> allocate(shape,count);
+         }
+         catch (flx::rtl::flx_out_of_memory_t& exn) // fatal error
+         {
+            fprintf(stderr,"[flx_gc:gc_profile_t] Allocation failed [after forced collection]\n");
+            throw exn;
+         }
+       }
+       else 
+       {
+         fprintf(stderr,"[flx_gc:gc_profile_t] Allocation failed [collection not allowed or already tried]\n");
+         throw exn; // fatal error
+       }
+     }
+   
+     assert (p);
+     return p;
+   }
+   
+   /*
+    *  This is the default scanner for compiler generated RTTI objects.
+    *  It uses an array of offsets into the object to tell where the pointers are.
+    *  We must pass this routine the collector, the RTTI shape of the object,
+    *  a pointer to the head (lowest byte) of the object, a count of the number
+    *  of copies of the object are present consecutively, and a recursion limit.
+    *
+    *  The count is there because all Felix heap objects are varrays, even if they're
+    *  merely length 1. Note that this dynamic array count is the number of used
+    *  slots in the varray not the allocated length. Note also the elements of the
+    *  varray can themselves be arrays with static lengths. The actual RTTI object
+    *  describes a single element of the inner static length array, so we have to
+    *  multiply the RTTI static length by the dynamic length.
+    */
+   void *scan_by_offsets(collector_t *collector, gc_shape_t *shape, void *p, size_t dyncount, int reclimit)
+   {
+     Word_t fp = (Word_t)p;
+   
+     // calculate the absolute number of used array slots
+     size_t n_used = dyncount  * shape->count;
+   
+     // find the array of offsets
+     offset_data_t const *data = (offset_data_t const *)shape->private_data;
+     ::std::size_t n_offsets = data->n_offsets;
+     ::std::size_t const *offsets = data->offsets;
+   
+     //fprintf(stderr, "scan by offsets: shape %s has %d offsets\n", shape->cname, (int)n_offsets);
+     // if the number of used slots is one and there is only one offset
+     // then there is only one possible pointer in the object at the specified offset
+     // so just return the value stored at that offset immediately
+     if (n_used * n_offsets == 1) // tail rec optimisation
+     {
+         void **pq = (void**)(void*)((unsigned char*)fp + offsets[0]);
+         void *q = *pq;
+         if(q) return q; // tail rec optimisation
+     }
+     else
+     // otherwise we have to scan through all the offsets in every array element
+     for(size_t j=0; j<n_used; ++j)
+     {
+       for(unsigned int i=0; i<n_offsets; ++i)
+       {
+         void **pq = (void**)(void*)((unsigned char*)fp + offsets[i]);
+         void *q = *pq;
+         //fprintf(stderr, "scan by offsets %s, #%d, offset %zu, address %p, value %p\n", 
+         //  shape->cname, i, offsets[i], pq, q);
+         // instead of returning the pointer, register it for later processing
+         if(collector->inrange(q))
+         {
+           collector->register_pointer(q, reclimit);
+         }
+       }
+       // on to the next array element
+       fp=(Word_t)(void*)((unsigned char*)fp+shape->amt);
+     }
+     // return 0 to indicate we registered pointers, instead of returning just one.
+     return 0;
+   }
+   
+   }}} // end namespaces
+   
+   // in global namespace now ..
+   //
+   // NOTE: Felix arrays are two dimensional. The shape.amt field is the size of
+   // one element. The shape.count field is the number of elements for a static
+   // array type. The dynamic length is for varrays, it is stored in a judy array
+   // associated with the array address. If there is nothing in the judy array,
+   // the dynamic length is one. C++ operator new allocates arrays of dynamic length 1. 
+   //
+   void *operator new(
+     std::size_t amt,
+     flx::gc::generic::gc_profile_t &gcp,
+     flx::gc::generic::gc_shape_t &shape,
+     bool allow_gc
+   )
+   {
+     if (amt != shape.amt * shape.count)
+     {
+       fprintf(stderr,"Shape size error: allocator size = %zu\n",amt);
+       fprintf(stderr,"Shape %s element size = %zu, element count = %zu\n",shape.cname,shape.amt,shape.count);
+       abort();
+     }
+     void *p = gcp.allocate(&shape,1,allow_gc); // dynamic array count = 1
+     return p;
+   }
+   
+   void operator delete(
+     void*,
+     flx::gc::generic::gc_profile_t &,
+     flx::gc::generic::gc_shape_t &,
+     bool
+   )
+   {
+   }
+   @
+   
+   
 
 Collector interface.
 --------------------
@@ -844,175 +841,175 @@ Collector interface.
 
 .. code-block:: cpp
 
-  
-  #ifndef __FLX_COLLECTOR_H__
-  #define __FLX_COLLECTOR_H__
-  #include <cstddef>
-  #include "flx_gc.hpp"
-  #include <map>
-  #include "pthread_thread.hpp"
-  #include <Judy.h>
-  
-  namespace flx {
-  namespace gc {
-  namespace collector {
-  using namespace generic;
-  
-  struct GC_EXTERN malloc_free;
-  struct GC_EXTERN tracing_allocator;
-  struct GC_EXTERN flx_collector_t;
-  
-  /// Allocator using malloc and free.
-  struct GC_EXTERN malloc_free : public virtual allocator_t
-  {
-    void *allocate(::std::size_t);
-    void deallocate(void *);
-    ~malloc_free();
-  };
-  
-  /// Allocator which saves allocations and deallocations
-  /// to a file, delegating operations to a servant allocator
-  struct GC_EXTERN tracing_allocator : public virtual allocator_t
-  {
-    allocator_t *servant;
-    FILE *tracefile;
-    tracing_allocator(FILE *, allocator_t *);
-    void *allocate(::std::size_t);
-    void deallocate(void *);
-    ~tracing_allocator();
-  };
-  
-  
-  struct mark_thread_context_t
-  {
-    flx_collector_t *collector;
-    pthread::memory_ranges_t *px;
-    int reclimit;
-  };
-  
-  
-  /// Naive Mark and Sweep Collector.
-  struct GC_EXTERN flx_collector_t : public collector_t
-  {
-    flx_collector_t(allocator_t *, flx::pthread::thread_control_base_t *, int _gcthreads, FILE *tf);
-    ~flx_collector_t();
-  
-    // RF: added to allow implementation of non-leaky drivers.
-    void impl_free_all_mem(); // clear all roots, sweep.
-  
-    void set_used(void *memory, size_t);
-    void incr_used(void *memory, ptrdiff_t);
-    size_t get_used(void *memory);
-    size_t get_count(void *memory);
-    void *create_empty_array( gc_shape_t *shape, size_t count);
-    gc_shape_t *get_shape(void *memory);
-    flx::pthread::thread_control_base_t *get_thread_control()const;
-    void register_pointer(void *q, int reclimit);
-    ::flx::gc::generic::pointer_data_t get_pointer_data(void *);
-  
-  protected:
-  
-    /// allocator
-    void *impl_allocate(gc_shape_t *ptr_map, size_t);
-  
-    /// collector (returns number of objects collected)
-    size_t impl_collect();
-  
-    // add and remove roots
-    void impl_add_root(void *memory);
-    void impl_remove_root(void *memory);
-  
-    //
-    void check();
-  
-    // statistics
-    size_t impl_get_allocation_count()const;
-    size_t impl_get_root_count()const;
-    size_t impl_get_allocation_amt()const;
-    void impl_finalise(void *fp);
-  
-  private:
-    /// allocator
-    void *v_allocate(gc_shape_t *ptr_map, size_t);
-  
-    /// collector (returns number of objects collected)
-    size_t v_collect();
-  
-    // add and remove roots
-    void v_add_root(void *memory);
-    void v_remove_root(void *memory);
-    void v_free_all_mem();
-  
-    // statistics
-    size_t v_get_allocation_count()const;
-    size_t v_get_root_count()const;
-    size_t v_get_allocation_amt()const;
-  
-  private:
-    void judyerror(char const*);
-    size_t allocation_count;
-    size_t root_count;
-    size_t allocation_amt;
-  
-    uintptr_t minptr;
-    uintptr_t maxptr;
-  
-    bool inrange(void *p)const { return minptr <= uintptr_t(p) && uintptr_t(p) < maxptr; }
-    void unlink(void *frame);
-    void v_finalise(void *frame);
-    void post_delete(void *frame);
-    void delete_frame(void *frame);
-    size_t reap();
-  
-    // top level mark, calls mark_single or mark_multi
-    void mark(pthread::memory_ranges_t*);
-  
-    // single threaded mark
-    void mark_single(pthread::memory_ranges_t*, int);
-  
-    // multithreaded mark: single thread enters and creates
-    // worker threads which run mark_thread routine below
-    void mark_multi(pthread::memory_ranges_t*,int reclimit, int nthreads);
-  
-  public: // unfortunately, due to dispatch machinery
-    // worker thread
-    void mark_thread(mark_thread_context_t *);
-  
-  private:
-    int gcthreads;
-    size_t sweep(); // calls scan_object
-  
-    typedef std::map<void *,size_t, std::less<void *> > rootmap_t;
-    rootmap_t roots;
-    bool parity;
-    allocator_t *allocator;
-    flx::pthread::thread_control_base_t *thread_control;
-  
-  
-    // JudyL array and error object
-    void *j_shape;
-    void *j_nalloc;
-    void *j_nused;
-    FILE *tracefile;
-  public:
-    struct memdata_t {
-      void *head;
-      gc_shape_t *pshape;
-      size_t nbytes;
-    };
-    void scan_object(void *memory, int reclimit);
-    memdata_t check_interior (void *memory);
-  
-    ::std::mutex j_tmp_lock;
-    ::std::condition_variable j_tmp_cv;
-    int j_tmp_waiting;
-    void *j_tmp;
-    JError_t je;
-  };
-  
-  }}} // end namespaces
-  #endif
-  
+   
+   #ifndef __FLX_COLLECTOR_H__
+   #define __FLX_COLLECTOR_H__
+   #include <cstddef>
+   #include "flx_gc.hpp"
+   #include <map>
+   #include "pthread_thread.hpp"
+   #include <Judy.h>
+   
+   namespace flx {
+   namespace gc {
+   namespace collector {
+   using namespace generic;
+   
+   struct GC_EXTERN malloc_free;
+   struct GC_EXTERN tracing_allocator;
+   struct GC_EXTERN flx_collector_t;
+   
+   /// Allocator using malloc and free.
+   struct GC_EXTERN malloc_free : public virtual allocator_t
+   {
+     void *allocate(::std::size_t);
+     void deallocate(void *);
+     ~malloc_free();
+   };
+   
+   /// Allocator which saves allocations and deallocations
+   /// to a file, delegating operations to a servant allocator
+   struct GC_EXTERN tracing_allocator : public virtual allocator_t
+   {
+     allocator_t *servant;
+     FILE *tracefile;
+     tracing_allocator(FILE *, allocator_t *);
+     void *allocate(::std::size_t);
+     void deallocate(void *);
+     ~tracing_allocator();
+   };
+   
+   
+   struct mark_thread_context_t
+   {
+     flx_collector_t *collector;
+     pthread::memory_ranges_t *px;
+     int reclimit;
+   };
+   
+   
+   /// Naive Mark and Sweep Collector.
+   struct GC_EXTERN flx_collector_t : public collector_t
+   {
+     flx_collector_t(allocator_t *, flx::pthread::thread_control_base_t *, int _gcthreads, FILE *tf);
+     ~flx_collector_t();
+   
+     // RF: added to allow implementation of non-leaky drivers.
+     void impl_free_all_mem(); // clear all roots, sweep.
+   
+     void set_used(void *memory, size_t);
+     void incr_used(void *memory, ptrdiff_t);
+     size_t get_used(void *memory);
+     size_t get_count(void *memory);
+     void *create_empty_array( gc_shape_t *shape, size_t count);
+     gc_shape_t *get_shape(void *memory);
+     flx::pthread::thread_control_base_t *get_thread_control()const;
+     void register_pointer(void *q, int reclimit);
+     ::flx::gc::generic::pointer_data_t get_pointer_data(void *);
+   
+   protected:
+   
+     /// allocator
+     void *impl_allocate(gc_shape_t *ptr_map, size_t);
+   
+     /// collector (returns number of objects collected)
+     size_t impl_collect();
+   
+     // add and remove roots
+     void impl_add_root(void *memory);
+     void impl_remove_root(void *memory);
+   
+     //
+     void check();
+   
+     // statistics
+     size_t impl_get_allocation_count()const;
+     size_t impl_get_root_count()const;
+     size_t impl_get_allocation_amt()const;
+     void impl_finalise(void *fp);
+   
+   private:
+     /// allocator
+     void *v_allocate(gc_shape_t *ptr_map, size_t);
+   
+     /// collector (returns number of objects collected)
+     size_t v_collect();
+   
+     // add and remove roots
+     void v_add_root(void *memory);
+     void v_remove_root(void *memory);
+     void v_free_all_mem();
+   
+     // statistics
+     size_t v_get_allocation_count()const;
+     size_t v_get_root_count()const;
+     size_t v_get_allocation_amt()const;
+   
+   private:
+     void judyerror(char const*);
+     size_t allocation_count;
+     size_t root_count;
+     size_t allocation_amt;
+   
+     uintptr_t minptr;
+     uintptr_t maxptr;
+   
+     bool inrange(void *p)const { return minptr <= uintptr_t(p) && uintptr_t(p) < maxptr; }
+     void unlink(void *frame);
+     void v_finalise(void *frame);
+     void post_delete(void *frame);
+     void delete_frame(void *frame);
+     size_t reap();
+   
+     // top level mark, calls mark_single or mark_multi
+     void mark(pthread::memory_ranges_t*);
+   
+     // single threaded mark
+     void mark_single(pthread::memory_ranges_t*, int);
+   
+     // multithreaded mark: single thread enters and creates
+     // worker threads which run mark_thread routine below
+     void mark_multi(pthread::memory_ranges_t*,int reclimit, int nthreads);
+   
+   public: // unfortunately, due to dispatch machinery
+     // worker thread
+     void mark_thread(mark_thread_context_t *);
+   
+   private:
+     int gcthreads;
+     size_t sweep(); // calls scan_object
+   
+     typedef std::map<void *,size_t, std::less<void *> > rootmap_t;
+     rootmap_t roots;
+     bool parity;
+     allocator_t *allocator;
+     flx::pthread::thread_control_base_t *thread_control;
+   
+   
+     // JudyL array and error object
+     void *j_shape;
+     void *j_nalloc;
+     void *j_nused;
+     FILE *tracefile;
+   public:
+     struct memdata_t {
+       void *head;
+       gc_shape_t *pshape;
+       size_t nbytes;
+     };
+     void scan_object(void *memory, int reclimit);
+     memdata_t check_interior (void *memory);
+   
+     ::std::mutex j_tmp_lock;
+     ::std::condition_variable j_tmp_cv;
+     int j_tmp_waiting;
+     void *j_tmp;
+     JError_t je;
+   };
+   
+   }}} // end namespaces
+   #endif
+   
 
 Collector Implementation
 ------------------------
@@ -1043,1121 +1040,1121 @@ T: temporary Judy1
 
 .. code-block:: cpp
 
-  
-  #include <cstdlib>
-  #include <map>
-  #include <limits.h>
-  #include <cassert>
-  #include <cstdio>
-  #include <cstddef>
-  #include "flx_rtl_config.hpp"
-  #include "flx_collector.hpp"
-  #include "flx_exceptions.hpp"
-  #include "flx_gc_private.hpp"
-  
-  #include <stdint.h>
-  #define lobit(p) (p & (uintptr_t)1u)
-  #define hibits(p) (p & ~(uintptr_t)1u)
-  #define SHAPE(p) ((gc_shape_t *)hibits(p))
-  
-  //#include "flx_rtl.hpp"
-  namespace flx {
-  namespace gc {
-  namespace collector {
-  
-  static int mcount FLX_UNUSED = 0;
-  
-  malloc_free::~malloc_free(){}
-  
-  void *malloc_free::allocate(::std::size_t amt)
-  {
-    void *p = malloc(amt);
-    if(debug)
-      fprintf(stderr,"[gc] Malloc %zd bytes, address = %p\n",amt,p);
-    if(p)return p;
-    else {
-      fprintf(stderr,"[gc] Felix: Malloc out of memory, blk=%zu\n",amt);
-      throw flx::rtl::flx_out_of_memory_t();
-    }
-  }
-  
-  void malloc_free::deallocate(void *p)
-  {
-    if(debug)
-      fprintf(stderr,"[gc] Free %p\n",p);
-    free(p);
-  }
-  
-  tracing_allocator::tracing_allocator (
-    FILE *tf, 
-    allocator_t *slave) 
-  : tracefile(tf), servant(slave) {}
-  
-  void *tracing_allocator::allocate (::std::size_t amt)
-  {
-     void *memory = servant->allocate(amt);
-     fprintf(tracefile,"A: %p\n",memory);
-     return memory;
-  }
-  
-  void tracing_allocator::deallocate (void *p)
-  {
-     fprintf(tracefile,"D: %p\n",p);
-     servant->deallocate(p);
-  }
-  
-  tracing_allocator::~tracing_allocator() { 
-    fclose(tracefile); 
-    delete servant; 
-    fprintf(stderr, "[gc] Allocation tracing terminated, file closed, slave allocator deleted\n"); 
-  }
-  
-  
-  void *flx_collector_t::v_allocate(gc_shape_t *ptr_map, size_t x) {
-    return impl_allocate(ptr_map, x);
-  }
-  
-  void flx_collector_t::v_finalise(void *frame) {
-    impl_finalise(frame);
-  }
-  
-  size_t flx_collector_t::v_collect() {
-    // NO MUTEX
-    return impl_collect();
-  }
-  
-  void flx_collector_t::v_add_root(void *memory) {
-    impl_add_root(memory);
-  }
-  
-  void flx_collector_t::v_remove_root(void *memory) {
-    impl_remove_root(memory);
-  }
-  
-  void flx_collector_t::v_free_all_mem() {
-    //fprintf(stderr, "Dispatching to impl free all mem\n");
-    impl_free_all_mem();
-  }
-  
-  size_t flx_collector_t::v_get_allocation_count()const {
-    return impl_get_allocation_count();
-  }
-  
-  size_t flx_collector_t::v_get_root_count()const {
-    return impl_get_root_count();
-  }
-  
-  size_t flx_collector_t::v_get_allocation_amt()const {
-    return impl_get_allocation_amt();
-  }
-  
-  size_t flx_collector_t::impl_get_allocation_count()const
-  {
-    return allocation_count;
-  }
-  
-  size_t flx_collector_t::impl_get_root_count()const
-  {
-    return root_count;
-  }
-  
-  size_t flx_collector_t::impl_get_allocation_amt()const
-  {
-    return allocation_amt;
-  }
-  
-  
-  flx_collector_t::flx_collector_t(
-    allocator_t *a, 
-    pthread::thread_control_base_t *tc,
-    int _gcthreads,
-    FILE *tf
-  )
-    :
-    allocation_count(0)
-    ,root_count(0)
-    ,allocation_amt(0)
-    ,parity(false)
-    ,allocator(a)
-    ,thread_control(tc)
-    ,j_shape(0)
-    ,j_nalloc(0)
-    ,j_nused(0)
-    ,j_tmp(0)
-    ,minptr(~uintptr_t(0))
-    ,maxptr(0)
-    ,tracefile(tf)
-    ,gcthreads(_gcthreads)
-  {
-    if(tf)
-      fprintf(stderr, "[flx_collector_t] Tracefile active\n");
-  }
-  
-  flx::pthread::thread_control_base_t *flx_collector_t::get_thread_control()const
-  {
-    return thread_control;
-  }
-  
-  void flx_collector_t::judyerror(char const *loc)
-  {
-    fprintf(stderr, "[gc] JUDY ERROR %d in %s\n",je.je_Errno,loc);
-    abort();
-  }
-  
-  void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
-  {
-    // calculate how much memory to request
-    ::std::size_t amt = nobj * shape->amt * shape->count;
-    //fprintf(stderr, "req amt = %zu\n",amt);
-    if(amt & 1) ++amt; // round up to even number
-    //fprintf(stderr, "rounded req amt = %zu\n",amt);
-  
-    // allocate a block
-    void *fp = (void *)allocator->allocate(amt);
-    assert(fp); // Got some memory!
-  
-    //++shape->allocations;
-  
-    // for use when things go wrong
-    char error_buffer[2048];
-    snprintf(error_buffer, 2047, 
-      "[gc] Allocated %p, shape=%s[%zd][%zu][#a=%zu,#d=%zu]\n", 
-      fp,shape->cname,shape->count,nobj,shape->allocations,shape->deallocations);
-  
-    Word_t *p = (Word_t*)(void*)JudyLIns(&j_shape,(Word_t)fp,&je);
-    if(tracefile) 
-       fprintf(tracefile,"IS: %p\n",fp);
-    *p = ((Word_t)(void*)shape) | (parity & 1);
-    if (nobj != (uintptr_t)1) // array
-    {
-  //fprintf(stderr, "Inserting into j_nalloc=%p\n",j_nalloc);
-      Word_t *p = (Word_t*)(void*)JudyLIns(&j_nalloc,(Word_t)fp,&je);
-  //fprintf(stderr, "  new j_nalloc=%p\n",j_nalloc);
-  //fprintf(stderr, "  slot for insert=%p\n",p);
-      if(tracefile) 
-         fprintf(tracefile,"IA: %p\n",fp);
-      *p = nobj;
-    }
-  
-    size_t n_objects = get_count(fp);
-    if (nobj != n_objects) 
-    {
-  
-      fprintf(stderr, 
-          "Insertion into j_nalloc (%p) failed: address %p, [nobj=%zu != get_count(fp)=%zu]\n",
-          j_nalloc, fp, nobj, n_objects);
-      
-      { // get_count(fp) conflates size 1 with NULL pointer, the following will disambiguate
-        Word_t *p = (Word_t*)(void*)JudyLGet(j_nalloc,(Word_t)fp,&je);
-        fprintf(stderr, 
-            "  p==NULL: %s\n", 
-            ((p == NULL) ? "true" : "false") );
-      }
-  
-      // finally output error_buffer if there's an error
-      fprintf(stderr, "%s", error_buffer);
-  
-      assert (nobj == n_objects);
-    }
-  
-    // update statistics
-    allocation_count++;
-    allocation_amt += amt;
-    //fprintf(stderr,"ADDING %zu to allocation amt, result %zu\n",amt,allocation_amt);
-    // return client memory pointer
-    minptr=::std::min(minptr,uintptr_t(fp));
-    maxptr=::std::max(maxptr,uintptr_t(fp)+amt);
-    return fp;
-  }
-  
-  // NOTE: although 1 is the default if there is no entry,
-  // it is allowed to have an entry with 1
-  // indeed, set_used always creates an entry
-  void flx_collector_t::set_used(void *memory, size_t n)
-  {
-    if (memory == NULL && n==0) return;
-    assert(memory);
-  
-    // this check is expensive, but set_used is not used often
-    assert(n<=get_count(memory));
-    //fprintf(stderr,"Set used of %p to %zu\n",memory,n);
-    Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
-    if(tracefile) 
-      fprintf(tracefile,"GU: %p\n",memory);
-    if(p==(Word_t*)PPJERR)judyerror("set_used");
-    if(p==NULL)
-    {
-      //fprintf(stderr,"set_used: No recorded usage! Creating store for data\n");
-      p = (Word_t*)(void*)JudyLIns(&j_nused,(Word_t)memory,&je);
-      if(tracefile) 
-         fprintf(tracefile,"IU: %p\n",memory);
-    }
-    //fprintf(stderr,"Slot for %p usage is address %p\n",memory,p);
-    *p = (Word_t)n;
-  }
-  
-  void flx_collector_t::incr_used(void *memory, ptrdiff_t n)
-  {
-    if (n==0) return;
-    assert(memory);
-    //fprintf(stderr,"Incr used of %p by %zu\n",memory,n);
-    //assert(get_used(memory) + n <= get_count(memory));
-    ptrdiff_t newused = (ptrdiff_t)get_used(memory) + n;
-    if (newused < 0 || newused > get_count(memory)) {
-      fprintf(stderr,"Address %p count %d used %d increment %d\n",
-        memory,(int)get_count(memory), (int)get_used(memory),(int)n);
-      fprintf(stderr,"Type %s\n",get_shape(memory)->cname);
-      assert(false);
-    }
-  
-    Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
-    if(tracefile) 
-      fprintf(tracefile,"GU: %p\n",memory);
-    if(p==(Word_t*)PPJERR)judyerror("incr_used");
-    if(p==NULL)
-    {
-      //fprintf(stderr,"incr_used: No recorded usage! Creating store for data\n");
-      p = (Word_t*)(void*)JudyLIns(&j_nused,(Word_t)memory,&je);
-      if(tracefile) 
-        fprintf(tracefile,"IU: %p\n",memory);
-      if(p==(Word_t*)PPJERR)judyerror("incr_used: new slot");
-      *p = newused;
-    }
-    else *p=newused;
-  }
-  
-  // actual number of used slots in an array
-  size_t flx_collector_t::get_used(void *memory)
-  {
-    if(memory==NULL) return 0;
-    //fprintf(stderr, "Get used of %p\n",memory);
-    Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
-    if(tracefile) 
-      fprintf(tracefile,"GU: %p\n",memory);
-    if(p==(Word_t*)PPJERR)judyerror("get_used");
-    //fprintf(stderr, "Used slot at address %p\n",p);
-    size_t z = p!=NULL?*p:1; // defaults to 1 for non-array support
-    //fprintf(stderr,"Used of %p is %zu\n",memory,z);
-    return z;
-  }
-  
-  // max number of available slots in an array
-  size_t flx_collector_t::get_count(void *memory)
-  {
-    if(memory==NULL) return 0;
-    //fprintf(stderr, "Get count of %p\n",memory);
-    Word_t *p = (Word_t*)(void*)JudyLGet(j_nalloc,(Word_t)memory,&je);
-    if(tracefile) 
-      fprintf(tracefile,"GA: %p\n",memory);
-    if(p==(Word_t*)PPJERR)judyerror("get_count");
-    //fprintf(stderr, "Count slot at address %p\n",p);
-    size_t z = p!=NULL?*p:1; // defaults to 1 for non-array support
-    //fprintf(stderr,"Count of %p is %zu\n\n",memory,z);
-    return z;
-  }
-  
-  // REQUIRES memory to be head pointer (not interior)
-  gc_shape_t *flx_collector_t::get_shape(void *memory)
-  {
-    if(memory == NULL) return &::flx::gc::generic::_ptr_void_map;
-    assert(memory);
-    //fprintf(stderr, "Get shape of %p\n",memory);
-    Word_t *pshape= (Word_t*)JudyLGet(j_shape,(Word_t)memory,&je);
-    if(tracefile) 
-      fprintf(tracefile,"GS: %p\n",memory);
-    if(pshape==(Word_t*)PPJERR)judyerror("get_shape");
-    if(pshape==NULL) { 
-      fprintf(stderr,"get_shape %p found NULL\n",memory);
-      abort();
-    }
-    return (gc_shape_t *)(*pshape & (~(uintptr_t)1));
-  }
-  
-  void *flx_collector_t::create_empty_array(
-    flx::gc::generic::gc_shape_t *shape,
-    size_t count
-  )
-  {
-    if (count==0) return NULL;
-    void *p = allocate(shape,count);
-    assert(p);
-    set_used (p, 0); // make sure to override default 1 slot usage
-    if(get_used(p) != 0 || get_count(p) != count) {
-      fprintf(stderr,"create empty array type %s address %p request count=%zu, actual count=%zu ,used=%zu\n",
-       p,shape->cname, count, get_count(p), get_used(p));
-      fprintf(stderr, "FATAL CONSTRUCTOR FAILURE\n");
-      assert (false);
-    }
-    return p;
-  }
-  
-  
-  void flx_collector_t::impl_finalise(void *fp)
-  {
-    assert(fp!=NULL);
-    //fprintf(stderr, "Finaliser for %p\n", fp);
-    gc_shape_t *shape = get_shape(fp); // inefficient, since we already know the shape!
-    //fprintf(stderr, "Got shape %p=%s\n", shape,shape->cname);
-    void (*finaliser)(collector_t*, void*) = shape->finaliser;
-    //fprintf(stderr, "Got finaliser %p\n", finaliser);
-    if (finaliser)
-    {
-      unsigned char *cp = (unsigned char*)fp;
-      size_t n_used = get_used(fp) * shape->count;
-      size_t eltsize = shape->amt;
-      //fprintf(stderr, "Finalising at %p for type %s %zu objects each size %zu\n", cp, shape->cname, n_used, eltsize);
-      for(size_t j = 0; j<n_used; ++j)
-      {
-        (*finaliser)(this,(void*)cp);
-        cp += eltsize;
-      }
-    }
-  }
-  
-  void flx_collector_t::unlink(void *fp)
-  {
-    // check we have a pointer to an object
-    assert(fp!=NULL);
-  
-    // call the finaliser if there is one
-    //fprintf(stderr,"Unlink: Calling finaliser for %p\n",fp);
-    impl_finalise(fp);
-  
-    allocation_count--;
-    gc_shape_t *shape = get_shape(fp);
-    size_t n_objects = get_count(fp);
-    size_t nobj = shape -> count * n_objects;
-    ::std::size_t size = shape->amt * nobj;
-    if (size & 1) ++size;
-    //fprintf(stderr, "Uncounting %zu bytes\n", size);
-    allocation_amt -= size;
-  
-    // unlink the frame from the collectors list
-    //fprintf(stderr,"Removing address from Judy lists\n");
-    JudyLDel(&j_shape, (Word_t)fp, &je);
-    JudyLDel(&j_nused, (Word_t)fp, &je);
-    JudyLDel(&j_nalloc, (Word_t)fp, &je);
-    if(tracefile) {
-      fprintf(tracefile,"DS: %p\n",fp);
-      fprintf(tracefile,"DA: %p\n",fp);
-      fprintf(tracefile,"DU: %p\n",fp);
-    }
-    //fprintf(stderr,"Finished unlinking\n");
-  }
-  
-  void flx_collector_t::post_delete(void *fp)
-  {
-    Judy1Set(&j_tmp,(Word_t)fp,&je);
-    if(tracefile)
-      fprintf(tracefile,"IT: %p\n",fp);
-  
-  }
-  
-  void flx_collector_t::delete_frame(void *fp)
-  {
-    allocator->deallocate(fp);
-  }
-  
-  size_t flx_collector_t::reap ()
-  {
-    size_t count = 0;
-    Word_t next=(Word_t)NULL;
-    int res = Judy1First(j_tmp,&next,&je);
-    if(tracefile)
-      fprintf(tracefile,"FT: %p\n",next);
-    while(res) {
-      delete_frame((void*)next);
-      ++count;
-      res = Judy1Next(j_tmp,&next,&je);
-      if(tracefile)
-        fprintf(tracefile,"NT: %p\n",next);
-    }
-    Judy1FreeArray(&j_tmp,&je);
-    if(tracefile)
-      fprintf(tracefile,"CT:\n");
-    if(debug) 
-    {
-      fprintf(stderr,"[gc] Reaped %zu objects\n",count);
-      fprintf(stderr,"[gc] Still allocated %zu objects occupying %zu bytes\n", get_allocation_count(), get_allocation_amt());
-    }
-    return count;
-  }
-  
-  
-  //#include <valgrind/memcheck.h>
-  
-  /* This is the top level mark routine
-   * Its job is to mark all objects that are reachable
-   * so a subsequent reaping phase can delete all
-   * the objects that are NOT marked
-   *
-   * This mark bit is the low bit of the RTTI shape object pointer
-   * stored in the j_shape Judy1Array.
-   *
-   * The meaning of this bit alternates between calls to the collector.
-   * Initially all objects are considered garbage and the flag is toggled
-   * to indicate the object is reachable.
-   *
-   * On the next pass the reachable value is reconsidered to mean
-   * garbage and the flag toggled again. This saves a pass over
-   * all objects marking them garbage before then tracing roots
-   * to find which ones are not.
-   */
-  
-  void flx_collector_t::mark(pthread::memory_ranges_t *px)
-  {
-    // The recursion limit is a stopper so recursions
-    // won't blow the machine stack and also wipe out the cache
-    // regularly. Our overall routine is iterative with limited
-    // recursion. The recursions are faster but the iteration
-    // can handle data type like lists of millions of elements
-    // which would otherwise recurse millions of times.
-    //
-    int reclimit = 64;
-    if(debug)
-      fprintf(stderr,"[gc] Collector: Running mark\n");
-  
-    // sanity check
-    assert (root_count == roots.size());
-  
-    // the j_tmp Judy1 array is just a set of pointers which
-    // we have not yet examined. When we find pointers we stash
-    // them in this set rather than examining them immediately.
-    // Later we come back and examine them. This buffers the recursion
-    // a bit. The set has to be empty initially.
-    assert(j_tmp == 0);
-    if (gcthreads < 2)
-      mark_single(px,reclimit);
-    else 
-      mark_multi(px,reclimit,gcthreads);
-  }
-  
-  static void run_mark_thread(mark_thread_context_t *mtc)
-  {
-    mtc->collector->mark_thread(mtc); 
-  }
-  
-  void flx_collector_t::mark_multi(pthread::memory_ranges_t *px,int reclimit, int nthreads)
-  {
-  //fprintf(stderr, "starting %d mark threads\n", nthreads);
-    j_tmp_waiting = 0;
-    mark_thread_context_t mtc {this,px, reclimit};
-    ::std::vector< ::std::thread> mark_threads;
-    for (int i=0; i<gcthreads; ++i)
-      mark_threads.push_back (::std::thread (run_mark_thread, &mtc));
-    for (int i=0; i<gcthreads; ++i)
-      mark_threads[i].join();
-  //fprintf(stderr, "multithread mark finished\n");
-  }
-  
-  // this method is run simultaneously by multiple threads
-  void flx_collector_t::mark_thread(mark_thread_context_t *mtc)
-  {
-  //fprintf(stderr, "multithread mark thread running\n");
-    int reclimit = mtc->reclimit;
-    pthread::memory_ranges_t *px  = mtc->px;
-    // px is a set of memory ranges representing the stacks
-    // of all pthreads including this one at the point the
-    // collector got invoked. All the other threads than this
-    // one must be stopped. The stack are found by recording the
-    // base stack value when launching the thread, and using
-    // the value when a thread stops to allow collection as the
-    // high value. The stack contains all the machine registers
-    // at this point too, since we used a long_jmp into a local
-    // variable to put the registers on the stack.
-    if(px)
-    {
-      // for all pthreads
-      std::vector<pthread::memory_range_t>::iterator end = (*px).end();
-      for(
-        std::vector<pthread::memory_range_t>::iterator i = (*px).begin();
-        i != end;
-        ++i
-      )
-      {
-        // get the stack extent for one pthread
-        pthread::memory_range_t range = *i;
-        if(debug)
-        {
-          size_t n = (char*)range.e - (char*)range.b;
-          fprintf(stderr, "[gc] Conservate scan of memory %p->%p, %zu bytes\n",range.b, range.e, n);
-        }
-        //VALGRIND_MAKE_MEM_DEFINED(range.b, (char*)range.e-(char*)range.b);
-        void *end = range.e;
-        // for all machine words on the stack
-        // this WILL FAIL if the stack isn't an exact multiple
-        // of the size of a machine word
-        for ( void *i = range.b; i != end; i = (void*)((void**)i+1))
-        {
-          //if(debug)
-          // fprintf(stderr, "[gc] Check if *%p=%p is a pointer\n",i,*(void**)i);
-          // conservative scan of every word on every stack
-          scan_object(*(void**)i, reclimit);
-        }
-        if(debug)
-          fprintf(stderr, "[gc] DONE: Conservate scan of memory %p->%p\n",range.b, range.e);
-      }
-    }
-  
-    // Now scan all the registered roots
-    if(debug)
-      fprintf(stderr, "[gc] Scanning roots\n");
-    rootmap_t::iterator const end = roots.end();
-    for(
-      rootmap_t::iterator i = roots.begin();
-      i != end;
-      ++i
-    )
-    {
-      if(debug)
-        fprintf(stderr, "[gc] Scanning root %p\n", (*i).first);
-      scan_object((*i).first, reclimit);
-    }
-  
-    // Now, scan the temporary set in j_tmp  until it is empty
-    // When we're processing an object with scan_object
-    // if its an actual Felix object we mark it reachable
-    // and then scan all the pointers in it: usually those pointers
-    // are not scanned immediately by scan object but simply put
-    // into the set j_tmp to schedule them for scanning.
-    //
-    // Note: Judy1First finds the first key greater than or equal to the given one,
-    // it returns 0 if there is no such key.
-    Word_t toscan;
-    int res;
-  again:
-    {
-      ::std::unique_lock< ::std::mutex> dummy(j_tmp_lock);
-  retry:
-      toscan = 0;
-      res = Judy1First(j_tmp,&toscan,&je); // get one object scheduled for scanning
-      if (!res) {
-         ++j_tmp_waiting;
-         if (j_tmp_waiting == gcthreads) {
-           j_tmp_cv.notify_all();
-           goto endoff;
-         }
-         j_tmp_cv.wait(dummy);
-         --j_tmp_waiting;
-         goto retry;
-      }
-      Judy1Unset(&j_tmp,toscan,&je);         // remove it immediately
-    }
-    scan_object((void*)toscan, reclimit);  // scan it, it will either be marked or discarded
-    goto again;
-  
-  endoff:
-    assert(j_tmp == 0);                  
-  
-    if(debug)
-      fprintf(stderr, "[gc] Done Scanning roots\n");
-  }
-  
-  
-  
-  void flx_collector_t::mark_single(pthread::memory_ranges_t *px, int reclimit)
-  {
-    // px is a set of memory ranges representing the stacks
-    // of all pthreads including this one at the point the
-    // collector got invoked. All the other threads than this
-    // one must be stopped. The stack are found by recording the
-    // base stack value when launching the thread, and using
-    // the value when a thread stops to allow collection as the
-    // high value. The stack contains all the machine registers
-    // at this point too, since we used a long_jmp into a local
-    // variable to put the registers on the stack.
-    if(px)
-    {
-      // for all pthreads
-      std::vector<pthread::memory_range_t>::iterator end = (*px).end();
-      for(
-        std::vector<pthread::memory_range_t>::iterator i = (*px).begin();
-        i != end;
-        ++i
-      )
-      {
-        // get the stack extent for one pthread
-        pthread::memory_range_t range = *i;
-        if(debug)
-        {
-          size_t n = (char*)range.e - (char*)range.b;
-          fprintf(stderr, "[gc] Conservate scan of memory %p->%p, %zu bytes\n",range.b, range.e, n);
-        }
-        //VALGRIND_MAKE_MEM_DEFINED(range.b, (char*)range.e-(char*)range.b);
-        void *end = range.e;
-        // for all machine words on the stack
-        // this WILL FAIL if the stack isn't an exact multiple
-        // of the size of a machine word
-        for ( void *i = range.b; i != end; i = (void*)((void**)i+1))
-        {
-          //if(debug)
-          // fprintf(stderr, "[gc] Check if *%p=%p is a pointer\n",i,*(void**)i);
-          // conservative scan of every word on every stack
-          scan_object(*(void**)i, reclimit);
-        }
-        if(debug)
-          fprintf(stderr, "[gc] DONE: Conservate scan of memory %p->%p\n",range.b, range.e);
-      }
-    }
-  
-    // Now scan all the registered roots
-    if(debug)
-      fprintf(stderr, "[gc] Scanning roots\n");
-    rootmap_t::iterator const end = roots.end();
-    for(
-      rootmap_t::iterator i = roots.begin();
-      i != end;
-      ++i
-    )
-    {
-      if(debug)
-        fprintf(stderr, "[gc] Scanning root %p\n", (*i).first);
-      scan_object((*i).first, reclimit);
-    }
-  
-    // Now, scan the temporary set in j_tmp  until it is empty
-    // When we're processing an object with scan_object
-    // if its an actual Felix object we mark it reachable
-    // and then scan all the pointers in it: usually those pointers
-    // are not scanned immediately by scan object but simply put
-    // into the set j_tmp to schedule them for scanning.
-    //
-    // Note: Judy1First finds the first key greater than or equal to the given one,
-    // it returns 0 if there is no such key.
-    Word_t toscan = 0;
-    int res = Judy1First(j_tmp,&toscan,&je); // get one object scheduled for scanning
-    //if(tracefile)
-    //  fprintf(tracefile,"FT: %p\n",toscan);
-    while(res) {
-      Judy1Unset(&j_tmp,toscan,&je);         // remove it immediately
-      if(tracefile)
-        fprintf(tracefile,"DT: %p\n",toscan);
-      scan_object((void*)toscan, reclimit);  // scan it, it will either be marked or discarded
-      toscan = 0;
-      res = Judy1First(j_tmp,&toscan,&je); 
-      if(tracefile)
-        fprintf(tracefile,"FT: %p\n",toscan);
-    }                                     
-    assert(j_tmp == 0);                  
-  
-    if(debug)
-      fprintf(stderr, "[gc] Done Scanning roots\n");
-  }
-  
-  
-  
-  size_t flx_collector_t::sweep()
-  {
-    if(debug)
-      fprintf(stderr,"[gc] Collector: Sweep, garbage bit value=%d\n",(int)parity);
-    size_t sweeped = 0;
-    void *current = NULL;
-    Word_t *pshape = (Word_t*)JudyLFirst(j_shape,(Word_t*)&current,&je); // GE
-    if(tracefile) 
-      fprintf(tracefile,"FS: %p\n",current);
-    if(pshape==(Word_t*)PPJERR)judyerror("sweep");
-  
-    while(pshape!=NULL)
-    {
-      if((*pshape & (uintptr_t)1) == (parity & (uintptr_t)1))
-      {
-        if(debug)
-          fprintf(stderr,"[gc] Garbage   %p=%s[%zd][%zu/%zu] [#a=%zu,#d=%zu]\n",
-            current,
-            SHAPE(*pshape)->cname,
-            SHAPE(*pshape)->count,
-            get_used(current), 
-            get_count(current),
-            SHAPE(*pshape)->allocations,
-            SHAPE(*pshape)->deallocations
-          );
-        ++ sweeped;
-        //fprintf(stderr,"Incr deallocation count ..\n");
-        //++((gc_shape_t *)(*pshape & ~(uintptr_t)1))->deallocations;
-        //fprintf(stderr,"Unlinking ..\n");
-        unlink(current);
-        //fprintf(stderr,"Posting delete ..\n");
-        post_delete(current);
-        //fprintf(stderr,"Reaping done\n");
-      }
-      else
-      {
-        if(debug)
-          fprintf(stderr,"[gc] Reachable %p=%s[%zd][%zu/%zu] [#a=%zu,#d=%zu]\n",
-            current,
-            SHAPE(*pshape)->cname,
-            SHAPE(*pshape)->count,
-            get_used(current), 
-            get_count(current),
-            SHAPE(*pshape)->allocations,
-            SHAPE(*pshape)->deallocations
-          );
-      }
-  
-      //fprintf(stderr,"Calling Judy for next object\n");
-      pshape = (Word_t*)JudyLNext(j_shape,(Word_t*)(void*)&current,&je); // GT
-      if(tracefile) 
-        fprintf(tracefile,"NS: %p\n",current);
-      //fprintf(stderr,"Judy got next object %p\n",pshape);
-    }
-  
-    parity = !parity;
-    if(debug)
-      fprintf(stderr,"[gc] Sweeped %zu\n",sweeped);
-    return reap();
-  }
-  
-  void flx_collector_t::impl_add_root(void *memory)
-  {
-    if(!memory)
-    {
-      fprintf(stderr, "[gc] GC ERROR: ADD NULL ROOT\n");
-      abort();
-    }
-    rootmap_t::iterator iter = roots.find(memory);
-    if(iter == roots.end())
-    {
-      std::pair<void *const, size_t> entry(memory,(uintptr_t)1);
-      if(debug) 
-        fprintf(stderr,"[gc] Add root %p=%s\n", memory,get_shape(memory)->cname);
-      roots.insert (entry);
-      root_count++;
-    }
-    else {
-      if(debug) 
-        fprintf(stderr,"[gc] Increment root %p to %zu\n", memory, (*iter).second+1);
-      ++(*iter).second;
-    }
-  }
-  
-  void flx_collector_t::impl_remove_root(void *memory)
-  {
-    rootmap_t::iterator iter = roots.find(memory);
-    if(iter == roots.end())
-    {
-      fprintf(stderr, "[gc] GC ERROR: REMOVE ROOT WHICH IS NOT ROOT\n");
-      abort();
-    }
-    if((*iter).second == (uintptr_t)1)
-    {
-      if(debug) 
-        fprintf(stderr,"[gc] Remove root %p\n", memory);
-      roots.erase(iter);
-      root_count--;
-    }
-    else {
-      if(debug) 
-        fprintf(stderr,"[gc] Decrement root %p to %zu\n", memory, (*iter).second-1);
-      --(*iter).second;
-    }
-  }
-  
-  /* This is the fun bit!
-   * Register pointer is called by scan object, indirectly
-   * via the custom scanner.
-   * It then recursively calls scan_object on that pointer,
-   * providing a standard recursive descent.
-   *
-   * HOWEVER if the recursion limit is reached during this process,
-   * instead of recursing it just stashes the pointer in the
-   * j_tmp collection for later processing.
-   *
-   * So recursions over small tree structures proceed as normal,
-   * but when you get a long list or array to handle the recursion
-   * is stopped before it blows the stack, and the data is just stashed
-   * for later processing by the top level iterative loop
-   */
-  
-  // unfortunately requires a dynamic test to determine
-  // if we're using the threaded mark routine or not
-  void flx_collector_t::register_pointer(void *q, int reclimit)
-  {
-    if (inrange(q)) {
-      if(reclimit==0) 
-      {
-        if(gcthreads>1) 
-        {
-          ::std::unique_lock< ::std::mutex> dummy(j_tmp_lock);
-          Judy1Set(&j_tmp,(Word_t)q,&je);
-          j_tmp_cv.notify_one();
-        } 
-        else {
-          Judy1Set(&j_tmp,(Word_t)q,&je);
-        }
-        if(tracefile)
-          fprintf(tracefile,"IT: %p\n",q);
-      }
-      else scan_object(q, reclimit-1);
-    }
-  }
-  
-  ::flx::gc::generic::pointer_data_t flx_collector_t::get_pointer_data (void *p)
-  {
-    ::flx::gc::generic::pointer_data_t pdat;
-    pdat.head = NULL;
-    pdat.max_elements = 0;
-    pdat.used_elements = 0;
-    pdat.shape = NULL;
-    pdat.pointer = p;
    
-    Word_t cand = (Word_t)p;
-    Word_t head = cand;
-    Word_t *ppshape = (Word_t*)JudyLLast(j_shape,&head, &je);
-    if(tracefile) 
-      fprintf(tracefile,"LS: %p\n",head);
-    if(ppshape==(Word_t*)PPJERR)judyerror("get_pointer_data");
-    if(ppshape == NULL) return pdat; // no lower object
-    gc_shape_t *pshape = SHAPE(*ppshape);
-    size_t max_slots = get_count((void*)head);
-    size_t used_slots = get_used((void*)head);
-    size_t n = max_slots * pshape->count * pshape->amt;
-    if(cand >= (Word_t)(void*)((unsigned char*)(void*)head+n)) return pdat; // not interior
-    pdat.head = (void*)head;
-    pdat.max_elements = max_slots;
-    pdat.used_elements = used_slots;
-    pdat.shape = pshape;
-    return pdat;
-  }
-  
-  /* Given some word siuze value p, we have to decide what it is.
-   * If its a pointer into an allocated object, since we got here
-   * that object is reachable so we ensure that object is marked
-   * reachable so it won't be reaped
-   */
-  
-  // if a pointer is interior, then
-  // if marked reachable already return NULL,NULL
-  // else mark as reachable and return head,shape
-  flx_collector_t::memdata_t flx_collector_t::check_interior (void *p)
-  {
-    Word_t reachable = (parity & (uintptr_t)1) ^ (uintptr_t)1;
-    if(debug)
-      fprintf(stderr,"[gc] Scan object %p, reachable bit value = %d\n",p,(int)reachable);
-  
-    // Now find the shape of the object into which the pointer points,
-    // if it is a Felix allocated object. First, we use JudyLLast
-    // which finds the value less than or equal to the given key.
-    if (!inrange(p)) return memdata_t{NULL,NULL,0};
-    Word_t cand = (Word_t)p;
-    Word_t head=cand;
-    Word_t *ppshape = (Word_t*)JudyLLast(j_shape,&head,&je);
-    if(ppshape==(Word_t*)PPJERR)judyerror("check_interior");
-  
-    // if the pointer returned by Judy is NULL, there is no
-    // allocated object at or lower then the given address so exit
-    if(ppshape == NULL) return memdata_t{NULL,NULL,0}; // no lower object
-    /*
-    if(debug)
-    {
-      fprintf(stderr,"Found candidate object %p, &shape=%p, shape(1) %p\n",(void*)fp,(void*)w,(void*)(*w));
-      fprintf(stderr," .. type=%s!\n",((gc_shape_t*)(*w & ~(uintptr_t)1))->cname);
-    }
-    */
-  
-    // if the object lower then the given pointer is already
-    // marked reachable, there's nothing to do (all the pointers
-    // it reaches should also be marked) so just exit.
-    if( (*ppshape & (uintptr_t)1) == reachable) return memdata_t {NULL,NULL,0};   // already handled
-  
-    // get the actual shape of the candidate object
-    // don't forget to mask out the low bit which is the reachability flag
-    gc_shape_t *pshape = SHAPE(*ppshape);
-  
-    // calculate the length of the candidate object in bytes
-    size_t exterior_count = get_count((void*)head);
-    size_t n = exterior_count * pshape->count * pshape->amt;
-  
-    // if our pointer is greater than or equal to the "one past the end"
-    // pointer of the object, it is not a pointer interior to that object
-    // but a foreign pointer and must be ignored
-    if(cand >= (Word_t)(void*)((unsigned char*)(void*)head+n)) return memdata_t{NULL,NULL,0}; // not interior
-    if(debug)
-      fprintf(stderr,"[gc] MARKING object %p, shape %p, type=%s\n",(void*)head,pshape,pshape->cname);
-  
-    // otherwise we have an iterior or head pointer to the object
-    // so set the reachable flag in the judy shape array
-    *ppshape = (*ppshape & ~(uintptr_t)1) | reachable;
-    return memdata_t {(void*)head,pshape,n};
-  }
-  
-  void flx_collector_t::scan_object(void *p, int reclimit)
-  {
-  
-    // CAN p be NULL?? If so a fast exit could be done
-    // no point if it can't be null though
-  
-    // The reachability flag is the low bit object type pointer.
-    // The sense of the flag alternative between 0 and 1 meaning
-    // reachable on successive collections. This is an optimisation
-    // which saves marking all object unreachable first, then marking
-    // the reachable ones reachable. We just use the previous reachable
-    // marking to mean unreachable next time, then flip the bit for each
-    // reachable object. The value parity records the sense and is flipped
-    // at the start of each GC pass.
-    //Word_t reachable = (parity & (uintptr_t)1) ^ (uintptr_t)1;
-  again:
-     memdata_t memdata = check_interior(p);
-     if(memdata.head == NULL) return;
-  /*
-    //if(debug)
-    //  fprintf(stderr,"[gc] Scan object %p, reachable bit value = %d\n",p,(int)reachable);
-  
-    // Now find the shape of the object into which the pointer points,
-    // if it is a Felix allocated object. First, we use JudyLLast
-    // which finds the value less than or equal to the given key.
-    if (!inrange(p)) return;
-    Word_t cand = (Word_t)p;
-    Word_t head=cand;
-    Word_t *ppshape = (Word_t*)JudyLLast(j_shape,&head,&je);
-    if(ppshape==(Word_t*)PPJERR)judyerror("scan_object");
-  
-    // if the pointer returned by Judy is NULL, there is no
-    // allocated object at or lower then the given address so exit
-    if(ppshape == NULL) return; // no lower object
-    
-    //if(debug)
-    //{
-    //  fprintf(stderr,"Found candidate object %p, &shape=%p, shape(1) %p\n",(void*)fp,(void*)w,(void*)(*w));
-    //  fprintf(stderr," .. type=%s!\n",((gc_shape_t*)(*w & ~(uintptr_t)1))->cname);
-    //}
-    //
-  
-    // if the object lower then the given pointer is already
-    // marked reachable, there's nothing to do (all the pointers
-    // it reaches should also be marked) so just exit.
-    if( (*ppshape & (uintptr_t)1) == reachable) return;   // already handled
-  
-    // get the actual shape of the candidate object
-    // don't forget to mask out the low bit which is the reachability flag
-    gc_shape_t *pshape = SHAPE(*ppshape);
-  
-    // calculate the length of the candidate object in bytes
-    size_t n = get_count((void*)head) * pshape->count * pshape->amt;
-  
-    // if our pointer is greater than or equal to the "one past the end"
-    // pointer of the object, it is not a pointer interior to that object
-    // but a foreign pointer and must be ignored
-    if(cand >= (Word_t)(void*)((unsigned char*)(void*)head+n)) return; // not interior
-    if(debug)
-      fprintf(stderr,"[gc] MARKING object %p, shape %p, type=%s\n",(void*)head,pshape,pshape->cname);
-  
-    // otherwise we have an iterior or head pointer to the object
-    // so set the reachable flag in the judy shape array
-    *ppshape = (*ppshape & ~(uintptr_t)1) | reachable;
-  */
-  
-    // Now we have to look for pointers contained in the object
+   #include <cstdlib>
+   #include <map>
+   #include <limits.h>
+   #include <cassert>
+   #include <cstdio>
+   #include <cstddef>
+   #include "flx_rtl_config.hpp"
+   #include "flx_collector.hpp"
+   #include "flx_exceptions.hpp"
+   #include "flx_gc_private.hpp"
    
-    // The first branch here is not used at the moment,
-    // and is a hard coded way to do a conservative scan on the object
-  
-    if(memdata.pshape->flags & gc_flags_conservative)
-    {
-      size_t n_used = get_used((void*)memdata.head) * memdata.pshape->count;
-      // end of object, rounded down to size of a void*
-      void **end = (void**)(
-        (unsigned char*)(void*)memdata.head +
-        n_used * memdata.nbytes / sizeof(void*) * sizeof(void*)
-      );
-      for ( void **i = (void**)memdata.head; i != end; i = i+1)
-      {
-        if(debug)
-        //  fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
-        if(reclimit==0) {
-  
-  // LOCK REQUIRED XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-          Judy1Set(&j_tmp,(Word_t)*i,&je);
-  // END LOCK XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-          if(tracefile)
-            fprintf(tracefile,"IT: %p\n",*i);
-        }
-        else
-          scan_object(*i,reclimit -1);
-      }
-    }
-  
-    // This is the normal processing.
-    else
-    {
-      // Calculate the dynamic count of used elements in the object.
-      // All Felix objects are varrays which have an allocated and used
-      // element count. The RTTI object always describes one element.
-      size_t dyncount = get_used((void*)memdata.head);
-  
-      // if don't have a scanner for the object it is atomic,
-      // that is it contains no pointers.
-      // Otherwise call the scanner.
-      if(memdata.pshape->scanner) {
-        void *r = memdata.pshape->scanner(this, memdata.pshape,memdata.head,dyncount,reclimit);
-        // If the scanner returns a non-zero value it is the sole pointer
-        // in the object. So reset our argument and jump to the start of
-        // this routine: self-tail-recursion optimisation.
-        if (r) { p = r; goto again; }
-        // Otherwise the scanner has registered the pointers it found that
-        // need further examination. We do not do that examination here
-        // recursively, or inside the scanner, because it might blow the stack.
-        // Instead we just return, so a flat iteration loop can grab things
-        // out of the registered pointer buffer and drive the process
-        // with a flat loop.
-      }
-    }
-  }
-  
-  
-  
-  size_t flx_collector_t::impl_collect()
-  {
-    // THIS IS A BIT OF A HACK
-    // but world_stop() is bugged!!
-    // This is a temporary fix.
-    FLX_SAVE_REGS;
-    if (thread_control == NULL || thread_control->world_stop())
-    {
-      //if(debug)
-      //  fprintf(stderr,"[gc] Collecting, thread %lx\n", (size_t)flx::pthread::get_current_native_thread());
-      pthread::memory_ranges_t * mr = thread_control? thread_control -> get_block_list() : NULL;
-      mark(mr);
-      delete mr;
-      size_t collected = sweep();
-      if(thread_control) thread_control->world_start();
-      //if(debug)
-      //  fprintf(stderr,"[gc] FINISHED collect, thread %lx\n", (size_t)flx::pthread::get_current_native_thread());
-      return collected;
-    }
-    else {
-      if(debug)
-        fprintf(stderr,"[gc] RACE: someone else is collecting, just yield\n");
-      if(thread_control)thread_control->yield();
-      return 0ul;
-    }
-  }
-  
-  void flx_collector_t::impl_free_all_mem()
-  {
-    //fprintf(stderr,"impl_free_all_mem -- freeing roots\n");
-    roots.clear();
-    root_count = 0;
-    //fprintf(stderr,"freeing all heap with sweep()\n");
-    sweep();
-  }
-  
-  flx_collector_t::~flx_collector_t()
-  {
-     if(tracefile) {
-       fclose(tracefile);
-       fprintf(stderr,"Closed FLX_TRACE_GC file\n");
+   #include <stdint.h>
+   #define lobit(p) (p & (uintptr_t)1u)
+   #define hibits(p) (p & ~(uintptr_t)1u)
+   #define SHAPE(p) ((gc_shape_t *)hibits(p))
+   
+   //#include "flx_rtl.hpp"
+   namespace flx {
+   namespace gc {
+   namespace collector {
+   
+   static int mcount FLX_UNUSED = 0;
+   
+   malloc_free::~malloc_free(){}
+   
+   void *malloc_free::allocate(::std::size_t amt)
+   {
+     void *p = malloc(amt);
+     if(debug)
+       fprintf(stderr,"[gc] Malloc %zd bytes, address = %p\n",amt,p);
+     if(p)return p;
+     else {
+       fprintf(stderr,"[gc] Felix: Malloc out of memory, blk=%zu\n",amt);
+       throw flx::rtl::flx_out_of_memory_t();
      }
-  
-    //THIS IS VERY DANGEROUS! What if don't want to collect
-    //the garbage for efficiency reasons???
-    //
-    // ELIDED .. already caused a bug!
-    //
-    //free_all_mem();
-  }
-  
-  }}} // end namespaces
-  
+   }
+   
+   void malloc_free::deallocate(void *p)
+   {
+     if(debug)
+       fprintf(stderr,"[gc] Free %p\n",p);
+     free(p);
+   }
+   
+   tracing_allocator::tracing_allocator (
+     FILE *tf, 
+     allocator_t *slave) 
+   : tracefile(tf), servant(slave) {}
+   
+   void *tracing_allocator::allocate (::std::size_t amt)
+   {
+      void *memory = servant->allocate(amt);
+      fprintf(tracefile,"A: %p\n",memory);
+      return memory;
+   }
+   
+   void tracing_allocator::deallocate (void *p)
+   {
+      fprintf(tracefile,"D: %p\n",p);
+      servant->deallocate(p);
+   }
+   
+   tracing_allocator::~tracing_allocator() { 
+     fclose(tracefile); 
+     delete servant; 
+     fprintf(stderr, "[gc] Allocation tracing terminated, file closed, slave allocator deleted\n"); 
+   }
+   
+   
+   void *flx_collector_t::v_allocate(gc_shape_t *ptr_map, size_t x) {
+     return impl_allocate(ptr_map, x);
+   }
+   
+   void flx_collector_t::v_finalise(void *frame) {
+     impl_finalise(frame);
+   }
+   
+   size_t flx_collector_t::v_collect() {
+     // NO MUTEX
+     return impl_collect();
+   }
+   
+   void flx_collector_t::v_add_root(void *memory) {
+     impl_add_root(memory);
+   }
+   
+   void flx_collector_t::v_remove_root(void *memory) {
+     impl_remove_root(memory);
+   }
+   
+   void flx_collector_t::v_free_all_mem() {
+     //fprintf(stderr, "Dispatching to impl free all mem\n");
+     impl_free_all_mem();
+   }
+   
+   size_t flx_collector_t::v_get_allocation_count()const {
+     return impl_get_allocation_count();
+   }
+   
+   size_t flx_collector_t::v_get_root_count()const {
+     return impl_get_root_count();
+   }
+   
+   size_t flx_collector_t::v_get_allocation_amt()const {
+     return impl_get_allocation_amt();
+   }
+   
+   size_t flx_collector_t::impl_get_allocation_count()const
+   {
+     return allocation_count;
+   }
+   
+   size_t flx_collector_t::impl_get_root_count()const
+   {
+     return root_count;
+   }
+   
+   size_t flx_collector_t::impl_get_allocation_amt()const
+   {
+     return allocation_amt;
+   }
+   
+   
+   flx_collector_t::flx_collector_t(
+     allocator_t *a, 
+     pthread::thread_control_base_t *tc,
+     int _gcthreads,
+     FILE *tf
+   )
+     :
+     allocation_count(0)
+     ,root_count(0)
+     ,allocation_amt(0)
+     ,parity(false)
+     ,allocator(a)
+     ,thread_control(tc)
+     ,j_shape(0)
+     ,j_nalloc(0)
+     ,j_nused(0)
+     ,j_tmp(0)
+     ,minptr(~uintptr_t(0))
+     ,maxptr(0)
+     ,tracefile(tf)
+     ,gcthreads(_gcthreads)
+   {
+     if(tf)
+       fprintf(stderr, "[flx_collector_t] Tracefile active\n");
+   }
+   
+   flx::pthread::thread_control_base_t *flx_collector_t::get_thread_control()const
+   {
+     return thread_control;
+   }
+   
+   void flx_collector_t::judyerror(char const *loc)
+   {
+     fprintf(stderr, "[gc] JUDY ERROR %d in %s\n",je.je_Errno,loc);
+     abort();
+   }
+   
+   void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
+   {
+     // calculate how much memory to request
+     ::std::size_t amt = nobj * shape->amt * shape->count;
+     //fprintf(stderr, "req amt = %zu\n",amt);
+     if(amt & 1) ++amt; // round up to even number
+     //fprintf(stderr, "rounded req amt = %zu\n",amt);
+   
+     // allocate a block
+     void *fp = (void *)allocator->allocate(amt);
+     assert(fp); // Got some memory!
+   
+     //++shape->allocations;
+   
+     // for use when things go wrong
+     char error_buffer[2048];
+     snprintf(error_buffer, 2047, 
+       "[gc] Allocated %p, shape=%s[%zd][%zu][#a=%zu,#d=%zu]\n", 
+       fp,shape->cname,shape->count,nobj,shape->allocations,shape->deallocations);
+   
+     Word_t *p = (Word_t*)(void*)JudyLIns(&j_shape,(Word_t)fp,&je);
+     if(tracefile) 
+        fprintf(tracefile,"IS: %p\n",fp);
+     *p = ((Word_t)(void*)shape) | (parity & 1);
+     if (nobj != (uintptr_t)1) // array
+     {
+   //fprintf(stderr, "Inserting into j_nalloc=%p\n",j_nalloc);
+       Word_t *p = (Word_t*)(void*)JudyLIns(&j_nalloc,(Word_t)fp,&je);
+   //fprintf(stderr, "  new j_nalloc=%p\n",j_nalloc);
+   //fprintf(stderr, "  slot for insert=%p\n",p);
+       if(tracefile) 
+          fprintf(tracefile,"IA: %p\n",fp);
+       *p = nobj;
+     }
+   
+     size_t n_objects = get_count(fp);
+     if (nobj != n_objects) 
+     {
+   
+       fprintf(stderr, 
+           "Insertion into j_nalloc (%p) failed: address %p, [nobj=%zu != get_count(fp)=%zu]\n",
+           j_nalloc, fp, nobj, n_objects);
+       
+       { // get_count(fp) conflates size 1 with NULL pointer, the following will disambiguate
+         Word_t *p = (Word_t*)(void*)JudyLGet(j_nalloc,(Word_t)fp,&je);
+         fprintf(stderr, 
+             "  p==NULL: %s\n", 
+             ((p == NULL) ? "true" : "false") );
+       }
+   
+       // finally output error_buffer if there's an error
+       fprintf(stderr, "%s", error_buffer);
+   
+       assert (nobj == n_objects);
+     }
+   
+     // update statistics
+     allocation_count++;
+     allocation_amt += amt;
+     //fprintf(stderr,"ADDING %zu to allocation amt, result %zu\n",amt,allocation_amt);
+     // return client memory pointer
+     minptr=::std::min(minptr,uintptr_t(fp));
+     maxptr=::std::max(maxptr,uintptr_t(fp)+amt);
+     return fp;
+   }
+   
+   // NOTE: although 1 is the default if there is no entry,
+   // it is allowed to have an entry with 1
+   // indeed, set_used always creates an entry
+   void flx_collector_t::set_used(void *memory, size_t n)
+   {
+     if (memory == NULL && n==0) return;
+     assert(memory);
+   
+     // this check is expensive, but set_used is not used often
+     assert(n<=get_count(memory));
+     //fprintf(stderr,"Set used of %p to %zu\n",memory,n);
+     Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
+     if(tracefile) 
+       fprintf(tracefile,"GU: %p\n",memory);
+     if(p==(Word_t*)PPJERR)judyerror("set_used");
+     if(p==NULL)
+     {
+       //fprintf(stderr,"set_used: No recorded usage! Creating store for data\n");
+       p = (Word_t*)(void*)JudyLIns(&j_nused,(Word_t)memory,&je);
+       if(tracefile) 
+          fprintf(tracefile,"IU: %p\n",memory);
+     }
+     //fprintf(stderr,"Slot for %p usage is address %p\n",memory,p);
+     *p = (Word_t)n;
+   }
+   
+   void flx_collector_t::incr_used(void *memory, ptrdiff_t n)
+   {
+     if (n==0) return;
+     assert(memory);
+     //fprintf(stderr,"Incr used of %p by %zu\n",memory,n);
+     //assert(get_used(memory) + n <= get_count(memory));
+     ptrdiff_t newused = (ptrdiff_t)get_used(memory) + n;
+     if (newused < 0 || newused > get_count(memory)) {
+       fprintf(stderr,"Address %p count %d used %d increment %d\n",
+         memory,(int)get_count(memory), (int)get_used(memory),(int)n);
+       fprintf(stderr,"Type %s\n",get_shape(memory)->cname);
+       assert(false);
+     }
+   
+     Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
+     if(tracefile) 
+       fprintf(tracefile,"GU: %p\n",memory);
+     if(p==(Word_t*)PPJERR)judyerror("incr_used");
+     if(p==NULL)
+     {
+       //fprintf(stderr,"incr_used: No recorded usage! Creating store for data\n");
+       p = (Word_t*)(void*)JudyLIns(&j_nused,(Word_t)memory,&je);
+       if(tracefile) 
+         fprintf(tracefile,"IU: %p\n",memory);
+       if(p==(Word_t*)PPJERR)judyerror("incr_used: new slot");
+       *p = newused;
+     }
+     else *p=newused;
+   }
+   
+   // actual number of used slots in an array
+   size_t flx_collector_t::get_used(void *memory)
+   {
+     if(memory==NULL) return 0;
+     //fprintf(stderr, "Get used of %p\n",memory);
+     Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
+     if(tracefile) 
+       fprintf(tracefile,"GU: %p\n",memory);
+     if(p==(Word_t*)PPJERR)judyerror("get_used");
+     //fprintf(stderr, "Used slot at address %p\n",p);
+     size_t z = p!=NULL?*p:1; // defaults to 1 for non-array support
+     //fprintf(stderr,"Used of %p is %zu\n",memory,z);
+     return z;
+   }
+   
+   // max number of available slots in an array
+   size_t flx_collector_t::get_count(void *memory)
+   {
+     if(memory==NULL) return 0;
+     //fprintf(stderr, "Get count of %p\n",memory);
+     Word_t *p = (Word_t*)(void*)JudyLGet(j_nalloc,(Word_t)memory,&je);
+     if(tracefile) 
+       fprintf(tracefile,"GA: %p\n",memory);
+     if(p==(Word_t*)PPJERR)judyerror("get_count");
+     //fprintf(stderr, "Count slot at address %p\n",p);
+     size_t z = p!=NULL?*p:1; // defaults to 1 for non-array support
+     //fprintf(stderr,"Count of %p is %zu\n\n",memory,z);
+     return z;
+   }
+   
+   // REQUIRES memory to be head pointer (not interior)
+   gc_shape_t *flx_collector_t::get_shape(void *memory)
+   {
+     if(memory == NULL) return &::flx::gc::generic::_ptr_void_map;
+     assert(memory);
+     //fprintf(stderr, "Get shape of %p\n",memory);
+     Word_t *pshape= (Word_t*)JudyLGet(j_shape,(Word_t)memory,&je);
+     if(tracefile) 
+       fprintf(tracefile,"GS: %p\n",memory);
+     if(pshape==(Word_t*)PPJERR)judyerror("get_shape");
+     if(pshape==NULL) { 
+       fprintf(stderr,"get_shape %p found NULL\n",memory);
+       abort();
+     }
+     return (gc_shape_t *)(*pshape & (~(uintptr_t)1));
+   }
+   
+   void *flx_collector_t::create_empty_array(
+     flx::gc::generic::gc_shape_t *shape,
+     size_t count
+   )
+   {
+     if (count==0) return NULL;
+     void *p = allocate(shape,count);
+     assert(p);
+     set_used (p, 0); // make sure to override default 1 slot usage
+     if(get_used(p) != 0 || get_count(p) != count) {
+       fprintf(stderr,"create empty array type %s address %p request count=%zu, actual count=%zu ,used=%zu\n",
+        p,shape->cname, count, get_count(p), get_used(p));
+       fprintf(stderr, "FATAL CONSTRUCTOR FAILURE\n");
+       assert (false);
+     }
+     return p;
+   }
+   
+   
+   void flx_collector_t::impl_finalise(void *fp)
+   {
+     assert(fp!=NULL);
+     //fprintf(stderr, "Finaliser for %p\n", fp);
+     gc_shape_t *shape = get_shape(fp); // inefficient, since we already know the shape!
+     //fprintf(stderr, "Got shape %p=%s\n", shape,shape->cname);
+     void (*finaliser)(collector_t*, void*) = shape->finaliser;
+     //fprintf(stderr, "Got finaliser %p\n", finaliser);
+     if (finaliser)
+     {
+       unsigned char *cp = (unsigned char*)fp;
+       size_t n_used = get_used(fp) * shape->count;
+       size_t eltsize = shape->amt;
+       //fprintf(stderr, "Finalising at %p for type %s %zu objects each size %zu\n", cp, shape->cname, n_used, eltsize);
+       for(size_t j = 0; j<n_used; ++j)
+       {
+         (*finaliser)(this,(void*)cp);
+         cp += eltsize;
+       }
+     }
+   }
+   
+   void flx_collector_t::unlink(void *fp)
+   {
+     // check we have a pointer to an object
+     assert(fp!=NULL);
+   
+     // call the finaliser if there is one
+     //fprintf(stderr,"Unlink: Calling finaliser for %p\n",fp);
+     impl_finalise(fp);
+   
+     allocation_count--;
+     gc_shape_t *shape = get_shape(fp);
+     size_t n_objects = get_count(fp);
+     size_t nobj = shape -> count * n_objects;
+     ::std::size_t size = shape->amt * nobj;
+     if (size & 1) ++size;
+     //fprintf(stderr, "Uncounting %zu bytes\n", size);
+     allocation_amt -= size;
+   
+     // unlink the frame from the collectors list
+     //fprintf(stderr,"Removing address from Judy lists\n");
+     JudyLDel(&j_shape, (Word_t)fp, &je);
+     JudyLDel(&j_nused, (Word_t)fp, &je);
+     JudyLDel(&j_nalloc, (Word_t)fp, &je);
+     if(tracefile) {
+       fprintf(tracefile,"DS: %p\n",fp);
+       fprintf(tracefile,"DA: %p\n",fp);
+       fprintf(tracefile,"DU: %p\n",fp);
+     }
+     //fprintf(stderr,"Finished unlinking\n");
+   }
+   
+   void flx_collector_t::post_delete(void *fp)
+   {
+     Judy1Set(&j_tmp,(Word_t)fp,&je);
+     if(tracefile)
+       fprintf(tracefile,"IT: %p\n",fp);
+   
+   }
+   
+   void flx_collector_t::delete_frame(void *fp)
+   {
+     allocator->deallocate(fp);
+   }
+   
+   size_t flx_collector_t::reap ()
+   {
+     size_t count = 0;
+     Word_t next=(Word_t)NULL;
+     int res = Judy1First(j_tmp,&next,&je);
+     if(tracefile)
+       fprintf(tracefile,"FT: %p\n",next);
+     while(res) {
+       delete_frame((void*)next);
+       ++count;
+       res = Judy1Next(j_tmp,&next,&je);
+       if(tracefile)
+         fprintf(tracefile,"NT: %p\n",next);
+     }
+     Judy1FreeArray(&j_tmp,&je);
+     if(tracefile)
+       fprintf(tracefile,"CT:\n");
+     if(debug) 
+     {
+       fprintf(stderr,"[gc] Reaped %zu objects\n",count);
+       fprintf(stderr,"[gc] Still allocated %zu objects occupying %zu bytes\n", get_allocation_count(), get_allocation_amt());
+     }
+     return count;
+   }
+   
+   
+   //#include <valgrind/memcheck.h>
+   
+   /* This is the top level mark routine
+    * Its job is to mark all objects that are reachable
+    * so a subsequent reaping phase can delete all
+    * the objects that are NOT marked
+    *
+    * This mark bit is the low bit of the RTTI shape object pointer
+    * stored in the j_shape Judy1Array.
+    *
+    * The meaning of this bit alternates between calls to the collector.
+    * Initially all objects are considered garbage and the flag is toggled
+    * to indicate the object is reachable.
+    *
+    * On the next pass the reachable value is reconsidered to mean
+    * garbage and the flag toggled again. This saves a pass over
+    * all objects marking them garbage before then tracing roots
+    * to find which ones are not.
+    */
+   
+   void flx_collector_t::mark(pthread::memory_ranges_t *px)
+   {
+     // The recursion limit is a stopper so recursions
+     // won't blow the machine stack and also wipe out the cache
+     // regularly. Our overall routine is iterative with limited
+     // recursion. The recursions are faster but the iteration
+     // can handle data type like lists of millions of elements
+     // which would otherwise recurse millions of times.
+     //
+     int reclimit = 64;
+     if(debug)
+       fprintf(stderr,"[gc] Collector: Running mark\n");
+   
+     // sanity check
+     assert (root_count == roots.size());
+   
+     // the j_tmp Judy1 array is just a set of pointers which
+     // we have not yet examined. When we find pointers we stash
+     // them in this set rather than examining them immediately.
+     // Later we come back and examine them. This buffers the recursion
+     // a bit. The set has to be empty initially.
+     assert(j_tmp == 0);
+     if (gcthreads < 2)
+       mark_single(px,reclimit);
+     else 
+       mark_multi(px,reclimit,gcthreads);
+   }
+   
+   static void run_mark_thread(mark_thread_context_t *mtc)
+   {
+     mtc->collector->mark_thread(mtc); 
+   }
+   
+   void flx_collector_t::mark_multi(pthread::memory_ranges_t *px,int reclimit, int nthreads)
+   {
+   //fprintf(stderr, "starting %d mark threads\n", nthreads);
+     j_tmp_waiting = 0;
+     mark_thread_context_t mtc {this,px, reclimit};
+     ::std::vector< ::std::thread> mark_threads;
+     for (int i=0; i<gcthreads; ++i)
+       mark_threads.push_back (::std::thread (run_mark_thread, &mtc));
+     for (int i=0; i<gcthreads; ++i)
+       mark_threads[i].join();
+   //fprintf(stderr, "multithread mark finished\n");
+   }
+   
+   // this method is run simultaneously by multiple threads
+   void flx_collector_t::mark_thread(mark_thread_context_t *mtc)
+   {
+   //fprintf(stderr, "multithread mark thread running\n");
+     int reclimit = mtc->reclimit;
+     pthread::memory_ranges_t *px  = mtc->px;
+     // px is a set of memory ranges representing the stacks
+     // of all pthreads including this one at the point the
+     // collector got invoked. All the other threads than this
+     // one must be stopped. The stack are found by recording the
+     // base stack value when launching the thread, and using
+     // the value when a thread stops to allow collection as the
+     // high value. The stack contains all the machine registers
+     // at this point too, since we used a long_jmp into a local
+     // variable to put the registers on the stack.
+     if(px)
+     {
+       // for all pthreads
+       std::vector<pthread::memory_range_t>::iterator end = (*px).end();
+       for(
+         std::vector<pthread::memory_range_t>::iterator i = (*px).begin();
+         i != end;
+         ++i
+       )
+       {
+         // get the stack extent for one pthread
+         pthread::memory_range_t range = *i;
+         if(debug)
+         {
+           size_t n = (char*)range.e - (char*)range.b;
+           fprintf(stderr, "[gc] Conservate scan of memory %p->%p, %zu bytes\n",range.b, range.e, n);
+         }
+         //VALGRIND_MAKE_MEM_DEFINED(range.b, (char*)range.e-(char*)range.b);
+         void *end = range.e;
+         // for all machine words on the stack
+         // this WILL FAIL if the stack isn't an exact multiple
+         // of the size of a machine word
+         for ( void *i = range.b; i != end; i = (void*)((void**)i+1))
+         {
+           //if(debug)
+           // fprintf(stderr, "[gc] Check if *%p=%p is a pointer\n",i,*(void**)i);
+           // conservative scan of every word on every stack
+           scan_object(*(void**)i, reclimit);
+         }
+         if(debug)
+           fprintf(stderr, "[gc] DONE: Conservate scan of memory %p->%p\n",range.b, range.e);
+       }
+     }
+   
+     // Now scan all the registered roots
+     if(debug)
+       fprintf(stderr, "[gc] Scanning roots\n");
+     rootmap_t::iterator const end = roots.end();
+     for(
+       rootmap_t::iterator i = roots.begin();
+       i != end;
+       ++i
+     )
+     {
+       if(debug)
+         fprintf(stderr, "[gc] Scanning root %p\n", (*i).first);
+       scan_object((*i).first, reclimit);
+     }
+   
+     // Now, scan the temporary set in j_tmp  until it is empty
+     // When we're processing an object with scan_object
+     // if its an actual Felix object we mark it reachable
+     // and then scan all the pointers in it: usually those pointers
+     // are not scanned immediately by scan object but simply put
+     // into the set j_tmp to schedule them for scanning.
+     //
+     // Note: Judy1First finds the first key greater than or equal to the given one,
+     // it returns 0 if there is no such key.
+     Word_t toscan;
+     int res;
+   again:
+     {
+       ::std::unique_lock< ::std::mutex> dummy(j_tmp_lock);
+   retry:
+       toscan = 0;
+       res = Judy1First(j_tmp,&toscan,&je); // get one object scheduled for scanning
+       if (!res) {
+          ++j_tmp_waiting;
+          if (j_tmp_waiting == gcthreads) {
+            j_tmp_cv.notify_all();
+            goto endoff;
+          }
+          j_tmp_cv.wait(dummy);
+          --j_tmp_waiting;
+          goto retry;
+       }
+       Judy1Unset(&j_tmp,toscan,&je);         // remove it immediately
+     }
+     scan_object((void*)toscan, reclimit);  // scan it, it will either be marked or discarded
+     goto again;
+   
+   endoff:
+     assert(j_tmp == 0);                  
+   
+     if(debug)
+       fprintf(stderr, "[gc] Done Scanning roots\n");
+   }
+   
+   
+   
+   void flx_collector_t::mark_single(pthread::memory_ranges_t *px, int reclimit)
+   {
+     // px is a set of memory ranges representing the stacks
+     // of all pthreads including this one at the point the
+     // collector got invoked. All the other threads than this
+     // one must be stopped. The stack are found by recording the
+     // base stack value when launching the thread, and using
+     // the value when a thread stops to allow collection as the
+     // high value. The stack contains all the machine registers
+     // at this point too, since we used a long_jmp into a local
+     // variable to put the registers on the stack.
+     if(px)
+     {
+       // for all pthreads
+       std::vector<pthread::memory_range_t>::iterator end = (*px).end();
+       for(
+         std::vector<pthread::memory_range_t>::iterator i = (*px).begin();
+         i != end;
+         ++i
+       )
+       {
+         // get the stack extent for one pthread
+         pthread::memory_range_t range = *i;
+         if(debug)
+         {
+           size_t n = (char*)range.e - (char*)range.b;
+           fprintf(stderr, "[gc] Conservate scan of memory %p->%p, %zu bytes\n",range.b, range.e, n);
+         }
+         //VALGRIND_MAKE_MEM_DEFINED(range.b, (char*)range.e-(char*)range.b);
+         void *end = range.e;
+         // for all machine words on the stack
+         // this WILL FAIL if the stack isn't an exact multiple
+         // of the size of a machine word
+         for ( void *i = range.b; i != end; i = (void*)((void**)i+1))
+         {
+           //if(debug)
+           // fprintf(stderr, "[gc] Check if *%p=%p is a pointer\n",i,*(void**)i);
+           // conservative scan of every word on every stack
+           scan_object(*(void**)i, reclimit);
+         }
+         if(debug)
+           fprintf(stderr, "[gc] DONE: Conservate scan of memory %p->%p\n",range.b, range.e);
+       }
+     }
+   
+     // Now scan all the registered roots
+     if(debug)
+       fprintf(stderr, "[gc] Scanning roots\n");
+     rootmap_t::iterator const end = roots.end();
+     for(
+       rootmap_t::iterator i = roots.begin();
+       i != end;
+       ++i
+     )
+     {
+       if(debug)
+         fprintf(stderr, "[gc] Scanning root %p\n", (*i).first);
+       scan_object((*i).first, reclimit);
+     }
+   
+     // Now, scan the temporary set in j_tmp  until it is empty
+     // When we're processing an object with scan_object
+     // if its an actual Felix object we mark it reachable
+     // and then scan all the pointers in it: usually those pointers
+     // are not scanned immediately by scan object but simply put
+     // into the set j_tmp to schedule them for scanning.
+     //
+     // Note: Judy1First finds the first key greater than or equal to the given one,
+     // it returns 0 if there is no such key.
+     Word_t toscan = 0;
+     int res = Judy1First(j_tmp,&toscan,&je); // get one object scheduled for scanning
+     //if(tracefile)
+     //  fprintf(tracefile,"FT: %p\n",toscan);
+     while(res) {
+       Judy1Unset(&j_tmp,toscan,&je);         // remove it immediately
+       if(tracefile)
+         fprintf(tracefile,"DT: %p\n",toscan);
+       scan_object((void*)toscan, reclimit);  // scan it, it will either be marked or discarded
+       toscan = 0;
+       res = Judy1First(j_tmp,&toscan,&je); 
+       if(tracefile)
+         fprintf(tracefile,"FT: %p\n",toscan);
+     }                                     
+     assert(j_tmp == 0);                  
+   
+     if(debug)
+       fprintf(stderr, "[gc] Done Scanning roots\n");
+   }
+   
+   
+   
+   size_t flx_collector_t::sweep()
+   {
+     if(debug)
+       fprintf(stderr,"[gc] Collector: Sweep, garbage bit value=%d\n",(int)parity);
+     size_t sweeped = 0;
+     void *current = NULL;
+     Word_t *pshape = (Word_t*)JudyLFirst(j_shape,(Word_t*)&current,&je); // GE
+     if(tracefile) 
+       fprintf(tracefile,"FS: %p\n",current);
+     if(pshape==(Word_t*)PPJERR)judyerror("sweep");
+   
+     while(pshape!=NULL)
+     {
+       if((*pshape & (uintptr_t)1) == (parity & (uintptr_t)1))
+       {
+         if(debug)
+           fprintf(stderr,"[gc] Garbage   %p=%s[%zd][%zu/%zu] [#a=%zu,#d=%zu]\n",
+             current,
+             SHAPE(*pshape)->cname,
+             SHAPE(*pshape)->count,
+             get_used(current), 
+             get_count(current),
+             SHAPE(*pshape)->allocations,
+             SHAPE(*pshape)->deallocations
+           );
+         ++ sweeped;
+         //fprintf(stderr,"Incr deallocation count ..\n");
+         //++((gc_shape_t *)(*pshape & ~(uintptr_t)1))->deallocations;
+         //fprintf(stderr,"Unlinking ..\n");
+         unlink(current);
+         //fprintf(stderr,"Posting delete ..\n");
+         post_delete(current);
+         //fprintf(stderr,"Reaping done\n");
+       }
+       else
+       {
+         if(debug)
+           fprintf(stderr,"[gc] Reachable %p=%s[%zd][%zu/%zu] [#a=%zu,#d=%zu]\n",
+             current,
+             SHAPE(*pshape)->cname,
+             SHAPE(*pshape)->count,
+             get_used(current), 
+             get_count(current),
+             SHAPE(*pshape)->allocations,
+             SHAPE(*pshape)->deallocations
+           );
+       }
+   
+       //fprintf(stderr,"Calling Judy for next object\n");
+       pshape = (Word_t*)JudyLNext(j_shape,(Word_t*)(void*)&current,&je); // GT
+       if(tracefile) 
+         fprintf(tracefile,"NS: %p\n",current);
+       //fprintf(stderr,"Judy got next object %p\n",pshape);
+     }
+   
+     parity = !parity;
+     if(debug)
+       fprintf(stderr,"[gc] Sweeped %zu\n",sweeped);
+     return reap();
+   }
+   
+   void flx_collector_t::impl_add_root(void *memory)
+   {
+     if(!memory)
+     {
+       fprintf(stderr, "[gc] GC ERROR: ADD NULL ROOT\n");
+       abort();
+     }
+     rootmap_t::iterator iter = roots.find(memory);
+     if(iter == roots.end())
+     {
+       std::pair<void *const, size_t> entry(memory,(uintptr_t)1);
+       if(debug) 
+         fprintf(stderr,"[gc] Add root %p=%s\n", memory,get_shape(memory)->cname);
+       roots.insert (entry);
+       root_count++;
+     }
+     else {
+       if(debug) 
+         fprintf(stderr,"[gc] Increment root %p to %zu\n", memory, (*iter).second+1);
+       ++(*iter).second;
+     }
+   }
+   
+   void flx_collector_t::impl_remove_root(void *memory)
+   {
+     rootmap_t::iterator iter = roots.find(memory);
+     if(iter == roots.end())
+     {
+       fprintf(stderr, "[gc] GC ERROR: REMOVE ROOT WHICH IS NOT ROOT\n");
+       abort();
+     }
+     if((*iter).second == (uintptr_t)1)
+     {
+       if(debug) 
+         fprintf(stderr,"[gc] Remove root %p\n", memory);
+       roots.erase(iter);
+       root_count--;
+     }
+     else {
+       if(debug) 
+         fprintf(stderr,"[gc] Decrement root %p to %zu\n", memory, (*iter).second-1);
+       --(*iter).second;
+     }
+   }
+   
+   /* This is the fun bit!
+    * Register pointer is called by scan object, indirectly
+    * via the custom scanner.
+    * It then recursively calls scan_object on that pointer,
+    * providing a standard recursive descent.
+    *
+    * HOWEVER if the recursion limit is reached during this process,
+    * instead of recursing it just stashes the pointer in the
+    * j_tmp collection for later processing.
+    *
+    * So recursions over small tree structures proceed as normal,
+    * but when you get a long list or array to handle the recursion
+    * is stopped before it blows the stack, and the data is just stashed
+    * for later processing by the top level iterative loop
+    */
+   
+   // unfortunately requires a dynamic test to determine
+   // if we're using the threaded mark routine or not
+   void flx_collector_t::register_pointer(void *q, int reclimit)
+   {
+     if (inrange(q)) {
+       if(reclimit==0) 
+       {
+         if(gcthreads>1) 
+         {
+           ::std::unique_lock< ::std::mutex> dummy(j_tmp_lock);
+           Judy1Set(&j_tmp,(Word_t)q,&je);
+           j_tmp_cv.notify_one();
+         } 
+         else {
+           Judy1Set(&j_tmp,(Word_t)q,&je);
+         }
+         if(tracefile)
+           fprintf(tracefile,"IT: %p\n",q);
+       }
+       else scan_object(q, reclimit-1);
+     }
+   }
+   
+   ::flx::gc::generic::pointer_data_t flx_collector_t::get_pointer_data (void *p)
+   {
+     ::flx::gc::generic::pointer_data_t pdat;
+     pdat.head = NULL;
+     pdat.max_elements = 0;
+     pdat.used_elements = 0;
+     pdat.shape = NULL;
+     pdat.pointer = p;
+    
+     Word_t cand = (Word_t)p;
+     Word_t head = cand;
+     Word_t *ppshape = (Word_t*)JudyLLast(j_shape,&head, &je);
+     if(tracefile) 
+       fprintf(tracefile,"LS: %p\n",head);
+     if(ppshape==(Word_t*)PPJERR)judyerror("get_pointer_data");
+     if(ppshape == NULL) return pdat; // no lower object
+     gc_shape_t *pshape = SHAPE(*ppshape);
+     size_t max_slots = get_count((void*)head);
+     size_t used_slots = get_used((void*)head);
+     size_t n = max_slots * pshape->count * pshape->amt;
+     if(cand >= (Word_t)(void*)((unsigned char*)(void*)head+n)) return pdat; // not interior
+     pdat.head = (void*)head;
+     pdat.max_elements = max_slots;
+     pdat.used_elements = used_slots;
+     pdat.shape = pshape;
+     return pdat;
+   }
+   
+   /* Given some word siuze value p, we have to decide what it is.
+    * If its a pointer into an allocated object, since we got here
+    * that object is reachable so we ensure that object is marked
+    * reachable so it won't be reaped
+    */
+   
+   // if a pointer is interior, then
+   // if marked reachable already return NULL,NULL
+   // else mark as reachable and return head,shape
+   flx_collector_t::memdata_t flx_collector_t::check_interior (void *p)
+   {
+     Word_t reachable = (parity & (uintptr_t)1) ^ (uintptr_t)1;
+     if(debug)
+       fprintf(stderr,"[gc] Scan object %p, reachable bit value = %d\n",p,(int)reachable);
+   
+     // Now find the shape of the object into which the pointer points,
+     // if it is a Felix allocated object. First, we use JudyLLast
+     // which finds the value less than or equal to the given key.
+     if (!inrange(p)) return memdata_t{NULL,NULL,0};
+     Word_t cand = (Word_t)p;
+     Word_t head=cand;
+     Word_t *ppshape = (Word_t*)JudyLLast(j_shape,&head,&je);
+     if(ppshape==(Word_t*)PPJERR)judyerror("check_interior");
+   
+     // if the pointer returned by Judy is NULL, there is no
+     // allocated object at or lower then the given address so exit
+     if(ppshape == NULL) return memdata_t{NULL,NULL,0}; // no lower object
+     /*
+     if(debug)
+     {
+       fprintf(stderr,"Found candidate object %p, &shape=%p, shape(1) %p\n",(void*)fp,(void*)w,(void*)(*w));
+       fprintf(stderr," .. type=%s!\n",((gc_shape_t*)(*w & ~(uintptr_t)1))->cname);
+     }
+     */
+   
+     // if the object lower then the given pointer is already
+     // marked reachable, there's nothing to do (all the pointers
+     // it reaches should also be marked) so just exit.
+     if( (*ppshape & (uintptr_t)1) == reachable) return memdata_t {NULL,NULL,0};   // already handled
+   
+     // get the actual shape of the candidate object
+     // don't forget to mask out the low bit which is the reachability flag
+     gc_shape_t *pshape = SHAPE(*ppshape);
+   
+     // calculate the length of the candidate object in bytes
+     size_t exterior_count = get_count((void*)head);
+     size_t n = exterior_count * pshape->count * pshape->amt;
+   
+     // if our pointer is greater than or equal to the "one past the end"
+     // pointer of the object, it is not a pointer interior to that object
+     // but a foreign pointer and must be ignored
+     if(cand >= (Word_t)(void*)((unsigned char*)(void*)head+n)) return memdata_t{NULL,NULL,0}; // not interior
+     if(debug)
+       fprintf(stderr,"[gc] MARKING object %p, shape %p, type=%s\n",(void*)head,pshape,pshape->cname);
+   
+     // otherwise we have an iterior or head pointer to the object
+     // so set the reachable flag in the judy shape array
+     *ppshape = (*ppshape & ~(uintptr_t)1) | reachable;
+     return memdata_t {(void*)head,pshape,n};
+   }
+   
+   void flx_collector_t::scan_object(void *p, int reclimit)
+   {
+   
+     // CAN p be NULL?? If so a fast exit could be done
+     // no point if it can't be null though
+   
+     // The reachability flag is the low bit object type pointer.
+     // The sense of the flag alternative between 0 and 1 meaning
+     // reachable on successive collections. This is an optimisation
+     // which saves marking all object unreachable first, then marking
+     // the reachable ones reachable. We just use the previous reachable
+     // marking to mean unreachable next time, then flip the bit for each
+     // reachable object. The value parity records the sense and is flipped
+     // at the start of each GC pass.
+     //Word_t reachable = (parity & (uintptr_t)1) ^ (uintptr_t)1;
+   again:
+      memdata_t memdata = check_interior(p);
+      if(memdata.head == NULL) return;
+   /*
+     //if(debug)
+     //  fprintf(stderr,"[gc] Scan object %p, reachable bit value = %d\n",p,(int)reachable);
+   
+     // Now find the shape of the object into which the pointer points,
+     // if it is a Felix allocated object. First, we use JudyLLast
+     // which finds the value less than or equal to the given key.
+     if (!inrange(p)) return;
+     Word_t cand = (Word_t)p;
+     Word_t head=cand;
+     Word_t *ppshape = (Word_t*)JudyLLast(j_shape,&head,&je);
+     if(ppshape==(Word_t*)PPJERR)judyerror("scan_object");
+   
+     // if the pointer returned by Judy is NULL, there is no
+     // allocated object at or lower then the given address so exit
+     if(ppshape == NULL) return; // no lower object
+     
+     //if(debug)
+     //{
+     //  fprintf(stderr,"Found candidate object %p, &shape=%p, shape(1) %p\n",(void*)fp,(void*)w,(void*)(*w));
+     //  fprintf(stderr," .. type=%s!\n",((gc_shape_t*)(*w & ~(uintptr_t)1))->cname);
+     //}
+     //
+   
+     // if the object lower then the given pointer is already
+     // marked reachable, there's nothing to do (all the pointers
+     // it reaches should also be marked) so just exit.
+     if( (*ppshape & (uintptr_t)1) == reachable) return;   // already handled
+   
+     // get the actual shape of the candidate object
+     // don't forget to mask out the low bit which is the reachability flag
+     gc_shape_t *pshape = SHAPE(*ppshape);
+   
+     // calculate the length of the candidate object in bytes
+     size_t n = get_count((void*)head) * pshape->count * pshape->amt;
+   
+     // if our pointer is greater than or equal to the "one past the end"
+     // pointer of the object, it is not a pointer interior to that object
+     // but a foreign pointer and must be ignored
+     if(cand >= (Word_t)(void*)((unsigned char*)(void*)head+n)) return; // not interior
+     if(debug)
+       fprintf(stderr,"[gc] MARKING object %p, shape %p, type=%s\n",(void*)head,pshape,pshape->cname);
+   
+     // otherwise we have an iterior or head pointer to the object
+     // so set the reachable flag in the judy shape array
+     *ppshape = (*ppshape & ~(uintptr_t)1) | reachable;
+   */
+   
+     // Now we have to look for pointers contained in the object
+    
+     // The first branch here is not used at the moment,
+     // and is a hard coded way to do a conservative scan on the object
+   
+     if(memdata.pshape->flags & gc_flags_conservative)
+     {
+       size_t n_used = get_used((void*)memdata.head) * memdata.pshape->count;
+       // end of object, rounded down to size of a void*
+       void **end = (void**)(
+         (unsigned char*)(void*)memdata.head +
+         n_used * memdata.nbytes / sizeof(void*) * sizeof(void*)
+       );
+       for ( void **i = (void**)memdata.head; i != end; i = i+1)
+       {
+         if(debug)
+         //  fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
+         if(reclimit==0) {
+   
+   // LOCK REQUIRED XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+           Judy1Set(&j_tmp,(Word_t)*i,&je);
+   // END LOCK XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+           if(tracefile)
+             fprintf(tracefile,"IT: %p\n",*i);
+         }
+         else
+           scan_object(*i,reclimit -1);
+       }
+     }
+   
+     // This is the normal processing.
+     else
+     {
+       // Calculate the dynamic count of used elements in the object.
+       // All Felix objects are varrays which have an allocated and used
+       // element count. The RTTI object always describes one element.
+       size_t dyncount = get_used((void*)memdata.head);
+   
+       // if don't have a scanner for the object it is atomic,
+       // that is it contains no pointers.
+       // Otherwise call the scanner.
+       if(memdata.pshape->scanner) {
+         void *r = memdata.pshape->scanner(this, memdata.pshape,memdata.head,dyncount,reclimit);
+         // If the scanner returns a non-zero value it is the sole pointer
+         // in the object. So reset our argument and jump to the start of
+         // this routine: self-tail-recursion optimisation.
+         if (r) { p = r; goto again; }
+         // Otherwise the scanner has registered the pointers it found that
+         // need further examination. We do not do that examination here
+         // recursively, or inside the scanner, because it might blow the stack.
+         // Instead we just return, so a flat iteration loop can grab things
+         // out of the registered pointer buffer and drive the process
+         // with a flat loop.
+       }
+     }
+   }
+   
+   
+   
+   size_t flx_collector_t::impl_collect()
+   {
+     // THIS IS A BIT OF A HACK
+     // but world_stop() is bugged!!
+     // This is a temporary fix.
+     FLX_SAVE_REGS;
+     if (thread_control == NULL || thread_control->world_stop())
+     {
+       //if(debug)
+       //  fprintf(stderr,"[gc] Collecting, thread %lx\n", (size_t)flx::pthread::get_current_native_thread());
+       pthread::memory_ranges_t * mr = thread_control? thread_control -> get_block_list() : NULL;
+       mark(mr);
+       delete mr;
+       size_t collected = sweep();
+       if(thread_control) thread_control->world_start();
+       //if(debug)
+       //  fprintf(stderr,"[gc] FINISHED collect, thread %lx\n", (size_t)flx::pthread::get_current_native_thread());
+       return collected;
+     }
+     else {
+       if(debug)
+         fprintf(stderr,"[gc] RACE: someone else is collecting, just yield\n");
+       if(thread_control)thread_control->yield();
+       return 0ul;
+     }
+   }
+   
+   void flx_collector_t::impl_free_all_mem()
+   {
+     //fprintf(stderr,"impl_free_all_mem -- freeing roots\n");
+     roots.clear();
+     root_count = 0;
+     //fprintf(stderr,"freeing all heap with sweep()\n");
+     sweep();
+   }
+   
+   flx_collector_t::~flx_collector_t()
+   {
+      if(tracefile) {
+        fclose(tracefile);
+        fprintf(stderr,"Closed FLX_TRACE_GC file\n");
+      }
+   
+     //THIS IS VERY DANGEROUS! What if don't want to collect
+     //the garbage for efficiency reasons???
+     //
+     // ELIDED .. already caused a bug!
+     //
+     //free_all_mem();
+   }
+   
+   }}} // end namespaces
+   
 
 Garbage Collector Interface
 ===========================
@@ -2165,46 +2162,46 @@ Garbage Collector Interface
 
 .. code-block:: felix
 
-  
-  //$ Generic garbage collector interface.
-  //$ This class provides a generic interface to the GC,
-  //$ that is, one that is independent of the GC representation.
-  open class Gc
-  {
-    fun _collect: unit -> size = "PTF gcp->actually_collect()"
-      requires property "needs_gc";
-  
-    //$ Invoke the garbage collector.
-    proc collect() { 
-      if Env::getenv "FLX_REPORT_COLLECTIONS" != "" do 
-        eprintln "[Gc::collect] Program requests collection"; 
-        var collected = _collect();
-        eprintln$ "[Gc::collect] Collector collected " + collected.str + " objects";
-      else
-        C_hack::ignore(_collect());
-      done
-    }
-  
-    //$ Get the total number of bytes currently allocated.
-    fun gc_get_allocation_amt : unit -> size= "PTF gcp->collector->get_allocation_amt()"
-      requires property "needs_gc";
-  
-    //$ Get the total number of objects currently allocated.
-    fun gc_get_allocation_count : unit -> size = "PTF gcp->collector->get_allocation_count()"
-      requires property "needs_gc";
-  
-    //$ Get the total number of roots.
-    fun gc_get_root_count : unit -> size = "PTF gcp->collector->get_root_count()"
-      requires property "needs_gc";
-  
-    proc add_root: address  = "PTF gcp->collector->add_root ($1);"
-      requires property "needs_gc";
-  
-    proc remove_root: address  = "PTF gcp->collector->remove_root ($1);"
-      requires property "needs_gc";
-  
-  }
-  @
+   
+   //$ Generic garbage collector interface.
+   //$ This class provides a generic interface to the GC,
+   //$ that is, one that is independent of the GC representation.
+   open class Gc
+   {
+     fun _collect: unit -> size = "PTF gcp->actually_collect()"
+       requires property "needs_gc";
+   
+     //$ Invoke the garbage collector.
+     proc collect() { 
+       if Env::getenv "FLX_REPORT_COLLECTIONS" != "" do 
+         eprintln "[Gc::collect] Program requests collection"; 
+         var collected = _collect();
+         eprintln$ "[Gc::collect] Collector collected " + collected.str + " objects";
+       else
+         C_hack::ignore(_collect());
+       done
+     }
+   
+     //$ Get the total number of bytes currently allocated.
+     fun gc_get_allocation_amt : unit -> size= "PTF gcp->collector->get_allocation_amt()"
+       requires property "needs_gc";
+   
+     //$ Get the total number of objects currently allocated.
+     fun gc_get_allocation_count : unit -> size = "PTF gcp->collector->get_allocation_count()"
+       requires property "needs_gc";
+   
+     //$ Get the total number of roots.
+     fun gc_get_root_count : unit -> size = "PTF gcp->collector->get_root_count()"
+       requires property "needs_gc";
+   
+     proc add_root: address  = "PTF gcp->collector->add_root ($1);"
+       requires property "needs_gc";
+   
+     proc remove_root: address  = "PTF gcp->collector->remove_root ($1);"
+       requires property "needs_gc";
+   
+   }
+   @
 
 Rtti introspection
 ==================
@@ -2212,144 +2209,144 @@ Rtti introspection
 
 .. code-block:: felix
 
-  class Rtti {
-  
-    //$ The type of the collector.
-    type collector_t = "::flx::gc::generic::collector_t*";
-  
-    //$ The type of an RTTI record.
-    type gc_shape_t = "::flx::gc::generic::gc_shape_t*";
-    fun ==: gc_shape_t * gc_shape_t -> bool = "$1==$2";
-  
-    fun isNULL: gc_shape_t -> bool = "$1==0";
-    typedef gc_shape_flags_t = uint;
-      val gc_flags_default = 0;
-      val gc_flags_immobile = 1;
-      val gc_flags_persistent = 2;
-      val gc_flags_conservative = 4;
-  
-    //$ The type of a finalisation function.
-    typedef gc_finaliser_t = collector_t * address --> void;
-    typedef gc_encoder_t = address --> string;
-    typedef gc_decoder_t = address * +char * size --> size;
-  
-    type fcops_t = "ValueType*";
-    fun get_fcops : gc_shape_t -> fcops_t = "$1->fcops";
-    fun isNULL: fcops_t -> bool = "$1==0";
-  
-    fun object_size: fcops_t -> size = "$1->object_size()";
-    fun object_alignment: fcops_t -> size = "$1->object_alignment()";
-    proc dflt_init : fcops_t * address = "$1->dflt_init($2);";
-    proc destroy : fcops_t * address = "$1->destroy($2);";
-    proc copy_init : fcops_t * address * address  = "$1->copy_init($2,$3);";
-    proc move_init : fcops_t * address * address  = "$1->move_init($2,$3);";
-    proc copy_assign: fcops_t * address * address  = "$1->copy_assign($2,$3);";
-    proc move_assign: fcops_t * address * address  = "$1->move_assign($2,$3);";
-  
-    //$ Iterator to find the next shape after a given one.
-    fun next_shape: gc_shape_t -> gc_shape_t = "$1->next_shape";
-  
-    //$ The C++ name of the Felix type.
-    fun cname: gc_shape_t -> +char = "$1->cname";
-  
-    //$ The static number of elements in an array type.
-    //$ Note this is not the size of a varray!
-    fun number_of_elements: gc_shape_t -> size = "$1->count";
-  
-    //$ Number of bytes in one element.
-    fun bytes_per_element: gc_shape_t -> size = "$1->amt";
-  
-    //$ The finaliser function.
-    fun finaliser: gc_shape_t -> gc_finaliser_t  = "$1->finaliser";
-  
-    //$ The encoder function.
-    fun encoder : gc_shape_t -> gc_encoder_t = "$1->encoder";
-  
-    //$ The decoder function.
-    fun decoder: gc_shape_t -> gc_decoder_t = "$1->decoder";
-  
-    //$ Check for offset data
-    fun uses_offset_table : gc_shape_t -> bool = "$1->scanner == ::flx::gc::generic::scan_by_offsets";
-  
-    //$ The number of pointers in the base type.
-    //$ If the type is an array that's the element type.
-    fun _unsafe_n_offsets: gc_shape_t -> size = "((::flx::gc::generic::offset_data_t const *)($1->private_data))->n_offsets";
-  
-    fun n_offsets (shape: gc_shape_t) : size => 
-      if uses_offset_table shape then _unsafe_n_offsets shape else 0uz
-    ;
-  
-    //$ Pointer to the offset table.
-    fun _unsafe_offsets: gc_shape_t -> +size = "const_cast< ::std::size_t *>(((::flx::gc::generic::offset_data_t const *)($1->private_data))->offsets)";
-  
-    fun offsets (shape: gc_shape_t) : +size => 
-      if uses_offset_table shape then _unsafe_offsets shape else C_hack::cast[+size] 0 
-    ;
+   class Rtti {
    
-    //$ Flags.
-    fun flags: gc_shape_t -> gc_shape_flags_t = "$1->flags";
-  
-    //$ Global head of the compiled shape list.
-    //$ This is actually the first type, since they're linked together.
-    fun shape_list_head : unit -> gc_shape_t = "PTF shape_list_head";
-  
-    //$ C++ type_info for the type.
-    type type_info = "::std::type_info" requires header "#include <typeinfo>";
-  
-    //$ C++ source name of the type.
-    fun name : type_info -> string = "::std::string($1.name())";
-  
-    //$ C++ Type_info of a type.
-    const typeid[T]: type_info = "typeid(?1)";
-  
-    // PLATFORM DEPENDENT, REQUIRES cxxabi.h.
-    // Only sure to work for gcc.
-    private proc _gxx_demangle: string * &string = """{
-      int status;
-      char *tmp=abi::__cxa_demangle($1.c_str(), 0,0, &status);
-      string s= string(tmp);
-      std::free(tmp);
-      *$2= s;
-      }
-    """ requires header "#include <cxxabi.h>";
-  
-    //$ For gcc only, the C++ name a mangled name represents.
-    fun gxx_demangle(s:string) :string = 
-    {
-      var r: string;
-      _gxx_demangle(s, &r);
-      return r;
-    }
-  
-    proc _link_shape[T]: &gc_shape_t = """
-      ::flx::gc::generic::gc_shape_t *p = (gc_shape_t*)malloc(sizeof(gc_shape_t));
-      p->next_shape = PTF shape_list_head;
-      PTF shape_list_head = p;
-      p->cname = typeid(?1).name();
-      p->count = 1;
-      p->amt = sizeof(?1);
-      p->finaliser = ::flx::gc::generic::std_finaliser<?1>;
-      p->n_offsets = 0;
-      p->offsets = 0;
-      p->flags = ::flx::gc::generic::gc_flags_default;
-      *$1 = p;
-      """ requires property "needs_gc";
-  
-    //$ Put a new shape record into the global list.
-    //$ This routine constructs a new shape record on the heap.
-    //$ It fills in some of the data based on the type.
-    //$ It links the new record into the shape list.
-    //$ Then it stores the shape at the user specified address.
-    //$ Since the shape is represented in Felix by a pointer,
-    //$ subsequent modifications carry through to the linked shape object.
-    //$ This routine is only useful for adding a shape record for a statically
-    //$ known type: that's useful because not all statically known types get
-    //$ shape records: the compiler only generates them if the shape is
-    //$ required because an object of that type is allocated on the heap.
-    gen link_shape[T]()= { var p: gc_shape_t; _link_shape[T] (&p); return p; }
-  }
-  @
-  
+     //$ The type of the collector.
+     type collector_t = "::flx::gc::generic::collector_t*";
+   
+     //$ The type of an RTTI record.
+     type gc_shape_t = "::flx::gc::generic::gc_shape_t*";
+     fun ==: gc_shape_t * gc_shape_t -> bool = "$1==$2";
+   
+     fun isNULL: gc_shape_t -> bool = "$1==0";
+     typedef gc_shape_flags_t = uint;
+       val gc_flags_default = 0;
+       val gc_flags_immobile = 1;
+       val gc_flags_persistent = 2;
+       val gc_flags_conservative = 4;
+   
+     //$ The type of a finalisation function.
+     typedef gc_finaliser_t = collector_t * address --> void;
+     typedef gc_encoder_t = address --> string;
+     typedef gc_decoder_t = address * +char * size --> size;
+   
+     type fcops_t = "ValueType*";
+     fun get_fcops : gc_shape_t -> fcops_t = "$1->fcops";
+     fun isNULL: fcops_t -> bool = "$1==0";
+   
+     fun object_size: fcops_t -> size = "$1->object_size()";
+     fun object_alignment: fcops_t -> size = "$1->object_alignment()";
+     proc dflt_init : fcops_t * address = "$1->dflt_init($2);";
+     proc destroy : fcops_t * address = "$1->destroy($2);";
+     proc copy_init : fcops_t * address * address  = "$1->copy_init($2,$3);";
+     proc move_init : fcops_t * address * address  = "$1->move_init($2,$3);";
+     proc copy_assign: fcops_t * address * address  = "$1->copy_assign($2,$3);";
+     proc move_assign: fcops_t * address * address  = "$1->move_assign($2,$3);";
+   
+     //$ Iterator to find the next shape after a given one.
+     fun next_shape: gc_shape_t -> gc_shape_t = "$1->next_shape";
+   
+     //$ The C++ name of the Felix type.
+     fun cname: gc_shape_t -> +char = "$1->cname";
+   
+     //$ The static number of elements in an array type.
+     //$ Note this is not the size of a varray!
+     fun number_of_elements: gc_shape_t -> size = "$1->count";
+   
+     //$ Number of bytes in one element.
+     fun bytes_per_element: gc_shape_t -> size = "$1->amt";
+   
+     //$ The finaliser function.
+     fun finaliser: gc_shape_t -> gc_finaliser_t  = "$1->finaliser";
+   
+     //$ The encoder function.
+     fun encoder : gc_shape_t -> gc_encoder_t = "$1->encoder";
+   
+     //$ The decoder function.
+     fun decoder: gc_shape_t -> gc_decoder_t = "$1->decoder";
+   
+     //$ Check for offset data
+     fun uses_offset_table : gc_shape_t -> bool = "$1->scanner == ::flx::gc::generic::scan_by_offsets";
+   
+     //$ The number of pointers in the base type.
+     //$ If the type is an array that's the element type.
+     fun _unsafe_n_offsets: gc_shape_t -> size = "((::flx::gc::generic::offset_data_t const *)($1->private_data))->n_offsets";
+   
+     fun n_offsets (shape: gc_shape_t) : size => 
+       if uses_offset_table shape then _unsafe_n_offsets shape else 0uz
+     ;
+   
+     //$ Pointer to the offset table.
+     fun _unsafe_offsets: gc_shape_t -> +size = "const_cast< ::std::size_t *>(((::flx::gc::generic::offset_data_t const *)($1->private_data))->offsets)";
+   
+     fun offsets (shape: gc_shape_t) : +size => 
+       if uses_offset_table shape then _unsafe_offsets shape else C_hack::cast[+size] 0 
+     ;
+    
+     //$ Flags.
+     fun flags: gc_shape_t -> gc_shape_flags_t = "$1->flags";
+   
+     //$ Global head of the compiled shape list.
+     //$ This is actually the first type, since they're linked together.
+     fun shape_list_head : unit -> gc_shape_t = "PTF shape_list_head";
+   
+     //$ C++ type_info for the type.
+     type type_info = "::std::type_info" requires header "#include <typeinfo>";
+   
+     //$ C++ source name of the type.
+     fun name : type_info -> string = "::std::string($1.name())";
+   
+     //$ C++ Type_info of a type.
+     const typeid[T]: type_info = "typeid(?1)";
+   
+     // PLATFORM DEPENDENT, REQUIRES cxxabi.h.
+     // Only sure to work for gcc.
+     private proc _gxx_demangle: string * &string = """{
+       int status;
+       char *tmp=abi::__cxa_demangle($1.c_str(), 0,0, &status);
+       string s= string(tmp);
+       std::free(tmp);
+       *$2= s;
+       }
+     """ requires header "#include <cxxabi.h>";
+   
+     //$ For gcc only, the C++ name a mangled name represents.
+     fun gxx_demangle(s:string) :string = 
+     {
+       var r: string;
+       _gxx_demangle(s, &r);
+       return r;
+     }
+   
+     proc _link_shape[T]: &gc_shape_t = """
+       ::flx::gc::generic::gc_shape_t *p = (gc_shape_t*)malloc(sizeof(gc_shape_t));
+       p->next_shape = PTF shape_list_head;
+       PTF shape_list_head = p;
+       p->cname = typeid(?1).name();
+       p->count = 1;
+       p->amt = sizeof(?1);
+       p->finaliser = ::flx::gc::generic::std_finaliser<?1>;
+       p->n_offsets = 0;
+       p->offsets = 0;
+       p->flags = ::flx::gc::generic::gc_flags_default;
+       *$1 = p;
+       """ requires property "needs_gc";
+   
+     //$ Put a new shape record into the global list.
+     //$ This routine constructs a new shape record on the heap.
+     //$ It fills in some of the data based on the type.
+     //$ It links the new record into the shape list.
+     //$ Then it stores the shape at the user specified address.
+     //$ Since the shape is represented in Felix by a pointer,
+     //$ subsequent modifications carry through to the linked shape object.
+     //$ This routine is only useful for adding a shape record for a statically
+     //$ known type: that's useful because not all statically known types get
+     //$ shape records: the compiler only generates them if the shape is
+     //$ required because an object of that type is allocated on the heap.
+     gen link_shape[T]()= { var p: gc_shape_t; _link_shape[T] (&p); return p; }
+   }
+   @
+   
 
 Low level Garbage Collector Access
 ==================================
@@ -2357,66 +2354,66 @@ Low level Garbage Collector Access
 
 .. code-block:: felix
 
-  class Collector
-  {
-    open Rtti;
-    struct pointer_data_t
-    {
-       pointer: address;
-       head: address;
-       max_elements: size;  // dynamic slots
-       used_elements: size; // dynamic slots used
-       shape:gc_shape_t;
-    }; 
-  
-    private type raw_pointer_data_t = "::flx::gc::generic::pointer_data_t" ;
-    private fun get_raw_pointer_data: address -> raw_pointer_data_t = 
-      "PTF gcp->collector->get_pointer_data($1)"
-      requires property "needs_gc"
-    ;
-    fun get_pointer_data (p:address) => C_hack::reinterpret[pointer_data_t](get_raw_pointer_data p);
-  
-    fun is_felix_pointer (pd: pointer_data_t) => not (isNULL pd.head);
-    fun is_head_pointer (pd: pointer_data_t) => pd.pointer == pd.head; 
-    fun repeat_count (pd: pointer_data_t) => pd.used_elements *  pd.shape.number_of_elements;
-    fun allocated_bytes (pd: pointer_data_t) => pd.max_elements * 
-      pd.shape.number_of_elements * pd.shape.bytes_per_element
-    ;
-  
-    //$ Diagnostic routine, dump pointer data and
-    //$ computed values.
-    proc print_pointer_data (pd: pointer_data_t)
-    {
-      println$ "Candidate pointer = " + pd.pointer.str;
-      println$ "Valid=" + pd.Collector::is_felix_pointer.str;
-      if pd.Collector::is_felix_pointer do
-        println$ "Is head=" + pd.Collector::is_head_pointer.str;
-        var shape = pd.shape;
-        println$ "Element type =  " + shape.cname.string;
-        println$ "Pod[has no finaliser] = " + shape.finaliser.address.isNULL.str;
-        var bpe = shape.bytes_per_element;
-        println$ "Bytes per element = " + bpe.str;
-        println$ "Static array length = " + shape.number_of_elements.str;
-        println$ "Dynamic array length = " + pd.used_elements.str; 
-        println$ "Max dynamic array length = " + pd.max_elements.str; 
-        var nelts = pd.used_elements * shape.number_of_elements;
-        println$ "Aggregate number of used elements " + nelts.str;
-        println$ "Store to serialise: " + (nelts * bpe) . str;
-      done
-    }
-  
-    //$ Diagnostic routine, print info about a pointer.
-    proc print_pointer_data (p:address) 
-    {
-      var pd = Collector::get_pointer_data p;
-      print_pointer_data (pd);
-    }
-    proc print_pointer_data[T] (p:&T) => print_pointer_data (C_hack::cast[address] p);
-    proc print_pointer_data[T] (p:cptr[T]) => print_pointer_data (C_hack::cast[address] p);
-    proc print_pointer_data[T] (p:+T) => print_pointer_data (C_hack::cast[address] p);
-  
-  }
-  @
+   class Collector
+   {
+     open Rtti;
+     struct pointer_data_t
+     {
+        pointer: address;
+        head: address;
+        max_elements: size;  // dynamic slots
+        used_elements: size; // dynamic slots used
+        shape:gc_shape_t;
+     }; 
+   
+     private type raw_pointer_data_t = "::flx::gc::generic::pointer_data_t" ;
+     private fun get_raw_pointer_data: address -> raw_pointer_data_t = 
+       "PTF gcp->collector->get_pointer_data($1)"
+       requires property "needs_gc"
+     ;
+     fun get_pointer_data (p:address) => C_hack::reinterpret[pointer_data_t](get_raw_pointer_data p);
+   
+     fun is_felix_pointer (pd: pointer_data_t) => not (isNULL pd.head);
+     fun is_head_pointer (pd: pointer_data_t) => pd.pointer == pd.head; 
+     fun repeat_count (pd: pointer_data_t) => pd.used_elements *  pd.shape.number_of_elements;
+     fun allocated_bytes (pd: pointer_data_t) => pd.max_elements * 
+       pd.shape.number_of_elements * pd.shape.bytes_per_element
+     ;
+   
+     //$ Diagnostic routine, dump pointer data and
+     //$ computed values.
+     proc print_pointer_data (pd: pointer_data_t)
+     {
+       println$ "Candidate pointer = " + pd.pointer.str;
+       println$ "Valid=" + pd.Collector::is_felix_pointer.str;
+       if pd.Collector::is_felix_pointer do
+         println$ "Is head=" + pd.Collector::is_head_pointer.str;
+         var shape = pd.shape;
+         println$ "Element type =  " + shape.cname.string;
+         println$ "Pod[has no finaliser] = " + shape.finaliser.address.isNULL.str;
+         var bpe = shape.bytes_per_element;
+         println$ "Bytes per element = " + bpe.str;
+         println$ "Static array length = " + shape.number_of_elements.str;
+         println$ "Dynamic array length = " + pd.used_elements.str; 
+         println$ "Max dynamic array length = " + pd.max_elements.str; 
+         var nelts = pd.used_elements * shape.number_of_elements;
+         println$ "Aggregate number of used elements " + nelts.str;
+         println$ "Store to serialise: " + (nelts * bpe) . str;
+       done
+     }
+   
+     //$ Diagnostic routine, print info about a pointer.
+     proc print_pointer_data (p:address) 
+     {
+       var pd = Collector::get_pointer_data p;
+       print_pointer_data (pd);
+     }
+     proc print_pointer_data[T] (p:&T) => print_pointer_data (C_hack::cast[address] p);
+     proc print_pointer_data[T] (p:cptr[T]) => print_pointer_data (C_hack::cast[address] p);
+     proc print_pointer_data[T] (p:+T) => print_pointer_data (C_hack::cast[address] p);
+   
+   }
+   @
 
 Bootstrap Build System
 ======================
@@ -2424,41 +2421,41 @@ Bootstrap Build System
 
 .. code-block:: python
 
-  import fbuild
-  from fbuild.functools import call
-  from fbuild.path import Path
-  from fbuild.record import Record
-  from fbuild.builders.file import copy
-  
-  import buildsystem
-  
-  # ------------------------------------------------------------------------------
-  
-  def build_runtime(phase):
-      path = Path(phase.ctx.buildroot/'share'/'src/gc')
-      dst = 'host/lib/rtl/flx_gc'
-      srcs = Path.glob(path / '*.cpp')
-      includes = [
-          phase.ctx.buildroot / 'host/lib/rtl',
-          phase.ctx.buildroot / 'share/lib/rtl',
-      ]
-      macros = ['BUILD_FLX_GC']
-      libs = [
-          call('buildsystem.judy.build_runtime', phase),
-          call('buildsystem.flx_exceptions.build_runtime', phase),
-      ]
-  
-      return Record(
-          static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
-              includes=includes,
-              macros=macros,
-              libs=[lib.static for lib in libs]),
-          shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
-              includes=includes,
-              macros=macros,
-              libs=[lib.shared for lib in libs]))
-  @
-  
+   import fbuild
+   from fbuild.functools import call
+   from fbuild.path import Path
+   from fbuild.record import Record
+   from fbuild.builders.file import copy
+   
+   import buildsystem
+   
+   # ------------------------------------------------------------------------------
+   
+   def build_runtime(phase):
+       path = Path(phase.ctx.buildroot/'share'/'src/gc')
+       dst = 'host/lib/rtl/flx_gc'
+       srcs = Path.glob(path / '*.cpp')
+       includes = [
+           phase.ctx.buildroot / 'host/lib/rtl',
+           phase.ctx.buildroot / 'share/lib/rtl',
+       ]
+       macros = ['BUILD_FLX_GC']
+       libs = [
+           call('buildsystem.judy.build_runtime', phase),
+           call('buildsystem.flx_exceptions.build_runtime', phase),
+       ]
+   
+       return Record(
+           static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
+               includes=includes,
+               macros=macros,
+               libs=[lib.static for lib in libs]),
+           shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
+               includes=includes,
+               macros=macros,
+               libs=[lib.shared for lib in libs]))
+   @
+   
 
 Configuration Database Records
 ==============================
@@ -2466,47 +2463,47 @@ Configuration Database Records
 
 .. code-block:: text
 
-  Name: flx_gc
-  Platform: Unix 
-  Description: Felix default garbage collector (Unix)
-  provides_dlib: -lflx_gc_dynamic
-  provides_slib: -lflx_gc_static
-  includes: '"flx_gc.hpp"'
-  library: flx_gc
-  macros: BUILD_FLX_GC
-  Requires: judy flx_exceptions
-  srcdir: src/gc
-  src: .*\.cpp
-  @
-  
+   Name: flx_gc
+   Platform: Unix 
+   Description: Felix default garbage collector (Unix)
+   provides_dlib: -lflx_gc_dynamic
+   provides_slib: -lflx_gc_static
+   includes: '"flx_gc.hpp"'
+   library: flx_gc
+   macros: BUILD_FLX_GC
+   Requires: judy flx_exceptions
+   srcdir: src/gc
+   src: .*\.cpp
+   @
+   
 
 .. code-block:: text
 
-  Name: flx_gc
-  Platform: Win32
-  Description: Felix default garbage collector (Windows)
-  provides_dlib: /DEFAULTLIB:flx_gc_dynamic
-  provides_slib: /DEFAULTLIB:flx_gc_static
-  includes: '"flx_gc.hpp"'
-  Requires: judy
-  library: flx_gc
-  macros: BUILD_FLX_GC
-  Requires: judy flx_exceptions
-  srcdir: src/gc
-  src: .*\.cpp
-  @
-  
+   Name: flx_gc
+   Platform: Win32
+   Description: Felix default garbage collector (Windows)
+   provides_dlib: /DEFAULTLIB:flx_gc_dynamic
+   provides_slib: /DEFAULTLIB:flx_gc_static
+   includes: '"flx_gc.hpp"'
+   Requires: judy
+   library: flx_gc
+   macros: BUILD_FLX_GC
+   Requires: judy flx_exceptions
+   srcdir: src/gc
+   src: .*\.cpp
+   @
+   
 
 .. code-block:: cpp
 
-  #ifndef __FLX_GC_CONFIG_H__
-  #define __FLX_GC_CONFIG_H__
-  #include "flx_rtl_config.hpp"
-  #ifdef BUILD_FLX_GC
-  #define GC_EXTERN FLX_EXPORT
-  #else
-  #define GC_EXTERN FLX_IMPORT
-  #endif
-  #endif
-  @
-  
+   #ifndef __FLX_GC_CONFIG_H__
+   #define __FLX_GC_CONFIG_H__
+   #include "flx_rtl_config.hpp"
+   #ifdef BUILD_FLX_GC
+   #define GC_EXTERN FLX_EXPORT
+   #else
+   #define GC_EXTERN FLX_IMPORT
+   #endif
+   #endif
+   @
+   

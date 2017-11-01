@@ -29,35 +29,31 @@ comparison. Arrays don't come equipped with a comparison.
 
 .. code-block:: felix
 
-  //$ Array as Value (immutable).
-  class ArrayValue[t,v]
-  {
-
+   //$ Array as Value (immutable).
+   class ArrayValue[t,v]
+   {
 The length of the array.
 
 .. code-block:: felix
 
-    //$ Length.
-    virtual fun len: t -> size;
-  
-
+     //$ Length.
+     virtual fun len: t -> size;
+   
 Performance routine to fetch the n'th element
 of an array without any bounds checking.
 
 .. code-block:: felix
 
-    //$ Unchecked common indexing.
-    virtual fun unsafe_get: t * size -> v;
-
+     //$ Unchecked common indexing.
+     virtual fun unsafe_get: t * size -> v;
 
 .. code-block:: felix
 
-    //$ Checked common indexing.
-    fun get[I in ints] (x:t, i:I) = { 
-      assert i.size < x.len;
-      return unsafe_get (x,i.size);
-    }
-
+     //$ Checked common indexing.
+     fun get[I in ints] (x:t, i:I) = { 
+       assert i.size < x.len;
+       return unsafe_get (x,i.size);
+     }
 The following methods depend only on the implementation
 of the core methods. Most are either simple remaps
 to provide more convenient nottion, or we use
@@ -76,40 +72,37 @@ operator dot  :code:`.` is also made available this way.
 
 .. code-block:: felix
 
-  
-    //$  Checked common indexing.
-    fun apply [I in ints] (i:I, x:t) => get (x,i.size);
-  
-
-
-.. code-block:: felix
-
-    //$ Callback based value iterator.
-    virtual proc iter (_f:v->void) (x:t) {
-      val n = x.len;
-      if n > 0uz do
-        for var i:size in 0uz upto n - 1uz do
-          _f$ unsafe_get(x,i);
-        done
-      done
-    }
-  
-
+   
+     //$  Checked common indexing.
+     fun apply [I in ints] (i:I, x:t) => get (x,i.size);
+   
 
 .. code-block:: felix
 
-    //$ Callback based index and value iterator.
-    //$ Callback f index value.
-    virtual proc iiter (_f:size -> v->void) (x:t) {
-      val n = x.len;
-      if n > 0uz do
-        for var i:size in 0uz upto n - 1uz do
-          _f i  (x,i).unsafe_get;
-        done
-      done
-    }
-  
+     //$ Callback based value iterator.
+     virtual proc iter (_f:v->void) (x:t) {
+       val n = x.len;
+       if n > 0uz do
+         for var i:size in 0uz upto n - 1uz do
+           _f$ unsafe_get(x,i);
+         done
+       done
+     }
+   
 
+.. code-block:: felix
+
+     //$ Callback based index and value iterator.
+     //$ Callback f index value.
+     virtual proc iiter (_f:size -> v->void) (x:t) {
+       val n = x.len;
+       if n > 0uz do
+         for var i:size in 0uz upto n - 1uz do
+           _f i  (x,i).unsafe_get;
+         done
+       done
+     }
+   
 Class  :code:`Streamable` provides a set of functions based
 on a generated named  :code:`iterator` which returns an
 infinite stream of option values. Loops based on such
@@ -124,57 +117,54 @@ of data, the loop terminates.
 
 .. code-block:: felix
 
-    instance Iterable[t,v] {
-      //$ Stream  value iterator.
-      gen iterator(xs:t) () : opt[v] = 
-      {
-        if xs.len > 0uz do
-          for var j in 0uz upto xs.len - 1uz do
-            yield Some (xs,j).unsafe_get;
-          done
-        done
-        return None[v];
-      } 
-    }
-  
-    inherit Streamable[t,v];
-
+     instance Iterable[t,v] {
+       //$ Stream  value iterator.
+       gen iterator(xs:t) () : opt[v] = 
+       {
+         if xs.len > 0uz do
+           for var j in 0uz upto xs.len - 1uz do
+             yield Some (xs,j).unsafe_get;
+           done
+         done
+         return None[v];
+       } 
+     }
+   
+     inherit Streamable[t,v];
 This HOF folds the values in an array into an accumulator
 using the supplied function. The scan is left to right.
 
 .. code-block:: felix
 
-    //$ Traditional left fold.
-    virtual fun fold_left[u] (_f:u->v->u) (init:u) (x:t): u = {
-      var o = init;
-      val n = x.len;
-      if n > 0uz do
-        for var i:size in 0uz upto n - 1uz do
-          o = _f o (unsafe_get(x,i));
-        done
-      done
-      return o;
-    }
-  
-
+     //$ Traditional left fold.
+     virtual fun fold_left[u] (_f:u->v->u) (init:u) (x:t): u = {
+       var o = init;
+       val n = x.len;
+       if n > 0uz do
+         for var i:size in 0uz upto n - 1uz do
+           o = _f o (unsafe_get(x,i));
+         done
+       done
+       return o;
+     }
+   
 This HOF folds the values in an array into an accumulator
 using the supplied function. The scan is right to left.
 
 .. code-block:: felix
 
-  //$ Traditional right fold.
-    virtual fun fold_right[u] (_f:v->u->u) (x:t) (init:u): u = {
-      var o = init;
-      val n = x.len;
-      if n > 0uz do
-        for var i:size in n - 1uz downto 0uz do
-          o = _f (unsafe_get(x,i)) o;
-        done
-      done
-      return o;
-    }
-  
-
+   //$ Traditional right fold.
+     virtual fun fold_right[u] (_f:v->u->u) (x:t) (init:u): u = {
+       var o = init;
+       val n = x.len;
+       if n > 0uz do
+         for var i:size in n - 1uz downto 0uz do
+           o = _f (unsafe_get(x,i)) o;
+         done
+       done
+       return o;
+     }
+   
 This HOF folds array array into an accumulator
 using an associative user supplied function.
 Associative here means that the order in which
@@ -185,30 +175,28 @@ by another more efficient ordering in an overriding function.
 
 .. code-block:: felix
 
-    virtual fun fold[u] (_f:u->v->u) (init:u) (x:t): u => 
-      fold_left _f init x
-    ;
-
+     virtual fun fold[u] (_f:u->v->u) (init:u) (x:t): u => 
+       fold_left _f init x
+     ;
 This function searches an array for a value that satifies
 the given predicate and returns a boolean value
 indicating whether one exists.
 
 .. code-block:: felix
 
-    //$ Membership by predicate.
-    virtual fun mem(pred:v->bool) (x:t): bool = {
-      val n = x.len;
-      if n > 0uz do
-        for var i:size in 0uz upto n  - 1uz do
-          if pred(unsafe_get(x,i)) do
-            return true;
-          done
-        done
-      done
-      return false;
-    }
-  
-
+     //$ Membership by predicate.
+     virtual fun mem(pred:v->bool) (x:t): bool = {
+       val n = x.len;
+       if n > 0uz do
+         for var i:size in 0uz upto n  - 1uz do
+           if pred(unsafe_get(x,i)) do
+             return true;
+           done
+         done
+       done
+       return false;
+     }
+   
 This function searches an array for a value  :code:`i` that stands
 in the specified relation  :code:`rel` to a given value  :code:`v`,
 where the relation is applied in that order:  :code:`rel(i,v)`.
@@ -216,87 +204,81 @@ The usual relation to use is equality.
 
 .. code-block:: felix
 
-    //$ Membership by relation to given value. 
-    virtual fun mem[u] (rel:v*u->bool) (x:t) (e:u): bool =>
-      mem (fun (i:v) => rel(i, e)) x
-    ;
-  
-
+     //$ Membership by relation to given value. 
+     virtual fun mem[u] (rel:v*u->bool) (x:t) (e:u): bool =>
+       mem (fun (i:v) => rel(i, e)) x
+     ;
+   
 This function uses the default equality operator  :code:`Eq[v]::==` for
 the array value type t to perform a search.
 
 .. code-block:: felix
 
-    //$ Array as Set:
-    //$ Membership by equality of value type.
-    instance[with Eq[v]] Set[t,v] {
-      fun \in (elt:v, a:t) => mem eq of (v * v) a elt;
-    }
-    inherit[t,v with Eq[v]] Set[t,v];
-  
-
+     //$ Array as Set:
+     //$ Membership by equality of value type.
+     instance[with Eq[v]] Set[t,v] {
+       fun \in (elt:v, a:t) => mem eq of (v * v) a elt;
+     }
+     inherit[t,v with Eq[v]] Set[t,v];
+   
 Same as our  :code:`mem` function except it returns the located value
 as an option type.
 
 .. code-block:: felix
 
-    //$ Searching for value satisfying predicate.
-    virtual fun find(pred:v->bool) (x:t): opt[v] = {
-      val n = x.len;
-      if  n > 0uz do 
-        for var i:size in 0uz upto n - 1uz do
-          if pred(unsafe_get(x,i)) do
-            return Some$ unsafe_get(x,i);
-          done
-        done
-      done
-      return None[v];
-    }
-  
-
+     //$ Searching for value satisfying predicate.
+     virtual fun find(pred:v->bool) (x:t): opt[v] = {
+       val n = x.len;
+       if  n > 0uz do 
+         for var i:size in 0uz upto n - 1uz do
+           if pred(unsafe_get(x,i)) do
+             return Some$ unsafe_get(x,i);
+           done
+         done
+       done
+       return None[v];
+     }
+   
 Same as our  :code:`mem` function except it returns the located value
 as an option type.
 
 .. code-block:: felix
 
-    //$ Searching for value satisfying relation to given value.
-    virtual fun find (rel:v*v->bool) (x:t) (e:v): opt[v] = {
-      val n = x.len;
-      if n > 0uz do
-        for var i:size in 0uz upto n - 1uz do
-          if rel(unsafe_get (x,i), e) do
-            return Some$ unsafe_get (x,i);
-          done
-        done
-      done
-  
-      return None[v];
-    }
-  
-
-
-.. code-block:: felix
-
-    fun \sum [with FloatAddgrp[v]] (it:t) =
-    {
-      var init = #zero[v];
-      for v in it do init = init + v; done
-      return init;
-    }
-  
-
+     //$ Searching for value satisfying relation to given value.
+     virtual fun find (rel:v*v->bool) (x:t) (e:v): opt[v] = {
+       val n = x.len;
+       if n > 0uz do
+         for var i:size in 0uz upto n - 1uz do
+           if rel(unsafe_get (x,i), e) do
+             return Some$ unsafe_get (x,i);
+           done
+         done
+       done
+   
+       return None[v];
+     }
+   
 
 .. code-block:: felix
 
-    fun \prod[with FloatMultSemi1[v]] (it:t) =
-    {
-      var init = #one[v];
-      for v in it do init = init * v; done
-      return init;
-    }
-  
-  
+     fun \sum [with FloatAddgrp[v]] (it:t) =
+     {
+       var init = #zero[v];
+       for v in it do init = init + v; done
+       return init;
+     }
+   
 
+.. code-block:: felix
+
+     fun \prod[with FloatMultSemi1[v]] (it:t) =
+     {
+       var init = #one[v];
+       for v in it do init = init * v; done
+       return init;
+     }
+   
+   
 Should have a functional update? Find methods should have
 directions. Search method should really be instances of
 a class derived from Set. Find functions should have a
@@ -304,8 +286,8 @@ version that also returns the index.
 
 .. code-block:: felix
 
-  }
-  
+   }
+   
 
 True Arrays.
 ------------
@@ -320,14 +302,14 @@ This work is incomplete.
 
 .. code-block:: felix
 
-  
-  class TrueArrayValue [t,x,v] 
-  {
-     inherit ArrayValue[t,v];
-     virtual fun render : x -> size;
-     fun true_unsafe_get (a:t, i:x) => unsafe_get (a, render i);
-  }
-  
+   
+   class TrueArrayValue [t,x,v] 
+   {
+      inherit ArrayValue[t,v];
+      virtual fun render : x -> size;
+      fun true_unsafe_get (a:t, i:x) => unsafe_get (a, render i);
+   }
+   
 
 Array Object.
 -------------
@@ -339,21 +321,19 @@ represented by a pointer, so it also uses pass by reference.
 
 .. code-block:: felix
 
-  //$ Array as Object (mutable).
-  class ArrayObject[t,v]
-  {
-    inherit ArrayValue[t,v];
-  
-
+   //$ Array as Object (mutable).
+   class ArrayObject[t,v]
+   {
+     inherit ArrayValue[t,v];
+   
 Modify an array object at a given index position
 by assigning a new value without a bounds check.
 
 .. code-block:: felix
 
-    // Unsafe store value into array by common index.
-    virtual proc unsafe_set: t * size * v;
-  
-
+     // Unsafe store value into array by common index.
+     virtual proc unsafe_set: t * size * v;
+   
 Note this is problematic as it forces a value to
 addressabe be stored as an object. A bitarray
 will not satisfy this requirement. Do we need
@@ -361,29 +341,27 @@ another abstraction?
 
 .. code-block:: felix
 
-    virtual fun unsafe_get_ref : t * size -> &v;
-  
-
+     virtual fun unsafe_get_ref : t * size -> &v;
+   
 Modify an array object by assigning a new value
 to the slot at a given index position. Bounds checked.
 
 .. code-block:: felix
 
-    // Checked store value into array by common index.
-    proc set[I in ints] (x:t, i:I, a:v) { 
-      assert i.size < x.len; unsafe_set (x,i.size,a); 
-    } 
-  
-
+     // Checked store value into array by common index.
+     proc set[I in ints] (x:t, i:I, a:v) { 
+       assert i.size < x.len; unsafe_set (x,i.size,a); 
+     } 
+   
 
 .. code-block:: felix
 
-    fun n"&." [I in ints] (x:t, i:I) : &v = {
-      assert i.size < x.len; 
-      return unsafe_get_ref (x,i.size); 
-    }
-  }
-  
+     fun n"&." [I in ints] (x:t, i:I) : &v = {
+       assert i.size < x.len; 
+       return unsafe_get_ref (x,i.size); 
+     }
+   }
+   
 
 True Array Object.
 ------------------
@@ -393,13 +371,13 @@ where the index type is fixed.
 
 .. code-block:: felix
 
-  class TrueArrayObject[t,x, v]
-  {
-    inherit TrueArrayValue[t,x,v];
-    inherit ArrayObject[t,v];
-    proc true_unsafe_set(a:t, i:x, e:v) => unsafe_set (a, render i, e);
-  }
-  
+   class TrueArrayObject[t,x, v]
+   {
+     inherit TrueArrayValue[t,x,v];
+     inherit ArrayObject[t,v];
+     proc true_unsafe_set(a:t, i:x, e:v) => unsafe_set (a, render i, e);
+   }
+   
 
 Contiguous Arrays.
 ------------------
@@ -417,59 +395,55 @@ type  :code:`carray[v]` is an alias for  :code:`+v`.
 
 .. code-block:: felix
 
-  //$ Array as Contiguous STL Object.
-  //$ Provides STL iterators type +v
-  class ContiguousArrayObject[t,v]
-  {
-    inherit ArrayObject[t,v];
-  
-
+   //$ Array as Contiguous STL Object.
+   //$ Provides STL iterators type +v
+   class ContiguousArrayObject[t,v]
+   {
+     inherit ArrayObject[t,v];
+   
 
 .. code-block:: felix
 
-    //$ Start of array iterator.
-    virtual fun stl_begin: t -> +v;
-  
-    //$ One past the end of array iterator.
-    virtual fun stl_end: t -> +v;
-  
-
+     //$ Start of array iterator.
+     virtual fun stl_begin: t -> +v;
+   
+     //$ One past the end of array iterator.
+     virtual fun stl_end: t -> +v;
+   
 We allow adding an integer to an array object to yield
 an incrementable pointer to that element. 
 
 .. code-block:: felix
 
-    //$ Add integer to iterator.
-    fun + [I in ints] (pa:t, i:I) : carray [v] = { 
-       assert i.size < pa.len; 
-       return pa.stl_begin + i.size; 
-    }
-  
-
+     //$ Add integer to iterator.
+     fun + [I in ints] (pa:t, i:I) : carray [v] = { 
+        assert i.size < pa.len; 
+        return pa.stl_begin + i.size; 
+     }
+   
 In place sort the contents of a contiuous array using STL
 sort and a supplied comparator, which must be a
 total order.
 
 .. code-block:: felix
 
-    //$ In place sort using STL sort with Felix comparator.
-    proc sort (cmp: v * v -> bool) (a:t) {
-      var first = a.stl_begin;
-      var last = a.stl_end;
-      var z = Sort::stl_comparator (cmp);
-      Sort::stl_sort (z,first,last);
-    }
-  
-
+     //$ In place sort using STL sort with Felix comparator.
+     proc sort (cmp: v * v -> bool) (a:t) {
+       var first = a.stl_begin;
+       var last = a.stl_end;
+       var z = Sort::stl_comparator (cmp);
+       Sort::stl_sort (z,first,last);
+     }
+   
 Inplace sort using default comparator.
 
 .. code-block:: felix
 
-    //$ In place sort using STL sort with default comparison.
-    proc sort[with Tord[v]] (a:t) => sort (< of (v*v)) a;
-  
-  }
-  
+     //$ In place sort using STL sort with default comparison.
+     proc sort[with Tord[v]] (a:t) => sort (< of (v*v)) a;
+   
+   }
+   
 
 True Contiguous Array Object.
 -----------------------------
@@ -479,13 +453,13 @@ Incomplete.
 
 .. code-block:: felix
 
-  class TrueContiguousArrayObject[t,x, v] 
-  {
-    inherit TrueArrayObject [t,x,v];
-    inherit ContiguousArrayObject[t,v];
-    fun + (pa:t, i:x) : carray [v] => pa + render i;
-  }
-  
+   class TrueContiguousArrayObject[t,x, v] 
+   {
+     inherit TrueArrayObject [t,x,v];
+     inherit ContiguousArrayObject[t,v];
+     fun + (pa:t, i:x) : carray [v] => pa + render i;
+   }
+   
 
 Array 
 ======
@@ -493,206 +467,206 @@ Array
 
 .. code-block:: felix
 
-  
-  //$ Compile time fix length array.
-  open class Farray
-  {
-    typedef array[t,n] = t ^ n;
-  
-    //ctor[T,N] array[T,N] (x:array[T,N]) => x;
-  
-    //$ Array copy.
-    fun copy[T,N] (var x:array[T,N]) => x;
-  
-    //$ Array of one element.
-    ctor[T] array[T,1] (x:T) => x :>> array[T,1];
-  
-    //$ Array as value.
-    instance[t,n] ArrayValue[array[t,n], t] {
-      fun len (x:array[t, n]): size => Typing::arrayindexcount[n];
-  
-      //fun unsafe_get: array[t, n] * size -> t = "$1.data[$2]";
-      fun unsafe_get (var a: array[t, n], j: size): t => a . (j :>> n);
-    }
-  
-    //$ Pointer to array as value.
-    instance[t,n] ArrayValue[&array[t,n], &t] {
-      fun len (x:&array[t, n]): size => Typing::arrayindexcount[n];
-      /* won't work for compact linear types! */
-      fun unsafe_get: &array[t, n] * size  -> &t = "(&($1->data[$2]))";
-    }
-  
-    // this one should
-    proc unsafe_set[t,n] (a: &(t^n), i:size, v:t) { a . (i.int) <- v; }
-  
-    proc set[t,n, I in ints] (a: &array[t,n], i:I,v:t) {
-      assert i.size < (*a).len;
-      unsafe_set (a,i.size,v);
-    }
-  
-    // these cannot work for compact linear arrays
-    fun stl_begin[t,n]: &array[t,n] -> +t = "(?1*)($1->data)";
-    fun stl_end[t,n] ( x:&array[t,n] ) : +t => stl_begin x + x*.len;
-  
-    //$ Array map.
-    fun map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N] = {
-      var o : array[U,N];
-      val n = x.len;
-      if n > 0uz 
-        for var i: size in 0uz upto n - 1uz
-          call set (&o,i, _f x.i)
-      ;
-      return o;
-    }
-  
-    // not very efficient!
-    fun rev_map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N] => 
-      rev (map _f x)
-    ;
-  
-    // Note: for many loops below, note we're using unsigned values
-    // iterating from 0 to N-1. Subtraction N-1 fails for n == 0
-    // so we need a special test. 
-  
-    //$ Join two arrays (functional).
-    fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, N + M] = {
-      var o : array[T, N + M];
-  
-      if x.len > 0uz
-        for var i in 0uz upto len(x) - 1uz
-          call set (&o, i,x.i)
-      ;
-      i = x.len;
-      if y.len > 0uz
-        for var k in 0uz upto len(y) - 1uz
-          call set(&o,i + k, y.k)
-      ;
-      return o;
-    }
-  
-    //$ Append value to end of an array (functional).
-    fun join[T, N] (x:array[T, N]) (y:T):array[T, N + 1] = {
-      var o : array[T, N + 1];
-  
-      if x.len > 0uz
-        for var i in 0uz upto len(x) - 1uz
-          call set (&o, i,x.i)
-      ;
-      set(&o,x.len, y);
-      return o;
-    }
-  
-    //$ Prepand value to start of an array (functional).
-    fun join[T, M] (x:T) (y:array[T, M]):array[T, 1 + M] = {
-      var o : array[T, 1 + M];
-  
-      set (&o, 0, x);
-      if y.len > 0uz
-        for var k in 0uz upto len(y) - 1uz
-          call set(&o,1uz + k, y.k)
-      ;
-      return o;
-    }
-  
-  
-    //$ Join two arrays (functional).
-    // will probably clash with tuple joining functions if we implement them
-    fun + [T, N, M] (x:array[T, N], y:array[T, M]):array[T, N + M] => join x y;
-  
-    //$ Transpose and array.
-    //$ Subsumes zip.
-    //$ Example: transpose ( (1,2,3), (4,5,6) ) = ( (1,4), (2,5), (3,6) ).
-    fun transpose[T,N,M] (y:array[array[T,M],N]) : array[array[T,N],M] = {
-      var o : array[array[T,N],M];
-      var n = len y;
-      var m = len y.0;
-      for var i in 0uz upto n - 1uz 
-        for var j in 0uz upto m - 1uz do
-          val pfirst : +array[T,N] = &o.stl_begin;
-          val psub: +array[T,N] = pfirst + j;
-          val pelt : +T = psub.stl_begin;
-          set(pelt,i, y.i.j);
-        done
-      return o;
-    }
-  
-    //$ Reverse elements of an array.
-    fun rev[T, N] (x:array[T, N]): array[T, N] = {
-      var o : array[T, N];
-      var n = len x;
-      if n > 0uz
-        for var i:size in 0uz upto n - 1uz
-          call set(&o,n - 1uz - i, x.i)
-      ;
-      return o;
-    }
-  
-    fun sort[T,N] (cmp: T * T -> bool) (var x:array[T,N]) : array[T,N] = {
-      Sort::stl_sort (Sort::stl_comparator cmp, stl_begin (&x), stl_end (&x));
-      return x;
-    }
-  
-    fun sort[T,N] (var x:array[T,N]) : array[T,N] = {
-      Sort::stl_sort (stl_begin (&x), stl_end (&x));
-      return x;
-    }
-  
-  
-    //$ Display: convert to string like (1,2,3).
-    instance[T,N with Show[T]] Str[array[T, N]] {
-      fun str (xs:array[T,N]) = {
-        var o = '(';
-        val n = xs.len;
-        if n  > 0uz do
-          o += repr xs.0;
-  
-          for var i:size in 1uz upto n - 1uz
-            perform o += ', ' + repr xs.i
-          ;
-        done
-        return o + ')';
-      }
-    }
-  
-    //$ Equality and Inequality.
-    instance[T,N with Eq[T]] Eq[array[T, N]] {
-      fun == (xs:array[T,N],ys:array[T,N]) = {
-        val n = xs.len;
-        // assert n == ys.len;
-        if n == 0uz do
-          return true;
-        else
-          for var i:size in 0uz upto n - 1uz
-            if not (xs.i == ys.i) return false;
-        done
-        return true;
-      }
-    }
-  
-    //$ Lexicographical total order based on
-    //$ total order of elements.
-    instance[T,N with Tord[T]] Tord[array[T,N]] {
-      fun < (xs:array[T,N],ys:array[T,N]) = {
-        val n = xs.len;
-        if n == 0uz return false;
-        // assert n == ys.len;
-        var i:size;
-        ph1:for i in 0uz upto n - 1uz
-          if not (xs.i < ys.i) break ph1;
-        for i in i upto n - 1uz
-          if not (xs.i <= ys.i) return false;
-        return true;
-      }
-    }
-  }
-  
-  open[T,N] Eq[array[T,N]];
-  open[T,N] Tord[array[T,N]];
-  open[T,N with Eq[T]] Set[array[T,N],T];
-  
-  open[T,N] ArrayValue[array[T,N], T];
-  open[T,N] ArrayValue[&array[T,N], &T];
-  
+   
+   //$ Compile time fix length array.
+   open class Farray
+   {
+     typedef array[t,n] = t ^ n;
+   
+     //ctor[T,N] array[T,N] (x:array[T,N]) => x;
+   
+     //$ Array copy.
+     fun copy[T,N] (var x:array[T,N]) => x;
+   
+     //$ Array of one element.
+     ctor[T] array[T,1] (x:T) => x :>> array[T,1];
+   
+     //$ Array as value.
+     instance[t,n] ArrayValue[array[t,n], t] {
+       fun len (x:array[t, n]): size => Typing::arrayindexcount[n];
+   
+       //fun unsafe_get: array[t, n] * size -> t = "$1.data[$2]";
+       fun unsafe_get (var a: array[t, n], j: size): t => a . (j :>> n);
+     }
+   
+     //$ Pointer to array as value.
+     instance[t,n] ArrayValue[&array[t,n], &t] {
+       fun len (x:&array[t, n]): size => Typing::arrayindexcount[n];
+       /* won't work for compact linear types! */
+       fun unsafe_get: &array[t, n] * size  -> &t = "(&($1->data[$2]))";
+     }
+   
+     // this one should
+     proc unsafe_set[t,n] (a: &(t^n), i:size, v:t) { a . (i.int) <- v; }
+   
+     proc set[t,n, I in ints] (a: &array[t,n], i:I,v:t) {
+       assert i.size < (*a).len;
+       unsafe_set (a,i.size,v);
+     }
+   
+     // these cannot work for compact linear arrays
+     fun stl_begin[t,n]: &array[t,n] -> +t = "(?1*)($1->data)";
+     fun stl_end[t,n] ( x:&array[t,n] ) : +t => stl_begin x + x*.len;
+   
+     //$ Array map.
+     fun map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N] = {
+       var o : array[U,N];
+       val n = x.len;
+       if n > 0uz 
+         for var i: size in 0uz upto n - 1uz
+           call set (&o,i, _f x.i)
+       ;
+       return o;
+     }
+   
+     // not very efficient!
+     fun rev_map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N] => 
+       rev (map _f x)
+     ;
+   
+     // Note: for many loops below, note we're using unsigned values
+     // iterating from 0 to N-1. Subtraction N-1 fails for n == 0
+     // so we need a special test. 
+   
+     //$ Join two arrays (functional).
+     fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, N + M] = {
+       var o : array[T, N + M];
+   
+       if x.len > 0uz
+         for var i in 0uz upto len(x) - 1uz
+           call set (&o, i,x.i)
+       ;
+       i = x.len;
+       if y.len > 0uz
+         for var k in 0uz upto len(y) - 1uz
+           call set(&o,i + k, y.k)
+       ;
+       return o;
+     }
+   
+     //$ Append value to end of an array (functional).
+     fun join[T, N] (x:array[T, N]) (y:T):array[T, N + 1] = {
+       var o : array[T, N + 1];
+   
+       if x.len > 0uz
+         for var i in 0uz upto len(x) - 1uz
+           call set (&o, i,x.i)
+       ;
+       set(&o,x.len, y);
+       return o;
+     }
+   
+     //$ Prepand value to start of an array (functional).
+     fun join[T, M] (x:T) (y:array[T, M]):array[T, 1 + M] = {
+       var o : array[T, 1 + M];
+   
+       set (&o, 0, x);
+       if y.len > 0uz
+         for var k in 0uz upto len(y) - 1uz
+           call set(&o,1uz + k, y.k)
+       ;
+       return o;
+     }
+   
+   
+     //$ Join two arrays (functional).
+     // will probably clash with tuple joining functions if we implement them
+     fun + [T, N, M] (x:array[T, N], y:array[T, M]):array[T, N + M] => join x y;
+   
+     //$ Transpose and array.
+     //$ Subsumes zip.
+     //$ Example: transpose ( (1,2,3), (4,5,6) ) = ( (1,4), (2,5), (3,6) ).
+     fun transpose[T,N,M] (y:array[array[T,M],N]) : array[array[T,N],M] = {
+       var o : array[array[T,N],M];
+       var n = len y;
+       var m = len y.0;
+       for var i in 0uz upto n - 1uz 
+         for var j in 0uz upto m - 1uz do
+           val pfirst : +array[T,N] = &o.stl_begin;
+           val psub: +array[T,N] = pfirst + j;
+           val pelt : +T = psub.stl_begin;
+           set(pelt,i, y.i.j);
+         done
+       return o;
+     }
+   
+     //$ Reverse elements of an array.
+     fun rev[T, N] (x:array[T, N]): array[T, N] = {
+       var o : array[T, N];
+       var n = len x;
+       if n > 0uz
+         for var i:size in 0uz upto n - 1uz
+           call set(&o,n - 1uz - i, x.i)
+       ;
+       return o;
+     }
+   
+     fun sort[T,N] (cmp: T * T -> bool) (var x:array[T,N]) : array[T,N] = {
+       Sort::stl_sort (Sort::stl_comparator cmp, stl_begin (&x), stl_end (&x));
+       return x;
+     }
+   
+     fun sort[T,N] (var x:array[T,N]) : array[T,N] = {
+       Sort::stl_sort (stl_begin (&x), stl_end (&x));
+       return x;
+     }
+   
+   
+     //$ Display: convert to string like (1,2,3).
+     instance[T,N with Show[T]] Str[array[T, N]] {
+       fun str (xs:array[T,N]) = {
+         var o = '(';
+         val n = xs.len;
+         if n  > 0uz do
+           o += repr xs.0;
+   
+           for var i:size in 1uz upto n - 1uz
+             perform o += ', ' + repr xs.i
+           ;
+         done
+         return o + ')';
+       }
+     }
+   
+     //$ Equality and Inequality.
+     instance[T,N with Eq[T]] Eq[array[T, N]] {
+       fun == (xs:array[T,N],ys:array[T,N]) = {
+         val n = xs.len;
+         // assert n == ys.len;
+         if n == 0uz do
+           return true;
+         else
+           for var i:size in 0uz upto n - 1uz
+             if not (xs.i == ys.i) return false;
+         done
+         return true;
+       }
+     }
+   
+     //$ Lexicographical total order based on
+     //$ total order of elements.
+     instance[T,N with Tord[T]] Tord[array[T,N]] {
+       fun < (xs:array[T,N],ys:array[T,N]) = {
+         val n = xs.len;
+         if n == 0uz return false;
+         // assert n == ys.len;
+         var i:size;
+         ph1:for i in 0uz upto n - 1uz
+           if not (xs.i < ys.i) break ph1;
+         for i in i upto n - 1uz
+           if not (xs.i <= ys.i) return false;
+         return true;
+       }
+     }
+   }
+   
+   open[T,N] Eq[array[T,N]];
+   open[T,N] Tord[array[T,N]];
+   open[T,N with Eq[T]] Set[array[T,N],T];
+   
+   open[T,N] ArrayValue[array[T,N], T];
+   open[T,N] ArrayValue[&array[T,N], &T];
+   
 
 Varray 
 =======
@@ -700,308 +674,308 @@ Varray
 
 .. code-block:: felix
 
-  
-  //$ Bounded Variable length arrays, bound set at construction time.
-  //$ A bound of 0 is allowed, the result is a NULL pointer.
-  
-  open class Varray
-  {
-    //$ A varray is just a pointer. 
-    //$ The current length and bound are maintained by the GC.
-    _gc_pointer type varray[t] = "?1*";
-  
-    //$ An ordinary carray, but owned by the GC.
-    ctor[t] carray[t] : varray[t] = "$1";
-  
-    //$ Create an empty varray with the given bound.
-    ctor[t] varray[t]: size =
-      "(?1*)(PTF gcp->collector->create_empty_array(&@?1,$1))"
-      requires property "needs_gc"
-    ;
-  
-    //$ Raw memory initialisation (really, this belongs in C_hack).
-    private proc _init[T]: &T * T = "new((void*)$1) ?1($2);";
    
-  
-    //$ Construct a varray filled up with a default value.
-    ctor[t] varray[t] (bound:size, default:t) = {
-      var o = varray[t] bound;
-      if o.maxlen != bound do
-        eprintln$ "Constructor failed, wrong bound";
-        eprintln$ "input Bound = " + bound.str + ", actual maxlen = " + o.maxlen.str;
-      done
-      if bound > 0uz do for var i in 0uz upto bound - 1uz do
-      if o.len >= o.maxlen do
-        eprintln ("ctor1: attempt to push_back on full varray size " + o.maxlen.str);
-        eprintln$ "bound = " + bound.str;
-        eprintln$ "index = " + i.str;
-      done
-        push_back(o, default);
-      done done
-      return o;
-    }
-  
-    //$ Construct a partially filled varray with a default value computed by a function.
-    ctor[t] varray[t] (bound:size, used:size, f:size->t when used <= bound) = {
-      var o = varray[t] bound;
-      if used > 0uz do for var i in 0uz upto used - 1uz do
-      if o.len >= o.maxlen do
-        eprintln ("ctor2: attempt to push_back on full varray size " + o.maxlen.str);
-      done
-        push_back(o, f i);
-      done done
-      return o;
-    }
-  
-    //$ Construct a full varray from an array.
-    // funny, the N isn't explicitly used.
-    ctor[t,N] varray[t] (x:array[t,N]) => 
-       varray[t] (len x, len x, (fun (i:size):t =>x.i))
-    ;
-  
-    //$ Construct a partially full varray from a varray.
-    ctor[t] varray[t] (x:varray[t], maxlen:size) =>
-      varray[t] (maxlen, min(maxlen,len x), (fun (i:size):t=> x.i))
-    ;
-  
-    //$ Construct a full varray from a varray (copy constructor).
-    ctor[t] varray[t] (x:varray[t]) =>
-      varray[t] (len x, len x, (fun (i:size):t=> x.i))
-    ;
-  
-    // Construct a varray from a list
-    ctor[t] varray[t] (x:list[t]) = {
-      val n = x.len.size;
-      var a = varray[t] n;
-      iter (proc (v:t) { 
-      if a.len >= a.maxlen do
-        eprintln ("ctor3: attempt to push_back on full varray size " + a.maxlen.str);
-      done
-        push_back(a,v); 
-       }) x;
-      return a;
-    }
-  
-    //$ Construct a varray from a string.
-    //$ Include a trailing nul byte.
-    ctor varray[char] (var x:string) = {
-      var n = x.len; 
-      var v = varray[char] (n + 1uz);
-      var p = &x.stl_begin;
-      var q = v.stl_begin;
-      Memory::memcpy (q.address, p.address, n);
-      set(q,n, char "");
-      set_used (v,n + 1uz);
-      return v;
-    } 
-  
-    //$ Construct a varray from a string.
-    //$ Exclude trailing nul byte.
-    fun varray_nonul (var x:string) = {
-      var n = x.len; 
-      var v = varray[char] (n);
-      var q = v.stl_begin;
-      var p = &x.stl_begin;
-      Memory::memcpy (q.address, p.address, n);
-      set_used (v,n);
-      return v;
-    } 
-  
-  
-    private proc set_used[t]: varray[t] * size =
-      "PTF gcp->collector->set_used($1,$2);"
-      requires property "needs_gc"
-    ;
-  
-    //$ Treat a varray as an ArrayValue.
-    instance[v] ArrayValue[varray[v],v] {
-      //$ Length of a varray (used).
-      fun len: varray[v] -> size =
-        "PTF gcp->collector->get_used($1)"
-        requires property "needs_gc"
-      ;
-      //$ Unsafe get value at position.
-      fun unsafe_get: varray[v] * size -> v = "$1[$2]";
-    } 
-  
-    //$ Treat a varray as an ArrayObject.
-    //$ Allows modifications.
-    instance[v] ArrayObject[varray[v],v] {
-      //$ Store the given value at the given position.
-      proc unsafe_set: varray[v] * size * v = "$1[$2]=$3;";
-      fun unsafe_get_ref: varray[v] * size -> &v = "$1+$2";
-    }
-  
-    //$ Treat a varray as a ContiguousArrayObject.
-    instance[v] ContiguousArrayObject[varray[v],v] {
-      //$ STL iterator to start of array.
-      fun stl_begin: varray[v] -> +v = "$1";
-  
-      //$ STL iterator to end of array.
-      fun stl_end: varray[v] -> +v = "($1+PTF gcp->collector->get_used($1))";
-    }
-  
-    //$ Get the bound of a varray.
-    fun maxlen[t]: varray[t] -> size =
-      "PTF gcp->collector->get_count($1)"
-      requires property "needs_gc"
-    ;
-  
-    //$ Append a new element to the end of a varray.
-    //$ Aborts if you go past the bound.
-    proc += [t] (pa:&varray[t],v:t) { 
-      if pa*.len >= pa*.maxlen do
-        eprintln ("attempt to += on full varray size " + (pa*.maxlen).str);
-      done
-      push_back (*pa,v); 
-    }
-  
-    //$ Append a new element to the end of a varray.
-    //$ Aborts if you go past the bound.
-    proc _push_back[t] : varray[t] * t = """
-      {
-        //?1 * _p = *$1;
-        size_t n = PTF gcp->collector->get_used($1);
-        PTF gcp->collector->incr_used($1,1L);
-        new($1+n) ?1($2);
-      }
-    """
-      requires property "needs_gc"
-    ;
-  
-    proc push_back[t] (x: varray[t], v: t)
-    {
-      if x.len >= x.maxlen do
-        eprintln ("attempt to push_back on full varray size " + x.maxlen.str);
-      done
-      _push_back (x,v);  
-    }
-  
-    //$ Pop an element off the end of a varray.
-    //$ Aborts if the array is empty.
-    proc pop_back[t] : varray[t] = """
-      { // pop varray
-        ?1 * _p = $1;
-        size_t n = PTF gcp->collector->get_used(_p);
-        PTF gcp->collector->incr_used(_p,-1L);
-        destroy(_p+n-1); // from flx_compiler_support_bodies
-      }
-    """
-      requires property "needs_gc";
-    ;
-  
-    //$ Erase elements of array between and including first and last.
-    //$ Include first and last, intersect with array span.
-    //$ Cannot fail.
-    proc erase[v] (a:varray[v], first:int, last:int)
-    {
-      if first > last return;
-      var l = a.len.int;
-      var b = if first < 0 then 0 else first;
-      var e = if last >= l then l - 1 else last;
-      var d = e - b + 1;
-      if d > 0 do
-        for var i in b upto l - d - 1 do
-           unsafe_set (a, i.size, unsafe_get (a, size (i + d)));
-        done
-        var s : carray[v] = a.stl_begin;
-        for i in l - d upto l - 1 do
-          var p : carray[v] = s + i;
-          C_hack::destroy$ -p;
-        done 
-        set_used$ a, (l - d).size;
-      done 
-    }
-  
-    proc erase[v] (a:varray[v], i:int) => erase (a,i,i);
-  
-    //$ insert (a,i,v) inserts v in a at position i
-    //$ that is, inserts before element i.
-    //$ If i is negative, position relative to end,
-    //$ that is, -1 is last element, so insert (a,-1,v)
-    //$ inserts before the last element (not after!)
-    //$ If i equals the length, element is appended.
-    //$ If the index is out of range, nothing happens.
-    proc insert[t] (a:varray[t], i:int, v:t)
-    {
-      var l = a.len.int;
-      var n = a.maxlen.int;
-      if l == n return; // fail: no space
-      var ix = if i < 0 then  l - i else i;
-      if ix < 0 or ix > l return; // fail: bad index
-      if ix == l do 
-      if a.len >= a.maxlen do
-        eprintln ("insert: attempt to push_back on full varray size " + a.maxlen.str);
-      done
-        push_back (a,v);
-      else
-        assert l > 0;
-      if a.len >= a.maxlen do
-        eprintln ("insert: attempt to push_back on full varray size " + a.maxlen.str);
-      done
-        push_back (a, a.(l - 1)); // dups last element
-        if l - 2 > ix do
-          for var j in l - 2 downto ix do // copy from second last pos
-             unsafe_set (a, j.size + 1uz, unsafe_get (a, j.size));
-          done
-        done
-        unsafe_set (a, ix.size, v); 
-      done
-    }
-  
-  
-    //$ Traditional map varray to varray.
-    fun map[T, U] (_f:T->U) (x:varray[T]): varray[U] = {
-      var o = varray[U]$ len(x);
-  
-      if len x > 0uz do for var i in 0uz upto len(x) - 1uz do
-      if o.len >= o.maxlen do
-        eprintln ("insert: attempt to push_back on full varray size " + o.maxlen.str);
-      done
-        push_back (o, _f x.i);
-      done done
-      return o;
-    }
-  
-  }
-  
-  instance[T with Show[T]] Str[Varray::varray[T]] {
-    //$ Convert a varray[T] to a string.
-    //$ Requires Show[T]
-    fun str (xs:varray[T]) = {
-      var o = 'varray(';
-  
-      if len xs > 0uz do
-        o += repr xs.0;
-  
-        for var i in 1uz upto len xs - 1uz do
-          o += ', ' + repr xs.i;
-        done
-      done
-  
-      return o + ')';
-    }
-  }
-  
-  //$ Treat varray as Set.
-  instance[T with Eq[T]] Set[varray[T],T] {
-    //$ Check is a value is stored in a varray.
-    fun \in (x:T, a:varray[T]) : bool = {
-      if len a > 0uz do
-        for var i in 0uz upto len a - 1uz do
-          if a.i == x do return true; done
-        done
-      done
-      return false;
-    } 
-  }
-  
-  open[T] Show[Varray::varray[T]];
-  open[T] Set[Varray::varray[T],T];
-  open[T] ArrayValue[varray[T], T];
-  open[T] ArrayObject[varray[T], T];
-  open[T] ContiguousArrayObject[varray[T], T];
-  
+   //$ Bounded Variable length arrays, bound set at construction time.
+   //$ A bound of 0 is allowed, the result is a NULL pointer.
+   
+   open class Varray
+   {
+     //$ A varray is just a pointer. 
+     //$ The current length and bound are maintained by the GC.
+     _gc_pointer type varray[t] = "?1*";
+   
+     //$ An ordinary carray, but owned by the GC.
+     ctor[t] carray[t] : varray[t] = "$1";
+   
+     //$ Create an empty varray with the given bound.
+     ctor[t] varray[t]: size =
+       "(?1*)(PTF gcp->collector->create_empty_array(&@?1,$1))"
+       requires property "needs_gc"
+     ;
+   
+     //$ Raw memory initialisation (really, this belongs in C_hack).
+     private proc _init[T]: &T * T = "new((void*)$1) ?1($2);";
+    
+   
+     //$ Construct a varray filled up with a default value.
+     ctor[t] varray[t] (bound:size, default:t) = {
+       var o = varray[t] bound;
+       if o.maxlen != bound do
+         eprintln$ "Constructor failed, wrong bound";
+         eprintln$ "input Bound = " + bound.str + ", actual maxlen = " + o.maxlen.str;
+       done
+       if bound > 0uz do for var i in 0uz upto bound - 1uz do
+       if o.len >= o.maxlen do
+         eprintln ("ctor1: attempt to push_back on full varray size " + o.maxlen.str);
+         eprintln$ "bound = " + bound.str;
+         eprintln$ "index = " + i.str;
+       done
+         push_back(o, default);
+       done done
+       return o;
+     }
+   
+     //$ Construct a partially filled varray with a default value computed by a function.
+     ctor[t] varray[t] (bound:size, used:size, f:size->t when used <= bound) = {
+       var o = varray[t] bound;
+       if used > 0uz do for var i in 0uz upto used - 1uz do
+       if o.len >= o.maxlen do
+         eprintln ("ctor2: attempt to push_back on full varray size " + o.maxlen.str);
+       done
+         push_back(o, f i);
+       done done
+       return o;
+     }
+   
+     //$ Construct a full varray from an array.
+     // funny, the N isn't explicitly used.
+     ctor[t,N] varray[t] (x:array[t,N]) => 
+        varray[t] (len x, len x, (fun (i:size):t =>x.i))
+     ;
+   
+     //$ Construct a partially full varray from a varray.
+     ctor[t] varray[t] (x:varray[t], maxlen:size) =>
+       varray[t] (maxlen, min(maxlen,len x), (fun (i:size):t=> x.i))
+     ;
+   
+     //$ Construct a full varray from a varray (copy constructor).
+     ctor[t] varray[t] (x:varray[t]) =>
+       varray[t] (len x, len x, (fun (i:size):t=> x.i))
+     ;
+   
+     // Construct a varray from a list
+     ctor[t] varray[t] (x:list[t]) = {
+       val n = x.len.size;
+       var a = varray[t] n;
+       iter (proc (v:t) { 
+       if a.len >= a.maxlen do
+         eprintln ("ctor3: attempt to push_back on full varray size " + a.maxlen.str);
+       done
+         push_back(a,v); 
+        }) x;
+       return a;
+     }
+   
+     //$ Construct a varray from a string.
+     //$ Include a trailing nul byte.
+     ctor varray[char] (var x:string) = {
+       var n = x.len; 
+       var v = varray[char] (n + 1uz);
+       var p = &x.stl_begin;
+       var q = v.stl_begin;
+       Memory::memcpy (q.address, p.address, n);
+       set(q,n, char "");
+       set_used (v,n + 1uz);
+       return v;
+     } 
+   
+     //$ Construct a varray from a string.
+     //$ Exclude trailing nul byte.
+     fun varray_nonul (var x:string) = {
+       var n = x.len; 
+       var v = varray[char] (n);
+       var q = v.stl_begin;
+       var p = &x.stl_begin;
+       Memory::memcpy (q.address, p.address, n);
+       set_used (v,n);
+       return v;
+     } 
+   
+   
+     private proc set_used[t]: varray[t] * size =
+       "PTF gcp->collector->set_used($1,$2);"
+       requires property "needs_gc"
+     ;
+   
+     //$ Treat a varray as an ArrayValue.
+     instance[v] ArrayValue[varray[v],v] {
+       //$ Length of a varray (used).
+       fun len: varray[v] -> size =
+         "PTF gcp->collector->get_used($1)"
+         requires property "needs_gc"
+       ;
+       //$ Unsafe get value at position.
+       fun unsafe_get: varray[v] * size -> v = "$1[$2]";
+     } 
+   
+     //$ Treat a varray as an ArrayObject.
+     //$ Allows modifications.
+     instance[v] ArrayObject[varray[v],v] {
+       //$ Store the given value at the given position.
+       proc unsafe_set: varray[v] * size * v = "$1[$2]=$3;";
+       fun unsafe_get_ref: varray[v] * size -> &v = "$1+$2";
+     }
+   
+     //$ Treat a varray as a ContiguousArrayObject.
+     instance[v] ContiguousArrayObject[varray[v],v] {
+       //$ STL iterator to start of array.
+       fun stl_begin: varray[v] -> +v = "$1";
+   
+       //$ STL iterator to end of array.
+       fun stl_end: varray[v] -> +v = "($1+PTF gcp->collector->get_used($1))";
+     }
+   
+     //$ Get the bound of a varray.
+     fun maxlen[t]: varray[t] -> size =
+       "PTF gcp->collector->get_count($1)"
+       requires property "needs_gc"
+     ;
+   
+     //$ Append a new element to the end of a varray.
+     //$ Aborts if you go past the bound.
+     proc += [t] (pa:&varray[t],v:t) { 
+       if pa*.len >= pa*.maxlen do
+         eprintln ("attempt to += on full varray size " + (pa*.maxlen).str);
+       done
+       push_back (*pa,v); 
+     }
+   
+     //$ Append a new element to the end of a varray.
+     //$ Aborts if you go past the bound.
+     proc _push_back[t] : varray[t] * t = """
+       {
+         //?1 * _p = *$1;
+         size_t n = PTF gcp->collector->get_used($1);
+         PTF gcp->collector->incr_used($1,1L);
+         new($1+n) ?1($2);
+       }
+     """
+       requires property "needs_gc"
+     ;
+   
+     proc push_back[t] (x: varray[t], v: t)
+     {
+       if x.len >= x.maxlen do
+         eprintln ("attempt to push_back on full varray size " + x.maxlen.str);
+       done
+       _push_back (x,v);  
+     }
+   
+     //$ Pop an element off the end of a varray.
+     //$ Aborts if the array is empty.
+     proc pop_back[t] : varray[t] = """
+       { // pop varray
+         ?1 * _p = $1;
+         size_t n = PTF gcp->collector->get_used(_p);
+         PTF gcp->collector->incr_used(_p,-1L);
+         destroy(_p+n-1); // from flx_compiler_support_bodies
+       }
+     """
+       requires property "needs_gc";
+     ;
+   
+     //$ Erase elements of array between and including first and last.
+     //$ Include first and last, intersect with array span.
+     //$ Cannot fail.
+     proc erase[v] (a:varray[v], first:int, last:int)
+     {
+       if first > last return;
+       var l = a.len.int;
+       var b = if first < 0 then 0 else first;
+       var e = if last >= l then l - 1 else last;
+       var d = e - b + 1;
+       if d > 0 do
+         for var i in b upto l - d - 1 do
+            unsafe_set (a, i.size, unsafe_get (a, size (i + d)));
+         done
+         var s : carray[v] = a.stl_begin;
+         for i in l - d upto l - 1 do
+           var p : carray[v] = s + i;
+           C_hack::destroy$ -p;
+         done 
+         set_used$ a, (l - d).size;
+       done 
+     }
+   
+     proc erase[v] (a:varray[v], i:int) => erase (a,i,i);
+   
+     //$ insert (a,i,v) inserts v in a at position i
+     //$ that is, inserts before element i.
+     //$ If i is negative, position relative to end,
+     //$ that is, -1 is last element, so insert (a,-1,v)
+     //$ inserts before the last element (not after!)
+     //$ If i equals the length, element is appended.
+     //$ If the index is out of range, nothing happens.
+     proc insert[t] (a:varray[t], i:int, v:t)
+     {
+       var l = a.len.int;
+       var n = a.maxlen.int;
+       if l == n return; // fail: no space
+       var ix = if i < 0 then  l - i else i;
+       if ix < 0 or ix > l return; // fail: bad index
+       if ix == l do 
+       if a.len >= a.maxlen do
+         eprintln ("insert: attempt to push_back on full varray size " + a.maxlen.str);
+       done
+         push_back (a,v);
+       else
+         assert l > 0;
+       if a.len >= a.maxlen do
+         eprintln ("insert: attempt to push_back on full varray size " + a.maxlen.str);
+       done
+         push_back (a, a.(l - 1)); // dups last element
+         if l - 2 > ix do
+           for var j in l - 2 downto ix do // copy from second last pos
+              unsafe_set (a, j.size + 1uz, unsafe_get (a, j.size));
+           done
+         done
+         unsafe_set (a, ix.size, v); 
+       done
+     }
+   
+   
+     //$ Traditional map varray to varray.
+     fun map[T, U] (_f:T->U) (x:varray[T]): varray[U] = {
+       var o = varray[U]$ len(x);
+   
+       if len x > 0uz do for var i in 0uz upto len(x) - 1uz do
+       if o.len >= o.maxlen do
+         eprintln ("insert: attempt to push_back on full varray size " + o.maxlen.str);
+       done
+         push_back (o, _f x.i);
+       done done
+       return o;
+     }
+   
+   }
+   
+   instance[T with Show[T]] Str[Varray::varray[T]] {
+     //$ Convert a varray[T] to a string.
+     //$ Requires Show[T]
+     fun str (xs:varray[T]) = {
+       var o = 'varray(';
+   
+       if len xs > 0uz do
+         o += repr xs.0;
+   
+         for var i in 1uz upto len xs - 1uz do
+           o += ', ' + repr xs.i;
+         done
+       done
+   
+       return o + ')';
+     }
+   }
+   
+   //$ Treat varray as Set.
+   instance[T with Eq[T]] Set[varray[T],T] {
+     //$ Check is a value is stored in a varray.
+     fun \in (x:T, a:varray[T]) : bool = {
+       if len a > 0uz do
+         for var i in 0uz upto len a - 1uz do
+           if a.i == x do return true; done
+         done
+       done
+       return false;
+     } 
+   }
+   
+   open[T] Show[Varray::varray[T]];
+   open[T] Set[Varray::varray[T],T];
+   open[T] ArrayValue[varray[T], T];
+   open[T] ArrayObject[varray[T], T];
+   open[T] ContiguousArrayObject[varray[T], T];
+   
 
 Darray 
 =======
@@ -1009,8 +983,8 @@ Darray
 
 .. code-block:: felix
 
-  
-  
+   
+   
 
 <code>darray</code>: an array with dynamic, unbounded length.
 =============================================================
@@ -1032,9 +1006,9 @@ O(1) speed is obtained at the cost of a lot of memory wastage.
 
 .. code-block:: felix
 
-  //$ Unbounded Variable length object array.
-  open class Darray
-  {
+   //$ Unbounded Variable length object array.
+   open class Darray
+   {
 
 Representation
 --------------
@@ -1048,12 +1022,12 @@ recommended amount of store.
 
 .. code-block:: felix
 
-    private struct darray_ctl[T]
-    {
-      a: varray[T];
-      resize: size * size --> size;
-    }
-  
+     private struct darray_ctl[T]
+     {
+       a: varray[T];
+       resize: size * size --> size;
+     }
+   
 
 Default resize function.
 ------------------------
@@ -1069,21 +1043,21 @@ case the array is empty, when the size is set to 0.
 
 .. code-block:: felix
 
-    //$ This is the default array resize function.
-    //$ If we run out of space, allocate what we have + 50%.
-    //$ If we need less than half the allocated space, return the requested size + 50%.
-    //$ Otherwise return the existing allocated space.
-    cfun dflt_resize(old_max:size, requested:size):size=
-    {
-      // GOTCHA: don't forget that division has a higher precedence than multiplication!
-      // sensible minimum size of 20, except if zero length
-      if requested == 0uz return 0uz;
-      if requested < 20uz return 20uz; 
-      if requested < old_max / 2uz return (3uz * requested) / 2uz;
-      if requested > old_max return (requested * 3uz) / 2uz;
-      return old_max;
-    }
-  
+     //$ This is the default array resize function.
+     //$ If we run out of space, allocate what we have + 50%.
+     //$ If we need less than half the allocated space, return the requested size + 50%.
+     //$ Otherwise return the existing allocated space.
+     cfun dflt_resize(old_max:size, requested:size):size=
+     {
+       // GOTCHA: don't forget that division has a higher precedence than multiplication!
+       // sensible minimum size of 20, except if zero length
+       if requested == 0uz return 0uz;
+       if requested < 20uz return 20uz; 
+       if requested < old_max / 2uz return (3uz * requested) / 2uz;
+       if requested > old_max return (requested * 3uz) / 2uz;
+       return old_max;
+     }
+   
 
  :code:`darray` type.
 ---------------------
@@ -1095,9 +1069,9 @@ the underlying control block.
 
 .. code-block:: felix
 
-    //$ Type of a darray.
-    type darray[T] = new &darray_ctl[T];
-  
+     //$ Type of a darray.
+     type darray[T] = new &darray_ctl[T];
+   
 
 Force a resize of the bound.
 ----------------------------
@@ -1113,14 +1087,14 @@ operation such as a  :code:`push_back` or  :code:`pop_back`.
 
 .. code-block:: felix
 
-    //$ Force a resize.
-    //$ Similar to C++ vector reserve function.
-    proc do_resize[T] (pd: darray[T], new_size: size)
-    {
-      var old = (_repr_ pd)*.a;
-      (_repr_ pd).a <- varray[T] (new_size, (len old), (fun(i:size)=>old.i));
-    }
-  
+     //$ Force a resize.
+     //$ Similar to C++ vector reserve function.
+     proc do_resize[T] (pd: darray[T], new_size: size)
+     {
+       var old = (_repr_ pd)*.a;
+       (_repr_ pd).a <- varray[T] (new_size, (len old), (fun(i:size)=>old.i));
+     }
+   
 
 Constructors.
 -------------
@@ -1128,25 +1102,25 @@ Constructors.
 
 .. code-block:: felix
 
-    //$ Make an empty darray, give it 20 slots for no particular reason.
-    ctor[T] darray[T] () => 
-      _make_darray[T]$ new darray_ctl[T](varray[T] 20uz , dflt_resize);
-  
-    //$ Make a darray from an array
-    ctor[T,N] darray[T] (a:array[T,N]) =>  
-      _make_darray[T]$ new darray_ctl[T]( varray[T] a, dflt_resize);
-  
-    //$ Make a darray from a varray
-    ctor[T] darray[T] (a:varray[T]) =>  
-      _make_darray[T]$ new darray_ctl[T]( varray[T] a, dflt_resize);
-  
-    //$ Make a darray from a darray (copy)
-    ctor[T] darray[T] (a:darray[T]) => darray ((_repr_ a)*.a);
-  
-  
-    //$ make a darray of a certain size initialised with some default value
-    ctor[T] darray[T] (n:size, default:T) => darray[T] (varray[T](n,default));
-  
+     //$ Make an empty darray, give it 20 slots for no particular reason.
+     ctor[T] darray[T] () => 
+       _make_darray[T]$ new darray_ctl[T](varray[T] 20uz , dflt_resize);
+   
+     //$ Make a darray from an array
+     ctor[T,N] darray[T] (a:array[T,N]) =>  
+       _make_darray[T]$ new darray_ctl[T]( varray[T] a, dflt_resize);
+   
+     //$ Make a darray from a varray
+     ctor[T] darray[T] (a:varray[T]) =>  
+       _make_darray[T]$ new darray_ctl[T]( varray[T] a, dflt_resize);
+   
+     //$ Make a darray from a darray (copy)
+     ctor[T] darray[T] (a:darray[T]) => darray ((_repr_ a)*.a);
+   
+   
+     //$ make a darray of a certain size initialised with some default value
+     ctor[T] darray[T] (n:size, default:T) => darray[T] (varray[T](n,default));
+   
 
 As a value.
 -----------
@@ -1154,12 +1128,12 @@ As a value.
 
 .. code-block:: felix
 
-    //$ Basic array value stuff.
-    instance[v] ArrayValue[darray[v],v] {
-      fun len (a:darray[v])=> len (_repr_ a)*.a;
-      fun unsafe_get (a:darray[v], i:size) => (_repr_ a)*.a.i;
-    }
-  
+     //$ Basic array value stuff.
+     instance[v] ArrayValue[darray[v],v] {
+       fun len (a:darray[v])=> len (_repr_ a)*.a;
+       fun unsafe_get (a:darray[v], i:size) => (_repr_ a)*.a.i;
+     }
+   
 
 As an object.
 -------------
@@ -1167,12 +1141,12 @@ As an object.
 
 .. code-block:: felix
 
-    //$ Basic array object stuff.
-    instance[v] ArrayObject[darray[v],v] {
-      proc unsafe_set (b:darray[v],  n:size, x:v) => unsafe_set ((_repr_ b)*.a,n,x);
-      fun unsafe_get_ref (b:darray[v],  n:size) : &v => unsafe_get_ref ((_repr_ b)*.a,n);
-    }
-  
+     //$ Basic array object stuff.
+     instance[v] ArrayObject[darray[v],v] {
+       proc unsafe_set (b:darray[v],  n:size, x:v) => unsafe_set ((_repr_ b)*.a,n,x);
+       fun unsafe_get_ref (b:darray[v],  n:size) : &v => unsafe_get_ref ((_repr_ b)*.a,n);
+     }
+   
 
 As an contiguous array.
 -----------------------
@@ -1180,12 +1154,12 @@ As an contiguous array.
 
 .. code-block:: felix
 
-    //$ Contrue as contiguous store.
-    instance[v] ContiguousArrayObject[darray[v],v] {
-      fun stl_begin(b:darray[v]) => stl_begin b._repr_*.a;
-      fun stl_end(b:darray[v]) => stl_end b._repr_*.a;
-    }
-  
+     //$ Contrue as contiguous store.
+     instance[v] ContiguousArrayObject[darray[v],v] {
+       fun stl_begin(b:darray[v]) => stl_begin b._repr_*.a;
+       fun stl_end(b:darray[v]) => stl_end b._repr_*.a;
+     }
+   
 
 Size changing mutators.
 -----------------------
@@ -1195,51 +1169,51 @@ Generally, this class is very incomplete.
 
 .. code-block:: felix
 
-    //$ Pop a value from the end.
-    //$ Same as pop_back in C++.
-    proc pop_back[t](a:darray[t]) {
-      pop_back (_repr_ a)*.a;
-      newsize := (_repr_ a)*.resize (maxlen (_repr_ a)*.a, len (_repr_ a)*.a);
-      if newsize != maxlen (_repr_ a)*.a call do_resize (a,newsize);
-    }
-  
-    //$ Push a value onto the end.
-    //$ Same as push_back in C++.
-    proc += [t] (a:&darray[t],v:t) {
-      push_back (*a, v);
-    }
-  
-    //$ Push a value onto the end.
-    //$ Same as push_back in C++.
-    proc push_back[t] (a:darray[t], v:t) {
-      r := _repr_ a; 
-      newsize := r*.resize (maxlen r*.a, len r*.a + 1uz);
-      if newsize != maxlen r*.a call do_resize(a,newsize);
-      if r*.a.len >= r*.a.maxlen do
-        eprintln ("darray push_back: attempt to push_back on full varray size " + r*.a.maxlen.str);
-      done
-      push_back (r*.a, v); // hack to workaround compiler error Address non variable
-    }
-  
-    //$ insert
-    proc insert[t] (a:darray[t], i:int, v:t)
-    {
-      var r = _repr_ a; 
-      newsize := r*.resize (maxlen r*.a, len r*.a + 1uz);
-      if newsize != maxlen r*.a call do_resize(a,newsize);
-      r = _repr_ a;
-      insert (r*.a,i,v);
-    }
-  
-    //$ Erase an element, note doesn't resize the varray,
-    //$ probably should ..
-    proc erase[t] (a:darray[t], i:int) => erase ((_repr_ a)*.a,i);
-  
-    //$ Erase multiple elements, note doesn't resize the varray,
-    //$ probably should ..
-    proc erase[t] (a:darray[t], first:int, last:int) => 
-      erase ((_repr_ a)*.a, first,last);
-  
+     //$ Pop a value from the end.
+     //$ Same as pop_back in C++.
+     proc pop_back[t](a:darray[t]) {
+       pop_back (_repr_ a)*.a;
+       newsize := (_repr_ a)*.resize (maxlen (_repr_ a)*.a, len (_repr_ a)*.a);
+       if newsize != maxlen (_repr_ a)*.a call do_resize (a,newsize);
+     }
+   
+     //$ Push a value onto the end.
+     //$ Same as push_back in C++.
+     proc += [t] (a:&darray[t],v:t) {
+       push_back (*a, v);
+     }
+   
+     //$ Push a value onto the end.
+     //$ Same as push_back in C++.
+     proc push_back[t] (a:darray[t], v:t) {
+       r := _repr_ a; 
+       newsize := r*.resize (maxlen r*.a, len r*.a + 1uz);
+       if newsize != maxlen r*.a call do_resize(a,newsize);
+       if r*.a.len >= r*.a.maxlen do
+         eprintln ("darray push_back: attempt to push_back on full varray size " + r*.a.maxlen.str);
+       done
+       push_back (r*.a, v); // hack to workaround compiler error Address non variable
+     }
+   
+     //$ insert
+     proc insert[t] (a:darray[t], i:int, v:t)
+     {
+       var r = _repr_ a; 
+       newsize := r*.resize (maxlen r*.a, len r*.a + 1uz);
+       if newsize != maxlen r*.a call do_resize(a,newsize);
+       r = _repr_ a;
+       insert (r*.a,i,v);
+     }
+   
+     //$ Erase an element, note doesn't resize the varray,
+     //$ probably should ..
+     proc erase[t] (a:darray[t], i:int) => erase ((_repr_ a)*.a,i);
+   
+     //$ Erase multiple elements, note doesn't resize the varray,
+     //$ probably should ..
+     proc erase[t] (a:darray[t], first:int, last:int) => 
+       erase ((_repr_ a)*.a, first,last);
+   
 
 Convert a darray to a string.
 -----------------------------
@@ -1247,13 +1221,13 @@ Convert a darray to a string.
 
 .. code-block:: felix
 
-    // uses _repr_ so has to be in the module
-    instance[T with Show[T]] Str[Darray::darray[T]] {
-      //$ Convert an array to a string,
-      //$ provided the element type is convertible.
-      fun str (x:darray[T])=> str (_repr_ x)*.a;
-    }
-  
+     // uses _repr_ so has to be in the module
+     instance[T with Show[T]] Str[Darray::darray[T]] {
+       //$ Convert an array to a string,
+       //$ provided the element type is convertible.
+       fun str (x:darray[T])=> str (_repr_ x)*.a;
+     }
+   
 
 Enable map on darray objects.
 -----------------------------
@@ -1261,19 +1235,19 @@ Enable map on darray objects.
 
 .. code-block:: felix
 
-    //$ Traditional map darray to darray.
-    fun map[T, U] (_f:T->U) (arr:darray[T]): darray[U] = {
-      var o = darray[U]();
-  
-      if arr.len > 0uz do
-        for var i in 0uz upto arr.len - 1uz do
-        push_back (o, _f arr.i);
-        done
-      done
-      
-      return o;
-    }
-  
+     //$ Traditional map darray to darray.
+     fun map[T, U] (_f:T->U) (arr:darray[T]): darray[U] = {
+       var o = darray[U]();
+   
+       if arr.len > 0uz do
+         for var i in 0uz upto arr.len - 1uz do
+         push_back (o, _f arr.i);
+         done
+       done
+       
+       return o;
+     }
+   
 
 Enable filter on darray objects
 -------------------------------
@@ -1281,26 +1255,26 @@ Enable filter on darray objects
 
 .. code-block:: felix
 
-  
-    //$ Return a sub list with elements satisfying the given predicate.
-    fun filter[T] (P:T -> bool) (arr:darray[T]) : darray[T] =
-    {
-      var o = darray[T]();
-  
-      if arr.len > 0uz do
-        for var i in 0uz upto arr.len - 1uz do
-          if (P(arr.i)) do
-        	  push_back (o, arr.i);
-          done
-        done
-      done
-      
-      return o;
-    }
-  
-  
-  }
-  
+   
+     //$ Return a sub list with elements satisfying the given predicate.
+     fun filter[T] (P:T -> bool) (arr:darray[T]) : darray[T] =
+     {
+       var o = darray[T]();
+   
+       if arr.len > 0uz do
+         for var i in 0uz upto arr.len - 1uz do
+           if (P(arr.i)) do
+         	  push_back (o, arr.i);
+           done
+         done
+       done
+       
+       return o;
+     }
+   
+   
+   }
+   
 
 As a set
 --------
@@ -1309,24 +1283,24 @@ Should be in main class body.
 
 .. code-block:: felix
 
-  //$ Construe a darray as a Set.
-  instance[T with Eq[T]] Set[darray[T],T] {
-   //$ element membership test.
-   fun \in (x:T, a:darray[T]) : bool = {
-     for var i in 0uz upto len a -1uz 
-       if a.i == x return true
-     ; 
-     return false;
-   } 
-  }
-  
-  open[T] Show[Darray::darray[T]];
-  open[T] Set[Darray::darray[T],T];
-  
-  open[T] ArrayValue[darray[T], T];
-  open[T] ArrayObject[darray[T], T];
-  open[T] ContiguousArrayObject[darray[T], T];
-  
+   //$ Construe a darray as a Set.
+   instance[T with Eq[T]] Set[darray[T],T] {
+    //$ element membership test.
+    fun \in (x:T, a:darray[T]) : bool = {
+      for var i in 0uz upto len a -1uz 
+        if a.i == x return true
+      ; 
+      return false;
+    } 
+   }
+   
+   open[T] Show[Darray::darray[T]];
+   open[T] Set[Darray::darray[T],T];
+   
+   open[T] ArrayValue[darray[T], T];
+   open[T] ArrayObject[darray[T], T];
+   open[T] ContiguousArrayObject[darray[T], T];
+   
 
 Sarray 
 =======
@@ -1334,96 +1308,96 @@ Sarray
 
 .. code-block:: felix
 
-  
-  //$ Unbounded sparse psuedo-array sarray.
-  //$ This data type is not a real array because it has no bounds
-  //$ and therefore cannot support iteration.
-  open class Sarray
-  {
-    open Judy;
-    private struct sarray_ctl[T] { a: darray[T]; j:JLArray; free:J1Array; dflt:T; };
-  
-    //$ Type of a sarray.
-    type sarray[T] = new &sarray_ctl[T];
-  
-    //$ Construct an infinite sarray with all values set to the given default.
-    ctor[T] sarray[T] (dflt:T) => _make_sarray[T]$ new sarray_ctl[T] (darray[T](), JLArray(), J1Array(),dflt);
-  
-    //$ Get the value at the given position.
-    fun get[T] (a:sarray[T], i:size) : T = {
+   
+   //$ Unbounded sparse psuedo-array sarray.
+   //$ This data type is not a real array because it has no bounds
+   //$ and therefore cannot support iteration.
+   open class Sarray
+   {
+     open Judy;
+     private struct sarray_ctl[T] { a: darray[T]; j:JLArray; free:J1Array; dflt:T; };
+   
+     //$ Type of a sarray.
+     type sarray[T] = new &sarray_ctl[T];
+   
+     //$ Construct an infinite sarray with all values set to the given default.
+     ctor[T] sarray[T] (dflt:T) => _make_sarray[T]$ new sarray_ctl[T] (darray[T](), JLArray(), J1Array(),dflt);
+   
+     //$ Get the value at the given position.
+     fun get[T] (a:sarray[T], i:size) : T = {
+        var pk: &word;
+        var e: JError_t;
+        JudyLGet ( (_repr_ a)*.j, i.word, &e, &pk);
+        var r = if C_hack::isNULL pk then (_repr_ a)*.dflt else (_repr_ a)*.a.(size(*pk));
+        return r;
+     }
+       
+     //$ Set the given value at the given position.
+     proc set[T] (a:sarray[T], i:size, v:T) {
        var pk: &word;
        var e: JError_t;
-       JudyLGet ( (_repr_ a)*.j, i.word, &e, &pk);
-       var r = if C_hack::isNULL pk then (_repr_ a)*.dflt else (_repr_ a)*.a.(size(*pk));
-       return r;
-    }
-      
-    //$ Set the given value at the given position.
-    proc set[T] (a:sarray[T], i:size, v:T) {
-      var pk: &word;
-      var e: JError_t;
-      JudyLGet ( (_repr_ a)*.j, i.word, &e, &pk);    // see if already in array
-      if C_hack::isNULL pk do
-        var idx: word = word 0;
-        var b: int;
-        Judy1First((_repr_ a)*.free,&idx,&e,&b);     // try to find a free slot
-        if b == 0 do                                // none?
-          idx = word (len (_repr_ a)*.a);
-          push_back ((_repr_ a)*.a, v);              // then push onto array end
-        else
-          Judy1Unset((_repr_ a)*.free,idx,&e,&b);     // remove free slot from free set
-          set ((_repr_ a)*.a,size idx,v);            // store value
-        done
-        JudyLIns ( (_repr_ a)*.j,i.word, &e, &pk);    // add new index to j mapping
-        pk <- idx;
-      else 
-        set ((_repr_ a)*.a, size (*pk), v);
-      done
-    }
-  
-    //$ Replace the value at a given position with the default.
-    proc del[T] (a:sarray[T], i:size) {
-      var pk: &word;
-      var e: JError_t;
-      JudyLGet ( (_repr_ a)*.j, i.word, &e, &pk);     // see if already in array
-      if not C_hack::isNULL pk do                    // if it is
-        var b:int;
-        Judy1Set ((_repr_ a)*.free, i.word, &e, &b);  // add slot to free set
-        set ( (_repr_ a)*.a, pk*.size, (_repr_ a)*.dflt); // replace old value with default
-      done    
-    }
-  
-    //$ Pack a sparse array. 
-    //$ This is an optimisation with no semantics.
-    //$ Reorganises the sarray to reduce memory use and optimise lookup.
-    //$
-    // Make a new varray with max number
-    // of elements in the j mapping, then fill it in order
-    // of the j mapping, replacing the j value with the new index
-    // finally replace the original darray with a new one made
-    // from the constructed varray: this is packed and in sequence
-    proc pack[T] (a:sarray[T]) {
-      r := _repr_ a;
-      var e: JError_t;
-      var n: word;
-      JudyLCount (r*.j, word 0, word (-1ul), &e, &n);
-      var x = varray[T] n.size;
-      var index = word 0;      
-      var i = 0ul;         // slot index for new array
-      var slot : &word;
-      JudyLFirst(r*.j, &index, &e, &slot);
-      while not isNULL slot do
-        push_back (x, r*.a.((*slot).size));
-        slot <- i.word; ++i;
-        JudyLNext(r*.j, &index, &e, &slot);
-      done
-      var m : word;
-      Judy1FreeArray(r*.free,&e,&m);
-      //println$ m.ulong.str + " bytes freed --> counted "+n.ulong.str;
-      r.a <- darray x;
-    }
-  }
-  
+       JudyLGet ( (_repr_ a)*.j, i.word, &e, &pk);    // see if already in array
+       if C_hack::isNULL pk do
+         var idx: word = word 0;
+         var b: int;
+         Judy1First((_repr_ a)*.free,&idx,&e,&b);     // try to find a free slot
+         if b == 0 do                                // none?
+           idx = word (len (_repr_ a)*.a);
+           push_back ((_repr_ a)*.a, v);              // then push onto array end
+         else
+           Judy1Unset((_repr_ a)*.free,idx,&e,&b);     // remove free slot from free set
+           set ((_repr_ a)*.a,size idx,v);            // store value
+         done
+         JudyLIns ( (_repr_ a)*.j,i.word, &e, &pk);    // add new index to j mapping
+         pk <- idx;
+       else 
+         set ((_repr_ a)*.a, size (*pk), v);
+       done
+     }
+   
+     //$ Replace the value at a given position with the default.
+     proc del[T] (a:sarray[T], i:size) {
+       var pk: &word;
+       var e: JError_t;
+       JudyLGet ( (_repr_ a)*.j, i.word, &e, &pk);     // see if already in array
+       if not C_hack::isNULL pk do                    // if it is
+         var b:int;
+         Judy1Set ((_repr_ a)*.free, i.word, &e, &b);  // add slot to free set
+         set ( (_repr_ a)*.a, pk*.size, (_repr_ a)*.dflt); // replace old value with default
+       done    
+     }
+   
+     //$ Pack a sparse array. 
+     //$ This is an optimisation with no semantics.
+     //$ Reorganises the sarray to reduce memory use and optimise lookup.
+     //$
+     // Make a new varray with max number
+     // of elements in the j mapping, then fill it in order
+     // of the j mapping, replacing the j value with the new index
+     // finally replace the original darray with a new one made
+     // from the constructed varray: this is packed and in sequence
+     proc pack[T] (a:sarray[T]) {
+       r := _repr_ a;
+       var e: JError_t;
+       var n: word;
+       JudyLCount (r*.j, word 0, word (-1ul), &e, &n);
+       var x = varray[T] n.size;
+       var index = word 0;      
+       var i = 0ul;         // slot index for new array
+       var slot : &word;
+       JudyLFirst(r*.j, &index, &e, &slot);
+       while not isNULL slot do
+         push_back (x, r*.a.((*slot).size));
+         slot <- i.word; ++i;
+         JudyLNext(r*.j, &index, &e, &slot);
+       done
+       var m : word;
+       Judy1FreeArray(r*.free,&e,&m);
+       //println$ m.ulong.str + " bytes freed --> counted "+n.ulong.str;
+       r.a <- darray x;
+     }
+   }
+   
 
 Bsarray 
 ========
@@ -1431,69 +1405,69 @@ Bsarray
 
 .. code-block:: felix
 
-  
-  
-  //$ Bounded sparse array.
-  //$ Basically a sarray with a given bound.
-  //$ The bound is ignored for get and set methods.
-  //$ The bound is used for membership tests and iteration.
-  include "std/datatype/sarray";
-  open class Bsarray
-  {
-    private struct bsarray_ctl[T] { a: sarray[T]; n:size; };
-    type bsarray[T] = new &bsarray_ctl[T];
-  
-    //$ Contruct with default value and bound.
-    ctor[T,I in ints] bsarray[T] (dflt:T, bound:I) =>
-      _make_bsarray[T]$ new bsarray_ctl[T] (sarray[T](dflt), bound.size)
-    ;
    
-    //$ Contrue as array value.
-    instance[T] ArrayValue[bsarray[T],T] {
-      fun len(b:bsarray[T])=> (_repr_ b)*.n;
-      fun unsafe_get(b:bsarray[T], i:size)=> get ((_repr_ b)*.a, i);
-    }
-  
-    //$ Contrue as array object.
-    instance[T] ArrayObject[bsarray[T],T] {
-      proc unsafe_set(b:bsarray[T], i:size, v:T)=> set ((_repr_ b)*.a, i, v);
-    }
-  
-    //$ Contrue as set: membership test.
-    instance[T with Eq[T]] Set[bsarray[T],T] {
-     // FIX ME: inefficient!
-     fun \in (x:T, a:bsarray[T]) : bool = {
-       if len a > 0uz
-         for var i in 0uz upto len a - 1uz
-           if a.i == x return true
-       ; 
-       return false;
-     } 
-    }
-  
-    instance[T with Show[T]] Str[Bsarray::bsarray[T]] {
-      //$ Convert to string.
-      fun str (xs:bsarray[T]) = {
-        var o = 'bsarray(';
-  
-        if len xs > 0uz do
-          o += repr xs.0;
-  
-          for var i in 1uz upto len xs - 1uz do
-            o += ', ' + repr xs.i;
-          done
-        done
-  
-        return o + ')';
-      }
-    }
-  }
-  
-  
-  open[T] Show[Bsarray::bsarray[T]];
-  open[T] Set[Bsarray::bsarray[T],T];
-  open[T] ArrayValue[bsarray[T], T];
-  open[T] ArrayObject[bsarray[T], T];
-  open[T] ContiguousArrayObject[bsarray[T], T];
-  
-  
+   
+   //$ Bounded sparse array.
+   //$ Basically a sarray with a given bound.
+   //$ The bound is ignored for get and set methods.
+   //$ The bound is used for membership tests and iteration.
+   include "std/datatype/sarray";
+   open class Bsarray
+   {
+     private struct bsarray_ctl[T] { a: sarray[T]; n:size; };
+     type bsarray[T] = new &bsarray_ctl[T];
+   
+     //$ Contruct with default value and bound.
+     ctor[T,I in ints] bsarray[T] (dflt:T, bound:I) =>
+       _make_bsarray[T]$ new bsarray_ctl[T] (sarray[T](dflt), bound.size)
+     ;
+    
+     //$ Contrue as array value.
+     instance[T] ArrayValue[bsarray[T],T] {
+       fun len(b:bsarray[T])=> (_repr_ b)*.n;
+       fun unsafe_get(b:bsarray[T], i:size)=> get ((_repr_ b)*.a, i);
+     }
+   
+     //$ Contrue as array object.
+     instance[T] ArrayObject[bsarray[T],T] {
+       proc unsafe_set(b:bsarray[T], i:size, v:T)=> set ((_repr_ b)*.a, i, v);
+     }
+   
+     //$ Contrue as set: membership test.
+     instance[T with Eq[T]] Set[bsarray[T],T] {
+      // FIX ME: inefficient!
+      fun \in (x:T, a:bsarray[T]) : bool = {
+        if len a > 0uz
+          for var i in 0uz upto len a - 1uz
+            if a.i == x return true
+        ; 
+        return false;
+      } 
+     }
+   
+     instance[T with Show[T]] Str[Bsarray::bsarray[T]] {
+       //$ Convert to string.
+       fun str (xs:bsarray[T]) = {
+         var o = 'bsarray(';
+   
+         if len xs > 0uz do
+           o += repr xs.0;
+   
+           for var i in 1uz upto len xs - 1uz do
+             o += ', ' + repr xs.i;
+           done
+         done
+   
+         return o + ')';
+       }
+     }
+   }
+   
+   
+   open[T] Show[Bsarray::bsarray[T]];
+   open[T] Set[Bsarray::bsarray[T],T];
+   open[T] ArrayValue[bsarray[T], T];
+   open[T] ArrayObject[bsarray[T], T];
+   open[T] ContiguousArrayObject[bsarray[T], T];
+   
+   

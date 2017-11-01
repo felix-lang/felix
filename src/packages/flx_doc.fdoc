@@ -403,7 +403,7 @@ done
 @
 
 
-@tangle fdoc2sphinx.flx
+@tangle flx_fdoc2sphinx.flx
 open Regdef;
 
 // command translation
@@ -520,7 +520,6 @@ fun process_file (f: string): string =
       else 
         match mode with
         | `Code =>
-          println$ "";
           mode = (#`Doc) :>> mode_t;
         | _ => ;
         endmatch;
@@ -531,7 +530,7 @@ fun process_file (f: string): string =
       match mode with
       | `Doc => 
          println$ code_markup line;
-      | `Code => println$ "  " + line;
+      | `Code => println$ "   " + line;
       endmatch;
     endmatch;
   done

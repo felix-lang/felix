@@ -12,48 +12,48 @@ Debugging Aid.
 
 .. code-block:: felix
 
-  // the internal representation of a Felix source location
-  // has to be global to simplify compiler hack
-  type flx_location_t = "flx::rtl::flx_range_srcref_t";
-  
-  class Debug
-  {
-    const FLX_SRCLOC : flx_location_t = "#srcloc";
-      // NOTE: this doesn't actually work! The replacement typically
-      // occurs in the wrong place: one gets the location of FLX_SRCLOC
-      // right here in the debug class .. not useful!
-    ctor flx_location_t : +char * int * int * int * int = "::flx::rtl::flx_range_srcref_t($a)";
-    fun filename: flx_location_t -> +char = "$1.filename";
-    fun startline: flx_location_t -> int = "$1.startline";
-    fun startcol: flx_location_t -> int = "$1.startcol";
-    fun endline: flx_location_t -> int = "$1.endline";
-    fun endcol: flx_location_t -> int = "$1.endcol";
-  
-    instance Str[flx_location_t] {
-      fun str(var x:flx_location_t)=> 
-      string (x.filename) + ":"+ x.startline.str + "[" + x.startcol.str + "]" + "-" +
-      x.endline.str + "[" + x.endcol.str + "]";
-    }
-  
-    // hack to emit C++ source file locations
-    const CPP_FUNCTION : +char = "__FUNCTION__";
-    const CPP_FILE: +char = "__FILE__";
-    const CPP_LINE: int = "__LINE__";
-  
-    // hack to emit C code an expression would generate
-    fun repr_expr[t]: t -> string = '\\"$a:?1\\"';
-  
-    // hack to emit C typename of a Felix type
-    const repr_type[t]:string = '\\"?1\\"';
-    proc enable_local_udp_trace : 1 = "::flx::debug::enable_local_udp_trace();" 
-      requires header '#include "flx_udp_trace.hpp"'
-    ;
-    proc send_udp_trace_message : string = "::flx::debug::send_udp_trace_message($1);"
-      requires header '#include "flx_udp_trace.hpp"';
-    ;
-  
-  }
-  
+   // the internal representation of a Felix source location
+   // has to be global to simplify compiler hack
+   type flx_location_t = "flx::rtl::flx_range_srcref_t";
+   
+   class Debug
+   {
+     const FLX_SRCLOC : flx_location_t = "#srcloc";
+       // NOTE: this doesn't actually work! The replacement typically
+       // occurs in the wrong place: one gets the location of FLX_SRCLOC
+       // right here in the debug class .. not useful!
+     ctor flx_location_t : +char * int * int * int * int = "::flx::rtl::flx_range_srcref_t($a)";
+     fun filename: flx_location_t -> +char = "$1.filename";
+     fun startline: flx_location_t -> int = "$1.startline";
+     fun startcol: flx_location_t -> int = "$1.startcol";
+     fun endline: flx_location_t -> int = "$1.endline";
+     fun endcol: flx_location_t -> int = "$1.endcol";
+   
+     instance Str[flx_location_t] {
+       fun str(var x:flx_location_t)=> 
+       string (x.filename) + ":"+ x.startline.str + "[" + x.startcol.str + "]" + "-" +
+       x.endline.str + "[" + x.endcol.str + "]";
+     }
+   
+     // hack to emit C++ source file locations
+     const CPP_FUNCTION : +char = "__FUNCTION__";
+     const CPP_FILE: +char = "__FILE__";
+     const CPP_LINE: int = "__LINE__";
+   
+     // hack to emit C code an expression would generate
+     fun repr_expr[t]: t -> string = '\\"$a:?1\\"';
+   
+     // hack to emit C typename of a Felix type
+     const repr_type[t]:string = '\\"?1\\"';
+     proc enable_local_udp_trace : 1 = "::flx::debug::enable_local_udp_trace();" 
+       requires header '#include "flx_udp_trace.hpp"'
+     ;
+     proc send_udp_trace_message : string = "::flx::debug::send_udp_trace_message($1);"
+       requires header '#include "flx_udp_trace.hpp"';
+     ;
+   
+   }
+   
 
 Source Location  :code:`HERE`
 =============================
@@ -71,12 +71,12 @@ The translation from the C macros used are done by the C++ compiler.
 
 .. code-block:: text
 
-  syntax debug
-  {
-     satom := "HERE" =># "`(ast_here ,_sr)";
-  }
-  @
-  
+   syntax debug
+   {
+      satom := "HERE" =># "`(ast_here ,_sr)";
+   }
+   @
+   
 
 UDP based trace support
 =======================
@@ -85,84 +85,84 @@ This stuff only on Posix so far.
 
 .. code-block:: cpp
 
-  #include "flx_rtl_config.hpp"
-  #include <string>
-  
-  namespace flx { namespace debug {
-    RTL_EXTERN void enable_local_udp_trace();
-    RTL_EXTERN void send_udp_trace_message (::std::string);
-  }}
-  
-  @
+   #include "flx_rtl_config.hpp"
+   #include <string>
+   
+   namespace flx { namespace debug {
+     RTL_EXTERN void enable_local_udp_trace();
+     RTL_EXTERN void send_udp_trace_message (::std::string);
+   }}
+   
+   @
 
 .. code-block:: cpp
 
-  #ifdef _WIN32
-  #include <stdio.h>
-  #include <string>
-  namespace flx { namespace debug {
-  void enable_local_udp_trace () {}
-  void send_udp_trace_message (::std::string msg) {
-    fprintf(stderr,"[WIN32: udp_trace not available, using stderr] %s\n",msg.c_str());
-  }
-  }}
-  #else
-  #include <sys/socket.h>
-  #include <stdio.h>
-  #include <arpa/inet.h>
-  #include <string.h>
-  #include <netdb.h>
-  #include <string>
-  #include "flx_udp_trace.hpp"
-  
-  namespace flx { namespace debug {
-  static int trace_socket = 0;
-  static struct sockaddr_in dst;
-  static int notify_first_send = 0;
-  
-  void enable_local_udp_trace ()
-  { 
-    trace_socket = socket(PF_INET,SOCK_DGRAM,0); // 17=UDP
-    struct sockaddr_in addr;
-    memset((char *)&addr, 0, sizeof(addr)); 
-    addr.sin_family = AF_INET; 
-    addr.sin_addr.s_addr = INADDR_ANY; 
-    addr.sin_port = 0;
-    int result = bind (trace_socket, (struct sockaddr*)&addr, sizeof(addr));
-    if (result != 0) {
-      fprintf(stderr,"FAILED to bind Trace Output Socket!\n"); 
-      return;
-    }
-    fprintf(stderr,"Bound Trace Output Socket OK!\n"); 
-  
-    memset((char*)&dst,0,sizeof(dst));
-    dst.sin_family=AF_INET;
-    dst.sin_port = htons(1153);
-    inet_aton("127.0.0.1",&dst.sin_addr);
-  }
-  
-  // Add locks later
-  void send_udp_trace_message (::std::string msg)
-  {
-    if (trace_socket != 0)
-    {
-      char const * cp = msg.c_str();
-      size_t n = msg.size();
-      int result = sendto (trace_socket, cp, n,0,(struct sockaddr*)&dst, sizeof(dst));
-      if (notify_first_send == 0)
-      {
-        notify_first_send = 1;
-        if (result == n)
-          fprintf(stderr, "First UDP Trace message sent OK! %d bytes = '%s'\n", result,cp);
-        else
-          fprintf(stderr, "First UDP Trace message send FAILED ****! Sent: %d bytes\n",result);
-      }
-    }
-  }
-  }} // namespaces
-  #endif
-  @
-  
+   #ifdef _WIN32
+   #include <stdio.h>
+   #include <string>
+   namespace flx { namespace debug {
+   void enable_local_udp_trace () {}
+   void send_udp_trace_message (::std::string msg) {
+     fprintf(stderr,"[WIN32: udp_trace not available, using stderr] %s\n",msg.c_str());
+   }
+   }}
+   #else
+   #include <sys/socket.h>
+   #include <stdio.h>
+   #include <arpa/inet.h>
+   #include <string.h>
+   #include <netdb.h>
+   #include <string>
+   #include "flx_udp_trace.hpp"
+   
+   namespace flx { namespace debug {
+   static int trace_socket = 0;
+   static struct sockaddr_in dst;
+   static int notify_first_send = 0;
+   
+   void enable_local_udp_trace ()
+   { 
+     trace_socket = socket(PF_INET,SOCK_DGRAM,0); // 17=UDP
+     struct sockaddr_in addr;
+     memset((char *)&addr, 0, sizeof(addr)); 
+     addr.sin_family = AF_INET; 
+     addr.sin_addr.s_addr = INADDR_ANY; 
+     addr.sin_port = 0;
+     int result = bind (trace_socket, (struct sockaddr*)&addr, sizeof(addr));
+     if (result != 0) {
+       fprintf(stderr,"FAILED to bind Trace Output Socket!\n"); 
+       return;
+     }
+     fprintf(stderr,"Bound Trace Output Socket OK!\n"); 
+   
+     memset((char*)&dst,0,sizeof(dst));
+     dst.sin_family=AF_INET;
+     dst.sin_port = htons(1153);
+     inet_aton("127.0.0.1",&dst.sin_addr);
+   }
+   
+   // Add locks later
+   void send_udp_trace_message (::std::string msg)
+   {
+     if (trace_socket != 0)
+     {
+       char const * cp = msg.c_str();
+       size_t n = msg.size();
+       int result = sendto (trace_socket, cp, n,0,(struct sockaddr*)&dst, sizeof(dst));
+       if (notify_first_send == 0)
+       {
+         notify_first_send = 1;
+         if (result == n)
+           fprintf(stderr, "First UDP Trace message sent OK! %d bytes = '%s'\n", result,cp);
+         else
+           fprintf(stderr, "First UDP Trace message send FAILED ****! Sent: %d bytes\n",result);
+       }
+     }
+   }
+   }} // namespaces
+   #endif
+   @
+   
 
 Simple UDP Trace monitor
 ------------------------
@@ -171,34 +171,34 @@ A simple posix only executable tool to monitor program traces.
 
 .. code-block:: cpp
 
-  #include <sys/socket.h>
-  #include <stdio.h>
-  #include <arpa/inet.h>
-  #include <string.h>
-  #define BUFLEN 2000
-  #define PORT 1153
-  int main()
-  {
-    char buffer[BUFLEN];
-  
-    int sock = socket(PF_INET,SOCK_DGRAM,0); // 17=UDP
-    struct sockaddr_in addr;
-    memset((char *)&addr, 0, sizeof(sockaddr)); 
-    addr.sin_family = AF_INET; 
-    addr.sin_addr.s_addr = htonl(INADDR_ANY); 
-    addr.sin_port = htons(PORT);
-    int result = bind (sock, (struct sockaddr*)&addr, sizeof(addr));
-    if (result != 0)
-      printf("UDP Trace Monitor: bind on port %d failed\n",PORT);
-    printf("UDP Trace Monitor Listening on port %d\n",PORT); 
-  
-    struct sockaddr_in writer;
-    socklen_t addrlen = sizeof(writer);
-    for(;;){
-      memset(buffer,0,BUFLEN);
-      result = recvfrom (sock, buffer, BUFLEN,0,(struct sockaddr*)&writer, &addrlen);
-      printf("Received = %d\n",result); 
-      printf("Buffer = %s\n",buffer);
-    }
-  }
-  
+   #include <sys/socket.h>
+   #include <stdio.h>
+   #include <arpa/inet.h>
+   #include <string.h>
+   #define BUFLEN 2000
+   #define PORT 1153
+   int main()
+   {
+     char buffer[BUFLEN];
+   
+     int sock = socket(PF_INET,SOCK_DGRAM,0); // 17=UDP
+     struct sockaddr_in addr;
+     memset((char *)&addr, 0, sizeof(sockaddr)); 
+     addr.sin_family = AF_INET; 
+     addr.sin_addr.s_addr = htonl(INADDR_ANY); 
+     addr.sin_port = htons(PORT);
+     int result = bind (sock, (struct sockaddr*)&addr, sizeof(addr));
+     if (result != 0)
+       printf("UDP Trace Monitor: bind on port %d failed\n",PORT);
+     printf("UDP Trace Monitor Listening on port %d\n",PORT); 
+   
+     struct sockaddr_in writer;
+     socklen_t addrlen = sizeof(writer);
+     for(;;){
+       memset(buffer,0,BUFLEN);
+       result = recvfrom (sock, buffer, BUFLEN,0,(struct sockaddr*)&writer, &addrlen);
+       printf("Received = %d\n",result); 
+       printf("Buffer = %s\n",buffer);
+     }
+   }
+   

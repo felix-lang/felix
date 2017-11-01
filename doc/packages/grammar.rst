@@ -14,118 +14,118 @@ Assertions
 
 .. code-block:: text
 
-  //$ Assertion statements.
-  //$ See also functions to find pre- and post-conditions.
-  syntax assertions {
-    requires statements;
-  
-    stmt = assertion_stmt;
-  
-    //$ The usual assert statement.
-    //$ Abort the program if the argument expression evaluates to false
-    //$ when control flows through the assert statement.
-    //$ Cannot be switched off!
-    private assertion_stmt := "assert" sexpr ";" =># "`(ast_assert ,_sr ,_2)";
-  
-    //$ Define an axiom with a general predicate.
-    //$ An axiom is a function which is true for all arguments.
-    //$ Axioms are core assertions about invariants which
-    //$ can be used to specify semantics and form the basis
-    //$ of reasoning about semantics which goes beyond
-    //$ structure.
-    private assertion_stmt  := "axiom" sdeclname sfun_arg ":" sexpr ";" =>#
-      """
-        `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
-      """;
-  
-    //$ A variant of an axiom which expresses the semantic
-    //$ equality of two expressions. Do not confuse this
-    //$ with an expresion containing run time equality (==).
-    //$ Semantic equality means that one expression could be
-    //$ replaced by the other without any observable difference
-    //$ in behaviour in any program, this can be asserted even
-    //$ if the type does not provide an equality operator (==).
-    private assertion_stmt  := "axiom" sdeclname sfun_arg ":" sexpr "=" sexpr ";" =>#
-      """
-        `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
-      """;
-  
-    //$ A lemma is a proposition which it is expected could
-    //$ be proved by a good automatic theorem prover,
-    //$ given the axioms. This is the predicate form.
-    private assertion_stmt  := "lemma" sdeclname sfun_arg ":" sexpr ";" =>#
-      """
-        `(ast_lemma ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
-      """;
-  
-    //$ A lemma is a proposition which it is expected could
-    //$ be proved by a good automatic theorem prover,
-    //$ given the axioms. This is the equational form.
-    private assertion_stmt  := "lemma" sdeclname sfun_arg ":" sexpr "=" sexpr ";" =>#
-      """
-        `(ast_lemma ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
-      """;
-  
-    //$ A theorem is a proposition which it is expected could
-    //$ NOT be proved by a good automatic theorem prover,
-    //$ given the axioms.  In the future, we might like to
-    //$ provide a "proof sketch" which a suitable tool could
-    //$ fill in. For the present, you can give a proof as 
-    //$ plain text in a string as a hint to the reader.
-    //$
-    //$ This is the predicative form.
-    private assertion_stmt  := "theorem" sdeclname sfun_arg ":" sexpr proof? ";" =>#
-      """
-        `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
-      """;
-      proof := "proof" sstring;
-  
-    //$ A theorem is a proposition which it is expected could
-    //$ NOT be proved by a good automatic theorem prover,
-    //$ given the axioms.  In the future, we might like to
-    //$ provide a "proof sketch" which a suitable tool could
-    //$ fill in. For the present, you can give a proof as 
-    //$ plain text in a string as a hint to the reader.
-    //$
-    //$ This is the equational form.
-    private assertion_stmt  := "theorem" sdeclname sfun_arg ":" sexpr "=" sexpr proof? ";" =>#
-      """
-        `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
-      """;
-  
-    //$ A reduction is a special kind of proposition of equational
-    //$ form which also directs the compiler to actually replace
-    //$ the LHS expression with the RHS expression when found.
-    //$
-    //$ Reductions allow powerful high level optimisations,
-    //$ such as eliminating two successive list reversals.
-    //$
-    //$ The client must take great care that reductions don't
-    //$ lead to infinite loops. Confluence isn't required but
-    //$ is probably desirable.
-    //$
-    //$ Reductions should be used sparingly because searching
-    //$ for patterns to reduce is applied to every sub-expression
-    //$ of every expression in the whole program, repeatedly
-    //$ after any reduction is applied, and this whole process
-    //$ is done at several different places in the program,
-    //$ to try to effect the reductions. Particularly both
-    //$ before and after inlining, since that can destroy
-    //$ or create candidate patterns.
-  
-    private assertion_stmt  := "reduce" sname "|"? sreductions ";"  =>#
-      """
-        `(ast_reduce ,_sr ,_2 ,_4)
-      """;
-  
-       private sreduce_args := "(" stypeparameter_comma_list ")" =># "_2";
-       private sreduction := stvarlist sreduce_args ":" sexpr "=>" sexpr =># "`(,_1 ,_2 ,_4 ,_6)";
-       private sreductions := sreduction =># "`(,_1)";
-       private sreductions := sreduction "|" sreductions =># "(cons _1 _3)";  
-  }
-  
-  @
-  
+   //$ Assertion statements.
+   //$ See also functions to find pre- and post-conditions.
+   syntax assertions {
+     requires statements;
+   
+     stmt = assertion_stmt;
+   
+     //$ The usual assert statement.
+     //$ Abort the program if the argument expression evaluates to false
+     //$ when control flows through the assert statement.
+     //$ Cannot be switched off!
+     private assertion_stmt := "assert" sexpr ";" =># "`(ast_assert ,_sr ,_2)";
+   
+     //$ Define an axiom with a general predicate.
+     //$ An axiom is a function which is true for all arguments.
+     //$ Axioms are core assertions about invariants which
+     //$ can be used to specify semantics and form the basis
+     //$ of reasoning about semantics which goes beyond
+     //$ structure.
+     private assertion_stmt  := "axiom" sdeclname sfun_arg ":" sexpr ";" =>#
+       """
+         `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
+       """;
+   
+     //$ A variant of an axiom which expresses the semantic
+     //$ equality of two expressions. Do not confuse this
+     //$ with an expresion containing run time equality (==).
+     //$ Semantic equality means that one expression could be
+     //$ replaced by the other without any observable difference
+     //$ in behaviour in any program, this can be asserted even
+     //$ if the type does not provide an equality operator (==).
+     private assertion_stmt  := "axiom" sdeclname sfun_arg ":" sexpr "=" sexpr ";" =>#
+       """
+         `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
+       """;
+   
+     //$ A lemma is a proposition which it is expected could
+     //$ be proved by a good automatic theorem prover,
+     //$ given the axioms. This is the predicate form.
+     private assertion_stmt  := "lemma" sdeclname sfun_arg ":" sexpr ";" =>#
+       """
+         `(ast_lemma ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
+       """;
+   
+     //$ A lemma is a proposition which it is expected could
+     //$ be proved by a good automatic theorem prover,
+     //$ given the axioms. This is the equational form.
+     private assertion_stmt  := "lemma" sdeclname sfun_arg ":" sexpr "=" sexpr ";" =>#
+       """
+         `(ast_lemma ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
+       """;
+   
+     //$ A theorem is a proposition which it is expected could
+     //$ NOT be proved by a good automatic theorem prover,
+     //$ given the axioms.  In the future, we might like to
+     //$ provide a "proof sketch" which a suitable tool could
+     //$ fill in. For the present, you can give a proof as 
+     //$ plain text in a string as a hint to the reader.
+     //$
+     //$ This is the predicative form.
+     private assertion_stmt  := "theorem" sdeclname sfun_arg ":" sexpr proof? ";" =>#
+       """
+         `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
+       """;
+       proof := "proof" sstring;
+   
+     //$ A theorem is a proposition which it is expected could
+     //$ NOT be proved by a good automatic theorem prover,
+     //$ given the axioms.  In the future, we might like to
+     //$ provide a "proof sketch" which a suitable tool could
+     //$ fill in. For the present, you can give a proof as 
+     //$ plain text in a string as a hint to the reader.
+     //$
+     //$ This is the equational form.
+     private assertion_stmt  := "theorem" sdeclname sfun_arg ":" sexpr "=" sexpr proof? ";" =>#
+       """
+         `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
+       """;
+   
+     //$ A reduction is a special kind of proposition of equational
+     //$ form which also directs the compiler to actually replace
+     //$ the LHS expression with the RHS expression when found.
+     //$
+     //$ Reductions allow powerful high level optimisations,
+     //$ such as eliminating two successive list reversals.
+     //$
+     //$ The client must take great care that reductions don't
+     //$ lead to infinite loops. Confluence isn't required but
+     //$ is probably desirable.
+     //$
+     //$ Reductions should be used sparingly because searching
+     //$ for patterns to reduce is applied to every sub-expression
+     //$ of every expression in the whole program, repeatedly
+     //$ after any reduction is applied, and this whole process
+     //$ is done at several different places in the program,
+     //$ to try to effect the reductions. Particularly both
+     //$ before and after inlining, since that can destroy
+     //$ or create candidate patterns.
+   
+     private assertion_stmt  := "reduce" sname "|"? sreductions ";"  =>#
+       """
+         `(ast_reduce ,_sr ,_2 ,_4)
+       """;
+   
+        private sreduce_args := "(" stypeparameter_comma_list ")" =># "_2";
+        private sreduction := stvarlist sreduce_args ":" sexpr "=>" sexpr =># "`(,_1 ,_2 ,_4 ,_6)";
+        private sreductions := sreduction =># "`(,_1)";
+        private sreductions := sreduction "|" sreductions =># "(cons _1 _3)";  
+   }
+   
+   @
+   
 
 Assignments
 -----------
@@ -134,94 +134,94 @@ Defines assignment forms.
 
 .. code-block:: text
 
-  //$ Assignment forms.
-  syntax assignment {
-    requires statements, swapop;
-  
-    //$ Assignment form.
-    sassignexpr := sexpr sassignop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
-  
-    //$ Assignment.
-      sassignop:= "=" =># "'_set";
-  
-    //$ Store at pointer.
-      //sassignop:= "<-" =># "'_pset";
-      sassignop:= "<-" =># "'storeat"; // overloadable now
-  
-    //$ Short form val declaration.
-      sassignop:= ":=" =># "'_init";
-  
-    //$ binary read-modify-write operators.
-    sassignexpr := sexpr srmwop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
-  
-      //$ Increment.
-      srmwop:= "+=" =># "_1";
-      //$ Decrement.
-      srmwop:= "-=" =># "_1";
-      //$ Multiply.
-      srmwop:= "*=" =># "_1";
-      //$ Divide.
-      srmwop:= "/=" =># "_1";
-      //$ C remainder.
-      srmwop:= "%=" =># "_1";
-      //$ Left shift.
-      srmwop:= "<<=" =># "_1";
-      //$ Right shift.
-      srmwop:= ">>=" =># "_1";
-      //$ Bitwise exclusive or.
-      srmwop:= "^=" =># "_1";
-      //$ Bitwise or.
-      srmwop:= "|=" =># "_1";
-      //$ Bitwise and.
-      srmwop:= "&=" =># "_1";
-      //$ Left shift.
-      srmwop:= "<<=" =># "_1";
-      //$ Right shift.
-      srmwop:= ">>=" =># "_1";
-  
-    //$ Swap operator.
-    sassignexpr := sexpr sswapop sexpr =># "`(ast_call ,_sr ,(noi _2) ((ast_ref ,_sr ,_1) (ast_ref ,_sr ,_3)))";
-  
-    //$ Prefix read/modify/write.
-    sassignexpr := spreincrop sexpr =># "`(ast_call ,_sr ,(noi _1) (ast_ref ,_sr ,_2))";
-      //$ Pre-increment.
-      spreincrop:= "++" =># "'pre_incr";
-      //$ Pre-decrement.
-      spreincrop:= "--" =># "'pre_decr";
-  
-    //$ Postfix read/modify/write.
-    sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,(noi _2) (ast_ref ,_sr ,_1))";
-      //$ Post-increment.
-      spostincrop:= "++" =># "'post_incr";
-      //$ Post-decrement.
-      spostincrop:= "--" =># "'post_decr";
-  
-    //$ Multiple initialisation/assignment form.
-    //$
-    //$ def x, (var y, val z) = 1,(2,3);
-    //$
-    //$ allows unpacking a tuple into a pre-existing variable,
-    //$ creating a new variable, and binding a new value,
-    //$ in a single form, with nesting.
-    sassignexpr := "def" slexpr "=" sexpr =># "`(ast_assign ,_sr _set ,_2 ,_4)";
-      slexpr := slexprs =># """ (if (null? (tail _1)) (first _1) `((List ,_1) none)) """;
-      slexprs := stlelement "," slexprs =># "(cons _1 _3)";
-      slexprs := stlelement =># "`(,_1)";
-  
-      slelement := "once" sname =># "`(Once ,_sr ,_2)";
-      slelement := "val" sname =># "`(Val ,_sr ,_2)";
-      slelement := "var" sname =># "`(Var ,_sr ,_2)";
-      slelement := sname =># "`(Name ,_sr ,_1)";
-      slelement := "_" =># "`(Skip ,_sr)";
-      slelement := "(" slexprs ")" =># "`(List ,_2)";
-  
-      stlelement := slelement ":" x[sfactor_pri] =># "`(,_1 (some ,_3))";
-      stlelement := slelement =># "`(,_1 none)";
-  
-  }
-  
-  @
-  
+   //$ Assignment forms.
+   syntax assignment {
+     requires statements, swapop;
+   
+     //$ Assignment form.
+     sassignexpr := sexpr sassignop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
+   
+     //$ Assignment.
+       sassignop:= "=" =># "'_set";
+   
+     //$ Store at pointer.
+       //sassignop:= "<-" =># "'_pset";
+       sassignop:= "<-" =># "'storeat"; // overloadable now
+   
+     //$ Short form val declaration.
+       sassignop:= ":=" =># "'_init";
+   
+     //$ binary read-modify-write operators.
+     sassignexpr := sexpr srmwop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
+   
+       //$ Increment.
+       srmwop:= "+=" =># "_1";
+       //$ Decrement.
+       srmwop:= "-=" =># "_1";
+       //$ Multiply.
+       srmwop:= "*=" =># "_1";
+       //$ Divide.
+       srmwop:= "/=" =># "_1";
+       //$ C remainder.
+       srmwop:= "%=" =># "_1";
+       //$ Left shift.
+       srmwop:= "<<=" =># "_1";
+       //$ Right shift.
+       srmwop:= ">>=" =># "_1";
+       //$ Bitwise exclusive or.
+       srmwop:= "^=" =># "_1";
+       //$ Bitwise or.
+       srmwop:= "|=" =># "_1";
+       //$ Bitwise and.
+       srmwop:= "&=" =># "_1";
+       //$ Left shift.
+       srmwop:= "<<=" =># "_1";
+       //$ Right shift.
+       srmwop:= ">>=" =># "_1";
+   
+     //$ Swap operator.
+     sassignexpr := sexpr sswapop sexpr =># "`(ast_call ,_sr ,(noi _2) ((ast_ref ,_sr ,_1) (ast_ref ,_sr ,_3)))";
+   
+     //$ Prefix read/modify/write.
+     sassignexpr := spreincrop sexpr =># "`(ast_call ,_sr ,(noi _1) (ast_ref ,_sr ,_2))";
+       //$ Pre-increment.
+       spreincrop:= "++" =># "'pre_incr";
+       //$ Pre-decrement.
+       spreincrop:= "--" =># "'pre_decr";
+   
+     //$ Postfix read/modify/write.
+     sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,(noi _2) (ast_ref ,_sr ,_1))";
+       //$ Post-increment.
+       spostincrop:= "++" =># "'post_incr";
+       //$ Post-decrement.
+       spostincrop:= "--" =># "'post_decr";
+   
+     //$ Multiple initialisation/assignment form.
+     //$
+     //$ def x, (var y, val z) = 1,(2,3);
+     //$
+     //$ allows unpacking a tuple into a pre-existing variable,
+     //$ creating a new variable, and binding a new value,
+     //$ in a single form, with nesting.
+     sassignexpr := "def" slexpr "=" sexpr =># "`(ast_assign ,_sr _set ,_2 ,_4)";
+       slexpr := slexprs =># """ (if (null? (tail _1)) (first _1) `((List ,_1) none)) """;
+       slexprs := stlelement "," slexprs =># "(cons _1 _3)";
+       slexprs := stlelement =># "`(,_1)";
+   
+       slelement := "once" sname =># "`(Once ,_sr ,_2)";
+       slelement := "val" sname =># "`(Val ,_sr ,_2)";
+       slelement := "var" sname =># "`(Var ,_sr ,_2)";
+       slelement := sname =># "`(Name ,_sr ,_1)";
+       slelement := "_" =># "`(Skip ,_sr)";
+       slelement := "(" slexprs ")" =># "`(List ,_2)";
+   
+       stlelement := slelement ":" x[sfactor_pri] =># "`(,_1 (some ,_3))";
+       stlelement := slelement =># "`(,_1 none)";
+   
+   }
+   
+   @
+   
 
 Block forms
 -----------
@@ -229,16 +229,16 @@ Block forms
 
 .. code-block:: text
 
-  syntax blocks
-  {
-    stmt = block;
-    block := "do" stmt* "done" =># '`(ast_seq ,_sr ,_2)';
-    block := "begin" stmt* "end" =># '(block _2)';
-    block := "perform" stmt =># '_2';
-  }
-  
-  @
-  
+   syntax blocks
+   {
+     stmt = block;
+     block := "do" stmt* "done" =># '`(ast_seq ,_sr ,_2)';
+     block := "begin" stmt* "end" =># '(block _2)';
+     block := "perform" stmt =># '_2';
+   }
+   
+   @
+   
 
 Bracket Forms
 -------------
@@ -246,46 +246,46 @@ Bracket Forms
 
 .. code-block:: text
 
-  syntax brackets 
-  {
-    //$ Array expression (deprecated).
-    satom := "[|" sexpr "|]" =># "`(ast_arrayof ,_sr ,(mkl _2))";
-  
-    //$ Short form anonymous function closure.
-    satom := "{" sexpr "}" =># "(lazy `((ast_fun_return ,_sr ,_2)))";
-  
-    //$ Grouping.
-    satom := "(" sexpr ")" =># "_2";
-    satom := "\(" sexpr "\)" =># "_2";
-    satom := "\[" sexpr "\]" =># "_2";
-    satom := "\{" sexpr "\}" =># "_2";
-  
-    //$ floor and ceiling
-    satom := "\lceil" sexpr "\rceil" =># "`(ast_apply ,_sr (,(noi 'ceil) (,_2)))";
-    satom := "\lfloor" sexpr "\rfloor" =># "`(ast_apply ,_sr (,(noi 'floor) (,_2)))";
-  
-    //$ absolute value
-    satom := "\lvert" sexpr "\rvert" =># "`(ast_apply ,_sr (,(noi 'abs) (,_2)))";
-    satom := "\left" "|" sexpr "\right" "|" =># "`(ast_apply ,_sr (,(noi 'abs) (,_3)))";
-    satom := "\left" "\vert" sexpr "\right" "\vert" =># "`(ast_apply ,_sr (,(noi 'abs) (,_3)))";
-  
-    //$ norm or length
-    satom := "\lVert" sexpr "\rVert" =># "`(ast_apply ,_sr (,(noi 'len) (,_2)))";
-    satom := "\left" "\Vert" sexpr "\right" "\Vert" =># "`(ast_apply ,_sr (,(noi 'len) (,_3)))";
-  
-    // mediating morphism of a product <f,g>
-    satom := "\langle" sexpr "\rangle" =># "`(ast_apply ,_sr (,(noi 'lrangle) (,_2)))";
-    satom := "\left" "\langle" sexpr "\right" "\rangle" =># "`(ast_apply ,_sr (,(noi 'lrangle) (,_3)))";
-  
-    // mediating morphism of a sum [f,g]
-    satom := "\lbrack" sexpr "\rbrack" =># "`(ast_apply ,_sr (,(noi 'lrbrack) (,_2)))";
-    satom := "\left" "\lbrack" sexpr "\right" "\rbrack" =># "`(ast_apply ,_sr (,(noi 'lrbrack) (,_3)))";
+   syntax brackets 
+   {
+     //$ Array expression (deprecated).
+     satom := "[|" sexpr "|]" =># "`(ast_arrayof ,_sr ,(mkl _2))";
    
+     //$ Short form anonymous function closure.
+     satom := "{" sexpr "}" =># "(lazy `((ast_fun_return ,_sr ,_2)))";
    
-  }
-  
-  @
-  
+     //$ Grouping.
+     satom := "(" sexpr ")" =># "_2";
+     satom := "\(" sexpr "\)" =># "_2";
+     satom := "\[" sexpr "\]" =># "_2";
+     satom := "\{" sexpr "\}" =># "_2";
+   
+     //$ floor and ceiling
+     satom := "\lceil" sexpr "\rceil" =># "`(ast_apply ,_sr (,(noi 'ceil) (,_2)))";
+     satom := "\lfloor" sexpr "\rfloor" =># "`(ast_apply ,_sr (,(noi 'floor) (,_2)))";
+   
+     //$ absolute value
+     satom := "\lvert" sexpr "\rvert" =># "`(ast_apply ,_sr (,(noi 'abs) (,_2)))";
+     satom := "\left" "|" sexpr "\right" "|" =># "`(ast_apply ,_sr (,(noi 'abs) (,_3)))";
+     satom := "\left" "\vert" sexpr "\right" "\vert" =># "`(ast_apply ,_sr (,(noi 'abs) (,_3)))";
+   
+     //$ norm or length
+     satom := "\lVert" sexpr "\rVert" =># "`(ast_apply ,_sr (,(noi 'len) (,_2)))";
+     satom := "\left" "\Vert" sexpr "\right" "\Vert" =># "`(ast_apply ,_sr (,(noi 'len) (,_3)))";
+   
+     // mediating morphism of a product <f,g>
+     satom := "\langle" sexpr "\rangle" =># "`(ast_apply ,_sr (,(noi 'lrangle) (,_2)))";
+     satom := "\left" "\langle" sexpr "\right" "\rangle" =># "`(ast_apply ,_sr (,(noi 'lrangle) (,_3)))";
+   
+     // mediating morphism of a sum [f,g]
+     satom := "\lbrack" sexpr "\rbrack" =># "`(ast_apply ,_sr (,(noi 'lrbrack) (,_2)))";
+     satom := "\left" "\lbrack" sexpr "\right" "\rbrack" =># "`(ast_apply ,_sr (,(noi 'lrbrack) (,_3)))";
+    
+    
+   }
+   
+   @
+   
 
 C binding technology
 --------------------
@@ -293,418 +293,418 @@ C binding technology
 
 .. code-block:: text
 
-  //$ Technology for binding to C.
-  //$ The forms in this DSSL are used to lift types and functions 
-  //$ from C into Felix, and, export Felix types and functions
-  //$ back into C.
-  
-  syntax cbind {
-    requires expressions, statements, requirements, list;
-  
-    stmt = cbind_stmt;
-  
-    //$ Export a Felix function into C.
-    //$ The function is exported by generating a C wrapper function
-    //$ which has external linkage and the link name
-    //$ given in the "as" phrase.
-    //$ The function must be identified by a suffixed name
-    //$ to choose between overloads. Example:
-    //$
-    //$ export fun myfun of (int) as "MyFun";
-    //$
-    private cbind_stmt := "export" "fun" ssuffixed_name "as" sstring ";" =>#
-      "`(ast_export_fun ,_sr ,_3 ,_5)";
-  
-    //$ Export a Felix function with C type into C.
-    private cbind_stmt := "export" "cfun" ssuffixed_name "as" sstring ";" =>#
-      "`(ast_export_cfun ,_sr ,_3 ,_5)";
-  
-    //$ Export a Felix procedure into C.
-    private cbind_stmt := "export" "proc" ssuffixed_name "as" sstring ";" =>#
-      "`(ast_export_fun ,_sr ,_3 ,_5)";
-  
-    //$ Export a Felix procedure with C type into C.
-    private cbind_stmt := "export" "cproc" ssuffixed_name "as" sstring ";" =>#
-      "`(ast_export_cfun ,_sr ,_3 ,_5)";
-  
-    //$ Export a Felix struct into C.
-    private cbind_stmt := "export" "struct" ssuffixed_name "as" sstring ";" =>#
-      "`(ast_export_struct ,_sr ,_3 ,_5)";
-  
-    //$ Export a Felix union into C.
-    private cbind_stmt := "export" "union" ssuffixed_name "as" sstring ";" =>#
-      "`(ast_export_union,_sr ,_3 ,_5)";
-  
-    //$ Export a type into C. 
-    //$ This is done using a typedef that defines the alias
-    //$ specified in the "as" phase to be the type expression.
-    private cbind_stmt := "export" "type" "(" sexpr ")" "as" sstring ";" =>#
-      "`(ast_export_type ,_sr ,_4 ,_7)";
-  
-    //$ The optional precedence phase specifies
-    //$ the C++ precedence of an expression, to allow
-    //$ the Felix compiler to minimise generated parentheses.
-    //$
-    //$ The precedence must be one of:
-    //$
-    //$ atom, primary, postfix, unary, cast, pm, mult, add, shift, rel, eq, 
-    //$ band, bxor, bor, and, xor, or, cond, assign, comma
-    //$ 
-    sopt_prec := "is" sname =># "_2"; 
-    sopt_prec := sepsilon =># '(quote "")';
-  
-    //$ Define a function by a C expression.
-    //$ If the optional C string is elided, the function
-    //$ is taken to be bound to a C function of the same name.
-    //$ For example:
-    //$
-    //$ fun sin : double -> double;
-    //$
-    //$ is equivalent to
-    //$
-    //$ fun sin : double -> double = "sin($1)";
-    //$
-    private cbind_stmt := sadjectives sfun_kind sdeclname fun_return_type sopt_cstring sopt_prec srequires_clause ";" =>#
-      """
-        (let* (
-          (name (first _3))
-          (vs (second _3))
-          (kind (cal_funkind _1 _2))
-          (t (first (first _4)))
-          (traint (second (first _4)))
-          (prec _6)
-          (reqs (if (memv 'Virtual _1)
-            `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
-            _7)
-          )
-          (ct
-            (if (eq? 'none _5)
-              (if (memv 'Virtual _1)
-                'Virtual
-                 `(StrTemplate ,(string-append "(#0) ::" name "($a)"))
-               )
-               (second _5))
-          )
-        )
-        (let (
-          (reqs
-            (if (eq? 'Generator kind)
-              `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
-              reqs))
-        )
-        (if (eq? 'ast_arrow (first t))
-          (let (
-            (argt (caadr t))
-            (ret (cadadr t)))
-          `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
-          )
-          (giveup))))
-      """;
-  
-    //$ Define a constructor function by a C expression.
-    stmt := "ctor" stvarlist squalified_name ":" stypeexpr sopt_cstring sopt_prec srequires_clause ";" =>#
-      """
-      (let*
-        (
-          (name (string-append "_ctor_" (base_of_qualified_name _3)))
-          (vs _2)
-          (ret _3)
-          (argt _5)
-          (ct
-            (if (eq? 'none _6)
-              `(StrTemplate ,(string-append "::" (base_of_qualified_name _3) "($a)"))
-              (second _6)
-            )
-          )
-          (prec _7)
-          (reqs _8)
-        )
-        `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
-      )
-      """;
-    stmt := "supertype" stvarlist squalified_name ":" stypeexpr sopt_cstring sopt_prec srequires_clause ";" =>#
-      """
-      (let*
-        (
-          (name (string-append "_ctor_" (base_of_qualified_name _3)))
-          (vs _2)
-          (ret _3)
-          (argt _5)
-          (ct
-            (if (eq? 'none _6)
-              `(StrTemplate ,(string-append "::" (base_of_qualified_name _3) "($a)"))
-              (second _6)
-            )
-          )
-          (prec _7)
-          (xreqs _8)
-          (reqs `(rreq_and (rreq_atom (Subtype_req)) ,xreqs))
-        )
-        `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
-      )
-      """;
-    cbind_stmt:= "virtual" "type" sname ";" =># 
-      "`(ast_virtual_type ,_sr ,_3)"
-    ;
-  
-    //$ Define a type by a C type expression.
-    private cbind_stmt:= stype_qual* "type" sdeclname "=" scode_spec srequires_clause ";" =>#
-      """
-      `(ast_abs_decl ,_sr ,(first _3) ,(second _3) ,_1 ,_5 ,_6)
-      """;
-  
-    //$ Define a special kind of procedure which can be used
-    //$ as a C callback.
-    private cbind_stmt := "callback" "proc" sname ":" stypeexpr srequires_clause ";" =>#
-      """
-      `(ast_callback_decl ,_sr ,_3 ,(mkl2 _5) (ast_void ,_sr) ,_6)
-      """;
-  
-    //$ Define a special kind of function which can be used
-    //$ as a C callback.
-    private cbind_stmt := "callback" "fun" sname ":" stypeexpr srequires_clause ";" =>#
-      """
-      (if (eq? 'ast_arrow (first _5))
-        (let*
-          (
-            (ft (second _5))
-            (dom (first ft))
-            (cod (second ft))
-            (args (mkl2 dom))
-          )
-        `(ast_callback_decl ,_sr ,_3 ,args ,cod ,_6)
-        )
-        'ERROR
-      )
-      """;
-  
-    //$ The type qualifier incomplete is used to
-    //$ prevent allocation of values of this type.
-    //$ Pointers can still be formed.
-    stype_qual := "incomplete" =># "'Incomplete";
-    stype_qual := "uncopyable" =># "'Uncopyable";
-  
-    //$ The type qualified pod is used to specify
-    //$ that a type has a trivial destructor.
-    //$ This allows the garbage collector to omit
-    //$ a call to the destructor, which is the default
-    //$ finaliser.
-    stype_qual := "pod" =># "'Pod";
-  
-    //$ Specify a C types is a garbage collectable
-    //$ pointer type, so it will be tracked by the collector.
-    stype_qual := "_gc_pointer" =># "'GC_pointer";
-  
-    //$ Specify the shape of the type should
-    //$ be taken as the shape of the given type expression.
-    //$ This is required when the type is immobile
-    //$ and represented by a pointer.
-    //$
-    //$ For example, the C++ RE2 type of Google's RE2 package
-    //$ cannot be used directly as a type because it is not
-    //$ copy assignable. Instead we have to use a pointer.
-    //$
-    //$ Here is the way this is done:
-    //$
-    //$ private type RE2_ = "::re2::RE2";
-    //$ _gc_pointer _gc_type RE2_ type RE2 = "::re2::RE2*";
-    //$ gen _ctor_RE2 : string -> RE2 = "new (*PTF gcp, @0, false) RE2($1)";
-    //$
-    //$ We bind the private type RE2_ to the C type RE2.
-    //$ It's private so the public cannot allocate it.
-    //$
-    //$ Instead we use the type RE2 which is a pointer, and thus
-    //$ copyable. because it is a pointer we have to specify
-    //$ _gc_pointer.
-    //$ 
-    //$ Now, the constructor _ctor_RE2 takes a string and returns
-    //$ a Felix RE2 (C type RE2*) which is a pointer to a heap allocated 
-    //$ object of type _RE2 (C type RE2).
-    //$ 
-    //$ The constructor does the allocation, so it must provde the
-    //$ shape of the RE2_ object, and this is what the specification
-    //$ _gc_type RE2_ does. This allows the notation @0 to refer to
-    //$ the shape of RE2_ instead of RE2 which it would normally.
-  
-    stype_qual := "_gc_type" stypeexpr =># "`(Raw_needs_shape ,_2)";
-  
-    //$ Define a set of types as C types with the same names.
-    private cbind_stmt:= stype_qual* "ctypes" snames srequires_clause ";" =>#
-      "`(ast_ctypes ,_sr ,_3 ,_1 ,_4)";
-  
-    //$ Embed a C statement into Felix code with arguments.
-    private cbind_stmt:= "cstmt" scode_spec sexpr? ";" =># "`(ast_code ,_sr ,_2 ,_3)";
-  
-  
-    //$ Embed a C statement which does not return normally
-    //$ into Felix code. For example:
-    //$
-    //$ noreturn cstmt "exit(0);";
-    //$
-    private cbind_stmt:= "noreturn" "cstmt" scode_spec sexpr? ";" =># "`(ast_noreturn_code ,_sr ,_3 ,_4)";
-  
-    //$ Embed a C expression into Felix.
-    //$ This required giving the Felix type of the expression. 
-    //$ The expression is contained in the string. For example:
-    //$
-    //$ code [double] "sin(0.7)"
-    //$
-    satom := "cexpr" "[" stypeexpr "]" scode_spec sexpr? "endcexpr" =># "`(ast_expr ,_sr ,_5 ,_3 ,_6)";
-  
-    //$ A short form embedding for variables.
-    //$
-    //$ code [double] M_PI
-    //$
-    satom := "cvar" "[" stypeexpr "]" sname =># "`(ast_expr ,_sr (Str ,_5) ,_3 ())";
-  
-    //$ Bind a C expression to a name.
-    //$ Note that despite the binding being called "const",
-    //$ the C expression does not have to be constant.
-    //$ For example:
-    //$
-    //$ const rand : int = "rand()";
-    //$
-    // note: also needed by typeclasses atm for virtual consts
-    private cbind_stmt := sadjectives "const" sdeclname ":" stypeexpr "=" scode_spec srequires_clause ";" =>#
-      """
-        (let ((reqs (if (memv 'Virtual _1)
-          `(rreq_and (rreq_atom (Property_req "virtual")) ,_8)
-          _8)))
-        `(ast_const_decl ,_sr ,(first _3) ,(second _3) ,_5 ,_7 ,reqs)
-        )
-      """;
-  
-    //$ Short form of const that declares a variable
-    //$ bound to the same name in C.
-    //$ Example:
-    //$
-    //$ const RAND_MAX: long;
-    //$
-  /*
-    private cbind_stmt := sadjectives "const" sdeclname ":" stypeexpr srequires_clause ";" =>#
-      """
-        (let ((reqs (if (memv 'Virtual _1)
-          `(rreq_and (rreq_atom (Property_req "virtual")) ,_6)
-          _6)))
-        `(ast_const_decl ,_sr ,(first _3) ,(second _3) ,_5 (Str ,(first _3)) ,reqs)
-        )
-      """;
-  */
-  
-  
+   //$ Technology for binding to C.
+   //$ The forms in this DSSL are used to lift types and functions 
+   //$ from C into Felix, and, export Felix types and functions
+   //$ back into C.
    
-    //$ Short form of const that declares a list of variables
-    //$ of the same type to be bound to their C names.
-    //$ Useful for lifting enumerations. Example:
-    //$
-    //$ const a,b,c : int;
-    //$
-    private cbind_stmt := sadjectives "const" sdeclnames ":" stypeexpr srequires_clause ";" =>#
-      """
-        (let ((reqs (if (memv 'Virtual _1)
-          `(rreq_and (rreq_atom (Property_req "virtual")) ,_6)
-          _6)))
-        (begin 
-           (define (constdef sym) 
-            `(ast_const_decl ,_sr ,(first sym) ,(second sym) ,_5 (Str ,(first sym)) ,reqs))
-           `(ast_seq ,_sr ,(map constdef _3)) 
-        )
-      )
-      """;
-  
-    //$ Special form for lifting C enumerations.
-    //$ Specifies the type name and enumeration constants
-    //$ in a single statement. Names bound to the same names in C.
-    //$
-    //$ This form also defined equality and inequality operators
-    //$ for the type automatically, as an instance of class Eq.
-    private cbind_stmt := "cenum" sname "=" snames srequires_clause ";" =>#
-      """
-        (begin 
-           (define (constdef sym) 
-            `(ast_const_decl ,_sr ,sym ,dfltvs ,(nos _2) (Str ,sym) ,_5))
-             (let* 
-               (
-                 (tdec `(ast_abs_decl ,_sr ,_2 ,dfltvs (Pod) (Str ,_2) ,_5))
-                 (argt `(ast_product ,_sr (,(nos _2) ,(nos _2))))
-                 (eqdef `(ast_fun_decl ,_sr "==" ,dfltvs ,(mkl2 argt) ,(nos "bool") (StrTemplate "$1==$2") rreq_true ""))
-                 (instdef `(ast_instance ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2))) (,eqdef)))
-                 (inherit `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2)))))
-               )
-               `(ast_seq ,_sr ,(append `(,tdec ,instdef ,inherit) (map constdef _4)))
+   syntax cbind {
+     requires expressions, statements, requirements, list;
+   
+     stmt = cbind_stmt;
+   
+     //$ Export a Felix function into C.
+     //$ The function is exported by generating a C wrapper function
+     //$ which has external linkage and the link name
+     //$ given in the "as" phrase.
+     //$ The function must be identified by a suffixed name
+     //$ to choose between overloads. Example:
+     //$
+     //$ export fun myfun of (int) as "MyFun";
+     //$
+     private cbind_stmt := "export" "fun" ssuffixed_name "as" sstring ";" =>#
+       "`(ast_export_fun ,_sr ,_3 ,_5)";
+   
+     //$ Export a Felix function with C type into C.
+     private cbind_stmt := "export" "cfun" ssuffixed_name "as" sstring ";" =>#
+       "`(ast_export_cfun ,_sr ,_3 ,_5)";
+   
+     //$ Export a Felix procedure into C.
+     private cbind_stmt := "export" "proc" ssuffixed_name "as" sstring ";" =>#
+       "`(ast_export_fun ,_sr ,_3 ,_5)";
+   
+     //$ Export a Felix procedure with C type into C.
+     private cbind_stmt := "export" "cproc" ssuffixed_name "as" sstring ";" =>#
+       "`(ast_export_cfun ,_sr ,_3 ,_5)";
+   
+     //$ Export a Felix struct into C.
+     private cbind_stmt := "export" "struct" ssuffixed_name "as" sstring ";" =>#
+       "`(ast_export_struct ,_sr ,_3 ,_5)";
+   
+     //$ Export a Felix union into C.
+     private cbind_stmt := "export" "union" ssuffixed_name "as" sstring ";" =>#
+       "`(ast_export_union,_sr ,_3 ,_5)";
+   
+     //$ Export a type into C. 
+     //$ This is done using a typedef that defines the alias
+     //$ specified in the "as" phase to be the type expression.
+     private cbind_stmt := "export" "type" "(" sexpr ")" "as" sstring ";" =>#
+       "`(ast_export_type ,_sr ,_4 ,_7)";
+   
+     //$ The optional precedence phase specifies
+     //$ the C++ precedence of an expression, to allow
+     //$ the Felix compiler to minimise generated parentheses.
+     //$
+     //$ The precedence must be one of:
+     //$
+     //$ atom, primary, postfix, unary, cast, pm, mult, add, shift, rel, eq, 
+     //$ band, bxor, bor, and, xor, or, cond, assign, comma
+     //$ 
+     sopt_prec := "is" sname =># "_2"; 
+     sopt_prec := sepsilon =># '(quote "")';
+   
+     //$ Define a function by a C expression.
+     //$ If the optional C string is elided, the function
+     //$ is taken to be bound to a C function of the same name.
+     //$ For example:
+     //$
+     //$ fun sin : double -> double;
+     //$
+     //$ is equivalent to
+     //$
+     //$ fun sin : double -> double = "sin($1)";
+     //$
+     private cbind_stmt := sadjectives sfun_kind sdeclname fun_return_type sopt_cstring sopt_prec srequires_clause ";" =>#
+       """
+         (let* (
+           (name (first _3))
+           (vs (second _3))
+           (kind (cal_funkind _1 _2))
+           (t (first (first _4)))
+           (traint (second (first _4)))
+           (prec _6)
+           (reqs (if (memv 'Virtual _1)
+             `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
+             _7)
+           )
+           (ct
+             (if (eq? 'none _5)
+               (if (memv 'Virtual _1)
+                 'Virtual
+                  `(StrTemplate ,(string-append "(#0) ::" name "($a)"))
+                )
+                (second _5))
+           )
+         )
+         (let (
+           (reqs
+             (if (eq? 'Generator kind)
+               `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
+               reqs))
+         )
+         (if (eq? 'ast_arrow (first t))
+           (let (
+             (argt (caadr t))
+             (ret (cadadr t)))
+           `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
+           )
+           (giveup))))
+       """;
+   
+     //$ Define a constructor function by a C expression.
+     stmt := "ctor" stvarlist squalified_name ":" stypeexpr sopt_cstring sopt_prec srequires_clause ";" =>#
+       """
+       (let*
+         (
+           (name (string-append "_ctor_" (base_of_qualified_name _3)))
+           (vs _2)
+           (ret _3)
+           (argt _5)
+           (ct
+             (if (eq? 'none _6)
+               `(StrTemplate ,(string-append "::" (base_of_qualified_name _3) "($a)"))
+               (second _6)
              )
-        )
-      """;
-  
-    // Very special form for binding C enumeration used as bit flags.
-    //$ Specifies the type name and enumeration constants
-    //$ in a single statement. Names bound to the same names in C.
-    //$
-    //$ This form automatically defines equality as an instance of class Eq.
-    //$ Furthermore it defines all the standard bitwise operators,
-    //$ as an instance of class Bits.
-    private cbind_stmt := "cflags" sname "=" snames srequires_clause ";" =>#
-      """
-        (begin 
-           (define (constdef sym) 
-            `(ast_const_decl ,_sr ,sym ,dfltvs ,(nos _2) (Str ,sym) ,_5))
-             (let* 
-               (
-                 (tdec `(ast_abs_decl ,_sr ,_2 ,dfltvs (Pod) (Str ,_2) ,_5))
-                 (argt `(ast_product ,_sr (,(nos _2) ,(nos _2))))
-                 (eqdef `(ast_fun_decl ,_sr "==" ,dfltvs ,(mkl2 argt) ,(nos "bool") (StrTemplate "$1==$2") rreq_true ""))
-                 (instdef `(ast_instance ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2))) (,eqdef)))
-                 (inherit `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2)))))
-                 (inherit2 `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Bits" (,(nos _2)))))
-               )
-               `(ast_seq ,_sr ,(append `(,tdec ,instdef ,inherit ,inherit2) (map constdef _4)))
+           )
+           (prec _7)
+           (reqs _8)
+         )
+         `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
+       )
+       """;
+     stmt := "supertype" stvarlist squalified_name ":" stypeexpr sopt_cstring sopt_prec srequires_clause ";" =>#
+       """
+       (let*
+         (
+           (name (string-append "_ctor_" (base_of_qualified_name _3)))
+           (vs _2)
+           (ret _3)
+           (argt _5)
+           (ct
+             (if (eq? 'none _6)
+               `(StrTemplate ,(string-append "::" (base_of_qualified_name _3) "($a)"))
+               (second _6)
              )
-        )
-      """;
-  
-  
-    //$ Define a Felix procedures as a binding to a 
-    //$ C statement. Only one statement is allowed.
-    //$ But you can use a block of course!
-    //$
-    //$ If the option C text is elided, the procedure
-    //$ is taken to be bound to a C function returning void
-    //$ of the same name.
-    private cbind_stmt := sadjectives sproc_kind sdeclname ":" stypeexpr sopt_cstring srequires_clause ";" =>#
-      """
-        (let (
-          (name (first _3))
-          (vs (second _3))
-          (kind (cal_funkind _1 _2))
-          (t _5)
-          (reqs (if (memv 'Virtual _1)
-            `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
-            _7)
-          )
-          (ct
-            (if (eq? 'none _6)
-              (if (memv 'Virtual _1)
-                'Virtual
-                 `(StrTemplate ,(string-append "::" (first _3) "($a);"))
-               )
-               (second _6))
-          )
-        )
-        (let (
-          (reqs
-            (if (eq? 'Generator kind)
-              `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
-              reqs))
-        )
-        (let (
-          (argt t)
-          (ret `(ast_void ,_sr)))
-          `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs "")
-          )))
-      """;
-  }
-  @
-  
+           )
+           (prec _7)
+           (xreqs _8)
+           (reqs `(rreq_and (rreq_atom (Subtype_req)) ,xreqs))
+         )
+         `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
+       )
+       """;
+     cbind_stmt:= "virtual" "type" sname ";" =># 
+       "`(ast_virtual_type ,_sr ,_3)"
+     ;
+   
+     //$ Define a type by a C type expression.
+     private cbind_stmt:= stype_qual* "type" sdeclname "=" scode_spec srequires_clause ";" =>#
+       """
+       `(ast_abs_decl ,_sr ,(first _3) ,(second _3) ,_1 ,_5 ,_6)
+       """;
+   
+     //$ Define a special kind of procedure which can be used
+     //$ as a C callback.
+     private cbind_stmt := "callback" "proc" sname ":" stypeexpr srequires_clause ";" =>#
+       """
+       `(ast_callback_decl ,_sr ,_3 ,(mkl2 _5) (ast_void ,_sr) ,_6)
+       """;
+   
+     //$ Define a special kind of function which can be used
+     //$ as a C callback.
+     private cbind_stmt := "callback" "fun" sname ":" stypeexpr srequires_clause ";" =>#
+       """
+       (if (eq? 'ast_arrow (first _5))
+         (let*
+           (
+             (ft (second _5))
+             (dom (first ft))
+             (cod (second ft))
+             (args (mkl2 dom))
+           )
+         `(ast_callback_decl ,_sr ,_3 ,args ,cod ,_6)
+         )
+         'ERROR
+       )
+       """;
+   
+     //$ The type qualifier incomplete is used to
+     //$ prevent allocation of values of this type.
+     //$ Pointers can still be formed.
+     stype_qual := "incomplete" =># "'Incomplete";
+     stype_qual := "uncopyable" =># "'Uncopyable";
+   
+     //$ The type qualified pod is used to specify
+     //$ that a type has a trivial destructor.
+     //$ This allows the garbage collector to omit
+     //$ a call to the destructor, which is the default
+     //$ finaliser.
+     stype_qual := "pod" =># "'Pod";
+   
+     //$ Specify a C types is a garbage collectable
+     //$ pointer type, so it will be tracked by the collector.
+     stype_qual := "_gc_pointer" =># "'GC_pointer";
+   
+     //$ Specify the shape of the type should
+     //$ be taken as the shape of the given type expression.
+     //$ This is required when the type is immobile
+     //$ and represented by a pointer.
+     //$
+     //$ For example, the C++ RE2 type of Google's RE2 package
+     //$ cannot be used directly as a type because it is not
+     //$ copy assignable. Instead we have to use a pointer.
+     //$
+     //$ Here is the way this is done:
+     //$
+     //$ private type RE2_ = "::re2::RE2";
+     //$ _gc_pointer _gc_type RE2_ type RE2 = "::re2::RE2*";
+     //$ gen _ctor_RE2 : string -> RE2 = "new (*PTF gcp, @0, false) RE2($1)";
+     //$
+     //$ We bind the private type RE2_ to the C type RE2.
+     //$ It's private so the public cannot allocate it.
+     //$
+     //$ Instead we use the type RE2 which is a pointer, and thus
+     //$ copyable. because it is a pointer we have to specify
+     //$ _gc_pointer.
+     //$ 
+     //$ Now, the constructor _ctor_RE2 takes a string and returns
+     //$ a Felix RE2 (C type RE2*) which is a pointer to a heap allocated 
+     //$ object of type _RE2 (C type RE2).
+     //$ 
+     //$ The constructor does the allocation, so it must provde the
+     //$ shape of the RE2_ object, and this is what the specification
+     //$ _gc_type RE2_ does. This allows the notation @0 to refer to
+     //$ the shape of RE2_ instead of RE2 which it would normally.
+   
+     stype_qual := "_gc_type" stypeexpr =># "`(Raw_needs_shape ,_2)";
+   
+     //$ Define a set of types as C types with the same names.
+     private cbind_stmt:= stype_qual* "ctypes" snames srequires_clause ";" =>#
+       "`(ast_ctypes ,_sr ,_3 ,_1 ,_4)";
+   
+     //$ Embed a C statement into Felix code with arguments.
+     private cbind_stmt:= "cstmt" scode_spec sexpr? ";" =># "`(ast_code ,_sr ,_2 ,_3)";
+   
+   
+     //$ Embed a C statement which does not return normally
+     //$ into Felix code. For example:
+     //$
+     //$ noreturn cstmt "exit(0);";
+     //$
+     private cbind_stmt:= "noreturn" "cstmt" scode_spec sexpr? ";" =># "`(ast_noreturn_code ,_sr ,_3 ,_4)";
+   
+     //$ Embed a C expression into Felix.
+     //$ This required giving the Felix type of the expression. 
+     //$ The expression is contained in the string. For example:
+     //$
+     //$ code [double] "sin(0.7)"
+     //$
+     satom := "cexpr" "[" stypeexpr "]" scode_spec sexpr? "endcexpr" =># "`(ast_expr ,_sr ,_5 ,_3 ,_6)";
+   
+     //$ A short form embedding for variables.
+     //$
+     //$ code [double] M_PI
+     //$
+     satom := "cvar" "[" stypeexpr "]" sname =># "`(ast_expr ,_sr (Str ,_5) ,_3 ())";
+   
+     //$ Bind a C expression to a name.
+     //$ Note that despite the binding being called "const",
+     //$ the C expression does not have to be constant.
+     //$ For example:
+     //$
+     //$ const rand : int = "rand()";
+     //$
+     // note: also needed by typeclasses atm for virtual consts
+     private cbind_stmt := sadjectives "const" sdeclname ":" stypeexpr "=" scode_spec srequires_clause ";" =>#
+       """
+         (let ((reqs (if (memv 'Virtual _1)
+           `(rreq_and (rreq_atom (Property_req "virtual")) ,_8)
+           _8)))
+         `(ast_const_decl ,_sr ,(first _3) ,(second _3) ,_5 ,_7 ,reqs)
+         )
+       """;
+   
+     //$ Short form of const that declares a variable
+     //$ bound to the same name in C.
+     //$ Example:
+     //$
+     //$ const RAND_MAX: long;
+     //$
+   /*
+     private cbind_stmt := sadjectives "const" sdeclname ":" stypeexpr srequires_clause ";" =>#
+       """
+         (let ((reqs (if (memv 'Virtual _1)
+           `(rreq_and (rreq_atom (Property_req "virtual")) ,_6)
+           _6)))
+         `(ast_const_decl ,_sr ,(first _3) ,(second _3) ,_5 (Str ,(first _3)) ,reqs)
+         )
+       """;
+   */
+   
+   
+    
+     //$ Short form of const that declares a list of variables
+     //$ of the same type to be bound to their C names.
+     //$ Useful for lifting enumerations. Example:
+     //$
+     //$ const a,b,c : int;
+     //$
+     private cbind_stmt := sadjectives "const" sdeclnames ":" stypeexpr srequires_clause ";" =>#
+       """
+         (let ((reqs (if (memv 'Virtual _1)
+           `(rreq_and (rreq_atom (Property_req "virtual")) ,_6)
+           _6)))
+         (begin 
+            (define (constdef sym) 
+             `(ast_const_decl ,_sr ,(first sym) ,(second sym) ,_5 (Str ,(first sym)) ,reqs))
+            `(ast_seq ,_sr ,(map constdef _3)) 
+         )
+       )
+       """;
+   
+     //$ Special form for lifting C enumerations.
+     //$ Specifies the type name and enumeration constants
+     //$ in a single statement. Names bound to the same names in C.
+     //$
+     //$ This form also defined equality and inequality operators
+     //$ for the type automatically, as an instance of class Eq.
+     private cbind_stmt := "cenum" sname "=" snames srequires_clause ";" =>#
+       """
+         (begin 
+            (define (constdef sym) 
+             `(ast_const_decl ,_sr ,sym ,dfltvs ,(nos _2) (Str ,sym) ,_5))
+              (let* 
+                (
+                  (tdec `(ast_abs_decl ,_sr ,_2 ,dfltvs (Pod) (Str ,_2) ,_5))
+                  (argt `(ast_product ,_sr (,(nos _2) ,(nos _2))))
+                  (eqdef `(ast_fun_decl ,_sr "==" ,dfltvs ,(mkl2 argt) ,(nos "bool") (StrTemplate "$1==$2") rreq_true ""))
+                  (instdef `(ast_instance ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2))) (,eqdef)))
+                  (inherit `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2)))))
+                )
+                `(ast_seq ,_sr ,(append `(,tdec ,instdef ,inherit) (map constdef _4)))
+              )
+         )
+       """;
+   
+     // Very special form for binding C enumeration used as bit flags.
+     //$ Specifies the type name and enumeration constants
+     //$ in a single statement. Names bound to the same names in C.
+     //$
+     //$ This form automatically defines equality as an instance of class Eq.
+     //$ Furthermore it defines all the standard bitwise operators,
+     //$ as an instance of class Bits.
+     private cbind_stmt := "cflags" sname "=" snames srequires_clause ";" =>#
+       """
+         (begin 
+            (define (constdef sym) 
+             `(ast_const_decl ,_sr ,sym ,dfltvs ,(nos _2) (Str ,sym) ,_5))
+              (let* 
+                (
+                  (tdec `(ast_abs_decl ,_sr ,_2 ,dfltvs (Pod) (Str ,_2) ,_5))
+                  (argt `(ast_product ,_sr (,(nos _2) ,(nos _2))))
+                  (eqdef `(ast_fun_decl ,_sr "==" ,dfltvs ,(mkl2 argt) ,(nos "bool") (StrTemplate "$1==$2") rreq_true ""))
+                  (instdef `(ast_instance ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2))) (,eqdef)))
+                  (inherit `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2)))))
+                  (inherit2 `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Bits" (,(nos _2)))))
+                )
+                `(ast_seq ,_sr ,(append `(,tdec ,instdef ,inherit ,inherit2) (map constdef _4)))
+              )
+         )
+       """;
+   
+   
+     //$ Define a Felix procedures as a binding to a 
+     //$ C statement. Only one statement is allowed.
+     //$ But you can use a block of course!
+     //$
+     //$ If the option C text is elided, the procedure
+     //$ is taken to be bound to a C function returning void
+     //$ of the same name.
+     private cbind_stmt := sadjectives sproc_kind sdeclname ":" stypeexpr sopt_cstring srequires_clause ";" =>#
+       """
+         (let (
+           (name (first _3))
+           (vs (second _3))
+           (kind (cal_funkind _1 _2))
+           (t _5)
+           (reqs (if (memv 'Virtual _1)
+             `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
+             _7)
+           )
+           (ct
+             (if (eq? 'none _6)
+               (if (memv 'Virtual _1)
+                 'Virtual
+                  `(StrTemplate ,(string-append "::" (first _3) "($a);"))
+                )
+                (second _6))
+           )
+         )
+         (let (
+           (reqs
+             (if (eq? 'Generator kind)
+               `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
+               reqs))
+         )
+         (let (
+           (argt t)
+           (ret `(ast_void ,_sr)))
+           `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs "")
+           )))
+       """;
+   }
+   @
+   
 
 Simple C grammar
 ----------------
@@ -712,412 +712,412 @@ Simple C grammar
 
 .. code-block:: text
 
-  //$ Embed C into Felix using extern "C" { } style.
-  //$ Direct name binding.
-  //$ WORK IN PROGRESS, NOT OPERATIONAL!
-  syntax cgram {
-    stmt := "extern" '"C"' cstatement =># '`(ast_comment ,_sr "C code ..")';
-    stmt := "extern" '"C"' "{" cstatement+ "}" =># '`(ast_comment ,_sr "C code ..")';
-    cstatement := external_declaration;
-    // this only for testing
-    satom := "extern" '"C"' "(" expression ")" =># "_4";
-  
-  
-  TYPE_NAME := sname ; // special, needs to lookup typedef names
-  
-  primary_expression
-  	:= sname             =># "_1"
-  	| sliteral           =># "_1"
-  	| '(' expression ')' =># "_2"
-  	;
-  
-  postfix_expression
-  	:= primary_expression =># "_1"
-  	| postfix_expression '[' expression ']' =># "`(subscript ,_sr ,_1 ,_3)"
-  	| postfix_expression '(' ')'            =># "`(apply ,_sr ,_1 ())"
-  	| postfix_expression '(' argument_expression_list ')' =># "`(ast_apply ,_sr ,(_1 (reverse _3)))"
-  	| postfix_expression '.' sname                        =># "`(ast_apply ,_sr (,_3 ,_1))"
-  	| postfix_expression '->' sname                       =># "`(ast_arrow ,_sr (,_1 ,_3))"
-  	| postfix_expression '++'                             =># "`(uop ,_sr 'postincr' ,_1)"
-  	| postfix_expression '--'                             =># "`(uop ,_sr 'postdecr' ,_1)"
-  	;
-  
-  argument_expression_list
-  	:= assignment_expression =># "`(,_1)"
-  	| argument_expression_list ',' assignment_expression =># "(cons _3 _1)"
-  	;
-  
-  unary_expression
-  	:= postfix_expression =># "_1"
-  	| unary_operator cast_expression =># "(prefix _2)"
-  	| 'sizeof' '(' type_name ')' =># "`(sizeoftype ,_sr ,_3)" // FIXME, WRONG!
-  	;
-  
-  unary_operator
-  	:= '&' =># "'addressof"
-  	| '*'  =># "'deref" 
-  	| '+'  =># "'pos"
-  	| '-'  =># "'neg"
-  	| '~'  =># "'compl"
-  	| '!'  =># "'excl"
-    | '++' =># "'preincr"
-    | '--' =># "'postincr"
-    | 'sizeof' =># "'sizeof"
-  	;
-  
-  cast_expression
-  	:= unary_expression =># "_1"
-  	| '(' type_name ')' cast_expression =># "`(ast_coercion ,_sr (,_3 ,_2))" // FIXME, WRONG!
-  	;
-  
-  multiplicative_expression
-  	:= cast_expression =># "_1"
-  	| multiplicative_expression '*' cast_expression =># "(infix 'mul)"
-  	| multiplicative_expression '/' cast_expression =># "(infix 'div)"
-  	| multiplicative_expression '%' cast_expression =># "(infix 'mod)"
-  	;
-  
-  additive_expression
-  	:= multiplicative_expression =># "_1"
-  	| additive_expression '+' multiplicative_expression =># "(infix 'add)" 
-  	| additive_expression '-' multiplicative_expression =># "(infix 'sub)" 
-  	;
-  
-  shift_expression
-  	:= additive_expression =># "_1"
-  	| shift_expression '<<' additive_expression =># "(infix 'shl)" 
-  	| shift_expression '>>' additive_expression =># "(infix 'shr)" 
-  	;
-  
-  relational_expression
-  	:= shift_expression =># "_1"
-  	| relational_expression '<' shift_expression =># "(infix 'lt)" 
-  	| relational_expression '>' shift_expression =># "(infix 'gt)" 
-  	| relational_expression '<=' shift_expression =># "(infix 'le)" 
-  	| relational_expression '>=' shift_expression =># "(infix 'ge)" 
-  	;
-  
-  equality_expression
-  	:= relational_expression =># "_1"
-  	| equality_expression '==' relational_expression =># "(infix 'eq)" 
-  	| equality_expression '!=' relational_expression =># "(infix 'ne)"
-  	;
-  
-  and_expression
-  	:= equality_expression =># "_1"
-  	| and_expression '&' equality_expression =># "(infix 'band)" 
-  	;
-  
-  exclusive_or_expression
-  	:= and_expression =># "_1"
-  	| exclusive_or_expression '^' and_expression =># "(infix 'bxor)" 
-  	;
-  
-  inclusive_or_expression
-  	:= exclusive_or_expression =># "_1"
-  	| inclusive_or_expression '|' exclusive_or_expression =># "(infix 'bor)" 
-  	;
-  
-  logical_and_expression
-  	:= inclusive_or_expression =># "_1"
-  	| logical_and_expression '&&' inclusive_or_expression =># "(infix 'land)" 
-  	;
-  
-  logical_or_expression
-  	:= logical_and_expression =># "_1"
-  	| logical_or_expression '||' logical_and_expression =># "(infix 'lor))" 
-  	;
-  
-  conditional_expression
-  	:= logical_or_expression =># "_1"
-  	| logical_or_expression '?' expression ':' conditional_expression =># "`(ast_cond ,_sr (,_1 ,_3 ,_5))" 
-  	;
-  
-  assignment_expression
-  	:= conditional_expression =># "_1"
-  	| unary_expression assignment_operator assignment_expression =># "(infix _2)" 
-  	;
-  
-  assignment_operator
-  	:= '=' =># "'_set"
-  	| '*=' =># "'muleq"
-  	| '/=' =># "'diveq"
-  	| '%=' =># "'modeq"
-  	| '+=' =># "'addeq"
-  	| '-=' =># "'subeq"
-  	| '<<=' =># "'lsheq"
-  	| '>>=' =># "'rsheq"
-  	| '&=' =># "'bandeq"
-  	| '^=' =># "'bxoreq"
-  	| '|=' =># "'boreq"
-  	;
-  
-  expression
-  	:= assignment_expression =># "_1"
-  	| expression ',' assignment_expression =># "(infix 'comma)" 
-  	;
-  
-  declaration
-  	:= declaration_specifiers ';'
-  	| declaration_specifiers init_declarator_list ';'
-    | 'typedef' type_specifier declarator ';'
-  	;
-  
-  declaration_specifiers
-  	:= storage_class_specifier
-  	| storage_class_specifier declaration_specifiers
-  	| type_specifier
-  	| type_specifier declaration_specifiers
-  	| type_qualifier
-  	| type_qualifier declaration_specifiers
-  	;
-  
-  init_declarator_list
-  	:= init_declarator
-  	| init_declarator_list ',' init_declarator
-  	;
-  
-  init_declarator
-  	:= declarator
-  	| declarator '=' initializer
-  	;
-  
-  storage_class_specifier
-  	:= 
-  	| 'extern'
-  	| 'static'
-  	| 'auto'
-  	| 'register'
-  	;
-  
-  type_specifier
-  	:= 'void'
-  	| 'char'
-  	| 'short'
-  	| 'int'
-  	| 'long'
-  	| 'float'
-  	| 'double'
-  	| 'signed'
-  	| 'unsigned'
-  	| struct_or_union_specifier
-  	| enum_specifier
-  //	| TYPE_NAME
-  	;
-  
-  struct_or_union_specifier
-  	:= struct_or_union sname '{' struct_declaration_list '}'
-  	| struct_or_union '{' struct_declaration_list '}'
-  	| struct_or_union sname
-  	;
-  
-  struct_or_union
-  	:= 'struct'
-  	| 'union'
-  	;
-  
-  struct_declaration_list
-  	:= struct_declaration
-  	| struct_declaration_list struct_declaration
-  	;
-  
-  struct_declaration
-  	:= specifier_qualifier_list struct_declarator_list ';'
-  	;
-  
-  specifier_qualifier_list
-  	:= type_specifier specifier_qualifier_list
-  	| type_specifier
-  	| type_qualifier specifier_qualifier_list
-  	| type_qualifier
-  	;
-  
-  struct_declarator_list
-  	:= struct_declarator
-  	| struct_declarator_list ',' struct_declarator
-  	;
-  
-  struct_declarator
-  	:= declarator
-  	| ':' constant_expression
-  	| declarator ':' constant_expression
-  	;
-  
-  enum_specifier
-  	:= 'enum' '{' enumerator_list '}'
-  	| 'enum' sname '{' enumerator_list '}'
-  	| 'enum' sname
-  	;
-  
-  enumerator_list
-  	:= enumerator
-  	| enumerator_list ',' enumerator
-  	;
-  
-  enumerator
-  	:= sname 
-  	| sname '=' constant_expression
-  	;
-  
-  // Felix doesn't support const or volatile
-  type_qualifier
-  	:= 'const'
-  	| 'volatile'
-  	;
-  
-  type_qualifier_list
-  	:= type_qualifier
-  	| type_qualifier_list type_qualifier
-  	;
-  
-  declarator
-  	:= pointer direct_declarator =># "`(ast_ref ,_sr ,_2)" 
-  	| direct_declarator =># "_1"
-  	;
-  
-  direct_declarator
-  	:= sname                        =># "_1"
-  	| '(' declarator ')'            =># "_2"
-  	| direct_declarator '[' constant_expression ']' =># "`(array ,_sr ,_1 ,_3)"
-  	| direct_declarator '[' ']'                     =># "`(array ,_sr ,_1 ())"  
-  	| direct_declarator '(' parameter_type_list ')' =># "`(fun ,_sr ,_1 ,(reverse _3))"
-  	| direct_declarator '(' ')'                     =># "`(fun ,_sr ,_1 ())"
-  	;
-  
-  pointer
-  	:= '*'                                          =># "`(ptr)"
-  	| '*' type_qualifier_list                       =># "`(ptr)"
-  	| '*' pointer                                   =># "(cons 'ptr ,_2)"
-  	| '*' type_qualifier_list pointer               =># "(cons 'ptr ,_3)"
-  	;
-  
-  parameter_type_list
-  	:= parameter_list              =># "_1"
-  	| parameter_list ',' '...'     =># "(cons 'ellipsis _1)"
-  	;
-  
-  parameter_list
-  	:= parameter_declaration                   =># "`(,_1)"
-  	| parameter_list ',' parameter_declaration =># "(cons _3 _1)"
-  	;
-  
-  parameter_declaration
-  	:= declaration_specifiers declarator         =># "`(,_1 ,_2)"
-  	| declaration_specifiers abstract_declarator =># "`(,_1 ,_2)"
-  	| declaration_specifiers                     =># "`(,_1 ())"
-  	;
-  
-  identifier_list
-  	:= sname                                =># "`(,_1)"
-  	| identifier_list ',' sname             =># "(cons _3 _1)"
-  	;
-  
-  type_name
-  	:= specifier_qualifier_list                    =># "`(,_1 ())"
-  	| specifier_qualifier_list abstract_declarator =># "`(,_1 ,_2)"
-  	;
-  
-  abstract_declarator
-  	:= pointer
-  	| direct_abstract_declarator
-  	| pointer direct_abstract_declarator
-  	;
-  
-  direct_abstract_declarator
-  	:= '(' abstract_declarator ')'
-  	| '[' ']'
-  	| '[' constant_expression ']'
-  	| direct_abstract_declarator '[' ']'
-  	| direct_abstract_declarator '[' constant_expression ']'
-  	| '(' ')'
-  	| '(' parameter_type_list ')'
-  	| direct_abstract_declarator '(' ')'
-  	| direct_abstract_declarator '(' parameter_type_list ')'
-  	;
-  
-  initializer
-  	:= assignment_expression
-  	| '{' initializer_list '}'
-  	| '{' initializer_list ',' '}'
-  	;
-  
-  initializer_list
-  	:= initializer
-  	| initializer_list ',' initializer
-  	;
-  
-  statement
-  	:= labeled_statement
-  	| compound_statement
-  	| expression_statement
-  	| selection_statement
-  	| iteration_statement
-  	| jump_statement
-  	;
-  
-  labeled_statement
-  	:= sname ':' statement
-  	| 'case' constant_expression ':' statement
-  	| 'default' ':' statement
-  	;
-  
-  compound_statement
-  	:= '{' '}'
-  	| '{' statement_list '}'
-  	| '{' declaration_list '}'
-  	| '{' declaration_list statement_list '}'
-  	;
-  
-  declaration_list
-  	:= declaration
-  	| declaration_list declaration
-  	;
-  
-  statement_list
-  	:= statement
-  	| statement_list statement
-  	;
-  
-  expression_statement
-  	:= ';'
-  	| expression ';'
-  	;
-  
-  selection_statement
-  	:= 'if' '(' expression ')' statement
-  	| 'if' '(' expression ')' statement 'else' statement
-  	| 'switch' '(' expression ')' statement
-  	;
-  
-  iteration_statement
-  	:= 'while' '(' expression ')' statement
-  	| 'do' statement 'while' '(' expression ')' ';'
-  	| 'for' '(' expression_statement expression_statement ')' statement
-  	| 'for' '(' expression_statement expression_statement expression ')' statement
-  	;
-  
-  jump_statement
-  	:= 'goto' sname ';'
-  	| 'continue' ';'
-  	| 'break' ';'
-  	| 'return' ';'
-  	| 'return' expression ';'
-  	;
-  
-  external_declaration
-  	:= function_definition
-  	| declaration
-  	;
-  
-  function_definition
-  	:= declaration_specifiers declarator declaration_list compound_statement
-  	| declaration_specifiers declarator compound_statement
-  	| declarator declaration_list compound_statement
-  	| declarator compound_statement
-  	;
-  }
-  @
-  
+   //$ Embed C into Felix using extern "C" { } style.
+   //$ Direct name binding.
+   //$ WORK IN PROGRESS, NOT OPERATIONAL!
+   syntax cgram {
+     stmt := "extern" '"C"' cstatement =># '`(ast_comment ,_sr "C code ..")';
+     stmt := "extern" '"C"' "{" cstatement+ "}" =># '`(ast_comment ,_sr "C code ..")';
+     cstatement := external_declaration;
+     // this only for testing
+     satom := "extern" '"C"' "(" expression ")" =># "_4";
+   
+   
+   TYPE_NAME := sname ; // special, needs to lookup typedef names
+   
+   primary_expression
+   	:= sname             =># "_1"
+   	| sliteral           =># "_1"
+   	| '(' expression ')' =># "_2"
+   	;
+   
+   postfix_expression
+   	:= primary_expression =># "_1"
+   	| postfix_expression '[' expression ']' =># "`(subscript ,_sr ,_1 ,_3)"
+   	| postfix_expression '(' ')'            =># "`(apply ,_sr ,_1 ())"
+   	| postfix_expression '(' argument_expression_list ')' =># "`(ast_apply ,_sr ,(_1 (reverse _3)))"
+   	| postfix_expression '.' sname                        =># "`(ast_apply ,_sr (,_3 ,_1))"
+   	| postfix_expression '->' sname                       =># "`(ast_arrow ,_sr (,_1 ,_3))"
+   	| postfix_expression '++'                             =># "`(uop ,_sr 'postincr' ,_1)"
+   	| postfix_expression '--'                             =># "`(uop ,_sr 'postdecr' ,_1)"
+   	;
+   
+   argument_expression_list
+   	:= assignment_expression =># "`(,_1)"
+   	| argument_expression_list ',' assignment_expression =># "(cons _3 _1)"
+   	;
+   
+   unary_expression
+   	:= postfix_expression =># "_1"
+   	| unary_operator cast_expression =># "(prefix _2)"
+   	| 'sizeof' '(' type_name ')' =># "`(sizeoftype ,_sr ,_3)" // FIXME, WRONG!
+   	;
+   
+   unary_operator
+   	:= '&' =># "'addressof"
+   	| '*'  =># "'deref" 
+   	| '+'  =># "'pos"
+   	| '-'  =># "'neg"
+   	| '~'  =># "'compl"
+   	| '!'  =># "'excl"
+     | '++' =># "'preincr"
+     | '--' =># "'postincr"
+     | 'sizeof' =># "'sizeof"
+   	;
+   
+   cast_expression
+   	:= unary_expression =># "_1"
+   	| '(' type_name ')' cast_expression =># "`(ast_coercion ,_sr (,_3 ,_2))" // FIXME, WRONG!
+   	;
+   
+   multiplicative_expression
+   	:= cast_expression =># "_1"
+   	| multiplicative_expression '*' cast_expression =># "(infix 'mul)"
+   	| multiplicative_expression '/' cast_expression =># "(infix 'div)"
+   	| multiplicative_expression '%' cast_expression =># "(infix 'mod)"
+   	;
+   
+   additive_expression
+   	:= multiplicative_expression =># "_1"
+   	| additive_expression '+' multiplicative_expression =># "(infix 'add)" 
+   	| additive_expression '-' multiplicative_expression =># "(infix 'sub)" 
+   	;
+   
+   shift_expression
+   	:= additive_expression =># "_1"
+   	| shift_expression '<<' additive_expression =># "(infix 'shl)" 
+   	| shift_expression '>>' additive_expression =># "(infix 'shr)" 
+   	;
+   
+   relational_expression
+   	:= shift_expression =># "_1"
+   	| relational_expression '<' shift_expression =># "(infix 'lt)" 
+   	| relational_expression '>' shift_expression =># "(infix 'gt)" 
+   	| relational_expression '<=' shift_expression =># "(infix 'le)" 
+   	| relational_expression '>=' shift_expression =># "(infix 'ge)" 
+   	;
+   
+   equality_expression
+   	:= relational_expression =># "_1"
+   	| equality_expression '==' relational_expression =># "(infix 'eq)" 
+   	| equality_expression '!=' relational_expression =># "(infix 'ne)"
+   	;
+   
+   and_expression
+   	:= equality_expression =># "_1"
+   	| and_expression '&' equality_expression =># "(infix 'band)" 
+   	;
+   
+   exclusive_or_expression
+   	:= and_expression =># "_1"
+   	| exclusive_or_expression '^' and_expression =># "(infix 'bxor)" 
+   	;
+   
+   inclusive_or_expression
+   	:= exclusive_or_expression =># "_1"
+   	| inclusive_or_expression '|' exclusive_or_expression =># "(infix 'bor)" 
+   	;
+   
+   logical_and_expression
+   	:= inclusive_or_expression =># "_1"
+   	| logical_and_expression '&&' inclusive_or_expression =># "(infix 'land)" 
+   	;
+   
+   logical_or_expression
+   	:= logical_and_expression =># "_1"
+   	| logical_or_expression '||' logical_and_expression =># "(infix 'lor))" 
+   	;
+   
+   conditional_expression
+   	:= logical_or_expression =># "_1"
+   	| logical_or_expression '?' expression ':' conditional_expression =># "`(ast_cond ,_sr (,_1 ,_3 ,_5))" 
+   	;
+   
+   assignment_expression
+   	:= conditional_expression =># "_1"
+   	| unary_expression assignment_operator assignment_expression =># "(infix _2)" 
+   	;
+   
+   assignment_operator
+   	:= '=' =># "'_set"
+   	| '*=' =># "'muleq"
+   	| '/=' =># "'diveq"
+   	| '%=' =># "'modeq"
+   	| '+=' =># "'addeq"
+   	| '-=' =># "'subeq"
+   	| '<<=' =># "'lsheq"
+   	| '>>=' =># "'rsheq"
+   	| '&=' =># "'bandeq"
+   	| '^=' =># "'bxoreq"
+   	| '|=' =># "'boreq"
+   	;
+   
+   expression
+   	:= assignment_expression =># "_1"
+   	| expression ',' assignment_expression =># "(infix 'comma)" 
+   	;
+   
+   declaration
+   	:= declaration_specifiers ';'
+   	| declaration_specifiers init_declarator_list ';'
+     | 'typedef' type_specifier declarator ';'
+   	;
+   
+   declaration_specifiers
+   	:= storage_class_specifier
+   	| storage_class_specifier declaration_specifiers
+   	| type_specifier
+   	| type_specifier declaration_specifiers
+   	| type_qualifier
+   	| type_qualifier declaration_specifiers
+   	;
+   
+   init_declarator_list
+   	:= init_declarator
+   	| init_declarator_list ',' init_declarator
+   	;
+   
+   init_declarator
+   	:= declarator
+   	| declarator '=' initializer
+   	;
+   
+   storage_class_specifier
+   	:= 
+   	| 'extern'
+   	| 'static'
+   	| 'auto'
+   	| 'register'
+   	;
+   
+   type_specifier
+   	:= 'void'
+   	| 'char'
+   	| 'short'
+   	| 'int'
+   	| 'long'
+   	| 'float'
+   	| 'double'
+   	| 'signed'
+   	| 'unsigned'
+   	| struct_or_union_specifier
+   	| enum_specifier
+   //	| TYPE_NAME
+   	;
+   
+   struct_or_union_specifier
+   	:= struct_or_union sname '{' struct_declaration_list '}'
+   	| struct_or_union '{' struct_declaration_list '}'
+   	| struct_or_union sname
+   	;
+   
+   struct_or_union
+   	:= 'struct'
+   	| 'union'
+   	;
+   
+   struct_declaration_list
+   	:= struct_declaration
+   	| struct_declaration_list struct_declaration
+   	;
+   
+   struct_declaration
+   	:= specifier_qualifier_list struct_declarator_list ';'
+   	;
+   
+   specifier_qualifier_list
+   	:= type_specifier specifier_qualifier_list
+   	| type_specifier
+   	| type_qualifier specifier_qualifier_list
+   	| type_qualifier
+   	;
+   
+   struct_declarator_list
+   	:= struct_declarator
+   	| struct_declarator_list ',' struct_declarator
+   	;
+   
+   struct_declarator
+   	:= declarator
+   	| ':' constant_expression
+   	| declarator ':' constant_expression
+   	;
+   
+   enum_specifier
+   	:= 'enum' '{' enumerator_list '}'
+   	| 'enum' sname '{' enumerator_list '}'
+   	| 'enum' sname
+   	;
+   
+   enumerator_list
+   	:= enumerator
+   	| enumerator_list ',' enumerator
+   	;
+   
+   enumerator
+   	:= sname 
+   	| sname '=' constant_expression
+   	;
+   
+   // Felix doesn't support const or volatile
+   type_qualifier
+   	:= 'const'
+   	| 'volatile'
+   	;
+   
+   type_qualifier_list
+   	:= type_qualifier
+   	| type_qualifier_list type_qualifier
+   	;
+   
+   declarator
+   	:= pointer direct_declarator =># "`(ast_ref ,_sr ,_2)" 
+   	| direct_declarator =># "_1"
+   	;
+   
+   direct_declarator
+   	:= sname                        =># "_1"
+   	| '(' declarator ')'            =># "_2"
+   	| direct_declarator '[' constant_expression ']' =># "`(array ,_sr ,_1 ,_3)"
+   	| direct_declarator '[' ']'                     =># "`(array ,_sr ,_1 ())"  
+   	| direct_declarator '(' parameter_type_list ')' =># "`(fun ,_sr ,_1 ,(reverse _3))"
+   	| direct_declarator '(' ')'                     =># "`(fun ,_sr ,_1 ())"
+   	;
+   
+   pointer
+   	:= '*'                                          =># "`(ptr)"
+   	| '*' type_qualifier_list                       =># "`(ptr)"
+   	| '*' pointer                                   =># "(cons 'ptr ,_2)"
+   	| '*' type_qualifier_list pointer               =># "(cons 'ptr ,_3)"
+   	;
+   
+   parameter_type_list
+   	:= parameter_list              =># "_1"
+   	| parameter_list ',' '...'     =># "(cons 'ellipsis _1)"
+   	;
+   
+   parameter_list
+   	:= parameter_declaration                   =># "`(,_1)"
+   	| parameter_list ',' parameter_declaration =># "(cons _3 _1)"
+   	;
+   
+   parameter_declaration
+   	:= declaration_specifiers declarator         =># "`(,_1 ,_2)"
+   	| declaration_specifiers abstract_declarator =># "`(,_1 ,_2)"
+   	| declaration_specifiers                     =># "`(,_1 ())"
+   	;
+   
+   identifier_list
+   	:= sname                                =># "`(,_1)"
+   	| identifier_list ',' sname             =># "(cons _3 _1)"
+   	;
+   
+   type_name
+   	:= specifier_qualifier_list                    =># "`(,_1 ())"
+   	| specifier_qualifier_list abstract_declarator =># "`(,_1 ,_2)"
+   	;
+   
+   abstract_declarator
+   	:= pointer
+   	| direct_abstract_declarator
+   	| pointer direct_abstract_declarator
+   	;
+   
+   direct_abstract_declarator
+   	:= '(' abstract_declarator ')'
+   	| '[' ']'
+   	| '[' constant_expression ']'
+   	| direct_abstract_declarator '[' ']'
+   	| direct_abstract_declarator '[' constant_expression ']'
+   	| '(' ')'
+   	| '(' parameter_type_list ')'
+   	| direct_abstract_declarator '(' ')'
+   	| direct_abstract_declarator '(' parameter_type_list ')'
+   	;
+   
+   initializer
+   	:= assignment_expression
+   	| '{' initializer_list '}'
+   	| '{' initializer_list ',' '}'
+   	;
+   
+   initializer_list
+   	:= initializer
+   	| initializer_list ',' initializer
+   	;
+   
+   statement
+   	:= labeled_statement
+   	| compound_statement
+   	| expression_statement
+   	| selection_statement
+   	| iteration_statement
+   	| jump_statement
+   	;
+   
+   labeled_statement
+   	:= sname ':' statement
+   	| 'case' constant_expression ':' statement
+   	| 'default' ':' statement
+   	;
+   
+   compound_statement
+   	:= '{' '}'
+   	| '{' statement_list '}'
+   	| '{' declaration_list '}'
+   	| '{' declaration_list statement_list '}'
+   	;
+   
+   declaration_list
+   	:= declaration
+   	| declaration_list declaration
+   	;
+   
+   statement_list
+   	:= statement
+   	| statement_list statement
+   	;
+   
+   expression_statement
+   	:= ';'
+   	| expression ';'
+   	;
+   
+   selection_statement
+   	:= 'if' '(' expression ')' statement
+   	| 'if' '(' expression ')' statement 'else' statement
+   	| 'switch' '(' expression ')' statement
+   	;
+   
+   iteration_statement
+   	:= 'while' '(' expression ')' statement
+   	| 'do' statement 'while' '(' expression ')' ';'
+   	| 'for' '(' expression_statement expression_statement ')' statement
+   	| 'for' '(' expression_statement expression_statement expression ')' statement
+   	;
+   
+   jump_statement
+   	:= 'goto' sname ';'
+   	| 'continue' ';'
+   	| 'break' ';'
+   	| 'return' ';'
+   	| 'return' expression ';'
+   	;
+   
+   external_declaration
+   	:= function_definition
+   	| declaration
+   	;
+   
+   function_definition
+   	:= declaration_specifiers declarator declaration_list compound_statement
+   	| declaration_specifiers declarator compound_statement
+   	| declarator declaration_list compound_statement
+   	| declarator compound_statement
+   	;
+   }
+   @
+   
 
 Conditional forms
 -----------------
@@ -1125,186 +1125,186 @@ Conditional forms
 
 .. code-block:: text
 
-  //$ Basic conditional statements.
-  syntax conditional 
-  {
-    block = if_stmt;
-  
-    /* Unfortunately we cannot currently use "if sexpr block"
-      because this makes if c do .. done and if c do .. else .. done
-      ambiguous for some reason i do not fathom, so we have
-      to list all the cases separately
-    */
-    if_stmt := "if" sexpr if_stmt =># '`(ast_ifdo ,_sr ,_2 (,_3) ())';
-    if_stmt := "if" sexpr loop_stmt =># '`(ast_ifdo ,_sr ,_2 (,_3) ())';
-    if_stmt := "if" sexpr match_stmt =># '`(ast_ifdo ,_sr ,_2 (,_3) ())';
-    if_stmt := "if" sexpr "perform" stmt =># '`(ast_ifdo ,_sr ,_2 (,_4) ())';
-    
-    //$ Short form conditional goto statements.
-    if_stmt := "if" sexpr "goto" sexpr ";" =># "`(ast_ifgoto_indirect ,_sr ,_2 ,_4)";
-    if_stmt := "if" sexpr "break" sname =># '`(ast_ifgoto ,_sr ,_2 ,(string-append "break_" _4))';
-    if_stmt := "if" sexpr "continue" sname =># '`(ast_ifgoto ,_sr ,_2 ,(string-append "continue_" _4))';
-    if_stmt := "if" sexpr "redo" sname =># '`(ast_ifgoto ,_sr ,_2 ,(string-append "redo_" _4))';
-  
-    //$ Short form conditional return statement.
-    if_stmt := "if" sexpr "return" ";" =># "`(ast_ifreturn ,_sr ,_2)";
-    if_stmt := "if" sexpr "return" sexpr ";" =># "`(ast_ifdo ,_sr ,_2 ((ast_fun_return ,_sr ,_4)) ())";
-  
-    //$ Short form conditional call statement.
-    if_stmt := "if" sexpr "call" sexpr ";" =>#
-      "`(ast_ifdo ,_sr ,_2 (,(cons 'ast_call (cons _sr (splitapply _4))))())";
-  
-    //$ Short form one branch conditional.
-    if_stmt := "if" sexpr "do" stmt* "done" =>#
-      "`(ast_ifdo ,_sr ,_2 ,_4 ())";
-  
-    //$ Short form one branch conditional.
-    if_stmt := "if" sexpr "begin" stmt* "end" =>#
-      "(block (list `(ast_ifdo ,_sr ,_2 ,_4 ())))";
-  
-    //$ General conditional chain statement.
-    //$
-    //$ if condition do
-    //$   ..
-    //$ elif condition do
-    //$   .
-    //$   .
-    //$ else
-    //$  ..
-    //$ done
-    if_stmt := "if" sexpr "do"  stmt* selse_clause "done" =>#
-      "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
-  
-    if_stmt := "if" sexpr "begin" stmt* selse_clause "end" =>#
-      "(block (list `(ast_ifdo ,_sr ,_2 ,_4 ,_5)))";
-  
-    //$ General elif clause.
-    private selif_clause := "elif" sexpr "do" stmt* =># "`(,_2 ,_4)";
-  
-    //$ Short form elif return clause.
-    private selif_clause := "elif" sexpr "return" ";" =># "`(,_2 ((ast_proc_return ,_sr)))";
-    private selif_clause := "elif" sexpr "return" sexpr ";" =># "`(,_2 ((ast_fun_return ,_sr ,_4)))";
-  
-    //$ Short form elif goto clause.
-    private selif_clause := "elif" sexpr "goto" sexpr ";" =># "`(,_2 (ast_cgoto ,_sr ,_4))";
-  
-  
-    private selif_clauses := selif_clauses selif_clause =># "(cons _2 _1)"; // Reversed!
-    private selif_clauses := selif_clause =># "`(,_1)";
-    private selse_clause := selif_clauses "else" stmt* =>#
-      """
-          (let ((f (lambda (result condthn)
-            (let ((cond (first condthn)) (thn (second condthn)))
-              `((ast_ifdo ,_sr ,cond ,thn ,result))))))
-          (fold_left f _3 _1))
-      """;
-  
-    private selse_clause := "else" stmt* =># "_2";
-    private selse_clause := selif_clauses =>#
-      """
-          (let ((f (lambda (result condthn)
-            (let ((cond (first condthn)) (thn (second condthn)))
-              `((ast_ifdo ,_sr ,cond ,thn ,result))))))
-          (fold_left f () _1))
-      """;
-  
-    //$ helpful error message for invalid if/then syntax on statements
-    if_stmt := "if" sexpr "then"  stmt* "endif" =># """
-      (raise (string-append 
-          "  Invalid syntax: This instance of 'if/then' is not valid. Try the following instead:\n"
-          "    if (condition) do\n"
-          "      ...\n"
-          "    done\n"))
-      """;
-  
-    //$ helpful error message for invalid if/then/else syntax on statements
-    if_stmt := "if" sexpr "then"  stmt* ("else" | "elif") =># """
-      (raise (string-append 
-          "  Invalid syntax: This instance of 'if/then/else' is not valid. Try the following instead:\n"
-          "    if (condition) do\n"
-          "      ...\n"
-          "    elif (condition) do\n"
-          "      ...\n"
-          "    else do\n"
-          "      ...\n"
-          "    done\n"))
-      """;
-  
-  }
-  @
-  
+   //$ Basic conditional statements.
+   syntax conditional 
+   {
+     block = if_stmt;
+   
+     /* Unfortunately we cannot currently use "if sexpr block"
+       because this makes if c do .. done and if c do .. else .. done
+       ambiguous for some reason i do not fathom, so we have
+       to list all the cases separately
+     */
+     if_stmt := "if" sexpr if_stmt =># '`(ast_ifdo ,_sr ,_2 (,_3) ())';
+     if_stmt := "if" sexpr loop_stmt =># '`(ast_ifdo ,_sr ,_2 (,_3) ())';
+     if_stmt := "if" sexpr match_stmt =># '`(ast_ifdo ,_sr ,_2 (,_3) ())';
+     if_stmt := "if" sexpr "perform" stmt =># '`(ast_ifdo ,_sr ,_2 (,_4) ())';
+     
+     //$ Short form conditional goto statements.
+     if_stmt := "if" sexpr "goto" sexpr ";" =># "`(ast_ifgoto_indirect ,_sr ,_2 ,_4)";
+     if_stmt := "if" sexpr "break" sname =># '`(ast_ifgoto ,_sr ,_2 ,(string-append "break_" _4))';
+     if_stmt := "if" sexpr "continue" sname =># '`(ast_ifgoto ,_sr ,_2 ,(string-append "continue_" _4))';
+     if_stmt := "if" sexpr "redo" sname =># '`(ast_ifgoto ,_sr ,_2 ,(string-append "redo_" _4))';
+   
+     //$ Short form conditional return statement.
+     if_stmt := "if" sexpr "return" ";" =># "`(ast_ifreturn ,_sr ,_2)";
+     if_stmt := "if" sexpr "return" sexpr ";" =># "`(ast_ifdo ,_sr ,_2 ((ast_fun_return ,_sr ,_4)) ())";
+   
+     //$ Short form conditional call statement.
+     if_stmt := "if" sexpr "call" sexpr ";" =>#
+       "`(ast_ifdo ,_sr ,_2 (,(cons 'ast_call (cons _sr (splitapply _4))))())";
+   
+     //$ Short form one branch conditional.
+     if_stmt := "if" sexpr "do" stmt* "done" =>#
+       "`(ast_ifdo ,_sr ,_2 ,_4 ())";
+   
+     //$ Short form one branch conditional.
+     if_stmt := "if" sexpr "begin" stmt* "end" =>#
+       "(block (list `(ast_ifdo ,_sr ,_2 ,_4 ())))";
+   
+     //$ General conditional chain statement.
+     //$
+     //$ if condition do
+     //$   ..
+     //$ elif condition do
+     //$   .
+     //$   .
+     //$ else
+     //$  ..
+     //$ done
+     if_stmt := "if" sexpr "do"  stmt* selse_clause "done" =>#
+       "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
+   
+     if_stmt := "if" sexpr "begin" stmt* selse_clause "end" =>#
+       "(block (list `(ast_ifdo ,_sr ,_2 ,_4 ,_5)))";
+   
+     //$ General elif clause.
+     private selif_clause := "elif" sexpr "do" stmt* =># "`(,_2 ,_4)";
+   
+     //$ Short form elif return clause.
+     private selif_clause := "elif" sexpr "return" ";" =># "`(,_2 ((ast_proc_return ,_sr)))";
+     private selif_clause := "elif" sexpr "return" sexpr ";" =># "`(,_2 ((ast_fun_return ,_sr ,_4)))";
+   
+     //$ Short form elif goto clause.
+     private selif_clause := "elif" sexpr "goto" sexpr ";" =># "`(,_2 (ast_cgoto ,_sr ,_4))";
+   
+   
+     private selif_clauses := selif_clauses selif_clause =># "(cons _2 _1)"; // Reversed!
+     private selif_clauses := selif_clause =># "`(,_1)";
+     private selse_clause := selif_clauses "else" stmt* =>#
+       """
+           (let ((f (lambda (result condthn)
+             (let ((cond (first condthn)) (thn (second condthn)))
+               `((ast_ifdo ,_sr ,cond ,thn ,result))))))
+           (fold_left f _3 _1))
+       """;
+   
+     private selse_clause := "else" stmt* =># "_2";
+     private selse_clause := selif_clauses =>#
+       """
+           (let ((f (lambda (result condthn)
+             (let ((cond (first condthn)) (thn (second condthn)))
+               `((ast_ifdo ,_sr ,cond ,thn ,result))))))
+           (fold_left f () _1))
+       """;
+   
+     //$ helpful error message for invalid if/then syntax on statements
+     if_stmt := "if" sexpr "then"  stmt* "endif" =># """
+       (raise (string-append 
+           "  Invalid syntax: This instance of 'if/then' is not valid. Try the following instead:\n"
+           "    if (condition) do\n"
+           "      ...\n"
+           "    done\n"))
+       """;
+   
+     //$ helpful error message for invalid if/then/else syntax on statements
+     if_stmt := "if" sexpr "then"  stmt* ("else" | "elif") =># """
+       (raise (string-append 
+           "  Invalid syntax: This instance of 'if/then/else' is not valid. Try the following instead:\n"
+           "    if (condition) do\n"
+           "      ...\n"
+           "    elif (condition) do\n"
+           "      ...\n"
+           "    else do\n"
+           "      ...\n"
+           "    done\n"))
+       """;
+   
+   }
+   @
+   
 
 .. code-block:: text
 
-  //$ Core control flow operators.
-  syntax control 
-  {
-    //$ Call a procedure (verbose).
-    block := "call" sexpr  ";" =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
-    block := "call_with_trap" sexpr  ";" =># """(cons 'ast_call_with_trap (cons _sr (splitapply _2)))""";
-    block := "callcc" sexpr  ";" =># """
-      (let* 
-        (
-          (labstring (fresh_name "_callcclab_"))
-          (lab (nos labstring))
-          (sa (splitapply _2))
-          (fun (first sa))
-          (arg (second sa))
-          (apl `(ast_apply ,_sr (,fun ,lab)))
-        )
-        `(ast_seq ,_sr 
-          (
-            (ast_jump ,_sr ,apl ,arg)
-            (ast_label ,_sr ,labstring)
-          )
-        )
-      )
-    """;
-  
-    //$ Procedure return.
-    block := "return" ";" =># "`(ast_proc_return ,_sr)";
-  
-    //$ Fast procedure return.
-    //$ Returns immediately from enclosing procedure with given name.
-    block := "return" "from" sname ";" =># "`(ast_proc_return_from ,_sr ,_3)";
-  
-  
-    //$ Procedure explicit tail call.
-    //$ Equivalent to a call followed by a return.
-    block := "jump" sexpr ";" =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
-  
-    //$ Function return with value.
-    block := "return" sexpr ";" =># "`(ast_fun_return ,_sr ,_2)";
-  
-    //$ Generator/iterator exchange with value (restart after yield).
-    //$ Yield is like a return, except that re-entering the generator
-    //$ will continue on after the yield statement rather that starting
-    //$ from the top.
-    block := "yield" sexpr ";" =># "`(ast_yield ,_sr ,_2)";
-  
-    //$ Special short form procedure self-tail call with argument.
-    block := "loop" sname sexpr ";" =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) ,_3)";
-  
-    //$ Special short form procedure self-tail call without argument.
-    block := "loop" sname ";" =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
-  
-    //$ Stop the program with prejudice and a message.
-    block := "halt" sstring ";" =># "`(ast_halt ,_sr ,_2)";
-  
-    //$ Label any statement.
-    //$ Do not confuse with loop labels.
-    stmt := sname ":>" =># "`(ast_label ,_sr ,_1)";
-  
-    //$ Unconditional goto label.
-    stmt := "goto" sexpr ";" =># "`(ast_goto_indirect ,_sr ,_2)";
-  
-    //$ Unconditional goto expression.
-    block := "goto-indirect" sexpr ";" =># "`(ast_goto_indirect ,_sr ,_2)";
-  
-  }
-  
-  @
-  
+   //$ Core control flow operators.
+   syntax control 
+   {
+     //$ Call a procedure (verbose).
+     block := "call" sexpr  ";" =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
+     block := "call_with_trap" sexpr  ";" =># """(cons 'ast_call_with_trap (cons _sr (splitapply _2)))""";
+     block := "callcc" sexpr  ";" =># """
+       (let* 
+         (
+           (labstring (fresh_name "_callcclab_"))
+           (lab (nos labstring))
+           (sa (splitapply _2))
+           (fun (first sa))
+           (arg (second sa))
+           (apl `(ast_apply ,_sr (,fun ,lab)))
+         )
+         `(ast_seq ,_sr 
+           (
+             (ast_jump ,_sr ,apl ,arg)
+             (ast_label ,_sr ,labstring)
+           )
+         )
+       )
+     """;
+   
+     //$ Procedure return.
+     block := "return" ";" =># "`(ast_proc_return ,_sr)";
+   
+     //$ Fast procedure return.
+     //$ Returns immediately from enclosing procedure with given name.
+     block := "return" "from" sname ";" =># "`(ast_proc_return_from ,_sr ,_3)";
+   
+   
+     //$ Procedure explicit tail call.
+     //$ Equivalent to a call followed by a return.
+     block := "jump" sexpr ";" =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
+   
+     //$ Function return with value.
+     block := "return" sexpr ";" =># "`(ast_fun_return ,_sr ,_2)";
+   
+     //$ Generator/iterator exchange with value (restart after yield).
+     //$ Yield is like a return, except that re-entering the generator
+     //$ will continue on after the yield statement rather that starting
+     //$ from the top.
+     block := "yield" sexpr ";" =># "`(ast_yield ,_sr ,_2)";
+   
+     //$ Special short form procedure self-tail call with argument.
+     block := "loop" sname sexpr ";" =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) ,_3)";
+   
+     //$ Special short form procedure self-tail call without argument.
+     block := "loop" sname ";" =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
+   
+     //$ Stop the program with prejudice and a message.
+     block := "halt" sstring ";" =># "`(ast_halt ,_sr ,_2)";
+   
+     //$ Label any statement.
+     //$ Do not confuse with loop labels.
+     stmt := sname ":>" =># "`(ast_label ,_sr ,_1)";
+   
+     //$ Unconditional goto label.
+     stmt := "goto" sexpr ";" =># "`(ast_goto_indirect ,_sr ,_2)";
+   
+     //$ Unconditional goto expression.
+     block := "goto-indirect" sexpr ";" =># "`(ast_goto_indirect ,_sr ,_2)";
+   
+   }
+   
+   @
+   
 
 Executable support
 ------------------
@@ -1312,32 +1312,32 @@ Executable support
 
 .. code-block:: text
 
-  //$ Special executable forms.
-  syntax executable {
-    requires statements;
-  
-    stmt := "type-error" stmt =># "`(ast_type_error ,_sr ,_2)";
-  
-    //$ System service call.
-    stmt := "_svc" sname =># "`(ast_svc ,_sr ,_2)";
-  
-    //$ Assignment expression.
-    stmt := sassignexpr ";" =># "_1";
-  
-    //$ Debug trace expression.
-    stmt := "trace" sname sstring =># "`(ast_trace ,_sr ,_2 ,_3)";
-  
-    //$ Call expression.
-    //$ Short form of "call f a;" is just "f a;"
-    //$ Short form of "call f ();" is just "f"
-    stmt := sexpr ";" =># "(cons 'ast_call (cons _sr (splitapply _1)))";
-  
-    //$ Template replacement index.
-    stmt := "??" sinteger ";" =># "`(ast_seq ,_sr (PARSER_ARGUMENT ,_2))";
-  }
-  
-  @
-  
+   //$ Special executable forms.
+   syntax executable {
+     requires statements;
+   
+     stmt := "type-error" stmt =># "`(ast_type_error ,_sr ,_2)";
+   
+     //$ System service call.
+     stmt := "_svc" sname =># "`(ast_svc ,_sr ,_2)";
+   
+     //$ Assignment expression.
+     stmt := sassignexpr ";" =># "_1";
+   
+     //$ Debug trace expression.
+     stmt := "trace" sname sstring =># "`(ast_trace ,_sr ,_2 ,_3)";
+   
+     //$ Call expression.
+     //$ Short form of "call f a;" is just "f a;"
+     //$ Short form of "call f ();" is just "f"
+     stmt := sexpr ";" =># "(cons 'ast_call (cons _sr (splitapply _1)))";
+   
+     //$ Template replacement index.
+     stmt := "??" sinteger ";" =># "`(ast_seq ,_sr (PARSER_ARGUMENT ,_2))";
+   }
+   
+   @
+   
 
 Expressions.
 ------------
@@ -1346,466 +1346,466 @@ See also other packages containing extensions.
 
 .. code-block:: text
 
-  syntax expressions {
-    priority 
-      let_pri < 
-      slambda_pri <
-      spipe_apply_pri <
-      sdollar_apply_pri < 
-      stuple_cons_pri <
-      stuple_pri <
-      simplies_condition_pri <
-      sor_condition_pri <
-      sand_condition_pri <
-      snot_condition_pri <
-      stex_implies_condition_pri <
-      stex_or_condition_pri <
-      stex_and_condition_pri <
-      stex_not_condition_pri <
-      scomparison_pri <
-      sas_expr_pri <
-      ssetunion_pri <
-      ssetintersection_pri <
-      sarrow_pri <
-      scase_literal_pri <
-      sbor_pri <
-      sbxor_pri <
-      sband_pri <
-      sshift_pri <
-      ssum_pri <
-      ssubtraction_pri <
-      sproduct_pri <
-      s_term_pri <
-      sprefixed_pri <
-      spower_pri <
-      ssuperscript_pri <
-      srefr_pri <
-      sapplication_pri <
-      scoercion_pri <
-      sfactor_pri <
-      srcompose_pri <
-      sthename_pri <
-      satomic_pri
-    ;
-  
-    requires 
-      setexpr, cmpexpr, pordcmpexpr, tordcmpexpr, 
-      addexpr, mulexpr, divexpr,
-      bitexpr,
-      spipeexpr, boolexpr, stringexpr, listexpr, tupleexpr
-    ;
-  
-    sexpr := x[let_pri] =># "_1";
-    stypeexpr:= x[sor_condition_pri] =># "_1";
-  
-    //$ Let binding.
-    x[let_pri] := "let" spattern "=" x[let_pri] "in" x[let_pri] =># "`(ast_letin ,_sr (,_2 ,_4 ,_6))";
-  
-    //$ Let fun binding.
-    x[let_pri] := "let" "fun" sdeclname sfun_arg* fun_return_type "=>" x[let_pri] "in" x[let_pri] =># 
-      """
-      (let* 
-        (
-          (body `((ast_fun_return ,_sr ,_7)))
-          (fun_decl `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ,(first _5) ,(second _5) Function () ,body))
-          (final_return `(ast_fun_return ,_sr ,_9))
-        )
-        (block_expr `(,fun_decl ,final_return))
-      )
-      """;
-  
-    // FIXME
-    x[let_pri] := "let" "fun" sdeclname fun_return_type "=" smatching+ "in" x[let_pri] =>#
-      """
-      (let* 
-        (
-          (ixname _3)
-          (name (first ixname))
-          (tvars (second ixname))
-          (t (first (first _4)))
-          (traint (second (first _4)))
-          (matching _6)
-          (expr _8)
-        )
-        (if (eq? 'ast_arrow (first t))
-          (let*
-            (
-              (argt (caadr t))
-              (ret (cadadr t))
-              (params `((((,_sr PVal _a ,argt none)) none))) ;; parameters
-              (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,matching)))))
-              (fun_decl `(ast_curry ,_sr ,name ,tvars ,params
-                 (,ret ,traint)
-                 Function () ,body)
-              )
-              (final_return `(ast_fun_return ,_sr ,expr))
-            )
-            (block_expr `(,fun_decl ,final_return))
-          )
-          'ERROR
-        )
-      )
-      """;
-  
-  
-  
-    //$ Unterminated match
-    x[let_pri] := "let" pattern_match =># "_2"; 
-  
-    //$ Conditional expression.
-    x[let_pri] := sconditional =># '_1';
-  
-    //$ Pattern matching.
-    x[let_pri] := pattern_match =># '_1';
-  
-  
-    //$ Alternate conditional expression.
-    x[sdollar_apply_pri] := x[stuple_pri] "unless" x[let_pri] "then" x[sdollar_apply_pri] =>#
-      "`(ast_cond ,_sr ((ast_not ,_sr ,_3) ,_1 ,_5))";
-  
-    //$ Low precedence right associative application.
-    x[sdollar_apply_pri] := x[stuple_pri] "$" x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
-  
-    //$ Low precedence left associative reverse application.
-    x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[stuple_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
-  
-    //$ Haskell-ish style infix notation of functions   foo(x,y) => x `(foo) y
-    x[stuple_pri]  := x[stuple_pri] "`(" sexpr ")" sexpr =># " `(ast_apply ,_sr ( ,_3 (,_1 ,_5)))";
-  
-    //$ Named temporary value.
-    x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";
-  
-    //$ Named variable.
-    x[sas_expr_pri] := x[sas_expr_pri] "as" "var" sname =># "`(ast_as_var ,_sr (,_1 ,_4))";
-  
-  
-  //  x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># '''
-  //    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range") ,_1)) ,_3))
-  //  ''';
-  //
-  //  x[sarrow_pri] := x[>sarrow_pri] "..<" x[>sarrow_pri] =># '''
-  //    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range_excl") ,_1)) ,_3))
-  //  ''';
-  
-    x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># "(infix 'Slice_range_incl)";
-    x[sarrow_pri] := x[>sarrow_pri] "..<" x[>sarrow_pri] =># "(infix 'Slice_range_excl)";
-    x[sarrow_pri] := "..<" x[>sarrow_pri] =># "(prefix 'Slice_to_excl)";
-    x[sarrow_pri] := ".." x[>sarrow_pri] =># "(prefix 'Slice_to_incl)";
-    x[sarrow_pri] := x[>sarrow_pri] ".." =># "(suffix 'Slice_from)";
-    x[sarrow_pri] := ".." =># """`(ast_name ,_sr "Slice_all" (,(noi 'int)))""";
-  
-  
-    // right arrows: RIGHT ASSOCIATIVE!
-    //$ Function type, right associative.
-    x[sarrow_pri] := x[>sarrow_pri] "->" x[sarrow_pri] =># "`(ast_arrow (,_1 ,_3))";
-    x[sarrow_pri] := x[>sarrow_pri] "->" "[" sexpr "]" x[sarrow_pri] =># "`(ast_effector (,_1 ,_4 ,_6))";
-  
-    //$ C function type, right associative.
-    x[sarrow_pri] := x[>sarrow_pri] "-->" x[sarrow_pri] =># "`(ast_longarrow (,_1 ,_3))";
-  
-    //$ Case tag literal.
-    x[scase_literal_pri] := "case" sinteger =># "`(ast_case_tag ,_sr ,_2))";
-    x[scase_literal_pri] := "`" sinteger =># "`(ast_case_tag ,_sr ,_2))";
-  
-    //$ Case value.
-    x[scase_literal_pri] := "case" sinteger "of" x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
-    x[scase_literal_pri] := "`" sinteger "of" x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
-    x[scase_literal_pri] := "`" sinteger ":" x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
-  
-    //$ Tuple projection function.
-    x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri] =># "`(ast_projection ,_2 ,_4)";
-  
-    //$ Variant value.
-    x[scase_literal_pri] := "#" "case" sname =># "`(ast_variant (,_3 ()))";
-    x[scase_literal_pri] := "case" sname x[ssum_pri] =># "`(ast_variant (,_2 ,_3))";
-    x[scase_literal_pri] := "#" "`" sname =># "`(ast_variant (,_3 ()))";
-    x[scase_literal_pri] := "`" sname x[ssum_pri] =># "`(ast_variant (,_2 ,_3))";
-  
-    //$ multiplication: right associative
-    x[sproduct_pri] := x[>sproduct_pri] "\otimes" x[sproduct_pri] =># "(Infix)";
-  
-  //------------------------------------------------------------------------
-  
-    //$ Prefix exclaim.
-    x[sprefixed_pri] := "!" x[spower_pri] =># "(Prefix)";
-  
-    //$ Prefix plus.
-    x[sprefixed_pri] := "+" x[spower_pri] =># "(prefix 'prefix_plus)";
-  
-    //$ Prefix negation.
-    x[sprefixed_pri] := "-" x[spower_pri] =># "(prefix 'neg)";
-  
-    //$ Prefix complement.
-    x[sprefixed_pri] := "~" x[spower_pri] =># "(Prefix)";
-  
-    //$ Fortran power.
-    x[spower_pri] := x[ssuperscript_pri] "**" x[sprefixed_pri] =># "(infix 'pow)";
-    x[spower_pri] := x[ssuperscript_pri] "<**>" x[sprefixed_pri] =># "(infix 'tuple_snoc)";
-  
-    //$ Superscript, exponential.
-    x[ssuperscript_pri] := x[ssuperscript_pri] "^" x[srefr_pri] =># "`(ast_superscript (,_1 ,_3))";
-  
-    //$ composition
-    x[ssuperscript_pri] := x[ssuperscript_pri] "\circ" x[>ssuperscript_pri] =># "(Infix)";
-    x[ssuperscript_pri] := x[ssuperscript_pri] "\cdot" x[>ssuperscript_pri] =># "(Infix)";
-  
-  //------------------------------------------------------------------------
-    //$ C dereference.
-    x[srefr_pri] := "*" x[srefr_pri] =># "(prefix 'deref)";
-  
-    //$ Deref primitive.
-    //x[srefr_pri] := "_deref" x[srefr_pri] =># "`(ast_deref ,_sr ,_2)";
-  
-    //$ Operator new.
-    x[srefr_pri] := "new" x[srefr_pri] =># "`(ast_new ,_sr ,_2)";
-  
-  //------------------------------------------------------------------------
-    //$ Operator whitespace: application.
-    x[sapplication_pri] := x[sapplication_pri] x[scoercion_pri] =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
-  
-    //$ Variant index.
-    x[sapplication_pri] := "caseno" x[scoercion_pri] =># "`(ast_case_index ,_sr ,_2)";
-  
-    //$ Optimisation hint: likely.
-    //$ Use in conditionals, e.g. if likely(x) do ...
-    x[sapplication_pri] := "likely" x[scoercion_pri] =># "`(ast_likely ,_sr ,_2)";
-  
-    //$ Optimisation hint: unlikely.
-    //$ Use in conditionals, e.g. if unlikely(x) do ...
-    x[sapplication_pri] := "unlikely" x[scoercion_pri] =># "`(ast_unlikely ,_sr ,_2)";
-  
-  //------------------------------------------------------------------------
-    //$ Suffixed coercion.
-    x[scoercion_pri] := x[scoercion_pri] ":>>" x[sfactor_pri] =># "`(ast_coercion ,_sr (,_1 ,_3))";
-  
-    x[scoercion_pri] := ssuffixed_name =># "_1";
-  
-  //------------------------------------------------------------------------
-    //$ Reverse application.
-    x[sfactor_pri] := x[sfactor_pri] "." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
-  
-  
-    //$ Reverse application with dereference.
-    //$ a *. b same as (*a) . b, like C  a -> b.
-    x[sfactor_pri] := x[sfactor_pri] "*." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 (ast_deref ,_sr ,_1)))";
-  
-    //$ a &. b is similar to &a . b for an array, but can be overloaded
-    //$ for abstract arrays: like a + b in C. Returns pointer.
-    // x[sfactor_pri] := x[sfactor_pri] "&." sthe_name =># "(Infix)";
-    x[sfactor_pri] := x[sfactor_pri] "&." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 (ast_ref ,_sr ,_1)))";
-  
-  //------------------------------------------------------------------------
-  
-    //$ Reverse composition
-    x[srcompose_pri] := x[srcompose_pri] "\odot" x[>srcompose_pri] =># "(Infix)";
-  
-  //------------------------------------------------------------------------
-    //$ High precedence unit application. #f = f ().
-    x[sthename_pri] := "#" x[sthename_pri] =># "`(ast_apply ,_sr (,_2 (ast_tuple ,_sr ())))";
-  
-    //$ Felix pointer type and address of operator.
-    x[sthename_pri] := "&" x[sthename_pri] =># "`(ast_ref ,_sr ,_2)";
-  
-    //$ Felix pointer type and address of operator.
-    x[sthename_pri] := "_uniq" x[sthename_pri] =># "`(ast_uniq ,_sr ,_2)";
-    x[sthename_pri] := "_rref" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
-    x[sthename_pri] := "&<" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
-    x[sthename_pri] := "_wref" x[sthename_pri] =># "`(ast_wref ,_sr ,_2)";
-    x[sthename_pri] := "&>" x[sthename_pri] =># "`(ast_wref ,_sr ,_2)";
-  
-  
-    //$ Felix address of operator.
-    x[sthename_pri] := "label_address" sname =># "`(ast_label_ref ,_sr ,_2)";
-  
-  
-    //$ C pointer type.
-    x[sthename_pri] :=  "@" x[sthename_pri] =># "(Prefix)";
-  
-    //$ macro expansion freezer.
-    x[sthename_pri] := "noexpand" squalified_name =># "`(ast_noexpand ,_sr ,_2)";
-  
-    //$ pattern variable.
-    x[sthename_pri] := "?" sname =># "`(ast_patvar ,_sr ,_2)";
-  
-    //$ Template replacement index.
-    x[sthename_pri] := "?" sinteger =># "`(PARSER_ARGUMENT ,_2)";
-  
-    x[sthename_pri] := squalified_name =># "_1";
-  
-  
-    //$ Qualified name.
-    sreally_qualified_name := squalified_name "::" ssimple_name_parts =>#
-      "`(ast_lookup (,_1 ,(first _3) ,(second _3)))";
-  
-    squalified_name := sreally_qualified_name =># '_1';
-  
-    squalified_name := ssimple_name_parts =>#
-      "`(ast_name ,_sr ,(first _1) ,(second _1))";
-  
-    ssimple_name_parts := sname =># "`(,_1 ())";
-    ssimple_name_parts := sname "[" "]" =># "`(,_1 ())";
-    ssimple_name_parts := sname "[" sexpr "]" =># "`(,_1 ,(mkl _3))";
-  
-    //$ Suffixed name (to name functions).
-    ssuffixed_name := squalified_name "of" x[sthename_pri] =>#
-      "`(ast_suffix (,_1 ,_3))";
-  
-  //------------------------------------------------------------------------
-    x[satomic_pri] := satom =># "_1";
-  
-    satom := "_pclt<" stypeexpr "," stypeexpr ">" =>#
-      "`(ast_pclt ,_sr ,_2 ,_4)"
-    ;
-  
-    //$ record value (comma separated).
-    satom := "(" rassign ("," rassign2 )* ")" =>#
-      "`(ast_record ,_sr ,(cons _2 (map second _3)))"
-    ;
-      rassign := sname "=" x[sor_condition_pri] =># "`(,_1 ,_3)";
-      rassign := "=" x[sor_condition_pri] =># '`("" ,_2)';
-      rassign2 := sname "=" x[sor_condition_pri] =># "`(,_1 ,_3)";
-      rassign2 := "=" x[sor_condition_pri] =># '`("" ,_2)';
-      rassign2 := x[sor_condition_pri] =># '`("" ,_1)';
-  
-    //$ polyrecord value
-    //$ record value (comma separated).
-    satom := "(" rassign ("," rassign2 )* "|" sexpr ")" =>#
-      "`(ast_polyrecord ,_sr ,(cons _2 (map second _3)) ,_5)"
-    ;
-  
-    satom := "(" sexpr "without" sname+ ")" =>#
-      "`(ast_remove_fields ,_sr ,_2 ,_4)"
-    ;
-  
-    satom := "(" sexpr "with" rassign ("," rassign2 )* ")" =>#
-      "`(ast_replace_fields ,_sr ,_2 ,(cons _4 (map second _5)))"
-    ;
-  
-  
-    //$ record value, statement list.
-    //$ this variant is useful for encapsulating
-    //$ a series of var x = y; style statements.
-    satom := "struct" "{" vassign+ "}" =>#
-      "`(ast_record ,_sr ,_3 )"
-    ;
-      vassign := "var" sname "=" sexpr ";" =># "`(,_2 ,_4)";
-  
-    //$ Record type.
-    satom := "(" srecord_mem_decl ("," srecord_mem_decl2)*  ")" =># 
-     "`(ast_record_type ,(cons _2 (map second _3)))";
-      srecord_mem_decl := sname ":" stypeexpr =># "`(,_1 ,_3)";
-      srecord_mem_decl := ":" stypeexpr =># '`("" ,_2)';
-      srecord_mem_decl2 := sname ":" stypeexpr =># "`(,_1 ,_3)";
-      srecord_mem_decl2 := ":" stypeexpr =># '`("" ,_2)';
-      srecord_mem_decl2 := stypeexpr =># '`("" ,_1)';
-  
-    //$ polyRecord type.
-    satom := "(" srecord_mem_decl ("," srecord_mem_decl2)*  "|" stypeexpr ")" =># 
-     "`(ast_polyrecord_type ,(cons _2 (map second _3)) ,_5)";
-  
-  
-    // INCONSISTENT GRAMMAR (no separator between items??
-    //$ Variant type.
-    satom := "(" stype_variant_items ")" =># "`(ast_variant_type ,_2)";
-      stype_variant_item := "case" sname "of" sexpr =># "`(ctor ,_2 ,_4)";
-      stype_variant_item := "case" sname =># "`(ctor ,_2 ,(noi 'unit))";
-      stype_variant_item := "`" sname "of" sexpr =># "`(ctor ,_2 ,_4)";
-      stype_variant_item := "`" sname =># "`(ctor ,_2 ,(noi 'unit))";
-  
-      stype_variant_item_bar := "|" stype_variant_item =># "_2";
-      stype_variant_item_bar := "|" stypeexpr =># "`(base ,_2)";
-      stype_variant_items := stype_variant_item stype_variant_item_bar* =># "(cons _1 _2)";
-      stype_variant_items := stype_variant_item_bar+ =># "_1";
-  
-    //$ scalar literals (numbers, strings).
-    satom := sliteral =># "_1";
-  
-    //$ Wildcard pattern.
-    satom := _ =># "`(ast_patany ,_sr)";
-  
-    //$ Ellipsis (for binding C varags functions).
-    satom := "..." =># "`(ast_ellipsis ,_sr)";
-  
-    //$ Callback expression.
-    satom := "callback" "[" sexpr "]" =># "`(ast_callback ,_sr ,_3)";
-  
-    //$ Short form anonymous procedure closure.
-    satom := scompound =># "(lazy _1)";
-  
-    //$ Short form sequence operator.
-    //$ ( stmt; expr ) means the same as #{stmt; return expr; }
-    satom := "(" stmt+ sexpr ")" =>#
-      """
-      (
-        let* 
-        (
-          (stmts _2)
-          (expr _3)
-          (retexp `(ast_fun_return ,_sr ,expr))
-          (nustmts (append stmts (list retexp)))
-        )
-        (block_expr nustmts)
-      )
-      """ 
-    ;
-  
-    //$ special anonymous variable forces eager eval.
-    satom := "(" "var" sexpr ")" =># 
-      """
-      (
-        let
-        (
-          (name (fresh_name "asvar"))
-        )
-        `(ast_as_var ,_sr (,_3 ,name))
-      )
-      """
-    ;
-  
-    //$ inline scheme
-    satom := "schemelex" sstring =># "(schemelex _2)";
-    satom := "schemerun" sstring =># "(schemerun _2)";
-    //$ Empty tuple (unit tuple).
-    satom := "(" ")" =># "'()";
-  
-    //$ Object extension.
-    satom := "extend" stypelist "with" sexpr "end" =># "`(ast_extension ,_sr ,_2 ,_4)";
-  
-      setbar := "|" =># "_1";
-      setbar := "\|" =># "_1";
-      setbar := "\mid" =># "_1";
-  
-    setform := spattern ":" stypeexpr setbar sexpr =>#
-      """
-      (let* 
-        (
-           (argt _3)
-           (ret (nos "bool"))
-           (matchings `((,_1 ,_5)((pat_setform_any ,_sr)(ast_typed_case 0 2))))
-           (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,matchings)))))
-           (param `(,_sr PVal _a ,argt none)) ;; one parameter
-           (params `(,param))            ;; parameter tuple list
-           (paramsx `(,params none))     ;; parameter tuple list with precondition
-           (paramsxs `(,paramsx))        ;; curry parameters 
-           (method `(ast_curry ,_sr "has_elt"  ,dfltvs ,paramsxs (,ret none) Method () ,body))
-           (noargs `((() none)))
-           (noobjtyp (noi 'typ_none))
-           (objsts `(,method))
-           (object `(ast_object ,_sr (,dfltvs ,noargs ,noobjtyp ,objsts))) 
-        )
-        `(ast_apply ,_sr (,object (ast_tuple ,_sr ())))
-      )
-      """;
-  
-    satom := "{" setform  "}" =># "_2";
-    satom := "\{" setform  "\}" =># "_2";
-  
-  
-  
-  }
-  
-  @
-  
+   syntax expressions {
+     priority 
+       let_pri < 
+       slambda_pri <
+       spipe_apply_pri <
+       sdollar_apply_pri < 
+       stuple_cons_pri <
+       stuple_pri <
+       simplies_condition_pri <
+       sor_condition_pri <
+       sand_condition_pri <
+       snot_condition_pri <
+       stex_implies_condition_pri <
+       stex_or_condition_pri <
+       stex_and_condition_pri <
+       stex_not_condition_pri <
+       scomparison_pri <
+       sas_expr_pri <
+       ssetunion_pri <
+       ssetintersection_pri <
+       sarrow_pri <
+       scase_literal_pri <
+       sbor_pri <
+       sbxor_pri <
+       sband_pri <
+       sshift_pri <
+       ssum_pri <
+       ssubtraction_pri <
+       sproduct_pri <
+       s_term_pri <
+       sprefixed_pri <
+       spower_pri <
+       ssuperscript_pri <
+       srefr_pri <
+       sapplication_pri <
+       scoercion_pri <
+       sfactor_pri <
+       srcompose_pri <
+       sthename_pri <
+       satomic_pri
+     ;
+   
+     requires 
+       setexpr, cmpexpr, pordcmpexpr, tordcmpexpr, 
+       addexpr, mulexpr, divexpr,
+       bitexpr,
+       spipeexpr, boolexpr, stringexpr, listexpr, tupleexpr
+     ;
+   
+     sexpr := x[let_pri] =># "_1";
+     stypeexpr:= x[sor_condition_pri] =># "_1";
+   
+     //$ Let binding.
+     x[let_pri] := "let" spattern "=" x[let_pri] "in" x[let_pri] =># "`(ast_letin ,_sr (,_2 ,_4 ,_6))";
+   
+     //$ Let fun binding.
+     x[let_pri] := "let" "fun" sdeclname sfun_arg* fun_return_type "=>" x[let_pri] "in" x[let_pri] =># 
+       """
+       (let* 
+         (
+           (body `((ast_fun_return ,_sr ,_7)))
+           (fun_decl `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ,(first _5) ,(second _5) Function () ,body))
+           (final_return `(ast_fun_return ,_sr ,_9))
+         )
+         (block_expr `(,fun_decl ,final_return))
+       )
+       """;
+   
+     // FIXME
+     x[let_pri] := "let" "fun" sdeclname fun_return_type "=" smatching+ "in" x[let_pri] =>#
+       """
+       (let* 
+         (
+           (ixname _3)
+           (name (first ixname))
+           (tvars (second ixname))
+           (t (first (first _4)))
+           (traint (second (first _4)))
+           (matching _6)
+           (expr _8)
+         )
+         (if (eq? 'ast_arrow (first t))
+           (let*
+             (
+               (argt (caadr t))
+               (ret (cadadr t))
+               (params `((((,_sr PVal _a ,argt none)) none))) ;; parameters
+               (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,matching)))))
+               (fun_decl `(ast_curry ,_sr ,name ,tvars ,params
+                  (,ret ,traint)
+                  Function () ,body)
+               )
+               (final_return `(ast_fun_return ,_sr ,expr))
+             )
+             (block_expr `(,fun_decl ,final_return))
+           )
+           'ERROR
+         )
+       )
+       """;
+   
+   
+   
+     //$ Unterminated match
+     x[let_pri] := "let" pattern_match =># "_2"; 
+   
+     //$ Conditional expression.
+     x[let_pri] := sconditional =># '_1';
+   
+     //$ Pattern matching.
+     x[let_pri] := pattern_match =># '_1';
+   
+   
+     //$ Alternate conditional expression.
+     x[sdollar_apply_pri] := x[stuple_pri] "unless" x[let_pri] "then" x[sdollar_apply_pri] =>#
+       "`(ast_cond ,_sr ((ast_not ,_sr ,_3) ,_1 ,_5))";
+   
+     //$ Low precedence right associative application.
+     x[sdollar_apply_pri] := x[stuple_pri] "$" x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
+   
+     //$ Low precedence left associative reverse application.
+     x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[stuple_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
+   
+     //$ Haskell-ish style infix notation of functions   foo(x,y) => x `(foo) y
+     x[stuple_pri]  := x[stuple_pri] "`(" sexpr ")" sexpr =># " `(ast_apply ,_sr ( ,_3 (,_1 ,_5)))";
+   
+     //$ Named temporary value.
+     x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";
+   
+     //$ Named variable.
+     x[sas_expr_pri] := x[sas_expr_pri] "as" "var" sname =># "`(ast_as_var ,_sr (,_1 ,_4))";
+   
+   
+   //  x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># '''
+   //    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range") ,_1)) ,_3))
+   //  ''';
+   //
+   //  x[sarrow_pri] := x[>sarrow_pri] "..<" x[>sarrow_pri] =># '''
+   //    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range_excl") ,_1)) ,_3))
+   //  ''';
+   
+     x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># "(infix 'Slice_range_incl)";
+     x[sarrow_pri] := x[>sarrow_pri] "..<" x[>sarrow_pri] =># "(infix 'Slice_range_excl)";
+     x[sarrow_pri] := "..<" x[>sarrow_pri] =># "(prefix 'Slice_to_excl)";
+     x[sarrow_pri] := ".." x[>sarrow_pri] =># "(prefix 'Slice_to_incl)";
+     x[sarrow_pri] := x[>sarrow_pri] ".." =># "(suffix 'Slice_from)";
+     x[sarrow_pri] := ".." =># """`(ast_name ,_sr "Slice_all" (,(noi 'int)))""";
+   
+   
+     // right arrows: RIGHT ASSOCIATIVE!
+     //$ Function type, right associative.
+     x[sarrow_pri] := x[>sarrow_pri] "->" x[sarrow_pri] =># "`(ast_arrow (,_1 ,_3))";
+     x[sarrow_pri] := x[>sarrow_pri] "->" "[" sexpr "]" x[sarrow_pri] =># "`(ast_effector (,_1 ,_4 ,_6))";
+   
+     //$ C function type, right associative.
+     x[sarrow_pri] := x[>sarrow_pri] "-->" x[sarrow_pri] =># "`(ast_longarrow (,_1 ,_3))";
+   
+     //$ Case tag literal.
+     x[scase_literal_pri] := "case" sinteger =># "`(ast_case_tag ,_sr ,_2))";
+     x[scase_literal_pri] := "`" sinteger =># "`(ast_case_tag ,_sr ,_2))";
+   
+     //$ Case value.
+     x[scase_literal_pri] := "case" sinteger "of" x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
+     x[scase_literal_pri] := "`" sinteger "of" x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
+     x[scase_literal_pri] := "`" sinteger ":" x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
+   
+     //$ Tuple projection function.
+     x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri] =># "`(ast_projection ,_2 ,_4)";
+   
+     //$ Variant value.
+     x[scase_literal_pri] := "#" "case" sname =># "`(ast_variant (,_3 ()))";
+     x[scase_literal_pri] := "case" sname x[ssum_pri] =># "`(ast_variant (,_2 ,_3))";
+     x[scase_literal_pri] := "#" "`" sname =># "`(ast_variant (,_3 ()))";
+     x[scase_literal_pri] := "`" sname x[ssum_pri] =># "`(ast_variant (,_2 ,_3))";
+   
+     //$ multiplication: right associative
+     x[sproduct_pri] := x[>sproduct_pri] "\otimes" x[sproduct_pri] =># "(Infix)";
+   
+   //------------------------------------------------------------------------
+   
+     //$ Prefix exclaim.
+     x[sprefixed_pri] := "!" x[spower_pri] =># "(Prefix)";
+   
+     //$ Prefix plus.
+     x[sprefixed_pri] := "+" x[spower_pri] =># "(prefix 'prefix_plus)";
+   
+     //$ Prefix negation.
+     x[sprefixed_pri] := "-" x[spower_pri] =># "(prefix 'neg)";
+   
+     //$ Prefix complement.
+     x[sprefixed_pri] := "~" x[spower_pri] =># "(Prefix)";
+   
+     //$ Fortran power.
+     x[spower_pri] := x[ssuperscript_pri] "**" x[sprefixed_pri] =># "(infix 'pow)";
+     x[spower_pri] := x[ssuperscript_pri] "<**>" x[sprefixed_pri] =># "(infix 'tuple_snoc)";
+   
+     //$ Superscript, exponential.
+     x[ssuperscript_pri] := x[ssuperscript_pri] "^" x[srefr_pri] =># "`(ast_superscript (,_1 ,_3))";
+   
+     //$ composition
+     x[ssuperscript_pri] := x[ssuperscript_pri] "\circ" x[>ssuperscript_pri] =># "(Infix)";
+     x[ssuperscript_pri] := x[ssuperscript_pri] "\cdot" x[>ssuperscript_pri] =># "(Infix)";
+   
+   //------------------------------------------------------------------------
+     //$ C dereference.
+     x[srefr_pri] := "*" x[srefr_pri] =># "(prefix 'deref)";
+   
+     //$ Deref primitive.
+     //x[srefr_pri] := "_deref" x[srefr_pri] =># "`(ast_deref ,_sr ,_2)";
+   
+     //$ Operator new.
+     x[srefr_pri] := "new" x[srefr_pri] =># "`(ast_new ,_sr ,_2)";
+   
+   //------------------------------------------------------------------------
+     //$ Operator whitespace: application.
+     x[sapplication_pri] := x[sapplication_pri] x[scoercion_pri] =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
+   
+     //$ Variant index.
+     x[sapplication_pri] := "caseno" x[scoercion_pri] =># "`(ast_case_index ,_sr ,_2)";
+   
+     //$ Optimisation hint: likely.
+     //$ Use in conditionals, e.g. if likely(x) do ...
+     x[sapplication_pri] := "likely" x[scoercion_pri] =># "`(ast_likely ,_sr ,_2)";
+   
+     //$ Optimisation hint: unlikely.
+     //$ Use in conditionals, e.g. if unlikely(x) do ...
+     x[sapplication_pri] := "unlikely" x[scoercion_pri] =># "`(ast_unlikely ,_sr ,_2)";
+   
+   //------------------------------------------------------------------------
+     //$ Suffixed coercion.
+     x[scoercion_pri] := x[scoercion_pri] ":>>" x[sfactor_pri] =># "`(ast_coercion ,_sr (,_1 ,_3))";
+   
+     x[scoercion_pri] := ssuffixed_name =># "_1";
+   
+   //------------------------------------------------------------------------
+     //$ Reverse application.
+     x[sfactor_pri] := x[sfactor_pri] "." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
+   
+   
+     //$ Reverse application with dereference.
+     //$ a *. b same as (*a) . b, like C  a -> b.
+     x[sfactor_pri] := x[sfactor_pri] "*." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 (ast_deref ,_sr ,_1)))";
+   
+     //$ a &. b is similar to &a . b for an array, but can be overloaded
+     //$ for abstract arrays: like a + b in C. Returns pointer.
+     // x[sfactor_pri] := x[sfactor_pri] "&." sthe_name =># "(Infix)";
+     x[sfactor_pri] := x[sfactor_pri] "&." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 (ast_ref ,_sr ,_1)))";
+   
+   //------------------------------------------------------------------------
+   
+     //$ Reverse composition
+     x[srcompose_pri] := x[srcompose_pri] "\odot" x[>srcompose_pri] =># "(Infix)";
+   
+   //------------------------------------------------------------------------
+     //$ High precedence unit application. #f = f ().
+     x[sthename_pri] := "#" x[sthename_pri] =># "`(ast_apply ,_sr (,_2 (ast_tuple ,_sr ())))";
+   
+     //$ Felix pointer type and address of operator.
+     x[sthename_pri] := "&" x[sthename_pri] =># "`(ast_ref ,_sr ,_2)";
+   
+     //$ Felix pointer type and address of operator.
+     x[sthename_pri] := "_uniq" x[sthename_pri] =># "`(ast_uniq ,_sr ,_2)";
+     x[sthename_pri] := "_rref" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
+     x[sthename_pri] := "&<" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
+     x[sthename_pri] := "_wref" x[sthename_pri] =># "`(ast_wref ,_sr ,_2)";
+     x[sthename_pri] := "&>" x[sthename_pri] =># "`(ast_wref ,_sr ,_2)";
+   
+   
+     //$ Felix address of operator.
+     x[sthename_pri] := "label_address" sname =># "`(ast_label_ref ,_sr ,_2)";
+   
+   
+     //$ C pointer type.
+     x[sthename_pri] :=  "@" x[sthename_pri] =># "(Prefix)";
+   
+     //$ macro expansion freezer.
+     x[sthename_pri] := "noexpand" squalified_name =># "`(ast_noexpand ,_sr ,_2)";
+   
+     //$ pattern variable.
+     x[sthename_pri] := "?" sname =># "`(ast_patvar ,_sr ,_2)";
+   
+     //$ Template replacement index.
+     x[sthename_pri] := "?" sinteger =># "`(PARSER_ARGUMENT ,_2)";
+   
+     x[sthename_pri] := squalified_name =># "_1";
+   
+   
+     //$ Qualified name.
+     sreally_qualified_name := squalified_name "::" ssimple_name_parts =>#
+       "`(ast_lookup (,_1 ,(first _3) ,(second _3)))";
+   
+     squalified_name := sreally_qualified_name =># '_1';
+   
+     squalified_name := ssimple_name_parts =>#
+       "`(ast_name ,_sr ,(first _1) ,(second _1))";
+   
+     ssimple_name_parts := sname =># "`(,_1 ())";
+     ssimple_name_parts := sname "[" "]" =># "`(,_1 ())";
+     ssimple_name_parts := sname "[" sexpr "]" =># "`(,_1 ,(mkl _3))";
+   
+     //$ Suffixed name (to name functions).
+     ssuffixed_name := squalified_name "of" x[sthename_pri] =>#
+       "`(ast_suffix (,_1 ,_3))";
+   
+   //------------------------------------------------------------------------
+     x[satomic_pri] := satom =># "_1";
+   
+     satom := "_pclt<" stypeexpr "," stypeexpr ">" =>#
+       "`(ast_pclt ,_sr ,_2 ,_4)"
+     ;
+   
+     //$ record value (comma separated).
+     satom := "(" rassign ("," rassign2 )* ")" =>#
+       "`(ast_record ,_sr ,(cons _2 (map second _3)))"
+     ;
+       rassign := sname "=" x[sor_condition_pri] =># "`(,_1 ,_3)";
+       rassign := "=" x[sor_condition_pri] =># '`("" ,_2)';
+       rassign2 := sname "=" x[sor_condition_pri] =># "`(,_1 ,_3)";
+       rassign2 := "=" x[sor_condition_pri] =># '`("" ,_2)';
+       rassign2 := x[sor_condition_pri] =># '`("" ,_1)';
+   
+     //$ polyrecord value
+     //$ record value (comma separated).
+     satom := "(" rassign ("," rassign2 )* "|" sexpr ")" =>#
+       "`(ast_polyrecord ,_sr ,(cons _2 (map second _3)) ,_5)"
+     ;
+   
+     satom := "(" sexpr "without" sname+ ")" =>#
+       "`(ast_remove_fields ,_sr ,_2 ,_4)"
+     ;
+   
+     satom := "(" sexpr "with" rassign ("," rassign2 )* ")" =>#
+       "`(ast_replace_fields ,_sr ,_2 ,(cons _4 (map second _5)))"
+     ;
+   
+   
+     //$ record value, statement list.
+     //$ this variant is useful for encapsulating
+     //$ a series of var x = y; style statements.
+     satom := "struct" "{" vassign+ "}" =>#
+       "`(ast_record ,_sr ,_3 )"
+     ;
+       vassign := "var" sname "=" sexpr ";" =># "`(,_2 ,_4)";
+   
+     //$ Record type.
+     satom := "(" srecord_mem_decl ("," srecord_mem_decl2)*  ")" =># 
+      "`(ast_record_type ,(cons _2 (map second _3)))";
+       srecord_mem_decl := sname ":" stypeexpr =># "`(,_1 ,_3)";
+       srecord_mem_decl := ":" stypeexpr =># '`("" ,_2)';
+       srecord_mem_decl2 := sname ":" stypeexpr =># "`(,_1 ,_3)";
+       srecord_mem_decl2 := ":" stypeexpr =># '`("" ,_2)';
+       srecord_mem_decl2 := stypeexpr =># '`("" ,_1)';
+   
+     //$ polyRecord type.
+     satom := "(" srecord_mem_decl ("," srecord_mem_decl2)*  "|" stypeexpr ")" =># 
+      "`(ast_polyrecord_type ,(cons _2 (map second _3)) ,_5)";
+   
+   
+     // INCONSISTENT GRAMMAR (no separator between items??
+     //$ Variant type.
+     satom := "(" stype_variant_items ")" =># "`(ast_variant_type ,_2)";
+       stype_variant_item := "case" sname "of" sexpr =># "`(ctor ,_2 ,_4)";
+       stype_variant_item := "case" sname =># "`(ctor ,_2 ,(noi 'unit))";
+       stype_variant_item := "`" sname "of" sexpr =># "`(ctor ,_2 ,_4)";
+       stype_variant_item := "`" sname =># "`(ctor ,_2 ,(noi 'unit))";
+   
+       stype_variant_item_bar := "|" stype_variant_item =># "_2";
+       stype_variant_item_bar := "|" stypeexpr =># "`(base ,_2)";
+       stype_variant_items := stype_variant_item stype_variant_item_bar* =># "(cons _1 _2)";
+       stype_variant_items := stype_variant_item_bar+ =># "_1";
+   
+     //$ scalar literals (numbers, strings).
+     satom := sliteral =># "_1";
+   
+     //$ Wildcard pattern.
+     satom := _ =># "`(ast_patany ,_sr)";
+   
+     //$ Ellipsis (for binding C varags functions).
+     satom := "..." =># "`(ast_ellipsis ,_sr)";
+   
+     //$ Callback expression.
+     satom := "callback" "[" sexpr "]" =># "`(ast_callback ,_sr ,_3)";
+   
+     //$ Short form anonymous procedure closure.
+     satom := scompound =># "(lazy _1)";
+   
+     //$ Short form sequence operator.
+     //$ ( stmt; expr ) means the same as #{stmt; return expr; }
+     satom := "(" stmt+ sexpr ")" =>#
+       """
+       (
+         let* 
+         (
+           (stmts _2)
+           (expr _3)
+           (retexp `(ast_fun_return ,_sr ,expr))
+           (nustmts (append stmts (list retexp)))
+         )
+         (block_expr nustmts)
+       )
+       """ 
+     ;
+   
+     //$ special anonymous variable forces eager eval.
+     satom := "(" "var" sexpr ")" =># 
+       """
+       (
+         let
+         (
+           (name (fresh_name "asvar"))
+         )
+         `(ast_as_var ,_sr (,_3 ,name))
+       )
+       """
+     ;
+   
+     //$ inline scheme
+     satom := "schemelex" sstring =># "(schemelex _2)";
+     satom := "schemerun" sstring =># "(schemerun _2)";
+     //$ Empty tuple (unit tuple).
+     satom := "(" ")" =># "'()";
+   
+     //$ Object extension.
+     satom := "extend" stypelist "with" sexpr "end" =># "`(ast_extension ,_sr ,_2 ,_4)";
+   
+       setbar := "|" =># "_1";
+       setbar := "\|" =># "_1";
+       setbar := "\mid" =># "_1";
+   
+     setform := spattern ":" stypeexpr setbar sexpr =>#
+       """
+       (let* 
+         (
+            (argt _3)
+            (ret (nos "bool"))
+            (matchings `((,_1 ,_5)((pat_setform_any ,_sr)(ast_typed_case 0 2))))
+            (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,matchings)))))
+            (param `(,_sr PVal _a ,argt none)) ;; one parameter
+            (params `(,param))            ;; parameter tuple list
+            (paramsx `(,params none))     ;; parameter tuple list with precondition
+            (paramsxs `(,paramsx))        ;; curry parameters 
+            (method `(ast_curry ,_sr "has_elt"  ,dfltvs ,paramsxs (,ret none) Method () ,body))
+            (noargs `((() none)))
+            (noobjtyp (noi 'typ_none))
+            (objsts `(,method))
+            (object `(ast_object ,_sr (,dfltvs ,noargs ,noobjtyp ,objsts))) 
+         )
+         `(ast_apply ,_sr (,object (ast_tuple ,_sr ())))
+       )
+       """;
+   
+     satom := "{" setform  "}" =># "_2";
+     satom := "\{" setform  "\}" =># "_2";
+   
+   
+   
+   }
+   
+   @
+   
 
 Stub extension file inclusion support
 -------------------------------------
@@ -1817,10 +1817,10 @@ by the python script  :code:`src/tools/flx_find_grammar_files.py`.
 
 .. code-block:: text
 
-  grammar/python_grammar.fsyn
-  grammar/debug.fsyn
-  @
-  
+   grammar/python_grammar.fsyn
+   grammar/debug.fsyn
+   @
+   
 
 Master DSSL dependency list.
 ----------------------------
@@ -1830,39 +1830,39 @@ all the DSSLs required for it.
 
 .. code-block:: text
 
-  syntax felix {
-    requires
-      list,
-      blocks,
-      lexer,
-      statements,
-      type_decls,
-      variables,
-      executable,
-      assignment,
-      control,
-      exceptions,
-      conditional,
-      loops,
-      pfor, 
-      assertions,
-      namespaces,
-      requirements,
-      expressions,
-      brackets,
-      texsyms,
-      functions,
-      patterns,
-      cbind,
-      regexps,
-      macros,
-      plugins,
-      debug,
-      chips
-    ;
-  }
-  @
-  
+   syntax felix {
+     requires
+       list,
+       blocks,
+       lexer,
+       statements,
+       type_decls,
+       variables,
+       executable,
+       assignment,
+       control,
+       exceptions,
+       conditional,
+       loops,
+       pfor, 
+       assertions,
+       namespaces,
+       requirements,
+       expressions,
+       brackets,
+       texsyms,
+       functions,
+       patterns,
+       cbind,
+       regexps,
+       macros,
+       plugins,
+       debug,
+       chips
+     ;
+   }
+   @
+   
 
 Function forms
 --------------
@@ -1870,452 +1870,452 @@ Function forms
 
 .. code-block:: text
 
-  //$ General functional forms.
-  syntax functions {
-    requires expressions;
-  
-    //$ Anonymous function (lamda).
-    satom := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
-      """
-      `(ast_lambda ,_sr (,_3 ,_4 ,(first (first _5)) ,_7))
-      """;
-  
-    //$ Anonymous function (lamda).
-    x[slambda_pri] := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=>" sexpr =>#
-      """
-      `(ast_lambda ,_sr (,_3 ,_4 ,(first (first _5)) ((ast_fun_return ,_sr ,_7))))
-      """;
-  
-    //$ Anonymous generator (lamda).
-    satom := sadjectives "gen" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
-      """
-      `(ast_generator ,_sr (,_3 ,_4 ,(first (first _5)) ,_7))
-      """;
-  
-    //$ Anonymous generator (lamda).
-    x[slambda_pri] := sadjectives "gen" stvarlist slambda_fun_args fun_return_type "=>" sexpr =>#
-      """
-      `(ast_generator ,_sr (,_3 ,_4 ,(first (first _5)) ((ast_fun_return ,_sr ,_7))))
-      """;
-  
-  
-    //$ Anonymous procedure (lamda).
-    satom := sadjectives "proc" stvarlist slambda_fun_args scompound =>#
-      """
-      `(ast_lambda ,_sr (,_3 ,_4 (ast_void ,_sr) ,_5))
-      """;
-  
-    //$ Anonymous procedure (lamda).
-    satom  := sadjectives "proc" stvarlist scompound =>#
-      """
-      `(ast_lambda ,_sr (,_3 ((() none)) (ast_void ,_sr) ,_4))
-      """;
-  
-    //$ Anonymous object constructor (lamda).
-    //$ UGLY.
-    satom := sadjectives "object" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
-      """
-      `(ast_object ,_sr (,_3 ,_4 ,(first (first _5)) ,_7))
-      """;
-  
-    //$ Function adjective (prefix property) inline.
-    sadjective := "inline" =># "'InlineFunction";
-  
-    //$ Function adjective (prefix property) noinline.
-    sadjective := "noinline" =># "'NoInlineFunction";
-    //sadjective := "static" =># "'Static";
-  
-    //$ Function adjective (prefix property) extern.
-    sadjective := "extern" =># "'NoInlineFunction";
-  
-    //$ Function adjective (prefix property) virtual.
-    //$ In classes only. Specifies an overrideable function.
-    sadjective := "virtual" =># "'Virtual";
-  
-    //$ Function dependent on its arguments only,
-    //$ not dependent on any variables in its enclosing context.
-    sadjective := "pure" =># "'Pure";
-  
-    //$ Function which fails  to evaluate argument 
-    //$ if and only if its argument fails, 
-    //$ i.e. f (error) = error
-    sadjective := "strict" =># "'Strict";
-  
-    //$ Function which fails  to evaluate argument 
-    //$ if and only if its argument fails, 
-    //$ i.e. f (error) = error
-    sadjective := "nonstrict" =># "'NonStrict";
-  
-  
-    //$ Function may be dependent on variables in its enclosing context.
-    sadjective := "impure" =># "'Impure";
-  
-    //$ Function returns a result for all argument values.
-    sadjective := "total" =># "'Total";
-  
-    //$ Function may fail for some argument values.
-    //$ Equivalent to a function with a non-tautologous but unknown pre-condition.
-    sadjective := "partial" =># "'Partial";
-  
-    //$ Specifies a method, in an object definition only.
-    sadjective := "method" =># "'Method";
-  
-    //$ Specifies function is to be exported under its Felix name.
-    //$ Function must be top level and non-polymorphic.
-    //$ Top level means the global space or a non-polymorphic class
-    //$ nested in a top level space (recursively).
-    sadjective := "export" =># "'Export";
-    sadjective := "export" sstring =># "`(NamedExport ,_2)";
-  
-    sadjectives := sadjective* =># "_1";
-  
-    slambda_fun_arg := "(" sparameter_comma_list "when" sexpr ")" =># "`(,_2 (some ,_4))";
-    slambda_fun_arg := "(" sparameter_comma_list ")" =># "`(,_2 none)";
-    slambda_fun_args := slambda_fun_arg+ =># "_1";
-  
-    //$ Function return type specification with post-condition.
-    fun_return_type := ":" stypeexpr "expect" sexpr =># "`((,_2 (some ,_4)) ,dflteffects)";
-    fun_return_type := ":" "[" sexpr "]" stypeexpr "expect" sexpr =># "`((,_5 (some ,_7)) ,_3)";
-  
-    //$ Function return type specification without post-condition.
-    fun_return_type := ":" stypeexpr =># "`((,_2 none) ,dflteffects)";
-    fun_return_type := ":" "[" sexpr "]" stypeexpr =># "`((,_5 none) ,_3)";
-  
-    //$ Function return postcondition without type.
-    fun_return_type := "expect" sexpr =># "`((,(noi 'typ_none) (some ,_2)) ,dflteffects)";
-    fun_return_type := ":" "[" sexpr "]" "expect" sexpr =># "`((,(noi 'typ_none) (some ,_6)) ,_3)";
-  
-    //$ No return type.
-    fun_return_type := ":" "[" sexpr "]" =># "`((,(noi 'typ_none) none) ,_3)";
-    fun_return_type := sepsilon =># "`((,(noi 'typ_none) none) ,dflteffects)";
-  
-    //$ Object factory return type.
-    object_return_type := stypeexpr =># "`(,_1 none)";
-  
-    //$ Object invariant
-    sfunction := "invariant" sexpr ";" =># "`(ast_invariant, _sr, _2)";
-  
-    //$ Function parameter with type and default value.
-    private sparameter := sparam_qual sname ":" x[sarrow_pri] "=" x[sor_condition_pri] =># "`(,_sr ,_1 ,_2 ,_4 (some ,_6))";
-  
-    //$ Function parameter with type.
-    private sparameter := sparam_qual sname ":" x[sarrow_pri] =># "`(,_sr ,_1 ,_2 ,_4 none)";
+   //$ General functional forms.
+   syntax functions {
+     requires expressions;
    
-    //$ Function parameter without type.
-    //$ Defaults to polymorphic in unnamed type variable.
-    private sparameter := sparam_qual sname =># "`(,_sr ,_1 ,_2 ,(noi 'typ_none) none)";
-  
-    //$ Empty parameter tuple.
-    private sparameter_comma_list = list::commalist0<sparameter>;
-  
-    //$ Parameter qualifier: val.
-    private sparam_qual := "val" =># "'PVal";
-  
-    //$ Parameter qualifier: once.
-    private sparam_qual := "once" =># "'POnce";
-  
-    //$ Parameter qualifier: var.
-    private sparam_qual := "var" =># "'PVar";
-  
-    //$ Default parameter qualifier is val.
-    private sparam_qual := sepsilon =># "'PDef";
-  
-    //$ Function tuple parameter with pre-condition.
-    sfun_arg :=  "(" sparameter_comma_list "when" sexpr ")" =># "`(,_2 (some ,_4))";
-  
-    //$ Function tuple parameter without pre-condition.
-    sfun_arg :=  "(" sparameter_comma_list ")" =># "`(,_2 none)";
-  
-    //$ Short form function parameter single polymorphic variable.
-    sfun_arg :=  sname =># "`(((,_sr PVal ,_1 ,(noi 'typ_none) none)) none)";
-  
-    //$ Function binder: C function.
-    //$ A function with C function type.
-    sfun_kind := "cfun" =># "'CFunction";
-  
-    //$ Function binder: Generator.
-    //$ A function with side effects.
-    sfun_kind := "gen" =># "'Generator";
-  
-    //$ Function binder: Function.
-    //$ A function without side-effects.
-    sfun_kind := "fun" =># "'Function";
-  
-    stmt := sfunction =># "_1";
-  
-    //$ General function definition. Multiple tuple arguments, body is expression.
-    //$ Example:
-    //$ 
-    //$ inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l => x.long + y;
-    sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=>" sexpr ";" =>#
-      """
-        (begin ;;(display "GENERAL FUNCTION")
-        (let ((body `((ast_fun_return ,_sr ,_7))))
-        `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ,(first _5) ,(second _5) ,(cal_funkind _1 _2) ,_1 ,body))
+     //$ Anonymous function (lamda).
+     satom := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
+       """
+       `(ast_lambda ,_sr (,_3 ,_4 ,(first (first _5)) ,_7))
+       """;
+   
+     //$ Anonymous function (lamda).
+     x[slambda_pri] := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=>" sexpr =>#
+       """
+       `(ast_lambda ,_sr (,_3 ,_4 ,(first (first _5)) ((ast_fun_return ,_sr ,_7))))
+       """;
+   
+     //$ Anonymous generator (lamda).
+     satom := sadjectives "gen" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
+       """
+       `(ast_generator ,_sr (,_3 ,_4 ,(first (first _5)) ,_7))
+       """;
+   
+     //$ Anonymous generator (lamda).
+     x[slambda_pri] := sadjectives "gen" stvarlist slambda_fun_args fun_return_type "=>" sexpr =>#
+       """
+       `(ast_generator ,_sr (,_3 ,_4 ,(first (first _5)) ((ast_fun_return ,_sr ,_7))))
+       """;
+   
+   
+     //$ Anonymous procedure (lamda).
+     satom := sadjectives "proc" stvarlist slambda_fun_args scompound =>#
+       """
+       `(ast_lambda ,_sr (,_3 ,_4 (ast_void ,_sr) ,_5))
+       """;
+   
+     //$ Anonymous procedure (lamda).
+     satom  := sadjectives "proc" stvarlist scompound =>#
+       """
+       `(ast_lambda ,_sr (,_3 ((() none)) (ast_void ,_sr) ,_4))
+       """;
+   
+     //$ Anonymous object constructor (lamda).
+     //$ UGLY.
+     satom := sadjectives "object" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
+       """
+       `(ast_object ,_sr (,_3 ,_4 ,(first (first _5)) ,_7))
+       """;
+   
+     //$ Function adjective (prefix property) inline.
+     sadjective := "inline" =># "'InlineFunction";
+   
+     //$ Function adjective (prefix property) noinline.
+     sadjective := "noinline" =># "'NoInlineFunction";
+     //sadjective := "static" =># "'Static";
+   
+     //$ Function adjective (prefix property) extern.
+     sadjective := "extern" =># "'NoInlineFunction";
+   
+     //$ Function adjective (prefix property) virtual.
+     //$ In classes only. Specifies an overrideable function.
+     sadjective := "virtual" =># "'Virtual";
+   
+     //$ Function dependent on its arguments only,
+     //$ not dependent on any variables in its enclosing context.
+     sadjective := "pure" =># "'Pure";
+   
+     //$ Function which fails  to evaluate argument 
+     //$ if and only if its argument fails, 
+     //$ i.e. f (error) = error
+     sadjective := "strict" =># "'Strict";
+   
+     //$ Function which fails  to evaluate argument 
+     //$ if and only if its argument fails, 
+     //$ i.e. f (error) = error
+     sadjective := "nonstrict" =># "'NonStrict";
+   
+   
+     //$ Function may be dependent on variables in its enclosing context.
+     sadjective := "impure" =># "'Impure";
+   
+     //$ Function returns a result for all argument values.
+     sadjective := "total" =># "'Total";
+   
+     //$ Function may fail for some argument values.
+     //$ Equivalent to a function with a non-tautologous but unknown pre-condition.
+     sadjective := "partial" =># "'Partial";
+   
+     //$ Specifies a method, in an object definition only.
+     sadjective := "method" =># "'Method";
+   
+     //$ Specifies function is to be exported under its Felix name.
+     //$ Function must be top level and non-polymorphic.
+     //$ Top level means the global space or a non-polymorphic class
+     //$ nested in a top level space (recursively).
+     sadjective := "export" =># "'Export";
+     sadjective := "export" sstring =># "`(NamedExport ,_2)";
+   
+     sadjectives := sadjective* =># "_1";
+   
+     slambda_fun_arg := "(" sparameter_comma_list "when" sexpr ")" =># "`(,_2 (some ,_4))";
+     slambda_fun_arg := "(" sparameter_comma_list ")" =># "`(,_2 none)";
+     slambda_fun_args := slambda_fun_arg+ =># "_1";
+   
+     //$ Function return type specification with post-condition.
+     fun_return_type := ":" stypeexpr "expect" sexpr =># "`((,_2 (some ,_4)) ,dflteffects)";
+     fun_return_type := ":" "[" sexpr "]" stypeexpr "expect" sexpr =># "`((,_5 (some ,_7)) ,_3)";
+   
+     //$ Function return type specification without post-condition.
+     fun_return_type := ":" stypeexpr =># "`((,_2 none) ,dflteffects)";
+     fun_return_type := ":" "[" sexpr "]" stypeexpr =># "`((,_5 none) ,_3)";
+   
+     //$ Function return postcondition without type.
+     fun_return_type := "expect" sexpr =># "`((,(noi 'typ_none) (some ,_2)) ,dflteffects)";
+     fun_return_type := ":" "[" sexpr "]" "expect" sexpr =># "`((,(noi 'typ_none) (some ,_6)) ,_3)";
+   
+     //$ No return type.
+     fun_return_type := ":" "[" sexpr "]" =># "`((,(noi 'typ_none) none) ,_3)";
+     fun_return_type := sepsilon =># "`((,(noi 'typ_none) none) ,dflteffects)";
+   
+     //$ Object factory return type.
+     object_return_type := stypeexpr =># "`(,_1 none)";
+   
+     //$ Object invariant
+     sfunction := "invariant" sexpr ";" =># "`(ast_invariant, _sr, _2)";
+   
+     //$ Function parameter with type and default value.
+     private sparameter := sparam_qual sname ":" x[sarrow_pri] "=" x[sor_condition_pri] =># "`(,_sr ,_1 ,_2 ,_4 (some ,_6))";
+   
+     //$ Function parameter with type.
+     private sparameter := sparam_qual sname ":" x[sarrow_pri] =># "`(,_sr ,_1 ,_2 ,_4 none)";
+    
+     //$ Function parameter without type.
+     //$ Defaults to polymorphic in unnamed type variable.
+     private sparameter := sparam_qual sname =># "`(,_sr ,_1 ,_2 ,(noi 'typ_none) none)";
+   
+     //$ Empty parameter tuple.
+     private sparameter_comma_list = list::commalist0<sparameter>;
+   
+     //$ Parameter qualifier: val.
+     private sparam_qual := "val" =># "'PVal";
+   
+     //$ Parameter qualifier: once.
+     private sparam_qual := "once" =># "'POnce";
+   
+     //$ Parameter qualifier: var.
+     private sparam_qual := "var" =># "'PVar";
+   
+     //$ Default parameter qualifier is val.
+     private sparam_qual := sepsilon =># "'PDef";
+   
+     //$ Function tuple parameter with pre-condition.
+     sfun_arg :=  "(" sparameter_comma_list "when" sexpr ")" =># "`(,_2 (some ,_4))";
+   
+     //$ Function tuple parameter without pre-condition.
+     sfun_arg :=  "(" sparameter_comma_list ")" =># "`(,_2 none)";
+   
+     //$ Short form function parameter single polymorphic variable.
+     sfun_arg :=  sname =># "`(((,_sr PVal ,_1 ,(noi 'typ_none) none)) none)";
+   
+     //$ Function binder: C function.
+     //$ A function with C function type.
+     sfun_kind := "cfun" =># "'CFunction";
+   
+     //$ Function binder: Generator.
+     //$ A function with side effects.
+     sfun_kind := "gen" =># "'Generator";
+   
+     //$ Function binder: Function.
+     //$ A function without side-effects.
+     sfun_kind := "fun" =># "'Function";
+   
+     stmt := sfunction =># "_1";
+   
+     //$ General function definition. Multiple tuple arguments, body is expression.
+     //$ Example:
+     //$ 
+     //$ inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l => x.long + y;
+     sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=>" sexpr ";" =>#
+       """
+         (begin ;;(display "GENERAL FUNCTION")
+         (let ((body `((ast_fun_return ,_sr ,_7))))
+         `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ,(first _5) ,(second _5) ,(cal_funkind _1 _2) ,_1 ,body))
+         )
+       """;
+   
+     //$ General function definition. Multiple tuple arguments, body of statements.
+     //$ inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l { return x.long + y; }
+     sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=" scompound =>#
+       """
+         (begin ;;(display "COMPOUND FUNCTION")
+         `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ,(first _5) ,(second _5) ,(cal_funkind _1 _2) ,_1 ,_7))
+       """;
+   
+     //$ Object factory definition with interface type.
+     sfunction := "object" sdeclname sfun_arg* "implements" object_return_type "=" scompound =>#
+       """
+         `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,_5 Object () ,_7)
+       """;
+   
+     //$ Object factory definition without interface type.
+     sfunction := "object" sdeclname sfun_arg*  "=" scompound =>#
+       """
+         `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 (,(noi 'typ_none) none) Object () ,_5)
+       """;
+   
+     //$ Object factory definition with inherited methods and
+     //$ interface type.
+     sfunction := 
+       "object" sdeclname sfun_arg* "extends" stypeexpr_comma_list 
+       "implements" object_return_type "=" scompound 
+     =>#
+       """
+      (let*  
+        (
+          (noretype `(,(noi 'typ_none) none))
+          (d `(ast_object ,_sr (,dfltvs ((() none)) none ,_9)))  ;; extension function
+          (a `(ast_apply ,_sr (,d ()))) ;; applied to unit
+          (x `(ast_extension ,_sr ,_5 ,a)) ;; actual extension expression
+          (retst `(ast_fun_return ,_sr ,x))
+          (body `(,retst))
         )
-      """;
-  
-    //$ General function definition. Multiple tuple arguments, body of statements.
-    //$ inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l { return x.long + y; }
-    sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=" scompound =>#
-      """
-        (begin ;;(display "COMPOUND FUNCTION")
-        `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ,(first _5) ,(second _5) ,(cal_funkind _1 _2) ,_1 ,_7))
-      """;
-  
-    //$ Object factory definition with interface type.
-    sfunction := "object" sdeclname sfun_arg* "implements" object_return_type "=" scompound =>#
-      """
-        `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,_5 Object () ,_7)
-      """;
-  
-    //$ Object factory definition without interface type.
-    sfunction := "object" sdeclname sfun_arg*  "=" scompound =>#
-      """
-        `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 (,(noi 'typ_none) none) Object () ,_5)
-      """;
-  
-    //$ Object factory definition with inherited methods and
-    //$ interface type.
-    sfunction := 
-      "object" sdeclname sfun_arg* "extends" stypeexpr_comma_list 
-      "implements" object_return_type "=" scompound 
-    =>#
-      """
-     (let*  
-       (
-         (noretype `(,(noi 'typ_none) none))
-         (d `(ast_object ,_sr (,dfltvs ((() none)) none ,_9)))  ;; extension function
-         (a `(ast_apply ,_sr (,d ()))) ;; applied to unit
-         (x `(ast_extension ,_sr ,_5 ,a)) ;; actual extension expression
-         (retst `(ast_fun_return ,_sr ,x))
-         (body `(,retst))
+        `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,_7 Function () ,body)
        )
-       `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,_7 Function () ,body)
-      )
-      """;
-  
-    //$ Object factory definition with inherited methods.
-    sfunction := "object" sdeclname sfun_arg*  "extends" stypeexpr_comma_list "=" scompound =>#
-      """
-     (let*  
-       (
-         (noretype `(,(noi 'typ_none) none))
-         (d `(ast_object ,_sr (,dfltvs ((() none)) none ,_7)))  ;; extension function
-         (a `(ast_apply ,_sr (,d ()))) ;; applied to unit
-         (x `(ast_extension ,_sr ,_5 ,a)) ;; actual extension expression
-         (retst `(ast_fun_return ,_sr ,x))
-         (body `(,retst))
+       """;
+   
+     //$ Object factory definition with inherited methods.
+     sfunction := "object" sdeclname sfun_arg*  "extends" stypeexpr_comma_list "=" scompound =>#
+       """
+      (let*  
+        (
+          (noretype `(,(noi 'typ_none) none))
+          (d `(ast_object ,_sr (,dfltvs ((() none)) none ,_7)))  ;; extension function
+          (a `(ast_apply ,_sr (,d ()))) ;; applied to unit
+          (x `(ast_extension ,_sr ,_5 ,a)) ;; actual extension expression
+          (retst `(ast_fun_return ,_sr ,x))
+          (body `(,retst))
+        )
+        `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,noretype Function () ,body)
        )
-       `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,noretype Function () ,body)
-      )
-      """;
-  
-      stypeexpr_comma_list = list::commalist1<stypeexpr>;
-  
-  
-    sopt_cstring := "=" scode_spec =># "`(some ,_2)";
-    sopt_cstring := sepsilon =># "'none";
-  
-    //$ Short form function definition. Example:
-    //$
-    //$ fun f : int -> int = | 0 => 0 | _ => 1;
-  /*
-    sfunction := sadjectives sfun_kind sdeclname fun_return_type "=" smatching+ ";" =>#
-      """
-       (let
-         (
-          (t (first _4))
-          (traint (second _4))
-         )
-        (begin ;;(display "MATCHING ftype=")(display t)(display "\\n")
-        (if (eq? 'ast_arrow (first t))
-          (let
-            (
-              (argt (caadr t))
-              (ret (cadadr t))
-              (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,_6)))))
-            )
-            `(ast_curry ,_sr ,(first _3) ,(second _3)
-              (
-                (((,_sr PVal _a ,argt none)) none)
-              )
-              (,ret ,traint)
-              ,(cal_funkind _1 _2) ,_1 ,body)
-          )
-          (begin (display "ERROR MATCHINGS FUNDEF ")(display _sr) 'ERROR)
-         )
-         )
-       )
-      """;
-  */
-  
-    sfunction := sadjectives sfun_kind sdeclname ":" stypeexpr "=" smatching+ ";" =>#
-      """
-       (let
-         (
-          (t _5)
-         )
-        (begin ;;(display "MATCHING ftype=")(display t)(display "\\n")
-          (let
-            (
-              (argt `(ast_apply ,_sr (,(nos "dom") ,t)))
-              (ret `(ast_apply ,_sr (,(nos "cod") ,t)))
-              (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,_7)))))
-            )
-            `(ast_curry ,_sr ,(first _3) ,(second _3)
-              (
-                (((,_sr PVal _a ,argt none)) none)
-              )
-              (,ret none)
-              ,(cal_funkind _1 _2) ,_1 ,body)
-          )
-         )
-       )
-      """;
-  
-  
-    sfunction := sadjectives sfun_kind sdeclname "=" sexpr ";" =>#
-     """ 
-        (let*
+       """;
+   
+       stypeexpr_comma_list = list::commalist1<stypeexpr>;
+   
+   
+     sopt_cstring := "=" scode_spec =># "`(some ,_2)";
+     sopt_cstring := sepsilon =># "'none";
+   
+     //$ Short form function definition. Example:
+     //$
+     //$ fun f : int -> int = | 0 => 0 | _ => 1;
+   /*
+     sfunction := sadjectives sfun_kind sdeclname fun_return_type "=" smatching+ ";" =>#
+       """
+        (let
           (
-            (traint 'none)
-            (t `(ast_apply ,_sr (,(nos "typeof") ,_5)))
-            (apl `(ast_apply ,_sr (,_5 ,(noi '_a))))
-            (argt `(ast_apply ,_sr (,(nos "dom") ,t)))
-            (ret `(ast_apply ,_sr (,(nos "cod") ,t)))
-            (body `((ast_fun_return ,_sr ,apl )))
-            (result `(ast_curry ,_sr ,(first _3) ,(second _3)
-              (
-                (((,_sr PVal _a ,argt none)) none)
-              )
-              (,ret ,traint)
-              ,(cal_funkind _1 _2) ,_1 ,body)
-            )
+           (t (first _4))
+           (traint (second _4))
           )
-          result
-       )
-      """;
-  
-  
-    //$ Procedure binder.
-    sproc_kind := "proc" =># "'Function";
-  
-    //$ C procedure binder. 
-    //$ Procedure has C function type (with void result type).
-    sproc_kind := "cproc" =># "'CFunction";
-  
-    private sopt_traint_eq:= "expect" sexpr "=" =># "`((some ,_2) ,dflteffects)";
-    private sopt_traint_eq:= "=" =># "`(none ,dflteffects)";
-    private sopt_traint_eq:= sepsilon =># "`(none ,dflteffects)";
-  
-    private sopt_traint_eq:= "expect" sexpr ":" "[" sexpr "]" "=" =># "`((some ,_2) ,_5)";
-    private sopt_traint_eq:= ":" "[" sexpr "]" "=" =># "`(none ,_3)";
-    private sopt_traint_eq:= ":" "[" sexpr "]" =># "`(none ,_3)";
-  
-  
-    private sopt_traint:= "expect" sexpr =># "`((some ,_2) ,dflteffects)";
-    private sopt_traint:= sepsilon =># "`(none ,dflteffects)";
-  
-    private sopt_traint:= "expect" sexpr ":" "[" sexpr "]" =># "`((some ,_2) ,_5)";
-    private sopt_traint:= ":" "[" sexpr "]" =># "`(none ,_3)";
-  
-    //$ Short form constructor function.
-    //$ The name of the function must be a type name.
-    //$ The return type is taken as the type with the name of the function.
-    sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound =>#
-      """
-      (let*
-        (
-          (name (string-append "_ctor_" (base_of_qualified_name _3)))
-          (vs _2)
-          (ret _3)
-          (traint (first _5))
-          (effects (second _5))
-          (body _6)
-          (args _4)
+         (begin ;;(display "MATCHING ftype=")(display t)(display "\\n")
+         (if (eq? 'ast_arrow (first t))
+           (let
+             (
+               (argt (caadr t))
+               (ret (cadadr t))
+               (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,_6)))))
+             )
+             `(ast_curry ,_sr ,(first _3) ,(second _3)
+               (
+                 (((,_sr PVal _a ,argt none)) none)
+               )
+               (,ret ,traint)
+               ,(cal_funkind _1 _2) ,_1 ,body)
+           )
+           (begin (display "ERROR MATCHINGS FUNDEF ")(display _sr) 'ERROR)
+          )
+          )
         )
-        `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects Function () ,body))
-      """;
-    sfunction := "supertype" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound =>#
-      """
-      (let*
-        (
-          (name (string-append "_ctor_" (base_of_qualified_name _3)))
-          (vs _2)
-          (ret _3)
-          (traint (first _5))
-          (effects (second _5))
-          (body _6)
-          (args _4)
+       """;
+   */
+   
+     sfunction := sadjectives sfun_kind sdeclname ":" stypeexpr "=" smatching+ ";" =>#
+       """
+        (let
+          (
+           (t _5)
+          )
+         (begin ;;(display "MATCHING ftype=")(display t)(display "\\n")
+           (let
+             (
+               (argt `(ast_apply ,_sr (,(nos "dom") ,t)))
+               (ret `(ast_apply ,_sr (,(nos "cod") ,t)))
+               (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,_7)))))
+             )
+             `(ast_curry ,_sr ,(first _3) ,(second _3)
+               (
+                 (((,_sr PVal _a ,argt none)) none)
+               )
+               (,ret none)
+               ,(cal_funkind _1 _2) ,_1 ,body)
+           )
+          )
         )
-        `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects Function (Subtype) ,body))
-      """;
-  
-    //$ Short form constructor function.
-    //$ The name of the function must be a type name.
-    //$ The return type is taken as the type with the name of the function.
-    sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";" =>#
-      """
-      (let*
-        (
-          (name (string-append "_ctor_" (base_of_qualified_name _3)))
-          (vs _2)
-          (ret _3)
-          (traint (first _5))
-          (effects (second _5))
-          (body `((ast_fun_return ,_sr ,_7)))
-          (args _4)
+       """;
+   
+   
+     sfunction := sadjectives sfun_kind sdeclname "=" sexpr ";" =>#
+      """ 
+         (let*
+           (
+             (traint 'none)
+             (t `(ast_apply ,_sr (,(nos "typeof") ,_5)))
+             (apl `(ast_apply ,_sr (,_5 ,(noi '_a))))
+             (argt `(ast_apply ,_sr (,(nos "dom") ,t)))
+             (ret `(ast_apply ,_sr (,(nos "cod") ,t)))
+             (body `((ast_fun_return ,_sr ,apl )))
+             (result `(ast_curry ,_sr ,(first _3) ,(second _3)
+               (
+                 (((,_sr PVal _a ,argt none)) none)
+               )
+               (,ret ,traint)
+               ,(cal_funkind _1 _2) ,_1 ,body)
+             )
+           )
+           result
         )
-        `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects Function () ,body))
-      """;
-    sfunction := "supertype" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";" =>#
-      """
-      (let*
-        (
-          (name (string-append "_ctor_" (base_of_qualified_name _3)))
-          (vs _2)
-          (ret _3)
-          (traint (first _5))
-          (effects (second _5))
-          (body `((ast_fun_return ,_sr ,_7)))
-          (args _4)
-        )
-        `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects Function (Subtype) ,body))
-      """;
-  
-  
-    //$ Procedure definition, general form.
-    sfunction := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint_eq scompound =>#
-      """
-        `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) ,(first _5)) ,(second _5)
-           ,(cal_funkind _1 _2) ,_1 ,_6)
-      """;
-  
-    //$ Procedure definition, short form (one statement).
-    sfunction := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint "=>" stmt =>#
-      """
-        `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) ,(first _5)) ,(second _5) 
-           ,(cal_funkind _1 _2) ,_1 (,_7))
-      """;
-  
-    //$ Routine definition, general form.
-    sfunction := sadjectives "routine" sdeclname sfun_arg* sopt_traint_eq scompound =>#
-      """
-        `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 (,(noi 'any) ,(first _5)) ,(second _5)
-           Function ,_1 ,_6)
-      """;
-  
-    //$ Routine definition, short form (one statement).
-    sfunction := sadjectives "routine" sdeclname sfun_arg* sopt_traint "=>" stmt =>#
-      """
-        `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 (,(noi 'any) ,(first _5)) ,(second _5) 
-           Function ,_1 (,_7))
-      """;
-  }
-  
-  @
-  
+       """;
+   
+   
+     //$ Procedure binder.
+     sproc_kind := "proc" =># "'Function";
+   
+     //$ C procedure binder. 
+     //$ Procedure has C function type (with void result type).
+     sproc_kind := "cproc" =># "'CFunction";
+   
+     private sopt_traint_eq:= "expect" sexpr "=" =># "`((some ,_2) ,dflteffects)";
+     private sopt_traint_eq:= "=" =># "`(none ,dflteffects)";
+     private sopt_traint_eq:= sepsilon =># "`(none ,dflteffects)";
+   
+     private sopt_traint_eq:= "expect" sexpr ":" "[" sexpr "]" "=" =># "`((some ,_2) ,_5)";
+     private sopt_traint_eq:= ":" "[" sexpr "]" "=" =># "`(none ,_3)";
+     private sopt_traint_eq:= ":" "[" sexpr "]" =># "`(none ,_3)";
+   
+   
+     private sopt_traint:= "expect" sexpr =># "`((some ,_2) ,dflteffects)";
+     private sopt_traint:= sepsilon =># "`(none ,dflteffects)";
+   
+     private sopt_traint:= "expect" sexpr ":" "[" sexpr "]" =># "`((some ,_2) ,_5)";
+     private sopt_traint:= ":" "[" sexpr "]" =># "`(none ,_3)";
+   
+     //$ Short form constructor function.
+     //$ The name of the function must be a type name.
+     //$ The return type is taken as the type with the name of the function.
+     sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound =>#
+       """
+       (let*
+         (
+           (name (string-append "_ctor_" (base_of_qualified_name _3)))
+           (vs _2)
+           (ret _3)
+           (traint (first _5))
+           (effects (second _5))
+           (body _6)
+           (args _4)
+         )
+         `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects Function () ,body))
+       """;
+     sfunction := "supertype" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound =>#
+       """
+       (let*
+         (
+           (name (string-append "_ctor_" (base_of_qualified_name _3)))
+           (vs _2)
+           (ret _3)
+           (traint (first _5))
+           (effects (second _5))
+           (body _6)
+           (args _4)
+         )
+         `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects Function (Subtype) ,body))
+       """;
+   
+     //$ Short form constructor function.
+     //$ The name of the function must be a type name.
+     //$ The return type is taken as the type with the name of the function.
+     sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";" =>#
+       """
+       (let*
+         (
+           (name (string-append "_ctor_" (base_of_qualified_name _3)))
+           (vs _2)
+           (ret _3)
+           (traint (first _5))
+           (effects (second _5))
+           (body `((ast_fun_return ,_sr ,_7)))
+           (args _4)
+         )
+         `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects Function () ,body))
+       """;
+     sfunction := "supertype" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";" =>#
+       """
+       (let*
+         (
+           (name (string-append "_ctor_" (base_of_qualified_name _3)))
+           (vs _2)
+           (ret _3)
+           (traint (first _5))
+           (effects (second _5))
+           (body `((ast_fun_return ,_sr ,_7)))
+           (args _4)
+         )
+         `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects Function (Subtype) ,body))
+       """;
+   
+   
+     //$ Procedure definition, general form.
+     sfunction := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint_eq scompound =>#
+       """
+         `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) ,(first _5)) ,(second _5)
+            ,(cal_funkind _1 _2) ,_1 ,_6)
+       """;
+   
+     //$ Procedure definition, short form (one statement).
+     sfunction := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint "=>" stmt =>#
+       """
+         `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) ,(first _5)) ,(second _5) 
+            ,(cal_funkind _1 _2) ,_1 (,_7))
+       """;
+   
+     //$ Routine definition, general form.
+     sfunction := sadjectives "routine" sdeclname sfun_arg* sopt_traint_eq scompound =>#
+       """
+         `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 (,(noi 'any) ,(first _5)) ,(second _5)
+            Function ,_1 ,_6)
+       """;
+   
+     //$ Routine definition, short form (one statement).
+     sfunction := sadjectives "routine" sdeclname sfun_arg* sopt_traint "=>" stmt =>#
+       """
+         `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 (,(noi 'any) ,(first _5)) ,(second _5) 
+            Function ,_1 (,_7))
+       """;
+   }
+   
+   @
+   
 
 Standard include file list
 --------------------------
@@ -2325,38 +2325,38 @@ for extensions in other packages.
 
 .. code-block:: text
 
-  grammar/utility.fsyn
-  grammar/blocks.fsyn
-  grammar/grammar_scheme_support.fsyn
-  grammar/grammar_regdefs.fsyn
-  grammar/grammar_ident_lexer.fsyn
-  grammar/grammar_string_lexer.fsyn
-  grammar/grammar_lexer.fsyn
-  grammar/expressions.fsyn
-  grammar/brackets.fsyn
-  grammar/texsyms.fsyn
-  grammar/patterns.fsyn
-  grammar/functions.fsyn
-  grammar/statements.fsyn
-  grammar/variables.fsyn
-  grammar/macros.fsyn
-  grammar/cbind.fsyn
-  grammar/executable.fsyn
-  grammar/assignment.fsyn
-  grammar/control.fsyn
-  grammar/conditional.fsyn
-  grammar/loops.fsyn
-  grammar/requirements.fsyn
-  grammar/type_decls.fsyn
-  grammar/assertions.fsyn
-  grammar/namespaces.fsyn
-  grammar/cgram.fsyn
-  grammar/plugins.fsyn
-  @@grammar/extra.files
-  grammar/felix.fsyn
-  grammar/save.fsyn
-  @
-  
+   grammar/utility.fsyn
+   grammar/blocks.fsyn
+   grammar/grammar_scheme_support.fsyn
+   grammar/grammar_regdefs.fsyn
+   grammar/grammar_ident_lexer.fsyn
+   grammar/grammar_string_lexer.fsyn
+   grammar/grammar_lexer.fsyn
+   grammar/expressions.fsyn
+   grammar/brackets.fsyn
+   grammar/texsyms.fsyn
+   grammar/patterns.fsyn
+   grammar/functions.fsyn
+   grammar/statements.fsyn
+   grammar/variables.fsyn
+   grammar/macros.fsyn
+   grammar/cbind.fsyn
+   grammar/executable.fsyn
+   grammar/assignment.fsyn
+   grammar/control.fsyn
+   grammar/conditional.fsyn
+   grammar/loops.fsyn
+   grammar/requirements.fsyn
+   grammar/type_decls.fsyn
+   grammar/assertions.fsyn
+   grammar/namespaces.fsyn
+   grammar/cgram.fsyn
+   grammar/plugins.fsyn
+   @@grammar/extra.files
+   grammar/felix.fsyn
+   grammar/save.fsyn
+   @
+   
 
 Identifier Lexer
 ----------------
@@ -2364,87 +2364,87 @@ Identifier Lexer
 
 .. code-block:: text
 
-  syntax felix_ident_lexer {
-    /* identifiers */
-    regdef ucn =
-        "\u" hexdigit hexdigit hexdigit hexdigit
-      | "\U" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit;
-  
-    regdef prime = "'";
-    regdef dash = '-';
-    regdef quest = "?";
-    regdef idletter = letter | underscore | hichar | ucn;
-    regdef alphnum = idletter | digit;
-    regdef innerglyph = idletter | digit | dash;
-    regdef flx_ident = idletter (innerglyph ? (alphnum | prime) +)* prime* quest ?;
-    regdef tex_ident = slosh letter+;
-    regdef sym_ident =
-      "+" | "-" | "*" | "/" | "%" | "^" | "~" | 
-      "\&" | "\|" | "\^" |
-      /* mutator */
-      "&=" | "|=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" | "<<=" | ">>=" |
-      /* comparison */
-      "<" | ">" | "==" | "!=" | "<=" | ">=" | "<<" | ">>" 
-    ;
-  
-    /* NOTE: upgrade to support n"wird + name" strings */
-    literal flx_ident =># "(utf8->ucn _1)";
-    literal tex_ident =># "_1";
-    literal sym_ident =># "_1";
-  
-    sname := flx_ident =># "_1" | tex_ident =># "_1" | sym_ident =># "_1";
-  
-  }
-  
-  @
-  
+   syntax felix_ident_lexer {
+     /* identifiers */
+     regdef ucn =
+         "\u" hexdigit hexdigit hexdigit hexdigit
+       | "\U" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit;
+   
+     regdef prime = "'";
+     regdef dash = '-';
+     regdef quest = "?";
+     regdef idletter = letter | underscore | hichar | ucn;
+     regdef alphnum = idletter | digit;
+     regdef innerglyph = idletter | digit | dash;
+     regdef flx_ident = idletter (innerglyph ? (alphnum | prime) +)* prime* quest ?;
+     regdef tex_ident = slosh letter+;
+     regdef sym_ident =
+       "+" | "-" | "*" | "/" | "%" | "^" | "~" | 
+       "\&" | "\|" | "\^" |
+       /* mutator */
+       "&=" | "|=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" | "<<=" | ">>=" |
+       /* comparison */
+       "<" | ">" | "==" | "!=" | "<=" | ">=" | "<<" | ">>" 
+     ;
+   
+     /* NOTE: upgrade to support n"wird + name" strings */
+     literal flx_ident =># "(utf8->ucn _1)";
+     literal tex_ident =># "_1";
+     literal sym_ident =># "_1";
+   
+     sname := flx_ident =># "_1" | tex_ident =># "_1" | sym_ident =># "_1";
+   
+   }
+   
+   @
+   
 
 .. code-block:: text
 
-  SCHEME """
-  (define (stripus s) ; strip underscores 
-    (let*
-      ( 
-        (chrs (string->list s))
-        (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
-      )
-      (list->string chrs)
-    )
-  )
-  """;
-  
-  SCHEME """
-  (define (tolower-char c) ; convert one character to lower case
-    (let* 
-      (
-        (i (char->integer c))
-        (i (if (and (>= i 65) (<= i 90)) (+ i 32) i))
-      ) 
-      (integer->char i)
-    )
-  )
-  """;
-  SCHEME """
-  (define (tolower-string s) ; convert a whole string to lower case
-    (let*
-      (
-        (chrs (string->list s))
-        (chrs (map tolower-char chrs))
-      )
-      (list->string chrs)
-    )
-  )
-  """;
-  
-  syntax lexer {
-    requires global_regdefs;
-    requires felix_ident_lexer;
-    requires felix_int_lexer;
-    requires felix_float_lexer;
-    requires felix_string_lexer;
-  }
-  @
-  
+   SCHEME """
+   (define (stripus s) ; strip underscores 
+     (let*
+       ( 
+         (chrs (string->list s))
+         (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
+       )
+       (list->string chrs)
+     )
+   )
+   """;
+   
+   SCHEME """
+   (define (tolower-char c) ; convert one character to lower case
+     (let* 
+       (
+         (i (char->integer c))
+         (i (if (and (>= i 65) (<= i 90)) (+ i 32) i))
+       ) 
+       (integer->char i)
+     )
+   )
+   """;
+   SCHEME """
+   (define (tolower-string s) ; convert a whole string to lower case
+     (let*
+       (
+         (chrs (string->list s))
+         (chrs (map tolower-char chrs))
+       )
+       (list->string chrs)
+     )
+   )
+   """;
+   
+   syntax lexer {
+     requires global_regdefs;
+     requires felix_ident_lexer;
+     requires felix_int_lexer;
+     requires felix_float_lexer;
+     requires felix_string_lexer;
+   }
+   @
+   
 
 Regular Definitions DSSL
 ------------------------
@@ -2454,49 +2454,49 @@ Google RE2 package via Felix binding library.
 
 .. code-block:: text
 
-  syntax global_regdefs {
-    /* ====================== REGULAR DEFINITIONS ============================ */
-    /* special characters */
-    regdef quote = "'";
-    regdef dquote = '"';
-    regdef slosh = '\';
-    regdef hash = '#';
-    regdef linefeed = 10;
-    regdef tab = 9;
-    regdef space = ' ';
-    regdef formfeed = 12;
-    regdef vtab = 11;
-    regdef carriage_return = 13;
-    regdef underscore = '_';
-  
-    /* character sets */
-    regdef bindigit = ['01'];
-    regdef octdigit = ['01234567'];
-    regdef digit = ['0123456789'];
-    regdef hexdigit = ["0123456789ABCDEFabcdef"];
-    regdef lower = ['abcdefghijklmnopqrstuvwxyz'];
-    regdef upper = ['ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
-    regdef letter = lower | upper;
-    regdef hichar = [128-255];
-    regdef white = space | tab;
-  
-    /* nasty: form control characters */
-    regdef form_control = linefeed | carriage_return | vtab | formfeed;
-    regdef newline_prefix = linefeed | carriage_return;
-    regdef newline = formfeed | linefeed  | carriage_return linefeed;
-    regdef hash = '#';
-  
-    regdef ordinary = letter | digit | hichar |
-      '!' | '$' | '%' | '&' | '(' | ')' | '*' |
-      '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' |
-      '=' | '>' | '?' | '@' | '[' | ']' | '^' | '_' |
-      '`' | '{' | '|' | '}' | '~';
-  
-    regdef printable = ordinary | quote | dquote | slosh | hash;
-  }
-  
-  @
-  
+   syntax global_regdefs {
+     /* ====================== REGULAR DEFINITIONS ============================ */
+     /* special characters */
+     regdef quote = "'";
+     regdef dquote = '"';
+     regdef slosh = '\';
+     regdef hash = '#';
+     regdef linefeed = 10;
+     regdef tab = 9;
+     regdef space = ' ';
+     regdef formfeed = 12;
+     regdef vtab = 11;
+     regdef carriage_return = 13;
+     regdef underscore = '_';
+   
+     /* character sets */
+     regdef bindigit = ['01'];
+     regdef octdigit = ['01234567'];
+     regdef digit = ['0123456789'];
+     regdef hexdigit = ["0123456789ABCDEFabcdef"];
+     regdef lower = ['abcdefghijklmnopqrstuvwxyz'];
+     regdef upper = ['ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
+     regdef letter = lower | upper;
+     regdef hichar = [128-255];
+     regdef white = space | tab;
+   
+     /* nasty: form control characters */
+     regdef form_control = linefeed | carriage_return | vtab | formfeed;
+     regdef newline_prefix = linefeed | carriage_return;
+     regdef newline = formfeed | linefeed  | carriage_return linefeed;
+     regdef hash = '#';
+   
+     regdef ordinary = letter | digit | hichar |
+       '!' | '$' | '%' | '&' | '(' | ')' | '*' |
+       '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' |
+       '=' | '>' | '?' | '@' | '[' | ']' | '^' | '_' |
+       '`' | '{' | '|' | '}' | '~';
+   
+     regdef printable = ordinary | quote | dquote | slosh | hash;
+   }
+   
+   @
+   
 
 Utility Scheme definitions.
 ---------------------------
@@ -2505,312 +2505,312 @@ For use in the action codes of the grammar.
 
 .. code-block:: text
 
-  SCHEME """(define counter 100)""";
-  
-  SCHEME """(define (fresh_int x)(begin (set! counter (+ counter 1)) counter))""";
-  
-  SCHEME """(define (fresh_name x)(string-append "_" x "_" _filebase "_" (number->string (fresh_int()))))""";
-  
-  SCHEME """
-  (begin
-    ;; lists
-    (define (first x)(car x))
-    (define (second x)(cadr x))
-    (define (third x)(caddr x))
-    (define (tail x)(cdr x))
-    (define fold_left
-      (lambda (f acc lst)
-        (if (null? lst) acc (fold_left f (f acc (first lst)) (tail lst)))))
-  
-    ;; list of pairs
-    (define (myassoc elt alst)
-      (let ((r (assoc elt alst)))
-      (if r (second r) `(MISMATCHED_BRACKET ,elt ,alst))))
-  
-    (define (list-mem? item lst) (fold_left (lambda (acc elt)(or acc (eq? elt item))) #f lst))
-    ;; name term constructor
-    (define (nos x)`(ast_name ,_sr ,x ()))
-    (define (noi x)`(ast_name ,_sr ,(symbol->string x) ()))
-    (define (qnoi c x)`(ast_lookup (,(noi c) ,(symbol->string x) ())))
-  
-    ;; polymorphic parameters
-    (define (typesoftvarlist x) (map nos (map first (first x))))
-    (define dfltaux '( (ast_tuple ("dummy" 0 0 0 0) ()) ()))
-    (define dfltvs `( () ,dfltaux)) ;; vs list: name,type,constraint triple
-    (define dfltargs '((() none)))
-    (define dflteffects '(ast_tuple ("dummy" 0 0 0 0) ())) ;; type unit
-  )
-  """;
-  
-  SCHEME """
-  (begin
-    (define (base_of_ast_lookup qn) (second (second qn)))
-    (define (base_of_ast_name n) (third n))
-    (define (base_of_qualified_name qn)
-      (cond 
-        ((eq? (first qn) 'ast_lookup) (base_of_ast_lookup qn))
-        ((eq? (first qn) 'ast_name) (base_of_ast_name qn))
-        (else (begin (display "QUALIFIED_NAME_EXPECTED got:")(display qn)))
-      )
-    )
-  )
-  """;
-  
-  SCHEME """
-  ;; lambda terms
-  (begin
-    (define (lazy stmts) `(ast_lambda ,_sr (,dfltvs ,dfltargs ,(noi 'typ_none) ,stmts)))
-    (define (lazy_proc stmts) `(ast_lambda ,_sr (,dfltvs ,dfltargs (ast_void ,_sr) ,stmts)))
-    (define (block stmts)`(ast_call ,_sr ,(lazy_proc stmts) ()))
-    (define (block_expr stmts) `(ast_apply ,_sr (,(lazy stmts) ())))
-    (define call (lambda (f a) `(ast_call ,_sr (ast_name ,_sr ,f ()) ,a)))
-  )
-  """;
-  
-  SCHEME """
-  ;; split an application term apply (f a) into list (f a)
-  (define (splitapply x)
-    (if (pair? x)
-      (if (eq? (first x) 'ast_apply)
-        (if (pair? (cddr x))
-          (begin
-  ;;           (display "f=")(display (caaddr x))
-  ;;           (display " arg=")(display (cadaddr x))
-  ;;           (display " pair=")(display (caddr x))
-             (caddr x))
-          (list x ()))
-        (list x ()))
-      (list ()))
-  )
-  """;
-  
-  SCHEME """
-  (define (mkl x)
-    (begin
-    ;;(display "mkl x=")(display x)
-    (if (pair? x)
-      (if (eq? (first x) 'ast_tuple)
-        (if (pair? (cddr x)) (caddr x) (list x))
-        (list x))
-      (list x)))
-  )
-  """;
-  
-  SCHEME """
-  (define (mkl2 x)
-    (begin
-    ;;(display "mkl2 x=")(display x)
-    (if (pair? x)
-      (if (eq? (first x) 'ast_product)
-        (if (pair? (cddr x)) (caddr x) (list x))
-        (list x))
-      (list x)))
-  )
-  """;
-  
-  SCHEME """
-  (define (cal_funkind adjs fk)
-    (if (eq? fk 'CFunction)'CFunction
-    (if (and (eq? fk 'Generator)(list-mem? 'Method adjs))'GeneratorMethod
-    (if (eq? fk 'Generator)'Generator
-    (if (list-mem? 'NoInlineFunction adjs)'NoInlineFunction
-    (if (list-mem? 'InlineFunction adjs)'InlineFunction
-    (if (list-mem? 'Method adjs)'Method
-    (if (list-mem? 'Ctor adjs)'Ctor
-    (if (list-mem? 'Virtual adjs)'Virtual
-    'Function
-  )))))))))
-  """;
-  SCHEME """
-  (define (tvfixup_folder vsct vtc)
-    (begin ;;(display "tvfixup_folder vsct=")(display vsct)(display ", vtc=")(display vtc)(display "\\n")
-    (let*
-      (
-        (vs (first vsct))
-        (ct (second vsct))
-        (v (first vtc))
-        (t (second vtc))
-        (c (caddr vtc))
-        (ct2
-          (cond
-            ((eq? 'NoConstraint c) ct )
-            ((eq? 'Eq (first c)) ;; type  valconstraint
-              `(ast_intersect
-                ((ast_type_match ,_sr ((ast_name ,_sr ,v ()) ((,(second c) ()))))
-                ,ct)
-              )
-            )
-            ((eq? 'In (first c)) ;; type constraint
-              `(ast_intersect
-                ((ast_isin ((ast_name ,_sr ,v ()) ,(second c)))
-                ,ct)
-              )
-            )
-          (else (display "ERROR!!!"))
-          )
-        )
-      )
-      (begin
-      ;;  (display "vs=")(display vs)
-      ;;  (display "\\nct=")(display ct)
-      ;;  (display "\\nv=")(display v)
-      ;;  (display "\\nt=")(display t)
-      ;;  (display "\\nc=")(display c)
-      ;;  (display "\\nct2=")(display ct2)
-      ;;  (display "\\n")
-      (list (cons `(,v ,t) vs) ct2))
-  ))))
-  """;
-  
-  //
-  // rti = rtc:type constraint, rtr:class requirement list
-  //
-  
-  SCHEME """
-  (define (tvfixup tv ct)
-    (begin ;;(display "tvfixup tv=")(display tv)(display ", ct=")(display ct)(display "\\n")
-    (let*
-      (
-        (vscs (fold_left tvfixup_folder `(() (ast_tuple ,_sr ())) tv))
-        (vs (first vscs))
-        (cs (second vscs))
-        (rtc (first ct))
-        (rtr (second ct))
-        (ct `((ast_intersect (,rtc ,cs)) ,rtr))
-      )
-      (begin
-      ;;  (display "vs=")(display vs)
-      ;;  (display "\\ncs=")(display cs)
-      ;;  (display "\\nrtc=")(display rtc)
-      ;;  (display "\\nrtr=")(display rtr)
-      ;;  (display "\\nct=")(display ct)
-      ;;  (display "\\n")
-      (list (reverse vs) ct))
-    )
-  ))
-  """;
-  
-  SCHEME """
-    (define (maybe k)(if (null? k)'none `(some ,(first k))))
-  """;
-  
-  SCHEME """
-    (define (strap a b)
-    (if(null? b)a(if(equal? b "")a(if(equal? a "")b(string-append a " " b)))))
-  """;
-  
-  SCHEME """
-    (define (strcat ls)(fold_left strap "" ls))
-  """;
-  
-  // chain 'and (x) yields just x,
-  // chain 'and (x y) yields ('and _sr (x y))
-  SCHEME """
-    (define (chain op hd tl)
-      (
-        if (equal? tl ())
-        hd
-        `(,op ,_sr ,(cons hd (map second tl)))
-      )
-    )
-  """;
-  
-  SCHEME """
-    (define (infix op) `(ast_apply ,_sr (,(noi op) (,_1 ,_3))))
-  """;
-  SCHEME """
-    (define (prefix op) `(ast_apply ,_sr (,(noi op) ,_2)))
-  """;
-  SCHEME """
-    (define (suffix op) `(ast_apply ,_sr (,(noi op) ,_1)))
-  """;
-  
-  
-  SCHEME """
-    (define (Prefix) `(ast_apply ,_sr (,(nos _1) ,_2)))
-  """;
-  SCHEME """
-    (define (Infix) `(ast_apply ,_sr (,(nos _2) (,_1 ,_3))))
-  """;
-  
-  SCHEME """
-    (define (filter pred lst) 
-      (reverse 
-        (fold_left 
-          (lambda (acc val) (if (pred val) (cons val acc) acc))
-          ()
-          lst
-        )
-      )
-    )
-  """;
-  
-  
-  SCHEME """
-    (define (filter_first sym lst) 
-      (reverse 
-        (fold_left 
-          (lambda (acc val) (if (equal? (first val) sym) (cons (tail val) acc) acc))
-          ()
-          lst
-        )
-      )
-    )
-  """;
-  
-  SCHEME """
-    (define (prefix? p s) 
-      (let
-        (
-          (pl (string-length p))
-          (sl (string-length s))
-        )
-        (if (< pl sl) (equal? p (substring s 0 pl)) #f)
-      )
-    )
-  """;
-  
-  SCHEME """
-    (define (suffix? p s) 
-      (let
-        (
-          (pl (string-length p))
-          (sl (string-length s))
-        )
-        (if (< pl sl) (equal? p (substring s (- sl pl) sl)) #f)
-      )
-    )
-  """;
-  
-  SCHEME """
-    (define (make_private s) `(ast_private ,_sr ,s))
-  """;
-  
-  SCHEME """
-    (define (SUBST term vals) 
-      (cond
-        ((symbol? term) term)
-        ((number? term) term)
-        ((string? term) term)
-        ((null? term) term)
-        ((list? term) 
-          (if (eq? (car term) 'PARSER_ARGUMENT)
-            (vector-ref vals (cadr term) )
-            (map (lambda (term) (SUBST term vals)) term)
-          )
-        )
-      ) 
-    )
-  """;
-  
-  SCHEME """
-    (define (stringof s) 
-      `(ast_literal ,_sr "string" ,s ,(string-append "::std::string(\"" s "\")"))
-    )
-  """;
-  
-  @
-  
+   SCHEME """(define counter 100)""";
+   
+   SCHEME """(define (fresh_int x)(begin (set! counter (+ counter 1)) counter))""";
+   
+   SCHEME """(define (fresh_name x)(string-append "_" x "_" _filebase "_" (number->string (fresh_int()))))""";
+   
+   SCHEME """
+   (begin
+     ;; lists
+     (define (first x)(car x))
+     (define (second x)(cadr x))
+     (define (third x)(caddr x))
+     (define (tail x)(cdr x))
+     (define fold_left
+       (lambda (f acc lst)
+         (if (null? lst) acc (fold_left f (f acc (first lst)) (tail lst)))))
+   
+     ;; list of pairs
+     (define (myassoc elt alst)
+       (let ((r (assoc elt alst)))
+       (if r (second r) `(MISMATCHED_BRACKET ,elt ,alst))))
+   
+     (define (list-mem? item lst) (fold_left (lambda (acc elt)(or acc (eq? elt item))) #f lst))
+     ;; name term constructor
+     (define (nos x)`(ast_name ,_sr ,x ()))
+     (define (noi x)`(ast_name ,_sr ,(symbol->string x) ()))
+     (define (qnoi c x)`(ast_lookup (,(noi c) ,(symbol->string x) ())))
+   
+     ;; polymorphic parameters
+     (define (typesoftvarlist x) (map nos (map first (first x))))
+     (define dfltaux '( (ast_tuple ("dummy" 0 0 0 0) ()) ()))
+     (define dfltvs `( () ,dfltaux)) ;; vs list: name,type,constraint triple
+     (define dfltargs '((() none)))
+     (define dflteffects '(ast_tuple ("dummy" 0 0 0 0) ())) ;; type unit
+   )
+   """;
+   
+   SCHEME """
+   (begin
+     (define (base_of_ast_lookup qn) (second (second qn)))
+     (define (base_of_ast_name n) (third n))
+     (define (base_of_qualified_name qn)
+       (cond 
+         ((eq? (first qn) 'ast_lookup) (base_of_ast_lookup qn))
+         ((eq? (first qn) 'ast_name) (base_of_ast_name qn))
+         (else (begin (display "QUALIFIED_NAME_EXPECTED got:")(display qn)))
+       )
+     )
+   )
+   """;
+   
+   SCHEME """
+   ;; lambda terms
+   (begin
+     (define (lazy stmts) `(ast_lambda ,_sr (,dfltvs ,dfltargs ,(noi 'typ_none) ,stmts)))
+     (define (lazy_proc stmts) `(ast_lambda ,_sr (,dfltvs ,dfltargs (ast_void ,_sr) ,stmts)))
+     (define (block stmts)`(ast_call ,_sr ,(lazy_proc stmts) ()))
+     (define (block_expr stmts) `(ast_apply ,_sr (,(lazy stmts) ())))
+     (define call (lambda (f a) `(ast_call ,_sr (ast_name ,_sr ,f ()) ,a)))
+   )
+   """;
+   
+   SCHEME """
+   ;; split an application term apply (f a) into list (f a)
+   (define (splitapply x)
+     (if (pair? x)
+       (if (eq? (first x) 'ast_apply)
+         (if (pair? (cddr x))
+           (begin
+   ;;           (display "f=")(display (caaddr x))
+   ;;           (display " arg=")(display (cadaddr x))
+   ;;           (display " pair=")(display (caddr x))
+              (caddr x))
+           (list x ()))
+         (list x ()))
+       (list ()))
+   )
+   """;
+   
+   SCHEME """
+   (define (mkl x)
+     (begin
+     ;;(display "mkl x=")(display x)
+     (if (pair? x)
+       (if (eq? (first x) 'ast_tuple)
+         (if (pair? (cddr x)) (caddr x) (list x))
+         (list x))
+       (list x)))
+   )
+   """;
+   
+   SCHEME """
+   (define (mkl2 x)
+     (begin
+     ;;(display "mkl2 x=")(display x)
+     (if (pair? x)
+       (if (eq? (first x) 'ast_product)
+         (if (pair? (cddr x)) (caddr x) (list x))
+         (list x))
+       (list x)))
+   )
+   """;
+   
+   SCHEME """
+   (define (cal_funkind adjs fk)
+     (if (eq? fk 'CFunction)'CFunction
+     (if (and (eq? fk 'Generator)(list-mem? 'Method adjs))'GeneratorMethod
+     (if (eq? fk 'Generator)'Generator
+     (if (list-mem? 'NoInlineFunction adjs)'NoInlineFunction
+     (if (list-mem? 'InlineFunction adjs)'InlineFunction
+     (if (list-mem? 'Method adjs)'Method
+     (if (list-mem? 'Ctor adjs)'Ctor
+     (if (list-mem? 'Virtual adjs)'Virtual
+     'Function
+   )))))))))
+   """;
+   SCHEME """
+   (define (tvfixup_folder vsct vtc)
+     (begin ;;(display "tvfixup_folder vsct=")(display vsct)(display ", vtc=")(display vtc)(display "\\n")
+     (let*
+       (
+         (vs (first vsct))
+         (ct (second vsct))
+         (v (first vtc))
+         (t (second vtc))
+         (c (caddr vtc))
+         (ct2
+           (cond
+             ((eq? 'NoConstraint c) ct )
+             ((eq? 'Eq (first c)) ;; type  valconstraint
+               `(ast_intersect
+                 ((ast_type_match ,_sr ((ast_name ,_sr ,v ()) ((,(second c) ()))))
+                 ,ct)
+               )
+             )
+             ((eq? 'In (first c)) ;; type constraint
+               `(ast_intersect
+                 ((ast_isin ((ast_name ,_sr ,v ()) ,(second c)))
+                 ,ct)
+               )
+             )
+           (else (display "ERROR!!!"))
+           )
+         )
+       )
+       (begin
+       ;;  (display "vs=")(display vs)
+       ;;  (display "\\nct=")(display ct)
+       ;;  (display "\\nv=")(display v)
+       ;;  (display "\\nt=")(display t)
+       ;;  (display "\\nc=")(display c)
+       ;;  (display "\\nct2=")(display ct2)
+       ;;  (display "\\n")
+       (list (cons `(,v ,t) vs) ct2))
+   ))))
+   """;
+   
+   //
+   // rti = rtc:type constraint, rtr:class requirement list
+   //
+   
+   SCHEME """
+   (define (tvfixup tv ct)
+     (begin ;;(display "tvfixup tv=")(display tv)(display ", ct=")(display ct)(display "\\n")
+     (let*
+       (
+         (vscs (fold_left tvfixup_folder `(() (ast_tuple ,_sr ())) tv))
+         (vs (first vscs))
+         (cs (second vscs))
+         (rtc (first ct))
+         (rtr (second ct))
+         (ct `((ast_intersect (,rtc ,cs)) ,rtr))
+       )
+       (begin
+       ;;  (display "vs=")(display vs)
+       ;;  (display "\\ncs=")(display cs)
+       ;;  (display "\\nrtc=")(display rtc)
+       ;;  (display "\\nrtr=")(display rtr)
+       ;;  (display "\\nct=")(display ct)
+       ;;  (display "\\n")
+       (list (reverse vs) ct))
+     )
+   ))
+   """;
+   
+   SCHEME """
+     (define (maybe k)(if (null? k)'none `(some ,(first k))))
+   """;
+   
+   SCHEME """
+     (define (strap a b)
+     (if(null? b)a(if(equal? b "")a(if(equal? a "")b(string-append a " " b)))))
+   """;
+   
+   SCHEME """
+     (define (strcat ls)(fold_left strap "" ls))
+   """;
+   
+   // chain 'and (x) yields just x,
+   // chain 'and (x y) yields ('and _sr (x y))
+   SCHEME """
+     (define (chain op hd tl)
+       (
+         if (equal? tl ())
+         hd
+         `(,op ,_sr ,(cons hd (map second tl)))
+       )
+     )
+   """;
+   
+   SCHEME """
+     (define (infix op) `(ast_apply ,_sr (,(noi op) (,_1 ,_3))))
+   """;
+   SCHEME """
+     (define (prefix op) `(ast_apply ,_sr (,(noi op) ,_2)))
+   """;
+   SCHEME """
+     (define (suffix op) `(ast_apply ,_sr (,(noi op) ,_1)))
+   """;
+   
+   
+   SCHEME """
+     (define (Prefix) `(ast_apply ,_sr (,(nos _1) ,_2)))
+   """;
+   SCHEME """
+     (define (Infix) `(ast_apply ,_sr (,(nos _2) (,_1 ,_3))))
+   """;
+   
+   SCHEME """
+     (define (filter pred lst) 
+       (reverse 
+         (fold_left 
+           (lambda (acc val) (if (pred val) (cons val acc) acc))
+           ()
+           lst
+         )
+       )
+     )
+   """;
+   
+   
+   SCHEME """
+     (define (filter_first sym lst) 
+       (reverse 
+         (fold_left 
+           (lambda (acc val) (if (equal? (first val) sym) (cons (tail val) acc) acc))
+           ()
+           lst
+         )
+       )
+     )
+   """;
+   
+   SCHEME """
+     (define (prefix? p s) 
+       (let
+         (
+           (pl (string-length p))
+           (sl (string-length s))
+         )
+         (if (< pl sl) (equal? p (substring s 0 pl)) #f)
+       )
+     )
+   """;
+   
+   SCHEME """
+     (define (suffix? p s) 
+       (let
+         (
+           (pl (string-length p))
+           (sl (string-length s))
+         )
+         (if (< pl sl) (equal? p (substring s (- sl pl) sl)) #f)
+       )
+     )
+   """;
+   
+   SCHEME """
+     (define (make_private s) `(ast_private ,_sr ,s))
+   """;
+   
+   SCHEME """
+     (define (SUBST term vals) 
+       (cond
+         ((symbol? term) term)
+         ((number? term) term)
+         ((string? term) term)
+         ((null? term) term)
+         ((list? term) 
+           (if (eq? (car term) 'PARSER_ARGUMENT)
+             (vector-ref vals (cadr term) )
+             (map (lambda (term) (SUBST term vals)) term)
+           )
+         )
+       ) 
+     )
+   """;
+   
+   SCHEME """
+     (define (stringof s) 
+       `(ast_literal ,_sr "string" ,s ,(string-append "::std::string(\"" s "\")"))
+     )
+   """;
+   
+   @
+   
 
 String like literals.
 ---------------------
@@ -2819,323 +2819,323 @@ Note some of these forms are not strings.
 
 .. code-block:: text
 
-  
-  SCHEME """
-  (define (decode-string s) 
-    (begin 
-      (adjust-linecount s)
-      (let* 
-        (
-          (n (string-length s))
-          (result 
-            (cond
-              ((prefix? "w'''" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "W'''" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "c'''" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "C'''" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "u'''" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "U'''" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "f'''" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "F'''" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "q'''" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "Q'''" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "n'''" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "N'''" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "r'''" s)(substring s 4 (- n 3)))
-              ((prefix? "R'''" s)(substring s 4 (- n 3)))
-              ((prefix? "'''" s)(unescape (substring s 3 (- n 3))))
-  
-              ((prefix? "w\"\"\"" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "W\"\"\"" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "c\"\"\"" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "C\"\"\"" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "u\"\"\"" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "U\"\"\"" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "f\"\"\"" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "F\"\"\"" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "q\"\"\"" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "Q\"\"\"" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "n\"\"\"" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "N\"\"\"" s)(unescape (substring s 4 (- n 3))))
-              ((prefix? "r\"\"\"" s)(substring s 4 (- n 3)))
-              ((prefix? "R\"\"\"" s)(substring s 4 (- n 3)))
-              ((prefix? "\"\"\"" s)(unescape (substring s 3 (- n 3))))
-  
-              ((prefix? "w'" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "W'" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "c'" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "C'" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "u'" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "U'" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "f'" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "F'" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "q'" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "Q'" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "n'" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "N'" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "r'" s)(substring s 2 (- n 1)))
-              ((prefix? "R'" s)(substring s 2 (- n 1)))
-              ((prefix? "'" s)(unescape (substring s 1 (- n 1))))
-  
-              ((prefix? "w\"" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "W\"" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "c\"" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "C\"" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "u\"" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "U\"" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "f\"" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "F\"" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "q\"" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "Q\"" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "n\"" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "N\"" s)(unescape (substring s 2 (- n 1))))
-              ((prefix? "r\"" s)(substring s 2 (- n 1)))
-              ((prefix? "R\"" s)(substring s 2 (- n 1)))
-              ((prefix? "\"" s)(unescape (substring s 1 (- n 1))))
-  
-              (else error) 
-            )
-          )
-        )
-        ;;(begin 
-        ;;   (newline)(display "string=")(display s)
-        ;;   (newline)(display "text=")(display result)
-           result
-        ;;)
-      )
-    )
-  )
-  """;
-  
-  // Scheme string to Felix string literal
-  SCHEME """
-  (define (strlit s) 
-      `(ast_literal ,_sr "string" ,s ,(string-append "::std::string(" (c-quote-string s) ")"))
-  )
-  """;
-  
-  //$ String literals.
-  //$
-  //$ Generaly we follow Python here.
-  //$ Felix allows strings to be delimited by;
-  //$
-  //$ single quotes '
-  //$ double quotes "
-  //$ triped single quotes '''
-  //$ tripled double quotes """
-  //$
-  //$ The single quote forms must be on a single line.
-  //$ The triple quoted forms may span lines, and include embedded newline
-  //$ characters.
-  //$
-  //$ These forms all allows embedded escape codes.
-  //$ These are:
-  //$
-  //$  \a  -  7 : bell
-  //$  \b  -  8 : backspace
-  //$  \t  -  9 : horizontal tab
-  //$  \n  - 10 : linefeed, newline
-  //$  \r  - 13 : carriage return
-  //$  \v  - 11 : vertical tab
-  //$  \f  - 12 :form feed
-  //$  \e  - 27 : escape
-  //$  \\  - \  : slosh
-  //$  \"  - "  : double quote
-  //$  \'  - '  : single quote
-  //$  \   - 32 : space
-  //$
-  //$  \xFF - hexadecimal character code
-  //$  \o7 \o77 \o777 -- octal character code (stops on count of 3 or non-octal character)
-  //$  \d9 \d99 \d999 -- decimal character code (stops on count of 3 or non-decimal character)
-  //$  \uFFFF - utf8 encoding of specified hex value
-  //$  \UFFFFFFFF - utf8 encoding of specified hex value
-  //$
-  //$ A prefix "r" or "R" on a double quoted string
-  //$ or triple double quoted string suppresses escape processing,
-  //$ this is called a raw string literal.
-  //$ NOTE: single quoted string cannot be used!
-  //$
-  //$ A prefix "w" or "W" specifies a wide character string,
-  //$ of character type wchar. DEPRECATED.
-  //$
-  //$ A prefix of "u" or "U" specifes a string of uint32.
-  //$ This is a full Unicode string. 
-  //$ THIS FEATURE WILL BE DEPRECATED.
-  //$ IT WILL BE REPLACED BY C++11 Unicode compliant strings.
-  //$
-  //$ A prefix of "c" or "C" specifies a C NTBS (Nul terminated
-  //$ byte string) be generated instead of a C++ string.
-  //$ Such a string has type +char rather than string.
-  //$ 
-  //$ A literal prefixed by "q" or "Q" is a Perl interpolation
-  //$ string. Such strings are actually functions.
-  //$ Each occurrence of $(varname) in the string is replaced
-  //$ at run time by the value "str varname". The type of the
-  //$ variable must provide an overload of "str" which returns
-  //$ a C++ string for this to work.
-  //$
-  //$ A literal prefixed by a "f" or "F" is a C format string.
-  //$ Such strings are actually functions.
-  //$ The string contains code such as "%d" or other supported
-  //$ C format string. Variable field width specifiers "*" are
-  //$ not permitted. The additional format specification %S
-  //$ is supported and requires a C++ string argument.
-  //$ Such functions accept a tuple of values like this:
-  //$
-  //$ f"%d-%S" (42, "Hello")
-  //$
-  //$ If vsnprintf is available on the local platform it is used
-  //$ to provide an implementation which cannot overrun.
-  //$ If it is not, vsprintf is used instead with a 1000 character
-  //$ buffer.
-  //$ 
-  //$ The argument types and code types are fully checked for type safety.
-  //$
-  //$ The special literal with a "n" or "N" prefix is a way to encode
-  //$ an arbitrary sequence of characters as an identifer in a context
-  //$ where the parser might interpret it otherwise.
-  //$ It can be used, for example, to define special characters as functions.
-  //$ For example:
-  //$
-  //$ typedef fun n"@" (T:TYPE) : TYPE => cptr[T]; 
-  //$
-  syntax felix_string_lexer {
-    /* Python strings */
-    regdef qqq = quote quote quote;
-    regdef ddd = dquote dquote dquote;
-  
-    regdef escape = slosh _;
-  
-    regdef dddnormal = ordinary | hash | quote | escape | white | newline;
-    regdef dddspecial = dddnormal | dquote dddnormal | dquote dquote dddnormal;
-  
-    regdef qqqnormal = ordinary | hash | dquote | escape | white | newline;
-    regdef qqqspecial = qqqnormal | quote qqqnormal | quote quote qqqnormal;
-  
-    regdef qstring_tail = (ordinary | hash | dquote | escape | white) * quote;
-    regdef dstring_tail = (ordinary | hash | quote | escape | white) * dquote;
-    regdef qqqstring_tail = qqqspecial * qqq;
-    regdef dddstring_tail = dddspecial * ddd;
-  
-    regdef qstring = quote qstring_tail;
-    regdef dstring = dquote dstring_tail;
-    regdef qqqstring = qqq qqqstring_tail;
-    regdef dddstring = ddd dddstring_tail;
-  
-  
-    regdef raw_dddnormal = ordinary | hash | quote | slosh | white | newline;
-    regdef raw_dddspecial = raw_dddnormal | dquote raw_dddnormal | dquote dquote raw_dddnormal;
-  
-    regdef raw_qqqnormal = ordinary | hash | dquote | slosh | space | newline;
-    regdef raw_qqqspecial = raw_qqqnormal | quote raw_qqqnormal | quote quote raw_qqqnormal;
-  
-    regdef raw = 'r' | 'R';
-  
-    regdef raw_dstring_tail =  (ordinary | hash | quote | escape | white) * dquote;
-    regdef raw_qqqstring_tail = raw_qqqspecial * qqq;
-    regdef raw_dddstring_tail = raw_dddspecial * ddd;
-  
-    regdef raw_dstring = raw dquote dstring_tail;
-    regdef raw_qqqstring = raw qqq qqqstring_tail;
-    regdef raw_dddstring = raw ddd dddstring_tail;
-  
-    regdef plain_string_literal = dstring | qqqstring | dddstring;
-    regdef raw_string_literal = raw_dstring | raw_qqqstring | raw_dddstring;
-  
-    regdef string_literal = plain_string_literal | qstring | raw_string_literal;
-  
-    regdef wstring_literal = ('w' | 'W') plain_string_literal; 
-    regdef ustring_literal = ('u' | 'U') plain_string_literal; 
-    regdef cstring_literal = ('c' | 'C') plain_string_literal; 
-    regdef qstring_literal = ('q' | 'Q') plain_string_literal; 
-    regdef fstring_literal = ('f' | 'F') plain_string_literal; 
-    regdef nstring_literal = ('n' | 'N') plain_string_literal; 
-  
-     // String as name.
-    literal nstring_literal =># "(decode-string _1)";
-    sname := nstring_literal =># "_1";
-  
-    // String for pattern or code template.
-    regdef sstring = string_literal;
-    literal sstring =># "(decode-string _1)";
-  
-    // Cstring for code.
-    regdef scstring = cstring_literal;
-    literal scstring =># "(decode-string _1)";
-  
-    // String for string parser.
-    regdef strstring = string_literal;
-    literal strstring =># "(c-quote-string (decode-string _1))";
-  
-    // String like literals.
-    regdef String = string_literal;
-    literal String =># """
-      (let*
-        (
-          (ftype "string")
-          (iv (decode-string _1))
-          (cv (c-quote-string iv))
-          (cv (string-append "::std::string(" cv ")"))
-        )
-        `(ast_literal ,_sr ,ftype ,iv ,cv)
-      )
-    """;
-    sliteral := String =># "_1";
-  
-    regdef Wstring = wstring_literal;
-    literal Wstring =># """
-      (let*
-        (
-          (ftype "wstring")
-          (iv (decode-string _1))
-          (cv (c-quote-string iv))
-          (cv (string-append "wstring(" cv ")"))
-        )
-        `(ast_literal ,_sr ,ftype ,iv ,cv)
-      )
-    """;
-    sliteral := Wstring =># "_1";
-  
-    regdef Ustring = ustring_literal;
-    literal Ustring =># """
-      (let*
-        (
-          (ftype "ustring")
-          (iv (decode-string _1))
-          (cv (c-quote-string iv))
-          (cv (string-append "ustring(" cv ")"))
-        )
-        `(ast_literal ,_sr ,ftype ,iv ,cv)
-      )
-    """;
-    sliteral := Ustring =># "_1";
-  
-    regdef Cstring = cstring_literal;
-    literal Cstring =>#
-    """
-      (let*
-        (
-          (ftype "cstring")
-          (iv (decode-string _1))
-          (cv (c-quote-string iv))
-        )
-        `(ast_literal ,_sr ,ftype ,iv ,cv)
-      )
-    """; 
-    sliteral := Cstring =># "_1";
-  
-    regdef Qstring = qstring_literal;
-    literal Qstring =># "`(ast_interpolate ,_sr ,(decode-string _1))";
-    sliteral := Qstring =># "_1";
-  
-    regdef Fstring = fstring_literal;
-    literal Fstring =># "`(ast_vsprintf ,_sr ,(decode-string _1))";
-    sliteral := Fstring =># "_1";
-  
-  }
-  
-  @
-  
+   
+   SCHEME """
+   (define (decode-string s) 
+     (begin 
+       (adjust-linecount s)
+       (let* 
+         (
+           (n (string-length s))
+           (result 
+             (cond
+               ((prefix? "w'''" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "W'''" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "c'''" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "C'''" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "u'''" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "U'''" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "f'''" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "F'''" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "q'''" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "Q'''" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "n'''" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "N'''" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "r'''" s)(substring s 4 (- n 3)))
+               ((prefix? "R'''" s)(substring s 4 (- n 3)))
+               ((prefix? "'''" s)(unescape (substring s 3 (- n 3))))
+   
+               ((prefix? "w\"\"\"" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "W\"\"\"" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "c\"\"\"" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "C\"\"\"" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "u\"\"\"" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "U\"\"\"" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "f\"\"\"" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "F\"\"\"" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "q\"\"\"" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "Q\"\"\"" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "n\"\"\"" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "N\"\"\"" s)(unescape (substring s 4 (- n 3))))
+               ((prefix? "r\"\"\"" s)(substring s 4 (- n 3)))
+               ((prefix? "R\"\"\"" s)(substring s 4 (- n 3)))
+               ((prefix? "\"\"\"" s)(unescape (substring s 3 (- n 3))))
+   
+               ((prefix? "w'" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "W'" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "c'" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "C'" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "u'" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "U'" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "f'" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "F'" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "q'" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "Q'" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "n'" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "N'" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "r'" s)(substring s 2 (- n 1)))
+               ((prefix? "R'" s)(substring s 2 (- n 1)))
+               ((prefix? "'" s)(unescape (substring s 1 (- n 1))))
+   
+               ((prefix? "w\"" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "W\"" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "c\"" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "C\"" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "u\"" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "U\"" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "f\"" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "F\"" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "q\"" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "Q\"" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "n\"" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "N\"" s)(unescape (substring s 2 (- n 1))))
+               ((prefix? "r\"" s)(substring s 2 (- n 1)))
+               ((prefix? "R\"" s)(substring s 2 (- n 1)))
+               ((prefix? "\"" s)(unescape (substring s 1 (- n 1))))
+   
+               (else error) 
+             )
+           )
+         )
+         ;;(begin 
+         ;;   (newline)(display "string=")(display s)
+         ;;   (newline)(display "text=")(display result)
+            result
+         ;;)
+       )
+     )
+   )
+   """;
+   
+   // Scheme string to Felix string literal
+   SCHEME """
+   (define (strlit s) 
+       `(ast_literal ,_sr "string" ,s ,(string-append "::std::string(" (c-quote-string s) ")"))
+   )
+   """;
+   
+   //$ String literals.
+   //$
+   //$ Generaly we follow Python here.
+   //$ Felix allows strings to be delimited by;
+   //$
+   //$ single quotes '
+   //$ double quotes "
+   //$ triped single quotes '''
+   //$ tripled double quotes """
+   //$
+   //$ The single quote forms must be on a single line.
+   //$ The triple quoted forms may span lines, and include embedded newline
+   //$ characters.
+   //$
+   //$ These forms all allows embedded escape codes.
+   //$ These are:
+   //$
+   //$  \a  -  7 : bell
+   //$  \b  -  8 : backspace
+   //$  \t  -  9 : horizontal tab
+   //$  \n  - 10 : linefeed, newline
+   //$  \r  - 13 : carriage return
+   //$  \v  - 11 : vertical tab
+   //$  \f  - 12 :form feed
+   //$  \e  - 27 : escape
+   //$  \\  - \  : slosh
+   //$  \"  - "  : double quote
+   //$  \'  - '  : single quote
+   //$  \   - 32 : space
+   //$
+   //$  \xFF - hexadecimal character code
+   //$  \o7 \o77 \o777 -- octal character code (stops on count of 3 or non-octal character)
+   //$  \d9 \d99 \d999 -- decimal character code (stops on count of 3 or non-decimal character)
+   //$  \uFFFF - utf8 encoding of specified hex value
+   //$  \UFFFFFFFF - utf8 encoding of specified hex value
+   //$
+   //$ A prefix "r" or "R" on a double quoted string
+   //$ or triple double quoted string suppresses escape processing,
+   //$ this is called a raw string literal.
+   //$ NOTE: single quoted string cannot be used!
+   //$
+   //$ A prefix "w" or "W" specifies a wide character string,
+   //$ of character type wchar. DEPRECATED.
+   //$
+   //$ A prefix of "u" or "U" specifes a string of uint32.
+   //$ This is a full Unicode string. 
+   //$ THIS FEATURE WILL BE DEPRECATED.
+   //$ IT WILL BE REPLACED BY C++11 Unicode compliant strings.
+   //$
+   //$ A prefix of "c" or "C" specifies a C NTBS (Nul terminated
+   //$ byte string) be generated instead of a C++ string.
+   //$ Such a string has type +char rather than string.
+   //$ 
+   //$ A literal prefixed by "q" or "Q" is a Perl interpolation
+   //$ string. Such strings are actually functions.
+   //$ Each occurrence of $(varname) in the string is replaced
+   //$ at run time by the value "str varname". The type of the
+   //$ variable must provide an overload of "str" which returns
+   //$ a C++ string for this to work.
+   //$
+   //$ A literal prefixed by a "f" or "F" is a C format string.
+   //$ Such strings are actually functions.
+   //$ The string contains code such as "%d" or other supported
+   //$ C format string. Variable field width specifiers "*" are
+   //$ not permitted. The additional format specification %S
+   //$ is supported and requires a C++ string argument.
+   //$ Such functions accept a tuple of values like this:
+   //$
+   //$ f"%d-%S" (42, "Hello")
+   //$
+   //$ If vsnprintf is available on the local platform it is used
+   //$ to provide an implementation which cannot overrun.
+   //$ If it is not, vsprintf is used instead with a 1000 character
+   //$ buffer.
+   //$ 
+   //$ The argument types and code types are fully checked for type safety.
+   //$
+   //$ The special literal with a "n" or "N" prefix is a way to encode
+   //$ an arbitrary sequence of characters as an identifer in a context
+   //$ where the parser might interpret it otherwise.
+   //$ It can be used, for example, to define special characters as functions.
+   //$ For example:
+   //$
+   //$ typedef fun n"@" (T:TYPE) : TYPE => cptr[T]; 
+   //$
+   syntax felix_string_lexer {
+     /* Python strings */
+     regdef qqq = quote quote quote;
+     regdef ddd = dquote dquote dquote;
+   
+     regdef escape = slosh _;
+   
+     regdef dddnormal = ordinary | hash | quote | escape | white | newline;
+     regdef dddspecial = dddnormal | dquote dddnormal | dquote dquote dddnormal;
+   
+     regdef qqqnormal = ordinary | hash | dquote | escape | white | newline;
+     regdef qqqspecial = qqqnormal | quote qqqnormal | quote quote qqqnormal;
+   
+     regdef qstring_tail = (ordinary | hash | dquote | escape | white) * quote;
+     regdef dstring_tail = (ordinary | hash | quote | escape | white) * dquote;
+     regdef qqqstring_tail = qqqspecial * qqq;
+     regdef dddstring_tail = dddspecial * ddd;
+   
+     regdef qstring = quote qstring_tail;
+     regdef dstring = dquote dstring_tail;
+     regdef qqqstring = qqq qqqstring_tail;
+     regdef dddstring = ddd dddstring_tail;
+   
+   
+     regdef raw_dddnormal = ordinary | hash | quote | slosh | white | newline;
+     regdef raw_dddspecial = raw_dddnormal | dquote raw_dddnormal | dquote dquote raw_dddnormal;
+   
+     regdef raw_qqqnormal = ordinary | hash | dquote | slosh | space | newline;
+     regdef raw_qqqspecial = raw_qqqnormal | quote raw_qqqnormal | quote quote raw_qqqnormal;
+   
+     regdef raw = 'r' | 'R';
+   
+     regdef raw_dstring_tail =  (ordinary | hash | quote | escape | white) * dquote;
+     regdef raw_qqqstring_tail = raw_qqqspecial * qqq;
+     regdef raw_dddstring_tail = raw_dddspecial * ddd;
+   
+     regdef raw_dstring = raw dquote dstring_tail;
+     regdef raw_qqqstring = raw qqq qqqstring_tail;
+     regdef raw_dddstring = raw ddd dddstring_tail;
+   
+     regdef plain_string_literal = dstring | qqqstring | dddstring;
+     regdef raw_string_literal = raw_dstring | raw_qqqstring | raw_dddstring;
+   
+     regdef string_literal = plain_string_literal | qstring | raw_string_literal;
+   
+     regdef wstring_literal = ('w' | 'W') plain_string_literal; 
+     regdef ustring_literal = ('u' | 'U') plain_string_literal; 
+     regdef cstring_literal = ('c' | 'C') plain_string_literal; 
+     regdef qstring_literal = ('q' | 'Q') plain_string_literal; 
+     regdef fstring_literal = ('f' | 'F') plain_string_literal; 
+     regdef nstring_literal = ('n' | 'N') plain_string_literal; 
+   
+      // String as name.
+     literal nstring_literal =># "(decode-string _1)";
+     sname := nstring_literal =># "_1";
+   
+     // String for pattern or code template.
+     regdef sstring = string_literal;
+     literal sstring =># "(decode-string _1)";
+   
+     // Cstring for code.
+     regdef scstring = cstring_literal;
+     literal scstring =># "(decode-string _1)";
+   
+     // String for string parser.
+     regdef strstring = string_literal;
+     literal strstring =># "(c-quote-string (decode-string _1))";
+   
+     // String like literals.
+     regdef String = string_literal;
+     literal String =># """
+       (let*
+         (
+           (ftype "string")
+           (iv (decode-string _1))
+           (cv (c-quote-string iv))
+           (cv (string-append "::std::string(" cv ")"))
+         )
+         `(ast_literal ,_sr ,ftype ,iv ,cv)
+       )
+     """;
+     sliteral := String =># "_1";
+   
+     regdef Wstring = wstring_literal;
+     literal Wstring =># """
+       (let*
+         (
+           (ftype "wstring")
+           (iv (decode-string _1))
+           (cv (c-quote-string iv))
+           (cv (string-append "wstring(" cv ")"))
+         )
+         `(ast_literal ,_sr ,ftype ,iv ,cv)
+       )
+     """;
+     sliteral := Wstring =># "_1";
+   
+     regdef Ustring = ustring_literal;
+     literal Ustring =># """
+       (let*
+         (
+           (ftype "ustring")
+           (iv (decode-string _1))
+           (cv (c-quote-string iv))
+           (cv (string-append "ustring(" cv ")"))
+         )
+         `(ast_literal ,_sr ,ftype ,iv ,cv)
+       )
+     """;
+     sliteral := Ustring =># "_1";
+   
+     regdef Cstring = cstring_literal;
+     literal Cstring =>#
+     """
+       (let*
+         (
+           (ftype "cstring")
+           (iv (decode-string _1))
+           (cv (c-quote-string iv))
+         )
+         `(ast_literal ,_sr ,ftype ,iv ,cv)
+       )
+     """; 
+     sliteral := Cstring =># "_1";
+   
+     regdef Qstring = qstring_literal;
+     literal Qstring =># "`(ast_interpolate ,_sr ,(decode-string _1))";
+     sliteral := Qstring =># "_1";
+   
+     regdef Fstring = fstring_literal;
+     literal Fstring =># "`(ast_vsprintf ,_sr ,(decode-string _1))";
+     sliteral := Fstring =># "_1";
+   
+   }
+   
+   @
+   
 
 Loops
 -----
@@ -3143,436 +3143,436 @@ Loops
 
 .. code-block:: text
 
-    SCHEME """
-      (define (notnumeric s) (fold_left notdigit #f (string->list s)))
-    """;
-  
-    SCHEME """
-      (define (check-label first last term) 
-        (if 
-          (notnumeric first) 
-          (if 
-            (equal? first last) 
-            term 
-            (begin   
-              (display (string-append first " != " last " giveup\n"))
-              (giveup)
-            )
-          )
-          (if 
-            (equal? "" last) 
-            term
-            (begin   
-              (display (string-append first " != " last " giveup\n"))
-              (giveup)
-            )
-          )
-        )
-      )
-      """;
-     
-  //$ Primary looping contructs.
-  SCHEME """
-     (define (incluploop)
-      `(ast_seq ,_sr
-        ,(append 
-          `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
-          `((ast_label ,_sr ,(string-append "redo_" _1)))
-          `((ast_unlikely_ifnotgoto ,_sr
-            (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_3 ()),_7)))
-            ,(string-append "break_" _1)
-          ))
-          `(,_8)
-          `((ast_label ,_sr ,(string-append "continue_" _1)))
-          `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
-          `((ast_goto ,_sr ,(string-append "redo_" _1)))
-          `((ast_label ,_sr ,(string-append "break_" _1)))
-         ))
-      )
-      """;
-  
-  SCHEME """
-     (define (excluploop)
-      `(ast_seq ,_sr
-        ,(append 
-          `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
-          `((ast_label ,_sr ,(string-append "redo_" _1)))
-          `((ast_unlikely_ifnotgoto ,_sr
-            (ast_apply ,_sr (,(noi '<) ((ast_name ,_sr ,_3 ()),_7)))
-            ,(string-append "break_" _1)
-          ))
-          `(,_8)
-          `((ast_label ,_sr ,(string-append "continue_" _1)))
-          `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
-          `((ast_goto ,_sr ,(string-append "redo_" _1)))
-          `((ast_label ,_sr ,(string-append "break_" _1)))
-         ))
-      )
-      """;
-  
-  
-  syntax loops
-  {
-    requires blocks;
-    // ----------------------------------------------------------------------------------
-    // Synopsis of loop forms
-    // ----------------------------------------------------------------------------------
-    stmt = escape_stmt;
-    block = loop_stmt;
-  
-    // ----------------------------------------------------------------------------------
-    //$ Statement groups controlled by loops
-    // ----------------------------------------------------------------------------------
-  
-    // ----------------------------------------------------------------------------------
-    // Escape statements for deviant processing
-    // ----------------------------------------------------------------------------------
-    //$ Labelled break.
-    //$ Use to exit from the loop with the specified label.
-    private escape_stmt := "break" sname =># '`(ast_goto ,_sr ,(string-append "break_" _2))';
-  
-    //$ Labelled continue.
-    //$ Use to continue with the next iteration of the loop with the specified label.
-    private escape_stmt := "continue" sname =># '`(ast_goto ,_sr ,(string-append "continue_" _2))';
-  
-    //$ Labelled redo.
-    //$ Use to restart this iteration of the loop with the specified label.
-    private escape_stmt := "redo" sname =># '`(ast_goto ,_sr ,(string-append "redo_" _2))';
-  
-    // ----------------------------------------------------------------------------------
-    //$ Syntax for a loop label. Used by escapes to indicate which loop.
-    // ----------------------------------------------------------------------------------
-    //$ Use just before the loop.
-    private optlabel := sname ":" =># "_1";
-  
-    //$ Loop labels aren't required.
-    private optlabel := sepsilon =># '(fresh_name "ll")';
-  
-    // ----------------------------------------------------------------------------------
-    // the loops
-    // ----------------------------------------------------------------------------------
-    //$ Standard while loop.
-    loop_stmt := optlabel "while" sexpr block =>#
-      """ 
-      `(ast_seq ,_sr
-        ,(list
-          `(ast_label ,_sr ,(string-append "continue_" _1))
-          `(ast_unlikely_ifnotgoto ,_sr ,_3 ,(string-append "break_" _1))
-          _4
-          `(ast_goto ,_sr ,(string-append "continue_" _1))
-          `(ast_label ,_sr ,(string-append "break_" _1))
-      ))
-      """;
-  
-    //$ repeat loop.
-    loop_stmt := optlabel "repeat" block =>#
-      """ 
-      `(ast_seq ,_sr
-        ,(list
-          `(ast_label ,_sr ,(string-append "continue_" _1))
-          _3
-          `(ast_goto ,_sr ,(string-append "continue_" _1))
-          `(ast_label ,_sr ,(string-append "break_" _1))
-      ))
-      """;
-  
-  
-    //$ Negated while loop.
-    loop_stmt := optlabel "until" sexpr block =>#
-      """
-      `(ast_seq ,_sr
-        ,(append 
-          `(( ast_label ,_sr ,(string-append "continue_" _1)))
-          `(( ast_unlikely_ifgoto ,_sr ,_3 ,(string-append "break_" _1)))
-          `(,_4)
-          `(( ast_goto ,_sr ,(string-append "continue_" _1)))
-          `(( ast_label ,_sr ,(string-append "break_" _1)))
-      ))
-      """;
-  
-    loop_stmt := optlabel "for" "(" stmt sexpr ";" stmt ")" stmt =>#
-    """
-    (begin 
-      `(ast_seq ,_sr
-        ,(append 
-          `(,_4)
-          `((ast_label ,_sr ,(string-append "redo_" _1)))
-          `((ast_unlikely_ifnotgoto ,_sr ,_5 ,(string-append "break_" _1)))
-          `(,_9)
-          `((ast_label ,_sr ,(string-append "continue_" _1)))
-          `(,_7)
-          `((ast_goto ,_sr ,(string-append "redo_" _1)))
-          `((ast_label ,_sr ,(string-append "break_" _1)))
-        )
-      )
-    )
-    """;
-  
-    loop_stmt := optlabel "for" stmt "while" sexpr ";" "next" stmt block =>#
-    """
-    (begin 
-      `(ast_seq ,_sr
-        ,(append 
-          `(,_3)
-          `((ast_label ,_sr ,(string-append "redo_" _1)))
-          `((ast_unlikely_ifnotgoto ,_sr ,_5 ,(string-append "break_" _1)))
-          `(,_9)
-          `((ast_label ,_sr ,(string-append "continue_" _1)))
-          `(,_8)
-          `((ast_goto ,_sr ,(string-append "redo_" _1)))
-          `((ast_label ,_sr ,(string-append "break_" _1)))
-        )
-      )
-    )
-    """;
-  
-  
-    loop_stmt := optlabel "for" stmt "until" sexpr ";" "next" stmt block =>#
-    """
-    (begin 
-      `(ast_seq ,_sr
-        ,(append 
-          `(,_3)
-          `((ast_label ,_sr ,(string-append "redo_" _1)))
-          `((ast_unlikely_ifgoto ,_sr ,_5 ,(string-append "break_" _1)))
-          `(,_9)
-          `((ast_label ,_sr ,(string-append "continue_" _1)))
-          `(,_8)
-          `((ast_goto ,_sr ,(string-append "redo_" _1)))
-          `((ast_label ,_sr ,(string-append "break_" _1)))
-        )
-      )
-    )
-    """;
-  
-    //$ Numeric upwards for loop, existing control variable.
-    //$ Ranges are inclusive. This is essential in case
-    //$ the loops if over the complete domain of the control variable type.
-    //$ The start and end argument types and the declared control variable type must be the same.
-  
-    // Unfortunately we have to have TWO comparisons with the terminating value
-    // the first to see if the body is to execute and the second to see if 
-    // the incr/decr is to be done, this is because it might be the max/min value
-    // in the range and the incr/decr would be invalid.
-  
-    //loop_stmt := optlabel "for" sname "in" sexpr ".." sexpr block =># "(incluploop)";
-    loop_stmt := optlabel "for" sname "in" sexpr "upto" sexpr block =># "(incluploop)";
-    //loop_stmt := optlabel "for" sname "in" sexpr "..<" sexpr block =># "(excluploop)";
+     SCHEME """
+       (define (notnumeric s) (fold_left notdigit #f (string->list s)))
+     """;
    
-  
-    //$ Numeric upwards for loop, also declares the control variable with type.
-    //$ The control variable is local to the enclosing context, 
-    //$ NOT the loop, so it can be inspected in code following the loop.
-    //$ Ranges are inclusive. This is essential in case
-    //$ the loops if over the complete domain of the control variable type.
-    //$ The start and end argument types and the declared control variable type must be the same.
-    loop_stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "upto" sexpr block =>#
-      """
-      `(ast_seq ,_sr
-        ,(append 
-          `((ast_var_decl ,_sr ,_4 ,dfltvs (some ,_6) (some ,_8)))
-          `((ast_label ,_sr ,(string-append "redo_" _1)))
-          `((ast_unlikely_ifnotgoto ,_sr
-            (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_4 ()),_10)))
-            ,(string-append "break_" _1)
+     SCHEME """
+       (define (check-label first last term) 
+         (if 
+           (notnumeric first) 
+           (if 
+             (equal? first last) 
+             term 
+             (begin   
+               (display (string-append first " != " last " giveup\n"))
+               (giveup)
+             )
+           )
+           (if 
+             (equal? "" last) 
+             term
+             (begin   
+               (display (string-append first " != " last " giveup\n"))
+               (giveup)
+             )
+           )
+         )
+       )
+       """;
+      
+   //$ Primary looping contructs.
+   SCHEME """
+      (define (incluploop)
+       `(ast_seq ,_sr
+         ,(append 
+           `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
+           `((ast_label ,_sr ,(string-append "redo_" _1)))
+           `((ast_unlikely_ifnotgoto ,_sr
+             (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_3 ()),_7)))
+             ,(string-append "break_" _1)
+           ))
+           `(,_8)
+           `((ast_label ,_sr ,(string-append "continue_" _1)))
+           `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
+           `((ast_goto ,_sr ,(string-append "redo_" _1)))
+           `((ast_label ,_sr ,(string-append "break_" _1)))
           ))
-          `(,_11)
-          `((ast_label ,_sr ,(string-append "continue_" _1)))
-          `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
-          `((ast_goto ,_sr ,(string-append "redo_" _1)))
-          `((ast_label ,_sr ,(string-append "break_" _1)))
-         ))
-      """;
-  
-    //$ Numeric upwards for loop, also declares the control variable.
-    //$ The control variable is local to the enclosing context, 
-    //$ NOT the loop, so it can be inspected in code following the loop.
-    //$ Ranges are inclusive. This is essential in case
-    //$ the loops if over the complete domain of the control variable type.
-    //$ The start and end argument types must be the same.
-    loop_stmt := optlabel "for" "var" sname "in" sexpr "upto" sexpr block =>#
-      """
-      `(ast_seq ,_sr
-        ,(append 
-          `((ast_var_decl ,_sr ,_4 ,dfltvs none (some ,_6)))
-          `((ast_label ,_sr ,(string-append "redo_" _1)))
-          `((ast_unlikely_ifnotgoto ,_sr
-            (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_4 ()) ,_8)))
-            ,(string-append "break_" _1)
+       )
+       """;
+   
+   SCHEME """
+      (define (excluploop)
+       `(ast_seq ,_sr
+         ,(append 
+           `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
+           `((ast_label ,_sr ,(string-append "redo_" _1)))
+           `((ast_unlikely_ifnotgoto ,_sr
+             (ast_apply ,_sr (,(noi '<) ((ast_name ,_sr ,_3 ()),_7)))
+             ,(string-append "break_" _1)
+           ))
+           `(,_8)
+           `((ast_label ,_sr ,(string-append "continue_" _1)))
+           `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
+           `((ast_goto ,_sr ,(string-append "redo_" _1)))
+           `((ast_label ,_sr ,(string-append "break_" _1)))
           ))
-          `(,_9)
-          `((ast_label ,_sr ,(string-append "continue_" _1)))
-          `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
-          `((ast_goto ,_sr ,(string-append "redo_" _1)))
-          `((ast_label ,_sr ,(string-append "break_" _1)))
-         ))
-      """;
-  
-  
-    //$ Numeric downwards for loop, existing control variable.
-    //$ Ranges are inclusive. This is essential in case
-    //$ the loops if over the complete domain of the control variable type.
-    //$ The start and end argument types and the declared control variable type must be the same.
-    loop_stmt := optlabel "for" sname "in" sexpr "downto" sexpr block =>#
-      """
-      `(ast_seq ,_sr
-        ,(append 
-          `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
-          `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
-          `((ast_label ,_sr ,(string-append "redo_" _1)))
-          `((ast_unlikely_ifnotgoto ,_sr
-            (ast_apply ,_sr (,(noi '>) ((ast_name ,_sr ,_3 ()),_7)))
-            ,(string-append "break_" _1)
+       )
+       """;
+   
+   
+   syntax loops
+   {
+     requires blocks;
+     // ----------------------------------------------------------------------------------
+     // Synopsis of loop forms
+     // ----------------------------------------------------------------------------------
+     stmt = escape_stmt;
+     block = loop_stmt;
+   
+     // ----------------------------------------------------------------------------------
+     //$ Statement groups controlled by loops
+     // ----------------------------------------------------------------------------------
+   
+     // ----------------------------------------------------------------------------------
+     // Escape statements for deviant processing
+     // ----------------------------------------------------------------------------------
+     //$ Labelled break.
+     //$ Use to exit from the loop with the specified label.
+     private escape_stmt := "break" sname =># '`(ast_goto ,_sr ,(string-append "break_" _2))';
+   
+     //$ Labelled continue.
+     //$ Use to continue with the next iteration of the loop with the specified label.
+     private escape_stmt := "continue" sname =># '`(ast_goto ,_sr ,(string-append "continue_" _2))';
+   
+     //$ Labelled redo.
+     //$ Use to restart this iteration of the loop with the specified label.
+     private escape_stmt := "redo" sname =># '`(ast_goto ,_sr ,(string-append "redo_" _2))';
+   
+     // ----------------------------------------------------------------------------------
+     //$ Syntax for a loop label. Used by escapes to indicate which loop.
+     // ----------------------------------------------------------------------------------
+     //$ Use just before the loop.
+     private optlabel := sname ":" =># "_1";
+   
+     //$ Loop labels aren't required.
+     private optlabel := sepsilon =># '(fresh_name "ll")';
+   
+     // ----------------------------------------------------------------------------------
+     // the loops
+     // ----------------------------------------------------------------------------------
+     //$ Standard while loop.
+     loop_stmt := optlabel "while" sexpr block =>#
+       """ 
+       `(ast_seq ,_sr
+         ,(list
+           `(ast_label ,_sr ,(string-append "continue_" _1))
+           `(ast_unlikely_ifnotgoto ,_sr ,_3 ,(string-append "break_" _1))
+           _4
+           `(ast_goto ,_sr ,(string-append "continue_" _1))
+           `(ast_label ,_sr ,(string-append "break_" _1))
+       ))
+       """;
+   
+     //$ repeat loop.
+     loop_stmt := optlabel "repeat" block =>#
+       """ 
+       `(ast_seq ,_sr
+         ,(list
+           `(ast_label ,_sr ,(string-append "continue_" _1))
+           _3
+           `(ast_goto ,_sr ,(string-append "continue_" _1))
+           `(ast_label ,_sr ,(string-append "break_" _1))
+       ))
+       """;
+   
+   
+     //$ Negated while loop.
+     loop_stmt := optlabel "until" sexpr block =>#
+       """
+       `(ast_seq ,_sr
+         ,(append 
+           `(( ast_label ,_sr ,(string-append "continue_" _1)))
+           `(( ast_unlikely_ifgoto ,_sr ,_3 ,(string-append "break_" _1)))
+           `(,_4)
+           `(( ast_goto ,_sr ,(string-append "continue_" _1)))
+           `(( ast_label ,_sr ,(string-append "break_" _1)))
+       ))
+       """;
+   
+     loop_stmt := optlabel "for" "(" stmt sexpr ";" stmt ")" stmt =>#
+     """
+     (begin 
+       `(ast_seq ,_sr
+         ,(append 
+           `(,_4)
+           `((ast_label ,_sr ,(string-append "redo_" _1)))
+           `((ast_unlikely_ifnotgoto ,_sr ,_5 ,(string-append "break_" _1)))
+           `(,_9)
+           `((ast_label ,_sr ,(string-append "continue_" _1)))
+           `(,_7)
+           `((ast_goto ,_sr ,(string-append "redo_" _1)))
+           `((ast_label ,_sr ,(string-append "break_" _1)))
+         )
+       )
+     )
+     """;
+   
+     loop_stmt := optlabel "for" stmt "while" sexpr ";" "next" stmt block =>#
+     """
+     (begin 
+       `(ast_seq ,_sr
+         ,(append 
+           `(,_3)
+           `((ast_label ,_sr ,(string-append "redo_" _1)))
+           `((ast_unlikely_ifnotgoto ,_sr ,_5 ,(string-append "break_" _1)))
+           `(,_9)
+           `((ast_label ,_sr ,(string-append "continue_" _1)))
+           `(,_8)
+           `((ast_goto ,_sr ,(string-append "redo_" _1)))
+           `((ast_label ,_sr ,(string-append "break_" _1)))
+         )
+       )
+     )
+     """;
+   
+   
+     loop_stmt := optlabel "for" stmt "until" sexpr ";" "next" stmt block =>#
+     """
+     (begin 
+       `(ast_seq ,_sr
+         ,(append 
+           `(,_3)
+           `((ast_label ,_sr ,(string-append "redo_" _1)))
+           `((ast_unlikely_ifgoto ,_sr ,_5 ,(string-append "break_" _1)))
+           `(,_9)
+           `((ast_label ,_sr ,(string-append "continue_" _1)))
+           `(,_8)
+           `((ast_goto ,_sr ,(string-append "redo_" _1)))
+           `((ast_label ,_sr ,(string-append "break_" _1)))
+         )
+       )
+     )
+     """;
+   
+     //$ Numeric upwards for loop, existing control variable.
+     //$ Ranges are inclusive. This is essential in case
+     //$ the loops if over the complete domain of the control variable type.
+     //$ The start and end argument types and the declared control variable type must be the same.
+   
+     // Unfortunately we have to have TWO comparisons with the terminating value
+     // the first to see if the body is to execute and the second to see if 
+     // the incr/decr is to be done, this is because it might be the max/min value
+     // in the range and the incr/decr would be invalid.
+   
+     //loop_stmt := optlabel "for" sname "in" sexpr ".." sexpr block =># "(incluploop)";
+     loop_stmt := optlabel "for" sname "in" sexpr "upto" sexpr block =># "(incluploop)";
+     //loop_stmt := optlabel "for" sname "in" sexpr "..<" sexpr block =># "(excluploop)";
+    
+   
+     //$ Numeric upwards for loop, also declares the control variable with type.
+     //$ The control variable is local to the enclosing context, 
+     //$ NOT the loop, so it can be inspected in code following the loop.
+     //$ Ranges are inclusive. This is essential in case
+     //$ the loops if over the complete domain of the control variable type.
+     //$ The start and end argument types and the declared control variable type must be the same.
+     loop_stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "upto" sexpr block =>#
+       """
+       `(ast_seq ,_sr
+         ,(append 
+           `((ast_var_decl ,_sr ,_4 ,dfltvs (some ,_6) (some ,_8)))
+           `((ast_label ,_sr ,(string-append "redo_" _1)))
+           `((ast_unlikely_ifnotgoto ,_sr
+             (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_4 ()),_10)))
+             ,(string-append "break_" _1)
+           ))
+           `(,_11)
+           `((ast_label ,_sr ,(string-append "continue_" _1)))
+           `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
+           `((ast_goto ,_sr ,(string-append "redo_" _1)))
+           `((ast_label ,_sr ,(string-append "break_" _1)))
           ))
-          `((ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
-          `(,_8)
-          `((ast_label ,_sr ,(string-append "continue_" _1)))
-          `((ast_goto ,_sr ,(string-append "redo_" _1)))
-          `((ast_label ,_sr ,(string-append "break_" _1)))
-         ))
-      """;
-  
-    //$ Numeric downwards for loop, also declares the control variable with type.
-    //$ The control variable is local to the enclosing context, 
-    //$ NOT the loop, so it can be inspected in code following the loop.
-    //$ Ranges are inclusive. This is essential in case
-    //$ the loops if over the complete domain of the control variable type.
-    //$ The start and end argument types and the declared control variable type must be the same.
-    loop_stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "downto" sexpr block =>#
-      """
-      `(ast_seq ,_sr
-        ,(append 
-          `((ast_var_decl ,_sr ,_4 ,dfltvs (some ,_6) (some ,_8)))
-          `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
-          `((ast_label ,_sr ,(string-append "redo_" _1)))
-          `((ast_unlikely_ifnotgoto ,_sr
-            (ast_apply ,_sr (,(noi '>) ((ast_name ,_sr ,_4 ()),_10)))
-            ,(string-append "break_" _1)
+       """;
+   
+     //$ Numeric upwards for loop, also declares the control variable.
+     //$ The control variable is local to the enclosing context, 
+     //$ NOT the loop, so it can be inspected in code following the loop.
+     //$ Ranges are inclusive. This is essential in case
+     //$ the loops if over the complete domain of the control variable type.
+     //$ The start and end argument types must be the same.
+     loop_stmt := optlabel "for" "var" sname "in" sexpr "upto" sexpr block =>#
+       """
+       `(ast_seq ,_sr
+         ,(append 
+           `((ast_var_decl ,_sr ,_4 ,dfltvs none (some ,_6)))
+           `((ast_label ,_sr ,(string-append "redo_" _1)))
+           `((ast_unlikely_ifnotgoto ,_sr
+             (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_4 ()) ,_8)))
+             ,(string-append "break_" _1)
+           ))
+           `(,_9)
+           `((ast_label ,_sr ,(string-append "continue_" _1)))
+           `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
+           `((ast_goto ,_sr ,(string-append "redo_" _1)))
+           `((ast_label ,_sr ,(string-append "break_" _1)))
           ))
-          `((ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
-          `(,_11)
-          `((ast_label ,_sr ,(string-append "continue_" _1)))
-          `((ast_goto ,_sr ,(string-append "redo_" _1)))
-          `((ast_label ,_sr ,(string-append "break_" _1)))
-         ))
-      """;
-  
-    //$ Numeric downwards for loop, also declares the control variable.
-    //$ The control variable is local to the enclosing context, 
-    //$ NOT the loop, so it can be inspected in code following the loop.
-    //$ Ranges are inclusive. This is essential in case
-    //$ the loops if over the complete domain of the control variable type.
-    //$ The start and end argument types and the declared control variable type must be the same.
-    loop_stmt := optlabel "for" "var" sname "in" sexpr "downto" sexpr block =>#
-      """
-      `(ast_seq ,_sr
-        ,(append 
-          `((ast_var_decl ,_sr ,_4 ,dfltvs none (some ,_6)))
-          `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
-          `((ast_label ,_sr ,(string-append "redo_" _1)))
-          `((ast_unlikely_ifnotgoto ,_sr
-            (ast_apply ,_sr (,(noi '>) ((ast_name ,_sr ,_4 ()) ,_8)))
-            ,(string-append "break_" _1)
+       """;
+   
+   
+     //$ Numeric downwards for loop, existing control variable.
+     //$ Ranges are inclusive. This is essential in case
+     //$ the loops if over the complete domain of the control variable type.
+     //$ The start and end argument types and the declared control variable type must be the same.
+     loop_stmt := optlabel "for" sname "in" sexpr "downto" sexpr block =>#
+       """
+       `(ast_seq ,_sr
+         ,(append 
+           `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
+           `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
+           `((ast_label ,_sr ,(string-append "redo_" _1)))
+           `((ast_unlikely_ifnotgoto ,_sr
+             (ast_apply ,_sr (,(noi '>) ((ast_name ,_sr ,_3 ()),_7)))
+             ,(string-append "break_" _1)
+           ))
+           `((ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
+           `(,_8)
+           `((ast_label ,_sr ,(string-append "continue_" _1)))
+           `((ast_goto ,_sr ,(string-append "redo_" _1)))
+           `((ast_label ,_sr ,(string-append "break_" _1)))
           ))
-          `((ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
-          `(,_9)
-          `((ast_label ,_sr ,(string-append "continue_" _1)))
-          `((ast_goto ,_sr ,(string-append "redo_" _1)))
-          `((ast_label ,_sr ,(string-append "break_" _1)))
-         ))
-      """;
-  
-    //$ Basic stream consumer.
-    //$ The second argument must be a value for which there is a generator: 
-    //$
-    //$   iterator : D -> unit -> opt[T]
-    //$
-    //$ Due to a hack in std/datatype/slice.flx:
-    //$    gen iterator[t] (f:1->opt[t]) => f;
-    //$ you can also use an actual iterator.
-    //$ 
-    //$ 1. The iterator function is called.
-    //$ 2. If the result is None, the loop exits.
-    //$ 3. If the result is Some ?t, then t is assigned to the 
-    //$    control variable, 
-    //$ 4. the loop body is executed, and
-    //$ 6. we go back to step 1.
-    loop_stmt := optlabel "for" sname "in" sexpr block =>#
-      """
-      (let* (
-       (generator_string_name (fresh_name "generator" ))
-       (generator_call_name (nos generator_string_name))
-       (generator_init `(ast_apply ,_sr (,(nos "iterator") ,_5 )))
-       (generator_call `(ast_apply ,_sr (,generator_call_name ())))
-       (some_pattern `(pat_nonconst_ctor ,_sr ,(nos "Some") (pat_as ,_sr (pat_any ,_sr) ,_3) ))
-       (some_exit `(ast_goto ,_sr ,(string-append "continue_" _1))) 
-       (some_handler (append `(,_6) `(,some_exit)))
-       (none_pattern `(pat_const_ctor ,_sr ,(nos "None")))
-       (none_handler `((ast_nop ,_sr, "drop thru")))
-       (some_item `(,some_pattern ,some_handler))
-       (none_item `(,none_pattern ,none_handler))
-       (matchings `(,some_item ,none_item))
-      )
-      `(ast_seq ,_sr (
-          (ast_var_decl ,_sr ,generator_string_name ,dfltvs none (some ,generator_init))
-          (ast_label ,_sr ,(string-append "continue_" _1))
-          (ast_stmt_match (,_sr ,generator_call ,matchings))
-          (ast_label ,_sr ,(string-append "break_" _1))
-         )))
-      """;
-  
-  
-    //$ Upmarket stream consumer.
-    //$ The second argument must be a value for which there is a generator: 
-    //$
-    //$   iterator : D -> unit -> opt[T]
-    //$
-    //$ Due to a hack in std/datatype/slice.flx:
-    //$    gen iterator[t] (f:1->opt[t]) => f;
-    //$ you can also use an actual iterator.
-    //$ 
-    //$
-    //$ 1. The iterator function is called.
-    //$ 2. If the result is None, the loop exits.
-    //$ 3. If the result is Some ?t, 
-    //$    then t is matched against the pattern.
-    //$ 4. If the pattern matches, loop body is executed, and
-    //$ 5. we go back to step 1.
-    //$ 6. If the pattern does not match,
-    //$ 7. we go back to step 1
-    //$    without executing the loop body.
-    loop_stmt := optlabel "match" spattern "in" sexpr block =>#
-      """
-      (let* (
-       (generator_string_name (fresh_name "generator" ))
-       (generator_call_name (nos generator_string_name))
-       (generator_init `(ast_apply ,_sr (,(nos "iterator") ,_5 )))
-       (generator_call `(ast_apply ,_sr (,generator_call_name ())))
-       (some_pattern `(pat_nonconst_ctor ,_sr ,(nos "Some")  ,_3 ))
-       (some_exit `(ast_goto ,_sr ,(string-append "continue_" _1))) 
-       (some_handler (append `(,_6) `(,some_exit)))
-       (some_item `(,some_pattern ,some_handler))
-       (other_pattern `(pat_nonconst_ctor ,_sr ,(nos "Some")  (pat_any ,_sr) ))
-       (other_handler `(,some_exit))
-       (other_item `(,other_pattern ,other_handler))
-       (none_pattern `(pat_const_ctor ,_sr ,(nos "None")))
-       (none_handler `((ast_nop ,_sr, "drop thru")))
-       (none_item `(,none_pattern ,none_handler))
-       (matchings `(,some_item ,other_item ,none_item))
-      )
-      `(ast_seq ,_sr (
-          (ast_var_decl ,_sr ,generator_string_name ,dfltvs none (some ,generator_init))
-          (ast_label ,_sr ,(string-append "continue_" _1))
-          (ast_stmt_match (,_sr ,generator_call ,matchings))
-          (ast_label ,_sr ,(string-append "break_" _1))
-         )))
-      """;
-  
-  
-  }
-  
-  @
-  
+       """;
+   
+     //$ Numeric downwards for loop, also declares the control variable with type.
+     //$ The control variable is local to the enclosing context, 
+     //$ NOT the loop, so it can be inspected in code following the loop.
+     //$ Ranges are inclusive. This is essential in case
+     //$ the loops if over the complete domain of the control variable type.
+     //$ The start and end argument types and the declared control variable type must be the same.
+     loop_stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "downto" sexpr block =>#
+       """
+       `(ast_seq ,_sr
+         ,(append 
+           `((ast_var_decl ,_sr ,_4 ,dfltvs (some ,_6) (some ,_8)))
+           `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
+           `((ast_label ,_sr ,(string-append "redo_" _1)))
+           `((ast_unlikely_ifnotgoto ,_sr
+             (ast_apply ,_sr (,(noi '>) ((ast_name ,_sr ,_4 ()),_10)))
+             ,(string-append "break_" _1)
+           ))
+           `((ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
+           `(,_11)
+           `((ast_label ,_sr ,(string-append "continue_" _1)))
+           `((ast_goto ,_sr ,(string-append "redo_" _1)))
+           `((ast_label ,_sr ,(string-append "break_" _1)))
+          ))
+       """;
+   
+     //$ Numeric downwards for loop, also declares the control variable.
+     //$ The control variable is local to the enclosing context, 
+     //$ NOT the loop, so it can be inspected in code following the loop.
+     //$ Ranges are inclusive. This is essential in case
+     //$ the loops if over the complete domain of the control variable type.
+     //$ The start and end argument types and the declared control variable type must be the same.
+     loop_stmt := optlabel "for" "var" sname "in" sexpr "downto" sexpr block =>#
+       """
+       `(ast_seq ,_sr
+         ,(append 
+           `((ast_var_decl ,_sr ,_4 ,dfltvs none (some ,_6)))
+           `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
+           `((ast_label ,_sr ,(string-append "redo_" _1)))
+           `((ast_unlikely_ifnotgoto ,_sr
+             (ast_apply ,_sr (,(noi '>) ((ast_name ,_sr ,_4 ()) ,_8)))
+             ,(string-append "break_" _1)
+           ))
+           `((ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
+           `(,_9)
+           `((ast_label ,_sr ,(string-append "continue_" _1)))
+           `((ast_goto ,_sr ,(string-append "redo_" _1)))
+           `((ast_label ,_sr ,(string-append "break_" _1)))
+          ))
+       """;
+   
+     //$ Basic stream consumer.
+     //$ The second argument must be a value for which there is a generator: 
+     //$
+     //$   iterator : D -> unit -> opt[T]
+     //$
+     //$ Due to a hack in std/datatype/slice.flx:
+     //$    gen iterator[t] (f:1->opt[t]) => f;
+     //$ you can also use an actual iterator.
+     //$ 
+     //$ 1. The iterator function is called.
+     //$ 2. If the result is None, the loop exits.
+     //$ 3. If the result is Some ?t, then t is assigned to the 
+     //$    control variable, 
+     //$ 4. the loop body is executed, and
+     //$ 6. we go back to step 1.
+     loop_stmt := optlabel "for" sname "in" sexpr block =>#
+       """
+       (let* (
+        (generator_string_name (fresh_name "generator" ))
+        (generator_call_name (nos generator_string_name))
+        (generator_init `(ast_apply ,_sr (,(nos "iterator") ,_5 )))
+        (generator_call `(ast_apply ,_sr (,generator_call_name ())))
+        (some_pattern `(pat_nonconst_ctor ,_sr ,(nos "Some") (pat_as ,_sr (pat_any ,_sr) ,_3) ))
+        (some_exit `(ast_goto ,_sr ,(string-append "continue_" _1))) 
+        (some_handler (append `(,_6) `(,some_exit)))
+        (none_pattern `(pat_const_ctor ,_sr ,(nos "None")))
+        (none_handler `((ast_nop ,_sr, "drop thru")))
+        (some_item `(,some_pattern ,some_handler))
+        (none_item `(,none_pattern ,none_handler))
+        (matchings `(,some_item ,none_item))
+       )
+       `(ast_seq ,_sr (
+           (ast_var_decl ,_sr ,generator_string_name ,dfltvs none (some ,generator_init))
+           (ast_label ,_sr ,(string-append "continue_" _1))
+           (ast_stmt_match (,_sr ,generator_call ,matchings))
+           (ast_label ,_sr ,(string-append "break_" _1))
+          )))
+       """;
+   
+   
+     //$ Upmarket stream consumer.
+     //$ The second argument must be a value for which there is a generator: 
+     //$
+     //$   iterator : D -> unit -> opt[T]
+     //$
+     //$ Due to a hack in std/datatype/slice.flx:
+     //$    gen iterator[t] (f:1->opt[t]) => f;
+     //$ you can also use an actual iterator.
+     //$ 
+     //$
+     //$ 1. The iterator function is called.
+     //$ 2. If the result is None, the loop exits.
+     //$ 3. If the result is Some ?t, 
+     //$    then t is matched against the pattern.
+     //$ 4. If the pattern matches, loop body is executed, and
+     //$ 5. we go back to step 1.
+     //$ 6. If the pattern does not match,
+     //$ 7. we go back to step 1
+     //$    without executing the loop body.
+     loop_stmt := optlabel "match" spattern "in" sexpr block =>#
+       """
+       (let* (
+        (generator_string_name (fresh_name "generator" ))
+        (generator_call_name (nos generator_string_name))
+        (generator_init `(ast_apply ,_sr (,(nos "iterator") ,_5 )))
+        (generator_call `(ast_apply ,_sr (,generator_call_name ())))
+        (some_pattern `(pat_nonconst_ctor ,_sr ,(nos "Some")  ,_3 ))
+        (some_exit `(ast_goto ,_sr ,(string-append "continue_" _1))) 
+        (some_handler (append `(,_6) `(,some_exit)))
+        (some_item `(,some_pattern ,some_handler))
+        (other_pattern `(pat_nonconst_ctor ,_sr ,(nos "Some")  (pat_any ,_sr) ))
+        (other_handler `(,some_exit))
+        (other_item `(,other_pattern ,other_handler))
+        (none_pattern `(pat_const_ctor ,_sr ,(nos "None")))
+        (none_handler `((ast_nop ,_sr, "drop thru")))
+        (none_item `(,none_pattern ,none_handler))
+        (matchings `(,some_item ,other_item ,none_item))
+       )
+       `(ast_seq ,_sr (
+           (ast_var_decl ,_sr ,generator_string_name ,dfltvs none (some ,generator_init))
+           (ast_label ,_sr ,(string-append "continue_" _1))
+           (ast_stmt_match (,_sr ,generator_call ,matchings))
+           (ast_label ,_sr ,(string-append "break_" _1))
+          )))
+       """;
+   
+   
+   }
+   
+   @
+   
 
 Macros
 ------
@@ -3580,20 +3580,20 @@ Macros
 
 .. code-block:: text
 
-  syntax macros {
-    requires expressions, statements, list;
-    
-    stmt := "macro" "val" snames "=" sexpr ";" =>#
-      "`(ast_macro_val ,_sr ,_3 ,_5)";
-  
-    stmt := "forall" sname "in" sexpr "do" stmt* "done" =>#
-      "`(ast_macro_forall ,_sr (,_2) ,_4 ,_6)"
-    ;
-  
-  }
-  
-  @
-  
+   syntax macros {
+     requires expressions, statements, list;
+     
+     stmt := "macro" "val" snames "=" sexpr ";" =>#
+       "`(ast_macro_val ,_sr ,_3 ,_5)";
+   
+     stmt := "forall" sname "in" sexpr "do" stmt* "done" =>#
+       "`(ast_macro_forall ,_sr (,_2) ,_4 ,_6)"
+     ;
+   
+   }
+   
+   @
+   
 
 Namespaces
 ----------
@@ -3601,162 +3601,162 @@ Namespaces
 
 .. code-block:: text
 
-  //$ Felix namespace control.
-  syntax namespaces {
-    requires statements;
-  
-    stmt = namespace_stmt;
-  
-    //$ Create a new solo name and bind it to an existing name.
-    //$ NOTE: it doesn't rename anything!
-    //$ Used to inject solo names into a namespace.
-  
-    private namespace_stmt := "rename" sdeclname "=" squalified_name ";" =>#
-      """
-      `(ast_inherit ,_sr ,(first _2) ,(second _2) ,_4)
-      """;
-  
-    //$ Create a new name for an existing set of function names.
-    //$ NOTE: it doesn't rename anything!
-    //$ Used to inject an overload set into a namespace.
-    private namespace_stmt := "rename" "fun" sdeclname "=" squalified_name ";" =>#
-      """
-      `(ast_inherit_fun ,_sr ,(first _3) ,(second _3) ,_5)
-      """;
-  
-    //$ Inject all the public members of a class or module
-    //$ into a namespace.
-    private namespace_stmt := "inherit" stvarlist squalified_name ";" =># 
-      "`(ast_inject_module ,_sr ,_2 ,_3)";
-  
-    //$ Inject all the public members of a class or module
-    //$ "just underneath" a namespace. Such names will be
-    //$ hidden by any names actually defined or injected
-    //$ into the actual namespace scope.
-    //$ NOTE: The names are not public members of the namespace.
-    //$ But they're not private members either, they're not
-    //$ members at all.
-    //$
-    //$ Open makes names available for use in a namespace
-    //$ without making them members for export.
-    private namespace_stmt := "open" stvarlist squalified_name ";" =>#
-      "`(ast_open ,_sr ,_2 ,_3)";
-  
-    //$ Open a single name to a namespace bound to the given qualified name.
-    private namespace_stmt := "use" sname "=" squalified_name ";" =># "`(ast_use ,_sr ,_2 ,_4)";
-  
-    //$ A short form for opening a single name as the
-    //$ base part of a qualified name.
-    private namespace_stmt := "use" squalified_name ";" =>#
-      """
-      (let ((name
-        (if (eq? (first _2) 'ast_lookup) (cadadr _2)
-          (if (eq? (first _2) 'ast_name) (second _2)
-          ("ERROR")))))
-      `(ast_use ,_sr ,name ,_2))
-      """;
-  
-    //$ Define a module.
-    //$ DEPRECATED. Use classes instead.
-    private namespace_stmt := "module" sdeclname "=" ? scompound =>#
-      """
-      `(ast_untyped_module ,_sr ,(first _2) ,(second _2) ,_4)
+   //$ Felix namespace control.
+   syntax namespaces {
+     requires statements;
+   
+     stmt = namespace_stmt;
+   
+     //$ Create a new solo name and bind it to an existing name.
+     //$ NOTE: it doesn't rename anything!
+     //$ Used to inject solo names into a namespace.
+   
+     private namespace_stmt := "rename" sdeclname "=" squalified_name ";" =>#
+       """
+       `(ast_inherit ,_sr ,(first _2) ,(second _2) ,_4)
        """;
-  
-    private namespace_stmt := "library" sname "=" ? scompound =>#
-      """
-      `(ast_library ,_sr ,_2 ,_4)
+   
+     //$ Create a new name for an existing set of function names.
+     //$ NOTE: it doesn't rename anything!
+     //$ Used to inject an overload set into a namespace.
+     private namespace_stmt := "rename" "fun" sdeclname "=" squalified_name ";" =>#
+       """
+       `(ast_inherit_fun ,_sr ,(first _3) ,(second _3) ,_5)
        """;
-  
-  
-    //$ Define a module and open in it in the current scope.
-    //$ DEPRECATED: Use classes instead.
-    private namespace_stmt := "open" "module" sdeclname "=" ? scompound =>#
-      """
-      `(ast_seq ,_sr (
-        (ast_untyped_module ,_sr ,(first _3) ,(second _3) ,_5)
-        (ast_open ,_sr ,dfltvs (ast_name ,_sr ,(first _3) ()))))
+   
+     //$ Inject all the public members of a class or module
+     //$ into a namespace.
+     private namespace_stmt := "inherit" stvarlist squalified_name ";" =># 
+       "`(ast_inject_module ,_sr ,_2 ,_3)";
+   
+     //$ Inject all the public members of a class or module
+     //$ "just underneath" a namespace. Such names will be
+     //$ hidden by any names actually defined or injected
+     //$ into the actual namespace scope.
+     //$ NOTE: The names are not public members of the namespace.
+     //$ But they're not private members either, they're not
+     //$ members at all.
+     //$
+     //$ Open makes names available for use in a namespace
+     //$ without making them members for export.
+     private namespace_stmt := "open" stvarlist squalified_name ";" =>#
+       "`(ast_open ,_sr ,_2 ,_3)";
+   
+     //$ Open a single name to a namespace bound to the given qualified name.
+     private namespace_stmt := "use" sname "=" squalified_name ";" =># "`(ast_use ,_sr ,_2 ,_4)";
+   
+     //$ A short form for opening a single name as the
+     //$ base part of a qualified name.
+     private namespace_stmt := "use" squalified_name ";" =>#
+       """
+       (let ((name
+         (if (eq? (first _2) 'ast_lookup) (cadadr _2)
+           (if (eq? (first _2) 'ast_name) (second _2)
+           ("ERROR")))))
+       `(ast_use ,_sr ,name ,_2))
        """;
-  
-    private namespace_stmt := "open" "library" sname "=" ? scompound =>#
-      """
-      `(ast_seq ,_sr (
-        (ast_library ,_sr ,_3 ,_5)
-        (ast_open ,_sr ,dfltvs (ast_name ,_sr ,_3 ()))))
+   
+     //$ Define a module.
+     //$ DEPRECATED. Use classes instead.
+     private namespace_stmt := "module" sdeclname "=" ? scompound =>#
+       """
+       `(ast_untyped_module ,_sr ,(first _2) ,(second _2) ,_4)
+        """;
+   
+     private namespace_stmt := "library" sname "=" ? scompound =>#
+       """
+       `(ast_library ,_sr ,_2 ,_4)
+        """;
+   
+   
+     //$ Define a module and open in it in the current scope.
+     //$ DEPRECATED: Use classes instead.
+     private namespace_stmt := "open" "module" sdeclname "=" ? scompound =>#
+       """
+       `(ast_seq ,_sr (
+         (ast_untyped_module ,_sr ,(first _3) ,(second _3) ,_5)
+         (ast_open ,_sr ,dfltvs (ast_name ,_sr ,(first _3) ()))))
+        """;
+   
+     private namespace_stmt := "open" "library" sname "=" ? scompound =>#
+       """
+       `(ast_seq ,_sr (
+         (ast_library ,_sr ,_3 ,_5)
+         (ast_open ,_sr ,dfltvs (ast_name ,_sr ,_3 ()))))
+        """;
+   
+     //$ Define a class.
+     //$ A class is a collection of constants, variables,
+     //$ types, functions, and other entities.
+     //$ 
+     //$ A polymorphic class may contain virtual functions, which are
+     //$ functions which can be defined later for particular types.
+     //$ This is equivalent to a specialisation of a template in C++.
+     //$
+     //$ NOTE: polymorphic classes may not contain variables.
+     //$ Only variables of non-polymorphic classes can be instantiated.
+     private namespace_stmt := "class" sdeclname "=" ? scompound =>#
+       """
+       `(ast_typeclass ,_sr ,(first _2) ,(second _2) ,_4)
        """;
-  
-    //$ Define a class.
-    //$ A class is a collection of constants, variables,
-    //$ types, functions, and other entities.
-    //$ 
-    //$ A polymorphic class may contain virtual functions, which are
-    //$ functions which can be defined later for particular types.
-    //$ This is equivalent to a specialisation of a template in C++.
-    //$
-    //$ NOTE: polymorphic classes may not contain variables.
-    //$ Only variables of non-polymorphic classes can be instantiated.
-    private namespace_stmt := "class" sdeclname "=" ? scompound =>#
-      """
-      `(ast_typeclass ,_sr ,(first _2) ,(second _2) ,_4)
-      """;
-  
-    //$ Define a class and open it.
-    private namespace_stmt := "open" "class" sdeclname "=" ? scompound =>#
-      """
-      `(ast_seq ,_sr (
-        (ast_typeclass ,_sr ,(first _3) ,(second _3) ,_5)
-        (ast_open ,_sr ,dfltvs (ast_name ,_sr ,(first _3) ()))))
-      """;
-  
-    //$ Define an instance of a class.
-    //$ This is a specialisation of the class which may contain
-    //$ overrides of virtual functions for a subset of the possible types.
-    //$ 
-    //$ Instances can be defined in any class scope (including and usually
-    //$ at the top level of the program).
-    //$
-    //$ Members of instances which are not overrides are private
-    //$ to the instance.
-    //$
-    private namespace_stmt := "instance" stvarlist squalified_name "=" ? scompound =>#
-      """
-      `(ast_instance ,_sr ,_2 ,_3 ,_5)
-      """;
-  
-  
-    //$ Provide a set of definitions in the with block
-    //$ which are available in the do block but are lost
-    //$ thereafter.
-    //$
-    //$ Effectively these definitions are private to the
-    //$ do block. The with block is basically an anonymous
-    //$ class which is opened in the do block. Example:
-    //$ 
-    //$ var x = 42;
-    //$ with var x = 1; do var y = x; done
-    //$ println$ x; // prints 42 not 1
-    //$
-    //$ This is the statement form of a let expression ..
-    private namespace_stmt := "with" stmt+ block =>#
-    """
-    (let* 
-      (
-        (dummy_class_name (fresh_name "dummy_class"))
-        (decls1 (map make_private _2)) 
-        (decls (append decls1 `(,_3)))
-      )
-      `(ast_seq ,_sr 
-        (
-          (ast_typeclass ,_sr ,dummy_class_name ,dfltvs ,decls)
-          (ast_inject_module ,_sr ,dfltvs ,(nos dummy_class_name))
-        )
-      )
-    )
-    """;
-  }
-  
-  @
-  
+   
+     //$ Define a class and open it.
+     private namespace_stmt := "open" "class" sdeclname "=" ? scompound =>#
+       """
+       `(ast_seq ,_sr (
+         (ast_typeclass ,_sr ,(first _3) ,(second _3) ,_5)
+         (ast_open ,_sr ,dfltvs (ast_name ,_sr ,(first _3) ()))))
+       """;
+   
+     //$ Define an instance of a class.
+     //$ This is a specialisation of the class which may contain
+     //$ overrides of virtual functions for a subset of the possible types.
+     //$ 
+     //$ Instances can be defined in any class scope (including and usually
+     //$ at the top level of the program).
+     //$
+     //$ Members of instances which are not overrides are private
+     //$ to the instance.
+     //$
+     private namespace_stmt := "instance" stvarlist squalified_name "=" ? scompound =>#
+       """
+       `(ast_instance ,_sr ,_2 ,_3 ,_5)
+       """;
+   
+   
+     //$ Provide a set of definitions in the with block
+     //$ which are available in the do block but are lost
+     //$ thereafter.
+     //$
+     //$ Effectively these definitions are private to the
+     //$ do block. The with block is basically an anonymous
+     //$ class which is opened in the do block. Example:
+     //$ 
+     //$ var x = 42;
+     //$ with var x = 1; do var y = x; done
+     //$ println$ x; // prints 42 not 1
+     //$
+     //$ This is the statement form of a let expression ..
+     private namespace_stmt := "with" stmt+ block =>#
+     """
+     (let* 
+       (
+         (dummy_class_name (fresh_name "dummy_class"))
+         (decls1 (map make_private _2)) 
+         (decls (append decls1 `(,_3)))
+       )
+       `(ast_seq ,_sr 
+         (
+           (ast_typeclass ,_sr ,dummy_class_name ,dfltvs ,decls)
+           (ast_inject_module ,_sr ,dfltvs ,(nos dummy_class_name))
+         )
+       )
+     )
+     """;
+   }
+   
+   @
+   
 
 Patterns
 --------
@@ -3764,226 +3764,226 @@ Patterns
 
 .. code-block:: text
 
-  //$ Pattern matching.
-  //$
-  //$ Pattern matching is a way to "take apart" a value according
-  //$ to its structure.
-  //$
-  //$ Matches operate "inside out".
-  
-  syntax patterns {
-  
-    block = match_stmt;
-  
-    //$ Pattern match statement.
-    //$ At least one branch must match or the program aborts with a match failure.
-    match_stmt:= "match" sexpr "with" stmt_matching+ "endmatch" ";" =>#
-      "`(ast_stmt_match (,_sr ,_2 ,_4))";
-  
-    match_stmt:= "match" sexpr "do" stmt_matching+ "done" =>#
-      "`(ast_stmt_match (,_sr ,_2 ,_4))";
-  
-    //$ A single branch of a pattern match statement.
-    //$ The match argument expression is compared to the pattern.
-    //$ If it matches any contained pattern variables are assigned
-    //$ the values in the corresponding possition of the expression,
-    //$ and the statements are executed.
-    private stmt_matching := "|" spattern "=>" stmt+ =># "`(,_2 ,_4)";
-  
-    //$ Pattern match expression with terminator.
-    satom := pattern_match "endmatch" =># "_1";
-  
-    //$ Pattern match expression without terminator.
-    //$ Match the expression against each of the branches in the matchings.
-    //$ At least one branch must match or the program aborts with a match failure.
-    pattern_match := "match" sexpr "with" smatching+ =>#
-      "`(ast_match ,_sr (,_2 ,_4))";
-  
-    //$ The match argument expression is compared to the pattern.
-    //$ If it matches any contained pattern variables are assigned
-    //$ the values in the corresponding possition of the expression,
-    //$ and expression is evaluated and becomes the return value
-    //$ of the whole match. 
-    smatching := "|" spattern "=>" x[let_pri] =># "`(,_2 ,_4)";
-  
-    //$ Match nothing.
-    smatching := "|" "=>" sexpr =># "`((pat_none ,_sr) ,_3)";
-  
-    spattern := sguard_pattern ("|" sguard_pattern)* =># "(chain 'pat_alt _1 _2)";
-  
-    //$ Match with guard.
-    //$ The LHS pattern is match first.
-    //$ Then the RHS guard expression is evaluated,
-    //$ in a context which includes any extracted match variables.
-    //$ If the guard is true, the whole pattern matches,
-    //$ otherwise the matching fails.
-    sguard_pattern := swith_pattern "when" sexpr =># "`(pat_when ,_sr ,_1 ,_3)";
-    sguard_pattern := swith_pattern =># "_1";
-  
-    swith_pattern := sas_pattern "with" spat_avars =># "`(pat_with ,_sr ,_1 ,_3)";
-      spat_avar := sname "=" stypeexpr =># "`(,_1 ,_3)";
-      spat_avars := list::commalist1<spat_avar> =># "_1"; 
-    swith_pattern := sas_pattern =># "_1";
-  
-    //$ Match with naming of subexpression.
-    //$ Matches the pattern against the corresponding subexpression,
-    //$ and gives it a name. 
-    private sas_pattern := scons_pattern "as" sname =># "`(pat_as ,_sr ,_1 ,_3)";
-    private sas_pattern := scons_pattern =># "_1";
-  
-    //$ Match a non-empty list.
-    //$ The LHS is the head of the list and the RHS is the tail.
-    //$ Does not match the empty list.
-    private scons_pattern := stuple_cons_pattern "!" scons_pattern =>#
-      '''`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))''';
-    private scons_pattern := stuple_cons_pattern =># "_1";
-  
-    //$ Match a non-empty list using standard list syntax
-    //$ This allows for variables in the list syntax and bindings should "just work"
-    private scons_pattern :="[" slist_pattern "]" =># 
-      "_2";
-    private slist_pattern := scoercive_pattern "," slist_pattern  =># """`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))""";
-    private slist_pattern := scoercive_pattern =># 
-      """`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 
-        (pat_const_ctor ,_sr ,(nos "Empty") ))))""";
-    private slist_pattern := scoercive_pattern ",," scoercive_pattern =># """`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))""";
-    private scons_pattern :="[" "]" =># """`(pat_const_ctor ,_sr ,(nos "Empty"))""";
-  
-    //$ Match a tuple of at least 3 elements.
-    //$ The LHS is the first element of the tuple.
-    //$ The RHS is the rest of the tuple.
-    private stuple_cons_pattern := stuple_pattern ",," stuple_cons_pattern =>#
-      "`(pat_tuple_cons ,_sr ,_1 ,_3)";
-    private stuple_cons_pattern := stuple_pattern "<,,>" stuple_cons_pattern =>#
-      "`(pat_tuple_snoc ,_sr ,_1 ,_3)";
-    private stuple_cons_pattern := stuple_pattern =># "_1";
-  
-  
-    //$ Match a tuple with 2 or more components.
-    private stuple_pattern := scoercive_pattern ("," scoercive_pattern )* =>#
-      "(chain 'pat_tuple _1 _2)";
-  
-    //$ Match a value with a coercion.
-    //$ The subexpression corresponding to the LHS is compared.
-    //$ If it matches the result is coerced to the RHS type expression. 
-    private scoercive_pattern := sapplicative_pattern "|>" x[sarrow_pri] =>#
-      "`(pat_coercion ,_sr ,_1 ,_3)";
-  
-  
-    // NOTE THIS IS A HACK I just wanted var x : t = expr to be
-    // convertable to let x : t = expr in, i.e. without having to delete the type
-    private scoercive_pattern := sapplicative_pattern ":" x[sarrow_pri] =>#
-      "`(pat_coercion ,_sr ,_1 ,_3)";
-    private scoercive_pattern := sapplicative_pattern =># "_1";
-  
-    private scoercive_pattern := stypeexpr ":>>" sname =>#
-      "`(pat_subtype ,_sr ,_1 ,_3)";
-  
-  
-    //$ Match a non-constant sum type constructor
-    //$ that is, one with an argument.
-    //$ The LHS name must match the constructor used to make the value.
-    //$ The RHS pattern is matched against the argument it was constructed with.
-    private sapplicative_pattern := sctor_name sargument_pattern =>#
-      "`(pat_nonconst_ctor ,_sr ,_1 ,_2)";
-  
-    private sapplicative_pattern := sctor_name stypeexpr+ sargument_pattern =>#
-      """;;(begin (display "HO PATTERN ")(display _1)(display "\n")
-         ;;(display "arguments=")(display _2) (display "\n")
-         ;;(display "pattern=")(display _3)(display "\n")
-         `(pat_ho_ctor ,_sr ,_1 ,_2 ,_3)
-         ;;)
-      """;
-  
-  
-      //$ The sum type constructor can either be a qualified name...
-      private sctor_name := sname =># "`(ast_name ,_sr ,_1 ())";
-  
-      //$ or it can be a case literal.
-      private sctor_name := "case" sinteger =># "`(ast_case_tag ,_sr ,_2)";
-  
-  
-    private sapplicative_pattern := "case" sname sargument_pattern =>#
-      "`(pat_nonconst_variant ,_sr ,_2 ,_3)";
-    private sapplicative_pattern := "`" sname sargument_pattern =>#
-      "`(pat_nonconst_variant ,_sr ,_2 ,_3)";
-  
-    private sapplicative_pattern := satomic_pattern =># "_1";
-    private sargument_pattern := satomic_pattern =># "_1";
-  
-    //-----------------------------------------------------------------------
-    // atomic pattern
-  
-    private satomic_pattern := sname =># 
-    """
-      (if 
-        (char-upper-case? (string-ref _1 0))
-        `(pat_const_ctor ,_sr (ast_name ,_sr ,_1 ()))
-        `(pat_as ,_sr (pat_any ,_sr) ,_1)
-      )
-    """;
-  
-    private satomic_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
-    private satomic_pattern := "val" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
-    private satomic_pattern := "#" sctor_name =># "`(pat_const_ctor ,_sr ,_2)";
-    private satomic_pattern := "#" "case" sname =># "`(pat_const_variant ,_sr ,_3)";
-    private satomic_pattern := "`" sname =># "`(pat_const_variant ,_sr ,_2)";
-    private satomic_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
-  
-  
-    //$ Match the value true = case 1 of 2.
-    private satomic_pattern := "true" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 1))";
-  
-    //$ Match the value false = case 0 of 2.
-    private satomic_pattern := "false" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 0))";
-  
-    //$ Match anything without naming the subexpression.
-    private satomic_pattern := "_" =># "`(pat_any ,_sr)";
-  
-    //$ Precedence control.
-    private satomic_pattern := "(" spattern ")" =># "_2";
-  
-    //$ Match the unit tuple.
-    private satomic_pattern := "(" ")" =># "`(pat_tuple ,_sr ())";
-  
-    //$ Match a record.
-    //$ The record must have fields with the given names.
-    //$ It may have more fields though, these are ignored.
-    private satomic_pattern :=  "(" spat_assign ("," spat_assign )* ")" =>#
-      "`(pat_record ,_sr ,(cons _2 (map second _3)))"
-    ;
-      private spat_assign := sname "=" spattern =># "`(,_1 ,_3)";
-  
-    //$ Polyrecord pattern
-    //$ Matches a record with the given fields and assigns
-    //$ the rest of the fields to the extension
-    private satomic_pattern :=  "(" spat_assign ("," spat_assign )* "|" sname ")" =>#
-      "`(pat_polyrecord ,_sr ,(cons _2 (map second _3)) ,_5)"
-    ;
-  
-    //$ Match an arbitrary expression.
-    //$ Equivalent to 
-    //$
-    //$  ?name when name == expr.
-    //$
-    private satomic_pattern := "$" "(" sexpr ")" =># "`(pat_expr ,_sr ,_3)";
-  
-    //$ Match against any literal value.
-    //$ This includes integers, strings, whatever.
-    //$ The underlying type must support equality operator (==).
-    //$ Usually it would be instance of class Eq.
-    private satomic_pattern := sliteral =># "`(pat_literal ,_sr ,_1)";
-  
-    //$ Match against a range specified by two literals.
-    //$ The range is inclusive.
-    //$ The underlying type must support less than operator (<).
-    //$ Usually it would be an instance of class Tord.
-    private satomic_pattern := sliteral ".." sliteral =># "`(pat_range ,_sr ,_1 ,_3)";
-  
-  }
-  
-  @
-  
+   //$ Pattern matching.
+   //$
+   //$ Pattern matching is a way to "take apart" a value according
+   //$ to its structure.
+   //$
+   //$ Matches operate "inside out".
+   
+   syntax patterns {
+   
+     block = match_stmt;
+   
+     //$ Pattern match statement.
+     //$ At least one branch must match or the program aborts with a match failure.
+     match_stmt:= "match" sexpr "with" stmt_matching+ "endmatch" ";" =>#
+       "`(ast_stmt_match (,_sr ,_2 ,_4))";
+   
+     match_stmt:= "match" sexpr "do" stmt_matching+ "done" =>#
+       "`(ast_stmt_match (,_sr ,_2 ,_4))";
+   
+     //$ A single branch of a pattern match statement.
+     //$ The match argument expression is compared to the pattern.
+     //$ If it matches any contained pattern variables are assigned
+     //$ the values in the corresponding possition of the expression,
+     //$ and the statements are executed.
+     private stmt_matching := "|" spattern "=>" stmt+ =># "`(,_2 ,_4)";
+   
+     //$ Pattern match expression with terminator.
+     satom := pattern_match "endmatch" =># "_1";
+   
+     //$ Pattern match expression without terminator.
+     //$ Match the expression against each of the branches in the matchings.
+     //$ At least one branch must match or the program aborts with a match failure.
+     pattern_match := "match" sexpr "with" smatching+ =>#
+       "`(ast_match ,_sr (,_2 ,_4))";
+   
+     //$ The match argument expression is compared to the pattern.
+     //$ If it matches any contained pattern variables are assigned
+     //$ the values in the corresponding possition of the expression,
+     //$ and expression is evaluated and becomes the return value
+     //$ of the whole match. 
+     smatching := "|" spattern "=>" x[let_pri] =># "`(,_2 ,_4)";
+   
+     //$ Match nothing.
+     smatching := "|" "=>" sexpr =># "`((pat_none ,_sr) ,_3)";
+   
+     spattern := sguard_pattern ("|" sguard_pattern)* =># "(chain 'pat_alt _1 _2)";
+   
+     //$ Match with guard.
+     //$ The LHS pattern is match first.
+     //$ Then the RHS guard expression is evaluated,
+     //$ in a context which includes any extracted match variables.
+     //$ If the guard is true, the whole pattern matches,
+     //$ otherwise the matching fails.
+     sguard_pattern := swith_pattern "when" sexpr =># "`(pat_when ,_sr ,_1 ,_3)";
+     sguard_pattern := swith_pattern =># "_1";
+   
+     swith_pattern := sas_pattern "with" spat_avars =># "`(pat_with ,_sr ,_1 ,_3)";
+       spat_avar := sname "=" stypeexpr =># "`(,_1 ,_3)";
+       spat_avars := list::commalist1<spat_avar> =># "_1"; 
+     swith_pattern := sas_pattern =># "_1";
+   
+     //$ Match with naming of subexpression.
+     //$ Matches the pattern against the corresponding subexpression,
+     //$ and gives it a name. 
+     private sas_pattern := scons_pattern "as" sname =># "`(pat_as ,_sr ,_1 ,_3)";
+     private sas_pattern := scons_pattern =># "_1";
+   
+     //$ Match a non-empty list.
+     //$ The LHS is the head of the list and the RHS is the tail.
+     //$ Does not match the empty list.
+     private scons_pattern := stuple_cons_pattern "!" scons_pattern =>#
+       '''`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))''';
+     private scons_pattern := stuple_cons_pattern =># "_1";
+   
+     //$ Match a non-empty list using standard list syntax
+     //$ This allows for variables in the list syntax and bindings should "just work"
+     private scons_pattern :="[" slist_pattern "]" =># 
+       "_2";
+     private slist_pattern := scoercive_pattern "," slist_pattern  =># """`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))""";
+     private slist_pattern := scoercive_pattern =># 
+       """`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 
+         (pat_const_ctor ,_sr ,(nos "Empty") ))))""";
+     private slist_pattern := scoercive_pattern ",," scoercive_pattern =># """`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))""";
+     private scons_pattern :="[" "]" =># """`(pat_const_ctor ,_sr ,(nos "Empty"))""";
+   
+     //$ Match a tuple of at least 3 elements.
+     //$ The LHS is the first element of the tuple.
+     //$ The RHS is the rest of the tuple.
+     private stuple_cons_pattern := stuple_pattern ",," stuple_cons_pattern =>#
+       "`(pat_tuple_cons ,_sr ,_1 ,_3)";
+     private stuple_cons_pattern := stuple_pattern "<,,>" stuple_cons_pattern =>#
+       "`(pat_tuple_snoc ,_sr ,_1 ,_3)";
+     private stuple_cons_pattern := stuple_pattern =># "_1";
+   
+   
+     //$ Match a tuple with 2 or more components.
+     private stuple_pattern := scoercive_pattern ("," scoercive_pattern )* =>#
+       "(chain 'pat_tuple _1 _2)";
+   
+     //$ Match a value with a coercion.
+     //$ The subexpression corresponding to the LHS is compared.
+     //$ If it matches the result is coerced to the RHS type expression. 
+     private scoercive_pattern := sapplicative_pattern "|>" x[sarrow_pri] =>#
+       "`(pat_coercion ,_sr ,_1 ,_3)";
+   
+   
+     // NOTE THIS IS A HACK I just wanted var x : t = expr to be
+     // convertable to let x : t = expr in, i.e. without having to delete the type
+     private scoercive_pattern := sapplicative_pattern ":" x[sarrow_pri] =>#
+       "`(pat_coercion ,_sr ,_1 ,_3)";
+     private scoercive_pattern := sapplicative_pattern =># "_1";
+   
+     private scoercive_pattern := stypeexpr ":>>" sname =>#
+       "`(pat_subtype ,_sr ,_1 ,_3)";
+   
+   
+     //$ Match a non-constant sum type constructor
+     //$ that is, one with an argument.
+     //$ The LHS name must match the constructor used to make the value.
+     //$ The RHS pattern is matched against the argument it was constructed with.
+     private sapplicative_pattern := sctor_name sargument_pattern =>#
+       "`(pat_nonconst_ctor ,_sr ,_1 ,_2)";
+   
+     private sapplicative_pattern := sctor_name stypeexpr+ sargument_pattern =>#
+       """;;(begin (display "HO PATTERN ")(display _1)(display "\n")
+          ;;(display "arguments=")(display _2) (display "\n")
+          ;;(display "pattern=")(display _3)(display "\n")
+          `(pat_ho_ctor ,_sr ,_1 ,_2 ,_3)
+          ;;)
+       """;
+   
+   
+       //$ The sum type constructor can either be a qualified name...
+       private sctor_name := sname =># "`(ast_name ,_sr ,_1 ())";
+   
+       //$ or it can be a case literal.
+       private sctor_name := "case" sinteger =># "`(ast_case_tag ,_sr ,_2)";
+   
+   
+     private sapplicative_pattern := "case" sname sargument_pattern =>#
+       "`(pat_nonconst_variant ,_sr ,_2 ,_3)";
+     private sapplicative_pattern := "`" sname sargument_pattern =>#
+       "`(pat_nonconst_variant ,_sr ,_2 ,_3)";
+   
+     private sapplicative_pattern := satomic_pattern =># "_1";
+     private sargument_pattern := satomic_pattern =># "_1";
+   
+     //-----------------------------------------------------------------------
+     // atomic pattern
+   
+     private satomic_pattern := sname =># 
+     """
+       (if 
+         (char-upper-case? (string-ref _1 0))
+         `(pat_const_ctor ,_sr (ast_name ,_sr ,_1 ()))
+         `(pat_as ,_sr (pat_any ,_sr) ,_1)
+       )
+     """;
+   
+     private satomic_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
+     private satomic_pattern := "val" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
+     private satomic_pattern := "#" sctor_name =># "`(pat_const_ctor ,_sr ,_2)";
+     private satomic_pattern := "#" "case" sname =># "`(pat_const_variant ,_sr ,_3)";
+     private satomic_pattern := "`" sname =># "`(pat_const_variant ,_sr ,_2)";
+     private satomic_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
+   
+   
+     //$ Match the value true = case 1 of 2.
+     private satomic_pattern := "true" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 1))";
+   
+     //$ Match the value false = case 0 of 2.
+     private satomic_pattern := "false" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 0))";
+   
+     //$ Match anything without naming the subexpression.
+     private satomic_pattern := "_" =># "`(pat_any ,_sr)";
+   
+     //$ Precedence control.
+     private satomic_pattern := "(" spattern ")" =># "_2";
+   
+     //$ Match the unit tuple.
+     private satomic_pattern := "(" ")" =># "`(pat_tuple ,_sr ())";
+   
+     //$ Match a record.
+     //$ The record must have fields with the given names.
+     //$ It may have more fields though, these are ignored.
+     private satomic_pattern :=  "(" spat_assign ("," spat_assign )* ")" =>#
+       "`(pat_record ,_sr ,(cons _2 (map second _3)))"
+     ;
+       private spat_assign := sname "=" spattern =># "`(,_1 ,_3)";
+   
+     //$ Polyrecord pattern
+     //$ Matches a record with the given fields and assigns
+     //$ the rest of the fields to the extension
+     private satomic_pattern :=  "(" spat_assign ("," spat_assign )* "|" sname ")" =>#
+       "`(pat_polyrecord ,_sr ,(cons _2 (map second _3)) ,_5)"
+     ;
+   
+     //$ Match an arbitrary expression.
+     //$ Equivalent to 
+     //$
+     //$  ?name when name == expr.
+     //$
+     private satomic_pattern := "$" "(" sexpr ")" =># "`(pat_expr ,_sr ,_3)";
+   
+     //$ Match against any literal value.
+     //$ This includes integers, strings, whatever.
+     //$ The underlying type must support equality operator (==).
+     //$ Usually it would be instance of class Eq.
+     private satomic_pattern := sliteral =># "`(pat_literal ,_sr ,_1)";
+   
+     //$ Match against a range specified by two literals.
+     //$ The range is inclusive.
+     //$ The underlying type must support less than operator (<).
+     //$ Usually it would be an instance of class Tord.
+     private satomic_pattern := sliteral ".." sliteral =># "`(pat_range ,_sr ,_1 ,_3)";
+   
+   }
+   
+   @
+   
 
 Plugin Support DSSL
 -------------------
@@ -3996,64 +3996,64 @@ link model.
 
 .. code-block:: text
 
-  // Dummy: FIXME: stupid skaller forgot to commit me, and then did a git clean -f.
-  SCHEME """
-  (begin
-    (define (static-link-symbol lib sym) 
-      (let*
-        (
-           (dummy (begin (display "lib ")(display lib)(display ", symbol ") (display sym)(display "\n")))
-           (externc (string-append "extern \"C\" void *" sym ";\n"))
-           (rcode `(Str ,externc))
-           (hreq `(Header_req ,rcode))
-           (reqs `(rreq_atom ,hreq))
-           (address_type (nos "address"))
-           (address `(Str ,(string-append "&" sym))) 
-           (const `(ast_const_decl ,_sr ,sym ,dfltvs ,address_type ,address ,reqs))
-           (arg `(ast_tuple ,_sr ,(list (stringof lib) (stringof sym) (nos sym))))
-           (addsym `(ast_call ,_sr ,(nos "add_symbol")  ,arg))
-        )
-        `(ast_seq ,_sr ,(list const addsym))
-      )
-    )
-    (define (plugin-syms lib) 
-      `(
-        ,(string-append lib "_create_thread_frame")
-        ,(string-append lib "_flx_start")
-        ,(string-append lib "_setup")
-        ,lib
-      )
-    )
-    (define (plugin-defs lib) 
-      (let*
-        (
-          (syms (plugin-syms lib))
-          (defs (map (lambda (sym) (static-link-symbol lib sym)) syms))
-        )
-        `(ast_seq ,_sr ,defs)
-      )
-    )
-  )
-  """;
-  
-  syntax plugins
-  {
-    stmt := "static-link-symbol" sname "in" "plugin" sname ";" =># "(static-link-symbol _5 _2)";
-  
-    stmt := "static-link-plugin" sname ("," sname)* ";" =>#
-    """
-    (let*
-      ( 
-        (plugins (cons _2 (map second _3)))
-        (defs (map plugin-defs plugins))
-      )
-      `(ast_seq ,_sr ,defs)
-    )
-    """;
+   // Dummy: FIXME: stupid skaller forgot to commit me, and then did a git clean -f.
+   SCHEME """
+   (begin
+     (define (static-link-symbol lib sym) 
+       (let*
+         (
+            (dummy (begin (display "lib ")(display lib)(display ", symbol ") (display sym)(display "\n")))
+            (externc (string-append "extern \"C\" void *" sym ";\n"))
+            (rcode `(Str ,externc))
+            (hreq `(Header_req ,rcode))
+            (reqs `(rreq_atom ,hreq))
+            (address_type (nos "address"))
+            (address `(Str ,(string-append "&" sym))) 
+            (const `(ast_const_decl ,_sr ,sym ,dfltvs ,address_type ,address ,reqs))
+            (arg `(ast_tuple ,_sr ,(list (stringof lib) (stringof sym) (nos sym))))
+            (addsym `(ast_call ,_sr ,(nos "add_symbol")  ,arg))
+         )
+         `(ast_seq ,_sr ,(list const addsym))
+       )
+     )
+     (define (plugin-syms lib) 
+       `(
+         ,(string-append lib "_create_thread_frame")
+         ,(string-append lib "_flx_start")
+         ,(string-append lib "_setup")
+         ,lib
+       )
+     )
+     (define (plugin-defs lib) 
+       (let*
+         (
+           (syms (plugin-syms lib))
+           (defs (map (lambda (sym) (static-link-symbol lib sym)) syms))
+         )
+         `(ast_seq ,_sr ,defs)
+       )
+     )
+   )
+   """;
    
-  }
-  @
-  
+   syntax plugins
+   {
+     stmt := "static-link-symbol" sname "in" "plugin" sname ";" =># "(static-link-symbol _5 _2)";
+   
+     stmt := "static-link-plugin" sname ("," sname)* ";" =>#
+     """
+     (let*
+       ( 
+         (plugins (cons _2 (map second _3)))
+         (defs (map plugin-defs plugins))
+       )
+       `(ast_seq ,_sr ,defs)
+     )
+     """;
+    
+   }
+   @
+   
 
 Python export grammar.
 ----------------------
@@ -4062,12 +4062,12 @@ Used to create Python3 modules in emitted libraries.
 
 .. code-block:: text
 
-  syntax python_grammar {
-    stmt := "export" "python" "fun" ssuffixed_name "as" sstring ";" =>#
-      "`(ast_export_python_fun ,_sr ,_4 ,_6)";
-  }
-  @
-  
+   syntax python_grammar {
+     stmt := "export" "python" "fun" ssuffixed_name "as" sstring ";" =>#
+       "`(ast_export_python_fun ,_sr ,_4 ,_6)";
+   }
+   @
+   
 
 Requirements
 ------------
@@ -4076,232 +4076,232 @@ Used to define dependencies on external resources.
 
 .. code-block:: text
 
-  //$ Syntax to express and provide dependencies.
-  //$
-  //$ Requirements operate as extensions to the usual
-  //$ usage dependencies, to provide the compiler additional
-  //$ information regarding C/C++ contructions used in bindings. 
-  //$
-  //$ A requirement of a C type is
-  //$ activated if, and only if, that type is used
-  //$ in a program (or plugin).
-  //$
-  //$ Similarly, a requirement of a function is
-  //$ activated if, and only if, the function is used.
-  //$
-  //$ An unnamed requirement in a class is activated
-  //$ if any C binding in the class is used.
-  //$ Such bindings also propagate to descendent (contained) classes.
-  //$
-  //$ A named requirement is activated only if an active
-  //$ requirement requires it.
-  //$ Requirements may have "tag names".
-  //$ When a requirement is required by name,
-  //$ all requirements with that name are activated.
-  //$ Circularities in named requirements are permitted and harmless.
-  //$
-  //$ Floating insertions (header, body) are emitted in order of writting
-  //$ at fixed places in the generated C++ header and implementation files.
-  //$ Floating insertions can themselves have requirements.
-  //$
-  //$ WARNING: there are two gotchas!
-  //$
-  //$ Gotcha 1: requirements on names cannot fail, even if no
-  //$ resource is tagged wih that name. This is because requirements
-  //$ activate the set of resources with the given name, and as
-  //$ usual, a set may be empty.
-  //$
-  //$ Gotcha 2; Just because you put a requires statement in a class
-  //$ doesn't mean it will be activated. requirements are only
-  //$ triggered by the use of C bindings! Using a Felix entity
-  //$ will not trigger the requirement!
-  
-  
-  syntax requirements {
-    //$ General form of required clause.
-    srequires_clause := "requires" srequirements =># "_2";
-  
-    //$ An empty requirement is deemed satisfied.
-    srequires_clause := sepsilon =># "'rreq_true";
-  
-    //$ A requirement on a requirement defined by name elsewhere.
-    private srequirement:= squalified_name =># "`(Named_req ,_1)";
-  
-    //$ A generic "catch all" requirement or specification
-    //$ of some property named by a string.
-    private srequirement :=  "property" sstring =># "`(Property_req ,_2)";
-  
-    //$ A dependency on an external package with a given name.
-    //$ Also known as a resource abstraction.
-    //$ 
-    //$ The package name refers to an entry in an external database 
-    //$ usually represented by directory of text files (usually called "config"),
-    //$ each of which usually has extension "fpc".
-    //$
-    //$ Each file contains a number of fields, which
-    //$ may specify a platform dependent filename for
-    //$ a shared/dynamic link library, static link library,
-    //$ header file, compiler option switch, or other
-    //$ information.
-    //$
-    //$ The package construction abstracts the platform dependent
-    //$ data required to locate and use a resource.
-    //$ 
-    //$ The Felix compiler "flxg" generates a list of required
-    //$ abstract resources.
-    //$
-    //$ The Felix command line harness "flx" queries the database
-    //$ of resources using the "flx_pkgconfig" tool, and applies
-    //$ the relevant arguments to the relevant steps of the 
-    //$ compilation process.
-    //$
-    //$ This allows fully automatic compilation and execution
-    //$ of Felix programs without the programmer needing to
-    //$ continually worry about build scripts.
-    //$
-    //$ Instead the system installer is required, once,
-    //$ to provide the resource database.
-    private srequirement :=  "package" scode_spec =># "`(Package_req ,_2)";
-  
-    //$ The scanner requirement applies only to a C type binding.
-    //$ It specifies the name of a C function which the garbage
-    //$ collector can called to search a data structure for pointers.
-    //$
-    //$ By default, if no scanner is specified for a C type,
-    //$ the type is assumed not to contain any Felix pointers.
-    private srequirement :=  "scanner" scode_spec =># "`(Scanner_req ,_2)";
-  
-    //$ The finaliser requirement applies only to a C type binding.
-    //$ It specifies the name of a C function which the garbage
-    //$ collector can call to finalise an object prior to freeing up
-    //$ the underlying memory.
-    //$
-    //$ By default, if no finaliser is specifed, the C++ destructor is called.
-    private srequirement :=  "finaliser" scode_spec =># "`(Finaliser_req ,_2)";
-  
-    //$ The encoder requirement applies only to a C type binding.
-    //$ It specifies the name of a C function which can be called 
-    //$ to serialise one element of the object.
-    //$ 
-    //$ By default, if no encoder is specifed, memcpy is used.
-    private srequirement :=  "encoder" scode_spec =># "`(Encoder_req ,_2)";
-  
-    //$ The decoder requirement applies only to a C type binding.
-    //$ It specifies the name of a C function which can be called 
-    //$ to deserialise one element of the object.
-    //$ 
-    //$ By default, if no decoder is specifed, memcpy is used.
-    private srequirement :=  "decoder" scode_spec =># "`(Decoder_req ,_2)";
-  
-    private srequirement :=  "index" sinteger =># "`(Index_req ,_2)";
-    private srequirement :=  "index" sname =># "`(Named_index_req ,_2)";
-  
-    //$ Requirement expressions. Deprecated.
-    private srequirement_atom:= srequirement =># "`(rreq_atom ,_1)";
-  
-    //$ Requirement expressions. Deprecated.
-    private srequirement_atom:= "(" srequirements ")" =># "_2";
-  
-    //$ Requirement expressions. Deprecated.
-    private srequirement_and:= srequirement_and "and" srequirement_atom =>#
-      "`(rreq_and ,_1 ,_3)";
-    private srequirement_and:= srequirement_atom =># "_1";
-  
-    //$ Requirement expressions. Deprecated.
-    private srequirement_or:= srequirement_or "or" srequirement_and =>#
-      "`(rreq_or ,_1 ,_3)";
-    private srequirement_or:= srequirement_and =># "_1";
-  
-    //$ Requirement expressions: a comma separated list
-    //$ of requirements specified each one of the requirements
-    //$ applies independently.
-    private srequirements:= srequirements "," srequirement_or =>#
-      "`(rreq_and ,_1 ,_3)";
-    private srequirements:= srequirement_or =># "_1";
-  
-    //$ The body requirement is a floating requirement that
-    //$ specifies that the given code
-    //$ string be inserted into the output "near the top"
-    //$ of the generated C++ body (cpp) file.
-    //$
-    //$ It can be used to emit utiliy functions
-    //$ written in C.
-    private srequirement := "body" scode_spec =># "`(Body_req ,_2)";
-  
-    //$ The header requirement is a floating requirement that
-    //$ specifies that the given code
-    //$ string be inserted into the output "near the top"
-    //$ of the generated C++ header (hpp) file.
-    //$
-    //$ It is typically used to emit a "#include" directive
-    //$ so that the requiring binding has relevant types
-    //$ and functions available.
-    private srequirement := "header" scode_spec =># "`(Header_req ,_2)";
-  
-    //$ A Felix string used as a code specification
-    //$ is treated as a template with special coding
-    //$ internally which can be replaced.
-    //$
-    //$ This feature supports the fact that Felix code
-    //$ insertions can be polymorphic.
-    scode_spec := sstring =># "`(StrTemplate ,_1)";
-  
-    //$ A c-string like c"xxxx" is emitted literally
-    //$ without any substitutions.
-    scode_spec := scstring =># "`(Str ,_1)";
-  
-    //$ This is a special code to make specific
-    //$ that a binding is an identity which can
-    //$ be optimised away.
-    scode_spec := "ident" =># "'Identity";
-  
-    //$ The anonymous requires statement specifies requirements which 
-    //$ propagates to all C bindings
-    //$ in the same class, or any descendant (enclosed) class.
-    stmt := "requires" srequirements ";" =>#
-      """`(ast_insert ,_sr "_root" ,dfltvs (Str "") body ,_2)""";
-  
-    stmt := "export" "requires" srequirements ";" =>#
-      """`(ast_seq ,_sr 
-           ,(list 
-             `(ast_insert ,_sr "_root" ,dfltvs (Str "") body ,_3)
-             `(ast_export_requirement ,_sr ,_3)
-           )
-        )
-      """;
-  
-  
-    //$ The named requires statement simply names a requirement.
-    stmt := sname "requires" srequirements ";" =>#
-      """`(ast_insert ,_sr ,_1 ,dfltvs (Str "") body ,_3)""";
-  
-    //$ The header statement specifies a header requirement which
-    //$ propagates to all C bindings
-    //$ in the same class, or any descendant (enclosed) class.
-    stmt := "header" scode_spec srequires_clause ";" =>#
-      """`(ast_insert ,_sr "_root" ,dfltvs ,_2 header ,_3))""";
-  
-    //$ The body statement specifies a header requirement which
-    //$ propagates to all C bindings
-    //$ in the same class, or any descendant (enclosed) class.
-    stmt := "body" scode_spec srequires_clause ";" =>#
-      """`(ast_insert ,_sr "_root" ,dfltvs ,_2 body ,_3))""";
-  
-    //$ Named header requirement.
-    stmt := "header" sdeclname "=" scode_spec srequires_clause ";" =>#
-      """
-      `(ast_insert ,_sr ,(first _2) ,(second _2) ,_4 header ,_5)
+   //$ Syntax to express and provide dependencies.
+   //$
+   //$ Requirements operate as extensions to the usual
+   //$ usage dependencies, to provide the compiler additional
+   //$ information regarding C/C++ contructions used in bindings. 
+   //$
+   //$ A requirement of a C type is
+   //$ activated if, and only if, that type is used
+   //$ in a program (or plugin).
+   //$
+   //$ Similarly, a requirement of a function is
+   //$ activated if, and only if, the function is used.
+   //$
+   //$ An unnamed requirement in a class is activated
+   //$ if any C binding in the class is used.
+   //$ Such bindings also propagate to descendent (contained) classes.
+   //$
+   //$ A named requirement is activated only if an active
+   //$ requirement requires it.
+   //$ Requirements may have "tag names".
+   //$ When a requirement is required by name,
+   //$ all requirements with that name are activated.
+   //$ Circularities in named requirements are permitted and harmless.
+   //$
+   //$ Floating insertions (header, body) are emitted in order of writting
+   //$ at fixed places in the generated C++ header and implementation files.
+   //$ Floating insertions can themselves have requirements.
+   //$
+   //$ WARNING: there are two gotchas!
+   //$
+   //$ Gotcha 1: requirements on names cannot fail, even if no
+   //$ resource is tagged wih that name. This is because requirements
+   //$ activate the set of resources with the given name, and as
+   //$ usual, a set may be empty.
+   //$
+   //$ Gotcha 2; Just because you put a requires statement in a class
+   //$ doesn't mean it will be activated. requirements are only
+   //$ triggered by the use of C bindings! Using a Felix entity
+   //$ will not trigger the requirement!
+   
+   
+   syntax requirements {
+     //$ General form of required clause.
+     srequires_clause := "requires" srequirements =># "_2";
+   
+     //$ An empty requirement is deemed satisfied.
+     srequires_clause := sepsilon =># "'rreq_true";
+   
+     //$ A requirement on a requirement defined by name elsewhere.
+     private srequirement:= squalified_name =># "`(Named_req ,_1)";
+   
+     //$ A generic "catch all" requirement or specification
+     //$ of some property named by a string.
+     private srequirement :=  "property" sstring =># "`(Property_req ,_2)";
+   
+     //$ A dependency on an external package with a given name.
+     //$ Also known as a resource abstraction.
+     //$ 
+     //$ The package name refers to an entry in an external database 
+     //$ usually represented by directory of text files (usually called "config"),
+     //$ each of which usually has extension "fpc".
+     //$
+     //$ Each file contains a number of fields, which
+     //$ may specify a platform dependent filename for
+     //$ a shared/dynamic link library, static link library,
+     //$ header file, compiler option switch, or other
+     //$ information.
+     //$
+     //$ The package construction abstracts the platform dependent
+     //$ data required to locate and use a resource.
+     //$ 
+     //$ The Felix compiler "flxg" generates a list of required
+     //$ abstract resources.
+     //$
+     //$ The Felix command line harness "flx" queries the database
+     //$ of resources using the "flx_pkgconfig" tool, and applies
+     //$ the relevant arguments to the relevant steps of the 
+     //$ compilation process.
+     //$
+     //$ This allows fully automatic compilation and execution
+     //$ of Felix programs without the programmer needing to
+     //$ continually worry about build scripts.
+     //$
+     //$ Instead the system installer is required, once,
+     //$ to provide the resource database.
+     private srequirement :=  "package" scode_spec =># "`(Package_req ,_2)";
+   
+     //$ The scanner requirement applies only to a C type binding.
+     //$ It specifies the name of a C function which the garbage
+     //$ collector can called to search a data structure for pointers.
+     //$
+     //$ By default, if no scanner is specified for a C type,
+     //$ the type is assumed not to contain any Felix pointers.
+     private srequirement :=  "scanner" scode_spec =># "`(Scanner_req ,_2)";
+   
+     //$ The finaliser requirement applies only to a C type binding.
+     //$ It specifies the name of a C function which the garbage
+     //$ collector can call to finalise an object prior to freeing up
+     //$ the underlying memory.
+     //$
+     //$ By default, if no finaliser is specifed, the C++ destructor is called.
+     private srequirement :=  "finaliser" scode_spec =># "`(Finaliser_req ,_2)";
+   
+     //$ The encoder requirement applies only to a C type binding.
+     //$ It specifies the name of a C function which can be called 
+     //$ to serialise one element of the object.
+     //$ 
+     //$ By default, if no encoder is specifed, memcpy is used.
+     private srequirement :=  "encoder" scode_spec =># "`(Encoder_req ,_2)";
+   
+     //$ The decoder requirement applies only to a C type binding.
+     //$ It specifies the name of a C function which can be called 
+     //$ to deserialise one element of the object.
+     //$ 
+     //$ By default, if no decoder is specifed, memcpy is used.
+     private srequirement :=  "decoder" scode_spec =># "`(Decoder_req ,_2)";
+   
+     private srequirement :=  "index" sinteger =># "`(Index_req ,_2)";
+     private srequirement :=  "index" sname =># "`(Named_index_req ,_2)";
+   
+     //$ Requirement expressions. Deprecated.
+     private srequirement_atom:= srequirement =># "`(rreq_atom ,_1)";
+   
+     //$ Requirement expressions. Deprecated.
+     private srequirement_atom:= "(" srequirements ")" =># "_2";
+   
+     //$ Requirement expressions. Deprecated.
+     private srequirement_and:= srequirement_and "and" srequirement_atom =>#
+       "`(rreq_and ,_1 ,_3)";
+     private srequirement_and:= srequirement_atom =># "_1";
+   
+     //$ Requirement expressions. Deprecated.
+     private srequirement_or:= srequirement_or "or" srequirement_and =>#
+       "`(rreq_or ,_1 ,_3)";
+     private srequirement_or:= srequirement_and =># "_1";
+   
+     //$ Requirement expressions: a comma separated list
+     //$ of requirements specified each one of the requirements
+     //$ applies independently.
+     private srequirements:= srequirements "," srequirement_or =>#
+       "`(rreq_and ,_1 ,_3)";
+     private srequirements:= srequirement_or =># "_1";
+   
+     //$ The body requirement is a floating requirement that
+     //$ specifies that the given code
+     //$ string be inserted into the output "near the top"
+     //$ of the generated C++ body (cpp) file.
+     //$
+     //$ It can be used to emit utiliy functions
+     //$ written in C.
+     private srequirement := "body" scode_spec =># "`(Body_req ,_2)";
+   
+     //$ The header requirement is a floating requirement that
+     //$ specifies that the given code
+     //$ string be inserted into the output "near the top"
+     //$ of the generated C++ header (hpp) file.
+     //$
+     //$ It is typically used to emit a "#include" directive
+     //$ so that the requiring binding has relevant types
+     //$ and functions available.
+     private srequirement := "header" scode_spec =># "`(Header_req ,_2)";
+   
+     //$ A Felix string used as a code specification
+     //$ is treated as a template with special coding
+     //$ internally which can be replaced.
+     //$
+     //$ This feature supports the fact that Felix code
+     //$ insertions can be polymorphic.
+     scode_spec := sstring =># "`(StrTemplate ,_1)";
+   
+     //$ A c-string like c"xxxx" is emitted literally
+     //$ without any substitutions.
+     scode_spec := scstring =># "`(Str ,_1)";
+   
+     //$ This is a special code to make specific
+     //$ that a binding is an identity which can
+     //$ be optimised away.
+     scode_spec := "ident" =># "'Identity";
+   
+     //$ The anonymous requires statement specifies requirements which 
+     //$ propagates to all C bindings
+     //$ in the same class, or any descendant (enclosed) class.
+     stmt := "requires" srequirements ";" =>#
+       """`(ast_insert ,_sr "_root" ,dfltvs (Str "") body ,_2)""";
+   
+     stmt := "export" "requires" srequirements ";" =>#
+       """`(ast_seq ,_sr 
+            ,(list 
+              `(ast_insert ,_sr "_root" ,dfltvs (Str "") body ,_3)
+              `(ast_export_requirement ,_sr ,_3)
+            )
+         )
        """;
-  
-    //$ Named body requirement.
-    stmt := "body" sdeclname "=" scode_spec srequires_clause ";" =>#
-      """
-      `(ast_insert ,_sr ,(first _2) ,(second _2) ,_4 body ,_5)
-       """;
-  }
-  
-  @
-  
+   
+   
+     //$ The named requires statement simply names a requirement.
+     stmt := sname "requires" srequirements ";" =>#
+       """`(ast_insert ,_sr ,_1 ,dfltvs (Str "") body ,_3)""";
+   
+     //$ The header statement specifies a header requirement which
+     //$ propagates to all C bindings
+     //$ in the same class, or any descendant (enclosed) class.
+     stmt := "header" scode_spec srequires_clause ";" =>#
+       """`(ast_insert ,_sr "_root" ,dfltvs ,_2 header ,_3))""";
+   
+     //$ The body statement specifies a header requirement which
+     //$ propagates to all C bindings
+     //$ in the same class, or any descendant (enclosed) class.
+     stmt := "body" scode_spec srequires_clause ";" =>#
+       """`(ast_insert ,_sr "_root" ,dfltvs ,_2 body ,_3))""";
+   
+     //$ Named header requirement.
+     stmt := "header" sdeclname "=" scode_spec srequires_clause ";" =>#
+       """
+       `(ast_insert ,_sr ,(first _2) ,(second _2) ,_4 header ,_5)
+        """;
+   
+     //$ Named body requirement.
+     stmt := "body" sdeclname "=" scode_spec srequires_clause ";" =>#
+       """
+       `(ast_insert ,_sr ,(first _2) ,(second _2) ,_4 body ,_5)
+        """;
+   }
+   
+   @
+   
 
 Save Thunk.
 -----------
@@ -4312,10 +4312,10 @@ to disk.
 
 .. code-block:: text
 
-  open syntax felix;
-  SAVE;
-  @
-  
+   open syntax felix;
+   SAVE;
+   @
+   
 
 Statements
 ----------
@@ -4324,151 +4324,151 @@ General statements.
 
 .. code-block:: text
 
-  //$ A grab bag of miscellaneous statements and 
-  //$ nonterminals used to construct other statements.
-  syntax statements {
-    requires expressions;
-  
-    //$ A comment statement based on a string argument.
-    stmt := "comment" sstring ";" =># "`(ast_comment ,_sr ,_2)";
-  
-    //$ Statement qualifier which makes a definition
-    //$ private to the containing module or class.
-    stmt := "private" stmt =># "`(ast_private ,_sr ,_2)";
-  
-    //$ Deprecated method of documenting a definition.
-    stmt := "publish" sstring stmt =># "_3";
-  
-    //$ An empty statement.
-    stmt := ";" =># """`(ast_nop ,_sr "")""";
-  
-    //$ Include file directive.
-    //$ This is similar to C's pre-processor include except that
-    //$ the file is parsed and macro processed first, entirely
-    //$ independently of the including file, and then the
-    //$ resulting AST is inserted into the current AST.
-    //$ Thus the included file also has no influence on
-    //$ the including file either: the two files are parsed
-    //$ entirely independently.
-    stmt := "include" sstring ";" =># "`(ast_include ,_sr ,_2)";
-  
-    //$ A declarative name consists of an identifier and
-    //$ an (optional) type variable specification.
-    // note: list is reversed, eg X::Y::name goes to list name, Y, Z
-    sdeclname := sname stvarlist =># "`(,_1 ,_2)";
-  
-    //$ A way to contruct a new abstract type out of an existing type.
-    //$ Only two operations are available on this new type:
-    //$
-    //$ _repr_ t: exposes the underlying type
-    //$ make_t  : constructs the type from the underlying type.
-    //$
-    //$ These operations are only available in the class or module
-    //$ containing the new type definition. This allows the private
-    //$ details of the type to be accessed so as to define operations
-    //$ on it, inside the same space as the definition, but leaves
-    //$ the type abstract externally.
-    stmt := stype_qual* "type" sdeclname "=" "new" sexpr ";" =>#
-      """
-      `(ast_newtype ,_sr ,(first _3) ,(second _3) ,_6)
-      """;
-  
-    stmt := "instance" "type" sdeclname "=" sexpr ";" =>#
-      """
-      `(ast_instance_type ,_sr ,(first _3) ,(second _3) ,_5)
-      """;
-  
-  
-    //$ Type constraint syntax.
-    //$ Type constraints are ways to constrain possible types
-    //$ which type variables may take on.
-    stypeclass_constraint_list := stypeclass_constraint ("," stypeclass_constraint )* =># 
-      "(cons _1 (map second _2))";
-  
-    stypeclass_constraint := squalified_name =># "_1";
-  
-    //$ Allow T is Real to mean Real[T].
-    // probably should generalise to use ast_lookup 
-    stypeclass_constraint := stypeexpr "is" sname =># "`(ast_name ,_sr ,_3 (,_1))";
-  
-    //$ A constraint specifying types require an instance
-    //$ of a particular type class.
-    stype_constraint := "with" stypeclass_constraint_list =># "`((ast_tuple,_sr()) ,_2)";
-  
-    //$ A predicative or equational constraint.
-    stype_constraint := "where" sexpr =># "`(,_2 ())";
-  
-    //$ Both types of constraint together.
-    stype_constraint := "with" stypeclass_constraint_list "where" sexpr =>#
-      "`(,_4 ,_2)";
-    
-    //$ Both types of constraint together.
-    stype_constraint := "where" sexpr "with" stypeclass_constraint_list =>#
-      "`(,_2 ,_4)";
-  
-    //$ The constraint is empty if the polymorphism is parametric.
-    stype_constraint := sepsilon =># "`((ast_tuple,_sr())())";
-  
-    //$ Individual type variable equational constraint.
-    seqorin:= "=" stypeexpr =># "`(Eq ,_2)";
-  
-    //$ Individual type variable membership constraint.
-    seqorin:= "in" stypeexpr =># "`(In ,_2)";
-  
-    //$ No constraint!
-    seqorin:= sepsilon =># "'NoConstraint";
-  
-    //$ A type variable, possibly with an individual constraint.
-    stvar := sname seqorin =># """`(,_1 (ast_name ,_sr "TYPE" ()) ,_2)"""; 
-  
-    //$ A type variable with an individual constraint.
-    //$ This is usually the same as a predicate.
-    stvar := sname ":" stypeexpr seqorin =># "`(,_1 ,_3 ,_4)";
-  
-    //$ A list of type variables with optional individual constraints.
-    stvar_comma_list := stvar ("," stvar)* =># "(cons _1 (map second _2))";
-    stvar_comma_list := sepsilon =># "'()";
-  
-    //$ A type variable specification consists of
-    //$ a possibly empty list of type variables with 
-    //$ individual constraints, plus an optional
-    //$ type constraint relating the specified variables.
-    stvarlist:= sepsilon =># "dfltvs";
-    stvarlist:= "[" stvar_comma_list stype_constraint "]" =>#
-      "(tvfixup _2 _3)";
-  
-    stypeparameter:= sname ":" x[sarrow_pri] =># "`(,_1 ,_3)";
-    stypeparameter:= sname =># "`(,_1 ,(noi 'typ_none))";
-    stypeparameter_comma_list := sepsilon =># "()";
-    stypeparameter_comma_list := stypeparameter ("," stypeparameter)* =># "(cons _1 (map second _2))";
-  
-    stypefun_arg := sname =># "`((,_1 ,(noi 'typ_none)))";
-    stypefun_arg := "(" stypeparameter_comma_list ")" =># "_2";
-    stypefun_args := stypefun_arg+  =># "_1";
-  
-    //$ The todo no-op is primarily a way to document
-    //$ unfinished code. Currently no action is taken.
-    //$ Felix reserves the right to throw an exception,
-    //$ or emit some diagnostics in future versions.
-    stodo := "todo" sstring ";" =># "`(ast_nop ,_sr ,_2)";
-    stodo := "todo" ";" =># """`(ast_nop ,_sr "todo")""";
-  
-    //$ Compound construction.
-    //$ Note his is NOT a statement.
-    //$ A compound followed by a semi-colon ";" is, however.
-    //scompound := "{" stmt* "}" =># "_2";
-    scompound := "{" sstatements "}" =># "_2";
-  
-    //$ A suffixed name.
-    //$ Used  to name an overloaded function.
-    sname_suffix:= "," sname sname_suffix =># "(cons _2 _3)";
-    sname_suffix:= "," sname =># "`(,_2)";
-  
-  
-  }
-  
-  @
-  
+   //$ A grab bag of miscellaneous statements and 
+   //$ nonterminals used to construct other statements.
+   syntax statements {
+     requires expressions;
+   
+     //$ A comment statement based on a string argument.
+     stmt := "comment" sstring ";" =># "`(ast_comment ,_sr ,_2)";
+   
+     //$ Statement qualifier which makes a definition
+     //$ private to the containing module or class.
+     stmt := "private" stmt =># "`(ast_private ,_sr ,_2)";
+   
+     //$ Deprecated method of documenting a definition.
+     stmt := "publish" sstring stmt =># "_3";
+   
+     //$ An empty statement.
+     stmt := ";" =># """`(ast_nop ,_sr "")""";
+   
+     //$ Include file directive.
+     //$ This is similar to C's pre-processor include except that
+     //$ the file is parsed and macro processed first, entirely
+     //$ independently of the including file, and then the
+     //$ resulting AST is inserted into the current AST.
+     //$ Thus the included file also has no influence on
+     //$ the including file either: the two files are parsed
+     //$ entirely independently.
+     stmt := "include" sstring ";" =># "`(ast_include ,_sr ,_2)";
+   
+     //$ A declarative name consists of an identifier and
+     //$ an (optional) type variable specification.
+     // note: list is reversed, eg X::Y::name goes to list name, Y, Z
+     sdeclname := sname stvarlist =># "`(,_1 ,_2)";
+   
+     //$ A way to contruct a new abstract type out of an existing type.
+     //$ Only two operations are available on this new type:
+     //$
+     //$ _repr_ t: exposes the underlying type
+     //$ make_t  : constructs the type from the underlying type.
+     //$
+     //$ These operations are only available in the class or module
+     //$ containing the new type definition. This allows the private
+     //$ details of the type to be accessed so as to define operations
+     //$ on it, inside the same space as the definition, but leaves
+     //$ the type abstract externally.
+     stmt := stype_qual* "type" sdeclname "=" "new" sexpr ";" =>#
+       """
+       `(ast_newtype ,_sr ,(first _3) ,(second _3) ,_6)
+       """;
+   
+     stmt := "instance" "type" sdeclname "=" sexpr ";" =>#
+       """
+       `(ast_instance_type ,_sr ,(first _3) ,(second _3) ,_5)
+       """;
+   
+   
+     //$ Type constraint syntax.
+     //$ Type constraints are ways to constrain possible types
+     //$ which type variables may take on.
+     stypeclass_constraint_list := stypeclass_constraint ("," stypeclass_constraint )* =># 
+       "(cons _1 (map second _2))";
+   
+     stypeclass_constraint := squalified_name =># "_1";
+   
+     //$ Allow T is Real to mean Real[T].
+     // probably should generalise to use ast_lookup 
+     stypeclass_constraint := stypeexpr "is" sname =># "`(ast_name ,_sr ,_3 (,_1))";
+   
+     //$ A constraint specifying types require an instance
+     //$ of a particular type class.
+     stype_constraint := "with" stypeclass_constraint_list =># "`((ast_tuple,_sr()) ,_2)";
+   
+     //$ A predicative or equational constraint.
+     stype_constraint := "where" sexpr =># "`(,_2 ())";
+   
+     //$ Both types of constraint together.
+     stype_constraint := "with" stypeclass_constraint_list "where" sexpr =>#
+       "`(,_4 ,_2)";
+     
+     //$ Both types of constraint together.
+     stype_constraint := "where" sexpr "with" stypeclass_constraint_list =>#
+       "`(,_2 ,_4)";
+   
+     //$ The constraint is empty if the polymorphism is parametric.
+     stype_constraint := sepsilon =># "`((ast_tuple,_sr())())";
+   
+     //$ Individual type variable equational constraint.
+     seqorin:= "=" stypeexpr =># "`(Eq ,_2)";
+   
+     //$ Individual type variable membership constraint.
+     seqorin:= "in" stypeexpr =># "`(In ,_2)";
+   
+     //$ No constraint!
+     seqorin:= sepsilon =># "'NoConstraint";
+   
+     //$ A type variable, possibly with an individual constraint.
+     stvar := sname seqorin =># """`(,_1 (ast_name ,_sr "TYPE" ()) ,_2)"""; 
+   
+     //$ A type variable with an individual constraint.
+     //$ This is usually the same as a predicate.
+     stvar := sname ":" stypeexpr seqorin =># "`(,_1 ,_3 ,_4)";
+   
+     //$ A list of type variables with optional individual constraints.
+     stvar_comma_list := stvar ("," stvar)* =># "(cons _1 (map second _2))";
+     stvar_comma_list := sepsilon =># "'()";
+   
+     //$ A type variable specification consists of
+     //$ a possibly empty list of type variables with 
+     //$ individual constraints, plus an optional
+     //$ type constraint relating the specified variables.
+     stvarlist:= sepsilon =># "dfltvs";
+     stvarlist:= "[" stvar_comma_list stype_constraint "]" =>#
+       "(tvfixup _2 _3)";
+   
+     stypeparameter:= sname ":" x[sarrow_pri] =># "`(,_1 ,_3)";
+     stypeparameter:= sname =># "`(,_1 ,(noi 'typ_none))";
+     stypeparameter_comma_list := sepsilon =># "()";
+     stypeparameter_comma_list := stypeparameter ("," stypeparameter)* =># "(cons _1 (map second _2))";
+   
+     stypefun_arg := sname =># "`((,_1 ,(noi 'typ_none)))";
+     stypefun_arg := "(" stypeparameter_comma_list ")" =># "_2";
+     stypefun_args := stypefun_arg+  =># "_1";
+   
+     //$ The todo no-op is primarily a way to document
+     //$ unfinished code. Currently no action is taken.
+     //$ Felix reserves the right to throw an exception,
+     //$ or emit some diagnostics in future versions.
+     stodo := "todo" sstring ";" =># "`(ast_nop ,_sr ,_2)";
+     stodo := "todo" ";" =># """`(ast_nop ,_sr "todo")""";
+   
+     //$ Compound construction.
+     //$ Note his is NOT a statement.
+     //$ A compound followed by a semi-colon ";" is, however.
+     //scompound := "{" stmt* "}" =># "_2";
+     scompound := "{" sstatements "}" =># "_2";
+   
+     //$ A suffixed name.
+     //$ Used  to name an overloaded function.
+     sname_suffix:= "," sname sname_suffix =># "(cons _2 _3)";
+     sname_suffix:= "," sname =># "`(,_2)";
+   
+   
+   }
+   
+   @
+   
 
 TeX Symbols
 -----------
@@ -4482,330 +4482,330 @@ different precedences.
 
 .. code-block:: text
 
-  //$ This file contains a huge set of operators from TeX, AMSTeX and LaTeX.
-  // 
-  //$ The precedence classification is currently very crude.
-  //$ Some operators are duplicate semantics with different names.
-  //$ Some are negations, and should be handled properly.
-  //$
-  //$ Nouns such as Greek letters are not included because they're atoms and don't
-  //$ need any parsing.
-  //$
-  syntax texsyms {
-  
-  // A
-  
-    bin := "\amalg" =># '(nos _1)'; 
-    cmp := "\approx" =># '(nos _1)'; 
-    cmp := "\approxeq" =># '(nos _1)'; 
-    cmp := "\Arrowvert" =># '(nos _1)'; 
-    cmp := "\arrowvert" =># '(nos _1)'; 
-    cmp := "\asymp" =># '(nos _1)'; 
-  
-  // B
-  
-    cmp := "\backsim" =># '(nos _1)'; 
-    cmp := "\backsimeq" =># '(nos _1)'; 
-    cmp := "\bar" =># '(nos _1)'; 
-    cmp := "\barwedge" =># '(nos _1)'; 
-    cmp := "\between" =># '(nos _1)'; 
-    bin := "\bigcap" =># '(nos _1)'; 
-    bin := "\bigcirc" =># '(nos _1)'; 
-    bin := "\bigcup" =># '(nos _1)'; 
-    bin := "\bigodot" =># '(nos _1)'; 
-    bin := "\bigoplus" =># '(nos _1)'; 
-    bin := "\bigotimes" =># '(nos _1)'; 
-    bin := "\bigsqcup" =># '(nos _1)'; 
-    bin := "\bigtriangledown" =># '(nos _1)'; 
-    bin := "\bigtriangleup" =># '(nos _1)'; 
-    bin := "\biguplus" =># '(nos _1)'; 
-    bin := "\bigvee" =># '(nos _1)'; 
-    bin := "\bigwedge" =># '(nos _1)'; 
-    bin := "\bowtie" =># '(nos _1)'; 
-    bin := "\Box" =># '(nos _1)'; 
-    bin := "\boxdot" =># '(nos _1)'; 
-    bin := "\boxminus" =># '(nos _1)'; 
-    bin := "\boxplus" =># '(nos _1)'; 
-    bin := "\boxtimes" =># '(nos _1)'; 
-    cmp := "\Bumpeq" =># '(nos _1)'; 
-    cmp := "\bumpeq" =># '(nos _1)'; 
-  
-  // C
-  
-    bin := "\Cap" =># '(nos _1)'; 
-    bin := "\cdot" =># '(nos _1)'; 
-    bin := "\cdotp" =># '(nos _1)'; 
-    cmp := "\circeq" =># '(nos _1)'; 
-    bin := "\circledast" =># '(nos _1)'; 
-    bin := "\circledcirc" =># '(nos _1)'; 
-    bin := "\circleddash" =># '(nos _1)'; 
-    cmp := "\cong" =># '(nos _1)'; 
-    bin := "\coprod" =># '(nos _1)'; 
-    bin := "\Cup" =># '(nos _1)'; 
-    cmp := "\curlyeqprec" =># '(nos _1)'; 
-    cmp := "\curlyeqsucc" =># '(nos _1)'; 
-    bin := "\curlyvee" =># '(nos _1)'; 
-    bin := "\curlywedge" =># '(nos _1)'; 
-  
-  // D
-  
-    arr := "\dashleftarrow" =># '(nos _1)'; 
-    arr := "\dashrightarrow" =># '(nos _1)'; 
-    bin := "\divideontimes" =># '(nos _1)'; 
-    cmp := "\doteq" =># '(nos _1)'; 
-    cmp := "\Doteq" =># '(nos _1)'; 
-    cmp := "\doteqdot" =># '(nos _1)'; 
-    bin := "\dotplus" =># '(nos _1)'; 
-    bin := "\doublebarwedge" =># '(nos _1)'; 
-    bin := "\doublecap" =># '(nos _1)'; 
-    bin := "\doublecup" =># '(nos _1)'; 
-    bin := "\Downarrow" =># '(nos _1)'; 
-    bin := "\downarrow" =># '(nos _1)'; 
-    bin := "\downdownarrows" =># '(nos _1)'; 
-    bin := "\downharpoonleft" =># '(nos _1)'; 
-    bin := "\downharpoonright" =># '(nos _1)'; 
-  
-  // E
-  
-    cmp := "\eqcirc" =># '(nos _1)'; 
-    cmp := "\eqsim" =># '(nos _1)'; 
-    cmp := "\eqslantgtr" =># '(nos _1)'; 
-    cmp := "\eqslantless" =># '(nos _1)'; 
-    cmp := "\equiv" =># '(nos _1)'; 
-  
-  // F
-  
-    bin := "\fallingdotseq" =># '(nos _1)'; 
-  
-  // G
-  
-    cmp := "\geqslant" =># '(nos _1)'; 
-    arr := "\gets" =># '(nos _1)'; 
-    cmp := "\gg" =># '(nos _1)'; 
-    cmp := "\ggg" =># '(nos _1)'; 
-    cmp := "\gggtr" =># '(nos _1)'; 
-    cmp := "\gnapprox" =># '(nos _1)'; 
-    cmp := "\gnsim" =># '(nos _1)'; 
-    cmp := "\gtrapprox" =># '(nos _1)'; 
-    cmp := "\gtrdot" =># '(nos _1)'; 
-    cmp := "\gtreqless" =># '(nos _1)'; 
-    cmp := "\gtreqqless" =># '(nos _1)'; 
-    cmp := "\gtrless" =># '(nos _1)'; 
-    cmp := "\gtrsim" =># '(nos _1)'; 
-    cmp := "\gvertneqq" =># '(nos _1)'; 
-  
-  // H
-  
-    arr := "\hookleftarrow" =># '(nos _1)'; 
-    arr := "\hookrightarrow" =># '(nos _1)'; 
-  
-  // I
-  
-  // J
-  
-    bin := "\Join" =># '(nos _1)'; 
-  
-  // K
-  
-  // L
-  
-    arr := "\leadsto" =># '(nos _1)'; 
-    arr := "\Leftarrow" =># '(nos _1)'; 
-    arr := "\leftarrow" =># '(nos _1)'; 
-    arr := "\leftarrowtail" =># '(nos _1)'; 
-    arr := "\leftharpoondown" =># '(nos _1)'; 
-    arr := "\leftharpoonup" =># '(nos _1)'; 
-    arr := "\leftleftarrows" =># '(nos _1)'; 
-    arr := "\Leftrightarrow" =># '(nos _1)'; 
-    arr := "\leftrightarrow" =># '(nos _1)'; 
-    cmp := "\leftrightarrows" =># '(nos _1)'; 
-    cmp := "\leftrightharpoons" =># '(nos _1)'; 
-    arr := "\leftrightsquigarrow" =># '(nos _1)'; 
-    cmp := "\leqslant" =># '(nos _1)'; 
-    cmp := "\lessapprox" =># '(nos _1)'; 
-    cmp := "\lessdot" =># '(nos _1)'; 
-    cmp := "\lesseqgtr" =># '(nos _1)'; 
-    cmp := "\lesseqqgtr" =># '(nos _1)'; 
-    cmp := "\lessgtr" =># '(nos _1)'; 
-    cmp := "\lesssim" =># '(nos _1)'; 
-    arr := "\Lleftarrow" =># '(nos _1)'; 
-    cmp := "\lll" =># '(nos _1)'; 
-    cmp := "\llless" =># '(nos _1)'; 
-    cmp := "\lnapprox" =># '(nos _1)'; 
-    cmp := "\lnot" =># '(nos _1)'; 
-    cmp := "\lnsim" =># '(nos _1)'; 
-    arr := "\Longleftarrow" =># '(nos _1)'; 
-    arr := "\longleftarrow" =># '(nos _1)'; 
-    arr := "\Longleftrightarrow" =># '(nos _1)'; 
-    arr := "\longleftrightarrow" =># '(nos _1)'; 
-    arr := "\longmapsto" =># '(nos _1)'; 
-    arr := "\Longrightarrow" =># '(nos _1)'; 
-    arr := "\longrightarrow" =># '(nos _1)'; 
-    cmp := "\ltimes" =># '(nos _1)'; 
-    cmp := "\lvertneqq" =># '(nos _1)'; 
-  
-  // M
-  
-    arr := "\mapsto" =># '(nos _1)'; 
-  
-  // N
-  
-    cmp := "\ncong" =># '(nos _1)'; 
-    cmp := "\ngeqslant" =># '(nos _1)'; 
-    cmp := "\ni" =># '(nos _1)'; 
-    cmp := "\nleqslant" =># '(nos _1)'; 
-    cmp := "\nparallel" =># '(nos _1)'; 
-    cmp := "\nprec" =># '(nos _1)'; 
-    cmp := "\npreceq" =># '(nos _1)'; 
-    cmp := "\nsim" =># '(nos _1)'; 
-    cmp := "\nsucc" =># '(nos _1)'; 
-    cmp := "\nsucceq" =># '(nos _1)'; 
-    cmp := "\ntriangleleft" =># '(nos _1)'; 
-    cmp := "\ntrianglelefteq" =># '(nos _1)'; 
-    cmp := "\ntriangleright" =># '(nos _1)'; 
-    cmp := "\ntrianglerighteq" =># '(nos _1)'; 
-  
-  // O
-  
-    bin := "\odot" =># '(nos _1)'; 
-    bin := "\ominus" =># '(nos _1)'; 
-    bin := "\oplus" =># '(nos _1)'; 
-    bin := "\oslash" =># '(nos _1)'; 
-    //bin := "\otimes" =># '(nos _1)'; 
-  
-  // P
-  
-    cmp := "\perp" =># '(nos _1)'; 
-    bin := "\pm" =># '(nos _1)'; 
-    cmp := "\prec" =># '(nos _1)'; 
-    cmp := "\precapprox" =># '(nos _1)'; 
-    cmp := "\preccurlyeq" =># '(nos _1)'; 
-    cmp := "\preceq" =># '(nos _1)'; 
-    cmp := "\precnapprox" =># '(nos _1)'; 
-    cmp := "\precneqq" =># '(nos _1)'; 
-    cmp := "\precnsim" =># '(nos _1)'; 
-    cmp := "\precsim" =># '(nos _1)'; 
-    bin := "\prod" =># '(nos _1)'; 
-    cmp := "\propto" =># '(nos _1)'; 
-  
-  // Q
-  
-  // R
-  
-    cmp := "\rhd" =># '(nos _1)'; 
-    arr := "\Rightarrow" =># '(nos _1)'; 
-    arr := "\rightarrow" =># '(nos _1)'; 
-    arr := "\rightarrowtail" =># '(nos _1)'; 
-    arr := "\rightharpoondown" =># '(nos _1)'; 
-    arr := "\rightharpoonup" =># '(nos _1)'; 
-    arr := "\rightleftarrows" =># '(nos _1)'; 
-    arr := "\rightleftharpoons" =># '(nos _1)'; 
-    arr := "\rightleftharpoons" =># '(nos _1)'; 
-    arr := "\rightrightarrows" =># '(nos _1)'; 
-    arr := "\rightsquigarrow" =># '(nos _1)'; 
-    arr := "\Rrightarrow" =># '(nos _1)'; 
-    cmp := "\rtimes" =># '(nos _1)'; 
-  
-  // S
-  
-    bin := "\setminus" =># '(nos _1)'; 
-    cmp := "\sim" =># '(nos _1)'; 
-    cmp := "\simeq" =># '(nos _1)'; 
-    cmp := "\smallsetminus" =># '(nos _1)'; 
-    bin := "\sqcap" =># '(nos _1)'; 
-    bin := "\sqcup" =># '(nos _1)'; 
-    cmp := "\sqsubset" =># '(nos _1)'; 
-    cmp := "\sqsubseteq" =># '(nos _1)'; 
-    cmp := "\sqsupset" =># '(nos _1)'; 
-    cmp := "\sqsupseteq" =># '(nos _1)'; 
-    bin := "\square" =># '(nos _1)'; 
-    cmp := "\Subset" =># '(nos _1)'; 
-    cmp := "\succ" =># '(nos _1)'; 
-    cmp := "\succapprox" =># '(nos _1)'; 
-    cmp := "\succcurlyeq" =># '(nos _1)'; 
-    cmp := "\succeq" =># '(nos _1)'; 
-    cmp := "\succnapprox" =># '(nos _1)'; 
-    cmp := "\succneqq" =># '(nos _1)'; 
-    cmp := "\succnsim" =># '(nos _1)'; 
-    cmp := "\succsim" =># '(nos _1)'; 
-    cmp := "\Supset" =># '(nos _1)'; 
-  
-  // T
-  
-    cmp := "\thickapprox" =># '(nos _1)'; 
-    cmp := "\thicksim" =># '(nos _1)'; 
-    bin := "\times" =># '(nos _1)'; 
-    arr := "\to" =># '(nos _1)'; 
-    bin := "\triangle" =># '(nos _1)'; 
-    bin := "\triangledown" =># '(nos _1)'; 
-    cmp := "\triangleleft" =># '(nos _1)'; 
-    cmp := "\trianglelefteq" =># '(nos _1)'; 
-    cmp := "\triangleq" =># '(nos _1)'; 
-    cmp := "\triangleright" =># '(nos _1)'; 
-    cmp := "\trianglerighteq" =># '(nos _1)'; 
-    arr := "\twoheadleftarrow" =># '(nos _1)'; 
-    arr := "\twoheadrightarrow" =># '(nos _1)'; 
-  
-  // U
-  
-    cmp := "\unlhd" =># '(nos _1)'; 
-    cmp := "\unrhd" =># '(nos _1)'; 
-    bin := "\Uparrow" =># '(nos _1)'; 
-    bin := "\uparrow" =># '(nos _1)'; 
-    bin := "\Updownarrow" =># '(nos _1)'; 
-    bin := "\updownarrow" =># '(nos _1)'; 
-    bin := "\upharpoonleft" =># '(nos _1)'; 
-    bin := "\upharpoonright" =># '(nos _1)'; 
-    bin := "\uplus" =># '(nos _1)'; 
-    bin := "\upuparrows" =># '(nos _1)'; 
-  
-  // V
-  
-    cmp := "\varsubsetneq" =># '(nos _1)'; 
-    cmp := "\varsubsetneqq" =># '(nos _1)'; 
-    cmp := "\varsupsetneq" =># '(nos _1)'; 
-    cmp := "\varsupsetneqq" =># '(nos _1)'; 
-    cmp := "\veebar" =># '(nos _1)'; 
-  
-  // W
-  
-  
-  // X
-  
-    arr := "\xleftarrow" =># '(nos _1)'; 
-    arr := "\xrightarrow" =># '(nos _1)'; 
-  
-  // Y
-  
-  
-  // Z
-  
-  
-  
-  // The precedences here are a hack: so many operators.
-  // The general effect is: except for keyword logic connectives,
-  // these operations are all done AFTER any ASCII art ops
-  // and, only one is allowed per sub-expression: you must use parens
-  // if you use more than one. We'll fix this for some key operations later,
-  // particularly the setwise and logic connectors. However, the comparisons
-  // are at the right precedence.
-  // (fact is, I don't know what half the operators are for anyhow .. )
-  
-    x[stuple_pri] := x[>stuple_pri] "\brace" x[>stuple_pri] =># "(Infix)";
-    x[stuple_pri] := x[>stuple_pri] "\brack" x[>stuple_pri] =># "(Infix)";
-  
-  
-    x[scomparison_pri]:= x[>scomparison_pri] bin x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
-    // set ops (note: no setminus, its a standard binop at the moment ;)
-    // note: no \Cap or other variants .. would interfere with chain 
-    // there's no reason at all to chain these anyhow, they're standard left assoc operators 
-  
-    // All arrows are right associative .. hmm ..
-    x[sarrow_pri] := x[scase_literal_pri] arr x[sarrow_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))"; 
-  }
-  
-  @
-  
+   //$ This file contains a huge set of operators from TeX, AMSTeX and LaTeX.
+   // 
+   //$ The precedence classification is currently very crude.
+   //$ Some operators are duplicate semantics with different names.
+   //$ Some are negations, and should be handled properly.
+   //$
+   //$ Nouns such as Greek letters are not included because they're atoms and don't
+   //$ need any parsing.
+   //$
+   syntax texsyms {
+   
+   // A
+   
+     bin := "\amalg" =># '(nos _1)'; 
+     cmp := "\approx" =># '(nos _1)'; 
+     cmp := "\approxeq" =># '(nos _1)'; 
+     cmp := "\Arrowvert" =># '(nos _1)'; 
+     cmp := "\arrowvert" =># '(nos _1)'; 
+     cmp := "\asymp" =># '(nos _1)'; 
+   
+   // B
+   
+     cmp := "\backsim" =># '(nos _1)'; 
+     cmp := "\backsimeq" =># '(nos _1)'; 
+     cmp := "\bar" =># '(nos _1)'; 
+     cmp := "\barwedge" =># '(nos _1)'; 
+     cmp := "\between" =># '(nos _1)'; 
+     bin := "\bigcap" =># '(nos _1)'; 
+     bin := "\bigcirc" =># '(nos _1)'; 
+     bin := "\bigcup" =># '(nos _1)'; 
+     bin := "\bigodot" =># '(nos _1)'; 
+     bin := "\bigoplus" =># '(nos _1)'; 
+     bin := "\bigotimes" =># '(nos _1)'; 
+     bin := "\bigsqcup" =># '(nos _1)'; 
+     bin := "\bigtriangledown" =># '(nos _1)'; 
+     bin := "\bigtriangleup" =># '(nos _1)'; 
+     bin := "\biguplus" =># '(nos _1)'; 
+     bin := "\bigvee" =># '(nos _1)'; 
+     bin := "\bigwedge" =># '(nos _1)'; 
+     bin := "\bowtie" =># '(nos _1)'; 
+     bin := "\Box" =># '(nos _1)'; 
+     bin := "\boxdot" =># '(nos _1)'; 
+     bin := "\boxminus" =># '(nos _1)'; 
+     bin := "\boxplus" =># '(nos _1)'; 
+     bin := "\boxtimes" =># '(nos _1)'; 
+     cmp := "\Bumpeq" =># '(nos _1)'; 
+     cmp := "\bumpeq" =># '(nos _1)'; 
+   
+   // C
+   
+     bin := "\Cap" =># '(nos _1)'; 
+     bin := "\cdot" =># '(nos _1)'; 
+     bin := "\cdotp" =># '(nos _1)'; 
+     cmp := "\circeq" =># '(nos _1)'; 
+     bin := "\circledast" =># '(nos _1)'; 
+     bin := "\circledcirc" =># '(nos _1)'; 
+     bin := "\circleddash" =># '(nos _1)'; 
+     cmp := "\cong" =># '(nos _1)'; 
+     bin := "\coprod" =># '(nos _1)'; 
+     bin := "\Cup" =># '(nos _1)'; 
+     cmp := "\curlyeqprec" =># '(nos _1)'; 
+     cmp := "\curlyeqsucc" =># '(nos _1)'; 
+     bin := "\curlyvee" =># '(nos _1)'; 
+     bin := "\curlywedge" =># '(nos _1)'; 
+   
+   // D
+   
+     arr := "\dashleftarrow" =># '(nos _1)'; 
+     arr := "\dashrightarrow" =># '(nos _1)'; 
+     bin := "\divideontimes" =># '(nos _1)'; 
+     cmp := "\doteq" =># '(nos _1)'; 
+     cmp := "\Doteq" =># '(nos _1)'; 
+     cmp := "\doteqdot" =># '(nos _1)'; 
+     bin := "\dotplus" =># '(nos _1)'; 
+     bin := "\doublebarwedge" =># '(nos _1)'; 
+     bin := "\doublecap" =># '(nos _1)'; 
+     bin := "\doublecup" =># '(nos _1)'; 
+     bin := "\Downarrow" =># '(nos _1)'; 
+     bin := "\downarrow" =># '(nos _1)'; 
+     bin := "\downdownarrows" =># '(nos _1)'; 
+     bin := "\downharpoonleft" =># '(nos _1)'; 
+     bin := "\downharpoonright" =># '(nos _1)'; 
+   
+   // E
+   
+     cmp := "\eqcirc" =># '(nos _1)'; 
+     cmp := "\eqsim" =># '(nos _1)'; 
+     cmp := "\eqslantgtr" =># '(nos _1)'; 
+     cmp := "\eqslantless" =># '(nos _1)'; 
+     cmp := "\equiv" =># '(nos _1)'; 
+   
+   // F
+   
+     bin := "\fallingdotseq" =># '(nos _1)'; 
+   
+   // G
+   
+     cmp := "\geqslant" =># '(nos _1)'; 
+     arr := "\gets" =># '(nos _1)'; 
+     cmp := "\gg" =># '(nos _1)'; 
+     cmp := "\ggg" =># '(nos _1)'; 
+     cmp := "\gggtr" =># '(nos _1)'; 
+     cmp := "\gnapprox" =># '(nos _1)'; 
+     cmp := "\gnsim" =># '(nos _1)'; 
+     cmp := "\gtrapprox" =># '(nos _1)'; 
+     cmp := "\gtrdot" =># '(nos _1)'; 
+     cmp := "\gtreqless" =># '(nos _1)'; 
+     cmp := "\gtreqqless" =># '(nos _1)'; 
+     cmp := "\gtrless" =># '(nos _1)'; 
+     cmp := "\gtrsim" =># '(nos _1)'; 
+     cmp := "\gvertneqq" =># '(nos _1)'; 
+   
+   // H
+   
+     arr := "\hookleftarrow" =># '(nos _1)'; 
+     arr := "\hookrightarrow" =># '(nos _1)'; 
+   
+   // I
+   
+   // J
+   
+     bin := "\Join" =># '(nos _1)'; 
+   
+   // K
+   
+   // L
+   
+     arr := "\leadsto" =># '(nos _1)'; 
+     arr := "\Leftarrow" =># '(nos _1)'; 
+     arr := "\leftarrow" =># '(nos _1)'; 
+     arr := "\leftarrowtail" =># '(nos _1)'; 
+     arr := "\leftharpoondown" =># '(nos _1)'; 
+     arr := "\leftharpoonup" =># '(nos _1)'; 
+     arr := "\leftleftarrows" =># '(nos _1)'; 
+     arr := "\Leftrightarrow" =># '(nos _1)'; 
+     arr := "\leftrightarrow" =># '(nos _1)'; 
+     cmp := "\leftrightarrows" =># '(nos _1)'; 
+     cmp := "\leftrightharpoons" =># '(nos _1)'; 
+     arr := "\leftrightsquigarrow" =># '(nos _1)'; 
+     cmp := "\leqslant" =># '(nos _1)'; 
+     cmp := "\lessapprox" =># '(nos _1)'; 
+     cmp := "\lessdot" =># '(nos _1)'; 
+     cmp := "\lesseqgtr" =># '(nos _1)'; 
+     cmp := "\lesseqqgtr" =># '(nos _1)'; 
+     cmp := "\lessgtr" =># '(nos _1)'; 
+     cmp := "\lesssim" =># '(nos _1)'; 
+     arr := "\Lleftarrow" =># '(nos _1)'; 
+     cmp := "\lll" =># '(nos _1)'; 
+     cmp := "\llless" =># '(nos _1)'; 
+     cmp := "\lnapprox" =># '(nos _1)'; 
+     cmp := "\lnot" =># '(nos _1)'; 
+     cmp := "\lnsim" =># '(nos _1)'; 
+     arr := "\Longleftarrow" =># '(nos _1)'; 
+     arr := "\longleftarrow" =># '(nos _1)'; 
+     arr := "\Longleftrightarrow" =># '(nos _1)'; 
+     arr := "\longleftrightarrow" =># '(nos _1)'; 
+     arr := "\longmapsto" =># '(nos _1)'; 
+     arr := "\Longrightarrow" =># '(nos _1)'; 
+     arr := "\longrightarrow" =># '(nos _1)'; 
+     cmp := "\ltimes" =># '(nos _1)'; 
+     cmp := "\lvertneqq" =># '(nos _1)'; 
+   
+   // M
+   
+     arr := "\mapsto" =># '(nos _1)'; 
+   
+   // N
+   
+     cmp := "\ncong" =># '(nos _1)'; 
+     cmp := "\ngeqslant" =># '(nos _1)'; 
+     cmp := "\ni" =># '(nos _1)'; 
+     cmp := "\nleqslant" =># '(nos _1)'; 
+     cmp := "\nparallel" =># '(nos _1)'; 
+     cmp := "\nprec" =># '(nos _1)'; 
+     cmp := "\npreceq" =># '(nos _1)'; 
+     cmp := "\nsim" =># '(nos _1)'; 
+     cmp := "\nsucc" =># '(nos _1)'; 
+     cmp := "\nsucceq" =># '(nos _1)'; 
+     cmp := "\ntriangleleft" =># '(nos _1)'; 
+     cmp := "\ntrianglelefteq" =># '(nos _1)'; 
+     cmp := "\ntriangleright" =># '(nos _1)'; 
+     cmp := "\ntrianglerighteq" =># '(nos _1)'; 
+   
+   // O
+   
+     bin := "\odot" =># '(nos _1)'; 
+     bin := "\ominus" =># '(nos _1)'; 
+     bin := "\oplus" =># '(nos _1)'; 
+     bin := "\oslash" =># '(nos _1)'; 
+     //bin := "\otimes" =># '(nos _1)'; 
+   
+   // P
+   
+     cmp := "\perp" =># '(nos _1)'; 
+     bin := "\pm" =># '(nos _1)'; 
+     cmp := "\prec" =># '(nos _1)'; 
+     cmp := "\precapprox" =># '(nos _1)'; 
+     cmp := "\preccurlyeq" =># '(nos _1)'; 
+     cmp := "\preceq" =># '(nos _1)'; 
+     cmp := "\precnapprox" =># '(nos _1)'; 
+     cmp := "\precneqq" =># '(nos _1)'; 
+     cmp := "\precnsim" =># '(nos _1)'; 
+     cmp := "\precsim" =># '(nos _1)'; 
+     bin := "\prod" =># '(nos _1)'; 
+     cmp := "\propto" =># '(nos _1)'; 
+   
+   // Q
+   
+   // R
+   
+     cmp := "\rhd" =># '(nos _1)'; 
+     arr := "\Rightarrow" =># '(nos _1)'; 
+     arr := "\rightarrow" =># '(nos _1)'; 
+     arr := "\rightarrowtail" =># '(nos _1)'; 
+     arr := "\rightharpoondown" =># '(nos _1)'; 
+     arr := "\rightharpoonup" =># '(nos _1)'; 
+     arr := "\rightleftarrows" =># '(nos _1)'; 
+     arr := "\rightleftharpoons" =># '(nos _1)'; 
+     arr := "\rightleftharpoons" =># '(nos _1)'; 
+     arr := "\rightrightarrows" =># '(nos _1)'; 
+     arr := "\rightsquigarrow" =># '(nos _1)'; 
+     arr := "\Rrightarrow" =># '(nos _1)'; 
+     cmp := "\rtimes" =># '(nos _1)'; 
+   
+   // S
+   
+     bin := "\setminus" =># '(nos _1)'; 
+     cmp := "\sim" =># '(nos _1)'; 
+     cmp := "\simeq" =># '(nos _1)'; 
+     cmp := "\smallsetminus" =># '(nos _1)'; 
+     bin := "\sqcap" =># '(nos _1)'; 
+     bin := "\sqcup" =># '(nos _1)'; 
+     cmp := "\sqsubset" =># '(nos _1)'; 
+     cmp := "\sqsubseteq" =># '(nos _1)'; 
+     cmp := "\sqsupset" =># '(nos _1)'; 
+     cmp := "\sqsupseteq" =># '(nos _1)'; 
+     bin := "\square" =># '(nos _1)'; 
+     cmp := "\Subset" =># '(nos _1)'; 
+     cmp := "\succ" =># '(nos _1)'; 
+     cmp := "\succapprox" =># '(nos _1)'; 
+     cmp := "\succcurlyeq" =># '(nos _1)'; 
+     cmp := "\succeq" =># '(nos _1)'; 
+     cmp := "\succnapprox" =># '(nos _1)'; 
+     cmp := "\succneqq" =># '(nos _1)'; 
+     cmp := "\succnsim" =># '(nos _1)'; 
+     cmp := "\succsim" =># '(nos _1)'; 
+     cmp := "\Supset" =># '(nos _1)'; 
+   
+   // T
+   
+     cmp := "\thickapprox" =># '(nos _1)'; 
+     cmp := "\thicksim" =># '(nos _1)'; 
+     bin := "\times" =># '(nos _1)'; 
+     arr := "\to" =># '(nos _1)'; 
+     bin := "\triangle" =># '(nos _1)'; 
+     bin := "\triangledown" =># '(nos _1)'; 
+     cmp := "\triangleleft" =># '(nos _1)'; 
+     cmp := "\trianglelefteq" =># '(nos _1)'; 
+     cmp := "\triangleq" =># '(nos _1)'; 
+     cmp := "\triangleright" =># '(nos _1)'; 
+     cmp := "\trianglerighteq" =># '(nos _1)'; 
+     arr := "\twoheadleftarrow" =># '(nos _1)'; 
+     arr := "\twoheadrightarrow" =># '(nos _1)'; 
+   
+   // U
+   
+     cmp := "\unlhd" =># '(nos _1)'; 
+     cmp := "\unrhd" =># '(nos _1)'; 
+     bin := "\Uparrow" =># '(nos _1)'; 
+     bin := "\uparrow" =># '(nos _1)'; 
+     bin := "\Updownarrow" =># '(nos _1)'; 
+     bin := "\updownarrow" =># '(nos _1)'; 
+     bin := "\upharpoonleft" =># '(nos _1)'; 
+     bin := "\upharpoonright" =># '(nos _1)'; 
+     bin := "\uplus" =># '(nos _1)'; 
+     bin := "\upuparrows" =># '(nos _1)'; 
+   
+   // V
+   
+     cmp := "\varsubsetneq" =># '(nos _1)'; 
+     cmp := "\varsubsetneqq" =># '(nos _1)'; 
+     cmp := "\varsupsetneq" =># '(nos _1)'; 
+     cmp := "\varsupsetneqq" =># '(nos _1)'; 
+     cmp := "\veebar" =># '(nos _1)'; 
+   
+   // W
+   
+   
+   // X
+   
+     arr := "\xleftarrow" =># '(nos _1)'; 
+     arr := "\xrightarrow" =># '(nos _1)'; 
+   
+   // Y
+   
+   
+   // Z
+   
+   
+   
+   // The precedences here are a hack: so many operators.
+   // The general effect is: except for keyword logic connectives,
+   // these operations are all done AFTER any ASCII art ops
+   // and, only one is allowed per sub-expression: you must use parens
+   // if you use more than one. We'll fix this for some key operations later,
+   // particularly the setwise and logic connectors. However, the comparisons
+   // are at the right precedence.
+   // (fact is, I don't know what half the operators are for anyhow .. )
+   
+     x[stuple_pri] := x[>stuple_pri] "\brace" x[>stuple_pri] =># "(Infix)";
+     x[stuple_pri] := x[>stuple_pri] "\brack" x[>stuple_pri] =># "(Infix)";
+   
+   
+     x[scomparison_pri]:= x[>scomparison_pri] bin x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
+     // set ops (note: no setminus, its a standard binop at the moment ;)
+     // note: no \Cap or other variants .. would interfere with chain 
+     // there's no reason at all to chain these anyhow, they're standard left assoc operators 
+   
+     // All arrows are right associative .. hmm ..
+     x[sarrow_pri] := x[scase_literal_pri] arr x[sarrow_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))"; 
+   }
+   
+   @
+   
 
 Type definitions
 ----------------
@@ -4813,364 +4813,364 @@ Type definitions
 
 .. code-block:: text
 
-  //$ Stuff for defining types.
-  //$
-  //$ Felix type expressions use the same syntax as value expressions.
-  
-    SCHEME """
-      (define (makecstruct type members reqs) 
+   //$ Stuff for defining types.
+   //$
+   //$ Felix type expressions use the same syntax as value expressions.
+   
+     SCHEME """
+       (define (makecstruct type members reqs) 
+         (let* 
+          (
+            (vals (filter_first 'Pval members))
+            (funs (filter_first 'Pfun members))
+            (struct-name (first type))
+            (struct-polyspec (second type))
+            (struct-polyvars (first struct-polyspec))
+            (struct-pvids (map first struct-polyvars))
+            (struct-pvs (map nos struct-pvids))
+            (struct-polyaux (second struct-polyspec))
+            (struct `(ast_cstruct ,_sr ,struct-name ,struct-polyspec ,vals ,reqs))
+            (mfuns (map (lambda (x) 
+              (let* 
+                (
+                  (lst (first x))
+                  (t0 (list-ref lst 0)) ; ast_curry
+                  (t1 (list-ref lst 1)) ; sr
+                  (t2 (list-ref lst 2)) ; name
+                  (polyspec (list-ref lst 3)) ; polyvars
+                  (t4 (list-ref lst 4)) ; args
+                  (t5 (list-ref lst 5)) ; return type
+                  (t6 (list-ref lst 6)) ; fun kind
+                  (t7 (list-ref lst 7)) ; adjective properties
+                  (t8 (list-ref lst 8)) ; body
+                  (polyvars (first polyspec))
+                  (polyaux (second polyspec))
+                  (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
+                  (kind (if (equal? (first (first t5)) 'ast_void) 'PRef 'PVal))
+                  (self-name 'self)
+                  (self-type `(ast_name ,_sr ,struct-name ,struct-pvs))
+                  (self-arg `(,kind ,self-name ,self-type none)) 
+                  (self-args `((,self-arg) none))
+                  (args (cons self-args t4))
+                ) 
+                `(,t0 ,t1 ,t2 ,outpolyvars ,args, t5 ,t6 ,t7 ,t8)
+              )) funs)
+            )
+            
+            (sts (cons struct mfuns))
+          )
+          `(ast_seq ,_sr ,sts)
+         )
+       )
+     """;
+   
+     SCHEME """
+     (define (asserteq a b code)
+       (if (equal? a b) 
+         code
+         (begin 
+           (display "struct tag ")(display a)(display " and typedef name ")
+           (display b)(display " must be equal\n")
+           (raise "typedef-struct-error") 
+         )
+       )
+     )
+     """;
+   
+   syntax type_decls {
+     requires statements;
+   
+     satom := stypematch =># "_1";
+     satom := stypecasematch =># "_1";
+   
+     //$ Typedef creates an alias for a type.
+     stmt := "typedef" sdeclname "=" sexpr ";" =>#
+       """
+       `(ast_type_alias ,_sr ,(first _2) ,(second _2) ,_4)
+       """;
+   
+     //$ Typedef fun create a type function or functor.
+     //$ It maps some types to another type.
+     //$ This is the simple expression form.
+     stmt := "typedef" "fun" sdeclname stypefun_args ":" stypeexpr "=>" sexpr ";" =>#
+       """
+       `(mktypefun ,_sr ,(first _3) ,(second _3) ,_4 ,_6 ,_8)
+       """;
+   
+     //$ Typedef fun create a type function or functor.
+     //$ It maps some types to another type.
+     //$ This is the simple matching form.
+     stmt := "typedef" "fun" sdeclname ":" stypeexpr "=" stype_matching+ ";" =>#
+       """
+       (if (eq? 'ast_arrow (first _5))
+         (let (
+           (argt (caadr _5))
+           (ret (cadadr _5))
+           (body `(ast_type_match ,_sr (,(noi '_a) ,_7))))
+           (let ((args `(((_a ,argt)))))
+         `(mktypefun ,_sr ,(first _3) ,(second _3) ,args ,ret ,body)
+         ))
+         ('ERROR)
+       )
+       """;
+   
+     stype_matching := "|" sexpr "=>" sexpr =># "`(,_2 ,_4)";
+   
+     //$ A typematch expression computes a type based on a pattern match.
+     //$ The matching process never rejects a type variable which 
+     //$ mighht later match after substitution.
+     //$ It also never accepts a match which might later fail to match
+     //$ after substitution.
+     stypematch := "typematch" sexpr "with" stype_matching+ "endmatch" =>#
+       "`(ast_type_match ,_sr (,_2 ,_4))";
+   
+   
+     //$ A typecase expression computes an expression based on a type match.
+     stypecasematch := "typecase" sexpr "with" stype_matching+ "endmatch" =>#
+       "`(ast_typecase_match ,_sr (,_2 ,_4))";
+   
+     //satom := "(" sexpr "=>" sname ")" =># "`(ast_caseextract ,_sr (,_2 ,_4))";
+   
+   
+     //$ A struct is a nominally type product type similar to a C struct.
+     //$ A struct may be polymorphic.  Felix generates a constructor for
+     //$ the struct from a tuple of the types of the fields of te struct,
+     //$ in the order they're written.
+     //$
+     //$ The syntax allows functions and procedures to be included in a struct, 
+     //$ however these are not non-static members. 
+     //$ Rather they global functions with an additional
+     //$ argument prefixed of the struct type (for a fun) or pointer
+     //$ to the struct type (for a proc). In such functinos the special
+     //$ identifier "self" must be used to refer to the struct.
+     //$ For example:
+     //$
+     //$ struct X { 
+     //$   a : int;
+     //$   fun f(b: int) => self.a + b;
+     //$ }
+     //$ println$ X 1 . f 2;
+     //$ // f is equivalent to
+     //$ fun f (self:X) (b:int) => self.a + b;
+     //$
+     sexport := "export" =># "'export";
+     sexport := sepsilon =># "'noexport";
+     stmt := sexport "struct" sdeclname "=" ? "{" sstruct_mem_decl * "}" =>#
+       """
         (let* 
-         (
-           (vals (filter_first 'Pval members))
-           (funs (filter_first 'Pfun members))
-           (struct-name (first type))
-           (struct-polyspec (second type))
-           (struct-polyvars (first struct-polyspec))
-           (struct-pvids (map first struct-polyvars))
-           (struct-pvs (map nos struct-pvids))
-           (struct-polyaux (second struct-polyspec))
-           (struct `(ast_cstruct ,_sr ,struct-name ,struct-polyspec ,vals ,reqs))
-           (mfuns (map (lambda (x) 
-             (let* 
-               (
-                 (lst (first x))
-                 (t0 (list-ref lst 0)) ; ast_curry
-                 (t1 (list-ref lst 1)) ; sr
-                 (t2 (list-ref lst 2)) ; name
-                 (polyspec (list-ref lst 3)) ; polyvars
-                 (t4 (list-ref lst 4)) ; args
-                 (t5 (list-ref lst 5)) ; return type
-                 (t6 (list-ref lst 6)) ; fun kind
-                 (t7 (list-ref lst 7)) ; adjective properties
-                 (t8 (list-ref lst 8)) ; body
-                 (polyvars (first polyspec))
-                 (polyaux (second polyspec))
-                 (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
-                 (kind (if (equal? (first (first t5)) 'ast_void) 'PRef 'PVal))
-                 (self-name 'self)
-                 (self-type `(ast_name ,_sr ,struct-name ,struct-pvs))
-                 (self-arg `(,kind ,self-name ,self-type none)) 
-                 (self-args `((,self-arg) none))
-                 (args (cons self-args t4))
-               ) 
-               `(,t0 ,t1 ,t2 ,outpolyvars ,args, t5 ,t6 ,t7 ,t8)
-             )) funs)
-           )
-           
-           (sts (cons struct mfuns))
-         )
-         `(ast_seq ,_sr ,sts)
-        )
-      )
-    """;
-  
-    SCHEME """
-    (define (asserteq a b code)
-      (if (equal? a b) 
-        code
-        (begin 
-          (display "struct tag ")(display a)(display " and typedef name ")
-          (display b)(display " must be equal\n")
-          (raise "typedef-struct-error") 
-        )
-      )
-    )
-    """;
-  
-  syntax type_decls {
-    requires statements;
-  
-    satom := stypematch =># "_1";
-    satom := stypecasematch =># "_1";
-  
-    //$ Typedef creates an alias for a type.
-    stmt := "typedef" sdeclname "=" sexpr ";" =>#
-      """
-      `(ast_type_alias ,_sr ,(first _2) ,(second _2) ,_4)
-      """;
-  
-    //$ Typedef fun create a type function or functor.
-    //$ It maps some types to another type.
-    //$ This is the simple expression form.
-    stmt := "typedef" "fun" sdeclname stypefun_args ":" stypeexpr "=>" sexpr ";" =>#
-      """
-      `(mktypefun ,_sr ,(first _3) ,(second _3) ,_4 ,_6 ,_8)
-      """;
-  
-    //$ Typedef fun create a type function or functor.
-    //$ It maps some types to another type.
-    //$ This is the simple matching form.
-    stmt := "typedef" "fun" sdeclname ":" stypeexpr "=" stype_matching+ ";" =>#
-      """
-      (if (eq? 'ast_arrow (first _5))
-        (let (
-          (argt (caadr _5))
-          (ret (cadadr _5))
-          (body `(ast_type_match ,_sr (,(noi '_a) ,_7))))
-          (let ((args `(((_a ,argt)))))
-        `(mktypefun ,_sr ,(first _3) ,(second _3) ,args ,ret ,body)
-        ))
-        ('ERROR)
-      )
-      """;
-  
-    stype_matching := "|" sexpr "=>" sexpr =># "`(,_2 ,_4)";
-  
-    //$ A typematch expression computes a type based on a pattern match.
-    //$ The matching process never rejects a type variable which 
-    //$ mighht later match after substitution.
-    //$ It also never accepts a match which might later fail to match
-    //$ after substitution.
-    stypematch := "typematch" sexpr "with" stype_matching+ "endmatch" =>#
-      "`(ast_type_match ,_sr (,_2 ,_4))";
-  
-  
-    //$ A typecase expression computes an expression based on a type match.
-    stypecasematch := "typecase" sexpr "with" stype_matching+ "endmatch" =>#
-      "`(ast_typecase_match ,_sr (,_2 ,_4))";
-  
-    //satom := "(" sexpr "=>" sname ")" =># "`(ast_caseextract ,_sr (,_2 ,_4))";
-  
-  
-    //$ A struct is a nominally type product type similar to a C struct.
-    //$ A struct may be polymorphic.  Felix generates a constructor for
-    //$ the struct from a tuple of the types of the fields of te struct,
-    //$ in the order they're written.
-    //$
-    //$ The syntax allows functions and procedures to be included in a struct, 
-    //$ however these are not non-static members. 
-    //$ Rather they global functions with an additional
-    //$ argument prefixed of the struct type (for a fun) or pointer
-    //$ to the struct type (for a proc). In such functinos the special
-    //$ identifier "self" must be used to refer to the struct.
-    //$ For example:
-    //$
-    //$ struct X { 
-    //$   a : int;
-    //$   fun f(b: int) => self.a + b;
-    //$ }
-    //$ println$ X 1 . f 2;
-    //$ // f is equivalent to
-    //$ fun f (self:X) (b:int) => self.a + b;
-    //$
-    sexport := "export" =># "'export";
-    sexport := sepsilon =># "'noexport";
-    stmt := sexport "struct" sdeclname "=" ? "{" sstruct_mem_decl * "}" =>#
-      """
-       (let* 
-         (
-           (vals (filter_first 'Pval _6))
-           (funs (filter_first 'Pfun _6))
-           (struct-name (first _3))
-           (struct-polyspec (second _3))
-           (struct-polyvars (first struct-polyspec))
-           (struct-pvids (map first struct-polyvars))
-           (struct-pvs (map nos struct-pvids))
-           (struct-polyaux (second struct-polyspec))
-           (struct `(ast_struct ,_sr ,struct-name ,struct-polyspec ,vals))
-           (mfuns (map (lambda (x) 
-             (let* 
-               (
-                 (lst (first x))
-                 (t0 (list-ref lst 0)) ; ast_curry
-                 (t1 (list-ref lst 1)) ; sr
-                 (t2 (list-ref lst 2)) ; name
-                 (polyspec (list-ref lst 3)) ; polyvars
-                 (t4 (list-ref lst 4)) ; args
-                 (t5 (list-ref lst 5)) ; return type, constraint
-                 (t6 (list-ref lst 6)) ; effects
-                 (t7 (list-ref lst 7)) ; fun kind
-                 (t8 (list-ref lst 8)) ; adjective properties
-                 (t9 (list-ref lst 9)) ; body
-                 (polyvars (first polyspec))
-                 (polyaux (second polyspec))
-                 (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
-                 (self-name 'self)
-                 (self-type 
-                   (if (equal? (first (first t5)) 'ast_void)
-                     `(ast_ref ,_sr (ast_name ,_sr ,struct-name ,struct-pvs))
-                     `(ast_name ,_sr ,struct-name ,struct-pvs)
-                   )
-                 )
-                 (self-arg `(,_sr PVal ,self-name ,self-type none)) 
-                 (self-args `((,self-arg) none))
-                 (args (cons self-args t4))
-               ) 
-               `(,t0 ,t1 ,t2 ,outpolyvars ,args ,t5 ,t6 ,t7 ,t8 ,t9)
-             )) funs)
-           )
-           (sts (cons struct mfuns))
-           (sts 
-             (if 
-               (equal? _1 'export) 
-               (cons `(ast_export_struct ,_sr ,struct-name) sts)
-               sts
-             )
-           )
-         )
-         `(ast_seq ,_sr ,sts)
-       )
-       """;
-      sstruct_mem_decl := stypeexpr sname ";" =># "`(Pval ,_2 ,_1)"; // like C: int x;!
-      sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(Pval ,_1 ,_3)";
-      sstruct_mem_decl := sfunction  =># """
-       (let 
-         (
-           (curry_kind (first _1))
-         )
-         (if 
-           (equal? curry_kind 'ast_curry_effects)
-           `(Pfun ,_1)
-           (let*
-             (
-               (lst _1)
-               (t1 (list-ref lst 1)) ; sr
-               (t2 (list-ref lst 2)) ; name
-               (t3 (list-ref lst 3)) ; vs
-               (t4 (list-ref lst 4)) ; args
-               (t5 (list-ref lst 5)) ; return type, constraint
-               (t6 (list-ref lst 6)) ; fun kind
-               (t7 (list-ref lst 7)) ; adjective properties
-               (t8 (list-ref lst 8)) ; body
-             )
-            `(Pfun (ast_curry_effects ,t1 ,t2 ,t3 ,t4 ,t5 ,dflteffects ,t6 ,t7 ,t8))
-           )
-         )
-       )
-       """;
-  
-    //$ A ctruct provides a model of a C structure.
-    //$ This is the same as a struct except the structure is not emitted.
-    //$ Instead, it is assumed to be already defined in C.
-    //$
-    //$ CAVEAT: A C struct constructor should not be used
-    //$ unless the cstruct definition is a complete model of the C struct.
-  
-    stmt := "cstruct" sdeclname "=" ? "{" sstruct_mem_decl * "}" srequires_clause ";" =>#
-      "(makecstruct _2 _5 _7)"
-    ;
-  
-    //$ A hack to help with cut and paste from C headers into Felix
-    stmt := "typedef" "struct" "{" sstruct_mem_decl * "}" sdeclname srequires_clause ";" =>#
-      "(makecstruct _6 _4 _7)"
-    ;
-  
-    //$ A hack to help with cut and paste from C headers into Felix
-    stmt := "typedef" "struct" sdeclname "{" sstruct_mem_decl * "}" sdeclname srequires_clause ";" =>#
-      "(asserteq (first _3)(first _7) (makecstruct _7 _5 _8))"
-    ;
-  
-    sopt_name := sname =># "_1";
-    sopt_name := sepsilon =># '""';
-  
-    //$ A union is a model of a discriminated union or variant.
-    //$ Such unions have a discriminant tag that determines
-    //$ at run time which component is populated.
-    //$ The only way to access the union field is by using a
-    //$ match which automatically enforces proper access.
-    //$
-    //$ The fields of a union are called type constructors.
-    //$ A constant type constructor has no arguments.
-    //$ A non-constant type constructor has an argument
-    //$ which can be extracted in a match.
-    //$ 
-    //$ Unions provide a safe way to "unify" heterogenous data
-    //$ into a single data type.
-  
-    // shared by both union decl forms..
-      stype_sum_item := sname sopt_value stvarlist "of" sexpr =># "`(,_1 ,_2 ,_3 ,_5)";
-      stype_sum_item := sname sopt_value stvarlist "of" sexpr "=>" sexpr =># "`(,_1 ,_2 ,_3 ,_5 ,_7)";
-      stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 (ast_void ,_sr))";
-      stype_sum_item := "#" sname sopt_value stvarlist =># "`(,_2 ,_3 ,_4 (ast_void ,_sr))";
-  
-      stype_sum_item_bar := "|" stype_sum_item =># "_2";
-      stype_sum_items := stype_sum_item stype_sum_item_bar* =># "(cons _1 _2)";
-      stype_sum_items := stype_sum_item_bar* =># "_1";
-  
-   // deviant form using trailing ";" per item used inside { } unions
-      stype_sum_item1 := stype_sum_item ";" =># "_1";
-  
-    suexport := "export" =># "'export";
-    suexport := sepsilon =># "'noexport";
-    suexport := "export" sstring =># "`(namedexport ,_2)";
-    stmt := suexport "union" sdeclname "=" stype_sum_items ";" =>#
-      """
-      (let*
-        ( 
-          (union-name (first _3))
-          (sts (list `(ast_union ,_sr ,union-name ,(second _3) ,_5)))
-          (sts 
-            (if 
-              (equal? _1 'export) 
-              (cons `(ast_export_union ,_sr ,(nos union-name) ,union-name) sts)
-              (if
-                (equal? _1 'noexport) 
-                 sts
-                (cons `(ast_export_union ,_sr ,(nos union-name) ,(second _1)) sts)
+          (
+            (vals (filter_first 'Pval _6))
+            (funs (filter_first 'Pfun _6))
+            (struct-name (first _3))
+            (struct-polyspec (second _3))
+            (struct-polyvars (first struct-polyspec))
+            (struct-pvids (map first struct-polyvars))
+            (struct-pvs (map nos struct-pvids))
+            (struct-polyaux (second struct-polyspec))
+            (struct `(ast_struct ,_sr ,struct-name ,struct-polyspec ,vals))
+            (mfuns (map (lambda (x) 
+              (let* 
+                (
+                  (lst (first x))
+                  (t0 (list-ref lst 0)) ; ast_curry
+                  (t1 (list-ref lst 1)) ; sr
+                  (t2 (list-ref lst 2)) ; name
+                  (polyspec (list-ref lst 3)) ; polyvars
+                  (t4 (list-ref lst 4)) ; args
+                  (t5 (list-ref lst 5)) ; return type, constraint
+                  (t6 (list-ref lst 6)) ; effects
+                  (t7 (list-ref lst 7)) ; fun kind
+                  (t8 (list-ref lst 8)) ; adjective properties
+                  (t9 (list-ref lst 9)) ; body
+                  (polyvars (first polyspec))
+                  (polyaux (second polyspec))
+                  (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
+                  (self-name 'self)
+                  (self-type 
+                    (if (equal? (first (first t5)) 'ast_void)
+                      `(ast_ref ,_sr (ast_name ,_sr ,struct-name ,struct-pvs))
+                      `(ast_name ,_sr ,struct-name ,struct-pvs)
+                    )
+                  )
+                  (self-arg `(,_sr PVal ,self-name ,self-type none)) 
+                  (self-args `((,self-arg) none))
+                  (args (cons self-args t4))
+                ) 
+                `(,t0 ,t1 ,t2 ,outpolyvars ,args ,t5 ,t6 ,t7 ,t8 ,t9)
+              )) funs)
+            )
+            (sts (cons struct mfuns))
+            (sts 
+              (if 
+                (equal? _1 'export) 
+                (cons `(ast_export_struct ,_sr ,struct-name) sts)
+                sts
               )
             )
           )
+          `(ast_seq ,_sr ,sts)
         )
-        `(ast_seq ,_sr ,sts)
-      )
-      """;
-  
-    //$ Deprecated C like syntax for unionx.
-    stmt := "union" sdeclname "{" stype_sum_item1* "}" =>#
-      """
-      `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
+        """;
+       sstruct_mem_decl := stypeexpr sname ";" =># "`(Pval ,_2 ,_1)"; // like C: int x;!
+       sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(Pval ,_1 ,_3)";
+       sstruct_mem_decl := sfunction  =># """
+        (let 
+          (
+            (curry_kind (first _1))
+          )
+          (if 
+            (equal? curry_kind 'ast_curry_effects)
+            `(Pfun ,_1)
+            (let*
+              (
+                (lst _1)
+                (t1 (list-ref lst 1)) ; sr
+                (t2 (list-ref lst 2)) ; name
+                (t3 (list-ref lst 3)) ; vs
+                (t4 (list-ref lst 4)) ; args
+                (t5 (list-ref lst 5)) ; return type, constraint
+                (t6 (list-ref lst 6)) ; fun kind
+                (t7 (list-ref lst 7)) ; adjective properties
+                (t8 (list-ref lst 8)) ; body
+              )
+             `(Pfun (ast_curry_effects ,t1 ,t2 ,t3 ,t4 ,t5 ,dflteffects ,t6 ,t7 ,t8))
+            )
+          )
+        )
+        """;
+   
+     //$ A ctruct provides a model of a C structure.
+     //$ This is the same as a struct except the structure is not emitted.
+     //$ Instead, it is assumed to be already defined in C.
+     //$
+     //$ CAVEAT: A C struct constructor should not be used
+     //$ unless the cstruct definition is a complete model of the C struct.
+   
+     stmt := "cstruct" sdeclname "=" ? "{" sstruct_mem_decl * "}" srequires_clause ";" =>#
+       "(makecstruct _2 _5 _7)"
+     ;
+   
+     //$ A hack to help with cut and paste from C headers into Felix
+     stmt := "typedef" "struct" "{" sstruct_mem_decl * "}" sdeclname srequires_clause ";" =>#
+       "(makecstruct _6 _4 _7)"
+     ;
+   
+     //$ A hack to help with cut and paste from C headers into Felix
+     stmt := "typedef" "struct" sdeclname "{" sstruct_mem_decl * "}" sdeclname srequires_clause ";" =>#
+       "(asserteq (first _3)(first _7) (makecstruct _7 _5 _8))"
+     ;
+   
+     sopt_name := sname =># "_1";
+     sopt_name := sepsilon =># '""';
+   
+     //$ A union is a model of a discriminated union or variant.
+     //$ Such unions have a discriminant tag that determines
+     //$ at run time which component is populated.
+     //$ The only way to access the union field is by using a
+     //$ match which automatically enforces proper access.
+     //$
+     //$ The fields of a union are called type constructors.
+     //$ A constant type constructor has no arguments.
+     //$ A non-constant type constructor has an argument
+     //$ which can be extracted in a match.
+     //$ 
+     //$ Unions provide a safe way to "unify" heterogenous data
+     //$ into a single data type.
+   
+     // shared by both union decl forms..
+       stype_sum_item := sname sopt_value stvarlist "of" sexpr =># "`(,_1 ,_2 ,_3 ,_5)";
+       stype_sum_item := sname sopt_value stvarlist "of" sexpr "=>" sexpr =># "`(,_1 ,_2 ,_3 ,_5 ,_7)";
+       stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 (ast_void ,_sr))";
+       stype_sum_item := "#" sname sopt_value stvarlist =># "`(,_2 ,_3 ,_4 (ast_void ,_sr))";
+   
+       stype_sum_item_bar := "|" stype_sum_item =># "_2";
+       stype_sum_items := stype_sum_item stype_sum_item_bar* =># "(cons _1 _2)";
+       stype_sum_items := stype_sum_item_bar* =># "_1";
+   
+    // deviant form using trailing ";" per item used inside { } unions
+       stype_sum_item1 := stype_sum_item ";" =># "_1";
+   
+     suexport := "export" =># "'export";
+     suexport := sepsilon =># "'noexport";
+     suexport := "export" sstring =># "`(namedexport ,_2)";
+     stmt := suexport "union" sdeclname "=" stype_sum_items ";" =>#
+       """
+       (let*
+         ( 
+           (union-name (first _3))
+           (sts (list `(ast_union ,_sr ,union-name ,(second _3) ,_5)))
+           (sts 
+             (if 
+               (equal? _1 'export) 
+               (cons `(ast_export_union ,_sr ,(nos union-name) ,union-name) sts)
+               (if
+                 (equal? _1 'noexport) 
+                  sts
+                 (cons `(ast_export_union ,_sr ,(nos union-name) ,(second _1)) sts)
+               )
+             )
+           )
+         )
+         `(ast_seq ,_sr ,sts)
+       )
        """;
-  
-  
-    stmt := senum_decl =># "_1";
-  
-    //$ Short for for declaring an enumeration,
-    //$ which is a union all of whose fields are constant constructors.
-    //$ Deprecated syntax.
-    stmt := "enum" sdeclname "{" senum_items "}" =>#
-      """
-      `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
+   
+     //$ Deprecated C like syntax for unionx.
+     stmt := "union" sdeclname "{" stype_sum_item1* "}" =>#
+       """
+       `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
+        """;
+   
+   
+     stmt := senum_decl =># "_1";
+   
+     //$ Short for for declaring an enumeration,
+     //$ which is a union all of whose fields are constant constructors.
+     //$ Deprecated syntax.
+     stmt := "enum" sdeclname "{" senum_items "}" =>#
+       """
+       `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
+        """;
+   
+     //$ Short for for declaring an enumeration,
+     //$ which is a union all of whose fields are constant constructors.
+     stmt := "enum" sdeclname "=" senum_items ";" =>#
+       """
+       `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
+        """;
+   
+     sopt_value := "=" sinteger =># "`(some ,_2)";
+     sopt_value := sepsilon =># "'none";
+     senum_item := sname sopt_value =># "`(,_1 ,_2 ,dfltvs (ast_void ,_sr))";
+     senum_items := senum_item "," senum_items =># "(cons _1 _3)";
+     senum_items := senum_item =># "`(,_1)";
+     senum_items := sepsilon =># "()";
+   
+   /*
+     //$ Java like interface of an object type.
+     //$ Equivalent to a record type.
+     stmt := "interface" sdeclname "{" srecord_type "}" =>#
+       """
+       `(ast_type_alias ,_sr ,(first _2) ,(second _2) ,_4)
        """;
-  
-    //$ Short for for declaring an enumeration,
-    //$ which is a union all of whose fields are constant constructors.
-    stmt := "enum" sdeclname "=" senum_items ";" =>#
-      """
-      `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
+   */
+   
+     //$ Java like interface of an object type.
+     //$ Equivalent to a record type.
+     stmt := "interface" sdeclname stype_extension "{" srecord_type "}" =>#
+       """
+       `(ast_type_alias ,_sr ,(first _2) ,(second _2) (ast_extension ,_sr ,_3 ,_5))
        """;
-  
-    sopt_value := "=" sinteger =># "`(some ,_2)";
-    sopt_value := sepsilon =># "'none";
-    senum_item := sname sopt_value =># "`(,_1 ,_2 ,dfltvs (ast_void ,_sr))";
-    senum_items := senum_item "," senum_items =># "(cons _1 _3)";
-    senum_items := senum_item =># "`(,_1)";
-    senum_items := sepsilon =># "()";
-  
-  /*
-    //$ Java like interface of an object type.
-    //$ Equivalent to a record type.
-    stmt := "interface" sdeclname "{" srecord_type "}" =>#
-      """
-      `(ast_type_alias ,_sr ,(first _2) ,(second _2) ,_4)
-      """;
-  */
-  
-    //$ Java like interface of an object type.
-    //$ Equivalent to a record type.
-    stmt := "interface" sdeclname stype_extension "{" srecord_type "}" =>#
-      """
-      `(ast_type_alias ,_sr ,(first _2) ,(second _2) (ast_extension ,_sr ,_3 ,_5))
-      """;
-  
-      srecord_type := srecord_mem_decl (";" srecord_mem_decl)* ";" =># 
-       "`(ast_record_type ,(cons _1 (map second _2)))";
-      stypelist := stypeexpr ("," stypeexpr)* =># "(cons _1 (map second _2))";
-      stype_extension := "extends" stypelist =># "_2";
-      stype_extension := sepsilon =># "()";
-  }
-  
-  @
-  
+   
+       srecord_type := srecord_mem_decl (";" srecord_mem_decl)* ";" =># 
+        "`(ast_record_type ,(cons _1 (map second _2)))";
+       stypelist := stypeexpr ("," stypeexpr)* =># "(cons _1 (map second _2))";
+       stype_extension := "extends" stypelist =># "_2";
+       stype_extension := sepsilon =># "()";
+   }
+   
+   @
+   
 
 Utility nonterminals.
 ---------------------
@@ -5178,20 +5178,20 @@ Utility nonterminals.
 
 .. code-block:: text
 
-  // Utility macros
-  syntax list 
-  {
-    seplist1 sep a := a (sep a)* =># '(cons _1 (map second _2))'; 
-    seplist0 sep a = seplist1<sep><a>;
-    seplist0 sep a := sepsilon =># '()';
-    commalist1 a = seplist1<","><a>;
-    commalist0 a = seplist0<","><a>;
-  
-    snames = commalist1<sname>;
-    sdeclnames = commalist1<sdeclname>;
-  }
-  @
-  
+   // Utility macros
+   syntax list 
+   {
+     seplist1 sep a := a (sep a)* =># '(cons _1 (map second _2))'; 
+     seplist0 sep a = seplist1<sep><a>;
+     seplist0 sep a := sepsilon =># '()';
+     commalist1 a = seplist1<","><a>;
+     commalist0 a = seplist0<","><a>;
+   
+     snames = commalist1<sname>;
+     sdeclnames = commalist1<sdeclname>;
+   }
+   @
+   
 
 Variable definitions.
 ---------------------
@@ -5199,118 +5199,118 @@ Variable definitions.
 
 .. code-block:: text
 
-  //$ General variable binders.
-  syntax variables {
-    requires statements, executable;
-  
-    //$ Value binder: multi declaration. Like:
-    //$ 
-    //$ val x,y,z = 1,2,3;
-    //$
-    stmt := "val" sname sname_suffix "=" sexpr ";" =>#
-      """
-      (let
-        (
-          (names (cons _2 _3))
-          (vals (mkl _5))
-        )
-        (begin
-        ;;(display "names=")(display names)
-        ;;(display "init=")(display vals)
-        ;;(display "\\n")
-        (if (eq? (length names)(length vals))
-          (let
-            (
-              (f (lambda (n v)`(ast_val_decl ,_sr ,n ,dfltvs none (some ,v))))
-            )
-            `(ast_seq ,_sr ,(map f names vals))
-          )
-          (let*
-            (
-              (f (lambda (n)`((Val ,_sr ,n) none)))
-              (lexpr (map f names))
-            )
-            `(ast_assign ,_sr _set ((List ,lexpr) none) ,_5)
-          )
-      )))
-      """;
-  
-    //$ Value binder, single.
-    stmt := "val" sdeclname "=" sexpr ";" =>#
-      """
-      `(ast_val_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
+   //$ General variable binders.
+   syntax variables {
+     requires statements, executable;
+   
+     //$ Value binder: multi declaration. Like:
+     //$ 
+     //$ val x,y,z = 1,2,3;
+     //$
+     stmt := "val" sname sname_suffix "=" sexpr ";" =>#
+       """
+       (let
+         (
+           (names (cons _2 _3))
+           (vals (mkl _5))
+         )
+         (begin
+         ;;(display "names=")(display names)
+         ;;(display "init=")(display vals)
+         ;;(display "\\n")
+         (if (eq? (length names)(length vals))
+           (let
+             (
+               (f (lambda (n v)`(ast_val_decl ,_sr ,n ,dfltvs none (some ,v))))
+             )
+             `(ast_seq ,_sr ,(map f names vals))
+           )
+           (let*
+             (
+               (f (lambda (n)`((Val ,_sr ,n) none)))
+               (lexpr (map f names))
+             )
+             `(ast_assign ,_sr _set ((List ,lexpr) none) ,_5)
+           )
+       )))
        """;
-  
-    //$ Once binder, single.
-    stmt := "once " sdeclname "=" sexpr ";" =>#
-      """
-      `(ast_once_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
+   
+     //$ Value binder, single.
+     stmt := "val" sdeclname "=" sexpr ";" =>#
+       """
+       `(ast_val_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
+        """;
+   
+     //$ Once binder, single.
+     stmt := "once " sdeclname "=" sexpr ";" =>#
+       """
+       `(ast_once_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
+        """;
+   
+   
+     stmt := "device" sdeclname "=" sexpr ";" =>#
+       """
+       `(ast_val_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
+        """;
+   
+   
+     //$ Value binder, single, with type.
+     stmt := "val" sdeclname ":" stypeexpr "=" sexpr ";" =>#
+       """
+       `(ast_val_decl ,_sr ,(first _2) ,(second _2) (some ,_4) (some ,_6))
+        """;
+   
+     //$ Variable binder, multiple.
+     stmt := "var" sname sname_suffix "=" sexpr ";" =>#
+       """
+       (let
+         (
+           (names (cons _2 _3))
+           (vals (mkl _5))
+         )
+         (begin
+         ;;(display "names=")(display names)
+         ;;(display "init=")(display vals)
+         ;;(display "\\n")
+         (if (eq? (length names)(length vals))
+           (let
+             (
+               (f (lambda (n v)`(ast_var_decl ,_sr ,n ,dfltvs none (some ,v))))
+             )
+             `(ast_seq ,_sr ,(map f names vals))
+           )
+           (let*
+             (
+               (f (lambda (n)`((Var ,_sr ,n) none)))
+               (lexpr (map f names))
+             )
+             `(ast_assign ,_sr _set ((List ,lexpr) none) ,_5)
+           )
+       )))
        """;
-  
-  
-    stmt := "device" sdeclname "=" sexpr ";" =>#
-      """
-      `(ast_val_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
-       """;
-  
-  
-    //$ Value binder, single, with type.
-    stmt := "val" sdeclname ":" stypeexpr "=" sexpr ";" =>#
-      """
-      `(ast_val_decl ,_sr ,(first _2) ,(second _2) (some ,_4) (some ,_6))
-       """;
-  
-    //$ Variable binder, multiple.
-    stmt := "var" sname sname_suffix "=" sexpr ";" =>#
-      """
-      (let
-        (
-          (names (cons _2 _3))
-          (vals (mkl _5))
-        )
-        (begin
-        ;;(display "names=")(display names)
-        ;;(display "init=")(display vals)
-        ;;(display "\\n")
-        (if (eq? (length names)(length vals))
-          (let
-            (
-              (f (lambda (n v)`(ast_var_decl ,_sr ,n ,dfltvs none (some ,v))))
-            )
-            `(ast_seq ,_sr ,(map f names vals))
-          )
-          (let*
-            (
-              (f (lambda (n)`((Var ,_sr ,n) none)))
-              (lexpr (map f names))
-            )
-            `(ast_assign ,_sr _set ((List ,lexpr) none) ,_5)
-          )
-      )))
-      """;
-  
-    //$ Variable binder, single.
-    stmt := "var" sdeclname "=" sexpr ";" =>#
-      """
-      `(ast_var_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
-       """;
-  
-    //$ Variable binder, single, with type.
-    stmt := "var" sdeclname ":" stypeexpr "=" sexpr ";" =>#
-      """
-      `(ast_var_decl ,_sr ,(first _2) ,(second _2) (some ,_4) (some ,_6))
-       """;
-  
-    //$ Variable binder, single, with type, no explicit initialiser.
-    stmt := "var" sdeclname ":" stypeexpr ";" =>#
-      """
-      `(ast_var_decl ,_sr ,(first _2) ,(second _2) (some ,_4) none)
-       """;
-  }
-  
-  @
-  
-  
+   
+     //$ Variable binder, single.
+     stmt := "var" sdeclname "=" sexpr ";" =>#
+       """
+       `(ast_var_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
+        """;
+   
+     //$ Variable binder, single, with type.
+     stmt := "var" sdeclname ":" stypeexpr "=" sexpr ";" =>#
+       """
+       `(ast_var_decl ,_sr ,(first _2) ,(second _2) (some ,_4) (some ,_6))
+        """;
+   
+     //$ Variable binder, single, with type, no explicit initialiser.
+     stmt := "var" sdeclname ":" stypeexpr ";" =>#
+       """
+       `(ast_var_decl ,_sr ,(first _2) ,(second _2) (some ,_4) none)
+        """;
+   }
+   
+   @
+   
+   
 
 Chips
 -----
@@ -5318,52 +5318,52 @@ Chips
 
 .. code-block:: text
 
-  syntax chips {
-    //$ input schannel type %<T
-    pintype := "%<" x[spower_pri] =># '`(ast_name ,_sr "ischannel" (,_2))';
-  
-    //$ output schannel type %>T
-    pintype := "%>" x[spower_pri] =># '`(ast_name ,_sr "oschannel" (,_2))';
-  
-    //$ input/output schannel type %<>T
-    pintype := "%<>" x[spower_pri] =># '`(ast_name ,_sr "ioschannel" (,_2))';
-  
-    //$ duplex schannel type %<INPUT%>OUTPUT
-    pintype := "%<" x[spower_pri] "%>" x[spower_pri] =># 
-      '`(ast_name ,_sr "duplex_schannel" (,_2 ,_4))'
-    ;
-  
-    pinspec :=  "pin" sname ":"  pintype =># "`(,_2 ,_4)"; 
-  
-    stmt := "chip" sdeclname sfun_arg* 
-      "connector" sname pinspec*
-       scompound =>#
-      """
-        (let*
-          (
-            (name (first _2))
-            (vs (second _2))
-            (args _3)
-            (effects dflteffects)
-            (ret `(ast_void ,_sr))
-            (traint 'none)
-            (body _7)
-            (pinstype `(ast_record_type ,_6))
-            (pinsarg `(,_sr PVal ,_5 ,pinstype none))
-            (pinsargs `((,pinsarg) none))
-            (args (append args `(,pinsargs (() none))))
-          )
-          `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects
-           NoInlineFunction (NoInlineFunction) ,body)
-        )
-      """;
-  
-    stmt := "circuit" sconnection+ "endcircuit" =># "`(ast_circuit ,_sr ,_2)";
-     spin := sname "." sname =># "`(,_1 ,_3)";
-     sconnection := "connect" list::commalist1<spin> =># "`(connect ,_2)";
-     sconnection := "wire" stypeexpr "to" sname "." sname =># "`(wire (,_2 ,_4 ,_6))";
-  
-  }
-  @
-  
-  
+   syntax chips {
+     //$ input schannel type %<T
+     pintype := "%<" x[spower_pri] =># '`(ast_name ,_sr "ischannel" (,_2))';
+   
+     //$ output schannel type %>T
+     pintype := "%>" x[spower_pri] =># '`(ast_name ,_sr "oschannel" (,_2))';
+   
+     //$ input/output schannel type %<>T
+     pintype := "%<>" x[spower_pri] =># '`(ast_name ,_sr "ioschannel" (,_2))';
+   
+     //$ duplex schannel type %<INPUT%>OUTPUT
+     pintype := "%<" x[spower_pri] "%>" x[spower_pri] =># 
+       '`(ast_name ,_sr "duplex_schannel" (,_2 ,_4))'
+     ;
+   
+     pinspec :=  "pin" sname ":"  pintype =># "`(,_2 ,_4)"; 
+   
+     stmt := "chip" sdeclname sfun_arg* 
+       "connector" sname pinspec*
+        scompound =>#
+       """
+         (let*
+           (
+             (name (first _2))
+             (vs (second _2))
+             (args _3)
+             (effects dflteffects)
+             (ret `(ast_void ,_sr))
+             (traint 'none)
+             (body _7)
+             (pinstype `(ast_record_type ,_6))
+             (pinsarg `(,_sr PVal ,_5 ,pinstype none))
+             (pinsargs `((,pinsarg) none))
+             (args (append args `(,pinsargs (() none))))
+           )
+           `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects
+            NoInlineFunction (NoInlineFunction) ,body)
+         )
+       """;
+   
+     stmt := "circuit" sconnection+ "endcircuit" =># "`(ast_circuit ,_sr ,_2)";
+      spin := sname "." sname =># "`(,_1 ,_3)";
+      sconnection := "connect" list::commalist1<spin> =># "`(connect ,_2)";
+      sconnection := "wire" stypeexpr "to" sname "." sname =># "`(wire (,_2 ,_4 ,_6))";
+   
+   }
+   @
+   
+   
