@@ -3,6 +3,7 @@
 @tangler flx_libcontents.flx = $PWD/src/tools/flx_libcontents.flx
 @tangler flx_libindex.flx = $PWD/src/tools/flx_libindex.flx
 @tangler flx_mktutindex.flx = $PWD/src/tools/flx_mktutindex.flx
+@tangler flx_fdoc2sphinx.flx = $PWD/src/tools/flx_fdoc2sphinx.flx
 
 @h1 Documentation tools for Felix.
 These tools are designed to extract and build
@@ -401,4 +402,161 @@ done
 
 @
 
+
+@tangle fdoc2sphinx.flx
+open Regdef;
+
+// command translation
+regdef cmd_name_r = perl("[A-Za-z_][A-Za-z_0-9]*");
+regdef spc_r = " " *;
+regdef any_r = perl(".*"); 
+regdef cmd_r = "@" group(cmd_name_r) spc_r group(any_r);
+var cmd_s = render cmd_r;
+var cmd_R = RE2 cmd_s;
+
+
+typedef markup_t = (`Txt | `At | `Code);
+fun code_markup (a:string): string =
+{
+  var out = "";
+  var mode = (#`Txt) :>> markup_t;
+  for ch in a do
+    match mode with
+    | `Txt =>
+      if ch == char "@" do 
+        mode = (#`At) :>> markup_t;
+      else
+        out += ch;
+      done
+
+    | `At =>
+      if ch == char "{" do
+        out += " :code:`";
+        mode = (#`Code) :>> markup_t;
+      else
+       out += "@"+ch;
+      done
+
+    | `Code =>
+      if ch == char "}" do
+        out += "`";
+        mode = (#`Txt) :>> markup_t;
+      else
+        out += ch;
+      done
+    endmatch;
+  done
+  return out;
+}
+
+fun lexer_from_filename (var s:string) : string =
+{
+  s = strip s;
+  var lexer = 
+    match s.Filename::get_extension with
+    | (".cpp" | ".cxx" | ".hpp")  =>  "cpp"
+    | (".flx" | ".fdoc")  =>  "felix"
+    | (".c" | ".h") => "c"
+    | (".py") => "python"
+    | _ => "text"
+    endmatch
+  ;
+  return lexer;
+}
+
+
+typedef mode_t = (`Doc | `Code);
+
+fun process_file (f: string): string =
+{
+  var out = "";
+  proc println[T with Str[T]] (x:T) => out += x.str + "\n"; 
+  var mode : mode_t = (#`Doc) :>> mode_t;
+  for line in split (f, char "\n") do
+    var cmd = Match (cmd_R, line);
+    match cmd with
+    | Some grp =>
+      var c = grp.1;
+      var a = grp.2;
+      if c == "title" do
+        println$ "";
+        match mode with
+        | `Code () => mode = (#`Doc) :>> mode_t;
+        | _ => ;
+        endmatch;
+        a = code_markup a;
+        println$ "=" * a.len.int;
+        println$ a;
+        println$ "=" * a.len.int;
+        println$ "";
+
+      elif c == "h1" do
+        println$ "";
+        match mode with
+        | `Code () => mode = (#`Doc) :>> mode_t;
+        | _ => ;
+        endmatch;
+        a = code_markup a;
+        println$ a;
+        println$ "=" * a.len.int;
+        println$ "";
+
+      elif c == "h2" do
+        a = code_markup a;
+        println$ "";
+        match mode with
+        | `Code => mode = (#`Doc) :>> mode_t;
+        | _ => ;
+        endmatch;
+        println$ a;
+        println$ "-" * a.len.int;
+        println$ "";
+
+      elif c == "tangle" do
+        println$ "";
+        println$ ".. code-block:: "+lexer_from_filename a;
+        println$ "";
+        mode = (#`Code) :>> mode_t;
+      else 
+        match mode with
+        | `Code =>
+          println$ "";
+          mode = (#`Doc) :>> mode_t;
+        | _ => ;
+        endmatch;
+      done
+
+
+    | None =>
+      match mode with
+      | `Doc => 
+         println$ code_markup line;
+      | `Code => println$ "  " + line;
+      endmatch;
+    endmatch;
+  done
+  return out;
+}
+
+
+include "std/felix/flx_cp";
+
+var dir = "src/packages";
+var regex = "(.*).fdoc";
+var target = "doc/packages/${1}.rst";
+var live = true;
+var verbose = true;
+
+gen sandr (src: string, dst:string) =
+{
+  var text = load src;
+  var result = process_file (text);
+  save (dst, result);
+  return true;
+}
+
+var filere = Re2::RE2 regex;
+CopyFiles::processfiles sandr (dir, filere, target, live, verbose);
+System::exit(0);
+@
 
