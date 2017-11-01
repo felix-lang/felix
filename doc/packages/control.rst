@@ -173,8 +173,7 @@ Misc Control Flow
      }
    
    }
-   @
-   
+
 
 .. code-block:: text
 
@@ -182,7 +181,6 @@ Misc Control Flow
    {
      sswapop := "<->" =># "'_swap";
    }
-   @
-   
-   
-   
+
+
+

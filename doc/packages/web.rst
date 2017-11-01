@@ -29,8 +29,7 @@ Web Server Support Library
    include "web/sundown";
    include "web/logger";
    include "web/simple_config";
-   @
-   
+
 
 .. code-block:: felix
 
@@ -45,8 +44,7 @@ Web Server Support Library
    
      
    }
-   @
-   
+
 
 .. code-block:: felix
 
@@ -147,8 +145,7 @@ Web Server Support Library
    
    
    }
-   @
-   
+
 
 .. code-block:: felix
 
@@ -371,8 +368,7 @@ Web Server Support Library
    
    }
    
-   @
-   
+
 
 .. code-block:: felix
 
@@ -487,8 +483,7 @@ Web Server Support Library
    
    }
    //WWW-Authenticate: Basic realm="WallyWorld"
-   @
-   
+
 
 .. code-block:: felix
 
@@ -663,7 +658,6 @@ Web Server Support Library
      );
      
    }
-   @
 
 .. code-block:: felix
 
@@ -716,8 +710,7 @@ Web Server Support Library
      }
    
    }
-   @
-   
+
 
 .. code-block:: felix
 
@@ -766,8 +759,7 @@ Web Server Support Library
      }
    
    }
-   @
-   
+
 
 .. code-block:: felix
 
@@ -1200,8 +1192,7 @@ Web Server Support Library
    */
    }
    
-   @
-   
+
 
 .. code-block:: felix
 
@@ -1241,8 +1232,7 @@ Web Server Support Library
          (map (fun(z:cookie):string => str(z)) c));
    
    }
-   @
-   
+
 
 .. code-block:: felix
 
@@ -1381,8 +1371,7 @@ Web Server Support Library
    }
    
     
-   @
-   
+
 
 .. code-block:: felix
 
@@ -1631,8 +1620,7 @@ Web Server Support Library
      }
    }
    
-   @
-   
+
 
 .. code-block:: felix
 
@@ -1838,8 +1826,7 @@ Web Server Support Library
      }
    }
    
-   @
-   
+
 
 .. code-block:: felix
 
@@ -1980,8 +1967,7 @@ Web Server Support Library
        return sz;
      }
    }
-   @
-   
+
 
 .. code-block:: felix
 
@@ -2155,8 +2141,7 @@ Web Server Support Library
    
    }
    
-   @
-   
+
 
 .. code-block:: felix
 
@@ -2165,8 +2150,7 @@ Web Server Support Library
    {
      fun sundown: string -> string requires package "sundown";
    }
-   @
-   
+
 
 .. code-block:: felix
 
@@ -2318,5 +2302,4 @@ Web Server Support Library
      }
    
    }
-   @
-   
+

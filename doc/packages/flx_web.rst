@@ -94,7 +94,6 @@ Standalone pretty printer for Felix  :code:`flx` format files.
      println$ "<pre class='flxbg'>\n"+txt+"\n</pre>";
    done
    
-   @
 
 Mainline for dynamic loading.
 -----------------------------
@@ -1337,8 +1336,7 @@ This is the actual webserver code.
    println "WEB SERVER FINNISHED?";
    println$ "Closing listener socket " + str listener;
    iclose (listener);
-   @
-   
+
 
 Mainline with preloaded plugins.
 --------------------------------
@@ -1397,8 +1395,7 @@ Mainline with preloaded plugins.
    
    Fibres::chain init;
    
-   @
-   
+
 
 Language Translators.
 =====================
@@ -1515,7 +1512,6 @@ Felix Package Config  :code:`fpc` format.
    export fun setup of (string) as "fpc2html_setup";
    export fun Fpc2Html::xlat_fpc of (string * string) as "fpc2html";
    
-   @
 
 Ocaml
 -----
@@ -1689,7 +1685,6 @@ Ocaml
    export fun setup of (string) as "ocaml2html_setup";
    export fun Ocaml2Html::xlat_ocaml of (string * string) as "ocaml2html";
    
-   @
 
 Python
 ------
@@ -1893,7 +1888,6 @@ Python
    export fun Py2Html::xlat_py of (string * string) as "py2html";
    
    
-   @
 
 Felix  :code:`flx` format.
 --------------------------
@@ -2573,7 +2567,6 @@ Felix  :code:`flx` format.
    export fun setup of (string) as "flx2html_setup";
    export fun Flx2Html::xlat_felix of (string * string) as "flx2html";
    
-   @
 
 C and C++ code.
 ---------------
@@ -2828,8 +2821,7 @@ C and C++ code.
    export fun Cpp2Html::xlat_cpp of (string * string) as "cpp2html";
    
    
-   @
-   
+
 
 Top level Felix  :code:`fdoc` format.
 -------------------------------------
@@ -3408,8 +3400,7 @@ Note the former are real Felix programs.
    
    export fun setup of (string) as "fdoc2html_setup";
    export fun xlat_fdoc of (string * string) as "fdoc2html";
-   @
-   
+
 
 Decorator Interfaces.
 =====================
@@ -3429,7 +3420,6 @@ Web page architecture layout and decorators.
      get-jscript: 1 -> string;
      make-button: button-spec_t -> string;
    }
-   @
 
 .. code-block:: felix
 
@@ -3442,7 +3432,6 @@ Web page architecture layout and decorators.
    }
    
    
-   @
 
 .. code-block:: felix
 
@@ -3452,7 +3441,6 @@ Web page architecture layout and decorators.
      get_header: string * string -> string;
      get_body : string * string * string -> string;
    }
-   @
 
 .. code-block:: felix
 
@@ -3471,7 +3459,6 @@ Web page architecture layout and decorators.
      make_frame: string -> string;
    }
    
-   @
 
 .. code-block:: felix
 
@@ -3483,7 +3470,6 @@ Web page architecture layout and decorators.
      mathjax_required: 1 -> bool;
    }
    
-   @
 
 .. code-block:: felix
 
@@ -3493,7 +3479,6 @@ Web page architecture layout and decorators.
      docnum: 1 -> string;
      get-jscript: 1 -> string;
    }
-   @
 
 .. code-block:: felix
 
@@ -3507,7 +3492,6 @@ Web page architecture layout and decorators.
      emit-js: 1 -> string;
      finalise: 1 -> 0;
    }
-   @
 
 .. code-block:: felix
 
@@ -3518,7 +3502,6 @@ Web page architecture layout and decorators.
      ep : 1 -> 0;
      bp : 1 -> 0;
    }
-   @
 
 .. code-block:: felix
 
@@ -3534,7 +3517,6 @@ Web page architecture layout and decorators.
      psplit : string -> 1 -> opt[string];
    }
    
-   @
 
 .. code-block:: felix
 
@@ -3545,8 +3527,7 @@ Web page architecture layout and decorators.
      active : 1 -> bool;
    }
    
-   @
-   
+
 
 Decorator Implementations.
 ==========================
@@ -3650,7 +3631,6 @@ Decorator Implementations.
    export fun fdoc_button of () as "fdoc_button";
    
    
-   @
 
 .. code-block:: felix
 
@@ -3729,7 +3709,6 @@ Decorator Implementations.
    export fun fdoc_edit of () as "fdoc_edit";
    
    
-   @
 
 .. code-block:: felix
 
@@ -3812,7 +3791,6 @@ Decorator Implementations.
    export fun setup of (string) as "fdoc_fileseq_setup";
    export fun fdoc_fileseq of (string) as "fdoc_fileseq";
    
-   @
 
 .. code-block:: felix
 
@@ -4078,7 +4056,6 @@ Decorator Implementations.
    export fun setup of (string) as "fdoc_frame_setup";
    export fun fdoc_frame of (fdoc_frame_data_t) as "fdoc_frame";
    
-   @
 
 .. code-block:: felix
 
@@ -4224,7 +4201,6 @@ Decorator Implementations.
    export fun setup of (string) as "fdoc_heading_setup";
    export fun fdoc_heading of (paragraph-control_t * (string->0)) as "fdoc_heading";
    
-   @
 
 .. code-block:: felix
 
@@ -4253,7 +4229,6 @@ Decorator Implementations.
    export fun setup of (string) as "fdoc_paragraph_setup";
    export fun fdoc_paragraph of (string->0) as "fdoc_paragraph";
    
-   @
 
 .. code-block:: felix
 
@@ -4320,7 +4295,6 @@ Decorator Implementations.
    export fun setup of (string) as "fdoc_scanner_setup";
    export fun fdoc_scanner of () as "fdoc_scanner";
    
-   @
 
 .. code-block:: felix
 
@@ -4497,7 +4471,6 @@ Decorator Implementations.
    export fun setup of (string) as "fdoc_slideshow_setup";
    export fun fdoc_slideshow of (string->0) as "fdoc_slideshow";
    
-   @
 
 .. code-block:: felix
 
@@ -4526,7 +4499,6 @@ Decorator Implementations.
      }
    }
    
-   @
 
 .. code-block:: felix
 
@@ -4659,5 +4631,4 @@ Decorator Implementations.
    export fun setup of (string) as "toc_menu_setup";
    export fun toc_menu of (list[int * string * string]) as "toc_menu";
    
-   @
-   
+

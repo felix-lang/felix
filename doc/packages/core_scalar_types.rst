@@ -165,8 +165,7 @@ arbitrary integer operations.
    
    pod type intptr = "intptr_t" requires C99_headers::stdint_h, index TYPE_intptr;
    pod type uintptr = "uintptr_t" requires C99_headers::stdint_h, index TYPE_uintptr;
-   @
-   
+
 
 Integer literal constructors.
 =============================
@@ -613,8 +612,7 @@ Floats
    
    //$ All the core approximations to numbers.
    typedef numbers = reals \cup complexes;
-   @
-   
+
 
 All Scalars.
 ------------

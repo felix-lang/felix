@@ -45,8 +45,7 @@ Generic Serialisation
    
    #endif
    
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -98,9 +97,8 @@ Generic Serialisation
    }
    
    }}}
-   @
-   
-   
+
+
 
 Judy Serialisers
 ----------------
@@ -116,7 +114,6 @@ Judy Serialisers
    GC_EXTERN scanner_t JudySL_scanner;
    }}}
    
-   @
 
 .. code-block:: cpp
 
@@ -178,8 +175,7 @@ Judy Serialisers
    
    
    }}} // end namespaces
-   @
-   
+
 
 Serialisation functions
 =======================
@@ -475,5 +471,4 @@ Serialisation functions
      }
    }
    
-   @
-   
+

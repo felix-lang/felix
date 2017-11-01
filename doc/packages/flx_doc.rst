@@ -110,8 +110,7 @@ the grammar.
      println$ "</pre></body></html>";
    done
    
-   @
-   
+
 
 Library contents table.
 -----------------------
@@ -259,8 +258,7 @@ Lists symbols per file.
      println$ "</body></html>";
    done
    
-   @
-   
+
 
 Library index table.
 --------------------
@@ -352,8 +350,7 @@ Lists symbols alphabetically.
        done
      done 
    done
-   @
-   
+
 
 Make tutorial index pages.
 --------------------------
@@ -422,16 +419,15 @@ with specified heading and pattern match.
      make_index prefix;
    done
    
-   @
-   
-   
+
+
 
 .. code-block:: felix
 
    open Regdef;
    
    // command translation
-   regdef cmd_name_r = perl("[A-Za-z_][A-Za-z_0-9]*");
+   regdef cmd_name_r = perl("[A-Za-z_][A-Za-z_0-9]*| *");
    regdef spc_r = " " *;
    regdef any_r = perl(".*"); 
    regdef cmd_r = "@" group(cmd_name_r) spc_r group(any_r);
@@ -581,6 +577,5 @@ with specified heading and pattern match.
    var filere = Re2::RE2 regex;
    CopyFiles::processfiles sandr (dir, filere, target, live, verbose);
    System::exit(0);
-   @
-   
-   
+
+

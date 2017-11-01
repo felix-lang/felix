@@ -173,9 +173,8 @@ The flx_dl.h header: portability macros.
    #endif
    #endif
    
-   @
-   
-   
+
+
 
 The  :code:`flx_dlopen` unit: C++ header file.
 ----------------------------------------------
@@ -213,8 +212,7 @@ level dlopen/LoadLibrary functions.
    }}
    
    #endif
-   @
-   
+
 
 The  :code:`flx_dlopen` unit: C++ implementation.
 -------------------------------------------------
@@ -278,8 +276,7 @@ Implement the RTL portable low level dlopen/LoadLibrary functions.
    }
    
    }} // namespaces
-   @
-   
+
 
 Felix level dynamic loader system
 =================================
@@ -588,8 +585,7 @@ The  :code:`flx_dynlink` unit:  :code:`flx_dynlink_t` class implementation.
      // modulename.c_str(), filename.c_str()
      // ); 
    }
-   @
-   
+
 
 The  :code:`flx_dynlink` unit:  :code:`flx_libinst_t` class implementation.
 ---------------------------------------------------------------------------
@@ -710,8 +706,7 @@ The  :code:`flx_dynlink` unit:  :code:`flx_libinst_t` class implementation.
    };
    
    }} // namespaces
-   @
-   
+
 
 The dynamic link library binding  :code:`Dynlink`
 =================================================
@@ -1430,8 +1425,7 @@ Dynamic Linkage support
    #define DYNLINK_EXTERN FLX_IMPORT
    #endif
    #endif
-   @
-   
+
 
 .. code-block:: text
 
@@ -1440,23 +1434,20 @@ Dynamic Linkage support
    includes: '<dlfcn.h>'
    requires_dlibs: -ldl
    requires_slibs: -ldl
-   @
-   
+
 
 .. code-block:: text
 
    Name: dl
    Description: dynamic loading support
    includes: '<dlfcn.h>'
-   @
-   
+
 
 .. code-block:: text
 
    Name: dl
    Description: dynamic loading support
-   @
-   
+
 
 .. code-block:: text
 
@@ -1470,8 +1461,7 @@ Dynamic Linkage support
    macros: BUILD_DYNLINK
    srcdir: src/dynlink
    src: .*\.cpp
-   @
-   
+
 
 .. code-block:: text
 
@@ -1485,8 +1475,7 @@ Dynamic Linkage support
    macros: BUILD_DYNLINK
    srcdir: src/dynlink
    src: .*\.cpp
-   @
-   
+
 
 .. code-block:: python
 
@@ -1522,7 +1511,6 @@ Dynamic Linkage support
                includes=includes,
                libs=[lib.shared for lib in libs],
                macros=macros))
-   @
-   
-   
-   
+
+
+

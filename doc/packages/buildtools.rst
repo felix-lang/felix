@@ -998,8 +998,7 @@ the build target directory.
    FlxPrepBuild::build_felix (#System::args);
    
    System::exit (0);
-   @
-   
+
 
 Build the Run Time Library (RTL)
 --------------------------------
@@ -1307,8 +1306,7 @@ share directory. Does not look in the repository.
    FlxRtlBuild::build_felix_rtl (#System::args);
    
    System::exit (0);
-   @
-   
+
 
 Build everything else.
 ----------------------
@@ -1364,8 +1362,7 @@ directory.
    flx_tool: flx_build_rtl
    flx_tool: flx_build_boot
    flx_tool: flx_build_flxg
-   @
-   
+
 
 .. code-block:: felix
 
@@ -1700,5 +1697,4 @@ directory.
    System::exit (0);
    
    
-   @
-   
+

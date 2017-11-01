@@ -124,8 +124,7 @@ Assertions
         private sreductions := sreduction "|" sreductions =># "(cons _1 _3)";  
    }
    
-   @
-   
+
 
 Assignments
 -----------
@@ -220,8 +219,7 @@ Defines assignment forms.
    
    }
    
-   @
-   
+
 
 Block forms
 -----------
@@ -237,8 +235,7 @@ Block forms
      block := "perform" stmt =># '_2';
    }
    
-   @
-   
+
 
 Bracket Forms
 -------------
@@ -284,8 +281,7 @@ Bracket Forms
     
    }
    
-   @
-   
+
 
 C binding technology
 --------------------
@@ -703,8 +699,7 @@ C binding technology
            )))
        """;
    }
-   @
-   
+
 
 Simple C grammar
 ----------------
@@ -1116,8 +1111,7 @@ Simple C grammar
    	| declarator compound_statement
    	;
    }
-   @
-   
+
 
 Conditional forms
 -----------------
@@ -1231,8 +1225,7 @@ Conditional forms
        """;
    
    }
-   @
-   
+
 
 .. code-block:: text
 
@@ -1303,8 +1296,7 @@ Conditional forms
    
    }
    
-   @
-   
+
 
 Executable support
 ------------------
@@ -1336,8 +1328,7 @@ Executable support
      stmt := "??" sinteger ";" =># "`(ast_seq ,_sr (PARSER_ARGUMENT ,_2))";
    }
    
-   @
-   
+
 
 Expressions.
 ------------
@@ -1804,8 +1795,7 @@ See also other packages containing extensions.
    
    }
    
-   @
-   
+
 
 Stub extension file inclusion support
 -------------------------------------
@@ -1819,8 +1809,7 @@ by the python script  :code:`src/tools/flx_find_grammar_files.py`.
 
    grammar/python_grammar.fsyn
    grammar/debug.fsyn
-   @
-   
+
 
 Master DSSL dependency list.
 ----------------------------
@@ -1861,8 +1850,7 @@ all the DSSLs required for it.
        chips
      ;
    }
-   @
-   
+
 
 Function forms
 --------------
@@ -2314,8 +2302,7 @@ Function forms
        """;
    }
    
-   @
-   
+
 
 Standard include file list
 --------------------------
@@ -2352,11 +2339,9 @@ for extensions in other packages.
    grammar/namespaces.fsyn
    grammar/cgram.fsyn
    grammar/plugins.fsyn
-   @@grammar/extra.files
-   grammar/felix.fsyn
-   grammar/save.fsyn
-   @
-   
+grammar/felix.fsyn
+grammar/save.fsyn
+
 
 Identifier Lexer
 ----------------
@@ -2396,8 +2381,7 @@ Identifier Lexer
    
    }
    
-   @
-   
+
 
 .. code-block:: text
 
@@ -2443,8 +2427,7 @@ Identifier Lexer
      requires felix_float_lexer;
      requires felix_string_lexer;
    }
-   @
-   
+
 
 Regular Definitions DSSL
 ------------------------
@@ -2495,8 +2478,7 @@ Google RE2 package via Felix binding library.
      regdef printable = ordinary | quote | dquote | slosh | hash;
    }
    
-   @
-   
+
 
 Utility Scheme definitions.
 ---------------------------
@@ -2809,8 +2791,7 @@ For use in the action codes of the grammar.
      )
    """;
    
-   @
-   
+
 
 String like literals.
 ---------------------
@@ -3134,8 +3115,7 @@ Note some of these forms are not strings.
    
    }
    
-   @
-   
+
 
 Loops
 -----
@@ -3571,8 +3551,7 @@ Loops
    
    }
    
-   @
-   
+
 
 Macros
 ------
@@ -3592,8 +3571,7 @@ Macros
    
    }
    
-   @
-   
+
 
 Namespaces
 ----------
@@ -3755,8 +3733,7 @@ Namespaces
      """;
    }
    
-   @
-   
+
 
 Patterns
 --------
@@ -3982,8 +3959,7 @@ Patterns
    
    }
    
-   @
-   
+
 
 Plugin Support DSSL
 -------------------
@@ -4052,8 +4028,7 @@ link model.
      """;
     
    }
-   @
-   
+
 
 Python export grammar.
 ----------------------
@@ -4066,8 +4041,7 @@ Used to create Python3 modules in emitted libraries.
      stmt := "export" "python" "fun" ssuffixed_name "as" sstring ";" =>#
        "`(ast_export_python_fun ,_sr ,_4 ,_6)";
    }
-   @
-   
+
 
 Requirements
 ------------
@@ -4300,8 +4274,7 @@ Used to define dependencies on external resources.
         """;
    }
    
-   @
-   
+
 
 Save Thunk.
 -----------
@@ -4314,8 +4287,7 @@ to disk.
 
    open syntax felix;
    SAVE;
-   @
-   
+
 
 Statements
 ----------
@@ -4467,8 +4439,7 @@ General statements.
    
    }
    
-   @
-   
+
 
 TeX Symbols
 -----------
@@ -4804,8 +4775,7 @@ different precedences.
      x[sarrow_pri] := x[scase_literal_pri] arr x[sarrow_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))"; 
    }
    
-   @
-   
+
 
 Type definitions
 ----------------
@@ -5169,8 +5139,7 @@ Type definitions
        stype_extension := sepsilon =># "()";
    }
    
-   @
-   
+
 
 Utility nonterminals.
 ---------------------
@@ -5190,8 +5159,7 @@ Utility nonterminals.
      snames = commalist1<sname>;
      sdeclnames = commalist1<sdeclname>;
    }
-   @
-   
+
 
 Variable definitions.
 ---------------------
@@ -5308,9 +5276,8 @@ Variable definitions.
         """;
    }
    
-   @
-   
-   
+
+
 
 Chips
 -----
@@ -5364,6 +5331,5 @@ Chips
       sconnection := "wire" stypeexpr "to" sname "." sname =># "`(wire (,_2 ,_4 ,_6))";
    
    }
-   @
-   
-   
+
+

@@ -93,8 +93,7 @@ RE2 Bootstrap Builder
                libs=libs,
                external_libs=external_libs,
                lflags=lflags))
-   @
-   
+
 
 String handling
 ===============
@@ -608,8 +607,7 @@ Config
    headers: re2/(re2|set|stringpiece|variadic_function)\.h  
    src: re2/[^/]*\.cc|util/arena\.cc|util/hash\.cc|util/rune\.cc|util/stringpiece\.cc|util/strutil.cc|util/stringprintf\.cc|util/valgrind\.cc
    build_includes: src/re2/re2
-   @
-   
+
 
 .. code-block:: text
 
@@ -624,8 +622,7 @@ Config
    headers: re2\\(re2|set|stringpiece|variadic_function)\.h  
    src: re2\\[^\\]*\.cc|util\\arena\.cc|util\\hash\.cc|util\\rune\.cc|util\\stringpiece\.cc|util\\strutil.cc|util\\stringprintf\.cc|util\\valgrind\.cc
    build_includes: src/re2/re2
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -638,8 +635,7 @@ Config
    #define RE2_EXTERN FLX_IMPORT
    #endif
    #endif
-   @
-   
-   
-   
-   
+
+
+
+

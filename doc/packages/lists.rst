@@ -504,7 +504,6 @@ Consecutive integers  :code:`range`
 Non-negative integers to limit  :code:`range`
 ---------------------------------------------
 
- :code:`num` integers 0 to  :code:`num-1`.
 
 .. code-block:: felix
 
@@ -899,7 +898,6 @@ Streaming list
      ;
    }
    
-   @
 
 List syntax
 ===========

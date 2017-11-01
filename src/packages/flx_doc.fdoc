@@ -407,7 +407,7 @@ done
 open Regdef;
 
 // command translation
-regdef cmd_name_r = perl("[A-Za-z_][A-Za-z_0-9]*");
+regdef cmd_name_r = perl("[A-Za-z_][A-Za-z_0-9]*| *");
 regdef spc_r = " " *;
 regdef any_r = perl(".*"); 
 regdef cmd_r = "@" group(cmd_name_r) spc_r group(any_r);

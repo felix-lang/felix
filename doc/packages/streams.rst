@@ -110,7 +110,6 @@ A functional stream is a coinductive data type
 dual to a list: it is a function 
 
    uncons: S -> T * S.
-
 First here is the class based definition of a stream.
 It has some problems as do all such definitions:
 
@@ -119,22 +118,19 @@ It has some problems as do all such definitions:
    class Fstream[T,S] {
      virtual fun uncons: S -> T * S;
    };
-   @
-   And now, we have a stream example.
-   It is suprising? An integer is a stream.
-   
+And now, we have a stream example.
+It is suprising? An integer is a stream.
+
 
 .. code-block:: felix
 
    instance Fstream [int,int] {
      fun uncons(x:int) => x, x + 1;
    }
-   @
-   
-   An obvious problem: the stream is ascending.
-   A descending stream is obvious:
-fun uncons(x:int) => x, x - 1
 
+An obvious problem: the stream is ascending.
+A descending stream is obvious:
+fun uncons(x:int) => x, x - 1
 and clearly there are rather a LOT of streams that
 can be defined on an integer.
 
@@ -151,17 +147,16 @@ built from a list of ints.
      | #Empty => None[int], Empty[int]
      ;
    }
-   @
-   The option type is a good way to provide a trailing
-   infinite sequence of values mandated by the definition
-   of a stream.
-   
-   This function converts an arbitrary stream
-   into a generator. This hides the state type
-   and state value from clients, however the forward
-   iterator we previously had is now degraded to an
-   input iterator (where I use iterator in the C++ sense)
-   
+The option type is a good way to provide a trailing
+infinite sequence of values mandated by the definition
+of a stream.
+
+This function converts an arbitrary stream
+into a generator. This hides the state type
+and state value from clients, however the forward
+iterator we previously had is now degraded to an
+input iterator (where I use iterator in the C++ sense)
+
 
 .. code-block:: felix
 
@@ -176,14 +171,12 @@ built from a list of ints.
        return v;
      }
    ;
-   @
-   
-   Felix already has an interesting construction
-   called an iterator, it is a generator function
-   of type
-   
-   1 -> opt[T]
 
+Felix already has an interesting construction
+called an iterator, it is a generator function
+of type
+
+   1 -> opt[T]
 We build such iterator out of a stream of optional values
 
 
@@ -194,26 +187,24 @@ We build such iterator out of a stream of optional values
    =>
      make_generator[opt[T],S] state
    ;
-   @
-   
-   Our definition is bad, because so far there is only
-   ONE kind of fstream for every type.
-   
-   What we really want is that, given some uncons function,
-   we can make a fstream object out of it.
-   
-   here's our stream object: it has an uncons function
-   and an initial state value. The uncons function
-   is called uncons_f to avoid ambiguities
+
+Our definition is bad, because so far there is only
+ONE kind of fstream for every type.
+
+What we really want is that, given some uncons function,
+we can make a fstream object out of it.
+
+here's our stream object: it has an uncons function
+and an initial state value. The uncons function
+is called uncons_f to avoid ambiguities
 
 .. code-block:: felix
 
    typedef stream[T,S] = ( state:S, uncons_f: S -> T * S );
-   @
-   Now, instantiate it.
-   The critical thing we're doing is translating
-   the internal uncons_f function, to one that
-   returns a stream object
+Now, instantiate it.
+The critical thing we're doing is translating
+the internal uncons_f function, to one that
+returns a stream object
 
 .. code-block:: felix
 
@@ -227,6 +218,5 @@ We build such iterator out of a stream of optional values
    }
    open Stream;
    
-   @
-   
-   
+
+

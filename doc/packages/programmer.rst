@@ -211,13 +211,11 @@ programmer utilities
    }
    
    
-   @
 
 .. code-block:: felix
 
    val e = int (System::argv 1);
    println$ "Errno " + str e + " " + Errno::strerror e.Errno::errno_t;
    
-   @
-   
-   
+
+

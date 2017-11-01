@@ -16,8 +16,7 @@ OSX
    #include <sys/socket.h>
    typedef socklen_t FLX_SOCKLEN_T;
    #endif
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -45,7 +44,6 @@ OSX
    #define FLX_HAVE_OPENMP 0
    #define FLX_MAX_ALIGN 16
    #endif
-   @
 
 Linux
 =====
@@ -58,8 +56,7 @@ Linux
    #include <sys/socket.h>
    typedef socklen_t FLX_SOCKLEN_T;
    #endif
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -87,8 +84,7 @@ Linux
    #define FLX_HAVE_OPENMP 1
    #define FLX_MAX_ALIGN 16
    #endif
-   @
-   
+
 
 Windows
 =======

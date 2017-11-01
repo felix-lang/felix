@@ -56,8 +56,7 @@ The original ANSI Standard blessed as an ISO Standard.
      header string_h =   "#include <string.h>";
      header time_h =     "#include <time.h>";
    }
-   @
-   
+
 
 C95 Amendment
 -------------
@@ -74,8 +73,7 @@ Added support for wide characters.
      header wchar_h =    "#include <wchar.h>";
      header wctype_h =   "#include <wctype.h>";
    }
-   @
-   
+
 
 C99 Standard
 ------------
@@ -97,9 +95,8 @@ bool.
      header stdint_h =   "#include <stdint.h>";
      header tgmath_h =   "#include <tgmath.h>";
    }
-   @
-   
-   
+
+
 
 C++ Standards.
 ==============
@@ -212,8 +209,7 @@ of new features.
      header cstdalign = '#include <cstdalign>';
      header cstdbool = '#include <cstdbool>';
    }
-   @
-   
+
 
 Posix
 =====
@@ -285,8 +281,7 @@ from the most recent, most final one.
      header wordexp_h = "#include <wordexp.h>";
    }
    
-   @
-   
+
 
 Windows
 =======
@@ -305,6 +300,5 @@ even for 64 bit Windows.
      header sys_utime_h = "#include <sys/utime.h>";
      header process_h = "#include <process.h>";
    }
-   @
-   
-   
+
+

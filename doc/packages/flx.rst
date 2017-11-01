@@ -59,7 +59,6 @@ run time loading.
    Fibres::chain init;
    
    
-   @
 
 Command line tool dflx.
 -----------------------
@@ -72,8 +71,7 @@ with the executable command line arguments.
    include "std/felix/flx/flx";
    
    System::pexit$ Flx::runflx #System::args;
-   @
-   
+
 
 The flx cache manager.
 ======================
@@ -300,8 +298,7 @@ Check if the flx cache is stale and deletes it if it is.
      }
    
    }
-   @
-   
+
 
 The compiler.
 -------------
@@ -386,8 +383,7 @@ A wrapper around the {flxg} command line compiler executable.
    
    }
    
-   @
-   
+
 
 Profile
 -------
@@ -444,8 +440,7 @@ which determines where to find everything.
      }
    }
    
-   @
-   
+
 
 Config.
 -------
@@ -636,8 +631,7 @@ on command line switches and the base profile.
    
    }
    
-   @
-   
+
 
 Control Record.
 ---------------
@@ -797,8 +791,7 @@ Just initialises the base configuration data.
    typedef control_type = typeof (#dflt_control);
    }
     
-   @
-   
+
 
 Command line argument parser.
 -----------------------------
@@ -1700,8 +1693,7 @@ Parses the command line options.
    }
    }
    
-   @
-   
+
 
 Calculate Dependent variables.
 ------------------------------
@@ -1977,8 +1969,7 @@ tools from a base configuration.
    } // fun cal_depvars
    } // class FlxDepvars
    
-   @
-   
+
 
 The execution manager.
 ----------------------
@@ -3015,8 +3006,7 @@ external compilers.
    
    }
    
-   @
-   
+
 
 The {flx} tool.
 ---------------
@@ -3234,8 +3224,7 @@ The {flx} tool.
      }
    }
    
-   @
-   
+
 
 Bootflx
 -------
@@ -3394,8 +3383,7 @@ which means it takes a very long time to compile.
      }
    }
    
-   @
-   
+
 
 Plugin Client.
 --------------
@@ -3414,8 +3402,7 @@ program.
        runflx = Dynlink::load-plugin-func1 [int,list[string]] ( dll-name="flx_plugin", setup-str="");
      }
    }
-   @
-   
+
 
 Bootstrap Felix.
 ----------------
@@ -3430,5 +3417,4 @@ toolchains are compiled in directly.
    println$ "BOOTFLX";
    System::pexit$ BootFlx::runflx #System::args;
    
-   @
-   
+

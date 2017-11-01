@@ -97,16 +97,14 @@ Felix library concordance macros
    macro val TYPE_dcomplex = 407;
    macro val TYPE_lcomplex = 408;
    
-   @
-   
+
 
 .. code-block:: felix
 
    // if this compiles it should run.
    println$ "Checking concordance is loaded";
    println$ "Concordance loaded = " + FLX_CONCORDANCE_LOADED.str;
-   @
-   
+
 
 .. code-block:: text
 
@@ -127,6 +125,5 @@ Felix library concordance macros
    let flx_land = 210
    let flx_lor = 211
    let flx_lnot = 212
-   @
-   
-   
+
+

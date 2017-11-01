@@ -36,8 +36,7 @@ thrown as an exception.
    };
    }} //namespaces
    #endif
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -292,8 +291,7 @@ and should not be used.
    
    }}
    #endif
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -393,8 +391,7 @@ and should not be used.
    }
    
    }}
-   @
-   
+
 
 Handling Exceptions
 ===================
@@ -422,8 +419,7 @@ across DLL boundaries. Gcc does not have this bug.
    }}
    
    #endif
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -533,8 +529,7 @@ across DLL boundaries. Gcc does not have this bug.
        return 5;
      }
    }
-   @
-   
+
 
 Exception Grammar
 =================
@@ -565,7 +560,6 @@ Exception Grammar
      catches := catch+ =># "_1";
    }
    
-   @
 
 .. code-block:: cpp
 
@@ -578,8 +572,7 @@ Exception Grammar
    #define FLX_EXCEPTIONS_EXTERN FLX_IMPORT
    #endif
    #endif
-   @
-   
+
 
 .. code-block:: text
 
@@ -592,8 +585,7 @@ Exception Grammar
    includes: '"flx_exceptions.hpp"'
    srcdir: src/exceptions
    src: .*\.cpp 
-   @
-   
+
 
 .. code-block:: text
 
@@ -606,8 +598,7 @@ Exception Grammar
    includes: '"flx_exceptions.hpp"'
    srcdir: src/exceptions
    src: .*\.cpp 
-   @
-   
+
 
 .. code-block:: python
 
@@ -640,6 +631,5 @@ Exception Grammar
            shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
                includes=includes,
                macros=macros))
-   @
-   
-   
+
+

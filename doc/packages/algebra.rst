@@ -322,9 +322,8 @@ Syntax
      cmp := "\ne" =># '(nos _1)'; 
      cmp := "\neq" =># '(nos _1)'; 
    }
-   @
-   
-   
+
+
 
 Partial Order
 -------------
@@ -591,8 +590,7 @@ the functions from class  :code:`Eq`.
      proc pluseq(px:&t, y:t) {  += (px,y); }
      proc  minuseq(px:&t, y:t) { -= (px,y); }
    }
-   @
-   
+
 
 Notation
 --------
@@ -1088,8 +1086,7 @@ To be moved. Folds over streams.
     
    }
    
-   @
-   
+
 
 Monad
 =====

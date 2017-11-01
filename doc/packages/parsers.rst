@@ -626,8 +626,7 @@ Chips to providing parsing functions.
      => left_recursion_elimination_step fresh Empty[pgramentry_t] right;
    
    } // class
-   @
-   
+
 
 .. code-block:: text
 
@@ -689,8 +688,7 @@ Chips to providing parsing functions.
    
    
    }
-   @
-   
+
 
 .. code-block:: felix
 

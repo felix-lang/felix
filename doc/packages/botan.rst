@@ -30,8 +30,7 @@ Random number generators.
        "$1->randomize_with_input($2,$3);"
      ;
    }}
-   @
-   
+
 
 Big Integers
 ============
@@ -128,8 +127,7 @@ Big Integers
      fun power_mod: bigint * bigint * bigint -> bigint = "Botan::power_mod($1,$2,$3)";
    }}
    
-   @
-   
+
 
 Hash functions
 ==============
@@ -145,8 +143,7 @@ Hash functions
      proc final: BufferedComputation * +byte = "$1->final($2);";
    
    }}
-   @
-   
+
 
 .. code-block:: text
 
@@ -159,33 +156,29 @@ Hash functions
    provides_dlib: -L/usr/local/lib -lbotan-2
    provides_slib: -L/usr/local/lib -lbotan-2
    cflags: -I/usr/local/include/botan-2.0
-   @
-   
+
 
 .. code-block:: text
 
    Requires: botan
    includes: '"botan/rng.h"'
    cflags: -I/usr/local/include/botan-2.0
-   @
-   
-   
+
+
 
 .. code-block:: text
 
    Requires: botan
    includes: '"botan/system_rng.h"'
    cflags: -I/usr/local/include/botan-2.0
-   @
-   
+
 
 .. code-block:: text
 
    Requires: botan
    includes: '"botan/bigint.h"' '"botan/numthry.h"'
    cflags: -I/usr/local/include/botan-2.0
-   @
-   
-   
-   
-   
+
+
+
+

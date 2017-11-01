@@ -22,7 +22,6 @@ The top level library module.
 
    header '#include "flx_rtl_config.hpp"';
    include "std/__init__";
-   @
 
 Default includes for Standard library.
 ======================================
@@ -81,8 +80,7 @@ Default includes for Standard library.
    // Felix (implementation exposure)
    include "std/felix/__init__";
    
-   @
-   
+
 
 C stuff
 =======
@@ -100,8 +98,7 @@ Structure of C sublibrary.
    include "std/c/c_hack";
    include "std/c/shared_ptr";
    
-   @
-   
+
 
 Data types
 ==========
@@ -143,8 +140,7 @@ Structure of datatype library.
    
    // tree
    //include "std/datatype/avl";
-   @
-   
+
 
 Posix
 =====
@@ -166,8 +162,7 @@ Structure of Posix support library.
    include "std/posix/shell";
    include "std/posix/faio_posix";
    include "std/posix/mmap";
-   @
-   
+
 
 Win32
 =====
@@ -189,8 +184,7 @@ Structure of Win32 library.
    include "std/win32/signal";
    include "std/win32/faio_win32";
    include "std/win32/win32_headers";
-   @
-   
+
 
 Platform independent Computation enforcement
 ============================================
@@ -207,8 +201,7 @@ compilations requiring platform specific macros.
    // Platform independent compilation enforced by
    // failing to set any platform macros.
    macro val PLAT_INDEP = 1;
-   @
-   
+
 
 C hackery
 =========
@@ -287,8 +280,7 @@ Hackery for mapping between Felix and C/C++.
    }
    
    
-   @
-   
+
 
 C stdlib Rand
 =============
@@ -312,8 +304,7 @@ Just to get random functions.
    }
    
    
-   @
-   
+
 
 OSX platform tag
 ================
@@ -324,8 +315,7 @@ OSX platform tag
    
    struct Osx{};
    include "std/posix/__init__";
-   @
-   
+
 
 Linux specifics
 ===============
@@ -339,8 +329,7 @@ Linux specifics
      requires package "plat_linux";
      fun get_cpu_nr: 1 -> int;
    }
-   @
-   
+
 
 Linux smap
 ==========

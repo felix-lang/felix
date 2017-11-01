@@ -26,7 +26,6 @@ Toolchain support
      debugln : string -> void
    );
    
-   @
 
 .. code-block:: felix
 
@@ -79,7 +78,6 @@ Toolchain support
      debug_flags : 1 -> list[string];
    }
    
-   @
 
 Generic C/C++ compiler
 ======================
@@ -358,8 +356,7 @@ gcc and clang basically.
    
    }
    
-   @
-   
+
 
 Dependency Checker
 ==================
@@ -470,8 +467,7 @@ by the underlying compiler, which must support this ability.
      }
    
    
-   @
-   
+
 
 Library Builder
 ===============
@@ -685,8 +681,7 @@ specification. Used by the flx_build_rtl tool.
      }
    }
    
-   @
-   
+
 
 Toolchains
 ==========
@@ -942,8 +937,7 @@ Object for gcc on Linux
      }
    }
    
-   @
-   
+
 
 Object for gcc on OSX
 ---------------------
@@ -1182,8 +1176,7 @@ Object for gcc on OSX
      }
    }
    
-   @
-   
+
 
 Object for clang on Linux
 -------------------------
@@ -1435,8 +1428,7 @@ Object for clang on Linux
      }
    }
    
-   @
-   
+
 
 Object for clang on OSX
 -----------------------
@@ -1681,7 +1673,6 @@ Object for clang on OSX
      }
    }
    
-   @
 
 Cygwin interface.
 -----------------
@@ -1729,8 +1720,7 @@ Cygwin interface.
         return t;
      }
    }
-   @
-   
+
 
 Cygwin config
 -------------
@@ -1741,9 +1731,8 @@ Cygwin config
    Descriptrion: Cygwin Dll
    provides_dlib: -L/usr/bin -lcygwin
    includes: '"sys/cygwin.h"' 
-   @
-   
-   
+
+
 
 Object for MSVC++ on Windows
 ----------------------------
@@ -1963,8 +1952,7 @@ Object for MSVC++ on Windows
      }
    }
    
-   @
-   
+
 
 Object for clang on iOS
 -----------------------
@@ -2241,8 +2229,7 @@ Object for clang on iOS
      return toolchain_clang_apple_iOS_maker ("iphonesimulator",(["x86_64","i386"])) config;
    }
    
-   @
-   
+
 
 Toolchain Plugins
 =================
@@ -2275,8 +2262,7 @@ iPhone Plugin
    }
    
    export fun setup of (string) as "toolchain_iphoneos_setup";
-   @
-   
+
 
 .. code-block:: felix
 
@@ -2293,10 +2279,9 @@ iPhone Plugin
    }
    
    export fun setup of (string) as "toolchain_iphonesimulator_setup";
-   @
-   
-   
-   
+
+
+
 
 Plugin for gcc on Linux 
 ------------------------
@@ -2316,8 +2301,7 @@ Plugin for gcc on Linux
    
    export fun setup of (string) as "toolchain_gcc_linux_setup";
    
-   @
-   
+
 
 Plugin for gcc on OSX
 ---------------------
@@ -2337,8 +2321,7 @@ Plugin for gcc on OSX
    
    export fun setup of (string) as "toolchain_gcc_osx_setup";
    
-   @
-   
+
 
 Plugin for clang on Linux 
 --------------------------
@@ -2361,8 +2344,7 @@ Plugin for clang on Linux
    
    export fun setup of (string) as "toolchain_clang_linux_setup";
    
-   @
-   
+
 
 Plugin for clang on OSX
 -----------------------
@@ -2383,8 +2365,7 @@ Plugin for clang on OSX
    }
    
    export fun setup of (string) as "toolchain_clang_osx_setup";
-   @
-   
+
 
 MSVC++ Plugin for Win32
 -----------------------
@@ -2405,8 +2386,7 @@ MSVC++ Plugin for Win32
    }
    
    export fun setup of (string) as "toolchain_msvc_win32_setup";
-   @
-   
+
 
 Flx Plugin
 ==========
@@ -2418,6 +2398,5 @@ A wrapper around "flx" command.
    include "std/felix/flx/flx";
    export fun flx_plugin_setup(x:string)=>0;
    export fun flx_plugin (args:list[string]) = { return Flx::runflx (args); }
-   @
-   
-   
+
+

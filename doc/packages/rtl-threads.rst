@@ -165,7 +165,6 @@ threads and pchannels for synchronisation.
    }}
    #endif
    
-   @
 
 .. code-block:: cpp
 
@@ -361,7 +360,6 @@ threads and pchannels for synchronisation.
    }}
    
    #endif
-   @
 
 .. code-block:: cpp
 
@@ -560,8 +558,7 @@ threads and pchannels for synchronisation.
    }}
    
    #endif
-   @
-   
+
 
 Condition Variable
 ==================
@@ -596,7 +593,6 @@ Condition Variable
    
    }}
    #endif
-   @
 
 .. code-block:: cpp
 
@@ -639,8 +635,7 @@ Condition Variable
    flx_condv_t::~flx_condv_t() { tc->unregister_world_stop_notifier(this); }
    
    }}
-   @
-   
+
 
 Monitor
 =======
@@ -683,7 +678,6 @@ Monitor
    }} // namespace pthread, flx
    #endif
    
-   @
 
 .. code-block:: cpp
 
@@ -753,7 +747,6 @@ Monitor
    
    }}
    
-   @
 
 Shared Counter
 ==============
@@ -805,7 +798,6 @@ Shared Counter
    
    #endif
    
-   @
 
 .. code-block:: cpp
 
@@ -890,7 +882,6 @@ Shared Counter
    
    }}
    
-   @
 
 Shared Boolean
 ==============
@@ -922,7 +913,6 @@ Shared Boolean
    }} // namespace pthread, flx
    #endif // __FLX_PTHREAD_WAIT_BOOL_H__
    
-   @
 
 .. code-block:: cpp
 
@@ -964,7 +954,6 @@ Shared Boolean
    
    } }
    
-   @
 
 Thread Control
 ==============
@@ -1288,8 +1277,7 @@ Thread Control
    }
    
    }}
-   @
-   
+
 
 New bound queue
 ---------------
@@ -1343,8 +1331,7 @@ A lock free thread safe bag for holding non-null pointers.
    
    }} // namespaces
    #endif
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -1432,8 +1419,7 @@ A lock free thread safe bag for holding non-null pointers.
        ++throughput;
        return d;
      }
-   @
-   
+
 
 .. code-block:: felix
 
@@ -1455,8 +1441,7 @@ A lock free thread safe bag for holding non-null pointers.
      gen len : lf_bag -> size = "$1->n"; 
      gen used : lf_bag -> size = "$1->used.load()"; 
    }
-   @
-   
+
 
 Bound Queue
 ===========
@@ -1517,8 +1502,7 @@ Bound Queue
    }} // namespace pthread, flx
    #endif
    
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -1672,15 +1656,13 @@ Bound Queue
    }}
    
    
-   @
-   
+
 
 .. code-block:: text
 
    Name: Pthread Bound Queue
    Requires: flx_pthread flx_gc
    includes: '"pthread_bound_queue.hpp"'
-   @
 
 Thread Safe Collector.
 ======================
@@ -1735,8 +1717,7 @@ its base with locks as required.
    }}} // end namespaces
    
    #endif
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -1847,8 +1828,7 @@ also do the check, to ensure blocked threads stay blocked.
    };
    }}
    #endif
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -1869,8 +1849,7 @@ also do the check, to ensure blocked threads stay blocked.
    }
    
    }}
-   @
-   
+
 
 .. code-block:: felix
 
@@ -1884,7 +1863,6 @@ also do the check, to ensure blocked threads stay blocked.
       proc unlock : fast_lock = "$1->unlock();";
    
    }
-   @
 
 Build System
 ============
@@ -1944,8 +1922,7 @@ Build System
                external_libs=external_libs,
                lflags=flags))
    
-   @
-   
+
 
 Configuration Database
 ======================
@@ -1964,8 +1941,7 @@ Configuration Database
    macros: BUILD_PTHREAD
    srcdir: src/pthread
    src: .*\.cpp
-   @
-   
+
 
 .. code-block:: text
 
@@ -1980,23 +1956,20 @@ Configuration Database
    macros: BUILD_PTHREAD
    srcdir: src/pthread
    src: .*\.cpp
-   @
-   
+
 
 .. code-block:: text
 
    Description: pthread support defaults to no requirements
-   @
-   
+
 
 .. code-block:: text
 
    Description: Linux pthread support
    requires_dlibs: -lpthread
    requires_slibs: -lpthread
-   @
-   
-   
+
+
 
 .. code-block:: cpp
 
@@ -2009,7 +1982,6 @@ Configuration Database
    #define PTHREAD_EXTERN FLX_IMPORT
    #endif
    #endif
-   @
-   
-   
-   
+
+
+

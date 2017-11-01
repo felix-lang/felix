@@ -40,7 +40,6 @@ General Numeric operations.
      proc /= : &t * t = "*$1/=$2;";
      proc %= : &t * t = "*$1=fmod($1,$2);";
    }
-   @
 
 Floating Numbers.
 =================

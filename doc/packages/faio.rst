@@ -45,8 +45,7 @@ Faio Driver
    
    }}
    #endif
-   @
-   
+
 
 Faio I/O
 ========
@@ -129,7 +128,6 @@ Faio I/O
    
    }}
    #endif
-   @
 
 .. code-block:: cpp
 
@@ -349,7 +347,6 @@ Faio I/O
    }
    
    }}
-   @
 
 .. code-block:: cpp
 
@@ -478,7 +475,6 @@ Faio I/O
    
    }}
    #endif  // __DWINIO__
-   @
 
 .. code-block:: cpp
 
@@ -601,8 +597,7 @@ Faio I/O
    }
    
    }}
-   @
-   
+
 
 Faio Timer
 ==========
@@ -645,7 +640,6 @@ Faio Timer
    
    }} // namespace faio, flx
    #endif
-   @
 
 .. code-block:: cpp
 
@@ -667,8 +661,7 @@ Faio Timer
    }
    
    }}
-   @
-   
+
 
 .. code-block:: text
 
@@ -676,8 +669,7 @@ Faio Timer
    Description: Real time clock services
    Requires: faio
    includes:  '"faio_timer.hpp"'
-   @
-   
+
 
 .. code-block:: text
 
@@ -692,8 +684,7 @@ Faio Timer
    srcdir: src/faio
    src: faio_(timer|posixio)\.cpp
    headers: faio_(drv|timer|posixio)\.hpp
-   @
-   
+
 
 .. code-block:: text
 
@@ -708,8 +699,7 @@ Faio Timer
    srcdir: src/faio
    src: faio_(timer|winio)\.cpp
    headers: faio_(drv|timer|winio)\.hpp
-   @
-   
+
 
 .. code-block:: python
 
@@ -763,8 +753,7 @@ Faio Timer
        return
        #return buildsystem.copy_flxs_to_lib(phase.ctx,
        #    Path('src/faio/*.flx').glob())
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -777,6 +766,5 @@ Faio Timer
    #define FAIO_EXTERN FLX_IMPORT
    #endif
    #endif
-   @
-   
-   
+
+

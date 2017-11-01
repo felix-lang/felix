@@ -107,8 +107,7 @@ String utilities
    }}}
    
    #endif
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -270,8 +269,7 @@ String utilities
    #endif
    
    }}}
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -284,8 +282,7 @@ String utilities
    #define STRUTIL_EXTERN FLX_IMPORT
    #endif
    #endif
-   @
-   
+
 
 .. code-block:: text
 
@@ -298,8 +295,7 @@ String utilities
    library: flx_strutil
    srcdir: src/strutil
    src: .*\.cpp
-   @
-   
+
 
 .. code-block:: text
 
@@ -312,8 +308,7 @@ String utilities
    library: flx_strutil
    srcdir: src/strutil
    src: .*\.cpp
-   @
-   
+
 
 UTF codec.
 ----------
@@ -331,8 +326,7 @@ UTF codec.
       STRUTIL_EXTERN std::string utf8(unsigned long);
    }}}
    #endif
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -390,8 +384,7 @@ UTF codec.
        return s;
      }
    }}}
-   @
-   
+
 
 Config database entry 
 ======================
@@ -403,8 +396,7 @@ Config database entry
    Description: Internationalisation support, Unicode, utf8
    Requires: flx_strutil
    includes: '"flx_i18n.hpp"'
-   @
-   
+
 
 .. code-block:: python
 
@@ -432,6 +424,5 @@ Config database entry
            shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
                includes=includes,
                macros=macros))
-   @
-   
-   
+
+

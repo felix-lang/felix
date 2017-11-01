@@ -112,8 +112,7 @@ off a synchronous channel into the active queue.
    }}
    
    #endif
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -412,6 +411,5 @@ off a synchronous channel into the active queue.
    }
    
    }}
-   @
-   
-   
+
+

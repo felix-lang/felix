@@ -648,8 +648,7 @@ Zero or more matcher
       wire chans.out to Ass.out
     endcircuit
    }
-   @
-   
+
 
 .. code-block:: felix
 

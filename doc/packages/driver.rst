@@ -26,8 +26,7 @@ translation unit.
 
    int felix_run(int, char**);
    int felix_arun(int, char**);
-   @
-   
+
 
 Implementation
 --------------
@@ -385,7 +384,6 @@ static_link() method (although it doesn't check for NULLs).
    
    }} // namespaces
    
-   @
 
 Mainline
 --------
@@ -455,8 +453,7 @@ async I/O library DLL cannot be found at run time.
    #define FLX_SUPPORT_ASYNC 1
    #define FELIX_MAIN felix_arun
    #include "flx_run.include"
-   @
-   
+
 
 Static link loader with async support
 -------------------------------------
@@ -473,8 +470,7 @@ to be linked in, however it is only activated on demand.
    #define FELIX_MAIN felix_arun
    #define FLX_BUILD_FOR_STATIC_LINK
    #include "flx_run.include"
-   @
-   
+
 
 Dynamic link loader with async support
 --------------------------------------
@@ -489,8 +485,7 @@ loading a Felix program built as a shared library.
    #define FLX_SUPPORT_ASYNC 0
    #define FELIX_MAIN felix_run
    #include "flx_run.include"
-   @
-   
+
 
 Static link loader without async support
 ----------------------------------------
@@ -505,8 +500,7 @@ running a Felix program built as an object file.
    #define FELIX_MAIN felix_run
    #define FLX_BUILD_FOR_STATIC_LINK
    #include "flx_run.include"
-   @
-   
+
 
 Traditional Mainline with async support
 ---------------------------------------
@@ -531,8 +525,7 @@ to create a static link executable with async support.
      #endif
      return felix_arun(argc, argv);
    }
-   @
-   
+
 
 Traditional Mainline without async support
 ------------------------------------------
@@ -559,8 +552,7 @@ to create a static link executable without async support.
      //fprintf(stderr,"Felix mainline flx_run_main starts!\n");
      return felix_run(argc, argv);
    }
-   @
-   
+
 
 Driver executable config
 ========================
@@ -574,8 +566,7 @@ Driver executable config
    flx_requires_driver: flx_arun
    srcdir: src/flx_drivers
    src: flx_arun_lib\.cpp|flx_arun_main\.cxx
-   @
-   
+
 
 .. code-block:: text
 
@@ -584,8 +575,7 @@ Driver executable config
    Requires: flx_pthread flx flx_gc flx_dynlink flx_strutil
    srcdir: src/flx_drivers
    src: flx_run_lib\.cpp|flx_run_main\.cxx
-   @
-   
+
 
 .. code-block:: text
 
@@ -595,8 +585,7 @@ Driver executable config
    Requires: flx flx_gc dl
    srcdir: src/flx_drivers
    src: flx_run_lib\.cpp|flx_run_main\.cxx
-   @
-   
+
 
 Build Code
 ==========
@@ -750,6 +739,5 @@ Build Code
            flx_arun_main_dynamic=flx_arun_main_dynamic,
            flx_arun_exe=flx_arun_exe,
        )
-   @
-   
-   
+
+

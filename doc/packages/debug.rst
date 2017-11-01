@@ -75,8 +75,7 @@ The translation from the C macros used are done by the C++ compiler.
    {
       satom := "HERE" =># "`(ast_here ,_sr)";
    }
-   @
-   
+
 
 UDP based trace support
 =======================
@@ -93,7 +92,6 @@ This stuff only on Posix so far.
      RTL_EXTERN void send_udp_trace_message (::std::string);
    }}
    
-   @
 
 .. code-block:: cpp
 
@@ -161,8 +159,7 @@ This stuff only on Posix so far.
    }
    }} // namespaces
    #endif
-   @
-   
+
 
 Simple UDP Trace monitor
 ------------------------

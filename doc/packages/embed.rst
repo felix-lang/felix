@@ -89,8 +89,7 @@ used to initiate a Felix world.
    
    }} // namespaces
    #endif
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -296,8 +295,7 @@ a Felix world.
    
    }} // namespaces
    #endif //__flx_world_H_
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -751,8 +749,7 @@ The Asychronous Support System
    
    }} // namespaces
    #endif //__flx_async_world_H_
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -1072,8 +1069,7 @@ not the implementation.
    }}
    
    #endif
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -1186,8 +1182,7 @@ not the implementation.
    }
    
    
-   @
-   
+
 
 Config
 ======
@@ -1205,8 +1200,7 @@ Config
    library: flx_async
    srcdir: src/flx_async
    src: .*\.cpp
-   @
-   
+
 
 .. code-block:: text
 
@@ -1220,8 +1214,7 @@ Config
    library: flx_async
    srcdir: src/flx_async
    src: .*\.cpp
-   @
-   
+
 
 .. code-block:: python
 
@@ -1263,8 +1256,7 @@ Config
                includes=includes,
                macros=macros,
                libs=[lib.shared for lib in libs]))
-   @
-   
-   
-   
-   
+
+
+
+

@@ -208,8 +208,7 @@ of Felix may not have all the required capabilities.
        s
      ; 
    }
-   @
-   
+
 
 Resource files
 ==============
@@ -221,8 +220,7 @@ Resource files
    Location: Part of the standard library
    provides_slib: -lrparse_static
    provides_dlib: -lrparse_dynamic
-   @
-   
+
 
 .. code-block:: text
 
@@ -230,8 +228,7 @@ Resource files
    Location: Part of the standard library
    provides_slib: /DEFAULTLIB:librparse_static
    provides_dlib: /DEFAULTLIB:librparse_dynamic
-   @
-   
+
 
 Interim Build script.
 =====================
@@ -251,9 +248,8 @@ Until a proper Felix tool can be organised!
    cp rparse/rparse.hpp build/release/host/lib/rtl
    cp rparse/rparse.includes build/release/host/lib/rtl
    cp src/config/unix/rparse.fpc build/release/host/config
-   @
-   
-   
+
+
 
 test
 ====
@@ -267,13 +263,11 @@ requjirements! So we have to add it manually!
    var s = 'Hello "world ish" stuff'; 
    var k = rparse_interface::default_respectful_split s;
    println$ s " splits to " + k.str;
-   @
-   
+
 
 .. code-block:: text
 
    build/release/host/bin/flx --felix=build.fpc --static --pkg=rparse testrparse.flx
    build/release/host/bin/flx --felix=build.fpc --pkg=rparse testrparse.flx
-   @
-   
-   
+
+

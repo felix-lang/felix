@@ -51,8 +51,7 @@ Note: regular expressions must match completely!
    //println$ "Dir=" dir;
    //println$ "Files in dir " + dir + "=";
    iter (proc (s:string) { println s; }) (FileSystem::regfilesin (dir, regex));
-   @
-   
+
 
 File copy  :code:`flx_cp`.
 --------------------------
@@ -110,8 +109,7 @@ Note: regular expressions must match completely!
    var re = Re2::RE2 regex;
    CopyFiles::copyfiles (dir, re, target, live, verbose);
    System::exit(0);
-   @
-   
+
 
 .. code-block:: felix
 
@@ -225,8 +223,7 @@ Note: regular expressions must match completely!
        copyfiles(basedir, RE2 re, tpat, live, verbose)
      ;
    }
-   @
-   
+
 
 Searching for strings  :code:`flx_grep`.
 ----------------------------------------
@@ -274,8 +271,7 @@ completely are listed.
    done
    
    
-   @
-   
+
 
 Replace substrings in a file.
 -----------------------------
@@ -303,8 +299,7 @@ to standard output.
    var result = search_and_replace (x, 0uz, cre, r);
    print result;
    
-   @
-   
+
 
 Batch Replace
 -------------
@@ -367,8 +362,7 @@ specified by a replacement.
    var filere = Re2::RE2 regex;
    CopyFiles::processfiles sandr (dir, filere, target, live, verbose);
    System::exit(0);
-   @
-   
+
 
 Renumbering.
 ------------
@@ -457,6 +451,5 @@ However it can be used on any sequenced file set.
      }) 
    files;
    
-   @
-   
-   
+
+

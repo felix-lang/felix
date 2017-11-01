@@ -23,96 +23,93 @@ Judy Builder
    
    # ------------------------------------------------------------------------------
    
-   @@fbuild.db.caches
-   def build_judytables(ctx, tablegen:fbuild.db.SRC, dst) -> fbuild.db.DST:
-       """Create the judytable generator executable."""
+def build_judytables(ctx, tablegen:fbuild.db.SRC, dst) -> fbuild.db.DST:
+    """Create the judytable generator executable."""
+
+    # Make sure the directory exists.
+    dst.parent.makedirs()
+
+    # We have to run the tablegen from the working directory to get the files
+    # generated in the right place.
+    ctx.execute(tablegen.abspath(),
+        msg1=tablegen.name,
+        msg2=dst,
+        cwd=dst.parent,
+        color='yellow')
+
+    return dst
+
+def prepend_macros(ctx, src, macros, dst) -> fbuild.db.DST:
+    """Generate a new version of the input file which has the given macros added to the top as #define's"""
+    # Make sure the directory exists.
+    dst.parent.makedirs()
+    src = Path(src)
+    dst = Path(dst)
+    outfile = open(dst, 'wb')
+    try: 
+        for macro in macros:
+            outfile.write(bytes('#ifndef '+macro+'\n'+
+                                '#define '+macro+' 1\n'+
+                                '#endif\n', 'ascii'))
+        outfile.write(bytes('#include "../JudyCommon/'+src.name+'"', 'ascii'))
+        ctx.logger.check(' * generate', '%s as #define %s and #include %s' % (dst, ','.join(macros), src), color='yellow')
+    finally: outfile.close()
+    return dst
+    
+    
+# ------------------------------------------------------------------------------
+
+def build_runtime(phase):
+    """
+    Builds the judy runtime library, and returns the static and shared
+    library versions.
+    """
+
+    path = Path(phase.ctx.buildroot/'share'/'src/judy/src')
+
+    # Copy the header into the runtime library.
+    buildsystem.copy_to(phase.ctx,
+        phase.ctx.buildroot / 'share/lib/rtl',
+        [path / 'Judy.h'])
+
+    types = config_call('fbuild.config.c.c99.types',
+        phase.platform, phase.c.static)
+
+    #if types.voidp.size == 8:
+    macros = ['JU_64BIT']
+    print ("64 bit JUDY")
    
-       # Make sure the directory exists.
-       dst.parent.makedirs()
-   
-       # We have to run the tablegen from the working directory to get the files
-       # generated in the right place.
-       ctx.execute(tablegen.abspath(),
-           msg1=tablegen.name,
-           msg2=dst,
-           cwd=dst.parent,
-           color='yellow')
-   
-       return dst
-   
-   @@fbuild.db.caches
-   def prepend_macros(ctx, src, macros, dst) -> fbuild.db.DST:
-       """Generate a new version of the input file which has the given macros added to the top as #define's"""
-       # Make sure the directory exists.
-       dst.parent.makedirs()
-       src = Path(src)
-       dst = Path(dst)
-       outfile = open(dst, 'wb')
-       try: 
-           for macro in macros:
-               outfile.write(bytes('#ifndef '+macro+'\n'+
-                                   '#define '+macro+' 1\n'+
-                                   '#endif\n', 'ascii'))
-           outfile.write(bytes('#include "../JudyCommon/'+src.name+'"', 'ascii'))
-           ctx.logger.check(' * generate', '%s as #define %s and #include %s' % (dst, ','.join(macros), src), color='yellow')
-       finally: outfile.close()
-       return dst
-       
-       
-   # ------------------------------------------------------------------------------
-   
-   def build_runtime(phase):
-       """
-       Builds the judy runtime library, and returns the static and shared
-       library versions.
-       """
-   
-       path = Path(phase.ctx.buildroot/'share'/'src/judy/src')
-   
-       # Copy the header into the runtime library.
-       buildsystem.copy_to(phase.ctx,
-           phase.ctx.buildroot / 'share/lib/rtl',
-           [path / 'Judy.h'])
-   
-       types = config_call('fbuild.config.c.c99.types',
-           phase.platform, phase.c.static)
-   
-       #if types.voidp.size == 8:
-       macros = ['JU_64BIT']
-       print ("64 bit JUDY")
-      
-       macros.append('BUILD_JUDY') #Apply this to all source files.
-   
-       #macros.append('DEBUG') #Apply this to all source files.
-       # above fails with link error because the debug routines
-       # simply don't exist
-   
-       srcs =  [
-           path / 'JudyCommon/JudyMalloc.c',
-           path / 'JudySL/JudySL.c',
-           path / 'JudyHS/JudyHS.c'] + (
-           path / 'Judy1' / '*.c').glob() + (
-           path / 'JudyL' / '*.c').glob()
-   
-       includes = [path, 
-                   path / 'JudyCommon', 
-                   path / 'JudyL', 
-                   path / 'Judy1']
-       
-       static = buildsystem.build_c_static_lib(phase, 'host/lib/rtl/judy',
-           srcs=srcs,
-           macros=macros,
-           includes=includes)
-   
-       shared = buildsystem.build_c_shared_lib(phase, 'host/lib/rtl/judy',
-           srcs=srcs,
-           macros=macros,
-           includes=includes)
-   
-       return Record(static=static, shared=shared)
-   
-   @
-   
+    macros.append('BUILD_JUDY') #Apply this to all source files.
+
+    #macros.append('DEBUG') #Apply this to all source files.
+    # above fails with link error because the debug routines
+    # simply don't exist
+
+    srcs =  [
+        path / 'JudyCommon/JudyMalloc.c',
+        path / 'JudySL/JudySL.c',
+        path / 'JudyHS/JudyHS.c'] + (
+        path / 'Judy1' / '*.c').glob() + (
+        path / 'JudyL' / '*.c').glob()
+
+    includes = [path, 
+                path / 'JudyCommon', 
+                path / 'JudyL', 
+                path / 'Judy1']
+    
+    static = buildsystem.build_c_static_lib(phase, 'host/lib/rtl/judy',
+        srcs=srcs,
+        macros=macros,
+        includes=includes)
+
+    shared = buildsystem.build_c_shared_lib(phase, 'host/lib/rtl/judy',
+        srcs=srcs,
+        macros=macros,
+        includes=includes)
+
+    return Record(static=static, shared=shared)
+
+
 
 .. code-block:: text
 
@@ -127,8 +124,7 @@ Judy Builder
    headers: Judy\.h
    src: (JudyCommon/JudyMalloc|JudySL/.*|JudyHS/.*|Judy1/.*|JudyL/.*)\.c
    build_includes: src/judy/src src/judy/src/Judy1 src/judy/src/JudyL src/judy/src/JudyHS src/judy/src/JudyCommon
-   @
-   
+
 
 .. code-block:: text
 
@@ -143,8 +139,7 @@ Judy Builder
    headers: Judy\.h
    src: (JudyCommon/JudyMalloc|JudySL/.*|JudyHS/.*|Judy1/.*|JudyL/.*)\.c
    build_includes: src/judy/src src/judy/src/Judy1 src/judy/src/JudyL src/judy/src/JudyHS src/judy/src/JudyCommon
-   @
-   
+
 
 .. code-block:: text
 
@@ -159,8 +154,7 @@ Judy Builder
    headers: Judy\.h
    src: (JudyCommon\\JudyMalloc|JudySL\\.*|JudyHS\\.*|Judy1\\.*|JudyL\\.*)\.c
    build_includes: src\judy\src src\judy\src\Judy1 src\judy\src\JudyL src\judy\src\JudyHS src\judy\src\JudyCommon
-   @
-   
-   
-   
-   
+
+
+
+

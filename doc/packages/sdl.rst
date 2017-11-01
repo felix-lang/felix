@@ -3770,8 +3770,7 @@ flx_faio_sdl.flx
        ignore(SDL_UnlockMutex(m));
      }
    }
-   @
-   
+
 
 Package Configuration
 =====================
@@ -3786,7 +3785,6 @@ Package Configuration
    provides_dlib: -L/usr/local/lib -lSDL2
    provides_slib: -L/usr/local/lib -lSDL2
    
-   @
 
 .. code-block:: text
 
@@ -3799,7 +3797,6 @@ Package Configuration
    requires_dlibs: -ljpeg -ltiff -lpng
    requires_slibs: -ljpeg -ltiff -lpng
    
-   @
 
 .. code-block:: text
 
@@ -3812,7 +3809,6 @@ Package Configuration
    requires_dlibs: -lfreetype
    requires_slibs: -lfreetype
    
-   @
 
 .. code-block:: text
 
@@ -3825,7 +3821,6 @@ Package Configuration
    requires_dlibs: ---framework=OpenGL
    requires_slibs: ---framework=OpenGL
    
-   @
 
 .. code-block:: text
 
@@ -3836,7 +3831,6 @@ Package Configuration
    provides_dlib: -L/usr/local/lib -lSDL2_image
    provides_slib: -L/usr/local/lib -lSDL2_image
    
-   @
 
 .. code-block:: text
 
@@ -3848,8 +3842,7 @@ Package Configuration
    provides_slib: -L/usr/local/lib -lSDL2_ttf
    requires_dlibs: -lfreetype
    requires_slibs: -lfreetype
-   @
-   
+
 
 .. code-block:: text
 
@@ -3861,7 +3854,6 @@ Package Configuration
    provides_slib: -L/usr/local/lib -lSDL2_gfx
    
    
-   @
 
 .. code-block:: text
 
@@ -3871,7 +3863,6 @@ Package Configuration
    includes: '"SDL.h"'
    provides_dlib: /DEFAULTLIB:\Users\skaller\Desktop\SDL2-2.0.3\lib\x64\SDL2
    
-   @
 
 .. code-block:: text
 
@@ -3881,7 +3872,6 @@ Package Configuration
    includes: '"SDL_image.h"'
    provides_dlib: /DEFAULTLIB:\Users\skaller\Desktop\SDL2_image-2.0.0\lib\x64\SDL2_image
    
-   @
 
 .. code-block:: text
 
@@ -3891,6 +3881,5 @@ Package Configuration
    includes: '"SDL_ttf.h"'
    provides_dlib: /DEFAULTLIB:\Users\skaller\Desktop\SDL2_ttf-2.0.12\lib\x64\SDL2_ttf
    
-   @
-   
-   
+
+

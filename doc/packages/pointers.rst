@@ -282,8 +282,7 @@ Conversions
    
    open[T] Eq[carray[T]];
    open[T] Tord[carray[T]];
-   @
-   
+
 
 .. code-block:: felix
 
@@ -298,7 +297,6 @@ Conversions
      println$  a.[i], *(a+i), a.i;
    done
    free a;
-   @
 
 .. code-block:: text
 
@@ -312,8 +310,7 @@ Conversions
    (50, 50, 50)
    (65, 65, 65)
    (82, 82, 82)
-   @
-   
+
 
 Array sort
 ==========
@@ -393,8 +390,7 @@ Reference counting pointer.
       fun unique[T] : shared_ptr[T] -> bool = "$1.unique";
       fun is_null[T] : shared_ptr[T] -> bool = "(bool)$1";
    }
-   @
-   
+
 
 MMap
 ====

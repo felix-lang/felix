@@ -265,16 +265,14 @@ ucstr_prim_01.flx
      delete s;
    }
    test();
-   @
 
 .. code-block:: text
 
    hello
    eello
-   @
-   
-   
-   
+
+
+
 
 Unique Counted Strings 
 =======================
@@ -498,13 +496,11 @@ ustr_prim_01.flx
      delete s;
    }
    test();
-   @
 
 .. code-block:: text
 
    hello
    eello
-   @
-   
-   
-   
+
+
+

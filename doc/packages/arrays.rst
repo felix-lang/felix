@@ -66,7 +66,6 @@ an integer to an array is translated into a
 call on the get method:
   n a -> get (a,n)
   a. n -> n a -> get (a,n)
-
 Note that the more usual reverse application using
 operator dot  :code:`.` is also made available this way.
 

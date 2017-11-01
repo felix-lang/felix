@@ -97,7 +97,6 @@ We provide a min-heap using a  :code:`darray` for storage.
      }
    
    }
-   @
 
 AVL tree
 ========

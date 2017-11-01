@@ -491,8 +491,7 @@ schannel types.
    
    } // class DuplexSchannels
    
-   @
-   Let's now rewrite our example:
+Let's now rewrite our example:
 
 .. code-block:: felix
 
@@ -505,15 +504,13 @@ schannel types.
    var wr, rw = mk_duplex_schannel_pair[string,int]();
    spawn_fthread$ int_to_string wr;
    println$ rw 42;
-   @
 
 .. code-block:: text
 
    42
-   @
-   
-   Even more compactly:
-   
+
+Even more compactly:
+
 
 .. code-block:: felix
 
@@ -524,12 +521,10 @@ schannel types.
      write(ch, r);
    }
    println$ int_to_string 42;
-   @
 
 .. code-block:: text
 
    42
-   @
-   
-   
-   
+
+
+

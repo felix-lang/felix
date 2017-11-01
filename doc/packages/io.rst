@@ -49,8 +49,7 @@ debugging.
      RTL_EXTERN void writeln (::std::ostream*, ::std::string);
    }}}
    #endif
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -260,8 +259,7 @@ debugging.
        fi->write(eol,sizeof(eol));
      }
    }}}
-   @
-   
+
 
 .. code-block:: text
 
@@ -269,8 +267,7 @@ debugging.
    Description: I/O support
    includes: '"flx_ioutil.hpp"'
    Requires: flx
-   @
-   
+
 
 Standard Library Synopsis
 =========================
@@ -574,8 +571,7 @@ Simple Text I/O
    
    //$ Write space on cerr.
    proc espace() { space cstderr; }
-   @
-   
+
 
 Ansi Terminal
 =============
@@ -1119,8 +1115,7 @@ Posix sockets
        
    }
    
-   @
-   
+
 
 Windows sockets
 ===============
@@ -1198,8 +1193,7 @@ Windows sockets
        ;
      }
    }
-   @
-   
+
 
 Host sockets
 ============
@@ -1218,8 +1212,7 @@ Host sockets
         ERROR;
      done
    }
-   @
-   
+
 
 Demux: Felix Event notification service
 =======================================

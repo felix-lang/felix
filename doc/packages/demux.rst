@@ -22,7 +22,6 @@ Demux build harness
    srcdir: src/demux
    src: [^/\\]+\.cpp
    src: posix/.*\.cpp
-   @
 
 .. code-block:: text
 
@@ -42,7 +41,6 @@ Demux build harness
    src: posix/.*\.cpp
    src: poll/.*\.cpp
    
-   @
 
 .. code-block:: text
 
@@ -61,8 +59,7 @@ Demux build harness
    src: [^/\\]+\.cpp
    src: posix/.*\.cpp
    src: epoll/.*\.cpp
-   @
-   
+
 
 .. code-block:: text
 
@@ -81,7 +78,6 @@ Demux build harness
    src: [^/\\]+\.cpp
    src: posix/.*\.cpp
    src: evtport/.*\.cpp
-   @
 
 .. code-block:: text
 
@@ -100,7 +96,6 @@ Demux build harness
    src: [^/\\]+\.cpp
    src: posix/.*\.cpp
    src: kqueue/.*\.cpp
-   @
 
 .. code-block:: text
 
@@ -120,7 +115,6 @@ Demux build harness
    srcdir: src\demux
    src: [^\\]+\.cpp
    src: win\\.*\.cpp
-   @
 
 .. code-block:: text
 
@@ -140,7 +134,6 @@ Demux build harness
    srcdir: src/demux
    src: [^/\\]+\.cpp
    src: win/.*\.cpp
-   @
 
 .. code-block:: text
 
@@ -159,8 +152,7 @@ Demux build harness
    src: [^/\\]+\.cpp
    src: posix/.*\.cpp
    src: poll/.*\.cpp
-   @
-   
+
 
 .. code-block:: python
 
@@ -293,8 +285,7 @@ Demux build harness
        return buildsystem.copy_flxs_to_lib(phase.ctx,
            Path('src/demux/*.flx').glob())
    
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -307,5 +298,4 @@ Demux build harness
    #define DEMUX_EXTERN FLX_IMPORT
    #endif
    #endif
-   @
-   
+

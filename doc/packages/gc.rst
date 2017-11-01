@@ -165,9 +165,8 @@ provide one as pthreads are considered mandatory for Felix.
    };
    }}
    #endif
-   @
-   
-   
+
+
 
 Memory Management Abstraction Interface.
 ----------------------------------------
@@ -548,7 +547,6 @@ rules which result in a quite complex structure.
    );
    
    #endif
-   @
 
 .. code-block:: cpp
 
@@ -831,9 +829,8 @@ Memory Management Abstraction Implementation.
    )
    {
    }
-   @
-   
-   
+
+
 
 Collector interface.
 --------------------
@@ -2201,7 +2198,6 @@ Garbage Collector Interface
        requires property "needs_gc";
    
    }
-   @
 
 Rtti introspection
 ==================
@@ -2345,8 +2341,7 @@ Rtti introspection
      //$ required because an object of that type is allocated on the heap.
      gen link_shape[T]()= { var p: gc_shape_t; _link_shape[T] (&p); return p; }
    }
-   @
-   
+
 
 Low level Garbage Collector Access
 ==================================
@@ -2413,7 +2408,6 @@ Low level Garbage Collector Access
      proc print_pointer_data[T] (p:+T) => print_pointer_data (C_hack::cast[address] p);
    
    }
-   @
 
 Bootstrap Build System
 ======================
@@ -2454,8 +2448,7 @@ Bootstrap Build System
                includes=includes,
                macros=macros,
                libs=[lib.shared for lib in libs]))
-   @
-   
+
 
 Configuration Database Records
 ==============================
@@ -2474,8 +2467,7 @@ Configuration Database Records
    Requires: judy flx_exceptions
    srcdir: src/gc
    src: .*\.cpp
-   @
-   
+
 
 .. code-block:: text
 
@@ -2491,8 +2483,7 @@ Configuration Database Records
    Requires: judy flx_exceptions
    srcdir: src/gc
    src: .*\.cpp
-   @
-   
+
 
 .. code-block:: cpp
 
@@ -2505,5 +2496,4 @@ Configuration Database Records
    #define GC_EXTERN FLX_IMPORT
    #endif
    #endif
-   @
-   
+

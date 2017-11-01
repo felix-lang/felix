@@ -22,7 +22,6 @@ the /proc directory would make sense.
    #define __PLAT_LINUX_H__
    int get_cpu_nr();
    #endif
-   @
 
 .. code-block:: cpp
 
@@ -66,5 +65,4 @@ the /proc directory would make sense.
    
       return (cpu_nr + 1);
    }
-   @
-   
+

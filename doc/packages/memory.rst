@@ -67,8 +67,7 @@ Raw Address
    
    open Eq[byte];
    open Tord[address];
-   @
-   
+
 
 .. code-block:: felix
 

@@ -20,9 +20,8 @@ required too for font and image handling.
    include "sdl/SDL2";
    include "sdl/SDL_ttf";
    include "sdl/SDL_image";
-   @
-   
-   The basic SDL initialisation stuff.
+
+The basic SDL initialisation stuff.
 
 .. code-block:: felix
 
@@ -30,21 +29,20 @@ required too for font and image handling.
    include "gui/types";
    include "gui/events";
    include "gui/font";
-   @
-   Basic GUI abstractions. Felix uses the Model-View-Controller (MVC)
-   design idea. 
-   
-   The <em>model</em> is representation of the abstract state.
-   independent of the visual interface.
-   
-   The <em>view</em> provides the operations required to render
-   the abstract state onto a graphical surface.
-   
-   The <em>controller</em> is responsible for event management
-   and in particular state mutations and scheduling display
-   updates corresponding to them in the view, based on input
-   from the client mouse and keyboard.
-   
+Basic GUI abstractions. Felix uses the Model-View-Controller (MVC)
+design idea. 
+
+The <em>model</em> is representation of the abstract state.
+independent of the visual interface.
+
+The <em>view</em> provides the operations required to render
+the abstract state onto a graphical surface.
+
+The <em>controller</em> is responsible for event management
+and in particular state mutations and scheduling display
+updates corresponding to them in the view, based on input
+from the client mouse and keyboard.
+
 
 .. code-block:: felix
 
@@ -57,7 +55,6 @@ required too for font and image handling.
    include "gui/window_controller";
    include "gui/window_manager";
    
-   @
 
 Widgets
 -------
@@ -84,8 +81,7 @@ Buttons and menus.
 
    include "gui/button";
    include "gui/menu";
-   @
-   
+
 
 .. code-block:: felix
 
@@ -94,8 +90,7 @@ Buttons and menus.
    include "gui/line_buffer_display_controller_interface";
    include "gui/line_buffer_display_controller";
    include "gui/line_editor";
-   @
-   
+
 
 Integrated presentation.
 ------------------------
@@ -134,8 +129,7 @@ class to make it a all a bit easier to use.
    
    } // class FlxGui
    
-   @
-   
+
 
 Core types
 ==========
@@ -177,8 +171,7 @@ from the well presented sum type Felix would use.
      typedef label_rect_t = (xy:point_t, lb: label_box_t);
    }
    
-   @
-   
+
 
 .. code-block:: felix
 
@@ -261,8 +254,7 @@ from the well presented sum type Felix would use.
      }
    
    }
-   @
-   
+
 
 Subsystem initialisation.
 -------------------------
@@ -325,8 +317,7 @@ the compiled header files and the binary linked in.
      } 
    
    }
-   @
-   
+
 
 Font handling.
 ==============
@@ -406,8 +397,7 @@ from having to set up a font library Felix knows about.
      }
    }
    
-   @
-   
+
 
 Colours.
 --------
@@ -441,7 +431,6 @@ rendering.
    
    }
    
-   @
 
 Surfaces.
 ---------
@@ -578,8 +567,7 @@ not need that in GUI.
      }
    
    }
-   @
-   
+
 
 Drawables
 ---------
@@ -799,7 +787,6 @@ replaced by a populated display.
    
    }
    
-   @
 
 The Window Controller.
 ----------------------
@@ -838,8 +825,7 @@ service events.
        display: 1 -> 0;
      }
    }
-   @
-   
+
 
 .. code-block:: felix
 
@@ -865,8 +851,7 @@ service events.
        //spawn_fthread (p imsgs);
      }
    }
-   @
-   
+
 
 The Window Manager.
 -------------------
@@ -1071,8 +1056,7 @@ listens for events.
    }
    }
    
-   @
-   
+
 
 Widgets
 =======
@@ -1263,8 +1247,7 @@ Simple Click Button
    }
    
    } // class
-   @
-   
+
 
 Cascading Menu
 --------------
@@ -1933,7 +1916,6 @@ Cascading Menu
    
    }
    
-   @
 
 .. code-block:: felix
 
@@ -1950,7 +1932,6 @@ Cascading Menu
    }
    }
    
-   @
 
 .. code-block:: felix
 
@@ -2013,7 +1994,6 @@ Cascading Menu
    }
    }
    
-   @
 
 .. code-block:: felix
 
@@ -2045,8 +2025,7 @@ Cascading Menu
    }
    
    
-   @
-   
+
 
 .. code-block:: felix
 
@@ -2126,7 +2105,6 @@ Cascading Menu
      }
    
    }
-   @
 
 .. code-block:: felix
 
@@ -2194,6 +2172,5 @@ Cascading Menu
    } //chip
    } //class
     
-   @
-   
-   
+
+

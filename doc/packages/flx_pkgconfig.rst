@@ -387,9 +387,8 @@ is given.
      }
    }
    
-   @
-   
-   
+
+
 
 Tool executable.
 ================
@@ -437,8 +436,7 @@ It exits with the return code that function returns.
    print$ strip$ cat ' ' result; endl;
    System::exit return_code;
    
-   @
-   
+
 
 Database query object.
 ======================
@@ -467,8 +465,7 @@ Database query object interface.
       }
    }
    
-   @
-   
+
 
 Database query object implementation.
 -------------------------------------
@@ -580,9 +577,8 @@ Depends on on the CLI function interface.
      }
    }
    
-   @
-   
-   
+
+
 
 Database Manager Library
 ========================
@@ -615,9 +611,8 @@ single include file and with a single wrapping namespace.
      inherit FlxPkgConfigQuery_interface;
      inherit FlxPkgConfig_query;
    }
-   @
-   
-   
+
+
 
 Separate compilation wrapper.
 -----------------------------
@@ -660,9 +655,8 @@ exported.
      as "flx_pkgconfig_query"
    ;
     
-   @
-   
-   
+
+
 
 Pkg config
 ==========
@@ -881,6 +875,5 @@ This has to be FIXED so flx can run in non-stop mode.
    
    }
    
-   @
-   
-   
+
+
