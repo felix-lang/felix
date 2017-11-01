@@ -10,7 +10,6 @@ Bootstrap builder.
 
 
 .. code-block:: python3
-    :caption: RTL bootstrap builder
 
     import fbuild
     from fbuild.functools import call
@@ -64,7 +63,6 @@ Bootstrap builder.
                 macros=macros,
                 libs=[lib.shared for lib in libs],
                 external_libs=external_libs))
-  @
   
 
 Compiler Support
