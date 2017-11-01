@@ -1,4 +1,9 @@
 
+=======
+Strings
+=======
+
+
 
 
 String handling
@@ -15,11 +20,11 @@ String handling
 Strings
 =======
 
-We have three string like things. @{cstring} is just
+We have three string like things.  :code:`cstring` is just
 an alias for a NTBS (Null Terminated Byte String).
-The workhorse @{string} type based on C++ string.
+The workhorse  :code:`string` type based on C++ string.
 
-A @{ustring} is a unicode representation using a 32 bit unsigned integer as
+A  :code:`ustring` is a unicode representation using a 32 bit unsigned integer as
 the character base.
 This type is deprecated, to be repalced by C++11 unicode string type.
 
@@ -70,8 +75,8 @@ Equality and total ordering
     inherit Tord[string];
   
 
-Equality of @{string} and @{char}
----------------------------------
+Equality of  :code:`string` and  :code:`char`
+---------------------------------------------
 
 
 .. code-block:: felix
@@ -82,8 +87,8 @@ Equality of @{string} and @{char}
     fun != (c:char, s:string) => len s != 1uz or s.[0] != c;
   
 
-Append to @{string} object
---------------------------
+Append to  :code:`string` object
+--------------------------------
 
 
 .. code-block:: felix
@@ -93,8 +98,8 @@ Append to @{string} object
     proc  += : &string * char = "*$1 += $2;";
   
 
-Length of @{string}
--------------------
+Length of  :code:`string`
+-------------------------
 
 
 .. code-block:: felix
@@ -122,8 +127,8 @@ String concatenation.
     //fun + [T with Str[T]] (x:string, y:T) => x + str y;
   
 
-Repetition of @{string} or @{char}
-----------------------------------
+Repetition of  :code:`string` or  :code:`char`
+----------------------------------------------
 
 
 .. code-block:: felix
@@ -132,8 +137,8 @@ Repetition of @{string} or @{char}
     fun * : char * int -> string = "::std::string($2:assign,$1:assign)";
   
 
-Application of @{string} to @{string} or @{int} is concatenation
-----------------------------------------------------------------
+Application of  :code:`string` to  :code:`string` or  :code:`int` is concatenation
+----------------------------------------------------------------------------------
 
 
 .. code-block:: felix
@@ -142,8 +147,8 @@ Application of @{string} to @{string} or @{int} is concatenation
     fun apply (x:string, y:int):string => x + y;
   
 
-Construct a char from first byte of a @{string}.
-------------------------------------------------
+Construct a char from first byte of a  :code:`string`.
+------------------------------------------------------
 
 Returns nul char (code 0) if the string is empty.
 
@@ -151,8 +156,8 @@ Returns nul char (code 0) if the string is empty.
 
     ctor char (x:string) => x.[0];
 
-Constructors for @{string}
---------------------------
+Constructors for  :code:`string`
+--------------------------------
 
 
 .. code-block:: felix
@@ -209,8 +214,8 @@ Substrings
     proc store: &string * !ints * char = "(*$1)[$2] = $3;";
   
 
-Map a string @{char} by @{char}
--------------------------------
+Map a string  :code:`char` by  :code:`char`
+-------------------------------------------
 
 
 .. code-block:: felix
@@ -229,8 +234,8 @@ STL string functions
 --------------------
 
 These come in two flavours: the standard C++ operations
-which return @{stl_npos} on failure, and a more Felix
-like variant which uses an @{option} type.
+which return  :code:`stl_npos` on failure, and a more Felix
+like variant which uses an  :code:`option` type.
 
 .. code-block:: felix
 
@@ -322,8 +327,8 @@ like variant which uses an @{option} type.
   
   
 
-Construe @{string} as set of @{char}
-------------------------------------
+Construe  :code:`string` as set of  :code:`char`
+------------------------------------------------
 
 
 .. code-block:: felix
@@ -333,8 +338,8 @@ Construe @{string} as set of @{char}
     }
   
 
-Construe @{string} as stream of @{char}
----------------------------------------
+Construe  :code:`string` as stream of  :code:`char`
+---------------------------------------------------
 
 
 .. code-block:: felix

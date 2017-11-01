@@ -24,11 +24,12 @@ class FelixLexer(RegexLexer):
     .. versionadded:: 1.2
     """
 
-    def get_tokens_unprocessed(self,text):
-      for index,token,value in RegexLexer.get_tokens_unprocessed(self,text):
-        if value[0]=="\\":
-          value = "\\(" + value + "\\)"
-        yield (index,token,value)
+    # screws up latex! Keep for reference. Testing HACK only! 
+    #def get_tokens_unprocessed(self,text):
+    #  for index,token,value in RegexLexer.get_tokens_unprocessed(self,text):
+    #    if value[0]=="\\":
+    #      value = "\\(" + value + "\\)"
+    #    yield (index,token,value)
 
     name = 'Felix'
     aliases = ['felix', 'flx']
