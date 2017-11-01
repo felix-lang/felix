@@ -21,6 +21,7 @@ Contents:
    unions
    sums
    functions
+   string-package
 
 Indices and tables
 ==================
