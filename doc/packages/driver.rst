@@ -1,0 +1,756 @@
+
+=========================
+Driver and Dynamic Linker
+=========================
+
+
+
+
+Driver  :code:`flx_run`
+=======================
+
+
+Entry points
+------------
+
+This header specifies the interface for two entry points,  :code:`felix_run`
+and  :code:`felix_arun`. The first provides a driver function that refuses
+to support asynchronous I/O, and is suitable for embedded systems.
+The second provides asynchronous I/O support which includes support
+for real time clock and sockets.
+
+Only one of these entry points will actually be defined in a given
+translation unit.
+
+.. code-block:: cpp
+
+  int felix_run(int, char**);
+  int felix_arun(int, char**);
+  @
+  
+
+Implementation
+--------------
+
+ 
+
+This file contains FOUR separate sets of four callback functions
+and a mainline. 
+
+It is designed to be included in four stub files which set the
+four combinations, so common code can be shared.
+
+These are conditioned by two boolean macros:
+
+FLX_BUILD_FOR_STATIC_LINK:
+  if defined, we're static linking
+  if not defined, we're dynamic linking
+
+FLX_SUPPORT_ASYNC:
+  if defined 0, async support is not provided
+  if defined non-zero, async support is provided
+  this macro must be defined
+
+In addition we notice these macros too:
+
+FLX_WIN32:
+  if defined non-zero, we're running Win32
+
+FLX_HAVE_MSVC:
+  if defined non-zero we're using MSVC++ compiler and SDK
+  used to decide the name of the async library dll
+
+NOTE: The macro "FLX_STATIC_LINK" will ALSO be defined by the
+toolchain. This is UNRELATED to the FLX_BUILD_FOR_STATIC_LINK
+macro. The FLX_STATIC_LINK macro says that all unresolved
+externals linking the flx_(a)_run executables are to be
+found in libraries statically. These executables ALWAYS
+dynamically load Felix DLLs using dlopen/LoadLibrary.
+
+But the exes themselves are fully statically linked 
+(except for C/C++ standard libraries of course).
+The flx_(a)run exes are univeral drivers. To make
+them the macro FLX_BUILD_FOR_STATIC_LINK must be *undefined*.
+
+The same source code is ALSO used to statically link your program
+into an executable. In this case again, all the object files
+have to be FLX_STATIC_LINK however this time we get code
+produced with FLX_BUILD_FOR_STATIC link defined.
+
+Note that a flx_run that satisfies its externals from a DLL
+would also be possible but we don't build one of them.
+That would be PATH dependent, and the PATH might be *different*
+to the one the client DLL program requires.
+
+
+.. code-block:: text
+
+  #include <cstdlib>
+  #include <stdio.h>
+  #include <string.h>
+  
+  #include <string>
+  
+  #include "flx_world.hpp"
+  #include "flx_async_world.hpp"
+  #include "flx_ts_collector.hpp"
+  #include "flx_eh.hpp"
+  
+  using namespace std;
+  using namespace flx::rtl;
+  using namespace flx::run;
+  
+  // non async drivers don't depend on faio<-demux<-winsock
+  // and so aren't linked with mswsock and ws2_32
+  // Cygwin doesn't use windows sockets either
+  #if !FLX_CYGWIN && FLX_WIN32 && FLX_SUPPORT_ASYNC
+    #include "demux_iocp_demuxer.hpp"
+    // needed to perform win socket io (calls WSAInit). Must happen
+    // before iocp_demuxer is instantiated and (I assume) happen
+    // only once.
+    // JS: No, it can be called any number of times, provided
+    // the destructor WSACleanup is called same number of times
+    // Use of this RAII object ensures WSAinit/Cleanup calls balance.
+    // RF: Still has to happen before any socket calls. Putting it in
+    // the async object which is created on demand is already too late.
+    // If that's a problem then any socket creation calls would have to
+    // gratuitously make async calls.
+    flx::demux::winsock_initer wsinit;
+  #endif
+  
+  // Actually on Cygwin it might be cygflx_async_dynamic .. not sure
+  #if !FLX_CYGWIN && FLX_HAVE_MSVC
+     #define FLX_ASYNC_DLL_NAME "flx_async_dynamic"
+  #else
+     #define FLX_ASYNC_DLL_NAME "libflx_async_dynamic"
+  #endif
+  
+  #ifdef FLX_BUILD_FOR_STATIC_LINK
+  extern "C" void *flx_main;
+  extern void *static_create_thread_frame;
+  extern void *static_flx_start;
+  #endif
+  
+  namespace flx { namespace run {
+  
+
+ :code:`init_ptr_create_async_hooker` callback #1
+-------------------------------------------------
+
+
+CALLBACK #1 init_ptr_create_async_hooker
+
+This is a really ugly piece of hackery!
+
+General Felix provides async I/O which is loaded
+and initialised on demand, i.e. on the first use.
+
+This is done so programs not doing socket or timer I/O
+don't spawn an extra thread, and programs which do 
+do not spawn it prematurely.
+
+Therefore the asynchronous I/O subsystem is initially
+represented by a NULL pointer. When its services are 
+required, the shared library providing them is dynamically
+loaded by name, and the service started.
+
+However if static linkage is being used, the code is linked
+in statically instead. In this case, the load step can
+be skipped, but the service must still be started on demand.
+
+Furthermore, Felix provides two drivers, flx_run and flx_arun.
+The former driver does not permit any asynchronous I/O.
+This is useful on a platform where we cannot provide these
+services, and it's also useful if we want to physically
+guarantee that such services cannot be run.
+
+We represent these options by using two pointers.
+One pointer contains a function will initialises the other.
+The first pointer represents the service creator,
+and the second the actual service.
+
+If the creator is NULL, the service can never be started.
+This is the variable ptr_create_async_hooker in the config.
+It is set to zero if async support is disabled by conditional
+compilation of this driver code, used to produce flx_run,
+the restricted version of Felix.
+
+If async is to be supported, then if we're static linking
+we set the pointer to the service initialiser create_async_hooker
+which has to have been statically linked in.
+
+If we're dynamic linking, we load the shared library FLX_ASYNC_DLL_NAME
+dynamically, and use dlsym() or GetProcAddress() to fetch
+the service creator function from its string name. 
+
+
+.. code-block:: text
+
+  
+  void init_ptr_create_async_hooker(flx_config *c, bool debug_driver) {
+  #if !FLX_SUPPORT_ASYNC
+    if(debug_driver)
+      fprintf(stderr,"[flx_run.include]: FLX_SUPPORT_ASYNC FALSE\n");
+    c->ptr_create_async_hooker = 0;
+  #else
+    c->ptr_create_async_hooker = create_async_hooker;
+    if(debug_driver)
+      fprintf(stderr,"[flx_run.include]: FLX_SUPPORT_ASYNC TRUE, create_async_hooker = %p\n", create_async_hooker);
+  #ifndef FLX_BUILD_FOR_STATIC_LINK
+    // Try to dynamically load the felix asynchronous library
+  
+    if(debug_driver)
+      fprintf(stderr,"[flx_run.include]: dymamic_link: trying to load %s\n",FLX_ASYNC_DLL_NAME);
+  
+    FLX_LIBHANDLE async_lib = ::flx::dynlink::flx_load_module_nothrow(FLX_ASYNC_DLL_NAME);
+  
+    // Error out if we couldn't load the library.
+    if (async_lib == FLX_NOLIBRARY) {
+      fprintf(stderr,
+        "[flx_run.include]: dynamic_link: Unable to find module '%s'\n",FLX_ASYNC_DLL_NAME);
+      exit(1);
+    }
+    // debug only ..
+    else {
+      if (debug_driver)
+        fprintf(stderr, "[flx_run.include]: dynamic_link: module '%s' loaded!\n",FLX_ASYNC_DLL_NAME);
+    }
+  
+    // Get the hooker function
+    c->ptr_create_async_hooker =
+      (create_async_hooker_t*)FLX_DLSYM(async_lib, create_async_hooker);
+  
+    // Error out if we couldn't find the hooker function in the
+    // library.
+    if (c->ptr_create_async_hooker == NULL) {
+      fprintf(stderr,
+        "[flx_run.include]: dynamic_link: Unable to find symbol 'create_async_hooker' in module "
+        "'%s'\n",FLX_ASYNC_DLL_NAME);
+      exit(1);
+    }
+    // debug only
+    else {
+      if (debug_driver)
+        fprintf(stderr, "[flx_run.include]: dynamic_link: found 'create_async_hooker'!\n");
+    }
+  #else
+    if(debug_driver)
+      fprintf(stderr,"[flx_run.include]: static_link: 'create_async_hooker' SHOULD BE LINKED IN\n");
+  #endif
+  #endif
+  }
+  
+
+ :code:`get_flx_args_config` callback
+-------------------------------------
+
+CALLBACK #2: get_flx_args_config #2
+
+Purpose: grabs program arguments.
+Prints help if statically linked.
+
+Static and dynamic linked programs have arguments 
+in different slots of argv because the mainline for
+dynamic linkage is actually flx_run executable whereas
+for static linkage this is the executable.
+
+So dynamic linked programs have an extra argument
+which has to be skipped for compatibility of static
+and dynamic linkage.
+
+
+.. code-block:: text
+
+  int get_flx_args_config(int argc, char **argv, flx_config *c) {
+  #ifndef FLX_BUILD_FOR_STATIC_LINK
+    c->static_link = false;
+    if (argc<2)
+    {
+      printf("usage: flx_run [--debug] dll_filename options ..\n");
+      printf("  environment variables (numbers can be decimals):\n");
+      printf("  FLX_DEBUG               # enable debugging traces (default off)\n");
+      printf("  FLX_DEBUG_ALLOCATIONS   # enable debugging allocator (default FLX_DEBUG)\n");
+      printf("  FLX_DEBUG_COLLECTIONS   # enable debugging collector (default FLX_DEBUG)\n");
+      printf("  FLX_REPORT_COLLECTIONS  # report collections (default FLX_DEBUG)\n");
+      printf("  FLX_DEBUG_THREADS       # enable debugging collector (default FLX_DEBUG)\n");
+      printf("  FLX_DEBUG_DRIVER        # enable debugging driver (default FLX_DEBUG)\n");
+      printf("  FLX_FINALISE            # whether to cleanup on termination (default NO)\n");
+      printf("  FLX_GC_FREQ=n           # how often to call garbage collector (default 1000)\n");
+      printf("  FLX_MIN_MEM=n           # initial memory pool n Meg (default 10)\n");
+      printf("  FLX_MAX_MEM=n           # maximum memory n Meg (default -1 = infinite)\n");
+      printf("  FLX_FREE_FACTOR=n.m     # reset FLX_MIN_MEM to actual usage by n.m after gc (default 1.1) \n");
+      printf("  FLX_ALLOW_COLLECTION_ANYWHERE # (default yes)\n");
+      return 1;
+    }
+    c->filename = argv[1];
+    c->flx_argv = argv+1;
+    c->flx_argc = argc-1;
+    c->debug = (argc > 1) && (strcmp(argv[1], "--debug")==0);
+    if (c->debug)
+    {
+      if (argc < 3)
+      {
+        printf("usage: flx_run [--debug] dll_filename options ..\n");
+        return 1;
+      }
+      c->filename = argv[2];
+      --c->flx_argc;
+      ++c->flx_argv;
+    }
+  #else
+    c->static_link = true;
+    c->filename = argv[0];
+    c->flx_argv = argv;
+    c->flx_argc = argc;
+    c->debug = false;
+  
+  //  printf("Statically linked Felix program running\n");
+  #endif
+    return 0;
+  }
+  
+
+A helper routine for finding the module name when
+static linking.
+
+Static link executables get their full pathname in argv[0].
+This has to be parsed to get the module name which is then
+set into the library linkage object.
+
+For dynamic link programs the library name is passed to
+the library linkage loader function, which does the parsing
+itself.
+
+This is a hack. It should be done in the library linkage class.
+
+
+.. code-block:: text
+
+  #ifdef FLX_BUILD_FOR_STATIC_LINK
+  static ::std::string modulenameoffilename(::std::string const &s)
+  {
+    ::std::size_t i = s.find_last_of("\\/");
+    ::std::size_t j = s.find_first_of(".",i+1);
+    return s.substr (i+1,j-i-1);
+  }
+  #endif
+  
+  
+
+ :code:`link_library` callback #3
+---------------------------------
+
+CALLBACK #3: link_library
+
+This function sets up the entry points for either
+a static or dynamic link program. 
+
+For static link,
+we provide the addresses of the compiler generated
+static link thunks. These are variables containing
+the actual entry points.
+
+For dynamic link, we actually load the library and
+then use dlsym() or GetProcAddress() to find the
+entry points.
+
+Once this routine is done, the flx_dynlink_t object is
+in the same state irrespective of linkage model.
+
+Note the asymmetric encoding: static link uses a dedicated
+static link only constructor form. The dynamic link uses
+a default constructor and then an initialisation method.
+There's no good reason for this now because I added a
+static_link() method (although it doesn't check for NULLs).
+
+
+
+.. code-block:: text
+
+  ::flx::dynlink::flx_dynlink_t *link_library(flx_config *c, ::flx::gc::collector::gc_profile_t *gcp) {
+    ::flx::dynlink::flx_dynlink_t* library;
+  #ifdef FLX_BUILD_FOR_STATIC_LINK
+    library = new (*gcp, ::flx::dynlink::flx_dynlink_ptr_map, false) ::flx::dynlink::flx_dynlink_t(
+        modulenameoffilename(c->filename),
+        (::flx::dynlink::thread_frame_creator_t)static_create_thread_frame,
+        (::flx::dynlink::start_t)static_flx_start,
+        (::flx::dynlink::main_t)&flx_main,
+        c->debug_driver
+     );
+  #else
+    library = new (*gcp, ::flx::dynlink::flx_dynlink_ptr_map, false) ::flx::dynlink::flx_dynlink_t(c->debug_driver);
+    library->dynamic_link(c->filename);
+  #endif
+    return library;
+  }
+  
+  }} // namespaces
+  
+  @
+
+Mainline
+--------
+
+
+.. code-block:: text
+
+  int FELIX_MAIN (int argc, char** argv)
+  {
+  //fprintf(stderr,"felix_run=FELIX_MAIN starts\n");
+    int error_exit_code = 0;
+    flx_config *c = new flx_config(link_library, init_ptr_create_async_hooker, get_flx_args_config);
+  // WINDOWS CRASHES HERE (the constructor runs)
+  //fprintf(stderr,"flx_config created\n");
+    flx_world *world=new flx_world(c);
+  //fprintf(stderr,"flx_world created\n");
+    try {
+  
+      error_exit_code = world->setup(argc, argv);
+  
+      if(0 != error_exit_code) return error_exit_code;
+  
+    // MAINLINE, ONLY DONE ONCE
+    // TODO: simply return error_exit_code
+      // We're all set up, so run felix
+      world->begin_flx_code();
+  
+      // Run the felix usercode.
+      error_exit_code = world->run_until_complete();
+      if(0 != error_exit_code) return error_exit_code;
+  
+      world->end_flx_code();
+  
+      error_exit_code = world->teardown();
+    }
+    catch (flx_exception_t &x) { error_exit_code = flx_exception_handler(&x); }
+    catch (std::exception &x) { error_exit_code = std_exception_handler (&x); }
+    catch (std::string &s) { error_exit_code = 6; fprintf(stderr, "%s\n", s.c_str()); }
+    catch (flx::rtl::con_t *p) { error_exit_code = 9; fprintf(stderr, "SYSTEM ERROR, UNCAUGHT CONTINUATION %p\n",p);}
+  
+    catch (...)
+    {
+      fprintf(stderr, "flx_run driver ends with unknown EXCEPTION\n");
+      error_exit_code = 4;
+    }
+    delete world;
+    delete c;
+  
+    return error_exit_code;
+  }
+  
+  
+
+Dynamic link loader with async support
+--------------------------------------
+
+Compile this with position independent code support
+to create a main driver object file
+containing flx_run startup function suitable for
+loading a Felix program built as a shared library.
+This object has support for on demand loading of
+the async I/O library. Loading may fail if the
+async I/O library DLL cannot be found at run time.
+
+.. code-block:: cpp
+
+  #define FLX_SUPPORT_ASYNC 1
+  #define FELIX_MAIN felix_arun
+  #include "flx_run.include"
+  @
+  
+
+Static link loader with async support
+-------------------------------------
+
+Compile this to create a main driver object file
+containing flx_run startup function suitable for
+running a Felix program built as an object file.
+This object file requires the async support library
+to be linked in, however it is only activated on demand.
+
+.. code-block:: cpp
+
+  #define FLX_SUPPORT_ASYNC 1
+  #define FELIX_MAIN felix_arun
+  #define FLX_BUILD_FOR_STATIC_LINK
+  #include "flx_run.include"
+  @
+  
+
+Dynamic link loader with async support
+--------------------------------------
+
+Compile this with position independent code support
+to create a main driver object file
+containing flx_run startup function suitable for
+loading a Felix program built as a shared library.
+
+.. code-block:: cpp
+
+  #define FLX_SUPPORT_ASYNC 0
+  #define FELIX_MAIN felix_run
+  #include "flx_run.include"
+  @
+  
+
+Static link loader without async support
+----------------------------------------
+
+Compile this to create a main driver object file
+containing flx_run startup function suitable for
+running a Felix program built as an object file.
+
+.. code-block:: cpp
+
+  #define FLX_SUPPORT_ASYNC 0
+  #define FELIX_MAIN felix_run
+  #define FLX_BUILD_FOR_STATIC_LINK
+  #include "flx_run.include"
+  @
+  
+
+Traditional Mainline with async support
+---------------------------------------
+
+Link this, together with translation units containing flx_arun,
+to create a static link executable with async support.
+
+.. code-block:: cpp
+
+  #include "flx_run.hpp"
+  
+  // to set the critical error handler
+  #ifdef _WIN32
+  #include <windows.h>
+  #include <stdio.h>
+  #endif
+  
+  int main(int argc, char **argv) 
+  {
+    #ifdef _WIN32
+    SetErrorMode (SEM_FAILCRITICALERRORS);
+    #endif
+    return felix_arun(argc, argv);
+  }
+  @
+  
+
+Traditional Mainline without async support
+------------------------------------------
+
+Link this, together with translation units containing flx_run,
+to create a static link executable without async support.
+
+.. code-block:: cpp
+
+  #include "flx_run.hpp"
+  #include "stdio.h"
+  
+  // to set the critical error handler
+  #ifdef _WIN32
+  #include <windows.h>
+  #include <stdio.h>
+  #endif
+  
+  int main(int argc, char **argv) 
+  {
+    #ifdef _WIN32
+    SetErrorMode (SEM_FAILCRITICALERRORS);
+    #endif
+    //fprintf(stderr,"Felix mainline flx_run_main starts!\n");
+    return felix_run(argc, argv);
+  }
+  @
+  
+
+Driver executable config
+========================
+
+
+.. code-block:: text
+
+  Name: flx_arun
+  Description: Felix standard driver, async support
+  Requires: flx_async faio demux flx_pthread flx flx_gc flx_dynlink flx_strutil
+  flx_requires_driver: flx_arun
+  srcdir: src/flx_drivers
+  src: flx_arun_lib\.cpp|flx_arun_main\.cxx
+  @
+  
+
+.. code-block:: text
+
+  Name: flx_run
+  Description: Felix standard driver, no async support
+  Requires: flx_pthread flx flx_gc flx_dynlink flx_strutil
+  srcdir: src/flx_drivers
+  src: flx_run_lib\.cpp|flx_run_main\.cxx
+  @
+  
+
+.. code-block:: text
+
+  Name: flx_thread_free_run
+  Description: Felix driver, no thread or async support
+  Description: WORK IN PROGRESS
+  Requires: flx flx_gc dl
+  srcdir: src/flx_drivers
+  src: flx_run_lib\.cpp|flx_run_main\.cxx
+  @
+  
+
+Build Code
+==========
+
+
+.. code-block:: python
+
+  import fbuild
+  from fbuild.functools import call
+  from fbuild.path import Path
+  from fbuild.record import Record
+  import buildsystem
+  from buildsystem.config import config_call
+  
+  # ------------------------------------------------------------------------------
+  
+  def build( phase):
+      #print("[fbuild:flx_drivers.py:build (in src/packages/driver.fdoc)] ********** BUILDING DRIVERS ***********************************************")
+      path = Path(phase.ctx.buildroot/'share'/'src/flx_drivers')
+  
+      #dlfcn_h = config_call('fbuild.config.c.posix.dlfcn_h',
+      #    phase.platform,
+      #    phase.cxx.static,
+      #    phase.cxx.shared)
+  
+      #if dlfcn_h.dlopen:
+      #    external_libs = dlfcn_h.external_libs
+      #    print("HAVE dlfcn.h, library=" + str (external_libs))
+      #else:
+      #    print("NO dlfcn.h available")
+      #    external_libs = []
+      external_libs = []
+  
+      run_includes = [
+          phase.ctx.buildroot / 'host/lib/rtl',
+          phase.ctx.buildroot / 'share/lib/rtl'
+      ]
+  
+      arun_includes = run_includes + [
+          'src/demux',
+      ] + ([], ['src/demux/win'])['win32' in phase.platform]
+  
+      # Make four object files for flx_run 
+      # two for async, two without
+      # each pair made static and non static
+  
+      flx_run_static_static_obj = phase.cxx.static.compile(
+          dst='host/lib/rtl/flx_run_lib_static',
+          src=path / 'flx_run_lib_static.cpp',
+          includes=run_includes,
+          macros=['FLX_STATIC_LINK'],
+      )
+  
+      flx_run_static_dynamic_obj = phase.cxx.shared.compile(
+          dst='host/lib/rtl/flx_run_lib_static',
+          src=path / 'flx_run_lib_static.cpp',
+          includes=run_includes,
+      )
+  
+  
+      flx_run_dynamic_dynamic_obj = phase.cxx.shared.compile(
+          dst='host/lib/rtl/flx_run_lib_dynamic',
+          src=path / 'flx_run_lib_dynamic.cpp',
+          includes=run_includes,
+      )
+  
+  
+      flx_arun_static_static_obj = phase.cxx.static.compile(
+          dst='host/lib/rtl/flx_arun_lib_static',
+          src=path / 'flx_arun_lib_static.cpp',
+          includes=arun_includes,
+          macros=['FLX_STATIC_LINK'],
+      )
+  
+      flx_arun_static_dynamic_obj = phase.cxx.shared.compile(
+          dst='host/lib/rtl/flx_arun_lib_static',
+          src=path / 'flx_arun_lib_static.cpp',
+          includes=arun_includes,
+      )
+  
+  
+      flx_arun_dynamic_dynamic_obj = phase.cxx.shared.compile(
+          dst='host/lib/rtl/flx_arun_lib_dynamic',
+          src=path / 'flx_arun_lib_dynamic.cpp',
+          includes=arun_includes,
+      )
+  
+  
+      # Now, the mainline object files for static links
+      flx_run_main_static= phase.cxx.static.compile(
+          dst='host/lib/rtl/flx_run_main',
+          src=path / 'flx_run_main.cxx',
+          includes=run_includes,
+          macros=['FLX_STATIC_LINK'],
+      )
+  
+      flx_arun_main_static= phase.cxx.static.compile(
+          dst='host/lib/rtl/flx_arun_main',
+          src=path / 'flx_arun_main.cxx',
+          includes=arun_includes,
+          macros=['FLX_STATIC_LINK'],
+      )
+  
+      # Now, the mainline object files for dynamic links
+      flx_run_main_dynamic= phase.cxx.shared.compile(
+          dst='host/lib/rtl/flx_run_main',
+          src=path / 'flx_run_main.cxx',
+          includes=run_includes,
+      )
+  
+      flx_arun_main_dynamic= phase.cxx.shared.compile(
+          dst='host/lib/rtl/flx_arun_main',
+          src=path / 'flx_arun_main.cxx',
+          includes=arun_includes,
+      )
+  
+  
+      # And then the mainline executable for dynamic links
+      flx_run_exe = phase.cxx.shared.build_exe(
+          dst='host/bin/flx_run',
+          srcs=[path / 'flx_run_main.cxx', path / 'flx_run_lib_dynamic.cpp'],
+          includes=run_includes,
+          external_libs=external_libs,
+          libs=[call('buildsystem.flx_rtl.build_runtime',  phase).shared],
+      )
+  
+      flx_arun_exe = phase.cxx.shared.build_exe(
+          dst='host/bin/flx_arun',
+          srcs=[path / 'flx_arun_main.cxx', path/ 'flx_arun_lib_dynamic.cpp'],
+          includes=arun_includes,
+          external_libs=external_libs,
+          libs=[
+             call('buildsystem.flx_rtl.build_runtime',  phase).shared,
+             call('buildsystem.flx_pthread.build_runtime', phase).shared,
+             call('buildsystem.flx_async.build_runtime', phase).shared,
+             call('buildsystem.demux.build_runtime', phase).shared,
+             call('buildsystem.faio.build_runtime', phase).shared],
+      )
+  
+      return Record(
+          flx_run_lib_static_static=flx_run_static_static_obj,
+          flx_run_lib_static_dynamic=flx_run_static_dynamic_obj,
+          flx_run_lib_dynamic_dynamic=flx_run_dynamic_dynamic_obj,
+          flx_arun_lib_static_static=flx_arun_static_static_obj,
+          flx_arun_lib_static_dynamic=flx_arun_static_dynamic_obj,
+          flx_arun_lib_dynamic_dynamic=flx_arun_dynamic_dynamic_obj,
+          flx_run_main_static=flx_run_main_static,
+          flx_run_main_dynamic=flx_run_main_dynamic,
+          flx_run_exe=flx_run_exe,
+          flx_arun_main_static=flx_arun_main_static,
+          flx_arun_main_dynamic=flx_arun_main_dynamic,
+          flx_arun_exe=flx_arun_exe,
+      )
+  @
+  
+  

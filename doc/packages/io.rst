@@ -1,0 +1,1754 @@
+
+===
+I/O
+===
+
+
+
+
+Core RTL support
+================
+
+Basic routines built on C  :code:`FILE*` and C++  :code:`iostreams`.
+Provides portability, and some conveniences regarding
+line handling and string handling.
+
+These routines all use binary I/O but are designed
+specifically for basic text I/O. Error handling
+is minimal, these are mainly for simple jobs and
+debugging.
+
+
+.. code-block:: cpp
+
+  #ifndef FLX_IOUTIL
+  #define FLX_IOUTIL
+  #include <string>
+  #include <cstdio>
+  #include "flx_rtl_config.hpp"
+  
+  namespace flx { namespace rtl { namespace ioutil {
+    RTL_EXTERN ::std::string load_file (::std::string);
+    RTL_EXTERN ::std::string load_text_file (::std::string);
+  
+    RTL_EXTERN ::std::string load_file (::std::FILE *);
+    RTL_EXTERN int flx_fileno(::std::FILE*);
+    RTL_EXTERN bool flx_isatty(::std::FILE*);
+    RTL_EXTERN bool flx_isstdin(::std::FILE*);
+    RTL_EXTERN bool flx_isconsole(::std::FILE*);
+    RTL_EXTERN ::std::string raw_readln(::std::FILE*);
+    RTL_EXTERN ::std::string raw_read(::std::FILE*, ::std::size_t);
+    RTL_EXTERN ::std::string echo_readln(::std::FILE*);
+    RTL_EXTERN ::std::string readln(::std::FILE*);
+    RTL_EXTERN void write (::std::FILE *, ::std::string);
+    RTL_EXTERN void writeln (::std::FILE *, ::std::string);
+  
+    RTL_EXTERN ::std::string load_file (::std::istream*);
+    RTL_EXTERN ::std::string readln(::std::istream*);
+    RTL_EXTERN void write (::std::ostream*, ::std::string);
+    RTL_EXTERN void writeln (::std::ostream*, ::std::string);
+  }}}
+  #endif
+  @
+  
+
+.. code-block:: cpp
+
+  
+  #include <cstdio>
+  #include <cstring>
+  #include <string>
+  #include <iostream>
+  #include <cassert>
+  #include "flx_ioutil.hpp"
+  
+  #if FLX_WIN32
+  #include <io.h>
+  #else
+  #include <unistd.h>
+  #endif
+  
+  namespace flx { namespace rtl { namespace ioutil {
+    using namespace std;
+  
+  
+  #if FLX_WIN32
+    int flx_fileno (FILE *f) { return _fileno (f); }
+    bool flx_isatty(int fd) { return 1 == _isatty (fd); }
+  #else
+    int flx_fileno (FILE *f) { return fileno (f); }
+    bool flx_isatty(int fd) { return 1 == isatty (fd); }
+  #endif
+  
+    bool flx_isatty (FILE *f) 
+    {
+      return 1 == flx_isatty (flx_fileno (f));
+    }
+  
+    bool flx_isstdin (FILE *f)
+    {
+      return flx_fileno (f) == 0;
+    }
+  
+    bool flx_isconsole (FILE *f)
+    {
+      return flx_isstdin (f) && flx_isatty(f);
+    }
+  
+  
+  /* small buffer for testing, should be much large in production version */
+  #define MYBUFSIZ 51200
+  
+    string load_file (string f)
+    {
+      char const *fname = f.c_str();
+  
+      FILE *fi = fopen(fname,"rb"); // note: binary mode!
+  
+      if (fi)
+      {
+        string x = "";
+        char buffer[MYBUFSIZ];
+        while (!feof(fi)) {
+          ::std::size_t n = fread(buffer,1,MYBUFSIZ,fi);
+          if(n>0) x += string(buffer,n);
+          else break;
+        }
+        fclose(fi);
+        return x;
+      }
+      else return "";
+    }
+  
+    string load_text_file (string f)
+    {
+      char const *fname = f.c_str();
+  
+      FILE *fi = fopen(fname,"rt"); // note: text mode
+  
+      if (fi)
+      {
+        string x = "";
+        char buffer[MYBUFSIZ];
+        while (!feof(fi)) {
+          ::std::size_t n = fread(buffer,1,MYBUFSIZ,fi);
+          if(n>0) x += string(buffer,n);
+          else break;
+        }
+        fclose(fi);
+        return x;
+      }
+      else return "";
+    }
+  
+  
+  // C FILE IO
+  
+    string load_file (FILE *fi) // note does NOT close file! (would screw up popen)
+    {
+      if (fi)
+      {
+        string x = "";
+        char buffer[MYBUFSIZ];
+        while (!feof(fi)) {
+          ::std::size_t n = fread(buffer,1,MYBUFSIZ,fi);
+          if(n>0) x = x + string(buffer,n);
+          else break;
+        }
+        return x;
+      }
+      else return "";
+    }
+  
+    // includes newline if present
+    // null string indicates end of file
+    string raw_readln (FILE *fi)
+    {
+      if(fi)
+      {
+        string x = "";
+        char buffer[MYBUFSIZ+1];
+        buffer[MYBUFSIZ]='\0';
+  next:
+        bool eof = fgets(buffer, MYBUFSIZ, fi) == 0;
+        if(eof) return x;
+        x += string(buffer);
+        if(x[x.size()-1]=='\n') return x;
+        goto next;
+      }
+      else return "";
+    }
+  
+    // read up to n bytes
+    string raw_read (FILE *fi, ::std::size_t n)
+    {
+      void *buffer = std::malloc(n);
+      ::std::size_t m = fread (buffer, 1, n, fi);
+      string s((char const*)buffer,m);
+      free(buffer);
+      return s;
+    }
+  
+    string echo_readln (FILE *f)
+    {
+      string result = raw_readln (f);
+      printf ("%s",result.c_str());
+      return result;
+    }
+  
+    string readln (FILE *f) { 
+      bool doecho = flx_isstdin(f) && !flx_isatty (f);
+      if (doecho)
+         return echo_readln(f);
+      else
+         return raw_readln (f);
+    }
+  
+    void write (FILE *fi, string s)
+    {
+      fwrite(s.data(),s.size(),1,fi);
+    }
+  
+    static const char eol[] = { '\n' };
+  
+    void writeln (FILE *fi, string s)
+    {
+      fwrite(s.data(),s.size(),1,fi);
+      fwrite(eol,sizeof(eol),1,fi);
+    }
+  
+  // C++ file IO
+  
+    string load_file (istream *fi) // note does NOT close file! (would screw up popen)
+    {
+      if (fi)
+      {
+        string x = "";
+        char buffer[MYBUFSIZ];
+  more:
+        fi->read(buffer,MYBUFSIZ);
+        int n = fi->gcount();
+        if(n>0) x = x + string(buffer,n);
+        if (n == MYBUFSIZ)goto more;
+        return x;
+      }
+      else return "";
+    }
+  
+    // includes newline if present
+    // null string indicates end of file
+    string readln (istream *fi)
+    {
+      if(fi)
+      {
+        ::std::string x = "";
+        ::std::getline(*fi,x);
+        if (fi->fail()) return x; 
+        else return x+"\n";
+      }
+      else return "";
+    }
+  
+    void write (ostream *fi, string s)
+    {
+      fi->write(s.data(),s.size());
+    }
+  
+    void writeln (ostream *fi, string s)
+    {
+      fi->write(s.data(),s.size());
+      fi->write(eol,sizeof(eol));
+    }
+  }}}
+  @
+  
+
+.. code-block:: text
+
+  Name: flx_ioutil
+  Description: I/O support
+  includes: '"flx_ioutil.hpp"'
+  Requires: flx
+  @
+  
+
+Standard Library Synopsis
+=========================
+
+
+.. code-block:: felix
+
+  
+  include "std/io/textio";
+  include "std/io/demux";
+  include "std/io/faio";
+  include "std/io/socket";
+  include "std/io/iostream";
+  include "std/io/ansi_terminal";
+  include "std/io/filename";
+  include "std/io/filestat";
+  include "std/io/directory";
+  include "std/io/filesystem";
+  
+
+Simple Text I/O
+===============
+
+
+.. code-block:: felix
+
+  
+  //$ These classes provide simple I/O for text, primarily intended for
+  //$ naive use, debugging etc. This is because there is no error
+  //$ handling. This simplifies usage at the expense of correctness,
+  //$ and so these routines should not be used in production code.
+  
+  //$ Abstract input file.
+  class Input_file[input_file]
+  {
+    //$ Open file for reading.
+    virtual gen raw_fopen_input: string -> input_file; 
+    virtual gen raw_fopen_input_text: string -> input_file; 
+  
+    gen fopen_input_text (f:string) : input_file =
+    {
+      if Env::getenv "FLX_FILE_MONITOR" != "" call
+        eprintln$ "[Open_input_text] " + f
+      ;
+      return raw_fopen_input_text f;
+    }
+  
+    gen fopen_input (f:string) : input_file =
+    {
+      if Env::getenv "FLX_FILE_MONITOR" != "" call
+        eprintln$ "[Open_input] " + f
+      ;
+      return raw_fopen_input f;
+    }
+  
+    //$ Check if the file was opened correctly.
+    virtual gen valid : input_file -> bool;
+   
+    //$ Close file.
+    virtual proc fclose: input_file;
+  
+    //$ Load the rest of an open file.
+    virtual gen load: input_file -> string;
+  
+    //$ Read one line with the trailing end-line mark included.
+    //$ Empty string indicates end of file.
+    virtual gen readln: input_file -> string;
+  
+    // read up to n bytes from file
+    virtual gen read: input_file * size -> string;
+  
+    //$ Read line excluding end of line marks.
+    virtual gen iterator(f:input_file) (): opt[string] => 
+      match readln f with
+      | "" => None[string]
+      | text => text.rstrip.Some
+      endmatch
+    ;
+  
+    /*
+    instance Iterable[input_file, string] {
+       gen iterator (f:input_file) () => Input_file[input_file]::iterator f ();
+    }
+    */
+  
+    //$ Check for end of file.
+    virtual gen feof : input_file -> bool;
+  }
+  
+  //$ Abstract output file.
+  class Output_file[output_file]
+  {
+    //$ Open file for writing.
+    virtual gen raw_fopen_output: string -> output_file;
+    virtual gen raw_fopen_output_text: string -> output_file;
+  
+    //$ Open file for writing in append-only mode.
+    virtual gen raw_fopen_append: string -> output_file;
+    virtual gen raw_fopen_append_text: string -> output_file;
+  
+    gen fopen_output(f:string) : output_file =
+    {
+      if Env::getenv "FLX_FILE_MONITOR" != "" call
+        eprintln$ "[Open_output] " + f
+      ;
+      return raw_fopen_output f;
+    }
+  
+    gen fopen_output_text(f:string) : output_file =
+    {
+      if Env::getenv "FLX_FILE_MONITOR" != "" call
+        eprintln$ "[Open_output_text] " + f
+      ;
+      return raw_fopen_output_text f;
+    }
+  
+    gen fopen_append(f:string) : output_file =
+    {
+      if Env::getenv "FLX_FILE_MONITOR" != "" call
+        eprintln$ "[Open_append] " + f
+      ;
+      return raw_fopen_append f;
+    }
+  
+    gen fopen_output_append text(f:string) : output_file =
+    {
+      if Env::getenv "FLX_FILE_MONITOR" != "" call
+        eprintln$ "[Open_output_append_text] " + f
+      ;
+      return raw_fopen_append_text f;
+    }
+  
+    //$ Check if the file was opened correctly.
+    virtual gen valid : output_file -> bool;
+   
+    //$ Close file.
+    virtual proc fclose: output_file;
+  
+    //$ Write one line adding the trailing end line mark.
+    virtual proc writeln : output_file * string;
+  
+    //$ Write a string.
+    virtual proc write : output_file * string;
+  
+    //$ Write a byte.
+    virtual proc write : output_file * utiny;
+  
+    //$ Write a char.
+    virtual proc write : output_file * char;
+  
+    //$ Flush the buffers.
+    virtual proc fflush: output_file;
+  
+    //$ Save string to file
+    proc save (fn:string, d:string) 
+    {
+      var f = fopen_output fn;
+      write$ f,d;
+      fclose f;
+    }
+  
+    // save list of strings to file
+    // adds a newline to each string in list
+    proc save (fn:string, lines:list[string]) 
+    {
+      var f = fopen_output fn;
+      iter (proc (s:string) { writeln$ f,s; }) lines;
+      fclose f;
+    }
+  
+    //$ Write a space.
+    proc space (s:output_file) { write (s, " "); };
+  
+    //$ Write end of line mark.
+    proc endl (s:output_file) { write (s, "\n"); };
+  
+    //$ Write data with conversion using Str::str.
+    proc fprint[T with Str[T]] (s:output_file, x:T) { write (s, str x); };
+  
+    //$ Write data with conversion using Str::str and end line mark.
+    proc fprintln[T with Str[T]] (s:output_file, x:T) { write (s, str x+"\n"); };
+  }
+  
+  //$ C standard IO with FILE*.
+  open class Cstdio {
+  
+    //$ C file type.
+    type FILE = "FILE*" requires C89_headers::stdio_h;
+  
+    pod type ifile = "FILE*" requires C89_headers::stdio_h;
+    pod type ofile = "FILE*" requires C89_headers::stdio_h;
+  
+    //$ Load file from filename.
+    //$ Note: loaded in binary mode not text mode!
+    fun raw_load: string -> string = "::flx::rtl::ioutil::load_file($1)"
+      requires package "flx_ioutil";
+  
+    fun raw_load_text: string -> string = "::flx::rtl::ioutil::load_text_file($1)"
+      requires package "flx_ioutil";
+  
+    fun load(f:string) : string =
+    {
+      if Env::getenv "FLX_FILE_MONITOR" != "" call
+        eprintln$ "[load] " + f
+      ;
+      return raw_load f;
+    }
+  
+    fun load_text(f:string) : string =
+    {
+      if Env::getenv "FLX_FILE_MONITOR" != "" call
+        eprintln$ "[load_text] " + f
+      ;
+      return raw_load_text f;
+    }
+  
+  
+  
+    //$ Standard input, can be redirected by flx_run.
+    const stdin: ifile = "PTF flx_stdin" requires property "needs_ptf";
+  
+    //$ Standard output, can be redirected by flx_run.
+    const stdout: ofile = "PTF flx_stdout" requires property "needs_ptf";
+  
+    //$ Standard error, can be redirected by flx_run.
+    const stderr: ofile = "PTF flx_stderr" requires property "needs_ptf";
+  
+    //$ Standard input, redirected by shell.
+    const cstdin: ifile = "stdin";
+  
+    //$ Standard output, redirected by shell.
+    const cstdout: ofile = "stdout";
+  
+    //$ Standard error, redirected by shell.
+    const cstderr: ofile = "stderr";
+  
+    //$ C standard IO as instance of Input_file.
+    instance Input_file[ifile] {
+      requires package "flx_ioutil";
+      gen raw_fopen_input: string -> ifile = 'fopen($1.c_str(),"rb")';
+      gen raw_fopen_input_text: string -> ifile = 'fopen($1.c_str(),"r")';
+      gen valid : ifile -> bool = "$1!=(FILE*)0";
+      proc fclose: ifile = '(void)fclose($1);';
+      gen load: ifile -> string = "::flx::rtl::ioutil::load_file($1)";
+      gen readln: ifile -> string ="::flx::rtl::ioutil::readln($1)";
+      gen read: ifile *size -> string = "::flx::rtl::ioutil::raw_read($1,$2)";
+      gen feof : ifile -> bool = "feof($1)";
+    }
+  
+    //$ C standard IO as instance of Output_file.
+    instance Output_file[ofile] {
+      requires package "flx_ioutil";
+      gen raw_fopen_output: string -> ofile = 'fopen($1.c_str(),"wb")';
+      gen raw_fopen_output_text: string -> ofile = 'fopen($1.c_str(),"w")';
+      gen raw_fopen_append: string -> ofile = 'fopen($1.c_str(),"ab")';
+      gen raw_fopen_append_text: string -> ofile = 'fopen($1.c_str(),"a")';
+      gen valid : ofile -> bool = "$1!=(FILE*)0";
+      proc fclose: ofile = '(void)fclose($1);';
+      proc writeln : ofile * string ="::flx::rtl::ioutil::writeln($1,$2);";
+      proc write : ofile * string ="::flx::rtl::ioutil::write($1,$2);";
+      proc write : ofile * utiny ="fwrite($2,1,1,$1);";
+      proc write : ofile * char ="fwrite($2,1,1,$1);";
+      proc fflush: ofile = "fflush($1);";
+    }
+  }
+  
+  open Input_file[Cstdio::ifile];
+  // note we cannot open Iterable here because it would cause
+  // a conflict ;(
+  
+  open Output_file[Cstdio::ofile];
+  //$ DEBUG OUTPUT UTIITIES! 
+  //$ DO NOT REQUIRE THREAD FRAME.
+  //$ NOT REDIRECTABLE BY DRIVER.
+  //$ (can be redirected by OS if OS can do it)
+  
+  //$ Write string to output.
+  proc print  [T with Str[T]] (x:T) { fprint (cstdout, x); };
+  
+  //$ Write string to output with end of line. Also does a flush
+  //$ to improve synchronisation with cstderr.
+  proc println[T with Str[T]] (x:T) { fprintln (cstdout, x); fflush cstdout; };
+  
+  //$ Write end of line on output.
+  proc endl() { endl cstdout; }
+  
+  //$ Write space on cout.
+  proc space() { space cstdout; }
+  
+  //$ flush buffers of cout.
+  proc fflush() { fflush cstdout; }
+  
+  //$ Write string to cerr.
+  proc eprint  [T with Str[T]] (x:T) { fprint (cstderr, x); };
+  
+  //$ Write string to cerr with end of line.
+  proc eprintln[T with Str[T]] (x:T) { fprintln (cstderr, x); fflush cstderr; };
+  
+  //$ Write end of line on cerr.
+  proc eendl() { endl cstderr; }
+  
+  //$ Write space on cerr.
+  proc espace() { space cstderr; }
+  @
+  
+
+Ansi Terminal
+=============
+
+
+.. code-block:: felix
+
+  
+  // Author Mike Maul
+  //$ #### Color output formatting for Ansi Terminals.
+  class AnsiTerminal
+  {
+    const cc:char = "(char)27";
+  
+    // No colour
+    fun  NC_ () => cc + '[0m'; 
+    fun  NC_(s:string) => NC_() + s;
+    proc NC()     { print$ NC_(""); }
+    proc NC(s:string)     { print$ NC_(s); }
+  
+    // Blue
+    fun blue_() => cc + '[1;34m';
+    fun blue_(s:string) => blue_() + s + NC_();
+    proc blue()   { print$ blue_(); }
+    proc blue(s:string)   { print$ blue_(s); }
+    fun BLUE_() => cc + '[1;34;1m';
+    fun BLUE_(s:string) => BLUE_() + s + NC_();
+    proc BLUE()   { print$ BLUE_(); }
+    proc BLUE(s:string)   { print$ BLUE_(s); }
+  
+    // Cyan
+    fun cyan_() => cc + '[0;36m';
+    fun cyan_(s:string) => cyan_()+ s + NC_();
+    proc cyan()   { print$ cyan_(); }
+    proc cyan(s:string)   { print$ cyan_(s); }
+    fun CYAN_() => cc + '[1;36;1m';
+    fun CYAN_(s:string) => CYAN_() + s + NC_();
+    proc CYAN()   { print$ CYAN_(); }
+    proc CYAN(s:string)   { print$ CYAN_(s); }
+  
+    // Green
+    fun green_() => cc + '[0;32m';
+    fun green_(s:string) => green_() + s + NC_();
+    proc green()  { print$ green_(); }
+    proc green(s:string)   { print$ green_(s); }
+    fun GREEN_() => cc + '[1;32;1m';
+    fun GREEN_(s:string) => GREEN_() + s + NC_();
+    proc GREEN()  { print$ GREEN_(); }
+    proc GREEN(s:string)   { println$ GREEN_(s); }
+  
+    // Red
+    fun red_() => cc + '[0;31m';
+    fun red_(s:string) => red_()+ s + NC_();
+    proc red()   { print$ red_(); }
+    proc red(s:string)   { print$ red_(s); }
+    fun RED_() => cc + '[0;31;1m';
+    fun RED_(s:string) => red_()+ s + NC_();
+    proc RED()   { print$ red_(); }
+    proc RED(s:string)   { print$ red_(s); }
+  
+    // Yellow
+    fun yellow_() => cc + '[0;33m';
+    fun yellow_(s:string) => yellow_() + s + NC_();
+    proc yellow() { print$ yellow_(); }
+    proc yellow(s:string)   { print$ yellow_(s); }
+    fun YELLOW_() => cc + '[1;33;1m';
+    fun YELLOW_(s:string) => YELLOW_() + s + NC_();
+    proc YELLOW() { print$ YELLOW_(); }
+    proc YELLOW(s:string)   { print$ YELLOW_(s); }
+  }
+  
+  
+
+Stream I/O
+==========
+
+
+.. code-block:: felix
+
+  
+  class IOStream {
+    requires package "demux";
+    requires package "faio";
+  
+    open Faio;
+  
+    if PLAT_POSIX do
+      open Faio_posix;
+      typedef fd_t = FileSystem::posix_file;
+    else
+      open Faio_win32;
+      typedef fd_t = Faio_win32::fd_t;
+    done
+  
+    // ---------------------------------------------------------------------------
+  
+    publish "The interface for a readable stream of bytes."
+    class IByteStream[T] {
+      publish "Read N bytes from the stream into the address."
+      virtual proc read: T * &int * address * &bool;
+    }
+  
+    publish "The interface for a writable stream of bytes."
+    class OByteStream[T] {
+      publish "Write N bytes from the address into the stream."
+      virtual proc write: T * &int * address * &bool;
+    }
+  
+    publish "The interface for a readable and writable stream of bytes."
+    class IOByteStream[T] {
+      inherit IByteStream[T];
+      inherit OByteStream[T];
+    }
+  
+    publish "A readable stream that can have it's read channel closed."
+    class TerminalIByteStream[T] {
+      inherit IByteStream[T];
+  
+      publish "Close the input stream."
+      virtual proc iclose: T;
+    }
+  
+    publish "A writable stream that can have it's write channel closed."
+    class TerminalOByteStream[T] {
+      inherit OByteStream[T];
+  
+      publish "Close the output stream."
+      virtual proc oclose: T;
+    }
+  
+    publish "A writable stream that can have it's channels closed."
+    class TerminalIOByteStream[T] {
+      inherit TerminalIByteStream[T];
+      inherit TerminalOByteStream[T];
+  
+      publish "Close the stream."
+      virtual proc ioclose: T;
+    }
+  
+    // ---------------------------------------------------------------------------
+  
+    union devnull_t = DEVNULL;
+  
+    publish "devnull_t"
+    instance IByteStream[devnull_t]
+    {
+      proc read(strm: devnull_t, len: &int, buf: address, eof: &bool) {
+        len <- 0;
+        eof <- true;
+      }
+    }
+  
+    instance OByteStream[devnull_t]
+    {
+      proc write(strm: devnull_t, len: &int, buf: address, eof: &bool) {
+        eof <- false;
+      }
+    }
+  
+    instance IOByteStream[devnull_t] {}
+    instance TerminalIByteStream[devnull_t] { proc iclose (x:devnull_t) {} }
+    instance TerminalOByteStream[devnull_t] { proc oclose (x:devnull_t) {} }
+    instance TerminalIOByteStream[devnull_t] { proc ioclose (x:devnull_t) {} }
+  
+    // ---------------------------------------------------------------------------
+  
+    publish "fd_t -- native file handle (disk file)"
+    instance IByteStream[fd_t]
+    {
+      if PLAT_POSIX do
+        gen cread: fd_t * int * address -> int = "read($1,$2,$3)";
+        proc read(fd: fd_t, len: &int, buf: address, eof: &bool) {
+          var oldlen = *len;
+          len <- cread(fd, *len, buf);
+          eof <- oldlen < *len;
+        }
+      else
+        // int32 = DWORD
+        gen ReadFile: fd_t * address * int32 * &int32 -> bool =
+          "ReadFile($1,$2,$3,$4,NULL)"
+        ;
+        proc read(fd: fd_t, len: &int, buf: address, eof: &bool) {
+          var oldlen = *len;
+          var readin: int32;
+          var res = ReadFile(fd, buf, len*.int32, &readin);
+          len <- readin.int;
+          eof <- res or (oldlen < *len);
+        }
+      done
+    }
+  
+    instance OByteStream[fd_t]
+    {
+      if PLAT_POSIX do
+        gen cwrite: fd_t * int * address -> int = "write($1,$2,$3)";
+        proc write(fd: fd_t, len: &int, buf: address, eof: &bool) {
+          var oldlen = *len;
+          len <- cwrite(fd, *len, buf);
+          eof <- oldlen < *len;
+        }
+      else
+        // int32 = DWORD
+        gen WriteFile: fd_t * address * int32 * &int32 -> bool =
+          "WriteFile($1,$2,$3,$4,NULL)"
+        ;
+        proc write(fd: fd_t, len: &int, buf: address, eof: &bool) {
+          var oldlen = *len;
+          var written: int32;
+          var res = WriteFile(fd, buf, len*.int32, &written);
+          len <- written.int;
+          eof <- res or (oldlen < *len);
+        }
+      done
+    }
+  
+    instance IOByteStream[fd_t] {}
+  
+    instance TerminalIByteStream[fd_t]
+    {
+      proc iclose (fd: fd_t) {
+        if PLAT_POSIX do
+          C_hack::ignore(FileSystem::close fd);
+        else
+          CloseFile fd;
+        done
+      }
+    }
+  
+    instance TerminalOByteStream[fd_t]
+    {
+      proc oclose (fd: fd_t) {
+        if PLAT_POSIX do
+          C_hack::ignore(FileSystem::close fd);
+        else
+          CloseFile fd;
+        done
+      }
+    }
+  
+    instance TerminalIOByteStream[fd_t]
+    {
+      proc ioclose (fd: fd_t) {
+        if PLAT_POSIX do
+          C_hack::ignore(FileSystem::close fd);
+        else
+          CloseFile fd;
+        done
+      }
+    }
+  
+    // ---------------------------------------------------------------------------
+  
+    publish "Read the input stream to the output stream."
+    proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]] (
+      istream: istr,
+      ostream: ostr,
+      buf: address,
+      bufsize: int)
+    {
+      var reof = false;
+      var weof = false;
+      var len: int;
+  
+      // if we finish input, stop. if output eofs, don't keep hammering on it!
+      while not reof and not weof do
+        len = bufsize;
+        read (istream, &len, buf, &reof);
+        write(ostream, &len, buf, &weof);
+      done
+    }
+  
+    publish "Read the input stream to the output stream."
+    proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]] (
+      istream: istr,
+      ostream: ostr)
+    {
+      val BUFSIZE = 100000;
+      var buf = Memory::malloc(BUFSIZE);
+  
+      // that's some nice error checking
+      cat (istream, ostream, buf, BUFSIZE);
+  
+      Memory::free (buf);
+    }
+  
+    publish "Read all the input streams to the output stream."
+    proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]] (
+      istreams: list[istr],
+      ostream: ostr,
+      buf: address,
+      bufsize: int)
+    {
+      List::iter (proc (istream:istr) {
+        cat (istream, ostream, buf, bufsize);
+      }) istreams;
+    }
+  
+    publish "Compare the results of two streams."
+    proc stream_cmp[istr1,istr2 with IByteStream[istr1], IByteStream[istr2]] (
+      stream1: istr1,
+      stream2: istr2,
+      buf1: address,
+      buf2: address,
+      bufsize: int,
+      sign: &int)
+    {
+      var eof1 = false;
+      var eof2 = false;
+      var len1: int;
+      var len2: int;
+      var terminated = false;
+      var cmp = 0;
+  
+      while cmp == 0 and not terminated do
+        len1 = bufsize; read(stream1, &len1, buf1, &eof1);
+        len2 = bufsize; read(stream2, &len2, buf2, &eof2);
+  
+        len := min(len1, len2);
+  
+        // It's very unfortunate that memcmp doesn't return the position of the
+        // first non-equality
+        cmp = Memory::memcmp(buf1, buf2, size len);
+  
+        if cmp == 0 do
+          cmp = len1 - len2;
+          if cmp == 0 do
+            terminated = eof1 and eof2;
+            cmp =
+              // ugg: false = case 0, true = case 1
+              match eof1, eof2 with
+              | case 1, case 1 => 0
+              | case 0, case 0 => 0
+              | case 0, case 1 => 1
+              | case 1, case 0 => -1
+              endmatch
+            ;
+          done
+        done
+      done
+  
+      sign <- cmp;
+    }
+  
+  
+    publish "Compare the results of two streams."
+    proc cmp[istr1, istr2 with IByteStream[istr1], IByteStream[istr2]] (
+      istream1: istr1,
+      istream2: istr2,
+      res: &int)
+    {
+      val BUFSIZE = 100000;
+      var buf1 = Memory::malloc(BUFSIZE);
+      var buf2 = Memory::malloc(BUFSIZE);
+      stream_cmp(istream1, istream2, buf1, buf2, BUFSIZE, res);
+      Memory::free(buf1);
+      Memory::free(buf2);
+    }
+  
+    publish "Read the results of a stream back into it's stream."
+    proc echo[iostr with IOByteStream[iostr]] (
+      iostream: iostr,
+      buf: address,
+      bufsize: int)
+    {
+      // echo a = cat a a. that's deep, man.
+      cat(iostream, iostream, buf, bufsize);
+    }
+  
+    publish "Read in from a stream and write to two streams."
+    proc tee[istr,ostr with IByteStream[istr], OByteStream[ostr]] (
+      istream: istr,
+      ostream1: ostr,
+      ostream2: ostr)
+    {
+      var reof  = false;
+      var weof1 = false;
+      var weof2 = false;
+      var len: int;
+  
+      val BUFSIZE = 10*1024;
+      var buf = Memory::malloc(BUFSIZE);
+  
+      // don't hammer!
+      while not reof and not weof1 and not weof2 do
+        len = BUFSIZE;
+        read  (istream,  &len, buf, &reof);
+        write (ostream1, &len, buf, &weof1);
+        write (ostream2, &len, buf, &weof2);
+      done
+  
+      Memory::free buf;
+    }
+  
+    // highly inefficient!
+    noinline proc get_line[istr with IByteStream[istr]] (
+      istream: istr,
+      s: &string)
+    {
+  //println$ "get_line starts";
+      var c: char;
+      val ac = address (&c);
+      var st: string="";
+      var finished = false;
+  
+      while not finished do
+        var len = 1;
+        var eof: bool;
+  
+  //println$ "read 1 byte";
+        read(istream, &len, ac, &eof);
+  //println$ if eof then "EOF" else "not EOF" endif;
+  //println$ "Char = " + str(ord c) + "='"+str c+"'";
+        if eof or c == char '\n' do
+          finished = true;
+        else
+          st += c;
+        done
+      done
+      s <- st;  // pass back result
+    }
+  
+    proc write_string[ostr with OByteStream[ostr]] (
+      ostream: ostr,
+      var s: string,
+      eof: &bool)
+    {
+      var slen = s.len.int;
+      var a = C_hack::cast[address]$ cstr s;
+      write(ostream, &slen, a, eof);
+    }
+  } // class Stream
+  
+
+TCP/IP Sockets
+==============
+
+These sockets are ONLY for TCP/IP.
+
+.. code-block:: felix
+
+  
+  class Socket_class[socket_t] {
+    requires package "demux";
+  
+    virtual proc mk_listener: &socket_t * &int * int;
+    virtual proc accept: socket_t * &socket_t;
+    virtual proc shutdown: socket_t * int;
+    virtual proc connect: &socket_t * +char * int * &int;
+  
+    inherit IOStream::IByteStream[socket_t];
+    inherit IOStream::OByteStream[socket_t];
+    inherit IOStream::IOByteStream[socket_t];
+    inherit IOStream::TerminalIByteStream[socket_t];
+    inherit IOStream::TerminalOByteStream[socket_t];
+    inherit IOStream::TerminalIOByteStream[socket_t];
+  }
+  
+
+Posix sockets
+=============
+
+
+.. code-block:: felix
+
+  class PosixSocket
+  {
+    requires package "demux";
+    typedef socket_t = Faio_posix::socket_t;
+    inherit Socket_class[socket_t];
+    instance Socket_class[socket_t]
+    {
+      proc mk_listener (l:&socket_t, port: &int, qlen:int) =>
+        Faio_posix::mk_listener(l, port, qlen)
+      ;
+  
+      proc accept (l:socket_t, s:&socket_t) =>
+        Faio_posix::accept(s, l)  // success or not? error checking
+      ;
+  
+      proc shutdown(s: socket_t, how: int) =>
+        Faio_posix::shutdown(s, how)
+      ;
+  
+      proc connect(s: &socket_t, addr: +char, port: int, err: &int) =>
+          Faio_posix::connect(s, addr, port, err)
+      ;
+  
+    }
+  
+    //
+    // socket_t
+    //
+    instance IOStream::IByteStream[socket_t]
+    {
+      proc read(s: socket_t, len: &int, buf: address, eof: &bool)
+        { Faio_posix::async_read(s, len, buf, eof); }
+    }
+  
+    instance IOStream::OByteStream[socket_t]
+    {
+      proc write(s: socket_t, len: &int, buf: address, eof: &bool)
+        {
+          //println$ "faio/socket.flx: Stream::OByteStream[socket_t]: write(s,"+str (*len)+",buf,"+str(*eof)+") calling async_write ..";
+          Faio_posix::async_write(s, len, buf, eof);
+          //println$ "faio/socket.flx: Stream::OByteStream[socket_t]: write(s,"+str (*len)+",buf,"+str(*eof)+") called async_write ..";
+        }
+    }
+  
+    instance IOStream::IOByteStream[socket_t] {}
+  
+    instance IOStream::TerminalIByteStream[socket_t]
+    {
+      proc iclose (s:socket_t)
+        { Faio_posix::shutdown (s,0); Faio_posix::close s; }
+    }
+  
+    instance IOStream::TerminalOByteStream[socket_t]
+    {
+      proc oclose (s:socket_t)
+        { Faio_posix::shutdown (s,1); Faio_posix::close s; }
+    }
+  
+    instance IOStream::TerminalIOByteStream[socket_t]
+    {
+      proc ioclose (s:socket_t)
+        {
+          // RF: just close, I don't think any of this stuff is necessary.
+          // I think this is an application level problem.
+          //fprint (cstderr,q"STREAM:Closing socket $s\n");
+          //Faio_posix::shutdown(s,2);
+          //Faio::sleep (Faio::sys_clock,5.0);
+          /*
+          var len = 1; var eof = false; var buf = Memory::malloc(1);
+          Faio_posix::async_read(s, &len, buf, &eof);
+          fprint (cstderr,q"STREAM:socket $s, eof=$eof\n");
+          Faio_posix::shutdown(s,0);
+          */
+          Faio_posix::close s;
+        }
+    }
+      
+  }
+  
+  @
+  
+
+Windows sockets
+===============
+
+
+.. code-block:: felix
+
+  class Win32Socket
+  {
+    requires package "demux";
+    typedef socket_t = Faio_win32::socket_t;
+    inherit Socket_class[socket_t];
+    instance Socket_class[socket_t]
+    {
+      proc mk_listener (l:&socket_t, port: &int, qlen:int) =>
+        Faio_win32::mk_listener(l, port, qlen)
+      ;
+      proc accept (var l:socket_t, s:&socket_t) 
+      {
+        var success: bool;
+        Faio_win32::mk_socket(s);  // error check?
+        Faio_win32::Accept(&success, l, *s);
+        if not success do
+          fprint (cstdout, "Accept failed! num?\n");
+        done
+      }
+  
+      proc shutdown(s: socket_t, how: int) =>
+        Faio_win32::shutdown(s, how)
+      ;
+  
+      proc connect(s: &socket_t, addr: +char, port: int, err: &int) =>
+        Faio_win32::Connect(s, addr, port, err)
+      ;
+  
+    }
+  
+    //
+    // socket_t
+    //
+    instance IOStream::IByteStream[socket_t]
+    {
+      proc read(s: socket_t, len: &int, buf: address, eof: &bool) =>
+        Faio_win32::WSARecv(s, len, buf, eof)
+      ;
+    }
+  
+    instance IOStream::OByteStream[socket_t]
+    {
+      proc write(s: socket_t, len: &int, buf: address, eof: &bool) =>
+        Faio_win32::WSASend(s, len, buf, eof)
+      ;
+    }
+  
+    instance IOStream::IOByteStream[socket_t] {}
+  
+    instance IOStream::TerminalIByteStream[socket_t]
+    {
+      proc iclose (s:socket_t) =>
+        Faio_win32::closesocket s
+      ;
+    }
+  
+    instance IOStream::TerminalOByteStream[socket_t]
+    {
+      proc oclose (s:socket_t) =>
+        Faio_win32::closesocket s
+      ;
+    }
+  
+    instance IOStream::TerminalIOByteStream[socket_t]
+    {
+      proc ioclose (s:socket_t) =>
+        Faio_win32::closesocket s
+      ;
+    }
+  }
+  @
+  
+
+Host sockets
+============
+
+
+.. code-block:: felix
+
+  
+  class Socket
+  {
+    if PLAT_WIN32 do
+      inherit Win32Socket;
+    elif PLAT_POSIX do
+       inherit PosixSocket;
+    else
+       ERROR;
+    done
+  }
+  @
+  
+
+Demux: Felix Event notification service
+=======================================
+
+
+.. code-block:: felix
+
+  
+  class Demux
+  {
+    type demuxer = "::flx::demux::flx_demuxer_t*"
+      requires package "demux"
+    ;
+    gen mk_sys_demux: 1->demuxer = "::flx::demux::make_std_demuxer()";
+    var sys_demux =  mk_sys_demux();
+  }
+  
+
+Faio: Felix Asynchronous I/O service
+====================================
+
+
+.. code-block:: felix
+
+  
+  class Faio {
+    requires package "demux";
+    requires package "faio";
+  
+    open C_hack;
+  
+    proc faio_req[t](x:&t) {
+      val y : &address = reinterpret[&address] x;
+      svc (svc_general y);
+    }
+  
+    proc get_thread(thread: &fthread) {
+        svc (svc_get_fthread thread );
+    }
+  
+    type sel_param = "flx::demux::sel_param";
+    type sel_param_ptr = "flx::demux::sel_param*";
+  
+    fun get_bytes_done : sel_param_ptr -> int = '$1->bytes_written';
+    proc init_pb : sel_param*address*int
+    = '{$1.buffer=(char*)$2;$1.buffer_size=$3;$1.bytes_written=0;}';
+  
+    proc calc_eof(pb: sel_param_ptr, len: &int, eof: &bool)
+    {
+        //println "Calc_eof ..";
+        var bytes_done = pb.get_bytes_done;
+        //println$ "Bytes done = "+ str bytes_done;
+        //println$ "Req len= "+ str (*len);
+        eof <- (bytes_done != *len);
+        //println$ "Eof = " + str (*eof);
+        len <- bytes_done;
+        //println$ "Reset len to bytes done ..";
+    }
+  
+    type sleep_request_t = 'flx::faio::sleep_request' requires package "timer";
+    type alarm_clock_t = 'flx::demux::timer_queue*' requires package "timer"; 
+  
+    fun mk_alarm_clock: 1 -> alarm_clock_t = '::flx::demux::mk_timer_queue()';
+    fun mk_sleep_request: alarm_clock_t * double -> sleep_request_t = '::flx::faio::sleep_request($1,$2)';
+  
+    proc sleep(clock: alarm_clock_t, delta: double)
+    {
+      var sr = mk_sleep_request$ clock,delta;
+      faio_req$ &sr;
+    }
+  
+    // this should be deleted if not used!
+    var clock = mk_alarm_clock();
+    proc sleep (delta:double) { sleep (clock,delta); }
+  
+  } // class faio
+  
+
+Posix Faio
+==========
+
+
+.. code-block:: felix
+
+  
+  class Faio_posix  {
+  header faio_posixio_hpp = '#include "faio_posixio.hpp"';
+  requires package "demux";
+  requires package "faio";
+  open C_hack;        // cast, address
+  open Faio;
+  open Pthread;
+  open Demux;
+  open Posix_headers;
+  
+  header sockety_h = '#include "demux_sockety.hpp"';  // my socket utils
+  header '#include "faio_posixio.hpp"';
+  
+  // ------------ core file and socket definitions ----------------
+  typedef fd_t = PosixFileSystem::posix_file;
+  
+  // type of a socket
+  type socket_t = "int";
+  
+  // a size type for use in some socket functions
+  // stupid confused Unix standard!
+  type socklen_t="socklen_t" requires sockety_h;
+  ctor socklen_t : int = "$1";
+  ctor int : socklen_t = "$1";
+  
+  // A socket address consists of 
+  // 1. a port number
+  // 2. an address family indicator
+  // 3. the encoded address, dependent on the family
+  //
+  // We deal only with Internet addresses IPv4 and IPv6,
+  // indicator AF_INET and AF_INET6
+  //
+  // type of socket address protocol family
+  type sa_family_t = "sa_family_t" requires sys_socket_h;
+  fun ==: sa_family_t * sa_family_t -> bool = "$1==$2";
+  
+  type in_port_t = "in_port_t" requires netinet_in_h;
+  
+  const AF_INET : sa_family_t;
+  const AF_INET6 : sa_family_t;
+  
+  // type to allocate on stack to hold any socket address for any protocol
+  // required for stack allocations
+  type sockaddr_storage_t = "struct sockaddr_storage" requires sockety_h;
+  fun ss_family : &sockaddr_storage_t -> sa_family_t = "$1->ss_family";
+  
+  // type of a socket address
+  type sockaddr_t = "struct sockaddr" requires sockety_h;
+  fun sa_family : &sockaddr_t -> sa_family_t = "$1->sa_family";
+  
+  // cast socket address storage object pointer to socket address pointer
+  fun sockaddr_p : &sockaddr_storage_t -> &sockaddr_t = "(struct sockaddr*)$1";
+  axiom inet_family(ss: &sockaddr_storage_t) : ss_family ss == sa_family (sockaddr_p ss);
+  
+  // --------------------------------------------------------------
+  // IPv4
+  // type containing IPv4 internet address
+  type in_addr_t = "in_addr_t" requires netinet_in_h; // an integer
+  type struct_in_addr = "struct in_addr";
+  fun s_addr: struct_in_addr -> in_addr_t = "$1.s_addr";
+  
+  // type containing encoded port and IPv4 address
+  type sockaddr_in_t = "struct sockaddr_in" requires sockety_h;
+  fun sin_family: sockaddr_in_t -> sa_family_t= "$1.sin_family";
+  fun sin_port : sockaddr_in_t -> in_port_t= "$1.sin_port";
+  fun sin_addr : sockaddr_in_t -> struct_in_addr = "$1.sin_addr";
+  fun sin_addr : &sockaddr_in_t -> &struct_in_addr = "&($1->sin_addr)";
+  
+  
+  // --------------------------------------------------------------
+  // IPv6
+  // type containing IPv6 internet address
+  type struct_in6_addr = "struct in6_addr";
+  typedef ipv6_addr = uint8^16;
+  fun s6_addr: struct_in6_addr -> &ipv6_addr = "$1.s6_addr";
+  
+  // type containing encoded socket address for IPv6
+  type sockaddr_in6_t = "struct sockaddr_in6" requires sockety_h;
+  fun sin6_family: sockaddr_in6_t -> sa_family_t= "$1.sin6_family";
+  fun sin6_port : sockaddr_in6_t -> in_port_t = "$1.sin6_port";
+  fun sin6_addr : sockaddr_in6_t -> struct_in6_addr = "$1.sin6_addr";
+  fun sin6_addr : &sockaddr_in6_t -> &struct_in6_addr = "&($1->sin6_addr)";
+  
+  
+  // convert Internet address to display format.
+  // $1: Address family
+  // $2: pointer to the address
+  // $3: pointer to output buffer
+  // $4: length of output buffer
+  fun inet_ntop: sa_family_t * address * +char * socklen_t -> +char requires arpa_inet_h;;
+  const INET_ADDRSTRLEN : socklen_t requires arpa_inet_h;
+  const INET6_ADDRSTRLEN : socklen_t requires arpa_inet_h;
+  
+  // --------------------------------------------------------------
+  
+  instance Str[FileSystem::posix_file] {
+    fun str: FileSystem::posix_file -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
+  }
+  
+  instance Str[socket_t] {
+    fun str: socket_t -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
+  }
+  
+  fun getpeername: socket_t * &sockaddr_t * &socklen_t -> int;
+  
+  fun getpeername (s: socket_t) : string = 
+  {
+    // store for encoded IP address
+    var sa:sockaddr_storage_t;
+    var paddr : &sockaddr_t = sockaddr_p &sa; // cast
+  
+    // length of encoded IP address
+    var nsa = C_hack::cast[socklen_t] sizeof[sockaddr_storage_t];
+  
+    // get encoded peer address
+    var res = getpeername (s,  paddr, &nsa);
+    if res == -1 return "";
+  
+    var p = C_hack::cast[+char] null[char]; 
+    var ips = "";
+    var family = ss_family &sa;
+    match family with
+    | $(AF_INET) =>
+      begin
+        var buffer = C_hack::cast[+char] (Memory::malloc INET_ADDRSTRLEN.int);
+        // cast to IPv4 socket address
+        var inet_sockaddr = C_hack::cast[&sockaddr_in_t] paddr;
+        // extract pointer to IPv4 internet address
+        var p_ipnumber : &struct_in_addr = inet_sockaddr.sin_addr;
+        p = inet_ntop
+          (
+            family, 
+            C_hack::cast[address] p_ipnumber, 
+            buffer, 
+            INET_ADDRSTRLEN
+          )
+        ;
+        if not p.isNULL do ips = str p; done
+        Memory::free (C_hack::cast[address] buffer);
+      end
+  
+    | $(AF_INET6) =>
+      begin
+        var buffer = C_hack::cast[+char] (Memory::malloc INET6_ADDRSTRLEN.int);
+        // cast to IPv6 socket address
+        var inet6_sockaddr = C_hack::cast[&sockaddr_in6_t] paddr;
+        // extract IPv6 internet address (address of a byte array)
+        var p_ip6number : &struct_in6_addr = inet6_sockaddr.sin6_addr;
+        p = inet_ntop
+          (
+            family, 
+            C_hack::cast[address] p_ip6number,
+            buffer, 
+            INET6_ADDRSTRLEN
+          )
+        ;
+        if not p.isNULL do ips = str p; done
+        Memory::free (C_hack::cast[address] buffer);
+      end
+  
+    | _ => ;
+    endmatch
+    ;
+    return ips;
+  
+  }
+  
+  proc close: socket_t = 'close($1);' requires Posix_headers::unistd_h;
+  proc shutdown: socket_t*int = 'shutdown($a);' requires Posix_headers::sys_socket_h;
+  fun bad_socket : socket_t -> bool = "$1 == -1";
+  
+  
+  // socketio_request should be renamed to be async_fd_request
+  type socketio_request = "::flx::faio::socketio_request";
+  
+  gen mk_socketio_request: demuxer * socket_t*address*int*bool -> socketio_request
+      = '::flx::faio::socketio_request($1, $2, (char*)$3, $4, $5)';
+  
+  fun get_pb: socketio_request -> sel_param_ptr = '&$1.sv.pb';
+  
+  // read & write differ only by a flag
+  proc async_rw(fd: socket_t, len: &int, buf: address, eof: &bool, read_flag: bool)
+  {
+      //println$ "faio/flx_faoi_posix.flx: async_rw (s,"+str (*len)+",buf,"+str(*eof)+", "+str read_flag+") calling mk_socketio_req ..";
+      var asyncb = mk_socketio_request(sys_demux,fd, buf, *len, read_flag);
+      faio_req$ &asyncb;
+      //println$ "faio/flx_faoi_posix.flx: async_rw ("+ str fd+", "+str (*len)+",buf,"+str(*eof)+", "+str read_flag+") calculating eof ..";
+  
+      calc_eof(asyncb.get_pb, len, eof);
+      //println$ "faio/flx_faoi_posix.flx: async_rw (s,"+str (*len)+",buf,"+str(*eof)+", "+str read_flag+") called mk_socketio_req ..";
+  }
+  
+  proc async_read(fd: socket_t, len: &int, buf: address,
+      eof: &bool)
+  {
+      async_rw(fd, len, buf, eof, true);      // read
+  }
+  
+  proc async_write(fd: socket_t, len: &int, buf: address, eof: &bool)
+  {
+      //println$ "faio/flx_faoi_posix.flx: async_write(s,"+str (*len)+",buf,"+str(*eof)+" calling async_rw ..";
+      async_rw(fd, len, buf, eof, false);     // write
+      //println$ "faio/flx_faoi_posix.flx: async_write(s,"+str (*len)+",buf,"+str(*eof)+" call async_rw ..";
+  }
+  
+  // connect!
+  type async_connect = '::flx::faio::connect_request';
+  
+  fun mk_async_connect: demuxer * +char *int-> async_connect = '::flx::faio::connect_request($a)';
+  fun get_socket: async_connect -> socket_t = '$1.s';
+  fun get_err: async_connect -> int = '$1.socket_err';
+  
+  // could do multi connects for capable drivers
+  proc connect(s: &socket_t, addr: +char, port: int, err: &int)
+  {
+      var ac = mk_async_connect(sys_demux,addr, port);
+      faio_req$ &ac;
+      err <- ac.get_err;
+      s <- ac.get_socket;
+  }
+  
+  type accept_request = "::flx::faio::accept_request";
+  
+  fun mk_accept: demuxer * socket_t -> accept_request = '::flx::faio::accept_request($1,$2)';
+  fun get_socket: accept_request -> socket_t = '$1.accepted';
+  
+  // arg1 = returned socket, arg2 is port, pass 0 to have one assigned
+  proc mk_listener: &socket_t* &int *int
+      = '*$1 = ::flx::demux::create_async_listener($2, $3);' requires sockety_h;
+  
+  proc accept(s: &socket_t, listener: socket_t)
+  {
+      var acc = mk_accept$ sys_demux,listener;
+      faio_req$ &acc;
+      s <- acc.get_socket;
+  }
+  
+  } // class faio_posix
+  
+
+Win32 Faio
+==========
+
+
+.. code-block:: felix
+
+  
+  
+  module Faio_win32 {
+  requires package "demux";
+  requires package "faio";
+  // contains windows overlapped/iocp io & copipes. no stream wrapper yet.
+  open C_hack;
+  open Faio;
+  open Demux;
+  
+  header '#include "faio_winio.hpp"'; // this has everything (includes asyncio.h)
+  
+  // ------------ core file and socket definitions ----------------
+  // I could just use HANDLEs everywhere, but I want to see how this goes
+  type WFILE = 'HANDLE';
+  typedef fd_t = WFILE;
+  
+  const INVALID_HANDLE_VALUE: WFILE = 'INVALID_HANDLE_VALUE';
+  fun == : WFILE*WFILE -> bool = '($1 == $2)';
+  
+  type SOCKET = "SOCKET";
+  typedef socket_t = SOCKET;
+  
+  instance Str[socket_t] {
+     fun str: socket_t -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
+  }
+  
+  // --------------------------------------------------------------
+  
+  // useful windows function
+  fun GetLastError: 1 -> int = 'GetLastError()';
+  
+  // maybe don't use this - let the socket be passed in already associated
+  // with an IOCP. do I have to make this explicitly overlapped? If we
+  // want async io I think I'll need to associate this with the iocp.
+  fun cmk_socket : unit -> SOCKET = '::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)';
+  
+  // well that didn't help.
+  //fun cmk_socket : unit -> SOCKET = 'WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED)';
+  // must associate with iocp to do overlapped io with s (WSASend/Recv)
+  proc mk_socket(s: &SOCKET)
+  {
+      s <- cmk_socket();
+      associate_with_iocp(*s);                // associate with iocp (errors?).
+  }
+  
+  
+  type wasync_accept = "flx::faio::wasync_accept";
+  
+  fun mk_accept: demuxer *  SOCKET*SOCKET -> wasync_accept = 'flx::faio::wasync_accept($a)';
+  // make this a parameterised type
+  fun get_success[t]: t -> bool = '$1.success';
+  
+  // this feels silly
+  const INVALID_SOCKET: SOCKET = 'INVALID_SOCKET';
+  // oops, no good if we can't check against it
+  fun eq : SOCKET*SOCKET -> bool = '($1 == $2)';
+  
+  // windows style accept. accepted is an already created socket, unbound
+  proc Accept(success: &bool, listener: SOCKET, accepted: SOCKET)
+  {
+      var acc = mk_accept(sys_demux,listener, accepted);
+      faio_req$ &acc;    // causes AcceptEx to be called
+      success <- get_success(acc);
+  }
+  
+  type connect_ex="flx::faio::connect_ex";
+  fun mk_connect_ex: demuxer * SOCKET*+char*int -> connect_ex = 'flx::faio::connect_ex($a)';
+  
+  // for use on sockets you make yourself, who knows, maybe you want to
+  // reuse them
+  proc Connect(s: SOCKET, addr: +char, port: int, err: &int)
+  {
+      var con = mk_connect_ex(sys_demux,s, addr, port);
+      faio_req$ &con;    // causes ConnectEx to be called
+      var success = get_success(con);
+      err <- if success then 0 else -1 endif;
+  }
+  
+  proc Connect(s: &SOCKET, addr: +char, port: int, err: &int)
+  {
+      mk_socket s;            // error handling?
+      Connect(*s, addr, port, err);
+  }
+  
+  // listens on all interfaces, I guess
+  proc cmk_listener: &SOCKET*&int*int
+      = '*$1 = flx::demux::create_listener_socket($2, $3);';
+  
+  proc mk_listener(listener: &SOCKET, port: &int, backlog: int)
+  {
+      cmk_listener(listener,port, backlog);
+      associate_with_iocp(*listener);
+  }
+  
+  // ignores return value
+  proc closesocket: SOCKET = 'closesocket($1);';
+  
+  const SD_RECEIVE:int = 'SD_RECEIVE';
+  const SD_SEND:int = 'SD_SEND';
+  const SD_BOTH:int = 'SD_BOTH';
+  
+  proc shutdown: SOCKET*int = 'shutdown($1, $2);';
+  
+  type wasync_transmit_file = "flx::faio::wasync_transmit_file";
+  
+  // hacked for ro atm. the 0 means exclusive (not good, but I haven't deciphered
+  // the flags yet. NULL for non inheritable security attributes.
+  // OPEN_EXISTING is to make sure it doesn't create the file
+  // Geez, FILE_ATTRIBUTE_NORMAL? not hidden, not temp, etc.
+  // final NULL is for template file. not sure what it does, but I don't want it.
+  // notice that it's opened for SHARED reading
+  gen OpenFile: string -> WFILE =
+    '''CreateFile($1.c_str(), FILE_READ_DATA, FILE_SHARE_READ, NULL,
+      OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL)''';
+  
+  // basically for windows named pipes
+  gen OpenFileDuplex: string -> WFILE =
+    '''CreateFile($1.c_str(), FILE_READ_DATA | FILE_WRITE_DATA,
+       FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+       FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL)''';
+  
+  proc CloseFile: WFILE = '''if(!CloseHandle($1))
+    fprintf(stderr, "CloseHandle(WFILE) failed: %i\\n", GetLastError());''';
+  
+  // error handling?
+  // proc CloseFile: WFILE = 'CloseHandle($1);';
+  
+  fun mk_transmit_file : demuxer * SOCKET*WFILE -> wasync_transmit_file
+      = 'flx::faio::wasync_transmit_file($a)';
+  
+  // toylike interface for now, but still fun
+  proc TransmitFile(s: SOCKET, f: WFILE)
+  {
+      var tf = mk_transmit_file(sys_demux,s, f);
+      faio_req$ &tf;
+  }
+  
+  // by passing special flags to TransmitFile we can transform a connected
+  // socket into a socket ready for use with AcceptEx. DisconnectEx explicitly
+  // does this and without the warning that accept-style & connect-style sockets
+  // cannot be reused as the other type (which isn't a problem for my use)
+  // however I already have TransmitFile code in place.
+  fun mk_reuse_socket : demuxer * SOCKET -> wasync_transmit_file
+      = 'flx::faio::wasync_transmit_file($a)';
+  
+  proc ReuseSocket(s: SOCKET)
+  {
+      var tf = mk_reuse_socket(sys_demux,s);
+      faio_req$ &tf;
+  }
+  
+  type wsa_socketio = "flx::faio::wsa_socketio";
+  gen mk_wsa_socketio: demuxer * SOCKET*sel_param_ptr*bool->wsa_socketio = 'flx::faio::wsa_socketio($a)';
+  
+  private fun to_ptr : sel_param -> sel_param_ptr = '&$1';
+  
+  
+  proc WSARecv(s: SOCKET, len: &int, buf: address, eof: &bool)
+  {
+      var pb: sel_param;
+      init_pb(pb, buf, *len);
+      var ppb: sel_param_ptr = to_ptr pb;
+  
+      var rev = mk_wsa_socketio(sys_demux,s, ppb, true);  // reading
+      faio_req$ &rev;
+  // we do have a success flag
+      calc_eof(ppb, len, eof);
+  }
+  
+  proc WSASend(s: SOCKET, len: &int, buf: address, eof: &bool)
+  {
+      var pb: sel_param;
+      init_pb(pb, buf, *len);
+      var ppb: sel_param_ptr = to_ptr pb;
+  
+      var rev = mk_wsa_socketio(sys_demux,s, ppb, false); // writing
+      faio_req$ &rev;
+      calc_eof(ppb, len, eof);
+  }
+  
+  
+  // general request for addition of socket to iocp. might be better to
+  // just create them that way.
+  type iocp_associator = "flx::faio::iocp_associator";
+  fun mk_iocp_associator: demuxer * SOCKET -> iocp_associator = 'flx::faio::iocp_associator($a)';
+  
+  // this ends up just casting to a handle, so I should be able to use
+  // this for other HANDLEs. Note that the user cookie is not settable
+  // via this interface.
+  proc associate_with_iocp(s: SOCKET)
+  {
+      // results? err code?
+      var req = mk_iocp_associator(sys_demux, s);
+      faio_req$ &req;
+  }
+  
+  } // module win32_faio
+  
+  

@@ -20,7 +20,7 @@ String handling
 Strings
 =======
 
-We have three string like things.  :code:`cstring` is just
+We have three string like things.  :code:`cstring` is just 
 an alias for a NTBS (Null Terminated Byte String).
 The workhorse  :code:`string` type based on C++ string.
 
@@ -32,7 +32,7 @@ This type is deprecated, to be repalced by C++11 unicode string type.
 .. code-block:: felix
 
   typedef cstring = +char;
-  type string = "::std::basic_string<char>"
+  type string = "::std::basic_string<char>" 
     requires Cxx_headers::string,
     header '#include "flx_serialisers.hpp"',
     encoder "::flx::gc::generic::string_encoder",
@@ -122,7 +122,7 @@ String concatenation.
     fun + ( x:string,  y: int) => x + str y;
   
     // may be a bit risky!
-    // IT WAS: interferes with "hello" + list ("world","blah"):
+    // IT WAS: interferes with "hello" + list ("world","blah"): 
     // is this a string or a list of strings?
     //fun + [T with Str[T]] (x:string, y:T) => x + str y;
   
@@ -202,15 +202,15 @@ Substrings
       | GSSList gsl =>
         // this should be faster cause it cats a list of string which
         // is linear in the number of strings
-        var sl = Empty[string];
+        var sl = Empty[string]; 
         for gs in gsl perform sl = subscript (x,gs) + sl;
         r = sl.rev.(cat "");
-      | _ =>
+      | _ => 
         for i in gs perform r += x.[i];
-      endmatch;
+      endmatch; 
       return r;
     }
-  
+   
     proc store: &string * !ints * char = "(*$1)[$2] = $3;";
   
 
@@ -325,7 +325,7 @@ like variant which uses an  :code:`option` type.
     fun find_last_not_of (s:string, e:char) : opt[size] => match stl_find_last_not_of (s, e) with | i when i == stl_npos => None[size] | i => Some i endmatch;
     fun find_last_not_of (s:string, e:char, i:size) : opt[size] => match stl_find_last_not_of (s, e, i) with | i when i == stl_npos => None[size] | i => Some i endmatch;
   
-  
+    
 
 Construe  :code:`string` as set of  :code:`char`
 ------------------------------------------------
@@ -336,7 +336,7 @@ Construe  :code:`string` as set of  :code:`char`
     instance Set[string,char] {
       fun \in (c:char, s:string) => stl_find (s,c) != stl_npos;
     }
-  
+    
 
 Construe  :code:`string` as stream of  :code:`char`
 ---------------------------------------------------
@@ -529,27 +529,27 @@ Split a string into a list on given separator
     // leading and trailing space is removed. Embedded
     // multiple spaces cause a single split.
     class RespectfulParser {
-      union quote_action_t =
+      union quote_action_t = 
         | ignore-quote
         | keep-quote
         | drop-quote
-      ;
-      union dquote_action_t =
+      ; 
+      union dquote_action_t = 
         | ignore-dquote
         | keep-dquote
         | drop-dquote
-      ;
-      union escape_action_t =
+      ; 
+      union escape_action_t = 
         | ignore-escape
         | keep-escape
         | drop-escape
-      ;
+      ; 
       typedef action_t = (quote:quote_action_t, dquote:dquote_action_t, escape:escape_action_t);
   
       union mode_t = | copying | skipping | quote | dquote | escape-copying | escape-quote | escape-dquote;
       typedef state_t = (mode:mode_t, current:string, parsed: list[string] );
   
-      noinline fun respectful_parse (action:action_t) (var state:state_t) (var s:string) : state_t =
+      noinline fun respectful_parse (action:action_t) (var state:state_t) (var s:string) : state_t = 
       {
         var mode = state.mode;
         var current = state.current;
@@ -558,7 +558,7 @@ Split a string into a list on given separator
         noinline proc handlecopying(ch:char) {
           if ch == char "'" do
             match action.quote with
-            | #ignore-quote =>
+            | #ignore-quote => 
               current += ch;
             | #keep-quote =>
               current += ch;
@@ -568,7 +568,7 @@ Split a string into a list on given separator
             endmatch;
           elif ch == char '"' do
             match action.dquote with
-            | #ignore-dquote =>
+            | #ignore-dquote => 
               current += ch;
             | #keep-dquote =>
               current += ch;
@@ -578,7 +578,7 @@ Split a string into a list on given separator
             endmatch;
           elif ch == char '\\' do
             match action.escape with
-            | #ignore-escape =>
+            | #ignore-escape => 
               current += ch;
             | #keep-escape =>
               current += ch;
@@ -596,13 +596,13 @@ Split a string into a list on given separator
           done
         }
   
-        for ch in s do
+        for ch in s do 
           match mode with
           | #copying => handlecopying ch;
           | #quote =>
             if ch == char "'" do
               match action.quote with
-              | #ignore-quote =>
+              | #ignore-quote => 
                 assert false;
                 //current += ch;
               | #keep-quote =>
@@ -613,7 +613,7 @@ Split a string into a list on given separator
               endmatch;
             elif ch == char "\\" do
               match action.escape with
-              | #ignore-escape =>
+              | #ignore-escape => 
                 current += ch;
               | #keep-escape =>
                 current += ch;
@@ -623,12 +623,12 @@ Split a string into a list on given separator
               endmatch;
             else
               current += ch;
-            done
+            done 
   
           | #dquote =>
             if ch == char '"' do
               match action.dquote with
-              | #ignore-dquote =>
+              | #ignore-dquote => 
                 assert false;
                 //current += ch;
               | #keep-dquote =>
@@ -639,7 +639,7 @@ Split a string into a list on given separator
               endmatch;
             elif ch == char "\\" do
               match action.escape with
-              | #ignore-escape =>
+              | #ignore-escape => 
                 current += ch;
               | #keep-escape =>
                 current += ch;
@@ -649,7 +649,7 @@ Split a string into a list on given separator
               endmatch;
             else
               current += ch;
-            done
+            done 
   
           | #escape-copying =>
              current += ch;
@@ -672,37 +672,37 @@ Split a string into a list on given separator
         return (mode=mode, current=current, parsed=state.parsed + result);
       }
     }
-  
+    
     // simplified one shot parser.
     // ignores mismatched quotes and backslashes.
-    fun respectful_split (action:RespectfulParser::action_t) (s:string) : list[string] =
+    fun respectful_split (action:RespectfulParser::action_t) (s:string) : list[string] = 
     {
       var state = RespectfulParser::respectful_parse
-        action
+        action 
         (
-          mode=RespectfulParser::skipping,
-          current="",
+          mode=RespectfulParser::skipping, 
+          current="", 
           parsed=Empty[string]
-        )
+        ) 
         s
       ;
       // ignore mismatched quotes and backslashes.
-      match state.mode with
+      match state.mode with 
       | #skipping => ;
       | _ => &state.parsed <- state.parsed + state.current;
       endmatch;
       return state.parsed;
-  
+   
     }
   
     fun respectful_split (s:string) : list[string] =>
       respectful_split (
-        quote=RespectfulParser::keep-quote,
-        dquote=RespectfulParser::keep-dquote,
+        quote=RespectfulParser::keep-quote, 
+        dquote=RespectfulParser::keep-dquote, 
         escape=RespectfulParser::keep-escape
-      )
+      ) 
       s
-    ;
+    ; 
   
     // OO version of the parser.
     object respectfulParser (action:RespectfulParser::action_t) = {
@@ -781,12 +781,12 @@ Uses Google RE2 engine.
        var count = 0;
        for var i in 0 upto s.len.int - 1 do
          match mode with
-         | #cp =>
-           if s.[i] == char "\\" do
-             mode = ins;
-             j=0; count = 0;
-           else
-            b += s.[i];
+         | #cp => 
+           if s.[i] == char "\\" do 
+             mode = ins; 
+             j=0; count = 0; 
+           else 
+            b += s.[i]; 
            done
          | #ins =>
            if s.[i] in "0123456789" do
@@ -803,7 +803,7 @@ Uses Google RE2 engine.
                j=0; count=0;
              else
                mode = cp;
-               b += s.[i];
+               b += s.[i]; 
              done
            done
          endmatch;
@@ -865,7 +865,7 @@ Fetch underlying cstring.
 
 .. code-block:: felix
 
-    // safely returns a malloc()'d copy, not garbage collected
+    // safely returns a malloc()'d copy, not garbage collected 
     fun _unsafe_cstr: string -> +char = "::flx::rtl::strutil::flx_cstr($1)" is atom;
   
     // partially unsafe because the string could be modified.
@@ -897,7 +897,7 @@ Case translation
 
 .. code-block:: felix
 
-    // Convert all characters to upper case
+    // Convert all characters to upper case  
     fun toupper(s:string):string => map (toupper of char) s;
     // Convert all characters to lower case
     fun tolower(s:string):string => map (tolower of char) s;
@@ -940,7 +940,7 @@ String syntax
 =============
 
 
-.. code-block:: felix
+.. code-block:: text
 
   syntax stringexpr
   {
@@ -956,4 +956,5 @@ String syntax
     //$ String substring, from start of string.
     x[sfactor_pri] := x[sfactor_pri] "." "[" "to" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'copyto) (,_1 ,_5)))";
   }
+  
   

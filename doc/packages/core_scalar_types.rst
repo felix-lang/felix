@@ -1,0 +1,636 @@
+
+=================
+Core Scalar Types
+=================
+
+
+
+Language features.
+==================
+
+In these definitions, we introduce basic types into Felix with
+bindings to C. These are expressed by the  :code:`type` statement,
+which gives the Felix name of the type, and then the C 
+name in quotes.
+
+Note very particularly each type is distinct, type names
+such as  :code:`size_t` in C and C++ are merely aliases for
+some other integer type, in Felix these types are 
+completely distinct.
+
+The adjective  :code:`pod` stands for <em>plain old datatype</em>
+and tells the system that the type has a trivial destructor
+and does not require finalisation.
+
+The adjective  :code:`_gc_pointer` tells the system the abstract
+primitive is in fact a pointer and the garbage collector
+must follow it.
+
+The  :code:`requires` clause, if specified, tells the system
+that the named floating insertion must be emitted into
+the generated C++ code.  We will use the names of code
+fragments specifying header files defined
+in the <strong>cheaders</strong> package.
+
+
+Synopsis
+========
+
+
+.. code-block:: felix
+
+  
+  include "std/scalar/ctypedefs";
+  
+  include "std/scalar/address";
+  include "std/scalar/memory";
+  include "std/scalar/bool";
+  include "std/scalar/int";
+  include "std/scalar/real";
+  include "std/scalar/number";
+  include "std/scalar/char";
+  
+  include "plat/float";
+  include "std/scalar/float_format";
+  include "std/scalar/float_math";
+  include "std/scalar/quaternion";
+  
+  
+
+Character type
+==============
+
+A basic 8 bit character type.
+
+.. code-block:: felix
+
+  pod type char = "char";
+  
+
+Efficient Integer types
+=======================
+
+These types correspond to C99 integer types.
+Note that Felix mandates the existence of the long long types.
+
+Note we also require the C99  :code:`intmax_t` and  :code:`uintmax_t`
+types. These will usually be signed and unsigned
+long long, however they may be an even larger type if the
+C implementor desires.
+
+We also map C89  :code:`size_t` and the less useful C99  :code:`ssize_t`,
+a signed variant of  :code:`size_t`. These are used for array
+lengths and in particular can span byte arrays as large
+as can be addressed.
+
+
+.. code-block:: felix
+
+  pod type tiny = "signed char" requires index TYPE_tiny;
+  pod type short = "short" requires index TYPE_short;
+  pod type int = "int" requires index TYPE_int;
+  pod type long = "long" requires index TYPE_long;
+  pod type vlong = "long long" requires index TYPE_vlong;
+  pod type utiny = "unsigned char" requires index TYPE_utiny;
+  pod type ushort = "unsigned short" requires index TYPE_ushort;
+  pod type uint = "unsigned int" requires index TYPE_uint;
+  pod type ulong = "unsigned long" requires index TYPE_ulong;
+  pod type uvlong = "unsigned long long" requires index TYPE_uvlong;
+  
+  pod type intmax = "intmax_t" requires C99_headers::stdint_h, index TYPE_intmax;
+  pod type uintmax = "uintmax_t" requires C99_headers::stdint_h, index TYPE_uintmax;
+  pod type size = "size_t" requires C89_headers::stddef_h, index TYPE_size;
+  pod type ssize = "ssize_t" requires C89_headers::stddef_h, index TYPE_ssize;
+  
+  /* for concordance, required to generated loops */
+  class PervasiveInts {
+    private const zero: int = "0" requires index CONST_zero;
+    private fun isneg:  int -> 2 = "$1<0" requires index FUN_isneg;
+    private fun isnonneg:  int -> 2= "$1>=0" requires index FUN_isnonneg;
+    private proc decr:  &int = "--*$1;" requires index PROC_decr;
+  }
+  
+  // Shouldn't really be here!
+  class PervasiveLogic {
+    private fun land: bool * bool -> bool = "$1&&$2" requires index FUN_land;
+    private fun lor: bool * bool -> bool = "$1||$2" requires index FUN_lor;
+    private fun lnot: bool * bool -> bool = "!$1" requires index FUN_lnot;
+  }
+  
+
+Exact Integer types
+===================
+
+Here are the usual exact integer types.
+Note that Felix mandates the existence of the  :code:`stdint.h`
+header file from C99, and that all the exact types are
+defined. This includes 64 bit signed and unsigned integers,
+even on a 32 bit machine.
+
+
+.. code-block:: felix
+
+  pod type int8 = "int8_t" requires C99_headers::stdint_h, index TYPE_int8;
+  pod type int16 = "int16_t" requires C99_headers::stdint_h, index TYPE_int16;
+  pod type int32 = "int32_t" requires C99_headers::stdint_h, index TYPE_int32;
+  pod type int64 = "int64_t" requires C99_headers::stdint_h, index TYPE_int64;
+  pod type uint8 = "uint8_t" requires C99_headers::stdint_h, index TYPE_uint8;
+  pod type uint16 = "uint16_t" requires C99_headers::stdint_h, index TYPE_uint16;
+  pod type uint32 = "uint32_t" requires C99_headers::stdint_h, index TYPE_uint32;
+  pod type uint64 = "uint64_t" requires C99_headers::stdint_h, index TYPE_uint64;
+  
+
+Raw Memory
+==========
+
+Raw memory operations provide an uninterpreted byte and
+two address types.
+ 
+We also provide a mapping of  :code:`ptrdiff_t` which is a signed
+type holding the result of subtracting two pointers or
+addresses of the same type.
+
+Finally, we provide signed and unsigned integers of the same
+size as addresses and pointers which can be used to perform
+arbitrary integer operations.
+
+
+.. code-block:: felix
+
+  pod type byte = "unsigned char" requires index TYPE_byte;
+  type caddress = "void *";
+  _gc_pointer type address = "void *" requires index TYPE_address;
+  
+  pod type ptrdiff = "ptrdiff_t" requires C89_headers::stddef_h, index TYPE_ptrdiff;
+  
+  pod type intptr = "intptr_t" requires C99_headers::stdint_h, index TYPE_intptr;
+  pod type uintptr = "uintptr_t" requires C99_headers::stdint_h, index TYPE_uintptr;
+  @
+  
+
+Integer literal constructors.
+=============================
+
+In Felix, integer types are lifted from C in the library.
+Therefore, constructors for these types must also 
+be defined in the library, including literals.
+
+In Felix, internally, all literals are represented opaquely.
+There are three components to a literal: the Felix type,
+the string value of the lexeme decoded by the parser,
+and a string representing the C++ value to be emitted
+by the compiler back end.
+
+The grammar specification consists of regular definitions
+used to recognize the literal, and decoding routines
+written in Scheme used to produce the triple required
+by the compiler.
+
+
+
+.. code-block:: text
+
+  
+  SCHEME """
+  (define (findradix s)  ; find the radix of integer lexeme
+    (let* 
+      (
+        (n (string-length s))
+        (result 
+          (cond 
+            ((prefix? "0b" s)`(,(substring s 2 n) 2)) 
+            ((prefix? "0o" s)`(,(substring s 2 n) 8)) 
+            ((prefix? "0d" s)`(,(substring s 2 n) 10)) 
+            ((prefix? "0x" s)`(,(substring s 2 n) 16)) 
+            (else `(,s 10))
+          )
+        )
+      )
+      result
+    )
+  )
+  """;
+  
+  SCHEME """
+  (define (findtype s) ;; find type of integer lexeme
+    (let*
+      (
+        (n (string-length s))
+        (result
+          (cond
+            ((suffix? "ut" s)`(,(substring s 0 (- n 2)) "utiny"))
+            ((suffix? "tu" s)`(,(substring s 0 (- n 2)) "utiny"))
+            ((suffix? "t" s)`(,(substring s 0 (- n 1)) "tiny"))
+  
+            ((suffix? "us" s)`(,(substring s 0 (- n 2)) "ushort"))
+            ((suffix? "su" s)`(,(substring s 0 (- n 2)) "ushort"))
+            ((suffix? "s" s)`(,(substring s 0 (- n 1)) "short"))
+  
+            ((suffix? "ui" s)`(,(substring s 0 (- n 2)) "uint"))
+            ((suffix? "iu" s)`(,(substring s 0 (- n 2)) "uint"))
+            ((suffix? "i" s)`(,(substring s 0 (- n 1)) "int"))
+  
+            ((suffix? "uz" s)`(,(substring s 0 (- n 2)) "size"))
+            ((suffix? "zu" s)`(,(substring s 0 (- n 2)) "size"))
+            ((suffix? "z" s)`(,(substring s 0 (- n 1)) "ssize"))
+  
+            ((suffix? "uj" s)`(,(substring s 0 (- n 2)) "uintmax"))
+            ((suffix? "ju" s)`(,(substring s 0 (- n 2)) "uintmax"))
+            ((suffix? "j" s)`(,(substring s 0 (- n 1)) "intmax"))
+  
+            ((suffix? "up" s)`(,(substring s 0 (- n 2)) "uintptr"))
+            ((suffix? "pu" s)`(,(substring s 0 (- n 2)) "uintptr"))
+            ((suffix? "p" s)`(,(substring s 0 (- n 1)) "intptr"))
+  
+            ((suffix? "ud" s)`(,(substring s 0 (- n 2)) "uptrdiff"))
+            ((suffix? "du" s)`(,(substring s 0 (- n 2)) "uptrdiff"))
+            ((suffix? "d" s)`(,(substring s 0 (- n 1)) "ptrdiff"))
+  
+            ;; must come first!
+            ((suffix? "uvl" s)`(,(substring s 0 (- n 3)) "uvlong"))
+            ((suffix? "vlu" s)`(,(substring s 0 (- n 3)) "uvlong"))
+            ((suffix? "ulv" s)`(,(substring s 0 (- n 3)) "uvlong"))
+            ((suffix? "lvu" s)`(,(substring s 0 (- n 3)) "uvlong"))
+            ((suffix? "llu" s)`(,(substring s 0 (- n 3)) "uvlong"))
+            ((suffix? "ull" s)`(,(substring s 0 (- n 3)) "uvlong"))
+  
+            ((suffix? "uv" s)`(,(substring s 0 (- n 2)) "uvlong"))
+            ((suffix? "vu" s)`(,(substring s 0 (- n 2)) "uvlong"))
+  
+            ((suffix? "lv" s)`(,(substring s 0 (- n 2)) "vlong"))
+            ((suffix? "vl" s)`(,(substring s 0 (- n 2)) "vlong"))
+            ((suffix? "ll" s)`(,(substring s 0 (- n 2)) "vlong"))
+      
+            ;; comes next
+            ((suffix? "ul" s)`(,(substring s 0 (- n 2)) "ulong"))
+            ((suffix? "lu" s)`(,(substring s 0 (- n 2)) "ulong"))
+  
+            ;; last
+            ((suffix? "v" s)`(,(substring s 0 (- n 1)) "vlong"))
+            ((suffix? "u" s)`(,(substring s 0 (- n 1)) "uint"))
+            ((suffix? "l" s)`(,(substring s 0 (- n 1)) "long"))
+  
+            ;; exact
+            ((suffix? "u8" s)`(,(substring s 0 (- n 2)) "uint8"))
+            ((suffix? "u16" s)`(,(substring s 0 (- n 3)) "uint16"))
+            ((suffix? "u32" s)`(,(substring s 0 (- n 3)) "uint32"))
+            ((suffix? "u64" s)`(,(substring s 0 (- n 3)) "uint64"))
+            ((suffix? "i8" s)`(,(substring s 0 (- n 2)) "int8"))
+            ((suffix? "i16" s)`(,(substring s 0 (- n 3)) "int16"))
+            ((suffix? "i32" s)`(,(substring s 0 (- n 3)) "int32"))
+            ((suffix? "i64" s)`(,(substring s 0 (- n 3)) "int64"))
+            (else `(,s "int"))
+          )
+        )
+      )
+      result
+    )
+  )
+  """;
+  
+  SCHEME """
+  (define (parse-int s) 
+    (let*
+      (
+        (s (tolower-string s))
+        (x (findradix s))
+        (radix (second x))
+        (x (first x))
+        (x (findtype x))
+        (type (second x))
+        (digits (first x))
+        (value (string->number digits radix))
+      )
+      (if (equal? value #f)
+         (begin 
+           (newline)
+           (display "Invalid integer literal ") (display s) 
+           (newline)
+           (display "Radix ")(display radix)
+           (newline)
+           (display "Type ")(display type)
+           (newline)
+           (display "Digits ")(display digits)
+           (newline)
+           error
+         )
+         `(,type ,value)
+      ) 
+    )
+  )
+  """;
+  
+  //$ Integer literals.
+  //$ 
+  //$ Felix integer literals consist of an optional radix specifer,
+  //$ a sequence of digits of the radix type, possibly separated
+  //$ by an underscore (_) character, and a trailing type specifier.
+  //$
+  //$ The radix can be:
+  //$ 0b, 0B - binary
+  //$ 0o, 0O - octal
+  //$ 0d, 0D - decimal
+  //$ 0x, 0X - hex
+  //$
+  //$ The default is decimal.
+  //$ NOTE: unlike C a leading 0 in does NOT denote octal.
+  //$
+  //$ Underscores are allowed between digits or the radix
+  //$ and the first digit, or between the digits and type specifier.
+  //$
+  //$ The adaptable signed type specifiers are:
+  //$ 
+  //$ t        -- tiny   (char as int)
+  //$ s        -- short
+  //$ i        -- int
+  //$ l        -- long 
+  //$ v,ll     -- vlong (long long in C)
+  //$ z        -- ssize (ssize_t in C, a signed variant of size_t)
+  //$ j        -- intmax
+  //$ p        -- intptr
+  //$ d        -- ptrdiff
+  //$
+  //$ These may be upper of lower case. 
+  //$ A "u" or "U" before or after such specifier indicates
+  //$ the correspondin unsigned type.
+  //$
+  //$ The follingw exact type specifiers can be given:
+  //$
+  //$      "i8" | "i16" | "i32" | "i64"
+  //$    | "u8" | "u16" | "u32" | "u64"
+  //$    | "I8" | "I16" | "I32" | "I64"
+  //$    | "U8" | "U16" | "U32" | "U64";
+  //$
+  //$ The default type is "int".
+  //$
+  
+  syntax felix_int_lexer {
+    /* integers */
+    regdef bin_lit  = '0' ('b' | 'B') (underscore ? bindigit) +;
+    regdef oct_lit  = '0' ('o' | 'O') (underscore ? octdigit) +;
+    regdef dec_lit  = '0' ('d' | 'D') (underscore ? digit) +;
+    regdef dflt_dec_lit  =  digit (underscore ? digit) *;
+    regdef hex_lit  = '0' ('x' | 'X') (underscore ? hexdigit)  +;
+    regdef int_prefix = bin_lit | oct_lit | dec_lit | dflt_dec_lit | hex_lit;
+  
+    regdef fastint_type_suffix = 
+      't'|'T'|'s'|'S'|'i'|'I'|'l'|'L'|'v'|'V'|"ll"|"LL"|"z"|"Z"|"j"|"J"|"p"|"P"|"d"|"D";
+    regdef exactint_type_suffix =
+        "i8" | "i16" | "i32" | "i64"
+      | "u8" | "u16" | "u32" | "u64"
+      | "I8" | "I16" | "I32" | "I64"
+      | "U8" | "U16" | "U32" | "U64";
+  
+    regdef signind = 'u' | 'U';
+  
+    regdef int_type_suffix =
+        '_'? exactint_type_suffix
+      | ('_'? fastint_type_suffix)? ('_'? signind)?
+      | ('_'? signind)? ('_'? fastint_type_suffix)?;
+  
+    regdef int_lit = int_prefix int_type_suffix;
+  
+    // Untyped integer literals.
+    literal int_prefix =># """
+    (let* 
+      (
+        (val (stripus _1))
+        (x (parse-int val))
+        (type (first x))
+        (value (second x))
+      )
+      value
+    )
+    """; 
+    sinteger := int_prefix =># "_1";
+  
+    // Typed integer literal.
+    literal int_lit =># """
+    (let* 
+      (
+        (val (stripus _1))
+        (x (parse-int val))
+        (type (first x))
+        (value (second x))
+        (fvalue (number->string value))
+        (cvalue fvalue)       ;; FIXME!!
+      )
+      `(,type ,fvalue ,cvalue)
+    )
+    """; 
+    sliteral := int_lit =># "`(ast_literal ,_sr ,@_1)";
+  
+    // Typed signed integer constant.
+    sintegral := int_lit =># "_1";
+    sintegral := "-" int_lit =># """
+    (let* 
+      (
+        (type (first _2))
+        (val (second _2))
+        (val (* -1 val))
+      )
+      `(,type ,val)
+    )
+    """;
+  
+    strint := sintegral =># "(second _1)";
+  }
+  
+  
+
+Floating types
+==============
+
+Note that Felix requires the long double type from C99.
+Also note that the complex types are taken from C++ and
+not C!
+
+.. code-block:: felix
+
+  pod type float = "float" requires index TYPE_float;
+  pod type double = "double" requires index TYPE_double;
+  pod type ldouble = "long double" requires index TYPE_ldouble;
+  pod type fcomplex = "::std::complex<float>" requires Cxx_headers::complex, index TYPE_fcomplex;
+  pod type dcomplex = "::std::complex<double>" requires Cxx_headers::complex, index TYPE_dcomplex;
+  pod type lcomplex = "::std::complex<long double>" requires Cxx_headers::complex, index TYPE_lcomplex;
+  
+  
+
+Float literal constructors
+==========================
+
+
+.. code-block:: text
+
+   
+  //$ Floating point literals.
+  //$
+  //$ Follows ISO C89, except that we allow underscores;
+  //$ AND we require both leading and trailing digits so that
+  //$ x.0 works for tuple projections and 0.f is a function
+  //$ application
+  syntax felix_float_lexer {
+    regdef decimal_string = digit (underscore ? digit) *;
+    regdef hexadecimal_string = hexdigit (underscore ? hexdigit) *;
+  
+    regdef decimal_fractional_constant =
+      decimal_string '.' decimal_string;
+  
+    regdef hexadecimal_fractional_constant =
+      ("0x" |"0X")
+      hexadecimal_string '.' hexadecimal_string;
+  
+    regdef decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string;
+    regdef binary_exponent = ('P'|'p') ('+'|'-')? decimal_string;
+  
+    regdef floating_suffix = 'L' | 'l' | 'F' | 'f' | 'D' | 'd';
+    regdef floating_literal =
+      (
+        decimal_fractional_constant decimal_exponent ? |
+        hexadecimal_fractional_constant binary_exponent ?
+      )
+      floating_suffix ?;
+  
+   // Floating constant.
+    regdef sfloat = floating_literal;
+    literal sfloat =># """
+    (let* 
+       (
+         (val (stripus _1))
+         (val (tolower-string val))
+         (n (string-length val))
+         (n-1 (- n 1))
+         (ch (substring val n-1 n))
+         (rest (substring val 0 n-1))
+         (result 
+           (if (equal? ch "l") `("ldouble" ,val ,val)
+             (if (equal? ch "f") `("float" ,val ,val) `("double" ,val ,val))
+           )
+         )
+       )
+       result 
+     ) 
+     """; 
+  
+    strfloat := sfloat =># "(second _1)";
+  
+    // Floating literal.
+    sliteral := sfloat =># "`(ast_literal ,_sr ,@_1)";
+  
+  }
+  
+
+Groupings of the types.
+=======================
+
+We can define sets of types so they may be used in
+in function bindings to avoid a lot of repetition.
+
+The  :code:`typesetof` operator takes a comma separated list
+of parenthesised type names, and represents a finite
+set of types.
+
+The \(\cup\) operator, spelled  :code:`\cup`, can be used to find the setwise
+union of two typesets.
+
+
+
+.. code-block:: felix
+
+  //$ Types associated with raw address calculations.
+  typedef addressing = typesetof (
+    byte,
+    address,
+    caddress
+  );
+  
+  //$ Character types.
+  typedef chars = typesetof (char);
+  
+
+Integers
+--------
+
+
+.. code-block:: felix
+
+  //$ "natural" sized signed integer types.
+  //$ These correspond to C/C++ core types.
+  typedef fast_sints = typesetof (tiny, short, int, long, vlong);
+  
+  //$ Exact sized signed integer types.
+  //$ In C these are typedefs.
+  //$ In Felix they're distinct types.
+  typedef exact_sints = typesetof(int8,int16,int32,int64);
+  
+  //$ "natural" sized unsigned integer types.
+  //$ These correspond to C/C++ core types.
+  typedef fast_uints = typesetof (utiny, ushort, uint, ulong,uvlong);
+  
+  //$ Exact sized unsigned integer types.
+  //$ In C these are typedefs.
+  //$ In Felix they're distinct types.
+  typedef exact_uints = typesetof (uint8,uint16,uint32,uint64);
+  
+  //$ Weirdo signed integers types corresponding to
+  //$ typedefs in C.
+  typedef weird_sints = typesetof (ptrdiff, ssize, intmax, intptr);
+  
+  //$ Weirdo unsigned integers types corresponding to
+  //$ typedefs in C.
+  typedef weird_uints = typesetof (size, uintmax, uintptr);
+  
+  //$ All the signed integers.
+  typedef sints = fast_sints \cup exact_sints \cup weird_sints;
+  
+  //$ All the usigned integers.
+  typedef uints = fast_uints \cup exact_uints \cup weird_uints;
+  
+  //$ All the fast integers.
+  typedef fast_ints = fast_sints \cup fast_uints;
+  
+  //$ All the exact integers.
+  typedef exact_ints = exact_sints \cup exact_uints;
+  
+  //$ All the integers.
+  typedef ints = sints \cup uints;
+  
+
+Floats
+------
+
+
+.. code-block:: felix
+
+  //$ All the core floating point types.
+  typedef floats = typesetof (float, double, ldouble);
+  
+  //$ All the core approximations to real types.
+  typedef reals = ints \cup floats;
+  
+  //$ All the core approximations to complex types.
+  typedef complexes = typesetof (fcomplex,dcomplex,lcomplex);
+  
+  //$ All the core approximations to numbers.
+  typedef numbers = reals \cup complexes;
+  @
+  
+
+All Scalars.
+------------
+
+
+.. code-block:: felix
+
+  //$ All the basic scalar types.
+  typedef basic_types = bool \cup numbers \cup chars \cup addressing;
+  
+  // we define this now, we will open it later...
+  instance [t in basic_types] Eq[t] {
+    fun == : t * t -> bool = "$1==$2";
+  }
+  
+  // we open this now even though we haven't developed
+  // the instances yet....
+  open[T in basic_types] Show[T];
+  

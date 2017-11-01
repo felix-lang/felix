@@ -1,0 +1,1370 @@
+
+=======
+Program
+=======
+
+
+
+Synopsis
+========
+
+
+.. code-block:: felix
+
+  
+  include "std/program/cmdopt";
+  include "std/program/system";
+  include "std/program/shell";
+  include "std/program/dynlink";
+  include "std/program/env";
+  include "std/program/process";
+  include "std/program/signal";
+  
+  
+
+Environment Variables
+=====================
+
+
+.. code-block:: felix
+
+  //$ Access environment variables.
+  class Env_class[os]
+  {
+    //$ Separator for filename lists
+    virtual fun pathsep: 1 -> string;
+  
+    //$ Get the value of a given variable.
+    //$ Returns empty string if the variable doesn't exist.
+    fun getenv:string -> string =
+      "::flx::rtl::strutil::atostr(std::getenv($1.c_str()))"
+      requires package "flx_strutil", Cxx_headers::cstdlib;
+  
+    fun issetenv(s:string)=> getenv s != "";
+  
+    //$ Get the value of a given variable.
+    //$ Returns specified default if the variable doesn't exist.
+    fun getenv(name:string,dflt:string):string=>let result = getenv(name) in 
+      if String::len result != 0uz then result else dflt endif
+    ;
+  
+    fun getenvlist (name:string) : list[string] =>
+       split (getenv name, #pathsep)
+    ;
+  }
+  
+  instance Env_class[Win32] { fun pathsep() => ";"; }
+  instance Env_class[Posix] { fun pathsep() => ":"; }
+  
+  class Env
+  {
+    if PLAT_WIN32 do
+      inherit Env_class[Win32];
+    else
+      inherit Env_class[Posix];
+    done
+  }
+  
+  
+
+Command Line Options
+====================
+
+
+.. code-block:: felix
+
+  
+  open class CmdOpt 
+  {
+    // Convert key/value pairs represented like -I path
+    // into form --include=path
+    noinline fun cvt-key-arg (keys: list[string * string]) (x:list[string]) = 
+    {
+       var out = Empty[string];
+       var inp = x.iterator;
+       for word in inp do
+         match keys.find word with
+         | #None => out = Cons (word,out);
+         | Some prefix => 
+           match inp() with
+           | #None => println$ "Error, expected argument to option " + word;
+           | Some arg => out = Cons (prefix+"=" + arg, out);
+           endmatch;
+         endmatch;
+       done
+       return rev out;
+    }
+  
+    // Parse key value pairs represented by --key=value.
+    // Allows multiple values to be given.
+    // Stores reversed list of values.
+    // Returns ordered list of non-handled elements.
+    var rekv = RE2 "(--.*)=(.*)";
+    noinline gen parse-key-multi-value (keys:list[string]) (d:strdict[list[string]]) (x:list[string]) =
+    {
+      var out = Empty[string];
+      var va = varray[StringPiece] (StringPiece "", StringPiece "", StringPiece "");
+      for opt in x do
+        if Match (rekv, StringPiece (opt), 0,ANCHOR_BOTH, va.stl_begin, va.len.int) do
+          var key = va . 1 . string;
+          if key in keys do
+            val value= va . 2 . string ;
+            val nuval = Cons (value, d.get_dflt (key,Empty[string]));
+            d.add key nuval;
+          else
+            out = Cons (opt, out);
+          done
+        else
+          out = Cons (opt, out);
+        done
+      done
+      return rev out;
+    }
+  
+    // Parse key value pairs represented by --key=value.
+    // Keys must be unique.
+    // Stores reversed list of values.
+    // Returns ordered list of non-handled elements.
+    noinline gen parse-key-single-value (keys:list[string]) (d:strdict[string]) (x:list[string]) =
+    {
+      var out = Empty[string];
+      var va = varray[StringPiece] (StringPiece "", StringPiece "", StringPiece "");
+      for opt in x do
+        if Match (rekv, StringPiece (opt), 0,ANCHOR_BOTH, va.stl_begin, va.len.int) do
+          var key = va . 1 . string;
+          if key in keys do
+            val value= va . 2 . string ;
+            match d.get key with
+            | #None => d.add key value;
+            | _ => println$ "Duplicate option '" + opt +"'";
+            endmatch;
+          else
+            println$ "Invalid option '" + opt+"'";
+          done
+        else
+          out = Cons (opt, out);
+        done
+      done
+      return rev out;
+    }
+  
+  
+    // Parse keys given by --key.
+    // Allows multiple values.
+    // Stores count of occurences.
+    var rek = RE2 "(--.*)";
+    noinline gen parse-key (keys:list[string]) (d:strdict[int]) (x:list[string]) =
+    {
+      var out = Empty[string];
+      var va = varray[StringPiece] (StringPiece "", StringPiece "");
+      for opt in x do
+        if Match (rek, StringPiece (opt), 0,ANCHOR_BOTH, va.stl_begin, va.len.int) do
+          var key = va . 1 . string;
+          if key in keys do
+            val nuval =d.get_dflt (key,0) + 1;
+            d.add key nuval;
+          else
+            println$ "Invalid option '" + opt+"'";
+          done
+        else
+          out = Cons (opt, out);
+        done
+      done
+      return rev out;
+    }
+  
+    // Parse keys given by -abcd
+    // Allows multiple values.
+    // Stores count of occurences.
+    // Replaces option letter with specified long option key.
+    // Returns ordered list of non-handled elements.
+    var resw = RE2 "(-.*)";
+    noinline gen parse-switches (switchmap: list[char * string] ) (d:strdict[int]) (x:list[string]) =
+    {
+      var out = Empty[string];
+      var va = varray[StringPiece] (StringPiece "", StringPiece "");
+      for opt in x do
+        if Match (resw, StringPiece (opt), 0,ANCHOR_BOTH, va.stl_begin, va.len.int) do
+          var switches = va . 1 . string . [1 to];
+          for switch in switches do
+            match switchmap.find switch with
+            | #None =>
+              println$ "Invalid option " + opt + " char '" + str switch+"'";
+            | Some key=>
+              val nuval = d.get_dflt (key,0) + 1;
+              d.add key nuval;
+            endmatch;
+          done
+        else
+          out = Cons (opt, out);
+        done
+      done
+      return rev out;
+    }
+  
+    typedef cmdspec_t = (
+      split-key-value-spec: list[string * string],
+      multi-valued-keys-spec: list[string], 
+      single-valued-keys-spec: list[string], 
+      switches-spec: list[string], 
+      short-switch-map-spec: list[char * string]
+    );
+  
+    typedef cmdopt-parse-result_t = (
+       multi-valued-keys : strdict[list[string]],
+       single-valued-keys : strdict[string],
+       switches : strdict[int],
+       positional : list[string]
+    );
+  
+    ctor cmdopt-parse-result_t () =>
+    (
+      multi-valued-keys = strdict[list[string]](), 
+      single-valued-keys = strdict[string](),
+      switches = strdict[int](),
+      positional = Empty[string]
+    );
+  
+    noinline gen parse-cmdline (spec:cmdspec_t) (x:list[string]) : cmdopt-parse-result_t = {
+      var result = cmdopt-parse-result_t ();
+      var nonk = cvt-key-arg spec.split-key-value-spec x;
+      nonk = parse-key-multi-value spec.multi-valued-keys-spec result.multi-valued-keys nonk;
+      nonk = parse-key-single-value spec.single-valued-keys-spec result.single-valued-keys nonk;
+      nonk = parse-key spec.switches-spec result.switches nonk;
+      &result.positional <- parse-switches spec.short-switch-map-spec result.switches nonk;
+      return result;
+    }
+  }
+  
+
+Process
+=======
+
+
+.. code-block:: felix
+
+  
+  class Process_class[os, process_status_t]
+  {
+    virtual gen popen_in : string -> Cstdio::ifile;
+    virtual gen pclose: Cstdio::ifile -> process_status_t; 
+  }
+  
+  class Process {
+  if PLAT_WIN32 do
+    inherit Win32Process;
+  else
+    inherit PosixProcess;
+  done
+  }
+  
+
+Posix Errno
+===========
+
+
+.. code-block:: felix
+
+  
+  open class Errno 
+  {
+    pod type errno_t = "int" requires C89_headers::errno_h;
+    ctor int : errno_t = "$1";
+    ctor errno_t : int = "$1";
+    instance Eq[errno_t] {
+      fun == : errno_t * errno_t -> bool= "$1==$2";
+    }
+    inherit Eq[errno_t];
+   
+    const errno : errno_t = "errno"; // SUCKS
+    const ENOERROR : errno_t = "0";
+    const EACCES: errno_t;
+    const ENOENT: errno_t;
+    const EAGAIN: errno_t;
+    const ENOMEM: errno_t;
+    const EEXIST: errno_t;
+    const EINVAL: errno_t;
+    const EINTR: errno_t; // call interrupted by a signal
+  
+    proc maybe_exit(var n:int) { if n != 0 do System::exit(errno.int); done }
+    proc maybe_exit(var n:errno_t) { if n != ENOERROR  do System::exit(n.int); done }
+    proc maybe_exit() { if errno != ENOERROR do System::exit(errno.int); done }
+  
+    // Unfortunately we get the crappy GNU version of strerror_r 
+    // even if we don't define _GNU_SOURCE
+    // This stupidity returns a char*, instead of a void.
+    // Unfortunately moron compilers complain about not using
+    // the returned result, but there is no legal way to use a void.
+    // There is no way out.
+  
+  if PLAT_WIN32 do
+    proc strerror_r: errno_t *  carray[char] * size  = "(void)strerror_s($2, $3, $1);" 
+      requires C89_headers::string_h /* on Linux.. on OSX it's in stdio.h */
+    ;
+  else
+    proc strerror_r: errno_t * carray[char] * size  = 
+      """
+      strerror_r($1, $2, $3);
+      """ 
+      requires C89_headers::string_h 
+    ;
+  done
+    fun strerror(e:errno_t) : string = {
+      if e.int == 0 do 
+        return "OK"; 
+      else
+        var b:array[char,1000];
+        var bad = "[strerror_r] Failed to find text for error number " + e.int.str;
+        var p = bad._unsafe_cstr;
+        CString::strncpy (carray (&b),p,1000.size); // safe because bad is a variable
+        Memory::free p.address;
+        strerror_r(e,carray (&b), b.len.size);
+        return string( carray (&b));
+      done
+    }
+   
+    gen strerror()=> strerror errno;
+  
+    instance Str[errno_t] { fun str (e:errno_t) => strerror e; }
+    inherit Str[errno_t];
+  
+    // Auto error check support
+    class Check[T] 
+    {
+      proc int_to_proc (var x:int) { if x == -1 do ehandler; done }
+      fun int_to_int (var x:int) = { if x == -1 do ehandler; done return x; }
+      fun pointer_to_pointer[U] (var p:&U) = { if C_hack::isNULL p do #ehandler; done return p; }
+      virtual fun ehandler: unit -> any;
+    }
+  
+    type check_ignore = "";
+    instance Check[check_ignore] 
+    {
+      fun ehandler ():any = {}
+    }
+    type check_throw = "";
+    instance Check[check_throw] 
+    {
+      fun ehandler ():any = { raise #strerror; }
+    }
+  }
+  
+
+Posix Process
+=============
+
+
+.. code-block:: felix
+
+  
+  class PosixProcess {
+    open PosixSignal;
+  
+    instance Process_class[Posix, process_status_t] 
+    {
+      gen popen_in: string -> Cstdio::ifile = 'popen($1.c_str(), "r")' 
+        requires C89_headers::stdio_h;
+      gen pclose: Cstdio::ifile -> process_status_t = "pclose($1)";
+    }
+    inherit Process_class[Posix, process_status_t];
+  
+    type process_status_t = "int" requires Posix_headers::sys_wait_h;
+    ctor int:process_status_t = "$1";
+    ctor process_status_t : int = "$1";
+    fun int_of_process_status_t: process_status_t -> int = "(int)$1";
+  
+    fun WIFCONTINUED: process_status_t -> bool = "WIFCONTINUED($1)!=0";
+    fun WIFEXITED: process_status_t -> bool = "WIFEXITED($1)!=0";
+    fun WIFSIGNALED: process_status_t -> bool = "WIFSIGNALED($1)!=0";
+    fun WIFSTOPPED: process_status_t -> bool = "WIFSTOPPED($1)!=0";
+  
+    fun WEXITSTATUS: process_status_t -> int = "WEXITSTATUS($1)";
+    fun WTERMSIG: process_status_t -> signal_t = "WTERMSIG($1)";
+    fun WSTOPSIG: process_status_t -> signal_t = "WSTOPSIG($1)";
+  
+    // OSX only, not in Posix
+    fun  WCOREDUMP: process_status_t -> int = "WCOREDUMP($1)";
+  
+  
+    fun str(x:process_status_t) = {
+      if WIFEXITED x do
+         val e = x.WEXITSTATUS;
+         return "Exit " + str e + ": " +e.errno_t.strerror;
+      elif WIFSIGNALED x do
+         val s = x.WTERMSIG;
+         return "SIGNAL " + s.int.str + ": " + s.str;
+      else
+         return "Unknown temination status " + x.int.str;
+      done
+    }
+  
+    const environ: + (+char) = "environ" requires Posix_headers::unistd_h;
+  
+    type exec_result_t = "int";
+    const bad_exec: exec_result_t = "-1";
+    fun == : exec_result_t * exec_result_t -> bool= "$1==$2";
+  
+    gen execv:+char *  + (+char) -> exec_result_t = "execv($1, $2)" requires Posix_headers::unistd_h;
+    gen execvp:+char *  + (+char) -> exec_result_t = "execvp($1, $2)" requires Posix_headers::unistd_h;
+    gen execve:+char *  + (+char) * + (+char) -> exec_result_t = "execve($1, $2, $3)" requires Posix_headers::unistd_h;
+  
+    // do NOT try to fork Felix programs, it doesn't work
+    // because of threads already running. We use fork only
+    // to preceed exec() calls.
+    type pid_t = "pid_t" requires Posix_headers::unistd_h;
+  
+    instance Str[pid_t] {
+      fun str: pid_t -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
+    }
+  
+    ctor int: pid_t = "((int)$1)";
+    const child_process : pid_t = "0";
+    const bad_process : pid_t = "-1";
+    fun == : pid_t * pid_t -> bool= "$1==$2";
+  
+    gen fork: unit -> pid_t = "fork()" requires Posix_headers::unistd_h;
+  
+    union spawn_result_t = 
+    // returned to parent process
+    | BadFork of errno_t  
+    | ProcessId of pid_t 
+  
+    // returned to child proces
+    | BadExec of errno_t 
+    | BadSetup of int
+    ;
+  
+    gen spawnv(file: string, argv:+ (+char), setup:1->int) : spawn_result_t = {
+      var x = fork();
+      if x == child_process do  // CHILD
+        var result = #setup;
+        if result != 0 do
+          return BadSetup result;
+        done
+        var y = execv(file.cstr, argv); 
+        if y == bad_exec do 
+          return BadExec errno; 
+        else 
+          return ProcessId x; // never taken! fool type system 
+        done 
+      elif x == bad_process do // PARENT 
+        return BadFork errno;
+      else 
+        return ProcessId x;
+      done
+    }
+  
+    gen spawnvp(file: string, argv:+ (+char), setup:1->int) : spawn_result_t = { 
+      var x = fork();
+      if x == child_process do // CHILD
+        var result = #setup;
+        if result != 0 do
+          return BadSetup result;
+        done
+        var y = execvp(file.cstr, argv); 
+        if y == bad_exec do 
+          return BadExec errno; 
+        else 
+          return ProcessId x; // never taken! fool type system 
+        done 
+      elif x == bad_process do  // PARENT
+        return BadFork errno;
+      else 
+        return ProcessId x;
+      done
+    }
+  
+    gen spawnve(file: string, argv:+ (+char), env: + (+char), setup:1->int) : spawn_result_t = {
+      var x = fork();
+      if x == child_process do // CHILD
+        var result = #setup;
+        if result != 0 do
+          return BadSetup result;
+        done
+        var y = execve(file.cstr, argv, env); 
+        if y == bad_exec do 
+          return BadExec errno; 
+        else 
+          return ProcessId x; // never taken! fool type system
+        done 
+      elif x == bad_process do // PARENT
+        return BadFork errno;
+      else 
+        return ProcessId x;
+      done
+    }
+  
+    type process_status_options_t = "int";
+    const WCONTINUED: process_status_options_t;
+    const WNOHANG: process_status_options_t;
+    const WUNTRACED: process_status_options_t;
+    const WNONE: process_status_options_t="0";
+    fun \| : process_status_options_t * process_status_options_t -> process_status_options_t = "$1|$2";
+  
+    gen waitpid: pid_t * &process_status_t * process_status_options_t -> pid_t requires Posix_headers::sys_wait_h;
+  
+    gen waitpid(pid:pid_t) = {
+      var status: process_status_t;
+      var pid' = waitpid(pid,&status,WNONE);
+      if pid' == bad_process do 
+        println$ "Waitpid failed .. fix me!";
+        System::exit 1;
+      else
+        return status;
+      done
+    }
+  
+    union ProcesStatus= | Running | Stopped of process_status_t;
+  
+    gen checkpid(pid:pid_t) = {
+      var status: process_status_t;
+      var pid' = waitpid(pid,&status,WNOHANG);
+      if pid' == bad_process do 
+        println$ "Waitpid failed .. fix me!";
+        System::exit 1;
+      elif pid'.int == 0 do
+        return Running;
+      else
+        return Stopped status;
+      done
+    }
+  
+    gen kill: pid_t * signal_t -> int;
+    const OUR_PROCESS_GROUP: pid_t = "0";
+   
+  }
+
+Win32 Process
+=============
+
+
+.. code-block:: felix
+
+  
+  class Win32Process {
+    open Win32Signal;
+  
+    instance Process_class[Win32, process_status_t] 
+    {
+      gen popen_in: string -> Cstdio::ifile = '_popen($1.c_str(), "r")' requires C89_headers::stdio_h;
+      gen pclose: Cstdio::ifile -> process_status_t = "_pclose($1)" requires C89_headers::stdio_h;
+    }
+    inherit Process_class[Win32, process_status_t];
+    type process_status_t = "intptr_t";
+    ctor intptr:process_status_t = "$1";
+    ctor int:process_status_t = "int($1)";
+    ctor process_status_t : intptr = "$1";
+    fun int_of_process_status_t: process_status_t -> int = "(int)$1";
+  
+  /*
+  
+    fun WIFCONTINUED: process_status_t -> bool = "WIFCONTINUED($1)!=0";
+    fun WIFEXITED: process_status_t -> bool = "WIFEXITED($1)!=0";
+    fun WIFSIGNALED: process_status_t -> bool = "WIFSIGNALED($1)!=0";
+    fun WIFSTOPPED: process_status_t -> bool = "WIFSTOPPED($1)!=0";
+  
+    fun WEXITSTATUS: process_status_t -> int = "WEXITSTATUS($1)";
+    fun WTERMSIG: process_status_t -> signal_t = "WTERMSIG($1)";
+    fun WSTOPSIG: process_status_t -> signal_t = "WSTOPSIG($1)";
+  
+    // OSX only, not in Posix
+    fun  WCOREDUMP: process_status_t -> int = "WCOREDUMP($1)";
+  
+  
+    fun str(x:process_status_t) = {
+      if WIFEXITED x do
+         val e = x.WEXITSTATUS;
+         return "Exit " + str e + ": " +e.errno_t.strerror;
+      elif WIFSIGNALED x do
+         val s = x.WTERMSIG;
+         return "SIGNAL " + s.int.str + ": " + s.str;
+      else
+         return "Unknown temination status " + x.int.str;
+      done
+    }
+  */
+    const environ: + (+char) = "environ" requires Posix_headers::unistd_h;
+  
+    type exec_result_t = "intptr_t";
+    const bad_exec: exec_result_t = "intptr_t(-1)";
+    fun == : exec_result_t * exec_result_t -> bool= "$1==$2";
+  
+    gen execv:+char *  + (+char) -> exec_result_t = "_execv($1, $2)" requires Win32_headers::process_h;
+    gen execvp:+char *  + (+char) -> exec_result_t = "_execvp($1, $2)" requires Win32_headers::process_h;
+    gen execve:+char *  + (+char) * + (+char) -> exec_result_t = "_execve($1, $2, $3)" requires Win32_headers::process_h;
+  
+    // do NOT try to fork Felix programs, it doesn't work
+    // because of threads already running. We use fork only
+    // to preceed exec() calls.
+    type pid_t = "intptr_t" requires Posix_headers::unistd_h;
+    ctor intptr: pid_t = "($1)";
+    const bad_process : pid_t = "intptr_t(-1)";
+    fun == : pid_t * pid_t -> bool= "$1==$2";
+  
+    instance Str[pid_t] {
+      fun str: pid_t -> string = "::flx::rtl::strutil::str<intptr_t>($1)" requires package "flx_strutil";
+    }
+  
+    union spawn_result_t = 
+    // returned to parent process
+    | BadFork of errno_t  
+    | ProcessId of pid_t 
+  
+    // returned to child proces (can't happen on Windows)
+    | BadExec of errno_t 
+    | BadSetup of int
+    ;
+  
+    gen spawnv:+char *  + (+char) -> pid_t = "_spawn(_P_NOWAIT,$1, $2)" requires Win32_headers::process_h;
+    gen spawnvp:+char *  + (+char) -> pid_t = "_spawnvp(_P_NOWAIT,$1, $2)" requires Win32_headers::process_h; 
+    gen spawnve:+char *  + (+char) * + (+char) -> pid_t = "_spawnve(_P_NOWAIT,$1, $2, $3)" requires Win32_headers::process_h; 
+  
+    gen spawnv(file: string, argv:+ (+char), setup:1->int) : spawn_result_t = {
+      var x = spawnv(file.cstr, argv); 
+      if x == bad_process do // PARENT 
+        return BadFork errno;
+      else 
+        return ProcessId x;
+      done
+    }
+  
+    gen spawnvp(file: string, argv:+ (+char), setup:1->int) : spawn_result_t = { 
+      var x = spawnvp(file.cstr, argv); 
+      if x == bad_process do  // PARENT
+        return BadFork errno;
+      else 
+        return ProcessId x;
+      done
+    }
+  
+    gen spawnve(file: string, argv:+ (+char), env: + (+char), setup:1->int) : spawn_result_t = {
+      var x = spawnve(file.cstr, argv, env); 
+      if x == bad_process do // PARENT
+        return BadFork errno;
+      else 
+        return ProcessId x;
+      done
+    }
+  /*
+    type process_status_options_t = "int";
+    const WCONTINUED: process_status_options_t;
+    const WNOHANG: process_status_options_t;
+    const WUNTRACED: process_status_options_t;
+    const WNONE: process_status_options_t="0";
+    fun \| : process_status_options_t * process_status_options_t -> process_status_options_t = "$1|$2";
+  
+    // Use WaitForSingleObject
+    gen waitpid: pid_t * &process_status_t * process_status_options_t -> pid_t requires Posix_headers::sys_wait_h;
+  
+    gen waitpid(pid:pid_t) = {
+      var status: process_status_t;
+      var pid' = waitpid(pid,&status,WNONE);
+      if pid' == bad_process do 
+        println$ "Waitpid failed .. fix me!";
+        System::exit 1;
+      else
+        return status;
+      done
+    }
+  
+    union ProcesStatus= | Running | Stopped of process_status_t;
+  
+    gen checkpid(pid:pid_t) = {
+      var status: process_status_t;
+      var pid' = waitpid(pid,&status,WNOHANG);
+      if pid' == bad_process do 
+        println$ "Waitpid failed .. fix me!";
+        System::exit 1;
+      elif pid'.int == 0 do
+        return Running;
+      else
+        return Stopped status;
+      done
+    }
+  
+    gen kill: pid_t * signal_t -> int;
+    const OUR_PROCESS_GROUP: pid_t = "0";
+  */ 
+  }
+  
+
+System Call
+===========
+
+
+.. code-block:: felix
+
+  
+  class System
+  {
+    const argc:int = "PTF argc" requires property "needs_ptf";
+    const _argv:&&char= "PTF argv" requires property "needs_ptf";
+  
+    fun argv:int -> string = '::std::string($1<0||$1>=PTF argc??"":PTF argv[$1])' 
+      requires property "needs_ptf";
+    fun argv_dflt (x:int) (y:string) => match argv x with | "" => y | a => a;
+  
+    fun args () => List::map (argv) (List::range argc);
+  
+    proc setargs : + (+char) * size = "PTF argc=$2; PTF argv=$1;" requires property "needs_ptf";
+    proc setargs[N] (a:string^N) 
+    {
+      gen myget(i:size)=>a.i.cstr;
+      var x = varray[+char] (a.len,a.len,myget);
+      setargs (x.stl_begin,x.len);
+    }
+  
+    gen system (cmd:string) : int => Shell::system(cmd);
+    gen exit: int -> any = '::std::exit($1)' requires Cxx_headers::cstdlib;
+    gen abort: 1 -> any = 
+      '(fprintf(stderr,"Felix code calling abort\\n"),::std::abort())' 
+      requires Cxx_headers::cstdlib;
+    _gc_pointer type ptf_t = "thread_frame_t*";
+    const ptf:ptf_t = "ptf" requires property "needs_ptf";
+  
+    //$ pexit examines the return code from a system call.
+    //$ If the code is 0 it exists with 0.
+    //$ On Windows:
+    //$    if the code is -1, it exits with errno.
+    //$    otherwise code 3
+    //$ On Unix:
+    //$   if the code is non-zero then
+    //$     if the callout aborted, return its abort code.
+    //$     if the callout died due to a signal, exit with code 2
+    //$     otherwise exit with code 3
+    //$ In both these cases a non-zero return causes a message
+    //$ to be printed on stderr.
+  
+    if PLAT_WIN32 do
+      proc pexit(e:int)
+      {
+        if e != 0 do
+          if e == -1 do
+            err :=  errno;
+            eprintln$ "Error "+err.str+" in flx: " + strerror err;
+            System::exit err.int;
+          else
+            eprintln$ "Unknown error in shell " + str e;
+            System::exit 3;
+          done
+        done
+        System::exit e;
+      }
+    else
+      proc pexit(e:int)
+      {
+        if e != 0 do
+          if PosixProcess::WIFEXITED e.PosixProcess::process_status_t do
+            err :=  PosixProcess::WEXITSTATUS e.PosixProcess::process_status_t;
+            eprintln$ "Error "+err.str+" in flx: " + strerror err.errno_t;
+            System::exit err;
+          elif PosixProcess::WIFSIGNALED e.PosixProcess::process_status_t do
+            sig := Process::WTERMSIG e.PosixProcess::process_status_t;
+            eprintln$ "Shell terminated by signal " + str sig;
+            System::exit 2;
+          else
+            eprintln$ "Unknown error in shell " + str e;
+            System::exit 3;
+          done
+        done
+        System::exit e;
+      }
+    done
+  
+    gen get_stdout(x:string) : int * string => Shell::get_stdout x;
+  
+  }
+  
+
+Shell
+=====
+
+
+.. code-block:: felix
+
+  
+  // Note Shell_class interface doesn't use process_status_t
+  // but the implementation does.
+  
+  class Shell_class[OS, process_status_t]
+  {
+    // Quote a single argument.
+    // Note: kills Bash wildcard replacement.
+    virtual fun quote_arg:string->string;
+    fun quote_args (s:list[string]) : string => catmap[string] ' ' quote_arg s;
+  
+    // Mainly for Windows we need a way to quote command line strings too.
+    virtual fun quote_line_for_system: string->string;
+  
+    virtual fun parse: string -> list[string];
+  
+    //------------------------------------------------------------
+    // system() function
+  
+    //$ System command is ISO C and C++ standard.
+    gen raw_system: string -> int = "::std::system($1.c_str())"
+      requires Cxx_headers::cstdlib
+    ;
+    //$ basic command with line quoting.
+    gen basic_system (cmd: string) :int => 
+      cmd.quote_line_for_system.raw_system
+    ;
+  
+    // string argument
+    gen system (cmd:string) = {
+      if Env::getenv "FLX_SHELL_ECHO" != "" do
+        eprintln$ "[system] " + cmd;
+      done
+      return basic_system cmd;
+    }
+  
+    // list of string argument
+    gen system (args:list[string]) : int =>
+      args.quote_args.system
+    ;
+  
+    gen system[T with Iterable[T,string]] (args:T) : int =
+    {
+      var lst = Empty[string];
+      for arg in args do 
+        lst = lst + arg; 
+      done
+      return system lst;
+    }  
+  
+    //------------------------------------------------------------
+    // popen() function (get_stdout)
+  
+    virtual fun quote_line_for_popen: string -> string;
+  
+    //$ get_stdout is a synchronous version of popen_in/pclose pair.
+    virtual gen raw_get_stdout : string -> int * string;
+   
+    gen basic_get_stdout (cmd: string) : int * string =>
+      cmd.quote_line_for_popen.raw_get_stdout
+    ;
+  
+    gen get_stdout (cmd:string) : int * string = {
+      if Env::getenv "FLX_SHELL_ECHO" != "" do
+        eprintln$ "[get_stdout] " + cmd;
+      done
+      return basic_get_stdout cmd;
+    }
+  
+    // arbitrary Streamable argument
+    gen get_stdout (args:list[string]) : int * string =>
+      args.quote_args.get_stdout
+    ;
+   
+    gen get_stdout[T with Iterable[T,string]] (args:T) : int * string =
+    {
+      var lst = Empty[string];
+      for arg in args do 
+        lst = lst + arg; 
+      done
+      return get_stdout lst;
+    }  
+  
+  }
+  
+  class Shell {
+  if PLAT_WIN32 do
+    inherit CmdExe;
+  else
+    inherit Bash;
+  done
+  }
+  
+
+Posix Shell (Bash)
+==================
+
+
+.. code-block:: felix
+
+  
+  // Note: shell functions here only work with Bash.
+  // However, the system() function always calls sh,
+  // and sh is always an ash, which is almost always bash
+  
+  /* GNU Bash 3-2 Man page
+  QUOTING
+         Quoting  is  used  to  remove  the  special meaning of certain characters or words to the shell.
+         Quoting can be used to disable special treatment for special  characters,  to  prevent  reserved
+         words from being recognized as such, and to prevent parameter expansion.
+  
+         Each  of  the metacharacters listed above under DEFINITIONS has special meaning to the shell and
+         must be quoted if it is to represent itself.
+  
+         When the command history expansion facilities are being used (see HISTORY EXPANSION below),  the
+         history expansion character, usually !, must be quoted to prevent history expansion.
+  
+         There are three quoting mechanisms: the escape character, single quotes, and double quotes.
+  
+         A  non-quoted backslash (\) is the escape character.  It preserves the literal value of the next
+         character that follows, with the exception of <newline>.  If a \<newline> pair appears, and  the
+         backslash is not itself quoted, the \<newline> is treated as a line continuation (that is, it is
+         removed from the input stream and effectively ignored).
+  
+         Enclosing characters in single quotes preserves the literal value of each character  within  the
+         quotes.   A single quote may not occur between single quotes, even when preceded by a backslash.
+  
+         Enclosing characters in double quotes preserves the literal value of all characters  within  the
+         quotes,  with  the exception of $, `, \, and, when history expansion is enabled, !.  The charac-
+         ters $ and ` retain their special meaning within double quotes.  The backslash retains its  spe-
+         cial meaning only when followed by one of the following characters: $, `, ", \, or <newline>.  A
+         double quote may be quoted within double quotes by preceding it with a backslash.   If  enabled,
+         history  expansion  will be performed unless an !  appearing in double quotes is escaped using a
+         backslash.  The backslash preceding the !  is not removed.
+  
+         The special parameters * and @ have special  meaning  when  in  double  quotes  (see  PARAMETERS
+         below).
+  
+         Words  of the form $'string' are treated specially.  The word expands to string, with backslash-
+         escaped characters replaced as specified by the ANSI C standard.  Backslash escape sequences, if
+         present, are decoded as follows:
+                \a     alert (bell)
+                \b     backspace
+                \e     an escape character
+                \f     form feed
+                \n     new line
+                \r     carriage return
+                \t     horizontal tab
+                \v     vertical tab
+                \\     backslash
+                \'     single quote
+                \nnn   the eight-bit character whose value is the octal value nnn (one to three digits)
+                \xHH   the  eight-bit  character  whose value is the hexadecimal value HH (one or two hex
+                       digits)
+                \cx    a control-x character
+  
+         The expanded result is single-quoted, as if the dollar sign had not been present.
+  
+         A double-quoted string preceded by a dollar sign ($) will cause  the  string  to  be  translated
+         according  to  the  current  locale.   If  the  current locale is C or POSIX, the dollar sign is
+         ignored.  If the string is translated and replaced, the replacement is double-quoted.
+  
+  */
+  
+  class Bash {
+  
+    instance Shell_class[Posix, PosixProcess::process_status_t] {
+      // we can't use single quotes becase there's no way to represent a ' 
+      // in a single quoted string .. so we have to use double quotes and
+      // backslash the 4 special characters: " $ \ `
+      // I think this is all ..
+      fun quote_arg(s:string):string= {
+        var r = "";
+        for ch in s do
+          if ch in "\\\"" do   // leave $ and ` in there, unquoted.
+            r += "\\"+ str ch;
+          else
+            r+= ch;
+          done
+        done
+        return '"'+r+'"';
+      }
+      fun quote_line_for_system (s:string) => s;
+      fun quote_line_for_popen (s:string) => s + " ";
+  
+      gen raw_get_stdout(x:string) = {
+          var fout = PosixProcess::popen_in(x+" ");
+          if valid fout do
+            var output = load fout;
+  
+            var result = PosixProcess::pclose fout; 
+            return PosixProcess::WEXITSTATUS result, output;
+          else
+            println$ "Unable to run command '" + x "'";
+            return -1,"";
+          done
+      }
+  
+      //$ Parse a bash command line into words.
+      fun parse (s:string) : list[string] = 
+      {
+        var args = Empty[string];
+        var current = "";
+        union mode_t = | copy | skip | quote | dquote | escape-copy | escape-dquote;
+        var mode = skip;
+        for ch in s do
+          match mode with
+          | #skip => 
+            if ch == char "\\" do
+              mode = escape-copy;
+            elif ch == char "'" do
+              mode = quote;
+            elif ch == char '"' do
+              mode = dquote;
+            elif ord ch > ord (char ' ') do
+              current += ch;
+              mode = copy;
+            done
+  
+          | #copy =>
+            if ch == char "\\" do
+              mode = escape-copy;
+            elif ord ch <= ord (char ' ') do
+              mode = skip;
+              args += current;
+              current = "";
+            elif ch == char "'" do
+               mode = quote;
+            elif ch == char '"' do
+              mode = dquote;
+            else
+              current += ch;
+            done
+  
+          | #escape-copy =>
+            current += ch;
+            mode = copy;
+  
+          | #escape-dquote =>
+            mode = dquote;
+            if ch in '"\\$`' do
+              current += ch;
+            elif ch == char "'n" do ;
+            else 
+              current += "\\" + ch;
+            done
+    
+          | #dquote =>
+            if ch == char '"' do
+              mode = copy;
+            elif ch == char "\\" do
+              mode = escape-dquote;
+            else
+              current += ch;
+            done
+          | #quote =>
+            if ch == char "'" do
+              mode = copy;
+            else
+              current += ch;
+            done
+          endmatch;
+        done
+        match mode with
+        | #skip => ;
+        | _ => args += current;
+        endmatch; 
+        return args;
+      }
+    }
+    inherit Shell_class[Posix, PosixProcess::process_status_t];
+  }
+  
+
+Win32 Shell (cmd.exe)
+=====================
+
+
+.. code-block:: felix
+
+  
+  
+  /* http://msdn.microsoft.com/en-us/library/17w5ykft.aspx
+  Microsoft Specific
+  
+  Microsoft C/C++ startup code uses the following rules when interpreting 
+  arguments given on the operating system command line:
+  
+      Arguments are delimited by white space, which is either a space or a tab.
+  
+      The caret character (^) is not recognized as an escape character or delimiter. 
+      The character is handled completely by the command-line parser in the 
+      operating system before being passed to the argv array in the program.
+  
+      A string surrounded by double quotation marks ("string") is 
+      interpreted as a single argument, regardless of white space contained within. 
+      A quoted string can be embedded in an argument.
+  
+      A double quotation mark preceded by a backslash (\") is 
+      interpreted as a literal double quotation mark character (").
+  
+      Backslashes are interpreted literally, unless they 
+      immediately precede a double quotation mark.
+  
+      If an even number of backslashes is followed by a 
+      double quotation mark, one backslash is placed in the argv
+      array for every pair of backslashes, and the double quotation mark 
+      is interpreted as a string delimiter.
+  
+      If an odd number of backslashes is followed by a 
+      double quotation mark, one backslash is placed in the argv
+      array for every pair of backslashes, and the double quotation mark
+      is "escaped" by the remaining backslash, causing a literal 
+      double quotation mark (") to be placed in argv.
+  */
+  
+  class CmdExe
+  {
+    instance Shell_class[Win32, Win32Process::process_status_t]
+    {
+      fun quote_arg(s:string):string => '"' + s + '"';
+      fun quote_line_for_system(s:string) => '"' + s + '"';
+      fun quote_line_for_popen(s:string) => '"' + s + '"';
+  
+      gen raw_get_stdout(x:string) = {
+        //eprintln("CMD.EXE: raw_get_stout of " + x);
+        var fout = Win32Process::popen_in(x);
+        if valid fout do
+          var output = load fout;
+          var result = Win32Process::pclose fout; 
+          return Win32Process::int_of_process_status_t result, output;
+        else
+          println$ "Unable to run command '" + x "'";
+          return -1,"";
+        done
+      }
+  
+      //$ Parse a CMD.EXE command line into words.
+      fun parse (s:string) : list[string] = 
+      {
+        var args = Empty[string];
+        var current = "";
+        union mode_t = | copy | skip | dquote | escape-copy | escape-dquote;
+        var mode = skip;
+        for ch in s do
+          match mode with
+          | #skip => 
+            if ch == char "\\" do
+              mode = escape-copy;
+            elif ch == char '"' do
+              mode = dquote;
+            elif ord ch > ord (char ' ') do
+              current += ch;
+              mode = copy;
+            done
+  
+          | #copy =>
+            if ch == char "\\" do
+              mode = escape-copy;
+            elif ord ch <= ord (char ' ') do
+              mode = skip;
+              args += current;
+              current = "";
+            elif ch == char '"' do
+              mode = dquote;
+            else
+              current += ch;
+            done
+  
+          | #escape-copy =>
+            mode = copy;
+            if ch == char '"' do
+              current += ch;
+            else
+              current += "\\" + ch;
+            done 
+  
+          | #escape-dquote =>
+            mode = dquote;
+            if ch == char '"' do
+              current += ch;
+            else 
+              current += "\\" + ch;
+            done
+    
+          | #dquote =>
+            if ch == char '"' do
+              mode = copy;
+            elif ch == char "\\" do
+              mode = escape-dquote;
+            else
+              current += ch;
+            done
+          endmatch;
+        done
+        match mode with
+        | #skip => ;
+        | _ => args += current;
+        endmatch; 
+        return args;
+      }
+    }
+    inherit Shell_class[Win32, Win32Process::process_status_t];
+  
+  }
+  
+  
+  
+
+Signals
+=======
+
+
+.. code-block:: felix
+
+  
+  body ctrl_c_flag = """
+    static bool ctrl_c_flag = false;
+    bool get_ctrl_c_flag() { return ctrl_c_flag; }
+    void set_ctrl_c_flag(int) { ctrl_c_flag = true; }
+  """;
+  
+  
+  class Signal_class [os] {
+    gen get_ctrl_c_flag: 1 -> bool requires ctrl_c_flag;
+    proc set_ctrl_c_flag: int requires ctrl_c_flag;
+    virtual proc trap_ctrl_c: 1;
+  
+  }
+  
+  class Signal {
+  if PLAT_WIN32 do
+    inherit Win32Signal;
+  else
+    inherit PosixSignal;
+  done
+  }
+  
+
+Posix Signal
+============
+
+
+.. code-block:: felix
+
+  
+  class PosixSignal {
+    requires C89_headers::signal_h; 
+    type signal_t = "int";
+    ctor signal_t: int = "$1";
+    ctor int: signal_t = "$1";
+  
+    type sig_t = "sig_t"; // what a pity posix calls the handler sig_t
+    gen signal: signal_t * sig_t -> sig_t = "signal($1, $2)";
+    instance Eq[signal_t] {
+      fun == : signal_t * signal_t ->  bool = "$1==$2";
+    }
+    inherit Eq[signal_t];
+  
+    // http://pubs.opengroup.org/onlinepubs/009695399/basedefs/signal.h.html
+    const 
+      SIGABRT, SIGALRM, SIGBUS, SIGCHLD, SIGCONT, SIGFPE, SIGHUP, SIGILL, SIGINT, SIGKILL,
+      SIGPIPE, SIGQUIT, SIGSEGV, SIGSTOP, SIGTERM, SIGTSTP, SIGTTN, SIGTTOU, SIGUSR1, SIGUSR2,
+      SIGPOLL, SIGPROF, SIGSYS, SIGTRAP, SIGURG, SIGVTALRM, SIGXCPU,SIGXSZ
+    : signal_t;
+  
+    instance Str[signal_t] {
+      fun str: signal_t -> string =
+      | $(SIGABRT) =>  "SIGABRT" 
+      | $(SIGALRM) =>  "SIGALRM" 
+      | $(SIGBUS) =>  "SIGBUS" 
+      | $(SIGCHLD) =>  "SIGCHLD" 
+      | $(SIGCONT) =>  "SIGCONT" 
+      | $(SIGFPE) =>  "SIGFPE" 
+      | $(SIGHUP) =>  "SIGHUP" 
+      | $(SIGILL) =>  "SIGILL" 
+      | $(SIGINT) =>  "SIGINT" 
+      | $(SIGKILL) =>  "SIGKILL"
+      | $(SIGPIPE) =>  "SIGPIPE" 
+      | $(SIGQUIT) =>  "SIGQUIT" 
+      | $(SIGSEGV) =>  "SIGSEGV" 
+      | $(SIGSTOP) =>  "SIGSTOP" 
+      | $(SIGTERM) =>  "SIGTERM" 
+      | $(SIGTSTP) =>  "SIGTSTP" 
+      // | $(SIGTTN) =>  "SIGTTN"  // not in OSX
+      | $(SIGTTOU) =>  "SIGTTOU" 
+      | $(SIGUSR1) =>  "SIGUSR1" 
+      | $(SIGUSR2) =>  "SIGUSR2"
+      // | $(SIGPOLL) =>  "SIGPOLL" // not in OSX
+      | $(SIGPROF) =>  "SIGPROF" 
+      | $(SIGSYS) =>  "SIGSYS" 
+      | $(SIGTRAP) =>  "SIGTRAP" 
+      | $(SIGURG) =>  "SIGURG" 
+      | $(SIGVTALRM) =>  "SIGVTALRM" 
+      | $(SIGXCPU) =>  "SIGXCPU" 
+      // | $(SIGXSZ) =>  "SIGXSZ" // not in OSX
+      | x => "signal " + x.int.str
+      ;
+    }
+    inherit Str[signal_t];
+  
+    body "void null_signal_handler(int){}";
+    const null_signal_handler: sig_t;
+    proc ignore_signal(s:signal_t) { C_hack::ignore(signal(s, null_signal_handler)); }
+  
+    // http://pubs.opengroup.org/onlinepubs/007904975/functions/sigaction.html
+    body ctrl_c_handling = """
+      void set_ctrl_c_flag(int);
+      void trap_ctrl_c () {
+        struct sigaction sa;
+        sa.sa_handler = set_ctrl_c_flag;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = SA_RESTART;
+        sigaction(SIGINT, &sa, NULL);
+     }
+    """ requires ctrl_c_flag;
+  
+    inherit Signal_class[Posix];
+  
+    instance Signal_class[Posix] {
+      proc trap_ctrl_c: unit requires ctrl_c_handling;
+    }
+  }
+  
+  
+
+Win32 Signal
+============
+
+
+.. code-block:: felix
+
+  
+  class Win32Signal {
+    requires C89_headers::signal_h;
+    type signal_t = "int";
+    ctor signal_t: int = "$1";
+    ctor int: signal_t = "$1";
+  
+    header sig_t_def = "typedef void (__cdecl *sig_t)(int);";
+    type sig_t = "sig_t" requires sig_t_def; 
+    gen signal: signal_t * sig_t -> sig_t = "signal($1, $2)";
+    instance Eq[signal_t] {
+      fun == : signal_t * signal_t ->  bool = "$1==$2";
+    }
+    inherit Eq[signal_t];
+  
+    // http://pubs.opengroup.org/onlinepubs/009695399/basedefs/signal.h.html
+    const 
+      SIGABRT,  SIGFPE, SIGILL, SIGINT, 
+      SIGSEGV,  SIGTERM 
+    : signal_t;
+  
+    instance Str[signal_t] {
+      fun str: signal_t -> string =
+      | $(SIGABRT) =>  "SIGABRT" 
+      | $(SIGFPE) =>  "SIGFPE" 
+      | $(SIGILL) =>  "SIGILL" 
+      | $(SIGINT) =>  "SIGINT" 
+      | $(SIGSEGV) =>  "SIGSEGV" 
+      | $(SIGTERM) =>  "SIGTERM" 
+      | x => "signal " + x.int.str
+      ;
+    }
+    inherit Str[signal_t];
+  
+    body "void null_signal_handler(int){}";
+    const null_signal_handler: sig_t;
+    proc ignore_signal(s:signal_t) { C_hack::ignore(signal(s, null_signal_handler)); }
+  
+    // http://pubs.opengroup.org/onlinepubs/007904975/functions/sigaction.html
+    body ctrl_c_handling = """
+      void set_ctrl_c_flag(int);
+      void trap_ctrl_c () {
+       (void)signal(SIGINT,set_ctrl_c_flag); 
+     }
+    """ requires ctrl_c_flag;
+  
+    inherit Signal_class[Win32];
+  
+    instance Signal_class[Win32] {
+      proc trap_ctrl_c: unit requires ctrl_c_handling;
+    }
+  }
+  
+  

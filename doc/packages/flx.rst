@@ -1,0 +1,3434 @@
+
+========================
+Flx compiler driver tool
+========================
+
+
+
+
+Felix  :code:`flx` tool.
+========================
+
+This is exactly the same as the dflx tool, it just runs
+the @[@f@l@x@r@u@n@}@ @l@i@b@r@a@r@y@ @f@u@n@c@t@i@o@n@ @w@i@t@h@ @c@o@m@m@a@n@d@ @l@i@n@e@ @a@r@g@u@m@e@n@t@s@.
+However it preloads some plugins that might be used to avoid
+run time loading.
+
+
+.. code-block:: felix
+
+  // flx plugin linker
+  //
+  class FlxPluginSymbols 
+  {
+  
+    // We have to do this dummy requirements because static
+    // linking removes
+    requires package "re2";
+    requires package "faio";
+    requires package "flx_arun";
+  
+    open Dynlink;
+  
+    // Now add all the symbols.
+    proc addsymbols ()
+    {
+      static-link-plugin 
+        toolchain_clang_osx,
+        toolchain_iphoneos,
+        toolchain_iphonesimulator,
+        toolchain_clang_linux,
+        toolchain_gcc_osx,
+        toolchain_gcc_linux,
+        toolchain_msvc_win32
+      ;
+      // flx
+      static-link-symbol dflx_create_thread_frame in plugin dflx;
+      static-link-symbol dflx_flx_start in plugin dflx;
+      
+    }
+  }
+  
+  // Add the symbols
+  FlxPluginSymbols::addsymbols;
+  
+  // Now invoke the program!
+  val linstance =  Dynlink::prepare_lib("dflx");
+  var init: cont = Dynlink::get_init linstance;
+  
+  Fibres::chain init;
+  
+  
+  @
+
+Command line tool dflx.
+-----------------------
+
+This tool just runs the  :code:`runflx` library function
+with the executable command line arguments.
+
+.. code-block:: felix
+
+  include "std/felix/flx/flx";
+  
+  System::pexit$ Flx::runflx #System::args;
+  @
+  
+
+The flx cache manager.
+======================
+
+Check if the flx cache is stale and deletes it if it is.
+
+.. code-block:: felix
+
+  class FlxCache
+  {
+    fun gramtime(debugln: string -> 0) (path:string, s:string) : double = {
+      //println$ "Path=" + path + " file = " + s;
+      fun maxtime (x:double) (s:string) => max (x, gramtime debugln (path, s));
+      if s.[0]=="@".char do
+        var file = 
+          let f = s.[1 to].strip in
+          if Filename::is_absolute_filename f then f 
+          else Directory::mk_absolute_filename (Filename::join$ path, f)
+        ;
+        var filetime = FileStat::dfiletime(file,0.0);
+        if filetime == 0.0 do
+          println$ "Grammar include file '" + file "' doesn't exist, exiting";
+          // this one is pretty fatal :-)
+          System::exit 1;
+        done
+        debugln$ "Grammar include file '" + file + "' time=" + FileStat::strfiletime(filetime);
+        var filetext = load file;
+        var files = split (filetext, "\n");
+        files = map strip of (string) files;
+        files = filter (fun (s:string) => s != "") files;
+        files = map (fun (s:string) => Filename::join (split(s,"/"))) files;
+        //println$ "Files=" + files;
+        return fold_left maxtime filetime files;
+      else
+        file = Filename::join$ path, s;
+        filetime = FileStat::dfiletime(file,0.0);
+        if filetime == 0.0 do
+          println$ "Grammar file " + file " doesn't exist, exiting";
+          // this one is pretty fatal :-)
+          System::exit 1;
+        done
+        debugln$ "Grammar file " + file + " time=" + FileStat::strfiletime(filetime);
+        return filetime;
+      done
+    }
+  
+    // FLX_INSTALL_DIR: root for finding standard grammar
+    // STDGRAMMAR: root standard grammar key, within FLX_INSTALL_DIR
+    //      usually "grammar/grammar.files"
+    // FLXG: absolute filename of felix compiler executable
+  
+    // CACHE_DIR: absolute filename of binary cache
+    // OUTPUT_DIR: absolute filename of text cache
+  
+    // DEFAULT_CACHE_DIR: default location of CACHE_DIR
+    // DEFAULT_OUTPUT_DIR: default location of OUTPUT_DIR
+    //    These defaults are used to determine if the
+    //    the cache should be deleted automatically
+    //    or a an interactive query used to verify.
+    //    Automatic deletion requies the caches to be the default.
+    // CLEAR_CACHE: switch to force clearing the cache
+  
+    typedef cache_validation_spec_t = 
+    (
+       FLX_SHARE_DIR:string, 
+       GRAMMAR_DIR:string, 
+       STDGRAMMAR:string, 
+       FLXG:string,    
+       CACHE_DIR:string,
+       OUTPUT_DIR:string,
+       CLEAR_CACHE: int,
+       AUTOMATON: string,
+       debugln : string -> 0,
+       xqt: string -> string,
+       quote: string -> string
+    );
+  
+  
+    // CACHE VALIDATION
+    // 
+    // This function validates the current cache, and if it is considered
+    // stale may flush it. If the cache is the default one in the users
+    // home directory the flush is done noisily but unconditionally.
+    // Otherwise the user is prompted for permission.
+    // The special cache locations / and . or "" are never deleted
+    // in case it wipes out parts of the root, home, or current directory.
+  
+    // The validation checks the time of the flxg compiler used to build
+    // it against the current flxg compiler, these must be exactly equal.
+    //
+    // It also checks that all the files defining the grammar are older
+    // than the generated automaton.
+    //
+    // It does NOT check any RTL C++ libraries are up to date.
+    // It does NOT check any Felix program files are up to date.
+    // Therefore it does NOT guarrantee the contents of the cache are valid.
+    // Rather it ensures only that the compiler and cached automaton are not stale.
+    // However if they are stale the whole cache is invalidated.
+    //
+    // In effect this means this function ensures the parser is ready and valid
+    // or non-existant. The compiler and automaton are locked together. If the compiler
+    // changes the automaton must be rebuilt. 
+  
+    // returns cache time
+    gen validate_cache  (var spec: cache_validation_spec_t) : int * double =
+    {
+  
+      // ensure the cache directory exists
+      Directory::mkdirs(spec.CACHE_DIR);
+  
+      // get the OS timestamp of the flxg compiler, +inf if not found
+      var flxg_time = FileStat::dfiletime(spec.FLXG, #FileStat::future_time);
+      spec.debugln$ "Flxg=" + spec.FLXG;
+      spec.debugln$ "Flxg_time=" + FileStat::strfiletime(flxg_time);
+  
+      // get the OS timestamp of the file flxg_time.stamp
+      // this file is created with the cache
+      var flxg_stamp = Filename::join spec.CACHE_DIR "flxg_time.stamp";
+      var cache_time = FileStat::dfiletime(flxg_stamp,#FileStat::future_time);
+      spec.debugln$ "cache_time=" + FileStat::strfiletime(cache_time);
+  
+      // get the timestamp string recorded in flxg_time.stamp
+      var flxg_stamp_data = load flxg_stamp;
+      //println$ "Flxg_stamp_data=" + flxg_stamp_data; 
+  
+      // convert the timestamp string to a double, if there is junk
+      // there or the string is empty, 0.0 is returned by atof,
+      // adjust that to -inf
+      var flxg_stamp_time = match flxg_stamp_data.atof with | 0.0 => #FileStat::past_time | x => x;
+  
+      spec.debugln$ "Flxg_stamp_data : " + FileStat::strfiletime(flxg_stamp_time);
+  
+      // Calculate the time of the newest text file defining the grammar
+      // these are files in directory share/lib/grammar.
+      var grammar_time = gramtime spec.debugln (spec.GRAMMAR_DIR, "@"+spec.STDGRAMMAR);
+      spec.debugln$ "Grammar text time=" + FileStat::strfiletime (grammar_time);
+  
+      // calculate the name of the compiled grammar automaton in the cache
+      var automaton_name = spec.AUTOMATON; 
+  
+      // Get the timestamp of the grammar automaton or -inf if it doesn't exist.
+      var automaton_time = FileStat::dfiletime(automaton_name,#FileStat::past_time);
+      spec.debugln$ "Automaton " + automaton_name + " time=" + FileStat::strfiletime(automaton_time);
+  
+      // If the cache exists and the recorded compiler time stamp is not equal
+      // to the current compiler time stamp, then the cache is stale 
+      // and should be deleted.
+      if cache_time != #FileStat::future_time and flxg_stamp_time != flxg_time do
+        println$ "Cache may be out of date due to compiler change!";
+        println$ "Flxg compiler time stamp=" + FileStat::strfiletime(flxg_time);
+        println$ "Cache time stamp        =" + FileStat::strfiletime(cache_time);
+  
+        // special safety check if the output dirs are root or current directory
+        if not (
+          (spec.OUTPUT_DIR == "/" or spec.OUTPUT_DIR == "" or spec.OUTPUT_DIR == ".") or
+          (spec.CACHE_DIR == "/" or spec.CACHE_DIR == "" or spec.CACHE_DIR == ".")
+        )
+        do 
+          spec&.CLEAR_CACHE <- 1;
+        done
+  
+      // If the automaton exists and the grammar is newer than the automaton
+      // then the cache is stale and should be deleted.
+      elif grammar_time > automaton_time do
+        println$ "Cache may be out of date due to grammar upgrade!";
+        println$ "Grammar time stamp          =" + FileStat::strfiletime(grammar_time);
+        println$ "Automaton.syntax time stamp =" + FileStat::strfiletime(automaton_time);
+        spec&.CLEAR_CACHE <- 1;
+      done
+  
+      // FFF BE CAREFUL! The value "/" for these caches is perfectly good
+      if spec.CLEAR_CACHE != 0 do
+        // refuse to delete "" or "/" or ".", basic safety check
+        if 
+          (spec.OUTPUT_DIR == "/" or spec.OUTPUT_DIR == "" or spec.OUTPUT_DIR == ".") or
+          (spec.CACHE_DIR == "/" or spec.CACHE_DIR == "" or spec.CACHE_DIR == ".")
+        do
+          println "WILL NOT DELETE CACHES";
+          println$ "output cache " + spec.OUTPUT_DIR;
+          println$ "binary cache " + spec.CACHE_DIR;
+          // INTENTIONAL EXIT
+          System::exit(1);
+        done
+  
+        println$ "Delete cache " + spec.OUTPUT_DIR;
+        if PLAT_WIN32 do
+            C_hack::ignore$ spec.xqt("mkdir "+spec.quote(spec.OUTPUT_DIR+"\\rubbish") +"& rmdir /Q /S " + spec.quote(spec.OUTPUT_DIR));
+        else
+            C_hack::ignore$ spec.xqt("rm -rf " + spec.quote(spec.OUTPUT_DIR));
+        done
+        println$ "Delete cache " + spec.CACHE_DIR;
+  
+        if PLAT_WIN32 do
+            C_hack::ignore$ spec.xqt("mkdir "+spec.quote(spec.CACHE_DIR+"\\rubbish")+"& rd /Q /S " + spec.quote(spec.CACHE_DIR));
+        else
+            C_hack::ignore$ spec.xqt("rm -rf " + spec.quote(spec.CACHE_DIR));
+        done
+  
+        // Make a new cache.
+        Directory::mkdirs(spec.CACHE_DIR);
+  
+        // make the stamp file with the time of the current compiler.
+        var f = fopen_output flxg_stamp;
+        write(f, fmt(flxg_time, fixed (0,3)));
+        f.fclose;
+      done
+      return spec.CLEAR_CACHE, cache_time;
+    }
+  
+    fun cache_join (c:string, var f:string) = 
+    {
+      //debugln$ "[cache_join] " + c + " with  " + f;
+      if PLAT_WIN32 do
+        if f.[1 to 3] == ":\\" do f = f.[0 to 1]+f.[2 to]; 
+        elif f.[1] == char ":" do f = f.[0 to 1]+"\\"+f.[2 to]; 
+        done
+        if f.[0] == char "\\" do f = f.[1 to]; done
+      else
+        if f.[0] == char "/" do f = f.[1 to]; done
+      done
+        var k = Filename::join(c,f);
+        //debugln$ "[cache_join] result = " + k;
+        return k;
+    }
+  
+  }
+  @
+  
+
+The compiler.
+-------------
+
+A wrapper around the {flxg} command line compiler executable.
+
+.. code-block:: felix
+
+  class Flxg
+  {
+    typedef flxg_spec_t = 
+    (
+      INLINE:int,
+      OUTPUT_DIR:string,
+      BUNDLE_DIR:opt[string],
+      CACHE_DIR:string,
+      COMPILER_PHASE:string,
+      DOREDUCE:int,
+      FLXG:string,
+      VERBOSE:list[string],
+      STDGRAMMAR:string,
+      AUTOMATON:string,
+      IMPORTS:list[string],
+      FLXLIBS:list[string],
+      INCLUDE_DIRS:list[string],
+      TIME:int,
+      FORCE:int,
+      FLAGS: list[string],
+      filebase:string,
+      use_ext:string,
+      debugln: string -> 0
+    );
+  
+  
+    gen run_felix_compiler (spec:flxg_spec_t) : int =
+    {
+      var FLXFLAGS=spec.FLAGS  + (list[string]$ "--inline="+str(spec.INLINE));
+      if spec.OUTPUT_DIR != "" do 
+        FLXFLAGS += '--output_dir=' + str(spec.OUTPUT_DIR); 
+      done
+      match spec.BUNDLE_DIR with
+      | Some dir =>
+        FLXFLAGS += '--bundle_dir=' + dir; 
+      | #None=> ;
+      endmatch;
+      if spec.CACHE_DIR != "" do 
+        FLXFLAGS +="--cache_dir=" + spec.CACHE_DIR; 
+      done
+      if spec.COMPILER_PHASE != "" do 
+        FLXFLAGS += '--compiler-phase=' + spec.COMPILER_PHASE; 
+      done
+      if spec.DOREDUCE == 0 do
+        FLXFLAGS += '--no-reduce';
+      done
+      if spec.TIME == 1 do
+        FLXFLAGS += '--time';
+      done
+      if spec.FORCE == 1 do
+        FLXFLAGS += '--force';
+      done
+      var cmd = 
+        spec.FLXG ! 
+        spec.VERBOSE +
+        FLXFLAGS + 
+        map (fun (s:string) => "-I"+s) spec.INCLUDE_DIRS + 
+        ("--syntax="+spec.STDGRAMMAR) +
+        ("--automaton="+spec.AUTOMATON) + 
+        map (fun (s:string) => "--import="+s) spec.IMPORTS +
+        spec.FLXLIBS +
+        (spec.filebase + spec.use_ext)
+      ;
+  
+      var CMD = catmap ' ' Shell::quote_arg cmd;
+      spec.debugln$ "Felix command="+CMD;
+      
+      var result=System::system(CMD);
+      if result != 0 do 
+        eprintln$ "Felix compilation "+CMD+" failed";
+      done
+      return result;
+    }
+  
+  }
+  
+  @
+  
+
+Profile
+-------
+
+The profile is the most basic low level configuration data,
+which determines where to find everything.
+
+
+.. code-block:: felix
+
+  class FlxProfile
+  {
+    fun dflt_profile () = 
+    {
+      fun / (x:string, y:string) => Filename::join (x,y);
+      var HOME= 
+        let h = Env::getenv "HOME" in
+          if h!="" then h 
+          elif PLAT_WIN32 then Env::getenv "USERPROFILE"
+          else ""
+          endif
+      ;
+      if HOME == "" do
+        eprintln$ "HOME (or USERPROFILE on WIN32) environment variable is not set.  Please set HOME before building."; 
+        // this one is pretty fatal :-)
+        System::exit 1;
+      done 
+  
+     
+      var FLX_HOME_DIR = Env::getenv("FLX_HOME_DIR",HOME/".felix");
+      var FLX_CACHE_TOP = Env::getenv("FLX_CACHE_TOP",FLX_HOME_DIR/"cache");
+      var FLX_PROFILE_DIR = Env::getenv("FLX_PROFILE_DIR",FLX_HOME_DIR/"config");
+  
+      var FLX_CACHE_DIR = Env::getenv("FLX_CACHE_DIR",FLX_CACHE_TOP / "binary");
+      var FLX_OUTPUT_DIR = Env::getenv("FLX_OUTPUT_DIR",FLX_CACHE_TOP / "text");
+      return 
+        (
+         FLX_HOME_DIR=FLX_HOME_DIR, 
+         FLX_PROFILE_DIR=FLX_PROFILE_DIR, 
+         FLX_CACHE_DIR=FLX_CACHE_DIR,
+         FLX_OUTPUT_DIR=FLX_OUTPUT_DIR
+        )
+      ;
+    }
+  
+    typedef profile_type = typeof (#dflt_profile);
+    instance Str[profile_type] {
+      fun str(x:profile_type) => 
+         "FLX_HOME_DIR="+x.FLX_HOME_DIR+"\n"+
+         "FLX_PROFILE_DIR="+x.FLX_PROFILE_DIR+"\n"+
+         "FLX_CACHE_DIR="+x.FLX_CACHE_DIR+"\n"+
+         "FLX_OUTPUT_DIR="+x.FLX_OUTPUT_DIR+"\n"
+      ;
+    }
+  }
+  
+  @
+  
+
+Config.
+-------
+
+A more detailed layout configuration based
+on command line switches and the base profile.
+
+.. code-block:: felix
+
+  include "std/version";
+  include "std/felix/flx_profile";
+  
+  
+  
+  class Config {
+    typedef config_type = (
+      FLX_SHARE_DIR: string,
+      FLX_TARGET_DIR: string,
+      FLX_HOME_DIR: string,
+      FLX_PROFILE_DIR: string,
+      FLX_CACHE_DIR: string,
+      FLX_OUTPUT_DIR: string,
+      FLX_CONFIG_DIRS: list[string],
+      FLX_LIB_DIRS: list[string],
+      FLX_RTL_DIRS: list[string]
+    );
+  
+    instance Str[config_type] {
+      fun str (x:config_type) : string =
+      {
+        var s = "";
+        reserve$ &s,1000;
+        s+="(FLX_SHARE_DIR="+ x.FLX_SHARE_DIR+",\n";
+        s+= "FLX_TARGET_DIR="+ x.FLX_TARGET_DIR+",\n";
+        s+="FLX_HOME_DIR="+ x.FLX_HOME_DIR+",\n";
+        s+="FLX_PROFILE_DIR="+ x.FLX_PROFILE_DIR+",\n";
+        s+="FLX_CACHE_DIR="+ x.FLX_CACHE_DIR+",\n";
+        s+="FLX_OUTPUT_DIR="+ x.FLX_OUTPUT_DIR+",\n";
+        s+="FLX_LIB_DIRS="+ x.FLX_LIB_DIRS.str+",\n";
+        s+="FLX_CONFIG_DIRS="+ x.FLX_CONFIG_DIRS.str+",\n";
+        s+="FLX_RTL_DIRS="+ x.FLX_RTL_DIRS.str+")\n";
+        return s;
+      }
+    }
+  
+    private fun / (x:string, y:string) => Filename::join (x,y);
+      
+    proc set_libs_and_rtls (x: &config_type)
+    {
+      x.FLX_LIB_DIRS <- list (x*.FLX_SHARE_DIR/"lib", x*.FLX_TARGET_DIR/"lib");
+      x.FLX_RTL_DIRS <- list (x*.FLX_SHARE_DIR/"lib"/"rtl", x*.FLX_TARGET_DIR/"lib"/"rtl");
+    }
+  
+    proc cascade_FLX_INSTALL_DIR (x: &config_type)  (y: string) = {
+      cascade_FLX_TARGET_DIR x (y/"host");
+      cascade_FLX_SHARE_DIR x (y/"share");
+    }
+  
+    proc cascade_FLX_TARGET_DIR (x: &config_type)  (y: string) = {
+      x.FLX_TARGET_DIR <- y;
+      x.FLX_CONFIG_DIRS <- list[string] (y/"config");
+      set_libs_and_rtls x;
+    }
+  
+    proc cascade_FLX_SHARE_DIR (x: &config_type)  (y: string) = {
+      x.FLX_SHARE_DIR <- y;
+      set_libs_and_rtls x;
+    }
+  
+    proc cascade_FLX_HOME_DIR (x: &config_type)  (y: string) = {
+      x.FLX_HOME_DIR <- y;
+      x.FLX_PROFILE_DIR <- y/"config";
+      x.FLX_CACHE_DIR <- y/"cache"/"binary";
+      x.FLX_OUTPUT_DIR <- y/"cache"/"text";
+    }
+  
+    proc copy_profile (cfg: &config_type) (profile: FlxProfile::profile_type)
+    {
+      cfg.FLX_HOME_DIR <- profile.FLX_HOME_DIR;
+      cfg.FLX_PROFILE_DIR <- profile.FLX_PROFILE_DIR;
+      cfg.FLX_CACHE_DIR <- profile.FLX_CACHE_DIR;
+      cfg.FLX_OUTPUT_DIR <- profile.FLX_OUTPUT_DIR;
+    }
+  
+    fun dflt_config() :config_type = {
+      var profile = FlxProfile::dflt_profile();
+      var cfg : config_type;
+      copy_profile &cfg profile;
+  
+      // global defaults
+      var PREFIX = Filename::root_subdir "usr"/"local"/"lib";
+  
+      var INSTALL_ROOT_TOPDIR= PREFIX/"felix";
+      var INSTALL_ROOT = INSTALL_ROOT_TOPDIR/ ("felix-"+Version::felix_version);
+      cascade_FLX_INSTALL_DIR &cfg INSTALL_ROOT;
+      return cfg;
+    }
+  
+    proc process_config_text (cfg:&config_type) (text:string)
+    {
+  
+      var re = RE2 ("([-a-zA-Z_]+) *: *(.*)");
+      var FLX_INSTALL_DIR = "";
+  
+      var lines = split (text, char "\n");
+      for line in lines do
+        var found = Match (re, line);
+        match found with
+        | Some v when v.len.int == 3 => 
+          var p = v.1;
+          var a = strip v.2;
+          match p with
+          | "FLX_INSTALL_DIR" => 
+            FLX_INSTALL_DIR = a;
+            cascade_FLX_INSTALL_DIR cfg a; 
+  
+          | "FLX_TARGET_SUBDIR" => 
+            if FLX_INSTALL_DIR != "" do
+              cascade_FLX_TARGET_DIR cfg (FLX_INSTALL_DIR / a);
+            else
+              eprintln$ "Cannot set FLX_TARGET_SUBDIR without setting FLX_INSTALL_DIR";
+              // this one is pretty fatal :-)
+              System::exit 1;
+            done
+  
+          | "FLX_SHARE_DIR" => cascade_FLX_SHARE_DIR cfg a; 
+          | "FLX_TARGET_DIR" => cascade_FLX_TARGET_DIR cfg a; 
+          | "FLX_HOME_DIR" => cascade_FLX_HOME_DIR cfg a; 
+          | "FLX_PROFILE_DIR" => cfg.FLX_PROFILE_DIR <- a; 
+          | "FLX_CONFIG_DIRS" => cfg.FLX_CONFIG_DIRS <- respectful_split a; 
+          | "FLX_CACHE_DIR" => cfg.FLX_CACHE_DIR <- a; 
+          | "FLX_OUTPUT_DIR" => cfg.FLX_OUTPUT_DIR <- a; 
+          | "FLX_LIB_DIRS" => cfg.FLX_LIB_DIRS <-  respectful_split a; 
+          | "FLX_RTL_DIRS" => cfg.FLX_RTL_DIRS <- respectful_split a; 
+          | _ => ;
+          endmatch;
+        | #None => ;
+        endmatch;
+      done
+    }
+  
+  
+    proc config_env_overrides (cfg:&config_type) 
+    {
+  
+      match Env::getenv ("FLX_INSTALL_DIR","") with
+      | "" => ;
+      | x => cascade_FLX_INSTALL_DIR cfg x;
+      endmatch;
+  
+      match Env::getenv ("FLX_SHARE_DIR","") with
+      | "" => ;
+      | x => cascade_FLX_SHARE_DIR cfg x;
+      endmatch;
+  
+      match Env::getenv ("FLX_TARGET_DIR","") with
+      | "" => ;
+      | x => cascade_FLX_TARGET_DIR cfg x;
+      endmatch;
+  
+      match Env::getenv ("FLX_CONFIG_DIRS","") with
+      | "" => ;
+      | x => cfg.FLX_CONFIG_DIRS <- respectful_split x;
+      endmatch;
+  
+      match Env::getenv ("FLX_LIB_DIRS","") with
+      | "" => ;
+      | x => cfg.FLX_LIB_DIRS <- respectful_split x;
+      endmatch;
+  
+      match Env::getenv ("FLX_RTL_DIRS","") with
+      | "" => ;
+      | x => cfg.FLX_RTL_DIRS <- respectful_split x;
+      endmatch;
+    }
+  
+    proc process_config_text_with_env_overrides (cfg:&config_type) (text:string)
+    {
+      process_config_text cfg text;
+      config_env_overrides cfg;
+    }
+  
+    fun std_config () = {
+      var cfg = #dflt_config; 
+      process_config_text_with_env_overrides &cfg (load (cfg.FLX_PROFILE_DIR / "felix.fpc"));
+      return cfg; 
+    }
+  
+  }
+  
+  @
+  
+
+Control Record.
+---------------
+
+Just initialises the base configuration data.
+
+.. code-block:: felix
+
+  class FlxControl
+  {
+  proc print_options(control:control_type) {
+      println$ "NOOPTIMISE         = "+str control.NOOPTIMISE;
+      println$ "STATIC             = "+str control.STATIC;
+      println$ "ECHO               = "+str control.ECHO;
+      println$ "NOSTDLIB           = "+str control.NOSTDLIB;
+      println$ "DEBUG              = "+str control.DEBUG;
+      println$ "DEBUG_COMPILER     = "+str control.DEBUG_COMPILER;
+      println$ "STDIMPORTS          = "+str control.STDIMPORTS;
+      println$ "STDGRAMMAR         = "+str control.STDGRAMMAR;
+      println$ "IMPORTS            = "+str control.IMPORTS;
+      println$ "RECOMPILE          = "+str control.RECOMPILE;
+      println$ "FLXG_FORCE         = "+str control.FLXG_FORCE;
+      println$ "ocamls              = "+str control.ocamls;
+      println$ "cpps               = "+str control.cpps;
+      println$ "cppos              = "+str control.cppos;
+      println$ "TIME               = "+str control.TIME;
+      println$ "COMPILER_TIME      = "+str control.COMPILER_TIME;
+      println$ "BUNDLE_DIR         = "+str control.BUNDLE_DIR;
+      println$ "RUNIT              = "+str control.RUNIT;
+      println$ "CCOMPILEIT         = "+str control.CCOMPILEIT;
+      println$ "LINKIT             = "+str control.LINKIT;
+      println$ "RUNONLY            = "+str control.RUNONLY;
+      println$ "CXXONLY            = "+str control.CXXONLY;
+      println$ "OCAMLONLY          = "+str control.OCAMLONLY;
+      println$ "FELIX              = "+str control.FELIX;
+      println$ "LINKER_SWITCHES    = "+str control.LINKER_SWITCHES;
+      println$ "LINKER_OUTPUT_FILENAME = "+str control.LINKER_OUTPUT_FILENAME;
+      println$ "FLX_INTERFACE_FILENAME = "+str control.FLX_INTERFACE_FILENAME;
+      println$ "CXX_INTERFACE_FILENAME = "+str control.CXX_INTERFACE_FILENAME;
+      println$ "MACROS             = "+str control.MACROS;
+      println$ "SHOWCODE           = "+str control.SHOWCODE;
+      println$ "USAGE              = "+control.USAGE;
+      println$ "DOREDUCE           = "+str control.DOREDUCE;
+      println$ "OPTIMISE           = "+str control.OPTIMISE;
+  }
+  
+  fun init_loopctl () => struct {
+      // Argument parsing loop
+      var argno=1;
+      var grab=1;
+      var path="";
+      var ext="";
+      var base="";
+      var dir="";
+      var progname = "";
+  };
+  typedef loopctl_type = typeof (#init_loopctl);
+  
+  fun dflt_control () =>
+    struct {
+  
+      var FLX_INSTALL_DIR= ""; // now a temporary!
+      var PRINT_HELP=0;
+  
+      var FLXG_FORCE=0;
+      var RECOMPILE=0;
+      var RUNIT=1;
+      var CCOMPILEIT=1;
+      var LINKIT=1;
+      var LINKEXE=0; // default is to link a DLL
+      var FELIX=1;
+      var RUNONLY=0;
+      var CXXONLY=0;
+      var OCAMLONLY=0;
+      var ECHO=0;
+      var DEBUG_FLX=false;
+      var VALIDATE_CACHE=1;
+      var CHECK_DEPENDENCIES=1;
+      var FLX_TOOLCHAIN="";
+      var FLX_TARGET_SUBDIR="";
+      // --------------------------------------------------
+      // processing options
+      // --------------------------------------------------
+  
+      var DIST_ROOT="";
+      var DEBUG=0;
+      var DEBUG_COMPILER=0;
+      var COMPILER_PHASE="";
+      var INLINE=25;
+      var COMPILER_TIME=0;
+      var TIME=0;
+      var NOOPTIMISE=0;
+      var DOREDUCE=1;
+      var TIMECMD="time -p";
+      var STATIC=0;
+      var STATICLIB=0;
+      var SHOWCODE=0;
+      var CCFLAGS=Empty[string];
+      var EXTRA_CCFLAGS=Empty[string];
+      var EXTRA_PACKAGES=Empty[string];
+      var LINKER_SWITCHES=Empty[string];
+      var MACROS=Empty[string];
+  
+      var cpps=Empty[string];
+      var cppos=Empty[string];
+  
+      var ocamls=Empty[string];
+  
+      var STANDARD_INCLUDE_FILES=Empty[string];
+      var EXTRA_INCLUDE_DIRS=Empty[string];
+      var EXTRA_INCLUDE_FILES=Empty[string];
+      var FLX_STD_LIBS=Empty[string];
+      var NOSTDLIB=0;
+      var STDOUT="";
+      var EXPECT="";
+      var CHECK_EXPECT=0;
+      var SET_STDIN=0;
+      var STDIN="";
+      var GRAMMAR_DIR="";
+      var STDGRAMMAR="";
+      //var STDIMPORTS  = Cons ("plat/flx.flxh", Cons ( "concordance/concordance.flxh", Empty[string]));
+      var STDIMPORTS  = (["plat/flx.flxh", "concordance/concordance.flxh"]);
+      var CMDLINE_INPUT=false;
+      var REPL_MODE=false;
+      var AUTOMATON="";
+      var IMPORTS=Empty[string];
+      var USAGE = "production";
+      var CLEAR_CACHE=0;
+      var BUNDLE_DIR = match Env::getenv("FLX_BUNDLE_DIR") with | "" => None[string] | dir => Some dir endmatch;
+  
+      var DRIVER_EXE = ""; // dynamic linkage only 
+      var DRIVER_OBJS = Empty[string]; // static linkage only
+      var LINK_STRINGS = Empty[string];
+  
+      var pkgs=Empty[string];
+      var extra_pkgs = Empty[string];
+      var FLXG = "";
+      var FLXRUN = Empty[string];
+      var LINKER_OUTPUT_FILENAME = "";
+      var FLX_INTERFACE_FILENAME = "";
+      var CXX_INTERFACE_FILENAME = "";
+      var OUTPUT_FILENAME_SPECIFIED = 0;
+      var OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED = 0;
+      var OUTPUT_DIRECTORY_SPECIFIED = 0;
+      var USER_ARGS = Empty[string];
+      var DLINK_STRINGS = Empty[string];
+      var SLINK_STRINGS = Empty[string];
+      var cache_time = 0.0;
+      var INDIR = "";
+      var INREGEX = "";
+      var NONSTOP = 0;
+      var OPTIMISE = list[string]$ "-O1";
+      var FLXG_OPTIMISE= 0;
+    }
+  ;
+  
+  typedef control_type = typeof (#dflt_control);
+  }
+   
+  @
+  
+
+Command line argument parser.
+-----------------------------
+
+Parses the command line options.
+
+.. code-block:: felix
+
+  // NOTE: below the string "host" is used to help find files eg flxg.
+  // This is a temporary hack to get Felix working after filesystem reorgnisation.
+  
+  class FlxCmdOpt
+  {
+  private proc print_help() {
+    println "Usage: flx [options] filename[.flx] [args ..]";
+    println "options:";
+    println "--cmd=text           : save text to file 'cmd.flx' and process that";
+    println "--repl               : enter REPL mode saving stuff in session.flx and library.flx";
+    println "--test               : use felix installation in current directory";
+    println "--test=dir           : use felix installation in dir";
+    println "--target-subdir=dir  : subdir of install dir containing target configuration (default 'host')";
+    println "--target-dir=dir     : dir containing target configuration (default '$FLX_INSTALL_DIR/host')";
+    println "--pkgconfig-path+=dir: prepend extra flx_pkgconfig search directory to standard path";
+    println "--toolchain=toolchain: pick a non-default C++ compiler toolchain";
+    println "--felix=file         : get installation details from file";
+    println "--where              : print location of felix installation";
+    println "--show               : print the felix program to stdout";
+    println "-c                   : compile only, do not run";
+    println "-o                   : linker output filename";
+    println "-ox                  : linker output filename (without extension)";
+    println "-od                  : linker output directory" ;
+    println "--usage=prototype    : fast compilation at the expense of slower executables";
+    println "--usage=debugging    : enable debugging aids";
+    println "--usage=production   : optimised code with run time safety checks retained";
+    println "--usage=hyperlight   : optimised code without run time safety checks";
+    println "--static             : make standalone statically linked executable";
+    println "--staticlib          : make standalone library of static objects";
+    println "--nofelix            : do not run felix translator, leave C++ outputs alone";
+    println "--nocc               : do not C/C++ compiler; implies --nolink";
+    println "--nolink             : do not link object files to an executable";
+    println "--run-only           : run program without dependency checking or linking";
+    println "--c++                : Pure C++ build, no Felix code";
+    println "--ocaml              : Pure Ocaml build, no Felix code";
+    println "--options            : show option set";
+    println "--config             : show configuration";
+    println "--version            : show felix version";
+    println "--force              : force run Felix compiler";
+    println "--force-compiler     : force Felix compiler to rebuild everything";
+    println "--cache-dir=dir      : directory cache output from parser (*.par files), autocreated, default $HOME/.felix/cache";
+    println "--output-dir=dir     : directory to hold C++ output from translator, autocreated, default $HOME/.felix/cache";
+    println "                       Felix stored by absolute pathname within directory (tree directory).";
+    println "--bundle-dir=dir     : directory to hold C++ output from translator, autocreated.";
+    println "                       Files directly in directory by basename (flat directory).";
+    println "--clean              : delete the caches first";
+    println "--help               : show this help";
+    println "--noinline           : force inlining off, may break things!";
+    println "--inline             : aggressive inlining"; 
+    println "--inline=999         : set inline cap to 999 'instructions'"; 
+    println "--echo               : print shell commands before running them";
+    println "--time               : print target program run time after it finishes";
+    println "--compile-time       : print time for compiler phases";
+    println "--nostdlib           : don't load the standard library";
+    println "--nooptimise         : disable C++ compiler optimisation";
+    println "--noreduce           : disable reductions (default for compilation speed)";
+    println "--doreduce           : enable reductions (default for performance)";
+    println "--debug              : put debug symbols in generated binaries";
+    println "--debug-compiler     : make felix compiler print progress diagnostics";
+    println "--debug-flx          : make flx tool print diagnostics";
+    println "--stdout=file        : run program with standard output redirected to file";
+    println "--expect=file        : compare stdout with expect file";
+    println "--expect             : compare stdout with basename.expect";
+    println "--input=file         : set standard input";
+    println "--input              : set standard input to basename.input";
+    println "--indir=dir          : set directory for regexp search, default current directory";
+    println "--regex=pattern      : Perl regexp for batch file processing";
+    println "--nonstop            : don't stop on error in batch processing";
+    println "--backup             : backup working source tree to dir 'backup'";
+    println "--import=file        : add an import which is prefixed to all files being translated";
+    println "--import=@file       : add all the files listed in file as imports (recursive on @)";
+    println "--nostdimport        : don't import the standard imports nugram.flxh and flx.flxh";
+    println "--compiler-phase     : specify which phase of the compiler to run";
+    println "-Idir                : add dir to search path for both felix and C++ includes";                      
+    println "-Ldir                : add dir to linker search path"; 
+    println "-llib                : add dir lib to linker command";
+    println "-foption             : add switch to compiler command";
+    println "-Woption             : add switch to compiler command";
+    println "-O0                  : add switch to compiler command";
+    println "-O1                  : add switch to compiler command";
+    println "-O2                  : add switch to compiler command";
+    println "-O3                  : add switch to compiler command";
+    println "--cflags=flags       : addd flags to compiler command";
+    println "-Dmac                : add macro def to C++ compiler command";
+    println "-DFLX_ENABLE_TRACE   : enable compilation of trace generators (defaults off)";
+    println "-DFLX_CGOTO          : use gcc indirect gotos and use assembler hack for long jumps (default on if config detects support)";
+    println "";
+    println "*.c *.cc *.cpp *.cxx ";
+    println "                     : add files to C++ compilation (and linker) steps";
+    println "*.o *.obj *.lib *.dll *.a *.so";
+    println "                     : add files to linker steps";
+    println "* *.flx *.fdoc       : Felix program name, terminates options and starts runtime arguments";
+    println "";
+    println "Environment variables";
+    println "---------------------";
+    println "Flx build tool";
+    println "  FLX_INSTALL_DIR=dir     : overrides default installation directory (as if --test=dir)";
+    println "  FLX_SHELL_ECHO=1        : show shell callouts (system,popen)";
+    println "  FLX_FILE_MONITOR=1      : reports on every file open (felix and flxg)";
+    println "  FLX_REPORT_FILECOPY=1   : reports on every file copy (felix)";
+    println "  FLX_DEBUG_FLX=1         : debug flx (as if --debug-flx set)";
+    println "";
+    println "Flxg compiler";
+    println "  FLX_DEBUG_PARSER=1      : emit debug info from the Felix parser";
+    println "  FLX_DEBUG_COMPILER_UNIQ=1  : emit debug of uniq flow analyser, instruction and flow analysis";
+    println "  FLX_DEBUG_COMPILER_UNIQ_GETSET=1  : emit debug of uniq flow analyser, instruction analysis";
+    println "";
+    println "Run time system (affects flx as well as any binary run)";
+    println "  FLX_DEBUG               : enable debugging traces (default off)";
+    println "  FLX_DEBUG_ALLOCATIONS   : enable debugging allocator (default FLX_DEBUG)";
+    println "  FLX_DEBUG_COLLECTIONS   : enable debugging collector (default FLX_DEBUG)";
+    println "  FLX_REPORT_COLLECTIONS  : report collections (default FLX_DEBUG)";
+    println "  FLX_DEBUG_THREADS       : enable debugging collector (default FLX_DEBUG)";
+    println "  FLX_DEBUG_DRIVER        : enable debugging driver (default FLX_DEBUG)";
+    println "";
+    println "Run time GC tuning (affects flx as well as any binary run)";
+    println "  FLX_FINALISE            : whether to cleanup on termination (default NO)";
+    println "  FLX_GC_FREQ=n           : how often to call garbage collector (default 1000)";
+    println "  FLX_MIN_MEM=n           : initial memory pool n Meg (default 10)";
+    println "  FLX_MAX_MEM=n           : maximum memory n Meg (default -1 = infinite)";
+    println "  FLX_FREE_FACTOR=n.m     : reset FLX_MIN_MEM to actual usage by n.m after gc (default 1.1)";
+    println "  FLX_ALLOW_COLLECTION_ANYWHERE # (default yes)";
+    println "";
+    println "Felix Developer debugging";
+    println "  FLX_DEBUG_USTR=1        : # Show malloc/realloc/free in ustr (default no)";
+  
+  
+  }
+  
+  // TODO: change the names of everything to match exactly the command line
+  // switches so this can be used as a response file
+  proc setup-from-file (debugln: string -> 0) 
+  (
+    config:&Config::config_type,
+    control:&FlxControl::control_type, 
+    arg:string
+  )
+  {
+    debugln$ "Setup file: " + arg;
+    var text = load arg;
+    Config::process_config_text config (text);
+    debugln$ "Config[after setupfile "+arg+"] =\n" + str (*config);
+    control <- FlxControl::dflt_control();
+    if control*.DEBUG_FLX call FlxControl::print_options(*control);
+  
+    fun / (a:string, b:string) => Filename::join (a,b);
+    var re = RE2 ("([-_a-zA-Z0-9]+) *: *(.*)");
+    var lines = split (load arg,char "\n");
+    for line in lines do
+      match Match (re,line) with
+      | Some v => 
+        var field = v.1;
+        var data = strip v.2;
+        match field with
+        | "felix-compiler" => debugln$ "set flxg " + data; control.FLXG <-data;
+        | "toolchain" => debugln$ "set toolchain "+data; control.FLX_TOOLCHAIN <- data;
+        | "linker-switch" => debugln$ "add linker switch "+data; 
+            control.LINKER_SWITCHES <- control*.LINKER_SWITCHES + data;
+        | "macro-switch" => debugln$ "add macro switches "+data; 
+            control.MACROS <- control*.MACROS + data;
+        | "optimisation-switch" => debugln$ "set C++ optimisation level "+data; 
+            control.OPTIMISE <- control*.OPTIMISE + data;
+        // American spelling
+        | "optimization-switch" => debugln$ "set C++ optimization level "+data; 
+            control.OPTIMISE <- control*.OPTIMISE + data;
+        | "cflag" => debugln$ "add C++ cflag "+data; 
+            control.EXTRA_CCFLAGS <- control*.EXTRA_CCFLAGS + data;
+        | "flx-include-dir" => debugln$ "add Felix include dir "+data; 
+            config.FLX_LIB_DIRS <- config*.FLX_LIB_DIRS + data;
+        | "rtl-include-dir" => debugln$ "add Felix and C++ rtl include dir "+data; 
+            config.FLX_RTL_DIRS <- config*.FLX_RTL_DIRS + data;
+        | "grammar-dir" => debugln$ "set Felix grammar directory "+data; 
+            control.GRAMMAR_DIR <- data;
+        | "grammar" => debugln$ "set Felix grammar (in stdlib) "+data; 
+            control.STDGRAMMAR <- data;
+        | "std-import" => debugln$ "set Felix standard import (in stdlib) "+data; 
+            control.STDIMPORTS <- data ! control*.STDIMPORTS;
+        | "extra-import" => debugln$ "set Felix extra import (in stdlib) "+data; 
+            control.IMPORTS <- control*.IMPORTS + data;
+        | "extra-cpp" => debugln$ "set Felix extra C++ file "+data; 
+            control.cpps <- control*.cpps + data;
+        | "extra-obj" => debugln$ "set Felix extra object file "+data; 
+            control.cppos <- control*.cppos + data;
+        | "flx-std-lib" => debugln$ "add Felix standard (cached) library "+data; 
+            control.FLX_STD_LIBS <- control*.FLX_STD_LIBS+ data;
+        | _ => debugln$ "Unknown field " + field;
+        endmatch;
+      | #None => ;
+      endmatch;
+    done
+  }
+  
+  private noinline proc handle_switch
+  (
+    config:&Config::config_type,
+    control:&FlxControl::control_type, 
+    arg:string
+  )
+  {
+    proc debugln[T with Str[T]] (x:T) {
+      if control*.DEBUG_FLX call fprintln (cstderr, "[flx] " + str x);
+    }
+  
+    if prefix(arg,"--cmd=") do
+      begin
+        var text = arg.[6 to];
+        save( "cmd.flx", text+";\n");
+        control.CMDLINE_INPUT <- true;  
+        debugln("Running command '" + text + ";'"); 
+      end
+    elif arg == "--repl" do
+      control.REPL_MODE <- true;
+        debugln("Set REPL mode");
+  
+    elif arg == "--nostdimport" do
+      debugln "No standard library import";
+      // Note: currently, Felix compiler generates code that REQUIRES
+      // the standard library, eg the driver passes a gc_profile_t record
+      // and the compiler generates _uctor_ objects, etc etc
+      control.STDIMPORTS <- list[string]();
+  
+    elif prefix(arg,"--import=") do
+     debugln "Add import";
+     control.IMPORTS <- control*.IMPORTS + arg.[9 to];
+  
+    elif prefix(arg,"--felix=") do
+      debugln "Set install details";
+      setup-from-file debugln[string] (config, control, arg.[8 to]);
+  
+    elif prefix(arg,"--target-subdir=") do
+      begin    
+        debugln "Set target subdirectory";
+        var a = arg.[16 to];
+        control.FLX_TARGET_SUBDIR <- a;
+        Config::cascade_FLX_TARGET_DIR config (Filename::join (control*.FLX_INSTALL_DIR, control*.FLX_TARGET_SUBDIR));
+      end
+  
+    elif prefix(arg,"--target-dir=") do
+      debugln "Set target configuration directory";
+      Config::cascade_FLX_TARGET_DIR config arg.[13 to];
+  
+    elif prefix(arg,"--pkgconfig-path+=") do
+      debugln "Prepend extra flx_pkgconfig directory to standard path";
+      config.FLX_CONFIG_DIRS <- arg.[18 to] + config*.FLX_CONFIG_DIRS;
+  
+    elif prefix(arg,"--toolchain=") do
+      debugln "Set toolchain";
+      control.FLX_TOOLCHAIN<- arg.[12 to];
+  
+    elif prefix(arg,"--test=") do
+      var a = arg.[7 to];
+      debugln "Set test directory";
+      Config::cascade_FLX_INSTALL_DIR config a;
+      control.FLX_INSTALL_DIR <- a;
+      control.FLX_TARGET_SUBDIR <- "host";
+  
+    elif arg=="--test" do
+      begin
+        debugln "Set test directory";
+        a = ".";
+        Config::cascade_FLX_INSTALL_DIR config a;
+        control.FLX_INSTALL_DIR <- a;
+        control.FLX_TARGET_SUBDIR <- "host";
+      end
+  
+    elif prefix(arg,"--stdout=") do
+      debugln "Redirect standard output";
+      // of the Felix program only: used for saving the output
+      // to a file so the test harness can compare it with an .expect file
+      control.STDOUT <- arg.[9 to];
+  
+    elif arg == "--expect" do
+      debugln "compare stdout with expect file (default name)";
+      // of the Felix program only: used for saving the output
+      // to a file so the test harness can compare it with an .expect file
+      control.CHECK_EXPECT <- 1;
+  
+    elif prefix(arg,"--expect=") do
+      debugln "compare stdout with expect file";
+      // of the Felix program only: used for saving the output
+      // to a file so the test harness can compare it with an .expect file
+      control.EXPECT <- arg.[9 to];
+      control.CHECK_EXPECT <- 1;
+  
+    elif arg == "--input" do
+      debugln "redirect stdin to (default name)";
+      control.SET_STDIN <- 1;
+  
+    elif prefix(arg,"--input=") do
+      debugln "redirect stdin to file";
+      control.STDIN <- arg.[8 to];
+      control.SET_STDIN <- 1;
+  
+  
+    elif arg=="--show" do
+      control.SHOWCODE <- 1;
+  
+    elif arg=="--clean" do
+      debugln "Clear caches";
+      control.CLEAR_CACHE <- 1;
+  
+    elif arg=="--force" do
+      debugln "Force recompilation";
+      // of the felix code, runs Felix unless --nofelix is set
+      // the C++ compiler is run unless the felix compile failed
+      control.RECOMPILE <- 1;
+  
+    elif arg=="--force-compiler" do
+      debugln "Force flxg compiler to rebuild everything";
+      // of the felix code, runs Felix unless --nofelix is set
+      // the C++ compiler is run unless the felix compile failed
+      control.RECOMPILE <- 1;
+      control.FLXG_FORCE<- 1;
+  
+    elif arg=="--debug-flx" do
+      control.DEBUG_FLX <- true;
+      control.ECHO <- 1;
+      debugln "debug flx tool ON";
+      control.DEBUG <- 1;
+  
+    elif arg=="--debug" do
+      debugln "Enable runtime debugging";
+      control.DEBUG <- 1;
+  
+    elif arg=="--debug-compiler" do
+      debugln "Enable compiler debugging";
+      control.DEBUG_COMPILER <- 1;
+  
+    elif prefix(arg,"--compiler-phase=") do
+      debugln "Change the compiler phase";
+      control.COMPILER_PHASE <- arg.[len "--compiler-phase=" to];
+      control.RUNIT <- 0;
+  
+    elif arg=="--nooptimise" do
+      debugln "Disable optimisation";
+      control.NOOPTIMISE <- 1;
+      control.DOREDUCE <- 0;
+    elif arg in ("--compiler-optimise","--compiler-optimize") do
+      debugln "Enable heavy flxg optimisation";
+      control.FLXG_OPTIMISE  <- 1;
+  
+    elif arg=="--nostdlib" do
+      debugln "Do not load standard library";
+      control.NOSTDLIB <- 1;
+  
+    elif arg == "--echo" do
+      debugln "Echo commands sent to system";
+      control.ECHO <- 1;
+  
+    elif arg == "--noreduce" do
+      debugln "do not perform reductions";
+      control.DOREDUCE <- 0;
+  
+    elif arg == "--doreduce" do
+      debugln "do perform reductions";
+      control.DOREDUCE <- 1;
+  
+  
+    elif arg == "--static" do
+      debugln "Compile a statically linked program";
+      control.STATIC <- 1;
+      control.LINKEXE<- 1;
+  
+    elif arg == "--staticlib" do
+      debugln "make a static link library (instead of a program)";
+      control.STATIC <- 1;
+      control.STATICLIB <- 1;
+      control.RUNIT <- 0;
+      control.LINKEXE<- 0;
+  
+    elif arg == "--exe" do
+      debugln "make an executable";
+      control.LINKEXE<- 1;
+  
+    elif prefix(arg,"--inline=") do
+      debugln "Set inline aggressiveness";
+      control.INLINE <- int(arg.[9 to]);
+  
+    elif arg == "--inline" do
+      debugln "Set inline aggressiveness";
+      control.INLINE <- 100;
+  
+    elif arg == "--noinline" do
+      debugln "Disable inlining (NOT RECOMMENDED)";
+      control.INLINE <- 0;
+  
+    elif arg == "--version" do
+      debugln "Print Felix version and exit";
+      print("version ");
+      println(Version::felix_version);
+      System::exit(0);
+  
+    elif arg == "--config" do
+      println (*config);
+      System::exit(0);
+  
+    elif arg == "--options" do
+      FlxControl::print_options(*control);
+      System::exit(0);
+  
+    elif arg == "--where" do
+      debugln "Print location of install directory and exit";
+      println(control*.FLX_INSTALL_DIR);
+      System::exit(0);
+  
+    elif arg == "--time" do
+      debugln "Time program execution and print after running";
+      control.TIME <- 1;
+  
+    elif arg == "--compile-time" do
+      debugln "Print time of Felix compiler phases";
+      control.COMPILER_TIME <- 1;
+  
+  
+    elif prefix(arg,"--output_dir=") or prefix(arg,"--output-dir=") do
+      debugln "Set the directory for compiler generated C++ files";
+      config.FLX_OUTPUT_DIR <- arg.[13 to];
+      
+    elif prefix(arg,"--bundle_dir=") or prefix(arg,"--bundle-dir=") do
+      debugln "Output files needed for C++ compilation into this folder (directly by basename)";
+      control.BUNDLE_DIR <- Some arg.[13 to];
+  
+    elif prefix(arg,"--cache_dir=") or prefix(arg,"--cache-dir=") do
+      debugln "Set the directory for compiler generated *.par files";
+      config.FLX_CACHE_DIR <- arg.[12 to];
+  
+    elif arg == "--usage=prototype" do
+      debugln "Set usage prototyping";
+      control.USAGE  <-  "prototype";
+      control.NOOPTIMISE <- 1;
+      control.OPTIMISE  <-  list[string]$ "-O1";
+      control.DOREDUCE  <-  0;
+      control.INLINE <- 5;
+  
+    elif arg in ("--usage=debugging","--usage=debug") do
+      debugln "Set usage debugging";
+      control.USAGE  <-  "debugging";
+      control.NOOPTIMISE <- 1;
+      control.DEBUG  <-  1;
+      control.DOREDUCE <-  0;
+      control.OPTIMISE  <-   list[string]$"-O0";
+      control.INLINE <- 5;
+  
+    elif arg == "--usage=production" do
+      debugln "Set usage production";
+      control.USAGE  <-  "production";
+      control.DOREDUCE  <-  1;
+      control.OPTIMISE  <-   list[string]$"-O2";
+      control.INLINE <- 25;
+      control.FLXG_OPTIMISE <- 1;
+  
+    elif arg == "--usage=hyperlight" do
+      debugln "Set usage hyperlight";
+      control.USAGE  <-  "hyperlight";
+      control.DOREDUCE  <-  1;
+      control.OPTIMISE  <-   list[string]$"-O2";
+      control.INLINE <- 100;
+      control.FLXG_OPTIMISE <- 1;
+  
+    elif arg == "--help" do
+      control.PRINT_HELP <- 1;
+  
+    elif arg == "-c" do
+      debugln "Compile program but do not run it";
+      control.RUNIT <- 0;
+  
+    elif prefix(arg,"-I") do
+      debugln "Set include directories for both Felix and C/C++";
+      config.FLX_LIB_DIRS<- config*.FLX_LIB_DIRS + arg.[2 to];
+      config.FLX_RTL_DIRS<- config*.FLX_RTL_DIRS + arg.[2 to];
+  
+    elif arg== "--nofelix" do
+      debugln "Do not translate Felix code, just compile generated C++ (used to debug at C++ level)";
+      control.FELIX <- 0;
+  
+    elif arg== "--nocc" do
+      debugln "Do not run the C/C++ compiler, just generate C++ source code and exit; implies -c and --nolink";
+      control.CCOMPILEIT <- 0;
+  
+    elif arg== "--nolink" do
+      debugln "Do not link object code to an executable, just generate and compile the C++ source code; implies -c";
+      control.LINKIT <- 0;
+  
+    elif arg == "--run-only" do
+      debugln "Run the binary executable without any compilation. Must exist!";
+      control.FELIX <-0;
+      control.CCOMPILEIT <- 0;
+      control.LINKIT <- 0;
+      control.LINKEXE <- 0;
+      control.RUNIT <- 1;
+      control.VALIDATE_CACHE <- 0;
+      control.CHECK_DEPENDENCIES <- 0;
+      control.RUNONLY <- 1;
+  
+    elif prefix(arg,"-l") or prefix(arg,"-L") do
+      debugln "Set extra switched for linker";
+      control.LINKER_SWITCHES <- control*.LINKER_SWITCHES + arg;
+  
+    elif prefix(arg,"-D") do
+      debugln "Set extra macros for C++ compilation";
+      control.MACROS <- control*.MACROS + arg;
+  
+    elif arg \in ("-O0", "-O1","-O2","-O3") do
+      debugln$ "Set C++ compilation optimisation " + arg;
+      control.OPTIMISE <-  list[string]$ arg;
+  
+    elif prefix(arg,"-f") do
+      debugln$ "Set C++ compilation switch "+arg;
+      control.EXTRA_CCFLAGS  <-  control*.EXTRA_CCFLAGS + arg;
+  
+    elif prefix(arg,"--cflags=") do
+      {
+        var flags = arg.[9 to];
+        debugln$ "Set C++ compilation switch "+ flags;
+        control.EXTRA_CCFLAGS  <-  control*.EXTRA_CCFLAGS + flags;
+      };
+  
+    elif prefix(arg,"-W") do
+      debugln$ "Set C++ warning switch "+arg;
+      control.EXTRA_CCFLAGS  <-  control*.EXTRA_CCFLAGS + arg;
+  
+    elif prefix(arg,"--pkg=") do
+      debugln "Add pkgconfig package to link";
+      control.pkgs <-  control*.pkgs +arg.[6 to];
+  
+    elif prefix (arg,"--indir=") do
+      control.INDIR  <-  arg.[8 to];
+      debugln$ "Set input directory for regexp to " + control*.INDIR;
+  
+    elif prefix (arg,"--regex=") do
+      control.INREGEX  <-  arg.[8 to];
+      debugln$ "Set input regex to " + control*.INREGEX;
+  
+    elif arg == "--nonstop" do
+      control.NONSTOP <- 1;
+      debugln$ "Set batch processing mode to nonstop " + control*.NONSTOP;
+  
+    elif arg == "--c++" do
+      control.CXXONLY <- 1;
+      control.FELIX <- 0;
+      debugln$ "C++ only, no Felix";
+  
+    elif arg == "--ocaml" do
+      control.OCAMLONLY <- 1;
+      control.FELIX <- 0;
+      debugln$ "Ocaml only, no Felix";
+    
+  // the main filename -- subsequent args are args to flx_run
+    else
+      eprintln$ "Unknown switch '" + arg+"'";
+      System::exit 1;
+    done
+  }
+  
+  
+  private noinline proc handle_filename
+  (
+    ploopctl:&FlxControl::loopctl_type,
+    config:&Config::config_type,
+    control:&FlxControl::control_type, 
+    arg:string
+  )
+  {
+    proc debugln[T with Str[T]] (x:T) {
+      if control*.DEBUG_FLX call fprintln (cstderr, "[flx] " + str x);
+    }
+  
+    ploopctl.progname <- arg;
+    var path,ext = Filename::split_extension(arg);
+    ploopctl.path <- path;
+    ploopctl.ext <- ext;
+    var dir,base = Filename::split1(ploopctl*.path);
+    ploopctl.dir <- dir;
+    ploopctl.base <- base;
+  
+    match check_ext $ Filename::get_extension arg with
+    | "compile" => 
+       control.cpps <- control*.cpps + arg;
+  
+    | "link" =>
+       control.cppos <- control*.cppos + arg;
+  
+    | "felix" => 
+      ploopctl.grab <- 0;
+  
+    | "none" => 
+      ploopctl.grab <- 0;
+  
+    | "unknown" =>
+      eprintln$ "Unknown file extension in " + arg;
+      System::exit 1;
+  
+    | "ocaml" =>
+      control.ocamls<- control*.ocamls + arg;
+  
+    | _ => assert false;
+    endmatch
+    ;
+  }
+  
+  // --------------------------------------------------
+  // String Utilities 
+  // --------------------------------------------------
+  
+  // utility to classify extensions.
+  private fun exts () = {
+    var compile_exts = list ('.cpp','.cxx','.c','.cc');
+    var ocaml = list ('.mli','.ml','.cmi','cmx','.cmxa');
+  
+    var link_exts =  list ('.o','.obj','.lib','.dll','.a','.so','.dylib','.os');
+    var felix_exts = list (".flx",".fdoc");
+    var exts =
+      map (fun (s:string) => s,"ocaml") ocaml+
+      map (fun (s:string) => s,"compile") compile_exts +
+      map (fun (s:string) => s,"link") link_exts +
+      map (fun (s:string) => s,"felix") felix_exts + 
+      ("","none")
+    ;
+    return exts;
+  }
+  
+  private fun check_ext (s:string) => match find #exts s with
+    | Some tag => tag
+    | #None => "unknown"
+  ;
+  
+  private noinline proc xparse_cmd_line 
+  (
+    config:&Config::config_type, 
+    control:&FlxControl::control_type, 
+    ploopctl:&FlxControl::loopctl_type,
+    vargs: varray[string]
+  )
+  {
+    proc debugln[T with Str[T]] (x:T) {
+      if control*.DEBUG_FLX call fprintln (cstderr, "[flx] " + str x);
+    }
+  
+    var SET_LINKER_OUTPUT = false;
+    var SET_LINKER_OUTPUT_WITHOUT_EXTENSION = false;
+    var SET_LINKER_OUTPUT_DIRECTORY = false;
+  
+  grabbing_args: while ploopctl*.grab == 1 and ploopctl*.argno < vargs.len.int do
+      var arg = vargs . (ploopctl*.argno);
+      debugln$ "ARGNO="+str(ploopctl*.argno)+", arg='"+arg+"'";
+  
+      if SET_LINKER_OUTPUT do
+         control.LINKER_OUTPUT_FILENAME <- arg;
+         debugln$ "Set linker output file=" + control*.LINKER_OUTPUT_FILENAME;
+         SET_LINKER_OUTPUT = false;
+         control.OUTPUT_FILENAME_SPECIFIED <- 1;
+  
+      elif SET_LINKER_OUTPUT_WITHOUT_EXTENSION do
+         control.LINKER_OUTPUT_FILENAME <- arg;
+         debugln$ "Set linker output file=" + control*.LINKER_OUTPUT_FILENAME;
+         SET_LINKER_OUTPUT_WITHOUT_EXTENSION = false;
+         control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED <- 1;
+  
+      elif SET_LINKER_OUTPUT_DIRECTORY do
+         control.LINKER_OUTPUT_FILENAME <- arg;
+         debugln$ "Set linker output directory =" + control*.LINKER_OUTPUT_FILENAME;
+         SET_LINKER_OUTPUT_DIRECTORY= false;
+         control.OUTPUT_DIRECTORY_SPECIFIED <- 1;
+  
+  
+      elif arg == "-o" do
+        debugln "Set linker output name (next arg)";
+        SET_LINKER_OUTPUT=true;
+  
+      elif arg == "-ox" do
+        debugln "Set linker output name (without extension) (next arg) ";
+        SET_LINKER_OUTPUT_WITHOUT_EXTENSION=true;
+  
+      elif arg == "-od" do
+        debugln "Set linker output directory (next arg) ";
+        SET_LINKER_OUTPUT_DIRECTORY=true;
+  
+  
+      elif arg == "--" do
+        ploopctl.grab <- 0;
+  
+      elif not (prefix (arg,"-")) do
+        handle_filename(ploopctl,config,control,arg);
+  
+      else
+        handle_switch(config,control,arg);
+  
+      done
+      ploopctl.argno <- ploopctl*.argno + 1;
+    done
+  
+    if control*.CMDLINE_INPUT or control*.REPL_MODE do
+      handle_filename(ploopctl,config,control,"cmd.flx");
+    done
+     
+  }
+  
+  noinline proc processing_stage1
+  (
+    config:&Config::config_type, 
+    control:&FlxControl::control_type, 
+    xloopctl:&FlxControl::loopctl_type,
+    vargs:varray[string]
+  ) 
+  {
+    fun / (x:string, y:string) => Filename::join (x,y);
+  
+    proc debugln[T with Str[T]] (x:T) {
+      if control*.DEBUG_FLX call fprintln (cstderr, "[flx] " + str x);
+    }
+  
+    // process environment variables
+    if Env::getenv "FLX_DEBUG_FLX" != "" do
+      control.DEBUG_FLX <- true;
+      control.ECHO <- 1;
+      debugln "debug flx tool ON";
+      control.DEBUG <- 1;
+    done
+  
+    xparse_cmd_line(config,control,xloopctl, vargs);
+    if control*.PRINT_HELP == 1 do
+      print_help;
+      System::exit(0);
+    done
+  
+    var xqt = dxqt (control*.ECHO==1 or control*.DEBUG_FLX);
+  
+    if control*.LINKIT == 0 and control*.STATICLIB == 1 do
+      eprintln$ "Conflicting switches --nolink and --staticlib";
+      System::exit 1;
+    done
+  
+    debugln$ xloopctl*.grab, xloopctl*.argno, System::argc;
+  
+    // Primary filename established.
+    debugln "#--------";
+    debugln$ "DONE, option index = "+str(xloopctl*.argno);
+    debugln$ "path="+xloopctl*.path+": dir="+xloopctl*.dir+",base="+xloopctl*.base+", ext="+xloopctl*.ext;
+    debugln$ "cpps="+str control*.cpps;
+    debugln$ "cppos="+str control*.cppos;
+  
+    debugln$ "ocamls="+str control*.ocamls;
+  
+  
+    // Grab program arguments.
+    while xloopctl*.argno < vargs.len.int do 
+      control.USER_ARGS `(+=) vargs . (xloopctl*.argno); 
+      pre_incr (xloopctl.argno); 
+    done
+    debugln$ "USER_ARGS=" + str control*.USER_ARGS;
+  
+    debugln$ "config=" + str (*config);
+  
+    // Establish C++ optimisation switches.
+    if control*.NOOPTIMISE == 0 do
+      debugln "Set C++ compiler optimisation switches";
+      control.CCFLAGS <- control*.CCFLAGS+ control*.OPTIMISE;
+    else
+      debugln "What, no optimisation?";
+    done
+    // Note we have to do it this way so the -f switches turn
+    // off optimisations previously introduced (order matters)
+    control.CCFLAGS <- control*.CCFLAGS + control*.EXTRA_CCFLAGS;
+    debugln$ "CCFLAGS =" + str control*.CCFLAGS;
+  
+    // Establish name of Felix compiler and run time library.
+    // The one in "host" is good enough for flxg, however the
+    // library location MUST be changed for cross compilation.
+    // FIXME!
+    
+    var dflt_flxg = "";
+    var dflt_flx_run = Empty[string];
+    if PLAT_WIN32 do
+      dflt_flxg = Filename::join(config*.FLX_TARGET_DIR, 'bin', 'flxg.exe');
+      dflt_flx_run = list$ "set", "PATH="+(Directory::mk_absolute_filename config*.FLX_TARGET_DIR)+"\\lib\\rtl;"+"%PATH%&&";
+    else
+      dflt_flxg = config*.FLX_TARGET_DIR+"/bin/flxg";
+      // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
+      if PLAT_MACOSX do
+        dflt_flx_run = list$ "env","DYLD_LIBRARY_PATH="+config*.FLX_TARGET_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH";
+      elif PLAT_CYGWIN do 
+        // hack: we need to set BOTH since PATH is used for load time dynamic linkage
+        // but LD_LIBRARY_PATH for run time (dlopen style) dynamic linkage
+        dflt_flx_run = list$ "env",
+          "LD_LIBRARY_PATH="+config*.FLX_TARGET_DIR+"/lib/rtl:$LD_LIBRARY_PATH",
+          "PATH="+config*.FLX_TARGET_DIR+"/lib/rtl:$PATH"
+      ;
+      else
+        dflt_flx_run = list$ "env", "LD_LIBRARY_PATH="+config*.FLX_TARGET_DIR+"/lib/rtl:$LD_LIBRARY_PATH";
+      done
+    done
+    control.FLXG <- 
+      match control*.FLXG with
+      | "" => dflt_flxg
+      | x => x
+      endmatch
+    ;
+    debugln$ "FLXG = " + control*.FLXG;
+    control.FLXRUN <- 
+      match control*.FLXRUN with
+      | #Empty => dflt_flx_run
+      | x => x
+      endmatch
+    ;
+    debugln$ "FLXRUN = " + control*.FLXRUN;
+  
+  
+    // TEMPORARY HACK: use the right stuff from the felix.fpc file
+    // a bit later .. for now the OS selection macros will do ..
+    fun link_strings () = {
+      var DLINK_STRING = "";
+      var SLINK_STRING = "";
+      if PLAT_WIN32 do // MSVC
+        DLINK_STRING = "/LIBPATH:"+config*.FLX_TARGET_DIR+r"\lib\rtl";
+        SLINK_STRING = "/LIBPATH:"+config*.FLX_TARGET_DIR+r"\lib\rtl";
+      elif PLAT_CYGWIN do // gcc on Windows
+        //DLINK_STRING = "-L"+config*.FLX_TARGET_DIR+"/bin";
+        DLINK_STRING = "-L"+config*.FLX_TARGET_DIR+"/lib/rtl";
+        SLINK_STRING = "-L"+config*.FLX_TARGET_DIR+"/lib/rtl";
+      else // Unix: gcc or clang
+        DLINK_STRING = "-L"+config*.FLX_TARGET_DIR+"/lib/rtl";
+        SLINK_STRING = "-L"+config*.FLX_TARGET_DIR+"/lib/rtl";
+      done;
+      return DLINK_STRING, SLINK_STRING;
+    }
+  
+  
+    // Get linker names.
+    var d,s = link_strings();
+    control.DLINK_STRINGS <-  Shell::parse d;
+    control.SLINK_STRINGS <-  Shell::parse s;
+  
+    fun mkrel (d:string, f:string) => 
+      if Filename::is_absolute_filename f then f else d / f endif
+    ;
+  
+    var dflt_grammar_dir = config*.FLX_SHARE_DIR/"lib";
+  
+    control.GRAMMAR_DIR <-
+      match control*.GRAMMAR_DIR with 
+      | "" => dflt_grammar_dir 
+      | x => Directory::mk_absolute_filename x 
+      endmatch
+    ;
+    debugln$ "GRAMMAR_DIR = " + control*.GRAMMAR_DIR;
+  
+    var dflt_grammar = Directory::mk_absolute_filename 
+      (Filename::join (control*.GRAMMAR_DIR,"grammar/grammar.files"))
+    ;
+    control.STDGRAMMAR <- 
+      match control*.STDGRAMMAR with 
+      | "" => dflt_grammar 
+      | x => 
+        if Filename::is_absolute_filename x then x 
+        else Filename::join (control*.GRAMMAR_DIR, x) 
+      endmatch
+    ;
+    debugln$ "STDGRAMMAR = " + control*.STDGRAMMAR;
+  
+    var dflt_automaton = 
+      cache_join
+      (
+        config*.FLX_CACHE_DIR, 
+        Filename::join (control*.STDGRAMMAR, "syntax.automaton")
+      )
+    ;
+    control.AUTOMATON <- 
+      match control*.AUTOMATON with 
+      | "" => dflt_automaton 
+      | x => x 
+      endmatch
+    ;
+    debugln$ "AUTOMATON = " + control*.AUTOMATON;
+  
+  
+    // this hack forces a directory name, because executing "prog"
+    // can fail if the currect directory is not on the PATH, 
+    // or worse, the wrong program can execute. The PATH is not
+    // searched if the filename includes a / somewhere so force one in.
+    // similarly for dynamic loaders looking for shared libraries
+    //
+    // It would probably be better to convert any relative filename
+    // to an absolute one, however this only makes sense on Unix 
+    // since Windows has multiple "drives" it is much harder to
+    // do the conversion.
+    xloopctl.dir <- 
+      if xloopctl*.dir != "" then xloopctl*.dir 
+      else "."
+      endif
+    ;
+  }
+  }
+  
+  @
+  
+
+Calculate Dependent variables.
+------------------------------
+
+Computes all the detailed variables needed to run the various
+tools from a base configuration.
+
+
+.. code-block:: felix
+
+  include "std/felix/flx/flx_control";
+  
+  class FlxDepvars
+  {
+  typedef dvars_type = (
+      filebase:string,
+      cpp_filebase:string,
+      args: list[string],
+      use_ext:string,
+      FLX_STD_LIBS: list[string],
+      GRAMMAR_DIR: string,
+      STDGRAMMAR: string,
+      AUTOMATON: string,
+      DEBUGSWITCH:list[string],
+      STATIC_ENV:list[string],
+      VERBOSE: list[string]
+    );
+  
+  gen cal_depvars(
+    toolchain: clang_config_t -> toolchain_t, 
+    config:Config::config_type,
+    control:&FlxControl::control_type, 
+    loopctl:FlxControl::loopctl_type) 
+    : dvars_type 
+    = 
+  {
+    proc debugln[T with Str[T]] (x:T) {
+      if control*.DEBUG_FLX call fprintln (cstderr, "[flx] " + str x);
+    }
+    fun / (d:string, f:string) => Filename::join (d,f);
+  
+    var dflt_clang_config = (
+        header_search_dirs = Empty[string],
+        macros = Empty[string],
+        library_search_dirs= Empty[string],
+        ccflags= Empty[string],
+        dynamic_libraries= Empty[string],
+        static_libraries= Empty[string],
+        debugln = debugln[string]
+    );
+    var tc = toolchain dflt_clang_config;
+    var EXT_LIB = #(tc.static_library_extension);
+    var EXT_SHLIB = #(tc.dynamic_library_extension);
+    var EXT_EXE = #(tc.executable_extension);
+    var EXT_STATIC_OBJ = #(tc.static_object_extension);
+    var EXT_SHARED_OBJ = #(tc.dynamic_object_extension);
+    var DEBUG_FLAGS = #(tc.debug_flags);
+  
+  
+    debugln$ "Felix package manager config directories are "+config.FLX_CONFIG_DIRS.str;
+    // make a list of any *.cpp files (or other g++ options ..)
+  
+    debugln$ "FileDir= " + loopctl.dir;
+    var rel_filebase = if loopctl.dir == "." then loopctl.base else Filename::join(loopctl.dir,loopctl.base);
+    debugln$ "Rel_filebase= " + rel_filebase;
+    debugln$ "Given Extension=" + loopctl.ext;
+  
+      // this is a hack! We should resolve the filename first.
+    var use_ext = if loopctl.ext != "" then loopctl.ext else
+      #{ 
+         var flxt = FileStat::dfiletime (rel_filebase+".flx",#FileStat::past_time);
+         var fdoct = FileStat::dfiletime (rel_filebase+".fdoc",#FileStat::past_time);
+         return 
+           if flxt > fdoct then ".flx"
+           elif fdoct > flxt then ".fdoc"
+           else ""
+         ;
+      }
+    ;
+    debugln$ "Computed Extension=" + use_ext;
+    var filebase = Directory::mk_absolute_filename$ rel_filebase;
+    debugln$ "User program base is " + filebase;
+    var cpp_filebase =
+      match control*.BUNDLE_DIR with
+      | Some dir => Filename::join(dir,Filename::basename filebase)
+      | #None =>if config.FLX_OUTPUT_DIR=="" then filebase 
+               else cache_join(config.FLX_OUTPUT_DIR,filebase) 
+               endif
+      endmatch;         
+    debugln$ "C++ file base is " + cpp_filebase;
+  
+    // if we're supposed to check output against an expect file,
+    // and no stdout file name is given, then direct output
+    // into the cache.
+    if control*.CHECK_EXPECT != 0 and control*.STDOUT == "" do
+      control.STDOUT <- cache_join (config.FLX_OUTPUT_DIR,filebase + ".stdout");
+      debugln$ "Set stdout to " + control*.STDOUT;
+    done
+  
+    if control*.SET_STDIN != 0 and control*.STDIN == "" do
+      var stdin_name = filebase + ".input"; 
+      if FileStat::fileexists stdin_name  do
+        control.STDIN <- stdin_name;
+      elif control*.INREGEX == "" do
+        eprintln$ "WARNING: computed input file " + stdin_name + " doesn't exist!";
+      done
+      debugln$ "Set stdin to " + control*.STDIN;
+    done
+  
+  
+    // if we're supposed to check output against an expect file,
+    // and no expect file name is given, then use the filebase
+    // with extension .expect.
+    if control*.CHECK_EXPECT != 0 and control*.EXPECT == "" do
+      var expect_name = filebase + ".expect";
+      if FileStat::fileexists expect_name do
+        control.EXPECT <- expect_name;
+      elif control*.INREGEX == "" do
+        eprintln$ "WARNING: computed expect file " + expect_name + " doesn't exist!";
+      done
+      debugln$ "Set expect to " + control*.EXPECT;
+    done
+  
+  
+    // Find absolute pathname
+  
+    if loopctl.path == "" do
+      fprint$ cstderr, ("No such felix program: "+loopctl.path+"\n");
+      System::exit(1);
+    done
+  
+    control.FLX_INTERFACE_FILENAME <- 
+      match control*.BUNDLE_DIR with
+      | Some dir => Filename::join(dir,Filename::basename filebase+"_interface.flx")
+      | #None => cache_join (config.FLX_OUTPUT_DIR,filebase+"_interface.flx")
+      endmatch;         
+    debugln$ "Flx interface filename is " + control*.FLX_INTERFACE_FILENAME;
+  
+    control.CXX_INTERFACE_FILENAME <- 
+      match control*.BUNDLE_DIR with
+      | Some dir => Filename::join(dir,Filename::basename filebase+".hpp")
+      | #None => cache_join (config.FLX_OUTPUT_DIR,filebase+".hpp")
+      endmatch;         
+    debugln$ "C++ interface filename is " + control*.FLX_INTERFACE_FILENAME;
+  
+    if control*.LINKER_OUTPUT_FILENAME == "" do
+      if control*.LINKIT == 1 or control*.RUNONLY == 1 do
+        if control*.STATICLIB == 1 do
+          var f = filebase+EXT_LIB;
+        elif control*.STATIC == 0 do // dynamic
+          if control*.LINKEXE == 1 do
+            f = filebase+EXT_LIB;
+          else // DLL
+            f = filebase+EXT_SHLIB;
+          done
+        else
+          f = filebase+EXT_EXE;
+        done
+      else // No link, name specifies object file only.
+        if control*.STATIC == 1 do
+          f = filebase+EXT_STATIC_OBJ;
+        else
+          f = filebase+EXT_SHARED_OBJ;
+        done
+      done
+      control.LINKER_OUTPUT_FILENAME <- cache_join (config.FLX_CACHE_DIR,f);
+      debugln$ "Felx writing output binary to " + control*.LINKER_OUTPUT_FILENAME;
+    elif control*.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 1 do
+      if control*.LINKIT == 1 or control*.RUNONLY == 1 do
+        if control*.STATICLIB == 1 do
+          control.LINKER_OUTPUT_FILENAME `(+=) EXT_LIB;
+        elif control*.STATIC == 0 do // dynamic
+          if control*.LINKEXE == 1 do
+            control.LINKER_OUTPUT_FILENAME `(+=) EXT_EXE;
+          else
+            control.LINKER_OUTPUT_FILENAME `(+=) EXT_SHLIB;
+          done
+        else
+          control.LINKER_OUTPUT_FILENAME `(+=) EXT_EXE;
+        done
+      else // No link, name specifies object file only.
+        if control*.STATIC == 1 do
+          control.LINKER_OUTPUT_FILENAME `(+=) EXT_STATIC_OBJ;
+        else
+          control.LINKER_OUTPUT_FILENAME `(+=) EXT_SHARED_OBJ;
+        done
+      done
+    elif control*.OUTPUT_DIRECTORY_SPECIFIED == 1 do
+      var basename = Filename::basename (Filename::strip_extension filebase);
+      if control*.LINKIT == 1 or control*.RUNONLY == 1 do
+        if control*.STATICLIB == 1 do
+          control.LINKER_OUTPUT_FILENAME <- control*.LINKER_OUTPUT_FILENAME / basename + EXT_LIB;
+        elif control*.STATIC == 0 do // dynamic
+          if control*.LINKEXE == 1 do
+            control.LINKER_OUTPUT_FILENAME <- control*.LINKER_OUTPUT_FILENAME / basename + EXT_EXE;
+          else
+            control.LINKER_OUTPUT_FILENAME <- control*.LINKER_OUTPUT_FILENAME / basename + EXT_SHLIB;
+          done
+        else
+          control.LINKER_OUTPUT_FILENAME <- control*.LINKER_OUTPUT_FILENAME / basename + EXT_EXE;
+        done
+      else // No link, name specifies object file only.
+        if control*.STATIC == 1 do
+          control.LINKER_OUTPUT_FILENAME <- control*.LINKER_OUTPUT_FILENAME / basename + EXT_STATIC_OBJ;
+        else
+          control.LINKER_OUTPUT_FILENAME <- control*.LINKER_OUTPUT_FILENAME / basename + EXT_SHARED_OBJ;
+        done
+      done
+    done
+    control.LINKER_OUTPUT_FILENAME <-  Directory::mk_absolute_filename control*.LINKER_OUTPUT_FILENAME;
+    control.LINKER_OUTPUT_FILENAME <-
+     match control*.BUNDLE_DIR with
+      | Some dir => Filename::join(dir,Filename::basename control*.LINKER_OUTPUT_FILENAME)
+      | #None => control*.LINKER_OUTPUT_FILENAME
+      endmatch;         
+    debugln$ "Linker output filename " + control*.LINKER_OUTPUT_FILENAME;
+   
+  
+    val args = control*.USER_ARGS;
+    debugln$ "Target program args = "+args.str;
+  
+    if control*.NOSTDLIB == 1 do
+      var FLX_STD_LIBS=Empty[string];
+    else
+      match control*.FLX_STD_LIBS with
+      | #Empty => FLX_STD_LIBS = list[string] ("std");
+      | x => FLX_STD_LIBS = x;
+      endmatch;
+    done
+    debugln$ "Felix standard (cached) libraries: " + str FLX_STD_LIBS;
+  
+    var STDGRAMMAR = Directory::mk_absolute_filename control*.STDGRAMMAR;
+    var GRAMMAR_DIR = Directory::mk_absolute_filename control*.GRAMMAR_DIR;
+    var AUTOMATON = Directory::mk_absolute_filename control*.AUTOMATON;
+  
+    var DEBUGSWITCH=Empty[string];
+    if control*.DEBUG == 1 do DEBUGSWITCH=list[string]$ "--debug"; done
+  
+    var STATIC_ENV=Empty[string];
+    if control*.DEBUG == 1 do STATIC_ENV=list[string] ("env","FLX_DEBUG=1"); done
+  
+    debugln$ "RECOMPILE="+str control*.RECOMPILE;
+    debugln$ "RUNIT="+str control*.RUNIT;
+  
+    var VERBOSE = Empty[string];
+    if control*.DEBUG_COMPILER == 1 do
+      VERBOSE=list[string] "-v";
+      debugln "Compiler debugging on";
+    else
+      VERBOSE=list[string]$  "-q";
+      debugln "Compiler debugging off";
+    done
+  
+    if control*.DEBUG==1 do
+      control.CCFLAGS <- control*.CCFLAGS+DEBUG_FLAGS;
+    done
+  
+  
+    return struct { 
+      var filebase=filebase;
+      var cpp_filebase=cpp_filebase;
+      var args = args;
+      var use_ext = use_ext;
+      var FLX_STD_LIBS=FLX_STD_LIBS;
+      var AUTOMATON=AUTOMATON;
+      var GRAMMAR_DIR=GRAMMAR_DIR;
+      var STDGRAMMAR=STDGRAMMAR;
+      var DEBUGSWITCH=DEBUGSWITCH;
+      var STATIC_ENV=STATIC_ENV;
+      var VERBOSE = VERBOSE;
+    };
+  
+  } // fun cal_depvars
+  } // class FlxDepvars
+  
+  @
+  
+
+The execution manager.
+----------------------
+
+This part of the flx tool is responsible for
+calculating dependencies and actually running the
+external compilers.
+
+.. code-block:: felix
+
+  include "std/felix/flx/flx_depchk";
+  include "std/felix/flx/flx_control";
+  include "std/felix/flx/flx_depvars";
+  
+  gen dxqt(DBG:bool) (cmd:string) = {
+    if DBG call fprintln (cstderr, "cmd="+cmd);
+    var now = #Time::time;
+    var result,output = Shell::get_stdout(cmd);
+    if result == 0 do
+      n := 
+        match find_first_of (output, char "\n") with
+        | Some n => n 
+        | #None => output.len
+        endmatch
+      ; 
+      output = output.[to n]; // first line excluding newline
+      var elapsed = #Time::time - now;
+      if DBG call fprintln (cstderr, "Popen:Elapsed: " + fmt (elapsed, fixed(9,3)) + ", output='"+output+"'");
+    else
+      if DBG call eprintln "COMMAND FAILED";
+      fprint$ cstderr, ("Error "+repr(result)+" executing command " + cmd + "\n");
+      System::pexit result;
+    done
+    return output;
+  }
+  
+  proc xdebugln[T with Str[T]] (d:bool) (x:T) {
+    if d call fprintln (cstderr, "[flx] " + str x);
+  }
+  
+  // CLEAR_CACHE is set to 1 if the cache is reset
+  proc check_cache(
+    config:&Config::config_type, 
+    control:&FlxControl::control_type)
+  {
+    var cc,ct = validate_cache (
+      FLX_SHARE_DIR = config*.FLX_SHARE_DIR,
+      AUTOMATON = control*.AUTOMATON,
+      GRAMMAR_DIR = control*.GRAMMAR_DIR,
+      STDGRAMMAR = control*.STDGRAMMAR,
+      FLXG = control*.FLXG,
+      CACHE_DIR = config*.FLX_CACHE_DIR,
+      OUTPUT_DIR = config*.FLX_OUTPUT_DIR,
+      CLEAR_CACHE= control*.CLEAR_CACHE,
+      debugln = xdebugln[string] (control*.DEBUG_FLX),
+      xqt = dxqt (control*.ECHO == 1 or control*.DEBUG_FLX),
+      quote = Shell::quote_arg
+    );
+    control.CLEAR_CACHE <- cc;
+    control.cache_time <-  ct;
+  }
+  
+  object processing_env(
+    toolchain: clang_config_t -> toolchain_t,
+    config:Config::config_type, 
+    var control:FlxControl::control_type,
+    dvars:FlxDepvars::dvars_type)
+  =
+  {
+    proc debugln[T with Str[T]] (x:T) {
+      if control.DEBUG_FLX call fprintln (cstderr, "[flx] " + str x);
+    }
+  
+    proc echoln[T with Str[T]] (x:T) {
+      if control.ECHO == 1 call fprintln (cstderr, "[flx] " + str x);
+    }
+  
+    var dflt_clang_config = (
+        header_search_dirs = Empty[string],
+        macros = Empty[string],
+        library_search_dirs= Empty[string],
+        ccflags= Empty[string],
+        dynamic_libraries= Empty[string],
+        static_libraries= Empty[string],
+        debugln = debugln[string]
+    );
+  
+    proc showtime(msg:string, t0:double)
+    {
+      if control.TIME == 1 do
+        var elapsed = #Time::time - t0;
+        var minutes = floor (elapsed / 60.0);
+        var seconds = elapsed - minutes * 60.0;
+        println$ "[flx] Time : " + fmt(minutes,fixed(2,0))+"m" + fmt(seconds,fixed(4,1)) + "s for " + msg;
+      done
+    }
+  
+  
+    method gen system(cmd:string):int= {
+      var now = #Time::time;
+      if control.ECHO==1 do fprintln$ cstderr, cmd; done
+      var result = System::system(cmd);
+      var elapsed = #Time::time - now;
+      if control.ECHO==1 do 
+        fprintln$ cstderr, "System:Elapsed: " + fmt (elapsed, fixed (8,3)) + 
+          ", Result code " + str(result)
+        ; 
+      done
+      return result;
+    }
+  
+  //----------------------------------------------------------------------------
+  // CALPACKAGES
+  //----------------------------------------------------------------------------
+  
+    var calpackages_run = false;
+  
+  /*
+    proc ehandler () {
+      eprintln$ "Flx: calpackages : failed, temporary ehandler invoked";
+      System::exit 1;
+    }
+  */
+    proc calpackages (ehandler:1->0) 
+    {
+      debugln$ "[flx:calpackages] Calculating package requirements (calpackages_run="+str calpackages_run +")";
+      if not calpackages_run  do
+        var tc = toolchain dflt_clang_config;
+        var x = FlxPkg::map_package_requirements ehandler
+        (
+           FLX_TARGET_DIR = config.FLX_TARGET_DIR,
+           FLX_CONFIG_DIRS = config.FLX_CONFIG_DIRS,
+           EXT_EXE = #(tc.executable_extension),
+           EXT_STATIC_OBJ = #(tc.static_object_extension),
+           EXT_DYNAMIC_OBJ = #(tc.dynamic_object_extension),
+           STATIC = control.STATIC,
+           LINKEXE = control.LINKEXE,
+           SLINK_STRINGS = control.SLINK_STRINGS,
+           DLINK_STRINGS = control.DLINK_STRINGS,
+           LINKER_SWITCHES = control.LINKER_SWITCHES,
+           cpp_filebase = dvars.cpp_filebase,
+           EXTRA_PACKAGES = control.pkgs
+        );
+        //control.EXTRA_CCFLAGS = control.EXTRA_CCFLAGS + x.CFLAGS;
+        &control.CCFLAGS <- control.CCFLAGS + x.CFLAGS;
+        &control.EXTRA_INCLUDE_FILES <- x.INCLUDE_FILES;
+        &control.DRIVER_EXE <- x.DRIVER_EXE;
+        &control.DRIVER_OBJS <- x.DRIVER_OBJS;
+        &control.LINK_STRINGS <- x.LINK_STRINGS;
+        //println$ "LINK STRINGS = " + x.LINK_STRINGS;
+        calpackages_run = true;
+      done
+    }
+  
+    fun find_cxx_pkgs (src:string) : list[string] =
+    {
+      debugln$ "[flx:find_cxx_pkgs] Scanning " + src + " for package requirements";
+      var out = Empty[string];
+      var pat = RE2('.*@requires package ([A-Za-z][A-Za-z0-9_-]*).*');
+      var f = fopen_input_text src;
+      if valid f do
+        for line in f do
+          var result = Match (pat,line);
+          match result do
+          | #None => ;
+          | Some v => out = v.1  + out;
+          done
+        done
+        fclose f;
+      else
+        eprintln("Can't find C++ source file " + src);
+        System::exit(1);
+      done
+      out = rev out;
+      if out != Empty[string] call
+        eprintln$ "[flx] C++ file "+src+" requires packages " + str (out);
+      return out;
+    }
+  
+  //----------------------------------------------------------------------------
+  // FELIX COMPILATION
+  //----------------------------------------------------------------------------
+  
+    // max time of Felix source files: #FileStat::future_time if any missing
+    fun cal_time_from_flxdepfile (debugln: string->0, df: string):double=
+    {
+      fun maxf (x: double) (f:string) =
+      {
+        if f == "" do return x; done
+        var ext = Filename::get_extension f;
+        var ft = if ext != "" then FileStat::dfiletime (f,#FileStat::past_time) else
+          max (FileStat::dfiletime (f+".fdoc", #FileStat::past_time), FileStat::dfiletime (f+".flx",#FileStat::past_time))
+        ;
+        debugln$ ("Time "+f+" = "+ FileStat::strfiletime ft);
+        ft = if ft == #FileStat::past_time then #FileStat::future_time else ft; // missing dependency
+        return max (x,ft);
+      }
+  
+      fun cal_files_time (fs: list[string])=> fold_left maxf #FileStat::past_time fs;
+  
+      var deptext = load_text df;
+      var lines = split (deptext, "\n"); 
+      debugln$ "Deps=" + str(lines);
+      var deptime = 
+        let ft = cal_files_time lines in 
+        if ft == #FileStat::past_time then #FileStat::future_time else ft endif
+      ;
+      debugln$ "Deptime=" + FileStat::strfiletime(deptime);
+      return deptime;
+    }
+  
+    fun cal_cxx_uptodate(debugln:string -> 0, OUTPUT_DIR:string, f:string)= 
+    {
+      val depfilename = cache_join (OUTPUT_DIR, f+".dep");
+      debugln$ "Dependency file name = " + depfilename;
+      var depfiletime = FileStat::dfiletime (depfilename, #FileStat::future_time);
+      if depfiletime == #FileStat::future_time do 
+        debugln$ "Dependency file doesn't exist";
+        return false;
+      done
+  
+      var deptime = cal_time_from_flxdepfile (debugln, depfilename);
+      debugln$ "dep time = " + FileStat::strfiletime deptime;
+      debugln$ "depfile time = " + FileStat::strfiletime depfiletime;
+      var cxx_uptodate = deptime < depfiletime;
+      debugln$ "cxx generated by flxg is = " + if cxx_uptodate then "" else " NOT " endif + "uptodate";
+      return cxx_uptodate;
+    }
+   
+    gen check_cxx_uptodate () : bool =
+    {
+      debugln "Check Felix->C++ uptodate";
+      if control.RECOMPILE == 1 do 
+        debugln$ "Felix->C++ dependency checking skipped due to switch RECOMPILE=1: forced not uptodate";
+        return false;
+      elif control.CHECK_DEPENDENCIES == 1 do
+        debugln "Checking Felix->C++ dependencies since CHECK_DEPENDENCIES=1 to see if the cxx is uptodate";
+        return cal_cxx_uptodate (debugln[string], config.FLX_OUTPUT_DIR, dvars.filebase);
+      else
+        debugln$ "Felix->C++ dependency checking skipped due to switch CHECK_DEPENDENCIES=0: forced uptodate";
+        return true;
+      done
+    }
+  
+    gen run_felix_compiler_if_required (ehandler:1->0) : int = 
+    {
+      var result = 0;
+      var uptodate = check_cxx_uptodate ();
+      debugln$ "[run_felix_compiler_if_required] Uptodate=" + uptodate.str;
+      if not uptodate do
+        debugln$ "Running flxg because target is not uptodate";
+        var t0 = #Time::time;
+        result = Flxg::run_felix_compiler
+        (
+          INLINE=control.INLINE,
+          OUTPUT_DIR=config.FLX_OUTPUT_DIR,
+          BUNDLE_DIR=control.BUNDLE_DIR,
+          CACHE_DIR=config.FLX_CACHE_DIR,
+          COMPILER_PHASE= control.COMPILER_PHASE,
+          DOREDUCE=control.DOREDUCE,
+          FLXG = control.FLXG,
+          VERBOSE = dvars.VERBOSE,
+          // NOTE: BUG: Not passing grammar directory to compiler!
+          // flxg expects file in standard library
+          STDGRAMMAR = "@"+control.STDGRAMMAR, 
+          AUTOMATON = control.AUTOMATON,
+          IMPORTS = control.STDIMPORTS + control.IMPORTS,
+          FLXLIBS = dvars.FLX_STD_LIBS,
+          INCLUDE_DIRS = config.FLX_LIB_DIRS,
+          filebase = dvars.filebase,
+          use_ext = dvars.use_ext,
+          TIME = control.COMPILER_TIME,
+          FORCE = control.FLXG_FORCE,
+          FLAGS = if control.FLXG_OPTIMISE == 0 then Empty[string] else list[string] "--optimise" endif,
+          debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
+        );
+        showtime("Felix flxg   : "+dvars.cpp_filebase, t0);
+        if result == 0 do
+          debugln$ "Felix compilation succeeded";
+          calpackages ehandler;
+          FlxPkg::write_include_file(dvars.cpp_filebase, control.EXTRA_INCLUDE_FILES);
+        done
+      else
+        debugln$ "skipping flxg because output is uptodate";
+      done
+      return result;
+    }
+  //----------------------------------------------------------------------------
+  // C++ COMPILATION
+  //----------------------------------------------------------------------------
+  
+    // C++ dynamic (one file)
+    gen cxx_compile_dynamic1 (ehandler:1->0) (src:string, dst:string) : int =
+    {
+      var t0 = #Time::time;
+      var pkgs = find_cxx_pkgs src;
+      control&.extra_pkgs <- control.extra_pkgs + pkgs;
+      var pkg_cflags = Empty[string];
+      if pkgs != Empty[string] do 
+        eprintln$ "[flx:cxx_compile_dynamic1] Adding packages " + str pkgs;
+        var PKGCONFIG_PATH=map 
+           (fun (s:string) => "--path+="+s) 
+           config.FLX_CONFIG_DIRS
+        ;
+        var allargs = PKGCONFIG_PATH+"--field=cflags"+"--keepleftmost"+pkgs + control.pkgs;
+        var ret,mycflags = FlxPkgConfig::flx_pkgconfig(allargs);
+        if ret != 0 do
+          eprintln$ "[flx:cxx_compile_dynamic1] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
+          // FIXME
+          //System::exit (1);
+          throw_continuation ehandler;
+        done
+        pkg_cflags = mycflags;
+      done
+      var tc = toolchain 
+        extend dflt_clang_config with 
+        (
+          ccflags = /* ccflags + */ control.CCFLAGS + pkg_cflags,
+          header_search_dirs = config.FLX_RTL_DIRS+control.EXTRA_INCLUDE_DIRS,
+          macros = control.MACROS,
+          debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
+        )
+        end
+      ;
+      if control.RECOMPILE==1 or not cxx_depcheck (tc,src,dst) do
+        var result = tc.cxx_dynamic_object_compiler (dst=dst,src=src);
+        showtime("Dynamic c++  : "+src, t0);
+        return result;
+      else
+        return 0;
+      done
+    }
+  
+    // C++ dynamic (many files)
+    gen cxx_compile_dynamic (ehandler:1->0) : int =
+    {
+      var EXT_SHARED_OBJ = #((toolchain dflt_clang_config).dynamic_object_extension);
+      if
+        control.CXXONLY == 0 and (
+        control.LINKIT == 1 or 
+        control.OUTPUT_FILENAME_SPECIFIED == 0 and
+        control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 0)
+      do
+  //println$ "Compiling thunk";
+        var result = cxx_compile_dynamic1 ehandler
+        (
+          dvars.cpp_filebase+"_static_link_thunk.cpp",
+          dvars.cpp_filebase+"_static_link_thunk"+EXT_SHARED_OBJ
+        );
+        if result != 0 return result;
+      done
+  
+      if control.CXXONLY == 0 do
+        if control.LINKIT == 0 do
+          result = cxx_compile_dynamic1 ehandler (dvars.cpp_filebase+".cpp", control.LINKER_OUTPUT_FILENAME);
+          if result != 0 return result;
+        else
+          result = cxx_compile_dynamic1 ehandler (dvars.cpp_filebase+".cpp", dvars.cpp_filebase+EXT_SHARED_OBJ);
+          if result != 0 return result;
+        done
+      done
+  
+      for src in control.cpps do
+        var dst = Filename::strip_extension src + EXT_SHARED_OBJ;
+        result = cxx_compile_dynamic1 ehandler (src,dst);
+        if result != 0 return result;
+        += (&control.cppos, dst);
+      done
+      return 0;
+    }
+  
+    // C++ static (one file)
+    gen cxx_compile_static (ehandler:1->0) : int = 
+    {
+      // we only need the thunk if we're linking OR -o switch was NOT specified
+      // i.e. skip compiling the thunk the output name was specified and 
+      // represents an object file (or library archive?)
+  //println$ "cxx_compile_static";
+      var EXT_STATIC_OBJ = #((toolchain dflt_clang_config).static_object_extension);
+      if 
+        control.CXXONLY == 0 and (
+        control.LINKIT == 1 or 
+        control.OUTPUT_FILENAME_SPECIFIED == 0 and
+        control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 0)
+      do
+  //println$ "Compiling thunk";
+        var result = cxx_compile_static1 ehandler
+        (
+          dvars.cpp_filebase+"_static_link_thunk.cpp",
+          dvars.cpp_filebase+"_static_link_thunk"+EXT_STATIC_OBJ
+        );
+        if result != 0 return result;
+      done
+  
+      for src in control.cpps do
+        var dst = Filename::strip_extension src +EXT_STATIC_OBJ;
+        result = cxx_compile_static1 ehandler (src,dst);
+        if result != 0 return result;
+        += (&control.cppos,dst);
+      done
+     
+      if control.CXXONLY == 0 do
+        if control.LINKIT == 0 do
+    //println$ "Compile only " + control.LINKER_OUTPUT_FILENAME;
+          // compile only
+          return cxx_compile_static1 ehandler
+            (dvars.cpp_filebase+".cpp",control.LINKER_OUTPUT_FILENAME);
+        else 
+          // compile and link
+    //println$ "Compile and link " + dvars.cpp_filebase+EXT_STATIC_OBJ;
+          return cxx_compile_static1 ehandler
+            (dvars.cpp_filebase+".cpp",dvars.cpp_filebase+EXT_STATIC_OBJ);
+        done
+      else
+        return 0;
+      done
+    }
+  
+    // C++ static (many files)
+    gen cxx_compile_static1 ehandler (src: string, dst: string) : int = 
+    {
+  //println$ "cxx_compile_static1: " + src " -> " + dst;
+      var t0 = #Time::time;
+      var pkgs = find_cxx_pkgs src;
+      control&.extra_pkgs <- control.extra_pkgs + pkgs;
+      var pkg_cflags = Empty[string];
+      if pkgs != Empty[string] do 
+        eprintln$ "[flx:cxx_compile_static1] Adding packages " + str pkgs;
+        var PKGCONFIG_PATH=map 
+           (fun (s:string) => "--path+="+s) 
+           config.FLX_CONFIG_DIRS
+        ;
+        var allargs = PKGCONFIG_PATH+"--field=cflags"+"--keepleftmost"+pkgs+control.pkgs;
+        var ret,mycflags = FlxPkgConfig::flx_pkgconfig(allargs);
+        if ret != 0 do
+          eprintln$ "[flx:cxx_compile_static1] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
+          // FIXME
+          System::exit (1);
+        done
+        pkg_cflags = mycflags;
+      done
+   
+      var tc = toolchain  
+        extend dflt_clang_config with 
+        (
+          ccflags = /*ccflags + */ control.CCFLAGS + pkg_cflags,
+          header_search_dirs = config.FLX_RTL_DIRS+control.EXTRA_INCLUDE_DIRS,
+          macros = control.MACROS,
+          debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
+        )
+        end
+      ;
+      if control.RECOMPILE==1 or not cxx_depcheck (tc,src,dst) do
+        var result = tc.cxx_static_object_compiler (dst=dst,src=src); 
+        showtime("Static c++   : "+src,t0);
+        if result != 0 do
+          eprintln$ "[flx] C++ compilation "+src+" failed";
+        done
+        return result;
+      else
+        return 0;
+      done
+  
+    }
+  
+    // C++ (many files)
+    gen run_cxx_compiler_if_required (ehandler:1->0) : int = 
+    {
+      var result = 0;
+      if control.STATIC == 0 do
+        debugln "Dynamic linkage";
+        result = cxx_compile_dynamic ehandler;
+      else
+        debugln "Static linkage";
+        result = cxx_compile_static ehandler;
+      done
+      return result;
+    }
+  
+   gen ocaml_compile1 (ehandler:1->0) (deps:list[string], s:string) = {
+      var xqt = dxqt (control.ECHO == 1 or control.DEBUG_FLX);
+      var result = xqt("ocamlopt.opt -c " + cat " " deps + " "+ s);
+      C_hack::ignore(result);
+      return 0;
+   }
+  
+   gen ocaml_compile (ehandler:1->0) = {
+      var deps = Empty[string];
+      for src in control.ocamls do
+        if suffix(src,".cmi") 
+        or suffix(src,".cmx") 
+        do
+          deps+=src;
+        else
+          var result = ocaml_compile1 ehandler (deps,src);
+          if result != 0 return result;
+          if suffix(src,".mli") do
+            deps+= src.[..-5]+".cmi";
+          elif suffix(src,".ml") do
+            deps+= src.[..-4]+".cmi";
+          done
+        done
+      done
+      return 0;
+   }
+  
+   gen run_ocaml_compiler_if_required (ehandler:1->0) : int =
+   {
+     return ocaml_compile ehandler;
+   }
+  
+  /*
+  
+    gen check_run_if_required_and_uptodate() : bool  =
+    {
+  
+      if control.RECOMPILE == 0 and control.RUNIT == 1 and control.CLEAR_CACHE == 0 do
+        var uptodate = #check_cxx_uptodate and #check_binary_uptodate;
+        if control.STATIC == 0 do
+          if uptodate do
+            debugln$ "Running dynamically linked binary";
+            return true;
+          else
+            debugln$ "Dynamically linked binary out of date or non-existant";
+          done
+        else
+          if uptodate do
+            debugln$ "Running statically linked binary";
+            return true;
+          else
+            debugln$ "Statically linked binary out of date or non-existant";
+          done
+        done
+      done
+      return false;
+  
+    }
+    gen run_with_calpackages () : int = 
+    {
+      if control.STATIC == 0 do
+        return #run_dynamic_with_calpackages;
+      else
+        return #run_program_static;
+      done
+    }
+  */
+  
+  //----------------------------------------------------------------------------
+  // LINKAGE
+  //----------------------------------------------------------------------------
+  
+    // ------------------------------------------------------------------
+    // Link shared library (dll)
+    // ------------------------------------------------------------------
+    gen cxx_link_shared_library (ehandler:1->0) : int =
+    {
+      var t0 = #Time::time;
+      var pkg_dstrings= Empty[string];
+      var pkgs = control.extra_pkgs;
+      if pkgs != Empty[string] do 
+        eprintln$ "[flx:cxx_link_shared_library] Adding packages " + str pkgs;
+        var PKGCONFIG_PATH=map 
+           (fun (s:string) => "--path+="+s) 
+           config.FLX_CONFIG_DIRS
+        ;
+        var allargs = PKGCONFIG_PATH+"-r"+"--field=provides_dlib"+"--field=requires_dlibs"+"--keepleftmost"+pkgs + control.pkgs;
+        var ret,mydstrings = FlxPkgConfig::flx_pkgconfig(allargs);
+        if ret != 0 do
+          eprintln$ "[flx:cxx_link_shared_library] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
+          // FIXME
+          //System::exit (1);
+          throw_continuation ehandler;
+        done
+        pkg_dstrings = mydstrings;
+      done
+   
+      var tc = toolchain 
+        extend dflt_clang_config with 
+        (
+          dynamic_libraries = control.LINK_STRINGS+pkg_dstrings, // a bit of a hack ..
+          debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
+        )
+        end
+      ;
+      var EXT_SHARED_OBJ = #(tc.dynamic_object_extension);
+      if control.CXXONLY == 0 do
+        var result = tc.dynamic_library_linker
+          (
+            dst=control.LINKER_OUTPUT_FILENAME,
+            srcs= control.cppos + (dvars.cpp_filebase+EXT_SHARED_OBJ)
+          )
+        ;
+      else
+        result = tc.dynamic_library_linker
+          (
+            dst=control.LINKER_OUTPUT_FILENAME,
+            srcs= control.cppos 
+          )
+        ;
+      done
+  
+      showtime("Dynamic link : "+control.LINKER_OUTPUT_FILENAME,t0);
+      if result != 0 do
+        eprintln$ "[flx] C++ clink "+control.LINKER_OUTPUT_FILENAME+" failed";
+      done
+      return result;
+    }
+  
+    gen cxx_link_shared_library_with_calpackages (ehandler:1->0) : int = 
+    {
+      calpackages ehandler;
+      return cxx_link_shared_library ehandler;
+    }
+  
+    // ------------------------------------------------------------------
+    // Link shared exe
+    // ------------------------------------------------------------------
+    gen cxx_link_shared_exe (ehandler:1->0) : int = 
+    {
+      var t0 = #Time::time;
+      var pkg_dstrings= Empty[string];
+      var pkgs = control.extra_pkgs;
+      if pkgs != Empty[string] do 
+        eprintln$ "[flx:cxx_link_shared_exe] Adding packages " + str pkgs;
+        var PKGCONFIG_PATH=map 
+           (fun (s:string) => "--path+="+s) 
+           config.FLX_CONFIG_DIRS
+        ;
+        var allargs = PKGCONFIG_PATH+"-r"+"--field=provides_dlib"+"--field=requires_dlibs"+"--keepleftmost"+pkgs + control.pkgs;
+        var ret,mydstrings = FlxPkgConfig::flx_pkgconfig(allargs);
+        if ret != 0 do
+          eprintln$ "[flx:cxx_link_shared_exe] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
+          // FIXME
+          //System::exit (1);
+          throw_continuation ehandler;
+        done
+        pkg_dstrings = mydstrings;
+      done
+      var tc = toolchain  
+        extend dflt_clang_config with 
+        (
+          //ccflags = ccflags + control.CCFLAGS + control.LINK_STRINGS, 
+          dynamic_libraries = control.LINK_STRINGS + pkg_dstrings, // a bit of a hack
+          debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
+        )
+        end
+      ;
+      println$ "Toolchain loaded " + #(tc.whatami);
+  /*
+  println$ "flx, prior to calling toolchain: DRIVER OBJS = " + control.DRIVER_OBJS.str;
+  println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
+  */
+      var EXT_DYNAMIC_OBJ = #(tc.dynamic_object_extension);
+      if control.CXXONLY == 0 do
+        var result = tc.dynamic_executable_linker
+          (
+            dst=control.LINKER_OUTPUT_FILENAME,
+            srcs= 
+              control.DRIVER_OBJS +
+              control.cppos + 
+              (dvars.cpp_filebase+"_static_link_thunk"+EXT_DYNAMIC_OBJ) + 
+              (dvars.cpp_filebase+EXT_DYNAMIC_OBJ)
+          )
+        ;
+      else
+        result = tc.dynamic_executable_linker
+          (
+            dst=control.LINKER_OUTPUT_FILENAME,
+            srcs= 
+              control.cppos 
+          )
+        ;
+      done
+      showtime("Dynamic executable link  : "+control.LINKER_OUTPUT_FILENAME,t0);
+      if result != 0 do
+        eprintln$ "[flx] C++ dynamic executable link "+control.LINKER_OUTPUT_FILENAME+" failed";
+      done
+      return result;
+    }
+  
+    gen cxx_link_shared_exe_with_calpackages(ehandler:1->0) :  int = 
+    {
+      calpackages ehandler;
+      return cxx_link_shared_exe ehandler;
+    }
+  
+    // ------------------------------------------------------------------
+    // Link static exe
+    // ------------------------------------------------------------------
+    gen cxx_link_static_exe (ehandler:1->0) : int = 
+    {
+      var t0 = #Time::time;
+      var pkg_sstrings= Empty[string];
+      var pkgs = control.extra_pkgs;
+      if pkgs != Empty[string] do 
+        eprintln$ "[flx:cxx_link_static] Adding packages " + str pkgs;
+        var PKGCONFIG_PATH=map 
+           (fun (s:string) => "--path+="+s) 
+           config.FLX_CONFIG_DIRS
+        ;
+        var allargs = PKGCONFIG_PATH+"-r"+"--field=provides_slib"+"--field=requires_slibs"+"--keepleftmost"+pkgs + control.pkgs;
+        var ret,mysstrings = FlxPkgConfig::flx_pkgconfig(allargs);
+        if ret != 0 do
+          eprintln$ "[flx:cxx_link_static] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
+          // FIXME
+          //System::exit (1);
+          throw_continuation ehandler;
+        done
+        pkg_sstrings = mysstrings;
+      done
+      var tc = toolchain  
+        extend dflt_clang_config with 
+        (
+          //ccflags = ccflags + control.CCFLAGS + control.LINK_STRINGS, 
+          static_libraries = control.LINK_STRINGS + pkg_sstrings, // a bit of a hack
+          debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
+        )
+        end
+      ;
+      var EXT_STATIC_OBJ = #(tc.static_object_extension);
+      if control.CXXONLY == 0 do
+        var result = tc.static_executable_linker
+          (
+            dst=control.LINKER_OUTPUT_FILENAME,
+            srcs= 
+              control.DRIVER_OBJS +
+              control.cppos + 
+              (dvars.cpp_filebase+"_static_link_thunk"+EXT_STATIC_OBJ) + 
+              (dvars.cpp_filebase+EXT_STATIC_OBJ)
+          )
+        ;
+      else
+        result = tc.static_executable_linker
+          (
+            dst=control.LINKER_OUTPUT_FILENAME,
+            srcs= 
+              control.cppos 
+          )
+        ;
+      done
+      showtime("Static executable link  : "+control.LINKER_OUTPUT_FILENAME,t0);
+      if result != 0 do
+        eprintln$ "[flx] C++ static executable link "+control.LINKER_OUTPUT_FILENAME+" failed";
+      done
+      return result;
+    }
+  
+    gen cxx_link_static_exe_with_calpackages(ehandler:1->0) :  int = 
+    {
+      calpackages ehandler;
+      return cxx_link_static_exe ehandler;
+    }
+  
+    // ------------------------------------------------------------------
+    // Link static (archive) library
+    // ------------------------------------------------------------------
+  
+    gen cxx_static_library (ehandler:1->0) : int = 
+    {
+      var t0 = #Time::time;
+      var tc = toolchain  
+        extend dflt_clang_config with 
+        (
+          //ccflags = ccflags + control.CCFLAGS,
+          debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
+        )
+        end
+      ;
+      var EXT_STATIC_OBJ = #(tc.static_object_extension);
+      if control.CXXONLY == 0 do
+        var result = tc . static_library_linker 
+          (
+            srcs=control.cppos + (dvars.cpp_filebase+EXT_STATIC_OBJ) ,
+            dst=control.LINKER_OUTPUT_FILENAME
+          )
+        ;
+      else
+        result = tc . static_library_linker 
+          (
+            srcs=control.cppos,
+            dst=control.LINKER_OUTPUT_FILENAME
+          )
+        ;
+      done
+      showtime("Static lib   : "+control.LINKER_OUTPUT_FILENAME,t0);
+      if result != 0 do
+        eprintln$ "[flx] C++ static library link "+control.LINKER_OUTPUT_FILENAME+" failed";
+      done
+      return result;
+    }
+  
+  
+  
+    // Assumes C++ generated by flxg (using timestamp of dep file)
+    // Assumes command line C++ file includes older than the argument (fixme!)
+    gen check_binary_uptodate () : bool =
+    {
+      fun maxf (t:double) (f:string) => max (t, FileStat::dfiletime (f, #FileStat::future_time));
+  
+      debugln "Check C++->binary uptodate";
+      if control.RECOMPILE == 1 do 
+        debugln$ "C++->binary dependency checking skipped due to switch RECOMPILE=1: forced not uptodate";
+        return false;
+      elif control.CHECK_DEPENDENCIES == 1 do
+        debugln "Checking C++->binary dependencies since CHECK_DEPENDENCIES=1 to see if the output is uptodate";
+  
+        var xtime = FileStat::dfiletime(control.LINKER_OUTPUT_FILENAME,#FileStat::past_time);
+        val depfilename = cache_join (config.FLX_OUTPUT_DIR, dvars.filebase+".dep");
+        var flx_srctime = FileStat::dfiletime (depfilename,#FileStat::future_time);
+        var cpp_srctime = fold_left maxf #FileStat::past_time control.cpps;
+        var obj_srctime = fold_left maxf #FileStat::past_time control.cppos;
+        var deptime = max (max (flx_srctime, cpp_srctime), obj_srctime);
+        var uptodate = xtime > deptime;
+  
+  
+        debugln$ "Extra c++ sources  "+ str control.cpps;
+        debugln$ "Extra object files "+ str control.cppos;
+  
+        debugln$ "Extra ocaml files  "+ str control.ocamls;
+  
+        debugln$ "Filebase = " + dvars.filebase; 
+  
+        debugln$ "cache   time = " + FileStat::strfiletime (control.cache_time);
+        debugln$ "flx_src time = " + FileStat::strfiletime (flx_srctime);
+        debugln$ "cpp_src time = " + FileStat::strfiletime (cpp_srctime);
+        debugln$ "obj_src time = " + FileStat::strfiletime (obj_srctime);
+  
+        debugln$ "dep     time = " + FileStat::strfiletime (deptime);
+        debugln$ "Binary  time = " + FileStat::strfiletime (xtime) + " for " + control.LINKER_OUTPUT_FILENAME;
+        debugln$ "output is " + if uptodate then "" else " NOT " endif + " up to date";
+        return uptodate;
+      else
+        debugln$ "C++->binary dependency checking skipped due to switch CHECK_DEPENDENCIES=0: forced uptodate";
+        return true;
+      done
+    }
+  
+  
+    gen run_linker_if_required(ehandler:1->0) : int = 
+    {
+      var result = 0;
+      if control.CCOMPILEIT == 0 do
+        debugln "C++ compilation (and linking and running) skipped by switch";
+      else
+        var uptodate = #check_binary_uptodate;
+        if uptodate do 
+          debugln "Linking skipped because binary is uptodate";
+        else
+          if control.STATIC == 0 do
+            debugln "Dynamic linkage";
+            if control.LINKEXE == 1 do
+              result = cxx_link_shared_exe_with_calpackages ehandler;
+            else
+              result = cxx_link_shared_library_with_calpackages ehandler;
+            done
+          else
+            debugln "Static linkage";
+            if control.STATICLIB == 1 do
+              result = cxx_static_library ehandler;
+            else
+              result = cxx_link_static_exe_with_calpackages ehandler;
+            done
+          done
+        done
+      done
+      return result;
+    }
+  
+  
+  
+  /*
+    method gen runit() : int = {
+      var immediate_run = #check_run_if_required_and_uptodate;
+      if immediate_run do
+        debugln$ "Uptodate so run immediately";
+        return #run_with_calpackages;
+      else
+        var result = #run_felix_compiler_if_required;
+        if result != 0 return result;
+        return #run_cxx_and_exe_as_required;
+      done
+    }
+  */
+  //----------------------------------------------------------------------------
+  // EXECUTION
+  //----------------------------------------------------------------------------
+    
+    gen run_program_dynamic (ehandler:1->0) : int =
+    {
+      var result = 0;
+      if control.CXXONLY == 0 do
+        var xargs =
+          control.DRIVER_EXE +
+          dvars.DEBUGSWITCH +
+          control.LINKER_OUTPUT_FILENAME +
+          dvars.args
+        ;
+        var CMD = strcat ' ' control.FLXRUN + ' ' + catmap ' ' Shell::quote_arg xargs;
+        if control.STDOUT != "" do CMD=CMD+" > " +Shell::quote_arg(control.STDOUT); done
+        if control.STDIN != "" do CMD=CMD+" < " +Shell::quote_arg(control.STDIN); done
+        debugln$ "Run command="+CMD;
+        var t0 = #Time::time;
+        result = system(CMD);
+        showtime("Dynamic Run : "+control.LINKER_OUTPUT_FILENAME,t0);
+      else
+        println$ "Cannot run C++ dynamic library " + control.LINKER_OUTPUT_FILENAME;
+      done
+      return result;
+    }
+  
+    gen run_program_static (ehandler:1->0) : int = 
+    {
+      var result = 0;
+      var CMD = 
+        catmap ' ' Shell::quote_arg ( dvars.STATIC_ENV + control.LINKER_OUTPUT_FILENAME + dvars.args )
+      ;
+  
+      if control.STDOUT != "" do CMD=CMD + " > "+Shell::quote_arg(control.STDOUT); done
+      if control.STDIN != "" do CMD=CMD+" < " +Shell::quote_arg(control.STDIN); done
+      debugln$ "Run command="+CMD;
+      var t0 = #Time::time;
+      result=system(CMD);
+      showtime("Static Run   : "+control.LINKER_OUTPUT_FILENAME,t0);
+      return result;
+    }
+  
+  
+    gen run_dynamic_with_calpackages (ehandler:1->0) : int = 
+    {
+      calpackages ehandler;
+      return run_program_dynamic ehandler;
+    }
+  
+    gen run_program_if_required (ehandler:1->0) : int = 
+    {
+      var result = 0;
+      if control.STATIC == 0 do
+        debugln$ "Running dynamic program";
+        result = run_dynamic_with_calpackages ehandler;
+      else
+        // NOTE: since Felix sets environment variable for plugin loads ..
+        // doesn't even a static program need calpackages?
+        debugln$ "Running static program";
+        result = run_program_static ehandler;
+      done
+      return result;
+    }
+  //----------------------------------------------------------------------------
+  // OUTPUT VERIFICATION
+  //----------------------------------------------------------------------------
+  
+    gen check_output_if_required () : int = 
+    {
+      var result = 0;
+      var expected = control.EXPECT;
+      var output = control.STDOUT;
+  
+      // possible bug in flx, if either missing it should have been
+      // set by default based on program name
+      if output == "" do
+        eprintln$ "[flx] No output file given??";
+        result = 1;
+      elif expected == "" do
+        eprintln$ "[flx] No expect file given??";
+        result = 1;
+      else 
+        
+        // note load never fails, at worse loads empty string.
+        var output_text = load_text (output);
+        var expected_text = load_text (expected);
+        var bresult = output_text == expected_text;
+        if not bresult do
+          eprintln$ "[flx] Output " + output + " doesn't match expected " + expected;
+          result = 1;
+        done
+      done 
+      return result;
+    }
+  //----------------------------------------------------------------------------
+  // ORDER OF OPERATION
+  //----------------------------------------------------------------------------
+  
+    method gen runit(ehandler:1->0) : int = {
+      var result = 0;
+      if control.FELIX == 1 do
+        result = run_felix_compiler_if_required ehandler;
+        if result != 0 return result;
+      else
+        debugln$ "Felix compilation skipped by switch";
+      done
+  
+      // we should run this on demand? And split up calculations
+      // for driver (needed to run dynamic program) and headers etc
+      // (needed after flxg to complete C++ code gen) and link stuff
+      // (needed for linkage)
+      calpackages ehandler;
+      if control.LINKER_OUTPUT_FILENAME != "" do
+         Directory::mkdirs (Filename::dirname control.LINKER_OUTPUT_FILENAME);
+      done
+  
+      if control.CCOMPILEIT == 1 do
+        result = run_cxx_compiler_if_required ehandler;
+        if result != 0 return result;
+      else
+        debugln "C++ compilation (and linking and running) skipped by switch";
+      done
+  
+      if control.CCOMPILEIT == 1 do // use this switch for Ocaml compiles too
+        result = run_ocaml_compiler_if_required ehandler;
+      else 
+        debugln "Ocaml compilation skipped by switch";
+      done
+  
+      if control.LINKIT == 1 do
+        result = run_linker_if_required ehandler;
+        if result != 0 return result;
+      else
+        debugln "Link step skipped by switch";
+      done
+  
+      if control.RUNIT == 1 do
+        result = run_program_if_required ehandler;
+        if result != 0 return result;
+      else
+        debugln "Running program skipped by switch";
+      done
+  
+      if control.EXPECT != "" do
+        result = #check_output_if_required;
+        if result != 0 return result;
+      done
+      return result;
+    }
+  
+  }
+  
+  @
+  
+
+The {flx} tool.
+---------------
+
+
+.. code-block:: felix
+
+  include "std/felix/config";
+  
+  include "std/felix/flx_cache";
+  include "std/felix/flx_pkg";
+  include "std/felix/flx_flxg";
+  include "std/felix/flx_cxx";
+  
+  include "std/felix/flx/flx_control";
+  include "std/felix/flx/flx_cmdopt";
+  include "std/felix/flx/flx_depvars";
+  include "std/felix/flx/flx_run";
+  include "std/felix/toolchain_clang_config";
+  include "std/felix/toolchain_interface";
+  
+  open FlxCache;
+  
+  fun startlib (x:string) =
+  {
+     return x in RE2(" *(fun|proc|var|val|gen|union|struct|typedef).*\n");
+  }
+  
+  // MOVE LATER!
+  proc repl()
+  {
+  
+  nextline:>
+    print "> "; fflush stdout;
+    var text = readln stdin;
+    if feof(stdin) return;
+  
+    if startlib(text) goto morelibrary;
+    goto executable;
+  
+  morelibrary:>
+    print ".. "; fflush stdout;
+    var more = readln stdin;
+    if feof(stdin) return;
+  
+    if more == "\n" goto saveit;
+    text += more;
+    goto morelibrary;
+  
+  saveit:>
+    var dlibrary = load("library.flx");
+    dlibrary += text;
+    save("library.flx",dlibrary);
+    goto nextline;
+  
+  executable:>
+     var session = load("session.flx");
+     session += text;
+     save ("session.flx", session);
+     dlibrary = load("library.flx");
+     var torun = dlibrary + text;
+     save ("cmd.flx", torun);
+  }
+  
+  
+  // Felix version of THIS program (NOT the one being installed
+  // if you're using flx to install Felix)
+  
+  
+  class Flx
+  {
+    gen flx_processing
+    (
+      config:&Config::config_type, 
+      control:&FlxControl::control_type,
+      loopctl:&FlxControl::loopctl_type,
+      args:list[string]
+    ) : int =
+    {
+      var result = 0;
+      fun / (a:string, b:string) => Filename::join (a,b);
+      FlxCmdOpt::processing_stage1 (config,control,loopctl,varray[string] args);
+      if control*.VALIDATE_CACHE == 1 do
+        check_cache(config, control);
+      done
+      if 
+        loopctl*.base == "" and 
+        control*.INREGEX == "" 
+        and not control*.CMDLINE_INPUT 
+      do
+        if control*.CLEAR_CACHE != 1 do
+          println "usage: flx [options] filename";
+          // TOP LEVEL FLX, OK
+          System::exit(1);
+        done
+        // TOP LEVEL FLX, OK
+        System::exit(0);
+      done
+  
+      var pkgconfig = FlxPkgConfig::FlxPkgConfigQuery$ config*.FLX_CONFIG_DIRS;
+      proc ehandler () {
+        eprintln$ "Flx: default ehandler: temporary ehandler invoked";
+        System::exit 1;
+      }
+   
+      var toolchain_name = 
+        if control*.FLX_TOOLCHAIN == "" then pkgconfig.getpkgfield1 ehandler ("toolchain", "toolchain")
+        else control*.FLX_TOOLCHAIN
+      ;
+  
+      var toolchain =
+         match toolchain_name with
+         | x => 
+           Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] ( dll-name=x, setup-str="")
+         endmatch
+      ;
+  
+      //println$ "[flx] Toolchain set to " + toolchain_name;
+  
+      if control*.INREGEX != "" do 
+  
+        begin
+          //control.USER_ARGS <- Shell::quote_arg(loopctl*.progname) + ' ' + control*.USER_ARGS;
+          // this is a hack because -- argument translates to empty program name ..
+          // and also if there is no name in that slot ..
+          if loopctl*.progname != "" do 
+            control.USER_ARGS <- loopctl*.progname ! control*.USER_ARGS;
+          done
+          if control*.INDIR == "" do control.INDIR <- "."; done
+          var regex = RE2 control*.INREGEX;
+          if not regex.ok do
+            eprintln$ "Malformed regex " + control*.INREGEX;
+            result = 1;
+            goto endoff;
+          done
+          var files = FileSystem::regfilesin (control*.INDIR, regex);
+          var n = files.len.int;
+          println$ "Processing " + files.len.str + " files";
+          var i = 1;
+          var pass = 0;
+          var fail = 0;
+          files = sort files;
+          for file in files do
+            var arg = Filename::join (control*.INDIR, file);
+            var path,ext = Filename::split_extension(arg);
+            loopctl.path <- path;
+            loopctl.ext <- ext;
+            var dir,base = Filename::split1(loopctl*.path);
+            loopctl.dir <- dir;
+            loopctl.base <- base;
+            // temporary hack, to force reset of the linker filename, stdout, and expect
+            // file names in cal_depvars so they depend on the current file.
+            control.LINKER_OUTPUT_FILENAME <- "";
+            control.STDOUT <- "";
+            control.EXPECT <- "";
+            control.STDIN <- "";
+            var dvars = FlxDepvars::cal_depvars(toolchain,*config,control,*loopctl);
+            println$ f"Processing [%02d/%02d]: %S" (i, n, file);
+            var pe = processing_env(toolchain,*config,*control,dvars);
+            call_with_trap {
+              proc ehandler() {
+                eprintln("BATCH MODE ERROR HANDLER");
+                result = 1;
+                goto err;
+               }
+               result = pe.runit(ehandler);
+             err:>
+            };
+            if result == 0 do ++pass; else ++fail; done
+            if control*.NONSTOP==0 and  result != 0 goto endoff;
+            ++i;
+            collect();
+          done 
+          println$ f"Batch result (%02d OK + %02d FAIL)/%2d" (pass, fail,n);
+        end
+      elif control*.REPL_MODE do
+        begin
+          again:>
+          repl();
+          if not feof (stdin) do
+            var dvars = FlxDepvars::cal_depvars(toolchain,*config,control, *loopctl);
+            var pe = processing_env(toolchain,*config,*control,dvars);
+            result = pe.runit(ehandler);
+            goto again;
+          else
+            println$ "Bye!";
+            // TOP LEVEL REPL, OK
+            System::exit 0;
+          done
+        end
+      else
+        begin
+          if control*.SHOWCODE == 1 do
+              var prg = 
+                (if dvars.use_ext == "" then "// No file "+dvars.filebase+".(flx|fdoc) found"
+                else load(dvars.filebase+"."+dvars.use_ext)
+              );
+              print prg;
+          done
+          var dvars = FlxDepvars::cal_depvars(toolchain,*config,control, *loopctl);
+          var pe = processing_env(toolchain,*config,*control,dvars);
+          result = pe.runit(ehandler);
+        end 
+      done
+  endoff:>
+      return result;
+    }
+  
+    gen runflx(args:list[string]) : int = 
+    {
+      var config = #Config::std_config;
+      var control = #FlxControl::dflt_control;
+      var loopctl = #FlxControl::init_loopctl;
+      return flx_processing(&config, &control, &loopctl, args);
+    }
+  }
+  
+  @
+  
+
+Bootflx
+-------
+
+This is supposed to be the same as the standard  :code:`flx`
+tool, except it includes all the required source code
+which means it takes a very long time to compile.
+
+
+.. code-block:: felix
+
+  include "std/felix/config";
+  
+  include "std/felix/flx_cache";
+  include "std/felix/flx_pkg";
+  include "std/felix/flx_flxg";
+  include "std/felix/flx_cxx";
+  
+  include "std/felix/flx/flx_control";
+  include "std/felix/flx/flx_cmdopt";
+  include "std/felix/flx/flx_depvars";
+  include "std/felix/flx/flx_run";
+  include "std/felix/toolchain_clang_config";
+  include "std/felix/toolchain_interface";
+  
+  
+  include "std/felix/toolchain/clang_osx";
+  include "std/felix/toolchain/clang_iOS_generic";
+  include "std/felix/toolchain/clang_linux";
+  include "std/felix/toolchain/gcc_osx";
+  include "std/felix/toolchain/gcc_linux";
+  include "std/felix/toolchain/msvc_win32";
+  
+  
+  open FlxCache;
+  
+  // Felix version of THIS program (NOT the one being installed
+  // if you're using flx to install Felix)
+  
+  
+  class BootFlx
+  {
+    gen flx_processing
+    (
+      config:&Config::config_type, 
+      control:&FlxControl::control_type,
+      loopctl:&FlxControl::loopctl_type,
+      args:list[string]
+    ) : int =
+    {
+      var result = 0;
+      fun / (a:string, b:string) => Filename::join (a,b);
+      FlxCmdOpt::processing_stage1 (config,control,loopctl,varray[string] args);
+      if control*.VALIDATE_CACHE == 1 do
+        check_cache(config, control);
+      done
+  
+      if loopctl*.base == "" and control*.INREGEX == "" do
+        if control*.CLEAR_CACHE != 1 do
+          println "usage: flx [options] filename";
+          // TOP LEVEL FLX, OK
+          System::exit(1);
+        done
+        // TOP LEVEL FLX, OK
+        System::exit(0);
+      done
+  
+      proc ehandler () {
+        eprintln$ "BOOTFLX: Flx_pkgconfig getpkgfiled1 failed, temporary ehandler invoked";
+        System::exit 1;
+      }
+      var dbdir = config*.FLX_TARGET_DIR / "config";
+      var pkgconfig = FlxPkgConfig::FlxPkgConfigQuery$ list[string] dbdir;
+      var toolchain_name = 
+        if control*.FLX_TOOLCHAIN == "" then pkgconfig.getpkgfield1 ehandler ("toolchain", "toolchain")
+        else control*.FLX_TOOLCHAIN
+      ;
+  
+      var toolchain =
+         match toolchain_name with
+        
+         | "toolchain_clang_osx" => toolchain_clang_osx 
+         // not required in bootstrap, but the ONLY way to check for type errors ..
+         | "toolchain_iphoneos" => toolchain_clang_apple_iPhoneOS_armv7_arm64 
+         | "toolchain_iphonesimulator" => toolchain_clang_apple_iPhoneSimulator
+  
+         | "toolchain_clang_linux" => toolchain_clang_linux
+         | "toolchain_gcc_osx" => toolchain_gcc_osx
+         | "toolchain_gcc_linux" => toolchain_gcc_linux
+         | "toolchain_msvc_win32" => toolchain_msvc_win32
+         | x => 
+           Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] ( dll-name=x, setup-str="")
+         endmatch
+      ;
+      if control*.INREGEX != "" do 
+  
+        begin
+          control.USER_ARGS <- Shell::quote_arg(loopctl*.progname) + ' ' + control*.USER_ARGS;
+          if control*.INDIR == "" do control.INDIR <- "."; done
+          var regex = RE2 control*.INREGEX;
+          if not regex.ok do
+            eprintln$ "Malformed regex " + control*.INREGEX;
+            result = 1;
+            goto endoff;
+          done
+          var files = FileSystem::regfilesin (control*.INDIR, regex);
+          var n = files.len.int;
+          println$ "Processing " + files.len.str + " files";
+          var i = 1;
+          for file in files do
+            var arg = Filename::join (control*.INDIR, file);
+            var path,ext = Filename::split_extension(arg);
+            loopctl.path <- path;
+            loopctl.ext <- ext;
+            var dir,base = Filename::split1(loopctl*.path);
+            loopctl.dir <- dir;
+            loopctl.base <- base;
+            // temporary hack, to force reset of the linker filename, stdout, and expect
+            // file names in cal_depvars so they depend on the current file.
+            control.LINKER_OUTPUT_FILENAME <- "";
+            control.STDOUT <- "";
+            control.EXPECT <- "";
+            var dvars = FlxDepvars::cal_depvars(toolchain,*config,control,*loopctl);
+            println$ f"Processing [%02d/%02d]: %S" (i, n, file);
+            var pe = processing_env(toolchain,*config,*control,dvars);
+            result = pe.runit(ehandler);
+            if result != 0 goto endoff;
+            ++i;
+          done 
+        end
+      else 
+        begin
+          if control*.SHOWCODE == 1 do
+              var prg = 
+                (if dvars.use_ext == "" then "// No file "+dvars.filebase+".(flx|fdoc) found"
+                else load(dvars.filebase+"."+dvars.use_ext)
+              );
+              print prg;
+          done
+          var dvars = FlxDepvars::cal_depvars(toolchain,*config,control, *loopctl);
+          var pe = processing_env(toolchain,*config,*control,dvars);
+          result = pe.runit(ehandler);
+        end 
+      done
+  endoff:>
+      return result;
+    }
+  
+    gen runflx(args:list[string]) : int = 
+    {
+  println$ "[bootflx] " + strcat " " args;
+      var config = #Config::std_config;
+      var control = #FlxControl::dflt_control;
+      var loopctl = #FlxControl::init_loopctl;
+      return flx_processing(&config, &control, &loopctl, args);
+    }
+  }
+  
+  @
+  
+
+Plugin Client.
+--------------
+
+Flx is also available as a plugin. This wrapper loads
+it on demand so it is easy to call flx from any Felix
+program.
+
+
+.. code-block:: felix
+
+  class Flx_client {
+    var runflx : list[string] -> int;
+    proc setup ()
+    {
+      runflx = Dynlink::load-plugin-func1 [int,list[string]] ( dll-name="flx_plugin", setup-str="");
+    }
+  }
+  @
+  
+
+Bootstrap Felix.
+----------------
+
+The same as the ordinary  :code:`flx` command, except the standard
+toolchains are compiled in directly.
+
+
+.. code-block:: felix
+
+  include "std/felix/flx/bootflx";
+  println$ "BOOTFLX";
+  System::pexit$ BootFlx::runflx #System::args;
+  
+  @
+  

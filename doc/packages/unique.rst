@@ -1,0 +1,50 @@
+
+=========================
+General Unique Facilities
+=========================
+
+
+General Facilities
+==================
+
+
+.. code-block:: felix
+
+  open class Unique 
+  {
+    // box up a value as a unique thing
+    fun uniq [T] : T -> _uniq T = "($t)";
+  
+    // unsafely unpack the unique box
+    fun ununiq [T] : _uniq T -> T = "($t)";
+  
+    // kill a live unique value
+    proc kill[T] : uniq T = ";";
+  
+    // functor for typing
+    typedef fun uniq (T:TYPE):TYPE => _uniq T;
+  
+    // peek inside the box without changing livenes state
+    fun peek[T] : &<(uniq T) -> T = "*($t)";
+   
+    // string representions
+    instance[T] Repr[uniq T] {
+      fun repr(var x:uniq T) => "uniq " + (C_hack::cast[T] x).str;
+    }
+  
+    instance[T] Str[uniq T] {
+      fun str(var x:uniq T) => "uniq " + (C_hack::cast[T] x).str;
+    }
+  
+    instance[T with Repr[T]] Repr[&<(uniq T)] {
+      fun repr(var x:&<(uniq T)) => "uniq " + x.peek.repr;
+    }
+  
+    instance[T with Str[T]] Str[&<(uniq T)] {
+      fun str(var x:&<(uniq T)) => x.peek.str;
+    }
+  
+  }
+  
+  
+  

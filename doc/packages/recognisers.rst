@@ -1,0 +1,886 @@
+
+
+===============================
+String Matching recogniser_base
+===============================
+
+
+Recognisers
+===========
+
+A recogniser is a component which tries to match the prefix of a string.
+If it succeeds it returns the position of the first character not matched.
+
+
+Buffer type
+-----------
+
+Recognisers work on an array of chars in memory. We use a Google
+StringPiece to represent it. 
+
+
+.. code-block:: felix
+
+  include "std/control/chips";
+  class RecogniserBase
+  {
+  open BaseChips; //needed for pipe symbol to work
+  
+  struct Buffer
+  {
+    sp: varray[char];
+    pos: int;
+  
+    fun atend => self.pos >= self.sp.len.int;
+  
+    fun get => 
+      if self.atend then char "" 
+      else (self.sp) . (self.pos)
+    ;
+  
+    proc next { 
+      if not self*.atend do
+        pre_incr self.pos;
+      done
+    }
+  
+    fun advanced =>
+      if self.atend then self
+      else Buffer (self.sp, self.pos + 1)
+    ;
+  
+    fun lookahead (i:int) =>
+      if self.pos + i > self.sp.len.int then char ""
+      elif self.pos + i < 0 then char ""
+      else (self.sp) . (self.pos + i)
+    ;
+  
+    fun stl_end => Buffer (self.sp,self.sp.len.int);
+  
+  }
+  
+  
+  ctor Buffer (p:varray[char]) =>
+    Buffer (p,0)
+  ;
+  
+  ctor Buffer (p:string) =>
+    Buffer (p.varray_nonul,0)
+  ;
+  
+  ctor Buffer (p: &string) =>
+    Buffer (*p)
+  ;
+  
+  instance Str[Buffer] {
+    fun str (b:Buffer) => "@"+b.pos.str;
+  }
+  
+  // hack, ignore underlying data.. FIXME
+  instance Eq[Buffer] {
+    fun == (a:Buffer, b:Buffer) => a.pos == b.pos;
+  }
+  instance Tord[Buffer] {
+    fun < (a:Buffer, b:Buffer) => a.pos < b.pos;
+  }
+  
+  open Eq[Buffer];
+  open Tord[Buffer];
+  
+  ctor string (a:Buffer, b:Buffer) =
+  {
+    var x = "";
+    for i in a.pos ..< b.pos do
+      x += a.sp.i;
+    done
+    return x;
+  }
+  
+  typedef recog_t = BaseChips::iochip_t[Buffer,Buffer];
+  // rendering lazy terms to actual recognizer
+  
+
+A string matcher.
+-----------------
+
+
+
+.. code-block:: felix
+
+  chip match_string (s:string)
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+  {
+  nextmatch:>
+    var b = read io.inp;
+    //println$ "Match " + s + " at " + b.str;
+    for i in 0..< s.len.int do 
+      if s.[i] != b.get goto nextmatch;
+      b&.next;
+    done
+    //println$ "Matched " + s + " to " + b.str;
+    write (io.out, b);
+    goto nextmatch;  
+  }
+  
+
+Whitespace matcher.
+-------------------
+
+Note: never fails.
+
+.. code-block:: felix
+
+  chip match_white 
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+  {
+    while true do
+      var b = read io.inp;
+      while not b.atend and b.get <= char ' ' perform b&.next;
+      write (io.out,b);
+    done
+  }
+  
+
+C++ comment matcher
+-------------------
+
+Note: cannot fail.
+
+.. code-block:: felix
+
+  chip match_cxx_comment 
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+  {
+  again:>
+    var b = read io.inp;
+    var b_saved = b;
+  
+    if b.get != char "/" goto bad;
+    b&.next;
+  
+    if b.get != char "/" goto bad;
+    b&.next;
+  
+    while not b.atend and not (b.get == char "\n")  perform b&.next;
+    b&.next; // works fine even if atend
+  ok:>
+    write (io.out,b);
+    goto again;
+  bad:>
+    write (io.out,b_saved);
+    goto again;
+  }
+  
+
+Nested C comment matcher
+------------------------
+
+Note: cannot fail.
+
+.. code-block:: felix
+
+  chip match_nested_c_comment 
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+  {
+  again:>
+    var depth = 0;
+    var b = read io.inp;
+    var b_saved = b;
+    if b.get != char "/" goto bad;
+    b&.next;
+    if b.get != char "*" goto bad;
+  
+  nest:>
+    b&.next;
+    ++depth;
+  
+  scan:>
+    if b.get == "/" do // start nested comment
+      b&.next;
+      if b.get == "*" goto nest;
+      goto scan;
+    done
+  
+    if b.get == "*" do // end comment group
+      b&.next;
+      if b.get == "/" goto unnest;
+      goto scan;
+    done
+  
+    b&.next;
+    goto scan;
+  
+  unnest:>
+    b&.next;
+    --depth;
+    if depth > 0 goto scan;
+    write (io.out,b);
+    goto again; 
+  
+  bad:>
+    write (io.out,b_saved);
+    goto again;
+  }
+  
+
+Felix comments
+--------------
+
+Note: can fail.
+
+.. code-block:: felix
+
+  
+  chip match_felix_white
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+  {
+    var ri,wi= #mk_ioschannel_pair[Buffer];
+    var ro,wo= #mk_ioschannel_pair[Buffer];
+    device w = BaseChips::pipeline_list ([match_white, match_nested_c_comment, match_cxx_comment]);
+    circuit
+       wire ri to w.inp
+       wire wo to w.out
+    endcircuit
+  
+  again:>    
+    var start = read io.inp;
+  more:>
+    write (wi, start);
+    var fin = read ro;
+    if fin != start do
+      start = fin;
+      goto more;
+    done
+  
+    write (io.out, fin);
+    goto again;
+  }
+  
+
+regex matcher.
+--------------
+
+
+
+.. code-block:: felix
+
+  chip match_regex (r:RE2)
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+  {
+    while true do
+      var b = read io.inp;
+  //println$ "Match regex " + r.str;
+      var matched = varray[StringPiece] (1uz,StringPiece());
+      var result = Match(r,StringPiece(b.sp),b.pos,ANCHOR_START,matched.stl_begin,1);
+  //println$ "Match result " + result.str;
+      if result do
+  //println$ "Matched OK, match len = " + matched.0.len.str;
+        var b2 = Buffer (b.sp,b.pos+matched.0.len.int);
+  //println$ "Writing buffer = " + b2.str;
+        write(io.out,b2);
+      done
+    done
+  }
+  
+
+Identifier matcher.
+-------------------
+
+For C like identifiers.
+
+
+.. code-block:: felix
+
+  device cident_matcher = match_regex (RE2 "[A-Za-z][A-Za-z0-9_]*");
+  device flxident_matcher = match_regex (RE2 "[A-Za-z_][A-Za-z0-9_']*");
+  device texident_matcher = match_regex (RE2 "\\\\[A-Za-z]+");
+  
+  chip flx_n_ident_matcher
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+  {
+  nextnident:>
+    var b = read io.inp;
+    if b.get != char "n" goto nextnident;
+    b&.next;
+    if b.get == char "'" do
+      b&.next;
+      while not b.atend and b.get != char "'" perform b&.next;
+      b&.next;
+      write (io.out, b);
+    elif b.get == char '"' do
+      b&.next;
+      while not b.atend and b.get != char '"' perform b&.next;
+      b&.next;
+      write (io.out, b);
+    done
+    goto nextnident;
+  }
+  
+  chip felix_identifier_matcher 
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+  {
+    device x = BaseChips::tryall_list 
+      ([
+        flxident_matcher, 
+        texident_matcher,
+        flx_n_ident_matcher
+      ])
+    ;
+    circuit
+      wire io.inp to x.inp
+      wire io.out to x.out
+    endcircuit
+  }
+  
+  
+
+Integer matcher.
+----------------
+
+For plain identifiers.
+
+
+.. code-block:: felix
+
+  device decimal_integer_matcher = match_regex (RE2 "[0-9]+");
+  
+
+Felix integer matcher.
+----------------------
+
+With radix prefix, and allows embedded underscores.
+Will recognise repeated underscores and trailing
+underscores even though these are not allowed.
+I mean, what should we do if we find them?
+
+
+.. code-block:: felix
+
+  
+  chip felix_integer_matcher 
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+  {
+  nexttry:>
+    var b = read io.inp;
+  //println$ "Felix integer matcher "+b.str;
+    var ch = b.get;
+    if ch not in "0123456789" goto bad;
+  
+    if ch == char "0" do
+      b&.next;
+      ch = b.get;
+  //println$ "felix_integer got leading 0, next char " + ch;
+      if ch in "bB" goto nextbinary;
+      if ch in "oO" goto nextoctal;
+      if ch in "dD0123456789_" goto nextdecimal;
+      if ch in "xX" goto nexthex;
+  //println$ "Bad radix";
+      goto bad;
+    done
+    goto decimal;
+  
+  nextbinary:>
+    b&.next;
+  binary:>
+    ch = b.get;
+    if ch in "_01234567" goto nextbinary;
+    goto suffix;
+  
+  nextoctal:>
+    b&.next;
+  octal:>
+    ch = b.get;
+    if ch in "_01234567" goto nextoctal;
+    goto suffix;
+  
+  
+  nextdecimal:>
+    b&.next;
+  decimal:>
+    ch = b.get;
+    if ch in "_0123456789" goto nextdecimal;
+    goto suffix;
+  
+  nexthex:>
+    b&.next;
+  hex:>
+    ch = b.get;
+    if ch in "_0123456789ABCDEFabcdef" goto nexthex;
+    goto suffix;
+  
+  suffix:>
+    // 3 char suffix
+    if "" + toupper (b.get) + toupper (b.lookahead 1) + toupper (b.lookahead 2) in 
+      ([
+        "I16", "I32","I64",
+        "U16", "U32","U64"
+      ])
+    do
+      b&.next;
+      b&.next;
+      b&.next;
+  
+    // 2 char suffix
+    elif "" + toupper (b.get) + toupper (b.lookahead 1) in
+      ([
+        "LL","I8","U8",
+        "UT","US","UD","UL","UV","UZ","UJ",
+        "TU","SU","DU","LU","VU","ZU","JU"
+      ])
+    do
+      b&.next;
+      b&.next;
+  
+    // one char suffix
+    elif "" + toupper (b.get) in
+      ([
+        'T', // tiny
+        'S', // short
+        'I', // int
+        'L', // long
+        'V', // long long
+        "Z", // size
+        "J", // intmax
+        "P", // intptr
+        "D"  // ptrdiff
+      ])
+    do
+      b&.next;
+    done 
+    goto ok;
+  
+  ok:>
+  //println$ "Felix integer ok";
+    write (io.out,b);
+    goto nexttry;
+  
+  bad:>
+  //println$ "Felix integer bad";
+    goto nexttry;
+  }
+  
+
+Felix float matcher.
+--------------------
+
+//$ Follows ISO C89, except that we allow underscores;
+//$ AND we require both leading and trailing digits so that
+//$ x.0 works for tuple projections and 0.f is a function
+//$ application
+
+.. code-block:: felix
+
+  chip felix_float_literal_matcher 
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+  {
+  nexttry:>
+    var b = read io.inp;
+    var ch = b.get;
+    if ch == char "0" do
+      b&.next;
+      ch = b.get;
+  //println$ "felix_integer got leading 0, next char " + ch;
+      if ch in "dD0123456789_" goto nextdecimal;
+      if ch in "xX" goto nexthex;
+  //println$ "Bad radix";
+      goto bad;
+    done
+    goto decimal;
+  
+  
+  nextdecimal:>
+    b&.next;
+  decimal:>
+    ch = b.get;
+    if ch in "_0123456789" goto nextdecimal;
+    if b.get != char "." goto bad;
+    b&.next;
+    if b.get not in "0123456789" goto bad;
+    b&.next;
+  
+  nextdecimalfrac:>
+    b&.next;
+  decimalfrac:>
+    ch = b.get;
+    if ch in "_0123456789" goto nexthexfrac;
+    if ch not in "Ee" goto ok;
+    b&.next;
+    if b.get == char "-" perform b&.next;
+    if b.get not in "0123456789" goto bad;
+  nextdecexp:>
+    b&.next;
+    if b.get not in "0123456789" goto suffix;
+    goto nextdecexp;
+  
+  nexthex:>
+    b&.next;
+  hex:>
+    ch = b.get;
+    if ch in "_0123456789ABCDEFabcdef" goto nexthex;
+    if b.get != char "." goto bad;
+    b&.next;
+    if b.get not in "0123456789ABCDEFabcdef" goto bad;
+    b&.next;
+  
+  nexthexfrac:>
+    b&.next;
+  hexfrac:>
+    ch = b.get;
+    if ch in "_0123456789ABCDEFabcdef" goto nexthexfrac;
+    if ch not in "Pp" goto ok;
+    b&.next;
+    if b.get == char "-" perform b&.next;
+    if b.get not in "0123456789" goto bad;
+  nexthexexp:>
+    b&.next;
+    if b.get not in "0123456789" goto suffix;
+    goto nexthexexp;
+  
+  suffix:>
+    if b.get in "fFlL" perform b&.next;
+  
+  ok:>
+  //println$ "Felix float ok";
+    write (io.out,b);
+    goto nexttry;
+  
+  bad:>
+  //println$ "Felix integer bad";
+    goto nexttry;
+  }
+  
+  
+
+String Literal matcher.
+-----------------------
+
+One shot. Simple, matches single or double quoted
+string not spanning lines, with no escape codes, 
+
+.. code-block:: felix
+
+  chip match_string_literal 
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+  {
+  restart:>
+    var b = read io.inp;
+    if b.atend goto restart; // end of data
+    var leadin = b.get;
+  //println$ "string literal matcher got char " + leadin.str;
+    if not (leadin in (char '"', char "'")) goto restart;
+  //println$ "Got valid string start .. ";
+    b&.next; 
+    if b.atend goto restart;
+    var ch = b.get;
+    while ch != leadin do
+      b&.next;
+      if b.atend goto restart;
+      ch = b.get;
+      if ch == char "\n" goto restart; // end of line
+    done
+    b&.next;
+    io.out `(write) b;  
+    goto restart;
+  }
+  
+  chip match_string_literal_backquote
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+  {
+  restart:>
+    var b = read io.inp;
+    if b.atend goto restart; // end of data
+    var leadin = b.get;
+  //println$ "string literal matcher got char " + leadin.str;
+    if leadin != char '`' goto restart;
+  //println$ "Got valid string start .. ";
+    b&.next; 
+    if b.atend goto restart;
+    var ch = b.get;
+    while ch != leadin do
+      b&.next;
+      if b.atend goto restart;
+      ch = b.get;
+      if ch == char "\n" goto restart; // end of line
+    done
+    b&.next;
+    io.out `(write) b;  
+    goto restart;
+  }
+  
+  chip felix_string_literal_matcher
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+  {
+  restart:>
+    var b = read io.inp;
+    var triple = false; // single quoted
+    var escape = char ""; // no escape
+  
+    // r: raw string, f: function, c: C string
+    // add others here
+  
+    // check for raw prefix r
+    if b.get in "r" do
+      if b.lookahead 1 != char '"' goto bad;
+      b&.next;
+      goto strlit;
+    done
+  
+    // check for other prefixen
+    if b.get in "cf" do
+      if b.lookahead 1 != char '"' goto bad;
+      b&.next;
+    done
+  
+    // normal escaping on
+    escape = char "\\";
+  
+  strlit:>
+    if b.get not in "'\"" goto bad;
+    var first_leadin = b.get;
+    b&.next;
+    if b.get == first_leadin and b.lookahead 1 == first_leadin do
+      triple = true;
+      b&.next; 
+      b&.next; 
+    done
+  
+  //println$ "Leadin=" + first_leadin + ", triple=" + triple.str + ", escape=" + escape.str;
+  
+  eatup:>
+  //println$ "Eatup " + b.get;
+  
+    if b.get == escape goto doescape;
+    if not triple and b.get == "\n"  goto bad; // newline in string
+    if not triple and b.get == first_leadin do
+      b&.next;
+      goto ok;
+    done
+  
+    if triple and 
+      b.get == first_leadin and 
+      b.lookahead 1 == first_leadin and 
+      b.lookahead 2 == first_leadin
+    do
+      b&.next;
+      b&.next;
+      b&.next;
+      goto ok;
+    done
+  
+    b&.next;
+    goto eatup;
+  
+  
+  doescape:>
+  //println$ "Escape";
+    b&.next;
+    b&.next;
+    goto eatup;
+  
+  ok:>
+    write (io.out, b);
+    goto restart;
+  
+  bad:>
+    goto restart;
+  }
+  
+
+End of string matcher
+---------------------
+
+
+.. code-block:: felix
+
+  chip eos_matcher 
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+  {
+    while true do
+      var x = read io.inp;
+      if x.atend perform write (io.out,x);
+    done
+  }
+  
+
+Longest match
+-------------
+
+
+.. code-block:: felix
+
+  chip longest_match (a: list[recog_t])
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+  {
+    var x = read io.inp;
+    var results = None[Buffer];
+    proc storemax[T with Tord [T]] (p: &opt[T]) (a:T) {
+      match *p with
+      | None => p <- Some a;
+      | Some v => if a > v perform p <- Some a;
+      endmatch;
+    }
+    for r in a call
+      run (x.value |-> r |-> (storemax &results).procedure)
+    ;
+    match results with
+    | None => ;
+    | Some answer => write (io.out, answer);
+    endmatch;
+  }
+  
+
+Match to eos
+------------
+
+Equivalent to .* but faster.
+
+.. code-block:: felix
+
+  chip toeos_matcher 
+    connector io
+      pin inp: %<Buffer
+      pin out: %>Buffer
+  {
+    while true do
+      var x = read io.inp;
+      write (io.out,x.stl_end);
+    done
+  }
+  }
+  
+  
+
+Lazy Syntactic form
+===================
+
+
+.. code-block:: felix
+
+  // this is a function, so it cannot construct pipeline
+  // chips, because they actually spawn the components internally
+  // and functions can't do service calls.
+  //
+  // So instead we just return a function 1->recog_t which does the
+  // job on invocation.
+  include "std/strings/recogniser_base";
+  include "std/strings/grammars";
+  
+  class Recognisers
+  {
+  inherit RecogniserBase;
+  open BaseChips;
+  
+  open Grammars;
+  
+  typedef ntdef_t = string * recog_t;
+  
+  fun find (v:varray[ntdef_t]) (nt:string) : size = 
+  {
+    for i in 0uz ..< v.len do
+      if v.i.0 == nt return i;
+    done
+    assert false;
+  }
+  
+  
+  fun render_prod 
+    (lib:gramlib_t,v:varray[ntdef_t]) 
+    (p:prod_t) 
+  : recog_t =>
+    match p with
+    | Terminal (s,r) => r 
+    | Epsilon =>  epsilon[Buffer] 
+    | Seq ps =>  pipeline_list (
+        map (fun (p:prod_t) => render_prod (lib,v) p) ps) 
+    | Alt ps =>   tryall_list (
+        map (fun (p:prod_t) => render_prod (lib,v) p) ps) 
+    | Nonterminal nt => 
+      let idx = find v nt in
+      let pslot = -(v.stl_begin + idx) in
+      let pchip = pslot . 1 in
+      BaseChips::deref_first_read pchip
+    endmatch
+  ;
+  
+  fun recogniser
+    (start:string, lib:gramlib_t) : recog_t =
+  {
+      var cl = closure (start,lib);
+  
+      // allocate a varray with a slot for each nonterminal
+      var n = cl.len;
+      var v = varray[string * recog_t] n;
+  
+      // populate the varray with the terminal names and a dummy chip
+      for nt in cl call // initialise array
+        push_back (v,(nt,BaseChips::epsilon[Buffer]))
+      ;
+  
+      // now assign the real recogniser_base to the array
+      var index = 0uz;
+      for nt in cl do
+        match find lib nt with
+        | None => assert false;
+        | Some prod =>
+          // get wrapped recogniser
+          var entry = render_prod (lib, v) prod;
+  
+          // address of the slot
+          var pentry : &recog_t = (-(v.stl_begin+index)).1;
+  
+          // overwrite dummy value
+          pentry <- entry;
+        endmatch;
+        ++index;
+      done
+      return v.(find v start).1;
+  }
+  
+  fun in (s:string) (g:grammar_t) =
+  {
+    chip false_if_got (pr: &bool)
+       connector io
+         pin inp: %<Buffer
+    {
+      C_hack::ignore$ read io.inp;
+      pr <- true;
+    }
+    var r = recogniser g;
+    var result = false;
+    run (s.Buffer.value |-> r |-> eos_matcher |-> false_if_got &result);
+    return result;
+  }
+  
+  } // Recognisers
+  
+  

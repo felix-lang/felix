@@ -1,0 +1,117 @@
+
+==========
+characters
+==========
+
+
+Char
+====
+
+
+.. code-block:: felix
+
+  
+  //$ Standard C operations on C character set.
+  open class Char
+  {
+    //$ Ordinal value as int.
+    fun ord: char -> int = "(int)$1";
+  
+    //$ Constructor from any integer type.
+    ctor[t in ints] char: t = "(char)$1";
+    
+    //$ Convert to upper case.
+    fun toupper : char -> char requires C89_headers::ctype_h;
+  
+    //$ Convert to lower case.
+    fun tolower : char -> char requires C89_headers::ctype_h;
+    
+    //$ Test if upper case [A-Z].
+    fun isupper : char -> bool  = "!!isupper($1)" requires C89_headers::ctype_h;
+  
+    //$ Test if lower case [a-z].
+    fun islower : char -> bool  = "!!islower($1)" requires C89_headers::ctype_h;
+  
+    //$ Test if alphanumeric [A-Za-z0-9].
+    fun isalnum : char -> bool  = "!!isalnum($1)" requires C89_headers::ctype_h;
+  
+    //$ Test if alphabetic [A-Za-z]
+    fun isalpha : char -> bool  = "!!isalpha($1)" requires C89_headers::ctype_h;
+  
+    //$ Test if digit [0-9].
+    fun isdigit : char -> bool  = "!!isdigit($1)" requires C89_headers::ctype_h;
+  
+    //$ Test if hex digit [0-9A-Fa-f].
+    fun isxdigit : char -> bool  = "!!isxdigit($1)" requires C89_headers::ctype_h;
+  
+    //$ Test if control character 0x0 - 0x20, 0x7F
+    fun iscntrl : char -> bool  = "!!iscntrl($1)" requires C89_headers::ctype_h;
+  
+    //$ Test if space x020.
+    fun isspace : char -> bool  = "!!isspace($1)" requires C89_headers::ctype_h;
+  
+    //$ Test if space 0x20 or tab 0x09
+    fun isblank : char -> bool  = "!!isblank($1)" requires C89_headers::ctype_h;
+  
+    //$ Test if printable 0x20-0x7e
+    fun isprint : char -> bool  = "!!isprint($1)" requires C89_headers::ctype_h;
+  
+    //$ Test if punctuation character.
+    fun ispunct : char -> bool  = "!!ispunct($1)" requires C89_headers::ctype_h;
+  
+    // define some basic character sets
+    val upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    val lower = "abcdefghijklmnopqrstuvwxyz";
+    val letters = upper + lower;
+    val digits = "0123456789";
+    val alphanum = letters + digits;
+    val cidcont= alphanum+"_";
+    val flxidcont= alphanum+"_-'";
+    val camlidcont= alphanum+"_'";
+    val numeric = digits + ".eEdD_"; // crud hack
+  
+    // some character classification functions
+    fun isidstart(x:char) => match find$ letters,x with | Some _ => true | #None => false endmatch;
+    fun iscamlidcont(x:char) => match find$ camlidcont,x with | Some _ => true | #None => false endmatch;
+    fun iscidcont(x:char) => match find$ cidcont,x with | Some _ => true | #None => false endmatch;
+    fun isflxidcont(x:char) => match find$ flxidcont,x with | Some _ => true | #None => false endmatch;
+    fun isnumeric(x:char) => match find$ numeric,x with | Some _ => true | #None => false endmatch;
+    fun isalphanum(x:char) => isidstart x or isdigit x;
+    fun isletter (x:char) => match find$ letters, x with | Some _ => true | #None => false endmatch;
+  
+    fun issq(x:char) => x == char "'";
+    fun isdq(x:char) => x == char '"';
+    fun isslosh(x:char) => x == char '\\';
+    fun isnull(x:char) => x == char "";
+    fun iseol(x:char) => x == char "\n"; // will be CR on Windoze ;(
+  
+  }
+  
+  instance[T in chars] Str[T] {
+    fun str: T -> string = "::flx::rtl::strutil::str<#1>($1)" requires package "flx_strutil";
+  }
+  
+  instance[T in chars] Repr[T] {
+    fun repr[with Str[T]] (c:T) : string = {
+      val s = str c;
+      return
+        match s with
+        | "'" =>  "\\'"
+        | '\t' => '\\t'
+        | '\n' => '\\n'
+        | '\r' => '\\r'
+        | '\f' => '\\f'
+        | '\v' => '\\v'
+        | _    => s
+        endmatch
+      ;
+    }
+  }
+  
+  instance Tord[char]
+  {
+    fun < : char * char -> bool = "$1<$2";
+  }
+  open Tord[char];
+  
+  
