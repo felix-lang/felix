@@ -91,11 +91,11 @@ Double Free
 
 An even worse problem is freeing the memory you allocated 
 twice. This may cause your program to abort, particularly
-if you have an modern checking allocator. Historically,
+if you have a modern checking allocator. Historically,
 however, the double free simply corrupted memory, and 
 all sorts of weird things could happen. If you were lucky,
-you soon get a core dump, if you are unlucky, your program
-runs but produces the wrong results.
+you would soon get a core dump, if you were unlucky, your program
+ran but produced the wrong results.
 
 Dangling Pointers
 ~~~~~~~~~~~~~~~~~
@@ -228,14 +228,79 @@ It means, if the string is deleted, the pointer
 must be inacessable.
 
 Uniqueness Types
-----------------
+================
+
 
 Felix provides some machinery to further aid in
 establishing and maintaining knowledge of, and the
 ability to, reason about ownership: uniqueness types.
 
 The facility is used to enforce a contract, but it does
-not provide a global safety guarrantee.
+not provide a global safety guarrantee. Our system
+provides a type constructor `uniq` which can be 
+applied to any type.
+
+We also provide three operators which can be applied to
+expressions. The `uniq` operator takes a value of some
+type T, and returns a value of type `uniq T`. The 
+`ununiq` operator takes a value of type `uniq T`,
+for some type T, and returns a value of type T.
+
+These operators are type coercions which have no
+run time impact. The uniq typing is erased by
+the compiler in the back end after type checking,
+ensuring there is no run time penalty for unique
+typing.
+
+In addition there is an unsafe cheat operator
+`peek` which can be applied to a read-only pointer
+to store of a uniq type, which returns the 
+stored value.
+
+Finally there is an unsafe procedure `kill`
+which consumes a uniq value without doing 
+anything. It can be used when the value
+has been consumed in a way that has escaped
+the notice of the type system, such as by
+use of a pointer, not notify the type system
+that the value is dead. It has no utility
+unless applied to a variable.
+
+.. code-block:: felix
+
+    open class Unique 
+    {
+      // box up a value as a unique thing
+      fun uniq [T] : T -> _uniq T = "($t)";
+
+      // unsafely unpack the unique box
+      fun ununiq [T] : _uniq T -> T = "($t)";
+
+      // kill a live unique value
+      proc kill[T] : uniq T = ";";
+
+      // functor for typing
+      typedef fun uniq (T:TYPE):TYPE => _uniq T;
+
+      // peek inside the box without changing livenes state
+      fun peek[T] : &<(uniq T) -> T = "*($t)";
+    }
+     
+In this code the type operator `_uniq` is the compiler
+intrinsic, the functor `uniq` is used to provide the
+public version.
+
+The system also provides conversions
+to strings which delegate to the conversions for
+the underlying type, not shown here.
+
+
+Example: UniqueCStrings
+-----------------------
+
+This example presents a cut down version of the
+Felix standard library component `UniqueCStrings`
+which illustrates a real use of uniqueness typing.
 
 Setup
 ~~~~~
@@ -277,7 +342,7 @@ class `UniqueCStrings`.
 Uniqueness
 ~~~~~~~~~~
 
-W're going to make the publically visible
+We're going to make the publically visible
 version a unique type.
 
 .. code-block:: felix
@@ -322,11 +387,15 @@ You can take the box out of one cupboard,
 and put it it another, but you cannot easily
 copy the box, because you cannot see inside it.
 
-When you have a new box safely in your cupboard,
-you can `unpack` the box to find out what is inside.
+When you have a new box put in your cupboard,
+you can take the box out of the cupboard
+and `unpack` it to find out what is inside.
 You can then play with its contents with
 relative safety, knowing that it is exclusively yours
-to play with. 
+to play with.  Its important to note, there isn't
+space to unpack your box inside the cpuboard. Its like
+a mail box, you have to take your letter out, emptying
+the mail box, before you can open the letter.
 
 
 Constructors
@@ -393,7 +462,7 @@ The type system cannot enforce the exclusive ownership,
 but it does enforce a useful contract. It ensures that
 if the caller *claims* to be the exclusive owner by
 typing the argument value `uniq` then that claim
-will be recognised by the client routine because
+will be recognised by the callee routine because
 the type system will *ensure* that the parameter is
 also typed `uniq`.
 
@@ -446,7 +515,7 @@ value.
 The box has to be unpacked first.  Here, we're using abstraction
 to ensure that we can provide this operation to the user
 without needing to expose the underlying pointer, but the user
-must already own the value and taken responsibility for its
+must already own the value and have taken responsibility for its
 safe management by unpacking a unique value.
 
 Length
@@ -474,8 +543,8 @@ it is only safe if you only take a peek.
 
 The machinery of taking the address of a `uniq` value and 
 then passing it to a client is known as `lending` the value.
-It is not safe in general to lend something to a client
-you do not trust. We can trust this client, because
+It is not safe in general to lend something to a service 
+you do not trust. We can trust this function, because
 we can see its implementation.  In particular we can
 see that whilst it does `peek` inside the packed up box,
 in order to calculate the length of the string, it does
@@ -492,7 +561,7 @@ Now we're going to modify one character. We use
 an unsafe function, `Carray::set` to so this.
 It operates on a pointer to a C array, or `+char`
 type. Here we make no assurance that the location being
-set if inside the string. This operation, therefore
+set is inside the string. This operation, therefore
 is unsafe, in that the index could be out of bounds.
 Our concern here is not with the validity of the bound,
 but that, assuming the bound is indeed valid,
@@ -700,7 +769,11 @@ to another kill the first variable and liven the second
 one. The first one has to be alive to start, and the second
 one has to be dead. After the assignment, the first one
 is dead and the second one is alive. Life has been moved
-from one variable to another.
+from one variable to another. We actually say
+that we have transfered `ownership`, as if you have
+a dog in a kennel and then give the dog as a gift
+to a friend (who puts it in another kennel, or lets it
+sleep on the sofa). 
 
 Taking the address of a variable does not kill it,
 which means if you do take the address you must only
@@ -756,11 +829,11 @@ dead. Some people say the value has been `consumed`.
 A dead variable can be relivened by assigning it a new
 uniq value.
 
-At the end of a function, all uniqely type variables
+At the end of a function, all uniqely typed variables
 must be dead.
 
 Felix does *NOT* recognise taking the address of a variable
-as significant,i *except* in the special case the address is
+as significant, *except* in the special case the address is
 immediately used as the first argument of the store at 
 operator `<-`. Tracking pointer aliases is not impossible but
 it is hard to do properly, and it can be very expensive.
