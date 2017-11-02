@@ -9,6 +9,7 @@ Contents:
   :maxdepth: 1
 
   unique
+  subtyping
 
 Indices and tables
 ==================
