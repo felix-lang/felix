@@ -5,7 +5,7 @@ Using Uniqueness Types
 Ownership
 =========
 
-Uniqueness types provide a way to help enforce an 
+Uniqueness types provide a way to help enforce a 
 contract of exclusive ownership. Lets look at an example
 to see how they work.
 
@@ -101,7 +101,7 @@ Dangling Pointers
 ~~~~~~~~~~~~~~~~~
 
 Another problem which occurs is that you free the
-pointer, but then go an use it anyhow. This is known
+pointer, but then go on and use it anyhow. This is known
 as a dangling pointer, since it points off into the
 wild blue yonder. Again, if you're lucky, you might get
 a program abort quickly, but it is easy to be unlucky.
@@ -155,7 +155,7 @@ two flavours to solve this problem: the first was to provide
 a rich, kitchen sink of methods that covered as much as
 experience showed was required.
 
-The second method was to provide an cheat method that did
+The second method was to provide a cheat method that did
 actually expose the underlying pointer. 
 
 Copying
@@ -187,9 +187,9 @@ Move Constructors
 ~~~~~~~~~~~~~~~~~
 
 In C++11 a major advance was made due to the introduction
-or rvalue references. An rvalue reference can only bind
+of rvalue references. An rvalue reference can only bind
 to an rvalue, and rvalues are always unique. So an rvalue
-passed to a function with an rvalue parameter can safely
+passed to a function with an rvalue reference parameter can safely
 modify the underlying memory, because the type system
 ensures it is the exclusive owner.
 
@@ -232,7 +232,7 @@ Uniqueness Types
 
 Felix provides some machinery to further aid in
 establishing and maintaining knowledge of, and the
-ability to reason about ownership: uniqueness types.
+ability to, reason about ownership: uniqueness types.
 
 The facility is used to enforce a contract, but it does
 not provide a global safety guarrantee.
@@ -264,16 +264,29 @@ representation type abstract.
       // abstract representation
       private type _ucstr = new +char;
 
+In Felix, the `type` binder introduces an abstract type.
+The RHS of the construction may be either the `new` operator
+followed by a type expression, or it may be a C++ type
+wrapped in a string. In the above the type `+char` means
+an incrementable non-null pointer to an array of `char`.
+
+As well as being abstract, we're also preventing the 
+name `_ucstr` from being visible outside the enclosing
+class `UniqueCStrings`.
+
 Uniqueness
 ~~~~~~~~~~
 
-And we're going to make the publically visible
+W're going to make the publically visible
 version a unique type.
 
 .. code-block:: felix
 
     // make it uniq
     typedef ucstr = uniq _ucstr;
+
+The type constructor `uniq` specifies a uniquely
+typed version of the type it qualifies.
 
 Internal Access
 ~~~~~~~~~~~~~~~
@@ -286,6 +299,7 @@ inside the class defining the abstract type.
 These methods are `_repr_` which casts the abstract
 type to its implementation, and `_make_ucstr` which
 casts the representation to the abstraction.
+
 Since these are a bit messy to write, we will provide
 private wrappers functions:
 
@@ -293,8 +307,27 @@ private wrappers functions:
 
 
     // privatise access to representation
-    private fun unpack (var p: ucstr) : +char => p.ununiq._repr_;
     private fun pack (p: +char) => p._make__ucstr.uniq;
+    private fun unpack (var p: ucstr) : +char => p.ununiq._repr_;
+
+You should think of `pack` as a way to take
+a raw char pointer and wrap it up in a package
+you can move about. You can pass this box from
+one variable to another. If a function has a local
+variable, we can say the function owns that variable.
+The variable is like a cupboard, into which you can
+put things.
+
+You can take the box out of one cupboard,
+and put it it another, but you cannot easily
+copy the box, because you cannot see inside it.
+
+When you have a new box safely in your cupboard,
+you can `unpack` the box to find out what is inside.
+You can then play with its contents with
+relative safety, knowing that it is exclusively yours
+to play with. 
+
 
 Constructors
 ~~~~~~~~~~~~
@@ -303,21 +336,21 @@ Now we need a constructor. We're going to use a C++ string
 which is a Felix string and copy its value into an a C array
 using the method `_unsafe_cstr`:
 
-
 .. code-block:: felix
 
     // Constructors
     ctor ucstr (var s:string) = {
-       var p =  s._unsafe_cstr; // malloc'd copy of string contents
-       if debug perform
-         println$ "Creating " + p.repr + " @" + p.address.repr;
+       // malloc'd copy of string contents
+       var p =  s._unsafe_cstr; 
        return pack p;
     }
 
-What this does is malloc a new array and copy the contents of the
-C++ internal array. It is not safe because it is returning a raw
-pointer which we might forget to free, but we're going to fix
-that by coercing it to a unique type.
+What `_unsafe_cstr` does is malloc a new array and copy the contents of the
+C++ internal array into it, it used the C++ method `c_str()`
+to gain access to the internal C array. This is the C++ `string` class
+cheat method. Our `_unsafe_cstr` is not safe because it is returning a raw
+pointer which we might forget to free, but we're trying to fix
+that by coercing it to a unique type. By wrapping into a box.
 
 Another constructor just copies an existing C string
 and packs it up into a unique type:
@@ -325,6 +358,16 @@ and packs it up into a unique type:
 .. code-block:: felix
 
     ctor ucstr (s:+char) => s.strdup.pack;
+
+You can see here our code is doing unsafe things, with raw
+C strings, but we are then using `pack` to at least
+notify our client. Because the constructor returns a
+unique type, the client of the constructor believes they
+have exclusive ownership of the returned value.
+
+And that indeed is the intent and purpose of our 
+constructor code, and we can easily verify we have
+met our part of the bargain.
 
 Destructor
 ~~~~~~~~~~
@@ -338,6 +381,34 @@ We need to provide a way to free our string:
       var q = unpack p;
       free q;
     } 
+
+How do we know it is safe to free the underlying pointer here?
+The answer is, as the client of the unique value, we are
+entitled to believe that we are the exclusive owner of it.
+It has been moved to the variable `p` which is exclusively
+our variable, and it has a type which indicates it holds
+an exclusively owned value.
+
+The type system cannot enforce the exclusive ownership,
+but it does enforce a useful contract. It ensures that
+if the caller *claims* to be the exclusive owner by
+typing the argument value `uniq` then that claim
+will be recognised by the client routine because
+the type system will *ensure* that the parameter is
+also typed `uniq`.
+
+In other words, this is a coupling contract. The argument
+passing to the parameter is a contract of transfer of
+ownership *witnessed* by the type system. All bets are
+off, before the client signs the contract by wrapping
+the value with a `uniq` operator. All bets are off,
+after the service routine signs the contract by 
+accepting the packed value, and then unpacks it.
+
+What the contract enforces is an agreement that
+the value is `moved` from the client routine
+to the service routine, instead of being copied.
+
 
 Display
 ~~~~~~~
@@ -364,6 +435,20 @@ respectively.
 Then, we yank bindings to these methods into our class
 with the `inherit` directives.
 
+What is important to observe about these routines is that
+they do not operate on the unique type. The values that they
+receive are abstracted representations of the underlying
+C pointer which we observe using the private `_repr_`
+method. What this means, is that you cannot apply the
+`str` operator to a packed up box, it won't work on a `uniq`
+value. 
+
+The box has to be unpacked first.  Here, we're using abstraction
+to ensure that we can provide this operation to the user
+without needing to expose the underlying pointer, but the user
+must already own the value and taken responsibility for its
+safe management by unpacking a unique value.
+
 Length
 ~~~~~~
 
@@ -387,17 +472,34 @@ so all is well. The `peek` operator you see above is used
 to look inside a unique type, which is not safe in general,
 it is only safe if you only take a peek.
 
+The machinery of taking the address of a `uniq` value and 
+then passing it to a client is known as `lending` the value.
+It is not safe in general to lend something to a client
+you do not trust. We can trust this client, because
+we can see its implementation.  In particular we can
+see that whilst it does `peek` inside the packed up box,
+in order to calculate the length of the string, it does
+not pass on the secret knowledge to anyone else, it
+returns only the length, not the pointer to the C array
+it peeked at. Similarly, the `len` function itself
+has trusted that the C `strlen` function has only used
+the supplied pointer transiently.
+
 Modifying One Character
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Now we're going to modify one character. We use
 an unsafe function, `Carray::set` to so this.
 It operates on a pointer to a C array, or `+char`
-type. It will never write past the end of a the array,
-but the onus is on the caller to ensure the array pointed
-at actually exists, and hasn't, for example, been freed.
-The owner also has to be sure the string has a null terminator!
+type. Here we make no assurance that the location being
+set if inside the string. This operation, therefore
+is unsafe, in that the index could be out of bounds.
+Our concern here is not with the validity of the bound,
+but that, assuming the bound is indeed valid,
+we can safely modify the string in place and return
+it, without anyone observing we did so.
 
+ 
 .. code-block:: felix
 
     // modify one char
@@ -418,6 +520,23 @@ be a side effect, because, whilst there is actually
 an effect in the form of a mutation, it can only be
 observed in the output of the function. It cannot be
 observed `on the side` because no one else knows about it.
+
+To say this another way, the caller cannot know if the
+string was modified, or a copy created and modified.
+What we gain is this: if the caller believes they have
+exclusive ownership, the caller can sign the transfer
+of ownership contract by making the type unique.
+In doing so they enable a significant optimisation
+whereby the need to copy the string to avoid a
+side effect is removed, a significant saving in
+both time and memory.
+
+The saving is actually considerably greater because
+the system is relieved of the cost of calculating
+whether the string is reachable from any live part
+of the program, a calculation which is normally done
+by the garbage collector.
+
 
 Appending two strings
 ~~~~~~~~~~~~~~~~~~~~~
@@ -460,7 +579,7 @@ have a `uniq` type.
 In fact that is not quite correct. There is one thing we
 cannot do with a uniquely typed value: forget it.
 We're responsible for it, we cannot forget it.
-We have to either return it, handling over ownership
+We have to either return it, handing back ownership
 to our caller, or free it. We freed the second argument in this routine
 and returned the first, with modifications, and possibly at a new
 location. Realloc took care of what to do if we needed a new
@@ -491,13 +610,17 @@ instead of a value, we know we're only allowed to
 peek at it. 
 
 The type system will not stop you, if, instead of just
-peeking, you dereference the pointer, unpacked the
-resulting value, and then freed it.
+peeking, you dereference the pointer, unpack the
+resulting value, and then free it.
 
 Felix uniq types do *not* ensure correct usage.
 What they actually do, is make the contract explicit.
 There is enforcement, but it is not complete.
 
+Convenience wrappers
+~~~~~~~~~~~~~~~~~~~~
+
+Here are some convenience wrappers:
 
 .. code-block:: felix
 
@@ -511,6 +634,25 @@ There is enforcement, but it is not complete.
   proc += (var lhs: &ucstr, var rhs: &ucstr) => 
     lhs <- append (*lhs,rhs)
   ;
+
+These wrappers allow you to use the infix `+` functional
+operator and `+=` procedural instruction. Note carefully
+the procedural implementations! By dereferncing the
+`lhs` pointer we have created a uniq value. We were
+only given a loan, so is this safe?
+
+In general, it isn't safe. But we can see here that,
+although we have abused the loan by modifying the 
+value, we are then storing the modified value back
+into the original location. We have taken the box,
+opened it, changed the contents, and put them back.
+The original owner remains the owner, although
+the value they own has changed.
+
+Of course, that is not only what the owner expected,
+it is what the owner demanded! There's no point putting
+a broken phone in for repair, if the repair shop doesn't
+actually fix it!
 
 Enforcement: An example of usage
 --------------------------------
@@ -537,6 +679,11 @@ See how I copied the value in variable `s` to `s2`?
 I didn't copy it. I *moved it*. Felix enforces a special rule
 for uniq types. They cannot be copied, only moved.
 
+Programming languages have no natural syntax for movement,
+only copying. So we need some help, when we do an assignment
+and we really mean to move, and not copy the value.
+Below I explain how we do that.
+
 A variable of a uniq type has to be used *exactly once*.
 If you pass the value in a variable to a function, the variable
 goes out of scope and cannot be accessed. You owned the value,
@@ -561,13 +708,69 @@ use it whilst the variable remains alive. Felix
 does *not* enforce that.
 
 So here you see the contract. Felix enforces correct
-use of whole variable, the programmer must enforce
+use of whole variables, the programmer must enforce
 the correct use of pointers.
 
+Errors
+~~~~~~
 
+So what happens if you make a mistake?
+Let me show you:
 
+.. code-block:: felix
 
+    proc test () {
+      var x = uniq 1;
+      println$ ununiq x;
+      println$ ununiq x;
+    }
+    test;
 
+Here we broke the rules. We used x twice. And here is what
+Felix has to say about it:
 
+.. code-block:: text
+
+    ~/felix>flx tmp
+    Once error: Using uninitialised or already used once variable
+    (50313:->x)
+    Variable x defined at
+    /Users/skaller/felix/tmp.flx: line 3, cols 3 to 18
+    2: proc test () {
+    3:   var x = uniq 1;
+         ****************
+    4:   println$ ununiq x;
+
+What Felix does is a control flow analysis. The requirement
+is that on every *statically* possible control path,
+a uniquely typed variable alternates between two states:
+`live` and `dead`. A variable is dead until it is initialised
+or assigned to. Parameters of a function are considered live,
+since we assume they were initialised by the caller with
+an argument. 
+
+If the variable is passed to a function, it must be live,
+but at the point it is passed it is now killed and considered
+dead. Some people say the value has been `consumed`.
+
+A dead variable can be relivened by assigning it a new
+uniq value.
+
+At the end of a function, all uniqely type variables
+must be dead.
+
+Felix does *NOT* recognise taking the address of a variable
+as significant,i *except* in the special case the address is
+immediately used as the first argument of the store at 
+operator `<-`. Tracking pointer aliases is not impossible but
+it is hard to do properly, and it can be very expensive.
+Felix is a lazy cat: he helps you get things right but 
+won't force you.
+
+The idea here is simple: a live variable contains a wrapped
+box, a dead variable does not. When you move a value out
+of a variable, it is no longer in the cupboard so the variable
+is marked empty or dead. When you put something back in, the
+cupboard is full and the variable live again.
 
 
