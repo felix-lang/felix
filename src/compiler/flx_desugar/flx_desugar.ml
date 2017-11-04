@@ -518,6 +518,7 @@ ps;
     let vs,args = List.fold_left begin fun (vs,args) arg ->
       match arg with
       | TYP_apply (TYP_name (_,"!",[]), TYP_name (sr,name,[])) ->
+print_endline ("Flx_desugar found ref to typeset " ^ name);
           let n = seq() in
           let var = "T" ^ string_of_bid n in
           (*
@@ -526,7 +527,11 @@ ps;
           (*
           let v = var,TPAT_name (name,[]) in
           *)
-          let v = var, TYP_name (sr,name,[]) in
+(*
+          let v = var, KND_typeset name in
+*)
+
+          let v = var, KND_tpattern (TYP_name (sr,name,[])) in
           let arg = TYP_name (sr,var,[]) in
           v::vs, arg::args
       | x -> vs, x::args

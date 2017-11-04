@@ -1933,7 +1933,7 @@ print_endline ("Union parent vs = " ^  catmap "," (fun (s,_,_) -> s) parent_vs ^
 (*
 print_endline ("AST_name(BTYP_inst): "^name^"=T<"^string_of_int i^">");
 *)
-                 name, btyp_type_var (i, bmt kind))
+                 name, btyp_type_var (i, bmt "Flx_bind_expression" kind))
                 vs
               in
 (*

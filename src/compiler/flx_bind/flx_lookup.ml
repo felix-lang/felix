@@ -223,7 +223,7 @@ and lookup_qn_in_env'
    I should test that ..
 
 *)
-and inner_bind_type state (bsym_table:Flx_bsym_table.t) env sr rs t =
+and inner_bind_type state (bsym_table:Flx_bsym_table.t) env sr rs (t:typecode_t) =
 (*
   print_endline ("[inner bind_type] " ^ string_of_typecode t);
 *)

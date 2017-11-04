@@ -214,7 +214,7 @@ print_endline (" &&&&&& bind_type_uses calling BBIND_SYMBOL");
   (* this is the full vs list *)
   let ivs = find_vs state.sym_table bsym_table symbol_index in
   let is_generic vs = List.fold_left (fun acc (name,index,typ) ->
-      acc || match typ with | TYP_generic _ -> true | _ -> false) 
+      acc || match typ with | KND_generic _ -> true | _ -> false) 
       false
       vs
   in

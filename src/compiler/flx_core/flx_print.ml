@@ -387,6 +387,16 @@ and string_of_expr (e:expr_t) =
    11    as, all
 *)
 
+and str_of_kindcode k : string =
+  match k with
+  | KND_type -> "TYPE"
+  | KND_generic -> "GENERIC"
+  | KND_typeset s -> "!" ^ s
+  | KND_tuple ks -> catmap " * " str_of_kindcode ks
+  | KND_function (d,c) -> str_of_kindcode d ^ " -> " ^ str_of_kindcode c
+  | KND_special s -> s
+  | KND_tpattern t -> "TPATTERN(" ^ st 0 t ^ ")"
+
 
 and st prec tc : string =
   let iprec,txt =
@@ -401,7 +411,6 @@ and st prec tc : string =
     | TYP_pclt (a,b) -> 0, "_pclt<" ^ string_of_typecode a ^ "," ^ string_of_typecode b ^ ">"
     | TYP_index (sr,name,idx) -> 0, name ^ "<" ^ string_of_bid idx ^ ">"
     | TYP_label -> 0, "LABEL"
-    | TYP_generic _ -> 0, "GENERIC"
     | TYP_void _ -> 0, "void"
     | TYP_name (_,name,ts) ->
         0, string_of_id name ^
@@ -550,7 +559,6 @@ and st prec tc : string =
     | TYP_isin (t1,t2) -> 6,st 2 t1 ^ " isin " ^ st 6 t2
 
     | TYP_apply (t1,t2) -> 2,st 2 t1 ^ " " ^ st 2 t2
-    | TYP_type -> 0,"TYPE"
     | TYP_type_tuple ls ->
       4, cat ", " (map (st 4) ls)
 
@@ -560,10 +568,10 @@ and st prec tc : string =
          "fun(" ^ cat ", "
          (
            map
-           (fun (n,t) -> string_of_id n ^ ": " ^ st 10 t)
+           (fun (n,t) -> string_of_id n ^ ": " ^ str_of_kindcode t)
            args
          ) ^
-         "): " ^ st 0 ret ^ "=" ^ st 10 body
+         "): " ^ str_of_kindcode ret ^ "=" ^ st 10 body
        )
     | TYP_type_extension (sr,ts,t) ->
       0,"extend {" ^ cat ", " (map (st 0) ts) ^ " with " ^ st 0 t ^ "}"
@@ -1012,15 +1020,9 @@ and special_string_of_btypecode bsym_table evs ty =  (* used for constructors *)
   | BTYP_tuple [] -> ""
   | _ -> " of " ^ string_of_btypecode (Some bsym_table) ty
 
-(*
-and string_of_maybe_tpattern = function
-  | TPAT_any -> ""
-  | t -> ": " ^ string_of_tpattern t
-*)
+and string_of_maybe_kindcode = function
+  | t -> ": " ^ str_of_kindcode t
 
-and string_of_maybe_typecode = function
-  | TYP_patany _ -> ""
-  | t -> ": " ^ string_of_typecode t
 
 and string_of_tconstraint = function
   | TYP_tuple [] -> ""
@@ -1039,7 +1041,7 @@ and string_of_tcon {raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} =
 
 and string_of_plain_ivs ivs =
   catmap ", "
-  (fun (name,ix,tpat) -> string_of_id name ^ string_of_maybe_typecode tpat)
+  (fun (name,ix,tpat) -> string_of_id name ^ string_of_maybe_kindcode tpat)
   ivs
 
 and string_of_ivs (ivs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
@@ -1047,7 +1049,7 @@ and string_of_ivs (ivs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as c
   | [],TYP_tuple [],[] -> ""
   | _ ->
       let ivs = catmap ", "
-        (fun (name,ix,tpat) -> string_of_id name ^ string_of_maybe_typecode tpat)
+        (fun (name,ix,tpat) -> string_of_id name ^ string_of_maybe_kindcode tpat)
         ivs
       in
       Printf.sprintf "[%s%s]" ivs (string_of_tcon con)
@@ -1057,10 +1059,15 @@ and string_of_vs (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con
   | [],TYP_tuple [],[] -> ""
   | _ ->
       let vs = catmap ", "
-        (fun (name,tpat) -> string_of_id name ^ string_of_maybe_typecode tpat)
+        (fun (name,tpat) -> string_of_id name ^ string_of_maybe_kindcode tpat)
         vs
       in
       Printf.sprintf "[%s%s]" vs (string_of_tcon con)
+
+and string_of_plain_vs vs =
+  catmap ", "
+    (fun (name,tpat) -> string_of_id name ^ string_of_maybe_kindcode tpat)
+  vs
 
 and string_of_bvs' bvs =
   catmap ", " (fun (s, i)-> Printf.sprintf "%s<%s>" s (string_of_bid i)) bvs
@@ -1858,7 +1865,7 @@ and string_of_symdef entry name vs =
     string_of_id name ^ string_of_ivs vs ^":"^ st t ^ ";"
 
   | SYMDEF_typevar (t) ->
-    "typevar " ^ string_of_id name ^ string_of_ivs vs ^":"^ st t ^ ";"
+    "typevar " ^ string_of_id name ^ string_of_ivs vs ^":"^ str_of_kindcode t ^ ";"
 
   | SYMDEF_const (props,t,ct, reqs) ->
     string_of_properties props ^

@@ -137,7 +137,7 @@ let lookup_type_name_in_table_dirs_with_sig
           end
 
     | SYMDEF_typevar mt ->
-      let mt = bt sra mt in
+      let mt = bmt "lookup_type_name_itdws" mt in
       (* match function a -> b -> c -> d with sigs a b c *)
       let rec m f s = match f,s with
       | BTYP_function (d,c),h::t when d = h -> m c t

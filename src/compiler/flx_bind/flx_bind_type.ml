@@ -126,14 +126,6 @@ print_endline ("Bind type " ^ string_of_typecode t ^ " params = " ^
   let t =
   match t with
   | TYP_pclt (d,c) -> btyp_cltpointer (bt d) (bt c)
-  | TYP_generic sr -> 
-(*
-    print_endline ("[bind_type'] trying to bind TYP_generic"); 
-*)
-    btyp_type (-1)
-(*
-    syserr sr ("[bind_type'] attempt to bind TYP_generic")
-*)
   | TYP_defer (sr, tor) -> 
     begin match !tor with
     | None -> print_endline ("Bind type: undefined defered type found"); assert false
@@ -406,12 +398,12 @@ print_endline ("\n+++++++++Bound recursive type is " ^ Flx_btype.st t^"\n\n");
 
   | TYP_typefun (ps,r,body) ->
       let data = List.rev_map
-        (fun (name, mt) -> name, bt mt, fresh_bid state.counter)
+        (fun (name, mt) -> name, bmt "Flx_bind_type.1" mt, fresh_bid state.counter)
         ps
       in
       (* reverse order .. *)
       let pnames = List.map
-        (fun (n, t, i) -> (n, btyp_type_var (i, t)))
+        (fun (n, mt, i) -> (n, btyp_type_var (i, mt)))
         data
       in
       let bbody =
@@ -426,7 +418,7 @@ print_endline ("\n+++++++++Bound recursive type is " ^ Flx_btype.st t^"\n\n");
       (* order as written *)
       let bparams = List.rev_map (fun (n, t, i) -> (i, t)) data in
 
-      btyp_type_function (bparams, bt r, bbody)
+      btyp_type_function (bparams, bmt "Flx_bind_type.2" r, bbody)
 
   | TYP_apply (TYP_name (_,"_rev",[]),t2) ->
     let t2 = bt t2 in
@@ -561,7 +553,6 @@ print_endline ("reduced application is: " ^ sbt bsym_table r);
 
   | TYP_apply (t1,t2) -> btyp_type_apply (bt t1, bt t2)
   | TYP_type_tuple ts -> btyp_type_tuple (List.map bt ts)
-  | TYP_type -> btyp_type 0
 
   | TYP_name (sr,s,[]) when List.mem_assoc s rs.as_fixlist ->
 (* HACK metatype guess *)

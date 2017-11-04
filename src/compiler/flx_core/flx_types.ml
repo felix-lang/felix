@@ -16,8 +16,11 @@ type partial_order_result_t =
 
 open Flx_ast
 
-type plain_ivs_list_t = (Flx_id.t * bid_t * typecode_t) list
+type plain_ivs_list_t = (Flx_id.t * bid_t * kindcode_t) list
 type ivs_list_t = plain_ivs_list_t * vs_aux_t
+
+let dfltivs : ivs_list_t = [], dfltvs_aux
+
 
 type recstop = {
   constraint_overload_trail: bid_t list;
@@ -111,7 +114,7 @@ type symbol_definition_t =
   | SYMDEF_instance_type of typecode_t
   | SYMDEF_abs of type_qual_t list * Flx_code_spec.t * named_req_expr_t
   | SYMDEF_parameter of  param_kind_t * typecode_t
-  | SYMDEF_typevar of typecode_t (* usually type TYPE *)
+  | SYMDEF_typevar of kindcode_t (* usually KND_type *)
   | SYMDEF_axiom of params_t * axiom_method_t
   | SYMDEF_lemma of params_t * axiom_method_t
   | SYMDEF_reduce of (ivs_list_t * parameter_t list * expr_t * expr_t) list

@@ -78,7 +78,7 @@ print_endline ("Includes, id = " ^ id);
 (*
 print_endline ("FUDGE: get includes: "^n^"=T<"^string_of_int k^">");
 *)
-              n,btyp_type_var (k,bmt kind)) (fst invs2) in
+              n,btyp_type_var (k,bmt "Flx_env" kind)) (fst invs2) in
             let bt t = bind_type' state bsym_table env rs sr t args mkenv in
             let ts'' = List.map bt ts'' in
             let ts'' = List.map (tsubst sr vs ts) ts'' in
@@ -118,11 +118,11 @@ and bind_dir
       Flx_sym_table.add state.sym_table i None {
         Flx_sym.id=n;
         sr=dummy_sr;
-        vs=dfltvs;
+        vs=dfltivs;
         pubmap=nullmap;
         privmap=nullmap;
         dirs=[];
-        symdef=SYMDEF_typevar TYP_type
+        symdef=SYMDEF_typevar KND_type
       }
     ;
   )
@@ -337,7 +337,7 @@ and build_env''
   if typeclasses <> [] then
     print_endline ("Typeclass qns=" ^ catmap "," string_of_qualified_name typeclasses);
   *)
-  let typeclasses = List.map (fun qn -> dfltvs,qn) typeclasses in
+  let typeclasses = List.map (fun qn -> dfltivs,qn) typeclasses in
 
 (*
   print_endline ("MERGE DIRECTIVES for " ^  sym.Flx_sym.id);

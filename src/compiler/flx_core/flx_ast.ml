@@ -48,11 +48,18 @@ and suffixed_name_t =
  * The encoding '`TYP_void' is the categorical initial: the type of an empty
  * union, and the type ordinary procedure types return.  There are no values
  * of this type. *)
+and kindcode_t =
+  | KND_type
+  | KND_generic
+  | KND_typeset of string (* excl mark *)
+  | KND_function of kindcode_t * kindcode_t 
+  | KND_tuple of kindcode_t list
+  | KND_tpattern of typecode_t
+  | KND_special of string
 
 (** type of a type *)
 and typecode_t =
   | TYP_pclt of typecode_t * typecode_t
-  | TYP_generic of Flx_srcref.t
   | TYP_label 
   | TYP_void of Flx_srcref.t                   (** void type *)
   | TYP_name of Flx_srcref.t * Flx_id.t * typecode_t list
@@ -99,9 +106,8 @@ and typecode_t =
   | TYP_dual of typecode_t                     (** dual *)
 
   | TYP_apply of typecode_t * typecode_t       (** type function application *)
-  | TYP_typefun of simple_parameter_t list * typecode_t * typecode_t
+  | TYP_typefun of kind_parameter_t list * kindcode_t * typecode_t
                                                 (** type lambda *)
-  | TYP_type                                   (** meta type of a type *)
   | TYP_type_tuple of typecode_t list          (** meta type product *)
 
   | TYP_type_match of typecode_t * (typecode_t * typecode_t) list
@@ -115,7 +121,7 @@ and vs_aux_t = {
   raw_typeclass_reqs: raw_typeclass_insts_t
 }
 
-and plain_vs_list_t = (Flx_id.t * typecode_t) list
+and plain_vs_list_t = (Flx_id.t * kindcode_t) list
 and vs_list_t = plain_vs_list_t * vs_aux_t
 
 and axiom_kind_t = Axiom | Lemma
@@ -285,6 +291,9 @@ and pattern_t =
 and param_kind_t = [`PVal | `PVar | `POnce]
 and simple_parameter_t = Flx_id.t * typecode_t
 and parameter_t = Flx_srcref.t * param_kind_t * Flx_id.t * typecode_t * expr_t option
+
+and kind_parameter_t = Flx_id.t * kindcode_t
+
 and lvalue_t = [
   | `Val of Flx_srcref.t * Flx_id.t
   | `Var of Flx_srcref.t * Flx_id.t
@@ -720,7 +729,6 @@ let src_of_suffixed_name (e : suffixed_name_t) = match e with
   -> s
 
 let src_of_typecode = function
-  | TYP_generic s
   | TYP_defer (s,_)
   | TYP_void s
   | TYP_name  (s,_,_)
@@ -767,7 +775,6 @@ let src_of_typecode = function
   | TYP_dual _
   | TYP_apply _
   | TYP_typefun _
-  | TYP_type
   | TYP_type_tuple _
   | TYP_type_match _
   -> Flx_srcref.dummy_sr
@@ -998,6 +1005,6 @@ let dfltvs_aux =
   { raw_type_constraint = TYP_tuple []; raw_typeclass_reqs = []; }
 
 (** Define a default vs_list_t. *)
-let dfltvs = [], dfltvs_aux
+let dfltvs : vs_list_t = [], dfltvs_aux
 
 

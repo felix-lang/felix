@@ -204,7 +204,7 @@ print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table
           *)
         | None -> []
       in
-      let mt = inner_bind_type state bsym_table env sr rs mt in
+      let mt = bmt "bind_type_index" mt in
       (*
       print_endline ("Bound metatype is " ^ sbt bsym_table mt);
       let mt = cal_assoc_type state sr mt in

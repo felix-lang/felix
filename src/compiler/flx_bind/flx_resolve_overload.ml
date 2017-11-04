@@ -23,7 +23,7 @@ open Flx_btype_occurs
 open Flx_btype_subst
 open Flx_bid
 
-let clone state bsym_table fi ft fbt fe fx new_vs generic_alias index =
+let clone state bsym_table fi ft fbt fe fx (new_vs:plain_ivs_list_t) generic_alias index =
       begin 
       let parent,sym = Flx_sym_table.find_with_parent state.sym_table index in
       let {Flx_sym.id=id;sr=sr;vs=vs;pubmap=pubmap; privmap=privmap;dirs=dirs;symdef=symdef} = sym in
@@ -103,7 +103,7 @@ print_endline ("New private name map = " ^ string_of_name_map nuprivmap);
           print_endline ("Parent is " ^ match parent with | None -> "NONE" | Some i -> si i);
           assert false
       in
-      let nuvs_vars = List.map (fun (s,i,t) -> s,fi i, ft t) new_vs in 
+      let nuvs_vars = List.map (fun (s,i,mt) -> s,fi i, mt) new_vs in 
       let nutraint = ft traint in
       let nutcreqs = tcreqs in (* just a qualified name list *)
       let nuvs_aux = {Flx_ast.raw_type_constraint=nutraint; raw_typeclass_reqs=nutcreqs} in
@@ -183,7 +183,7 @@ if name = "accumulate" then begin
 end;
 *)
     let is_generic vs = List.fold_left (fun acc (s,i,mt) -> 
-      acc || match mt with | TYP_generic _ -> true | _ -> false) 
+      acc || match mt with | KND_generic -> true | _ -> false) 
       false 
       vs 
     in
@@ -205,7 +205,7 @@ end;
     List.iter (fun (s,i,mt as v) -> 
       let n = !counter in
       begin match mt with 
-      | TYP_generic _ -> 
+      | KND_generic -> 
         let bt = List.nth ts n in
         let ubt = Flx_typecode_of_btype.typecode_of_btype bsym_table state.counter sr bt in
         gen_vs := (v,n) :: !gen_vs;
@@ -334,7 +334,7 @@ print_endline ("Adding alias " ^ s ^ "<"^si alias_index^"> -> " ^ string_of_type
       let entry = NonFunctionEntry {base_sym=alias_index; spec_vs=[]; sub_ts=[]} in
       Hashtbl.add generic_alias s entry;
       let symdef = SYMDEF_type_alias t in
-      let sym = {Flx_sym.id=s;sr=sr;vs=dfltvs;pubmap=noalias; privmap=noalias;dirs=[];symdef=symdef} in
+      let sym = {Flx_sym.id=s;sr=sr;vs=dfltivs;pubmap=noalias; privmap=noalias;dirs=[];symdef=symdef} in
       Flx_sym_table.add state.sym_table alias_index (Some nuindex) sym;
     )
     smap; 

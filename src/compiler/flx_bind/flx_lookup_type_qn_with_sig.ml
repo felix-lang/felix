@@ -189,7 +189,7 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
       let ts = List.map
         (fun (name,i,kind) ->
 print_endline ("AST_name: "^name^"=T<"^string_of_int i^">");
- btyp_type_var (i, bmt kind))
+ btyp_type_var (i, bmt "Flx_lookup_type_qn_with_sig.1" kind))
         (fst vs)
       in
       begin try 
@@ -209,7 +209,7 @@ print_endline "Abnormal exit inner_type_of_index from `AST_index";
       let ts = List.map
         (fun (name,i,kind) ->
 print_endline ("AST_name: "^name^"=T<"^string_of_int i^">");
- btyp_type_var (i, bmt kind))
+ btyp_type_var (i, bmt "Flx_lookup_type_qn_with_sig.2" kind))
         (fst vs)
       in
       handle_nonfunction_index index ts

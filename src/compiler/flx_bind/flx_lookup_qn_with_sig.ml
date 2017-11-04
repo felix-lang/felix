@@ -104,7 +104,7 @@ in
         *)
         let hack_vs,_ = vs in
         let hvs = List.map (fun (id,index,kind) -> id,index) hack_vs in
-        let hts = List.map (fun (_,index,kind) -> Flx_btype.btyp_type_var (index,bmt kind)) hack_vs in
+        let hts = List.map (fun (_,index,kind) -> Flx_btype.btyp_type_var (index,bmt "lookup_qn_with_sig.1" kind)) hack_vs in
         let hacked_entry = { base_sym=index; spec_vs=hvs; sub_ts=hts } in
         let ro = resolve_overload state bsym_table env rs sra [hacked_entry] id signs ts in
         let (_,t),bts =
@@ -388,7 +388,7 @@ print_endline ("Error lookup name with sig .. " ^ Printexc.to_string x);
 (*
 print_endline ("AST_index(function): "^name^"=T<"^string_of_int i^">");
 *)
-          btyp_type_var (i,bmt kind))
+          btyp_type_var (i,bmt "lookup_qn_with_sig.2" kind))
         (fst vs)
       in
 if debug then
@@ -408,7 +408,7 @@ print_endline ("flx_lookup.Ast_index.bexpr_closure");
 (*
 print_endline ("AST_index (nonfunction): "^name^"=T<"^string_of_int i^">");
 *)
- btyp_type_var (i,bmt kind))
+ btyp_type_var (i,bmt "lookup_qn_with_sig.3" kind))
         (fst vs)
       in
       handle_nonfunction_index index ts

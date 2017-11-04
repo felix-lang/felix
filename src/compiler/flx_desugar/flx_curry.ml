@@ -125,7 +125,7 @@ let fix_params sr seq ps =
        ((v,TYP_patany sr)::vs),((kind,id,vt,expr)::ps) (* a bit HACKY *)
        *)
 
-       ((v,TYP_generic sr)::vs),((sr,kind,id,vt,expr)::ps) (* a bit HACKY *)
+       ((v,KND_generic)::vs),((sr,kind,id,vt,expr)::ps) (* a bit HACKY *)
 
     (* General case: Recurse assmbling the fixed type variables (vs). *)
     | h :: t ->

@@ -77,7 +77,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
 
   (* meta constructors *)
   | TYP_apply (a,b) -> TYP_apply (f a, f b)
-  | TYP_typefun (ps, a, b) -> TYP_typefun (ps, f a, f b)
+  | TYP_typefun (ps, a, b) -> TYP_typefun (ps, a, f b)
   | TYP_type_tuple ts -> TYP_type_tuple (List.map f ts)
   | TYP_type_extension (sr,ts,t) -> TYP_type_extension (sr,List.map f ts, f t)
 
@@ -92,11 +92,9 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | TYP_patany _
 
   (* absolute constants *)
-  | TYP_generic _
   | TYP_label
   | TYP_void _
   | TYP_ellipsis
-  | TYP_type
   | TYP_none
   -> t
 

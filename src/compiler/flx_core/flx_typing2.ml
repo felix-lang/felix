@@ -45,6 +45,11 @@ let type_of_list = function
   | [x] -> x
   | x -> TYP_tuple x
 
+let kind_of_list = function
+  | [x] -> x
+  | x -> KND_tuple x
+
+
 let paramtype (params : parameter_t list) =
   let typlist params =
     map (fun (_,k,_,t,_) -> t) params
@@ -62,12 +67,25 @@ let all_tunits ts =
     true
   with Not_found -> false
 
+let rec kindcode_of_expr (e:expr_t) :kindcode_t =
+  let te e = kindcode_of_expr e in
+  match e with
+  | EXPR_name (_,"TYPE",[]) -> KND_type
+  | EXPR_name (_,"GENERIC",[]) -> KND_generic
+  | EXPR_tuple (sr,ls) ->
+    begin match ls with
+    | [] -> KND_tuple [] (* HACK!! *)
+    | [x] -> failwith "Unexpected one element tuple converting to type tuple"
+    | _ -> KND_tuple (map te ls)
+    end
+  | EXPR_arrow (_,(a,b)) -> KND_function (te a, te b)
+  | _ -> assert false
+
+
 let rec typecode_of_expr (e:expr_t) :typecode_t =
   let te e = typecode_of_expr e in
   match e with
   | EXPR_pclt_type (_,d,c) -> TYP_pclt (d,c)
-  | EXPR_name (_,"TYPE",[]) -> TYP_type
-  | EXPR_name (sr,"GENERIC",[]) -> TYP_generic sr
   | EXPR_name (_,"LABEL",[]) -> TYP_label
   | EXPR_name (sr,"DEFER",[]) -> TYP_defer (sr,ref None)
   | EXPR_name (sr,"_",[]) -> TYP_patany sr
@@ -217,7 +235,10 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
       | _ ->
           TYP_apply (typecode_of_expr e1, typecode_of_expr e2)
       end
-
+(* FIXME: can't handle this one at the moment because it already contains typecodes,
+and we have no way to convert typecodes to kindcodes
+*)
+(*
   | EXPR_lambda (sr,(kind,vs,paramss,ret,body)) ->
      begin match paramss with
      | [params,traint] ->
@@ -250,7 +271,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
        clierrx "[flx_core/flx_typing2.ml:225: E269] " sr
        "Type lambda only allowed one argument (arity=1)"
      end
-
+*)
   | EXPR_type_match (sr,(e,ps)) ->
     TYP_type_match (e,ps)
 
@@ -276,8 +297,6 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
 
   | TYP_label -> clierrx "[flx_core/flx_typing2.ml:250: E271] " dsr ("expr_of_typecode: TYP_label")
   | TYP_none -> clierrx "[flx_core/flx_typing2.ml:251: E272] " dsr ("expr_of_typecode: TYP_none")
-  | TYP_type -> clierrx "[flx_core/flx_typing2.ml:252: E273] " dsr ("expr_of_typecode: TYP_type")
-  | TYP_generic _  -> clierrx "[flx_core/flx_typing2.ml:253: E274] " dsr ("expr_of_typecode: TYP_generic")
   | TYP_var _ -> clierrx "[flx_core/flx_typing2.ml:254: E275] " dsr ("expr_of_typecode: TYP_var")
   | TYP_defer _ -> clierrx "[flx_core/flx_typing2.ml:255: E276] " dsr ("expr_of_typecode: TYP_defer")
   | TYP_dual _ -> clierrx "[flx_core/flx_typing2.ml:256: E277] " dsr ("expr_of_typecode: TYP_dual")
@@ -319,6 +338,8 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
         TYP_none,
         [STMT_fun_return (dsr,(expr_of_typecode dsr t))]))
 
+  | TYP_typefun _ -> assert false
+(*
   (* Also a hack. Treat with caution. *)
   | TYP_typefun (params, ret, t) -> 
 
@@ -329,6 +350,7 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
         [params,None],
         ret,
         [STMT_fun_return (dsr,(expr_of_typecode dsr t))]))
+*)
 
   (* The following can be converted *)
   | TYP_pointer t -> EXPR_ref (dsr,(expr_of_typecode dsr t))
@@ -448,7 +470,6 @@ let string_of_type_name (t:typecode_t) = match t with
   | TYP_label -> "TYP_label"
   | TYP_none -> " TYP_none"
   | TYP_ellipsis -> "TYP_ellipsis"
-  | TYP_generic _ -> "TYP_generic"
   | TYP_void _ -> "TYP_void"
   | TYP_name _ -> " TYP_name"
   | TYP_case_tag _ -> " TYP_case_tag"
@@ -476,7 +497,6 @@ let string_of_type_name (t:typecode_t) = match t with
   | TYP_uniq _-> "TYP_uniq"
   | TYP_array _ -> "TYP_array"
   | TYP_as _ -> "TYP_as"
-  | TYP_type -> "TYP_type"
   | TYP_var _ -> "TYP_var"
   | TYP_isin _ -> "TYP_isin"
   | TYP_defer _ -> "TYP_defer"

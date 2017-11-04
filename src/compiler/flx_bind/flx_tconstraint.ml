@@ -25,11 +25,20 @@ open Flx_bid
 *)
 
 let build_constraint_element counter bt sr i p1 =
+print_endline ("Build type constraints for " ^ str_of_kindcode p1);
+  let p1 = match p1 with
+  | KND_tpattern t -> t
+  | _ -> assert false
+  in
   (* special case, no constraint, represent by just 'true' (unit type) *)
   match p1 with
+(*
   | TYP_generic _ -> (* print_endline ("constraint generic .. "); *) btyp_tuple []
+*)
   | TYP_patany _
+(*
   | TYP_type
+*)
   | TYP_function _ -> btyp_tuple []
   | _ ->
 
@@ -94,9 +103,7 @@ let build_constraint_element counter bt sr i p1 =
     tm
 
 let build_type_constraints counter bsym_table bt name sr vs =
-(*
-if name = "accumulate" then print_endline ("building type constraints for accumulate");
-*)
+print_endline ("building type constraints for " ^ name);
   let type_constraints =
     map (fun (s,i,tp) ->
 (*

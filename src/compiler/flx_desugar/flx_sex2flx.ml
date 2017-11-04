@@ -36,7 +36,11 @@ let rec xsr x : Flx_srcref.t =
       Flx_srcref.make (fn,ii fl,ii fc,ii ll,ii lc)
   | x -> err x "Invalid source reference"
 
-and type_of_sex sr w =
+and kind_of_sex sr w : kindcode_t =
+  let x = xexpr_t sr w in
+  kindcode_of_expr x
+
+and type_of_sex sr w : typecode_t =
 (*
   print_endline ("[type_of_sex] Converting sexp " ^ Sex_print.string_of_sex w ^ " to a type");
 *)
@@ -457,12 +461,23 @@ and xvs_aux_t sr x : vs_aux_t =
   | Lst [ct; tcr] -> { raw_type_constraint=ti ct; raw_typeclass_reqs=xrtc tcr }
   | x -> err x "xvs_aux_t"
 
-and xplain_vs_list_t sr x : plain_vs_list_t =
+and xsimple_parameter_list sr x : simple_parameter_t list =
   let ex x = xexpr_t sr x in
   let ti x = type_of_sex sr x in
   match x with
   | Lst its -> map (function
     | Lst [id; t] -> xid id, ti t
+    | x -> err x "xsimple_parameter_list"
+    ) its
+  | x -> err x "xsimple_parameter_list"
+
+
+and xplain_vs_list_t sr x : plain_vs_list_t =
+  let ex x = xexpr_t sr x in
+  let ki x = kind_of_sex sr x in
+  match x with
+  | Lst its -> map (function
+    | Lst [id; t] -> xid id, ki t
     | x -> err x "xplain_vs_list"
     ) its
   | x -> err x "xplain_vs_list"
@@ -655,6 +670,8 @@ and xconnection_t sr = function
   | x -> err x "connection specification"
 
 and xstatement_t sr x : statement_t =
+  let pdef = `PVal in
+  let xspl sr x = xsimple_parameter_list sr x in 
   let xpvs sr x = xplain_vs_list_t sr x in
   let xs sr x = xstatement_t sr x in
   let ex sr x = xexpr_t sr x in
@@ -666,6 +683,7 @@ and xstatement_t sr x : statement_t =
   let xsts sr x =  lst "statement" (xs sr) x in
   let xfk sr x = xfunkind_t sr x in
   let ti sr x = type_of_sex sr x in
+  let ki sr x = kind_of_sex sr x in
   let ii i = int_of_string i in
   let xi = function | Int i -> ii i | x -> err x "int" in
   let xtlv sr x = xtlvalue_t sr x in
@@ -677,7 +695,7 @@ and xstatement_t sr x : statement_t =
   let xscmp sr x = xstruct_component sr x in
   let xp x = xpattern_t x in
   let xred sr x = match x with
-  | Lst [vs; spl; e1; e2] -> xvs sr vs, xpvs sr spl, ex sr e1, ex sr e2 
+  | Lst [vs; spl; e1; e2] -> xvs sr vs, xspl sr spl, ex sr e1, ex sr e2 
   | _ -> err x "reduction format" 
   in
 
@@ -791,7 +809,7 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
 
   | Lst [Id "mktypefun"; sr; id; vs; argss; ret; body] -> let sr = xsr sr in 
     let fixarg  arg = match arg with
-    | Lst [id; t] -> xid id, ti sr t
+    | Lst [id; t] -> xid id, ki sr t
     | x -> err x "mktypefun:unpack args1"
     in
     let fixargs args = match args with
@@ -802,7 +820,7 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
     | Lst args -> map fixargs args
     | x -> err x "mktypefun:unpack args3"
     in
-    Flx_typing.mktypefun (sr) (xid id) (xvs sr vs) argss (ti sr ret) (ti sr body)
+    Flx_typing.mktypefun (sr) (xid id) (xvs sr vs) argss (ki sr ret) (ti sr body)
 
   | Lst [Id "ast_inherit"; sr; id; vs; qn] -> let sr = xsr sr in 
       STMT_inherit (sr, xid id, xvs sr vs, xq sr "ast_inherit" qn)

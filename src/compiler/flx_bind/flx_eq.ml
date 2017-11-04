@@ -115,7 +115,7 @@ print_endline ("BEFORE: Symbol table has " ^ si (Hashtbl.length state.sym_table)
           state.Flx_lookup_state.counter
           state.Flx_lookup_state.sym_table
           "__eq"
-          Flx_ast.dfltvs
+          Flx_types.dfltivs
           0 
           (Some 0)
           rootsym.Flx_sym.pubmap

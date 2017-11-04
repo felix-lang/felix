@@ -131,7 +131,7 @@ val btyp_type_set_union : t list -> t
 val btyp_type_set_intersection : t list -> t
 val btyp_typeof: (int * Flx_ast.expr_t) -> t
 
-val bmt: Flx_ast.typecode_t -> t
+val bmt: string -> Flx_ast.kindcode_t -> t
 
 val unfold : 'a -> t -> t
 val is_void : t -> bool

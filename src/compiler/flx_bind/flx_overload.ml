@@ -229,6 +229,7 @@ let sig_of_symdef symdef sr name i = match symdef with
 
   | SYMDEF_const_ctor (_,r,_,_) -> TYP_void sr,r,None
   | SYMDEF_nonconst_ctor (_,r,_,_,t) -> t,r,None
+(*
   | SYMDEF_type_alias t ->
     (*
     print_endline ("[sig_of_symdef] Found a typedef " ^ name);
@@ -238,7 +239,7 @@ let sig_of_symdef symdef sr name i = match symdef with
       (*
       print_endline "TYP_typefun";
       *)
-      type_of_list (List.map snd ps),r,None
+      kind_of_list (List.map snd ps),r,None
     | symdef ->
       (*
       print_endline "OverloadKindError";
@@ -250,13 +251,14 @@ let sig_of_symdef symdef sr name i = match symdef with
         string_of_typecode t
       ))
     end
+*)
 
   | symdef ->
     raise (OverloadKindError (sr,
       "[sig_of_symdef] Expected "^
       name
       ^" to be function or procedure, got " ^
-     string_of_symdef symdef name dfltvs
+     string_of_symdef symdef name dfltivs
     ))
 
 
@@ -402,7 +404,7 @@ let hack_name qn = match qn with
 | _ -> failwith "expected qn .."
 
 
-let specialize_domain sr base_vs sub_ts t =
+let specialize_domain sr (base_vs:plain_ivs_list_t) sub_ts t =
   (*
   print_endline ("specialise Base type " ^ sbt bsym_table t);
   *)
@@ -529,7 +531,7 @@ let solve_mgu
   call_sr
   mgu
   entry_kind
-  base_vs
+  (base_vs: plain_ivs_list_t)
   sr
   bt
   con
@@ -572,7 +574,7 @@ if name = "EInt" then
   *)
   let unresolved = ref (
     Flx_list.fold_lefti begin fun i acc (s,bid) ->
-      if not (List.mem_assoc bid !mgu) then (s,bid,TYP_type,i)::acc else acc
+      if not (List.mem_assoc bid !mgu) then (s,bid,KND_type,i)::acc else acc
     end [] entry_kind.spec_vs
   )
   in
@@ -595,7 +597,7 @@ if name = "EInt" then
   let report_unresolved =
     List.fold_left begin fun acc (s,i,tp,k) ->
       acc ^ "  The " ^th k ^" subscript  " ^ s ^ "[" ^ string_of_bid i ^
-        "]" ^ Flx_print.string_of_maybe_typecode tp ^ "\n"
+        "]" ^ Flx_print.string_of_maybe_kindcode tp ^ "\n"
     end "" !unresolved
   in
   begin
@@ -622,7 +624,9 @@ if name = "EInt" then
 
     List.iter begin fun (s,j',tp) ->
       let et,explicit_vars1,any_vars1, as_vars1, eqns1 =
-        type_of_tpattern counter tp
+        match tp with
+        | KND_tpattern t -> type_of_tpattern counter t
+        | _ -> assert false
       in
       let et = bt sr et in
       let et = specialize_domain sr base_vs entry_kind.sub_ts et in
@@ -684,7 +688,7 @@ if name = "EInt" then
             print_endline (
               "Coupled " ^ s ^ ": " ^ string_of_bid k ^ "(vs var) <--> " ^
               string_of_bid i ^" (pat var)" ^
-              " pat=" ^ string_of_typecode pat);
+              " pat=" ^ str_of_kindcode pat);
             let t1 = btyp_type_var (i, btyp_type 0) in
             let t2 = btyp_type_var (k, btyp_type 0) in
 
@@ -863,7 +867,7 @@ print_endline ("SOLVE MGU " ^ name);
 (*
 print_endline ("flx_overload: solve mgu : "^n^"=T<"^string_of_int i^"> kind="^string_of_typecode mt);
 *)
-   let mt = bt sr mt in
+   let mt = Flx_btype.bmt "Flx_overload.1" mt in
 (*
 print_endline ("Bound meta type = " ^ Flx_btype.st mt); 
 *)
@@ -894,7 +898,7 @@ if id = "accumulate" then
         None
     | BTYP_tuple [] ->
         let parent_ts = List.map
-          (fun (n,i,mt) -> btyp_type_var (i, bmt mt))
+          (fun (n,i,mt) -> btyp_type_var (i, bmt "Flx_overload.2" mt))
           parent_vs
         in
         Some (entry_kind.base_sym,domain,spec_result,!mgu,parent_ts @ base_ts)
@@ -907,7 +911,7 @@ if id = "accumulate" then
 (*
 print_endline ("flx_overload: solve mgu2 : "^n^"=T<"^string_of_int i^">");
 *)
-btyp_type_var (i, bmt mt))
+btyp_type_var (i, bmt "Flx_overload.3" mt))
             parent_vs in
           Some (entry_kind.base_sym,domain,spec_result,!mgu,parent_ts @ base_ts)
         else begin

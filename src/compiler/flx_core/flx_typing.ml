@@ -11,7 +11,7 @@ let mktypefun sr name vs args return_type body =
   let argtyp t = match t with
     | [] -> failwith "Lambda abstraction requires nonunit parameter"
     | [x] -> x
-    | x -> TYP_type_tuple x
+    | x -> KND_tuple x
   in
   let body =
     let p = ref (List.rev args) in
@@ -21,7 +21,7 @@ let mktypefun sr name vs args return_type body =
       let arg = List.hd !p in
       p := List.tl !p;
       b := TYP_typefun (arg, !r, !b);
-      r := TYP_function(argtyp (List.map snd (arg)),!r)
+      r := KND_function(argtyp (List.map snd (arg)),!r)
     done;
     !b
   in

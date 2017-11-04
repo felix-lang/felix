@@ -24,7 +24,7 @@ val mktypefun:
   Flx_srcref.t ->
   Flx_id.t ->
   vs_list_t ->
-  (Flx_id.t * typecode_t) list list ->
-  typecode_t ->
+  (Flx_id.t * kindcode_t) list list ->
+  kindcode_t ->
   typecode_t ->
   statement_t

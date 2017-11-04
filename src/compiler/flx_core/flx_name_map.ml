@@ -49,7 +49,7 @@ let mkentry counter_ref (vs:Flx_types.ivs_list_t) i =
     (fst vs)
   in
   let ts = List.map2 (fun i (n,_,mt) ->
-    let mt = Flx_btype.bmt mt in
+    let mt = Flx_btype.bmt "Flx_name_map.mkentry" mt in
     Flx_btype.btyp_type_var (i, mt)) is (fst vs)
   in
   let vs = List.map2 (fun i (n,_,_) -> 

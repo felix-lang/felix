@@ -185,7 +185,7 @@ let full_add_typevar counter_ref sym_table sr table key value =
 
     | FunctionEntry [] -> assert false
   with Not_found ->
-    Hashtbl.add table key (NonFunctionEntry (mkentry counter_ref dfltvs value))
+    Hashtbl.add table key (NonFunctionEntry (mkentry counter_ref dfltivs value))
 
 
 let full_add_function counter_ref sym_table sr (vs:ivs_list_t) table key value =
@@ -232,6 +232,8 @@ let full_replace_function counter_ref sym_table sr (vs:ivs_list_t) table key val
 
 (* make_ivs inserts unique indexes into vs_lists, thus creating an ivs_list. *)
 let make_ivs ?(print=false) level counter_ref (vs, con) : ivs_list_t =
+print_endline ("Making ivs from vs=" ^ Flx_print.string_of_plain_vs vs ^ ", con=" ^
+Flx_print.string_of_tcon con);
   let ivs =
     List.map begin fun (tid, tpat) ->
       let n = fresh_bid counter_ref in
@@ -262,7 +264,7 @@ let make_ivs ?(print=false) level counter_ref (vs, con) : ivs_list_t =
 
 let add_root_entry counter_ref name_map =
   Hashtbl.add name_map "root"
-    (NonFunctionEntry (mkentry counter_ref dfltvs 0))
+    (NonFunctionEntry (mkentry counter_ref dfltivs 0))
 
 let rec build_tables
   ~pub_name_map
@@ -443,9 +445,7 @@ and build_table_for_dcl
     sr
     symdef
   =
-(*
 print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", parent=" ^ str_parent parent);
-*)
 (*
     let is_generic vs = List.fold_left (fun acc (name,index,typ) ->
       acc || match typ with | TYP_generic _ -> true | _ -> false) 
@@ -516,17 +516,20 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
   in
 
 
-  let add_tvars' parent table ivs =
+  let add_tvars' parent table (ivs: ivs_list_t) =
     List.iter begin fun (tvid, index, tpat) ->
+print_endline ("add_tvars' " ^ Flx_print.string_of_ivs ivs);
+(*
       let mt = match tpat with
-      | TYP_patany _ -> TYP_type (* default/unspecified *)
-      | TYP_none -> TYP_type
+      | TYP_patany _ -> KND_type (* default/unspecified *)
+      | TYP_none -> KND_type
       | TYP_ellipsis -> Flx_exceptions.clierrx "[flx_bind/flx_symtab.ml:524: E256] " sr "Ellipsis ... as metatype"
       | _ -> tpat
       in
-
+*)
+      let mt = tpat in
       (* Add the type variable to the symbol table. *)
-      add_symbol ~ivs:dfltvs index tvid sr (SYMDEF_typevar mt);
+      add_symbol ~ivs:dfltivs index tvid sr (SYMDEF_typevar mt);
       full_add_typevar counter_ref sym_table sr table tvid index;
     end (fst ivs)
   in
@@ -541,14 +544,14 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
         "  at " ^ Flx_srcref.short_string_of_src sr);
 
     (* Add the paramater to the symbol table. *)
-    add_symbol ~parent ~ivs:dfltvs n name sr (SYMDEF_parameter (k, typ));
+    add_symbol ~parent ~ivs:dfltivs n name sr (SYMDEF_parameter (k, typ));
 
     (* Possibly add the parameter to the public symbol table. *)
     if access = `Public then
-      full_add_unique counter_ref sym_table sr dfltvs pubtab name n;
+      full_add_unique counter_ref sym_table sr dfltivs pubtab name n;
 
     (* Add the parameter to the private symbol table. *)
-    full_add_unique counter_ref sym_table sr dfltvs privtab name n;
+    full_add_unique counter_ref sym_table sr dfltivs privtab name n;
 
     (sr,k, name, typ, dflt)
   in
@@ -572,8 +575,8 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
         if print_flag then
           print_endline ("//  " ^ spc ^ Flx_print.string_of_bid lidx ^ " -> " ^
             name ^ " (label of "^string_of_int symbol_index^")");
-        add_symbol ~parent:(Some parent) ~ivs:dfltvs lidx name sr (SYMDEF_label name);
-        full_add_unique counter_ref sym_table sr dfltvs privtab name lidx
+        add_symbol ~parent:(Some parent) ~ivs:dfltivs lidx name sr (SYMDEF_label name);
+        full_add_unique counter_ref sym_table sr dfltivs privtab name lidx
       | _ -> ()
     ) exes
   in 
@@ -649,7 +652,7 @@ if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int
           counter_ref
           sym_table 
           id
-          dfltvs
+          dfltivs
           (level + 1)
           (Some symbol_index)
           inits_ref
@@ -710,7 +713,7 @@ ps;
           counter_ref
           sym_table
           id
-          dfltvs
+          dfltivs
           (level + 1)
           (Some symbol_index)
           inits_ref
@@ -931,7 +934,7 @@ print_endline ("MODULE "^name^" Init procs = " ^ string_of_int (List.length inne
 *)
       let exes = 
         (make_calls sr (List.rev !capture_inits)) @ 
-        (if complete_vs = dfltvs then exes else []) 
+        (if complete_vs = dfltivs then exes else []) 
       in
       if List.length exes > 0 then begin
         let init_fun = fresh_bid counter_ref in
@@ -1026,7 +1029,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
 *)
       let exes = 
         (make_calls sr (List.rev !capture_inits)) @ 
-        (if complete_vs = dfltvs then exes else []) 
+        (if complete_vs = dfltivs then exes else []) 
       in
       if List.length exes > 0 then begin
         let init_fun = fresh_bid counter_ref in
@@ -1076,7 +1079,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
           counter_ref
           sym_table
           id
-          dfltvs
+          dfltivs
           (level + 1)
           (Some symbol_index)
           inits_ref
@@ -1311,6 +1314,7 @@ print_endline (string_of_int symbol_index ^ " Adding virtual type " ^ id ^ " to 
       add_tvars privtab
 
   | DCL_fun (props, ts,t,c,reqs,prec) ->
+print_endline ("Adding DCL_fun " ^ id ^ " to symbol table " ^ name);
       (* Add the function to the sym_table. *)
       add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_fun (props, ts, t, c, reqs, prec));
 
@@ -1390,7 +1394,7 @@ print_endline (string_of_int symbol_index ^ " Adding virtual type " ^ id ^ " to 
         (* add extra type variables to symbol table *)
         List.iter (fun (tvid,index,mt) -> 
            add_symbol ~pubtab:dummy_hashtab ~privtab:dummy_hashtab 
-             ~parent:(Some dfn_idx) ~ivs:dfltvs index tvid sr (SYMDEF_typevar mt)) 
+             ~parent:(Some dfn_idx) ~ivs:dfltivs index tvid sr (SYMDEF_typevar mt)) 
            (fst evs)
         ;
 
@@ -1528,7 +1532,7 @@ let add_dcl ?parent print_flag counter_ref symbol_table inits_ref dcl =
       counter_ref
       symbol_table.sym_table
       "root"
-      Flx_ast.dfltvs
+      dfltivs
       level
       parent
       pubmap
@@ -1562,7 +1566,7 @@ print_endline ("SYMBOL TABLE CONSTRUCTION: name=" ^ name ^ " level = " ^ string_
       counter_ref
       symbol_table.sym_table
       name (* "root" *)
-      dfltvs
+      dfltivs
       level (*0*)
       parent (*None*)
       symbol_table.inits_ref

@@ -502,11 +502,14 @@ let btyp_type_set_intersection ts =
 (* -------------------------------------------------------------------------- *)
 (* a HACK *) 
 
-let rec bmt mt = match mt with
-  | Flx_ast.TYP_type -> btyp_type 0
-  | Flx_ast.TYP_function (t1,t2) -> btyp_function (bmt t1, bmt t2)
-  | Flx_ast.TYP_tuple(ts) -> btyp_tuple(List.map bmt ts)
-  | _ -> btyp_type 0
+let rec bmt msg mt = match mt with
+  | Flx_ast.KND_type -> btyp_type 0
+  | Flx_ast.KND_function (t1,t2) -> btyp_function (bmt msg t1, bmt msg t2)
+  | Flx_ast.KND_tuple(ts) -> btyp_tuple(List.map (bmt msg) ts)
+  | Flx_ast.KND_tpattern t -> print_endline ("BMT tpattern fail " ^ msg); assert false
+  | Flx_ast.KND_typeset ts -> print_endline ("BMT typeset fail " ^ msg); assert false 
+  | Flx_ast.KND_generic -> print_endline ("BMT generic fail " ^ msg); assert false
+  | Flx_ast.KND_special s -> print_endline ("BMT special fail " ^ msg); assert false
 
 (* -------------------------------------------------------------------------- *)
 

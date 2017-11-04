@@ -26,8 +26,6 @@ let debug = false
 
 let rec guess_metatype sr t =
   match t with
-  | TYP_generic _ -> syserr sr ("[bind_type_index] Attempt to bind TYP_generic]")
-
   | TYP_defer _ -> print_endline "Guess metatype: defered type found"; assert false
   | TYP_tuple_cons (sr,t1,t2) -> assert false
   | TYP_tuple_snoc (sr,t1,t2) -> assert false
@@ -40,10 +38,10 @@ let rec guess_metatype sr t =
     let atyps = List.map (fun (_,t) -> t) d in
     let atyp = match atyps with
     | [x]->x
-    | _ -> TYP_tuple atyps
+    | _ -> KND_tuple atyps
     in
-    let t = TYP_function (atyp, c) in
-    Flx_btype.bmt t
+    let t = KND_function (atyp, c) in
+    Flx_btype.bmt "Flx_guess_meta_type" t
 
   (* name like, its a big guess! *)
   | TYP_label
@@ -79,8 +77,6 @@ let rec guess_metatype sr t =
   (* note this one COULD be a type function type *)
   | TYP_function _ -> btyp_type 0
   | TYP_effector _ -> btyp_type 0
-
-  | TYP_type -> btyp_type 1
 
   | TYP_dual t -> guess_metatype sr t
 
