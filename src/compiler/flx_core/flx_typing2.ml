@@ -81,6 +81,15 @@ let rec kindcode_of_expr (e:expr_t) :kindcode_t =
   | EXPR_arrow (_,(a,b)) -> KND_function (te a, te b)
   | _ -> assert false
 
+let rec kindcode_of_typecode (t:typecode_t) : kindcode_t =
+  let kt t = kindcode_of_typecode t in
+  match t with
+  | TYP_name (_,"GENERIC",[]) -> KND_generic 
+  | TYP_name (_,"TYPE",[]) -> KND_type
+  | TYP_type_tuple ts -> KND_tuple (List.map kt ts) 
+  | TYP_function (d,c) -> KND_function (kt d, kt c) 
+  | _ -> 
+   failwith ("Typecode can't convert to kindcode: " ^ string_of_typecode t)
 
 let rec typecode_of_expr (e:expr_t) :typecode_t =
   let te e = typecode_of_expr e in
@@ -235,10 +244,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
       | _ ->
           TYP_apply (typecode_of_expr e1, typecode_of_expr e2)
       end
-(* FIXME: can't handle this one at the moment because it already contains typecodes,
-and we have no way to convert typecodes to kindcodes
-*)
-(*
+
   | EXPR_lambda (sr,(kind,vs,paramss,ret,body)) ->
      begin match paramss with
      | [params,traint] ->
@@ -252,11 +258,11 @@ and we have no way to convert typecodes to kindcodes
 
              (* special case, allows {t} to mean 1 -> t *)
              | [[],None],TYP_none ->
-               TYP_function (TYP_tuple [],t)
+               TYP_typefun ([],KND_type, t)
 
              | _ ->
-               let params = map (fun (_,x,y,z,d)-> y,z) params in
-               TYP_typefun (params, ret, t)
+               let params = map (fun (_,x,y,z,d)-> y,kindcode_of_typecode z) params in
+               TYP_typefun (params, kindcode_of_typecode ret, t)
 
            with _ ->
              clierrx "[flx_core/flx_typing2.ml:216: E267] " sr
@@ -271,7 +277,7 @@ and we have no way to convert typecodes to kindcodes
        clierrx "[flx_core/flx_typing2.ml:225: E269] " sr
        "Type lambda only allowed one argument (arity=1)"
      end
-*)
+
   | EXPR_type_match (sr,(e,ps)) ->
     TYP_type_match (e,ps)
 
