@@ -464,7 +464,7 @@ print_endline ("type _map datatype = " ^ sbt bsym_table bt2);
 
       | _ -> clierrx "[flx_bind/flx_lookup.ml:1002: E98] " sr ("Cannot flatten type " ^ sbt bsym_table t2)
       end
-
+(*
   | TYP_apply (TYP_void _ as qn, t2')
   | TYP_apply (TYP_name _ as qn, t2')
   | TYP_apply (TYP_case_tag _ as qn, t2')
@@ -551,7 +551,7 @@ print_endline ("reduced application is: " ^ sbt bsym_table r);
 *)
         r
       end
-
+*)
   | TYP_apply (t1,t2) -> btyp_type_apply (bt t1, bt t2)
   | TYP_type_tuple ts -> btyp_type_tuple (List.map bt ts)
 
