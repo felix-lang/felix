@@ -518,7 +518,9 @@ ps;
     let vs,args = List.fold_left begin fun (vs,args) arg ->
       match arg with
       | TYP_apply (TYP_name (_,"!",[]), TYP_name (sr,name,[])) ->
+(*
 print_endline ("Flx_desugar found ref to typeset " ^ name);
+*)
           let n = seq() in
           let var = "T" ^ string_of_bid n in
           (*

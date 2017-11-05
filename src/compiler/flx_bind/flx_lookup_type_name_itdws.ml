@@ -76,32 +76,18 @@ let lookup_type_name_in_table_dirs_with_sig
   caller_env env rs
   sra srn name ts t2
 =
-(*
-  print_endline
-  (
-    "LOOKUP TYPE NAME "^name ^"["^
-    catmap "," (sbt bsym_table) ts ^
-    "] IN TABLE DIRS WITH SIG " ^ catmap "," (sbt bsym_table) t2
-  );
-*)
   let mkenv i = build_env state bsym_table (Some i) in
   let bt sr t =
     bind_type' state bsym_table env rs sr t [] mkenv
   in
 
-  let result:entry_set_t =
-    match Flx_name_lookup.lookup_name_in_htab table name  with
-    | Some x -> x
-    | None -> FunctionEntry []
-  in
-  match result with
-  | NonFunctionEntry (index) ->
-    begin match get_data state.sym_table (sye index) with
+  let process_index index =
+    match get_data state.sym_table (sye index) with
     { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry }->
     (*
     print_endline ("FOUND " ^ id);
     *)
-    begin match entry with
+    match entry with
     | SYMDEF_inherit _ ->
       clierrx "[flx_bind/flx_lookup.ml:3607: E158] " sra "Woops found inherit in lookup_type_name_in_table_dirs_with_sig"
     | SYMDEF_inherit_fun _ ->
@@ -111,9 +97,8 @@ let lookup_type_name_in_table_dirs_with_sig
     | SYMDEF_cstruct _
     | SYMDEF_nonconst_ctor _
       ->
-        (*
         print_endline "lookup_name_in_table_dirs_with_sig finds struct constructor";
-        *)
+        assert false;
         let ro =
           resolve_overload
           state bsym_table caller_env rs sra [index] name t2 ts
@@ -171,12 +156,11 @@ let lookup_type_name_in_table_dirs_with_sig
 
     (* the effect of the binding depends on the mode for aliases, nominal or structural *)
     | SYMDEF_type_alias t -> 
-      assert false
-      (* 
+(*
       let modes = if get_structural_typedefs state then "structural" else "nominal" in
 print_endline ("lookup_type_name_in_table_dirs_with_sig: Binding reference to type alias " ^ name ^ " mode=" ^ modes);
+*)
       Some (bt sr t)
-      *)
 
     | SYMDEF_label _
     | SYMDEF_const_ctor _
@@ -206,124 +190,53 @@ print_endline ("lookup_type_name_in_table_dirs_with_sig: Binding reference to ty
           " to be a type or functor, got " ^
           string_of_symdef entry id vs
         )
-    end
-    end
-
-  | FunctionEntry fs ->
+  in
 (*
-    print_endline ("Found function set size " ^ si (List.length fs));
+  print_endline
+  (
+    "LOOKUP TYPE NAME "^name ^"["^
+    catmap "," (sbt bsym_table) ts ^
+    "] IN TABLE DIRS WITH SIG " ^ catmap "," (sbt bsym_table) t2
+  );
+  begin match Flx_name_lookup.lookup_name_in_htab table name  with
+  | None -> print_endline ("Name " ^ name ^ " not found!");
+  | Some _ -> print_endline ("Name " ^ name ^ " found!");
+  end;
 *)
-    let ro =
-      resolve_overload
-      state bsym_table caller_env rs sra fs name t2 ts
+
+  match Flx_name_lookup.lookup_name_in_htab table name with
+  | Some (NonFunctionEntry (index)) ->
+    process_index index
+
+  | Some (FunctionEntry fs) ->
+(*
+    print_endline ("Lookup type name in table dirs with sig Found function set size " ^ si (List.length fs));
+    print_endline ("Not allowed for types now .. ");
+*)
+    None
+
+  | None ->
+(*
+    print_endline "Can't find in primary table, Trying opens";
+*)
+    let opens : entry_set_t list =
+      List.concat
+      (
+        List.map
+        (fun table ->
+          match Flx_name_lookup.lookup_name_in_htab table name with
+          | Some x -> [x]
+          | None -> []
+        )
+        dirs
+      )
     in
-    match ro with
-      | Some (index,t,ret,mgu,ts) ->
-(*
-        print_endline ("handle_function (3) ts=" ^ catmap "," (sbt bsym_table) ts);
-        let ts = adjust_ts state.sym_table sra index ts in
-        print_endline "Adjusted ts";
-        print_endline ("Found functional thingo, " ^ string_of_bid index);
-        print_endline (" ts=" ^ catmap "," (sbt bsym_table) ts);
-*)
-        let tb =
-          handle_type
-          build_env
-          bind_type_index
-          state
-          bsym_table
-          rs
-          sra srn name ts index
-        in
-(*
-          print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind state.sym_table bsym_table (mkentry state.counter dfltvs index));
-          print_endline ("Value of ts is " ^ catmap "," (sbt bsym_table) ts);
-          print_endline ("Instantiated type is " ^ sbt bsym_table tb);
-*)
-          Some tb
-
-      | None ->
-        (*
-        print_endline "Can't overload: Trying opens";
-        *)
-        let opens : entry_set_t list =
-          List.concat
-          (
-            List.map
-            (fun table ->
-              match Flx_name_lookup.lookup_name_in_htab table name with
-              | Some x -> [x]
-              | None -> []
-            )
-            dirs
-          )
-        in
-        (*
-        print_endline (si (List.length opens) ^ " OPENS BUILT for " ^ name);
-        *)
-        match opens with
-        | [NonFunctionEntry i] when
-          (
-              match get_data state.sym_table (sye i) with
-              { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry }->
-              (*
-              print_endline ("FOUND " ^ id);
-              *)
-              match entry with
-              | SYMDEF_abs _
-              | SYMDEF_union _ -> true
-              | _ -> false
-           ) ->
-           Some (btyp_inst (sye i, ts))
-
-        | [NonFunctionEntry i] when
-          (
-              match get_data state.sym_table (sye i) with
-              { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry }->
-              (*
-              print_endline ("FOUND " ^ id);
-              *)
-              match entry with
-              | SYMDEF_virtual_type -> true
-              | _ -> false
-           ) ->
-           Some (btyp_vinst (sye i, ts))
-
-
-        | _ ->
-        let fs =
-          match opens with
-          | [NonFunctionEntry i] -> [i]
-          | [FunctionEntry ii] -> ii
-          | _ ->
-            Flx_name_lookup.merge_functions opens name
-        in
-          let ro =
-            resolve_overload
-            state bsym_table caller_env rs sra fs name t2 ts
-          in
-          (*
-          print_endline "OVERLOAD RESOLVED .. ";
-          *)
-          match ro with
-          | Some (result,t,ret,mgu,ts) ->
-            (*
-            print_endline "handle_function (4)";
-            *)
-            let tb =
-              handle_type
-              build_env
-              bind_type_index
-              state
-              bsym_table
-              rs
-              sra srn name ts result
-            in
-              Some tb
-          | None ->
-            (*
-            print_endline "FAILURE"; flush stdout;
-            *)
-            None
-
+    (*
+    print_endline (si (List.length opens) ^ " OPENS BUILT for " ^ name);
+    *)
+    match opens with
+    | [NonFunctionEntry index] ->
+      process_index index
+    | _ -> None
+ 
 

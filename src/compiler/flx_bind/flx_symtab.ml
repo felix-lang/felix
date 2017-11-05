@@ -232,8 +232,10 @@ let full_replace_function counter_ref sym_table sr (vs:ivs_list_t) table key val
 
 (* make_ivs inserts unique indexes into vs_lists, thus creating an ivs_list. *)
 let make_ivs ?(print=false) level counter_ref (vs, con) : ivs_list_t =
+(*
 print_endline ("Making ivs from vs=" ^ Flx_print.string_of_plain_vs vs ^ ", con=" ^
 Flx_print.string_of_tcon con);
+*)
   let ivs =
     List.map begin fun (tid, tpat) ->
       let n = fresh_bid counter_ref in
@@ -445,7 +447,9 @@ and build_table_for_dcl
     sr
     symdef
   =
+(*
 print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", parent=" ^ str_parent parent);
+*)
 (*
     let is_generic vs = List.fold_left (fun acc (name,index,typ) ->
       acc || match typ with | TYP_generic _ -> true | _ -> false) 
@@ -518,7 +522,9 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
 
   let add_tvars' parent table (ivs: ivs_list_t) =
     List.iter begin fun (tvid, index, tpat) ->
+(*
 print_endline ("add_tvars' " ^ Flx_print.string_of_ivs ivs);
+*)
 (*
       let mt = match tpat with
       | TYP_patany _ -> KND_type (* default/unspecified *)
@@ -1138,43 +1144,8 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       (* Add the type alias to the sym_table. *)
       add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_type_alias t);
 
-      (* this is a hack, checking for a type function this way, since it will
-       * also incorrectly recognize a type lambda like:
-       *
-       *    typedef f = fun(x:TYPE)=>x;
-       *
-       * With ordinary functions:
-       *
-       *    f := fun (x:int)=>x;
-       *
-       * initialises a value, and this f cannot be overloaded.
-       *
-       * That is, a closure (object) and a function (class) are distinguished ..
-       * this should be the same for type functions as well.
-       *
-       * EVEN WORSE: our system is getting confused with unbound type variables
-       * which are HOLES in types, and parameters, which are bound variables:
-       * the latter are really just the same as type aliases where the alias
-       * isn't known. The problem is that we usually substitute names with
-       * what they alias, but we can't for parameters, so we replace them with
-       * undistinguished type variables.
-       *
-       * Consequently, for a type function with a type function as a parameter,
-       * the parameter name is being overloaded when it is applied, which is
-       * wrong.
-       *
-       * We need to do what we do with ordinary function: put the parameter
-       * names into the symbol table too: lookup_name_with_sig can handle this,
-       * because it checks both function set results and non-function results.
-       *)
-      begin match t with
-      | TYP_typefun _ ->
-          if access = `Public then add_function pub_name_map id symbol_index;
-          add_function priv_name_map id symbol_index
-      | _ ->
-          if access = `Public then add_unique pub_name_map id symbol_index;
-          add_unique priv_name_map id symbol_index
-      end;
+      if access = `Public then add_unique pub_name_map id symbol_index;
+      add_unique priv_name_map id symbol_index;
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
@@ -1314,7 +1285,9 @@ print_endline (string_of_int symbol_index ^ " Adding virtual type " ^ id ^ " to 
       add_tvars privtab
 
   | DCL_fun (props, ts,t,c,reqs,prec) ->
+(*
 print_endline ("Adding DCL_fun " ^ id ^ " to symbol table " ^ name);
+*)
       (* Add the function to the sym_table. *)
       add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_fun (props, ts, t, c, reqs, prec));
 

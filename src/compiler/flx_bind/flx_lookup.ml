@@ -1029,6 +1029,9 @@ and lookup_type_name_with_sig
       " of " ^ catmap "," (sbt bsym_table) t2
     )
   | (_,_,table,dirs,_)::tail ->
+(*
+print_endline ("lookup_type_name_with_sig: trying top level table-dirs");
+*)
     match
       lookup_type_name_in_table_dirs_with_sig
       state
@@ -1040,6 +1043,9 @@ and lookup_type_name_with_sig
     with
     | Some result -> result
     | None ->
+(*
+print_endline ("lookup_type_name_with_sig: failed top level table-dirs, trying tail env");
+*)
       let tbx=
         lookup_type_name_with_sig
           state

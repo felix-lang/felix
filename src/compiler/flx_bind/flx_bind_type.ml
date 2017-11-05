@@ -510,7 +510,8 @@ print_endline ("Looking up name " ^ name ^ " in param list");
          * finds a constructor, it seems to return the type of the constructor
          * instead of the actual constructor .. *)
 (*
-print_endline "Cannot find name in param list, doing lookup with metatype as sig";
+print_endline ("Flx_bind_type: Cannot find name "^string_of_qualified_name qn ^
+" in param list, doing lookup with metatype as sig=" ^ sbt bsym_table sign);
 *)
         let t1 = lookup_type_qn_with_sig'
           state

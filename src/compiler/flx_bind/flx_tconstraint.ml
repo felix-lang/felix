@@ -10,6 +10,8 @@ open Flx_print
 open Flx_list
 open Flx_bid
 
+let debug = false
+
 (* A type constraint written in a vs list is a simplification.
    The form
 
@@ -24,16 +26,24 @@ open Flx_bid
    metatype p, without other constraints!)
 *)
 
+
 let build_constraint_element counter bt sr i p1 =
-print_endline ("Build type constraints for " ^ str_of_kindcode p1);
-  let p1 = match p1 with
-  | KND_tpattern t -> t
-  | _ -> assert false
-  in
+(*
+print_endline ("Build type constraints for type variable " ^string_of_int i ^": " ^ str_of_kindcode p1);
+*)
+  match p1 with
+  | KND_type
+  | KND_function _ 
+  | KND_tuple _ -> btyp_tuple []
+  | KND_tpattern p1 ->
+  begin
   (* special case, no constraint, represent by just 'true' (unit type) *)
   match p1 with
 (*
   | TYP_generic _ -> (* print_endline ("constraint generic .. "); *) btyp_tuple []
+*)
+(*
+  | TYP_tuple _
 *)
   | TYP_patany _
 (*
@@ -101,9 +111,13 @@ print_endline ("Build type constraints for " ^ str_of_kindcode p1);
     let tm = tyset (fe p1) in
     (* print_endline ("Bound typematch is " ^ sbt counter.sym_table tm); *)
     tm
+  end
+  | _ -> assert false (* unexpected kind *)
 
 let build_type_constraints counter bsym_table bt name sr vs =
+(*
 print_endline ("building type constraints for " ^ name);
+*)
   let type_constraints =
     map (fun (s,i,tp) ->
 (*
@@ -123,8 +137,8 @@ if name = "accumulate" then print_endline ("type variable " ^ s ^ " constraint =
   in
     let tc = btyp_intersect type_constraints in
     let tc = Flx_beta.beta_reduce "build type constraints" counter bsym_table sr tc in
-    (*
-    print_endline ("Type constraints = " ^ sbt bsym_table tc);
-    *)
+(*
+    print_endline ("Flx_tconstraint: intersected individual type constraints = " ^ sbt bsym_table tc);
+*)
     tc
 

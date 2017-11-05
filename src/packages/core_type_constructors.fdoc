@@ -43,14 +43,14 @@ open class Typing
     endmatch
   ;
 
-  typedef fun lnot(x:TYPE):TYPE=>
+  typedef fun type_lnot(x:TYPE):TYPE=>
     typematch x with
     | 0 => 1
     | _ => 0
     endmatch
   ;
 
-  typedef fun land(x:TYPE, y:TYPE):TYPE =>
+  typedef fun type_land(x:TYPE, y:TYPE):TYPE =>
     typematch (x,  y) with
     | 0, _ => 0
     | _,0 => 0
@@ -58,45 +58,38 @@ open class Typing
     endmatch
   ;
 
-  typedef fun lor(x:TYPE, y:TYPE):TYPE=>
+  typedef fun type_lor(x:TYPE, y:TYPE):TYPE=>
     typematch (x,  y) with
     | 0, 0 => 0
     | _,_ => 1
     endmatch
   ;
 
-  typedef fun eq(x:TYPE, y:TYPE):TYPE=>
+  typedef fun type_eq(x:TYPE, y:TYPE):TYPE=>
     typematch x with
     | y => typematch y with | x => 1 | _ => 0 endmatch
     | _ => 0
     endmatch
   ;
 
-  typedef fun == (x:TYPE, y:TYPE):TYPE=>
-    typematch x with
-    | y => typematch y with | x => 1 | _ => 0 endmatch
-    | _ => 0
-    endmatch
-  ;
+  typedef fun type_ne (x:TYPE, y:TYPE):TYPE=> type_lnot (type_eq (x , y));
 
-  typedef fun != (x:TYPE, y:TYPE):TYPE=> lnot (eq (x , y));
-
-  typedef fun <= (x:TYPE, y:TYPE):TYPE=>
+  typedef fun type_le (x:TYPE, y:TYPE):TYPE=>
     typematch x with
     | y => 1 
     | _ => 0
     endmatch
   ;
 
-  typedef fun >= (x:TYPE, y:TYPE):TYPE=>
+  typedef fun type_ge (x:TYPE, y:TYPE):TYPE=>
     typematch y with
     | x => 1 
     | _ => 0
     endmatch
   ;
 
-  typedef fun > (x:TYPE, y:TYPE):TYPE=> y <= x;
-  typedef fun < (x:TYPE, y:TYPE):TYPE=> y >= x;
+  typedef fun type_gt (x:TYPE, y:TYPE):TYPE=> type_le (y, x);
+  typedef fun type_lt (x:TYPE, y:TYPE):TYPE=> type_ge (y, x);
 
 
   const memcount[t] : size = "#memcount";
@@ -639,6 +632,7 @@ instance[t with Tord[t]] Tord[t*t] {
 open [T,U with Tord[T], Tord[U]] Tord[T ** U];
 open [T,U with Tord[T], Tord[U]] Tord[T * U];
 
+/* type equality now requires type_eq!
 //------------------------------------------------------------------------------
 // Generic Field access
 fun field[n,t,u where n==0] (a:t,b:u)=>a;
@@ -658,7 +652,7 @@ fun field[n,t,u,v,w,x where n==1] (a:t,b:u,c:v,d:w,e:x)=>b;
 fun field[n,t,u,v,w,x where n==2] (a:t,b:u,c:v,d:w,e:x)=>c;
 fun field[n,t,u,v,w,x where n==3] (a:t,b:u,c:v,d:w,e:x)=>d;
 fun field[n,t,u,v,w,x where n==4] (a:t,b:u,c:v,d:w,e:x)=>e;
-
+*/
 
 //------------------------------------------------------------------------------
 open class parallel_tuple_comp

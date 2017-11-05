@@ -176,7 +176,8 @@ let get_data table index =
  * constructor.
  *)
 
-let sig_of_symdef symdef sr name i = match symdef with
+let sig_of_symdef symdef sr name i : typecode_t * typecode_t * ((string * expr_t option) list) option = 
+  match symdef with
   (* primitives *)
   | SYMDEF_fun (_,ps,r,_,_,_)
     -> type_of_list ps,r,None
@@ -229,17 +230,17 @@ let sig_of_symdef symdef sr name i = match symdef with
 
   | SYMDEF_const_ctor (_,r,_,_) -> TYP_void sr,r,None
   | SYMDEF_nonconst_ctor (_,r,_,_,t) -> t,r,None
-(*
   | SYMDEF_type_alias t ->
-    (*
+(*
     print_endline ("[sig_of_symdef] Found a typedef " ^ name);
-    *)
+*)
     begin match t with
     | TYP_typefun (ps,r,b) ->
-      (*
       print_endline "TYP_typefun";
-      *)
+      assert false;
+(*
       kind_of_list (List.map snd ps),r,None
+*)
     | symdef ->
       (*
       print_endline "OverloadKindError";
@@ -251,7 +252,6 @@ let sig_of_symdef symdef sr name i = match symdef with
         string_of_typecode t
       ))
     end
-*)
 
   | symdef ->
     raise (OverloadKindError (sr,
@@ -311,7 +311,8 @@ let fixup_argtypes be bid pnames base_domain argt rs =
 let resolve sym_table bsym_table base_sym bt be arg_types =
   let sym = Flx_sym_table.find sym_table base_sym in
   let name = sym.Flx_sym.id in
-if name = debugid then print_endline ("Attempting to resolve " ^ name);
+  if name = debugid then 
+  print_endline ("Attempting to resolve " ^ name);
   let opt_bsym = try Some (Flx_bsym_table.find bsym_table base_sym) with Not_found -> None in
 
   let pvs, vs, { raw_type_constraint=con } =
@@ -626,7 +627,12 @@ if name = "EInt" then
       let et,explicit_vars1,any_vars1, as_vars1, eqns1 =
         match tp with
         | KND_tpattern t -> type_of_tpattern counter t
-        | _ -> assert false
+        | KND_type
+        | KND_function _ 
+        | KND_tuple _ -> TYP_var j',[],[],[],[]
+        | _ -> 
+         print_endline ("Flx_overload. Expection KND_tpattern, got " ^ str_of_kindcode tp);
+         assert false
       in
       let et = bt sr et in
       let et = specialize_domain sr base_vs entry_kind.sub_ts et in
@@ -875,21 +881,18 @@ btyp_type_var (i,mt))
       parent_vs
     in
     let type_constraint = build_type_constraints counter bsym_table (bt sr) id sr base_vs in
+if id = debugid then
+    print_endline ("type constraint " ^ sbt bsym_table type_constraint);
     let type_constraint = btyp_intersect [type_constraint; con] in
-(*
-if id = "accumulate" then
+if id = debugid then
     print_endline ("Raw type constraint " ^ sbt bsym_table type_constraint);
-*)
     let vs = List.map (fun (s,i,_)-> s,i) base_vs in
     let type_constraint = tsubst sr vs base_ts type_constraint in
-    (*
+if id = debugid then
     print_endline ("Substituted type constraint " ^ sbt bsym_table type_constraint);
-    *)
     let reduced_constraint = beta_reduce "flx_overload: constraint" counter bsym_table sr type_constraint in
-(*
-if id = "accumulate" then
+if id = debugid then
     print_endline ("Reduced type constraint " ^ sbt bsym_table reduced_constraint);
-*)
     begin match reduced_constraint with
     | BTYP_void ->
         (*

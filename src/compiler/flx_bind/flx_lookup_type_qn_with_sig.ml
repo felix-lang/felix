@@ -168,7 +168,7 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
 
   | `AST_name (sr,name,ts) ->
 (*
-    print_endline ("AST_name " ^ name);
+    print_endline ("lookup_type_qn_with_sig': AST_name " ^ name ^ " calling lookup_type_name_with_sig");
 *)
     let ts = List.map (bt sr) ts in
     lookup_type_name_with_sig
