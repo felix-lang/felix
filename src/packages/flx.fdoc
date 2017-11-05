@@ -2358,7 +2358,7 @@ object processing_env(
   }
 
   // C++ static (many files)
-  gen cxx_compile_static1 ehandler (src: string, dst: string) : int = 
+  gen cxx_compile_static1 (ehandler:1->0) (src: string, dst: string) : int = 
   {
 //println$ "cxx_compile_static1: " + src " -> " + dst;
     var t0 = #Time::time;

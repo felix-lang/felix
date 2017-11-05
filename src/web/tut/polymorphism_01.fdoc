@@ -86,7 +86,7 @@ this in Felix?
 With a type function and match of course! This is from library file
 <a href="/lib/std/int.flx">int.flx</a>:
 
-@felix
+@felix-unchecked
 typedef fun integral_promotion: TYPE -> TYPE =
   | tiny => int
   | utiny => int

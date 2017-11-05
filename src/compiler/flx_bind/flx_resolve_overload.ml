@@ -23,13 +23,15 @@ open Flx_btype_occurs
 open Flx_btype_subst
 open Flx_bid
 
+let debugid = ""
+
 let clone state bsym_table fi ft fbt fe fx (new_vs:plain_ivs_list_t) generic_alias index =
       begin 
       let parent,sym = Flx_sym_table.find_with_parent state.sym_table index in
       let {Flx_sym.id=id;sr=sr;vs=vs;pubmap=pubmap; privmap=privmap;dirs=dirs;symdef=symdef} = sym in
-(*
+if id = debugid then
       print_endline ("CLONING SYMBOL " ^ id ^"<"^si index^">");
-*)
+
       let nupubmap =map_name_map fi fbt pubmap in 
       let nuprivmap = map_name_map fi fbt privmap in
       Hashtbl.iter (fun key value -> Hashtbl.replace nuprivmap key value)
@@ -136,9 +138,8 @@ let resolve_overload
   sufs
   ts
 =
-(*
-if name = "EInt" then print_endline ("Trying to resolve overload for " ^ name);
-*)
+if name = debugid then
+print_endline ("Trying to resolve overload for " ^ name ^ ", lenfs=" ^ string_of_int (List.length fs));
   if List.length fs = 0 then None else
   let env i =
     (*
@@ -154,27 +155,22 @@ if name = "EInt" then print_endline ("Trying to resolve overload for " ^ name);
   in
   let luqn2 i qn = lookup_qn_in_env2' state bsym_table (env i) rs qn in
   let fs = trclose state bsym_table rs sr fs in
-
-(*
-if name = "EInt" then print_endline ("Calling overload for " ^ name);
-*)
+if name = debugid then
+  print_endline ("Calling overload for " ^ name);
   let result : overload_result option =
     overload state.counter state.sym_table bsym_table caller_env rs bt be luqn2 sr fs name sufs ts
   in
   begin match result with
   | None -> 
-(*
-if name = "EInt" then print_endline ("FAILED overload for " ^ name);
-*)
+if name = debugid then
+    print_endline ("FAILED overload for " ^ name);
     None 
   | Some (index,sign,ret,mgu,ts) ->
-(*
-if name = "EInt" then begin
+if name = debugid then begin
     print_endline ("RESOLVED OVERLOAD OF " ^ name);
     print_endline (" .. mgu = " ^ string_of_varlist bsym_table mgu);
     print_endline ("Resolve ts = " ^ catmap "," (sbt bsym_table) ts);
 end;
-*)
     let parent_vs,vs,{raw_typeclass_reqs=rtcr} = find_split_vs state.sym_table bsym_table index in
 (*
 if name = "accumulate" then begin
@@ -189,11 +185,10 @@ end;
     in
     assert (not (is_generic parent_vs));
     if not (is_generic vs) then result else let () = () in
-
-(*
+if name = debugid then begin
     print_endline ("Found generic function " ^ name);
     print_endline ("REBINDING");
-*)
+end;
     let new_vs = ref [] in
     let gen_vs = ref [] in
     let counter = ref 0 in

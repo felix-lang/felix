@@ -24,6 +24,7 @@ open Flx_btype_subst
 open Flx_bid
 
 let debug = false 
+let debugid = ""
 
 let handle_function 
   inner_type_of_index_with_ts
@@ -162,15 +163,20 @@ let rec lookup_name_in_table_dirs_with_sig
     sra srn name ts t2
   in
 
-(*
-if name = "EInt" then
+if name = debugid then
   print_endline
   (
     "LOOKUP NAME "^name ^"["^
     catmap "," (sbt bsym_table) ts ^
     "] IN TABLE DIRS WITH SIG " ^ catmap "," (sbt bsym_table) t2
   );
+
+(* THIS IS AN UGLY HACK but it may impact the result. I modified this
+in type lookup routine and hell broke out. I think this is because
+returning None immediately doesn't cause opened modules to be looked in,
+whereas a failure returning an empty FunctionEntry does.
 *)
+
   let result:entry_set_t =
     match Flx_name_lookup.lookup_name_in_htab table name with
     | Some x -> x
@@ -180,10 +186,8 @@ if name = "EInt" then
   | NonFunctionEntry (index) ->
     begin match get_data state.sym_table (sye index) with
     { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry }->
-(*
-if name = "EInt" then
+if name = debugid then
     print_endline ("FOUND nonfunction " ^ id);
-*)
     begin match entry with
     | SYMDEF_inherit _ ->
       clierrx "[flx_bind/flx_lookup.ml:3369: E155] " sra "Woops found inherit in lookup_name_in_table_dirs_with_sig"
@@ -293,22 +297,19 @@ print_endline("Found var or param of type " ^ sbt bsym_table t);
     end
 
   | FunctionEntry fs ->
-(*
-    if name = "EInt" then
+if name = debugid then
     print_endline ("Lookup_name_in_table_dirs_with_sig Found function set size " ^ si (List.length fs));
-*)
     let ro =
       resolve_overload
       state bsym_table caller_env rs sra fs name t2 ts
     in
     match ro with
       | Some (index,t,ret,mgu,ts) ->
-(*
-    if name = "EInt" then begin 
+if name = debugid then
+    begin
        print_endline ("Overload resolved to index " ^ si index);
        print_endline ("handle_function (3) ts=" ^ catmap "," (sbt bsym_table) ts);
     end;
-*)
         (*
         print_endline ("handle_function (3) ts=" ^ catmap "," (sbt bsym_table) ts);
         let ts = adjust_ts state.sym_table sra index ts in

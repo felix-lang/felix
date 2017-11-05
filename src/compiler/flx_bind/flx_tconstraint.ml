@@ -32,6 +32,7 @@ let build_constraint_element counter bt sr i p1 =
 print_endline ("Build type constraints for type variable " ^string_of_int i ^": " ^ str_of_kindcode p1);
 *)
   match p1 with
+  | KND_generic (* treated as ordinary type variable here *)
   | KND_type
   | KND_function _ 
   | KND_tuple _ -> btyp_tuple []

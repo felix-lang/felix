@@ -33,7 +33,7 @@ pr$ drf$ adr x;
 pr$ X::drf px;
 pr$ X::drf$ X::adr x;
 
-fun ff[t,k where t==k ]: t * k -> t = "$1+$2";
+fun ff[t,k where type_eq(t,k) ]: t * k -> t = "$1+$2";
 
 pr$ ff$ 1,2;
 //pr$ ff$ 1,2.0; // should fail
