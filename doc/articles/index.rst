@@ -10,6 +10,7 @@ Contents:
 
   unique
   subtyping
+  openrecursion
 
 Indices and tables
 ==================

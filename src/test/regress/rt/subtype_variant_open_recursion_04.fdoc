@@ -1,0 +1,82 @@
+@h1 Open Recursion with Mixin
+A diamond derivation.
+@felix
+typedef addable'[T] = (
+ | `Val of int 
+ | `Add of T * T
+ )
+;
+
+fun eval'[T] (eval: T-> int) (term: addable'[T]) : int =>
+  match term with
+  | `Val j => j
+  | `Add (t1, t2) => eval t1 + eval t2
+;
+
+typedef addable = addable'[addable];
+fun eval (term:addable) : int => eval' eval term;
+
+typedef subable'[T] = (
+ | addable'[T]
+ | `Sub of T * T
+ )
+;
+
+fun eval2'[T] (eval2: T-> int) (term: subable'[T]) : int =>
+  match term with
+  | `Sub (t1, t2) => eval2 t1 - eval2 t2
+  | (addable'[T] :>> y) => eval' eval2 y
+;
+
+typedef subable = subable'[subable];
+fun eval2 (term:subable):int => eval2' eval2 term;
+
+typedef mulable'[T] = (
+ | addable'[T]
+ | `Mul of T * T
+ )
+;
+
+fun eval3'[T] (eval3: T-> int) (term: mulable'[T]) : int=>
+  match term with
+  | `Mul (t1, t2) => eval3 t1 * eval3 t2
+  | (addable'[T] :>> y) => eval' eval3 y
+;
+
+typedef mulable = mulable'[mulable];
+fun eval3 (term:mulable) : int => eval3' eval3 term;
+
+typedef msable'[T] = (
+ | subable'[T]
+ | mulable'[T] 
+ )
+;
+
+fun eval4'[T] (eval4: T-> int) (term: msable'[T]) : int =>
+  match term with
+  | (subable'[T] :>> y) => eval2' eval4 y
+  | (mulable'[T] :>> z) => eval3' eval4 z
+;
+
+typedef msable = msable'[msable];
+fun eval4 (term:msable) : int  => eval4' eval4 term;
+
+
+val x = `Sub (`Add (`Val 42, `Add (`Val 66, `Val 99)), `Val 23);
+val y = `Mul (`Add (`Val 42, `Mul (`Val 66, `Val 99)), `Val 23);
+val z = `Sub (`Add (`Val 42, `Mul (`Val 66, `Val 99)), `Val 23);
+
+println$ eval2 x; // subable
+println$ eval3 y; // mulable
+
+println$ eval4 x; // subable
+println$ eval4 y; // mulable
+println$ eval4 z; // msable
+@
+@expect
+184
+151248
+184
+151248
+6553
+@
