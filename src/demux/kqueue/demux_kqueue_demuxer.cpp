@@ -228,9 +228,11 @@ kqueue_demuxer::get_evts(bool poll)
     if(ev.flags & EV_EOF)
     {
       // errno in fflags!
+      /* this isn't actually an error, just a transient eof ?? 
       fprintf(stderr,
         "got EV_EOF on read, %i bytes remain in buffer, errno=%i\n",
         (int)ev.data, ev.fflags);
+      */
     }
     // fprintf(stderr,"EVFILT_READ: got %i bytes coming\n", (int)ev.data);
     // remove_reading_fd(s);      // now useing EV_ONESHOT
