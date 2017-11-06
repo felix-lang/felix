@@ -232,7 +232,6 @@ let rec get_offsets' syms bsym_table typ : string list =
   | BTYP_fix _
   | BTYP_void
 
-  | BTYP_type  _
   | BTYP_type_var _
   | BTYP_type_apply _
   | BTYP_type_map _

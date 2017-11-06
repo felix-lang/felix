@@ -1,4 +1,6 @@
 open Flx_bid
+open Flx_kind
+
 exception Invalid_int_of_unitsum
 type btpattern_t = {
   pattern : t;
@@ -35,13 +37,12 @@ and t = private
   | BTYP_cfunction of t * t
   | BTYP_void
   | BTYP_label
-  | BTYP_fix of int * t
+  | BTYP_fix of int * kind 
   | BTYP_rev of t
   | BTYP_uniq of t
-  | BTYP_type of int
   | BTYP_type_tuple of t list
-  | BTYP_type_function of (bid_t * t) list * t * t
-  | BTYP_type_var of bid_t * t
+  | BTYP_type_function of (bid_t * kind) list * kind * t
+  | BTYP_type_var of bid_t * kind
   | BTYP_type_apply of t * t
   | BTYP_type_map of t * t
   | BTYP_type_match of t * (btpattern_t * t) list
@@ -118,11 +119,11 @@ val btyp_cltwref : t -> t -> t
 val btyp_function : t * t -> t
 val btyp_effector : t * t * t -> t
 val btyp_cfunction : t * t -> t
-val btyp_fix : int -> t -> t
-val btyp_type : int -> t
+val btyp_fix : int -> kind -> t
+val btyp_type : int -> kind
 val btyp_type_tuple : t list -> t
-val btyp_type_function : (bid_t * t) list * t * t -> t
-val btyp_type_var : bid_t * t -> t
+val btyp_type_function : (bid_t * kind) list * kind * t -> t
+val btyp_type_var : bid_t * kind -> t
 val btyp_type_apply : t * t -> t
 val btyp_type_map : t * t -> t
 val btyp_type_match : t * (btpattern_t * t) list -> t
@@ -131,7 +132,7 @@ val btyp_type_set_union : t list -> t
 val btyp_type_set_intersection : t list -> t
 val btyp_typeof: (int * Flx_ast.expr_t) -> t
 
-val bmt: string -> Flx_ast.kindcode_t -> t
+val bmt: string -> Flx_ast.kindcode_t -> kind 
 
 val unfold : 'a -> t -> t
 val is_void : t -> bool

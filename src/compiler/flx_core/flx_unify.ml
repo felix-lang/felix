@@ -367,7 +367,6 @@ print_endline ("Polyrecord/record unification " ^ sbt bsym_table lhs ^ " = " ^ s
         else raise Not_found
 
       | BTYP_label , BTYP_label -> ()
-      | BTYP_type i,BTYP_type j when i = j -> ()
       | BTYP_void,BTYP_void -> ()
 
       | BTYP_vinst (i1,ts1),BTYP_vinst (i2,ts2) 
@@ -393,7 +392,8 @@ print_endline "Trying to unify instances (2)";
       | BTYP_fix (i,t1),BTYP_fix (j,t2) ->
         if i <> j then raise Not_found;
         if t1 <> t2 then print_endline "unification: fix points at same level with unequal metatypes!";
-        add_eqn (t1,t2)
+        (* kind equality *)
+        if not (Flx_kind.kind_eq t1 t2) then raise Not_found
 
       | BTYP_tuple ls, BTYP_array (ta,BTYP_unitsum n)
       | BTYP_array (ta,BTYP_unitsum n), BTYP_tuple ls

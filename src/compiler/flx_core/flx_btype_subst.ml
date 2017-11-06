@@ -21,7 +21,7 @@ let rec alpha counter t =
       let remap i = List.assoc i remap_list in
       let cvt t = alpha counter (vars_subst remap_list t) in
       let ps = List.map (fun (i,t) -> remap i,t) ps in
-      btyp_type_function (ps, cvt r, cvt b)
+      btyp_type_function (ps, r, cvt b)
   | t -> Flx_btype.map ~f_btype:(alpha counter) t
 
 let term_subst counter src i arg =
@@ -74,8 +74,8 @@ let varmap_subst varmap t =
         else x
     | BTYP_type_function (p,r,b) ->
         let
-          p = List.map (fun (name,kind) -> (name,f_btype kind)) p and
-          r = f_btype r and
+          p = List.map (fun (name,kind) -> (name,kind)) p and
+          r = r and
           b = f_btype b
         in
         btyp_type_function (p,r,b)

@@ -21,10 +21,11 @@ open Flx_name_map
 open Flx_btype_occurs
 open Flx_btype_subst
 open Flx_bid
+open Flx_kind
 
 let debug = false
 
-let rec guess_metatype sr t =
+let rec guess_metatype sr t : kind =
   match t with
   | TYP_defer _ -> print_endline "Guess metatype: defered type found"; assert false
   | TYP_tuple_cons (sr,t1,t2) -> assert false
@@ -48,7 +49,7 @@ let rec guess_metatype sr t =
   | TYP_suffix _
   | TYP_index _
   | TYP_lookup _ 
-  | TYP_name _ -> (* print_endline "A type name?"; *) btyp_type 0
+  | TYP_name _ -> (* print_endline "A type name?"; *) kind_type
   | TYP_as _ -> print_endline "A type as (recursion)?"; assert false
 
   (* usually actual types! *)
@@ -72,11 +73,11 @@ let rec guess_metatype sr t =
   | TYP_rref _
   | TYP_wref _
   | TYP_type_extension _
-  | TYP_array _ -> btyp_type 0
+  | TYP_array _ -> kind_type
 
   (* note this one COULD be a type function type *)
-  | TYP_function _ -> btyp_type 0
-  | TYP_effector _ -> btyp_type 0
+  | TYP_function _ -> kind_type
+  | TYP_effector _ -> kind_type
 
   | TYP_dual t -> guess_metatype sr t
 
@@ -95,9 +96,9 @@ let rec guess_metatype sr t =
 
   | TYP_type_match _
   | TYP_patany _
-    -> print_endline ("Woops, dunno meta type of " ^ string_of_typecode t); btyp_type 0
+    -> print_endline ("Woops, dunno meta type of " ^ string_of_typecode t); kind_type
 
-let guess_meta_type state bsym_table bt index = 
+let guess_meta_type state bsym_table bt index : kind = 
   let data = get_data state.sym_table index in
   match data with { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs; symdef=entry } ->
     match entry with

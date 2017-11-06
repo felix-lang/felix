@@ -121,8 +121,13 @@ let lookup_type_name_in_table_dirs_with_sig
           | None -> None
           end
 
+(* This routine can't work, because the "sigs" required are types,
+   and the check needed here is on kinds. The only real solution is
+   a special lookup_type_function_name_itdws routine
+*)
     | SYMDEF_typevar mt ->
       let mt = bmt "lookup_type_name_itdws" mt in
+(*
       (* match function a -> b -> c -> d with sigs a b c *)
       let rec m f s = match f,s with
       | BTYP_function (d,c),h::t when d = h -> m c t
@@ -131,14 +136,19 @@ let lookup_type_name_in_table_dirs_with_sig
       | _ -> false
       in
       if m mt t2
-      then Some (btyp_type_var (sye index,mt))
+      then 
+*)
+      Some (btyp_type_var (sye index,mt))
+(*
       else
       (print_endline
       (
         "Typevariable has wrong meta-type" ^
-        "\nexpected domains " ^ catmap ", " (sbt bsym_table) t2 ^
-        "\ngot " ^ sbt bsym_table mt
+        "\nexpected domains " ^ catmap ", " (sk) t2 ^
+        "\ngot " ^ sk mt
       ); None)
+*)
+
 
     | SYMDEF_virtual_type ->
       print_endline "Found virtual type";

@@ -87,8 +87,11 @@ print_endline ("bind_type_index finds: Type alias name " ^ sym.Flx_sym.id);
   its a bit of a hack!
 *)
 print_endline ("Inner type of index trying to calculate meta type of type alias");
+assert false
+(*
       let t = bt sym.Flx_sym.sr t in
       Flx_metatype.metatype state.sym_table bsym_table rs sym.Flx_sym.sr t
+*)
 
   | SYMDEF_function ((ps,_),rt,effects,props,_) ->
 (*

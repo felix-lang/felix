@@ -37,7 +37,6 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
   | _,BTYP_hole -> true
 
   | BTYP_label,BTYP_label -> true
-  | BTYP_type i, BTYP_type j -> i = j
   | BTYP_vinst (i1,ts1),BTYP_vinst (i2,ts2)
   | BTYP_inst (i1,ts1),BTYP_inst (i2,ts2) ->
     i1 = i2 &&
@@ -168,7 +167,7 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
          but we're going down a level from types to meta-types, so this shouldn't
          happen
       *)
-      te t1 t2 
+      Flx_kind.kind_eq t1 t2 
     end else (* hack ..? *)
     begin
       (*

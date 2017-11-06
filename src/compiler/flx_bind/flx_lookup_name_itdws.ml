@@ -67,7 +67,7 @@ print_endline ("flx_lookup.handle_function.bexpr_closure");
 
   | SYMDEF_type_alias (TYP_typefun _) ->
       (* THIS IS A HACK .. WE KNOW THE TYPE IS NOT NEEDED BY THE CALLER .. *)
-      let t = btyp_function (btyp_type 0, btyp_type 0) in
+      let t = btyp_function (btyp_none (), btyp_none ()) in
 if debug then
 print_endline ("flx_lookup.SYMDEF_type_alias.bexpr_closure");
       bexpr_closure t (index,ts)

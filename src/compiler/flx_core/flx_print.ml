@@ -10,6 +10,7 @@ open Flx_typing
 open Flx_name_map
 open List
 open Flx_bid
+open Flx_kind
 
 module L = Flx_literal
 
@@ -687,7 +688,7 @@ and sb bsym_table depth fixlist counter prec tc =
        )
 
     | BTYP_type_var (i,mt) -> 0,"<T" ^ string_of_bid i ^
-      (match mt with BTYP_type i ->"" | _ -> ":"^sbt 0 mt)^
+      (match mt with KIND_type ->"" | _ -> ":"^sk mt)^
       ">"
 
     | BTYP_inst (i,ts) ->
@@ -835,7 +836,6 @@ and sb bsym_table depth fixlist counter prec tc =
 
     | BTYP_type_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2
     | BTYP_type_map (t1,t2) -> 2,"_map " ^ sbt 2 t1 ^ " " ^ sbt 2 t2
-    | BTYP_type i -> 0,"TYPE " ^ si i
     | BTYP_type_tuple ls ->
       begin match ls with
       | [] -> 0,"UNEXPECTED TYPE TUPLE NO ARGS"
@@ -848,10 +848,10 @@ and sb bsym_table depth fixlist counter prec tc =
          "fun (" ^ cat ", "
          (
            map
-           (fun (i,t)-> "T" ^ string_of_bid i ^ ": " ^ sbt 8 t)
+           (fun (i,t)-> "T" ^ string_of_bid i ^ ": " ^ sk t)
            args
          ) ^
-         "): " ^ sbt 0 ret ^ "=" ^ sbt 8 body ^" endfun"
+         "): " ^ sk ret ^ "=" ^ sbt 8 body ^" endfun"
        )
   in
     let txt,lst = string_of_fixpoints depth !fixlist in

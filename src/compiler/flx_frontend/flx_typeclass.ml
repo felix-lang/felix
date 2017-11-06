@@ -79,8 +79,8 @@ let tcinst_chk syms bsym_table id sr i ts (inst_vs, inst_constraint, inst_ts, j)
      let assigns, rest = fold_left 
         (fun (assigns,rest) (l,r) -> 
          match l,r with
-         | BTYP_type_var (x,BTYP_type 0), other
-         | other, BTYP_type_var (x,BTYP_type 0) -> (x,other) :: assigns, rest
+         | BTYP_type_var (x,KIND_type), other
+         | other, BTYP_type_var (x,KIND_type) -> (x,other) :: assigns, rest
 
          | _ -> assigns, (l,r) :: rest
         )

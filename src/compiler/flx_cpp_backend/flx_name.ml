@@ -235,7 +235,7 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
 
   | BTYP_type_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
-        string_of_bid i ^ ":"^ sbt bsym_table mt)
+        string_of_bid i ^ ":"^ Flx_kind.sk mt)
   | BTYP_fix (i,_) -> "void" (* failwith "[cpp_type_classname] Can't name type fixpoint" *)
   | BTYP_none -> "none" (* hack needed for null case in pgen *)
   | BTYP_void -> (* print_endline "WARNING cpp_type_classname of void"; *) "void" (* failwith "void doesn't have a classname" *)
@@ -371,7 +371,6 @@ print_endline ("[flx_name] One component union should have been removed");
   | BTYP_intersect _
   | BTYP_union _
 
-  | BTYP_type _
   | BTYP_type_tuple _
   | BTYP_type_function _
   | BTYP_type_apply _
@@ -403,7 +402,7 @@ and cpp_structure_name syms bsym_table t =
   try match t' with
   | BTYP_type_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
-        string_of_bid i ^ ":"^ sbt bsym_table mt)
+        string_of_bid i ^ ":"^ Flx_kind.sk mt)
   | BTYP_fix (i,_) -> "_fix<"^string_of_int (-i)^">" (* failwith "[cpp_type_classname] Can't name type fixpoint" *)
   | BTYP_none -> "none" (* hack needed for null case in pgen *)
   | BTYP_void -> print_endline ("WARNING cpp_structure_name of void"); "void" (* failwith "void doesn't have a classname" *)

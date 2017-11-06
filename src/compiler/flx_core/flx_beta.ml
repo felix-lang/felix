@@ -10,6 +10,7 @@ open Flx_typing
 open Flx_unify
 open Flx_maps
 open Flx_btype_subst
+open Flx_kind
 
 (* fixpoint reduction: reduce
    Fix f. Lam x. e ==> Lam x. Fix z. e [f x -> z]
@@ -106,7 +107,7 @@ let rec fixup counter ps body =
      && i + depth +1  = 0 (* looking inside application, one more level *)
      -> print_endline "SPECIAL REDUCTION";
 (* HACK: meta type of fixpoint guessed *)
-     btyp_fix (i+2) (btyp_type 0) (* elide application AND skip under lambda abstraction *)
+     btyp_fix (i+2) (kind_type) (* elide application AND skip under lambda abstraction *)
 
    | BTYP_type_function (a,b,c) ->
       (* NOTE we have to add 2 to depth here, an extra
@@ -119,7 +120,7 @@ let rec fixup counter ps body =
       print_endline "OOPS >> no alpha conversion?";
       *)
 
-      btyp_type_function (a, fx b, aux c (depth + 2))
+      btyp_type_function (a, b, aux c (depth + 2))
    | x -> x
  in
    (* note depth 1: we seek a fix to an abstraction
@@ -260,7 +261,7 @@ and beta_reduce' calltag counter bsym_table sr termlist t =
     print_endline ("Repeated term " ^ sbt bsym_table t);
     *)
 (* HACK: meta type of fixpoint guessed *)
-    let fp = btyp_fix (-j - 1)  (btyp_type 0) in
+    let fp = btyp_fix (-j - 1)  (kind_type) in
 (*
 print_endline ("Beta-reduce: type list index found term in trail, returning fixpoint " ^ sbt bsym_table fp);
 *)
@@ -438,7 +439,6 @@ print_endline "Type list index returned None";
 
   | BTYP_label -> t
   | BTYP_void -> t
-  | BTYP_type _ -> t
   | BTYP_unitsum _ -> t
 
   (* beta reduce map of function on explicit tuple as tuple of
