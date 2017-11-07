@@ -257,6 +257,8 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
 
 *)
 
+(* WARNING WARNING: see also Flx_macro.mac_get_pattern_vars!!!! *)
+
 let rec get_pattern_vars
   (vars : psym_table_t ref)
   pat       (* pattern *)

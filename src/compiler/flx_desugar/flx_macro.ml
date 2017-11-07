@@ -179,21 +179,22 @@ let fix_pattern counter pat =
   in aux pat
 
 (* Find variable names in patterns so as to protect them *)
-let rec get_pattern_vars pat =
+let rec mac_get_pattern_vars pat =
   match pat with
   | PAT_name (_,v) -> [v]
-  | PAT_as (_,p,v) -> v :: get_pattern_vars p
-  | PAT_when (_,p,_) -> get_pattern_vars p
-  | PAT_nonconst_ctor (_,_,p) -> get_pattern_vars p
-  | PAT_ho_ctor (_,_,_,p) -> get_pattern_vars p
-  | PAT_nonconst_variant (_,_,p) -> get_pattern_vars p
-  | PAT_tuple (_,ps) -> List.concat (List.map get_pattern_vars ps)
-  | PAT_tuple_cons (sr,a,b) -> get_pattern_vars a @ get_pattern_vars b
-  | PAT_tuple_snoc (sr,a,b) -> get_pattern_vars a @ get_pattern_vars b
-  | PAT_record (_,ps) -> List.concat(List.map get_pattern_vars (List.map snd ps))
-  | PAT_polyrecord (_,ps,r) -> r :: List.concat(List.map get_pattern_vars (List.map snd ps))
+  | PAT_as (_,p,v) -> v :: mac_get_pattern_vars p
+  | PAT_when (_,p,_) -> mac_get_pattern_vars p
+  | PAT_nonconst_ctor (_,_,p) -> mac_get_pattern_vars p
+  | PAT_ho_ctor (_,_,_,p) -> mac_get_pattern_vars p
+  | PAT_nonconst_variant (_,_,p) -> mac_get_pattern_vars p
+  | PAT_tuple (_,ps) -> List.concat (List.map mac_get_pattern_vars ps)
+  | PAT_tuple_cons (sr,a,b) -> mac_get_pattern_vars a @ mac_get_pattern_vars b
+  | PAT_tuple_snoc (sr,a,b) -> mac_get_pattern_vars a @ mac_get_pattern_vars b
+  | PAT_record (_,ps) -> List.concat(List.map mac_get_pattern_vars (List.map snd ps))
+  | PAT_polyrecord (_,ps,r) -> r :: List.concat(List.map mac_get_pattern_vars (List.map snd ps))
   | PAT_alt _ -> assert false
-  | PAT_with (_,p,asgns) -> List.map fst asgns @ get_pattern_vars p
+  | PAT_with (_,p,asgns) -> List.map fst asgns @ mac_get_pattern_vars p
+  | PAT_subtype (_,_,v) -> [v] 
   | _ -> []
 
 (* cartesian product of two lists N x M is a single list of N x M pairs *)
@@ -308,6 +309,7 @@ let alpha_pat local_prefix seq fast_remap remap expand_expr pat =
   | PAT_tuple_snoc (sr,a,b) -> PAT_tuple_snoc (sr, aux a, aux b)
   | PAT_record (sr, ps) -> PAT_record (sr, List.map (fun (id,p) -> id, aux p) ps)
   | PAT_polyrecord (sr, ps, r) -> PAT_polyrecord (sr, List.map (fun (id,p) -> id, aux p) ps, ren r)
+  | PAT_subtype (sr, t, id) -> PAT_subtype (sr,t, ren id)
   | p -> p
   in aux pat
 
@@ -708,7 +710,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       List.map
       (fun (pat,e) ->
         let pat = fix_pattern seq pat in
-        let pvs = get_pattern_vars pat in
+        let pvs = mac_get_pattern_vars pat in
         let pvs' =  (* new parameter names *)
           List.map
           (fun s -> let b = !seq in incr seq; s^"_param_" ^ local_prefix ^ "_" ^ string_of_int b)
@@ -742,7 +744,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       List.map
       (fun (pat,e) ->
         let pat = fix_pattern seq pat in
-        let pvs = get_pattern_vars pat in
+        let pvs = mac_get_pattern_vars pat in
         let pvs' =  (* new parameter names *)
           List.map
           (fun s -> let b = !seq in incr seq; s^"_param_" ^ local_prefix ^ "_" ^ string_of_int b)
@@ -1165,7 +1167,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     let pss = expand_pattern_branches pss in
     let pss = List.map (fun (pat,sts) ->
       let pat = fix_pattern seq pat in
-      let pvs = get_pattern_vars pat in
+      let pvs = mac_get_pattern_vars pat in
       let pvs' =  (* new parameter names *)
         List.map
         (fun s -> let b = !seq in incr seq; s^"_param_" ^ local_prefix ^ "_" ^ string_of_int b)

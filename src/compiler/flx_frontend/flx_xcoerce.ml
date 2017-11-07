@@ -111,8 +111,14 @@ and variant_coercion new_table bsym_table counter parent remap ((srcx,srct) as s
       List.iter (fun (name,_) -> ignore (get_rel_seq name)) rs;
       Hashtbl.iter (fun name count -> 
         if count <> 0 then 
-          print_endline ("Warning: Variant coercion target duplicates name " ^ 
-            name ^ ", will use first one for coercion")
+          let typ = List.assoc name rs in
+          let eqtypes = List.fold_left 
+            (fun acc (n,t) -> acc && n<>name || Flx_unify.type_eq bsym_table counter typ t) 
+            true rs 
+          in
+          if not eqtypes then
+            print_endline ("Flx_coerce.Warning: Variant coercion target duplicates name " ^ 
+              name ^ ", will use first one for coercion, argtype = " ^ Flx_print.sbt bsym_table typ)
       ) counts;
       let coercions = List.map (fun (name, ltyp) ->
         let condition = bexpr_match_variant (name,srce) in
