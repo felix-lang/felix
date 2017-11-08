@@ -22,8 +22,8 @@ As it turns out this idea fails because identifying a module
 with a single type is the wrong answer. Never the less the
 core concept is very important.
 
-The Stupid Programmer
----------------------
+The Hard Working Programmer
+---------------------------
 
 An unenlightened programmer is asked to provide a term representing
 an expression which can perform addition on expressions. This is the 
@@ -81,8 +81,8 @@ both routines.
 Would it surprise you if the client now wants to multiply
 as well?
 
-The Smart Programmer
---------------------
+The Lazy programmer
+-------------------
 
 The smart programmer writes the same addable routine
 as the stupid programmar. But the smart programmers is not
@@ -144,7 +144,7 @@ In its simplest form above it requires polymorphic variant types
 and higher order function.
 
 With this technique, we make flat, linearly extensible
-data types by using a type variable in the type where would
+data types by using a type variable parameter in the type where would
 normally want recursion. Similarly in the flat function,
 we use a function passed in as a parameter to evaluate
 the values of the type of the type variable.
@@ -221,7 +221,7 @@ where the methods have invariant arguments. OO is very good
 for character device drivers, because the write method
 accepts a char in both the abstraction and all the derived
 classes: it is an invariant argument.
-
+  
 Mixins
 ======
 
@@ -288,4 +288,5 @@ Here's some test code:
     println$ eval4 z; // msable
     
 Note that eval4 works fine on x and y as well as z!
+
  

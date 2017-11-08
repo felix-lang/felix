@@ -11,6 +11,7 @@ Contents:
   unique
   subtyping
   openrecursion
+  cofunctions
 
 Indices and tables
 ==================
