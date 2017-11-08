@@ -12,6 +12,7 @@ Contents:
   subtyping
   openrecursion
   cofunctions
+  coroutines1
 
 Indices and tables
 ==================
