@@ -96,10 +96,13 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
 
   | EXPR_vsprintf _
   | EXPR_interpolate _
+
+  | EXPR_subtype_match _ 
   | EXPR_type_match _ ->
       let sr = src_of_expr e in
       clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
       ("[desugar_pat:subst]4 Not expected in pattern when clause: " ^ string_of_expr e); 
+
   | EXPR_expr _ ->
       let sr = src_of_expr e in
       clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 

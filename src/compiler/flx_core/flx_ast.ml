@@ -111,6 +111,7 @@ and typecode_t =
   | TYP_type_tuple of typecode_t list          (** meta type product *)
 
   | TYP_type_match of typecode_t * (typecode_t * typecode_t) list
+  | TYP_subtype_match of typecode_t * (typecode_t * typecode_t) list
   | TYP_type_extension of Flx_srcref.t * typecode_t list * typecode_t
   | TYP_tuple_cons of Flx_srcref.t * typecode_t * typecode_t
   | TYP_tuple_snoc of Flx_srcref.t * typecode_t * typecode_t
@@ -242,6 +243,7 @@ and expr_t =
   | EXPR_expr of Flx_srcref.t * Flx_code_spec.t * typecode_t * expr_t
 
   | EXPR_type_match of Flx_srcref.t * (typecode_t * (typecode_t * typecode_t) list)
+  | EXPR_subtype_match of Flx_srcref.t * (typecode_t * (typecode_t * typecode_t) list)
   | EXPR_typecase_match of Flx_srcref.t * (typecode_t * (typecode_t * expr_t) list)
 
   | EXPR_extension of Flx_srcref.t * expr_t list * expr_t
@@ -421,6 +423,7 @@ and connection_t =
 and statement_t =
   | STMT_circuit of Flx_srcref.t * connection_t list
   | STMT_type_error of Flx_srcref.t * statement_t
+  | STMT_type_assert of Flx_srcref.t * statement_t
   | STMT_cgoto of Flx_srcref.t * expr_t
   | STMT_ifcgoto of Flx_srcref.t * expr_t * expr_t
   | STMT_try of Flx_srcref.t 
@@ -676,6 +679,7 @@ and statement_t =
 type exe_t =
   | EXE_circuit of connection_t list
   | EXE_type_error of exe_t
+  | EXE_type_assert of exe_t
   | EXE_code of CS.t * expr_t (* for inline C++ code *)
   | EXE_noreturn_code of CS.t * expr_t  (* for inline C++ code *)
   | EXE_comment of string (* for documenting generated code *)
@@ -777,6 +781,7 @@ let src_of_typecode = function
   | TYP_typefun _
   | TYP_type_tuple _
   | TYP_type_match _
+  | TYP_subtype_match _
   -> Flx_srcref.dummy_sr
 
 let src_of_expr (e : expr_t) = match e with
@@ -849,6 +854,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_as_var (s,_)
   | EXPR_match (s, _)
   | EXPR_type_match (s, _)
+  | EXPR_subtype_match (s, _)
   | EXPR_typecase_match (s, _)
   | EXPR_cond (s,_)
   | EXPR_expr (s,_,_,_)
@@ -873,6 +879,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_virtual_type (s,_)
   | STMT_circuit (s,_)
   | STMT_type_error (s,_)
+  | STMT_type_assert (s,_)
   | STMT_try s
   | STMT_endtry s
   | STMT_catch (s,_,_)

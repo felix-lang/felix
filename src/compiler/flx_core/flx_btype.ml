@@ -68,6 +68,7 @@ and t =
   *)
   | BTYP_type_map of t * t
   | BTYP_type_match of t * (btpattern_t * t) list
+  | BTYP_subtype_match of t * (btpattern_t * t) list
 
   | BTYP_tuple_cons of t * t 
   | BTYP_tuple_snoc of t * t 
@@ -167,6 +168,15 @@ and str_of_btype typ =
     let cases = String.concat "\n  | " (List.map (fun (p,t) -> sp p ^ " => " ^ s t) pats) in
     "BTYP_type_match("^s v^",(\n" ^cases ^ "\n))\n"
 
+  | BTYP_subtype_match (v,pats) -> 
+    let sa (i,t) = string_of_int i ^ " <- " ^ s t in
+    let sas a = catmap ", " sa a in
+    let sbs pvs = BidSet.fold (fun i acc -> (if acc="" then "" else acc ^ "," ) ^ string_of_int i) pvs "" in
+    let sp {pattern=pat; pattern_vars=pvs; assignments=a; }  = "forall " ^ sbs pvs ^ ". " ^ s pat ^ " with " ^ sas a in
+    let cases = String.concat "\n  | " (List.map (fun (p,t) -> sp p ^ " => " ^ s t) pats) in
+    "BTYP_subtype_match("^s v^",(\n" ^cases ^ "\n))\n"
+
+
   | BTYP_type_map (f,t) -> "BTYP_type_map(" ^ s f ^"," ^s t^")"
 
   | BTYP_tuple_cons (h,t) -> "BTYP_tuple_cons (" ^ s h ^"**" ^ s t^")"
@@ -230,6 +240,7 @@ let complete_type t =
     | BTYP_rev t -> uf t
     | BTYP_uniq t -> uf t
  
+    | BTYP_subtype_match (a,tts)
     | BTYP_type_match (a,tts) ->
         uf a;
         List.iter (fun (p,x) -> uf x) tts
@@ -488,6 +499,10 @@ let btyp_type_map (f,a) =
 let btyp_type_match (t, ps) =
   BTYP_type_match (t, ps)
 
+let btyp_subtype_match (t, ps) =
+  BTYP_subtype_match (t, ps)
+
+
 (** Construct a BTYP_type_set type. *)
 let btyp_type_set ts =
   BTYP_type_set ts
@@ -640,6 +655,8 @@ let flat_iter
        * bid. *)
   | BTYP_type_apply (a,b) -> f_btype a; f_btype b
   | BTYP_type_map (a,b) -> f_btype a; f_btype b
+
+  | BTYP_subtype_match (t,ps)
   | BTYP_type_match (t,ps) ->
       f_btype t;
       List.iter begin fun (tp, t) ->
@@ -732,6 +749,20 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
         end ps
       in
       btyp_type_match (f_btype t, ps)
+
+  | BTYP_subtype_match (t,ps) ->
+      let ps =
+        List.map begin fun (tp, t) ->
+          { tp with
+            pattern = f_btype tp.pattern;
+            assignments = List.map
+              (fun (i, t) -> f_bid i, f_btype t)
+              tp.assignments },
+          f_btype t
+        end ps
+      in
+      btyp_subtype_match (f_btype t, ps)
+
   | BTYP_type_set ts ->
       let g acc elt =
         (* SHOULD USE UNIFICATIION! *)
@@ -915,7 +946,14 @@ and unfold msg t =
          * they mean *)
         let tts = List.map (fun (p,x) -> p,uf x) tts in
         btyp_type_match (a,tts)
-  
+
+     | BTYP_subtype_match (a,tts) ->
+        let a = uf a in
+        (* don't unfold recursions in patterns yet because we don't know what
+         * they mean *)
+        let tts = List.map (fun (p,x) -> p,uf x) tts in
+        btyp_subtype_match (a,tts)
+ 
     | _ -> t'
   in aux 0 t
 

@@ -352,6 +352,20 @@ and string_of_expr (e:expr_t) =
     ^
     "\n endmatch"
 
+
+  | EXPR_subtype_match (_,(e, ps)) ->
+    "subtypematch " ^ string_of_typecode e ^ " with " ^
+    catmap ""
+    (fun (p,e')->
+      "\n  | " ^
+      string_of_typecode p ^
+      " => " ^
+      string_of_typecode e'
+    )
+    ps
+    ^
+    "\n endmatch"
+
   | EXPR_typecase_match (_,(t, ps)) ->
     "typecase " ^ string_of_typecode t ^ " with " ^
     catmap ""
@@ -443,6 +457,16 @@ and st prec tc : string =
 
     | TYP_type_match (e,ps) -> 0,
       "typematch " ^ string_of_typecode e ^ " with " ^
+      catmap ""
+      (fun (p,t) ->
+      "\n  | " ^ string_of_typecode p ^ " => " ^ string_of_typecode t
+      )
+      ps
+      ^
+      "\nendmatch"
+
+    | TYP_subtype_match (e,ps) -> 0,
+      "subtypematch " ^ string_of_typecode e ^ " with " ^
       catmap ""
       (fun (p,t) ->
       "\n  | " ^ string_of_typecode p ^ " => " ^ string_of_typecode t
@@ -675,6 +699,22 @@ and sb bsym_table depth fixlist counter prec tc =
         ^
         "\nendmatch"
       )
+
+    | BTYP_subtype_match (t,ps) ->
+      0,
+      (
+        "subtypematch " ^
+        sbt 99 t ^
+        " with" ^
+        catmap ""
+        (fun ({pattern=p},t) ->
+          "\n  | " ^ sbt 99 p ^ " => " ^ sbt 99 t
+        )
+        ps
+        ^
+        "\nendmatch"
+      )
+
 
     | BTYP_fix (i,mt) ->
        0,
@@ -1300,7 +1340,8 @@ and string_of_statement level s =
    ""
    cs
 
-  | STMT_type_error (_,stmt) -> spaces level ^ "type-error" ^ string_of_statement 0 stmt
+  | STMT_type_error (_,stmt) -> spaces level ^ "type-error " ^ string_of_statement 0 stmt
+  | STMT_type_assert (_,stmt) -> spaces level ^ "type-asset " ^ string_of_statement 0 stmt
   | STMT_cgoto (_,e) -> spaces level ^ "goto-indirect " ^ se e ^ ";"
   | STMT_ifcgoto (_,e1,e2) -> spaces level ^ "if("^se e1^") goto-indirect " ^ se e2 ^ ";"
   | STMT_try _ -> spaces level ^ "try"
@@ -2003,6 +2044,7 @@ and string_of_exe level s =
 
 
   | EXE_type_error x -> "type-error " ^ string_of_exe 0 x
+  | EXE_type_assert x -> "type-assert " ^ string_of_exe 0 x
   | EXE_cgoto e -> "goto-indirect " ^ se e ^ ";"
   | EXE_proc_return_from s -> "return from " ^ s ^ ";"
 

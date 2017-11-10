@@ -376,6 +376,7 @@ print_endline ("[flx_name] One component union should have been removed");
   | BTYP_type_apply _
   | BTYP_type_map _
   | BTYP_type_match _
+  | BTYP_subtype_match _
 
   | BTYP_type_set _
   | BTYP_type_set_union _

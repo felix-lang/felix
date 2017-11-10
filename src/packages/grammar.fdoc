@@ -1301,6 +1301,7 @@ syntax executable {
   requires statements;
 
   stmt := "type-error" stmt =># "`(ast_type_error ,_sr ,_2)";
+  stmt := "type-assert" stmt =># "`(ast_type_assert ,_sr ,_2)";
 
   //$ System service call.
   stmt := "_svc" sname =># "`(ast_svc ,_sr ,_2)";
@@ -4806,6 +4807,8 @@ syntax type_decls {
   stypematch := "typematch" sexpr "with" stype_matching+ "endmatch" =>#
     "`(ast_type_match ,_sr (,_2 ,_4))";
 
+  stypematch := "subtypematch" sexpr "with" stype_matching+ "endmatch" =>#
+    "`(ast_subtype_match ,_sr (,_2 ,_4))";
 
   //$ A typecase expression computes an expression based on a type match.
   stypecasematch := "typecase" sexpr "with" stype_matching+ "endmatch" =>#

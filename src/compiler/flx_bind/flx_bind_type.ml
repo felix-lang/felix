@@ -291,6 +291,11 @@ print_endline ("Calling Flx_beta.adjust, possibly incorrectly, type = " ^ sbt bs
     let t = bt t in
     bind_type_match bsym_table state.counter bt btp params sr t ps ubt 
 
+  | TYP_subtype_match (t,ps) as ubt ->
+    let t = bt t in
+    bind_subtype_match bsym_table state.counter bt btp params sr t ps ubt 
+
+
   | TYP_dual t -> Flx_btype_dual.dual (bt t)
 
   | TYP_ellipsis ->

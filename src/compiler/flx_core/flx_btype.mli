@@ -46,6 +46,7 @@ and t = private
   | BTYP_type_apply of t * t
   | BTYP_type_map of t * t
   | BTYP_type_match of t * (btpattern_t * t) list
+  | BTYP_subtype_match of t * (btpattern_t * t) list
   | BTYP_tuple_cons of t * t
   | BTYP_tuple_snoc of t * t
   | BTYP_type_set of t list
@@ -127,6 +128,7 @@ val btyp_type_var : bid_t * kind -> t
 val btyp_type_apply : t * t -> t
 val btyp_type_map : t * t -> t
 val btyp_type_match : t * (btpattern_t * t) list -> t
+val btyp_subtype_match : t * (btpattern_t * t) list -> t
 val btyp_type_set : t list -> t
 val btyp_type_set_union : t list -> t
 val btyp_type_set_intersection : t list -> t

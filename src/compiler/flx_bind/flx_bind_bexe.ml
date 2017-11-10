@@ -262,8 +262,16 @@ print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_typ
     let result = try Some (bind_exe' state bsym_table (sr, x)) with _ -> None
     in begin match result with
     | None -> []
-    | Some _ -> clierrx "[flx_bind/flx_bind_bexe.ml:295: E15] " sr ("type_error expected, statement compiled! " ^ string_of_exe 0 exe);
+    | Some _ -> clierrx "[flx_bind/flx_bind_bexe.ml:265: E15] " sr ("type_error expected, statement compiled! " ^ string_of_exe 0 exe);
     end
+
+  | EXE_type_assert x ->
+    let result = try Some (bind_exe' state bsym_table (sr, x)) with _ -> None
+    in begin match result with
+    | Some _ -> []
+    | None -> clierrx "[flx_bind/flx_bind_bexe.ml:272: E15a] " sr ("type-assert failed to compile! " ^ string_of_exe 0 exe);
+    end
+
 
   | EXE_label s ->
       state.reachable <- true;

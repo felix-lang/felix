@@ -590,6 +590,7 @@ print_endline ("Calculated isrec= " ^ if isrec then "true" else "false");
     end
 
   | BTYP_type_match (tt,pts) ->
+  begin
 (*
     print_endline ("Typematch [before reduction] " ^ sbt bsym_table t ^ "=" ^ Flx_btype.st t);
 *)
@@ -621,7 +622,9 @@ print_endline ("Calculated isrec= " ^ if isrec then "true" else "false");
     let pts = List.rev !new_matches in
     match pts with
     | [] ->
+      (*
       print_endline ("[beta-reduce] typematch failure " ^ sbt bsym_table t);
+      *)
       t 
 
     | ({pattern=p';pattern_vars=dvars;assignments=eqns},t') :: _ ->
@@ -637,4 +640,60 @@ print_endline ("Calculated isrec= " ^ if isrec then "true" else "false");
         *)
         adjust bsym_table t'
       with Not_found -> btyp_type_match (tt,pts)
+
+  end
+  | BTYP_subtype_match (tt,pts) ->
+  begin
+(*
+    print_endline ("Typematch [before reduction] " ^ sbt bsym_table t ^ "=" ^ Flx_btype.st t);
+*)
+    let tt = br tt in
+    let new_matches = ref [] in
+    List.iter (fun ({pattern=p; pattern_vars=dvars; assignments=eqns}, t') ->
+      (*
+      print_endline (spc ^"Tring to unify argument with " ^
+        sbt bsym_table p');
+      *)
+      let p =  br p in
+      let x =
+        {
+          pattern=p;
+          assignments=List.map (fun (j,t) -> j, br t) eqns;
+          pattern_vars=dvars;
+        }, t'
+      in
+      match maybe_specialisation bsym_table counter [p,tt] with
+      | Some _ -> new_matches := x :: !new_matches
+      | None ->
+        (*
+        print_endline (spc ^"Discarding pattern " ^ sbt bsym_table p');
+        *)
+        ()
+    )
+    pts
+    ;
+    let pts = List.rev !new_matches in
+    match pts with
+    | [] ->
+      (*
+      print_endline ("[beta-reduce] typematch failure " ^ sbt bsym_table t);
+      *)
+      t 
+
+    | ({pattern=p';pattern_vars=dvars;assignments=eqns},t') :: _ ->
+      let maybe_mgu = maybe_specialisation_with_dvars bsym_table counter [p', tt] dvars in
+      begin match maybe_mgu with
+      | Some mgu ->
+        (*
+        print_endline "Typematch success";
+        *)
+        let t' = list_subst counter (mgu @ eqns) t' in
+        let t' = br t' in
+        (*
+        print_endline ("type match reduction result=" ^ sbt bsym_table t');
+        *)
+        adjust bsym_table t'
+      | None -> btyp_subtype_match (tt,pts)
+      end
+  end
 

@@ -112,6 +112,17 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
     in  
     let result = List.rev result in
     result
+  | STMT_type_assert (sr,stmt) ->
+    let asms = rst state name access parent_vs stmt in
+    let result = List.fold_left (fun acc exe -> 
+      match exe with
+      | Exe (sr,asm) -> Exe (sr, EXE_type_assert asm) :: acc 
+      | a -> clierrx "[flx_desugar/flx_desugar.ml:106: E323] " sr ("type-assert statement must be purely executable got " ^ string_of_asm 0 a)
+    ) [] asms
+    in  
+    let result = List.rev result in
+    result
+
 
 
   | STMT_try sr -> [Exe (sr,EXE_try)]

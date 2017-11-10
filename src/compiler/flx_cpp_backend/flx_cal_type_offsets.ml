@@ -238,6 +238,7 @@ let rec get_offsets' syms bsym_table typ : string list =
   | BTYP_type_function _
   | BTYP_type_tuple _
   | BTYP_type_match _
+  | BTYP_subtype_match _
   | BTYP_type_set_intersection _
   | BTYP_type_set_union _ -> assert false
 

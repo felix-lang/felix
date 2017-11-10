@@ -227,6 +227,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     EXPR_typecase_match (sr, (t, List.combine ts xs))
 
   | EXPR_type_match _ -> [],e
+  | EXPR_subtype_match _ -> [],e
 
   | EXPR_noexpand (_,e) -> rex e
   | EXPR_name (sr,name,_) -> [],e

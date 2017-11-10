@@ -770,6 +770,10 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     let ps = List.map (fun (pat,e) -> pat, mt sr e) ps in
     EXPR_type_match (sr,(mt sr e,ps))
 
+  | EXPR_subtype_match (sr, (e,ps)) ->
+    let ps = List.map (fun (pat,e) -> pat, mt sr e) ps in
+    EXPR_subtype_match (sr,(mt sr e,ps))
+
   | EXPR_typecase_match (sr, (t,ps)) ->
     let ps = List.map (fun (t,e) -> mt sr t, me e) ps in
     EXPR_typecase_match (sr,(mt sr t,ps))
@@ -872,6 +876,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     
   | STMT_try _ -> tack st
   | STMT_type_error _ -> tack st
+  | STMT_type_assert _ -> tack st
 
   | STMT_endtry _ -> 
     reachable := true;

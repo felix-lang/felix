@@ -281,6 +281,10 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | EXPR_type_match (sr,(e,ps)) ->
     TYP_type_match (e,ps)
 
+  | EXPR_subtype_match (sr,(e,ps)) ->
+    TYP_subtype_match (e,ps)
+
+
   | EXPR_noexpand (sr,e) -> te e
 
   | EXPR_patvar (sr,s) -> TYP_patvar (sr,s)
@@ -324,6 +328,7 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
 
   | TYP_type_tuple ls -> EXPR_tuple (dsr, List.map (expr_of_typecode dsr) ls)
   | TYP_type_match (e,ps) -> EXPR_type_match (dsr,(e,ps))
+  | TYP_subtype_match (e,ps) -> EXPR_subtype_match (dsr,(e,ps))
 
   | TYP_type_extension (sr, bases, extension) -> 
       EXPR_extension (sr,
@@ -514,6 +519,7 @@ let string_of_type_name (t:typecode_t) = match t with
   | TYP_typefun _ -> "TYP_typefun"
   | TYP_type_tuple _ -> "TYP_type_tuple"
   | TYP_type_match _ -> "TYP_type_match"
+  | TYP_subtype_match _ -> "TYP_subtype_match"
   | TYP_type_extension _ -> "TYP_type_extension"
   | TYP_tuple_cons _ -> "TYP_tuple_cons"
   | TYP_tuple_snoc _ -> "TYP_tuple_snoc"

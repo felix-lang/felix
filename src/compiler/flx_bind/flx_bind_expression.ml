@@ -151,6 +151,7 @@ let rec bind_expression'
   | EXPR_vsprintf _
   | EXPR_interpolate _
   | EXPR_type_match _
+  | EXPR_subtype_match _
   | EXPR_noexpand _
   | EXPR_letin _
   | EXPR_typeof _

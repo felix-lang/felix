@@ -83,6 +83,7 @@ let fix i t =
     | BTYP_type_function _
     | BTYP_type_tuple _
     | BTYP_type_match _
+    | BTYP_subtype_match _
     | BTYP_type_set_union _ -> t
     | BTYP_type_set_intersection _ -> t
   in

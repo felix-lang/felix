@@ -300,6 +300,16 @@ and xexpr_t sr x =
      ts
    in EXPR_type_match (xsr sr,(ti t, ts))
 
+ | Lst [Id "ast_subtype_match";  sr; Lst [t; Lst ts]] ->
+   let ts =
+     map (function
+       | Lst [t1; t2] -> ti t1, ti t2
+       | x -> err x "ast_subtypematch typerrror"
+     )
+     ts
+   in EXPR_subtype_match (xsr sr,(ti t, ts))
+
+
  | Lst [Id "ast_typecase_match";  sr; Lst [t; Lst ts]] ->
    let ts =
      map (function
@@ -893,6 +903,7 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
     STMT_instance (sr, xvs sr vs, xq sr "ast_instance" qn, xsts sr sts)
 
   | Lst [Id "ast_type_error"; sr; stmt] -> let sr = xsr sr in STMT_type_error (sr, xs sr stmt)
+  | Lst [Id "ast_type_assert"; sr; stmt] -> let sr = xsr sr in STMT_type_assert(sr, xs sr stmt)
 
   | Lst [Id "ast_label"; sr; id] -> let sr = xsr sr in STMT_label (sr, xid id)
   | Lst [Id "ast_try"; sr] -> let sr = xsr sr in STMT_try (sr)

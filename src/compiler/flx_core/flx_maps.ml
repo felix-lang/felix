@@ -63,14 +63,14 @@ let map_type f (t:typecode_t):typecode_t = match t with
   (* dualizer *)
   | TYP_dual t -> TYP_dual (f t)
 
-  (*
-  | TYP_type_match (t,ps) ->
-    let ps = List.map (fun (p,t) -> p, f t) ps in
-    TYP_type_match (f t, ps)
-  *)
   | TYP_type_match (t,ps) ->
     let ps = List.map (fun (p,t) -> f p, f t) ps in
     TYP_type_match (f t, ps)
+
+  | TYP_subtype_match (t,ps) ->
+    let ps = List.map (fun (p,t) -> f p, f t) ps in
+    TYP_subtype_match (f t, ps)
+
 
   | TYP_tuple_cons (sr,t1,t2) -> TYP_tuple_cons (sr, f t1, f t2)
   | TYP_tuple_snoc (sr,t1,t2) -> TYP_tuple_snoc (sr, f t1, f t2)
@@ -204,6 +204,7 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
 
   | EXPR_expr (sr,s,t,e) -> EXPR_expr (sr,s,ft t, fe e)
   | EXPR_type_match _ -> e
+  | EXPR_subtype_match _ -> e
   | EXPR_typecase_match (sr,(t,ps)) ->
     let ps = List.map (fun (t,e) -> ft t, fe e) ps in
     EXPR_typecase_match (sr, (ft t, ps))
@@ -248,6 +249,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_literal _
   | EXPR_lambda _
   | EXPR_type_match _
+  | EXPR_subtype_match _
   | EXPR_pclt_type _
     -> ()
 
@@ -338,6 +340,7 @@ let rec map_exe fi ft fe (x:exe_t):exe_t = match x with
 
   | EXE_circuit cs -> x 
   | EXE_type_error (x) -> EXE_type_error (map_exe fi ft fe x)
+  | EXE_type_assert (x) -> EXE_type_assert (map_exe fi ft fe x)
   | EXE_code (c,e) -> EXE_code (c, fe e)
   | EXE_noreturn_code (c,e) -> EXE_noreturn_code (c, fe e)
   | EXE_comment _
@@ -375,6 +378,7 @@ let rec iter_exe fi ft fe (x:exe_t):unit = match x with
 
   | EXE_circuit cs ->  () 
   | EXE_type_error (x) -> iter_exe fi ft fe x
+  | EXE_type_assert (x) -> iter_exe fi ft fe x
   | EXE_code (c,e) ->fe e
   | EXE_noreturn_code (c,e) -> fe e
   | EXE_comment _
