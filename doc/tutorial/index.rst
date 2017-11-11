@@ -10,7 +10,8 @@ Contents:
 .. toctree::
    :maxdepth: 2
    
-   tutorial 
+   hello 
+   pythagoras
 
 Indices and tables
 ==================
