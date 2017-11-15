@@ -37,7 +37,7 @@ Of course, the operator `+` is addition.
 The `fun` binder is used here to define a function. Then we give
 the function name we want to use, in this case `hypot`.
 
-Then, in paranthesis we give a comma separated list of paramater
+Then, in paranthesis we give a comma separated list of parameter
 specifications. Each specification is the name of the parameter,
 followed by its type.
 

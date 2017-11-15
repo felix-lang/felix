@@ -12,12 +12,13 @@
 from pygments.lexer import RegexLexer, include, bygroups, default, words, \
     combined
 from pygments.token import Text, Comment, Operator, Keyword, Name, String, \
-    Number, Punctuation, Generic
+    Number, Punctuation, Generic, Token
 
-__all__ = ['FelixLexer']
+__all__ = ['XFelixLexer']
 
+XMath = Token.XMath
 
-class FelixLexer(RegexLexer):
+class XFelixLexer(RegexLexer):
     """
     For `Felix <http://felix-lang.org>`_ source code.
 
@@ -29,10 +30,17 @@ class FelixLexer(RegexLexer):
       for index,token,value in RegexLexer.get_tokens_unprocessed(self,text):
         if token == Generic:
           value = "\\(" + value + "\\)"
-        yield (index,token,value)
+          print ("Generic")
+          yield (index,token,value)
+        elif token == XMath:
+          print ("XMATH")
+          yield (index,Generic,value)
+        else:
+          yield (index,token,value)
+      
 
-    name = 'Felix'
-    aliases = ['felix', 'flx']
+    name = 'XFelix'
+    aliases = ['xfelix', 'xflx']
     filenames = ['*.flx', '*.flxh']
     mimetypes = ['text/x-felix']
 
@@ -159,6 +167,8 @@ class FelixLexer(RegexLexer):
 
             # TeX Identifiers
             (r"\\[A-Za-z]+", Generic),
+
+            (r'\\\(.*\\\)',XMath),
 
         ],
         'whitespace': [

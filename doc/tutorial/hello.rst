@@ -1,5 +1,5 @@
-Tutorial
-========
+Hello
+=====
 
 This is the Felix tutorial
 
@@ -25,6 +25,19 @@ To run it you just say:
 It's pretty simple. Felix runs programs like Python does, you run the 
 source code directly. Behind the scenes, Felix translates the program
 into C++, compiles the program, and runs it. All the generated files
-are cached in the .felix/cache subdirectory of your $HOME directory.
+are cached in the .felix/cache subdirectory of your $HOME directory
+on Unix like systems, and $USERPROFILE on Windows.
 
+TeX in code test here.
+
+.. code-block:: xfelix
+
+    fun \beta (w:double, a:double) : double =>
+      \(\sqrt{(w^{2^2} + \alpha^2)\over 2}\) + 42
+    ;
+
+    println$ \beta (3.0, 4.0);
+    println$ \(a^2 + b^2\);
+
+Did that work on RTD?
 
