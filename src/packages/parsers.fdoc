@@ -38,16 +38,18 @@ class Parsers
     ;
   }
 
-  union open_pgram_t[T] = 
-  | Action of action_t
-  | Recog of open_prod_t[T]
+  typedef open_pgram_t[T] =
+  ( 
+    | `Action of action_t
+    | open_prod_t[T]
+  )
   ;
 
   instance[T with Str[T]] Str[open_pgram_t[T]] 
   {
     fun str: open_pgram_t[T] -> string =
-    | Action a => "{" + a.str + "}"
-    | Recog r => r.str
+    | `Action a => "{" + a.str + "}"
+    | open_prod_t[T] :>> r => r.str
     ;
   }
 
@@ -268,21 +270,18 @@ class Parsers
     (p:pgram_t) 
   : parser_t =>
     match p with
-    | Recog r => 
-      match r with
-      | Terminal (s,r) => ActionSecond s white r 
-      | Epsilon => BaseChips::epsilon[parser_state_t] 
-      | Seq ps => BaseChips::pipeline_list (
+    | `Terminal (s,r) => ActionSecond s white r 
+    | `Epsilon => BaseChips::epsilon[parser_state_t] 
+    | `Seq ps => BaseChips::pipeline_list (
           map (fun (p:pgram_t) => render_pgram (lib,v) white p) ps) 
-      | Alt ps =>  BaseChips::tryall_list (
+    | `Alt ps =>  BaseChips::tryall_list (
           map (fun (p:pgram_t) => render_pgram (lib,v) white p) ps)
-      | Nonterminal nt => 
+    | `Nonterminal nt => 
          let idx : size = find v nt in
          let pslot : &pntdef_t = -(v.stl_begin + idx) in
          let pchip : &parser_t = pslot . 1 in
          BaseChips::deref_each_read pchip
-      endmatch
-    | Action a => ActionGeneral a
+    | `Action a => ActionGeneral a
   ;
 
   fun open_add_pgram[T] 
@@ -290,8 +289,8 @@ class Parsers
     (acc:list[string]) (p: open_pgram_t[T]) 
   : list[string] =>
     match p with
-    | Recog r => open_add_prod[T] aux acc r
-    | Action a => acc
+    | `Action a => acc
+    | open_prod_t[T] :>> r => open_add_prod[T] aux acc r
     endmatch
   ;
 
@@ -388,32 +387,32 @@ class Parsers
   {
    var out = Empty[pgramentry_t];
    match p with
-   | Action a => out = ([head,p]); 
-   | Recog Epsilon => out = ([head,p]);
-   | Recog (Terminal _) => out = ([head,Recog (Seq[pgram_t] ([p]))]);
-   | Recog (Nonterminal s) => out= ([head,Recog (Seq[pgram_t] ([p]))]);
+   | `Action a => out = ([head,p]); 
+   | `Epsilon => out = ([head,p]);
+   | `Terminal _ => out = ([head,(`Seq ([p])):>>pgram_t]);
+   | `Nonterminal s => out= ([head,(`Seq ([p])):>>pgram_t]);
 
-   | Recog (Seq ps) =>
+   | `Seq ps =>
      var newseq = Empty[pgram_t];
      for term in ps do
        match term with
-       | Action _ => newseq = term ! newseq;
-       | Recog Epsilon => ;
-       | Recog (Nonterminal _) => newseq = term ! newseq;
-       | Recog (Terminal _) => newseq = term ! newseq;
+       | `Action _ => newseq = term ! newseq;
+       | `Epsilon => ;
+       | `Nonterminal _ => newseq = term ! newseq;
+       | `Terminal _ => newseq = term ! newseq;
        | _ =>
          var newhead = fresh();
-         newseq = Recog (Nonterminal[pgram_t] newhead) ! newseq;
+         newseq = (`Nonterminal newhead) :>>pgram_t ! newseq;
          out = unpack fresh (newhead,term);
        endmatch;
      done
 
      match newseq with 
-     | Empty => out = (head,Recog (Epsilon[pgram_t])) ! out;
-     | _ => out = (head,Recog (Seq[pgram_t] (rev newseq))) ! out;
+     | Empty => out = (head,(#`Epsilon):>> pgram_t) ! out;
+     | _ => out = (head,(`Seq(rev newseq)):>>pgram_t) ! out;
      endmatch;
 
-   | Recog (Alt ps) =>
+   | `Alt ps =>
      iter (proc (p:pgram_t) { out = unpack fresh (head,p) + out; }) ps;
    endmatch;
    return out;
@@ -427,15 +426,15 @@ class Parsers
    var out = ([Empty[pgram_t]]);
    match p with
    // add symbol to each alternative
-   | Recog Epsilon => ;
-   | ( Action a  
-   | Recog (Terminal _) 
-   | Recog (Nonterminal s)) => 
+   | `Epsilon => ;
+   | `Action a  
+   | `Terminal _
+   | `Nonterminal s => 
      out = map (fun (ss: list[pgram_t]) => Cons (p,ss)) out; 
 
    // A sequence is unpacked by successively unpacking each
    // symbol. The result is then prepended to each alternative.
-   | Recog (Seq ps) =>
+   | `Seq ps =>
      for term in ps do
        var tmp = expand_aux term;
        var out2 = Empty[list[pgram_t]];
@@ -445,7 +444,7 @@ class Parsers
        out = out2;
      done
  
-   | Recog (Alt ps) =>
+   | `Alt ps =>
      var alts = cat (map expand_aux ps);
      out2 = Empty[list[pgram_t]];
      for left in alts perform
@@ -459,16 +458,16 @@ class Parsers
 
   fun expand (p:pgram_t) : pgram_t =>
     let ps = expand_aux p in
-    Recog (Alt[pgram_t] (map (fun (seqs: list[pgram_t]) => Recog (Seq[pgram_t] (rev seqs))) ps))
+    (`Alt (map (fun (seqs: list[pgram_t]) => (`Seq(rev seqs)):>>pgram_t) ps)) :>> pgram_t
   ;
 
   // in p replace nonterminal name with value (where q=name,value)
   fun substitute (q:pgramentry_t) (p:pgram_t)=>
     let name,value = q in
     match p with
-    | Recog (Nonterminal s) when name == s => value
-    | Recog (Seq ls) => Recog (Seq[pgram_t] (map (substitute q) ls))
-    | Recog (Alt ls) => Recog (Alt[pgram_t] (map (substitute q) ls))
+    | `Nonterminal s when name == s => value
+    | `Seq ls => (`Seq (map (substitute q) ls)) :>> pgram_t
+    | `Alt ls => (`Alt (map (substitute q) ls)) :>> pgram_t
     | _ => p
   ;
 
@@ -497,11 +496,11 @@ class Parsers
      var betas = Empty[list[pgram_t]];
   // where does Epsilon go??
      match expr with
-     | Recog (Alt alts) =>
+     | `Alt alts =>
        for alt in alts do
          match alt with
-         | Recog (Seq (Cons (Recog (Nonterminal $(nt)),tail))) => alphas = tail ! alphas;
-         | Recog (Seq b) => betas = b ! betas;
+         | (`Seq (Cons ((`Nonterminal $(nt)),tail))) => alphas = tail ! alphas;
+         | (`Seq b) => betas = b ! betas;
          | x => betas = ([x]) ! betas;
 
          //| x => println$ "EDLR, unexpected alternative " + x.str; assert false;
@@ -515,11 +514,11 @@ class Parsers
        outgram = (nt,expr) ! outgram;
      else 
        var newntname = fresh();
-       var newnt = Recog (Nonterminal[pgram_t] newntname); 
-       var alts = map (fun (b:list[pgram_t]) => Recog (Seq (b + newnt))) betas;
-       outgram =  (nt, Recog (Alt alts)) !  outgram ;
-       alts = map (fun (a:list[pgram_t]) => Recog (Seq (a + newnt))) alphas + Recog (Epsilon[pgram_t]);
-       outgram = (newntname, Recog (Alt alts)) ! outgram;
+       var newnt = (`Nonterminal newntname) :>> pgram_t; 
+       var alts = map (fun (b:list[pgram_t]) => (`Seq (b + newnt)):>>pgram_t) betas;
+       outgram =  (nt, (`Alt alts) :>>pgram_t) !  outgram ;
+       alts = map (fun (a:list[pgram_t]) => (`Seq (a + newnt)):>>pgram_t) alphas + (#`Epsilon):>>pgram_t;
+       outgram = (newntname, (`Alt alts):>>pgram_t) ! outgram;
      done
    done
    return outgram;
@@ -543,8 +542,8 @@ class Parsers
 
   fun make_seq (a:pgram_t) (b:list[pgram_t]) =>
     match a with
-    | Recog (Seq a) => Recog (Seq (a + b))
-    | _ => Recog (Seq (a ! b))
+    | (`Seq a) => (`Seq (a + b)) :>> pgram_t
+    | _ => (`Seq (a ! b)) :>> pgram_t
   ; 
 
   // requires one entry per non-terminal, sorted for performance
@@ -565,7 +564,7 @@ class Parsers
 println$ "left_recursion_elimination considering nonterminal A_i=" +rnt;
        var rprods = 
          match rdfn with
-         | Recog (Alt alts) => alts
+         | `Alt alts => alts
          | _ => ([rdfn])
        ;
 
@@ -575,7 +574,7 @@ println$ "left_recursion_elimination considering nonterminal A_i=" +rnt;
 println$ "  left_recursion_elimination considering nonterminal A_j=" +lnt;
          var lprods = 
            match ldfn with
-           | Recog (Alt alts) => alts
+           | `Alt alts => alts
            | _ => ([ldfn])
          ;
          var counter = -1;
@@ -583,7 +582,7 @@ println$ "  left_recursion_elimination considering nonterminal A_j=" +lnt;
 println$ "    checking if " + rnt + " = " + rprod.str + " has left corner A_j=" + lnt;
            ++counter;
            match rprod with
-           | Recog (Seq (Recog (Nonterminal s) ! alpha)) =>
+           | `Seq ((`Nonterminal s) ! alpha) =>
              if s == lnt do
 println$ "      YES: replace";
                toremove = counter ! toremove;
@@ -592,7 +591,7 @@ println$ "      YES: replace";
              else // not of form A_i = A_j alpha
 println$ "      NO: keep";
              done
-           | Recog (Nonterminal s) => // alpha = Epsilon
+           | `Nonterminal s => // alpha = Epsilon
              if s == lnt do
 println$ "      YES: replace";
                toremove = counter ! toremove;
@@ -613,7 +612,7 @@ println$ "      NO: keep";
          if not (counter in toremove) perform
            toadd = elt ! toadd;
        done
-       var newa_i = direct_left_recursion_elimination fresh ([rnt, Recog (Alt toadd)]);
+       var newa_i = direct_left_recursion_elimination fresh ([rnt, (`Alt toadd) :>> pgram_t]);
        return left_recursion_elimination_step fresh (newa_i + left) tail;
      endmatch;
   }
@@ -694,16 +693,16 @@ class Parser_synlib
 {
   open Parsers;
   open Grammars;
-  fun NT (s:string) => Recog (Nonterminal [pgram_t] s);
-  fun TERM (s:string, r:Recognisers::recog_t) => Recog (Terminal [pgram_t] (s,r));
-  fun STR (s:string) => Recog (Terminal [pgram_t] (s, (Recognisers::match_string s)));
-  fun REDUCE (s:string, n:int) => Action[pgram_t] (Reduce (s,n));
-  fun BINOP(s:string) => Action[pgram_t] (Sequence ([Swap, Drop 1, (Reduce (s,2))]));
-  fun SWAP () => Action[pgram_t] (Swap);
-  fun DROP (n:int) => Action[pgram_t] (Drop n);
-  fun ALT (ls: list[pgram_t]) => Recog (Alt[pgram_t] ls);
-  fun SEQ (ls: list[pgram_t]) => Recog (Seq[pgram_t] ls);
-  fun EPS () => Recog (Epsilon[pgram_t]);
+  fun NT (s:string) => (`Nonterminal  s) :>> pgram_t ;
+  fun TERM (s:string, r:Recognisers::recog_t) => (`Terminal (s,r)) :>> pgram_t;
+  fun STR (s:string) => (`Terminal (s, (Recognisers::match_string s)));
+  fun REDUCE (s:string, n:int) => (`Action (Reduce (s,n))) :>> pgram_t;
+  fun BINOP(s:string) => (`Action (Sequence ([Swap, Drop 1, (Reduce (s,2))]))):>>pgram_t;
+  fun SWAP () => (`Action (Swap)) :>> pgram_t;
+  fun DROP (n:int) => (`Action (Drop n)) :>> pgram_t;
+  fun ALT (ls: list[pgram_t]) => (`Alt ls) :>> pgram_t;
+  fun SEQ (ls: list[pgram_t]) => (`Seq ls) :>> pgram_t;
+  fun EPS () => (#`Epsilon) :>> pgram_t;
 }
 
 

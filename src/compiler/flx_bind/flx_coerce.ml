@@ -132,6 +132,8 @@ print_endline ("Binding coercion " ^ sbe bsym_table x' ^ ": " ^ sbt bsym_table t
 *)
     if type_eq bsym_table state.Flx_lookup_state.counter t' t'' then x'
     else
+    let t' = unfold "flx_coerce1" t' in
+    let t'' = unfold "flx_coerce1" t'' in
     begin match t',t'' with
     | BTYP_inst (i,[]),t when Flx_btype.islinear_type bsym_table t->
       let n = Flx_btype.sizeof_linear_type bsym_table  t in

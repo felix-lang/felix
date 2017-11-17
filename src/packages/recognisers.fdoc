@@ -733,13 +733,13 @@ fun render_prod
   (p:prod_t) 
 : recog_t =>
   match p with
-  | Terminal (s,r) => r 
-  | Epsilon =>  epsilon[Buffer] 
-  | Seq ps =>  pipeline_list (
+  | `Terminal (s,r) => r 
+  | `Epsilon =>  epsilon[Buffer] 
+  | `Seq ps =>  pipeline_list (
       map (fun (p:prod_t) => render_prod (lib,v) p) ps) 
-  | Alt ps =>   tryall_list (
+  | `Alt ps =>   tryall_list (
       map (fun (p:prod_t) => render_prod (lib,v) p) ps) 
-  | Nonterminal nt => 
+  | `Nonterminal nt => 
     let idx = find v nt in
     let pslot = -(v.stl_begin + idx) in
     let pchip = pslot . 1 in

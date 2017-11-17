@@ -9,21 +9,25 @@ open BaseChips;
 
 // silly sample grammar, right associative operators +, * ^ parens () and 
 // value 9 only
-fun strng (s:string) => Terminal[prod_t] (s, match_string s);
+fun strng (s:string) => (`Terminal (s, match_string s)) :>> prod_t;
+fun nt (s:string) => (`Nonterminal s):>> prod_t;
+fun seq (ps: list[prod_t]) => (`Seq ps) :>> prod_t;
+fun alt (ps: list[prod_t]) => (`Alt ps) :>> prod_t;
+val eps = (#`Epsilon) :>> prod_t;
 
-var xprod = Alt([
-  Seq ([Nonterminal[prod_t] "term", strng "+", Nonterminal[prod_t] "expr"]),
-  Nonterminal[prod_t] "term"]);
+var xprod = alt([
+  seq ([nt "term", strng "+", nt "expr"]),
+  nt "term"]);
    
-var tprod = Alt ([
-  Seq ([Nonterminal[prod_t] "factor", strng "*", Nonterminal[prod_t] "term"]),
-  Nonterminal[prod_t] "factor"]);
+var tprod =alt ([
+  seq ([nt "factor", strng "*", nt "term"]),
+  nt "factor"]);
 
-var fprod = Alt ([Seq ([Nonterminal[prod_t] "atom", strng "^", Nonterminal[prod_t] "factor"]),
-  Nonterminal[prod_t] "atom"]);
+var fprod = alt ([seq ([ nt "atom", strng "^", nt "factor"]),
+  nt "atom"]);
 
-var atom = Alt ([
-  Seq ([strng "(", Nonterminal[prod_t] "expr", strng ")"]),
+var atom = alt ([
+  seq ([strng "(", nt "expr", strng ")"]),
   strng "9"]);
 
 
