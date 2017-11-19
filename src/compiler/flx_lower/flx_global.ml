@@ -22,6 +22,7 @@ open Flx_bid
 
 let throw_on_heap_type bsym_table t =
     begin match t with
+    | BTYP_variant _ -> raise Not_found
     | BTYP_sum args when not (all_units args) -> raise Not_found
     | BTYP_inst (i,ts) ->
       begin match Flx_bsym_table.find_bbdcl bsym_table i with

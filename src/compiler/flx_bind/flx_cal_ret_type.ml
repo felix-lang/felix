@@ -46,6 +46,10 @@ print_endline ("Cal ret type of " ^ id ^ "<" ^ string_of_int index ^ "> at " ^ F
 *)
     let rt = bind_type' state bsym_table env rs sr rt args mkenv in
     let rt = beta_reduce "flx_lookup: cal_ret_type" state.counter bsym_table sr rt in
+    let pvtype = match rt with BTYP_variant _ -> true | _ -> false in
+(*
+    if pvtype then print_endline (id ^ " has pv type " ^ sbt bsym_table rt);
+*)
     let ret_type = ref rt in
     let return_counter = ref 0 in
 (*
@@ -121,16 +125,19 @@ print_endline "Flx_lookup: about to check calculated and registered return type"
 print_endline ("Return type = " ^ Flx_btype.st !ret_type);
 print_endline ("Return expression type = " ^ Flx_btype.st t);
 *)
+        if pvtype then
+          () (* use the declared return type, let the coercion be inserted later *) 
+        else
         let result = Flx_do_unify.do_unify
-          state.counter
-          state.varmap
-          state.sym_table
-          bsym_table
-          !ret_type
-          t
+           state.counter
+           state.varmap
+           state.sym_table
+           bsym_table
+           !ret_type
+           t
           (* the argument order is crucial *)
         in 
-       if result then
+        if result then
           let t' = varmap_subst state.varmap !ret_type in
 (*
 print_endline (" %%%%% Setting return type to " ^ sbt bsym_table t');

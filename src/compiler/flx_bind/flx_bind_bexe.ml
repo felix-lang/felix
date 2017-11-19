@@ -233,6 +233,8 @@ let rec bind_exe' (state: Flx_bexe_state.bexe_state_t) bsym_table (sr, exe) : be
 (*
 print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_type);
   print_endline ("EXE="^string_of_exe 1 exe);
+*)
+(*
   if not state.reachable then
   begin
     match exe with
@@ -610,7 +612,33 @@ print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
       end
 *)
     end
-    else clierrx "[flx_bind/flx_bind_bexe.ml:593: E30] " sr
+    (* coerce type of return value to specified function return type if
+       they're polymorphic variants, and the return value type
+       is a subtype of the specified function return type
+    *)
+    else begin match unfold "bind_exe_v2" t', unfold "bind_exe_v1" state.ret_type with
+    | BTYP_variant ts, BTYP_variant rs ->
+      begin try List.iter (fun (name,t) ->
+         let r = List.assoc name rs in
+         if not (type_eq bsym_table state.counter r t) then raise Not_found
+      ) ts;
+(*
+      print_endline ("Coercing return value");
+*)
+      [(bexe_fun_return (sr,bexpr_coerce ((e',t'), state.ret_type)))]
+      with Not_found -> 
+      clierrx "[flx_bind/flx_bind_bexe.ml:593: E30] " sr
+        (
+          "[bind_exe: fun_return ] return expression \n" ^
+          sbe bsym_table e ^
+          "\nof type\n" ^
+          sbt bsym_table t' ^
+          "\nis not a subtype of the function return type:\n" ^ 
+          sbt bsym_table state.ret_type
+        )
+      end
+    | _ ->
+    clierrx "[flx_bind/flx_bind_bexe.ml:593: E30] " sr
       (
         "[bind_exe: fun_return ] return expression \n" ^
         sbe bsym_table e ^
@@ -619,6 +647,7 @@ print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
         "\ndoes not agree with the function return type:\n" ^ 
         sbt bsym_table state.ret_type
       )
+    end
 
   | EXE_yield e ->
     state.return_count <- state.return_count + 1;
@@ -658,10 +687,14 @@ print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
         sbt bsym_table t
       )
 
+  (* this instruction appears to be ONLY created by the desugaring
+     of a pattern match, it is similar to EXE_init, except the first
+     argument also contains the string name of the variable. It is used
+     to hold the evaluated match arument which this instruction assigns.
+     At present this code does NOT do the polymorphic variant subtyping
+     implicit coercion. I dont know if it should or not.
+  *)
   | EXE_iinit ((s,index),e) ->
-(*
-print_endline ("Bind EXE_iinit "^s);
-*)
       let e',rhst = be e in 
       (* a type variable in executable code just has to be of kind TYPE *)
       let parent_ts = map
@@ -737,7 +770,31 @@ print_endline ("Bind EXE_init "^s);
             print_endline ("Index = " ^ si index ^ " initexpr=" ^ sbe bsym_table (e',rhst) ^ " type of variable is " ^ sbt bsym_table rhst);
 *)
             [bexe]
-          end else clierrx "[flx_bind/flx_bind_bexe.ml:724: E35] " sr
+          end 
+        else begin match unfold "bind_exe_v2" rhst, unfold "bind_exe_v1" lhst with
+        | BTYP_variant ts, BTYP_variant rs ->
+          begin try List.iter (fun (name,t) ->
+             let r = List.assoc name rs in
+             if not (type_eq bsym_table state.counter r t) then raise Not_found
+          ) ts;
+    (*
+          print_endline ("Coercing init value");
+    *)
+          let bexe = bexe_init (sr,index,bexpr_coerce ((e',rhst), lhst)) in
+          [bexe]
+          with Not_found -> 
+          clierrx "[flx_bind/flx_bind_bexe.ml:782: E30A] " sr
+            (
+              "[bind_exe: init] initialising expression \n" ^
+              sbe bsym_table (e',rhst) ^
+              "\nof type\n" ^
+              sbt bsym_table rhst ^
+              "\nis not a supertype of the declared variable type:\n" ^ 
+              sbt bsym_table lhst 
+            )
+          end (* try *)
+        | _ ->
+          clierrx "[flx_bind/flx_bind_bexe.ml:793: E35] " sr
           (
             "[bind_exe: init] LHS[" ^ s ^ "<" ^ string_of_bid index ^ ">]:\n" ^
             sbt bsym_table lhst^
@@ -749,6 +806,7 @@ print_endline ("Bind EXE_init "^s);
             print_vs state.parent_vs
             else "")
           )
+        end (* variant check *)
       end
 
   | EXE_assign (l,r) ->
@@ -787,7 +845,30 @@ print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
 *)
       if type_match bsym_table state.counter lhst rhst
       then [(bexe_assign (sr,lx,rx))]
-      else clierrx "[flx_bind/flx_bind_bexe.ml:765: E36] " sr
+      else begin match unfold "bind_exe_v2" rhst, unfold "bind_exe_v1" lhst with
+      | BTYP_variant ts, BTYP_variant rs ->
+        begin try List.iter (fun (name,t) ->
+           let r = List.assoc name rs in
+           if not (type_eq bsym_table state.counter r t) then raise Not_found
+        ) ts;
+  (*
+        print_endline ("Coercing init value");
+  *)
+        let bexe = bexe_assign (sr,lx,bexpr_coerce (rx, lhst)) in
+        [bexe]
+        with Not_found -> 
+        clierrx "[flx_bind/flx_bind_bexe.ml:856: E30B] " sr
+          (
+            "[bind_exe: assign] RHS expression \n" ^
+            sbe bsym_table rx ^
+            "\nof type\n" ^
+            sbt bsym_table rhst ^
+            "\nis not a supertype of the LHS type:\n" ^ 
+            sbt bsym_table lhst 
+          )
+        end (* try *)
+      | _ ->
+      clierrx "[flx_bind/flx_bind_bexe.ml:867: E36] " sr
       (
         "[bind_exe: assign ] Assignment "^
           sbe bsym_table lx^"="^
@@ -797,6 +878,7 @@ print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
         "RHS type: " ^ sbt bsym_table rhst ^
         record_field_diag bsym_table lhst rhst
       )
+      end (* variant check *)
 
   | EXE_storeat (l,r) ->
     let _,lhst as lx = be l in

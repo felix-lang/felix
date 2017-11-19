@@ -10,24 +10,24 @@ open Flx_bid
 let generated = Flx_srcref.make_dummy "[flx_match] generated"
 let etup = EXPR_tuple (generated,[])
 
-let make_match_check sr rex pat match_var_name match_var_index =
+let make_match_check sr rex_with_ret pat match_var_name match_var_index =
   let params = [], None in
   let match_expr = Flx_desugar_pat.gen_match_check pat (EXPR_index (sr,match_var_name, match_var_index)) in
-  let stmts, e = rex match_expr in
+  let stmts, e = rex_with_ret match_expr TYP_none in
   let asms = stmts @ [Exe (sr,EXE_fun_return e)] in
   DCL_function (params, Flx_typing.flx_bool,Flx_typing.flx_unit,[`Generated "Flx_match.make_match_check"],asms)
 
 let make_match_handler sr rex pat match_var_name match_var_index body =
  assert false (* TO BE DONE *)
 
-let gen_stmt_match seq rex rsts name (* parent_vs access *) sr e pss =
+let gen_stmt_match seq rex_with_ret rsts_with_ret name (* parent_vs access *) sr e pss rettype =
 (*
-print_endline ("Generating stmt match " ^ name ^ ", expr=" ^ string_of_expr e);
+print_endline ("Generating stmt match " ^ name ^ ", expr=" ^ string_of_expr e ^ ", rettype=" ^ string_of_typecode rettype);
 *)
     if List.length pss = 0 then clierrx "[flx_desugar/flx_match.ml:243: E340] " sr "Empty Pattern";
 
     (* step 1: evaluate e *)
-    let d,x = rex e in
+    let d,x = rex_with_ret e TYP_none in
     let match_var_index : bid_t = seq () in
 
     let match_var_name = name^ "_mv_" ^ string_of_bid match_var_index in
@@ -98,7 +98,7 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
 (*
         rsts name parent_vs access [block sr !new_sts]
 *)
-        rsts (* name parent_vs access *) !new_sts
+        rsts_with_ret (* name parent_vs access *) rettype !new_sts
       in
 (*
 print_endline ("Body=");
@@ -130,7 +130,7 @@ List.iter (fun st -> print_endline (string_of_asm 2 st)) body;
       matches := !matches @
         [
           Dcl (patsrc,match_checker_id,Some n1,`Private,dfltvs,
-          make_match_check sr rex pat match_var_name match_var_index)
+          make_match_check sr rex_with_ret pat match_var_name match_var_index)
         ]
         @
         [
@@ -215,7 +215,10 @@ List.iter (fun st -> print_endline (string_of_asm 2 st)) body;
     match_function_body
 
 
-let gen_match rex rsts seq name sr e pss =
+let gen_match rex_with_ret rsts_with_ret seq name sr e pss rettype =
+(*
+print_endline ("gen_match, rettype=" ^ string_of_typecode rettype);
+*)
     let match_function_index = seq() in
     let match_function_id =
       name ^ "_mf_" ^ string_of_bid match_function_index
@@ -225,7 +228,7 @@ let gen_match rex rsts seq name sr e pss =
     in
 
     let pss = List.map (fun (pat,exp) -> pat, [STMT_fun_return (sr, exp)]) pss in
-    let match_function_body = gen_stmt_match seq rex rsts name sr e pss in
+    let match_function_body = gen_stmt_match seq rex_with_ret rsts_with_ret name sr e pss rettype in
  
 
     [
@@ -238,7 +241,7 @@ let gen_match rex rsts seq name sr e pss =
         DCL_function
         (
           ([],None),
-          TYP_none,
+          rettype,
           Flx_typing.flx_unit,
           [`GeneratedInline;`Generated "desugar:match fun"],
           match_function_body

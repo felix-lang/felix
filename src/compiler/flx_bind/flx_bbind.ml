@@ -214,7 +214,7 @@ print_endline (" &&&&&& bind_type_uses calling BBIND_SYMBOL");
   (* this is the full vs list *)
   let ivs = find_vs state.sym_table bsym_table symbol_index in
   let is_generic vs = List.fold_left (fun acc (name,index,typ) ->
-      acc || match typ with | KND_generic _ -> true | _ -> false) 
+      acc || match typ with | KND_generic -> true | _ -> false) 
       false
       vs
   in
@@ -383,7 +383,7 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
 
   | SYMDEF_function (ps,rt,effects,props,exes) ->
 (*
-print_endline ("Binding function " ^ sym.Flx_sym.id);
+print_endline ("Flx_bbind: Binding function " ^ sym.Flx_sym.id);
     print_endline (" ... Binding parameters");
 *)
     let bps = bindps ps in
@@ -394,6 +394,10 @@ print_endline ("Binding function " ^ sym.Flx_sym.id);
 
     (* We don't need to bind the intermediary type. *)
     let brt = bt' rt in
+(*
+print_endline ("Flx_bbind: Calculate return type " ^ string_of_typecode rt ^
+  " ==> " ^ sbt bsym_table brt);
+*)
     let beffects = bt' effects in
 (*
 if sym.Flx_sym.id = "hhhhh" then
@@ -411,7 +415,7 @@ print_endline ("Effects = " ^ Flx_btype.st beffects);
         else btyp_effector (d,beffects,brt)
       in
       let t = Flx_fold.fold bsym_table state.counter ft in
-if debug then
+ if debug then 
 print_endline ("Flx_bbind: Adding type of index " ^ si symbol_index ^ " to cache, type=" ^ Flx_btype.st t);
       Hashtbl.add state.ticache symbol_index t
     end;

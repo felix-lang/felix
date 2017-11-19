@@ -17,6 +17,7 @@ open Flx_use
 open Flx_beta
 open Flx_bid
 open Flx_btype_subst
+open Flx_kind
 
 module CS = Flx_code_spec
 let drop l n = Flx_list.list_tail l n

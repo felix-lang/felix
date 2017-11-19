@@ -51,8 +51,7 @@ let gen_call_init sr name' =
 
 (* -------------------------------------------------------------------------- *)
 (** Recursive statement desugerer *)
-let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
-
+let rec rst_with_ret state name access (parent_vs:vs_list_t) rettype (st:statement_t): asm_t list =
   (* construct an anonymous name *)
   let parent_ts sr : typecode_t list =
     List.map 
@@ -74,23 +73,30 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
   *)
   let bridge sr n = Flx_reqs.bridge sr n parent_vs rqname' name in
 
+
+  let rst_with_ret name access parent_vs rettype st = rst_with_ret state name access parent_vs rettype st in 
+  let rst name access parent_vs st = rst_with_ret name access parent_vs TYP_none st in 
+
+  let rsts_with_ret name vs access rettype sts = 
+    List.concat 
+      (List.map
+        (rst_with_ret name access vs rettype) 
+        sts)
+  in
+  let rsts name vs acces sts = rsts_with_ret name vs access TYP_none sts in 
+
   (* rename _root headers *)
-  let rex x = 
+  let rex_with_ret x rettype = 
     Flx_desugar_expr.rex 
-      rst 
+      rst_with_ret 
       (Flx_reqs.mkreqs state access parent_ts) 
       (Flx_reqs.map_reqs rqname') 
       state 
       name 
       x 
+      rettype
   in
-
-  let rsts name vs access sts = 
-    List.concat 
-      (List.map
-        (rst state name access vs) 
-        sts)
-  in
+  let rex x = rex_with_ret x TYP_none in
 
   let seq () = state.Flx_desugar_expr.fresh_bid () in
 
@@ -103,7 +109,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
     [Exe (sr,(EXE_circuit (cs)))]
 
   | STMT_type_error (sr,stmt) ->
-    let asms = rst state name access parent_vs stmt in
+    let asms = rst name access parent_vs stmt in
     let result = List.fold_left (fun acc exe -> 
       match exe with
       | Exe (sr,asm) -> Exe (sr, EXE_type_error asm) :: acc 
@@ -113,7 +119,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
     let result = List.rev result in
     result
   | STMT_type_assert (sr,stmt) ->
-    let asms = rst state name access parent_vs stmt in
+    let asms = rst name access parent_vs stmt in
     let result = List.fold_left (fun acc exe -> 
       match exe with
       | Exe (sr,asm) -> Exe (sr, EXE_type_assert asm) :: acc 
@@ -133,7 +139,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
    ]
 
   | STMT_seq _ -> assert false
-  | STMT_private (sr,st) -> rst state name `Private parent_vs st
+  | STMT_private (sr,st) -> rst name `Private parent_vs st
   | STMT_include (sr,inspec) ->
       state.Flx_desugar_expr.include_file_cache <- (sr, inspec) :: state.Flx_desugar_expr.include_file_cache;
       []
@@ -189,7 +195,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
     *)
     begin match typ,expr with
     | Some t, Some e ->
-      let d,x = rex e in
+      let d,x = rex_with_ret e t in
       d @ [
         Dcl (sr,name,None,access,vs,DCL_value (t, `Var));
         (* Exe (sr,EXE_init (name,x))] *)
@@ -212,7 +218,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
     *)
     begin match typ,expr with
     | Some t, Some e ->
-      let d,x = rex e in
+      let d,x = rex_with_ret e t in
       d @ [
         Dcl (sr,name,None,access,vs,DCL_value (t, `Val));
         (* Exe (sr,EXE_init (name,x))] *)
@@ -230,6 +236,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
     end
 
   | STMT_once_decl (sr,name,vs,typ,expr) ->
+print_endline ("Once decl detected, deprecated");
     let vs_exprs = List.map (fun (s,_)->TYP_name (sr,s,[])) (fst vs) in
     begin match typ,expr with
     | Some t, Some e ->
@@ -251,6 +258,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
     end
 
   | STMT_ref_decl (sr,name,vs,typ,expr) ->
+print_endline ("Ref decl detected, deprecated");
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
@@ -364,11 +372,14 @@ print_endline ("Translating Lazy Declaration " ^ name);
   | STMT_inherit_fun (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit_fun qn)]
 
   | STMT_curry (sr,name',vs,pps,ret,effects,kind,adjs,sts) ->
+(*
+print_endline ("STMT_curry " ^ name' ^ ", rettype=" ^ string_of_typecode ret);
+*)
     (* construct a function-like STMT from the given statements, etc. *)
     let curr = (Flx_curry.mkcurry seq sr name' vs pps ret effects kind sts adjs) in
 
     (* The final construction we want to return and possibly export. *)
-    let fdef = rst state name access parent_vs curr in
+    let fdef = rst name access parent_vs curr in
 
     (* Determine if we should export this function *)
     let export_name = ref name' in
@@ -423,9 +434,16 @@ print_endline ("Translating Lazy Declaration " ^ name);
 
   | STMT_function (sr,name', vs, params, (res,postcondition), effects, props, sts) ->
 (*
-    print_endline ("Desugar: STMT_function "^name'^" to DCL_function " ^ Flx_srcref.short_string_of_src sr);
+    begin match sts with
+    | [STMT_fun_return (sr,e)] -> 
+      print_endline ("Desugar: SOLO RETURN STMT_function "^name'^
+      " to DCL_function " ^ Flx_srcref.short_string_of_src sr ^ ", rettype=" ^ string_of_typecode res);
+    | _ -> ()
+    end
+    ;
 *)
     (*
+    print_endline ("Desugar: STMT_function "^name'^" to DCL_function " ^ Flx_srcref.short_string_of_src sr);
     print_endline (string_of_statement 0 st);
     *)
     let ps,traint = params in
@@ -443,7 +461,7 @@ ps;
 
       (* Merge new type variables with existing *)
       let vs = Flx_merge_vs.merge_vs vs (vs',dfltvs_aux)  in
-      let asms = rsts name' dfltvs `Public sts in
+      let asms = rsts_with_ret name' dfltvs `Public res sts in
       let asms = bridge name' sr :: asms in
 
       (* Fix params with type level lifting *)
@@ -516,7 +534,7 @@ ps;
       let st =
         STMT_function (sr,name',vs,(ps,None),(res,None),effects,props,sts)
       in
-      asms @ (rst state name access parent_vs st) 
+      asms @ (rst_with_ret name access parent_vs res st) 
     end
 
   | STMT_fun_decl (sr,name',vs,args,result,code, reqs,prec) ->
@@ -579,10 +597,15 @@ print_endline ("Flx_desugar found ref to typeset " ^ name);
 
 
   | STMT_fun_return (sr,e) ->
-    let d,x = rex e in d @ [Exe (sr,EXE_fun_return x)]
+(*
+print_endline ("STMT_fun_return " ^ string_of_expr e^ ", rettype=" ^ string_of_typecode rettype);
+*)
+    let d,x = rex_with_ret e rettype in 
+    let x = if rettype = TYP_none then x else EXPR_coercion (sr,(x, rettype)) in
+    d @ [Exe (sr,EXE_fun_return x)]
 
   | STMT_yield (sr,e) ->
-    let d,x = rex e in d @ [Exe (sr,EXE_yield x)]
+    let d,x = rex_with_ret e rettype in d @ [Exe (sr,EXE_yield x)]
 
   | STMT_assert (sr,e) ->
     let d,x = rex e in d @ [Exe (sr,EXE_assert x)]
@@ -717,7 +740,7 @@ print_endline ("Flx_desugar found ref to typeset " ^ name);
     d @ [Exe (sr,EXE_noreturn_code (s,x))]
 
   | STMT_stmt_match (sr,(e,pss)) -> 
-    Flx_match.gen_stmt_match seq rex (rsts name parent_vs access) name sr e pss
+    Flx_match.gen_stmt_match seq rex_with_ret (rsts_with_ret name parent_vs access) name sr e pss rettype
 
   (* split into multiple declarations *)
 
@@ -747,7 +770,7 @@ let rec desugar_stmts state curpath stmts =
      string_of_int (Flx_macro.get_macro_seq (state.Flx_desugar_expr.macro_state))); 
 *)
   let asms = List.concat (List.map
-    (rst state state.Flx_desugar_expr.name `Public dfltvs)
+    (rst_with_ret state state.Flx_desugar_expr.name `Public dfltvs TYP_none) (* should be void? *)
     stmts)
   in
 (*

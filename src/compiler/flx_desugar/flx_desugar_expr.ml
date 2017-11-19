@@ -106,9 +106,15 @@ let rec rett_fixparams rex ps =
   so we have to apply rsts to these bodies..
 *)
 
-let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t list * expr_t =
-  let rex e = rex rst mkreqs map_reqs state name e in
-  let rsts sts = List.concat (List.map (rst state name `Private dfltvs) sts) in
+let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) rettype : asm_t list * expr_t =
+  let rex_with_ret e rettype = rex rst_with_ret mkreqs map_reqs state name e rettype in
+  let rex e = rex_with_ret e rettype in
+
+  let rst st = rst_with_ret name `Private dfltvs rettype st in
+
+  let rsts_with_ret rettype sts = List.concat (List.map (rst_with_ret name `Private dfltvs rettype) sts) in
+  let rsts sts = rsts_with_ret rettype sts in
+
   let sr = src_of_expr e in
   let seq () = state.fresh_bid () in
   match e with
@@ -558,11 +564,11 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     let n = seq() in
     let name' = "_lam_" ^ string_of_bid n in
     let access = `Private in
-    let sts = rst
-      state
+    let sts = rst_with_ret
       name
       access
       dfltvs
+      ret
       (mkcurry seq sr name' vs pps (ret,None) Flx_typing.flx_unit kind sts [`Generated "lambda"])
     in
     if List.length pps = 0 then syserr sr "[rex] Lambda with no arguments?" else
@@ -579,8 +585,12 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     sts,e
 
   | EXPR_coercion (sr,(e,t)) ->
-    let l1,x1 = rex e in
-    l1, EXPR_coercion (sr,(x1,t))
+    begin match t with
+    | TYP_none -> rex e (* allow system to coerce expression to unknown type as nop *)
+    | _ ->
+      let l1,x1 = rex e in
+      l1, EXPR_coercion (sr,(x1,t))
+    end
 
   | EXPR_variant_subtype_match_coercion (sr,(e,t)) ->
     let l1,x1 = rex e in
@@ -602,7 +612,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
   *)
 
   | EXPR_match (sr,(e,pss)) ->
-    Flx_match.gen_match rex rsts seq name sr e pss
+    Flx_match.gen_match rex_with_ret rsts_with_ret seq name sr e pss rettype
 
 (* remove blocks *)
 (* parent vs is containing module vs .. only for modules *)
