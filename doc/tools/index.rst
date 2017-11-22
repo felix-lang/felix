@@ -11,6 +11,8 @@ Contents:
    :maxdepth: 2
    
    installation 
+   basicoperation
+   thirdpartylibraries
 
 Indices and tables
 ==================

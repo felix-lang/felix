@@ -48,7 +48,7 @@ Clone Felix
 You first need to configure git, please see git docs.
 Then for a user without write access to the Felix repository,
 make a workspace directory *in which* the Felix repository
-directory will be created. Now grab a copy of Felix:
+directory will be created and `cd` into it. Now grab a copy of Felix:
 
 .. code-block:: bash
 
@@ -113,12 +113,31 @@ Now you should be able to run the GUI tests:
 
     make tutopt-check
 
+Preserve the SDL2 Patches
+-------------------------
+
+The changes you made above to the Felix configuration
+will be lost next time you upgrade Felix. To fix this
+problem do this:
+
+.. code-block:: bash
+
+    mkdir -p $HOME/.felix/config
+    cp build/release/host/config/sdl2*.fpc $HOME/.felix/config
+
+Next time you build Felix, it will first clobber the changed
+files in `build/release/config` and then clobber those changed
+files with the ones from `$HOME/.felix/config`, thereby
+preserving your modification.
+
 
 Installation
 ------------
 
 Felix does *not* have to be installed to work.
 I recommend you do *not* install it, at least not yet.
+Installation is for enterprise users, rather than personal users.
+
 The reason is that upgrades are frequent: Felix is typically
 upgraded every day. Rebuilding Felix is easy, but it is a pain
 reinstalling it all the time, it is better initially to run it
@@ -147,14 +166,13 @@ set already.
 
 For full plugin and dynamic library support, you will also need to
 set `LD_LIBRARY_PATH`. Normally, `flx` sets this for you, but if you want
-to run Felix build executables directly as standalone programs, *and*
+to run Felix built executables directly as standalone programs, *and*
 you want to link to Felix shared libraries, including plugins, 
 then the system linker has to find the libraries so you will also need this:
 
 .. code-block:: bash
 
     export LD_LIBRARY_PATH=/usr/local/lib/felix/felix-latest/host/lib/rtl:$LD_LIBRARY_PATH
-
 
 Felix does not put its shared libraries in the usual place, directly in 
 a `/usr/lib` or `/usr/local/lib` directory. This is deliberate.
@@ -167,11 +185,11 @@ Running in Place
 ----------------
 
 This option is prefered over installing Felix at the moment,
-although it is a little tricker to set up, it make it very
+although it is a little tricker to set up, it makes it very
 much easier to upgrade Felix.
 
 After you have built Felix, you can use it in place, without
-installing it. First you need to do this, make sure you
+installing it. First you need to do this: make sure you
 are still in the Felix directory, be very careful to use the
 correct quotation marks as indicated below!!
 
