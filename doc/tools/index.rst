@@ -15,6 +15,7 @@ Contents:
    thirdpartylibraries
    platform
    flx_pkgconfig
+   flx
 
 
 Indices and tables
