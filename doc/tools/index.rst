@@ -14,6 +14,7 @@ Contents:
    basicoperation
    thirdpartylibraries
    platform
+   flx_pkgconfig
 
 
 Indices and tables
