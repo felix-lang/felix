@@ -239,7 +239,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'felix', u'Felix Documentatino Master',
+  ('index', 'felix', u'Felix Documentation Master',
    u'John Skaller', 'felix-master', 'Felix Documentation Master',
    'Miscellaneous'),
 ]
