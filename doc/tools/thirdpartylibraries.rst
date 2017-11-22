@@ -98,7 +98,7 @@ Felix Source Code
 Now you have installed your library, and added entries
 in the configuration database, you can use the library like this:
 
-.. block-code:: felix
+.. code-block:: elix
 
     type mytype = "mylib::mytype"
       requires package "mylib"

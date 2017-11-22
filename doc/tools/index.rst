@@ -13,6 +13,8 @@ Contents:
    installation 
    basicoperation
    thirdpartylibraries
+   platform
+
 
 Indices and tables
 ==================
