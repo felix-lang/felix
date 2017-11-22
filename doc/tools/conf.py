@@ -42,7 +42,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'felix articles'
+project = u'Felix installation and tools'
 copyright = u'2017, John Skaller and others'
 
 # The version info for the project you're documenting, acts as replacement for
