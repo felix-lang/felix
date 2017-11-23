@@ -809,6 +809,7 @@ private proc print_help() {
   println "--nofelix            : do not run felix translator, leave C++ outputs alone";
   println "--nocc               : do not C/C++ compiler; implies --nolink";
   println "--nolink             : do not link object files to an executable";
+  println "--exe                : link executable";
   println "--run-only           : run program without dependency checking or linking";
   println "--c++                : Pure C++ build, no Felix code";
   println "--ocaml              : Pure Ocaml build, no Felix code";

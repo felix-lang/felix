@@ -2,6 +2,8 @@
 Felix
 ========
 
+[Master Documentation Index](http://felix-documentation-master.readthedocs.io/en/latest)
+
 Felix is an advanced high performance statically typed scripting language.
 
 It is as easy to run a program as Python:
@@ -49,5 +51,7 @@ Bindings:
 - SDL: Simple Direct Media Layer
   * SDL based platform independent GUI 
 
-If you want to read more, check out the [Annotated Reference Manual](https://github.com/felix-lang/felix/raw/master/docs/felix-ref.pdf) and the [website documentation](http://felix-lang.org/share/src/web/documentation.fdoc).
+
+If you want to read more, check out the [Annotated Reference Manual](https://github.com/felix-lang/felix/raw/master/docs/felix-ref.pdf) 
+and the [website documentation](http://felix-lang.org/share/src/web/documentation.fdoc).
 

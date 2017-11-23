@@ -226,12 +226,15 @@ entirely without any Felix. For example:
 
 .. code-block:: bash
 
-    flx --c++ --static needed.cpp mainline.cxx
+    flx --c++ --static needed.cpp mainline.cxx -- args
  
 All you need is to add the `--c++` switch. When you run C++
 like this you must remember that the Felix configuration
 data base will not allow automatic linkage, as it does for
 Felix programs, unless you modify the source.
+
+We need to use the special symbol -- above separate
+the list of C++ files and the arguments to the program.
 
 
 Upgrading C++ for autolink
@@ -298,6 +301,270 @@ In addition it *aslo* adds the directory to the Felix
 library search path, so any Felix files in the specified
 directory will be found.
 
+Output Object Type
+==================
 
+The normal mode of operation of `flx` is to run specified
+program. Execution can be inhibited by using the `-c` switch.
+
+By default, `flx` generates a dynamic library, this is a shared
+library on Unix with `.so` extension on Linux, or `.dylib` extenion
+on OSX, on Windows, you get a `.dll`.
+
+The action of a Felix *program* is just the side effects of the
+initialisation of a library, that is, programs in Felix do not
+really exist. Thus, a generated dynamic library can act both
+as a program and also as an actual library.
+
+Felix comes with two executables, `flx_run` and `flx_arun`
+which can be used to run any dynamic Felix library.
+
+If the `--static` switch is set, then object files are generated
+for static linkage. Otherwise, object files are generated for
+dynamic linkage. Dynamic link object files on x86_64 Linux
+systems require position independent code. Shared libraries 
+must be built from dynamic link object files.
+
+If `--static` is set, then Felix links the object code for
+either `flx_run` or `flx_arun` together with a stub adaptor
+against the object file of your program, to produce a stand
+alone executable.
+
+To generate a static archive, use the `--staticlib` switch.
+This produces an `.a` file on UNix systems and a `.lib`
+file on Windows. Note that this option implies `--static`.
+However, you can still make static link library from
+dynamic object files. You need to first compile a dynamic
+object file, and then on a separate command combine it
+with any other dynamic object files using `--staticlib`.
+
+The `--exe` switch tells `flx` to produce a static link
+executable. This is only necessary in special circumstances.
+
+The `--nolink` switch inhibts linking so that the output object
+is now an object file. It can be combined with `--static` to 
+produce a non-position independent object file. Unless overriden,
+`flx` produces static link object files with the source basename
+suffixed by `_static` and dynamic link, position independent object
+files with suffix `_dynamic`.
+
+The `--nocc` switch inhibits C++ compilation.
+
+The `--run-only` switch inhits all compilation and just runs the
+program, ignoring any dependency checking. Obviously this will
+fail if there is no program to run.
+
+
+Output Location
+===============
+
+By default, the output object of a `flx` operation will be 
+placed in the cache as `$HOME/.felix/cache/binary/pathname`
+where `pathname` is the absolute pathname of the source
+file with the extension replaced depending on the output
+type and OS conventions, as well as the suffix for object
+files if the output type is an object file produced for
+a Felix source program.
+
+The output pathname can be changed with the `-o pathname` switch.
+The given pathname is used instead of the default.
+This is discouraged because it is not platform independent.
+
+The output pathname can be changed with the `-ox pathname` switch.
+In this case the pathname specified is used, except that the
+appropriate extension is added automatically. This is prefered
+over the plain `-o` switch because it is platform independent.
+
+The output pathname can also be changed with the `-od dirname` switch.
+In this case, the output object is placed in the specified directory,
+with the name of the basename of the input file, and the appropriate
+extension. This option is specifically design for use with batched
+compilations where the filename is not known, because the files
+to be processed are find by examining a directory and comparing filenames
+found in it with a regular expression. However this switch is also useful
+even if you know the filename because it avoid repeating it, and it
+is useful in a script, because it avoids the string processing
+required to remove the source extension.
+
+When Felix translates a Felix program to C++ it normally puts
+the C++ files into the cache. You can override this with
+the `--output_dir=dirname` switch. This is primarily useful
+if you are cross compiling, where wish to capture the output 
+files and ship them to another computer for C++ compilation.
+
+The `--bundle_dir=dirname` switch bundles *all* the generated
+files for a program into a single directory. This includes
+resource control files, C++ output files, object files,
+executables, etc. This is sometimes useful when debugging,
+or when you need to ship some or all of the generated files
+to another computer.
+
+The `--cache_dir=dirname` changes the location of the cache
+for this processing run. The cache is normally `$HOME/.felix/cache`.
+This is useful is you are running flx in a special mode, and
+it is *essential* if you are running `flx` simultaneously in
+multiple processes to avoid clobbering of cached files.
+Always use this if you are simultaneously building for different
+targets.
+
+By default, Felix knows about targets and if you change targets
+the cache is cleaned automatically. Compiling from a clean cache
+takes considerable extra time, since the whole library has to be
+parsed and bound again.
+
+Generic Performance Controls
+============================
+
+`flx` provides several performance controls. The `--usage=level` control
+is a generic control over the compilation process. The level can be
+as follows:
+
+hyperlight
+----------
+
+Ultra fast performance, all run time checks stripped.
+Not recommended except for microbenchmarking tests.
+
+production
+----------
+
+For code to be shipped to clients. High performance
+run time at the expense of compile time, but includes
+run time checks.
+
+prototype
+---------
+
+For use developing a program, provides slightly faster
+compilation at the expense of some run time performance,
+and includes more run time checks and debugging controls.
+
+debug, debugging
+----------------
+
+Provides the slowest output with the maximum debugging
+support. Object files should be produces with debugging
+information for debugger use. Comments in the generated
+C++ are expanded. Synthesised objects are reduced to make
+it easier to compare generated C++ with Felix sources.
+
+Insecure run time debugging support is enabled. This includes
+run time UDP debugging traces on Unix platforms.
+
+C++ compiler switches
+=====================
+
+Felix recognises certain switches and ships them 
+to your C++ compiler. Only a fixed set of switches
+is recognised. In some cases, the switches may be
+translated by the underlying toolchain.
+
+-Lword, -lword
+--------------
+
+Shipped to the linker.
+
+-fword, -Wword
+--------------
+
+Shipped to the compiler. Sets warning controls and
+miscellaneous options. Compiler specific.
+
+-Dword, -Dword=word
+-------------------
+
+Shipped to the compiler. Sets macros.
+Translated for all compilers.
+
+-O0, -O1, -O2, -O3
+------------------
+
+Shipped to the compiler. Tells the compiler which
+performance model to compile with. May interfere
+with instructions from Felix performance controls.
+
+-Idir
+-----
+
+Shipped to the compiler and also used by Felix.
+Specifies path for include file search.
+
+--cflags=word
+-------------
+
+Shipped to compiler.
+
+Debugging
+=========
+
+The switch `--debug-flx` tells `flx` to emit
+progress and debugging information, especially about
+dependency checking.
+
+The switch `--compile-time` tells the Felix compiler
+`flxg` to emit times for phases of execution. This is 
+primarily useful to find exactly when a particular
+bug in Felix program is detected, since some error
+messages can be hard to understand.
+
+The switch `--debug-compiler` turns on full debugging
+of the Felix compiler `flxg`. It is primarily for
+the developer of the compiler itself, not users.
+
+The `--echo` switch tells `flx` to print commands
+it sends to the shell. You can also use the 
+`FLX_SHELL_ECHO=1` environment variable to do this.
+That variable affects all Felix programs, including
+both `flx` itself and also any program it runs.
+
+The `--force-compiler` switch forces `flx` to
+send Felix code to the Felix compiler `flxg` even
+if `flx` thinks the program and its dependencies
+are unchanged. This switch usually fails to achieve
+its intent because `flxg` also does dependency
+checking.
+
+The `--clean` switch wipes out the entire cache
+forcing all compilation to run from scratch.
+
+The `--stdin=filename` switch tells `flx` to that when
+it runs a Felix program, to redirect standard input
+so it comes from the specified file.
+
+The `--stdout=filename` switch tells `flx` that
+when it runs a Felix program, to redirect standard
+output to the specified file.
+
+The `--expect=filename` switch tells `flx` that the
+expected output of a program is in the specified file.
+After the program has run, Felix checks the output
+agrees with the expected output.
+
+The `--stdin`, `--stdout` and `--expect` switch
+are similar but they use the pathname of the Felix
+program with the extension replaced by `.input`,
+`.stdout` and `.expect` respectively. These switches
+are used to run test suites along with batch mode
+compilation.
+
+Batch Compilation
+=================
+
+`flx` can run a command multiple times, replacing the
+primary Felix filename with a each name found in a
+directory which matches a regular expression.
+
+The `--indir=dirname` switch sets the directory to
+be examined for filenames. The `--regex=regexp` sets
+the regular expression used to filter the filenames.
+This is a Google RE2 compilant regular expression.
+Make sure you get the command line quoting correct.
+The regexp must match the whole of the filename
+relative to the directory specified in `--indir`
+switch.
+
+The `--nonstop` switch tells `flx` to run a batch
+of compilations without stopping. By default,
+it stops when an error is detected.
 
 
