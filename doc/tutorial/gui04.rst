@@ -3,7 +3,7 @@ Using An Event Handler
 
 So far we have just done some drawing. But now, we want to 
 respond interactively to user input. To do this, we need
-to use an *event handler. 
+to use an *event handler*. 
 
 The initial window
 ------------------

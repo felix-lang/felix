@@ -15,6 +15,7 @@ Contents:
    gui01
    gui02
    gui03
+   gui04
 
 Indices and tables
 ==================
