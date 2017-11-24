@@ -3,7 +3,7 @@ Putting Stuff in the Window
 
 Now we have created a window, we want to put stuff on it!
 
-.. image:: gui03.jpg
+.. image:: gui03.jpeg
 
 Here's how:
 
