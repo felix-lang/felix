@@ -47,7 +47,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'felix'
+project = u'Felix Tutorial'
 copyright = u'2017, John Skaller and others'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -230,7 +230,7 @@ latex_elements = {
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'felix', u'Felix Documentation',
+    ('index', 'Felix Tutorial', u'Felix Tutorial',
      [u'John Skaller'], 1)
 ]
 
@@ -244,7 +244,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'felix', u'Felix Documentation',
+  ('index', 'felix-tutorial', u'Felix Tutorial',
    u'John Skaller', 'felix', 'One line description of project.',
    'Miscellaneous'),
 ]

@@ -65,7 +65,7 @@ down the screen.
 
 The unit of measurement is approximately the pixel.
 I say approximately because on a Mac with a Retina display,
-each pixel is often four displayt elements on the screen.
+each pixel is often four display elements on the screen.
 To confuse the issue, the Mac can do hardware scaling.
 You'll just have to experiment!
 
@@ -94,7 +94,7 @@ The second argument is an argument to that command, in this
 case :code:`lightgrey`, which tells the clearing command what
 colour to write on the surface it is clearing.
 
-We have not actually drawn on the window at the point.
+We have not actually drawn on the window at this point.
 What we have done is packaged up the drawing instructions,
 and *scheduled* them for drawing later.
 
@@ -108,7 +108,7 @@ Now we have drawn the objects we scheduled to be drawn
 on the systems internal representation of the window's
 surface but still, nothing appears on the screen!
 
-This is because the window has not be shown yet.
+This is because the window has not been shown yet.
 We've been drawing on it whilst it was invisible.
 So we now make it visible:
 

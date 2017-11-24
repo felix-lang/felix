@@ -3,6 +3,10 @@ Putting Stuff in the Window
 
 Now we have created a window, we want to put stuff on it!
 
+.. image:: /gui03.jpg
+
+Here's how:
+
 .. code-block:: felix
 
     include "gui/__init__";
@@ -38,6 +42,9 @@ Now we have created a window, we want to put stuff on it!
 
 Here, the program is as before, except we now do three basic
 ways to draw on a window.
+
+Text
+----
 
 First, we want to be able to put ordinary text on the window.
 To do that, we have to first create a font to write the text
@@ -84,13 +91,15 @@ The base point is origin of the first character which is
 approximately the left edge of the character, and the
 point at which an invisible underline would occur:
 in other words, under the main body of the character,
-but on top of any descender that letter like `g` have.
+but on top of any descender that letter like `g` may have.
 
 The exact location is font dependent. Font rendering
 is an arcane art, not an exact science so you will have
 to practice to get text to appear where you it has
 the correct visual significance.
 
+Picture
+-------
 
 Now we are going to put a picture in the window.
 The image is a JPEG image, and is supplied for testing
@@ -130,7 +139,7 @@ The first line loads the image file into memoy using a low
 level primitive from SDL2_image. That primitve requires
 a C char pointer, not a C++ string, which is what Felix uses,
 so we use :code:`cstr` to convert. Then the `surface` function
-translates the loaded file into an SDL surface object.
+translates the loaded file into an Felix surface object.
 
 In the second line we add the drawable to the window based
 on the :code:`blit` function. This copies one surface to another.
@@ -138,8 +147,11 @@ We copy the image surface to the window surface at position 20,20
 in the window, and use the :code:`get_sdl_surface()` method to
 translate the Felix surface object into a lower level SDL surface.
 
-Its all a bit mysterious, so you just have to so some thing
+Its all a bit mysterious, so you just have to so some things
 by copying the patterns that work.
+
+Lines
+-----
 
 Finally, we draw a blue rectangle on top of the picture.
 I'm sure you can figure out how that works!
