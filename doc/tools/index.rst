@@ -16,6 +16,7 @@ Contents:
    platform
    flx_pkgconfig
    flx
+   filetools
 
 
 Indices and tables
