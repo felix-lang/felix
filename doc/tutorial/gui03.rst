@@ -38,7 +38,7 @@ Here's how:
     w.update();
     w.show();
 
-    sleep(15.0);
+    Faio::sleep(15.0);
 
 Here, the program is as before, except we now do three basic
 ways to draw on a window.
