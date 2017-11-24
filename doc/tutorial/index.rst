@@ -12,10 +12,7 @@ Contents:
    
    hello 
    pythagoras
-   gui01
-   gui02
-   gui03
-   gui04
+   guiindex 
 
 Indices and tables
 ==================
