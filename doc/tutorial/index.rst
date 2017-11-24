@@ -12,6 +12,9 @@ Contents:
    
    hello 
    pythagoras
+   gui01
+   gui02
+   gui03
 
 Indices and tables
 ==================
