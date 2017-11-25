@@ -45,7 +45,8 @@ class XFelixLexer(RegexLexer):
     mimetypes = ['text/x-felix']
 
     keywords = (
-        '_', '_deref', 'all', 'as',
+        '_', '_deref', 'all', 'as','begin','end','while','connector','pin',
+        'circuit','endciruit','connect','wire',
         'assert', 'attempt', 'call', 'callback', 'case', 'caseno', 'cclass',
         'code', 'compound', 'ctypes', 'do', 'done', 'downto', 'elif', 'else',
         'endattempt', 'endcase', 'endif', 'endmatch', 'enum', 'except',
@@ -94,7 +95,6 @@ class XFelixLexer(RegexLexer):
     )
 
     name_builtins = (
-        '_svc', 'while',
     )
 
     name_pseudo = (
