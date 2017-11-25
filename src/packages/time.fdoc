@@ -17,6 +17,7 @@ if PLAT_WIN32 do
 else
   inherit PosixTime;
 done
+  rename fun sleep =  Faio::sleep; 
 }
 
 @h1 Posix RTC
