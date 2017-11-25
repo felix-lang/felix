@@ -5,6 +5,8 @@ A *window manager* is a component that automates
 distribution of message such as mouse clicks and key
 presses to one of several event handlers.
 
+.. image:: gui05.jpeg
+
 The initial windows
 -------------------
 
@@ -84,7 +86,6 @@ The same as before!
 The Window manager
 ------------------
 
-.. image:: gui05.jpeg
 
 Noe for the fun bit. First, our mainline creates a window manager
 object:
