@@ -14,7 +14,7 @@ Lets start by making a window that looks like this:
 
 which we do with this code as usual:
 
-.. code-block:: felix
+.. code-block:: xfelix
 
     include "gui/__init__";
     open FlxGui;
@@ -42,7 +42,7 @@ The event handler
 Now, the next thing is we are going to make a *chip* which can handle
 events:
 
-.. code-block:: felix
+.. code-block:: xfelix
 
     chip event_displayer (w:window_t)
       connector pins
@@ -132,7 +132,7 @@ The Mainline
 
 Now, as promised, it is time to install our event handler:
 
-.. code-block:: felix
+.. code-block:: xfelix
      
     begin
       var qin,qout = mk_ioschannel_pair[int]();

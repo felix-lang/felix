@@ -30,10 +30,8 @@ class XFelixLexer(RegexLexer):
       for index,token,value in RegexLexer.get_tokens_unprocessed(self,text):
         if token == Generic:
           value = "\\(" + value + "\\)"
-          print ("Generic")
           yield (index,token,value)
         elif token == XMath:
-          print ("XMATH")
           yield (index,Generic,value)
         else:
           yield (index,token,value)
