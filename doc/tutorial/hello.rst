@@ -28,18 +28,4 @@ into C++, compiles the program, and runs it. All the generated files
 are cached in the .felix/cache subdirectory of your $HOME directory
 on Unix like systems, and $USERPROFILE on Windows.
 
-Test felix:
-
-.. code-block:: felix
-
-    var x = \alpha \(x^2\)
-
-Test xfelix:
-
-.. code-block:: xfelix
-
-    var x = \alpha \(x^2\)
-
-
-
 
