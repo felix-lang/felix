@@ -19,10 +19,12 @@ import os
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('./_static'))
+sys.path.insert(0, os.path.abspath('../../src/misc/pygments'))
 import custom_lexers.xfelix
 
 from sphinx.highlighting import lexers
 lexers['xfelix']= custom_lexers.xfelix.XFelixLexer()
+lexers['felix']= custom_lexers.xfelix.FelixLexer()
 
 # -- General configuration ------------------------------------------------
 

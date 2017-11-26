@@ -14,33 +14,11 @@ from pygments.lexer import RegexLexer, include, bygroups, default, words, \
 from pygments.token import Text, Comment, Operator, Keyword, Name, String, \
     Number, Punctuation, Generic, Token
 
-__all__ = ['XFelixLexer']
+__all__ = ['XFelixLexer','FelixLexer']
 
 XMath = Token.XMath
 
-class XFelixLexer(RegexLexer):
-    """
-    For `Felix <http://felix-lang.org>`_ source code.
-
-    .. versionadded:: 1.2
-    """
-
-    # screws up latex! Keep for reference. Testing HACK only! 
-    def get_tokens_unprocessed(self,text):
-      for index,token,value in RegexLexer.get_tokens_unprocessed(self,text):
-        if token == Generic:
-          value = "\\(" + value + "\\)"
-          yield (index,token,value)
-        elif token == XMath:
-          yield (index,Generic,value)
-        else:
-          yield (index,token,value)
-      
-
-    name = 'XFelix'
-    aliases = ['xfelix', 'xflx']
-    filenames = ['*.flx', '*.flxh']
-    mimetypes = ['text/x-felix']
+class FelixBase(RegexLexer):
 
     keywords = (
         '_', '_deref', 'all', 'as','begin','end','while','connector','pin',
@@ -107,7 +85,7 @@ class XFelixLexer(RegexLexer):
 
             # Keywords
             (words(('axiom', 'ctor', 'chip', 'fun', 'gen', 'proc', 'reduce','regdef',
-              'var','val','typedef',
+              'var','val','typedef','device',
               'union'), suffix=r'\b'),
              Keyword, 'funcname'),
             (words(('class', 'cclass', 'cstruct', 'obj', 'struct', 'object'), suffix=r'\b'),
@@ -234,3 +212,41 @@ class XFelixLexer(RegexLexer):
             include('nl')
         ],
     }
+
+class XFelixLexer(FelixBase):
+    def get_tokens_unprocessed(self,text):
+      for index,token,value in RegexLexer.get_tokens_unprocessed(self,text):
+        if token == Generic:
+          value = "\\(" + value + "\\)"
+          yield (index,token,value)
+        elif token == XMath:
+          yield (index,Generic,value)
+        else:
+          yield (index,token,value)
+      
+
+    name = 'XFelix'
+    aliases = ['xfelix', 'xflx']
+    filenames = ['*.flx', '*.flxh']
+    mimetypes = ['text/x-felix']
+
+class FelixLexer(FelixBase):
+    def get_tokens_unprocessed(self,text):
+      for index,token,value in RegexLexer.get_tokens_unprocessed(self,text):
+        if token == Generic:
+          yield (index,token,value)
+        elif token == XMath:
+           yield (index,Punctuation,u"\\")
+           yield (index,Punctuation,u"(")
+           yield (index,Generic,value[2:-2])
+           yield (index,Punctuation,u"\\")
+           yield (index,Punctuation,u")")
+        else:
+          yield (index,token,value)
+
+    name = 'Felix'
+    aliases = ['felix', 'flx']
+    filenames = ['*.flx', '*.flxh']
+    mimetypes = ['text/x-felix']
+
+ 
