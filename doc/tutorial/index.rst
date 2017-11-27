@@ -12,6 +12,7 @@ Contents:
    
    hello 
    integers
+   strings
    pythagoras
    guiindex 
 
