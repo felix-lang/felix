@@ -11,6 +11,8 @@ Contents:
    :maxdepth: 2
    
    hello 
+   comments
+   variables
    logic
    integers
    floats 
