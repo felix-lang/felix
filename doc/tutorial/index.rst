@@ -19,6 +19,9 @@ Contents:
    strings
    goto
    loops
+   arrays
+   tuples
+   procedures
    pythagoras
    guiindex 
 
