@@ -11,7 +11,9 @@ Contents:
    :maxdepth: 2
    
    hello 
+   logic
    integers
+   floats 
    strings
    pythagoras
    guiindex 
