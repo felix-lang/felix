@@ -17,6 +17,8 @@ Contents:
    integers
    floats 
    strings
+   goto
+   loops
    pythagoras
    guiindex 
 
