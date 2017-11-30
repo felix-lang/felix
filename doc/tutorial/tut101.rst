@@ -1,6 +1,8 @@
 Felix 101: the Basics
 =====================
 
+The first module gives a brief overview of some basics.
+
 .. toctree::
    :maxdepth: 2
    
@@ -16,8 +18,8 @@ Felix 101: the Basics
    arrays
    tuples
    procedures
+   functions
    pythagoras
-   guiindex 
 
 
 

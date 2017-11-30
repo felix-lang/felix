@@ -3,7 +3,7 @@
 Felix tutorial!
 ====================
 
-**THIS IS A WORK IN PROGRESS!**
+An introduction to the Felix programming language.
 
 Contents:
 
@@ -14,12 +14,6 @@ Contents:
    tut101
    tut102
    lexicology
-   pythagoras
    guiindex 
 
-Indices and tables
-==================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
