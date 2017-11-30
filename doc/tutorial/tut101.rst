@@ -13,6 +13,7 @@ The first module gives a brief overview of some basics.
    integers
    floats 
    strings
+   chars
    goto
    loops
    arrays
