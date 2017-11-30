@@ -41,6 +41,7 @@ without their apt-name at the momen (sorry, please help!):
 * gmp++: C++ wrapper for gmp
 * gsl: gnu scientific library
 * botan: Crypto library
+* icu: unicode library
 
 Clone Felix
 -----------
@@ -87,50 +88,6 @@ Finally, some optional tests run, which exercise optional
 packages. Most of these are graphics and GUI tests and
 they WILL fail on Ubuntu. We will fix that in a moment!
 
-Patch SDL2 configuration
-------------------------
-
-Felix comes with a pre-built configuration for SDL that
-assumed you compiled and built it yourself and installed
-it in `/usr/local`, however if you use `apt-get` to install
-the components as instructed in this document, it will
-be installed in `/usr/` instead. So we have to fix this
-with a patch.
-
-You need to edit these files now, using your favourite editor:
-
-.. code-block:: text
-
-    build/release/host/config/sdl2.fpc
-    build/release/host/config/sdl2_image.fpc
-    build/release/host/config/sdl2_ttf.fpc
-
-and replace `/usr/local` with `/usr`.
-
-Now you should be able to run the GUI tests:
-
-.. code-block:: bash
-
-    make tutopt-check
-
-Preserve the SDL2 Patches
--------------------------
-
-The changes you made above to the Felix configuration
-will be lost next time you upgrade Felix. To fix this
-problem do this:
-
-.. code-block:: bash
-
-    mkdir -p $HOME/.felix/config
-    cp build/release/host/config/sdl2*.fpc $HOME/.felix/config
-
-Next time you build Felix, it will first clobber the changed
-files in `build/release/config` and then clobber those changed
-files with the ones from `$HOME/.felix/config`, thereby
-preserving your modification.
-
-
 Installation
 ------------
 
@@ -172,13 +129,13 @@ then the system linker has to find the libraries so you will also need this:
 
 .. code-block:: bash
 
-    export LD_LIBRARY_PATH=/usr/local/lib/felix/felix-latest/host/lib/rtl:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=/usr/local/lib/felix/felix-version:$LD_LIBRARY_PATH
 
 Felix does not put its shared libraries in the usual place, directly in 
 a `/usr/lib` or `/usr/local/lib` directory. This is deliberate.
 You need to be able to delete a Felix version, or all of Felix easily,
 and for this reason *almost everything* lives under master directory
-`/usr/local/lib/felix` and subdirectory `felix-latest`, the main
+`/usr/local/lib/felix` and subdirectory `felix-version`, the main
 exception being the `flx` program, which is copied to `/usr/local/bin`.
 
 Running in Place
@@ -195,7 +152,7 @@ correct quotation marks as indicated below!!
 
 .. code-block:: bash
 
-    echo `export PATH=/usr/local/bin:$PATH` >> $HOME/.profile
+    echo `export PATH=$PWD/build/release/host/bin:$PATH` >> $HOME/.profile
     mkdir -p $HOME/.felix/config
     echo "FLX_INSTALL_DIR: $PWD/build/release" >$HOME/.felix/config/felix.fpc
 
