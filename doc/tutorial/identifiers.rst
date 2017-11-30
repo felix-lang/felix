@@ -318,13 +318,13 @@ No space is required after a TeX identifier. Therefore
 
     \alpha2
 
-encodes the symbol \(\alpha\) followed by the integer 2.
+encodes the symbol \alpha followed by the integer 2.
 
-Note, the Unicode escapes `\u0041` is the idenifier `A`,
-not the TeX identifier `\u` followed by integer 41.
-Unicode escapes take precedence over TeX idenifiers.
-This also means, however, that `\u004` will be lexed
-in an expression as TeX identifier `\u` followed by integer 4,
+Note, the Unicode escapes `\\u0041` is the identifier `A`,
+not the TeX identifier `\\u` followed by integer 41.
+Unicode escapes take precedence over TeX identifiers.
+This also means, however, that `\\u004` will be lexed
+in an expression as TeX identifier `\\u` followed by integer 4,
 it is not a valid identifier.
 
 Special Identifiers
@@ -332,13 +332,13 @@ Special Identifiers
 
 Felix also allows certain special sequences to be considered
 as identifiers. Recognition may be context dependent.
-The symbols `+`, `-`, `*`, `/`, `%`, `^`, `~`, `\&`, `\|, `\^`,
+The symbols `+`, `-`, `*`, `/`, `%`, `^`, `~`, `\\&`, `\\|, `\\^`,
 and
 `<`, `<=`,`==`,`!=`,`>=`,`>`,
 and
 `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, 
 `<<=`, `>>=`,
- may be used as an identifer when an identifier
+may be used as an identifer when an identifier
 is required.
 
 Special Encoding

@@ -70,8 +70,8 @@ All ordinary character strings are emitted as
 single line C++ strings using only one byte
 encoding of code points 0x20-0x7E. All other
 code points are represented either by C++
-escapes, such as `\n` for newline, or hex
-escapes `\x` with exactly two hex digits,
+escapes, such as `\\n` for newline, or hex
+escapes `\\x` with exactly two hex digits,
 representing the UTF-8 encoded code point
 with a sequence of hex escapes.
 
