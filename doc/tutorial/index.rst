@@ -11,19 +11,9 @@ Contents:
    :maxdepth: 2
    
    hello 
+   tut101
+   tut102
    lexicology
-   comments
-   identifiers
-   variables
-   logic
-   integers
-   floats 
-   strings
-   goto
-   loops
-   arrays
-   tuples
-   procedures
    pythagoras
    guiindex 
 

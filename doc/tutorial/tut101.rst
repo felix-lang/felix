@@ -1,0 +1,23 @@
+Felix 101: the Basics
+=====================
+
+.. toctree::
+   :maxdepth: 2
+   
+   comments
+   identifiers
+   variables
+   logic
+   integers
+   floats 
+   strings
+   goto
+   loops
+   arrays
+   tuples
+   procedures
+   pythagoras
+   guiindex 
+
+
+

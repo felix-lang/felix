@@ -37,6 +37,8 @@ to the application.
 7-bit ASCII is fully compatible with UTF-8 encoded
 Unicode.
 
+Reference: <https://unicode-table.com/en/>
+
 Whitespace
 ----------
 
