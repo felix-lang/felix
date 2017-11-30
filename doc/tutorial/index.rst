@@ -11,7 +11,9 @@ Contents:
    :maxdepth: 2
    
    hello 
+   lexicology
    comments
+   identifiers
    variables
    logic
    integers
