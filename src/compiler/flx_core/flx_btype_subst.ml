@@ -86,9 +86,12 @@ let varmap_subst varmap t =
 (* the type arguments are matched up with the type
   variables in order so that
   vs_i -> ts_i
-  where vs_t might be (fred,var j)
+
+  NOTE: the meta-type is dropped here, because there's
+  no way to find the meta-type of a type without
+  looking up the symbol table. Hmm.
 *)
-let mk_varmap sr vs ts =
+let mk_varmap sr (vs:bvs_t) ts =
   if List.length ts <> List.length vs
   then
     clierrx "[flx_core/flx_btype_subst.ml: E280] " sr 
@@ -97,23 +100,23 @@ let mk_varmap sr vs ts =
       si (List.length vs) ^
       ", got ts=" ^
       si (List.length ts) ^
-      "\nvs= " ^ Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") vs
+      "\nvs= " ^ Flx_util.catmap "," (fun (s,i,mt) -> s ^ "<" ^ string_of_bid i ^ ">") vs
     )
   ;
   let varmap = Hashtbl.create 97 in
   List.iter2
-  (fun (_, varidx) typ -> Hashtbl.add varmap varidx typ)
+  (fun (_, varidx,_) typ -> Hashtbl.add varmap varidx typ)
   vs ts
   ;
   varmap
 
 let varmap_of_mgu mgu = 
   let varmap = Hashtbl.create 97 in
-  List.iter (fun (varidx, typ) -> Hashtbl.add varmap varidx typ) mgu;
+  List.iter (fun (varidx, typ,mt) -> Hashtbl.add varmap varidx typ) mgu;
   varmap
 
 
-let tsubst sr vs ts t =
+let tsubst sr (vs:Flx_kind.bvs_t) ts t =
   varmap_subst (mk_varmap sr vs ts) t
 
 

@@ -42,12 +42,12 @@ type axiom_t =
   Flx_srcref.t *
   bid_t option *
   Flx_ast.axiom_kind_t *
-  Flx_types.bvs_t *
+  Flx_kind.bvs_t *
   Flx_bparams.t *
   baxiom_method_t
 
 type reduction_case_t =
-  Flx_types.bvs_t *
+  Flx_kind.bvs_t *
   Flx_bparameter.t list *
   Flx_bexpr.t *
   Flx_bexpr.t
@@ -73,8 +73,8 @@ type sym_state_t =
   reductions : reduction_t list ref;
   axioms : axiom_t list ref;
   variant_map: (Flx_btype.t * Flx_btype.t, bid_t) Hashtbl.t;
-  mutable virtual_to_instances: (bid_t, (Flx_types.bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t;
-  mutable instances_of_typeclass: (bid_t, (bid_t * (Flx_types.bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
+  mutable virtual_to_instances: (bid_t, (Flx_kind.bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t;
+  mutable instances_of_typeclass: (bid_t, (bid_t * (Flx_kind.bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
   transient_specialisation_cache: (bid_t , bid_t ) Hashtbl.t;
   array_sum_offset_table: array_sum_offset_table_t;
   power_table: power_table_t;

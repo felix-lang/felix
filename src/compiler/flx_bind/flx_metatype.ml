@@ -6,6 +6,12 @@ open Flx_btype
 open Flx_exceptions
 open Flx_kind
 
+
+(* NOTE: This function uses the bound type and the UNBOUND
+symbol table entry for nominal types together to calculate
+the meta type of a type term
+*)
+
 let rec metatype sym_table bsym_table rs sr term : kind =
   (*
   print_endline ("Find Metatype  of: " ^

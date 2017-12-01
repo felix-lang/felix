@@ -4,7 +4,7 @@ open Flx_bid
 
 type entry_kind_t = {
   base_sym : bid_t;
-  spec_vs : (string * bid_t) list;
+  spec_vs : Flx_kind.bvs_t;
   sub_ts : Flx_btype.t list;
 }
 type entry_set_t =
@@ -31,7 +31,7 @@ val review_entry:
   bid_t ref ->
   string ->
   Flx_srcref.t ->
-  Flx_types.bvs_t ->
+  Flx_kind.bvs_t ->
   Flx_btype.t list ->
   entry_kind_t ->
   entry_kind_t
@@ -41,7 +41,7 @@ val review_entry_set:
   string -> 
   entry_set_t ->
   Flx_srcref.t ->
-  Flx_types.bvs_t ->
+  Flx_kind.bvs_t ->
   Flx_btype.t list ->
   entry_set_t
 
@@ -49,7 +49,7 @@ val make_view_table:
   bid_t ref ->
   name_map_t ->
   Flx_srcref.t ->
-  Flx_types.bvs_t ->
+  Flx_kind.bvs_t ->
   Flx_btype.t list ->
   name_map_t
 

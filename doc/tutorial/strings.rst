@@ -76,7 +76,7 @@ Length
 
 Use the len function:
 
-.. code.block:: felix
+.. code-block:: felix
 
    var x = "hello";
    var y = x.len.int;

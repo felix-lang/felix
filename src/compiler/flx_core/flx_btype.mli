@@ -15,7 +15,7 @@ and t = private
   | BTYP_unitsum of int
   | BTYP_intersect of t list
   | BTYP_union of t list
-  | BTYP_inst of bid_t * t list
+  | BTYP_inst of bid_t * t list * Flx_kind.kind_t
   | BTYP_vinst of bid_t * t list
   | BTYP_tuple of t list
   | BTYP_array of t * t

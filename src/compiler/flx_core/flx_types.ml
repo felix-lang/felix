@@ -105,8 +105,6 @@ and asm_t =
 
 type bound_iface_t = Flx_srcref.t * iface_t * bid_t option
 
-type bvs_t = (string * bid_t) list
-
 type symbol_definition_t =
   | SYMDEF_virtual_type
   | SYMDEF_label of string

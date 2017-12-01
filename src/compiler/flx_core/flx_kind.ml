@@ -16,3 +16,8 @@ let kind_type = KIND_type
 let kind_function (d, c) = KIND_function (d,c)
 let kind_tuple ks = KIND_tuple ks
 
+(* this probably doesn't belong here .. *)
+type bv_t = string * Flx_bid.bid_t * kind
+type bvs_t = bv_t list
+
+
