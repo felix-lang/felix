@@ -71,8 +71,19 @@ this one:
 
 has three end of lines (one after the first triple quote).
 
-Operations
-----------
+Length
+------
+
+Use the len function:
+
+.. code.block:: felix
+
+   var x = "hello";
+   var y = x.len.int;
+
+
+Concatenation
+-------------
 
 Strings can be concatenated with the infix `+` operator or
 just written next to each other, juxtaposition has a higher
@@ -88,6 +99,31 @@ then the second one which appends "end". The result
 is independent of the ordering because concatenation
 is associative, the run time performance, however, is not,
 because concatenation requires coping.
+
+Substring Extraction
+--------------------
+
+A substring of a string can be extracted using a slice
+with the notation shown:
+
+.. code-block:: felix
+
+    var x = "Hello World";
+    var y = x.[3..7]; // 'lo Wo'
+
+
+Indexing
+--------
+
+Select the n'th character:
+
+.. code-block:: felix
+
+    var x = "Hello World";
+    var y = x.[1]; // e
+
+
+
 
 
 
