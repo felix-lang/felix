@@ -846,7 +846,7 @@ and lookup_name_with_sig
      print_endline ("projection of tuple cons not implemented yet"); assert false
 *)
 
-   | [BTYP_inst (j,ts') as d] ->
+   | [BTYP_inst (j,ts',_) as d] ->
      let bsym = try Some (Flx_bsym_table.find bsym_table j) with Not_found -> None in
      begin match bsym with
      | Some bsym ->
@@ -896,7 +896,7 @@ and lookup_name_with_sig
        end
      end
 
-   | [BTYP_pointer (BTYP_inst (j,ts')) as d] ->
+   | [BTYP_pointer (BTYP_inst (j,ts',_)) as d] ->
      let bsym = try Some (Flx_bsym_table.find bsym_table j) with Not_found -> None in
      begin match bsym with
      | Some bsym ->

@@ -77,13 +77,13 @@ let handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_
     in
     let ct =
       let bvs = List.map
-        (fun (n,i,_) -> n, btyp_type_var (i, btyp_type 0))
+        (fun (n,i,mt) -> n, btyp_type_var (i, Flx_btype.bmt "Flx_dot1" mt))
         (vs)
       in
       let env' = build_env state bsym_table (Some i) in
       bind_type' state bsym_table env' rsground sr ct bvs mkenv
     in
-    let vs' = List.map (fun (s,i,tp) -> s,i) vs in
+    let vs' = List.map (fun (s,i,tp) -> s,i, Flx_btype.bmt "Flx_dot" tp) vs in
     let ct = tsubst sr vs' ts' ct in
     let ct = if isptr then btyp_pointer ct else ct in
     (* messy .. we generalised get_n to accept any type instead

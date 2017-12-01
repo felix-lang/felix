@@ -91,7 +91,7 @@ and handle_variable
   let t = bind_type' state bsym_table env rs sr t [] mkenv in
   let ts = adjust_ts state.sym_table bsym_table sr index ts in
   let vs = find_vs state.sym_table bsym_table index in
-  let bvs = List.map (fun (s,i,tp) -> s,i) (fst vs) in
+  let bvs = List.map (fun (s,i,tp) -> s,i, Flx_btype.bmt "Flx_lookup_name_itdws" tp) (fst vs) in
   let t = beta_reduce "flx_lookup: handle_variabe" state.counter bsym_table sr (tsubst sr bvs ts t) in
 (*
 print_endline ("Handle variable " ^ si index ^ "=" ^ id);
@@ -207,7 +207,7 @@ if name = debugid then
         *)
 if debug then
 print_endline ("flx_lookup.SYMDEF_type_alias.bexpr_closure");
-        Some (bexpr_closure (btyp_inst (sye index,ts)) (sye index,ts))
+        Some (bexpr_closure (btyp_inst (sye index,ts,Flx_kind.KIND_type)) (sye index,ts))
         (*
         failwith "NOT IMPLEMENTED YET"
         *)

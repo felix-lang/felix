@@ -25,7 +25,7 @@ type device_descr_t = string * pin_descr_t list
 
 let cal_channel bsym_table (schannel,ischannel,oschannel) sr typ : int * string * Flx_btype.t =
   match typ with
-  | BTYP_inst (i,[t]) ->
+  | BTYP_inst (i,[t],_) ->
      let direction = match i with
      | _ when i = schannel -> "io"
      | _ when i = oschannel -> "output"
@@ -65,7 +65,9 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
 (*
     print_endline ("Spawn_fthread = " ^ sbe bsym_table spawn_fthread);
 *)
-    let parent_ts = List.map (fun (s,i) -> btyp_type_var (i,btyp_type 0)) state.parent_vs in
+    let parent_ts = List.map (fun (s,i,k) -> 
+      btyp_type_var (i,k)) state.parent_vs 
+    in
 
     (* find all the devices *)
     let devices = 
@@ -351,7 +353,7 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
           vt,nw
       in
       let name = "pin_" ^ string_of_int index in
-      let stype = Flx_btype.btyp_inst (schannel, [vt]) in
+      let stype = Flx_btype.btyp_inst (schannel, [vt], Flx_kind.KIND_type) in
       let bbdcl = Flx_bbdcl.bbdcl_val (state.parent_vs,stype,`Val) in
       let bsym = Flx_bsym.create ~sr name bbdcl in 
       Flx_bsym_table.add bsym_table index state.parent bsym;
@@ -405,7 +407,7 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
           (* the type expected, ischannel,oschannel, or schannel, is NOT
             the actual variable type which is always just schannel
           *)
-          let ct = Flx_btype.btyp_inst (cast_schannelindex,[vt]) in
+          let ct = Flx_btype.btyp_inst (cast_schannelindex,[vt], Flx_kind.KIND_type) in
           let component = pin,(Flx_bexpr.bexpr_varname ct (vindex, parent_ts)) in
           component::acc
         )

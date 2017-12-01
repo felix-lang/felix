@@ -36,7 +36,8 @@ type dvars_t = BidSet.t
 (* LHS ge RHS, parameter supertype of argument *)
 let rec solve_subtypes bsym_table counter lhs rhs dvars (s:vassign_t option ref) (add_eq:reladd_t) (add_ge:reladd_t) =
   match lhs, rhs with
-  | BTYP_inst (l,[]),BTYP_inst(r,[]) ->
+  | BTYP_inst (l,[],_),BTYP_inst(r,[],_) ->
+    (* meta types have to agree if types do? *)
     if l <> r && not (Flx_bsym_table.is_supertype bsym_table l r)
     then raise Not_found
 
@@ -368,8 +369,8 @@ print_endline ("Polyrecord/record unification " ^ sbt bsym_table lhs ^ " = " ^ s
       | BTYP_label , BTYP_label -> ()
       | BTYP_void,BTYP_void -> ()
 
-      | BTYP_vinst (i1,ts1),BTYP_vinst (i2,ts2) 
-      | BTYP_inst (i1,ts1),BTYP_inst (i2,ts2) ->
+      | BTYP_vinst (i1,ts1,mt1),BTYP_vinst (i2,ts2,mt2) 
+      | BTYP_inst (i1,ts1,mt1),BTYP_inst (i2,ts2,mt2) ->
 (*
 print_endline "Trying to unify instances (1)";
 *)

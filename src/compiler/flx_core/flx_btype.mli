@@ -15,8 +15,8 @@ and t = private
   | BTYP_unitsum of int
   | BTYP_intersect of t list
   | BTYP_union of t list
-  | BTYP_inst of bid_t * t list * Flx_kind.kind_t
-  | BTYP_vinst of bid_t * t list
+  | BTYP_inst of bid_t * t list * Flx_kind.kind
+  | BTYP_vinst of bid_t * t list * Flx_kind.kind
   | BTYP_tuple of t list
   | BTYP_array of t * t
   | BTYP_record of (string * t) list
@@ -95,8 +95,8 @@ val btyp_sum : t list -> t
 val btyp_unitsum : int -> t
 val btyp_intersect : t list -> t
 val btyp_union : t list -> t
-val btyp_inst : bid_t * t list -> t
-val btyp_vinst : bid_t * t list -> t
+val btyp_inst : bid_t * t list * kind -> t
+val btyp_vinst : bid_t * t list * kind -> t
 val btyp_tuple : t list -> t
 val btyp_rev : t -> t
 val btyp_uniq : t -> t

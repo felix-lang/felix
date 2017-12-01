@@ -78,7 +78,7 @@ val find_bbdcl : t -> bid_t -> Flx_bbdcl.t
 val find_bparams : t -> bid_t -> Flx_bparams.t
 
 (** Searches the bound symbol table for the given symbol's bvs. *)
-val find_bvs : t -> bid_t -> Flx_types.bvs_t
+val find_bvs : t -> bid_t -> Flx_kind.bvs_t
 
 (** Copies the bound symbol table. *)
 val copy : t -> t

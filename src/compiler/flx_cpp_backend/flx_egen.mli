@@ -7,7 +7,7 @@ val gen_expr:
   (string, Flx_btype.t) Hashtbl.t ->
   Flx_label.label_info_t ->
   bid_t ->
-  Flx_types.bvs_t ->
+  Flx_kind.bvs_t ->
   Flx_btype.t list ->
   Flx_srcref.t ->
   Flx_bexpr.t ->
@@ -20,7 +20,7 @@ val gen_expr':
   (string, Flx_btype.t) Hashtbl.t ->
   Flx_label.label_info_t ->
   bid_t ->
-  Flx_types.bvs_t ->
+  Flx_kind.bvs_t ->
   Flx_btype.t list ->
   Flx_srcref.t ->
   Flx_bexpr.t ->

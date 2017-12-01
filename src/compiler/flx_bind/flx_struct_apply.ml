@@ -24,11 +24,11 @@ let cal_struct_apply
     )
   ;
   let bvs = List.map
-    (fun (n,i,_) -> n, btyp_type_var (i, btyp_type 0))
+    (fun (n,i,mt) -> n, btyp_type_var (i,Flx_btype.bmt "Flx_struct_apply1" mt))
     (vs)
   in
   let env' = build_env state bsym_table (Some i) in
-  let vs' = List.map (fun (s,i,tp) -> s,i) (vs) in
+  let vs' = List.map (fun (s,i,tp) -> s,i,Flx_btype.bmt "Flx_struct_apply2" tp) (vs) in
   let ialst = List.map2 (fun (k,t) i -> k,(t,i)) alst (Flx_list.nlist na) in
   let a =
     List.map (fun (name,ct)->

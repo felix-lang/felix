@@ -105,8 +105,9 @@ print_endline ("Metatyping term " ^ st term);
 *)
     mt
 
-  | BTYP_vinst (index,ts) -> kind_type
-  | BTYP_inst (index,ts) ->
+  | BTYP_vinst (index,ts,k) -> k
+  | BTYP_inst (index,ts,k) -> k
+(*
       let sym =
         try Flx_sym_table.find sym_table index with Not_found ->
           failwith ("[metatype'] can't find type instance index " ^
@@ -154,6 +155,7 @@ print_endline ("Metatyping term " ^ st term);
           clierrx "[flx_bind/flx_metatype.ml:128: E245] " sr ("Unexpected argument to metatype: " ^
             sbt bsym_table term)
       end
+*)
 
   (* Ordinary type expressions *)
   | BTYP_typeof _

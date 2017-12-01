@@ -50,13 +50,13 @@ let handle_map sr (f,ft) (a,at) =
       match ft with
       | BTYP_function (d,c) ->
         begin match at with
-        | BTYP_inst (i,[t]) ->
+        | BTYP_inst (i,[t],k) ->
           if t <> d
           then clierrx "[flx_bind/flx_lookup.ml:3801: E161] " sr
             ("map type of data structure index " ^
             "must agree with function domain")
           else
-            btyp_inst (i,[c])
+            btyp_inst (i,[c],k)
         | _ -> clierrx "[flx_bind/flx_lookup.ml:3806: E162] " sr "map requires instance"
         end
       | _ -> clierrx "[flx_bind/flx_lookup.ml:3808: E163] " sr "map non-function"
@@ -586,7 +586,7 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
     | BTYP_sum _ -> ()
     | BTYP_variant _ -> ()
     | BTYP_type_var _ -> ()
-    | BTYP_inst (i,_) ->
+    | BTYP_inst (i,_,_) ->
       begin match hfind "lookup" state.sym_table i with
       | { Flx_sym.symdef=SYMDEF_union _} -> ()
       | { Flx_sym.id=id} -> clierrx "[flx_bind/flx_lookup.ml:4210: E181] " sr ("Argument of caseno must be sum or union type, got abstract type " ^ id)
@@ -1725,7 +1725,7 @@ print_endline ("EXPR_variant_subtype_match_coercion");
       print_endline ("Union type is " ^ sbt bsym_table ut);
 *)
       begin match ut with
-      | BTYP_inst (i,ts') ->
+      | BTYP_inst (i,ts',_) ->
 (*
         print_endline ("OK got type " ^ si i);
 *)
@@ -1888,7 +1888,7 @@ print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
       print_endline ("ctor_arg: Constructor to extract: " ^ name ^ "[" ^ catmap "," string_of_typecode ts ^ "]"); 
 *)
       begin match ut with
-      | BTYP_inst (i,ts') ->
+      | BTYP_inst (i,ts',_) ->
         begin match hfind "lookup" state.sym_table i with
         | { Flx_sym.id=id; symdef=SYMDEF_union ls } ->
           let _,vs,_  = find_split_vs state.sym_table bsym_table i in
@@ -1979,7 +1979,7 @@ print_endline ("Dependent variables to solve for = ");
           let varmap = Hashtbl.create 3 in
           List.iter (fun (j,t) -> Hashtbl.add varmap j t) mgu;
           let vt = varmap_subst varmap vt in
-          let vs' = List.map (fun (s,i,tp) -> s,i) vs in
+          let vs' = List.map (fun (s,i,tp) -> s,i, Flx_btype.bmt "Flx_bind_expression.1" tp) vs in
 (*
           print_endline ("vs in union type = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs'); 
           print_endline ("ts' to bind to them = " ^ catmap "," (sbt bsym_table) ts'); 

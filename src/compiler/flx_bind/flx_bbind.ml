@@ -31,9 +31,9 @@ let find_param name_map s =
   | NonFunctionEntry (i) -> sye i
   | _ -> failwith ("[find_param] Can't find parameter " ^ s )
 
-let print_bvs vs =
-  if length vs = 0 then "" else
-  "[" ^ catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") vs ^ "]"
+let print_bvs bvs =
+  if length bvs = 0 then "" else
+  "[" ^ catmap "," (fun (s,i,_) -> s ^ "<" ^ string_of_bid i ^ ">") bvs ^ "]"
 
 (* confused over Some 0 and None parents .. I added this! *)
 let rec find_true_parent sym_table child parent =
@@ -225,7 +225,7 @@ print_endline (" &&&&&& bind_type_uses calling BBIND_SYMBOL");
 *)
   end else
   (* bind the type variables *)
-  let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in
+  let bvs = map (fun (s,i,tp) -> s,i, Flx_btype.bmt "Flx_bbind" tp) (fst ivs) in
 
   let bind_type_constraint ivs =
     let cons =
@@ -325,7 +325,7 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
         let bps = bind_basic_ps ps in
         let be1 = be e1 in
         let be2 = be e2 in
-        let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in
+        let bvs = map (fun (s,i,tp) -> s,i,Flx_btype.bmt "Flx_bbind.2" tp) (fst ivs) in
         bvs,bps,be1,be2
       )
       reds
@@ -493,7 +493,7 @@ print_endline ("flx_bind: Adding label " ^ s ^ " index " ^ string_of_int symbol_
     let t = type_of_index symbol_index in
     let ut = bt ut in
     let btraint = bind_type_constraint vs' in
-    let evs = map (fun (s,i,__) -> s,i) (fst vs') in
+    let evs = map (fun (s,i,k) -> s,i, Flx_btype.bmt "Flx_bbind.2" k) (fst vs') in
 
     if state.print_flag then
       print_endline ("//bound const ctor " ^ sym.Flx_sym.id ^ "<" ^
@@ -509,7 +509,7 @@ print_endline ("flx_bind: Adding label " ^ s ^ " index " ^ string_of_int symbol_
     let argt = bt argt in
     let ut = bt ut in
     let btraint = bind_type_constraint vs' in
-    let evs = map (fun (s,i,_) -> s,i) (fst vs') in
+    let evs = map (fun (s,i,k) -> s,i, Flx_btype.bmt "Flx_bbind.4" k) (fst vs') in
 
     if state.print_flag then
       print_endline ("//bound nonconst ctor " ^ sym.Flx_sym.id ^ "<" ^
@@ -527,7 +527,8 @@ print_endline ("flx_bind: Adding label " ^ s ^ " index " ^ string_of_int symbol_
         btyp_void ()
     in
     if Flx_btype.contains_uniq t then begin
-      print_endline ("Flx_bbind: WARNING: Local val " ^ sym.Flx_sym.id ^ " type " ^ sbt bsym_table t ^
+      print_endline ("Flx_bbind: WARNING: Local val " ^ sym.Flx_sym.id ^ " type " ^ 
+        sbt bsym_table t ^
         " is or contains uniq, var is recommended");
       print_endline (Flx_srcref.long_string_of_src sym.Flx_sym.sr)
 (*
@@ -760,9 +761,13 @@ print_endline ("Flx_bbind: Adding type of index " ^ si symbol_index ^ " to cache
   | SYMDEF_union (cs) ->
     if state.print_flag then
       print_endline ("//Binding union " ^ si symbol_index ^ " --> " ^ sym.Flx_sym.id);
-    let ut = btyp_inst (symbol_index, List.map (fun (s,i) -> btyp_type_var (i,btyp_type 0)) bvs) in
+    let ut = btyp_inst (
+      symbol_index, 
+      List.map (fun (s,i,k) -> btyp_type_var (i,k)) bvs, 
+      Flx_kind.KIND_type) 
+    in
     let cs' = List.map (fun (n,v,vs',d,c,gadt) -> 
-      let evs = List.map (fun (s,i,_) -> s,i) (fst vs') in
+      let evs = List.map (fun (s,i,k) -> s,i,Flx_btype.bmt "Flx_bbind.7" k) (fst vs') in
       n, v, evs, bt d, bt c, gadt
     ) cs 
     in
@@ -1134,7 +1139,7 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
           in
           print_endline ("Type of function " ^ string_of_int i ^ " is " ^ sbt bsym_table ft);
           match ft with
-          | BTYP_function (BTYP_inst (dom,[]),BTYP_inst (cod,[])) ->
+          | BTYP_function (BTYP_inst (dom,[],_),BTYP_inst (cod,[],_)) ->
             print_endline ("Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
             Flx_bsym_table.add_supertype bsym_table ((cod,dom),i)
  
@@ -1172,7 +1177,7 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
           in
           print_endline ("Type of function " ^ string_of_int i ^ " is " ^ sbt bsym_table ft);
           match ft with
-          | BTYP_function (BTYP_inst (dom,[]),BTYP_inst (cod,[])) ->
+          | BTYP_function (BTYP_inst (dom,[],_),BTYP_inst (cod,[],_)) ->
             print_endline ("Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
             Flx_bsym_table.add_supertype bsym_table ((cod,dom),i)
           | _ -> clierr sr ("Subtype specification requires nonpolymorphic nominal typed function")

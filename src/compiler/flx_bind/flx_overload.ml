@@ -302,7 +302,7 @@ let specialize_domain sr (base_vs:plain_ivs_list_t) sub_ts t =
   *)
   let n = List.length base_vs in
   let ts = list_prefix sub_ts n in
-  let vs = List.map (fun (i,n,_) -> i,n) base_vs in
+  let vs = List.map (fun (s,i,k) -> s,i, Flx_btype.bmt "Flx_overload1" k) base_vs in
   let t = tsubst sr vs ts t in
   (*
   print_endline ("to View type " ^ sbt bsym_table t);
@@ -337,13 +337,13 @@ if name = debugid then
   print_endline ("Candidate sigs= " ^  catmap "->" (sbt bsym_table) curry_domains);
 *)
   (* equations for user specified assignments *)
-  let lhsi = List.map (fun (n,i) -> i) entry_kind.spec_vs in
+  let lhsi = List.map (fun (n,i,_) -> i) entry_kind.spec_vs in
   let lhs = List.map
-    (fun (n,i) -> 
+    (fun (n,i,mt) -> 
 (*
 print_endline ("flx_overload: FUDGE METATYPE? lookup map entry vs does not have kind! make equations: "^n^"=T<"^string_of_int i^">");
 *)
-btyp_type_var ((i), btyp_type 0))
+     btyp_type_var (i,mt))
     entry_kind.spec_vs
   in
   let n = min (List.length entry_kind.spec_vs) (List.length input_ts) in
@@ -387,7 +387,7 @@ btyp_type_var ((i), btyp_type 0))
   in
 
   let dvars = ref BidSet.empty in
-  List.iter (fun (_,i)-> dvars := BidSet.add i !dvars) entry_kind.spec_vs;
+  List.iter (fun (_,i,_)-> dvars := BidSet.add i !dvars) entry_kind.spec_vs;
 if name = debugid then begin
   print_endline "EQUATIONS ARE:";
   List.iter (fun (t1,t2) -> print_endline (sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2))
@@ -465,8 +465,8 @@ if name = "EInt" then
   print_endline "Check for unresolved";
   *)
   let unresolved = ref (
-    Flx_list.fold_lefti begin fun i acc (s,bid) ->
-      if not (List.mem_assoc bid !mgu) then (s,bid,KND_type,i)::acc else acc
+    Flx_list.fold_lefti begin fun i acc (s,bid,mt) ->
+      if not (List.mem_assoc bid !mgu) then (s,bid,mt,i)::acc else acc
     end [] entry_kind.spec_vs
   )
   in
@@ -489,7 +489,7 @@ if name = "EInt" then
   let report_unresolved =
     List.fold_left begin fun acc (s,i,tp,k) ->
       acc ^ "  The " ^th k ^" subscript  " ^ s ^ "[" ^ string_of_bid i ^
-        "]" ^ Flx_print.string_of_maybe_kindcode tp ^ "\n"
+        "]" ^ Flx_kind.sk tp ^ "\n"
     end "" !unresolved
   in
   begin
@@ -509,7 +509,7 @@ if name = "EInt" then
     let extra_eqns = ref [] in
     let dvars = ref BidSet.empty in
 
-    List.iter begin fun (_,i)->
+    List.iter begin fun (_,i,mt)->
       if not (List.mem_assoc i !mgu) then (* mgu vars get eliminated *)
       dvars := BidSet.add i !dvars
     end entry_kind.spec_vs;
@@ -777,7 +777,7 @@ if id = debugid then
     let type_constraint = btyp_intersect [type_constraint; con] in
 if id = debugid then
     print_endline ("Raw type constraint " ^ sbt bsym_table type_constraint);
-    let vs = List.map (fun (s,i,_)-> s,i) base_vs in
+    let vs = List.map (fun (s,i,mt)-> s,i,Flx_btype.bmt "Flx_overload2" mt) base_vs in
     let type_constraint = tsubst sr vs base_ts type_constraint in
 if id = debugid then
     print_endline ("Substituted type constraint " ^ sbt bsym_table type_constraint);
@@ -887,7 +887,7 @@ if name = debugid then print_endline ("Resolve done for " ^ name);
       catmap "," (fun (s,i,_)->s ^ "<" ^ string_of_bid i ^ ">") base_vs);
     print_endline ("sub TS=" ^ catmap "," (sbt bsym_table) entry_kind.sub_ts);
     print_endline ("spec VS=" ^
-      catmap "," (fun (s,i)-> s ^ "<" ^ string_of_bid i ^ ">") entry_kind.spec_vs);
+      catmap "," (fun (s,i,mt)-> s ^ "<" ^ string_of_bid i ^ ">:" ^ Flx_kind.sk mt) entry_kind.spec_vs);
     print_endline ("input TS=" ^ catmap "," (sbt bsym_table) input_ts);
   end;
 

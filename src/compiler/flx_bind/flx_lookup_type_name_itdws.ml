@@ -36,7 +36,7 @@ let handle_type
   | SYMDEF_struct _
   | SYMDEF_cstruct _
   | SYMDEF_nonconst_ctor _
-  | SYMDEF_callback _ -> btyp_inst (index,ts)
+  | SYMDEF_callback _ -> btyp_inst (index,ts,Flx_kind.KIND_type)
   | SYMDEF_instance_type _ ->
 (*
 print_endline ("Lookup_type_name_in_table_dirs_with_sig: Handle type " ^ name ^ " ... binding type index " ^ string_of_int index);
@@ -152,13 +152,13 @@ let lookup_type_name_in_table_dirs_with_sig
 
     | SYMDEF_virtual_type ->
       print_endline "Found virtual type";
-      Some (btyp_vinst (sye index, ts))
+      Some (btyp_vinst (sye index, ts, Flx_kind.KIND_type))
 
     | SYMDEF_newtype _
     | SYMDEF_abs _
     | SYMDEF_union _ ->
       (* print_endline "Found abs,union,or newtype"; *)
-      Some (btyp_inst (sye index, ts))
+      Some (btyp_inst (sye index, ts, Flx_kind.KIND_type))
 
     (* an instance type is just like a type alias in phase 1 *)
     | SYMDEF_instance_type t ->

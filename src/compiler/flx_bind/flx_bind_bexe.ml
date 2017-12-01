@@ -209,8 +209,8 @@ let cal_loop sym_table sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
 
 exception Found of int
 
-let print_vs vs =
-  catmap "," (fun (s,i) -> s ^ "->" ^ string_of_bid i) vs
+let print_bvs vs =
+  catmap "," (fun (s,i,_) -> s ^ "->" ^ string_of_bid i) vs
 
 type bexe_t = Flx_bexe.t
 
@@ -698,7 +698,7 @@ print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
       let e',rhst = be e in 
       (* a type variable in executable code just has to be of kind TYPE *)
       let parent_ts = map
-        (fun (s,i) -> btyp_type_var (i,btyp_type 0))
+        (fun (s,i,k) -> btyp_type_var (i, k))
         state.parent_vs
       in
       let lhst =
@@ -725,7 +725,7 @@ print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
         sbt bsym_table rhst^
         "\nunfolded LHS = " ^ sbt bsym_table (unfold "flx_bind_bexe" lhst) ^
         "\nenvironment type variables are " ^
-        print_vs state.parent_vs
+        print_bvs state.parent_vs
 
       )
 
@@ -740,7 +740,7 @@ print_endline ("Bind EXE_init "^s);
           let e',rhst = be e in
           (* a type variable in executable code just has to be of kind TYPE *)
           let parent_ts = map
-            (fun (s,i) -> btyp_type_var (i,btyp_type 0))
+            (fun (s,i,k) -> btyp_type_var (i,k))
             state.parent_vs
           in
           let lhst =
@@ -803,7 +803,7 @@ print_endline ("Bind EXE_init "^s);
             "\nunfolded LHS = " ^ sbt bsym_table (unfold "flx_bind_bexe" lhst) ^
             (if length state.parent_vs > 0 then
             "\nenvironment type variables are " ^
-            print_vs state.parent_vs
+            print_bvs state.parent_vs
             else "")
           )
         end (* variant check *)

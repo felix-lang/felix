@@ -91,7 +91,7 @@ let varmap_subst varmap t =
   no way to find the meta-type of a type without
   looking up the symbol table. Hmm.
 *)
-let mk_varmap sr (vs:bvs_t) ts =
+let mk_varmap sr (vs:Flx_kind.bvs_t) ts =
   if List.length ts <> List.length vs
   then
     clierrx "[flx_core/flx_btype_subst.ml: E280] " sr 
@@ -112,7 +112,7 @@ let mk_varmap sr (vs:bvs_t) ts =
 
 let varmap_of_mgu mgu = 
   let varmap = Hashtbl.create 97 in
-  List.iter (fun (varidx, typ,mt) -> Hashtbl.add varmap varidx typ) mgu;
+  List.iter (fun (varidx, typ) -> Hashtbl.add varmap varidx typ) mgu;
   varmap
 
 

@@ -64,7 +64,7 @@ print_endline ("Includes, id = " ^ id);
         end;
 *)
         let _,incl_qns,_ = split_dirs [] dirs in
-        let vs = List.map (fun (n,i,_) -> n,i) (fst vs) in
+        let vs = List.map (fun (n,i,mt) -> n,i,Flx_btype.bmt "Flx_env" mt) (fst vs) in
         incl_qns,sr,vs
       in
       List.iter (fun (invs2,qn) ->

@@ -340,7 +340,7 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
       hvarmap ""
     );
     *)
-    let ts = map (fun (s,i) -> btyp_type_var (i, btyp_type 0)) vs' in
+    let ts = map (fun (s,i,k) -> btyp_type_var (i, k)) vs' in
     let ts = map (varmap_subst hvarmap) ts in
     uis sr i ts; (* this is wrong?: initialisation is not use .. *)
     ue sr e
@@ -353,7 +353,7 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
 
   | BEXE_svc (sr,i) ->
     let vs' = Flx_bsym_table.find_bvs bsym_table i in
-    let ts = map (fun (s,i) -> btyp_type_var (i, btyp_type 0)) vs' in
+    let ts = map (fun (s,i,k) -> btyp_type_var (i, k)) vs' in
     let ts = map (varmap_subst hvarmap) ts in
     uis sr i ts
 
@@ -422,7 +422,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
   | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
     let argtypes = Flx_bparameter.get_btypes ps in
     assert (length vs = length ts);
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let vars = map2 (fun (s,i,k) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     if instps || mem `Cfun props then begin
       iter (fun {pindex=i; ptyp=t} ->
@@ -446,36 +446,36 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
   | BBDCL_union (vs,ps) ->
     let argtypes = map (fun (_,_,evs,argt,rest,_)->argt) ps in
     assert (length vs = length ts);
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let vars = map2 (fun (s,i,k) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     let tss = map (varmap_subst hvarmap) argtypes in
     iter rtr tss;
-    rtnr (btyp_inst (i,ts))
+    rtnr (btyp_inst (i,ts,Flx_kind.KIND_type))
 
 
   | BBDCL_cstruct (vs,ps, reqs) ->
     let argtypes = map snd ps in
     assert (length vs = length ts);
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let vars = map2 (fun (s,i,k) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     let tss = map (varmap_subst hvarmap) argtypes in
     iter rtr tss;
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs;
-    rtnr (btyp_inst (i,ts))
+    rtnr (btyp_inst (i,ts,Flx_kind.KIND_type))
 
   | BBDCL_struct (vs,ps) ->
     let argtypes = map snd ps in
     assert (length vs = length ts);
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let vars = map2 (fun (s,i,k) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     let tss = map (varmap_subst hvarmap) argtypes in
     iter rtr tss;
-    rtnr (btyp_inst (i,ts));
+    rtnr (btyp_inst (i,ts,Flx_kind.KIND_type));
 
   | BBDCL_newtype (vs,t) ->
     rtnr t;
-    rtnr (btyp_inst (i,ts))
+    rtnr (btyp_inst (i,ts,Flx_kind.KIND_type))
 
   | BBDCL_val (vs,t,_) ->
     if length vs <> length ts
@@ -483,11 +483,11 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     (
       "ts/vs mismatch instantiating variable " ^ Flx_bsym.id bsym ^ "<" ^
       string_of_bid i ^ ">, inst " ^ string_of_bid inst ^ ": vs = [" ^
-      catmap ";" (fun (s,i)-> s ^ "<" ^ string_of_bid i ^ ">") vs ^ "], " ^
+      catmap ";" (fun (s,i,k)-> s ^ "<" ^ string_of_bid i ^ ">") vs ^ "], " ^
       "ts = [" ^
       catmap ";" (fun t->sbt bsym_table t) ts ^ "]"
     );
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let vars = map2 (fun (s,i,k) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     let t = varmap_subst hvarmap t in
     rtr t
@@ -508,7 +508,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     );
     *)
     assert (length vs = length ts);
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let vars = map2 (fun (s,i,k) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     let t = varmap_subst hvarmap t in
     rtr t;
@@ -523,14 +523,14 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     Flx_bsym.id bsym ^ " = " ^ Flx_print.string_of_code_spec s);
 *)
     assert (length vs = length ts);
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let vars = map2 (fun (s,i,k) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs
 
   | BBDCL_external_fun (_,vs,argtypes,ret,reqs,_,kind) ->
     assert (length vs = length ts);
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let vars = map2 (fun (s,i,k) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs;
@@ -592,7 +592,7 @@ print_endline ("arg types c " ^ catmap "," (sbt bsym_table) tss);
 
   | BBDCL_external_type (vs,_,_,reqs) ->
     assert (length vs = length ts);
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let vars = map2 (fun (s,i,k) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs
@@ -601,7 +601,7 @@ print_endline ("arg types c " ^ catmap "," (sbt bsym_table) tss);
 
   | BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) ->
     assert (length vs = length ts);
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let vars = map2 (fun (s,i,k) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
 
     (* we don't register the union .. it's a uctor anyhow *)

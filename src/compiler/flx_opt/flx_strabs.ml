@@ -24,7 +24,7 @@ open Flx_btype_subst
 (* identify a type which is a union with a single constructor *)
 let is_solo_union bsym_table t =
   match t with
-  | BTYP_inst (i,ts) ->  (* ts already upgraded by the Flx_btype.map *)
+  | BTYP_inst (i,ts,_) ->  (* ts already upgraded by the Flx_btype.map *)
     let bsym =
       try Flx_bsym_table.find bsym_table i 
       with Not_found -> failwith ("can't find entry " ^ string_of_int i ^ " in bsym table")
@@ -44,7 +44,7 @@ let is_nonconst_ctor bsym_table i =
 
 let get_solo_union_ctor_arg_type bsym_table t =
   match t with
-  | BTYP_inst (i,ts) ->  (* ts already upgraded by the Flx_btype.map *)
+  | BTYP_inst (i,ts,_) ->  (* ts already upgraded by the Flx_btype.map *)
     let bsym =
       try Flx_bsym_table.find bsym_table i 
       with Not_found -> failwith ("can't find entry " ^ string_of_int i ^ " in bsym table")
@@ -61,7 +61,7 @@ let fixtype bsym_table t =
   let rec f_btype t =
     let t = Flx_btype.map ~f_btype t in
     match t with 
-    | BTYP_inst (i,ts) ->  (* ts already upgraded by the Flx_btype.map *)
+    | BTYP_inst (i,ts,_) ->  (* ts already upgraded by the Flx_btype.map *)
       let bsym =
         try Flx_bsym_table.find bsym_table i 
         with Not_found -> failwith ("can't find entry " ^ string_of_int i ^ " in bsym table")

@@ -64,7 +64,7 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
       Flx_bsym_table.add bsym_table k (Some this) bsym;
 
       (* append a pointer to this variable to the argument *)
-      let ts' = List.map (fun (s,i) -> btyp_type_var (i,btyp_type 0)) vs in
+      let ts' = List.map (fun (s,i,_) -> btyp_type_var (i,btyp_type 0)) vs in
       let ptr = bexpr_ref (btyp_pointer ret) (k,ts') in
       let (_,at') as a' = append_args syms bsym_table f a [ptr] in
 
@@ -324,7 +324,7 @@ let mkproc_gen syms bsym_table =
       let vix,ps,exes = fixup vs exes in
 
       (* and actually convert it *)
-      let ts = List.map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
+      let ts = List.map (fun (_,i,mt) -> btyp_type_var (i,mt)) vs in
       assert (ts = []);
       let dv = bexpr_deref ret (bexpr_varname (btyp_pointer ret) (vix,ts)) in
       let exes = proc_exes syms bsym_table dv exes in

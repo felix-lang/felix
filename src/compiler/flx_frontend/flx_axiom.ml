@@ -61,7 +61,7 @@ let verify syms bsym_table csr e =
         let ts = map snd xs in
         bexpr_tuple (btyp_tuple ts) xs
     in
-    let tvars = map (fun (_,i) -> i) bvs in
+    let tvars = map (fun (_,i,_) -> i) bvs in
     let evars = Flx_bparameter.get_bids bpl in
     let result = expr_maybe_matches bsym_table syms.counter tvars evars param e in
     match result with
@@ -86,7 +86,7 @@ let verify syms bsym_table csr e =
               *)
               let ts =
                 try
-                  Some (map (fun (s,i) -> assoc i tmgu) tcbvs)
+                  Some (map (fun (s,i,_) -> assoc i tmgu) tcbvs)
                 with Not_found ->
                   (*
                   print_endline "Can't instantiate typeclass vars- FAIL";

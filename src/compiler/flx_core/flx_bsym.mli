@@ -39,7 +39,7 @@ val is_generator: t -> bool
 val get_bparams: t -> Flx_bparams.t
 
 (** Returns the bound type value list of the bound symbol. *)
-val get_bvs: t -> Flx_types.bvs_t
+val get_bvs: t -> Flx_kind.bvs_t
 
 (** Calls the function over every bid inside the bound symbol. *)
 val iter_uses : (Flx_bid.bid_t -> unit) -> t -> unit

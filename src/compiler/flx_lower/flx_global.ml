@@ -24,7 +24,7 @@ let throw_on_heap_type bsym_table t =
     begin match t with
     | BTYP_variant _ -> raise Not_found
     | BTYP_sum args when not (all_units args) -> raise Not_found
-    | BTYP_inst (i,ts) ->
+    | BTYP_inst (i,ts,_) ->
       begin match Flx_bsym_table.find_bbdcl bsym_table i with
       | BBDCL_union (vs,idts) when not
           (all_voids (List.map (fun (_,_,evs,d,c,_)->d) idts)) -> raise Not_found

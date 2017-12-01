@@ -73,7 +73,7 @@ let rec ematchs syms bsym_table name reds e =
   match reds with
   | [] -> false,e
   | (bvs,bps,e1,e2) :: tail ->
-    let tvars = map (fun (tvid, tvidx) -> tvidx) bvs in
+    let tvars = map (fun (tvid, tvidx,_) -> tvidx) bvs in
     let evars = Flx_bparameter.get_bids bps in
     let changed,e = ematch syms bsym_table name tvars evars e1 e2 e in
     if changed then changed,e else

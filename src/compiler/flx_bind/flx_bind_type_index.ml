@@ -94,7 +94,7 @@ if index = 37335 then begin
 end;
 *)
 (* DO A HACK NOW, cause params doesn't propagate *)
-     let t = tsubst sr (List.map (fun (s,i,m) -> s,i) vs) ts t in 
+     let t = tsubst sr (List.map (fun (s,i,mt) -> s,i,Flx_btype.bmt "Flx_bind_type_index" mt) vs) ts t in 
 (*
 if index = 37335 then begin
   print_endline (" **** AFTER TSUBST Bound type is " ^ sbt bsym_table t);
@@ -283,13 +283,13 @@ print_endline ("Bind type index, trying to bind " ^id ^ "<" ^string_of_int index
 *)
             salias
           | BBDCL_nominal_type_alias (bvs, alias) ->
-            let t = btyp_inst (index,ts) in
+            let t = btyp_inst (index,ts,Flx_kind.KIND_type) in
             t
 
           | _ -> failwith ("Flx_bind_type expected type alias in bound symbol table " ^ id);
           end
         with Not_found ->
-          let t = btyp_inst (index,ts) in 
+          let t = btyp_inst (index,ts,Flx_kind.KIND_type) in 
 (*
         print_endline ("Bind type index: nominalising type alias " ^ id ^ " index=" ^ si index ^ " to " ^ Flx_btype.st t);
 *)
@@ -297,10 +297,10 @@ print_endline ("Bind type index, trying to bind " ^id ^ "<" ^string_of_int index
       end
 
     | SYMDEF_abs _ ->
-      btyp_inst (index,ts)
+      btyp_inst (index,ts,Flx_kind.KIND_type)
 
     | SYMDEF_virtual_type  ->
-      btyp_vinst (index,ts)
+      btyp_vinst (index,ts,Flx_kind.KIND_type)
 
     | SYMDEF_newtype _
     | SYMDEF_union _
@@ -310,15 +310,15 @@ print_endline ("Bind type index, trying to bind " ^id ^ "<" ^string_of_int index
 (*
 print_endline ("bind type index, struct thing " ^ si index ^ " ts=" ^ catmap "," (sbt bsym_table) ts);
 *)
-      btyp_inst (index,ts)
+      btyp_inst (index,ts,Flx_kind.KIND_type)
 
 
     (* allow binding to type constructors now too .. *)
     | SYMDEF_const_ctor (uidx,ut,idx,vs') ->
-      btyp_inst (index,ts)
+      btyp_inst (index,ts,Flx_kind.KIND_type)
 
     | SYMDEF_nonconst_ctor (uidx,ut,idx,vs',argt) ->
-      btyp_inst (index,ts)
+      btyp_inst (index,ts,Flx_kind.KIND_type)
 
     | SYMDEF_typeclass 
     | SYMDEF_module 

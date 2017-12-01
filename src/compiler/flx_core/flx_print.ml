@@ -731,24 +731,24 @@ and sb bsym_table depth fixlist counter prec tc =
       (match mt with KIND_type ->"" | _ -> ":"^sk mt)^
       ">"
 
-    | BTYP_inst (i,ts) ->
+    | BTYP_inst (i,ts,mt) ->
       0, (match bsym_table with 
         | Some tab -> let name = qualified_name_of_bindex tab i in
           (* print_endline ("DEBUG: flx_print: BTYP_inst " ^ si i ^ ": " ^ name);  *)
           name
         | None -> "<Prim " ^ si i^">") ^
       (if List.length ts = 0 then "" else
-      "[" ^cat ", " (map (sbt 9) ts) ^ "]"
+      "[" ^cat ", " (map (sbt 9) ts) ^ "]:" ^ sk mt
       )
 
-    | BTYP_vinst (i,ts) ->
+    | BTYP_vinst (i,ts,mt) ->
       0, (match bsym_table with 
         | Some tab -> let name = qualified_name_of_bindex tab i in
           (* print_endline ("DEBUG: flx_print: BTYP_inst " ^ si i ^ ": " ^ name);  *)
           name
         | None -> "<Virtual type " ^ si i^">") ^
       (if List.length ts = 0 then "" else
-      "[" ^cat ", " (map (sbt 9) ts) ^ "]"
+      "[" ^cat ", " (map (sbt 9) ts) ^ "]:" ^ sk mt
       )
 
     | BTYP_tuple ls ->
@@ -1110,7 +1110,7 @@ and string_of_plain_vs vs =
   vs
 
 and string_of_bvs' bvs =
-  catmap ", " (fun (s, i)-> Printf.sprintf "%s<%s>" s (string_of_bid i)) bvs
+  catmap ", " (fun (s, i,mt)-> s^"<" ^string_of_bid i^">:"^ sk mt) bvs
 
 and string_of_bvs = function
   | [] -> ""
@@ -2828,7 +2828,7 @@ let full_string_of_entry_kind sym_table bsym_table {base_sym=i; spec_vs=vs; sub_
   in
   string_of_symdef sym.Flx_sym.symdef sym.Flx_sym.id sym.Flx_sym.vs ^
   "\n  defined at " ^ Flx_srcref.short_string_of_src sym.Flx_sym.sr ^ "\n  with view" ^
-  " vs=" ^ catmap "," (fun (s,i)->s^"<"^si i^">") vs ^
+  " vs=" ^ string_of_bvs vs ^
   " ts=" ^ catmap "," (sbt bsym_table) ts
 
 
@@ -2850,7 +2850,7 @@ let full_string_of_entry_set sym_table bsym_table = function
 
 let string_of_myentry bsym_table {base_sym=i; spec_vs=vs; sub_ts=ts} =
  string_of_bid i ^
- " vs=" ^ catmap "," (fun (s,_)->s) vs ^
+ " vs=" ^ string_of_bvs vs ^
  " ts=" ^ catmap "," (sbt bsym_table) ts
 
 let print_name_table bsym_table table =
@@ -2916,7 +2916,7 @@ let print_env_short e =
 let print_function_body bsym_table id i (bvs:bvs_t) ps exes =
   print_endline "";
   print_endline ("BODY OF " ^ string_of_id id ^ "<" ^ string_of_bid i ^ "> [" ^
-  catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs ^
+  string_of_bvs bvs ^
   "] (" ^ string_of_bparameters bsym_table ps ^ ")"
   );
   iter
@@ -2979,7 +2979,7 @@ let print_symbols bsym_table =
           kind
           (string_of_id (Flx_bsym.id bsym))
           (string_of_bid i)
-          (catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs)
+          (string_of_bvs bvs)
           (sbt bsym_table t)
     | BBDCL_invalid -> print_endline ("INVALID  " ^ id)
     | BBDCL_module -> print_endline ("MODULE " ^ id)

@@ -7,7 +7,7 @@ type bexe_state_t = {
   env: Flx_mtypes2.env_t;
   id: string;
   parent: bid_t option;
-  parent_vs: Flx_types.bvs_t;
+  parent_vs: Flx_kind.bvs_t;
   mutable ret_type: Flx_btype.t;
   mutable reachable: bool;
   mutable return_count: int;

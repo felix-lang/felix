@@ -211,7 +211,7 @@ print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table
   | BTYP_cltrref (d,c) -> rr d; rr c; rnr t
   | BTYP_cltwref (d,c) -> rr d; rr c; rnr t
 
-  | BTYP_inst (i,ts)->
+  | BTYP_inst (i,ts,_)->
 (*
 print_endline ("Instance type, registering argument ts=" ^ catmap "," (sbt bsym_table) ts);
 *)

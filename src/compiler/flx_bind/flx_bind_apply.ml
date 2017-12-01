@@ -197,7 +197,7 @@ end;
             cal_apply state bsym_table sr rs f a 
 
         (* NOTE THIS CASE HASN'T BEEN CHECKED FOR POLYMORPHISM YET *)
-        | BTYP_inst (i,ts') when
+        | BTYP_inst (i,ts',_) when
           (
             match Flx_lookup_state.hfind "flx_bind_apply" state.Flx_lookup_state.sym_table i with
             | { Flx_sym.symdef=Flx_types.SYMDEF_struct _}

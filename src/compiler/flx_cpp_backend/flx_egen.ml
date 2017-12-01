@@ -532,7 +532,7 @@ assert false;
     ce_prefix "&" (ce_arrow (ge' a) (cid_of_flxid field_name))
 
   (* struct or cstruct projection *)
-  | BEXPR_apply ( (BEXPR_prj (n,BTYP_inst (i,_),_),_), (_,at as a)) ->
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_inst (i,_,_),_),_), (_,at as a)) ->
     begin match Flx_bsym_table.find_bbdcl bsym_table i with
     | BBDCL_cstruct (_,ls,_)
     | BBDCL_struct (_,ls) ->
@@ -551,7 +551,7 @@ assert false;
     end
 
   (* pointer to struct or cstruct projection *)
-  | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_inst (i,_)),_),_), (_,at as a)) ->
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_inst (i,_,_)),_),_), (_,at as a)) ->
     begin match Flx_bsym_table.find_bbdcl bsym_table i with
     | BBDCL_cstruct (_,ls,_)
     | BBDCL_struct (_,ls) ->
@@ -754,11 +754,11 @@ print_endline "Apply struct";
     let ts = map tsub ts in
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_cstruct (vs,_,_) ->
-      let name = tn (btyp_inst (index,ts)) in
+      let name = tn (btyp_inst (index,ts,Flx_kind.KIND_type)) in
       ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")/* apply cstruct*/")
 
     | BBDCL_struct (vs,cts) ->
-      let name = tn (btyp_inst (index,ts)) in
+      let name = tn (btyp_inst (index,ts,Flx_kind.KIND_type)) in
       if length cts > 1 then
         (* argument must be an lvalue *)
         ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")/* apply struct */")
@@ -1316,7 +1316,7 @@ end
           | [BTYP_array (_,BTYP_unitsum n)] -> ce_atom (si n)
           | [BTYP_sum ls] 
           | [BTYP_tuple ls] -> let n = length ls in ce_atom (si n)
-          | [BTYP_inst (i,_)] ->
+          | [BTYP_inst (i,_,_)] ->
             begin match Flx_bsym_table.find_bbdcl bsym_table i with
               | BBDCL_struct (_,ls) -> let n = length ls in ce_atom (si n)
               | BBDCL_cstruct (_,ls,_) -> let n = length ls in ce_atom (si n)

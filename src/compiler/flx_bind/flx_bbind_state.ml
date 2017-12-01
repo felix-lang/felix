@@ -8,8 +8,8 @@ type bbind_state_t = {
   sym_table: Flx_sym_table.t;
   ticache : (bid_t, Flx_btype.t) Hashtbl.t;
   varmap : typevarmap_t;
-  virtual_to_instances: (bid_t, (bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t;
-  instances_of_typeclass: (bid_t, (bid_t * (bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
+  virtual_to_instances: (bid_t, (Flx_kind.bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t;
+  instances_of_typeclass: (bid_t, (bid_t * (Flx_kind.bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
   reductions: reduction_t list ref;
   axioms: axiom_t list ref;
   lookup_state: Flx_lookup_state.lookup_state_t;

@@ -2,7 +2,8 @@ open Flx_types
 open Flx_name_map
 
 let pub_table_dir counter (sym_table:Flx_sym_table.t) (invs,i,ts) : Flx_name_map.name_map_t =
-  let invs = List.map (fun (i,n,_)->i,n) (fst invs) in
+  let invs = fst invs in
+  let invs = List.map (fun (s,i,k) -> s,i, Flx_btype.bmt "Flx_pubname_map" k) invs in
   let sym = Flx_sym_table.find sym_table i in
   match sym.Flx_sym.symdef with
   | SYMDEF_root _ 

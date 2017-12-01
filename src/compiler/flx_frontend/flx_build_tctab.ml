@@ -48,11 +48,14 @@ let rec drop l n =
 
 let drop l n = Flx_list.list_tail l n
 
-let vs2ts vs = List.map (fun (s,i) -> btyp_type_var (i, btyp_type 0)) vs
+let vs2ts vs = List.map (fun (s,i,k) -> btyp_type_var (i,k)) vs
 
 let remap_virtual_types x = Flx_remap_vtypes.remap_virtual_types x
 
-let check_binding syms bsym_table (inst, inst_id, inst_vs, inst_ts, inst_sr, inst_map, inst_constraint) tc tc_bvs tck sr id tck_bvs tctype =
+let check_binding syms bsym_table 
+  (inst, inst_id, inst_vs, inst_ts, inst_sr, inst_map, inst_constraint) 
+  tc tc_bvs tck sr id tck_bvs tctype 
+=
   let sigmatch i inst_funbvs t =
     (* typeclass X[t1,t2] { virtual fun f[t3] .. }
        Instance[i1, i2, i3] X[..,..] { fun f[i4] 
@@ -266,7 +269,7 @@ let check_instance
   bsym_table
   inst
   inst_id
-  inst_vs
+  (inst_vs: Flx_kind.bvs_t)
   inst_constraint
   inst_sr
   inst_props
@@ -298,13 +301,13 @@ end;
       clierr2 inst_sr (Flx_bsym.sr tc_bsym)
       (
         "Instance [" ^
-        catmap "," (fun (s,j) -> s ^ "<" ^ string_of_bid j ^ ">") inst_vs
+        catmap "," (fun (s,j,_) -> s ^ "<" ^ string_of_bid j ^ ">") inst_vs
         ^ "] " ^
         inst_id ^"<"^ string_of_bid inst ^ ">" ^
         "[" ^ catmap "," (sbt bsym_table) inst_ts ^ "]" ^
         "\nsupplies wrong number of type arguments for typeclass parameters\n" ^
         inst_id ^ "[" ^
-        catmap "," (fun (s,j) -> s ^ "<" ^ string_of_bid j ^ ">") tc_bvs ^ "]"
+        catmap "," (fun (s,j,_) -> s ^ "<" ^ string_of_bid j ^ ">") tc_bvs ^ "]"
       )
     ;
 (* list all the kids of the type class *)
@@ -509,7 +512,7 @@ let build_typeclass_to_instance_table syms bsym_table : unit =
       with Not_found -> Hashtbl.add syms.virtual_to_instances i []; []  
     in
     let cons = Flx_btype.btyp_unit () in
-    let ts = List.map (fun (s,j) -> Flx_btype.btyp_type_var (j,Flx_btype.btyp_type 0)) bvs in
+    let ts = List.map (fun (s,j,k) -> Flx_btype.btyp_type_var (j,k)) bvs in
     let entry = bvs, cons, ts,i in (* self reference *)
     Hashtbl.replace syms.virtual_to_instances i (entry::v2i)
 
@@ -537,7 +540,7 @@ let build_typeclass_to_instance_table syms bsym_table : unit =
       in
       if s <> "" then
         let cons = Flx_btype.btyp_unit () in
-        let ts = List.map (fun (s,j) -> Flx_btype.btyp_type_var (j,Flx_btype.btyp_type 0)) bvs in
+        let ts = List.map (fun (s,j,k) -> Flx_btype.btyp_type_var (j,k)) bvs in
         let entry = bvs, cons, ts,i in (* self reference *)
         Hashtbl.replace syms.virtual_to_instances i (entry::v2i)
 

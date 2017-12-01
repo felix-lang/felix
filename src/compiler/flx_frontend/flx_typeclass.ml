@@ -57,7 +57,9 @@ let drop l n = Flx_list.list_tail l n
 *)
 
 
-let tcinst_chk syms bsym_table id sr i ts (inst_vs, inst_constraint, inst_ts, j)  =
+let tcinst_chk syms bsym_table id sr i ts 
+  ((inst_vs:Flx_kind.bvs_t), inst_constraint, inst_ts, j) 
+ =
      if length inst_ts > length ts then
        clierrx "[flx_frontend/flx_typeclass.ml:409: E365] " sr (
          "Not enough ts given, expected at least " ^
@@ -66,7 +68,7 @@ let tcinst_chk syms bsym_table id sr i ts (inst_vs, inst_constraint, inst_ts, j)
      ;
      (* solve for vs' *)
      let vis = List.map (fun _ -> fresh_bid syms.counter) inst_vs in
-     let nuvs = map (fun i -> btyp_type_var (i, btyp_type 0)) vis in
+     let nuvs = map (fun i -> btyp_type_var (i, Flx_kind.KIND_type)) vis in
      let inst_ts' = map (tsubst sr inst_vs nuvs) inst_ts in
      let vset = fold_left (fun acc i -> BidSet.add i acc) BidSet.empty vis in
 
@@ -109,7 +111,7 @@ let tcinst_chk syms bsym_table id sr i ts (inst_vs, inst_constraint, inst_ts, j)
        ) 
        eqns
      in
-     let assignments = map (fun (i,t) -> btyp_type_var (i,btyp_type 0),t) assigns in
+     let assignments = map (fun (i,t) -> btyp_type_var (i,Flx_kind.KIND_type),t) assigns in
      let mgu =
        try Some (unification bsym_table syms.counter (assignments @ eqns) vset)
        with Not_found -> None
@@ -152,12 +154,12 @@ print_endline (id ^ " Unified");
        end
      | Some mgu ->
        let mgu =
-         let goback = combine vis (map (fun (_,i)->i) inst_vs) in
+         let goback = combine vis (map (fun (_,i,_)->i) inst_vs) in
          map (fun (i,t) -> assoc i goback, t) mgu
        in
        let tsv =
          map
-         (fun (s,i) ->
+         (fun (s,i,_) ->
            if not (mem_assoc i mgu) then
              failwith ("Didn't solve for instance type variable " ^ s)
            else
@@ -387,7 +389,7 @@ print_endline "Discard r";
         print_endline (" instance parent " ^ string_of_bid parent ^ "[" ^
           catmap "," (sbt bsym_table) inst_ts ^ "]");
         print_endline (" instance vs= " ^
-          catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") inst_vs);
+          catmap "," (fun (s,i,mt) -> s ^ "<" ^ string_of_bid i ^ ">:" ^ Flx_kind.sk mt) inst_vs);
        print_endline ("  defined: " ^ Flx_srcref.long_string_of_src (Flx_bsym.sr bsym))
       end candidates;
 

@@ -238,7 +238,7 @@ end;
         let param, arg = make_inner_function state nutab closure_bid fsr vs ts (List.map snd ps) in
 
         (* Generate a call to the wrapped function. *)
-        let ret = btyp_inst (i,ts) in 
+        let ret = btyp_inst (i,ts,Flx_kind.KIND_type) in 
         let exes =
            let e = bexpr_apply_struct ret (i, ts, arg) in
            [ bexe_fun_return (fsr, e) ]
@@ -266,7 +266,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
         let param, arg = make_inner_function state nutab closure_bid fsr vs ts (List.map snd ps) in
 
         (* Generate a call to the wrapped function. *)
-        let ret = btyp_inst (i,ts) in 
+        let ret = btyp_inst (i,ts,Flx_kind.KIND_type) in 
         let exes =
            let e = bexpr_apply_struct ret (i, ts, arg) in
            [ bexe_fun_return (fsr, e) ]

@@ -18,10 +18,10 @@ let rec expand bsym_table  counter sr t =
         "diff is " ^ string_of_int (i - level)
       );
 *)
-      Flx_btype.btyp_fix (i - level) (Flx_btype.btyp_type 0) (* CHECK!! *)
+      Flx_btype.btyp_fix (i - level) Flx_kind.KIND_type (* CHECK!! *)
     | None ->
       match t with
-      | Flx_btype.BTYP_inst (k,ts) ->
+      | Flx_btype.BTYP_inst (k,ts,mt) ->
         begin try 
           let bsym = Flx_bsym_table.find bsym_table k in
           let bbdcl = Flx_bsym.bbdcl bsym in

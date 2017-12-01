@@ -199,7 +199,7 @@ print_endline ("Bound variant = " ^ Flx_btype.st t);
         match t with
         (* reverse the fields so the second one with a given name takes precedence *)
         | BTYP_record (fields) -> new_fields := List.rev fields @ (!new_fields)
-        | BTYP_inst (i,ts) -> (* should only happen during typedef binding in nominal type mode *)
+        | BTYP_inst (i,ts,_) -> (* should only happen during typedef binding in nominal type mode *)
           begin try
             let bsym = Flx_bsym_table.find bsym_table i in
             let bbdcl = Flx_bsym.bbdcl bsym in
@@ -583,10 +583,10 @@ print_endline ("Binding TYP_name " ^s^ " via params to " ^ sbt bsym_table t);
       | SYMDEF_union _
       | SYMDEF_abs _ ->
           let ts = List.map
-            (fun (s,i,_) -> btyp_type_var (i, btyp_type 0))
+            (fun (s,i,mt) -> btyp_type_var (i, Flx_btype.bmt "Flx_bind_type1" mt))
             (fst sym.Flx_sym.vs)
           in
-          btyp_inst (index,ts)
+          btyp_inst (index,ts,Flx_kind.KIND_type)
       | SYMDEF_typevar _ ->
           print_endline ("Synthetic name "^name ^ " is a typevar!");
           syserr sr ("Synthetic name "^name ^ " is a typevar!")
@@ -649,7 +649,7 @@ end;
         print_endline ("Kind=" ^ match t with | TYP_name (_,s,ts) -> "TYP_name ("^s^"["^catmap ","string_of_typecode ts^"])" | _ -> "TYP_*");
         print_endline ("spec_vs=" ^
           catmap ","
-            (fun (s,j)-> s ^ "<" ^ string_of_bid j ^ ">")
+            (fun (s,j,mt)-> s ^ "<" ^ string_of_bid j ^ ">")
             entry_kind.spec_vs);
         print_endline ("spec_ts=" ^
           catmap "," (sbt bsym_table) entry_kind.sub_ts);

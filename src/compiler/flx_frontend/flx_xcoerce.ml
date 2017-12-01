@@ -233,7 +233,7 @@ and expand_coercion new_table bsym_table counter parent remap ((srcx,srct) as sr
   let srct = unfold "expand_coercion srct" srct in
   let dstt = unfold "expand_coercion dstt" dstt in
   match srct,dstt with
-  | BTYP_inst (src,[]), BTYP_inst (dst,[]) ->
+  | BTYP_inst (src,[],_), BTYP_inst (dst,[],_) ->
     if debug then
     print_endline ("Searching for nominal type conversion from " ^ 
     si src  ^ " -> " ^ si dst);

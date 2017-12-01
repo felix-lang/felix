@@ -14,7 +14,7 @@ print_endline("Binding type " ^ Flx_print.string_of_typecode ut);
 print_endline("Bound type " ^ Flx_print.sbt bsym_table but);
 *)
       begin (*6*)match but with
-      | BTYP_inst (index, ts) ->
+      | BTYP_inst (index, ts,_) ->
         begin
         try List.assoc (index,ts) state.Flx_lookup_state.decoder_cache
         with Not_found ->

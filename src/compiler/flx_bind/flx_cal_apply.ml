@@ -82,7 +82,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
     end (* functions *)
 
     (* HACKERY TO SUPPORT STRUCT CONSTRUCTORS *)
-    | BTYP_inst (index,ts) ->
+    | BTYP_inst (index,ts,_) ->
       begin match get_data state.sym_table index with
       { Flx_sym.id=id; symdef=entry } ->
         begin match entry with

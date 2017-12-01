@@ -19,7 +19,7 @@ let is_typeset tss1 =
         List.iter (fun (p,v) -> match p,v with
         | { assignments=[]; 
             pattern_vars=pvs; 
-            pattern=BTYP_inst (_,[])
+            pattern=BTYP_inst (_,[],_)
           },
           BTYP_tuple [] when BidSet.is_empty pvs -> ()
         | _ -> raise Not_found
@@ -34,7 +34,7 @@ let make_typeset tss : bid_t list =
   match List.rev tss with
   | h::t -> List.map (fun x ->
     match x with 
-    | {pattern=BTYP_inst (i,[])},_ -> i
+    | {pattern=BTYP_inst (i,[],_)},_ -> i
     | _ -> assert false
     ) 
     t

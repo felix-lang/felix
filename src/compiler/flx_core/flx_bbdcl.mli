@@ -1,6 +1,7 @@
 open Flx_ast
 open Flx_types
 open Flx_bid
+open Flx_kind
 
 type btype_qual_t = [
   | Flx_ast.base_type_qual_t

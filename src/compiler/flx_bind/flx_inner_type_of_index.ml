@@ -185,7 +185,8 @@ print_endline ("** FINISH **** Calculating Function type for function " ^ sym.Fl
       let ts = adjust_ts state.sym_table bsym_table sym.Flx_sym.sr index ts in
 (* print_endline "inner type of index .. struct .. adjust ts done"; *)
       let t = type_of_list (List.map snd ls) in
-      let result = btyp_function (bt sym.Flx_sym.sr t, btyp_inst (index, ts)) in
+      let mt = Flx_kind.KIND_type in
+      let result = btyp_function (bt sym.Flx_sym.sr t, btyp_inst (index, ts, mt)) in
 (*
 print_endline ("struct as function [inner_type_of_index] " ^ sbt bsym_table result);
 *)

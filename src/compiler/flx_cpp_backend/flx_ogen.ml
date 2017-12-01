@@ -194,7 +194,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
       bcat s "  ::flx::gc::generic::gc_flags_default,0ul,0ul\n";
       bcat s "};\n"
 
-    | BTYP_inst (i,ts) ->
+    | BTYP_inst (i,ts,_) ->
 (*
 print_endline ("NOMINAL TYPE");
 *)
@@ -449,7 +449,7 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
           with Not_found -> ()
       end args
 
-    | BTYP_inst (i,ts) ->
+    | BTYP_inst (i,ts,_) ->
       print_debug syms ("Thinking about type index " ^ si i ^ " ts = " ^ catmap "," (sbt bsym_table) ts);
       let bsym =
         try Flx_bsym_table.find bsym_table i
