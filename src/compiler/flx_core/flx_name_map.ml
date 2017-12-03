@@ -63,21 +63,36 @@ let map_name_map fi ft nm =
 
 
 (* use fresh variables, but preserve names *)
-let mkentry counter_ref (vs:Flx_types.ivs_list_t) i =
+let mkentry counter_ref (ivs:Flx_types.ivs_list_t) i =
+let flag = ref false in
   let is = List.map
-    (fun _ -> fresh_bid counter_ref)
-    (fst vs)
+    (fun (n,i,mt) -> 
+      let j = fresh_bid counter_ref in
+(*
+if j > 7140 && j < 7150 then flag := true;
+*)
+     j
+    )
+    (fst ivs)
   in
   let ts = List.map2 (fun i (n,_,mt) ->
-    let mt = Flx_btype.bmt "Flx_name_map.mkentry1" mt in
-    Flx_btype.btyp_type_var (i, mt)) is (fst vs)
+    let k = Flx_btype.bmt "Flx_name_map.mkentry1" mt in
+    Flx_btype.btyp_type_var (i, k)) 
+    is 
+    (fst ivs)
   in
   let vs = List.map2 (fun i (n,_,mt) -> 
-    let mt = Flx_btype.bmt "Flx_name_map.mkentry2" mt in
-    n,i,mt) 
+    let k = Flx_btype.bmt "Flx_name_map.mkentry2" mt in
+    n,i,k) 
     is 
-    (fst vs) 
+    (fst ivs) 
   in
+  if !flag then begin
+    print_endline ("Make entry for base = " ^ string_of_int i);
+    print_endline ("Base vs=" ^ Flx_util.catmap ","  (fun (n,i,mt) -> n ^ "<" ^ string_of_int i ^">") (fst ivs));
+    print_endline ("Sub vs=" ^ Flx_util.catmap ","  (fun (n,i,mt) -> n ^ "<" ^ string_of_int i ^">") vs);
+    print_endline ("Sub ts=" ^ Flx_util.catmap ","  Flx_btype.st ts);
+  end;
   {base_sym=i; spec_vs=vs; sub_ts=ts}
 
 (* specialise an name map entry *)

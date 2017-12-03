@@ -131,6 +131,15 @@ print_endline (" &&&&&& bind_type_uses calling BBIND_SYMBOL");
   in
 *)
   let bexes exes ret_type index tvars : Flx_btype.t * Flx_bexe.t list=
+(*
+  print_endline ("Flx_bbind.bexes: Binding " ^ sym.Flx_sym.id ^ "<"^ si symbol_index ^ ">");
+
+  print_endline ("Flx_bbind.bexes: sym_parent is " ^
+    (match sym_parent with | None -> "none" | Some i -> si i));
+  print_endline ("Flx_bbind.bexes: True Parent is " ^
+    (match true_parent with | None -> "none" | Some i -> si i));
+
+*)
     let bexe_state = Flx_bexe_state.make_bexe_state
       ?parent:sym_parent
       ~env
@@ -144,6 +153,8 @@ print_endline (" &&&&&& bind_type_uses calling BBIND_SYMBOL");
       bexe_state
       bsym_table
       sym.Flx_sym.sr
+      symbol_index
+      sym.Flx_sym.id
       exes
     in
 (*
@@ -382,8 +393,13 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
     add_bsym true_parent (bbdcl_lemma ())
 
   | SYMDEF_function (ps,rt,effects,props,exes) ->
+
 (*
+if sym.Flx_sym.id = "join" then 
 print_endline ("Flx_bbind: Binding function " ^ sym.Flx_sym.id);
+if sym.Flx_sym.id = "join" then 
+  print_endline ("join: precalculated bvs = " ^ Flx_print.string_of_bvs bvs);
+if sym.Flx_sym.id = "join" then 
     print_endline (" ... Binding parameters");
 *)
     let bps = bindps ps in
@@ -392,8 +408,16 @@ print_endline ("Flx_bbind: Binding function " ^ sym.Flx_sym.id);
 *)
     let ts = Flx_bparams.get_btypes bps in
 
+(*
+if sym.Flx_sym.id = "join" then 
+print_endline ("join: binding return type");
+*)
     (* We don't need to bind the intermediary type. *)
     let brt = bt' rt in
+(*
+if sym.Flx_sym.id = "join" then 
+print_endline ("join: bound return type");
+*)
 (*
 print_endline ("Flx_bbind: Calculate return type " ^ string_of_typecode rt ^
   " ==> " ^ sbt bsym_table brt);
@@ -402,6 +426,10 @@ print_endline ("Flx_bbind: Calculate return type " ^ string_of_typecode rt ^
 (*
 if sym.Flx_sym.id = "hhhhh" then
 print_endline ("Effects = " ^ Flx_btype.st beffects);
+*)
+(*
+if sym.Flx_sym.id = "join" then 
+print_endline ("Join: binding executable instructions");
 *)
     let brt, bbexes = bexes exes brt symbol_index bvs in
     let bbdcl = bbdcl_fun (props,bvs,bps,brt,beffects,bbexes) in
@@ -1132,15 +1160,21 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
                 failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
           end;
           (* now, bind the types dom,cod! We cheat, and just lookup the cache*)
+(*
           print_endline ("bind dom/cod");
+*)
           let ft =
              try Hashtbl.find state.ticache i 
              with Not_found -> failwith ("WOOPS, expected type of subtype function in cache");
           in
+(*
           print_endline ("Type of function " ^ string_of_int i ^ " is " ^ sbt bsym_table ft);
+*)
           match ft with
           | BTYP_function (BTYP_inst (dom,[],_),BTYP_inst (cod,[],_)) ->
+(*
             print_endline ("Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
+*)
             Flx_bsym_table.add_supertype bsym_table ((cod,dom),i)
  
           | _ -> clierr sr ("Subtype specification requires nonpolymorphic nominal typed function")
@@ -1170,15 +1204,21 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
                 failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
           end;
           (* now bind the types dom,cod *)
+(*
           print_endline ("bind dom/cod");
+*)
           let ft =
              try Hashtbl.find state.ticache i 
              with Not_found -> failwith ("WOOPS, expected type of subtype function in cache");
           in
+(*
           print_endline ("Type of function " ^ string_of_int i ^ " is " ^ sbt bsym_table ft);
+*)
           match ft with
           | BTYP_function (BTYP_inst (dom,[],_),BTYP_inst (cod,[],_)) ->
+(*
             print_endline ("Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
+*)
             Flx_bsym_table.add_supertype bsym_table ((cod,dom),i)
           | _ -> clierr sr ("Subtype specification requires nonpolymorphic nominal typed function")
         end

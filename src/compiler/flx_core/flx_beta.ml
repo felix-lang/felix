@@ -462,10 +462,32 @@ print_endline "Type list index returned None";
   | BTYP_type_map (t1,t2) -> btyp_type_map (br t1, br t2)
 
   | BTYP_type_apply (t1,t2) ->
+(*
+print_endline ("Flx_beta: BTYP_type_apply\n  " ^ Flx_btype.st t1 ^ "\nto\n  " ^
+  Flx_btype.st t2);
+*)
 (* NOT clear if this is OK or not *)
     let t1 = br t1 in
     let t2 = br t2 in
     begin
+    let m1 = Flx_btype_kind.metatype sr t1 in
+    let m2 = Flx_btype_kind.metatype sr t2 in
+    begin match m1 with
+    | KIND_function (d,c) ->
+      if d = m2 then () else
+      Flx_exceptions.clierr sr
+      ("Flx_beta: In application: " ^ Flx_btype.st t ^ 
+       "\ntype apply requires domain of type function to agree with argument\n" ^
+       "Domain kind=" ^ Flx_kind.sk d ^ 
+       "\nArgument type=" ^ Flx_btype.st t2 ^ ", kind=" ^ Flx_kind.sk m2)
+
+    | _ -> 
+      Flx_exceptions.clierr sr 
+      ("Flx_beta: type apply requires first argument to be KIND_function, got\n" ^ 
+       "Type="^ Flx_btype.st t1 ^", kind=" ^ Flx_kind.sk m1)
+    end;
+
+
 (*
 print_endline ("Attempting to beta-reduce type function application " ^ sbt bsym_table t);
 *)
@@ -579,13 +601,17 @@ print_endline ("Calculated isrec= " ^ if isrec then "true" else "false");
       print_endline ("Body after reduction = " ^ sbt bsym_table t');
 *)
       let t' = adjust bsym_table t' in
+(*
+print_endline ("Flx_beta: result of application is: " ^ Flx_btype.st t');
+*)
       t'
 
     | _ ->
+      let t = btyp_type_apply (t1,t2) in
 (*
-      print_endline "Apply nonfunction .. can't reduce";
+      print_endline ("Flx_beta: type apply nonfunction .. can't beta reduce, keep as " ^ Flx_btype.st t);
 *)
-      btyp_type_apply (t1,t2)
+      t
     end
     end
 

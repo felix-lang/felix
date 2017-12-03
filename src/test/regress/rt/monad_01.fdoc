@@ -1,0 +1,108 @@
+@title
+Monad test
+@felix
+union success[T] = 
+  | Success of T
+  | Failure of string
+  ;
+instance[T with Str[T]] Str[success[T]]
+{
+  //success[T] satisfies the requirements of the typeclass Str (if the
+  //same can be said of T)
+
+  fun str (x:success[T]):string =>
+    match x with 
+      | Success t => "Success " + (str t)
+      | Failure s => "Failure " + s
+    endmatch
+    ;
+}
+typedef fun Fallible (t:TYPE) : TYPE => success[t] ;
+instance Monad[Fallible]
+{
+  fun bind[a, b] (x:Fallible a, f: a -> Fallible b):Fallible b =>
+    match x with
+      | Success a => f a
+      | Failure s => Failure[b] s
+    endmatch
+    ;
+  fun ret[a](x:a):Fallible a => Success x ;
+
+}
+
+
+const INT_MAX:int requires Cxx_headers::cstdlib ;
+const INT_MIN:int requires Cxx_headers::cstdlib ;
+
+fun madd (x:int) (y:int) : success[int] => 
+  if (x > 0 and y > (INT_MAX - x)) or 
+     (x < 0 and y < (INT_MIN - x))
+  then
+      Failure[int] "overflow"
+  else
+    Success (y + x)
+  endif
+  ;
+
+fun msub (x:int) (y:int) : success[int] => 
+  if (x > 0 and y < (INT_MIN + x)) or
+     (x < 0 and y > (INT_MAX + x))
+  then
+    Failure[int] "overflow"
+  else
+    Success (y - x)
+  endif
+  ;
+
+fun mmul (x:int) (y:int) : success[int] => 
+  if y > 0 and x > 0 and y > (INT_MAX / y) or
+     y > 0 and x <= 0 and x < (INT_MIN / y) or
+     y <= 0 and x > 0 and y < (INT_MIN / x) or
+     y <= 0 and y != 0 and x <= 0 and x < (INT_MAX / y) then
+        Failure[int] "overflow"
+  else
+    Success (y * x) 
+  endif
+  ;
+
+fun mdiv (x:int) (y:int) : success[int] => 
+    if (x == 0) then 
+        Failure[int] "attempted division by zero" 
+    else 
+      if y == INT_MIN and x == -1 then
+        Failure[int] "overflow"
+      else
+        Success (y / x) 
+    endif 
+    ;
+open Monad[Fallible] ;
+
+val zero = ret 0 ;
+val zero_over_one = bind ((Success 0), (mdiv 1)) ;
+val undefined = bind ((Success 1),(mdiv 0)) ;
+val two = bind((ret 1), (madd 1)) ;
+val two_by_one_plus_one = bind (two , (mmul 2)) ;
+
+println$ "zero = " + str zero ;
+println$ "1 / 0 = " + str undefined ;
+println$ "0 / 1 = " + str zero_over_one ;
+println$ "1 + 1 = " + str two ;
+println$ "2 * (1 + 1) = " + str (bind (bind((ret 1), (madd 1)) , (mmul 2))) ;
+println$ "INT_MAX - 1 = " + str (bind ((ret INT_MAX), (msub 1))) ;
+println$ "INT_MAX + 1 = " + str (bind ((ret INT_MAX), (madd 1))) ;
+println$ "INT_MIN - 1 = " + str (bind ((ret INT_MIN), (msub 1))) ;
+println$ "INT_MIN + 1 = " + str (bind ((ret INT_MIN), (madd 1))) ;
+
+println$ "--" ;
+@expect
+zero = Success 0
+1 / 0 = Failure attempted division by zero
+0 / 1 = Success 0
+1 + 1 = Success 2
+2 * (1 + 1) = Success 4
+INT_MAX - 1 = Success 2147483646
+INT_MAX + 1 = Failure overflow
+INT_MIN - 1 = Failure overflow
+INT_MIN + 1 = Success -2147483647
+--
+@

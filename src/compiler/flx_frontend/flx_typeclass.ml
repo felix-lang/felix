@@ -68,7 +68,13 @@ let tcinst_chk syms bsym_table id sr i ts
      ;
      (* solve for vs' *)
      let vis = List.map (fun _ -> fresh_bid syms.counter) inst_vs in
-     let nuvs = map (fun i -> btyp_type_var (i, Flx_kind.KIND_type)) vis in
+     let nuvs = map (fun i -> 
+(*
+if i = 7141 then
+print_endline ("Flx_typeclass: bind_type var, HACKED KIND_type");
+*)
+       btyp_type_var (i, Flx_kind.KIND_type)) vis 
+     in
      let inst_ts' = map (tsubst sr inst_vs nuvs) inst_ts in
      let vset = fold_left (fun acc i -> BidSet.add i acc) BidSet.empty vis in
 
@@ -111,7 +117,11 @@ let tcinst_chk syms bsym_table id sr i ts
        ) 
        eqns
      in
-     let assignments = map (fun (i,t) -> btyp_type_var (i,Flx_kind.KIND_type),t) assigns in
+     let assignments = map (fun (i,t) -> 
+if i = 7141 then
+print_endline ("Flx_typeclass: HACKED assignments ");
+        btyp_type_var (i,Flx_kind.KIND_type),t) assigns 
+     in
      let mgu =
        try Some (unification bsym_table syms.counter (assignments @ eqns) vset)
        with Not_found -> None

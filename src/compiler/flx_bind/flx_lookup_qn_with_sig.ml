@@ -121,8 +121,8 @@ in
               clierrx "[flx_bind/flx_lookup.ml:2382: E121] " sra ("Struct "^id^" constructor arguments don't match member types")
         in
         assert (List.length hvs = List.length bts);
-        print_endline ("Struct constructor found, type= " ^ sbt bsym_table t);
         (*
+        print_endline ("Struct constructor found, type= " ^ sbt bsym_table t);
         print_endline ("Vs len= " ^ si (List.length hvs) ^ " ts len= " ^ si (List.length bts));
         *)
         (*

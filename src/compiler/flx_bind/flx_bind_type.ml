@@ -71,7 +71,7 @@ let handle_typeset state sr elt tset =
   let fresh = fresh_bid state.counter in
   let dflt =
     {
-      pattern = btyp_type_var (fresh,btyp_type 0);
+      pattern = btyp_type_var (fresh,Flx_kind.KIND_type);
       pattern_vars = BidSet.singleton fresh;
       assignments=[]
     },
@@ -316,11 +316,22 @@ print_endline ("Calling Flx_beta.adjust, possibly incorrectly, type = " ^ sbt bs
       handle_typeset state sr elt typeset
 
   | TYP_var i ->
-(*
-print_endline ("FUDGE: Binding TYP_var " ^ si i);
-*)
+if i = 7141 then
+print_endline ("Flx_bind_type TYP_var " ^ string_of_int i);
+    begin try 
+      let sym = Flx_sym_table.find state.sym_table i in
+      match sym.symdef with
+      | SYMDEF_typevar mt -> 
+        let k = Flx_btype.bmt "Flx_bind_type.TYP_var" mt in
+        btyp_type_var (i, k)
+      | _ -> raise Not_found 
+    with Not_found ->
       (* HACK .. assume variable is type TYPE *)
-      btyp_type_var (i, btyp_type 0)
+(*
+print_endline ("FUDGE: Binding TYP_var " ^ si i ^ ", HACKING KIND TO TYPE");
+*)
+      btyp_type_var (i, Flx_kind.KIND_type)
+    end
 
   | TYP_as (t,s) ->
 (*
@@ -349,7 +360,7 @@ print_endline ("\n+++++++++Bound recursive type is " ^ Flx_btype.st t^"\n\n");
         let outer_depth = List.assq e rs.expr_fixlist in
         let fixdepth = outer_depth -rs.depth in
 (* HACK metatype guess *)
-        btyp_fix fixdepth (btyp_type 0)
+        btyp_fix fixdepth (Flx_kind.KIND_type)
       end else begin
         if debug then
         print_endline ("Flx_bind_type.TYP_typeof.Start tentative binding of typeof (" ^ string_of_expr e ^ ")");
@@ -402,13 +413,21 @@ print_endline ("\n+++++++++Bound recursive type is " ^ Flx_btype.st t^"\n\n");
   | TYP_void _ -> btyp_void ()
 
   | TYP_typefun (ps,r,body) ->
+(*
+print_endline ("Binding type function " ^ Flx_print.string_of_typecode t);
+*)
       let data = List.rev_map
         (fun (name, mt) -> name, bmt "Flx_bind_type.1" mt, fresh_bid state.counter)
         ps
       in
       (* reverse order .. *)
       let pnames = List.map
-        (fun (n, mt, i) -> (n, btyp_type_var (i, mt)))
+        (fun (n, mt, i) -> 
+(*
+           print_endline ("Flx_bind_type: Type function, parameter " ^ 
+           si i ^ ",kind=" ^ Flx_kind.sk mt); 
+*)
+           (n, btyp_type_var (i, mt)))
         data
       in
       let bbody =
@@ -469,100 +488,21 @@ print_endline ("type _map datatype = " ^ sbt bsym_table bt2);
 
       | _ -> clierrx "[flx_bind/flx_lookup.ml:1002: E98] " sr ("Cannot flatten type " ^ sbt bsym_table t2)
       end
+  | TYP_apply (t1,t2) -> 
 (*
-  | TYP_apply (TYP_void _ as qn, t2')
-  | TYP_apply (TYP_name _ as qn, t2')
-  | TYP_apply (TYP_case_tag _ as qn, t2')
-  | TYP_apply (TYP_typed_case _ as qn, t2')
-  | TYP_apply (TYP_lookup _ as qn, t2')
-  | TYP_apply (TYP_index _ as qn, t2')
-  | TYP_apply (TYP_callback _ as qn, t2') ->
-      let qn =
-        match qualified_name_of_typecode qn with
-        | Some qn -> qn
-        | None -> assert false
-       in
-(*
-print_endline ("Binding type application, qn = " ^ string_of_qualified_name qn ^" argument " ^ string_of_typecode t2');
+print_endline ("Binding TYP_apply " ^ string_of_typecode t);
 *)
-      let t2 = bt t2' in
+    let x = btyp_type_apply (bt t1, bt t2) in
 (*
-print_endline ("Type application,qn = " ^ string_of_qualified_name qn ^" argument " ^ string_of_typecode t2' ^ " bound=" ^ sbt bsym_table t2);
+print_endline ("  ***** Bound TYP_apply: " ^ Flx_btype.st x );
 *)
-      let sign = Flx_metatype.metatype state.sym_table bsym_table rs sr t2 in
-(*
-print_endline ("meta type of argument is " ^ sbt bsym_table sign);
-*)
-      begin try
-        match qn with
-        | `AST_name (sr,name,[]) ->
-(*
-print_endline ("Looking up name " ^ name ^ " in param list");
-*)
-          let fn = List.assoc name params in
-          let r = btyp_type_apply (fn, t2) in
-          let r = beta_reduce "flx_lookup: bind_TYP_apply" state.counter bsym_table sr r in
-          r
-        | _ -> raise Not_found
-      with Not_found ->
-        (* Note: parameters etc cannot be found with a qualified name, unless
-         * it is a simple name .. which is already handled by the previous
-         * case .. so we can drop them .. ? *)
+    x
 
-        (* PROBLEM: we don't know if the term is a type alias or type
-         * constructor. The former don't overload ..  the latter do ..
-         * lookup_type_qn_with_sig is probably the wrong routine .. if it
-         * finds a constructor, it seems to return the type of the constructor
-         * instead of the actual constructor .. *)
-(*
-print_endline ("Flx_bind_type: Cannot find name "^string_of_qualified_name qn ^
-" in param list, doing lookup with metatype as sig=" ^ sbt bsym_table sign);
-*)
-        let t1 = lookup_type_qn_with_sig'
-          state
-          bsym_table
-          sr
-          sr
-          env
-          {rs with depth=rs.depth + 1 }
-          qn
-          [sign]
-        in
-(*
-print_endline ("Lookup type qn with sig: qn= " ^ string_of_qualified_name qn ^ " sig=" ^ sbt bsym_table sign);
-print_endline ("Lookup type qn with sig found type " ^ sbt bsym_table t1);
-*)
-(*
-        begin  match t1 with
-        | BTYP_fix (j,mt) -> 
-          print_endline ("Hmm .. lookup found a fixpoint?? " ^ string_of_int j); 
-          print_endline "params = ";
-          List.iter (fun (n,t) -> 
-            print_endline (n ^ " value : " ^ sbt bsym_table t)
-          )
-          params
-        | _ -> ()
-        end;
-*)
-        let r = btyp_type_apply (t1,t2) in
-(*
-print_endline ("Completed binding type apply OK; " ^ sbt bsym_table r);
-*)
-(*
-        let r = beta_reduce "flx_lookup: bind_TYP_apply: reduced application" state.counter bsym_table sr r in
-*)
-(*
-print_endline ("reduced application is: " ^ sbt bsym_table r);
-*)
-        r
-      end
-*)
-  | TYP_apply (t1,t2) -> btyp_type_apply (bt t1, bt t2)
   | TYP_type_tuple ts -> btyp_type_tuple (List.map bt ts)
 
   | TYP_name (sr,s,[]) when List.mem_assoc s rs.as_fixlist ->
 (* HACK metatype guess *)
-    btyp_fix ((List.assoc s rs.as_fixlist) - rs.depth) (btyp_type 0)
+    btyp_fix ((List.assoc s rs.as_fixlist) - rs.depth) (Flx_kind.KIND_type)
 
   | TYP_name (sr,s,[]) when List.mem_assoc s params ->
     let t = List.assoc s params in

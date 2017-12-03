@@ -210,11 +210,11 @@ let cal_loop sym_table sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
 exception Found of int
 
 let print_bvs vs =
-  catmap "," (fun (s,i,_) -> s ^ "->" ^ string_of_bid i) vs
+  catmap "," (fun (s,i,mt) -> s ^ "<" ^ string_of_bid i^">:"^Flx_kind.sk mt) vs
 
 type bexe_t = Flx_bexe.t
 
-let rec bind_exe' (state: Flx_bexe_state.bexe_state_t) bsym_table (sr, exe) : bexe_t list =
+let rec bind_exe' (state: Flx_bexe_state.bexe_state_t) bsym_table fuindex funame (sr, exe) : bexe_t list =
   let be e =
     bind_expression
       state.lookup_state
@@ -231,9 +231,16 @@ let rec bind_exe' (state: Flx_bexe_state.bexe_state_t) bsym_table (sr, exe) : be
       n
   in
 (*
-print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_type);
+if funame = "join" then
+print_endline ("join:: Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_type);
+if funame = "join" then
   print_endline ("EXE="^string_of_exe 1 exe);
+if funame = "join" then
+print_endline("  PARENT BVS=" ^ print_bvs state.parent_vs);
+if funame = "join" then
+print_endline("  SPECIFIED RETURN TYPE =" ^ Flx_btype.st state.ret_type);
 *)
+
 (*
   if not state.reachable then
   begin
@@ -252,6 +259,7 @@ print_endline ("Bind_exe, return type " ^ Flx_print.sbt bsym_table state.ret_typ
   end
   ;
 *)
+  let bind_exe' state bsym_table x  = bind_exe' state bsym_table fuindex funame x in
   match exe with
   | EXE_begin_match_case
   | EXE_end_match_case -> assert false
@@ -578,7 +586,8 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
     state.reachable <- false;
     state.return_count <- state.return_count + 1;
 (*
-print_endline ("++++++++ EXE_fun_return1: Return expression raw " ^ string_of_expr e);
+if funame = "join" then
+print_endline ("Flx_bind_bexe: ++++++++ EXE_fun_return1: Return expression raw " ^ string_of_expr e);
 *)
     let e',t' as e = be e in
 (*
@@ -586,9 +595,18 @@ print_endline ("+++++++++EXE_fun_return2: Function return value has type " ^ sbt
 *)
     let t' = Flx_fold.minimise bsym_table state.counter t' in
 (*
-print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
+if funame = "join" then
+print_endline ("Flx_bind_bexe: Function return value has MINIMISED type " ^ sbt bsym_table t');
+*)
+(*
+if funame="join" then
+print_endline ("Flx_bind_bexe: UNIFIYING");
 *)
     ignore (do_unify state bsym_table state.ret_type t');
+(*
+if funame="join" then
+print_endline ("Flx_bind_bexe: UNIFICATION DONE");
+*)
     state.ret_type <- varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type;
     if type_match bsym_table state.counter state.ret_type t' then
 (*
@@ -938,14 +956,18 @@ print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
      let t = bind_type state.lookup_state bsym_table state.env sr t in
      [(bexe_catch sr s t)]
 
-let rec bind_exe (state: Flx_bexe_state.bexe_state_t) bsym_table (sr, exe) : bexe_t list =
-  try bind_exe' state bsym_table (sr,exe)
+let rec bind_exe (state: Flx_bexe_state.bexe_state_t) bsym_table fuindex funame (sr, exe) : bexe_t list =
+  try bind_exe' state bsym_table fuindex funame (sr,exe)
   with Flx_dot.OverloadResolutionError as exn ->
      print_endline  ("Overload resolution error binding exe: " ^ string_of_exe 2 exe);
      print_endline (Flx_srcref.long_string_of_src sr);
      raise exn
 
-let bind_exes state bsym_table sr exes : Flx_btype.t * Flx_bexe.t list  =
+let bind_exes state bsym_table sr fuindex funame exes : Flx_btype.t * Flx_bexe.t list  =
+(*
+if funame = "join" then
+  print_endline ("Bind_exes, funame is join");
+*)
 (*
   print_endline ("bind_exes.. env depth="^ string_of_int (List.length state.env));
   print_endline "Dumping Source Executables";
@@ -989,7 +1011,7 @@ let bind_exes state bsym_table sr exes : Flx_btype.t * Flx_bexe.t list  =
         end
 
       | exe :: tail -> 
-        let bs =  (bind_exe state bsym_table exe) in
+        let bs =  (bind_exe state bsym_table fuindex funame exe) in
         bind tail (result @ bs)
     in
     bind exes [] 

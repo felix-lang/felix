@@ -185,6 +185,7 @@ print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table
       (*
       print_endline ("type variable index " ^ si index);
       *)
+(*
       let env = match parent with
         | Some parent ->
           (*
@@ -204,12 +205,17 @@ print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table
           *)
         | None -> []
       in
+*)
       let mt = bmt "bind_type_index" mt in
       (*
       print_endline ("Bound metatype is " ^ sbt bsym_table mt);
       let mt = cal_assoc_type state sr mt in
       print_endline ("Assoc type is " ^ sbt bsym_table mt);
       *)
+(*
+if index = 7141 then
+print_endline ("Flx_bind_type_index.Binding type variable " ^ si index ^ ", kind=" ^ Flx_kind.sk mt);
+*)
       btyp_type_var (index,mt)
 
     (* type alias RECURSE *)
@@ -224,77 +230,37 @@ print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table
 (*
 print_endline ("Bind type index, trying to bind " ^id ^ "<" ^string_of_int index ^ "> = " ^ string_of_typecode t);
 *)
+    begin try
+      let bsym = Flx_bsym_table.find bsym_table index in
+      let bbdcl = Flx_bsym.bbdcl bsym in
+      begin match bbdcl with
+      | BBDCL_structural_type_alias (bvs, alias) ->
+        let salias = Flx_btype_subst.tsubst sr bvs ts alias in
 (*
-      if get_structural_typedefs state then begin
-(*
-        if debug then
-        print_endline ("Bind type index: Unravelling type alias " ^ id ^ " index=" ^ si index);
+        print_endline ("Bind type index: STRUCTURAL Unravelling type alias " ^ id ^ " index=" ^ si index ^ " to " ^
+          Flx_btype.st salias);
 *)
-        begin try
-          let bsym = Flx_bsym_table.find bsym_table index in
-          let bbdcl = Flx_bsym.bbdcl bsym in
-          begin match bbdcl with
-          | BBDCL_structural_type_alias (bvs, alias) ->
-            let salias = Flx_btype_subst.tsubst sr bvs ts alias in
+        salias
+      | BBDCL_nominal_type_alias (bvs, alias) ->
 (*
-            print_endline ("Bind type index: Unravelling type alias " ^ id ^ " index=" ^ si index ^ " to " ^
-              Flx_btype.st salias);
+        print_endline ("Bind type index: NOMINAL bind type alias " ^ id ^ " index=" ^ si index ^ " to " ^
+          Flx_btype.st alias);
 *)
-            salias
-          | _ -> failwith ("Flx_bind_type expected structural type alias in bound symbol table " ^ id);
-          end
-        with Not_found ->
-          failwith ("Flx_bind_type. Bound structural type alias missing from bound symbol table " ^ id)
-        end
-
-(*
-        let t = bt t in
-*)
-(*
-        print_endline ("Bind type index: Unravelling type alias " ^ id ^ " index=" ^ si index ^ " to " ^ Flx_btype.st t);
-*)
-(*
+        let k = Flx_btype_kind.metatype sr alias in
+        let t = btyp_inst (index,ts,k) in
         t
-*)
-      end
-      else begin
-        let t = 
-          try btyp_inst (index,ts) 
-          with exn -> 
-            print_endline ("Cannot create nominal type reference!");
-            raise exn
-        in
-(*
-        print_endline ("Bind type index: nominalising type alias " ^ id ^ " index=" ^ si index ^ " to " ^ Flx_btype.st t);
-*)
-        t
-      end
-*)
 
-        begin try
-          let bsym = Flx_bsym_table.find bsym_table index in
-          let bbdcl = Flx_bsym.bbdcl bsym in
-          begin match bbdcl with
-          | BBDCL_structural_type_alias (bvs, alias) ->
-            let salias = Flx_btype_subst.tsubst sr bvs ts alias in
-(*
-            print_endline ("Bind type index: Unravelling type alias " ^ id ^ " index=" ^ si index ^ " to " ^
-              Flx_btype.st salias);
-*)
-            salias
-          | BBDCL_nominal_type_alias (bvs, alias) ->
-            let t = btyp_inst (index,ts,Flx_kind.KIND_type) in
-            t
-
-          | _ -> failwith ("Flx_bind_type expected type alias in bound symbol table " ^ id);
-          end
-        with Not_found ->
-          let t = btyp_inst (index,ts,Flx_kind.KIND_type) in 
-(*
-        print_endline ("Bind type index: nominalising type alias " ^ id ^ " index=" ^ si index ^ " to " ^ Flx_btype.st t);
-*)
-          t
+      | _ -> failwith ("Flx_bind_type expected type alias in bound symbol table " ^ id);
       end
+    with Not_found ->
+      let k = Flx_guess_meta_type.guess_metatype sr t in
+      let t = btyp_inst (index,ts,k) in 
+(*
+      print_endline ("Bind type index: INITIAL nominalising type alias " ^ id ^ 
+       " index=" ^ si index ^ " to " ^ Flx_btype.st t ^ ", kind=" ^ Flx_kind.sk k);
+*)
+      t
+    end
 
     | SYMDEF_abs _ ->
       btyp_inst (index,ts,Flx_kind.KIND_type)

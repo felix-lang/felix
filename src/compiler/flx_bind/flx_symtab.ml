@@ -103,7 +103,7 @@ print_endline ("Merge entry " ^ k);
     Hashtbl.add htab k v
   end
 
-let merge_ivs
+let rmerge_ivs
   (vs1,{ raw_type_constraint=con1; raw_typeclass_reqs=rtcr1 })
   (vs2,{ raw_type_constraint=con2; raw_typeclass_reqs=rtcr2 }) :
   ivs_list_t
@@ -121,7 +121,7 @@ let merge_ivs
   and
     rtcr = Flx_list.uniq_list (rtcr1 @ rtcr2)
   in
-  vs1 @ vs2,
+  vs2 @ vs1, (* NOTE: REVERSED .... *)
   { raw_type_constraint=t; raw_typeclass_reqs=rtcr }
 
 
@@ -189,6 +189,10 @@ let full_add_typevar counter_ref sym_table sr table key value =
 
 
 let full_add_function counter_ref sym_table sr (vs:ivs_list_t) table key value =
+(*
+if key = "bind" then print_endline ("Adding bind to name lookup table");
+if key = "bind" then print_endline ("vs = " ^ Flx_util.catmap "," (fun (name,index,mt) -> name ^ "<" ^ string_of_int index ^ ">") (fst vs));
+*) 
   try
     match Hashtbl.find table key with
     | NonFunctionEntry entry ->
@@ -241,7 +245,8 @@ Flx_print.string_of_tcon con);
       let n = fresh_bid counter_ref in
       if print then
         print_endline ("//  " ^ Flx_util.spaces level ^
-          Flx_print.string_of_bid n ^ " -> " ^ tid ^ " (type variable)");
+          Flx_print.string_of_bid n ^ " -> " ^ tid ^ 
+          " (type variable) kind/tpat=" ^ Flx_print.str_of_kindcode tpat);
       tid, n, tpat
     end vs
   in
@@ -410,7 +415,7 @@ and build_table_for_dcl
     counter_ref
     sym_table
     sr
-    (merge_ivs ivs inherit_ivs)
+    (rmerge_ivs ivs inherit_ivs)
     table
     id
     idx
@@ -419,7 +424,7 @@ and build_table_for_dcl
     counter_ref
     sym_table
     sr
-    (merge_ivs ivs inherit_ivs)
+    (rmerge_ivs ivs inherit_ivs)
     table
     id
     idx
@@ -428,7 +433,7 @@ and build_table_for_dcl
     counter_ref
     sym_table
     sr
-    (merge_ivs ivs inherit_ivs)
+    (rmerge_ivs ivs inherit_ivs)
     table
     id
     idx
@@ -533,6 +538,9 @@ print_endline ("add_tvars' " ^ Flx_print.string_of_ivs ivs);
       | _ -> tpat
       in
 *)
+if index = 7141 then
+print_endline ("Adding type variable 7141!");
+
       let mt = tpat in
       (* Add the type variable to the symbol table. *)
       add_symbol ~ivs:dfltivs index tvid sr (SYMDEF_typevar mt);
@@ -631,7 +639,8 @@ print_endline ("add_tvars' " ^ Flx_print.string_of_ivs ivs);
 
   | DCL_function ((ps,pre),t,effects,props,asms) ->
 (*
-if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int symbol_index);
+if id = "join" then print_endline ("Adding function join index=" ^ string_of_int symbol_index);
+if id = "bind" then print_endline ("Adding function bind index=" ^ string_of_int symbol_index);
 *)
       let is_ctor = List.mem `Ctor props in
 
@@ -667,15 +676,6 @@ if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int
       let ips = add_parameters pubtab privtab (Some symbol_index) ps in
 
       (* Add the symbols to the sym_table. *)
-(*
-print_endline ("Adding function " ^ id ^ " at " ^ Flx_srcref.short_string_of_src sr);
-*)
-(*
-print_endline ("Parameters:");
-List.iter ( fun (sr,kind,name,typ,init) -> 
-  print_endline ("  " ^ name ^ " at " ^ Flx_srcref.short_string_of_src sr))
-ps;
-*)
       add_symbol ~pubtab ~privtab ~dirs
         symbol_index id sr (SYMDEF_function ((ips, pre), t, effects, props, exes));
       add_labels symbol_index privtab exes;
@@ -690,7 +690,13 @@ ps;
       interfaces := !interfaces @ ifaces;
 
       (* Add the type variables to the private symbol table. *)
-      add_tvars privtab
+      add_tvars privtab;
+(*
+if id = "join" then
+print_endline ("Finished adding join to symtab");
+if id = "bind" then
+print_endline ("Finished adding bind to symtab")
+*)
 
   | DCL_match_handler (pat,(mvname,match_var_index),asms) ->
       assert (List.length (fst ivs) = 0);
@@ -767,7 +773,7 @@ ps;
           counter_ref
           sym_table
           id
-          (merge_ivs inherit_ivs ivs)
+          (rmerge_ivs inherit_ivs ivs)
           (level + 1)
           (Some 0) (* Note None does NOT work here for some reason *)
           capture_inits 
@@ -866,7 +872,7 @@ print_endline ("Checking parent's public map");
         true, Hashtbl.create 97, Hashtbl.create 97, symbol_index
       in
  
-      let complete_vs = merge_ivs inherit_ivs ivs in
+      let complete_vs = rmerge_ivs inherit_ivs ivs in
       let capture_inits = ref [] in
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
@@ -918,7 +924,7 @@ print_endline ("Checking parent's public map");
 *)
 
   | DCL_module asms ->
-      let complete_vs = merge_ivs inherit_ivs ivs in
+      let complete_vs = rmerge_ivs inherit_ivs ivs in
       let capture_inits = ref [] in
       let pubtab, privtab, exes, ifaces, dirs=
         build_tables
@@ -985,7 +991,7 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
       add_tvars privtab
 
   | DCL_typeclass asms ->
-      let complete_vs = merge_ivs inherit_ivs ivs in
+      let complete_vs = rmerge_ivs inherit_ivs ivs in
       let capture_inits = ref [] in
       let pubtab, privtab, exes, ifaces, dirs=
         build_tables
@@ -1011,7 +1017,13 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
         else
           failwith "WEIRD CASE"
       in
-      let nts = List.map (fun (s,i,t)-> btyp_type_var (i,btyp_type 0)) (fst ivs) in
+      let nts = List.map (fun (s,i,mt)-> 
+if i = 7141 then
+print_endline ("Flx_symtab: typeclass fudging type variables!!!!");
+let k = Flx_btype.bmt "Flx_symtab.typeclass" mt in
+         btyp_type_var (i,k)) 
+        (fst ivs) 
+      in
 
       (* fudge the private view to remove the vs *)
       let fixup e =
@@ -1286,20 +1298,33 @@ print_endline (string_of_int symbol_index ^ " Adding virtual type " ^ id ^ " to 
 
   | DCL_fun (props, ts,t,c,reqs,prec) ->
 (*
+if id = "bind" then print_endline ("Adding fun bind index=" ^ string_of_int symbol_index);
+*)
+(*
 print_endline ("Adding DCL_fun " ^ id ^ " to symbol table " ^ name);
 *)
       (* Add the function to the sym_table. *)
       add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_fun (props, ts, t, c, reqs, prec));
-
+(*
+if id = "bind" then print_endline ("Adding bind, public table");
+*)
       (* Possibly add the function to the public symbol table. *)
       if access = `Public then add_function pub_name_map id symbol_index;
-
+(*
+if id = "bind" then print_endline ("Adding bind, private table");
+*)
       (* Add the function to the private symbol table. *)
       add_function priv_name_map id symbol_index;
 
+(*
+if id = "bind" then print_endline ("Adding bind, type variables");
+*)
       (* Add the type variables to the private symbol table. *)
-      add_tvars privtab
+      add_tvars privtab;
 
+(*
+if id = "bind" then print_endline ("Finished Adding fun bind index=" ^ string_of_int symbol_index);
+*)
   (* A callback is just like a C function binding .. only it actually generates
    * the function. It has a special argument the C function has as type void*,
    * but which Felix must consider as the type of a closure with the same type
@@ -1380,12 +1405,12 @@ print_endline ("Adding DCL_fun " ^ id ^ " to symbol table " ^ name);
         *)
         let allivs,localivs = match gadt with
         | false -> 
-          let allivs = merge_ivs ivs inherit_ivs in
-          let allivs = merge_ivs allivs evs in
-          let localivs = merge_ivs ivs evs in
+          let allivs = rmerge_ivs ivs inherit_ivs in
+          let allivs = rmerge_ivs allivs evs in
+          let localivs = rmerge_ivs ivs evs in
           allivs,localivs
         | true ->
-          let allivs = merge_ivs inherit_ivs evs in
+          let allivs = rmerge_ivs inherit_ivs evs in
           allivs,evs
         in
         

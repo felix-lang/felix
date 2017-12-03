@@ -219,12 +219,10 @@ let resolve sym_table bsym_table base_sym bt be arg_types =
     sym.Flx_sym.id
     base_sym
   in
-(*
-if name = "accumulate" then begin
+if name = debugid then begin
   print_endline ("Base_sym=" ^si base_sym^ ", base domain="^string_of_typecode base_domain ^
    ", base result="^string_of_typecode base_result^", pnames from sig_of_symdef");
 end;
-*)
 
   let arg_types =
     match arg_types with
@@ -237,10 +235,8 @@ end;
     | _ ->
         arg_types
   in
-(*
-if name = "accumulate" then 
+if name = debugid then 
   print_endline ("Arg types = " ^ catmap "," (sbt bsym_table) arg_types);
-*)
   (* bind type in base context, then translate it to view context:
    * thus, base type variables are eliminated and specialisation
    * type variables introduced *)
@@ -296,17 +292,32 @@ let hack_name qn = match qn with
 | _ -> failwith "expected qn .."
 
 
+(* This routine takes a type term from the symbol definition
+expressed in terms of the base vs, and "lifts" it to one
+expressed in terms of the view vs, i.e. it applies the specialisation
+functor.
+
+So the base_vs is the symbol definitions type variables.
+The sub_ts from the view should be 1-1 with them.
+After the replacement the resulting term now has
+type variables from the view.
+
+*)
 let specialize_domain sr (base_vs:plain_ivs_list_t) sub_ts t =
-  (*
-  print_endline ("specialise Base type " ^ sbt bsym_table t);
-  *)
+(*
+  print_endline ("BUGGED! specialise Base type " ^ Flx_btype.st t);
+  print_endline ("BASEVS=" ^ catmap "," (fun (n,i,k) -> n ^ "<" ^ si i ^ ">") base_vs);
+  print_endline ("SUBTS=" ^ catmap "," Flx_btype.st sub_ts);
+*)
   let n = List.length base_vs in
-  let ts = list_prefix sub_ts n in
+  let ts = list_prefix sub_ts n in (* THIS IS WRONG! The lengths should agree,
+    the problem is we failed to account for the parent/child split
+  *)
   let vs = List.map (fun (s,i,k) -> s,i, Flx_btype.bmt "Flx_overload1" k) base_vs in
   let t = tsubst sr vs ts t in
-  (*
-  print_endline ("to View type " ^ sbt bsym_table t);
-  *)
+(*
+  print_endline ("BUGGED! to View type " ^ Flx_btype.st t);
+*)
   t
 
 
@@ -342,6 +353,10 @@ if name = debugid then
     (fun (n,i,mt) -> 
 (*
 print_endline ("flx_overload: FUDGE METATYPE? lookup map entry vs does not have kind! make equations: "^n^"=T<"^string_of_int i^">");
+*)
+(*
+if i = 7141 then
+print_endline ("Flx_overload bind type var");
 *)
      btyp_type_var (i,mt))
     entry_kind.spec_vs
@@ -586,7 +601,15 @@ if name = "EInt" then
               "Coupled " ^ s ^ ": " ^ string_of_bid k ^ "(vs var) <--> " ^
               string_of_bid i ^" (pat var)" ^
               " pat=" ^ str_of_kindcode pat);
+(*
+if i = 7123 then
+print_endline ("Flx_overload, constraint FUDGE");
+*)
             let t1 = btyp_type_var (i, btyp_type 0) in
+(*
+if k = 7123 then
+print_endline ("Flx_overload, constraint FUDGE");
+*)
             let t2 = btyp_type_var (k, btyp_type 0) in
 
             print_endline ("Adding equation " ^ sbt bsym_table t1 ^ " = " ^
@@ -624,6 +647,10 @@ if name = "EInt" then
       *)
       List.iter begin fun (i,t) ->
         let t2 = bt sr t in
+(*
+if i = 7123 then
+print_endline ("Flx_overload, extra FUDGE");
+*)
         let t1 = btyp_type_var (i, btyp_type 0) in
         extra_eqns := (t1,t2) :: !extra_eqns
       end eqns1;
@@ -768,6 +795,8 @@ print_endline ("flx_overload: solve mgu : "^n^"=T<"^string_of_int i^"> kind="^st
 (*
 print_endline ("Bound meta type = " ^ Flx_btype.st mt); 
 *)
+if i = 7141 then
+print_endline ("Flx_overload, parent ts");
 btyp_type_var (i,mt))
       parent_vs
     in

@@ -95,7 +95,7 @@ let rec guess_metatype sr t : kind =
   | TYP_apply _
 
   | TYP_subtype_match _
-  | TYP_type_match _
+  | TYP_type_match _ (* FIXME: calculate by examining branches ! *)
   | TYP_patany _
     -> print_endline ("Woops, dunno meta type of " ^ string_of_typecode t); kind_type
 

@@ -486,10 +486,17 @@ let btyp_type_function (args, ret, body) =
 
 (** Construct a BTYP_type_var type. *)
 let btyp_type_var (bid, t) =
+(*
+if bid = 7141 then print_endline ("Flx_btype: Binding type variable " ^ string_of_int bid ^
+  ", kind=" ^ Flx_kind.sk t);
+*)
   BTYP_type_var (bid, t)
 
 (** Construct a BTYP_type_apply type. *)
 let btyp_type_apply (f, a) =
+(*
+print_endline ("Construct type application: " ^ st f ^ " to " ^ st a);
+*)
   BTYP_type_apply (f, a)
 
 let btyp_type_map (f,a) =

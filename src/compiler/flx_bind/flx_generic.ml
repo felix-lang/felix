@@ -144,7 +144,15 @@ let adjust_ts sym_table bsym_table sr index ts =
     )
   end;
 
-  map (fun (_,i,_) -> btyp_type_var (i,btyp_type 0)) pvs @ ts
+  map (fun (_,i,mt) -> 
+    let k = Flx_btype.bmt "Flx_generic" mt in
+(*
+print_endline ("Flx_generic: type variable " ^ string_of_int i);
+*)
+    btyp_type_var (i,k)) 
+  pvs 
+  @ 
+  ts
 
 let make_params sym_table bsym_table sr i ts =
   let vs,_ = find_vs sym_table bsym_table i in
