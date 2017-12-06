@@ -101,6 +101,7 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
     end else false
 
 
+  | BTYP_rptsum (s1,d1),BTYP_rptsum (s2,d2)
   | BTYP_array (s1,d1),BTYP_array (s2,d2)
   | BTYP_function (s1,d1),BTYP_function (s2,d2)
   | BTYP_cfunction (s1,d1),BTYP_cfunction (s2,d2)

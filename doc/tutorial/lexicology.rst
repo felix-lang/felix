@@ -5,37 +5,20 @@ Encoding of Program Files
 -------------------------
 
 Felix recognises program files consisting of a sequence
-of 31 bit code points, encoded by the full, extended,
-UTF-8 encoding scheme. Up to 5 bytes may be required
-to encode a single code point. 
+of 32 bit code points, encoded by the full, extended,
+UTF-8 encoding scheme. Up to 6 bytes may be required
+to encode a single code point.
 
-This means the full, original, ISO-10646, and more recent
-ISO and Unicode standards are processed, as well as additional
-codes above 0x10FFF. Code points up to 0x7FFFF are recognised
-and processed.
-
-There is one exception: on 32 bit machines the compiler
-only handles 30 bit code points correctly. This is because
-Ocaml signed integers on a 32 bit machine are only 31 bits,
-and the processing logic assumes the integers are positive.
-
-Program files on systems which use UTF-16 or UCS-4
-encoding cannot be processed correctly at this time. 
-Please ensure you use UTF-8 encoding for internationalised
-Felix programs.
-
-Internet standards require UTF-8 encoding.
-UTF-8 is the standard encoding for Linux.
-Solaris and Windows tend to use UTF-16.
-
-Do not use Latin-1 encoding.  
-
-The UTF-8 encoding restriction only applies to
-program files because decoding of data is up
-to the application.
+Unicode only requires 21 bits, therefore, UTF-8 encoded
+Unicode text will be processed correctly.
+ 
 
 7-bit ASCII is fully compatible with UTF-8 encoded
 Unicode.
+
+Note: on 32 bit machine, only 30 bit code-points can
+be processed. This restriction is due to the representation
+of integers in Ocaml, the language used for the Felix compiler.
 
 Reference: <https://unicode-table.com/en/>
 

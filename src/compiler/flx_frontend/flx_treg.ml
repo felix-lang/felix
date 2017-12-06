@@ -160,6 +160,8 @@ print_endline ("Flx_treg: attempt to register effector type, register equivalent
     rr ret;
     rnr t
 
+  | BTYP_rptsum (n,b) -> rr n; rr b; rnr t
+
   | BTYP_array (ps,ret) ->
 (*
 print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table ps ^ " index type " ^ sbt bsym_table ret);

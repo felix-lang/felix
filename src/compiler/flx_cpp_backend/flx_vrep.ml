@@ -5,6 +5,9 @@ open Flx_bbdcl
 let cal_variant_cases bsym_table t =
   match t with
   | BTYP_void -> 0
+  | BTYP_rptsum (BTYP_unitsum k,_) -> k
+  | BTYP_rptsum _ -> failwith ("Number of cases of nonunitsum repeated sum not handled yet")
+
   | BTYP_sum ls -> List.length ls
   | BTYP_unitsum i -> i
   | BTYP_variant ls -> List.length ls
@@ -47,6 +50,7 @@ let size t = match t with
 let cal_variant_maxarg bsym_table t =
   match t with
   | BTYP_void -> -1 (* special for void *)
+  | BTYP_rptsum (_,t) -> size t
   | BTYP_sum ls -> List.fold_left (fun r t -> max r (size t)) 0 ls
   | BTYP_unitsum i -> 0
   | BTYP_variant ls -> List.fold_left (fun r (_,t) -> max r (size t)) 0 ls
@@ -129,6 +133,7 @@ let string_of_variant_rep = function
 
 
 let cal_variant_rep bsym_table t =
+ (* IF NOT SURE WE COULD MAKE rptsum always use VR_uctor .. *)
   if is_gadt bsym_table t then VR_uctor else
   (* variant types universally use _uctor_ since they're open *)
   match t with BTYP_variant _ -> VR_uctor | _ ->

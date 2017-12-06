@@ -369,6 +369,7 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
       let n = length offsets in
       gen_offset_data module_name s n name offsets false false [] None last_ptr_map encoder_name decoder_name
  
+    | BTYP_rptsum _
     | BTYP_sum _ ->
       begin match Flx_vrep.cal_variant_rep bsym_table btyp with
       | Flx_vrep.VR_self -> assert false
@@ -436,6 +437,10 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
             Hashtbl.replace allocable_types t index
           with Not_found -> ()
       end args
+
+    | BTYP_rptsum (n,t) ->
+      let index = Flx_treg.find_type_index syms bsym_table t in
+      Hashtbl.replace allocable_types t index
 
     | BTYP_variant args ->
       iter begin fun (_,t) ->

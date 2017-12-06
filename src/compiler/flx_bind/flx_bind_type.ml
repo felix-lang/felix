@@ -132,6 +132,11 @@ print_endline ("Bind type " ^ string_of_typecode t ^ " params = " ^
     | Some t -> bt t
     end
 
+  | TYP_rptsum (count, base) ->
+    let n = bt count in
+    let b = bt base in
+    btyp_rptsum (n,b)
+
   | TYP_label -> btyp_label ()
   | TYP_patvar _ -> failwith "Not implemented patvar in typecode"
   | TYP_patany _ -> failwith "Not implemented patany in typecode"
@@ -320,7 +325,7 @@ if i = 7141 then
 print_endline ("Flx_bind_type TYP_var " ^ string_of_int i);
     begin try 
       let sym = Flx_sym_table.find state.sym_table i in
-      match sym.symdef with
+      match sym.Flx_sym.symdef with
       | SYMDEF_typevar mt -> 
         let k = Flx_btype.bmt "Flx_bind_type.TYP_var" mt in
         btyp_type_var (i, k)

@@ -19,6 +19,7 @@ and t = private
   | BTYP_vinst of bid_t * t list * Flx_kind.kind
   | BTYP_tuple of t list
   | BTYP_array of t * t
+  | BTYP_rptsum of t * t
   | BTYP_record of (string * t) list
   | BTYP_polyrecord of (string * t) list * t
   | BTYP_variant of (string * t) list
@@ -103,6 +104,7 @@ val btyp_uniq : t -> t
 val btyp_tuple_cons : t -> t -> t
 val btyp_tuple_snoc : t -> t -> t
 val btyp_array : t * t -> t
+val btyp_rptsum : t * t -> t
 val btyp_record : (string * t) list -> t
 val btyp_polyrecord : (string * t) list -> t -> t
 val btyp_variant : (string * t) list -> t

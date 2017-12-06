@@ -72,7 +72,7 @@ zero, so:
 
 .. code-block:: felix
 
-   -3/2 == 1
+   -3/2 == -1
 
 The the quotient is non-negative if the two operands
 are both negative or both non-negative, otherwise

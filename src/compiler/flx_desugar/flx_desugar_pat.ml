@@ -127,6 +127,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
       clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
       ("[desugar_pat:subst]7 Not expected in pattern when clause: " ^ string_of_expr e); 
 
+  | EXPR_rptsum_type _ 
   | EXPR_pclt_type _
   | EXPR_record_type _
   | EXPR_polyrecord_type _
@@ -171,6 +172,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   (* as above, it's wrong .. *)
   | EXPR_match (sr, (e,ps)) -> EXPR_match (sr, (subst e, map (fun (p,e') -> p,subst e') ps))
 
+  | EXPR_rptsum_arg _ -> e
   | EXPR_case_index _ -> e
   | EXPR_index _  -> e
   | EXPR_lookup _ -> e

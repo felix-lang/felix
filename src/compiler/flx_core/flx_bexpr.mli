@@ -33,6 +33,7 @@ type bexpr_t = private
   | BEXPR_case of int * Flx_btype.t
   | BEXPR_match_case of int * t
   | BEXPR_case_arg of int * t
+  | BEXPR_rptsum_arg of t
   | BEXPR_case_index of t
   | BEXPR_expr of Flx_code_spec.t * Flx_btype.t * t
   | BEXPR_range_check of t * t * t
@@ -49,6 +50,7 @@ type bexpr_t = private
   | BEXPR_rprj of string * int * Flx_btype.t * Flx_btype.t
   | BEXPR_aprj of t * Flx_btype.t * Flx_btype.t
   | BEXPR_inj of int * Flx_btype.t * Flx_btype.t
+  | BEXPR_ainj of t * Flx_btype.t * Flx_btype.t 
   | BEXPR_label of bid_t
   | BEXPR_unitptr of int
   | BEXPR_cond of t * t * t
@@ -141,6 +143,7 @@ val bexpr_polyrecord : (string * t) list -> t -> t
 val bexpr_variant : Flx_btype.t -> string * t -> t
 val bexpr_aprj : t -> Flx_btype.t -> Flx_btype.t -> t
 val bexpr_inj : int -> Flx_btype.t -> Flx_btype.t -> t
+val bexpr_ainj : t -> Flx_btype.t -> Flx_btype.t -> t
 
 val find_seq: 
   string -> (* field name *)
@@ -162,6 +165,7 @@ val bexpr_nonconst_case :
 val bexpr_match_case : int * t -> t
 val bexpr_match_variant : string * t -> t
 val bexpr_case_arg : Flx_btype.t -> int * t -> t
+val bexpr_rptsum_arg : t -> t
 val bexpr_variant_arg : Flx_btype.t -> string * t -> t
 val bexpr_case_index : Flx_btype.t -> t -> t
 val bexpr_expr : Flx_code_spec.t * Flx_btype.t * t -> t

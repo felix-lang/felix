@@ -73,7 +73,8 @@ print_endline ("[flx_pgen] One component union should have been removed");
     | _ -> tn t ^ "_ptr_map"
     end
 
-  | BTYP_sum cpts ->
+  | BTYP_rptsum _ 
+  | BTYP_sum _ ->
       begin match Flx_vrep.cal_variant_rep bsym_table t with
       | Flx_vrep.VR_self -> assert false
       | Flx_vrep.VR_int -> "::flx::rtl::_int_ptr_map"

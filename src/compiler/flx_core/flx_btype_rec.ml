@@ -54,6 +54,7 @@ let fix i t =
 
 
     | BTYP_array (a,b) -> btyp_array (aux a, aux b)
+    | BTYP_rptsum (a,b) -> btyp_rptsum (aux a, aux b)
     | BTYP_rev t -> btyp_rev (aux t)
     | BTYP_uniq t -> btyp_uniq (aux t)
 

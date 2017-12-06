@@ -287,6 +287,23 @@ print_endline ("LOOKUP 1: varname " ^ si index);
       | _ -> clierrx "[flx_bind/flx_lookup.ml:2544: E133] " sr "Case requires exactly one argument"
       end
 
+    | BTYP_rptsum (BTYP_unitsum k, vt) ->
+      begin match signs with
+      | [argt] -> 
+        if vt = argt then begin
+          let x = bexpr_nonconst_case vt (v,t) in
+(*
+          print_endline ("nonconst case " ^ sbe bsym_table x);
+*)
+          x
+        end else
+          clierrx "[flx_bind/flx_lookup.ml:2540: E132] " sr 
+            ("Sum case constructor requires argument of type " ^
+             sbt bsym_table vt ^ ", got " ^ sbt bsym_table argt
+            )
+      | _ -> clierrx "[flx_bind/flx_lookup.ml:2544: E133] " sr "Case requires exactly one argument"
+      end
+
     | _ ->
       clierrx "[flx_bind/flx_lookup.ml:2548: E134] " sr
       (

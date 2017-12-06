@@ -8,6 +8,7 @@ open Flx_typing
 let ident x = x
 
 let map_type f (t:typecode_t):typecode_t = match t with
+  | TYP_rptsum (i,t) -> TYP_rptsum (f i, f t)
   | TYP_defer (sr,dt) -> 
     begin match !dt with
     | None -> t (* unmodified *)
@@ -100,6 +101,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
 
 
 let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
+  | EXPR_rptsum_arg (sr, e) -> EXPR_rptsum_arg (sr, fe e)
   | EXPR_label _
   | EXPR_patvar _
   | EXPR_patany _
@@ -116,6 +118,7 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
     EXPR_index (sr,s,fi ix)
   | EXPR_case_tag _ -> e
   | EXPR_typed_case (sr,n,t) -> EXPR_typed_case (sr,n, ft t)
+  | EXPR_rptsum_type (sr,n,t) -> EXPR_rptsum_type (sr, ft n, ft t)
   | EXPR_projection (sr,n,t) -> EXPR_projection (sr,n,ft t)
   | EXPR_rnprj (sr,name,seq,a) -> EXPR_rnprj (sr,name,seq, fe a)
   | EXPR_lookup (sr,(x,s,ts)) -> EXPR_lookup (sr,(fe x, s, List.map ft ts))
@@ -251,8 +254,10 @@ let iter_expr f (e:expr_t) =
   | EXPR_type_match _
   | EXPR_subtype_match _
   | EXPR_pclt_type _
+  | EXPR_rptsum_type _
     -> ()
 
+  | EXPR_rptsum_arg (_,x)
   | EXPR_expr (_,_,_,x)
   | EXPR_rnprj (_,_,_,x)
   | EXPR_variant (_,(_,x))

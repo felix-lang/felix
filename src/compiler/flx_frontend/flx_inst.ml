@@ -118,9 +118,11 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_not e
   | BEXPR_deref e
   | BEXPR_match_case (_,e)
+  | BEXPR_rptsum_arg (e)
   | BEXPR_case_arg (_,e)
   | BEXPR_case_index e
     -> ue e
+  | BEXPR_ainj (e,d,c)
   | BEXPR_aprj (e,d,c) ->
     ue e;
     ut (vs (btyp_function (d,c)))

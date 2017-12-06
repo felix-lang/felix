@@ -96,6 +96,7 @@ and string_of_expr (e:expr_t) =
   let sqn e = string_of_qualified_name e in
   match e with
   | EXPR_pclt_type (_,a,b) -> "pclt_type<" ^ st a ^ "," ^ st b ^ ">"
+  | EXPR_rptsum_type (_,a,b) -> st a ^ "*+" ^ st b 
 
   | EXPR_label (_,s) -> "(&&" ^ s ^ ")"
   | EXPR_not (sr,e) -> "not(" ^ se e ^ ")"
@@ -306,6 +307,10 @@ and string_of_expr (e:expr_t) =
   | EXPR_case_index (_,e) ->
     "caseno (" ^ se e ^ ")"
 
+  | EXPR_rptsum_arg (_,e) ->
+    "casearg (" ^ se e ^ ")"
+
+
   | EXPR_match_ctor (_,(cn,e)) ->
     "match_ctor " ^ sqn cn ^ "(" ^
     se e ^ ")"
@@ -424,6 +429,8 @@ and st prec tc : string =
     | TYP_tuple_cons (sr, t1, t2) -> 6, st 4 t1 ^ "**" ^ st 4 t2
     | TYP_tuple_snoc (sr, t1, t2) -> 6, st 4 t1 ^ "<**>" ^ st 4 t2
     | TYP_pclt (a,b) -> 0, "_pclt<" ^ string_of_typecode a ^ "," ^ string_of_typecode b ^ ">"
+    | TYP_rptsum (d,c) -> 6, st 4 d ^ "*+" ^ st 4 c
+
     | TYP_index (sr,name,idx) -> 0, name ^ "<" ^ string_of_bid idx ^ ">"
     | TYP_label -> 0, "LABEL"
     | TYP_void _ -> 0, "void"
@@ -854,6 +861,12 @@ and sb bsym_table depth fixlist counter prec tc =
 
     | BTYP_cfunction (args, result) ->
       6,(sbt 6 args) ^ " --> " ^ (sbt 6 result)
+
+    | BTYP_rptsum (t1,t2) ->
+      begin match t1 with
+      | BTYP_unitsum k -> 3, si k ^"*+"^sbt 3 t2
+      | _ -> 3, sbt 3 t1 ^"*+"^sbt 3 t2
+      end
 
     | BTYP_array (t1,t2) ->
       begin match t2 with
@@ -2171,10 +2184,11 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_tuple_last e -> "tuple_last("^ se e ^")"
   | BEXPR_tuple_cons (eh,et) -> "tuple_cons("^ se eh ^"," ^ se et ^")"
   | BEXPR_tuple_snoc (eh,et) -> "tuple_snoc ("^ se eh ^"," ^ se et ^")"
-  | BEXPR_aprj (ix,d,c) -> "aprj("^se ix^")"
+  | BEXPR_aprj (ix,d,c) -> "aprj("^se ix^":"^sbt bsym_table d ^ " -> " ^ sbt bsym_table c^")"
   | BEXPR_rprj (ix,n,d,c) -> "rprj_"^string_of_int n^"("^ix^")"
   | BEXPR_prj (n,d,c) -> "(prj"^ si n^":"^sbt bsym_table d ^ " -> " ^ sbt bsym_table c^ ")"
   | BEXPR_inj (n,d,c) -> "inj"^ si n^":"^sbt bsym_table d ^ " -> " ^ sbt bsym_table c
+  | BEXPR_ainj (n,d,c) -> "ainj("^ se n ^":"^sbt bsym_table d ^ " -> " ^ sbt bsym_table c ^")"
 
   | BEXPR_int i -> "int("^ string_of_int i^ ")"
   | BEXPR_not e -> "not("^ se e ^ ")"
@@ -2245,6 +2259,10 @@ and string_of_bound_expression' bsym_table se e =
 
   | BEXPR_case_index e ->
     "caseno (" ^ se e ^ ")"
+
+  | BEXPR_rptsum_arg e ->
+    "casearg (" ^ se e ^ ")"
+
 
   | BEXPR_expr (s,t,e) ->
     "cexpr ["^string_of_btypecode (Some bsym_table) t^"]" ^ string_of_code_spec s ^ " (" ^ se e ^ ") endcexpr"

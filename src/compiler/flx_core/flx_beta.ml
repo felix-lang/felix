@@ -315,6 +315,7 @@ print_endline "Type list index returned None";
   | BTYP_uniq t -> btyp_uniq (br t)
 
   | BTYP_array (i,t) -> btyp_array (br i, br t)
+  | BTYP_rptsum (i,t) -> btyp_rptsum (br i, br t)
   | BTYP_sum ls -> btyp_sum (List.map br ls)
   | BTYP_record (ts) ->
      let ss,ls = List.split ts in

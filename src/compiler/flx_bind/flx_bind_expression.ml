@@ -145,6 +145,7 @@ let rec bind_expression'
   let rt t = beta_reduce "flx_lookup: bind_expression'(2)" state.counter bsym_table sr t in
   let sr = src_of_expr e in
   match e with
+  | EXPR_rptsum_type _
   | EXPR_pclt_type _
   | EXPR_patvar _
   | EXPR_patany _
@@ -579,19 +580,28 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
     | t -> 
      clierrx "[flx_bind/flx_lookup.ml:4198: E180] " sr ("[bind_expression] Projection requires record or polyrecord instance, got type:\n" ^ sbt bsym_table t)
     end
+  | EXPR_rptsum_arg (sr,e) ->
+    let (_,t) as e'  = be e in
+    begin match t with
+    | BTYP_rptsum (n,argt) -> bexpr_rptsum_arg e'
+    | _ -> clierr sr ("Flx_bind_expression: casearg can only be applied to value of repeated sum type (coarray)" ^
+      "\ngot: " ^ Flx_btype.st t )
+    end
+
   | EXPR_case_index (sr,e) ->
     let (e',t) as e  = be e in
     begin match t with
     | BTYP_unitsum _ -> ()
+    | BTYP_rptsum _ -> ()
     | BTYP_sum _ -> ()
     | BTYP_variant _ -> ()
     | BTYP_type_var _ -> ()
     | BTYP_inst (i,_,_) ->
       begin match hfind "lookup" state.sym_table i with
       | { Flx_sym.symdef=SYMDEF_union _} -> ()
-      | { Flx_sym.id=id} -> clierrx "[flx_bind/flx_lookup.ml:4210: E181] " sr ("Argument of caseno must be sum or union type, got abstract type " ^ id)
+      | { Flx_sym.id=id} -> clierrx "[Flx_bind_expression:593: E181] " sr ("Argument of caseno must be sum or union type, got abstract type " ^ id)
       end
-    | _ -> clierrx "[flx_bind/flx_lookup.ml:4212: E182] " sr ("Argument of caseno must be sum or union type, got " ^ sbt bsym_table t)
+    | _ -> clierrx "[Flx_bind_expression:595: E182] " sr ("Argument of caseno must be sum or union type, got " ^ sbt bsym_table t)
     end
     ;
     let int_t = bt sr (TYP_name (sr,"int",[])) in
@@ -1829,7 +1839,6 @@ print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
      | _ -> clierrx "[flx_bind/flx_lookup.ml:5222: E219] " sr ("Expected variant type, got " ^ sbt bsym_table t)
      end
 
-
   | EXPR_case_arg (sr,(v,e)) ->
      let (_,t) as e' = be e in
      ignore (try unfold "flx_lookup" t with _ -> failwith "AST_case_arg unfold screwd");
@@ -1846,6 +1855,13 @@ print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
        then clierrx "[flx_bind/flx_lookup.ml:5239: E221] " sr "Invalid sum index"
        else let t = List.nth ls v in
        bexpr_case_arg t (v, e')
+
+     | BTYP_rptsum (BTYP_unitsum n,t) ->
+       if v<0 || v>=n
+       then clierrx "[flx_bind/flx_lookup.ml:5239: E221] " sr "Invalid sum index"
+       else
+         bexpr_case_arg t (v, e')
+
 
      (* EXPR_case_arg is used for variants with an integer index producted from
         the field name with a hash of the field name and type. We do this so a variant

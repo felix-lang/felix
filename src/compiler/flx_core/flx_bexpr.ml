@@ -56,6 +56,7 @@ type bexpr_t =
 
 (* decoding of union/sum value *)
   | BEXPR_case_arg of int * t
+  | BEXPR_rptsum_arg of t
 
   | BEXPR_case_index of t
 
@@ -80,6 +81,9 @@ type bexpr_t =
 (* union/sum constructor wrapped as function *)
   | BEXPR_inj of int * Flx_btype.t * Flx_btype.t 
     (* first arg = constructor index, second arg domain = ctor type, third arg codomain = union type *)
+
+(* generalised injection, dual to array projection. *)
+  | BEXPR_ainj of t * Flx_btype.t * Flx_btype.t 
 
   | BEXPR_label of bid_t
   | BEXPR_unitptr of int
@@ -627,6 +631,10 @@ let bexpr_aprj ix d c =
 let bexpr_inj n d c = 
   BEXPR_inj (n,d,c),complete_check "bexpr_inj" (Flx_btype.btyp_function (d,c))
 
+let bexpr_ainj n d c = 
+  BEXPR_ainj (n,d,c),complete_check "bexpr_ainj" (Flx_btype.btyp_function (d,c))
+
+
 let bexpr_variant t (name, ((_,argt) as arg)) = 
   match t with
   | Flx_btype.BTYP_variant _ ->
@@ -672,6 +680,15 @@ let bexpr_case_arg t (i, e) =
   | Some k -> bexpr_unitptr k
   | _ ->   
     BEXPR_case_arg (i, e), complete_check "bexpr_case_arg" t
+
+
+let bexpr_rptsum_arg (_,t as e) = 
+  match t with
+  | Flx_btype.BTYP_rptsum (_,argt) ->
+    BEXPR_rptsum_arg (e), complete_check "bexpr_rptsum_arg" argt
+  | _ -> 
+    failwith ("Flx_bexpr: rptsum_arg requires argument of repeat sum (coarray) type")
+
 
 let bexpr_variant_arg argt (name, ((_,vt) as v)) = 
   match Flx_btype.trivorder argt with
@@ -831,8 +848,10 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
     (* don't bother with alpha conversion here *)
     i=i' && vt=vt' && e = e'
 
+  | BEXPR_rptsum_arg e, BEXPR_rptsum_arg e'
   | BEXPR_not (e),BEXPR_not (e') 
   | BEXPR_deref e,BEXPR_deref e' -> cmp e e'
+
 
   | BEXPR_varname (i,ts),BEXPR_varname (i',ts')
   | BEXPR_ref (i,ts),BEXPR_ref (i',ts')
@@ -908,6 +927,11 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
 
   | BEXPR_inj (n,d,c), BEXPR_inj (n',d',c') ->
     d = d' && c = c' && n = n'
+
+  | BEXPR_ainj (n,d,c), BEXPR_ainj (n',d',c') ->
+    d = d' && c = c' && cmp n  n'
+
+
   | BEXPR_funprod e, BEXPR_funprod e' ->
     cmp e e'
   | BEXPR_funsum e, BEXPR_funsum e' ->
@@ -1000,6 +1024,7 @@ let flat_iter
       List.iter f_btype ts
   | BEXPR_case (i,t') -> f_btype t'
   | BEXPR_match_case (i,e) -> f_bexpr e
+  | BEXPR_rptsum_arg (e) -> f_bexpr e
   | BEXPR_case_arg (i,e) -> f_bexpr e
   | BEXPR_case_index e -> f_bexpr e
   | BEXPR_literal x -> f_btype t
@@ -1030,6 +1055,7 @@ let flat_iter
   | BEXPR_rprj (ix,n,d,c) -> f_btype d; f_btype c
   | BEXPR_prj (n,d,c) -> f_btype d; f_btype c
   | BEXPR_inj (n,d,c) -> f_btype d; f_btype c
+  | BEXPR_ainj (n,d,c) -> f_bexpr n; f_btype d; f_btype c
   | BEXPR_funprod e -> f_bexpr e
   | BEXPR_funsum e -> f_bexpr e
   | BEXPR_lrangle e -> f_bexpr e
@@ -1117,6 +1143,8 @@ let map
   | BEXPR_identity_function t -> 
     bexpr_identity_function (f_btype t)
 
+  | BEXPR_rptsum_arg e -> bexpr_rptsum_arg (f_bexpr e)
+
   | BEXPR_varname (i,ts) -> bexpr_varname t (f_bid i, List.map f_btype ts)
   | BEXPR_case (i,t) -> bexpr_const_case (i,f_btype t)
   | BEXPR_match_case (i,e) -> bexpr_match_case (i, f_bexpr e)
@@ -1148,6 +1176,8 @@ let map
     (* BEXPR_prj (n, f_btype d, f_btype c) *)
 
   | BEXPR_inj (n,d,c) -> bexpr_inj n (f_btype d) (f_btype c)
+  | BEXPR_ainj (n,d,c) -> bexpr_ainj (f_bexpr n) (f_btype d) (f_btype c)
+
   | BEXPR_funprod e -> bexpr_funprod t (f_bexpr e)
   | BEXPR_funsum e -> bexpr_funsum t (f_bexpr e)
   | BEXPR_lrangle e -> bexpr_lrangle t (f_bexpr e)

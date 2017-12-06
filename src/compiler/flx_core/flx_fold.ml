@@ -26,6 +26,7 @@ let fold (bsym_table: Flx_bsym_table.t) counter t =
     | BTYP_cltrref (a,b)
     | BTYP_cltwref (a,b)
     | BTYP_array (a,b)
+    | BTYP_rptsum (a,b)
     | BTYP_function (a,b) -> ax a; ax b
     | BTYP_effector (a,e, b) -> ax a; ax e; ax b
     | BTYP_cfunction (a,b) -> ax a; ax b

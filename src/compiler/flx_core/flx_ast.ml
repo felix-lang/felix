@@ -59,6 +59,7 @@ and kindcode_t =
 
 (** type of a type *)
 and typecode_t =
+  | TYP_rptsum of typecode_t * typecode_t
   | TYP_pclt of typecode_t * typecode_t
   | TYP_label 
   | TYP_void of Flx_srcref.t                   (** void type *)
@@ -140,6 +141,7 @@ and expr_t =
   | EXPR_match_variant_subtype of Flx_srcref.t * (expr_t * typecode_t)
 
   | EXPR_pclt_type of Flx_srcref.t * typecode_t * typecode_t
+  | EXPR_rptsum_type of Flx_srcref.t * typecode_t * typecode_t
   | EXPR_label of Flx_srcref.t * string
   | EXPR_vsprintf of Flx_srcref.t * string
   | EXPR_interpolate of Flx_srcref.t * string
@@ -216,6 +218,8 @@ and expr_t =
 
   (* this extracts the argument of a number sum variant -- unsafe *)
   | EXPR_case_arg of Flx_srcref.t * (int * expr_t)
+
+  | EXPR_rptsum_arg of Flx_srcref.t * (expr_t)
 
   (* this just returns an integer equal to union or sum index *)
   | EXPR_case_index of Flx_srcref.t * expr_t (* the zero origin variant index *)
@@ -749,6 +753,7 @@ let src_of_typecode = function
   | TYP_tuple_snoc (s,_,_)
   -> s
 
+  | TYP_rptsum _
   | TYP_pclt _
   | TYP_label
   | TYP_tuple _
@@ -785,8 +790,10 @@ let src_of_typecode = function
   -> Flx_srcref.dummy_sr
 
 let src_of_expr (e : expr_t) = match e with
+  | EXPR_rptsum_arg (s,_)
   | EXPR_match_variant_subtype (s,(_,_))
   | EXPR_pclt_type (s,_,_)
+  | EXPR_rptsum_type (s,_,_)
   | EXPR_label (s,_)
   | EXPR_void s
   | EXPR_name (s,_,_)

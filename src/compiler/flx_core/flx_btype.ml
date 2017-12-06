@@ -29,6 +29,7 @@ and t =
   | BTYP_vinst of bid_t * t list * Flx_kind.kind
   | BTYP_tuple of t list
   | BTYP_array of t * t
+  | BTYP_rptsum of t * t
   | BTYP_record of (string * t) list
   | BTYP_polyrecord of (string * t) list * t
   | BTYP_variant of (string * t) list
@@ -129,6 +130,7 @@ and str_of_btype typ =
   | BTYP_vinst (i,ts,mt) -> "BTYP_vinst("^string_of_int i^"["^ss ts^"]:"^Flx_kind.sk mt^")"
   | BTYP_tuple ts -> "BTYP_tuple(" ^ ss ts ^ ")"
   | BTYP_array (b,x) -> "BTYP_array(" ^ s b ^"," ^s x^")"
+  | BTYP_rptsum (b,x) -> "BTYP_rptsum(" ^ s b ^"," ^s x^")"
   | BTYP_record (ls) -> "BTYP_record("^String.concat "," (List.map (fun (name,t)->name^":"^s t) ls)^")"
   | BTYP_polyrecord (ls,t) -> "BTYP_polyrecord("^String.concat "," (List.map (fun (name,t)->name^":"^s t) ls)^" | "^s t^")"
   | BTYP_variant (ls) -> "BTYP_variant(" ^String.concat " | " (List.map (fun (name,t)->name^" of "^s t) ls)^")"
@@ -224,6 +226,7 @@ let complete_type t =
     | BTYP_variant ls -> (List.iter (fun (s,t) -> uf t) ls)
     | BTYP_polyvariant ls -> (List.iter (fun k -> match k with | `Ctor (s,t) -> uf t | `Base t -> uf t) ls)
     | BTYP_array (a,b) -> uf a; uf b
+    | BTYP_rptsum (a,b) -> uf a; uf b
     | BTYP_function (a,b) -> uf a;uf b
     | BTYP_effector (a,e,b) -> uf a; uf e; uf b
     | BTYP_cfunction (a,b) -> uf a;uf b
@@ -274,23 +277,41 @@ let btyp_bool () =
 let btyp_any () =
   BTYP_fix (0, kind_type)
 
-(** Construct a BTYP_sum type. *)
-let btyp_sum ts =
-  match ts with 
-  | [] -> BTYP_void
-  (* | [t] -> t *)
-  | _ -> 
-   try 
-     List.iter (fun t -> if t <> BTYP_tuple [] then raise Not_found) ts;
-     BTYP_unitsum (List.length ts)
-   with Not_found -> BTYP_sum ts
-
 (** Construct a BTYP_unitsum type. *)
 let btyp_unitsum n =
   match n with
   | 0 -> BTYP_void
   | 1 -> BTYP_tuple []
   | _ ->  BTYP_unitsum n
+
+let btyp_rptsum (n,t) =
+  match n with
+  | BTYP_void -> BTYP_void
+  | BTYP_tuple [] -> t
+  | _ -> match t with
+    | BTYP_void  -> BTYP_void
+    | BTYP_tuple [] -> n
+    | BTYP_unitsum k ->
+      begin match n with
+      | BTYP_unitsum j -> btyp_unitsum (j * k)
+      | _ -> BTYP_rptsum (n,t)
+      end
+    | _ -> BTYP_rptsum (n,t)
+     
+
+(** Construct a BTYP_sum type. *)
+let btyp_sum ts =
+  match ts with 
+  | [] -> BTYP_void
+  | [t] -> t 
+  | _ ->
+  let first = List.hd ts in
+  begin try List.iter (fun t -> if t <> first then raise Not_found) ts;
+    let n = btyp_unitsum (List.length ts) in
+    btyp_rptsum (n,first)
+  with Not_found -> BTYP_sum ts
+  end
+
 
 (** Construct a BTYP_intersect type. *)
 let btyp_intersect ls =
@@ -624,6 +645,7 @@ let flat_iter
   | BTYP_inst (i,ts,mt) -> f_bid i; List.iter f_btype ts
   | BTYP_vinst (i,ts,mt) -> f_bid i; List.iter f_btype ts
   | BTYP_tuple ts -> List.iter f_btype ts
+  | BTYP_rptsum (t1,t2)
   | BTYP_array (t1,t2)->  f_btype t1; f_btype t2
   | BTYP_record (ts) -> List.iter (fun (s,t) -> f_btype t) ts
   | BTYP_polyrecord (ts,v) -> List.iter (fun (s,t) -> f_btype t) ts; f_btype v
@@ -710,6 +732,7 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_vinst (i,ts,mt) -> btyp_vinst (f_bid i, List.map f_btype ts,mt)
   | BTYP_tuple ts -> btyp_tuple (List.map f_btype ts)
   | BTYP_array (t1,t2) -> btyp_array (f_btype t1, f_btype t2)
+  | BTYP_rptsum (t1,t2) -> btyp_rptsum (f_btype t1, f_btype t2)
   | BTYP_record (ts) -> btyp_record (List.map (fun (s,t) -> s, f_btype t) ts)
   | BTYP_polyrecord (ts,v) -> btyp_polyrecord (List.map (fun (s,t) -> s, f_btype t) ts) (f_btype v)
   | BTYP_variant ts -> btyp_variant (List.map (fun (s,t) -> s, f_btype t) ts)
@@ -930,6 +953,7 @@ and unfold msg t =
      ) ls)
 
     | BTYP_array (a,b) -> btyp_array (uf a,uf b)
+    | BTYP_rptsum (a,b) -> btyp_rptsum (uf a,uf b)
     | BTYP_function (a,b) -> btyp_function (uf a,uf b)
     | BTYP_effector (a,e, b) -> btyp_effector (uf a,uf e,uf b)
     | BTYP_cfunction (a,b) -> btyp_cfunction (uf a,uf b)
@@ -972,6 +996,7 @@ let contains_uniq t =
     | BTYP_uniq _ -> raise Not_found
     | BTYP_tuple _
     | BTYP_array _
+    | BTYP_rptsum _
     | BTYP_record _
     | BTYP_sum _
     | BTYP_variant _

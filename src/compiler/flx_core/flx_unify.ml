@@ -445,6 +445,17 @@ print_endline ("Weird array thing " ^ Flx_print.sbt bsym_table lhs ^ " <--> " ^ 
             s := None
         end
 
+      (* repeated sums *)
+      | BTYP_rptsum (n1,t1), BTYP_rptsum (n2,t2) ->
+        add_eqn (n1,n2);
+        add_eqn(t1,t2)
+
+      (* linearly repeated sum and sum *)
+      | BTYP_sum (ts), BTYP_rptsum (BTYP_unitsum n,t) 
+      | BTYP_rptsum (BTYP_unitsum n,t), BTYP_sum (ts) 
+        when List.length ts = n ->
+        List.iter  (fun k -> add_eqn (k,t)) ts
+
       (* structural, not functional, equality of lambdas by alpha equivalence *)
       | BTYP_type_function (p1,r1,b1), BTYP_type_function (p2,r2,b2)
         when List.length p1 = List.length p2 ->

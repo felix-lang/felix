@@ -212,6 +212,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
     let cdt = `Cdt_value t in
     "typedef " ^ string_of_cdecl_type name cdt ^ ";\n"
 
+  | BTYP_rptsum _ 
   | BTYP_sum _ 
   | BTYP_variant _ -> ""
     (*
@@ -413,6 +414,7 @@ let rec gen_type syms bsym_table (index,typ) =
     "  virtual ~"^name^"(){};\n" ^
     "};\n"
 
+  | BTYP_rptsum _
   | BTYP_sum _ -> "" (* union typedef *)
   | BTYP_variant _ -> ""
 

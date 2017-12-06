@@ -398,6 +398,22 @@ print_endline ("Generated application of injection application " ^ sbe bsym_tabl
 *)
     cx
 
+(* co-array, that is, c = N * d = d + d + d .... + d, N time *)
+  | BEXPR_apply ( (BEXPR_ainj (v,d,c),ft' as f), (_,argt as a)) -> 
+    ate d argt;
+    ate c t;
+    assert (not (clt c)); 
+print_endline ("Can't handle injection with computed variant index yet");
+assert false;
+(*
+    let cx = Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table shape_map c v a in
+(*
+print_endline ("Generated application of injection application " ^ sbe bsym_table (e,t) ^ " as " ^ string_of_cexpr cx);
+*)
+    cx
+*)
+
+
   | BEXPR_apply (
      (BEXPR_cltpointer_prj (jd,jc,v1),_),
      (BEXPR_cltpointer (pd,pc,ptr,v2),_)
@@ -627,6 +643,8 @@ assert false;
 
   (* we CAN handle this now, since we have made a closure for it: FIXME *)
   | BEXPR_inj _ -> assert false (* can't handle yet *)
+
+  | BEXPR_ainj _ -> assert false (* can't handle yet *)
 
   (* we cannot handle this one yet, because we didn't yet make a closure for it: FIXME *)
   | BEXPR_aprj _ -> assert false (* can't handle yet *)
@@ -1111,6 +1129,9 @@ assert false;
   | BEXPR_cond (c,t,f) -> ce_cond (ge' c) (ge' t) (ge' f)
 
   | BEXPR_not e -> ce_prefix "!" (ge' e)
+
+  | BEXPR_rptsum_arg (e) ->
+    Flx_vgen.gen_get_rptsum_arg ge' tn bsym_table e
 
   | BEXPR_case_arg (n,e) ->
 (*

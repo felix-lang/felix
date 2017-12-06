@@ -53,6 +53,7 @@ let rec guess_metatype sr t : kind =
   | TYP_as _ -> print_endline "A type as (recursion)?"; assert false
 
   (* usually actual types! *)
+  | TYP_rptsum _
   | TYP_pclt _
   | TYP_uniq _
   | TYP_void _ 

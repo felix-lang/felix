@@ -119,6 +119,7 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
   let seq () = state.fresh_bid () in
   match e with
 
+  | EXPR_rptsum_type _
   | EXPR_patvar _
   | EXPR_patany _
   | EXPR_match_case _
@@ -469,6 +470,11 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
   | EXPR_case_index (sr,e) ->
     let l,x = rex e in
     l,EXPR_case_index (sr,x)
+
+  | EXPR_rptsum_arg (sr,e) ->
+    let l,x = rex e in
+    l,EXPR_rptsum_arg (sr,x)
+
 
   | EXPR_apply (sr,(fn,arg)) ->
     let l1,x1 = rex fn in

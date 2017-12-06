@@ -30,6 +30,7 @@ let rec is_pod bsym_table t =
   | BTYP_label
   | BTYP_unitsum _ 
   | BTYP_sum _ 
+  | BTYP_rptsum _ 
   | BTYP_pointer _
   | BTYP_cltpointer _
   | BTYP_cltrref _
@@ -87,6 +88,7 @@ let rec get_offsets' syms bsym_table typ : string list =
     ["offsetof("^tname^",data)"]
 
   (* need to fix the rule for optimisation here .. *)
+  | BTYP_rptsum _ 
   | BTYP_sum _ ->
     begin match Flx_vrep.cal_variant_rep bsym_table t' with
     | Flx_vrep.VR_self -> assert false (* FIXME! *) 

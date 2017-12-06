@@ -274,6 +274,7 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
     (* "::flx::rtl::_variant_"; *)
     "::flx::rtl::_uctor_";
 
+  | BTYP_rptsum _ 
   | BTYP_sum _ ->
     begin match Flx_vrep.cal_variant_rep bsym_table t with
     | Flx_vrep.VR_self -> print_endline "WARNING cpp_type_classname of VR_self (1)"; assert false
@@ -435,6 +436,7 @@ and cpp_structure_name syms bsym_table t =
       "::flx::rtl::clptr_t";
 
 
+  | BTYP_rptsum _
   | BTYP_sum _ ->
     begin match Flx_vrep.cal_variant_rep bsym_table t with
     | Flx_vrep.VR_self -> print_endline ("WARNING cpp_structure_name of VR_self (1)"); assert false

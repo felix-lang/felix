@@ -40,6 +40,7 @@ print_endline "cal_case_type";
 *)
   match unfold "cal_case_type" t with
   | BTYP_unitsum _ -> Flx_btype.btyp_tuple []
+  | BTYP_rptsum (_,k) -> k
   | BTYP_sum ls -> nth ls n
   | BTYP_variant ls -> 
     let ct = 
@@ -71,18 +72,7 @@ Flx_print.sbt bsym_table t);
     end
   | _ -> assert false
 
-(* get the argument of a non-constant variant constructor. To be used in a match
- *  when the case index has been found.
- *)
-let gen_get_case_arg ge tn bsym_table n (e:Flx_bexpr.t) : cexpr_t =
-(*
-print_endline "gen_get_case_arg"; 
-*)
-  let x,ut = e in
-  let ct = cal_case_type bsym_table n ut in
-(*
-print_endline ("Case type = " ^ sbt bsym_table ct);
-*)
+let gen_get_arg ge tn bsym_table ct ut (e:Flx_bexpr.t) : cexpr_t =
   let cast = tn ct in
   match cal_variant_rep bsym_table ut with
   | VR_self -> ge e
@@ -108,6 +98,22 @@ print_endline ("Case type = " ^ sbt bsym_table ct);
     | 1 -> ce_cast cast (ce_cast "uintptr_t" (ce_dot (ge e) "data")) 
     | _ -> ce_prefix "*" (ce_cast (cast^"*") (ce_dot (ge e) "data"))
     end
+
+(* get the argument of a non-constant variant constructor. To be used in a match
+ *  when the case index has been found.
+ *)
+let gen_get_case_arg ge tn bsym_table n (e:Flx_bexpr.t) : cexpr_t =
+  let x,ut = e in
+  let ct = cal_case_type bsym_table n ut in
+  gen_get_arg ge tn bsym_table ct ut e 
+
+let gen_get_rptsum_arg ge tn bsym_table (e:Flx_bexpr.t) : cexpr_t =
+  let x,ut = e in
+  match ut with
+  | BTYP_rptsum (_,ct) ->
+    gen_get_arg ge tn bsym_table ct ut e 
+  | _ -> assert false
+
 
 (* Value constructor for constant (argumentless) variant constructor case *)
 let gen_make_const_ctor bsym_table e : cexpr_t =

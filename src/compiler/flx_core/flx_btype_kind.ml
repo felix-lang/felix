@@ -101,6 +101,7 @@ and metatype' sr typ : kind =
   | BTYP_subtype_match (_, _)
   | BTYP_tuple_cons (_, _)
   | BTYP_tuple_snoc (_, _)
+  | BTYP_rptsum _
   | BTYP_unitsum _ -> kind_type
 
   | BTYP_type_set _

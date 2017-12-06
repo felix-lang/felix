@@ -1495,6 +1495,10 @@ syntax expressions {
   //$ Tuple projection function.
   x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri] =># "`(ast_projection ,_2 ,_4)";
 
+  // coarray injection
+  // (ainj (r:>>4) of (4 *+ int)) 42
+  x[scase_literal_pri] := "ainj" stypeexpr "of" x[ssum_pri] =># "`(ast_ainj ,_2 ,_4)";
+
   //$ Variant value.
   x[scase_literal_pri] := "#" "case" sname =># "`(ast_variant (,_3 ()))";
   x[scase_literal_pri] := "case" sname x[ssum_pri] =># "`(ast_variant (,_2 ,_3))";
@@ -1503,6 +1507,10 @@ syntax expressions {
 
   //$ multiplication: right associative
   x[sproduct_pri] := x[>sproduct_pri] "\otimes" x[sproduct_pri] =># "(Infix)";
+
+  // repeated sum type, eg 4 *+ int == int + int + int + int
+  // right associative:  2 *+ 3 *+ int is approx 6 *+ int
+  x[sproduct_pri] := x[>sproduct_pri] "*+" x[sproduct_pri] =># "`(ast_rptsum_type ,_sr ,_1 ,_3)";
 
 //------------------------------------------------------------------------
 
@@ -1545,6 +1553,7 @@ syntax expressions {
 
   //$ Variant index.
   x[sapplication_pri] := "caseno" x[scoercion_pri] =># "`(ast_case_index ,_sr ,_2)";
+  x[sapplication_pri] := "casearg" x[scoercion_pri] =># "`(ast_rptsum_arg ,_sr ,_2)";
 
   //$ Optimisation hint: likely.
   //$ Use in conditionals, e.g. if likely(x) do ...
