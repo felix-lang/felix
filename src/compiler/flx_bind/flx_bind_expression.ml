@@ -622,6 +622,22 @@ sbt bsym_table t);
 *)
     bexpr_variant (btyp_variant [s,t]) (s,e)
 
+  | EXPR_ainj (sr, v, sumt) ->
+    let bsumt = bt sr sumt in
+    let (_,idxt) as e = be v in
+    begin match bsumt with
+    | BTYP_rptsum (sidxt, baset) ->
+      if type_eq bsym_table state.counter sidxt idxt  then
+        bexpr_ainj e baset bsumt
+      else
+        clierr sr ("Flx_bind_expression: Coarray injection aint requires " ^
+         "index expression type " ^ Flx_btype.st idxt ^ " to equal " ^
+         "repeated sum repetition type " ^ Flx_btype.st sidxt)
+    | _ ->
+      clierr sr ("Flx_bind_expression: Coarrray injection ainj requires " ^
+        "repeated sum type,\ngot: " ^ Flx_btype.st bsumt) 
+    end
+
   | EXPR_projection (sr,v,t) -> 
     let t = bt sr t in
     begin match t with

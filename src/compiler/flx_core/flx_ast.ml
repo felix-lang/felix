@@ -152,6 +152,7 @@ and expr_t =
   | EXPR_case_tag of Flx_srcref.t * int
   | EXPR_typed_case of Flx_srcref.t * int * typecode_t
   | EXPR_projection of Flx_srcref.t * int * typecode_t
+  | EXPR_ainj of Flx_srcref.t * expr_t * typecode_t
   | EXPR_rnprj of Flx_srcref.t * string * int * expr_t
   | EXPR_lookup of Flx_srcref.t * (expr_t * Flx_id.t * typecode_t list)
   | EXPR_apply of Flx_srcref.t * (expr_t * expr_t)
@@ -800,6 +801,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_case_tag (s,_)
   | EXPR_typed_case (s,_,_)
   | EXPR_projection (s,_,_)
+  | EXPR_ainj (s,_,_)
   | EXPR_rnprj (s,_,_,_)
   | EXPR_lookup (s,_)
   | EXPR_index (s,_,_)

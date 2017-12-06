@@ -216,4 +216,26 @@ print_endline ("gen_make_nonconst_ctor arg=" ^ Flx_print.sbe bsym_table a ^
     let arg = gen_make_ctor_arg rep ge tn syms bsym_table shape_map a in
     ce_call (ce_atom "::flx::rtl::_uctor_") [ce_atom (si cidx); arg] 
 
+let gen_make_nonconst_rptsum ge tn syms bsym_table shape_map codt cidx a : cexpr_t =
+(*
+print_endline ("gen_make_nonconst_ctor arg=" ^ Flx_print.sbe bsym_table a ^ 
+" type=" ^ Flx_print.sbt bsym_table codt); 
+*)
+  let rep = cal_variant_rep bsym_table codt in
+  match rep with
+  | VR_self -> assert false (* ge a*)
+  | VR_int -> assert false (* ce_call (ce_atom "/*VR_int*/") [ge a] *)
+
+  | VR_nullptr -> 
+    let arg = gen_make_ctor_arg rep ge tn syms bsym_table shape_map a in
+    ce_call (ce_atom "FLX_VNR") [cidx; arg]
+
+  | VR_packed -> 
+    let arg = gen_make_ctor_arg rep ge tn syms bsym_table shape_map a in
+    ce_call (ce_atom "FLX_VR") [cidx; arg]
+
+  | VR_uctor ->  
+    let arg = gen_make_ctor_arg rep ge tn syms bsym_table shape_map a in
+    ce_call (ce_atom "::flx::rtl::_uctor_") [cidx; arg] 
+
 

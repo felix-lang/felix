@@ -403,15 +403,12 @@ print_endline ("Generated application of injection application " ^ sbe bsym_tabl
     ate d argt;
     ate c t;
     assert (not (clt c)); 
-print_endline ("Can't handle injection with computed variant index yet");
-assert false;
-(*
-    let cx = Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table shape_map c v a in
+    let vexpr = ge' v in
+    let cx = Flx_vgen.gen_make_nonconst_rptsum ge' tn syms bsym_table shape_map c vexpr a in
 (*
 print_endline ("Generated application of injection application " ^ sbe bsym_table (e,t) ^ " as " ^ string_of_cexpr cx);
 *)
     cx
-*)
 
 
   | BEXPR_apply (

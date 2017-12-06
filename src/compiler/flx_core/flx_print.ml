@@ -117,6 +117,11 @@ and string_of_expr (e:expr_t) =
     "(proj " ^ si v ^
     " of " ^ string_of_typecode t ^ ")"
 
+  | EXPR_ainj (_,v,t) ->
+    "(ainj " ^ se v ^
+    " of " ^ string_of_typecode t ^ ")"
+
+
   | EXPR_rnprj (_,name,seq,arg) ->
     "(rnproj " ^ name ^ "#"^ string_of_int seq ^ "(" ^ se arg ^ "))"
 

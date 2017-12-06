@@ -256,6 +256,11 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
     let l1,x1 = rex e in
     l1, EXPR_wref (sr,x1)
 
+  | EXPR_ainj (sr,e,t) ->
+    let l1,x1 = rex e in
+    l1, EXPR_ainj (sr,x1, t)
+
+
 
 
   | EXPR_uniq (sr,e) ->

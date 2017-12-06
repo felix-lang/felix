@@ -1497,7 +1497,7 @@ syntax expressions {
 
   // coarray injection
   // (ainj (r:>>4) of (4 *+ int)) 42
-  x[scase_literal_pri] := "ainj" stypeexpr "of" x[ssum_pri] =># "`(ast_ainj ,_2 ,_4)";
+  x[scase_literal_pri] := "ainj"  stypeexpr "of" x[ssum_pri] =># "`(ast_ainj ,_sr ,_2 ,_4)";
 
   //$ Variant value.
   x[scase_literal_pri] := "#" "case" sname =># "`(ast_variant (,_3 ()))";
@@ -3828,6 +3828,7 @@ syntax patterns {
 
     //$ or it can be a case literal.
     private sctor_name := "case" sinteger =># "`(ast_case_tag ,_sr ,_2)";
+    private sctor_name := "`" sinteger =># "`(ast_case_tag ,_sr ,_2)";
 
 
   private sapplicative_pattern := "case" sname sargument_pattern =>#
@@ -3856,6 +3857,7 @@ syntax patterns {
   private satomic_pattern := "#" "case" sname =># "`(pat_const_variant ,_sr ,_3)";
   private satomic_pattern := "`" sname =># "`(pat_const_variant ,_sr ,_2)";
   private satomic_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
+  private satomic_pattern := "`" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
 
 
   //$ Match the value true = case 1 of 2.

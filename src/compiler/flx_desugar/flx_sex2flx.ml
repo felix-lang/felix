@@ -113,6 +113,9 @@ and xexpr_t sr x =
   *)
 
   | Lst [Id "ast_case_tag";  sr; Int i] -> EXPR_case_tag (xsr sr,ii i)
+  | Lst [Id "ast_ainj"; sr; ix; tp] -> 
+    EXPR_ainj (xsr sr, ex ix, ti tp) 
+
   | Lst [Id "ast_typed_case";  Int i; t] -> EXPR_typed_case (sr,ii i,ti t)
   | Lst [Id "ast_projection";  Int i; t] -> EXPR_projection (sr,ii i,ti t)
   | Lst [Id "ast_typed_case";  i; t] -> 
