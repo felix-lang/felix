@@ -7,12 +7,16 @@ is called `bool` after mathematician George Bool.
 Type
 ----
 
-We lift the type from C++ as usual:
+In Felix, `bool` is a special case of a more general mechanism
+we will meet later. It is an `alias` for the type `2`, which is
+the type that handles two alternatives:
 
 .. code-block:: felix
 
-    type bool = "std::bool";
+    typedef bool = 2;
 
+The `typedef` binder binds a name to an existing type,
+that is, it creates an alias.
 
 Constants
 ---------
@@ -52,6 +56,16 @@ is parsed as
     (a < b) and (b < c)
 
 
+Summary: Logical operations
+---------------------------
+
+========     ===================     =======  =============
+Operator     Type                    Syntax   Semantics
+========     ===================     =======  =============
+or           bool * bool -> bool     Infix    Disjunction
+and          bool * bool -> bool     Infix    Conjunction
+not          bool -> bool            Prefix   Negation
+========     ===================     =======  =============
 
 
 
