@@ -132,8 +132,8 @@ Out of bounds values
 If the result of a calculation performed at run time
 is out of bounds, the result is indeterminate.
 
-Summary: Integer Operations
----------------------------
+Summary: Integer Comparisons
+----------------------------
 
 ========     ===================     =======  =============
 Operator     Type                    Syntax   Semantics
@@ -144,6 +144,16 @@ Operator     Type                    Syntax   Semantics
 <            int * int -> bool       Infix    Less
 >=           int * int -> bool       Infix    Greater or Equal
 >            int * int -> bool       Infix    Greater
+========     ===================     =======  =============
+
+
+
+Summary: Integer Operations
+---------------------------
+
+========     ===================     =======  =============
+Operator     Type                    Syntax   Semantics
+========     ===================     =======  =============
 \+           int * int -> int        Infix    Addition
 \-           int * int -> int        Infix    Subtraction 
 \*           int * int -> int        Infix    Multiplication

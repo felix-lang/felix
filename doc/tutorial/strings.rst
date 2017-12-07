@@ -2,7 +2,15 @@ Strings
 =======
 
 A string is basically a sequence of characters
-with a definite length.
+with a definite length. The type is the traditional C++ 
+string type, and supports Unicode only by UTF-8 encoding.
+
+Strings are 8 bit clean, meaning all 256 characters, 
+including nul, may occur in them.
+
+However string literals may not directly contain a nul.
+String literals are actually C nul terminated char strings
+which are lifted to C++ automatically.
 
 Type
 ----
@@ -122,9 +130,40 @@ Select the n'th character:
     var x = "Hello World";
     var y = x.[1]; // e
 
+Comparisons
+-----------
+
+Strings are totally ordered using standard lexicogrphical
+ordering and support the usual comparison operators.
+
+
+Summary: String Comparisons
+---------------------------
+
+========     ======================     =======  =============
+Operator     Type                       Syntax   Semantics
+========     ======================     =======  =============
+==           string * string -> bool    Infix    Equality
+!=           string * string -> bool    Infix    Not Equal
+<=           string * string -> bool    Infix    Less or Equal
+<            string * string -> bool    Infix    Less
+>=           string * string -> bool    Infix    Greater or Equal
+>            string * string -> bool    Infix    Greater
+========     ======================     =======  =============
 
 
 
+Summary: Double Operations
+---------------------------
+
+========     ==========================   =======  =============
+Operator     Type                         Syntax   Semantics
+========     ==========================   =======  =============
+len          string -> size               Prefix   Length
+\+           string* string -> string     Infix    Concatenation
+\.[_]        string * slice -> string     Postfix  Substring 
+\.[_]        string * int -> char         Postfix  Indexing
+========     ==========================   =======  =============
 
 
 

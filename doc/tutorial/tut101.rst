@@ -21,6 +21,7 @@ The first module gives a brief overview of some basics.
    tuples
    procedures
    functions
+   application
    pythagoras
 
 

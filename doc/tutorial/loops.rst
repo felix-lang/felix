@@ -7,7 +7,7 @@ in circles for a while, then exit at the end
 of the loop.
 
 
-while loop
+While loop
 ----------
 
 The simplest loop, repeatedly executes its body whilst
@@ -28,11 +28,11 @@ A semicolon is not required after the `done`. Make sure
 when writing while loops that the condition eventually
 becomes false, unless, of course, you intend an infinite loop.
 
-for loop
+For loop
 --------
 
 For loops feature a control variable which is usually
-modified each iterator, until a terminal condition is
+modified each iteration, until a terminal condition is
 met. The simplest for loop uses a slice:
 
 .. code-block:: felix

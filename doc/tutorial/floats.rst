@@ -67,3 +67,39 @@ of numerical analysis. Felix helps by providing the function
 
 to check the result is with about 3 decimal places of 1.0.
 
+
+Summary: Double Comparisons
+---------------------------
+
+========     ======================     =======  =============
+Operator     Type                       Syntax   Semantics
+========     ===================        =======  =============
+==           double * double -> bool    Infix    Equality
+!=           double * double -> bool    Infix    Not Equal
+<=           double * double -> bool    Infix    Less or Equal
+<            double * double -> bool    Infix    Less
+>=           double * double -> bool    Infix    Greater or Equal
+>            double * double -> bool    Infix    Greater
+========     ======================     =======  =============
+
+
+
+Summary: Double Operations
+---------------------------
+
+========     ==========================   =======  =============
+Operator     Type                         Syntax   Semantics
+========     ==========================   =======  =============
+\+           double * double -> double    Infix    Addition
+\-           double * double -> double    Infix    Subtraction 
+\*           double * double -> double    Infix    Multiplication
+/            double * double -> double    Infix    Division
+\-           double -> double             Prefix   Negation
+neg          double -> double             Prefix   Negation
+abs          double -> double             Prefix   Absolute Value
+========     ==========================   =======  =============
+
+
+
+
+

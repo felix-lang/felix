@@ -1,7 +1,30 @@
 Simple Control Flow
 ===================
 
+Sequential Flow
+---------------
+
 Normally, control flows from one statement to the next.
+
+.. code-block:: felix
+
+    first;
+    second;
+    third;
+
+No operation
+------------
+
+Felix provides several statements which do nothing.
+A lone semi-colon `;` is a statement which does nothing.
+
+.. code-block:: felix
+
+    first;
+    ; // does nothing
+    second;
+
+
 
 Labels and Gotos
 ----------------
