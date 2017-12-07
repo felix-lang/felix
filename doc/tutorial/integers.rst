@@ -144,12 +144,12 @@ Operator     Type                    Syntax   Semantics
 <            int * int -> bool       Infix    Less
 >=           int * int -> bool       Infix    Greater or Equal
 >            int * int -> bool       Infix    Greater
-:code:`+`    int * int -> int        Infix    Addition
-:code:`-`    int * int -> int        Infix    Subtraction 
-:code:`*`    int * int -> int        Infix    Multiplication
+``+``        int * int -> int        Infix    Addition
+``-``        int * int -> int        Infix    Subtraction 
+``*``        int * int -> int        Infix    Multiplication
 /            int * int -> int        Infix    Division
 %            int * int -> int        Infix    Remainder
-:code:`-`    int -> int              Prefix   Negation
+``-``        int -> int              Prefix   Negation
 neg          int -> int              Prefix   Negation
 abs          int -> int              Prefix   Absolute Value
 ========     ===================     =======  =============
