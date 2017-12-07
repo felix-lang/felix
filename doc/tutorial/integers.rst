@@ -138,18 +138,19 @@ Summary: Integer Operations
 ========     ===================     =======  =============
 Operator     Type                    Syntax   Semantics
 ========     ===================     =======  =============
-==           int * int -> int        Infix    Equality
-!=           int * int -> int        Infix    Not Equal
-<=           int * int -> int        Infix    Less of Equal
-<            int * int -> int        Infix    Less
->=           int * int -> int        Infix    Greater or Equal
->            int * int -> int        Infix    Greater
-+            int * int -> int        Infix    Addition
--            int * int -> int        Infix    Subtraction 
-*            int * int -> int        Infix    Multiplication
+==           int * int -> bool       Infix    Equality
+!=           int * int -> bool       Infix    Not Equal
+<=           int * int -> bool       Infix    Less or Equal
+<            int * int -> bool       Infix    Less
+>=           int * int -> bool       Infix    Greater or Equal
+>            int * int -> bool       Infix    Greater
+:code:`+`    int * int -> int        Infix    Addition
+:code:`-`    int * int -> int        Infix    Subtraction 
+:code:`*`    int * int -> int        Infix    Multiplication
 /            int * int -> int        Infix    Division
 %            int * int -> int        Infix    Remainder
--            int -> int              Prefix   Negation
+:code:`-`    int -> int              Prefix   Negation
+neg          int -> int              Prefix   Negation
 abs          int -> int              Prefix   Absolute Value
 ========     ===================     =======  =============
 
