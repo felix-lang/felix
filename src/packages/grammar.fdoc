@@ -3152,6 +3152,53 @@ SCHEME """
     )
     """;
 
+SCHEME """
+  (define iterator_recursive_loop 
+    (lambda (loopname cvar iterator body) 
+      (begin (display "Eval iterator recursive loop\n")
+      (let* 
+        (
+          (proc_string_name (fresh_name "proc"))
+          (proc_call_name (nos proc_string_name))
+          (proc_param `((() none)))
+          (proc_ret `((ast_void ,_sr) none))
+          (proc_adjectives `())
+          (proccall `(ast_call ,_sr ,proc_call_name (ast_tuple ,_sr ())))
+          (generator_string_name (fresh_name "generator" ))
+          (generator_call_name (nos generator_string_name))
+          (generator_init `(ast_apply ,_sr (,(nos "iterator") ,iterator )))
+          (generator_call `(ast_apply ,_sr (,generator_call_name ())))
+          (some_pattern `(pat_nonconst_ctor ,_sr ,(nos "Some") (pat_as ,_sr (pat_any ,_sr) ,cvar) ))
+          (some_exit proccall) 
+          (some_handler (append `(,body) `(,some_exit)))
+          (none_pattern `(pat_const_ctor ,_sr ,(nos "None")))
+          (none_handler `((ast_nop ,_sr, "drop thru")))
+          (some_item `(,some_pattern ,some_handler))
+          (none_item `(,none_pattern ,none_handler))
+          (matchings `(,some_item ,none_item))
+          (proc_body 
+            `( ast_seq ,_sr 
+              (
+                (ast_label ,_sr ,(string-append "continue_" loopname))
+                (ast_stmt_match (,_sr ,generator_call ,matchings))
+                (ast_label ,_sr ,(string-append "break_" loopname))
+              )
+            )
+          )
+          (vardef `(ast_var_decl ,_sr ,generator_string_name ,dfltvs none (some ,generator_init)))
+          (procdef 
+            `(
+              ast_curry_effects ,_sr ,proc_string_name ,dfltvs ,proc_param ,proc_ret ,dflteffects 
+              Function ,proc_adjectives (,proc_body)
+            )
+          )
+        )
+        `(ast_seq ,_sr (,vardef ,procdef ,proccall))
+      )
+      ) ;;display
+    )
+  )
+""";
 
 syntax loops
 {
@@ -3463,6 +3510,7 @@ syntax loops
        )))
     """;
 
+  loop_stmt := optlabel "rfor" sname "in" sexpr block =># '(iterator_recursive_loop _1 _3 _5 _6)';
 
   //$ Upmarket stream consumer.
   //$ The second argument must be a value for which there is a generator: 

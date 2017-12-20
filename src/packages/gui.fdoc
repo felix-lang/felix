@@ -731,8 +731,6 @@ class FlxGuiWindow
       done
     }
 
-    var drawables = darray[drawable_t] ();
-
     method proc draw () 
     {
       var surf =  surface (SDL_GetWindowSurface w);
