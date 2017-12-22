@@ -22,6 +22,7 @@
 @tangler line_buffer_interface.flx                     = share/lib/gui/line_buffer_interface.flx
 @tangler line_buffer_object.flx                        = share/lib/gui/line_buffer_object.flx
 @tangler line_editor.flx                               = share/lib/gui/line_editor.flx
+@tangler linegraph.flx                                 = share/lib/gui/linegraph.flx
 
 @h1 Basics
 The Felix portable GUI is based on the portable SDL library
@@ -278,6 +279,8 @@ class FlxGuiInit
     done
     println$ "IMG_init OK";
   }
+
+  proc quit() { SDL_Quit(); }
 
   proc versions ()
   {
@@ -600,8 +603,10 @@ by events occuring at times different to the events such as mouse
 clicks triggering state changes.
 
 @tangle drawchain.flx
+include "gui/__init__";
 class FlxGuiDrawChain
 {
+  open FlxGui;
   interface drawchain_t {
     draw: surface_t -> 0;
     remove: string -> 0;
@@ -2113,4 +2118,109 @@ chip line_edit
 } //class
  
 @
+
+@h1 Tools
+@tangle linegraph.flx
+include "gui/__init__";
+
+
+library GraphTools {
+open FlxGui;
+  interface linegraph_t {
+    title: string;
+    func: double -> double;
+    xmin: double;
+    xmax: double;
+    ymin: double;
+    ymax: double;
+    client: rect_t;
+  }
+
+  proc linegraph (g:linegraph_t) {
+    // SDL
+    FlxGui::init();
+
+    // window
+    var w = create_resizable_window(g.title, 
+      g.client.x,g.client.y,g.client.w,g.client.h
+    );
+    w.add$ mk_drawable FlxGui::clear lightgrey;
+
+    // font and label
+    var font_name = dflt_sans_serif_font();
+    var font : font_t = get_font(font_name, 12);
+    var bigfont : font_t = get_font(font_name, 14);
+    var lineskip = get_lineskip font;
+
+    // bounding box for graph
+    var t = 20;
+    var l = 50;
+    var b = g.client.h - 90;
+    var r = g.client.w - 10;
+    w.add$ mk_drawable FlxGui::write (l+(r - l)/2,10,bigfont,black,g.title);
+
+
+    var c = RGB(0,0,255);
+    var c2 = RGB(0,0,0);
+
+    // top
+    w.add$ mk_drawable draw_line (c, l - 5,t,r,t);
+    w.add$ mk_drawable FlxGui::write (l - 40,t,font,black,g.ymax.str);
+
+    // bottom
+    w.add$ mk_drawable draw_line (c, l - 5,b,r,b);
+    w.add$ mk_drawable FlxGui::write (l - 40,b,font,black,g.ymin.str);
+
+    // left
+    w.add$ mk_drawable draw_line (c, l,t,l,b + 5);
+    w.add$ mk_drawable FlxGui::write (l,b + 15,font,black,g.xmin.str);
+
+    // right
+    w.add$ mk_drawable draw_line (c, r,t,r,b + 5);
+    w.add$ mk_drawable FlxGui::write (r - 40,b + 15,font,black,g.xmax.str);
+
+    // coordinate transforms
+    fun i2x (i:int): double =>  (i - l).double / (r - l).double * (g.xmax - g.xmin) + g.xmin; 
+    fun y2j (y:double) : int => b-((y - g.ymin)/ (g.ymax - g.ymin) * (b - t).double).int; 
+    fun x2i (x:double) : int => ((x - g.xmin) / (g.xmax - g.xmin) * (r - l).double).int + l;
+
+    // x axis (y=0)
+    var jorig = y2j 0.0;
+    w.add$ mk_drawable FlxGui::write (l - 40,jorig,font,black,"0");
+    w.add$ mk_drawable draw_line (blue,l,jorig,r,jorig);
+
+    // y axis (x=0)
+    var iorig = x2i 0.0;
+    w.add$ mk_drawable draw_line (red,iorig,t,iorig,b+5);
+    w.add$ mk_drawable FlxGui::write (iorig,b+15,font,black,"0");
+
+    w.update();
+    w.show();
+
+
+    var oldi = -2000;
+    var oldj = 0;
+    rfor i in l..r do
+      var x = i2x i;
+      var y = g.func x;
+      var j = y2j y;
+      //println$ g.title+"(" + x.str + ")=" y.str + ", coord(" + i.str + "," + j.str + ")";
+      var data = c2,oldi,oldj,i,j;
+      if oldi != -2000 do
+        w.add$ mk_drawable draw_line data;
+      done
+      oldi = i;
+      oldj= j;
+      w.update();
+      sleep(0.01);
+    done
+    w.add$ mk_drawable draw_line (c, l,t,r,b);
+
+    w.update();
+    var wm = window_manager();
+    wm.run_with_timeout 15.0;
+    FlxGui::quit();
+  } // lilnegraph
+} // GraphTools
+
 
