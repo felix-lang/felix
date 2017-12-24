@@ -57,7 +57,7 @@ presented enclosed in curly braces.
 Two kinds of specification are allowed in a polymorphic class:
 function definitions and assertions.
 
-@h2 Functions
+@h2 Functions.
 There are two kinds of function definitions. A function
 or procedure specified with the adjective @{virtual}
 may have a specialisation provided in an instance declaration.
