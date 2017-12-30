@@ -3751,6 +3751,19 @@ syntax patterns {
 
   block = match_stmt;
 
+  smatch_head := "chainmatch" sexpr "with" stmt_matching+ =># "`(,_2 ,_4)";
+  smatch_link := "ormatch" sexpr "with" stmt_matching+ =># "`(,_2 ,_4)";
+  smatch_chain := smatch_chain smatch_link =># "(cons _2 _1)"; // revsersed
+  smatch_chain := smatch_link =># "`(,_1)";
+
+  match_stmt := smatch_head smatch_chain "endmatch" ";" =># 
+    "`(ast_stmt_chainmatch ,_sr ,(cons _1 (reverse _2)))"
+  ; 
+
+  match_stmt := smatch_head "endmatch" ";" =># 
+    "`(ast_stmt_match (,_sr ,_1))"
+  ; 
+
   //$ Pattern match statement.
   //$ At least one branch must match or the program aborts with a match failure.
   match_stmt:= "match" sexpr "with" stmt_matching+ "endmatch" ";" =>#

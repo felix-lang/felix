@@ -1059,9 +1059,33 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
       | Lst [p;stmts] ->  xp p, xsts sr stmts
       | x -> err x "ast_stmt_match syntax"
       )
-     pss
-   in
-   STMT_stmt_match (sr, (ex sr e,pss))
+    pss
+    in
+    STMT_stmt_match (sr, (ex sr e,pss))
+
+  | Lst [Id "ast_stmt_chainmatch";  sr; Lst links] as x -> 
+    if List.length links = 0 then err x "invalid chain match, no cases";
+    let sr = xsr sr in 
+    let camel ps : pattern_t * statement_t list = 
+      match ps with
+      | Lst [p;stmts] -> xp p, xsts sr stmts
+      | x -> err x "ast_stmt_match, case clause"
+    in
+    let calmatch e pss = STMT_stmt_match (sr, (e,pss)) in
+    let wild = PAT_any sr in
+    let append_wild cases stmts : (pattern_t * statement_t list)list = cases @ [wild, stmts] in
+    let revlinks = List.rev links in
+    List.fold_left (fun acc link ->
+      match link with
+      | Lst [e; Lst pss] -> calmatch (ex sr e) (append_wild (map camel pss) [acc])
+      | x -> err x "ast_stmt_chainmatch chain syntax"
+    ) 
+    (match List.hd revlinks with
+      | Lst [e; Lst pss] -> calmatch (ex sr e) (map camel pss)
+      | x -> err x "ast_stmt_chainmatch chain syntax last case"
+    )
+    (List.tl revlinks)
+
 
   | x -> err x "statement"
 
