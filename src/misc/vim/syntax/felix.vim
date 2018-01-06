@@ -83,6 +83,8 @@ syn keyword felixStatement else
 syn keyword felixStatement otherwise
 syn keyword felixStatement endcase
 syn keyword felixStatement endif
+syn keyword felixStatement chainmatch
+syn keyword felixStatement ormatch
 syn keyword felixStatement endmatch
 syn keyword felixStatement enum
 syn keyword felixStatement cenum
