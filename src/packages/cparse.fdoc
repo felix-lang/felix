@@ -1,0 +1,170 @@
+@title C Parsing Utils
+@tangler ctok.flx = share/lib/std/c/ctok.flx
+@h1 C Tokeniser
+This is a crude C tokeniser that is intended for parsing
+header files only, i.e. interfaces.
+
+@tangle ctok.flx
+
+// TODO: strings, chars
+// NOTE: preprocesor directives start with # and end with newline
+// NOTE: trailing slosh is elided, but also ends a token, not really correct
+
+class Ctok
+{
+  fun c_tok(x:string): list[string] =
+  { 
+    var result = Empty[string];
+    var token = "";
+    var n = x.len.int;
+    var inmacro = false;
+    var i = 0;
+    while i < n do
+      // 3 char tokens
+      if x.[i.+3] in ("<<=", ">>=","...")  do
+       result -= x.[i.+3];
+       i += 3;
+
+      elif x.[i.+2] == "\\\n" do
+       i += 2;
+      
+      // C++ comment
+      elif x.[i.+2] == "//" do
+        i += 2;
+        while i <= n and x.[i] != "\n" do
+          ++i;
+        done 
+        if inmacro do
+          result -= "\\n";
+          inmacro = false;
+        done
+        ++i;
+
+      // C comment
+      elif x.[i.+2] == "/*" do
+        i += 2;
+        while i <= n and x.[i.+2] != "*/" do
+          ++i;
+        done
+        i += 2;
+
+      elif x.[i] == "\n" do
+        if inmacro do
+          result -= "\n";
+          inmacro = false;
+        done
+        ++i;
+
+      // whitespace
+      elif ord x.[i]  <= 32 do
+        ++i; 
+
+      // 2 char tokens
+      elif x.[i.+2] in ("::", 
+         "<<", ">>", "<=", ">=", "==","!=". "&&","||",
+        "++","--", "+=","==","!=","&=","^=","|=") 
+      do
+        result -= x.[i.+2];; 
+        i += 2;
+ 
+      elif x.[i] == "#" do
+        inmacro = true;
+        result -= "#";
+        ++i;
+
+      // 1 char tokens
+      elif x.[i] in "<>^!+-*/%(){}[],:;&|?=" do
+        result -= x.[i].string; 
+        ++i;
+
+
+      // char 
+      elif x.[i] == "'" do
+        ++i;
+        token = x.[i].string;
+        while i < n and x.[i] != "'" do
+          if x.[i] == "\\" do
+            token += "\\";
+            ++i;
+          done
+          token += x.[i]; 
+          ++i;
+        done
+        result -= token + "'";
+        ++i;
+
+      // string
+      elif x.[i] == '"' do
+        token = x.[i].string;
+        ++i;
+        while i < n and x.[i] != '"' do
+          if x.[i] == "\\" do
+            token += "\\";
+            ++i;
+          done
+          token += x.[i]; 
+          ++i;
+        done
+        result -= token + '"';
+        ++i;
+
+      // identifier
+      elif x.[i] in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_" do
+        token = x.[i].string;
+        ++i;
+        while i <= n and x.[i] in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789" do
+          token += string x.[i]; 
+          ++i;
+        done
+        result -= token;
+
+      // number
+      elif x.[i] in "0123456789" do
+       token = x.[i].string;
+       ++i;
+       while x.[i] in "0123456789xabcdefXABCDEF.pP+-uUlL" do
+         token += x.[i].string;
+         ++i;
+       done
+       result -= token;
+
+      // other
+      else
+       result -= x.[i].string;
+       ++i;
+      done // conditional
+    done //loop
+    return rev result;
+  }
+  proc dump_tokens_formatted (x:list[string]) {
+    var nest = 0;
+    proc newline() { println$ ""; print$ " " * ( 2 * nest); }
+    println$ "Tokens = ";
+    for token in tokens do
+      if token == ";" do
+        print$ ";"; newline;
+
+      elif token == "{" do
+        newline;
+        print$ "{";
+        ++nest;
+        newline;
+
+      elif token == "}" do
+        --nest;
+        newline;
+        print$ "}";
+        newline;
+      elif token == "#" do
+        newline;
+        print$ "#"; 
+      elif token == "\n" do
+        print "#endmacro";
+        newline;
+      else 
+        print$ token.str+  " ";
+      done 
+    done
+  } // dump
+}
+

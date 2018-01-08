@@ -421,6 +421,10 @@ O(N) slow.
   //$ Append element to tail of list (slow!).
   proc += [T] (x:&list[T], y:T) { x <- *x + y; }
 
+  //$ Prepend element to head of list (fast!).
+  proc -= [T] (x:&list[T], y:T) { x <- y ! *x; }
+
+
 @h2 Outer product.
 Given a list of lists of T named x and 
 a list of lists of T named y, 
