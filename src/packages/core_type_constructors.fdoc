@@ -117,7 +117,16 @@ open class Option {
       endmatch
     ;
   }
-  
+ 
+  instance[T with Eq[T]] Eq[opt[T]] {
+    fun == : opt[T] * opt[T] -> bool =
+    | None, None => true
+    | Some x, Some y => x == y
+    | _ => false
+    ;
+  }
+  inherit[T] Eq[T];
+ 
   // Return the value of the option if it has any, otherwise
   // returns the default value provided
   fun or_else[T] (x:opt[T]) (d:T) : T =>

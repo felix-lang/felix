@@ -407,6 +407,8 @@ From @{low} to @{high} exclusive with given @{step}.
   //$ Concatenate two lists.
   pure fun + [T] (x:list[T], y: list[T]):list[T] => join x y;
 
+  proc += [T] (x:&list[T], y: list[T]) => x <- join (*x) y;
+
 @h2 Cons an element onto a list.
 @tangle list.flx
   //$ Prepend element to head of list.

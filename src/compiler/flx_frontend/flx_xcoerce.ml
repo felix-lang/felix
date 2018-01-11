@@ -8,8 +8,8 @@ exception Vfound (* for variants, Found already used elsewhere *)
 
 let si x = string_of_int x
 
-let rec function_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt ld lc rd rc =
-  let coerce parent e dstt = expand_coercion new_table bsym_table counter parent remap e dstt in
+let rec function_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt ld lc rd rc sr =
+  let coerce parent e dstt = expand_coercion new_table bsym_table counter parent remap e dstt sr in
   (* coerce function argument value to function parameter value 
      value subtype of parameter
      domain contravariant, codomain covariant
@@ -54,8 +54,8 @@ let rec function_coercion new_table bsym_table counter parent remap ((srcx,srct)
    let coerced_function = bexpr_closure  (btyp_function (rd,rc)) (fidx,[]) in
    coerced_function
    
-and variant_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt ls rs =
-  let coerce parent e dstt = expand_coercion new_table bsym_table counter parent remap e dstt in
+and variant_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt ls rs sr =
+  let coerce parent e dstt = expand_coercion new_table bsym_table counter parent remap e dstt sr in
   if debug then
   print_endline ("Variant coercion " ^ Flx_btype.st srct ^ " => " ^ Flx_btype.st dstt); 
   (* check for the special case where the argument constructors all
@@ -161,8 +161,8 @@ print_endline ("MINIMISED dstt = " ^ Flx_btype.st dstt);
   end
 
 
-and record_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt ls rs =
-  let coerce parent e dstt = expand_coercion new_table bsym_table counter parent remap e dstt in
+and record_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt ls rs sr =
+  let coerce parent e dstt = expand_coercion new_table bsym_table counter parent remap e dstt sr in
       (* count duplicate fields in target *)
       let counts = Hashtbl.create 97 in
       let get_rel_seq name = 
@@ -198,7 +198,7 @@ print_endline ("src field idx=" ^ string_of_int idx ^ ", type=" ^ Flx_print.sbt 
        failwith ("Bad record coercion in xcoerce " ^ Flx_print.sbt bsym_table srct ^ " ===> " ^ Flx_print.sbt bsym_table dstt);
       end
 
-and tuple_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt ls rs =
+and tuple_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt ls rs sr =
   let n = List.length ls in
   let m = List.length rs in
   assert (n=m);
@@ -207,8 +207,8 @@ and tuple_coercion new_table bsym_table counter parent remap ((srcx,srct) as src
   let prjs = List.map2 (fun p t-> bexpr_coerce (p,t)) prjs rs in
   remap parent (bexpr_tuple dstt prjs)
 
-and array_coercion new_table bsym_table counter parent remap ((_,srct) as srce) dstt l r n =
-  let coerce parent e t = expand_coercion new_table bsym_table counter parent remap e t in
+and array_coercion new_table bsym_table counter parent remap ((_,srct) as srce) dstt l r n sr =
+  let coerce parent e t = expand_coercion new_table bsym_table counter parent remap e t sr in
   let fidx = Flx_bid.fresh_bid counter in
   let ix = Flx_bid.fresh_bid counter in
   let ixval = bexpr_varname l (ix,[]) in
@@ -222,7 +222,7 @@ and array_coercion new_table bsym_table counter parent remap ((_,srct) as srce) 
 justified by theory, it doesn't check if, for example, that
 compact linear type transformations are actually isomorphisms, etc
 *)
-and expand_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt =
+and expand_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt sr =
   if Flx_typeeq.type_eq (Flx_print.sbt bsym_table) counter srct dstt
   then srce
   else
@@ -241,13 +241,16 @@ and expand_coercion new_table bsym_table counter parent remap ((srcx,srct) as sr
     begin match maybe_coercion with
     | None -> 
 
+      let srcid = Flx_bsym.id (Flx_bsym_table.find bsym_table src) in
+      let dstid = Flx_bsym.id (Flx_bsym_table.find bsym_table dst) in
       print_endline ("Unable to find supertype coercion from " ^ 
-      si src ^ " to " ^ si dst);
+      srcid ^ "<" ^ si src ^ "> to " ^ dstid ^ "<" ^ si dst ^ ">");
       Flx_bsym_table.iter_coercions bsym_table
         (fun ((a,b),c) -> print_endline ("       " ^ si c ^ ":" ^ si b ^ "->" ^ si a))
       ;
-      failwith ("Unable to find supertype coercion from " ^ 
-      si src ^ " to " ^ si dst);
+      Flx_exceptions.clierr sr ("Unable to find supertype coercion from " ^ 
+      srcid ^ "<" ^ si src ^ "> to " ^ dstid ^ "<" ^ si dst ^ ">");
+ 
     | Some fn ->
       if debug then
       print_endline ("Found coercion function " ^ si fn ^ " from " ^
@@ -256,36 +259,36 @@ and expand_coercion new_table bsym_table counter parent remap ((srcx,srct) as sr
     end
      
   | BTYP_function (ld,lc) , BTYP_function (rd,rc)  ->
-    function_coercion new_table bsym_table counter parent remap srce dstt ld lc rd rc
+    function_coercion new_table bsym_table counter parent remap srce dstt ld lc rd rc sr
 
   | BTYP_variant ls, BTYP_variant rs ->
     let ls = List.map (fun (s,t) -> s,unfold "variant ls component" t) ls in
     let rs = List.map (fun (s,t) -> s,unfold "variant rs component" t) rs in
-    variant_coercion new_table bsym_table counter parent remap srce dstt ls rs
+    variant_coercion new_table bsym_table counter parent remap srce dstt ls rs sr
 
   | BTYP_record ls, BTYP_record rs ->
-    record_coercion new_table bsym_table counter parent remap srce dstt ls rs
+    record_coercion new_table bsym_table counter parent remap srce dstt ls rs sr
 
   | BTYP_tuple ls, BTYP_tuple rs when List.length ls = List.length rs ->
-    tuple_coercion new_table bsym_table counter parent remap srce dstt ls rs
+    tuple_coercion new_table bsym_table counter parent remap srce dstt ls rs sr
 
   | BTYP_tuple ls, BTYP_array (r, BTYP_unitsum n) when List.length ls = n ->
     let rs = Flx_list.repeat r n in
-    tuple_coercion new_table bsym_table counter parent remap srce dstt ls rs
+    tuple_coercion new_table bsym_table counter parent remap srce dstt ls rs sr
 
   | BTYP_array (l, BTYP_unitsum n), BTYP_tuple rs when List.length rs = n ->
     let ls = Flx_list.repeat l n in
-    tuple_coercion new_table bsym_table counter parent remap srce dstt ls rs
+    tuple_coercion new_table bsym_table counter parent remap srce dstt ls rs sr
 
   | BTYP_array (l, BTYP_unitsum n), BTYP_array(r,BTYP_unitsum m) when n = m ->
     if n > 20 then begin
       print_endline ("Flx_xcoerce. Coerce array longer than 20");
-      array_coercion new_table bsym_table counter parent remap srce dstt l r n
+      array_coercion new_table bsym_table counter parent remap srce dstt l r n sr
     end
     else
     let ls = Flx_list.repeat l n in
     let rs = Flx_list.repeat r n in
-    tuple_coercion new_table bsym_table counter parent remap srce dstt ls rs
+    tuple_coercion new_table bsym_table counter parent remap srce dstt ls rs sr
 
   | _ -> 
     (* not currently reducible, becomes a reinterpret cast in flx_egen,
@@ -299,8 +302,8 @@ print_endline ("Unable to expand coercion: " ^ Flx_print.sbe bsym_table srce ^ "
 *)
     Flx_bexpr.bexpr_coerce (srce, dstt)
 
-and process_expr new_table bsym_table counter parent expr = 
-  let f_bexpr parent expr = process_expr new_table bsym_table counter parent expr in
+and process_expr new_table bsym_table counter parent sr expr = 
+  let f_bexpr parent expr = process_expr new_table bsym_table counter parent sr expr in
   let remap parent expr = Flx_bexpr.map ~f_bexpr:(f_bexpr parent) expr in
   (* perform bottom up expansion, upto subparts of expression *)
   let e = remap parent expr in
@@ -310,7 +313,7 @@ and process_expr new_table bsym_table counter parent expr =
 (*
     print_endline ("Examining coercion " ^ Flx_print.sbe bsym_table e );
 *)
-    let e' = expand_coercion new_table bsym_table counter parent remap srce dstt in
+    let e' = expand_coercion new_table bsym_table counter parent remap srce dstt sr in
 (*
     print_endline ("Expanded to " ^ Flx_print.sbe bsym_table e');
 *)
@@ -320,7 +323,8 @@ and process_expr new_table bsym_table counter parent expr =
   | _ -> e
 
 let process_exe new_table bsym_table counter parent exe =
-  let newexe = Flx_bexe.map ~f_bexpr:(process_expr new_table bsym_table counter parent) exe in
+  let sr = Flx_bexe.get_srcref exe in
+  let newexe = Flx_bexe.map ~f_bexpr:(process_expr new_table bsym_table counter parent sr) exe in
 (*
   print_endline ("Old bexe=" ^ Flx_print.sbx bsym_table exe);
   print_endline ("New bexe=" ^ Flx_print.sbx bsym_table newexe);
