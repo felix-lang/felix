@@ -7,8 +7,8 @@ addons:
     - ubuntu-toolchain-r-test
     packages:
     - python3
-    - gcc-6
-    - g++-6
+    - gcc
+    - g++
 before_script:
 - sudo apt-get remove g++
 - wget https://github.com/ocaml/ocaml/archive/4.02.3.tar.gz

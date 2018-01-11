@@ -174,6 +174,16 @@ fun iscident(x:string) : bool = {
     result &= iscidcont ch;
   return result;
 }
+typedef parameter_t = ctyp_t * string;
+
+typedef field_t = ctyp_t * string;
+
+// either or both the tag string is present of the field list is present
+typedef struct_t = string * opt[list[field_t]];
+
+typedef enumconst_t = string * int;
+typedef enum_t = string * list[enumconst_t];
+
 
 union ctyp_t =
 | Base of string
@@ -186,16 +196,6 @@ union ctyp_t =
 | Union of struct_t
 | Enum of enum_t
 ;
-typedef parameter_t = ctyp_t * string;
-
-typedef field_t = ctyp_t * string;
-
-// either or both the tag string is present of the field list is present
-typedef struct_t = string * opt[list[field_t]];
-
-typedef enumconst_t = string * int;
-typedef enum_t = string * list[enumconst_t];
-
 instance Eq[ctyp_t] {
   fun == (a:ctyp_t, b:ctyp_t) => 
     match a,b with
