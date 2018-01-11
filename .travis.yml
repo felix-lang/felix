@@ -27,11 +27,6 @@ before_script:
 - cp -r linuxgccbinary/build/* build
 - rm -rf build/release/share/lib/
 script:
-- mkdir bin
-- ln -s /usr/bin/gcc-6 bin/gcc
-- ln -s /usr/bin/g++-6 bin/g++
-- bin/gcc --version
-- bin/g++ --version
 - export PATH=bin:build/release/host/bin:$PATH LD_LIBRARY_PATH=build/release/host/lib/rtl
 - #export FLX_SHELL_ECHO=1
 - gcc --version
