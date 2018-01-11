@@ -10,7 +10,6 @@ addons:
     - gcc
     - g++
 before_script:
-- sudo apt-get remove g++
 - wget https://github.com/ocaml/ocaml/archive/4.02.3.tar.gz
 - tar -xzf 4.02.3.tar.gz
 - cd ocaml-4.02.3
