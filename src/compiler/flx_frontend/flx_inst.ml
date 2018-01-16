@@ -88,14 +88,14 @@ let add_inst syms bsym_table ref_insts1 sr (i,ts) =
     end
   end
 
-let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
+let rec process_expr syms bsym_table weak ref_insts1 hvarmap sr ((e,t) as be) =
 (*
   print_endline ("Process expr " ^ sbe bsym_table be ^ " .. raw type " ^ sbt bsym_table t);
   print_endline (" .. instantiated type " ^ sbt bsym_table (varmap_subst hvarmap t));
 *)
-  let ue e = process_expr syms bsym_table ref_insts1 hvarmap sr e in
+  let ue e = process_expr syms bsym_table weak ref_insts1 hvarmap sr e in
   let ui i ts = add_inst syms bsym_table ref_insts1 sr (i,ts) in
-  let ut t = register_type_r ui syms bsym_table [] sr t in
+  let ut t = register_type_r ui syms bsym_table weak [] sr t in
   let vs t = varmap_subst hvarmap t in
   let t' = vs t in
   ut t'
@@ -276,8 +276,8 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_reinterpret_cast(e,t) -> ue e; ut t
   end
 
-and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
-  let ue sr e = process_expr syms bsym_table ref_insts1 hvarmap sr e in
+and process_exe syms bsym_table weak ref_insts1 ts hvarmap exe =
+  let ue sr e = process_expr syms bsym_table weak ref_insts1 hvarmap sr e in
   let uis sr i ts = add_inst syms bsym_table ref_insts1 sr (i,ts) in
   let ui sr i = uis sr i ts in
 (*
@@ -299,7 +299,7 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
   | BEXE_jump_direct (sr,i,ts,e2)
   | BEXE_call_stack (sr,i,ts,e2)
     ->
-    let ut t = register_type_r (uis sr) syms bsym_table [] sr t in
+    let ut t = register_type_r (uis sr) syms bsym_table weak [] sr t in
     let vs t = varmap_subst hvarmap t in
     let ts = map vs ts in
     iter ut ts;
@@ -360,7 +360,7 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
     uis sr i ts
 
   | BEXE_catch (sr, s, t) -> 
-    let ut t = register_type_r (uis sr) syms bsym_table [] sr t in
+    let ut t = register_type_r (uis sr) syms bsym_table weak [] sr t in
     ut t
   | BEXE_halt _
   | BEXE_trace _
@@ -373,21 +373,21 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
   | BEXE_endtry _
     -> ()
 
-and process_exes syms bsym_table ref_insts1 ts hvarmap exes =
-  iter (process_exe syms bsym_table ref_insts1 ts hvarmap) exes
+and process_exes syms bsym_table weak ref_insts1 ts hvarmap exes =
+  iter (process_exe syms bsym_table weak ref_insts1 ts hvarmap) exes
 
-and process_function syms bsym_table hvarmap ref_insts1 index sr argtypes ret exes ts =
+and process_function syms bsym_table weak hvarmap ref_insts1 index sr argtypes ret exes ts =
   (*
   print_endline ("Process function " ^ si index);
   *)
-  process_exes syms bsym_table ref_insts1 ts hvarmap exes ;
+  process_exes syms bsym_table weak ref_insts1 ts hvarmap exes ;
   (*
   print_endline ("Done Process function " ^ si index);
   *)
 
-and do_reqs syms bsym_table ref_insts1 sr msg vs reqs =
+and do_reqs syms bsym_table weak ref_insts1 sr msg vs reqs =
   let uis i ts = add_inst syms bsym_table ref_insts1 sr (i,ts) in
-  let rtr t = register_type_r uis syms bsym_table [] sr t in
+  let rtr t = register_type_r uis syms bsym_table weak [] sr t in
     iter (
       fun (i, ts)->
       if i = dummy_bid then
@@ -399,7 +399,7 @@ and do_reqs syms bsym_table ref_insts1 sr msg vs reqs =
     )
     reqs
 
-and process_inst syms bsym_table instps ref_insts1 i ts inst =
+and process_inst syms bsym_table weak instps ref_insts1 i ts inst =
   let bsym =
     try Flx_bsym_table.find bsym_table i
     with Not_found -> failwith ("[process_inst] Can't find index " ^
@@ -409,11 +409,11 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
   let uis i ts = add_inst syms bsym_table ref_insts1 sr (i,ts) in
   let ui i = uis i ts in
   let ue hvarmap e =
-    process_expr syms bsym_table ref_insts1 hvarmap sr e
+    process_expr syms bsym_table weak ref_insts1 hvarmap sr e
   in
-  let rtr t = register_type_r uis syms bsym_table [] sr t in
+  let rtr t = register_type_r uis syms bsym_table weak [] sr t in
   let rtnr t = register_type_nr syms bsym_table t in
-  let do_reqs vs reqs = do_reqs syms bsym_table ref_insts1 sr (Flx_bsym.id bsym) vs reqs in
+  let do_reqs vs reqs = do_reqs syms bsym_table weak ref_insts1 sr (Flx_bsym.id bsym) vs reqs in
   if syms.compiler_options.Flx_options.print_flag then
   print_endline ("//Instance " ^ string_of_bid inst ^ "=" ^ Flx_bsym.id bsym ^
     "<" ^ string_of_bid i ^ ">[" ^
@@ -435,7 +435,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     end;
     process_function
       syms
-      bsym_table
+      bsym_table weak
       hvarmap
       ref_insts1
       i
@@ -581,7 +581,7 @@ print_endline ("arg types c " ^ catmap "," (sbt bsym_table) tss);
     | _ ->
         process_function
           syms
-          bsym_table
+          bsym_table weak
           hvarmap
           ref_insts1
           i
@@ -659,6 +659,13 @@ print_endline ("arg types c " ^ catmap "," (sbt bsym_table) tss);
   type and function.
 *)
 
+(* Note: compare is not strictly good enough for uniqueness of types
+in Felix, however it will do, since the use of a set is primarily
+an optimisation. The actual registration process later applied will
+eliminate duplication. The order is irrelevant, we just need a set.
+*)
+
+
 let instantiate syms bsym_table instps (root:bid_t option) (bifaces:biface_t list) =
 (*
 print_endline "  [flx_inst] Begin instantiation";
@@ -666,6 +673,9 @@ print_endline "  [flx_inst] Begin instantiation";
   Hashtbl.clear syms.instances;
   syms.registry <- [];
   Hashtbl.clear syms.array_as_tuple_registry;
+
+  (* weak set *)
+  let weak = ref WeakSet.empty in
 
   (* empty instantiation registry *)
   let insts1 = ref FunInstSet.empty in
@@ -692,10 +702,10 @@ print_endline "  [flx_inst] Begin instantiation";
       | BBDCL_fun (props,_,(ps,_),_,_,_) ->
         begin match ps with
         | [] -> ()
-        | [{ptyp=t}] -> register_type_r (ui sr) syms bsym_table [] sr t
+        | [{ptyp=t}] -> register_type_r (ui sr) syms bsym_table weak [] sr t
         | _ ->
           let t = btyp_tuple (Flx_bparameter.get_btypes ps) in
-          register_type_r (ui sr) syms bsym_table [] sr t;
+          register_type_r (ui sr) syms bsym_table weak [] sr t;
           register_type_nr syms bsym_table t;
           register_tuple syms bsym_table t;
         end
@@ -704,12 +714,12 @@ print_endline "  [flx_inst] Begin instantiation";
       add_cand x []
 
     | BIFACE_export_type (sr,t,_) ->
-      register_type_r (ui sr) syms bsym_table [] sr t
+      register_type_r (ui sr) syms bsym_table weak [] sr t
 
     | BIFACE_export_struct (sr,idx) -> ui sr idx []
     | BIFACE_export_union (sr,idx, _) -> ui sr idx []
     | BIFACE_export_requirement (sr,breqs) ->
-      let do_reqs vs reqs = do_reqs syms bsym_table insts1 sr "`requirement(fix!)`" vs reqs in
+      let do_reqs vs reqs = do_reqs syms bsym_table weak insts1 sr "`requirement(fix!)`" vs reqs in
       let vs = fun x -> x in
       do_reqs vs breqs
   )
@@ -733,9 +743,18 @@ print_endline "  [flx_inst] Begin instantiation";
     let (index,vars) as x = FunInstSet.choose !insts1 in
     insts1 := FunInstSet.remove x !insts1;
     let inst = add_instance index vars in
-    process_inst syms bsym_table instps insts1 index vars inst
+    process_inst syms bsym_table weak instps insts1 index vars inst
   done
   ;
+
+  while not (WeakSet.is_empty !weak) do
+     let inweak = !weak in
+     weak := WeakSet.empty;
+     WeakSet.iter (fun t -> 
+       let sr = Flx_srcref.dummy_sr in register_type_r (ui sr) syms bsym_table weak [] sr t)
+       inweak
+     ;
+  done
 
 (*
   print_endline "  [flx_inst] End instantiation";

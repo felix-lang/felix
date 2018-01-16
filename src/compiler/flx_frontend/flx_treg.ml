@@ -14,6 +14,21 @@ open Flx_beta
 open Flx_bid
 open Flx_btype_subst
 
+module WeakSet = Set.Make (
+  struct 
+    type t=Flx_btype.t
+    let compare = compare
+  end
+)
+
+let add_weak (weak:WeakSet.t ref) t =
+  weak := WeakSet.add t !weak
+
+let remove_weak (weak:WeakSet.t ref) t =
+  weak := WeakSet.remove t !weak
+
+
+
 exception Found of Flx_btype.t * bid_t
 let find_equivalent_type_entry syms bsym_table t =
   try List.iter (fun (t',i) ->
@@ -34,6 +49,9 @@ let registered_type syms bsym_table t =
   | Some (_,i) -> true
   
 let register_type_nr syms bsym_table t =
+(*
+    print_endline ("Register type nr: type " ^ sbt bsym_table t);
+*)
 (*
   if Flx_unify.is_recursive_type t 
     then print_endline ("Register type nr: recursive type " ^ sbt bsym_table t)
@@ -58,7 +76,7 @@ print_endline ("Register type nr " ^ sbt bsym_table t);
     then begin
       let () = check_recursion bsym_table t in
       let n = fresh_bid syms.counter in
-      if syms.compiler_options.Flx_options.print_flag then
+      if syms.compiler_options.Flx_options.print_flag then 
       print_endline ("//Register type " ^ string_of_bid n ^ ": " ^
         sbt bsym_table t);
       syms.registry <- (t, n)::syms.registry;
@@ -92,9 +110,14 @@ let register_tuple syms bsym_table t =
 print_endline ("flx_treg: Try to register tuple " ^ sbt bsym_table t);
     assert false
 
-let rec register_type_r' ui syms bsym_table exclude sr t =
+let rec register_type_r' ui syms bsym_table weak exclude sr t =
 (*
-print_endline ("Register type r " ^ sbt bsym_table t);
+if 
+  not (mem t exclude) &&
+  not (registered_type syms bsym_table t)
+then 
+  print_endline ("Register type r " ^ sbt bsym_table t)
+;
 *)
   let t = beta_reduce "flx_treg: register_type" syms.Flx_mtypes2.counter bsym_table sr t in
   (*
@@ -106,7 +129,8 @@ print_endline ("Register type r " ^ sbt bsym_table t);
   if not (registered_type syms bsym_table t) then
   if not (mem t exclude) then
   if complete_type t then
-  let rr t' = register_type_r' ui syms bsym_table (t :: exclude) sr t' in
+  let () = remove_weak weak t in
+  let rr t' = register_type_r' ui syms bsym_table weak (t :: exclude) sr t' in
   let rnr t = register_type_nr syms bsym_table t in
   let t' = unfold "flx_treg" t in
   (*
@@ -206,7 +230,7 @@ print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table
   | BTYP_wref t' -> assert false; rr t'
 
 
-  | BTYP_pointer t' -> rr t'; rnr t
+  | BTYP_pointer t' -> add_weak weak t'; rnr t
   | BTYP_cltpointer (d,c) -> rr d; rr c; rnr t
 
   (* I wonder if these should be here .. probably not *)
@@ -237,7 +261,7 @@ print_endline ("ts len = " ^ si (List.length ts));
 *)
       let cts = map (fun (_,_,evs,d,c,gadt) -> d) cs in
       let cts = map (tsubst (Flx_bsym.sr bsym) vs ts) cts in
-      iter rr cts;
+      iter (add_weak weak) cts;
       rnr t
 
     | BBDCL_cstruct (vs,cs,_)
@@ -307,9 +331,10 @@ print_endline ("External primitive instance, registering whole type " ^ sbt bsym
       sbt bsym_table t
     )
 
-let register_type_r ui syms bsym_table exclude sr t =
+let register_type_r ui syms bsym_table (weak:WeakSet.t ref) exclude sr t =
+(* print_endline ("TOP LEVEL &&&&&&& Register type r " ^ sbt bsym_table t); *)
   try 
-    register_type_r' ui syms bsym_table exclude sr t
+    register_type_r' ui syms bsym_table weak exclude sr t
   with 
   | Bad_recursion ->
     clierr sr ("[register_type_r] illegal fixpoint in type " ^ 

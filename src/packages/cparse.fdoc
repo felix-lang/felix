@@ -242,6 +242,64 @@ instance Str[parameter_t] {
   fun str (t:ctyp_t,n:string) => t.str + if n!="" then " " else "" endif + n;
 }
 
+fun discard_to_rbrace (level:int) (tokens: list[string]) =>
+  match tokens with
+  | "{" ! tokens => discard_to_rbrace (level + 1) tokens
+  | "}" ! tokens => if level > 1 then discard_to_rbrace (level - 1) tokens else tokens
+  | _ ! tokens  => discard_to_rbrace level tokens
+  | Empty => tokens
+  endmatch
+;
+
+// discard everything up to the next top level }
+fun discard_to_rbrace (tokens: list[string]) =>
+  discard_to_rbrace 0 tokens
+;
+
+// discard everything up to the next top level ;
+// won't work for nested code because of ; in for statements
+fun discard_to_semi (tokens: list[string]) =>
+  match tokens with
+  | "{" ! tokens => discard_to_semi (discard_to_rbrace 1 tokens)
+  | ";" ! tokens => tokens
+  | _ ! tokens => discard_to_semi tokens
+  | Empty => tokens
+  endmatch
+;
+
+fun rev_grab_to_rbrace (out:list[string]) (level:int) (tokens: list[string]) =>
+  match tokens with
+  | "{" ! tokens => rev_grab_to_rbrace ("{" ! out) (level + 1) tokens
+  | "}" ! tokens => if level > 1 then rev_grab_to_rbrace ("}" ! out) (level - 1) tokens else out, tokens
+  | token  ! tokens  => rev_grab_to_rbrace (token ! out) level tokens
+  | Empty => out, tokens
+  endmatch
+;
+
+// grab everything up to the next top level }
+fun grab_to_rbrace (tokens: list[string]) =>
+  rev (rev_grab_to_rbrace Empty[string] 0 tokens)
+;
+
+// grab everything up to the next top level ;
+// won't work for nested code because of ; in for statements
+fun rev_grab_to_semi (out:list[string]) (tokens: list[string]) =>
+  match tokens with
+  | "{" ! tokens => 
+    let grabbed, trailing = (rev_grab_to_rbrace out 1 tokens) in
+    rev_grab_to_semi grabbed trailing
+
+  | ";" ! tokens => out,tokens
+  | _ ! tokens => rev_grab_to_semi out tokens
+  | Empty => out,tokens
+  endmatch
+;
+
+fun grab_to_semi (tokens: list[string]) =>
+  rev (rev_grab_to_semi Empty[string] tokens)
+;
+
+
 // ***********************************************
 // input a token list
 // parse the LHS of a C type, the base type, eg int

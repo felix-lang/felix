@@ -268,7 +268,7 @@ class BuildFlxg
                "-I",tmpdir/dir, 
                "-I", entmp (Filename::dirname file)) +
                include_flags +
-               list("-c", "-w",'yzex','-warn-error',"FPSU",
+               list("-unsafe-string", "-c", "-w",'yzex','-warn-error',"FPSU",
                '-o',entmp (Filename::strip_extension file) + ".cmx",
                file)
             ;
