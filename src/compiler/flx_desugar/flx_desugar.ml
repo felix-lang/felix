@@ -325,6 +325,8 @@ print_endline ("Translating Lazy Declaration " ^ name);
 *)
     mdcl
 
+  | STMT_begin_typeclass _ -> assert false
+
   (* typeclasses and modules are basically the same thing now .. *)
   | STMT_untyped_module (sr,name', vs', sts) ->
     let asms = rsts name' (Flx_merge_vs.merge_vs parent_vs vs') `Public sts in

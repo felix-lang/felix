@@ -578,6 +578,11 @@ and statement_t =
       vs_list_t *
       statement_t list
 
+  | STMT_begin_typeclass of
+      Flx_srcref.t *
+      Flx_id.t *
+      vs_list_t
+
   | STMT_instance of
       Flx_srcref.t *
       vs_list_t *
@@ -951,6 +956,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_struct (s,_,_,_)
   | STMT_cstruct (s,_,_,_,_)
   | STMT_typeclass (s,_,_,_)
+  | STMT_begin_typeclass (s,_,_)
   | STMT_instance (s,_,_,_)
   | STMT_untyped_module (s,_,_,_)
   | STMT_library (s,_,_)

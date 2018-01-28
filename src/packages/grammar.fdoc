@@ -3681,6 +3681,12 @@ syntax namespaces {
     `(ast_typeclass ,_sr ,(first _2) ,(second _2) ,_4)
     """;
 
+  private namespace_stmt := "class" sdeclname ";" =>#
+    """
+    `(ast_begin_typeclass ,_sr ,(first _2) ,(second _2))
+    """;
+
+
   //$ Define a class and open it.
   private namespace_stmt := "open" "class" sdeclname "=" ? scompound =>#
     """

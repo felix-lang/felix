@@ -937,6 +937,8 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | STMT_typeclass (sr, id, vs, sts) ->
     tack (STMT_typeclass (sr, mi sr id, vs, ms sts))
 
+  | STMT_begin_typeclass _ -> assert false
+
   | STMT_type_alias (sr, id, vs, t) ->
     tack (STMT_type_alias (sr,mi sr id,vs, mt sr t))
 
@@ -1589,6 +1591,25 @@ and expand_statements recursion_limit local_prefix seq reachable macros (ss:stat
     )
   
 let expand_macros macro_state stmts =
+  (* translate class X; ... into class X { ...  *)
+  let rec grab stmts res =
+    match stmts with
+    | [] -> List.rev res,[]
+    | STMT_begin_typeclass _ :: _ -> List.rev res, stmts
+    | h :: t -> grab t (h :: res) 
+  in
+  let rec aux stmts res =
+    match stmts with
+    | [] -> List.rev res
+    | STMT_begin_typeclass (sr,name,vs) :: stmts ->
+      let nested,rest = grab stmts [] in
+      aux rest (STMT_typeclass (sr,name,vs,nested) :: res)
+
+    | h :: t ->
+      aux t (h::res)
+  in 
+  let stmts = aux stmts [] in
+
   expand_statements
     macro_state.recursion_limit
     macro_state.local_prefix
@@ -1597,18 +1618,6 @@ let expand_macros macro_state stmts =
     macro_state.macros
     stmts
 
-let expand_macros_in_statement macro_state handle_stmt init stmt =
-  let stmts =
-    expand_statement
-      macro_state.recursion_limit
-      macro_state.local_prefix
-      macro_state.seq
-      macro_state.reachable
-      macro_state.ref_macros
-      macro_state.macros
-      stmt
-  in
-  List.fold_left handle_stmt init stmts
 
 let make_macro_state ?(recursion_limit=5000) local_prefix seq =
   {

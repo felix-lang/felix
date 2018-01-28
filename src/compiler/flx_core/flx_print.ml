@@ -1486,6 +1486,9 @@ and string_of_statement level s =
     spaces level ^ "typeclass " ^ string_of_id name ^ string_of_vs vs ^ " = " ^
     string_of_compound level sts
 
+  | STMT_begin_typeclass (_,name, vs) ->
+    spaces level ^ "begin typeclass " ^ string_of_id name ^ string_of_vs vs ^ ";"
+
   | STMT_instance (_,vs,name, sts) ->
     spaces level ^ "instance " ^ string_of_vs vs ^ " " ^
     string_of_qualified_name name ^ " = " ^

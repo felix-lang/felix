@@ -894,6 +894,10 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
   | Lst [Id "ast_typeclass"; sr; id; vs; sts] -> let sr = xsr sr in 
       STMT_typeclass (sr, xid id, xvs sr vs, xsts sr sts)
 
+  | Lst [Id "ast_begin_typeclass"; sr; id; vs] -> let sr = xsr sr in 
+      STMT_begin_typeclass (sr, xid id, xvs sr vs)
+
+
   | Lst [Id "ast_instance"; sr; vs; qn; sts] -> let sr = xsr sr in 
     (*
     print_endline "Ast instance sts=";
