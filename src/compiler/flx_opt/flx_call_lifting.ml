@@ -52,7 +52,7 @@ let call_lifting syms uses bsym_table caller callee a argument =
   let bsym = Flx_bsym_table.find bsym_table callee in
 
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
+  | BBDCL_fun (props,vs,ps,ret,effects,exes) ->
 
     (* Ensure that we aren't dealing with any type variables. *)
     assert (vs=[]);

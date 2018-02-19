@@ -54,7 +54,9 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
 (*
   print_endline ("The function " ^ id ^ (if requires_ptf then " REQUIRES PTF" else " DOES NOT REQUIRE PTF"));
 *)
+(*
   let ps = List.map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
+*)
   if syms.compiler_options.print_flag then
   print_endline
   (
@@ -66,7 +68,7 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
       else "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
     )
   );
-  let argtype = typeof_bparams bps in
+  let argtype = Flx_bparams.get_btype bps in
   if length ts <> length vs then
   failwith
   (

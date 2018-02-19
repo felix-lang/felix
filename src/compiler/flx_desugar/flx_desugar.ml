@@ -399,7 +399,7 @@ print_endline ("STMT_curry " ^ name' ^ ", rettype=" ^ string_of_typecode ret);
     if (!doexport) then
       let domain = 
         match pps with
-        | (ps,_)::_ -> paramtype ps
+        | (ps,_)::_ -> typeof_paramspec_t ps
         | [] -> TYP_tuple []
       in
       let qn = `AST_name (sr,name',[]) in
@@ -459,7 +459,7 @@ ps;
 
       (* Check for unbound type parameters and make them bindable. Also, return
         them for introduction *)
-      let vs',params = Flx_curry.fix_params sr seq params in
+      let vs',params = Flx_curry.fix_param sr seq params in
 
       (* Merge new type variables with existing *)
       let vs = Flx_merge_vs.merge_vs vs (vs',dfltvs_aux)  in
@@ -502,7 +502,7 @@ ps;
 
       let sts =
         pre_assert @
-        [ STMT_function (sr,name'', dfltvs,([],None),(res,None),effects,props,sts); ] @
+        [ STMT_function (sr,name'', dfltvs,(Slist [],None),(res,None),effects,props,sts); ] @
 
         begin match res with
 

@@ -22,7 +22,7 @@ open Flx_util
 open Flx_bid
 
 let heavy_inline_call syms uses bsym_table
-  caller callee argument id sr (props, vs, (ps,traint), exes)
+  caller callee argument id sr (props, vs, ps, exes)
 =
   (*
   print_endline ("INLINING CALL to " ^ id ^"<"^ si callee^">("^sbe bsym_table argument^")");

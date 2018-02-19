@@ -171,6 +171,7 @@ val bexpr_case_index : Flx_btype.t -> t -> t
 val bexpr_expr : Flx_code_spec.t * Flx_btype.t * t -> t
 val bexpr_range_check : Flx_btype.t -> t * t * t -> t
 val bexpr_compose : Flx_btype.t -> t * t -> t
+val bexpr_revcompose : Flx_btype.t -> t * t -> t
 val bexpr_unitsum_case : int -> int -> t
 val bexpr_funprod : Flx_btype.t -> t -> t
 val bexpr_funsum : Flx_btype.t -> t -> t

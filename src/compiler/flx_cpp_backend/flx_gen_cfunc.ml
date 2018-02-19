@@ -35,8 +35,6 @@ let gen_C_function syms bsym_table (shapes:Flx_set.StringSet.t ref) shape_map pr
   (*
   print_endline ("C Function " ^ id ^ " " ^ if requires_ptf then "requires ptf" else "does NOT require ptf");
   *)
-  let ps = List.map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
-  let params = Flx_bparameter.get_bids bps in
   if syms.compiler_options.print_flag then
   print_endline
   (
@@ -48,7 +46,7 @@ let gen_C_function syms bsym_table (shapes:Flx_set.StringSet.t ref) shape_map pr
       else "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
     )
   );
-  let argtype = typeof_bparams bps in
+  let argtype = Flx_bparams.get_btype bps in
   if length ts <> length vs then
   failwith
   (
@@ -63,25 +61,26 @@ let gen_C_function syms bsym_table (shapes:Flx_set.StringSet.t ref) shape_map pr
   if ret = btyp_tuple [] then "// elided (returns unit)\n" else
 
   let funtype = Flx_fold.fold bsym_table syms.counter (btyp_function (argtype, ret)) in
-
   (* let argtypename = cpp_typename syms bsym_table argtype in *)
   let display = get_display_list bsym_table index in
   assert (length display = 0);
   let name = cpp_instance_name syms bsym_table index ts in
   let rettypename = cpp_typename syms bsym_table ret in
+  let pidxs = Flx_bparams.get_bids bps in
   rettypename ^ " " ^
   name ^ "(" ^
   (
     let s =
-      match length params with
+(*
+      match length pidxs with
       | 0 -> ""
       | 1 ->
-        let ix = hd params in
+        let ix = hd pidxs in
         if Hashtbl.mem syms.instances (ix, ts)
         && not (argtype = btyp_tuple [] || argtype = btyp_void ())
         then cpp_typename syms bsym_table argtype else ""
       | _ ->
-        let counter = ref 0 in
+*)
         fold_left
         (fun s {pindex=i; ptyp=t} ->
           let t = rt vs t in
@@ -92,7 +91,8 @@ let gen_C_function syms bsym_table (shapes:Flx_set.StringSet.t ref) shape_map pr
           else s (* elide initialisation of elided variable *)
         )
         ""
-        bps
+        (Flx_bparams.get_params bps)
+
     in
       (
         if (not (mem `Cfun props)) then
@@ -126,7 +126,7 @@ let gen_C_function_body filename syms bsym_table
     )
   );
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(bps,traint),ret',effects,exes) ->
+  | BBDCL_fun (props,vs,bps,ret',effects,exes) ->
     (*
     print_endline ("Properties=" ^ catmap "," (fun x->st (x:>felix_term_t)) props);
     *)
@@ -143,7 +143,7 @@ let gen_C_function_body filename syms bsym_table
 
     "//C FUNC <" ^ string_of_bid index ^ ">: " ^ name ^ "\n" ^
 
-    let argtype = typeof_bparams bps in
+    let argtype = Flx_bparams.get_btype bps in
     let argtype = rt vs argtype in
     let rt' vs t = beta_reduce "flx_gen_cfunc: gen_C_function_body2"  syms.Flx_mtypes2.counter bsym_table sr (tsubst sr vs ts t) in
     let ret = rt' vs ret' in
@@ -154,10 +154,12 @@ let gen_C_function_body filename syms bsym_table
     (* let argtypename = cpp_typename syms bsym_table argtype in *)
     let rettypename = cpp_typename syms bsym_table ret in
 
-    let params = Flx_bparameter.get_bids bps in
+    let params = Flx_bparams.get_bids bps in
     let exe_string,_ =
       try
-        Flx_gen_exe.gen_exes filename name syms bsym_table shapes shape_map [] label_info counter index exes vs ts instance_no true
+        Flx_gen_exe.gen_exes filename name syms bsym_table 
+          shapes shape_map [] label_info counter index 
+          exes vs ts instance_no true
       with x ->
         (*
         print_endline (Printexc.to_string x);
@@ -194,6 +196,7 @@ let gen_C_function_body filename syms bsym_table
       name ^ "(" ^
       (
         let s =
+(*
           match bps with
           | [] -> ""
           | [{pkind=k; pindex=i; ptyp=t}] ->
@@ -205,11 +208,10 @@ let gen_C_function_body filename syms bsym_table
               cpp_instance_name syms bsym_table i ts
             else ""
           | _ ->
-              let counter = ref dummy_bid in
+*)
               fold_left
               (fun s {pkind=k; pindex=i; ptyp=t} ->
                 let t = rt vs t in
-                let n = fresh_bid counter in
                 if Hashtbl.mem syms.instances (i,ts) && not (t = btyp_tuple [])
                 then s ^
                   (if String.length s > 0 then ", " else " ") ^
@@ -218,7 +220,7 @@ let gen_C_function_body filename syms bsym_table
                 else s (* elide initialisation of elided variable *)
               )
               ""
-              bps
+              (Flx_bparams.get_params bps)
         in
           (
             if not (mem `Cfun props) &&
@@ -257,8 +259,8 @@ let gen_C_procedure_body filename syms bsym_table
     )
   );
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(bps,traint),BTYP_fix (0,_),effects,exes) 
-  | BBDCL_fun (props,vs,(bps,traint),BTYP_void,effects,exes) ->
+  | BBDCL_fun (props,vs,bps,BTYP_fix (0,_),effects,exes) 
+  | BBDCL_fun (props,vs,bps,BTYP_void,effects,exes) ->
     let requires_ptf = mem `Requires_ptf props in
     if length ts <> length vs then
     failwith
@@ -269,16 +271,17 @@ let gen_C_procedure_body filename syms bsym_table
       si (length ts)
     );
     let name = cpp_instance_name syms bsym_table index ts in
-    let argtype = typeof_bparams bps in
+    let argtype = Flx_bparams.get_btype bps in
     let argtype = rt vs argtype in
 
     let funtype = Flx_fold.fold bsym_table syms.counter (btyp_function (argtype, btyp_void ())) in
     (* let argtypename = cpp_typename syms bsym_table argtype in *)
 
-    let params = Flx_bparameter.get_bids bps in
+    let params = Flx_bparams.get_bids bps in
     let exe_string,_ =
       try
-        Flx_gen_exe.gen_exes filename name syms bsym_table shapes shape_map [] label_info counter index exes vs ts instance_no true
+        Flx_gen_exe.gen_exes filename name syms bsym_table 
+          shapes shape_map [] label_info counter index exes vs ts instance_no true
       with x ->
         (*
         print_endline (Printexc.to_string x);
@@ -317,6 +320,7 @@ let gen_C_procedure_body filename syms bsym_table
       name ^ "(" ^
       (
         let s =
+(*
           match bps with
           | [] -> ""
           | [{pkind=k; pindex=i; ptyp=t}] ->
@@ -328,11 +332,10 @@ let gen_C_procedure_body filename syms bsym_table
               cpp_instance_name syms bsym_table i ts
             else ""
           | _ ->
-              let counter = ref 0 in
+*)
               fold_left
               (fun s {pkind=k; pindex=i; ptyp=t} ->
                 let t = rt vs t in
-                let n = !counter in incr counter;
                 if Hashtbl.mem syms.instances (i,ts) && not (t = btyp_tuple [])
                 then s ^
                   (if String.length s > 0 then ", " else " ") ^
@@ -341,7 +344,7 @@ let gen_C_procedure_body filename syms bsym_table
                 else s (* elide initialisation of elided variable *)
               )
               ""
-              bps
+              (Flx_bparams.get_params bps)
         in
           (
             if (not (mem `Cfun props)) && requires_ptf then

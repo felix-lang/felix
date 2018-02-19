@@ -23,6 +23,8 @@ open Flx_use
 open Flx_util
 open Flx_bid
 
+(* FIXME: the constraint(s) is(are) discarded when combining parameters *)
+
 let find_uncurry_expr syms bsym_table uncurry_map e =
   let aux e = match e with
   | BEXPR_apply
@@ -214,7 +216,7 @@ let fixup_function
 =
   let ps =
     match Flx_bsym.bbdcl bsymi with
-    | BBDCL_fun (_,_,(ps,_),_,_,_) -> ps
+    | BBDCL_fun (_,_,ps,_,_,_) -> ps
     | _ -> assert false
   in
 
@@ -225,7 +227,7 @@ let fixup_function
     c
     (Some k)
     true
-    (Flx_bparameter.get_bids ps)
+    (Flx_bparams.get_bids ps)
   in
 
   (* Helper function to look up a reparented index. *)
@@ -234,7 +236,7 @@ let fixup_function
   in
 
   (* Create new bound symbols for the parameters. *)
-  List.iter begin fun { pkind=pk; ptyp=t; pid=s; pindex=pi } ->
+  Flx_bparams.piter begin fun { pkind=pk; ptyp=t; pid=s; pindex=pi } ->
     if pi <> 0 then begin
       let n = revar pi in
       let bbdcl = match pk with
@@ -255,30 +257,31 @@ let fixup_function
   end ps;
 
   (* Make sure the parameter indices don't equal the remapped index. *)
-  assert (List.for_all (fun ({ pindex=i }) -> (i = 0 || i <> revar i)) ps);
-  assert (List.for_all (fun ({ pindex=i }) -> (i = 0 || i <> revar i)) psc);
+  assert (List.for_all (fun i -> (i = 0 || i <> revar i)) (Flx_bparams.get_bids ps));
+  assert (List.for_all (fun i -> (i = 0 || i <> revar i)) (Flx_bparams.get_bids psc));
 
   (* Update the parent's parameter indices. *)
   let ps =
-    List.map begin fun ({ pid=s; pindex=i } as p) ->
+    Flx_bparams.xpmap begin fun ({ pid=s; pindex=i } as p) ->
       { p with pid=s ^ "_uncurry"; pindex=revar i }
-    end ps
+    end (fst ps)
   in
 
   (* Update the child's parameter list. *)
-  let psc = List.map
+  let psc = Flx_bparams.xpmap
     (fun ({ pindex=i} as p) -> {p with pindex=revar i })
-    psc
+    (fst psc)
   in
 
   (* Finally, merge the parent and child parameters. *)
-  let ps = ps @ psc in
+  let ps = Flx_bparams.xget_prjs ps @ Flx_bparams.xget_prjs psc in
+  let ps = List.map fst ps in (* discard projection *)
   if syms.compiler_options.print_flag then
   List.iter (fun {pkind=pk; pid=s; ptyp=pt}->
     print_endline ("param " ^ string_of_param_kind pk ^" " ^ s ^ ":" ^ sbt bsym_table pt))
     ps
   ;
-
+  let ps = Flx_bparams.bparams_of_list ps in
 
   (* Update the child's expressions and executables. *)
   let rec revare e = Flx_bexpr.map ~f_bid:revar ~f_bexpr:revare e in
@@ -320,12 +323,12 @@ let synthesize_function syms bsym_table ut i (c, k, n) =
   (* Add the new function or procedure. *)
   let bbdcl =
     match Flx_bsym_table.find_bbdcl bsym_table c with
-    | BBDCL_fun (propsc,vsc,(psc,traintc),retc,effects,exesc) ->
+    | BBDCL_fun (propsc,vsc,psc,retc,effects,exesc) ->
       assert (vsc=[]);
       if syms.compiler_options.print_flag then
       print_endline ("Properties " ^ Flx_print.string_of_properties propsc);
       let ps,exes = fixup_function psc exesc in
-      bbdcl_fun (propsc,[],(ps,traintc),retc,effects,exes)
+      bbdcl_fun (propsc,[],(ps,None),retc,effects,exes)
     | _ -> assert false
   in
 

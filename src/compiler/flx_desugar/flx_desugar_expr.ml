@@ -32,7 +32,7 @@ let make_desugar_state name seq = {
 
 
 let block sr body :statement_t =
-  let e = EXPR_lambda (sr,(`GeneratedInlineProcedure,dfltvs,[[],None],TYP_void sr,body)) in
+  let e = EXPR_lambda (sr,(`GeneratedInlineProcedure,dfltvs,[Slist [],None],TYP_void sr,body)) in
   STMT_call (sr,e,EXPR_tuple(sr,[]))
 
 (* This function has to lift lambdas out of types, 
@@ -62,21 +62,17 @@ let rett_fixparam rex (sr,kind,id,typ,expr) =
    Returns a tuple: (list of declarations, list of params) *)
 let rec rett_fixparams rex ps = 
   match ps with
-
-  (* Inductive case: destructure head element and fix it *)
-  | param :: ps_tail ->
-    let decls,param' = rett_fixparam rex param in
-
-    (* work on the other cases before wrapping up. *)
-    let other_decls, other_ps = 
-      rett_fixparams rex ps_tail in
-
-    decls @ other_decls, (param' :: other_ps)
-
-  (* Base case: no input, no output. *)
-  | [] -> [],[]
-
   
+  (* Inductive case: destructure head element and fix it *)
+  | Satom param ->
+    let decls,param' = rett_fixparam rex param in
+    decls, Satom param'
+
+  | Slist ps ->
+    let rs = List.map (rett_fixparams rex) ps in
+    let decls = List.map fst rs in
+    let pss = List.map snd rs in
+    List.concat decls, Slist pss
       
 (* split lambdas out. Each lambda is replaced by a
    reference to a synthesised name in the original
@@ -583,7 +579,7 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
       (mkcurry seq sr name' vs pps (ret,None) Flx_typing.flx_unit kind sts [`Generated "lambda"])
     in
     if List.length pps = 0 then syserr sr "[rex] Lambda with no arguments?" else
-    let t = type_of_argtypes (List.map (fun(sr,x,y,z,d)->z) (fst (List.hd pps))) in
+    let t = typeof_paramspec_t (fst (List.hd pps)) in
     let e =
       EXPR_suffix
       (

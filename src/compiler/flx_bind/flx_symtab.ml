@@ -549,6 +549,9 @@ print_endline ("Adding type variable 7141!");
   in
   let add_tvars table = add_tvars' (Some symbol_index) table ivs in
 
+  (* adds parameter to symbol table and lookup table as side effect
+     returning original parameter
+  *)
   let add_parameter pubtab privtab parent (sr,k, name, typ, dflt) =
     let n = fresh_bid counter_ref in
 
@@ -571,17 +574,20 @@ print_endline ("Adding type variable 7141!");
   in
 
   (* Add parameters to the symbol table. *)
-  let add_parameters pubtab privtab parent =
-    List.map (add_parameter pubtab privtab parent)
+  let rec add_parameters pubtab privtab parent ps =
+    match ps with
+    | Satom ps -> Satom (add_parameter pubtab privtab parent ps) 
+    | Slist pss -> Slist (List.map (add_parameters pubtab privtab parent) pss)
   in
 
   (* Add simple parameters to the symbol table. *)
+(*
   let add_simple_parameters pubtab privtab parent =
     List.map begin fun (name, typ) ->
       add_parameter pubtab privtab parent (sr,`PVal, name, typ, None)
     end
   in
-
+*)
   let add_labels parent privtab exes = 
     List.iter (fun exe -> match exe with
       | sr,EXE_label name -> 
@@ -603,7 +609,8 @@ print_endline ("Adding type variable 7141!");
 
   (* Add the declarations to the symbol table. *)
   begin match (dcl:Flx_types.dcl_t) with
-  | DCL_reduce reds ->
+  | DCL_reduce reds -> assert false
+(*
       let reds = 
         List.map (fun (vs, ps, e1, e2) ->
           let ips: parameter_t list = add_simple_parameters pubtab privtab (Some symbol_index) ps in
@@ -618,7 +625,7 @@ print_endline ("Adding type variable 7141!");
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
-
+*)
   | DCL_axiom ((ps, pre), e1) ->
       let ips = add_parameters pubtab privtab (Some symbol_index) ps in
 
@@ -734,7 +741,7 @@ print_endline ("Finished adding bind to symtab")
 
       (* Add symbols to sym_table. *)
       add_symbol ~pubtab ~privtab ~dirs symbol_index id sr (SYMDEF_function (
-          ([],None),
+          unit_params_t,
           TYP_var symbol_index,
           noeffects,
           [`Generated "symtab:match handler" ; `GeneratedInline],
@@ -809,7 +816,7 @@ print_endline ("ROOT: Init procs = " ^ string_of_int (List.length inner_inits));
                   | Some x -> (sr,EXE_call (EXPR_index (sr,"_init_",x),EXPR_tuple (sr,[]))):: exes 
                   | None -> exes
                 in
-                let init_def = SYMDEF_function (([], None), TYP_void sr, noeffects, [], exes) in
+                let init_def = SYMDEF_function (unit_params_t, TYP_void sr, noeffects, [], exes) in
 
                 (* Get a unique index for the _init_ function. *)
 
@@ -898,7 +905,7 @@ print_endline ("Checking parent's public map");
 
         (* Take all the exes and add them to a function called _init_ that's
          * called when the module is loaded. *)
-        let init_def = SYMDEF_function (([], None), TYP_void sr, noeffects, [], exes) in
+        let init_def = SYMDEF_function (unit_params_t, TYP_void sr, noeffects, [], exes) in
 
         (* Get a unique index for the _init_ function. *)
 
@@ -956,7 +963,7 @@ print_endline ("MODULE "^name^" Init procs = " ^ string_of_int (List.length inne
 
         (* Take all the exes and add them to a function called _init_ that's
          * called when the module is loaded. *)
-        let init_def = SYMDEF_function (([], None), TYP_void sr, noeffects, [], exes) in
+        let init_def = SYMDEF_function (unit_params_t, TYP_void sr, noeffects, [], exes) in
 
         (* Get a unique index for the _init_ function. *)
 
@@ -1057,7 +1064,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
 
         (* Take all the exes and add them to a function called _init_ that's
          * called when the module is loaded. *)
-        let init_def = SYMDEF_function (([], None), TYP_void sr, noeffects, [], exes) in
+        let init_def = SYMDEF_function (unit_params_t, TYP_void sr, noeffects, [], exes) in
 
         (* Get a unique index for the _init_ function. *)
 

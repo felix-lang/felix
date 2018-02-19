@@ -12,7 +12,7 @@ val tailit:
   string ->
   bid_t ->
   Flx_srcref.t ->
-  Flx_bparameter.t list ->
+  Flx_bparams.t ->
   Flx_bexe.t list ->
   Flx_bexe.t list
 

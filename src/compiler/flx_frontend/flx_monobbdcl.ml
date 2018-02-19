@@ -47,7 +47,7 @@ begin try
     (*
     print_endline ("+++processing parameters of " ^ Flx_bsym.id bsym);
     *)
-    let ps = List.map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} ->
+    let ps = Flx_bparams.xpmap (fun {pkind=pk; pid=s;pindex=i; ptyp=t} ->
     {pkind=pk;pid=s;pindex=fst (polyinst sr i ts);ptyp=mt vars t}) ps in
     (*
     print_endline ("+++parameters processed: " ^ Flx_bsym.id bsym);
@@ -56,7 +56,7 @@ begin try
     with Not_found -> print_endline ("Not Found FIXING parameters"); assert false
   in
   (* fudge unit parameters *)
-  let ps = List.map (fun {pkind=pk; pid=s; pindex=i; ptyp=t} ->
+  let ps = Flx_bparams.xpmap (fun {pkind=pk; pid=s; pindex=i; ptyp=t} ->
     {pkind=pk;pid=s;pindex=(match t with BTYP_tuple [] -> 0 | _ -> i);ptyp=t}) ps 
   in
   let traint =

@@ -66,6 +66,14 @@ let get_data table index =
  * result of a syntax trick or user defined application or x
  * constructor.
  *)
+let get_pnames_and_unbound_dflts ps : (string * expr_t option) list =
+  List.map 
+    begin fun p -> match p with
+    | Flx_ast.Satom (sr,_,name,_,d) -> name,d
+    | Flx_ast.Slist _ -> raise Not_found (* can't allow nested param tuples *)
+    end 
+    ps
+
 
 let sig_of_symdef symdef sr name i : typecode_t * typecode_t * ((string * expr_t option) list) option = 
   match symdef with
@@ -106,10 +114,11 @@ let sig_of_symdef symdef sr name i : typecode_t * typecode_t * ((string * expr_t
 
   | SYMDEF_function (ps,r,effects,_,_) ->
     let p = fst ps in
-    begin match p,r with
-    | _ ->
-      paramtype p,r,Some (List.map (fun (sr,_,name,_,d)->name,d) p)
-    end
+    let paramlist = match p with
+    | Satom _ -> None
+    | Slist ps -> try Some (get_pnames_and_unbound_dflts ps) with Not_found -> None
+    in
+    typeof_paramspec_t p,r,paramlist
 
   | SYMDEF_cstruct (ls, _) ->
     type_of_list (List.map snd ls), TYP_index (sr,name,i),
@@ -153,6 +162,7 @@ let sig_of_symdef symdef sr name i : typecode_t * typecode_t * ((string * expr_t
     ))
 
 
+(* see also "reorder" function .. hmm .. *)
 let fixup_argtypes be bid pnames base_domain argt rs =
   match pnames with
   | None -> argt

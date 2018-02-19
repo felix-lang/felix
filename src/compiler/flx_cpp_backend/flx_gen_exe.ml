@@ -591,8 +591,8 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         | _ -> assert false
       in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (props,vs,(ps,traint),BTYP_fix (0,_),effects,_)
-      | BBDCL_fun (props,vs,(ps,traint),BTYP_void,effects,_) ->
+      | BBDCL_fun (props,vs,ps,BTYP_fix (0,_),effects,_)
+      | BBDCL_fun (props,vs,ps,BTYP_void,effects,_) ->
         assert (mem `Stack_closure props);
         let a = match a with (a,t) -> a, tsub t in
         let ts = List.map tsub ts in
@@ -600,73 +600,22 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
           let display = get_display_list bsym_table index in
           let name = cpp_instance_name syms bsym_table index ts in
-          let s =
-            assert (length display = 0);
-            match ps with
-            | [] -> ""
-            | [{pindex=i; ptyp=t}] ->
-              if Hashtbl.mem syms.instances (i,ts)
-              && not (t = btyp_tuple [])
-              then
-                ge_arg a
-              else ""
-
-            | _ ->
-              begin match a with
-              | BEXPR_tuple xs,_ ->
-                (*
-                print_endline ("Arg to C function is tuple " ^ sbe a);
-                *)
-                fold_left
-                (fun s (((x,t) as xt),{pindex=i}) ->
-                  let x =
-                    if Hashtbl.mem syms.instances (i,ts)
-                    && not (t = btyp_tuple [])
-                    then ge_arg xt
-                    else ""
-                  in
-                  if String.length x = 0 then s else
-                  s ^
-                  (if String.length s > 0 then ", " else "") ^ (* append a comma if needed *)
-                  x
-                )
-                ""
-                (combine xs ps)
-
-              | _,tt ->
-                let k = List.length ps in
-                let tt = beta_reduce "flx_gen_exe: callstack" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr vs ts tt) in
-                (* NASTY, EVALUATES EXPR MANY TIMES .. *)
-                let n = ref 0 in
-                fold_left
-                (fun s (i,{pindex=j;ptyp=t}) ->
-                  (*
-                  print_endline ( "ps = " ^ catmap "," (fun (id,(p,t)) -> id) ps);
-                  print_endline ("tt=" ^ sbt bsym_table tt);
-                  *)
-                  let t = nth_type tt i in
-                  let a' = bexpr_get_n t i a in
-                  let x =
-                    if Hashtbl.mem syms.instances (j,ts)
-                    && not (t = btyp_tuple [])
-                    then ge_arg a'
-                    else ""
-                  in
-                  incr n;
-                  if String.length x = 0 then s else
-                  s ^ (if String.length s > 0 then ", " else "") ^ x
-                )
-                ""
-                (combine (nlist k) ps)
-              end
+          assert (length display = 0);
+          let prjs = Flx_bparams.get_prjs ps in
+          let args = List.map (fun (_,prj) -> match prj with
+            | None -> a
+            | Some ((_,BTYP_function (_,c)) as prj) -> bexpr_apply c (prj,a) 
+            | _ -> assert false
+            ) prjs
           in
+          let s = String.concat "," (List.map (fun x -> ge sr x) args) in
           let s =
             if mem `Requires_ptf props then
               if String.length s > 0 then "FLX_FPAR_PASS " ^ s
               else "FLX_FPAR_PASS_ONLY"
             else s
           in
-            "  " ^ name ^ "(" ^ s ^ ");\n"
+          "  " ^ name ^ "(" ^ s ^ ");\n"
         else
           let subs,x = Flx_unravel.unravel syms bsym_table a in
           let subs = List.map

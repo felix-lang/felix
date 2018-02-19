@@ -266,17 +266,16 @@ print_endline (" &&&&&& bind_type_uses calling BBIND_SYMBOL");
     bind_reqs bt state bsym_table env sym.Flx_sym.sr reqs
   in
   let bind_quals quals = bind_quals bt quals in
-  let bind_basic_ps ps =
-    List.map (fun (sr,k,s,t,_) ->
+  let rec bind_basic_ps ps = match ps with
+     | Satom (sr,k,s,t,_) ->
       let i = find_param sym.Flx_sym.privmap s in
       let t =
         let t = bt t in
         match k with
         | _ -> t
       in
-      { pid=s; pindex=i; pkind=k; ptyp=t }
-    )
-    ps
+      Satom { pid=s; pindex=i; pkind=k; ptyp=t }
+    | Slist pss -> Slist (List.map bind_basic_ps pss)
   in
   let bindps (ps,traint) =
     bind_basic_ps ps, btraint traint
@@ -330,7 +329,8 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
   | SYMDEF_virtual_type ->
     add_bsym true_parent (bbdcl_virtual_type bvs)
  
-  | SYMDEF_reduce reds -> 
+  | SYMDEF_reduce reds -> assert false
+(* 
     let reds =
       List.map (fun (ivs,ps,e1,e2) ->
         let bps = bind_basic_ps ps in
@@ -349,6 +349,7 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
         string_of_bid symbol_index ^ ">" );
 
     add_bsym true_parent (bbdcl_reduce ())
+*)
 
   | SYMDEF_axiom (ps,e1) ->
     let bps = bindps ps in
@@ -631,7 +632,7 @@ print_endline ("Flx_bbind: Adding type of index " ^ si symbol_index ^ " to cache
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table brt);
     let beffects = btyp_unit () in
-    add_bsym true_parent (bbdcl_fun (props,bvs,([],None),brt,beffects,bbexes))
+    add_bsym true_parent (bbdcl_fun (props,bvs,Flx_bparams.unit_bparams,brt,beffects,bbexes))
 
   | SYMDEF_const (props,t,ct,reqs) ->
     let t = type_of_index symbol_index in
@@ -1143,10 +1144,10 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
         let dom, cod = 
           let ps = fst params in
           begin match ps with
-          | [sr,kind,id,typ,initopt] -> typ,ret 
+          | Satom (sr,kind,id,typ,initopt) -> typ,ret 
           | _ ->
              clierr sr ("Improper subtype, only one parameter allowed, got " ^ 
-               string_of_int (List.length ps))
+               string_of_paramspec_t ps)
           end
         in
         begin
@@ -1244,7 +1245,7 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
 print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
 *)
       begin match sym.Flx_sym.symdef with
-      | Flx_types.SYMDEF_function (([psr,kind,pid,TYP_defer _,_],None),ret,effects,props,exes) ->
+      | Flx_types.SYMDEF_function ((Satom (psr,kind,pid,TYP_defer _,_),None),ret,effects,props,exes) ->
 print_endline ("[flx_bbind] bind_symbol FUNCTION " ^ sym.Flx_sym.id ^ " .. DEFERED");
         defered := i :: !defered
       | Flx_types.SYMDEF_parameter (kind,TYP_defer _) ->

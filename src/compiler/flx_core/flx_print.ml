@@ -946,19 +946,24 @@ and string_of_param_kind = function
   | `PVal -> "val"
   | `PVar -> "var"
 
+and string_of_parameter (sr,k,name,typ,dflt) =
+  string_of_param_kind k ^ " " ^
+  string_of_id name ^ ": "^(string_of_typecode typ) ^
+  (match dflt with None -> "" | Some e -> "="^ string_of_expr e)
+
+and inner_string_of_paramspec_t ps =
+  match ps with 
+  | Satom p -> string_of_parameter p 
+  | Slist ps -> "(" ^ catmap ", " inner_string_of_paramspec_t ps ^ ")"
+
+and string_of_paramspec_t ps =
+  match ps with 
+  | Satom p -> string_of_parameter p 
+  | Slist ps -> catmap ", " inner_string_of_paramspec_t ps
+
 and string_of_parameters (ps:params_t) =
   let ps, traint = ps in
-  cat
-    ", "
-    (map
-      (fun (sr,k,x,y,d)->
-        string_of_param_kind k^ " " ^
-        string_of_id x ^ ": "^(string_of_typecode y) ^
-        (match d with None -> "" | Some e -> "="^ string_of_expr e)
-      )
-      ps
-     )
-  ^
+  string_of_paramspec_t ps ^
   (match traint with
   | Some x -> " where " ^ string_of_expr x
   | None -> ""
@@ -977,18 +982,22 @@ and string_of_iparameters sym_table ps =
   )
 *)
 
-and string_of_basic_bparameters bsym_table ps : string =
-  catmap "," begin fun {pid=x; pkind=kind; pindex=i; ptyp=y} ->
-    Printf.sprintf "%s %s<%s>: %s"
-      (string_of_param_kind kind)
-      x
-      (string_of_bid i)
-      (string_of_btypecode (Some bsym_table) y)
-  end ps
+and string_of_bparameter bsym_table {pid=x; pkind=kind; pindex=i; ptyp=y} =
+  Printf.sprintf "%s %s<%s>: %s"
+    (string_of_param_kind kind)
+    x
+    (string_of_bid i)
+    (string_of_btypecode (Some bsym_table) y)
+
+and inner_string_of_basic_bparameters bsym_table ps : string =
+  match ps with 
+  | Satom p -> string_of_bparameter bsym_table p 
+  | Slist ps -> "(" ^ catmap ", " (inner_string_of_basic_bparameters bsym_table) ps ^ ")"
+
 
 and string_of_bparameters bsym_table ps : string =
   let ps, traint = ps in
-  string_of_basic_bparameters bsym_table ps
+  inner_string_of_basic_bparameters bsym_table ps
   ^
   (match traint with
   | Some x -> " where " ^ sbe bsym_table x
@@ -2018,11 +2027,7 @@ and string_of_symdef entry name vs =
     (
       TYP_effector
       (
-        (
-          match map (fun (sr,x,y,z,d) -> z) ps with
-          | [x] -> x
-          | x -> TYP_tuple x
-        ),
+        typeof_paramspec_t ps,
         effects , res
       )
     ) ^

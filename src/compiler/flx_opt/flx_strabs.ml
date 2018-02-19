@@ -260,7 +260,7 @@ let fixbexes bsym_table bexes =
   )
 
 let fixps bsym_table (ps,traint) =
-  List.map (fun p -> { p with ptyp=fixtype bsym_table p.ptyp }) ps,
+  Flx_bparams.xpmap (fun p -> { p with ptyp=fixtype bsym_table p.ptyp }) ps,
   (
   match traint with
   | None -> None

@@ -19,14 +19,14 @@ let report_subtypes syms =
       else
       let ps = fst params in
       begin match ps with
-      | [sr,kind,id,typ,initopt] -> () 
+      | Satom (sr,kind,id,typ,initopt) -> () 
 (*
          print_endline ("      " ^ string_of_typecode typ ^ " -> " 
          ^ string_of_typecode ret)
 *)
       | _ ->
          print_endline ("Improper subtype, only one parameter allowed, got " ^ 
-           string_of_int (List.length ps))
+           string_of_paramspec_t ps)
       end
       
     | SYMDEF_fun (props,ps,ret,_,_,_) when List.mem `Subtype props ->

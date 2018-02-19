@@ -2,6 +2,9 @@ open Flx_btype
 open Flx_bexpr
 open Flx_bid
 
+(* This module handles implicit subtyping coercions, see flx_coerce for the module
+that handles explicit user coercions!
+*)
 let debug = false
 
 exception Vfound (* for variants, Found already used elsewhere *)
@@ -45,7 +48,7 @@ let rec function_coercion new_table bsym_table counter parent remap ((srcx,srct)
    (* wrapper function *)
    let effects = Flx_btype.btyp_unit () in
    let param = {Flx_bparameter.pid=pname;pindex=pidx;pkind=`PVal;ptyp=rd} in
-   let params = [param], None in
+   let params = Flx_bparams.unit_bparams in
    let bbdcl = Flx_bbdcl.bbdcl_fun ([],[],params,rc,effects,exe) in
    let bsym = Flx_bsym.create ("_coerce" ^ string_of_int fidx) bbdcl in
    Flx_bsym_table.add new_table  fidx parent bsym;

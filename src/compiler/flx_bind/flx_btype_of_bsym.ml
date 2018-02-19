@@ -25,11 +25,6 @@ open Flx_bid
 
 (** Find the type of a bound symbol. *)
 let btype_of_bsym state bsym_table sr bt bid bsym =
-  (* Helper function to convert function parameters to a type. *)
-  let type_of_params params =
-    btyp_tuple (Flx_bparameter.get_btypes params)
-  in
-
   match Flx_bsym.bbdcl bsym with
   | BBDCL_label _ -> btyp_label ()
   | BBDCL_invalid -> assert false
@@ -38,12 +33,12 @@ let btype_of_bsym state bsym_table sr bt bid bsym =
   | BBDCL_module -> 
     clierrx "[flx_bind/flx_lookup.ml:1854: E106] " (Flx_bsym.sr bsym) ("Attempt to find type of module or library name " ^ Flx_bsym.id bsym)
 
-  | BBDCL_fun (_,_,(params,_),return_type,effects,_) ->
+  | BBDCL_fun (_,_,params,return_type,effects,_) ->
     begin match effects with
     | BTYP_tuple [] ->
-      btyp_function (type_of_params params, return_type)
+      btyp_function (Flx_bparams.get_btype params, return_type)
     | _ ->
-      btyp_effector (type_of_params params, effects, return_type)
+      btyp_effector (Flx_bparams.get_btype params, effects, return_type)
     end
   | BBDCL_val (_,t,_) -> t
   | BBDCL_newtype (_,t) -> t

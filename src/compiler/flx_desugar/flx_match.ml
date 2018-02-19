@@ -11,7 +11,7 @@ let generated = Flx_srcref.make_dummy "[flx_match] generated"
 let etup = EXPR_tuple (generated,[])
 
 let make_match_check sr rex_with_ret pat match_var_name match_var_index =
-  let params = [], None in
+  let params = Slist [], None in
   let match_expr = Flx_desugar_pat.gen_match_check pat (EXPR_index (sr,match_var_name, match_var_index)) in
   let stmts, e = rex_with_ret match_expr TYP_none in
   let asms = stmts @ [Exe (sr,EXE_fun_return e)] in
@@ -240,7 +240,7 @@ print_endline ("gen_match, rettype=" ^ string_of_typecode rettype);
         dfltvs,
         DCL_function
         (
-          ([],None),
+          (Slist [],None),
           rettype,
           Flx_typing.flx_unit,
           [`GeneratedInline;`Generated "desugar:match fun"],

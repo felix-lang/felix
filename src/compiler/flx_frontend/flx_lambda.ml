@@ -23,7 +23,7 @@ let add_wrapper_function new_table parent fidx pidx dt effects ct exes =
   (* wrapper function *)
   let effects = Flx_btype.btyp_unit () in
   let param = {Flx_bparameter.pid=pname;pindex=pidx;pkind=`PVar;ptyp=dt} in
-  let params = [param], None in
+  let params = Flx_ast.Satom param, None in
   let bbdcl = Flx_bbdcl.bbdcl_fun ([],[],params,ct,effects,exes) in
   let fname = "_lambda" ^ string_of_int fidx in
   let bsym = Flx_bsym.create fname bbdcl in

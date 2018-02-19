@@ -20,6 +20,12 @@ open Flx_spexes
 open Flx_args
 open Flx_bid
 
+(* make a procedure from a function by flattening the parameters and
+adding an extra pointer parameter at the end of the list, adjust suitable
+initialisations to call the procedure
+*)
+
+
 let ident x = x
 
 (* THIS CODE JUST COUNTS APPLICATIONS 
@@ -237,6 +243,8 @@ let mkproc_gen syms bsym_table =
             props, vs, ps, traint, ret, effects, exes
         | _ -> assert false
       in
+      (* flatten parameters *)
+      let ps = List.map fst (Flx_bparams.xget_prjs ps) in
 
       (* Save a dummy procedure that we'll update later. *)
       let bsym = Flx_bsym.create
@@ -256,7 +264,7 @@ let mkproc_gen syms bsym_table =
 
       let fixup vsc exesc =
         (* reparent all the children of i to k *)
-        let bids = Flx_bparameter.get_bids ps in
+        let bids = List.map (fun {pindex=i}->i) ps in
         let revariable =
           Flx_reparent.reparent_children syms
           ut bsym_table
@@ -329,6 +337,7 @@ let mkproc_gen syms bsym_table =
       let dv = bexpr_deref ret (bexpr_varname (btyp_pointer ret) (vix,ts)) in
       let exes = proc_exes syms bsym_table dv exes in
 
+      let ps = Flx_bparams.bparams_of_list ps in
       (* save the new procedure *)
       let bbdcl = bbdcl_fun (props,vs,(ps,traint),btyp_void (),effects,exes) in
       Flx_bsym_table.update_bbdcl bsym_table k bbdcl;

@@ -298,7 +298,9 @@ and pattern_t =
 and param_kind_t = [`PVal | `PVar | `POnce]
 and simple_parameter_t = Flx_id.t * typecode_t
 and parameter_t = Flx_srcref.t * param_kind_t * Flx_id.t * typecode_t * expr_t option
-
+and 'a sexpr_t = Satom  of 'a | Slist of 'a sexpr_t list
+and paramspec_t = parameter_t sexpr_t
+and params_t = paramspec_t * expr_t option (* second arg is a constraint *)
 and kind_parameter_t = Flx_id.t * kindcode_t
 
 and lvalue_t = [
@@ -409,7 +411,6 @@ and named_req_expr_t =
   | NREQ_false
 
 and prec_t = string
-and params_t = parameter_t list * expr_t option (* second arg is a constraint *)
 
 and ast_term_t =
   | Expression_term of expr_t
@@ -1029,4 +1030,15 @@ let dfltvs_aux =
 (** Define a default vs_list_t. *)
 let dfltvs : vs_list_t = [], dfltvs_aux
 
+let tuple_type ts = match ts with
+  | [t] -> t
+  | _ -> TYP_tuple ts
+
+let rec typeof_paramspec_t p = match p with
+  | Satom (sr,kind,name,typ,dflt) -> typ
+  | Slist ps -> tuple_type (List.map typeof_paramspec_t ps)
+
+let unit_params_t : params_t  = Slist [], None
+
+    
 

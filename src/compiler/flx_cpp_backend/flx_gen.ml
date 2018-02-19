@@ -204,11 +204,11 @@ let gen_functions syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_table 
        in Flx_bsym.id parent_bsym ^ "<" ^ string_of_int p ^ ">"
     in
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,(ps,traint),ret,effects,_) ->
+    | BBDCL_fun (props,vs,ps,ret,effects,_) ->
       let is_proc = match ret with | BTYP_void | BTYP_fix (0,_) -> true | _ -> false in
       let name = if is_proc then "PROCEDURE" else "FUNCTION" in
       bcat s ("\n//------------------------------\n");
-      let ft = btyp_effector (typeof_bparams ps,effects,ret) in
+      let ft = btyp_effector (Flx_bparams.get_btype ps,effects,ret) in
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
         bcat s ("//PURE C " ^ name ^ " <" ^ string_of_bid index ^ ">: " ^
           qualified_name_of_bindex bsym_table index ^ tss ^ " " ^ sbt bsym_table ft ^
@@ -322,9 +322,11 @@ let gen_dtor syms bsym_table name display ts =
 *)
 
 let unpack_args syms bsym_table shapes shape_table label_info index vs ts sr argtype bps params =
-  match bps with
-  | [] -> ""
-  | [{pindex=i}] ->
+  assert (ts = []);
+  let xps,_ = bps in
+  match xps with
+  | Flx_ast.Slist [] -> ""
+  | Flx_ast.Satom {pindex=i} ->
     if Hashtbl.mem syms.instances (i, ts)
     && not (argtype = btyp_tuple [] || argtype = btyp_void ())
     then
@@ -334,37 +336,43 @@ let unpack_args syms bsym_table shapes shape_table label_info index vs ts sr arg
     let ge' e : Flx_ctypes.cexpr_t = 
       Flx_egen.gen_expr' syms bsym_table shapes shape_table label_info index vs ts sr e 
     in
-    let counter = ref 0 in
-    List.fold_left begin fun s i ->
-      let n = !counter in incr counter;
-      if Hashtbl.mem syms.instances (i,ts)
-      then
-        if Flx_btype.islinear_type bsym_table argtype then begin
-(*
-print_endline ("Handling compact linear parameter");
-*)
-          let arg = bexpr_literal argtype {Flx_literal.felix_type="";internal_value=""; c_value="_arg"} in 
-          let component = match argtype with
-          | BTYP_array (v,idxt) -> 
-            let index = bexpr_const_case (n,idxt) in
-            Flx_ixgen.handle_get_n_array_clt syms bsym_table ge' index idxt v idxt argtype arg  
-          | BTYP_tuple ls -> 
-            let rt = List.nth ls n in
-            let dummy = arg in (* dont care doesn't seem to be used *)
-            Flx_ixgen.handle_get_n syms bsym_table ls rt ge' dummy argtype n arg
-          | _ -> assert false
-          in
-          let component = Flx_cexpr.string_of_cexpr component in
-          s ^ "  " ^ cpp_instance_name syms bsym_table i ts ^ " = " ^ component ^";\n"
-        end else let memexpr =
-          match argtype with
-          | BTYP_array _ -> ".data["^si n^"]"
-          | BTYP_tuple _ -> ".mem_"^ si n
+    let arg = bexpr_literal argtype {Flx_literal.felix_type="";internal_value=""; c_value="_arg"} in 
+
+    if Flx_btype.islinear_type bsym_table argtype then
+      let counter = ref 0 in
+      List.fold_left begin fun s i ->
+        let n = !counter in incr counter;
+        if Hashtbl.mem syms.instances (i,ts)
+        then
+            let component = match argtype with
+            | BTYP_array (v,idxt) -> 
+              let index = bexpr_const_case (n,idxt) in
+              Flx_ixgen.handle_get_n_array_clt syms bsym_table ge' index idxt v idxt argtype arg  
+            | BTYP_tuple ls -> 
+              let rt = List.nth ls n in
+              let dummy = arg in (* dont care doesn't seem to be used *)
+              Flx_ixgen.handle_get_n syms bsym_table ls rt ge' dummy argtype n arg
+            | _ -> assert false
+            in
+            let component = Flx_cexpr.string_of_cexpr component in
+            s ^ "  " ^ cpp_instance_name syms bsym_table i ts ^ " = " ^ component ^";\n"
+        else s (* elide initialisation of elided variable *)
+      end "" params
+    else (* not clt *)
+      let inits = List.map (fun ({pindex=pindex; ptyp=ptyp},prj) -> 
+        let init = 
+          match prj with
+          | None -> arg
+          | Some (_,BTYP_function (_,c) as prj) -> bexpr_apply c (prj,arg)
           | _ -> assert false
         in
-        s ^ "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg"^ memexpr ^";\n"
-      else s (* elide initialisation of elided variable *)
-    end "" params
+        let init = Flx_cexpr.string_of_cexpr (ge' init) in
+          "  " ^ cpp_instance_name syms bsym_table pindex ts ^ " = " ^ init ^ ";\n"
+      )
+      (Flx_bparams.get_prjs bps)
+      in
+      String.concat "" inits
+
 (* PROCEDURES are implemented by continuations.
    The constructor accepts the display vector to
    form the closure object. The call method accepts
@@ -407,7 +415,7 @@ let gen_function_methods filename syms bsym_table (
   );
   let cxx_name = cid_of_flxid (Flx_bsym.id bsym) in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(bps,traint),ret',effects,exes) ->
+  | BBDCL_fun (props,vs,bps,ret',effects,exes) ->
     let tailsr = Flx_bsym.sr bsym in
     if length ts <> length vs then
     failwith
@@ -417,7 +425,7 @@ let gen_function_methods filename syms bsym_table (
       ", got ts=" ^
       si (length ts)
     );
-    let argtype = typeof_bparams bps in
+    let argtype = Flx_bparams.get_btype bps in
     let argtype = rt vs argtype in
     let rt' vs t = beta_reduce "flx_gen3" syms.Flx_mtypes2.counter bsym_table (Flx_bsym.sr bsym) (tsubst sr vs ts t) in
     let ret = rt' vs ret' in
@@ -437,7 +445,7 @@ let gen_function_methods filename syms bsym_table (
       let funs = filter (fun (_,t) -> is_gc_pointer syms bsym_table (Flx_bsym.sr bsym) t) vars in
       gen_ctor syms bsym_table name display funs [] [] ts props
     in
-    let params = Flx_bparameter.get_bids bps in
+    let params = Flx_bparams.get_bids bps in
     let exe_string,needs_switch =
       try
         Flx_gen_exe.gen_exes filename cxx_name syms bsym_table shapes shape_table
@@ -533,8 +541,8 @@ let gen_procedure_methods filename syms bsym_table
   );
   let cxx_name = cid_of_flxid (Flx_bsym.id bsym) in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(bps,traint),BTYP_fix (0,_),effects,exes)
-  | BBDCL_fun (props,vs,(bps,traint),BTYP_void,effects,exes) ->
+  | BBDCL_fun (props,vs,bps,BTYP_fix (0,_),effects,exes)
+  | BBDCL_fun (props,vs,bps,BTYP_void,effects,exes) ->
     if length ts <> length vs then
     failwith
     (
@@ -548,7 +556,7 @@ let gen_procedure_methods filename syms bsym_table
     (*
     let heapable = not stackable or heapable in
     *)
-    let argtype = typeof_bparams bps in
+    let argtype = Flx_bparams.get_btype bps in
     let argtype = rt vs argtype in
     let funtype = Flx_fold.fold bsym_table syms.counter (btyp_function (argtype, btyp_void ())) in
 
@@ -566,8 +574,8 @@ let gen_procedure_methods filename syms bsym_table
     (*
     let dtor = gen_dtor syms bsym_table name display ts in
     *)
-    let ps = List.map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
-    let params = Flx_bparameter.get_bids bps in
+    let ps = List.map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) (Flx_bparams.get_params bps) in
+    let params = Flx_bparams.get_bids bps in
     let exe_string,needs_switch =
       Flx_gen_exe.gen_exes filename cxx_name syms bsym_table shapes shape_table display label_info counter index exes vs ts instance_no (stackable && not heapable)
 (*

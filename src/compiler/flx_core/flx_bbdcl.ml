@@ -213,13 +213,7 @@ let iter
    * it's type, it's just used to uniquely named the type variables, and has no
    * corresponding value number in the symbol table. *)
 
-  let f_ps (ps,traint) =
-    List.iter begin fun p ->
-      f_bid p.Flx_bparameter.pindex;
-      f_btype p.Flx_bparameter.ptyp
-    end ps;
-    match traint with Some e -> f_bexpr e | None -> ()
-  in
+  let f_ps ps = Flx_bparams.iter ~f_bid ~f_btype ps in
   let f_breqs =
     List.iter begin fun (bid,ts) ->
       f_bid bid;
@@ -299,14 +293,7 @@ let map
   ?(f_bexe=fun e -> e)
   bbdcl
 =
-  let f_ps (ps,e) =
-    List.map begin fun p ->
-      { p with
-        Flx_bparameter.pindex=f_bid p.Flx_bparameter.pindex;
-        ptyp=f_btype p.Flx_bparameter.ptyp }
-    end ps,
-    match e with Some e -> Some (f_bexpr e) | None -> None
-  in
+  let f_ps ps = Flx_bparams.map ~f_bid ~f_btype ps in
   let f_breqs =
     List.map begin fun (bid,ts) ->
       f_bid bid, List.map f_btype ts
@@ -396,12 +383,7 @@ let iter_uses f bbdcl =
   let f_btype = Flx_btype.flat_iter ~f_bid:f in
   let f_bexpr = Flx_bexpr.iter ~f_bid:f ~f_btype in
   let f_bexe = Flx_bexe.iter ~f_bid:f ~f_btype ~f_bexpr in
-  let f_ps (ps,traint) =
-    List.iter begin fun p ->
-      f_btype p.Flx_bparameter.ptyp
-    end ps;
-    match traint with Some e -> f_bexpr e | None -> ()
-  in
+  let f_ps ps = Flx_bparams.iter ~f_btype ~f_bexpr ps in
   let f_breqs =
     List.iter begin fun (bid,ts) ->
       List.iter f_btype ts

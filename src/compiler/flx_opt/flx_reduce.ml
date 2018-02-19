@@ -10,7 +10,7 @@ open Flx_types
 open Flx_unify
 open Flx_util
 open Flx_btype_subst
-
+(*
 let id x = x
 (*
 let remove_useless_reductions syms bsym_table reductions =
@@ -74,7 +74,7 @@ let rec ematchs syms bsym_table name reds e =
   | [] -> false,e
   | (bvs,bps,e1,e2) :: tail ->
     let tvars = map (fun (tvid, tvidx,_) -> tvidx) bvs in
-    let evars = Flx_bparameter.get_bids bps in
+    let evars = Flx_bparams.get_bids bps in
     let changed,e = ematch syms bsym_table name tvars evars e1 e2 e in
     if changed then changed,e else
     ematchs syms bsym_table name tail e
@@ -125,4 +125,9 @@ let reduce_all syms bsym_table =
      | _ -> ()
   )
   bsym_table
+*)
+
+(* temporary hack *)
+let reduce_exes syms bsym_table reductions exes = exes
+let reduce_all syms bsym_table = ()
 

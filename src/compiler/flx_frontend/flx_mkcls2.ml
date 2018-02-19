@@ -116,7 +116,7 @@ let gen_composite_closure_entry state bsym_table sr (f1,t1) (f2,t2) =
   in
 
   (* the function record *)
-  let bbdcl = bbdcl_fun ([],vs,([param],None),r2t,exes) in
+  let bbdcl = bbdcl_fun ([],vs,(Satom param,None),r2t,exes) in
 
   (* the complete symbol *)
   let bsym = Flx_bsym.create ~sr:sr ("_a" ^ string_of_int closure_bid ) (bbdcl) in
@@ -219,7 +219,7 @@ end;
         in
 
         let props = if List.mem `Generator props then [`Generator] else [] in
-        let bbdcl = bbdcl_fun (props,[],([param],None),ret,noeffects,exes) in
+        let bbdcl = bbdcl_fun (props,[],(Satom param,None),ret,noeffects,exes) in
         Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
         bexpr_closure t (closure_bid, [])
 
@@ -243,7 +243,7 @@ end;
            let e = bexpr_apply_struct ret (i, ts, arg) in
            [ bexe_fun_return (fsr, e) ]
         in
-        let bbdcl = bbdcl_fun ([],[],([param],None),ret,noeffects,exes) in
+        let bbdcl = bbdcl_fun ([],[],(Satom param,None),ret,noeffects,exes) in
         Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
 (*
 print_endline ("Struct ctor wrapper: constructor type = " ^ sbt bsym_table t);
@@ -272,7 +272,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
            [ bexe_fun_return (fsr, e) ]
         in
 
-        let bbdcl = bbdcl_fun ([],[],([param],None),ret,noeffects,exes) in
+        let bbdcl = bbdcl_fun ([],[],(Satom param,None),ret,noeffects,exes) in
         Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
         bexpr_closure t (closure_bid, [])
 
@@ -296,7 +296,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
            [ bexe_fun_return (fsr, e) ]
         in
 
-        let bbdcl = bbdcl_fun ([],[],([param],None),ret,noeffects,exes) in
+        let bbdcl = bbdcl_fun ([],[],(Satom param,None),ret,noeffects,exes) in
         Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
         bexpr_closure t (closure_bid, [])
 
@@ -335,7 +335,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
        [ bexe_fun_return (sr, e) ]
     in
 
-    let bbdcl = bbdcl_fun ([],[],([param],None),cod1,noeffects,exes) in
+    let bbdcl = bbdcl_fun ([],[],(Satom param,None),cod1,noeffects,exes) in
     Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
     bexpr_closure t (closure_bid, [])
 
@@ -370,7 +370,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
        [ bexe_fun_return (sr, e) ]
     in
 
-    let bbdcl = bbdcl_fun ([],[],([param],None),fcodomain,noeffects,exes) in
+    let bbdcl = bbdcl_fun ([],[],(Satom param,None),fcodomain,noeffects,exes) in
     Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
     bexpr_closure t (closure_bid, [])
 
@@ -392,7 +392,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
        [ bexe_fun_return (sr, e) ]
     in
 
-    let bbdcl = bbdcl_fun ([],[],([param],None),c,noeffects,exes) in
+    let bbdcl = bbdcl_fun ([],[],(Satom param,None),c,noeffects,exes) in
     Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
     bexpr_closure t (closure_bid, [])
 
@@ -414,7 +414,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
        [ bexe_fun_return (sr, e) ]
     in
 
-    let bbdcl = bbdcl_fun ([],[],([param],None),c,noeffects,exes) in
+    let bbdcl = bbdcl_fun ([],[],(Satom param,None),c,noeffects,exes) in
     Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
     bexpr_closure t (closure_bid, [])
 
@@ -435,7 +435,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
        [ bexe_fun_return (sr, e) ]
     in
 
-    let bbdcl = bbdcl_fun ([],[],([param],None),c,noeffects,exes) in
+    let bbdcl = bbdcl_fun ([],[],(Satom param,None),c,noeffects,exes) in
     Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
     bexpr_closure t (closure_bid, [])
 
@@ -452,7 +452,7 @@ print_endline ("[flx_mkcls2] Generating identity for " ^ sbt bsym_table t);
 
     let param, arg = make_inner_function state nutab closure_bid sr [] [] [t] in
     let exes = [bexe_fun_return (sr,arg) ] in
-    let bbdcl = bbdcl_fun ([],[],([param],None),t,noeffects,exes) in
+    let bbdcl = bbdcl_fun ([],[],(Satom param,None),t,noeffects,exes) in
     Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
 
     bexpr_closure ft (closure_bid, [])

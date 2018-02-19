@@ -27,7 +27,7 @@ let inline_tail_apply syms uses bsym_table caller callee a =
   assert (callee <> caller);
   let bsym = Flx_bsym_table.find bsym_table callee in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
+  | BBDCL_fun (props,vs,ps,ret,effects,exes) ->
     assert (vs=[]);
     (*
     let id2,_,_,_ = hfind "inline-tail[function]" bsym_table caller in

@@ -28,13 +28,14 @@ type submode_t = [`Eager | `Lazy]
   won't cause the test to return a false positive
 *)
 
+(* FIXME: doesn't count usage of parameter constraint! *)
 let recal_exes_usage uses sr i ps exes =
   (*
   print_endline ("Recal usage of "^ si i^", this code:\n" ^ catmap "\n" (sbx sym_table) exes);
   *)
   (* delete old entry *)
   (try Hashtbl.remove uses i with Not_found -> ());
-  iter (Flx_call.cal_param_usage uses sr i) ps;
+  Flx_bparams.piter (Flx_call.cal_param_usage uses sr i) ps;
   iter (Flx_call.cal_exe_usage uses i) exes
 
 let is_tailed ps exes =
@@ -115,7 +116,7 @@ let gen_body syms uses bsym_table id
   (*
   let argument = Flx_bexpr.reduce bsym_table argument in
   *)
-  let psis = Flx_bparameter.get_bids ps in
+  let psis = Flx_bparams.get_bids ps in
 
   (* NOTE: this is the inline method for val's ONLY.
     If a parameter is a var, it is inlined eagerly no
@@ -172,16 +173,7 @@ let gen_body syms uses bsym_table id
   iter (fun x -> print_endline (string_of_bexe bsym_table 0 x)) exes;
   end
   ;
-  let paramtype  =
-    let pt =
-      let pts = Flx_bparameter.get_btypes ps in
-      match pts with
-      | [x] -> x
-      | x -> btyp_tuple x
-    in
-      pt
-  in
-
+  let paramtype  = Flx_bparams.get_btype ps in
   let ge e = 
 (*
      print_endline ("Remap expr " ^ sbe bsym_table e);
@@ -402,44 +394,26 @@ let gen_body syms uses bsym_table id
     end else if inline_method = `Lazy then begin
     *)
     let argmap = Hashtbl.create 97 in
-    begin match ps with
+    let pprjs = Flx_bparams.get_prjs ps in
+    begin match pprjs with
     | [] -> ()
-    | [{pkind=kind; ptyp=typ; pindex=k}] ->
+    | [{pkind=kind; ptyp=typ; pindex=k},_] ->
       let index = revar k in
       handle_arg b argmap index argument typ kind
-    | _ ->
+    | pss ->
       (* create a variable for the parameter *)
       let parameter = fresh_bid syms.counter in
       let param_id = "_p" ^ string_of_bid parameter in
-      (*
-      print_endline ("Parameter assigned index " ^ si parameter);
-      *)
-
-      let n = ref 0 in
-      let k = List.length ps in
-      iter
-      (fun {pkind=kind; pid=vid; pindex=ix; ptyp=prjt} ->
-        let pj =
-          match argument with
-          (* THIS CASE MAY NOT WORK WITH TAIL REC OPT! *)
-          | BEXPR_tuple ls,_ ->
-            begin try nth ls (!n)
-            with _ ->
-                failwith (
-                  "[gen_body2] Woops, prj "^si (!n) ^" tuple wrong length? " ^ si (length ls)
-                )
-            end
-          | p -> bexpr_get_n prjt (!n) p
-        in
-        (*
-        let prj = Flx_bexpr.reduce bsym_table pj in
-        *)
-        let prj = pj in
-        let index = revar ix in
-        handle_arg b argmap index prj prjt kind;
-        incr n
+      List.iter
+      (fun ({pkind=kind; pid=vid; pindex=ix; ptyp=ctyp},pj) ->
+        match pj with 
+        | Some pj ->
+          let component = bexpr_apply ctyp (pj,argument) in
+          let index = revar ix in
+          handle_arg b argmap index component ctyp kind;
+        | None -> assert false
       )
-      ps
+      pss
     end
     ;
     (*
@@ -484,10 +458,10 @@ let gen_body syms uses bsym_table id
       BidSet.iter begin fun i ->
         let bsym = Flx_bsym_table.find bsym_table i in
         match Flx_bsym.bbdcl bsym with
-        | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
+        | BBDCL_fun (props,vs,ps,ret,effects,exes) ->
             let exes = map (subarg syms bsym_table argmap) exes in
             recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-            let bbdcl = bbdcl_fun (props,vs,(ps,traint),ret,effects,exes) in
+            let bbdcl = bbdcl_fun (props,vs,ps,ret,effects,exes) in
             Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 
         | _ -> ()

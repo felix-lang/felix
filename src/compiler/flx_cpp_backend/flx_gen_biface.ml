@@ -34,7 +34,7 @@ let gen_fun_header syms bsym_table kind index export_name modulename =
         failwith ("[gen_biface_header] Can't find index " ^ string_of_bid index)
     in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,(ps,traint),ret,effects,_) ->
+    | BBDCL_fun (props,vs,ps,ret,effects,_) ->
       let display = get_display_list bsym_table index in
       if length display <> 0
       then clierrx "[flx_cpp_backend/flx_gen_biface.ml:40: E290] " (Flx_bsym.sr bsym) ("Can't export nested function " ^ export_name);
@@ -42,12 +42,12 @@ let gen_fun_header syms bsym_table kind index export_name modulename =
       let arglist =
         List.map
         (fun {ptyp=t} -> cpp_typename syms bsym_table t)
-        ps
+        (Flx_bparams.get_params ps)
       in
       let arglist = "  " ^
         match kind with 
         | `Fun -> 
-           (if length ps = 0 then "FLX_FPAR_DECL_ONLY"
+           (if length arglist = 0 then "FLX_FPAR_DECL_ONLY"
            else "FLX_FPAR_DECL\n" ^ cat ",\n  " arglist
            )
         | `Cfun -> cat ",\n  " arglist
@@ -121,7 +121,7 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
     in
     let sr = Flx_bsym.sr bsym in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,(ps,traint),BTYP_void,effects,_) ->
+    | BBDCL_fun (props,vs,ps,BTYP_void,effects,_) ->
       if length vs <> 0
       then clierrx "[flx_cpp_backend/flx_gen_biface.ml:126: E291] " sr ("Can't export generic procedure " ^ Flx_bsym.id bsym)
       ;
@@ -135,14 +135,14 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
         with _ -> args
         )
         []
-        ps)
+        (Flx_bparams.get_params ps))
       in
       let params =
         List.map
         (fun {ptyp=t; pindex=pidx; pid=name} ->
           cpp_typename syms bsym_table t ^ " " ^ name
         )
-        ps
+        (Flx_bparams.get_params ps)
       in
       let strparams = "  " ^
         match kind with
@@ -155,20 +155,20 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
       let class_name = cpp_instance_name syms bsym_table index [] in
       let strargs =
         let ge = gen_expr syms bsym_table shapes shape_map label_map index [] [] in
-        match ps with
+        match Flx_bparams.get_params ps with
         | [] -> "0"
         | [{ptyp=t; pid=name; pindex=idx}] -> "0" ^ ", " ^ name
         | _ ->
           let a =
             let counter = ref 0 in
             bexpr_tuple
-              (btyp_tuple (Flx_bparameter.get_btypes ps))
+              (btyp_tuple (Flx_bparams.get_btypes ps))
               (
                 List.map
                 (fun {ptyp=t; pid=name; pindex=idx} ->
                   bexpr_expr (Flx_code_spec.Str name,t,bexpr_unit)
                 )
-                ps
+                (Flx_bparams.get_params ps)
               )
           in
           "0" ^ ", " ^ ge sr a
@@ -206,7 +206,7 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
             else ""
           )
           ^
-          cat ", " (Flx_bparameter.get_names args) ^ ");\n" ^
+          catmap  ", " (fun {pid=id}->id) args ^ ");\n" ^
           "  return 0;\n"
 
         | `Stack_call ->
@@ -233,7 +233,7 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
       ^
       "}\n"
 
-    | BBDCL_fun (props,vs,(ps,traint),ret,effects,_) ->
+    | BBDCL_fun (props,vs,ps,ret,effects,_) ->
       if length vs <> 0
       then clierrx "[flx_cpp_backend/flx_gen_biface.ml:238: E296] " (Flx_bsym.sr bsym) ("Can't export generic function " ^ Flx_bsym.id bsym)
       ;
@@ -243,12 +243,12 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
       let arglist =
         List.map
         (fun {ptyp=t; pid=name} -> cpp_typename syms bsym_table t ^ " " ^ name)
-        ps
+        (Flx_bparams.get_params ps)
       in
       let arglist = "  " ^
         match kind with
         | `Fun ->
-          (if length ps = 0 then "FLX_FPAR_DECL_ONLY"
+          (if length arglist = 0 then "FLX_FPAR_DECL_ONLY"
           else "FLX_FPAR_DECL\n  " ^ cat ",\n  " arglist
           )
         | `Cfun ->  cat ",\n " arglist
@@ -274,22 +274,24 @@ print_endline ("Export " ^ export_name ^ " properties " ^ string_of_properties p
       let rettypename = cpp_typename syms bsym_table ret in
       let class_name = cpp_instance_name syms bsym_table index [] in
       let ge = gen_expr syms bsym_table shapes shape_map label_map index [] [] in
-      let args = match ps with
-      | [] -> ""
-      | [{pid=name}] -> name
-      | _ ->
-          let a =
-            let counter = ref 0 in
+
+      let args =
+        match fst ps with
+        | Flx_ast.Slist [] -> "" (* should only occur at top level *)
+        | Flx_ast.Satom {pid=name;ptyp=t} -> name
+        | _ -> 
+          (* this mess is because (a,(b,c)) for example isn't a tuple in C,
+             so to call the Felix function "as if" the above were a tuple
+             we have to construct an actual tuple
+          *)
+          let rec aux ps = match ps with
+          | Flx_ast.Satom {pid=name;ptyp=t} -> bexpr_expr (Flx_code_spec.Str name,t, bexpr_unit)
+          | Flx_ast.Slist pss  ->
             bexpr_tuple
-              (btyp_tuple (Flx_bparameter.get_btypes ps))
-              (
-                List.map
-                (fun {ptyp=t; pid=name; pindex=idx} ->
-                  bexpr_expr (Flx_code_spec.Str name,t, bexpr_unit)
-                )
-                ps
-              )
+              (Flx_bparams.xget_btype ps)
+              (List.map aux pss)
           in
+          let a = aux (fst ps) in
           ge sr a
       in
 
@@ -299,9 +301,10 @@ print_endline ("Export " ^ export_name ^ " properties " ^ string_of_properties p
       rettypename ^" " ^ export_name ^ "(\n" ^ arglist ^ "\n){\n" ^
       begin match call_method with
       | `C_call -> 
+        let names = Flx_bparams.get_names ps in
         "  return " ^ class_name ^ "("^
-        (if requires_ptf then "_PTFV"^(if List.length ps > 0 then ", " else "") else "") ^
-        cat ", " (Flx_bparameter.get_names ps) ^ ");\n"
+        (if requires_ptf then "_PTFV"^(if List.length names > 0 then ", " else "") else "") ^
+        cat ", " names ^ ");\n"
 
       | `Stack_call ->
         "  return " ^ class_name ^ "("^
@@ -343,12 +346,14 @@ let gen_felix_binding syms bsym_table kind index export_name modulename =
       failwith ("[gen_biface_header] Can't find index " ^ string_of_bid index)
   in
   begin match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(ps,traint),ret,effects,_) ->
+  | BBDCL_fun (props,vs,origps,ret,effects,_) ->
     let display = get_display_list bsym_table index in
     if length display <> 0
     then clierrx "[flx_cpp_backend/flx_gen_biface.ml:349: E299] " (Flx_bsym.sr bsym) ("Can't export nested function " ^ export_name);
 
     (* THIS BIT FOR DOCO ONLY *)
+    (* FIXME: HACK, probably not right, just get it to compile *)
+    let ps = Flx_bparams.get_params origps in 
     let n = List.length ps in
     let fkind, rettypename =
       match ret with

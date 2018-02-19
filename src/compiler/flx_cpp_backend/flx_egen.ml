@@ -811,7 +811,7 @@ print_endline ("Apply direct ");
     print_endline ("  .. argument is " ^ sbe bsym_table a);
     *)
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,_,_,_,_,_) ->
+    | BBDCL_fun (props,_,ps,_,_,_) ->
       (*
       print_endline ("Generating closure[apply direct] of " ^ si index);
       *)
@@ -826,32 +826,20 @@ print_endline ("Apply direct ");
           else d'
       in
       let name = cpp_instance_name syms bsym_table index ts in
+      (* C function modelling Felix function, one C parameter per 
+         component in parameter s-expr
+      *)
       if mem `Cfun props
-      then begin (* this is probably wrong because it doesn't split arguments up *)
-        let d = snd a in
-        match d with
-        | BTYP_tuple ts ->
-          begin match a with
-          | BEXPR_tuple xs,_ ->
-            let s = String.concat ", " (List.map (fun x -> ge x) xs) in
-            ce_atom ( name ^"(" ^ s ^ ")")
-          | _ ->
-           failwith "[flx_egen][tuple] can't split up arg to C function yet"
-          end
-        | BTYP_array (t,BTYP_unitsum n) ->
-          let ts = 
-           let rec aux ts n = if n = 0 then ts else aux (t::ts) (n-1) in
-           aux [] n
-          in
-          begin match a with
-          | BEXPR_tuple xs,_ ->
-            let s = String.concat ", " (List.map (fun x -> ge x) xs) in
-            ce_atom ( name ^"(" ^ s ^ ")")
-          | _ ->
-            failwith "[flx_egen][array] can't split up arg to C function yet"
-          end
-        | _ ->
-          ce_call (ce_atom name) [ce_atom (ge_arg a)]
+      then begin 
+        let prjs = Flx_bparams.get_prjs ps in
+        let args = List.map (fun (_,prj) -> match prj with
+          | None -> a
+          | Some ((_,BTYP_function (_,c)) as prj) -> bexpr_apply c (prj,a) 
+          | _ -> assert false
+          ) prjs
+        in
+        let s = String.concat ", " (List.map (fun x -> ge x) args) in
+        ce_atom ( name ^"(" ^ s ^ ")")
       end else
         ce_atom (
         "(FLX_NEWP("^name^")"^ Flx_gen_display.strd the_display props ^")"^
@@ -884,24 +872,20 @@ print_endline ("Apply stack");
     in
     begin
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,(ps,traint),retyp,effects,_) ->
+    | BBDCL_fun (props,vs,ps,retyp,effects,_) ->
       let display = get_display_list bsym_table index in
       let name = cpp_instance_name syms bsym_table index ts in
-      (* C FUNCTION CALL *)
+      (* C FUNCTION modelliung Felix function, one C param per s-expr component *)
       if mem `Pure props && not (mem `Heap_closure props) then
       begin
-        let s =
-          assert (length display = 0);
-          match ps with
-          | [] -> ""
-          | [{pindex=ix; ptyp=t}] ->
-            if Hashtbl.mem syms.instances (ix,ts)
-            then ge_arg a
-            else ""
-
-          | _ ->
-            ge_carg ps ts vs a
+        let prjs = Flx_bparams.get_prjs ps in
+        let args = List.map (fun (_,prj) -> match prj with
+          | None -> a
+          | Some ((_,BTYP_function (_,c)) as prj) -> bexpr_apply c (prj,a) 
+          | _ -> assert false
+          ) prjs
         in
+        let s = String.concat "," (List.map (fun x -> ge x) args) in
         let s =
           if mem `Requires_ptf props then
             if String.length s > 0 then "FLX_FPAR_PASS " ^ s
@@ -1381,7 +1365,7 @@ end
         end
 
       (* | BBDCL_fun (_,_,([s,(_,BTYP_void)],_),_,[BEXE_fun_return e]) -> *)
-      | BBDCL_fun (_,_,([],_),_,_,[BEXE_fun_return (_,e)]) ->
+      | BBDCL_fun (_,_,(Slist [],_),_,_,[BEXE_fun_return (_,e)]) ->
         ge' e
 
       | BBDCL_cstruct _

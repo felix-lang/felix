@@ -43,14 +43,8 @@ let remap_bbdcl offset bbdcl =
   let remap_tbexpr = remap_tbexpr offset in
   let remap_bexe = remap_bexe offset in
   let remap_bvs = List.map (fun (n, i, mt) -> n, remap_bid i,mt) in
-  let remap_bparameter bpar =
-    { bpar with
-      pindex = remap_bid bpar.pindex;
-      ptyp = remap_btype bpar.ptyp }
-  in
-  let remap_bparams (bparameters, e) =
-    let e = match e with None -> None | Some t -> Some (remap_tbexpr t) in
-    (List.map remap_bparameter bparameters), e
+  let remap_bparams bpar = 
+    Flx_bparams.map ~f_bid:remap_bid ~f_btype:remap_btype ~f_bexpr:remap_tbexpr bpar 
   in
   let remap_breqs breqs =
     List.map (fun (i, ts) -> remap_bid i, List.map remap_btype ts) breqs

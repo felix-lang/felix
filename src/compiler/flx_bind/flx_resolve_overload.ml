@@ -47,10 +47,12 @@ print_endline ("New private name map = " ^ string_of_name_map nuprivmap);
         match symdef with
         | SYMDEF_function (params,rett,effects,props,sexes) -> 
           let paramlist, ptraint = params in
-          let nuparamlist = List.map (fun (sr,pkind,pname,ptyp,pinitopt) -> 
-            sr,pkind,pname,ft ptyp, pinitopt (* HACK *)) 
-            paramlist
+          let rec map ps = match ps with
+          | Satom  (sr,pkind,pname,ptyp,pinitopt) -> 
+            Satom (sr,pkind,pname,ft ptyp, pinitopt (* HACK *))
+          | Slist pss -> Slist (List.map map pss)
           in
+          let nuparamlist = map paramlist in
           let nuptraint = match ptraint with | None -> None | Some e -> Some (fe e) in
           let nuparams = nuparamlist, nuptraint in
 (*

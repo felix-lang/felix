@@ -102,7 +102,7 @@ let locals bsym_table uses i =
 
 let fold_vars syms bsym_table uses i ps exes : Flx_bexe.t list = 
   if not syms.compiler_options.optimise then exes else 
-  let pset = fold_left (fun s {pindex=i}-> BidSet.add i s) BidSet.empty ps in
+  let pset = fold_left (fun s i -> BidSet.add i s) BidSet.empty (Flx_bparams.get_bids ps) in
   let kids = Flx_bsym_table.find_children bsym_table i in
 
   let bsym = Flx_bsym_table.find bsym_table i in

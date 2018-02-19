@@ -122,7 +122,7 @@ let rec heavy_inline_calls
       print_endline ("CALL DIRECT " ^ id ^ "<"^ si callee^">");
       *)
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (props,vs,(ps,traint),BTYP_void,effects,exes) ->
+      | BBDCL_fun (props,vs,ps,BTYP_void,effects,exes) ->
         assert (vs = []);
         if Flx_inline_check.inline_check syms bsym_table uses sr caller callee props exes then
         begin
@@ -136,7 +136,7 @@ let rec heavy_inline_calls
             argument
             (Flx_bsym.id bsym)
             sr
-            (props,vs,(ps,traint),exes)
+            (props,vs,ps,exes)
           in
           let xs = hic revariable callee xs in
           exes' := rev xs @ !exes'
@@ -166,7 +166,7 @@ let rec heavy_inline_calls
       inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
+      | BBDCL_fun (props,vs,ps,ret,effects,exes) ->
         assert (vs=[]);
         if Flx_inline_check.inline_check syms bsym_table uses sr caller callee props exes then
         begin
@@ -195,7 +195,7 @@ print_endline "init apply closure/direct";
       inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
+      | BBDCL_fun (props,vs,ps,ret,effects,exes) ->
         if Flx_inline_check.inline_check syms bsym_table uses sr caller callee props exes then
           begin
             let bsymv = Flx_bsym_table.find bsym_table i in
@@ -237,7 +237,7 @@ print_endline "return apply/closure/direct";
       inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
+      | BBDCL_fun (props,vs,ps,ret,effects,exes) ->
         assert (vs=[]);
         if Flx_inline_check.inline_check syms bsym_table uses sr caller callee props exes then
         begin

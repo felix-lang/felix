@@ -28,7 +28,7 @@ let inline_function syms uses bsym_table caller callee a varindex =
   *)
   let bsym = Flx_bsym_table.find bsym_table callee in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
+  | BBDCL_fun (props,vs,ps,ret,effects,exes) ->
     (*
     print_endline
     (

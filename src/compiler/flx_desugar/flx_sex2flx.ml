@@ -529,11 +529,23 @@ and xparameter_t sr def_val x : parameter_t =
     sr, xpk pk, xid id, ti t, opt "dflt_arg" ex e
   | x -> err x "parameter_t"
 
+
+(* Temporarily, the parser isn't being upgraded to handle nested paramspecs,
+   first get the unbound term handling to work!
+*)
+and xparamspec_t sr def_val ps : paramspec_t = 
+  let xpa x = xparameter_t sr def_val x in
+  match ps with
+  | [p] -> Satom  (xpa p)
+  | _ -> Slist (map (fun p -> Satom (xpa p)) ps)
+
+(* Temporarily, the parser isn't being upgraded to handle nested paramspecs,
+   first get the unbound term handling to work!
+*)
 and xparams_t def_val sr x : params_t =
   let ex x = xexpr_t sr x in
-  let xpa x = xparameter_t sr def_val x in
   match x with
-  | Lst [Lst ps; eo] -> map xpa ps, opt "params" ex eo
+  | Lst [Lst ps; eo] -> xparamspec_t sr def_val ps, opt "params" ex eo
   | x -> err x "params_t"
 
 and xret_t sr x : typecode_t * expr_t option =

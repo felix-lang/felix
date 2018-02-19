@@ -97,7 +97,7 @@ assert false
 (*
 print_endline ("** BEGIN ** Calculating Function type for function " ^ sym.Flx_sym.id ^ " index "^si index);
 *)
-      let pts = List.map (fun (sr,_,_,t,_) -> t) ps in
+      let ptyp = typeof_paramspec_t ps in
 
       (* Calculate the return type. *)
       let rt =
@@ -133,7 +133,7 @@ print_endline ("** END **** Abnormal Exit Function type for function " ^ sym.Flx
           )))
       end;
 
-      let d = bt sym.Flx_sym.sr (type_of_list pts) in
+      let d = bt sym.Flx_sym.sr ptyp in
       let e = bt sym.Flx_sym.sr effects in
       let ft = 
         if List.mem `Cfun props

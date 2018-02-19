@@ -707,7 +707,19 @@ let bexpr_expr (s, t, e) =
 
 let bexpr_range_check t (e1, e2, e3) = BEXPR_range_check (e1, e2, e3), complete_check "bexpr_range_check" t
 
-let bexpr_compose t (e1, e2) = BEXPR_compose (e1, e2), complete_check "bexpr_compose" t
+(* STANDARD FORWARD COMPOSITION! e2 is applied first! e1 (e2 x) *)
+let bexpr_compose t (_,ft1 as e1, (_,ft2 as e2)) = 
+  begin match t,ft1,ft2 with 
+  | Flx_btype.BTYP_function (d,c), Flx_btype.BTYP_function (d1,c1), Flx_btype.BTYP_function (d2,c2) ->
+    if not (d=d2 && c=c1 && c2=d1)  (* should be using type equality check *)
+    then print_endline ("Domain/codomain mismatch in composition (fix diag if we get this one)") 
+  | _ -> print_endline ("Invalid types in composition, expected functions (fix diag if we get this one)")
+  end;
+  BEXPR_compose (e1, e2), complete_check "bexpr_compose" t
+
+
+(* REVERSE COMPOSITION: x.e1.e2 *)
+let bexpr_revcompose t (e1, e2) = bexpr_compose t (e2, e1) 
 
 let bexpr_unitsum_case i j =
   let case_type = Flx_btype.btyp_unitsum j in

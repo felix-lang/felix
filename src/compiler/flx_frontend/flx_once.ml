@@ -657,7 +657,7 @@ let once_check bsym_table ix2chain chain2ix  bid name  bexes =
      assumed live initially
   *)
   let bparams = Flx_bsym_table.find_bparams bsym_table bid in 
-  let bids = Flx_bparameter.get_bids (fst bparams) in
+  let bids = Flx_bparams.get_bids bparams in
   let entries = List.fold_left (fun acc bid -> acc @ find_entries bsym_table chain2ix bid) [] bids in
   let ixs = List.map snd entries in
   let once_params = BidSet.of_list ixs in

@@ -30,11 +30,11 @@ let rec heavily_inline_bbdcl syms uses bsym_table excludes i =
   in
   match bsym with None -> () | Some bsym ->
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
+  | BBDCL_fun (props,vs,ps,ret,effects,exes) ->
     assert (vs=[]);
     if not (mem `Inlining_started props) then begin
       let props = `Inlining_started :: props in
-      let bbdcl = bbdcl_fun (props,[],(ps,traint),ret,effects, exes) in
+      let bbdcl = bbdcl_fun (props,[],ps,ret,effects, exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       (* inline into all children first *)
       let children = Flx_bsym_table.find_children bsym_table i in
@@ -103,7 +103,7 @@ let rec heavily_inline_bbdcl syms uses bsym_table excludes i =
       let exes = List.map Flx_bexe.reduce exes in
 *)
       let props = `Inlining_complete :: props in
-      let bbdcl = bbdcl_fun (props,[],(ps,traint),ret,effects, exes) in
+      let bbdcl = bbdcl_fun (props,[],ps,ret,effects, exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       Flx_remove_unused_children.remove_unused_children syms uses bsym_table i;

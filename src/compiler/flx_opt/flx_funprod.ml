@@ -106,8 +106,7 @@ print_endline " .. Calculate function product";
 *)
     let re = Flx_bexpr.bexpr_tuple ct appls in (* product codomain type *)
     let exe = Flx_bexe.bexe_fun_return (sr,re) in 
-    let params = [{Flx_bparameter.pid="_a"; pindex=pindex; pkind=`PVar;ptyp=dt}] in
-    let params = params,None in 
+    let params = Flx_ast.Satom {Flx_bparameter.pid="_a"; pindex=pindex; pkind=`PVar;ptyp=dt},None in
     let props = [`Generated "funprod"] in
     let bbdcl = Flx_bbdcl.bbdcl_fun (props,[],params, ct,noeffects,[exe]) in 
     let bsym = Flx_bsym.create "funprod" bbdcl in

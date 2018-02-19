@@ -96,7 +96,7 @@ print_endline ("Unbound type = " ^ string_of_typecode ubt);
 *)
       let p1 = sr,`PVal,"_a",ubt,None in
       let p2 = sr,`PVal,"_b",ubt,None in
-      let params = [p1;p2], None in 
+      let params = Slist [Satom p1; Satom p2], None in 
       let typecode = TYP_unitsum 2 in
       let properties = [] in
       let asms = [Exe (sr,EXE_fun_return retexpr)] in

@@ -157,7 +157,7 @@ print_endline ("  ** generated instructions for transducer");
 print_endline ("  ** added read variable to symbol table " ^ string_of_int read_var_index);
 *)
             (* add inner procedure to symbol table, type 1->0 *)
-            let inner_proc_bbdcl = Flx_bbdcl.bbdcl_fun (props, bvs, ([], None), btyp_void (), effects, exes) in
+            let inner_proc_bbdcl = Flx_bbdcl.bbdcl_fun (props, bvs, Flx_bparams.unit_bparams, btyp_void (), effects, exes) in
             let inner_proc_bsym = Flx_bsym.create ~sr inner_proc_name inner_proc_bbdcl in
             Flx_bsym_table.add bsym_table inner_proc_index (Some outer_fun_index) inner_proc_bsym;
 (*
@@ -172,7 +172,7 @@ print_endline ("  ** added parameter to symbol table " ^ string_of_int param_ind
 *)
             (* add outer function to symbol table, type params -> (1->0) *)
             let outer_fun_exes = [bexe_fun_return (sr, bexpr_closure unit_proc_type (inner_proc_index,ts))] in
-            let outer_fun_bbdcl = Flx_bbdcl.bbdcl_fun (props, bvs, ([param], None), unit_proc_type, effects, outer_fun_exes) in
+            let outer_fun_bbdcl = Flx_bbdcl.bbdcl_fun (props, bvs, (Satom param, None), unit_proc_type, effects, outer_fun_exes) in
             let outer_fun_bsym = Flx_bsym.create ~sr outer_fun_name outer_fun_bbdcl in
             Flx_bsym_table.add bsym_table outer_fun_index None outer_fun_bsym;
 (*
@@ -203,7 +203,7 @@ print_endline ("Generate master procedure spawns");
 print_endline ("Exes =\n" ^ String.concat "\n" (List.map (Flx_print.string_of_bexe bsym_table 1) super_proc_exes));
 *)
           (* add super procedure to symbol table, type 1->0 *)
-          let super_proc_bbdcl = Flx_bbdcl.bbdcl_fun (props, bvs, ([], None), btyp_void (), effects, super_proc_exes) in
+          let super_proc_bbdcl = Flx_bbdcl.bbdcl_fun (props, bvs, Flx_bparams.unit_bparams, btyp_void (), effects, super_proc_exes) in
           let super_proc_bsym = Flx_bsym.create ~sr super_proc_name super_proc_bbdcl in
           Flx_bsym_table.add bsym_table super_proc_index (Some super_fun_index) super_proc_bsym;
 
@@ -215,7 +215,7 @@ print_endline ("Exes =\n" ^ String.concat "\n" (List.map (Flx_print.string_of_be
           (* add super function to symbol table, type params -> (1->0) *)
           let super_fun_exes = [bexe_fun_return (sr, bexpr_closure unit_proc_type (super_proc_index,ts))] in
           let super_fun_ret = btyp_function (super_param_type, unit_proc_type) in
-          let super_fun_bbdcl = Flx_bbdcl.bbdcl_fun (props, bvs, ([super_param], None), unit_proc_type, effects, super_fun_exes) in
+          let super_fun_bbdcl = Flx_bbdcl.bbdcl_fun (props, bvs, (Satom super_param, None), unit_proc_type, effects, super_fun_exes) in
           let super_fun_bsym = Flx_bsym.create ~sr super_fun_name super_fun_bbdcl in
           Flx_bsym_table.add bsym_table super_fun_index None super_fun_bsym;
 

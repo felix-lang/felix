@@ -49,13 +49,6 @@ let kind_of_list = function
   | [x] -> x
   | x -> KND_tuple x
 
-
-let paramtype (params : parameter_t list) =
-  let typlist params =
-    map (fun (_,k,_,t,_) -> t) params
-  in
-  type_of_list (typlist params)
-
 let all_tunits ts =
   try
     iter
@@ -258,13 +251,24 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
              match paramss,ret with
 
              (* special case, allows {t} to mean 1 -> t *)
-             | [[],None],TYP_none ->
+             | [Slist [],None],TYP_none ->
                TYP_typefun ([],KND_type, t)
 
              | _ ->
-               let params = map (fun (_,x,y,z,d)-> y,kindcode_of_typecode z) params in
-               TYP_typefun (params, kindcode_of_typecode ret, t)
-
+               begin match params with
+               | Satom (_,_,name,typ,_) ->
+                 TYP_typefun ([name,kindcode_of_typecode typ], kindcode_of_typecode ret, t)
+               | Slist ps ->
+                 let kps  = List.map 
+                 (
+                   fun p -> match p with 
+                   | Satom (_,_,name,typ,_) -> name,kindcode_of_typecode typ 
+                   | Slist _ -> clierr sr "Type functions require non-nested parameter list"
+                 )
+                 ps  
+                 in
+                 TYP_typefun (kps, kindcode_of_typecode ret, t)
+               end
            with _ ->
              clierrx "[flx_core/flx_typing2.ml:216: E267] " sr
              "Type lambda must return type expression"
@@ -347,7 +351,7 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
       EXPR_lambda (dsr,
         (`GeneratedInlineFunction,
         dfltvs,
-        [[],None],
+        [Slist [],None],
         TYP_none,
         [STMT_fun_return (dsr,(expr_of_typecode dsr t))]))
 

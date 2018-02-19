@@ -118,7 +118,7 @@ print_endline ("Exes =\n" ^ String.concat "\n" (List.map (Flx_print.string_of_be
           Flx_bsym_table.add bsym_table label_index (Some inner_proc_index) label_bsym;
 
           (* add inner procedure to symbol table, type 1->0 *)
-          let inner_proc_bbdcl = Flx_bbdcl.bbdcl_fun (props, bvs, ([], None), btyp_void (), effects, exes) in
+          let inner_proc_bbdcl = Flx_bbdcl.bbdcl_fun (props, bvs, (Slist [], None), btyp_void (), effects, exes) in
           let inner_proc_bsym = Flx_bsym.create ~sr inner_proc_name inner_proc_bbdcl in
           Flx_bsym_table.add bsym_table inner_proc_index (Some outer_fun_index) inner_proc_bsym;
 
@@ -131,7 +131,7 @@ print_endline ("Exes =\n" ^ String.concat "\n" (List.map (Flx_print.string_of_be
           let unit_proc_type = btyp_function (btyp_unit (), btyp_void ()) in
           let outer_fun_exes = [bexe_fun_return (sr, bexpr_closure unit_proc_type (inner_proc_index,ts))] in
           let outer_fun_ret = btyp_function (param_type, unit_proc_type) in
-          let outer_fun_bbdcl = Flx_bbdcl.bbdcl_fun (props, bvs, ([param], None), unit_proc_type, effects, outer_fun_exes) in
+          let outer_fun_bbdcl = Flx_bbdcl.bbdcl_fun (props, bvs, (Satom param, None), unit_proc_type, effects, outer_fun_exes) in
           let outer_fun_bsym = Flx_bsym.create ~sr outer_fun_name outer_fun_bbdcl in
           Flx_bsym_table.add bsym_table outer_fun_index None outer_fun_bsym;
 

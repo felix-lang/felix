@@ -386,7 +386,7 @@ print_endline ("PAT_with: " ^ s ^ " = " ^ Flx_print.string_of_expr e);
 
 let closure sr e =
   let ret = STMT_fun_return (sr,e) in 
-  EXPR_lambda (sr, (`Function, dfltvs, [[],None], flx_bool, [ret]))
+  EXPR_lambda (sr, (`Function, dfltvs, [Slist [],None], flx_bool, [ret]))
  
 let rec gen_match_check pat (arg:expr_t) =
   let apl sr f x =

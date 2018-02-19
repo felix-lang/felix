@@ -43,6 +43,7 @@ open Flx_typeclass
 open Flx_btype_subst
 open Flx_unify_expr
 
+(*
 let string_of_bvs bvs =
   catmap "," (fun (s,i)->s^"<"^si i^">") bvs
 
@@ -176,7 +177,9 @@ let fixup_exes syms bsym_table gen bexes =
   | h :: t -> aux t (h::outx)
   in
   aux bexes []
+*)
 
-let axiom_check syms bsym_table gen =
+let axiom_check syms bsym_table gen = ()
+(*
   Flx_bsym_table.update_bexes (fixup_exes syms bsym_table gen) bsym_table
-
+*)

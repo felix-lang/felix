@@ -129,18 +129,14 @@ let find_members syms bsym_table index ts =
   "  //variables\n" ^
   *)
   x
-
-let typeof_bparams bps =
-  btyp_tuple (Flx_bparameter.get_btypes bps)
-
 let get_type bsym_table index =
   let bsym =
     try Flx_bsym_table.find bsym_table index
     with _ -> failwith ("[get_type] Can't find index " ^ si index)
   in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(ps,_),ret,effects,_) ->
-      btyp_function (typeof_bparams ps,ret)
+  | BBDCL_fun (props,vs,ps,ret,effects,_) ->
+      btyp_function (Flx_bparams.get_btype ps,ret)
   | _ -> failwith "Only function and procedure types handles by get_type"
 
 

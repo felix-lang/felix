@@ -12,12 +12,8 @@ val expr_of_typecode:
 val type_of_list:
   typecode_t list -> typecode_t
 
-val paramtype:
-  parameter_t list -> typecode_t
-
 val kind_of_list:
   kindcode_t list -> kindcode_t
-
 
 val qualified_name_of_expr:
   expr_t -> qualified_name_t option

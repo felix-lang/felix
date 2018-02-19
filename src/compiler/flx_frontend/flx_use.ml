@@ -45,8 +45,8 @@ let is_param bsym_table idx =
     | Some p when p <> 0 ->
       let bbdcl = Flx_bsym_table.find_bbdcl bsym_table p in
       begin match bbdcl with
-      | BBDCL_fun (_,_,(bps,_),_,_,_) ->
-        let bids = Flx_bparameter.get_bids bps in
+      | BBDCL_fun (_,_,bps,_,_,_) ->
+        let bids = Flx_bparams.get_bids bps in
         List.mem idx bids
       | _ -> false
       end

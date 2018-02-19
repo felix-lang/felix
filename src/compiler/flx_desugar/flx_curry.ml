@@ -105,40 +105,38 @@ let propagate_invariants body invariants sr =
 
 
 (** Iterate over parameters and create type variables when needed. *)
-let fix_params sr seq ps =
-
-  let rec aux ps =
+let fix_param sr seq p =
+  let pparam p : (string * kindcode_t) list * parameter_t =
     (* ps : (sr * param_kind_t * Flx_id.t * typecode_t * expr_t option) *)
-    match ps with
+    match p with
 
     (* The case where the param type is none. 
        This is where things like 'could not match type "_v4029" with "int" in "x + 3"' originate *)
-    | (sr,kind,id,TYP_none,expr) :: t ->
+    | (sr,kind,id,TYP_none,expr) ->
 
       let v = "_v" ^ string_of_bid (seq()) in  (* Create a fresh identifier *)
       let vt = TYP_name (generated,v,[]) in    (* Create a new type variable w/ dummy source ref. *)
-      let vs,ps = aux t in                     (* work on the other cases before wrapping up. *)
+      [v,KND_generic],(sr,kind,id,vt,expr)
 
-      (* Add our new type in to the sequence. It has the new type of TYP_patany
-         which should trigger future processing for type binding. *)
-       (* 
-       ((v,TYP_patany sr)::vs),((kind,id,vt,expr)::ps) (* a bit HACKY *)
-       *)
-
-       ((v,KND_generic)::vs),((sr,kind,id,vt,expr)::ps) (* a bit HACKY *)
-
-    (* General case: Recurse assmbling the fixed type variables (vs). *)
-    | h :: t ->
-      let vs,ps = aux t in
-      vs, (h::ps)
-
-    (* Empty case: no input, no output. *)
-    | [] -> [],[]
+    | p -> [],p
   in
 
-  let ps, traint = ps in   (* Split ps into type variables and type constraints *)
-  let vs,ps = aux ps in    (* Process params *)
-  vs,(ps,traint)           (* Reassemble *)
+  let rec pspec (ps:paramspec_t)  : (string * kindcode_t) list * paramspec_t = 
+    match ps with
+    | Satom p -> 
+      let vs, p = pparam p in 
+      vs,Satom p
+
+    | Slist ps ->
+      let vps = List.map pspec ps in
+      let vs = List.concat (List.map fst vps) in
+      let pss = List.map snd vps in
+      vs,Slist pss
+   in
+
+  let p, traint = p in   (* Split ps into type variables and type constraints *)
+  let vs,p = pspec p in    (* Process params *)
+  vs,(p,traint)           (* Reassemble *)
 
 
 let cal_props kind props = match kind with
@@ -172,28 +170,21 @@ let mkcurry seq sr name vs args return_type effects kind body props =
   (* New ones are stored in vss' *)
   let vss',args = 
     List.split 
-      (List.map (fix_params sr seq) args) in 
+      (List.map (fix_param sr seq) args) in 
 
   (* Reassemble vs back together *)
   let vs = List.concat (vs :: vss') in
   let vs : vs_list_t = vs,tcon in
 
   let return_type, postcondition = return_type in
-
-  let typeoflist lst = match lst with
-    | [x] -> x
-    | _ -> TYP_tuple lst
-  in
-
   let mkret arg (eff,ret) = 
     Flx_typing.flx_unit,
     TYP_effector 
-      ((typeoflist 
-        (List.map 
-          (fun(sr,x,y,z,d)->z) 
-          (fst arg))),
+    (
+      typeof_paramspec_t (fst arg),
       eff,
-      ret)
+      ret
+    )
   in
 
   let arity = List.length args in
@@ -249,7 +240,7 @@ let mkcurry seq sr name vs args return_type effects kind body props =
               | _ -> STMT_proc_return sr :: reved
             )
           in
-          STMT_function (sr, synthname n, vs, ([],None), (return_type,postcondition), effects, props, body)
+          STMT_function (sr, synthname n, vs, (Slist [],None), (return_type,postcondition), effects, props, body)
 
         | _ ->
           (* allow functions with no arguments now .. *)
@@ -324,7 +315,7 @@ let mkcurry seq sr name vs args return_type effects kind body props =
       let argt =
         let hdt = List.hd t in
         let xargs,traint = hdt in
-        typeoflist (List.map (fun (sr,x,y,z,d) -> z) xargs)
+        typeof_paramspec_t xargs
       in
       let m = List.length args in
       let body = [ 

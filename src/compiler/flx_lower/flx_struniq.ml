@@ -77,13 +77,8 @@ let fixbexes bsym_table bexes =
     List.fold_left pr [] bexes
   )
 
-let fixps bsym_table (ps,traint) =
-  List.map (fun p -> { p with ptyp=fixtype bsym_table p.ptyp }) ps,
-  (
-  match traint with
-  | None -> None
-  | Some t -> Some (fixexpr bsym_table t)
-  )
+let fixps bsym_table ps = 
+  Flx_bparams.map ~f_btype:(fixtype bsym_table) ~f_bexpr:(fixexpr bsym_table) ps
 
 let fix_symbol bsym_table index parent bsym bsym_table' =
   let ft t = fixtype bsym_table t in

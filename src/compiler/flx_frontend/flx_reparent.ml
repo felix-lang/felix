@@ -207,11 +207,7 @@ let reparent1
     | Some i -> string_of_bid i
   in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
-  let remap_ps ps = map (fun {pid=id; pindex=i; ptyp=t; pkind=k} ->
-    {pid=id; pindex=revar i; ptyp=t; pkind=k})
-     ps
-   in
-
+  let remap_ps ps = Flx_bparams.map ~f_bid:revar ps in
   let rexes xs = remap_exes syms bsym_table revariable xs in
   let rexpr e = remap_expr syms bsym_table revariable e in
   let rreqs rqs = remap_reqs syms bsym_table revariable rqs in
@@ -237,12 +233,12 @@ let reparent1
     Hashtbl.add uses k calls
 
 
-  | BBDCL_fun (props, vs, (ps,traint), ret, effects, exes) ->
+  | BBDCL_fun (props, vs, ps, ret, effects, exes) ->
     let props = allow_rescan rescan_flag props in
     let props = filter (fun p -> p <> `Virtual) props in
     let ps = remap_ps ps in
     let exes = rexes exes in
-    update_bsym (bbdcl_fun (props,vs,(ps,traint),ret,effects, exes));
+    update_bsym (bbdcl_fun (props,vs,ps,ret,effects, exes));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls

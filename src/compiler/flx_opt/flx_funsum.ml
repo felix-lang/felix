@@ -138,8 +138,7 @@ let elim_funsums syms bsym_table =
 print_endline " .. Calculated function sum *********";
 *)
     let exes = List.rev (!exes) in
-    let params = [{Flx_bparameter.pid="_a"; pindex=pindex; pkind=`PVar;ptyp=dt}] in
-    let params = params,None in 
+    let params = Flx_ast.Satom {Flx_bparameter.pid="_a"; pindex=pindex; pkind=`PVar;ptyp=dt},None in
     let props = [`Generated "funsum"] in
     let bbdcl = Flx_bbdcl.bbdcl_fun (props,[],params, ct,noeffects,exes) in 
     let bsym = Flx_bsym.create "funsum" bbdcl in

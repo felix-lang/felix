@@ -18,6 +18,7 @@ open Flx_bid
 type aentry_t =
   bid_t *
   (string * Flx_btype.t * Flx_bexpr.t * BidSet.t)
+(* parameter index, (parameter name, parameter type, initialising expression, dependendency set) *)
 
 
 (* Parallel Assignment algorithm.

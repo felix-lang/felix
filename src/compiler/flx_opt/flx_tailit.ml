@@ -134,9 +134,9 @@ let tailit syms bsym_table uses id this sr ps exes =
 
 
   let pset = List.fold_left
-    (fun s {pindex=i} -> if i = 0 then s else BidSet.add i s)
+    (fun s i -> if i = 0 then s else BidSet.add i s)
     BidSet.empty
-    ps
+    (Flx_bparams.get_bids ps)
   in
   let parameters = ref [] in
   let descend = Flx_bsym_table.find_descendants bsym_table this in
@@ -199,14 +199,26 @@ let tailit syms bsym_table uses id this sr ps exes =
   (* Weirdly, this works for BOTH tail calls
     and tail applies
   *)
+  let pslist = Flx_bparams.get_prjs ps in
+  let params = List.map fst pslist in
   let cal_tail_call e =
-    match ps with
-    | [] ->
+    let args  = 
+      List.map 
+        (fun prj -> match prj with 
+        | Some ((_,BTYP_function (_,c)) as prj) ->
+          (* we RELY on this application simplifying the arguments! *)
+          Flx_bexpr.bexpr_apply c (prj,e)
+        | _ -> assert false
+        ) 
+        (List.map snd pslist)
+    in
+    match fst ps with
+    | Slist [] ->
       [
         bexe_goto (sr,lc);
         bexe_comment (sr,"tail rec call (0)")
       ]
-    | [{pindex=k}] ->
+    | Satom {pindex=k} ->
       assert (k <> 0);
       [
         bexe_goto (sr,lc);
@@ -214,18 +226,20 @@ let tailit syms bsym_table uses id this sr ps exes =
         bexe_comment (sr,"tail rec call (1)")
       ]
     | _ ->
+(*
       begin match e with
       | BEXPR_tuple ls,_ ->
         (*
         print_endline ("TUPLE ASSGN " ^ sbe bsym_table e);
         *)
         assert (length ls = length ps);
+*)
         let pinits =
           map2
           (fun {pid=name; pindex=i; ptyp=t} e ->
             i,(name,t,e,expr_uses syms descend uses pset e)
           )
-          ps ls
+          params args
         in
         let tmps,exes = Flx_passign.passign syms bsym_table pinits sr in
         parameters := tmps @ !parameters;
@@ -236,7 +250,7 @@ let tailit syms bsym_table uses id this sr ps exes =
           List.iter (fun x -> print_endline (string_of_bexe bsym_table 0 x) ) (rev !result);
         *)
         !result
-
+(*
       | _ ->
         print_endline "NON TUPLE TAIL CALL";
         let t = snd e in
@@ -270,6 +284,7 @@ let tailit syms bsym_table uses id this sr ps exes =
           bexe_comment (sr,"tail rec call (2)")
         ]
       end
+*)
   in
   let cal_asgn1 pas ls =
     let n = length pas in

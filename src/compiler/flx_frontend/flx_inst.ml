@@ -421,17 +421,13 @@ and process_inst syms bsym_table weak instps ref_insts1 i ts inst =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_nominal_type_alias _ -> assert false
   | BBDCL_structural_type_alias _ -> assert false
-  | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) ->
-    let argtypes = Flx_bparameter.get_btypes ps in
+  | BBDCL_fun (props,vs,ps,ret,effects,exes) ->
+    let argtypes = Flx_bparams.get_btypes ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i,k) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     if instps || mem `Cfun props then begin
-      iter (fun {pindex=i; ptyp=t} ->
-        ui i;
-        rtr (varmap_subst hvarmap t)
-      )
-      ps
+      Flx_bparams.iter ~f_bid:ui ~f_btype:(fun t -> rtr (varmap_subst hvarmap t)) ps
     end;
     process_function
       syms
@@ -701,13 +697,23 @@ print_endline "  [flx_inst] Begin instantiation";
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_fun (props,_,(ps,_),_,_,_) ->
         begin match ps with
-        | [] -> ()
-        | [{ptyp=t}] -> register_type_r (ui sr) syms bsym_table weak [] sr t
-        | _ ->
-          let t = btyp_tuple (Flx_bparameter.get_btypes ps) in
+        | Slist [] -> ()
+        | Satom {ptyp=t} -> register_type_r (ui sr) syms bsym_table weak [] sr t
+        | Slist pss ->
+          let t = Flx_bparams.get_btype (ps,None) in (* hack *)
           register_type_r (ui sr) syms bsym_table weak [] sr t;
           register_type_nr syms bsym_table t;
-          register_tuple syms bsym_table t;
+          (* register parameter tuple and all nested subtuples recursively *)
+          let rec aux ps = match ps with 
+          | Satom _ -> ()
+          | Slist [] -> ()
+          | Slist [_] -> ()
+          | Slist pss -> 
+            let t = Flx_bparams.get_btype (ps,None) in (* hack *)
+            register_tuple syms bsym_table t;
+            List.iter aux pss
+          in
+          aux ps
         end
       | _ -> assert false
       end;
