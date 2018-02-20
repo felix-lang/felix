@@ -2226,7 +2226,7 @@ and string_of_bound_expression' bsym_table se e =
     ")"
 
   | BEXPR_compose (fn1, fn2) -> "(" ^
-    se fn1 ^ " . " ^
+    se fn1 ^ " \\circ " ^
     se fn2 ^
     ")"
 

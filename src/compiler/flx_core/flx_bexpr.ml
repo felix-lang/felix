@@ -1215,10 +1215,11 @@ let rec reduce e =
 
     | BEXPR_apply 
       (
-       (BEXPR_compose( (_,Flx_btype.BTYP_function (_,b) as f1), f2),_),
+       (BEXPR_compose( 
+        f1, (_,Flx_btype.BTYP_function (_,b) as f2)),_),
        e
       ),t ->
-      bexpr_apply t (f2, bexpr_apply b (f1,e))
+      bexpr_apply t (f1, bexpr_apply b (f2,e))
     | BEXPR_apply((BEXPR_compose _,_),_),_ -> print_endline "Bugged composition"; assert false
     | BEXPR_cond ((BEXPR_case (0,Flx_btype.BTYP_unitsum 2),Flx_btype.BTYP_unitsum 2), _, fa),_ -> fa
     | BEXPR_cond ((BEXPR_case (1,Flx_btype.BTYP_unitsum 2),Flx_btype.BTYP_unitsum 2), tr, _),_ -> tr

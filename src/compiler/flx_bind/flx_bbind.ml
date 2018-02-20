@@ -396,7 +396,7 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
   | SYMDEF_function (ps,rt,effects,props,exes) ->
 
 (*
-if sym.Flx_sym.id = "join" then 
+if sym.Flx_sym.id = "f" then 
 print_endline ("Flx_bbind: Binding function " ^ sym.Flx_sym.id);
 if sym.Flx_sym.id = "join" then 
   print_endline ("join: precalculated bvs = " ^ Flx_print.string_of_bvs bvs);
@@ -405,9 +405,12 @@ if sym.Flx_sym.id = "join" then
 *)
     let bps = bindps ps in
 (*
+if sym.Flx_sym.id = "f" then begin
     print_endline (" ... DONE Binding parameters");
+    print_endline ("Input unbound parameters: " ^ string_of_parameters ps);
+    print_endline ("Output  bound parameters: " ^ string_of_bparameters bsym_table bps);
+end;
 *)
-    let ts = Flx_bparams.get_btypes bps in
 
 (*
 if sym.Flx_sym.id = "join" then 
@@ -434,31 +437,25 @@ print_endline ("Join: binding executable instructions");
 *)
     let brt, bbexes = bexes exes brt symbol_index bvs in
     let bbdcl = bbdcl_fun (props,bvs,bps,brt,beffects,bbexes) in
+    let d = Flx_bparams.get_btype bps in
+    let ft =
+      if mem `Cfun props
+      then btyp_cfunction (d,brt)
+      else btyp_effector (d,beffects,brt)
+    in
 
     (* Cache the type of the function. *)
     if not (Hashtbl.mem state.ticache symbol_index) then begin
-      let d = btyp_tuple ts in
-      let ft =
-        if mem `Cfun props
-        then btyp_cfunction (d,brt)
-        else btyp_effector (d,beffects,brt)
-      in
       let t = Flx_fold.fold bsym_table state.counter ft in
- if debug then 
-print_endline ("Flx_bbind: Adding type of index " ^ si symbol_index ^ " to cache, type=" ^ Flx_btype.st t);
+      if debug then 
+        print_endline ("Flx_bbind: Adding type of index " ^ si symbol_index ^ " to cache, type=" ^ Flx_btype.st t);
       Hashtbl.add state.ticache symbol_index t
     end;
 
-    if state.print_flag then begin
-      let atyp = btyp_tuple ts in
-      let t =
-        if mem `Cfun props
-        then btyp_cfunction (atyp,brt)
-        else btyp_effector (atyp,beffects,brt)
-      in
+    if sym.Flx_sym.id = "f" || state.print_flag then begin
       print_endline ("//bound function " ^ qname ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt bsym_table t)
+        print_bvs bvs ^ ":" ^ sbt bsym_table ft)
     end;
 
     add_bsym true_parent bbdcl
