@@ -192,35 +192,35 @@ let rec process_expr syms bsym_table weak ref_insts1 hvarmap sr ((e,t) as be) =
 
   | BEXPR_tuple es ->
     iter ue es;
-    register_tuple syms bsym_table (vs t)
+    register_tuple "Flx_inst: tuple" syms bsym_table (vs t)
 
   | BEXPR_tuple_head e ->
     ue e
 
   | BEXPR_tuple_tail e ->
     ue e;
-    register_tuple syms bsym_table (vs t) (* NOTE: this is the type of the tail! *)
+    register_tuple "Flx_inst: tuple tail" syms bsym_table (vs t) (* NOTE: this is the type of the tail! *)
 
   | BEXPR_tuple_last e ->
     ue e
 
   | BEXPR_tuple_body e ->
     ue e;
-    register_tuple syms bsym_table (vs t) (* NOTE: this is the type of the body! *)
+    register_tuple "Flx_inst: tuple body" syms bsym_table (vs t) (* NOTE: this is the type of the body! *)
 
   | BEXPR_tuple_cons (eh, et) ->
     ue eh; ue et; 
-    register_tuple syms bsym_table (vs t)
+    register_tuple "Flx_inst: tuple cons" syms bsym_table (vs t)
 
   | BEXPR_tuple_snoc (eh, et) ->
     ue eh; ue et; 
-    register_tuple syms bsym_table (vs t)
+    register_tuple "Flx_inst: tuple snoc" syms bsym_table (vs t)
 
 
   | BEXPR_record es ->
     let ss,es = split es in
     iter ue es;
-    register_tuple syms bsym_table (vs t)
+    register_tuple "Flx_inst: record" syms bsym_table (vs t)
 
   (* should have disappeared after monomorphisation *)
   | BEXPR_polyrecord _ -> 
@@ -571,7 +571,7 @@ print_endline ("arg types c " ^ catmap "," (sbt bsym_table) tss);
       in
       if length flx_fun_atypes != 1 then 
         let tt = btyp_tuple (List.map fst flx_fun_atypes) in
-        Flx_treg.register_tuple syms bsym_table tt
+        Flx_treg.register_tuple "Flx_inst: Callback" syms bsym_table tt
       
 
     | _ ->
@@ -710,7 +710,7 @@ print_endline "  [flx_inst] Begin instantiation";
           | Slist [_] -> ()
           | Slist pss -> 
             let t = Flx_bparams.get_btype (ps,None) in (* hack *)
-            register_tuple syms bsym_table t;
+            register_tuple "Flx_inst: BIFACE_export" syms bsym_table t;
             List.iter aux pss
           in
           aux ps

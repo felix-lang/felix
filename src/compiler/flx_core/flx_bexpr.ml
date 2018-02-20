@@ -277,6 +277,7 @@ let bexpr_apply t (e1, e2) =
   | Some k -> bexpr_unitptr k
   | _ -> 
   match e1, e2 with
+  | (BEXPR_identity_function _,_),e2 -> e2
   | (BEXPR_prj (n,d,c),_), (BEXPR_tuple es,_) ->
     assert (0<=n && n < List.length es);
     List.nth es n
@@ -306,6 +307,7 @@ let bexpr_tuple t es =
   let _ = List.map (complete_check "bexpr_tuple(component)") ts in 
   match es with 
   | [] -> bexpr_unit 
+  | [x] -> x
   | _ -> BEXPR_tuple es, complete_check "bexpr_tuple(client)" t
 
 let bexpr_closure t (bid, ts) = 
@@ -346,7 +348,8 @@ let bexpr_reinterpret_cast (e, t) =
 
 
 let bexpr_prj n d c = 
-  begin match d with
+  if (n = 0  && d == c) then bexpr_identity_function c
+  else begin begin match d with
   | Flx_btype.BTYP_uniq _ ->
     failwith ("Projection from unique type " ^ Flx_btype.st d ^ " not allowed")
  
@@ -389,6 +392,7 @@ let bexpr_prj n d c =
   end;
 
   BEXPR_prj (n,d,c),complete_check "bexpr_prj" (Flx_btype.btyp_function (d,c))
+  end
 
 (* note, inefficiency, if we find a field key
   and start counting down sequence numbers,

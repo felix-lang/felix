@@ -14,6 +14,12 @@ let err x s =
   print_string ("[sex2flx] ERROR in " ^ s ^ " in " ^ Sex_print.string_of_sex x);
   raise (Sex2FlxTypeError (s,x))
 
+let serr sr x s =
+  print_endline ("[sex2flx] ERROR in " ^ s ^ " in " ^ Sex_print.string_of_sex x);
+  print_endline ("Location: " ^ Flx_srcref.long_string_of_src sr);
+  raise (Sex2FlxTypeError (s,x))
+
+
 let qne ex s e' =
   let e = ex e' in
   match qualified_name_of_expr e with
@@ -527,26 +533,59 @@ and xparameter_t sr def_val x : parameter_t =
   | Lst [sr; pk; id; t; e] -> 
     let sr = xsr sr in
     sr, xpk pk, xid id, ti t, opt "dflt_arg" ex e
-  | x -> err x "parameter_t"
+  | x -> serr sr x "parameter_t"
 
 
 (* Temporarily, the parser isn't being upgraded to handle nested paramspecs,
    first get the unbound term handling to work!
 *)
-and xparamspec_t sr def_val ps : paramspec_t = 
+and old_xparamspec_t sr def_val ps : paramspec_t = 
   let xpa x = xparameter_t sr def_val x in
   match ps with
   | [p] -> Satom  (xpa p)
   | _ -> Slist (map (fun p -> Satom (xpa p)) ps)
 
+and xparamspec_t sr def_val ps : paramspec_t = 
+  let xps x = xparamspec_t sr def_val x in
+  let xpa x = xparameter_t sr def_val x in
+  let base = match ps with
+    | Lst [Id "Satom"; p] -> Satom  (xpa p)
+    | Lst [Id "Slist"; Lst ps]  -> Slist (map xps ps)
+
+    (* anachronism in parser *)
+    | Lst [p] -> 
+      print_endline ("Parser: warning: sole parameter should have 'Satom'");
+      print_endline ("Location: " ^ Flx_srcref.long_string_of_src sr);
+      Satom (xpa p) (* FIXME: Hack for old parser, typically single parameter *)
+
+    (* anachronism in parser *)
+    | Lst [] -> 
+      print_endline ("Parser: warning: unit parameter should have 'Slist'");
+      print_endline ("Location: " ^ Flx_srcref.long_string_of_src sr);
+      Slist []       (* FIXME: Hack for old parser, typically default empty parameter ((),none) *)
+    | x -> serr sr x "xparamspec_t"
+  in
+  (* Replace Slist of one entry with that entry *)
+  let rec aux x = match x with
+  | Slist [x] -> aux x
+  | x -> x
+  in aux base
+
 (* Temporarily, the parser isn't being upgraded to handle nested paramspecs,
    first get the unbound term handling to work!
 *)
+and old_xparams_t def_val sr x : params_t =
+  let ex x = xexpr_t sr x in
+  match x with
+  | Lst [Lst ps; eo] -> old_xparamspec_t sr def_val ps, opt "params" ex eo
+  | x -> err x "params_t"
+
 and xparams_t def_val sr x : params_t =
   let ex x = xexpr_t sr x in
   match x with
-  | Lst [Lst ps; eo] -> xparamspec_t sr def_val ps, opt "params" ex eo
-  | x -> err x "params_t"
+  | Lst [ps; eo] -> xparamspec_t sr def_val ps, opt "params" ex eo
+  | x -> serr sr x "xparams_t"
+
 
 and xret_t sr x : typecode_t * expr_t option =
   let ex x = xexpr_t sr x in

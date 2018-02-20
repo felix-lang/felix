@@ -208,6 +208,7 @@ let tailit syms bsym_table uses id this sr ps exes =
         | Some ((_,BTYP_function (_,c)) as prj) ->
           (* we RELY on this application simplifying the arguments! *)
           Flx_bexpr.bexpr_apply c (prj,e)
+        | None -> e
         | _ -> assert false
         ) 
         (List.map snd pslist)

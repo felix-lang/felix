@@ -83,7 +83,7 @@ print_endline ("Register type nr " ^ sbt bsym_table t);
     end
 
 
-let register_tuple syms bsym_table t =
+let register_tuple where syms bsym_table t =
   let t = Flx_fold.minimise bsym_table syms.counter t in
   let record_tuple t =
     register_type_nr syms bsym_table t;
@@ -107,7 +107,10 @@ let register_tuple syms bsym_table t =
     end
 
   | _ ->
-print_endline ("flx_treg: Try to register tuple " ^ sbt bsym_table t);
+    print_endline ("flx_treg: from " ^ 
+      where ^ " Try to register tuple " ^ 
+      Flx_btype.str_of_btype t ^ "\n=\n" ^ 
+      sbt bsym_table t);
     assert false
 
 let rec register_type_r' ui syms bsym_table weak exclude sr t =

@@ -1774,14 +1774,13 @@ syntax expressions {
          (matchings `((,_1 ,_5)((pat_setform_any ,_sr)(ast_typed_case 0 2))))
          (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,matchings)))))
          (param `(,_sr PVal _a ,argt none)) ;; one parameter
-         (params `(,param))            ;; parameter tuple list
+         (params `( Satom ,param ))            ;; parameter tuple list
          (paramsx `(,params none))     ;; parameter tuple list with precondition
          (paramsxs `(,paramsx))        ;; curry parameters 
          (method `(ast_curry ,_sr "has_elt"  ,dfltvs ,paramsxs (,ret none) Method () ,body))
-         (noargs `((() none)))
          (noobjtyp (noi 'typ_none))
          (objsts `(,method))
-         (object `(ast_object ,_sr (,dfltvs ,noargs ,noobjtyp ,objsts))) 
+         (object `(ast_object ,_sr (,dfltvs ,dfltparams ,noobjtyp ,objsts))) 
       )
       `(ast_apply ,_sr (,object (ast_tuple ,_sr ())))
     )
@@ -1981,7 +1980,12 @@ syntax functions {
   private sparameter := sparam_qual sname =># "`(,_sr ,_1 ,_2 ,(noi 'typ_none) none)";
 
   //$ Empty parameter tuple.
-  private sparameter_comma_list = list::commalist0<sparameter>;
+  //private sparameter_comma_list = list::commalist0<sparameter>;
+
+  // parameter list including nested params
+  private sxparam := sparameter =># "`(Satom ,_1)";
+  private sxparam := "(" list::commalist0<sxparam> ")" =># "`(Slist ,_2)";
+  private sparameter_comma_list := list::commalist0<sxparam> =># "`(Slist ,_1)";
 
   //$ Parameter qualifier: val.
   private sparam_qual := "val" =># "'PVal";
@@ -2002,7 +2006,7 @@ syntax functions {
   sfun_arg :=  "(" sparameter_comma_list ")" =># "`(,_2 none)";
 
   //$ Short form function parameter single polymorphic variable.
-  sfun_arg :=  sname =># "`(((,_sr PVal ,_1 ,(noi 'typ_none) none)) none)";
+  sfun_arg :=  sname =># "`(((Satom (,_sr PVal ,_1 ,(noi 'typ_none) none))) none)";
 
   //$ Function binder: C function.
   //$ A function with C function type.
@@ -2060,7 +2064,7 @@ syntax functions {
    (let*  
      (
        (noretype `(,(noi 'typ_none) none))
-       (d `(ast_object ,_sr (,dfltvs ((() none)) none ,_9)))  ;; extension function
+       (d `(ast_object ,_sr (,dfltvs (,unitparam) none ,_9)))  ;; extension function
        (a `(ast_apply ,_sr (,d ()))) ;; applied to unit
        (x `(ast_extension ,_sr ,_5 ,a)) ;; actual extension expression
        (retst `(ast_fun_return ,_sr ,x))
@@ -2076,7 +2080,7 @@ syntax functions {
    (let*  
      (
        (noretype `(,(noi 'typ_none) none))
-       (d `(ast_object ,_sr (,dfltvs ((() none)) none ,_7)))  ;; extension function
+       (d `(ast_object ,_sr (,dfltvs (,unitparam) none ,_7)))  ;; extension function
        (a `(ast_apply ,_sr (,d ()))) ;; applied to unit
        (x `(ast_extension ,_sr ,_5 ,a)) ;; actual extension expression
        (retst `(ast_fun_return ,_sr ,x))
@@ -2131,7 +2135,7 @@ syntax functions {
        (
         (t _5)
        )
-      (begin ;;(display "MATCHING ftype=")(display t)(display "\\n")
+      (begin ;;(display "MATCHING ftype=")(display t)(display "\n")
         (let
           (
             (argt `(ast_apply ,_sr (,(nos "dom") ,t)))
@@ -2140,7 +2144,7 @@ syntax functions {
           )
           `(ast_curry ,_sr ,(first _3) ,(second _3)
             (
-              (((,_sr PVal _a ,argt none)) none)
+              ((Satom (,_sr PVal _a ,argt none)) none)
             )
             (,ret none)
             ,(cal_funkind _1 _2) ,_1 ,body)
@@ -2162,7 +2166,7 @@ syntax functions {
           (body `((ast_fun_return ,_sr ,apl )))
           (result `(ast_curry ,_sr ,(first _3) ,(second _3)
             (
-              (((,_sr PVal _a ,argt none)) none)
+              ((Satom (,_sr PVal _a ,argt none)) none)
             )
             (,ret ,traint)
             ,(cal_funkind _1 _2) ,_1 ,body)
@@ -2490,7 +2494,8 @@ SCHEME """
   (define (typesoftvarlist x) (map nos (map first (first x))))
   (define dfltaux '( (ast_tuple ("dummy" 0 0 0 0) ()) ()))
   (define dfltvs `( () ,dfltaux)) ;; vs list: name,type,constraint triple
-  (define dfltargs '((() none)))
+  (define unitparam '((Slist ()) none))
+  (define dfltparams `(,unitparam))
   (define dflteffects '(ast_tuple ("dummy" 0 0 0 0) ())) ;; type unit
 )
 """;
@@ -2512,8 +2517,8 @@ SCHEME """
 SCHEME """
 ;; lambda terms
 (begin
-  (define (lazy stmts) `(ast_lambda ,_sr (,dfltvs ,dfltargs ,(noi 'typ_none) ,stmts)))
-  (define (lazy_proc stmts) `(ast_lambda ,_sr (,dfltvs ,dfltargs (ast_void ,_sr) ,stmts)))
+  (define (lazy stmts) `(ast_lambda ,_sr (,dfltvs ,dfltparams ,(noi 'typ_none) ,stmts)))
+  (define (lazy_proc stmts) `(ast_lambda ,_sr (,dfltvs ,dfltparams (ast_void ,_sr) ,stmts)))
   (define (block stmts)`(ast_call ,_sr ,(lazy_proc stmts) ()))
   (define (block_expr stmts) `(ast_apply ,_sr (,(lazy stmts) ())))
   (define call (lambda (f a) `(ast_call ,_sr (ast_name ,_sr ,f ()) ,a)))
@@ -3161,7 +3166,7 @@ SCHEME """
         (
           (proc_string_name (fresh_name "proc"))
           (proc_call_name (nos proc_string_name))
-          (proc_param `((() none)))
+          (proc_param dfltparams)
           (proc_ret `((ast_void ,_sr) none))
           (proc_adjectives `())
           (proccall `(ast_call ,_sr ,proc_call_name (ast_tuple ,_sr ())))
@@ -4957,7 +4962,7 @@ syntax type_decls {
                  )
                )
                (self-arg `(,_sr PVal ,self-name ,self-type none)) 
-               (self-args `((,self-arg) none))
+               (self-args `((Satom ,self-arg) none))
                (args (cons self-args t4))
              ) 
              `(,t0 ,t1 ,t2 ,outpolyvars ,args ,t5 ,t6 ,t7 ,t8 ,t9)
@@ -5299,8 +5304,8 @@ syntax chips {
           (body _7)
           (pinstype `(ast_record_type ,_6))
           (pinsarg `(,_sr PVal ,_5 ,pinstype none))
-          (pinsargs `((,pinsarg) none))
-          (args (append args `(,pinsargs (() none))))
+          (pinsargs `((Satom ,pinsarg) none))
+          (args (append args `(,pinsargs ,unitparam)))
         )
         `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects
          NoInlineFunction (NoInlineFunction) ,body)
