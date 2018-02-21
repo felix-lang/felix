@@ -452,7 +452,7 @@ print_endline ("Join: binding executable instructions");
       Hashtbl.add state.ticache symbol_index t
     end;
 
-    if sym.Flx_sym.id = "f" || state.print_flag then begin
+    if (* sym.Flx_sym.id = "f" || *) state.print_flag then begin
       print_endline ("//bound function " ^ qname ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table ft)
