@@ -1,0 +1,29 @@
+@title Nested Parameter test
+@felix
+// test nested params
+
+// might screw up because second arg is an array ..
+fun f (x:int, (y:int, z:int)) => x + y + z;
+println$ f (1,(2,3));
+
+// tail recursion test
+proc tailer (x:int, (y:int, z:int)) {
+  var a = x + y + z;
+  println$ a;
+  if a > 100 return;
+  tailer (x+1, (y+z, z+x));
+}
+
+tailer (1, (1,1));
+@
+@expect
+6
+3
+6
+11
+19
+31
+48
+71
+101
+@
