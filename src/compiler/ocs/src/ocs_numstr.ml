@@ -7,8 +7,6 @@ open Ocs_num
 open Ocs_env
 
 open Num
-open Big_int
-open Ratio
 
 (* We need to scan strings and keep track of our position.  *)
 
@@ -72,9 +70,9 @@ let parse_prefix s =
     nextp 0 Undef
 ;;
 
-let strtobi s base =
+let strtoi s base =
   let n = Bytes.length s
-  and am v i = add_int_big_int i (mult_int_big_int base v) in
+  and am v i =  i + (base * v) in
   let rec loop i v =
     if i >= n then
       v
@@ -86,14 +84,14 @@ let strtobi s base =
 	| 'A' .. 'F' as c -> int_of_char c - int_of_char 'A' + 10
 	| _ -> raise (Error "invalid number")))
   in
-    loop 0 (big_int_of_int 0)
+    loop 0 0
 ;;
 
-let read_bigint s base =
+let read_int s base =
   if base = 10 then
-    big_int_of_string s
+    int_of_string s
   else
-    strtobi s base
+    strtoi s base
 ;;
 
 (* The largest integer is at *least* this big (bigger on 64-bit machines).  *)
@@ -134,14 +132,10 @@ let parse_num s base =
 	    else
 	      Sint i
 	| (_, true) ->
-	    Sbigint (read_bigint (Bytes.sub s.s_str sp (s.s_pos - sp)) base)
+	    raise (Error "too big number")
     in
       let num = readn () in
 	match speek s with
-	  Some '/' ->
-	    skip s;
-	    fixsign (div2 (Sbigint (bigint_of_snum num))
-			  (Sbigint (bigint_of_snum (readn ()))))
 	| Some ('+' | '-' | '@') | None -> fixsign num
 	| _ -> raise (Error "invalid rational")
 ;;
@@ -180,12 +174,6 @@ let parse_flo10 s =
 ;;
 
 let string_to_num str ub =
-  (* Special cases for [-+][iI] *)
-  if str = "+i" || str = "+I" then
-    Scomplex { Complex.re = 0.0; Complex.im = 1.0; }
-  else if str = "-i" || str = "-I" then
-    Scomplex { Complex.re = 0.0; Complex.im = -1.0; }
-  else
   let s = { s_str = str; s_pos = 0 } in
   let (base, ex) =
     match parse_prefix s with
@@ -209,38 +197,12 @@ let string_to_num str ub =
 	parse_num s base
     and fixex n =
       match (ex, n) with
-	(Inexact, (Sint _ | Sbigint _ | Srational _)) -> promote_real n
-      | (Exact, (Sreal _ | Scomplex _)) -> raise (Error "Not exact")
+	(Inexact, (Sint _ )) -> promote_real n
+      | (Exact, (Sreal _ )) -> raise (Error "Not exact")
       | _ -> n
     in
       let a = fixex (getn ()) in
 	match speek s with
-	  Some ('+' | '-' as c) ->
-	    if ex = Exact then
-	      raise (Error "Complex not exact")
-	    else
-	      if ssleft s = 2 && s.s_str.[s.s_pos + 1] = 'i' then
-		Scomplex { Complex.re = float_of_snum a;
-			   Complex.im = (if c = '-' then -1.0 else 1.0) }
-	      else
-		let b = getn () in
-		  if ssleft s <> 1 || speek s <> Some 'i' then
-		    raise (Error "invalid number")
-		  else
-		    Scomplex { Complex.re = float_of_snum a;
-			       Complex.im = float_of_snum b }
-	| Some '@' ->
-            skip s;
-	    if ex = Exact then
-	      raise (Error "Complex not exact")
-	    else
-	      let b = getn () in
-		if ssleft s <> 0 then
-		  raise (Error "invalid number")
-		else
-		  let r = float_of_snum a
-		  and t = float_of_snum b in
-		    Scomplex (Complex.polar r t)
 	| Some c -> raise (Error "invalid number")
 	| None -> a
 ;;
@@ -295,23 +257,6 @@ let string_of_real r =
     loop 0
 ;;
 
-let string_of_complex =
-  function { Complex.re = r; Complex.im = i } ->
-    (string_of_real_s r) ^
-      (if i < 0.0 then
-	begin
-	  if i = -1.0 then
-	    "-i"
-	  else
-	    (string_of_real_s i) ^ "i"
-	end
-      else
-	if i = 1.0 then
-	  "+i"
-	else
-	  "+" ^ (string_of_real_s i) ^ "i")
-;;
-
 let ichr i =
   if i < 10 then
     char_of_int (int_of_char '0' + i)
@@ -349,43 +294,16 @@ let itostr base i =
       pf ^ string_of_list (loop (abs i) [])
 ;;
 
-let biqmi bi i =
-  let (q, r) = quomod_big_int bi (big_int_of_int i) in
-    (q, int_of_big_int r)
-;;
-
-let bitostr base bi =
-  let pf = if sign_big_int bi < 0 then "-" else "" in
-  let rec loop bi r =
-    if sign_big_int bi = 0 then
-      begin
-	match r with
-	  [] -> [ '0' ]
-	| _ -> r
-      end
-    else
-      let (q, m) = biqmi bi base in
-	loop q ((ichr m)::r)
-  in
-    pf ^ string_of_list (loop (abs_big_int bi) [])
-;;
-
 let ntostr base =
   function
     Sint i -> itostr base i
-  | Sbigint bi -> bitostr base bi
-  | Srational r -> bitostr base (numerator_ratio r) ^ "/" ^
-                     bitostr base (denominator_ratio r)
   | _ -> raise (Error "number->string: invalid radix for inexact number")
 ;;
 
 let rec snum_numtostr =
   function
     [| Sint i |] -> Sstring (string_of_int i)
-  | [| Sbigint bi |] -> Sstring (string_of_big_int bi)
-  | [| Srational r |] -> Sstring (string_of_ratio r)
   | [| Sreal r |] -> Sstring (string_of_real r)
-  | [| Scomplex z |] -> Sstring (string_of_complex z)
   | [| snum; Sint radix |] ->
       if radix = 10 then
 	snum_numtostr [| snum |]

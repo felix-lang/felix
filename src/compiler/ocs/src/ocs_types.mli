@@ -30,9 +30,6 @@ type sval =
   (* Numeric types.  *)
   | Sint of int
   | Sreal of float
-  | Scomplex of Complex.t
-  | Sbigint of Big_int.big_int
-  | Srational of Ratio.ratio
 
   (* Character.  *)
   | Schar of char

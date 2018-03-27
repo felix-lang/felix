@@ -56,9 +56,6 @@ and store putc puts disp =
   | Ssymbol s -> puts s
   | Sint i -> puts (string_of_int i)
   | Sreal r -> puts (string_of_real r)
-  | Scomplex z -> puts (string_of_complex z)
-  | Sbigint b -> puts (Big_int.string_of_big_int b)
-  | Srational r -> puts (Ratio.string_of_ratio r)
   | Schar c -> if disp then putc c else store_char putc puts c
   | Spair l -> store_list putc puts disp l
   | Svector v -> store_vector putc puts disp v

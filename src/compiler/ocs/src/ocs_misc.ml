@@ -42,9 +42,6 @@ let test_eqv a b =
       (Sint i1, Sint i2) -> i1 = i2
     | (Schar c1, Schar c2) -> c1 = c2
     | (Sreal r1, Sreal r2) -> r1 = r2
-    | (Sbigint bi1, Sbigint bi2) -> Big_int.compare_big_int bi1 bi2 = 0
-    | (Srational r1, Srational r2) -> Ratio.compare_ratio r1 r2 = 0
-    | (Scomplex z1, Scomplex z2) -> z1 = z2
     | (Sstring s1, Sstring s2) -> s1 = s2
     | (Svector v1, Svector v2) -> v1 == v2
     | _ -> false

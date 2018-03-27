@@ -3,7 +3,6 @@ open Flx_print
 open Flx_exceptions
 open List
 open Flx_typing
-open Big_int
 open Flx_set
 open Flx_maps
 
@@ -13,6 +12,7 @@ let truth sr r =
   let r = if r then 1 else 0 in
   EXPR_typed_case (sr,r,flx_bool)
 
+(*
 let sbi x = string_of_big_int x
 let bis x = big_int_of_string x
 
@@ -32,13 +32,18 @@ let ge x y = (ge_big_int (bis x) (bis y))
 let gt x y = (gt_big_int (bis x) (bis y))
 
 let mkint sr x = EXPR_literal (sr, {felix_type="int"; internal_value=x; c_value=x}) 
+*)
+
 let mkstring sr x = EXPR_literal (sr, {felix_type="string"; internal_value=x; 
   c_value=Flx_string.c_quote_of_string x}) 
 
 let const_fold' e sr name arg =
+(*
   let mkint x = mkint sr x in
+*)
   let mkstring x = mkstring sr x in
   match name, arg with
+(*
   (* integers *)
   (* -x *)
   | "neg", EXPR_literal (_,{felix_type="int"; internal_value=x})
@@ -157,6 +162,7 @@ let const_fold' e sr name arg =
           ])
     ->
     truth sr (not (eq x y))
+*)
 
   (* strings *)
   (* x+y *)

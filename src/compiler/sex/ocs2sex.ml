@@ -9,10 +9,6 @@ let rec ocs2sex (s:sval) : sexp_t =
     -> failwith ("unmapped ocs type Seof " ^ Ocs_print.string_of_ocs s)
   | Sreal _
     -> failwith ("unmapped ocs type Sreal " ^ Ocs_print.string_of_ocs s)
-  | Scomplex _
-    -> failwith ("unmapped ocs type Scomplex " ^ Ocs_print.string_of_ocs s)
-  | Srational _
-    -> failwith ("unmapped ocs type Srational " ^ Ocs_print.string_of_ocs s)
   | Schar _
     -> failwith ("unmapped ocs type Schar " ^ Ocs_print.string_of_ocs s)
   | Sport _
@@ -38,7 +34,6 @@ let rec ocs2sex (s:sval) : sexp_t =
   | Sstring s -> Str s
   | Ssymbol s -> Id s
   | Sint i -> Int (string_of_int i)
-  | Sbigint i -> Int (Big_int.string_of_big_int i)
   | Spair _ ->
     let svs = Ocs_misc.list_to_caml s in
     let sexs = List.map ocs2sex svs in
