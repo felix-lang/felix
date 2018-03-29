@@ -5,7 +5,7 @@ open Dypgen_parser
 open Dypgen_lexer
 open Extract_type
 
-(*let _ = Dyp.dypgen_verbose := 4*)
+let _ = Dyp.dypgen_verbose := 0
 
 let input_file, input_file_short =
   let input_file = !Argument.string_ref in
@@ -607,7 +607,11 @@ let non_terminal_map, non_terminal_set =
     let nt_not_in_rhs = String_set.diff nt_not_in_rhs entryp_set in
     let f hs nt =
       (*print_endline ("File \""^input_file^"\":");*)
-      print_endline ("Warning: non terminal `"^nt^"' is never in a "^hs)
+      if !Argument.werror then
+        (fprintf stderr "Error: non terminal `%s' is never in a %s\n" nt hs;
+        exit 2)
+      else
+        print_endline ("Warning: non terminal `"^nt^"' is never in a "^hs)
     in
     String_set.iter (f "left-hand side.") nt_not_in_lhs;
     String_set.iter (f "right-hand side.") nt_not_in_rhs;
@@ -668,8 +672,13 @@ let symb_cons_map, cons_entry_table, var_cons_map =
     List.fold_left (fun vcm (identl, _) -> match identl with
       | name::args ->
           if Extract_type.match_Arg_ (Lexing.from_string name)
-          then Printf.printf
-            "Warning: the lexer name `%s' contains the string `_Arg_'\n" name;
+          then
+            if !Argument.werror then
+              (fprintf stderr
+              "Error: the lexer name `%s' contains the string `_Arg_'\n" name;
+              exit 2)
+            else printf
+              "Warning: the lexer name `%s' contains the string `_Arg_'\n" name;
           let vcm = Str2_map.add (name,"") ("Lex_"^name) vcm in
           List.fold_left (fun vcm arg ->
             Str2_map.add (name,arg) ("Lex_"^name^"_Arg_"^arg) vcm)
@@ -895,7 +904,11 @@ let priority_set =
          then
            (printf "File \"%s\", line %d, characters %d-%d:\n"
            fname line col1 col2;
-           printf "Warning: the priority `%s' is not declared\n" p);
+           if !Argument.werror then
+             (fprintf stderr "Error: the priority `%s' is not declared\n" p;
+             exit 2)
+           else
+             printf "Warning: the priority `%s' is not declared\n" p);
         String_set.add p st_set)
     | _ -> st_set
   in
@@ -904,7 +917,11 @@ let priority_set =
     if String_set.mem p priority_set1=false && p<>"default_priority" then
       (printf "File \"%s\", line %d, characters %d-%d:\n"
       fname line col1 col2;
-      printf "Warning: the priority `%s' is not declared\n" p);
+      if !Argument.werror then
+        (fprintf stderr "Error: the priority `%s' is not declared\n" p;
+        exit 2)
+      else
+        printf "Warning: the priority `%s' is not declared\n" p);
     List.fold_left aux1 st_set ld_list
   in
   let priority_set = List.fold_left aux2 priority_set1 grammar in

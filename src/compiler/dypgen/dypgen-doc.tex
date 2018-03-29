@@ -2,6 +2,14 @@
 \usepackage[utf8]{inputenc}
 \usepackage{geometry}
 \geometry{ hmargin=2cm, vmargin=2cm }
+\usepackage{hyperref}
+\hypersetup{
+colorlinks=true,       % false: boxed links; true: colored links
+    linkcolor=black,          % color of internal links
+    citecolor=black,        % color of links to bibliography
+    filecolor=black,      % color of file links
+    urlcolor=blue           % color of external links
+}
 \title{\texttt{dypgen} User's Manual}
 \author{Emmanuel Onzon}
 
@@ -567,7 +575,25 @@ type position = {
 
 The demo program \verb|position_token_list| is the same as \verb|position| except that it first uses ocamllex to make a list of tokens and then uses dypgen to parse this list of tokens. It makes use of \verb|dypgen_lexbuf_position|.\\
 
-Note: the following abbreviations are available in the \verb|.dyp| file: \verb|$<| for \verb|dyp.Dyp.rhs_start_pos| and \verb|$>| for \verb|dyp.Dyp.rhs_end_pos|.
+Note: the following abbreviations are available in the \verb|.dyp| file: \verb|$<| for \verb|dyp.Dyp.rhs_start_pos| and \verb|$>| for \verb|dyp.Dyp.rhs_end_pos|.\\
+
+Remark that in some instances, the position returned by \verb|symbol_start| and \verb|symbol_start_pos| looks inconsistent with the position returned by the functions for the right-hand side. This may be the case when the right-hand side of the rule, which is used to reduce, begins with nullable non terminals. In such a case the position returned by \verb|rhs_start| and \verb|rhs_end| for these symbols may be smaller than the position returned by \verb|symbol_start|. This is the case when there are layout characters before the characters matched by the first non nullable symbol of the right-hand side of the rule. Here is an example.
+\begin{verbatim}
+%start main
+%layout ' '
+%parser
+main: eps "abc"
+  { Printf.printf "eps start: %d, eps end: %d, main start: %d\n"
+     (dyp.Dyp.rhs_start 1) (dyp.Dyp.rhs_end 1)
+     (dyp.Dyp.symbol_start ());
+    0 }
+eps: { 0 }
+\end{verbatim}
+Parsing the string \verb|"   abc"|, where the string begins with 3 spaces, returns
+\begin{verbatim}
+eps start: 0, eps end: 0, main start: 4
+\end{verbatim}
+The reason for this inconsistency is that no layout character is read before reducing with a rule with an empty right-end side, therefore the 3 spaces are not read. But those layout characters are not included when computing the start of \verb|main|. This seems to be the most useful convention.
 
 
 \subsection{Extending the lexer}
@@ -669,7 +695,7 @@ let dyp_merge_Obj_nt l = match l with
   | [] -> assert false
 \end{verbatim}
 
-A merge function is only called on ASTs which were yielded with the same priority. If a part of the input is reduced to the same non terminal by two different ways but yielding two distinct priorities, then each AST is kept and used independantly for the parsing, but they are not merged.
+A merge function is only called on ASTs which were yielded with the same priority. If a part of the input is reduced to the same non terminal by two different ways but yielding two distinct priorities, then each AST is kept and used independently for the parsing, but they are not merged.
 
 \subsubsection{Example}
 
@@ -1581,6 +1607,18 @@ exception Undefined_ter of string
 \end{verbatim}
 The string is the name of the undefined token. If you want to extend the lexer then use dypgen as the lexer generator and use regular expressions in the right hand-side of the new rules that need the lexer to be extended.\\
 
+It is not possible to define new named regexp at runtime but it is possible to use the ones defined statically to build new rules using the constructor \verb|RE_Name|. If this constructor is used with a string that does not correspond to an existing named regexp then the exception \verb|Not_found| is raised. Therefore it is useful to check whether the string is the name of a named regexp. To do so it is possible to use the following function.
+\begin{verbatim}
+val is_re_name : ('t,'o,'gd,'ld,'l) parser_pilot -> string -> bool
+\end{verbatim}
+For instance, the code
+\begin{verbatim}
+if is_re_name dyp.parser_pilot s
+then Regexp (RE_Name s)
+else failwith "regexp name undefined"
+\end{verbatim}
+fails when trying to use a string \verb|s| that does not correspond to an existing named regexp.\\
+
 Note that you can also include non terminals in the initial grammar without being part of any rule. To do this use the keyword \verb|%non_terminal| followed by the names of the non terminals you want to include, like:
 \begin{verbatim}
 %non_terminal nt1 nt2 nt3
@@ -2153,6 +2191,22 @@ val lexparse :
   ?choose_token:[`first|`all] ->
   'obj dyplexbuf ->
   (('obj * string) list)
+
+val log_channel : out_channel ref
+
+val function_free_pdev :
+  ('t,'o,'gd,'ld,'lb) parsing_device -> ('t,'o,'gd,'ld,'lb) parsing_device
+
+val import_functions :
+  ('t,'o,'gd,'ld,'l) parsing_device ->
+  ('t,'o,'gd,'ld,'l) parser_pilot ->
+  (rule * (('t,'o,'gd,'ld,'l) dypgen_toolbox ->
+      'o list -> 'o * ('t,'o,'gd,'ld,'l) dyp_action list)) list ->
+  ('t,'o,'gd,'ld,'l) parsing_device
+
+val is_re_name : ('t,'o,'gd,'ld,'l) parser_pilot -> string -> bool
+
+val version : string
 \end{verbatim}
 
 \section{Other features}
@@ -2266,6 +2320,19 @@ is a constructor of the type \verb|dyp_action| that makes possible to print the 
 \end{verbatim}
 
 If the option \texttt{--merge-warning} is used then a warning is issued on the standard output each time a merge happens. If the \texttt{lexbuf} structure is updated by user actions in the lexer then the beginning and the end of the part of the input is given.
+
+\subsection{Warnings}
+
+Dypgen issues warnings at compile time in the following situations:
+\begin{itemize}
+\item When a non terminal symbol is only in right-hand side and not in a left-hand side and inversely (except for start symbols).
+\item When a lexer name contains the string `\verb|_Arg_|'.
+\item When a priority is not declared.
+\end{itemize}
+
+In addition dypgen issues warning at run time when a merge is done if the option \verb|--merge-warning| is used.
+
+Compile time warnings become failing errors when using the command option \verb|--Werror|.
 
 \subsection{Error}
 

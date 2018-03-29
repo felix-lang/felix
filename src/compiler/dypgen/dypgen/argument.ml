@@ -1,4 +1,4 @@
-let dypgen_version = "20110328"
+let dypgen_version = "20120619"
 
 let verbose = ref 1
 let merge_warning = ref false
@@ -6,6 +6,7 @@ let merge_warning = ref false
 let emit_token_type = ref true
 let emit_pp = ref true
 let emit_obj_type = ref true
+let werror = ref false
 
 let process_verbose_mode () = verbose := 2
 
@@ -39,6 +40,8 @@ let list_arg = [
 
 ("--merge-warning",Arg.Set merge_warning,"activates merge warning: the generated parser will emit a warning on the standard output each time a merge happens");
 
+("--Werror",Arg.Set werror,"warnings become errors, does not apply for merge warnings");
+
 ("--pv-obj",Arg.Set pv_obj,"the type constructor obj is made as a sum of polymorphic variants instead of a sum of constructors. This is useful when the maximum number of constructors allowed is reached.");
 
 ("--pv-token",Arg.Set pv_token,"the type token is made as a sum of polymorphic variants instead of a sum of constructors. This is useful when the maximum number of constructors allowed is reached.");
@@ -65,10 +68,10 @@ let list_arg = [
 
 ("--cpp-options",Arg.String process_cpp_options,"\"options\" dypgen calls the C preprocessor cpp with options \"options\" on the input file before processing it.");
 
-("--version",Arg.Unit process_version,"gives the version of dypgen and exit.")
+("--version",Arg.Unit process_version,"gives the version of dypgen and exits.")
 ]
 
-let _ = Arg.parse list_arg process_argument "usage: dypgen [-v] [--merge-warning] [--pv-obj] [--pv-token] [--noemit-token-type] [--no-pp] [--no-obj-type] [--no-undef-nt] [--ocamlc \"options\" | --command \"command\"] [--no-mli] [--use-rule-order] [--use-all-actions] [--cpp | --cpp-options \"options\"] file_name.dyp\n"
+let _ = Arg.parse list_arg process_argument "usage: dypgen [-v] [--merge-warning] [--Werror] [--pv-obj] [--pv-token] [--noemit-token-type] [--no-pp] [--no-obj-type] [--no-undef-nt] [--ocamlc \"options\" | --command \"command\"] [--no-mli] [--use-rule-order] [--use-all-actions] [--cpp | --cpp-options \"options\"] file_name.dyp\n"
 
 let _ = if !string_ref = "" then
-  let _ = print_string "usage: dypgen [-v] [--merge-warning] [--pv-obj] [--pv-token] [--noemit-token-type] [--no-pp] [--no-obj-type] [--no-undef-nt] [--ocamlc \"options\" | --command \"command\"] [--no-mli] [--use-rule-order] [--use-all-actions] [--cpp | --cpp-options \"options\"] file_name.dyp\n" in exit 0
+  let _ = print_string "usage: dypgen [-v] [--merge-warning] [--Werror] [--pv-obj] [--pv-token] [--noemit-token-type] [--no-pp] [--no-obj-type] [--no-undef-nt] [--ocamlc \"options\" | --command \"command\"] [--no-mli] [--use-rule-order] [--use-all-actions] [--cpp | --cpp-options \"options\"] file_name.dyp\n" in exit 0

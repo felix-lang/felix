@@ -1,7 +1,7 @@
 include ../Makefile.config
 
 REP=
-CAMLC=ocamlc -g
+CAMLC=ocamlc
 OCAMLFIND=ocamlfind
 
 all: dyp opt prof
