@@ -1,11 +1,7 @@
-let version = "20120619"
-
 let list_map f l = List.rev (List.rev_map f l)
 
 include Dyplex
 open Dyp_special_types
-
-open Printf
 
 let default_priority = 0
 
@@ -656,7 +652,7 @@ let create_aut gram_rhs gram_lhs gram_parnt bnt_array r_L (*prio_dat*) it_nb (*a
       !dypgen_verbose
       (*prio_dat*) it_nb (*array_nt_prio nt_of_ind prio_of_ind lhslists*)
       r_L lhs_table ist_nt_nb token_nb str_non_ter
-      str_ter entry_points_list regexp_array implicit_rule
+      str_ter entry_points_list regexp_array
   in
   state_list, n, stations, entry_points, is_trace
 
@@ -1016,9 +1012,6 @@ let string_of_nt_prio = function
   | Greater_priority p -> "(>"^p^")", Some p
   | Greatereq_priority p -> "(>="^p^")", Some p
 
-let string_prio_of_nt_prio ntp = match string_of_nt_prio ntp with
-  | _, (Some p) -> p | _, None -> ""
-
 let add_prio_nt nt_prio_map lhs_prio_map priodata nt_table ntntp_ht ntp_ntl_ht =
   String_map.fold (fun nt_lhs (nt, ntp) ral ->
     let ps = find_lhspm nt lhs_prio_map in
@@ -1104,7 +1097,7 @@ let print_nt_ntl_array outchan nt_ntl_array str_non_ter =
   for i=0 to Array.length nt_ntl_array -1 do
     output_string outchan (str_non_ter.(i)^" : ");
     output_string outchan
-      (Bytes.concat " "
+      (String.concat " "
       (Int_set.fold (fun nt l -> str_non_ter.(nt)::l) nt_ntl_array.(i) []));
     output_string outchan "\n"
   done
@@ -1141,7 +1134,6 @@ let make_grammar ral old_ral (relations:string list list) ppar ter_table str_ter
         let nts = String_set.add (lhs^"("^p^")") nts in
         let nts = String_set.add (lhs^"(_)") nts in
         let ntpm = String_map.add (lhs^"(_)") (lhs, No_priority) ntpm in
-        let ntpm = String_map.add (lhs^"("^p^")") (lhs, Eq_priority p) ntpm in
         let cons =
           try String_map.find lhs nt_cons_map
           with Not_found -> assert false
@@ -1252,13 +1244,7 @@ let make_grammar ral old_ral (relations:string list list) ppar ter_table str_ter
   Hashtbl.iter (fun re i -> Printf.printf "i=%d\n" i) regexp_table;*)
   
   let str_non_ter = Array.make (nt_set_card+1) "" in
-  let str_non_ter_prio = Array.make (nt_set_card+1) ("","") in
-  let f5 str n =
-    str_non_ter.(n) <- str;
-    let nt, p = String_map.find str nt_prio_map in
-    let p_str = string_prio_of_nt_prio p in
-    str_non_ter_prio.(n) <- nt, p_str
-  in
+  let f5 str n = str_non_ter.(n) <- str in
   Hashtbl.iter f5 nt_table;
   
   let prio_dat = {
@@ -1328,7 +1314,7 @@ let make_grammar ral old_ral (relations:string list list) ppar ter_table str_ter
   
   gram_lhs, gram_rhs, lhs_table, actions, inherited, nt_nb, po_ht,
   user_g, (*array_nt_prio, nt_of_ind, prio_of_ind,*)
-  nt_table, str_non_ter, str_non_ter_prio, (*prio_dat,*) rn_of_rule, regexp_table,
+  nt_table, str_non_ter, (*prio_dat,*) rn_of_rule, regexp_table,
   ((List.rev !(fst regexp_list)), (List.rev !(snd regexp_list))),
   ((List.rev !(fst regexp_actions)), (List.rev !(snd regexp_actions))),
   regexp_array, rule_options, (*lhslists,*) cyclic_rules, gram_parnt, bnt_array,
@@ -1447,7 +1433,7 @@ let make_grammar ral old_ral (relations:string list list) ppar ter_table str_ter
 let create_parsing_device ra_list relations (*global_data local_data*) nt_cons_map entry_point_list ppar regexp_decl_list main_lexer aux_lexer token_nb str_ter ter_table =
   
   let gram_lhs, gram_rhs, lhs_table, actions, inherited, nt_nb,
-    po_ht, user_g, nt_table, str_non_ter, str_non_ter_prio, rn_of_rule,
+    po_ht, user_g, nt_table, str_non_ter, rn_of_rule,
     regexp_table, regexp_list, regexp_actions, regexp_array,
     rule_options, cyclic_rules, gram_parnt, bnt_array, cons_of_nt,
     nt_ntl_array, implicit_rule, left_rec_rule
@@ -1589,7 +1575,6 @@ let create_parsing_device ra_list relations (*global_data local_data*) nt_cons_m
     (*prio_of_ind = prio_of_ind;
     nt_of_ind = nt_of_ind;*)
     str_non_ter = str_non_ter;
-    str_non_ter_prio =  str_non_ter_prio;
     cons_of_nt = cons_of_nt;
     relations = relations;
     nt_cons_map = nt_cons_map;
@@ -1639,7 +1624,7 @@ let make_parser
   let ppar = {
     merge_warning = merge_warning;
     undef_nt = undef_nt;
-    get_value = get_value; 
+    get_value = get_value;
     get_name = get_name;
     str_token = str_token;
     global_data_equal = global_data_equal;
@@ -2733,7 +2718,7 @@ let update_parsing_device ppar pdev_leftSib new_relations rapf_add new_nt_cons c
     in
     let gram_lhs, gram_rhs, lhs_table, actions, inherited, nt_nb,
       po_ht, user_g,
-      nt_table, str_non_ter, str_non_ter_prio, rn_of_rule,
+      nt_table, str_non_ter, rn_of_rule,
       regexp_table, regexp_list, regexp_actions, regexp_array,
       rule_options, cyclic_rules, gram_parnt, bnt_array,
       cons_of_nt, nt_ntl_array, implicit_rule, left_rec_rule
@@ -2922,7 +2907,6 @@ let update_parsing_device ppar pdev_leftSib new_relations rapf_add new_nt_cons c
     nt_nb = Array.length gram_lhs;
     token_nb = new_token_nb;
     str_non_ter = str_non_ter;
-    str_non_ter_prio = str_non_ter_prio;
     cons_of_nt = cons_of_nt;
     relations = relations;
     nt_cons_map = nt_cons_map;
@@ -3016,7 +3000,7 @@ type ('token,'obj,'data,'local_data,'lexbuf) vertex = {
   token read before creating this stack node.
   Second bit = 1 if layout char are allowed to be read before the
   next token. *)
-  lexer_pos : Lexing.position; (* this is the position just after the token *)
+  lexer_pos : (Lexing.position * Lexing.position);
   mutable succ_edges : (('token,'obj,'data,'local_data,'lexbuf) edge) list;
   mutable prev_nodes_eps : ('token,'obj,'data,'local_data,'lexbuf) vertex list;
   (* stack nodes that point to this node and that have the same last_token,
@@ -3042,8 +3026,7 @@ and ('token,'obj,'data,'local_data,'lexbuf) edge = {
   mutable edge_label : 'obj list;
   mutable edge_id : int;
   mutable dest : ('token,'obj,'data,'local_data,'lexbuf) vertex;
-  mutable parse_tree : string;
-  e_lexer_pos : Lexing.position; (* this is the position just before the token, after layout chars *)
+  mutable parse_tree : string
   (*mutable edge_reduced : bool;*)
   (* tells whether the edge has been used for a reduction *)
   (*mutable reduction_list :
@@ -3072,11 +3055,10 @@ and ('token,'obj,'data,'local_data,'lexbuf) edge = {
   in
   List.iter (aux (fun _ -> ())) topmost*)
 
-let create_e v1 label id v2 f topmost pt e_lexer_pos =
+let create_e v1 label id v2 f topmost pt =
   let new_edge = {
     edge_label = label; edge_id = id; dest = v2;
-    parse_tree = pt;
-    e_lexer_pos = e_lexer_pos
+    parse_tree = pt
     (*edge_reduced = false;*) (*reduction_list = None*) }
   in
   v1.succ_edges <- new_edge::(v1.succ_edges);
@@ -3486,14 +3468,11 @@ let insert_reduction rl sn link counters topmost use_rule_order =
 
 exception Find_rightSib_failed
 
-let str_bool = function true -> "true" | false -> "false"
-
 (** [find_rightSib] is used in [reduceViaPath] and [doShift].
     Its purpose is to find in the stack nodes list [snl] a stack node which
     holds the same grammar as [g_leftSib] and which holds a state which has an
     items set equal to [is_rightSib]. *)
-let find_rightSib g_nb_rightSib st_nb snl (gd:'gd) (ld:'ld) layout_flags (gd_equal:'gd->'gd->bool) (ld_equal:'ld->'ld->bool) non_ter test_mergeable (*sn_id start_node_nb*) =
-  if !dypgen_verbose>2 then Printf.fprintf !log_channel "find_rightSib called\n";
+let find_rightSib g_nb_rightSib st_nb snl (gd:'gd) (ld:'ld) layout_flags (gd_equal:'gd->'gd->bool) (ld_equal:'ld->'ld->bool) non_ter sn_id start_node_nb =
   let rec aux snl = match snl with
     | [] -> raise Find_rightSib_failed
     | sn::tl ->
@@ -3501,24 +3480,13 @@ let find_rightSib g_nb_rightSib st_nb snl (gd:'gd) (ld:'ld) layout_flags (gd_equ
           try Intc_map.find (g_nb_rightSib,st_nb) start_node.visited_states
           with Not_found -> -1
         in*)
-        if !dypgen_verbose>2 then
-          Printf.fprintf !log_channel
-          "sn.sn_nb = %d, sn.state_nb = %d, st_nb = %d, sn.pdev.g_nb = %d, g_nb_rightSib = %d, gd_equal = %s, ld_equal = %s, layout_flags = %d, sn.layout_flags = %d, test_mergeable = %s, sn.sn_non_ter = %d, non_ter = %d\n"
-          sn.sn_nb
-          sn.state_nb st_nb sn.pdev.g_nb g_nb_rightSib
-          (str_bool (gd_equal sn.global_data gd))
-          (str_bool (ld_equal sn.local_data ld))
-          layout_flags sn.layout_flags
-          (str_bool (test_mergeable sn))
-          sn.sn_non_ter non_ter;
         if sn.state_nb = st_nb && sn.pdev.g_nb = g_nb_rightSib &&
           gd_equal sn.global_data gd &&
           ld_equal sn.local_data ld &&
           layout_flags = sn.layout_flags &&
-          (test_mergeable sn) &&
-          (*(sn.pdev.state_is_mergeable.(sn.state_nb)
+          (sn.pdev.state_is_mergeable.(sn.state_nb)
           || start_node_nb = sn.sn_nb
-          || sn_id = sn.sn_nb) &&*)
+          || sn_id = sn.sn_nb) &&
           sn.sn_non_ter = non_ter
         then sn
         else aux tl
@@ -3652,13 +3620,10 @@ let merge_in_edge ppar counters edge_nb (sn, link, cons_index, objdata_list) (to
     let _, _, _, (sn, link, cons_index, objdata_list) = m in
     let edge_nb = link.edge_nb in*)
     if !dypgen_verbose>2 then
-      Printf.fprintf !log_channel "do_merge for edge: [%d]-%d-[%d]\nobjdata_list length = %d\n"
-      link.dest.sn_nb edge_nb sn.sn_nb (List.length objdata_list);
+      Printf.fprintf !log_channel "do_merge for edge: [%d]-%d-[%d]\n"
+      link.dest.sn_nb edge_nb sn.sn_nb;
     let obj_list, glo_dat, loc_dat =
       ppar.merge_array.(cons_index) objdata_list in
-    if !dypgen_verbose>2 then
-      Printf.fprintf !log_channel "obj_list length = %d\n"
-      (List.length obj_list);
     let pdev = sn.pdev in
     if (ppar.global_data_equal glo_dat sn.global_data &&
       ppar.local_data_equal loc_dat sn.local_data)
@@ -3684,8 +3649,7 @@ let merge_in_edge ppar counters edge_nb (sn, link, cons_index, objdata_list) (to
           then raise Find_rightSib_failed else*)
           find_rightSib pdev.g_nb sn.state_nb topmost
           sn.global_data sn.local_data sn.layout_flags
-          ppar.global_data_equal ppar.local_data_equal sn.sn_non_ter (*(-1) (-1)*)
-          (fun sn -> sn.pdev.state_is_mergeable.(sn.state_nb)),
+          ppar.global_data_equal ppar.local_data_equal sn.sn_non_ter (-1) (-1),
           counters.countsn, topmost, false
         with Find_rightSib_failed ->
           let rightSib =
@@ -3697,7 +3661,7 @@ let merge_in_edge ppar counters edge_nb (sn, link, cons_index, objdata_list) (to
       in
       let new_edge = create_e rightSib
         obj_list counters.counted link.dest
-        (check_last_token link.dest.last_token) topmost link.parse_tree link.e_lexer_pos in
+        (check_last_token link.dest.last_token) topmost link.parse_tree in
       if !dypgen_verbose>2 then
         (print_sn rightSib;
         Printf.fprintf !log_channel
@@ -3784,13 +3748,12 @@ let print_g last_pdev outchan =
 
 
 let position_map p start_node =
-  let rec aux res lpos = function
-    | [] -> res
-    | e::t ->
-        let pos = e.dest.lexer_pos in
-        aux ((e.e_lexer_pos, lpos)::res) pos t
+  let rec aux res l = match l with
+    | [] -> List.rev (start_node.lexer_pos::res)
+    | e::t -> aux (e.dest.lexer_pos::res) t
   in
-  aux [] start_node.lexer_pos (List.rev p)
+  try aux [] (List.tl p)
+  with Failure _ -> [start_node.lexer_pos]
 
 
 
@@ -3821,28 +3784,6 @@ let add_inherited_val sn0 sn1 argll nt =
   else (*let _ = output_string !log_channel "bnt_array = false\n" in*) argll
 
 
-(*let rec find_end_node_pos snd_node_lexer_pos sn_lexer_pos = function
-  | (pos,_)::tl ->
-    if pos = snd_node_lexer_pos
-    then find_end_node_pos snd_node_lexer_pos sn_lexer_pos tl
-    else pos
-  | [] -> sn_lexer_pos*)
-
-
-let find_end_node_pos sn_lexer_pos path =
-  let rec aux last_pos = function
-  | e::tl ->
-    if last_pos = e.dest.lexer_pos
-    then aux e.e_lexer_pos tl
-    else last_pos
-  | [] -> last_pos
-  in
-  match path with
-  | e::tl -> aux e.e_lexer_pos tl
-  | [] -> sn_lexer_pos
-
-
-
 let compute_inherited_values sn ppar next_lexeme =
   (*print_endline "compute_inherited_values";*)
   let state_id = sn.state_nb in
@@ -3863,12 +3804,9 @@ let compute_inherited_values sn ppar next_lexeme =
     let argll = collect_objs path sn in
     let argll = add_inherited_val sn0 sn argll lhs in
     let position_list = position_map path sn in
-    (*let end_node_pos = match position_list with
-      | (pos, _)::_ -> pos
-      | [] -> sn.lexer_pos
-    in*)
-    let end_node_pos = find_end_node_pos sn.lexer_pos path in
-    let start_node_pos = sn.lexer_pos in
+    let end_node_pos = try fst (List.hd position_list)
+      with Failure _ -> Lexing.dummy_pos in
+    let start_node_pos = snd sn.lexer_pos in
     let symbol_pos = (end_node_pos, start_node_pos) in
     let pp = {
       pp_dev = pdev;
@@ -3897,7 +3835,7 @@ let compute_inherited_values sn ppar next_lexeme =
 
 
 
-let complete_reduction topmost rl mm parse_res pr leftSib pdev_rightSib global_data_rS local_data_rS v_rightSib new_obj nt symbol_pos counters ppar cons_index layout_flags ind tnb selfderiv pt next_lexeme start_node =
+let complete_reduction topmost rl mm parse_res pr leftSib pdev_rightSib global_data_rS local_data_rS v_rightSib new_obj nt lexer_pos counters ppar cons_index layout_flags ind tnb selfderiv pt next_lexeme start_node =
 (*pathList pl_recred topmost leftSib pdev_rightSib
 v_rightSib new_obj nt lexer_pos prio counters ppar merge_map cons_index layout_flags edge_map ind tnb =*)
   (*if !dypgen_verbose>2 then
@@ -3906,27 +3844,22 @@ v_rightSib new_obj nt lexer_pos prio counters ppar merge_map cons_index layout_f
   try
     (*if not pdev_rightSib.state_is_mergeable.(v_rightSib)
     then raise Find_rightSib_failed else*)
-    (* we allow to merge (same rightSib and same link)
+    (* fixme : we should allow to merge (same rightSib and same link)
     for non mergeable state, only the case with Find_link_failed
-    make non mergeable mandatory. *)
+    should make non mergeable mandatory. *)
     let sn_id =
       try Intc_map.find (pdev_rightSib.g_nb,v_rightSib) start_node.visited_states
       with Not_found -> -1
-    in
-    let rightSib =
+     in
+     let rightSib =
       find_rightSib pdev_rightSib.g_nb v_rightSib topmost
       global_data_rS local_data_rS layout_flags
       ppar.find_rightSib_global_data_equal
-      ppar.find_rightSib_local_data_equal nt
-      (fun _ -> true) (*sn_id start_node.sn_nb*)
+      ppar.find_rightSib_local_data_equal nt sn_id start_node.sn_nb
     in
     let find_link rightSib leftSib =
       let rec aux el = match el with
-        | [] ->
-            if rightSib.pdev.state_is_mergeable.(rightSib.state_nb)
-              || start_node.sn_nb = rightSib.sn_nb || sn_id = rightSib.sn_nb
-            then raise Find_link_failed
-            else raise Find_rightSib_failed
+        | [] -> raise Find_link_failed
         | e::tl -> if (stack_node_equal e.dest leftSib) then e else aux tl
       in
       aux rightSib.succ_edges
@@ -3937,10 +3870,10 @@ v_rightSib new_obj nt lexer_pos prio counters ppar merge_map cons_index layout_f
       let old_obj_list = link.edge_label in
       let edge_nb = link.edge_id in
       if (!dypgen_verbose>2 || ppar.merge_warning) then
-        (let (start_pos, end_pos) = symbol_pos in
+        (let (start_pos,end_pos) = lexer_pos in
         let col1 = start_pos.pos_cnum - start_pos.pos_bol in
         let col2 = end_pos.pos_cnum - end_pos.pos_bol in
-        Printf.fprintf !log_channel "Warning: the parser will merge the non terminal `%s'\nin file \"%s\", from l:%d,c:%d to l:%d,c:%d, constructor : %s\n"
+        Printf.fprintf !log_channel "Warning: the parser will merge the non terminal `%s'\nin file \"%s\", from l:%d,c:%d to l:%d,c:%d, consructor : %s\n"
         (pdev_rightSib.str_non_ter.(nt))
         start_pos.pos_fname
         start_pos.pos_lnum col1 end_pos.pos_lnum col2
@@ -3987,7 +3920,7 @@ v_rightSib new_obj nt lexer_pos prio counters ppar merge_map cons_index layout_f
         ppar.local_data_equal rightSib.local_data local_data_rS then ()
         else raise Find_rightSib_failed;
       let link = create_e rightSib [new_obj] counters.counted leftSib
-        (check_last_token leftSib.last_token) topmost pt (fst symbol_pos) in
+        (check_last_token leftSib.last_token) topmost pt in
       if !dypgen_verbose>2 then
         Printf.fprintf !log_channel
         "complete_reduction creates a new edge:\n[%d]-%d-[%d]\n"
@@ -4010,11 +3943,10 @@ v_rightSib new_obj nt lexer_pos prio counters ppar merge_map cons_index layout_f
     in
     let rightSib =
       create_v v_rightSib pdev_rightSib global_data_rS local_data_rS counters.countsn
-      counters.count_token (snd symbol_pos) layout_flags (leftSib.det_depth+1) nt new_vs
+      counters.count_token lexer_pos layout_flags (leftSib.det_depth+1) nt new_vs
     in
     let _ = create_e rightSib [new_obj] counters.counted leftSib
-      (check_last_token leftSib.last_token) topmost pt (fst symbol_pos)
-    in
+      (check_last_token leftSib.last_token) topmost pt in
     if !dypgen_verbose>2 then
       (print_sn rightSib;
       Printf.fprintf !log_channel
@@ -4163,13 +4095,8 @@ let fold_rightSib_l pr counters symbol_pos start_node last_pdev position_list le
     let _ = match_chan_s_chan_g v_rightSib pdev_rightSib chan_s chan_g in
     
     let topmost, rl, mm, parse_res =
-      let nt_entry_point, _ = leftSib.pdev.str_non_ter_prio.(leftSib.pdev.entry_point) in
-      let nt_ind, prio_ind = last_pdev.str_non_ter_prio.(ind) in
-      if (!dypgen_verbose>2) then
-        (fprintf !log_channel "nt_entry_point = %s, nt_ind = %s, prio_ind = %s\n"
-          nt_entry_point nt_ind prio_ind);
-      if (*last_pdev.entry_point = ind*) (*last_pdev.nt_of_ind.(ind)*)
-       nt_entry_point = nt_ind  && leftSib.last_token = 0 then
+      if last_pdev.entry_point = ind (*last_pdev.nt_of_ind.(ind)*)
+      && leftSib.last_token = 0 then
         (*(complete_reduction pathList pl_recred topmost leftSib
         pdev_rightSib v_rightSib new_obj (nt_of_ind.(ind_lS))
         symbol_pos prio counters ppar
@@ -4177,7 +4104,7 @@ let fold_rightSib_l pr counters symbol_pos start_node last_pdev position_list le
         (*let prio_str =
           last_pdev.prio.prd_names.(last_pdev.prio_of_ind.(ind)) in*)
         (*let parse_res = (new_obj, prio_str)::parse_res in*)
-        let parse_res = (new_obj, prio_ind)::parse_res in
+        let parse_res = (new_obj, "")::parse_res in
         complete_reduction topmost rl mm parse_res pr leftSib
           pdev_rightSib newdata newlocal_data v_rightSib new_obj non_ter
           symbol_pos (*prio*) counters ppar cons_index layout_flags
@@ -4212,14 +4139,11 @@ let reduce_with_result pr counters symbol_pos start_node last_pdev position_list
       
     if v_rightSib = -1 then
       (if !dypgen_verbose>2 then output_string !log_channel
-          "v_rightSib = -1\n";
-      if !dypgen_verbose>2 then output_string !log_channel
           "reduce_with found a new parse_result\n";
-      let _, prio_ind = last_pdev.str_non_ter_prio.(ind) in
       let parse_res =
         (*let lpd = last_pdev in
         let prio = lpd.prio.prd_names.(lpd.prio_of_ind.(ind)) in*)
-        (new_obj,prio_ind)::parse_res
+        (new_obj,"")::parse_res
       in
       topmost, rl, mm, parse_res, (will_shift2 && will_shift))
     else
@@ -4233,7 +4157,7 @@ let reduce_with_result pr counters symbol_pos start_node last_pdev position_list
 let table_find ht i = try Hashtbl.find ht i with Not_found -> -1
 
 
-let reduce_with_action ac_l pr counters symbol_pos start_node position_list leftSib pp non_ter rn v_rightSib ind rhs snd_node next_lexeme layout_flags tnb selfderiv pt (topmost, rl, mm, parse_res, will_shift) toPass =
+let reduce_with_action ac_l pr counters symbol_pos start_node position_list leftSib pp non_ter rn v_rightSib ind rhs snd_node next_lexeme layout_flags ind tnb selfderiv pt (topmost, rl, mm, parse_res, will_shift) toPass =
   
   (*output_string !log_channel "reduce_with_action called\n";*)
   let res_list =
@@ -4294,19 +4218,9 @@ let process_v_rightSib_l ac_l pr counters symbol_pos start_node last_pdev positi
     (reduce_with_action ac_l pr counters
       symbol_pos start_node position_list leftSib
       pp non_ter rn v_rightSib ind rhs snd_node
-      next_lexeme layout_flags tnb selfderiv pt)
+      next_lexeme layout_flags ind tnb selfderiv pt)
     (topmost, rl, mm, parse_res, will_shift)
     obj_ll
-
-
-let find_first_no_eps start_node p =
-  let rec aux = function
-    | e1::((e2::_) as tl) ->
-        if e1.dest.last_token = e2.dest.last_token then aux tl
-        else e2.dest
-    | [_] | [] -> start_node
-  in
-  aux p
 
 
 let reduceViaPath (((start_node,p,tnb),(ind,rhs),rn) as pr) rl mm topmost parse_res ppar counters next_lexeme_precursor last_pr merge_reduce =
@@ -4323,10 +4237,11 @@ let reduceViaPath (((start_node,p,tnb),(ind,rhs),rn) as pr) rl mm topmost parse_
     flush_all ());
   
   let position_list = position_map p start_node in
-  (*let end_node_pos = match position_list with
-    | (pos, _)::_ -> pos
-    | [] -> start_node.lexer_pos
-  in*)
+  let end_node_pos = try fst (List.hd position_list)
+    with Failure _ -> Lexing.dummy_pos in
+  let start_node_pos = snd start_node.lexer_pos in
+  let symbol_pos = (end_node_pos, start_node_pos) in
+  (* ^ this is the good order actually ^ *)
   (*add_to_reduction_list path counters.count_token;*)
   (*set_edge_reduced p;*)
   let leftSib, snd_node = match p with
@@ -4334,10 +4249,6 @@ let reduceViaPath (((start_node,p,tnb),(ind,rhs),rn) as pr) rl mm topmost parse_
     | [h] -> h.dest, start_node
     | h1::h2::_ -> h1.dest, h2.dest
   in
-  let end_node_pos = find_end_node_pos start_node.lexer_pos p in
-  let start_node_pos = start_node.lexer_pos in
-  let symbol_pos = (end_node_pos, start_node_pos) in
-  (* ^ this is the good order actually ^ *)
   let pt =
     if !dypgen_verbose>2 then
       (let pdev = start_node.pdev in
@@ -4348,29 +4259,26 @@ let reduceViaPath (((start_node,p,tnb),(ind,rhs),rn) as pr) rl mm topmost parse_
       in
       Printf.fprintf !log_channel "  %s%s\n" lhs_s
         (str_rhs_reduction start_node p pdev.gram_rhs.(rn) pdev.str_non_ter);
-      let pt_rhs = Bytes.concat " " (List.map (fun e -> e.parse_tree) p) in
+      let pt_rhs = String.concat " " (List.map (fun e -> e.parse_tree) p) in
       let pt = "("^lhs_s^pt_rhs^")" in
       output_string !log_channel (pt^"\n");
       pt)
     else ""
   in
+  let layout = (1 land snd_node.layout_flags = 1) && p <> [] in
   (*Printf.fprintf !log_channel "snd_node.layout_flags=%d\n"
     snd_node.layout_flags;
   Printf.fprintf !log_channel
     "start_node.pdev.rule_options.(rn)=%d start_node.layout_flags=%d\n"
     start_node.pdev.rule_options.(rn) start_node.layout_flags;*)
-  let first_no_eps = find_first_no_eps start_node p in
-  let layout = (1 land first_no_eps.layout_flags = 1) && p <> [] in
   let layout_flags =
     let first_flag =
-      match p with [] -> 0 | _ -> 1 land first_no_eps.layout_flags
+      match p with [] -> 0 | _ -> 1 land snd_node.layout_flags
     in
     first_flag lor
     ((2 land start_node.pdev.rule_options.(rn)) land
     (2 land start_node.layout_flags))
   in
-  if !dypgen_verbose>2 then
-    (Printf.fprintf !log_channel "first_no_eps = [%d], layout_flags = %d\n" first_no_eps.sn_nb layout_flags);
   (*Printf.fprintf !log_channel "layout_flags=%d\n" layout_flags;*)
   let v = leftSib.state_nb in
   let last_pdev = start_node.pdev in
@@ -4537,13 +4445,10 @@ let do_shifts_for_each tok_name tok_value prevTops lexbuf counters ppar layout l
       let rightSib =
         find_rightSib parsing_device.g_nb next_state topmost
         sn.global_data sn.local_data layout_flags
-        ppar.global_data_equal ppar.local_data_equal 0
-        (fun sn -> sn.pdev.state_is_mergeable.(sn.state_nb)) (*(-1) (-1)*)
+        ppar.global_data_equal ppar.local_data_equal 0 (-1) (-1)
       in
       let _ = create_e rightSib [tok_value] counters.counted sn
-        (check_last_token sn.last_token) topmost pt
-        (fst (ppar.lexbuf_position_fun lexbuf))
-      in
+        (check_last_token sn.last_token) topmost pt in
       if (!dypgen_verbose>2) then
         Printf.fprintf !log_channel
         "do_shifts creates a new edge:\n  [%d]-%d-[%d]\n"
@@ -4551,14 +4456,13 @@ let do_shifts_for_each tok_name tok_value prevTops lexbuf counters ppar layout l
       counters.counted <- counters.counted + 1;
       topmost
     with Find_rightSib_failed ->
-      let fst_pos, snd_pos = ppar.lexbuf_position_fun lexbuf in
       let rightSib =
         create_v next_state parsing_device sn.global_data sn.local_data counters.countsn
-        counters.count_token snd_pos
+        counters.count_token (ppar.lexbuf_position_fun lexbuf)
         layout_flags (sn.det_depth+1) 0 Intc_map.empty
       in
       let _ = create_e rightSib [tok_value] counters.counted sn
-        (check_last_token sn.last_token) topmost pt fst_pos in
+        (check_last_token sn.last_token) topmost pt in
       if !dypgen_verbose>2 then
         (print_sn rightSib;
         Printf.fprintf !log_channel
@@ -4691,7 +4595,7 @@ let init_parser parser_pilot entry_point lexpos lexbuf keep_data use_rule_order 
   in
   let start =
     create_v start_state.number parsing_device gd ld counters.countsn 0
-    (snd (ppar.lexbuf_position_fun lexbuf)) 2 0 0 Intc_map.empty
+    (ppar.lexbuf_position_fun lexbuf) 2 0 0 Intc_map.empty
   in
   
   if !dypgen_verbose>2 then print_sn start;
@@ -4928,7 +4832,7 @@ let select_token topmost lexbuf all_token reset_start_pos select_unexpected layo
     | x ->
     let x = no_double (List.sort Pervasives.compare x) in
         (*Printf.printf "list x = %s\n"
-        (Bytes.concat " " (List.map (fun i -> string_of_int i) x));*)
+        (String.concat " " (List.map (fun i -> string_of_int i) x));*)
         Some ((if all_token then x else [select_act_id x]), pdev)
   in
   let rec find_match2 aid_pdev_layout accu_layout = function
@@ -5035,7 +4939,7 @@ let rec lex_token topmost lexbuf layout all_token =
 let next_lexeme_precur_lb_pdev lexbuf pdev gd ld =
   (*output_string !log_channel "next_lexeme called\n";*)
   let snl =
-    [create_v 0 pdev gd ld 0 0 Lexing.dummy_pos 2 0 0 Intc_map.empty]
+    [create_v 0 pdev gd ld 0 0 (Lexing.dummy_pos,Lexing.dummy_pos) 2 0 0 Intc_map.empty]
   in
   let first_curr_pos = lexbuf.lb_lexbuf.lex_curr_pos in
   let old_start_pos = lexbuf.lb_lexbuf.lex_start_pos in
@@ -5066,20 +4970,20 @@ let next_lexeme_precur_lb_pdev lexbuf pdev gd ld =
         res
     | None, (Some ((action_id_l, pdev, _),_)) ->
       let lexeme =
-        try Bytes.sub lexbuf.lb_lexbuf.lex_buffer prev_curr_pos len
-        with Invalid_argument("Bytes.sub") ->
+        try String.sub lexbuf.lb_lexbuf.lex_buffer prev_curr_pos len
+        with Invalid_argument("String.sub") ->
           (Printf.printf "1; %s\n" lexbuf.lb_lexbuf.lex_buffer;
-          raise (Invalid_argument("Bytes.sub")))
+          raise (Invalid_argument("String.sub")))
       in
        (if !dypgen_verbose>2 then
          output_string !log_channel "next_lexeme called bis\n";
        next_token (lexeme::res))
     | (Some ((action_id_l, pdev, _),_)), _ ->
       let lexeme =
-        try Bytes.sub lexbuf.lb_lexbuf.lex_buffer prev_curr_pos len
-        with Invalid_argument("Bytes.sub") ->
+        try String.sub lexbuf.lb_lexbuf.lex_buffer prev_curr_pos len
+        with Invalid_argument("String.sub") ->
           (Printf.printf "2; %i, %i\n" prev_curr_pos len;
-          raise (Invalid_argument("Bytes.sub")))
+          raise (Invalid_argument("String.sub")))
       in
         (lexbuf.lb_lexbuf.lex_curr_pos <- first_curr_pos;
         (*Printf.printf "next_lexeme, lex_curr_pos=%d, lex_start_pos=%d, lex_abs_pos=%d\n"
@@ -5297,5 +5201,5 @@ let import_functions cl_pdev pp ra_list =
     aux_lexer = pdev.aux_lexer }
 
 
-let is_re_name pp s = Hashtbl.mem pp.pp_dev.regexp_decl s
 
+let version = "20110328"

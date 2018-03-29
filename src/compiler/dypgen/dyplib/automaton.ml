@@ -201,10 +201,10 @@ let compare_is is1 is2 =
 
 let soc c = Char.escaped c
 let pr_cil l =
-  Bytes.concat ";"
+  String.concat ";"
   (List.map (fun (a,b) -> "('"^(soc a)^"','"^(soc b)^"')") l)
 let pr_pretty_cil l =
-  Bytes.concat ""
+  String.concat ""
   (List.map (fun (a,b) ->
     if a=b then "'"^(soc a)^"'" else
    "'"^(soc a)^"'-'"^(soc b)^"'") l)
@@ -212,11 +212,11 @@ let rec print_regexp = function
   | RE_Char c -> "Dyp.RE_Char '"^(soc c)^"'"
   | RE_Char_set l -> "Dyp.RE_Char_set ["^(pr_cil l)^"]"
   | RE_Char_set_exclu l -> "Dyp.RE_Char_set_exclu ["^(pr_cil l)^"]"
-  | RE_String s -> "Dyp.RE_String \""^(Bytes.escaped s)^"\""
+  | RE_String s -> "Dyp.RE_String \""^(String.escaped s)^"\""
   | RE_Alt rl -> let sl = List.map print_regexp rl in
-      "Dyp.RE_Alt ["^(Bytes.concat ";" sl)^"]"
+      "Dyp.RE_Alt ["^(String.concat ";" sl)^"]"
   | RE_Seq rl -> let sl = List.map print_regexp rl in
-      "Dyp.RE_Seq ["^(Bytes.concat ";" sl)^"]"
+      "Dyp.RE_Seq ["^(String.concat ";" sl)^"]"
   | RE_Star r -> "Dyp.RE_Star ("^(print_regexp r)^")"
   | RE_Plus r -> "Dyp.RE_Plus ("^(print_regexp r)^")"
   | RE_Option r -> "Dyp.RE_Option ("^(print_regexp r)^")"
@@ -228,11 +228,11 @@ let rec print_pretty_regexp = function
   | RE_Char c -> "'"^(soc c)^"'"
   | RE_Char_set l -> "["^(pr_pretty_cil l)^"]"
   | RE_Char_set_exclu l -> "[^"^(pr_pretty_cil l)^"]"
-  | RE_String s -> "\""^(Bytes.escaped s)^"\""
+  | RE_String s -> "\""^(String.escaped s)^"\""
   | RE_Alt rl -> let sl = List.map print_pretty_regexp rl in
-      Bytes.concat "|" sl
+      String.concat "|" sl
   | RE_Seq rl -> let sl = List.map print_pretty_regexp rl in
-      Bytes.concat " " sl
+      String.concat " " sl
   | RE_Star r -> "("^(print_pretty_regexp r)^")*"
   | RE_Plus r -> "("^(print_pretty_regexp r)^")+"
   | RE_Option r -> "("^(print_pretty_regexp r)^")?"
@@ -269,8 +269,8 @@ let rec print_pretty_regexp = function
     let f tn str = str^(try str_ter.(tn) with _ -> (Printf.sprintf "<regexp:%d>" tn))^"," in
     let str = TNS.fold f tns "" in
     if str = "" then "" else
-    let string_length = (Bytes.length str) in
-    Bytes.sub str 0 (string_length-1)
+    let string_length = (String.length str) in
+    String.sub str 0 (string_length-1)
 
   (*let print_item ((nt,litl,length),dp) (tns:TNS.t) =
     Printf.fprintf !log_channel "   %s -> %s, (%s) ; length=%d\n" (str_lhs nt)
@@ -485,7 +485,7 @@ and ('t,'o,'gd,'ld,'l) parsing_device = {
   the 3rd int is the nt that is using this action.
   the bool tells whether the first symbol in the rhs is dypgen__epsilon. *)
   entry_point : int;
-  entry_points : (int, state) Hashtbl.t; (* this field is redundant with stations *)
+  entry_points : (int, state) Hashtbl.t;
   g_nb : int;
    (* the id of the grammar of the parser *)
   lex_nb : int;
@@ -533,7 +533,6 @@ and ('t,'o,'gd,'ld,'l) parsing_device = {
   nt_of_ind : non_ter array;*)
   (*lhs_of_ind : lhs array;*)
   str_non_ter : string array;
-  str_non_ter_prio : (string * string) array;
   cons_of_nt : int array;
   relations : string list list;
   nt_cons_map : nt_cons_map;
@@ -1142,7 +1141,7 @@ let make_entry_point_state entry_points stations gram_rhs gram_lhs gram_parnt bn
     (* is it really necessary to have v in state_list ? *)
 
 
-let build_automaton_LR0 is_trace (gram_rhs:rhs array) (gram_lhs:((int list) * (int option)) array) gram_lhs' gram_parnt bnt_array (*prio_dat*) it_nb (*array_nt_prio nt_of_ind prio_of_ind lhslists*) r_L lhs_table ist_nt_nb token_nb str_non_ter str_ter entry_points_list regexp_array implicit_rule =
+let build_automaton_LR0 is_trace (gram_rhs:rhs array) (gram_lhs:((int list) * (int option)) array) gram_lhs' gram_parnt bnt_array (*prio_dat*) it_nb (*array_nt_prio nt_of_ind prio_of_ind lhslists*) r_L lhs_table ist_nt_nb token_nb str_non_ter str_ter entry_points_list regexp_array =
   
   let array_lt_ter = Array.make token_nb None in
   let array_lt_ter_nl = Array.make token_nb None in
@@ -1164,21 +1163,15 @@ let build_automaton_LR0 is_trace (gram_rhs:rhs array) (gram_lhs:((int list) * (i
     let is, nt_to_add =
       init_is gram_rhs (fst gram_lhs.(n)) r_L non_kernel_array
     in
-    
     (match snd gram_lhs.(n) with
       | None -> ()
       | Some rn -> is.reducible <- Int_set.add rn Int_set.empty);
-    
     (*Printf.fprintf !log_channel "\nstation: (%s,%s,%d) = (%d,%d)\n"
       str_non_ter.(nt_of_ind.(n)) prio_dat.prd_names.(prio_of_ind.(n))
       n nt_of_ind.(n) prio_of_ind.(n);
     print_item_set !log_channel is gram_rhs lhs_table nt_of_ind prio_of_ind
       str_non_ter str_ter prio_dat.prd_names;*)
-    
     closure_v0_LR0 is gram_rhs gram_lhs' nt_to_add non_kernel_array;
-    
-    is.non_kernel <- List.filter (fun rn -> not implicit_rule.(rn)) is.non_kernel;
-    
     let predict =
       List.fold_left
       (fun predict rn -> try (match gram_rhs.(rn).(0) with
@@ -1258,7 +1251,7 @@ let build_automaton_LR0 is_trace (gram_rhs:rhs array) (gram_lhs:((int list) * (i
   is_trace, state_list, stations, entry_points
 
 
-let build_automaton is_trace gram_rhs gram_lhs gram_lhs' (gram_parnt:(int * int) list array) bnt_array verbose (*prio_dat*) it_nb (*array_nt_prio nt_of_ind prio_of_ind lhslists*) r_L lhs_table ist_nt_nb token_nb str_non_ter str_ter entry_points_list regexp_array implicit_rule =
+let build_automaton is_trace gram_rhs gram_lhs gram_lhs' (gram_parnt:(int * int) list array) bnt_array verbose (*prio_dat*) it_nb (*array_nt_prio nt_of_ind prio_of_ind lhslists*) r_L lhs_table ist_nt_nb token_nb str_non_ter str_ter entry_points_list regexp_array =
   countst := 0;
   count_trans := 0;
   let time1 = Sys.time () in
@@ -1268,7 +1261,7 @@ let build_automaton is_trace gram_rhs gram_lhs gram_lhs' (gram_parnt:(int * int)
           gram_parnt bnt_array
           (*prio_dat*) it_nb (*array_nt_prio nt_of_ind prio_of_ind lhslists*) r_L
           lhs_table ist_nt_nb token_nb str_non_ter str_ter entry_points_list
-          regexp_array implicit_rule
+          regexp_array
     in is_trace, state_list, stations, entry_points
   in
   let time2 = Sys.time () in

@@ -801,7 +801,7 @@ let global_data = {
 
 let is_nested nt =
   try
-    let sub = Bytes.sub nt 0 18 in
+    let sub = String.sub nt 0 18 in
     if sub = "dypgen__nested_nt_" then true else false
   with Invalid_argument _ -> false
 
@@ -2599,7 +2599,7 @@ Dyp.Dypgen_action (fun __dypgen_ol __dypgen_pos __dypgen_posl __dypgen_gd __dypg
         in
         let pat_code =
           try
-            if Bytes.sub pat_typ 0 15 = "dypgen__option_" then
+            if String.sub pat_typ 0 15 = "dypgen__option_" then
               if pat_code = "_" then "_"
               else "(Some ("^pat_code^")|None)"
             else pat_code
@@ -2701,7 +2701,7 @@ Dyp.Dypgen_action (fun __dypgen_ol __dypgen_pos __dypgen_posl __dypgen_gd __dypg
       else
       let is_nested =
         try
-          let sub = Bytes.sub pat_typ 0 18 in
+          let sub = String.sub pat_typ 0 18 in
           if sub = "dypgen__nested_nt_" then true else false
         with Invalid_argument _ -> false
       in

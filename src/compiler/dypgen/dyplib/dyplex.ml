@@ -27,7 +27,7 @@ let regexp_of_string s =
   let rec aux i l = if i= -1 then l else
     aux (i-1) ((RE_Char s.[i])::l)
   in
-  let len = Bytes.length s in
+  let len = String.length s in
   if len = 0 then
     failwith "Lexer generator: empty string in regular expression"
   else RE_Seq (aux (len-1) [])
@@ -50,14 +50,14 @@ let disjoint cs = match cs with [] | [_] -> cs | _ ->
 
 let str_int_list l =
   let l = List.map (fun i -> string_of_int i) l in
-  Bytes.concat " " l
+  String.concat " " l
 
 let list_of_set s = Int_set.fold (fun x l -> x::l) s []
 
 let str_int_set s = str_int_list (list_of_set s)
 
 let str_intc_list l =
-  Bytes.concat " "
+  String.concat " "
   (List.map (fun (a,b) ->
     (string_of_int a)^"-"^(string_of_int b)) l)
 
@@ -68,10 +68,10 @@ let str_eps n =
   Printf.sprintf "\n    <%d>" n.id
 
 let str_trans_list l =
-  Bytes.concat "" (List.map str_trans l)
+  String.concat "" (List.map str_trans l)
 
 let str_eps_list l =
-  Bytes.concat "" (List.map str_eps l)
+  String.concat "" (List.map str_eps l)
 
 
 let print_node s =
@@ -175,6 +175,86 @@ let make_nfa r table regexp_id id =
   f ((*prn*) { id = id; trans = []; eps = [];
     matched = Int_set.add regexp_id Int_set.empty })
     (id+1)
+
+(*let build_nfa table =
+  let rec aux = function
+  | RE_Char c ->
+      let c = int_of_char c in
+      (fun succ id tag -> (*prn*) { id = id; trans = [[c,c], succ]; eps = [];
+       matched = Int_set.empty }, id+1, tag)
+  | RE_Char_set cs ->
+      let cs = disjoint (norm_cs cs) in
+      (fun succ id tag -> (*prn*) { id = id; trans = [cs, succ];
+       eps = []; matched = Int_set.empty }, id+1, tag)
+  | RE_Char_set_exclu cs ->
+      let cs = disjoint (diff [any_char] (norm_cs cs)) in
+      (fun succ id tag ->
+      (*prn*) { id = id;
+      trans = [cs, succ];
+      eps = []; matched = Int_set.empty }, id+1, tag)
+  | RE_String s -> aux (regexp_of_string s)
+  | RE_Alt rl ->
+      let fl = aux_list rl in
+      (fun succ id tag ->
+      let nl, id, t = List.fold_left
+        (fun (nl, id, t) f ->
+          let n, id, t = f succ id t in n::nl, id, t)
+        ([], id, tag) fl in
+      (*prn*) { id = id; trans = [];
+       eps = List.map (fun n -> n,-1) nl;
+       matched = Int_set.empty }, id+1, tag)
+  | RE_Seq rl ->
+      let fl = aux_list rl in
+      (fun succ id tag -> List.fold_left
+        (fun (n, id, t) f -> f n id t) (succ, id, tag) fl)
+  | RE_Star r ->
+      let f = aux r in
+      (fun succ id tag ->
+      let n = { id = id; trans = []; eps = [];
+        matched = Int_set.empty } in
+      let s, id1, t = f n (id+1) tag in
+      n.eps <- [(s,-1);(succ,-1)];
+      (*prn*) n, id1, t)
+  | RE_Plus r ->
+      let f = aux r in
+      (fun succ id tag ->
+      let n = { id = id; trans = []; eps = [];
+        matched = Int_set.empty } in
+      let s, id1, t = f n (id+1) tag in
+      n.eps <- [(s,-1);(succ,-1)];
+      (*prn n;*)
+      (*prn*) s, id1, t)
+  | RE_Option r ->
+      let f = aux r in
+      (fun succ id tag ->
+      let s, id, t = f succ id tag in
+      (*prn*) { id = id; trans = []; eps = [(s,-1);(succ,-1)];
+        matched = Int_set.empty }, id+1, t)
+  | RE_Name s -> Hashtbl.find table s
+  | RE_Bind (r,var) ->
+      let f = aux r in
+      (fun succ id tag ->
+      let n2 = { id = id; trans = []; eps = [];
+        matched = Int_set.empty } in
+      let n1, id, t = f n2 (id+1) (tag+1) in
+      let n0 = { id = id; trans = []; eps = [n1,tag];
+        matched = Int_set.empty } in
+      n2.eps <- [succ,t];
+      n0, (id+1), t+1)
+  | RE_Eof_char ->
+      (fun succ id tag ->
+      (*prn*) { id = id; trans = [[256,256], succ]; eps = [];
+        matched = Int_set.empty }, id+1, tag)
+  and aux_list rl =
+    List.fold_left (fun fl r -> (aux r)::fl) [] rl in
+  function r -> aux r
+
+
+let make_nfa r table ter_id id =
+  let f = build_nfa r table in
+  f ((*prn*) { id = id; trans = []; eps = [];
+    matched = Int_set.add ter_id Int_set.empty })
+    (id+1) 0*)
 
 
 let compile_regexp_decl rl =
@@ -284,12 +364,75 @@ let disjoint_tl tl scount =
   res
 
 
+(*let disjoint_tl tl =
+  
+  (*print_tl tl;*)
+  
+  let aux l (il,n) =
+    match il with h::t ->
+      let rec aux1 l ((a1,b1) as h) t accu = match l with
+      | (((a2,b2) as ci2,nl) as h2)::t2 ->
+          if b1<a2 then (match t with
+            | [] -> accu, (h,[n])::l
+            | h3::t -> aux1 l h3 t ((h,[n])::accu) )
+          else if b2<a1 then aux1 t2 h t (h2::accu)
+          else
+          let ci = match interval_inter h ci2
+            with Some ci -> ci | _ -> assert false in
+          let cil1 = interval_diff h ci2 in
+          let cil2 = interval_diff ci2 h in
+          (match cil2 with
+          | [ci_a;ci_b] -> (match t with
+            | [] -> accu, (ci_a,nl)::(ci,n::nl)::(ci_b,nl)::t2
+            | h3::t -> aux1 t2 h3 t ((ci_b,nl)::(ci,n::nl)::(ci_a,nl)::accu) )
+          | [(a0,b0) as ci_0] ->
+            if b1<b2 then (match t, cil1 with
+            | [], [] -> accu, (ci,n::nl)::(ci_0,nl)::t2
+            | [], [ci1] -> accu, (ci1,[n])::(ci,n::nl)::(ci_0,nl)::t2
+            | h3::t, [] -> aux1 ((ci_0,nl)::t2) h3 t ((ci,n::nl)::accu)
+            | h3::t, [ci1] -> aux1 ((ci_0,nl)::t2) h3 t
+              ((ci,n::nl)::(ci1,[n])::accu)
+            | _ -> assert false )
+            else (match t, cil1 with
+            | _, [ci1] -> aux1 t2 ci1 t ((ci,n::nl)::(ci_0,nl)::accu)
+            | h3::t, [] -> aux1 t2 h3 t ((ci,n::nl)::(ci_0,nl)::accu)
+            | [], [] -> accu, (ci_0,nl)::(ci,n::nl)::t2
+            | _ -> assert false )
+          | [] -> (match cil1 with
+            | [] -> (match t with
+              | [] -> accu, (ci,n::nl)::t2
+              | h3::t -> aux1 t2 h3 t ((ci,n::nl)::accu))
+            | [ci1] ->
+              if a1=a2 then aux1 t2 ci1 t ((ci,n::nl)::accu)
+              else (match t with
+              | [] -> accu, (ci1,[n])::(ci,n::nl)::t2
+              | h3::t -> aux1 t2 h3 t ((ci,n::nl)::(ci1,[n])::accu))
+            | [ci_a;ci_b] -> aux1 t2 ci_b t ((ci,n::nl)::(ci_a,[n])::accu)
+            | _ -> assert false)
+          | _ -> assert false )
+      | [] -> [], List.fold_left
+          (fun accu ci -> (ci,[n])::accu) ((h,[n])::accu) t
+      in
+      let accu, l = aux1 l h t [] in
+      List.fold_left (fun l x -> x::l) l accu
+    | [] -> assert false
+  in
+  List.fold_left aux [] tl*)
+  (*let res =
+    List.fold_left aux [] tl
+  in
+  print_disjoint_tl_res res;
+  res*)
+
+
+
 module Ordered_int_set =
 struct
   type t = Int_set.t
   let compare = Int_set.compare
 end
 module State_map = Map.Make(Ordered_int_set)
+
 
 
 
@@ -593,7 +736,7 @@ let lex_engine is_main_lexer tbl_list (lexbuf:Lexing.lexbuf) reset_start_pos =
         -> (Printf.printf "%d, %d, %s, %d, %d\n"
          lexbuf.lex_curr_pos lexbuf.lex_buffer_len
          (string_of_bool reset_start_pos)
-         p (Bytes.length lexbuf.lex_buffer);
+         p (String.length lexbuf.lex_buffer);
         raise (Invalid_argument("index out of bounds")))
     in
     let aux_lex (new_state_list,valid_lex) tbl state =

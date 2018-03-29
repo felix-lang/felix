@@ -36,7 +36,7 @@ struct
 end
 module Ordered_string =
 struct
-  type t = bytes
+  type t = string
   let compare = Pervasives.compare
 end
 

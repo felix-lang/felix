@@ -310,6 +310,4 @@ val import_functions :
       'o list -> 'o * ('t,'o,'gd,'ld,'l) dyp_action list)) list ->
   ('t,'o,'gd,'ld,'l) parsing_device
 
-val is_re_name : ('t,'o,'gd,'ld,'l) parser_pilot -> string -> bool
-
 val version : string
