@@ -444,7 +444,7 @@ class BuildFlxg
         return ocaml_build_lib(path, 'flx_misc',
             extend #libdflt with (srcs=mls path,
             libs=list[string] (build_flx_version()),
-            external_libs=list[string]('nums', 'str', 'unix')) end);
+            external_libs=list[string]('str', 'unix')) end);
     }
 
     gen build_flx_version_hook() = {
@@ -513,7 +513,7 @@ class BuildFlxg
                 build_flx_parse(),
                 build_flx_misc()
                 ),
-            external_libs=list[string]('nums')) end);
+            external_libs=list[string]()) end);
     }
 
     gen build_flx_desugar() = {
@@ -534,7 +534,7 @@ class BuildFlxg
                 build_flx_core(),
                 build_flx_version()
                 ),
-            external_libs=list[string]('nums', 'unix')) end);
+            external_libs=list[string]('unix')) end);
     }
 
     gen build_flx_bind() = {
@@ -548,7 +548,7 @@ class BuildFlxg
                 build_flx_misc(),
                 build_flx_core(),
                 build_flx_desugar()),
-            external_libs=list[string]('nums')) end);
+            external_libs=list[string]()) end);
     }
 
     gen build_flx_frontend() = {
@@ -613,7 +613,7 @@ class BuildFlxg
                 build_flx_core(),
                 build_flx_frontend(),
                 build_flx_backend()),
-            external_libs=list[string]('nums')) end);
+            external_libs=list[string]()) end);
     }
 
     println$ "Build dypgen";
@@ -638,7 +638,7 @@ class BuildFlxg
           build_flx_version_hook()
     );
 
-    var external_libs = list('nums.cmxa', 'unix.cmxa', 'str.cmxa');
+    var external_libs = list('unix.cmxa', 'str.cmxa');
     C_hack::ignore$ libs;
     var path ='src'/'compiler'/'flxg';
     var exe = ocaml_build_exe (path,'flxg',

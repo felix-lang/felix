@@ -3,18 +3,6 @@
 open Ocs_types
 open Ocs_error
 
-open Num
-
-let fix_floating_precision () =
-  let n = Arith_status.get_floating_precision () in
-    if n < 25 then
-      Arith_status.set_floating_precision 25
-;;
-
-fix_floating_precision ();;
-
-Arith_status.set_normalize_ratio true;;
-
 let promote_real =
   function
     Sint i -> Sreal (float_of_int i)
@@ -35,18 +23,6 @@ let snum_fixtypes a b =
   | (Sreal _, _) -> a, promote_real b
   | (_, Sreal _) -> (promote_real a), b
   | _ -> raise (Error "snum_fixtypes: not numeric types")
-;;
-
-let snum_of_num =
-  function
-    Int x -> Sint x
-  | Big_int _ | Ratio _ -> assert false (* this crud from Num .. *)
-;;
-
-let num_of_snum =
-  function
-    Sint x -> Int x
-  | _ -> raise (Error "bad number type")
 ;;
 
 let round_float r =

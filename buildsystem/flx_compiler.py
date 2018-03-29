@@ -15,7 +15,7 @@ def build_flx_misc(phase):
     return phase.ocaml.build_lib(path / 'flx_misc',
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[build_flx_version(phase)],
-        external_libs=['nums', 'str', 'unix'])
+        external_libs=['str', 'unix'])
 
 def build_flx_version_hook(phase):
     path = phase.ctx.buildroot / 'src/compiler/flx_version_hook'
@@ -75,7 +75,7 @@ def build_flx_core(phase):
             build_flx_parse(phase),
             build_flx_misc(phase),
             ],
-        external_libs=['nums'])
+        external_libs=[])
 
 def build_flx_desugar(phase):
     path = Path('src/compiler/flx_desugar')
@@ -93,7 +93,7 @@ def build_flx_desugar(phase):
             build_flx_core(phase),
             build_flx_version(phase),
             ],
-        external_libs=['nums', 'unix'])
+        external_libs=['unix'])
 
 def build_flx_bind(phase):
     path = Path('src/compiler/flx_bind')
@@ -104,7 +104,7 @@ def build_flx_bind(phase):
             build_flx_misc(phase),
             build_flx_core(phase),
             build_flx_desugar(phase)],
-        external_libs=['nums'])
+        external_libs=[])
 
 def build_flx_frontend(phase):
     path = Path('src/compiler/flx_frontend')
@@ -155,7 +155,7 @@ def build_flx_cpp_backend(phase):
             build_flx_core(phase),
             build_flx_frontend(phase),
             build_flx_backend(phase)],
-        external_libs=['nums'])
+        external_libs=[])
 
 def build_flx_drivers(ctx, phase):
     libs = [
@@ -178,7 +178,7 @@ def build_flx_drivers(ctx, phase):
         build_flx_version_hook(phase),
         ]
 
-    external_libs = ['nums', 'unix', 'str']
+    external_libs = ['unix', 'str']
 
     flxg = phase.ocaml.build_exe('host/bin/flxg',
         Path.glob('src/compiler/flxg/*.ml{,i}'),

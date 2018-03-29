@@ -31,18 +31,6 @@ val decint_of_string : string -> int
 (** decode hexadecimal digit string 0123456789abcdefABCDEF to int *)
 val hexint_of_string : string -> int
 
-(** decode binary digit string 01 to big_int *)
-val binbig_int_of_string : string -> Big_int.big_int
-
-(** decode octal digit string 01234567 to int *)
-val octbig_int_of_string : string -> Big_int.big_int
-
-(** decode decimal digit  string 0123456789 to int *)
-val decbig_int_of_string : string -> Big_int.big_int
-
-(** decode hexadecimal digit string 0123456789abcdefABCDEF to int *)
-val hexbig_int_of_string : string -> Big_int.big_int
-
 (** decode floating point string to float *)
 val floating_of_string : string -> float
 

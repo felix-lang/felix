@@ -126,54 +126,6 @@ let hexint_of_string s =
   done;
   !value
 
-let binbig_int_of_string s =
-  let len = len s in
-  let value = ref (Big_int.big_int_of_int 0) in
-  for i = 0 to (len - 1) do
-    if s.[i] <> '_'
-    then value :=
-      Big_int.add_int_big_int
-        (bin_char2int s.[i])
-        (Big_int.mult_int_big_int 2 !value)
-  done;
-  !value
-
-let octbig_int_of_string s =
-  let len = len s in
-  let value = ref (Big_int.big_int_of_int 0) in
-  for i = 0 to (len - 1) do
-    if s.[i] <> '_'
-    then value :=
-      Big_int.add_int_big_int
-        (oct_char2int s.[i])
-        (Big_int.mult_int_big_int 8 !value)
-  done;
-  !value
-
-let decbig_int_of_string s =
-  let len = len s in
-  let value = ref (Big_int.big_int_of_int 0) in
-  for i = 0 to (len - 1) do
-    if s.[i] <> '_'
-    then value :=
-      Big_int.add_int_big_int
-        (dec_char2int s.[i])
-        (Big_int.mult_int_big_int 10 !value)
-  done;
-  !value
-
-let hexbig_int_of_string s =
-  let len = len s in
-  let value = ref (Big_int.big_int_of_int 0) in
-  for i = 0 to (len - 1) do
-    if s.[i] <> '_'
-    then value :=
-      Big_int.add_int_big_int
-        (hex_char2int s.[i])
-        (Big_int.mult_int_big_int 16 !value)
-  done;
-  !value
-
 let floating_of_string s' =
   let dst = ref 0 in
   let s = Bytes.copy s' in

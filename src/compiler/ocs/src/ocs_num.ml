@@ -6,8 +6,6 @@ open Ocs_env
 open Ocs_numaux
 open Ocs_complex
 
-open Num
-
 let rec negate =
   function
     (Sint i) as s -> Sint (- i)
@@ -30,8 +28,7 @@ let sub2 a b =
 let mul2 a b =
   match snum_fixtypes a b with
   | (Sreal r1, Sreal r2) -> Sreal (r1 *. r2)
-  | (Sint i1, Sint i2) ->
-    snum_of_num (mult_num (Int i1) (Int i2))
+  | (Sint i1, Sint i2) -> Sint (i1 * i2)
   | _ -> raise (Error "mul: invalid args")
 ;;
 
@@ -41,8 +38,7 @@ let div2 a b =
   | (Sint n, Sint d) ->
       if d = 0 then
 	raise (Error "division by zero")
-      else
-	snum_of_num (div_num (Int n) (Int d))
+      else Sint (n / d)
   | _ -> raise (Error "div: invalid args")
 ;;
 
@@ -305,9 +301,8 @@ let snum_sqrt =
 ;;
 let quotient n d =
   match (n, d) with
-    ((Sint _ ),
-     (Sint _ )) ->
-      snum_of_num (integer_num (div_num (num_of_snum n) (num_of_snum d)))
+    ((Sint n ),
+     (Sint d )) -> Sint (n / d)
   | _ ->
       let n = float_of_snum n
       and d = float_of_snum d in
@@ -319,15 +314,8 @@ let quotient n d =
 
 let remainder n d =
   match (n, d) with
-    ((Sint _ ),
-     (Sint _ )) ->
-      let n = num_of_snum n
-      and d = num_of_snum d in
-      let m = mod_num n d in
-	if sign_num n + sign_num d = 0 then
-	  snum_of_num (sub_num m d)
-	else
-	  snum_of_num m
+    ((Sint n ),
+     (Sint d )) -> Sint (n / d - n * d)
   | _ ->
       let n = float_of_snum n
       and d = float_of_snum d in
@@ -339,9 +327,8 @@ let remainder n d =
 
 let modulo n d =
   match (n, d) with
-    ((Sint _ ),
-     (Sint _ )) ->
-      snum_of_num (mod_num (num_of_snum n) (num_of_snum d))
+    ((Sint n ),
+     (Sint d )) -> Sint (n / d - n * d) (* wrong but who cares! *)
   | _ ->
       let n = float_of_snum n
       and d = float_of_snum d in

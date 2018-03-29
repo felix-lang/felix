@@ -6,8 +6,6 @@ open Ocs_numaux
 open Ocs_num
 open Ocs_env
 
-open Num
-
 (* We need to scan strings and keep track of our position.  *)
 
 type sbuf = {
