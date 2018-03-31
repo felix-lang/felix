@@ -365,7 +365,8 @@ def config_host(ctx, build):
         debug=ctx.options.debug or ctx.options.host_ocaml_debug,
         ocamlc=ctx.options.host_ocamlc,
         ocamlopt=ctx.options.host_ocamlopt,
-        flags=['-unsafe-string', '-w', 'yzex', '-warn-error', 'FPSU'],
+        flags=[#'-unsafe-string', 
+            '-w', 'yzex', '-warn-error', 'FPSU'],
         linker=phase.c.static.lib_linker,
         requires_at_least_version=(3, 11))
 

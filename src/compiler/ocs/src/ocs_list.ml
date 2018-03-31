@@ -220,7 +220,7 @@ let list_to_vector =
 
 let list_to_string =
   function
-    Snull -> Sstring ""
+    Snull -> Sstring (Bytes.empty)
   | Spair _ as l ->
       let n = safe_length l in
       let s = Bytes.create n in

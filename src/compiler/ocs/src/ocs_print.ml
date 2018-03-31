@@ -6,7 +6,7 @@ open Ocs_numstr
 
 let store_string putc puts s =
   putc '\"';
-  for i = 0 to Bytes.length s - 1 do
+  for i = 0 to String.length s - 1 do
     match s.[i] with
       '\n' -> puts "\\n"
     | '\r' -> puts "\\r"
@@ -52,7 +52,7 @@ and store putc puts disp =
   | Seof -> puts "#<eof>"
   | Strue -> puts "#t"
   | Sfalse -> puts "#f"
-  | Sstring s -> if disp then puts s else store_string putc puts s
+  | Sstring s -> if disp then puts (Bytes.to_string s) else store_string putc puts (Bytes.to_string s)
   | Ssymbol s -> puts s
   | Sint i -> puts (string_of_int i)
   | Sreal r -> puts (string_of_real r)

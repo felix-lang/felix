@@ -74,13 +74,13 @@ let is_symbol =
 
 let symbol_to_string =
   function
-    Ssymbol s -> Sstring s
+    Ssymbol s -> Sstring (Bytes.of_string s)
   | _ -> raise (Error "symbol->string: not a symbol")
 ;;
 
 let string_to_symbol =
   function
-    Sstring s -> get_symbol (Bytes.copy s)
+    Sstring s -> get_symbol (Bytes.to_string s)
   | _ -> raise (Error "string->symbol: not a string")
 ;;
 
@@ -206,7 +206,7 @@ let load_file e th name =
 
 let load_prim e th cc =
   function
-    [| Sstring name |] -> load_file e th name; cc Sunspec
+    [| Sstring name |] -> load_file e th (Bytes.to_string name); cc Sunspec
   | _ -> raise (Error "load: invalid name argument")
 ;;
 

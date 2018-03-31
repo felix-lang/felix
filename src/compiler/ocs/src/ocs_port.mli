@@ -10,9 +10,9 @@ type port_flag =
 val fd_port : Unix.file_descr -> port_flag list -> port
 val input_port : in_channel -> port
 val output_port : out_channel -> port
-val open_input_port : bytes-> port
-val open_output_port : bytes -> port
-val string_input_port : bytes -> port
+val open_input_port : string -> port
+val open_output_port : string -> port
+val string_input_port : string -> port
 val string_output_port : unit -> port
 
 val is_input : port -> bool
@@ -23,7 +23,7 @@ val ungetc : port -> char -> unit
 val char_ready : port -> bool
 
 val putc : port -> char -> unit
-val puts : port -> bytes -> unit
+val puts : port -> string -> unit
 
 val get_fd : port -> Unix.file_descr option
 

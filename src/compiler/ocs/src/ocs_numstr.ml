@@ -14,7 +14,7 @@ type sbuf = {
 }
 
 let speek s =
-  if s.s_pos < Bytes.length s.s_str then
+  if s.s_pos < String.length s.s_str then
     Some s.s_str.[s.s_pos]
   else
     None
@@ -31,7 +31,7 @@ let sget s =
 ;;
 
 let ssleft s =
-  (Bytes.length s.s_str) - s.s_pos
+  (String.length s.s_str) - s.s_pos
 ;;
 
 (* Converting strings to numbers is fairly complex.  We have a lot of
@@ -69,7 +69,7 @@ let parse_prefix s =
 ;;
 
 let strtoi s base =
-  let n = Bytes.length s
+  let n = String.length s
   and am v i =  i + (base * v) in
   let rec loop i v =
     if i >= n then
@@ -158,15 +158,15 @@ let parse_flo10 s =
 	      skip s; skipd true
 	  | _ -> ()
       end;
-      let t = Bytes.sub s.s_str sp (s.s_pos - sp) in
+      let t = Bytes.of_string (String.sub s.s_str sp (s.s_pos - sp)) in
 	for i = 0 to Bytes.length t - 1 do
-	  match t.[i] with
+	  match Bytes.get t i with
 	    '#' -> Bytes.set t i '0'
 	  | 'F' | 'f' | 'D' | 'd' | 'S' | 's' | 'L' | 'l' -> Bytes.set t i 'e'
 	  | _ -> ()
 	done;
 	  try
-	    Sreal (float_of_string t)
+	    Sreal (float_of_string (Bytes.to_string t))
 	  with
 	    Failure _ -> raise (Error "invalid float")
 ;;
@@ -223,10 +223,10 @@ let snum_strtonum av =
 	    Sstring s ->
 	      begin
 		try
-		  if s = "" then
+		  if Bytes.to_string s = "" then
 		    Sfalse
 		  else
-		    string_to_num s r
+		    string_to_num (Bytes.to_string s) r
 		with
 		  _ -> Sfalse
 	      end
@@ -246,7 +246,7 @@ let string_of_real_s r =
 
 let string_of_real r =
   let s = string_of_real_s r in
-  let n = Bytes.length s in
+  let n = String.length s in
   let rec loop i =
     if i >= n then s ^ ".0"
     else if s.[i] = '.' || s.[i] = 'e' then s
@@ -275,7 +275,7 @@ let string_of_list l =
     else
       ()
   in
-    loop 0 l; s
+    loop 0 l; Bytes.to_string s
 ;;
 
 let itostr base i =
@@ -300,13 +300,13 @@ let ntostr base =
 
 let rec snum_numtostr =
   function
-    [| Sint i |] -> Sstring (string_of_int i)
-  | [| Sreal r |] -> Sstring (string_of_real r)
+    [| Sint i |] -> Sstring (Bytes.of_string (string_of_int i))
+  | [| Sreal r |] -> Sstring (Bytes.of_string (string_of_real r))
   | [| snum; Sint radix |] ->
       if radix = 10 then
 	snum_numtostr [| snum |]
       else if radix = 2 || radix = 8 || radix = 16 then
-	Sstring (ntostr radix snum)
+	Sstring (Bytes.of_string (ntostr radix snum))
       else
 	raise (Error "number->string: invalid radix")
   | _ -> raise (Error "number->string: bad args")

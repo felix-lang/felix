@@ -32,7 +32,7 @@ let string_ref s k =
   match (s, k) with
     (Sstring s, Sint k) ->
       if k >= 0 && k < Bytes.length s then
-	Schar s.[k]
+	Schar (Bytes.get s k)
       else
 	raise (Error "string-ref: out of bounds")
   | _ -> raise (Error "string-ref: bad args")
@@ -65,7 +65,7 @@ let string_ge = string_cmp (>=);;
 let string_ci_cmp op s1 s2 =
   match (s1, s2) with
     (Sstring s1, Sstring s2) ->
-      if op (Bytes.lowercase s1) (Bytes.lowercase s2) then Strue else Sfalse
+      if op (Bytes.lowercase_ascii s1) (Bytes.lowercase_ascii s2) then Strue else Sfalse
   | _ -> raise (Error "bad args")
 ;;
 
@@ -77,7 +77,7 @@ let string_ci_ge = string_ci_cmp (>=);;
 
 let string_append av =
   Sstring
-    (Array.fold_left (^) ""
+    (Array.fold_left (Bytes.cat) (Bytes.empty)
       (Array.map (function
                     Sstring s -> s
                   | _ -> raise (Error "string-append: bad args")) av))
@@ -100,7 +100,7 @@ let string_to_list =
       begin
 	let rec loop i r =
 	  if i < 0 then r
-	  else loop (i - 1) (Spair { car = Schar s.[i]; cdr = r })
+	  else loop (i - 1) (Spair { car = Schar (Bytes.get s i); cdr = r })
 	in
 	  loop (Bytes.length s - 1) Snull
       end

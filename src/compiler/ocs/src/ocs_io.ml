@@ -129,13 +129,13 @@ let is_output =
 
 let open_input_file =
   function
-    Sstring s -> Sport (Ocs_port.open_input_port s)
+    Sstring s -> Sport (Ocs_port.open_input_port (Bytes.to_string s))
   | _ -> raise (Error "expected string as input file name")
 ;;
 
 let open_output_file =
   function
-    Sstring s -> Sport (Ocs_port.open_output_port s)
+    Sstring s -> Sport (Ocs_port.open_output_port (Bytes.to_string s))
   | _ -> raise (Error "expected string as output file name")
 ;;
 

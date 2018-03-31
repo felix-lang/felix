@@ -7,7 +7,7 @@ type token =
     Leof
   | Lopenv			(* #( *)
   | Lunqsplice			(* ,@ *)
-  | Lident of bytes
+  | Lident of string 
   | Lstring of bytes
   | Lnumber of sval
   | Lbool of sval
@@ -17,7 +17,7 @@ type token =
 type lexer = {
   l_port : Ocs_port.port;
   l_buf : Buffer.t;
-  l_name : bytes;
+  l_name : string;
   mutable l_line : int
 }
 
@@ -33,7 +33,7 @@ let get_loc lex =
 ;;
 
 let lex_error lex err =
-  if Bytes.length lex.l_name = 0 then
+  if String.length lex.l_name = 0 then
     Error err
   else
     ErrorL (get_loc lex, err)
@@ -47,7 +47,7 @@ let num_w_base lex s =
     | 'O' | 'o' -> 8
     | 'X' | 'x' -> 16
     | _ -> raise (lex_error lex "invalid character literal")
-  and n = Bytes.length s
+  and n = String.length s
   in
     let rec scn v i =
       if i >= n then v
@@ -99,7 +99,7 @@ let read_char lex =
   in
     loop ();
     let s = Buffer.contents lex.l_buf in
-      if Bytes.length s = 1 then
+      if String.length s = 1 then
 	Lchar (Schar s.[0])
       else
 	match Ocs_char.name_to_char s with
@@ -109,7 +109,7 @@ let read_char lex =
 
 let rec read_string lex =
   match Ocs_port.getc lex.l_port with
-    Some '\"' -> Lstring (Buffer.contents lex.l_buf)
+    Some '\"' -> Lstring (Bytes.of_string (Buffer.contents lex.l_buf))
   | Some '\\' ->
       begin
 	match Ocs_port.getc lex.l_port with
@@ -240,8 +240,8 @@ let rec tok lex =
 		  read_number lex
 	      | Some x ->
 		  Ocs_port.ungetc lex.l_port x;
-		  Lident (Bytes.make 1 c)
-	      | None -> Lident (Bytes.make 1 c)
+		  Lident (String.make 1 c)
+	      | None -> Lident (String.make 1 c)
 	    end
 	| '.' ->
 	    begin

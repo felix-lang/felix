@@ -20,7 +20,7 @@ type sval =
   | Sfalse
 
   (* String object.  *)
-  | Sstring of string
+  | Sstring of bytes 
 
   (* Symbol type.  Symbols should not be created directly, but using
      Ocs_sym.get_symbol, which ensures that they are unique and can be

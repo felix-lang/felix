@@ -7,7 +7,7 @@ type token =
     Leof
   | Lopenv			(* #( *)
   | Lunqsplice			(* ,@ *)
-  | Lident of bytes
+  | Lident of string 
   | Lstring of bytes
   | Lnumber of sval
   | Lbool of sval
@@ -16,7 +16,7 @@ type token =
 
 type lexer
 
-val make_lexer : Ocs_port.port -> bytes -> lexer
+val make_lexer : Ocs_port.port -> string -> lexer
 val get_loc : lexer -> location
 val get_tok : lexer -> token
 

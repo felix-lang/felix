@@ -107,7 +107,7 @@ let getc p =
       else
 	begin
 	  assert (p.p_pos < p.p_rend);
-	  let c = p.p_buf.[p.p_pos] in
+	  let c = Bytes.get p.p_buf p.p_pos in
 	    p.p_pos <- p.p_pos + 1;
 	    Some c
 	end
@@ -160,6 +160,7 @@ let putc p c =
 ;;
 
 let puts p s =
+  let s = Bytes.of_string s in
   let n = Bytes.length s in
     if n > 0 && p.p_rend - p.p_pos >= n then
       begin
@@ -213,6 +214,7 @@ let open_output_port name =
 ;;
 
 let string_input_port s =
+  let s = Bytes.of_string s in
   let p = mkport s None true false false in
     p.p_rend <- Bytes.length s;
     p

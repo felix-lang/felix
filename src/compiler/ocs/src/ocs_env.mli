@@ -15,16 +15,16 @@ val set_glob : env -> sval -> sval -> unit
 val env_copy : env -> env
 
 val is_a_keyword : env -> sval -> bool
-val is_keyword : env -> sval -> bytes -> bool
-val safe_is_keyword : env -> sval -> bytes -> bool
+val is_keyword : env -> sval -> string -> bool
+val safe_is_keyword : env -> sval -> string -> bool
 
 val is_syntax : env -> sval -> (env -> sval array -> code) -> bool
 
-val set_pf0 : env -> (unit -> sval) -> bytes -> unit
-val set_pf1 : env -> (sval -> sval) -> bytes -> unit
-val set_pf2 : env -> (sval -> sval -> sval) -> bytes -> unit
-val set_pf3 : env -> (sval -> sval -> sval -> sval) -> bytes -> unit
-val set_pfn : env -> (sval array -> sval) -> bytes -> unit
+val set_pf0 : env -> (unit -> sval) -> string -> unit
+val set_pf1 : env -> (sval -> sval) -> string -> unit
+val set_pf2 : env -> (sval -> sval -> sval) -> string -> unit
+val set_pf3 : env -> (sval -> sval -> sval -> sval) -> string -> unit
+val set_pfn : env -> (sval array -> sval) -> string -> unit
 val set_pfcn :
-  env -> (thread -> (sval -> unit) -> sval array -> unit) -> bytes -> unit
+  env -> (thread -> (sval -> unit) -> sval array -> unit) -> string -> unit
 

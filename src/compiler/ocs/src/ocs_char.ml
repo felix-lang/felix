@@ -29,8 +29,8 @@ let char_short_names =
      "can"; "em";  "sub"; "esc"; "fs";  "gs";  "rs";  "us"  |]
 ;;
 
-let name_to_char name =
-  let name = (Bytes.lowercase name)
+let name_to_char (name:string) =
+  let name = Bytes.to_string (Bytes.lowercase_ascii (Bytes.of_string name))
   and ln = Array.length char_long_names
   and sn = Array.length char_short_names in
   let rec lloop i =
@@ -47,13 +47,13 @@ let name_to_char name =
 ;;
 
 (* Generate the preferred printed literal form of a character.  *)
-let char_to_name =
+let char_to_name : char -> string =
   function
     '\n' -> "newline"
   | ' ' -> "space"
   | '\127' -> "del"
   | '\000' .. '\031' as c -> char_short_names.(int_of_char c)
-  | '\033' .. '\126' as c -> Bytes.make 1 c
+  | '\033' .. '\126' as c -> String.make 1 c
   | c -> Printf.sprintf "x%02x" (int_of_char c)
 ;;
 
@@ -72,7 +72,7 @@ let char_ge = char_cmp (>=);;
 let char_ci_cmp op c1 c2 =
   match (c1, c2) with
     (Schar c1, Schar c2) ->
-      if op (Char.lowercase c1) (Char.lowercase c2) then Strue else Sfalse
+      if op (Char.lowercase_ascii c1) (Char.lowercase_ascii c2) then Strue else Sfalse
   | _ -> raise (Error "args not characters")
 ;;
 
@@ -119,11 +119,11 @@ let integer_char =
 ;;
 
 let char_upcase =
-  char_unop (fun c -> Schar (Char.uppercase c))
+  char_unop (fun c -> Schar (Char.uppercase_ascii c))
 ;;
 
 let char_downcase =
-  char_unop (fun c -> Schar (Char.lowercase c))
+  char_unop (fun c -> Schar (Char.lowercase_ascii c))
 ;;
 
 let init e =

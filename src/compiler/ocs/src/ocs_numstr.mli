@@ -2,9 +2,9 @@
 
 open Ocs_types
 
-val string_of_real : float -> bytes
+val string_of_real : float -> string 
 
-val string_to_num : bytes -> int -> sval
+val string_to_num : string -> int -> sval
 
 val init : env -> unit
 
