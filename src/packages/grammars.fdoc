@@ -199,8 +199,8 @@ fun unpack (fresh:1->string) (head:string, p:prod_t) : gramlib_t =
  var out = Empty[gramentry_t];
  match p with
  | `Epsilon => out = ([head,p]);
- | `Terminal _ => out = ([head,(`Seq ([p])) :>> prod_t]);
- | `Nonterminal s => out= ([head,(`Seq ([p])) :>> prod_t]);
+ | `Terminal _ => out = ([head,`Seq ([p]) :>> prod_t]);
+ | `Nonterminal s => out= ([head,`Seq ([p]) :>> prod_t]);
 
  | `Seq ps =>
    var newseq = Empty[prod_t];
@@ -217,8 +217,8 @@ fun unpack (fresh:1->string) (head:string, p:prod_t) : gramlib_t =
    done
 
    match newseq with 
-   | Empty => out = (head,(#`Epsilon) :>> prod_t ) ! out;
-   | _ => out = (head,(`Seq (rev newseq)) :>> prod_t) ! out;
+   | Empty => out = (head,#`Epsilon :>> prod_t ) ! out;
+   | _ => out = (head,`Seq (rev newseq) :>> prod_t) ! out;
    endmatch;
 
  | `Alt ps =>
@@ -257,7 +257,7 @@ fun merge (var p:gramlib_t): gramlib_t =
  }
 
  proc dohead() { key = cur.0; alts = Empty[prod_t]; }
- proc dofoot() { out = (key,(`Alt alts) :>> prod_t ) ! out;  }
+ proc dofoot() { out = (key,`Alt alts :>> prod_t ) ! out;  }
  proc dobreak() { dofoot; dohead; }
  proc check() { if key != cur.0 call dobreak; }
 

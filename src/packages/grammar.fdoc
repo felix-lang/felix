@@ -1360,8 +1360,8 @@ syntax expressions {
     spower_pri <
     ssuperscript_pri <
     srefr_pri <
-    sapplication_pri <
     scoercion_pri <
+    sapplication_pri <
     sfactor_pri <
     srcompose_pri <
     sthename_pri <
@@ -1500,11 +1500,12 @@ syntax expressions {
   // (ainj (r:>>4) of (4 *+ int)) 42
   x[scase_literal_pri] := "ainj"  stypeexpr "of" x[ssum_pri] =># "`(ast_ainj ,_sr ,_2 ,_4)";
 
+  spv_name := "case" sname =># "_2";
+  spv_name := "`" sname =># "_2";
+
   //$ Variant value.
-  x[scase_literal_pri] := "#" "case" sname =># "`(ast_variant (,_3 ()))";
-  x[scase_literal_pri] := "case" sname x[ssum_pri] =># "`(ast_variant (,_2 ,_3))";
-  x[scase_literal_pri] := "#" "`" sname =># "`(ast_variant (,_3 ()))";
-  x[scase_literal_pri] := "`" sname x[ssum_pri] =># "`(ast_variant (,_2 ,_3))";
+  x[sthename_pri] := "#" spv_name =># "`(ast_variant (,_2 ()))";
+  x[sapplication_pri] := spv_name  x[>sapplication_pri] =># "`(ast_variant (,_1 ,_2))";
 
   //$ multiplication: right associative
   x[sproduct_pri] := x[>sproduct_pri] "\otimes" x[sproduct_pri] =># "(Infix)";
@@ -1550,25 +1551,25 @@ syntax expressions {
 
 //------------------------------------------------------------------------
   //$ Operator whitespace: application.
-  x[sapplication_pri] := x[sapplication_pri] x[scoercion_pri] =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
+  x[sapplication_pri] := x[sapplication_pri] x[>sapplication_pri] =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
 
   //$ Variant index.
-  x[sapplication_pri] := "caseno" x[scoercion_pri] =># "`(ast_case_index ,_sr ,_2)";
-  x[sapplication_pri] := "casearg" x[scoercion_pri] =># "`(ast_rptsum_arg ,_sr ,_2)";
+  x[sapplication_pri] := "caseno" x[>sapplication_pri] =># "`(ast_case_index ,_sr ,_2)";
+  x[sapplication_pri] := "casearg" x[>sapplication_pri] =># "`(ast_rptsum_arg ,_sr ,_2)";
 
   //$ Optimisation hint: likely.
   //$ Use in conditionals, e.g. if likely(x) do ...
-  x[sapplication_pri] := "likely" x[scoercion_pri] =># "`(ast_likely ,_sr ,_2)";
+  x[sapplication_pri] := "likely" x[>sapplication_pri] =># "`(ast_likely ,_sr ,_2)";
 
   //$ Optimisation hint: unlikely.
   //$ Use in conditionals, e.g. if unlikely(x) do ...
-  x[sapplication_pri] := "unlikely" x[scoercion_pri] =># "`(ast_unlikely ,_sr ,_2)";
+  x[sapplication_pri] := "unlikely" x[>sapplication_pri] =># "`(ast_unlikely ,_sr ,_2)";
 
 //------------------------------------------------------------------------
   //$ Suffixed coercion.
-  x[scoercion_pri] := x[scoercion_pri] ":>>" x[sfactor_pri] =># "`(ast_coercion ,_sr (,_1 ,_3))";
+  x[scoercion_pri] := x[scoercion_pri] ":>>" x[>scoercion_pri] =># "`(ast_coercion ,_sr (,_1 ,_3))";
 
-  x[scoercion_pri] := ssuffixed_name =># "_1";
+  x[sfactor_pri] := ssuffixed_name =># "_1";
 
 //------------------------------------------------------------------------
   //$ Reverse application.
@@ -1704,6 +1705,7 @@ syntax expressions {
 
     stype_variant_item_bar := "|" stype_variant_item =># "_2";
     stype_variant_item_bar := "|" stypeexpr =># "`(base ,_2)";
+    stype_variant_items := stypeexpr stype_variant_item_bar+ =># "(cons `(base ,_1) _2)";
     stype_variant_items := stype_variant_item stype_variant_item_bar* =># "(cons _1 _2)";
     stype_variant_items := stype_variant_item_bar+ =># "_1";
 
