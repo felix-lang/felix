@@ -389,8 +389,8 @@ class Parsers
    match p with
    | `Action a => out = ([head,p]); 
    | `Epsilon => out = ([head,p]);
-   | `Terminal _ => out = ([head,(`Seq ([p])):>>pgram_t]);
-   | `Nonterminal s => out= ([head,(`Seq ([p])):>>pgram_t]);
+   | `Terminal _ => out = ([head,`Seq ([p]):>>pgram_t]);
+   | `Nonterminal s => out= ([head,`Seq ([p]):>>pgram_t]);
 
    | `Seq ps =>
      var newseq = Empty[pgram_t];
@@ -402,14 +402,14 @@ class Parsers
        | `Terminal _ => newseq = term ! newseq;
        | _ =>
          var newhead = fresh();
-         newseq = (`Nonterminal newhead) :>>pgram_t ! newseq;
+         newseq = `Nonterminal newhead :>>pgram_t ! newseq;
          out = unpack fresh (newhead,term);
        endmatch;
      done
 
      match newseq with 
-     | Empty => out = (head,(#`Epsilon):>> pgram_t) ! out;
-     | _ => out = (head,(`Seq(rev newseq)):>>pgram_t) ! out;
+     | Empty => out = (head,#`Epsilon:>> pgram_t) ! out;
+     | _ => out = (head,`Seq(rev newseq):>>pgram_t) ! out;
      endmatch;
 
    | `Alt ps =>
@@ -458,7 +458,7 @@ class Parsers
 
   fun expand (p:pgram_t) : pgram_t =>
     let ps = expand_aux p in
-    (`Alt (map (fun (seqs: list[pgram_t]) => (`Seq(rev seqs)):>>pgram_t) ps)) :>> pgram_t
+    (`Alt (map (fun (seqs: list[pgram_t]) => `Seq(rev seqs):>>pgram_t) ps)) :>> pgram_t
   ;
 
   // in p replace nonterminal name with value (where q=name,value)
@@ -466,8 +466,8 @@ class Parsers
     let name,value = q in
     match p with
     | `Nonterminal s when name == s => value
-    | `Seq ls => (`Seq (map (substitute q) ls)) :>> pgram_t
-    | `Alt ls => (`Alt (map (substitute q) ls)) :>> pgram_t
+    | `Seq ls => `Seq (map (substitute q) ls) :>> pgram_t
+    | `Alt ls => `Alt (map (substitute q) ls) :>> pgram_t
     | _ => p
   ;
 
@@ -514,11 +514,11 @@ class Parsers
        outgram = (nt,expr) ! outgram;
      else 
        var newntname = fresh();
-       var newnt = (`Nonterminal newntname) :>> pgram_t; 
-       var alts = map (fun (b:list[pgram_t]) => (`Seq (b + newnt)):>>pgram_t) betas;
-       outgram =  (nt, (`Alt alts) :>>pgram_t) !  outgram ;
-       alts = map (fun (a:list[pgram_t]) => (`Seq (a + newnt)):>>pgram_t) alphas + (#`Epsilon):>>pgram_t;
-       outgram = (newntname, (`Alt alts):>>pgram_t) ! outgram;
+       var newnt = `Nonterminal newntname :>> pgram_t; 
+       var alts = map (fun (b:list[pgram_t]) => `Seq (b + newnt):>>pgram_t) betas;
+       outgram =  (nt, `Alt alts :>>pgram_t) !  outgram ;
+       alts = map (fun (a:list[pgram_t]) => `Seq (a + newnt):>>pgram_t) alphas + (#`Epsilon):>>pgram_t;
+       outgram = (newntname, `Alt alts:>>pgram_t) ! outgram;
      done
    done
    return outgram;
@@ -542,8 +542,8 @@ class Parsers
 
   fun make_seq (a:pgram_t) (b:list[pgram_t]) =>
     match a with
-    | (`Seq a) => (`Seq (a + b)) :>> pgram_t
-    | _ => (`Seq (a ! b)) :>> pgram_t
+    | (`Seq a) => `Seq (a + b) :>> pgram_t
+    | _ => `Seq (a ! b) :>> pgram_t
   ; 
 
   // requires one entry per non-terminal, sorted for performance
@@ -612,7 +612,7 @@ println$ "      NO: keep";
          if not (counter in toremove) perform
            toadd = elt ! toadd;
        done
-       var newa_i = direct_left_recursion_elimination fresh ([rnt, (`Alt toadd) :>> pgram_t]);
+       var newa_i = direct_left_recursion_elimination fresh ([rnt, `Alt toadd :>> pgram_t]);
        return left_recursion_elimination_step fresh (newa_i + left) tail;
      endmatch;
   }
@@ -693,15 +693,15 @@ class Parser_synlib
 {
   open Parsers;
   open Grammars;
-  fun NT (s:string) => (`Nonterminal  s) :>> pgram_t ;
-  fun TERM (s:string, r:Recognisers::recog_t) => (`Terminal (s,r)) :>> pgram_t;
+  fun NT (s:string) => `Nonterminal  s :>> pgram_t ;
+  fun TERM (s:string, r:Recognisers::recog_t) => `Terminal (s,r) :>> pgram_t;
   fun STR (s:string) => (`Terminal (s, (Recognisers::match_string s)));
-  fun REDUCE (s:string, n:int) => (`Action (Reduce (s,n))) :>> pgram_t;
-  fun BINOP(s:string) => (`Action (Sequence ([Swap, Drop 1, (Reduce (s,2))]))):>>pgram_t;
-  fun SWAP () => (`Action (Swap)) :>> pgram_t;
-  fun DROP (n:int) => (`Action (Drop n)) :>> pgram_t;
-  fun ALT (ls: list[pgram_t]) => (`Alt ls) :>> pgram_t;
-  fun SEQ (ls: list[pgram_t]) => (`Seq ls) :>> pgram_t;
+  fun REDUCE (s:string, n:int) => `Action (Reduce (s,n)) :>> pgram_t;
+  fun BINOP(s:string) => `Action (Sequence ([Swap, Drop 1, (Reduce (s,2))])):>>pgram_t;
+  fun SWAP () => `Action (Swap) :>> pgram_t;
+  fun DROP (n:int) => `Action (Drop n) :>> pgram_t;
+  fun ALT (ls: list[pgram_t]) => `Alt ls :>> pgram_t;
+  fun SEQ (ls: list[pgram_t]) => `Seq ls :>> pgram_t;
   fun EPS () => (#`Epsilon) :>> pgram_t;
 }
 
