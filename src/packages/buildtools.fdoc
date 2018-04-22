@@ -172,9 +172,14 @@ class BuildFlxg
 
     gen ocaml_build(kind:build_kind, dir:string, lib:string, spec:libspec_t) =
     {
-
+      var safe_string_flag = 
+        if lib in (/* "ocs",*/ /*"sex",*/ "dyp","dypgen.exe",/*"flx_lex",*/"flx_parse","flx_desugar") 
+        then "-unsafe-string"
+        else "-safe-string"
+      ;
       println$ "-" * 20;
       println$ "Lib=" + lib + " in " + dir;
+      println$ "Safe-string-flag=" + safe_string_flag;
       println$ "-" * 20;
       //println$ "srcs = \n    " +strcat "\n    " spec.srcs;
       println$ "libs= \n    " + strcat "\n    " spec.libs;
@@ -249,7 +254,7 @@ class BuildFlxg
                "-I",tmpdir, 
                "-I",tmpdir/dir, 
                "-I", entmp (Filename::dirname file)) + 
-               include_flags +
+               include_flags + safe_string_flag +
                list("-c", "-w",'yzex','-warn-error',"FPSU",
                '-o',entmp (Filename::strip_extension file) + ".cmi",
                file)
@@ -267,8 +272,8 @@ class BuildFlxg
                "-I",tmpdir, 
                "-I",tmpdir/dir, 
                "-I", entmp (Filename::dirname file)) +
-               include_flags +
-               list("-unsafe-string", "-c", "-w",'yzex','-warn-error',"FPSU",
+               include_flags + safe_string_flag +
+               list("-c", "-w",'yzex','-warn-error',"FPSU",
                '-o',entmp (Filename::strip_extension file) + ".cmx",
                file)
             ;

@@ -31,7 +31,7 @@ let rec ocs2sex (s:sval) : sexp_t =
   | Snull -> Lst []
   | Strue -> Id "true"
   | Sfalse -> Id "false"
-  | Sstring s -> Str s
+  | Sstring s -> Str (Bytes.to_string s)
   | Ssymbol s -> Id s
   | Sint i -> Int (string_of_int i)
   | Spair _ ->
