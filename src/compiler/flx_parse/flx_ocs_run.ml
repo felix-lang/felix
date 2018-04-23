@@ -2,7 +2,7 @@ let dummy_sr = Flx_srcref.make ("dummy",0,0,0,0)
 
 let string_of_sval  (s:Ocs_types.sval) : string =
   match s with
-  | Ocs_types.Sstring s -> s
+  | Ocs_types.Sstring s -> Bytes.to_string s
   | _ -> failwith 
     ("string of sval expected a Scheme string, got " ^ Ocs_print.string_of_ocs s)
 

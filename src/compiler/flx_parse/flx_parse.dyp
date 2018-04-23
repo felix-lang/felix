@@ -626,7 +626,7 @@ since the production syntax cannot parse an empty
 production at the moment
 */
 sepsilon: | { Snull }
-strepsilon: | { Sstring "" }
+strepsilon: | { Sstring (Bytes.empty) }
 
 basic_name:
   | NAME 

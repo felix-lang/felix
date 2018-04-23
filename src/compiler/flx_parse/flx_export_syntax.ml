@@ -72,7 +72,7 @@ let silly_strtoken k = Flx_prelex.string_of_token k
 *)
 let xsr sr =
   match Flx_srcref.to_tuple sr with f,fl,fc,ll,lc ->
-  Ocs_misc.make_slist Snull ((Sint lc) :: (Sint ll) :: (Sint fc) :: (Sint fl) :: (Sstring f) :: [])
+  Ocs_misc.make_slist Snull ((Sint lc) :: (Sint ll) :: (Sint fc) :: (Sint fl) :: (Sstring (Bytes.of_string f)) :: [])
 
 let buffer_add_ocs b r = Ocs_print.print_to_buffer b false r
 
@@ -199,15 +199,15 @@ print_endline ("define_scheme " ^ name);
 
           | STRING s1, `Obj_NAME s2 ->
             if s1 <> s2 then raise Giveup;
-            Sstring s1
+            Sstring (Bytes.of_string s1)
 
-          | STRING _, `Lexeme_matched s -> (* print_endline ("Matched regexp to " ^ s); *) Sstring s
+          | STRING _, `Lexeme_matched s -> (* print_endline ("Matched regexp to " ^ s); *) Sstring (Bytes.of_string s)
 
-          | REGEX _, `Lexeme_matched s -> (* print_endline ("Matched regexp to " ^ s); *) Sstring s
+          | REGEX _, `Lexeme_matched s -> (* print_endline ("Matched regexp to " ^ s); *) Sstring (Bytes.of_string s)
 
           | k , _ ->
           print_endline ("Woops, unhandled token=" ^ Flx_prelex.string_of_token k);
-          Sstring (Flx_prelex.string_of_token k)
+          Sstring (Bytes.of_string (Flx_prelex.string_of_token k))
         in
         if !(dyp.global_data.pdebug) then begin
           Buffer.add_string b ("Arg " ^ string_of_int n ^ " = ");
@@ -240,7 +240,7 @@ print_endline ("sr of reduction is " ^ Flx_srcref.short_string_of_src sr);
         b
       in
       let filenase = munge filebase in 
-      Ocs_env.set_glob env v2 (Sstring filebase)
+      Ocs_env.set_glob env v2 (Sstring (Bytes.of_string filebase))
     end
     ;
     let r =

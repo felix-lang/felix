@@ -6,21 +6,21 @@ let giveup () = raise Dyp.Giveup; Sunspec
 let sraise s  = raise (Scheme_error s); Sunspec
 let sunescape s =
   match s with
-  | Sstring s -> Sstring (Flx_string.unescape s)
+  | Sstring s -> Sstring (Bytes.of_string (Flx_string.unescape (Bytes.to_string s)))
   | _ -> raise (Ocs_error.Error ("sunescape: not a string"))
 
 let cquote s =
   match s with
-  | Sstring s -> Sstring (Flx_string.c_quote_of_string s)
+  | Sstring s -> Sstring (Bytes.of_string (Flx_string.c_quote_of_string (Bytes.to_string s)))
   | _ -> raise (Ocs_error.Error ("c-quote-string: not a string"))
 
 let utf2ucn s =
   match s with
-  | Sstring s -> Sstring (Flx_utf.utf8_to_ucn s)
+  | Sstring s -> Sstring (Bytes.of_string (Flx_utf.utf8_to_ucn (Bytes.to_string s)))
   | _ -> raise (Ocs_error.Error ("utf8->ucn: not a string"))
 
 let ocs_to_string s = 
-  Sstring (Ocs_print.string_of_ocs s)
+  Sstring (Bytes.of_string (Ocs_print.string_of_ocs s))
  
 let flx_ocs_init env =
   Ocs_env.set_pf0 env giveup "giveup";
@@ -51,7 +51,7 @@ let init_env () =
 
   for n = 1 to 20 do
     let v1:Ocs_types.sval = Ocs_sym.get_symbol ("_" ^ string_of_int n) in
-    let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = Sstring ""} in
+    let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = Sstring (Bytes.empty)} in
     Ocs_env.bind_name env v1 g1;
   done;
   env
