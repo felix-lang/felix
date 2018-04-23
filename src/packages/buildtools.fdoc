@@ -173,7 +173,7 @@ class BuildFlxg
     gen ocaml_build(kind:build_kind, dir:string, lib:string, spec:libspec_t) =
     {
       var safe_string_flag = 
-        if lib in (/* "ocs",*/ /*"sex",*/ "dyp","dypgen.exe",/*"flx_lex",*/"flx_parse","flx_desugar") 
+        if lib in (/* "ocs",*/ /*"sex",*/ "dyp","dypgen.exe",/*"flx_lex",*/"flx_parse"/*,"flx_desugar"*/) 
         then "-unsafe-string"
         else "-safe-string"
       ;

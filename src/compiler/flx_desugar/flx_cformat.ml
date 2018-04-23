@@ -111,9 +111,9 @@ type mode_t = [
 let strchr ch = String.make 1 ch
 
 let ast i =
-  let s = String.make (i+1) ' 'in
+  let s = Bytes.make (i+1) ' ' in
   Bytes.set s i '*';
-  s
+  (Bytes.to_string s)
 
 let numval ch = index "0123456789" ch
 

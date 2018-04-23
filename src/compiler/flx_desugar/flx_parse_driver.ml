@@ -24,7 +24,7 @@ let parse_lexbuf_with_parser aparser old_local_data lexbuf : local_data_t =
     let adjust_line s =
       match s with
       | Sstring s -> 
-        Flx_parse_srcref.adjust_lineno lexbuf s; Sunspec
+        Flx_parse_srcref.adjust_lineno lexbuf (Bytes.to_string s); Sunspec
       | _ -> raise (Ocs_error.Error ("adjust-linecount: not a string"))
     in
     let env = Flx_parse_data.global_data.Flx_token.env in
@@ -58,7 +58,7 @@ let parse_lexbuf_with_parser aparser old_local_data lexbuf : local_data_t =
 *)
       | Flx_ocs_init.Scheme_error x ->
           begin match x with 
-          | Sstring (s) -> failwith s
+          | Sstring (s) -> failwith (Bytes.to_string s)
           | _ -> failwith "SCHEME_ERROR"
           end
 
@@ -147,10 +147,16 @@ print_endline ("#include file '" ^ include_file ^ "'");
   with End_of_file ->
     close_in ch
 
+(* FIXME: WARNING DANGEROUS HACKERY MUTATING STRING *)
 let feed_buffer buffer = 
   let start = ref 0 in 
   let len = Buffer.length buffer in
-  fun s n -> 
+  fun (s':string) n -> 
+    (* Currently Dypgen provides a string to be filled in, so we have to
+     * unsafely alias it as bytes to allow the blit to work. This code
+     * will change when and if Dypgen is fixed to use bytes
+     *)
+    let s = Bytes.unsafe_of_string s' in 
     if n < (len - !start) then begin
       Buffer.blit buffer (!start) s 0 n;
       start := (!start) + n;
