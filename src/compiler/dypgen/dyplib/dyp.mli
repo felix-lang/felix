@@ -215,7 +215,7 @@ val from_channel :
 
 val from_function :
   ('token,'obj,'global_data,'local_data,'lexbuf) parser_pilot ->
-  (string -> int -> int) ->
+  (bytes -> int -> int) ->
   'obj dyplexbuf
 
 val dyplex_lexbuf_position :

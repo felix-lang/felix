@@ -4309,6 +4309,25 @@ let find_first_no_eps start_node p =
   aux p
 
 
+let merge_in_path ppar counters p topmost rl mm =
+  let f (topmost, rl, mm) e =
+    if !dypgen_verbose>2 then
+      Printf.fprintf !log_channel "Try to merge edge %d.\n" e.edge_id;
+    try
+      let merge_item = Int_map.find e.edge_id mm in
+      let mm = Int_map.remove e.edge_id mm in
+      let topmost, rl =
+        merge_in_edge ppar counters e.edge_id merge_item (topmost, rl)
+      in
+      topmost, rl, mm
+    with Not_found ->
+      (if !dypgen_verbose>2 then
+        Printf.fprintf !log_channel "Edge %d not found in merge map.\n" e.edge_id;
+      topmost, rl, mm)
+  in
+  List.fold_left f (topmost, rl, mm) p
+
+
 let reduceViaPath (((start_node,p,tnb),(ind,rhs),rn) as pr) rl mm topmost parse_res ppar counters next_lexeme_precursor last_pr merge_reduce =
   
   if !dypgen_verbose>2 then
@@ -4322,6 +4341,7 @@ let reduceViaPath (((start_node,p,tnb),(ind,rhs),rn) as pr) rl mm topmost parse_
     print_path start_node p;
     flush_all ());
   
+  let topmost, rl, mm = merge_in_path ppar counters p topmost rl mm in
   let position_list = position_map p start_node in
   (*let end_node_pos = match position_list with
     | (pos, _)::_ -> pos
@@ -4505,28 +4525,23 @@ let must_merge ((start0,p0,tnb0),(ind0,rhs0),rn0) (ind1,tnb1,g_nb1,(gd1,e1,ld1,o
   else false
 
 
-
-
 let do_reductions topmost counters ppar next_lexeme_precursor =
   
   let rl = make_reduction_list topmost counters ppar in
   
   let rec merge_reduce rl mm topmost parse_res last_pr =
-    let (topmost, rl), mm = match rl, last_pr with
-      | pr1::_, Some pr2 when compare_pr pr1 pr2 = 1 ->
-          (do_merge mm rl topmost ppar counters), Int_map.empty
-      | [], _ ->
-          (do_merge mm rl topmost ppar counters), Int_map.empty
-      | _ -> (topmost, rl), mm
-    in
     match rl with
       | pr::tl ->
           reduceViaPath pr tl mm topmost parse_res ppar counters
           next_lexeme_precursor last_pr merge_reduce
-      | [] -> topmost, parse_res
+      | [] -> topmost, parse_res, mm
   in
   
-  merge_reduce rl Int_map.empty topmost [] None
+  let topmost, parse_res, mm = merge_reduce rl Int_map.empty topmost [] None in
+  let topmost, _ = do_merge mm [] topmost ppar counters in
+  topmost, parse_res
+
+
 
 
 
@@ -5066,9 +5081,9 @@ let next_lexeme_precur_lb_pdev lexbuf pdev gd ld =
         res
     | None, (Some ((action_id_l, pdev, _),_)) ->
       let lexeme =
-        try String.sub lexbuf.lb_lexbuf.lex_buffer prev_curr_pos len
+        try Bytes.to_string (Bytes.sub lexbuf.lb_lexbuf.lex_buffer prev_curr_pos len)
         with Invalid_argument("String.sub") ->
-          (Printf.printf "1; %s\n" lexbuf.lb_lexbuf.lex_buffer;
+          (Printf.printf "1; %s\n" (Bytes.to_string (lexbuf.lb_lexbuf.lex_buffer));
           raise (Invalid_argument("String.sub")))
       in
        (if !dypgen_verbose>2 then
@@ -5076,7 +5091,7 @@ let next_lexeme_precur_lb_pdev lexbuf pdev gd ld =
        next_token (lexeme::res))
     | (Some ((action_id_l, pdev, _),_)), _ ->
       let lexeme =
-        try String.sub lexbuf.lb_lexbuf.lex_buffer prev_curr_pos len
+        try Bytes.to_string (Bytes.sub lexbuf.lb_lexbuf.lex_buffer prev_curr_pos len)
         with Invalid_argument("String.sub") ->
           (Printf.printf "2; %i, %i\n" prev_curr_pos len;
           raise (Invalid_argument("String.sub")))

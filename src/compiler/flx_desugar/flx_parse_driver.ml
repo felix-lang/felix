@@ -151,12 +151,15 @@ print_endline ("#include file '" ^ include_file ^ "'");
 let feed_buffer buffer = 
   let start = ref 0 in 
   let len = Buffer.length buffer in
+  (*
   fun (s':string) n -> 
     (* Currently Dypgen provides a string to be filled in, so we have to
      * unsafely alias it as bytes to allow the blit to work. This code
      * will change when and if Dypgen is fixed to use bytes
      *)
     let s = Bytes.unsafe_of_string s' in 
+*)
+  fun (s:bytes) n ->
     if n < (len - !start) then begin
       Buffer.blit buffer (!start) s 0 n;
       start := (!start) + n;
