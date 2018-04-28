@@ -1,0 +1,9 @@
+@title R-lang vector op test
+@felix
+var x = varray(1,2,3,4);
+var y = varray(1,0);
+println$ rop (add of (int * int)) (x,y);
+@
+@expect
+varray(1,1,2,2)
+@

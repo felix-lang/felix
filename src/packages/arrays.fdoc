@@ -873,6 +873,16 @@ open class Varray
     return o;
   }
 
+  //$ R like operations
+  fun rop[T] (op:T * T -> T) (x:varray[T], y:varray[T]) : varray[T] =>
+    let n = x.len in
+    let m = y.len in
+    if m == 0uz or n == 0uz then varray[T](0uz) else
+    let l = max(n,m) in
+    let fun g (i:size): T => op (x.(i%n), y.(i%m)) in
+    varray[T] (l,l,g)
+  ;
+
 }
 
 instance[T with Show[T]] Str[Varray::varray[T]] {
