@@ -9,6 +9,9 @@ Contents:
    :maxdepth: 1
    
    manual
+   compilation
+   lexical
+   primtypes
    logic
    integers
    floats 
@@ -23,6 +26,7 @@ Contents:
    variants
    functions
    procedures
+   objects
    coroutines
 
 Indices and tables
