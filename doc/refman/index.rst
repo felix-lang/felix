@@ -11,6 +11,7 @@ Contents:
    manual
    compilation
    lexical
+   typealias
    primtypes
    logic
    integers
@@ -26,6 +27,7 @@ Contents:
    variants
    functions
    procedures
+   generators
    objects
    coroutines
 

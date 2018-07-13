@@ -200,6 +200,45 @@ into the scope of the function body. In the example
 str is a method of Str which translates a value of type
 T into a human readable string.
 
+Constructor functions
+---------------------
+
+Subtyping Conversion functions
+------------------------------
+
+Projection Functions
+--------------------
+
+Injection Functions
+-------------------
+
+Pre and post conditions
+-----------------------
+
+Functions can have pre-conditions:
+
+.. code-block:: felix
+
+   fun checked_sqrt
+     (x:double where x >= 0.0) 
+     : double expect result >= 0.0 
+     => sqrt x
+   ;
+
+Pre and post conditions are checked dynamically at run time.
+They are not part of the function type.
+
+Row Polymorphism
+----------------
+
+
+
+
+
+
+
+
+
 
 
 
