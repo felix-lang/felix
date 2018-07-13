@@ -104,7 +104,7 @@ An error diagnostic will be printed and the compilation
 terminated if no such instance exists.
 
 Virtual types
-=============
+-------------
 
 A class may also specify a virtual type. This is an existential type
 which is dependent on the class type parameters in way which
