@@ -20,8 +20,10 @@ Contents:
    classes
    unions
    sums
+   variants
    functions
-   string-package
+   procedures
+   coroutines
 
 Indices and tables
 ==================

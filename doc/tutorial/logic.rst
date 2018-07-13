@@ -21,7 +21,7 @@ that is, it creates an alias.
 Constants
 ---------
 
-There two predefined constants, `true` and `false`.
+There are two predefined constants of type bool, `true` and `false`.
 
 Operations
 ----------

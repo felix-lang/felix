@@ -15,7 +15,7 @@ which are lifted to C++ automatically.
 Type
 ----
 
-The easiest string type to use in Felix is the one based
+The string type in Felix is the based
 on C++:
 
 .. code-block:: felix
@@ -45,7 +45,7 @@ you can concatenate them by juxtaposition:
       'and I am the second.'
     ;
 
-Notice the special encoding `\n` which inserts and end of
+Notice the special encoding `\n` which inserts an end of
 line character into the string rather than a `\` followed
 by an `n`. This is called an escape.
 
@@ -82,7 +82,7 @@ has three end of lines (one after the first triple quote).
 Length
 ------
 
-Use the len function:
+Use the `len` function:
 
 .. code-block:: felix
 
@@ -140,16 +140,16 @@ ordering and support the usual comparison operators.
 Summary: String Comparisons
 ---------------------------
 
-========     ======================     =======  =============
+========     =======================    =======  =================
 Operator     Type                       Syntax   Semantics
-========     ======================     =======  =============
+========     =======================    =======  =================
 ==           string * string -> bool    Infix    Equality
 !=           string * string -> bool    Infix    Not Equal
 <=           string * string -> bool    Infix    Less or Equal
 <            string * string -> bool    Infix    Less
 >=           string * string -> bool    Infix    Greater or Equal
 >            string * string -> bool    Infix    Greater
-========     ======================     =======  =============
+========     ======================     =======  =================
 
 
 

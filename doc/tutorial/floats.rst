@@ -3,7 +3,7 @@ Floating Point Numbers
 
 Floating point literals are local approximations to reals.
 Local means close to zero. Floats are dense near zero and
-loose precision far from it.
+lose precision far from it.
 
 Type
 ----
@@ -71,9 +71,9 @@ to check the result is with about 3 decimal places of 1.0.
 Summary: Double Comparisons
 ---------------------------
 
-========     ======================     =======  =============
+========     =======================    =======  =============
 Operator     Type                       Syntax   Semantics
-========     ===================        =======  =============
+========     =======================    =======  =============
 ==           double * double -> bool    Infix    Equality
 !=           double * double -> bool    Infix    Not Equal
 <=           double * double -> bool    Infix    Less or Equal

@@ -28,4 +28,4 @@ into C++, compiles the program, and runs it. All the generated files
 are cached in the .felix/cache subdirectory of your $HOME directory
 on Unix like systems, and $USERPROFILE on Windows.
 
-
+This means the script can be run in a read-only directory.

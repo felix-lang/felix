@@ -103,4 +103,30 @@ overloads from the most specialised instance.
 An error diagnostic will be printed and the compilation
 terminated if no such instance exists.
 
+Virtual types
+=============
+
+A class may also specify a virtual type. This is an existential type
+which is dependent on the class type parameters in way which
+cannot be specified by a formula. Instead, the type is specified in
+each instance. Type parameters are deduced from applications to 
+select a class virtual function, a virtual type is used in the
+result:
+
+.. code-block:: felix
+
+  class Add[T1, T2] {
+     virtual type U;
+     virtual fun promote: T1 * T1-> U;
+  }
+
+  instance Add[int, long] {
+     typedef U = long;
+     fun add(x:int,y:long):long = "$1+$2";
+  }
+
+Since a virtual type is only known at monomorphisation type
+a value of that type can only be used in the argument of a function
+which is parametrically polymorphic or a virtual class method.
+
 

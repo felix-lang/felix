@@ -13,7 +13,8 @@ hyphens, or ASCII digits.
 The first character may also be an underscore
 but that is reserved for the system. 
 
-Felix requires UTF-8 encoding.
+A letter may be any Unicode code point accepted by ISO C++ Standard
+as a letter, it must be encoded as UTF-8.
 
 .. code-block:: felix
 

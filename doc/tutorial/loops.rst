@@ -17,7 +17,7 @@ the loop is executed.
 
 .. code-block:: felix
 
-   var x = 10
+   var x = 10;
    while x > 0 do
      println$ x;
      x = x - 1;
@@ -53,8 +53,8 @@ An inclusive slice is illustrated here:
     done
 
 and the loop iterations include the value 3. The values
-of a the slice start and slice end delimiters must
-can be arbitrary expressions but be of type `int`.
+of a the slice start and slice end delimiters 
+can be arbitrary expressions of type `int`.
 Slices can be empty if the end is lower than the start,
 in this case the loop body is not executed.
 
