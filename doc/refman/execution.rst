@@ -45,3 +45,52 @@ the function will behave as if eagerly evaluated.
 On the other hand if you want lazy behaviour you can make
 your function accept a closure end evaluate it when you
 need the result.
+
+Fibres
+++++++
+
+Felix supports shared memory concurrency with conventional
+pre-emptive threads. However within each thread a collection
+of fibres may run.
+
+Fibres are logical threads of control which communicate with
+other fibres using synchronous channels, as well as shared
+memory. Fibres interleave execution in a pthread under program
+control: I/O operations on channels cause the current fibre
+to be suspended until at least a matching opposite operation
+of another fibre. Reads match writes, so a reader will suspend
+until a write provides the data it is waiting for, writers
+suspend until there is a reader to consume the data it provides.
+
+In a fibrated system all events form a total order: fibration
+is a *sequential programming technique* in which pieces of the
+program suspend of their own volition, and are resumed by 
+a scheduler at the earliest when their I/O requirement is met.
+
+Fibres communicating with anonymous channels cannot deadlock,
+deadlock is a legitimate method of suicide. When a fibres
+starves for input, or blocks for output, which cannot arrive,
+the fibre is removed (by the garbage collector) and so a deadlock
+is equivalent to the fibre exiting.
+
+The details are beyond the scope of this brief description
+and can be found elsewhere.
+
+
+Asynchronous Event Handling
+---------------------------
+
+Felix has an asynchronous event handling system which currently
+supports two kinds of events: timeout of an alarm clock,
+and socket readiness notifications.
+
+When utilised a separate system pthread monitors timers and
+sockets using the best available technology for the current
+platform: it chooses between select, poll, epoll, kqueue,
+Windows completion ports and Solaris completion ports.
+
+When a coroutine waits for a clock alarm, or requests a socket
+read, write, or connection, its fibre is blocked until the
+alarm triggers, or the requestion socket I/O operation is
+complete. However *other* coroutines running on the same
+pthread do not block.

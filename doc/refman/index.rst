@@ -12,20 +12,7 @@ Contents:
    compilation
    execution 
    lexical
-   typealias
-   primtypes
-   logic
-   integers
-   floats 
-   strings
-   tuples
-   records
-   structs
-   pointers
-   classes
-   unions
-   sums
-   variants
+   typesys
    functions
    procedures
    generators
