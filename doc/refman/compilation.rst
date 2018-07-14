@@ -246,9 +246,146 @@ name with type arguments:
   ;
 
 
+Resource Database
++++++++++++++++++
+
+Felix uses a resource data base to represent some external libraries.
+The database consists of one or more directories containing resource
+descriptors which are files ending in extenion `.fpc`. The system
+is similar to `pkconfig` and there is a separate tool `flx_pkgconfig`
+which can be used to query it.
+
+The resources are called resource packages, not to be confused with
+source packages.
+
+Package files consist of a sequence of field definitions:
+
+.. code-block:: text
+
+  Generated_from: 2403 "/Users/skaller/felix/src/packages/gc.fdoc"
+  Name: flx_gc
+  Platform: Unix
+  Description: Felix default garbage collector (Unix)
+  provides_dlib: -lflx_gc_dynamic
+  provides_slib: -lflx_gc_static
+  includes: '"flx_gc.hpp"'
+  library: flx_gc
+  macros: BUILD_FLX_GC
+  Requires: judy flx_exceptions
+  srcdir: src/gc
+  src: .*\.cpp
+
+The field `includes` specifies the header requires to compile with 
+the Felix garbage collector.
+
+The `provides_dlib` field specifies the linker switches required to
+link the shared library version of the collector.
+
+The `provides_slib` field specifies the linker switches require
+to link the static archive version of the collector.
+
+The `Requires` field specifies packages on which this one
+depends, in this case `judy` and `flx_exceptions`.
+
+Packages can contain arbitrary fields: in the above package
+there are fields which are used to control building the
+run time library.
+
+The configuration
+database must be created to reflect the location
+of libraries and header files for each individual system.
+
+In order to access the database the programmer uses a requires
+package clause:
+
+.. code-block:: felix
+
+   type collector_t = "::flx::gc::generic::collector_t*"
+     requires package "flx_gc"
+   ;
+
+although note this is only an example and the collector
+is actually always available.
+
+Here is another package:
+
+.. code-block:: text
+
+  Generated_from: 3674 "/Users/skaller/felix/src/packages/sdl.fdoc"
+  Name: SDL2
+  Description: Simple Direct Media Layer 2.0
+  cflags: -I/usr/local/include/SDL2
+  includes: '"SDL.h"'
+  provides_dlib: -L/usr/local/lib -lSDL2
+  provides_slib: -L/usr/local/lib -lSDL2
+  requires_dlibs: ---framework=OpenGL
+  requires_slibs: ---framework=OpenGL
+
+In this case some special coding is needed to emit the 
+correct linker switches: on OSX the syntax is two words:
+
+.. code-block:: text
+
+  --framework OpenGL
+
+and the extra leading `-` and internal `=` have to be removed
+to emit the correct switches.  `flx_pkgconfig` can remove duplicate
+fields and this could lead to an incorrect isolated framework
+name if the `--framework` is not duplicated.
+
+The primary effect of the resource packaging system is to abstract
+away the system dependent details of the location and name of 
+library files, and then allow the programmer to express these
+dependencies via the abstraction directly in the program.
+
+As a result, Felix can automatically find external headers
+during C++ compilation, and automatically find libraries
+during linkage, removing the need for external scripts such
+as Make files entirely.
+
+Provided you install the required libraries for the
+Simple Direct Media Layer (SDL) system, for example,
+and then install suitable `.fpc` files in the configuration
+database, then Felix can magically run programs which do
+graphics, and you can write code which works on all platforms
+supporting SDL.
+
+Note that `flx` tool *also* supports automatic linkage
+of C and C++ code provided suitable annotations are
+embedded in the code (however it doesn't support automatic
+insertion of header files because that would prevent the
+C++ program from being compiled with conventional tools).
+
+
+Output Model
+++++++++++++
+
+By default, Felix generates a shared library which can be run with
+a fixed loaded program passed the library name as an argument.
+It is also possible to produce a static link object file,
+and link the stub loader with the generated library to
+create a stand alone executable.
+
+Felix does not support mixed mode linkage. You either use all shared
+libraries or fully statically link everything. The only exception
+is if the system requires dynamic linkage of certain libraries,
+for example on OSX the C run time library is always dynamically
+loaded (even for statically linked executables).
+
+This document does not describe all the capabilities of the
+`flx` driver tool, please read the tools documentation for that.
+Suffice it to say the tool can also compile and link in C++
+to a Felix program, and, it provides comprehensive caching
+and dependency checking of all compilation and linkage steps.
+
+By default all outputs go into the cache, even the final executable,
+and the program is then run, emulating the operation of a scripting
+language such as Python. It can therefore be regarded as an
+interpreter which takes a long time to start the first time,
+but runs code immediately thereafter, and runs it faster than
+any interpreter could (even one with a Jit).
 
 
 
 
- 
 

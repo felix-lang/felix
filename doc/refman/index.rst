@@ -10,6 +10,7 @@ Contents:
    
    manual
    compilation
+   execution 
    lexical
    typealias
    primtypes
