@@ -203,14 +203,77 @@ T into a human readable string.
 Constructor functions
 ---------------------
 
+A type name can be used as a function name like this:
+
+.. code-block:: felix
+
+  typedef polar = complex;
+  ctor complex: double * double = "::std::complex($1,$2)";
+  ctor polar: double * double = "::std::polar($1,$2)";
+  var z = polar (1.0, 0.0);
+
+The code *ctor* is actually a misnomer: these functions are
+actually conversions, not type constructors .. but the `ctor` name
+has stuck.
+
+Constructor function can be polymorphic, in this case the
+type variables have to be added after the ctor word:
+
+.. code-block:: felix
+
+  ctor[T] vector: 1 = "::std::vector<?1>()";
+
+
 Subtyping Conversion functions
 ------------------------------
+
+A subtyping conversion can be provided for nominal types:
+
+.. code-block:: felix
+
+  supertype: long (x:int) => x.long;
+
+This says int is a subtype of long, so that a function accepting
+a long will also accept and int. It is recommended not to use
+this feature unless emulating inheritance based subtyping of
+structure values.
+
+
 
 Projection Functions
 --------------------
 
+Projections of tuple types can be used as functions with the special
+name `proj` followed by a literal int, the domain type must then
+be given with an `of` suffix:
+
+.. code-block:: felix
+
+   proj 1 of (int * double)
+  
+Recall the
+integer literal is zero origin!
+ 
+Projections for records, structs, and cstructs use the field name,
+with a type suffix if necessary to resolve overloads. 
+
 Injection Functions
 -------------------
+
+Injections of anonymous sums can be used as functions with the special
+notation:
+
+.. code-block:: felix
+
+   `1: (int + double)
+   case 1 of (int + double)
+ 
+Recall the integer literal is zero origin! The more verbose `case`
+form is considered deprecated.
+
+Injections for unions use the constructor name, possibly with 
+an `of` suffix to resolve overloads.
+
 
 Pre and post conditions
 -----------------------
