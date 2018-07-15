@@ -241,9 +241,9 @@ provides a type constructor `uniq` which can be
 applied to any type.
 
 We also provide three operators which can be applied to
-expressions. The `uniq` operator takes a value of some
+expressions. The `box` operator takes a value of some
 type T, and returns a value of type `uniq T`. The 
-`ununiq` operator takes a value of type `uniq T`,
+`unbox` operator takes a value of type `uniq T`,
 for some type T, and returns a value of type T.
 
 These operators are type coercions which have no
@@ -271,10 +271,10 @@ unless applied to a variable.
     open class Unique 
     {
       // box up a value as a unique thing
-      fun uniq [T] : T -> _uniq T = "($t)";
+      fun box[T] : T -> _uniq T = "($t)";
 
       // unsafely unpack the unique box
-      fun ununiq [T] : _uniq T -> T = "($t)";
+      fun unbox[T] : _uniq T -> T = "($t)";
 
       // kill a live unique value
       proc kill[T] : uniq T = ";";
@@ -348,7 +348,7 @@ version a unique type.
 .. code-block:: felix
 
     // make it uniq
-    typedef ucstr = uniq _ucstr;
+    typedef ucstr = box _ucstr;
 
 The type constructor `uniq` specifies a uniquely
 typed version of the type it qualifies.
@@ -373,7 +373,7 @@ private wrappers functions:
 
     // privatise access to representation
     private fun pack (p: +char) => p._make__ucstr.uniq;
-    private fun unpack (var p: ucstr) : +char => p.ununiq._repr_;
+    private fun unpack (var p: ucstr) : +char => p.unbox._repr_;
 
 You should think of `pack` as a way to take
 a raw char pointer and wrap it up in a package
@@ -793,9 +793,9 @@ Let me show you:
 .. code-block:: felix
 
     proc test () {
-      var x = uniq 1;
-      println$ ununiq x;
-      println$ ununiq x;
+      var x = box 1;
+      println$ unbox x;
+      println$ unbox x;
     }
     test;
 
@@ -810,9 +810,9 @@ Felix has to say about it:
     Variable x defined at
     /Users/skaller/felix/tmp.flx: line 3, cols 3 to 18
     2: proc test () {
-    3:   var x = uniq 1;
+    3:   var x = box 1;
          ****************
-    4:   println$ ununiq x;
+    4:   println$ unbox x;
 
 What Felix does is a control flow analysis. The requirement
 is that on every *statically* possible control path,
