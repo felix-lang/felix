@@ -18,6 +18,8 @@ Contents:
    generators
    objects
    coroutines
+   expressions
+   statements
 
 Indices and tables
 ==================

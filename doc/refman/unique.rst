@@ -40,7 +40,7 @@ continued to see the original value, however since
 such accesses are disallowed, the original can
 safely be modified.
 
-The client of the funtion cannot pass a plain value to
+The client of the function cannot pass a plain value to
 the function because that would be a type error: instead
 the client has to box the value to make it acceptable
 to the receiver function. By doing this the programmer
