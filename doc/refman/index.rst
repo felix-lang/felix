@@ -19,6 +19,7 @@ Contents:
    objects
    coroutines
    expressions
+   control 
    statements
 
 Indices and tables

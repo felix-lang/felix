@@ -1,8 +1,35 @@
-Statements
-==========
+Control Model
+=============
 
-Basic Control Flow
-++++++++++++++++++
+The Felix control model is split into two distinct pieces.
+
+Function Representation
+-----------------------
+
+Functional code uses the machine stack for function return addresses.
+
+A function type object is an abstract class with a pure virtual method
+called apply which returns a representation of the codomain
+and accepts a representation of the domain.
+
+A function is derived virtually from its type and implements
+the apply method.
+
+Function closures in Felix are pointers to function type objects,
+therefore all functions of the same type are represented by a
+pointer to the same C++ class. The actual function is called
+by virtual dispatch.
+
+The function class constructor is used to store a pointer
+to the thread frame object and the display, which is the
+list of the most recent activation records 
+of the ancestors of the function at the time
+the closure was created. The function can use the display
+to access the ancestor local variables.
+
+The objects pointer to by the display members can be 
+either function or procedure frames.
+
 
 Abstract Representation of Procedural Continuations
 ---------------------------------------------------
@@ -65,17 +92,28 @@ The return address of a procedure consists of a pointer
 to the calling continuation and the program counter
 stored in *that* continuation (not in the current one).
 
-Continuations
+Optimisation
+------------
 
+Function and procedure objects are generally allocated
+on the heap. However if it is safe, Felix can allocate
+them on the machines stack.
 
+Furthermore, it may also replace them with actual C++
+functions.
 
+Finally, it can also inline functions so they may not exist
+at all as discrete objects. Within certain bounds
+direct calls and applications are inlined.
 
 
 Goto
 ----
 
 Code may be marked with labels and jumps to any visible label
-can be written.
+can be written. Gotos, however, may not jump though a function.
+A goto can cross procedure boundaries, or it can be a local
+goto within a function.
 
 .. code-block:: felix
 
@@ -371,96 +409,5 @@ Abort
 The abort routine terminates the current process
 with prejudice. It takes no argument. A message is
 printed before the process is terminated.
-
-
-Assignments
-+++++++++++
-
-Felix primary method of setting store is the intrinsic `_storeat`:
-
-.. code-block:: felix
-
-  proc storeat[T] (p: &>T, v:T) { _storeat (p,v); }
-
-The library procedure take a pointer or write-only point to T
-and a value V of type T, and calls the system intrinsic _storeat.
-The parser in turn maps
-
-.. code-block:: felix
-
-  p <- v;
-
-to the procedure `storeat`. For simple variables only you can write:
-
-.. code-block:: felix
-
-  x = v;
-
-which is notionally sugar for
-
-.. code-block:: felix
-
-  &x <- v;
-
-In addition each of the following infix operators calls a two argument
-procedure with the same name as the operator:
-
-======== ===========================
-operator usual meaning for uints
-======== ===========================
-+=       increment
--=       decrement
-/=       quotient
-\*=      product
-%=       remainer
-\<\<=    mul 2^N
-\>\>=    div 2^N
-\^=      bitwise exclusive or
-\&=      bitwise and
-\|=      bitwise or
-======== ===========================
-
-
-
-Conditionals
-++++++++++++
-
-The simplest form of a conditional construction is:
-
-.. code-block:: felix
-
-  if cond do
-     stmts
-   elif cond do
-     stmts
-   ...
-   else
-     stmts
-   done
-
-The `elif` and `else` clauses are optional. The final `done`
-does not require a trailing semicolon. The construction is
-sugar for a collection of labels and gotos, so that it is
-ok to put labels in the controlled statements and jump
-into the middle of a conditional with a goto.
-
-A more advanced statement is:
-
-.. code-block:: felix
-
-  match expr with
-  | pattern1 => stmts1
-  | pattern2 => stmts2
-  ...
-  endmatch;
-
-The final endmatch and semicolon is mandatory to distinguish the construction
-from a match expression. If none of the pattern match
-the program aborts with a match failure exception.
-
-
-Loops
-+++++
-
 
 
