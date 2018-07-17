@@ -13,11 +13,7 @@ Contents:
    execution 
    lexical
    typesys
-   functions
-   procedures
-   generators
-   objects
-   coroutines
+   definitions
    expressions
    control 
    statements

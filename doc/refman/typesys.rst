@@ -23,5 +23,6 @@ Contents:
    unions
    sums
    variants
+   funtyp
 
 
