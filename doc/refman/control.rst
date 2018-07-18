@@ -12,7 +12,7 @@ A function type object is an abstract class with a pure virtual method
 called apply which returns a representation of the codomain
 and accepts a representation of the domain.
 
-A function is derived virtually from its type and implements
+A function is derived from its type and implements
 the apply method.
 
 Function closures in Felix are pointers to function type objects,
@@ -28,7 +28,80 @@ the closure was created. The function can use the display
 to access the ancestor local variables.
 
 The objects pointer to by the display members can be 
-either function or procedure frames.
+either function or procedure frames. Here is an example,
+the macros in the C++ code have been expanded:
+
+.. code-block:: felix
+
+  noinline fun k(z:int) = {
+    fun f(x:int) = {
+      var y = x;
+      return  y + z;
+    }
+    return f;
+  }
+
+
+.. code-block:: cpp
+
+  struct thread_frame_t;
+
+  //TYPE 52224: int -> int
+  struct _ft52224 {
+    typedef int rettype;
+    typedef int argtype;
+    virtual int apply(int const &)=0;
+    virtual _ft52224 *clone()=0;
+    virtual ~_ft52224(){};
+  };
+
+
+  //FUNCTION <50810>: k int -> (int -> int)
+  //    parent = None
+  struct k {
+    thread_frame_t *ptf; 
+
+    int z;
+    k(thread_frame_t *);
+    k* clone();
+    _ft52224* apply(int const &);
+  };
+
+  //FUNCTION <50812>: k::f int -> int
+  //    parent = k<50810>
+  struct f: _ft52224 {
+    thread_frame_t *ptf; 
+    k *ptrk;
+
+    int x;
+    int y;
+    f  (thread_frame_t *, k*);
+    f* clone();
+    int apply(int const &);
+  };
+
+  //FUNCTION <50812>: k::f: Apply method
+  int f::apply(int const &_arg ){
+    x = _arg;
+    y  = x; //init
+    return y + ptrk->z ;
+  }
+
+  //FUNCTION <50810>: k: Apply method
+  _ft52224* k::apply(int const &_arg ){
+    z = _arg;
+    return (new(ptf->gcp, f_ptr_map) f(ptf, this));
+  }
+
+The symbol `gcp` is a pointer to the garbage collector profile object.
+The symbol `f_ptr_map` is a pointer to the static run time
+type information for `f` which is associated with the store allocated
+for the closure of f created to the collector can trace it.
+This is necessary because the closure of `f` contains a pointer
+to a closure of `k`, as well as the thread frame object.
+
+The type of `k` is elided because Felix knows the function
+not formed into a closure, this is an optimisation.
 
 
 Abstract Representation of Procedural Continuations

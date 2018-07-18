@@ -126,4 +126,24 @@ component:
   var x = X (1,2);
   &x . a <- 42; // sets x.a to 42
 
+Object Concept
+^^^^^^^^^^^^^^
+
+The use of pointer projections equips Felix with a radical model
+of values and objects. Instead of references, lvalues and rvalues
+as in C++, Felix has a powerful alternative model.
+
+In Felix all values of product type are immutable and first class,
+including arrays. However if such a value is stored in an addressable
+variable, it has an address. If a value is constructured
+on the heap a pointer is returned.
+
+Thus, the components of a value can be fetched but not modified,
+whilst, via pointer projections, the components of a value
+stored in an addressable location can be fetched and modified.
+
+However, pointers are themselves first class values. 
+Therefore, Felix supports mutation entirely with a value
+semantics.
+
 
