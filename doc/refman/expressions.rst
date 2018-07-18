@@ -81,7 +81,57 @@ Another let form defines a local function:
   let fun sq(x:int) = x * x in 
     sqrt (sq x + sq y)
 
+Sets
+++++
+
+Logic
++++++
+
+Felix uses the operators `and`, `or`, `xor`, `implies` as standard
+binary operators for logical conjunction, disjunction, disjoint disjunction,
+and implication. The unary operator `not` is used for negation,
+and we have the constants `false` and `true`.
+
+There are also two special short cut forms: `andthen` and `orthen`.
+The second argument of these function is a unit function returning
+a bool, *not* a value of boolean type.
 
 
-  
+Comparisons
++++++++++++
+
+The usual comparison operators are available along with TeX identifiers:
+
+==================== ==================
+operator             semantics
+==================== ==================
+==, \(\eq\)          equality
+!=                   inequality
+
+<
+<=
+>
+>=
+==================== ==================
+
+Arithmetic
+++++++++++
+
+Bitwise Operations
+++++++++++++++++++
+
+
+Addressing
+++++++++++
+
+
+Atomic Forms
+++++++++++++
+
+Conditional
+-----------
+
+Pattern Match
+-------------
+
 
