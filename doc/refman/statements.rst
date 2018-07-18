@@ -72,6 +72,12 @@ sugar for a collection of labels and gotos, so that it is
 ok to put labels in the controlled statements and jump
 into the middle of a conditional with a goto.
 
+A simplified form is drives a single statement:
+
+.. code-block:: felix
+
+  if cond perform stuff;
+
 A more advanced statement is:
 
 .. code-block:: felix
@@ -87,8 +93,30 @@ from a match expression. If none of the pattern match
 the program aborts with a match failure exception.
 
 
+
 Loops
 +++++
 
+While
+-----
 
+Here is a while loop:
 
+.. code-block:: felix
+  
+   while (x>1) do
+     println$ x;
+     --x;
+   done
+
+The loop body executes repeatedly until the condition is
+not satisfied. If the condition is initially unsatisfied
+the body is not executed.
+
+C style for loop
+----------------
+
+Base For Loops
+--------------
+
+Felix has some basic

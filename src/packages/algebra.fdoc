@@ -717,6 +717,10 @@ class Integer[t] {
 
   fun shl(x:t,y:t)=> x << y;
   fun shr(x:t,y:t)=> x >> y;
+
+  virtual fun maxval: 1 -> t = "::std::numeric_limits<?1>::max()";
+  virtual fun minval: 1 -> t = "::std::numeric_limits<?1>::min()";
+
 }
 
 //$ Signed Integers.

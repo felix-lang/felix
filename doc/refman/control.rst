@@ -28,8 +28,9 @@ the closure was created. The function can use the display
 to access the ancestor local variables.
 
 The objects pointer to by the display members can be 
-either function or procedure frames. Here is an example,
-the macros in the C++ code have been expanded:
+either function or procedure frames. Here is an example.
+
+Felix code:
 
 .. code-block:: felix
 
@@ -41,10 +42,9 @@ the macros in the C++ code have been expanded:
     return f;
   }
 
+Function types
 
 .. code-block:: cpp
-
-  struct thread_frame_t;
 
   //TYPE 52224: int -> int
   struct _ft52224 {
@@ -55,6 +55,11 @@ the macros in the C++ code have been expanded:
     virtual ~_ft52224(){};
   };
 
+Function class:
+
+.. code-block:: cpp
+
+  struct thread_frame_t;
 
   //FUNCTION <50810>: k int -> (int -> int)
   //    parent = None
@@ -80,6 +85,10 @@ the macros in the C++ code have been expanded:
     int apply(int const &);
   };
 
+Function apply methods:
+
+.. code-block:: cpp
+
   //FUNCTION <50812>: k::f: Apply method
   int f::apply(int const &_arg ){
     x = _arg;
@@ -93,6 +102,40 @@ the macros in the C++ code have been expanded:
     return (new(ptf->gcp, f_ptr_map) f(ptf, this));
   }
 
+Clone methods:
+
+.. code-block:: cpp
+
+  //FUNCTION <51331>: k: Clone method
+    k* k::clone(){
+    return new(*PTF gcp,k_ptr_map,true) k(*this);
+  }
+
+  //FUNCTION <51333>: k::f: Clone method
+    f* f::clone(){
+    return new(*PTF gcp,f_ptr_map,true) f(*this);
+  }
+
+
+Constructors:
+
+.. code-block:: cpp
+
+  //FUNCTION <51331>: k: Constructor
+  k::k(thread_frame_t *ptf_) ptf(ptf_) {}
+
+
+  //FUNCTION <51333>: k::f: Constructor
+  f::f
+    (
+      thread_frame_t *ptf_ 
+      k *pptrk
+    )
+    ptf(ptf_), ptrk(pptrk) {}
+
+
+
+
 The symbol `gcp` is a pointer to the garbage collector profile object.
 The symbol `f_ptr_map` is a pointer to the static run time
 type information for `f` which is associated with the store allocated
@@ -103,28 +146,161 @@ to a closure of `k`, as well as the thread frame object.
 The type of `k` is elided because Felix knows the function
 not formed into a closure, this is an optimisation.
 
+The clone method (not show) invokes the copy constructor, it is used
+when calling the function to ensure the initial state is invariant.
+This may be necessary if the function is called twice through the closure, 
+particularly if it is recursive.
+
+Non-Yielding Generators
+-----------------------
+
+A non-yielding generator has the same representation
+as a function, except that the clone method returns `this`
+instead of a pointer to a heap allocated copy of the 
+class object.
+
+Whilst function values stored in variables are cloned
+to ensure they have an invariant initial state,
+generators aren't, to ensure internal state is preserved
+between calls.
+
+Yielding Generators
+-------------------
+
+A yielding generator is a generator with a `yield` statement.
+Yield returns a value and saves the current program counter.
+
+The `apply` function body is called then the function jumps
+to the saved program counter. Note that the parameter is set
+to the argument of each invocation.
+
+.. code-block:: felix
+
+  gen f (var x:int) = {
+    var i = 10;
+    while i > 0 do
+      yield x;
+      --x; --i;
+    done
+    return 0;
+  }
+
+  var k = f;
+
+  var v = k 4;
+  while v > 0 do
+    println$ v;
+    v = k 2;
+  done
+
+This program prints 4 once then 1, nine times.
+
+The usual way to write generators is to use a higher
+order function:
+
+.. code-block:: felix
+
+  gen f (var x:int) () = {
+    while x > 0 do
+      yield x;
+      --x;
+    done
+    return 0;
+  }
+
+  var k = f 4;
+
+  var v = #k;
+  while v > 0 do
+    println$ v;
+    v = #k;
+  done
+
+The header looks like this:
+
+.. code-block:: cpp
+
+  //FUNCTION <51331>: f int -> (unit -> int)
+  //    parent = None
+  struct f {
+    thread_frame_t *ptf; 
+
+    int x;
+    f(thread_frame_t *);
+    f* clone();
+    _ft52601* apply(int const &);
+  };
+
+  //FUNCTION <51333>: f::f'2 unit -> int
+  //    parent = f<51331>
+  struct _fI51333_f__apos_2: _ft52601 {
+    thread_frame_t *ptf; 
+    int pc;
+    f *ptrf;
+
+    _fI51333_f__apos_2  (FLX_FPAR_DECL f*);
+    _fI51333_f__apos_2* clone();
+    int apply();
+  };
+
+
+The apply method looks like this:
+
+.. code-block:: cpp
+
+  //FUNCTION <51331>: f: Apply method
+  _ft52601* f::apply(int const &_arg ){
+    x = _arg;
+    return 
+      new(*ptf->gcp,_fI51333_f__apos_2_ptr)  
+        _fI51333_f__apos_2 (ptf, this)
+    ;
+  }
+
+  //FUNCTION <51333>: f::f'2: Apply method
+  int _fI51333_f__apos_2::apply(){
+    switch (pc) { 
+      case 0:
+      continue__ll_x_102_L51335:;
+        if(!(0 < ptrf->x)) 
+          goto break__ll_x_102_L51336;
+        pc = 52614
+        return ptrf->x;//yield
+      case 52614:
+        {
+        int* _tmp52615 = (int*)&ptrf->x;
+        --*((_tmp52615));
+        }
+        goto continue__ll_x_102_L51335;
+      break__ll_x_102_L51336:;
+        return 0;
+    }
+  }
+
+With gcc compiler, a computed goto is used instead of a switch.
+
 
 Abstract Representation of Procedural Continuations
 ---------------------------------------------------
 
-========================
-Field
-========================
-Service Address
-Caller Continuation
-Program Counter
-Display
-Thread Frame
-Local Variables
-========================
+===== ==================
+Abbr. Field
+===== ==================
+SVA   Service Address
+RET   Callers Continuation
+PC    Program Counter
+DSP   Display
+TF    Thread Frame
+LV    Local Variables
+====  ===================
 
 Service Address
 ^^^^^^^^^^^^^^^
 
 Address of a service request, usually NULL.
 
-Caller Continuation
-^^^^^^^^^^^^^^^^^^^
+Callers Continuation
+^^^^^^^^^^^^^^^^^^^^
 
 Pointer to the calling procedure's continuation, or NULL if there isn't one.
 

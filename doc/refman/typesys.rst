@@ -10,6 +10,7 @@ Contents:
    :maxdepth: 1
    
    typealias
+   typeset
    primtypes
    logic
    integers
@@ -23,6 +24,7 @@ Contents:
    unions
    sums
    variants
+   compactlinear
    funtyp
 
 

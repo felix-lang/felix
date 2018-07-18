@@ -41,6 +41,99 @@ An expanded form of a function definition uses imperative code:
       return h;
    }
 
+Pattern Match Definition
+------------------------
+
+A definition like:
+
+.. code-block:: felix
+
+  fun f: opt[int] -> int =
+  | Some x => x + 1
+  | None => 0
+  ;
+
+
+is a shortcut form for:
+
+.. code-block:: felix
+
+  fun f (v: opt[int]): int =>
+    match v with 
+    | Some x => x + 1
+    | None => 0
+  ;
+
+Parameter Forms
+---------------
+
+A function can only have one parameter,
+however several can be given if the parameter
+type is a tuple.
+
+.. code-block:: felix
+
+   fun pythag(x:double, y:double) => ...
+
+This is roughly an irrefutable pattern match.
+The tupled parameter form can nest:
+
+.. code-block:: felix
+
+   fun f(x:double, (y:int, z:long)) => ...
+
+Var parameters
+--------------
+
+By default, a parameter component is treated as a `val` meaning
+the evaluation strategy for the component is determined by the
+the compiler and the component is immutable.
+
+If a parameter component is marked `var`, however,
+it is eagerly evaluated, and is also addressable (and thus mutable).
+
+.. code-block:: felix
+
+  fun f(x:int, var y:int) = {
+    y += x;
+    return y;
+  }
+
+Record Argument form
+--------------------
+
+Given the two functions and application:
+
+.. code-block:: felix
+
+  fun f(x:int, y:double) : int => ..
+  fun f(a:int, b:double) : int => ..
+
+A function can be called with named parameters,
+that is, with a record:
+
+
+.. code-block:: felix
+
+  println$ f(x=1,b=2.3);
+
+which resolves the ambiguity.
+
+Default Arguments
+-----------------
+
+Default arguments are also allowed on trailing
+components:
+
+.. code-block:: felix
+
+  fun f(x:int, y:double=4.2) : int => ..
+  println$ f(x=1); 
+
+To use the default value, In this case the function must be 
+called with an argument of record type.
+
+
 Purity
 ------
 
@@ -58,6 +151,31 @@ It a function is found not to be pure but a pure adjective
 is specified, it is a fatal error. If the compiler is unable
 to decide if a function is pure, it is assumed to be pure
 if and only if the pure adjective is specified.
+
+Inline Functions
+----------------
+
+Functions can have the `inline` and `noinline` adjective:
+
+.. code-block:: felix
+
+  inline fun add(x:int, y:int) => x + y;
+  noinline fun sub (x:int, y:int) => x - y;
+
+The inline keyword is not a hint, it forces the
+function to inlined on a direct application
+unless the function is recursive
+
+Closure are usually not inlined.
+
+Inlining impacts semantics because inline functions usually
+result in non-var parameters being lazily evaluated.
+Also, if a parameter isn't used, its initialisation
+may be elided, whereas for a closure only the type
+is known and the argument has to be evaluated.
+
+A function marked `noinline` will never be inlined.
+
 
 Side Effects
 ------------
@@ -290,6 +408,7 @@ Functions can have pre-conditions:
 
 Pre and post conditions are checked dynamically at run time.
 They are not part of the function type.
+
 
 Row Polymorphism
 ----------------
