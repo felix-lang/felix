@@ -14,6 +14,7 @@ Contents:
    primtypes
    logic
    integers
+   slices
    floats 
    strings
    tuples
