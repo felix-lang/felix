@@ -10,7 +10,7 @@ Contents:
    :maxdepth: 1
    
    typealias
-   typeset
+   typesets
    primtypes
    logic
    integers
