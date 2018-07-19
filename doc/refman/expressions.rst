@@ -84,6 +84,9 @@ Another let form defines a local function:
 Sets
 ++++
 
+Lists, arrays, and other data structures can be viewed as sets
+and support the `in` or `\in` (spelled `\\in`) operator.
+
 Logic
 +++++
 
@@ -105,7 +108,7 @@ The usual comparison operators are available along with TeX identifiers:
 ==================== ==================
 operator             semantics
 ==================== ==================
-==, \(\eq\)          equality
+==, $eq$             equality
 !=                   inequality
 
 <
