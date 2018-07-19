@@ -93,6 +93,21 @@ associated with GADTs or type classes with polymorphic recursion.
 The right hand side of a `,,` value constructor or `**` type constructor
 must be a tuple of at least 2 components.
 
+The recursive formulation requires the right argument of the operator
+to be a tuple. The unit tuple can be used so that
+
+.. code-block:: felix
+ 
+   1,2 == 1,,2,,()
+
+Note that
+
+.. code-block:: felix
+
+  42,,() = 42
+
+because a tuple with one component is identical to that component in Felix.
+
 Arrays
 ~~~~~~
 

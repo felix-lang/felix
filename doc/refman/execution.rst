@@ -94,3 +94,33 @@ read, write, or connection, its fibre is blocked until the
 alarm triggers, or the requestion socket I/O operation is
 complete. However *other* coroutines running on the same
 pthread do not block.
+
+Garbage Collection and Threads
+++++++++++++++++++++++++++++++
+
+Felix runs with a garbage collector. Use of the collector is
+"optional" in a certain sense. The collector is a naive
+world-stop mark/sweep variety, with a parallel mark algorithm.
+
+The collector can be called manually, or is triggered by
+an attempt to allocate memory when a threshold is reached.
+Felix uses an allocator which itself calls the C library
+`malloc`. The collector is precise with object allocated
+on the Felix heap, tolerates but cannot scan objects allocated
+on the C heap, and conservative on the machine stack.
+
+When a collection is triggered it must wait until all 
+threads stop. Threads will stop only when they attempt
+an allocation or explicitly check for the GC pending flag.
+Because of this Felix provides its own versions of synchronisation
+primitives such as mutex and semaphores. Raw system primitives
+can only be used with knowledge of the memory and execution 
+model. For example a raw mutex is fine provided the scope of
+the lock does no allocations and completes in bounded time.
+The Felix mutex is actually a spin lock that checks the 
+GC flag whilst spinning (and also inserts an small
+OS based sleep in the spin loop to encourage the holder of
+the lock to run and complete.
+
+
+

@@ -15,6 +15,7 @@ Contents:
    typesys
    definitions
    expressions
+   patterns
    control 
    statements
 

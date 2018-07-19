@@ -108,13 +108,13 @@ The usual comparison operators are available along with TeX identifiers:
 ==================== ==================
 operator             numeric semantics
 ==================== ==================
-==, \eq              equality
-!=, \n               inequality
+==, \\eq              equality
+!=, \\ne              inequality
 
-<, \lt               less than
-<=, \le              less or equal
->, \gt               greater than
->=, \ge              greater or equal
+<, \\lt               less than
+<=, \\le              less or equal
+>, \\gt               greater than
+>=, \\ge              greater or equal
 ==================== ==================
 
 Arithmetic
@@ -125,9 +125,9 @@ The usual operators:
 ==================== ==================
 operator             numeric semantics
 ==================== ==================
-+                    addition
--                    subtraction
-*                    multiplication
+\+                   addition
+\-                   subtraction
+\*                   multiplication
 /                    division
 %                    remainder
 -, neg               negation
@@ -137,18 +137,83 @@ operator             numeric semantics
 Bitwise Operations
 ++++++++++++++++++
 
+The usual C operators spelled differently: note
+for numeric types these operations only apply to
+unsigned integers.
+
+==================== ==================
+operator             numeric semantics
+==================== ==================
+\|                   bitwise or
+\^                   bitwise exclusive or
+\&                   bitwise and
+~                    ones complement
+==================== ==================
+
+
 
 Addressing
 ++++++++++
 
 
+Composition
++++++++++++
+
+There are two composition operators for functions,
+both are left associative:
+
+==================== ==================
+operator             semantics
+==================== ==================
+\\circ               forward composition
+\\odot               reverse composition
+==================== ==================
+
+
+
+
 Atomic Forms
 ++++++++++++
+
+Grouping is provided by parenthesis:
+
+.. code-block:: felix
+
+   (a + b) / c
+
 
 Conditional
 -----------
 
+The standard boolean conditional expression:
+
+.. code-block:: felix
+
+  if cond then texpr else fexpr endif
+
+The `else` clause is mandatory, the `endif` can sometimes be dropped
+if the end of the alternate expression is established by context.
+The `cond` expression must be of type `bool` and `texpr` and `fexpr`
+must be the same type.
+
+
 Pattern Match
 -------------
+
+Pattern match expression:
+
+.. code-block:: felix
+
+  match mexpr with
+  | pattern1 => expr1
+  | pattern2 => expr2
+  ...
+  endmatch
+
+The `endmatch` is mandatory. All the RHS expressions must have
+the same type. All the patterns must also match the same type
+as `mexpr`. If all the patterns fail to match the program
+terminates with a match failure.
+
 
 

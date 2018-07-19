@@ -13,6 +13,7 @@ Contents:
    typeset
    primtypes
    logic
+   addresstype
    integers
    slices
    floats 
