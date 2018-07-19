@@ -108,7 +108,7 @@ The usual comparison operators are available along with TeX identifiers:
 ==================== ==================
 operator             semantics
 ==================== ==================
-==, ..math:`\eq`             equality
+==, ..math::`\eq`             equality
 !=                   inequality
 
 <
