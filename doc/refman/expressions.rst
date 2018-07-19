@@ -106,19 +106,33 @@ Comparisons
 The usual comparison operators are available along with TeX identifiers:
 
 ==================== ==================
-operator             semantics
+operator             numeric semantics
 ==================== ==================
-==, ..math::`\eq`             equality
-!=                   inequality
+==, \eq              equality
+!=, \n               inequality
 
-<
-<=
->
->=
+<, \lt               less than
+<=, \le              less or equal
+>, \gt               greater than
+>=, \ge              greater or equal
 ==================== ==================
 
 Arithmetic
 ++++++++++
+
+The usual operators:
+
+==================== ==================
+operator             numeric semantics
+==================== ==================
++                    addition
+-                    subtraction
+*                    multiplication
+/                    division
+%                    remainder
+-, neg               negation
+==================== ==================
+
 
 Bitwise Operations
 ++++++++++++++++++
