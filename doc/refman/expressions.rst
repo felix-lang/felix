@@ -86,40 +86,6 @@ Precedence Indices
 
 
 
-Let forms
-+++++++++
-
-Syntax:
-
-.. code-block:: felix
-
-  x[let_pri] := "let" spattern "=" x[let_pri] "in" x[let_pri] 
-  x[let_pri] := "let" spattern "=" x[let_pri] "in" x[let_pri] 
-  x[let_pri] := "let" "fun" sdeclname fun_return_type "=" smatching+ "in" x[let_pri]
-  x[let_pri] := "let" pattern_match 
-  x[let_pri] := pattern_match 
-
-A let form allows an expression to be factored:
-
-.. code-block:: felix
-
-  let p = expr1 in expr2
-
-for example:
-
-.. code-block:: felix
-
-  let x2 = x * x in
-  let y2 = y * y in
-    sqrt (x2 + y2)
-
-Another let form defines a local function:
-
-.. code-block:: felix
-
-  let fun sq(x:int) = x * x in 
-    sqrt (sq x + sq y)
-
 Dollar Forms
 ++++++++++++
 
@@ -297,44 +263,6 @@ Addressing
 
   x[sthename_pri] := squalified_name
 
-Qualified Names
-+++++++++++++++
-
-.. code-block:: felix
-
-  //$ Qualified name.
-  sreally_qualified_name := squalified_name "::" ssimple_name_parts 
-
-  squalified_name := sreally_qualified_name 
-
-  squalified_name := ssimple_name_parts 
-    
-
-  ssimple_name_parts := sname 
-  ssimple_name_parts := sname "[" "]"
-  ssimple_name_parts := sname "[" sexpr "]" 
-
-  //$ Suffixed name (to name functions).
-  ssuffixed_name := squalified_name "of" x[sthename_pri] 
-  
-
-
-Arithmetic Summary
-++++++++++++++++++
-
-The usual operators:
-
-==================== ==================
-operator             numeric semantics
-==================== ==================
-\+                   addition
-\-                   subtraction
-\*                   multiplication
-/                    division
-%                    remainder
--, neg               negation
-==================== ==================
-
 
 Composition Sumary
 ++++++++++++++++++
@@ -395,34 +323,4 @@ the same type. All the patterns must also match the same type
 as `mexpr`. If all the patterns fail to match the program
 terminates with a match failure.
 
-
-Applications
-------------
-
-Felix has a large number of application operators, from
-highest precedence to lowest:
-
-.. code-block:: felix
-
-  #f   // constant evaluator: means f ()
-  a.f  // operator dot: reverse application, left associative
-  f a  // operator whitespace, left associative
-  f$a  // operator dollar, right associative
-  a|>f // operator pipe apply: reverse application, left associative
-
-There are also two special combinations:
-
-.. code-block:: felix
-
-   a*.f  // means (*a).f
-   a&.f  // means (&a).f
-
-The rich collection of operators is indended to reduce the
-need for parentheses.
-
-Another application for binary operator is
-
-.. code-block:: felix
-
-  a `(f) b // means f (a,b)
 
