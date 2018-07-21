@@ -2,7 +2,7 @@ Comparisons
 +++++++++++
 
 
-Silly test:
+Silly test \(a \leq b\) or $a \leq b$:
 
 .. code-block:: felix
 
