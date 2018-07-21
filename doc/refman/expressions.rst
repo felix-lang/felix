@@ -391,7 +391,7 @@ Reverse Composition
 .. code-block:: felix
 
   //$ Reverse composition
-  x[srcompose_pri] := x[srcompose_pri] "\odot" x[>srcompose_pri] =># "(Infix)";
+  x[srcompose_pri] := x[srcompose_pri] "\odot" x[>srcompose_pri] 
 
 Addressing
 ++++++++++
@@ -452,106 +452,6 @@ Qualified Names
   
 
 
-Comparisons
-+++++++++++
-
-.. code-block:: felix
-
-  x[scomparison_pri]:= x[>scomparison_pri] cmp x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
-  x[scomparison_pri]:= x[>scomparison_pri] "not" cmp x[>scomparison_pri] =># "`(ast_not ,_sr (ast_apply ,_sr (,_3 (,_1 ,_4))))";
-
-Equivalences
-------------
-
-.. code-block:: felix
-  cmp := "==" =># "(nos _1)";
-  cmp := "!=" =># "(nos _1)";
-  cmp := "\ne" =># '(nos _1)';
-  cmp := "\neq" =># '(nos _1)';
-
-Partial Orders
---------------
-
-.. code-block:: felix
-  cmp := "\subset" =># '(nos _1)';
-  cmp := "\supset" =># '(nos _1)';
-  cmp := "\subseteq" =># '(nos _1)';
-  cmp := "\subseteqq" =># '(nos _1)';
-  cmp := "\supseteq" =># '(nos _1)';
-  cmp := "\supseteqq" =># '(nos _1)';
-
-  cmp := "\nsubseteq" =># '(nos _1)';
-  cmp := "\nsubseteqq" =># '(nos _1)';
-  cmp := "\nsupseteq" =># '(nos _1)';
-  cmp := "\nsupseteqq" =># '(nos _1)';
-
-  cmp := "\subsetneq" =># '(nos _1)';
-  cmp := "\subsetneqq" =># '(nos _1)';
-  cmp := "\supsetneq" =># '(nos _1)';
-  cmp := "\supsetneqq" =># '(nos _1)';
-
-Total Orders
-------------
-
-.. code-block:: felix
-  cmp := "<" =># "(nos _1)";
-
-  cmp := "\lt" =># '(nos _1)';
-  cmp := "\lneq" =># '(nos _1)';
-  cmp := "\lneqq" =># '(nos _1)';
-
-  cmp := "<=" =># "(nos _1)";
-  cmp := "\le" =># '(nos _1)';
-  cmp := "\leq" =># '(nos _1)';
-  cmp := "\leqq" =># '(nos _1)';
-
-  cmp := ">" =># "(nos _1)";
-  cmp := "\gt" =># '(nos _1)';
-  cmp := "\gneq" =># '(nos _1)';
-  cmp := "\gneqq" =># '(nos _1)';
-
-  cmp := ">=" =># "(nos _1)";
-  cmp := "\ge" =># '(nos _1)';
-  cmp := "\geq" =># '(nos _1)';
-  cmp := "\geqq" =># '(nos _1)';
-
-  cmp := "\nless" =># '(nos _1)';
-  cmp := "\nleq" =># '(nos _1)';
-  cmp := "\nleqq" =># '(nos _1)';
-  cmp := "\ngtr" =># '(nos _1)';
-  cmp := "\ngeq" =># '(nos _1)';
-  cmp := "\ngeqq" =># '(nos _1)';
-
-  bin := "\vee" =># '(nos _1)';
-  bin := "\wedge" =># '(nos _1)';
-
-The usual comparison operators are available along with TeX identifiers:
-
-==================== ==================
-operator             numeric semantics
-==================== ==================
-==, \\eq              equality
-!=, \\ne              inequality
-
-<, \\lt               less than
-<=, \\le              less or equal
->, \\gt               greater than
->=, \\ge              greater or equal
-==================== ==================
-
-Set Operators
-+++++++++++++
-
-.. code-block:: felix
-
-  cmp := "in" =># '(nos "\\in")';
-  cmp := "\in" =># "(nos _1)";
-  cmp := "\notin" =># '(nos _1)';
-  cmp := "\owns" =># '(nos _1)';
-
-  x[ssetunion_pri] := x[ssetunion_pri] "\cup" x[>ssetunion_pri] =># "(Infix)" note "setunion";
-  x[ssetintersection_pri] := x[ssetintersection_pri] "\cap" x[>ssetintersection_pri] =># "(Infix)" note "setintersection"; 
-
 Arithmetic Summary
 ++++++++++++++++++
 
@@ -575,19 +475,19 @@ Bitwise Operations
 .. code-block:: felix
 
   //$ Bitwise or, left associative.
-  x[sbor_pri] := x[sbor_pri] "\|" x[>sbor_pri] =># "(Infix)";
+  x[sbor_pri] := x[sbor_pri] "\|" x[>sbor_pri] 
 
   //$ Bitwise xor, left associative.
-  x[sbxor_pri] := x[sbxor_pri] "\^" x[>sbxor_pri] =># "(Infix)";
+  x[sbxor_pri] := x[sbxor_pri] "\^" x[>sbxor_pri] 
 
   //$ Bitwise exclusive and, left associative.
-  x[sband_pri] := x[sband_pri] "\&" x[>sband_pri] =># "(Infix)";
+  x[sband_pri] := x[sband_pri] "\&" x[>sband_pri] 
 
   //$ Bitwise left shift, left associative.
-  x[sshift_pri] := x[sshift_pri] "<<" x[>sshift_pri] =># "(Infix)";
+  x[sshift_pri] := x[sshift_pri] "<<" x[>sshift_pri]
 
   //$ Bitwise right shift, left associative.
-  x[sshift_pri] := x[sshift_pri] ">>" x[>sshift_pri] =># "(Infix)";
+  x[sshift_pri] := x[sshift_pri] ">>" x[>sshift_pri] 
 
 The usual C operators spelled differently: note
 for numeric types these operations only apply to
@@ -599,6 +499,8 @@ operator             numeric semantics
 \|                   bitwise or
 \^                   bitwise exclusive or
 \&                   bitwise and
+<<                   left shift
+>>                   right shift
 ~                    ones complement
 ==================== ==================
 

@@ -14,7 +14,7 @@ Contents:
    lexical
    typesys
    definitions
-   expressions
+   exprsyn
    patterns
    control 
    statements
