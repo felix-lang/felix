@@ -3,20 +3,6 @@ Comparisons
 
 General
 =======
-
-========= ==================
-Operator  Display
-========= ==================
-\\leq     :math:`a \leq b`
-========= ==================
-
-.. code-block:: xfelix
-
-   var \alpha = 1; // \(\alpha\)
-  
-.. code-block:: felix
-
-   var \alpha = 1; // \(\alpha\)
   
 Syntax
 ------
@@ -182,33 +168,33 @@ Syntax
 
 .. code-block:: felix
 
-  cmp := "<" 
+  cmp := "<"          // \(< \) 
 
-  cmp := "\lt"
-  cmp := "\lneq" 
-  cmp := "\lneqq" 
+  cmp := "\lt"        // \(\lt \)
+  cmp := "\lneq"      // \(\lneq \) 
+  cmp := "\lneqq"     // \(\lneqq \) 
+ 
+  cmp := "<="         // \(<= \) 
+  cmp := "\le"        // \(\le \)
+  cmp := "\leq"       // \(\leq \)
+  cmp := "\leqq"      // \(\leqq \) 
 
-  cmp := "<=" 
-  cmp := "\le"
-  cmp := "\leq"
-  cmp := "\leqq" 
+  cmp := ">"          // \(> \)
+  cmp := "\gt"        // \(\gt \)
+  cmp := "\gneq"      // \(\gneq \) 
+  cmp := "\gneqq"     // \(\gneqq \) 
 
-  cmp := ">"
-  cmp := "\gt"
-  cmp := "\gneq" 
-  cmp := "\gneqq" 
+  cmp := ">="         // \(>= \) 
+  cmp := "\ge"        // \(\ge \) 
+  cmp := "\geq"       // \(\geq \)
+  cmp := "\geqq"      // \(\geqq \)
 
-  cmp := ">=" 
-  cmp := "\ge" 
-  cmp := "\geq"
-  cmp := "\geqq"
-
-  cmp := "\nless"
-  cmp := "\nleq" 
-  cmp := "\nleqq"
-  cmp := "\ngtr"
-  cmp := "\ngeq" 
-  cmp := "\ngeqq"
+  cmp := "\nless"     // \(\nless \)
+  cmp := "\nleq"      // \(\nleq \) 
+  cmp := "\nleqq"     // \(\nleqq \)
+  cmp := "\ngtr"      // \(\ngtr \)
+  cmp := "\ngeq"      // \(\ngeq \) 
+  cmp := "\ngeqq"     // \(\ngeqq \)
 
 Semantics
 ---------
