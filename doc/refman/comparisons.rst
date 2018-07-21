@@ -10,6 +10,10 @@ Operator  Display
 \\leq     :math:`a \leq b`
 ========= ==================
 
+.. code-block:: xfelix
+
+   var \alpha = 1; // \(\alpha\)
+  
 
 Syntax
 ------
