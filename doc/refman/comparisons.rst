@@ -116,22 +116,22 @@ Syntax
 
 .. code-block:: felix
 
-  cmp := "\subset"
-  cmp := "\supset" 
-  cmp := "\subseteq" 
-  cmp := "\subseteqq"
-  cmp := "\supseteq" 
-  cmp := "\supseteqq"
+  cmp := "\subset"      // \(\subset \)
+  cmp := "\supset"      // \(\supset \) 
+  cmp := "\subseteq"    // \(\subseteq \) 
+  cmp := "\subseteqq"   // \(\subseteqq \)
+  cmp := "\supseteq"    // \(\supseteq \) 
+  cmp := "\supseteqq"   // \(\supseteqq \)
 
-  cmp := "\nsubseteq"
-  cmp := "\nsubseteqq"
-  cmp := "\nsupseteq"
-  cmp := "\nsupseteqq"
+  cmp := "\nsubseteq"   // \(\nsubseteq \)
+  cmp := "\nsubseteqq"  // \(\nsubseteqq \)
+  cmp := "\nsupseteq"   // \(\nsupseteq \)
+  cmp := "\nsupseteqq"  // \(\nsupseteqq \)
 
-  cmp := "\subsetneq"
-  cmp := "\subsetneqq"
-  cmp := "\supsetneq"
-  cmp := "\supsetneqq"
+  cmp := "\subsetneq"   // \(\subsetneq \)
+  cmp := "\subsetneqq"  // \(\subsetneqq \)
+  cmp := "\supsetneq"   // \(\supsetneq \)
+  cmp := "\supsetneqq"  // \(\supsetneqq \)
 
 Semantics
 ---------
