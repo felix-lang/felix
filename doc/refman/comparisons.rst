@@ -1,16 +1,14 @@
 Comparisons
 +++++++++++
 
+General
+=======
 
-Silly test \(a \leq b\) or $a \leq b$:
-
-.. code-block:: felix
-
-   a \leq b
-
-.. code-block:: xfelix
-
-   a \leq b
+========= ==================
+Operator  Display
+========= ==================
+\\leq     :math:`a \leq b`
+========= ==================
 
 
 Syntax
@@ -31,6 +29,15 @@ comparisons along with the usual ascii art symbols.
 In addition there is a large collection of TeX operators which
 are not currently used and are available for overloading
 by the user. 
+
+All comparisons can be negated by prefixing the comparison
+operator with `not`.
+
+.. code-block:: felix
+
+  a < b 
+  a not < b
+
 
 Equivalences
 ============
