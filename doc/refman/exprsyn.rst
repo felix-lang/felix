@@ -10,6 +10,8 @@ Expression Syntax
    comparisons
    arithmetic
    texoperators
+   slicexpr
+   variantexpr
    application
    names
    brackets

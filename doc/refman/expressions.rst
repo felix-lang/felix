@@ -123,18 +123,6 @@ Inline Variables
   x[sas_expr_pri] := x[sas_expr_pri] "as" "var" sname 
 
 
-Slices
-++++++
-
-.. code-block:: felix
-
-  x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] 
-  x[sarrow_pri] := x[>sarrow_pri] "..<" x[>sarrow_pri]
-  x[sarrow_pri] := "..<" x[>sarrow_pri] 
-  x[sarrow_pri] := ".." x[>sarrow_pri] 
-  x[sarrow_pri] := x[>sarrow_pri] ".." 
-  x[sarrow_pri] := ".." 
-  x[sarrow_pri] := x[>sarrow_pri] ".+" x[>sarrow_pri] 
 
 Arrows
 ------
@@ -153,15 +141,6 @@ Case Literals
 
 .. code-block:: felix
 
-  //$ Case tag literal.
-  x[scase_literal_pri] := "case" sinteger 
-  x[scase_literal_pri] := "`" sinteger 
-
-  //$ Case value.
-  x[scase_literal_pri] := "case" sinteger "of" x[ssum_pri] 
-  x[scase_literal_pri] := "`" sinteger "of" x[ssum_pri] 
-  x[scase_literal_pri] := "`" sinteger ":" x[ssum_pri] 
-
   //$ Tuple projection function.
   x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri] 
 
@@ -169,18 +148,6 @@ Case Literals
   // (ainj (r:>>4) of (4 *+ int)) 42
   x[scase_literal_pri] := "ainj"  stypeexpr "of" x[ssum_pri] 
 
-
-Variant Literals
-++++++++++++++++
-
-.. code-block:: felix
-
-  spv_name := "case" sname
-  spv_name := "`" sname 
-
-  //$ Variant value.
-  x[sthename_pri] := "#" spv_name
-  x[sapplication_pri] := spv_name  x[>sapplication_pri] 
 
 Dereference
 +++++++++++
