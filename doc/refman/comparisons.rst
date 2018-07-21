@@ -11,6 +11,7 @@ Syntax
 
   x[scomparison_pri]:= x[>scomparison_pri] cmp x[>scomparison_pri] 
   x[scomparison_pri]:= x[>scomparison_pri] "not" cmp x[>scomparison_pri]
+  x[scomparison_pri]:= x[>scomparison_pri] "\not" cmp x[>scomparison_pri] 
 
 Description
 -----------

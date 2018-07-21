@@ -1,6 +1,64 @@
 Logical Operations
 ==================
 
+Syntax
+------
+
+.. code-block:: felix
+
+  //$ Boolean false.
+  satom := "false" =># "'(ast_typed_case  0 2)";
+
+  //$ Boolean true.
+  satom := "true" =># "'(ast_typed_case  1 2)";
+
+  //$ Logical implication.
+  x[simplies_condition_pri] := x[>simplies_condition_pri] "implies" x[>simplies_condition_pri] 
+
+  //$ Logical disjunction (or).
+  x[sor_condition_pri] := x[>sor_condition_pri] ( "or" x[>sor_condition_pri])+ 
+
+  //$ Logical conjunction (and).
+  x[sand_condition_pri] := x[>sand_condition_pri] ( "and" x[>sand_condition_pri])+ 
+
+  //$ Logical negation (not).
+  x[snot_condition_pri] := "not" x[snot_condition_pri]  
+
+
+  // tex logic operators
+  x[stex_implies_condition_pri] := x[>stex_implies_condition_pri]  "\implies" x[>stex_implies_condition_pri] 
+
+  x[stex_or_condition_pri] := x[>stex_or_condition_pri] ( "\lor" x[>stex_or_condition_pri])+ 
+
+  x[stex_and_condition_pri] := x[>stex_and_condition_pri] ( "\land" x[>stex_and_condition_pri])+ 
+
+  x[stex_not_condition_pri] := "\lnot" x[stex_not_condition_pri]
+
+
+  bin := "\iff" =># '(nos _1)'; // NOT IMPLEMENTED FIXME
+  bin := "\impliedby" =># '(nos _1)'; // NOT IMPLEMENTED FIXME
+
+  //$ Conditional expression.
+  satom := sconditional "endif" =># "_1";
+
+  //$ Conditional expression (prefix).
+  sconditional := "if" sexpr "then" sexpr selse_part 
+
+      selif := "elif" sexpr "then" sexpr 
+
+      selifs := selif 
+      selifs := selifs selif 
+
+      selse_part:= "else" sexpr 
+      selse_part:= selifs "else" sexpr 
+}
+
+Semantics
+---------
+
+Description
+-----------
+
 Felix provides two boolean types: :code:`bool` and :code:`cbool`
 with constants :code:`true` and :code:`false` and
 :code:`ctrue` and :code:`cfalse` respectively and
