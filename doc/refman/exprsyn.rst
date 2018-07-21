@@ -6,6 +6,7 @@ Expression Syntax
    
    expressions 
    let
+   tuplexpr
    logic
    comparisons
    arithmetic
