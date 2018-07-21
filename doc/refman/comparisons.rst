@@ -14,7 +14,10 @@ Operator  Display
 
    var \alpha = 1; // \(\alpha\)
   
+.. code-block:: felix
 
+   var \alpha = 1; // \(\alpha\)
+  
 Syntax
 ------
 
