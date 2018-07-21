@@ -3,287 +3,287 @@ Tex Sytmbols
 
 .. code-block:: felix
 
-  // A
+        // A
 
-    bin := "\amalg"
-    cmp := "\approx"
-    cmp := "\approxeq"
-    cmp := "\Arrowvert"
-    cmp := "\arrowvert"
-    cmp := "\asymp"
+    bin := "\amalg"                 // \(\amalg \)
+    cmp := "\approx"                // \(\approx \)
+    cmp := "\approxeq"              // \(\approxeq \)
+    cmp := "\Arrowvert"             // \(\Arrowvert \)
+    cmp := "\arrowvert"             // \(\arrowvert \)
+    cmp := "\asymp"                 // \(\asymp \)
 
-  // B
+        // B
 
-    cmp := "\backsim"
-    cmp := "\backsimeq"
-    cmp := "\bar"
-    cmp := "\barwedge"
-    cmp := "\between"
-    bin := "\bigcap"
-    bin := "\bigcirc"
-    bin := "\bigcup"
-    bin := "\bigodot"
-    bin := "\bigoplus"
-    bin := "\bigotimes"
-    bin := "\bigsqcup"
-    bin := "\bigtriangledown"
-    bin := "\bigtriangleup"
-    bin := "\biguplus"
-    bin := "\bigvee"
-    bin := "\bigwedge"
-    bin := "\bowtie"
-    bin := "\Box"
-    bin := "\boxdot"
-    bin := "\boxminus"
-    bin := "\boxplus"
-    bin := "\boxtimes"
-    cmp := "\Bumpeq"
-    cmp := "\bumpeq"
+    cmp := "\backsim"               // \(\backsim \)
+    cmp := "\backsimeq"             // \(\backsimeq \)
+    cmp := "\bar"                   // \(\bar \)
+    cmp := "\barwedge"              // \(\barwedge \)
+    cmp := "\between"               // \(\between \)
+    bin := "\bigcap"                // \(\bigcap \)
+    bin := "\bigcirc"               // \(\bigcirc \)
+    bin := "\bigcup"                // \(\bigcup \)
+    bin := "\bigodot"               // \(\bigodot \)
+    bin := "\bigoplus"              // \(\bigoplus \)
+    bin := "\bigotimes"             // \(\bigotimes \)
+    bin := "\bigsqcup"              // \(\bigsqcup \)
+    bin := "\bigtriangledown"       // \(\bigtriangledown \)
+    bin := "\bigtriangleup"         // \(\bigtriangleup \)
+    bin := "\biguplus"              // \(\biguplus \)
+    bin := "\bigvee"                // \(\bigvee \)
+    bin := "\bigwedge"              // \(\bigwedge \)
+    bin := "\bowtie"                // \(\bowtie \)
+    bin := "\Box"                   // \(\Box \)
+    bin := "\boxdot"                // \(\boxdot \)
+    bin := "\boxminus"              // \(\boxminus \)
+    bin := "\boxplus"               // \(\boxplus \)
+    bin := "\boxtimes"              // \(\boxtimes \)
+    cmp := "\Bumpeq"                // \(\Bumpeq \)
+    cmp := "\bumpeq"                // \(\bumpeq \)
 
-  // C
+        // C
 
-    bin := "\Cap"
-    bin := "\cdot"
-    bin := "\cdotp"
-    cmp := "\circeq"
-    bin := "\circledast"
-    bin := "\circledcirc"
-    bin := "\circleddash"
-    cmp := "\cong"
-    bin := "\coprod"
-    bin := "\Cup"
-    cmp := "\curlyeqprec"
-    cmp := "\curlyeqsucc"
-    bin := "\curlyvee"
-    bin := "\curlywedge"
+    bin := "\Cap"                   // \(\Cap \)
+    bin := "\cdot"                  // \(\cdot \)
+    bin := "\cdotp"                 // \(\cdotp \)
+    cmp := "\circeq"                // \(\circeq \)
+    bin := "\circledast"            // \(\circledast \)
+    bin := "\circledcirc"           // \(\circledcirc \)
+    bin := "\circleddash"           // \(\circleddash \)
+    cmp := "\cong"                  // \(\cong \)
+    bin := "\coprod"                // \(\coprod \)
+    bin := "\Cup"                   // \(\Cup \)
+    cmp := "\curlyeqprec"           // \(\curlyeqprec \)
+    cmp := "\curlyeqsucc"           // \(\curlyeqsucc \)
+    bin := "\curlyvee"              // \(\curlyvee \)
+    bin := "\curlywedge"            // \(\curlywedge \)
 
-  // D
+        // D
 
-    arr := "\dashleftarrow"
-    arr := "\dashrightarrow"
-    bin := "\divideontimes"
-    cmp := "\doteq"
-    cmp := "\Doteq"
-    cmp := "\doteqdot"
-    bin := "\dotplus"
-    bin := "\doublebarwedge"
-    bin := "\doublecap"
-    bin := "\doublecup"
-    bin := "\Downarrow"
-    bin := "\downarrow"
-    bin := "\downdownarrows"
-    bin := "\downharpoonleft"
-    bin := "\downharpoonright"
+    arr := "\dashleftarrow"         // \(\dashleftarrow \)
+    arr := "\dashrightarrow"        // \(\dashrightarrow \)
+    bin := "\divideontimes"         // \(\divideontimes \)
+    cmp := "\doteq"                 // \(\doteq \)
+    cmp := "\Doteq"                 // \(\Doteq \)
+    cmp := "\doteqdot"              // \(\doteqdot \)
+    bin := "\dotplus"               // \(\dotplus \)
+    bin := "\doublebarwedge"        // \(\doublebarwedge \)
+    bin := "\doublecap"             // \(\doublecap \)
+    bin := "\doublecup"             // \(\doublecup \)
+    bin := "\Downarrow"             // \(\Downarrow \)
+    bin := "\downarrow"             // \(\downarrow \)
+    bin := "\downdownarrows"        // \(\downdownarrows \)
+    bin := "\downharpoonleft"       // \(\downharpoonleft \)
+    bin := "\downharpoonright"      // \(\downharpoonright \)
 
-  // E
+        // E
 
-    cmp := "\eqcirc"
-    cmp := "\eqsim"
-    cmp := "\eqslantgtr"
-    cmp := "\eqslantless"
-    cmp := "\equiv"
+    cmp := "\eqcirc"                // \(\eqcirc \)
+    cmp := "\eqsim"                 // \(\eqsim \)
+    cmp := "\eqslantgtr"            // \(\eqslantgtr \)
+    cmp := "\eqslantless"           // \(\eqslantless \)
+    cmp := "\equiv"                 // \(\equiv \)
 
-  // F
+        // F
 
-    bin := "\fallingdotseq"
+    bin := "\fallingdotseq"         // \(\fallingdotseq \)
 
-  // G
+        // G
 
-    cmp := "\geqslant"
-    arr := "\gets"
-    cmp := "\gg"
-    cmp := "\ggg"
-    cmp := "\gggtr"
-    cmp := "\gnapprox"
-    cmp := "\gnsim"
-    cmp := "\gtrapprox"
-    cmp := "\gtrdot"
-    cmp := "\gtreqless"
-    cmp := "\gtreqqless"
-    cmp := "\gtrless"
-    cmp := "\gtrsim"
-    cmp := "\gvertneqq"
+    cmp := "\geqslant"              // \(\geqslant \)
+    arr := "\gets"                  // \(\gets \)
+    cmp := "\gg"                    // \(\gg \)
+    cmp := "\ggg"                   // \(\ggg \)
+    cmp := "\gggtr"                 // \(\gggtr \)
+    cmp := "\gnapprox"              // \(\gnapprox \)
+    cmp := "\gnsim"                 // \(\gnsim \)
+    cmp := "\gtrapprox"             // \(\gtrapprox \)
+    cmp := "\gtrdot"                // \(\gtrdot \)
+    cmp := "\gtreqless"             // \(\gtreqless \)
+    cmp := "\gtreqqless"            // \(\gtreqqless \)
+    cmp := "\gtrless"               // \(\gtrless \)
+    cmp := "\gtrsim"                // \(\gtrsim \)
+    cmp := "\gvertneqq"             // \(\gvertneqq \)
 
-  // H
+        // H
 
-    arr := "\hookleftarrow"
-    arr := "\hookrightarrow"
+    arr := "\hookleftarrow"         // \(\hookleftarrow \)
+    arr := "\hookrightarrow"        // \(\hookrightarrow \)
 
-  // I
+        // I
 
-  // J
+        // J
 
-    bin := "\Join"
+    bin := "\Join"                  // \(\Join \)
 
-  // K
+        // K
 
-  // L
+        // L
 
-    arr := "\leadsto"
-    arr := "\Leftarrow"
-    arr := "\leftarrow"
-    arr := "\leftarrowtail"
-    arr := "\leftharpoondown"
-    arr := "\leftharpoonup"
-    arr := "\leftleftarrows"
-    arr := "\Leftrightarrow"
-    arr := "\leftrightarrow"
-    cmp := "\leftrightarrows"
-    cmp := "\leftrightharpoons"
-    arr := "\leftrightsquigarrow"
-    cmp := "\leqslant"
-    cmp := "\lessapprox"
-    cmp := "\lessdot"
-    cmp := "\lesseqgtr"
-    cmp := "\lesseqqgtr"
-    cmp := "\lessgtr"
-    cmp := "\lesssim"
-    arr := "\Lleftarrow"
-    cmp := "\lll"
-    cmp := "\llless"
-    cmp := "\lnapprox"
-    cmp := "\lnot"
-    cmp := "\lnsim"
-    arr := "\Longleftarrow"
-    arr := "\longleftarrow"
-    arr := "\Longleftrightarrow"
-    arr := "\longleftrightarrow"
-    arr := "\longmapsto"
-    arr := "\Longrightarrow"
-    arr := "\longrightarrow"
-    cmp := "\ltimes"
-    cmp := "\lvertneqq"
+    arr := "\leadsto"               // \(\leadsto \)
+    arr := "\Leftarrow"             // \(\Leftarrow \)
+    arr := "\leftarrow"             // \(\leftarrow \)
+    arr := "\leftarrowtail"         // \(\leftarrowtail \)
+    arr := "\leftharpoondown"       // \(\leftharpoondown \)
+    arr := "\leftharpoonup"         // \(\leftharpoonup \)
+    arr := "\leftleftarrows"        // \(\leftleftarrows \)
+    arr := "\Leftrightarrow"        // \(\Leftrightarrow \)
+    arr := "\leftrightarrow"        // \(\leftrightarrow \)
+    cmp := "\leftrightarrows"       // \(\leftrightarrows \)
+    cmp := "\leftrightharpoons"     // \(\leftrightharpoons \)
+    arr := "\leftrightsquigarrow"   // \(\leftrightsquigarrow \)
+    cmp := "\leqslant"              // \(\leqslant \)
+    cmp := "\lessapprox"            // \(\lessapprox \)
+    cmp := "\lessdot"               // \(\lessdot \)
+    cmp := "\lesseqgtr"             // \(\lesseqgtr \)
+    cmp := "\lesseqqgtr"            // \(\lesseqqgtr \)
+    cmp := "\lessgtr"               // \(\lessgtr \)
+    cmp := "\lesssim"               // \(\lesssim \)
+    arr := "\Lleftarrow"            // \(\Lleftarrow \)
+    cmp := "\lll"                   // \(\lll \)
+    cmp := "\llless"                // \(\llless \)
+    cmp := "\lnapprox"              // \(\lnapprox \)
+    cmp := "\lnot"                  // \(\lnot \)
+    cmp := "\lnsim"                 // \(\lnsim \)
+    arr := "\Longleftarrow"         // \(\Longleftarrow \)
+    arr := "\longleftarrow"         // \(\longleftarrow \)
+    arr := "\Longleftrightarrow"    // \(\Longleftrightarrow \)
+    arr := "\longleftrightarrow"    // \(\longleftrightarrow \)
+    arr := "\longmapsto"            // \(\longmapsto \)
+    arr := "\Longrightarrow"        // \(\Longrightarrow \)
+    arr := "\longrightarrow"        // \(\longrightarrow \)
+    cmp := "\ltimes"                // \(\ltimes \)
+    cmp := "\lvertneqq"             // \(\lvertneqq \)
 
   // M
 
-    arr := "\mapsto"
+    arr := "\mapsto"                // \(\mapsto \)
 
   // N
 
-    cmp := "\ncong"
-    cmp := "\ngeqslant"
-    cmp := "\ni"
-    cmp := "\nleqslant"
-    cmp := "\nparallel"
-    cmp := "\nprec"
-    cmp := "\npreceq"
-    cmp := "\nsim"
-    cmp := "\nsucc"
-    cmp := "\nsucceq"
-    cmp := "\ntriangleleft"
-    cmp := "\ntrianglelefteq"
-    cmp := "\ntriangleright"
-    cmp := "\ntrianglerighteq"
+    cmp := "\ncong"                 // \(\ncong \)
+    cmp := "\ngeqslant"             // \(\ngeqslant \)
+    cmp := "\ni"                    // \(\ni \)
+    cmp := "\nleqslant"             // \(\nleqslant \)
+    cmp := "\nparallel"             // \(\nparallel \)
+    cmp := "\nprec"                 // \(\nprec \)
+    cmp := "\npreceq"               // \(\npreceq \)
+    cmp := "\nsim"                  // \(\nsim \)
+    cmp := "\nsucc"                 // \(\nsucc \)
+    cmp := "\nsucceq"               // \(\nsucceq \)
+    cmp := "\ntriangleleft"         // \(\ntriangleleft \)
+    cmp := "\ntrianglelefteq"       // \(\ntrianglelefteq \)
+    cmp := "\ntriangleright"        // \(\ntriangleright \)
+    cmp := "\ntrianglerighteq"      // \(\ntrianglerighteq \)
 
   // O
 
-    bin := "\odot"
-    bin := "\ominus"
-    bin := "\oplus"
-    bin := "\oslash"
-    //bin := "\otimes"
+    bin := "\odot"                  // \(\odot \)
+    bin := "\ominus"                // \(\ominus \)
+    bin := "\oplus"                 // \(\oplus \)
+    bin := "\oslash"                // \(\oslash \)
+    //bin := "\otimes"              // \(\otimes \)
 
   // P
 
-    cmp := "\perp"
-    bin := "\pm"
-    cmp := "\prec"
-    cmp := "\precapprox"
-    cmp := "\preccurlyeq"
-    cmp := "\preceq"
-    cmp := "\precnapprox"
-    cmp := "\precneqq"
-    cmp := "\precnsim"
-    cmp := "\precsim"
-    bin := "\prod"
-    cmp := "\propto"
+    cmp := "\perp"                  // \(\perp \)
+    bin := "\pm"                    // \(\pm \)
+    cmp := "\prec"                  // \(\prec \)
+    cmp := "\precapprox"            // \(\precapprox \)
+    cmp := "\preccurlyeq"           // \(\preccurlyeq \)
+    cmp := "\preceq"                // \(\preceq \)
+    cmp := "\precnapprox"           // \(\precnapprox \)
+    cmp := "\precneqq"              // \(\precneqq \)
+    cmp := "\precnsim"              // \(\precnsim \)
+    cmp := "\precsim"               // \(\precsim \)
+    bin := "\prod"                  // \(\prod \)
+    cmp := "\propto"                // \(\propto \)
 
   // Q
 
   // R
 
-    cmp := "\rhd"
-    arr := "\Rightarrow"
-    arr := "\rightarrow"
-    arr := "\rightarrowtail"
-    arr := "\rightharpoondown"
-    arr := "\rightharpoonup"
-    arr := "\rightleftarrows"
-    arr := "\rightleftharpoons"
-    arr := "\rightleftharpoons"
-    arr := "\rightrightarrows"
-    arr := "\rightsquigarrow"
-    arr := "\Rrightarrow"
-    cmp := "\rtimes"
+    cmp := "\rhd"                   // \(\rhd \)
+    arr := "\Rightarrow"            // \(\Rightarrow \)
+    arr := "\rightarrow"            // \(\rightarrow \)
+    arr := "\rightarrowtail"        // \(\rightarrowtail \)
+    arr := "\rightharpoondown"      // \(\rightharpoondown \)
+    arr := "\rightharpoonup"        // \(\rightharpoonup \)
+    arr := "\rightleftarrows"       // \(\rightleftarrows \)
+    arr := "\rightleftharpoons"     // \(\rightleftharpoons \)
+    arr := "\rightleftharpoons"     // \(\rightleftharpoons \)
+    arr := "\rightrightarrows"      // \(\rightrightarrows \)
+    arr := "\rightsquigarrow"       // \(\rightsquigarrow \)
+    arr := "\Rrightarrow"           // \(\Rrightarrow \)
+    cmp := "\rtimes"                // \(\rtimes \)
 
   // S
 
-    bin := "\setminus"
-    cmp := "\sim"
-    cmp := "\simeq"
-    cmp := "\smallsetminus"
-    bin := "\sqcap"
-    bin := "\sqcup"
-    cmp := "\sqsubset"
-    cmp := "\sqsubseteq"
-    cmp := "\sqsupset"
-    cmp := "\sqsupseteq"
-    bin := "\square"
-    cmp := "\Subset"
-    cmp := "\succ"
-    cmp := "\succapprox"
-    cmp := "\succcurlyeq"
-    cmp := "\succeq"
-    cmp := "\succnapprox"
-    cmp := "\succneqq"
-    cmp := "\succnsim"
-    cmp := "\succsim"
-    cmp := "\Supset"
+    bin := "\setminus"              // \(\setminus \)
+    cmp := "\sim"                   // \(\sim \)
+    cmp := "\simeq"                 // \(\simeq \)
+    cmp := "\smallsetminus"         // \(\smallsetminus \)
+    bin := "\sqcap"                 // \(\sqcap \)
+    bin := "\sqcup"                 // \(\sqcup \)
+    cmp := "\sqsubset"              // \(\sqsubset \)
+    cmp := "\sqsubseteq"            // \(\sqsubseteq \)
+    cmp := "\sqsupset"              // \(\sqsupset \)
+    cmp := "\sqsupseteq"            // \(\sqsupseteq \)
+    bin := "\square"                // \(\square \)
+    cmp := "\Subset"                // \(\Subset \)
+    cmp := "\succ"                  // \(\succ \)
+    cmp := "\succapprox"            // \(\succapprox \)
+    cmp := "\succcurlyeq"           // \(\succcurlyeq \)
+    cmp := "\succeq"                // \(\succeq \)
+    cmp := "\succnapprox"           // \(\succnapprox \)
+    cmp := "\succneqq"              // \(\succneqq \)
+    cmp := "\succnsim"              // \(\succnsim \)
+    cmp := "\succsim"               // \(\succsim \)
+    cmp := "\Supset"                // \(\Supset \)
 
   // T
 
-    cmp := "\thickapprox"
-    cmp := "\thicksim"
-    bin := "\times"
-    arr := "\to"
-    bin := "\triangle"
-    bin := "\triangledown"
-    cmp := "\triangleleft"
-    cmp := "\trianglelefteq"
-    cmp := "\triangleq"
-    cmp := "\triangleright"
-    cmp := "\trianglerighteq"
-    arr := "\twoheadleftarrow"
-    arr := "\twoheadrightarrow"
+    cmp := "\thickapprox"           // \(\thickapprox \)
+    cmp := "\thicksim"              // \(\thicksim \)
+    bin := "\times"                 // \(\times \)
+    arr := "\to"                    // \(\to \)
+    bin := "\triangle"              // \(\triangle \)
+    bin := "\triangledown"          // \(\triangledown \)
+    cmp := "\triangleleft"          // \(\triangleleft \)
+    cmp := "\trianglelefteq"        // \(\trianglelefteq \)
+    cmp := "\triangleq"             // \(\triangleq \)
+    cmp := "\triangleright"         // \(\triangleright \)
+    cmp := "\trianglerighteq"       // \(\trianglerighteq \)
+    arr := "\twoheadleftarrow"      // \(\twoheadleftarrow \)
+    arr := "\twoheadrightarrow"     // \(\twoheadrightarrow \)
 
   // U
 
-    cmp := "\unlhd"
-    cmp := "\unrhd"
-    bin := "\Uparrow"
-    bin := "\uparrow"
-    bin := "\Updownarrow"
-    bin := "\updownarrow"
-    bin := "\upharpoonleft"
-    bin := "\upharpoonright"
-    bin := "\uplus"
-    bin := "\upuparrows"
+    cmp := "\unlhd"                // \(\unlhd \)
+    cmp := "\unrhd"                // \(\unrhd \)
+    bin := "\Uparrow"              // \(\Uparrow \)
+    bin := "\uparrow"              // \(\uparrow \)
+    bin := "\Updownarrow"          // \(\Updownarrow \)
+    bin := "\updownarrow"          // \(\updownarrow \)
+    bin := "\upharpoonleft"        // \(\upharpoonleft \)
+    bin := "\upharpoonright"       // \(\upharpoonright \)
+    bin := "\uplus"                // \(\uplus \)
+    bin := "\upuparrows"           // \(\upuparrows \)
 
   // V
 
-    cmp := "\varsubsetneq"
-    cmp := "\varsubsetneqq"
-    cmp := "\varsupsetneq"
-    cmp := "\varsupsetneqq"
-    cmp := "\veebar"
+    cmp := "\varsubsetneq"         // \(\varsubsetneq \)
+    cmp := "\varsubsetneqq"        // \(\varsubsetneqq \)
+    cmp := "\varsupsetneq"         // \(\varsupsetneq \)
+    cmp := "\varsupsetneqq"        // \(\varsupsetneqq \)
+    cmp := "\veebar"               // \(\veebar \)
 
   // W
 
 
   // X
 
-    arr := "\xleftarrow"
-    arr := "\xrightarrow"
+    arr := "\xleftarrow"           // \(\xleftarrow \)
+    arr := "\xrightarrow"          // \(\xrightarrow \)
 
   // Y
 
