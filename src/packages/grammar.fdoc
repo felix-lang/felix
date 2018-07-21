@@ -2355,7 +2355,7 @@ syntax felix_ident_lexer {
     /* mutator */
     "&=" | "|=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" | "<<=" | ">>=" |
     /* comparison */
-    "<" | ">" | "==" | "!=" | "<=" | ">=" | "<<" | ">>" 
+    "<" | ">" | "==" | "!=" | "<=" | ">=" | "<<" | ">>" | "<>"
   ;
 
   /* NOTE: upgrade to support n"wird + name" strings */
