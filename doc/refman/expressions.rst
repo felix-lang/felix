@@ -127,9 +127,6 @@ Dollar Forms
 
   //$ Alternate conditional expression.
   x[sdollar_apply_pri] := x[stuple_pri] "unless" x[let_pri] "then" x[sdollar_apply_pri]
- 
-  //$ Low precedence right associative application.
-  x[sdollar_apply_pri] := x[stuple_pri] "$" x[sdollar_apply_pri] 
 
 Tuple Forms
 +++++++++++
@@ -145,24 +142,6 @@ Tuple Forms
   //$ Tuple formation non-associative.
   x[stuple_pri] := x[>stuple_pri] ( "," x[>stuple_pri])+ 
 
-
-
-Pipe Application
-++++++++++++++++
-
-.. code-block:: felix
-
-  //$ Low precedence left associative reverse application.
-  x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[stuple_pri] 
-
-
-Infix Application
-+++++++++++++++++
-
-.. code-block:: felix
-
-  //$ Haskell-ish style infix notation of functions   foo(x,y) => x `(foo) y
-  x[stuple_pri]  := x[stuple_pri] "`(" sexpr ")" sexpr =># " `(ast_apply ,_sr ( ,_3 (,_1 ,_5)))";
 
 
 Inline Variables
@@ -225,7 +204,7 @@ Case Literals
   x[scase_literal_pri] := "ainj"  stypeexpr "of" x[ssum_pri] 
 
 
-Unit Application
+Variant Literals
 ++++++++++++++++
 
 .. code-block:: felix
@@ -256,9 +235,6 @@ Operator Whitespace
 
 .. code-block:: felix
 
-  //$ Operator whitespace: application.
-  x[sapplication_pri] := x[sapplication_pri] x[>sapplication_pri] 
-
   //$ Variant index.
   x[sapplication_pri] := "caseno" x[>sapplication_pri]
   x[sapplication_pri] := "casearg" x[>sapplication_pri] 
@@ -279,24 +255,6 @@ Coercions
   //$ Suffixed coercion.
   x[scoercion_pri] := x[scoercion_pri] ":>>" x[>scoercion_pri]
 
-Factors
-+++++++
-
-.. code-block:: felix
-
-  //$ Reverse application.
-  x[sfactor_pri] := x[sfactor_pri] "." x[>sfactor_pri]
-
-
-  //$ Reverse application with dereference.
-  //$ a *. b same as (*a) . b, like C  a -> b.
-  x[sfactor_pri] := x[sfactor_pri] "*." x[>sfactor_pri]
-
-  //$ a &. b is similar to &a . b for an array, but can be overloaded
-  //$ for abstract arrays: like a + b in C. Returns pointer.
-  // x[sfactor_pri] := x[sfactor_pri] "&." sthe_name
-  x[sfactor_pri] := x[sfactor_pri] "&." x[>sfactor_pri]
-
 Reverse Composition
 +++++++++++++++++++
 
@@ -309,9 +267,6 @@ Addressing
 ++++++++++
 
 .. code-block:: felix
-
-  //$ High precedence unit application. #f = f ().
-  x[sthename_pri] := "#" x[sthename_pri] 
 
   //$ Felix pointer type and address of operator.
   x[sthename_pri] := "&" x[sthename_pri] 
@@ -380,41 +335,6 @@ operator             numeric semantics
 -, neg               negation
 ==================== ==================
 
-
-Bitwise Operations
-++++++++++++++++++
-
-.. code-block:: felix
-
-  //$ Bitwise or, left associative.
-  x[sbor_pri] := x[sbor_pri] "\|" x[>sbor_pri] 
-
-  //$ Bitwise xor, left associative.
-  x[sbxor_pri] := x[sbxor_pri] "\^" x[>sbxor_pri] 
-
-  //$ Bitwise exclusive and, left associative.
-  x[sband_pri] := x[sband_pri] "\&" x[>sband_pri] 
-
-  //$ Bitwise left shift, left associative.
-  x[sshift_pri] := x[sshift_pri] "<<" x[>sshift_pri]
-
-  //$ Bitwise right shift, left associative.
-  x[sshift_pri] := x[sshift_pri] ">>" x[>sshift_pri] 
-
-The usual C operators spelled differently: note
-for numeric types these operations only apply to
-unsigned integers.
-
-==================== ==================
-operator             numeric semantics
-==================== ==================
-\|                   bitwise or
-\^                   bitwise exclusive or
-\&                   bitwise and
-<<                   left shift
->>                   right shift
-~                    ones complement
-==================== ==================
 
 Composition Sumary
 ++++++++++++++++++

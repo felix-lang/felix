@@ -5,8 +5,11 @@ Expression Syntax
    :maxdepth: 1
    
    expressions 
+   let
    logic
    comparisons
    arithmetic
    texoperators
+   application
+   names
    brackets
