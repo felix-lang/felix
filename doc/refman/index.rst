@@ -11,6 +11,7 @@ Contents:
    manual
    compilation
    execution 
+   parsing
    lexical
    typesys
    definitions
