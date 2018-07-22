@@ -5,6 +5,7 @@ Lexical Structure
    :maxdepth: 1
    
    grammargrammar
+   whitelex
    identifiers
    integerlit
    floatlit
