@@ -4,7 +4,7 @@ Parsing
 Overview
 --------
 
-Unlike most programming languages, Felix has tiny bootstrap grammer hard coded
+Unlike most programming languages, Felix has tiny bootstrap grammar hard coded
 into the compiler. That grammar does not specify the commonly used part of
 the language, instead, it specifies an how to parse an EBNF like syntax which
 specifies the actual grammar.
@@ -24,17 +24,24 @@ look like this:
     block := "perform" stmt =># '_2';
   }
 
-The basic form consists of a nonterminal on the left, an `:=` symbol,
-a regular expression like specification involving quoted strings,
-which are treated as terminals, identifiers, which are nonterminals,
-and the symbols `*` for the Kleene closure of 0 or more repetitions,
-`+` for 1 or more repetitions, `?` for 0 or 1 repetition, and parenthesis `(`
-and `)` for grouping. followed by a `=>#` symbol, a string in R5RS Scheme
-language, and then a terminating semicolon `;`.
+The basic form of a grammar rule consists of:
+
+* a nonterminal on the left
+*  an `:=` symbol,
+* a production, which is a regular expression like specification involving 
+** quoted strings, which are treated as terminals, 
+** identifiers, which are nonterminals,
+** and the symbols `*` for the Kleene closure of 0 or more repetitions,
+** `+` for 1 or more repetitions, 
+** `?` for 0 or 1 repetition, 
+** and parenthesis `(` and `)` for grouping. 
+* followed by a `=>#` symbol, then
+* a string in R5RS Scheme call the action
+* and finally a terminating semicolon `;`.
 
 The `syntax` group is called a DSSL or domain specific sublanguage.
 
-Then the parse hits a statement like this:
+Then the parser hits a statement like this:
 
 .. code-block:: felix
 
