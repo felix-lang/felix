@@ -446,7 +446,146 @@ in a certain context. For example:
   var var = 1;
   n"var" = 2;
  
+Format Functions
+++++++++++++++++
 
+A string literal prefixed by `f` or '`F` is a format function.
+It uses C `printf` like codes and is implemented using
+`::std::vsnprintf`. It is first called with a NULL string
+and 0 length for the buffer to calculate the required buffer
+size, then the buffer is allocated and the function actually run.
+
+
+Felix also supports a `%S` specifier for C++ strings.
+It is converted to `%s` and the internal char array of the 
+C++ string used as an argument.
+
+The `*` format specifier is not supported.
+
+The compiler scans the string to calculate the type
+of the arguments. The arguments must be presented as
+a tuple.
+
+.. code-block:: felix
+
+   println$ f'Hello %S on %d' ("Felix", 42);
+
+
+====== ========
+Code   Type
+====== ========
+hhd    tiny
+hhi    tiny
+hho    utiny
+hhx    utiny
+hhX    utiny
+
+hd     short
+hi     short
+hu     ushort
+ho     ushort
+hx     ushort
+hX     ushort
+
+d      int
+i      int
+u      uint
+o      uint
+x      uint
+X      uint
+
+ld     long
+li     long
+lu     ulong
+lo     ulong
+lx     ulong
+lX     ulong
+
+lld    vlong
+lli    vlong
+llu    uvlong
+llo    uvlong
+llx    uvlong
+llX    uvlong
+
+zd     ssize
+zi     ssize
+zu     size
+zo     size
+zx     size
+zX     size
+
+jd     intmax
+ji     intmax
+ju     uintmax
+jo     uintmax
+jx     uintmax
+jX     uintmax
+
+
+td     ptrdiff
+ti     ptrdiff
+tu     uptrdiff
+to     uptrdiff
+tx     uptrdiff
+tX     uptrdiff
+
+e      double
+E      double
+f      double
+F      double
+g      double
+G      double
+a      double
+A      double
+
+Le     ldouble
+LE     ldouble
+Lf     ldouble
+LF     ldouble
+Lg     ldouble
+LG     ldouble
+La     ldouble
+LA     ldouble
+
+c      int
+
+S      string
+s      &char
+p      address
+P      address
+====== ========
+
+
+Interpolation Strings
++++++++++++++++++++++
+
+A string prefixed by a `q` or `Q` is an interpolation string.
+Such a string may contain `$(varname)` where varname is a visible
+variable name. The code is replaced by `%S`, and a tuple whose components
+are the application of the `str` function to the variable is formed and
+the string, considered now as a format function literal, is applied to it.
+
+.. code-block:: felix
+
+  var x = 1; var y = 2;
+  println$ q"$(x) + $(y)";
+
+
+
+Constant Folding
+++++++++++++++++
+
+Felix compiler concatenates adjacent string literals.
+So for example you can do this:
+
+.. code-block:: felix
+
+   var x = 
+     "To be\n"
+     "Or not to be\n"
+     "That is the question\n"
+   ;
 
 
 
