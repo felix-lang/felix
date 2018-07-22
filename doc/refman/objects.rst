@@ -1,6 +1,27 @@
 Objects
 =======
 
+Syntax
+------
+
+.. code-block:: felix
+
+  satom := sadjectives "object" stvarlist slambda_fun_args fun_return_type "=" scompound 
+  sfunction := "object" sdeclname sfun_arg* "implements" object_return_type "=" scompound
+  sfunction := "object" sdeclname sfun_arg*  "=" scompound 
+  sfunction :=
+    "object" sdeclname sfun_arg* "extends" stypeexpr_comma_list
+    "implements" object_return_type "=" scompound
+
+  sfunction := "object" sdeclname sfun_arg*  "extends" stypeexpr_comma_list "=" scompound 
+  sadjective := "method" =># "'Method";
+  stmt := "interface" sdeclname stype_extension "{" srecord_type "}" =>#
+    srecord_type := srecord_mem_decl (";" srecord_mem_decl)* ";"
+    stypelist := stypeexpr ("," stypeexpr)* 
+    stype_extension := "extends" stypelist 
+    stype_extension := sepsilon
+
+
 Basic Objects
 -------------
 

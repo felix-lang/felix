@@ -2343,11 +2343,10 @@ syntax felix_ident_lexer {
 
   regdef prime = "'";
   regdef dash = '-';
-  regdef quest = "?";
   regdef idletter = letter | underscore | hichar | ucn;
   regdef alphnum = idletter | digit;
   regdef innerglyph = idletter | digit | dash;
-  regdef flx_ident = idletter (innerglyph ? (alphnum | prime) +)* prime* quest ?;
+  regdef flx_ident = idletter (innerglyph ? (alphnum | prime) +)* prime*;
   regdef tex_ident = slosh letter+;
   regdef sym_ident =
     "+" | "-" | "*" | "/" | "%" | "^" | "~" | 

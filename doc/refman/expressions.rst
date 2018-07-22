@@ -152,10 +152,6 @@ Operator Whitespace
 
 .. code-block:: felix
 
-  //$ Variant index.
-  x[sapplication_pri] := "caseno" x[>sapplication_pri]
-  x[sapplication_pri] := "casearg" x[>sapplication_pri] 
-
   //$ Optimisation hint: likely.
   //$ Use in conditionals, e.g. if likely(x) do ...
   x[sapplication_pri] := "likely" x[>sapplication_pri]
