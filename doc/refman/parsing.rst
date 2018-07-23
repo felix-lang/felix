@@ -52,11 +52,11 @@ and *augments* the current parser with the specified syntax.
 After all the extensions so specified a special command
 causes the parser to save the extended automaton to disk as a cache:
 dependency checking allows us to skip the above process if the grammar
-is unmodified and load the automaton immediately.
+is unmodified and load :ethe automaton immediately.
 
 The parser is now ready to process actual Felix files.
 When it parses a string according to a grammar rule it
-sets the variables `_1`, `_2`, `_3` etc to the abstracted
+sets the Scheme variables `_1`, `_2`, `_3` etc to the abstracted
 syntax trees previously generated and then executes the Scheme
 in the action code. This results in a Scheme S-expression being
 returned. Note that the Scheme code is compiled and the compiled
@@ -73,7 +73,8 @@ The result of parsing each file is saved in the cache so if the file
 and the grammar is not changed, the AST can be loaded from the cache.
 Therefore Felix usually only parse the files you're actively working on.
 Felix is specifically designed so that files can be parsed independently
-of eaach other to minnimise parsing time.
+of eaach other to minnimise parsing time. The cached files AST files
+end in extension `.par`.
 
 The parser used is Dypgen, and the Scheme used is OCS Scheme.
 Dypgen is a GLR+ parser. The automaton has an LALR1 kernel
