@@ -14,5 +14,6 @@ Expression Syntax
    slicexpr
    variantexpr
    application
+   funexpr
    names
    brackets
