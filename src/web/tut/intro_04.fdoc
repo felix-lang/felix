@@ -37,13 +37,13 @@ Now for the new statement:
 @felix
 syntax mystatements
 { 
-  stmt := "say" sexpr ";" =># { myprint ?2; myendl(); };
+  stmt := "say" sexpr ";" =># { myprint #?2; myendl(); };
 }
 @
 The non-terminal @{stmt} must be used to add new statements.
 The non-terminal @{sexpr} can be used for expressions.
 We define our @{say} command to print the expression
-denoted by {?2} which is the second symbol on the RHS of the
+denoted by {#?2} which is the second symbol on the RHS of the
 {:=} sign, and then do an end of line.
 
 Note the RHS after the {=>#} is scoped inside curly braces.
@@ -77,16 +77,16 @@ function calls when we'd like to use operators.
 @felix
 syntax myexpressions
 {
-  sexpr := myrel =># (?1);
+  sexpr := myrel =># (#?1);
 
-  myrel := myterm "==" myterm =>#  (myeq (?1, ?3) );
-  myrel := myterm =># (?1);
+  myrel := myterm "==" myterm =>#  (myeq (#?1, #?3) );
+  myrel := myterm =># (#?1);
 
-  myterm := myterm "+" myfactor =># ( myadd (?1, ?3) );
-  myterm := myfactor =># (?1);
+  myterm := myterm "+" myfactor =># ( myadd (#?1, #?3) );
+  myterm := myfactor =># (#?1);
 
-  myfactor := myfactor "*" myatom =># ( mymul (?1, ?3) );
-  myfactor := myatom =># (?1);
+  myfactor := myfactor "*" myatom =># ( mymul (#?1, #?3) );
+  myfactor := myatom =># (#?1);
 
   myatom := sname =># "(nos _1)";
   myatom := "(" myrel ")" =># "_2";
@@ -107,7 +107,7 @@ There is some magic in the last two lines.
 When the RHS after the {=>#} symbol is a string,
 Felix interprets it as Scheme code. In the Scheme
 code the non-terminals of the production are denoted
-by  @{_1}, @{_2} etc instead of {?1}, {?2} etc.
+by  @{_1}, @{_2} etc instead of {#?1}, {#?2} etc.
 
 The Scheme function @{nos} here converts the string designated
 by an @{sname} into a Felix identifier term. @{nos} stands

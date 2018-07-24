@@ -1,7 +1,6 @@
 Variant literals
 ================
 
-
 .. code-block:: felix
 
   //$ Case value, sum types
@@ -19,4 +18,17 @@ Variant literals
   x[sapplication_pri] := "caseno" x[>sapplication_pri]
   x[sapplication_pri] := "casearg" x[>sapplication_pri] 
 
+
+  //$ Tuple projection function.
+  x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri] 
+
+  // coarray injection
+  // (ainj (r:>>4) of (4 *+ int)) 42
+  x[scase_literal_pri] := "ainj"  stypeexpr "of" x[ssum_pri] 
+
+
+Description
+-----------
+
+Blah.
 

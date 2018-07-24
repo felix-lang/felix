@@ -1439,10 +1439,6 @@ syntax expressions {
   x[let_pri] := pattern_match =># '_1';
 
 
-  //$ Alternate conditional expression.
-  x[sdollar_apply_pri] := x[stuple_pri] "unless" x[let_pri] "then" x[sdollar_apply_pri] =>#
-    "`(ast_cond ,_sr ((ast_not ,_sr ,_3) ,_1 ,_5))";
-
   //$ Low precedence right associative application.
   x[sdollar_apply_pri] := x[stuple_pri] "$" x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
 
@@ -1619,7 +1615,7 @@ syntax expressions {
   x[sthename_pri] := "?" sname =># "`(ast_patvar ,_sr ,_2)";
 
   //$ Template replacement index.
-  x[sthename_pri] := "?" sinteger =># "`(PARSER_ARGUMENT ,_2)";
+  x[sthename_pri] := "#?" sinteger =># "`(PARSER_ARGUMENT ,_2)";
 
   x[sthename_pri] := squalified_name =># "_1";
 

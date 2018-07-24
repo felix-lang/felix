@@ -86,67 +86,6 @@ Precedence Indices
 
 
 
-Dollar Forms
-++++++++++++
-
-.. code-block:: felix
-
-  //$ Alternate conditional expression.
-  x[sdollar_apply_pri] := x[stuple_pri] "unless" x[let_pri] "then" x[sdollar_apply_pri]
-
-Inline Variables
-++++++++++++++++
-
-.. code-block:: felix
-
-  //$ Named temporary value.
-  x[sas_expr_pri] := x[sas_expr_pri] "as" sname 
-
-
-  //$ Named variable.
-  x[sas_expr_pri] := x[sas_expr_pri] "as" "var" sname 
-
-
-
-Arrows
-------
-
-.. code-block:: felix
-
-  //$ Function type, right associative.
-  x[sarrow_pri] := x[>sarrow_pri] "->" x[sarrow_pri] 
-  x[sarrow_pri] := x[>sarrow_pri] "->" "[" sexpr "]" x[sarrow_pri] 
-
-  //$ C function type, right associative.
-  x[sarrow_pri] := x[>sarrow_pri] "-->" x[sarrow_pri] 
-
-Case Literals
-+++++++++++++
-
-.. code-block:: felix
-
-  //$ Tuple projection function.
-  x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri] 
-
-  // coarray injection
-  // (ainj (r:>>4) of (4 *+ int)) 42
-  x[scase_literal_pri] := "ainj"  stypeexpr "of" x[ssum_pri] 
-
-
-Dereference
-+++++++++++
-
-.. code-block:: felix
-
-  //$ C dereference.
-  x[srefr_pri] := "*" x[srefr_pri]
-
-  //$ Deref primitive.
-  //x[srefr_pri] := "_deref" x[srefr_pri] 
-
-  //$ Operator new.
-  x[srefr_pri] := "new" x[srefr_pri]
-
 Operator Whitespace
 +++++++++++++++++++
 
@@ -180,24 +119,6 @@ Addressing
 ++++++++++
 
 .. code-block:: felix
-
-  //$ Felix pointer type and address of operator.
-  x[sthename_pri] := "&" x[sthename_pri] 
-
-  //$ Felix pointer type and address of operator.
-  x[sthename_pri] := "_uniq" x[sthename_pri] 
-  x[sthename_pri] := "_rref" x[sthename_pri]
-  x[sthename_pri] := "&<" x[sthename_pri] 
-  x[sthename_pri] := "_wref" x[sthename_pri]
-  x[sthename_pri] := "&>" x[sthename_pri]
-
-
-  //$ Felix address of operator.
-  x[sthename_pri] := "label_address" sname 
-
-
-  //$ C pointer type.
-  x[sthename_pri] :=  "@" x[sthename_pri]
 
   //$ macro expansion freezer.
   x[sthename_pri] := "noexpand" squalified_name 
