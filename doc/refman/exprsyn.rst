@@ -5,6 +5,7 @@ Expression Syntax
    :maxdepth: 1
    
    expressions 
+   precedence
    let
    tuplexpr
    logic
@@ -14,6 +15,8 @@ Expression Syntax
    slicexpr
    variantexpr
    application
+   addressing
    funexpr
+   coercion
    names
    brackets

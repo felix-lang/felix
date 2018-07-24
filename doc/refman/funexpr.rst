@@ -78,14 +78,17 @@ Polymorphic variant injections
 Coarray Injection
 -----------------
 
+Blah.
+
 Compositions
 ------------
 
 Forward and reverse serial, parallel, mediating morphisms.
 
+.. code-block:: felix
 
-//$ Reverse composition
-x[srcompose_pri] := x[srcompose_pri] "\odot" x[>srcompose_pri]
+  //$ Reverse composition
+  x[srcompose_pri] := x[srcompose_pri] "\odot" x[>srcompose_pri]
 
 
 Composition Sumary
@@ -104,4 +107,8 @@ operator             semantics
 
 
 
+Lambda Forms
+------------
+
+Blah.
 

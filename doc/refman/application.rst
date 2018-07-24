@@ -9,11 +9,17 @@ Syntax
   x[sdollar_apply_pri] := x[stuple_pri] "$" x[sdollar_apply_pri] 
   x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[stuple_pri] 
   x[stuple_pri]  := x[stuple_pri] "`(" sexpr ")" sexpr
+
   x[sapplication_pri] := x[sapplication_pri] x[>sapplication_pri] 
+  x[sapplication_pri] := "likely" x[>sapplication_pri]
+  x[sapplication_pri] := "unlikely" x[>sapplication_pri]
+
   x[sfactor_pri] := x[sfactor_pri] "." x[>sfactor_pri] 
   x[sfactor_pri] := x[sfactor_pri] "*." x[>sfactor_pri]
   x[sfactor_pri] := x[sfactor_pri] "&." x[>sfactor_pri]
+
   x[sthename_pri] := "#" x[sthename_pri] 
+
 
 Description
 -----------
@@ -23,7 +29,7 @@ highest precedence to lowest:
 
 .. code-block:: felix
 
-  f$a    // operator dollar, right associative
+  f$a    // Haskell operator dollar, right associative
   a|>f   // operator pipe apply: reverse application, left associative
   f a    // operator whitespace, left associative
   a.f    // operator dot: reverse application, left associative
@@ -89,6 +95,24 @@ of type `T * A` where `A` is the type of the argument. For example:
 
 Here is a string is applied to a string. Since a string isn't a function,
 Felix looks for and finds a function named `apply` with domain `string * string`.
+
+
+Likelyhood
+----------
+
+The `likely` and `unlikely` pseudo functions are optimisation hints
+applied to expressions of boolean type which indicate that the
+value is likely (or unlikely, respectively) to be true.
+The hint is passed on to C++ compilers which have an intrinsic to
+support it, the hint allows the C++ compiler to reorganise code
+so that the most likely flow continues on and the least likely
+uses a branch, the idea being to keep the instruction pipeline
+full and perhaps influence speculative execution choices.
+
+In particular, Felix adds `likely` to branches in loops which
+cause the loop to repeat and `unlikely` to those which terminate
+the loop.
+
 
 
 

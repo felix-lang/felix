@@ -10,17 +10,17 @@ var f = gen ( var g : 1 -> opt[int] ) () : opt[int] = {
 
 
 syntax SSTREAM {
-  spattern := "?" sinteger ":" "pattern" =># "`(PARSER_ARGUMENT ,_2)";
+  spattern := "#?" sinteger ":" "pattern" =># "`(PARSER_ARGUMENT ,_2)";
 }
 
 syntax STREAM {
   open syntax SSTREAM;
   x[let_pri] := "stream-filter" "[" sexpr "]" spattern "=>" sexpr =># 
   (
-    gen ( var g : 1 -> opt[?3] ) () : opt[?3] = 
+    gen ( var g : 1 -> opt[#?3] ) () : opt[#?3] = 
     {
-      match ?5:pattern in g do yield Some ?7; done
-      return None[?3];
+      match #?5:pattern in g do yield Some #?7; done
+      return None[#?3];
     }
   );
 };
