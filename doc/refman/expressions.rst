@@ -131,23 +131,6 @@ Addressing
 
   x[sthename_pri] := squalified_name
 
-
-Composition Sumary
-++++++++++++++++++
-
-There are two composition operators for functions,
-both are left associative:
-
-==================== ==================
-operator             semantics
-==================== ==================
-\\circ               forward composition
-\\odot               reverse composition
-==================== ==================
-
-
-
-
 Atomic Forms
 ++++++++++++
 
