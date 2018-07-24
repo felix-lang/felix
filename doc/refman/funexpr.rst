@@ -18,6 +18,16 @@ and the application is optimised, for example, by inlining the application.
 Function names
 --------------
 
+Syntax
+^^^^^^
+
+.. code-block:: felix
+
+  ssuffixed_name := squalified_name "of" x[sthename_pri]
+
+Description
+^^^^^^^^^^^
+
 The full name of a function defined by the user can be given
 with a suffixed name. For example:
 
@@ -29,8 +39,20 @@ with a suffixed name. For example:
 The `of` suffix is used in lieu of an argument to perform overload resolution
 and select a specific function.
 
+This syntax is also used to name union constructors.
+
 Tuple projections
 -----------------
+
+Syntax
+^^^^^^
+
+.. code-block:: felix
+
+  x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri]
+
+Description
+^^^^^^^^^^^
 
 You can name a specific projection of a tuple type by:
 
@@ -66,19 +88,28 @@ so the usual suffixed form can be used to specify a projection.
 Sum Injections
 --------------
 
-cases etc
+Syntax
+^^^^^^
 
-Union injection
----------------
+.. code-block:: felix
 
-Polymorphic variant injections
-------------------------------
+  x[scase_literal_pri] := "case" sinteger "of" x[ssum_pri] 
+  x[scase_literal_pri] := "`" sinteger "of" x[ssum_pri] 
+  x[scase_literal_pri] := "`" sinteger ":" x[ssum_pri] 
 
 
 Coarray Injection
 -----------------
 
-Blah.
+Syntax
+^^^^^^
+
+.. code-block:: felix
+
+  // coarray injection
+  // (ainj (r:>>4) of (4 *+ int)) 42
+  x[scase_literal_pri] := "ainj"  stypeexpr "of" x[ssum_pri] =># "`(ast_ainj ,_sr ,_2 ,_4)";
+
 
 Compositions
 ------------
@@ -89,6 +120,26 @@ Forward and reverse serial, parallel, mediating morphisms.
 
   //$ Reverse composition
   x[srcompose_pri] := x[srcompose_pri] "\odot" x[>srcompose_pri]
+
+  //$ Forward composition
+  x[ssuperscript_pri] := x[ssuperscript_pri] "\circ" x[>ssuperscript_pri]
+
+  // ???? 
+  x[ssuperscript_pri] := x[ssuperscript_pri] "\cdot" x[>ssuperscript_pri]
+
+Mediating Morphisms
+^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: felix
+
+  // mediating morphism of a product <f,g>
+  satom := "\langle" sexpr "\rangle" =># "`(ast_apply ,_sr (,(noi 'lrangle) (,_2)))";
+  satom := "\left" "\langle" sexpr "\right" "\rangle" =># "`(ast_apply ,_sr (,(noi 'lrangle) (,_3)))";
+
+  // mediating morphism of a sum [f,g]
+  satom := "\lbrack" sexpr "\rbrack" =># "`(ast_apply ,_sr (,(noi 'lrbrack) (,_2)))";
+  satom := "\left" "\lbrack" sexpr "\right" "\rbrack" =># "`(ast_apply ,_sr (,(noi 'lrbrack) (,_3)))";
+ 
 
 
 Composition Sumary
