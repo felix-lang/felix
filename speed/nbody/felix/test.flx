@@ -20,7 +20,7 @@ struct Body { pos:vec; vel:vec; mass: double; };
 proc Advance(dt: double){
    var i: int; var j:int;
    for i in 0 upto nbodies - 1 do
-      val pi = &bodies.i;
+      var pi = &bodies.i;
       val bimass = pi*.mass;
       var delta = 0.0,0.0,0.0;
       for j in i+1 upto nbodies - 1 do
