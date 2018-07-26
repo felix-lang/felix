@@ -127,8 +127,8 @@ Forward and reverse serial, parallel, mediating morphisms.
   // ???? 
   x[ssuperscript_pri] := x[ssuperscript_pri] "\cdot" x[>ssuperscript_pri]
 
-Mediating Morphisms
-^^^^^^^^^^^^^^^^^^^
+Categorical Constructions
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: felix
 
@@ -141,6 +141,16 @@ Mediating Morphisms
   satom := "\left" "\lbrack" sexpr "\right" "\rbrack" =># "`(ast_apply ,_sr (,(noi 'lrbrack) (,_3)))";
  
 
+.. code-block:: felix
+
+  fun f(x:int) => x.str;
+  fun g(x:int) => x.double+42.1;
+
+  // mediating morphism of product
+  println$ \langle f , g\rangle 1; // ("1", 43.1)
+
+  // parallel composition
+  println$ \prod (f , g) (1,2); // ("1", 44.1)
 
 Composition Sumary
 ++++++++++++++++++
@@ -161,5 +171,48 @@ operator             semantics
 Lambda Forms
 ------------
 
-Blah.
+A unit function or procedure can be written inline, anonymously:
+
+.. code-block:: felix
+
+    // functions
+    { 42 }                        // 1->int
+    { var x = 1; x * x }          // 1->int
+    { var x = 1; return x * x; }  // 1->int
+
+    // procedure
+    { var x = 1; println$ x; }    // 1->0
+
+A useful construction:
+
+.. code-block:: felix
+
+    {
+      var x = 1;
+      println$ "Hello";
+    };
+
+looks like a block in C except for the terminating `;`.
+Actually it is a call to an anonymous procedure since the
+`call` can be elided, and the argument `()` can also be
+elided. You can jump out of an anonymous procedure
+but not into it, since it creates a scope. You cannot
+jump out of functions, and thus not anonymous functions either.
+
+
+Functions or procedures with arguments can be
+written too:
+
+
+.. code-block:: felix
+
+  (fun (x:int)=>x * x)
+  (proc (x:int){println$ x;})
+
+The enclosing parens are not part of the syntax but are
+often required to get the precedence right.
+
+
+
+
 
