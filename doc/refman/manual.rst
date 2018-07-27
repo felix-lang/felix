@@ -107,46 +107,29 @@ all first class. Function and procedure values can
 be constructed and capture their environment to
 form a closure.
 
-It is important to note variables *including* `val`s are
-part of a stack frame object which may be allocated
-on the heap and the capture is via a pointer to the
-whole frame. This means when a closure is executed,
-the value of the captured variable is the value
-current *at the time the closure executes* and not
-the value at the time of capture.
+Automatic Memory Management
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For example:
+Combination of stack protocol, smart pointers and
+garbage collection.
 
-.. code-block:: felix
+Simplified Object Model
+^^^^^^^^^^^^^^^^^^^^^^^
 
-  var x = 1;
-  var g: (1->0)^3;
-  noinline proc f (y:int) () { println$ y; };
-  for i in 1..3 do
-    &g.(i - 1) <- f x; // capture value x in y
-    ++x;
-  done
-  for i in 1..3 do
-    g.(i - 1) (); // prints 1,2,3
-  done
+Felix dispenses with the traditional idea of lvalues, references,
+and mutability and replaces them with a simple robust concept:
+all values are immutable. However a value can placed in, or constructed
+in, addressable store and then mutation is available via a pointer.
+Since pointers are values, a purely functional model is obtained
+which still admits mutation.
 
-Without the `noinline` Felix is too smart and the variable
-y is inlined to the mainline, so there is only one copy,
-when you run the script, it prints 4,4,4. If you just change
-the parameter to `var y:int` to force eager evaluation,
-it prints 3,3,3.
+Leverage and Reuse
+^^^^^^^^^^^^^^^^^^
 
-Capture by address is not a design fault, it is in fact
-the only option. Just consider:
-
-.. code-block:: felix
-
-  var x = 1;
-  fun getx() => x;
-  ++x;
-  println$ getx();
-
-You would be surprised if this printed 1! You expect
-the function to report the current value of x.
+Felix generates C++ and is compatible with the C/C++ ABI.
+Felix allows the programmer to almost seamlessly integrate
+existing C/C++ binary libraries and utilise existing C/C++
+header files. Indeed almost all the basic types in Felix
+are lifted by binding constructed from C++.
 
 

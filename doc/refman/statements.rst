@@ -8,4 +8,7 @@ Statements
    conditional
    loops 
    assertions
+   goto
+   call
+   traps
    debug

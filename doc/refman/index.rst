@@ -19,6 +19,7 @@ Contents:
    patterns
    control 
    statements
+   threads
 
 Indices and tables
 ==================

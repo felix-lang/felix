@@ -123,4 +123,49 @@ OS based sleep in the spin loop to encourage the holder of
 the lock to run and complete.
 
 
+Closures
+++++++++
+
+It is important to note variables *including* `val`s are
+part of a stack frame object which may be allocated
+on the heap and the capture is via a pointer to the
+whole frame. This means when a closure is executed,
+the value of the captured variable is the value
+current *at the time the closure executes* and not
+the value at the time of capture.
+
+For example:
+
+.. code-block:: felix
+
+  var x = 1;
+  var g: (1->0)^3;
+  noinline proc f (y:int) () { println$ y; };
+  for i in 1..3 do
+    &g.(i - 1) <- f x; // capture value x in y
+    ++x;
+  done
+  for i in 1..3 do
+    g.(i - 1) (); // prints 1,2,3
+  done
+
+Without the `noinline` Felix is too smart and the variable
+y is inlined to the mainline, so there is only one copy,
+when you run the script, it prints 4,4,4. If you just change
+the parameter to `var y:int` to force eager evaluation,
+it prints 3,3,3.
+
+Capture by address is not a design fault, it is in fact
+the only option. Just consider:
+
+.. code-block:: felix
+
+  var x = 1;
+  fun getx() => x;
+  ++x;
+  println$ getx();
+
+You would be surprised if this printed 1! You expect
+the function to report the current value of x.
+
 
