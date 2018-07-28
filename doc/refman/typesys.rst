@@ -10,6 +10,8 @@ Contents:
    :maxdepth: 1
    
    typealias
+   typefun
+   typematch
    typeset
    typecase
    primtypes
