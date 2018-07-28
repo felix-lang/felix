@@ -140,7 +140,7 @@ Syntax
   //$
   //$ Felix integer literals consist of an optional radix specifer,
   //$ a sequence of digits of the radix type, possibly separated
-  //$ by an underscore (_) character, and a trailing type specifier.
+  //$ by an underscore (_) or quote ('_ character, and a trailing type specifier.
   //$
   //$ The radix can be:
   //$ 0b, 0B - binary
@@ -182,11 +182,11 @@ Syntax
 
   syntax felix_int_lexer {
     /* integers */
-    regdef bin_lit  = '0' ('b' | 'B') (underscore ? bindigit) +;
-    regdef oct_lit  = '0' ('o' | 'O') (underscore ? octdigit) +;
-    regdef dec_lit  = '0' ('d' | 'D') (underscore ? digit) +;
-    regdef dflt_dec_lit  =  digit (underscore ? digit) *;
-    regdef hex_lit  = '0' ('x' | 'X') (underscore ? hexdigit)  +;
+    regdef bin_lit  = '0' ('b' | 'B') (dsep ? bindigit) +;
+    regdef oct_lit  = '0' ('o' | 'O') (dsep ? octdigit) +;
+    regdef dec_lit  = '0' ('d' | 'D') (dsep ? digit) +;
+    regdef dflt_dec_lit  =  digit (dsep ? digit) *;
+    regdef hex_lit  = '0' ('x' | 'X') (dsep ? hexdigit)  +;
     regdef int_prefix = bin_lit | oct_lit | dec_lit | dflt_dec_lit | hex_lit;
 
     regdef fastint_type_suffix =

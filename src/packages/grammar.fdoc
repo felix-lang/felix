@@ -2366,11 +2366,12 @@ syntax felix_ident_lexer {
 
 @tangle grammar_lexer.fsyn
 SCHEME """
-(define (stripus s) ; strip underscores 
+(define (stripus s) ; strip underscores and primes in numbers
   (let*
     ( 
       (chrs (string->list s))
       (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
+      (chrs (filter (lambda (x) (not (char=? x (integer->char 39)))) chrs)) ; strip primes
     )
     (list->string chrs)
   )
@@ -2438,6 +2439,7 @@ syntax global_regdefs {
   regdef letter = lower | upper;
   regdef hichar = [128-255];
   regdef white = space | tab;
+  regdef dsep = underscore | quote;
 
   /* nasty: form control characters */
   regdef form_control = linefeed | carriage_return | vtab | formfeed;
