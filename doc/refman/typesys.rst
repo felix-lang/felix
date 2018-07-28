@@ -11,6 +11,7 @@ Contents:
    
    typealias
    typeset
+   typecase
    primtypes
    logic
    addresstype

@@ -144,6 +144,8 @@ let rec bind_expression'
   *)
   let rt t = beta_reduce "flx_lookup: bind_expression'(2)" state.counter bsym_table sr t in
   let sr = src_of_expr e in
+  (* Is this right? It fixes a weird behaviour but may break something else ... *)
+  let e = match e with | EXPR_noexpand (_,e) -> e | e -> e in
   match e with
   | EXPR_rptsum_type _
   | EXPR_pclt_type _

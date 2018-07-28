@@ -140,11 +140,9 @@ and string_of_expr (e:expr_t) =
   | EXPR_interpolate (sr,s) -> "q"^string_of_string s
   | EXPR_vsprintf (sr,s) -> "f"^string_of_string s
   | EXPR_ellipsis _ -> "..."
-  (*
   | EXPR_noexpand (sr,e) -> "noexpand(" ^ string_of_expr e ^ ")"
-  *)
   (* because 'noexpand' is too ugly .. *)
-  | EXPR_noexpand (sr,e) -> string_of_expr e
+  (* | EXPR_noexpand (sr,e) -> string_of_expr e *)
 
   | EXPR_letin (sr,(pat,e1, e2)) ->
     "let " ^ string_of_pattern pat ^ " = " ^ se e1 ^ " in " ^ se e2

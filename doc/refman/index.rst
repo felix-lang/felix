@@ -19,6 +19,7 @@ Contents:
    patterns
    control 
    statements
+   fibres
    threads
 
 Indices and tables

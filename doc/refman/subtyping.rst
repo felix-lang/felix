@@ -47,11 +47,15 @@ Nominal Types
 -------------
 
 Nominal types including primitives, structs and unions do not
-admit subtying relations by defaul. However the programmer
+admit subtying relations by default. However the programmer
 can write a single step coercion. Currently coercions do not chain.
 The coercions are done before overloading and so can result
 in an ambiguity even of one function parameter matches exactly
 and the other requires a coercion.
+
+.. code-block:: felix
+
+  supertype: long (x:int) => x.long;
 
 Polymorphic Specialisation
 --------------------------
