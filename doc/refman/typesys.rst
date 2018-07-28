@@ -28,5 +28,7 @@ Contents:
    variants
    compactlinear
    funtyp
+   subtyping
+
 
 

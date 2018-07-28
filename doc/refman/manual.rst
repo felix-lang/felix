@@ -9,30 +9,64 @@ user space, in the library.
  
 This chapter briefly explains some of the central concepts of Felix.
 
-Ease of use
-^^^^^^^^^^^
+Simplicity, Performance.
+------------------------
+
+Felix is, first and foremost, dedicated to obtaining run time performance.
+
+Felix motto is *hyperlight* performance which means we aim
+to run programs *faster than C*. 
 
 Let's start with a simple script:
  
 .. code-block:: felix
-   
-   println$ "Hello World!";
+     
+  fun ack(x:int,y:int):int =>
+    if x == 0 then y + 1
+    elif y == 0 then ack(x - 1, 1)
+    else ack(x - 1, ack(x, y - 1))
+    endif
+  ;
+
+  do
+    val n = 13;
+    var v = ack(3,n);
+    println$ f"Ack(3,%d): %d" (n, v);
+  done
+
+  fun Tak (x:double, y:double, z:double): double =>
+    if (y >= x) then z
+    else Tak(Tak(x - 1.0,y,z), Tak(y - 1.0,z,x), Tak(z - 1.0,x,y))
+    endif
+  ;
+
+  do 
+    val n = 12.0;
+    var v = Tak(n*3.0, n*2.0, n*1.0);
+    println$ f"%.2f" v;
+  done
 
 To run it you just say:
 
 .. code-block:: bash 
    
-   flx hello.flx
+   flx test.flx
 
 It's pretty simple. Felix runs programs like Python does, you run the 
 source code directly.
 
-Performance
-^^^^^^^^^^^
+All the generated files
+are cached in the .felix/cache subdirectory of your $HOME directory.
+Felix can run script files in read-only directories.
 
-Behind the scenes, Felix translates the program
-into C++, compiles the program, and runs it. Felix programs run *fast*.
-Here's a silly comparison for Ackermann's function, `acl(3,13)`:
+Felix translates the code into C++, compiles the C++, and runs it. 
+Felix programs run *fast*. Felix itself implements high level optimisations
+beyond the scope of traditional compilers, then passes the generated
+code to your system C++ compiler which in turn implements low level
+optimisations. 
+
+Here's a silly comparison for Ackermann's function and Takfp,
+times in seconds:
 
 =============  ======  ===========
 Compiler       Ack     Takfp
@@ -43,93 +77,4 @@ Felix/gcc      2.34    6.60
 Gcc/C++        2.25    6.25
 Ocaml          2.93    8.41
 =============  ======  ===========
-
-Felix motto is *hyperlight* performance which means we aim
-to run programs *faster than C*. 
-
-The compiler is fast too. Felix is designed so all files
-can be independently parsed. The `flx` tool does automatic
-dependency checking and caches temporary results.
-
-No File system pollution
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-All the generated files
-are cached in the .felix/cache subdirectory of your $HOME directory.
-Felix can run script files in read-only directories.
-
-Portability
-^^^^^^^^^^^
-
-Felix lets you write both portable and non-portable programs.
-It generates ISO compliant C++ and the run time library (RTL) 
-is written in ISO C++. 
-
-Portability is obtain by a combination of conditional compilation
-in the Felix libraries and in the RTL and reliance on the ISO C++ Standard
-Library. Most library functions
-in the Felix library are designed to work the same way
-on all platforms. Well written script should run on Linux, OSX
-and Windows without modification.
-
-By using a configuration database, platform and compiler switches
-are avoided: Felix knows how to run your C++ compiler and
-how to link third party libraries.
-
-Even the `flx` tool has switches specifically designed to work
-on all platforms, for example `flx --static -c -od . hello` will compile
-and link your program and put it in the current directory,
-even though the executable is named `hello.exe` on Windows.
-
-
-Domain Specific Sublanguage Support
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Whilst C++ allows you to overload operators so you can
-design a syntax suitable to your application domain,
-Felix goes a step further and allows you to specify
-grammar extensions. Indeed, almost the entire Felix
-language is specified by parsing rules in user space,
-in the library.
-
-Constructs based on theory
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The core constructions in Felix are modelled on 
-mathematical theory: set theory, type theory,
-category theory.
-
-First class lexically scoped functions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Functions, procedures and coroutines in Felix are
-all first class. Function and procedure values can
-be constructed and capture their environment to
-form a closure.
-
-Automatic Memory Management
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Combination of stack protocol, smart pointers and
-garbage collection.
-
-Simplified Object Model
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Felix dispenses with the traditional idea of lvalues, references,
-and mutability and replaces them with a simple robust concept:
-all values are immutable. However a value can placed in, or constructed
-in, addressable store and then mutation is available via a pointer.
-Since pointers are values, a purely functional model is obtained
-which still admits mutation.
-
-Leverage and Reuse
-^^^^^^^^^^^^^^^^^^
-
-Felix generates C++ and is compatible with the C/C++ ABI.
-Felix allows the programmer to almost seamlessly integrate
-existing C/C++ binary libraries and utilise existing C/C++
-header files. Indeed almost all the basic types in Felix
-are lifted by binding constructed from C++.
-
 
