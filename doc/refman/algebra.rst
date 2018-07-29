@@ -1,8 +1,6 @@
 Library Algebras
 ================
 
-
-
 Contents:
 
 .. toctree::
