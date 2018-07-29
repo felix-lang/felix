@@ -11,7 +11,7 @@ it is the type system analogue of a match:
 
   typedef fun dom (T:TYPE):TYPE =>
     typematch T with
-    | D -> _ => D
+    | ?D -> _ => ?D
     | _ => 0
     endmatch
   ;
@@ -20,6 +20,9 @@ The type function dom above finds the domain type or a function
 type, if the argument is a function type, otherwise it returns 
 the void type 0. Note that dom does not preserve structure
 and so is not a functor.
+
+An identifier in a type pattern is assumed to be a type name
+unless it is prefixed by `?` which indicates a pattern variable.
 
 Semantics
 ---------
@@ -53,7 +56,7 @@ For example:
 
   typedef X[T] = 
     typematch T with
-    | D -> C => 1
+    | ?D -> ?C => 1
     | _ -> 0
     endmatch
   ;
