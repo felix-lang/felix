@@ -6,15 +6,15 @@ Sets provide an alternate representation of logical operators.
 Set Class
 ---------
 
-A `set` is any type with a membership predicate ..math::`\in``
-spelled `\in`. You can also use function `mem`. The parser
-also maps `in` to operator `\in`.
+A `set` is any type with a membership predicate :math:`\in``
+spelled `\\in`. You can also use function `mem`. The parser
+also maps `in` to operator `\\in`.
 
-We also provide a reversed form :math::`\owns` spelled `\owns`,
+We also provide a reversed form :math::`\owns` spelled `\\owns`,
 and negated forms :math:`\ni` spelled `\ni` or `\notin`.
 
-Three combinators are provided as well, :math:`\cap` spelled `\cap`
-provides intersection, :math:`\cup` spelled `\cup` provides
+Three combinators are provided as well, :math:`\cap` spelled `\\cap`
+provides intersection, :math:`\cup` spelled `\\cup` provides
 the usual set union, and :math:`\setminus` spelled `\setminus`
 the asymmetic set difference or subtraction.
 
@@ -22,11 +22,6 @@ Note that sets are not necessarily finite.
 
 .. code-block:: felix
 
-  // note: eq is not necessarily required for a membership test
-  // for example: string member of regexp doesn't require
-  // string equality
-  // Set need not be finite (example regexp again)
-  // A list is a set, despite the duplications
   class Set[c,t] {
     fun mem (elt:t, container:c):bool => elt \in container;
     virtual fun \in : t * c-> bool;

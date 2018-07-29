@@ -14,6 +14,7 @@ Contents:
    parsing
    lexical
    typesys
+   algebra
    definitions
    exprsyn
    patterns
