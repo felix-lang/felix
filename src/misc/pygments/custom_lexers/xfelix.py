@@ -139,11 +139,12 @@ class FelixBase(RegexLexer):
             (r'[a-zA-Z_]\w*:>', Name.Label),
 
             # Identifiers
-            (r"[a-zA-Z_][a-zA-Z0-9_'-]*", Name),
+            (r"`?[a-zA-Z_][a-zA-Z0-9_'-]*", Name),
 
             # TeX Identifiers
             (r"\\[A-Za-z]+", Generic),
 
+            # Math mode
             (r'\\\(.*\\\)',XMath),
 
         ],
