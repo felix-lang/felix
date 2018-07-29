@@ -99,7 +99,7 @@ Felis also allows virtual types in type classes, these types
 must be specified in instances. Virtual types can participate
 in ad-hoc overload resolution, but the specified per instance 
 type cannot. This is because the substitution occurs during
-monomorphisation *after* ad-overload resoltion is complete.
+monomorphisation *after* ad-overload resolution is complete.
 However type class overloading is performed *during* monomorphisation
 so the instance types can be used at that point.
 

@@ -24,6 +24,7 @@ Contents:
    typecase
    primtypes
    logic
+   setforms
    addresstype
    integers
    slices

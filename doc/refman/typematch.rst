@@ -11,7 +11,7 @@ it is the type system analogue of a match:
 
   typedef fun dom (T:TYPE):TYPE =>
     typematch T with
-    | ?D -> _ => ?D
+    | ?D -> _ => D
     | _ => 0
     endmatch
   ;
@@ -39,7 +39,7 @@ If the argument *can never match* then the first branch is discarded
 and we proceed to the next branch. If there are no branches left the
 typematch fails.
 
-If the argument *can possible match in the future* but doesn't at
+If the argument *can possibly match in the future* but doesn't at
 present, the whole type match is returned (minus any branches which
 have been discarded).
 

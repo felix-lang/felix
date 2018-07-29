@@ -45,6 +45,9 @@ the set of candidates further. At this point if two or more functions
 remain the call is deemed ambiguous. If there is exactly one remaining
 function that is the selected function.
 
+Outer scopes
+------------
+
 Finally if there are now available functions, the overload resolution
 fails, however this is not the end of the story. Felix has several ways
 to continue. The primary recovery mechanism is to consider functions
@@ -69,7 +72,7 @@ Type Class virtual instantiation
 --------------------------------
 
 Type class virtual functions are instantiated purely with unification,
-the tricks, constraints, and mult-level scoping considerations
+the tricks, constraints, and multi-level scoping considerations
 do not apply here: it is a purely a matter of specialisation.
 
 Subtyping
