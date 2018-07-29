@@ -1,19 +1,21 @@
 Sets
 ====
 
+Sets provide an alternate representation of logical operators.
+
 Set Class
 ---------
 
-A `set` is any type with a membership predicate ``\in``
-spelled ``\in``. You can also use function `mem`. The parser
-also maps @{in} to operator @{\in}.
+A `set` is any type with a membership predicate ..math::`\in``
+spelled `\in`. You can also use function `mem`. The parser
+also maps `in` to operator `\in`.
 
-We also provide a reversed form \(\owns\) spelled @{\owns},
-and negated forms \(ni\) spelled @{\ni} or @{\notin}.
+We also provide a reversed form :math::`\owns` spelled `\owns`,
+and negated forms :math:`\ni` spelled `\ni` or `\notin`.
 
-Three combinators are provided as well, \(\cap\) spelled @{cap}
-provides intersection, \(\cup\) spelled @{\cup} provides
-the usual set union, and \(\setminus\) spelled @{\setminus}
+Three combinators are provided as well, :math:`\cap` spelled `\cap`
+provides intersection, :math:`\cup` spelled `\cup` provides
+the usual set union, and :math:`\setminus` spelled `\setminus`
 the asymmetic set difference or subtraction.
 
 Note that sets are not necessarily finite.
@@ -55,20 +57,21 @@ Syntax
 
   syntax setexpr
   {
-    cmp := "in" =># '(nos "\\in")'; 
-    cmp := "\in" =># "(nos _1)"; 
-    cmp := "\notin" =># '(nos _1)'; 
-    cmp := "\owns" =># '(nos _1)'; 
+    cmp := "in" 
+    cmp := "\in"
+    cmp := "\notin"
+    cmp := "\owns" ; 
 
     x[ssetunion_pri] := x[ssetunion_pri] "\cup" x[>ssetunion_pri] =># "(Infix)" note "setunion";
-    x[ssetintersection_pri] := x[ssetintersection_pri] "\cap" x[>ssetintersection_pri] =># "(Infix)" note "setintersection";
+    x[ssetintersection_pri] := x[ssetintersection_pri] "\cap" x[>ssetintersection_pri] =># "(Infix)" 
+      note "setintersection";
   }
 
 Set Forms
 =========
 
-A @{set_form} is a record type with a single 
-member @{has_elt} which returns true if it's argument
+A `set_form` is a record type with a single 
+member `has_elt` which returns true if it's argument
 is intended as a member of some particular set.
 
 We construe a set_form as a Set by providing an
@@ -77,7 +80,6 @@ instance.
 A set_form is basically just the membership predicate remodelled
 as a noun by encapsulating the predicate in a closure and
 thereby abstracting it.
-@tangle set.flx
 
 .. code-block:: felix
 
@@ -92,10 +94,6 @@ We provide an inverse image:
 
 .. code-block:: felix
 
-  // INVERSE image of a set under a function
-  // For a function f: t -> t2, an element e
-  // is in a restriction of the domain t if its
-  // image in t2 is in the specified set.
   fun invimg[t,c2,t2 with Set[c2,t2]] 
     (f:t->t2, x:c2) : set_form[t] =>
     { e : t | (f e) \in x }
@@ -106,9 +104,9 @@ Cartesian Product of set_forms.
 
 This uses some advanced instantiation technology
 to allow you to define the cartesian product of a
-sequence of sets using the infix TeX operator \(\otimes\)
-which is spelled @{\otimes}. There's also a left associative
-binary operator \(\times\) spelled @{\times}.
+sequence of sets using the infix TeX operator :math:`\otimes`
+which is spelled `\otimes`. There's also a left associative
+binary operator :math:`\times` spelled `\times`.
 
 Operators
 ---------
@@ -138,4 +136,27 @@ Example:
 
   var p = \{ x,y: int * int | x == y \};
   println$ (1,1) in p;
+
+
+Containers
+===========
+
+Roughly, a Container is a finite Set.
+It is a derived type specified in the library
+with a type class:
+
+.. code-block:: felix
+
+  class Container [c,v]
+  {
+    inherit Set[c,v];
+    virtual fun len: c -> size;
+    fun \Vert (x:c) => len x;
+    virtual fun empty(x: c): bool => len x == size(0);
+  }
+
+
+The :math:`\Vert` operator, spelled `\Vert` is an alternative
+name for `len`.
+
 

@@ -1,7 +1,8 @@
 Slices
 ======
 
-Felix provides two slice types. 
+Felix provides two slice types, these are derived types defined 
+in the library.
 
 Basic Type
 ----------
