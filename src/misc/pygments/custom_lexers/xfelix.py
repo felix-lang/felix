@@ -68,6 +68,7 @@ class FelixBase(RegexLexer):
 
     keyword_constants = (
         'false', 'true',
+        'cfalse', 'ctrue',
     )
 
     name_builtins = (
@@ -140,6 +141,9 @@ class FelixBase(RegexLexer):
 
             # Identifiers
             (r"`?[a-zA-Z_][a-zA-Z0-9_'-]*", Name),
+ 
+            # sum tags
+            (r"`[0-9]+", Name),
 
             # TeX Identifiers
             (r"\\[A-Za-z]+", Generic),
