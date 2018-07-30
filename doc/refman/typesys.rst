@@ -22,17 +22,7 @@ Contents:
    typecase
    primtypes
    abstractyp
-   tuples
-   records
-   structs
-   pointers
    classes
    abstract
-   unions
-   sums
-   variants
-   compactlinear
-   funtyp
-   subtyping
    overloading
 

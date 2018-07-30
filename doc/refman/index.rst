@@ -14,6 +14,7 @@ Contents:
    parsing
    lexical
    typesys
+   corealg
    algebra
    definitions
    exprsyn
