@@ -1,5 +1,5 @@
-Sum Types
-=========
+Anonymous Sum Types
+===================
 
 Sum types are a positionally accessed structural type dual to tuples.
 They're used like this:
