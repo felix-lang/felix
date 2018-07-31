@@ -1,5 +1,5 @@
-Sum Types
-=========
+Coproduct Types
+===============
 
 
 Contents:
@@ -7,6 +7,7 @@ Contents:
 .. toctree::
    :maxdepth: 1
   
+   sumspec
    sums 
    variants 
    unions
