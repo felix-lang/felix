@@ -1,6 +1,37 @@
 Set Forms
 =========
 
+Syntax
+------
+
+.. code-block:: felix
+
+  setbar := "|" =># "_1";
+  setbar := "\|" =># "_1";
+  setbar := "\mid" =># "_1";
+
+  setform := spattern ":" stypeexpr setbar sexpr
+
+  satom := "{" setform  "}" =># "_2";
+  satom := "\{" setform  "\}" =># "_2";
+
+
+Definition
+----------
+
+.. code-block:: felix
+
+  interface set_form[T] { has_elt: T -> bool; }
+
+  instance[T] Set[set_form[T], T] {
+    fun \in (elt:T, s:set_form[T]) => s.has_elt elt;
+  }
+
+  open[T] Set[set_form[T],T];
+
+Description
+-----------
+
 A `set_form` is a record type with a single 
 member `has_elt` which returns true if it's argument
 is intended as a member of some particular set.
@@ -12,14 +43,7 @@ A set_form is basically just the membership predicate remodelled
 as a noun by encapsulating the predicate in a closure and
 thereby abstracting it.
 
-.. code-block:: felix
 
-  interface set_form[T] { has_elt: T -> bool; }
-
-  instance[T] Set[set_form[T], T] {
-    fun \in (elt:T, s:set_form[T]) => s.has_elt elt;
-  }
-  open[T] Set[set_form[T],T];
 
 We provide an inverse image:
 

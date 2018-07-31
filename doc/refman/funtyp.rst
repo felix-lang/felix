@@ -1,6 +1,15 @@
 Function Types
 ==============
 
+Specification
+-------------
+
+https://en.wikipedia.org/wiki/Exponential_object
+
+
+Felix Exponentials
+------------------
+
 Felix has 4 primary classes of executable components.
 
 The general type of a function, generator, or procedure
@@ -17,6 +26,9 @@ it is a function or generator.
 
 Values of these types are pointers to a procedure or function
 object.
+
+C function type
+---------------
 
 The type:
 

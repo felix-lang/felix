@@ -50,6 +50,14 @@ In Felix compact linear types are addressable! However
 the pointers formed are not simple machine addresses.
 
 
+Pointer syntax
+--------------
+
+.. code-block:: felix
+
+  satom := "_pclt<" stypeexpr "," stypeexpr ">" =>#
+    "`(ast_pclt ,_sr ,_2 ,_4)"
+  ;
 
 
 

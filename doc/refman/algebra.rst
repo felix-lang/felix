@@ -16,7 +16,7 @@ Contents:
    addgroup
    mulgroup
    ring
-   integers
+   integral
    slices
    floats 
    strings

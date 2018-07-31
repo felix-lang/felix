@@ -9,4 +9,5 @@ Contents:
    productspec
    tuples
    records
+   polyrecord
    structs 

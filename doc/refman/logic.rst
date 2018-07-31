@@ -56,6 +56,26 @@ Syntax
 Semantics
 ---------
 
+.. code-block:: felix
+
+  //$ Bitwise operators.
+  class Bits[t] {
+    virtual fun \^ : t * t -> t = "(?1)($1^$2)";
+    virtual fun \| : t * t -> t = "$1|$2";
+    virtual fun \& : t * t -> t = "$1&$2";
+    virtual fun ~: t -> t = "(?1)(~$1)";
+    virtual proc ^= : &t * t = "*$1^=$2;";
+    virtual proc |= : &t * t = "*$1|=$2;";
+    virtual proc &= : &t * t = "*$1&=$2;";
+
+    fun bxor(x:t,y:t)=> x \^ y;
+    fun bor(x:t,y:t)=> x \| y;
+    fun band(x:t,y:t)=> x \& y;
+    fun bnot(x:t)=> ~ x;
+
+  }
+
+
 Description
 -----------
 
