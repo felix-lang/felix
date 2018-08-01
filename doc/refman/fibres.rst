@@ -14,6 +14,7 @@ These calls are basically:
 * write (channel, value)
 * spawn_fthread
 * suicide
+* run
 
 Channel construction
 --------------------
@@ -64,18 +65,6 @@ Termination
 A fibre terminates when its initial coroutine returns, 
 it calls `suicide()`, starves or blocks.
 
-Felix top level mainline code forms a coroutine
-which the system spawns automatically. However
-you can also create a sub-scheduler with the procedure
-call
-
-.. code-block:: felix
-
-   run p;
-
-`run` is a subroutine, it creates a new scheduler object,
-spawns p on that scheduler, and runs the scheduler until
-there are no active fibres left.
 
 Starvation
 ----------
@@ -107,6 +96,27 @@ forgotten except by those using them.
 Contrarily, when a channel is reachable and a fibres is suspended on it,
 if the procedure which can reach it never does so, that is called
 a `livelock`.
+
+Constructing a new Scheduler
+----------------------------
+
+Felix top level mainline code forms a coroutine
+which the system spawns automatically. However
+you can also create a sub-scheduler with the procedure
+call
+
+.. code-block:: felix
+
+   run p;
+
+`run` is a subroutine, it creates a new scheduler object,
+spawns `p` on that scheduler, and runs the scheduler until
+there are no active fibres left on that scheduler.
+
+Note that if `p` itself spawns new fibres they will become
+active on the same scheduler as `p`, however, *fibres can
+migrate between schedulers*.
+
 
 Example
 -------
