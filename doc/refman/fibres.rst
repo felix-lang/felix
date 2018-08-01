@@ -149,13 +149,168 @@ blocked: it is trying to read from a channel which no active fibre can
 write on. This, the reader becomes unreachable, and so when the mainline
 terminates the program is finished.
 
-If global variables had been used instead the program would hang 
-forever instead of terminating.
+Binding Channels With HOFs.
+---------------------------
+
+A better way to write the code above is to use Higher Order
+Functions (HOFs).
+
+.. code-block:: felix
+
+  fun make() = {
+    typedef r_t = (inp: %<int);
+    typedef w_t = (out: %>int);
+
+    proc writer (x: w_t) () {
+       for i in 0..9 perform write (x.out,i);
+    };
+    proc reader (y: r_t) () {
+      repeat perform println$ read y.inp;
+    };
+
+    var i,o = mk_ioschannel_pair[int]();
+    return reader (inp=i), writer (out=o);
+  }
+  proc example () {
+    var r,w = make();
+    spawn_fthread r;
+    spawn_fthread w;
+  }
+  example();
+  println$ "Done";
+ 
+Here the reader and writer are functions which take a record argument whose
+fields are the required channels and return a unit procedure.
+
+Syntactic Supoport
+------------------
+
+The protocol above is supported by special syntax:
+
+
+.. code-block:: felix
+
+  chip writer 
+    connector x
+      pin out: %>int
+   {
+     for i in 0..9 perform write (x.out,i);
+   }
+
+   chip reader
+     connector y
+       pin inp: %<int
+   {
+      repeat perform println$ read y.inp;
+   }
+
+   circuit
+     connect writer.out, reader.inp
+   endcircuit
+
+   println$ "Done";
+
+The `chip` constructions above are exactly the same as the
+procedures in the previous example. The connectors are
+the record parameters, the pins are the fields of the record.
+
+The `circuit` statement constructs the channels required to
+connect the pins automatically, binds them to the 
+parameters, and then spawns the resulting unit procedures
+as fibres.
+
+Sources, Sinks, and Transducers
+-------------------------------
+
+What is important to note here is that connectors can
+have any number of pins. Coroutines are not restricted to 
+using one communication channel.
+
+The writer above, with a single output pin, is called a `source`.
+The reader above, with a single input pin, is called a `sink`.
+And the following shows a `transducer`:
+
+.. code-block:: felix
+
+  chip squareit 
+    connector x
+      pin inp: %<int
+      pin out: %>int
+   {
+     repeat do
+       var i = read x.inp;
+       write (x.out, i*i);
+     done
+   }
+
+   circuit
+     connect writer.out, squareit.inp
+     connect squareit.out, reader.inp
+   endcircuit
+
+Pipelines
+---------
+
+When you run a set of coroutines starting with
+a source, followed by a sequence of transducers,
+and terminated by a sink, the construction is
+called a `closed pipeline`. There are special operators
+to simplify pipeline construction:
+
+.. code-block:: felix
+
+  var pipeline = writer |-> squareit |-> reader;
+  pipeline ();
+
+
+Library Chips
+-------------
+
+We can simplify our code again by using standard library chips.
+Here is the whole program again:
+
+.. code-block:: felix
+
+  proc readit (y:int) { println$ y; }
+
+  gen  writeit () : opt[int] = {
+    for i in 0..9 perform yield Some i;
+    return None[int];
+  }
+  fun squareit (x:int) => x * x;
+
+  var pipeline = iterate writeit |-> function squareit |-> procedure readit;
+  pipeline ();
+  println$ "Done";
+
+The `iterate` chip is an adaptor that accepts an iterator and produces
+a source.
+
+The `function` chip is an adaptor that accepts a function and
+proceduces a transducer.
+
+The `procedure` chip is an adaptor that accepts a procedure
+with one argument and produces a sink.
+
+Here's another example:
+
+.. code-block:: felix
+
+  run (
+    iterate (1,2,3).iterator |->
+    function (fun (x:int) =>  x * x) |->
+    procedure (proc (x:int) { println$ x; })
+  );
+
+which prints the squares of the values of an array 1,2,3
+in a single line by using anonymous functions and the standard
+iterator method for arrays.
 
 
 
 
  
+
 
 
 

@@ -5,7 +5,7 @@
 @h2 Write block.
 Blocks reader.
 @tangle chips.flx
-class BaseChips
+open class BaseChips
 {
 
 chip writeblock[T]
@@ -49,7 +49,6 @@ chip source[T] (a:T)
   done
 }
 @h2 One shot source
-
 @tangle chips.flx
 chip value[T] (a:T)
   connector io 
@@ -58,6 +57,30 @@ chip value[T] (a:T)
   write (io.out, a);
 }
 
+@h2 Source from generator
+@tangle chips.flx
+chip generator[T] (g: 1->T)
+  connector io
+    pin out: %>T
+  {
+    repeat perform write (io.out, g());
+  }
+
+@h2 Source from iterator
+@tangle chips.flx
+chip iterate[T] (g: 1->opt[T])
+  connector io
+    pin out: %>T
+  {
+    again:>
+      var x = g();
+      match x with
+      | Some v => 
+        write (io.out, v);
+        goto again;
+      | None => ;
+      endmatch; 
+  }
 
 @h2 Source from list
 @tangle chips.flx
