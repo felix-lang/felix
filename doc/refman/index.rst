@@ -15,15 +15,20 @@ Contents:
    lexical
    typesys
    corealg
-   algebra
    definitions
    exprsyn
    patterns
    control 
    statements
+   algebra
+   datatypes
    fibres
    threads
-
+   filesys
+   program
+   process
+   network
+ 
 Indices and tables
 ==================
 
