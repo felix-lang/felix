@@ -1,7 +1,7 @@
 .. felix documentation master file
 
-Felix documentation!
-====================
+Core System
+===========
 
 Contents:
 
@@ -24,7 +24,17 @@ Contents:
    datatypes
    fibres
    threads
+   representations
+
+Stanard Library
+===============
+
+.. toctree::
+   :maxdepth: 1
+  
    env
+   felix
+   graphics
 
  
 Indices and tables
