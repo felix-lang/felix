@@ -9,6 +9,7 @@ Contents:
    :maxdepth: 1
    
    manual
+   platdep
    compilation
    execution 
    parsing
