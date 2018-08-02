@@ -9,11 +9,10 @@ Contents:
    :maxdepth: 1
    
    manual
-   platdep
-   compilation
-   execution 
-   parsing
+   overview
    lexical
+   macros
+   directives
    typesys
    corealg
    definitions
