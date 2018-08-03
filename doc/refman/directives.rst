@@ -136,6 +136,17 @@ when the injected name is the same as the source name.
 library directive
 -----------------
 
+Syntax
+^^^^^^
+
+.. code-block:: felix
+
+  namespace_stmt := "library" sname "=" ? scompound 
+  namespace_stmt := "open" "library" sname "=" ? scompound
+
+Description
+^^^^^^^^^^^
+
 The library directive constructs an part of an extensible scope.
 Multiple library directives can be given for the same name.
 Libraries can therefore be defined in multiple files,
@@ -144,6 +155,31 @@ whereas classes must be specified in a single file.
 Libraries cannot be polymorphic and serve only to provide
 a qualified name prefix for names.
 
+.. code-block:: felix
+
+   library X { fun f(x:int) => x * x; }
+   ...
+   library X { fun g(x:int) => x + 1; }
+
+
+class directive
+---------------
+
+Syntax
+^^^^^^
+
+.. code-block:: felix
+
+  namespace_stmt := "class" sdeclname ";"
+
+Description
+^^^^^^^^^^^
+
+The class directive specifies the rest of the current file
+should be considered as a class definition. The directive
+is syntactic sugar for the standard class definition,
+the entire purpose is to allow easier indentation of the
+text.
 
 Qualified Names
 ---------------
@@ -155,14 +191,41 @@ Opening classes or libraries causes namespace pollution, which is especially
 problematic if the open is in the top level (global or root) scope
 and is generally reserved for core algebras.
 
+.. _export_directive:
+
 Export directive
 ----------------
+
+Syntax
+^^^^^^
+
+.. code-block:: felix
+
+  stmt := "export" "requires" srequirements ";" 
+
+  cbind_stmt := "export" "fun" ssuffixed_name "as" sstring ";" 
+
+  cbind_stmt := "export" "cfun" ssuffixed_name "as" sstring ";" 
+
+  cbind_stmt := "export" "proc" ssuffixed_name "as" sstring ";" 
+
+  cbind_stmt := "export" "cproc" ssuffixed_name "as" sstring ";" 
+
+  cbind_stmt := "export" "struct" ssuffixed_name "as" sstring ";"
+
+  cbind_stmt := "export" "union" ssuffixed_name "as" sstring ";" 
+
+  cbind_stmt := "export" "type" "(" sexpr ")" "as" sstring ";" 
+
+  stmt := "export" "python" "fun" ssuffixed_name "as" sstring ";" =>#
 
 The export directive tell the compiler to export a symbol with a special name.
 The `export` directive can also be used as an adjective.
 
+See also :ref:`export_adjective`
+
 export python directive
------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 The `export python` directive tells the compiler the function is
 part of a Python module. It has no effect on the function itself,
@@ -317,12 +380,16 @@ if, and only if, it is actually used, and, it is not defined
 in the class.
 
 
+.. _export_adjective:
+
 export adjective
 ----------------
 
 The export adjective is equivalent to an export directive
 specifying the function or type, providing the C name
 the same as the Felix nae.
+
+See also :ref:`export_directive`
 
 private adjective
 -----------------
