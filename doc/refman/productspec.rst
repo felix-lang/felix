@@ -1,4 +1,5 @@
 Product Specification
 =====================
 
-https://en.wikipedia.org/wiki/Product_(category_theory)
+See: `https://en.wikipedia.org/wiki/Product_(category_theory)`_.
+
