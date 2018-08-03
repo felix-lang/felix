@@ -4,7 +4,7 @@ Directives
 Directives control the operation of the Felix compiler.
 
 Directive Statements
-^^^^^^^^^^^^^^^^^^^^
+++++++++++++++++++++
 
 include directive
 -----------------
@@ -235,9 +235,9 @@ tables for Python 3. To work correctly the function must have arguments
 and return types compliant with Python C API.
 
 Adjectival directives
-^^^^^^^^^^^^^^^^^^^^^
++++++++++++++++++++++
 
-A function, generator, or procedure definition may be prefixed with
+A function, generator, procedure or type definition may be prefixed with
 an adjectival directive that provides instructions for its use
 or properties.
 
@@ -246,9 +246,11 @@ inline adjective
 
 A function or procedure definition can be qualified by the adjective
 `inline` to tell the compiler to inline direct applications or calls.
+
 Recursive functions or procedures cannot be inlined, it is an error
-to specify inline for them. An inline function will not be inlined if it
-is invoked via a closure.
+to specify inline for them. [Currently ignored].
+
+An inline function will not be inlined if it is invoked via a closure.
 
 noinline adjective
 ------------------
@@ -274,7 +276,7 @@ however invoking an impure function or procedure is not.
 The compiler will examine the function to try to determine if it is
 pure. If the compiler can prove it is not pure, the compilation
 will be aborted with an error message, otherwise the function will
-be taken as pure.
+be taken as pure. [Purity violation is not currently implemented]
 
 impure adjective
 ----------------
