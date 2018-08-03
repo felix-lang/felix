@@ -93,6 +93,8 @@ files and all their dependent include files repeatedly
 for every translation unit is a serious problem in large scale
 software developments.
 
+See also :ref:`_include_directive`.
+
 .. _include_directive:
 
 Include Directive
