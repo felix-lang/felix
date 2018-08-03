@@ -3,6 +3,9 @@ Directives
 
 Directives control the operation of the Felix compiler.
 
+Directive Statements
+^^^^^^^^^^^^^^^^^^^^
+
 include directive
 -----------------
 
@@ -77,6 +80,174 @@ Opening classes or libraries causes namespace pollution, which is especially
 problematic if the open is in the top level (global or root) scope
 and is generally reserved for core algebras.
 
+Export directive
+----------------
+
+The export directive tell the compiler to export a symbol with a special name.
+The `export` directive can also be used as an adjective.
+
+export python directive
+-----------------------
+
+The `export python` directive tells the compiler the function is
+part of a Python module. It has no effect on the function itself,
+however it causes the compiler to generate a Python module table
+containing the function in the output. Felix generates module
+tables for Python 3. To work correctly the function must have arguments
+and return types compliant with Python C API.
+
+Adjectival directives
+^^^^^^^^^^^^^^^^^^^^^
+
+A function, generator, or procedure definition may be prefixed with
+an adjectival directive that provides instructions for its use
+or properties.
+
+inline adjective
+----------------
+
+A function or procedure definition can be qualified by the adjective
+`inline` to tell the compiler to inline direct applications or calls.
+Recursive functions or procedures cannot be inlined, it is an error
+to specify inline for them. An inline function will not be inlined if it
+is invoked via a closure.
+
+noinline adjective
+------------------
+
+The `noinline` adjective on a function or procedure definition tells
+the compiler not to inline it.
+
+The `inline` and `noinline` directives are not optimisation hints,
+they are mandatory requirements with semantic impact. This is because
+Felix has indeterminate evaluation strategy and may choose to eagerly
+or lazily evaluate arguments. Indirect calls or direct calls to
+recursive function cannot be inlined and necessarily use eager evaluation.
+Inlined calls generally use lazy evaluation. 
+
+pure adjective
+--------------
+
+The `pure` adjective tells the compiler the programmer thinks the
+function is pure; that is, it is dependent only on its parameters.
+Dependence on invariant symbols outside the definition is permitted,
+however invoking an impure function or procedure is not.
+
+The compiler will examine the function to try to determine if it is
+pure. If the compiler can prove it is not pure, the compilation
+will be aborted with an error message, otherwise the function will
+be taken as pure.
+
+impure adjective
+----------------
+
+The `impure` adjective tells the compiler to treat the function
+as impure, whether it is actually impure or not.
+
+Purity helps enable certain optimisations. For functions,
+purity ensures referential transparency.
+
+total adjective
+---------------
+
+The `total` adjective tells the compiler the function or 
+procedure will work correctly with all arguments
+of the correct type, that is, that there are no pre-conditions.
+
+Felix provides a way to specify pre-conditions, but not all
+pre-conditions can or should be specified, and pre-conditions
+can and usually are omitted.
+
+partial adjective
+-----------------
+
+The `partial` adjective tells the compiler the function may fail
+with some correctly typed arguments, that is, that the function
+may have pre-conditions.
+
+If pre-conditions are given along with the partial adjective
+it should indicate the pre-conditions are not complete.
+
+strict adjective
+----------------
+
+The strict adjective tells the compiler that if an argument
+expression is evaluated lazily and fails, then the function
+would have failed anyhow. 
+
+Some functions require lazy evaluation. For example
+consider:
+
+.. code-block:: felix
+
+   fun myif(c:bool, t:int, f:int) =>
+     if c then t else f
+    ;
+    var y = 0;
+    var x = myif(y==0, 1, 1/y);
+
+This code will crash if the third argument to `myif` is evaluated
+before the function is called, even though the final result does
+not depend on it it.  However if the application is inlined 
+the resulting expression:
+
+.. code-block:: felix
+
+  if y==0 then 1 else 1/y endif
+
+will not crash becuase the else branch is not taken. Indeed in the
+example the compiler may optimise the code to just `1` because it 
+knows `y==0` must be true and the nasty division by zero is not
+only not executed, it isn't even present in the code.
+
+The `strict` adjective tells the compiler it is safe
+to eagerly evaluate the function application: if the evaluation
+of the argument would fail, then the function would fail even with
+lazy evaluation, for example because the argument is always are
+required.
+
+Felix assumes functions are strict. Even if this is not the case,
+the function may still work correctly on the arguments for which
+it applied.
+
+nonstrict adjective
+-------------------
+
+This tells the programmer the function is not strict in one
+or more arguments. It has no effect on the compiler, which
+continues to assume the function is, in fact strict.
+Rather, it tells the programmer to be careful to call the
+function with arguments for which eager and lazy evaluation
+would produce the same result.
+
+If this is not possible the programmer must change the argument
+type to accept a closure and evaluate the argument on demand,
+thereby enforcing lazy evaluation.
+
+method adjective
+----------------
+
+The `method` adjective may only be used in an `object` and tells
+the compiler a closure of the function over the objects internal
+state must be included in the record value returned as the value
+of a field named after the function name.
+
+virtual adjective
+-----------------
+
+The virtual adjective can only be used in a class and tells
+the compiler the function, procedure, or type may be overriden
+in an instance. A virtual function must be defined in an instance
+if, and only if, it is actually used, and, it is not defined
+in the class.
+
+
+export adjective
+----------------
+
+The export adjective is equivalent to an export directive
+specifying the function or type, providing the C name
+the same as the Felix nae.
 
 
 

@@ -34,7 +34,8 @@ A small number of files, usually a single file, is used to
 define macros which are prefixed to every ordinary file
 Felix processes. These macros are typically used to specify
 the host operating systems so as to allow platform dependent
-conditional compilation.
+conditional compilation. Macro files usually end in extension
+`*.flxh`.
 
 Library Files
 -------------

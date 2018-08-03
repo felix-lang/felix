@@ -18,13 +18,20 @@ Syntax
 
   stmt := "forall" sname "in" sexpr "do" stmt* "done"
 
+  x[sthename_pri] := "noexpand" squalified_name
+
 Semantics
 ---------
 
-The macro val statement is used to associate a macro name with an expression.
-The forall statement is used to generate a sequence of statements
+The `macro val` statement is used to associate a macro name with an expression.
+
+The `forall` statement is used to generate a sequence of statements
 repeatedly replacing occurences of the given name with each of the
 given expression in turn, and is useful for table generation.
+
+The noexpand prefix is used to prevent expansion of a name 
+which might have been a macro val. It is stripped out by the macro
+processor.
 
 
 Constant Folding
