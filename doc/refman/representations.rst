@@ -8,7 +8,10 @@ Representation of Felix entities in C++.
 
   funrep 
   cltrep
-  schannelrep
   variantrep
   jumpaddrrep
+  continuationrep
+  slistrep
+  schannelrep
+  fthreadrep
 
