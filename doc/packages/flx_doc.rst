@@ -492,7 +492,7 @@ with specified heading and pattern match.
   fun url_fixer (a:string) =>
     match Match (url_R, a) with
     | None => a
-    | Some grp => grp.1 + "`" + grp.3 + " <" + grp.2 + ">_" + grp.4
+    | Some grp => grp.1 + "`" + grp.3 + " <" + grp.2 + ">`_" + grp.4
   ;
   
   fun code_markup(a:string) => code_fixer (url_fixer a);

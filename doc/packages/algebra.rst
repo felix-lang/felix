@@ -290,10 +290,10 @@ Orders
 Equivalence Relation.
 ---------------------
 
-An `equivalence <https://en.wikipedia.org/wiki/Equivalence_relation">_ relation 
-is a `reflexive <https://en.wikipedia.org/wiki/Reflexive_relation">_, 
-`symmetric <https://en.wikipedia.org/wiki/Symmetric_relation">_,
-`transitive <https://en.wikipedia.org/wiki/Transitive_relation">_
+An `equivalence <https://en.wikipedia.org/wiki/Equivalence_relation">`_ relation 
+is a `reflexive <https://en.wikipedia.org/wiki/Reflexive_relation">`_, 
+`symmetric <https://en.wikipedia.org/wiki/Symmetric_relation">`_,
+`transitive <https://en.wikipedia.org/wiki/Transitive_relation">`_
 relation. It is one of the most fundamental concepts in
 mathematics. One can show that for any set \(S\), for any
 element \(s \in  S\), the subset \(\lbrack s\rbrack\) of \(S\) 
@@ -302,15 +302,15 @@ equivalent to each other, and not equivalent to any other
 element outside that set.
 
 Therefore, every equivalence relation on a set \(S\) specifies 
-a `partition <https://en.wikipedia.org/wiki/Partition_of_a_set">_ 
+a `partition <https://en.wikipedia.org/wiki/Partition_of_a_set">`_ 
 of \(S\) which is a set of subsets of \(S\)
-known as `equivalence classes <https://en.wikipedia.org/wiki/Equivalence_class">_, 
+known as `equivalence classes <https://en.wikipedia.org/wiki/Equivalence_class">`_, 
 or just plain classes,
 such that no two classes have a common
 intersection, and the union of the classes spans the whole set.
 
 In other words a partition consists of 
-a `disjoint union <https://en.wikipedia.org/wiki/Disjoint_union">_
+a `disjoint union <https://en.wikipedia.org/wiki/Disjoint_union">`_
 of subsets.
 
 The most fundamential relation in computing which is required
@@ -323,7 +323,7 @@ As a simple example, consider that the rational numbers
 \(1/2\) and \(2/4\) have distinct encodings but none-the-less
 are semantically equivalent.
 
-An online reference on `Wikibooks <http://en.wikibooks.org/wiki/Abstract_Algebra/Equivalence_relations_and_congruence_classes">_
+An online reference on `Wikibooks <http://en.wikibooks.org/wiki/Abstract_Algebra/Equivalence_relations_and_congruence_classes">`_
 
 
 .. code-block:: felix
@@ -367,11 +367,11 @@ Syntax
 Partial Order
 -------------
 
-A proper `partial order <https://en.wikipedia.org/wiki/Partially_ordered_set">_ 
+A proper `partial order <https://en.wikipedia.org/wiki/Partially_ordered_set">`_ 
 \(\subset\) spelled  :code:`\subset`
 is a transitive, 
-`antisymmetric <https://en.wikipedia.org/wiki/Antisymmetric_relation">_ 
-`irreflexive <https://en.wikipedia.org/wiki/Reflexive_relation">_ relation.
+`antisymmetric <https://en.wikipedia.org/wiki/Antisymmetric_relation">`_ 
+`irreflexive <https://en.wikipedia.org/wiki/Reflexive_relation">`_ relation.
 
 We also provide an improper operator \(\subseteq\) 
 spelled  :code:`\subseteq` which is transitive, antisymmetric,
@@ -441,8 +441,8 @@ Syntax
 Total Order
 -----------
 
-A `total order <https://en.wikipedia.org/wiki/Total_order">_ is a 
-partial order with a `totality law <https://en.wikipedia.org/wiki/Total_relation">_.
+A `total order <https://en.wikipedia.org/wiki/Total_order">`_ is a 
+partial order with a `totality law <https://en.wikipedia.org/wiki/Total_relation">`_.
 
 However we do not derive it from our partial order because
 we use different comparison operators. Here we use the
