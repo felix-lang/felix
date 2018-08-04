@@ -14,6 +14,7 @@ context of the `call_with_trap` which should be the context
 of its definition.
 
 .. code-block:: felix
+
   call_with_trap {
     proc ehandler() {
       eprintln("BATCH MODE ERROR HANDLER");
