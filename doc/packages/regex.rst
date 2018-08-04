@@ -41,6 +41,7 @@ RE2 Bootstrap Builder
 
 .. code-block:: python
 
+  #[re2.py]
 
 import fbuild
 from fbuild.functools import call
@@ -127,7 +128,8 @@ String handling
 
 
 .. code-block:: felix
-//[__init__.flx]
+
+  //[__init__.flx]
 include "std/regex/re2";
 include "std/regex/tre";
 include "std/regex/regdef";
@@ -140,7 +142,8 @@ RE2 regexps
 
 
 .. code-block:: felix
-//[re2.flx]
+
+  //[re2.flx]
 
 include "stl/stl_map";
 
@@ -395,7 +398,8 @@ Regular definitions
 
 
 .. code-block:: felix
-//[regdef.flx]
+
+  //[regdef.flx]
 
 class Regdef {
   union regex =
@@ -473,7 +477,8 @@ Syntax
 
 
 .. code-block:: felix
-//[regexps.fsyn]
+
+  //[regexps.fsyn]
 
 //$ Syntax for regular definitions.
 //$ Binds to library class Regdef,
@@ -585,7 +590,8 @@ Lexer
 
 
 .. code-block:: felix
-//[lexer.flx]
+
+  //[lexer.flx]
 class Lexer
 {
   pod type lex_iterator = "char const*";
@@ -653,6 +659,7 @@ build_includes: src/re2/re2
 
 .. code-block:: cpp
 
+  //[flx_re2_config.hpp]
 #ifndef __FLX_RE2_CONFIG_H__
 #define __FLX_RE2_CONFIG_H__
 #include "flx_rtl_config.hpp"

@@ -19,7 +19,8 @@ or involve the null terminator.
 
 
 .. code-block:: felix
-//[cstring.flx]
+
+  //[cstring.flx]
 // Primitives
 class CString
 {
@@ -93,7 +94,8 @@ string length if they exceed it.
 
 
 .. code-block:: felix
-//[ucstr.flx]
+
+  //[ucstr.flx]
 open class UniqueCStrings
 {
   open CString;
@@ -268,7 +270,8 @@ ucstr_prim_01.flx
 
 
 .. code-block:: felix
-//[ucstr_prim_01.flx]
+
+  //[ucstr_prim_01.flx]
 proc test() {
   var s = ucstr "hello";
   println$ &s;
@@ -331,7 +334,8 @@ string length if they exceed it.
 
 
 .. code-block:: felix
-//[ustr.flx]
+
+  //[ustr.flx]
 open class UniqueCountedStrings
 {
   open CString;
@@ -506,7 +510,8 @@ ustr_prim_01.flx
 
 
 .. code-block:: felix
-//[ustr_prim_01.flx]
+
+  //[ustr_prim_01.flx]
 proc test() {
   var s = ustr "hello";
   println$ &s;

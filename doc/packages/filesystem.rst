@@ -39,7 +39,8 @@ Filename
 
 
 .. code-block:: felix
-//[filename.flx]
+
+  //[filename.flx]
 
 //$ Operations on filenames.
 class Filename_class[os] {
@@ -217,7 +218,8 @@ Filestat
 
 
 .. code-block:: felix
-//[filestat.flx]
+
+  //[filestat.flx]
 
 //$ Filesystem file kind query functions parametrised
 //$ by operating system, status type and mode type.
@@ -358,7 +360,8 @@ Posix FileStat
 
 
 .. code-block:: felix
-//[posix_filestat.flx]
+
+  //[posix_filestat.flx]
 
 class PosixFileStat
 {
@@ -455,7 +458,8 @@ Win32 FileStat
 
 
 .. code-block:: felix
-//[win32_filestat.flx]
+
+  //[win32_filestat.flx]
 
 class Win32FileStat
 {
@@ -535,7 +539,8 @@ File Syetem
 
 
 .. code-block:: felix
-//[filesystem.flx]
+
+  //[filesystem.flx]
 
 //$ Filesystem operations parametrised by operating system.
 //$ YET TO BE DONE.
@@ -669,7 +674,8 @@ Posix File Syetem
 
 
 .. code-block:: felix
-//[posix_filesystem.flx]
+
+  //[posix_filesystem.flx]
 
 class PosixFileSystem 
 {
@@ -829,7 +835,8 @@ Win32 File Syetem
 
 
 .. code-block:: felix
-//[win32_filesystem.flx]
+
+  //[win32_filesystem.flx]
 
 class Win32FileSystem 
 {
@@ -993,7 +1000,8 @@ Directory
 
 
 .. code-block:: felix
-//[directory.flx]
+
+  //[directory.flx]
 
 //$ File system directory services,
 //$ Parametrised  by operating system and mode type.
@@ -1042,7 +1050,8 @@ Posix Directory Services
 
 
 .. code-block:: felix
-//[posix_directory.flx]
+
+  //[posix_directory.flx]
 
 class PosixDirectory
 {
@@ -1130,7 +1139,8 @@ Win32 Directory Services
 
 
 .. code-block:: felix
-//[win32_directory.flx]
+
+  //[win32_directory.flx]
 
 class Win32Directory
 {

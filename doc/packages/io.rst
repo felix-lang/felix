@@ -41,6 +41,7 @@ debugging.
 
 .. code-block:: cpp
 
+  //[flx_ioutil.hpp]
 #ifndef FLX_IOUTIL
 #define FLX_IOUTIL
 #include <string>
@@ -73,6 +74,7 @@ namespace flx { namespace rtl { namespace ioutil {
 
 .. code-block:: cpp
 
+  //[flx_ioutil.cpp]
 
 #include <cstdio>
 #include <cstring>
@@ -294,7 +296,8 @@ Standard Library Synopsis
 
 
 .. code-block:: felix
-//[__init__.flx]
+
+  //[__init__.flx]
 
 include "std/io/textio";
 include "std/io/demux";
@@ -313,7 +316,8 @@ Simple Text I/O
 
 
 .. code-block:: felix
-//[textio.flx]
+
+  //[textio.flx]
 
 //$ These classes provide simple I/O for text, primarily intended for
 //$ naive use, debugging etc. This is because there is no error
@@ -598,7 +602,8 @@ Ansi Terminal
 
 
 .. code-block:: felix
-//[ansi_terminal.flx]
+
+  //[ansi_terminal.flx]
 
 // Author Mike Maul
 //$ #### Color output formatting for Ansi Terminals.
@@ -670,7 +675,8 @@ Stream I/O
 
 
 .. code-block:: felix
-//[iostream.flx]
+
+  //[iostream.flx]
 
 class IOStream {
   requires package "demux";
@@ -1031,7 +1037,8 @@ TCP/IP Sockets
 These sockets are ONLY for TCP/IP.
 
 .. code-block:: felix
-//[socket.flx]
+
+  //[socket.flx]
 
 class Socket_class[socket_t] {
   requires package "demux";
@@ -1055,7 +1062,8 @@ Posix sockets
 
 
 .. code-block:: felix
-//[socket.flx]
+
+  //[socket.flx]
 class PosixSocket
 {
   requires package "demux";
@@ -1142,7 +1150,8 @@ Windows sockets
 
 
 .. code-block:: felix
-//[socket.flx]
+
+  //[socket.flx]
 class Win32Socket
 {
   requires package "demux";
@@ -1220,7 +1229,8 @@ Host sockets
 
 
 .. code-block:: felix
-//[socket.flx]
+
+  //[socket.flx]
 
 class Socket
 {
@@ -1239,7 +1249,8 @@ Demux: Felix Event notification service
 
 
 .. code-block:: felix
-//[demux.flx]
+
+  //[demux.flx]
 
 class Demux
 {
@@ -1256,7 +1267,8 @@ Faio: Felix Asynchronous I/O service
 
 
 .. code-block:: felix
-//[faio.flx]
+
+  //[faio.flx]
 
 class Faio {
   requires package "demux";
@@ -1316,7 +1328,8 @@ Posix Faio
 
 
 .. code-block:: felix
-//[posix_faio.flx]
+
+  //[posix_faio.flx]
 
 class Faio_posix  {
 header faio_posixio_hpp = '#include "faio_posixio.hpp"';
@@ -1564,7 +1577,8 @@ Win32 Faio
 
 
 .. code-block:: felix
-//[win32_faio.flx]
+
+  //[win32_faio.flx]
 
 
 module Faio_win32 {

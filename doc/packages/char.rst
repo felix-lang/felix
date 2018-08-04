@@ -14,7 +14,8 @@ Char
 
 
 .. code-block:: felix
-//[char.flx]
+
+  //[char.flx]
 
 //$ Standard C operations on C character set.
 open class Char

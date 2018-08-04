@@ -40,7 +40,8 @@ of Felix may not have all the required capabilities.
 
 
 .. code-block:: felix
-//[rparse.flx]
+
+  //[rparse.flx]
 class NewRespectfulParser 
 {
     export union quote_action_t = 
@@ -268,7 +269,8 @@ Note: currently interfaces don't contain package
 requjirements! So we have to add it manually!
 
 .. code-block:: felix
-//[testrparse.flx]
+
+  //[testrparse.flx]
 include "std/strings/rparse_interface";
 var s = 'Hello "world ish" stuff'; 
 var k = rparse_interface::default_respectful_split s;

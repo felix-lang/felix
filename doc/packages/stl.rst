@@ -23,7 +23,8 @@ Stl Iterators
 
 
 .. code-block:: felix
-//[stl.flx]
+
+  //[stl.flx]
 
 class Iterator[it,t] {
   virtual fun deref: it -> t;
@@ -82,7 +83,8 @@ Stl Vector
 
 
 .. code-block:: felix
-//[stl_vector.flx]
+
+  //[stl_vector.flx]
 
 include "stl/stl";
 
@@ -190,7 +192,8 @@ Stl Set
 
 
 .. code-block:: felix
-//[stl_set.flx]
+
+  //[stl_set.flx]
 
 include "stl/stl";
   class Stl_Set[t]
@@ -287,7 +290,8 @@ Stl Multiset
 
 
 .. code-block:: felix
-//[stl_multiset.flx]
+
+  //[stl_multiset.flx]
 
 include "stl/stl";
 class Stl_MultiSet[t]
@@ -383,7 +387,8 @@ Stl Map
 
 
 .. code-block:: felix
-//[stl_map.flx]
+
+  //[stl_map.flx]
 
 include "stl/stl";
 class Stl_Map[k,v]
@@ -482,7 +487,8 @@ Stl Multimap
 
 
 .. code-block:: felix
-//[stl_multimap.flx]
+
+  //[stl_multimap.flx]
 
 include "stl/stl";
 class Stl_MultiMap[k,v]
@@ -579,7 +585,8 @@ Stl List
 
 
 .. code-block:: felix
-//[stl_list.flx]
+
+  //[stl_list.flx]
 
 include "stl/stl";
 
@@ -682,7 +689,8 @@ Stl Deque
 
 
 .. code-block:: felix
-//[stl_deque.flx]
+
+  //[stl_deque.flx]
 
 
 class Stl_Deque[t]

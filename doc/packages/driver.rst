@@ -41,6 +41,7 @@ translation unit.
 
 .. code-block:: cpp
 
+  //[flx_run.hpp]
 int felix_run(int, char**);
 int felix_arun(int, char**);
 
@@ -467,6 +468,7 @@ async I/O library DLL cannot be found at run time.
 
 .. code-block:: cpp
 
+  //[flx_arun_lib_dynamic.cpp]
 #define FLX_SUPPORT_ASYNC 1
 #define FELIX_MAIN felix_arun
 #include "flx_run.include"
@@ -483,6 +485,7 @@ to be linked in, however it is only activated on demand.
 
 .. code-block:: cpp
 
+  //[flx_arun_lib_static.cpp]
 #define FLX_SUPPORT_ASYNC 1
 #define FELIX_MAIN felix_arun
 #define FLX_BUILD_FOR_STATIC_LINK
@@ -499,6 +502,7 @@ loading a Felix program built as a shared library.
 
 .. code-block:: cpp
 
+  //[flx_run_lib_dynamic.cpp]
 #define FLX_SUPPORT_ASYNC 0
 #define FELIX_MAIN felix_run
 #include "flx_run.include"
@@ -513,6 +517,7 @@ running a Felix program built as an object file.
 
 .. code-block:: cpp
 
+  //[flx_run_lib_static.cpp]
 #define FLX_SUPPORT_ASYNC 0
 #define FELIX_MAIN felix_run
 #define FLX_BUILD_FOR_STATIC_LINK
@@ -527,6 +532,7 @@ to create a static link executable with async support.
 
 .. code-block:: cpp
 
+  //[flx_arun_main.cxx]
 #include "flx_run.hpp"
 
 // to set the critical error handler
@@ -552,6 +558,7 @@ to create a static link executable without async support.
 
 .. code-block:: cpp
 
+  //[flx_run_main.cxx]
 #include "flx_run.hpp"
 #include "stdio.h"
 
@@ -610,6 +617,7 @@ Build Code
 
 .. code-block:: python
 
+  #[flx_drivers.py]
 import fbuild
 from fbuild.functools import call
 from fbuild.path import Path

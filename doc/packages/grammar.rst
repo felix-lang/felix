@@ -50,7 +50,8 @@ Assertions
 
 
 .. code-block:: felix
-//[assertions.fsyn]
+
+  //[assertions.fsyn]
 //$ Assertion statements.
 //$ See also functions to find pre- and post-conditions.
 syntax assertions {
@@ -169,7 +170,8 @@ Assignments
 Defines assignment forms.
 
 .. code-block:: felix
-//[assignment.fsyn]
+
+  //[assignment.fsyn]
 //$ Assignment forms.
 syntax assignment {
   requires statements, swapop;
@@ -263,7 +265,8 @@ Block forms
 
 
 .. code-block:: felix
-//[blocks.fsyn]
+
+  //[blocks.fsyn]
 syntax blocks
 {
   stmt = block;
@@ -279,7 +282,8 @@ Bracket Forms
 
 
 .. code-block:: felix
-//[brackets.fsyn]
+
+  //[brackets.fsyn]
 syntax brackets 
 {
   //$ Array expression (deprecated).
@@ -325,7 +329,8 @@ C binding technology
 
 
 .. code-block:: felix
-//[cbind.fsyn]
+
+  //[cbind.fsyn]
 //$ Technology for binding to C.
 //$ The forms in this DSSL are used to lift types and functions 
 //$ from C into Felix, and, export Felix types and functions
@@ -743,7 +748,8 @@ Simple C grammar
 
 
 .. code-block:: felix
-//[cgram.fsyn]
+
+  //[cgram.fsyn]
 //$ Embed C into Felix using extern "C" { } style.
 //$ Direct name binding.
 //$ WORK IN PROGRESS, NOT OPERATIONAL!
@@ -1155,7 +1161,8 @@ Conditional forms
 
 
 .. code-block:: felix
-//[conditional.fsyn]
+
+  //[conditional.fsyn]
 //$ Basic conditional statements.
 syntax conditional 
 {
@@ -1265,7 +1272,8 @@ syntax conditional
 
 
 .. code-block:: felix
-//[control.fsyn]
+
+  //[control.fsyn]
 //$ Core control flow operators.
 syntax control 
 {
@@ -1340,7 +1348,8 @@ Executable support
 
 
 .. code-block:: felix
-//[executable.fsyn]
+
+  //[executable.fsyn]
 //$ Special executable forms.
 syntax executable {
   requires statements;
@@ -1374,7 +1383,8 @@ Expressions.
 See also other packages containing extensions.
 
 .. code-block:: felix
-//[expressions.fsyn]
+
+  //[expressions.fsyn]
 syntax expressions {
   priority 
     let_pri < 
@@ -1863,7 +1873,8 @@ Defines the standard felix grammar by specifying
 all the DSSLs required for it.
 
 .. code-block:: felix
-//[felix.fsyn]
+
+  //[felix.fsyn]
 syntax felix {
   requires
     list,
@@ -1902,7 +1913,8 @@ Function forms
 
 
 .. code-block:: felix
-//[functions.fsyn]
+
+  //[functions.fsyn]
 //$ General functional forms.
 syntax functions {
   requires expressions;
@@ -2398,7 +2410,8 @@ Identifier Lexer
 
 
 .. code-block:: felix
-//[grammar_ident_lexer.fsyn]
+
+  //[grammar_ident_lexer.fsyn]
 syntax felix_ident_lexer {
   /* identifiers */
   regdef ucn =
@@ -2433,7 +2446,8 @@ syntax felix_ident_lexer {
 
 
 .. code-block:: felix
-//[grammar_lexer.fsyn]
+
+  //[grammar_lexer.fsyn]
 SCHEME """
 (define (stripus s) ; strip underscores and primes in numbers
   (let*
@@ -2486,7 +2500,8 @@ Regular expressions and regular definitions for use with
 Google RE2 package via Felix binding library.
 
 .. code-block:: felix
-//[grammar_regdefs.fsyn]
+
+  //[grammar_regdefs.fsyn]
 syntax global_regdefs {
   /* ====================== REGULAR DEFINITIONS ============================ */
   /* special characters */
@@ -2537,7 +2552,8 @@ Utility Scheme definitions.
 For use in the action codes of the grammar.
 
 .. code-block:: felix
-//[grammar_scheme_support.fsyn]
+
+  //[grammar_scheme_support.fsyn]
 SCHEME """(define counter 100)""";
 
 SCHEME """(define (fresh_int x)(begin (set! counter (+ counter 1)) counter))""";
@@ -2851,7 +2867,8 @@ String like literals.
 Note some of these forms are not strings.
 
 .. code-block:: felix
-//[grammar_string_lexer.fsyn]
+
+  //[grammar_string_lexer.fsyn]
 
 SCHEME """
 (define (decode-string s) 
@@ -3174,7 +3191,8 @@ Loops
 
 
 .. code-block:: felix
-//[loops.fsyn]
+
+  //[loops.fsyn]
   SCHEME """
     (define (notnumeric s) (fold_left notdigit #f (string->list s)))
   """;
@@ -3658,7 +3676,8 @@ Macros
 
 
 .. code-block:: felix
-//[macros.fsyn]
+
+  //[macros.fsyn]
 syntax macros {
   requires expressions, statements, list;
   
@@ -3678,7 +3697,8 @@ Namespaces
 
 
 .. code-block:: felix
-//[namespaces.fsyn]
+
+  //[namespaces.fsyn]
 //$ Felix namespace control.
 syntax namespaces {
   requires statements;
@@ -3846,7 +3866,8 @@ Patterns
 
 
 .. code-block:: felix
-//[patterns.fsyn]
+
+  //[patterns.fsyn]
 //$ Pattern matching.
 //$
 //$ Pattern matching is a way to "take apart" a value according
@@ -4092,7 +4113,8 @@ link model.
 
 
 .. code-block:: felix
-//[plugins.fsyn]
+
+  //[plugins.fsyn]
 // Dummy: FIXME: stupid skaller forgot to commit me, and then did a git clean -f.
 SCHEME """
 (begin
@@ -4157,7 +4179,8 @@ Python export grammar.
 Used to create Python3 modules in emitted libraries.
 
 .. code-block:: felix
-//[python_grammar.fsyn]
+
+  //[python_grammar.fsyn]
 syntax python_grammar {
   stmt := "export" "python" "fun" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_python_fun ,_sr ,_4 ,_6)";
@@ -4170,7 +4193,8 @@ Requirements
 Used to define dependencies on external resources.
 
 .. code-block:: felix
-//[requirements.fsyn]
+
+  //[requirements.fsyn]
 //$ Syntax to express and provide dependencies.
 //$
 //$ Requirements operate as extensions to the usual
@@ -4405,7 +4429,8 @@ to disk.
 
 
 .. code-block:: felix
-//[save.fsyn]
+
+  //[save.fsyn]
 open syntax felix;
 SAVE;
 
@@ -4416,7 +4441,8 @@ Statements
 General statements.
 
 .. code-block:: felix
-//[statements.fsyn]
+
+  //[statements.fsyn]
 //$ A grab bag of miscellaneous statements and 
 //$ nonterminals used to construct other statements.
 syntax statements {
@@ -4573,7 +4599,8 @@ different precedences.
 
 
 .. code-block:: felix
-//[texsyms.fsyn]
+
+  //[texsyms.fsyn]
 //$ This file contains a huge set of operators from TeX, AMSTeX and LaTeX.
 // 
 //$ The precedence classification is currently very crude.
@@ -4903,7 +4930,8 @@ Type definitions
 
 
 .. code-block:: felix
-//[type_decls.fsyn]
+
+  //[type_decls.fsyn]
 //$ Stuff for defining types.
 //$
 //$ Felix type expressions use the same syntax as value expressions.
@@ -5269,7 +5297,8 @@ Utility nonterminals.
 
 
 .. code-block:: felix
-//[utility.fsyn]
+
+  //[utility.fsyn]
 // Utility macros
 syntax list 
 {
@@ -5289,7 +5318,8 @@ Variable definitions.
 
 
 .. code-block:: felix
-//[variables.fsyn]
+
+  //[variables.fsyn]
 //$ General variable binders.
 syntax variables {
   requires statements, executable;
@@ -5407,7 +5437,8 @@ Chips
 
 
 .. code-block:: felix
-//[chips.fsyn]
+
+  //[chips.fsyn]
 syntax chips {
   //$ input schannel type %<T
   pintype := "%<" x[spower_pri] =># '`(ast_name ,_sr "ischannel" (,_2))';

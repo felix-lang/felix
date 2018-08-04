@@ -29,6 +29,7 @@ thrown as an exception.
 
 .. code-block:: cpp
 
+  //[flx_continuation.hpp]
 #ifndef _FLX_CONTINUATION_HPP
 #define _FLX_CONTINUATION_HPP
 #include "flx_exceptions_config.hpp"
@@ -55,6 +56,7 @@ struct FLX_EXCEPTIONS_EXTERN con_t ///< abstract base for mutable continuations
 
 .. code-block:: cpp
 
+  //[flx_continuation.cpp]
 #include "flx_continuation.hpp"
 namespace flx { namespace rtl {
 // ********************************************************
@@ -104,6 +106,7 @@ and should not be used.
 
 .. code-block:: cpp
 
+  //[flx_exceptions.hpp]
 #ifndef __FLX_EXCEPTIONS_HPP__
 #define __FLX_EXCEPTIONS_HPP__
 #include "flx_exceptions_config.hpp"
@@ -310,6 +313,7 @@ struct FLX_EXCEPTIONS_EXTERN flx_link_failure_t : flx_exception_t {
 
 .. code-block:: cpp
 
+  //[flx_exceptions.cpp]
 #include <stdio.h>
 
 #include "flx_exceptions.hpp"
@@ -423,6 +427,7 @@ across DLL boundaries. Gcc does not have this bug.
 
 .. code-block:: cpp
 
+  //[flx_eh.hpp]
 #ifndef __FLX_EH_H__
 #define __FLX_EH_H__
 #include "flx_rtl_config.hpp"
@@ -438,6 +443,7 @@ int FLX_EXCEPTIONS_EXTERN flx_exception_handler (::flx::rtl::flx_exception_t con
 
 .. code-block:: cpp
 
+  //[flx_eh.cpp]
 #include <stdio.h>
 #include "flx_exceptions.hpp"
 #include "flx_eh.hpp"
@@ -551,7 +557,8 @@ Exception Grammar
 
 
 .. code-block:: felix
-//[exceptions.fsyn]
+
+  //[exceptions.fsyn]
 syntax exceptions
 {
   //$ Exception handling.
@@ -578,6 +585,7 @@ syntax exceptions
 
 .. code-block:: cpp
 
+  //[flx_exceptions_config.hpp]
 #ifndef __FLX_EXCEPTIONS_CONFIG_H__
 #define __FLX_EXCEPTIONS_CONFIG_H__
 #include "flx_rtl_config.hpp"
@@ -617,6 +625,7 @@ src: .*\.cpp
 
 .. code-block:: python
 
+  #[flx_exceptions.py]
 import fbuild
 from fbuild.path import Path
 from fbuild.record import Record

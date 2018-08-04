@@ -16,7 +16,8 @@ First Class Type Descriptor.
 
 
 .. code-block:: felix
-//[typedesc.flx]
+
+  //[typedesc.flx]
 include "std/felix/rtti";
 
 class DynamicMetaTyping

@@ -21,7 +21,8 @@ General Numeric operations.
 
 
 .. code-block:: felix
-//[number.flx]
+
+  //[number.flx]
 
 instance[t in numbers] FloatAddgrp[t] {
   fun zero: unit -> t = "(?1)0" ;
@@ -58,7 +59,8 @@ Floating Numbers.
 Operations on Real and Complex numbers.
 
 .. code-block:: felix
-//[float_math.flx]
+
+  //[float_math.flx]
 
 // note: has to be called Fcomplex to avoid clash with class Complex
 
@@ -180,7 +182,8 @@ Complex Constructors.
 
 
 .. code-block:: felix
-//[float_math.flx]
+
+  //[float_math.flx]
 
 ctor complex[float] (x:float, y:float) => fcomplex(x,y);
 ctor complex[double] (x:double, y:double) => dcomplex(x,y);
@@ -214,7 +217,8 @@ Real numbers
 
 
 .. code-block:: felix
-//[real.flx]
+
+  //[real.flx]
 instance[t in reals] Tord[t] {
   fun < : t * t -> bool = "$1<$2";
 }
@@ -225,7 +229,8 @@ Floating Formats
 
 
 .. code-block:: felix
-//[float_format.flx ]
+
+  //[float_format.flx ]
 //$ Functions to format floating point numbers.
 open class float_format
 {
@@ -315,7 +320,8 @@ Integral Promotion.
 
 
 .. code-block:: felix
-//[int.flx]
+
+  //[int.flx]
 
 typedef fun integral_promotion: TYPE -> TYPE =
   | #tiny => int
@@ -336,7 +342,8 @@ Conversion operators.
 
 
 .. code-block:: felix
-//[int.flx]
+
+  //[int.flx]
 open class Tiny
 {
   ctor tiny: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
@@ -496,7 +503,8 @@ Convert to decimal string.
 
 
 .. code-block:: felix
-//[int.flx]
+
+  //[int.flx]
 instance Str[tiny] {
   fun str: tiny -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
 }
@@ -522,7 +530,8 @@ Convert to lexical string.
 
 
 .. code-block:: felix
-//[int.flx]
+
+  //[int.flx]
 instance Repr[tiny]   { fun repr[with Str[tiny]]   (t:tiny)   : string => (str t) + "t";  }
 instance Repr[short]  { fun repr[with Str[short]]  (t:short)  : string => (str t) + "s";  }
 instance Repr[int]   { fun repr[with Str[int]]   (t:int)   : string => (str t) + "";  }
@@ -556,7 +565,8 @@ Methods of integers
 
 
 .. code-block:: felix
-//[int.flx]
+
+  //[int.flx]
 instance[t in ints] Addgrp[t] {}
 instance[t in ints] Ring[t] {}
 instance[t in ints] MultSemi1[t] {}
@@ -597,7 +607,8 @@ Methods of signed integers
 
 
 .. code-block:: felix
-//[int.flx]
+
+  //[int.flx]
 instance[t in sints] Signed_integer[t] {
   fun sgn: t -> int = "$1<0??-1:$1>0??1:0";
   fun abs: t -> t = "$1<0??-$1:$1";
@@ -609,7 +620,8 @@ Methods of unsigned integers
 
 
 .. code-block:: felix
-//[int.flx]
+
+  //[int.flx]
 instance[t in uints] Unsigned_integer[t] {}
 
 
@@ -618,7 +630,8 @@ Make functions accessible without qualification
 
 
 .. code-block:: felix
-//[int.flx]
+
+  //[int.flx]
 //open[T in sints] Signed_integer[T];
 open Signed_integer[tiny];
 open Signed_integer[short];
@@ -655,7 +668,8 @@ Quaternions
 
 
 .. code-block:: felix
-//[quaternion.flx]
+
+  //[quaternion.flx]
 
 class Quaternion
 {
@@ -701,7 +715,8 @@ Random number generation
 
 
 .. code-block:: felix
-//[random.flx]
+
+  //[random.flx]
 
 class Random {
     private type random_device = "::std::random_device*"

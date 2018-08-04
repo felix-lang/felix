@@ -27,6 +27,7 @@ Faio Driver
 
 .. code-block:: cpp
 
+  //[faio_drv.hpp]
 #ifndef __FLX_FAIO_DRV_H__
 #define __FLX_FAIO_DRV_H__
 #include <flx_faio_config.hpp>
@@ -69,6 +70,7 @@ Faio I/O
 
 .. code-block:: cpp
 
+  //[faio_posixio.hpp]
 #ifndef __FLX_FAIO_POSIXIO_H__
 #define __FLX_FAIO_POSIXIO_H__
 #include <flx_faio_config.hpp>
@@ -147,6 +149,7 @@ public:
 
 .. code-block:: cpp
 
+  //[faio_posixio.cpp]
 #include <stdio.h>      // printf
 #include "faio_posixio.hpp"
 #include "demux_sockety.hpp"    // async_connect
@@ -366,6 +369,7 @@ accept_request::wakeup(posix_demuxer& demux)
 
 .. code-block:: cpp
 
+  //[faio_winio.hpp]
 #ifndef __FLX_FAIO_WINIO_H__
 #define __FLX_FAIO_WINIO_H__
 #include <flx_faio_config.hpp>
@@ -494,6 +498,7 @@ public:
 
 .. code-block:: cpp
 
+  //[faio_winio.cpp]
 #include "faio_winio.hpp"
 #include <stdio.h>      // printf
 
@@ -621,6 +626,7 @@ Faio Timer
 
 .. code-block:: cpp
 
+  //[faio_timer.hpp]
 #ifndef __FLX_FAIO_TIMER_H__
 #define __FLX_FAIO_TIMER_H__
 #include <flx_faio_config.hpp>
@@ -659,6 +665,7 @@ public:
 
 .. code-block:: cpp
 
+  //[faio_timer.cpp]
 #include "faio_timer.hpp"
 
 using namespace flx::demux;
@@ -719,6 +726,7 @@ headers: faio_(drv|timer|winio)\.hpp
 
 .. code-block:: python
 
+  #[faio.py]
 import fbuild
 from fbuild.functools import call
 from fbuild.path import Path
@@ -773,6 +781,7 @@ def build_flx(phase):
 
 .. code-block:: cpp
 
+  //[flx_faio_config.hpp]
 #ifndef __FLX_FAIO_CONFIG_H__
 #define __FLX_FAIO_CONFIG_H__
 #include "flx_rtl_config.hpp"

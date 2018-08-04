@@ -42,7 +42,8 @@ Note: regular expressions must match completely!
 
 
 .. code-block:: felix
-//[flx_ls.flx]
+
+  //[flx_ls.flx]
 fun dbg(s:string):string={ println s; return s; }
 //println$ System::args ();
 //println$ "argc=" + str System::argc;
@@ -84,7 +85,8 @@ Note: regular expressions must match completely!
 
 
 .. code-block:: felix
-//[flx_cp_tool.flx]
+
+  //[flx_cp_tool.flx]
 include "std/felix/flx_cp";
 
 fun dbg(s:string):string={ println s; return s; }
@@ -123,7 +125,8 @@ System::exit(0);
 
 
 .. code-block:: felix
-//[flx_cp.flx]
+
+  //[flx_cp.flx]
 class CopyFiles {
   proc processfiles 
     (var process: string * string -> bool) 
@@ -246,7 +249,8 @@ completely are listed.
 
 
 .. code-block:: felix
-//[flx_grep.flx]
+
+  //[flx_grep.flx]
 var dir = 
   if System::argc < 2 then Directory::getcwd()
   else System::argv 1
@@ -293,7 +297,8 @@ to standard output.
 
 
 .. code-block:: felix
-//[flx_replace.flx]
+
+  //[flx_replace.flx]
 var filename = System::argv 1;
 var re = System::argv 2;
 var r = System::argv 3;
@@ -322,7 +327,8 @@ any of the files matching some pattern with another string
 specified by a replacement.
 
 .. code-block:: felix
-//[flx_batch_replace.flx]
+
+  //[flx_batch_replace.flx]
 include "std/felix/flx_cp";
 
 fun dbg(s:string):string={ println s; return s; }
@@ -394,7 +400,8 @@ However it can be used on any sequenced file set.
 
 
 .. code-block:: felix
-//[flx_renumber.flx]
+
+  //[flx_renumber.flx]
 // File renumbering
 
 if System::argc < 4 do

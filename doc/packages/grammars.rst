@@ -14,7 +14,8 @@ Grammar
 
 
 .. code-block:: felix
-//[grammars.flx]
+
+  //[grammars.flx]
 
 class Grammars {
 
@@ -96,7 +97,8 @@ Closure
 
 
 .. code-block:: felix
-//[grammars.flx]
+
+  //[grammars.flx]
 
 fun add_unique (acc:list[string]) (elt:string) : list[string] =>
   if elt in acc then acc else Cons (elt,acc)

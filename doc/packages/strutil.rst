@@ -24,6 +24,7 @@ String utilities
 
 .. code-block:: cpp
 
+  //[flx_strutil.hpp]
 
 #ifndef __FLX_STRUTIL_HPP_
 #define __FLX_STRUTIL_HPP_
@@ -124,6 +125,7 @@ namespace flx { namespace rtl { namespace strutil {
 
 .. code-block:: cpp
 
+  //[flx_strutil.cpp]
 
 #include <stdio.h>
 #include <cstdint>
@@ -286,6 +288,7 @@ namespace flx { namespace rtl { namespace strutil {
 
 .. code-block:: cpp
 
+  //[flx_strutil_config.hpp]
 #ifndef __FLX_STRUTIL_CONFIG_H__
 #define __FLX_STRUTIL_CONFIG_H__
 #include "flx_rtl_config.hpp"
@@ -329,6 +332,7 @@ UTF codec.
 
 .. code-block:: cpp
 
+  //[flx_i18n.hpp]
 
 #ifndef __FLX_I18N_H__
 #define __FLX_I18N_H__
@@ -343,6 +347,7 @@ namespace flx { namespace rtl { namespace i18n {
 
 .. code-block:: cpp
 
+  //[flx_i18n.cpp]
 
 #include "flx_i18n.hpp"
 namespace flx { namespace rtl { namespace i18n {
@@ -413,6 +418,7 @@ includes: '"flx_i18n.hpp"'
 
 .. code-block:: python
 
+  #[flx_strutil.py]
 import fbuild
 from fbuild.path import Path
 from fbuild.record import Record

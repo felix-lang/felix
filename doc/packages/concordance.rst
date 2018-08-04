@@ -107,7 +107,8 @@ macro val TYPE_lcomplex = 408;
 
 
 .. code-block:: felix
-//[concordance_check.flx]
+
+  //[concordance_check.flx]
 // if this compiles it should run.
 println$ "Checking concordance is loaded";
 println$ "Concordance loaded = " + FLX_CONCORDANCE_LOADED.str;

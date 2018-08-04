@@ -561,10 +561,11 @@ fun process_file (f: string): string =
         println$ "";
         var lexer = lexer_from_filename a;
         println$ ".. code-block:: "+lexer;
-        if lexer == "felix" do
-          println$ "//[" + a + "]";
-        else
-          println$ "";
+        println$ "";
+        if lexer in ("c","cpp","felix") do
+          println$ "  //[" + a + "]";
+        elif lexer == "python" do
+          println$ "  #["+a+"]";
         done
         mode = (#`Code) :>> mode_t;
       else 

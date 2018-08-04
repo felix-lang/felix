@@ -81,7 +81,8 @@ SDL2.flx
 
 
 .. code-block:: felix
-//[SDL2.flx]
+
+  //[SDL2.flx]
 
 open class SDL2
 {
@@ -157,7 +158,8 @@ SDL_active.flx
 
 
 .. code-block:: felix
-//[SDL_active.flx]
+
+  //[SDL_active.flx]
 
 
 //Module        : SDL_active_h
@@ -188,7 +190,8 @@ SDL_audio.flx
 
 
 .. code-block:: felix
-//[SDL_audio.flx]
+
+  //[SDL_audio.flx]
 
 
 //Module        : SDL_audio_h
@@ -320,7 +323,8 @@ SDL_cdrom.flx
 
 
 .. code-block:: felix
-//[SDL_cdrom.flx]
+
+  //[SDL_cdrom.flx]
 
 //Module        : SDL_cdrom_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
@@ -402,7 +406,8 @@ SDL_clipboard.flx
 
 
 .. code-block:: felix
-//[SDL_clipboard.flx]
+
+  //[SDL_clipboard.flx]
 
 
 open class SDL_clipboard_h
@@ -444,7 +449,8 @@ SDL_endian.flx
 
 
 .. code-block:: felix
-//[SDL_endian.flx]
+
+  //[SDL_endian.flx]
 
 //Module        : SDL_endian_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
@@ -500,7 +506,8 @@ SDL_error.flx
 
 
 .. code-block:: felix
-//[SDL_error.flx]
+
+  //[SDL_error.flx]
 
 //#define SDL_OutOfMemory()     SDL_Error(SDL_ENOMEM)
 //#define _SDL_error_h
@@ -534,7 +541,8 @@ SDL_events.flx
 
 
 .. code-block:: felix
-//[SDL_events.flx]
+
+  //[SDL_events.flx]
 
 open class SDL_events_h
 {
@@ -1287,7 +1295,8 @@ SDL_framerate.flx
 
 
 .. code-block:: felix
-//[SDL_framerate.flx]
+
+  //[SDL_framerate.flx]
 
 //Module        : SDL_framerate_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
@@ -1329,7 +1338,8 @@ SDL_gfxPrimitives.flx
 
 
 .. code-block:: felix
-//[SDL_gfxPrimitives.flx]
+
+  //[SDL_gfxPrimitives.flx]
 
 
 //Module        : SDL_gfxPrimitives_h
@@ -1408,7 +1418,8 @@ SDL_gfxPrimitives_font.flx
 
 
 .. code-block:: felix
-//[SDL_gfxPrimitives_font.flx]
+
+  //[SDL_gfxPrimitives_font.flx]
 
 
 //Module        : SDL_gfxPrimitives_font_h
@@ -1436,7 +1447,8 @@ SDL_image.flx
 
 
 .. code-block:: felix
-//[SDL_image.flx]
+
+  //[SDL_image.flx]
 
 
 //Module        : SDL_image_h
@@ -1512,7 +1524,8 @@ SDL_imageFilter.flx
 
 
 .. code-block:: felix
-//[SDL_imageFilter.flx]
+
+  //[SDL_imageFilter.flx]
 
 //Module        : SDL_imageFilter_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
@@ -1582,7 +1595,8 @@ SDL_joystick.flx
 
 
 .. code-block:: felix
-//[SDL_joystick.flx]
+
+  //[SDL_joystick.flx]
 
 
 //Module        : SDL_joystick_h
@@ -1642,7 +1656,8 @@ SDL_keyboard.flx
 
 
 .. code-block:: felix
-//[SDL_keyboard.flx]
+
+  //[SDL_keyboard.flx]
 
 //#define SDL_DEFAULT_REPEAT_INTERVAL   30
 //#define SDL_DEFAULT_REPEAT_DELAY      500
@@ -1690,7 +1705,8 @@ SDL_keycode.flx
 
 
 .. code-block:: felix
-//[SDL_keycode.flx]
+
+  //[SDL_keycode.flx]
 
 open class SDL_keycode_h
 {
@@ -2258,7 +2274,8 @@ SDL_mixer.flx
 
 
 .. code-block:: felix
-//[SDL_mixer.flx]
+
+  //[SDL_mixer.flx]
 
 //Module        : SDL_mixer_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
@@ -2453,7 +2470,8 @@ SDL_mouse.flx
 
 
 .. code-block:: felix
-//[SDL_mouse.flx]
+
+  //[SDL_mouse.flx]
 
 
 
@@ -2518,7 +2536,8 @@ SDL_mutex.flx
 
 
 .. code-block:: felix
-//[SDL_mutex.flx]
+
+  //[SDL_mutex.flx]
 
 
 //Module        : SDL_mutex_h
@@ -2573,7 +2592,8 @@ SDL_net.flx
 
 
 .. code-block:: felix
-//[SDL_net.flx]
+
+  //[SDL_net.flx]
 
 
 //Module        : SDL_net_h
@@ -2677,7 +2697,8 @@ SDL_opengl.flx
 
 
 .. code-block:: felix
-//[SDL_opengl.flx]
+
+  //[SDL_opengl.flx]
 
 header '#include "SDL_opengl.h"';
 
@@ -2696,7 +2717,8 @@ SDL_pixels.flx
 
 
 .. code-block:: felix
-//[SDL_pixels.flx]
+
+  //[SDL_pixels.flx]
 
 
 open class SDL_pixels_h
@@ -2752,7 +2774,8 @@ SDL_rect.flx
 
 
 .. code-block:: felix
-//[SDL_rect.flx]
+
+  //[SDL_rect.flx]
 
 
 open class SDL_rect_h
@@ -2785,7 +2808,8 @@ SDL_render.flx
 
 
 .. code-block:: felix
-//[SDL_render.flx]
+
+  //[SDL_render.flx]
 
 
 open class SDL_Render_h
@@ -2805,7 +2829,8 @@ SDL_rotozoom.flx
 
 
 .. code-block:: felix
-//[SDL_rotozoom.flx]
+
+  //[SDL_rotozoom.flx]
 
 //Module        : SDL_rotozoom_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
@@ -2861,7 +2886,8 @@ SDL_rwops.flx
 
 
 .. code-block:: felix
-//[SDL_rwops.flx]
+
+  //[SDL_rwops.flx]
 
 //#define SDL_RWclose(ctx)              (ctx)->close(ctx)
 //#define SDL_RWwrite(ctx, ptr, size, n)        (ctx)->write(ctx, ptr, size, n)
@@ -2916,7 +2942,8 @@ SDL_scancode.flx
 
 
 .. code-block:: felix
-//[SDL_scancode.flx]
+
+  //[SDL_scancode.flx]
 
 
 open class SDL_scancode_h
@@ -3284,7 +3311,8 @@ SDL_sound.flx
 
 
 .. code-block:: felix
-//[SDL_sound.flx]
+
+  //[SDL_sound.flx]
 
 
 //Module        : SDL_sound_h
@@ -3348,7 +3376,8 @@ SDL_surface.flx
 
 
 .. code-block:: felix
-//[SDL_surface.flx]
+
+  //[SDL_surface.flx]
 
 
 open class SDL_surface_h
@@ -3396,7 +3425,8 @@ SDL_timer.flx
 
 
 .. code-block:: felix
-//[SDL_timer.flx]
+
+  //[SDL_timer.flx]
 
 
 //Module        : SDL_timer_h
@@ -3468,7 +3498,8 @@ SDL_ttf.flx
 
 
 .. code-block:: felix
-//[SDL_ttf.flx]
+
+  //[SDL_ttf.flx]
 
 //#define TTF_SetError  SDL_SetError
 //#define TTF_RenderUNICODE(font, text, fg, bg) \
@@ -3608,7 +3639,8 @@ SDL_types.flx
 
 
 .. code-block:: felix
-//[SDL_types.flx]
+
+  //[SDL_types.flx]
 
 //Module        : SDL_types_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
@@ -3660,7 +3692,8 @@ SDL_version.flx
 
 
 .. code-block:: felix
-//[SDL_version.flx]
+
+  //[SDL_version.flx]
 
 
 //#define SDL_VERSION_ATLEAST(X, Y, Z) \
@@ -3703,7 +3736,8 @@ SDL_video.flx
 
 
 .. code-block:: felix
-//[SDL_video.flx]
+
+  //[SDL_video.flx]
 
 //Module        : SDL_video_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
@@ -3811,7 +3845,8 @@ flx_faio_sdl.flx
 
 
 .. code-block:: felix
-//[flx_faio_sdl.flx]
+
+  //[flx_faio_sdl.flx]
 
 
 

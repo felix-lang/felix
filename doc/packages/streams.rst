@@ -15,7 +15,8 @@ Iterators
 
 
 .. code-block:: felix
-//[iterator.flx]
+
+  //[iterator.flx]
 //$ Class of data structures supporting streaming.
 //$ The container type just needs an iterator method.
 //$ The iterator method returns a generator which
@@ -120,7 +121,8 @@ First here is the class based definition of a stream.
 It has some problems as do all such definitions:
 
 .. code-block:: felix
-//[stream.flx]
+
+  //[stream.flx]
 class Fstream[T,S] {
   virtual fun uncons: S -> T * S;
 };
@@ -129,7 +131,8 @@ It is suprising? An integer is a stream.
 
 
 .. code-block:: felix
-//[stream.flx]
+
+  //[stream.flx]
 instance Fstream [int,int] {
   fun uncons(x:int) => x, x + 1;
 }
@@ -146,7 +149,8 @@ built from a list of ints.
 
 
 .. code-block:: felix
-//[stream.flx]
+
+  //[stream.flx]
 instance Fstream [opt[int], list[int]] {
   fun uncons: list[int] -> opt[int] * list[int] =
   | Cons (h,t) => Some h, t
@@ -165,7 +169,8 @@ input iterator (where I use iterator in the C++ sense)
 
 
 .. code-block:: felix
-//[stream.flx]
+
+  //[stream.flx]
 class Stream 
 {
 fun make_generator [T,S with Fstream[T,S]] 
@@ -187,7 +192,8 @@ We build such iterator out of a stream of optional values
 
 
 .. code-block:: felix
-//[stream.flx]
+
+  //[stream.flx]
 fun make_iterator [T,S with Fstream[opt[T],S]] 
   (var state:S) 
 =>
@@ -205,7 +211,8 @@ and an initial state value. The uncons function
 is called uncons_f to avoid ambiguities
 
 .. code-block:: felix
-//[stream.flx]
+
+  //[stream.flx]
 typedef stream[T,S] = ( state:S, uncons_f: S -> T * S );
 Now, instantiate it.
 The critical thing we're doing is translating
@@ -213,7 +220,8 @@ the internal uncons_f function, to one that
 returns a stream object
 
 .. code-block:: felix
-//[stream.flx]
+
+  //[stream.flx]
 instance[T,S] Fstream[T, stream[T,S]] {
   fun uncons (x:stream[T,S]) : T * stream[T,S] =>
     let head,tail = x.uncons_f x.state in

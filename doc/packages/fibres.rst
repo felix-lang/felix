@@ -25,7 +25,8 @@ Fibres (fthreads)
 
 
 .. code-block:: felix
-//[fibres.flx]
+
+  //[fibres.flx]
 
 //$ Low level management of Felix fthreads (fibres).
 open class Fibres
@@ -200,7 +201,8 @@ Synchronous Channels
 
 
 .. code-block:: felix
-//[schannels.flx]
+
+  //[schannels.flx]
 
 //$ Sychronous Channels.
 //$ Used to exchange control and possibly data
@@ -368,7 +370,8 @@ get all the input data, but the order is indeterminate.
 
 
 .. code-block:: felix
-//[mux.flx]
+
+  //[mux.flx]
 
 //$ Schannel multiplexor.
 //$ Read multiple input schannels, write to an output schannel.
@@ -409,7 +412,8 @@ Special syntax for both pipes and also abbreviation for
 schannel types.
 
 .. code-block:: felix
-//[spipeexpr.fsyn]
+
+  //[spipeexpr.fsyn]
 syntax spipeexpr 
 {
   //$ Left assoc, for schannel pipes.
@@ -442,7 +446,8 @@ syntax spipeexpr
 
 
 .. code-block:: felix
-//[schannels.flx]
+
+  //[schannels.flx]
 
 open class DuplexSchannels
 {
@@ -508,7 +513,8 @@ inline gen apply[r,w] (
 Let's now rewrite our example:
 
 .. code-block:: felix
-//[subrout-02.flx]
+
+  //[subrout-02.flx]
 proc int_to_string (ch: %<int%>string)  ()
 {
   var x = read ch;
@@ -527,7 +533,8 @@ Even more compactly:
 
 
 .. code-block:: felix
-//[subrout-03.flx]
+
+  //[subrout-03.flx]
 proc int_to_string (ch: %<int%>string)  ()
 {
   var x = read ch;

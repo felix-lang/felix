@@ -24,6 +24,7 @@ Generic Serialisation
 
 .. code-block:: cpp
 
+  //[flx_serialisers.hpp]
 #ifndef __FLX_SERIALISERS_HPP__
 #define __FLX_SERIALISERS_HPP__
 
@@ -58,6 +59,7 @@ size_t tunblit(void *p, char *s, size_t i)
 
 .. code-block:: cpp
 
+  //[flx_serialisers.cpp]
 #include "flx_serialisers.hpp"
 #include <string>
 #include <cstring>
@@ -115,6 +117,7 @@ Judy Serialisers
 
 .. code-block:: cpp
 
+  //[flx_judy_scanner.hpp]
 #include "flx_gc.hpp"
 
 namespace flx { namespace gc { namespace generic {
@@ -126,6 +129,7 @@ GC_EXTERN scanner_t JudySL_scanner;
 
 .. code-block:: cpp
 
+  //[flx_judy_scanner.cpp]
 #include "flx_judy_scanner.hpp"
 #include <Judy.h>
 
@@ -191,7 +195,8 @@ Serialisation functions
 
 
 .. code-block:: felix
-//[serialise.flx]
+
+  //[serialise.flx]
 class Serialise 
 {
   open Collector;

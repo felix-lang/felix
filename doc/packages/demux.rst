@@ -174,6 +174,7 @@ src: poll/.*\.cpp
 
 .. code-block:: python
 
+  #[demux.py]
 import fbuild
 from fbuild.functools import call
 from fbuild.path import Path
@@ -307,6 +308,7 @@ def build_flx(phase):
 
 .. code-block:: cpp
 
+  //[flx_demux_config.hpp]
 #ifndef __FLX_DEMUX_CONFIG_H__
 #define __FLX_DEMUX_CONFIG_H__
 #include "flx_rtl_config.hpp"

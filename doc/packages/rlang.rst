@@ -18,7 +18,8 @@ Work in progress implementing R interpreter.
 
 
 .. code-block:: felix
-//[rcore.flx]
+
+  //[rcore.flx]
 library Rlang {
 class Rcore {
 
@@ -59,7 +60,8 @@ typedef Robject_v = (
 
 
 .. code-block:: felix
-//[rtest.flx]
+
+  //[rtest.flx]
 include "rlang/rcore";
 open Rlang;
 open Rcore;

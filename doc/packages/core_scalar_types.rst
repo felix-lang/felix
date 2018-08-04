@@ -46,7 +46,8 @@ Synopsis
 
 
 .. code-block:: felix
-//[__init__.flx]
+
+  //[__init__.flx]
 
 include "std/scalar/ctypedefs";
 
@@ -71,7 +72,8 @@ Character type
 A basic 8 bit character type.
 
 .. code-block:: felix
-//[scalar.flx]
+
+  //[scalar.flx]
 pod type char = "char";
 
 
@@ -93,7 +95,8 @@ as can be addressed.
 
 
 .. code-block:: felix
-//[scalar.flx]
+
+  //[scalar.flx]
 pod type tiny = "signed char" requires index TYPE_tiny;
 pod type short = "short" requires index TYPE_short;
 pod type int = "int" requires index TYPE_int;
@@ -137,7 +140,8 @@ even on a 32 bit machine.
 
 
 .. code-block:: felix
-//[scalar.flx]
+
+  //[scalar.flx]
 pod type int8 = "int8_t" requires C99_headers::stdint_h, index TYPE_int8;
 pod type int16 = "int16_t" requires C99_headers::stdint_h, index TYPE_int16;
 pod type int32 = "int32_t" requires C99_headers::stdint_h, index TYPE_int32;
@@ -164,7 +168,8 @@ arbitrary integer operations.
 
 
 .. code-block:: felix
-//[scalar.flx]
+
+  //[scalar.flx]
 pod type byte = "unsigned char" requires index TYPE_byte;
 type caddress = "void *";
 _gc_pointer type address = "void *" requires index TYPE_address;
@@ -196,7 +201,8 @@ by the compiler.
 
 
 .. code-block:: felix
-//[int.fsyn]
+
+  //[int.fsyn]
 
 SCHEME """
 (define (findradix s)  ; find the radix of integer lexeme
@@ -453,7 +459,8 @@ Also note that the complex types are taken from C++ and
 not C!
 
 .. code-block:: felix
-//[scalar.flx]
+
+  //[scalar.flx]
 pod type float = "float" requires index TYPE_float;
 pod type double = "double" requires index TYPE_double;
 pod type ldouble = "long double" requires index TYPE_ldouble;
@@ -468,7 +475,8 @@ Float literal constructors
 
 
 .. code-block:: felix
-//[float.fsyn]
+
+  //[float.fsyn]
  
 //$ Floating point literals.
 //$
@@ -543,7 +551,8 @@ union of two typesets.
 
 
 .. code-block:: felix
-//[scalar.flx]
+
+  //[scalar.flx]
 //$ Types associated with raw address calculations.
 typedef addressing = typesetof (
   byte,
@@ -560,7 +569,8 @@ Integers
 
 
 .. code-block:: felix
-//[scalar.flx]
+
+  //[scalar.flx]
 //$ "natural" sized signed integer types.
 //$ These correspond to C/C++ core types.
 typedef fast_sints = typesetof (tiny, short, int, long, vlong);
@@ -608,7 +618,8 @@ Floats
 
 
 .. code-block:: felix
-//[scalar.flx]
+
+  //[scalar.flx]
 //$ All the core floating point types.
 typedef floats = typesetof (float, double, ldouble);
 
@@ -627,7 +638,8 @@ All Scalars.
 
 
 .. code-block:: felix
-//[scalar.flx]
+
+  //[scalar.flx]
 //$ All the basic scalar types.
 typedef basic_types = bool \cup numbers \cup chars \cup addressing;
 

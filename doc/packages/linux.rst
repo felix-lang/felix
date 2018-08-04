@@ -24,6 +24,7 @@ the /proc directory would make sense.
 
 .. code-block:: cpp
 
+  //[plat_linux.hpp]
 #ifndef __PLAT_LINUX_H__
 #define __PLAT_LINUX_H__
 int get_cpu_nr();
@@ -31,6 +32,7 @@ int get_cpu_nr();
 
 .. code-block:: cpp
 
+  //[plat_linux.cpp]
 #define STAT "/proc/stat"
 #include <stdio.h>
 #include <errno.h>

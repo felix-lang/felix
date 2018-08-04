@@ -22,7 +22,8 @@ Core Type Classes
 
 
 .. code-block:: felix
-//[special.flx]
+
+  //[special.flx]
 
 // Core types and type classes
 
@@ -34,7 +35,8 @@ Type Functors
 
 
 .. code-block:: felix
-//[typing.flx]
+
+  //[typing.flx]
 open class Typing
 {
   typedef fun dom(t:TYPE):TYPE =>
@@ -120,7 +122,8 @@ Option
 
 
 .. code-block:: felix
-//[option.flx]
+
+  //[option.flx]
 
 // Note: some felix internals expect this to be defined here, not in a class, and
 // in this order.  Don't mess with it!
@@ -244,7 +247,8 @@ Slice
 
 
 .. code-block:: felix
-//[slice.flx]
+
+  //[slice.flx]
 
 union slice[T] =
   | Slice_all
@@ -413,7 +417,8 @@ Operations on sums of units
 Treated as finite cyclic groups.
 
 .. code-block:: felix
-//[unitsum.flx]
+
+  //[unitsum.flx]
 
 // -----------------------------------------------------------------------------
 typedef void = 0;
@@ -503,7 +508,8 @@ Category Theoretic Functional Operations
 
 
 .. code-block:: felix
-//[functional.flx]
+
+  //[functional.flx]
 
 //$ Categorical Operators
 open class Functional
@@ -584,7 +590,8 @@ Tuples
 
 
 .. code-block:: felix
-//[tuple.flx]
+
+  //[tuple.flx]
 
 //------------------------------------------------------------------------------
 // Class Str: convert to string
@@ -729,7 +736,8 @@ Tuple Constructor Syntax
 
 
 .. code-block:: felix
-//[tupleexpr.fsyn]
+
+  //[tupleexpr.fsyn]
 syntax tupleexpr
 {
   //$ Tuple formation by cons: right associative.

@@ -31,7 +31,8 @@ It is built directly from the repository.
 
 
 .. code-block:: felix
-//[flx_build_flxg.flx]
+
+  //[flx_build_flxg.flx]
 class BuildFlxg
 {
 
@@ -682,7 +683,8 @@ the build target directory.
 
 
 .. code-block:: felix
-//[flx_build_prep.flx]
+
+  //[flx_build_prep.flx]
 include "std/felix/flx_cp";
 
 class FlxPrepBuild
@@ -1021,7 +1023,8 @@ Builds the run time library from the build target
 share directory. Does not look in the repository.
 
 .. code-block:: felix
-//[flx_build_rtl.flx]
+
+  //[flx_build_rtl.flx]
 include "std/felix/toolchain_clang_config";
 include "std/felix/toolchain_interface";
 include "std/felix/flx_pkgconfig";
@@ -1334,7 +1337,8 @@ directory.
 
 
 .. code-block:: felix
-//[build_boot.flx]
+
+  //[build_boot.flx]
 web_plugin:      cpp2html
 web_plugin:      fdoc2html
 web_plugin:      fdoc_edit
@@ -1379,7 +1383,8 @@ flx_tool: flx_build_flxg
 
 
 .. code-block:: felix
-//[flx_build_boot.flx]
+
+  //[flx_build_boot.flx]
 include "std/felix/toolchain_clang_config";
 include "std/felix/toolchain_interface";
 include "std/felix/flx_cp";

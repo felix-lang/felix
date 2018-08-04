@@ -44,7 +44,8 @@ Synopsis.
 
 
 .. code-block:: felix
-//[init.flx]
+
+  //[init.flx]
 include "std/algebra/predicate";        // in logic.fdoc
 include "std/algebra/set";              // in algebra.fdoc
 include "std/algebra/container";        // in algebra.fdoc
@@ -150,7 +151,8 @@ the asymmetic set difference or subtraction.
 Note that sets are not necessarily finite.
 
 .. code-block:: felix
-//[set.flx]
+
+  //[set.flx]
 // note: eq is not necessarily required for a membership test
 // for example: string member of regexp doesn't require
 // string equality
@@ -185,7 +187,8 @@ Syntax
 
 
 .. code-block:: felix
-//[setexpr.fsyn]
+
+  //[setexpr.fsyn]
 syntax setexpr
 {
   cmp := "in" =># '(nos "\\in")'; 
@@ -213,7 +216,8 @@ as a noun by encapsulating the predicate in a closure and
 thereby abstracting it.
 
 .. code-block:: felix
-//[set.flx]
+
+  //[set.flx]
 interface set_form[T] { has_elt: T -> bool; }
 
 instance[T] Set[set_form[T], T] {
@@ -241,7 +245,8 @@ which is spelled  :code:`\otimes`. There's also a left associative
 binary operator \(\times\) spelled  :code:`\times`.
 
 .. code-block:: felix
-//[set.flx]
+
+  //[set.flx]
 
 fun \times[U,V] (x:set_form[U],y:set_form[V]) => 
   { u,v : U * V | u \in x and v \in y }
@@ -265,7 +270,8 @@ Containers.
 
 
 .. code-block:: felix
-//[container.flx]
+
+  //[container.flx]
 // roughly, a finite Set
 class Container [c,v]
 {
@@ -321,7 +327,8 @@ An online reference on <a href="http://en.wikibooks.org/wiki/Abstract_Algebra/Eq
 
 
 .. code-block:: felix
-//[equiv.flx]
+
+  //[equiv.flx]
 // equality: technically, equivalence relation
 class Eq[t] {
   virtual fun == : t * t -> bool;
@@ -343,7 +350,8 @@ Syntax
 
 
 .. code-block:: felix
-//[cmpexpr.fsyn]
+
+  //[cmpexpr.fsyn]
 syntax cmpexpr
 {
   x[scomparison_pri]:= x[>scomparison_pri] cmp x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
@@ -374,7 +382,8 @@ The choice of operators is motivated by the canonical
 exemplar of subset containment relations.
 
 .. code-block:: felix
-//[pord.flx]
+
+  //[pord.flx]
 // partial order
 class Pord[t]{
   inherit Eq[t];
@@ -406,7 +415,8 @@ Syntax
 
 
 .. code-block:: felix
-//[pordcmpexpr.fsyn]
+
+  //[pordcmpexpr.fsyn]
 syntax pordcmpexpr
 {
   cmp := "\subset" =># '(nos _1)'; 
@@ -445,7 +455,8 @@ holding the mouse over the symbol briefly.
 
 
 .. code-block:: felix
-//[tord.flx]
+
+  //[tord.flx]
 // total order
 class Tord[t]{
   inherit Eq[t];
@@ -518,7 +529,8 @@ Syntax
 
 
 .. code-block:: felix
-//[tordcmpexpr.fsyn]
+
+  //[tordcmpexpr.fsyn]
 syntax tordcmpexpr
 {
   cmp := "<" =># "(nos _1)"; 
@@ -559,7 +571,8 @@ Sequences
 
 
 .. code-block:: felix
-//[sequence.flx]
+
+  //[sequence.flx]
 
 class Forward[t] {
   virtual fun succ: t -> t;
@@ -596,7 +609,8 @@ Note we use the  :code:`inherit` statement to include
 the functions from class  :code:`Eq`.
 
 .. code-block:: felix
-//[group.flx]
+
+  //[group.flx]
 //$ Additive symmetric float-approximate group, symbol +.
 //$ Note: associativity is not assumed.
 class FloatAddgrp[t] {
@@ -630,7 +644,8 @@ Notation
 
 
 .. code-block:: felix
-//[addexpr.fsyn]
+
+  //[addexpr.fsyn]
 syntax addexpr
 {
   //$ Addition: left non-associative.
@@ -648,7 +663,8 @@ A proper additive group is derived from  :code:`FloatAddgrp`
 with associativity added.
 
 .. code-block:: felix
-//[group.flx]
+
+  //[group.flx]
 //$ Additive symmetric group, symbol +.
 class Addgrp[t] {
   inherit FloatAddgrp[t];
@@ -664,7 +680,8 @@ An approximate multiplicative semigroup is a set with a symmetric
 binary multiplication operator and a unit. 
 
 .. code-block:: felix
-//[group.flx]
+
+  //[group.flx]
 //$ Multiplicative symmetric float-approximate semi group with unit symbol *.
 //$ Note: associativity is not assumed.
 class FloatMultSemi1[t] {
@@ -686,7 +703,8 @@ Syntax
 
 
 .. code-block:: felix
-//[mulexpr.fsyn]
+
+  //[mulexpr.fsyn]
 syntax mulexpr
 {
   //$ multiplication: non-associative.
@@ -703,7 +721,8 @@ multiplicative semigroup with unit and associativity
 and satisfies the cancellation law.
 
 .. code-block:: felix
-//[group.flx]
+
+  //[group.flx]
 //$ Multiplicative semi group with unit.
 class MultSemi1[t] {
   inherit FloatMultSemi1[t];
@@ -724,7 +743,8 @@ multiplication satisfying the rules for approximate
 additive group and multiplicative semigroup respectively.
 
 .. code-block:: felix
-//[ring.flx]
+
+  //[ring.flx]
 //$ Float-approximate ring.
 class FloatRing[t] {
   inherit FloatAddgrp[t];
@@ -740,7 +760,8 @@ multiplicative semigroup with unit, and which in
 addition satisfies the distributive law.
 
 .. code-block:: felix
-//[ring.flx]
+
+  //[ring.flx]
 //$ Ring.
 class Ring[t] {
   inherit Addgrp[t];
@@ -755,7 +776,8 @@ An approximate division ring is an approximate ring with unit
 with a division operator.
 
 .. code-block:: felix
-//[ring.flx]
+
+  //[ring.flx]
 //$ Float-approximate division ring.
 class FloatDring[t] {
   inherit FloatRing[t];
@@ -781,7 +803,8 @@ Syntax
 
 
 .. code-block:: felix
-//[divexpr.fsyn]
+
+  //[divexpr.fsyn]
 syntax divexpr
 {
   //$ division: right associative low precedence fraction form
@@ -804,7 +827,8 @@ Division Ring
 
 
 .. code-block:: felix
-//[ring.flx]
+
+  //[ring.flx]
 //$ Division ring.
 class Dring[t] {
   inherit Ring[t];
@@ -821,7 +845,8 @@ Bitwise operations
 
 
 .. code-block:: felix
-//[bits.flx]
+
+  //[bits.flx]
 
 //$ Bitwise operators.
 class Bits[t] {
@@ -846,7 +871,8 @@ Syntax
 
 
 .. code-block:: felix
-//[bitexpr.fsyn]
+
+  //[bitexpr.fsyn]
 syntax bitexpr
 {
   //$ Bitwise or, left associative.
@@ -871,7 +897,8 @@ Integer
 
 
 .. code-block:: felix
-//[integer.flx]
+
+  //[integer.flx]
 
 //$ Integers.
 class Integer[t] {
@@ -916,7 +943,8 @@ Trigonometric functions are shared by
 real and complex numbers.
 
 .. code-block:: felix
-//[trig.flx]
+
+  //[trig.flx]
 
 //$ Float-approximate trigonometric functions.
 class Trig[t] {
@@ -1026,7 +1054,8 @@ Approximate Reals.
 
 
 .. code-block:: felix
-//[real.flx]
+
+  //[real.flx]
 //$ Float-approximate real numbers.
 class Real[t] {
   inherit Tord[t];
@@ -1060,7 +1089,8 @@ Complex numbers
 
 
 .. code-block:: felix
-//[complex.flx]
+
+  //[complex.flx]
 //$ Float-approximate Complex.
 class Complex[t,r] {
   inherit Eq[t];
@@ -1091,7 +1121,8 @@ Summation and Product Quantifiers.
 To be moved. Folds over streams.
 
 .. code-block:: felix
-//[group.flx]
+
+  //[group.flx]
 open class Quantifiers_add_mul {
   fun \sum[T,C with FloatAddgrp[T], Streamable[C,T]] (a:C):T = 
   {
@@ -1130,7 +1161,8 @@ Monad
 
 
 .. code-block:: felix
-//[monad.flx]
+
+  //[monad.flx]
 
 class Monad [M: TYPE->TYPE] {
   virtual fun ret[a]: a -> M a;

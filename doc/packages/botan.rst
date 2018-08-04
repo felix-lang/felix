@@ -32,7 +32,8 @@ Random number generators.
 
 
 .. code-block:: felix
-//[rng.flx]
+
+  //[rng.flx]
 library Botan { class Rng
 {
   requires package "botan_rng", package "botan_system_rng";
@@ -57,7 +58,8 @@ Big Integers
 
 
 .. code-block:: felix
-//[bigint.flx]
+
+  //[bigint.flx]
 library Botan { class BigInt
 {
   requires package "botan_bigint";
@@ -154,7 +156,8 @@ Hash functions
 
 
 .. code-block:: felix
-//[hash.flx]
+
+  //[hash.flx]
 library Botan { class Hash {
   type BufferedComputation = "::Botan::BufferedComputation*";
   fun output_length : BufferedComputation -> size = "$1->output_length()";

@@ -20,6 +20,7 @@ Judy Builder
 
 .. code-block:: python
 
+  #[judy.py]
 import fbuild
 import fbuild.db
 from fbuild.builders.file import copy, copy_regex

@@ -130,6 +130,7 @@ provide one as pthreads are considered mandatory for Felix.
 
 .. code-block:: cpp
 
+  //[pthread_thread_control_base.hpp]
 #ifndef __PTHREAD_THREAD_CONTROL_BASE_HPP__
 #define __PTHREAD_THREAD_CONTROL_BASE_HPP__
 
@@ -191,6 +192,7 @@ Memory Management Abstraction Interface.
 
 .. code-block:: cpp
 
+  //[flx_gc.hpp]
 
 #ifndef __FLX_GC_H__
 #define __FLX_GC_H__
@@ -233,6 +235,7 @@ object for the element type. , that is, the <em>array bound</em>.
 
 .. code-block:: cpp
 
+  //[flx_gc.hpp]
 struct GC_EXTERN pointer_data_t
 {
   void *pointer;                      //< candidate pointer
@@ -251,6 +254,7 @@ Types required for the RTTI object.
 
 .. code-block:: cpp
 
+  //[flx_gc.hpp]
 enum gc_shape_flags_t {
   gc_flags_default    = 0,            //< collectable and mobile
   gc_flags_immobile   = 1,            //< cannot be moved
@@ -297,6 +301,7 @@ containing offsets into an object where pointers are located.
 
 .. code-block:: cpp
 
+  //[flx_gc.hpp]
 struct GC_EXTERN offset_data_t
 {
   ::std::size_t n_offsets;
@@ -315,6 +320,7 @@ to a do nothing finaliser function.
 
 .. code-block:: cpp
 
+  //[flx_gc.hpp]
 
 /*
  * The following template is provided as a standard wrapper
@@ -356,6 +362,7 @@ with software organisation.
 
 .. code-block:: cpp
 
+  //[flx_gc.hpp]
 /// Allocator abstraction.
 
 struct allocator_t {
@@ -392,6 +399,7 @@ rules which result in a quite complex structure.
 
 .. code-block:: cpp
 
+  //[flx_gc.hpp]
 
 /// Collector abstraction.
 struct GC_EXTERN collector_t
@@ -567,6 +575,7 @@ GC_EXTERN void operator delete(
 
 .. code-block:: cpp
 
+  //[flx_gc_private.hpp]
 
 #define _ROUNDUP(i,n) ((i + n - 1) / n * n)
 #define _ALIGN(i) _ROUNDUP(i,FLX_MAX_ALIGN)
@@ -578,6 +587,7 @@ Memory Management Abstraction Implementation.
 
 .. code-block:: cpp
 
+  //[flx_gc.cpp]
 
 #include <cstdlib>
 #include <cstdio>
@@ -855,6 +865,7 @@ Collector interface.
 
 .. code-block:: cpp
 
+  //[flx_collector.hpp]
 
 #ifndef __FLX_COLLECTOR_H__
 #define __FLX_COLLECTOR_H__
@@ -1054,6 +1065,7 @@ T: temporary Judy1
 
 .. code-block:: cpp
 
+  //[flx_collector.cpp]
 
 #include <cstdlib>
 #include <map>
@@ -2175,7 +2187,8 @@ Garbage Collector Interface
 
 
 .. code-block:: felix
-//[gc.flx]
+
+  //[gc.flx]
 
 //$ Generic garbage collector interface.
 //$ This class provides a generic interface to the GC,
@@ -2221,7 +2234,8 @@ Rtti introspection
 
 
 .. code-block:: felix
-//[rtti.flx]
+
+  //[rtti.flx]
 class Rtti {
 
   //$ The type of the collector.
@@ -2365,7 +2379,8 @@ Low level Garbage Collector Access
 
 
 .. code-block:: felix
-//[flx_gc.flx]
+
+  //[flx_gc.flx]
 class Collector
 {
   open Rtti;
@@ -2432,6 +2447,7 @@ Bootstrap Build System
 
 .. code-block:: python
 
+  #[flx_gc.py]
 import fbuild
 from fbuild.functools import call
 from fbuild.path import Path
@@ -2504,6 +2520,7 @@ src: .*\.cpp
 
 .. code-block:: cpp
 
+  //[flx_gc_config.hpp]
 #ifndef __FLX_GC_CONFIG_H__
 #define __FLX_GC_CONFIG_H__
 #include "flx_rtl_config.hpp"

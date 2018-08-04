@@ -53,7 +53,8 @@ and the Felix bindings thereof. SDL_ttf and SDL_image are
 required too for font and image handling.
 
 .. code-block:: felix
-//[__init__.flx]
+
+  //[__init__.flx]
 include "sdl/SDL2";
 include "sdl/SDL_ttf";
 include "sdl/SDL_image";
@@ -61,7 +62,8 @@ include "sdl/SDL_image";
 The basic SDL initialisation stuff.
 
 .. code-block:: felix
-//[__init__.flx]
+
+  //[__init__.flx]
 include "gui/init";
 include "gui/types";
 include "gui/events";
@@ -82,7 +84,8 @@ from the client mouse and keyboard.
 
 
 .. code-block:: felix
-//[__init__.flx]
+
+  //[__init__.flx]
 include "gui/color";
 include "gui/surface";
 include "gui/drawable";
@@ -115,13 +118,15 @@ protocols which allow plugins to provide services.
 Buttons and menus.
 
 .. code-block:: felix
-//[__init__.flx]
+
+  //[__init__.flx]
 include "gui/button";
 include "gui/menu";
 
 
 .. code-block:: felix
-//[__init__.flx]
+
+  //[__init__.flx]
 include "gui/line_buffer_interface";
 include "gui/line_buffer_object";
 include "gui/line_buffer_display_controller_interface";
@@ -136,7 +141,8 @@ Merge all the separate classes into a single
 class to make it a all a bit easier to use.
 
 .. code-block:: felix
-//[__init__.flx]
+
+  //[__init__.flx]
 class FlxGui 
 {
  inherit FlxGuiInit;
@@ -180,7 +186,8 @@ from the well presented sum type Felix would use.
 
 
 .. code-block:: felix
-//[types.flx]
+
+  //[types.flx]
 class FlxGuiTypes
 {
   typedef font_t = TTF_Font;
@@ -211,7 +218,8 @@ class FlxGuiTypes
 
 
 .. code-block:: felix
-//[events.flx]
+
+  //[events.flx]
 class FlxGuiEvents
 {
   typedef event_t = SDL_Event;
@@ -301,7 +309,8 @@ Display versions of libraries, both the one from
 the compiled header files and the binary linked in.
 
 .. code-block:: felix
-//[init.flx]
+
+  //[init.flx]
 class FlxGuiInit
 {
   proc init()
@@ -373,7 +382,8 @@ from having to set up a font library Felix knows about.
 
 
 .. code-block:: felix
-//[font.flx]
+
+  //[font.flx]
 class FlxGuiFont
 {
   private fun / (s:string, t:string) => Filename::join (s,t);
@@ -448,7 +458,8 @@ rendering.
 
 
 .. code-block:: felix
-//[color.flx]
+
+  //[color.flx]
 class FlxGuiColor
 {
   fun RGB (r:int, g:int, b:int) => 
@@ -494,7 +505,8 @@ not need that in GUI.
 
 
 .. code-block:: felix
-//[surface.flx]
+
+  //[surface.flx]
 class FlxGuiSurface
 {
   proc clear(surf:&SDL_Surface) (c: colour_t)
@@ -618,7 +630,8 @@ with lowest z are applied first.
 
 
 .. code-block:: felix
-//[drawable.flx]
+
+  //[drawable.flx]
 class FlxGuiDrawable
 {
   interface drawable_t {
@@ -666,7 +679,8 @@ clicks triggering state changes.
 
 
 .. code-block:: felix
-//[drawchain.flx]
+
+  //[drawchain.flx]
 include "gui/__init__";
 class FlxGuiDrawChain
 {
@@ -749,7 +763,8 @@ replaced by a populated display.
 
 
 .. code-block:: felix
-//[window.flx]
+
+  //[window.flx]
 class FlxGuiWindow
 {
   interface window_t {
@@ -850,7 +865,8 @@ service events.
 
 
 .. code-block:: felix
-//[window_controller_interface.flx]
+
+  //[window_controller_interface.flx]
 class FlxGuiWindowControllerInterface
 {
   // ------------------------------------------------------------------
@@ -867,7 +883,8 @@ class FlxGuiWindowControllerInterface
 
 
 .. code-block:: felix
-//[window_controller.flx]
+
+  //[window_controller.flx]
 
 class FlxGuiWindowController
 {
@@ -927,7 +944,8 @@ listens for events.
 
 
 .. code-block:: felix
-//[window_manager.flx]
+
+  //[window_manager.flx]
 class FlxGuiWindowManager
 {
 // Window Manager is responsible for a set of windows,
@@ -1106,7 +1124,8 @@ Simple Click Button
 
 
 .. code-block:: felix
-//[button.flx]
+
+  //[button.flx]
 class FlxGuiButton
 {
   union button_state_t =  
@@ -1293,7 +1312,8 @@ Cascading Menu
 
 
 .. code-block:: felix
-//[menu.flx]
+
+  //[menu.flx]
 // interim menu stuff
 // these menus are transient, retaining state only when open
 
@@ -1957,7 +1977,8 @@ class FlxGuiMenu
 
 
 .. code-block:: felix
-//[line_buffer_display_controller_interface.flx]
+
+  //[line_buffer_display_controller_interface.flx]
 class FlxGuiLineBufferDisplayControllerInterface
 {
 interface line_buffer_display_controller_interface
@@ -1973,7 +1994,8 @@ interface line_buffer_display_controller_interface
 
 
 .. code-block:: felix
-//[line_buffer_display_controller.flx]
+
+  //[line_buffer_display_controller.flx]
 include "gui/line_buffer_display_controller_interface";
 
 class FlxGuiLineBufferDisplayController
@@ -2035,7 +2057,8 @@ implements line_buffer_display_controller_interface =
 
 
 .. code-block:: felix
-//[line_buffer_interface.flx]
+
+  //[line_buffer_interface.flx]
 class FlxGuiLineBufferInterface
 {
   interface line_buffer_interface 
@@ -2067,7 +2090,8 @@ class FlxGuiLineBufferInterface
 
 
 .. code-block:: felix
-//[line_buffer_object.flx]
+
+  //[line_buffer_object.flx]
 include "gui/line_buffer_interface";
 
 class FlxGuiLineBuffer
@@ -2146,7 +2170,8 @@ class FlxGuiLineBuffer
 }
 
 .. code-block:: felix
-//[line_editor.flx]
+
+  //[line_editor.flx]
 class FlxGuiLineEditor
 {
 chip line_edit 
@@ -2218,7 +2243,8 @@ Tools
 
 
 .. code-block:: felix
-//[linegraph.flx]
+
+  //[linegraph.flx]
 include "gui/__init__";
 
 

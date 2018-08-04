@@ -40,6 +40,7 @@ used to initiate a Felix world.
 
 .. code-block:: cpp
 
+  //[flx_world_config.hpp]
 
 #ifndef __flx_world_config_H_
 #define __flx_world_config_H_
@@ -108,6 +109,7 @@ public:
 
 .. code-block:: cpp
 
+  //[flx_world_config.cpp]
 
 #include "flx_world_config.hpp"
 #include <cstdlib>
@@ -246,6 +248,7 @@ a Felix world.
 
 .. code-block:: cpp
 
+  //[flx_world.hpp]
 
 #ifndef __flx_world_H_
 #define __flx_world_H_
@@ -314,6 +317,7 @@ public:
 
 .. code-block:: cpp
 
+  //[flx_world.cpp]
 
 #include "flx_world.hpp"
 #include "flx_eh.hpp"
@@ -708,6 +712,7 @@ The Asychronous Support System
 
 .. code-block:: cpp
 
+  //[flx_async_world.hpp]
 
 #ifndef __flx_async_world_H_
 #define __flx_async_world_H_
@@ -768,6 +773,7 @@ private:
 
 .. code-block:: cpp
 
+  //[flx_async_world.cpp ]
 
 
 #include "flx_world.hpp"
@@ -1005,6 +1011,7 @@ not the implementation.
 
 .. code-block:: cpp
 
+  //[flx_async.hpp]
 #ifndef __FLX_ASYNC_H__
 #define __FLX_ASYNC_H__
 #include "flx_rtl_config.hpp"
@@ -1088,6 +1095,7 @@ public:
 
 .. code-block:: cpp
 
+  //[flx_async.cpp]
 #include "flx_async.hpp"
 #include "pthread_bound_queue.hpp"
 #include "flx_rtl.hpp"
@@ -1233,6 +1241,7 @@ src: .*\.cpp
 
 .. code-block:: python
 
+  #[flx_async.py]
 import fbuild
 from fbuild.functools import call
 from fbuild.path import Path

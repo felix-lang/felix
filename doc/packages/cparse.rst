@@ -17,7 +17,8 @@ header files only, i.e. interfaces.
 
 
 .. code-block:: felix
-//[ctok.flx]
+
+  //[ctok.flx]
 
 // TODO: strings, chars
 // NOTE: preprocesor directives start with # and end with newline

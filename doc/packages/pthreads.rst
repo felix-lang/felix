@@ -28,7 +28,8 @@ Pthread Synopsis
 
 
 .. code-block:: felix
-//[__init__.flx]
+
+  //[__init__.flx]
 
 // pthreads (portable)
 include "std/pthread/pthread";
@@ -64,7 +65,8 @@ synchronisation instead.
 
 
 .. code-block:: felix
-//[pthread.flx]
+
+  //[pthread.flx]
 
 header pthread_hxx = '#include "pthread_thread.hpp"';
 header mutex_hxx = '#include "pthread_mutex.hpp"';
@@ -119,7 +121,8 @@ error.
 
 
 .. code-block:: felix
-//[pchannels.flx]
+
+  //[pchannels.flx]
 
 //$ Pchannels are unbuffered synchronisation points
 //$ for pre-emptive threads.
@@ -205,7 +208,8 @@ Ppipes.
 
 
 .. code-block:: felix
-//[ppipe.flx]
+
+  //[ppipe.flx]
 
 //$ Asynchronous Synchronous Pipe.
 //$ Used to link pthreads.
@@ -326,7 +330,8 @@ Fork/Join.
 
 
 .. code-block:: felix
-//[forkjoin.flx]
+
+  //[forkjoin.flx]
 include "std/pthread/pchannels";
 
 //$ Implement fork/join protocol.
@@ -372,7 +377,8 @@ A Felix mutex is created on the heap and must be destroyed
 after use manually, they're not garbage collected.
 
 .. code-block:: felix
-//[mutex.flx]
+
+  //[mutex.flx]
 
 open class Mutex
 {
@@ -414,7 +420,8 @@ to go elsewhere!
 
 
 .. code-block:: felix
-//[semaphore.flx]
+
+  //[semaphore.flx]
 
 open class Semaphore
 {
@@ -436,7 +443,8 @@ Condition Variables.
 
 
 .. code-block:: felix
-//[condition_variable.flx]
+
+  //[condition_variable.flx]
 
 //$ Condition Variable for pthread synchronisation.
 open class Condition_Variable
@@ -481,7 +489,8 @@ Thread Safe Counter.
 Probably redundant now we have upgraded to C++11 and have atomics.
 
 .. code-block:: felix
-//[ts_counter.flx]
+
+  //[ts_counter.flx]
 
 open class Ts_counter
 {
@@ -505,7 +514,8 @@ Thread Safe Bound Queue.
 
 
 .. code-block:: felix
-//[ts_bound_queue.flx]
+
+  //[ts_bound_queue.flx]
 
 open class TS_Bound_Queue
 {
@@ -582,7 +592,8 @@ Atomic operations
 
 
 .. code-block:: felix
-//[atomic.flx]
+
+  //[atomic.flx]
 open class Atomic
 {
   // note: only works for some types: constraints need to be added.
@@ -627,7 +638,8 @@ overhead posting a job.
 
 
 .. code-block:: felix
-//[threadpool.flx]
+
+  //[threadpool.flx]
 
 include "std/pthread/ts_bound_queue";
 include "std/pthread/atomic";
@@ -784,7 +796,8 @@ Parallel loop grammar
 
 
 .. code-block:: felix
-//[pfor.fsyn]
+
+  //[pfor.fsyn]
 syntax pfor
 {
    requires loops, blocks;
@@ -820,7 +833,8 @@ Thread Pool Demo
 
 
 .. code-block:: felix
-//[threadpoolex1.flx]
+
+  //[threadpoolex1.flx]
 include "std/pthread/threadpool";
 open ThreadPool;
 

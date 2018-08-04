@@ -20,7 +20,8 @@ Debugging Aid.
 
 
 .. code-block:: felix
-//[debug.flx]
+
+  //[debug.flx]
 // the internal representation of a Felix source location
 // has to be global to simplify compiler hack
 type flx_location_t = "flx::rtl::flx_range_srcref_t";
@@ -79,7 +80,8 @@ The translation from the C macros used are done by the C++ compiler.
 
 
 .. code-block:: felix
-//[debug.fsyn]
+
+  //[debug.fsyn]
 syntax debug
 {
    satom := "HERE" =># "`(ast_here ,_sr)";
@@ -93,6 +95,7 @@ This stuff only on Posix so far.
 
 .. code-block:: cpp
 
+  //[flx_udp_trace.hpp]
 #include "flx_rtl_config.hpp"
 #include <string>
 
@@ -104,6 +107,7 @@ namespace flx { namespace debug {
 
 .. code-block:: cpp
 
+  //[flx_udp_trace.cpp]
 #ifdef _WIN32
 #include <stdio.h>
 #include <string>
@@ -177,6 +181,7 @@ A simple posix only executable tool to monitor program traces.
 
 .. code-block:: cpp
 
+  //[flx_udp_trace_monitor.cxx]
 #include <sys/socket.h>
 #include <stdio.h>
 #include <arpa/inet.h>

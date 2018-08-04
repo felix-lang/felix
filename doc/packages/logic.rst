@@ -33,7 +33,8 @@ to only 8 cbools.
 
 
 .. code-block:: felix
-//[bool.flx]
+
+  //[bool.flx]
 typedef bool = 2;
 type cbool = "bool" requires index TYPE_cbool; 
 
@@ -181,7 +182,8 @@ Syntax
 
 
 .. code-block:: felix
-//[boolexpr.fsyn]
+
+  //[boolexpr.fsyn]
 syntax boolexpr
 {
   //$ Boolean false.
@@ -252,7 +254,8 @@ functions  :code:`land`,  :code:`lor`,  :code:`implies`, and  :code:`lnot` respe
 
 
 .. code-block:: felix
-//[predicate.flx]
+
+  //[predicate.flx]
 
 // Some operations on predicates.
 // These also automatically apply to relations, but just taking

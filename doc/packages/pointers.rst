@@ -26,7 +26,8 @@ C pointer
 
 
 .. code-block:: felix
-//[cptr.flx]
+
+  //[cptr.flx]
 
 // move to separate file later.
 open class AbstractPointers
@@ -127,7 +128,8 @@ is an incrementable, non-NULL pointer to a contiguous store.
 
 
 .. code-block:: felix
-//[carray.flx]
+
+  //[carray.flx]
 
 
 // For some reason this functor must be in global scope
@@ -153,7 +155,8 @@ to reserve such carrays for C datatypes.
 
 
 .. code-block:: felix
-//[carray.flx]
+
+  //[carray.flx]
 
   //$ Allocate a C array on the C heap (malloc).
   //$ Unsafe: Not tracked by GC.
@@ -173,7 +176,8 @@ Dereference
 
 
 .. code-block:: felix
-//[carray.flx]
+
+  //[carray.flx]
 
   //$ Functional get by index.
   fun get[T]: carray[T] * !ints -> T = '$1[$2]';
@@ -194,7 +198,8 @@ familiar with C notation. Felix does not support the notion
 of lvalues in general: this is a very special case.
 
 .. code-block:: felix
-//[carray.flx]
+
+  //[carray.flx]
   //$ Lvalue reference to element by index position. Unsafe.
   //lvalue fun subscript[T]: carray[T] * !ints -> T = '$1[$2]';
   fun subscript[T]: carray[T] * !ints -> T = '$1[$2]';
@@ -209,7 +214,8 @@ Pointer operators
 
 
 .. code-block:: felix
-//[carray.flx]
+
+  //[carray.flx]
   //$ Advance carray to next element.
   fun + [T]: carray[T] * !ints -> carray[T]= '$1+$2';
 
@@ -226,7 +232,8 @@ Mutators
 
 
 .. code-block:: felix
-//[carray.flx]
+
+  //[carray.flx]
 
   //$ Mutable pre-increment ++p.
   proc pre_incr[T]: &carray[T] = '++*$1;';
@@ -252,7 +259,8 @@ Comparisons
 
 
 .. code-block:: felix
-//[carray.flx]
+
+  //[carray.flx]
 
   //$ Pointer equality.
   instance[T] Eq[carray[T]] {
@@ -274,7 +282,8 @@ Conversions
 
 
 .. code-block:: felix
-//[carray.flx]
+
+  //[carray.flx]
   //$ Get carray of an array.
   fun stl_begin[T,N]: carray[array[T,N]] -> carray[T] = "(?1*)&($1->data)";
 
@@ -300,7 +309,8 @@ open[T] Tord[carray[T]];
 
 
 .. code-block:: felix
-//[carray_test.flx]
+
+  //[carray_test.flx]
 // carray test
 
 var a : +int = array_alloc[int] 10;
@@ -333,7 +343,8 @@ Array sort
 Sort an array using STL sort.
 
 .. code-block:: felix
-//[sort.flx]
+
+  //[sort.flx]
 
 //$ Utility class to leverage STL sort.
 class Sort
@@ -386,7 +397,8 @@ Reference counting pointer.
 
 
 .. code-block:: felix
-//[shared_ptr.flx]
+
+  //[shared_ptr.flx]
 open class SharedPtr
 {
    type shared_ptr[T] 
@@ -414,7 +426,8 @@ Address mapping facility. Note: this is the posix function mmap().
 Windows has a similar capability we have not modelled yet.
 
 .. code-block:: felix
-//[posix_mmap.flx]
+
+  //[posix_mmap.flx]
 
 class Mmap
 {

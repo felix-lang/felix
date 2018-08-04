@@ -17,7 +17,8 @@ Synopsis
 
 
 .. code-block:: felix
-//[__init__.flx]
+
+  //[__init__.flx]
 
 include "std/codec/csv";
 include "std/codec/base64";
@@ -30,7 +31,8 @@ Base64
 
 
 .. code-block:: felix
-//[base64.flx]
+
+  //[base64.flx]
 
 //$ Base64 encode/decode functions.
 //$ http://en.wikipedia.org/wiki/Base64
@@ -173,7 +175,8 @@ Csv
 
 
 .. code-block:: felix
-//[csv.flx]
+
+  //[csv.flx]
 
 //$ Comma Separated Values (CSV) reader
 //$ Splits a string like 1,2,"hell" up into three strings.
@@ -237,7 +240,8 @@ URI Codec
 
 
 .. code-block:: felix
-//[uri_codec.flx]
+
+  //[uri_codec.flx]
 
 publish """
 Encoder Decoders for URIs, Translates characters not allowed in URIs

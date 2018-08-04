@@ -19,7 +19,8 @@ A Real Time Clock (RTC) is a device that provides the
 current date and time of day.
 
 .. code-block:: felix
-//[time.flx]
+
+  //[time.flx]
 class Time_class [os] {
   virtual gen time: 1 -> double; // time in seconds since Jan 1 1970 UTC, seconds
 }
@@ -39,7 +40,8 @@ Posix RTC
 
 
 .. code-block:: felix
-//[posix_time.flx]
+
+  //[posix_time.flx]
 
 class PosixTime
 {
@@ -75,7 +77,8 @@ Win32 RTC
 
 
 .. code-block:: felix
-//[win32_time.flx]
+
+  //[win32_time.flx]
 
 class Win32Time
 {

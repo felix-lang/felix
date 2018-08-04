@@ -28,7 +28,8 @@ Synopsis
 
 
 .. code-block:: felix
-//[__init__.flx]
+
+  //[__init__.flx]
 
 include "std/program/cmdopt";
 include "std/program/system";
@@ -45,7 +46,8 @@ Environment Variables
 
 
 .. code-block:: felix
-//[env.flx]
+
+  //[env.flx]
 //$ Access environment variables.
 class Env_class[os]
 {
@@ -90,7 +92,8 @@ Command Line Options
 
 
 .. code-block:: felix
-//[cmdopt.flx]
+
+  //[cmdopt.flx]
 
 open class CmdOpt 
 {
@@ -260,7 +263,8 @@ Process
 
 
 .. code-block:: felix
-//[process.flx]
+
+  //[process.flx]
 
 class Process_class[os, process_status_t]
 {
@@ -282,7 +286,8 @@ Posix Errno
 
 
 .. code-block:: felix
-//[posix_errno.flx]
+
+  //[posix_errno.flx]
 
 open class Errno 
 {
@@ -373,7 +378,8 @@ Posix Process
 
 
 .. code-block:: felix
-//[posix_process.flx]
+
+  //[posix_process.flx]
 
 class PosixProcess {
   open PosixSignal;
@@ -557,7 +563,8 @@ Win32 Process
 
 
 .. code-block:: felix
-//[win32_process.flx]
+
+  //[win32_process.flx]
 
 class Win32Process {
   open Win32Signal;
@@ -711,7 +718,8 @@ System Call
 
 
 .. code-block:: felix
-//[system.flx]
+
+  //[system.flx]
 
 class System
 {
@@ -799,7 +807,8 @@ Shell
 
 
 .. code-block:: felix
-//[shell.flx]
+
+  //[shell.flx]
 
 // Note Shell_class interface doesn't use process_status_t
 // but the implementation does.
@@ -899,7 +908,8 @@ Posix Shell (Bash)
 
 
 .. code-block:: felix
-//[posix_shell.flx]
+
+  //[posix_shell.flx]
 
 // Note: shell functions here only work with Bash.
 // However, the system() function always calls sh,
@@ -1079,7 +1089,8 @@ Win32 Shell (cmd.exe)
 
 
 .. code-block:: felix
-//[win32_shell.flx]
+
+  //[win32_shell.flx]
 
 
 /* http://msdn.microsoft.com/en-us/library/17w5ykft.aspx
@@ -1214,7 +1225,8 @@ Signals
 
 
 .. code-block:: felix
-//[signal.flx]
+
+  //[signal.flx]
 
 body ctrl_c_flag = """
   static bool ctrl_c_flag = false;
@@ -1244,7 +1256,8 @@ Posix Signal
 
 
 .. code-block:: felix
-//[posix_signal.flx]
+
+  //[posix_signal.flx]
 
 class PosixSignal {
   requires C89_headers::signal_h; 
@@ -1331,7 +1344,8 @@ Win32 Signal
 
 
 .. code-block:: felix
-//[win32_signal.flx]
+
+  //[win32_signal.flx]
 
 class Win32Signal {
   requires C89_headers::signal_h;

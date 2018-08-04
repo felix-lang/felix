@@ -57,7 +57,8 @@ Toolchain support
 
 
 .. code-block:: felix
-//[toolchain_clang_config.flx]
+
+  //[toolchain_clang_config.flx]
 
 typedef clang_config_t = (
   header_search_dirs: list[string],
@@ -71,7 +72,8 @@ typedef clang_config_t = (
 
 
 .. code-block:: felix
-//[toolchain_interface.flx]
+
+  //[toolchain_interface.flx]
 interface toolchain_t {
   whatami : 1 -> string;
   host_os : 1 -> string;
@@ -130,7 +132,8 @@ gcc and clang basically.
 
 
 .. code-block:: felix
-//[flx_cxx.flx]
+
+  //[flx_cxx.flx]
 class CxxCompiler
 {
   typedef cxx_dep_spec_t = 
@@ -414,7 +417,8 @@ by the underlying compiler, which must support this ability.
 
 
 .. code-block:: felix
-//[flx_depchk.flx]
+
+  //[flx_depchk.flx]
 include "std/felix/toolchain_interface";
 
   gen cxx_depcheck (tc: toolchain_t, src:string, dst:string) : bool = 
@@ -520,7 +524,8 @@ specification. Used by the flx_build_rtl tool.
 
 
 .. code-block:: felix
-//[flx_mklib.flx]
+
+  //[flx_mklib.flx]
 include "std/felix/toolchain_clang_config";
 include "std/felix/flx_pkg"; // only for "fix2word_flags"
 include "std/felix/flx_cp";
@@ -758,7 +763,8 @@ Object for gcc on Linux
 
 
 .. code-block:: felix
-//[gcc_linux.flx]
+
+  //[gcc_linux.flx]
 include "std/felix/toolchain_interface";
 include "std/felix/toolchain_clang_config";
 include "std/felix/flx_cxx";
@@ -1004,7 +1010,8 @@ Object for gcc on OSX
 
 
 .. code-block:: felix
-//[gcc_osx.flx]
+
+  //[gcc_osx.flx]
 include "std/felix/toolchain_interface";
 include "std/felix/toolchain_clang_config";
 include "std/felix/flx_cxx";
@@ -1243,7 +1250,8 @@ Object for clang on Linux
 
 
 .. code-block:: felix
-//[clang_linux.flx]
+
+  //[clang_linux.flx]
 include "std/felix/toolchain_interface";
 include "std/felix/toolchain_clang_config";
 include "std/felix/flx_cxx";
@@ -1495,7 +1503,8 @@ Object for clang on OSX
 
 
 .. code-block:: felix
-//[clang_osx.flx]
+
+  //[clang_osx.flx]
 include "std/felix/toolchain_interface";
 include "std/felix/toolchain_clang_config";
 include "std/felix/flx_cxx";
@@ -1739,7 +1748,8 @@ Cygwin interface.
 
 
 .. code-block:: felix
-//[cygwin.flx]
+
+  //[cygwin.flx]
 class Cygwin
 {
   requires package "cygwin";
@@ -1799,7 +1809,8 @@ Object for MSVC++ on Windows
 
 
 .. code-block:: felix
-//[msvc_win32.flx]
+
+  //[msvc_win32.flx]
 include "std/felix/toolchain_interface";
 include "std/felix/toolchain_clang_config";
 include "std/felix/flx_cxx";
@@ -2019,7 +2030,8 @@ Object for clang on iOS
 
 
 .. code-block:: felix
-//[clang_iOS_generic.flx]
+
+  //[clang_iOS_generic.flx]
 include "std/felix/toolchain_interface";
 include "std/felix/toolchain_clang_config";
 include "std/felix/flx_cxx";
@@ -2308,7 +2320,8 @@ iPhone Plugin
 
 
 .. code-block:: felix
-//[toolchain_iphoneos.flx]
+
+  //[toolchain_iphoneos.flx]
 include "std/felix/toolchain/clang_iOS_generic";
 
 // varies osx vs linus,  gcc vs clang
@@ -2325,7 +2338,8 @@ export fun setup of (string) as "toolchain_iphoneos_setup";
 
 
 .. code-block:: felix
-//[toolchain_iphonesimulator.flx]
+
+  //[toolchain_iphonesimulator.flx]
 include "std/felix/toolchain/clang_iOS_generic";
 
 // varies osx vs linus,  gcc vs clang
@@ -2348,7 +2362,8 @@ Plugin for gcc on Linux
 
 
 .. code-block:: felix
-//[toolchain_gcc_linux.flx]
+
+  //[toolchain_gcc_linux.flx]
 include "std/felix/toolchain/gcc_linux";
 
 export fun toolchain_gcc_linux of (clang_config_t) as "toolchain_gcc_linux";
@@ -2368,7 +2383,8 @@ Plugin for gcc on OSX
 
 
 .. code-block:: felix
-//[toolchain_gcc_osx.flx]
+
+  //[toolchain_gcc_osx.flx]
 include "std/felix/toolchain/gcc_osx";
 
 export fun toolchain_gcc_osx of (clang_config_t) as "toolchain_gcc_osx";
@@ -2388,7 +2404,8 @@ Plugin for clang on Linux
 
 
 .. code-block:: felix
-//[toolchain_clang_linux.flx]
+
+  //[toolchain_clang_linux.flx]
 include "std/felix/toolchain/clang_linux";
 
 // varies osx vs linus,  gcc vs clang
@@ -2411,7 +2428,8 @@ Plugin for clang on OSX
 
 
 .. code-block:: felix
-//[toolchain_clang_osx.flx]
+
+  //[toolchain_clang_osx.flx]
 include "std/felix/toolchain/clang_osx";
 
 // varies osx vs linus,  gcc vs clang
@@ -2432,7 +2450,8 @@ MSVC++ Plugin for Win32
 
 
 .. code-block:: felix
-//[toolchain_msvc_win32.flx]
+
+  //[toolchain_msvc_win32.flx]
 include "std/felix/toolchain/msvc_win32";
 
 // varies osx vs linus,  gcc vs clang
@@ -2454,7 +2473,8 @@ Flx Plugin
 A wrapper around "flx" command.
 
 .. code-block:: felix
-//[flx_plugin.flx]
+
+  //[flx_plugin.flx]
 include "std/felix/flx/flx";
 export fun flx_plugin_setup(x:string)=>0;
 export fun flx_plugin (args:list[string]) = { return Flx::runflx (args); }

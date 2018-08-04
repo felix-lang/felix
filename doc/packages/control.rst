@@ -16,7 +16,8 @@ Control Synopsis
 
 
 .. code-block:: felix
-//[__init__.flx]
+
+  //[__init__.flx]
 // stream is part of datatype, included in std/datatype/__init__
 include "std/control/control";
 include "std/control/unique";
@@ -34,7 +35,8 @@ Misc Control Flow
 
 
 .. code-block:: felix
-//[control.flx]
+
+  //[control.flx]
 open class Control
 {
   open C_hack;
@@ -185,7 +187,8 @@ open class Control
 
 
 .. code-block:: felix
-//[swapop.fsyn]
+
+  //[swapop.fsyn]
 syntax swapop
 {
   sswapop := "<->" =># "'_swap";

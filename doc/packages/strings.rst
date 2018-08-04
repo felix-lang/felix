@@ -18,7 +18,8 @@ String handling
 
 
 .. code-block:: felix
-//[__init__.flx]
+
+  //[__init__.flx]
 include "std/strings/string";
 include "std/strings/cstring";
 include "std/strings/ustr";
@@ -37,7 +38,8 @@ This type is deprecated, to be repalced by C++11 unicode string type.
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
 typedef cstring = +char;
 type string = "::std::basic_string<char>" 
   requires Cxx_headers::string,
@@ -67,7 +69,8 @@ Equality and total ordering
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
 instance[t in strings] Eq[t] {
   fun == : t * t -> bool = "$1==$2";
 }
@@ -87,7 +90,8 @@ Equality of  :code:`string` and  :code:`char`
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   fun == (s:string, c:char) => len s == 1uz and s.[0] == c;
   fun == (c:char, s:string) => len s == 1uz and s.[0] == c;
   fun != (s:string, c:char) => len s != 1uz or s.[0] != c;
@@ -99,7 +103,8 @@ Append to  :code:`string` object
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   proc  += : &string * string = "$1->append($2:assign);";
   proc  += : &string * +char = "$1->append($2:assign);";
   proc  += : &string * char = "*$1 += $2;";
@@ -110,7 +115,8 @@ Length of  :code:`string`
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   // we need to cast to an int so that c++ won't complain
   fun len: string -> size = "$1.size()";
 
@@ -120,7 +126,8 @@ String concatenation.
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   fun + : string * string -> string = "$1+$2";
   fun + : string * carray[char] -> string = "$1+$2";
   fun + : string * char -> string = "$1+$2";
@@ -139,7 +146,8 @@ Repetition of  :code:`string` or  :code:`char`
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   fun * : string * int -> string = "::flx::rtl::strutil::mul($1:assign,$2:assign)" requires package "flx_strutil";
   fun * : char * int -> string = "::std::string($2:assign,$1:assign)";
 
@@ -149,7 +157,8 @@ Application of  :code:`string` to  :code:`string` or  :code:`int` is concatenati
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   fun apply (x:string, y:string):string => x + y;
   fun apply (x:string, y:int):string => x + y;
 
@@ -160,7 +169,8 @@ Construct a char from first byte of a  :code:`string`.
 Returns nul char (code 0) if the string is empty.
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   ctor char (x:string) => x.[0];
 
 Constructors for  :code:`string`
@@ -168,7 +178,8 @@ Constructors for  :code:`string`
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   ctor string (c:char) => ""+c;
   ctor string: +char = "::std::string($1:assign)";
   ctor string: +char  * !ints = "::std::string($1:assign,$2:assign)";
@@ -180,7 +191,8 @@ Substrings
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   fun subscript: string * !ints -> char =
     "::flx::rtl::strutil::subscript($1:assign,$2:assign)" requires package "flx_strutil";
   fun copyfrom: string * !ints -> string =
@@ -227,7 +239,8 @@ Map a string  :code:`char` by  :code:`char`
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   fun map (f:char->char) (var x:string): string = {
     if len x > 0uz do
       for var i in 0uz upto (len x) - 1uz do
@@ -246,7 +259,8 @@ which return  :code:`stl_npos` on failure, and a more Felix
 like variant which uses an  :code:`option` type.
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   const stl_npos: size = "::std::string::npos";
 
   fun stl_find: string * string -> size = "$1.find($2)" is cast;
@@ -340,7 +354,8 @@ Construe  :code:`string` as set of  :code:`char`
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   instance Set[string,char] {
     fun \in (c:char, s:string) => stl_find (s,c) != stl_npos;
   }
@@ -351,7 +366,8 @@ Construe  :code:`string` as stream of  :code:`char`
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   instance Iterable[string, char] {
     gen iterator(var x:string) () = {
       for var i in 0 upto x.len.int - 1 do yield Some (x.[i]); done
@@ -366,7 +382,8 @@ Test if a string has given prefix or suffix
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   fun prefix(arg:string,key:string)=>
     arg.[to len key]==key
   ;
@@ -390,7 +407,8 @@ Trim off specified prefix or suffix or both
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   fun ltrim (x:string) (e:string) : string =>
     if startswith x e then
       x.[e.len.int to]
@@ -415,7 +433,8 @@ Strip characters from left, right, or both end of a string.
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   fun lstrip (x:string, e:string) : string =
   {
     if len x > 0uz do
@@ -466,7 +485,8 @@ Justify string contents
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   fun ljust(x:string, width:int) : string =>
     if x.len.int >= width
       then x
@@ -487,7 +507,8 @@ Split a string into a list on given separator
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   fun split (x:string, d:char): List::list[string] => List::rev (rev_split (x,d));
 
   fun rev_split (x:string, d:char): List::list[string] = {
@@ -727,7 +748,8 @@ erase, insert or replace substrings
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   // Note: pos, length!
   //$ mutators
   proc erase: &string * size * size = "$1->erase($2,$3);";
@@ -747,7 +769,8 @@ search and replace
 Search and replace by string.
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   fun search_and_replace (x:string, var spos:size, s:string, r:string) : string =
   {
     val m = s.len;
@@ -777,7 +800,8 @@ Regexp search and replace
 Uses Google RE2 engine.
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   // Replace \0 \1 \2 etc in s with text from v
   fun subst(s:string, v:varray[StringPiece]): string =
   {
@@ -851,7 +875,8 @@ Parse string to numeric type
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   fun atoi: string -> int = "::std::atoi($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
   fun atol: string -> long = "::std::atol($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
   fun atoll: string -> long = "::std::atoll($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
@@ -863,7 +888,8 @@ Reserve store
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   proc reserve: &string * !ints = "$1->reserve($2);";
 
 
@@ -872,7 +898,8 @@ Fetch underlying cstring.
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   // safely returns a malloc()'d copy, not garbage collected 
   fun _unsafe_cstr: string -> +char = "::flx::rtl::strutil::flx_cstr($1)" is atom;
 
@@ -889,7 +916,8 @@ Polymorphic vsprintf hack
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   fun vsprintf[t]: +char  * t -> string =
     "::flx::rtl::strutil::flx_asprintf($1,$2)" requires package "flx_strutil"
   ;
@@ -904,7 +932,8 @@ Case translation
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
   // Convert all characters to upper case  
   fun toupper(s:string):string => map (toupper of char) s;
   // Convert all characters to lower case
@@ -918,7 +947,8 @@ Transation to string
 
 
 .. code-block:: felix
-//[string.flx]
+
+  //[string.flx]
 
 instance Str[string] {
   fun str (s:string) : string => s;
@@ -949,7 +979,8 @@ String syntax
 
 
 .. code-block:: felix
-//[stringexpr.fsyn]
+
+  //[stringexpr.fsyn]
 syntax stringexpr
 {
   //$ String subscript.

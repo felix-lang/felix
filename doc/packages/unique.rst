@@ -14,7 +14,8 @@ General Facilities
 
 
 .. code-block:: felix
-//[unique.flx]
+
+  //[unique.flx]
 open class Unique 
 {
   // box up a value as a unique thing

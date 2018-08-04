@@ -30,7 +30,8 @@ Generates an index of non-terminals used in
 the grammar.
 
 .. code-block:: felix
-//[flx_gramdoc.flx]
+
+  //[flx_gramdoc.flx]
 var ishtml = System::argv 1 == "--html";
 var dir =  Filename::join ("src", "lib", "grammar");
 var fregex = ".*\\.flxh";
@@ -127,7 +128,8 @@ Library contents table.
 Lists symbols per file.
 
 .. code-block:: felix
-//[flx_libcontents.flx]
+
+  //[flx_libcontents.flx]
 var ishtml = System::argv 1 == "--html";
 var dir =  Filename::join ("src", "lib", "std");
 
@@ -275,7 +277,8 @@ Library index table.
 Lists symbols alphabetically.
 
 .. code-block:: felix
-//[flx_libindex.flx]
+
+  //[flx_libindex.flx]
 var ishtml = System::argv 1 == "--html";
 var dir =  Filename::join ("src", "lib", "std");
 var fregex = ".*\\.(flx|fdoc)";
@@ -369,7 +372,8 @@ with specified heading and pattern match.
 
 
 .. code-block:: felix
-//[flx_mktutindex.flx]
+
+  //[flx_mktutindex.flx]
 var dirname = System::argv_dflt 1 "src/web/tut";
 var homepage = System::argv_dflt 2 "";
 
@@ -432,7 +436,8 @@ done
 
 
 .. code-block:: felix
-//[flx_fdoc2sphinx.flx]
+
+  //[flx_fdoc2sphinx.flx]
 open Regdef;
 
 // command translation
@@ -590,10 +595,11 @@ fun process_file (f: string): string =
         println$ "";
         var lexer = lexer_from_filename a;
         println$ ".. code-block:: "+lexer;
-        if lexer == "felix" do
-          println$ "//[" + a + "]";
-        else
-          println$ "";
+        println$ "";
+        if lexer in ("c","cpp","felix") do
+          println$ "  //[" + a + "]";
+        elif lexer == "python" do
+          println$ "  #["+a+"]";
         done
         mode = (#`Code) :>> mode_t;
       else 

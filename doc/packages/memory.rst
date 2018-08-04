@@ -16,7 +16,8 @@ Raw Address
 
 
 .. code-block:: felix
-//[address.flx]
+
+  //[address.flx]
 
 //$ Core operations on addresses.
 open class Address {
@@ -76,7 +77,8 @@ open Tord[address];
 
 
 .. code-block:: felix
-//[memory.flx]
+
+  //[memory.flx]
 class Memory
 {
   proc memcpy: address * address * !ints =

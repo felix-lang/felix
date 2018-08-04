@@ -37,7 +37,8 @@ Std.flx
 The top level library module.
 
 .. code-block:: felix
-//[std.flx]
+
+  //[std.flx]
 header '#include "flx_rtl_config.hpp"';
 include "std/__init__";
 
@@ -227,7 +228,8 @@ C hackery
 Hackery for mapping between Felix and C/C++.
 
 .. code-block:: felix
-//[c_hack.flx]
+
+  //[c_hack.flx]
 
 //$ This class provides access to raw C/C++ encodings.
 //$ Incorrect typing is likely to pass by Felix and
@@ -306,7 +308,8 @@ C stdlib Rand
 Just to get random functions.
 
 .. code-block:: felix
-//[cstdlib.flx]
+
+  //[cstdlib.flx]
 
 open class Cstdlib
 {
@@ -340,7 +343,8 @@ Linux specifics
 
 
 .. code-block:: felix
-//[linux.flx]
+
+  //[linux.flx]
 
 module Linux {
   header '#include "plat_linux.hpp"';
@@ -355,7 +359,8 @@ Linux smap
 Parses and totals proc/PID/smaps memory stats. 
 
 .. code-block:: felix
-//[linux_smaps.flx]
+
+  //[linux_smaps.flx]
 
 publish """
 Parses and totals proc/PID/smaps memory stats. 

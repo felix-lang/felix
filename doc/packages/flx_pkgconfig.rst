@@ -29,7 +29,8 @@ is given.
 
 
 .. code-block:: felix
-//[flx_pkgconfig_core.flx]
+
+  //[flx_pkgconfig_core.flx]
 class FlxPkgConfig_core
 {
   open Lexer;
@@ -430,7 +431,8 @@ It exits with the return code that function returns.
 
 
 .. code-block:: felix
-//[flx_pkgconfig_tool.flx]
+
+  //[flx_pkgconfig_tool.flx]
 include "std/felix/flx_pkgconfig";
 
 header flx_pkgconfig_header = 
@@ -483,7 +485,8 @@ Database query object interface.
 
 
 .. code-block:: felix
-//[flx_pkgconfig_query_interface.flx]
+
+  //[flx_pkgconfig_query_interface.flx]
 class FlxPkgConfigQuery_interface
 {
   interface FlxPkgConfigQuery_t {
@@ -504,7 +507,8 @@ Database query object implementation.
 Depends on on the CLI function interface.
 
 .. code-block:: felix
-//[flx_pkgconfig_query.flx]
+
+  //[flx_pkgconfig_query.flx]
 include "std/felix/flx_pkgconfig_core";
 include "std/felix/flx_pkgconfig_query_interface";
 
@@ -631,7 +635,8 @@ single include file and with a single wrapping namespace.
 
 
 .. code-block:: felix
-//[flx_pkgconfig.flx]
+
+  //[flx_pkgconfig.flx]
 include "std/felix/flx_pkgconfig_core";
 include "std/felix/flx_pkgconfig_query_interface";
 include "std/felix/flx_pkgconfig_query";
@@ -655,7 +660,8 @@ exported.
 
 
 .. code-block:: felix
-//[flx_pkgconfig_export.flx]
+
+  //[flx_pkgconfig_export.flx]
 include "std/felix/flx_pkgconfig";
 
 export FlxPkgConfig::flx_pkgconfig of (list[string]) as "flx_pkgconfig";
@@ -703,7 +709,8 @@ This has to be FIXED so flx can run in non-stop mode.
 
 
 .. code-block:: felix
-//[flx_pkg.flx]
+
+  //[flx_pkg.flx]
 include "std/felix/flx_pkgconfig";
 
 class FlxPkg

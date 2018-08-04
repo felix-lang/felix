@@ -31,7 +31,8 @@ Web Server Support Library
 
 
 .. code-block:: felix
-//[__init__.flx]
+
+  //[__init__.flx]
 // codecs
 include "web/json";                    
 include "web/mime_type";
@@ -53,7 +54,8 @@ include "web/simple_config";
 
 
 .. code-block:: felix
-//[web_util.flx]
+
+  //[web_util.flx]
 class WebUtil {
 
   fun parse_attribute_list(lst:list[string]):list[string^2] =>
@@ -68,7 +70,8 @@ class WebUtil {
 
 
 .. code-block:: felix
-//[http_auth.flx]
+
+  //[http_auth.flx]
 include "web/__init__";
 
 publish """ Implements Basic HTTP Authentication
@@ -169,7 +172,8 @@ to the browser"""
 
 
 .. code-block:: felix
-//[http_request.flx]
+
+  //[http_request.flx]
 include "web/__init__";
 
 publish """
@@ -392,7 +396,8 @@ fun read_bytes(conn:http_connection,olen:int) = {
 
 
 .. code-block:: felix
-//[http_response.flx]
+
+  //[http_response.flx]
 include "web/__init__";
 
 publish """
@@ -507,7 +512,8 @@ Content-Length: """ + str (len response.content) + """\r
 
 
 .. code-block:: felix
-//[http_handler.flx]
+
+  //[http_handler.flx]
 include "web/__init__";
 
 publish """
@@ -681,7 +687,8 @@ fun get_fs_path (config:server_config,request:http_request) =>
 }
 
 .. code-block:: felix
-//[http_connection.flx]
+
+  //[http_connection.flx]
 include "web/__init__";
 
 publish """
@@ -734,7 +741,8 @@ class HTTPConnection {
 
 
 .. code-block:: felix
-//[http_status_code.flx]
+
+  //[http_status_code.flx]
 /*
 Example:
   println$ str SC_OK;
@@ -783,7 +791,8 @@ class HTTPStatusCodes {
 
 
 .. code-block:: felix
-//[mime_type.flx]
+
+  //[mime_type.flx]
 publish """
 Implements variant types representing MIME types.
 Also implements Str instance for mime types and parses MIME type from string
@@ -1216,7 +1225,8 @@ application/x-pkcs7-signature: p7s files
 
 
 .. code-block:: felix
-//[cookie.flx]
+
+  //[cookie.flx]
 include "web/low_res_time";
 
 class Cookie {
@@ -1256,7 +1266,8 @@ class Cookie {
 
 
 .. code-block:: felix
-//[low_res_time.flx]
+
+  //[low_res_time.flx]
 class LowResTime
 {
   open C_hack;
@@ -1395,7 +1406,8 @@ done
 
 
 .. code-block:: felix
-//[json.flx]
+
+  //[json.flx]
 open class Json 
 {
   union Jvalue = 
@@ -1644,7 +1656,8 @@ bad:>
 
 
 .. code-block:: felix
-//[logger.flx]
+
+  //[logger.flx]
 publish """
 Extensible Flexible Logger
 example:
@@ -1850,7 +1863,8 @@ class Logger {
 
 
 .. code-block:: felix
-//[simple_config.flx]
+
+  //[simple_config.flx]
 publish """
 Simple config file reader. Splits key value pairs seperated by the equals character.
 Skips lines where first non-space character is the # character. Max configuration file size 
@@ -1991,7 +2005,8 @@ class SimpleConfig {
 
 
 .. code-block:: felix
-//[server_config.flx]
+
+  //[server_config.flx]
 include "web/__init__";
 
 class ServerConfig {
@@ -2165,7 +2180,8 @@ class ServerConfig {
 
 
 .. code-block:: felix
-//[sundown.flx]
+
+  //[sundown.flx]
 //$ A Markdown to Html translator.
 class SunDown
 {
@@ -2174,7 +2190,8 @@ class SunDown
 
 
 .. code-block:: felix
-//[web_server.flx]
+
+  //[web_server.flx]
 publish """ 
 Accepts connection and spawns fthread to handle request 
 See webapp.flx for usage example 
