@@ -1,3 +1,4 @@
+.. index:: application
 Applications
 ============
 
@@ -44,6 +45,7 @@ Another application for binary operator is
 
   a `(f) b // means f (a,b)
 
+.. index:: overloading
 Overloading
 -----------
 
@@ -81,6 +83,7 @@ is applied to must match the domain of the function type:
   var g = f;
   println$ g 1;
 
+.. index:: apply, function
 Special Apply
 -------------
 
@@ -97,6 +100,7 @@ Here is a string is applied to a string. Since a string isn't a function,
 Felix looks for and finds a function named `apply` with domain `string * string`.
 
 
+.. index:: likely; unlikely
 Likelyhood
 ----------
 

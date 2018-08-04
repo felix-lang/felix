@@ -1,9 +1,9 @@
 .. felix documentation master file
+Felix
++++++
 
 Core System
 ===========
-
-Contents:
 
 .. toctree::
    :maxdepth: 1
@@ -25,7 +25,7 @@ Contents:
    threads
    representations
 
-Stanard Library
+Standard Library
 ===============
 
 .. toctree::
@@ -40,5 +40,3 @@ Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
