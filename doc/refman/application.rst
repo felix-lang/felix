@@ -45,11 +45,11 @@ Another application for binary operator is
 
   a `(f) b // means f (a,b)
 
+.. index:: overloading
 
 Overloading
 -----------
 
-.. index:: overloading
 .. index:: 
    pair: direct; application
    pair: indirect; application
