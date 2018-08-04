@@ -49,6 +49,8 @@ Another application for binary operator is
 Overloading
 -----------
 
+.. index:: pair: application, direct
+.. index:: pair: application, indirect
 There are two kinds of application: a *direct* application and an *indirect*
 application. A direct application is the most common kind and involves
 applying a function by name to an argument expression:
@@ -86,7 +88,7 @@ is applied to must match the domain of the function type:
 Special Apply
 -------------
 
-.. index:: apply, function
+.. index:: pair: apply, function
 If the expression being applied has type T which is not a function type,
 then Felix instead looks for a function named `apply` which takes a tuple
 of type `T * A` where `A` is the type of the argument. For example:
