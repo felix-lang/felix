@@ -16,708 +16,708 @@ Chips to providing parsing functions.
 .. code-block:: felix
 
   //[parsers.flx]
-include "std/control/chips";
-include "std/strings/recognisers";
-include "std/strings/parser_synlib";
-class Parsers 
-{
-  open Recognisers;
-  open Grammars;
+   include "std/control/chips";
+   include "std/strings/recognisers";
+   include "std/strings/parser_synlib";
+   class Parsers 
+   {
+     open Recognisers;
+     open Grammars;
+      
+     union action_t =  
+     | Reduce of string * int
+     | Scroll of int
+     | Unscroll of int
+     | Pack of int
+     | Unpack
+     | Drop of int
+     | Swap
+     | Sequence of list[action_t]
+     ;
    
-  union action_t =  
-  | Reduce of string * int
-  | Scroll of int
-  | Unscroll of int
-  | Pack of int
-  | Unpack
-  | Drop of int
-  | Swap
-  | Sequence of list[action_t]
-  ;
-
-  instance Str[action_t] {
-    fun str: action_t -> string =
-    | Reduce (s,n) => "Reduce(" + s + ","+n.str+")"
-    | Scroll n => "Scroll " + n.str
-    | Unscroll n => "Unscroll " + n.str
-    | Pack n => "Pack " + n.str
-    | Drop n => "Drop " + n.str
-    | Swap => "Swap"
-    | Sequence aa =>
-      "Seq(" + catmap "," (str of action_t) aa + ")"
-    ;
-  }
-
-  typedef open_pgram_t[T] =
-  ( 
-    | `Action of action_t
-    | open_prod_t[T]
-  )
-  ;
-
-  instance[T with Str[T]] Str[open_pgram_t[T]] 
-  {
-    fun str: open_pgram_t[T] -> string =
-    | `Action a => "{" + a.str + "}"
-    | open_prod_t[T] :>> r => r.str
-    ;
-  }
-
-    
-  typedef pgram_t = open_pgram_t[pgram_t];
-
-  typedef open_pgramentry_t[T] = string * open_pgram_t[T];
-  typedef open_pgramlib_t[T] = list[open_pgramentry_t[T]];
-  typedef open_pgrammar_t[T] = string * open_pgramlib_t[T];
-
-  typedef pgramentry_t = open_pgramentry_t[pgram_t];
-  typedef pgramlib_t = open_pgramlib_t[pgram_t];
-  typedef pgrammar_t = open_pgrammar_t[pgram_t];
-
-  typedef lexeme = (start:Buffer, finish:Buffer);
-
-  union stack_node_t = 
-  | RTerminal of string * lexeme
-  | RNonterminal of string * list[stack_node_t]
-  ;
-
-  instance Str[stack_node_t] {
-    fun str: stack_node_t -> string =
-    | RTerminal (s,x) => s+"("+string (x.start,x.finish)+")"
-    | RNonterminal (s,xs) => 
-      s + "(" + catmap "," (str of stack_node_t) xs + ")"
-    ;
-  }
-
-  typedef parser_stack_t = list[stack_node_t];
-
-  instance Str[parser_stack_t] {
-    fun str (x:parser_stack_t) => 
-      catmap "; " (str of stack_node_t) x
-    ;
-  }
-
-  typedef parser_state_t =
-  (
-    pos: Buffer,
-    stack: parser_stack_t
-  );
-
-  instance Str[parser_state_t] {
-    fun str (x:parser_state_t) =>
-      x.pos.str + ":  " + x.stack.str
-    ;
-  }
-
-  instance Str[pgramlib_t] {
-    fun str (lib: pgramlib_t) : string = 
-    {
-      var s = "";
-      match nt,ex in lib do
-        s += nt + ":\n";
-        s += "  " + ex.str+"\n";
-      done
-      return s;
-    }
-  }
-
-  typedef parser_t = BaseChips::iochip_t[parser_state_t,parser_state_t];
-
-  chip ActionShift (label:string) (r: recog_t)
-    connector io
-      pin inp: %<parser_state_t
-      pin out: %>parser_state_t
-   {
-     // We need to use a secondary chip so that if the recogniser
-     // writes no output, this chip will block on it and die
-     // without killing off the ActionShift chip.
-     chip handler 
-       connector inner
-         pin inp: %<parser_state_t
-     {
-       var inp = read inner.inp;
-
-       var ri,wi = #mk_ioschannel_pair[Buffer];
-       var ro,wo = #mk_ioschannel_pair[Buffer];
-       circuit 
-         wire ri to r.inp
-         wire wo to r.out
-       endcircuit
-
-       var ipos = inp.pos;
-       write (wi, ipos);
-       var opos = read ro;
-       var entry = RTerminal (label, (start = ipos, finish = opos));
-       //println$ "ActionShift " + label + " write " + io.out.address.str;
-       write (io.out, (pos = opos, stack = entry ! inp.stack));
-     }
-
-     while true do
-       var inp = read io.inp;
-       var ri,wi = #mk_ioschannel_pair[parser_state_t];
-      circuit
-         wire wi to handler.inp
-       endcircuit
-       write (wi, inp);
-     done
-   }
-
-  chip ActionSecond (label:string) (r1: recog_t) (r2: recog_t)
-    connector io
-      pin inp: %<parser_state_t
-      pin out: %>parser_state_t
-   {
-
-     chip handler 
-       connector inner
-         pin inp: %<parser_state_t
-     {
-       var inp = read inner.inp;
-
-       var ri1,wi1 = #mk_ioschannel_pair[Buffer];
-       var ro1,wo1 = #mk_ioschannel_pair[Buffer];
-       var ri2,wi2 = #mk_ioschannel_pair[Buffer];
-       var ro2,wo2 = #mk_ioschannel_pair[Buffer];
-       circuit 
-         wire ri1 to r1.inp
-         wire wo1 to r1.out
-         wire ri2 to r2.inp
-         wire wo2 to r2.out
-       endcircuit
-
-       // whitespace
-       var pos1 = inp.pos;
-       write (wi1, pos1);
-       var pos2 = read ro1;
-
-       // terminal
-       write (wi2, pos2);
-       var pos3 = read ro2;
-
-       var entry = RTerminal (label, (start = pos2, finish = pos3));
-       //println$ "ActionSecond " + label + " write " + io.out.address.str;
-       write (io.out, (pos = pos3, stack = entry ! inp.stack));
-     }
-
-     while true do
-       var inp = read io.inp;
-       var ri,wi = #mk_ioschannel_pair[parser_state_t];
-       circuit
-         wire wi to handler.inp
-       endcircuit
-       write (wi, inp);
-     done
-   }
-
-  fun doaction (aux: parser_stack_t,s:parser_stack_t) (a:action_t) =>
-    match a with
-    | Reduce (label,n) => 
-      let revhead,tail = revsplit n s in
-      aux,RNonterminal (label,revhead) ! tail
-
-    | Drop n => aux,drop n s
-
-    | Swap => aux,
-      match s with 
-      | e1 ! e2 ! tail => e2 ! e1 ! tail 
-      | _ => s
-      endmatch
-
-    | Scroll n => let s,a = scroll (s,aux) n in a,s
-    | Unscroll n => scroll (aux,s) n
-
-    | Pack n => 
-      let revhead,tail = revsplit n s in
-      aux,RNonterminal ("_Tuple",revhead) ! tail
-
-    | Unpack => 
-      match s with
-      | RNonterminal (_,ss) ! tail => aux, ss + tail
-      | _ => aux,s
-      endmatch
- 
-    | Sequence actions =>
-      fold_left (fun (aux:parser_stack_t,s:parser_stack_t) (a:action_t) => 
-        doaction (aux,s) a) 
-        (aux,s) 
-        actions
-
-    endmatch
-  ;
-
-  fun doaction (s:parser_stack_t) (a:action_t) =>
-    let _,s = doaction (Empty[stack_node_t], s) a in
-    s
-  ;
-
-  chip ActionGeneral (a:action_t)
-    connector io
-      pin inp: %<parser_state_t
-      pin out: %>parser_state_t
-  {
-    while true do
-      var i = read io.inp;
-      var pos = i.pos;
-      var stack = doaction i.stack a;
-      //println$ "ActionGeneral ["+a.str+"] write " + io.out.address.str;
-      write (io.out, (pos=pos, stack=stack)); 
-    done
-  }
-
-  typedef pntdef_t = string * parser_t;
-
-  fun find (v:varray[pntdef_t]) (nt:string) : size = 
-  {
-    for i in 0uz ..< v.len do
-      if v.i.0 == nt return i;
-    done
-    assert false;
-  }
-
-  fun render_pgram
-    (lib:pgramlib_t,v:varray[pntdef_t])
-    (white:recog_t)
-    (p:pgram_t) 
-  : parser_t =>
-    match p with
-    | `Terminal (s,r) => ActionSecond s white r 
-    | `Epsilon => BaseChips::epsilon[parser_state_t] 
-    | `Seq ps => BaseChips::pipeline_list (
-          map (fun (p:pgram_t) => render_pgram (lib,v) white p) ps) 
-    | `Alt ps =>  BaseChips::tryall_list (
-          map (fun (p:pgram_t) => render_pgram (lib,v) white p) ps)
-    | `Nonterminal nt => 
-         let idx : size = find v nt in
-         let pslot : &pntdef_t = -(v.stl_begin + idx) in
-         let pchip : &parser_t = pslot . 1 in
-         BaseChips::deref_each_read pchip
-    | `Action a => ActionGeneral a
-  ;
-
-  fun open_add_pgram[T] 
-    (aux: list[string] -> T -> list[string])
-    (acc:list[string]) (p: open_pgram_t[T]) 
-  : list[string] =>
-    match p with
-    | `Action a => acc
-    | open_prod_t[T] :>> r => open_add_prod[T] aux acc r
-    endmatch
-  ;
-
-  fun add_pgram (acc:list[string]) (p:pgram_t) : list[string] =>
-    fix open_add_pgram[pgram_t] acc p
-  ;
-
-  fun closure (g:pgrammar_t): list[string] =>
-    generic_closure[pgram_t] add_pgram g
-  ;
-
-  chip make_parser_from_grammar (white:recog_t)
-    connector io
-      pin inp: %<pgrammar_t
-      pin out: %>parser_t
-  {
-
-    while true do
-      // read in the grammar
-      var start, lib = read io.inp;
-
-      // calculate the transitive closure of nonterminals
-      // from the start symbol
-      var cl = closure (start,lib);
-
-      // allocate a varray with a slot for each nonterminal
-      var n = cl.len;
-      var v = varray[string * parser_t] n;
-
-      // populate the varray with the terminal names and a dummy chip
-      for nt in cl call // initialise array
-        push_back (v,(nt,BaseChips::epsilon[parser_state_t]))
-      ;
-
-      // now assign the real recognisers to the array
-      var index = 0uz;
-      for nt in cl do
-        match find lib nt with
-        | None => assert false;
-        | Some prod =>
-          // get wrapped parser 
-          var entry = render_pgram (lib, v) white prod;
-
-          // address of the slot
-          var pentry : &parser_t = (-(v.stl_begin+index)).1;
-
-          // overwrite dummy value
-          pentry <- entry;
-        endmatch;
-        ++index;
-      done
-      write (io.out, (v.(find v start).1));
-    done
-  }
-
-  gen make_parser_from_grammar (g:pgrammar_t) (white:recog_t) : parser_t =
-  {
-    var parsr: parser_t;
-    var sched = #fibre_scheduler; 
-    spawn_fthread sched {
-      var gri,gwi = mk_ioschannel_pair[pgrammar_t]();
-      var gro,gwo = mk_ioschannel_pair[parser_t]();
-      spawn_fthread (make_parser_from_grammar white (inp=gri,out=gwo));
-      write (gwi, g);
-      parsr = read gro;
-    };
-    sched.run;
-    return parsr;
-  }
-
-  gen run_parser_on_string (parsr:parser_t) (s:string) : list[parser_state_t] =
-  {
-    var results = Empty[parser_state_t]; 
-    var b = Buffer s;
-    var ps : parser_state_t = (pos=b, stack=Empty[stack_node_t]);
-    var sched = #fibre_scheduler; 
-    spawn_fthread sched { 
-      var ri,wi = mk_ioschannel_pair[parser_state_t]();
-      var ro,wo = mk_ioschannel_pair[parser_state_t]();
-      spawn_fthread (parsr (inp=ri, out=wo));
-      write (wi,ps);
-      while true do
-        var result = read ro;
-        results = result ! results;
-        //println$ "Test1: End pos (should be 14)=" + result.str;
-      done
-    };
-    sched.run;
-    return results;
-  }
-
-  // replace internal sub-expressions with fresh nonterminals
-  fun unpack (fresh:1->string) (head:string, p:pgram_t) : pgramlib_t =
-  {
-   var out = Empty[pgramentry_t];
-   match p with
-   | `Action a => out = ([head,p]); 
-   | `Epsilon => out = ([head,p]);
-   | `Terminal _ => out = ([head,`Seq ([p]):>>pgram_t]);
-   | `Nonterminal s => out= ([head,`Seq ([p]):>>pgram_t]);
-
-   | `Seq ps =>
-     var newseq = Empty[pgram_t];
-     for term in ps do
-       match term with
-       | `Action _ => newseq = term ! newseq;
-       | `Epsilon => ;
-       | `Nonterminal _ => newseq = term ! newseq;
-       | `Terminal _ => newseq = term ! newseq;
-       | _ =>
-         var newhead = fresh();
-         newseq = `Nonterminal newhead :>>pgram_t ! newseq;
-         out = unpack fresh (newhead,term);
-       endmatch;
-     done
-
-     match newseq with 
-     | Empty => out = (head,#`Epsilon:>> pgram_t) ! out;
-     | _ => out = (head,`Seq(rev newseq):>>pgram_t) ! out;
-     endmatch;
-
-   | `Alt ps =>
-     iter (proc (p:pgram_t) { out = unpack fresh (head,p) + out; }) ps;
-   endmatch;
-   return out;
-  }
-
-  // expand internal sub-expressions, return a list of symbol sequences
-  // the outer list are the alternatives and the inner ones sequences
-  // IN REVERSE ORDER! 
-  fun expand_aux (p:pgram_t) : list[list[pgram_t]] =
-  {
-   var out = ([Empty[pgram_t]]);
-   match p with
-   // add symbol to each alternative
-   | `Epsilon => ;
-   | `Action a  
-   | `Terminal _
-   | `Nonterminal s => 
-     out = map (fun (ss: list[pgram_t]) => Cons (p,ss)) out; 
-
-   // A sequence is unpacked by successively unpacking each
-   // symbol. The result is then prepended to each alternative.
-   | `Seq ps =>
-     for term in ps do
-       var tmp = expand_aux term;
-       var out2 = Empty[list[pgram_t]];
-       for left in tmp perform 
-         for right in out perform
-           out2 += left + right;
-       out = out2;
-     done
- 
-   | `Alt ps =>
-     var alts = cat (map expand_aux ps);
-     out2 = Empty[list[pgram_t]];
-     for left in alts perform
-       for right in out perform
-         out2 += left + right;
-     out = out2;
-
-   endmatch;
-   return out;
-  }
-
-  fun expand (p:pgram_t) : pgram_t =>
-    let ps = expand_aux p in
-    (`Alt (map (fun (seqs: list[pgram_t]) => `Seq(rev seqs):>>pgram_t) ps)) :>> pgram_t
-  ;
-
-  // in p replace nonterminal name with value (where q=name,value)
-  fun substitute (q:pgramentry_t) (p:pgram_t)=>
-    let name,value = q in
-    match p with
-    | `Nonterminal s when name == s => value
-    | `Seq ls => `Seq (map (substitute q) ls) :>> pgram_t
-    | `Alt ls => `Alt (map (substitute q) ls) :>> pgram_t
-    | _ => p
-  ;
-
-// direct left recursion eliminator
-// assumes A = A alpha | beta form
-// outputs
-// A = beta A'
-// A' = alpha A' | Eps
-//
-// BETTER
-//
-// A = beta | beta A'
-// A' = alpha A' | alpha
-//
-// since this is Epsilon free
-
-  fun direct_left_recursion_elimination 
-   (fresh:1->string) 
-   (lib:pgramlib_t) 
-  =
-  {
-   var outgram = Empty[pgramentry_t];
-   for ntdef in lib do
-     var nt,expr = ntdef;
-     var alphas = Empty[list[pgram_t]];
-     var betas = Empty[list[pgram_t]];
-  // where does Epsilon go??
-     match expr with
-     | `Alt alts =>
-       for alt in alts do
-         match alt with
-         | (`Seq (Cons ((`Nonterminal $(nt)),tail))) => alphas = tail ! alphas;
-         | (`Seq b) => betas = b ! betas;
-         | x => betas = ([x]) ! betas;
-
-         //| x => println$ "EDLR, unexpected alternative " + x.str; assert false;
-         endmatch;
-       done
-     | x => betas = ([x]) ! betas;
-
-     //| x => println$ "EDLR, unexpected expr " + x.str; assert false;
-     endmatch;
-     if alphas.len == 0uz do
-       outgram = (nt,expr) ! outgram;
-     else 
-       var newntname = fresh();
-       var newnt = `Nonterminal newntname :>> pgram_t; 
-       var alts = map (fun (b:list[pgram_t]) => `Seq (b + newnt):>>pgram_t) betas;
-       outgram =  (nt, `Alt alts :>>pgram_t) !  outgram ;
-       alts = map (fun (a:list[pgram_t]) => `Seq (a + newnt):>>pgram_t) alphas + (#`Epsilon):>>pgram_t;
-       outgram = (newntname, `Alt alts:>>pgram_t) ! outgram;
-     done
-   done
-   return outgram;
-  }
-
-  gen fresh_sym () : string = {
-    var n = 1;
-  next:>
-    yield "_"+n.str;
-    ++n;
-    goto next;
-  }
-  // this needs to be global so the algo can be re-applied to the same
-  // grammar library
-  var fresh = fresh_sym;
-
-  fun direct_left_recursion_elimination (lib:pgramlib_t) = 
-  {
-    return direct_left_recursion_elimination fresh lib;
-  }
-
-  fun make_seq (a:pgram_t) (b:list[pgram_t]) =>
-    match a with
-    | (`Seq a) => `Seq (a + b) :>> pgram_t
-    | _ => `Seq (a ! b) :>> pgram_t
-  ; 
-
-  // requires one entry per non-terminal, sorted for performance
-  // must be in form Alt (Seq (nt, ...)) or Seq (nt, ...) or sym
-  // right is the original grammar which i scans thru
-  // left is the modified grammar for j = 1 to n -1
-  // each recursion advances i one step
-
-  fun left_recursion_elimination_step 
-    (fresh:1->string) 
-    (var left:pgramlib_t)
-    (var right:pgramlib_t)
-  = 
-  {
-     match right with
-     | Empty => return left;
-     | (rnt,rdfn) ! tail => // A_i
-println$ "left_recursion_elimination considering nonterminal A_i=" +rnt;
-       var rprods = 
-         match rdfn with
-         | `Alt alts => alts
-         | _ => ([rdfn])
+     instance Str[action_t] {
+       fun str: action_t -> string =
+       | Reduce (s,n) => "Reduce(" + s + ","+n.str+")"
+       | Scroll n => "Scroll " + n.str
+       | Unscroll n => "Unscroll " + n.str
+       | Pack n => "Pack " + n.str
+       | Drop n => "Drop " + n.str
+       | Swap => "Swap"
+       | Sequence aa =>
+         "Seq(" + catmap "," (str of action_t) aa + ")"
        ;
-
-       var toremove = Empty[int];
-       var toadd = Empty[pgram_t];
-       match lnt,ldfn in left do // A_j = 1 to i - 1
-println$ "  left_recursion_elimination considering nonterminal A_j=" +lnt;
-         var lprods = 
-           match ldfn with
-           | `Alt alts => alts
-           | _ => ([ldfn])
+     }
+   
+     typedef open_pgram_t[T] =
+     ( 
+       | `Action of action_t
+       | open_prod_t[T]
+     )
+     ;
+   
+     instance[T with Str[T]] Str[open_pgram_t[T]] 
+     {
+       fun str: open_pgram_t[T] -> string =
+       | `Action a => "{" + a.str + "}"
+       | open_prod_t[T] :>> r => r.str
+       ;
+     }
+   
+       
+     typedef pgram_t = open_pgram_t[pgram_t];
+   
+     typedef open_pgramentry_t[T] = string * open_pgram_t[T];
+     typedef open_pgramlib_t[T] = list[open_pgramentry_t[T]];
+     typedef open_pgrammar_t[T] = string * open_pgramlib_t[T];
+   
+     typedef pgramentry_t = open_pgramentry_t[pgram_t];
+     typedef pgramlib_t = open_pgramlib_t[pgram_t];
+     typedef pgrammar_t = open_pgrammar_t[pgram_t];
+   
+     typedef lexeme = (start:Buffer, finish:Buffer);
+   
+     union stack_node_t = 
+     | RTerminal of string * lexeme
+     | RNonterminal of string * list[stack_node_t]
+     ;
+   
+     instance Str[stack_node_t] {
+       fun str: stack_node_t -> string =
+       | RTerminal (s,x) => s+"("+string (x.start,x.finish)+")"
+       | RNonterminal (s,xs) => 
+         s + "(" + catmap "," (str of stack_node_t) xs + ")"
+       ;
+     }
+   
+     typedef parser_stack_t = list[stack_node_t];
+   
+     instance Str[parser_stack_t] {
+       fun str (x:parser_stack_t) => 
+         catmap "; " (str of stack_node_t) x
+       ;
+     }
+   
+     typedef parser_state_t =
+     (
+       pos: Buffer,
+       stack: parser_stack_t
+     );
+   
+     instance Str[parser_state_t] {
+       fun str (x:parser_state_t) =>
+         x.pos.str + ":  " + x.stack.str
+       ;
+     }
+   
+     instance Str[pgramlib_t] {
+       fun str (lib: pgramlib_t) : string = 
+       {
+         var s = "";
+         match nt,ex in lib do
+           s += nt + ":\n";
+           s += "  " + ex.str+"\n";
+         done
+         return s;
+       }
+     }
+   
+     typedef parser_t = BaseChips::iochip_t[parser_state_t,parser_state_t];
+   
+     chip ActionShift (label:string) (r: recog_t)
+       connector io
+         pin inp: %<parser_state_t
+         pin out: %>parser_state_t
+      {
+        // We need to use a secondary chip so that if the recogniser
+        // writes no output, this chip will block on it and die
+        // without killing off the ActionShift chip.
+        chip handler 
+          connector inner
+            pin inp: %<parser_state_t
+        {
+          var inp = read inner.inp;
+   
+          var ri,wi = #mk_ioschannel_pair[Buffer];
+          var ro,wo = #mk_ioschannel_pair[Buffer];
+          circuit 
+            wire ri to r.inp
+            wire wo to r.out
+          endcircuit
+   
+          var ipos = inp.pos;
+          write (wi, ipos);
+          var opos = read ro;
+          var entry = RTerminal (label, (start = ipos, finish = opos));
+          //println$ "ActionShift " + label + " write " + io.out.address.str;
+          write (io.out, (pos = opos, stack = entry ! inp.stack));
+        }
+   
+        while true do
+          var inp = read io.inp;
+          var ri,wi = #mk_ioschannel_pair[parser_state_t];
+         circuit
+            wire wi to handler.inp
+          endcircuit
+          write (wi, inp);
+        done
+      }
+   
+     chip ActionSecond (label:string) (r1: recog_t) (r2: recog_t)
+       connector io
+         pin inp: %<parser_state_t
+         pin out: %>parser_state_t
+      {
+   
+        chip handler 
+          connector inner
+            pin inp: %<parser_state_t
+        {
+          var inp = read inner.inp;
+   
+          var ri1,wi1 = #mk_ioschannel_pair[Buffer];
+          var ro1,wo1 = #mk_ioschannel_pair[Buffer];
+          var ri2,wi2 = #mk_ioschannel_pair[Buffer];
+          var ro2,wo2 = #mk_ioschannel_pair[Buffer];
+          circuit 
+            wire ri1 to r1.inp
+            wire wo1 to r1.out
+            wire ri2 to r2.inp
+            wire wo2 to r2.out
+          endcircuit
+   
+          // whitespace
+          var pos1 = inp.pos;
+          write (wi1, pos1);
+          var pos2 = read ro1;
+   
+          // terminal
+          write (wi2, pos2);
+          var pos3 = read ro2;
+   
+          var entry = RTerminal (label, (start = pos2, finish = pos3));
+          //println$ "ActionSecond " + label + " write " + io.out.address.str;
+          write (io.out, (pos = pos3, stack = entry ! inp.stack));
+        }
+   
+        while true do
+          var inp = read io.inp;
+          var ri,wi = #mk_ioschannel_pair[parser_state_t];
+          circuit
+            wire wi to handler.inp
+          endcircuit
+          write (wi, inp);
+        done
+      }
+   
+     fun doaction (aux: parser_stack_t,s:parser_stack_t) (a:action_t) =>
+       match a with
+       | Reduce (label,n) => 
+         let revhead,tail = revsplit n s in
+         aux,RNonterminal (label,revhead) ! tail
+   
+       | Drop n => aux,drop n s
+   
+       | Swap => aux,
+         match s with 
+         | e1 ! e2 ! tail => e2 ! e1 ! tail 
+         | _ => s
+         endmatch
+   
+       | Scroll n => let s,a = scroll (s,aux) n in a,s
+       | Unscroll n => scroll (aux,s) n
+   
+       | Pack n => 
+         let revhead,tail = revsplit n s in
+         aux,RNonterminal ("_Tuple",revhead) ! tail
+   
+       | Unpack => 
+         match s with
+         | RNonterminal (_,ss) ! tail => aux, ss + tail
+         | _ => aux,s
+         endmatch
+    
+       | Sequence actions =>
+         fold_left (fun (aux:parser_stack_t,s:parser_stack_t) (a:action_t) => 
+           doaction (aux,s) a) 
+           (aux,s) 
+           actions
+   
+       endmatch
+     ;
+   
+     fun doaction (s:parser_stack_t) (a:action_t) =>
+       let _,s = doaction (Empty[stack_node_t], s) a in
+       s
+     ;
+   
+     chip ActionGeneral (a:action_t)
+       connector io
+         pin inp: %<parser_state_t
+         pin out: %>parser_state_t
+     {
+       while true do
+         var i = read io.inp;
+         var pos = i.pos;
+         var stack = doaction i.stack a;
+         //println$ "ActionGeneral ["+a.str+"] write " + io.out.address.str;
+         write (io.out, (pos=pos, stack=stack)); 
+       done
+     }
+   
+     typedef pntdef_t = string * parser_t;
+   
+     fun find (v:varray[pntdef_t]) (nt:string) : size = 
+     {
+       for i in 0uz ..< v.len do
+         if v.i.0 == nt return i;
+       done
+       assert false;
+     }
+   
+     fun render_pgram
+       (lib:pgramlib_t,v:varray[pntdef_t])
+       (white:recog_t)
+       (p:pgram_t) 
+     : parser_t =>
+       match p with
+       | `Terminal (s,r) => ActionSecond s white r 
+       | `Epsilon => BaseChips::epsilon[parser_state_t] 
+       | `Seq ps => BaseChips::pipeline_list (
+             map (fun (p:pgram_t) => render_pgram (lib,v) white p) ps) 
+       | `Alt ps =>  BaseChips::tryall_list (
+             map (fun (p:pgram_t) => render_pgram (lib,v) white p) ps)
+       | `Nonterminal nt => 
+            let idx : size = find v nt in
+            let pslot : &pntdef_t = -(v.stl_begin + idx) in
+            let pchip : &parser_t = pslot . 1 in
+            BaseChips::deref_each_read pchip
+       | `Action a => ActionGeneral a
+     ;
+   
+     fun open_add_pgram[T] 
+       (aux: list[string] -> T -> list[string])
+       (acc:list[string]) (p: open_pgram_t[T]) 
+     : list[string] =>
+       match p with
+       | `Action a => acc
+       | open_prod_t[T] :>> r => open_add_prod[T] aux acc r
+       endmatch
+     ;
+   
+     fun add_pgram (acc:list[string]) (p:pgram_t) : list[string] =>
+       fix open_add_pgram[pgram_t] acc p
+     ;
+   
+     fun closure (g:pgrammar_t): list[string] =>
+       generic_closure[pgram_t] add_pgram g
+     ;
+   
+     chip make_parser_from_grammar (white:recog_t)
+       connector io
+         pin inp: %<pgrammar_t
+         pin out: %>parser_t
+     {
+   
+       while true do
+         // read in the grammar
+         var start, lib = read io.inp;
+   
+         // calculate the transitive closure of nonterminals
+         // from the start symbol
+         var cl = closure (start,lib);
+   
+         // allocate a varray with a slot for each nonterminal
+         var n = cl.len;
+         var v = varray[string * parser_t] n;
+   
+         // populate the varray with the terminal names and a dummy chip
+         for nt in cl call // initialise array
+           push_back (v,(nt,BaseChips::epsilon[parser_state_t]))
          ;
-         var counter = -1;
-         for rprod in rprods do // A_i = A_j alpha
-println$ "    checking if " + rnt + " = " + rprod.str + " has left corner A_j=" + lnt;
-           ++counter;
-           match rprod with
-           | `Seq ((`Nonterminal s) ! alpha) =>
-             if s == lnt do
-println$ "      YES: replace";
-               toremove = counter ! toremove;
-               for beta in lprods perform 
-                 toadd  = make_seq beta alpha ! toadd;
-             else // not of form A_i = A_j alpha
-println$ "      NO: keep";
-             done
-           | `Nonterminal s => // alpha = Epsilon
-             if s == lnt do
-println$ "      YES: replace";
-               toremove = counter ! toremove;
-               for beta in lprods perform 
-                 toadd  = beta ! toadd;
-             else
-println$ "      NO: keep";
-             done
-           | _ => 
-println$ "      NO: keep";
+   
+         // now assign the real recognisers to the array
+         var index = 0uz;
+         for nt in cl do
+           match find lib nt with
+           | None => assert false;
+           | Some prod =>
+             // get wrapped parser 
+             var entry = render_pgram (lib, v) white prod;
+   
+             // address of the slot
+             var pentry : &parser_t = (-(v.stl_begin+index)).1;
+   
+             // overwrite dummy value
+             pentry <- entry;
            endmatch;
-         done // all A_i of form A_J alpha
+           ++index;
+         done
+         write (io.out, (v.(find v start).1));
        done
-       // strip replaced productions out, add the others
-       counter = -1;
-       for elt in rprods do
-         ++counter;
-         if not (counter in toremove) perform
-           toadd = elt ! toadd;
-       done
-       var newa_i = direct_left_recursion_elimination fresh ([rnt, `Alt toadd :>> pgram_t]);
-       return left_recursion_elimination_step fresh (newa_i + left) tail;
-     endmatch;
-  }
-
-  fun left_recursion_elimination 
-    (fresh:1->string) 
-    (var right:pgramlib_t)
-  => left_recursion_elimination_step fresh Empty[pgramentry_t] right;
-
-} // class
+     }
+   
+     gen make_parser_from_grammar (g:pgrammar_t) (white:recog_t) : parser_t =
+     {
+       var parsr: parser_t;
+       var sched = #fibre_scheduler; 
+       spawn_fthread sched {
+         var gri,gwi = mk_ioschannel_pair[pgrammar_t]();
+         var gro,gwo = mk_ioschannel_pair[parser_t]();
+         spawn_fthread (make_parser_from_grammar white (inp=gri,out=gwo));
+         write (gwi, g);
+         parsr = read gro;
+       };
+       sched.run;
+       return parsr;
+     }
+   
+     gen run_parser_on_string (parsr:parser_t) (s:string) : list[parser_state_t] =
+     {
+       var results = Empty[parser_state_t]; 
+       var b = Buffer s;
+       var ps : parser_state_t = (pos=b, stack=Empty[stack_node_t]);
+       var sched = #fibre_scheduler; 
+       spawn_fthread sched { 
+         var ri,wi = mk_ioschannel_pair[parser_state_t]();
+         var ro,wo = mk_ioschannel_pair[parser_state_t]();
+         spawn_fthread (parsr (inp=ri, out=wo));
+         write (wi,ps);
+         while true do
+           var result = read ro;
+           results = result ! results;
+           //println$ "Test1: End pos (should be 14)=" + result.str;
+         done
+       };
+       sched.run;
+       return results;
+     }
+   
+     // replace internal sub-expressions with fresh nonterminals
+     fun unpack (fresh:1->string) (head:string, p:pgram_t) : pgramlib_t =
+     {
+      var out = Empty[pgramentry_t];
+      match p with
+      | `Action a => out = ([head,p]); 
+      | `Epsilon => out = ([head,p]);
+      | `Terminal _ => out = ([head,`Seq ([p]):>>pgram_t]);
+      | `Nonterminal s => out= ([head,`Seq ([p]):>>pgram_t]);
+   
+      | `Seq ps =>
+        var newseq = Empty[pgram_t];
+        for term in ps do
+          match term with
+          | `Action _ => newseq = term ! newseq;
+          | `Epsilon => ;
+          | `Nonterminal _ => newseq = term ! newseq;
+          | `Terminal _ => newseq = term ! newseq;
+          | _ =>
+            var newhead = fresh();
+            newseq = `Nonterminal newhead :>>pgram_t ! newseq;
+            out = unpack fresh (newhead,term);
+          endmatch;
+        done
+   
+        match newseq with 
+        | Empty => out = (head,#`Epsilon:>> pgram_t) ! out;
+        | _ => out = (head,`Seq(rev newseq):>>pgram_t) ! out;
+        endmatch;
+   
+      | `Alt ps =>
+        iter (proc (p:pgram_t) { out = unpack fresh (head,p) + out; }) ps;
+      endmatch;
+      return out;
+     }
+   
+     // expand internal sub-expressions, return a list of symbol sequences
+     // the outer list are the alternatives and the inner ones sequences
+     // IN REVERSE ORDER! 
+     fun expand_aux (p:pgram_t) : list[list[pgram_t]] =
+     {
+      var out = ([Empty[pgram_t]]);
+      match p with
+      // add symbol to each alternative
+      | `Epsilon => ;
+      | `Action a  
+      | `Terminal _
+      | `Nonterminal s => 
+        out = map (fun (ss: list[pgram_t]) => Cons (p,ss)) out; 
+   
+      // A sequence is unpacked by successively unpacking each
+      // symbol. The result is then prepended to each alternative.
+      | `Seq ps =>
+        for term in ps do
+          var tmp = expand_aux term;
+          var out2 = Empty[list[pgram_t]];
+          for left in tmp perform 
+            for right in out perform
+              out2 += left + right;
+          out = out2;
+        done
+    
+      | `Alt ps =>
+        var alts = cat (map expand_aux ps);
+        out2 = Empty[list[pgram_t]];
+        for left in alts perform
+          for right in out perform
+            out2 += left + right;
+        out = out2;
+   
+      endmatch;
+      return out;
+     }
+   
+     fun expand (p:pgram_t) : pgram_t =>
+       let ps = expand_aux p in
+       (`Alt (map (fun (seqs: list[pgram_t]) => `Seq(rev seqs):>>pgram_t) ps)) :>> pgram_t
+     ;
+   
+     // in p replace nonterminal name with value (where q=name,value)
+     fun substitute (q:pgramentry_t) (p:pgram_t)=>
+       let name,value = q in
+       match p with
+       | `Nonterminal s when name == s => value
+       | `Seq ls => `Seq (map (substitute q) ls) :>> pgram_t
+       | `Alt ls => `Alt (map (substitute q) ls) :>> pgram_t
+       | _ => p
+     ;
+   
+   // direct left recursion eliminator
+   // assumes A = A alpha | beta form
+   // outputs
+   // A = beta A'
+   // A' = alpha A' | Eps
+   //
+   // BETTER
+   //
+   // A = beta | beta A'
+   // A' = alpha A' | alpha
+   //
+   // since this is Epsilon free
+   
+     fun direct_left_recursion_elimination 
+      (fresh:1->string) 
+      (lib:pgramlib_t) 
+     =
+     {
+      var outgram = Empty[pgramentry_t];
+      for ntdef in lib do
+        var nt,expr = ntdef;
+        var alphas = Empty[list[pgram_t]];
+        var betas = Empty[list[pgram_t]];
+     // where does Epsilon go??
+        match expr with
+        | `Alt alts =>
+          for alt in alts do
+            match alt with
+            | (`Seq (Cons ((`Nonterminal $(nt)),tail))) => alphas = tail ! alphas;
+            | (`Seq b) => betas = b ! betas;
+            | x => betas = ([x]) ! betas;
+   
+            //| x => println$ "EDLR, unexpected alternative " + x.str; assert false;
+            endmatch;
+          done
+        | x => betas = ([x]) ! betas;
+   
+        //| x => println$ "EDLR, unexpected expr " + x.str; assert false;
+        endmatch;
+        if alphas.len == 0uz do
+          outgram = (nt,expr) ! outgram;
+        else 
+          var newntname = fresh();
+          var newnt = `Nonterminal newntname :>> pgram_t; 
+          var alts = map (fun (b:list[pgram_t]) => `Seq (b + newnt):>>pgram_t) betas;
+          outgram =  (nt, `Alt alts :>>pgram_t) !  outgram ;
+          alts = map (fun (a:list[pgram_t]) => `Seq (a + newnt):>>pgram_t) alphas + (#`Epsilon):>>pgram_t;
+          outgram = (newntname, `Alt alts:>>pgram_t) ! outgram;
+        done
+      done
+      return outgram;
+     }
+   
+     gen fresh_sym () : string = {
+       var n = 1;
+     next:>
+       yield "_"+n.str;
+       ++n;
+       goto next;
+     }
+     // this needs to be global so the algo can be re-applied to the same
+     // grammar library
+     var fresh = fresh_sym;
+   
+     fun direct_left_recursion_elimination (lib:pgramlib_t) = 
+     {
+       return direct_left_recursion_elimination fresh lib;
+     }
+   
+     fun make_seq (a:pgram_t) (b:list[pgram_t]) =>
+       match a with
+       | (`Seq a) => `Seq (a + b) :>> pgram_t
+       | _ => `Seq (a ! b) :>> pgram_t
+     ; 
+   
+     // requires one entry per non-terminal, sorted for performance
+     // must be in form Alt (Seq (nt, ...)) or Seq (nt, ...) or sym
+     // right is the original grammar which i scans thru
+     // left is the modified grammar for j = 1 to n -1
+     // each recursion advances i one step
+   
+     fun left_recursion_elimination_step 
+       (fresh:1->string) 
+       (var left:pgramlib_t)
+       (var right:pgramlib_t)
+     = 
+     {
+        match right with
+        | Empty => return left;
+        | (rnt,rdfn) ! tail => // A_i
+   println$ "left_recursion_elimination considering nonterminal A_i=" +rnt;
+          var rprods = 
+            match rdfn with
+            | `Alt alts => alts
+            | _ => ([rdfn])
+          ;
+   
+          var toremove = Empty[int];
+          var toadd = Empty[pgram_t];
+          match lnt,ldfn in left do // A_j = 1 to i - 1
+   println$ "  left_recursion_elimination considering nonterminal A_j=" +lnt;
+            var lprods = 
+              match ldfn with
+              | `Alt alts => alts
+              | _ => ([ldfn])
+            ;
+            var counter = -1;
+            for rprod in rprods do // A_i = A_j alpha
+   println$ "    checking if " + rnt + " = " + rprod.str + " has left corner A_j=" + lnt;
+              ++counter;
+              match rprod with
+              | `Seq ((`Nonterminal s) ! alpha) =>
+                if s == lnt do
+   println$ "      YES: replace";
+                  toremove = counter ! toremove;
+                  for beta in lprods perform 
+                    toadd  = make_seq beta alpha ! toadd;
+                else // not of form A_i = A_j alpha
+   println$ "      NO: keep";
+                done
+              | `Nonterminal s => // alpha = Epsilon
+                if s == lnt do
+   println$ "      YES: replace";
+                  toremove = counter ! toremove;
+                  for beta in lprods perform 
+                    toadd  = beta ! toadd;
+                else
+   println$ "      NO: keep";
+                done
+              | _ => 
+   println$ "      NO: keep";
+              endmatch;
+            done // all A_i of form A_J alpha
+          done
+          // strip replaced productions out, add the others
+          counter = -1;
+          for elt in rprods do
+            ++counter;
+            if not (counter in toremove) perform
+              toadd = elt ! toadd;
+          done
+          var newa_i = direct_left_recursion_elimination fresh ([rnt, `Alt toadd :>> pgram_t]);
+          return left_recursion_elimination_step fresh (newa_i + left) tail;
+        endmatch;
+     }
+   
+     fun left_recursion_elimination 
+       (fresh:1->string) 
+       (var right:pgramlib_t)
+     => left_recursion_elimination_step fresh Empty[pgramentry_t] right;
+   
+   } // class
 
 
 .. code-block:: felix
 
   //[parser_syn.fsyn]
-
-syntax parser_syn
-{
-  priority 
-    palt_pri <
-    pseq_pri <
-    patom_pri
-  ;
-  
-  stmt := plibrary =># "_1";
-
-  plibrary := "gramlib" sname "{" plibentry* "}" =>#
-    """
-    (let*
-      (
-        (tup `(ast_tuple ,_sr ,_4))
-        (v `(ast_apply ,_sr (,(nos "list") ,tup)))
-      )
-      `(ast_var_decl ,_sr ,_2 ,dfltvs none (some ,v))
-    )
-    """
-  ; 
-
-  plibentry := sname "=" pexpr[palt_pri] ";" =>#
-  """`(ast_tuple ,_sr (,(strlit _1) ,_3))""";
-
-  sexpr := "parser" "(" pexpr[palt_pri] ")" =># "_3";
-
-  private pexpr[palt_pri] := "|"? pexpr[>palt_pri] ("|" pexpr[>palt_pri])+ =># 
-    """`(ast_apply ,_sr (  
-      ,(qnoi 'Parser_synlib 'ALT)
-      (ast_apply ,_sr (,(noi 'list) ,(cons _2 (map second _3))))))"""
-  ;
-
-  private pexpr[pseq_pri] := pexpr[>pseq_pri] (pexpr[>pseq_pri])+ =># 
-    """`(ast_apply ,_sr ( 
-      ,(qnoi 'Parser_synlib 'SEQ)
-      (ast_apply ,_sr (,(noi 'list) ,(cons _1 _2)))))"""
-  ;
-
-  private pexpr[patom_pri] := "(" pexpr[palt_pri] ")" =># "_2";
-
-  private pexpr[patom_pri] := String =># 
-    """`(ast_apply ,_sr ( ,(qnoi 'Parser_synlib 'STR) ,_1)) """
-  ;
-
-  private pexpr[patom_pri] := "#EPS" =>#
-    """`(ast_apply ,_sr ( ,(qnoi 'Parser_synlib 'EPS) ())) """
-  ;
-
-  private pexpr[patom_pri] := sname=>#
-    """`(ast_apply ,_sr ( ,(qnoi 'Parser_synlib 'NT) ,(strlit _1))) """
-  ;
-
-  private pexpr[patom_pri] := "{" sexpr "}" =># "_2";
-
-
-}
+   
+   syntax parser_syn
+   {
+     priority 
+       palt_pri <
+       pseq_pri <
+       patom_pri
+     ;
+     
+     stmt := plibrary =># "_1";
+   
+     plibrary := "gramlib" sname "{" plibentry* "}" =>#
+       """
+       (let*
+         (
+           (tup `(ast_tuple ,_sr ,_4))
+           (v `(ast_apply ,_sr (,(nos "list") ,tup)))
+         )
+         `(ast_var_decl ,_sr ,_2 ,dfltvs none (some ,v))
+       )
+       """
+     ; 
+   
+     plibentry := sname "=" pexpr[palt_pri] ";" =>#
+     """`(ast_tuple ,_sr (,(strlit _1) ,_3))""";
+   
+     sexpr := "parser" "(" pexpr[palt_pri] ")" =># "_3";
+   
+     private pexpr[palt_pri] := "|"? pexpr[>palt_pri] ("|" pexpr[>palt_pri])+ =># 
+       """`(ast_apply ,_sr (  
+         ,(qnoi 'Parser_synlib 'ALT)
+         (ast_apply ,_sr (,(noi 'list) ,(cons _2 (map second _3))))))"""
+     ;
+   
+     private pexpr[pseq_pri] := pexpr[>pseq_pri] (pexpr[>pseq_pri])+ =># 
+       """`(ast_apply ,_sr ( 
+         ,(qnoi 'Parser_synlib 'SEQ)
+         (ast_apply ,_sr (,(noi 'list) ,(cons _1 _2)))))"""
+     ;
+   
+     private pexpr[patom_pri] := "(" pexpr[palt_pri] ")" =># "_2";
+   
+     private pexpr[patom_pri] := String =># 
+       """`(ast_apply ,_sr ( ,(qnoi 'Parser_synlib 'STR) ,_1)) """
+     ;
+   
+     private pexpr[patom_pri] := "#EPS" =>#
+       """`(ast_apply ,_sr ( ,(qnoi 'Parser_synlib 'EPS) ())) """
+     ;
+   
+     private pexpr[patom_pri] := sname=>#
+       """`(ast_apply ,_sr ( ,(qnoi 'Parser_synlib 'NT) ,(strlit _1))) """
+     ;
+   
+     private pexpr[patom_pri] := "{" sexpr "}" =># "_2";
+   
+   
+   }
 
 
 .. code-block:: felix
 
   //[parser_synlib.flx]
-include "std/strings/parsers";
-
-class Parser_synlib
-{
-  open Parsers;
-  open Grammars;
-  fun NT (s:string) => `Nonterminal  s :>> pgram_t ;
-  fun TERM (s:string, r:Recognisers::recog_t) => `Terminal (s,r) :>> pgram_t;
-  fun STR (s:string) => (`Terminal (s, (Recognisers::match_string s)));
-  fun REDUCE (s:string, n:int) => `Action (Reduce (s,n)) :>> pgram_t;
-  fun BINOP(s:string) => `Action (Sequence ([Swap, Drop 1, (Reduce (s,2))])):>>pgram_t;
-  fun SWAP () => `Action (Swap) :>> pgram_t;
-  fun DROP (n:int) => `Action (Drop n) :>> pgram_t;
-  fun ALT (ls: list[pgram_t]) => `Alt ls :>> pgram_t;
-  fun SEQ (ls: list[pgram_t]) => `Seq ls :>> pgram_t;
-  fun EPS () => (#`Epsilon) :>> pgram_t;
-}
-
-
-
+   include "std/strings/parsers";
+   
+   class Parser_synlib
+   {
+     open Parsers;
+     open Grammars;
+     fun NT (s:string) => `Nonterminal  s :>> pgram_t ;
+     fun TERM (s:string, r:Recognisers::recog_t) => `Terminal (s,r) :>> pgram_t;
+     fun STR (s:string) => (`Terminal (s, (Recognisers::match_string s)));
+     fun REDUCE (s:string, n:int) => `Action (Reduce (s,n)) :>> pgram_t;
+     fun BINOP(s:string) => `Action (Sequence ([Swap, Drop 1, (Reduce (s,2))])):>>pgram_t;
+     fun SWAP () => `Action (Swap) :>> pgram_t;
+     fun DROP (n:int) => `Action (Drop n) :>> pgram_t;
+     fun ALT (ls: list[pgram_t]) => `Alt ls :>> pgram_t;
+     fun SEQ (ls: list[pgram_t]) => `Seq ls :>> pgram_t;
+     fun EPS () => (#`Epsilon) :>> pgram_t;
+   }
+   
+   
+   

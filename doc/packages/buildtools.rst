@@ -33,647 +33,647 @@ It is built directly from the repository.
 .. code-block:: felix
 
   //[flx_build_flxg.flx]
-class BuildFlxg
-{
-
-/* HEY, this is FELIX! We have our own time services
-
-  // this utter rubbish is required just to format the time.
-  // Shame on the idiot C language, and even more on Posix!
-
-  // some kind of integer time in seconds
-  private type time_t = "time_t" requires Posix_headers::sys_time_h;
-  private fun _ctor_long : time_t -> long = "(long)$1";
-
-  // convert double to integer
-  private fun _ctor_time_t : double -> time_t = "static_cast<time_t>($1)";
-
-  // split up time structure
-  private type struct_tm = "struct tm" requires C89_headers::time_h;
-
-  // convert integer time to split up time
-  private proc gmtime_r : &time_t * &struct_tm;
-
-  // format split up time
-  private gen strftime: +char * size * +char * &struct_tm -> size;
-
-  private gen fmt_time (t: double, fmt:string) = {
-     var  tt = time_t t; // double to time_t
-     var tm:struct_tm;
-     gmtime_r(&tt,&tm); // split up time_t into pieces
-     var buffer = varray[char] (100uz, char 0);
-     var n = strftime(buffer.stl_begin,buffer.len, fmt.cstr, &tm);
-     return string(buffer.stl_begin, n);
-  }
-*/
-
-  // remove slosh-newline
-  fun pack(s:string) = {
-    var slosh = false;
-    var space = true;
-    var out = "";
-    for ch in s do
-      if ch == char "\n" and slosh do slosh = false;
-      elif ch == char "\\" do slosh=true; 
-      elif slosh do slosh=false; out+="\\"; out+=ch;
-      elif ch == "\t" do out+=char ' '; space=true;
-      elif ch == ' ' and space do ;
-      elif ch == ' ' do out+=ch; space=true;
-      else out+=ch; space=false;
-      done
-    done
-    return out;
-  }
-
-  fun version_hook () = {
-    var time = #Time::time;
-    //var fmttime = fmt_time (time, "%a %d %b %Y");
-    var fmttime = time.str; // Its just arbitrary text
-    return
-      "open Flx_version\n" +
-      "let version_data: version_data_t = \n" +
-      "{\n" +
-      '  version_string = "' + Version::felix_version + '";\n' +
-      '  build_time_float = '+ str time + ';\n'+ 
-      '  build_time = "' + fmttime + '";\n'+
-      "}\n" +
-      ";;\n" +
-      "let set_version () = \n" +
-      "  Flx_version.version_data := version_data\n" +
-      ";;\n"
-    ;
-  }
-
-  fun first (a:string, b:string) => a;
-  fun second (a:string, b:string) => b;
-  proc build_flx_drivers() 
-  {
-    var tmpdir = 'build/flxg-tmp';
-    fun entmp (a:string) => if prefix (a,tmpdir) then a else tmpdir/a;
-
-    C_hack::ignore$ Directory::mkdir tmpdir;
+   class BuildFlxg
+   {
    
-    // make the version hook file
-    begin
-      var path = tmpdir/"flx_version_hook";
-      Directory::mkdirs path;
-      var f = fopen_output (path/"flx_version_hook.ml");
-      write (f, #version_hook);
-      fclose f;
-    end
-
-    var db = strdict[bool]();
-    typedef db_t = strdict[bool];
-
-    var sorted_libs = Empty[string];
-
-    fun libdflt () => (
-      srcs=Empty[string], 
-      libs=Empty[string],
-      includes=Empty[string],
-      external_libs=Empty[string]
-    );
-
-    typedef libspec_t = typeof (#libdflt);
-
-    fun exedflt () => libdflt();
-    typedef exespec_t = typeof (#exedflt);
-
-    fun lexdflt () => (flags=Empty[string]);
-    typedef lexspec_t = typeof #lexdflt;
-
-    fun yaccflt () => (flags=Empty[string]);
-    typedef yaccspec_t = typeof #lexdflt;
-
-    fun dypgendflt () => (flags=Empty[string]);
-    typedef dypgenspec_t = typeof #dypgendflt;
-
-    gen ocamldep (dir:string, src:string) = {
-      var result, dep = Shell::get_stdout$ list$ "ocamldep.opt", "-native","-I", Filename::dirname src, "-I", dir, "-I", tmpdir, src;
-      if result != 0 do
-        println$ "Ocamldep failed to process " + src;
-        System::exit (1);
-      done
-      //println$ "Ocamldep raw return = " + dep;
-      var out = dep.pack.strip;
-      //println$ "Ocamldep packed return = " + out;
-      var lines = filter (fun (s:string) => stl_find (s,".cmo") == stl_npos) (split(out,"\n"));
-      //println$ "Ocamldep lines = " + str lines;
-      var res = head lines;
-      //println$ "ocamldep result=" + res;
-      var pos = stl_find (res, ":");
-      if pos == stl_npos do 
-        println$ "Cannot find ':' in string " + res;
-        System::exit 1;
-      done
-      res = res.[pos+2 to].strip;
-      //println$ "ocamldep result 2 =" + res;
-      var dfiles = split(res,' ');
-      //println$ "ocamldep result 3 =" + str dfiles;
-      dfiles = map (fun (s:string) = { //println$ "Extension swap case '" + s+"'";
-        match Filename::get_extension s with 
-        | ".cmi" => return Filename::strip_extension s + ".mli";
-        | ".cmx" => return Filename::strip_extension s + ".ml";
-        | "" => return "";
-        | x => return  "ERROR" ;
-        endmatch;
-        }) 
-        dfiles
-      ;
-      //println$ "ocamldep result 4 =" + str dfiles;
-      dfiles = filter (fun (s:string) => s != "") dfiles;
-      return dfiles;
-    }
-
-    union build_kind = Library | Executable;
-
-    gen ocaml_build(kind:build_kind, dir:string, lib:string, spec:libspec_t) =
-    {
-      var safe_string_flag = 
-        if lib == "dypgen.exe" 
-        then "-unsafe-string"
-        else "-safe-string"
-      ;
-      println$ "-" * 20;
-      println$ "Lib=" + lib + " in " + dir;
-      println$ "Safe-string-flag=" + safe_string_flag;
-      println$ "-" * 20;
-      //println$ "srcs = \n    " +strcat "\n    " spec.srcs;
-      println$ "libs= \n    " + strcat "\n    " spec.libs;
-      println$ "includes= \n" + strcat "\n    " spec.includes;
-      /*
-      println$ "external libs = \n    " + strcat "\n    " spec.external_libs;
-      println$ "-" * 20;
-      println$ "";
-      */
-
-      // copy the list of files, processing dyp, mll, and mly files we encounter.
-      var infiles = spec.srcs;
-      var files = Empty[string];
-      for file in infiles do
-        match Filename::get_extension file with
-        | ".mli" => files += file;
-        | ".ml" => files += file;
-        | ".dyp" => files += dypgen file;
-        | ".mll" => files += ocamllex file;
-        | ".mly" => var out = ocamlyacc file; files += out+".ml"; files += out+".mli";
-        endmatch;
-      done
-
-      var sorted_files = Empty[string];
-      begin
-        // calculate dependencies
-        var db = strdict[list[string]]();
-        for file in files do
-          var deps = ocamldep (dir,file);
-          deps = filter (fun (f:string) => f in files) deps;
-          db.add file deps;
-          //println$ "Ocamldep : " + src + " : " + str deps;
-        done
-
-        // topological sort
-        var count = 0;
-        while not files.is_empty do
-          ++count;
-          if count > 40 do
-            println$ "Invalid file or circular reference";
-            System::exit 1;
-          done
-          var unsorted = Empty[string];
-          for file in files do
-            match db.get file with
-            | Some dps =>
-              if dps \subseteq sorted_files do
-                sorted_files = file + sorted_files;
-              else
-                unsorted = file + unsorted;
-              done
-            | #None => assert false;
-            endmatch;
-          done
-          files = unsorted;
-        done
-        sorted_files = rev sorted_files;
-        //println$ "Library build order: " + str sorted_files;
-      end
-
-      // compile the files
-      var include_flags = fold_left (fun (acc:list[string]) (a:string) => acc+"-I"+entmp a) Empty[string] spec.libs;
-      for file in sorted_files do
-        var path = tmpdir/(Filename::dirname file);
-        Directory::mkdirs path;
-        match Filename::get_extension file with
-        | ".mli" => 
-          println$ "Compiling MLI " + file;
-          begin
-            var result = Shell::system$ list(
-               "ocamlc.opt",
-               "-I",tmpdir, 
-               "-I",tmpdir/dir, 
-               "-I", entmp (Filename::dirname file)) + 
-               include_flags + safe_string_flag +
-               list("-c", "-w",'yzex','-warn-error',"FPSU",
-               '-o',entmp (Filename::strip_extension file) + ".cmi",
-               file)
-            ;
-            if result != 0 do
-              println$ "MLI Compile Failed : " + file;
-              System::exit 1;
-            done
-          end
-        | ".ml" => 
-          println$ "Compiling ML  " + file;
-          begin
-            var result = Shell::system$ list(
-               "ocamlopt.opt",
-               "-I",tmpdir, 
-               "-I",tmpdir/dir, 
-               "-I", entmp (Filename::dirname file)) +
-               include_flags + safe_string_flag +
-               list("-c", "-w",'yzex','-warn-error',"FPSU",
-               '-o',entmp (Filename::strip_extension file) + ".cmx",
-               file)
-            ;
-            if result != 0 do
-              println$ "ML Compile Failed : " + file;
-              System::exit 1;
-            done
-          end
-        | x => println$ "Ignoring " + file;
-        endmatch;
-      done
-
-      match kind with
-      | #Library =>
-        begin
-          // link files into library
-          println$ "Linking library " + tmpdir/lib + ".cmxa";
-          sorted_libs = sorted_libs + (tmpdir/lib+ ".cmxa");
-          var result = Shell::system$ "ocamlopt.opt" + list(
-            "-a", "-w",'yzex','-warn-error',"FPSU",
-            '-o',tmpdir/lib + ".cmxa") +
-            map 
-              (fun (s:string) => entmp (Filename::strip_extension s) + ".cmx") 
-              (filter (fun (s:string)=> Filename::get_extension s == ".ml") sorted_files)
-          ;
-          if result !=0 do
-            println$ "Linking cmxa library " + tmpdir/lib+'.cmxa' + " failed";
-            System::exit 1;
-          done 
-        end
-      | #Executable =>
-        begin
-          // link files into executable
-          println$ "Linking executable " + tmpdir/lib;
-          var result = Shell::system$ "ocamlopt.opt" + list(
-             "-w",'yzex','-warn-error',"FPSU",
-            '-o',tmpdir/lib ) + spec.external_libs + sorted_libs +
-            map 
-              (fun (s:string) => entmp (Filename::strip_extension s) + ".cmx") 
-              (filter (fun (s:string)=> Filename::get_extension s == ".ml") sorted_files)
-          ;
-          if result !=0 do
-            println$ "Linking executable " + tmpdir/lib+ " failed";
-            System::exit 1;
-          done 
-        end
-      endmatch;
-
-      // return the directory containing the library source.
-      return dir;
-    }
-
-    gen ocaml_build_lib (dir:string, lib:string, spec:libspec_t) =>
-      ocaml_build(Library,dir,lib,spec)
-    ;
-
-    gen ocaml_build_exe (dir:string, lib:string, spec:libspec_t) =>
-      ocaml_build(Executable,dir,lib,spec)
-    ;
-
-
-    // src, including .mll suffix, dst: including .ml suffix
-    gen ocamllex (file:string) : string =
-    {
-      var out = entmp (file.Filename::basename.Filename::strip_extension + ".ml");
-      var result = Shell::system$ list$ 'ocamllex.opt','-o',out,file;
-      if result != 0 do
-        println$ "Ocamllex failed to process " + file;
-        System::exit (1);
-      done
-      return out;
-    }
-
-    // src, including .mly suffix, dst: excluding suffices
-    gen ocamlyacc(file:string) : string =
-    {
-      var out = entmp (file.Filename::basename.Filename::strip_extension);
-      var result = Shell::system('ocamlyacc.opt','-b'+out,file);
-      if result != 0 do
-        println$ "Ocamlyacc failed to process " + file;
-        System::exit (1);
-      done
-      return out;
-    }
-
-    // executable: the dypgen executable name
-    // src: including .dyp suffix
-    // tmpdir: directory for target .ml, .mli files
-    gen dypgen(file:string) : string =
-    {
-      var flags = list$ "--no-mli", "--no-undef-nt", "--pv-obj", "--noemit-token-type";
-      var executable = tmpdir / 'dypgen.exe';
-
-      // Dypgen doesn't allow an output spec
-      // so we process a copy of the file.
-      var dyp = entmp (file.Filename::basename);
-      C_hack::ignore$ FileSystem::filecopy (file, dyp);
-      var result = Shell::system(executable + flags +  dyp);
-      if result != 0 do
-        println$ "dypgen failed to process " +file;
-        System::exit (1);
-      done
-      return dyp.Filename::strip_extension+".ml";
-    }
-
-    gen build_dypgen() = 
-    {
-      var path = 'src'/'compiler'/'dypgen'/'dypgen';
-      var exe = ocaml_build_exe (path,'dypgen.exe',
-         extend #libdflt with (srcs=mls_nodyp path,
-            libs = list[string] (build_dyplib())
-            ) end);
-      println$ "Done, exe = " + exe;
-      return exe;
-    }
-    //----------------------------------------------------------------------------------
-
-    fun / (a:string, b:string) => Filename::join (a,b);
-
-    gen mls (d:string) = {
-      var files = FileSystem::regfilesin (d, RE2 '.*\\.(mli?|dyp|mll|mly)');
-      return map (fun (f:string) = { return d/f;}) files;
-    }
-
-    gen mls_nodyp (d:string) = {
-      var files = FileSystem::regfilesin (d, RE2 '.*\\.(mli?|mll|mly)');
-      return map (fun (f:string) = { return d/f;}) files;
-    }
-
-
-    gen build_ocs() =
-    {
-      var path = ('src'/'compiler'/'ocs'/'src');
-      if db.haskey path do return path; done
-      db.add path true;
-      return ocaml_build_lib(path, 'ocs',
-          extend #libdflt with (srcs=mls path) end);
-    }
-
-    gen build_sex() =
-    {
-      var path = ('src'/'compiler'/'sex');
-      if db.haskey path do return path; done
-      db.add path true;
-      return ocaml_build_lib(path, 'sex',
-          extend #libdflt with (srcs=mls path,
-          libs=list[string] (build_dyplib(), build_ocs())) end);
-    }
-
-    gen build_dyplib() =
-    {
-      var path = ('src'/'compiler'/'dypgen'/'dyplib');
-      if db.haskey path do return path; done
-      db.add path true;
-
-      return ocaml_build_lib(path, 'dyp',
-          extend #libdflt with (srcs=mls path) end);
-    }
-
-    gen build_flx_version() = {
-        var path = ('src'/'compiler'/'flx_version');
-        if db.haskey path do return path; done
-        db.add path true;
-
-        return ocaml_build_lib(path, 'flx_version',
-            extend #libdflt with (srcs=mls path) end);
-    }
-
-    gen build_flx_misc() = {
-        var path = 'src'/'compiler'/'flx_misc';
-        if db.haskey path do return path; done
-        db.add path true;
-        return ocaml_build_lib(path, 'flx_misc',
-            extend #libdflt with (srcs=mls path,
-            libs=list[string] (build_flx_version()),
-            external_libs=list[string]('str', 'unix')) end);
-    }
-
-    gen build_flx_version_hook() = {
-        var path = tmpdir/'flx_version_hook';
-        if db.haskey path do return path; done
-        db.add path true;
-        return ocaml_build_lib(path, 'flx_version_hook',
-            extend #libdflt with (srcs=mls path,
-            libs=list[string](build_flx_version())) end);
-    }
-
-    gen build_flx_lex() = {
-        var path = 'src'/'compiler'/'flx_lex';
-        if db.haskey path do return path; done
-        db.add path true;
-        return ocaml_build_lib(path,'flx_lex',
-            extend #libdflt with (srcs=mls path,
-            libs=list[string](
-                build_dyplib(),
-                build_ocs(),
-                build_sex(),
-                build_flx_version())) end);
-    }
-
-    gen build_flx_parse() = {
-        var path = 'src'/'compiler'/'flx_parse';
-        if db.haskey path do return path; done
-        db.add path true;
-        return ocaml_build_lib(path,'flx_parse',
-            extend #libdflt with (srcs=mls path,
-            libs=list[string](
-                build_dyplib(),
-                build_ocs(),
-                build_sex(),
-                build_flx_version(),
-                build_flx_lex())) end);
-    }
-
-    gen build_flx_file() = {
-        var path = 'src'/'compiler'/'flx_file';
-        if db.haskey path do return path; done
-        db.add path true;
-        return ocaml_build_lib(path,'flx_file',
-            extend #libdflt with (srcs=mls path,
-            libs=list[string](
-                build_dyplib(),
-                build_ocs(),
-                build_sex(),
-                build_flx_version(),
-                build_flx_misc(),
-                build_flx_lex(),
-                build_flx_parse()
-                )) end);
-    }
-
-    gen build_flx_core() = {
-        var path = 'src'/'compiler'/'flx_core';
-        if db.haskey path do return path; done
-        db.add path true;
-        return ocaml_build_lib(path, 'flx_core',
-            extend #libdflt with (srcs=mls path,
-            libs=list[string](
-                build_dyplib(),
-                build_ocs(),
-                build_flx_lex(),
-                build_flx_parse(),
-                build_flx_misc()
-                ),
-            external_libs=list[string]()) end);
-    }
-
-    gen build_flx_desugar() = {
-        var path = 'src'/'compiler'/'flx_desugar';
-        if db.haskey path do return path; done
-        db.add path true;
-
-        return ocaml_build_lib(path, 'flx_desugar',
-            extend #libdflt with (srcs=mls path,
-            libs=list[string](
-                build_dyplib(),
-                build_ocs(),
-                build_sex(),
-                build_flx_lex(),
-                build_flx_parse(),
-                build_flx_file(),
-                build_flx_misc(),
-                build_flx_core(),
-                build_flx_version()
-                ),
-            external_libs=list[string]('unix')) end);
-    }
-
-    gen build_flx_bind() = {
-        var path = 'src'/'compiler'/'flx_bind';
-        if db.haskey path do return path; done
-        db.add path true;
-        return ocaml_build_lib(path, 'flx_bind',
-            extend #libdflt with (srcs=mls path,
-            libs=list[string](
-                build_flx_lex(),
-                build_flx_misc(),
-                build_flx_core(),
-                build_flx_desugar()),
-            external_libs=list[string]()) end);
-    }
-
-    gen build_flx_frontend() = {
-        var path = 'src'/'compiler'/'flx_frontend';
-        if db.haskey path do return path; done
-        db.add path true;
-        return ocaml_build_lib(path, 'flx_frontend',
-            extend #libdflt with (srcs=mls path,
-            libs=list[string](
-                build_flx_lex(),
-                build_flx_misc(),
-                build_flx_core())) end);
-    }
-
-    gen build_flx_opt() = {
-        var path = 'src'/'compiler'/'flx_opt';
-        if db.haskey path do return path; done
-        db.add path true;
-        return ocaml_build_lib(path, 'flx_opt',
-            extend #libdflt with (srcs=mls path,
-            libs=list[string](
-                build_flx_lex(),
-                build_flx_misc(),
-                build_flx_core(),
-                build_flx_frontend())) end);
-    }
-
-    gen build_flx_lower() = {
-        var path = 'src'/'compiler'/'flx_lower';
-        if db.haskey path do return path; done
-        db.add path true;
-        return ocaml_build_lib(path, 'flx_lower',
-            extend #libdflt with (srcs=mls path,
-            libs=list[string](
-                build_flx_lex(),
-                build_flx_misc(),
-                build_flx_core(),
-                build_flx_frontend())) end);
-    }
-
-    gen build_flx_backend() = {
-        var path = 'src'/'compiler'/'flx_backend';
-        if db.haskey path do return path; done
-        db.add path true;
-        return ocaml_build_lib(path, 'flx_backend',
-            extend #libdflt with (srcs=mls path,
-            libs=list[string](
-                build_flx_lex(),
-                build_flx_misc(),
-                build_flx_core())) end);
-    }
-
-    gen build_flx_cpp_backend() = {
-        var path = 'src'/'compiler'/'flx_cpp_backend';
-        if db.haskey path do return path; done
-        db.add path true;
-        return ocaml_build_lib(path, 'flx_cpp_backend',
-            extend #libdflt with (srcs=mls path,
-            libs=list[string](
-                build_flx_lex(),
-                build_flx_misc(),
-                build_flx_core(),
-                build_flx_frontend(),
-                build_flx_backend()),
-            external_libs=list[string]()) end);
-    }
-
-    println$ "Build dypgen";
-    C_hack::ignore$ build_dypgen();
-    var libs = list ( 
-          build_ocs(),
-          build_sex(),
-          build_dyplib(),
-          build_flx_version(),
-          build_flx_lex(),
-          build_flx_parse(),
-          build_flx_misc(),
-          build_flx_file(),
-          build_flx_core(),
-          build_flx_desugar(),
-          build_flx_bind(),
-          build_flx_frontend(),
-          build_flx_opt(),
-          build_flx_lower(),
-          build_flx_backend(),
-          build_flx_cpp_backend(),
-          build_flx_version_hook()
-    );
-
-    var external_libs = list('unix.cmxa', 'str.cmxa');
-    C_hack::ignore$ libs;
-    var path ='src'/'compiler'/'flxg';
-    var exe = ocaml_build_exe (path,'flxg',
-            extend #libdflt with (srcs=mls path,
-            libs = libs,
-            external_libs=external_libs) end);
-    println$ "Done, exe = " + exe;
-  } // end build_drivers
-} // end class
-
-
-BuildFlxg::build_flx_drivers();
-
+   /* HEY, this is FELIX! We have our own time services
+   
+     // this utter rubbish is required just to format the time.
+     // Shame on the idiot C language, and even more on Posix!
+   
+     // some kind of integer time in seconds
+     private type time_t = "time_t" requires Posix_headers::sys_time_h;
+     private fun _ctor_long : time_t -> long = "(long)$1";
+   
+     // convert double to integer
+     private fun _ctor_time_t : double -> time_t = "static_cast<time_t>($1)";
+   
+     // split up time structure
+     private type struct_tm = "struct tm" requires C89_headers::time_h;
+   
+     // convert integer time to split up time
+     private proc gmtime_r : &time_t * &struct_tm;
+   
+     // format split up time
+     private gen strftime: +char * size * +char * &struct_tm -> size;
+   
+     private gen fmt_time (t: double, fmt:string) = {
+        var  tt = time_t t; // double to time_t
+        var tm:struct_tm;
+        gmtime_r(&tt,&tm); // split up time_t into pieces
+        var buffer = varray[char] (100uz, char 0);
+        var n = strftime(buffer.stl_begin,buffer.len, fmt.cstr, &tm);
+        return string(buffer.stl_begin, n);
+     }
+   */
+   
+     // remove slosh-newline
+     fun pack(s:string) = {
+       var slosh = false;
+       var space = true;
+       var out = "";
+       for ch in s do
+         if ch == char "\n" and slosh do slosh = false;
+         elif ch == char "\\" do slosh=true; 
+         elif slosh do slosh=false; out+="\\"; out+=ch;
+         elif ch == "\t" do out+=char ' '; space=true;
+         elif ch == ' ' and space do ;
+         elif ch == ' ' do out+=ch; space=true;
+         else out+=ch; space=false;
+         done
+       done
+       return out;
+     }
+   
+     fun version_hook () = {
+       var time = #Time::time;
+       //var fmttime = fmt_time (time, "%a %d %b %Y");
+       var fmttime = time.str; // Its just arbitrary text
+       return
+         "open Flx_version\n" +
+         "let version_data: version_data_t = \n" +
+         "{\n" +
+         '  version_string = "' + Version::felix_version + '";\n' +
+         '  build_time_float = '+ str time + ';\n'+ 
+         '  build_time = "' + fmttime + '";\n'+
+         "}\n" +
+         ";;\n" +
+         "let set_version () = \n" +
+         "  Flx_version.version_data := version_data\n" +
+         ";;\n"
+       ;
+     }
+   
+     fun first (a:string, b:string) => a;
+     fun second (a:string, b:string) => b;
+     proc build_flx_drivers() 
+     {
+       var tmpdir = 'build/flxg-tmp';
+       fun entmp (a:string) => if prefix (a,tmpdir) then a else tmpdir/a;
+   
+       C_hack::ignore$ Directory::mkdir tmpdir;
+      
+       // make the version hook file
+       begin
+         var path = tmpdir/"flx_version_hook";
+         Directory::mkdirs path;
+         var f = fopen_output (path/"flx_version_hook.ml");
+         write (f, #version_hook);
+         fclose f;
+       end
+   
+       var db = strdict[bool]();
+       typedef db_t = strdict[bool];
+   
+       var sorted_libs = Empty[string];
+   
+       fun libdflt () => (
+         srcs=Empty[string], 
+         libs=Empty[string],
+         includes=Empty[string],
+         external_libs=Empty[string]
+       );
+   
+       typedef libspec_t = typeof (#libdflt);
+   
+       fun exedflt () => libdflt();
+       typedef exespec_t = typeof (#exedflt);
+   
+       fun lexdflt () => (flags=Empty[string]);
+       typedef lexspec_t = typeof #lexdflt;
+   
+       fun yaccflt () => (flags=Empty[string]);
+       typedef yaccspec_t = typeof #lexdflt;
+   
+       fun dypgendflt () => (flags=Empty[string]);
+       typedef dypgenspec_t = typeof #dypgendflt;
+   
+       gen ocamldep (dir:string, src:string) = {
+         var result, dep = Shell::get_stdout$ list$ "ocamldep.opt", "-native","-I", Filename::dirname src, "-I", dir, "-I", tmpdir, src;
+         if result != 0 do
+           println$ "Ocamldep failed to process " + src;
+           System::exit (1);
+         done
+         //println$ "Ocamldep raw return = " + dep;
+         var out = dep.pack.strip;
+         //println$ "Ocamldep packed return = " + out;
+         var lines = filter (fun (s:string) => stl_find (s,".cmo") == stl_npos) (split(out,"\n"));
+         //println$ "Ocamldep lines = " + str lines;
+         var res = head lines;
+         //println$ "ocamldep result=" + res;
+         var pos = stl_find (res, ":");
+         if pos == stl_npos do 
+           println$ "Cannot find ':' in string " + res;
+           System::exit 1;
+         done
+         res = res.[pos+2 to].strip;
+         //println$ "ocamldep result 2 =" + res;
+         var dfiles = split(res,' ');
+         //println$ "ocamldep result 3 =" + str dfiles;
+         dfiles = map (fun (s:string) = { //println$ "Extension swap case '" + s+"'";
+           match Filename::get_extension s with 
+           | ".cmi" => return Filename::strip_extension s + ".mli";
+           | ".cmx" => return Filename::strip_extension s + ".ml";
+           | "" => return "";
+           | x => return  "ERROR" ;
+           endmatch;
+           }) 
+           dfiles
+         ;
+         //println$ "ocamldep result 4 =" + str dfiles;
+         dfiles = filter (fun (s:string) => s != "") dfiles;
+         return dfiles;
+       }
+   
+       union build_kind = Library | Executable;
+   
+       gen ocaml_build(kind:build_kind, dir:string, lib:string, spec:libspec_t) =
+       {
+         var safe_string_flag = 
+           if lib == "dypgen.exe" 
+           then "-unsafe-string"
+           else "-safe-string"
+         ;
+         println$ "-" * 20;
+         println$ "Lib=" + lib + " in " + dir;
+         println$ "Safe-string-flag=" + safe_string_flag;
+         println$ "-" * 20;
+         //println$ "srcs = \n    " +strcat "\n    " spec.srcs;
+         println$ "libs= \n    " + strcat "\n    " spec.libs;
+         println$ "includes= \n" + strcat "\n    " spec.includes;
+         /*
+         println$ "external libs = \n    " + strcat "\n    " spec.external_libs;
+         println$ "-" * 20;
+         println$ "";
+         */
+   
+         // copy the list of files, processing dyp, mll, and mly files we encounter.
+         var infiles = spec.srcs;
+         var files = Empty[string];
+         for file in infiles do
+           match Filename::get_extension file with
+           | ".mli" => files += file;
+           | ".ml" => files += file;
+           | ".dyp" => files += dypgen file;
+           | ".mll" => files += ocamllex file;
+           | ".mly" => var out = ocamlyacc file; files += out+".ml"; files += out+".mli";
+           endmatch;
+         done
+   
+         var sorted_files = Empty[string];
+         begin
+           // calculate dependencies
+           var db = strdict[list[string]]();
+           for file in files do
+             var deps = ocamldep (dir,file);
+             deps = filter (fun (f:string) => f in files) deps;
+             db.add file deps;
+             //println$ "Ocamldep : " + src + " : " + str deps;
+           done
+   
+           // topological sort
+           var count = 0;
+           while not files.is_empty do
+             ++count;
+             if count > 40 do
+               println$ "Invalid file or circular reference";
+               System::exit 1;
+             done
+             var unsorted = Empty[string];
+             for file in files do
+               match db.get file with
+               | Some dps =>
+                 if dps \subseteq sorted_files do
+                   sorted_files = file + sorted_files;
+                 else
+                   unsorted = file + unsorted;
+                 done
+               | #None => assert false;
+               endmatch;
+             done
+             files = unsorted;
+           done
+           sorted_files = rev sorted_files;
+           //println$ "Library build order: " + str sorted_files;
+         end
+   
+         // compile the files
+         var include_flags = fold_left (fun (acc:list[string]) (a:string) => acc+"-I"+entmp a) Empty[string] spec.libs;
+         for file in sorted_files do
+           var path = tmpdir/(Filename::dirname file);
+           Directory::mkdirs path;
+           match Filename::get_extension file with
+           | ".mli" => 
+             println$ "Compiling MLI " + file;
+             begin
+               var result = Shell::system$ list(
+                  "ocamlc.opt",
+                  "-I",tmpdir, 
+                  "-I",tmpdir/dir, 
+                  "-I", entmp (Filename::dirname file)) + 
+                  include_flags + safe_string_flag +
+                  list("-c", "-w",'yzex','-warn-error',"FPSU",
+                  '-o',entmp (Filename::strip_extension file) + ".cmi",
+                  file)
+               ;
+               if result != 0 do
+                 println$ "MLI Compile Failed : " + file;
+                 System::exit 1;
+               done
+             end
+           | ".ml" => 
+             println$ "Compiling ML  " + file;
+             begin
+               var result = Shell::system$ list(
+                  "ocamlopt.opt",
+                  "-I",tmpdir, 
+                  "-I",tmpdir/dir, 
+                  "-I", entmp (Filename::dirname file)) +
+                  include_flags + safe_string_flag +
+                  list("-c", "-w",'yzex','-warn-error',"FPSU",
+                  '-o',entmp (Filename::strip_extension file) + ".cmx",
+                  file)
+               ;
+               if result != 0 do
+                 println$ "ML Compile Failed : " + file;
+                 System::exit 1;
+               done
+             end
+           | x => println$ "Ignoring " + file;
+           endmatch;
+         done
+   
+         match kind with
+         | #Library =>
+           begin
+             // link files into library
+             println$ "Linking library " + tmpdir/lib + ".cmxa";
+             sorted_libs = sorted_libs + (tmpdir/lib+ ".cmxa");
+             var result = Shell::system$ "ocamlopt.opt" + list(
+               "-a", "-w",'yzex','-warn-error',"FPSU",
+               '-o',tmpdir/lib + ".cmxa") +
+               map 
+                 (fun (s:string) => entmp (Filename::strip_extension s) + ".cmx") 
+                 (filter (fun (s:string)=> Filename::get_extension s == ".ml") sorted_files)
+             ;
+             if result !=0 do
+               println$ "Linking cmxa library " + tmpdir/lib+'.cmxa' + " failed";
+               System::exit 1;
+             done 
+           end
+         | #Executable =>
+           begin
+             // link files into executable
+             println$ "Linking executable " + tmpdir/lib;
+             var result = Shell::system$ "ocamlopt.opt" + list(
+                "-w",'yzex','-warn-error',"FPSU",
+               '-o',tmpdir/lib ) + spec.external_libs + sorted_libs +
+               map 
+                 (fun (s:string) => entmp (Filename::strip_extension s) + ".cmx") 
+                 (filter (fun (s:string)=> Filename::get_extension s == ".ml") sorted_files)
+             ;
+             if result !=0 do
+               println$ "Linking executable " + tmpdir/lib+ " failed";
+               System::exit 1;
+             done 
+           end
+         endmatch;
+   
+         // return the directory containing the library source.
+         return dir;
+       }
+   
+       gen ocaml_build_lib (dir:string, lib:string, spec:libspec_t) =>
+         ocaml_build(Library,dir,lib,spec)
+       ;
+   
+       gen ocaml_build_exe (dir:string, lib:string, spec:libspec_t) =>
+         ocaml_build(Executable,dir,lib,spec)
+       ;
+   
+   
+       // src, including .mll suffix, dst: including .ml suffix
+       gen ocamllex (file:string) : string =
+       {
+         var out = entmp (file.Filename::basename.Filename::strip_extension + ".ml");
+         var result = Shell::system$ list$ 'ocamllex.opt','-o',out,file;
+         if result != 0 do
+           println$ "Ocamllex failed to process " + file;
+           System::exit (1);
+         done
+         return out;
+       }
+   
+       // src, including .mly suffix, dst: excluding suffices
+       gen ocamlyacc(file:string) : string =
+       {
+         var out = entmp (file.Filename::basename.Filename::strip_extension);
+         var result = Shell::system('ocamlyacc.opt','-b'+out,file);
+         if result != 0 do
+           println$ "Ocamlyacc failed to process " + file;
+           System::exit (1);
+         done
+         return out;
+       }
+   
+       // executable: the dypgen executable name
+       // src: including .dyp suffix
+       // tmpdir: directory for target .ml, .mli files
+       gen dypgen(file:string) : string =
+       {
+         var flags = list$ "--no-mli", "--no-undef-nt", "--pv-obj", "--noemit-token-type";
+         var executable = tmpdir / 'dypgen.exe';
+   
+         // Dypgen doesn't allow an output spec
+         // so we process a copy of the file.
+         var dyp = entmp (file.Filename::basename);
+         C_hack::ignore$ FileSystem::filecopy (file, dyp);
+         var result = Shell::system(executable + flags +  dyp);
+         if result != 0 do
+           println$ "dypgen failed to process " +file;
+           System::exit (1);
+         done
+         return dyp.Filename::strip_extension+".ml";
+       }
+   
+       gen build_dypgen() = 
+       {
+         var path = 'src'/'compiler'/'dypgen'/'dypgen';
+         var exe = ocaml_build_exe (path,'dypgen.exe',
+            extend #libdflt with (srcs=mls_nodyp path,
+               libs = list[string] (build_dyplib())
+               ) end);
+         println$ "Done, exe = " + exe;
+         return exe;
+       }
+       //----------------------------------------------------------------------------------
+   
+       fun / (a:string, b:string) => Filename::join (a,b);
+   
+       gen mls (d:string) = {
+         var files = FileSystem::regfilesin (d, RE2 '.*\\.(mli?|dyp|mll|mly)');
+         return map (fun (f:string) = { return d/f;}) files;
+       }
+   
+       gen mls_nodyp (d:string) = {
+         var files = FileSystem::regfilesin (d, RE2 '.*\\.(mli?|mll|mly)');
+         return map (fun (f:string) = { return d/f;}) files;
+       }
+   
+   
+       gen build_ocs() =
+       {
+         var path = ('src'/'compiler'/'ocs'/'src');
+         if db.haskey path do return path; done
+         db.add path true;
+         return ocaml_build_lib(path, 'ocs',
+             extend #libdflt with (srcs=mls path) end);
+       }
+   
+       gen build_sex() =
+       {
+         var path = ('src'/'compiler'/'sex');
+         if db.haskey path do return path; done
+         db.add path true;
+         return ocaml_build_lib(path, 'sex',
+             extend #libdflt with (srcs=mls path,
+             libs=list[string] (build_dyplib(), build_ocs())) end);
+       }
+   
+       gen build_dyplib() =
+       {
+         var path = ('src'/'compiler'/'dypgen'/'dyplib');
+         if db.haskey path do return path; done
+         db.add path true;
+   
+         return ocaml_build_lib(path, 'dyp',
+             extend #libdflt with (srcs=mls path) end);
+       }
+   
+       gen build_flx_version() = {
+           var path = ('src'/'compiler'/'flx_version');
+           if db.haskey path do return path; done
+           db.add path true;
+   
+           return ocaml_build_lib(path, 'flx_version',
+               extend #libdflt with (srcs=mls path) end);
+       }
+   
+       gen build_flx_misc() = {
+           var path = 'src'/'compiler'/'flx_misc';
+           if db.haskey path do return path; done
+           db.add path true;
+           return ocaml_build_lib(path, 'flx_misc',
+               extend #libdflt with (srcs=mls path,
+               libs=list[string] (build_flx_version()),
+               external_libs=list[string]('str', 'unix')) end);
+       }
+   
+       gen build_flx_version_hook() = {
+           var path = tmpdir/'flx_version_hook';
+           if db.haskey path do return path; done
+           db.add path true;
+           return ocaml_build_lib(path, 'flx_version_hook',
+               extend #libdflt with (srcs=mls path,
+               libs=list[string](build_flx_version())) end);
+       }
+   
+       gen build_flx_lex() = {
+           var path = 'src'/'compiler'/'flx_lex';
+           if db.haskey path do return path; done
+           db.add path true;
+           return ocaml_build_lib(path,'flx_lex',
+               extend #libdflt with (srcs=mls path,
+               libs=list[string](
+                   build_dyplib(),
+                   build_ocs(),
+                   build_sex(),
+                   build_flx_version())) end);
+       }
+   
+       gen build_flx_parse() = {
+           var path = 'src'/'compiler'/'flx_parse';
+           if db.haskey path do return path; done
+           db.add path true;
+           return ocaml_build_lib(path,'flx_parse',
+               extend #libdflt with (srcs=mls path,
+               libs=list[string](
+                   build_dyplib(),
+                   build_ocs(),
+                   build_sex(),
+                   build_flx_version(),
+                   build_flx_lex())) end);
+       }
+   
+       gen build_flx_file() = {
+           var path = 'src'/'compiler'/'flx_file';
+           if db.haskey path do return path; done
+           db.add path true;
+           return ocaml_build_lib(path,'flx_file',
+               extend #libdflt with (srcs=mls path,
+               libs=list[string](
+                   build_dyplib(),
+                   build_ocs(),
+                   build_sex(),
+                   build_flx_version(),
+                   build_flx_misc(),
+                   build_flx_lex(),
+                   build_flx_parse()
+                   )) end);
+       }
+   
+       gen build_flx_core() = {
+           var path = 'src'/'compiler'/'flx_core';
+           if db.haskey path do return path; done
+           db.add path true;
+           return ocaml_build_lib(path, 'flx_core',
+               extend #libdflt with (srcs=mls path,
+               libs=list[string](
+                   build_dyplib(),
+                   build_ocs(),
+                   build_flx_lex(),
+                   build_flx_parse(),
+                   build_flx_misc()
+                   ),
+               external_libs=list[string]()) end);
+       }
+   
+       gen build_flx_desugar() = {
+           var path = 'src'/'compiler'/'flx_desugar';
+           if db.haskey path do return path; done
+           db.add path true;
+   
+           return ocaml_build_lib(path, 'flx_desugar',
+               extend #libdflt with (srcs=mls path,
+               libs=list[string](
+                   build_dyplib(),
+                   build_ocs(),
+                   build_sex(),
+                   build_flx_lex(),
+                   build_flx_parse(),
+                   build_flx_file(),
+                   build_flx_misc(),
+                   build_flx_core(),
+                   build_flx_version()
+                   ),
+               external_libs=list[string]('unix')) end);
+       }
+   
+       gen build_flx_bind() = {
+           var path = 'src'/'compiler'/'flx_bind';
+           if db.haskey path do return path; done
+           db.add path true;
+           return ocaml_build_lib(path, 'flx_bind',
+               extend #libdflt with (srcs=mls path,
+               libs=list[string](
+                   build_flx_lex(),
+                   build_flx_misc(),
+                   build_flx_core(),
+                   build_flx_desugar()),
+               external_libs=list[string]()) end);
+       }
+   
+       gen build_flx_frontend() = {
+           var path = 'src'/'compiler'/'flx_frontend';
+           if db.haskey path do return path; done
+           db.add path true;
+           return ocaml_build_lib(path, 'flx_frontend',
+               extend #libdflt with (srcs=mls path,
+               libs=list[string](
+                   build_flx_lex(),
+                   build_flx_misc(),
+                   build_flx_core())) end);
+       }
+   
+       gen build_flx_opt() = {
+           var path = 'src'/'compiler'/'flx_opt';
+           if db.haskey path do return path; done
+           db.add path true;
+           return ocaml_build_lib(path, 'flx_opt',
+               extend #libdflt with (srcs=mls path,
+               libs=list[string](
+                   build_flx_lex(),
+                   build_flx_misc(),
+                   build_flx_core(),
+                   build_flx_frontend())) end);
+       }
+   
+       gen build_flx_lower() = {
+           var path = 'src'/'compiler'/'flx_lower';
+           if db.haskey path do return path; done
+           db.add path true;
+           return ocaml_build_lib(path, 'flx_lower',
+               extend #libdflt with (srcs=mls path,
+               libs=list[string](
+                   build_flx_lex(),
+                   build_flx_misc(),
+                   build_flx_core(),
+                   build_flx_frontend())) end);
+       }
+   
+       gen build_flx_backend() = {
+           var path = 'src'/'compiler'/'flx_backend';
+           if db.haskey path do return path; done
+           db.add path true;
+           return ocaml_build_lib(path, 'flx_backend',
+               extend #libdflt with (srcs=mls path,
+               libs=list[string](
+                   build_flx_lex(),
+                   build_flx_misc(),
+                   build_flx_core())) end);
+       }
+   
+       gen build_flx_cpp_backend() = {
+           var path = 'src'/'compiler'/'flx_cpp_backend';
+           if db.haskey path do return path; done
+           db.add path true;
+           return ocaml_build_lib(path, 'flx_cpp_backend',
+               extend #libdflt with (srcs=mls path,
+               libs=list[string](
+                   build_flx_lex(),
+                   build_flx_misc(),
+                   build_flx_core(),
+                   build_flx_frontend(),
+                   build_flx_backend()),
+               external_libs=list[string]()) end);
+       }
+   
+       println$ "Build dypgen";
+       C_hack::ignore$ build_dypgen();
+       var libs = list ( 
+             build_ocs(),
+             build_sex(),
+             build_dyplib(),
+             build_flx_version(),
+             build_flx_lex(),
+             build_flx_parse(),
+             build_flx_misc(),
+             build_flx_file(),
+             build_flx_core(),
+             build_flx_desugar(),
+             build_flx_bind(),
+             build_flx_frontend(),
+             build_flx_opt(),
+             build_flx_lower(),
+             build_flx_backend(),
+             build_flx_cpp_backend(),
+             build_flx_version_hook()
+       );
+   
+       var external_libs = list('unix.cmxa', 'str.cmxa');
+       C_hack::ignore$ libs;
+       var path ='src'/'compiler'/'flxg';
+       var exe = ocaml_build_exe (path,'flxg',
+               extend #libdflt with (srcs=mls path,
+               libs = libs,
+               external_libs=external_libs) end);
+       println$ "Done, exe = " + exe;
+     } // end build_drivers
+   } // end class
+   
+   
+   BuildFlxg::build_flx_drivers();
+   
 
 Preparation for building.
 -------------------------
@@ -685,335 +685,335 @@ the build target directory.
 .. code-block:: felix
 
   //[flx_build_prep.flx]
-include "std/felix/flx_cp";
-
-class FlxPrepBuild
-{
-
-  fun / (x:string,y:string) => Filename::join(x,y);
-
-  proc dirsetup(cmd:cmd_type)
-  {
-    // NOTE: unlink doesn't work on directories anyhow ...
-    // We need rmdir(), but that doesn't work unless dir is empty!
-    //FileSystem::unlink("trial-tmp");
-
-    if cmd.clean_target_dir do 
-       println$ "Deleting target-dir=" + cmd.target_dir;
-       FileSystem::unlink(cmd.target_dir);
-    elif cmd.clean_target_bin_dir do 
-       println$ "Deleting target-bin=" + cmd.target_dir/cmd.target_bin;
-       FileSystem::unlink(cmd.target_dir/cmd.target_bin);
-    elif cmd.clean_target_bin_binaries do 
-      println$ "Cleaning binaries out of target not implemented";
-    done
-
-    C_hack::ignore$ Directory::mkdir(cmd.target_dir);
-    C_hack::ignore$ Directory::mkdir(cmd.target_dir/cmd.target_bin);
-    C_hack::ignore$ Directory::mkdir(cmd.target_dir/cmd.target_bin/'bin');
-
-    // Set up the share subdirectory.
-    if cmd.copy_repo do
-      if cmd.repo != cmd.target_dir/'share' do
-        println$ "Copy repository "+cmd.repo/'src -> ' + cmd.target_dir/'share'/'src';
-        CopyFiles::copyfiles(cmd.repo/'src', 
-         '(.*\.(h|hpp|ml|mli|c|cpp|cxx|cc|flx|flxh|fdoc|fsyn|js|html|css|svg|png|gif|jpg|files|include|ttf))', 
-         cmd.target_dir/'share'/'src'/'${1}',true,cmd.debug);
-      else
-        println$ "Cannot copy repo because source = target";
-      done
-    done
-
-    if cmd.copy_library do
-      println$ "Copy Felix library";
-      CopyFiles::copyfiles (cmd.target_dir/'share'/'src'/'lib', r"(.*\.(flx|flxh|fsyn|fdoc|files))", 
-        cmd.target_dir/'share'/'lib/${1}',true,cmd.debug);
-    done
-
-    // This is SPECIAL because "version.flx" is the only file which is both
-    // shared-readonly and generated. So it has to be copied out of an
-    // existing built library not the repository dir.
-    // TODO: generate it using, say, flx or flxg.
-    if cmd.copy_version do
-      if cmd.source_dir != cmd.target_dir do
-        CopyFiles::copyfiles (cmd.source_dir/'share'/'lib'/'std', '(version.flx)', 
-          cmd.target_dir/'share'/'lib'/'std/${1}',true,cmd.debug);
-      else
-        println$ "Cannot copy version because source = target";
-      done
-    done
-
-    if cmd.copy_pkg_db do
-      if cmd.source_dir/cmd.source_bin != cmd.target_dir/cmd.target_bin do
-        println$ "Copy config db";
-        CopyFiles::copyfiles(cmd.source_dir/cmd.source_bin/'config', '(.*)',
-          cmd.target_dir/cmd.target_bin/'config'/'${1}',true,cmd.debug);
-      else
-        println$ "Cannot copy config db because source = target";
-      done
-    done
-
-    if cmd.copy_config_headers do
-      if cmd.source_dir/cmd.source_bin != cmd.target_dir/cmd.target_bin do
-        println$ "Copy rtl config headers";
-        CopyFiles::copyfiles(cmd.source_dir/cmd.source_bin/'lib', r"(.*\.(h|hpp|flx|flxh))", 
-          cmd.target_dir/cmd.target_bin/'lib'/'${1}',true,cmd.debug);
-      else
-        println$ "Cannot copy rtl config headers because source = target";
-      done
-    done
-
-    if cmd.setup_pkg != "" do
-      var setupdata = load cmd.setup_pkg;
-      var commands = split(setupdata,"\n");
-      var lineno = 0;
-      for command in commands do
-        //println$ "Command=" + command;
-        ++lineno;
-        var hsrc, hdst = "","";
-        match split (command, ">") with
-        | #Empty => ;
-        | Cons (h,#Empty) => hsrc = strip h;
-        | Cons (h,Cons (d,#Empty)) => hsrc = strip h; hdst = strip d;
-        | _ => 
-           println$ "[flx_build_prep:setup-pkg] file too many > characters file: "+
-           cmd.setup_pkg +"["+lineno.str+"] " + command;
-        endmatch;
-
-        if hsrc != "" do
-          if hdst == "" do hdst = "${0}"; done
-          println$ "Copying files " + hsrc + " > " + hdst;
-          //println$ "From source directory " + cmd.source_dir;
-          //println$ "To target directory " + cmd.target_dir/cmd.target_bin;
-          CopyFiles::copyfiles (cmd.source_dir, hsrc,cmd.target_dir/cmd.target_bin/hdst,true, true);
+   include "std/felix/flx_cp";
+   
+   class FlxPrepBuild
+   {
+   
+     fun / (x:string,y:string) => Filename::join(x,y);
+   
+     proc dirsetup(cmd:cmd_type)
+     {
+       // NOTE: unlink doesn't work on directories anyhow ...
+       // We need rmdir(), but that doesn't work unless dir is empty!
+       //FileSystem::unlink("trial-tmp");
+   
+       if cmd.clean_target_dir do 
+          println$ "Deleting target-dir=" + cmd.target_dir;
+          FileSystem::unlink(cmd.target_dir);
+       elif cmd.clean_target_bin_dir do 
+          println$ "Deleting target-bin=" + cmd.target_dir/cmd.target_bin;
+          FileSystem::unlink(cmd.target_dir/cmd.target_bin);
+       elif cmd.clean_target_bin_binaries do 
+         println$ "Cleaning binaries out of target not implemented";
+       done
+   
+       C_hack::ignore$ Directory::mkdir(cmd.target_dir);
+       C_hack::ignore$ Directory::mkdir(cmd.target_dir/cmd.target_bin);
+       C_hack::ignore$ Directory::mkdir(cmd.target_dir/cmd.target_bin/'bin');
+   
+       // Set up the share subdirectory.
+       if cmd.copy_repo do
+         if cmd.repo != cmd.target_dir/'share' do
+           println$ "Copy repository "+cmd.repo/'src -> ' + cmd.target_dir/'share'/'src';
+           CopyFiles::copyfiles(cmd.repo/'src', 
+            '(.*\.(h|hpp|ml|mli|c|cpp|cxx|cc|flx|flxh|fdoc|fsyn|js|html|css|svg|png|gif|jpg|files|include|ttf))', 
+            cmd.target_dir/'share'/'src'/'${1}',true,cmd.debug);
+         else
+           println$ "Cannot copy repo because source = target";
+         done
+       done
+   
+       if cmd.copy_library do
+         println$ "Copy Felix library";
+         CopyFiles::copyfiles (cmd.target_dir/'share'/'src'/'lib', r"(.*\.(flx|flxh|fsyn|fdoc|files))", 
+           cmd.target_dir/'share'/'lib/${1}',true,cmd.debug);
+       done
+   
+       // This is SPECIAL because "version.flx" is the only file which is both
+       // shared-readonly and generated. So it has to be copied out of an
+       // existing built library not the repository dir.
+       // TODO: generate it using, say, flx or flxg.
+       if cmd.copy_version do
+         if cmd.source_dir != cmd.target_dir do
+           CopyFiles::copyfiles (cmd.source_dir/'share'/'lib'/'std', '(version.flx)', 
+             cmd.target_dir/'share'/'lib'/'std/${1}',true,cmd.debug);
+         else
+           println$ "Cannot copy version because source = target";
+         done
+       done
+   
+       if cmd.copy_pkg_db do
+         if cmd.source_dir/cmd.source_bin != cmd.target_dir/cmd.target_bin do
+           println$ "Copy config db";
+           CopyFiles::copyfiles(cmd.source_dir/cmd.source_bin/'config', '(.*)',
+             cmd.target_dir/cmd.target_bin/'config'/'${1}',true,cmd.debug);
+         else
+           println$ "Cannot copy config db because source = target";
+         done
+       done
+   
+       if cmd.copy_config_headers do
+         if cmd.source_dir/cmd.source_bin != cmd.target_dir/cmd.target_bin do
+           println$ "Copy rtl config headers";
+           CopyFiles::copyfiles(cmd.source_dir/cmd.source_bin/'lib', r"(.*\.(h|hpp|flx|flxh))", 
+             cmd.target_dir/cmd.target_bin/'lib'/'${1}',true,cmd.debug);
+         else
+           println$ "Cannot copy rtl config headers because source = target";
+         done
+       done
+   
+       if cmd.setup_pkg != "" do
+         var setupdata = load cmd.setup_pkg;
+         var commands = split(setupdata,"\n");
+         var lineno = 0;
+         for command in commands do
+           //println$ "Command=" + command;
+           ++lineno;
+           var hsrc, hdst = "","";
+           match split (command, ">") with
+           | #Empty => ;
+           | Cons (h,#Empty) => hsrc = strip h;
+           | Cons (h,Cons (d,#Empty)) => hsrc = strip h; hdst = strip d;
+           | _ => 
+              println$ "[flx_build_prep:setup-pkg] file too many > characters file: "+
+              cmd.setup_pkg +"["+lineno.str+"] " + command;
+           endmatch;
+   
+           if hsrc != "" do
+             if hdst == "" do hdst = "${0}"; done
+             println$ "Copying files " + hsrc + " > " + hdst;
+             //println$ "From source directory " + cmd.source_dir;
+             //println$ "To target directory " + cmd.target_dir/cmd.target_bin;
+             CopyFiles::copyfiles (cmd.source_dir, hsrc,cmd.target_dir/cmd.target_bin/hdst,true, true);
+           done
+         done
+       done
+     }
+   
+     proc flx_build(cmd: cmd_type)
+     {
+       dirsetup(cmd);
+       // copy the compiler 
+       var compiler_name = "flxg";
+       if PLAT_WIN32 do
+          compiler_name += ".exe";
+       done
+       if cmd.copy_compiler call CopyFiles::copyfiles(cmd.source_dir/cmd.source_bin/'bin', compiler_name, 
+         cmd.target_dir/cmd.target_bin/'bin'/'flxg', true, cmd.debug);
+   
+       println$ "Build Complete";
+     }
+   
+     proc print_help()
+     {
+       println$ "Usage: flx_build_prep ";
+       println$ "";
+       println$ "# locations";
+       println$ "";
+       println$ "  --repo=repo                 default: src";
+       println$ "  --target-dir=target_dir     default: build/trial";
+       println$ "  --target-bin=target_bin     default: host";
+       println$ "  --source-dir=source_dir     default: build/release";
+       println$ "  --source-bin=source_bin     default: host";
+       println$ "";
+       println$ "# cleaning options";
+       println$ "";
+       println$ "  --clean-target-dir          delete entire target directory";
+       println$ "  --clean-target-bin-dir      delete target sub-directory";
+       println$ "  --clean-target-bin-binaries delete binaries from target sub-directory (not implemented yet)";
+       println$ "";
+       println$ "# copy options";
+       println$ "";
+       println$ "  --copy-repo                 copy src dir of repository";
+       println$ "  --copy-compiler             copy compiler flxg";
+       println$ "  --copy-pkg-db               copy package database";
+       println$ "  --copy-config-headers       copy C++ config headers (NO LONGER OF ANY USE!)";
+       println$ "  --copy-version              copy Felix version file";
+       println$ "  --copy-library              copy Felix library";
+       println$ "";
+       println$ "# selective setup of pkg-db";
+       println$ "  --setup=pkg                 setup using file";
+       println$ "  --toolchain=toolchain       specify toolchain to use";
+       println$ "  --debug                     do stuff verbosely";
+       println$ "";
+       println$ "# Environment variables";
+       println$ "";
+       println$ "FLX_SHELL_ECHO=1              echo all shell callouts (system, popen)";
+       println$ "FLX_DEBUG_FLX=1               make 'flx' explain its processing decisions";
+       println$ "BUILD_FLX_TOOLCHAIN_FAMILY=family   family=gcc or family=clang";
+       println$ "";
+       println$ "Purpose: setup new Felix target";
+       println$ "";
+       println$ "Requires repository directory $repo contain subdirectory 'src'";
+       println$ "Requires directory $source_dir contain subdirectory $source_bin which contains program 'flxg'";
+       println$ "Ensures target_dir contains:";
+       println$ "";
+       println$ "  (a) Repository source in $target_dir/share/src";
+       println$ "  (b) config db, C++ headers, libraries in $target_dir/$target_bin/*";
+       println$ "";
+       println$ "Copies version, flxg, config db, and C++ headers from $source_dir if required";
+     }
+   
+     proc setup_toolchain(var toolchain:string, pkgdir:string)
+     {
+       // if the toolchain is specified, fix it
+       if toolchain != "" do 
+         begin
+           println$ "Write toolchain " + toolchain + " into package " + pkgdir/'toolchain.fpc';
+           Directory::mkdirs pkgdir;
+           var f = fopen_output (pkgdir/'toolchain.fpc');
+           write (f,"toolchain: " + toolchain +"\n");
+           fclose f;
+         end
+         println$ "WRITING SPECIFIED TOOLCHAIN PACKAGE: ****************************";
+       elif FileStat::fileexists (pkgdir/'toolchain.fpc') do
+         println$ "USING EXISTING TOOLCHAIN PACKAGE: ****************************";
+       else // guess toolchain and write it
+         var res, os = Shell::get_stdout("uname");
+         &os <- os.strip;
+         var compiler_family = Env::getenv "BUILD_FLX_TOOLCHAIN_FAMILY";
+         match os,compiler_family do
+         | "","" => &toolchain <- "toolchain_mscv_win32";
+         | "Linux","" => &toolchain <- "toolchain_gcc_linux";
+         | "Darwin","" => &toolchain <- "toolchain_clang_osx";
+   
+         | "Linux","gcc" => &toolchain <- "toolchain_gcc_linux";
+         | "Linux","clang" => &toolchain <- "toolchain_clang_linux";
+         | "Darwin","gcc" => &toolchain <- "toolchain_gcc_osx";
+         | "Darwin","clang" => &toolchain <- "toolchain_clang_osx";
+   
+         | _,_ => 
+           println$ "No toolchain specified in toolchain.fpc or with --toolchain switch";
+           println$ "  uname returns unknown OS: '" +os+'"';
+           println$ "Either:";
+           println$ "  (1) Set environment variable BUID_FLX_TOOLCHAIN_FAMILY=family where family=gcc or family=clang";
+           println$ "  (2) Set the toolchain.fpc file to read 'toolchain:toolchain_name";
+           println$ "  (3) use --toolchain=toolchain_name command line option";
+           println$ "  Note:toolchain name is form 'toolchain_<family>_<os>'";
+           println$ "    where os=Darwin or os=Linux or os=Win32";
+           System::exit(1);
+         done
+         begin
+           println$ "Write toolchain " + toolchain + " into package " + pkgdir/'toolchain.fpc';
+           var f = fopen_output (pkgdir/'toolchain.fpc');
+           write (f,"toolchain: " + toolchain +"\n");
+           fclose f;
+         end
+         println$ "USING GUESSED TOOLCHAIN PACKAGE: ****************************";
+       done
+       println$ load (pkgdir/'toolchain.fpc');
+     }
+   
+     typedef cmd_type = typeof (parse_args Empty[string]);
+   
+     noinline fun parse_args (args: list[string]) = 
+     {
+        var cmd = (
+          repo = '.',
+          target_dir="build"/"trial",
+          target_bin="host",
+          source_dir="build"/"release",
+          source_bin="host",
+          toolchain="",
+   
+          clean_target_dir=false,
+          clean_target_bin_dir=false,
+          clean_target_bin_binaries=false,
+   
+          copy_repo=false,
+          copy_compiler=false,
+          copy_pkg_db=false,
+          copy_config_headers=false,
+          copy_version=false,
+          copy_library=false,
+          setup_pkg="",
+          debug = false
+        );
+   
+        for arg in args do
+          // location options
+          if prefix(arg,"--repo=") do
+            &cmd.repo <- arg.[7 to];
+          elif prefix(arg,"--target-dir=") do
+            &cmd.target_dir <- arg.[13 to];
+          elif prefix(arg,"--target-bin=") do
+            &cmd.target_bin <- arg.[13 to];
+          elif prefix(arg,"--source-dir=") do
+            &cmd.source_dir <- arg.[13 to];
+          elif prefix(arg,"--source-bin=") do
+            &cmd.source_bin <- arg.[13 to];
+          elif prefix(arg,"--toolchain=") do
+            &cmd.toolchain <- arg.[12 to];
+          elif arg == "--debug" do
+            &cmd.debug <- true;
+   
+          // operation options: cleaning
+          elif arg == "--clean-target-dir" do
+            &cmd.clean_target_dir <- true;
+          elif arg == "--clean-target-bin-dir" do
+            &cmd.clean_target_bin_dir <- true;
+          elif arg == "--clean-target-bin-binaries" do
+            &cmd.clean_target_bin_binaries <- true;
+   
+          // operation options: copying
+          elif arg == "--copy-repo" do
+            &cmd.copy_repo<- true;
+          elif arg == "--copy-compiler" do
+            &cmd.copy_compiler<- true;
+          elif arg == "--copy-pkg-db" do
+            &cmd.copy_pkg_db <- true;
+          elif arg == "--copy-config-headers" do
+            &cmd.copy_config_headers <- true;
+          elif arg == "--copy-version" do
+            &cmd.copy_version <- true;
+          elif arg == "--copy-library" do
+            &cmd.copy_library <- true;
+    
+          // special configuration package
+          elif prefix(arg,"--setup=") do
+            &cmd.setup_pkg <- arg.[8 to];
+   
+          // help
+          elif arg == "--help" do
+            print_help();
+            System::exit(0);
+          else
+            println$ "Unknown switch " + arg;
+            print_help();
+            System::exit(1);
+          done 
         done
-      done
-    done
-  }
-
-  proc flx_build(cmd: cmd_type)
-  {
-    dirsetup(cmd);
-    // copy the compiler 
-    var compiler_name = "flxg";
-    if PLAT_WIN32 do
-       compiler_name += ".exe";
-    done
-    if cmd.copy_compiler call CopyFiles::copyfiles(cmd.source_dir/cmd.source_bin/'bin', compiler_name, 
-      cmd.target_dir/cmd.target_bin/'bin'/'flxg', true, cmd.debug);
-
-    println$ "Build Complete";
-  }
-
-  proc print_help()
-  {
-    println$ "Usage: flx_build_prep ";
-    println$ "";
-    println$ "# locations";
-    println$ "";
-    println$ "  --repo=repo                 default: src";
-    println$ "  --target-dir=target_dir     default: build/trial";
-    println$ "  --target-bin=target_bin     default: host";
-    println$ "  --source-dir=source_dir     default: build/release";
-    println$ "  --source-bin=source_bin     default: host";
-    println$ "";
-    println$ "# cleaning options";
-    println$ "";
-    println$ "  --clean-target-dir          delete entire target directory";
-    println$ "  --clean-target-bin-dir      delete target sub-directory";
-    println$ "  --clean-target-bin-binaries delete binaries from target sub-directory (not implemented yet)";
-    println$ "";
-    println$ "# copy options";
-    println$ "";
-    println$ "  --copy-repo                 copy src dir of repository";
-    println$ "  --copy-compiler             copy compiler flxg";
-    println$ "  --copy-pkg-db               copy package database";
-    println$ "  --copy-config-headers       copy C++ config headers (NO LONGER OF ANY USE!)";
-    println$ "  --copy-version              copy Felix version file";
-    println$ "  --copy-library              copy Felix library";
-    println$ "";
-    println$ "# selective setup of pkg-db";
-    println$ "  --setup=pkg                 setup using file";
-    println$ "  --toolchain=toolchain       specify toolchain to use";
-    println$ "  --debug                     do stuff verbosely";
-    println$ "";
-    println$ "# Environment variables";
-    println$ "";
-    println$ "FLX_SHELL_ECHO=1              echo all shell callouts (system, popen)";
-    println$ "FLX_DEBUG_FLX=1               make 'flx' explain its processing decisions";
-    println$ "BUILD_FLX_TOOLCHAIN_FAMILY=family   family=gcc or family=clang";
-    println$ "";
-    println$ "Purpose: setup new Felix target";
-    println$ "";
-    println$ "Requires repository directory $repo contain subdirectory 'src'";
-    println$ "Requires directory $source_dir contain subdirectory $source_bin which contains program 'flxg'";
-    println$ "Ensures target_dir contains:";
-    println$ "";
-    println$ "  (a) Repository source in $target_dir/share/src";
-    println$ "  (b) config db, C++ headers, libraries in $target_dir/$target_bin/*";
-    println$ "";
-    println$ "Copies version, flxg, config db, and C++ headers from $source_dir if required";
-  }
-
-  proc setup_toolchain(var toolchain:string, pkgdir:string)
-  {
-    // if the toolchain is specified, fix it
-    if toolchain != "" do 
-      begin
-        println$ "Write toolchain " + toolchain + " into package " + pkgdir/'toolchain.fpc';
-        Directory::mkdirs pkgdir;
-        var f = fopen_output (pkgdir/'toolchain.fpc');
-        write (f,"toolchain: " + toolchain +"\n");
-        fclose f;
-      end
-      println$ "WRITING SPECIFIED TOOLCHAIN PACKAGE: ****************************";
-    elif FileStat::fileexists (pkgdir/'toolchain.fpc') do
-      println$ "USING EXISTING TOOLCHAIN PACKAGE: ****************************";
-    else // guess toolchain and write it
-      var res, os = Shell::get_stdout("uname");
-      &os <- os.strip;
-      var compiler_family = Env::getenv "BUILD_FLX_TOOLCHAIN_FAMILY";
-      match os,compiler_family do
-      | "","" => &toolchain <- "toolchain_mscv_win32";
-      | "Linux","" => &toolchain <- "toolchain_gcc_linux";
-      | "Darwin","" => &toolchain <- "toolchain_clang_osx";
-
-      | "Linux","gcc" => &toolchain <- "toolchain_gcc_linux";
-      | "Linux","clang" => &toolchain <- "toolchain_clang_linux";
-      | "Darwin","gcc" => &toolchain <- "toolchain_gcc_osx";
-      | "Darwin","clang" => &toolchain <- "toolchain_clang_osx";
-
-      | _,_ => 
-        println$ "No toolchain specified in toolchain.fpc or with --toolchain switch";
-        println$ "  uname returns unknown OS: '" +os+'"';
-        println$ "Either:";
-        println$ "  (1) Set environment variable BUID_FLX_TOOLCHAIN_FAMILY=family where family=gcc or family=clang";
-        println$ "  (2) Set the toolchain.fpc file to read 'toolchain:toolchain_name";
-        println$ "  (3) use --toolchain=toolchain_name command line option";
-        println$ "  Note:toolchain name is form 'toolchain_<family>_<os>'";
-        println$ "    where os=Darwin or os=Linux or os=Win32";
-        System::exit(1);
-      done
-      begin
-        println$ "Write toolchain " + toolchain + " into package " + pkgdir/'toolchain.fpc';
-        var f = fopen_output (pkgdir/'toolchain.fpc');
-        write (f,"toolchain: " + toolchain +"\n");
-        fclose f;
-      end
-      println$ "USING GUESSED TOOLCHAIN PACKAGE: ****************************";
-    done
-    println$ load (pkgdir/'toolchain.fpc');
-  }
-
-  typedef cmd_type = typeof (parse_args Empty[string]);
-
-  noinline fun parse_args (args: list[string]) = 
-  {
-     var cmd = (
-       repo = '.',
-       target_dir="build"/"trial",
-       target_bin="host",
-       source_dir="build"/"release",
-       source_bin="host",
-       toolchain="",
-
-       clean_target_dir=false,
-       clean_target_bin_dir=false,
-       clean_target_bin_binaries=false,
-
-       copy_repo=false,
-       copy_compiler=false,
-       copy_pkg_db=false,
-       copy_config_headers=false,
-       copy_version=false,
-       copy_library=false,
-       setup_pkg="",
-       debug = false
-     );
-
-     for arg in args do
-       // location options
-       if prefix(arg,"--repo=") do
-         &cmd.repo <- arg.[7 to];
-       elif prefix(arg,"--target-dir=") do
-         &cmd.target_dir <- arg.[13 to];
-       elif prefix(arg,"--target-bin=") do
-         &cmd.target_bin <- arg.[13 to];
-       elif prefix(arg,"--source-dir=") do
-         &cmd.source_dir <- arg.[13 to];
-       elif prefix(arg,"--source-bin=") do
-         &cmd.source_bin <- arg.[13 to];
-       elif prefix(arg,"--toolchain=") do
-         &cmd.toolchain <- arg.[12 to];
-       elif arg == "--debug" do
-         &cmd.debug <- true;
-
-       // operation options: cleaning
-       elif arg == "--clean-target-dir" do
-         &cmd.clean_target_dir <- true;
-       elif arg == "--clean-target-bin-dir" do
-         &cmd.clean_target_bin_dir <- true;
-       elif arg == "--clean-target-bin-binaries" do
-         &cmd.clean_target_bin_binaries <- true;
-
-       // operation options: copying
-       elif arg == "--copy-repo" do
-         &cmd.copy_repo<- true;
-       elif arg == "--copy-compiler" do
-         &cmd.copy_compiler<- true;
-       elif arg == "--copy-pkg-db" do
-         &cmd.copy_pkg_db <- true;
-       elif arg == "--copy-config-headers" do
-         &cmd.copy_config_headers <- true;
-       elif arg == "--copy-version" do
-         &cmd.copy_version <- true;
-       elif arg == "--copy-library" do
-         &cmd.copy_library <- true;
- 
-       // special configuration package
-       elif prefix(arg,"--setup=") do
-         &cmd.setup_pkg <- arg.[8 to];
-
-       // help
-       elif arg == "--help" do
-         print_help();
-         System::exit(0);
-       else
-         println$ "Unknown switch " + arg;
+   
+    
+        return cmd;
+     }
+   
+     noinline proc build_felix (xargs:list[string])
+     {
+       if xargs.len.int < 2 do 
          print_help();
          System::exit(1);
-       done 
-     done
-
- 
-     return cmd;
-  }
-
-  noinline proc build_felix (xargs:list[string])
-  {
-    if xargs.len.int < 2 do 
-      print_help();
-      System::exit(1);
-    done
-    var cmd = parse_args (tail xargs);
-    println$ "flx_build_prep v1.6";
-    println$ "  repository       = " + cmd.repo;
-    println$ "  target-dir       = " + cmd.target_dir;
-    println$ "  target-bin       = " + cmd.target_bin;
-    println$ "  source-dir       = " + cmd.source_dir;
-    println$ "  source-bin       = " + cmd.source_bin;
-    println$ "  setup-pkg        = " + cmd.setup_pkg;
-    println$ "  toolchain (spec) = " + cmd.toolchain;
-    flx_build (cmd);
-    var target_config_dir = cmd.target_dir/cmd.target_bin/"config" ;
-    setup_toolchain(cmd.toolchain,target_config_dir );
-  }
-
-}
-
-FlxPrepBuild::build_felix (#System::args);
-
-System::exit (0);
+       done
+       var cmd = parse_args (tail xargs);
+       println$ "flx_build_prep v1.6";
+       println$ "  repository       = " + cmd.repo;
+       println$ "  target-dir       = " + cmd.target_dir;
+       println$ "  target-bin       = " + cmd.target_bin;
+       println$ "  source-dir       = " + cmd.source_dir;
+       println$ "  source-bin       = " + cmd.source_bin;
+       println$ "  setup-pkg        = " + cmd.setup_pkg;
+       println$ "  toolchain (spec) = " + cmd.toolchain;
+       flx_build (cmd);
+       var target_config_dir = cmd.target_dir/cmd.target_bin/"config" ;
+       setup_toolchain(cmd.toolchain,target_config_dir );
+     }
+   
+   }
+   
+   FlxPrepBuild::build_felix (#System::args);
+   
+   System::exit (0);
 
 
 Build the Run Time Library (RTL)
@@ -1025,304 +1025,304 @@ share directory. Does not look in the repository.
 .. code-block:: felix
 
   //[flx_build_rtl.flx]
-include "std/felix/toolchain_clang_config";
-include "std/felix/toolchain_interface";
-include "std/felix/flx_pkgconfig";
-include "std/felix/flx_pkg"; // only for "fix2word_flags"
-include "std/felix/flx_cp";
-include "std/felix/flx/flx_depchk";
-include "std/pthread/threadpool";
-include "std/felix/flx_mklib";
-
-class FlxRtlBuild
-{
-
-  private fun / (x:string,y:string) => Filename::join(x,y);
-
-  proc ehandler () {
-    eprintln$ "Flx_buildtools:FlxRtlBuild flx_pkgconfig temporary ehandler invoked";
-    System::exit 1;
-  }
-
-
-  proc make_rtl (
-    build:string, target:string,
-    boot_package:string, 
-    tmpdir:string,
-    static_only:bool,
-    noexes:bool,
-    debug: bool
-  )
-  {
-    val pkgdir = build / target / 'config';
-    val srtl = build / 'share' / 'lib' / 'rtl';
-    val hrtl = build / target / 'lib' / 'rtl';
-    val bin = build / target / 'bin';
-    val repo = build / 'share'; // excludes "src" cause that's in the packages
-    
-    proc dbug (x:string) => if debug call println$ '[make_rtl] ' + x;
-    Directory::mkdirs tmpdir;
-    Directory::mkdirs hrtl;
-    Directory::mkdirs srtl;
-    println$ "bootpkg=" + boot_package + " build image=" + build;
-
-    var db = FlxPkgConfig::FlxPkgConfigQuery (list[string] pkgdir);
-
-    gen getbootfield (field:string) => db.getpkgfield1 ehandler (boot_package, field);
-    gen gettoolchain () => db.getpkgfield1 ehandler ("toolchain","toolchain");
-    var toolchain = gettoolchain();
-    println$ "toolchain    : " + str toolchain;
-
-    var allpkgs = db.getclosure ehandler boot_package;
-    //println$ "Closure      : " + str allpkgs;
-
-    for pkg in allpkgs begin 
-      var lib = db.getpkgfielddflt ehandler (pkg,"library");
-      var srcdir = db.getpkgfielddflt ehandler (pkg,"srcdir");
-      println$ f"%15S %20S %20S" (pkg,lib,srcdir);
-    end 
-
-    var toolchain-maker = 
-      Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] 
-      (
-        dll-name=toolchain, 
-        setup-str="",
-        entry-point=toolchain
-      )
-    ;
-    for pkg in allpkgs begin
-      var library = db.getpkgfielddflt ehandler (pkg,"library");
-      var srcdir = db.getpkgfielddflt ehandler (pkg,"srcdir");
-      var src = db.getpkgfield ehandler (pkg,"src");
-      if library != "" do
-        if srcdir == "" do
-          println$ "Package error, package " + pkg + " library " + library + " No srcdir specified";
-          System::exit(1);
-        done
-        if src.is_empty do
-          println$ "Package error, package " + pkg + " library " + library + " No src files specified";
-          System::exit(1);
-        done
-        var src_dir =  build / 'share';
-        var share_rtl = src_dir / 'lib' / 'rtl';
-        var target_dir =  build / target / 'lib' / 'rtl';
-        var result = FlxLibBuild::make_lib (db,toolchain-maker, src_dir, target_dir, share_rtl, pkg,tmpdir, static_only, debug) ();
-        if not result do
-          eprintln$ "Library build " + pkg + " failed";
-          System::exit 1;
-        done
-      else 
-        println$ "------------";
-        println$ "External package " + pkg;
-        println$ "------------";
-      done
-    end 
-
-    // make drivers
-    begin
-      println$ "------------";
-      println$ "Make drivers";
-      println$ "------------";
-      var srcdir = repo/"src"/"flx_drivers";
-      var config = 
-        (
-          header_search_dirs= list[string] (hrtl, srcdir, srtl),
-          macros= Empty[string],
-          ccflags = Empty[string],
-          library_search_dirs= list[string] ("-L"+hrtl),
-          dynamic_libraries= Empty[string],
-          static_libraries= Empty[string], //############ FIXME or the link won't work!
-          debugln = dbug
-        )
-      ;
-      fun prgname (file:string) => let 
-          dstprg = file.Filename::strip_extension + #(toolchain.executable_extension) in
-          bin / dstprg
-      ;
-
-      var toolchain = toolchain-maker config;
-      println$ #(toolchain.whatami);
-      proc cobj_static (s:string,dst:string) {
-        var src = srcdir/s;
-        println$ "Compiling [static] " + src + " -> " + dst;
-        var fresh = cxx_depcheck (toolchain, src, dst);
-        var result = if fresh then 0 else 
-          toolchain.cxx_static_object_compiler(src=src, dst=dst)
-        ;
-        if result != 0 do
-          println$ "Driver compile "+ s + " -> " + dst +" FAILED";
-          System::exit 1;
-        done
-      }
-      proc cobj_dynamic (s:string,dst:string) {
-        var src = srcdir/s;
-        if static_only do
-          println$ "Skipping [dynamic] " + src + " -> " + dst + " due to flag";
-        else
-          println$ "Compiling [dynamic] " + src + " -> " + dst;
-          var fresh = cxx_depcheck (toolchain, src, dst);
-          var result = if fresh then 0 else 
-            toolchain.cxx_dynamic_object_compiler(src=src, dst=dst)
-          ;
-          if result != 0 do
-            println$ "Driver compile "+ s + " -> " + dst +" FAILED";
-            System::exit 1;
-          done
-        done
-      }
-
-      // VERY CONFUSING!
-      // This one is for full static linkage, RTL static linked
-      cobj_static("flx_run_lib_static.cpp",hrtl/"flx_run_lib_static"+#(toolchain.static_object_extension));
-
-      // This run is for linking an executable which uses the RTL dynamic linked
-      cobj_dynamic("flx_run_lib_static.cpp",hrtl/"flx_run_lib_static"+#(toolchain.dynamic_object_extension));
-
-      // This one is for loading a program as a DLL, i.e. for use in flx_run.exe
-      cobj_dynamic("flx_run_lib_dynamic.cpp",hrtl/"flx_run_lib_dynamic"+#(toolchain.dynamic_object_extension));
-
-      cobj_static("flx_arun_lib_static.cpp",hrtl/"flx_arun_lib_static"+#(toolchain.static_object_extension));
-      cobj_dynamic("flx_arun_lib_static.cpp",hrtl/"flx_arun_lib_static"+#(toolchain.dynamic_object_extension));
-      cobj_dynamic("flx_arun_lib_dynamic.cpp",hrtl/"flx_arun_lib_dynamic"+#(toolchain.dynamic_object_extension));
-
-      cobj_static("flx_run_main.cxx",hrtl/"flx_run_main"+#(toolchain.static_object_extension));
-      cobj_dynamic("flx_run_main.cxx",hrtl/"flx_run_main"+#(toolchain.dynamic_object_extension));
-
-      cobj_static("flx_arun_main.cxx",hrtl/"flx_arun_main"+#(toolchain.static_object_extension));
-      cobj_dynamic("flx_arun_main.cxx",hrtl/"flx_arun_main"+#(toolchain.dynamic_object_extension));
-
-      proc prg(file:string) {
-        var exe = prgname file;
-        println$ "Linking [executable] " + exe;
-        var objs = list (
-          hrtl/file+"_lib_dynamic"+#(toolchain.dynamic_object_extension),
-          hrtl/file+"_main"+#(toolchain.dynamic_object_extension)
+   include "std/felix/toolchain_clang_config";
+   include "std/felix/toolchain_interface";
+   include "std/felix/flx_pkgconfig";
+   include "std/felix/flx_pkg"; // only for "fix2word_flags"
+   include "std/felix/flx_cp";
+   include "std/felix/flx/flx_depchk";
+   include "std/pthread/threadpool";
+   include "std/felix/flx_mklib";
+   
+   class FlxRtlBuild
+   {
+   
+     private fun / (x:string,y:string) => Filename::join(x,y);
+   
+     proc ehandler () {
+       eprintln$ "Flx_buildtools:FlxRtlBuild flx_pkgconfig temporary ehandler invoked";
+       System::exit 1;
+     }
+   
+   
+     proc make_rtl (
+       build:string, target:string,
+       boot_package:string, 
+       tmpdir:string,
+       static_only:bool,
+       noexes:bool,
+       debug: bool
+     )
+     {
+       val pkgdir = build / target / 'config';
+       val srtl = build / 'share' / 'lib' / 'rtl';
+       val hrtl = build / target / 'lib' / 'rtl';
+       val bin = build / target / 'bin';
+       val repo = build / 'share'; // excludes "src" cause that's in the packages
+       
+       proc dbug (x:string) => if debug call println$ '[make_rtl] ' + x;
+       Directory::mkdirs tmpdir;
+       Directory::mkdirs hrtl;
+       Directory::mkdirs srtl;
+       println$ "bootpkg=" + boot_package + " build image=" + build;
+   
+       var db = FlxPkgConfig::FlxPkgConfigQuery (list[string] pkgdir);
+   
+       gen getbootfield (field:string) => db.getpkgfield1 ehandler (boot_package, field);
+       gen gettoolchain () => db.getpkgfield1 ehandler ("toolchain","toolchain");
+       var toolchain = gettoolchain();
+       println$ "toolchain    : " + str toolchain;
+   
+       var allpkgs = db.getclosure ehandler boot_package;
+       //println$ "Closure      : " + str allpkgs;
+   
+       for pkg in allpkgs begin 
+         var lib = db.getpkgfielddflt ehandler (pkg,"library");
+         var srcdir = db.getpkgfielddflt ehandler (pkg,"srcdir");
+         println$ f"%15S %20S %20S" (pkg,lib,srcdir);
+       end 
+   
+       var toolchain-maker = 
+         Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] 
+         (
+           dll-name=toolchain, 
+           setup-str="",
+           entry-point=toolchain
+         )
+       ;
+       for pkg in allpkgs begin
+         var library = db.getpkgfielddflt ehandler (pkg,"library");
+         var srcdir = db.getpkgfielddflt ehandler (pkg,"srcdir");
+         var src = db.getpkgfield ehandler (pkg,"src");
+         if library != "" do
+           if srcdir == "" do
+             println$ "Package error, package " + pkg + " library " + library + " No srcdir specified";
+             System::exit(1);
+           done
+           if src.is_empty do
+             println$ "Package error, package " + pkg + " library " + library + " No src files specified";
+             System::exit(1);
+           done
+           var src_dir =  build / 'share';
+           var share_rtl = src_dir / 'lib' / 'rtl';
+           var target_dir =  build / target / 'lib' / 'rtl';
+           var result = FlxLibBuild::make_lib (db,toolchain-maker, src_dir, target_dir, share_rtl, pkg,tmpdir, static_only, debug) ();
+           if not result do
+             eprintln$ "Library build " + pkg + " failed";
+             System::exit 1;
+           done
+         else 
+           println$ "------------";
+           println$ "External package " + pkg;
+           println$ "------------";
+         done
+       end 
+   
+       // make drivers
+       begin
+         println$ "------------";
+         println$ "Make drivers";
+         println$ "------------";
+         var srcdir = repo/"src"/"flx_drivers";
+         var config = 
+           (
+             header_search_dirs= list[string] (hrtl, srcdir, srtl),
+             macros= Empty[string],
+             ccflags = Empty[string],
+             library_search_dirs= list[string] ("-L"+hrtl),
+             dynamic_libraries= Empty[string],
+             static_libraries= Empty[string], //############ FIXME or the link won't work!
+             debugln = dbug
+           )
+         ;
+         fun prgname (file:string) => let 
+             dstprg = file.Filename::strip_extension + #(toolchain.executable_extension) in
+             bin / dstprg
+         ;
+   
+         var toolchain = toolchain-maker config;
+         println$ #(toolchain.whatami);
+         proc cobj_static (s:string,dst:string) {
+           var src = srcdir/s;
+           println$ "Compiling [static] " + src + " -> " + dst;
+           var fresh = cxx_depcheck (toolchain, src, dst);
+           var result = if fresh then 0 else 
+             toolchain.cxx_static_object_compiler(src=src, dst=dst)
+           ;
+           if result != 0 do
+             println$ "Driver compile "+ s + " -> " + dst +" FAILED";
+             System::exit 1;
+           done
+         }
+         proc cobj_dynamic (s:string,dst:string) {
+           var src = srcdir/s;
+           if static_only do
+             println$ "Skipping [dynamic] " + src + " -> " + dst + " due to flag";
+           else
+             println$ "Compiling [dynamic] " + src + " -> " + dst;
+             var fresh = cxx_depcheck (toolchain, src, dst);
+             var result = if fresh then 0 else 
+               toolchain.cxx_dynamic_object_compiler(src=src, dst=dst)
+             ;
+             if result != 0 do
+               println$ "Driver compile "+ s + " -> " + dst +" FAILED";
+               System::exit 1;
+             done
+           done
+         }
+   
+         // VERY CONFUSING!
+         // This one is for full static linkage, RTL static linked
+         cobj_static("flx_run_lib_static.cpp",hrtl/"flx_run_lib_static"+#(toolchain.static_object_extension));
+   
+         // This run is for linking an executable which uses the RTL dynamic linked
+         cobj_dynamic("flx_run_lib_static.cpp",hrtl/"flx_run_lib_static"+#(toolchain.dynamic_object_extension));
+   
+         // This one is for loading a program as a DLL, i.e. for use in flx_run.exe
+         cobj_dynamic("flx_run_lib_dynamic.cpp",hrtl/"flx_run_lib_dynamic"+#(toolchain.dynamic_object_extension));
+   
+         cobj_static("flx_arun_lib_static.cpp",hrtl/"flx_arun_lib_static"+#(toolchain.static_object_extension));
+         cobj_dynamic("flx_arun_lib_static.cpp",hrtl/"flx_arun_lib_static"+#(toolchain.dynamic_object_extension));
+         cobj_dynamic("flx_arun_lib_dynamic.cpp",hrtl/"flx_arun_lib_dynamic"+#(toolchain.dynamic_object_extension));
+   
+         cobj_static("flx_run_main.cxx",hrtl/"flx_run_main"+#(toolchain.static_object_extension));
+         cobj_dynamic("flx_run_main.cxx",hrtl/"flx_run_main"+#(toolchain.dynamic_object_extension));
+   
+         cobj_static("flx_arun_main.cxx",hrtl/"flx_arun_main"+#(toolchain.static_object_extension));
+         cobj_dynamic("flx_arun_main.cxx",hrtl/"flx_arun_main"+#(toolchain.dynamic_object_extension));
+   
+         proc prg(file:string) {
+           var exe = prgname file;
+           println$ "Linking [executable] " + exe;
+           var objs = list (
+             hrtl/file+"_lib_dynamic"+#(toolchain.dynamic_object_extension),
+             hrtl/file+"_main"+#(toolchain.dynamic_object_extension)
+           );
+           var result,libs = db.query$ list("--rec","--keeprightmost",
+             "--field=provides_dlib","--field=requires_dlibs",file);
+           libs = FlxPkg::fix2word_flags libs;
+           if result != 0 do
+             println$ "Driver pkgconfig query for "+ file+" FAILED";
+             System::exit 1;
+           done
+           if noexes do
+             println$ "Skipping executable link due to flag";
+           else
+             result = toolchain.dynamic_executable_linker(srcs=objs+libs, dst=exe);
+             if result != 0 do
+               println$ "Driver link  "+ file+" FAILED";
+               System::exit 1;
+             done
+           done
+         }
+         prg("flx_run");
+         prg("flx_arun");
+       end
+     }
+   
+     proc flx_build(cmd: cmd_type)
+     {
+       make_rtl ( cmd.target_dir, cmd.target_bin, cmd.boot_package, cmd.tmp_dir, cmd.static_only, cmd.noexes, cmd.debug);
+       println$ "Build Complete";
+     }
+   
+     proc print_help()
+     {
+       println$ "Usage: flx_build_rtl ";
+       println$ "";
+       println$ "# locations";
+       println$ "";
+       println$ "  --pkg=bootpkg (default: flx_rtl_core)";
+       println$ "  --target-dir=target_dir     default: build/trial";
+       println$ "  --target-bin=target_bin     default: host";
+       println$ "  --tmp-dir=tmp               default: build/rtl-tmp";
+       println$ "  --static                    static link libraries only";
+       println$ "  --noexes                    libraries only";
+       println$ "";
+       println$ "  --debug                     do stuff verbosely";
+       println$ "";
+       println$ "# Environment variables";
+       println$ "";
+       println$ "FLX_SHELL_ECHO=1              echo all shell callouts (system, popen)";
+       println$ "FLX_DEBUG_FLX=1               make 'flx' explain its processing decisions";
+       println$ "";
+       println$ "Purpose: Build new Felix target";
+       println$ "";
+       println$ "Ensures target_dir contains:";
+       println$ "";
+       println$ "  (a) Repository source in $target_dir/share/src";
+       println$ "  (b) Share library in $target_dir/share/lib";
+       println$ "  (c) config db, C++ headers, libraries and executables in $target_dir/$target_bin/*";
+       println$ "";
+       println$ "Compiles all C++ sources to libraries and executables";
+     }
+   
+     typedef cmd_type = typeof (parse_args Empty[string]);
+   
+     noinline fun parse_args (args: list[string]) = 
+     {
+        var cmd = (
+          boot_package="",
+          target_dir="build"/"trial",
+          target_bin="host",
+          tmp_dir="build"/"rtl-tmp",
+          static_only=false,
+          noexes=false,
+          debug = false
         );
-        var result,libs = db.query$ list("--rec","--keeprightmost",
-          "--field=provides_dlib","--field=requires_dlibs",file);
-        libs = FlxPkg::fix2word_flags libs;
-        if result != 0 do
-          println$ "Driver pkgconfig query for "+ file+" FAILED";
-          System::exit 1;
+   
+        for arg in args do
+          // location options
+          if prefix(arg,"--pkg=") do
+            &cmd.boot_package <- arg.[6 to];
+          elif prefix(arg,"--target-dir=") do
+            &cmd.target_dir <- arg.[13 to];
+          elif prefix(arg,"--target-bin=") do
+            &cmd.target_bin <- arg.[13 to];
+          elif prefix(arg,"--tmp-dir=") do
+            &cmd.tmp_dir <- arg.[10 to];
+          elif arg == "--static" do
+            &cmd.static_only <- true;
+          elif arg == "--noexes" do
+            &cmd.noexes<- true;
+          elif arg == "--debug" do
+            &cmd.debug <- true;
+   
+          elif arg == "--help" do
+            print_help();
+            System::exit(0);
+          else
+            println$ "Unknown switch " + arg;
+            print_help();
+            System::exit(1);
+          done 
         done
-        if noexes do
-          println$ "Skipping executable link due to flag";
-        else
-          result = toolchain.dynamic_executable_linker(srcs=objs+libs, dst=exe);
-          if result != 0 do
-            println$ "Driver link  "+ file+" FAILED";
-            System::exit 1;
-          done
-        done
-      }
-      prg("flx_run");
-      prg("flx_arun");
-    end
-  }
-
-  proc flx_build(cmd: cmd_type)
-  {
-    make_rtl ( cmd.target_dir, cmd.target_bin, cmd.boot_package, cmd.tmp_dir, cmd.static_only, cmd.noexes, cmd.debug);
-    println$ "Build Complete";
-  }
-
-  proc print_help()
-  {
-    println$ "Usage: flx_build_rtl ";
-    println$ "";
-    println$ "# locations";
-    println$ "";
-    println$ "  --pkg=bootpkg (default: flx_rtl_core)";
-    println$ "  --target-dir=target_dir     default: build/trial";
-    println$ "  --target-bin=target_bin     default: host";
-    println$ "  --tmp-dir=tmp               default: build/rtl-tmp";
-    println$ "  --static                    static link libraries only";
-    println$ "  --noexes                    libraries only";
-    println$ "";
-    println$ "  --debug                     do stuff verbosely";
-    println$ "";
-    println$ "# Environment variables";
-    println$ "";
-    println$ "FLX_SHELL_ECHO=1              echo all shell callouts (system, popen)";
-    println$ "FLX_DEBUG_FLX=1               make 'flx' explain its processing decisions";
-    println$ "";
-    println$ "Purpose: Build new Felix target";
-    println$ "";
-    println$ "Ensures target_dir contains:";
-    println$ "";
-    println$ "  (a) Repository source in $target_dir/share/src";
-    println$ "  (b) Share library in $target_dir/share/lib";
-    println$ "  (c) config db, C++ headers, libraries and executables in $target_dir/$target_bin/*";
-    println$ "";
-    println$ "Compiles all C++ sources to libraries and executables";
-  }
-
-  typedef cmd_type = typeof (parse_args Empty[string]);
-
-  noinline fun parse_args (args: list[string]) = 
-  {
-     var cmd = (
-       boot_package="",
-       target_dir="build"/"trial",
-       target_bin="host",
-       tmp_dir="build"/"rtl-tmp",
-       static_only=false,
-       noexes=false,
-       debug = false
-     );
-
-     for arg in args do
-       // location options
-       if prefix(arg,"--pkg=") do
-         &cmd.boot_package <- arg.[6 to];
-       elif prefix(arg,"--target-dir=") do
-         &cmd.target_dir <- arg.[13 to];
-       elif prefix(arg,"--target-bin=") do
-         &cmd.target_bin <- arg.[13 to];
-       elif prefix(arg,"--tmp-dir=") do
-         &cmd.tmp_dir <- arg.[10 to];
-       elif arg == "--static" do
-         &cmd.static_only <- true;
-       elif arg == "--noexes" do
-         &cmd.noexes<- true;
-       elif arg == "--debug" do
-         &cmd.debug <- true;
-
-       elif arg == "--help" do
-         print_help();
-         System::exit(0);
-       else
-         println$ "Unknown switch " + arg;
+        if cmd.boot_package== "" perform &cmd.boot_package <- "flx_rtl_core";
+        return cmd;
+     }
+   
+     noinline proc build_felix_rtl (xargs:list[string])
+     {
+       if xargs.len.int < 2 do 
          print_help();
          System::exit(1);
-       done 
-     done
-     if cmd.boot_package== "" perform &cmd.boot_package <- "flx_rtl_core";
-     return cmd;
-  }
-
-  noinline proc build_felix_rtl (xargs:list[string])
-  {
-    if xargs.len.int < 2 do 
-      print_help();
-      System::exit(1);
-    done
-    var cmd = parse_args (tail xargs);
-    println$ "flx_build_rtl v1.8";
-    println$ "  build-package = " + cmd.boot_package;
-    println$ "  target-dir    = " + cmd.target_dir;
-    println$ "  target-bin    = " + cmd.target_bin;
-    println$ "  tmp-dir       = " + cmd.tmp_dir;
-    println$ "  static only   = " + cmd.static_only.str;
-    println$ "  no executables= " + cmd.noexes.str;
-    flx_build (cmd);
-  }
-
-}
-
-FlxRtlBuild::build_felix_rtl (#System::args);
-
-System::exit (0);
+       done
+       var cmd = parse_args (tail xargs);
+       println$ "flx_build_rtl v1.8";
+       println$ "  build-package = " + cmd.boot_package;
+       println$ "  target-dir    = " + cmd.target_dir;
+       println$ "  target-bin    = " + cmd.target_bin;
+       println$ "  tmp-dir       = " + cmd.tmp_dir;
+       println$ "  static only   = " + cmd.static_only.str;
+       println$ "  no executables= " + cmd.noexes.str;
+       flx_build (cmd);
+     }
+   
+   }
+   
+   FlxRtlBuild::build_felix_rtl (#System::args);
+   
+   System::exit (0);
 
 
 Build everything else.
@@ -1339,381 +1339,381 @@ directory.
 .. code-block:: felix
 
   //[build_boot.flx]
-web_plugin:      cpp2html
-web_plugin:      fdoc2html
-web_plugin:      fdoc_edit
-web_plugin:      fdoc_button
-web_plugin:      fdoc_fileseq
-web_plugin:      fdoc_heading
-web_plugin:      fdoc_paragraph
-web_plugin:      fdoc_scanner
-web_plugin:      fdoc_slideshow
-web_plugin:      toc_menu
-web_plugin:      fdoc_frame
-web_plugin:      flx2html
-web_plugin:      fpc2html
-web_plugin:      ocaml2html
-web_plugin:      py2html
-toolchain_plugin:      toolchain_clang_linux
-toolchain_plugin:      toolchain_clang_osx
-toolchain_plugin:      toolchain_iphoneos
-toolchain_plugin:      toolchain_iphonesimulator
-toolchain_plugin:      toolchain_gcc_linux
-toolchain_plugin:      toolchain_gcc_osx
-toolchain_plugin:      toolchain_msvc_win32
-tool:      flx_cp
-tool:      flx_ls
-tool:      flx_grep
-tool:      flx_replace
-tool:      flx_batch_replace
-tool:      flx_tangle
-tool:      flx_perror
-tool:      flx_gramdoc
-tool:      flx_libindex
-tool:      flx_libcontents
-tool:      flx_mktutindex
-tool:      flx_renumber
-tool:      flx_iscr
-tool:      flx_pretty
-flx_tool: flx_pkgconfig
-flx_tool: flx_build_prep
-flx_tool: flx_build_rtl
-flx_tool: flx_build_boot
-flx_tool: flx_build_flxg
+   web_plugin:      cpp2html
+   web_plugin:      fdoc2html
+   web_plugin:      fdoc_edit
+   web_plugin:      fdoc_button
+   web_plugin:      fdoc_fileseq
+   web_plugin:      fdoc_heading
+   web_plugin:      fdoc_paragraph
+   web_plugin:      fdoc_scanner
+   web_plugin:      fdoc_slideshow
+   web_plugin:      toc_menu
+   web_plugin:      fdoc_frame
+   web_plugin:      flx2html
+   web_plugin:      fpc2html
+   web_plugin:      ocaml2html
+   web_plugin:      py2html
+   toolchain_plugin:      toolchain_clang_linux
+   toolchain_plugin:      toolchain_clang_osx
+   toolchain_plugin:      toolchain_iphoneos
+   toolchain_plugin:      toolchain_iphonesimulator
+   toolchain_plugin:      toolchain_gcc_linux
+   toolchain_plugin:      toolchain_gcc_osx
+   toolchain_plugin:      toolchain_msvc_win32
+   tool:      flx_cp
+   tool:      flx_ls
+   tool:      flx_grep
+   tool:      flx_replace
+   tool:      flx_batch_replace
+   tool:      flx_tangle
+   tool:      flx_perror
+   tool:      flx_gramdoc
+   tool:      flx_libindex
+   tool:      flx_libcontents
+   tool:      flx_mktutindex
+   tool:      flx_renumber
+   tool:      flx_iscr
+   tool:      flx_pretty
+   flx_tool: flx_pkgconfig
+   flx_tool: flx_build_prep
+   flx_tool: flx_build_rtl
+   flx_tool: flx_build_boot
+   flx_tool: flx_build_flxg
 
 
 .. code-block:: felix
 
   //[flx_build_boot.flx]
-include "std/felix/toolchain_clang_config";
-include "std/felix/toolchain_interface";
-include "std/felix/flx_cp";
-include "std/felix/flx_pkgconfig";
-include "std/felix/flx_pkg"; // only for "fix2word_flags"
-include "std/felix/flx/flx_plugin_client";
-
-class FlxCoreBuild
-{
-
-  fun / (x:string,y:string) => Filename::join(x,y);
-
-  proc ehandler () {
-    eprintln$ "Flx_buildtools:FlxCoreBuild flx_pkgconfig temporary ehandler invoked";
-    System::exit 1;
-  }
-
-
-  proc build_plugins(target_dir:string, target_bin:string, plugins:list[string])
-  {
-    for plugin in plugins do
-      println$ "Building plugin " + plugin;
-      var result = Flx_client::runflx$ list ('[flx]',
-        '--test='+target_dir, '--target-subdir='+target_bin, 
-        '-c', '-ox',target_dir/target_bin/'lib'/'rtl'/plugin, 
-        target_dir/'share'/'lib'/'plugins'/plugin);
-      if result != 0 do 
-        println$ "plugin (dynamic) build failed";
-        System::exit 1; 
-      done
-
-      result = Flx_client::runflx$ list ('[flx]',
-        '--test='+target_dir, '--target-subdir='+target_bin, 
-        '-c', '--nolink','-ox', target_dir/target_bin/'lib'/'rtl'/plugin, 
-        target_dir/'share'/'lib'/'plugins'/plugin);
-      if result != 0 do 
-        println$ "plugin (dynamic obj) build failed";
-        System::exit 1; 
-      done
-
-      result = Flx_client::runflx$ list ('[flx]',
-        '--test='+target_dir, '--target-subdir='+target_bin, 
-        '--static','-c', '--nolink','-ox', target_dir/target_bin/'lib'/'rtl'/plugin, 
-        target_dir/'share'/'lib'/'plugins'/plugin);
-      if result != 0 do 
-        println$ "plugin (static obj) build failed";
-        System::exit 1; 
-      done
-    done
+   include "std/felix/toolchain_clang_config";
+   include "std/felix/toolchain_interface";
+   include "std/felix/flx_cp";
+   include "std/felix/flx_pkgconfig";
+   include "std/felix/flx_pkg"; // only for "fix2word_flags"
+   include "std/felix/flx/flx_plugin_client";
    
-  }
-
-  proc build_exes(target_dir:string, target_bin:string, tools:list[string])
-  {
-    println$ "build exes";
-    for exe in tools do
-      var src = Filename::join ("tools",exe);
-      println$ src + " -> " + exe;
-      var result = Flx_client::runflx$ list ('[flx]',
-        '--test='+target_dir, '--target-subdir='+target_bin, 
-        '--static','-c',
-        '-ox', target_dir/target_bin/'bin'/exe, target_dir/'share'/'src'/src);
-      if result != 0 do 
-        println$ "exe build failed";
-        System::exit 1; 
-      done
-    done
-  }
-
-  proc build_flx_tools (target_dir:string, target_bin:string, tools:list[string])
-  {
-    println$ "build flx build tools";
-    for exe in tools do
-      var src = Filename::join ("tools",exe);
-      println$ src + " -> " + exe;
-      var result = Flx_client::runflx$ list ('[flx]',
-        '--test='+target_dir, '--target-subdir='+target_bin, 
-        '--static','-c',
-        '-ox', target_dir/target_bin/'bin'/exe, target_dir/'share'/'src'/src);
-      if result != 0 do 
-        println$ "exe build failed";
-        System::exit 1; 
-      done
-    done
-  }
-
-  proc build_flx_web (target_dir:string, target_bin:string, web_plugins:list[string])
-  {
-    if PLAT_WIN32 do
-      var obj_extn = "_static.obj"; // HACK!!!!!!!! 
-    else
-      var obj_extn = "_static.o"; // HACK!!!!!!!! 
-    done
-
-    println$ "dflx_web  -> dflx_web object file";
-    var result = Flx_client::runflx$ list ('[flx]',
-      '--test='+target_dir, '--target-subdir='+target_bin, 
-      '--static','-c','--nolink',
-      '-o', target_dir/target_bin/'lib'/'rtl'/'dflx_web'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx_web');
-    if result != 0 do 
-      println$ "dflx_web build failed";
-      System::exit 1; 
-    done
-    var web_plugin_objs = 
-      map 
-        (fun (s:string) => target_dir/target_bin/'lib'/'rtl'/s+obj_extn) 
-        web_plugins
-    ;
-
-    println$ "Build flx_web. Note: requires --build-web-plugins";
-    println$ "flx_web  -> flx_web executable";
-    result = Flx_client::runflx$ 
-      list (
-        '[flx]',
-        '--test='+target_dir, '--target-subdir='+target_bin, 
-        '--static','-c',
-        '-ox', target_dir/target_bin/'bin'/'flx_web') + 
-      web_plugin_objs +
-      list (
-        target_dir/target_bin/'lib'/'rtl'/'dflx_web' + obj_extn, 
-        target_dir/'share'/'src'/'tools'/'flx_web.flx')
-    ;
-    if result != 0 do 
-      println$ "exe build failed";
-      System::exit 1; 
-    done
-  }
-
-  proc build_flx (target_dir:string, target_bin:string, toolchain_plugins:list[string])
-  {
-    if PLAT_WIN32 do
-      var obj_extn = ".obj"; // HACK!!!!!!!! 
-    else
-      var obj_extn = ".o"; // HACK!!!!!!!! 
-    done
-    println$ "dflx  -> dflx object file";
-    var result = Flx_client::runflx$ list ('[flx]',
-      '--test='+target_dir, '--target-subdir='+target_bin, 
-      '-c','--nolink', '--static',
-      '-o', target_dir/target_bin/'lib'/'rtl'/'dflx'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx');
-    if result != 0 do 
-      println$ "dflx build failed";
-      System::exit 1; 
-    done
-
-    println$ "Compile of dflx"+obj_extn+" SUCCEEDED";
-
-    var toolchain_objects = map (fun (p:string) =>
-      target_dir/target_bin/'lib'/'rtl'/p + "_static"+obj_extn) 
-      toolchain_plugins
-    ; 
-
-    println$ "Linking dflx"+obj_extn+" with toolchains "+toolchain_objects.str;
- 
-    println$ "Build flx. Note: requires --build-toolchain-plugins";
-    println$ "flx  -> flx";
-    result = Flx_client::runflx$ list ('[flx]',
-      '--test='+target_dir, '--target-subdir='+target_bin, 
-      '--static','-c',
-      '-ox', target_dir/target_bin/'bin'/'flx') + toolchain_objects +
-      (target_dir/target_bin/'lib'/'rtl'/'dflx' + obj_extn) +
-      (target_dir/'share'/'src'/'tools'/'flx.flx')
-    ;
-    if result != 0 do 
-      println$ "exe build failed";
-      System::exit 1; 
-    done
-    println$ "Build flx: SUCCEEDED";
-  }
-
-  proc flx_build(cmd: cmd_type)
-  {
-    println$ "bootpkg=" + cmd.boot_package;
-    var pkgdir = Filename::join (cmd.target_dir, cmd.target_bin, "config");
-    var db = FlxPkgConfig::FlxPkgConfigQuery (list[string] pkgdir);
-    gen getbootfields (field:string) => db.getpkgfield  ehandler (cmd.boot_package, field);
-    var toolchain_plugins = getbootfields ("toolchain_plugin");
-    var cygwin_toolchain_plugins = getbootfields ("cygwin_toolchain_plugin");
-    var web_plugins = getbootfields ("web_plugin");
-    var flx_tools = getbootfields ("flx_tool");
-    var tools = getbootfields ("tool");
-
-    // at this point, the build proceeds using host tools, but only target sources.
-    if PLAT_CYGWIN do // requires cygwin dll and headers so only on Cygwin!
-      if cmd.build_toolchain_plugins call 
-        build_plugins(cmd.target_dir, cmd.target_bin, 
-        toolchain_plugins+cygwin_toolchain_plugins+"flx_plugin")
-      ;
-      if cmd.build_flx call 
-        build_flx(cmd.target_dir, cmd.target_bin, toolchain_plugins+cygwin_toolchain_plugins)
-      ;
-    else
-      if cmd.build_toolchain_plugins call 
-        build_plugins(cmd.target_dir, cmd.target_bin, toolchain_plugins+"flx_plugin")
-      ;
-      if cmd.build_flx call 
-        build_flx(cmd.target_dir, cmd.target_bin, toolchain_plugins)
-      ;
-    done
-
-    if cmd.build_flx_tools call build_flx_tools(cmd.target_dir, cmd.target_bin, flx_tools);
-    if cmd.build_web_plugins call build_plugins(cmd.target_dir, cmd.target_bin, web_plugins);
-    if cmd.build_tools call build_exes(cmd.target_dir, cmd.target_bin, tools);
-    if cmd.build_flx_web call build_flx_web (cmd.target_dir, cmd.target_bin, web_plugins);
-    println$ "Build Complete";
-  }
-
-  proc print_help()
-  {
-    println$ "Usage: flx_build_boot ";
-    println$ "";
-    println$ "# locations";
-    println$ "";
-    println$ "  --pkg=bootpkg               default: build_boot";
-    println$ "  --target-dir=target_dir     default: build/release";
-    println$ "  --target-bin=target_bin     default: host";
-    println$ "";
-    println$ "";
-    println$ "# compilation options";
-    println$ "";
-    println$ "  --build-toolchain-plugins   Felix compile the toolchain plugins";
-    println$ "  --build-flx                 Felix compile flx";
-    println$ "  --build-flx-tools           Felix compile flx build tools";
-    println$ "  --build-web-plugins         Felix compile the webserver plugins";
-    println$ "  --build-tools               Felix compile standard tools";
-    println$ "  --build-flx-web             Felix compile web server executable";
-    println$ "";
-    println$ "  --debug                     do stuff verbosely";
-    println$ "";
-    println$ "# Environment variables";
-    println$ "";
-    println$ "FLX_SHELL_ECHO=1              echo all shell callouts (system, popen)";
-    println$ "FLX_DEBUG_FLX=1               make 'flx' explain its processing decisions";
-    println$ "";
-    println$ "Purpose: Build new Felix target: stuff written in Felix";
-    println$ "";
-    println$ "Ensures target_dir contains:";
-    println$ "";
-    println$ "  (a) Repository source in $target_dir/share/src";
-    println$ "  (b) Share library in $target_dir/share/lib";
-    println$ "  (c) config db, C++ headers, libraries and executables in $target_dir/$target_bin/*";
-    println$ "";
-  }
-
-  typedef cmd_type = typeof (parse_args Empty[string]);
-
-  noinline fun parse_args (args: list[string]) = 
-  {
-     var cmd = (
-       boot_package="",
-       target_dir="build"/"release",
-       target_bin="host",
-
-       build_web_plugins=false,
-       build_toolchain_plugins=false,
-       build_flx=false,
-       build_flx_tools=false,
-       build_tools=false,
-       build_flx_web=false,
-       debug = false
-     );
-
-     for arg in args do
-       // location options
-       if prefix(arg,"--pkg=") do
-         &cmd.boot_package <- arg.[6 to];
-       elif prefix(arg,"--target-dir=") do
-         &cmd.target_dir <- arg.[13 to];
-       elif prefix(arg,"--target-bin=") do
-         &cmd.target_bin <- arg.[13 to];
-       elif arg == "--debug" do
-         &cmd.debug <- true;
-
-       // operation options: compilation
-       elif arg == "--build-web-plugins" do
-         &cmd.build_web_plugins<- true;
-       elif arg == "--build-toolchain-plugins" do
-         &cmd.build_toolchain_plugins<- true;
-       elif arg == "--build-flx" do
-         &cmd.build_flx <- true;
-       elif arg == "--build-flx-tools" do
-         &cmd.build_flx_tools <- true;
-       elif arg == "--build-tools" do
-         &cmd.build_tools<- true;
-       elif arg == "--build-flx-web" do
-         &cmd.build_flx_web <- true;
-       elif arg == "--build-all" do
-         &cmd.build_web_plugins<- true;
-         &cmd.build_toolchain_plugins<- true;
-         &cmd.build_flx <- true;
-         &cmd.build_flx_web <- true;
-         &cmd.build_flx_tools <- true;
-         &cmd.build_tools<- true;
-       elif arg == "--help" do
-         print_help();
-         System::exit(0);
+   class FlxCoreBuild
+   {
+   
+     fun / (x:string,y:string) => Filename::join(x,y);
+   
+     proc ehandler () {
+       eprintln$ "Flx_buildtools:FlxCoreBuild flx_pkgconfig temporary ehandler invoked";
+       System::exit 1;
+     }
+   
+   
+     proc build_plugins(target_dir:string, target_bin:string, plugins:list[string])
+     {
+       for plugin in plugins do
+         println$ "Building plugin " + plugin;
+         var result = Flx_client::runflx$ list ('[flx]',
+           '--test='+target_dir, '--target-subdir='+target_bin, 
+           '-c', '-ox',target_dir/target_bin/'lib'/'rtl'/plugin, 
+           target_dir/'share'/'lib'/'plugins'/plugin);
+         if result != 0 do 
+           println$ "plugin (dynamic) build failed";
+           System::exit 1; 
+         done
+   
+         result = Flx_client::runflx$ list ('[flx]',
+           '--test='+target_dir, '--target-subdir='+target_bin, 
+           '-c', '--nolink','-ox', target_dir/target_bin/'lib'/'rtl'/plugin, 
+           target_dir/'share'/'lib'/'plugins'/plugin);
+         if result != 0 do 
+           println$ "plugin (dynamic obj) build failed";
+           System::exit 1; 
+         done
+   
+         result = Flx_client::runflx$ list ('[flx]',
+           '--test='+target_dir, '--target-subdir='+target_bin, 
+           '--static','-c', '--nolink','-ox', target_dir/target_bin/'lib'/'rtl'/plugin, 
+           target_dir/'share'/'lib'/'plugins'/plugin);
+         if result != 0 do 
+           println$ "plugin (static obj) build failed";
+           System::exit 1; 
+         done
+       done
+      
+     }
+   
+     proc build_exes(target_dir:string, target_bin:string, tools:list[string])
+     {
+       println$ "build exes";
+       for exe in tools do
+         var src = Filename::join ("tools",exe);
+         println$ src + " -> " + exe;
+         var result = Flx_client::runflx$ list ('[flx]',
+           '--test='+target_dir, '--target-subdir='+target_bin, 
+           '--static','-c',
+           '-ox', target_dir/target_bin/'bin'/exe, target_dir/'share'/'src'/src);
+         if result != 0 do 
+           println$ "exe build failed";
+           System::exit 1; 
+         done
+       done
+     }
+   
+     proc build_flx_tools (target_dir:string, target_bin:string, tools:list[string])
+     {
+       println$ "build flx build tools";
+       for exe in tools do
+         var src = Filename::join ("tools",exe);
+         println$ src + " -> " + exe;
+         var result = Flx_client::runflx$ list ('[flx]',
+           '--test='+target_dir, '--target-subdir='+target_bin, 
+           '--static','-c',
+           '-ox', target_dir/target_bin/'bin'/exe, target_dir/'share'/'src'/src);
+         if result != 0 do 
+           println$ "exe build failed";
+           System::exit 1; 
+         done
+       done
+     }
+   
+     proc build_flx_web (target_dir:string, target_bin:string, web_plugins:list[string])
+     {
+       if PLAT_WIN32 do
+         var obj_extn = "_static.obj"; // HACK!!!!!!!! 
        else
-         println$ "Unknown switch " + arg;
+         var obj_extn = "_static.o"; // HACK!!!!!!!! 
+       done
+   
+       println$ "dflx_web  -> dflx_web object file";
+       var result = Flx_client::runflx$ list ('[flx]',
+         '--test='+target_dir, '--target-subdir='+target_bin, 
+         '--static','-c','--nolink',
+         '-o', target_dir/target_bin/'lib'/'rtl'/'dflx_web'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx_web');
+       if result != 0 do 
+         println$ "dflx_web build failed";
+         System::exit 1; 
+       done
+       var web_plugin_objs = 
+         map 
+           (fun (s:string) => target_dir/target_bin/'lib'/'rtl'/s+obj_extn) 
+           web_plugins
+       ;
+   
+       println$ "Build flx_web. Note: requires --build-web-plugins";
+       println$ "flx_web  -> flx_web executable";
+       result = Flx_client::runflx$ 
+         list (
+           '[flx]',
+           '--test='+target_dir, '--target-subdir='+target_bin, 
+           '--static','-c',
+           '-ox', target_dir/target_bin/'bin'/'flx_web') + 
+         web_plugin_objs +
+         list (
+           target_dir/target_bin/'lib'/'rtl'/'dflx_web' + obj_extn, 
+           target_dir/'share'/'src'/'tools'/'flx_web.flx')
+       ;
+       if result != 0 do 
+         println$ "exe build failed";
+         System::exit 1; 
+       done
+     }
+   
+     proc build_flx (target_dir:string, target_bin:string, toolchain_plugins:list[string])
+     {
+       if PLAT_WIN32 do
+         var obj_extn = ".obj"; // HACK!!!!!!!! 
+       else
+         var obj_extn = ".o"; // HACK!!!!!!!! 
+       done
+       println$ "dflx  -> dflx object file";
+       var result = Flx_client::runflx$ list ('[flx]',
+         '--test='+target_dir, '--target-subdir='+target_bin, 
+         '-c','--nolink', '--static',
+         '-o', target_dir/target_bin/'lib'/'rtl'/'dflx'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx');
+       if result != 0 do 
+         println$ "dflx build failed";
+         System::exit 1; 
+       done
+   
+       println$ "Compile of dflx"+obj_extn+" SUCCEEDED";
+   
+       var toolchain_objects = map (fun (p:string) =>
+         target_dir/target_bin/'lib'/'rtl'/p + "_static"+obj_extn) 
+         toolchain_plugins
+       ; 
+   
+       println$ "Linking dflx"+obj_extn+" with toolchains "+toolchain_objects.str;
+    
+       println$ "Build flx. Note: requires --build-toolchain-plugins";
+       println$ "flx  -> flx";
+       result = Flx_client::runflx$ list ('[flx]',
+         '--test='+target_dir, '--target-subdir='+target_bin, 
+         '--static','-c',
+         '-ox', target_dir/target_bin/'bin'/'flx') + toolchain_objects +
+         (target_dir/target_bin/'lib'/'rtl'/'dflx' + obj_extn) +
+         (target_dir/'share'/'src'/'tools'/'flx.flx')
+       ;
+       if result != 0 do 
+         println$ "exe build failed";
+         System::exit 1; 
+       done
+       println$ "Build flx: SUCCEEDED";
+     }
+   
+     proc flx_build(cmd: cmd_type)
+     {
+       println$ "bootpkg=" + cmd.boot_package;
+       var pkgdir = Filename::join (cmd.target_dir, cmd.target_bin, "config");
+       var db = FlxPkgConfig::FlxPkgConfigQuery (list[string] pkgdir);
+       gen getbootfields (field:string) => db.getpkgfield  ehandler (cmd.boot_package, field);
+       var toolchain_plugins = getbootfields ("toolchain_plugin");
+       var cygwin_toolchain_plugins = getbootfields ("cygwin_toolchain_plugin");
+       var web_plugins = getbootfields ("web_plugin");
+       var flx_tools = getbootfields ("flx_tool");
+       var tools = getbootfields ("tool");
+   
+       // at this point, the build proceeds using host tools, but only target sources.
+       if PLAT_CYGWIN do // requires cygwin dll and headers so only on Cygwin!
+         if cmd.build_toolchain_plugins call 
+           build_plugins(cmd.target_dir, cmd.target_bin, 
+           toolchain_plugins+cygwin_toolchain_plugins+"flx_plugin")
+         ;
+         if cmd.build_flx call 
+           build_flx(cmd.target_dir, cmd.target_bin, toolchain_plugins+cygwin_toolchain_plugins)
+         ;
+       else
+         if cmd.build_toolchain_plugins call 
+           build_plugins(cmd.target_dir, cmd.target_bin, toolchain_plugins+"flx_plugin")
+         ;
+         if cmd.build_flx call 
+           build_flx(cmd.target_dir, cmd.target_bin, toolchain_plugins)
+         ;
+       done
+   
+       if cmd.build_flx_tools call build_flx_tools(cmd.target_dir, cmd.target_bin, flx_tools);
+       if cmd.build_web_plugins call build_plugins(cmd.target_dir, cmd.target_bin, web_plugins);
+       if cmd.build_tools call build_exes(cmd.target_dir, cmd.target_bin, tools);
+       if cmd.build_flx_web call build_flx_web (cmd.target_dir, cmd.target_bin, web_plugins);
+       println$ "Build Complete";
+     }
+   
+     proc print_help()
+     {
+       println$ "Usage: flx_build_boot ";
+       println$ "";
+       println$ "# locations";
+       println$ "";
+       println$ "  --pkg=bootpkg               default: build_boot";
+       println$ "  --target-dir=target_dir     default: build/release";
+       println$ "  --target-bin=target_bin     default: host";
+       println$ "";
+       println$ "";
+       println$ "# compilation options";
+       println$ "";
+       println$ "  --build-toolchain-plugins   Felix compile the toolchain plugins";
+       println$ "  --build-flx                 Felix compile flx";
+       println$ "  --build-flx-tools           Felix compile flx build tools";
+       println$ "  --build-web-plugins         Felix compile the webserver plugins";
+       println$ "  --build-tools               Felix compile standard tools";
+       println$ "  --build-flx-web             Felix compile web server executable";
+       println$ "";
+       println$ "  --debug                     do stuff verbosely";
+       println$ "";
+       println$ "# Environment variables";
+       println$ "";
+       println$ "FLX_SHELL_ECHO=1              echo all shell callouts (system, popen)";
+       println$ "FLX_DEBUG_FLX=1               make 'flx' explain its processing decisions";
+       println$ "";
+       println$ "Purpose: Build new Felix target: stuff written in Felix";
+       println$ "";
+       println$ "Ensures target_dir contains:";
+       println$ "";
+       println$ "  (a) Repository source in $target_dir/share/src";
+       println$ "  (b) Share library in $target_dir/share/lib";
+       println$ "  (c) config db, C++ headers, libraries and executables in $target_dir/$target_bin/*";
+       println$ "";
+     }
+   
+     typedef cmd_type = typeof (parse_args Empty[string]);
+   
+     noinline fun parse_args (args: list[string]) = 
+     {
+        var cmd = (
+          boot_package="",
+          target_dir="build"/"release",
+          target_bin="host",
+   
+          build_web_plugins=false,
+          build_toolchain_plugins=false,
+          build_flx=false,
+          build_flx_tools=false,
+          build_tools=false,
+          build_flx_web=false,
+          debug = false
+        );
+   
+        for arg in args do
+          // location options
+          if prefix(arg,"--pkg=") do
+            &cmd.boot_package <- arg.[6 to];
+          elif prefix(arg,"--target-dir=") do
+            &cmd.target_dir <- arg.[13 to];
+          elif prefix(arg,"--target-bin=") do
+            &cmd.target_bin <- arg.[13 to];
+          elif arg == "--debug" do
+            &cmd.debug <- true;
+   
+          // operation options: compilation
+          elif arg == "--build-web-plugins" do
+            &cmd.build_web_plugins<- true;
+          elif arg == "--build-toolchain-plugins" do
+            &cmd.build_toolchain_plugins<- true;
+          elif arg == "--build-flx" do
+            &cmd.build_flx <- true;
+          elif arg == "--build-flx-tools" do
+            &cmd.build_flx_tools <- true;
+          elif arg == "--build-tools" do
+            &cmd.build_tools<- true;
+          elif arg == "--build-flx-web" do
+            &cmd.build_flx_web <- true;
+          elif arg == "--build-all" do
+            &cmd.build_web_plugins<- true;
+            &cmd.build_toolchain_plugins<- true;
+            &cmd.build_flx <- true;
+            &cmd.build_flx_web <- true;
+            &cmd.build_flx_tools <- true;
+            &cmd.build_tools<- true;
+          elif arg == "--help" do
+            print_help();
+            System::exit(0);
+          else
+            println$ "Unknown switch " + arg;
+            print_help();
+            System::exit(1);
+          done 
+        done
+   
+        // Note: unrelated to boot package used by flx_build_rtl
+        if cmd.boot_package == "" do &cmd.boot_package <- "build_boot"; done
+        return cmd;
+     }
+   
+     noinline proc build_felix (xargs:list[string])
+     {
+       if xargs.len.int < 2 do 
          print_help();
          System::exit(1);
-       done 
-     done
-
-     // Note: unrelated to boot package used by flx_build_rtl
-     if cmd.boot_package == "" do &cmd.boot_package <- "build_boot"; done
-     return cmd;
-  }
-
-  noinline proc build_felix (xargs:list[string])
-  {
-    if xargs.len.int < 2 do 
-      print_help();
-      System::exit(1);
-    done
-    var cmd = parse_args (tail xargs);
-    println$ "flx_build_boot v1.3";
-    println$ "  build_package = " + cmd.boot_package;
-    println$ "  target_dir    = " + cmd.target_dir;
-    println$ "  target_bin    = " + cmd.target_bin;
-
-    flx_build (cmd);
-  }
-
-}
-
-Flx_client::setup;
-FlxCoreBuild::build_felix (#System::args);
-
-System::exit (0);
-
-
+       done
+       var cmd = parse_args (tail xargs);
+       println$ "flx_build_boot v1.3";
+       println$ "  build_package = " + cmd.boot_package;
+       println$ "  target_dir    = " + cmd.target_dir;
+       println$ "  target_bin    = " + cmd.target_bin;
+   
+       flx_build (cmd);
+     }
+   
+   }
+   
+   Flx_client::setup;
+   FlxCoreBuild::build_felix (#System::args);
+   
+   System::exit (0);
+   
+   
 

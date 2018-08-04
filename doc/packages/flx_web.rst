@@ -49,83 +49,83 @@ Standalone pretty printer for Felix  :code:`flx` format files.
 .. code-block:: felix
 
   //[flx_pretty.flx]
-// pretty printer for *.flx files
-// uses the flx2html plugin
-
-// COPIED from dflx_web .. 
-class Css4Html {
-flx_head := """
-<style type="text/css">
-body {margin:3%; }
-h1 {color:gray; font-size:120%;}
-h2 {color:gray; font-size:105%;}
-h3 {font-size:100%;}
-h4 {font-size:95%;}
-h5 {font-size:95%;}
-span.fstring {color:darkblue; font-style:italic; }
-span.comment {font-family:arial; color:blue; font-style:italic; }
-span.doccomment {font-family:arial; color:green; font-style:italic; }
-span.big_keyword {color:#FF1010; }
-span.small_keyword {color:#802040; }
-span.qualifier {color:#A02020; }
-span.library {color:#A02000; }
-span.ctor {color:#406020; }
-span.hack {color:#66DD00; }
-span.preproc {color:#005500; }
-span.embedded_c{background-color:#DDDDDD; }
-span.fpc_fieldname {color:#DD0000; }
-span.lineno {color:#101010; background-color:#E0E0E0; font-size:80%; font-family:"courier",monospace; font-style:normal; }
-pre.flxbg {background-color:#A0FFA0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
-pre.uncheckedflxbg {background-color:#D0D0D0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
-pre.cppbg {background-color:#80FF80; color:black; }
-pre.prefmtbg {background-color:#D0D0D0; color:black; }
-pre.expected {background-color:#E0FF80; color:black; }
-pre.input {background-color:#E08080; color:black; }
-pre.inclusion {background-color:#D070D0; color:black; }
-code.inclusion {background-color:#D070D0; color:black; }
-.obsolete { background-color:#FFEFEF; font-size: small; color:black; }
-.future { background-color:#FF8080; font-size: small; color:black; }
-.implementation_detail { background-color:#E0E0E0; font-size: small; color:black;  }
-.bug { background-color:#FFE0E0; font-size: small; color:black; }
-.fixed{ background-color:#FFE0E0; font-size: small; color:black; }
-.done { background-color:#FFE0E0; font-size: small; color:black; }
-.caveat { background-color:#FF8080; color:black; }
-</style>
-""";
-}
-mathjax := '''
-<script type="text/x-mathjax-config">
-  MathJax.Hub.Config({
-    tex2jax: {
-        skipTags: ["script","noscript","style","textarea"]
-    }
-  });
-</script> 
-<script type="text/javascript"
-  src="http://cdn.mathjax.org/mathjax/latest/MathJax.jsconfig=TeX-AMS-MML_HTMLorMML">
-</script>
-''';
-
-
-var xlat_felix: string * string -> bool * string;
-
-xlat_felix = Dynlink::load-plugin-func2 [bool * string, string, string] (
-  dll-name="flx2html", setup-str="", entry-point="flx2html"
-);
-
-
-var filename = System::argv 1;
-if filename == "--style" do
-  println$ Css4Html::flx_head;
-elif filename == "--mathjax" do
-  println$ mathjax;
-else
-  eprintln$ "Formatting file " + filename;
-  var b = load filename;
-  needs_mathjax', txt := xlat_felix (b,"");
-  println$ "<pre class='flxbg'>\n"+txt+"\n</pre>";
-done
-
+   // pretty printer for *.flx files
+   // uses the flx2html plugin
+   
+   // COPIED from dflx_web .. 
+   class Css4Html {
+   flx_head := """
+   <style type="text/css">
+   body {margin:3%; }
+   h1 {color:gray; font-size:120%;}
+   h2 {color:gray; font-size:105%;}
+   h3 {font-size:100%;}
+   h4 {font-size:95%;}
+   h5 {font-size:95%;}
+   span.fstring {color:darkblue; font-style:italic; }
+   span.comment {font-family:arial; color:blue; font-style:italic; }
+   span.doccomment {font-family:arial; color:green; font-style:italic; }
+   span.big_keyword {color:#FF1010; }
+   span.small_keyword {color:#802040; }
+   span.qualifier {color:#A02020; }
+   span.library {color:#A02000; }
+   span.ctor {color:#406020; }
+   span.hack {color:#66DD00; }
+   span.preproc {color:#005500; }
+   span.embedded_c{background-color:#DDDDDD; }
+   span.fpc_fieldname {color:#DD0000; }
+   span.lineno {color:#101010; background-color:#E0E0E0; font-size:80%; font-family:"courier",monospace; font-style:normal; }
+   pre.flxbg {background-color:#A0FFA0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
+   pre.uncheckedflxbg {background-color:#D0D0D0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
+   pre.cppbg {background-color:#80FF80; color:black; }
+   pre.prefmtbg {background-color:#D0D0D0; color:black; }
+   pre.expected {background-color:#E0FF80; color:black; }
+   pre.input {background-color:#E08080; color:black; }
+   pre.inclusion {background-color:#D070D0; color:black; }
+   code.inclusion {background-color:#D070D0; color:black; }
+   .obsolete { background-color:#FFEFEF; font-size: small; color:black; }
+   .future { background-color:#FF8080; font-size: small; color:black; }
+   .implementation_detail { background-color:#E0E0E0; font-size: small; color:black;  }
+   .bug { background-color:#FFE0E0; font-size: small; color:black; }
+   .fixed{ background-color:#FFE0E0; font-size: small; color:black; }
+   .done { background-color:#FFE0E0; font-size: small; color:black; }
+   .caveat { background-color:#FF8080; color:black; }
+   </style>
+   """;
+   }
+   mathjax := '''
+   <script type="text/x-mathjax-config">
+     MathJax.Hub.Config({
+       tex2jax: {
+           skipTags: ["script","noscript","style","textarea"]
+       }
+     });
+   </script> 
+   <script type="text/javascript"
+     src="http://cdn.mathjax.org/mathjax/latest/MathJax.jsconfig=TeX-AMS-MML_HTMLorMML">
+   </script>
+   ''';
+   
+   
+   var xlat_felix: string * string -> bool * string;
+   
+   xlat_felix = Dynlink::load-plugin-func2 [bool * string, string, string] (
+     dll-name="flx2html", setup-str="", entry-point="flx2html"
+   );
+   
+   
+   var filename = System::argv 1;
+   if filename == "--style" do
+     println$ Css4Html::flx_head;
+   elif filename == "--mathjax" do
+     println$ mathjax;
+   else
+     eprintln$ "Formatting file " + filename;
+     var b = load filename;
+     needs_mathjax', txt := xlat_felix (b,"");
+     println$ "<pre class='flxbg'>\n"+txt+"\n</pre>";
+   done
+   
 
 Mainline for dynamic loading.
 -----------------------------
@@ -135,1240 +135,1240 @@ This is the actual webserver code.
 .. code-block:: felix
 
   //[dflx_web.flx]
-if PLAT_POSIX do
-PosixSignal::ignore_signal(PosixSignal::SIGPIPE);
-done
-
-
-
-class Css4Html {
-flx_head := """
-<style type="text/css">
-body {margin:3%; font-family: sans-serif; }
-h1 {color:black; font-size:120%; border-bottom: 2px solid #ddd; padding: 0 0 3px 0;}
-h2 {color:#202020; font-size:105%;}
-h3 {font-size:100%;}
-h4 {font-size:95%;}
-h5 {font-size:95%;}
-span.fstring {color:darkblue; font-style:italic; }
-span.comment {font-family:arial; color:blue; font-style:italic; }
-span.doccomment {font-family:arial; color:green; font-style:italic; }
-span.big_keyword {color:#FF1010; }
-span.small_keyword {color:#802040; }
-span.qualifier {color:#A02020; }
-span.library {color:#A02000; }
-span.ctor {color:#406020; }
-span.hack {color:#66DD00; }
-span.preproc {color:#005500; }
-span.embedded_c{background-color:#DDDDDD; }
-span.fpc_fieldname {color:#DD0000; }
-span.lineno {color:#101010; background-color:#E0E0E0; font-size:80%; font-family:"courier",monospace; font-style:normal; }
-pre { border: 1px solid #ccc; color: black; box-shadow:3px 3px 2px rgba(0,0,0,0.1); padding:2px; }
-pre.flxbg {background-color:#C2FDC2; box-shadow:3px 3px 2px rgba(0,0,0,0.1) }
-pre.uncheckedflxbg {background-color:#eee; box-shadow:3px 3px 2px rgba(0,0,0,0.1); }
-pre.cppbg {background-color:#C2FDC2; }
-pre.prefmtbg {background-color:#F1F1F1; }
-pre.expected {background-color:hsla(74,94%,88%,1); }
-pre.input {background-color:hsla(20,94%,88%,1); }
-pre.inclusion {
-    font-family: Arial;
-    font-weight: normal;
-    font-size: 0.9em;
-    color: #555;
-    border: none;
-    box-shadow: none;
-    text-align: right;
-    margin: -7px 11px -12px 0;
-    padding: 0;
-    background-color:#fafafa;
-}
-code.inclusion {background-color:#D070D0; color:black; }
-.obsolete { background-color:#FFEFEF; font-size: small; color:black; }
-.future { background-color:#FF8080; font-size: small; color:black; }
-.implementation_detail { background-color:#E0E0E0; font-size: small; color:black;  }
-.bug { background-color:#FFE0E0; font-size: small; color:black; }
-.fixed{ background-color:#FFE0E0; font-size: small; color:black; }
-.done { background-color:#FFE0E0; font-size: small; color:black; }
-.caveat { background-color:hsla(0,100%,91%,1); color:black; padding: 0.6em; }
-</style>
-""";
-}
-
-open Socket;
-open IOStream;
-
-open TerminalIByteStream[fd_t];
-open TerminalIOByteStream[socket_t];
-
-// this is a hack to make close work on a listener
-// RF got this right the first time:
-// in the abstract a listener is NOT a socket
-// In fact, it is a socket server, with accept() a way to
-// read new sockets off it ..
-open TerminalIByteStream[socket_t];
-
-include "web/http_response";
-open HTTPResponse;
-include "web/mime_type";
-
-include "plugins/plugin_common";
-include "plugins/fdoc-interface";
-include "plugins/edit-interface";
-include "plugins/toc_menu-interface";
-
-proc dbg(x:string) { fprint (cstderr,x); };
-fun / (x:string, y:string) => Filename::join (x,y);
-
-requires header '#include <stdlib.h>';
-fun strtod: string -> double = "strtod($1.data(),0)";
-fun atoi: string -> int = "atoi($1.data())";
-
-// command line argument processing
-
-// -------------------------------------------------------------------------
-// Setup the fixed defaults.
-var arg = "";
-var argno = 1;
-var SHARE = #Config::std_config.FLX_SHARE_DIR;
-var TARGET = #Config::std_config.FLX_TARGET_DIR;
-var INSTALL_ROOT = SHARE.[to -6]; // cut off the /share suffix
- 
-var DELAY = 0.1;
-var PORT=1234;
-
-var FLX_PATH=Empty[string];
-var FDOC_PATH=Empty[string];
-
-var C_PATH=list(
-  "/usr/local/include",
-  "/usr/include"
-);
-
-var FLX_PKGCONFIG_PATH=Empty[string];
-
-var FLX_WEBSERVER_PLUGIN_PATH = Empty[string];
-var PLUGIN_MAP = Empty[string^3];
-
-// -------------------------------------------------------------------------
-// Set the hard coded default config.
-// This sucks totally, its just a hack based on my
-// local requirements. And even that screws up by
-// confusing multiple gcc installs and clang installs.
-
-var default_config = list (
-  "C_PATH += /usr/include/c++/4.2.1", 
-  "C_PATH += /usr/include/c++/4.2.1/x86_64-apple-darwin10", 
-
-  "C_PATH += /usr/include/c++/4.6", 
-  "C_PATH += /usr/include/c++/4.6.3", 
-  "C_PATH += /usr/lib/gcc/x86_64-linux-gnu/4.6.3/include",
-   ""
-);
-
-// -------------------------------------------------------------------------
-// Now find the users HOME directory.
-// Try to get the config string from there.
-var HOME: string = Env::getenv "HOME";
-println$ "Home=" + HOME;
-var FLX_HOME : string= Filename::join (HOME, ".felix");
-println$ "FlxHome=" + FLX_HOME;
-var FLX_CONFIG : string= Filename::join (FLX_HOME,"webserver.config");
-println$ "Flxconfig=" + FLX_CONFIG;
-var config_data = load(FLX_CONFIG);
-println$ "loaded webserver config data = " + config_data;
-var config_lines = split(config_data, "\n");
-
-
-// -------------------------------------------------------------------------
-// If we couldn't get the webserver config string
-// from the HOME directory, use the fixed default.
-if len config_data == 0.size do
-  println "Using default config";
-  config_lines = default_config;
-done
-
-// -------------------------------------------------------------------------
-// Parse the config string.
-config_lines = map (strip of (string)) config_lines; 
-var pathext = RE2("(.*)\\+=(.*)");
-var varset = RE2("(.*)=(.*)");
-
-var result = varray[StringPiece] (4.size,StringPiece(""));
-for line in config_lines do
-  var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
-  if match_result do
-    var lhs = result.1.str.strip;
-    var rhs = result.2.str.strip;
-    match lhs with
-    | "C_PATH" => C_PATH += rhs;
-    | "FLX_PATH" => FLX_PATH += rhs; 
-    | "FLX_PKGCONFIG_PATH" => FLX_PKGCONFIG_PATH += rhs;
-    | "FLX_WEBSERVER_PLUGIN_PATH" => FLX_WEBSERVER_PLUGIN_PATH += rhs;
-    | "FDOC_PATH" => FDOC_PATH += rhs;
-    | _ => println$ "Unknown variable '" + lhs +"'";
-    endmatch;
-  else
-  match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
-  if match_result do
-    lhs = result.1.str.strip;
-    rhs = result.2.str.strip;
-    match lhs with
-    | "PORT" => PORT = atoi rhs;
-    | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
-    | _ => println$ "Unknown variable '" + lhs +"'";
-    endmatch;
-  done done
-done
-
-// -------------------------------------------------------------------------
-// Process command line options.
-// These can reset the INSTALL_ROOT
-// or augment the C_PATH.
-while argno<System::argc do
-  arg = System::argv argno;
-  println$ "ARG=" + arg;
-  if prefix(arg,"--root=") do
-    INSTALL_ROOT=arg.[7 to];
-    SHARE = INSTALL_ROOT/"share";
-    TARGET = INSTALL_ROOT/"host";
-
-  elif prefix(arg,"--close-delay=") do
-    DELAY=strtod arg.[14 to];
-  elif prefix(arg,"--port=") do
-    PORT=atoi arg.[7 to];
-  elif prefix(arg,"--cpath=") do
-    C_PATH+=arg.[8 to];
-  elif prefix(arg,"--plugin-path=") do
-    FLX_WEBSERVER_PLUGIN_PATH+=arg.[14 to];
-  done
-  ++argno;
-done
-
-// -------------------------------------------------------------------------
-// Now, use the INSTALL_ROOT to augment
-// the search paths.
-C_PATH+= TARGET+"/lib/rtl";
-C_PATH+= INSTALL_ROOT+"/share/lib/rtl";
-FLX_PATH+=INSTALL_ROOT+"/share/lib";
-FLX_PATH+= TARGET+"/lib";
-FDOC_PATH+=INSTALL_ROOT;
-FLX_PKGCONFIG_PATH+= TARGET+"/config";
-FLX_WEBSERVER_PLUGIN_PATH+= TARGET+"/lib";
-
-// -------------------------------------------------------------------------
-// Print the configuation.
-println$ "INSTALL_ROOT="+INSTALL_ROOT;
-println$ "FLX_PATH="+str FLX_PATH;
-println$ "C_PATH="+str C_PATH;
-println$ "FLX_PKGCONFIG_PATH="+str FLX_PKGCONFIG_PATH;
-println$ "FLX_WEBSERVER_PLUGIN_PATH="+str FLX_WEBSERVER_PLUGIN_PATH;
-println$ "FDOC_PATH="+str FDOC_PATH;
-println$ "DELAY="+str DELAY;
-println$ "PORT="+str PORT;
-
-
-// -------------------------------------------------------------------------
-// Build consolidated configuration string
-// for plugins.
-
-val newline="\n";
-
-var config = "INSTALL_ROOT = " + INSTALL_ROOT + newline;
-for d in FLX_PATH do
-  config += "FLX_PATH += " + d + newline;
-done
-
-for d in C_PATH do
-  config += "C_PATH += " + d + newline;
-done
-
-for d in FDOC_PATH do
-  config += "FDOC_PATH += " + d + newline;
-done
-
-for d in FLX_PKGCONFIG_PATH do
-  config += "FLX_PKGCONFIG_PATH += " + d + newline;
-done
-
-for d in FLX_WEBSERVER_PLUGIN_PATH do
-  config += "FLX_WEBSERVER_PLUGIN_PATH += " + d + newline;
-done
-
-print$ "CONSOLIDATED CONFIG:\n" + config;
-
-// -------------------------------------------------------------------------
-// Now load the plugins.
-
-var  xlat_felix = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="flx2html", setup-str=config, entry-point="flx2html"
-  );
-
-var  xlat_fdoc = Dynlink::load-plugin-func2 [fdoc_t, string, string] (
-    dll-name="fdoc2html", setup-str=config, entry-point="fdoc2html"
-  );
-
-var  xlat_fpc = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="fpc2html", setup-str=config, entry-point="fpc2html"
-  );
-
-var  xlat_py = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="py2html", setup-str=config, entry-point="py2html"
-  );
-
-var  xlat_ocaml = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="ocaml2html", setup-str=config, entry-point="ocaml2html"
-  );
-
-var  xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="cpp2html", setup-str=config, entry-point="cpp2html"
-  );
-
-var editor_maker = Dynlink::load-plugin-func1 [edit-interface_t, 1] (
-  dll-name="fdoc_edit", setup-str=config, entry-point="fdoc_edit"
-  );
-
-var  toc_menu = Dynlink::load-plugin-func1 [toc_menu_interface, list[int * string * string]] (
-    dll-name="toc_menu", setup-str="loaded-from-fdoc_frame", entry-point="toc_menu"
-  );
-
-
-// MOVE THIS ELSEWHERE!
-
-fun getline_to_url (get:string) =>
-  if not startswith get "GET " then
-    ""
-  else
-    match find (get, ' ', 4uz) with
-    | #None => ""
-    | Some pos => get.[4 to pos]
-    endmatch
-  endif
-;
-
-fun postline_to_url (get:string) =>
-  if not startswith get "POST " then
-    ""
-  else
-    match find (get, ' ', 5uz) with
-    | #None => ""
-    | Some pos => get.[5 to pos]
-    endmatch
-  endif
-;
-
-
-// strip off the leading http:// then split on the next /
-fun split_url (inurl:string) = {
-  val url =
-    if startswith inurl "http://" then
-      inurl.[to 7]
-    else
-      inurl
-    endif
-  ;
-
-  return
-    match find (url, '/') with
-    | #None => None[string*string]
-    | Some pos => Some$ url.[0 to pos], url.[pos + 1 to]
-    endmatch
-  ;
-}
-
-// parse balance of HTTP GET request (after gthe GET keyword)
-fun parse_get_line (get:string) =>
-  split_url$ getline_to_url get
-;
-
-// parse balance of HTTP GET request (after gthe GET keyword)
-fun parse_post_line (get:string) =>
-  split_url$ postline_to_url get
-;
-
-union request_type = reqGET | reqPOST | reqHEAD | reqERROR;
-
-fun parse_request_type (r:string) =>
-  if startswith r "GET" then reqGET
-  elif startswith r "HEAD" then reqHEAD
-  elif startswith r "POST" then reqPOST
-  else reqERROR
-  endif
-;
-  
-// fixup text by replacing < > and & characters
-fun txt2html (x:string) =
-{
-  var out2 = "";
-  for var i in 0 upto x.len.int - 1 do
-    var ch = x.[i];
-    if ch == char "<" do out2+="&lt;";
-    elif ch == char ">" do out2+="&gt;";
-    elif ch == char "&" do out2+="&amp;";
-    else out2+=ch;
-    done
-  done
-
-  return out2;
-}
-
-// put into <head> of document
-// http://www.mathjax.org/docs/1.1/start.html#mathjax-cdn
-mathjax := '''
-<script type="text/x-mathjax-config">
-  MathJax.Hub.Config({
-    tex2jax: {
-        skipTags: ["script","noscript","style","textarea"]
-    }
-  });
-</script> 
-<script type="text/javascript"
-  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
-</script>
-''';
-
-
-// functions to make responses
-fun make_image_from_suffix (suffix:string, contents:string, headers:headers_t) =>
-  make_image(MIMEType::mime_type_from_extension suffix,contents, headers)
-;
-
-proc serve_not_found (k:socket_t, fname:string, get:bool) {
-   var eof_flag = false;
-   val data = make_not_found(fname);
-   write_string(k,data,&eof_flag);
-}
-
-proc serve_not_implemented (k:socket_t, fname:string) {
-   var eof_flag = false;
-   val data = make_not_implemented(fname);
-   write_string(k,data,&eof_flag);
-}
-
-
-proc serve_forbidden (k:socket_t, fname:string, get:bool) {
-   var eof_flag = false;
-   val data = make_forbidden(fname);
-   write_string(k,data,&eof_flag);
-}
-
-fun find_defs (lines:string) : darray[int * int * string] =
-{
-
-  var fregex = ".*\\.(flx|fdoc)";
-  open Regdef;
-  regdef anychar = perl (".");
-
-  regdef letter = charset "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  regdef digit = charset "0123456789";
-  regdef id1 = letter | "_";
-  regdef id2 = id1 | digit | "-" | "'";
-  regdef id = id1 id2*;
-
-  regdef tex = "\\" letter*;
-  regdef symbol1 = "+-*/%^";
-  regdef symbol = symbol1 | symbol1 symbol1 | symbol1 symbol1 symbol1;
-  regdef name = id | symbol;
-  regdef spaces = " "*;
-  regdef vlist =  "[" spaces id (spaces "," spaces id)* spaces "]";
+   if PLAT_POSIX do
+   PosixSignal::ignore_signal(PosixSignal::SIGPIPE);
+   done
    
-  regdef adjective = "pure" | "inline" | "noinline" | "pod" | "open" | "virtual";
-  regdef binder = "fun" | "proc" | "gen" | "class" | "union" | "struct" | "type" | "typedef" | "ctor" (spaces vlist)?;
-
-  regdef indent2 = "  ";
-
-  regdef classbind= group ("class" | "open class");
-  regdef otherbind= indent2 ? group (adjective* spaces binder);
-
-  // Group 1 = class
-  // Group 2 = other 
-  // group 3 = identifier
-  regdef decl = (classbind | otherbind) spaces group (name) anychar*;
-
-  var emptystring = "";
-  var emptystringpiece = StringPiece emptystring;
-
-  var lregex = decl . render;
-  var lgrep = RE2 lregex;
-  var n = NumberOfCapturingGroups(lgrep)+1;
-  var v = varray[StringPiece] (n.size,emptystringpiece);
-
-  var extract = RE2 " *([^={]*) *(=|{|;).*";
-  var n2 = NumberOfCapturingGroups(extract)+1;
-  var v2 = varray[StringPiece] (n2.size,emptystringpiece);
-
-  var scomment = RE2 " *//[$](.*)";
-  var vcomment = varray[StringPiece] (2.size, emptystringpiece);
-  var count = 0;
-  var comments = Empty[string];
-
-  var h = darray[int * int * string] ();
-  var lno = 1;
-  for line in split (lines,char "\n") do
-    ++count;
-    var spl = StringPiece line;
-
-    match lgrep line with
-    | Some v =>
-      var sym = v.3;
-      var dfn = "";
-      var m2 = Match (extract, spl, 0, ANCHOR_BOTH, v2.stl_begin, n2);
-      if m2 do
-        dfn = v2 . 1 . string . strip;
-      else
-        dfn = line . strip;
-      done
-      //println$ "DEFN: " + dfn;
-      var level = if line.[0] == " " then 2 else 1 endif;
-      push_back (h, (level, lno, dfn));
-
-    | #None => ;
-    endmatch; //d grexp
-    ++lno;
-  done // line
-  return h;
-}
-
-var frame_style= """ 
-<style>
-.container {
-  position: fixed;
-  top:0px;
-  left:0px;
-  height : 100%;
-  width: 100%;
-  background-color: grey;
-  margin: 0px;
-  padding: 0px;
-  border-width: 0px;
-  color: #404040;
-}
-.maincontent {
-  padding:4px;
-  padding-left:8px;
-  line-height:1.3em;
-  color:#404040; background-color:#fafafa;
-}
-.maincontent h1 { margin-left:-8px; position: relative; font-family: georgia, serif; font-size: 1.8em; font-weight: normal; }
-.maincontent h2 { margin-left:-8px; position: relative; margin-bottom:-5px; }
-.maincontent h3 { margin-left:-8px; position: relative; margin-bottom:-5px; }
-.maincontent h4 { margin-left:-8px; position: relative; margin-bottom:-5px; }
-.maincontent code { color:#902030; }
-.toppanel {
-  position:absolute; left:0px; top:0px; height:20px; right:0px; 
-  background-color: #e0e0e0;
-}
-.bottompanel {
-  position:absolute; left:0px; top:22px; bottom:0px; right:0px; 
-  background-color: #fafafa;
-  font-size:14px;
-}
-.leftpanel {
-  position:absolute; left:0px; top:0px; bottom:0px; width: 150px; 
-  background-color: #eaeaea; overflow: auto;
-}
-.rightpanel {
-  position:absolute; right: 0px; left:160px; top:0px; bottom: 0px; 
-  background-color: #fafafa; overflow: auto;
-}
-.divider {
-  position:absolute; left: 150px; top:0px; bottom:0px; 
-  background-color: black; width:2px;
-  box-shadow: 0 0 8px #000;
-}
-
-#panemover {
-    position:absolute;
-    left: 150px;
-    width : 10px;
-    top: 0px;
-    bottom: 0px;
-    opacity: 0.3;
-    cursor:col-resize;
-}
-
-div.m {
-    margin: 0px;
-    padding:0px;
-    border-width:2px;
-    border-color: green;
-}
-
-div.m1 {
-    background-color: #86E870;
-    border-style:outset;
-    border-color:#ccc;
-    border-width:2px 0;
-    font-size:90%;
-    padding: 1px 0 2px 10px;
-}
-
-div.m2 {
-    background-color: #70C070;
-    padding-left:15px;
-    padding-top:2px;
-    border-style:outset;
-    border-color:green;
-    border-width:0 0 1px 0;
-    font-size:80%;
-}
-
-div.m1:hover, div.m2:hover {
-    background-color: white;
-}
-
-#leftmargintoc a {
-    text-decoration: none;
-    color: #404040;
-}
-</style>
-""";
-
-var frame_js = """
-    <script async="true">
-      function dragStart(e, left, right){
-        document.getElementById("panemover").style.width="70%";
-        document.getElementById("panemover").style.left="50px";
-        mousedown = true;
-        x = e.clientX
-        dragOffsetLeft =  
-          document.getElementById(left).getBoundingClientRect().right - 
-          document.getElementById(left).getBoundingClientRect().left - 
-          x 
-        ; 
-        dragOffsetDivider= document.getElementById("divider").getBoundingClientRect().left - x; 
-        dragOffsetRight = document.getElementById(right).getBoundingClientRect().left - x;
-      }
-      function dragRelease(){
-        document.getElementById('panemover').style.width = '6px';
-        document.getElementById('panemover').style.left = document.getElementById('divider').offsetLeft + 'px';
-        mousedown = false;
-      }
-      function drag(e, left, right){
-        if(!mousedown){return}
-        x = e.clientX
-        tmpLeft = dragOffsetLeft + x
-        tmpDivider= dragOffsetDivider + x
-        tmpRight = dragOffsetRight + x
-        document.getElementById(left).style.width= tmpLeft + 'px';
-        document.getElementById("divider").style.left= tmpDivider + 'px';
-        document.getElementById(right).style.left = tmpRight + 'px';
-      };
-    </script>
-""";
-
-typedef code_data_t = int * int * string;
-typedef menu_data_t = int * string * string;
-
-noinline fun wrap_html (h:darray[code_data_t], out:string) :string = {
-  var h3 =  fold_right 
-    (fun (level:int, lno:int, text:string) (lst:list[menu_data_t]) => 
-      (level, text, "#line" + lno.str) + lst
-    )
-    h Empty[menu_data_t]
-  ; 
-    var menu = toc_menu (h3);
-
-    var o = "";
-    reserve(&o,10000+out.len.int);
-
-    o+=frame_style;
-    o+=#(menu.get_style);
-    o+=frame_js;
-    o+=#(menu.get_js);
-
-    // MAIN CONTENT
-    var topcontent =
-      '    <!--Main Content top navbar-->\n'  +
-      '    <!--Main Content top navbar End-->\n'
-    ;
-
-    var leftcontent = #(menu.make_menu);
-
-    var rightcontent =
-      '<!--Main Content Body-->\n' + 
-      out +
-      '<!--Main Content Body End-->\n'
-    ;
- 
-    var html = """
-    <div class="container">
-      <div class="toppanel">
-""" + topcontent + """
-      </div> <!-- toppanel end -->
-      <div class="bottompanel">
-
-        <span id="divider" class="divider"></span>
-
-        <span id="left" class="leftpanel" >
-          <div class="menucontent">
-""" + leftcontent + """
-          </div> <!-- leftpanel contents end -->
-        </span> <!-- leftpanel end -->
-
-
-        <span id="right" class="rightpanel">
-          <div class="maincontent">
-""" + rightcontent + """
-          </div> <!-- rightpanel contents end -->
-          <hr>
-        </span> <!-- rightpanel end -->
-
-        <span id="panemover" style="cursor:col-resize;" 
-         onmousedown="dragStart(event, 'left', 'right'); return false;" 
-         onmousemove="drag(event, 'left', 'right');" 
-         onmouseout="dragRelease();" 
-         onmouseup="dragRelease();"
-        >
-        </span> <!-- panemover end -->
-      </div> <!-- bottom panel end -->
-    </div> <!-- container end -->
-""";
-    o+= html;
-    return o;
-}
-
-
-proc serve_felix (k:socket_t, fname:string, get:bool) {
-  var eof_flag = false;
-
-  match get_file(fname,INSTALL_ROOT,FLX_PATH) with
-  | Some path =>
-    val text = load path;
-    println$ "Loaded felix file " + fname+", len="+str (text.len.int);
-    var h =find_defs (text); 
-    val dirname = Filename::dirname path;
-    def val needs_mathjax, val html = xlat_felix(text,dirname);
-    var wrapped_html = wrap_html (h,"<pre>"+html+"</pre>");
-    val data = make_html$
-      "<html><head>"+Css4Html::flx_head+
-       if needs_mathjax then mathjax else "" endif +
-      "</head><body>"+ wrapped_html +
-      "</body></html>\n\r",
-      list[string*string](("Cache-control","max-age=86400"))
-    ;
-    write_string(k,data,&eof_flag);
-  | #None =>
-      serve_not_found (k,fname,get);
-  endmatch;
-}
-
-proc serve_fpc (k:socket_t, fname:string, get:bool) {
-  var eof_flag = false;
-
-  match get_file (fname, INSTALL_ROOT,FLX_PKGCONFIG_PATH) with
-  | Some path =>
-    val text=load path;
-    println$ "Loaded fpc file " + fname+", len="+str (text.len.int);
-    val dirname = Filename::dirname path;
-    val data = make_html$
-      "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+
-      (xlat_fpc (text, dirname)).1
-      +"</pre></body></html>\n\r",
-      list[string*string]("Cache-control","max-age=86400")
-    ;
-    write_string(k,data,&eof_flag);
-  | #None =>
-      serve_not_found (k,fname,get);
-  endmatch;
-
-}
-
-proc serve_py (k:socket_t, fname:string, get:bool) {
-  var eof_flag = false;
-  match get_file(fname,INSTALL_ROOT,FLX_PATH) with
-  | Some path =>
-    var flx = load path;
-    val data = make_html$
-      "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+ 
-      (xlat_py (flx,"")).1 +"</pre></body></html>\n\r",
+   
+   
+   class Css4Html {
+   flx_head := """
+   <style type="text/css">
+   body {margin:3%; font-family: sans-serif; }
+   h1 {color:black; font-size:120%; border-bottom: 2px solid #ddd; padding: 0 0 3px 0;}
+   h2 {color:#202020; font-size:105%;}
+   h3 {font-size:100%;}
+   h4 {font-size:95%;}
+   h5 {font-size:95%;}
+   span.fstring {color:darkblue; font-style:italic; }
+   span.comment {font-family:arial; color:blue; font-style:italic; }
+   span.doccomment {font-family:arial; color:green; font-style:italic; }
+   span.big_keyword {color:#FF1010; }
+   span.small_keyword {color:#802040; }
+   span.qualifier {color:#A02020; }
+   span.library {color:#A02000; }
+   span.ctor {color:#406020; }
+   span.hack {color:#66DD00; }
+   span.preproc {color:#005500; }
+   span.embedded_c{background-color:#DDDDDD; }
+   span.fpc_fieldname {color:#DD0000; }
+   span.lineno {color:#101010; background-color:#E0E0E0; font-size:80%; font-family:"courier",monospace; font-style:normal; }
+   pre { border: 1px solid #ccc; color: black; box-shadow:3px 3px 2px rgba(0,0,0,0.1); padding:2px; }
+   pre.flxbg {background-color:#C2FDC2; box-shadow:3px 3px 2px rgba(0,0,0,0.1) }
+   pre.uncheckedflxbg {background-color:#eee; box-shadow:3px 3px 2px rgba(0,0,0,0.1); }
+   pre.cppbg {background-color:#C2FDC2; }
+   pre.prefmtbg {background-color:#F1F1F1; }
+   pre.expected {background-color:hsla(74,94%,88%,1); }
+   pre.input {background-color:hsla(20,94%,88%,1); }
+   pre.inclusion {
+       font-family: Arial;
+       font-weight: normal;
+       font-size: 0.9em;
+       color: #555;
+       border: none;
+       box-shadow: none;
+       text-align: right;
+       margin: -7px 11px -12px 0;
+       padding: 0;
+       background-color:#fafafa;
+   }
+   code.inclusion {background-color:#D070D0; color:black; }
+   .obsolete { background-color:#FFEFEF; font-size: small; color:black; }
+   .future { background-color:#FF8080; font-size: small; color:black; }
+   .implementation_detail { background-color:#E0E0E0; font-size: small; color:black;  }
+   .bug { background-color:#FFE0E0; font-size: small; color:black; }
+   .fixed{ background-color:#FFE0E0; font-size: small; color:black; }
+   .done { background-color:#FFE0E0; font-size: small; color:black; }
+   .caveat { background-color:hsla(0,100%,91%,1); color:black; padding: 0.6em; }
+   </style>
+   """;
+   }
+   
+   open Socket;
+   open IOStream;
+   
+   open TerminalIByteStream[fd_t];
+   open TerminalIOByteStream[socket_t];
+   
+   // this is a hack to make close work on a listener
+   // RF got this right the first time:
+   // in the abstract a listener is NOT a socket
+   // In fact, it is a socket server, with accept() a way to
+   // read new sockets off it ..
+   open TerminalIByteStream[socket_t];
+   
+   include "web/http_response";
+   open HTTPResponse;
+   include "web/mime_type";
+   
+   include "plugins/plugin_common";
+   include "plugins/fdoc-interface";
+   include "plugins/edit-interface";
+   include "plugins/toc_menu-interface";
+   
+   proc dbg(x:string) { fprint (cstderr,x); };
+   fun / (x:string, y:string) => Filename::join (x,y);
+   
+   requires header '#include <stdlib.h>';
+   fun strtod: string -> double = "strtod($1.data(),0)";
+   fun atoi: string -> int = "atoi($1.data())";
+   
+   // command line argument processing
+   
+   // -------------------------------------------------------------------------
+   // Setup the fixed defaults.
+   var arg = "";
+   var argno = 1;
+   var SHARE = #Config::std_config.FLX_SHARE_DIR;
+   var TARGET = #Config::std_config.FLX_TARGET_DIR;
+   var INSTALL_ROOT = SHARE.[to -6]; // cut off the /share suffix
+    
+   var DELAY = 0.1;
+   var PORT=1234;
+   
+   var FLX_PATH=Empty[string];
+   var FDOC_PATH=Empty[string];
+   
+   var C_PATH=list(
+     "/usr/local/include",
+     "/usr/include"
+   );
+   
+   var FLX_PKGCONFIG_PATH=Empty[string];
+   
+   var FLX_WEBSERVER_PLUGIN_PATH = Empty[string];
+   var PLUGIN_MAP = Empty[string^3];
+   
+   // -------------------------------------------------------------------------
+   // Set the hard coded default config.
+   // This sucks totally, its just a hack based on my
+   // local requirements. And even that screws up by
+   // confusing multiple gcc installs and clang installs.
+   
+   var default_config = list (
+     "C_PATH += /usr/include/c++/4.2.1", 
+     "C_PATH += /usr/include/c++/4.2.1/x86_64-apple-darwin10", 
+   
+     "C_PATH += /usr/include/c++/4.6", 
+     "C_PATH += /usr/include/c++/4.6.3", 
+     "C_PATH += /usr/lib/gcc/x86_64-linux-gnu/4.6.3/include",
+      ""
+   );
+   
+   // -------------------------------------------------------------------------
+   // Now find the users HOME directory.
+   // Try to get the config string from there.
+   var HOME: string = Env::getenv "HOME";
+   println$ "Home=" + HOME;
+   var FLX_HOME : string= Filename::join (HOME, ".felix");
+   println$ "FlxHome=" + FLX_HOME;
+   var FLX_CONFIG : string= Filename::join (FLX_HOME,"webserver.config");
+   println$ "Flxconfig=" + FLX_CONFIG;
+   var config_data = load(FLX_CONFIG);
+   println$ "loaded webserver config data = " + config_data;
+   var config_lines = split(config_data, "\n");
+   
+   
+   // -------------------------------------------------------------------------
+   // If we couldn't get the webserver config string
+   // from the HOME directory, use the fixed default.
+   if len config_data == 0.size do
+     println "Using default config";
+     config_lines = default_config;
+   done
+   
+   // -------------------------------------------------------------------------
+   // Parse the config string.
+   config_lines = map (strip of (string)) config_lines; 
+   var pathext = RE2("(.*)\\+=(.*)");
+   var varset = RE2("(.*)=(.*)");
+   
+   var result = varray[StringPiece] (4.size,StringPiece(""));
+   for line in config_lines do
+     var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
+     if match_result do
+       var lhs = result.1.str.strip;
+       var rhs = result.2.str.strip;
+       match lhs with
+       | "C_PATH" => C_PATH += rhs;
+       | "FLX_PATH" => FLX_PATH += rhs; 
+       | "FLX_PKGCONFIG_PATH" => FLX_PKGCONFIG_PATH += rhs;
+       | "FLX_WEBSERVER_PLUGIN_PATH" => FLX_WEBSERVER_PLUGIN_PATH += rhs;
+       | "FDOC_PATH" => FDOC_PATH += rhs;
+       | _ => println$ "Unknown variable '" + lhs +"'";
+       endmatch;
+     else
+     match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
+     if match_result do
+       lhs = result.1.str.strip;
+       rhs = result.2.str.strip;
+       match lhs with
+       | "PORT" => PORT = atoi rhs;
+       | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
+       | _ => println$ "Unknown variable '" + lhs +"'";
+       endmatch;
+     done done
+   done
+   
+   // -------------------------------------------------------------------------
+   // Process command line options.
+   // These can reset the INSTALL_ROOT
+   // or augment the C_PATH.
+   while argno<System::argc do
+     arg = System::argv argno;
+     println$ "ARG=" + arg;
+     if prefix(arg,"--root=") do
+       INSTALL_ROOT=arg.[7 to];
+       SHARE = INSTALL_ROOT/"share";
+       TARGET = INSTALL_ROOT/"host";
+   
+     elif prefix(arg,"--close-delay=") do
+       DELAY=strtod arg.[14 to];
+     elif prefix(arg,"--port=") do
+       PORT=atoi arg.[7 to];
+     elif prefix(arg,"--cpath=") do
+       C_PATH+=arg.[8 to];
+     elif prefix(arg,"--plugin-path=") do
+       FLX_WEBSERVER_PLUGIN_PATH+=arg.[14 to];
+     done
+     ++argno;
+   done
+   
+   // -------------------------------------------------------------------------
+   // Now, use the INSTALL_ROOT to augment
+   // the search paths.
+   C_PATH+= TARGET+"/lib/rtl";
+   C_PATH+= INSTALL_ROOT+"/share/lib/rtl";
+   FLX_PATH+=INSTALL_ROOT+"/share/lib";
+   FLX_PATH+= TARGET+"/lib";
+   FDOC_PATH+=INSTALL_ROOT;
+   FLX_PKGCONFIG_PATH+= TARGET+"/config";
+   FLX_WEBSERVER_PLUGIN_PATH+= TARGET+"/lib";
+   
+   // -------------------------------------------------------------------------
+   // Print the configuation.
+   println$ "INSTALL_ROOT="+INSTALL_ROOT;
+   println$ "FLX_PATH="+str FLX_PATH;
+   println$ "C_PATH="+str C_PATH;
+   println$ "FLX_PKGCONFIG_PATH="+str FLX_PKGCONFIG_PATH;
+   println$ "FLX_WEBSERVER_PLUGIN_PATH="+str FLX_WEBSERVER_PLUGIN_PATH;
+   println$ "FDOC_PATH="+str FDOC_PATH;
+   println$ "DELAY="+str DELAY;
+   println$ "PORT="+str PORT;
+   
+   
+   // -------------------------------------------------------------------------
+   // Build consolidated configuration string
+   // for plugins.
+   
+   val newline="\n";
+   
+   var config = "INSTALL_ROOT = " + INSTALL_ROOT + newline;
+   for d in FLX_PATH do
+     config += "FLX_PATH += " + d + newline;
+   done
+   
+   for d in C_PATH do
+     config += "C_PATH += " + d + newline;
+   done
+   
+   for d in FDOC_PATH do
+     config += "FDOC_PATH += " + d + newline;
+   done
+   
+   for d in FLX_PKGCONFIG_PATH do
+     config += "FLX_PKGCONFIG_PATH += " + d + newline;
+   done
+   
+   for d in FLX_WEBSERVER_PLUGIN_PATH do
+     config += "FLX_WEBSERVER_PLUGIN_PATH += " + d + newline;
+   done
+   
+   print$ "CONSOLIDATED CONFIG:\n" + config;
+   
+   // -------------------------------------------------------------------------
+   // Now load the plugins.
+   
+   var  xlat_felix = Dynlink::load-plugin-func2 [bool * string, string, string] (
+       dll-name="flx2html", setup-str=config, entry-point="flx2html"
+     );
+   
+   var  xlat_fdoc = Dynlink::load-plugin-func2 [fdoc_t, string, string] (
+       dll-name="fdoc2html", setup-str=config, entry-point="fdoc2html"
+     );
+   
+   var  xlat_fpc = Dynlink::load-plugin-func2 [bool * string, string, string] (
+       dll-name="fpc2html", setup-str=config, entry-point="fpc2html"
+     );
+   
+   var  xlat_py = Dynlink::load-plugin-func2 [bool * string, string, string] (
+       dll-name="py2html", setup-str=config, entry-point="py2html"
+     );
+   
+   var  xlat_ocaml = Dynlink::load-plugin-func2 [bool * string, string, string] (
+       dll-name="ocaml2html", setup-str=config, entry-point="ocaml2html"
+     );
+   
+   var  xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
+       dll-name="cpp2html", setup-str=config, entry-point="cpp2html"
+     );
+   
+   var editor_maker = Dynlink::load-plugin-func1 [edit-interface_t, 1] (
+     dll-name="fdoc_edit", setup-str=config, entry-point="fdoc_edit"
+     );
+   
+   var  toc_menu = Dynlink::load-plugin-func1 [toc_menu_interface, list[int * string * string]] (
+       dll-name="toc_menu", setup-str="loaded-from-fdoc_frame", entry-point="toc_menu"
+     );
+   
+   
+   // MOVE THIS ELSEWHERE!
+   
+   fun getline_to_url (get:string) =>
+     if not startswith get "GET " then
+       ""
+     else
+       match find (get, ' ', 4uz) with
+       | #None => ""
+       | Some pos => get.[4 to pos]
+       endmatch
+     endif
+   ;
+   
+   fun postline_to_url (get:string) =>
+     if not startswith get "POST " then
+       ""
+     else
+       match find (get, ' ', 5uz) with
+       | #None => ""
+       | Some pos => get.[5 to pos]
+       endmatch
+     endif
+   ;
+   
+   
+   // strip off the leading http:// then split on the next /
+   fun split_url (inurl:string) = {
+     val url =
+       if startswith inurl "http://" then
+         inurl.[to 7]
+       else
+         inurl
+       endif
+     ;
+   
+     return
+       match find (url, '/') with
+       | #None => None[string*string]
+       | Some pos => Some$ url.[0 to pos], url.[pos + 1 to]
+       endmatch
+     ;
+   }
+   
+   // parse balance of HTTP GET request (after gthe GET keyword)
+   fun parse_get_line (get:string) =>
+     split_url$ getline_to_url get
+   ;
+   
+   // parse balance of HTTP GET request (after gthe GET keyword)
+   fun parse_post_line (get:string) =>
+     split_url$ postline_to_url get
+   ;
+   
+   union request_type = reqGET | reqPOST | reqHEAD | reqERROR;
+   
+   fun parse_request_type (r:string) =>
+     if startswith r "GET" then reqGET
+     elif startswith r "HEAD" then reqHEAD
+     elif startswith r "POST" then reqPOST
+     else reqERROR
+     endif
+   ;
+     
+   // fixup text by replacing < > and & characters
+   fun txt2html (x:string) =
+   {
+     var out2 = "";
+     for var i in 0 upto x.len.int - 1 do
+       var ch = x.[i];
+       if ch == char "<" do out2+="&lt;";
+       elif ch == char ">" do out2+="&gt;";
+       elif ch == char "&" do out2+="&amp;";
+       else out2+=ch;
+       done
+     done
+   
+     return out2;
+   }
+   
+   // put into <head> of document
+   // http://www.mathjax.org/docs/1.1/start.html#mathjax-cdn
+   mathjax := '''
+   <script type="text/x-mathjax-config">
+     MathJax.Hub.Config({
+       tex2jax: {
+           skipTags: ["script","noscript","style","textarea"]
+       }
+     });
+   </script> 
+   <script type="text/javascript"
+     src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+   </script>
+   ''';
+   
+   
+   // functions to make responses
+   fun make_image_from_suffix (suffix:string, contents:string, headers:headers_t) =>
+     make_image(MIMEType::mime_type_from_extension suffix,contents, headers)
+   ;
+   
+   proc serve_not_found (k:socket_t, fname:string, get:bool) {
+      var eof_flag = false;
+      val data = make_not_found(fname);
+      write_string(k,data,&eof_flag);
+   }
+   
+   proc serve_not_implemented (k:socket_t, fname:string) {
+      var eof_flag = false;
+      val data = make_not_implemented(fname);
+      write_string(k,data,&eof_flag);
+   }
+   
+   
+   proc serve_forbidden (k:socket_t, fname:string, get:bool) {
+      var eof_flag = false;
+      val data = make_forbidden(fname);
+      write_string(k,data,&eof_flag);
+   }
+   
+   fun find_defs (lines:string) : darray[int * int * string] =
+   {
+   
+     var fregex = ".*\\.(flx|fdoc)";
+     open Regdef;
+     regdef anychar = perl (".");
+   
+     regdef letter = charset "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+     regdef digit = charset "0123456789";
+     regdef id1 = letter | "_";
+     regdef id2 = id1 | digit | "-" | "'";
+     regdef id = id1 id2*;
+   
+     regdef tex = "\\" letter*;
+     regdef symbol1 = "+-*/%^";
+     regdef symbol = symbol1 | symbol1 symbol1 | symbol1 symbol1 symbol1;
+     regdef name = id | symbol;
+     regdef spaces = " "*;
+     regdef vlist =  "[" spaces id (spaces "," spaces id)* spaces "]";
+      
+     regdef adjective = "pure" | "inline" | "noinline" | "pod" | "open" | "virtual";
+     regdef binder = "fun" | "proc" | "gen" | "class" | "union" | "struct" | "type" | "typedef" | "ctor" (spaces vlist)?;
+   
+     regdef indent2 = "  ";
+   
+     regdef classbind= group ("class" | "open class");
+     regdef otherbind= indent2 ? group (adjective* spaces binder);
+   
+     // Group 1 = class
+     // Group 2 = other 
+     // group 3 = identifier
+     regdef decl = (classbind | otherbind) spaces group (name) anychar*;
+   
+     var emptystring = "";
+     var emptystringpiece = StringPiece emptystring;
+   
+     var lregex = decl . render;
+     var lgrep = RE2 lregex;
+     var n = NumberOfCapturingGroups(lgrep)+1;
+     var v = varray[StringPiece] (n.size,emptystringpiece);
+   
+     var extract = RE2 " *([^={]*) *(=|{|;).*";
+     var n2 = NumberOfCapturingGroups(extract)+1;
+     var v2 = varray[StringPiece] (n2.size,emptystringpiece);
+   
+     var scomment = RE2 " *//[$](.*)";
+     var vcomment = varray[StringPiece] (2.size, emptystringpiece);
+     var count = 0;
+     var comments = Empty[string];
+   
+     var h = darray[int * int * string] ();
+     var lno = 1;
+     for line in split (lines,char "\n") do
+       ++count;
+       var spl = StringPiece line;
+   
+       match lgrep line with
+       | Some v =>
+         var sym = v.3;
+         var dfn = "";
+         var m2 = Match (extract, spl, 0, ANCHOR_BOTH, v2.stl_begin, n2);
+         if m2 do
+           dfn = v2 . 1 . string . strip;
+         else
+           dfn = line . strip;
+         done
+         //println$ "DEFN: " + dfn;
+         var level = if line.[0] == " " then 2 else 1 endif;
+         push_back (h, (level, lno, dfn));
+   
+       | #None => ;
+       endmatch; //d grexp
+       ++lno;
+     done // line
+     return h;
+   }
+   
+   var frame_style= """ 
+   <style>
+   .container {
+     position: fixed;
+     top:0px;
+     left:0px;
+     height : 100%;
+     width: 100%;
+     background-color: grey;
+     margin: 0px;
+     padding: 0px;
+     border-width: 0px;
+     color: #404040;
+   }
+   .maincontent {
+     padding:4px;
+     padding-left:8px;
+     line-height:1.3em;
+     color:#404040; background-color:#fafafa;
+   }
+   .maincontent h1 { margin-left:-8px; position: relative; font-family: georgia, serif; font-size: 1.8em; font-weight: normal; }
+   .maincontent h2 { margin-left:-8px; position: relative; margin-bottom:-5px; }
+   .maincontent h3 { margin-left:-8px; position: relative; margin-bottom:-5px; }
+   .maincontent h4 { margin-left:-8px; position: relative; margin-bottom:-5px; }
+   .maincontent code { color:#902030; }
+   .toppanel {
+     position:absolute; left:0px; top:0px; height:20px; right:0px; 
+     background-color: #e0e0e0;
+   }
+   .bottompanel {
+     position:absolute; left:0px; top:22px; bottom:0px; right:0px; 
+     background-color: #fafafa;
+     font-size:14px;
+   }
+   .leftpanel {
+     position:absolute; left:0px; top:0px; bottom:0px; width: 150px; 
+     background-color: #eaeaea; overflow: auto;
+   }
+   .rightpanel {
+     position:absolute; right: 0px; left:160px; top:0px; bottom: 0px; 
+     background-color: #fafafa; overflow: auto;
+   }
+   .divider {
+     position:absolute; left: 150px; top:0px; bottom:0px; 
+     background-color: black; width:2px;
+     box-shadow: 0 0 8px #000;
+   }
+   
+   #panemover {
+       position:absolute;
+       left: 150px;
+       width : 10px;
+       top: 0px;
+       bottom: 0px;
+       opacity: 0.3;
+       cursor:col-resize;
+   }
+   
+   div.m {
+       margin: 0px;
+       padding:0px;
+       border-width:2px;
+       border-color: green;
+   }
+   
+   div.m1 {
+       background-color: #86E870;
+       border-style:outset;
+       border-color:#ccc;
+       border-width:2px 0;
+       font-size:90%;
+       padding: 1px 0 2px 10px;
+   }
+   
+   div.m2 {
+       background-color: #70C070;
+       padding-left:15px;
+       padding-top:2px;
+       border-style:outset;
+       border-color:green;
+       border-width:0 0 1px 0;
+       font-size:80%;
+   }
+   
+   div.m1:hover, div.m2:hover {
+       background-color: white;
+   }
+   
+   #leftmargintoc a {
+       text-decoration: none;
+       color: #404040;
+   }
+   </style>
+   """;
+   
+   var frame_js = """
+       <script async="true">
+         function dragStart(e, left, right){
+           document.getElementById("panemover").style.width="70%";
+           document.getElementById("panemover").style.left="50px";
+           mousedown = true;
+           x = e.clientX
+           dragOffsetLeft =  
+             document.getElementById(left).getBoundingClientRect().right - 
+             document.getElementById(left).getBoundingClientRect().left - 
+             x 
+           ; 
+           dragOffsetDivider= document.getElementById("divider").getBoundingClientRect().left - x; 
+           dragOffsetRight = document.getElementById(right).getBoundingClientRect().left - x;
+         }
+         function dragRelease(){
+           document.getElementById('panemover').style.width = '6px';
+           document.getElementById('panemover').style.left = document.getElementById('divider').offsetLeft + 'px';
+           mousedown = false;
+         }
+         function drag(e, left, right){
+           if(!mousedown){return}
+           x = e.clientX
+           tmpLeft = dragOffsetLeft + x
+           tmpDivider= dragOffsetDivider + x
+           tmpRight = dragOffsetRight + x
+           document.getElementById(left).style.width= tmpLeft + 'px';
+           document.getElementById("divider").style.left= tmpDivider + 'px';
+           document.getElementById(right).style.left = tmpRight + 'px';
+         };
+       </script>
+   """;
+   
+   typedef code_data_t = int * int * string;
+   typedef menu_data_t = int * string * string;
+   
+   noinline fun wrap_html (h:darray[code_data_t], out:string) :string = {
+     var h3 =  fold_right 
+       (fun (level:int, lno:int, text:string) (lst:list[menu_data_t]) => 
+         (level, text, "#line" + lno.str) + lst
+       )
+       h Empty[menu_data_t]
+     ; 
+       var menu = toc_menu (h3);
+   
+       var o = "";
+       reserve(&o,10000+out.len.int);
+   
+       o+=frame_style;
+       o+=#(menu.get_style);
+       o+=frame_js;
+       o+=#(menu.get_js);
+   
+       // MAIN CONTENT
+       var topcontent =
+         '    <!--Main Content top navbar-->\n'  +
+         '    <!--Main Content top navbar End-->\n'
+       ;
+   
+       var leftcontent = #(menu.make_menu);
+   
+       var rightcontent =
+         '<!--Main Content Body-->\n' + 
+         out +
+         '<!--Main Content Body End-->\n'
+       ;
+    
+       var html = """
+       <div class="container">
+         <div class="toppanel">
+   """ + topcontent + """
+         </div> <!-- toppanel end -->
+         <div class="bottompanel">
+   
+           <span id="divider" class="divider"></span>
+   
+           <span id="left" class="leftpanel" >
+             <div class="menucontent">
+   """ + leftcontent + """
+             </div> <!-- leftpanel contents end -->
+           </span> <!-- leftpanel end -->
+   
+   
+           <span id="right" class="rightpanel">
+             <div class="maincontent">
+   """ + rightcontent + """
+             </div> <!-- rightpanel contents end -->
+             <hr>
+           </span> <!-- rightpanel end -->
+   
+           <span id="panemover" style="cursor:col-resize;" 
+            onmousedown="dragStart(event, 'left', 'right'); return false;" 
+            onmousemove="drag(event, 'left', 'right');" 
+            onmouseout="dragRelease();" 
+            onmouseup="dragRelease();"
+           >
+           </span> <!-- panemover end -->
+         </div> <!-- bottom panel end -->
+       </div> <!-- container end -->
+   """;
+       o+= html;
+       return o;
+   }
+   
+   
+   proc serve_felix (k:socket_t, fname:string, get:bool) {
+     var eof_flag = false;
+   
+     match get_file(fname,INSTALL_ROOT,FLX_PATH) with
+     | Some path =>
+       val text = load path;
+       println$ "Loaded felix file " + fname+", len="+str (text.len.int);
+       var h =find_defs (text); 
+       val dirname = Filename::dirname path;
+       def val needs_mathjax, val html = xlat_felix(text,dirname);
+       var wrapped_html = wrap_html (h,"<pre>"+html+"</pre>");
+       val data = make_html$
+         "<html><head>"+Css4Html::flx_head+
+          if needs_mathjax then mathjax else "" endif +
+         "</head><body>"+ wrapped_html +
+         "</body></html>\n\r",
+         list[string*string](("Cache-control","max-age=86400"))
+       ;
+       write_string(k,data,&eof_flag);
+     | #None =>
+         serve_not_found (k,fname,get);
+     endmatch;
+   }
+   
+   proc serve_fpc (k:socket_t, fname:string, get:bool) {
+     var eof_flag = false;
+   
+     match get_file (fname, INSTALL_ROOT,FLX_PKGCONFIG_PATH) with
+     | Some path =>
+       val text=load path;
+       println$ "Loaded fpc file " + fname+", len="+str (text.len.int);
+       val dirname = Filename::dirname path;
+       val data = make_html$
+         "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+
+         (xlat_fpc (text, dirname)).1
+         +"</pre></body></html>\n\r",
+         list[string*string]("Cache-control","max-age=86400")
+       ;
+       write_string(k,data,&eof_flag);
+     | #None =>
+         serve_not_found (k,fname,get);
+     endmatch;
+   
+   }
+   
+   proc serve_py (k:socket_t, fname:string, get:bool) {
+     var eof_flag = false;
+     match get_file(fname,INSTALL_ROOT,FLX_PATH) with
+     | Some path =>
+       var flx = load path;
+       val data = make_html$
+         "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+ 
+         (xlat_py (flx,"")).1 +"</pre></body></html>\n\r",
+          list[string*string](("Cache-control","max-age=86400"))
+       ;
+       write_string (k, data, &eof_flag);
+     | #None =>
+       serve_not_found (k,fname,get);
+     endmatch;
+   }
+   
+   proc serve_ocaml (k:socket_t, fname:string, get:bool) {
+     var eof_flag = false;
+     match get_file (fname, INSTALL_ROOT,FLX_PATH) with
+     | Some path =>
+       var flx = load path;
+       println$ f"Loaded Ocaml file %S, len=%d" (fname, flx.len.int);
+       val data = make_html$
+         "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
+         (xlat_ocaml (flx,"")).1
+         +"</pre></body></html>\n\r",
+         list[string*string](("Cache-control","max-age=86400"))
+       ;
+       write_string (k, data, &eof_flag);
+     | #None =>
+       serve_not_found (k,fname,get);
+     endmatch;
+   }
+   
+   proc serve_cpp (k:socket_t, fname:string, get:bool) {
+     var eof_flag = false;
+     match get_file(fname,INSTALL_ROOT,C_PATH) with
+     | Some path =>
+       val text=load path;
+   println$ f"Loaded C++ file %S, len=%d" (fname, text.len.int);
+       val dirname = Filename::dirname path;
+       val data = make_html$
+         "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
+         (xlat_cpp (text, dirname)).1
+         +"</pre></body></html>\n\r",
+         list[string*string](("Cache-control","max-age=86400"))
+       ;
+       write_string (k, data, &eof_flag);
+     | #None =>
+         serve_not_found (k,fname,get);
+     endmatch;
+   }
+   
+   val text_suffices = (
+     "txt","py","ml","mli",
+     "tex","pl","dyp",
+     "why","resh","pak","ipk",
+     "dep","stdout","expect"
+   );
+   
+   proc serve_text (k:socket_t, fname:string, get:bool) {
+     var eof_flag = false;
+     var txt = load(fname);
+     println$ f"Loaded text file %S, len=%d" (fname, txt.len.int);
+     val data = make_html$
+       "<html><head></head><body><pre>"+
+       txt
+       +"</pre></body></html>\n\r",
        list[string*string](("Cache-control","max-age=86400"))
-    ;
-    write_string (k, data, &eof_flag);
-  | #None =>
-    serve_not_found (k,fname,get);
-  endmatch;
-}
-
-proc serve_ocaml (k:socket_t, fname:string, get:bool) {
-  var eof_flag = false;
-  match get_file (fname, INSTALL_ROOT,FLX_PATH) with
-  | Some path =>
-    var flx = load path;
-    println$ f"Loaded Ocaml file %S, len=%d" (fname, flx.len.int);
-    val data = make_html$
-      "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
-      (xlat_ocaml (flx,"")).1
-      +"</pre></body></html>\n\r",
-      list[string*string](("Cache-control","max-age=86400"))
-    ;
-    write_string (k, data, &eof_flag);
-  | #None =>
-    serve_not_found (k,fname,get);
-  endmatch;
-}
-
-proc serve_cpp (k:socket_t, fname:string, get:bool) {
-  var eof_flag = false;
-  match get_file(fname,INSTALL_ROOT,C_PATH) with
-  | Some path =>
-    val text=load path;
-println$ f"Loaded C++ file %S, len=%d" (fname, text.len.int);
-    val dirname = Filename::dirname path;
-    val data = make_html$
-      "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
-      (xlat_cpp (text, dirname)).1
-      +"</pre></body></html>\n\r",
-      list[string*string](("Cache-control","max-age=86400"))
-    ;
-    write_string (k, data, &eof_flag);
-  | #None =>
-      serve_not_found (k,fname,get);
-  endmatch;
-}
-
-val text_suffices = (
-  "txt","py","ml","mli",
-  "tex","pl","dyp",
-  "why","resh","pak","ipk",
-  "dep","stdout","expect"
-);
-
-proc serve_text (k:socket_t, fname:string, get:bool) {
-  var eof_flag = false;
-  var txt = load(fname);
-  println$ f"Loaded text file %S, len=%d" (fname, txt.len.int);
-  val data = make_html$
-    "<html><head></head><body><pre>"+
-    txt
-    +"</pre></body></html>\n\r",
-    list[string*string](("Cache-control","max-age=86400"))
-  ;
-  write_string (k, data, &eof_flag);
-}
-
-proc serve_html (k:socket_t, fname:string, get:bool) {
-  var eof_flag = false;
-  var txt = load fname;
-  println$ f"Loaded html file %S, len=%d" (fname, txt.len.int);
-  val data = make_html$ txt,
-    list[string*string](("Cache-control","max-age=86400"))
-  ;
-  write_string (k, data, &eof_flag);
-}
-
-proc serve_xhtml (k:socket_t, fname:string, get:bool) {
-  var eof_flag = false;
-  var txt = load fname;
-  println$ f"Loaded xhtml file %S, len=%d" (fname, txt.len.int);
-  val data = make_xhtml$ txt,
-    list[string*string](("Cache-control","max-age=86400"))
-  ;
-  write_string (k, data, &eof_flag);
-}
-
-
-proc serve_fdoc (k:socket_t, fname:string, get:bool) {
-  var eof_flag = false;
-  match get_file(fname,INSTALL_ROOT,FDOC_PATH) with
-  | Some path=> 
-    var txt = load(path);
-    //println$ "Contents=" + flx;
-    var result = xlat_fdoc (txt, fname);
-    var needs_mathjax = #(result.mathjax_required);
-    var html = #(result.html_page);
-    var title = #(result.html_title);
-    val data = make_html(
-      "<html><head>"+Css4Html::flx_head+
-      if needs_mathjax then mathjax else "" endif +
-      if title != "" then "<title>"+title+"</title>" else "" endif +
-      "</head><body>"+
-      html+
-      "</body></html>\n\r",
-      list[string*string](("Cache-control","max-age=86400"))
-    );
-    write_string(k,data,&eof_flag);
-  | #None => serve_not_found(k,fname,get); 
-  endmatch;
-}
-
-proc serve_xfdoc (k:socket_t, fname:string, get:bool) {
-  var eof_flag = false;
-  match get_file(fname,INSTALL_ROOT,FDOC_PATH) with
-  | Some path=> 
-    var txt = load(path);
-    println$ "Serve fdoc "+fname+" as xhtml";
-    //println$ "Contents=" + flx;
-    var result = xlat_fdoc (txt, fname);
-    var needs_mathjax = #(result.mathjax_required);
-    var html = #(result.html_page);
-    var title = #(result.html_title);
-    val data = make_html(
-      "<html><head>"+Css4Html::flx_head+
-      if needs_mathjax then mathjax else "" endif +
-      if title != "" then "<title>"+title+"</title>" else "" endif +
-      "</head>"+
-      "<body>"+ html
-      "</body></html>\n\r",
-      list[string*string](("Cache-control","max-age=86400"))
-    );
-    write_string(k,data,&eof_flag);
-  | #None => serve_not_found(k,fname,get); 
-  endmatch;
-}
-
-proc serve_raw (k:socket_t, fname:string, suffix:string, get:bool) {
-  var eof_flag = false;
-  var txt = load fname;
-  println$ f"Loaded raw file %S, len=%d" (fname, txt.len.int);
-  var mime = MIMEType::mime_type_from_file fname;
-  println$ "File " + fname + " taken to be " + str mime;
-  //println$ "Contents=" + flx;
-  val data = make_mime (mime,txt);
-  //val data = make_raw txt;
-  write_string (k, data, &eof_flag);
-}
-
-proc serve_image (k:socket_t, fname:string, suffix:string, get:bool) {
-  var eof_flag = false;
-  var txt = load fname;
-  println$ f"Loaded image file %S, len=%d" (fname, txt.len.int);
-  //println$ "Contents=" + flx;
-  val data = make_image_from_suffix (suffix,txt,
-    list[string*string](("Cache-control","max-age=86400"))
-  );
-  write_string (k, data, &eof_flag);
-}
-
-// NOTE: TRICKY! serving css to be used in a page
-// is quite different to serving a css file to be
-// used by some program! In the first case it has to
-// to be sent verbatim. In the second it is colourised.
-proc serve_css(k:socket_t, fname:string, suffix:string, get:bool) {
-  var eof_flag = false;
-  var txt = load fname;
-  println$ f"Loaded css file %S, len=%d" (fname, txt.len.int);
-  //println$ "Contents=" + flx;
-  val data = make_css txt;
-  write_string(k,data,&eof_flag);
-}
-
-fun mk_dir_lines (fname:string, dirs: list[string]) = {
-  fun rf(f:string)=>'  <a href="/$'+ fname + '/' +f+'">'+f+'</a>';
-  return 
-    fold_left (fun (acc: string) (f:string) => 
-      match f with 
-      | "." => acc 
-      | ".." => acc
-      | _ => acc + rf f + "\r\n" 
-      endmatch
-    ) 
-    "" 
-    dirs
-  ;
-}
-
-  
-fun mk_reg_lines (fname:string, files: list[string]) = {
-  var eof = false;
-  var s = "";
-  var old_base = "";
-  var base = "";
-  var extn = "";
-  var entry = "";
-  var exts = Empty[string];
-  var rest = files;
-
-  proc hd() { chd; }
-  proc chd() { exts=list(extn); old_base=base; }
-  proc cft() {
-    //println$ "Cft for key " + old_base + " exts=" + str exts;
-    fun rf(x:string)=>
-      '  <a href="/$'+ fname + '/' +old_base+x+'">'+
-      if x == "" then "(none)" else x endif +
-      '</a>'
-    ;
-    def var extn, var rest = match exts with | Cons(h,t)=> h,t endmatch;
-    s+= '  <a href="/$'+ fname + '/' +old_base+extn +'">'+old_base+extn+'</a>';
-    List::iter (proc (x:string){ s+=" "+rf x; }) rest;
-  }
-  proc ft() { cft; s+="\r\n"; }
-  proc twixt() { s+="\r\n"; }
-  proc cbrk () { cft; twixt; chd; }
-  proc nxt() { 
-    match rest with 
-    | Cons(h,t) => 
-      entry = h; rest = t;
-      base,extn =
-        match rfind (entry, ".") with
-        | #None => entry, "" 
-        | Some pos => entry.[to pos], entry.[pos to]
-        endmatch
-      ;
-    | #Empty => eof = true;   
-    endmatch;
-  }
-
-  //special case for empty list
-  if len files == 0uz do return ""; done
-
-  nxt;                    //prime the system
-  hd;                     // head off
-
-again:>
-  nxt;
-  if eof goto fin;        //check for eof
-  if base == old_base do  //check for control break
-    exts += extn;         // nope, same key
-  else 
-    cbrk;                 // key changed
-  done
-  goto again;
-fin:>
-  ft;                     // foot off
-  return s;
-}
-
-proc serve_directory (k:socket_t, fname:string, get:bool) {
-  var dirname = Filename::basename fname;
-  var eof_flag = false;
-  val top = "A DIRECTORY " + fname + "\r\n";
-  val flist = 
-    match Directory::filesin fname with
-    | Some files =>
-      let aux = 
-          fun (ls2:list[string] * list[string]) (f:string) =>
-          match ls2 with | ds,rs => match FileStat::filetype (Filename::join (fname,f)) with
-            | #DIRECTORY => Cons (f,ds), rs
-            | #REGULAR => ds, Cons (f,rs)
-            | _ => ls2
-            endmatch
-          endmatch
-      in
-      let dirs,regs = fold_left aux (Empty[string], Empty[string]) files in
-      let dirs,regs = sort dirs, sort regs in
-      let dir_lines = mk_dir_lines (fname,dirs) in
-      let reg_lines = mk_reg_lines (fname,regs) in
-        "<pre>"+ 
-        '  <a href="/"><em>home</em></a>\r\n'+
-        if dir_lines.len != 0uz then ' Directories: \r\n' + dir_lines else "" endif +
-        if reg_lines.len != 0uz then ' Files: \r\n' + reg_lines else "" endif +
-        "</pre>"
-    | #None => "ERROR ACCESSING DIRECTORY"
-    endmatch
-  ;
-  val page = make_html(top + flist,
-    list[string*string](("Cache-control","max-age=86400"))
-  );
-  write_string(k,page,&eof_flag);
-}
-
-
-proc serve_file(s: socket_t, infname: string) => serve (s, infname, true);
-proc serve_head(s: socket_t, infname: string) => serve (s,infname,false);
-
-proc serve(s: socket_t, infname: string, get:bool)
-{
-  var eof_flag = false;
-  // if empty string, serve index.html
-  // not quite right - needs to handle directories too, so
-  // not only foo.com/ -> index.html, but foo.com/images/ -> images/index.html
-  var fname = if "" == infname then "share/src/web/index.html" else infname endif;
-
-  fname = 
-    if fname.[0] == char "$" then fname.[1 to] 
-    elif fname.[0 to 3] == "%24" then fname.[3 to]  
-    else fname 
-    endif
-  ;
-
-  // set mime type depending on extension...
-  // serve a "not found page" for that case (check for recursion)
-  //print "serve file: "; print fname; endl;
-
-  // figure out the filetype
-  // we first check if the filename has a suffix like cpp
-  // which is a trick done by us to force the filetype
-  // to be "c++" for C++ standard include file names 
-  // which have no suffix. If we find that, we strip it
-  // out of the filename too. Otherwise we just find
-  // the suffix.
-
-  var suffix = "";
-  fun split_suffix (fname:string) =>
-    match rfind (fname, "?") with
-    | Some pos => fname.[pos + 1 to], fname.[0 to pos]
-    | #None =>
-        match rfind (fname, ".") with
-        | #None => "",fname
-        | Some pos => fname.[pos + 1 to], fname
-        endmatch
-    endmatch
-  ;
-  suffix,fname = split_suffix fname;
-
-  if fname == "STOP" do
-    run = false;
-    println$ "STOP DETECTED";
-  elif fname == "robots.txt" do
-    serve_raw (s,INSTALL_ROOT + "/robots.txt","txt", get);
-  elif suffix \in list ("flx","flxh") do 
-    serve_felix(s, fname, get);
-  elif suffix \in list ("py") do 
-    serve_py(s, fname, get);
-  elif suffix \in list ("ml","mli") do 
-    serve_ocaml(s, fname, get);
-  elif suffix \in list("cpp","hpp","h","c","cc","i","cxx","rtti","includes","ctors_cpp") do 
-    serve_cpp(s, fname, get);
-  elif suffix == "fpc" do 
-    serve_fpc(s, fname, get);
-  elif suffix == "fdoc" do 
-    serve_xfdoc(s, fname, get);
-  elif suffix \in ("html","htm") do
-    fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
-    serve_html(s,fname, get);
-  elif suffix == "xhtml" do
-    fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
-    serve_xhtml(s,fname, get);
-  elif suffix \in text_suffices do
-    fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
-    serve_text(s,fname, get);
-  elif suffix \in ("gif","png","jpg","svg") do
-    fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
-    serve_image(s,fname,suffix, get);
-  elif suffix == "css" do
-    // path lookup for css files
-    fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
-    serve_css(s,fname,suffix, get);
-  else
-    match get_file(fname, INSTALL_ROOT,Empty[string]) with
-    | #None => serve_not_found(s,fname, get);
-    | Some f =>
-        if prefix(fname,"/etc") do serve_forbidden(s,fname, get);
-        else
-        match FileStat::filetype f with
-        | #REGULAR => serve_raw(s,f,suffix, get);
-        | #DIRECTORY => serve_directory (s,f, get);
-        | _ => serve_not_found(s,f, get); 
-        endmatch;
-        done
-    endmatch;
-  done
-}
-val webby_port = PORT;
-var run = true;
-
-print "FLX WEB!!! listening on port "; print webby_port; endl;
-
-// up the queue len for stress testing
-var p = webby_port;
-var listener: socket_t;
-mk_listener(&listener, &p, 10);
-
-var clock = Faio::mk_alarm_clock();
-
-// noinline is necessary to stop the closure being
-// inlined into the loop, preventing the socket variable k
-// being duplicated as it must be [a bug in Felix]
-noinline proc handler (var k:socket_t) ()
-{
-  //dbg$ "Spawned fthread running for socket "+str k+"\n";
-  // should spawn fthread here to allow for more io overlap
-  //dbg$ "here we go .. read a line\n";
-
-  var line: string;
-  get_line(k, &line);  // should be the GET line.
-  //dbg$ "Got a line from socket " + str k + "\n";
-  //cat(s, DEVNULL);
-
-
-  // now I need to parse the GET line, get a file name out of its url
-  // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
-  var req = parse_request_type line;
-
-  match req with
-  | #reqGET =>
-    match parse_get_line line with
-    | Some (base, file) => 
-      print "file="; print file; endl;
-      serve_file(k,file);
-    | #None => println$ "BAD GET line: '"+line+"'";
-    endmatch;
-  | #reqHEAD =>
-    match parse_get_line line with
-    | Some (base, file) => 
-      print "file="; print file; endl;
-      serve_head(k,file);
-    | #None => println$ "BAD HEAD line: '"+line+"'";
-    endmatch;
-  | #reqERROR =>
-    println$ "BAD request line: '"+line+"'";
-  endmatch;
-
-broken:>
-
-  // we've only read the GET line, so let's flush out the rest of
-  // the http request so we don't get connection reset errors when
-  // we close the socket. shutting down stops cat blocking (?)
-  //Faio_posix::shutdown(s, 1); // disallow further sends.
-  //cat(s, DEVNULL);
-
-  //fprint$ cstderr,"fthread socket "+str k+" close delay ..\n";
-  Faio::sleep(clock,DELAY); // give OS time to empty its buffers
-  //fprint$ cstderr,"fthread socket "+str k+" shutdown now\n";
-
-// try this:
-// Advised by: koettermarkus@g@m@x@.@d@e@,@ @M@A@N@Y@ @T@H@A@N@K@S@!
-
-  gen hack_recv: socket_t * &char * int * int -> int = "recv($1,$2,$3,$4)";
-
-  var buf:char ^1025;
-  var counter = 0;
-  var extra = 0;
-  shutdown(k,1); // shutdown read
-retry:>
-  var b = hack_recv(k,C_hack::cast[&char] (&buf),1024,0);
-  //println$ "Error code " + str b + " from read after shutdown";
-  if b > 0 do
-    extra += b;
-    if extra > 2000 do
-      println$ "Read too many extraneous bytes from OS buffer";
-      goto force_close;
+     ;
+     write_string (k, data, &eof_flag);
+   }
+   
+   proc serve_html (k:socket_t, fname:string, get:bool) {
+     var eof_flag = false;
+     var txt = load fname;
+     println$ f"Loaded html file %S, len=%d" (fname, txt.len.int);
+     val data = make_html$ txt,
+       list[string*string](("Cache-control","max-age=86400"))
+     ;
+     write_string (k, data, &eof_flag);
+   }
+   
+   proc serve_xhtml (k:socket_t, fname:string, get:bool) {
+     var eof_flag = false;
+     var txt = load fname;
+     println$ f"Loaded xhtml file %S, len=%d" (fname, txt.len.int);
+     val data = make_xhtml$ txt,
+       list[string*string](("Cache-control","max-age=86400"))
+     ;
+     write_string (k, data, &eof_flag);
+   }
+   
+   
+   proc serve_fdoc (k:socket_t, fname:string, get:bool) {
+     var eof_flag = false;
+     match get_file(fname,INSTALL_ROOT,FDOC_PATH) with
+     | Some path=> 
+       var txt = load(path);
+       //println$ "Contents=" + flx;
+       var result = xlat_fdoc (txt, fname);
+       var needs_mathjax = #(result.mathjax_required);
+       var html = #(result.html_page);
+       var title = #(result.html_title);
+       val data = make_html(
+         "<html><head>"+Css4Html::flx_head+
+         if needs_mathjax then mathjax else "" endif +
+         if title != "" then "<title>"+title+"</title>" else "" endif +
+         "</head><body>"+
+         html+
+         "</body></html>\n\r",
+         list[string*string](("Cache-control","max-age=86400"))
+       );
+       write_string(k,data,&eof_flag);
+     | #None => serve_not_found(k,fname,get); 
+     endmatch;
+   }
+   
+   proc serve_xfdoc (k:socket_t, fname:string, get:bool) {
+     var eof_flag = false;
+     match get_file(fname,INSTALL_ROOT,FDOC_PATH) with
+     | Some path=> 
+       var txt = load(path);
+       println$ "Serve fdoc "+fname+" as xhtml";
+       //println$ "Contents=" + flx;
+       var result = xlat_fdoc (txt, fname);
+       var needs_mathjax = #(result.mathjax_required);
+       var html = #(result.html_page);
+       var title = #(result.html_title);
+       val data = make_html(
+         "<html><head>"+Css4Html::flx_head+
+         if needs_mathjax then mathjax else "" endif +
+         if title != "" then "<title>"+title+"</title>" else "" endif +
+         "</head>"+
+         "<body>"+ html
+         "</body></html>\n\r",
+         list[string*string](("Cache-control","max-age=86400"))
+       );
+       write_string(k,data,&eof_flag);
+     | #None => serve_not_found(k,fname,get); 
+     endmatch;
+   }
+   
+   proc serve_raw (k:socket_t, fname:string, suffix:string, get:bool) {
+     var eof_flag = false;
+     var txt = load fname;
+     println$ f"Loaded raw file %S, len=%d" (fname, txt.len.int);
+     var mime = MIMEType::mime_type_from_file fname;
+     println$ "File " + fname + " taken to be " + str mime;
+     //println$ "Contents=" + flx;
+     val data = make_mime (mime,txt);
+     //val data = make_raw txt;
+     write_string (k, data, &eof_flag);
+   }
+   
+   proc serve_image (k:socket_t, fname:string, suffix:string, get:bool) {
+     var eof_flag = false;
+     var txt = load fname;
+     println$ f"Loaded image file %S, len=%d" (fname, txt.len.int);
+     //println$ "Contents=" + flx;
+     val data = make_image_from_suffix (suffix,txt,
+       list[string*string](("Cache-control","max-age=86400"))
+     );
+     write_string (k, data, &eof_flag);
+   }
+   
+   // NOTE: TRICKY! serving css to be used in a page
+   // is quite different to serving a css file to be
+   // used by some program! In the first case it has to
+   // to be sent verbatim. In the second it is colourised.
+   proc serve_css(k:socket_t, fname:string, suffix:string, get:bool) {
+     var eof_flag = false;
+     var txt = load fname;
+     println$ f"Loaded css file %S, len=%d" (fname, txt.len.int);
+     //println$ "Contents=" + flx;
+     val data = make_css txt;
+     write_string(k,data,&eof_flag);
+   }
+   
+   fun mk_dir_lines (fname:string, dirs: list[string]) = {
+     fun rf(f:string)=>'  <a href="/$'+ fname + '/' +f+'">'+f+'</a>';
+     return 
+       fold_left (fun (acc: string) (f:string) => 
+         match f with 
+         | "." => acc 
+         | ".." => acc
+         | _ => acc + rf f + "\r\n" 
+         endmatch
+       ) 
+       "" 
+       dirs
+     ;
+   }
+   
+     
+   fun mk_reg_lines (fname:string, files: list[string]) = {
+     var eof = false;
+     var s = "";
+     var old_base = "";
+     var base = "";
+     var extn = "";
+     var entry = "";
+     var exts = Empty[string];
+     var rest = files;
+   
+     proc hd() { chd; }
+     proc chd() { exts=list(extn); old_base=base; }
+     proc cft() {
+       //println$ "Cft for key " + old_base + " exts=" + str exts;
+       fun rf(x:string)=>
+         '  <a href="/$'+ fname + '/' +old_base+x+'">'+
+         if x == "" then "(none)" else x endif +
+         '</a>'
+       ;
+       def var extn, var rest = match exts with | Cons(h,t)=> h,t endmatch;
+       s+= '  <a href="/$'+ fname + '/' +old_base+extn +'">'+old_base+extn+'</a>';
+       List::iter (proc (x:string){ s+=" "+rf x; }) rest;
+     }
+     proc ft() { cft; s+="\r\n"; }
+     proc twixt() { s+="\r\n"; }
+     proc cbrk () { cft; twixt; chd; }
+     proc nxt() { 
+       match rest with 
+       | Cons(h,t) => 
+         entry = h; rest = t;
+         base,extn =
+           match rfind (entry, ".") with
+           | #None => entry, "" 
+           | Some pos => entry.[to pos], entry.[pos to]
+           endmatch
+         ;
+       | #Empty => eof = true;   
+       endmatch;
+     }
+   
+     //special case for empty list
+     if len files == 0uz do return ""; done
+   
+     nxt;                    //prime the system
+     hd;                     // head off
+   
+   again:>
+     nxt;
+     if eof goto fin;        //check for eof
+     if base == old_base do  //check for control break
+       exts += extn;         // nope, same key
+     else 
+       cbrk;                 // key changed
+     done
+     goto again;
+   fin:>
+     ft;                     // foot off
+     return s;
+   }
+   
+   proc serve_directory (k:socket_t, fname:string, get:bool) {
+     var dirname = Filename::basename fname;
+     var eof_flag = false;
+     val top = "A DIRECTORY " + fname + "\r\n";
+     val flist = 
+       match Directory::filesin fname with
+       | Some files =>
+         let aux = 
+             fun (ls2:list[string] * list[string]) (f:string) =>
+             match ls2 with | ds,rs => match FileStat::filetype (Filename::join (fname,f)) with
+               | #DIRECTORY => Cons (f,ds), rs
+               | #REGULAR => ds, Cons (f,rs)
+               | _ => ls2
+               endmatch
+             endmatch
+         in
+         let dirs,regs = fold_left aux (Empty[string], Empty[string]) files in
+         let dirs,regs = sort dirs, sort regs in
+         let dir_lines = mk_dir_lines (fname,dirs) in
+         let reg_lines = mk_reg_lines (fname,regs) in
+           "<pre>"+ 
+           '  <a href="/"><em>home</em></a>\r\n'+
+           if dir_lines.len != 0uz then ' Directories: \r\n' + dir_lines else "" endif +
+           if reg_lines.len != 0uz then ' Files: \r\n' + reg_lines else "" endif +
+           "</pre>"
+       | #None => "ERROR ACCESSING DIRECTORY"
+       endmatch
+     ;
+     val page = make_html(top + flist,
+       list[string*string](("Cache-control","max-age=86400"))
+     );
+     write_string(k,page,&eof_flag);
+   }
+   
+   
+   proc serve_file(s: socket_t, infname: string) => serve (s, infname, true);
+   proc serve_head(s: socket_t, infname: string) => serve (s,infname,false);
+   
+   proc serve(s: socket_t, infname: string, get:bool)
+   {
+     var eof_flag = false;
+     // if empty string, serve index.html
+     // not quite right - needs to handle directories too, so
+     // not only foo.com/ -> index.html, but foo.com/images/ -> images/index.html
+     var fname = if "" == infname then "share/src/web/index.html" else infname endif;
+   
+     fname = 
+       if fname.[0] == char "$" then fname.[1 to] 
+       elif fname.[0 to 3] == "%24" then fname.[3 to]  
+       else fname 
+       endif
+     ;
+   
+     // set mime type depending on extension...
+     // serve a "not found page" for that case (check for recursion)
+     //print "serve file: "; print fname; endl;
+   
+     // figure out the filetype
+     // we first check if the filename has a suffix like cpp
+     // which is a trick done by us to force the filetype
+     // to be "c++" for C++ standard include file names 
+     // which have no suffix. If we find that, we strip it
+     // out of the filename too. Otherwise we just find
+     // the suffix.
+   
+     var suffix = "";
+     fun split_suffix (fname:string) =>
+       match rfind (fname, "?") with
+       | Some pos => fname.[pos + 1 to], fname.[0 to pos]
+       | #None =>
+           match rfind (fname, ".") with
+           | #None => "",fname
+           | Some pos => fname.[pos + 1 to], fname
+           endmatch
+       endmatch
+     ;
+     suffix,fname = split_suffix fname;
+   
+     if fname == "STOP" do
+       run = false;
+       println$ "STOP DETECTED";
+     elif fname == "robots.txt" do
+       serve_raw (s,INSTALL_ROOT + "/robots.txt","txt", get);
+     elif suffix \in list ("flx","flxh") do 
+       serve_felix(s, fname, get);
+     elif suffix \in list ("py") do 
+       serve_py(s, fname, get);
+     elif suffix \in list ("ml","mli") do 
+       serve_ocaml(s, fname, get);
+     elif suffix \in list("cpp","hpp","h","c","cc","i","cxx","rtti","includes","ctors_cpp") do 
+       serve_cpp(s, fname, get);
+     elif suffix == "fpc" do 
+       serve_fpc(s, fname, get);
+     elif suffix == "fdoc" do 
+       serve_xfdoc(s, fname, get);
+     elif suffix \in ("html","htm") do
+       fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
+       serve_html(s,fname, get);
+     elif suffix == "xhtml" do
+       fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
+       serve_xhtml(s,fname, get);
+     elif suffix \in text_suffices do
+       fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
+       serve_text(s,fname, get);
+     elif suffix \in ("gif","png","jpg","svg") do
+       fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
+       serve_image(s,fname,suffix, get);
+     elif suffix == "css" do
+       // path lookup for css files
+       fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
+       serve_css(s,fname,suffix, get);
+     else
+       match get_file(fname, INSTALL_ROOT,Empty[string]) with
+       | #None => serve_not_found(s,fname, get);
+       | Some f =>
+           if prefix(fname,"/etc") do serve_forbidden(s,fname, get);
+           else
+           match FileStat::filetype f with
+           | #REGULAR => serve_raw(s,f,suffix, get);
+           | #DIRECTORY => serve_directory (s,f, get);
+           | _ => serve_not_found(s,f, get); 
+           endmatch;
+           done
+       endmatch;
+     done
+   }
+   val webby_port = PORT;
+   var run = true;
+   
+   print "FLX WEB!!! listening on port "; print webby_port; endl;
+   
+   // up the queue len for stress testing
+   var p = webby_port;
+   var listener: socket_t;
+   mk_listener(&listener, &p, 10);
+   
+   var clock = Faio::mk_alarm_clock();
+   
+   // noinline is necessary to stop the closure being
+   // inlined into the loop, preventing the socket variable k
+   // being duplicated as it must be [a bug in Felix]
+   noinline proc handler (var k:socket_t) ()
+   {
+     //dbg$ "Spawned fthread running for socket "+str k+"\n";
+     // should spawn fthread here to allow for more io overlap
+     //dbg$ "here we go .. read a line\n";
+   
+     var line: string;
+     get_line(k, &line);  // should be the GET line.
+     //dbg$ "Got a line from socket " + str k + "\n";
+     //cat(s, DEVNULL);
+   
+   
+     // now I need to parse the GET line, get a file name out of its url
+     // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
+     var req = parse_request_type line;
+   
+     match req with
+     | #reqGET =>
+       match parse_get_line line with
+       | Some (base, file) => 
+         print "file="; print file; endl;
+         serve_file(k,file);
+       | #None => println$ "BAD GET line: '"+line+"'";
+       endmatch;
+     | #reqHEAD =>
+       match parse_get_line line with
+       | Some (base, file) => 
+         print "file="; print file; endl;
+         serve_head(k,file);
+       | #None => println$ "BAD HEAD line: '"+line+"'";
+       endmatch;
+     | #reqERROR =>
+       println$ "BAD request line: '"+line+"'";
+     endmatch;
+   
+   broken:>
+   
+     // we've only read the GET line, so let's flush out the rest of
+     // the http request so we don't get connection reset errors when
+     // we close the socket. shutting down stops cat blocking (?)
+     //Faio_posix::shutdown(s, 1); // disallow further sends.
+     //cat(s, DEVNULL);
+   
+     //fprint$ cstderr,"fthread socket "+str k+" close delay ..\n";
+     Faio::sleep(clock,DELAY); // give OS time to empty its buffers
+     //fprint$ cstderr,"fthread socket "+str k+" shutdown now\n";
+   
+   // try this:
+   // Advised by: koettermarkus@gmx.de, MANY THANKS!
+   
+     gen hack_recv: socket_t * &char * int * int -> int = "recv($1,$2,$3,$4)";
+   
+     var buf:char ^1025;
+     var counter = 0;
+     var extra = 0;
+     shutdown(k,1); // shutdown read
+   retry:>
+     var b = hack_recv(k,C_hack::cast[&char] (&buf),1024,0);
+     //println$ "Error code " + str b + " from read after shutdown";
+     if b > 0 do
+       extra += b;
+       if extra > 2000 do
+         println$ "Read too many extraneous bytes from OS buffer";
+         goto force_close;
+        done;
+      goto retry;
+     elif b == -1 do
+       ++counter;
+       if counter > 200 do
+         println "Timeout waiting for write buffers to be flushed";
+         goto force_close;
+       done;
+       Faio::sleep(clock,0.1); // 100 ms
+       goto retry;
      done;
-   goto retry;
-  elif b == -1 do
-    ++counter;
-    if counter > 200 do
-      println "Timeout waiting for write buffers to be flushed";
-      goto force_close;
-    done;
-    Faio::sleep(clock,0.1); // 100 ms
-    goto retry;
-  done;
-  assert b==0;
-
-force_close:> 
-  Socket::shutdown(k,2);
-  ioclose(k);
-  //fprint$ stderr,"fthread "+str k+" terminating!\n";
-};
-
-spawn_fthread { while run do Faio::sleep(clock, 60.0); collect(); done };
-while run do
-  var s: socket_t;
-  //dbg$ "Waiting for connection\n";
-  accept(listener, &s);  // blocking
-  //dbg$ "got connection "+str s + "\n";  // error check here
-
-  // hmm - spawning an fthread is blocking the web server. don't know why
-  //dbg$ "spawning fthread to handle connection "+str s+"\n";
-  var h = handler s;
-  spawn_fthread  h;
- //collect(); // this hangs everything, no idea why!
-done
-
-println "WEB SERVER FINNISHED?";
-println$ "Closing listener socket " + str listener;
-iclose (listener);
+     assert b==0;
+   
+   force_close:> 
+     Socket::shutdown(k,2);
+     ioclose(k);
+     //fprint$ stderr,"fthread "+str k+" terminating!\n";
+   };
+   
+   spawn_fthread { while run do Faio::sleep(clock, 60.0); collect(); done };
+   while run do
+     var s: socket_t;
+     //dbg$ "Waiting for connection\n";
+     accept(listener, &s);  // blocking
+     //dbg$ "got connection "+str s + "\n";  // error check here
+   
+     // hmm - spawning an fthread is blocking the web server. don't know why
+     //dbg$ "spawning fthread to handle connection "+str s+"\n";
+     var h = handler s;
+     spawn_fthread  h;
+    //collect(); // this hangs everything, no idea why!
+   done
+   
+   println "WEB SERVER FINNISHED?";
+   println$ "Closing listener socket " + str listener;
+   iclose (listener);
 
 
 Mainline with preloaded plugins.
@@ -1378,57 +1378,57 @@ Mainline with preloaded plugins.
 .. code-block:: felix
 
   //[flx_web.flx]
-// webserver plugin linker
-
-class WebserverPluginSymbols 
-{
-
-  // We have to do this dummy requirements because static
-  // linking removes
-  requires package "re2";
-  requires package "faio";
-  requires package "flx_arun";
-
-  open Dynlink;
-
-  // Now add all the symbols.
-  proc addsymbols ()
-  {
-    static-link-plugin 
-      fdoc2html,
-      flx2html,
-      fpc2html,
-      py2html,
-      ocaml2html,
-      cpp2html,
-      fdoc_scanner,
-      fdoc_slideshow,
-      fdoc_heading,
-      fdoc_fileseq,
-      fdoc_paragraph,
-      fdoc_button,
-      fdoc_frame,
-      fdoc_edit,
-      toc_menu
-    ;
-    // webserver
-    static-link-symbol dflx_web_create_thread_frame in plugin dflx_web;
-    static-link-symbol dflx_web_flx_start in plugin dflx_web;
-    
-  }
-}
-
-// Add the symbols
-WebserverPluginSymbols::addsymbols;
-
-// Now invoke the webserver!
-println$ "Running webserver";
-val linstance =  Dynlink::prepare_lib("dflx_web");
-println$ "Webserver prepared";
-var init: cont = Dynlink::get_init linstance;
-
-Fibres::chain init;
-
+   // webserver plugin linker
+   
+   class WebserverPluginSymbols 
+   {
+   
+     // We have to do this dummy requirements because static
+     // linking removes
+     requires package "re2";
+     requires package "faio";
+     requires package "flx_arun";
+   
+     open Dynlink;
+   
+     // Now add all the symbols.
+     proc addsymbols ()
+     {
+       static-link-plugin 
+         fdoc2html,
+         flx2html,
+         fpc2html,
+         py2html,
+         ocaml2html,
+         cpp2html,
+         fdoc_scanner,
+         fdoc_slideshow,
+         fdoc_heading,
+         fdoc_fileseq,
+         fdoc_paragraph,
+         fdoc_button,
+         fdoc_frame,
+         fdoc_edit,
+         toc_menu
+       ;
+       // webserver
+       static-link-symbol dflx_web_create_thread_frame in plugin dflx_web;
+       static-link-symbol dflx_web_flx_start in plugin dflx_web;
+       
+     }
+   }
+   
+   // Add the symbols
+   WebserverPluginSymbols::addsymbols;
+   
+   // Now invoke the webserver!
+   println$ "Running webserver";
+   val linstance =  Dynlink::prepare_lib("dflx_web");
+   println$ "Webserver prepared";
+   var init: cont = Dynlink::get_init linstance;
+   
+   Fibres::chain init;
+   
 
 
 Language Translators.
@@ -1442,111 +1442,111 @@ Felix Package Config  :code:`fpc` format.
 .. code-block:: felix
 
   //[fpc2html.flx]
-
-var FLX_PKGCONFIG_PATH = Empty[string];
-var INSTALL_ROOT = "";
-var C_PATH = Empty[string];
-var FLX_PATH = Empty[string];
-
-fun get_file (var fname:string, path:list[string]) = {
-  if fname.[0] == char "$" do fname = fname.[1 to]; done
-  if FileStat::fileexists fname do return Some fname;
-  else
-    var f = Filename::join(INSTALL_ROOT,fname);
-    if FileStat::fileexists f do return Some f;
-    else return FileSystem::find_in_path (fname, path);
-    done
-  done
-}
-
-
-
-module Fpc2Html 
-{
-fun xlat_fpc(t:string, dir:string) : bool * string =
-{
-println$ "formatting fpc data";
-  var out = "";
-  val lines = split(t,"\n");
-  iter handle_line lines;
-  return false, out;
-
-  proc handle_line(s:string) {
-    match split(s,":") with
-    | Cons(fn,Cons(fv,Empty))  =>
-      { 
-        out+= "<span class=fpc_fieldname>"+fn+": </span>";
-        if fn in ("Requires","flx_requires_driver") do
-          var pkgs=split$ fv.strip, " ";
-          iter handle_pkg pkgs;
-          out+="\n";
-        elif fn == "includes" do
-          var includes=split$ fv.strip, " ";
-          iter handle_include includes;
-          out+="\n";
-        else out+= fv+"\n"; 
-        done;
-      }
-    | x => { out+=s + "\n"; }
-    endmatch;
-  }
-  proc handle_pkg(s:string) {
-    match get_file(s+".fpc",FLX_PKGCONFIG_PATH) with
-    | Some path => { out += '<a href="/$' + path + '">' + s + '</a> '; }
-    | #None => { out += s + " "; }
-    endmatch;
-  }
-  proc handle_include(s:string) {
-    var n = s;
-    while n.[0] in (char '"', char '<', char "'") do n=n.[1 to]; done
-    while n.[-1] in (char '"',char '>',char "'") do n=n.[to -1]; done
-    match get_file(n,C_PATH) with
-    | Some path => { out += '<a href="/$' + path + '">' + s + '</a> '; }
-    | #None => { out += s + " "; }
-    endmatch;
-  }
-}
-}
-
-eprintln$ Version::felix_version+"Fpc2html initialisation";
-
-fun setup(config_data:string) = {
-  var config_lines = split(config_data, "\n");
-  config_lines = map (strip of (string)) config_lines; 
-  var pathext = RE2("(.*)\\+=(.*)");
-  var varset = RE2("(.*)=(.*)");
-  var plugin_spec = RE2 " *extension (.*)->(.*)::(.*)";
-
-  var result = varray[StringPiece] (4.size,StringPiece(""));
-  for line in config_lines do
-    var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
-    if match_result do
-      var lhs = result.1.str.strip;
-      var rhs = result.2.str.strip;
-      match lhs with
-      | "FLX_PATH" => FLX_PATH += rhs; 
-      | "C_PATH" => C_PATH += rhs; 
-      | "FLX_PKGCONFIG_PATH" => FLX_PKGCONFIG_PATH += rhs;
-      | _ => ;
-      endmatch;
-    else
-    match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
-    if match_result do
-      lhs = result.1.str.strip;
-      rhs = result.2.str.strip;
-      match lhs with
-      | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
-      | _ => ;
-      endmatch;
-    done done
-  done
-  return 0;
-}
-
-
-export fun setup of (string) as "fpc2html_setup";
-export fun Fpc2Html::xlat_fpc of (string * string) as "fpc2html";
-
+   
+   var FLX_PKGCONFIG_PATH = Empty[string];
+   var INSTALL_ROOT = "";
+   var C_PATH = Empty[string];
+   var FLX_PATH = Empty[string];
+   
+   fun get_file (var fname:string, path:list[string]) = {
+     if fname.[0] == char "$" do fname = fname.[1 to]; done
+     if FileStat::fileexists fname do return Some fname;
+     else
+       var f = Filename::join(INSTALL_ROOT,fname);
+       if FileStat::fileexists f do return Some f;
+       else return FileSystem::find_in_path (fname, path);
+       done
+     done
+   }
+   
+   
+   
+   module Fpc2Html 
+   {
+   fun xlat_fpc(t:string, dir:string) : bool * string =
+   {
+   println$ "formatting fpc data";
+     var out = "";
+     val lines = split(t,"\n");
+     iter handle_line lines;
+     return false, out;
+   
+     proc handle_line(s:string) {
+       match split(s,":") with
+       | Cons(fn,Cons(fv,Empty))  =>
+         { 
+           out+= "<span class=fpc_fieldname>"+fn+": </span>";
+           if fn in ("Requires","flx_requires_driver") do
+             var pkgs=split$ fv.strip, " ";
+             iter handle_pkg pkgs;
+             out+="\n";
+           elif fn == "includes" do
+             var includes=split$ fv.strip, " ";
+             iter handle_include includes;
+             out+="\n";
+           else out+= fv+"\n"; 
+           done;
+         }
+       | x => { out+=s + "\n"; }
+       endmatch;
+     }
+     proc handle_pkg(s:string) {
+       match get_file(s+".fpc",FLX_PKGCONFIG_PATH) with
+       | Some path => { out += '<a href="/$' + path + '">' + s + '</a> '; }
+       | #None => { out += s + " "; }
+       endmatch;
+     }
+     proc handle_include(s:string) {
+       var n = s;
+       while n.[0] in (char '"', char '<', char "'") do n=n.[1 to]; done
+       while n.[-1] in (char '"',char '>',char "'") do n=n.[to -1]; done
+       match get_file(n,C_PATH) with
+       | Some path => { out += '<a href="/$' + path + '">' + s + '</a> '; }
+       | #None => { out += s + " "; }
+       endmatch;
+     }
+   }
+   }
+   
+   eprintln$ Version::felix_version+"Fpc2html initialisation";
+   
+   fun setup(config_data:string) = {
+     var config_lines = split(config_data, "\n");
+     config_lines = map (strip of (string)) config_lines; 
+     var pathext = RE2("(.*)\\+=(.*)");
+     var varset = RE2("(.*)=(.*)");
+     var plugin_spec = RE2 " *extension (.*)->(.*)::(.*)";
+   
+     var result = varray[StringPiece] (4.size,StringPiece(""));
+     for line in config_lines do
+       var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
+       if match_result do
+         var lhs = result.1.str.strip;
+         var rhs = result.2.str.strip;
+         match lhs with
+         | "FLX_PATH" => FLX_PATH += rhs; 
+         | "C_PATH" => C_PATH += rhs; 
+         | "FLX_PKGCONFIG_PATH" => FLX_PKGCONFIG_PATH += rhs;
+         | _ => ;
+         endmatch;
+       else
+       match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
+       if match_result do
+         lhs = result.1.str.strip;
+         rhs = result.2.str.strip;
+         match lhs with
+         | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
+         | _ => ;
+         endmatch;
+       done done
+     done
+     return 0;
+   }
+   
+   
+   export fun setup of (string) as "fpc2html_setup";
+   export fun Fpc2Html::xlat_fpc of (string * string) as "fpc2html";
+   
 
 Ocaml
 -----
@@ -1555,172 +1555,172 @@ Ocaml
 .. code-block:: felix
 
   //[ocaml2html.flx]
-// Ocaml
-module Ocaml2Html {
-private val big_keywords = 
-  "module",
-  "functor",
-  "open",
-  "type",
-  "class",
-  "struct",
-  "end",
-  "val",
-  "inherit",
-  "exception"
-;
-private val small_keywords =
-  "if", "then", "else", "elif", "endif", "do", "done",
-  "let", "in", "for", "while", "to", "upto","downto",
-  "try","match","with","fun","function",
-  "begin","end"
-;
-
-private val qualifiers = 
-  "virtual", "private"
-;
-private val hack = "C_hack","C_hack"; // to make it an array we need 2 components
-
-
-fun xlat_ocaml(t:string, dir:string) : bool * string =
-{
-  var out = "";
-  proc write_string(t:string) 
-  { 
-   out += t;
-  }
-
-  union state_t = 
-    | sot // start of token
-    | id // processing identifier
-    | num // in a number
-    | dq // processing double quote string
-    | ccomment // a C style comment
-  ;
-  fun str(s:state_t) => match s with
-  | #sot => "sot"
-  | #id => "id"
-  | #num => "num"
-  | #dq => "dq"
-  | #ccomment => "ccomment"
-  endmatch;
-  
-  var i = 0; var s:state_t;
-  var ch = t.[i];
-  proc next() { ch = t.[i]; ++i; }
-  fun ahead (j:int)=> t.[i + j - 1]; 
-
-  var b = "";
-  var last_id = "";
-  var last_op = "";
-  proc cp() { b += ch; }
-  proc ws() {
-     write_string('<span class=fstring>'+b+"</span>"); 
-  }
-  proc w() { 
-    //println$ "Token["+str s+"]="+b; 
-    match s with 
-    | #dq => ws; 
-    | #ccomment => write_string('<span class=comment>'+b+"</span>");
-    | #id => 
-        last_id = b;
-        if b in big_keywords do write_string('<span class=big_keyword>'+b+"</span>"); 
-        elif b in small_keywords do write_string('<span class=small_keyword>'+b+"</span>"); 
-        elif b in qualifiers do write_string('<span class=qualifier>'+b+"</span>"); 
-        elif isupper b.[0] do write_string('<span class=ctor>'+b+"</span>"); 
-        else write_string(b); done
-    | _ =>
-        last_op=b; 
-        if b == "<" do b = "&lt;";
-        elif b == ">" do b = "&gt;";
-        elif b == "&" do b = "&amp;";
-        done;
-        write_string(b);  
-    endmatch;
-    b = "";  
-  }
-
-
-  goto nextt;
-
-contin:> // copy char and continue
-  cp();
-  goto nextch;
+   // Ocaml
+   module Ocaml2Html {
+   private val big_keywords = 
+     "module",
+     "functor",
+     "open",
+     "type",
+     "class",
+     "struct",
+     "end",
+     "val",
+     "inherit",
+     "exception"
+   ;
+   private val small_keywords =
+     "if", "then", "else", "elif", "endif", "do", "done",
+     "let", "in", "for", "while", "to", "upto","downto",
+     "try","match","with","fun","function",
+     "begin","end"
+   ;
    
-overrun:> // one past last char of token
-  w();
-  s = sot;
-  goto thisch;
-
-lastch:> // last char of token
-  cp();
-  w();
-
-nextt:>  // new token on next char
-  s = sot;
-
-nextch:> // next char
-  next();
-
-thisch:> // same char, reconsider it
-  //println$ "Considering char " + str(ord(ch));
-  if isnull ch goto fin; // out of data
-  match s with 
-  | #sot =>
-      if isidstart ch do s = id; goto contin;
-      elif isdigit ch do s = num; goto contin;
-      elif isdq ch do s = dq; goto contin;
-      elif ch == char "(" do
-        if ahead(1) == char "*" do cp; next; s = ccomment; goto contin;
-        else goto lastch;
-        done 
-      else cp; w; goto nextt;
-      done
-
-  | #id => 
-      if iscamlidcont ch do goto contin;
-      else goto overrun;
-      done
-  | #num => 
-      if isnumeric ch do goto contin;
-      else goto overrun; 
-      done
-  | #dq =>
-      if isdq ch do goto lastch;
-      elif ch== char "<" do b+="&lt;"; goto nextch;
-      elif ch== char ">" do b+="&gt;"; goto nextch;
-      elif ch== char "&" do b+="&amp;"; goto nextch;
-      else goto contin;
-      done
-   // comments
-  | #ccomment => // doesn't handle nested comments yet
-      if ch == char "*" and ahead(1) == char ")" do 
-        cp; 
-        goto lastch;
-      else goto contin;
-      done
-  endmatch
-  ; 
-  println$ "Unexpected drop thru";
-
-fin:>
-   println "outof data";
-   w(); // whatever is left over gets written
-   return false, out;
-}
-}
-
-
-eprintln$ Version::felix_version+"ocaml2html initialisation";
-
-fun setup(x:string) = {
-  C_hack::ignore(x); // which means, don't ignore it!
-  return 0;
-}
-
-export fun setup of (string) as "ocaml2html_setup";
-export fun Ocaml2Html::xlat_ocaml of (string * string) as "ocaml2html";
-
+   private val qualifiers = 
+     "virtual", "private"
+   ;
+   private val hack = "C_hack","C_hack"; // to make it an array we need 2 components
+   
+   
+   fun xlat_ocaml(t:string, dir:string) : bool * string =
+   {
+     var out = "";
+     proc write_string(t:string) 
+     { 
+      out += t;
+     }
+   
+     union state_t = 
+       | sot // start of token
+       | id // processing identifier
+       | num // in a number
+       | dq // processing double quote string
+       | ccomment // a C style comment
+     ;
+     fun str(s:state_t) => match s with
+     | #sot => "sot"
+     | #id => "id"
+     | #num => "num"
+     | #dq => "dq"
+     | #ccomment => "ccomment"
+     endmatch;
+     
+     var i = 0; var s:state_t;
+     var ch = t.[i];
+     proc next() { ch = t.[i]; ++i; }
+     fun ahead (j:int)=> t.[i + j - 1]; 
+   
+     var b = "";
+     var last_id = "";
+     var last_op = "";
+     proc cp() { b += ch; }
+     proc ws() {
+        write_string('<span class=fstring>'+b+"</span>"); 
+     }
+     proc w() { 
+       //println$ "Token["+str s+"]="+b; 
+       match s with 
+       | #dq => ws; 
+       | #ccomment => write_string('<span class=comment>'+b+"</span>");
+       | #id => 
+           last_id = b;
+           if b in big_keywords do write_string('<span class=big_keyword>'+b+"</span>"); 
+           elif b in small_keywords do write_string('<span class=small_keyword>'+b+"</span>"); 
+           elif b in qualifiers do write_string('<span class=qualifier>'+b+"</span>"); 
+           elif isupper b.[0] do write_string('<span class=ctor>'+b+"</span>"); 
+           else write_string(b); done
+       | _ =>
+           last_op=b; 
+           if b == "<" do b = "&lt;";
+           elif b == ">" do b = "&gt;";
+           elif b == "&" do b = "&amp;";
+           done;
+           write_string(b);  
+       endmatch;
+       b = "";  
+     }
+   
+   
+     goto nextt;
+   
+   contin:> // copy char and continue
+     cp();
+     goto nextch;
+      
+   overrun:> // one past last char of token
+     w();
+     s = sot;
+     goto thisch;
+   
+   lastch:> // last char of token
+     cp();
+     w();
+   
+   nextt:>  // new token on next char
+     s = sot;
+   
+   nextch:> // next char
+     next();
+   
+   thisch:> // same char, reconsider it
+     //println$ "Considering char " + str(ord(ch));
+     if isnull ch goto fin; // out of data
+     match s with 
+     | #sot =>
+         if isidstart ch do s = id; goto contin;
+         elif isdigit ch do s = num; goto contin;
+         elif isdq ch do s = dq; goto contin;
+         elif ch == char "(" do
+           if ahead(1) == char "*" do cp; next; s = ccomment; goto contin;
+           else goto lastch;
+           done 
+         else cp; w; goto nextt;
+         done
+   
+     | #id => 
+         if iscamlidcont ch do goto contin;
+         else goto overrun;
+         done
+     | #num => 
+         if isnumeric ch do goto contin;
+         else goto overrun; 
+         done
+     | #dq =>
+         if isdq ch do goto lastch;
+         elif ch== char "<" do b+="&lt;"; goto nextch;
+         elif ch== char ">" do b+="&gt;"; goto nextch;
+         elif ch== char "&" do b+="&amp;"; goto nextch;
+         else goto contin;
+         done
+      // comments
+     | #ccomment => // doesn't handle nested comments yet
+         if ch == char "*" and ahead(1) == char ")" do 
+           cp; 
+           goto lastch;
+         else goto contin;
+         done
+     endmatch
+     ; 
+     println$ "Unexpected drop thru";
+   
+   fin:>
+      println "outof data";
+      w(); // whatever is left over gets written
+      return false, out;
+   }
+   }
+   
+   
+   eprintln$ Version::felix_version+"ocaml2html initialisation";
+   
+   fun setup(x:string) = {
+     C_hack::ignore(x); // which means, don't ignore it!
+     return 0;
+   }
+   
+   export fun setup of (string) as "ocaml2html_setup";
+   export fun Ocaml2Html::xlat_ocaml of (string * string) as "ocaml2html";
+   
 
 Python
 ------
@@ -1729,202 +1729,202 @@ Python
 .. code-block:: felix
 
   //[py2html.flx]
-
-// Python 
-module Py2Html {
-private val big_keywords = 
-  "def",
-  "class",
-  "import"
-;
-private val small_keywords =
-  "if", "while", "for", "return", "in", "from","else","elsif","except","try",
-  "not","with","raise"
-;
-
-private val qualifiers = 
-  "None", "True", "False", "pass","self"
-;
-
-
-fun xlat_py(t:string, dir:string) : bool * string =
-{
-  var out = "";
-  proc write_string(t:string) 
-  { 
-   out += t;
-  }
-
-  union state_t = 
-    | sot // start of token
-    | id // processing identifier
-    | num // in a number
-    | sq // processing single quote string
-    | dq // processing double quote string
-    | sq3 // processing single quote string
-    | dq3 // processing double quote string
-    | cppcomment // a C++ style comment
-  ;
-  fun str(s:state_t) => match s with
-  | #sot => "sot"
-  | #id => "id"
-  | #num => "num"
-  | #sq => "sq"
-  | #dq => "dq"
-  | #sq3 => "sq3"
-  | #dq3 => "dq3"
-  | #cppcomment => "cppcomment"
-  endmatch;
-  
-  var i = 0; var s:state_t;
-  var ch = t.[i];
-  proc next() { ch = t.[i]; ++i; }
-  fun ahead (j:int)=> t.[i + j - 1]; 
-  fun issq3() => 
-    ch == char "'" and 
-    ahead(1) == char "'" and
-    ahead(2) == char "'" 
-  ;
-  fun isdq3() => 
-    ch == char '"'  and
-    ahead(1) == char '"' and
-    ahead(2) == char '"' 
-  ;
-
-  var b = "";
-  var last_id = "";
-  var last_op = "";
-  proc cp() { b += ch; }
-  proc ws() {
-     write_string('<span class=fstring>'+b+"</span>"); 
-  }
-  proc w() { 
-    //println$ "Token["+str s+"]="+b; 
-    match s with 
-    | #dq =>  ws; 
-    | #sq =>  ws; 
-    | #sq3 =>  ws; 
-    | #dq3 =>  ws; 
-    | #cppcomment => write_string('<span class=comment>'+b+"</span>"); 
-    | #id => 
-        last_id = b;
-        if b in big_keywords do write_string('<span class=big_keyword>'+b+"</span>"); 
-        elif b in small_keywords do write_string('<span class=small_keyword>'+b+"</span>"); 
-        elif b in qualifiers do write_string('<span class=qualifier>'+b+"</span>"); 
-        else write_string(b); done
-    | _ =>
-        last_op=b; 
-        if b == "<" do b = "&lt;";
-        elif b == ">" do b = "&gt;";
-        elif b == "&" do b = "&amp;";
-        done;
-        write_string(b);  
-    endmatch;
-    b = "";  
-  }
-
-
-  goto nextt;
-
-contin:> // copy char and continue
-  cp();
-  goto nextch;
    
-overrun:> // one past last char of token
-  w();
-  s = sot;
-  goto thisch;
-
-lastch:> // last char of token
-  cp();
-  w();
-
-nextt:>  // new token on next char
-  s = sot;
-
-nextch:> // next char
-  next();
-
-thisch:> // same char, reconsider it
-  //println$ "Considering char " + str(ord(ch));
-  if isnull ch goto fin; // out of data
-  match s with 
-  | #sot =>
-      if isidstart ch do s = id; goto contin;
-      elif isdigit ch do s = num; goto contin;
-      elif issq3() do cp; next; cp; next; s = sq3; goto contin;
-      elif isdq3() do cp; next; cp; next; s = dq3; goto contin;
-      elif issq ch do s = sq; goto contin;
-      elif isdq ch do s = dq; goto contin;
-      elif ch == char "#" do s = cppcomment; goto contin;
-      else cp; w; goto nextt;
-      done
-
-  | #id => 
-      if isalphanum ch do goto contin;
-      else goto overrun;
-      done
-  | #num => 
-      if isnumeric ch do goto contin;
-      else goto overrun; 
-      done
-  // single quoted strings
-  | #sq =>
-      if issq ch do goto lastch; 
-      elif ch== char "<" do b+="&lt;"; goto nextch;
-      elif ch== char ">" do b+="&gt;"; goto nextch;
-      elif ch== char "&" do b+="&amp;"; goto nextch;
-      else goto contin;
-      done
-  | #dq =>
-      if isdq ch do goto lastch;
-      elif ch== char "<" do b+="&lt;"; goto nextch;
-      elif ch== char ">" do b+="&gt;"; goto nextch;
-      elif ch== char "&" do b+="&amp;"; goto nextch;
-      else goto contin;
-      done
-   // triple quoted strings
-  | #sq3 =>
-      if issq3() do cp; next; cp; next; cp; w; goto nextt; 
-      elif ch== char "<" do b+="&lt;"; goto nextch;
-      elif ch== char ">" do b+="&gt;"; goto nextch;
-      elif ch== char "&" do b+="&amp;"; goto nextch;
-      else goto contin;
-      done
-  | #dq3 =>
-      if isdq3() do cp; next; cp; next; cp; w; goto nextt;
-      elif ch== char "<" do b+="&lt;"; goto nextch;
-      elif ch== char ">" do b+="&gt;"; goto nextch;
-      elif ch== char "&" do b+="&amp;"; goto nextch;
-      else goto contin;
-      done
-   // comments
-  | #cppcomment =>
-      if iseol ch do goto lastch;
-      else goto contin;
-      done
-  endmatch
-  ; 
-  println$ "Unexpected drop thru";
-
-fin:>
-   println "outof data";
-   w(); // whatever is left over gets written
-   return false, out;
-}
-}
-
-eprintln$ Version::felix_version+"Py2html initialisation";
-
-fun setup(x:string) = {
-  C_hack::ignore(x); // which means, don't ignore it .. :)
-  return 0;
-}
-
-export fun setup of (string) as "py2html_setup";
-export fun Py2Html::xlat_py of (string * string) as "py2html";
-
-
+   // Python 
+   module Py2Html {
+   private val big_keywords = 
+     "def",
+     "class",
+     "import"
+   ;
+   private val small_keywords =
+     "if", "while", "for", "return", "in", "from","else","elsif","except","try",
+     "not","with","raise"
+   ;
+   
+   private val qualifiers = 
+     "None", "True", "False", "pass","self"
+   ;
+   
+   
+   fun xlat_py(t:string, dir:string) : bool * string =
+   {
+     var out = "";
+     proc write_string(t:string) 
+     { 
+      out += t;
+     }
+   
+     union state_t = 
+       | sot // start of token
+       | id // processing identifier
+       | num // in a number
+       | sq // processing single quote string
+       | dq // processing double quote string
+       | sq3 // processing single quote string
+       | dq3 // processing double quote string
+       | cppcomment // a C++ style comment
+     ;
+     fun str(s:state_t) => match s with
+     | #sot => "sot"
+     | #id => "id"
+     | #num => "num"
+     | #sq => "sq"
+     | #dq => "dq"
+     | #sq3 => "sq3"
+     | #dq3 => "dq3"
+     | #cppcomment => "cppcomment"
+     endmatch;
+     
+     var i = 0; var s:state_t;
+     var ch = t.[i];
+     proc next() { ch = t.[i]; ++i; }
+     fun ahead (j:int)=> t.[i + j - 1]; 
+     fun issq3() => 
+       ch == char "'" and 
+       ahead(1) == char "'" and
+       ahead(2) == char "'" 
+     ;
+     fun isdq3() => 
+       ch == char '"'  and
+       ahead(1) == char '"' and
+       ahead(2) == char '"' 
+     ;
+   
+     var b = "";
+     var last_id = "";
+     var last_op = "";
+     proc cp() { b += ch; }
+     proc ws() {
+        write_string('<span class=fstring>'+b+"</span>"); 
+     }
+     proc w() { 
+       //println$ "Token["+str s+"]="+b; 
+       match s with 
+       | #dq =>  ws; 
+       | #sq =>  ws; 
+       | #sq3 =>  ws; 
+       | #dq3 =>  ws; 
+       | #cppcomment => write_string('<span class=comment>'+b+"</span>"); 
+       | #id => 
+           last_id = b;
+           if b in big_keywords do write_string('<span class=big_keyword>'+b+"</span>"); 
+           elif b in small_keywords do write_string('<span class=small_keyword>'+b+"</span>"); 
+           elif b in qualifiers do write_string('<span class=qualifier>'+b+"</span>"); 
+           else write_string(b); done
+       | _ =>
+           last_op=b; 
+           if b == "<" do b = "&lt;";
+           elif b == ">" do b = "&gt;";
+           elif b == "&" do b = "&amp;";
+           done;
+           write_string(b);  
+       endmatch;
+       b = "";  
+     }
+   
+   
+     goto nextt;
+   
+   contin:> // copy char and continue
+     cp();
+     goto nextch;
+      
+   overrun:> // one past last char of token
+     w();
+     s = sot;
+     goto thisch;
+   
+   lastch:> // last char of token
+     cp();
+     w();
+   
+   nextt:>  // new token on next char
+     s = sot;
+   
+   nextch:> // next char
+     next();
+   
+   thisch:> // same char, reconsider it
+     //println$ "Considering char " + str(ord(ch));
+     if isnull ch goto fin; // out of data
+     match s with 
+     | #sot =>
+         if isidstart ch do s = id; goto contin;
+         elif isdigit ch do s = num; goto contin;
+         elif issq3() do cp; next; cp; next; s = sq3; goto contin;
+         elif isdq3() do cp; next; cp; next; s = dq3; goto contin;
+         elif issq ch do s = sq; goto contin;
+         elif isdq ch do s = dq; goto contin;
+         elif ch == char "#" do s = cppcomment; goto contin;
+         else cp; w; goto nextt;
+         done
+   
+     | #id => 
+         if isalphanum ch do goto contin;
+         else goto overrun;
+         done
+     | #num => 
+         if isnumeric ch do goto contin;
+         else goto overrun; 
+         done
+     // single quoted strings
+     | #sq =>
+         if issq ch do goto lastch; 
+         elif ch== char "<" do b+="&lt;"; goto nextch;
+         elif ch== char ">" do b+="&gt;"; goto nextch;
+         elif ch== char "&" do b+="&amp;"; goto nextch;
+         else goto contin;
+         done
+     | #dq =>
+         if isdq ch do goto lastch;
+         elif ch== char "<" do b+="&lt;"; goto nextch;
+         elif ch== char ">" do b+="&gt;"; goto nextch;
+         elif ch== char "&" do b+="&amp;"; goto nextch;
+         else goto contin;
+         done
+      // triple quoted strings
+     | #sq3 =>
+         if issq3() do cp; next; cp; next; cp; w; goto nextt; 
+         elif ch== char "<" do b+="&lt;"; goto nextch;
+         elif ch== char ">" do b+="&gt;"; goto nextch;
+         elif ch== char "&" do b+="&amp;"; goto nextch;
+         else goto contin;
+         done
+     | #dq3 =>
+         if isdq3() do cp; next; cp; next; cp; w; goto nextt;
+         elif ch== char "<" do b+="&lt;"; goto nextch;
+         elif ch== char ">" do b+="&gt;"; goto nextch;
+         elif ch== char "&" do b+="&amp;"; goto nextch;
+         else goto contin;
+         done
+      // comments
+     | #cppcomment =>
+         if iseol ch do goto lastch;
+         else goto contin;
+         done
+     endmatch
+     ; 
+     println$ "Unexpected drop thru";
+   
+   fin:>
+      println "outof data";
+      w(); // whatever is left over gets written
+      return false, out;
+   }
+   }
+   
+   eprintln$ Version::felix_version+"Py2html initialisation";
+   
+   fun setup(x:string) = {
+     C_hack::ignore(x); // which means, don't ignore it .. :)
+     return 0;
+   }
+   
+   export fun setup of (string) as "py2html_setup";
+   export fun Py2Html::xlat_py of (string * string) as "py2html";
+   
+   
 
 Felix  :code:`flx` format.
 --------------------------
@@ -1933,678 +1933,678 @@ Felix  :code:`flx` format.
 .. code-block:: felix
 
   //[flx2html.flx]
-include "./plugin_common";
-
-// fixup text by replacing < > and & characters
-fun txt2html (x:string) =
-{
-  var out2 = "";
-  for var i in 0 upto x.len.int - 1 do
-    var ch = x.[i];
-    if ch == char "<" do out2+="&lt;";
-    elif ch == char ">" do out2+="&gt;";
-    elif ch == char "&" do out2+="&amp;";
-    else out2+=ch;
-    done
-  done
-
-  return out2;
-}
-
-var INSTALL_ROOT = "";
-var FLX_PKGCONFIG_PATH = Empty[string];
-var FLX_PATH = Empty[string];
-var FLX_WEBSERVER_PLUGIN_PATH = Empty[string];
-
-var xlat_cpp: string * string -> bool * string;
-
-// stick line numbers in front of each line (for hyperlinking source refs)
-fun lc (x:string) = {
-  var lines = rev
-    match rev_split (x,"\n") with 
-    | Cons ("",t) => t
-    | x => x
-    endmatch
-  ;
-  
-  var result = "";
-  reserve (&result, len x + 50.size * len lines);
-  var count = 0;
-  for line in lines do
-    ++count;
-    result += '<span class="lineno" id=line'+count.str+'></span>';
-    result += '  ' +line+'\n';
-  done
-  return result;
-}
-
-// Felix
-module Flx2Html {
-private val big_keywords = 
-  ("export",'generate extern "C" wrapper'),
-  ("macro","prefix for macro definitions"),
-  ("module","Define a module namespace"),
-  ("cfun","Define a C function"),
-  ("cproc","Define a C procedure"),
-  ("fun","Define a function with no side-effects"),
-  ("enum","Elaborate an enumeration, a simple sum type"),
-  ("cenum","Lift an enumeration of integers from C"),
-  ("cflags","Lift an enumeration of flags from C"),
-  ("gen","Define a generator, a function with side-effects returning a value"),
-  ("proc","Define a procedure, a function with side-effects not returning a value"),
-  ("ctor","Define a value constructor or conversion operator for a type"),
-  ("type","Define a primitive type by binding to a C type"),
-  ("ctypes","Define a set of primitive type by binding to C types with the same name"),
-  ("union","Define a union of variants (alternatives)"),
-  ("struct","Define a structure"),
-  ("cstruct","Provide a model for an existing C struct"),
-  ("typedef","Define an alias for a type expression"),
-  ("var","Define a mutable variable"),
-  ("val","Define an immutable value"),
-  ("class","Define a type class"),
-  ("const","Bind a Felix symbol to a C expression"),
-  ("instance","Provide an instance of a typeclass"),
-  ("header","Specify C code to be inserted into header file"),
-  ("body","Specify C code to be inserted into implementation file"),
-  ("include","Include a Felix file"),
-  ("spawn_fthread","Spawn a cooperative fibre"),
-  ("spawn_pthread","Spawn a pre-emptive thread"),
-  ("reduce", "Specify a reduction"),
-  ("axiom", "Specify core semantics"),
-  ("assert", "Run time assertion"),
-  ("open", "Open a module or class"),
-  ("inherit","Inherit symbols into a module or typeclass"),
-  ("rename","create a new name for a symbol"),
-  ("use","put the basename of a qualified name in the current scope"),
-  ("SCHEME","Define Scheme symbols"),
-  ("syntax","define domain specific sublanguage module"),
-  ("regdef","define named regular expression"),
-  ("literal","define literal"),
-  ("priority","Define order of syntactic priority symbols"),
-  ("requires","specify requirements"),
-  ("object","define an object factory"),
-  ("interface","define an object interface"),
-  ("try","try block"),
-  ("catch","catch handler"),
-  ("endtry","end of try block"),
-  ("halt", "terminate program with message")
-;
-
-private val small_keywords =
-  ("if","conditional"), 
-  ("then","conditional"), 
-  ("else","conditional"), 
-  ("elif","conditional"), 
-  ("endif","conditional"), 
-  ("do","imperative code begins"), 
-  ("done","end of body"),
-  ("extend","define an object interface"),
-  ("begin","end of extension"),
-  ("end","end of extension"),
-  ("in", "membership operator, function mem"),
-  ("for", "for loop"),
-  ("while","while loop"),
-  ("to", "substring range separator"),
-  ("upto","upwards counting for loop"),
-  ("downto","downwards counting for loop"),
-  ("typematch","type match expression"),
-  ("match","match statement or expression"),
-  ("endmatch","end a match statement or expression"),
-  ("with", "type-class constraint"),
-  ("return","return"),
-  ("yield","return a value saving the current location for future resumption"),
-  ("goto","jump to label"),
-  ("goto-indirect","jump to code address"),
-  ("branch-and-link","low level exchange of control"),
-  ("call","call a procedure"),
-  ("jump","tail call of function"),
-  ("loop","self-tail call"),
-  ("package","specifies an abstract package name"),
-  ("when", "predicative type constraint or precondition"),
-  ("result","value of function return used in post condition"),
-  ("expect","post condition"),
-  ("for","for loop"),
-  ("ident","identifier macro"),
-  ("noexpand","inhibit macro expansion"),
-  ("typesetof","a set of types"),
-  ("code","literal C code insertion"),
-  ("extends","extend an object or interface with extra methods"),
-  ("implements","specify what interfaces an object implements"), 
-  ("encoder","serialisation encoder"),
-  ("decoder","serialisation decoder"),
-  ("caseno","Integer index of value of a sum type"),
-  ("case","Sum type selector"),
-  ("proj","Product projection"),
-  ("let","let binder"),
-  ("label_address","code address at a label"),
-  ("and","logical conjunction"),
-  ("or","logical disjunction"),
-  ("not","logical negation"),
-  ("implies","logical implication"),
-  ("until","loop until condition is met"),
-  ("invariant","establish invariant for object methods")
-;
-
-private val qualifiers = 
-  ("method", "A function depending only on its parameters"),
-  ("pure", "A function depending only on its parameters"),
-  ("virtual", "Type of a function to be provided in type class instances"),
-  ("inline", "Function or procedure which should be inlined if possible"),
-  ("noinline", "Function or procedure which must not be inlined"),
-  ("private", "Symbol visible only in enclosing module or typeclass namespace"),
-  ("incomplete","A type which must not be instantiated"),
-  ("callback","A C wrapper for a Felix callback"),
-  ("pod","A Plain Old Data type, which needs no finalisation"),
-  ("_gc_pointer","A Felix heap allocated pointer"),
-  ("_gc_type","Type of object pointed to"),
-  ("scanner","names C routine which scans a data structure for pointers"),
-  ("finaliser","names C routine which finalises an object"),
-  ("_repr_","Refer to the representation of a Felix abstract type"),
-  ("noreturn","specify C code doesn't return")
-;
-
-private val dlibrary = 
-  ("any", "Type a non-returning function returns"),
-  ("void", "Type with no values, returning void indicates a procedure"),
-  ("unit", "Type with one values (), the empty tuple"),
-  ("tiny", "binding of C signed char type"),
-  ("utiny", "binding of C unsigned char type"),
-  ("short", "binding of C short type"),
-  ("ushort", "binding of C unsigned short type"),
-  ("int", "binding of C int type"),
-  ("uint", "binding of C unsigned int type"),
-  ("long", "binding of C long type"),
-  ("ulong", "binding of C unsigned long type"),
-  ("vlong", "binding of C long long type"),
-  ("uvlong", "binding of C unsigned long long type"),
-  ("int8", "binding of C int8_t type"),
-  ("int16", "binding of C int16_t type"),
-  ("int32", "binding of C int32_t type"),
-  ("int64", "binding of C int64 type"),
-  ("uint8", "binding of C uint8_t type"),
-  ("uint16", "binding of C uint16_t type"),
-  ("uint32", "binding of C uint32_t type"),
-  ("uint64", "binding of C uint64 type"),
-  ("char", "binding of C char type"),
-  ("uchar", "binding of C int32_t type used for Unicode character set"),
-  ("intptr", "binding of C intptr_t type"),
-  ("uintptr", "binding of C unsigned type corresponding to intptr_t type"),
-  ("maxint", "binding of C maxint_t type"),
-  ("umaxint", "binding of C unsigned type corresponding to maxint_t type"),
-  ("size", "binding of C size_t type"),
-  ("ssize", "binding of C signed type corresponding to size_t type"),
-  ("float", "binding of C float type"),
-  ("double", "binding of C double float type"),
-  ("ldouble", "binding of C long double type"),
-  ("string", "binding of C++ string type"),
-  ("ptrdiff", "binding of C ptrdiff_t type"),
-  ("intmax", "binding of C intmax_t type"),
-  ("uintmax", "binding of C uintmax_t type"),
-  ("wchar", "binding of C uintmax_t type"),
-  ("fcomplex", "binding of C++ complex&lt;float&gt; type"),
-  ("dcomplex", "binding of C++ complex&lt;double&gt; type"),
-  ("lcomplex", "binding of C++ complex&lt;long double&gt; type"),
-  ("byte", "special binding of C unsigned char type"),
-  ("address", "special binding of C void* type"),
-
-  ("opt", "option type: Some x or None"),
-  ("list", "functional, singly linked list"),
-  ("array", "array type, a tuple of all components the same type"),
-  ("varray", "array with dynamically variable limit up to a fixed bound"),
-  ("darray", "array with unbounded dynamically variable limit"),
-  ("sarray", "unbounded sparse array"),
-  ("bsarray", "bounded sparse array"),
-
-  ("str", "Convert a value to a string"),
-  ("print", "Print a string to standard output"),
-  ("println", "Print a string to standard output with newline appended"),
-  ("write", "Print a string to a stream"),
-  ("write", "Print a string to a stream with newline appended"),
-  ("readln", "Read a string from a stream including trailing newline"),
-
-  ("iter", "call procedure on each element of data structure"),
-  ("map", "return data structure with function applied to each value"),
-  ("fold_left", "accumulated values of data structure from left into initial value using function"),
-  ("fold_right", "accumulated values of data structure from right into initial value using function"),
-  ("rev", "return data structure with elements reversed"),
-  ("len", "number of elements in data structure"),
-  ("true", "truth value"),
-  ("false", "false value")
-;
-
-private val hack = "C_hack","C_hack"; // to make it an array we need 2 components
-
-
-fun valof[N](x:array[string * string,N],key:string) =>
-  match find (fun (kv:string * string)=> kv.(0) == key) x with
-  | Some (k,v) => v
-  | #None => ""
-  endmatch
-;
-
-fun xlat_felix(t:string, dir:string): bool * string =
-{
-  var needs_mathjax = false;
-  var mathcount = 0;
-  var out = "";
-  proc write_string(t:string) 
-  { 
-   out += t;
-  }
-
-  union state_t = 
-    | sot // start of token
-    | id // processing identifier
-    | texid // processing identifier
-    | num // in a number
-    | sq // processing single quote string
-    | dq // processing double quote string
-    | sq3 // processing single quote string
-    | dq3 // processing double quote string
-    | ccomment of int // a C style comment
-    | cppcomment // a C++ style comment
-    | cppfdoc // a documentation comment  //$
-    | mathmode // TeX math mode
-    | mathid // TeX math mode, Felix id
-    | mathtexid // TeX math mode, TeX id
-  ;
-  fun str(s:state_t) => match s with
-  | #sot => "sot"
-  | #id => "id"
-  | #texid => "texid"
-  | #num => "num"
-  | #sq => "sq"
-  | #dq => "dq"
-  | #sq3 => "sq3"
-  | #dq3 => "dq3"
-  | ccomment n => "ccomment_"+ str n
-  | #cppcomment => "cppcomment"
-  | #cppfdoc => "doccomment"
-  | #mathmode => "mathmode"
-  | #mathid => "mathid"
-  | #mathtexid => "mathid"
-  endmatch;
-  
-  var i = 0; var s:state_t;
-  var ch = t.[i];
-  proc next() { ch = t.[i]; ++i; }
-  fun ahead (j:int)=> t.[i + j - 1]; 
-  fun issq3() => 
-    ch == char "'" and 
-    ahead(1) == char "'" and
-    ahead(2) == char "'" 
-  ;
-  fun isdq3() => 
-    ch == char '"'  and
-    ahead(1) == char '"' and
-    ahead(2) == char '"' 
-  ;
-
-  var b = "";
-  var fdocb = "";
-  var last_id = "";
-  var last_texop = "";
-  var last_op = "";
-  var last_key = "";
-
-  proc cp() { b += ch; }
-  proc cpfdoc() { fdocb += ch; }
-
-  proc ws() {
-    if last_id == "include" do // hackery
-      var n = b; 
-      while n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
-      while n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
-      if n.[0] == '.' do
-        var rel_flx = Filename::join (dir, n.[1 to]);
-        if FileStat::fileexists rel_flx do
-          write_string('<a href="/$'+rel_flx+'" >' + b + '</a>') ;
-        else 
-          write_string('<span class="fstring">'+txt2html b+"</span>");
-        done
-      else
-        var try_flx = n+ ".flx"; 
-        var resolve_flx = get_file (try_flx, INSTALL_ROOT,FLX_PATH);
-        var try_fdoc = n+ ".fdoc"; 
-        var resolve_fdoc= get_file (try_fdoc, INSTALL_ROOT,FLX_PATH);
-        var flx_time,flx_file = match resolve_flx with | Some f => FileStat::filetime f,f | #None => 0.0,"";
-        var fdoc_time,fdoc_file = match resolve_fdoc with | Some f => FileStat::filetime f,f | #None => 0.0,"";
-        if flx_time > fdoc_time do 
-          write_string('<a href="/$'+flx_file+'" >' + b + '</a>') ;
-        elif fdoc_time > flx_time do
-          write_string('<a href="/$'+fdoc_file+'" >' + b + '</a>') ;
-        else 
-          write_string('<span class="fstring">'+txt2html b+"</span>");
-        done 
-      done
-    elif last_key in ("header","body") do
-      n = b; 
-      var quote = '"""';
-      if prefix(b,quote) do n = b.[3 to -3]; goto unstring; done
-      quote = "'''"; 
-      if prefix(b,quote) do n = b.[3 to -3]; goto unstring; done
-      quote = "'"; 
-      if prefix(b,quote) do n = b.[1 to -1]; goto unstring; done
-      quote = '"'; 
-      if prefix(b,quote) do n = b.[1 to -1]; goto unstring; done
-      // shouldn't happen ..
-unstring:>
-      val c = (xlat_cpp (n,dir)).1;
-      write_string(quote+'<span class="embedded_c">' + c + '</span>'+quote); 
-    elif last_key == "package" do
-       println$ "Package: " + b;
-       n = b;
-      while n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
-      while n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
-      n+=".fpc";
-println$ "Package file basename is " + n;
-      match get_file(n,INSTALL_ROOT,FLX_PKGCONFIG_PATH) with
-      | Some f => { write_string('<a href="/$'+f+'" >' + txt2html b + '</a>') ; }
-      | #None => { 
-          println$ "Can't find "+n+" in path " + str FLX_PKGCONFIG_PATH;   
-          write_string('<span class="fstring">'+txt2html b+"</span>"); 
-        }
-      endmatch;
-    else 
-     write_string('<span class="fstring">'+txt2html b+"</span>"); 
-    done
-  }
-  proc wfdoc() {
-    write_string ('<span class="doccomment">' + txt2html fdocb + "</span>\n");
-    fdocb = ""; b="";
-  }
-  proc w() { 
-    last_texop = ""; 
-    //println$ "Token["+str s+"]="+b; 
-    match s with 
-    | #dq => { ws; }
-    | #sq => { ws; }
-    | #sq3 => { ws; }
-    | #dq3 => { ws; }
-    | ccomment _ => { write_string('<span class="comment">'+txt2html b+"</span>"); }
-    | #cppcomment => { write_string('<span class="comment">'+txt2html b.[to -1]+"</span>\n"); }
-    | #texid => { write_string (
-        '<span class="tex_symbol" title="'+b+'">\\(' + txt2html b + '\\)</span>'
-        ); 
-        needs_mathjax = true; 
-      }  // format with MathJax
-    | #mathmode => { needs_mathjax = true; write_string b; }
-    | #mathid => { needs_mathjax = true; write_string b; }
-    | #mathtexid => { needs_mathjax = true; last_texop = b; write_string b; }
-    | #id => 
-      { 
-        last_id = b;
-        // this is a bit hacky but I can't see another way!
-        var bv=valof(big_keywords,b);
-        var sv=valof(small_keywords,b);
-        var qv=valof(qualifiers,b);
-        var lv=valof(dlibrary,b);
-        if   bv != "" do last_key=b; write_string('<span class="big_keyword" title="'+bv+'">'+b+"</span>"); 
-        elif sv != "" do last_key=b; write_string('<span class="small_keyword" title="'+sv+'">'+b+"</span>");
-        elif qv != "" do write_string('<span class="qualifier" title="'+qv+'">'+b+"</span>"); 
-        elif lv != "" do write_string('<span class="library" title="'+lv+'">'+b+"</span>"); 
-        elif b in hack do write_string('<span class="hack">'+b+"</span>"); 
-        else write_string(b); done
-      }
-    | _ =>
-      { 
-        last_op=b; 
-        if b == ";" do last_key = ""; done
-        if b == "<" do b = "&lt;";
-        elif b == ">" do b = "&gt;";
-        elif b == "&" do b = "&amp;";
-        done;
-        write_string(b);  
-      }
-    endmatch;
-    b = "";  
-  }
-
-
-  goto nextt;
-
-continfdoc:>
-  cpfdoc;
-  goto nextch;
-
-contin:> // copy char and continue
-  cp;
-  goto nextch;
+   include "./plugin_common";
    
-overrun:> // one past last char of token
-  w;
-  s = sot;
-  goto thisch;
-
-lastfdoc:>
-  wfdoc;
-  goto nextt;
-
-lastch:> // last char of token
-  cp;
-  w;
-
-nextt:>  // new token on next char
-  s = sot;
-
-nextch:> // next char
-  next;
-
-thisch:> // same char, reconsider it
-  //println$ "Considering char " + str(ord(ch));
-  if isnull ch goto fin; // out of data
-  match s with 
-  | #sot =>
-      if isidstart ch do s = id; goto contin;
-      elif ch == char "\\" and isletter (ahead(1)) do cp; next; s = texid; goto contin; 
-      elif ch == char "\\" and ahead(1) in (char "(", char "[")  do 
-        cp; next; s=mathmode; ++mathcount; goto contin;
-      elif isdigit ch do s = num; goto contin;
-      elif issq3() do cp; next; cp; next; s = sq3; goto contin;
-      elif isdq3() do cp; next; cp; next; s = dq3; goto contin;
-      elif issq ch do s = sq; goto contin;
-      elif isdq ch do s = dq; goto contin;
-      elif ch == char "/" do
-        if ahead(1) == char "/" do 
-          if ahead(2) == char "$" do 
-            next; next; next;
-            s = cppfdoc; 
-          else cp; next; s = cppcomment;
-          done
-          goto contin;
-        elif ahead(1) == char "*" do cp; next; s = ccomment 1; goto contin;
-        else goto lastch;
-        done 
-      else cp; w; goto nextt;
-      done
-
-  | #mathmode =>
-     if ch == char "\\" do
-       if ahead (1) == char ")" do
-         --mathcount;
-         if mathcount == 0 do
-           // EXIT MATH MODE
-           cp; next; cp; w; goto nextt;
+   // fixup text by replacing < > and & characters
+   fun txt2html (x:string) =
+   {
+     var out2 = "";
+     for var i in 0 upto x.len.int - 1 do
+       var ch = x.[i];
+       if ch == char "<" do out2+="&lt;";
+       elif ch == char ">" do out2+="&gt;";
+       elif ch == char "&" do out2+="&amp;";
+       else out2+=ch;
+       done
+     done
+   
+     return out2;
+   }
+   
+   var INSTALL_ROOT = "";
+   var FLX_PKGCONFIG_PATH = Empty[string];
+   var FLX_PATH = Empty[string];
+   var FLX_WEBSERVER_PLUGIN_PATH = Empty[string];
+   
+   var xlat_cpp: string * string -> bool * string;
+   
+   // stick line numbers in front of each line (for hyperlinking source refs)
+   fun lc (x:string) = {
+     var lines = rev
+       match rev_split (x,"\n") with 
+       | Cons ("",t) => t
+       | x => x
+       endmatch
+     ;
+     
+     var result = "";
+     reserve (&result, len x + 50.size * len lines);
+     var count = 0;
+     for line in lines do
+       ++count;
+       result += '<span class="lineno" id=line'+count.str+'></span>';
+       result += '  ' +line+'\n';
+     done
+     return result;
+   }
+   
+   // Felix
+   module Flx2Html {
+   private val big_keywords = 
+     ("export",'generate extern "C" wrapper'),
+     ("macro","prefix for macro definitions"),
+     ("module","Define a module namespace"),
+     ("cfun","Define a C function"),
+     ("cproc","Define a C procedure"),
+     ("fun","Define a function with no side-effects"),
+     ("enum","Elaborate an enumeration, a simple sum type"),
+     ("cenum","Lift an enumeration of integers from C"),
+     ("cflags","Lift an enumeration of flags from C"),
+     ("gen","Define a generator, a function with side-effects returning a value"),
+     ("proc","Define a procedure, a function with side-effects not returning a value"),
+     ("ctor","Define a value constructor or conversion operator for a type"),
+     ("type","Define a primitive type by binding to a C type"),
+     ("ctypes","Define a set of primitive type by binding to C types with the same name"),
+     ("union","Define a union of variants (alternatives)"),
+     ("struct","Define a structure"),
+     ("cstruct","Provide a model for an existing C struct"),
+     ("typedef","Define an alias for a type expression"),
+     ("var","Define a mutable variable"),
+     ("val","Define an immutable value"),
+     ("class","Define a type class"),
+     ("const","Bind a Felix symbol to a C expression"),
+     ("instance","Provide an instance of a typeclass"),
+     ("header","Specify C code to be inserted into header file"),
+     ("body","Specify C code to be inserted into implementation file"),
+     ("include","Include a Felix file"),
+     ("spawn_fthread","Spawn a cooperative fibre"),
+     ("spawn_pthread","Spawn a pre-emptive thread"),
+     ("reduce", "Specify a reduction"),
+     ("axiom", "Specify core semantics"),
+     ("assert", "Run time assertion"),
+     ("open", "Open a module or class"),
+     ("inherit","Inherit symbols into a module or typeclass"),
+     ("rename","create a new name for a symbol"),
+     ("use","put the basename of a qualified name in the current scope"),
+     ("SCHEME","Define Scheme symbols"),
+     ("syntax","define domain specific sublanguage module"),
+     ("regdef","define named regular expression"),
+     ("literal","define literal"),
+     ("priority","Define order of syntactic priority symbols"),
+     ("requires","specify requirements"),
+     ("object","define an object factory"),
+     ("interface","define an object interface"),
+     ("try","try block"),
+     ("catch","catch handler"),
+     ("endtry","end of try block"),
+     ("halt", "terminate program with message")
+   ;
+   
+   private val small_keywords =
+     ("if","conditional"), 
+     ("then","conditional"), 
+     ("else","conditional"), 
+     ("elif","conditional"), 
+     ("endif","conditional"), 
+     ("do","imperative code begins"), 
+     ("done","end of body"),
+     ("extend","define an object interface"),
+     ("begin","end of extension"),
+     ("end","end of extension"),
+     ("in", "membership operator, function mem"),
+     ("for", "for loop"),
+     ("while","while loop"),
+     ("to", "substring range separator"),
+     ("upto","upwards counting for loop"),
+     ("downto","downwards counting for loop"),
+     ("typematch","type match expression"),
+     ("match","match statement or expression"),
+     ("endmatch","end a match statement or expression"),
+     ("with", "type-class constraint"),
+     ("return","return"),
+     ("yield","return a value saving the current location for future resumption"),
+     ("goto","jump to label"),
+     ("goto-indirect","jump to code address"),
+     ("branch-and-link","low level exchange of control"),
+     ("call","call a procedure"),
+     ("jump","tail call of function"),
+     ("loop","self-tail call"),
+     ("package","specifies an abstract package name"),
+     ("when", "predicative type constraint or precondition"),
+     ("result","value of function return used in post condition"),
+     ("expect","post condition"),
+     ("for","for loop"),
+     ("ident","identifier macro"),
+     ("noexpand","inhibit macro expansion"),
+     ("typesetof","a set of types"),
+     ("code","literal C code insertion"),
+     ("extends","extend an object or interface with extra methods"),
+     ("implements","specify what interfaces an object implements"), 
+     ("encoder","serialisation encoder"),
+     ("decoder","serialisation decoder"),
+     ("caseno","Integer index of value of a sum type"),
+     ("case","Sum type selector"),
+     ("proj","Product projection"),
+     ("let","let binder"),
+     ("label_address","code address at a label"),
+     ("and","logical conjunction"),
+     ("or","logical disjunction"),
+     ("not","logical negation"),
+     ("implies","logical implication"),
+     ("until","loop until condition is met"),
+     ("invariant","establish invariant for object methods")
+   ;
+   
+   private val qualifiers = 
+     ("method", "A function depending only on its parameters"),
+     ("pure", "A function depending only on its parameters"),
+     ("virtual", "Type of a function to be provided in type class instances"),
+     ("inline", "Function or procedure which should be inlined if possible"),
+     ("noinline", "Function or procedure which must not be inlined"),
+     ("private", "Symbol visible only in enclosing module or typeclass namespace"),
+     ("incomplete","A type which must not be instantiated"),
+     ("callback","A C wrapper for a Felix callback"),
+     ("pod","A Plain Old Data type, which needs no finalisation"),
+     ("_gc_pointer","A Felix heap allocated pointer"),
+     ("_gc_type","Type of object pointed to"),
+     ("scanner","names C routine which scans a data structure for pointers"),
+     ("finaliser","names C routine which finalises an object"),
+     ("_repr_","Refer to the representation of a Felix abstract type"),
+     ("noreturn","specify C code doesn't return")
+   ;
+   
+   private val dlibrary = 
+     ("any", "Type a non-returning function returns"),
+     ("void", "Type with no values, returning void indicates a procedure"),
+     ("unit", "Type with one values (), the empty tuple"),
+     ("tiny", "binding of C signed char type"),
+     ("utiny", "binding of C unsigned char type"),
+     ("short", "binding of C short type"),
+     ("ushort", "binding of C unsigned short type"),
+     ("int", "binding of C int type"),
+     ("uint", "binding of C unsigned int type"),
+     ("long", "binding of C long type"),
+     ("ulong", "binding of C unsigned long type"),
+     ("vlong", "binding of C long long type"),
+     ("uvlong", "binding of C unsigned long long type"),
+     ("int8", "binding of C int8_t type"),
+     ("int16", "binding of C int16_t type"),
+     ("int32", "binding of C int32_t type"),
+     ("int64", "binding of C int64 type"),
+     ("uint8", "binding of C uint8_t type"),
+     ("uint16", "binding of C uint16_t type"),
+     ("uint32", "binding of C uint32_t type"),
+     ("uint64", "binding of C uint64 type"),
+     ("char", "binding of C char type"),
+     ("uchar", "binding of C int32_t type used for Unicode character set"),
+     ("intptr", "binding of C intptr_t type"),
+     ("uintptr", "binding of C unsigned type corresponding to intptr_t type"),
+     ("maxint", "binding of C maxint_t type"),
+     ("umaxint", "binding of C unsigned type corresponding to maxint_t type"),
+     ("size", "binding of C size_t type"),
+     ("ssize", "binding of C signed type corresponding to size_t type"),
+     ("float", "binding of C float type"),
+     ("double", "binding of C double float type"),
+     ("ldouble", "binding of C long double type"),
+     ("string", "binding of C++ string type"),
+     ("ptrdiff", "binding of C ptrdiff_t type"),
+     ("intmax", "binding of C intmax_t type"),
+     ("uintmax", "binding of C uintmax_t type"),
+     ("wchar", "binding of C uintmax_t type"),
+     ("fcomplex", "binding of C++ complex&lt;float&gt; type"),
+     ("dcomplex", "binding of C++ complex&lt;double&gt; type"),
+     ("lcomplex", "binding of C++ complex&lt;long double&gt; type"),
+     ("byte", "special binding of C unsigned char type"),
+     ("address", "special binding of C void* type"),
+   
+     ("opt", "option type: Some x or None"),
+     ("list", "functional, singly linked list"),
+     ("array", "array type, a tuple of all components the same type"),
+     ("varray", "array with dynamically variable limit up to a fixed bound"),
+     ("darray", "array with unbounded dynamically variable limit"),
+     ("sarray", "unbounded sparse array"),
+     ("bsarray", "bounded sparse array"),
+   
+     ("str", "Convert a value to a string"),
+     ("print", "Print a string to standard output"),
+     ("println", "Print a string to standard output with newline appended"),
+     ("write", "Print a string to a stream"),
+     ("write", "Print a string to a stream with newline appended"),
+     ("readln", "Read a string from a stream including trailing newline"),
+   
+     ("iter", "call procedure on each element of data structure"),
+     ("map", "return data structure with function applied to each value"),
+     ("fold_left", "accumulated values of data structure from left into initial value using function"),
+     ("fold_right", "accumulated values of data structure from right into initial value using function"),
+     ("rev", "return data structure with elements reversed"),
+     ("len", "number of elements in data structure"),
+     ("true", "truth value"),
+     ("false", "false value")
+   ;
+   
+   private val hack = "C_hack","C_hack"; // to make it an array we need 2 components
+   
+   
+   fun valof[N](x:array[string * string,N],key:string) =>
+     match find (fun (kv:string * string)=> kv.(0) == key) x with
+     | Some (k,v) => v
+     | #None => ""
+     endmatch
+   ;
+   
+   fun xlat_felix(t:string, dir:string): bool * string =
+   {
+     var needs_mathjax = false;
+     var mathcount = 0;
+     var out = "";
+     proc write_string(t:string) 
+     { 
+      out += t;
+     }
+   
+     union state_t = 
+       | sot // start of token
+       | id // processing identifier
+       | texid // processing identifier
+       | num // in a number
+       | sq // processing single quote string
+       | dq // processing double quote string
+       | sq3 // processing single quote string
+       | dq3 // processing double quote string
+       | ccomment of int // a C style comment
+       | cppcomment // a C++ style comment
+       | cppfdoc // a documentation comment  //$
+       | mathmode // TeX math mode
+       | mathid // TeX math mode, Felix id
+       | mathtexid // TeX math mode, TeX id
+     ;
+     fun str(s:state_t) => match s with
+     | #sot => "sot"
+     | #id => "id"
+     | #texid => "texid"
+     | #num => "num"
+     | #sq => "sq"
+     | #dq => "dq"
+     | #sq3 => "sq3"
+     | #dq3 => "dq3"
+     | ccomment n => "ccomment_"+ str n
+     | #cppcomment => "cppcomment"
+     | #cppfdoc => "doccomment"
+     | #mathmode => "mathmode"
+     | #mathid => "mathid"
+     | #mathtexid => "mathid"
+     endmatch;
+     
+     var i = 0; var s:state_t;
+     var ch = t.[i];
+     proc next() { ch = t.[i]; ++i; }
+     fun ahead (j:int)=> t.[i + j - 1]; 
+     fun issq3() => 
+       ch == char "'" and 
+       ahead(1) == char "'" and
+       ahead(2) == char "'" 
+     ;
+     fun isdq3() => 
+       ch == char '"'  and
+       ahead(1) == char '"' and
+       ahead(2) == char '"' 
+     ;
+   
+     var b = "";
+     var fdocb = "";
+     var last_id = "";
+     var last_texop = "";
+     var last_op = "";
+     var last_key = "";
+   
+     proc cp() { b += ch; }
+     proc cpfdoc() { fdocb += ch; }
+   
+     proc ws() {
+       if last_id == "include" do // hackery
+         var n = b; 
+         while n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
+         while n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
+         if n.[0] == '.' do
+           var rel_flx = Filename::join (dir, n.[1 to]);
+           if FileStat::fileexists rel_flx do
+             write_string('<a href="/$'+rel_flx+'" >' + b + '</a>') ;
+           else 
+             write_string('<span class="fstring">'+txt2html b+"</span>");
+           done
          else
-          next; b+="}"; goto nextch;
+           var try_flx = n+ ".flx"; 
+           var resolve_flx = get_file (try_flx, INSTALL_ROOT,FLX_PATH);
+           var try_fdoc = n+ ".fdoc"; 
+           var resolve_fdoc= get_file (try_fdoc, INSTALL_ROOT,FLX_PATH);
+           var flx_time,flx_file = match resolve_flx with | Some f => FileStat::filetime f,f | #None => 0.0,"";
+           var fdoc_time,fdoc_file = match resolve_fdoc with | Some f => FileStat::filetime f,f | #None => 0.0,"";
+           if flx_time > fdoc_time do 
+             write_string('<a href="/$'+flx_file+'" >' + b + '</a>') ;
+           elif fdoc_time > flx_time do
+             write_string('<a href="/$'+fdoc_file+'" >' + b + '</a>') ;
+           else 
+             write_string('<span class="fstring">'+txt2html b+"</span>");
+           done 
          done
-       elif ahead (1) == char "(" do
-          ++mathcount;
-          b+="{";
-          next; goto nextch;
-       elif ahead (1) == char "]" do
-         --mathcount;
-         if mathcount == 0 do
-           // EXIT MATH MODE
-           cp; next; cp; w; goto nextt;
-         else
-          cp; next; cp; b+="}"; goto nextch;
-         done
-       elif ahead (1) == char "[" do
-          ++mathcount;
-          b+="{";
-          cp; next; cp; goto nextch;
-       elif ahead (1) == (char "{") do
-         b+="{"; cp; next; cp; goto nextch;
-       elif ahead (1)  == (char "}") do
-         cp; next; cp; b+="}"; goto nextch;
-       elif isletter (ahead(1)) do
-         cp; s = mathtexid; goto nextch;
+       elif last_key in ("header","body") do
+         n = b; 
+         var quote = '"""';
+         if prefix(b,quote) do n = b.[3 to -3]; goto unstring; done
+         quote = "'''"; 
+         if prefix(b,quote) do n = b.[3 to -3]; goto unstring; done
+         quote = "'"; 
+         if prefix(b,quote) do n = b.[1 to -1]; goto unstring; done
+         quote = '"'; 
+         if prefix(b,quote) do n = b.[1 to -1]; goto unstring; done
+         // shouldn't happen ..
+   unstring:>
+         val c = (xlat_cpp (n,dir)).1;
+         write_string(quote+'<span class="embedded_c">' + c + '</span>'+quote); 
+       elif last_key == "package" do
+          println$ "Package: " + b;
+          n = b;
+         while n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
+         while n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
+         n+=".fpc";
+   println$ "Package file basename is " + n;
+         match get_file(n,INSTALL_ROOT,FLX_PKGCONFIG_PATH) with
+         | Some f => { write_string('<a href="/$'+f+'" >' + txt2html b + '</a>') ; }
+         | #None => { 
+             println$ "Can't find "+n+" in path " + str FLX_PKGCONFIG_PATH;   
+             write_string('<span class="fstring">'+txt2html b+"</span>"); 
+           }
+         endmatch;
        else 
-         goto contin;
+        write_string('<span class="fstring">'+txt2html b+"</span>"); 
        done
-     // add {} around () and [] so TeX sees a group
-     elif ch in (char "(", char "[") do
-       b+="{"; cp; goto nextch;
-     elif ch in (char ")", char "]") do
-       cp; b+="}"; goto nextch;
- 
-     elif isidstart ch do
-       w; 
-       if not (isflxidcont (ahead 1)) do 
-         goto contin; // leave one character identifiers "as is"
-                      // so default typeface is mathit
-       else
-         s = mathid; 
-         var mathfont = 
-           if last_texop in (
-             "\\mathit",   // math italic
-             "\\mathfrak", // fraktur
-             "\\mathcal",  // caligraphic
-             "\\mathrm",   // roman
-             "\\mathbf",   // bold
-             "\\mathscr",  // script
-             "\mathbb",    // blackboard bold
-             "\mathsf",    // sans-serif
-             "\\pmb"       // poor mans bold
-           )
-           then last_texop else "\\mathtt"
-         ;
-         b="{"+mathfont+"{\\text{"; 
-         goto contin;
-       done
-     else
-       goto contin;
-     done
-  | #mathtexid =>
-      if isletter ch goto contin;
-      w;
-      s = mathmode;
-      goto thisch;
-
-  | #mathid =>
-      if isflxidcont ch goto contin;
-      b+="}}}";
-      w; s = mathmode;
-      goto thisch;
-
-  | #texid => 
-      if isletter ch do goto contin;
-      else 
-        goto overrun;
-      done
-  | #id => 
-      if isflxidcont ch do goto contin;
-      else goto overrun;
-      done
-  | #num => 
-      if isnumeric ch do goto contin;
-      else goto overrun; 
-      done
-  // single quoted strings
-  | #sq =>
-      if issq ch do goto lastch; done
-      goto contin;
-  | #dq =>
-      if isdq ch do goto lastch; done
-      goto contin;
-   // triple quoted strings
-  | #sq3 =>
-      if issq3() do cp; next; cp; next; cp; w; goto nextt; done
-      goto contin;
-  | #dq3 =>
-      if isdq3() do cp; next; cp; next; cp; w; goto nextt; done
-      goto contin;
-   // comments
-  | #cppfdoc =>
-     if iseol ch do goto lastfdoc;
-     else goto continfdoc;
-     done
-
-  | #cppcomment =>
-      if iseol ch do goto lastch;
-      else goto contin;
-      done
-  | ccomment n => 
-      if ch == char "*" and ahead(1) == char "/" do 
-        if n == 1 do 
-          cp; next;
-          goto lastch;
+     }
+     proc wfdoc() {
+       write_string ('<span class="doccomment">' + txt2html fdocb + "</span>\n");
+       fdocb = ""; b="";
+     }
+     proc w() { 
+       last_texop = ""; 
+       //println$ "Token["+str s+"]="+b; 
+       match s with 
+       | #dq => { ws; }
+       | #sq => { ws; }
+       | #sq3 => { ws; }
+       | #dq3 => { ws; }
+       | ccomment _ => { write_string('<span class="comment">'+txt2html b+"</span>"); }
+       | #cppcomment => { write_string('<span class="comment">'+txt2html b.[to -1]+"</span>\n"); }
+       | #texid => { write_string (
+           '<span class="tex_symbol" title="'+b+'">\\(' + txt2html b + '\\)</span>'
+           ); 
+           needs_mathjax = true; 
+         }  // format with MathJax
+       | #mathmode => { needs_mathjax = true; write_string b; }
+       | #mathid => { needs_mathjax = true; write_string b; }
+       | #mathtexid => { needs_mathjax = true; last_texop = b; write_string b; }
+       | #id => 
+         { 
+           last_id = b;
+           // this is a bit hacky but I can't see another way!
+           var bv=valof(big_keywords,b);
+           var sv=valof(small_keywords,b);
+           var qv=valof(qualifiers,b);
+           var lv=valof(dlibrary,b);
+           if   bv != "" do last_key=b; write_string('<span class="big_keyword" title="'+bv+'">'+b+"</span>"); 
+           elif sv != "" do last_key=b; write_string('<span class="small_keyword" title="'+sv+'">'+b+"</span>");
+           elif qv != "" do write_string('<span class="qualifier" title="'+qv+'">'+b+"</span>"); 
+           elif lv != "" do write_string('<span class="library" title="'+lv+'">'+b+"</span>"); 
+           elif b in hack do write_string('<span class="hack">'+b+"</span>"); 
+           else write_string(b); done
+         }
+       | _ =>
+         { 
+           last_op=b; 
+           if b == ";" do last_key = ""; done
+           if b == "<" do b = "&lt;";
+           elif b == ">" do b = "&gt;";
+           elif b == "&" do b = "&amp;";
+           done;
+           write_string(b);  
+         }
+       endmatch;
+       b = "";  
+     }
+   
+   
+     goto nextt;
+   
+   continfdoc:>
+     cpfdoc;
+     goto nextch;
+   
+   contin:> // copy char and continue
+     cp;
+     goto nextch;
+      
+   overrun:> // one past last char of token
+     w;
+     s = sot;
+     goto thisch;
+   
+   lastfdoc:>
+     wfdoc;
+     goto nextt;
+   
+   lastch:> // last char of token
+     cp;
+     w;
+   
+   nextt:>  // new token on next char
+     s = sot;
+   
+   nextch:> // next char
+     next;
+   
+   thisch:> // same char, reconsider it
+     //println$ "Considering char " + str(ord(ch));
+     if isnull ch goto fin; // out of data
+     match s with 
+     | #sot =>
+         if isidstart ch do s = id; goto contin;
+         elif ch == char "\\" and isletter (ahead(1)) do cp; next; s = texid; goto contin; 
+         elif ch == char "\\" and ahead(1) in (char "(", char "[")  do 
+           cp; next; s=mathmode; ++mathcount; goto contin;
+         elif isdigit ch do s = num; goto contin;
+         elif issq3() do cp; next; cp; next; s = sq3; goto contin;
+         elif isdq3() do cp; next; cp; next; s = dq3; goto contin;
+         elif issq ch do s = sq; goto contin;
+         elif isdq ch do s = dq; goto contin;
+         elif ch == char "/" do
+           if ahead(1) == char "/" do 
+             if ahead(2) == char "$" do 
+               next; next; next;
+               s = cppfdoc; 
+             else cp; next; s = cppcomment;
+             done
+             goto contin;
+           elif ahead(1) == char "*" do cp; next; s = ccomment 1; goto contin;
+           else goto lastch;
+           done 
+         else cp; w; goto nextt;
+         done
+   
+     | #mathmode =>
+        if ch == char "\\" do
+          if ahead (1) == char ")" do
+            --mathcount;
+            if mathcount == 0 do
+              // EXIT MATH MODE
+              cp; next; cp; w; goto nextt;
+            else
+             next; b+="}"; goto nextch;
+            done
+          elif ahead (1) == char "(" do
+             ++mathcount;
+             b+="{";
+             next; goto nextch;
+          elif ahead (1) == char "]" do
+            --mathcount;
+            if mathcount == 0 do
+              // EXIT MATH MODE
+              cp; next; cp; w; goto nextt;
+            else
+             cp; next; cp; b+="}"; goto nextch;
+            done
+          elif ahead (1) == char "[" do
+             ++mathcount;
+             b+="{";
+             cp; next; cp; goto nextch;
+          elif ahead (1) == (char "{") do
+            b+="{"; cp; next; cp; goto nextch;
+          elif ahead (1)  == (char "}") do
+            cp; next; cp; b+="}"; goto nextch;
+          elif isletter (ahead(1)) do
+            cp; s = mathtexid; goto nextch;
+          else 
+            goto contin;
+          done
+        // add {} around () and [] so TeX sees a group
+        elif ch in (char "(", char "[") do
+          b+="{"; cp; goto nextch;
+        elif ch in (char ")", char "]") do
+          cp; b+="}"; goto nextch;
+    
+        elif isidstart ch do
+          w; 
+          if not (isflxidcont (ahead 1)) do 
+            goto contin; // leave one character identifiers "as is"
+                         // so default typeface is mathit
+          else
+            s = mathid; 
+            var mathfont = 
+              if last_texop in (
+                "\\mathit",   // math italic
+                "\\mathfrak", // fraktur
+                "\\mathcal",  // caligraphic
+                "\\mathrm",   // roman
+                "\\mathbf",   // bold
+                "\\mathscr",  // script
+                "\mathbb",    // blackboard bold
+                "\mathsf",    // sans-serif
+                "\\pmb"       // poor mans bold
+              )
+              then last_texop else "\\mathtt"
+            ;
+            b="{"+mathfont+"{\\text{"; 
+            goto contin;
+          done
         else
-          s = ccomment (n - 1);
           goto contin;
         done
-      elif ch == char "/" and ahead(1) == char "*" do 
-        s = ccomment (n + 1);
-        goto contin;
-      else 
-        goto contin;
-      done
-  endmatch;
-
-  println$ "Unexpected drop thru";
-
-fin:>
-   //println "outof data, final write ..";
-   w(); // whatever is left over gets written
-   return needs_mathjax, lc out;
-}
-}
-
-
-eprintln$ Version::felix_version+" flx2html initialisation";
-
-fun setup(config_data:string) = {
-  var config_lines = split(config_data, "\n");
-  config_lines = map (strip of (string)) config_lines; 
-  var pathext = RE2("(.*)\\+=(.*)");
-  var varset = RE2("(.*)=(.*)");
-  var plugin_spec = RE2 " *extension (.*)->(.*)::(.*)";
-
-  var result = varray[StringPiece] (4.size,StringPiece(""));
-  for line in config_lines do
-    var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
-    if match_result do
-      var lhs = result.1.str.strip;
-      var rhs = result.2.str.strip;
-      match lhs with
-      | "FLX_PATH" => FLX_PATH += rhs; 
-      | "FLX_PKGCONFIG_PATH" => FLX_PKGCONFIG_PATH += rhs;
-      | "FLX_WEBSERVER_PLUGIN_PATH" => FLX_WEBSERVER_PLUGIN_PATH += rhs;
-      | _ => ;
-      endmatch;
-    else
-    match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
-    if match_result do
-      lhs = result.1.str.strip;
-      rhs = result.2.str.strip;
-      match lhs with
-      | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
-      | _ => ;
-      endmatch;
-    done done
-  done
-
-  xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="cpp2html", setup-str=config_data, entry-point="cpp2html"
-  );
-  
-  return 0;
-}
-
-export fun setup of (string) as "flx2html_setup";
-export fun Flx2Html::xlat_felix of (string * string) as "flx2html";
-
+     | #mathtexid =>
+         if isletter ch goto contin;
+         w;
+         s = mathmode;
+         goto thisch;
+   
+     | #mathid =>
+         if isflxidcont ch goto contin;
+         b+="}}}";
+         w; s = mathmode;
+         goto thisch;
+   
+     | #texid => 
+         if isletter ch do goto contin;
+         else 
+           goto overrun;
+         done
+     | #id => 
+         if isflxidcont ch do goto contin;
+         else goto overrun;
+         done
+     | #num => 
+         if isnumeric ch do goto contin;
+         else goto overrun; 
+         done
+     // single quoted strings
+     | #sq =>
+         if issq ch do goto lastch; done
+         goto contin;
+     | #dq =>
+         if isdq ch do goto lastch; done
+         goto contin;
+      // triple quoted strings
+     | #sq3 =>
+         if issq3() do cp; next; cp; next; cp; w; goto nextt; done
+         goto contin;
+     | #dq3 =>
+         if isdq3() do cp; next; cp; next; cp; w; goto nextt; done
+         goto contin;
+      // comments
+     | #cppfdoc =>
+        if iseol ch do goto lastfdoc;
+        else goto continfdoc;
+        done
+   
+     | #cppcomment =>
+         if iseol ch do goto lastch;
+         else goto contin;
+         done
+     | ccomment n => 
+         if ch == char "*" and ahead(1) == char "/" do 
+           if n == 1 do 
+             cp; next;
+             goto lastch;
+           else
+             s = ccomment (n - 1);
+             goto contin;
+           done
+         elif ch == char "/" and ahead(1) == char "*" do 
+           s = ccomment (n + 1);
+           goto contin;
+         else 
+           goto contin;
+         done
+     endmatch;
+   
+     println$ "Unexpected drop thru";
+   
+   fin:>
+      //println "outof data, final write ..";
+      w(); // whatever is left over gets written
+      return needs_mathjax, lc out;
+   }
+   }
+   
+   
+   eprintln$ Version::felix_version+" flx2html initialisation";
+   
+   fun setup(config_data:string) = {
+     var config_lines = split(config_data, "\n");
+     config_lines = map (strip of (string)) config_lines; 
+     var pathext = RE2("(.*)\\+=(.*)");
+     var varset = RE2("(.*)=(.*)");
+     var plugin_spec = RE2 " *extension (.*)->(.*)::(.*)";
+   
+     var result = varray[StringPiece] (4.size,StringPiece(""));
+     for line in config_lines do
+       var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
+       if match_result do
+         var lhs = result.1.str.strip;
+         var rhs = result.2.str.strip;
+         match lhs with
+         | "FLX_PATH" => FLX_PATH += rhs; 
+         | "FLX_PKGCONFIG_PATH" => FLX_PKGCONFIG_PATH += rhs;
+         | "FLX_WEBSERVER_PLUGIN_PATH" => FLX_WEBSERVER_PLUGIN_PATH += rhs;
+         | _ => ;
+         endmatch;
+       else
+       match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
+       if match_result do
+         lhs = result.1.str.strip;
+         rhs = result.2.str.strip;
+         match lhs with
+         | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
+         | _ => ;
+         endmatch;
+       done done
+     done
+   
+     xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
+       dll-name="cpp2html", setup-str=config_data, entry-point="cpp2html"
+     );
+     
+     return 0;
+   }
+   
+   export fun setup of (string) as "flx2html_setup";
+   export fun Flx2Html::xlat_felix of (string * string) as "flx2html";
+   
 
 C and C++ code.
 ---------------
@@ -2613,253 +2613,253 @@ C and C++ code.
 .. code-block:: felix
 
   //[cpp2html.flx]
-include "./plugin_common";
-
-var C_PATH = Empty[string];
-var INSTALL_ROOT = "";
-
-
-module Cpp2Html { 
-// C++ and C
-val cpp_big_keywords = 
-  "class",
-  "struct",
-  "union",
-  "namespace",
-  "typedef",
-  "enum",
-  "template"
-;
-
-val cpp_small_keywords =
-  "if", "while", "until","do","for","return","goto","std"
-;
-
-val cpp_qualifiers = 
-  "virtual", "inline", "static", "extern", "public","private","protected",
-  "int","long","unsigned","float","double","char","short","signed","void","size_t",
-  "const","volatile","typename"
-;
-
-val cpp_preproc = 
-  "define","if","endif","else","include","ifdef","ifndef"
-;
-
-fun xlat_cpp(t:string, dir:string) : bool * string=
-{
-  var out = "";
-  proc write_string(t:string) 
-  { 
-    out += t;
-  }
-
-  union state_t = 
-    | sot // start of token
-    | id // processing identifier
-    | num // in a number
-    | sq // processing single quote string
-    | dq // processing double quote string
-    | angle // processing <filename> string
-    | ccomment // a C style comment
-    | cppcomment // a C++ style comment
-  ;
-  fun str(s:state_t) => match s with
-  | #sot => "sot"
-  | #id => "id"
-  | #num => "num"
-  | #sq => "sq"
-  | #dq => "dq"
-  | #angle => "angle"
-  | #ccomment=> "ccomment"
-  | #cppcomment => "cppcomment"
-  endmatch;
-  
-  var i = 0; var s:state_t;
-  var ch = t.[i];
-  proc next() { ch = t.[i]; ++i; }
-  fun ahead (j:int)=> t.[i + j - 1]; 
-
-  var b = "";
-  var last_id = "";
-  var last_op = "";
-  proc cp() { b += ch; }
-  proc ws() {
-    if last_id == "include" do // hackery
-      var n = b; 
-      while n.[0] == char '<' or n.[0] == char '"' do n = n.[1 to]; done
-      while n.[-1] == char '>' or n.[-1] == char '"' do n = n.[to -1]; done
-      var x = b;
-      if x.[0] == char "<" do x = "&lt;" + x.[1 to]; done
-      if x.[-1] == char ">" do x = x.[to -1] + "&gt;"; done
-      match get_file(n,INSTALL_ROOT,Cons(dir,C_PATH)) with
-      | Some f => 
-          // the $ is so we know we have resolved the filename
-          // we can't use just / because it means the server root
-          // and we can't use // because firefox thinks it means
-          // the website name is empty
-          // the trailing cpp tells us the filetype is C/C++
-          write_string('<a href="/$'+f+'" >' + x + '</a>'); 
-      | #None => write_string('<span class="fstring">'+x+"</span>");
-      endmatch;
-    else 
-     write_string('<span class="fstring">'+b+"</span>"); 
-    done
-  }
-  proc w() { 
-    //println$ "Token["+str s+"]="+b; 
-    match s with 
-    | #dq => ws; 
-    | #sq => ws; 
-    | #ccomment=> write_string('<span class="comment">'+b+"</span>");
-    | #cppcomment=> write_string('<span class="comment">'+b+"</span>");
-    | #id => 
-        last_id = b;
-        if b in cpp_big_keywords do write_string('<span class="big_keyword">'+b+"</span>"); 
-        elif b in cpp_small_keywords do write_string('<span class="small_keyword">'+b+"</span>"); 
-        elif b in cpp_qualifiers do write_string('<span class="qualifier">'+b+"</span>"); 
-        elif last_op == "#" and b in cpp_preproc do write_string('<span class="preproc">'+b+"</span>"); last_op="";
-        else write_string(b); done
-    | #angle => ws; 
-    | _ => 
-        last_op=b; 
-        if b == "<" do b = "&lt;";
-        elif b == ">" do b = "&gt;";
-        elif b == "&" do b = "&amp;";
-        done;
-        write_string(b);  
-    endmatch;
-    b = "";  
-  }
-
-
-  goto nextt;
-
-contin:> // copy char and continue
-  cp();
-  goto nextch;
+   include "./plugin_common";
    
-overrun:> // one past last char of token
-  w();
-  s = sot;
-  goto thisch;
-
-lastch:> // last char of token
-  cp();
-  w();
-
-nextt:>  // new token on next char
-  s = sot;
-
-nextch:> // next char
-  next();
-
-thisch:> // same char, reconsider it
-  //println$ "Considering char " + str(ord(ch));
-  if isnull ch goto fin; // out of data
-  match s with 
-  | #sot =>
-      if isidstart ch do s = id; goto contin;
-      elif isdigit ch do s = num; goto contin;
-      elif issq ch do s = sq; goto contin;
-      elif isdq ch do s = dq; goto contin;
-      elif ch == char "/" do
-        if ahead(1) == char "/" do cp; next; s = cppcomment; goto contin;
-        elif ahead(1) == char "*" do cp; next; s = ccomment; goto contin;
-        else goto lastch;
-        done 
-      elif ch == char "<" and last_id == "include" do 
-        s = angle; goto contin;
-      else cp; w; goto nextt;
-      done
-
-  | #id => 
-      if isalphanum ch do goto contin;
-      else goto overrun;
-      done
-  | #num => 
-      if isnumeric ch do goto contin;
-      else goto overrun; 
-      done
-  // single quoted strings
-  | #sq =>
-      if issq ch do goto lastch; 
-      elif ch== char "<" do b+="&lt;"; goto nextch;
-      elif ch== char ">" do b+="&gt;"; goto nextch;
-      elif ch== char "&" do b+="&amp;"; goto nextch;
-      else goto contin;
-      done
-  | #dq =>
-      if isdq ch do goto lastch;
-      elif ch== char "<" do b+="&lt;"; goto nextch;
-      elif ch== char ">" do b+="&gt;"; goto nextch;
-      elif ch== char "&" do b+="&amp;"; goto nextch;
-      else goto contin;
-      done
-
-  // <bracket> form
-  | #angle =>
-      if ch == char ">" do goto lastch;
-      else goto contin;
-      done
-
-  // comments
-  | #cppcomment =>
-      if iseol ch do goto lastch;
-      else goto contin;
-      done
-  | #ccomment => // doesn't handle nested comments yet
-      if ch == char "*" and ahead(1) == char "/" do 
-        cp; 
-        goto lastch;
-      else goto contin;
-      done
-  endmatch
-  ; 
-  println$ "Unexpected drop thru";
-
-fin:>
-   w(); // whatever is left over gets written
-   return false, out;
-}
-}
-eprintln$ Version::felix_version+ " cpp2html initialisation";
-
-fun setup(config_data:string) = {
-  var config_lines = split(config_data, "\n");
-  config_lines = map (strip of (string)) config_lines; 
-  var pathext = RE2("(.*)\\+=(.*)");
-  var varset = RE2("(.*)=(.*)");
-  var plugin_spec = RE2 " *extension (.*)->(.*)::(.*)";
-
-  var result = varray[StringPiece] (4.size,StringPiece(""));
-  for line in config_lines do
-    var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
-    if match_result do
-      var lhs = result.1.str.strip;
-      var rhs = result.2.str.strip;
-      match lhs with
-      | "C_PATH" => C_PATH += rhs;
-      | _ => ;
-      endmatch;
-    else
-    match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
-    if match_result do
-      lhs = result.1.str.strip;
-      rhs = result.2.str.strip;
-      match lhs with
-      | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
-      | _ => ;
-      endmatch;
-    done done
-  done
-
-  return 0;
-}
-
-export fun setup of (string) as "cpp2html_setup";
-export fun Cpp2Html::xlat_cpp of (string * string) as "cpp2html";
-
-
+   var C_PATH = Empty[string];
+   var INSTALL_ROOT = "";
+   
+   
+   module Cpp2Html { 
+   // C++ and C
+   val cpp_big_keywords = 
+     "class",
+     "struct",
+     "union",
+     "namespace",
+     "typedef",
+     "enum",
+     "template"
+   ;
+   
+   val cpp_small_keywords =
+     "if", "while", "until","do","for","return","goto","std"
+   ;
+   
+   val cpp_qualifiers = 
+     "virtual", "inline", "static", "extern", "public","private","protected",
+     "int","long","unsigned","float","double","char","short","signed","void","size_t",
+     "const","volatile","typename"
+   ;
+   
+   val cpp_preproc = 
+     "define","if","endif","else","include","ifdef","ifndef"
+   ;
+   
+   fun xlat_cpp(t:string, dir:string) : bool * string=
+   {
+     var out = "";
+     proc write_string(t:string) 
+     { 
+       out += t;
+     }
+   
+     union state_t = 
+       | sot // start of token
+       | id // processing identifier
+       | num // in a number
+       | sq // processing single quote string
+       | dq // processing double quote string
+       | angle // processing <filename> string
+       | ccomment // a C style comment
+       | cppcomment // a C++ style comment
+     ;
+     fun str(s:state_t) => match s with
+     | #sot => "sot"
+     | #id => "id"
+     | #num => "num"
+     | #sq => "sq"
+     | #dq => "dq"
+     | #angle => "angle"
+     | #ccomment=> "ccomment"
+     | #cppcomment => "cppcomment"
+     endmatch;
+     
+     var i = 0; var s:state_t;
+     var ch = t.[i];
+     proc next() { ch = t.[i]; ++i; }
+     fun ahead (j:int)=> t.[i + j - 1]; 
+   
+     var b = "";
+     var last_id = "";
+     var last_op = "";
+     proc cp() { b += ch; }
+     proc ws() {
+       if last_id == "include" do // hackery
+         var n = b; 
+         while n.[0] == char '<' or n.[0] == char '"' do n = n.[1 to]; done
+         while n.[-1] == char '>' or n.[-1] == char '"' do n = n.[to -1]; done
+         var x = b;
+         if x.[0] == char "<" do x = "&lt;" + x.[1 to]; done
+         if x.[-1] == char ">" do x = x.[to -1] + "&gt;"; done
+         match get_file(n,INSTALL_ROOT,Cons(dir,C_PATH)) with
+         | Some f => 
+             // the $ is so we know we have resolved the filename
+             // we can't use just / because it means the server root
+             // and we can't use // because firefox thinks it means
+             // the website name is empty
+             // the trailing cpp tells us the filetype is C/C++
+             write_string('<a href="/$'+f+'" >' + x + '</a>'); 
+         | #None => write_string('<span class="fstring">'+x+"</span>");
+         endmatch;
+       else 
+        write_string('<span class="fstring">'+b+"</span>"); 
+       done
+     }
+     proc w() { 
+       //println$ "Token["+str s+"]="+b; 
+       match s with 
+       | #dq => ws; 
+       | #sq => ws; 
+       | #ccomment=> write_string('<span class="comment">'+b+"</span>");
+       | #cppcomment=> write_string('<span class="comment">'+b+"</span>");
+       | #id => 
+           last_id = b;
+           if b in cpp_big_keywords do write_string('<span class="big_keyword">'+b+"</span>"); 
+           elif b in cpp_small_keywords do write_string('<span class="small_keyword">'+b+"</span>"); 
+           elif b in cpp_qualifiers do write_string('<span class="qualifier">'+b+"</span>"); 
+           elif last_op == "#" and b in cpp_preproc do write_string('<span class="preproc">'+b+"</span>"); last_op="";
+           else write_string(b); done
+       | #angle => ws; 
+       | _ => 
+           last_op=b; 
+           if b == "<" do b = "&lt;";
+           elif b == ">" do b = "&gt;";
+           elif b == "&" do b = "&amp;";
+           done;
+           write_string(b);  
+       endmatch;
+       b = "";  
+     }
+   
+   
+     goto nextt;
+   
+   contin:> // copy char and continue
+     cp();
+     goto nextch;
+      
+   overrun:> // one past last char of token
+     w();
+     s = sot;
+     goto thisch;
+   
+   lastch:> // last char of token
+     cp();
+     w();
+   
+   nextt:>  // new token on next char
+     s = sot;
+   
+   nextch:> // next char
+     next();
+   
+   thisch:> // same char, reconsider it
+     //println$ "Considering char " + str(ord(ch));
+     if isnull ch goto fin; // out of data
+     match s with 
+     | #sot =>
+         if isidstart ch do s = id; goto contin;
+         elif isdigit ch do s = num; goto contin;
+         elif issq ch do s = sq; goto contin;
+         elif isdq ch do s = dq; goto contin;
+         elif ch == char "/" do
+           if ahead(1) == char "/" do cp; next; s = cppcomment; goto contin;
+           elif ahead(1) == char "*" do cp; next; s = ccomment; goto contin;
+           else goto lastch;
+           done 
+         elif ch == char "<" and last_id == "include" do 
+           s = angle; goto contin;
+         else cp; w; goto nextt;
+         done
+   
+     | #id => 
+         if isalphanum ch do goto contin;
+         else goto overrun;
+         done
+     | #num => 
+         if isnumeric ch do goto contin;
+         else goto overrun; 
+         done
+     // single quoted strings
+     | #sq =>
+         if issq ch do goto lastch; 
+         elif ch== char "<" do b+="&lt;"; goto nextch;
+         elif ch== char ">" do b+="&gt;"; goto nextch;
+         elif ch== char "&" do b+="&amp;"; goto nextch;
+         else goto contin;
+         done
+     | #dq =>
+         if isdq ch do goto lastch;
+         elif ch== char "<" do b+="&lt;"; goto nextch;
+         elif ch== char ">" do b+="&gt;"; goto nextch;
+         elif ch== char "&" do b+="&amp;"; goto nextch;
+         else goto contin;
+         done
+   
+     // <bracket> form
+     | #angle =>
+         if ch == char ">" do goto lastch;
+         else goto contin;
+         done
+   
+     // comments
+     | #cppcomment =>
+         if iseol ch do goto lastch;
+         else goto contin;
+         done
+     | #ccomment => // doesn't handle nested comments yet
+         if ch == char "*" and ahead(1) == char "/" do 
+           cp; 
+           goto lastch;
+         else goto contin;
+         done
+     endmatch
+     ; 
+     println$ "Unexpected drop thru";
+   
+   fin:>
+      w(); // whatever is left over gets written
+      return false, out;
+   }
+   }
+   eprintln$ Version::felix_version+ " cpp2html initialisation";
+   
+   fun setup(config_data:string) = {
+     var config_lines = split(config_data, "\n");
+     config_lines = map (strip of (string)) config_lines; 
+     var pathext = RE2("(.*)\\+=(.*)");
+     var varset = RE2("(.*)=(.*)");
+     var plugin_spec = RE2 " *extension (.*)->(.*)::(.*)";
+   
+     var result = varray[StringPiece] (4.size,StringPiece(""));
+     for line in config_lines do
+       var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
+       if match_result do
+         var lhs = result.1.str.strip;
+         var rhs = result.2.str.strip;
+         match lhs with
+         | "C_PATH" => C_PATH += rhs;
+         | _ => ;
+         endmatch;
+       else
+       match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
+       if match_result do
+         lhs = result.1.str.strip;
+         rhs = result.2.str.strip;
+         match lhs with
+         | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
+         | _ => ;
+         endmatch;
+       done done
+     done
+   
+     return 0;
+   }
+   
+   export fun setup of (string) as "cpp2html_setup";
+   export fun Cpp2Html::xlat_cpp of (string * string) as "cpp2html";
+   
+   
 
 
 Top level Felix  :code:`fdoc` format.
@@ -2873,573 +2873,573 @@ Note the former are real Felix programs.
 .. code-block:: felix
 
   //[fdoc2html.flx]
-
-open Regdef; // required
-
-include "./plugin_common";
-
-include "./slideshow-interface";
-var slideshow-maker  : (string->0) -> slideshow_t;
-
-include "./paragraph-interface";
-var paragraph-maker : (string->0) -> paragraph-control_t;
-
-include "./heading-interface";
-var heading-maker : paragraph-control_t * (string->0) -> heading-control_t;
-
-include "./fileseq-interface";
-var fileseq-maker : string -> fileseq-control_t;
-
-include "./scanner-interface";
-var fdocscanner-maker : unit -> fdocscanner-control_t;
-
-include "./button-interface";
-var button-factory-maker : unit -> button-factory_t;
-
-include "./fdoc-frame-interface";
-var fdoc_frame_maker : fdoc_frame_data_t -> fdoc_frame_t;
-
-include "./fdoc-interface";
-
-var xlat_cpp: string * string -> bool * string;
-var xlat_felix: string * string -> bool * string;
-var xlat_ocaml: string * string -> bool * string;
-var xlat_python: string * string -> bool * string;
-
-// felix document
-var INSTALL_ROOT="";
-var FLX_PATH = Empty[string];
-var FDOC_PATH = Empty[string];
-var FLX_PKGCONFIG_PATH = Empty[string];
-var FLX_WEBSERVER_PLUGIN_PATH = Empty[string];
-var PLUGIN_MAP = Empty[string^3];
-
-
-fun get_flx (fname:string) = {
-  var flx =
-    match get_file(fname,INSTALL_ROOT,FLX_PATH) with
-    | Some name => load(name)
-    | #None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
-    endmatch
-  ;
-  //println$ "Loaded felix file " + fname+", len="+str (flx.len.int);
-  return flx;
-}
-
-// fixup text by replacing < > and & characters
-fun txt2html (x:string) =
-{
-  var out2 = "";
-  for var i in 0 upto x.len.int - 1 do
-    var ch = x.[i];
-    if ch == char "<" do out2+="&lt;";
-    elif ch == char ">" do out2+="&gt;";
-    elif ch == char "&" do out2+="&amp;";
-    else out2+=ch;
-    done
-  done
-
-  return out2;
-}
-
-
-proc boreq(l:&bool, r:bool) { l <- *l or r; } 
-
-val markdown_code1 = RE2 ("( :code:`([^`]*)})");
-val markdown_code2 = RE2 (r"(@g@l@o@s@s@a@r@y@\@(@(@[@^@)@]@*@)@\@)@)@"@)@;
-fun markdown (s:string):string= {
-  var x = s;
-  C_hack::ignore(GlobalReplace(&x, markdown_code1, StringPiece ("<code>\\2</code>")));
-  C_hack::ignore(GlobalReplace(&x, markdown_code2, StringPiece ("<a href='/share/src/web/ref/glossary.fdoc#\\2'>\\2</a>")));
-  return x;
-}
-
-val timeout = Filename::join (#Config::std_config.FLX_TARGET_DIR, "bin", "flx_timeout"+#(Filename::executable_extension));
-
-gen safer_popen(cmd:string)=>
-  Process::popen_in(timeout+" -t 15 " + cmd + " 2>&1")
-;
-
-// helper definitions
-regdef optwhite = ' '*;
-regdef white = ' '+;
-regdef felt= perl ("\\$?[A-Za-z._][-A-Za-z0-9_.]*");
-regdef fname = (felt "/")* felt;
-
-// A tangler definition looks like:
-// @t@a@n@g@l@e@r@ @n@a@m@e@ @=@ @f@i@l@e@n@a@m@e
-regdef tangler_def_regdef = 
-  "tangler" white group (felt) optwhite "=" 
-  optwhite group (fname) optwhite 
-; 
-
-// To set the output we just use
-// @t@a@n@g@l@e@ @n@a@m@e
-regdef tangler_use_regdef = 
-  "tangle" white group (felt) optwhite 
-; 
-var tangler_def_re2 = RE2 (Regdef::render tangler_def_regdef);
-var tangler_use_re2 = RE2 (Regdef::render tangler_use_regdef);
-
-object xlat_fdoc (t:string, filename:string) implements fdoc_t = {
-
-  method fun whatami () => "Translator for " + filename;
-  method fun mathjax_required () => needs_mathjax;
-  method fun html_raw () => out;
-  method fun html_page () => page;
-  method fun html_title () => title;
-  var title = filename;
-  var slideshow = slideshow-maker write_string of (string);
-  //eprintln$ "FDOC make slidehow .. " + #(slideshow.whatami);
-
-  var paragraph = paragraph-maker write_string of (string);
-  //eprintln$ "FDOC make paragraph .. " + #(paragraph.whatami);
-
-  var heading = heading-maker (paragraph, write_string of (string));
-  //eprintln$ "FDOC make heading .. " + #(heading.whatami);
-
-  var fileseq = fileseq-maker (filename);
-  //eprintln$ "FDOC make fileseq .. " + #(fileseq.whatami);
-
-  var fdocscanner = fdocscanner-maker ();
-  //eprintln$ "FDOC make scanner .. " + #(fdocscanner.whatami);
-
-  var fdoc_frame_data :fdoc_frame_data_t = (heading=heading, button-factory=#button-factory-maker,fileseq=fileseq);
-  var fdoc_frame = fdoc_frame_maker fdoc_frame_data;
-
-
-  var needs_mathjax = false;
-  var out = "";
-  proc write_string(t:string) 
-  { 
-    out += t;
-  }
-
-  fun split_first (x:string, c:string):string*string =>
-    match find_first_of (x, c) with
-      | Some n => (strip(x.[to n]),strip(x.[n+1 to]))
-      | _ => (x,"")
-    endmatch
-  ;
-
-  var tanglers = strdict[string] ();
-
-  proc def_tangler (id:string, filename:string)
-  {
-    match get tanglers id with
-    | Some _ =>
-      println$ "Duplicate definition of tangler " + id;
-    | #None =>
-      println$ "Add tangler id=" + id + " filename=" + filename;
-      add tanglers id filename;
-    endmatch;
-  }
    
-  // paragraphs
-  proc sp () { paragraph.sp (); }
-  proc sp (cls:string) { paragraph.sp-clas cls; }
-  proc ep () { paragraph.ep (); }
-  proc bp () { paragraph.bp (); }
-
-  // headings
-  proc h(n:int, txt:string) {
-    heading.head (#(fileseq.docnum), n, markdown txt);
-  }
-
-//---------------------------------------------------
-  // main loop
-  var inp = fdocscanner.fdoc_scan t;
-  gen get_text () =>
-    match #inp with
-    | Some (Text x) => x
-    | _ => ""
-    endmatch
-  ;
-next:>
-  var entry = #inp;
-  match entry with
-  | Some (Cmd cmdline) => handle_cmd cmdline; goto next;
-  | Some (Text x) =>
-    for para in fdocscanner.psplit x do 
-      bp; 
-      write_string(markdown para); 
-    done
-    ep;
-    goto next;
-
-  | #None => 
-    ep;
-    heading.finalise();
-
-    slideshow.finalise();
-    if #(slideshow.active) do
-      eprintln$ "Slideshow Active";
-    else
-      //eprintln$ "Slideshow NOT active";
-    done
-  endmatch;
-
-  var page = 
-   if #(slideshow.active)  then out 
-   else fdoc_frame.make_frame out
-   endif
-  ;
-
-//---------------------------------------------------
-
-  // preformat
-  proc inline_pre(b:string)
-  {
-    sp; 
-    write_string('<pre class="prefmtbg">'); 
-    write_string(txt2html b); 
-    write_string("</pre>"); 
-    ep;
-  }
-
-  proc inline_expect(b:string)
-  {
-    sp; 
-    write_string('<pre class="expected">'); 
-    write_string(txt2html b); 
-    write_string("</pre>"); 
-    ep;
-  }
-
-  proc inline_input(b:string)
-  {
-    sp; 
-    write_string('<pre class="input">'); 
-    write_string(txt2html b); 
-    write_string("</pre>"); 
-    ep;
-  }
-
-
-
-  proc inline_cpp (b:string)
-  {
-    sp;
-    write_string("<pre class='cppbg'>"); 
-    write_string((xlat_cpp(b,"")).1); // no parent!
-    write_string("</pre>");
-    ep; 
-  }
-
-  proc inline_felix (b:string)
-  {
-    sp;
-    write_string("<pre class='flxbg'>"); 
-    needs_mathjax', txt := xlat_felix (b,"");
-    needs_mathjax |= needs_mathjax';
-    write_string(txt); // no parent!
-    write_string("</pre>");
-    ep; 
-  }
-
-  proc inline_felix_unchecked (b:string)
-  {
-    sp;
-    write_string("<pre class='uncheckedflxbg'>"); 
-    needs_mathjax', txt := xlat_felix (b,"");
-    needs_mathjax |= needs_mathjax';
-    write_string(txt); // no parent!
-    write_string("</pre>");
-    ep; 
-  }
-
-
-  proc inline_ocaml(b:string)
-  {
-    sp;
-    write_string("<pre class='flxbg'>"); 
-    needs_mathjax', txt := xlat_ocaml(b,"");
-    needs_mathjax |= needs_mathjax';
-    write_string(txt); // no parent!
-    write_string("</pre>");
-    ep; 
-  }
-
-  proc inline_python(b:string)
-  {
-    sp;
-    write_string("<pre class='flxbg'>"); 
-    needs_mathjax', txt := xlat_python(b,"");
-    needs_mathjax |= needs_mathjax';
-    write_string(txt); // no parent!
-    write_string("</pre>");
-    ep; 
-  }
-
-
-
-  proc felix_file (rest:string) 
-  {
-      var re1 = RE2('(.*) "(.*)" "(.*)"');
-      var re2 = RE2('(.*) "(.*)"');
-      var v1 = varray(4uz, StringPiece "");
-      var v2 = varray(4uz, StringPiece "");
-      var v3 = varray(4uz, StringPiece "");
-      var matched1 = Match(re1, StringPiece(rest),0,ANCHOR_BOTH,v1.stl_begin, v1.len.int);
-      var matched2 = Match(re2, StringPiece(rest),0,ANCHOR_BOTH,v2.stl_begin, v2.len.int);
-      if matched1 do
-        var fname = v1.1.string.strip;
-      elif matched2 do
-        fname = v2.1.string.strip;
-      else
-        fname = rest;
-      done
-      var flx = get_flx(fname);
-      if matched1 do
-        var p1 = match find(flx,v1.2.string) with
-        | Some i => i.int
-        | #None => 0
-        endmatch;
-        flx = flx.[p1 to];
-        var p2 = match find(flx,v1.3.string) with
-        | Some i => i.int
-        | #None => flx.len.int - 1
-        endmatch;
-        flx = flx.[to p2];
-      elif matched2 do
-        var re3 = RE2(v2.2.string);
-        var matched3 = Match(re3,StringPiece(flx),0,UNANCHORED,v3.stl_begin, v3.len.int);
-        if matched3 do
-          flx = v3.1.string;
-        done
-      done
-      needs_mathjax', html := xlat_felix (flx,"");
-      needs_mathjax |= needs_mathjax';
-      write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
-      write_string("<pre class='flxbg'>"); 
-      write_string(html);
-      write_string("</pre>"); 
-  }
-
-  proc flx_and_expect (fname:string)
-  {
-    var flx = get_flx(fname+".flx");
-    needs_mathjax', html := xlat_felix (flx,"");
-    needs_mathjax |= needs_mathjax';
-    write_string("<pre class='inclusion'>"+fname+".flx</pre>\n");
-    write_string("<pre class='flxbg'>"); 
-    write_string(html);
-    write_string("</pre>\n");
-    heading.add_button fname;
-    write_string(heading.tree_button(fname,fname+"_d"));
-    write_string("<code class='inclusion'>  "+fname+".expect</code>\n");
-    var xpected = get_flx(fname+".expect");
-    write_string("<pre id='"+fname+"_d' class='expected' style='display:none'>"); 
-    write_string(xpected);
-    write_string("</pre>"); 
-  }
-
-  proc extern_cpp (fname:string)
-  {
-    var flx = get_flx(fname);
-    write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
-    write_string("<pre class='cppbg'>"); 
-    write_string((xlat_cpp (flx,"")).1);
-    write_string("</pre>"); 
-  }
-
-  proc extern_ocaml (fname:string)
-  {
-    var flx = get_flx(fname);
-    write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
-    write_string("<pre class='cppbg'>"); 
-    write_string((xlat_ocaml(flx,"")).1);
-    write_string("</pre>"); 
-  }
-
-  proc extern_python(fname:string)
-  {
-    var flx = get_flx(fname);
-    write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
-    write_string("<pre class='cppbg'>"); 
-    write_string((xlat_python(flx,"")).1);
-    write_string("</pre>"); 
-  }
-  
-  proc handle_cmd (b:string) 
-  {
-//println$ "CMD=@"@+@b@;
-    match Match (tangler_def_re2, b) with
-    | Some v => def_tangler (v.1, v.2);
-    | #None => 
-      match Match (tangler_use_re2, b) with
-      | Some s => 
-        println$ "Tangle id=" + s.1;
-        match get tanglers s.1 with
-        | Some x => 
-          println$ "Tangler filename=" + x;
-          var xtn = Filename::get_extension x;
-          println$ "Extension=" + xtn;
-          if xtn in (".flx",".flxh",".fsyn") do 
-            write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
-            println$ "flx ....";
-            inline_felix (#get_text);
-          elif xtn in (".cxx",".cpp",".hpp",".c",".cc",".h") do 
-            write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
-            println$ "cpp ....";
-            inline_cpp (#get_text);
-          else 
-            write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
-            println$ "pre ....";
-            inline_pre (#get_text);
-          done
-        | #None => 
-          println$ "Can't find tangler '" + s.1+"'";
-          inline_pre (#get_text);
-        endmatch;
-      | #None => 
-        if b == "felix" do inline_felix (#get_text);
-        elif b == "felix-unchecked" do inline_felix_unchecked (#get_text);
-        elif prefix (b,"felix ") do felix_file (strip (b.[6 to]));
-        elif prefix (b,"flx-and-expect ") do flx_and_expect (strip(b.[15 to]));
-
-        elif b == "c++" do inline_cpp (#get_text);
-        elif prefix (b,"c++") do extern_cpp ( strip(b.[4 to]));
-
-        elif b == "ocaml" do inline_ocaml (#get_text);
-        elif prefix (b,"ocaml") do extern_ocaml( strip(b.[6 to]));
-
-        elif b == "python" do inline_python(#get_text);
-        elif prefix (b,"python") do extern_python( strip(b.[7 to]));
-
-
-        elif b=="p" do bp; 
-        elif b=="pre" do inline_pre (#get_text);
-        elif b=="expect" do inline_expect (#get_text);
-        elif b=="input" do inline_input(#get_text);
-        elif b=="obsolete" do ep; sp 'obsolete'; write_string("<em>Obsolete</em> ");
-        elif b=="caveat" do ep; sp 'caveat'; write_string("<em>Caveat: </em> ");
-        elif b=="impl" do ep; sp 'implementation_detail'; write_string("<em>Implementation Detail: </em>");
-        elif b=="future" do ep; sp 'future'; write_string("<em>In future: </em>");
-        elif b=="note" do ep; sp 'bug'; write_string("<em>Note: </em>");
-        elif b=="bug" do ep; sp 'bug'; write_string("<em>Bug: </em>");
-        elif b=="fixed" do ep; sp 'fixed'; write_string("<em>Fixed: </em>");
-        elif b=="done" do ep; sp 'done'; write_string("<em>Done: </em>");
-        elif b=="mathjax" do needs_mathjax = true;
-
-        elif prefix (b,"title") do title = strip(b.[5 to]);
-
-        elif prefix(b,"h1") do h(1,b.[3 to]); 
-        elif prefix(b,"h2") do h(2,b.[3 to]); 
-        elif prefix(b,"h3") do h(3,b.[3 to]);
-        elif prefix(b,"h4") do h(4,b.[3 to]);
-        elif prefix(b,"h5") do h(5,b.[3 to]);
-
-        // external image
-        elif prefix(b,"image") do 
-          var img = split_first(b.[6 to],"|");
-          write_string("<img src='"+img.(0)+"' style='"+img.(1)+"'></img>");
-
-        // arbitrary shell command
-        elif prefix(b,"sh") do 
-          var cmd = b.[3 to];
-          var fout = safer_popen(cmd);
-          if valid fout do
-            var output = load fout;
-            var result = Process::pclose fout; 
-            println$ "Ran cmd=" + cmd;
-            //println$ "Output = " + output;
-            write_string("<pre>");
-            write_string output;
-            write_string("</pre>");
-          else
-            println$ "Unable to run shell command '" + cmd "'";
-            write_string("Failed cmd: " + b);
-          done
-
-        // slideshow
-        elif slideshow.check-slide-commands b do ;
-        elif b == "" do ;
-        else
-          println$ "Unable to understand @c@o@m@m@a@n@d@ @'@"@+@b@+@"@'@"@;
-        done
-      endmatch;
-    endmatch;
-  }
-}
-
-eprintln$ Version::felix_version +  " fdoc2html initialisation";
-
-fun setup(config_data:string) = {
-  var config_lines = split(config_data, "\n");
-  config_lines = map (strip of (string)) config_lines; 
-  var pathext = RE2("(.*)\\+=(.*)");
-  var varset = RE2("(.*)=(.*)");
-  var plugin_spec = RE2 " *extension (.*)->(.*)::(.*)";
-
-  var result = varray[StringPiece] (4.size,StringPiece(""));
-  for line in config_lines do
-    var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
-    if match_result do
-      var lhs = result.1.str.strip;
-      var rhs = result.2.str.strip;
-      match lhs with
-      | "FLX_PATH" => FLX_PATH += rhs; 
-      | "FDOC_PATH" => FDOC_PATH += rhs; 
-      | "FLX_PKGCONFIG_PATH" => FLX_PKGCONFIG_PATH += rhs;
-      | "FLX_WEBSERVER_PLUGIN_PATH" => FLX_WEBSERVER_PLUGIN_PATH += rhs;
-      | _ => ;
-      endmatch;
-    else
-    match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
-    if match_result do
-      lhs = result.1.str.strip;
-      rhs = result.2.str.strip;
-      match lhs with
-      | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
-      | _ => ;
-      endmatch;
-    else
-    match_result = Match(plugin_spec, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,4);
-    if match_result do
-      var extn = result.1.str.strip;
-      var lib = result.2.str.strip;
-      var entry = result.3.str.strip;
-      PLUGIN_MAP = Cons ((extn, lib, entry), PLUGIN_MAP);
-    done done done
-  done
-
-  xlat_felix = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="flx2html", setup-str=config_data, entry-point="flx2html"
-  );
-
-  xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="cpp2html", setup-str=config_data, entry-point="cpp2html"
-  );
-
-  xlat_ocaml = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="ocaml2html", setup-str=config_data, entry-point="ocaml2html"
-  );
-
-  xlat_python = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="py2html", setup-str=config_data, entry-point="py2html"
-  );
-
-
-  slideshow-maker  = Dynlink::load-plugin-func1 [slideshow_t, (string->0)] (dll-name="fdoc_slideshow");
-
-  paragraph-maker = Dynlink::load-plugin-func1 [paragraph-control_t, (string->0)] (dll-name="fdoc_paragraph");
-
-  heading-maker = Dynlink::load-plugin-func2 [heading-control_t, paragraph-control_t , (string->0)] (dll-name="fdoc_heading");
-
-  fileseq-maker = Dynlink::load-plugin-func1 [fileseq-control_t,string] (dll-name="fdoc_fileseq");
-
-  fdocscanner-maker = Dynlink::load-plugin-func0 [fdocscanner-control_t] (dll-name="fdoc_scanner");
-
-  button-factory-maker = Dynlink::load-plugin-func0 [button-factory_t] (dll-name="fdoc_button");
-
-  fdoc_frame_maker = Dynlink::load-plugin-func1 [fdoc_frame_t,fdoc_frame_data_t] (dll-name="fdoc_frame");
-
-  return 0;
-}
-
-export fun setup of (string) as "fdoc2html_setup";
-export fun xlat_fdoc of (string * string) as "fdoc2html";
+   open Regdef; // required
+   
+   include "./plugin_common";
+   
+   include "./slideshow-interface";
+   var slideshow-maker  : (string->0) -> slideshow_t;
+   
+   include "./paragraph-interface";
+   var paragraph-maker : (string->0) -> paragraph-control_t;
+   
+   include "./heading-interface";
+   var heading-maker : paragraph-control_t * (string->0) -> heading-control_t;
+   
+   include "./fileseq-interface";
+   var fileseq-maker : string -> fileseq-control_t;
+   
+   include "./scanner-interface";
+   var fdocscanner-maker : unit -> fdocscanner-control_t;
+   
+   include "./button-interface";
+   var button-factory-maker : unit -> button-factory_t;
+   
+   include "./fdoc-frame-interface";
+   var fdoc_frame_maker : fdoc_frame_data_t -> fdoc_frame_t;
+   
+   include "./fdoc-interface";
+   
+   var xlat_cpp: string * string -> bool * string;
+   var xlat_felix: string * string -> bool * string;
+   var xlat_ocaml: string * string -> bool * string;
+   var xlat_python: string * string -> bool * string;
+   
+   // felix document
+   var INSTALL_ROOT="";
+   var FLX_PATH = Empty[string];
+   var FDOC_PATH = Empty[string];
+   var FLX_PKGCONFIG_PATH = Empty[string];
+   var FLX_WEBSERVER_PLUGIN_PATH = Empty[string];
+   var PLUGIN_MAP = Empty[string^3];
+   
+   
+   fun get_flx (fname:string) = {
+     var flx =
+       match get_file(fname,INSTALL_ROOT,FLX_PATH) with
+       | Some name => load(name)
+       | #None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
+       endmatch
+     ;
+     //println$ "Loaded felix file " + fname+", len="+str (flx.len.int);
+     return flx;
+   }
+   
+   // fixup text by replacing < > and & characters
+   fun txt2html (x:string) =
+   {
+     var out2 = "";
+     for var i in 0 upto x.len.int - 1 do
+       var ch = x.[i];
+       if ch == char "<" do out2+="&lt;";
+       elif ch == char ">" do out2+="&gt;";
+       elif ch == char "&" do out2+="&amp;";
+       else out2+=ch;
+       done
+     done
+   
+     return out2;
+   }
+   
+   
+   proc boreq(l:&bool, r:bool) { l <- *l or r; } 
+   
+   val markdown_code1 = RE2 ("(@{([^}]*)})");
+   val markdown_code2 = RE2 (r"(@glossary\(([^)]*)\))");
+   fun markdown (s:string):string= {
+     var x = s;
+     C_hack::ignore(GlobalReplace(&x, markdown_code1, StringPiece ("<code>\\2</code>")));
+     C_hack::ignore(GlobalReplace(&x, markdown_code2, StringPiece ("<a href='/share/src/web/ref/glossary.fdoc#\\2'>\\2</a>")));
+     return x;
+   }
+   
+   val timeout = Filename::join (#Config::std_config.FLX_TARGET_DIR, "bin", "flx_timeout"+#(Filename::executable_extension));
+   
+   gen safer_popen(cmd:string)=>
+     Process::popen_in(timeout+" -t 15 " + cmd + " 2>&1")
+   ;
+   
+   // helper definitions
+   regdef optwhite = ' '*;
+   regdef white = ' '+;
+   regdef felt= perl ("\\$?[A-Za-z._][-A-Za-z0-9_.]*");
+   regdef fname = (felt "/")* felt;
+   
+   // A tangler definition looks like:
+   // @tangler name = filename
+   regdef tangler_def_regdef = 
+     "tangler" white group (felt) optwhite "=" 
+     optwhite group (fname) optwhite 
+   ; 
+   
+   // To set the output we just use
+   // @tangle name
+   regdef tangler_use_regdef = 
+     "tangle" white group (felt) optwhite 
+   ; 
+   var tangler_def_re2 = RE2 (Regdef::render tangler_def_regdef);
+   var tangler_use_re2 = RE2 (Regdef::render tangler_use_regdef);
+   
+   object xlat_fdoc (t:string, filename:string) implements fdoc_t = {
+   
+     method fun whatami () => "Translator for " + filename;
+     method fun mathjax_required () => needs_mathjax;
+     method fun html_raw () => out;
+     method fun html_page () => page;
+     method fun html_title () => title;
+     var title = filename;
+     var slideshow = slideshow-maker write_string of (string);
+     //eprintln$ "FDOC make slidehow .. " + #(slideshow.whatami);
+   
+     var paragraph = paragraph-maker write_string of (string);
+     //eprintln$ "FDOC make paragraph .. " + #(paragraph.whatami);
+   
+     var heading = heading-maker (paragraph, write_string of (string));
+     //eprintln$ "FDOC make heading .. " + #(heading.whatami);
+   
+     var fileseq = fileseq-maker (filename);
+     //eprintln$ "FDOC make fileseq .. " + #(fileseq.whatami);
+   
+     var fdocscanner = fdocscanner-maker ();
+     //eprintln$ "FDOC make scanner .. " + #(fdocscanner.whatami);
+   
+     var fdoc_frame_data :fdoc_frame_data_t = (heading=heading, button-factory=#button-factory-maker,fileseq=fileseq);
+     var fdoc_frame = fdoc_frame_maker fdoc_frame_data;
+   
+   
+     var needs_mathjax = false;
+     var out = "";
+     proc write_string(t:string) 
+     { 
+       out += t;
+     }
+   
+     fun split_first (x:string, c:string):string*string =>
+       match find_first_of (x, c) with
+         | Some n => (strip(x.[to n]),strip(x.[n+1 to]))
+         | _ => (x,"")
+       endmatch
+     ;
+   
+     var tanglers = strdict[string] ();
+   
+     proc def_tangler (id:string, filename:string)
+     {
+       match get tanglers id with
+       | Some _ =>
+         println$ "Duplicate definition of tangler " + id;
+       | #None =>
+         println$ "Add tangler id=" + id + " filename=" + filename;
+         add tanglers id filename;
+       endmatch;
+     }
+      
+     // paragraphs
+     proc sp () { paragraph.sp (); }
+     proc sp (cls:string) { paragraph.sp-clas cls; }
+     proc ep () { paragraph.ep (); }
+     proc bp () { paragraph.bp (); }
+   
+     // headings
+     proc h(n:int, txt:string) {
+       heading.head (#(fileseq.docnum), n, markdown txt);
+     }
+   
+   //---------------------------------------------------
+     // main loop
+     var inp = fdocscanner.fdoc_scan t;
+     gen get_text () =>
+       match #inp with
+       | Some (Text x) => x
+       | _ => ""
+       endmatch
+     ;
+   next:>
+     var entry = #inp;
+     match entry with
+     | Some (Cmd cmdline) => handle_cmd cmdline; goto next;
+     | Some (Text x) =>
+       for para in fdocscanner.psplit x do 
+         bp; 
+         write_string(markdown para); 
+       done
+       ep;
+       goto next;
+   
+     | #None => 
+       ep;
+       heading.finalise();
+   
+       slideshow.finalise();
+       if #(slideshow.active) do
+         eprintln$ "Slideshow Active";
+       else
+         //eprintln$ "Slideshow NOT active";
+       done
+     endmatch;
+   
+     var page = 
+      if #(slideshow.active)  then out 
+      else fdoc_frame.make_frame out
+      endif
+     ;
+   
+   //---------------------------------------------------
+   
+     // preformat
+     proc inline_pre(b:string)
+     {
+       sp; 
+       write_string('<pre class="prefmtbg">'); 
+       write_string(txt2html b); 
+       write_string("</pre>"); 
+       ep;
+     }
+   
+     proc inline_expect(b:string)
+     {
+       sp; 
+       write_string('<pre class="expected">'); 
+       write_string(txt2html b); 
+       write_string("</pre>"); 
+       ep;
+     }
+   
+     proc inline_input(b:string)
+     {
+       sp; 
+       write_string('<pre class="input">'); 
+       write_string(txt2html b); 
+       write_string("</pre>"); 
+       ep;
+     }
+   
+   
+   
+     proc inline_cpp (b:string)
+     {
+       sp;
+       write_string("<pre class='cppbg'>"); 
+       write_string((xlat_cpp(b,"")).1); // no parent!
+       write_string("</pre>");
+       ep; 
+     }
+   
+     proc inline_felix (b:string)
+     {
+       sp;
+       write_string("<pre class='flxbg'>"); 
+       needs_mathjax', txt := xlat_felix (b,"");
+       needs_mathjax |= needs_mathjax';
+       write_string(txt); // no parent!
+       write_string("</pre>");
+       ep; 
+     }
+   
+     proc inline_felix_unchecked (b:string)
+     {
+       sp;
+       write_string("<pre class='uncheckedflxbg'>"); 
+       needs_mathjax', txt := xlat_felix (b,"");
+       needs_mathjax |= needs_mathjax';
+       write_string(txt); // no parent!
+       write_string("</pre>");
+       ep; 
+     }
+   
+   
+     proc inline_ocaml(b:string)
+     {
+       sp;
+       write_string("<pre class='flxbg'>"); 
+       needs_mathjax', txt := xlat_ocaml(b,"");
+       needs_mathjax |= needs_mathjax';
+       write_string(txt); // no parent!
+       write_string("</pre>");
+       ep; 
+     }
+   
+     proc inline_python(b:string)
+     {
+       sp;
+       write_string("<pre class='flxbg'>"); 
+       needs_mathjax', txt := xlat_python(b,"");
+       needs_mathjax |= needs_mathjax';
+       write_string(txt); // no parent!
+       write_string("</pre>");
+       ep; 
+     }
+   
+   
+   
+     proc felix_file (rest:string) 
+     {
+         var re1 = RE2('(.*) "(.*)" "(.*)"');
+         var re2 = RE2('(.*) "(.*)"');
+         var v1 = varray(4uz, StringPiece "");
+         var v2 = varray(4uz, StringPiece "");
+         var v3 = varray(4uz, StringPiece "");
+         var matched1 = Match(re1, StringPiece(rest),0,ANCHOR_BOTH,v1.stl_begin, v1.len.int);
+         var matched2 = Match(re2, StringPiece(rest),0,ANCHOR_BOTH,v2.stl_begin, v2.len.int);
+         if matched1 do
+           var fname = v1.1.string.strip;
+         elif matched2 do
+           fname = v2.1.string.strip;
+         else
+           fname = rest;
+         done
+         var flx = get_flx(fname);
+         if matched1 do
+           var p1 = match find(flx,v1.2.string) with
+           | Some i => i.int
+           | #None => 0
+           endmatch;
+           flx = flx.[p1 to];
+           var p2 = match find(flx,v1.3.string) with
+           | Some i => i.int
+           | #None => flx.len.int - 1
+           endmatch;
+           flx = flx.[to p2];
+         elif matched2 do
+           var re3 = RE2(v2.2.string);
+           var matched3 = Match(re3,StringPiece(flx),0,UNANCHORED,v3.stl_begin, v3.len.int);
+           if matched3 do
+             flx = v3.1.string;
+           done
+         done
+         needs_mathjax', html := xlat_felix (flx,"");
+         needs_mathjax |= needs_mathjax';
+         write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
+         write_string("<pre class='flxbg'>"); 
+         write_string(html);
+         write_string("</pre>"); 
+     }
+   
+     proc flx_and_expect (fname:string)
+     {
+       var flx = get_flx(fname+".flx");
+       needs_mathjax', html := xlat_felix (flx,"");
+       needs_mathjax |= needs_mathjax';
+       write_string("<pre class='inclusion'>"+fname+".flx</pre>\n");
+       write_string("<pre class='flxbg'>"); 
+       write_string(html);
+       write_string("</pre>\n");
+       heading.add_button fname;
+       write_string(heading.tree_button(fname,fname+"_d"));
+       write_string("<code class='inclusion'>  "+fname+".expect</code>\n");
+       var xpected = get_flx(fname+".expect");
+       write_string("<pre id='"+fname+"_d' class='expected' style='display:none'>"); 
+       write_string(xpected);
+       write_string("</pre>"); 
+     }
+   
+     proc extern_cpp (fname:string)
+     {
+       var flx = get_flx(fname);
+       write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
+       write_string("<pre class='cppbg'>"); 
+       write_string((xlat_cpp (flx,"")).1);
+       write_string("</pre>"); 
+     }
+   
+     proc extern_ocaml (fname:string)
+     {
+       var flx = get_flx(fname);
+       write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
+       write_string("<pre class='cppbg'>"); 
+       write_string((xlat_ocaml(flx,"")).1);
+       write_string("</pre>"); 
+     }
+   
+     proc extern_python(fname:string)
+     {
+       var flx = get_flx(fname);
+       write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
+       write_string("<pre class='cppbg'>"); 
+       write_string((xlat_python(flx,"")).1);
+       write_string("</pre>"); 
+     }
+     
+     proc handle_cmd (b:string) 
+     {
+   //println$ "CMD=@"+b;
+       match Match (tangler_def_re2, b) with
+       | Some v => def_tangler (v.1, v.2);
+       | #None => 
+         match Match (tangler_use_re2, b) with
+         | Some s => 
+           println$ "Tangle id=" + s.1;
+           match get tanglers s.1 with
+           | Some x => 
+             println$ "Tangler filename=" + x;
+             var xtn = Filename::get_extension x;
+             println$ "Extension=" + xtn;
+             if xtn in (".flx",".flxh",".fsyn") do 
+               write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
+               println$ "flx ....";
+               inline_felix (#get_text);
+             elif xtn in (".cxx",".cpp",".hpp",".c",".cc",".h") do 
+               write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
+               println$ "cpp ....";
+               inline_cpp (#get_text);
+             else 
+               write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
+               println$ "pre ....";
+               inline_pre (#get_text);
+             done
+           | #None => 
+             println$ "Can't find tangler '" + s.1+"'";
+             inline_pre (#get_text);
+           endmatch;
+         | #None => 
+           if b == "felix" do inline_felix (#get_text);
+           elif b == "felix-unchecked" do inline_felix_unchecked (#get_text);
+           elif prefix (b,"felix ") do felix_file (strip (b.[6 to]));
+           elif prefix (b,"flx-and-expect ") do flx_and_expect (strip(b.[15 to]));
+   
+           elif b == "c++" do inline_cpp (#get_text);
+           elif prefix (b,"c++") do extern_cpp ( strip(b.[4 to]));
+   
+           elif b == "ocaml" do inline_ocaml (#get_text);
+           elif prefix (b,"ocaml") do extern_ocaml( strip(b.[6 to]));
+   
+           elif b == "python" do inline_python(#get_text);
+           elif prefix (b,"python") do extern_python( strip(b.[7 to]));
+   
+   
+           elif b=="p" do bp; 
+           elif b=="pre" do inline_pre (#get_text);
+           elif b=="expect" do inline_expect (#get_text);
+           elif b=="input" do inline_input(#get_text);
+           elif b=="obsolete" do ep; sp 'obsolete'; write_string("<em>Obsolete</em> ");
+           elif b=="caveat" do ep; sp 'caveat'; write_string("<em>Caveat: </em> ");
+           elif b=="impl" do ep; sp 'implementation_detail'; write_string("<em>Implementation Detail: </em>");
+           elif b=="future" do ep; sp 'future'; write_string("<em>In future: </em>");
+           elif b=="note" do ep; sp 'bug'; write_string("<em>Note: </em>");
+           elif b=="bug" do ep; sp 'bug'; write_string("<em>Bug: </em>");
+           elif b=="fixed" do ep; sp 'fixed'; write_string("<em>Fixed: </em>");
+           elif b=="done" do ep; sp 'done'; write_string("<em>Done: </em>");
+           elif b=="mathjax" do needs_mathjax = true;
+   
+           elif prefix (b,"title") do title = strip(b.[5 to]);
+   
+           elif prefix(b,"h1") do h(1,b.[3 to]); 
+           elif prefix(b,"h2") do h(2,b.[3 to]); 
+           elif prefix(b,"h3") do h(3,b.[3 to]);
+           elif prefix(b,"h4") do h(4,b.[3 to]);
+           elif prefix(b,"h5") do h(5,b.[3 to]);
+   
+           // external image
+           elif prefix(b,"image") do 
+             var img = split_first(b.[6 to],"|");
+             write_string("<img src='"+img.(0)+"' style='"+img.(1)+"'></img>");
+   
+           // arbitrary shell command
+           elif prefix(b,"sh") do 
+             var cmd = b.[3 to];
+             var fout = safer_popen(cmd);
+             if valid fout do
+               var output = load fout;
+               var result = Process::pclose fout; 
+               println$ "Ran cmd=" + cmd;
+               //println$ "Output = " + output;
+               write_string("<pre>");
+               write_string output;
+               write_string("</pre>");
+             else
+               println$ "Unable to run shell command '" + cmd "'";
+               write_string("Failed cmd: " + b);
+             done
+   
+           // slideshow
+           elif slideshow.check-slide-commands b do ;
+           elif b == "" do ;
+           else
+             println$ "Unable to understand @command '"+b+"'";
+           done
+         endmatch;
+       endmatch;
+     }
+   }
+   
+   eprintln$ Version::felix_version +  " fdoc2html initialisation";
+   
+   fun setup(config_data:string) = {
+     var config_lines = split(config_data, "\n");
+     config_lines = map (strip of (string)) config_lines; 
+     var pathext = RE2("(.*)\\+=(.*)");
+     var varset = RE2("(.*)=(.*)");
+     var plugin_spec = RE2 " *extension (.*)->(.*)::(.*)";
+   
+     var result = varray[StringPiece] (4.size,StringPiece(""));
+     for line in config_lines do
+       var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
+       if match_result do
+         var lhs = result.1.str.strip;
+         var rhs = result.2.str.strip;
+         match lhs with
+         | "FLX_PATH" => FLX_PATH += rhs; 
+         | "FDOC_PATH" => FDOC_PATH += rhs; 
+         | "FLX_PKGCONFIG_PATH" => FLX_PKGCONFIG_PATH += rhs;
+         | "FLX_WEBSERVER_PLUGIN_PATH" => FLX_WEBSERVER_PLUGIN_PATH += rhs;
+         | _ => ;
+         endmatch;
+       else
+       match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
+       if match_result do
+         lhs = result.1.str.strip;
+         rhs = result.2.str.strip;
+         match lhs with
+         | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
+         | _ => ;
+         endmatch;
+       else
+       match_result = Match(plugin_spec, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,4);
+       if match_result do
+         var extn = result.1.str.strip;
+         var lib = result.2.str.strip;
+         var entry = result.3.str.strip;
+         PLUGIN_MAP = Cons ((extn, lib, entry), PLUGIN_MAP);
+       done done done
+     done
+   
+     xlat_felix = Dynlink::load-plugin-func2 [bool * string, string, string] (
+       dll-name="flx2html", setup-str=config_data, entry-point="flx2html"
+     );
+   
+     xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
+       dll-name="cpp2html", setup-str=config_data, entry-point="cpp2html"
+     );
+   
+     xlat_ocaml = Dynlink::load-plugin-func2 [bool * string, string, string] (
+       dll-name="ocaml2html", setup-str=config_data, entry-point="ocaml2html"
+     );
+   
+     xlat_python = Dynlink::load-plugin-func2 [bool * string, string, string] (
+       dll-name="py2html", setup-str=config_data, entry-point="py2html"
+     );
+   
+   
+     slideshow-maker  = Dynlink::load-plugin-func1 [slideshow_t, (string->0)] (dll-name="fdoc_slideshow");
+   
+     paragraph-maker = Dynlink::load-plugin-func1 [paragraph-control_t, (string->0)] (dll-name="fdoc_paragraph");
+   
+     heading-maker = Dynlink::load-plugin-func2 [heading-control_t, paragraph-control_t , (string->0)] (dll-name="fdoc_heading");
+   
+     fileseq-maker = Dynlink::load-plugin-func1 [fileseq-control_t,string] (dll-name="fdoc_fileseq");
+   
+     fdocscanner-maker = Dynlink::load-plugin-func0 [fdocscanner-control_t] (dll-name="fdoc_scanner");
+   
+     button-factory-maker = Dynlink::load-plugin-func0 [button-factory_t] (dll-name="fdoc_button");
+   
+     fdoc_frame_maker = Dynlink::load-plugin-func1 [fdoc_frame_t,fdoc_frame_data_t] (dll-name="fdoc_frame");
+   
+     return 0;
+   }
+   
+   export fun setup of (string) as "fdoc2html_setup";
+   export fun xlat_fdoc of (string * string) as "fdoc2html";
 
 
 Decorator Interfaces.
@@ -3450,133 +3450,133 @@ Web page architecture layout and decorators.
 .. code-block:: felix
 
   //[button-interface.flx]
-interface button-spec_t {
-  id: string;
-  text: string;
-  onclick: string;
-}
-
-interface button-factory_t {
-  whatami: 1 -> string;
-  get-jscript: 1 -> string;
-  make-button: button-spec_t -> string;
-}
+   interface button-spec_t {
+     id: string;
+     text: string;
+     onclick: string;
+   }
+   
+   interface button-factory_t {
+     whatami: 1 -> string;
+     get-jscript: 1 -> string;
+     make-button: button-spec_t -> string;
+   }
 
 .. code-block:: felix
 
   //[toc_menu-interface.flx]
-
-interface toc_menu_interface {
-  whatami: 1 -> string;
-  get_style: 1-> string;
-  get_js: 1-> string;
-  make_menu: 1 -> string;
-}
-
-
+   
+   interface toc_menu_interface {
+     whatami: 1 -> string;
+     get_style: 1-> string;
+     get_js: 1-> string;
+     make_menu: 1 -> string;
+   }
+   
+   
 
 .. code-block:: felix
 
   //[edit-interface.flx]
-
-interface edit-interface_t {
-  whatami: 1 -> string;
-  get_header: string * string -> string;
-  get_body : string * string * string -> string;
-}
+   
+   interface edit-interface_t {
+     whatami: 1 -> string;
+     get_header: string * string -> string;
+     get_body : string * string * string -> string;
+   }
 
 .. code-block:: felix
 
   //[fdoc-frame-interface.flx]
-include "./heading-interface";
-include "./button-interface";
-include "./fileseq-interface";
-
-typedef fdoc_frame_data_t = (
-  heading: heading-control_t,
-  button-factory: button-factory_t,
-  fileseq: fileseq-control_t
-);
-
-interface fdoc_frame_t {
-  whatami : 1 -> string;
-  make_frame: string -> string;
-}
-
+   include "./heading-interface";
+   include "./button-interface";
+   include "./fileseq-interface";
+   
+   typedef fdoc_frame_data_t = (
+     heading: heading-control_t,
+     button-factory: button-factory_t,
+     fileseq: fileseq-control_t
+   );
+   
+   interface fdoc_frame_t {
+     whatami : 1 -> string;
+     make_frame: string -> string;
+   }
+   
 
 .. code-block:: felix
 
   //[fdoc-interface.flx]
-interface fdoc_t {
-  whatami : 1 -> string;
-  html_raw : 1 -> string;
-  html_page : 1 -> string;
-  html_title: 1 -> string;
-  mathjax_required: 1 -> bool;
-}
-
+   interface fdoc_t {
+     whatami : 1 -> string;
+     html_raw : 1 -> string;
+     html_page : 1 -> string;
+     html_title: 1 -> string;
+     mathjax_required: 1 -> bool;
+   }
+   
 
 .. code-block:: felix
 
   //[fileseq-interface.flx]
-interface fileseq-control_t {
-  whatami: 1 -> string;
-  shownav: 1 -> string;
-  docnum: 1 -> string;
-  get-jscript: 1 -> string;
-}
+   interface fileseq-control_t {
+     whatami: 1 -> string;
+     shownav: 1 -> string;
+     docnum: 1 -> string;
+     get-jscript: 1 -> string;
+   }
 
 .. code-block:: felix
 
   //[heading-interface.flx]
-interface heading-control_t {
-  whatami: 1 -> string;
-  get_headings: 1 -> list[int * string];
-  head : string * int * string -> 0;
-  tree_button : string * string -> string;
-  add_button: string -> 0;
-  emit-buttons: 1 -> string;
-  emit-js: 1 -> string;
-  finalise: 1 -> 0;
-}
+   interface heading-control_t {
+     whatami: 1 -> string;
+     get_headings: 1 -> list[int * string];
+     head : string * int * string -> 0;
+     tree_button : string * string -> string;
+     add_button: string -> 0;
+     emit-buttons: 1 -> string;
+     emit-js: 1 -> string;
+     finalise: 1 -> 0;
+   }
 
 .. code-block:: felix
 
   //[paragraph-interface.flx]
-interface paragraph-control_t {
-  whatami: 1 -> string;
-  sp : 1 -> 0;
-  sp-clas : string -> 0;
-  ep : 1 -> 0;
-  bp : 1 -> 0;
-}
+   interface paragraph-control_t {
+     whatami: 1 -> string;
+     sp : 1 -> 0;
+     sp-clas : string -> 0;
+     ep : 1 -> 0;
+     bp : 1 -> 0;
+   }
 
 .. code-block:: felix
 
   //[scanner-interface.flx]
-// split up an fdoc into a stream of commands and text 
-union fdoc-data_t = 
-  | Cmd of string
-  | Text of string
-;
-
-interface fdocscanner-control_t {
-  whatami: 1 -> string;
-  fdoc_scan : string -> 1 ->  opt[fdoc-data_t];
-  psplit : string -> 1 -> opt[string];
-}
-
+   // split up an fdoc into a stream of commands and text 
+   union fdoc-data_t = 
+     | Cmd of string
+     | Text of string
+   ;
+   
+   interface fdocscanner-control_t {
+     whatami: 1 -> string;
+     fdoc_scan : string -> 1 ->  opt[fdoc-data_t];
+     psplit : string -> 1 -> opt[string];
+   }
+   
 
 .. code-block:: felix
 
   //[slideshow-interface.flx]
-interface slideshow_t {
-  whatami : 1 -> string;
-  check-slide-commands : string -> bool;
-  finalise: 1 -> 0;
-  active : 1 -> bool;
-}
-
+   interface slideshow_t {
+     whatami : 1 -> string;
+     check-slide-commands : string -> bool;
+     finalise: 1 -> 0;
+     active : 1 -> bool;
+   }
+   
 
 
 Decorator Implementations.
@@ -3586,1109 +3586,1109 @@ Decorator Implementations.
 .. code-block:: felix
 
   //[fdoc_button.flx]
-//$ Make buttons in a consistent style
-include "./button-interface";
-
-fun setup(config_data:string) = {
-  eprintln$ "Setup fdoc_button " + config_data;
-  return 0;
-}
-
-val jscript = """
-<script>
-function mouseover(id)
-{
-  var elt = document.getElementById(id);
-  elt.style.display="none";
-  var elt2 = document.getElementById(id+"_mo");
-  elt2.style.display="inline";
-}
-
-function mouseout(id)
-{
-  var elt = document.getElementById(id+"_mo");
-  elt.style.display="none";
-  var elt2 = document.getElementById(id);
-  elt2.style.display="inline";
-}
-
-</script>
-""";
-
-object fdoc_button () implements button-factory_t = {
-
-  method fun whatami () => "button factory";
-
-  method fun get-jscript () => jscript;
-
-  val sz = 65,30; // frame size
-  val bz = 60,20; // button size
-  val bp = 4,6; // button pos in frame
-  val cr = 4,40; // corner radii
-  val st = 2,"black"; // border stroke thickness and colour
-  val fc = "blue",0.2; // fill colour and opacity
-  val hfc = "red",0.2; // hilight colour and opacity
-  val tp = 13,21; // text position in frame
-  val tc = "black"; // text colour
-  val fz = "12px"; // font size
-
-  fun rect (bz: int^2, cr:int^2, st: int * string, fc: string * double) (bp:int^2) =>
-    '<rect '+
-      'x="'+bp.0.str+'px" y="'+bp.1.str+'px" '+
-      'rx="'+cr.0.str+'px" ry="'+cr.1.str+'px" '+
-      'width="'+bz.0.str+'px" height="'+bz.1.str+'px" '+
-      'style='+
-        '"'+
-          'fill:'+fc.0+';opacity:'+fc.1.str+';'+
-          'stroke:'+st.1+';stroke-width:'+st.0.str+
-       '"'+
-     '/>'
-  ;
-  fun text (tc:string, txt:string) (tp:int^2) =>
-    '<text x="'+tp.0.str+'px" y="'+tp.1+'px" fill="'+tc+
-    '" style="font-size:'+fz+';">'+txt+'</text>'
-  ;
-  fun span (id:string) (txt:string) => 
-    '<span id="'+id+'">' + txt + '</span>'
-  ;
-
-  fun span_hide (id:string) (txt:string) => 
-    '<span id="'+id+'" style="display:none">' + txt + '</span>'
-  ;
-
-  fun svg (sz:int^2) (txt:string) =>
-    '<svg height="'+sz.1.str+'px" width="' + sz.0.str + 'px">' + txt + '</svg>'
-  ;
-
-  method fun make-button (b:button-spec_t) =>
-  """<span style="position:relative; bottom:6px"
-  onmouseover="mouseover('"""+b.id+"""')" 
-  onmouseout="mouseout('"""+b.id+"""')"
-  onclick=\""""+b.onclick+"""('"""+b.id+"""')"  
-  >""" +
-
-   span b.id (
-    svg sz ( rect (bz,cr,st,fc) bp + text (tc,b.text) tp )
-   ) +
-   span_hide (b.id+"_mo") (
-    svg sz ( rect (bz,cr,st,hfc) bp + text (tc,b.text) tp ) 
-   )
-   +
-  '</span>'
-  ;
-}
-
-export fun setup of (string) as "fdoc_button_setup";
-export fun fdoc_button of () as "fdoc_button";
-
-
+   //$ Make buttons in a consistent style
+   include "./button-interface";
+   
+   fun setup(config_data:string) = {
+     eprintln$ "Setup fdoc_button " + config_data;
+     return 0;
+   }
+   
+   val jscript = """
+   <script>
+   function mouseover(id)
+   {
+     var elt = document.getElementById(id);
+     elt.style.display="none";
+     var elt2 = document.getElementById(id+"_mo");
+     elt2.style.display="inline";
+   }
+   
+   function mouseout(id)
+   {
+     var elt = document.getElementById(id+"_mo");
+     elt.style.display="none";
+     var elt2 = document.getElementById(id);
+     elt2.style.display="inline";
+   }
+   
+   </script>
+   """;
+   
+   object fdoc_button () implements button-factory_t = {
+   
+     method fun whatami () => "button factory";
+   
+     method fun get-jscript () => jscript;
+   
+     val sz = 65,30; // frame size
+     val bz = 60,20; // button size
+     val bp = 4,6; // button pos in frame
+     val cr = 4,40; // corner radii
+     val st = 2,"black"; // border stroke thickness and colour
+     val fc = "blue",0.2; // fill colour and opacity
+     val hfc = "red",0.2; // hilight colour and opacity
+     val tp = 13,21; // text position in frame
+     val tc = "black"; // text colour
+     val fz = "12px"; // font size
+   
+     fun rect (bz: int^2, cr:int^2, st: int * string, fc: string * double) (bp:int^2) =>
+       '<rect '+
+         'x="'+bp.0.str+'px" y="'+bp.1.str+'px" '+
+         'rx="'+cr.0.str+'px" ry="'+cr.1.str+'px" '+
+         'width="'+bz.0.str+'px" height="'+bz.1.str+'px" '+
+         'style='+
+           '"'+
+             'fill:'+fc.0+';opacity:'+fc.1.str+';'+
+             'stroke:'+st.1+';stroke-width:'+st.0.str+
+          '"'+
+        '/>'
+     ;
+     fun text (tc:string, txt:string) (tp:int^2) =>
+       '<text x="'+tp.0.str+'px" y="'+tp.1+'px" fill="'+tc+
+       '" style="font-size:'+fz+';">'+txt+'</text>'
+     ;
+     fun span (id:string) (txt:string) => 
+       '<span id="'+id+'">' + txt + '</span>'
+     ;
+   
+     fun span_hide (id:string) (txt:string) => 
+       '<span id="'+id+'" style="display:none">' + txt + '</span>'
+     ;
+   
+     fun svg (sz:int^2) (txt:string) =>
+       '<svg height="'+sz.1.str+'px" width="' + sz.0.str + 'px">' + txt + '</svg>'
+     ;
+   
+     method fun make-button (b:button-spec_t) =>
+     """<span style="position:relative; bottom:6px"
+     onmouseover="mouseover('"""+b.id+"""')" 
+     onmouseout="mouseout('"""+b.id+"""')"
+     onclick=\""""+b.onclick+"""('"""+b.id+"""')"  
+     >""" +
+   
+      span b.id (
+       svg sz ( rect (bz,cr,st,fc) bp + text (tc,b.text) tp )
+      ) +
+      span_hide (b.id+"_mo") (
+       svg sz ( rect (bz,cr,st,hfc) bp + text (tc,b.text) tp ) 
+      )
+      +
+     '</span>'
+     ;
+   }
+   
+   export fun setup of (string) as "fdoc_button_setup";
+   export fun fdoc_button of () as "fdoc_button";
+   
+   
 
 .. code-block:: felix
 
   //[fdoc_edit.flx]
-include "./edit-interface";
-
-fun setup(config_data:string) = {
-  eprintln$ "Setup fdoc_edit " + config_data;
-  return 0;
-}
-
-var mime-to-file = 
-  list (
-    ("text/x-felix", "flx_codemirror/mode/felix/felix.js"),
-    ("text/x-ocaml", "codemirror/mode/mllike/mllike.js"),
-    ("text/x-csrc", "codemirror/mode/clike/clike.js"),
-    ("text/x-c++src", "codemirror/mode/clike/clike.js"),
-    ("text/x-python", "codemirror/mode/python/python.js"),
-    ("text/html", "codemirror/mode/htmlmixed/htmlmixed.js"),
-    ("application/xml", "codemirror/mode/xml/xml.js"),
-    ("text/s-tex", "codemirror/mode/stex/stex.js"),
-    ("text/css", "codemirror/mode/css/css.js")
-  )
-;
-
-object fdoc_edit () implements edit-interface_t = {
-  method fun whatami () => "fdoc edit";
-  method fun get_header (filename:string, mimetype:string) =>
-    let modefile = 
-       match Assoc_list::find mime-to-file mimetype with
-       | Some f => f
-       | #None => "flx_codemirror/felix/felix.js"
-       endmatch
-    in
-
-    "<title>"+filename+"</title>" +
-    ''' 
-    <link rel="stylesheet" href="/share/src/codemirror/lib/codemirror.css">
-    <link rel="stylesheet" href="/share/src/codemirror/addon/fold/foldgutter.css">
-    <script src="/share/src/codemirror/lib/codemirror.js"></script>
-    <script src="/share/src/'''+modefile+'''"></script>
-    <script src="/share/src/codemirror/addon/edit/matchbrackets.js"></script>
-    <script src="/share/src/codemirror/addon/fold/foldcode.js"></script>
-    <script src="/share/src/codemirror/addon/fold/foldgutter.js"></script>
-    <script src="/share/src/codemirror/addon/fold/brace-fold.js"></script>
-    <script src="/share/src/codemirror/addon/fold/comment-fold.js"></script>
-    <style>.CodeMirror {border: 2px inset #dee; height:auto; }</style>
-    <style>.CodeMirror-scroll {overflow-x: hidden; overflow-y:auto; }</style>
-    '''
-  ;
-  method fun get_body (id:string, mime:string, text:string) =>
-   '<form action="doedit" method="post" enctype="text/plain">'+
-   '<input type="submit" value="Save"><br>'+
-   '<textarea id="'+id+'" name="code">'+
-   text +
-   '</textarea></form>' +
-    '''
-    <script>
-      var editor = CodeMirror.fromTextArea(document.getElementById("'''+id+'''"), {
-        lineNumbers: true,
-        lineWrapping: true,
-        matchBrackets: true,
-        smartIndent: false,
-        viewportMargin: Infinity,
-        extraKeys: {"Ctrl-Q": function(cm){ cm.foldCode(cm.getCursor()); }},
-        foldGutter:true,
-        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
-        mode: "'''+mime+'''"
-      });
-    </script>
-    '''
-  ;
-
-}
-
-export fun setup of (string) as "fdoc_edit_setup";
-export fun fdoc_edit of () as "fdoc_edit";
-
-
+   include "./edit-interface";
+   
+   fun setup(config_data:string) = {
+     eprintln$ "Setup fdoc_edit " + config_data;
+     return 0;
+   }
+   
+   var mime-to-file = 
+     list (
+       ("text/x-felix", "flx_codemirror/mode/felix/felix.js"),
+       ("text/x-ocaml", "codemirror/mode/mllike/mllike.js"),
+       ("text/x-csrc", "codemirror/mode/clike/clike.js"),
+       ("text/x-c++src", "codemirror/mode/clike/clike.js"),
+       ("text/x-python", "codemirror/mode/python/python.js"),
+       ("text/html", "codemirror/mode/htmlmixed/htmlmixed.js"),
+       ("application/xml", "codemirror/mode/xml/xml.js"),
+       ("text/s-tex", "codemirror/mode/stex/stex.js"),
+       ("text/css", "codemirror/mode/css/css.js")
+     )
+   ;
+   
+   object fdoc_edit () implements edit-interface_t = {
+     method fun whatami () => "fdoc edit";
+     method fun get_header (filename:string, mimetype:string) =>
+       let modefile = 
+          match Assoc_list::find mime-to-file mimetype with
+          | Some f => f
+          | #None => "flx_codemirror/felix/felix.js"
+          endmatch
+       in
+   
+       "<title>"+filename+"</title>" +
+       ''' 
+       <link rel="stylesheet" href="/share/src/codemirror/lib/codemirror.css">
+       <link rel="stylesheet" href="/share/src/codemirror/addon/fold/foldgutter.css">
+       <script src="/share/src/codemirror/lib/codemirror.js"></script>
+       <script src="/share/src/'''+modefile+'''"></script>
+       <script src="/share/src/codemirror/addon/edit/matchbrackets.js"></script>
+       <script src="/share/src/codemirror/addon/fold/foldcode.js"></script>
+       <script src="/share/src/codemirror/addon/fold/foldgutter.js"></script>
+       <script src="/share/src/codemirror/addon/fold/brace-fold.js"></script>
+       <script src="/share/src/codemirror/addon/fold/comment-fold.js"></script>
+       <style>.CodeMirror {border: 2px inset #dee; height:auto; }</style>
+       <style>.CodeMirror-scroll {overflow-x: hidden; overflow-y:auto; }</style>
+       '''
+     ;
+     method fun get_body (id:string, mime:string, text:string) =>
+      '<form action="doedit" method="post" enctype="text/plain">'+
+      '<input type="submit" value="Save"><br>'+
+      '<textarea id="'+id+'" name="code">'+
+      text +
+      '</textarea></form>' +
+       '''
+       <script>
+         var editor = CodeMirror.fromTextArea(document.getElementById("'''+id+'''"), {
+           lineNumbers: true,
+           lineWrapping: true,
+           matchBrackets: true,
+           smartIndent: false,
+           viewportMargin: Infinity,
+           extraKeys: {"Ctrl-Q": function(cm){ cm.foldCode(cm.getCursor()); }},
+           foldGutter:true,
+           gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+           mode: "'''+mime+'''"
+         });
+       </script>
+       '''
+     ;
+   
+   }
+   
+   export fun setup of (string) as "fdoc_edit_setup";
+   export fun fdoc_edit of () as "fdoc_edit";
+   
+   
 
 .. code-block:: felix
 
   //[fdoc_fileseq.flx]
-include "./fileseq-interface";
-
-include "./button-interface";
-var button-factory : unit -> button-factory_t;
-
-fun setup(config_data:string) = {
-  eprintln$ "Setup fdoc_fileseq " + config_data;
-  button-factory = Dynlink::load-plugin-func0 [button-factory_t] (dll-name="fdoc_button");
-  return 0;
-}
-
-object fdoc_fileseq (filename: string) implements fileseq-control_t = 
-{
-  var button = #button-factory;
-  method fun whatami()=> "Filename sequence navigation object";
-  method fun get-jscript() => "<script> function nop(dummy) {} </script>";
-
-  fun calnav() = 
-  {
-    val relfile = match (filename,'/').split.rev with | Cons(h,_) => h | #Empty => "";
-    var lpos = relfile.len.int;
-    while lpos > 0 and not isdigit(relfile.[lpos - 1]) do 
-       --lpos; 
-    done 
-    assert lpos == 0 or relfile.[lpos - 1].isdigit;
-    var fpos = lpos;
-    while fpos > 0 and isdigit(relfile.[fpos - 1]) do --fpos; done 
-    assert fpos == 0 or relfile.[fpos].isdigit;
-    val digits = 
-      if fpos >=0 and lpos > fpos then
-        relfile.[fpos to lpos]
-      else ""
-    ;
-
-    val n = digits.len.int;
-    val v = digits.int;
-    val vnext = v + 1;
-    val vprev = v - 1;
-    var snext = (f"%010d" vnext).[10-n to];
-    var sprev= (f"%010d" vprev).[10-n to];
-
-    snext = relfile.[to fpos] + snext + relfile.[lpos to];
-    sprev = relfile.[to fpos] + sprev + relfile.[lpos to];
-    docindex := relfile.[to fpos] + "index" + relfile.[lpos to];
-
-    return
-      if digits == "" then 
-        None[int],None[string],None[string],docindex
-      elif vprev > 0 then 
-        Some v,Some sprev, Some snext,docindex
-      else
-        Some v,None[string], Some snext,docindex
-    ;
-  }
-
-  method fun shownav() => 
-    match calnav() with
-    | _,Some sprev, Some snext, docindex => 
-        "<a href='"+sprev+"'>"+button.make-button(id="prev", text="Prev", onclick="nop")+"</a> " + 
-        "<a href='"+snext+"'>"+button.make-button(id="next", text="Next", onclick="nop")+"</a> " + 
-        "<a href='"+docindex+"'>"+button.make-button(id="index", text="Index", onclick="nop")+"</a> "
-    | _,#None, Some snext, docindex => 
-       "<a href='"+snext+"'>"+button.make-button(id="next", text="Next", onclick="nop")+"</a> "+
-       "<a href='"+docindex+"'>"+button.make-button(id="index", text="Index", onclick="nop")+"</a>" 
-    | _,#None, #None,_ => ""
-    endmatch
-  ;
-
-  method fun docnum()=>
-    match calnav() with
-    | #None,_,_,_ => ""
-    | Some v,_,_,_ => str v + "."
-  ; 
-
-}
-
-export fun setup of (string) as "fdoc_fileseq_setup";
-export fun fdoc_fileseq of (string) as "fdoc_fileseq";
-
+   include "./fileseq-interface";
+   
+   include "./button-interface";
+   var button-factory : unit -> button-factory_t;
+   
+   fun setup(config_data:string) = {
+     eprintln$ "Setup fdoc_fileseq " + config_data;
+     button-factory = Dynlink::load-plugin-func0 [button-factory_t] (dll-name="fdoc_button");
+     return 0;
+   }
+   
+   object fdoc_fileseq (filename: string) implements fileseq-control_t = 
+   {
+     var button = #button-factory;
+     method fun whatami()=> "Filename sequence navigation object";
+     method fun get-jscript() => "<script> function nop(dummy) {} </script>";
+   
+     fun calnav() = 
+     {
+       val relfile = match (filename,'/').split.rev with | Cons(h,_) => h | #Empty => "";
+       var lpos = relfile.len.int;
+       while lpos > 0 and not isdigit(relfile.[lpos - 1]) do 
+          --lpos; 
+       done 
+       assert lpos == 0 or relfile.[lpos - 1].isdigit;
+       var fpos = lpos;
+       while fpos > 0 and isdigit(relfile.[fpos - 1]) do --fpos; done 
+       assert fpos == 0 or relfile.[fpos].isdigit;
+       val digits = 
+         if fpos >=0 and lpos > fpos then
+           relfile.[fpos to lpos]
+         else ""
+       ;
+   
+       val n = digits.len.int;
+       val v = digits.int;
+       val vnext = v + 1;
+       val vprev = v - 1;
+       var snext = (f"%010d" vnext).[10-n to];
+       var sprev= (f"%010d" vprev).[10-n to];
+   
+       snext = relfile.[to fpos] + snext + relfile.[lpos to];
+       sprev = relfile.[to fpos] + sprev + relfile.[lpos to];
+       docindex := relfile.[to fpos] + "index" + relfile.[lpos to];
+   
+       return
+         if digits == "" then 
+           None[int],None[string],None[string],docindex
+         elif vprev > 0 then 
+           Some v,Some sprev, Some snext,docindex
+         else
+           Some v,None[string], Some snext,docindex
+       ;
+     }
+   
+     method fun shownav() => 
+       match calnav() with
+       | _,Some sprev, Some snext, docindex => 
+           "<a href='"+sprev+"'>"+button.make-button(id="prev", text="Prev", onclick="nop")+"</a> " + 
+           "<a href='"+snext+"'>"+button.make-button(id="next", text="Next", onclick="nop")+"</a> " + 
+           "<a href='"+docindex+"'>"+button.make-button(id="index", text="Index", onclick="nop")+"</a> "
+       | _,#None, Some snext, docindex => 
+          "<a href='"+snext+"'>"+button.make-button(id="next", text="Next", onclick="nop")+"</a> "+
+          "<a href='"+docindex+"'>"+button.make-button(id="index", text="Index", onclick="nop")+"</a>" 
+       | _,#None, #None,_ => ""
+       endmatch
+     ;
+   
+     method fun docnum()=>
+       match calnav() with
+       | #None,_,_,_ => ""
+       | Some v,_,_,_ => str v + "."
+     ; 
+   
+   }
+   
+   export fun setup of (string) as "fdoc_fileseq_setup";
+   export fun fdoc_fileseq of (string) as "fdoc_fileseq";
+   
 
 .. code-block:: felix
 
   //[fdoc_frame.flx]
-include "./fdoc-frame-interface";
-include "./toc_menu-interface";
-
-fun setup (config_data:string) = {
-  eprintln$ "Setup fdoc_frame v1.4 " + config_data;
-  return 0;
-}
-
-var frame_style= """ 
-<style>
-body {margin:3%; font-family: sans-serif; }
-h1 {color:black; font-size:120%; border-bottom: 2px solid #ddd; padding: 0 0 3px 0;}
-h2 {color:#202020; font-size:105%;}
-h3 {font-size:100%;}
-h4 {font-size:95%;}
-h5 {font-size:95%;}
-span.fstring {color:darkblue; font-style:italic; }
-span.comment {font-family:arial; color:blue; font-style:italic; }
-span.doccomment {font-family:arial; color:green; font-style:italic; }
-span.big_keyword {color:#FF1010; }
-span.small_keyword {color:#802040; }
-span.qualifier {color:#A02020; }
-span.library {color:#A02000; }
-span.ctor {color:#406020; }
-span.hack {color:#66DD00; }
-span.preproc {color:#005500; }
-span.embedded_c{background-color:#DDDDDD; }
-span.fpc_fieldname {color:#DD0000; }
-span.lineno {color:#101010; background-color:#E0E0E0; font-size:80%; font-family:"courier",monospace; font-style:normal; }
-pre { border: 1px solid #ccc; color: black; box-shadow:3px 3px 2px rgba(0,0,0,0.1); padding:2px; }
-pre.flxbg {background-color:#C2FDC2; box-shadow:3px 3px 2px rgba(0,0,0,0.1) }
-pre.uncheckedflxbg {background-color:#eee; box-shadow:3px 3px 2px rgba(0,0,0,0.1); }
-pre.cppbg {background-color:#C2FDC2; }
-pre.prefmtbg {background-color:#F1F1F1; }
-pre.expected {background-color:hsla(74,94%,88%,1); }
-pre.input {background-color:hsla(20,94%,88%,1); }
-pre.inclusion {
-    font-family: Arial;
-    font-weight: normal;
-    font-size: 0.9em;
-    color: #555;
-    border: none;
-    box-shadow: none;
-    text-align: right;
-    margin: -7px 11px -12px 0;
-    padding: 0;
-    background-color:#fafafa;
-}
-code.inclusion {background-color:#D070D0; color:black; }
-.obsolete { background-color:#FFEFEF; font-size: small; color:black; }
-.future { background-color:#FF8080; font-size: small; color:black; }
-.implementation_detail { background-color:#E0E0E0; font-size: small; color:black;  }
-.bug { background-color:#FFE0E0; font-size: small; color:black; }
-.fixed{ background-color:#FFE0E0; font-size: small; color:black; }
-.done { background-color:#FFE0E0; font-size: small; color:black; }
-.caveat { background-color:hsla(0,100%,91%,1); color:black; padding: 0.6em; }
-.container {
-  position: fixed;
-  top:0px;
-  left:0px;
-  height : 100%;
-  width: 100%;
-  background-color: grey;
-  margin: 0px;
-  padding: 0px;
-  border-width: 0px;
-  color: #404040;
-}
-.maincontent {
-  padding:4px;
-  padding-left:8px;
-  line-height:1.3em;
-  color:#404040; background-color:#fafafa;
-}
-.maincontent h1 { margin-left:-8px; position: relative; font-family: georgia, serif; font-size: 1.8em; font-weight: normal; }
-.maincontent h2 { margin-left:-8px; position: relative; margin-bottom:-5px; }
-.maincontent h3 { margin-left:-8px; position: relative; margin-bottom:-5px; }
-.maincontent h4 { margin-left:-8px; position: relative; margin-bottom:-5px; }
-.maincontent code { color:#902030; }
-.toppanel {
-  position:absolute; left:0px; top:0px; height:20px; right:0px; 
-  background-color: #e0e0e0;
-}
-.bottompanel {
-  position:absolute; left:0px; top:22px; bottom:0px; right:0px; 
-  background-color: #fafafa;
-  font-size:14px;
-}
-.leftpanel {
-  position:absolute; left:0px; top:0px; bottom:0px; width: 150px; 
-  background-color: #eaeaea; overflow: auto;
-}
-.rightpanel {
-  position:absolute; right: 0px; left:160px; top:0px; bottom: 0px; 
-  background-color: #fafafa; overflow: auto;
-}
-.divider {
-  position:absolute; left: 150px; top:0px; bottom:0px; 
-  background-color: black; width:2px;
-  box-shadow: 0 0 8px #000;
-}
-
-#panemover {
-    position:absolute;
-    left: 150px;
-    width : 10px;
-    top: 0px;
-    bottom: 0px;
-    opacity: 0.3;
-    cursor:col-resize;
-}
-
-div.m {
-    margin: 0px;
-    padding:0px;
-    border-width:2px;
-    border-color: green;
-}
-
-div.m1 {
-    background-color: #86E870;
-    border-style:outset;
-    border-color:#ccc;
-    border-width:2px 0;
-    font-size:90%;
-    padding: 1px 0 2px 10px;
-}
-
-div.m2 {
-    background-color: #70C070;
-    padding-left:15px;
-    padding-top:2px;
-    border-style:outset;
-    border-color:green;
-    border-width:0 0 1px 0;
-    font-size:80%;
-}
-
-div.m1:hover, div.m2:hover {
-    background-color: white;
-}
-
-#leftmargintoc a {
-    text-decoration: none;
-    color: #404040;
-}
-</style>
-""";
-
-var frame_js = """
-    <script async="true">
-      function dragStart(e, left, right){
-        document.getElementById("panemover").style.width="70%";
-        document.getElementById("panemover").style.left="50px";
-        mousedown = true;
-        x = e.clientX
-        dragOffsetLeft =  
-          document.getElementById(left).getBoundingClientRect().right - 
-          document.getElementById(left).getBoundingClientRect().left - 
-          x 
-        ; 
-        dragOffsetDivider= document.getElementById("divider").getBoundingClientRect().left - x; 
-        dragOffsetRight = document.getElementById(right).getBoundingClientRect().left - x;
-      }
-      function dragRelease(){
-        document.getElementById('panemover').style.width = '10px';
-        document.getElementById('panemover').style.left = document.getElementById('divider').offsetLeft + 'px';
-        mousedown = false;
-      }
-      function drag(e, left, right){
-        if(!mousedown){return}
-        x = e.clientX
-        tmpLeft = dragOffsetLeft + x
-        tmpDivider= dragOffsetDivider + x
-        tmpRight = dragOffsetRight + x
-        document.getElementById(left).style.width= tmpLeft + 'px';
-        document.getElementById("divider").style.left= tmpDivider + 'px';
-        document.getElementById(right).style.left = tmpRight + 'px';
-      };
-    </script>
-""";
-
-var  toc_menu = Dynlink::load-plugin-func1 [toc_menu_interface, list[int * string * string]] (
-    dll-name="toc_menu", setup-str="loaded-from-fdoc_frame", entry-point="toc_menu"
-  );
-
-
-object fdoc_frame (d:fdoc_frame_data_t) implements fdoc_frame_t = 
-{
-  method fun whatami () => "fdoc_frame maker";
-
-  method fun make_frame (out:string) :string = {
-    var o = "";
-    reserve(&o,10000+out.len.int);
-    var h2 = #(d.heading.get_headings);
-    var h3 = map (fun (level:int, heading:string) => level, heading, '#'+heading+'_h') h2;
-    var menu = toc_menu (h3);
-
-    o+=frame_style;
-    o+=#(menu.get_style);
-    o+=frame_js;
-    o+=#(menu.get_js);
-
-    o+=#(d.heading.emit-js);
-    o+=#(d.button-factory.get-jscript);
-    o+=#(d.fileseq.get-jscript);
-
-    // MAIN CONTENT
-    var topcontent =
-      '    <!--Main Content top navbar-->\n'  +
-      #(d.heading.emit-buttons) + 
-      #(d.fileseq.shownav) +
-      '    <!--Main Content top navbar End-->\n'
-    ;
-
-    var leftcontent = #(menu.make_menu);
-
-    var rightcontent =
-      '<!--Main Content Body-->\n' + 
-      out +
-      '<!--Main Content Body End-->\n'
-    ;
- 
-    var html = """
-    <div class="container">
-      <div class="toppanel">
-""" + topcontent + """
-      </div> <!-- toppanel end -->
-      <div class="bottompanel">
-        <span id="divider" class="divider"></span>
-
-        <span id="left" class="leftpanel" >
-          <div class="menucontent">
-""" + leftcontent + """
-          </div> <!-- leftpanel contents end -->
-        </span> <!-- leftpanel end -->
-
-        <span id="right" class="rightpanel">
-          <div class="maincontent">
-""" + rightcontent + """
-          </div> <!-- rightpanel contents end -->
-          <hr>
-        </span> <!-- rightpanel end -->
-
-        <span id="panemover" style="cursor:col-resize;" 
-         onmousedown="dragStart(event, 'left', 'right'); return false;" 
-         onmousemove="drag(event, 'left', 'right');" 
-         onmouseout="dragRelease();" 
-         onmouseup="dragRelease();"
-        >
-        </span> <!-- panemover end -->
-      </div> <!-- bottom panel end -->
-    </div> <!-- container end -->
-""";
-    o+= html;
-    return o;
-  }
-
-}
-export fun setup of (string) as "fdoc_frame_setup";
-export fun fdoc_frame of (fdoc_frame_data_t) as "fdoc_frame";
-
+   include "./fdoc-frame-interface";
+   include "./toc_menu-interface";
+   
+   fun setup (config_data:string) = {
+     eprintln$ "Setup fdoc_frame v1.4 " + config_data;
+     return 0;
+   }
+   
+   var frame_style= """ 
+   <style>
+   body {margin:3%; font-family: sans-serif; }
+   h1 {color:black; font-size:120%; border-bottom: 2px solid #ddd; padding: 0 0 3px 0;}
+   h2 {color:#202020; font-size:105%;}
+   h3 {font-size:100%;}
+   h4 {font-size:95%;}
+   h5 {font-size:95%;}
+   span.fstring {color:darkblue; font-style:italic; }
+   span.comment {font-family:arial; color:blue; font-style:italic; }
+   span.doccomment {font-family:arial; color:green; font-style:italic; }
+   span.big_keyword {color:#FF1010; }
+   span.small_keyword {color:#802040; }
+   span.qualifier {color:#A02020; }
+   span.library {color:#A02000; }
+   span.ctor {color:#406020; }
+   span.hack {color:#66DD00; }
+   span.preproc {color:#005500; }
+   span.embedded_c{background-color:#DDDDDD; }
+   span.fpc_fieldname {color:#DD0000; }
+   span.lineno {color:#101010; background-color:#E0E0E0; font-size:80%; font-family:"courier",monospace; font-style:normal; }
+   pre { border: 1px solid #ccc; color: black; box-shadow:3px 3px 2px rgba(0,0,0,0.1); padding:2px; }
+   pre.flxbg {background-color:#C2FDC2; box-shadow:3px 3px 2px rgba(0,0,0,0.1) }
+   pre.uncheckedflxbg {background-color:#eee; box-shadow:3px 3px 2px rgba(0,0,0,0.1); }
+   pre.cppbg {background-color:#C2FDC2; }
+   pre.prefmtbg {background-color:#F1F1F1; }
+   pre.expected {background-color:hsla(74,94%,88%,1); }
+   pre.input {background-color:hsla(20,94%,88%,1); }
+   pre.inclusion {
+       font-family: Arial;
+       font-weight: normal;
+       font-size: 0.9em;
+       color: #555;
+       border: none;
+       box-shadow: none;
+       text-align: right;
+       margin: -7px 11px -12px 0;
+       padding: 0;
+       background-color:#fafafa;
+   }
+   code.inclusion {background-color:#D070D0; color:black; }
+   .obsolete { background-color:#FFEFEF; font-size: small; color:black; }
+   .future { background-color:#FF8080; font-size: small; color:black; }
+   .implementation_detail { background-color:#E0E0E0; font-size: small; color:black;  }
+   .bug { background-color:#FFE0E0; font-size: small; color:black; }
+   .fixed{ background-color:#FFE0E0; font-size: small; color:black; }
+   .done { background-color:#FFE0E0; font-size: small; color:black; }
+   .caveat { background-color:hsla(0,100%,91%,1); color:black; padding: 0.6em; }
+   .container {
+     position: fixed;
+     top:0px;
+     left:0px;
+     height : 100%;
+     width: 100%;
+     background-color: grey;
+     margin: 0px;
+     padding: 0px;
+     border-width: 0px;
+     color: #404040;
+   }
+   .maincontent {
+     padding:4px;
+     padding-left:8px;
+     line-height:1.3em;
+     color:#404040; background-color:#fafafa;
+   }
+   .maincontent h1 { margin-left:-8px; position: relative; font-family: georgia, serif; font-size: 1.8em; font-weight: normal; }
+   .maincontent h2 { margin-left:-8px; position: relative; margin-bottom:-5px; }
+   .maincontent h3 { margin-left:-8px; position: relative; margin-bottom:-5px; }
+   .maincontent h4 { margin-left:-8px; position: relative; margin-bottom:-5px; }
+   .maincontent code { color:#902030; }
+   .toppanel {
+     position:absolute; left:0px; top:0px; height:20px; right:0px; 
+     background-color: #e0e0e0;
+   }
+   .bottompanel {
+     position:absolute; left:0px; top:22px; bottom:0px; right:0px; 
+     background-color: #fafafa;
+     font-size:14px;
+   }
+   .leftpanel {
+     position:absolute; left:0px; top:0px; bottom:0px; width: 150px; 
+     background-color: #eaeaea; overflow: auto;
+   }
+   .rightpanel {
+     position:absolute; right: 0px; left:160px; top:0px; bottom: 0px; 
+     background-color: #fafafa; overflow: auto;
+   }
+   .divider {
+     position:absolute; left: 150px; top:0px; bottom:0px; 
+     background-color: black; width:2px;
+     box-shadow: 0 0 8px #000;
+   }
+   
+   #panemover {
+       position:absolute;
+       left: 150px;
+       width : 10px;
+       top: 0px;
+       bottom: 0px;
+       opacity: 0.3;
+       cursor:col-resize;
+   }
+   
+   div.m {
+       margin: 0px;
+       padding:0px;
+       border-width:2px;
+       border-color: green;
+   }
+   
+   div.m1 {
+       background-color: #86E870;
+       border-style:outset;
+       border-color:#ccc;
+       border-width:2px 0;
+       font-size:90%;
+       padding: 1px 0 2px 10px;
+   }
+   
+   div.m2 {
+       background-color: #70C070;
+       padding-left:15px;
+       padding-top:2px;
+       border-style:outset;
+       border-color:green;
+       border-width:0 0 1px 0;
+       font-size:80%;
+   }
+   
+   div.m1:hover, div.m2:hover {
+       background-color: white;
+   }
+   
+   #leftmargintoc a {
+       text-decoration: none;
+       color: #404040;
+   }
+   </style>
+   """;
+   
+   var frame_js = """
+       <script async="true">
+         function dragStart(e, left, right){
+           document.getElementById("panemover").style.width="70%";
+           document.getElementById("panemover").style.left="50px";
+           mousedown = true;
+           x = e.clientX
+           dragOffsetLeft =  
+             document.getElementById(left).getBoundingClientRect().right - 
+             document.getElementById(left).getBoundingClientRect().left - 
+             x 
+           ; 
+           dragOffsetDivider= document.getElementById("divider").getBoundingClientRect().left - x; 
+           dragOffsetRight = document.getElementById(right).getBoundingClientRect().left - x;
+         }
+         function dragRelease(){
+           document.getElementById('panemover').style.width = '10px';
+           document.getElementById('panemover').style.left = document.getElementById('divider').offsetLeft + 'px';
+           mousedown = false;
+         }
+         function drag(e, left, right){
+           if(!mousedown){return}
+           x = e.clientX
+           tmpLeft = dragOffsetLeft + x
+           tmpDivider= dragOffsetDivider + x
+           tmpRight = dragOffsetRight + x
+           document.getElementById(left).style.width= tmpLeft + 'px';
+           document.getElementById("divider").style.left= tmpDivider + 'px';
+           document.getElementById(right).style.left = tmpRight + 'px';
+         };
+       </script>
+   """;
+   
+   var  toc_menu = Dynlink::load-plugin-func1 [toc_menu_interface, list[int * string * string]] (
+       dll-name="toc_menu", setup-str="loaded-from-fdoc_frame", entry-point="toc_menu"
+     );
+   
+   
+   object fdoc_frame (d:fdoc_frame_data_t) implements fdoc_frame_t = 
+   {
+     method fun whatami () => "fdoc_frame maker";
+   
+     method fun make_frame (out:string) :string = {
+       var o = "";
+       reserve(&o,10000+out.len.int);
+       var h2 = #(d.heading.get_headings);
+       var h3 = map (fun (level:int, heading:string) => level, heading, '#'+heading+'_h') h2;
+       var menu = toc_menu (h3);
+   
+       o+=frame_style;
+       o+=#(menu.get_style);
+       o+=frame_js;
+       o+=#(menu.get_js);
+   
+       o+=#(d.heading.emit-js);
+       o+=#(d.button-factory.get-jscript);
+       o+=#(d.fileseq.get-jscript);
+   
+       // MAIN CONTENT
+       var topcontent =
+         '    <!--Main Content top navbar-->\n'  +
+         #(d.heading.emit-buttons) + 
+         #(d.fileseq.shownav) +
+         '    <!--Main Content top navbar End-->\n'
+       ;
+   
+       var leftcontent = #(menu.make_menu);
+   
+       var rightcontent =
+         '<!--Main Content Body-->\n' + 
+         out +
+         '<!--Main Content Body End-->\n'
+       ;
+    
+       var html = """
+       <div class="container">
+         <div class="toppanel">
+   """ + topcontent + """
+         </div> <!-- toppanel end -->
+         <div class="bottompanel">
+           <span id="divider" class="divider"></span>
+   
+           <span id="left" class="leftpanel" >
+             <div class="menucontent">
+   """ + leftcontent + """
+             </div> <!-- leftpanel contents end -->
+           </span> <!-- leftpanel end -->
+   
+           <span id="right" class="rightpanel">
+             <div class="maincontent">
+   """ + rightcontent + """
+             </div> <!-- rightpanel contents end -->
+             <hr>
+           </span> <!-- rightpanel end -->
+   
+           <span id="panemover" style="cursor:col-resize;" 
+            onmousedown="dragStart(event, 'left', 'right'); return false;" 
+            onmousemove="drag(event, 'left', 'right');" 
+            onmouseout="dragRelease();" 
+            onmouseup="dragRelease();"
+           >
+           </span> <!-- panemover end -->
+         </div> <!-- bottom panel end -->
+       </div> <!-- container end -->
+   """;
+       o+= html;
+       return o;
+     }
+   
+   }
+   export fun setup of (string) as "fdoc_frame_setup";
+   export fun fdoc_frame of (fdoc_frame_data_t) as "fdoc_frame";
+   
 
 .. code-block:: felix
 
   //[fdoc_heading.flx]
-include "./paragraph-interface";
-include "./heading-interface";
-
-include "./button-interface";
-var button-factory : unit -> button-factory_t;
-
-
-val js1 =
-"""
-<script type="text/javascript">
-
-function expand(but,id)
-{
-  var n = document.getElementById(id).style;
-  var button = document.getElementById(but);
-  button.src = "/share/src/web/images/minus.gif";
-  button.alt = "-";
-  n.display = "block";
-}
-function collapse(but,id)
-{
-  var n = document.getElementById(id).style;
-  var button = document.getElementById(but);
-  button.src = "/share/src/web/images/plus.gif";
-  button.alt = "+";
-  n.display = "none";
-}
-function toggle(button,id)
-{
-  var n = document.getElementById(id).style;
-  if (n.display == "none")
-  {
-    button.src = "/share/src/web/images/minus.gif";
-    button.alt = "-";
-    n.display = "block";
-  }
-  else
-  {
-    button.src = "/share/src/web/images/plus.gif";
-    button.alt = "+";
-    n.display = "none";
-  }
-}
-var allbuttons = [
-""";
-val js2 =
-"""
-];
-function expand_all(dummy)
-{
-  for (i in allbuttons)
-  {
-    expand(allbuttons[i], allbuttons[i]+"_d");
-  }
-}
-function collapse_all(dummy)
-{
-  for (i in allbuttons)
-  {
-    collapse(allbuttons[i], allbuttons[i]+"_d");
-  }
-}
-</script>
-""";
-
-fun escape_sp(h: string) => map (fun (c: char) => if c == ' ' then '_'.char else c) h;
-
-fun setup(config_data:string) = {
-  button-factory = Dynlink::load-plugin-func0 [button-factory_t] (dll-name="fdoc_button");
-  eprintln$ "Setup fdoc_heading " + config_data;
-  return 0;
-}
-
-
-object fdoc_heading (paragraph: paragraph-control_t, write_string: string -> 0) implements heading-control_t =
-{
-  var button = #button-factory;
-
-  method fun whatami () => "Heading object";
-  var hstack = 0; // number of open <div>s
-  var hnums = varray[int] (size 5,1);
-  var all_buttons = "";
-  var htree = Empty[int * string];
-
-  method fun get_headings () => rev htree;
-
-  method fun emit-buttons() =>
-   button.make-button(id="expand", text="Expand", onclick="expand_all") +
-   button.make-button(id="collapse", text="Collapse", onclick="collapse_all")
-  ;
-
-  method fun emit-js() => js1 + all_buttons + js2;
-
-  // bid is the button id, cid is the stuff which is controlled by it
-  method fun tree_button(bid:string, cid:string)=>
-    "<img src='/share/src/web/images/minus.gif' id='"+bid+"' onclick='toggle(this,\""+cid+"\")' alt='+'/>"
-  ;
-
-  method proc add_button (fname: string) {
-    all_buttons = if all_buttons != "" then all_buttons + ',\n' else '' endif + '"' + fname + '"';
-  }
-
-  proc edivs(n:int) {
-    while hstack > n do
-      write_string("</div>");
-      --hstack;
-      set (hnums,hstack,1);
-     done
-     if hstack == n do
-       --hstack;
-       write_string("</div>");
-       set(hnums,hstack,hnums.hstack+1);
-     done
-  }
-
-  fun hnum() = {
-    var s = ""; var i:int;
-    for i in 0 upto hstack - 2 do
-      s+=str(hnums.i) + ".";
-    done
-    return s + str(hnums.(hstack - 1));
-  }
-
-  method proc head(docnum: string, n:int, txt:string) {
-    #(paragraph.ep);
-    edivs(n);
-    add_button txt;
-    tb:=tree_button(txt,escape_sp(txt)+"_d");
-    ++hstack;
-    htree = Cons ( (n,txt), htree);
-    write_string("<h"+str n+" id='"+escape_sp(txt)+"_h'>"+tb+" "+docnum+hnum()+" "+ txt+"</h"+str n+">" +
-     "<div id='"+escape_sp(txt)+"_d' style='display:block'>\n");
-  }
-
-  method proc finalise () {
-   edivs(1);
-  }
-}
-
-export fun setup of (string) as "fdoc_heading_setup";
-export fun fdoc_heading of (paragraph-control_t * (string->0)) as "fdoc_heading";
-
+   include "./paragraph-interface";
+   include "./heading-interface";
+   
+   include "./button-interface";
+   var button-factory : unit -> button-factory_t;
+   
+   
+   val js1 =
+   """
+   <script type="text/javascript">
+   
+   function expand(but,id)
+   {
+     var n = document.getElementById(id).style;
+     var button = document.getElementById(but);
+     button.src = "/share/src/web/images/minus.gif";
+     button.alt = "-";
+     n.display = "block";
+   }
+   function collapse(but,id)
+   {
+     var n = document.getElementById(id).style;
+     var button = document.getElementById(but);
+     button.src = "/share/src/web/images/plus.gif";
+     button.alt = "+";
+     n.display = "none";
+   }
+   function toggle(button,id)
+   {
+     var n = document.getElementById(id).style;
+     if (n.display == "none")
+     {
+       button.src = "/share/src/web/images/minus.gif";
+       button.alt = "-";
+       n.display = "block";
+     }
+     else
+     {
+       button.src = "/share/src/web/images/plus.gif";
+       button.alt = "+";
+       n.display = "none";
+     }
+   }
+   var allbuttons = [
+   """;
+   val js2 =
+   """
+   ];
+   function expand_all(dummy)
+   {
+     for (i in allbuttons)
+     {
+       expand(allbuttons[i], allbuttons[i]+"_d");
+     }
+   }
+   function collapse_all(dummy)
+   {
+     for (i in allbuttons)
+     {
+       collapse(allbuttons[i], allbuttons[i]+"_d");
+     }
+   }
+   </script>
+   """;
+   
+   fun escape_sp(h: string) => map (fun (c: char) => if c == ' ' then '_'.char else c) h;
+   
+   fun setup(config_data:string) = {
+     button-factory = Dynlink::load-plugin-func0 [button-factory_t] (dll-name="fdoc_button");
+     eprintln$ "Setup fdoc_heading " + config_data;
+     return 0;
+   }
+   
+   
+   object fdoc_heading (paragraph: paragraph-control_t, write_string: string -> 0) implements heading-control_t =
+   {
+     var button = #button-factory;
+   
+     method fun whatami () => "Heading object";
+     var hstack = 0; // number of open <div>s
+     var hnums = varray[int] (size 5,1);
+     var all_buttons = "";
+     var htree = Empty[int * string];
+   
+     method fun get_headings () => rev htree;
+   
+     method fun emit-buttons() =>
+      button.make-button(id="expand", text="Expand", onclick="expand_all") +
+      button.make-button(id="collapse", text="Collapse", onclick="collapse_all")
+     ;
+   
+     method fun emit-js() => js1 + all_buttons + js2;
+   
+     // bid is the button id, cid is the stuff which is controlled by it
+     method fun tree_button(bid:string, cid:string)=>
+       "<img src='/share/src/web/images/minus.gif' id='"+bid+"' onclick='toggle(this,\""+cid+"\")' alt='+'/>"
+     ;
+   
+     method proc add_button (fname: string) {
+       all_buttons = if all_buttons != "" then all_buttons + ',\n' else '' endif + '"' + fname + '"';
+     }
+   
+     proc edivs(n:int) {
+       while hstack > n do
+         write_string("</div>");
+         --hstack;
+         set (hnums,hstack,1);
+        done
+        if hstack == n do
+          --hstack;
+          write_string("</div>");
+          set(hnums,hstack,hnums.hstack+1);
+        done
+     }
+   
+     fun hnum() = {
+       var s = ""; var i:int;
+       for i in 0 upto hstack - 2 do
+         s+=str(hnums.i) + ".";
+       done
+       return s + str(hnums.(hstack - 1));
+     }
+   
+     method proc head(docnum: string, n:int, txt:string) {
+       #(paragraph.ep);
+       edivs(n);
+       add_button txt;
+       tb:=tree_button(txt,escape_sp(txt)+"_d");
+       ++hstack;
+       htree = Cons ( (n,txt), htree);
+       write_string("<h"+str n+" id='"+escape_sp(txt)+"_h'>"+tb+" "+docnum+hnum()+" "+ txt+"</h"+str n+">" +
+        "<div id='"+escape_sp(txt)+"_d' style='display:block'>\n");
+     }
+   
+     method proc finalise () {
+      edivs(1);
+     }
+   }
+   
+   export fun setup of (string) as "fdoc_heading_setup";
+   export fun fdoc_heading of (paragraph-control_t * (string->0)) as "fdoc_heading";
+   
 
 .. code-block:: felix
 
   //[fdoc_paragraph.flx]
-include "./paragraph-interface";
-
-fun setup(config_data:string) = {
-  eprintln$ "Setup fdoc_paragraph" + config_data;
-  return 0;
-}
-
-
-object fdoc_paragraph (write_string: string -> 0) implements paragraph-control_t = 
-{
-  method fun whatami () => "Paragraph object";
-  var pstate = false;
-  proc start_p () { write_string("<p>"); pstate=true; }
-  proc start_p (cls:string) { write_string("<p class='"+cls+"'>"); pstate=true; }
-  proc end_p () { write_string("</p>"); pstate=false; }
-  proc break_p () { write_string("</p><p>"); }
-  method proc sp-clas (cls: string) { if not pstate do start_p cls; done }
-  method proc sp() { if not pstate do start_p; done }
-  method proc ep() { if pstate do end_p; done }
-  method proc bp() { if pstate do end_p; done start_p; }
-}
-
-export fun setup of (string) as "fdoc_paragraph_setup";
-export fun fdoc_paragraph of (string->0) as "fdoc_paragraph";
-
+   include "./paragraph-interface";
+   
+   fun setup(config_data:string) = {
+     eprintln$ "Setup fdoc_paragraph" + config_data;
+     return 0;
+   }
+   
+   
+   object fdoc_paragraph (write_string: string -> 0) implements paragraph-control_t = 
+   {
+     method fun whatami () => "Paragraph object";
+     var pstate = false;
+     proc start_p () { write_string("<p>"); pstate=true; }
+     proc start_p (cls:string) { write_string("<p class='"+cls+"'>"); pstate=true; }
+     proc end_p () { write_string("</p>"); pstate=false; }
+     proc break_p () { write_string("</p><p>"); }
+     method proc sp-clas (cls: string) { if not pstate do start_p cls; done }
+     method proc sp() { if not pstate do start_p; done }
+     method proc ep() { if pstate do end_p; done }
+     method proc bp() { if pstate do end_p; done start_p; }
+   }
+   
+   export fun setup of (string) as "fdoc_paragraph_setup";
+   export fun fdoc_paragraph of (string->0) as "fdoc_paragraph";
+   
 
 .. code-block:: felix
 
   //[fdoc_scanner.flx]
-include "./scanner-interface";
-
-fun setup(config_data:string) = {
-  eprintln$ "Setup fdoc_scanner " + config_data;
-  return 0;
-}
-
-
-object fdoc_scanner () implements fdocscanner-control_t = {
-  method fun whatami () => "Scanner object";
-
-  method gen fdoc_scan (var inp:string) () : opt[fdoc-data_t] = {
-    var lines = split (inp,"\n");
-    var out = "";
-    String::reserve (&out,inp.len);
-    for line in lines do
-      if line.[0]=='@'@ @a@n@d@ @l@i@n@e@.@[@1@]@ @!@=@ @" :code:`" do
-        if out !=""  do
-           yield Some (Text out);
-           out = "";
-        done
-        yield Some (Cmd$ strip(line.[1 to]));
-      else
-        out+=line;
-        out+="\n";
-      done
-    done;
-    if out != "" do
-      yield Some (Text out);
-    done
-    return None[fdoc-data_t];
-  }
-
-  // split up doc text into a stream of paragraphs
-  method gen psplit (var inp:string) () : opt[string] = {
-    var lines = split(inp,"\n");
-    var out = "";
-    String::reserve (&out,inp.len);
-    for line in lines do
-      // accumulate non-blank lines
-      if line != "" do
-        out += line;
-        out += "\n";
-
-      else // emit accumulated lines
-        if out != "" do
-          yield Some out;
-          out = "";
-        done
-      done
-    done
-    if out != "" do
-      yield Some out;
-      out = ""; // no semantics but release memory
-    done
-    return None[string];
-  }
-}
-
- 
-export fun setup of (string) as "fdoc_scanner_setup";
-export fun fdoc_scanner of () as "fdoc_scanner";
-
+   include "./scanner-interface";
+   
+   fun setup(config_data:string) = {
+     eprintln$ "Setup fdoc_scanner " + config_data;
+     return 0;
+   }
+   
+   
+   object fdoc_scanner () implements fdocscanner-control_t = {
+     method fun whatami () => "Scanner object";
+   
+     method gen fdoc_scan (var inp:string) () : opt[fdoc-data_t] = {
+       var lines = split (inp,"\n");
+       var out = "";
+       String::reserve (&out,inp.len);
+       for line in lines do
+         if line.[0]=='@' and line.[1] != "{" do
+           if out !=""  do
+              yield Some (Text out);
+              out = "";
+           done
+           yield Some (Cmd$ strip(line.[1 to]));
+         else
+           out+=line;
+           out+="\n";
+         done
+       done;
+       if out != "" do
+         yield Some (Text out);
+       done
+       return None[fdoc-data_t];
+     }
+   
+     // split up doc text into a stream of paragraphs
+     method gen psplit (var inp:string) () : opt[string] = {
+       var lines = split(inp,"\n");
+       var out = "";
+       String::reserve (&out,inp.len);
+       for line in lines do
+         // accumulate non-blank lines
+         if line != "" do
+           out += line;
+           out += "\n";
+   
+         else // emit accumulated lines
+           if out != "" do
+             yield Some out;
+             out = "";
+           done
+         done
+       done
+       if out != "" do
+         yield Some out;
+         out = ""; // no semantics but release memory
+       done
+       return None[string];
+     }
+   }
+   
+    
+   export fun setup of (string) as "fdoc_scanner_setup";
+   export fun fdoc_scanner of () as "fdoc_scanner";
+   
 
 .. code-block:: felix
 
   //[fdoc_slideshow.flx]
-
-
-val slideshow_js = """
-<button id="start" onclick="start_slides()">Start</button>
-<button id="stop" onclick="stop_slides()" disabled="true">Stop</button>
-<button id="reset" onclick="reset_slides()">Reset</button>
-<button id="next" onclick="skip_to_next()">Next</button>
-<span id="goose" style="position:absolute; right:50px;">Slideshow Ready</span>
-<script>
-var slides = new Array();
-var slideno = 0;
-var lineno = 0;
-var nslides = 0;
-slides[0]=0;
-
-var interval_handle;
-function enable (slide, line) {
-  var elt = document.getElementById("slide-section-"+slide+","+line)
-  elt.style.display="";
-  var n = elt.innerHTML.length;
-  interval_handle = setTimeout(showframe, 7000+25 * n); 
-}
-
-function disable (slide, line) {
-  document.getElementById("slide-section-"+slide+","+line).style.display="none";
-}
-
-function disable_slide (slide) {
-  for (i = 1; i <= slides[slide]; i = i + 1) disable(slide,i);
-}
-
-function nextslide() {
-  slideno = slideno + 1;
-  if (slideno > nslides ) { reset_slides();}
-  lineno = 1;
-}
-
-function nextline() {
-  lineno = lineno + 1;
-  if (lineno > slides[slideno]) { nextslide(); }
-}
-
-function showline() { 
-  if (slideno == 0) {
-    document.getElementById("goose").innerHTML="READY";
-  }
-  else {
-    document.getElementById("goose").innerHTML="SLIDE " + (slideno) + ", LINE " + (lineno) +"";
-    enable (slideno, lineno); 
-  }
-}
-
-function showframe(){
-  oldslide = slideno;
-  oldline = lineno;
-  nextline();
-  if (oldslide != slideno) { 
-    disable_slide(oldslide);
-    setTimeout(showline,2000);
-  }
-  else showline();
-}
-
-function skip_to_next() {
-  clearTimeout(interval_handle);
-  disable_slide (slideno);
-  nextslide();
-  showline();
-}
-
-function start_slides() { 
-  document.body.style.background="black";
-  document.body.style.color="white";
-  document.getElementById("start").disabled=true; 
-  document.getElementById("stop").disabled=false; 
-  document.getElementById("reset").disabled=false; 
-  showframe();
-}
-
-function stop_slides() { 
-  document.body.style.background="white";
-  document.body.style.color="black";
-  document.getElementById("start").disabled=false; 
-  document.getElementById("stop").disabled=true; 
-  document.getElementById("reset").disabled=false; 
-  clearTimeout(interval_handle); 
-}
-
-function reset_slides() {
-  document.getElementById("reset").disabled=true; 
-  disable_slide(slideno);
-  stop_slides();
-  slideno = 0;
-  lineno = 0;
-  showline();
-}
-
-</script>
-""";
-
-include "./slideshow-interface";
-
-fun setup(config_data:string) = {
-  eprintln$ "Setup fdoc_slideshow " + config_data;
-  return 0;
-}
-
-
-object fdoc_slideshow (var write_string: string -> 0) implements slideshow_t = 
-{
-  method fun whatami () => "Slideshow object";
-  var slideshow-used = false;
-  var slide_count = 0;
-  var slide_section_count = 0;
-
-  proc end_slide_section() { write_string("\n</div>"); }
-  proc end_slide() {
-    write_string("</div>\n<script>\nslides["+str slide_count+"]=" + str slide_section_count + ";\n</script>\n");
-  }
-  proc start_slide() {
-    write_string('\n<div class="slide" id="slide-'+str slide_count+'">\n');
-  }
-  proc start_slide_section() {
-    write_string('\n<div class="slide-section" id="slide-section-'+
-      str slide_count+","+str slide_section_count+'" style="display:none">\n');
-  }
-
-  method fun check-slide-commands (b:string) : bool =
-  {
-    if b == "slideshow" do
-      slideshow-used = true;
-      write_string (slideshow_js);
-      slide_count = 0;
-      slide_section_count = 0;
-      return true;
-    elif b == "slide" do
-      if slide_count != 0 do 
-        end_slide_section(); 
-        end_slide(); 
-      done
-      slide_count = slide_count + 1;
-      slide_section_count = 1;
-      start_slide();
-      start_slide_section();
-      //s = doc;
-      return true;
-    elif b == "section" do
-      if slide_section_count != 0 do 
-        end_slide_section(); 
-      done
-      slide_section_count = slide_section_count + 1; 
-      start_slide_section();
-      //s = doc;
-      return true;
-    else
-      return false;
-    done
-  }
-
-  method proc finalise() =
-  {
-    if slide_count > 0 do
-      end_slide_section();
-      end_slide();
-      write_string("\n<script>nslides = " + str slide_count + ";</script>\n");
-    done
-  }
-  method fun active () => slideshow-used;
-};
-
-export fun setup of (string) as "fdoc_slideshow_setup";
-export fun fdoc_slideshow of (string->0) as "fdoc_slideshow";
-
+   
+   
+   val slideshow_js = """
+   <button id="start" onclick="start_slides()">Start</button>
+   <button id="stop" onclick="stop_slides()" disabled="true">Stop</button>
+   <button id="reset" onclick="reset_slides()">Reset</button>
+   <button id="next" onclick="skip_to_next()">Next</button>
+   <span id="goose" style="position:absolute; right:50px;">Slideshow Ready</span>
+   <script>
+   var slides = new Array();
+   var slideno = 0;
+   var lineno = 0;
+   var nslides = 0;
+   slides[0]=0;
+   
+   var interval_handle;
+   function enable (slide, line) {
+     var elt = document.getElementById("slide-section-"+slide+","+line)
+     elt.style.display="";
+     var n = elt.innerHTML.length;
+     interval_handle = setTimeout(showframe, 7000+25 * n); 
+   }
+   
+   function disable (slide, line) {
+     document.getElementById("slide-section-"+slide+","+line).style.display="none";
+   }
+   
+   function disable_slide (slide) {
+     for (i = 1; i <= slides[slide]; i = i + 1) disable(slide,i);
+   }
+   
+   function nextslide() {
+     slideno = slideno + 1;
+     if (slideno > nslides ) { reset_slides();}
+     lineno = 1;
+   }
+   
+   function nextline() {
+     lineno = lineno + 1;
+     if (lineno > slides[slideno]) { nextslide(); }
+   }
+   
+   function showline() { 
+     if (slideno == 0) {
+       document.getElementById("goose").innerHTML="READY";
+     }
+     else {
+       document.getElementById("goose").innerHTML="SLIDE " + (slideno) + ", LINE " + (lineno) +"";
+       enable (slideno, lineno); 
+     }
+   }
+   
+   function showframe(){
+     oldslide = slideno;
+     oldline = lineno;
+     nextline();
+     if (oldslide != slideno) { 
+       disable_slide(oldslide);
+       setTimeout(showline,2000);
+     }
+     else showline();
+   }
+   
+   function skip_to_next() {
+     clearTimeout(interval_handle);
+     disable_slide (slideno);
+     nextslide();
+     showline();
+   }
+   
+   function start_slides() { 
+     document.body.style.background="black";
+     document.body.style.color="white";
+     document.getElementById("start").disabled=true; 
+     document.getElementById("stop").disabled=false; 
+     document.getElementById("reset").disabled=false; 
+     showframe();
+   }
+   
+   function stop_slides() { 
+     document.body.style.background="white";
+     document.body.style.color="black";
+     document.getElementById("start").disabled=false; 
+     document.getElementById("stop").disabled=true; 
+     document.getElementById("reset").disabled=false; 
+     clearTimeout(interval_handle); 
+   }
+   
+   function reset_slides() {
+     document.getElementById("reset").disabled=true; 
+     disable_slide(slideno);
+     stop_slides();
+     slideno = 0;
+     lineno = 0;
+     showline();
+   }
+   
+   </script>
+   """;
+   
+   include "./slideshow-interface";
+   
+   fun setup(config_data:string) = {
+     eprintln$ "Setup fdoc_slideshow " + config_data;
+     return 0;
+   }
+   
+   
+   object fdoc_slideshow (var write_string: string -> 0) implements slideshow_t = 
+   {
+     method fun whatami () => "Slideshow object";
+     var slideshow-used = false;
+     var slide_count = 0;
+     var slide_section_count = 0;
+   
+     proc end_slide_section() { write_string("\n</div>"); }
+     proc end_slide() {
+       write_string("</div>\n<script>\nslides["+str slide_count+"]=" + str slide_section_count + ";\n</script>\n");
+     }
+     proc start_slide() {
+       write_string('\n<div class="slide" id="slide-'+str slide_count+'">\n');
+     }
+     proc start_slide_section() {
+       write_string('\n<div class="slide-section" id="slide-section-'+
+         str slide_count+","+str slide_section_count+'" style="display:none">\n');
+     }
+   
+     method fun check-slide-commands (b:string) : bool =
+     {
+       if b == "slideshow" do
+         slideshow-used = true;
+         write_string (slideshow_js);
+         slide_count = 0;
+         slide_section_count = 0;
+         return true;
+       elif b == "slide" do
+         if slide_count != 0 do 
+           end_slide_section(); 
+           end_slide(); 
+         done
+         slide_count = slide_count + 1;
+         slide_section_count = 1;
+         start_slide();
+         start_slide_section();
+         //s = doc;
+         return true;
+       elif b == "section" do
+         if slide_section_count != 0 do 
+           end_slide_section(); 
+         done
+         slide_section_count = slide_section_count + 1; 
+         start_slide_section();
+         //s = doc;
+         return true;
+       else
+         return false;
+       done
+     }
+   
+     method proc finalise() =
+     {
+       if slide_count > 0 do
+         end_slide_section();
+         end_slide();
+         write_string("\n<script>nslides = " + str slide_count + ";</script>\n");
+       done
+     }
+     method fun active () => slideshow-used;
+   };
+   
+   export fun setup of (string) as "fdoc_slideshow_setup";
+   export fun fdoc_slideshow of (string->0) as "fdoc_slideshow";
+   
 
 .. code-block:: felix
 
   //[plugin_common.flx]
-open class WebserverPluginCommon
-{
-  fun get_file (var fname:string, INSTALL_ROOT:string, path:list[string]) = {
-//println$ "Search for file " + fname;
-    if fname.[0] == char "$" do fname = fname.[1 to]; done
-    if FileStat::fileexists fname do 
-      //println$ "Found as " + fname; 
-      return Some fname;
-    else
-      var f = Filename::join(INSTALL_ROOT,fname);
-      if FileStat::fileexists f do 
-        // println$ "Found in root as " + f; 
-        return Some f;
-      else 
-        var result = FileSystem::find_in_path (fname, path);
-        //match result with
-        //| Some f => println$ "Found in path as " + f;
-        //| #None => println$ "Not found in path " + str path;
-        //endmatch;
-        return result;
-      done
-    done
-  }
-}
-
+   open class WebserverPluginCommon
+   {
+     fun get_file (var fname:string, INSTALL_ROOT:string, path:list[string]) = {
+   //println$ "Search for file " + fname;
+       if fname.[0] == char "$" do fname = fname.[1 to]; done
+       if FileStat::fileexists fname do 
+         //println$ "Found as " + fname; 
+         return Some fname;
+       else
+         var f = Filename::join(INSTALL_ROOT,fname);
+         if FileStat::fileexists f do 
+           // println$ "Found in root as " + f; 
+           return Some f;
+         else 
+           var result = FileSystem::find_in_path (fname, path);
+           //match result with
+           //| Some f => println$ "Found in path as " + f;
+           //| #None => println$ "Not found in path " + str path;
+           //endmatch;
+           return result;
+         done
+       done
+     }
+   }
+   
 
 .. code-block:: felix
 
   //[toc_menu.flx]
-include "./toc_menu-interface";
-
-fun setup (config_data:string) = {
-  eprintln$ "Setup toc_menu v1.1 " + config_data;
-  return 0;
-}
-
-var menu_js = """
-<script type="text/javascript">
-
-  function mexpand(id)
-  {
-    var n = document.getElementById(id).style;
-    n.display = "block";
-  }
-
-  function mcollapse(id)
-  {
-    var n = document.getElementById(id).style;
-    n.display = "none";
-  }
-
-  var counter_max = 0;
-  function mshow(id,loc)
-  {
-    var i;
-    for(i=1; i<=counter_max; ++i)
-      mcollapse("menu"+String(i));
-    mexpand(id);
-    window.location.replace(loc);
-  }
-</script>
-""";
-
-var menu_style = """
-<style>
-div.m {
-    margin: 0px;
-    padding:0px;
-    border-width:2px;
-    border-color: green;
-}
-
-div.m1 {
-    background-color: #86E870;
-    border-style:outset;
-    border-color:#ccc;
-    border-width:2px 0;
-    font-size:90%;
-    padding: 1px 0 2px 10px;
-}
-
-div.m2 {
-    background-color: #70C070;
-    padding-left:15px;
-    padding-top:2px;
-    border-style:outset;
-    border-color:green;
-    border-width:0 0 1px 0;
-    font-size:80%;
-}
-
-div.m1:hover, div.m2:hover {
-    background-color: white;
-}
-
-#leftmargintoc a {
-    text-decoration: none;
-    color: #404040;
-}
-
-
-</style>
-""";
-
-fun escape_sp(h: string) => map (fun (c: char) => if c == ' ' then '_'.char else c) h;
-
-
-object toc_menu (h:list[int * string * string]) implements toc_menu_interface =
-{
-  method fun whatami () => "toc_menu maker";
-  method fun get_style () => menu_style;
-  method fun get_js() => menu_js;
-  method fun make_menu() =
-  {
-    // LEFT MARGIN
-    var leftcontent ='  <!--Left Margin Toc-->\n';
-      leftcontent +='  <div id="leftmargintoc">\n';
-
-      // Contents body
-        leftcontent+='    <!--Left Margin Toc Main Contents-->\n';
-
-        proc head1(level:int, text:string, link:string) {
-          leftcontent+= """      <div class=m1 onclick="mshow('menu"""+ counter.str+"""','"""+link+"""')"> """;
-          leftcontent+= '''<a href="'''+escape_sp(link)+'''">''';
-          leftcontent+= text + "</a></div>\n";
-          leftcontent+= """      <div class=sm id=menu"""+counter.str+""">\n""";
-        }
-        proc foot1() { leftcontent+="      </div>\n"; }
-        proc break1(level:int, text:string,link:string) {foot1(); ++counter; head1(level,text,link); }
-
-        var counter = 0;
-        iter proc (level:int,text:string, link:string)
-          {
-            //println$ i,s;
-            if level == 1 do // first level meny entry
-              if counter == 0 do ++counter; head1 (level, text, link);
-              else break1 (level,text,link);
-              done
-            elif level == 2 do // second level menu entry
-              leftcontent+="      <div class=m2>";
-              leftcontent+='''<a href="'''+escape_sp(link)+'''">'''+text+'''</a></div>\n''';
-            done
-          }
-          h
-        ;
-        if counter >= 1 do  foot1; done;
-        leftcontent+="    <script>counter_max="+counter.str+";</script>\n";
-
-      leftcontent+='  </div>\n'; // leftmargintoc end
-      leftcontent+='  <!--End Left Margin Toc-->\n';
-    return leftcontent;
-  }
-
-}
-
-export fun setup of (string) as "toc_menu_setup";
-export fun toc_menu of (list[int * string * string]) as "toc_menu";
-
+   include "./toc_menu-interface";
+   
+   fun setup (config_data:string) = {
+     eprintln$ "Setup toc_menu v1.1 " + config_data;
+     return 0;
+   }
+   
+   var menu_js = """
+   <script type="text/javascript">
+   
+     function mexpand(id)
+     {
+       var n = document.getElementById(id).style;
+       n.display = "block";
+     }
+   
+     function mcollapse(id)
+     {
+       var n = document.getElementById(id).style;
+       n.display = "none";
+     }
+   
+     var counter_max = 0;
+     function mshow(id,loc)
+     {
+       var i;
+       for(i=1; i<=counter_max; ++i)
+         mcollapse("menu"+String(i));
+       mexpand(id);
+       window.location.replace(loc);
+     }
+   </script>
+   """;
+   
+   var menu_style = """
+   <style>
+   div.m {
+       margin: 0px;
+       padding:0px;
+       border-width:2px;
+       border-color: green;
+   }
+   
+   div.m1 {
+       background-color: #86E870;
+       border-style:outset;
+       border-color:#ccc;
+       border-width:2px 0;
+       font-size:90%;
+       padding: 1px 0 2px 10px;
+   }
+   
+   div.m2 {
+       background-color: #70C070;
+       padding-left:15px;
+       padding-top:2px;
+       border-style:outset;
+       border-color:green;
+       border-width:0 0 1px 0;
+       font-size:80%;
+   }
+   
+   div.m1:hover, div.m2:hover {
+       background-color: white;
+   }
+   
+   #leftmargintoc a {
+       text-decoration: none;
+       color: #404040;
+   }
+   
+   
+   </style>
+   """;
+   
+   fun escape_sp(h: string) => map (fun (c: char) => if c == ' ' then '_'.char else c) h;
+   
+   
+   object toc_menu (h:list[int * string * string]) implements toc_menu_interface =
+   {
+     method fun whatami () => "toc_menu maker";
+     method fun get_style () => menu_style;
+     method fun get_js() => menu_js;
+     method fun make_menu() =
+     {
+       // LEFT MARGIN
+       var leftcontent ='  <!--Left Margin Toc-->\n';
+         leftcontent +='  <div id="leftmargintoc">\n';
+   
+         // Contents body
+           leftcontent+='    <!--Left Margin Toc Main Contents-->\n';
+   
+           proc head1(level:int, text:string, link:string) {
+             leftcontent+= """      <div class=m1 onclick="mshow('menu"""+ counter.str+"""','"""+link+"""')"> """;
+             leftcontent+= '''<a href="'''+escape_sp(link)+'''">''';
+             leftcontent+= text + "</a></div>\n";
+             leftcontent+= """      <div class=sm id=menu"""+counter.str+""">\n""";
+           }
+           proc foot1() { leftcontent+="      </div>\n"; }
+           proc break1(level:int, text:string,link:string) {foot1(); ++counter; head1(level,text,link); }
+   
+           var counter = 0;
+           iter proc (level:int,text:string, link:string)
+             {
+               //println$ i,s;
+               if level == 1 do // first level meny entry
+                 if counter == 0 do ++counter; head1 (level, text, link);
+                 else break1 (level,text,link);
+                 done
+               elif level == 2 do // second level menu entry
+                 leftcontent+="      <div class=m2>";
+                 leftcontent+='''<a href="'''+escape_sp(link)+'''">'''+text+'''</a></div>\n''';
+               done
+             }
+             h
+           ;
+           if counter >= 1 do  foot1; done;
+           leftcontent+="    <script>counter_max="+counter.str+";</script>\n";
+   
+         leftcontent+='  </div>\n'; // leftmargintoc end
+         leftcontent+='  <!--End Left Margin Toc-->\n';
+       return leftcontent;
+     }
+   
+   }
+   
+   export fun setup of (string) as "toc_menu_setup";
+   export fun toc_menu of (list[int * string * string]) as "toc_menu";
+   
 

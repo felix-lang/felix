@@ -25,89 +25,89 @@ Generic Serialisation
 .. code-block:: cpp
 
   //[flx_serialisers.hpp]
-#ifndef __FLX_SERIALISERS_HPP__
-#define __FLX_SERIALISERS_HPP__
-
-#include "flx_gc.hpp"
-namespace flx { namespace gc { namespace generic {
-GC_EXTERN encoder_t string_encoder;
-GC_EXTERN decoder_t string_decoder;
-
-GC_EXTERN ::std::string blit (void *, size_t);
-GC_EXTERN size_t unblit (void *, size_t, char*, size_t);
-
-GC_EXTERN ::std::string string_blit (::std::string const&);
-
-template<class T> 
-::std::string tblit(void *p) 
-{
-  return blit (p, sizeof(T));
-}
-
-template<class T> 
-size_t tunblit(void *p, char *s, size_t i) 
-{
-  return unblit (p, sizeof(T), s, i);
-}
-
-
-}}}
-
-#endif
-
+   #ifndef __FLX_SERIALISERS_HPP__
+   #define __FLX_SERIALISERS_HPP__
+   
+   #include "flx_gc.hpp"
+   namespace flx { namespace gc { namespace generic {
+   GC_EXTERN encoder_t string_encoder;
+   GC_EXTERN decoder_t string_decoder;
+   
+   GC_EXTERN ::std::string blit (void *, size_t);
+   GC_EXTERN size_t unblit (void *, size_t, char*, size_t);
+   
+   GC_EXTERN ::std::string string_blit (::std::string const&);
+   
+   template<class T> 
+   ::std::string tblit(void *p) 
+   {
+     return blit (p, sizeof(T));
+   }
+   
+   template<class T> 
+   size_t tunblit(void *p, char *s, size_t i) 
+   {
+     return unblit (p, sizeof(T), s, i);
+   }
+   
+   
+   }}}
+   
+   #endif
+   
 
 
 .. code-block:: cpp
 
   //[flx_serialisers.cpp]
-#include "flx_serialisers.hpp"
-#include <string>
-#include <cstring>
-#include <cstddef>
-
-namespace flx { namespace gc { namespace generic {
-
-// This is an encoder for a primitive string.
-::std::string string_encoder (void *p)
-{
-  return *(::std::string*)p;
-}
-
-// This is NOT an encoder. It's a utility wrapper which
-// takes a variable length string and returns another
-// string prefixed by the length.
-//
-// This function is applied to all user defined encoders,
-// to get a length managed serialisation.
-::std::string string_blit (::std::string const &s) 
-{
-  ::std::size_t n = s.size();
-  ::std::string b = blit (&n, sizeof(::std::size_t));
-  b+=s;
-  return b;
-}
-
-// This is a utility for encoding a pod of size n.
-// We don't need a length because it is statically known.
-::std::string blit (void *p, ::std::size_t n) {
-  return ::std::string((char*)p,n);
-}
-
-::std::size_t string_decoder (void *p, char *s, ::std::size_t i)
-{
-   ::std::size_t n;
-   ::std::memcpy (&n,s + i,sizeof(::std::size_t));
-   new (p) ::std::string(s+i+sizeof(::std::size_t), n);
-   return i + sizeof(::std::size_t) + n;
-}
-
-::std::size_t unblit (void *p, ::std::size_t n, char *s, ::std::size_t i)
-{
-  ::std::memcpy (p,s+i,n);
-  return i + n;
-}
-
-}}}
+   #include "flx_serialisers.hpp"
+   #include <string>
+   #include <cstring>
+   #include <cstddef>
+   
+   namespace flx { namespace gc { namespace generic {
+   
+   // This is an encoder for a primitive string.
+   ::std::string string_encoder (void *p)
+   {
+     return *(::std::string*)p;
+   }
+   
+   // This is NOT an encoder. It's a utility wrapper which
+   // takes a variable length string and returns another
+   // string prefixed by the length.
+   //
+   // This function is applied to all user defined encoders,
+   // to get a length managed serialisation.
+   ::std::string string_blit (::std::string const &s) 
+   {
+     ::std::size_t n = s.size();
+     ::std::string b = blit (&n, sizeof(::std::size_t));
+     b+=s;
+     return b;
+   }
+   
+   // This is a utility for encoding a pod of size n.
+   // We don't need a length because it is statically known.
+   ::std::string blit (void *p, ::std::size_t n) {
+     return ::std::string((char*)p,n);
+   }
+   
+   ::std::size_t string_decoder (void *p, char *s, ::std::size_t i)
+   {
+      ::std::size_t n;
+      ::std::memcpy (&n,s + i,sizeof(::std::size_t));
+      new (p) ::std::string(s+i+sizeof(::std::size_t), n);
+      return i + sizeof(::std::size_t) + n;
+   }
+   
+   ::std::size_t unblit (void *p, ::std::size_t n, char *s, ::std::size_t i)
+   {
+     ::std::memcpy (p,s+i,n);
+     return i + n;
+   }
+   
+   }}}
 
 
 
@@ -118,76 +118,76 @@ Judy Serialisers
 .. code-block:: cpp
 
   //[flx_judy_scanner.hpp]
-#include "flx_gc.hpp"
-
-namespace flx { namespace gc { namespace generic {
-GC_EXTERN scanner_t Judy1_scanner;
-GC_EXTERN scanner_t JudyL_scanner;
-GC_EXTERN scanner_t JudySL_scanner;
-}}}
-
+   #include "flx_gc.hpp"
+   
+   namespace flx { namespace gc { namespace generic {
+   GC_EXTERN scanner_t Judy1_scanner;
+   GC_EXTERN scanner_t JudyL_scanner;
+   GC_EXTERN scanner_t JudySL_scanner;
+   }}}
+   
 
 .. code-block:: cpp
 
   //[flx_judy_scanner.cpp]
-#include "flx_judy_scanner.hpp"
-#include <Judy.h>
-
-namespace flx { namespace gc { namespace generic {
-
-void *Judy1_scanner(collector_t *collector, gc_shape_t *shape, void *pp, size_t dyncount, int reclimit)
-{
-  void *p = *(void**)pp;
-  //printf("Scanning judy1 array %p->%p\n", pp, p);
-  JError_t je;
-  Word_t key = 0;
-  int res = Judy1First(p, &key, &je);
-  while(res) {
-    //printf("Judy1 scanning p=%p\n",key); 
-    collector->register_pointer((void*)key,reclimit);
-    res = Judy1Next(p,&key, &je);
-  }
-  return 0;
-}
-
-void *JudyL_scanner(collector_t *collector, gc_shape_t *shape, void *pp, size_t dyncount, int reclimit)
-{
-  void *p = *(void**)pp;
-  //printf("Scanning judyL array %p->%p\n", pp, p);
-  JError_t je;
-  Word_t key = 0;
-  Word_t *pval = 0;
-  pval = (Word_t*)JudyLFirst(p, &key, &je);
-  while(pval) {
-    //printf("JudyL scanning p=%p\n",key); 
-    collector->register_pointer((void*)key,reclimit);
-    //printf("JudyL scanning p=%p\n",key); 
-    collector->register_pointer((void*)*pval,reclimit);
-    pval = (Word_t*)JudyLNext(p, &key, &je);
-  }
-  return 0;
-}
-
-void *JudySL_scanner(collector_t *collector, gc_shape_t *shape, void *pp, size_t dyncount, int reclimit)
-{
-  void *p = *(void**)pp;
-  //fprintf(stderr,"Scanning judySL array %p->%p\n", pp, p);
-  JError_t je;
-  unsigned char *key = (unsigned char*)::std::malloc(10000); // HACK
-  *key = 0;
-  Word_t *pval = 0;
-  pval = (Word_t*)JudySLFirst(p, key, &je);
-  while(pval) {
-    //printf("JudyL scanning p=%s, v=%p\n",key,*pval); 
-    collector->register_pointer((void*)*pval,reclimit);
-    pval = (Word_t*)JudySLNext(p, key, &je);
-  }
-  ::std::free(key);
-  return 0;
-}
-
-
-}}} // end namespaces
+   #include "flx_judy_scanner.hpp"
+   #include <Judy.h>
+   
+   namespace flx { namespace gc { namespace generic {
+   
+   void *Judy1_scanner(collector_t *collector, gc_shape_t *shape, void *pp, size_t dyncount, int reclimit)
+   {
+     void *p = *(void**)pp;
+     //printf("Scanning judy1 array %p->%p\n", pp, p);
+     JError_t je;
+     Word_t key = 0;
+     int res = Judy1First(p, &key, &je);
+     while(res) {
+       //printf("Judy1 scanning p=%p\n",key); 
+       collector->register_pointer((void*)key,reclimit);
+       res = Judy1Next(p,&key, &je);
+     }
+     return 0;
+   }
+   
+   void *JudyL_scanner(collector_t *collector, gc_shape_t *shape, void *pp, size_t dyncount, int reclimit)
+   {
+     void *p = *(void**)pp;
+     //printf("Scanning judyL array %p->%p\n", pp, p);
+     JError_t je;
+     Word_t key = 0;
+     Word_t *pval = 0;
+     pval = (Word_t*)JudyLFirst(p, &key, &je);
+     while(pval) {
+       //printf("JudyL scanning p=%p\n",key); 
+       collector->register_pointer((void*)key,reclimit);
+       //printf("JudyL scanning p=%p\n",key); 
+       collector->register_pointer((void*)*pval,reclimit);
+       pval = (Word_t*)JudyLNext(p, &key, &je);
+     }
+     return 0;
+   }
+   
+   void *JudySL_scanner(collector_t *collector, gc_shape_t *shape, void *pp, size_t dyncount, int reclimit)
+   {
+     void *p = *(void**)pp;
+     //fprintf(stderr,"Scanning judySL array %p->%p\n", pp, p);
+     JError_t je;
+     unsigned char *key = (unsigned char*)::std::malloc(10000); // HACK
+     *key = 0;
+     Word_t *pval = 0;
+     pval = (Word_t*)JudySLFirst(p, key, &je);
+     while(pval) {
+       //printf("JudyL scanning p=%s, v=%p\n",key,*pval); 
+       collector->register_pointer((void*)*pval,reclimit);
+       pval = (Word_t*)JudySLNext(p, key, &je);
+     }
+     ::std::free(key);
+     return 0;
+   }
+   
+   
+   }}} // end namespaces
 
 
 Serialisation functions
@@ -197,292 +197,292 @@ Serialisation functions
 .. code-block:: felix
 
   //[serialise.flx]
-class Serialise 
-{
-  open Collector;
-  open Rtti;
-  open Judy;
-
-  //$ Encode binary image of a type, without length.
-  fun blit[T] (p: &T) => string ( C_hack::cast[+char] p, C_hack::sizeof[T]);
-  fun ncode [T] (var v: T) => blit &v;
-
-  //$ Decode a type
-  gen unblit[T] (p: &T, s: +char, i:size) : size = 
-  {
-     Memory::memcpy(p.address,(s+i).address,C_hack::sizeof[T]);
-     return i + C_hack::sizeof[T];
-  } 
-  
-  // Despite the name this is the general heap object encoder
-  // sans pointers and head adjustment.
-  fun encode_varray (p:address) : string =
-  {
-    var pd = Collector::get_pointer_data p;
-    assert pd.is_felix_pointer;
-    var shape = pd.shape;
-
-    var has_encoder = not shape.encoder.C_hack::cast[address].isNULL;
-    var has_pointers = shape._unsafe_n_offsets == 0uz;
-
-    // write shape
-    var out = ncode shape;
-
-    // write head pointer
-    out += ncode pd.head;
-
-    // write max slots
-    out += ncode pd.max_elements;
-  
-    // write used slots
-    out += ncode pd.used_elements;
-
-    assert has_encoder;
-    var dynamic_slot_size = shape.bytes_per_element * shape.number_of_elements;
-    for var i:size in 0uz upto pd.used_elements.size  - 1uz do
-      // write out each encoded value 
-      out += shape.encoder (pd.head + i * dynamic_slot_size);
-    done
-    return out;
-  }
-
-  fun find_pointers (p:address) : list[address] =
-  {
-    //println$ "Find pointers for object " + p.str;
-    var pd = Collector::get_pointer_data p;
-    if not pd.is_felix_pointer do
-      //println$ "Not Felix pointer";
-      return Empty[address];
-    done
-    //Collector::print_pointer_data pd;
-    var shape = pd.shape;
-    var head = pd.head;
-    var n_offsets = shape.Rtti::n_offsets;
-    //println$ "Number of offsets " + n_offsets.str;
-    var pointers = Empty[address];
-    if n_offsets > 0uz do
-      var offsets = shape.Rtti::offsets;
-      var repeat_count = pd.used_elements.size * shape.number_of_elements;
-      var element_size = shape.bytes_per_element;
-      for var sindex in 0uz upto repeat_count - 1uz do
-        for var oindex in 0uz upto n_offsets - 1uz do
-          var bindex = sindex * element_size + *(offsets+oindex);
-          var ptr = *((head + bindex).C_hack::cast[&address]);
-          pointers = Cons (ptr, pointers);
-        done
-      done
-    done
-    return pointers;
-  }
-
-  // data structure to represent pointer closure
-  struct pclosure 
-  {
-     processed: J1Array;
-     waiting: J1Array;
-  };
-
-  // initially empty
-  ctor pclosure () => pclosure (#J1Array, #J1Array);
-
-  // add a pointer to the waiting set,
-  // provided it isn't already processed or waiting
-  proc add_pointer (self: &pclosure) (p:address) 
-  {
-    var pd = Collector::get_pointer_data p;
-    if pd.is_felix_pointer do 
-      var je : JError_t;
-      var ret : int;
-      var w = pd.head.Judy::word;
-      if not (w \in self*.processed or w \in self*.waiting) do
-        Judy1Set (self*.waiting, w, &je, &ret);
-      done
-    done
-  }
-
-  // get a pointer from the waiting set, put it in
-  // the processed set, and return it, None if the
-  // waiting set is empty.
-  gen iterator (self: &pclosure) () : opt[address] =
-  {
-    var w: word = 0.word;
-    var je : JError_t;
-    var ret: int;
-    Judy1First(self*.waiting,&w,&je,&ret);
-    if ret == 1 do
-      Judy1Unset(self*.waiting, w, &je, &ret);
-      Judy1Set (self*.processed, w, &je, &ret);
-      return Some w.address;
-    else
-      return None[address];
-    done 
-   }
-
-  fun find_closure (p:address) : list[address] =
-  {
-     var xpc = #pclosure;
-     var pd = Collector::get_pointer_data p;
-     add_pointer &xpc pd.head;
-     for ptr in &xpc do
-       //println$ "Processing pointer " + ptr.str;
-       iter (add_pointer &xpc) (find_pointers ptr);
-     done
-     var lst = list[address] (pd.head);
-     var a: word = 0.word;
-     var ret: int;
-     Judy1First (xpc.processed, &a, &je, &ret);
-     while ret == 1 do
-       if a.address != pd.head do
-         lst = Cons (a.address, lst);
+   class Serialise 
+   {
+     open Collector;
+     open Rtti;
+     open Judy;
+   
+     //$ Encode binary image of a type, without length.
+     fun blit[T] (p: &T) => string ( C_hack::cast[+char] p, C_hack::sizeof[T]);
+     fun ncode [T] (var v: T) => blit &v;
+   
+     //$ Decode a type
+     gen unblit[T] (p: &T, s: +char, i:size) : size = 
+     {
+        Memory::memcpy(p.address,(s+i).address,C_hack::sizeof[T]);
+        return i + C_hack::sizeof[T];
+     } 
+     
+     // Despite the name this is the general heap object encoder
+     // sans pointers and head adjustment.
+     fun encode_varray (p:address) : string =
+     {
+       var pd = Collector::get_pointer_data p;
+       assert pd.is_felix_pointer;
+       var shape = pd.shape;
+   
+       var has_encoder = not shape.encoder.C_hack::cast[address].isNULL;
+       var has_pointers = shape._unsafe_n_offsets == 0uz;
+   
+       // write shape
+       var out = ncode shape;
+   
+       // write head pointer
+       out += ncode pd.head;
+   
+       // write max slots
+       out += ncode pd.max_elements;
+     
+       // write used slots
+       out += ncode pd.used_elements;
+   
+       assert has_encoder;
+       var dynamic_slot_size = shape.bytes_per_element * shape.number_of_elements;
+       for var i:size in 0uz upto pd.used_elements.size  - 1uz do
+         // write out each encoded value 
+         out += shape.encoder (pd.head + i * dynamic_slot_size);
        done
-       Judy1Next(xpc.processed, &a, &je, &ret);
-     done
-     var w:word;
-     var je:JError_t;
-     Judy1FreeArray (xpc.processed, &je, &w);
-     // pc.waiting should be empty already
-     // original pointer is LAST in the list!
-     return lst;
-  } 
-
-  fun encode_closure (alst:list[address]) : string =
-  {
-    var b = "";
-    iter proc (elt:address) { b+=encode_varray elt; } alst;
-    return b;
-  }
-
-  fun encode_pointer_closure (p:address) =>
-     p.find_closure.encode_closure
-  ;
-
-  gen create_empty_varray : gc_shape_t * size -> address =
-    "(PTF gcp->collector->create_empty_array($1,$2))"
-    requires property "needs_gc"
-  ;
-
-  proc set_used: address * size =
-    "PTF gcp->collector->set_used($1,$2);"
-    requires property "needs_gc"
-  ;
-
-  gen decode_varray (ss:string) : address = 
-  {
-    var s = ss.cstr;
-    var i = 0uz;
-
-    // get header data
-    var shape: gc_shape_t;
-    var head: address;
-    var maxslots : size;
-    var usedslots: size;
-    i = unblit (&shape, s, i);
-    i = unblit (&head, s, i);
-    i = unblit (&maxslots, s, i);
-    i = unblit (&usedslots, s, i);
-    assert not shape.decoder.C_hack::cast[address].isNULL;
-    var dynamic_slot_size = shape.bytes_per_element * shape.number_of_elements;
-    var p = create_empty_varray (shape, maxslots);
-    for var slot in 0uz upto usedslots - 1uz do
-      i = (shape.decoder ( p + slot * dynamic_slot_size, s, i));
-    done
-    set_used (p, usedslots);
-    return p;
-  }
-
-  gen decode_pointer_closure (ss:string) : address =  
-  {
-    // A map from old object head to new head
-    var pmap = #JLArray; 
-    var je : JError_t;
-
-    // create set of objects from serialised data
-    // return a pointer to the last one which is 
-    // assumed to be the root of the closure
-    gen create_objects () : address =
-    {
-      var s = ss.cstr;
-      var n = ss.len;
-      var i = 0uz;
-      var pnew : &word;
-      while i != n do
-        // get header data
-        var shape: gc_shape_t;
-        var head: address;
-        var maxslots : size;
-        var usedslots: size;
-        i = unblit (&shape, s, i);
-        i = unblit (&head, s, i);
-        i = unblit (&maxslots, s, i);
-        i = unblit (&usedslots, s, i);
-        assert not shape.decoder.C_hack::cast[address].isNULL;
-        var dynamic_slot_size = shape.bytes_per_element * shape.number_of_elements;
-        var p = create_empty_varray (shape, maxslots);
-        for var slot in 0uz upto usedslots - 1uz do
-          i = (shape.decoder ( p + slot * dynamic_slot_size, s, i));
+       return out;
+     }
+   
+     fun find_pointers (p:address) : list[address] =
+     {
+       //println$ "Find pointers for object " + p.str;
+       var pd = Collector::get_pointer_data p;
+       if not pd.is_felix_pointer do
+         //println$ "Not Felix pointer";
+         return Empty[address];
+       done
+       //Collector::print_pointer_data pd;
+       var shape = pd.shape;
+       var head = pd.head;
+       var n_offsets = shape.Rtti::n_offsets;
+       //println$ "Number of offsets " + n_offsets.str;
+       var pointers = Empty[address];
+       if n_offsets > 0uz do
+         var offsets = shape.Rtti::offsets;
+         var repeat_count = pd.used_elements.size * shape.number_of_elements;
+         var element_size = shape.bytes_per_element;
+         for var sindex in 0uz upto repeat_count - 1uz do
+           for var oindex in 0uz upto n_offsets - 1uz do
+             var bindex = sindex * element_size + *(offsets+oindex);
+             var ptr = *((head + bindex).C_hack::cast[&address]);
+             pointers = Cons (ptr, pointers);
+           done
+         done
+       done
+       return pointers;
+     }
+   
+     // data structure to represent pointer closure
+     struct pclosure 
+     {
+        processed: J1Array;
+        waiting: J1Array;
+     };
+   
+     // initially empty
+     ctor pclosure () => pclosure (#J1Array, #J1Array);
+   
+     // add a pointer to the waiting set,
+     // provided it isn't already processed or waiting
+     proc add_pointer (self: &pclosure) (p:address) 
+     {
+       var pd = Collector::get_pointer_data p;
+       if pd.is_felix_pointer do 
+         var je : JError_t;
+         var ret : int;
+         var w = pd.head.Judy::word;
+         if not (w \in self*.processed or w \in self*.waiting) do
+           Judy1Set (self*.waiting, w, &je, &ret);
+         done
+       done
+     }
+   
+     // get a pointer from the waiting set, put it in
+     // the processed set, and return it, None if the
+     // waiting set is empty.
+     gen iterator (self: &pclosure) () : opt[address] =
+     {
+       var w: word = 0.word;
+       var je : JError_t;
+       var ret: int;
+       Judy1First(self*.waiting,&w,&je,&ret);
+       if ret == 1 do
+         Judy1Unset(self*.waiting, w, &je, &ret);
+         Judy1Set (self*.processed, w, &je, &ret);
+         return Some w.address;
+       else
+         return None[address];
+       done 
+      }
+   
+     fun find_closure (p:address) : list[address] =
+     {
+        var xpc = #pclosure;
+        var pd = Collector::get_pointer_data p;
+        add_pointer &xpc pd.head;
+        for ptr in &xpc do
+          //println$ "Processing pointer " + ptr.str;
+          iter (add_pointer &xpc) (find_pointers ptr);
         done
-        set_used (p, usedslots);
-
-        JudyLIns(pmap,head.word,&je,&pnew);
-        pnew <- p.word;
-      done
-      return head; // root pointer is last in list!
-    }
-
-    // Adjust a pointer at the given address
-    proc adjust_pointer (pptr:&address) 
-    {
-      var oldptr = *pptr;
-      var oldhead = oldptr.word;
-      var pnew2 : &word;
-      // find the equal or next lowest old object address
-      // and the associated new object address
-      JudyLLast(pmap,&oldhead,&je,&pnew2);
-      if not isNULL pnew2 do
-        var newhead2 = *pnew2;
-        var pd2 = Collector::get_pointer_data newhead2.address;
-        var nbytes = pd2.shape.bytes_per_element * pd2.max_elements.size * pd2.shape.number_of_elements;
-        if oldptr < oldhead.address + nbytes do
-           pptr <- newhead2.address + (oldptr - oldhead.address);
-        done
-      done
-    }
-
-    // Adjust all the pointers in one of the new objects
-    proc adjust_all_pointers (newhead:address)
-    {
-      var pd = Collector::get_pointer_data newhead;
-      var shape = pd.shape;
-      var head = pd.head;
-      var n_offsets = shape.Rtti::n_offsets;
-      //println$ "Number of offsets " + n_offsets.str;
-      if n_offsets > 0uz do
-        var offsets = shape.Rtti::offsets;
-        var repeat_count = pd.used_elements.size * shape.number_of_elements;
-        var element_size = shape.bytes_per_element;
-        for var sindex in 0uz upto repeat_count - 1uz do
-          for var oindex in 0uz upto n_offsets - 1uz do
-            var bindex = sindex * element_size + *(offsets+oindex);
-            var pptr = ((head + bindex).C_hack::cast[&address]);
-            adjust_pointer (pptr);
+        var lst = list[address] (pd.head);
+        var a: word = 0.word;
+        var ret: int;
+        Judy1First (xpc.processed, &a, &je, &ret);
+        while ret == 1 do
+          if a.address != pd.head do
+            lst = Cons (a.address, lst);
           done
+          Judy1Next(xpc.processed, &a, &je, &ret);
         done
-      done
-    }
-
-    var rootp = create_objects();
-
-    // Adjust all the pointers in all of the new objects
-    var old : word = 0.word;
-    var pnew : &word;
-    JudyLFirst(pmap, &old, &je, &pnew);
-    while not (isNULL pnew) do
-      var newhead = (*pnew).address;
-      adjust_all_pointers (newhead);
-      JudyLNext(pmap, &old, &je, &pnew);
-    done
-    return rootp;
-  }
-}
-
+        var w:word;
+        var je:JError_t;
+        Judy1FreeArray (xpc.processed, &je, &w);
+        // pc.waiting should be empty already
+        // original pointer is LAST in the list!
+        return lst;
+     } 
+   
+     fun encode_closure (alst:list[address]) : string =
+     {
+       var b = "";
+       iter proc (elt:address) { b+=encode_varray elt; } alst;
+       return b;
+     }
+   
+     fun encode_pointer_closure (p:address) =>
+        p.find_closure.encode_closure
+     ;
+   
+     gen create_empty_varray : gc_shape_t * size -> address =
+       "(PTF gcp->collector->create_empty_array($1,$2))"
+       requires property "needs_gc"
+     ;
+   
+     proc set_used: address * size =
+       "PTF gcp->collector->set_used($1,$2);"
+       requires property "needs_gc"
+     ;
+   
+     gen decode_varray (ss:string) : address = 
+     {
+       var s = ss.cstr;
+       var i = 0uz;
+   
+       // get header data
+       var shape: gc_shape_t;
+       var head: address;
+       var maxslots : size;
+       var usedslots: size;
+       i = unblit (&shape, s, i);
+       i = unblit (&head, s, i);
+       i = unblit (&maxslots, s, i);
+       i = unblit (&usedslots, s, i);
+       assert not shape.decoder.C_hack::cast[address].isNULL;
+       var dynamic_slot_size = shape.bytes_per_element * shape.number_of_elements;
+       var p = create_empty_varray (shape, maxslots);
+       for var slot in 0uz upto usedslots - 1uz do
+         i = (shape.decoder ( p + slot * dynamic_slot_size, s, i));
+       done
+       set_used (p, usedslots);
+       return p;
+     }
+   
+     gen decode_pointer_closure (ss:string) : address =  
+     {
+       // A map from old object head to new head
+       var pmap = #JLArray; 
+       var je : JError_t;
+   
+       // create set of objects from serialised data
+       // return a pointer to the last one which is 
+       // assumed to be the root of the closure
+       gen create_objects () : address =
+       {
+         var s = ss.cstr;
+         var n = ss.len;
+         var i = 0uz;
+         var pnew : &word;
+         while i != n do
+           // get header data
+           var shape: gc_shape_t;
+           var head: address;
+           var maxslots : size;
+           var usedslots: size;
+           i = unblit (&shape, s, i);
+           i = unblit (&head, s, i);
+           i = unblit (&maxslots, s, i);
+           i = unblit (&usedslots, s, i);
+           assert not shape.decoder.C_hack::cast[address].isNULL;
+           var dynamic_slot_size = shape.bytes_per_element * shape.number_of_elements;
+           var p = create_empty_varray (shape, maxslots);
+           for var slot in 0uz upto usedslots - 1uz do
+             i = (shape.decoder ( p + slot * dynamic_slot_size, s, i));
+           done
+           set_used (p, usedslots);
+   
+           JudyLIns(pmap,head.word,&je,&pnew);
+           pnew <- p.word;
+         done
+         return head; // root pointer is last in list!
+       }
+   
+       // Adjust a pointer at the given address
+       proc adjust_pointer (pptr:&address) 
+       {
+         var oldptr = *pptr;
+         var oldhead = oldptr.word;
+         var pnew2 : &word;
+         // find the equal or next lowest old object address
+         // and the associated new object address
+         JudyLLast(pmap,&oldhead,&je,&pnew2);
+         if not isNULL pnew2 do
+           var newhead2 = *pnew2;
+           var pd2 = Collector::get_pointer_data newhead2.address;
+           var nbytes = pd2.shape.bytes_per_element * pd2.max_elements.size * pd2.shape.number_of_elements;
+           if oldptr < oldhead.address + nbytes do
+              pptr <- newhead2.address + (oldptr - oldhead.address);
+           done
+         done
+       }
+   
+       // Adjust all the pointers in one of the new objects
+       proc adjust_all_pointers (newhead:address)
+       {
+         var pd = Collector::get_pointer_data newhead;
+         var shape = pd.shape;
+         var head = pd.head;
+         var n_offsets = shape.Rtti::n_offsets;
+         //println$ "Number of offsets " + n_offsets.str;
+         if n_offsets > 0uz do
+           var offsets = shape.Rtti::offsets;
+           var repeat_count = pd.used_elements.size * shape.number_of_elements;
+           var element_size = shape.bytes_per_element;
+           for var sindex in 0uz upto repeat_count - 1uz do
+             for var oindex in 0uz upto n_offsets - 1uz do
+               var bindex = sindex * element_size + *(offsets+oindex);
+               var pptr = ((head + bindex).C_hack::cast[&address]);
+               adjust_pointer (pptr);
+             done
+           done
+         done
+       }
+   
+       var rootp = create_objects();
+   
+       // Adjust all the pointers in all of the new objects
+       var old : word = 0.word;
+       var pnew : &word;
+       JudyLFirst(pmap, &old, &je, &pnew);
+       while not (isNULL pnew) do
+         var newhead = (*pnew).address;
+         adjust_all_pointers (newhead);
+         JudyLNext(pmap, &old, &je, &pnew);
+       done
+       return rootp;
+     }
+   }
+   
 

@@ -513,8 +513,7 @@ fun process_file (f: string): string =
         done
         println$ tabline;
         mode = (#`Doc) :>> mode_t;
-      | _ => 
-        mode = (#`Doc) :>> mode_t;
+      | _ => ;
       endmatch;
     endmatch;
 

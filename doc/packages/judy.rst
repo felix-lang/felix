@@ -21,17 +21,17 @@ Judy Builder
 .. code-block:: python
 
   #[judy.py]
-import fbuild
-import fbuild.db
-from fbuild.builders.file import copy, copy_regex
-from fbuild.path import Path
-from fbuild.record import Record
-
-import buildsystem
-from buildsystem.config import config_call
-
-# ------------------------------------------------------------------------------
-
+   import fbuild
+   import fbuild.db
+   from fbuild.builders.file import copy, copy_regex
+   from fbuild.path import Path
+   from fbuild.record import Record
+   
+   import buildsystem
+   from buildsystem.config import config_call
+   
+   # ------------------------------------------------------------------------------
+   
 def build_judytables(ctx, tablegen:fbuild.db.SRC, dst) -> fbuild.db.DST:
     """Create the judytable generator executable."""
 
@@ -122,47 +122,47 @@ def build_runtime(phase):
 
 .. code-block:: text
 
-Name: Judy
-Description: Judy arrays
-provides_dlib: -ljudy_dynamic
-provides_slib: -ljudy_static
-includes: '"Judy.h"'
-library: judy
-macros: JU_32BIT BUILD_JUDY
-srcdir: src/judy/src
-headers: Judy\.h
-src: (JudyCommon/JudyMalloc|JudySL/.*|JudyHS/.*|Judy1/.*|JudyL/.*)\.c
-build_includes: src/judy/src src/judy/src/Judy1 src/judy/src/JudyL src/judy/src/JudyHS src/judy/src/JudyCommon
+   Name: Judy
+   Description: Judy arrays
+   provides_dlib: -ljudy_dynamic
+   provides_slib: -ljudy_static
+   includes: '"Judy.h"'
+   library: judy
+   macros: JU_32BIT BUILD_JUDY
+   srcdir: src/judy/src
+   headers: Judy\.h
+   src: (JudyCommon/JudyMalloc|JudySL/.*|JudyHS/.*|Judy1/.*|JudyL/.*)\.c
+   build_includes: src/judy/src src/judy/src/Judy1 src/judy/src/JudyL src/judy/src/JudyHS src/judy/src/JudyCommon
 
 
 .. code-block:: text
 
-Name: Judy
-Description: Judy arrays
-provides_dlib: -ljudy_dynamic
-provides_slib: -ljudy_static
-includes: '"Judy.h"'
-library: judy
-macros: JU_64BIT BUILD_JUDY
-srcdir: src/judy/src
-headers: Judy\.h
-src: (JudyCommon/JudyMalloc|JudySL/.*|JudyHS/.*|Judy1/.*|JudyL/.*)\.c
-build_includes: src/judy/src src/judy/src/Judy1 src/judy/src/JudyL src/judy/src/JudyHS src/judy/src/JudyCommon
+   Name: Judy
+   Description: Judy arrays
+   provides_dlib: -ljudy_dynamic
+   provides_slib: -ljudy_static
+   includes: '"Judy.h"'
+   library: judy
+   macros: JU_64BIT BUILD_JUDY
+   srcdir: src/judy/src
+   headers: Judy\.h
+   src: (JudyCommon/JudyMalloc|JudySL/.*|JudyHS/.*|Judy1/.*|JudyL/.*)\.c
+   build_includes: src/judy/src src/judy/src/Judy1 src/judy/src/JudyL src/judy/src/JudyHS src/judy/src/JudyCommon
 
 
 .. code-block:: text
 
-Name: Judy WIN32 64 BIT
-Description: Judy arrays
-provides_dlib: /DEFAULTLIB:judy_dynamic
-provides_slib: /DEFAULTLIB:judy_static
-includes "Judy.h"
-library: judy
-macros: JU_64BIT BUILD_JUDY
-srcdir: src\judy\src
-headers: Judy\.h
-src: (JudyCommon\\JudyMalloc|JudySL\\.*|JudyHS\\.*|Judy1\\.*|JudyL\\.*)\.c
-build_includes: src\judy\src src\judy\src\Judy1 src\judy\src\JudyL src\judy\src\JudyHS src\judy\src\JudyCommon
+   Name: Judy WIN32 64 BIT
+   Description: Judy arrays
+   provides_dlib: /DEFAULTLIB:judy_dynamic
+   provides_slib: /DEFAULTLIB:judy_static
+   includes "Judy.h"
+   library: judy
+   macros: JU_64BIT BUILD_JUDY
+   srcdir: src\judy\src
+   headers: Judy\.h
+   src: (JudyCommon\\JudyMalloc|JudySL\\.*|JudyHS\\.*|Judy1\\.*|JudyL\\.*)\.c
+   build_includes: src\judy\src src\judy\src\Judy1 src\judy\src\JudyL src\judy\src\JudyHS src\judy\src\JudyCommon
 
 
 
