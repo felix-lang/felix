@@ -50,6 +50,9 @@ Overloading
 -----------
 
 .. index:: overloading
+.. index:: 
+   pair: direct; application
+   pair: indirect; application
 
 There are two kinds of application: a *direct* application and an *indirect*
 application. A direct application is the most common kind and involves
