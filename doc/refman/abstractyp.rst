@@ -1,3 +1,5 @@
+.. index:: type, abstract
+
 Abstract Types
 ==============
 
@@ -30,6 +32,7 @@ of `Darray`:
     ...
   }
 
+.. index:: _repr_; _make_LHS
 An abstract type is defined in a class by its representation as a new type
 based on an old one by using the `type LHS = new RHS;` construction.
 The LHS type is the abstract type and the RHS is its representation.
