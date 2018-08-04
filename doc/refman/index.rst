@@ -18,7 +18,6 @@ Contents:
    definitions
    exprsyn
    patterns
-   control 
    statements
    algebra
    datatypes
