@@ -448,13 +448,13 @@ with specified heading and pattern match.
   regdef any_r = perl(".*"); 
   regdef cmd_r = "@" group(cmd_name_r) spc_r group(any_r);
   regdef tangler_r = "@tangler" spc_r group(fkey_r) spc_r  "=" spc_r group(any_r);
-  regdef url_r = group(any_r) '<a href="' group(any_r) ">" group(any_r) "</a>" group(any_r);
+  regdef url_r = group(any_r) '<a href="' group(any_r) '">' group(any_r) "</a>" group(any_r);
   
   var cmd_R = RE2 (render cmd_r);
   var tangler_R = RE2 (render tangler_r);
   var url_R = RE2 (render url_r);
   
-  typedef markup_t = (`Txt | `At | `Code);
+  typedef markup_t = (`Txt | `At | `Code | `Slosh | `Math | `MathSlosh);
   fun code_fixer (a:string): string =
   {
     var out = "";
@@ -464,9 +464,34 @@ with specified heading and pattern match.
       | `Txt =>
         if ch == char "@" do 
           mode = (#`At) :>> markup_t;
+        elif ch == char "\\" do
+          mode = (#`Slosh) :>> markup_t;
         else
           out += ch;
         done
+  
+      | `Slosh =>
+        if ch == char "(" do
+          mode = (#`Math) :>> markup_t;
+          out += ":math:`";
+        else
+          out += "\\" + ch;
+          mode = (#`Txt) :>> markup_t;
+        done
+      | `Math =>
+        if ch == char "\\" do
+          mode = (#`MathSlosh) :>> markup_t;
+        else
+          out+= ch;
+        done
+  
+      | `MathSlosh =>
+         if ch == ")" do
+           out+="` ";
+           mode = (#`Txt) :>> markup_t;
+         else
+           out+="\\" + ch;
+         done
   
       | `At =>
         if ch == char "{" do

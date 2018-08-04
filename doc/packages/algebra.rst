@@ -136,16 +136,16 @@ strategies, tactics and hints.
 Sets.
 =====
 
-A <em>set</em> is any type with a membership predicate \(\in\)
+A <em>set</em> is any type with a membership predicate :math:`\i\n\\` 
 spelled  :code:`\in`. You can also use function  :code:`mem`. The parser
 also maps  :code:`in` to operator  :code:`\in`.
 
-We also provide a reversed form \(\owns\) spelled  :code:`\owns`,
-and negated forms \(ni\) spelled  :code:`\ni` or  :code:`\notin`.
+We also provide a reversed form :math:`\o\w\n\s\\`  spelled  :code:`\owns`,
+and negated forms :math:`ni`  spelled  :code:`\ni` or  :code:`\notin`.
 
-Three combinators are provided as well, \(\cap\) spelled  :code:`cap`
-provides intersection, \(\cup\) spelled  :code:`\cup` provides
-the usual set union, and \(\setminus\) spelled  :code:`\setminus`
+Three combinators are provided as well, :math:`\c\a\p\\`  spelled  :code:`cap`
+provides intersection, :math:`\c\u\p\\`  spelled  :code:`\cup` provides
+the usual set union, and :math:`\s\e\t\m\i\n\u\s\\`  spelled  :code:`\setminus`
 the asymmetic set difference or subtraction.
 
 Note that sets are not necessarily finite.
@@ -240,9 +240,9 @@ Cartesian Product of set_forms.
 
 This uses some advanced instantiation technology
 to allow you to define the cartesian product of a
-sequence of sets using the infix TeX operator \(\otimes\)
+sequence of sets using the infix TeX operator :math:`\o\t\i\m\e\s\\` 
 which is spelled  :code:`\otimes`. There's also a left associative
-binary operator \(\times\) spelled  :code:`\times`.
+binary operator :math:`\t\i\m\e\s\\`  spelled  :code:`\times`.
 
 .. code-block:: felix
 
@@ -290,27 +290,27 @@ Orders
 Equivalence Relation.
 ---------------------
 
-An `equivalence <https://en.wikipedia.org/wiki/Equivalence_relation">`_ relation 
-is a `reflexive <https://en.wikipedia.org/wiki/Reflexive_relation">`_, 
-`symmetric <https://en.wikipedia.org/wiki/Symmetric_relation">`_,
-`transitive <https://en.wikipedia.org/wiki/Transitive_relation">`_
+An `equivalence <https://en.wikipedia.org/wiki/Equivalence_relation>`_ relation 
+is a `reflexive <https://en.wikipedia.org/wiki/Reflexive_relation>`_, 
+`symmetric <https://en.wikipedia.org/wiki/Symmetric_relation>`_,
+`transitive <https://en.wikipedia.org/wiki/Transitive_relation>`_
 relation. It is one of the most fundamental concepts in
-mathematics. One can show that for any set \(S\), for any
-element \(s \in  S\), the subset \(\lbrack s\rbrack\) of \(S\) 
-consisting of all elements equivalent to \(s\) are also
+mathematics. One can show that for any set :math:`S` , for any
+element :math:`s \i\n\ \ \S\\` , the subset :math:`\l\b\r\a\c\k\ \s\\\r\b\r\a\c\k\\`  of :math:`S`  
+consisting of all elements equivalent to :math:`s`  are also
 equivalent to each other, and not equivalent to any other
 element outside that set.
 
-Therefore, every equivalence relation on a set \(S\) specifies 
-a `partition <https://en.wikipedia.org/wiki/Partition_of_a_set">`_ 
-of \(S\) which is a set of subsets of \(S\)
-known as `equivalence classes <https://en.wikipedia.org/wiki/Equivalence_class">`_, 
+Therefore, every equivalence relation on a set :math:`S`  specifies 
+a `partition <https://en.wikipedia.org/wiki/Partition_of_a_set>`_ 
+of :math:`S`  which is a set of subsets of :math:`S` 
+known as `equivalence classes <https://en.wikipedia.org/wiki/Equivalence_class>`_, 
 or just plain classes,
 such that no two classes have a common
 intersection, and the union of the classes spans the whole set.
 
 In other words a partition consists of 
-a `disjoint union <https://en.wikipedia.org/wiki/Disjoint_union">`_
+a `disjoint union <https://en.wikipedia.org/wiki/Disjoint_union>`_
 of subsets.
 
 The most fundamential relation in computing which is required
@@ -320,10 +320,10 @@ a value, but still consider them equal semantically,
 and to provide an operational measure of that equivalence.
 
 As a simple example, consider that the rational numbers
-\(1/2\) and \(2/4\) have distinct encodings but none-the-less
+:math:`1/2`  and :math:`2/4`  have distinct encodings but none-the-less
 are semantically equivalent.
 
-An online reference on `Wikibooks <http://en.wikibooks.org/wiki/Abstract_Algebra/Equivalence_relations_and_congruence_classes">`_
+An online reference on `Wikibooks <http://en.wikibooks.org/wiki/Abstract_Algebra/Equivalence_relations_and_congruence_classes>`_
 
 
 .. code-block:: felix
@@ -367,13 +367,13 @@ Syntax
 Partial Order
 -------------
 
-A proper `partial order <https://en.wikipedia.org/wiki/Partially_ordered_set">`_ 
-\(\subset\) spelled  :code:`\subset`
+A proper `partial order <https://en.wikipedia.org/wiki/Partially_ordered_set>`_ 
+:math:`\s\u\b\s\e\t\\`  spelled  :code:`\subset`
 is a transitive, 
-`antisymmetric <https://en.wikipedia.org/wiki/Antisymmetric_relation">`_ 
-`irreflexive <https://en.wikipedia.org/wiki/Reflexive_relation">`_ relation.
+`antisymmetric <https://en.wikipedia.org/wiki/Antisymmetric_relation>`_ 
+`irreflexive <https://en.wikipedia.org/wiki/Reflexive_relation>`_ relation.
 
-We also provide an improper operator \(\subseteq\) 
+We also provide an improper operator :math:`\s\u\b\s\e\t\e\q\\`  
 spelled  :code:`\subseteq` which is transitive, antisymmetric,
 and reflexive, for which either the partial order
 or equivalence operator  :code:`==` applies.
@@ -441,8 +441,8 @@ Syntax
 Total Order
 -----------
 
-A `total order <https://en.wikipedia.org/wiki/Total_order">`_ is a 
-partial order with a `totality law <https://en.wikipedia.org/wiki/Total_relation">`_.
+A `total order <https://en.wikipedia.org/wiki/Total_order>`_ is a 
+partial order with a `totality law <https://en.wikipedia.org/wiki/Total_relation>`_.
 
 However we do not derive it from our partial order because
 we use different comparison operators. Here we use the
