@@ -1,6 +1,7 @@
 Subroutine Calls
 ================
 
+.. index:: call
 Call
 ----
 
@@ -20,12 +21,14 @@ The word `call` can be elided. If the procedure has a unit
 argument, it can be elided.
 
 
+.. index:: return
 Return
 ------
 
 A plain `return` returns from a procedure.
 An implicit return is added to the end of a procedure.
 
+.. index:: return from
 Return from
 -----------
 
@@ -44,6 +47,7 @@ A `return from` can be used to exit an outer procedure.
      f();
    }
 
+.. index:: jump
 Jump
 ----
 
@@ -55,6 +59,9 @@ by a return.
   proc w() { println$ " World"; }
   proc hw () { println$ "Hello"; jump w(); }
 
+.. index::
+  single:  yield
+  pair: generator; yielding
 Yield
 -----
 
