@@ -1,8 +1,3 @@
-Control Model
-=============
-
-The Felix control model is split into two distinct pieces.
-
 Function Representation
 -----------------------
 
