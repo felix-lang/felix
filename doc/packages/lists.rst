@@ -538,6 +538,8 @@ Concatenate two lists  :code:`join`.
      //$ Concatenate two lists.
      pure fun + [T] (x:list[T], y: list[T]):list[T] => join x y;
    
+     proc += [T] (x:&list[T], y: list[T]) => x <- join (*x) y;
+   
 
 Cons an element onto a list.
 ----------------------------
@@ -561,6 +563,10 @@ O(N) slow.
    
      //$ Append element to tail of list (slow!).
      proc += [T] (x:&list[T], y:T) { x <- *x + y; }
+   
+     //$ Prepend element to head of list (fast!).
+     proc -= [T] (x:&list[T], y:T) { x <- y ! *x; }
+   
    
 
 Outer product.

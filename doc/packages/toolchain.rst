@@ -535,6 +535,23 @@ specification. Used by the flx_build_rtl tool.
        ;
        var toolchain = toolchain-maker config;
        println$ #(toolchain.whatami);
+   
+       // THIS DOES NOT SEEM RIGHT, we're copying headers from share/src
+       // into share/lib/rtl
+       //
+       // previously we copied into host/lib/rtl but that's even wronger
+       // because only calculated configuration headers go there
+       //
+       // the thing is, the share directory is supposed to be read-only,
+       // and the files in it immutable, so the contents should already
+       // have been put there direct from the repository
+       //
+       // of course, for add on packages, share may need updating ..
+       // its all confusing :)
+       //
+       // Leave this in there for now because demux is not actually packaged.
+       // the fbuild process has put stuff in share already though!
+   
        var headers = db.getpkgfielddflt ehandler (pkg,"headers");
        if headers == "" do headers = r".*\.h(pp)?"; println$ "copying all header files"; done
        var hsrc, hdst = "","";
@@ -547,7 +564,7 @@ specification. Used by the flx_build_rtl tool.
    
        if hdst == "" do hdst = "${0}"; done
        println$ "Copying headers " + hsrc + " > " + hdst;
-       CopyFiles::copyfiles (srcpath, hsrc,target_dir/hdst,true, true);
+       CopyFiles::copyfiles (srcpath, hsrc,share_rtl/hdst,true, true);
    
        var pats = db.getpkgfield ehandler (pkg,"src");
        var pat = catmap '|' (fun (x:string)=>"("+x+")") pats;

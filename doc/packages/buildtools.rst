@@ -179,9 +179,14 @@ It is built directly from the repository.
    
        gen ocaml_build(kind:build_kind, dir:string, lib:string, spec:libspec_t) =
        {
-   
+         var safe_string_flag = 
+           if lib == "dypgen.exe" 
+           then "-unsafe-string"
+           else "-safe-string"
+         ;
          println$ "-" * 20;
          println$ "Lib=" + lib + " in " + dir;
+         println$ "Safe-string-flag=" + safe_string_flag;
          println$ "-" * 20;
          //println$ "srcs = \n    " +strcat "\n    " spec.srcs;
          println$ "libs= \n    " + strcat "\n    " spec.libs;
@@ -256,7 +261,7 @@ It is built directly from the repository.
                   "-I",tmpdir, 
                   "-I",tmpdir/dir, 
                   "-I", entmp (Filename::dirname file)) + 
-                  include_flags +
+                  include_flags + safe_string_flag +
                   list("-c", "-w",'yzex','-warn-error',"FPSU",
                   '-o',entmp (Filename::strip_extension file) + ".cmi",
                   file)
@@ -274,7 +279,7 @@ It is built directly from the repository.
                   "-I",tmpdir, 
                   "-I",tmpdir/dir, 
                   "-I", entmp (Filename::dirname file)) +
-                  include_flags +
+                  include_flags + safe_string_flag +
                   list("-c", "-w",'yzex','-warn-error',"FPSU",
                   '-o',entmp (Filename::strip_extension file) + ".cmx",
                   file)
@@ -451,7 +456,7 @@ It is built directly from the repository.
            return ocaml_build_lib(path, 'flx_misc',
                extend #libdflt with (srcs=mls path,
                libs=list[string] (build_flx_version()),
-               external_libs=list[string]('nums', 'str', 'unix')) end);
+               external_libs=list[string]('str', 'unix')) end);
        }
    
        gen build_flx_version_hook() = {
@@ -520,7 +525,7 @@ It is built directly from the repository.
                    build_flx_parse(),
                    build_flx_misc()
                    ),
-               external_libs=list[string]('nums')) end);
+               external_libs=list[string]()) end);
        }
    
        gen build_flx_desugar() = {
@@ -541,7 +546,7 @@ It is built directly from the repository.
                    build_flx_core(),
                    build_flx_version()
                    ),
-               external_libs=list[string]('nums', 'unix')) end);
+               external_libs=list[string]('unix')) end);
        }
    
        gen build_flx_bind() = {
@@ -555,7 +560,7 @@ It is built directly from the repository.
                    build_flx_misc(),
                    build_flx_core(),
                    build_flx_desugar()),
-               external_libs=list[string]('nums')) end);
+               external_libs=list[string]()) end);
        }
    
        gen build_flx_frontend() = {
@@ -620,7 +625,7 @@ It is built directly from the repository.
                    build_flx_core(),
                    build_flx_frontend(),
                    build_flx_backend()),
-               external_libs=list[string]('nums')) end);
+               external_libs=list[string]()) end);
        }
    
        println$ "Build dypgen";
@@ -645,7 +650,7 @@ It is built directly from the repository.
              build_flx_version_hook()
        );
    
-       var external_libs = list('nums.cmxa', 'unix.cmxa', 'str.cmxa');
+       var external_libs = list('unix.cmxa', 'str.cmxa');
        C_hack::ignore$ libs;
        var path ='src'/'compiler'/'flxg';
        var exe = ocaml_build_exe (path,'flxg',

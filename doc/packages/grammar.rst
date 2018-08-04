@@ -1309,6 +1309,7 @@ Executable support
      requires statements;
    
      stmt := "type-error" stmt =># "`(ast_type_error ,_sr ,_2)";
+     stmt := "type-assert" stmt =># "`(ast_type_assert ,_sr ,_2)";
    
      //$ System service call.
      stmt := "_svc" sname =># "`(ast_svc ,_sr ,_2)";
@@ -1371,8 +1372,8 @@ See also other packages containing extensions.
        spower_pri <
        ssuperscript_pri <
        srefr_pri <
-       sapplication_pri <
        scoercion_pri <
+       sapplication_pri <
        sfactor_pri <
        srcompose_pri <
        sthename_pri <
@@ -1450,15 +1451,11 @@ See also other packages containing extensions.
      x[let_pri] := pattern_match =># '_1';
    
    
-     //$ Alternate conditional expression.
-     x[sdollar_apply_pri] := x[stuple_pri] "unless" x[let_pri] "then" x[sdollar_apply_pri] =>#
-       "`(ast_cond ,_sr ((ast_not ,_sr ,_3) ,_1 ,_5))";
-   
      //$ Low precedence right associative application.
-     x[sdollar_apply_pri] := x[stuple_pri] "$" x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
+     x[sdollar_apply_pri] := x[>sdollar_apply_pri] "$" x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
    
      //$ Low precedence left associative reverse application.
-     x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[stuple_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
+     x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[>spipe_apply_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
    
      //$ Haskell-ish style infix notation of functions   foo(x,y) => x `(foo) y
      x[stuple_pri]  := x[stuple_pri] "`(" sexpr ")" sexpr =># " `(ast_apply ,_sr ( ,_3 (,_1 ,_5)))";
@@ -1484,6 +1481,7 @@ See also other packages containing extensions.
      x[sarrow_pri] := ".." x[>sarrow_pri] =># "(prefix 'Slice_to_incl)";
      x[sarrow_pri] := x[>sarrow_pri] ".." =># "(suffix 'Slice_from)";
      x[sarrow_pri] := ".." =># """`(ast_name ,_sr "Slice_all" (,(noi 'int)))""";
+     x[sarrow_pri] := x[>sarrow_pri] ".+" x[>sarrow_pri] =># "(infix 'Slice_from_counted)";
    
    
      // right arrows: RIGHT ASSOCIATIVE!
@@ -1506,28 +1504,37 @@ See also other packages containing extensions.
      //$ Tuple projection function.
      x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri] =># "`(ast_projection ,_2 ,_4)";
    
+     // coarray injection
+     // (ainj (r:>>4) of (4 *+ int)) 42
+     x[scase_literal_pri] := "ainj"  stypeexpr "of" x[ssum_pri] =># "`(ast_ainj ,_sr ,_2 ,_4)";
+   
+     spv_name := "case" sname =># "_2";
+     spv_name := "`" sname =># "_2";
+   
      //$ Variant value.
-     x[scase_literal_pri] := "#" "case" sname =># "`(ast_variant (,_3 ()))";
-     x[scase_literal_pri] := "case" sname x[ssum_pri] =># "`(ast_variant (,_2 ,_3))";
-     x[scase_literal_pri] := "#" "`" sname =># "`(ast_variant (,_3 ()))";
-     x[scase_literal_pri] := "`" sname x[ssum_pri] =># "`(ast_variant (,_2 ,_3))";
+     x[sthename_pri] := "#" spv_name =># "`(ast_variant (,_2 ()))";
+     x[sapplication_pri] := spv_name  x[>sapplication_pri] =># "`(ast_variant (,_1 ,_2))";
    
      //$ multiplication: right associative
      x[sproduct_pri] := x[>sproduct_pri] "\otimes" x[sproduct_pri] =># "(Infix)";
    
+     // repeated sum type, eg 4 *+ int == int + int + int + int
+     // right associative:  2 *+ 3 *+ int is approx 6 *+ int
+     x[sproduct_pri] := x[>sproduct_pri] "*+" x[sproduct_pri] =># "`(ast_rptsum_type ,_sr ,_1 ,_3)";
+   
    //------------------------------------------------------------------------
    
      //$ Prefix exclaim.
-     x[sprefixed_pri] := "!" x[spower_pri] =># "(Prefix)";
+     x[sprefixed_pri] := "!" x[sprefixed_pri] =># "(Prefix)";
    
      //$ Prefix plus.
-     x[sprefixed_pri] := "+" x[spower_pri] =># "(prefix 'prefix_plus)";
+     x[sprefixed_pri] := "+" x[sprefixed_pri] =># "(prefix 'prefix_plus)";
    
      //$ Prefix negation.
-     x[sprefixed_pri] := "-" x[spower_pri] =># "(prefix 'neg)";
+     x[sprefixed_pri] := "-" x[sprefixed_pri] =># "(prefix 'neg)";
    
      //$ Prefix complement.
-     x[sprefixed_pri] := "~" x[spower_pri] =># "(Prefix)";
+     x[sprefixed_pri] := "~" x[sprefixed_pri] =># "(Prefix)";
    
      //$ Fortran power.
      x[spower_pri] := x[ssuperscript_pri] "**" x[sprefixed_pri] =># "(infix 'pow)";
@@ -1552,24 +1559,25 @@ See also other packages containing extensions.
    
    //------------------------------------------------------------------------
      //$ Operator whitespace: application.
-     x[sapplication_pri] := x[sapplication_pri] x[scoercion_pri] =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
+     x[sapplication_pri] := x[sapplication_pri] x[>sapplication_pri] =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
    
      //$ Variant index.
-     x[sapplication_pri] := "caseno" x[scoercion_pri] =># "`(ast_case_index ,_sr ,_2)";
+     x[sapplication_pri] := "caseno" x[>sapplication_pri] =># "`(ast_case_index ,_sr ,_2)";
+     x[sapplication_pri] := "casearg" x[>sapplication_pri] =># "`(ast_rptsum_arg ,_sr ,_2)";
    
      //$ Optimisation hint: likely.
      //$ Use in conditionals, e.g. if likely(x) do ...
-     x[sapplication_pri] := "likely" x[scoercion_pri] =># "`(ast_likely ,_sr ,_2)";
+     x[sapplication_pri] := "likely" x[>sapplication_pri] =># "`(ast_likely ,_sr ,_2)";
    
      //$ Optimisation hint: unlikely.
      //$ Use in conditionals, e.g. if unlikely(x) do ...
-     x[sapplication_pri] := "unlikely" x[scoercion_pri] =># "`(ast_unlikely ,_sr ,_2)";
+     x[sapplication_pri] := "unlikely" x[>sapplication_pri] =># "`(ast_unlikely ,_sr ,_2)";
    
    //------------------------------------------------------------------------
      //$ Suffixed coercion.
-     x[scoercion_pri] := x[scoercion_pri] ":>>" x[sfactor_pri] =># "`(ast_coercion ,_sr (,_1 ,_3))";
+     x[scoercion_pri] := x[scoercion_pri] ":>>" x[>scoercion_pri] =># "`(ast_coercion ,_sr (,_1 ,_3))";
    
-     x[scoercion_pri] := ssuffixed_name =># "_1";
+     x[sfactor_pri] := ssuffixed_name =># "_1";
    
    //------------------------------------------------------------------------
      //$ Reverse application.
@@ -1619,7 +1627,7 @@ See also other packages containing extensions.
      x[sthename_pri] := "?" sname =># "`(ast_patvar ,_sr ,_2)";
    
      //$ Template replacement index.
-     x[sthename_pri] := "?" sinteger =># "`(PARSER_ARGUMENT ,_2)";
+     x[sthename_pri] := "#?" sinteger =># "`(PARSER_ARGUMENT ,_2)";
    
      x[sthename_pri] := squalified_name =># "_1";
    
@@ -1705,6 +1713,7 @@ See also other packages containing extensions.
    
        stype_variant_item_bar := "|" stype_variant_item =># "_2";
        stype_variant_item_bar := "|" stypeexpr =># "`(base ,_2)";
+       stype_variant_items := stypeexpr stype_variant_item_bar+ =># "(cons `(base ,_1) _2)";
        stype_variant_items := stype_variant_item stype_variant_item_bar* =># "(cons _1 _2)";
        stype_variant_items := stype_variant_item_bar+ =># "_1";
    
@@ -1775,14 +1784,13 @@ See also other packages containing extensions.
             (matchings `((,_1 ,_5)((pat_setform_any ,_sr)(ast_typed_case 0 2))))
             (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,matchings)))))
             (param `(,_sr PVal _a ,argt none)) ;; one parameter
-            (params `(,param))            ;; parameter tuple list
+            (params `( Satom ,param ))            ;; parameter tuple list
             (paramsx `(,params none))     ;; parameter tuple list with precondition
             (paramsxs `(,paramsx))        ;; curry parameters 
             (method `(ast_curry ,_sr "has_elt"  ,dfltvs ,paramsxs (,ret none) Method () ,body))
-            (noargs `((() none)))
             (noobjtyp (noi 'typ_none))
             (objsts `(,method))
-            (object `(ast_object ,_sr (,dfltvs ,noargs ,noobjtyp ,objsts))) 
+            (object `(ast_object ,_sr (,dfltvs ,dfltparams ,noobjtyp ,objsts))) 
          )
          `(ast_apply ,_sr (,object (ast_tuple ,_sr ())))
        )
@@ -1994,7 +2002,12 @@ Function forms
      private sparameter := sparam_qual sname =># "`(,_sr ,_1 ,_2 ,(noi 'typ_none) none)";
    
      //$ Empty parameter tuple.
-     private sparameter_comma_list = list::commalist0<sparameter>;
+     //private sparameter_comma_list = list::commalist0<sparameter>;
+   
+     // parameter list including nested params
+     private sxparam := sparameter =># "`(Satom ,_1)";
+     private sxparam := "(" list::commalist0<sxparam> ")" =># "`(Slist ,_2)";
+     private sparameter_comma_list := list::commalist0<sxparam> =># "`(Slist ,_1)";
    
      //$ Parameter qualifier: val.
      private sparam_qual := "val" =># "'PVal";
@@ -2015,7 +2028,7 @@ Function forms
      sfun_arg :=  "(" sparameter_comma_list ")" =># "`(,_2 none)";
    
      //$ Short form function parameter single polymorphic variable.
-     sfun_arg :=  sname =># "`(((,_sr PVal ,_1 ,(noi 'typ_none) none)) none)";
+     sfun_arg :=  sname =># "`(((Satom (,_sr PVal ,_1 ,(noi 'typ_none) none))) none)";
    
      //$ Function binder: C function.
      //$ A function with C function type.
@@ -2073,7 +2086,7 @@ Function forms
       (let*  
         (
           (noretype `(,(noi 'typ_none) none))
-          (d `(ast_object ,_sr (,dfltvs ((() none)) none ,_9)))  ;; extension function
+          (d `(ast_object ,_sr (,dfltvs (,unitparam) none ,_9)))  ;; extension function
           (a `(ast_apply ,_sr (,d ()))) ;; applied to unit
           (x `(ast_extension ,_sr ,_5 ,a)) ;; actual extension expression
           (retst `(ast_fun_return ,_sr ,x))
@@ -2089,7 +2102,7 @@ Function forms
       (let*  
         (
           (noretype `(,(noi 'typ_none) none))
-          (d `(ast_object ,_sr (,dfltvs ((() none)) none ,_7)))  ;; extension function
+          (d `(ast_object ,_sr (,dfltvs (,unitparam) none ,_7)))  ;; extension function
           (a `(ast_apply ,_sr (,d ()))) ;; applied to unit
           (x `(ast_extension ,_sr ,_5 ,a)) ;; actual extension expression
           (retst `(ast_fun_return ,_sr ,x))
@@ -2144,7 +2157,7 @@ Function forms
           (
            (t _5)
           )
-         (begin ;;(display "MATCHING ftype=")(display t)(display "\\n")
+         (begin ;;(display "MATCHING ftype=")(display t)(display "\n")
            (let
              (
                (argt `(ast_apply ,_sr (,(nos "dom") ,t)))
@@ -2153,7 +2166,7 @@ Function forms
              )
              `(ast_curry ,_sr ,(first _3) ,(second _3)
                (
-                 (((,_sr PVal _a ,argt none)) none)
+                 ((Satom (,_sr PVal _a ,argt none)) none)
                )
                (,ret none)
                ,(cal_funkind _1 _2) ,_1 ,body)
@@ -2175,7 +2188,7 @@ Function forms
              (body `((ast_fun_return ,_sr ,apl )))
              (result `(ast_curry ,_sr ,(first _3) ,(second _3)
                (
-                 (((,_sr PVal _a ,argt none)) none)
+                 ((Satom (,_sr PVal _a ,argt none)) none)
                )
                (,ret ,traint)
                ,(cal_funkind _1 _2) ,_1 ,body)
@@ -2357,11 +2370,10 @@ Identifier Lexer
    
      regdef prime = "'";
      regdef dash = '-';
-     regdef quest = "?";
      regdef idletter = letter | underscore | hichar | ucn;
      regdef alphnum = idletter | digit;
      regdef innerglyph = idletter | digit | dash;
-     regdef flx_ident = idletter (innerglyph ? (alphnum | prime) +)* prime* quest ?;
+     regdef flx_ident = idletter (innerglyph ? (alphnum | prime) +)* prime*;
      regdef tex_ident = slosh letter+;
      regdef sym_ident =
        "+" | "-" | "*" | "/" | "%" | "^" | "~" | 
@@ -2369,7 +2381,7 @@ Identifier Lexer
        /* mutator */
        "&=" | "|=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" | "<<=" | ">>=" |
        /* comparison */
-       "<" | ">" | "==" | "!=" | "<=" | ">=" | "<<" | ">>" 
+       "<" | ">" | "==" | "!=" | "<=" | ">=" | "<<" | ">>" | "<>"
      ;
    
      /* NOTE: upgrade to support n"wird + name" strings */
@@ -2386,11 +2398,12 @@ Identifier Lexer
 .. code-block:: text
 
    SCHEME """
-   (define (stripus s) ; strip underscores 
+   (define (stripus s) ; strip underscores and primes in numbers
      (let*
        ( 
          (chrs (string->list s))
          (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
+         (chrs (filter (lambda (x) (not (char=? x (integer->char 39)))) chrs)) ; strip primes
        )
        (list->string chrs)
      )
@@ -2462,6 +2475,7 @@ Google RE2 package via Felix binding library.
      regdef letter = lower | upper;
      regdef hichar = [128-255];
      regdef white = space | tab;
+     regdef dsep = underscore | quote;
    
      /* nasty: form control characters */
      regdef form_control = linefeed | carriage_return | vtab | formfeed;
@@ -2519,7 +2533,8 @@ For use in the action codes of the grammar.
      (define (typesoftvarlist x) (map nos (map first (first x))))
      (define dfltaux '( (ast_tuple ("dummy" 0 0 0 0) ()) ()))
      (define dfltvs `( () ,dfltaux)) ;; vs list: name,type,constraint triple
-     (define dfltargs '((() none)))
+     (define unitparam '((Slist ()) none))
+     (define dfltparams `(,unitparam))
      (define dflteffects '(ast_tuple ("dummy" 0 0 0 0) ())) ;; type unit
    )
    """;
@@ -2541,8 +2556,8 @@ For use in the action codes of the grammar.
    SCHEME """
    ;; lambda terms
    (begin
-     (define (lazy stmts) `(ast_lambda ,_sr (,dfltvs ,dfltargs ,(noi 'typ_none) ,stmts)))
-     (define (lazy_proc stmts) `(ast_lambda ,_sr (,dfltvs ,dfltargs (ast_void ,_sr) ,stmts)))
+     (define (lazy stmts) `(ast_lambda ,_sr (,dfltvs ,dfltparams ,(noi 'typ_none) ,stmts)))
+     (define (lazy_proc stmts) `(ast_lambda ,_sr (,dfltvs ,dfltparams (ast_void ,_sr) ,stmts)))
      (define (block stmts)`(ast_call ,_sr ,(lazy_proc stmts) ()))
      (define (block_expr stmts) `(ast_apply ,_sr (,(lazy stmts) ())))
      (define call (lambda (f a) `(ast_call ,_sr (ast_name ,_sr ,f ()) ,a)))
@@ -3190,6 +3205,53 @@ Loops
        )
        """;
    
+   SCHEME """
+     (define iterator_recursive_loop 
+       (lambda (loopname cvar iterator body) 
+         (begin (display "Eval iterator recursive loop\n")
+         (let* 
+           (
+             (proc_string_name (fresh_name "proc"))
+             (proc_call_name (nos proc_string_name))
+             (proc_param dfltparams)
+             (proc_ret `((ast_void ,_sr) none))
+             (proc_adjectives `())
+             (proccall `(ast_call ,_sr ,proc_call_name (ast_tuple ,_sr ())))
+             (generator_string_name (fresh_name "generator" ))
+             (generator_call_name (nos generator_string_name))
+             (generator_init `(ast_apply ,_sr (,(nos "iterator") ,iterator )))
+             (generator_call `(ast_apply ,_sr (,generator_call_name ())))
+             (some_pattern `(pat_nonconst_ctor ,_sr ,(nos "Some") (pat_as ,_sr (pat_any ,_sr) ,cvar) ))
+             (some_exit proccall) 
+             (some_handler (append `(,body) `(,some_exit)))
+             (none_pattern `(pat_const_ctor ,_sr ,(nos "None")))
+             (none_handler `((ast_nop ,_sr, "drop thru")))
+             (some_item `(,some_pattern ,some_handler))
+             (none_item `(,none_pattern ,none_handler))
+             (matchings `(,some_item ,none_item))
+             (proc_body 
+               `( ast_seq ,_sr 
+                 (
+                   (ast_label ,_sr ,(string-append "continue_" loopname))
+                   (ast_stmt_match (,_sr ,generator_call ,matchings))
+                   (ast_label ,_sr ,(string-append "break_" loopname))
+                 )
+               )
+             )
+             (vardef `(ast_var_decl ,_sr ,generator_string_name ,dfltvs none (some ,generator_init)))
+             (procdef 
+               `(
+                 ast_curry_effects ,_sr ,proc_string_name ,dfltvs ,proc_param ,proc_ret ,dflteffects 
+                 Function ,proc_adjectives (,proc_body)
+               )
+             )
+           )
+           `(ast_seq ,_sr (,vardef ,procdef ,proccall))
+         )
+         ) ;;display
+       )
+     )
+   """;
    
    syntax loops
    {
@@ -3501,6 +3563,7 @@ Loops
           )))
        """;
    
+     loop_stmt := optlabel "rfor" sname "in" sexpr block =># '(iterator_recursive_loop _1 _3 _5 _6)';
    
      //$ Upmarket stream consumer.
      //$ The second argument must be a value for which there is a generator: 
@@ -3678,6 +3741,12 @@ Namespaces
        `(ast_typeclass ,_sr ,(first _2) ,(second _2) ,_4)
        """;
    
+     private namespace_stmt := "class" sdeclname ";" =>#
+       """
+       `(ast_begin_typeclass ,_sr ,(first _2) ,(second _2))
+       """;
+   
+   
      //$ Define a class and open it.
      private namespace_stmt := "open" "class" sdeclname "=" ? scompound =>#
        """
@@ -3751,6 +3820,19 @@ Patterns
    syntax patterns {
    
      block = match_stmt;
+   
+     smatch_head := "chainmatch" sexpr "with" stmt_matching+ =># "`(,_2 ,_4)";
+     smatch_link := "ormatch" sexpr "with" stmt_matching+ =># "`(,_2 ,_4)";
+     smatch_chain := smatch_chain smatch_link =># "(cons _2 _1)"; // revsersed
+     smatch_chain := smatch_link =># "`(,_1)";
+   
+     match_stmt := smatch_head smatch_chain "endmatch" ";" =># 
+       "`(ast_stmt_chainmatch ,_sr ,(cons _1 (reverse _2)))"
+     ; 
+   
+     match_stmt := smatch_head "endmatch" ";" =># 
+       "`(ast_stmt_match (,_sr ,_1))"
+     ; 
    
      //$ Pattern match statement.
      //$ At least one branch must match or the program aborts with a match failure.
@@ -3878,6 +3960,7 @@ Patterns
    
        //$ or it can be a case literal.
        private sctor_name := "case" sinteger =># "`(ast_case_tag ,_sr ,_2)";
+       private sctor_name := "`" sinteger =># "`(ast_case_tag ,_sr ,_2)";
    
    
      private sapplicative_pattern := "case" sname sargument_pattern =>#
@@ -3906,6 +3989,7 @@ Patterns
      private satomic_pattern := "#" "case" sname =># "`(pat_const_variant ,_sr ,_3)";
      private satomic_pattern := "`" sname =># "`(pat_const_variant ,_sr ,_2)";
      private satomic_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
+     private satomic_pattern := "`" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
    
    
      //$ Match the value true = case 1 of 2.
@@ -4894,6 +4978,8 @@ Type definitions
      stypematch := "typematch" sexpr "with" stype_matching+ "endmatch" =>#
        "`(ast_type_match ,_sr (,_2 ,_4))";
    
+     stypematch := "subtypematch" sexpr "with" stype_matching+ "endmatch" =>#
+       "`(ast_subtype_match ,_sr (,_2 ,_4))";
    
      //$ A typecase expression computes an expression based on a type match.
      stypecasematch := "typecase" sexpr "with" stype_matching+ "endmatch" =>#
@@ -4963,7 +5049,7 @@ Type definitions
                     )
                   )
                   (self-arg `(,_sr PVal ,self-name ,self-type none)) 
-                  (self-args `((,self-arg) none))
+                  (self-args `((Satom ,self-arg) none))
                   (args (cons self-args t4))
                 ) 
                 `(,t0 ,t1 ,t2 ,outpolyvars ,args ,t5 ,t6 ,t7 ,t8 ,t9)
@@ -5317,8 +5403,8 @@ Chips
              (body _7)
              (pinstype `(ast_record_type ,_6))
              (pinsarg `(,_sr PVal ,_5 ,pinstype none))
-             (pinsargs `((,pinsarg) none))
-             (args (append args `(,pinsargs (() none))))
+             (pinsargs `((Satom ,pinsarg) none))
+             (args (append args `(,pinsargs ,unitparam)))
            )
            `(ast_curry_effects ,_sr ,name ,vs ,args (,ret ,traint) ,effects
             NoInlineFunction (NoInlineFunction) ,body)

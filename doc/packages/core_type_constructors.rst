@@ -49,14 +49,14 @@ Type Functors
        endmatch
      ;
    
-     typedef fun lnot(x:TYPE):TYPE=>
+     typedef fun type_lnot(x:TYPE):TYPE=>
        typematch x with
        | 0 => 1
        | _ => 0
        endmatch
      ;
    
-     typedef fun land(x:TYPE, y:TYPE):TYPE =>
+     typedef fun type_land(x:TYPE, y:TYPE):TYPE =>
        typematch (x,  y) with
        | 0, _ => 0
        | _,0 => 0
@@ -64,45 +64,38 @@ Type Functors
        endmatch
      ;
    
-     typedef fun lor(x:TYPE, y:TYPE):TYPE=>
+     typedef fun type_lor(x:TYPE, y:TYPE):TYPE=>
        typematch (x,  y) with
        | 0, 0 => 0
        | _,_ => 1
        endmatch
      ;
    
-     typedef fun eq(x:TYPE, y:TYPE):TYPE=>
+     typedef fun type_eq(x:TYPE, y:TYPE):TYPE=>
        typematch x with
        | y => typematch y with | x => 1 | _ => 0 endmatch
        | _ => 0
        endmatch
      ;
    
-     typedef fun == (x:TYPE, y:TYPE):TYPE=>
-       typematch x with
-       | y => typematch y with | x => 1 | _ => 0 endmatch
-       | _ => 0
-       endmatch
-     ;
+     typedef fun type_ne (x:TYPE, y:TYPE):TYPE=> type_lnot (type_eq (x , y));
    
-     typedef fun != (x:TYPE, y:TYPE):TYPE=> lnot (eq (x , y));
-   
-     typedef fun <= (x:TYPE, y:TYPE):TYPE=>
+     typedef fun type_le (x:TYPE, y:TYPE):TYPE=>
        typematch x with
        | y => 1 
        | _ => 0
        endmatch
      ;
    
-     typedef fun >= (x:TYPE, y:TYPE):TYPE=>
+     typedef fun type_ge (x:TYPE, y:TYPE):TYPE=>
        typematch y with
        | x => 1 
        | _ => 0
        endmatch
      ;
    
-     typedef fun > (x:TYPE, y:TYPE):TYPE=> y <= x;
-     typedef fun < (x:TYPE, y:TYPE):TYPE=> y >= x;
+     typedef fun type_gt (x:TYPE, y:TYPE):TYPE=> type_le (y, x);
+     typedef fun type_lt (x:TYPE, y:TYPE):TYPE=> type_ge (y, x);
    
    
      const memcount[t] : size = "#memcount";
@@ -135,7 +128,16 @@ Option
          endmatch
        ;
      }
-     
+    
+     instance[T with Eq[T]] Eq[opt[T]] {
+       fun == : opt[T] * opt[T] -> bool =
+       | None, None => true
+       | Some x, Some y => x == y
+       | _ => false
+       ;
+     }
+     inherit[T] Eq[T];
+    
      // Return the value of the option if it has any, otherwise
      // returns the default value provided
      fun or_else[T] (x:opt[T]) (d:T) : T =>
@@ -241,6 +243,7 @@ Slice
      | Slice_range_incl of T * T
      | Slice_range_excl of T * T
      | Slice_one of T
+     | Slice_none
    ;
    
    fun \in[T with Integer[T]] (x:T, s:slice[T]) => 
@@ -253,6 +256,7 @@ Slice
      | Slice_range_incl (i,j) => x >= i and x <= j
      | Slice_range_excl (i,j) => x >= i and x < j 
      | Slice_one i => i == x
+     | Slice_none => false
    ;
    
    
@@ -261,11 +265,12 @@ Slice
      | Slice_one x => { yield Some x; return None[T]; }
      | Slice_range_incl (first, last) => slice_range_incl first last
      | Slice_range_excl (first, last) => slice_range_excl first last
-     | Slice_to_incl (last) => slice_range_incl #zero[T] last
-     | Slice_to_excl (last) => slice_range_excl #zero[T] last
-     | Slice_from (first) => slice_from first
+     | Slice_to_incl (last) => slice_range_incl #Integer[T]::minval last
+     | Slice_to_excl (last) => slice_range_excl #Integer[T]::minval last
+     | Slice_from (first) => slice_range_incl first #Integer[T]::maxval
      | Slice_from_counted (first, count) => slice_from_counted first count
-     | #Slice_all => slice_from #zero[T]
+     | #Slice_all => slice_range_incl #Integer[T]::minval #Integer[T]::maxval
+     | #Slice_none => { return None[T]; } 
      endmatch
    ;
    
@@ -292,12 +297,6 @@ Slice
    }
    
    
-   // Note: guarrantees no overflow if first + count - 1
-   // is in range of the type
-   // Terminates after count values emitted
-   // provided overflow doesn't throw.
-   // Well defined on unsigned types (just wraps around)
-   // NOTE: result may not be monotonic increasing because of wrap around
    gen slice_from_counted[T with Integer[T]] (first:T) (count:T) () = {
      var k = count; 
      while k > #zero[T] do 
@@ -306,20 +305,6 @@ Slice
      done 
      return None[T]; 
    }
-   
-   // Ensures monotonic increasing by terminating on wrap around
-   gen slice_from[T with Integer[T]] (var first:T) () = {
-     var last = first;
-     lab: while true do  
-       yield Some first; 
-       last = first;
-       first = first + #one[T]; 
-       if first < last break lab;
-     done 
-     return None[T]; 
-   }
-   
-   
    
    // hack so for in f do .. done will work too
    gen iterator[t] (f:1->opt[t]) => f;
@@ -670,6 +655,7 @@ Tuples
    open [T,U with Tord[T], Tord[U]] Tord[T ** U];
    open [T,U with Tord[T], Tord[U]] Tord[T * U];
    
+   /* type equality now requires type_eq!
    //------------------------------------------------------------------------------
    // Generic Field access
    fun field[n,t,u where n==0] (a:t,b:u)=>a;
@@ -689,7 +675,7 @@ Tuples
    fun field[n,t,u,v,w,x where n==2] (a:t,b:u,c:v,d:w,e:x)=>c;
    fun field[n,t,u,v,w,x where n==3] (a:t,b:u,c:v,d:w,e:x)=>d;
    fun field[n,t,u,v,w,x where n==4] (a:t,b:u,c:v,d:w,e:x)=>e;
-   
+   */
    
    //------------------------------------------------------------------------------
    open class parallel_tuple_comp

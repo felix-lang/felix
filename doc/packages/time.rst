@@ -23,6 +23,7 @@ current date and time of day.
    else
      inherit PosixTime;
    done
+     rename fun sleep =  Faio::sleep; 
    }
    
 

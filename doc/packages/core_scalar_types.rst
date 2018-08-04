@@ -365,11 +365,11 @@ by the compiler.
    
    syntax felix_int_lexer {
      /* integers */
-     regdef bin_lit  = '0' ('b' | 'B') (underscore ? bindigit) +;
-     regdef oct_lit  = '0' ('o' | 'O') (underscore ? octdigit) +;
-     regdef dec_lit  = '0' ('d' | 'D') (underscore ? digit) +;
-     regdef dflt_dec_lit  =  digit (underscore ? digit) *;
-     regdef hex_lit  = '0' ('x' | 'X') (underscore ? hexdigit)  +;
+     regdef bin_lit  = '0' ('b' | 'B') (dsep ? bindigit) +;
+     regdef oct_lit  = '0' ('o' | 'O') (dsep ? octdigit) +;
+     regdef dec_lit  = '0' ('d' | 'D') (dsep ? digit) +;
+     regdef dflt_dec_lit  =  digit (dsep ? digit) *;
+     regdef hex_lit  = '0' ('x' | 'X') (dsep ? hexdigit)  +;
      regdef int_prefix = bin_lit | oct_lit | dec_lit | dflt_dec_lit | hex_lit;
    
      regdef fastint_type_suffix = 
@@ -469,8 +469,8 @@ Float literal constructors
    //$ x.0 works for tuple projections and 0.f is a function
    //$ application
    syntax felix_float_lexer {
-     regdef decimal_string = digit (underscore ? digit) *;
-     regdef hexadecimal_string = hexdigit (underscore ? hexdigit) *;
+     regdef decimal_string = digit (dsep ? digit) *;
+     regdef hexadecimal_string = hexdigit (dsep ? hexdigit) *;
    
      regdef decimal_fractional_constant =
        decimal_string '.' decimal_string;

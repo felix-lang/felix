@@ -17,6 +17,8 @@ Control Synopsis
    include "std/control/schannels";
    include "std/control/fibres";
    include "std/control/spipes";
+   include "std/control/chips";
+   
    //include "std/control/mux";
    
 

@@ -475,7 +475,7 @@ with specified heading and pattern match.
      var lexer = 
        match s.Filename::get_extension with
        | (".cpp" | ".cxx" | ".hpp")  =>  "cpp"
-       | (".flx" | ".fdoc")  =>  "felix"
+       | (".flx" | ".fdoc" | ".fsyn")  =>  "felix"
        | (".c" | ".h") => "c"
        | (".py") => "python"
        | _ => "text"
@@ -534,8 +534,13 @@ with specified heading and pattern match.
    
          elif c == "tangle" do
            println$ "";
-           println$ ".. code-block:: "+lexer_from_filename a;
-           println$ "";
+           var lexer = lexer_from_filename a;
+           println$ ".. code-block:: "+lexer;
+           if lexer == "felix" do
+             println$ "//[" + a + "]";
+           else
+             println$ "";
+           done
            mode = (#`Code) :>> mode_t;
          else 
            match mode with

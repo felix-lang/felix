@@ -72,11 +72,11 @@ to only 8 cbools.
      proc &= : &bool * bool = "*$1&=$2;";  
    
      // Elide double negations.
-     reduce dneg(x:bool): lnot (lnot x) => x;       
+     //reduce dneg(x:bool): lnot (lnot x) => x;       
      // Elide double negations.
-     reduce dneg(x:bool,y:bool): lnot (nand(x,y)) => land(x,y); 
+     //reduce dneg(x:bool,y:bool): lnot (nand(x,y)) => land(x,y); 
      // Elide double negations.
-     reduce dneg(x:bool,y:bool): lnot (nor(x,y)) => lor(x,y);
+     //reduce dneg(x:bool,y:bool): lnot (nor(x,y)) => lor(x,y);
    }
    
    //$ Standard operations on cboolean type.
@@ -124,11 +124,11 @@ to only 8 cbools.
      proc &= : &cbool * cbool = "*$1&=$2;";  
    
      // Elide double negations.
-     reduce dneg(x:cbool): lnot (lnot x) => x;       
+     //reduce dneg(x:cbool): lnot (lnot x) => x;       
      // Elide double negations.
-     reduce dneg(x:cbool,y:cbool): lnot (nand(x,y)) => land(x,y); 
+     //reduce dneg(x:cbool,y:cbool): lnot (nand(x,y)) => land(x,y); 
      // Elide double negations.
-     reduce dneg(x:cbool,y:cbool): lnot (nor(x,y)) => lor(x,y);
+     //reduce dneg(x:cbool,y:cbool): lnot (nor(x,y)) => lor(x,y);
    }
    
    

@@ -47,8 +47,8 @@ Two kinds of specification are allowed in a polymorphic class:
 function definitions and assertions.
 
 
-Functions
----------
+Functions.
+----------
 
 There are two kinds of function definitions. A function
 or procedure specified with the adjective  :code:`virtual`
@@ -578,10 +578,12 @@ the functions from class  :code:`Eq`.
      virtual proc += (px:&t,y:t) { px <- *px + y; }
      virtual proc -= (px:&t,y:t) { px <- *px - y; }
    
+   /*
      reduce id (x:t): x+zero() => x;
      reduce id (x:t): zero()+x => x;
      reduce inv(x:t): x - x => zero();
      reduce inv(x:t): - (-x) => x;
+   */
      axiom sym (x:t,y:t): x+y == y+x;
    
      fun add(x:t,y:t)=> x + y;
@@ -620,7 +622,7 @@ with associativity added.
    class Addgrp[t] {
      inherit FloatAddgrp[t];
      axiom assoc (x:t,y:t,z:t): (x + y) + z == x + (y + z);
-     reduce inv(x:t,y:t): x + y - y => x;
+     //reduce inv(x:t,y:t): x + y - y => x;
    }
    
 
@@ -643,8 +645,8 @@ binary multiplication operator and a unit.
      virtual fun one: unit -> t;
      virtual fun * : t * t -> t;
      virtual proc *= (px:&t, y:t) { px <- *px * y; }
-     reduce id (x:t): x*one() => x;
-     reduce id (x:t): one()*x => x;
+     //reduce id (x:t): x*one() => x;
+     //reduce id (x:t): one()*x => x;
    }
    
 
@@ -675,7 +677,7 @@ and satisfies the cancellation law.
    class MultSemi1[t] {
      inherit FloatMultSemi1[t];
      axiom assoc (x:t,y:t,z:t): (x * y) * z == x * (y * z);
-     reduce cancel (x:t,y:t,z:t): x * z ==  y * z => x == y;
+     //reduce cancel (x:t,y:t,z:t): x * z ==  y * z => x == y;
    }
    
 
@@ -850,6 +852,10 @@ Integer
    
      fun shl(x:t,y:t)=> x << y;
      fun shr(x:t,y:t)=> x >> y;
+   
+     virtual fun maxval: 1 -> t = "::std::numeric_limits<?1>::max()";
+     virtual fun minval: 1 -> t = "::std::numeric_limits<?1>::min()";
+   
    }
    
    //$ Signed Integers.

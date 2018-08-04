@@ -54,7 +54,9 @@ is given.
    
        proc pre_incr:&lex_iterator = "++*$1;";
    
-       fun lexit(ini:lex_iterator, finish:lex_iterator): lex_iterator * string =
+       union token_t = Str of string | Cmd of string | Eos;
+   
+       fun lexit(ini:lex_iterator, finish:lex_iterator): lex_iterator * token_t=
        {
          //println$ "lexit input='" + string_between(ini,finish)+"'";
    
@@ -62,13 +64,13 @@ is given.
    
          // already at end
          if start == finish do 
-           return start, "";
+           return start, Eos;
    
          // eat white space 
          elif *start == char(' ') do 
            ++start;
            while start != finish and *start == char(' ') do ++start; done;
-           return start,"";
+           return start,Eos;
    
          // double quoted string
          elif *start == char('"') do
@@ -76,9 +78,9 @@ is given.
            p1 := start;
            while start != finish and *start != char('"') do ++start; done;
            if start == finish do
-             return start,string_between(p1,start);
+             return start,Str (string_between(p1,start));
            else
-             return start+1,string_between(p1, start);
+             return start+1,Str (string_between(p1, start));
            done;
    
          // single quoted string
@@ -87,16 +89,27 @@ is given.
            p2 := start;
            while start != finish and *start != char("'") do ++start; done;
            if start == finish do 
-             return start,string_between(p2,start);
+             return start,Str (string_between(p2,start));
            else
-             return start+1,string_between(p2, start);
+             return start+1,Str (string_between(p2, start));
            done;
+   
+         elif *start == char("`") do
+           ++start;
+           p3 := start;
+           while start != finish and *start != char("`") do ++start; done;
+           if start == finish do 
+             return start,Cmd (string_between(p3,start));
+           else
+             return start+1,Cmd (string_between(p3, start));
+           done;
+   
    
          done;
          // identifier
-         p3 := start;
+         p4 := start;
          while start != finish and *start != char(" ")  do ++start; done;
-         return start,string_between(p3,start);
+         return start,Str (string_between(p4,start));
        }
    
        fun lexstr(s':string): list[string] =
@@ -108,10 +121,17 @@ is given.
          var words = Empty[string];
          while current != finish do 
            match lexit(current,finish) with
-           | next,lexeme =>
+           | next,token=>
              {
                current = next;
-               if lexeme != "" do words = Cons(lexeme,words); done;
+               match token with
+               | Eos => ;
+               | Str lexeme => if lexeme != "" perform words = Cons(lexeme,words);
+               | Cmd cmd =>
+                 var res,s = System::get_stdout cmd;
+                 var recres = lexstr s.strip;
+                 words = rev recres + words;
+               endmatch;
              }
            endmatch;
          done

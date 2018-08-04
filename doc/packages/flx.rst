@@ -832,6 +832,7 @@ Parses the command line options.
      println "--nofelix            : do not run felix translator, leave C++ outputs alone";
      println "--nocc               : do not C/C++ compiler; implies --nolink";
      println "--nolink             : do not link object files to an executable";
+     println "--exe                : link executable";
      println "--run-only           : run program without dependency checking or linking";
      println "--c++                : Pure C++ build, no Felix code";
      println "--ocaml              : Pure Ocaml build, no Felix code";
@@ -2389,7 +2390,7 @@ external compilers.
      }
    
      // C++ static (many files)
-     gen cxx_compile_static1 ehandler (src: string, dst: string) : int = 
+     gen cxx_compile_static1 (ehandler:1->0) (src: string, dst: string) : int = 
      {
    //println$ "cxx_compile_static1: " + src " -> " + dst;
        var t0 = #Time::time;

@@ -1580,5 +1580,35 @@ String Dictionary.
    
    open[T] StrDict[T];
    
+   // map from string to list of strings
+   open class Str2StrList
+   {
+     typedef str2strlist = strdict[list[string]];
+     ctor str2strlist () => strdict[list[string]] ();
+   
+     // transitive closure of a list of dependencies
+     fun trcls (x:str2strlist) (inp: list[string]) (out:list[string]) =>
+       match inp with
+       | Empty => out
+       | head ! tail => 
+         if not (head in out) then
+           trcls x (tail + x.get_dflt (head, Empty[string])) (head ! out)
+         else
+           trcls x tail out
+         endif
+       endmatch
+     ;
+   
+     // mutates the dictionary so each key maps to
+     // the transitive closure of its original value set
+     // the resulting value lists are unique lists even if
+     // the original list contained duplicates
+     proc transitive_closure (x:str2strlist) = {
+       match file,deps in x.iterator do
+         x.add file (trcls x deps Empty[string]);
+       done 
+     }
+   
+   }
    
    

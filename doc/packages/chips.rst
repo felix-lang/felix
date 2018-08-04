@@ -16,7 +16,7 @@ Blocks reader.
 
 .. code-block:: felix
 
-   class BaseChips
+   open class BaseChips
    {
    
    chip writeblock[T]
@@ -79,7 +79,6 @@ One shot source
 ---------------
 
 
-
 .. code-block:: felix
 
    chip value[T] (a:T)
@@ -89,6 +88,40 @@ One shot source
      write (io.out, a);
    }
    
+
+Source from generator
+---------------------
+
+
+.. code-block:: felix
+
+   chip generator[T] (g: 1->T)
+     connector io
+       pin out: %>T
+     {
+       repeat perform write (io.out, g());
+     }
+   
+
+Source from iterator
+--------------------
+
+
+.. code-block:: felix
+
+   chip iterate[T] (g: 1->opt[T])
+     connector io
+       pin out: %>T
+     {
+       again:>
+         var x = g();
+         match x with
+         | Some v => 
+           write (io.out, v);
+           goto again;
+         | None => ;
+         endmatch; 
+     }
    
 
 Source from list

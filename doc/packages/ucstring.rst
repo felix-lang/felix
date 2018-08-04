@@ -96,8 +96,8 @@ string length if they exceed it.
      typedef ucstr = uniq _ucstr;
    
      // privatise access to representation
-     private fun unpack (var p: ucstr) : +char => p.ununiq._repr_;
-     private fun pack (p: +char) => p._make__ucstr.uniq;
+     private fun unpack (var p: ucstr) : +char => p.unbox._repr_;
+     private fun pack (p: +char) => p._make__ucstr.box;
    
      // Constructors
      ctor ucstr (var s:string) = {
@@ -327,8 +327,8 @@ string length if they exceed it.
      typedef ustr = uniq _ustr;
    
      // privatise access to representation
-     private fun unpack (var p: ustr) : +char => p.ununiq._repr_;
-     private fun pack (p: +char) => p._make__ustr.uniq;
+     private fun unpack (var p: ustr) : +char => p.unbox._repr_;
+     private fun pack (p: +char) => p._make__ustr.box;
    
      // Constructors
      ctor ustr (var s:string) = {

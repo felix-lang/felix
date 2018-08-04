@@ -299,6 +299,10 @@ Synchronous Channels
        var ps = C_hack::cast[root::address]$ new v;
        svc$ svc_swrite$ C_hack::cast[_schannel] chan, &ps;
      }
+   
+     proc write[T] (chan:oschannel[T], v:T) { 
+       write (C_hack::cast[schannel[T]] chan, v); 
+     }
     
      //$ Multi Write an item to a bidirectional channel.
      proc broadcast[T] (chan:schannel[T], v:T) {
@@ -307,9 +311,6 @@ Synchronous Channels
      }
     
      //$ Multi Write an item to an output channel.
-     proc write[T] (chan:oschannel[T], v:T) { 
-       write (C_hack::cast[schannel[T]] chan, v); 
-     }
      proc broadcast[T] (chan:oschannel[T], v:T) { 
        broadcast (C_hack::cast[schannel[T]] chan, v); 
      }

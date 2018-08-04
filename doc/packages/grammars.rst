@@ -49,12 +49,14 @@ Grammar
    // NOTE: this depends on Recognisers, but Recognisers
    // depends on Grammars. BAD BAD.
    
-   union open_prod_t[T] =
-   | Terminal of string * Recognisers::recog_t
-   | Nonterminal of string
-   | Epsilon
-   | Seq of list[T]
-   | Alt of list[T]
+   typedef open_prod_t[T] =
+   ( 
+     | `Terminal of string * Recognisers::recog_t
+     | `Nonterminal of string
+     | `Epsilon
+     | `Seq of list[T]
+     | `Alt of list[T]
+   )
    ;
    
    typedef prod_t = open_prod_t[prod_t];
@@ -62,11 +64,11 @@ Grammar
    instance[T with Str[T]] Str[open_prod_t[T]] 
    {
      fun str: open_prod_t[T] -> string =
-     | Terminal (s,r) => '"' + s + '"'
-     | Nonterminal name => name
-     | Epsilon => "Eps"
-     | Seq ss => "(" + catmap " " (str of T) ss + ")"
-     | Alt ss => "[" + catmap " | " (str of T) ss + "]"
+     | `Terminal (s,r) => '"' + s + '"'
+     | `Nonterminal name => name
+     | `Epsilon => "Eps"
+     | `Seq ss => "(" + catmap " " (str of T) ss + ")"
+     | `Alt ss => "[" + catmap " | " (str of T) ss + "]"
      ;
    }
    
@@ -100,11 +102,11 @@ Closure
      (acc:list[string]) (p: open_prod_t[T]) 
    : list[string] =>
      match p with
-     | Terminal _ => acc
-     | Nonterminal name => Cons (name, acc) 
-     | Epsilon => acc
-     | Seq ps => fold_left aux acc ps
-     | Alt ps => fold_left aux acc ps
+     | `Terminal _ => acc
+     | `Nonterminal name => Cons (name, acc) 
+     | `Epsilon => acc
+     | `Seq ps => fold_left aux acc ps
+     | `Alt ps => fold_left aux acc ps
      endmatch
    ;
    
@@ -118,15 +120,15 @@ Closure
    
    fun nullable_prod (lib:gramlib_t) (e:prod_t) (trail:list[string]) =>
      match e with
-     | Terminal _ => false
-     | Seq es => fold_left (fun (acc:bool) (sym:prod_t) => 
+     | `Terminal _ => false
+     | `Seq es => fold_left (fun (acc:bool) (sym:prod_t) => 
          acc and (nullable_prod lib sym trail)) true es
    
-     | Alt es => fold_left (fun (acc:bool) (sym:prod_t) => 
+     | `Alt es => fold_left (fun (acc:bool) (sym:prod_t) => 
          acc or (nullable_prod lib sym trail)) false es
    
-     | Nonterminal nt => nullable_nt lib nt trail
-     | Epsilon => true
+     | `Nonterminal nt => nullable_nt lib nt trail
+     | `Epsilon => true
    ;
    
    fun nullable_nt (lib: gramlib_t) (nt:string) (trail:list[string]) : bool =>
@@ -146,15 +148,15 @@ Closure
    
    fun recursive_prod (lib:gramlib_t) (e:prod_t) (orig:string) (trail:list[string]) =>
      match e with
-     | Terminal _ => false
-     | Seq es => fold_left (fun (acc:bool) (sym:prod_t) => 
+     | `Terminal _ => false
+     | `Seq es => fold_left (fun (acc:bool) (sym:prod_t) => 
          acc or (recursive_prod lib sym orig trail)) false es
    
-     | Alt es => fold_left (fun (acc:bool) (sym:prod_t) => 
+     | `Alt es => fold_left (fun (acc:bool) (sym:prod_t) => 
          acc or (recursive_prod lib sym orig trail)) false es
    
-     | Nonterminal nt => if nt == orig then true else recursive_nt lib nt orig trail
-     | Epsilon => false
+     | `Nonterminal nt => if nt == orig then true else recursive_nt lib nt orig trail
+     | `Epsilon => false
    ;
    
    fun recursive_nt (lib: gramlib_t) (nt:string) (orig:string) (trail:list[string]) : bool =>
@@ -171,9 +173,9 @@ Closure
    
    fun left_recursive_prod (lib:gramlib_t) (e:prod_t) (orig:string) (trail:list[string]) =>
      match e with
-     | Terminal _ => false
+     | `Terminal _ => false
    
-     | Seq es =>
+     | `Seq es =>
        let fun aux (es:list[prod_t]) =>
          match es with
          | Empty => false
@@ -185,14 +187,14 @@ Closure
        in
        aux es
    
-     | Alt es => fold_left (fun (acc:bool) (sym:prod_t) => 
+     | `Alt es => fold_left (fun (acc:bool) (sym:prod_t) => 
          acc or (left_recursive_prod lib sym orig trail)) false es
    
-     | Nonterminal nt => 
+     | `Nonterminal nt => 
        if nt == orig then true 
        else left_recursive_nt lib nt orig trail
    
-     | Epsilon => false 
+     | `Epsilon => false 
    ;
    
    fun left_recursive_nt (lib: gramlib_t) (nt:string) (orig:string) (trail:list[string]) : bool =>
@@ -212,30 +214,30 @@ Closure
    {
     var out = Empty[gramentry_t];
     match p with
-    | Epsilon => out = ([head,p]);
-    | Terminal _ => out = ([head,Seq ([p])]);
-    | Nonterminal s => out= ([head,Seq ([p])]);
+    | `Epsilon => out = ([head,p]);
+    | `Terminal _ => out = ([head,`Seq ([p]) :>> prod_t]);
+    | `Nonterminal s => out= ([head,`Seq ([p]) :>> prod_t]);
    
-    | Seq ps =>
+    | `Seq ps =>
       var newseq = Empty[prod_t];
       for term in ps do
         match term with
-        | Epsilon => ;
-        | Nonterminal _ => newseq = term ! newseq;
-        | Terminal _ => newseq = term ! newseq;
+        | `Epsilon => ;
+        | `Nonterminal _ => newseq = term ! newseq;
+        | `Terminal _ => newseq = term ! newseq;
         | _ =>
           var newhead = fresh();
-          newseq = Nonterminal[prod_t] newhead ! newseq;
+          newseq = (`Nonterminal newhead ) :>> prod_t ! newseq;
           out = unpack fresh (newhead,term);
         endmatch;
       done
    
       match newseq with 
-      | Empty => out = (head,Epsilon[prod_t]) ! out;
-      | _ => out = (head,Seq[prod_t] (rev newseq)) ! out;
+      | Empty => out = (head,#`Epsilon :>> prod_t ) ! out;
+      | _ => out = (head,`Seq (rev newseq) :>> prod_t) ! out;
       endmatch;
    
-    | Alt ps =>
+    | `Alt ps =>
       iter (proc (p:prod_t) { out = unpack fresh (head,p) + out; }) ps;
     endmatch;
     return out;
@@ -271,7 +273,7 @@ Closure
     }
    
     proc dohead() { key = cur.0; alts = Empty[prod_t]; }
-    proc dofoot() { out = (key,Alt alts) ! out;  }
+    proc dofoot() { out = (key,`Alt alts :>> prod_t ) ! out;  }
     proc dobreak() { dofoot; dohead; }
     proc check() { if key != cur.0 call dobreak; }
    

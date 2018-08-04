@@ -392,7 +392,7 @@ Simple Text I/O
        return raw_fopen_append f;
      }
    
-     gen fopen_output_append text(f:string) : output_file =
+     gen fopen_output_append_text(f:string) : output_file =
      {
        if Env::getenv "FLX_FILE_MONITOR" != "" call
          eprintln$ "[Open_output_append_text] " + f

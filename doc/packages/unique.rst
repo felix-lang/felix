@@ -13,10 +13,10 @@ General Facilities
    open class Unique 
    {
      // box up a value as a unique thing
-     fun uniq [T] : T -> _uniq T = "($t)";
+     fun box[T] : T -> _uniq T = "($t)";
    
      // unsafely unpack the unique box
-     fun ununiq [T] : _uniq T -> T = "($t)";
+     fun unbox[T] : _uniq T -> T = "($t)";
    
      // kill a live unique value
      proc kill[T] : uniq T = ";";

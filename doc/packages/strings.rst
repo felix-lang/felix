@@ -191,6 +191,7 @@ Substrings
        | Slice_to_excl (end) => copyto (x, end)
        | Slice_range_incl (start, end) => substring (x, start, end + 1)
        | Slice_range_excl (start, end) => substring (x, start, end)
+       | Slice_from_counted (start, count) => substring (x,start, start + count)
        | Slice_one (index) => string x.[index]
        endmatch
      ;

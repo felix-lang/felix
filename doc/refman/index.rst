@@ -26,15 +26,9 @@ Core System
    representations
 
 Standard Library
-===============
+================
 
-.. toctree::
-   :maxdepth: 1
-  
-   env
-   felix
-   graphics
-
+Please see https://felix-library-packages.readthedocs.io/en/latest/index.html.
  
 Indices and tables
 ==================
