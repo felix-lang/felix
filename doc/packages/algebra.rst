@@ -136,16 +136,16 @@ strategies, tactics and hints.
 Sets.
 =====
 
-A <em>set</em> is any type with a membership predicate :math:`\i\n\\` 
+A <em>set</em> is any type with a membership predicate :math:`\in` 
 spelled  :code:`\in`. You can also use function  :code:`mem`. The parser
 also maps  :code:`in` to operator  :code:`\in`.
 
-We also provide a reversed form :math:`\o\w\n\s\\`  spelled  :code:`\owns`,
+We also provide a reversed form :math:`\owns`  spelled  :code:`\owns`,
 and negated forms :math:`ni`  spelled  :code:`\ni` or  :code:`\notin`.
 
-Three combinators are provided as well, :math:`\c\a\p\\`  spelled  :code:`cap`
-provides intersection, :math:`\c\u\p\\`  spelled  :code:`\cup` provides
-the usual set union, and :math:`\s\e\t\m\i\n\u\s\\`  spelled  :code:`\setminus`
+Three combinators are provided as well, :math:`\cap`  spelled  :code:`cap`
+provides intersection, :math:`\cup`  spelled  :code:`\cup` provides
+the usual set union, and :math:`\setminus`  spelled  :code:`\setminus`
 the asymmetic set difference or subtraction.
 
 Note that sets are not necessarily finite.
@@ -240,9 +240,9 @@ Cartesian Product of set_forms.
 
 This uses some advanced instantiation technology
 to allow you to define the cartesian product of a
-sequence of sets using the infix TeX operator :math:`\o\t\i\m\e\s\\` 
+sequence of sets using the infix TeX operator :math:`\otimes` 
 which is spelled  :code:`\otimes`. There's also a left associative
-binary operator :math:`\t\i\m\e\s\\`  spelled  :code:`\times`.
+binary operator :math:`\times`  spelled  :code:`\times`.
 
 .. code-block:: felix
 
@@ -296,7 +296,7 @@ is a `reflexive <https://en.wikipedia.org/wiki/Reflexive_relation>`_,
 `transitive <https://en.wikipedia.org/wiki/Transitive_relation>`_
 relation. It is one of the most fundamental concepts in
 mathematics. One can show that for any set :math:`S` , for any
-element :math:`s \i\n\ \ \S\\` , the subset :math:`\l\b\r\a\c\k\ \s\\\r\b\r\a\c\k\\`  of :math:`S`  
+element :math:`s \in  S` , the subset :math:`\lbrack s\rbrack`  of :math:`S`  
 consisting of all elements equivalent to :math:`s`  are also
 equivalent to each other, and not equivalent to any other
 element outside that set.
@@ -368,12 +368,12 @@ Partial Order
 -------------
 
 A proper `partial order <https://en.wikipedia.org/wiki/Partially_ordered_set>`_ 
-:math:`\s\u\b\s\e\t\\`  spelled  :code:`\subset`
+:math:`\subset`  spelled  :code:`\subset`
 is a transitive, 
 `antisymmetric <https://en.wikipedia.org/wiki/Antisymmetric_relation>`_ 
 `irreflexive <https://en.wikipedia.org/wiki/Reflexive_relation>`_ relation.
 
-We also provide an improper operator :math:`\s\u\b\s\e\t\e\q\\`  
+We also provide an improper operator :math:`\subseteq`  
 spelled  :code:`\subseteq` which is transitive, antisymmetric,
 and reflexive, for which either the partial order
 or equivalence operator  :code:`==` applies.

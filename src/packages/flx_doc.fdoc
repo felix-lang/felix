@@ -458,6 +458,7 @@ fun code_fixer (a:string): string =
          mode = (#`Txt) :>> markup_t;
        else
          out+="\\" + ch;
+         mode = (#`Math) :>> markup_t;
        done
 
     | `At =>

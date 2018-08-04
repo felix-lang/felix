@@ -545,7 +545,7 @@ The  :code:`typesetof` operator takes a comma separated list
 of parenthesised type names, and represents a finite
 set of types.
 
-The :math:`\c\u\p\\`  operator, spelled  :code:`\cup`, can be used to find the setwise
+The :math:`\cup`  operator, spelled  :code:`\cup`, can be used to find the setwise
 union of two typesets.
 
 

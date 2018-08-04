@@ -478,6 +478,7 @@ with specified heading and pattern match.
           out += "\\" + ch;
           mode = (#`Txt) :>> markup_t;
         done
+  
       | `Math =>
         if ch == char "\\" do
           mode = (#`MathSlosh) :>> markup_t;
@@ -491,6 +492,7 @@ with specified heading and pattern match.
            mode = (#`Txt) :>> markup_t;
          else
            out+="\\" + ch;
+           mode = (#`Math) :>> markup_t;
          done
   
       | `At =>
