@@ -51,7 +51,7 @@ the pointers formed are not simple machine addresses.
 
 
 Pointer syntax
---------------
+^^^^^^^^^^^^^^
 
 .. code-block:: felix
 
@@ -59,9 +59,21 @@ Pointer syntax
     "`(ast_pclt ,_sr ,_2 ,_4)"
   ;
 
+A pointer to a compact linear type `_pclt<D,C>` specifies a pointer to a component 
+type `C` embedded in a complete compact linear type `D`, which occupies a machine word.
 
+Projections for components of compact linear products use the same syntax
+as for non-compact products, as do the overloads for pointers. In order
+to get a compact linear pointer we can first store a complete compact
+linear value in a variable. Then starting with an ordinary machine
+pointer to the variable, a pointer projection to a component will
+yield a compact linear pointer. For example:
 
+.. code-block:: felix
 
-
+  var x = true,false,true;
+  var px = &x;     // ordinary pointer
+  var p1 = px . 1; // compact linear pointer
+  p1 <- true;      // store 1 bit
 
 

@@ -81,7 +81,7 @@ let rec get_offsets' syms bsym_table typ : string list =
 
   | BTYP_cltpointer _
   | BTYP_cltrref _
-  | BTYP_cltwref _ -> assert false (* RTL rep *)
+  | BTYP_cltwref _ -> ["0"] (* RTL rep clptr_t *)
 
 
   | BTYP_variant _ ->
