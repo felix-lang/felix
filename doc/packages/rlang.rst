@@ -1,3 +1,5 @@
+Package: src/packages/rlang.fdoc
+
 
 ===============
 R language DSSL

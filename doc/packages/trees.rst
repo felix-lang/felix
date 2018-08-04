@@ -1,3 +1,5 @@
+Package: src/packages/trees.fdoc
+
 
 =========================
 Tree and graph data types

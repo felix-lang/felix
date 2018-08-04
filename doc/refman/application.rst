@@ -83,10 +83,10 @@ is applied to must match the domain of the function type:
   var g = f;
   println$ g 1;
 
-.. index:: apply, function
 Special Apply
 -------------
 
+.. index:: apply, function
 If the expression being applied has type T which is not a function type,
 then Felix instead looks for a function named `apply` which takes a tuple
 of type `T * A` where `A` is the type of the argument. For example:
@@ -100,10 +100,10 @@ Here is a string is applied to a string. Since a string isn't a function,
 Felix looks for and finds a function named `apply` with domain `string * string`.
 
 
-.. index:: likely; unlikely
 Likelyhood
 ----------
 
+.. index:: likely; unlikely
 The `likely` and `unlikely` pseudo functions are optimisation hints
 applied to expressions of boolean type which indicate that the
 value is likely (or unlikely, respectively) to be true.

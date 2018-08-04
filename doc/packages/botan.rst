@@ -1,3 +1,5 @@
+Package: src/packages/botan.fdoc
+
 
 ===============
 Botan Interface

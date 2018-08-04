@@ -1,3 +1,5 @@
+Package: src/packages/libstruct.fdoc
+
 
 =================
 Library structure

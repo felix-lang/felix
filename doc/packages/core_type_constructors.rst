@@ -1,3 +1,5 @@
+Package: src/packages/core_type_constructors.fdoc
+
 
 ======================
 Core Type Constructors

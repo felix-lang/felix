@@ -1,3 +1,5 @@
+Package: src/packages/judy.fdoc
+
 
 ===========
 Judy Arrays

@@ -1,3 +1,5 @@
+Package: src/packages/flx_web.fdoc
+
 
 =====================
 Webserver and Plugins

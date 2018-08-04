@@ -1,3 +1,5 @@
+Package: src/packages/serialisation.fdoc
+
 
 =====================
 Serialisation Support

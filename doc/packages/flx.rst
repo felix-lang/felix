@@ -1,3 +1,5 @@
+Package: src/packages/flx.fdoc
+
 
 ========================
 Flx compiler driver tool

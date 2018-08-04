@@ -1,3 +1,5 @@
+Package: src/packages/fibres.fdoc
+
 
 ===================
 Synchronous threads

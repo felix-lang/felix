@@ -1,3 +1,5 @@
+Package: src/packages/logic.fdoc
+
 
 =====
 Logic

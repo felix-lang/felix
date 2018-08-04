@@ -1,3 +1,5 @@
+Package: src/packages/control.fdoc
+
 
 ==============
 Control Basics

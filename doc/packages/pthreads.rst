@@ -1,3 +1,5 @@
+Package: src/packages/pthreads.fdoc
+
 
 ============================
 Preemptive Threading Support

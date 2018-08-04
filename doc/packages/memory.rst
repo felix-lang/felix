@@ -1,3 +1,5 @@
+Package: src/packages/memory.fdoc
+
 
 =================
 Memory Operations

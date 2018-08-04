@@ -1,3 +1,5 @@
+Package: src/packages/numbers.fdoc
+
 
 ======================
 Operations on numbers.

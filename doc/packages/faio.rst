@@ -1,3 +1,5 @@
+Package: src/packages/faio.fdoc
+
 
 =============================
 Faio: Felix Async I/O support

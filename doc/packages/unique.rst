@@ -1,3 +1,5 @@
+Package: src/packages/unique.fdoc
+
 
 =========================
 General Unique Facilities

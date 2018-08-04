@@ -1,3 +1,5 @@
+Package: src/packages/demux.fdoc
+
 
 ===================
 Demux build harness

@@ -1,3 +1,5 @@
+Package: src/packages/embed.fdoc
+
 
 ===========================
 Driver Embedding Technology

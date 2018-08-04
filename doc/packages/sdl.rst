@@ -1,3 +1,5 @@
+Package: src/packages/sdl.fdoc
+
 
 =============
 SDL2 bindings

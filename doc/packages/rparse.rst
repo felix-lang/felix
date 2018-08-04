@@ -1,3 +1,5 @@
+Package: src/packages/rparse.fdoc
+
 
 =====================
 Felix library add ons

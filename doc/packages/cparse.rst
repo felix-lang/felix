@@ -1,3 +1,5 @@
+Package: src/packages/cparse.fdoc
+
 
 ===============
 C Parsing Utils

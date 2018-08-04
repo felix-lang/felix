@@ -1,3 +1,5 @@
+Package: src/packages/ucstring.fdoc
+
 
 ==============
 Unique Strings

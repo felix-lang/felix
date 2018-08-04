@@ -1,3 +1,5 @@
+Package: src/packages/stdlib_toc.fdoc
+
 
 =================
 The Felix Library

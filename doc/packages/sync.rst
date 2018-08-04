@@ -1,3 +1,5 @@
+Package: src/packages/sync.fdoc
+
 
 =====================
 Synchronous Scheduler

@@ -1,3 +1,5 @@
+Package: src/packages/regex.fdoc
+
 
 ===================
 Regular Expressions

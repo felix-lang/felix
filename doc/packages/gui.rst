@@ -1,3 +1,5 @@
+Package: src/packages/gui.fdoc
+
 
 ===
 GUI

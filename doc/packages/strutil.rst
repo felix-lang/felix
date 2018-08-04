@@ -1,3 +1,5 @@
+Package: src/packages/strutil.fdoc
+
 
 =========================
 String Support Utilities.

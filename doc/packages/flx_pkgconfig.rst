@@ -1,3 +1,5 @@
+Package: src/packages/flx_pkgconfig.fdoc
+
 
 ==========================================================
 The configuration database manager  :code:`flx_pkgconfig`.

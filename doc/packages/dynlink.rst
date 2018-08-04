@@ -1,3 +1,5 @@
+Package: src/packages/dynlink.fdoc
+
 
 ==============
 Dynamic Linker

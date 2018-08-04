@@ -1,3 +1,5 @@
+Package: src/packages/time.fdoc
+
 
 ===========
 Time of Day

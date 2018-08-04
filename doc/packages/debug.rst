@@ -1,3 +1,5 @@
+Package: src/packages/debug.fdoc
+
 
 =========
 Debugging

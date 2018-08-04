@@ -1,3 +1,5 @@
+Package: src/packages/program.fdoc
+
 
 =======
 Program

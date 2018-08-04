@@ -1,3 +1,5 @@
+Package: src/packages/filetools.fdoc
+
 
 ==========
 File Tools

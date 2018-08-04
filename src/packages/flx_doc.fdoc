@@ -638,6 +638,7 @@ gen sandr (src: string, dst:string) =
 {
   var text = load src;
   var result = process_file (text);
+  result = "Package: " + src + "\n\n"+result;
   save (dst, result);
   return true;
 }

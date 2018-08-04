@@ -1,3 +1,5 @@
+Package: src/packages/strings.fdoc
+
 
 =======
 Strings

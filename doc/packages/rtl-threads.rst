@@ -1,3 +1,5 @@
+Package: src/packages/rtl-threads.fdoc
+
 
 =================================
 Run Time Library Pthread support.

@@ -1,3 +1,5 @@
+Package: src/packages/exceptions.fdoc
+
 
 =============================
 Felix RTL Exception Handling.

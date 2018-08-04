@@ -1,3 +1,5 @@
+Package: src/packages/grammar.fdoc
+
 
 ============
 Base Grammar

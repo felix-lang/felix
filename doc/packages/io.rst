@@ -1,3 +1,5 @@
+Package: src/packages/io.fdoc
+
 
 ===
 I/O

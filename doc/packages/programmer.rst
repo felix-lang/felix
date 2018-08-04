@@ -1,3 +1,5 @@
+Package: src/packages/programmer.fdoc
+
 
 ====================
 programmer utilities

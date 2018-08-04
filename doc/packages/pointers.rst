@@ -1,3 +1,5 @@
+Package: src/packages/pointers.fdoc
+
 
 ============================================
 Pointers and low level address manipulation.

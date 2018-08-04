@@ -1,3 +1,5 @@
+Package: src/packages/flx_doc.fdoc
+
 
 ==========================
 Felix documentation tools.
@@ -672,6 +674,7 @@ with specified heading and pattern match.
   {
     var text = load src;
     var result = process_file (text);
+    result = "Package: " + src + "\n\n"+result;
     save (dst, result);
     return true;
   }

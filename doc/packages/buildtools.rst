@@ -1,3 +1,5 @@
+Package: src/packages/buildtools.fdoc
+
 
 ========================
 Tools For building Felix

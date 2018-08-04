@@ -1,3 +1,5 @@
+Package: src/packages/linux.fdoc
+
 
 =========================
 Specialised Linux Support
