@@ -1,3 +1,10 @@
+===================== =============================================
+key                   file                                          
+===================== =============================================
+concordance.flxh      share/lib/concordance/concordance.flxh        
+concordance.ml        $PWD/src/compiler/flx_core/flx_concordance.ml 
+concordance_check.flx $PWD/concordance_check.flx                    
+===================== =============================================
 
 
 ===========
@@ -44,86 +51,86 @@ Felix library concordance macros
 
 .. code-block:: text
 
-   macro val FLX_CONCORDANCE_LOADED=true;
-   // put other things here later when it is working.
-   macro val TYPE_tiny     = 100;
-   macro val TYPE_short    = 101;
-   macro val TYPE_int      = 102;
-   macro val TYPE_long     = 103;
-   macro val TYPE_vlong    = 104;
-   macro val TYPE_utiny    = 105;
-   macro val TYPE_ushort   = 106;
-   macro val TYPE_uint     = 107;
-   macro val TYPE_ulong    = 108;
-   macro val TYPE_uvlong   = 109;
-   
-   macro val TYPE_intmax   = 110;
-   macro val TYPE_uintmax  = 111;
-   macro val TYPE_size     = 112;
-   macro val TYPE_ssize    = 113;
-   
-   macro val CONST_zero    = 200;
-   macro val FUN_isneg     = 201;
-   macro val FUN_isnonneg  = 202;
-   macro val PROC_decr     = 203;
-   
-   macro val FUN_land      = 210;
-   macro val FUN_lor       = 211;
-   macro val FUN_lnot      = 212;
-   
-   macro val TYPE_int8     = 300; 
-   macro val TYPE_int16    = 301;
-   macro val TYPE_int32    = 302;
-   macro val TYPE_int64    = 303;
-   macro val TYPE_uint8    = 304;
-   macro val TYPE_uint16   = 305;
-   macro val TYPE_uint32   = 306;
-   macro val TYPE_uint64   = 307;
-   
-   macro val TYPE_uintptr  = 308;
-   macro val TYPE_intptr   = 309;
-   macro val TYPE_address  = 310;
-   macro val TYPE_byte     = 311;
-   macro val TYPE_ptrdiff  = 312;
-   
-   macro val TYPE_cbool    = 400;
-   macro val TYPE_char     = 401;
-   macro val TYPE_string   = 402;
-   
-   macro val TYPE_float    = 403;
-   macro val TYPE_double   = 404;
-   macro val TYPE_ldouble  = 405;
-   macro val TYPE_fcomplex = 406;
-   macro val TYPE_dcomplex = 407;
-   macro val TYPE_lcomplex = 408;
-   
+macro val FLX_CONCORDANCE_LOADED=true;
+// put other things here later when it is working.
+macro val TYPE_tiny     = 100;
+macro val TYPE_short    = 101;
+macro val TYPE_int      = 102;
+macro val TYPE_long     = 103;
+macro val TYPE_vlong    = 104;
+macro val TYPE_utiny    = 105;
+macro val TYPE_ushort   = 106;
+macro val TYPE_uint     = 107;
+macro val TYPE_ulong    = 108;
+macro val TYPE_uvlong   = 109;
+
+macro val TYPE_intmax   = 110;
+macro val TYPE_uintmax  = 111;
+macro val TYPE_size     = 112;
+macro val TYPE_ssize    = 113;
+
+macro val CONST_zero    = 200;
+macro val FUN_isneg     = 201;
+macro val FUN_isnonneg  = 202;
+macro val PROC_decr     = 203;
+
+macro val FUN_land      = 210;
+macro val FUN_lor       = 211;
+macro val FUN_lnot      = 212;
+
+macro val TYPE_int8     = 300; 
+macro val TYPE_int16    = 301;
+macro val TYPE_int32    = 302;
+macro val TYPE_int64    = 303;
+macro val TYPE_uint8    = 304;
+macro val TYPE_uint16   = 305;
+macro val TYPE_uint32   = 306;
+macro val TYPE_uint64   = 307;
+
+macro val TYPE_uintptr  = 308;
+macro val TYPE_intptr   = 309;
+macro val TYPE_address  = 310;
+macro val TYPE_byte     = 311;
+macro val TYPE_ptrdiff  = 312;
+
+macro val TYPE_cbool    = 400;
+macro val TYPE_char     = 401;
+macro val TYPE_string   = 402;
+
+macro val TYPE_float    = 403;
+macro val TYPE_double   = 404;
+macro val TYPE_ldouble  = 405;
+macro val TYPE_fcomplex = 406;
+macro val TYPE_dcomplex = 407;
+macro val TYPE_lcomplex = 408;
+
 
 
 .. code-block:: felix
-
-   // if this compiles it should run.
-   println$ "Checking concordance is loaded";
-   println$ "Concordance loaded = " + FLX_CONCORDANCE_LOADED.str;
+//[concordance_check.flx]
+// if this compiles it should run.
+println$ "Checking concordance is loaded";
+println$ "Concordance loaded = " + FLX_CONCORDANCE_LOADED.str;
 
 
 .. code-block:: text
 
-   let flx_tiny=100
-   let flx_short=101
-   let flx_int=102
-   let flx_long=103
-   let flx_vlong=104
-   let flx_utiny=105
-   let flx_ushort=106
-   let flx_uint=107
-   let flx_ulong=108
-   let flx_uvlong=109
-   let flx_zero_int = 200
-   let flx_isneg_int =201
-   let flx_isnonneg_int =202
-   let flx_decr_int = 203
-   let flx_land = 210
-   let flx_lor = 211
-   let flx_lnot = 212
+let flx_tiny=100
+let flx_short=101
+let flx_int=102
+let flx_long=103
+let flx_vlong=104
+let flx_utiny=105
+let flx_ushort=106
+let flx_uint=107
+let flx_ulong=108
+let flx_uvlong=109
+let flx_zero_int = 200
+let flx_isneg_int =201
+let flx_isnonneg_int =202
+let flx_decr_int = 203
+let flx_land = 210
+let flx_lor = 211
+let flx_lnot = 212
 
 

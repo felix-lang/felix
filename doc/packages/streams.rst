@@ -1,3 +1,9 @@
+============ ==================================
+key          file                               
+============ ==================================
+iterator.flx share/lib/std/control/iterator.flx 
+stream.flx   share/lib/std/datatype/stream.flx  
+============ ==================================
 
 ===================================
 Streamable data types and iterators
@@ -9,99 +15,99 @@ Iterators
 
 
 .. code-block:: felix
+//[iterator.flx]
+//$ Class of data structures supporting streaming.
+//$ The container type just needs an iterator method.
+//$ The iterator method returns a generator which
+//$ yields the values stored in the container.
+class Iterable [C1, V] {
+  virtual fun iterator : C1 -> 1 -> opt[V];
+}
 
-   //$ Class of data structures supporting streaming.
-   //$ The container type just needs an iterator method.
-   //$ The iterator method returns a generator which
-   //$ yields the values stored in the container.
-   class Iterable [C1, V] {
-     virtual fun iterator : C1 -> 1 -> opt[V];
-   }
-   
-   class Streamable[C1, V] {
-     inherit Iterable[C1,V];
-   
-     // check if a streamable x is a subset of a set y.
-     virtual fun \subseteq[C2 with Set[C2,V]] (x:C1, y:C2) = 
-     {
-       for v in x do
-         if not (v \in y) goto bad;
-       done
-       return true;
-   bad:>
-       return false;
-     }
-   
-     // subset or equal: variant equality bar
-     fun \subseteqq [C2 with Set[C2,V], Streamable[C2,V]] 
-       (x:C1, y:C2) => x \subseteq y
-     ;
-   
-     // congruence (equality as sets)
-     virtual fun \cong[C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
-       (x:C1, y:C2) => x \subseteq y and y \subseteq x
-     ;
-   
-     // negated congruence
-     fun \ncong[C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
-       (x:C1, y:C2) => not (x \cong y)
-     ;
-   
-     // proper subset
-     virtual fun \subset [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
-       (x:C1, y:C2) => x \subseteq y and x \ncong y
-     ;
-   
-     // variant proper relations with strke-through on equality bar
-     fun \subsetneq [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
-       (x:C1, y:C2) => x \subset y
-     ;
-     fun \subsetneqq [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
-       (x:C1, y:C2) => x \subset y
-     ;
-   
-     // reversed relations, super set
-     fun \supset [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
-       (x:C1, y:C2) => y \subset x
-     ;
-   
-     fun \supseteq [C2 with Set[C2,V], Streamable[C2,V]] 
-       (x:C1, y:C2) => y \subseteq x
-     ;
-   
-     fun \supseteqq [C2 with Set[C2,V], Streamable[C2,V]] 
-       (x:C1, y:C2) => y \subseteq x
-     ;
-     // variant proper relations with strke-through on equality bar
-     fun \supsetneq [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
-       (x:C1, y:C2) => x \supset y
-     ;
-     fun \supsetneqq [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
-       (x:C1, y:C2) => x \supset y
-     ;
-   
-   
-     // negated operators, strike-through
-     fun \nsubseteq [C2 with Set[C2,V], Streamable[C2,V]] 
-       (x:C1, y:C2) => not (x \subseteq y)
-     ;
-   
-     fun \nsubseteqq [C2 with Set[C2,V], Streamable[C2,V]] 
-       (x:C1, y:C2) => not (x \subseteq y)
-     ;
-   
-     // negated reversed operators, strike-through
-     fun \nsupseteq [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
-       (x:C1, y:C2) => not (x \supseteq y)
-     ;
-   
-     fun \nsupseteqq [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
-       (x:C1, y:C2) => not (x \supseteq y)
-     ;
-   
-   }
-   
-   
+class Streamable[C1, V] {
+  inherit Iterable[C1,V];
+
+  // check if a streamable x is a subset of a set y.
+  virtual fun \subseteq[C2 with Set[C2,V]] (x:C1, y:C2) = 
+  {
+    for v in x do
+      if not (v \in y) goto bad;
+    done
+    return true;
+bad:>
+    return false;
+  }
+
+  // subset or equal: variant equality bar
+  fun \subseteqq [C2 with Set[C2,V], Streamable[C2,V]] 
+    (x:C1, y:C2) => x \subseteq y
+  ;
+
+  // congruence (equality as sets)
+  virtual fun \cong[C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
+    (x:C1, y:C2) => x \subseteq y and y \subseteq x
+  ;
+
+  // negated congruence
+  fun \ncong[C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
+    (x:C1, y:C2) => not (x \cong y)
+  ;
+
+  // proper subset
+  virtual fun \subset [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
+    (x:C1, y:C2) => x \subseteq y and x \ncong y
+  ;
+
+  // variant proper relations with strke-through on equality bar
+  fun \subsetneq [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
+    (x:C1, y:C2) => x \subset y
+  ;
+  fun \subsetneqq [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
+    (x:C1, y:C2) => x \subset y
+  ;
+
+  // reversed relations, super set
+  fun \supset [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
+    (x:C1, y:C2) => y \subset x
+  ;
+
+  fun \supseteq [C2 with Set[C2,V], Streamable[C2,V]] 
+    (x:C1, y:C2) => y \subseteq x
+  ;
+
+  fun \supseteqq [C2 with Set[C2,V], Streamable[C2,V]] 
+    (x:C1, y:C2) => y \subseteq x
+  ;
+  // variant proper relations with strke-through on equality bar
+  fun \supsetneq [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
+    (x:C1, y:C2) => x \supset y
+  ;
+  fun \supsetneqq [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
+    (x:C1, y:C2) => x \supset y
+  ;
+
+
+  // negated operators, strike-through
+  fun \nsubseteq [C2 with Set[C2,V], Streamable[C2,V]] 
+    (x:C1, y:C2) => not (x \subseteq y)
+  ;
+
+  fun \nsubseteqq [C2 with Set[C2,V], Streamable[C2,V]] 
+    (x:C1, y:C2) => not (x \subseteq y)
+  ;
+
+  // negated reversed operators, strike-through
+  fun \nsupseteq [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
+    (x:C1, y:C2) => not (x \supseteq y)
+  ;
+
+  fun \nsupseteqq [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
+    (x:C1, y:C2) => not (x \supseteq y)
+  ;
+
+}
+
+
 
 Streams
 =======
@@ -114,19 +120,19 @@ First here is the class based definition of a stream.
 It has some problems as do all such definitions:
 
 .. code-block:: felix
-
-   class Fstream[T,S] {
-     virtual fun uncons: S -> T * S;
-   };
+//[stream.flx]
+class Fstream[T,S] {
+  virtual fun uncons: S -> T * S;
+};
 And now, we have a stream example.
 It is suprising? An integer is a stream.
 
 
 .. code-block:: felix
-
-   instance Fstream [int,int] {
-     fun uncons(x:int) => x, x + 1;
-   }
+//[stream.flx]
+instance Fstream [int,int] {
+  fun uncons(x:int) => x, x + 1;
+}
 
 An obvious problem: the stream is ascending.
 A descending stream is obvious:
@@ -140,13 +146,13 @@ built from a list of ints.
 
 
 .. code-block:: felix
-
-   instance Fstream [opt[int], list[int]] {
-     fun uncons: list[int] -> opt[int] * list[int] =
-     | Cons (h,t) => Some h, t
-     | #Empty => None[int], Empty[int]
-     ;
-   }
+//[stream.flx]
+instance Fstream [opt[int], list[int]] {
+  fun uncons: list[int] -> opt[int] * list[int] =
+  | Cons (h,t) => Some h, t
+  | #Empty => None[int], Empty[int]
+  ;
+}
 The option type is a good way to provide a trailing
 infinite sequence of values mandated by the definition
 of a stream.
@@ -159,18 +165,18 @@ input iterator (where I use iterator in the C++ sense)
 
 
 .. code-block:: felix
-
-   class Stream 
-   {
-   fun make_generator [T,S with Fstream[T,S]] 
-     (var state:S) 
-   =>
-     gen () : T = {
-       var v,s = uncons state;
-       state = s;
-       return v;
-     }
-   ;
+//[stream.flx]
+class Stream 
+{
+fun make_generator [T,S with Fstream[T,S]] 
+  (var state:S) 
+=>
+  gen () : T = {
+    var v,s = uncons state;
+    state = s;
+    return v;
+  }
+;
 
 Felix already has an interesting construction
 called an iterator, it is a generator function
@@ -181,12 +187,12 @@ We build such iterator out of a stream of optional values
 
 
 .. code-block:: felix
-
-   fun make_iterator [T,S with Fstream[opt[T],S]] 
-     (var state:S) 
-   =>
-     make_generator[opt[T],S] state
-   ;
+//[stream.flx]
+fun make_iterator [T,S with Fstream[opt[T],S]] 
+  (var state:S) 
+=>
+  make_generator[opt[T],S] state
+;
 
 Our definition is bad, because so far there is only
 ONE kind of fstream for every type.
@@ -199,24 +205,24 @@ and an initial state value. The uncons function
 is called uncons_f to avoid ambiguities
 
 .. code-block:: felix
-
-   typedef stream[T,S] = ( state:S, uncons_f: S -> T * S );
+//[stream.flx]
+typedef stream[T,S] = ( state:S, uncons_f: S -> T * S );
 Now, instantiate it.
 The critical thing we're doing is translating
 the internal uncons_f function, to one that
 returns a stream object
 
 .. code-block:: felix
+//[stream.flx]
+instance[T,S] Fstream[T, stream[T,S]] {
+  fun uncons (x:stream[T,S]) : T * stream[T,S] =>
+    let head,tail = x.uncons_f x.state in
+    head, (state=tail, uncons_f = x.uncons_f)
+  ;
+}
+inherit [T,S] Fstream[T,stream[T,S]];
+}
+open Stream;
 
-   instance[T,S] Fstream[T, stream[T,S]] {
-     fun uncons (x:stream[T,S]) : T * stream[T,S] =>
-       let head,tail = x.uncons_f x.state in
-       head, (state=tail, uncons_f = x.uncons_f)
-     ;
-   }
-   inherit [T,S] Fstream[T,stream[T,S]];
-   }
-   open Stream;
-   
 
 

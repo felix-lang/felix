@@ -7,6 +7,11 @@ Unique Strings
 Traditional C Strings
 =====================
 
+=========== =================================
+key         file                              
+=========== =================================
+cstring.flx share/lib/std/strings/cstring.flx 
+=========== =================================
 
 Primitive operations on C strings, distinct from 
 corresponding byte operations in that they depend on
@@ -14,38 +19,45 @@ or involve the null terminator.
 
 
 .. code-block:: felix
+//[cstring.flx]
+// Primitives
+class CString
+{
+  //$ C strcpy.
+  proc strcpy: +char * +char = "(void)::std::strcpy($1,$2);" 
+    requires Cxx_headers::cstring
+  ;
 
-   // Primitives
-   class CString
-   {
-     //$ C strcpy.
-     proc strcpy: +char * +char = "(void)::std::strcpy($1,$2);" 
-       requires Cxx_headers::cstring
-     ;
-   
-     //$ C strncpy.
-     proc strncpy: +char * +char * !ints = "(void)::std::strncpy($1,$2,$3);" 
-       requires Cxx_headers::cstring
-     ;
-   
-     //$ C strlen: NTBS length.
-     fun strlen: +char -> size = "::std::strlen($1)" 
-       requires Cxx_headers::cstring
-     ;
-   
-     fun len (s:+char) => strlen s;
-   
-     //$ Traditional NTBS strdup.
-     gen strdup: +char -> +char = "::flx::rtl::strutil::flx_strdup($1)"
-       requires package "flx_strutil"
-     ; 
-   
-   }
-   
+  //$ C strncpy.
+  proc strncpy: +char * +char * !ints = "(void)::std::strncpy($1,$2,$3);" 
+    requires Cxx_headers::cstring
+  ;
+
+  //$ C strlen: NTBS length.
+  fun strlen: +char -> size = "::std::strlen($1)" 
+    requires Cxx_headers::cstring
+  ;
+
+  fun len (s:+char) => strlen s;
+
+  //$ Traditional NTBS strdup.
+  gen strdup: +char -> +char = "::flx::rtl::strutil::flx_strdup($1)"
+    requires package "flx_strutil"
+  ; 
+
+}
+
 
 Unique C Strings 
 =================
 
+==================== ========================================
+key                  file                                     
+==================== ========================================
+ucstr.flx            share/lib/std/strings/ucstr.flx          
+ucstr_prim_01.flx    src/test/regress/rt/ucstr_prim_01.flx    
+ucstr_prim_01.expect src/test/regress/rt/ucstr_prim_01.expect 
+==================== ========================================
 
 A safer way to handle NTBS, using uniq typing to transfer
 owenership. Doesn't require GC.
@@ -81,195 +93,195 @@ string length if they exceed it.
 
 
 .. code-block:: felix
+//[ucstr.flx]
+open class UniqueCStrings
+{
+  open CString;
+  open Memory;
 
-   open class UniqueCStrings
-   {
-     open CString;
-     open Memory;
-   
-     private var debug = Env::issetenv "FLX_TRACE_UCSTR";
-   
-     // abstract representation
-     private type _ucstr = new +char;
-   
-     // make it uniq
-     typedef ucstr = uniq _ucstr;
-   
-     // privatise access to representation
-     private fun unpack (var p: ucstr) : +char => p.unbox._repr_;
-     private fun pack (p: +char) => p._make__ucstr.box;
-   
-     // Constructors
-     ctor ucstr (var s:string) = {
-        var p =  s._unsafe_cstr; // malloc'd copy of string contents
-        if debug perform
-          println$ "Creating " + p.repr + " @" + p.address.repr;
-        return pack p;
-     }
-   
-     ctor ucstr (s:+char) => s.strdup.pack;
-   
-     // duplicate value, destructive
-     fun dup (var s:ucstr) : ucstr * ucstr = {
-       var p = unpack s;
-       var q = strdup p;
-       if debug perform
-         println$ "Creating " + q.repr + " @" + q.address.repr;
-       return p.pack,q.pack;
-     }
-   
-     // duplicate variable, non destructive
-     fun dup (s:&<ucstr) : ucstr = {
-       var p = s.peek._repr_.strdup;
-       if debug perform
-         println$ "Creating " + p.repr + " @" + p.address.repr;
-       return p.pack;
-     }
-   
-     // deletes the store
-     proc delete (var p:ucstr) {
-       var q = unpack p;
-       if debug perform
-         println$ "Deleting " + q.address.repr;
-       free q;
-     } 
-   
-     inherit Str[_ucstr];
-     inherit Repr[_ucstr];
-     instance Str[_ucstr] { fun str(p:_ucstr)=>p._repr_.str; }
-     instance Repr[_ucstr] { fun repr(p:_ucstr)=>p._repr_.repr; }
-   
-     // length
-     fun len(var s:&<ucstr) : size => s.peek._repr_.strlen;
-   
-     // modify one char
-     fun set (var s:ucstr, i:int, c:char) : ucstr =  {
-       var cs = unpack s;
-       Carray::set (cs, i, c); 
-       return cs.pack;
-     }
-   
-     private gen realloc : +char * !ints -> +char = 
-       "(char*)::std::realloc($1,$2)"
-       requires Cxx_headers::cstdlib
-     ; 
-   
-     // reserve storage 
-     fun reserve (var s:ucstr, n:size) : ucstr =>
-       pack (realloc (unpack s,n))
-     ;
-   
-     // append: consumes y
-     fun append (var x:ucstr, var y:ucstr): ucstr = {
-       var cx = unpack x;
-       var cy = unpack y;
-       var lx = cx.len;
-       var ly = cy.len;
-       var r = realloc (cx, lx+ly+1);
-       strncpy (r+lx,cy,ly+1);
-       if debug do
-         println$ "Realloc @" + cx.address.repr + " -> " + r.address.repr;
-         println$ "Free @" + cy.address.repr;
-       done
-       free cy;
-       return pack r;
-     } 
-   
-     // append: doesnt consume y
-     noinline fun append (var x:ucstr, var py:&ucstr): ucstr = {
-       var cx = unpack x;
-       var cy = py.peek._repr_;
-       var lx = cx.len;
-       var ly = cy.len;
-       var r = realloc (cx, lx+ly+1);
-       if debug perform
-         println$ "Realloc @" + cx.address.repr + " -> " + r.address.repr;
-       strncpy (r+lx,cy,ly+1);
-       return pack r;
-     } 
-   
-     // nicer appends
-     fun + (var x:ucstr, var y:ucstr) => append (x,y);
-     fun + (var x:ucstr, var py:&ucstr) => append (x,py);
-   
-     proc += (var lhs: &ucstr, var rhs: ucstr) => 
-       lhs <- append (*lhs,rhs)
-     ;
-     proc += (var lhs: &ucstr, var rhs: &ucstr) => 
-       lhs <- append (*lhs,rhs)
-     ;
-   
-     private fun strmov (var x:ucstr) (var f:int, var l:int) : ucstr = {
-       var p = x.unpack;
-       var n = p.strlen.int;
-       if f < 0 perform f = 0; 
-       if f > n perform f = n;
-       if l < 0 perform l = f;
-       if l > n perform l = n;
-       if f != l perform strcpy (p+f, p+l); 
-       return pack p;
-     }
+  private var debug = Env::issetenv "FLX_TRACE_UCSTR";
+
+  // abstract representation
+  private type _ucstr = new +char;
+
+  // make it uniq
+  typedef ucstr = uniq _ucstr;
+
+  // privatise access to representation
+  private fun unpack (var p: ucstr) : +char => p.unbox._repr_;
+  private fun pack (p: +char) => p._make__ucstr.box;
+
+  // Constructors
+  ctor ucstr (var s:string) = {
+     var p =  s._unsafe_cstr; // malloc'd copy of string contents
+     if debug perform
+       println$ "Creating " + p.repr + " @"@ @+@ @p@.@a@d@d@r@e@s@s@.@r@e@p@r@;
+     return pack p;
+  }
+
+  ctor ucstr (s:+char) => s.strdup.pack;
+
+  // duplicate value, destructive
+  fun dup (var s:ucstr) : ucstr * ucstr = {
+    var p = unpack s;
+    var q = strdup p;
+    if debug perform
+      println$ "Creating " + q.repr + " @"@ @+@ @q@.@a@d@d@r@e@s@s@.@r@e@p@r@;
+    return p.pack,q.pack;
+  }
+
+  // duplicate variable, non destructive
+  fun dup (s:&<ucstr) : ucstr = {
+    var p = s.peek._repr_.strdup;
+    if debug perform
+      println$ "Creating " + p.repr + " @"@ @+@ @p@.@a@d@d@r@e@s@s@.@r@e@p@r@;
+    return p.pack;
+  }
+
+  // deletes the store
+  proc delete (var p:ucstr) {
+    var q = unpack p;
+    if debug perform
+      println$ "Deleting " + q.address.repr;
+    free q;
+  } 
+
+  inherit Str[_ucstr];
+  inherit Repr[_ucstr];
+  instance Str[_ucstr] { fun str(p:_ucstr)=>p._repr_.str; }
+  instance Repr[_ucstr] { fun repr(p:_ucstr)=>p._repr_.repr; }
+
+  // length
+  fun len(var s:&<ucstr) : size => s.peek._repr_.strlen;
+
+  // modify one char
+  fun set (var s:ucstr, i:int, c:char) : ucstr =  {
+    var cs = unpack s;
+    Carray::set (cs, i, c); 
+    return cs.pack;
+  }
+
+  private gen realloc : +char * !ints -> +char = 
+    "(char*)::std::realloc($1,$2)"
+    requires Cxx_headers::cstdlib
+  ; 
+
+  // reserve storage 
+  fun reserve (var s:ucstr, n:size) : ucstr =>
+    pack (realloc (unpack s,n))
+  ;
+
+  // append: consumes y
+  fun append (var x:ucstr, var y:ucstr): ucstr = {
+    var cx = unpack x;
+    var cy = unpack y;
+    var lx = cx.len;
+    var ly = cy.len;
+    var r = realloc (cx, lx+ly+1);
+    strncpy (r+lx,cy,ly+1);
+    if debug do
+      println$ "Realloc @"@ @+@ @c@x@.@a@d@d@r@e@s@s@.@r@e@p@r@ @+@ @"@ @-@>@ @"@ @+@ @r@.@a@d@d@r@e@s@s@.@r@e@p@r@;
+      println$ "Free @"@ @+@ @c@y@.@a@d@d@r@e@s@s@.@r@e@p@r@;
+    done
+    free cy;
+    return pack r;
+  } 
+
+  // append: doesnt consume y
+  noinline fun append (var x:ucstr, var py:&ucstr): ucstr = {
+    var cx = unpack x;
+    var cy = py.peek._repr_;
+    var lx = cx.len;
+    var ly = cy.len;
+    var r = realloc (cx, lx+ly+1);
+    if debug perform
+      println$ "Realloc @"@ @+@ @c@x@.@a@d@d@r@e@s@s@.@r@e@p@r@ @+@ @"@ @-@>@ @"@ @+@ @r@.@a@d@d@r@e@s@s@.@r@e@p@r@;
+    strncpy (r+lx,cy,ly+1);
+    return pack r;
+  } 
+
+  // nicer appends
+  fun + (var x:ucstr, var y:ucstr) => append (x,y);
+  fun + (var x:ucstr, var py:&ucstr) => append (x,py);
+
+  proc += (var lhs: &ucstr, var rhs: ucstr) => 
+    lhs <- append (*lhs,rhs)
+  ;
+  proc += (var lhs: &ucstr, var rhs: &ucstr) => 
+    lhs <- append (*lhs,rhs)
+  ;
+
+  private fun strmov (var x:ucstr) (var f:int, var l:int) : ucstr = {
+    var p = x.unpack;
+    var n = p.strlen.int;
+    if f < 0 perform f = 0; 
+    if f > n perform f = n;
+    if l < 0 perform l = f;
+    if l > n perform l = n;
+    if f != l perform strcpy (p+f, p+l); 
+    return pack p;
+  }
+ 
+  fun erase (var x:ucstr) (sl:slice[int]) : ucstr =>
+    match sl with
+    | Slice_all => set (x,0,char "")
+    | Slice_from idx => set (x,idx, char "")
+    | Slice_from_counted (first,len) => strmov x (first,first+len)
+    | Slice_to_incl incl => strmov x (0,incl)
+    | Slice_to_excl excl => strmov x (0, excl - 1)
+    | Slice_range_incl (first, last) => strmov x (first, last+1)
+    | Slice_range_excl (first, last) => strmov x (first, last) 
+    | Slice_one pos => strmov x (pos, pos+1)
+  ;
+
+  fun insert (var x:ucstr) (var pos: int, var y:ucstr) : ucstr =
+  {
+    var px = unpack x;
+    var py = unpack y;
+    var n = px.strlen.int;
+    var m = py.strlen.int; 
+    if pos < 0 perform pos = pos + n;
+    if pos > n perform pos = n;
+    if pos < 0 perform pos = 0;
+    px = realloc (px, m + n + 1);
+    memmove (px.address + pos, px.address + pos + m, m);
+    free py;
+    return pack px;
+  }
+
+  fun search (var s: &<ucstr, var pat: &<ucstr) : size =
+  {
+    var p = s*.unpack;
+    var q = pat*.unpack;
+    var n = strlen p;
+    var m = strlen q;
+    var pr = Memory::search (p.address,(p+n).address,q.address,(q+m).address);
+    val r = (pr - p.address).size;
+    return r;
+  }
     
-     fun erase (var x:ucstr) (sl:slice[int]) : ucstr =>
-       match sl with
-       | Slice_all => set (x,0,char "")
-       | Slice_from idx => set (x,idx, char "")
-       | Slice_from_counted (first,len) => strmov x (first,first+len)
-       | Slice_to_incl incl => strmov x (0,incl)
-       | Slice_to_excl excl => strmov x (0, excl - 1)
-       | Slice_range_incl (first, last) => strmov x (first, last+1)
-       | Slice_range_excl (first, last) => strmov x (first, last) 
-       | Slice_one pos => strmov x (pos, pos+1)
-     ;
-   
-     fun insert (var x:ucstr) (var pos: int, var y:ucstr) : ucstr =
-     {
-       var px = unpack x;
-       var py = unpack y;
-       var n = px.strlen.int;
-       var m = py.strlen.int; 
-       if pos < 0 perform pos = pos + n;
-       if pos > n perform pos = n;
-       if pos < 0 perform pos = 0;
-       px = realloc (px, m + n + 1);
-       memmove (px.address + pos, px.address + pos + m, m);
-       free py;
-       return pack px;
-     }
-   
-     fun search (var s: &<ucstr, var pat: &<ucstr) : size =
-     {
-       var p = s*.unpack;
-       var q = pat*.unpack;
-       var n = strlen p;
-       var m = strlen q;
-       var pr = Memory::search (p.address,(p+n).address,q.address,(q+m).address);
-       val r = (pr - p.address).size;
-       return r;
-     }
-       
-   }
-   
+}
+
 
 ucstr_prim_01.flx
 =================
 
 
 .. code-block:: felix
-
-   proc test() {
-     var s = ucstr "hello";
-     println$ &s;
-     s = set (s, 0, char "e"); 
-     println$ &s;
-     delete s;
-   }
-   test();
+//[ucstr_prim_01.flx]
+proc test() {
+  var s = ucstr "hello";
+  println$ &s;
+  s = set (s, 0, char "e"); 
+  println$ &s;
+  delete s;
+}
+test();
 
 .. code-block:: text
 
-   hello
-   eello
+hello
+eello
 
 
 
@@ -277,6 +289,13 @@ ucstr_prim_01.flx
 Unique Counted Strings 
 =======================
 
+=================== ====================================
+key                 file                                 
+=================== ====================================
+ustr.flx            share/lib/std/strings/ustr.flx       
+ustr_prim_01.flx    src/test/regress/rt/ustr_prim_01.flx 
+ustr_prim_01.expect src/test/regress/rt/ustr_prim_01.flx 
+=================== ====================================
 
 A safer way to handle counted strings using uniq typing to transfer
 owenership. Doesn't require GC.
@@ -312,195 +331,195 @@ string length if they exceed it.
 
 
 .. code-block:: felix
+//[ustr.flx]
+open class UniqueCountedStrings
+{
+  open CString;
+  open Memory;
 
-   open class UniqueCountedStrings
-   {
-     open CString;
-     open Memory;
-   
-     private var debug = Env::issetenv "FLX_TRACE_UCSTR";
-   
-     // abstract representation
-     private type _ustr = new +char;
-   
-     // make it uniq
-     typedef ustr = uniq _ustr;
-   
-     // privatise access to representation
-     private fun unpack (var p: ustr) : +char => p.unbox._repr_;
-     private fun pack (p: +char) => p._make__ustr.box;
-   
-     // Constructors
-     ctor ustr (var s:string) = {
-        var p =  s._unsafe_cstr; // malloc'd copy of string contents
-        if debug perform
-          println$ "Creating " + p.repr + " @" + p.address.repr;
-        return pack p;
-     }
-   
-     ctor ustr (s:+char) => s.strdup.pack;
-   
-     // duplicate value, destructive
-     fun dup (var s:ustr) : ustr * ustr = {
-       var p = unpack s;
-       var q = strdup p;
-       if debug perform
-         println$ "Creating " + q.repr + " @" + q.address.repr;
-       return p.pack,q.pack;
-     }
-   
-     // duplicate variable, non destructive
-     fun dup (s:&<ustr) : ustr = {
-       var p = s.peek._repr_.strdup;
-       if debug perform
-         println$ "Creating " + p.repr + " @" + p.address.repr;
-       return p.pack;
-     }
-   
-     // deletes the store
-     proc delete (var p:ustr) {
-       var q = unpack p;
-       if debug perform
-         println$ "Deleting " + q.address.repr;
-       free q;
-     } 
-   
-     inherit Str[_ustr];
-     inherit Repr[_ustr];
-     instance Str[_ustr] { fun str(p:_ustr)=>p._repr_.str; }
-     instance Repr[_ustr] { fun repr(p:_ustr)=>p._repr_.repr; }
-   
-     // length
-     fun len(var s:&<ustr) : size => s.peek._repr_.strlen;
-   
-     // modify one char
-     fun set (var s:ustr, i:int, c:char) : ustr =  {
-       var cs = unpack s;
-       Carray::set (cs, i, c); 
-       return cs.pack;
-     }
-   
-     private gen realloc : +char * !ints -> +char = 
-       "(char*)::std::realloc($1,$2)"
-       requires Cxx_headers::cstdlib
-     ; 
-   
-     // reserve storage 
-     fun reserve (var s:ustr, n:size) : ustr =>
-       pack (realloc (unpack s,n))
-     ;
-   
-     // append: consumes y
-     fun append (var x:ustr, var y:ustr): ustr = {
-       var cx = unpack x;
-       var cy = unpack y;
-       var lx = cx.len;
-       var ly = cy.len;
-       var r = realloc (cx, lx+ly+1);
-       strncpy (r+lx,cy,ly+1);
-       if debug do
-         println$ "Realloc @" + cx.address.repr + " -> " + r.address.repr;
-         println$ "Free @" + cy.address.repr;
-       done
-       free cy;
-       return pack r;
-     } 
-   
-     // append: doesnt consume y
-     noinline fun append (var x:ustr, var py:&ustr): ustr = {
-       var cx = unpack x;
-       var cy = py.peek._repr_;
-       var lx = cx.len;
-       var ly = cy.len;
-       var r = realloc (cx, lx+ly+1);
-       if debug perform
-         println$ "Realloc @" + cx.address.repr + " -> " + r.address.repr;
-       strncpy (r+lx,cy,ly+1);
-       return pack r;
-     } 
-   
-     // nicer appends
-     fun + (var x:ustr, var y:ustr) => append (x,y);
-     fun + (var x:ustr, var py:&ustr) => append (x,py);
-   
-     proc += (var lhs: &ustr, var rhs: ustr) => 
-       lhs <- append (*lhs,rhs)
-     ;
-     proc += (var lhs: &ustr, var rhs: &ustr) => 
-       lhs <- append (*lhs,rhs)
-     ;
-   
-     private fun strmov (var x:ustr) (var f:int, var l:int) : ustr = {
-       var p = x.unpack;
-       var n = p.strlen.int;
-       if f < 0 perform f = 0; 
-       if f > n perform f = n;
-       if l < 0 perform l = f;
-       if l > n perform l = n;
-       if f != l perform strcpy (p+f, p+l); 
-       return pack p;
-     }
+  private var debug = Env::issetenv "FLX_TRACE_UCSTR";
+
+  // abstract representation
+  private type _ustr = new +char;
+
+  // make it uniq
+  typedef ustr = uniq _ustr;
+
+  // privatise access to representation
+  private fun unpack (var p: ustr) : +char => p.unbox._repr_;
+  private fun pack (p: +char) => p._make__ustr.box;
+
+  // Constructors
+  ctor ustr (var s:string) = {
+     var p =  s._unsafe_cstr; // malloc'd copy of string contents
+     if debug perform
+       println$ "Creating " + p.repr + " @"@ @+@ @p@.@a@d@d@r@e@s@s@.@r@e@p@r@;
+     return pack p;
+  }
+
+  ctor ustr (s:+char) => s.strdup.pack;
+
+  // duplicate value, destructive
+  fun dup (var s:ustr) : ustr * ustr = {
+    var p = unpack s;
+    var q = strdup p;
+    if debug perform
+      println$ "Creating " + q.repr + " @"@ @+@ @q@.@a@d@d@r@e@s@s@.@r@e@p@r@;
+    return p.pack,q.pack;
+  }
+
+  // duplicate variable, non destructive
+  fun dup (s:&<ustr) : ustr = {
+    var p = s.peek._repr_.strdup;
+    if debug perform
+      println$ "Creating " + p.repr + " @"@ @+@ @p@.@a@d@d@r@e@s@s@.@r@e@p@r@;
+    return p.pack;
+  }
+
+  // deletes the store
+  proc delete (var p:ustr) {
+    var q = unpack p;
+    if debug perform
+      println$ "Deleting " + q.address.repr;
+    free q;
+  } 
+
+  inherit Str[_ustr];
+  inherit Repr[_ustr];
+  instance Str[_ustr] { fun str(p:_ustr)=>p._repr_.str; }
+  instance Repr[_ustr] { fun repr(p:_ustr)=>p._repr_.repr; }
+
+  // length
+  fun len(var s:&<ustr) : size => s.peek._repr_.strlen;
+
+  // modify one char
+  fun set (var s:ustr, i:int, c:char) : ustr =  {
+    var cs = unpack s;
+    Carray::set (cs, i, c); 
+    return cs.pack;
+  }
+
+  private gen realloc : +char * !ints -> +char = 
+    "(char*)::std::realloc($1,$2)"
+    requires Cxx_headers::cstdlib
+  ; 
+
+  // reserve storage 
+  fun reserve (var s:ustr, n:size) : ustr =>
+    pack (realloc (unpack s,n))
+  ;
+
+  // append: consumes y
+  fun append (var x:ustr, var y:ustr): ustr = {
+    var cx = unpack x;
+    var cy = unpack y;
+    var lx = cx.len;
+    var ly = cy.len;
+    var r = realloc (cx, lx+ly+1);
+    strncpy (r+lx,cy,ly+1);
+    if debug do
+      println$ "Realloc @"@ @+@ @c@x@.@a@d@d@r@e@s@s@.@r@e@p@r@ @+@ @"@ @-@>@ @"@ @+@ @r@.@a@d@d@r@e@s@s@.@r@e@p@r@;
+      println$ "Free @"@ @+@ @c@y@.@a@d@d@r@e@s@s@.@r@e@p@r@;
+    done
+    free cy;
+    return pack r;
+  } 
+
+  // append: doesnt consume y
+  noinline fun append (var x:ustr, var py:&ustr): ustr = {
+    var cx = unpack x;
+    var cy = py.peek._repr_;
+    var lx = cx.len;
+    var ly = cy.len;
+    var r = realloc (cx, lx+ly+1);
+    if debug perform
+      println$ "Realloc @"@ @+@ @c@x@.@a@d@d@r@e@s@s@.@r@e@p@r@ @+@ @"@ @-@>@ @"@ @+@ @r@.@a@d@d@r@e@s@s@.@r@e@p@r@;
+    strncpy (r+lx,cy,ly+1);
+    return pack r;
+  } 
+
+  // nicer appends
+  fun + (var x:ustr, var y:ustr) => append (x,y);
+  fun + (var x:ustr, var py:&ustr) => append (x,py);
+
+  proc += (var lhs: &ustr, var rhs: ustr) => 
+    lhs <- append (*lhs,rhs)
+  ;
+  proc += (var lhs: &ustr, var rhs: &ustr) => 
+    lhs <- append (*lhs,rhs)
+  ;
+
+  private fun strmov (var x:ustr) (var f:int, var l:int) : ustr = {
+    var p = x.unpack;
+    var n = p.strlen.int;
+    if f < 0 perform f = 0; 
+    if f > n perform f = n;
+    if l < 0 perform l = f;
+    if l > n perform l = n;
+    if f != l perform strcpy (p+f, p+l); 
+    return pack p;
+  }
+ 
+  fun erase (var x:ustr) (sl:slice[int]) : ustr =>
+    match sl with
+    | Slice_all => set (x,0,char "")
+    | Slice_from idx => set (x,idx, char "")
+    | Slice_from_counted (first,len) => strmov x (first,first+len)
+    | Slice_to_incl incl => strmov x (0,incl)
+    | Slice_to_excl excl => strmov x (0, excl - 1)
+    | Slice_range_incl (first, last) => strmov x (first, last+1)
+    | Slice_range_excl (first, last) => strmov x (first, last) 
+    | Slice_one pos => strmov x (pos, pos+1)
+  ;
+
+  fun insert (var x:ustr) (var pos: int, var y:ustr) : ustr =
+  {
+    var px = unpack x;
+    var py = unpack y;
+    var n = px.strlen.int;
+    var m = py.strlen.int; 
+    if pos < 0 perform pos = pos + n;
+    if pos > n perform pos = n;
+    if pos < 0 perform pos = 0;
+    px = realloc (px, m + n + 1);
+    memmove (px.address + pos, px.address + pos + m, m);
+    free py;
+    return pack px;
+  }
+
+  fun search (var s: &<ustr, var pat: &<ustr) : size =
+  {
+    var p = s*.unpack;
+    var q = pat*.unpack;
+    var n = strlen p;
+    var m = strlen q;
+    var pr = Memory::search (p.address,(p+n).address,q.address,(q+m).address);
+    val r = (pr - p.address).size;
+    return r;
+  }
     
-     fun erase (var x:ustr) (sl:slice[int]) : ustr =>
-       match sl with
-       | Slice_all => set (x,0,char "")
-       | Slice_from idx => set (x,idx, char "")
-       | Slice_from_counted (first,len) => strmov x (first,first+len)
-       | Slice_to_incl incl => strmov x (0,incl)
-       | Slice_to_excl excl => strmov x (0, excl - 1)
-       | Slice_range_incl (first, last) => strmov x (first, last+1)
-       | Slice_range_excl (first, last) => strmov x (first, last) 
-       | Slice_one pos => strmov x (pos, pos+1)
-     ;
-   
-     fun insert (var x:ustr) (var pos: int, var y:ustr) : ustr =
-     {
-       var px = unpack x;
-       var py = unpack y;
-       var n = px.strlen.int;
-       var m = py.strlen.int; 
-       if pos < 0 perform pos = pos + n;
-       if pos > n perform pos = n;
-       if pos < 0 perform pos = 0;
-       px = realloc (px, m + n + 1);
-       memmove (px.address + pos, px.address + pos + m, m);
-       free py;
-       return pack px;
-     }
-   
-     fun search (var s: &<ustr, var pat: &<ustr) : size =
-     {
-       var p = s*.unpack;
-       var q = pat*.unpack;
-       var n = strlen p;
-       var m = strlen q;
-       var pr = Memory::search (p.address,(p+n).address,q.address,(q+m).address);
-       val r = (pr - p.address).size;
-       return r;
-     }
-       
-   }
-   
+}
+
 
 ustr_prim_01.flx
 ================
 
 
 .. code-block:: felix
-
-   proc test() {
-     var s = ustr "hello";
-     println$ &s;
-     s = set (s, 0, char "e"); 
-     println$ &s;
-     delete s;
-   }
-   test();
+//[ustr_prim_01.flx]
+proc test() {
+  var s = ustr "hello";
+  println$ &s;
+  s = set (s, 0, char "e"); 
+  println$ &s;
+  delete s;
+}
+test();
 
 .. code-block:: text
 
-   hello
-   eello
+hello
+eello
 
 
 

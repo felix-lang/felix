@@ -3,6 +3,21 @@
 Felix RTL Exception Handling.
 =============================
 
+========================= =========================================
+key                       file                                      
+========================= =========================================
+flx_continuation.hpp      share/lib/rtl/flx_continuation.hpp        
+flx_continuation.cpp      share/src/exceptions/flx_continuation.cpp 
+flx_eh.hpp                share/lib/rtl/flx_eh.hpp                  
+flx_eh.cpp                share/src/exceptions/flx_eh.cpp           
+flx_exceptions.hpp        share/lib/rtl/flx_exceptions.hpp          
+flx_exceptions.cpp        share/src/exceptions/flx_exceptions.cpp   
+flx_exceptions_config.hpp share/lib/rtl/flx_exceptions_config.hpp   
+exceptions.fsyn           share/lib/std/control/exceptions.fsyn     
+flx_exceptions.py         $PWD/buildsystem/flx_exceptions.py        
+unix_flx_exceptions.fpc   $PWD/src/config/unix/flx_exceptions.fpc   
+win32_flx_exceptions.fpc  $PWD/src/config/win32/flx_exceptions.fpc  
+========================= =========================================
 
 
 Continuation
@@ -14,50 +29,50 @@ thrown as an exception.
 
 .. code-block:: cpp
 
-   #ifndef _FLX_CONTINUATION_HPP
-   #define _FLX_CONTINUATION_HPP
-   #include "flx_exceptions_config.hpp"
-   #include "flx_compiler_support_headers.hpp"
-   
-   // ********************************************************
-   /// CONTINUATION.
-   // ********************************************************
-   
-   namespace flx {namespace rtl {
-   struct FLX_EXCEPTIONS_EXTERN con_t ///< abstract base for mutable continuations
-   {
-     FLX_PC_DECL               ///< interior program counter
-     struct _uctor_ *p_svc;           ///< pointer to service request
-   
-     con_t();                  ///< initialise pc, p_svc to 0
-     virtual con_t *resume()=0;///< method to perform a computational step
-     virtual ~con_t();
-     con_t * _caller;          ///< callers continuation (return address)
-   };
-   }} //namespaces
-   #endif
+#ifndef _FLX_CONTINUATION_HPP
+#define _FLX_CONTINUATION_HPP
+#include "flx_exceptions_config.hpp"
+#include "flx_compiler_support_headers.hpp"
+
+// ********************************************************
+/// CONTINUATION.
+// ********************************************************
+
+namespace flx {namespace rtl {
+struct FLX_EXCEPTIONS_EXTERN con_t ///< abstract base for mutable continuations
+{
+  FLX_PC_DECL               ///< interior program counter
+  struct _uctor_ *p_svc;           ///< pointer to service request
+
+  con_t();                  ///< initialise pc, p_svc to 0
+  virtual con_t *resume()=0;///< method to perform a computational step
+  virtual ~con_t();
+  con_t * _caller;          ///< callers continuation (return address)
+};
+}} //namespaces
+#endif
 
 
 .. code-block:: cpp
 
-   #include "flx_continuation.hpp"
-   namespace flx { namespace rtl {
-   // ********************************************************
-   // con_t implementation
-   // ********************************************************
-   
-   con_t::con_t() : pc(0), p_svc(0), _caller(0) {
-   #if FLX_DEBUG_CONT
-    fprintf(stderr,"Constructing %p\n",this);
-   #endif
-   }
-   con_t::~con_t(){
-   #if FLX_DEBUG_CONT
-     fprintf(stderr,"Destroying %p\n",this);
-   #endif
-   }
-   }} // namespaces
-   
+#include "flx_continuation.hpp"
+namespace flx { namespace rtl {
+// ********************************************************
+// con_t implementation
+// ********************************************************
+
+con_t::con_t() : pc(0), p_svc(0), _caller(0) {
+#if FLX_DEBUG_CONT
+ fprintf(stderr,"Constructing %p\n",this);
+#endif
+}
+con_t::~con_t(){
+#if FLX_DEBUG_CONT
+  fprintf(stderr,"Destroying %p\n",this);
+#endif
+}
+}} // namespaces
+
 
 Exceptions
 ==========
@@ -89,308 +104,308 @@ and should not be used.
 
 .. code-block:: cpp
 
-   #ifndef __FLX_EXCEPTIONS_HPP__
-   #define __FLX_EXCEPTIONS_HPP__
-   #include "flx_exceptions_config.hpp"
-   #include <string>
-   
-   namespace flx { namespace rtl {
-   // ********************************************************
-   // Standard C++ Exceptions
-   // ********************************************************
-   
-   struct FLX_EXCEPTIONS_EXTERN flx_exception_t;
-   struct FLX_EXCEPTIONS_EXTERN flx_out_of_memory_t;
-   struct FLX_EXCEPTIONS_EXTERN flx_exec_failure_t;
-   struct FLX_EXCEPTIONS_EXTERN flx_range_srcref_t;
-   struct FLX_EXCEPTIONS_EXTERN flx_match_failure_t;
-   struct FLX_EXCEPTIONS_EXTERN flx_assert_failure_t;
-   struct FLX_EXCEPTIONS_EXTERN flx_assert2_failure_t;
-   struct FLX_EXCEPTIONS_EXTERN flx_axiom_check_failure_t;
-   struct FLX_EXCEPTIONS_EXTERN flx_switch_failure_t;
-   struct FLX_EXCEPTIONS_EXTERN flx_dead_frame_failure_t;
-   struct FLX_EXCEPTIONS_EXTERN flx_dropthru_failure_t;
-   struct FLX_EXCEPTIONS_EXTERN flx_link_failure_t;
-   
-   // ********************************************************
-   /// EXCEPTION: Felix exception base abstraction.
-   /// Mainly used to convert catches into subroutine
-   /// calls which then dispatch on RTTI manually.
-   // ********************************************************
-   
-   
-   struct FLX_EXCEPTIONS_EXTERN flx_exception_t {
-     virtual ~flx_exception_t()=0;
-   };
-   
-   // ********************************************************
-   /// EXCEPTION: Out of Memory.
-   /// Thrown when out of memory or memory bound exceeded.
-   // ********************************************************
-   
-   struct FLX_EXCEPTIONS_EXTERN flx_out_of_memory_t : flx_exception_t {
-     flx_out_of_memory_t();
-     virtual ~flx_out_of_memory_t();
-   };
-   
-   // ********************************************************
-   /// EXCEPTION: EXEC protocol failure.
-   /// Thrown when trying to run a dead procedure
-   // ********************************************************
-   
-   struct FLX_EXCEPTIONS_EXTERN flx_exec_failure_t : flx_exception_t {
-     ::std::string filename;  ///< dll filename
-     ::std::string operation; ///< faulty operation
-     ::std::string what;      ///< error description
-     flx_exec_failure_t(::std::string f, ::std::string o, ::std::string w);
-     virtual ~flx_exec_failure_t();
-   };
-   
-   // ********************************************************
-   /// SOURCE REFERENCE: to track places in user source code.
-   // ********************************************************
-   
-   struct FLX_EXCEPTIONS_EXTERN flx_range_srcref_t {
-     char const *filename;  ///< source file name
-     int startline;   ///< first line (1 origin)
-     int startcol;    ///< first column (1 origin)
-     int endline;     ///< last line
-     int endcol;      ///< last column
-     flx_range_srcref_t(char const *f,int sl, int sc, int el, int ec);
-     flx_range_srcref_t();
-   };
-   
-   // ********************************************************
-   /// EXCEPTION: HALT.
-   /// Thrown by halt command
-   // ********************************************************
-   
-   struct FLX_EXCEPTIONS_EXTERN flx_halt_t : flx_exception_t {
-     ::std::string reason;         ///< halt argument
-     flx_range_srcref_t flx_loc; ///< location in Felix file
-     char const *cxx_srcfile;          ///< C++ file name
-     int cxx_srcline;            ///< C++ line number
-     flx_halt_t(flx_range_srcref_t ff, char const *cf, int cl, ::std::string reason);
-     virtual ~flx_halt_t();
-   };
-   
-   // ********************************************************
-   /// EXCEPTION: MATCH failure.
-   /// Thrown when no match cases match the argument of a match,
-   /// regmatch, or reglex
-   // ********************************************************
-   
-   struct FLX_EXCEPTIONS_EXTERN flx_match_failure_t : flx_exception_t {
-     flx_range_srcref_t flx_loc; ///< location in Felix file
-     char const *cxx_srcfile;          ///< C++ file name
-     int cxx_srcline;            ///< C++ line number
-     flx_match_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
-     virtual ~flx_match_failure_t();
-   };
-   
-   // ********************************************************
-   /// EXCEPTION: DROPTHRU failure.
-   /// Thrown when function drops off end without returning value
-   // ********************************************************
-   
-   struct FLX_EXCEPTIONS_EXTERN flx_dropthru_failure_t : flx_exception_t {
-     flx_range_srcref_t flx_loc; ///< location in Felix file
-     char const *cxx_srcfile;          ///< C++ file name
-     int cxx_srcline;            ///< C++ line number
-     flx_dropthru_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
-     virtual ~flx_dropthru_failure_t();
-   };
-   
-   // ********************************************************
-   /// EXCEPTION: ASSERT failure.
-   /// Thrown when user assertion fails
-   // ********************************************************
-   
-   struct FLX_EXCEPTIONS_EXTERN flx_assert_failure_t : flx_exception_t {
-     flx_range_srcref_t flx_loc; ///< location in Felix file
-     char const *cxx_srcfile;          ///< C++ file
-     int cxx_srcline;            ///< __LINE__ macro
-     flx_assert_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
-     virtual ~flx_assert_failure_t();
-   };
-   
-   struct FLX_EXCEPTIONS_EXTERN flx_assert2_failure_t : flx_exception_t {
-     flx_range_srcref_t flx_loc; ///< location in Felix file
-     flx_range_srcref_t flx_loc2; ///< second location in Felix file
-     char const *cxx_srcfile;          ///< C++ file
-     int cxx_srcline;            ///< __LINE__ macro
-     flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl);
-     virtual ~flx_assert2_failure_t();
-   };
-   
-   struct FLX_EXCEPTIONS_EXTERN flx_axiom_check_failure_t : flx_exception_t {
-     flx_range_srcref_t flx_loc; ///< location in Felix file
-     flx_range_srcref_t flx_loc2; ///< second location in Felix file
-     char const *cxx_srcfile;          ///< C++ file
-     int cxx_srcline;            ///< __LINE__ macro
-     flx_axiom_check_failure_t (flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl);
-     virtual ~flx_axiom_check_failure_t ();
-   };
-   
-   // ********************************************************
-   /// EXCEPTION: RANGE failure.
-   /// Thrown when a range check fails
-   // ********************************************************
-   
-   struct FLX_EXCEPTIONS_EXTERN flx_range_failure_t : flx_exception_t {
-     long min; long v; long max;
-     flx_range_srcref_t flx_loc; ///< location in Felix file
-     char const *cxx_srcfile;          ///< C++ file
-     int cxx_srcline;            ///< __LINE__ macro
-     flx_range_failure_t(long,long,long,flx_range_srcref_t ff, char const *cf, int cl);
-     virtual ~flx_range_failure_t();
-   };
-   
-   FLX_EXCEPTIONS_EXTERN long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl);
-   FLX_EXCEPTIONS_EXTERN void print_loc(FILE *ef,flx_range_srcref_t x,char const *cf, int cl);
-   FLX_EXCEPTIONS_EXTERN void print_cxxloc(FILE *ef,char const *cf, int cl);
-   
-   
-   // ********************************************************
-   /// EXCEPTION: SWITCH failure. this is a system failure!
-   // ********************************************************
-   
-   struct FLX_EXCEPTIONS_EXTERN flx_switch_failure_t : flx_exception_t {
-     char const *cxx_srcfile;          ///< C++ file
-     int cxx_srcline;            ///< __LINE__ macro
-     flx_switch_failure_t(char const *cf, int cl);
-     virtual ~flx_switch_failure_t();
-   };
-   
-   
-   // ********************************************************
-   /// EXCEPTION: DEAD FRAME failure. 
-   /// Thrown on attempt to resume already returned procedure frame.
-   // ********************************************************
-   
-   struct FLX_EXCEPTIONS_EXTERN flx_dead_frame_failure_t : flx_exception_t {
-     char const *cxx_srcfile;          ///< C++ file
-     int cxx_srcline;            ///< __LINE__ macro
-     flx_dead_frame_failure_t(char const *cf, int cl);
-     virtual ~flx_dead_frame_failure_t();
-   };
-   
-   
-   // ********************************************************
-   /// EXCEPTION: DYNAMIC LINKAGE failure. this is a system failure!
-   // ********************************************************
-   
-   struct FLX_EXCEPTIONS_EXTERN flx_link_failure_t : flx_exception_t {
-     ::std::string filename;
-     ::std::string operation;
-     ::std::string what;
-     flx_link_failure_t(::std::string f, ::std::string o, ::std::string w);
-     flx_link_failure_t(); // unfortunately this one requires a default ctor.
-     virtual ~flx_link_failure_t();
-   };
-   
-   }}
-   #endif
+#ifndef __FLX_EXCEPTIONS_HPP__
+#define __FLX_EXCEPTIONS_HPP__
+#include "flx_exceptions_config.hpp"
+#include <string>
+
+namespace flx { namespace rtl {
+// ********************************************************
+// Standard C++ Exceptions
+// ********************************************************
+
+struct FLX_EXCEPTIONS_EXTERN flx_exception_t;
+struct FLX_EXCEPTIONS_EXTERN flx_out_of_memory_t;
+struct FLX_EXCEPTIONS_EXTERN flx_exec_failure_t;
+struct FLX_EXCEPTIONS_EXTERN flx_range_srcref_t;
+struct FLX_EXCEPTIONS_EXTERN flx_match_failure_t;
+struct FLX_EXCEPTIONS_EXTERN flx_assert_failure_t;
+struct FLX_EXCEPTIONS_EXTERN flx_assert2_failure_t;
+struct FLX_EXCEPTIONS_EXTERN flx_axiom_check_failure_t;
+struct FLX_EXCEPTIONS_EXTERN flx_switch_failure_t;
+struct FLX_EXCEPTIONS_EXTERN flx_dead_frame_failure_t;
+struct FLX_EXCEPTIONS_EXTERN flx_dropthru_failure_t;
+struct FLX_EXCEPTIONS_EXTERN flx_link_failure_t;
+
+// ********************************************************
+/// EXCEPTION: Felix exception base abstraction.
+/// Mainly used to convert catches into subroutine
+/// calls which then dispatch on RTTI manually.
+// ********************************************************
+
+
+struct FLX_EXCEPTIONS_EXTERN flx_exception_t {
+  virtual ~flx_exception_t()=0;
+};
+
+// ********************************************************
+/// EXCEPTION: Out of Memory.
+/// Thrown when out of memory or memory bound exceeded.
+// ********************************************************
+
+struct FLX_EXCEPTIONS_EXTERN flx_out_of_memory_t : flx_exception_t {
+  flx_out_of_memory_t();
+  virtual ~flx_out_of_memory_t();
+};
+
+// ********************************************************
+/// EXCEPTION: EXEC protocol failure.
+/// Thrown when trying to run a dead procedure
+// ********************************************************
+
+struct FLX_EXCEPTIONS_EXTERN flx_exec_failure_t : flx_exception_t {
+  ::std::string filename;  ///< dll filename
+  ::std::string operation; ///< faulty operation
+  ::std::string what;      ///< error description
+  flx_exec_failure_t(::std::string f, ::std::string o, ::std::string w);
+  virtual ~flx_exec_failure_t();
+};
+
+// ********************************************************
+/// SOURCE REFERENCE: to track places in user source code.
+// ********************************************************
+
+struct FLX_EXCEPTIONS_EXTERN flx_range_srcref_t {
+  char const *filename;  ///< source file name
+  int startline;   ///< first line (1 origin)
+  int startcol;    ///< first column (1 origin)
+  int endline;     ///< last line
+  int endcol;      ///< last column
+  flx_range_srcref_t(char const *f,int sl, int sc, int el, int ec);
+  flx_range_srcref_t();
+};
+
+// ********************************************************
+/// EXCEPTION: HALT.
+/// Thrown by halt command
+// ********************************************************
+
+struct FLX_EXCEPTIONS_EXTERN flx_halt_t : flx_exception_t {
+  ::std::string reason;         ///< halt argument
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  char const *cxx_srcfile;          ///< C++ file name
+  int cxx_srcline;            ///< C++ line number
+  flx_halt_t(flx_range_srcref_t ff, char const *cf, int cl, ::std::string reason);
+  virtual ~flx_halt_t();
+};
+
+// ********************************************************
+/// EXCEPTION: MATCH failure.
+/// Thrown when no match cases match the argument of a match,
+/// regmatch, or reglex
+// ********************************************************
+
+struct FLX_EXCEPTIONS_EXTERN flx_match_failure_t : flx_exception_t {
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  char const *cxx_srcfile;          ///< C++ file name
+  int cxx_srcline;            ///< C++ line number
+  flx_match_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
+  virtual ~flx_match_failure_t();
+};
+
+// ********************************************************
+/// EXCEPTION: DROPTHRU failure.
+/// Thrown when function drops off end without returning value
+// ********************************************************
+
+struct FLX_EXCEPTIONS_EXTERN flx_dropthru_failure_t : flx_exception_t {
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  char const *cxx_srcfile;          ///< C++ file name
+  int cxx_srcline;            ///< C++ line number
+  flx_dropthru_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
+  virtual ~flx_dropthru_failure_t();
+};
+
+// ********************************************************
+/// EXCEPTION: ASSERT failure.
+/// Thrown when user assertion fails
+// ********************************************************
+
+struct FLX_EXCEPTIONS_EXTERN flx_assert_failure_t : flx_exception_t {
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  char const *cxx_srcfile;          ///< C++ file
+  int cxx_srcline;            ///< __LINE__ macro
+  flx_assert_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
+  virtual ~flx_assert_failure_t();
+};
+
+struct FLX_EXCEPTIONS_EXTERN flx_assert2_failure_t : flx_exception_t {
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  flx_range_srcref_t flx_loc2; ///< second location in Felix file
+  char const *cxx_srcfile;          ///< C++ file
+  int cxx_srcline;            ///< __LINE__ macro
+  flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl);
+  virtual ~flx_assert2_failure_t();
+};
+
+struct FLX_EXCEPTIONS_EXTERN flx_axiom_check_failure_t : flx_exception_t {
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  flx_range_srcref_t flx_loc2; ///< second location in Felix file
+  char const *cxx_srcfile;          ///< C++ file
+  int cxx_srcline;            ///< __LINE__ macro
+  flx_axiom_check_failure_t (flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl);
+  virtual ~flx_axiom_check_failure_t ();
+};
+
+// ********************************************************
+/// EXCEPTION: RANGE failure.
+/// Thrown when a range check fails
+// ********************************************************
+
+struct FLX_EXCEPTIONS_EXTERN flx_range_failure_t : flx_exception_t {
+  long min; long v; long max;
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  char const *cxx_srcfile;          ///< C++ file
+  int cxx_srcline;            ///< __LINE__ macro
+  flx_range_failure_t(long,long,long,flx_range_srcref_t ff, char const *cf, int cl);
+  virtual ~flx_range_failure_t();
+};
+
+FLX_EXCEPTIONS_EXTERN long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl);
+FLX_EXCEPTIONS_EXTERN void print_loc(FILE *ef,flx_range_srcref_t x,char const *cf, int cl);
+FLX_EXCEPTIONS_EXTERN void print_cxxloc(FILE *ef,char const *cf, int cl);
+
+
+// ********************************************************
+/// EXCEPTION: SWITCH failure. this is a system failure!
+// ********************************************************
+
+struct FLX_EXCEPTIONS_EXTERN flx_switch_failure_t : flx_exception_t {
+  char const *cxx_srcfile;          ///< C++ file
+  int cxx_srcline;            ///< __LINE__ macro
+  flx_switch_failure_t(char const *cf, int cl);
+  virtual ~flx_switch_failure_t();
+};
+
+
+// ********************************************************
+/// EXCEPTION: DEAD FRAME failure. 
+/// Thrown on attempt to resume already returned procedure frame.
+// ********************************************************
+
+struct FLX_EXCEPTIONS_EXTERN flx_dead_frame_failure_t : flx_exception_t {
+  char const *cxx_srcfile;          ///< C++ file
+  int cxx_srcline;            ///< __LINE__ macro
+  flx_dead_frame_failure_t(char const *cf, int cl);
+  virtual ~flx_dead_frame_failure_t();
+};
+
+
+// ********************************************************
+/// EXCEPTION: DYNAMIC LINKAGE failure. this is a system failure!
+// ********************************************************
+
+struct FLX_EXCEPTIONS_EXTERN flx_link_failure_t : flx_exception_t {
+  ::std::string filename;
+  ::std::string operation;
+  ::std::string what;
+  flx_link_failure_t(::std::string f, ::std::string o, ::std::string w);
+  flx_link_failure_t(); // unfortunately this one requires a default ctor.
+  virtual ~flx_link_failure_t();
+};
+
+}}
+#endif
 
 
 .. code-block:: cpp
 
-   #include <stdio.h>
-   
-   #include "flx_exceptions.hpp"
-   
-   namespace flx { namespace rtl {
-   // ********************************************************
-   // standard exceptions -- implementation
-   // ********************************************************
-   flx_exception_t::~flx_exception_t(){}
-   
-   flx_exec_failure_t::flx_exec_failure_t(::std::string f, ::std::string o, ::std::string w) :
-     filename(f),
-     operation(o),
-     what(w)
-   {}
-   
-   flx_out_of_memory_t::flx_out_of_memory_t(){}
-   flx_out_of_memory_t::~flx_out_of_memory_t(){}
-   flx_exec_failure_t::~flx_exec_failure_t(){}
-   
-   flx_range_srcref_t::flx_range_srcref_t() :
-       filename(""),startline(0),startcol(0),endline(0),endcol(0){}
-   flx_range_srcref_t::flx_range_srcref_t(char const *f,int sl, int sc, int el, int ec) :
-       filename(f),startline(sl),startcol(sc),endline(el),endcol(ec){}
-   
-   flx_halt_t::flx_halt_t(flx_range_srcref_t ff, char const *cf, int cl, ::std::string r) :
-      reason(r), flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
-   flx_halt_t::~flx_halt_t(){}
-   
-   flx_match_failure_t::flx_match_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
-      flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
-   flx_match_failure_t::~flx_match_failure_t(){}
-   
-   flx_dropthru_failure_t::flx_dropthru_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
-      flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
-   flx_dropthru_failure_t::~flx_dropthru_failure_t(){}
-   
-   flx_assert_failure_t::flx_assert_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
-      flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
-   flx_assert_failure_t::~flx_assert_failure_t(){}
-   
-   flx_assert2_failure_t::flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl) :
-      flx_loc(ff), flx_loc2(ff2), cxx_srcfile(cf), cxx_srcline(cl) {}
-   flx_assert2_failure_t::~flx_assert2_failure_t(){}
-   
-   flx_axiom_check_failure_t::flx_axiom_check_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl) :
-      flx_loc(ff), flx_loc2(ff2), cxx_srcfile(cf), cxx_srcline(cl) {}
-   flx_axiom_check_failure_t::~flx_axiom_check_failure_t(){}
-   
-   flx_range_failure_t::flx_range_failure_t(long l, long x, long h, flx_range_srcref_t ff, char const *cf, int cl) :
-      min(l), v(x), max(h), flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
-   flx_range_failure_t::~flx_range_failure_t(){}
-   
-   flx_switch_failure_t::~flx_switch_failure_t(){}
-   flx_switch_failure_t::flx_switch_failure_t (char const *cf, int cl) :
-     cxx_srcfile(cf), cxx_srcline (cl) {}
-   
-   flx_dead_frame_failure_t::~flx_dead_frame_failure_t(){}
-   flx_dead_frame_failure_t::flx_dead_frame_failure_t(char const *cf, int cl) :
-     cxx_srcfile(cf), cxx_srcline (cl) {}
-   
-   
-   flx_link_failure_t::flx_link_failure_t(::std::string f, ::std::string o, ::std::string w) :
-     filename(f),
-     operation(o),
-     what(w)
-   {}
-   
-   flx_link_failure_t::~flx_link_failure_t(){}
-   flx_link_failure_t::flx_link_failure_t(){}
-   
-   
-   long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl)
-   {
-     if (x>=l && x<h) return x;
-     throw flx::rtl::flx_range_failure_t (l,x,h,sref,cf,cl);
-   }
-   
-   void print_cxxloc(FILE *ef,char const *cf, int cl)
-   {
-     fprintf(ef,"C++ location  : %s %d\n", cf, cl);
-   }
-   
-   void print_loc(FILE *ef,flx_range_srcref_t x,char const *cf, int cl)
-   {
-     fprintf(ef,"Felix location: %s %d[%d]-%d[%d]\n",
-       x.filename,
-       x.startline,
-       x.startcol,
-       x.endline,
-       x.endcol
-     );
-     fprintf(ef,"C++ location  : %s %d\n", cf, cl);
-   }
-   
-   }}
+#include <stdio.h>
+
+#include "flx_exceptions.hpp"
+
+namespace flx { namespace rtl {
+// ********************************************************
+// standard exceptions -- implementation
+// ********************************************************
+flx_exception_t::~flx_exception_t(){}
+
+flx_exec_failure_t::flx_exec_failure_t(::std::string f, ::std::string o, ::std::string w) :
+  filename(f),
+  operation(o),
+  what(w)
+{}
+
+flx_out_of_memory_t::flx_out_of_memory_t(){}
+flx_out_of_memory_t::~flx_out_of_memory_t(){}
+flx_exec_failure_t::~flx_exec_failure_t(){}
+
+flx_range_srcref_t::flx_range_srcref_t() :
+    filename(""),startline(0),startcol(0),endline(0),endcol(0){}
+flx_range_srcref_t::flx_range_srcref_t(char const *f,int sl, int sc, int el, int ec) :
+    filename(f),startline(sl),startcol(sc),endline(el),endcol(ec){}
+
+flx_halt_t::flx_halt_t(flx_range_srcref_t ff, char const *cf, int cl, ::std::string r) :
+   reason(r), flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_halt_t::~flx_halt_t(){}
+
+flx_match_failure_t::flx_match_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
+   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_match_failure_t::~flx_match_failure_t(){}
+
+flx_dropthru_failure_t::flx_dropthru_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
+   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_dropthru_failure_t::~flx_dropthru_failure_t(){}
+
+flx_assert_failure_t::flx_assert_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
+   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_assert_failure_t::~flx_assert_failure_t(){}
+
+flx_assert2_failure_t::flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl) :
+   flx_loc(ff), flx_loc2(ff2), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_assert2_failure_t::~flx_assert2_failure_t(){}
+
+flx_axiom_check_failure_t::flx_axiom_check_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl) :
+   flx_loc(ff), flx_loc2(ff2), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_axiom_check_failure_t::~flx_axiom_check_failure_t(){}
+
+flx_range_failure_t::flx_range_failure_t(long l, long x, long h, flx_range_srcref_t ff, char const *cf, int cl) :
+   min(l), v(x), max(h), flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_range_failure_t::~flx_range_failure_t(){}
+
+flx_switch_failure_t::~flx_switch_failure_t(){}
+flx_switch_failure_t::flx_switch_failure_t (char const *cf, int cl) :
+  cxx_srcfile(cf), cxx_srcline (cl) {}
+
+flx_dead_frame_failure_t::~flx_dead_frame_failure_t(){}
+flx_dead_frame_failure_t::flx_dead_frame_failure_t(char const *cf, int cl) :
+  cxx_srcfile(cf), cxx_srcline (cl) {}
+
+
+flx_link_failure_t::flx_link_failure_t(::std::string f, ::std::string o, ::std::string w) :
+  filename(f),
+  operation(o),
+  what(w)
+{}
+
+flx_link_failure_t::~flx_link_failure_t(){}
+flx_link_failure_t::flx_link_failure_t(){}
+
+
+long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl)
+{
+  if (x>=l && x<h) return x;
+  throw flx::rtl::flx_range_failure_t (l,x,h,sref,cf,cl);
+}
+
+void print_cxxloc(FILE *ef,char const *cf, int cl)
+{
+  fprintf(ef,"C++ location  : %s %d\n", cf, cl);
+}
+
+void print_loc(FILE *ef,flx_range_srcref_t x,char const *cf, int cl)
+{
+  fprintf(ef,"Felix location: %s %d[%d]-%d[%d]\n",
+    x.filename,
+    x.startline,
+    x.startcol,
+    x.endline,
+    x.endcol
+  );
+  fprintf(ef,"C++ location  : %s %d\n", cf, cl);
+}
+
+}}
 
 
 Handling Exceptions
@@ -408,228 +423,228 @@ across DLL boundaries. Gcc does not have this bug.
 
 .. code-block:: cpp
 
-   #ifndef __FLX_EH_H__
-   #define __FLX_EH_H__
-   #include "flx_rtl_config.hpp"
-   #include "flx_exceptions.hpp"
-   
-   namespace flx { namespace rtl {
-   int FLX_EXCEPTIONS_EXTERN std_exception_handler (::std::exception const *e);
-   int FLX_EXCEPTIONS_EXTERN flx_exception_handler (::flx::rtl::flx_exception_t const *e);
-   }}
-   
-   #endif
+#ifndef __FLX_EH_H__
+#define __FLX_EH_H__
+#include "flx_rtl_config.hpp"
+#include "flx_exceptions.hpp"
+
+namespace flx { namespace rtl {
+int FLX_EXCEPTIONS_EXTERN std_exception_handler (::std::exception const *e);
+int FLX_EXCEPTIONS_EXTERN flx_exception_handler (::flx::rtl::flx_exception_t const *e);
+}}
+
+#endif
 
 
 .. code-block:: cpp
 
-   #include <stdio.h>
-   #include "flx_exceptions.hpp"
-   #include "flx_eh.hpp"
-   using namespace ::flx::rtl;
-   
-   
-   int ::flx::rtl::std_exception_handler (::std::exception const *e)
-   {
-     fprintf(stderr,"C++ STANDARD EXCEPTION %s\n",e->what());
-     return 4;
-   }
-   
-   int ::flx::rtl::flx_exception_handler (flx_exception_t const *e)
-   {
-   fprintf(stderr, "Felix exception handler\n");
-     if (flx_halt_t const *x = dynamic_cast<flx_halt_t const*>(e))
-     {
-       fprintf(stderr,"Halt: %s \n",x->reason.data());
-       print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
-       return 3;
-     }
-     if (flx_link_failure_t const *x = dynamic_cast<flx_link_failure_t const*>(e))
-     {
-       fprintf(stderr,"Dynamic linkage error\n");
-       fprintf(stderr,"filename: %s\n",x->filename.data());
-       fprintf(stderr,"operation: %s\n",x->operation.data());
-       fprintf(stderr,"what: %s\n",x->what.data());
-       return 3;
-     }
-     else
-     if (flx_exec_failure_t const *x = dynamic_cast<flx_exec_failure_t const*>(e))
-     {
-       fprintf(stderr,"Execution error\n");
-       fprintf(stderr,"filename: %s\n",x->filename.data());
-       fprintf(stderr,"operation: %s\n",x->operation.data());
-       fprintf(stderr,"what: %s\n",x->what.data());
-       return 3;
-     }
-     else
-     if (flx_assert_failure_t const *x = dynamic_cast<flx_assert_failure_t const*>(e))
-     {
-       fprintf(stderr,"Assertion Failure\n");
-       print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
-       return 3;
-     }
-     else
-     if (flx_assert2_failure_t const *x = dynamic_cast<flx_assert2_failure_t const*>(e))
-     {
-       fprintf(stderr,"Assertion2 Failure\n");
-       print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
-       print_loc(stderr,x->flx_loc2,x->cxx_srcfile, x->cxx_srcline);
-       return 3;
-     }
-     if (flx_axiom_check_failure_t const *x = dynamic_cast<flx_axiom_check_failure_t const*>(e))
-     {
-       fprintf(stderr,"Axiom Check Failure\n");
-       print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
-       print_loc(stderr,x->flx_loc2,x->cxx_srcfile, x->cxx_srcline);
-       return 3;
-     }
-     else
-     if (flx_match_failure_t const *x = dynamic_cast<flx_match_failure_t const*>(e))
-     {
-       fprintf(stderr,"Match Failure\n");
-       print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
-       return 3;
-     }
-     else
-     if (flx_switch_failure_t const *x = dynamic_cast<flx_switch_failure_t const*>(e))
-     {
-       fprintf(stderr,"Attempt to switch to non-existant case\n");
-       print_cxxloc(stderr,x->cxx_srcfile, x->cxx_srcline);
-       return 3;
-     }
-     if (flx_dead_frame_failure_t const *x = dynamic_cast<flx_dead_frame_failure_t const*>(e))
-     {
-       fprintf(stderr,"Attempt to resume non-live procedure frame\n");
-       print_cxxloc(stderr,x->cxx_srcfile, x->cxx_srcline);
-       return 3;
-     }
-     else
-     if (flx_dropthru_failure_t const *x = dynamic_cast<flx_dropthru_failure_t const*>(e))
-     {
-       fprintf(stderr,"Function Drops Off End Failure\n");
-       print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
-       return 3;
-     }
-     else
-     if (flx_range_failure_t const *x = dynamic_cast<flx_range_failure_t const*>(e))
-     {
-       fprintf(stderr,"Range Check Failure %ld <= %ld < %ld\n",x->min, x->v,x->max);
-       print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
-       return 3;
-     }
-     else
-     if (dynamic_cast<flx_out_of_memory_t const*>(e))
-     {
-       fprintf(stderr,"Felix Out of Malloc or Specified Max allocation Exceeded");
-       return 3;
-     }
-     else
-     {
-       fprintf(stderr,"Unknown Felix EXCEPTION!\n");
-       return 5;
-     }
-   }
+#include <stdio.h>
+#include "flx_exceptions.hpp"
+#include "flx_eh.hpp"
+using namespace ::flx::rtl;
+
+
+int ::flx::rtl::std_exception_handler (::std::exception const *e)
+{
+  fprintf(stderr,"C++ STANDARD EXCEPTION %s\n",e->what());
+  return 4;
+}
+
+int ::flx::rtl::flx_exception_handler (flx_exception_t const *e)
+{
+fprintf(stderr, "Felix exception handler\n");
+  if (flx_halt_t const *x = dynamic_cast<flx_halt_t const*>(e))
+  {
+    fprintf(stderr,"Halt: %s \n",x->reason.data());
+    print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
+    return 3;
+  }
+  if (flx_link_failure_t const *x = dynamic_cast<flx_link_failure_t const*>(e))
+  {
+    fprintf(stderr,"Dynamic linkage error\n");
+    fprintf(stderr,"filename: %s\n",x->filename.data());
+    fprintf(stderr,"operation: %s\n",x->operation.data());
+    fprintf(stderr,"what: %s\n",x->what.data());
+    return 3;
+  }
+  else
+  if (flx_exec_failure_t const *x = dynamic_cast<flx_exec_failure_t const*>(e))
+  {
+    fprintf(stderr,"Execution error\n");
+    fprintf(stderr,"filename: %s\n",x->filename.data());
+    fprintf(stderr,"operation: %s\n",x->operation.data());
+    fprintf(stderr,"what: %s\n",x->what.data());
+    return 3;
+  }
+  else
+  if (flx_assert_failure_t const *x = dynamic_cast<flx_assert_failure_t const*>(e))
+  {
+    fprintf(stderr,"Assertion Failure\n");
+    print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
+    return 3;
+  }
+  else
+  if (flx_assert2_failure_t const *x = dynamic_cast<flx_assert2_failure_t const*>(e))
+  {
+    fprintf(stderr,"Assertion2 Failure\n");
+    print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
+    print_loc(stderr,x->flx_loc2,x->cxx_srcfile, x->cxx_srcline);
+    return 3;
+  }
+  if (flx_axiom_check_failure_t const *x = dynamic_cast<flx_axiom_check_failure_t const*>(e))
+  {
+    fprintf(stderr,"Axiom Check Failure\n");
+    print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
+    print_loc(stderr,x->flx_loc2,x->cxx_srcfile, x->cxx_srcline);
+    return 3;
+  }
+  else
+  if (flx_match_failure_t const *x = dynamic_cast<flx_match_failure_t const*>(e))
+  {
+    fprintf(stderr,"Match Failure\n");
+    print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
+    return 3;
+  }
+  else
+  if (flx_switch_failure_t const *x = dynamic_cast<flx_switch_failure_t const*>(e))
+  {
+    fprintf(stderr,"Attempt to switch to non-existant case\n");
+    print_cxxloc(stderr,x->cxx_srcfile, x->cxx_srcline);
+    return 3;
+  }
+  if (flx_dead_frame_failure_t const *x = dynamic_cast<flx_dead_frame_failure_t const*>(e))
+  {
+    fprintf(stderr,"Attempt to resume non-live procedure frame\n");
+    print_cxxloc(stderr,x->cxx_srcfile, x->cxx_srcline);
+    return 3;
+  }
+  else
+  if (flx_dropthru_failure_t const *x = dynamic_cast<flx_dropthru_failure_t const*>(e))
+  {
+    fprintf(stderr,"Function Drops Off End Failure\n");
+    print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
+    return 3;
+  }
+  else
+  if (flx_range_failure_t const *x = dynamic_cast<flx_range_failure_t const*>(e))
+  {
+    fprintf(stderr,"Range Check Failure %ld <= %ld < %ld\n",x->min, x->v,x->max);
+    print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
+    return 3;
+  }
+  else
+  if (dynamic_cast<flx_out_of_memory_t const*>(e))
+  {
+    fprintf(stderr,"Felix Out of Malloc or Specified Max allocation Exceeded");
+    return 3;
+  }
+  else
+  {
+    fprintf(stderr,"Unknown Felix EXCEPTION!\n");
+    return 5;
+  }
+}
 
 
 Exception Grammar
 =================
 
 
-.. code-block:: text
+.. code-block:: felix
+//[exceptions.fsyn]
+syntax exceptions
+{
+  //$ Exception handling.
+  //$
+  //$ try .. catch x : T => handler endtry
+  //$
+  //$ can be used to execute code which might throw
+  //$ an exception, and catch the exception.
+  //$
+  //$ This is primarily intended to for wrapping C bindings.
+  //$ Exceptions do not propage properly in Felix across
+  //$ multiple function/procedure layers. If you have to use
+  //$ this construction be sure to keep wrap the try block
+  //$ closely around the throwing code.
+  block := "try" stmt+ catches "endtry" =>#
+    "`(ast_seq ,_sr ,(append `((ast_try ,_sr)) _2 _3 `((ast_endtry ,_sr))))";
 
-   syntax exceptions
-   {
-     //$ Exception handling.
-     //$
-     //$ try .. catch x : T => handler endtry
-     //$
-     //$ can be used to execute code which might throw
-     //$ an exception, and catch the exception.
-     //$
-     //$ This is primarily intended to for wrapping C bindings.
-     //$ Exceptions do not propage properly in Felix across
-     //$ multiple function/procedure layers. If you have to use
-     //$ this construction be sure to keep wrap the try block
-     //$ closely around the throwing code.
-     block := "try" stmt+ catches "endtry" =>#
-       "`(ast_seq ,_sr ,(append `((ast_try ,_sr)) _2 _3 `((ast_endtry ,_sr))))";
-   
-     catch := "catch" sname ":" sexpr  "=>" stmt+ =>#
-       "`(ast_seq ,_sr ,(cons `(ast_catch ,_sr ,_2 ,_4) _6))";
-   
-     catches := catch+ =># "_1";
-   }
-   
+  catch := "catch" sname ":" sexpr  "=>" stmt+ =>#
+    "`(ast_seq ,_sr ,(cons `(ast_catch ,_sr ,_2 ,_4) _6))";
+
+  catches := catch+ =># "_1";
+}
+
 
 .. code-block:: cpp
 
-   #ifndef __FLX_EXCEPTIONS_CONFIG_H__
-   #define __FLX_EXCEPTIONS_CONFIG_H__
-   #include "flx_rtl_config.hpp"
-   #ifdef BUILD_FLX_EXCEPTIONS
-   #define FLX_EXCEPTIONS_EXTERN FLX_EXPORT
-   #else
-   #define FLX_EXCEPTIONS_EXTERN FLX_IMPORT
-   #endif
-   #endif
+#ifndef __FLX_EXCEPTIONS_CONFIG_H__
+#define __FLX_EXCEPTIONS_CONFIG_H__
+#include "flx_rtl_config.hpp"
+#ifdef BUILD_FLX_EXCEPTIONS
+#define FLX_EXCEPTIONS_EXTERN FLX_EXPORT
+#else
+#define FLX_EXCEPTIONS_EXTERN FLX_IMPORT
+#endif
+#endif
 
 
 .. code-block:: text
 
-   Name: flx_exceptions
-   Description: Felix exceptions
-   provides_dlib: -lflx_exceptions_dynamic
-   provides_slib: -lflx_exceptions_static
-   library: flx_exceptions
-   macros: BUILD_FLX_EXCEPTIONS
-   includes: '"flx_exceptions.hpp"'
-   srcdir: src/exceptions
-   src: .*\.cpp 
+Name: flx_exceptions
+Description: Felix exceptions
+provides_dlib: -lflx_exceptions_dynamic
+provides_slib: -lflx_exceptions_static
+library: flx_exceptions
+macros: BUILD_FLX_EXCEPTIONS
+includes: '"flx_exceptions.hpp"'
+srcdir: src/exceptions
+src: .*\.cpp 
 
 
 .. code-block:: text
 
-   Name: flx
-   Description: Felix exceptions
-   provides_dlib: /DEFAULTLIB:flx_exceptions_dynamic
-   provides_slib: /DEFAULTLIB:flx_exceptions_static
-   library: flx_exceptions
-   macros: BUILD_FLX_EXCEPTIONS
-   includes: '"flx_exceptions.hpp"'
-   srcdir: src/exceptions
-   src: .*\.cpp 
+Name: flx
+Description: Felix exceptions
+provides_dlib: /DEFAULTLIB:flx_exceptions_dynamic
+provides_slib: /DEFAULTLIB:flx_exceptions_static
+library: flx_exceptions
+macros: BUILD_FLX_EXCEPTIONS
+includes: '"flx_exceptions.hpp"'
+srcdir: src/exceptions
+src: .*\.cpp 
 
 
 .. code-block:: python
 
-   import fbuild
-   from fbuild.path import Path
-   from fbuild.record import Record
-   from fbuild.builders.file import copy
-   
-   import buildsystem
-   
-   # ------------------------------------------------------------------------------
-   
-   def build_runtime(phase):
-       print('[fbuild] [rtl] build exceptions')
-       path = Path(phase.ctx.buildroot/'share'/'src/exceptions')
-   
-       srcs = [
-        path / 'flx_continuation.cpp',
-        path / 'flx_exceptions.cpp',
-        path / 'flx_eh.cpp',
-        ]
-       includes = [phase.ctx.buildroot / 'host/lib/rtl', phase.ctx.buildroot / 'share/lib/rtl']
-       macros = ['BUILD_FLX_EXCEPTIONS']
-   
-       dst = 'host/lib/rtl/flx_exceptions'
-       return Record(
-           static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
-               includes=includes,
-               macros=macros),
-           shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
-               includes=includes,
-               macros=macros))
+import fbuild
+from fbuild.path import Path
+from fbuild.record import Record
+from fbuild.builders.file import copy
+
+import buildsystem
+
+# ------------------------------------------------------------------------------
+
+def build_runtime(phase):
+    print('[fbuild] [rtl] build exceptions')
+    path = Path(phase.ctx.buildroot/'share'/'src/exceptions')
+
+    srcs = [
+     path / 'flx_continuation.cpp',
+     path / 'flx_exceptions.cpp',
+     path / 'flx_eh.cpp',
+     ]
+    includes = [phase.ctx.buildroot / 'host/lib/rtl', phase.ctx.buildroot / 'share/lib/rtl']
+    macros = ['BUILD_FLX_EXCEPTIONS']
+
+    dst = 'host/lib/rtl/flx_exceptions'
+    return Record(
+        static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
+            includes=includes,
+            macros=macros),
+        shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
+            includes=includes,
+            macros=macros))
 
 

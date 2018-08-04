@@ -407,12 +407,16 @@ done
 open Regdef;
 
 // command translation
+regdef ident_r = perl("[A-Za-z_][A-Za-z_0-9]*");
+regdef fkey_r = ident_r "." ident_r;
 regdef cmd_name_r = perl("[A-Za-z_][A-Za-z_0-9]*| *");
 regdef spc_r = " " *;
 regdef any_r = perl(".*"); 
 regdef cmd_r = "@" group(cmd_name_r) spc_r group(any_r);
-var cmd_s = render cmd_r;
-var cmd_R = RE2 cmd_s;
+regdef tangler_r = "@tangler" spc_r group(fkey_r) spc_r  "=" spc_r group(any_r);
+
+var cmd_R = RE2 (render cmd_r);
+var tangler_R = RE2 (render tangler_r);
 
 
 typedef markup_t = (`Txt | `At | `Code);
@@ -465,15 +469,56 @@ fun lexer_from_filename (var s:string) : string =
 }
 
 
-typedef mode_t = (`Doc | `Code);
+typedef mode_t = (`Doc | `Code | `Tangler);
 
 fun process_file (f: string): string =
 {
+  var tanglers = Empty[string * string];
   var out = "";
   proc println[T with Str[T]] (x:T) => out += x.str + "\n"; 
   var mode : mode_t = (#`Doc) :>> mode_t;
-  for line in split (f, char "\n") do
-    var cmd = Match (cmd_R, line);
+  nextline: for line in split (f, char "\n") do
+    var cmd = Match (tangler_R, line);
+    match cmd with
+    | Some grp => 
+      mode = (#`Tangler) :>> mode_t;
+      tanglers = (grp.1,grp.2) ! tanglers;
+      continue nextline;
+
+    | None =>
+      match mode with
+      | `Tangler =>
+        var tab = rev tanglers;
+        tanglers = Empty[string * string];
+        var lkey,lfile = fold_left 
+          (fun (lkey:int,lfile:int) (key:string,file:string) =>
+             max (lkey, key.len.int), max (lfile, file.len.int)
+          )
+          (10,20)
+          tab
+        ;
+        var tabline = "=" * lkey + " " + "=" * lfile;
+        println$ tabline;
+        println$ 
+          ("key" + " " * lkey).[0..lkey] + 
+          ("file" + " " * lfile).[0..lfile]
+        ;
+        println$ tabline;
+        for item in tab do
+          var key,file = item;
+          println$ 
+            (key + " " * lkey).[0..lkey] + 
+            (file + " " * lfile).[0..lfile]
+          ;
+        done
+        println$ tabline;
+        mode = (#`Doc) :>> mode_t;
+      | _ => 
+        mode = (#`Doc) :>> mode_t;
+      endmatch;
+    endmatch;
+
+    cmd = Match (cmd_R, line);
     match cmd with
     | Some grp =>
       var c = grp.1;

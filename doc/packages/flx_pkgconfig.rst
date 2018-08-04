@@ -3,6 +3,17 @@
 The configuration database manager  :code:`flx_pkgconfig`.
 ==========================================================
 
+================================= =====================================================
+key                               file                                                  
+================================= =====================================================
+flx_pkg.flx                       share/lib/std/felix/flx_pkg.flx                       
+flx_pkgconfig.flx                 share/lib/std/felix/flx_pkgconfig.flx                 
+flx_pkgconfig_core.flx            share/lib/std/felix/flx_pkgconfig_core.flx            
+flx_pkgconfig_export.flx          share/lib/std/felix/flx_pkgconfig_export.flx          
+flx_pkgconfig_query.flx           share/lib/std/felix/flx_pkgconfig_query.flx           
+flx_pkgconfig_query_interface.flx share/lib/std/felix/flx_pkgconfig_query_interface.flx 
+flx_pkgconfig_tool.flx            $PWD/src/tools/flx_pkgconfig.flx                      
+================================= =====================================================
 
 
 Command Line Interface
@@ -18,395 +29,395 @@ is given.
 
 
 .. code-block:: felix
+//[flx_pkgconfig_core.flx]
+class FlxPkgConfig_core
+{
+  open Lexer;
 
-   class FlxPkgConfig_core
-   {
-     open Lexer;
-   
-     gen flx_pkgconfig (args:list[string]) : int * list[string] = 
-     {
-       proc print_help {
-         println$ "flx_pkgconfig [options] pkg pkg ...";
-         println$ "  returns code 1 if any packages are missing unless --noerror is specified";
-         println$ "  prints package or field list to standard output on one line";
-         println$ "options: (follows GNU conventions)";
-         println$ "  --path=dirname        set database directory name";
-         println$ "  --path+=dirname       append database directory name";
-         println$ "  --extension=fpc       set resource descriptor extensions,";
-         println$ "                          default 'fpc' use 'pc' for pkgconfig databases";
-         println$ "  -h";
-         println$ "  --hide                only process first package in path with a given name";
-         println$ "                          default, process all occurences";
-         println$ "  --list                list available packages from specified set";
-         println$ "  --missing             list missing packages from specified set";
-         println$ "  --noerror             do not return 1 because of missing packages";
-         println$ "  -r";
-         println$ "  --rec                 form transitive closure of specified set based on Requires field";
-         println$ "  --rec=field           form transitive closure of specified set based on specified field";
-         println$ "  -b";
-         println$ "  --backwards           process specified packages in reverse order";
-         println$ "  --field=field         collate values of field in package set";
-         println$ "  --keepleftmost        remove duplicate values in output keeping only leftmost occurrence";
-         println$ "  --keeprightmost       remove duplicate values in output keeping only rightmost occurrence";
-         println$ "  --keepall             keep duplicate values in output";
-         println$ "  @filename             Replace with arguments from filename, one line per argument";
-       }
-   
-       proc pre_incr:&lex_iterator = "++*$1;";
-   
-       union token_t = Str of string | Cmd of string | Eos;
-   
-       fun lexit(ini:lex_iterator, finish:lex_iterator): lex_iterator * token_t=
-       {
-         //println$ "lexit input='" + string_between(ini,finish)+"'";
-   
-         var start = ini;
-   
-         // already at end
-         if start == finish do 
-           return start, Eos;
-   
-         // eat white space 
-         elif *start == char(' ') do 
-           ++start;
-           while start != finish and *start == char(' ') do ++start; done;
-           return start,Eos;
-   
-         // double quoted string
-         elif *start == char('"') do
-           ++start;
-           p1 := start;
-           while start != finish and *start != char('"') do ++start; done;
-           if start == finish do
-             return start,Str (string_between(p1,start));
-           else
-             return start+1,Str (string_between(p1, start));
-           done;
-   
-         // single quoted string
-         elif *start == char("'") do
-           ++start;
-           p2 := start;
-           while start != finish and *start != char("'") do ++start; done;
-           if start == finish do 
-             return start,Str (string_between(p2,start));
-           else
-             return start+1,Str (string_between(p2, start));
-           done;
-   
-         elif *start == char("`") do
-           ++start;
-           p3 := start;
-           while start != finish and *start != char("`") do ++start; done;
-           if start == finish do 
-             return start,Cmd (string_between(p3,start));
-           else
-             return start+1,Cmd (string_between(p3, start));
-           done;
-   
-   
-         done;
-         // identifier
-         p4 := start;
-         while start != finish and *start != char(" ")  do ++start; done;
-         return start,Str (string_between(p4,start));
-       }
-   
-       fun lexstr(s':string): list[string] =
-       {
-         var s = s';
-         val first = start_iterator s;
-         val finish = end_iterator s;
-         var current = first;
-         var words = Empty[string];
-         while current != finish do 
-           match lexit(current,finish) with
-           | next,token=>
-             {
-               current = next;
-               match token with
-               | Eos => ;
-               | Str lexeme => if lexeme != "" perform words = Cons(lexeme,words);
-               | Cmd cmd =>
-                 var res,s = System::get_stdout cmd;
-                 var recres = lexstr s.strip;
-                 words = rev recres + words;
-               endmatch;
-             }
-           endmatch;
-         done
-         //println$ "Words='" + str(rev words)+"'";
-         return rev words;
-       }
-   
-       macro val streq = eq of (string * string);
-   
-       var path=Env::getenv("PKG_CONFIG_PATH");
-   
-       // parse arguments
-       var fields = Empty[string];
-       var pkgs = Empty[string];
-   
-       var hide = false; // only find first file in path
-       var require_pkg_exists = true; // fail if file not found
-       var missing = false; // report missing packages
-       var require_field_exists = false; // fail if file doesn't contain field
-       var recfields = Empty[string];
-       var dolist = false;
-       var listkeys = false;
-       var return_code = 0;
-       var backwards = false;
-       enum keep_t {keepall, keepleftmost, keeprightmost};
-       var keep= keepleftmost;
-       var extension = "fpc";
-   
-       fun is_prefix_of(p:string,w:string)=> p == w.[to len p];
-   
-       fun xfind(flags: string, c: string) =>
-        match find(flags, c) with
-        | #None => false
-        | Some _ => true
-        endmatch
-       ;
-   
-       proc parse_args(args:list[string])
-       {
-         match args with
-         | #Empty => {}
-         | Cons (arg,tail) =>
-           {
-             fun prefix(x:string)=>is_prefix_of(x,arg);
-   
-             if prefix("--hide") do hide = true;
-             elif prefix("--backwards") do backwards = true;
-             elif prefix("--list") do dolist = true;
-             elif prefix("--missing") do missing = true;
-             elif prefix("--noerror") do require_pkg_exists = false;
-             elif prefix("--keeprightmost") do keep = keeprightmost;
-             elif prefix("--keepleftmost") do keep = keepleftmost;
-             elif prefix("--keepall") do keep = keepall;
-   
-             elif "--field" == arg.[0 to 7] do
-               fields = fields + arg.[8 to];
-   
-             elif "--extension" == arg.[0 to 11] do
-               extension = arg.[12 to];
-   
-             elif "-" == arg.[0 to 1] and "-" != arg.[1 to 2] do
-               flags := arg.[1 to];
-               if xfind(flags, "r") do
-                 recfields = append_unique streq recfields "Requires";
-               done;
-   
-               if xfind(flags,"h") do hide = true; done;
-               if xfind(flags,"b") do backwards = true; done;
-               if xfind(flags,"l") do dolist = true; done;
-   
-             elif "--rec" == arg.[0 to 5] do
-               var fld = arg.[6 to];
-               fld = if fld == "" then "Requires" else fld endif;
-               recfields = append_unique streq recfields fld;
-   
-             // add to path
-             elif "--path+" == arg.[0 to 7] do
-               val x = arg.[8 to];
-               if path != "" do
-                 path= path + ":" + x;
-               else
-                 path= x;
-               done;
-   
-             // set path
-             elif "--path" == arg.[0 to 6] do
-               path= arg.[7 to];
-   
-             elif "--help" == arg do
-               print_help;
-               // FIXME
-               System::exit(0);
-   
-             elif "@" == arg.[0 to 1] do
-               val data = load$ strip arg.[1 to];
-               parse_args$ split(data,c" \n\r\t,");
-   
-             // ignore unknown options
-             elif "-" == arg.[0 to 1] do ;
-   
-             // ignore empty arguments
-             elif "" == arg do ;
-   
-             // package name
-             else
-               pkgs = pkgs + arg;
-             done;
-             parse_args(tail);
-           }
-         endmatch;
-       }
-   
-       parse_args(args);
-   
-       //print$ "Fields   = " + str fields; endl;
-       //print$ "Packages = " + str pkgs; endl;
-   
-       fun reattach_drive_letters : list[string] -> list[string] =
-         | Cons (a, Cons (b, tail)) =>
-             if (len(a) == size 1 and isalpha(a.[0]) and b.startswith('\\')) then 
-               Cons (a+':'+b, reattach_drive_letters tail)
-             else
-               Cons (a, reattach_drive_letters (Cons (b, tail)))
-             endif
-         | other => other // 1 or 0 elements left
-       ;
-         
-       val dirs=reattach_drive_letters(split(path, char ':'));
-   
-       // print$ "Path = " + str dirs; endl;
-   
-       var result = Empty[string];
-   
-       fun check_id (s:string) = {
-         var acc=true;
-         for elt in s do acc = acc and isalphanum elt; done
-         return acc;
-       }
-   
-       fun get_field(line:string):string * string =>
-           match find (line,char ':') with
-           | #None => "",""
-           | Some n =>
-               strip line.[to n],
-               strip line.[n+1 to]
-           endmatch
-         ;
-   
-   
-       fun get_variable(line:string):string * string =>
-           match find (line,char '=') with
-           | #None => "",""
-           | Some n =>
-               let name = strip line.[to n] in 
-               let value = strip line.[n+1 to] in
-               if check_id name then name,value else "",""
-           endmatch
-         ;
-   
-       proc add_val(v:string){
-        result = insert_unique streq result v;
-       //  result = rev$ Cons(v, rev result);
-       }
-   
-       proc tail_val(v:string){
-          result = append_unique streq result v;
-       //  result = Cons(v, result);
-       }
-   
-       proc keep_val (v:string){
-         result = result + v;
-       }
-   
-       proc handle_pkg (pkg:string, trace:list[string]){
-   //eprintln$ "Handle_pkg pkg= " + pkg + " trace= " + trace.str;
-          var variables = Empty[string * string];
-   
-          if mem streq trace pkg return;
-          var found = false;
-          iter(proc (dir:string){
-            val filename =
-              if dir=="" then "." else dir endif + #Filename::sep + pkg + "."+extension
-            ;
-            //print filename; endl;
-   
-            // examine line of one file
-            file := fopen_input filename;
-            if valid file do
-              if dolist do
-                match keep with
-                | #keepleftmost => add_val pkg;
-                | #keeprightmost => tail_val pkg;
-                | #keepall => keep_val pkg;
-                endmatch;
-              done
-              var lines = Empty[string];
-              var line = readln file;
-              while line != "" do
-                line = line.strip;
-                if line != "" and line.[0] != char "#" do
-                  lines = Cons(line,lines);
-                done
-                line = readln file;
-              done
-              if not backwards do lines = rev lines; done;
-   
-              iter (proc (line:string)
-              {
-                //print line;
-                def var variable, var vval = get_variable(line);
-                if variable != "" do
-                  var bdy = search_and_replace variables vval;
-                  variables = Cons ( ("${"+variable+"}",bdy), variables);
-                else
-                  def var key, var value = get_field(line);
-                  if listkeys call add_val key;
-                  var values = lexstr(value);
-                  values = map (search_and_replace variables) values;
-                  if mem streq fields key do
-                    match keep with
-                    | #keepleftmost => { iter add_val values; }
-                    | #keeprightmost => { iter tail_val values; }
-                    | #keepall => { iter keep_val values; }
-                    endmatch;
-                  done;
-   //eprintln$ "Chase dependent packages key = " + key + " recfields = " + recfields.str;
-                  // chase dependent packages
-                  if mem streq recfields key do
-   //eprintln$ "FOUND";
-                    iter (proc (s:string){
-                      handle_pkg$ s,Cons(pkg,trace);
-                    })
-                    values;
-                  done
-   //eprintln$ "DONE  dependent packages key = " + key + " recfields = " + recfields.str;
-   
-                done
-              })
-              lines
-              ;
-              fclose file;
-              found = true;
-              if hide return; // only find first file in path
+  gen flx_pkgconfig (args:list[string]) : int * list[string] = 
+  {
+    proc print_help {
+      println$ "flx_pkgconfig [options] pkg pkg ...";
+      println$ "  returns code 1 if any packages are missing unless --noerror is specified";
+      println$ "  prints package or field list to standard output on one line";
+      println$ "options: (follows GNU conventions)";
+      println$ "  --path=dirname        set database directory name";
+      println$ "  --path+=dirname       append database directory name";
+      println$ "  --extension=fpc       set resource descriptor extensions,";
+      println$ "                          default 'fpc' use 'pc' for pkgconfig databases";
+      println$ "  -h";
+      println$ "  --hide                only process first package in path with a given name";
+      println$ "                          default, process all occurences";
+      println$ "  --list                list available packages from specified set";
+      println$ "  --missing             list missing packages from specified set";
+      println$ "  --noerror             do not return 1 because of missing packages";
+      println$ "  -r";
+      println$ "  --rec                 form transitive closure of specified set based on Requires field";
+      println$ "  --rec=field           form transitive closure of specified set based on specified field";
+      println$ "  -b";
+      println$ "  --backwards           process specified packages in reverse order";
+      println$ "  --field=field         collate values of field in package set";
+      println$ "  --keepleftmost        remove duplicate values in output keeping only leftmost occurrence";
+      println$ "  --keeprightmost       remove duplicate values in output keeping only rightmost occurrence";
+      println$ "  --keepall             keep duplicate values in output";
+      println$ "  @f@i@l@e@n@a@m@e@ @ @ @ @ @ @ @ @ @ @ @ @ @R@e@p@l@a@c@e@ @w@i@t@h@ @a@r@g@u@m@e@n@t@s@ @f@r@o@m@ @f@i@l@e@n@a@m@e@,@ @o@n@e@ @l@i@n@e@ @p@e@r@ @a@r@g@u@m@e@n@t@"@;
+    }
+
+    proc pre_incr:&lex_iterator = "++*$1;";
+
+    union token_t = Str of string | Cmd of string | Eos;
+
+    fun lexit(ini:lex_iterator, finish:lex_iterator): lex_iterator * token_t=
+    {
+      //println$ "lexit input='" + string_between(ini,finish)+"'";
+
+      var start = ini;
+
+      // already at end
+      if start == finish do 
+        return start, Eos;
+
+      // eat white space 
+      elif *start == char(' ') do 
+        ++start;
+        while start != finish and *start == char(' ') do ++start; done;
+        return start,Eos;
+
+      // double quoted string
+      elif *start == char('"') do
+        ++start;
+        p1 := start;
+        while start != finish and *start != char('"') do ++start; done;
+        if start == finish do
+          return start,Str (string_between(p1,start));
+        else
+          return start+1,Str (string_between(p1, start));
+        done;
+
+      // single quoted string
+      elif *start == char("'") do
+        ++start;
+        p2 := start;
+        while start != finish and *start != char("'") do ++start; done;
+        if start == finish do 
+          return start,Str (string_between(p2,start));
+        else
+          return start+1,Str (string_between(p2, start));
+        done;
+
+      elif *start == char("`") do
+        ++start;
+        p3 := start;
+        while start != finish and *start != char("`") do ++start; done;
+        if start == finish do 
+          return start,Cmd (string_between(p3,start));
+        else
+          return start+1,Cmd (string_between(p3, start));
+        done;
+
+
+      done;
+      // identifier
+      p4 := start;
+      while start != finish and *start != char(" ")  do ++start; done;
+      return start,Str (string_between(p4,start));
+    }
+
+    fun lexstr(s':string): list[string] =
+    {
+      var s = s';
+      val first = start_iterator s;
+      val finish = end_iterator s;
+      var current = first;
+      var words = Empty[string];
+      while current != finish do 
+        match lexit(current,finish) with
+        | next,token=>
+          {
+            current = next;
+            match token with
+            | Eos => ;
+            | Str lexeme => if lexeme != "" perform words = Cons(lexeme,words);
+            | Cmd cmd =>
+              var res,s = System::get_stdout cmd;
+              var recres = lexstr s.strip;
+              words = rev recres + words;
+            endmatch;
+          }
+        endmatch;
+      done
+      //println$ "Words='" + str(rev words)+"'";
+      return rev words;
+    }
+
+    macro val streq = eq of (string * string);
+
+    var path=Env::getenv("PKG_CONFIG_PATH");
+
+    // parse arguments
+    var fields = Empty[string];
+    var pkgs = Empty[string];
+
+    var hide = false; // only find first file in path
+    var require_pkg_exists = true; // fail if file not found
+    var missing = false; // report missing packages
+    var require_field_exists = false; // fail if file doesn't contain field
+    var recfields = Empty[string];
+    var dolist = false;
+    var listkeys = false;
+    var return_code = 0;
+    var backwards = false;
+    enum keep_t {keepall, keepleftmost, keeprightmost};
+    var keep= keepleftmost;
+    var extension = "fpc";
+
+    fun is_prefix_of(p:string,w:string)=> p == w.[to len p];
+
+    fun xfind(flags: string, c: string) =>
+     match find(flags, c) with
+     | #None => false
+     | Some _ => true
+     endmatch
+    ;
+
+    proc parse_args(args:list[string])
+    {
+      match args with
+      | #Empty => {}
+      | Cons (arg,tail) =>
+        {
+          fun prefix(x:string)=>is_prefix_of(x,arg);
+
+          if prefix("--hide") do hide = true;
+          elif prefix("--backwards") do backwards = true;
+          elif prefix("--list") do dolist = true;
+          elif prefix("--missing") do missing = true;
+          elif prefix("--noerror") do require_pkg_exists = false;
+          elif prefix("--keeprightmost") do keep = keeprightmost;
+          elif prefix("--keepleftmost") do keep = keepleftmost;
+          elif prefix("--keepall") do keep = keepall;
+
+          elif "--field" == arg.[0 to 7] do
+            fields = fields + arg.[8 to];
+
+          elif "--extension" == arg.[0 to 11] do
+            extension = arg.[12 to];
+
+          elif "-" == arg.[0 to 1] and "-" != arg.[1 to 2] do
+            flags := arg.[1 to];
+            if xfind(flags, "r") do
+              recfields = append_unique streq recfields "Requires";
             done;
-          })
-          dirs;
-          if not found do
-            eprintln$ "package not found: " + pkg;
-            if require_pkg_exists do return_code = 1; done;
-            if missing call add_val(pkg);
+
+            if xfind(flags,"h") do hide = true; done;
+            if xfind(flags,"b") do backwards = true; done;
+            if xfind(flags,"l") do dolist = true; done;
+
+          elif "--rec" == arg.[0 to 5] do
+            var fld = arg.[6 to];
+            fld = if fld == "" then "Requires" else fld endif;
+            recfields = append_unique streq recfields fld;
+
+          // add to path
+          elif "--path+" == arg.[0 to 7] do
+            val x = arg.[8 to];
+            if path != "" do
+              path= path + ":" + x;
+            else
+              path= x;
+            done;
+
+          // set path
+          elif "--path" == arg.[0 to 6] do
+            path= arg.[7 to];
+
+          elif "--help" == arg do
+            print_help;
+            // FIXME
+            System::exit(0);
+
+          elif "@"@ @=@=@ @a@r@g@.@[@0@ @t@o@ @1@]@ @d@o
+            val data = load$ strip arg.[1 to];
+            parse_args$ split(data,c" \n\r\t,");
+
+          // ignore unknown options
+          elif "-" == arg.[0 to 1] do ;
+
+          // ignore empty arguments
+          elif "" == arg do ;
+
+          // package name
+          else
+            pkgs = pkgs + arg;
           done;
-       }
-   
-       var original_pkgs = pkgs;
-   //eprintln$ "+++++++++++++++++++++++++";
-   //eprintln$ "TOP LEVEL HANDLING PACKAGES " + original_pkgs.str;
-       while not is_empty pkgs do
-         match pkgs with
-         | #Empty => {}
-         | Cons (pkg,tail) =>
+          parse_args(tail);
+        }
+      endmatch;
+    }
+
+    parse_args(args);
+
+    //print$ "Fields   = " + str fields; endl;
+    //print$ "Packages = " + str pkgs; endl;
+
+    fun reattach_drive_letters : list[string] -> list[string] =
+      | Cons (a, Cons (b, tail)) =>
+          if (len(a) == size 1 and isalpha(a.[0]) and b.startswith('\\')) then 
+            Cons (a+':'+b, reattach_drive_letters tail)
+          else
+            Cons (a, reattach_drive_letters (Cons (b, tail)))
+          endif
+      | other => other // 1 or 0 elements left
+    ;
+      
+    val dirs=reattach_drive_letters(split(path, char ':'));
+
+    // print$ "Path = " + str dirs; endl;
+
+    var result = Empty[string];
+
+    fun check_id (s:string) = {
+      var acc=true;
+      for elt in s do acc = acc and isalphanum elt; done
+      return acc;
+    }
+
+    fun get_field(line:string):string * string =>
+        match find (line,char ':') with
+        | #None => "",""
+        | Some n =>
+            strip line.[to n],
+            strip line.[n+1 to]
+        endmatch
+      ;
+
+
+    fun get_variable(line:string):string * string =>
+        match find (line,char '=') with
+        | #None => "",""
+        | Some n =>
+            let name = strip line.[to n] in 
+            let value = strip line.[n+1 to] in
+            if check_id name then name,value else "",""
+        endmatch
+      ;
+
+    proc add_val(v:string){
+     result = insert_unique streq result v;
+    //  result = rev$ Cons(v, rev result);
+    }
+
+    proc tail_val(v:string){
+       result = append_unique streq result v;
+    //  result = Cons(v, result);
+    }
+
+    proc keep_val (v:string){
+      result = result + v;
+    }
+
+    proc handle_pkg (pkg:string, trace:list[string]){
+//eprintln$ "Handle_pkg pkg= " + pkg + " trace= " + trace.str;
+       var variables = Empty[string * string];
+
+       if mem streq trace pkg return;
+       var found = false;
+       iter(proc (dir:string){
+         val filename =
+           if dir=="" then "." else dir endif + #Filename::sep + pkg + "."+extension
+         ;
+         //print filename; endl;
+
+         // examine line of one file
+         file := fopen_input filename;
+         if valid file do
+           if dolist do
+             match keep with
+             | #keepleftmost => add_val pkg;
+             | #keeprightmost => tail_val pkg;
+             | #keepall => keep_val pkg;
+             endmatch;
+           done
+           var lines = Empty[string];
+           var line = readln file;
+           while line != "" do
+             line = line.strip;
+             if line != "" and line.[0] != char "#" do
+               lines = Cons(line,lines);
+             done
+             line = readln file;
+           done
+           if not backwards do lines = rev lines; done;
+
+           iter (proc (line:string)
            {
-   //eprintln$ "TOP LEVEL HANDLE ONE PACKAGE " + pkg.str;
-             pkgs = tail;
-             handle_pkg(pkg,Empty[string]);
-   //eprintln$ "DONE: TOP LEVEL HANDLE ONE PACKAGE " + pkg.str;
-           }
-         endmatch;
+             //print line;
+             def var variable, var vval = get_variable(line);
+             if variable != "" do
+               var bdy = search_and_replace variables vval;
+               variables = Cons ( ("${"+variable+"}",bdy), variables);
+             else
+               def var key, var value = get_field(line);
+               if listkeys call add_val key;
+               var values = lexstr(value);
+               values = map (search_and_replace variables) values;
+               if mem streq fields key do
+                 match keep with
+                 | #keepleftmost => { iter add_val values; }
+                 | #keeprightmost => { iter tail_val values; }
+                 | #keepall => { iter keep_val values; }
+                 endmatch;
+               done;
+//eprintln$ "Chase dependent packages key = " + key + " recfields = " + recfields.str;
+               // chase dependent packages
+               if mem streq recfields key do
+//eprintln$ "FOUND";
+                 iter (proc (s:string){
+                   handle_pkg$ s,Cons(pkg,trace);
+                 })
+                 values;
+               done
+//eprintln$ "DONE  dependent packages key = " + key + " recfields = " + recfields.str;
+
+             done
+           })
+           lines
+           ;
+           fclose file;
+           found = true;
+           if hide return; // only find first file in path
+         done;
+       })
+       dirs;
+       if not found do
+         eprintln$ "package not found: " + pkg;
+         if require_pkg_exists do return_code = 1; done;
+         if missing call add_val(pkg);
        done;
-   //eprintln$ "DONE: TOP LEVEL HANDLING PACKAGES " + original_pkgs.str;
-   //eprintln$ " ************************";
-   
-       return return_code, result;
-     }
-   }
-   
+    }
+
+    var original_pkgs = pkgs;
+//eprintln$ "+++++++++++++++++++++++++";
+//eprintln$ "TOP LEVEL HANDLING PACKAGES " + original_pkgs.str;
+    while not is_empty pkgs do
+      match pkgs with
+      | #Empty => {}
+      | Cons (pkg,tail) =>
+        {
+//eprintln$ "TOP LEVEL HANDLE ONE PACKAGE " + pkg.str;
+          pkgs = tail;
+          handle_pkg(pkg,Empty[string]);
+//eprintln$ "DONE: TOP LEVEL HANDLE ONE PACKAGE " + pkg.str;
+        }
+      endmatch;
+    done;
+//eprintln$ "DONE: TOP LEVEL HANDLING PACKAGES " + original_pkgs.str;
+//eprintln$ " ************************";
+
+    return return_code, result;
+  }
+}
+
 
 
 
@@ -419,43 +430,43 @@ It exits with the return code that function returns.
 
 
 .. code-block:: felix
+//[flx_pkgconfig_tool.flx]
+include "std/felix/flx_pkgconfig";
 
-   include "std/felix/flx_pkgconfig";
-   
-   header flx_pkgconfig_header = 
-   """
-   #include <iostream>
-   #include "flx_ioutil.hpp"
-   #include "flx_strutil.hpp"
-   #include "flx_rtl.hpp"
-   #include "flx_gc.hpp"
-   """;
-   
-   // This KLUDGE does two independent things:
-   //
-   // (1) It stops problems with the GC preventing
-   // building Felix in a core build.
-   //
-   // (2) It injects the header includes required by flx_pkgconfig
-   // directly into flx_pkgconfig so the executable can be built
-   // without flx or flx_pkgconfig.
-   //
-   // The latter is essential during the Python based bootstrap
-   // build process. That process uses the flx_pkgconfig executable
-   // to translate the flx.resh file produced by compiling flx.flx
-   // with flxg into actual package requirements, and thence
-   // into the required header file.
-   //
-   
-   proc kludge : 1 = "PTF gcp->allow_collection_anywhere=false;" requires flx_pkgconfig_header;
-   kludge();
-   
-   // strip any trailing space off to ease bash scripting
-   var return_code, result = FlxPkgConfig::flx_pkgconfig (tail #System::args);
-   
-   print$ strip$ cat ' ' result; endl;
-   System::exit return_code;
-   
+header flx_pkgconfig_header = 
+"""
+#include <iostream>
+#include "flx_ioutil.hpp"
+#include "flx_strutil.hpp"
+#include "flx_rtl.hpp"
+#include "flx_gc.hpp"
+""";
+
+// This KLUDGE does two independent things:
+//
+// (1) It stops problems with the GC preventing
+// building Felix in a core build.
+//
+// (2) It injects the header includes required by flx_pkgconfig
+// directly into flx_pkgconfig so the executable can be built
+// without flx or flx_pkgconfig.
+//
+// The latter is essential during the Python based bootstrap
+// build process. That process uses the flx_pkgconfig executable
+// to translate the flx.resh file produced by compiling flx.flx
+// with flxg into actual package requirements, and thence
+// into the required header file.
+//
+
+proc kludge : 1 = "PTF gcp->allow_collection_anywhere=false;" requires flx_pkgconfig_header;
+kludge();
+
+// strip any trailing space off to ease bash scripting
+var return_code, result = FlxPkgConfig::flx_pkgconfig (tail #System::args);
+
+print$ strip$ cat ' ' result; endl;
+System::exit return_code;
+
 
 
 Database query object.
@@ -472,19 +483,19 @@ Database query object interface.
 
 
 .. code-block:: felix
-
-   class FlxPkgConfigQuery_interface
-   {
-     interface FlxPkgConfigQuery_t {
-       query:           list[string] -> int * list[string];
-       getpkgfield:     (1->0) -> string * string -> list[string];
-       getpkgfield1:    (1->0) -> string * string -> string;
-       getpkgfieldopt:  (1->0) -> string * string -> opt[string];
-       getpkgfielddflt: (1->0) -> string * string ->  string;
-       getclosure:      (1->0) -> string -> list[string];
-      }
+//[flx_pkgconfig_query_interface.flx]
+class FlxPkgConfigQuery_interface
+{
+  interface FlxPkgConfigQuery_t {
+    query:           list[string] -> int * list[string];
+    getpkgfield:     (1->0) -> string * string -> list[string];
+    getpkgfield1:    (1->0) -> string * string -> string;
+    getpkgfieldopt:  (1->0) -> string * string -> opt[string];
+    getpkgfielddflt: (1->0) -> string * string ->  string;
+    getclosure:      (1->0) -> string -> list[string];
    }
-   
+}
+
 
 
 Database query object implementation.
@@ -493,110 +504,110 @@ Database query object implementation.
 Depends on on the CLI function interface.
 
 .. code-block:: felix
+//[flx_pkgconfig_query.flx]
+include "std/felix/flx_pkgconfig_core";
+include "std/felix/flx_pkgconfig_query_interface";
 
-   include "std/felix/flx_pkgconfig_core";
-   include "std/felix/flx_pkgconfig_query_interface";
-   
-   class FlxPkgConfig_query
-   {
-     object FlxPkgConfigQuery (path:list[string]) implements FlxPkgConfigQuery_interface::FlxPkgConfigQuery_t = 
-     {
-       var paths = 
-         match path with
-         | #Empty => Empty[string]
-         | Cons (h,t) => 
-           let 
-             fun aux (lst:list[string]) (out:list[string]) => 
-             match lst with
-             | #Empty => rev out
-             | Cons (h,t) => aux t (("--path+="+h)!out) 
-             endmatch
-           in
-           ("--path="+h) ! aux t Empty[string]
-       ;
-       match path with | #Empty => assert false; | _ => ; endmatch;
-   
-   
-       method gen query (args:list[string]) =>
-         FlxPkgConfig_core::flx_pkgconfig (paths + args)
-       ;
-   
-       // Get all the values of a field in a particular package
-       method gen getpkgfield (ehandler:1->0) (pkg:string, field:string) : list[string] = {
-         var result,values = query$ list$ ("--field="+field, pkg);
-         if result != 0 do
-           println$ "Can't find package " + pkg;
-           println$ "Searching in paths:";
-           for path in paths do
-             println$ "  " + path;
-           done
-           // FIXME
-           // System::exit(1);
-           throw_continuation ehandler;
-         done
-         return values;
-       }
-       
-       // Get the single value of a field in a particular package.
-       // Bug out if missing or multiple values.
-       method gen getpkgfield1 (ehandler:1->0) (pkg:string, field:string) : string = {
-         var values = getpkgfield ehandler (pkg,field);
-         match values with
-         | Cons (h,#Empty) => return h;
-         | #Empty => 
-           println$ "Required field " + field + " not found in package "+pkg;
-           // FIXME
-           // System::exit(1);
-           throw_continuation ehandler;
-   
-         | _ =>
-           println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
-           // FIXME
-           // System::exit(1);
-           throw_continuation ehandler;
-         endmatch;
-       }
-   
-       // Get the single value of a field in a particular package.
-       // Bug out if multiple values.
-       method gen getpkgfieldopt (ehandler:1->0) (pkg:string, field:string) : opt[string] = {
-         var values = getpkgfield ehandler (pkg,field);
-         match values with
-         | Cons (h,#Empty) => return Some h;
-         | #Empty => return None[string];
-         | _ =>
-           println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
-           // FIXME
-           // System::exit(1);
-           throw_continuation ehandler;
-         endmatch;
-       }
-   
-       method gen getpkgfielddflt (ehandler:1->0) (pkg:string, field:string) : string =>
-         match getpkgfieldopt ehandler (pkg, field) with
-         | Some h => h
-         | #None => ""
-         endmatch
-       ;
-   
-       //$ Get Requires closure.
-       //$ Result is topologically sorted with each package listed
-       //$ after ones it requires.
-       method gen getclosure (ehandler:1->0) (pkg:string) : list[string] = {
-         var result,values = FlxPkgConfig_core::flx_pkgconfig $ paths +
-           "--keeprightmost" + "--rec" + "--list" +  pkg
-         ;
-         if result != 0 do
-           println$ "missing package for closure of " + pkg;
-           // FIXME
-           // System::exit(1);
-           throw_continuation ehandler;
-         done
-         return rev values;
-       }
-     }
-   }
-   
+class FlxPkgConfig_query
+{
+  object FlxPkgConfigQuery (path:list[string]) implements FlxPkgConfigQuery_interface::FlxPkgConfigQuery_t = 
+  {
+    var paths = 
+      match path with
+      | #Empty => Empty[string]
+      | Cons (h,t) => 
+        let 
+          fun aux (lst:list[string]) (out:list[string]) => 
+          match lst with
+          | #Empty => rev out
+          | Cons (h,t) => aux t (("--path+="+h)!out) 
+          endmatch
+        in
+        ("--path="+h) ! aux t Empty[string]
+    ;
+    match path with | #Empty => assert false; | _ => ; endmatch;
+
+
+    method gen query (args:list[string]) =>
+      FlxPkgConfig_core::flx_pkgconfig (paths + args)
+    ;
+
+    // Get all the values of a field in a particular package
+    method gen getpkgfield (ehandler:1->0) (pkg:string, field:string) : list[string] = {
+      var result,values = query$ list$ ("--field="+field, pkg);
+      if result != 0 do
+        println$ "Can't find package " + pkg;
+        println$ "Searching in paths:";
+        for path in paths do
+          println$ "  " + path;
+        done
+        // FIXME
+        // System::exit(1);
+        throw_continuation ehandler;
+      done
+      return values;
+    }
+    
+    // Get the single value of a field in a particular package.
+    // Bug out if missing or multiple values.
+    method gen getpkgfield1 (ehandler:1->0) (pkg:string, field:string) : string = {
+      var values = getpkgfield ehandler (pkg,field);
+      match values with
+      | Cons (h,#Empty) => return h;
+      | #Empty => 
+        println$ "Required field " + field + " not found in package "+pkg;
+        // FIXME
+        // System::exit(1);
+        throw_continuation ehandler;
+
+      | _ =>
+        println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
+        // FIXME
+        // System::exit(1);
+        throw_continuation ehandler;
+      endmatch;
+    }
+
+    // Get the single value of a field in a particular package.
+    // Bug out if multiple values.
+    method gen getpkgfieldopt (ehandler:1->0) (pkg:string, field:string) : opt[string] = {
+      var values = getpkgfield ehandler (pkg,field);
+      match values with
+      | Cons (h,#Empty) => return Some h;
+      | #Empty => return None[string];
+      | _ =>
+        println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
+        // FIXME
+        // System::exit(1);
+        throw_continuation ehandler;
+      endmatch;
+    }
+
+    method gen getpkgfielddflt (ehandler:1->0) (pkg:string, field:string) : string =>
+      match getpkgfieldopt ehandler (pkg, field) with
+      | Some h => h
+      | #None => ""
+      endmatch
+    ;
+
+    //$ Get Requires closure.
+    //$ Result is topologically sorted with each package listed
+    //$ after ones it requires.
+    method gen getclosure (ehandler:1->0) (pkg:string) : list[string] = {
+      var result,values = FlxPkgConfig_core::flx_pkgconfig $ paths +
+        "--keeprightmost" + "--rec" + "--list" +  pkg
+      ;
+      if result != 0 do
+        println$ "missing package for closure of " + pkg;
+        // FIXME
+        // System::exit(1);
+        throw_continuation ehandler;
+      done
+      return rev values;
+    }
+  }
+}
+
 
 
 
@@ -620,17 +631,17 @@ single include file and with a single wrapping namespace.
 
 
 .. code-block:: felix
+//[flx_pkgconfig.flx]
+include "std/felix/flx_pkgconfig_core";
+include "std/felix/flx_pkgconfig_query_interface";
+include "std/felix/flx_pkgconfig_query";
 
-   include "std/felix/flx_pkgconfig_core";
-   include "std/felix/flx_pkgconfig_query_interface";
-   include "std/felix/flx_pkgconfig_query";
-   
-   class FlxPkgConfig
-   {
-     inherit FlxPkgConfig_core;
-     inherit FlxPkgConfigQuery_interface;
-     inherit FlxPkgConfig_query;
-   }
+class FlxPkgConfig
+{
+  inherit FlxPkgConfig_core;
+  inherit FlxPkgConfigQuery_interface;
+  inherit FlxPkgConfig_query;
+}
 
 
 
@@ -644,37 +655,37 @@ exported.
 
 
 .. code-block:: felix
+//[flx_pkgconfig_export.flx]
+include "std/felix/flx_pkgconfig";
 
-   include "std/felix/flx_pkgconfig";
-   
-   export FlxPkgConfig::flx_pkgconfig of (list[string]) as "flx_pkgconfig";
-   
-   export struct FlxPkgConfigQuery_struct 
-   {
-       query:           list[string] -> int * list[string];
-       getpkgfield:     (1->0) -> string * string -> list[string];
-       getpkgfield1:    (1->0) -> string * string -> string;
-       getpkgfieldopt:  (1->0) -> string * string -> opt[string];
-       getpkgfielddflt: (1->0) -> string * string ->  string;
-       getclosure:      (1->0) -> string -> list[string];
-   }
-   
-   gen mk_pkgconfig_query (a:FlxPkgConfigQuery_struct) => 
-     FlxPkgConfig::FlxPkgConfigQuery (
-       query=a.query,
-       getpkgfield=a.getpkgfield,
-       getpkgfield1=a.getpkgfield1,
-       getpkgfieldopt=a.getpkgfieldopt,
-       getpkgfielddflt=a.getpkgfielddflt,
-       getclosure=a.getclosure
-     )
-   ;
-   
-   export mk_pkgconfig_query
-     of (FlxPkgConfigQuery_struct)
-     as "flx_pkgconfig_query"
-   ;
-    
+export FlxPkgConfig::flx_pkgconfig of (list[string]) as "flx_pkgconfig";
+
+export struct FlxPkgConfigQuery_struct 
+{
+    query:           list[string] -> int * list[string];
+    getpkgfield:     (1->0) -> string * string -> list[string];
+    getpkgfield1:    (1->0) -> string * string -> string;
+    getpkgfieldopt:  (1->0) -> string * string -> opt[string];
+    getpkgfielddflt: (1->0) -> string * string ->  string;
+    getclosure:      (1->0) -> string -> list[string];
+}
+
+gen mk_pkgconfig_query (a:FlxPkgConfigQuery_struct) => 
+  FlxPkgConfig::FlxPkgConfigQuery (
+    query=a.query,
+    getpkgfield=a.getpkgfield,
+    getpkgfield1=a.getpkgfield1,
+    getpkgfieldopt=a.getpkgfieldopt,
+    getpkgfielddflt=a.getpkgfielddflt,
+    getclosure=a.getclosure
+  )
+;
+
+export mk_pkgconfig_query
+  of (FlxPkgConfigQuery_struct)
+  as "flx_pkgconfig_query"
+;
+ 
 
 
 
@@ -692,208 +703,208 @@ This has to be FIXED so flx can run in non-stop mode.
 
 
 .. code-block:: felix
+//[flx_pkg.flx]
+include "std/felix/flx_pkgconfig";
 
-   include "std/felix/flx_pkgconfig";
-   
-   class FlxPkg
-   {
-     typedef pkgconfig_inspec_t = (
-       FLX_CONFIG_DIRS: list[string],
-       FLX_TARGET_DIR:string,
-       EXT_EXE: string,
-       EXT_STATIC_OBJ: string,
-       EXT_DYNAMIC_OBJ: string,
-       STATIC: int,
-       LINKEXE: int,
-       SLINK_STRINGS: list[string],
-       DLINK_STRINGS: list[string],
-       LINKER_SWITCHES: list[string],
-       EXTRA_PACKAGES: list[string],
-       cpp_filebase : string
-     );
-   
-     typedef pkgconfig_outspec_t = (
-       CFLAGS: list[string],
-       INCLUDE_FILES: list[string],
-       DRIVER_EXE: string,
-       DRIVER_OBJS: list[string],
-       LINK_STRINGS: list[string]
-     );
-   
-     fun fix2word_flags (fs: list[string]) = {
-       //println$ "Fix2word, input=" + fs.str;
-       var output =  fold_left
-        (fun (acc:list[string]) (elt:string) =>
-          if prefix (elt, "---") then acc + (split (elt.[2 to], char "="))
-          else acc + elt
-          endif
-         )
-         Empty[string]
-         fs
-       ;
-       //println$ "Fix2word, output=" + output.str;
-       return output;
-     }
-   
-   
-     // Model:
-     // Static link exe: return the object files required, no driver exe
-     // Dynamic link exe: the same
-     // DLL: return the executable (flx_run) required to run the DLL
-     // 
-     // We provide instructions to link the target binary and how to run it.
-   
-   /*
-     proc ehandler () {
-       eprintln$ "Flx_pkgconfig: map_package_requirements: failed, temporary ehandler invoked";
-       System::exit 1;
-     }
-   */
-     gen map_package_requirements (ehandler:1->0) (spec:pkgconfig_inspec_t) : pkgconfig_outspec_t =
-     {
-   
-   /*
-   println$ "MAP PACKAGE REQUIREMENTS: LINK " + 
-     if spec.LINKEXE==1 
-     then "EXE"  + " ("+if spec.STATIC==1 then "full" else "with DLL support" endif + ")" 
-     else "DLL"
-     endif
-   ; 
-   */
-       var PKGCONFIG_PATH=map 
-          (fun (s:string) => "--path+="+s) 
-          spec.FLX_CONFIG_DIRS
-       ;
-       var RESH = "@"+spec.cpp_filebase+".resh";
-   
-       gen pkgconfl(args:list[string]) : list[string] =
-       {
-         if spec.EXTRA_PACKAGES != Empty[string] call
-            eprintln$ "calpackages, EXTRA_PACKAGES = " + str spec.EXTRA_PACKAGES
-         ;
-         var allargs = PKGCONFIG_PATH+args+spec.EXTRA_PACKAGES + RESH; 
-         var ret,s = FlxPkgConfig::flx_pkgconfig(allargs);
-         if ret != 0 do
-           eprintln$ "[FlxPkg:map_package_requirements] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
-           // FIXME
-           //System::exit (1);
-           throw_continuation ehandler;
-         done
-         return s;
-       }
-       gen pkgconfs(args:list[string]) : string => cat ' ' $ pkgconfl(args);
-   
-       var e = Empty[string];
-   
-       // find all include directories
-       var CFLAGS=pkgconfl(e+'--field=cflags'+'--keepleftmost');
-   
-       // find all include files
-       var INCLUDE_FILES=pkgconfl(e+'--field=includes'+'--keepleftmost');
-   
-   
-       // find the driver package
-       var DRIVER_PKG=pkgconfs(e+'--field=flx_requires_driver');
-       if DRIVER_PKG == "" do DRIVER_PKG="flx_run"; done
-   
-       // find the driver entity
-       if spec.STATIC == 0 do
-         // dynamic linkage: the driver executable
-         if spec.LINKEXE == 0 do
-           var DRIVER_EXE= Filename::join$ list (
-             spec.FLX_TARGET_DIR,
-             "bin",
-             DRIVER_PKG+spec.EXT_EXE
-           );
-           var DRIVER_OBJS = Empty[string];
-         else
-         // dynamic linkage: the object files for executable with DLL support
-           DRIVER_OBJS =list(
-             Filename::join (list (
-               spec.FLX_TARGET_DIR,
-               "lib",
-               "rtl",
-               DRIVER_PKG+"_lib_static"+
-               spec.EXT_DYNAMIC_OBJ)),
-             Filename::join (list (
-               spec.FLX_TARGET_DIR,
-               "lib",
-               "rtl",
-               DRIVER_PKG+"_main"+spec.EXT_DYNAMIC_OBJ))
-           );
-           DRIVER_EXE = "";
-         done
-       else
-         // static linkage: the object files for full static link
-         DRIVER_OBJS =list(
-           Filename::join (list (
-             spec.FLX_TARGET_DIR,
-             "lib",
-             "rtl",
-             DRIVER_PKG+"_lib_static"+
-             spec.EXT_STATIC_OBJ)),
-           Filename::join (list (
-             spec.FLX_TARGET_DIR,
-             "lib",
-             "rtl",
-             DRIVER_PKG+"_main"+spec.EXT_STATIC_OBJ))
-         );
-         DRIVER_EXE = "";
-       done
-   
-       if spec.STATIC == 0 do
-         if spec.LINKEXE == 0 do
-           // Linking a DLL
-           var LINK_STRINGS =
-             spec.DLINK_STRINGS+
-             spec.LINKER_SWITCHES+
-             pkgconfl(e+'-r'+'--keeprightmost'+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
-         else
-           // Linking an EXE (with DLL support)
-           LINK_STRINGS =
-             spec.DLINK_STRINGS +
-             spec.LINKER_SWITCHES+
-             pkgconfl(e+'-r'+'--keepleftmost'+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
-         done
-       else
-         // static linkage: all the libraries required by the application and driver
-         // This has to be recursive to find the closure.
-         // Linking an EXE (fully static)
-         LINK_STRINGS =
-           spec.SLINK_STRINGS+
-           spec.LINKER_SWITCHES+
-           pkgconfl(e+'-r'+'--keeprightmost'+'--field=provides_slib'+'--field=requires_slibs'+DRIVER_PKG);
-       done
-       LINK_STRINGS = fold_left
-         (fun (acc:list[string]) (elt:string) =>
-           if prefix (elt, "---") then
-            acc + split (elt.[2 to], char "=")
-           else acc + elt
-           endif
-         )
-         Empty[string]
-         LINK_STRINGS
-       ;
-   
-       return ( 
-         CFLAGS = CFLAGS,
-         INCLUDE_FILES = INCLUDE_FILES,
-         DRIVER_EXE = DRIVER_EXE,
-         DRIVER_OBJS = DRIVER_OBJS,
-         LINK_STRINGS = LINK_STRINGS
-       );
-     }
-   
-     proc write_include_file(path:string, INCLUDE_FILES:list[string]) {
-       var f = fopen_output(path+".includes");
-       List::iter  
-         (proc (i:string) { writeln$ f, "#include " + i; })
-         INCLUDE_FILES
-       ;
-       fclose f;
-     }
-   
-   }
-   
+class FlxPkg
+{
+  typedef pkgconfig_inspec_t = (
+    FLX_CONFIG_DIRS: list[string],
+    FLX_TARGET_DIR:string,
+    EXT_EXE: string,
+    EXT_STATIC_OBJ: string,
+    EXT_DYNAMIC_OBJ: string,
+    STATIC: int,
+    LINKEXE: int,
+    SLINK_STRINGS: list[string],
+    DLINK_STRINGS: list[string],
+    LINKER_SWITCHES: list[string],
+    EXTRA_PACKAGES: list[string],
+    cpp_filebase : string
+  );
+
+  typedef pkgconfig_outspec_t = (
+    CFLAGS: list[string],
+    INCLUDE_FILES: list[string],
+    DRIVER_EXE: string,
+    DRIVER_OBJS: list[string],
+    LINK_STRINGS: list[string]
+  );
+
+  fun fix2word_flags (fs: list[string]) = {
+    //println$ "Fix2word, input=" + fs.str;
+    var output =  fold_left
+     (fun (acc:list[string]) (elt:string) =>
+       if prefix (elt, "---") then acc + (split (elt.[2 to], char "="))
+       else acc + elt
+       endif
+      )
+      Empty[string]
+      fs
+    ;
+    //println$ "Fix2word, output=" + output.str;
+    return output;
+  }
+
+
+  // Model:
+  // Static link exe: return the object files required, no driver exe
+  // Dynamic link exe: the same
+  // DLL: return the executable (flx_run) required to run the DLL
+  // 
+  // We provide instructions to link the target binary and how to run it.
+
+/*
+  proc ehandler () {
+    eprintln$ "Flx_pkgconfig: map_package_requirements: failed, temporary ehandler invoked";
+    System::exit 1;
+  }
+*/
+  gen map_package_requirements (ehandler:1->0) (spec:pkgconfig_inspec_t) : pkgconfig_outspec_t =
+  {
+
+/*
+println$ "MAP PACKAGE REQUIREMENTS: LINK " + 
+  if spec.LINKEXE==1 
+  then "EXE"  + " ("+if spec.STATIC==1 then "full" else "with DLL support" endif + ")" 
+  else "DLL"
+  endif
+; 
+*/
+    var PKGCONFIG_PATH=map 
+       (fun (s:string) => "--path+="+s) 
+       spec.FLX_CONFIG_DIRS
+    ;
+    var RESH = "@"@+@s@p@e@c@.@c@p@p@_@f@i@l@e@b@a@s@e@+@"@.@r@e@s@h@"@;
+
+    gen pkgconfl(args:list[string]) : list[string] =
+    {
+      if spec.EXTRA_PACKAGES != Empty[string] call
+         eprintln$ "calpackages, EXTRA_PACKAGES = " + str spec.EXTRA_PACKAGES
+      ;
+      var allargs = PKGCONFIG_PATH+args+spec.EXTRA_PACKAGES + RESH; 
+      var ret,s = FlxPkgConfig::flx_pkgconfig(allargs);
+      if ret != 0 do
+        eprintln$ "[FlxPkg:map_package_requirements] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
+        // FIXME
+        //System::exit (1);
+        throw_continuation ehandler;
+      done
+      return s;
+    }
+    gen pkgconfs(args:list[string]) : string => cat ' ' $ pkgconfl(args);
+
+    var e = Empty[string];
+
+    // find all include directories
+    var CFLAGS=pkgconfl(e+'--field=cflags'+'--keepleftmost');
+
+    // find all include files
+    var INCLUDE_FILES=pkgconfl(e+'--field=includes'+'--keepleftmost');
+
+
+    // find the driver package
+    var DRIVER_PKG=pkgconfs(e+'--field=flx_requires_driver');
+    if DRIVER_PKG == "" do DRIVER_PKG="flx_run"; done
+
+    // find the driver entity
+    if spec.STATIC == 0 do
+      // dynamic linkage: the driver executable
+      if spec.LINKEXE == 0 do
+        var DRIVER_EXE= Filename::join$ list (
+          spec.FLX_TARGET_DIR,
+          "bin",
+          DRIVER_PKG+spec.EXT_EXE
+        );
+        var DRIVER_OBJS = Empty[string];
+      else
+      // dynamic linkage: the object files for executable with DLL support
+        DRIVER_OBJS =list(
+          Filename::join (list (
+            spec.FLX_TARGET_DIR,
+            "lib",
+            "rtl",
+            DRIVER_PKG+"_lib_static"+
+            spec.EXT_DYNAMIC_OBJ)),
+          Filename::join (list (
+            spec.FLX_TARGET_DIR,
+            "lib",
+            "rtl",
+            DRIVER_PKG+"_main"+spec.EXT_DYNAMIC_OBJ))
+        );
+        DRIVER_EXE = "";
+      done
+    else
+      // static linkage: the object files for full static link
+      DRIVER_OBJS =list(
+        Filename::join (list (
+          spec.FLX_TARGET_DIR,
+          "lib",
+          "rtl",
+          DRIVER_PKG+"_lib_static"+
+          spec.EXT_STATIC_OBJ)),
+        Filename::join (list (
+          spec.FLX_TARGET_DIR,
+          "lib",
+          "rtl",
+          DRIVER_PKG+"_main"+spec.EXT_STATIC_OBJ))
+      );
+      DRIVER_EXE = "";
+    done
+
+    if spec.STATIC == 0 do
+      if spec.LINKEXE == 0 do
+        // Linking a DLL
+        var LINK_STRINGS =
+          spec.DLINK_STRINGS+
+          spec.LINKER_SWITCHES+
+          pkgconfl(e+'-r'+'--keeprightmost'+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
+      else
+        // Linking an EXE (with DLL support)
+        LINK_STRINGS =
+          spec.DLINK_STRINGS +
+          spec.LINKER_SWITCHES+
+          pkgconfl(e+'-r'+'--keepleftmost'+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
+      done
+    else
+      // static linkage: all the libraries required by the application and driver
+      // This has to be recursive to find the closure.
+      // Linking an EXE (fully static)
+      LINK_STRINGS =
+        spec.SLINK_STRINGS+
+        spec.LINKER_SWITCHES+
+        pkgconfl(e+'-r'+'--keeprightmost'+'--field=provides_slib'+'--field=requires_slibs'+DRIVER_PKG);
+    done
+    LINK_STRINGS = fold_left
+      (fun (acc:list[string]) (elt:string) =>
+        if prefix (elt, "---") then
+         acc + split (elt.[2 to], char "=")
+        else acc + elt
+        endif
+      )
+      Empty[string]
+      LINK_STRINGS
+    ;
+
+    return ( 
+      CFLAGS = CFLAGS,
+      INCLUDE_FILES = INCLUDE_FILES,
+      DRIVER_EXE = DRIVER_EXE,
+      DRIVER_OBJS = DRIVER_OBJS,
+      LINK_STRINGS = LINK_STRINGS
+    );
+  }
+
+  proc write_include_file(path:string, INCLUDE_FILES:list[string]) {
+    var f = fopen_output(path+".includes");
+    List::iter  
+      (proc (i:string) { writeln$ f, "#include " + i; })
+      INCLUDE_FILES
+    ;
+    fclose f;
+  }
+
+}
+
 
 
