@@ -55,19 +55,19 @@ required too for font and image handling.
 .. code-block:: felix
 
   //[__init__.flx]
-   include "sdl/SDL2";
-   include "sdl/SDL_ttf";
-   include "sdl/SDL_image";
+  include "sdl/SDL2";
+  include "sdl/SDL_ttf";
+  include "sdl/SDL_image";
 
 The basic SDL initialisation stuff.
 
 .. code-block:: felix
 
   //[__init__.flx]
-   include "gui/init";
-   include "gui/types";
-   include "gui/events";
-   include "gui/font";
+  include "gui/init";
+  include "gui/types";
+  include "gui/events";
+  include "gui/font";
 Basic GUI abstractions. Felix uses the Model-View-Controller (MVC)
 design idea. 
 
@@ -86,15 +86,15 @@ from the client mouse and keyboard.
 .. code-block:: felix
 
   //[__init__.flx]
-   include "gui/color";
-   include "gui/surface";
-   include "gui/drawable";
-   include "gui/drawchain";
-   include "gui/window";
-   include "gui/window_controller_interface";
-   include "gui/window_controller";
-   include "gui/window_manager";
-   
+  include "gui/color";
+  include "gui/surface";
+  include "gui/drawable";
+  include "gui/drawchain";
+  include "gui/window";
+  include "gui/window_controller_interface";
+  include "gui/window_controller";
+  include "gui/window_manager";
+  
 
 Widgets
 -------
@@ -120,18 +120,18 @@ Buttons and menus.
 .. code-block:: felix
 
   //[__init__.flx]
-   include "gui/button";
-   include "gui/menu";
+  include "gui/button";
+  include "gui/menu";
 
 
 .. code-block:: felix
 
   //[__init__.flx]
-   include "gui/line_buffer_interface";
-   include "gui/line_buffer_object";
-   include "gui/line_buffer_display_controller_interface";
-   include "gui/line_buffer_display_controller";
-   include "gui/line_editor";
+  include "gui/line_buffer_interface";
+  include "gui/line_buffer_object";
+  include "gui/line_buffer_display_controller_interface";
+  include "gui/line_buffer_display_controller";
+  include "gui/line_editor";
 
 
 Integrated presentation.
@@ -143,35 +143,35 @@ class to make it a all a bit easier to use.
 .. code-block:: felix
 
   //[__init__.flx]
-   class FlxGui 
-   {
-    inherit FlxGuiInit;
-    inherit FlxGuiTypes;
-    inherit FlxGuiEvents;
-    inherit FlxGuiFont;
-    inherit FlxGuiColor;
-    inherit FlxGuiSurface;
-    inherit FlxGuiDrawable;
-    inherit FlxGuiDrawChain;
-   
-    inherit FlxGuiWindow;
-    inherit FlxGuiWindowController;
-    inherit FlxGuiWindowControllerInterface;
-    inherit FlxGuiWindowManager;
-   
-    inherit FlxGuiButton;
-   
-    inherit FlxGuiMenu;
-   
-    // text field editor
-    inherit FlxGuiLineBufferInterface;
-    inherit FlxGuiLineBuffer;
-    inherit FlxGuiLineBufferDisplayControllerInterface;
-    inherit FlxGuiLineBufferDisplayController;
-    inherit FlxGuiLineEditor; 
-   
-   } // class FlxGui
-   
+  class FlxGui 
+  {
+   inherit FlxGuiInit;
+   inherit FlxGuiTypes;
+   inherit FlxGuiEvents;
+   inherit FlxGuiFont;
+   inherit FlxGuiColor;
+   inherit FlxGuiSurface;
+   inherit FlxGuiDrawable;
+   inherit FlxGuiDrawChain;
+  
+   inherit FlxGuiWindow;
+   inherit FlxGuiWindowController;
+   inherit FlxGuiWindowControllerInterface;
+   inherit FlxGuiWindowManager;
+  
+   inherit FlxGuiButton;
+  
+   inherit FlxGuiMenu;
+  
+   // text field editor
+   inherit FlxGuiLineBufferInterface;
+   inherit FlxGuiLineBuffer;
+   inherit FlxGuiLineBufferDisplayControllerInterface;
+   inherit FlxGuiLineBufferDisplayController;
+   inherit FlxGuiLineEditor; 
+  
+  } // class FlxGui
+  
 
 
 Core types
@@ -188,117 +188,117 @@ from the well presented sum type Felix would use.
 .. code-block:: felix
 
   //[types.flx]
-   class FlxGuiTypes
-   {
-     typedef font_t = TTF_Font;
-     typedef colour_t = SDL_Color;
-     typedef color_t = colour_t; // dang yanks ..
-   
-     // rectangular shape without origin
-     typedef box_t = (w:int,h:int);
-     ctor box_t(w:int,h:int)=>(w=w,h=h);
-   
-     // point
-     typedef point_t = SDL_Point;
-     ctor point_t(x:int,y:int)=>SDL_Point(x,y);
-   
-     // box with origin for label (margin, baseline)
-     typedef label_box_t = (box:box_t, label_origin: point_t);
-     ctor label_box_t (box:box_t, label_origin: point_t)=> (box=box,label_origin=label_origin);
-   
-     // rectangular shape with top left origin
-     typedef rect_t = SDL_Rect;
-     ctor rect_t (x:int, y:int, w:int, h:int) => SDL_Rect (x,y,w,h);
-     ctor rect_t (xy:point_t, dim:box_t) => SDL_Rect (xy.x,xy.y,dim.w,dim.h);
-   
-     // label rect
-     typedef label_rect_t = (xy:point_t, lb: label_box_t);
-   }
-   
+  class FlxGuiTypes
+  {
+    typedef font_t = TTF_Font;
+    typedef colour_t = SDL_Color;
+    typedef color_t = colour_t; // dang yanks ..
+  
+    // rectangular shape without origin
+    typedef box_t = (w:int,h:int);
+    ctor box_t(w:int,h:int)=>(w=w,h=h);
+  
+    // point
+    typedef point_t = SDL_Point;
+    ctor point_t(x:int,y:int)=>SDL_Point(x,y);
+  
+    // box with origin for label (margin, baseline)
+    typedef label_box_t = (box:box_t, label_origin: point_t);
+    ctor label_box_t (box:box_t, label_origin: point_t)=> (box=box,label_origin=label_origin);
+  
+    // rectangular shape with top left origin
+    typedef rect_t = SDL_Rect;
+    ctor rect_t (x:int, y:int, w:int, h:int) => SDL_Rect (x,y,w,h);
+    ctor rect_t (xy:point_t, dim:box_t) => SDL_Rect (xy.x,xy.y,dim.w,dim.h);
+  
+    // label rect
+    typedef label_rect_t = (xy:point_t, lb: label_box_t);
+  }
+  
 
 
 .. code-block:: felix
 
   //[events.flx]
-   class FlxGuiEvents
-   {
-     typedef event_t = SDL_Event;
-   
-     fun _match_ctor_QUIT (e:event_t) => e.type == SDL_QUIT.uint32;
-     fun _match_ctor_WINDOWEVENT (e:event_t) => e.type == SDL_WINDOWEVENT.uint32;
-     fun _ctor_arg_WINDOWEVENT (e:event_t) => e.window;
-   
-     fun _match_ctor_KEYDOWN (e:event_t) => e.type == SDL_KEYDOWN.uint32;
-     fun _ctor_arg_KEYDOWN (e:event_t) => e.key;
-   
-     fun _match_ctor_KEYUP (e:event_t) => e.type == SDL_KEYUP.uint32;
-     fun _ctor_arg_KEYUP(e:event_t) => e.key;
-   
-     fun _match_ctor_MOUSEMOTION (e:event_t) => e.type == SDL_MOUSEMOTION.uint32;
-     fun _ctor_arg_MOUSEMOTION (e:event_t) => e.motion;
-   
-     fun _match_ctor_MOUSEBUTTONDOWN (e:event_t) => e.type == SDL_MOUSEBUTTONDOWN.uint32;
-     fun _ctor_arg_MOUSEBUTTONDOWN (e:event_t) => e.button;
-   
-     fun _match_ctor_MOUSEBUTTONUP (e:event_t) => e.type == SDL_MOUSEBUTTONUP.uint32;
-     fun _ctor_arg_MOUSEBUTTONUP (e:event_t) => e.button;
-   
-     fun _match_ctor_MOUSEWHEEL  (e:event_t) => e.type == SDL_MOUSEWHEEL.uint32;
-     fun _ctor_arg_MOUSEWHEEL (e:event_t) => e.wheel;
-   
-     fun _match_ctor_TEXTINPUT (e:event_t) => e.type == SDL_TEXTINPUT.uint32;
-     fun _ctor_arg_TEXTINPUT (e:event_t) => e.text;
-   
-     fun _match_ctor_TEXTEDITING (e:event_t) => e.type == SDL_TEXTEDITING.uint32;
-     fun _ctor_arg_TEXTEDITING (e:event_t) => e.edit;
-   
-     chip event_source
-       connector events
-         pin src : %> event_t
-     {
-         var clock = Faio::mk_alarm_clock();
-         var e : SDL_Event;
-         // dummy first event
-         e&.type <- SDL_FIRSTEVENT.uint32;
-         write$ events.src,e;
-         proc waitevent()
-         {
-         nexte:>
-           var result = SDL_PollEvent$ &e;
-           if result == 0 do
-             Faio::sleep(clock,0.1);
-             goto nexte;
-           done
-         }
-         waitevent;
-         while e.type.SDL_EventType != SDL_QUIT do
-   //println$ "SDL EVENT: " + e.type.SDL_EventType.str + " SDL window #" + e.window.windowID.str;
-           write$ events.src, e;
-           waitevent;
-         done
-         println$ "[event_source] SDL_QUIT seen!";
-         write$ events.src, e;
-         return;
-     } // chip event_source
-   
-     proc demo_timer (quit:&bool) (var d:double) ()
-     {
-       var delta = 0.1;
-       var clock = Faio::mk_alarm_clock();
-     again:>
-       Faio::sleep(clock,delta);
-       d -= delta;
-       if *quit goto doquit;
-       if d > 0.0 goto again;
-       quit <- true;
-       var quitmsg : SDL_Event;
-       quitmsg&.type <- SDL_QUIT.uint32;
-   println$ "TIMEOUT";
-       C_hack::ignore(SDL_PushEvent(&quitmsg)); 
-   doquit:>
-     }
-   
-   }
+  class FlxGuiEvents
+  {
+    typedef event_t = SDL_Event;
+  
+    fun _match_ctor_QUIT (e:event_t) => e.type == SDL_QUIT.uint32;
+    fun _match_ctor_WINDOWEVENT (e:event_t) => e.type == SDL_WINDOWEVENT.uint32;
+    fun _ctor_arg_WINDOWEVENT (e:event_t) => e.window;
+  
+    fun _match_ctor_KEYDOWN (e:event_t) => e.type == SDL_KEYDOWN.uint32;
+    fun _ctor_arg_KEYDOWN (e:event_t) => e.key;
+  
+    fun _match_ctor_KEYUP (e:event_t) => e.type == SDL_KEYUP.uint32;
+    fun _ctor_arg_KEYUP(e:event_t) => e.key;
+  
+    fun _match_ctor_MOUSEMOTION (e:event_t) => e.type == SDL_MOUSEMOTION.uint32;
+    fun _ctor_arg_MOUSEMOTION (e:event_t) => e.motion;
+  
+    fun _match_ctor_MOUSEBUTTONDOWN (e:event_t) => e.type == SDL_MOUSEBUTTONDOWN.uint32;
+    fun _ctor_arg_MOUSEBUTTONDOWN (e:event_t) => e.button;
+  
+    fun _match_ctor_MOUSEBUTTONUP (e:event_t) => e.type == SDL_MOUSEBUTTONUP.uint32;
+    fun _ctor_arg_MOUSEBUTTONUP (e:event_t) => e.button;
+  
+    fun _match_ctor_MOUSEWHEEL  (e:event_t) => e.type == SDL_MOUSEWHEEL.uint32;
+    fun _ctor_arg_MOUSEWHEEL (e:event_t) => e.wheel;
+  
+    fun _match_ctor_TEXTINPUT (e:event_t) => e.type == SDL_TEXTINPUT.uint32;
+    fun _ctor_arg_TEXTINPUT (e:event_t) => e.text;
+  
+    fun _match_ctor_TEXTEDITING (e:event_t) => e.type == SDL_TEXTEDITING.uint32;
+    fun _ctor_arg_TEXTEDITING (e:event_t) => e.edit;
+  
+    chip event_source
+      connector events
+        pin src : %> event_t
+    {
+        var clock = Faio::mk_alarm_clock();
+        var e : SDL_Event;
+        // dummy first event
+        e&.type <- SDL_FIRSTEVENT.uint32;
+        write$ events.src,e;
+        proc waitevent()
+        {
+        nexte:>
+          var result = SDL_PollEvent$ &e;
+          if result == 0 do
+            Faio::sleep(clock,0.1);
+            goto nexte;
+          done
+        }
+        waitevent;
+        while e.type.SDL_EventType != SDL_QUIT do
+  //println$ "SDL EVENT: " + e.type.SDL_EventType.str + " SDL window #" + e.window.windowID.str;
+          write$ events.src, e;
+          waitevent;
+        done
+        println$ "[event_source] SDL_QUIT seen!";
+        write$ events.src, e;
+        return;
+    } // chip event_source
+  
+    proc demo_timer (quit:&bool) (var d:double) ()
+    {
+      var delta = 0.1;
+      var clock = Faio::mk_alarm_clock();
+    again:>
+      Faio::sleep(clock,delta);
+      d -= delta;
+      if *quit goto doquit;
+      if d > 0.0 goto again;
+      quit <- true;
+      var quitmsg : SDL_Event;
+      quitmsg&.type <- SDL_QUIT.uint32;
+  println$ "TIMEOUT";
+      C_hack::ignore(SDL_PushEvent(&quitmsg)); 
+  doquit:>
+    }
+  
+  }
 
 
 Subsystem initialisation.
@@ -311,60 +311,60 @@ the compiled header files and the binary linked in.
 .. code-block:: felix
 
   //[init.flx]
-   class FlxGuiInit
-   {
-     proc init()
-     {
-       if SDL_Init(SDL_INIT_AUDIO \| SDL_INIT_VIDEO) < 0  do
-         eprintln$ f"Unable to init SDL: %S\n" #SDL_GetError;
-         System::exit(1);
-       done
-       println$ "SDL_init OK";
-       if TTF_Init() < 0 do 
-         eprintln$ f"Unable to init TTF: %S\n" #TTF_GetError;
-         System::exit(1);
-       done
-       println$ "TTF_init OK";
-       if IMG_Init(IMG_INIT_PNG) < 0 do 
-         eprintln$ f"Unable to init IMG with PNG: %S\n" #IMG_GetError;
-         System::exit(1);
-       done
-       println$ "IMG_init OK";
-     }
-   
-     proc quit() { SDL_Quit(); }
-   
-     proc versions ()
-     {
-       begin
-         var compiled = #SDL_Compiled_Version;
-         var linked = #SDL_Linked_Version;
-         println$ f"We compiled against SDL version %d.%d.%d ..."
-           (compiled.major.int, compiled.minor.int, compiled.patch.int);
-         println$ f"But we are linking against SDL version %d.%d.%d."
-           (linked.major.int, linked.minor.int, linked.patch.int);
-       end 
-   
-       begin
-         var compiled = #TTF_Compiled_Version;
-         var linked = #TTF_Linked_Version;
-         println$ f"We compiled against TTF version %d.%d.%d ..."
-           (compiled.major.int, compiled.minor.int, compiled.patch.int);
-         println$ f"But we are linking against TTF version %d.%d.%d."
-           (linked.major.int, linked.minor.int, linked.patch.int);
-       end 
-   
-       begin
-         var compiled = #IMG_Compiled_Version;
-         var linked = #IMG_Linked_Version;
-         println$ f"We compiled against IMG version %d.%d.%d ..."
-           (compiled.major.int, compiled.minor.int, compiled.patch.int);
-         println$ f"But we are linking against IMG version %d.%d.%d."
-           (linked.major.int, linked.minor.int, linked.patch.int);
-       end 
-     } 
-   
-   }
+  class FlxGuiInit
+  {
+    proc init()
+    {
+      if SDL_Init(SDL_INIT_AUDIO \| SDL_INIT_VIDEO) < 0  do
+        eprintln$ f"Unable to init SDL: %S\n" #SDL_GetError;
+        System::exit(1);
+      done
+      println$ "SDL_init OK";
+      if TTF_Init() < 0 do 
+        eprintln$ f"Unable to init TTF: %S\n" #TTF_GetError;
+        System::exit(1);
+      done
+      println$ "TTF_init OK";
+      if IMG_Init(IMG_INIT_PNG) < 0 do 
+        eprintln$ f"Unable to init IMG with PNG: %S\n" #IMG_GetError;
+        System::exit(1);
+      done
+      println$ "IMG_init OK";
+    }
+  
+    proc quit() { SDL_Quit(); }
+  
+    proc versions ()
+    {
+      begin
+        var compiled = #SDL_Compiled_Version;
+        var linked = #SDL_Linked_Version;
+        println$ f"We compiled against SDL version %d.%d.%d ..."
+          (compiled.major.int, compiled.minor.int, compiled.patch.int);
+        println$ f"But we are linking against SDL version %d.%d.%d."
+          (linked.major.int, linked.minor.int, linked.patch.int);
+      end 
+  
+      begin
+        var compiled = #TTF_Compiled_Version;
+        var linked = #TTF_Linked_Version;
+        println$ f"We compiled against TTF version %d.%d.%d ..."
+          (compiled.major.int, compiled.minor.int, compiled.patch.int);
+        println$ f"But we are linking against TTF version %d.%d.%d."
+          (linked.major.int, linked.minor.int, linked.patch.int);
+      end 
+  
+      begin
+        var compiled = #IMG_Compiled_Version;
+        var linked = #IMG_Linked_Version;
+        println$ f"We compiled against IMG version %d.%d.%d ..."
+          (compiled.major.int, compiled.minor.int, compiled.patch.int);
+        println$ f"But we are linking against IMG version %d.%d.%d."
+          (linked.major.int, linked.minor.int, linked.patch.int);
+      end 
+    } 
+  
+  }
 
 
 Font handling.
@@ -384,68 +384,68 @@ from having to set up a font library Felix knows about.
 .. code-block:: felix
 
   //[font.flx]
-   class FlxGuiFont
-   {
-     private fun / (s:string, t:string) => Filename::join (s,t);
-   
-     fun dflt_mono_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Courier New.ttf";  
-     fun dflt_sans_serif_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Arial.ttf";  
-     fun dflt_serif_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Times New Roman.ttf";  
-   
-     gen get_font (font_file:string, ptsize:int) = {
-       var font = TTF_OpenFont (font_file,ptsize);
-       if not (TTF_ValidFont font) do
-         eprintln$ f"Unable to open TTF font %S\n" font_file;
-         System::exit 1;
-       done
-       TTF_SetFontKerning (font,0);
-       var isfixed = TTF_FontFaceIsFixedWidth (font);
-       println$ "Opened Font " + font_file + 
-         " Facename: " + TTF_FontFaceFamilyName font + 
-         (if isfixed>0 then " MONOSPACED "+ isfixed.str else " VARIABLE WIDTH");
-       println$ "Metrics: Height "+font.TTF_FontHeight.str + 
-         ", Ascent "+ font.TTF_FontAscent.str +
-         ", Descent "+ font.TTF_FontDescent.str +
-         ", Lineskip"+ font.TTF_FontLineSkip.str
-       ;
-       TTF_SetFontHinting (font,TTF_HINTING_MONO); // guess...
-       return font;
-     }
-   
-     fun get_lineskip (f: font_t) => TTF_FontLineSkip(f) + 1;
-   
-     fun get_textsize (f: font_t, s:string) = 
-     {
-       var w: int; var h: int;
-       C_hack::ignore$ TTF_SizeText (f,s,&w, &h);
-       return w,h;
-     }
-   
-     // x,y is the origin  of the first character
-     // The bounding box is 2 pixels up from the highest char
-     // 2 pixies down from the lowest char
-     // 2 pixies to the left of the first character's orgin
-     // and 2 pix right from the origin of the last char + the notional advance
-     // this ONLY works right for a monospaced font!
-     fun bounding_box (f:font_t, x:int, y:int, s:string) : rect_t =
-     {
-       var n = s.len.int;
-       var w = 
-         #{ 
-           var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
-           C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
-           return advance;
-         }
-       ;
-       var a = f.TTF_FontAscent;
-       var d = f.TTF_FontDescent;
-       // the 5 = 4 + 1 is due to what looks like a BUG in SDL or TTF:
-       // for at least one font, height = ascent - descent + 1
-       // even though lineskip = ascent - descent
-       return SDL_Rect (x - 2,y - a - 2, w * n +4, a - d + 5);
-     }
-   }
-   
+  class FlxGuiFont
+  {
+    private fun / (s:string, t:string) => Filename::join (s,t);
+  
+    fun dflt_mono_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Courier New.ttf";  
+    fun dflt_sans_serif_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Arial.ttf";  
+    fun dflt_serif_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Times New Roman.ttf";  
+  
+    gen get_font (font_file:string, ptsize:int) = {
+      var font = TTF_OpenFont (font_file,ptsize);
+      if not (TTF_ValidFont font) do
+        eprintln$ f"Unable to open TTF font %S\n" font_file;
+        System::exit 1;
+      done
+      TTF_SetFontKerning (font,0);
+      var isfixed = TTF_FontFaceIsFixedWidth (font);
+      println$ "Opened Font " + font_file + 
+        " Facename: " + TTF_FontFaceFamilyName font + 
+        (if isfixed>0 then " MONOSPACED "+ isfixed.str else " VARIABLE WIDTH");
+      println$ "Metrics: Height "+font.TTF_FontHeight.str + 
+        ", Ascent "+ font.TTF_FontAscent.str +
+        ", Descent "+ font.TTF_FontDescent.str +
+        ", Lineskip"+ font.TTF_FontLineSkip.str
+      ;
+      TTF_SetFontHinting (font,TTF_HINTING_MONO); // guess...
+      return font;
+    }
+  
+    fun get_lineskip (f: font_t) => TTF_FontLineSkip(f) + 1;
+  
+    fun get_textsize (f: font_t, s:string) = 
+    {
+      var w: int; var h: int;
+      C_hack::ignore$ TTF_SizeText (f,s,&w, &h);
+      return w,h;
+    }
+  
+    // x,y is the origin  of the first character
+    // The bounding box is 2 pixels up from the highest char
+    // 2 pixies down from the lowest char
+    // 2 pixies to the left of the first character's orgin
+    // and 2 pix right from the origin of the last char + the notional advance
+    // this ONLY works right for a monospaced font!
+    fun bounding_box (f:font_t, x:int, y:int, s:string) : rect_t =
+    {
+      var n = s.len.int;
+      var w = 
+        #{ 
+          var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+          C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+          return advance;
+        }
+      ;
+      var a = f.TTF_FontAscent;
+      var d = f.TTF_FontDescent;
+      // the 5 = 4 + 1 is due to what looks like a BUG in SDL or TTF:
+      // for at least one font, height = ascent - descent + 1
+      // even though lineskip = ascent - descent
+      return SDL_Rect (x - 2,y - a - 2, w * n +4, a - d + 5);
+    }
+  }
+  
 
 
 Colours.
@@ -460,27 +460,27 @@ rendering.
 .. code-block:: felix
 
   //[color.flx]
-   class FlxGuiColor
-   {
-     fun RGB (r:int, g:int, b:int) => 
-       SDL_Color (r.uint8, g.uint8, b.uint8, 255u8)
-     ;
-   
-     // create some colours and clear the window
-     var white = RGB (255,255,255);
-     var black = RGB (0,0,0);
-     var lightgrey = RGB (180,180,180);
-     var grey = RGB (100,100,100);
-     var darkgrey = RGB (60,60,60);
-     var red = RGB(255,0,0);
-     var green = RGB (0,255,0);
-     var blue = RGB (0,0,255);
-     var purple = RGB (255,0,255);
-     var yellow = RGB (255,255,0);
-     var orange = RGB (100,255,100);
-   
-   }
-   
+  class FlxGuiColor
+  {
+    fun RGB (r:int, g:int, b:int) => 
+      SDL_Color (r.uint8, g.uint8, b.uint8, 255u8)
+    ;
+  
+    // create some colours and clear the window
+    var white = RGB (255,255,255);
+    var black = RGB (0,0,0);
+    var lightgrey = RGB (180,180,180);
+    var grey = RGB (100,100,100);
+    var darkgrey = RGB (60,60,60);
+    var red = RGB(255,0,0);
+    var green = RGB (0,255,0);
+    var blue = RGB (0,0,255);
+    var purple = RGB (255,0,255);
+    var yellow = RGB (255,255,0);
+    var orange = RGB (100,255,100);
+  
+  }
+  
 
 Surfaces.
 ---------
@@ -507,117 +507,117 @@ not need that in GUI.
 .. code-block:: felix
 
   //[surface.flx]
-   class FlxGuiSurface
-   {
-     proc clear(surf:&SDL_Surface) (c: colour_t)
-     {
-       var pixelformat : &SDL_PixelFormat  = surf*.format;
-       var bgpixels = SDL_MapRGB(pixelformat,c.r,c.g,c.b);
-       SDL_ClearClipRect (surf);
-       C_hack::ignore$ SDL_FillSurface (surf, bgpixels);
-     }
-   
-     proc fill (surf:&SDL_Surface) (var r:rect_t, c:colour_t)
-     {
-       SDL_ClearClipRect (surf);
-       var pixelformat : &SDL_PixelFormat  = surf*.format;
-       var bgpixels = SDL_MapRGB(pixelformat,c.r,c.g,c.b);
-       C_hack::ignore$ SDL_FillRect (surf, &r, bgpixels);
-       SDL_ClearClipRect (surf);
-     }
-   
-     noinline proc draw_line (surf:&SDL_Surface)  (c:color_t, x0:int, y0:int, x1:int, y1:int)
-     {
-        var r: SDL_Renderer = SDL_CreateSoftwareRenderer surf;
-        C_hack::ignore$ SDL_SetRenderDrawColor (r, c.r, c.g, c.b, c.a);
-        C_hack::ignore$ SDL_RenderDrawLine (r, x0, y0, x1, y1);
-        SDL_DestroyRenderer r;
-     }
-   
-     proc write(surf:&SDL_Surface) (x:int, y:int, font:font_t, c: colour_t, s:string)
-     {
-       var rendered = TTF_RenderText_Solid (font,s,c);
-       var rect : SDL_Rect;
-   
-       var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
-       C_hack::ignore$ TTF_GlyphMetrics(font,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
-       
-       rect&.x <- x + (min (minx,0));
-       rect&.y <- y - maxy;
-       var nullRect = C_hack::null[SDL_Rect];
-   
-       var result = SDL_BlitSurface (rendered, nullRect, surf, &rect); 
-       if result != 0 do
-         eprintln$ "Unable to blit text to surface";
-         System::exit 1;
-       done
-       SDL_FreeSurface rendered;
-     }
-   
-     proc blit (surf:&SDL_Surface) (dstx:int, dsty:int, src: &SDL_Surface)
-     {
-       var nullRect = C_hack::null[SDL_Rect];
-       var dstRect = rect_t (dstx, dsty,0,0);
-       var result = SDL_BlitSurface (src, nullRect, surf, &dstRect);
-       if result != 0 do
-         eprintln$ "Unable to blit surface to surface at (" + dstx.str + "," + dsty.str + ")";
-         //System::exit 1;
-       done
-   
-     } 
-   
-     interface surface_t {
-       get_sdl_surface: 1 -> &SDL_Surface;
-       get_width : 1 -> int;
-       get_height: 1 -> int;
-       clear: colour_t -> 0;
-       fill: rect_t * colour_t -> 0;
-       draw_line: colour_t * int * int * int * int -> 0; // x0,y0,x1,y1
-       write: int * int * font_t * colour_t * string -> 0;
-     }
-   
-     // Wrapper around SDL surface
-     // borrows the SDL_Surface!! Does not own or delete
-     object surface (surf: &SDL_Surface) implements surface_t =
-     {
-       method fun get_sdl_surface () => surf;
-       method fun get_width () => surf*.w;
-       method fun get_height() => surf*.h;
-       method proc clear (c:colour_t) => FlxGuiSurface::clear surf c;
-       method proc fill (r:rect_t, c:colour_t) => FlxGuiSurface::fill surf (r,c);
-       method proc draw_line (c:colour_t, x0:int, y0:int, x1:int, y1:int) { FlxGuiSurface::draw_line surf (c,x0,y0,x1,y1); }
-       method proc write (x:int, y:int, font:font_t, c: colour_t, s:string) { FlxGuiSurface::write surf (x,y,font,c,s); }
-     }
-   
-     // Takes possession of the surface
-     // Frees surface when object is freed by GC
-   
-     header surface_deleter = """
-       struct _SDL_SurfaceDeleter {
-          _SDL_Surface *p;
-          _SDL_SurfaceDeleter () : p (nullptr) {}
-          ~_SDL_SurfaceDeleter () { SDL_FreeSurface (p); }
-       };
-     """;
-     type surface_holder_t = "surface_deleter" requires surface_deleter;
-     proc set : &surface_holder_t * &SDL_Surface = "$1->p=$2;";
-   
-     object owned_surface (surf: &SDL_Surface) implements surface_t =
-     {
-       var holder: surface_holder_t;
-       set (&holder, surf);
-   
-       // returns a LOAN of the surface only
-       method fun get_sdl_surface () => surf;
-       method fun get_width () => surf*.w;
-       method fun get_height() => surf*.h;
-       method proc clear (c:colour_t) => FlxGuiSurface::clear surf c;
-       method proc fill (r:rect_t, c:colour_t) => FlxGuiSurface::fill surf (r,c);
-       method proc draw_line (c:colour_t, x0:int, y0:int, x1:int, y1:int) { FlxGuiSurface::draw_line surf (c,x0,y0,x1,y1); }
-       method proc write (x:int, y:int, font:font_t, c: colour_t, s:string) { FlxGuiSurface::write surf (x,y,font,c,s); }
-     }
-   
-   }
+  class FlxGuiSurface
+  {
+    proc clear(surf:&SDL_Surface) (c: colour_t)
+    {
+      var pixelformat : &SDL_PixelFormat  = surf*.format;
+      var bgpixels = SDL_MapRGB(pixelformat,c.r,c.g,c.b);
+      SDL_ClearClipRect (surf);
+      C_hack::ignore$ SDL_FillSurface (surf, bgpixels);
+    }
+  
+    proc fill (surf:&SDL_Surface) (var r:rect_t, c:colour_t)
+    {
+      SDL_ClearClipRect (surf);
+      var pixelformat : &SDL_PixelFormat  = surf*.format;
+      var bgpixels = SDL_MapRGB(pixelformat,c.r,c.g,c.b);
+      C_hack::ignore$ SDL_FillRect (surf, &r, bgpixels);
+      SDL_ClearClipRect (surf);
+    }
+  
+    noinline proc draw_line (surf:&SDL_Surface)  (c:color_t, x0:int, y0:int, x1:int, y1:int)
+    {
+       var r: SDL_Renderer = SDL_CreateSoftwareRenderer surf;
+       C_hack::ignore$ SDL_SetRenderDrawColor (r, c.r, c.g, c.b, c.a);
+       C_hack::ignore$ SDL_RenderDrawLine (r, x0, y0, x1, y1);
+       SDL_DestroyRenderer r;
+    }
+  
+    proc write(surf:&SDL_Surface) (x:int, y:int, font:font_t, c: colour_t, s:string)
+    {
+      var rendered = TTF_RenderText_Solid (font,s,c);
+      var rect : SDL_Rect;
+  
+      var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+      C_hack::ignore$ TTF_GlyphMetrics(font,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+      
+      rect&.x <- x + (min (minx,0));
+      rect&.y <- y - maxy;
+      var nullRect = C_hack::null[SDL_Rect];
+  
+      var result = SDL_BlitSurface (rendered, nullRect, surf, &rect); 
+      if result != 0 do
+        eprintln$ "Unable to blit text to surface";
+        System::exit 1;
+      done
+      SDL_FreeSurface rendered;
+    }
+  
+    proc blit (surf:&SDL_Surface) (dstx:int, dsty:int, src: &SDL_Surface)
+    {
+      var nullRect = C_hack::null[SDL_Rect];
+      var dstRect = rect_t (dstx, dsty,0,0);
+      var result = SDL_BlitSurface (src, nullRect, surf, &dstRect);
+      if result != 0 do
+        eprintln$ "Unable to blit surface to surface at (" + dstx.str + "," + dsty.str + ")";
+        //System::exit 1;
+      done
+  
+    } 
+  
+    interface surface_t {
+      get_sdl_surface: 1 -> &SDL_Surface;
+      get_width : 1 -> int;
+      get_height: 1 -> int;
+      clear: colour_t -> 0;
+      fill: rect_t * colour_t -> 0;
+      draw_line: colour_t * int * int * int * int -> 0; // x0,y0,x1,y1
+      write: int * int * font_t * colour_t * string -> 0;
+    }
+  
+    // Wrapper around SDL surface
+    // borrows the SDL_Surface!! Does not own or delete
+    object surface (surf: &SDL_Surface) implements surface_t =
+    {
+      method fun get_sdl_surface () => surf;
+      method fun get_width () => surf*.w;
+      method fun get_height() => surf*.h;
+      method proc clear (c:colour_t) => FlxGuiSurface::clear surf c;
+      method proc fill (r:rect_t, c:colour_t) => FlxGuiSurface::fill surf (r,c);
+      method proc draw_line (c:colour_t, x0:int, y0:int, x1:int, y1:int) { FlxGuiSurface::draw_line surf (c,x0,y0,x1,y1); }
+      method proc write (x:int, y:int, font:font_t, c: colour_t, s:string) { FlxGuiSurface::write surf (x,y,font,c,s); }
+    }
+  
+    // Takes possession of the surface
+    // Frees surface when object is freed by GC
+  
+    header surface_deleter = """
+      struct _SDL_SurfaceDeleter {
+         _SDL_Surface *p;
+         _SDL_SurfaceDeleter () : p (nullptr) {}
+         ~_SDL_SurfaceDeleter () { SDL_FreeSurface (p); }
+      };
+    """;
+    type surface_holder_t = "surface_deleter" requires surface_deleter;
+    proc set : &surface_holder_t * &SDL_Surface = "$1->p=$2;";
+  
+    object owned_surface (surf: &SDL_Surface) implements surface_t =
+    {
+      var holder: surface_holder_t;
+      set (&holder, surf);
+  
+      // returns a LOAN of the surface only
+      method fun get_sdl_surface () => surf;
+      method fun get_width () => surf*.w;
+      method fun get_height() => surf*.h;
+      method proc clear (c:colour_t) => FlxGuiSurface::clear surf c;
+      method proc fill (r:rect_t, c:colour_t) => FlxGuiSurface::fill surf (r,c);
+      method proc draw_line (c:colour_t, x0:int, y0:int, x1:int, y1:int) { FlxGuiSurface::draw_line surf (c,x0,y0,x1,y1); }
+      method proc write (x:int, y:int, font:font_t, c: colour_t, s:string) { FlxGuiSurface::write surf (x,y,font,c,s); }
+    }
+  
+  }
 
 
 Drawables
@@ -632,38 +632,38 @@ with lowest z are applied first.
 .. code-block:: felix
 
   //[drawable.flx]
-   class FlxGuiDrawable
-   {
-     interface drawable_t {
-        draw: surface_t -> 0;
-        get_z: 1 -> uint32;
-        get_tag: 1 -> string;
-     }
-   
-     object drawable (tag:string) (z:uint32) (d: surface_t -> 0) implements drawable_t = 
-     {
-       method fun get_z () => z;
-       method proc draw (surf:surface_t) => d surf;
-       method fun get_tag () => tag;
-     }
-   
-     // given some routine like draw_line (s:&SDL_surface) (p:parameters)
-     // this wrapper constructs a drawable by adding a tag name, a Z coordinate
-     // and binding the parameters.
-     noinline fun mk_drawable[T] (tag:string) (z:uint32) (d: &SDL_Surface -> T -> 0) (var a:T) : drawable_t => 
-       drawable tag z (proc (s:surface_t) { d (s.get_sdl_surface()) a; })
-     ;
-   
-     noinline fun mk_drawable[T] (d: &SDL_Surface -> T -> 0) (var a:T) : drawable_t => 
-       drawable "notag" 100u32 (proc (s:surface_t) { d (s.get_sdl_surface()) a; })
-     ;
-   
-     noinline fun mk_drawable[T] (tag:string) (d: &SDL_Surface -> T -> 0) (var a:T) : drawable_t => 
-       drawable tag 100u32 (proc (s:surface_t) { d (s.get_sdl_surface()) a; })
-     ;
-     
-   }
-   
+  class FlxGuiDrawable
+  {
+    interface drawable_t {
+       draw: surface_t -> 0;
+       get_z: 1 -> uint32;
+       get_tag: 1 -> string;
+    }
+  
+    object drawable (tag:string) (z:uint32) (d: surface_t -> 0) implements drawable_t = 
+    {
+      method fun get_z () => z;
+      method proc draw (surf:surface_t) => d surf;
+      method fun get_tag () => tag;
+    }
+  
+    // given some routine like draw_line (s:&SDL_surface) (p:parameters)
+    // this wrapper constructs a drawable by adding a tag name, a Z coordinate
+    // and binding the parameters.
+    noinline fun mk_drawable[T] (tag:string) (z:uint32) (d: &SDL_Surface -> T -> 0) (var a:T) : drawable_t => 
+      drawable tag z (proc (s:surface_t) { d (s.get_sdl_surface()) a; })
+    ;
+  
+    noinline fun mk_drawable[T] (d: &SDL_Surface -> T -> 0) (var a:T) : drawable_t => 
+      drawable "notag" 100u32 (proc (s:surface_t) { d (s.get_sdl_surface()) a; })
+    ;
+  
+    noinline fun mk_drawable[T] (tag:string) (d: &SDL_Surface -> T -> 0) (var a:T) : drawable_t => 
+      drawable tag 100u32 (proc (s:surface_t) { d (s.get_sdl_surface()) a; })
+    ;
+    
+  }
+  
 
 Draw Chain
 ----------
@@ -681,66 +681,66 @@ clicks triggering state changes.
 .. code-block:: felix
 
   //[drawchain.flx]
-   include "gui/__init__";
-   class FlxGuiDrawChain
-   {
-     open FlxGui;
-     interface drawchain_t {
-       draw: surface_t -> 0;
-       remove: string -> 0;
-       add: drawable_t -> 0;
-       len: 1 -> size;
-       get_drawables : 1 -> darray[drawable_t];
-     }
-   
-     object drawchain() implements drawchain_t = 
-     {
-       var drawables = darray[drawable_t] ();
-       method fun len () => drawables.len;
-       method fun get_drawables () => drawables;
-   
-       method proc draw (surf: surface_t) 
-       {
-   //println$ "----";
-         for d in drawables do 
-           d.draw surf; 
-   //println$ "Drawn " + d.get_tag() + " " + #(d.get_z).str;
-         done
-       }
-   
-       method proc remove (tag:string)  
-       {
-   //println$ "remove " + tag;
-         var i = 0;
-         while i < drawables.len.int do
-           if drawables.i.get_tag () == tag do
-             erase (drawables, i);
-           else
-             ++i;
-           done
-         done
-       }
-   
-       method proc add (d:drawable_t) 
-       {
-         var z = d.get_z ();
-         var i = 0;
-       next:>
-         if i == drawables.len.int do
-           push_back (drawables, d);
-         else
-           if drawables.i.get_z() > z do
-             insert(drawables, i, d);
-           else
-             ++i;
-             goto next;
-           done
-         done
-       }
-     }
-   }
-   
-   
+  include "gui/__init__";
+  class FlxGuiDrawChain
+  {
+    open FlxGui;
+    interface drawchain_t {
+      draw: surface_t -> 0;
+      remove: string -> 0;
+      add: drawable_t -> 0;
+      len: 1 -> size;
+      get_drawables : 1 -> darray[drawable_t];
+    }
+  
+    object drawchain() implements drawchain_t = 
+    {
+      var drawables = darray[drawable_t] ();
+      method fun len () => drawables.len;
+      method fun get_drawables () => drawables;
+  
+      method proc draw (surf: surface_t) 
+      {
+  //println$ "----";
+        for d in drawables do 
+          d.draw surf; 
+  //println$ "Drawn " + d.get_tag() + " " + #(d.get_z).str;
+        done
+      }
+  
+      method proc remove (tag:string)  
+      {
+  //println$ "remove " + tag;
+        var i = 0;
+        while i < drawables.len.int do
+          if drawables.i.get_tag () == tag do
+            erase (drawables, i);
+          else
+            ++i;
+          done
+        done
+      }
+  
+      method proc add (d:drawable_t) 
+      {
+        var z = d.get_z ();
+        var i = 0;
+      next:>
+        if i == drawables.len.int do
+          push_back (drawables, d);
+        else
+          if drawables.i.get_z() > z do
+            insert(drawables, i, d);
+          else
+            ++i;
+            goto next;
+          done
+        done
+      }
+    }
+  }
+  
+  
 
 Windows
 =======
@@ -765,82 +765,82 @@ replaced by a populated display.
 .. code-block:: felix
 
   //[window.flx]
-   class FlxGuiWindow
-   {
-     interface window_t {
-       get_sdl_window : 1 -> SDL_Window;
-       get_sdl_surface: 1 -> &SDL_Surface;
-       get_sdl_window_id : 1 -> uint32; 
+  class FlxGuiWindow
+  {
+    interface window_t {
+      get_sdl_window : 1 -> SDL_Window;
+      get_sdl_surface: 1 -> &SDL_Surface;
+      get_sdl_window_id : 1 -> uint32; 
+  
+      get_surface: 1 -> surface_t;
+      add: drawable_t -> 0;
+      remove: string -> 0;
+      get_drawchain: 1 -> drawchain_t;
+      draw: 1 -> 0;
+  
+      show: 1 -> 0;
+      hide: 1 -> 0;
+      raise: 1 -> 0;
+      prim_update: 1 -> 0;
+      update: 1 -> 0; // does a draw then prim_update
+      destroy: 1 -> 0;
+    }
+  
+    object window (title:string, xpos:int, ypos:int, width:int,height:int, flag:uint32) implements window_t =
+    {
+      var w = SDL_CreateWindow(
+        title,
+        xpos,ypos,
+        width, height,
+        flag
+      );
+      var dc = drawchain ();
+  
+      method fun get_drawchain () => dc;
+      method proc add (d:drawable_t) => dc.add d;
+      method proc remove (tag:string) => dc.remove tag;
+  
+  
+      method fun get_sdl_window_id () => SDL_GetWindowID w;
+      method fun get_sdl_window () => w;
+      method fun get_sdl_surface() => SDL_GetWindowSurface w;
+      method fun get_surface () : surface_t => surface (SDL_GetWindowSurface w);
+  
+      method proc show () { SDL_ShowWindow w; }
+      method proc hide () { SDL_HideWindow w; }
+      method proc raise () { SDL_RaiseWindow w; }
+      method proc destroy () { SDL_DestroyWindow w; }
+  
+      method proc prim_update()
+      {
+        var result = SDL_UpdateWindowSurface w;
+        if result != 0 do
+          eprintln$ "Unable to update window";
+          System::exit 1;
+        done
+      }
+  
+      method proc draw () 
+      {
+        var surf =  surface (SDL_GetWindowSurface w);
+        dc.draw surf;
+      }
+  
+      method proc update () { draw(); prim_update(); }
    
-       get_surface: 1 -> surface_t;
-       add: drawable_t -> 0;
-       remove: string -> 0;
-       get_drawchain: 1 -> drawchain_t;
-       draw: 1 -> 0;
-   
-       show: 1 -> 0;
-       hide: 1 -> 0;
-       raise: 1 -> 0;
-       prim_update: 1 -> 0;
-       update: 1 -> 0; // does a draw then prim_update
-       destroy: 1 -> 0;
-     }
-   
-     object window (title:string, xpos:int, ypos:int, width:int,height:int, flag:uint32) implements window_t =
-     {
-       var w = SDL_CreateWindow(
-         title,
-         xpos,ypos,
-         width, height,
-         flag
-       );
-       var dc = drawchain ();
-   
-       method fun get_drawchain () => dc;
-       method proc add (d:drawable_t) => dc.add d;
-       method proc remove (tag:string) => dc.remove tag;
-   
-   
-       method fun get_sdl_window_id () => SDL_GetWindowID w;
-       method fun get_sdl_window () => w;
-       method fun get_sdl_surface() => SDL_GetWindowSurface w;
-       method fun get_surface () : surface_t => surface (SDL_GetWindowSurface w);
-   
-       method proc show () { SDL_ShowWindow w; }
-       method proc hide () { SDL_HideWindow w; }
-       method proc raise () { SDL_RaiseWindow w; }
-       method proc destroy () { SDL_DestroyWindow w; }
-   
-       method proc prim_update()
-       {
-         var result = SDL_UpdateWindowSurface w;
-         if result != 0 do
-           eprintln$ "Unable to update window";
-           System::exit 1;
-         done
-       }
-   
-       method proc draw () 
-       {
-         var surf =  surface (SDL_GetWindowSurface w);
-         dc.draw surf;
-       }
-   
-       method proc update () { draw(); prim_update(); }
-    
-     }
-   
-     gen create_fixed_window (title:string, x:int, y:int, width:int, height:int) : window_t =>
-       window (title, x,y,width,height, SDL_WINDOW_SHOWN \| SDL_WINDOW_ALLOW_HIGHDPI)
-     ;
-   
-     gen create_resizable_window (title:string, x:int, y:int, width:int, height:int) : window_t =>
-       window (title, x,y,width,height, SDL_WINDOW_RESIZABLE \| SDL_WINDOW_ALLOW_HIGHDPI)
-     ;
-   
-   
-   }
-   
+    }
+  
+    gen create_fixed_window (title:string, x:int, y:int, width:int, height:int) : window_t =>
+      window (title, x,y,width,height, SDL_WINDOW_SHOWN \| SDL_WINDOW_ALLOW_HIGHDPI)
+    ;
+  
+    gen create_resizable_window (title:string, x:int, y:int, width:int, height:int) : window_t =>
+      window (title, x,y,width,height, SDL_WINDOW_RESIZABLE \| SDL_WINDOW_ALLOW_HIGHDPI)
+    ;
+  
+  
+  }
+  
 
 The Window Controller.
 ----------------------
@@ -867,46 +867,46 @@ service events.
 .. code-block:: felix
 
   //[window_controller_interface.flx]
-   class FlxGuiWindowControllerInterface
-   {
-     // ------------------------------------------------------------------
-     // Window controller is responsible for all the work
-     // being done on a window. It requires support for
-     // dispatching events on its event channel.
-     interface window_controller_interface {
-       get_window_id : 1 -> uint32;
-       get_oschannel : 1 -> oschannel[event_t];
-       destroy_window : 1 -> 0;
-       display: 1 -> 0;
-     }
-   }
+  class FlxGuiWindowControllerInterface
+  {
+    // ------------------------------------------------------------------
+    // Window controller is responsible for all the work
+    // being done on a window. It requires support for
+    // dispatching events on its event channel.
+    interface window_controller_interface {
+      get_window_id : 1 -> uint32;
+      get_oschannel : 1 -> oschannel[event_t];
+      destroy_window : 1 -> 0;
+      display: 1 -> 0;
+    }
+  }
 
 
 .. code-block:: felix
 
   //[window_controller.flx]
-   
-   class FlxGuiWindowController
-   {
-     object window_controller 
-     (
-       w:window_t, 
-       p:(input:ischannel[event_t]) -> 1->0 // chip interface
-     ) 
-       implements window_controller_interface = 
-     {
-       var imsgs,omsgs = #mk_ioschannel_pair[event_t]; 
-       
-       method fun get_window_id () => w.get_sdl_window_id ();
-       method proc destroy_window () => w.destroy ();
-       method fun get_oschannel () => omsgs;
-       method proc display() { w.update(); }
-       circuit
-         wire imsgs to p.input
-       endcircuit
-       //spawn_fthread (p imsgs);
-     }
-   }
+  
+  class FlxGuiWindowController
+  {
+    object window_controller 
+    (
+      w:window_t, 
+      p:(input:ischannel[event_t]) -> 1->0 // chip interface
+    ) 
+      implements window_controller_interface = 
+    {
+      var imsgs,omsgs = #mk_ioschannel_pair[event_t]; 
+      
+      method fun get_window_id () => w.get_sdl_window_id ();
+      method proc destroy_window () => w.destroy ();
+      method fun get_oschannel () => omsgs;
+      method proc display() { w.update(); }
+      circuit
+        wire imsgs to p.input
+      endcircuit
+      //spawn_fthread (p imsgs);
+    }
+  }
 
 
 The Window Manager.
@@ -946,173 +946,173 @@ listens for events.
 .. code-block:: felix
 
   //[window_manager.flx]
-   class FlxGuiWindowManager
-   {
-   // Window Manager is responsible for a set of windows,
-   // and dispatching events specific to a particular
-   // window to that window.
-   
-   // ------------------------------------------------------------------
-   object window_manager () = 
-   {
-     var windows = darray[window_controller_interface]();
-   
-     method fun get_n_windows () => windows.len.int;
-   
-     // add a new window to the controlled set
-     // return its current index
-     method gen add_window (w:window_controller_interface) : int = 
-     { 
-       windows += w; 
-   println$ "add_window: index = " + (windows.len.int - 1  ).str + " SDL windows id = " + #(w.get_window_id).str;
-       return windows.len.int - 1; 
-     }
-   
-     fun find_window(wid: uint32) : opt[window_controller_interface] =
-     {
-       for wobj in windows do
-         if wid == #(wobj.get_window_id) do
-           return Some wobj;
-         done
-       done
-       return None[window_controller_interface];
-     }
-   
-     fun find_window_index (wid: uint32) : opt[int] =
-     {
-       for var i in 0 upto windows.len.int - 1 do
-         if wid == #(windows.i.get_window_id) return Some i;
-       done
-       return None[int];
-     }
-   
-     method fun get_window_controller_from_index (i:int) => windows.i;
-   
-     method proc delete_window (wid: uint32)
-     {
-       match find_window_index wid with
-       | #None => ;
-       | Some i => 
-         println$ "delete window found index " + i.str;
-         windows.i.destroy_window (); 
-         println$ "SDL destroyed";
-         erase (windows, i);
-         println$ "Window erased";
-       endmatch;
-     }
-   
-     chip window_event_dispatcher 
-      connector events
-        pin eventin : %<event_t
-        pin quit: %>int
-     {
-       forever:while true do
-         var e = read events.eventin;
-         if e.type.SDL_EventType == SDL_QUIT break forever
-         dispatch_window_event e;
-       done
-       write$ events.quit,1;
-     }
-     method fun get_window_event_dispatcher () => window_event_dispatcher;
-     method proc dispatch_window_event (e:event_t) 
-     {
-       match SDL_GetWindowID e with
-       | Some wid =>
-         match find_window wid with
-         | Some wobj =>
-           var omsgs = #(wobj.get_oschannel);
-           write (omsgs, e);
-           if e.type.SDL_EventType == SDL_WINDOWEVENT and 
-             e.window.event.SDL_WindowEventID == SDL_WINDOWEVENT_CLOSE 
-           do
-             #(wobj.get_window_id).delete_window;
-             println$ "dispatch: window deleted!";
-           else
-             wobj.display();
-           done
-         | #None => println$ "Can't find window ID = " + str wid;
-         endmatch;
-       | #None => println$ "No window for message: Event type " + e.type.SDL_EventType.str;
-       endmatch;
-     }
-   
-     method proc delete_all() 
-     {
-       println$ "Delete all";
-       var e : SDL_Event;
-       e&.type <- SDL_WINDOWEVENT.uint32;
-       e&.window.event <- SDL_WINDOWEVENT_CLOSE.uint8;
-       for wobj in windows do 
-         var omsgs = #(wobj.get_oschannel);
-         e&.window.windowID <- #(wobj.get_window_id);
-         write (omsgs, e);
-       done
-       // note: not bothering to delete the darray :)
-     }
-   
-     // the quit channel is deliberately connected to a dummy channel
-     // (a dummy is used to suppress compiler non-connection warning)
-     // the WM will suicide when it gets a SDL_QUIT message
-     method proc start ()
-     {
-       var qin,qout = mk_ioschannel_pair[int]();
-       circuit
-         connect window_event_dispatcher.eventin, event_source.src
-         wire qout to window_event_dispatcher.quit
-       endcircuit 
-     }
-   
-     // start WM, wait until SDL_QUIT seen
-     // closes windows before returning
-     method proc run_until_quit ()
-     {
-       var qin,qout = mk_ioschannel_pair[int]();
-   
-       circuit
-         connect window_event_dispatcher.eventin, event_source.src
-         wire qout to window_event_dispatcher.quit
-       endcircuit 
-   
-       C_hack::ignore(read qin);
-   
-       // we must have got a quit ..
-       println$ "QUIT EVENT, deleting all windows";
-       delete_all();
-     }
-   
-     // start WM, wait until SDL_QUIT issued by either
-     // the user or the timer
-     // closes windows before returning
-     method proc run_with_timeout (var timeout: double)
-     {
-       var qin,qout = mk_ioschannel_pair[int]();
-   
-       circuit
-         connect window_event_dispatcher.eventin, event_source.src
-         wire qout to window_event_dispatcher.quit
-       endcircuit 
-   
-       var quit = false;
-       spawn_fthread$ demo_timer &quit timeout;
-       C_hack::ignore(read qin);
-       quit = true;
-   
-       // we must have got a quit ..
-       println$ "QUIT EVENT, deleting all windows";
-       delete_all();
-     }
-   }
-   
-   gen create_SDL_event_source () : ischannel[event_t]  =
-   {
-     var imsgs, omsgs = mk_ioschannel_pair[event_t]();
-     circuit
-       wire omsgs to event_source.src
-     endcircuit
-     return imsgs;
-   }
-   }
-   
+  class FlxGuiWindowManager
+  {
+  // Window Manager is responsible for a set of windows,
+  // and dispatching events specific to a particular
+  // window to that window.
+  
+  // ------------------------------------------------------------------
+  object window_manager () = 
+  {
+    var windows = darray[window_controller_interface]();
+  
+    method fun get_n_windows () => windows.len.int;
+  
+    // add a new window to the controlled set
+    // return its current index
+    method gen add_window (w:window_controller_interface) : int = 
+    { 
+      windows += w; 
+  println$ "add_window: index = " + (windows.len.int - 1  ).str + " SDL windows id = " + #(w.get_window_id).str;
+      return windows.len.int - 1; 
+    }
+  
+    fun find_window(wid: uint32) : opt[window_controller_interface] =
+    {
+      for wobj in windows do
+        if wid == #(wobj.get_window_id) do
+          return Some wobj;
+        done
+      done
+      return None[window_controller_interface];
+    }
+  
+    fun find_window_index (wid: uint32) : opt[int] =
+    {
+      for var i in 0 upto windows.len.int - 1 do
+        if wid == #(windows.i.get_window_id) return Some i;
+      done
+      return None[int];
+    }
+  
+    method fun get_window_controller_from_index (i:int) => windows.i;
+  
+    method proc delete_window (wid: uint32)
+    {
+      match find_window_index wid with
+      | #None => ;
+      | Some i => 
+        println$ "delete window found index " + i.str;
+        windows.i.destroy_window (); 
+        println$ "SDL destroyed";
+        erase (windows, i);
+        println$ "Window erased";
+      endmatch;
+    }
+  
+    chip window_event_dispatcher 
+     connector events
+       pin eventin : %<event_t
+       pin quit: %>int
+    {
+      forever:while true do
+        var e = read events.eventin;
+        if e.type.SDL_EventType == SDL_QUIT break forever
+        dispatch_window_event e;
+      done
+      write$ events.quit,1;
+    }
+    method fun get_window_event_dispatcher () => window_event_dispatcher;
+    method proc dispatch_window_event (e:event_t) 
+    {
+      match SDL_GetWindowID e with
+      | Some wid =>
+        match find_window wid with
+        | Some wobj =>
+          var omsgs = #(wobj.get_oschannel);
+          write (omsgs, e);
+          if e.type.SDL_EventType == SDL_WINDOWEVENT and 
+            e.window.event.SDL_WindowEventID == SDL_WINDOWEVENT_CLOSE 
+          do
+            #(wobj.get_window_id).delete_window;
+            println$ "dispatch: window deleted!";
+          else
+            wobj.display();
+          done
+        | #None => println$ "Can't find window ID = " + str wid;
+        endmatch;
+      | #None => println$ "No window for message: Event type " + e.type.SDL_EventType.str;
+      endmatch;
+    }
+  
+    method proc delete_all() 
+    {
+      println$ "Delete all";
+      var e : SDL_Event;
+      e&.type <- SDL_WINDOWEVENT.uint32;
+      e&.window.event <- SDL_WINDOWEVENT_CLOSE.uint8;
+      for wobj in windows do 
+        var omsgs = #(wobj.get_oschannel);
+        e&.window.windowID <- #(wobj.get_window_id);
+        write (omsgs, e);
+      done
+      // note: not bothering to delete the darray :)
+    }
+  
+    // the quit channel is deliberately connected to a dummy channel
+    // (a dummy is used to suppress compiler non-connection warning)
+    // the WM will suicide when it gets a SDL_QUIT message
+    method proc start ()
+    {
+      var qin,qout = mk_ioschannel_pair[int]();
+      circuit
+        connect window_event_dispatcher.eventin, event_source.src
+        wire qout to window_event_dispatcher.quit
+      endcircuit 
+    }
+  
+    // start WM, wait until SDL_QUIT seen
+    // closes windows before returning
+    method proc run_until_quit ()
+    {
+      var qin,qout = mk_ioschannel_pair[int]();
+  
+      circuit
+        connect window_event_dispatcher.eventin, event_source.src
+        wire qout to window_event_dispatcher.quit
+      endcircuit 
+  
+      C_hack::ignore(read qin);
+  
+      // we must have got a quit ..
+      println$ "QUIT EVENT, deleting all windows";
+      delete_all();
+    }
+  
+    // start WM, wait until SDL_QUIT issued by either
+    // the user or the timer
+    // closes windows before returning
+    method proc run_with_timeout (var timeout: double)
+    {
+      var qin,qout = mk_ioschannel_pair[int]();
+  
+      circuit
+        connect window_event_dispatcher.eventin, event_source.src
+        wire qout to window_event_dispatcher.quit
+      endcircuit 
+  
+      var quit = false;
+      spawn_fthread$ demo_timer &quit timeout;
+      C_hack::ignore(read qin);
+      quit = true;
+  
+      // we must have got a quit ..
+      println$ "QUIT EVENT, deleting all windows";
+      delete_all();
+    }
+  }
+  
+  gen create_SDL_event_source () : ischannel[event_t]  =
+  {
+    var imsgs, omsgs = mk_ioschannel_pair[event_t]();
+    circuit
+      wire omsgs to event_source.src
+    endcircuit
+    return imsgs;
+  }
+  }
+  
 
 
 Widgets
@@ -1126,185 +1126,185 @@ Simple Click Button
 .. code-block:: felix
 
   //[button.flx]
-   class FlxGuiButton
-   {
-     union button_state_t =  
-       | Up       // ready
-       | Down     // being clicked
-       | Disabled // inactive
-       | Mouseover // ready and mouse is over
-     ;
-   
-     union button_action_t =
-       | NoAction
-       | ClickAction of string
-     ;
-   
-     interface button_model_t 
+  class FlxGuiButton
+  {
+    union button_state_t =  
+      | Up       // ready
+      | Down     // being clicked
+      | Disabled // inactive
+      | Mouseover // ready and mouse is over
+    ;
+  
+    union button_action_t =
+      | NoAction
+      | ClickAction of string
+    ;
+  
+    interface button_model_t 
+    {
+      get_state: 1 -> button_state_t;
+      set_state: button_state_t -> 0;
+      get_tag: 1 -> string;
+    }
+  
+    object ButtonModel 
+      (var tag: string, init_state:button_state_t) 
+      implements button_model_t 
+    =
+    {
+      var state = init_state;
+      method fun get_state() => state;
+      method proc set_state (s:button_state_t) => state = s;
+      method fun get_tag () => tag;
+    }
+  
+    typedef button_colour_scheme_t = 
+    (
+      label_colour: colour_t,
+      bg_colour: colour_t,
+      top_colour: colour_t,
+      left_colour: colour_t,
+      bottom_colour: colour_t,
+      right_colour: colour_t
+    );
+  
+    typedef button_skin_t =
+    (
+      up: button_colour_scheme_t,
+      down: button_colour_scheme_t,
+      disabled: button_colour_scheme_t,
+      mouseover: button_colour_scheme_t
+    );
+  
+    interface button_display_t {
+      display: 1 -> 0;
+      get_client_rect: 1 -> rect_t;
+      get_label : 1 -> string;
+      get_tag: 1 -> string;
+    }
+  
+    object ButtonDisplay (b:button_model_t) 
+    (
+      w:window_t, // change to surface later
+      font:font_t, 
+      label:string, 
+      tag: string, // note: NOT the same as the button's tag!
+      skin : button_skin_t,
+      coords: rect_t,
+      origin: point_t
+     ) 
+     implements button_display_t =
      {
-       get_state: 1 -> button_state_t;
-       set_state: button_state_t -> 0;
-       get_tag: 1 -> string;
-     }
-   
-     object ButtonModel 
-       (var tag: string, init_state:button_state_t) 
-       implements button_model_t 
-     =
-     {
-       var state = init_state;
-       method fun get_state() => state;
-       method proc set_state (s:button_state_t) => state = s;
+       // NOTE: the tag must be unique per button-display on each window.
+       // it is used to *remove* the drawing instructions from the window
+       // for the previous button state prior to adding new instructions.
+       // Dont confuse with the label (which might change per display)
+       // or the button state tag (which is not enough if the same button state
+       // drives two displays on the same window).
        method fun get_tag () => tag;
-     }
+  
+       method fun get_client_rect () => coords;
+  
+       method fun get_label () => label;
+       method proc display()
+       {
+        var state = b.get_state ();
+        var scheme = match state with
+          | #Up => skin.up
+          | #Down => skin.down
+          | #Disabled => skin.disabled
+          | #Mouseover => skin.mouseover
+          endmatch
+        ;
+        w.remove tag;
+        var left_x = coords.x;
+        var right_x = coords.x + coords.w - 1;
+        var top_y = coords.y;
+        var bottom_y = coords.y + coords.h - 1;
+        var origin_x = origin.x;
+        var origin_y = origin.y;
+  
+        // top
+        w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2) ; 
+        w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
+        // left
+        w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
+        w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
+        // right
+        w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
+        w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
+        // bottom
+        w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
+        w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
+  
+        w.add$ mk_drawable tag fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
+        w.add$ mk_drawable tag FlxGuiSurface::write (origin_x, origin_y, font, scheme.label_colour, label);
+      } // draw
+      display();
+    } //button
+  
+  chip button_controller 
+  (
+    bm: button_model_t, 
+    bd: button_display_t 
+  )
+  connector but
+    pin ec: %<event_t
+    pin response: %>button_action_t 
+  {
+    bd.display();
+    var run = true;
+    var e = read but.ec;
+    while run do
+      match e with
+      | MOUSEMOTION mm =>
+        var x,y = mm.x,mm.y; //int32
+        if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
+          //println$ "Motion in client rect of button " + bd.get_label();
+          match bm.get_state () with
+          | #Up => bm.set_state Mouseover; bd.display(); // Enter
+          | _ => ;
+          endmatch;
+        else
+          match bm.get_state () with
+          | #Mouseover => bm.set_state Up; bd.display(); // Leave
+          | #Down => bm.set_state Up; bd.display(); // Leave
+          | _ => ;
+          endmatch;
+        done
+        write$ but.response, NoAction;
    
-     typedef button_colour_scheme_t = 
-     (
-       label_colour: colour_t,
-       bg_colour: colour_t,
-       top_colour: colour_t,
-       left_colour: colour_t,
-       bottom_colour: colour_t,
-       right_colour: colour_t
-     );
+      | MOUSEBUTTONDOWN mbd =>
+        x,y = mbd.x,mbd.y; //int32
+        if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
+          //println$ "Button down in client rect of button " + bd.get_label();
+          bm.set_state Down; bd.display();
+        done
+        write$ but.response, NoAction;
    
-     typedef button_skin_t =
-     (
-       up: button_colour_scheme_t,
-       down: button_colour_scheme_t,
-       disabled: button_colour_scheme_t,
-       mouseover: button_colour_scheme_t
-     );
-   
-     interface button_display_t {
-       display: 1 -> 0;
-       get_client_rect: 1 -> rect_t;
-       get_label : 1 -> string;
-       get_tag: 1 -> string;
-     }
-   
-     object ButtonDisplay (b:button_model_t) 
-     (
-       w:window_t, // change to surface later
-       font:font_t, 
-       label:string, 
-       tag: string, // note: NOT the same as the button's tag!
-       skin : button_skin_t,
-       coords: rect_t,
-       origin: point_t
-      ) 
-      implements button_display_t =
-      {
-        // NOTE: the tag must be unique per button-display on each window.
-        // it is used to *remove* the drawing instructions from the window
-        // for the previous button state prior to adding new instructions.
-        // Dont confuse with the label (which might change per display)
-        // or the button state tag (which is not enough if the same button state
-        // drives two displays on the same window).
-        method fun get_tag () => tag;
-   
-        method fun get_client_rect () => coords;
-   
-        method fun get_label () => label;
-        method proc display()
-        {
-         var state = b.get_state ();
-         var scheme = match state with
-           | #Up => skin.up
-           | #Down => skin.down
-           | #Disabled => skin.disabled
-           | #Mouseover => skin.mouseover
-           endmatch
-         ;
-         w.remove tag;
-         var left_x = coords.x;
-         var right_x = coords.x + coords.w - 1;
-         var top_y = coords.y;
-         var bottom_y = coords.y + coords.h - 1;
-         var origin_x = origin.x;
-         var origin_y = origin.y;
-   
-         // top
-         w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2) ; 
-         w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
-         // left
-         w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
-         w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
-         // right
-         w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
-         w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
-         // bottom
-         w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
-         w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
-   
-         w.add$ mk_drawable tag fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
-         w.add$ mk_drawable tag FlxGuiSurface::write (origin_x, origin_y, font, scheme.label_colour, label);
-       } // draw
-       display();
-     } //button
-   
-   chip button_controller 
-   (
-     bm: button_model_t, 
-     bd: button_display_t 
-   )
-   connector but
-     pin ec: %<event_t
-     pin response: %>button_action_t 
-   {
-     bd.display();
-     var run = true;
-     var e = read but.ec;
-     while run do
-       match e with
-       | MOUSEMOTION mm =>
-         var x,y = mm.x,mm.y; //int32
-         if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
-           //println$ "Motion in client rect of button " + bd.get_label();
-           match bm.get_state () with
-           | #Up => bm.set_state Mouseover; bd.display(); // Enter
-           | _ => ;
-           endmatch;
-         else
-           match bm.get_state () with
-           | #Mouseover => bm.set_state Up; bd.display(); // Leave
-           | #Down => bm.set_state Up; bd.display(); // Leave
-           | _ => ;
-           endmatch;
-         done
-         write$ but.response, NoAction;
-    
-       | MOUSEBUTTONDOWN mbd =>
-         x,y = mbd.x,mbd.y; //int32
-         if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
-           //println$ "Button down in client rect of button " + bd.get_label();
-           bm.set_state Down; bd.display();
-         done
-         write$ but.response, NoAction;
-    
-       | MOUSEBUTTONUP mbu => 
-         x,y = mbu.x,mbu.y; //int32
-         if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
-           //println$ "Button up in client rect of button " + bd.get_label();
-           bm.set_state Mouseover; bd.display();
-           write$ but.response, ClickAction #(bm.get_tag);
-         else
-           bm.set_state Up; bd.display();
-           write$ but.response, NoAction;
-         done
-       | WINDOWEVENT we when we.event == SDL_WINDOWEVENT_LEAVE.uint8  =>
-         bm.set_state Up; bd.display();
-         write$ but.response, NoAction;
-   
-       | _ => 
-         write$ but.response, NoAction;
-       endmatch;
-       e = read but.ec;
-     done
-   
-   }
-   
-   } // class
+      | MOUSEBUTTONUP mbu => 
+        x,y = mbu.x,mbu.y; //int32
+        if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
+          //println$ "Button up in client rect of button " + bd.get_label();
+          bm.set_state Mouseover; bd.display();
+          write$ but.response, ClickAction #(bm.get_tag);
+        else
+          bm.set_state Up; bd.display();
+          write$ but.response, NoAction;
+        done
+      | WINDOWEVENT we when we.event == SDL_WINDOWEVENT_LEAVE.uint8  =>
+        bm.set_state Up; bd.display();
+        write$ but.response, NoAction;
+  
+      | _ => 
+        write$ but.response, NoAction;
+      endmatch;
+      e = read but.ec;
+    done
+  
+  }
+  
+  } // class
 
 
 Cascading Menu
@@ -1314,928 +1314,928 @@ Cascading Menu
 .. code-block:: felix
 
   //[menu.flx]
-   // interim menu stuff
-   // these menus are transient, retaining state only when open
-   
-   
-   include "std/datatype/lsexpr";
-   
-   class FlxGuiMenu
-   {
-     // A menu entry is either some text or a separator
-     // The text has a visual label and a separate tag 
-     // returned when an entry is selected
-     union menu_entry_active_t = Active | Disabled;
-     typedef menu_text_entry_t = (tag:string, label:string, active:menu_entry_active_t);
-   
-     union menu_entry_t = Separator | Text of menu_text_entry_t;
-   
-     // A menu is a list of trees with both leaves and nodes labelled
-     typedef menu_item_t = LS_expr::lsexpr[menu_entry_t, menu_entry_t];
-     typedef menu_data_t = list[menu_item_t];
-   
-     // A position in the tree is a list of integers
-     // Separators do not count
-     typedef menu_position_t = list[int];
-   
-     // A menu is either closed, or open at a particular position
-     union menu_state_t = Closed | Open of menu_position_t;
-   
-     union menu_action_t = NoAction | ChangedPosition | SelectedAction of string;
-   
-     interface menu_model_t
-     {
-       get_menu: 1 -> menu_data_t;
-       get_state: 1 -> menu_state_t;
-       set_state: menu_state_t -> 0;
-       get_current_tag: 1 -> string; // empty string if closed
-       get_current_tag_chain: 1 -> list[string]; // from the top
-     }
-   
-     object MenuModel (m:menu_data_t) implements menu_model_t =
-     {
-       var state = Closed;
-       method fun get_menu () => m;
-       method fun get_state () => state;
-       method proc set_state (s:menu_state_t) => state = s;
-   
-       // find ix'th entry in a menu if it exists,
-       // separators not counted
-       fun find (m:menu_data_t, ix:int) : opt[menu_item_t] =>
-         match m with
-         | #Empty => None[menu_item_t]
-         | Cons (h,t) => 
-           match h with
-           | Leaf (Separator) => find (t,ix)
-           | x => if ix == 0 then Some x else find (t,ix - 1)
-           endmatch
-         endmatch
-       ;
-         
-       fun find_tag (pos: menu_position_t, menu:menu_data_t) : string =>
-         match pos,menu with
-         | #Empty, _ => "Empty"
-         | Cons (i,t), m => 
-           match find (m,i),t with
-           | Some (Leaf (Text (tag=tag))), Empty => tag
-           | Some (Tree (Text (tag=tag), _)), Empty => tag
-           | Some (Tree (_, subtree)), _=> find_tag (t,subtree)
-           | _ => "Error"
-           endmatch
-         endmatch
-       ; 
-       method fun get_current_tag () => 
-        match state with
-        | #Closed => "Closed"
-        | Open pos =>
-           find_tag (pos,m)
+  // interim menu stuff
+  // these menus are transient, retaining state only when open
+  
+  
+  include "std/datatype/lsexpr";
+  
+  class FlxGuiMenu
+  {
+    // A menu entry is either some text or a separator
+    // The text has a visual label and a separate tag 
+    // returned when an entry is selected
+    union menu_entry_active_t = Active | Disabled;
+    typedef menu_text_entry_t = (tag:string, label:string, active:menu_entry_active_t);
+  
+    union menu_entry_t = Separator | Text of menu_text_entry_t;
+  
+    // A menu is a list of trees with both leaves and nodes labelled
+    typedef menu_item_t = LS_expr::lsexpr[menu_entry_t, menu_entry_t];
+    typedef menu_data_t = list[menu_item_t];
+  
+    // A position in the tree is a list of integers
+    // Separators do not count
+    typedef menu_position_t = list[int];
+  
+    // A menu is either closed, or open at a particular position
+    union menu_state_t = Closed | Open of menu_position_t;
+  
+    union menu_action_t = NoAction | ChangedPosition | SelectedAction of string;
+  
+    interface menu_model_t
+    {
+      get_menu: 1 -> menu_data_t;
+      get_state: 1 -> menu_state_t;
+      set_state: menu_state_t -> 0;
+      get_current_tag: 1 -> string; // empty string if closed
+      get_current_tag_chain: 1 -> list[string]; // from the top
+    }
+  
+    object MenuModel (m:menu_data_t) implements menu_model_t =
+    {
+      var state = Closed;
+      method fun get_menu () => m;
+      method fun get_state () => state;
+      method proc set_state (s:menu_state_t) => state = s;
+  
+      // find ix'th entry in a menu if it exists,
+      // separators not counted
+      fun find (m:menu_data_t, ix:int) : opt[menu_item_t] =>
+        match m with
+        | #Empty => None[menu_item_t]
+        | Cons (h,t) => 
+          match h with
+          | Leaf (Separator) => find (t,ix)
+          | x => if ix == 0 then Some x else find (t,ix - 1)
+          endmatch
         endmatch
-       ;
-       method fun get_current_tag_chain () => Empty[string];
-     }
-   
-     interface menu_display_t 
-     {
-       display: 1 -> 0;
-       get_hotrects: 1 -> list[rect_t * menu_position_t];
-       get_tag: 1 -> string;
-     }
-   
-     typedef submenu_icon_t = (open_icon: surface_t, closed_icon: surface_t);
-   
-     object MenuDisplay 
-     (
-       tag:string,
-       m:menu_model_t,
-       w:window_t,
-       x:int,y:int,
-       font:font_t,
-       text_colour: button_colour_scheme_t,
-       disabled_colour: button_colour_scheme_t,
-       selected_colour: button_colour_scheme_t,
-       submenu_icons: submenu_icon_t
-     ) implements menu_display_t =
-     {
-       method fun get_tag () => tag;
-   
-       var icon_width = max (submenu_icons.open_icon.get_width(), submenu_icons.closed_icon.get_width());
-       var lineskip = get_lineskip font;
-       var baseline_offset = font.TTF_FontAscent; 
-       var border_width = 2;
-       var left_padding = 4;
-       var right_padding = 10 + icon_width;
-       var min_width = 20;
-       var separator_depth = 1;
-       var top_padding = 1;
-       var bottom_padding = 1;
-   
-       fun width (s:string) => (FlxGuiFont::get_textsize (font,s)).0;
-       fun width: menu_entry_t -> int =
-         | #Separator => left_padding + right_padding + min_width
-         | Text s => left_padding + right_padding + width s.label
-       ;
-       fun depth : menu_entry_t -> int = 
-         | #Separator => top_padding + bottom_padding + separator_depth
-         | Text s => top_padding + bottom_padding + lineskip
-       ;
-       fun width : menu_item_t -> int =
-         | Leaf menu_entry => width menu_entry
-         | Tree (menu_entries ,_) => width menu_entries
-       ;
-   
-       fun depth : menu_item_t -> int =
-         | Leaf menu_entry => depth menu_entry
-         | Tree (menu_entry ,_) => depth menu_entry
-       ;
-       fun width (ls: menu_data_t) => fold_left 
-         (fun (w:int) (menu_item:menu_item_t) => max (w, width menu_item)) 
-         0 
-         ls
-       ;
-       fun depth (ls: menu_data_t) => fold_left
-         (fun (d:int) (menu_item:menu_item_t) => d + depth menu_item)
-         0
-         ls
-       ;
-       proc display_menu(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
-       {
-         var left_x = x;
-         var top_y = y;
-         var right_x = left_x + width menu;
-         var bottom_y = top_y + depth menu;
-         var scheme = text_colour;
-   
-         // top
-         w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
-         w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
-         // left
-         w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
-         w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
-         // right
-         w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
-         w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
-         // bottom
-         w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
-         w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
-   
-         w.add$ mk_drawable tag fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
-   
-         var selected = match position with
-           | #Empty => 0 // ignore for the moment
-           | Cons (h,_) => h
-         ;
-   
-         var counter = 0;
-         var ypos = top_y + top_padding;
-         proc show_entry (entry: menu_entry_t) (submenu:menu_data_t) => 
-           match entry with
-           | #Separator => 
-             var y = ypos;
-             w.add$ mk_drawable tag draw_line (RGB(0,0,0), left_x, y, right_x, y); 
-             ypos = ypos + separator_depth + bottom_padding + top_padding;
-   
-           | Text (label=s,active=active) =>
-             y = ypos + baseline_offset;
-             var scheme, dosub = match active with
-               | #Active => if counter == selected then selected_colour, true else text_colour, false
-               | #Disabled => disabled_colour, false
-             ;
-             var client_area = rect_t (
-               left_x+border_width,
-               ypos+top_padding,
-               right_x - left_x - 2 * border_width, 
-               lineskip
-             );
-             w.add$ mk_drawable tag fill (client_area, scheme.bg_colour);
-             w.add$ mk_drawable tag FlxGui::write (left_x+left_padding, y,font,scheme.label_colour,s);
-   
-             match submenu with
-             | #Empty => ;
-             | _ =>
-               var icon = if selected == counter then submenu_icons.open_icon else submenu_icons.closed_icon; 
-               var dst = rect_t (right_x - icon_width - border_width - 1, ypos, 0,0);
-               w.add$ mk_drawable tag blit (dst.x, dst.y, icon.get_sdl_surface());
-               if dosub do
-                 var subpos = match position with 
-                   | Cons (_,tail) => tail
-                   | _ => position // empty
-                 ;
-                 display_menu (right_x+border_width,ypos+border_width,submenu,subpos);
-               done
-             endmatch;
-             ypos = ypos + lineskip + bottom_padding+top_padding;
-             ++counter;
-           endmatch
-         ;
-         for item in menu do
-           match item with
-           | Leaf entry => show_entry entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
-           | Tree (entry, submenu) => show_entry entry submenu;
-           endmatch;
-         done
-       }  
-       method proc display() {
-         val position = match #(m.get_state) with
-           | #Closed => list (0)
-           | Open p => p
-         ;
-         display_menu (x,y,#(m.get_menu), position);
-         //w.update(); 
-       }
-   
-       proc get_hotrecs(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
-         (revtrail: list[int]) 
-         (photrecs:&list[rect_t * menu_position_t])=
-       {
-   //println$ "get_hotrecs, revtrail=" + revtrail.str+", pos=" + position.str;
-         var left_x = x;
-         var top_y = y;
-         var right_x = left_x + width menu;
-         var bottom_y = top_y + depth menu;
-   
-         var selected = match position with
-           | #Empty => 0 // ignore for the moment
-           | Cons (h,_) => h
-         ;
-   
-         var counter = 0;
-         var ypos = top_y + top_padding;
-         proc hotrecs (entry: menu_entry_t) (submenu:menu_data_t) 
-         {
-           match entry with
-           | #Separator => 
-             ypos = ypos + separator_depth + bottom_padding + top_padding;
-   //println$ "SEPARATOR : Counter="+counter.str;
-   
-           | Text (label=s,active=active) =>
-             y = ypos + baseline_offset;
-             var dosub = match active with
-               | #Active => counter == selected
-               | #Disabled => false
-             ;
-             var client_area = rect_t (
-               left_x+border_width,
-               ypos+top_padding,
-               right_x - left_x - 2 * border_width, 
-               lineskip
-             );
-   //println$ "TEXT: Counter="+counter.str+", Rect=" + client_area.str;
-             match active with 
-             | #Active => photrecs <- (client_area, rev (counter + revtrail)) + *photrecs;
-             | #Disabled => ;
-             endmatch;
-             match submenu with
-             | #Empty => ;
-             | _ =>
-               if dosub do
-                 var subpos = match position with 
-                   | Cons (_,tail) => tail
-                   | _ => position // empty
-                 ;
-                 get_hotrecs (right_x+border_width,ypos+border_width,submenu,subpos) (counter+revtrail) photrecs;
-               done
-             endmatch;
-             ypos = ypos + lineskip + bottom_padding+top_padding;
-             ++counter;
-           endmatch;
-         }
-         for item in menu do
-           match item with
-           | Leaf entry => hotrecs entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
-           | Tree (entry, submenu) => hotrecs entry submenu;
-           endmatch;
-         done
-       }  
-   
-       method fun get_hotrects() : list[rect_t * menu_position_t] =
-       {
-         val position = match #(m.get_state) with
-           | #Closed => list (0)
-           | Open p => p
-         ;
-         var hotrecs = Empty[rect_t * menu_position_t];
-         get_hotrecs (x,y,#(m.get_menu),position) Empty[int] &hotrecs;
-         return rev hotrecs;
-       }
-   
-     }
-   
-     fun hotpos (point:SDL_Point, hot:list[rect_t * menu_position_t]) : opt[menu_position_t] =>
-       match hot with
-       | #Empty => None[menu_position_t]
-       | Cons ((r,pos),tail) =>
-         if point \in r then Some pos else hotpos (point, tail)
+      ;
+        
+      fun find_tag (pos: menu_position_t, menu:menu_data_t) : string =>
+        match pos,menu with
+        | #Empty, _ => "Empty"
+        | Cons (i,t), m => 
+          match find (m,i),t with
+          | Some (Leaf (Text (tag=tag))), Empty => tag
+          | Some (Tree (Text (tag=tag), _)), Empty => tag
+          | Some (Tree (_, subtree)), _=> find_tag (t,subtree)
+          | _ => "Error"
+          endmatch
+        endmatch
+      ; 
+      method fun get_current_tag () => 
+       match state with
+       | #Closed => "Closed"
+       | Open pos =>
+          find_tag (pos,m)
        endmatch
-     ;
-   
-     // ===============================================================================
-     object MenuBarDisplay 
-     (
-       tag:string,
-       m:menu_model_t,
-       w:window_t,
-       x:int,y:int,
-       font:font_t,
-       text_colour: button_colour_scheme_t,
-       disabled_colour: button_colour_scheme_t,
-       selected_colour: button_colour_scheme_t,
-       submenu_icons: submenu_icon_t
-     ) implements menu_display_t =
-     {
-       method fun get_tag() => tag;
-       var icon_width = max (submenu_icons.open_icon.get_width(), submenu_icons.closed_icon.get_width());
-       var lineskip = get_lineskip font;
-       var baseline_offset = font.TTF_FontAscent; 
-       var border_width = 2;
-       var left_padding = 4;
-       var right_padding = 4; 
-       var min_width = 20;
-       var separator_width = 1;
-       var top_padding = 1;
-       var bottom_padding = 1;
-       var bar_depth =
-         top_padding + bottom_padding + lineskip
-       ;
-   
-       fun width (s:string) => (FlxGuiFont::get_textsize (font,s)).0;
-   
-       fun width: menu_entry_t -> int =
-         | #Separator => left_padding + right_padding + separator_width
-         | Text s => left_padding + right_padding + max(min_width, width s.label)
-       ;
-   
-       fun width : menu_item_t -> int =
-         | Leaf menu_entry => width menu_entry
-         | Tree (menu_entry,_) => width menu_entry
-       ;
-   
-       fun width (ls: menu_data_t) => fold_left 
-         (fun (w:int) (menu_item:menu_item_t) => w + width menu_item)
-         0 
-         ls
-       ;
-   
-       proc display_menu(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
-       {
-         var left_x = x;
-         var top_y = y;
-         var right_x = left_x + width menu;
-         var bottom_y = top_y + bar_depth;
-         var scheme = text_colour;
-   
-         w.remove tag;
-         // top
-         w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
-         w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
-         // left
-         w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
-         w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
-         // right
-         w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
-         w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
-         // bottom
-         w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
-         w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
-   
-         w.add$ mk_drawable tag fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
-   
-         var selected = match position with
-           | #Empty => 0 // ignore for the moment
-           | Cons (h,_) => h
-         ;
-   
-         var counter = 0;
-         var xpos = left_x + left_padding;
-   //println$ "Display Menu "+ tag;
-         proc show_entry (entry: menu_entry_t) (submenu:menu_data_t) => 
-           match entry with
-           | #Separator => 
-             w.add$ mk_drawable tag draw_line (RGB(0,0,0), xpos, top_y, xpos, top_y+bar_depth); 
-             xpos = xpos + separator_width + right_padding + left_padding;
-   
-           | Text (label=s,active=active) =>
-             var scheme, dosub = match active with
-               | #Active => if counter == selected then selected_colour, true else text_colour, false
-               | #Disabled => disabled_colour, false
-             ;
-             var item_width =  max (width s, min_width);
-             var client_area = rect_t (
-               xpos+border_width,
-               top_y+top_padding,
-               item_width,
-               lineskip
-             );
-             w.add$ mk_drawable tag fill (client_area, scheme.bg_colour);
-   //println$ "Menu bar counter=" + counter.str + ", xpos= " + xpos.str + ", text="+s.str;
-             w.add$ mk_drawable tag FlxGui::write (
-               xpos+left_padding, 
-               top_y+baseline_offset,
-               font,
-               scheme.label_colour,
-               s
-             );
-   
-             match submenu with
-             | #Empty => ;
-             | _ => 
-               if dosub do
-                 println "SUBMENU SELECTED";
-                 var smm = MenuModel ( submenu );
-                 var smd = MenuDisplay ( tag,
-                   smm,
-                   w,
-                   xpos,bottom_y+border_width,
-                   font,
-                   text_colour,
-                   disabled_colour,
-                   selected_colour,
-                   submenu_icons
-                 );
-                 match position with
-                 | Cons (_,tail) => smm.set_state (Open tail);
-                 | _ => ;
-                 endmatch;
-                 smd.display();
-               done
-             endmatch;
-             xpos = xpos + item_width + right_padding+left_padding;
-             ++counter;
-           endmatch
-         ;
-         for item in menu do
-           match item with
-           | Leaf entry => show_entry entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
-           | Tree (entry, submenu) => show_entry entry submenu;
-           endmatch;
-         done
-       }  
-   
-       method proc display() {
-         val position = match #(m.get_state) with
-           | #Closed => list (0)
-           | Open p => p
-         ;
-         display_menu (x,y,#(m.get_menu), position);
-         //w.update(); 
-       }
-       proc get_hotrecs(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
-         (revtrail: list[int]) 
-         (photrecs:&list[rect_t * menu_position_t])=
-       {
-   //println$ "get_hotrecs, revtrail=" + revtrail.str+", pos=" + position.str;
-         var left_x = x;
-         var top_y = y;
-         var right_x = left_x + width menu;
-         var bottom_y = top_y + bar_depth;
-   
-         var selected = match position with
-           | #Empty => 0 // ignore for the moment
-           | Cons (h,_) => h
-         ;
-   
-         var counter = 0;
-         var xpos = left_x + left_padding;
-         proc hotrecs (entry: menu_entry_t) (submenu:menu_data_t) 
-         {
-           match entry with
-           | #Separator => 
-             xpos = xpos + separator_width + right_padding + left_padding;
-   //println$ "SEPARATOR : Counter="+counter.str;
-   
-           | Text (label=s,active=active) =>
-             var dosub = match active with
-               | #Active => counter == selected
-               | #Disabled => false
-             ;
-             var item_width = max (width s, min_width);
-             var client_area = rect_t (
-               xpos+border_width,
-               top_y+top_padding,
-               item_width,
-               lineskip
-             );
-   //println$ "TEXT: Counter="+counter.str+", Rect=" + client_area.str;
-             match active with 
-             | #Active => photrecs <- (client_area, rev (counter + revtrail)) + *photrecs;
-             | #Disabled => ;
-             endmatch;
-             match submenu with
-             | #Empty => ;
-             | _ => 
-               if dosub do
-                 var smm = MenuModel ( submenu );
-                 var smd = MenuDisplay (tag,
-                   smm,
-                   w,
-                   xpos,bottom_y+border_width,
-                   font,
-                   text_colour,
-                   disabled_colour,
-                   selected_colour,
-                   submenu_icons
-                 );
-                 match position with
-                 | Cons (_,tail) => smm.set_state (Open tail);
-                 | _ => ;
-                 endmatch;
-                 var shots = smd.get_hotrects();
-                 shots = map (fun (h:rect_t,pos:menu_position_t) => (h,Cons(counter,pos) )) shots;
-                 photrecs <- *photrecs + shots;
-               done
-             endmatch;
-             xpos = xpos + item_width + right_padding +left_padding;
-             ++counter;
-           endmatch;
-         }
-         for item in menu do
-           match item with
-           | Leaf entry => hotrecs entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
-           | Tree (entry, submenu) => hotrecs entry submenu;
-           endmatch;
-         done
-       }  
-   
-   
-       method fun get_hotrects() : list[rect_t * menu_position_t] =
-       {
-         val position = match #(m.get_state) with
-           | #Closed => list (0)
-           | Open p => p
-         ;
-         var hotrecs = Empty[rect_t * menu_position_t];
-         get_hotrecs (x,y,#(m.get_menu),position) Empty[int] &hotrecs;
-         return rev hotrecs;
-       }
-   
-     } 
-     // ===============================================================================
-   
-   
-     chip menu_controller 
-     (
-       mm: menu_model_t,
-       md: menu_display_t
-     )
-     connector mio
-       pin ec: %<event_t
-       pin response: %>menu_action_t
-     {
-       md.display();
-       var run = true;
-       var e = read mio.ec;
-       while run do
-         match e.type.SDL_EventType with
-         | $(SDL_WINDOWEVENT) =>
-           match e.window.event.SDL_WindowEventID with
-           | $(SDL_WINDOWEVENT_RESIZED) =>
-             md.display();
-             write$ mio.response, NoAction;
-   
-           | _ => write$ mio.response, NoAction;
-           endmatch;
-   
-         | $(SDL_MOUSEMOTION) =>
-           var hotrecs = md.get_hotrects();
-           //List::iter proc (r:rect_t, pos:menu_position_t) { println$ "Rect=" + r.str + ", Pos=" + pos.str; } hotrecs; 
-           
-           var x,y = e.motion.x,e.motion.y; //int32
-           match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
-           | #None =>
-             write$ mio.response, NoAction;
-           | Some pos =>
-             println$ "Mouse Move Position " + pos.str;
-             match #(mm.get_state) with
-             | #Closed =>
-               write$ mio.response, ChangedPosition;
-             | Open oldpos =>
-               if oldpos == pos do
-                 write$ mio.response, NoAction;
-               else
-                 mm.set_state (Open pos);
-                 write$ mio.response, ChangedPosition;
-               done
-             endmatch;
-           endmatch;
-      
-         | $(SDL_MOUSEBUTTONDOWN) => 
-           hotrecs = md.get_hotrects();
-           x,y = e.button.x,e.button.y; //int32
-           match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
-           | #None =>
-             write$ mio.response, NoAction;
-           | Some pos =>
-             println$ "Mouse down Position " + pos.str;
-             match #(mm.get_state) with
-             | #Closed =>
-               write$ mio.response, ChangedPosition;
-             | Open oldpos =>
-               if oldpos == pos do
-                 write$ mio.response, NoAction;
-               else
-                 mm.set_state (Open pos);
-                 write$ mio.response, ChangedPosition;
-               done
-             endmatch;
-           endmatch;
-   
-         | $(SDL_MOUSEBUTTONUP) => 
-           hotrecs = md.get_hotrects();
-           x,y = e.button.x,e.button.y; //int32
-           match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
-           | #None =>
-             write$ mio.response, NoAction;
-           | Some pos =>
-             println$ "Mouse up Position " + pos.str;
-             match #(mm.get_state) with
-             | #Closed =>
-               write$ mio.response, ChangedPosition;
-             | Open oldpos =>
-               if oldpos == pos do
-                 var selected_tag = #(mm.get_current_tag);
-                 write$ mio.response, SelectedAction selected_tag;
-               else
-                 mm.set_state (Open pos);
-                 write$ mio.response, ChangedPosition;
-               done
-             endmatch;
-           endmatch;
-   
-   
-   
-         | $(SDL_WINDOWEVENT) when e.window.event == SDL_WINDOWEVENT_LEAVE.uint8  =>
-           write$ mio.response, NoAction;
-   
-         | _ => 
-           write$ mio.response, NoAction;
-         endmatch;
-         e = read mio.ec;
-       done
-   
-     }
-   
-   }
-   
+      ;
+      method fun get_current_tag_chain () => Empty[string];
+    }
+  
+    interface menu_display_t 
+    {
+      display: 1 -> 0;
+      get_hotrects: 1 -> list[rect_t * menu_position_t];
+      get_tag: 1 -> string;
+    }
+  
+    typedef submenu_icon_t = (open_icon: surface_t, closed_icon: surface_t);
+  
+    object MenuDisplay 
+    (
+      tag:string,
+      m:menu_model_t,
+      w:window_t,
+      x:int,y:int,
+      font:font_t,
+      text_colour: button_colour_scheme_t,
+      disabled_colour: button_colour_scheme_t,
+      selected_colour: button_colour_scheme_t,
+      submenu_icons: submenu_icon_t
+    ) implements menu_display_t =
+    {
+      method fun get_tag () => tag;
+  
+      var icon_width = max (submenu_icons.open_icon.get_width(), submenu_icons.closed_icon.get_width());
+      var lineskip = get_lineskip font;
+      var baseline_offset = font.TTF_FontAscent; 
+      var border_width = 2;
+      var left_padding = 4;
+      var right_padding = 10 + icon_width;
+      var min_width = 20;
+      var separator_depth = 1;
+      var top_padding = 1;
+      var bottom_padding = 1;
+  
+      fun width (s:string) => (FlxGuiFont::get_textsize (font,s)).0;
+      fun width: menu_entry_t -> int =
+        | #Separator => left_padding + right_padding + min_width
+        | Text s => left_padding + right_padding + width s.label
+      ;
+      fun depth : menu_entry_t -> int = 
+        | #Separator => top_padding + bottom_padding + separator_depth
+        | Text s => top_padding + bottom_padding + lineskip
+      ;
+      fun width : menu_item_t -> int =
+        | Leaf menu_entry => width menu_entry
+        | Tree (menu_entries ,_) => width menu_entries
+      ;
+  
+      fun depth : menu_item_t -> int =
+        | Leaf menu_entry => depth menu_entry
+        | Tree (menu_entry ,_) => depth menu_entry
+      ;
+      fun width (ls: menu_data_t) => fold_left 
+        (fun (w:int) (menu_item:menu_item_t) => max (w, width menu_item)) 
+        0 
+        ls
+      ;
+      fun depth (ls: menu_data_t) => fold_left
+        (fun (d:int) (menu_item:menu_item_t) => d + depth menu_item)
+        0
+        ls
+      ;
+      proc display_menu(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
+      {
+        var left_x = x;
+        var top_y = y;
+        var right_x = left_x + width menu;
+        var bottom_y = top_y + depth menu;
+        var scheme = text_colour;
+  
+        // top
+        w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
+        w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
+        // left
+        w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
+        w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
+        // right
+        w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
+        w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
+        // bottom
+        w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
+        w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
+  
+        w.add$ mk_drawable tag fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
+  
+        var selected = match position with
+          | #Empty => 0 // ignore for the moment
+          | Cons (h,_) => h
+        ;
+  
+        var counter = 0;
+        var ypos = top_y + top_padding;
+        proc show_entry (entry: menu_entry_t) (submenu:menu_data_t) => 
+          match entry with
+          | #Separator => 
+            var y = ypos;
+            w.add$ mk_drawable tag draw_line (RGB(0,0,0), left_x, y, right_x, y); 
+            ypos = ypos + separator_depth + bottom_padding + top_padding;
+  
+          | Text (label=s,active=active) =>
+            y = ypos + baseline_offset;
+            var scheme, dosub = match active with
+              | #Active => if counter == selected then selected_colour, true else text_colour, false
+              | #Disabled => disabled_colour, false
+            ;
+            var client_area = rect_t (
+              left_x+border_width,
+              ypos+top_padding,
+              right_x - left_x - 2 * border_width, 
+              lineskip
+            );
+            w.add$ mk_drawable tag fill (client_area, scheme.bg_colour);
+            w.add$ mk_drawable tag FlxGui::write (left_x+left_padding, y,font,scheme.label_colour,s);
+  
+            match submenu with
+            | #Empty => ;
+            | _ =>
+              var icon = if selected == counter then submenu_icons.open_icon else submenu_icons.closed_icon; 
+              var dst = rect_t (right_x - icon_width - border_width - 1, ypos, 0,0);
+              w.add$ mk_drawable tag blit (dst.x, dst.y, icon.get_sdl_surface());
+              if dosub do
+                var subpos = match position with 
+                  | Cons (_,tail) => tail
+                  | _ => position // empty
+                ;
+                display_menu (right_x+border_width,ypos+border_width,submenu,subpos);
+              done
+            endmatch;
+            ypos = ypos + lineskip + bottom_padding+top_padding;
+            ++counter;
+          endmatch
+        ;
+        for item in menu do
+          match item with
+          | Leaf entry => show_entry entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
+          | Tree (entry, submenu) => show_entry entry submenu;
+          endmatch;
+        done
+      }  
+      method proc display() {
+        val position = match #(m.get_state) with
+          | #Closed => list (0)
+          | Open p => p
+        ;
+        display_menu (x,y,#(m.get_menu), position);
+        //w.update(); 
+      }
+  
+      proc get_hotrecs(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
+        (revtrail: list[int]) 
+        (photrecs:&list[rect_t * menu_position_t])=
+      {
+  //println$ "get_hotrecs, revtrail=" + revtrail.str+", pos=" + position.str;
+        var left_x = x;
+        var top_y = y;
+        var right_x = left_x + width menu;
+        var bottom_y = top_y + depth menu;
+  
+        var selected = match position with
+          | #Empty => 0 // ignore for the moment
+          | Cons (h,_) => h
+        ;
+  
+        var counter = 0;
+        var ypos = top_y + top_padding;
+        proc hotrecs (entry: menu_entry_t) (submenu:menu_data_t) 
+        {
+          match entry with
+          | #Separator => 
+            ypos = ypos + separator_depth + bottom_padding + top_padding;
+  //println$ "SEPARATOR : Counter="+counter.str;
+  
+          | Text (label=s,active=active) =>
+            y = ypos + baseline_offset;
+            var dosub = match active with
+              | #Active => counter == selected
+              | #Disabled => false
+            ;
+            var client_area = rect_t (
+              left_x+border_width,
+              ypos+top_padding,
+              right_x - left_x - 2 * border_width, 
+              lineskip
+            );
+  //println$ "TEXT: Counter="+counter.str+", Rect=" + client_area.str;
+            match active with 
+            | #Active => photrecs <- (client_area, rev (counter + revtrail)) + *photrecs;
+            | #Disabled => ;
+            endmatch;
+            match submenu with
+            | #Empty => ;
+            | _ =>
+              if dosub do
+                var subpos = match position with 
+                  | Cons (_,tail) => tail
+                  | _ => position // empty
+                ;
+                get_hotrecs (right_x+border_width,ypos+border_width,submenu,subpos) (counter+revtrail) photrecs;
+              done
+            endmatch;
+            ypos = ypos + lineskip + bottom_padding+top_padding;
+            ++counter;
+          endmatch;
+        }
+        for item in menu do
+          match item with
+          | Leaf entry => hotrecs entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
+          | Tree (entry, submenu) => hotrecs entry submenu;
+          endmatch;
+        done
+      }  
+  
+      method fun get_hotrects() : list[rect_t * menu_position_t] =
+      {
+        val position = match #(m.get_state) with
+          | #Closed => list (0)
+          | Open p => p
+        ;
+        var hotrecs = Empty[rect_t * menu_position_t];
+        get_hotrecs (x,y,#(m.get_menu),position) Empty[int] &hotrecs;
+        return rev hotrecs;
+      }
+  
+    }
+  
+    fun hotpos (point:SDL_Point, hot:list[rect_t * menu_position_t]) : opt[menu_position_t] =>
+      match hot with
+      | #Empty => None[menu_position_t]
+      | Cons ((r,pos),tail) =>
+        if point \in r then Some pos else hotpos (point, tail)
+      endmatch
+    ;
+  
+    // ===============================================================================
+    object MenuBarDisplay 
+    (
+      tag:string,
+      m:menu_model_t,
+      w:window_t,
+      x:int,y:int,
+      font:font_t,
+      text_colour: button_colour_scheme_t,
+      disabled_colour: button_colour_scheme_t,
+      selected_colour: button_colour_scheme_t,
+      submenu_icons: submenu_icon_t
+    ) implements menu_display_t =
+    {
+      method fun get_tag() => tag;
+      var icon_width = max (submenu_icons.open_icon.get_width(), submenu_icons.closed_icon.get_width());
+      var lineskip = get_lineskip font;
+      var baseline_offset = font.TTF_FontAscent; 
+      var border_width = 2;
+      var left_padding = 4;
+      var right_padding = 4; 
+      var min_width = 20;
+      var separator_width = 1;
+      var top_padding = 1;
+      var bottom_padding = 1;
+      var bar_depth =
+        top_padding + bottom_padding + lineskip
+      ;
+  
+      fun width (s:string) => (FlxGuiFont::get_textsize (font,s)).0;
+  
+      fun width: menu_entry_t -> int =
+        | #Separator => left_padding + right_padding + separator_width
+        | Text s => left_padding + right_padding + max(min_width, width s.label)
+      ;
+  
+      fun width : menu_item_t -> int =
+        | Leaf menu_entry => width menu_entry
+        | Tree (menu_entry,_) => width menu_entry
+      ;
+  
+      fun width (ls: menu_data_t) => fold_left 
+        (fun (w:int) (menu_item:menu_item_t) => w + width menu_item)
+        0 
+        ls
+      ;
+  
+      proc display_menu(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
+      {
+        var left_x = x;
+        var top_y = y;
+        var right_x = left_x + width menu;
+        var bottom_y = top_y + bar_depth;
+        var scheme = text_colour;
+  
+        w.remove tag;
+        // top
+        w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
+        w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
+        // left
+        w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
+        w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
+        // right
+        w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
+        w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
+        // bottom
+        w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
+        w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
+  
+        w.add$ mk_drawable tag fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
+  
+        var selected = match position with
+          | #Empty => 0 // ignore for the moment
+          | Cons (h,_) => h
+        ;
+  
+        var counter = 0;
+        var xpos = left_x + left_padding;
+  //println$ "Display Menu "+ tag;
+        proc show_entry (entry: menu_entry_t) (submenu:menu_data_t) => 
+          match entry with
+          | #Separator => 
+            w.add$ mk_drawable tag draw_line (RGB(0,0,0), xpos, top_y, xpos, top_y+bar_depth); 
+            xpos = xpos + separator_width + right_padding + left_padding;
+  
+          | Text (label=s,active=active) =>
+            var scheme, dosub = match active with
+              | #Active => if counter == selected then selected_colour, true else text_colour, false
+              | #Disabled => disabled_colour, false
+            ;
+            var item_width =  max (width s, min_width);
+            var client_area = rect_t (
+              xpos+border_width,
+              top_y+top_padding,
+              item_width,
+              lineskip
+            );
+            w.add$ mk_drawable tag fill (client_area, scheme.bg_colour);
+  //println$ "Menu bar counter=" + counter.str + ", xpos= " + xpos.str + ", text="+s.str;
+            w.add$ mk_drawable tag FlxGui::write (
+              xpos+left_padding, 
+              top_y+baseline_offset,
+              font,
+              scheme.label_colour,
+              s
+            );
+  
+            match submenu with
+            | #Empty => ;
+            | _ => 
+              if dosub do
+                println "SUBMENU SELECTED";
+                var smm = MenuModel ( submenu );
+                var smd = MenuDisplay ( tag,
+                  smm,
+                  w,
+                  xpos,bottom_y+border_width,
+                  font,
+                  text_colour,
+                  disabled_colour,
+                  selected_colour,
+                  submenu_icons
+                );
+                match position with
+                | Cons (_,tail) => smm.set_state (Open tail);
+                | _ => ;
+                endmatch;
+                smd.display();
+              done
+            endmatch;
+            xpos = xpos + item_width + right_padding+left_padding;
+            ++counter;
+          endmatch
+        ;
+        for item in menu do
+          match item with
+          | Leaf entry => show_entry entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
+          | Tree (entry, submenu) => show_entry entry submenu;
+          endmatch;
+        done
+      }  
+  
+      method proc display() {
+        val position = match #(m.get_state) with
+          | #Closed => list (0)
+          | Open p => p
+        ;
+        display_menu (x,y,#(m.get_menu), position);
+        //w.update(); 
+      }
+      proc get_hotrecs(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
+        (revtrail: list[int]) 
+        (photrecs:&list[rect_t * menu_position_t])=
+      {
+  //println$ "get_hotrecs, revtrail=" + revtrail.str+", pos=" + position.str;
+        var left_x = x;
+        var top_y = y;
+        var right_x = left_x + width menu;
+        var bottom_y = top_y + bar_depth;
+  
+        var selected = match position with
+          | #Empty => 0 // ignore for the moment
+          | Cons (h,_) => h
+        ;
+  
+        var counter = 0;
+        var xpos = left_x + left_padding;
+        proc hotrecs (entry: menu_entry_t) (submenu:menu_data_t) 
+        {
+          match entry with
+          | #Separator => 
+            xpos = xpos + separator_width + right_padding + left_padding;
+  //println$ "SEPARATOR : Counter="+counter.str;
+  
+          | Text (label=s,active=active) =>
+            var dosub = match active with
+              | #Active => counter == selected
+              | #Disabled => false
+            ;
+            var item_width = max (width s, min_width);
+            var client_area = rect_t (
+              xpos+border_width,
+              top_y+top_padding,
+              item_width,
+              lineskip
+            );
+  //println$ "TEXT: Counter="+counter.str+", Rect=" + client_area.str;
+            match active with 
+            | #Active => photrecs <- (client_area, rev (counter + revtrail)) + *photrecs;
+            | #Disabled => ;
+            endmatch;
+            match submenu with
+            | #Empty => ;
+            | _ => 
+              if dosub do
+                var smm = MenuModel ( submenu );
+                var smd = MenuDisplay (tag,
+                  smm,
+                  w,
+                  xpos,bottom_y+border_width,
+                  font,
+                  text_colour,
+                  disabled_colour,
+                  selected_colour,
+                  submenu_icons
+                );
+                match position with
+                | Cons (_,tail) => smm.set_state (Open tail);
+                | _ => ;
+                endmatch;
+                var shots = smd.get_hotrects();
+                shots = map (fun (h:rect_t,pos:menu_position_t) => (h,Cons(counter,pos) )) shots;
+                photrecs <- *photrecs + shots;
+              done
+            endmatch;
+            xpos = xpos + item_width + right_padding +left_padding;
+            ++counter;
+          endmatch;
+        }
+        for item in menu do
+          match item with
+          | Leaf entry => hotrecs entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
+          | Tree (entry, submenu) => hotrecs entry submenu;
+          endmatch;
+        done
+      }  
+  
+  
+      method fun get_hotrects() : list[rect_t * menu_position_t] =
+      {
+        val position = match #(m.get_state) with
+          | #Closed => list (0)
+          | Open p => p
+        ;
+        var hotrecs = Empty[rect_t * menu_position_t];
+        get_hotrecs (x,y,#(m.get_menu),position) Empty[int] &hotrecs;
+        return rev hotrecs;
+      }
+  
+    } 
+    // ===============================================================================
+  
+  
+    chip menu_controller 
+    (
+      mm: menu_model_t,
+      md: menu_display_t
+    )
+    connector mio
+      pin ec: %<event_t
+      pin response: %>menu_action_t
+    {
+      md.display();
+      var run = true;
+      var e = read mio.ec;
+      while run do
+        match e.type.SDL_EventType with
+        | $(SDL_WINDOWEVENT) =>
+          match e.window.event.SDL_WindowEventID with
+          | $(SDL_WINDOWEVENT_RESIZED) =>
+            md.display();
+            write$ mio.response, NoAction;
+  
+          | _ => write$ mio.response, NoAction;
+          endmatch;
+  
+        | $(SDL_MOUSEMOTION) =>
+          var hotrecs = md.get_hotrects();
+          //List::iter proc (r:rect_t, pos:menu_position_t) { println$ "Rect=" + r.str + ", Pos=" + pos.str; } hotrecs; 
+          
+          var x,y = e.motion.x,e.motion.y; //int32
+          match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
+          | #None =>
+            write$ mio.response, NoAction;
+          | Some pos =>
+            println$ "Mouse Move Position " + pos.str;
+            match #(mm.get_state) with
+            | #Closed =>
+              write$ mio.response, ChangedPosition;
+            | Open oldpos =>
+              if oldpos == pos do
+                write$ mio.response, NoAction;
+              else
+                mm.set_state (Open pos);
+                write$ mio.response, ChangedPosition;
+              done
+            endmatch;
+          endmatch;
+     
+        | $(SDL_MOUSEBUTTONDOWN) => 
+          hotrecs = md.get_hotrects();
+          x,y = e.button.x,e.button.y; //int32
+          match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
+          | #None =>
+            write$ mio.response, NoAction;
+          | Some pos =>
+            println$ "Mouse down Position " + pos.str;
+            match #(mm.get_state) with
+            | #Closed =>
+              write$ mio.response, ChangedPosition;
+            | Open oldpos =>
+              if oldpos == pos do
+                write$ mio.response, NoAction;
+              else
+                mm.set_state (Open pos);
+                write$ mio.response, ChangedPosition;
+              done
+            endmatch;
+          endmatch;
+  
+        | $(SDL_MOUSEBUTTONUP) => 
+          hotrecs = md.get_hotrects();
+          x,y = e.button.x,e.button.y; //int32
+          match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
+          | #None =>
+            write$ mio.response, NoAction;
+          | Some pos =>
+            println$ "Mouse up Position " + pos.str;
+            match #(mm.get_state) with
+            | #Closed =>
+              write$ mio.response, ChangedPosition;
+            | Open oldpos =>
+              if oldpos == pos do
+                var selected_tag = #(mm.get_current_tag);
+                write$ mio.response, SelectedAction selected_tag;
+              else
+                mm.set_state (Open pos);
+                write$ mio.response, ChangedPosition;
+              done
+            endmatch;
+          endmatch;
+  
+  
+  
+        | $(SDL_WINDOWEVENT) when e.window.event == SDL_WINDOWEVENT_LEAVE.uint8  =>
+          write$ mio.response, NoAction;
+  
+        | _ => 
+          write$ mio.response, NoAction;
+        endmatch;
+        e = read mio.ec;
+      done
+  
+    }
+  
+  }
+  
 
 .. code-block:: felix
 
   //[line_buffer_display_controller_interface.flx]
-   class FlxGuiLineBufferDisplayControllerInterface
-   {
-   interface line_buffer_display_controller_interface
-   {
-     get_tag : 1 -> string;
-     get_client_rect : 1 -> rect_t;
-     get_char_width : 1 -> int;
-     display : 1 -> 0;
-     set_focus_gained: 1 -> 0; // 
-     set_focus_lost: 1 -> 0;
-   }
-   }
-   
+  class FlxGuiLineBufferDisplayControllerInterface
+  {
+  interface line_buffer_display_controller_interface
+  {
+    get_tag : 1 -> string;
+    get_client_rect : 1 -> rect_t;
+    get_char_width : 1 -> int;
+    display : 1 -> 0;
+    set_focus_gained: 1 -> 0; // 
+    set_focus_lost: 1 -> 0;
+  }
+  }
+  
 
 .. code-block:: felix
 
   //[line_buffer_display_controller.flx]
-   include "gui/line_buffer_display_controller_interface";
-   
-   class FlxGuiLineBufferDisplayController
-   {
-   object line_buffer_display_controller
-   (
-     w:window_t, tag:string, f:font_t, c:colour_t, bg:colour_t,
-     x: int, y:int, b:line_buffer_interface
-   ) 
-   implements line_buffer_display_controller_interface =
-   {
-     method fun get_tag() => tag;
-     method fun get_client_rect () => bounding_box (f,x,y,b.get());
-     method fun get_char_width () = {
-       var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
-       C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
-       return advance;
-     }
-   
-     var has_focus = false;
-     method proc set_focus_gained () => has_focus = true;
-     method proc set_focus_lost () => has_focus = false;
-   
-     method proc display ()
-     {
-       var nullRect = C_hack::null[SDL_Rect];
-       var s = #(b.get);
-   //  println$ "Edit box = '" + s + "'";
-       var text_rendered = TTF_RenderText_Blended(f,s,c);
-       var bbox = bounding_box (f,x,y,s);
-   //println$ "Bounding box for ("+x.str+","+y.str+")=("+bbox.x.str+","+bbox.y.str+","+bbox.w.str+","+bbox.h.str+")";
-       w.remove tag;
-       w.add$ mk_drawable tag fill (bbox,bg);
-       var viewport: SDL_Rect;
-       var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
-       C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
-         
-       viewport&.x <- bbox.x + min(minx,0) + 2; 
-       viewport&.y <- bbox.y + 2; // actually y + font.ascent + 2
-       viewport&.h <-  bbox.h;
-   //println$ "Viewpos for ("+x.str+","+y.str+")=("+viewport.x.str+","+viewport.y.str;
-       w.add$ mk_drawable tag blit (viewport.x, viewport.y, text_rendered); 
-       //SDL_FreeSurface text_rendered;
-       if has_focus do
-         var charwidth = 
-           #{ 
-             var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
-             C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
-             return advance;
-           }
-         ;
-         var curpos = x + charwidth * #(b.get_pos);
-         w.add$ mk_drawable tag draw_line(red,curpos,viewport.y - 1,curpos,viewport.y + viewport.h - 2);
-       done
-     } 
-     display();
-   }
-   }
-   
+  include "gui/line_buffer_display_controller_interface";
+  
+  class FlxGuiLineBufferDisplayController
+  {
+  object line_buffer_display_controller
+  (
+    w:window_t, tag:string, f:font_t, c:colour_t, bg:colour_t,
+    x: int, y:int, b:line_buffer_interface
+  ) 
+  implements line_buffer_display_controller_interface =
+  {
+    method fun get_tag() => tag;
+    method fun get_client_rect () => bounding_box (f,x,y,b.get());
+    method fun get_char_width () = {
+      var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+      C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+      return advance;
+    }
+  
+    var has_focus = false;
+    method proc set_focus_gained () => has_focus = true;
+    method proc set_focus_lost () => has_focus = false;
+  
+    method proc display ()
+    {
+      var nullRect = C_hack::null[SDL_Rect];
+      var s = #(b.get);
+  //  println$ "Edit box = '" + s + "'";
+      var text_rendered = TTF_RenderText_Blended(f,s,c);
+      var bbox = bounding_box (f,x,y,s);
+  //println$ "Bounding box for ("+x.str+","+y.str+")=("+bbox.x.str+","+bbox.y.str+","+bbox.w.str+","+bbox.h.str+")";
+      w.remove tag;
+      w.add$ mk_drawable tag fill (bbox,bg);
+      var viewport: SDL_Rect;
+      var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+      C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+        
+      viewport&.x <- bbox.x + min(minx,0) + 2; 
+      viewport&.y <- bbox.y + 2; // actually y + font.ascent + 2
+      viewport&.h <-  bbox.h;
+  //println$ "Viewpos for ("+x.str+","+y.str+")=("+viewport.x.str+","+viewport.y.str;
+      w.add$ mk_drawable tag blit (viewport.x, viewport.y, text_rendered); 
+      //SDL_FreeSurface text_rendered;
+      if has_focus do
+        var charwidth = 
+          #{ 
+            var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+            C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+            return advance;
+          }
+        ;
+        var curpos = x + charwidth * #(b.get_pos);
+        w.add$ mk_drawable tag draw_line(red,curpos,viewport.y - 1,curpos,viewport.y + viewport.h - 2);
+      done
+    } 
+    display();
+  }
+  }
+  
 
 .. code-block:: felix
 
   //[line_buffer_interface.flx]
-   class FlxGuiLineBufferInterface
-   {
-     interface line_buffer_interface 
-     {
-       get: 1 -> string;
-       get_pos: 1 -> int;
-       set_pos: int -> 0;
-   
-       // movement
-       mv_left : 1 -> 0;
-       mv_right : 1 -> 0;
-       mv_start : 1 -> 0;
-       mv_end : 1 -> 0;
-   
-       // insert and overwrite
-       ins: char -> 0;
-       ovr: char -> 0;
-   
-       // delete
-       del_left: 1 -> 0;
-       del_right: 1 -> 0;
-       clear : 1 ->0;
-       clear_right : 1 -> 0;
-       clear_left : 1 -> 0;
-     }
-   }
-   
-   
+  class FlxGuiLineBufferInterface
+  {
+    interface line_buffer_interface 
+    {
+      get: 1 -> string;
+      get_pos: 1 -> int;
+      set_pos: int -> 0;
+  
+      // movement
+      mv_left : 1 -> 0;
+      mv_right : 1 -> 0;
+      mv_start : 1 -> 0;
+      mv_end : 1 -> 0;
+  
+      // insert and overwrite
+      ins: char -> 0;
+      ovr: char -> 0;
+  
+      // delete
+      del_left: 1 -> 0;
+      del_right: 1 -> 0;
+      clear : 1 ->0;
+      clear_right : 1 -> 0;
+      clear_left : 1 -> 0;
+    }
+  }
+  
+  
 
 
 .. code-block:: felix
 
   //[line_buffer_object.flx]
-   include "gui/line_buffer_interface";
-   
-   class FlxGuiLineBuffer
-   {
-     object line_buffer (n:int, var b:string) implements line_buffer_interface =
-     {
-       b = substring (b+ ' ' *n,0,n); //clip and pad to n chars
-       assert b.len.int == n;
-   
-       // caret position: can range between 0 and n inclusive!
-       // its the position *between* two characters!!
-       var pos = 0; 
-       method fun get() => b;
-       method fun get_pos () => pos;
-       method proc set_pos (x:int) => pos = x;
-   
-       // movement
-       method proc mv_left () => pos = max (0,pos - 1);
-       method proc mv_right () => pos = min (n, pos + 1);
-       method proc mv_start () => pos = 0;
-       method proc mv_end () => pos = n;
-   
-       // insert and move right
-       method proc ins (ch:char) 
-       {
-         b = substring (b, 0, pos) + ch + substring (b, pos, n);
-         pos = min (pos + 1, n);
-         assert b.len.int == n;
-       }
-       // overwrite and move right
-       method proc ovr (ch:char) 
-       {
-         if pos < n do
-           b = substring (b, 0, pos) + ch + substring (b, pos+1, n);
-           pos = min (pos + 1, n);
-         done
-         assert b.len.int == n;
-       }
-       // delete to the left
-       method proc del_left ()
-       {
-         if pos > 0 do
-           b = substring (b, 0, pos - 1) + substring (b, pos, n) + ' ';
-           pos = max (0, pos - 1);
-         done
-         assert b.len.int == n;
-       }
-       // delete to the right
-       method proc del_right ()
-       {
-         if pos < n do
-           b = substring (b, 0, pos) + substring (b, pos + 1, n) + ' ';
-         done
-         assert b.len.int == n;
-       }
-       // clear all
-       method proc clear () 
-       {
-         b = ' ' *n; 
-         pos = 0;
-         assert b.len.int == n;
-       }
-       method proc clear_right ()
-       {
-         b = substring (b, 0, pos) + ' ' * (n - pos);
-         assert b.len.int == n;
-       }
-       method proc clear_left ()
-       {
-         b = substring (b, pos, n) + ' ' * pos;
-         pos = 0;
-         assert b.len.int == n;
-       }
-     }
-   
-   }
+  include "gui/line_buffer_interface";
+  
+  class FlxGuiLineBuffer
+  {
+    object line_buffer (n:int, var b:string) implements line_buffer_interface =
+    {
+      b = substring (b+ ' ' *n,0,n); //clip and pad to n chars
+      assert b.len.int == n;
+  
+      // caret position: can range between 0 and n inclusive!
+      // its the position *between* two characters!!
+      var pos = 0; 
+      method fun get() => b;
+      method fun get_pos () => pos;
+      method proc set_pos (x:int) => pos = x;
+  
+      // movement
+      method proc mv_left () => pos = max (0,pos - 1);
+      method proc mv_right () => pos = min (n, pos + 1);
+      method proc mv_start () => pos = 0;
+      method proc mv_end () => pos = n;
+  
+      // insert and move right
+      method proc ins (ch:char) 
+      {
+        b = substring (b, 0, pos) + ch + substring (b, pos, n);
+        pos = min (pos + 1, n);
+        assert b.len.int == n;
+      }
+      // overwrite and move right
+      method proc ovr (ch:char) 
+      {
+        if pos < n do
+          b = substring (b, 0, pos) + ch + substring (b, pos+1, n);
+          pos = min (pos + 1, n);
+        done
+        assert b.len.int == n;
+      }
+      // delete to the left
+      method proc del_left ()
+      {
+        if pos > 0 do
+          b = substring (b, 0, pos - 1) + substring (b, pos, n) + ' ';
+          pos = max (0, pos - 1);
+        done
+        assert b.len.int == n;
+      }
+      // delete to the right
+      method proc del_right ()
+      {
+        if pos < n do
+          b = substring (b, 0, pos) + substring (b, pos + 1, n) + ' ';
+        done
+        assert b.len.int == n;
+      }
+      // clear all
+      method proc clear () 
+      {
+        b = ' ' *n; 
+        pos = 0;
+        assert b.len.int == n;
+      }
+      method proc clear_right ()
+      {
+        b = substring (b, 0, pos) + ' ' * (n - pos);
+        assert b.len.int == n;
+      }
+      method proc clear_left ()
+      {
+        b = substring (b, pos, n) + ' ' * pos;
+        pos = 0;
+        assert b.len.int == n;
+      }
+    }
+  
+  }
 
 .. code-block:: felix
 
   //[line_editor.flx]
-   class FlxGuiLineEditor
-   {
-   chip line_edit 
-     (b:line_buffer_interface)
-     (d:line_buffer_display_controller_interface) 
-     connector lin
-       pin ec: %<event_t
-   {
-     //println$ "Line buffer running";
-     d.display();
-     var run = true;
-     var e : event_t = read lin.ec;
-     while run do
-       match e.type.SDL_EventType with
-       | $(SDL_WINDOWEVENT) =>
-         match e.window.event.SDL_WindowEventID with
-         | $(SDL_WINDOWEVENT_FOCUS_GAINED) => d.set_focus_gained (); d.display();
-         | $(SDL_WINDOWEVENT_FOCUS_LOST) => d.set_focus_lost (); d.display();
-         | $(SDL_WINDOWEVENT_RESIZED) =>  d.display();
-         | _ => ;
-         endmatch;
+  class FlxGuiLineEditor
+  {
+  chip line_edit 
+    (b:line_buffer_interface)
+    (d:line_buffer_display_controller_interface) 
+    connector lin
+      pin ec: %<event_t
+  {
+    //println$ "Line buffer running";
+    d.display();
+    var run = true;
+    var e : event_t = read lin.ec;
+    while run do
+      match e.type.SDL_EventType with
+      | $(SDL_WINDOWEVENT) =>
+        match e.window.event.SDL_WindowEventID with
+        | $(SDL_WINDOWEVENT_FOCUS_GAINED) => d.set_focus_gained (); d.display();
+        | $(SDL_WINDOWEVENT_FOCUS_LOST) => d.set_focus_lost (); d.display();
+        | $(SDL_WINDOWEVENT_RESIZED) =>  d.display();
+        | _ => ;
+        endmatch;
+  
+      | $(SDL_MOUSEBUTTONDOWN) => 
+        var x,y = e.button.x,e.button.y; //int32
+        if SDL_Point (x.int,y.int) \in d.get_client_rect () do
+          var w = d.get_char_width();
+          var inchar = (x.int - (d.get_client_rect()).x + w / 2) / w;
+          //println$ "Button down in client rect of line edit " + d.get_tag() + ", pos = " + inchar.str;
+          b.set_pos inchar; 
+          d.display();
+        done
    
-       | $(SDL_MOUSEBUTTONDOWN) => 
-         var x,y = e.button.x,e.button.y; //int32
-         if SDL_Point (x.int,y.int) \in d.get_client_rect () do
-           var w = d.get_char_width();
-           var inchar = (x.int - (d.get_client_rect()).x + w / 2) / w;
-           //println$ "Button down in client rect of line edit " + d.get_tag() + ", pos = " + inchar.str;
-           b.set_pos inchar; 
-           d.display();
-         done
-    
+  
+      | $(SDL_KEYDOWN) =>
+        var vkey = e.key.keysym.sym;
+        match vkey with
+        | $(SDLK_LEFT) => b.mv_left (); d.display();
+        | $(SDLK_RIGHT) => b.mv_right (); d.display();
+        | $(SDLK_HOME) => b.mv_start (); d.display();
+        | $(SDLK_END) => b.mv_end (); d.display();
+        | $(SDLK_DELETE) => b.del_right(); d.display();
+        | $(SDLK_BACKSPACE) => b.del_left(); d.display();
+        | $(SDLK_RETURN) => b.mv_start(); d.display();
+        | $(SDLK_TAB) => b.mv_start(); d.display();
+        | _ => ;
+        endmatch;
+      | $(SDL_TEXTINPUT) =>
+        var text_buffer : +char = e.text.text;
+        var ch = text_buffer . 0;
+        b.ovr ch; 
+        d.display();
+  
+      // NOTE: not an actual SDL_QUIT!
+      // We just need something to terminate.
+      // Should be sent on window close actually.
+      | $(SDL_QUIT) =>  
+        run = false;
+      | _ => ;
+      endmatch;
+      e = read lin.ec;
+    done
+  } //chip
+  } //class
    
-       | $(SDL_KEYDOWN) =>
-         var vkey = e.key.keysym.sym;
-         match vkey with
-         | $(SDLK_LEFT) => b.mv_left (); d.display();
-         | $(SDLK_RIGHT) => b.mv_right (); d.display();
-         | $(SDLK_HOME) => b.mv_start (); d.display();
-         | $(SDLK_END) => b.mv_end (); d.display();
-         | $(SDLK_DELETE) => b.del_right(); d.display();
-         | $(SDLK_BACKSPACE) => b.del_left(); d.display();
-         | $(SDLK_RETURN) => b.mv_start(); d.display();
-         | $(SDLK_TAB) => b.mv_start(); d.display();
-         | _ => ;
-         endmatch;
-       | $(SDL_TEXTINPUT) =>
-         var text_buffer : +char = e.text.text;
-         var ch = text_buffer . 0;
-         b.ovr ch; 
-         d.display();
-   
-       // NOTE: not an actual SDL_QUIT!
-       // We just need something to terminate.
-       // Should be sent on window close actually.
-       | $(SDL_QUIT) =>  
-         run = false;
-       | _ => ;
-       endmatch;
-       e = read lin.ec;
-     done
-   } //chip
-   } //class
-    
 
 
 Tools
@@ -2245,107 +2245,107 @@ Tools
 .. code-block:: felix
 
   //[linegraph.flx]
-   include "gui/__init__";
-   
-   
-   library GraphTools {
-   open FlxGui;
-     interface linegraph_t {
-       title: string;
-       func: double -> double;
-       xmin: double;
-       xmax: double;
-       ymin: double;
-       ymax: double;
-       client: rect_t;
-     }
-   
-     proc linegraph (g:linegraph_t) {
-       // SDL
-       FlxGui::init();
-   
-       // window
-       var w = create_resizable_window(g.title, 
-         g.client.x,g.client.y,g.client.w,g.client.h
-       );
-       w.add$ mk_drawable FlxGui::clear lightgrey;
-   
-       // font and label
-       var font_name = dflt_sans_serif_font();
-       var font : font_t = get_font(font_name, 12);
-       var bigfont : font_t = get_font(font_name, 14);
-       var lineskip = get_lineskip font;
-   
-       // bounding box for graph
-       var t = 20;
-       var l = 50;
-       var b = g.client.h - 90;
-       var r = g.client.w - 10;
-       w.add$ mk_drawable FlxGui::write (l+(r - l)/2,10,bigfont,black,g.title);
-   
-   
-       var c = RGB(0,0,255);
-       var c2 = RGB(0,0,0);
-   
-       // top
-       w.add$ mk_drawable draw_line (c, l - 5,t,r,t);
-       w.add$ mk_drawable FlxGui::write (l - 40,t,font,black,g.ymax.str);
-   
-       // bottom
-       w.add$ mk_drawable draw_line (c, l - 5,b,r,b);
-       w.add$ mk_drawable FlxGui::write (l - 40,b,font,black,g.ymin.str);
-   
-       // left
-       w.add$ mk_drawable draw_line (c, l,t,l,b + 5);
-       w.add$ mk_drawable FlxGui::write (l,b + 15,font,black,g.xmin.str);
-   
-       // right
-       w.add$ mk_drawable draw_line (c, r,t,r,b + 5);
-       w.add$ mk_drawable FlxGui::write (r - 40,b + 15,font,black,g.xmax.str);
-   
-       // coordinate transforms
-       fun i2x (i:int): double =>  (i - l).double / (r - l).double * (g.xmax - g.xmin) + g.xmin; 
-       fun y2j (y:double) : int => b-((y - g.ymin)/ (g.ymax - g.ymin) * (b - t).double).int; 
-       fun x2i (x:double) : int => ((x - g.xmin) / (g.xmax - g.xmin) * (r - l).double).int + l;
-   
-       // x axis (y=0)
-       var jorig = y2j 0.0;
-       w.add$ mk_drawable FlxGui::write (l - 40,jorig,font,black,"0");
-       w.add$ mk_drawable draw_line (blue,l,jorig,r,jorig);
-   
-       // y axis (x=0)
-       var iorig = x2i 0.0;
-       w.add$ mk_drawable draw_line (red,iorig,t,iorig,b+5);
-       w.add$ mk_drawable FlxGui::write (iorig,b+15,font,black,"0");
-   
-       w.update();
-       w.show();
-   
-   
-       var oldi = -2000;
-       var oldj = 0;
-       rfor i in l..r do
-         var x = i2x i;
-         var y = g.func x;
-         var j = y2j y;
-         //println$ g.title+"(" + x.str + ")=" y.str + ", coord(" + i.str + "," + j.str + ")";
-         var data = c2,oldi,oldj,i,j;
-         if oldi != -2000 do
-           w.add$ mk_drawable draw_line data;
-         done
-         oldi = i;
-         oldj= j;
-         w.update();
-         sleep(0.01);
-       done
-       w.add$ mk_drawable draw_line (c, l,t,r,b);
-   
-       w.update();
-       var wm = window_manager();
-       wm.run_with_timeout 15.0;
-       FlxGui::quit();
-     } // lilnegraph
-   } // GraphTools
-   
-   
-   
+  include "gui/__init__";
+  
+  
+  library GraphTools {
+  open FlxGui;
+    interface linegraph_t {
+      title: string;
+      func: double -> double;
+      xmin: double;
+      xmax: double;
+      ymin: double;
+      ymax: double;
+      client: rect_t;
+    }
+  
+    proc linegraph (g:linegraph_t) {
+      // SDL
+      FlxGui::init();
+  
+      // window
+      var w = create_resizable_window(g.title, 
+        g.client.x,g.client.y,g.client.w,g.client.h
+      );
+      w.add$ mk_drawable FlxGui::clear lightgrey;
+  
+      // font and label
+      var font_name = dflt_sans_serif_font();
+      var font : font_t = get_font(font_name, 12);
+      var bigfont : font_t = get_font(font_name, 14);
+      var lineskip = get_lineskip font;
+  
+      // bounding box for graph
+      var t = 20;
+      var l = 50;
+      var b = g.client.h - 90;
+      var r = g.client.w - 10;
+      w.add$ mk_drawable FlxGui::write (l+(r - l)/2,10,bigfont,black,g.title);
+  
+  
+      var c = RGB(0,0,255);
+      var c2 = RGB(0,0,0);
+  
+      // top
+      w.add$ mk_drawable draw_line (c, l - 5,t,r,t);
+      w.add$ mk_drawable FlxGui::write (l - 40,t,font,black,g.ymax.str);
+  
+      // bottom
+      w.add$ mk_drawable draw_line (c, l - 5,b,r,b);
+      w.add$ mk_drawable FlxGui::write (l - 40,b,font,black,g.ymin.str);
+  
+      // left
+      w.add$ mk_drawable draw_line (c, l,t,l,b + 5);
+      w.add$ mk_drawable FlxGui::write (l,b + 15,font,black,g.xmin.str);
+  
+      // right
+      w.add$ mk_drawable draw_line (c, r,t,r,b + 5);
+      w.add$ mk_drawable FlxGui::write (r - 40,b + 15,font,black,g.xmax.str);
+  
+      // coordinate transforms
+      fun i2x (i:int): double =>  (i - l).double / (r - l).double * (g.xmax - g.xmin) + g.xmin; 
+      fun y2j (y:double) : int => b-((y - g.ymin)/ (g.ymax - g.ymin) * (b - t).double).int; 
+      fun x2i (x:double) : int => ((x - g.xmin) / (g.xmax - g.xmin) * (r - l).double).int + l;
+  
+      // x axis (y=0)
+      var jorig = y2j 0.0;
+      w.add$ mk_drawable FlxGui::write (l - 40,jorig,font,black,"0");
+      w.add$ mk_drawable draw_line (blue,l,jorig,r,jorig);
+  
+      // y axis (x=0)
+      var iorig = x2i 0.0;
+      w.add$ mk_drawable draw_line (red,iorig,t,iorig,b+5);
+      w.add$ mk_drawable FlxGui::write (iorig,b+15,font,black,"0");
+  
+      w.update();
+      w.show();
+  
+  
+      var oldi = -2000;
+      var oldj = 0;
+      rfor i in l..r do
+        var x = i2x i;
+        var y = g.func x;
+        var j = y2j y;
+        //println$ g.title+"(" + x.str + ")=" y.str + ", coord(" + i.str + "," + j.str + ")";
+        var data = c2,oldi,oldj,i,j;
+        if oldi != -2000 do
+          w.add$ mk_drawable draw_line data;
+        done
+        oldi = i;
+        oldj= j;
+        w.update();
+        sleep(0.01);
+      done
+      w.add$ mk_drawable draw_line (c, l,t,r,b);
+  
+      w.update();
+      var wm = window_manager();
+      wm.run_with_timeout 15.0;
+      FlxGui::quit();
+    } // lilnegraph
+  } // GraphTools
+  
+  
+  

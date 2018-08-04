@@ -414,13 +414,14 @@ regdef spc_r = " " *;
 regdef any_r = perl(".*"); 
 regdef cmd_r = "@" group(cmd_name_r) spc_r group(any_r);
 regdef tangler_r = "@tangler" spc_r group(fkey_r) spc_r  "=" spc_r group(any_r);
+regdef url_r = group(any_r) '<a href="' group(any_r) ">" group(any_r) "</a>" group(any_r);
 
 var cmd_R = RE2 (render cmd_r);
 var tangler_R = RE2 (render tangler_r);
-
+var url_R = RE2 (render url_r);
 
 typedef markup_t = (`Txt | `At | `Code);
-fun code_markup (a:string): string =
+fun code_fixer (a:string): string =
 {
   var out = "";
   var mode = (#`Txt) :>> markup_t;
@@ -453,6 +454,15 @@ fun code_markup (a:string): string =
   return out;
 }
 
+
+fun url_fixer (a:string) =>
+  match Match (url_R, a) with
+  | None => a
+  | Some grp => grp.1 + "`" + grp.3 + " <" + grp.2 + ">_" + grp.4
+;
+
+fun code_markup(a:string) => code_fixer (url_fixer a);
+
 fun lexer_from_filename (var s:string) : string =
 {
   s = strip s;
@@ -460,6 +470,7 @@ fun lexer_from_filename (var s:string) : string =
     match s.Filename::get_extension with
     | (".cpp" | ".cxx" | ".hpp")  =>  "cpp"
     | (".flx" | ".fdoc" | ".fsyn")  =>  "felix"
+    | (".fpc") => "fpc"
     | (".c" | ".h") => "c"
     | (".py") => "python"
     | _ => "text"
@@ -561,7 +572,7 @@ fun process_file (f: string): string =
         var lexer = lexer_from_filename a;
         println$ ".. code-block:: "+lexer;
         println$ "";
-        if lexer in ("c","cpp","felix") do
+        if lexer in ("c","cpp","felix","fpc") do
           println$ "  //[" + a + "]";
         elif lexer == "python" do
           println$ "  #["+a+"]";
@@ -580,7 +591,7 @@ fun process_file (f: string): string =
       match mode with
       | `Doc => 
          println$ code_markup line;
-      | `Code => println$ "   " + line;
+      | `Code => println$ "  " + line;
       endmatch;
     endmatch;
   done

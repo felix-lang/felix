@@ -24,298 +24,306 @@ demux_cygwin.fpc  $PWD/src/config/cygwin/demux.fpc
 ================= =================================
 
 
-.. code-block:: text
+.. code-block:: fpc
 
-   Name: demux
-   Description: Event handling: select
-   Comment: Generated during configuration
-   provides_dlib: -ldemux_dynamic
-   provides_slib: -ldemux_static
-   Requires: flx_pthread
-   flx_requires_driver: flx_arun
-   macros: BUILD_DEMUX
-   includes: '"flx_demux.hpp"'
-   library: demux
-   headers: (.*/)?([^/\\]+\.hpp)>${2}
-   srcdir: src/demux
-   src: [^/\\]+\.cpp
-   src: posix/.*\.cpp
+  //[demux_default.fpc]
+  Name: demux
+  Description: Event handling: select
+  Comment: Generated during configuration
+  provides_dlib: -ldemux_dynamic
+  provides_slib: -ldemux_static
+  Requires: flx_pthread
+  flx_requires_driver: flx_arun
+  macros: BUILD_DEMUX
+  includes: '"flx_demux.hpp"'
+  library: demux
+  headers: (.*/)?([^/\\]+\.hpp)>${2}
+  srcdir: src/demux
+  src: [^/\\]+\.cpp
+  src: posix/.*\.cpp
 
-.. code-block:: text
+.. code-block:: fpc
 
-   Name: demux
-   Description: Event handling (poll)
-   Comment: Generated during configuration
-   provides_dlib: -ldemux_dynamic
-   provides_slib: -ldemux_static
-   Requires: flx_pthread
-   flx_requires_driver: flx_arun
-   macros: BUILD_DEMUX
-   includes: '"flx_demux.hpp"'
-   library: demux
-   headers: (.*/)?([^/\\]+\.hpp)>${2}
-   srcdir: src/demux
-   src: [^/\\]+\.cpp
-   src: posix/.*\.cpp
-   src: poll/.*\.cpp
-   
+  //[demux_unix.fpc]
+  Name: demux
+  Description: Event handling (poll)
+  Comment: Generated during configuration
+  provides_dlib: -ldemux_dynamic
+  provides_slib: -ldemux_static
+  Requires: flx_pthread
+  flx_requires_driver: flx_arun
+  macros: BUILD_DEMUX
+  includes: '"flx_demux.hpp"'
+  library: demux
+  headers: (.*/)?([^/\\]+\.hpp)>${2}
+  srcdir: src/demux
+  src: [^/\\]+\.cpp
+  src: posix/.*\.cpp
+  src: poll/.*\.cpp
+  
 
-.. code-block:: text
+.. code-block:: fpc
 
-   Name: demux
-   Description: Event handling (epoll)
-   Comment: Generated during configuration
-   provides_dlib: -ldemux_dynamic
-   provides_slib: -ldemux_static
-   Requires: flx_pthread
-   flx_requires_driver: flx_arun
-   includes: '"flx_demux.hpp"'
-   macros: BUILD_DEMUX
-   library: demux
-   headers: (.*/)?([^/\\]+\.hpp)>${2}
-   srcdir: src/demux
-   src: [^/\\]+\.cpp
-   src: posix/.*\.cpp
-   src: epoll/.*\.cpp
+  //[demux_linux.fpc]
+  Name: demux
+  Description: Event handling (epoll)
+  Comment: Generated during configuration
+  provides_dlib: -ldemux_dynamic
+  provides_slib: -ldemux_static
+  Requires: flx_pthread
+  flx_requires_driver: flx_arun
+  includes: '"flx_demux.hpp"'
+  macros: BUILD_DEMUX
+  library: demux
+  headers: (.*/)?([^/\\]+\.hpp)>${2}
+  srcdir: src/demux
+  src: [^/\\]+\.cpp
+  src: posix/.*\.cpp
+  src: epoll/.*\.cpp
 
 
-.. code-block:: text
+.. code-block:: fpc
 
-   Name: demux
-   Description: Event handling (event ports)
-   Comment: Generated during configuration
-   provides_dlib: -ldemux_dynamic
-   provides_slib: -ldemux_static -lsocket -lnsl
-   Requires: flx_pthread
-   flx_requires_driver: flx_arun
-   macros: BUILD_DEMUX
-   includes: '"flx_demux.hpp"'
-   library: demux
-   headers: (.*/)?([^/\\]+\.hpp)>${2}
-   srcdir: src/demux
-   src: [^/\\]+\.cpp
-   src: posix/.*\.cpp
-   src: evtport/.*\.cpp
+  //[demux_solaris.fpc]
+  Name: demux
+  Description: Event handling (event ports)
+  Comment: Generated during configuration
+  provides_dlib: -ldemux_dynamic
+  provides_slib: -ldemux_static -lsocket -lnsl
+  Requires: flx_pthread
+  flx_requires_driver: flx_arun
+  macros: BUILD_DEMUX
+  includes: '"flx_demux.hpp"'
+  library: demux
+  headers: (.*/)?([^/\\]+\.hpp)>${2}
+  srcdir: src/demux
+  src: [^/\\]+\.cpp
+  src: posix/.*\.cpp
+  src: evtport/.*\.cpp
 
-.. code-block:: text
+.. code-block:: fpc
 
-   Name: demux
-   Description: Event handling (kqueue)
-   Comment: Generated during configuration
-   provides_dlib: -ldemux_dynamic
-   provides_slib: -ldemux_static
-   Requires: flx_pthread
-   flx_requires_driver: flx_arun
-   macros: BUILD_DEMUX
-   includes: '"flx_demux.hpp"'
-   library: demux
-   headers: (.*/)?([^/\\]+\.hpp)>${2}
-   srcdir: src/demux
-   src: [^/\\]+\.cpp
-   src: posix/.*\.cpp
-   src: kqueue/.*\.cpp
+  //[demux_macosx.fpc]
+  Name: demux
+  Description: Event handling (kqueue)
+  Comment: Generated during configuration
+  provides_dlib: -ldemux_dynamic
+  provides_slib: -ldemux_static
+  Requires: flx_pthread
+  flx_requires_driver: flx_arun
+  macros: BUILD_DEMUX
+  includes: '"flx_demux.hpp"'
+  library: demux
+  headers: (.*/)?([^/\\]+\.hpp)>${2}
+  srcdir: src/demux
+  src: [^/\\]+\.cpp
+  src: posix/.*\.cpp
+  src: kqueue/.*\.cpp
 
-.. code-block:: text
+.. code-block:: fpc
 
-   Name: demux
-   Description: Event handling (windows event ports with msvc)
-   Comment: Generated during configuration
-   provides_dlib: /DEFAULTLIB:demux_dynamic
-   requires_dlibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock
-   provides_slib: /DEFAULTLIB:demux_static
-   requires_slibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock
-   Requires: flx_pthread
-   flx_requires_driver: flx_arun
-   macros: BUILD_DEMUX
-   includes: '"flx_demux.hpp"'
-   library: demux
-   headers: (.*\\)?([^\\]+\.hpp)>${2}
-   srcdir: src\demux
-   src: [^\\]+\.cpp
-   src: win\\.*\.cpp
+  //[demux_win32.fpc]
+  Name: demux
+  Description: Event handling (windows event ports with msvc)
+  Comment: Generated during configuration
+  provides_dlib: /DEFAULTLIB:demux_dynamic
+  requires_dlibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock
+  provides_slib: /DEFAULTLIB:demux_static
+  requires_slibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock
+  Requires: flx_pthread
+  flx_requires_driver: flx_arun
+  macros: BUILD_DEMUX
+  includes: '"flx_demux.hpp"'
+  library: demux
+  headers: (.*\\)?([^\\]+\.hpp)>${2}
+  srcdir: src\demux
+  src: [^\\]+\.cpp
+  src: win\\.*\.cpp
 
-.. code-block:: text
+.. code-block:: fpc
 
-   Name: demux
-   Description: Event handling (windows event ports with gcc)
-   Comment: Generated during configuration
-   provides_dlib: -ldemux_dynamic
-   requires_dlibs: -lws2_32 -lmswsock
-   provides_slib: -ldemux_static
-   requires_slibs: -lws2_32 -lmswsock
-   Requires: flx_pthread
-   flx_requires_driver: flx_arun
-   macros: BUILD_DEMUX
-   includes: '"flx_demux.hpp"'
-   library: demux
-   headers: (.*/)?([^/\\]+\.hpp)>${2}
-   srcdir: src/demux
-   src: [^/\\]+\.cpp
-   src: win/.*\.cpp
+  //[demux_msys.fpc]
+  Name: demux
+  Description: Event handling (windows event ports with gcc)
+  Comment: Generated during configuration
+  provides_dlib: -ldemux_dynamic
+  requires_dlibs: -lws2_32 -lmswsock
+  provides_slib: -ldemux_static
+  requires_slibs: -lws2_32 -lmswsock
+  Requires: flx_pthread
+  flx_requires_driver: flx_arun
+  macros: BUILD_DEMUX
+  includes: '"flx_demux.hpp"'
+  library: demux
+  headers: (.*/)?([^/\\]+\.hpp)>${2}
+  srcdir: src/demux
+  src: [^/\\]+\.cpp
+  src: win/.*\.cpp
 
-.. code-block:: text
+.. code-block:: fpc
 
-   Name: demux
-   Description: Event handling (poll)
-   Comment: Generated during configuration
-   provides_dlib: -ldemux_dynamic
-   provides_slib: -ldemux_static
-   Requires: flx_pthread
-   flx_requires_driver: flx_arun
-   includes: '"flx_demux.hpp"'
-   macros: BUILD_DEMUX
-   library: demux
-   headers: (.*/)?([^/\\]+\.hpp)>${2}
-   srcdir: src/demux
-   src: [^/\\]+\.cpp
-   src: posix/.*\.cpp
-   src: poll/.*\.cpp
+  //[demux_cygwin.fpc]
+  Name: demux
+  Description: Event handling (poll)
+  Comment: Generated during configuration
+  provides_dlib: -ldemux_dynamic
+  provides_slib: -ldemux_static
+  Requires: flx_pthread
+  flx_requires_driver: flx_arun
+  includes: '"flx_demux.hpp"'
+  macros: BUILD_DEMUX
+  library: demux
+  headers: (.*/)?([^/\\]+\.hpp)>${2}
+  srcdir: src/demux
+  src: [^/\\]+\.cpp
+  src: posix/.*\.cpp
+  src: poll/.*\.cpp
 
 
 .. code-block:: python
 
   #[demux.py]
-   import fbuild
-   from fbuild.functools import call
-   from fbuild.path import Path
-   from fbuild.record import Record
-   
-   import buildsystem
-   from buildsystem.config import config_call
-   
-   # ------------------------------------------------------------------------------
-   
-   def build_runtime(phase):
-       print('[fbuild] [demux]')
-       path = Path(phase.ctx.buildroot/'share'/'src/demux')
-   
-       buildsystem.copy_hpps_to_rtl(phase.ctx,
-           #phase.ctx.buildroot / 'lib/rtl/flx_demux_config.hpp', # portable
-   
-           # portable
-           path / 'flx_demux.hpp',
-           path / 'demux_demuxer.hpp',
-           path / 'demux_timer_queue.hpp',
-           path / 'demux_quitter.hpp',
-   
-           # windows (monolithic)
-           path / 'win/demux_iocp_demuxer.hpp',
-           path / 'win/demux_overlapped.hpp',
-           path / 'win/demux_win_timer_queue.hpp',
-           path / 'win/demux_wself_piper.hpp',
-   
-           # posix
-           path / 'posix/demux_posix_demuxer.hpp',
-           path / 'posix/demux_posix_timer_queue.hpp',
-           path / 'posix/demux_select_demuxer.hpp',
-           path / 'posix/demux_sockety.hpp',
-           path / 'posix/demux_self_piper.hpp',
-           path / 'posix/demux_ts_select_demuxer.hpp',
-   
-           # linux, osx 10.3 (select impl), 10.4 real.
-           path / 'poll/demux_poll_demuxer.hpp',
-           path / 'poll/demux_ts_poll_demuxer.hpp',
-   
-           # linux (>= 2.6)
-           path / 'epoll/demux_epoll_demuxer.hpp',
-   
-           # osx (10.3 onwards)/bsd
-           path / 'kqueue/demux_kqueue_demuxer.hpp',
-   
-           # solaris (9 onwards?)
-           path / 'evtport/demux_evtport_demuxer.hpp',
-       )
-   
-       dst = 'host/lib/rtl/demux'
-       srcs = [path / '*.cpp']
-       includes = [
-           phase.ctx.buildroot / 'host/lib/rtl',
-           phase.ctx.buildroot / 'share/lib/rtl',
-       ]
-       macros = ['BUILD_DEMUX']
-       libs = [call('buildsystem.flx_pthread.build_runtime', phase)]
-       extra_libs = []
-   
-       if 'win32' in phase.platform:
-           print("DEMUX: providing WIN32 IO COMPLETION PORTS");
-           srcs.extend((
-               path / 'win/demux_iocp_demuxer.cpp',       # windows
-               path / 'win/demux_overlapped.cpp',         # windows
-               path / 'win/demux_wself_piper.cpp',        # windows
-               path / 'win/demux_win_timer_queue.cpp',    # windows
-           ))
-           extra_libs.extend(('ws2_32', 'mswsock'))
-   
-       if 'posix' in phase.platform:
-           print("DEMUX: providing POSIX SELECT");
-           srcs.extend((
-               path / 'posix/demux_posix_demuxer.cpp',      # posix
-               path / 'posix/demux_select_demuxer.cpp',     # posix
-               path / 'posix/demux_posix_timer_queue.cpp',  # posix
-               path / 'posix/demux_sockety.cpp',            # posix
-               path / 'posix/demux_self_piper.cpp',         # posix
-               path / 'posix/demux_ts_select_demuxer.cpp',  # posix
-           ))
-   
-       poll_h = config_call('fbuild.config.c.posix.poll_h', phase.platform, phase.cxx.shared)
-       sys_epoll_h = config_call('fbuild.config.c.linux.sys_epoll_h', phase.platform, phase.cxx.shared)
-       sys_event_h = config_call('fbuild.config.c.bsd.sys_event_h', phase.platform, phase.cxx.shared)
-       port_h = config_call('fbuild.config.c.solaris.port_h', phase.platform, phase.cxx.shared)
-   
-       if poll_h.header:
-           print("DEMUX: providing UNIX POLL");
-           srcs.extend((
-               # I've seen poll on linux and osx10.4 systems.
-               # conditionally compiled and used.
-               path / 'poll/demux_poll_demuxer.cpp',       # I've seen this on linux and osx10.4
-               path / 'poll/demux_ts_poll_demuxer.cpp',    # ditto
-           ))
-   
-       if sys_epoll_h.header:
-           print("DEMUX: providing LINUX EPOLL");
-           srcs.append(path / 'epoll/demux_epoll_demuxer.cpp')
-   
-       if sys_event_h.header:
-           print("DEMUX: providing OSX KQUEUE");
-           srcs.append(path / 'kqueue/demux_kqueue_demuxer.cpp')
-   
-       if port_h.header:
-           print("DEMUX: providingd SOLARIS EVENT PORTS");
-           srcs.append(path / 'evtport/demux_evtport_demuxer.cpp')
-   
-       srcs = Path.globall(srcs)
-   
-       lp = len (path)
-       #print("demux: srcs = ", [str (src)[lp+1:] for src in srcs])
-       #print("demux: include paths = ", [str(inc) for inc in includes])
-       return Record(
-           static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
-               includes=includes,
-               macros=macros,
-               libs=[lib.static for lib in libs],
-               external_libs=extra_libs),
-           shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
-               includes=includes,
-               macros=macros,
-               libs=[lib.shared for lib in libs],
-               external_libs=extra_libs))
-   
-   def build_flx(phase):
-       return buildsystem.copy_flxs_to_lib(phase.ctx,
-           Path('src/demux/*.flx').glob())
-   
+  import fbuild
+  from fbuild.functools import call
+  from fbuild.path import Path
+  from fbuild.record import Record
+  
+  import buildsystem
+  from buildsystem.config import config_call
+  
+  # ------------------------------------------------------------------------------
+  
+  def build_runtime(phase):
+      print('[fbuild] [demux]')
+      path = Path(phase.ctx.buildroot/'share'/'src/demux')
+  
+      buildsystem.copy_hpps_to_rtl(phase.ctx,
+          #phase.ctx.buildroot / 'lib/rtl/flx_demux_config.hpp', # portable
+  
+          # portable
+          path / 'flx_demux.hpp',
+          path / 'demux_demuxer.hpp',
+          path / 'demux_timer_queue.hpp',
+          path / 'demux_quitter.hpp',
+  
+          # windows (monolithic)
+          path / 'win/demux_iocp_demuxer.hpp',
+          path / 'win/demux_overlapped.hpp',
+          path / 'win/demux_win_timer_queue.hpp',
+          path / 'win/demux_wself_piper.hpp',
+  
+          # posix
+          path / 'posix/demux_posix_demuxer.hpp',
+          path / 'posix/demux_posix_timer_queue.hpp',
+          path / 'posix/demux_select_demuxer.hpp',
+          path / 'posix/demux_sockety.hpp',
+          path / 'posix/demux_self_piper.hpp',
+          path / 'posix/demux_ts_select_demuxer.hpp',
+  
+          # linux, osx 10.3 (select impl), 10.4 real.
+          path / 'poll/demux_poll_demuxer.hpp',
+          path / 'poll/demux_ts_poll_demuxer.hpp',
+  
+          # linux (>= 2.6)
+          path / 'epoll/demux_epoll_demuxer.hpp',
+  
+          # osx (10.3 onwards)/bsd
+          path / 'kqueue/demux_kqueue_demuxer.hpp',
+  
+          # solaris (9 onwards?)
+          path / 'evtport/demux_evtport_demuxer.hpp',
+      )
+  
+      dst = 'host/lib/rtl/demux'
+      srcs = [path / '*.cpp']
+      includes = [
+          phase.ctx.buildroot / 'host/lib/rtl',
+          phase.ctx.buildroot / 'share/lib/rtl',
+      ]
+      macros = ['BUILD_DEMUX']
+      libs = [call('buildsystem.flx_pthread.build_runtime', phase)]
+      extra_libs = []
+  
+      if 'win32' in phase.platform:
+          print("DEMUX: providing WIN32 IO COMPLETION PORTS");
+          srcs.extend((
+              path / 'win/demux_iocp_demuxer.cpp',       # windows
+              path / 'win/demux_overlapped.cpp',         # windows
+              path / 'win/demux_wself_piper.cpp',        # windows
+              path / 'win/demux_win_timer_queue.cpp',    # windows
+          ))
+          extra_libs.extend(('ws2_32', 'mswsock'))
+  
+      if 'posix' in phase.platform:
+          print("DEMUX: providing POSIX SELECT");
+          srcs.extend((
+              path / 'posix/demux_posix_demuxer.cpp',      # posix
+              path / 'posix/demux_select_demuxer.cpp',     # posix
+              path / 'posix/demux_posix_timer_queue.cpp',  # posix
+              path / 'posix/demux_sockety.cpp',            # posix
+              path / 'posix/demux_self_piper.cpp',         # posix
+              path / 'posix/demux_ts_select_demuxer.cpp',  # posix
+          ))
+  
+      poll_h = config_call('fbuild.config.c.posix.poll_h', phase.platform, phase.cxx.shared)
+      sys_epoll_h = config_call('fbuild.config.c.linux.sys_epoll_h', phase.platform, phase.cxx.shared)
+      sys_event_h = config_call('fbuild.config.c.bsd.sys_event_h', phase.platform, phase.cxx.shared)
+      port_h = config_call('fbuild.config.c.solaris.port_h', phase.platform, phase.cxx.shared)
+  
+      if poll_h.header:
+          print("DEMUX: providing UNIX POLL");
+          srcs.extend((
+              # I've seen poll on linux and osx10.4 systems.
+              # conditionally compiled and used.
+              path / 'poll/demux_poll_demuxer.cpp',       # I've seen this on linux and osx10.4
+              path / 'poll/demux_ts_poll_demuxer.cpp',    # ditto
+          ))
+  
+      if sys_epoll_h.header:
+          print("DEMUX: providing LINUX EPOLL");
+          srcs.append(path / 'epoll/demux_epoll_demuxer.cpp')
+  
+      if sys_event_h.header:
+          print("DEMUX: providing OSX KQUEUE");
+          srcs.append(path / 'kqueue/demux_kqueue_demuxer.cpp')
+  
+      if port_h.header:
+          print("DEMUX: providingd SOLARIS EVENT PORTS");
+          srcs.append(path / 'evtport/demux_evtport_demuxer.cpp')
+  
+      srcs = Path.globall(srcs)
+  
+      lp = len (path)
+      #print("demux: srcs = ", [str (src)[lp+1:] for src in srcs])
+      #print("demux: include paths = ", [str(inc) for inc in includes])
+      return Record(
+          static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
+              includes=includes,
+              macros=macros,
+              libs=[lib.static for lib in libs],
+              external_libs=extra_libs),
+          shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
+              includes=includes,
+              macros=macros,
+              libs=[lib.shared for lib in libs],
+              external_libs=extra_libs))
+  
+  def build_flx(phase):
+      return buildsystem.copy_flxs_to_lib(phase.ctx,
+          Path('src/demux/*.flx').glob())
+  
 
 
 .. code-block:: cpp
 
   //[flx_demux_config.hpp]
-   #ifndef __FLX_DEMUX_CONFIG_H__
-   #define __FLX_DEMUX_CONFIG_H__
-   #include "flx_rtl_config.hpp"
-   #ifdef BUILD_DEMUX
-   #define DEMUX_EXTERN FLX_EXPORT
-   #else
-   #define DEMUX_EXTERN FLX_IMPORT
-   #endif
-   #endif
+  #ifndef __FLX_DEMUX_CONFIG_H__
+  #define __FLX_DEMUX_CONFIG_H__
+  #include "flx_rtl_config.hpp"
+  #ifdef BUILD_DEMUX
+  #define DEMUX_EXTERN FLX_EXPORT
+  #else
+  #define DEMUX_EXTERN FLX_IMPORT
+  #endif
+  #endif
 

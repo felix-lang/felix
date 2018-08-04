@@ -33,2311 +33,2311 @@ Web Server Support Library
 .. code-block:: felix
 
   //[__init__.flx]
-   // codecs
-   include "web/json";                    
-   include "web/mime_type";
-   
-   // http protocol handlers
-   include "web/web_util"; 
-   include "web/http_handler";            
-   include "web/http_connection";         
-   include "web/http_request";            
-   include "web/http_status_code";        
-   include "web/http_response";           
-   include "web/http_auth";               
-   include "web/cookie";                  
-   include "web/low_res_time";
-   include "web/server_config";
-   include "web/sundown";
-   include "web/logger";
-   include "web/simple_config";
+  // codecs
+  include "web/json";                    
+  include "web/mime_type";
+  
+  // http protocol handlers
+  include "web/web_util"; 
+  include "web/http_handler";            
+  include "web/http_connection";         
+  include "web/http_request";            
+  include "web/http_status_code";        
+  include "web/http_response";           
+  include "web/http_auth";               
+  include "web/cookie";                  
+  include "web/low_res_time";
+  include "web/server_config";
+  include "web/sundown";
+  include "web/logger";
+  include "web/simple_config";
 
 
 .. code-block:: felix
 
   //[web_util.flx]
-   class WebUtil {
-   
-     fun parse_attribute_list(lst:list[string]):list[string^2] =>
-       map (fun (s:string) => match split_first(s,"=") with
-                                |Some (i,j) => (strip i),(strip j)
-                                |_       => "",""
-                              endmatch ) lst;
-   
-   
-     
-   }
+  class WebUtil {
+  
+    fun parse_attribute_list(lst:list[string]):list[string^2] =>
+      map (fun (s:string) => match split_first(s,"=") with
+                               |Some (i,j) => (strip i),(strip j)
+                               |_       => "",""
+                             endmatch ) lst;
+  
+  
+    
+  }
 
 
 .. code-block:: felix
 
   //[http_auth.flx]
-   include "web/__init__";
+  include "web/__init__";
+  
+  publish """ Implements Basic HTTP Authentication
+  """
+  class HTTPBasicAuth {
+    open HTTPConnection;
+    open HTTPRequest;
+    open Assoc_list;
+    open HTTPResponse;
+    open Base64;
+    open ServerConfig;
+    open HTTPHandler;
+  
+    publish """
+    A default app_handler for implementing Basic Auth. You must supply a function that 
+    takes a user name and password and returns fru or fals if authenticated. You must
+    also supply a realm string which appears in the Authentication Prompt of the browser.
+    This app_handler uses a route that applies to all pages
+    """
+    fun app_handlers(auth_source:(string*string->bool),realm:string) =>
+      (Cons (http_handler(http_basic_auth_route,(http_basic_auth(auth_source,realm))),
+       Empty[http_handler]));
+  
+    publish """
+    A default route for http auth applies to all pages
+    """
+    fun http_basic_auth_route(config:server_config,request:http_request) => 
+      true;
+  
+    private fun basic(s:string) =>ltrim s "Basic ";
+  
+    publish """
+    Handler for http_basic_auth if Authorization header supplied by browser attemps to authenticate against auth source.
+    If Authorization header not supplied send WWW-Authenticate header
+    """
+    
+  
+    
+    gen http_basic_auth (auth_source:(string*string->bool),realm:string) (conn:http_connection, request:http_request) =  {
+      http_basic_auth (auth_source,realm,"Unauthorized") (conn, request);
+  }
+  
+    gen http_basic_auth (auth_source:(string*string->bool),realm:string,unauth_content:string) (conn:http_connection, request:http_request) =  {
+      if match (find (fun(x:string)=>x=="Authorization") request.headers) with
+        |Some a => match split(decode(basic(a)),":") with
+                        |Cons(n,Cons(p,Empty)) => auth_source(n,p)
+                        |_ => false
+                      endmatch
+         |_       => false
+        endmatch do
+          set_dirty(conn,false);
+          return ;
+      else
+        val hdrs:assoc_list[string,string] = Cons (("WWW-Authenticate","Basic realm=\""+realm+"\""), Empty[string*string]);
+        var us = make_unauthorized(hdrs,unauth_content);
+        write(conn,us);  
+      done 
+      set_dirty(conn,true);
+      return ;
+    }
+  
+  publish """Authentication wrapper for a http_handler function, prcesses HTTP Authentication
+  and passes control to handler if Authentication succedes otherwise returns Unauthorized response 
+  to the browser"""
+    proc requires_auth (auth_source:(string*string->bool),realm:string,
+                       handler_fn:(http_connection*http_request) -> void)
+                      (conn:http_connection, request:http_request ) = {
+      http_basic_auth (auth_source,realm) (conn, request);
+      if not *conn.dirty do
+        handler_fn(conn,request);
+      done
+    }
    
-   publish """ Implements Basic HTTP Authentication
-   """
-   class HTTPBasicAuth {
-     open HTTPConnection;
-     open HTTPRequest;
-     open Assoc_list;
-     open HTTPResponse;
-     open Base64;
-     open ServerConfig;
-     open HTTPHandler;
-   
-     publish """
-     A default app_handler for implementing Basic Auth. You must supply a function that 
-     takes a user name and password and returns fru or fals if authenticated. You must
-     also supply a realm string which appears in the Authentication Prompt of the browser.
-     This app_handler uses a route that applies to all pages
-     """
-     fun app_handlers(auth_source:(string*string->bool),realm:string) =>
-       (Cons (http_handler(http_basic_auth_route,(http_basic_auth(auth_source,realm))),
-        Empty[http_handler]));
-   
-     publish """
-     A default route for http auth applies to all pages
-     """
-     fun http_basic_auth_route(config:server_config,request:http_request) => 
-       true;
-   
-     private fun basic(s:string) =>ltrim s "Basic ";
-   
-     publish """
-     Handler for http_basic_auth if Authorization header supplied by browser attemps to authenticate against auth source.
-     If Authorization header not supplied send WWW-Authenticate header
-     """
-     
-   
-     
-     gen http_basic_auth (auth_source:(string*string->bool),realm:string) (conn:http_connection, request:http_request) =  {
-       http_basic_auth (auth_source,realm,"Unauthorized") (conn, request);
-   }
-   
-     gen http_basic_auth (auth_source:(string*string->bool),realm:string,unauth_content:string) (conn:http_connection, request:http_request) =  {
-       if match (find (fun(x:string)=>x=="Authorization") request.headers) with
-         |Some a => match split(decode(basic(a)),":") with
-                         |Cons(n,Cons(p,Empty)) => auth_source(n,p)
-                         |_ => false
-                       endmatch
-          |_       => false
-         endmatch do
-           set_dirty(conn,false);
-           return ;
-       else
-         val hdrs:assoc_list[string,string] = Cons (("WWW-Authenticate","Basic realm=\""+realm+"\""), Empty[string*string]);
-         var us = make_unauthorized(hdrs,unauth_content);
-         write(conn,us);  
-       done 
-       set_dirty(conn,true);
-       return ;
-     }
-   
-   publish """Authentication wrapper for a http_handler function, prcesses HTTP Authentication
-   and passes control to handler if Authentication succedes otherwise returns Unauthorized response 
-   to the browser"""
      proc requires_auth (auth_source:(string*string->bool),realm:string,
-                        handler_fn:(http_connection*http_request) -> void)
-                       (conn:http_connection, request:http_request ) = {
-       http_basic_auth (auth_source,realm) (conn, request);
-       if not *conn.dirty do
-         handler_fn(conn,request);
-       done
-     }
-    
-      proc requires_auth (auth_source:(string*string->bool),realm:string,
-                        handler_fn:(http_connection*http_request) -> void,
-                        unauthorized_content:string)
-                       (conn:http_connection, request:http_request ) = {
-       http_basic_auth (auth_source,realm,unauthorized_content) (conn, request);
-       if not *conn.dirty do
-         handler_fn(conn,request);
-       done
-     }
-   
-     
+                       handler_fn:(http_connection*http_request) -> void,
+                       unauthorized_content:string)
+                      (conn:http_connection, request:http_request ) = {
+      http_basic_auth (auth_source,realm,unauthorized_content) (conn, request);
+      if not *conn.dirty do
+        handler_fn(conn,request);
+      done
+    }
+  
     
    
-     gen authorized_user (conn:http_connection, request:http_request) =>
-        match (find (fun(x:string)=>x=="Authorization") request.headers) with
-         |Some a => match split(decode(basic(a)),":") with
-                         |Cons(n,Cons(p,Empty)) => Some n
-                         |_ => None[string]
-                       endmatch
-          |_       => None[string]
-         endmatch ;
-   
-   
-   }
+  
+    gen authorized_user (conn:http_connection, request:http_request) =>
+       match (find (fun(x:string)=>x=="Authorization") request.headers) with
+        |Some a => match split(decode(basic(a)),":") with
+                        |Cons(n,Cons(p,Empty)) => Some n
+                        |_ => None[string]
+                      endmatch
+         |_       => None[string]
+        endmatch ;
+  
+  
+  }
 
 
 .. code-block:: felix
 
   //[http_request.flx]
-   include "web/__init__";
+  include "web/__init__";
+  
+  publish """
+  Defines types and container for http_request.
+  Main entry points are get_param (helper to extract params from http_request)
+  and get_http_request which extracts request from stream
+  """  
+  
+  class HTTPRequest {
+     open HTTPConnection;
+     open Assoc_list;   
+     open URICodec;
+     open Logger;
+     open Cookie;
+     open IOStream;
+     open Socket;
+     open TerminalIOByteStream[socket_t];
+     open WebUtil;
    
-   publish """
-   Defines types and container for http_request.
-   Main entry points are get_param (helper to extract params from http_request)
-   and get_http_request which extracts request from stream
-   """  
-   
-   class HTTPRequest {
-      open HTTPConnection;
-      open Assoc_list;   
-      open URICodec;
-      open Logger;
-      open Cookie;
-      open IOStream;
-      open Socket;
-      open TerminalIOByteStream[socket_t];
-      open WebUtil;
+     union http_method = 
+       | GET
+       | POST
+       | BAD;
+  
+    instance Str[http_method] {
+      fun str : http_method ->string =
+        | #GET => "GET"
+        | #POST => "POST"
+        | #BAD => "BAD";
+     }
+  
+    instance Eq[http_method] {
+      fun == : http_method*http_method->bool = "$1==$2";
+      fun != : http_method*http_method->bool = "$1!=$2";
+    }
     
-      union http_method = 
-        | GET
-        | POST
-        | BAD;
-   
-     instance Str[http_method] {
-       fun str : http_method ->string =
-         | #GET => "GET"
-         | #POST => "POST"
-         | #BAD => "BAD";
-      }
-   
-     instance Eq[http_method] {
-       fun == : http_method*http_method->bool = "$1==$2";
-       fun != : http_method*http_method->bool = "$1!=$2";
-     }
-     
-   
-      struct http_request {
-       hmethod: http_method;
-       uri: string;
-       path:string;
-       params:assoc_list[string,string];
-       entity_params:assoc_list[string,string];
-       headers:assoc_list[string,string];    
-     }
-   
-     instance Str[http_request] {
-       fun str (request: http_request) => 
-         "HTTP Request\n"+
-         "\tMethod:"+str(request.hmethod)+"\n"+
-         //"\tURI:"""+request.uri+"\n"+
-         "\tPath:"""+request.path+"\n"+
-         "\tParams:"""+str(request.params)+"\n"+
-         "\tHeaders:"""+str(request.headers)+"\n";
-     } 
-         
-     private proc copy_request(orig:&http_request,cpy:&http_request) = {
-       cpy.hmethod <- *orig.hmethod;
-       cpy.uri <- *orig.uri;
-       cpy.path <- *orig.path;
-       cpy.params <- *orig.params;
-     }
-   
-     publish """
-     Parses a list of URI encoded key value parameters and returns as an assoc_list.
-     """
-     fun get_params(p:string):list[string*string] ={
-        var params = split(p,'&');
-        return   map  (fun(x:string):string*string =>let Cons(hd,tl) = split(x,'=') in
-                        (uri_decode(hd),uri_decode((fold_left (fun(x:string) (y:string):string => x + y) "" tl)))
-                        ) params;
-     }
-   
-     noinline proc get_headers(conn:http_connection,headers:&list[string^2])  {
-       var line:string = "";
-       get_line(conn.sock, &line);  // shouldg be the GET line.
-       while line != "" and line != "\r" do
-         get_line(conn.sock, &line); 
-         match split(line,':') with
-           | Cons(key,value) =>
-                 headers <- Cons((uri_decode(strip(key)),   
-   	      uri_decode(strip(fold_left (fun(x:string) (y:string):string => x + y) "" value))),
-                 *headers);
-            | x => println("WARNING:Possible malformed request headerline:"+x); 
-         endmatch;
-       done
-     }
-   
-     publish """ Main entry point for extracting HTTP request from stream """
-     noinline proc get_request(conn:http_connection,request:&http_request) = {
-       var k = conn.sock;
-       var line: string = "";
-       get_line(k, &line);  // shouldg be the GET line.
-       var got = match split(line,' ') with
-         | Cons (hmethod,Cons(uri,Cons(prot,_))) => match (hmethod,uri,prot) with
-           | ("GET",uri,prot)  => match (GET,uri,split(uri,'?'),prot) with
-             | (GET,uri,Cons(path,rest),prot) => 
-                  http_request(GET,uri,path,
-                   get_params((fold_left (fun(x:string) (y:string):string => x + y) "" rest)),
-                   Empty[string*string],Empty[string*string])
-               endmatch
-           | ("POST",uri,prot)  => match (POST,uri,split(uri,'?'),prot) with
-             | (POST,uri,Cons(path,rest),prot) => http_request(POST,uri,path,
-                   get_params((fold_left (fun(x:string) (y:string):string => x + y) "" rest)),
-                   Empty[string*string],Empty[string*string])
-             endmatch
-   	  endmatch
-           | _ =>  http_request(BAD,"","",Empty[string*string],Empty[string*string],
-                                Empty[string*string])
-       endmatch;  
-       var headers = Empty[string^2];
-       get_headers(conn,&headers);
-       got&.headers <- headers;
-       copy_request(&got,request); 
-       request.headers <- headers;
-     }
-   
-   
-     
-   
-     publish """
-     Populates entity_params in request. Entity params are URI encoded key value pairs in
-     request body that are supplied when a POST request is made by the browser.
-     """
-     proc get_entity_params(conn:http_connection,request:&http_request,attribs:list[string^2]) = {
-       val olen = match get_header(*request,"Content-Length") with |Some s=> int(s) |_ => 0 endmatch;
-       var len = olen;
-       var eof=false;
-       var params:assoc_list[string,string] = Empty[string*string];
-       if olen > 0 do
-         var buf = C_hack::cast[+char] (Memory::malloc(len+1));
-         var buf_a = address(buf);
-         read(conn.sock,&len,buf_a,&eof);
-         if len > 0 do
-           params = get_params(string(buf,len));
-         done
-         Memory::free(buf_a);
-       done
-       request.entity_params <- params;
-       return ; 
-     }
-   
-   fun read_bytes(conn:http_connection,olen:int) = {
-       var len = olen;
-       var eof=false;
-       
-       var ret:string = "";
-       if olen > 0 do
-         var buf = C_hack::cast[+char] (Memory::malloc(len+1));
-         var buf_a = address(buf);
-         read(conn.sock,&len,buf_a,&eof);
-         ret= str(buf);
-         Memory::free(buf_a);
-        done
-        return ret; 
-     }
-   
-   
-     proc get_multipart_params(conn:http_connection,request:&http_request,attribs:list[string^2]) {
-       var line:string = "";
-       val llen = match get_header(*request,"Content-Length") with |Some s=> int(s) |_ => 0 endmatch;
-       var rest = read_bytes(conn,llen);
-       write(conn,HTTPResponse::make_continue());
-       conn.dirty <- false;
-   
-       match (find (fun (s:string) => s == "boundary") attribs) with
-         |Some b => { get_line(conn.sock, &line); 
-           var headers = Empty[string^2];
-           get_headers(conn,&headers);
-         }
-        |_ => {conn.config.log(DEBUG,"No Boundry"); }
-       endmatch;
-        request.entity_params <- Empty[string*string];
-     }
-   
-     fun get_fname(request:http_request) ={
-       val v = match rev(split(request.path,'/')) with
-         | Cons(hd,_) => Some(hd) 
-         | _ => None[string]
-       endmatch;
-       return v;
-     }
-   
-     fun get_path_and_fname(request:http_request):opt[string^2] ={
-       return match rev(split(request.path,'/')) with
-         | Cons(hd,tl) => Some(
-               (fold_left (fun(x:string) (y:string):string => x +"/"+ y) "" (rev(tl))), hd)
-         | _ => None[string*string]
-       endmatch;
-     }
-   
-     publish """ Return opt[string] parameter value for given name """
-     fun get_param(request:http_request,name:string) =>
-        find (fun (a:string,b:string) => eq(a,b)) request.params name;
-   
-     publish """ Return opt[string] post parameter value for given name """
-     fun get_post_param(request:http_request,name:string) =>
-        find (fun (a:string,b:string) => eq(a,b)) request.entity_params name;
-   
-     publish """ Return opt[string] request header value for given name """
-     fun get_header(request:http_request,name:string) =>
-        find (fun (a:string,b:string) => eq(a,b)) request.headers name;
-   
-     fun get_cookies(request:http_request):list[cookie] = {
-       
-        val cline= Assoc_list::find (fun (a:string,b:string) => eq(a,b)) (request.headers)  ('Cookie');
-        val lines = match cline with
-          | Some s => (match split(s,';') with
-                          |Cons (h,t) => Cons(h,t)
-                          |_            => Empty[string]
-                        endmatch)
-          | _        => Empty[string]
+  
+     struct http_request {
+      hmethod: http_method;
+      uri: string;
+      path:string;
+      params:assoc_list[string,string];
+      entity_params:assoc_list[string,string];
+      headers:assoc_list[string,string];    
+    }
+  
+    instance Str[http_request] {
+      fun str (request: http_request) => 
+        "HTTP Request\n"+
+        "\tMethod:"+str(request.hmethod)+"\n"+
+        //"\tURI:"""+request.uri+"\n"+
+        "\tPath:"""+request.path+"\n"+
+        "\tParams:"""+str(request.params)+"\n"+
+        "\tHeaders:"""+str(request.headers)+"\n";
+    } 
+        
+    private proc copy_request(orig:&http_request,cpy:&http_request) = {
+      cpy.hmethod <- *orig.hmethod;
+      cpy.uri <- *orig.uri;
+      cpy.path <- *orig.path;
+      cpy.params <- *orig.params;
+    }
+  
+    publish """
+    Parses a list of URI encoded key value parameters and returns as an assoc_list.
+    """
+    fun get_params(p:string):list[string*string] ={
+       var params = split(p,'&');
+       return   map  (fun(x:string):string*string =>let Cons(hd,tl) = split(x,'=') in
+                       (uri_decode(hd),uri_decode((fold_left (fun(x:string) (y:string):string => x + y) "" tl)))
+                       ) params;
+    }
+  
+    noinline proc get_headers(conn:http_connection,headers:&list[string^2])  {
+      var line:string = "";
+      get_line(conn.sock, &line);  // shouldg be the GET line.
+      while line != "" and line != "\r" do
+        get_line(conn.sock, &line); 
+        match split(line,':') with
+          | Cons(key,value) =>
+                headers <- Cons((uri_decode(strip(key)),   
+  	      uri_decode(strip(fold_left (fun(x:string) (y:string):string => x + y) "" value))),
+                *headers);
+           | x => println("WARNING:Possible malformed request headerline:"+x); 
         endmatch;
-        val pairs = filter (fun (sl:opt[string^2]) => match sl with |Some _ => true |_ => false endmatch) (map (fun (cl:string) => split_first(cl,"=")) lines);
-         return (map (fun (p:opt[string^2]) => let Some q = p in cookie(q.(0),q.(1))) pairs);
-   }
-   
-   }
-   
+      done
+    }
+  
+    publish """ Main entry point for extracting HTTP request from stream """
+    noinline proc get_request(conn:http_connection,request:&http_request) = {
+      var k = conn.sock;
+      var line: string = "";
+      get_line(k, &line);  // shouldg be the GET line.
+      var got = match split(line,' ') with
+        | Cons (hmethod,Cons(uri,Cons(prot,_))) => match (hmethod,uri,prot) with
+          | ("GET",uri,prot)  => match (GET,uri,split(uri,'?'),prot) with
+            | (GET,uri,Cons(path,rest),prot) => 
+                 http_request(GET,uri,path,
+                  get_params((fold_left (fun(x:string) (y:string):string => x + y) "" rest)),
+                  Empty[string*string],Empty[string*string])
+              endmatch
+          | ("POST",uri,prot)  => match (POST,uri,split(uri,'?'),prot) with
+            | (POST,uri,Cons(path,rest),prot) => http_request(POST,uri,path,
+                  get_params((fold_left (fun(x:string) (y:string):string => x + y) "" rest)),
+                  Empty[string*string],Empty[string*string])
+            endmatch
+  	  endmatch
+          | _ =>  http_request(BAD,"","",Empty[string*string],Empty[string*string],
+                               Empty[string*string])
+      endmatch;  
+      var headers = Empty[string^2];
+      get_headers(conn,&headers);
+      got&.headers <- headers;
+      copy_request(&got,request); 
+      request.headers <- headers;
+    }
+  
+  
+    
+  
+    publish """
+    Populates entity_params in request. Entity params are URI encoded key value pairs in
+    request body that are supplied when a POST request is made by the browser.
+    """
+    proc get_entity_params(conn:http_connection,request:&http_request,attribs:list[string^2]) = {
+      val olen = match get_header(*request,"Content-Length") with |Some s=> int(s) |_ => 0 endmatch;
+      var len = olen;
+      var eof=false;
+      var params:assoc_list[string,string] = Empty[string*string];
+      if olen > 0 do
+        var buf = C_hack::cast[+char] (Memory::malloc(len+1));
+        var buf_a = address(buf);
+        read(conn.sock,&len,buf_a,&eof);
+        if len > 0 do
+          params = get_params(string(buf,len));
+        done
+        Memory::free(buf_a);
+      done
+      request.entity_params <- params;
+      return ; 
+    }
+  
+  fun read_bytes(conn:http_connection,olen:int) = {
+      var len = olen;
+      var eof=false;
+      
+      var ret:string = "";
+      if olen > 0 do
+        var buf = C_hack::cast[+char] (Memory::malloc(len+1));
+        var buf_a = address(buf);
+        read(conn.sock,&len,buf_a,&eof);
+        ret= str(buf);
+        Memory::free(buf_a);
+       done
+       return ret; 
+    }
+  
+  
+    proc get_multipart_params(conn:http_connection,request:&http_request,attribs:list[string^2]) {
+      var line:string = "";
+      val llen = match get_header(*request,"Content-Length") with |Some s=> int(s) |_ => 0 endmatch;
+      var rest = read_bytes(conn,llen);
+      write(conn,HTTPResponse::make_continue());
+      conn.dirty <- false;
+  
+      match (find (fun (s:string) => s == "boundary") attribs) with
+        |Some b => { get_line(conn.sock, &line); 
+          var headers = Empty[string^2];
+          get_headers(conn,&headers);
+        }
+       |_ => {conn.config.log(DEBUG,"No Boundry"); }
+      endmatch;
+       request.entity_params <- Empty[string*string];
+    }
+  
+    fun get_fname(request:http_request) ={
+      val v = match rev(split(request.path,'/')) with
+        | Cons(hd,_) => Some(hd) 
+        | _ => None[string]
+      endmatch;
+      return v;
+    }
+  
+    fun get_path_and_fname(request:http_request):opt[string^2] ={
+      return match rev(split(request.path,'/')) with
+        | Cons(hd,tl) => Some(
+              (fold_left (fun(x:string) (y:string):string => x +"/"+ y) "" (rev(tl))), hd)
+        | _ => None[string*string]
+      endmatch;
+    }
+  
+    publish """ Return opt[string] parameter value for given name """
+    fun get_param(request:http_request,name:string) =>
+       find (fun (a:string,b:string) => eq(a,b)) request.params name;
+  
+    publish """ Return opt[string] post parameter value for given name """
+    fun get_post_param(request:http_request,name:string) =>
+       find (fun (a:string,b:string) => eq(a,b)) request.entity_params name;
+  
+    publish """ Return opt[string] request header value for given name """
+    fun get_header(request:http_request,name:string) =>
+       find (fun (a:string,b:string) => eq(a,b)) request.headers name;
+  
+    fun get_cookies(request:http_request):list[cookie] = {
+      
+       val cline= Assoc_list::find (fun (a:string,b:string) => eq(a,b)) (request.headers)  ('Cookie');
+       val lines = match cline with
+         | Some s => (match split(s,';') with
+                         |Cons (h,t) => Cons(h,t)
+                         |_            => Empty[string]
+                       endmatch)
+         | _        => Empty[string]
+       endmatch;
+       val pairs = filter (fun (sl:opt[string^2]) => match sl with |Some _ => true |_ => false endmatch) (map (fun (cl:string) => split_first(cl,"=")) lines);
+        return (map (fun (p:opt[string^2]) => let Some q = p in cookie(q.(0),q.(1))) pairs);
+  }
+  
+  }
+  
 
 
 .. code-block:: felix
 
   //[http_response.flx]
-   include "web/__init__";
-   
-   publish """
-   Use make_<response type> to wrap html in an apropriate response
-   """
-   
-   class HTTPResponse {
-     open LowResTime;
-     open HTTPStatusCodes;
-     open MIMEType;
-     open Assoc_list;
-     struct http_response {
-       status_code:status_code;
-       last_modified:tm;
-       content_type:mime_type;
-       headers:assoc_list[string,string];
-       content:string;
-     }
-   
-     typedef headers_t = assoc_list[string,string];
-     fun no_headers ():headers_t => Empty[string*string];
-   
-     fun http_header (response:http_response) =>
-   """HTTP/1.0 """ + str(response.status_code) +"""\r
-   Date: """ + rfc1123_date() + """\r
-   Server: felix web server\r
-   Last-Modified: """ + rfc1123_date(response.last_modified) +"""\r
-   Connection: close\r
-   Content-Type: """ + str(response.content_type) + """\r
-   Content-Length: """ + str (len response.content) + """\r
-   """+(fold_left (fun(x:string) (y:string):string => x + y) "" (map (fun (n:string*string) => n.(0)+": "+n.(1)+"\r\n") response.headers))+"""\r
-   """;
-   
-     
-     fun make_image(mime:mime_type, content:string) => 
-       http_header(http_response(SC_OK,localtime(#time_t),mime,#no_headers,content)) +
-         content; 
-   
-     fun make_image(mime:mime_type, content:string, headers:headers_t) => 
-       http_header(http_response(SC_OK,localtime(#time_t),mime,headers,content)) +
-         content; 
-   
-     fun make_css (content:string) =>
-       http_header(http_response(SC_OK,localtime(#time_t),text css,#no_headers,content)) +
-         content; 
-   
-     fun make_js (content:string) =>
-       http_header(http_response(SC_OK,localtime(#time_t),application javascript,#no_headers,content)) +
-         content; 
-   
-     fun make_json (content:string) =>
-       http_header(http_response(SC_OK,localtime(#time_t),application json,#no_headers,content)) +
-         content; 
-   
-     fun make_not_found (content:string) =>
-       let response = http_response(SC_NOT_FOUND,localtime(#time_t),text html,#no_headers,
-   				  content) in
-       	http_header(response) + response.content; 
-   
-     fun make_not_implemented (content:string) =>
-       let response = http_response(SC_NOT_IMPLEMENTED,localtime(#time_t),text html,#no_headers,
-   				  content) in
-       	http_header(response) + response.content; 
-     
-     
-     fun make_see_other (location:string) =>
-       let response = http_response(SC_SEE_OTHER,localtime(#time_t),text html,Cons(("Location",location),Empty[string^2]),"") in
-       	http_header(response) + response.content; 
-   
-     fun make_forbidden (content:string) =>
-       let response = http_response(SC_FORBIDDEN,localtime(#time_t),text html,#no_headers,
-   				  "Forbidden: "+content) in
-       	http_header(response) + response.content; 
-   
-     fun make_unauthorized (headers:headers_t) =>
-       let response = http_response(SC_UNAUTHORIZED,localtime(#time_t),text html,headers,
-   				  "") in
-       	http_header(response) +"\nUnauthorized"; 
-   
-     fun make_unauthorized (headers:headers_t,content:string) =>
-       let response = http_response(SC_UNAUTHORIZED,localtime(#time_t),text html,headers,
-   				  "") in
-       	http_header(response) +"\n"+content; 
-   
-     fun make_continue () =>
-       let response = http_response(SC_CONTINUE,localtime(#time_t),text html,#no_headers,
-   				  "") in
-       	http_header(response) +"\r";   
-   
-     fun make_raw (content:string) => make_raw(content,#no_headers);
-     fun make_raw (content:string,headers:headers_t) =>
-       http_header(http_response(SC_OK,localtime(#time_t),application octet_DASH_stream,
-                                 headers,content)) + content; 
-   
-     fun make_html (content:string) => make_html(content,#no_headers);
-     fun make_html (content:string,headers:headers_t) =>
-       http_header(http_response(SC_OK,localtime(#time_t),text html,
-                                 headers,content)) + content; 
-     fun make_xhtml (content:string) => make_xhtml(content,#no_headers);
-     fun make_xhtml (content:string,headers:headers_t) =>
-       http_header(http_response(SC_OK,localtime(#time_t),application xhtml_PLUS_xml,
-                                 headers,content)) + content; 
-   
-     fun make_mime (mime:mime_type, content:string) => make_mime(mime,content, #no_headers);
-     fun make_mime (mime:mime_type, content:string, headers:headers_t) =>
-       http_header(http_response(SC_OK,localtime(#time_t),mime,
-                                 headers,content)) + content; 
-   
-   
-   }
-   //WWW-Authenticate: Basic realm="WallyWorld"
+  include "web/__init__";
+  
+  publish """
+  Use make_<response type> to wrap html in an apropriate response
+  """
+  
+  class HTTPResponse {
+    open LowResTime;
+    open HTTPStatusCodes;
+    open MIMEType;
+    open Assoc_list;
+    struct http_response {
+      status_code:status_code;
+      last_modified:tm;
+      content_type:mime_type;
+      headers:assoc_list[string,string];
+      content:string;
+    }
+  
+    typedef headers_t = assoc_list[string,string];
+    fun no_headers ():headers_t => Empty[string*string];
+  
+    fun http_header (response:http_response) =>
+  """HTTP/1.0 """ + str(response.status_code) +"""\r
+  Date: """ + rfc1123_date() + """\r
+  Server: felix web server\r
+  Last-Modified: """ + rfc1123_date(response.last_modified) +"""\r
+  Connection: close\r
+  Content-Type: """ + str(response.content_type) + """\r
+  Content-Length: """ + str (len response.content) + """\r
+  """+(fold_left (fun(x:string) (y:string):string => x + y) "" (map (fun (n:string*string) => n.(0)+": "+n.(1)+"\r\n") response.headers))+"""\r
+  """;
+  
+    
+    fun make_image(mime:mime_type, content:string) => 
+      http_header(http_response(SC_OK,localtime(#time_t),mime,#no_headers,content)) +
+        content; 
+  
+    fun make_image(mime:mime_type, content:string, headers:headers_t) => 
+      http_header(http_response(SC_OK,localtime(#time_t),mime,headers,content)) +
+        content; 
+  
+    fun make_css (content:string) =>
+      http_header(http_response(SC_OK,localtime(#time_t),text css,#no_headers,content)) +
+        content; 
+  
+    fun make_js (content:string) =>
+      http_header(http_response(SC_OK,localtime(#time_t),application javascript,#no_headers,content)) +
+        content; 
+  
+    fun make_json (content:string) =>
+      http_header(http_response(SC_OK,localtime(#time_t),application json,#no_headers,content)) +
+        content; 
+  
+    fun make_not_found (content:string) =>
+      let response = http_response(SC_NOT_FOUND,localtime(#time_t),text html,#no_headers,
+  				  content) in
+      	http_header(response) + response.content; 
+  
+    fun make_not_implemented (content:string) =>
+      let response = http_response(SC_NOT_IMPLEMENTED,localtime(#time_t),text html,#no_headers,
+  				  content) in
+      	http_header(response) + response.content; 
+    
+    
+    fun make_see_other (location:string) =>
+      let response = http_response(SC_SEE_OTHER,localtime(#time_t),text html,Cons(("Location",location),Empty[string^2]),"") in
+      	http_header(response) + response.content; 
+  
+    fun make_forbidden (content:string) =>
+      let response = http_response(SC_FORBIDDEN,localtime(#time_t),text html,#no_headers,
+  				  "Forbidden: "+content) in
+      	http_header(response) + response.content; 
+  
+    fun make_unauthorized (headers:headers_t) =>
+      let response = http_response(SC_UNAUTHORIZED,localtime(#time_t),text html,headers,
+  				  "") in
+      	http_header(response) +"\nUnauthorized"; 
+  
+    fun make_unauthorized (headers:headers_t,content:string) =>
+      let response = http_response(SC_UNAUTHORIZED,localtime(#time_t),text html,headers,
+  				  "") in
+      	http_header(response) +"\n"+content; 
+  
+    fun make_continue () =>
+      let response = http_response(SC_CONTINUE,localtime(#time_t),text html,#no_headers,
+  				  "") in
+      	http_header(response) +"\r";   
+  
+    fun make_raw (content:string) => make_raw(content,#no_headers);
+    fun make_raw (content:string,headers:headers_t) =>
+      http_header(http_response(SC_OK,localtime(#time_t),application octet_DASH_stream,
+                                headers,content)) + content; 
+  
+    fun make_html (content:string) => make_html(content,#no_headers);
+    fun make_html (content:string,headers:headers_t) =>
+      http_header(http_response(SC_OK,localtime(#time_t),text html,
+                                headers,content)) + content; 
+    fun make_xhtml (content:string) => make_xhtml(content,#no_headers);
+    fun make_xhtml (content:string,headers:headers_t) =>
+      http_header(http_response(SC_OK,localtime(#time_t),application xhtml_PLUS_xml,
+                                headers,content)) + content; 
+  
+    fun make_mime (mime:mime_type, content:string) => make_mime(mime,content, #no_headers);
+    fun make_mime (mime:mime_type, content:string, headers:headers_t) =>
+      http_header(http_response(SC_OK,localtime(#time_t),mime,
+                                headers,content)) + content; 
+  
+  
+  }
+  //WWW-Authenticate: Basic realm="WallyWorld"
 
 
 .. code-block:: felix
 
   //[http_handler.flx]
-   include "web/__init__";
+  include "web/__init__";
+  
+  publish """
+  Implements default handlers for static content and error pages.
+  Defines container http_hadler for use in constructing custom handlers
+  for use in WebServer """
+  class HTTPHandler {
+    open HTTPResponse;
+    open HTTPRequest;
+    open HTTPConnection;
+    open ServerConfig;
+    open MIMEType;
+    open Tord[mime_type];
+  
+    publish """ handles determines what requests are handleded by handler_fn.
+    handler_fn handles http request and respons on http_connection """
+    struct http_handler {
+      handles: (server_config*http_request)->bool;
+      handler_fn: (http_connection*http_request) -> void;
+    }
    
-   publish """
-   Implements default handlers for static content and error pages.
-   Defines container http_hadler for use in constructing custom handlers
-   for use in WebServer """
-   class HTTPHandler {
-     open HTTPResponse;
-     open HTTPRequest;
-     open HTTPConnection;
-     open ServerConfig;
-     open MIMEType;
-     open Tord[mime_type];
-   
-     publish """ handles determines what requests are handleded by handler_fn.
-     handler_fn handles http request and respons on http_connection """
-     struct http_handler {
-       handles: (server_config*http_request)->bool;
-       handler_fn: (http_connection*http_request) -> void;
-     }
-    
-     publish """ return option of the first element in a list mapped to type V satisfying 
-     the combined transformer and predicate xf """
-   
-    fun / (x:string, y:string) => Filename::join (x,y);
-   
-   fun find_and_map[T,V] (xf:T -> opt[V]) (xs:list[T]) : opt[V] =>
-       match xs with
-       | #Empty => None[V]
-       | Cons (h,t) => match xf(h) with |Some (v) => Some(v) |_ => find_and_map xf t endmatch
-       endmatch
-     ;
-   
-   
-   fun get_fs_path (config:server_config,request:http_request) => 
-       match get_path_and_fname(request) with
-         | Some(path,fname) => find_and_map[string,string] (fun (r:string):opt[string] => (let fs_path =
-           Filename::join(Filename::join(r,path),fname) in
-           if (FileStat::fileexists fs_path) then
-             Some(fs_path)
-           else
-             None[string]
-           endif)) (list(config.document_root,
-             Filename::join(Filename::join(Filename::join(#Config::std_config.FLX_SHARE_DIR,"lib"),"web"),"html")))
-         | _ => None[string]
-       endmatch;
-   
-   
-     fun txt2html (x:string) =
-     {
-       var out2 = "";
-       var i:int;
-       for i in 0 upto (int(len x) - 1) do
-         var ch = x.[i];
-         if ch == char "<" do out2+="&lt;";
-         elif ch == char ">" do out2+="&gt;";
-         elif ch == char "&" do out2+="&amp;";
-         else out2+=ch;
-         done
-       done
-      return out2;
-     }
-   
-      gen handle_not_found(conn:http_connection, request:http_request) =  {
-        var txt = "<div style='text-color:red;'>Page "+ 
-          (match get_fname request with | Some(fname) => fname | _ => "NONE" endmatch)+
-          " not found.</div>";
-        val data = make_not_found txt;
-        write(conn,data);
-        return ;
-      }
-     
-     proc do_handle_not_found(conn:http_connection, request:http_request) {
-       handle_not_found(conn,request);
-     }
-      
-     fun handle_not_found_route (config:server_config, request:http_request) => true; 
-   
-     gen handle_css(conn:http_connection, request:http_request) = {
-       match get_fs_path(conn.config,request) with
-         | Some(file) => {
-                          val txt = load (file);
-         		       write(conn,(make_css txt));
-                          }
-         | _ => {do_handle_not_found(conn,request);}
-      endmatch;  
-      return ;
-     }
-   
-     fun handle_css_route (config:server_config, request:http_request) =>
-       match (get_path_and_fname request) with
-          | Some (p,f) => (match (mime_type_from_file f) with |text css => true | _ => false endmatch)
-          | _ => false
-        endmatch;
-   
-     gen handle_js(conn:http_connection, request:http_request) = {
-       match get_fs_path(conn.config,request) with
-         | Some(file) => {
-                          val txt = load (file);
-         		       write(conn,(make_js txt));
-                          }
-         | _ => {do_handle_not_found(conn,request);}
+    publish """ return option of the first element in a list mapped to type V satisfying 
+    the combined transformer and predicate xf """
+  
+   fun / (x:string, y:string) => Filename::join (x,y);
+  
+  fun find_and_map[T,V] (xf:T -> opt[V]) (xs:list[T]) : opt[V] =>
+      match xs with
+      | #Empty => None[V]
+      | Cons (h,t) => match xf(h) with |Some (v) => Some(v) |_ => find_and_map xf t endmatch
+      endmatch
+    ;
+  
+  
+  fun get_fs_path (config:server_config,request:http_request) => 
+      match get_path_and_fname(request) with
+        | Some(path,fname) => find_and_map[string,string] (fun (r:string):opt[string] => (let fs_path =
+          Filename::join(Filename::join(r,path),fname) in
+          if (FileStat::fileexists fs_path) then
+            Some(fs_path)
+          else
+            None[string]
+          endif)) (list(config.document_root,
+            Filename::join(Filename::join(Filename::join(#Config::std_config.FLX_SHARE_DIR,"lib"),"web"),"html")))
+        | _ => None[string]
       endmatch;
-      return ;
-     }
-   
-     fun handle_js_route (config:server_config, request:http_request) =>
-       match (get_path_and_fname request) with
-         | Some (p,f) => (match (mime_type_from_file f) with 
-           |application javascript => true | _ => false endmatch)
-         | _ => false
-        endmatch;
-   
-     gen handle_image(conn:http_connection, request:http_request) = {
-       match get_fs_path(conn.config,request) with
-         | Some(file) => {
-                          val txt = load (file);
-         		       write(conn,make_image((mime_type_from_file file), txt));
-                          }
-         | _ => {do_handle_not_found(conn,request);}
-      endmatch;  
-      return ;
-     }
-   
-     fun handle_image_route (config:server_config,request:http_request) => 
-        match (get_path_and_fname request) with
-          | Some (p,f) => (match (mime_type_from_file f) with 
-               |image gif => true 
-               |image jpeg => true 
-               |image png => true 
-               |image tiff => true 
-               | _ => false endmatch)
-          | _ => false
-        endmatch;
-   
-     gen handle_html(conn:http_connection, request:http_request) = {
-       if (request.uri == "/" and request.path == "/") do 
-         val txt = load (conn.config.document_root+"/index.html");
-         write(conn,(make_html txt));
-       else                   
-         match get_fs_path(conn.config,request) with
-           | Some(file) => {
-                          val txt = load (file);
-         		       write(conn,(make_html txt));
-                          }
-           | _ => {do_handle_not_found(conn,request);}
-          endmatch;
-       done
+  
+  
+    fun txt2html (x:string) =
+    {
+      var out2 = "";
+      var i:int;
+      for i in 0 upto (int(len x) - 1) do
+        var ch = x.[i];
+        if ch == char "<" do out2+="&lt;";
+        elif ch == char ">" do out2+="&gt;";
+        elif ch == char "&" do out2+="&amp;";
+        else out2+=ch;
+        done
+      done
+     return out2;
+    }
+  
+     gen handle_not_found(conn:http_connection, request:http_request) =  {
+       var txt = "<div style='text-color:red;'>Page "+ 
+         (match get_fname request with | Some(fname) => fname | _ => "NONE" endmatch)+
+         " not found.</div>";
+       val data = make_not_found txt;
+       write(conn,data);
        return ;
      }
-   
-     fun handle_html_route (config:server_config,request:http_request):bool =>
-        if (request.uri == "/" and request.path == "/") then 
-          true
-        else
-          match (get_path_and_fname request) with
-            | Some (p,f) => (match (mime_type_from_file f) with |text html => true | _ => false endmatch)
-            | _ => false
-          endmatch
-        endif;
-   
-     publish """ Returns list of Stock handlers """
-     fun default_handlers() => list (
-       http_handler(handle_html_route,handle_html),
-   	  http_handler(handle_image_route,handle_image),
-       http_handler(handle_css_route,handle_css),
-   		http_handler(handle_js_route,handle_js),
-       http_handler(handle_not_found_route,handle_not_found)
-     );
+    
+    proc do_handle_not_found(conn:http_connection, request:http_request) {
+      handle_not_found(conn,request);
+    }
      
-   }
+    fun handle_not_found_route (config:server_config, request:http_request) => true; 
+  
+    gen handle_css(conn:http_connection, request:http_request) = {
+      match get_fs_path(conn.config,request) with
+        | Some(file) => {
+                         val txt = load (file);
+        		       write(conn,(make_css txt));
+                         }
+        | _ => {do_handle_not_found(conn,request);}
+     endmatch;  
+     return ;
+    }
+  
+    fun handle_css_route (config:server_config, request:http_request) =>
+      match (get_path_and_fname request) with
+         | Some (p,f) => (match (mime_type_from_file f) with |text css => true | _ => false endmatch)
+         | _ => false
+       endmatch;
+  
+    gen handle_js(conn:http_connection, request:http_request) = {
+      match get_fs_path(conn.config,request) with
+        | Some(file) => {
+                         val txt = load (file);
+        		       write(conn,(make_js txt));
+                         }
+        | _ => {do_handle_not_found(conn,request);}
+     endmatch;
+     return ;
+    }
+  
+    fun handle_js_route (config:server_config, request:http_request) =>
+      match (get_path_and_fname request) with
+        | Some (p,f) => (match (mime_type_from_file f) with 
+          |application javascript => true | _ => false endmatch)
+        | _ => false
+       endmatch;
+  
+    gen handle_image(conn:http_connection, request:http_request) = {
+      match get_fs_path(conn.config,request) with
+        | Some(file) => {
+                         val txt = load (file);
+        		       write(conn,make_image((mime_type_from_file file), txt));
+                         }
+        | _ => {do_handle_not_found(conn,request);}
+     endmatch;  
+     return ;
+    }
+  
+    fun handle_image_route (config:server_config,request:http_request) => 
+       match (get_path_and_fname request) with
+         | Some (p,f) => (match (mime_type_from_file f) with 
+              |image gif => true 
+              |image jpeg => true 
+              |image png => true 
+              |image tiff => true 
+              | _ => false endmatch)
+         | _ => false
+       endmatch;
+  
+    gen handle_html(conn:http_connection, request:http_request) = {
+      if (request.uri == "/" and request.path == "/") do 
+        val txt = load (conn.config.document_root+"/index.html");
+        write(conn,(make_html txt));
+      else                   
+        match get_fs_path(conn.config,request) with
+          | Some(file) => {
+                         val txt = load (file);
+        		       write(conn,(make_html txt));
+                         }
+          | _ => {do_handle_not_found(conn,request);}
+         endmatch;
+      done
+      return ;
+    }
+  
+    fun handle_html_route (config:server_config,request:http_request):bool =>
+       if (request.uri == "/" and request.path == "/") then 
+         true
+       else
+         match (get_path_and_fname request) with
+           | Some (p,f) => (match (mime_type_from_file f) with |text html => true | _ => false endmatch)
+           | _ => false
+         endmatch
+       endif;
+  
+    publish """ Returns list of Stock handlers """
+    fun default_handlers() => list (
+      http_handler(handle_html_route,handle_html),
+  	  http_handler(handle_image_route,handle_image),
+      http_handler(handle_css_route,handle_css),
+  		http_handler(handle_js_route,handle_js),
+      http_handler(handle_not_found_route,handle_not_found)
+    );
+    
+  }
 
 .. code-block:: felix
 
   //[http_connection.flx]
-   include "web/__init__";
-   
-   publish """
-   Container for server config and socket_t
-   """
-   class HTTPConnection {
-     open ServerConfig;
-     open Socket;
-     open Logger;
-     open IOStream;
-     open Socket;
-     open TerminalIOByteStream[socket_t];
-   
-     struct http_connection {
-       config:server_config;
-       sock:socket_t;
-       dirty:&bool;
-     };
-     fun _ctor_http_connection(config:server_config,sock:socket_t) = {
-       var b:bool = false;
-       return http_connection(config,sock,&b);
-     }
-     proc set_dirty(conn:http_connection,state:bool) {
-       conn.dirty <- state;
-     }
-   
-     noinline proc write(var conn:http_connection,var content:string) {
-       
-       var eof_flag = false;
-       val content_len = content.len;
-       conn.config.log(DEBUG,"Content Size:"+str(content_len));
-       val chunk_size = size(1024);
-       var chunks:size = content.len / chunk_size;
-       var remainder = content.len % chunk_size;
-       var base = size(0);
-       for var i in size(1) upto chunks do
-         conn.config.log(DEBUG,"Writing[sock="+str conn.sock+"]:"+str(base)+" to "+str(base+chunk_size));
-         write_string(conn.sock,content.[base to (base+chunk_size)],&eof_flag);
-         base = base + chunk_size;
-         
-       done
-       if remainder > size(0) do
-          conn.config.log(DEBUG,"Writing[sock="+str conn.sock+"] Remainder:"+str(base)+" to "+str(content_len));
-          write_string(conn.sock,content.[base to ],&eof_flag);
-       done
-       set_dirty(conn,true);  
-     }
-   
-   }
+  include "web/__init__";
+  
+  publish """
+  Container for server config and socket_t
+  """
+  class HTTPConnection {
+    open ServerConfig;
+    open Socket;
+    open Logger;
+    open IOStream;
+    open Socket;
+    open TerminalIOByteStream[socket_t];
+  
+    struct http_connection {
+      config:server_config;
+      sock:socket_t;
+      dirty:&bool;
+    };
+    fun _ctor_http_connection(config:server_config,sock:socket_t) = {
+      var b:bool = false;
+      return http_connection(config,sock,&b);
+    }
+    proc set_dirty(conn:http_connection,state:bool) {
+      conn.dirty <- state;
+    }
+  
+    noinline proc write(var conn:http_connection,var content:string) {
+      
+      var eof_flag = false;
+      val content_len = content.len;
+      conn.config.log(DEBUG,"Content Size:"+str(content_len));
+      val chunk_size = size(1024);
+      var chunks:size = content.len / chunk_size;
+      var remainder = content.len % chunk_size;
+      var base = size(0);
+      for var i in size(1) upto chunks do
+        conn.config.log(DEBUG,"Writing[sock="+str conn.sock+"]:"+str(base)+" to "+str(base+chunk_size));
+        write_string(conn.sock,content.[base to (base+chunk_size)],&eof_flag);
+        base = base + chunk_size;
+        
+      done
+      if remainder > size(0) do
+         conn.config.log(DEBUG,"Writing[sock="+str conn.sock+"] Remainder:"+str(base)+" to "+str(content_len));
+         write_string(conn.sock,content.[base to ],&eof_flag);
+      done
+      set_dirty(conn,true);  
+    }
+  
+  }
 
 
 .. code-block:: felix
 
   //[http_status_code.flx]
-   /*
-   Example:
-     println$ str SC_OK;
-   */
-   
-   class HTTPStatusCodes {
-     enum status_code {
-       SC_OK,
-       SC_CREATED,
-       SC_NO_CONTENT,
-       SC_MOVED_PERMANENTLY,
-       SC_TEMPORARY_REDIRECT,
-       SC_BAD_REQUEST,
-       SC_UNAUTHORIZED,
-       SC_FORBIDDEN,
-       SC_NOT_FOUND,
-       SC_METHOD_NOT_ALLOWED,
-       SC_INTERNAL_SERVER_ERROR,
-       SC_NOT_IMPLEMENTED,
-       SC_SERVICE_UNAVAILABLE,
-       SC_SEE_OTHER,
-       SC_CONTINUE
-     }
-             
-     instance Str[status_code] {          
-       fun str: status_code -> string =
-         |  #SC_CONTINUE => "100 Continue"
-         |  #SC_OK => "200 OK"
-         |  #SC_CREATED => "201 Created"
-         |  #SC_NO_CONTENT => "204 No Content"
-         |  #SC_MOVED_PERMANENTLY => "301 Moved Permanently"
-         |  #SC_SEE_OTHER => "303 See Other"
-         |  #SC_TEMPORARY_REDIRECT => "307 Temporary Redirect"
-         |  #SC_BAD_REQUEST => "400 Bad Request"
-         |  #SC_UNAUTHORIZED => "401 Unauthorized"
-         |  #SC_FORBIDDEN => "403 Forbidden"
-         |  #SC_NOT_FOUND => "404 Not Found"
-         |  #SC_METHOD_NOT_ALLOWED => "405 Not Allowed"
-         |  #SC_INTERNAL_SERVER_ERROR => "500 Internal Server Error"
-         |  #SC_NOT_IMPLEMENTED => "501 Not Implemented"
-         |  #SC_SERVICE_UNAVAILABLE => "503 Service Unavailable"
-       ;
-     }
-   
-   }
+  /*
+  Example:
+    println$ str SC_OK;
+  */
+  
+  class HTTPStatusCodes {
+    enum status_code {
+      SC_OK,
+      SC_CREATED,
+      SC_NO_CONTENT,
+      SC_MOVED_PERMANENTLY,
+      SC_TEMPORARY_REDIRECT,
+      SC_BAD_REQUEST,
+      SC_UNAUTHORIZED,
+      SC_FORBIDDEN,
+      SC_NOT_FOUND,
+      SC_METHOD_NOT_ALLOWED,
+      SC_INTERNAL_SERVER_ERROR,
+      SC_NOT_IMPLEMENTED,
+      SC_SERVICE_UNAVAILABLE,
+      SC_SEE_OTHER,
+      SC_CONTINUE
+    }
+            
+    instance Str[status_code] {          
+      fun str: status_code -> string =
+        |  #SC_CONTINUE => "100 Continue"
+        |  #SC_OK => "200 OK"
+        |  #SC_CREATED => "201 Created"
+        |  #SC_NO_CONTENT => "204 No Content"
+        |  #SC_MOVED_PERMANENTLY => "301 Moved Permanently"
+        |  #SC_SEE_OTHER => "303 See Other"
+        |  #SC_TEMPORARY_REDIRECT => "307 Temporary Redirect"
+        |  #SC_BAD_REQUEST => "400 Bad Request"
+        |  #SC_UNAUTHORIZED => "401 Unauthorized"
+        |  #SC_FORBIDDEN => "403 Forbidden"
+        |  #SC_NOT_FOUND => "404 Not Found"
+        |  #SC_METHOD_NOT_ALLOWED => "405 Not Allowed"
+        |  #SC_INTERNAL_SERVER_ERROR => "500 Internal Server Error"
+        |  #SC_NOT_IMPLEMENTED => "501 Not Implemented"
+        |  #SC_SERVICE_UNAVAILABLE => "503 Service Unavailable"
+      ;
+    }
+  
+  }
 
 
 .. code-block:: felix
 
   //[mime_type.flx]
-   publish """
-   Implements variant types representing MIME types.
-   Also implements Str instance for mime types and parses MIME type from string
+  publish """
+  Implements variant types representing MIME types.
+  Also implements Str instance for mime types and parses MIME type from string
+  
+  Example: 
+    open MIMETypes;
+    println (javascript);
+    println from_str("application/atom+xml");
+    println (application zip);
+  """
+  
+  class MIMEType {
+  /*
+  TODO: implement more MIME types.
+  */  
+  
+    open WebUtil;
+    union application_mime_subtype =
+      | atom_PLUS_xml //: Atom feeds
+      | ecmascript // ECMAScript/JavaScript; Defined in RFC 4329
+      | EDI_DASH_X12 // EDI X12 data; Defined in RFC 1767
+      | EDIFACT  //EDI EDIFACT data; Defined in RFC 1767
+      | json // JavaScript Object Notation JSON; Defined in RFC 4627
+      | javascript // ECMAScript/JavaScript; Defined in RFC 4329
+      | octet_DASH_stream // Arbitrary binary data.
+      | ogg // Ogg, a multimedia bitstream container format;
+      | pdf // Portable Document Format, 
+      | postscript // PostScript; Defined in RFC 2046
+      | rss_PLUS_xml // RSS feeds
+      | soap_PLUS_xml //SOAP; Defined by RFC 3902
+      | font_DASH_woff //: Web Open Font Format;
+      | xhtml_PLUS_xml //: XHTML; Defined by RFC 3236
+      | xml_DASH_dtd //: DTD files; Defined by RFC 3023
+      | xop_PLUS_xml //:XOP
+      | zip //: ZIP archive files; Registered[7]
+      | x_DASH_gzip //: Gzip
+      | x_DASH_www_DASH_form_DASH_urlencoded;  
+  
+    union audio_mime_subtype =
+      | basic //: mulaw audio at 8 kHz, 1 channel; Defined in RFC 2046
+      | L24 //: 24bit Linear PCM audio at 8-48kHz, 1-N channels; Defined in RFC 3190
+      | mp4 //: MP4 audio
+      | mpeg //: MP3 or other MPEG audio; Defined in RFC 3003
+      | ogg1 //: Ogg Vorbis, Speex, Flac and other audio; Defined in RFC 5334
+      | vorbis //: Vorbis encoded audio; Defined in RFC 5215
+      | x_DASH_ms_DASH_wma //: Windows Media Audio; Documented in Microsoft KB 288102
+      | x_DASH_ms_DASH_wax //: Windows Media Audio Redirector
+      | vnd_DOT_rn_DASH_realaudio //: RealAudio; Documented in RealPlayer
+      | vnd_DOT_wave //: WAV audio; Defined in RFC 2361
+      | webm //: WebM open media format
+    ;   
+  
+    union image_mime_subtype =
+      | gif //: GIF image; Defined in RFC 2045 and RFC 2046
+      | jpeg // JPEG JFIF image; Defined in RFC 2045 and RFC 2046
+      | pjpeg //: JPEG JFIF image; Associated with Internet Explorer;
+      | png //: Portable Network Graphics; Registered,[8] Defined in RFC 2083
+      | svg_PLUS_xml //: SVG vector image; Defined in SVG Tiny 1.2 Specification Appendix M
+      | tiff // Tag Image File Format (only for Baseline TIFF); Defined in RFC 3302
+      | vnd_DOT_microsoft_DOT_icon //: ICO image; Registered[9]
+    ;
+  
+    union text_mime_subtype =
+      | cmd //: commands; subtype resident in Gecko browsers like Firefox 3.5
+      | css //: Cascading Style Sheets; Defined in RFC 2318
+      | csv //: Comma-separated values; Defined in RFC 4180
+      | html //: HTML; Defined in RFC 2854
+      | javascript1 //(Obsolete): JavaScript; Defined in and obsoleted by RFC 4329
+      | plain //: Textual data; Defined in RFC 2046 and RFC 3676
+      | vcard //: vCard (contact information); Defined in RFC 6350
+      | xml //: Extensible Markup Language; Defined in RFC 3023
+      | x_DASH_felix
+      | x_DASH_fdoc
+      | x_DASH_fpc
+      | x_DASH_c
+      | x_DASH_ocaml
+      | x_DASH_python
+    ;
    
-   Example: 
-     open MIMETypes;
-     println (javascript);
-     println from_str("application/atom+xml");
-     println (application zip);
-   """
-   
-   class MIMEType {
-   /*
-   TODO: implement more MIME types.
-   */  
-   
-     open WebUtil;
-     union application_mime_subtype =
-       | atom_PLUS_xml //: Atom feeds
-       | ecmascript // ECMAScript/JavaScript; Defined in RFC 4329
-       | EDI_DASH_X12 // EDI X12 data; Defined in RFC 1767
-       | EDIFACT  //EDI EDIFACT data; Defined in RFC 1767
-       | json // JavaScript Object Notation JSON; Defined in RFC 4627
-       | javascript // ECMAScript/JavaScript; Defined in RFC 4329
-       | octet_DASH_stream // Arbitrary binary data.
-       | ogg // Ogg, a multimedia bitstream container format;
-       | pdf // Portable Document Format, 
-       | postscript // PostScript; Defined in RFC 2046
-       | rss_PLUS_xml // RSS feeds
-       | soap_PLUS_xml //SOAP; Defined by RFC 3902
-       | font_DASH_woff //: Web Open Font Format;
-       | xhtml_PLUS_xml //: XHTML; Defined by RFC 3236
-       | xml_DASH_dtd //: DTD files; Defined by RFC 3023
-       | xop_PLUS_xml //:XOP
-       | zip //: ZIP archive files; Registered[7]
-       | x_DASH_gzip //: Gzip
-       | x_DASH_www_DASH_form_DASH_urlencoded;  
-   
-     union audio_mime_subtype =
-       | basic //: mulaw audio at 8 kHz, 1 channel; Defined in RFC 2046
-       | L24 //: 24bit Linear PCM audio at 8-48kHz, 1-N channels; Defined in RFC 3190
-       | mp4 //: MP4 audio
-       | mpeg //: MP3 or other MPEG audio; Defined in RFC 3003
-       | ogg1 //: Ogg Vorbis, Speex, Flac and other audio; Defined in RFC 5334
-       | vorbis //: Vorbis encoded audio; Defined in RFC 5215
-       | x_DASH_ms_DASH_wma //: Windows Media Audio; Documented in Microsoft KB 288102
-       | x_DASH_ms_DASH_wax //: Windows Media Audio Redirector
-       | vnd_DOT_rn_DASH_realaudio //: RealAudio; Documented in RealPlayer
-       | vnd_DOT_wave //: WAV audio; Defined in RFC 2361
-       | webm //: WebM open media format
-     ;   
-   
-     union image_mime_subtype =
-       | gif //: GIF image; Defined in RFC 2045 and RFC 2046
-       | jpeg // JPEG JFIF image; Defined in RFC 2045 and RFC 2046
-       | pjpeg //: JPEG JFIF image; Associated with Internet Explorer;
-       | png //: Portable Network Graphics; Registered,[8] Defined in RFC 2083
-       | svg_PLUS_xml //: SVG vector image; Defined in SVG Tiny 1.2 Specification Appendix M
-       | tiff // Tag Image File Format (only for Baseline TIFF); Defined in RFC 3302
-       | vnd_DOT_microsoft_DOT_icon //: ICO image; Registered[9]
-     ;
-   
-     union text_mime_subtype =
-       | cmd //: commands; subtype resident in Gecko browsers like Firefox 3.5
-       | css //: Cascading Style Sheets; Defined in RFC 2318
-       | csv //: Comma-separated values; Defined in RFC 4180
-       | html //: HTML; Defined in RFC 2854
-       | javascript1 //(Obsolete): JavaScript; Defined in and obsoleted by RFC 4329
-       | plain //: Textual data; Defined in RFC 2046 and RFC 3676
-       | vcard //: vCard (contact information); Defined in RFC 6350
-       | xml //: Extensible Markup Language; Defined in RFC 3023
-       | x_DASH_felix
-       | x_DASH_fdoc
-       | x_DASH_fpc
-       | x_DASH_c
-       | x_DASH_ocaml
-       | x_DASH_python
-     ;
-    
-     union multipart_mime_subtype =
-       | mixed
-       | alternative
-       | related
-       | form-data
-       | signed
-       | encrypted;
-   
-     union mime_type =
-       | application of application_mime_subtype
-       | audio of audio_mime_subtype
-       | image of image_mime_subtype
-       | text of text_mime_subtype
-       | multipart of multipart_mime_subtype;
-   
-     typedef media_type =  mime_type * list[string^2];
-   
-     instance Str[application_mime_subtype] {
-       fun str : application_mime_subtype ->string =
-         | #atom_PLUS_xml => "application/atom+xml" 
-         | #ecmascript => "application/ecmascript" 
-         | #EDI_DASH_X12 => "application/EDI-X12" 
-         | #EDIFACT => "application/EDIFACT" 
-         | #json => "application/json" 
-         | #javascript => "application/javascript" 
-         | #octet_DASH_stream => "application/octet-stream" 
-         | #ogg => "application/ogg" 
-         | #pdf => "application/pdf" 
-         | #postscript => "appliction/postscript" 
-         | #rss_PLUS_xml => "application/rss+xml"
-         | #soap_PLUS_xml => "application/soap+xml" 
-         | #font_DASH_woff => "application/font-woff" 
-         | #xhtml_PLUS_xml => "application/xhtml+xml"
-         | #xml_DASH_dtd => "application/xml-dtd" 
-         | #xop_PLUS_xml => "application/xop+xml" 
-         | #zip => "application/zip" 
-         | #x_DASH_gzip => "application/x-gzip" 
-         | #x_DASH_www_DASH_form_DASH_urlencoded => "application/x-www-form-urlencoded";
+    union multipart_mime_subtype =
+      | mixed
+      | alternative
+      | related
+      | form-data
+      | signed
+      | encrypted;
+  
+    union mime_type =
+      | application of application_mime_subtype
+      | audio of audio_mime_subtype
+      | image of image_mime_subtype
+      | text of text_mime_subtype
+      | multipart of multipart_mime_subtype;
+  
+    typedef media_type =  mime_type * list[string^2];
+  
+    instance Str[application_mime_subtype] {
+      fun str : application_mime_subtype ->string =
+        | #atom_PLUS_xml => "application/atom+xml" 
+        | #ecmascript => "application/ecmascript" 
+        | #EDI_DASH_X12 => "application/EDI-X12" 
+        | #EDIFACT => "application/EDIFACT" 
+        | #json => "application/json" 
+        | #javascript => "application/javascript" 
+        | #octet_DASH_stream => "application/octet-stream" 
+        | #ogg => "application/ogg" 
+        | #pdf => "application/pdf" 
+        | #postscript => "appliction/postscript" 
+        | #rss_PLUS_xml => "application/rss+xml"
+        | #soap_PLUS_xml => "application/soap+xml" 
+        | #font_DASH_woff => "application/font-woff" 
+        | #xhtml_PLUS_xml => "application/xhtml+xml"
+        | #xml_DASH_dtd => "application/xml-dtd" 
+        | #xop_PLUS_xml => "application/xop+xml" 
+        | #zip => "application/zip" 
+        | #x_DASH_gzip => "application/x-gzip" 
+        | #x_DASH_www_DASH_form_DASH_urlencoded => "application/x-www-form-urlencoded";
+   }
+  
+   instance Str[audio_mime_subtype] {
+     fun str : audio_mime_subtype ->string =
+       | #basic => "audio/basic" 
+       | #L24 => "audio/L24" 
+       | #mp4 => "audio/mp4"
+       | #mpeg => "audio/mpeg"
+       | #ogg1 => "audop/ogg"
+       | #vorbis => "audio/vorbis"
+       | #x_DASH_ms_DASH_wma => "audio/x-ms-wma"
+       | #x_DASH_ms_DASH_wax => "audio/x-ms-wax"
+       | #vnd_DOT_rn_DASH_realaudio => "audio/vnd.rn-realaudio"
+       | #vnd_DOT_wave => "audio/vnd.wave"
+       | #webm => "audio/webm";
     }
-   
-    instance Str[audio_mime_subtype] {
-      fun str : audio_mime_subtype ->string =
-        | #basic => "audio/basic" 
-        | #L24 => "audio/L24" 
-        | #mp4 => "audio/mp4"
-        | #mpeg => "audio/mpeg"
-        | #ogg1 => "audop/ogg"
-        | #vorbis => "audio/vorbis"
-        | #x_DASH_ms_DASH_wma => "audio/x-ms-wma"
-        | #x_DASH_ms_DASH_wax => "audio/x-ms-wax"
-        | #vnd_DOT_rn_DASH_realaudio => "audio/vnd.rn-realaudio"
-        | #vnd_DOT_wave => "audio/vnd.wave"
-        | #webm => "audio/webm";
-     }
-   
-     instance Str[image_mime_subtype] {
-       fun str : image_mime_subtype ->string =
-         | #gif => "image/gif"
-         | #jpeg => "image/jpeg"
-         | #pjpeg => "image/pjpeg"
-         | #png => "image/png"
-         | #svg_PLUS_xml => "image/svg+xml"
-         | #tiff => "image/tiff"
-         | #vnd_DOT_microsoft_DOT_icon => "image/vnd.microsoft.icon"; 
-     }
-   
-     instance Str[text_mime_subtype] {
-       fun str : text_mime_subtype ->string =
-         | #cmd => "text/cmd"
-         | #css => "text/css"
-         | #csv => "text/csv"
-         | #html => "text/html"
-         | #javascript1 => "text/javascript"
-         | #plain => "text/plain"
-         | #vcard => "text/vcard"
-         | #xml => "text/xml"
-         | #x_DASH_felix => "text/x-felix"
-         | #x_DASH_fdoc => "text/x-fdoc"
-         | #x_DASH_fpc => "text/x-fpc"
-         | #x_DASH_c => "text/x-c"
-         | #x_DASH_ocaml => "text/x-ocaml"
-         | #x_DASH_python => "text/x-python";
-     }
-     
-     instance Str[multipart_mime_subtype] {
-       fun str : multipart_mime_subtype ->string =
-         | #mixed => "multipart/mixed"
-         | #alternative => "multipart/alternative"
-         | #related => "multipart/related"
-         | #form-data => "multipart/form-data"
-         | #signed => "multipart/signed"
-         | #encrypted => "multipart/encrypted";
-     }
-   
-     instance Str[mime_type] {
-       fun str : mime_type ->string =
-         | application  a => str a
-         | audio  a => str a
-         | image  a => str a
-         | text  a => str a
-         | multipart  a => str a;
-     }
-   
-     fun application_type_from_str : string -> opt[application_mime_subtype] =
-       | "application/atom+xml"     => Some atom_PLUS_xml 
-       | "application/ecmascript"   => Some ecmascript 
-       | "application/EDI-X12"      => Some EDI_DASH_X12 
-       | "application/EDIFACT"      => Some EDIFACT 
-       | "application/json"         => Some json 
-       | "application/javascript"   => Some javascript 
-       | "application/octet-stream" => Some octet_DASH_stream 
-       | "application/ogg"          => Some ogg 
-       | "application/pdf"          => Some pdf 
-       | "appliction/postscript"    => Some postscript 
-       | "application/rss+xml"      => Some rss_PLUS_xml 
-       | "application/soap+xml"     => Some soap_PLUS_xml 
-       | "application/font-woff"    => Some font_DASH_woff 
-       | "application/xhtml+xml"    => Some xhtml_PLUS_xml 
-       | "application/xml-dtd"      => Some xml_DASH_dtd 
-       | "application/xop+xml"      => Some xop_PLUS_xml 
-       | "application/zip"          => Some zip 
-       | "application/x-gzip"       => Some x_DASH_gzip
-       | "application/x-www-form-urlencoded" => Some x_DASH_www_DASH_form_DASH_urlencoded
-       | _                          => None[application_mime_subtype];
-     
-     fun audio_type_from_str : string -> opt[audio_mime_subtype] =
-       |  "audio/basic" => Some basic
-       |  "audio/L24" => Some L24
-       |  "audio/mp4" => Some mp4
-       |  "audio/mpeg" => Some mpeg
-       |  "audop/ogg" => Some ogg1
-       |  "audio/vorbis" => Some vorbis
-       |  "audio/x-ms-wma" => Some x_DASH_ms_DASH_wma
-       |  "audio/x-ms-wax" => Some x_DASH_ms_DASH_wax
-       |  "audio/vnd.rn-realaudio" => Some vnd_DOT_rn_DASH_realaudio
-       |  "audio/vnd.wave" => Some vnd_DOT_wave
-       |  "audio/webm" => Some webm 
-       |  _ => None[audio_mime_subtype] ;
-   
-     fun image_type_from_str : string -> opt[image_mime_subtype] =
-       | "image/gif" => Some gif 
-       | "image/jpeg" => Some jpeg 
-       | "image/pjpeg" => Some pjpeg 
-       | "image/png" => Some png 
-       | "image/svg+xml" => Some svg_PLUS_xml 
-       | "image/tiff" => Some tiff 
-       | "image/vnd.microsoft.icon" => Some vnd_DOT_microsoft_DOT_icon 
-       | _ => None[image_mime_subtype]; 
-     
-     fun text_type_from_str : string -> opt[text_mime_subtype] =
-       | "text/cmd" => Some cmd 
-       | "text/css" => Some css 
-       | "text/csv" => Some csv 
-       | "text/html" => Some html 
-       | "text/javascript" => Some javascript1 
-       | "text/plain" => Some plain 
-       | "text/vcard" => Some vcard 
-       | "text/xml" => Some xml 
-       | "text/x-felix" => Some x_DASH_felix
-       | "text/x-fdoc" => Some x_DASH_fdoc
-       | "text/x-fpc" =>  Some x_DASH_fpc
-       | "text/x-c"  => Some x_DASH_c
-       | "text/x-ocaml"  => Some x_DASH_ocaml
-       | "text/x-python" => Some x_DASH_python
-       | _ => None[text_mime_subtype];
-   
-     fun multipart_type_from_str : string -> opt[multipart_mime_subtype] =
-       | "multipart/mixed" => Some mixed
-       | "multipart/alternative" => Some alternative
-       | "multipart/related" => Some related
-       | "multipart/form-data" => Some form-data
-       | "multipart/signed" => Some signed
-       | "multipart/encrypted" => Some encrypted
-     ;
-   
-     fun from_str (s:string):opt[mime_type] => 
-       match application_type_from_str s with
-         | Some t => Some (application t)
-         | #None => match audio_type_from_str s with
-           | Some t =>  Some (audio t)
-           | #None => match image_type_from_str s with
-              | Some t => Some (image t)
-              | #None => match text_type_from_str s with
-                | Some t => Some (text t)
-                | #None => match multipart_type_from_str s with
-                  | Some t => Some (multipart t)
-                  | #None => None[mime_type]
-                endmatch
-              endmatch
-            endmatch
-          endmatch
-        endmatch;
-     
-     fun mime_type_from_file(file:string) =>
-       match rev(split(file,'.')) with
-       | Cons(hd,_) => mime_type_from_extension hd
-       | _ => text plain
+  
+    instance Str[image_mime_subtype] {
+      fun str : image_mime_subtype ->string =
+        | #gif => "image/gif"
+        | #jpeg => "image/jpeg"
+        | #pjpeg => "image/pjpeg"
+        | #png => "image/png"
+        | #svg_PLUS_xml => "image/svg+xml"
+        | #tiff => "image/tiff"
+        | #vnd_DOT_microsoft_DOT_icon => "image/vnd.microsoft.icon"; 
+    }
+  
+    instance Str[text_mime_subtype] {
+      fun str : text_mime_subtype ->string =
+        | #cmd => "text/cmd"
+        | #css => "text/css"
+        | #csv => "text/csv"
+        | #html => "text/html"
+        | #javascript1 => "text/javascript"
+        | #plain => "text/plain"
+        | #vcard => "text/vcard"
+        | #xml => "text/xml"
+        | #x_DASH_felix => "text/x-felix"
+        | #x_DASH_fdoc => "text/x-fdoc"
+        | #x_DASH_fpc => "text/x-fpc"
+        | #x_DASH_c => "text/x-c"
+        | #x_DASH_ocaml => "text/x-ocaml"
+        | #x_DASH_python => "text/x-python";
+    }
+    
+    instance Str[multipart_mime_subtype] {
+      fun str : multipart_mime_subtype ->string =
+        | #mixed => "multipart/mixed"
+        | #alternative => "multipart/alternative"
+        | #related => "multipart/related"
+        | #form-data => "multipart/form-data"
+        | #signed => "multipart/signed"
+        | #encrypted => "multipart/encrypted";
+    }
+  
+    instance Str[mime_type] {
+      fun str : mime_type ->string =
+        | application  a => str a
+        | audio  a => str a
+        | image  a => str a
+        | text  a => str a
+        | multipart  a => str a;
+    }
+  
+    fun application_type_from_str : string -> opt[application_mime_subtype] =
+      | "application/atom+xml"     => Some atom_PLUS_xml 
+      | "application/ecmascript"   => Some ecmascript 
+      | "application/EDI-X12"      => Some EDI_DASH_X12 
+      | "application/EDIFACT"      => Some EDIFACT 
+      | "application/json"         => Some json 
+      | "application/javascript"   => Some javascript 
+      | "application/octet-stream" => Some octet_DASH_stream 
+      | "application/ogg"          => Some ogg 
+      | "application/pdf"          => Some pdf 
+      | "appliction/postscript"    => Some postscript 
+      | "application/rss+xml"      => Some rss_PLUS_xml 
+      | "application/soap+xml"     => Some soap_PLUS_xml 
+      | "application/font-woff"    => Some font_DASH_woff 
+      | "application/xhtml+xml"    => Some xhtml_PLUS_xml 
+      | "application/xml-dtd"      => Some xml_DASH_dtd 
+      | "application/xop+xml"      => Some xop_PLUS_xml 
+      | "application/zip"          => Some zip 
+      | "application/x-gzip"       => Some x_DASH_gzip
+      | "application/x-www-form-urlencoded" => Some x_DASH_www_DASH_form_DASH_urlencoded
+      | _                          => None[application_mime_subtype];
+    
+    fun audio_type_from_str : string -> opt[audio_mime_subtype] =
+      |  "audio/basic" => Some basic
+      |  "audio/L24" => Some L24
+      |  "audio/mp4" => Some mp4
+      |  "audio/mpeg" => Some mpeg
+      |  "audop/ogg" => Some ogg1
+      |  "audio/vorbis" => Some vorbis
+      |  "audio/x-ms-wma" => Some x_DASH_ms_DASH_wma
+      |  "audio/x-ms-wax" => Some x_DASH_ms_DASH_wax
+      |  "audio/vnd.rn-realaudio" => Some vnd_DOT_rn_DASH_realaudio
+      |  "audio/vnd.wave" => Some vnd_DOT_wave
+      |  "audio/webm" => Some webm 
+      |  _ => None[audio_mime_subtype] ;
+  
+    fun image_type_from_str : string -> opt[image_mime_subtype] =
+      | "image/gif" => Some gif 
+      | "image/jpeg" => Some jpeg 
+      | "image/pjpeg" => Some pjpeg 
+      | "image/png" => Some png 
+      | "image/svg+xml" => Some svg_PLUS_xml 
+      | "image/tiff" => Some tiff 
+      | "image/vnd.microsoft.icon" => Some vnd_DOT_microsoft_DOT_icon 
+      | _ => None[image_mime_subtype]; 
+    
+    fun text_type_from_str : string -> opt[text_mime_subtype] =
+      | "text/cmd" => Some cmd 
+      | "text/css" => Some css 
+      | "text/csv" => Some csv 
+      | "text/html" => Some html 
+      | "text/javascript" => Some javascript1 
+      | "text/plain" => Some plain 
+      | "text/vcard" => Some vcard 
+      | "text/xml" => Some xml 
+      | "text/x-felix" => Some x_DASH_felix
+      | "text/x-fdoc" => Some x_DASH_fdoc
+      | "text/x-fpc" =>  Some x_DASH_fpc
+      | "text/x-c"  => Some x_DASH_c
+      | "text/x-ocaml"  => Some x_DASH_ocaml
+      | "text/x-python" => Some x_DASH_python
+      | _ => None[text_mime_subtype];
+  
+    fun multipart_type_from_str : string -> opt[multipart_mime_subtype] =
+      | "multipart/mixed" => Some mixed
+      | "multipart/alternative" => Some alternative
+      | "multipart/related" => Some related
+      | "multipart/form-data" => Some form-data
+      | "multipart/signed" => Some signed
+      | "multipart/encrypted" => Some encrypted
+    ;
+  
+    fun from_str (s:string):opt[mime_type] => 
+      match application_type_from_str s with
+        | Some t => Some (application t)
+        | #None => match audio_type_from_str s with
+          | Some t =>  Some (audio t)
+          | #None => match image_type_from_str s with
+             | Some t => Some (image t)
+             | #None => match text_type_from_str s with
+               | Some t => Some (text t)
+               | #None => match multipart_type_from_str s with
+                 | Some t => Some (multipart t)
+                 | #None => None[mime_type]
+               endmatch
+             endmatch
+           endmatch
+         endmatch
        endmatch;
-   
-     fun mime_type_from_extension: string -> mime_type =
-       | "atom" => application atom_PLUS_xml 
-       | "ecma" => application ecmascript 
-       | "json" => application json 
-       | "js" => application javascript 
-       | "application/octet-stream" => application octet_DASH_stream 
-       | "ogg" => application ogg 
-       | "ogx" => application ogg 
-       | "pdf" => application pdf 
-       | "ps" => application postscript 
-       | "eps" => application postscript 
-       | "ai" => application postscript 
-       | "xhtml" => application xhtml_PLUS_xml 
-       | "xht" => application xhtml_PLUS_xml 
-       | "dtd" => application xml_DASH_dtd 
-       | "xop" => application xop_PLUS_xml 
-       | "zip" => application zip 
-       | "x-gzip" => application x_DASH_gzip
-       | "au" => audio basic
-       | "snd" => audio basic
-       | "mp4a" => audio mp4
-       | "mpega" => audio mpeg
-       | "mpga" => audio mpeg
-       | "mp2a" => audio mpeg
-       | "mp3a" => audio mpeg
-       | "mp4a" => audio mpeg
-       | "mp2" => audio mpeg
-       | "mp3" => audio mpeg
-       | "ogg" => audio ogg1
-       | "oga" => audio ogg1
-       | "spx" => audio ogg1
-       | "wma" => audio x_DASH_ms_DASH_wma
-       | "wax" => audio x_DASH_ms_DASH_wax
-       | "ra" => audio vnd_DOT_rn_DASH_realaudio
-       | "wav" => audio vnd_DOT_wave
-       | "webma" => audio webm 
-       | "gif" => image gif 
-       | "image/jpeg" => image jpeg 
-       | "jpg" => image jpeg 
-       | "pjpeg" => image pjpeg 
-       | "png" => image png 
-       | "svg" => image svg_PLUS_xml 
-       | "tiff" => image tiff 
-       | "css" => text css 
-       | "csv" => text csv 
-       | "html" => text html 
-       | "htm" => text html 
-       | "shtm" => text html 
-       | "text/plain" => text plain 
-       | "asc" => text plain 
-       | "conf" => text plain 
-       | "def" => text plain 
-       | "diff" => text plain 
-       | "in" => text plain 
-       | "list" => text plain 
-       | "log" => text plain 
-       | "pot" => text plain 
-       | "text" => text plain 
-       | "txt" => text plain 
-       | _ => text plain
-     ;
-   
-           
-   instance Eq[mime_type]  {
-     fun == : mime_type * mime_type -> bool = "$1==$2";
-   }
-   
-   
-     fun parse_media_type (s:string):opt[media_type] =>
-       match split( s, ";") with
-       | Cons(h,t) => 
-         match from_str(h) with
-         | Some m => Some (m,parse_attribute_list(t))
-         | _       => None[media_type]
-         endmatch 
-       | _ => None[media_type]
-       endmatch
-     ;
-   
-   //instance Tord[test_mime_subtype] {
-   //    fun eq: t * t -> bool = "$1==$2";
-   //}
-   //open Tord[text_mime_subtype];
-   open Tord[mime_type];
-   /*
-   Other unimplemented types:
-   Type message
-   message/http: Defined in RFC 2616
-   message/imdn+xml: IMDN Instant Message Disposition Notification; Defined in RFC 5438
-   message/partial: Email; Defined in RFC 2045 and RFC 2046
-   message/rfc822: Email; EML files, MIME files, MHT files, MHTML files; Defined in RFC 2045 and RFC 2046
-   Type model
-   For 3D models.
-   model/example: Defined in RFC 4735
-   model/iges: IGS files, IGES files; Defined in RFC 2077
-   model/mesh: MSH files, MESH files; Defined in RFC 2077, SILO files
-   model/vrml: WRL files, VRML files; Defined in RFC 2077
-   model/x3d+binary: X3D ISO standard for representing 3D computer graphics, X3DB binary files
-   model/x3d+vrml: X3D ISO standard for representing 3D computer graphics, X3DV VRML files
-   model/x3d+xml: X3D ISO standard for representing 3D computer graphics, X3D XML files
-   Type multipart
-   Type video
-   For video.
-   video/mpeg: MPEG-1 video with multiplexed audio; Defined in RFC 2045 and RFC 2046
-   video/mp4: MP4 video; Defined in RFC 4337
-   video/ogg: Ogg Theora or other video (with audio); Defined in RFC 5334
-   video/quicktime: QuickTime video; Registered[10]
-   video/webm: WebM Matroska-based open media format
-   video/x-matroska: Matroska open media format
-   video/x-ms-wmv: Windows Media Video; Documented in Microsoft KB 288102
-   Type vnd
-   For vendor-specific files.
-   application/vnd.oasis.opendocument.text: OpenDocument Text; Registered[11]
-   application/vnd.oasis.opendocument.spreadsheet: OpenDocument Spreadsheet; Registered[12]
-   application/vnd.oasis.opendocument.presentation: OpenDocument Presentation; Registered[13]
-   application/vnd.oasis.opendocument.graphics: OpenDocument Graphics; Registered[14]
-   application/vnd.ms-excel: Microsoft Excel files
-   application/vnd.openxmlformats-officedocument.spreadsheetml.sheet: Microsoft Excel 2007 files
-   application/vnd.ms-powerpoint: Microsoft Powerpoint files
-   application/vnd.openxmlformats-officedocument.presentationml.presentation: Microsoft Powerpoint 2007 files
-   application/msword: Microsoft Word files
-   application/vnd.openxmlformats-officedocument.wordprocessingml.document: Microsoft Word 2007 files
-   application/vnd.mozilla.xul+xml: Mozilla XUL files
-   application/vnd.google-earth.kml+xml: KML files (e.g. for Google Earth)
-   Type x
-   For non-standard files.
-   application/x-www-form-urlencoded Form Encoded Data; Documented in HTML 4.01 Specification, Section 17.13.4.1
-   application/x-dvi: device-independent document in DVI format
-   application/x-latex: LaTeX files
-   application/x-font-ttf: TrueType Font No registered MIME type, but this is the most commonly used
-   application/x-shockwave-flash: Adobe Flash files for example with the extension .swf
-   application/x-stuffit: StuffIt archive files
-   application/x-rar-compressed: RAR archive files
-   application/x-tar: Tarball files
-   text/x-gwt-rpc: GoogleWebToolkit data
-   text/x-jquery-tmpl: jQuery template data
-   application/x-javascript:
-   application/x-deb: deb_(file_format), a software package format used by the Debian project
-   [edit]Type x-pkcs
-   For PKCS standard files.
-   application/x-pkcs12: p12 files
-   application/x-pkcs12: pfx files
-   application/x-pkcs7-certificates: p7b files
-   application/x-pkcs7-certificates: spc files
-   application/x-pkcs7-certreqresp: p7r files
-   application/x-pkcs7-mime: p7c files
-   application/x-pkcs7-mime: p7m files
-   application/x-pkcs7-signature: p7s files
-   */
-   }
-   
+    
+    fun mime_type_from_file(file:string) =>
+      match rev(split(file,'.')) with
+      | Cons(hd,_) => mime_type_from_extension hd
+      | _ => text plain
+      endmatch;
+  
+    fun mime_type_from_extension: string -> mime_type =
+      | "atom" => application atom_PLUS_xml 
+      | "ecma" => application ecmascript 
+      | "json" => application json 
+      | "js" => application javascript 
+      | "application/octet-stream" => application octet_DASH_stream 
+      | "ogg" => application ogg 
+      | "ogx" => application ogg 
+      | "pdf" => application pdf 
+      | "ps" => application postscript 
+      | "eps" => application postscript 
+      | "ai" => application postscript 
+      | "xhtml" => application xhtml_PLUS_xml 
+      | "xht" => application xhtml_PLUS_xml 
+      | "dtd" => application xml_DASH_dtd 
+      | "xop" => application xop_PLUS_xml 
+      | "zip" => application zip 
+      | "x-gzip" => application x_DASH_gzip
+      | "au" => audio basic
+      | "snd" => audio basic
+      | "mp4a" => audio mp4
+      | "mpega" => audio mpeg
+      | "mpga" => audio mpeg
+      | "mp2a" => audio mpeg
+      | "mp3a" => audio mpeg
+      | "mp4a" => audio mpeg
+      | "mp2" => audio mpeg
+      | "mp3" => audio mpeg
+      | "ogg" => audio ogg1
+      | "oga" => audio ogg1
+      | "spx" => audio ogg1
+      | "wma" => audio x_DASH_ms_DASH_wma
+      | "wax" => audio x_DASH_ms_DASH_wax
+      | "ra" => audio vnd_DOT_rn_DASH_realaudio
+      | "wav" => audio vnd_DOT_wave
+      | "webma" => audio webm 
+      | "gif" => image gif 
+      | "image/jpeg" => image jpeg 
+      | "jpg" => image jpeg 
+      | "pjpeg" => image pjpeg 
+      | "png" => image png 
+      | "svg" => image svg_PLUS_xml 
+      | "tiff" => image tiff 
+      | "css" => text css 
+      | "csv" => text csv 
+      | "html" => text html 
+      | "htm" => text html 
+      | "shtm" => text html 
+      | "text/plain" => text plain 
+      | "asc" => text plain 
+      | "conf" => text plain 
+      | "def" => text plain 
+      | "diff" => text plain 
+      | "in" => text plain 
+      | "list" => text plain 
+      | "log" => text plain 
+      | "pot" => text plain 
+      | "text" => text plain 
+      | "txt" => text plain 
+      | _ => text plain
+    ;
+  
+          
+  instance Eq[mime_type]  {
+    fun == : mime_type * mime_type -> bool = "$1==$2";
+  }
+  
+  
+    fun parse_media_type (s:string):opt[media_type] =>
+      match split( s, ";") with
+      | Cons(h,t) => 
+        match from_str(h) with
+        | Some m => Some (m,parse_attribute_list(t))
+        | _       => None[media_type]
+        endmatch 
+      | _ => None[media_type]
+      endmatch
+    ;
+  
+  //instance Tord[test_mime_subtype] {
+  //    fun eq: t * t -> bool = "$1==$2";
+  //}
+  //open Tord[text_mime_subtype];
+  open Tord[mime_type];
+  /*
+  Other unimplemented types:
+  Type message
+  message/http: Defined in RFC 2616
+  message/imdn+xml: IMDN Instant Message Disposition Notification; Defined in RFC 5438
+  message/partial: Email; Defined in RFC 2045 and RFC 2046
+  message/rfc822: Email; EML files, MIME files, MHT files, MHTML files; Defined in RFC 2045 and RFC 2046
+  Type model
+  For 3D models.
+  model/example: Defined in RFC 4735
+  model/iges: IGS files, IGES files; Defined in RFC 2077
+  model/mesh: MSH files, MESH files; Defined in RFC 2077, SILO files
+  model/vrml: WRL files, VRML files; Defined in RFC 2077
+  model/x3d+binary: X3D ISO standard for representing 3D computer graphics, X3DB binary files
+  model/x3d+vrml: X3D ISO standard for representing 3D computer graphics, X3DV VRML files
+  model/x3d+xml: X3D ISO standard for representing 3D computer graphics, X3D XML files
+  Type multipart
+  Type video
+  For video.
+  video/mpeg: MPEG-1 video with multiplexed audio; Defined in RFC 2045 and RFC 2046
+  video/mp4: MP4 video; Defined in RFC 4337
+  video/ogg: Ogg Theora or other video (with audio); Defined in RFC 5334
+  video/quicktime: QuickTime video; Registered[10]
+  video/webm: WebM Matroska-based open media format
+  video/x-matroska: Matroska open media format
+  video/x-ms-wmv: Windows Media Video; Documented in Microsoft KB 288102
+  Type vnd
+  For vendor-specific files.
+  application/vnd.oasis.opendocument.text: OpenDocument Text; Registered[11]
+  application/vnd.oasis.opendocument.spreadsheet: OpenDocument Spreadsheet; Registered[12]
+  application/vnd.oasis.opendocument.presentation: OpenDocument Presentation; Registered[13]
+  application/vnd.oasis.opendocument.graphics: OpenDocument Graphics; Registered[14]
+  application/vnd.ms-excel: Microsoft Excel files
+  application/vnd.openxmlformats-officedocument.spreadsheetml.sheet: Microsoft Excel 2007 files
+  application/vnd.ms-powerpoint: Microsoft Powerpoint files
+  application/vnd.openxmlformats-officedocument.presentationml.presentation: Microsoft Powerpoint 2007 files
+  application/msword: Microsoft Word files
+  application/vnd.openxmlformats-officedocument.wordprocessingml.document: Microsoft Word 2007 files
+  application/vnd.mozilla.xul+xml: Mozilla XUL files
+  application/vnd.google-earth.kml+xml: KML files (e.g. for Google Earth)
+  Type x
+  For non-standard files.
+  application/x-www-form-urlencoded Form Encoded Data; Documented in HTML 4.01 Specification, Section 17.13.4.1
+  application/x-dvi: device-independent document in DVI format
+  application/x-latex: LaTeX files
+  application/x-font-ttf: TrueType Font No registered MIME type, but this is the most commonly used
+  application/x-shockwave-flash: Adobe Flash files for example with the extension .swf
+  application/x-stuffit: StuffIt archive files
+  application/x-rar-compressed: RAR archive files
+  application/x-tar: Tarball files
+  text/x-gwt-rpc: GoogleWebToolkit data
+  text/x-jquery-tmpl: jQuery template data
+  application/x-javascript:
+  application/x-deb: deb_(file_format), a software package format used by the Debian project
+  [edit]Type x-pkcs
+  For PKCS standard files.
+  application/x-pkcs12: p12 files
+  application/x-pkcs12: pfx files
+  application/x-pkcs7-certificates: p7b files
+  application/x-pkcs7-certificates: spc files
+  application/x-pkcs7-certreqresp: p7r files
+  application/x-pkcs7-mime: p7c files
+  application/x-pkcs7-mime: p7m files
+  application/x-pkcs7-signature: p7s files
+  */
+  }
+  
 
 
 .. code-block:: felix
 
   //[cookie.flx]
-   include "web/low_res_time";
-   
-   class Cookie {
-     open LowResTime;
-     open WebUtil;
-   
-     struct cookie {
-       name:string;
-       value:string;
-       domain:string;
-       path:string;
-       expires:string;
-       secure:bool;
-       http_only:bool;
-     }
-   
-     fun _ctor_cookie (n:string,v:string) = {
-       var c:cookie;c&.name<-n;c&.value<-v;return c;}
-   
-   
-   
-     instance Str[cookie] {
-       fun str (c:cookie) => c.name+"="+c.value+"; "+match c.domain with 
-         |'' => ' ' | d => "Domain="+d+"; " endmatch+
-         match c.path with |'' => ' ' |p => "Path="+p+"; " endmatch+
-         match c.expires with |'' => ' ' |e => " Expires="+e+"; " endmatch+
-         (if c.secure then "Secure; " else " " endif)+
-         (if c.http_only then "HttpOnly;" else "" endif);
-     }
-   
-     fun set_cookie (c:cookie):string*string => ("Set-Cookie",str(c));
-     fun set_cookies (c:list[cookie]):string*string => ("Set-Cookie",
-       fold_left (fun(x:string) (y:string):string => y +"\r"+ x) "" 
-         (map (fun(z:cookie):string => str(z)) c));
-   
-   }
+  include "web/low_res_time";
+  
+  class Cookie {
+    open LowResTime;
+    open WebUtil;
+  
+    struct cookie {
+      name:string;
+      value:string;
+      domain:string;
+      path:string;
+      expires:string;
+      secure:bool;
+      http_only:bool;
+    }
+  
+    fun _ctor_cookie (n:string,v:string) = {
+      var c:cookie;c&.name<-n;c&.value<-v;return c;}
+  
+  
+  
+    instance Str[cookie] {
+      fun str (c:cookie) => c.name+"="+c.value+"; "+match c.domain with 
+        |'' => ' ' | d => "Domain="+d+"; " endmatch+
+        match c.path with |'' => ' ' |p => "Path="+p+"; " endmatch+
+        match c.expires with |'' => ' ' |e => " Expires="+e+"; " endmatch+
+        (if c.secure then "Secure; " else " " endif)+
+        (if c.http_only then "HttpOnly;" else "" endif);
+    }
+  
+    fun set_cookie (c:cookie):string*string => ("Set-Cookie",str(c));
+    fun set_cookies (c:list[cookie]):string*string => ("Set-Cookie",
+      fold_left (fun(x:string) (y:string):string => y +"\r"+ x) "" 
+        (map (fun(z:cookie):string => str(z)) c));
+  
+  }
 
 
 .. code-block:: felix
 
   //[low_res_time.flx]
-   class LowResTime
-   {
-     open C_hack;
-     
-     requires C89_headers::time_h;
-   
-     type time_t = "time_t";
-     fun +: time_t*time_t -> time_t = "$1+$2";
-     fun +: time_t*int -> time_t = "$1+(time_t)$2";
-   
-     //$ Current time
-     proc time: &time_t = "time($1);";
-   
-     //$ Current time
-     ctor time_t () = {
-       var time_v:time_t;
-       time(&time_v);
-       return time_v;
-     }
+  class LowResTime
+  {
+    open C_hack;
     
-   
-     // cast integer (in second since epoch) to time
-     ctor time_t: !ints = "(time_t)$1:cast" is cast;
-   
-     cstruct tm {
-       tm_sec:int;         /* seconds */
-       tm_min:int;         /* minutes */
-       tm_hour:int;        /* hours */
-       tm_mday:int;        /* day of the month */
-       tm_mon:int;         /* month */
-       tm_year:int;        /* year */
-       tm_wday:int;        /* day of the week */
-       tm_yday:int;        /* day in the year */
-       tm_isdst:int;       /* daylight saving time */
-     };
-   
-     
-   if PLAT_WIN32 do
-     private proc gmtime:&time_t * &tm = "gmtime_s($2,$1);";
-   else
-     private proc gmtime:&time_t * &tm = "gmtime_r($1,$2);";
-   done
-   
-     fun gmtime (var t:time_t) :tm =
-     {
-       var atm : tm; gmtime (&t, &atm);
-       return atm;
-     }
-   
-   if PLAT_WIN32 do
-     private proc localtime:&time_t * &tm = "localtime_s($2,$1);";
-   else
-     private proc localtime:&time_t * &tm = "localtime_r($1,$2);";
-   done
-     fun localtime (var t:time_t) :tm =
-     {
-       var atm : tm; localtime (&t, &atm);
-       return atm;
-     }
-   
-     header """
-       string asctime_helper(struct tm const * ti);
-     """;
-   
-   if PLAT_WIN32 do
-     body """
-       string asctime_helper(struct tm const * ti) {
-         int len = 64;
-         char *fmted = (char*) ::std::malloc(sizeof(char)*64);
-         asctime_s(fmted,64,ti);
-         string s = string(fmted);
-         ::std::free(fmted);
-         return s;
-       }
-     """;
-   else
-     body """
-       string asctime_helper(struct tm const * ti) {
-         int len = 64;
-         char *fmted = (char*) ::std::malloc(sizeof(char)*64);
-         asctime_r(ti,fmted);
-         string s = string(fmted);
-         ::std::free(fmted);
-         return s;
-       }
-     """;
-   done
-   
-     private fun asctime:&tm -> string = "asctime_helper($1)";
-     fun asctime (var t:tm) : string => asctime (&t);
-   
-     header """
-       string strftime_helper(const char *pat,    const struct tm * ti);
-     """;
-   
-     body """
-       string strftime_helper(const char *pat,    const struct tm * ti) {
-         int len = 64;
-         char *fmted = (char*) ::std::malloc(sizeof(char)*64);
-         strftime(fmted,len,pat,ti);
-         string s = string(fmted);
-         ::std::free(fmted);
-         return s;
-       }
-     """;
-   
-     private fun strftime: string * &tm -> string = "strftime_helper(($1.c_str()),$2)";
-     fun strftime (fmt: string, var t: tm ) :string = 
-     {
-        return strftime (fmt, &t); 
-     }
-   
-     fun rfc1123_date (dt:&tm) => strftime("%a, %d %b %Y %H:%M:%S %Z",dt);
-     fun rfc1123_date (dt:tm) => strftime("%a, %d %b %Y %H:%M:%S %Z",dt);
-   
-     fun rfc1123_date () = {
-       var time_epoch_seconds = time_t();
-       var tm_struct : tm;
-       gmtime(&time_epoch_seconds, &tm_struct);
-       return rfc1123_date(&tm_struct);
-     }
-   
-     fun hour() => 3600;
-   
-     fun day() => 86400;
-     fun expires_seconds_from_now(seconds:int) ={ 
-       var time_epoch_seconds = time_t() +seconds;
-       var tm_struct : tm;
-       gmtime(&time_epoch_seconds, &tm_struct);
-      return rfc1123_date (&tm_struct);
+    requires C89_headers::time_h;
+  
+    type time_t = "time_t";
+    fun +: time_t*time_t -> time_t = "$1+$2";
+    fun +: time_t*int -> time_t = "$1+(time_t)$2";
+  
+    //$ Current time
+    proc time: &time_t = "time($1);";
+  
+    //$ Current time
+    ctor time_t () = {
+      var time_v:time_t;
+      time(&time_v);
+      return time_v;
     }
    
-   }
-   
+  
+    // cast integer (in second since epoch) to time
+    ctor time_t: !ints = "(time_t)$1:cast" is cast;
+  
+    cstruct tm {
+      tm_sec:int;         /* seconds */
+      tm_min:int;         /* minutes */
+      tm_hour:int;        /* hours */
+      tm_mday:int;        /* day of the month */
+      tm_mon:int;         /* month */
+      tm_year:int;        /* year */
+      tm_wday:int;        /* day of the week */
+      tm_yday:int;        /* day in the year */
+      tm_isdst:int;       /* daylight saving time */
+    };
+  
     
+  if PLAT_WIN32 do
+    private proc gmtime:&time_t * &tm = "gmtime_s($2,$1);";
+  else
+    private proc gmtime:&time_t * &tm = "gmtime_r($1,$2);";
+  done
+  
+    fun gmtime (var t:time_t) :tm =
+    {
+      var atm : tm; gmtime (&t, &atm);
+      return atm;
+    }
+  
+  if PLAT_WIN32 do
+    private proc localtime:&time_t * &tm = "localtime_s($2,$1);";
+  else
+    private proc localtime:&time_t * &tm = "localtime_r($1,$2);";
+  done
+    fun localtime (var t:time_t) :tm =
+    {
+      var atm : tm; localtime (&t, &atm);
+      return atm;
+    }
+  
+    header """
+      string asctime_helper(struct tm const * ti);
+    """;
+  
+  if PLAT_WIN32 do
+    body """
+      string asctime_helper(struct tm const * ti) {
+        int len = 64;
+        char *fmted = (char*) ::std::malloc(sizeof(char)*64);
+        asctime_s(fmted,64,ti);
+        string s = string(fmted);
+        ::std::free(fmted);
+        return s;
+      }
+    """;
+  else
+    body """
+      string asctime_helper(struct tm const * ti) {
+        int len = 64;
+        char *fmted = (char*) ::std::malloc(sizeof(char)*64);
+        asctime_r(ti,fmted);
+        string s = string(fmted);
+        ::std::free(fmted);
+        return s;
+      }
+    """;
+  done
+  
+    private fun asctime:&tm -> string = "asctime_helper($1)";
+    fun asctime (var t:tm) : string => asctime (&t);
+  
+    header """
+      string strftime_helper(const char *pat,    const struct tm * ti);
+    """;
+  
+    body """
+      string strftime_helper(const char *pat,    const struct tm * ti) {
+        int len = 64;
+        char *fmted = (char*) ::std::malloc(sizeof(char)*64);
+        strftime(fmted,len,pat,ti);
+        string s = string(fmted);
+        ::std::free(fmted);
+        return s;
+      }
+    """;
+  
+    private fun strftime: string * &tm -> string = "strftime_helper(($1.c_str()),$2)";
+    fun strftime (fmt: string, var t: tm ) :string = 
+    {
+       return strftime (fmt, &t); 
+    }
+  
+    fun rfc1123_date (dt:&tm) => strftime("%a, %d %b %Y %H:%M:%S %Z",dt);
+    fun rfc1123_date (dt:tm) => strftime("%a, %d %b %Y %H:%M:%S %Z",dt);
+  
+    fun rfc1123_date () = {
+      var time_epoch_seconds = time_t();
+      var tm_struct : tm;
+      gmtime(&time_epoch_seconds, &tm_struct);
+      return rfc1123_date(&tm_struct);
+    }
+  
+    fun hour() => 3600;
+  
+    fun day() => 86400;
+    fun expires_seconds_from_now(seconds:int) ={ 
+      var time_epoch_seconds = time_t() +seconds;
+      var tm_struct : tm;
+      gmtime(&time_epoch_seconds, &tm_struct);
+     return rfc1123_date (&tm_struct);
+   }
+  
+  }
+  
+   
 
 
 .. code-block:: felix
 
   //[json.flx]
-   open class Json 
-   {
-     union Jvalue = 
-     | Jstring of string
-     | Jnumber of string
-     | Jdictionary of list[Jpair]
-     | Jarray of list [Jvalue]
-     | Jname of string
-     ;
-     typedef Jpair = Jvalue * Jvalue;
-   
-     fun str (s:Jvalue, v:Jvalue) : string => str s + ': ' + str v;
-   
-     fun str (v: Jvalue) : string => match v with
-     | Jstring s => '"' + s + '"' // hack, ignores quoting rules
-     | Jnumber i => i
-     | Jdictionary d => "{" + cat ", " (map str of (Jpair) d) + "}"
-     | Jarray a => "[" + cat ", " (map str of (Jvalue) a) + "]"
-     | Jname a => a
-     endmatch
-     ;
-   
-     union ParseResult =
-     | Good of Jvalue
-     | Bad of int
-     ;
-   
-     fun parse_json(s:string): ParseResult = {
-       var i = skip_white s 0;
-       def i, var v = parse_value s i;
-       i = skip_white s i;
-       if s.[i] != "".char do
-         return Bad i;
-       else
-         return v;
-       done
-     }
-   
-     private fun skip_white (s:string) (var i:int) = {
-       while s.[i] in " \t\r\n" do ++i; done
-       return i;
-     }
-   
-     private fun parse_value (s:string) (i:int): int * ParseResult =>
-       if s.[i] in "-0123456789" then parse_number s i
-       elif s.[i] == '"'.char then parse_string s (i+1)
-       elif s.[i] == "{".char then parse_dictionary s (i+1)
-       elif s.[i] ==  "[".char then parse_array s (i+1)
-       elif s.[i] in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" then parse_name s i
-       else i, Bad i
-       endif
-     ;
-   
-     private fun parse_name (s:string) (var i:int) = {
-       var j = s.[i].string;
-       ++i; 
-       while s.[i] in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_" do
-          j += s.[i];
-          ++i;
-       done
-       if j in ("true","false","null") do
-         return i,Good (Jname j);
-       else
-         return i, Bad i;
-       done
-     }
-   
-     private fun parse_number (s:string) (var i:int) = {
-       var j = "";
-   
-       // optional leading sign
-       if s.[i] == "-".char do 
-         j += s.[i]; 
-         ++i;
-       done
-   
-       // zero integral part
-       if s.[i] == "0".char do
-         j+= s.[i];
-         ++i;
-         goto point;
-       done
-   
-       // nonzero integral part
-       if s.[i] in "123456789" do
+  open class Json 
+  {
+    union Jvalue = 
+    | Jstring of string
+    | Jnumber of string
+    | Jdictionary of list[Jpair]
+    | Jarray of list [Jvalue]
+    | Jname of string
+    ;
+    typedef Jpair = Jvalue * Jvalue;
+  
+    fun str (s:Jvalue, v:Jvalue) : string => str s + ': ' + str v;
+  
+    fun str (v: Jvalue) : string => match v with
+    | Jstring s => '"' + s + '"' // hack, ignores quoting rules
+    | Jnumber i => i
+    | Jdictionary d => "{" + cat ", " (map str of (Jpair) d) + "}"
+    | Jarray a => "[" + cat ", " (map str of (Jvalue) a) + "]"
+    | Jname a => a
+    endmatch
+    ;
+  
+    union ParseResult =
+    | Good of Jvalue
+    | Bad of int
+    ;
+  
+    fun parse_json(s:string): ParseResult = {
+      var i = skip_white s 0;
+      def i, var v = parse_value s i;
+      i = skip_white s i;
+      if s.[i] != "".char do
+        return Bad i;
+      else
+        return v;
+      done
+    }
+  
+    private fun skip_white (s:string) (var i:int) = {
+      while s.[i] in " \t\r\n" do ++i; done
+      return i;
+    }
+  
+    private fun parse_value (s:string) (i:int): int * ParseResult =>
+      if s.[i] in "-0123456789" then parse_number s i
+      elif s.[i] == '"'.char then parse_string s (i+1)
+      elif s.[i] == "{".char then parse_dictionary s (i+1)
+      elif s.[i] ==  "[".char then parse_array s (i+1)
+      elif s.[i] in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" then parse_name s i
+      else i, Bad i
+      endif
+    ;
+  
+    private fun parse_name (s:string) (var i:int) = {
+      var j = s.[i].string;
+      ++i; 
+      while s.[i] in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_" do
          j += s.[i];
          ++i;
-       else 
-         goto bad;
-       done
-   
-       // rest of integral part
-       while s.[i] in "0123456789" do
-          j += s.[i];
-          ++i;
-       done
-   
-   point:>
-       if s.[i] != ".".char goto exponent;
-       j += s.[i];
-       ++i;
-   
-   fraction:>
-       if s.[i] in "0123456789" do
-         while s.[i] in "0123456789" do
-            j += s.[i];
-            ++i;
-         done
-       else
-         goto bad;
-       done
-   
-   exponent:>
-       if s.[i] in "eE" do
+      done
+      if j in ("true","false","null") do
+        return i,Good (Jname j);
+      else
+        return i, Bad i;
+      done
+    }
+  
+    private fun parse_number (s:string) (var i:int) = {
+      var j = "";
+  
+      // optional leading sign
+      if s.[i] == "-".char do 
+        j += s.[i]; 
+        ++i;
+      done
+  
+      // zero integral part
+      if s.[i] == "0".char do
+        j+= s.[i];
+        ++i;
+        goto point;
+      done
+  
+      // nonzero integral part
+      if s.[i] in "123456789" do
+        j += s.[i];
+        ++i;
+      else 
+        goto bad;
+      done
+  
+      // rest of integral part
+      while s.[i] in "0123456789" do
          j += s.[i];
          ++i;
-       else
-         goto good;
-       done
-   
-       // sign of exponent
-       if s.[i] in "+-" do
-         j += s.[i];
-         ++i;
-       done
-   
-       // exponent value
-       if s.[i] in "0123456789" do
-         while s.[i] in "0123456789" do
-         j += s.[i];
-         ++i;
-         done
-       else
-         goto bad;
-       done
-   good:>
-       return i,Good (Jnumber j);
-   bad:>
-       return i, Bad i;
-     }
-   
-     private fun parse_string (s:string) (var i:int) = {
-       var r = "";
-   ordinary:>
-       while s.[i] != "".char and s.[i] != '"'.char and s.[i] != "\\".char do
-         if s.[i].ord < 32 goto bad; // control chars are not allowed
-         r += s.[i];
-         ++i;
-       done
-   
-       if s.[i] == '"'.char do // closing quote
-         ++i;
-         goto good;
-       elif s.[i] == "\\".char do // escape
-         r += s.[i];
-         ++i;
-         if s.[i] in '"\\/bfnrt' do // one char escape code
-           r += s.[i];
+      done
+  
+  point:>
+      if s.[i] != ".".char goto exponent;
+      j += s.[i];
+      ++i;
+  
+  fraction:>
+      if s.[i] in "0123456789" do
+        while s.[i] in "0123456789" do
+           j += s.[i];
            ++i;
-           goto ordinary; 
-         elif s.[i] == "u".char do // hex escape
-           r += s.[i];
-           ++i;
-           if s.[i] in "0123456789ABCDEFabcdef" do r += s.[i]; ++i; else goto bad; done
-           if s.[i] in "0123456789ABCDEFabcdef" do r += s.[i]; ++i; else goto bad; done
-           if s.[i] in "0123456789ABCDEFabcdef" do r += s.[i]; ++i; else goto bad; done
-           if s.[i] in "0123456789ABCDEFabcdef" do r += s.[i]; ++i; else goto bad; done
-           goto ordinary;
-         else
-           goto bad;
-         done
-       else // end of input
-         goto bad;
-       done
-   
-   good:>
-       return i,Good (Jstring r);
-   bad:>
-       return i, Bad i;
-   }
-   
-     private fun parse_dictionary (s:string) (var i:int) = {
-       var elts = #list[Jvalue * Jvalue];
-       i = skip_white s i;
-       while s.[i] != "}".char do
-         if s.[i] == '"'.char do
-           def i, var ms = parse_string s (i+1);
-           match ms with
-           | Good sv => 
-             i = skip_white s i;
-             if s.[i] == ":".char do
-               ++i;
-               i = skip_white s i;
-               def i, var mv = parse_value s i;
-               match mv with 
-               | Good v =>
-                 elts += sv,v;
-                 i = skip_white s i;
-               | Bad j => return i, Bad j;
-               endmatch;
-             else
-               return i, Bad i;
-             done
-             if s.[i] == ",".char do
-               ++i; 
-               i = skip_white s i;
-             elif s.[i] == "}".char do ; 
-             else
-               return i, Bad i;
-             done 
-           | Bad j => return i, Bad j;
-           endmatch;
-         else
-           return i, Bad i;
-         done
-       done
-       ++i;
-       i = skip_white s i;
-       return i, Good (Jdictionary elts);
-     }
-   
-     private fun parse_array (s:string) (var i:int) = {
-       var elts = #list[Jvalue];
-       i = skip_white s i;
-       while s.[i] != "]".char do
-         def i, var mv = parse_value s i;
-         match mv with
-         | Good v => elts += v; 
-           i = skip_white s i;
-           if s.[i] == ",".char do
-             ++i; 
-             i = skip_white s i;
-           elif s.[i] == "]".char do ; 
-           else
-             return i, Bad i;
-           done 
-         | Bad j => return i, Bad j;
-         endmatch;
-       done
-       ++i;
-       i = skip_white s i;
-       return i, Good (Jarray elts);
-     }
-   }
-   
+        done
+      else
+        goto bad;
+      done
+  
+  exponent:>
+      if s.[i] in "eE" do
+        j += s.[i];
+        ++i;
+      else
+        goto good;
+      done
+  
+      // sign of exponent
+      if s.[i] in "+-" do
+        j += s.[i];
+        ++i;
+      done
+  
+      // exponent value
+      if s.[i] in "0123456789" do
+        while s.[i] in "0123456789" do
+        j += s.[i];
+        ++i;
+        done
+      else
+        goto bad;
+      done
+  good:>
+      return i,Good (Jnumber j);
+  bad:>
+      return i, Bad i;
+    }
+  
+    private fun parse_string (s:string) (var i:int) = {
+      var r = "";
+  ordinary:>
+      while s.[i] != "".char and s.[i] != '"'.char and s.[i] != "\\".char do
+        if s.[i].ord < 32 goto bad; // control chars are not allowed
+        r += s.[i];
+        ++i;
+      done
+  
+      if s.[i] == '"'.char do // closing quote
+        ++i;
+        goto good;
+      elif s.[i] == "\\".char do // escape
+        r += s.[i];
+        ++i;
+        if s.[i] in '"\\/bfnrt' do // one char escape code
+          r += s.[i];
+          ++i;
+          goto ordinary; 
+        elif s.[i] == "u".char do // hex escape
+          r += s.[i];
+          ++i;
+          if s.[i] in "0123456789ABCDEFabcdef" do r += s.[i]; ++i; else goto bad; done
+          if s.[i] in "0123456789ABCDEFabcdef" do r += s.[i]; ++i; else goto bad; done
+          if s.[i] in "0123456789ABCDEFabcdef" do r += s.[i]; ++i; else goto bad; done
+          if s.[i] in "0123456789ABCDEFabcdef" do r += s.[i]; ++i; else goto bad; done
+          goto ordinary;
+        else
+          goto bad;
+        done
+      else // end of input
+        goto bad;
+      done
+  
+  good:>
+      return i,Good (Jstring r);
+  bad:>
+      return i, Bad i;
+  }
+  
+    private fun parse_dictionary (s:string) (var i:int) = {
+      var elts = #list[Jvalue * Jvalue];
+      i = skip_white s i;
+      while s.[i] != "}".char do
+        if s.[i] == '"'.char do
+          def i, var ms = parse_string s (i+1);
+          match ms with
+          | Good sv => 
+            i = skip_white s i;
+            if s.[i] == ":".char do
+              ++i;
+              i = skip_white s i;
+              def i, var mv = parse_value s i;
+              match mv with 
+              | Good v =>
+                elts += sv,v;
+                i = skip_white s i;
+              | Bad j => return i, Bad j;
+              endmatch;
+            else
+              return i, Bad i;
+            done
+            if s.[i] == ",".char do
+              ++i; 
+              i = skip_white s i;
+            elif s.[i] == "}".char do ; 
+            else
+              return i, Bad i;
+            done 
+          | Bad j => return i, Bad j;
+          endmatch;
+        else
+          return i, Bad i;
+        done
+      done
+      ++i;
+      i = skip_white s i;
+      return i, Good (Jdictionary elts);
+    }
+  
+    private fun parse_array (s:string) (var i:int) = {
+      var elts = #list[Jvalue];
+      i = skip_white s i;
+      while s.[i] != "]".char do
+        def i, var mv = parse_value s i;
+        match mv with
+        | Good v => elts += v; 
+          i = skip_white s i;
+          if s.[i] == ",".char do
+            ++i; 
+            i = skip_white s i;
+          elif s.[i] == "]".char do ; 
+          else
+            return i, Bad i;
+          done 
+        | Bad j => return i, Bad j;
+        endmatch;
+      done
+      ++i;
+      i = skip_white s i;
+      return i, Good (Jarray elts);
+    }
+  }
+  
 
 
 .. code-block:: felix
 
   //[logger.flx]
-   publish """
-   Extensible Flexible Logger
-   example:
-   /* Creates two log files, my_info.log rolls over when log size exceeds 1024 bytes
-      and is archived 4 times. my_debug.log does not roll over and will grow to infinite size.
-      log messages with log_level INFO are routed to my_info.log.log messages with log level DEBUG
-      are routed to my_debug.log */
-   open Logger;
-   var mylog = logger(simple_logger(
-     Logger::log("log","my.log",size(1024),4ui),   INFO)+
-     simple_logger(Logger::log("log","my_debug.log",size(0),0ui),  DEBUG));
-   mylog(DEBUG,"Debugging enabled");
-   """
-   class Logger {
+  publish """
+  Extensible Flexible Logger
+  example:
+  /* Creates two log files, my_info.log rolls over when log size exceeds 1024 bytes
+     and is archived 4 times. my_debug.log does not roll over and will grow to infinite size.
+     log messages with log_level INFO are routed to my_info.log.log messages with log level DEBUG
+     are routed to my_debug.log */
+  open Logger;
+  var mylog = logger(simple_logger(
+    Logger::log("log","my.log",size(1024),4ui),   INFO)+
+    simple_logger(Logger::log("log","my_debug.log",size(0),0ui),  DEBUG));
+  mylog(DEBUG,"Debugging enabled");
+  """
+  class Logger {
+  
+    open LowResTime;
+  
+    struct log {
+      path:string;
+      name:string;
+      max_size:size;
+      archives:uint;
+    }
+  
+    publish """ Log Level definitions """
+    union log_level = 
+      | INFO
+      | WARNING
+      | ERROR
+      | ACCESS
+      | DEBUG
+      | CUSTOM1
+      | CUSTOM2;
+  
+    publish """ Definition of log_message """
+    typedef log_message = log_level*string; 
+  
+    publish """
+    Container for log handler. handles governs what log messages are sent to handles_fn
+    """  
+    struct log_handler {
+      handles: (log_message)->bool;
+      handler_fn: (log_message) -> void;
+    }
    
-     open LowResTime;
-   
-     struct log {
-       path:string;
-       name:string;
-       max_size:size;
-       archives:uint;
-     }
-   
-     publish """ Log Level definitions """
-     union log_level = 
-       | INFO
-       | WARNING
-       | ERROR
-       | ACCESS
-       | DEBUG
-       | CUSTOM1
-       | CUSTOM2;
-   
-     publish """ Definition of log_message """
-     typedef log_message = log_level*string; 
-   
-     publish """
-     Container for log handler. handles governs what log messages are sent to handles_fn
-     """  
-     struct log_handler {
-       handles: (log_message)->bool;
-       handler_fn: (log_message) -> void;
-     }
+    publish """
+    Simple predicate generator. Returns closusre matching message against curried 
+    parameter handles
+    """
+    fun simple_log_handles [with Eq[log_level]] (handles:log_level) (message:log_message) =>
+      handles == message.(0);
+  
+    publish """
+    Simple log handler implementation. Creates log file give log_path and log_file
+    and returns clousre accepting log_message writeing to files specified
+    """
+    gen simple_log_handler_fn (l:log):(log_message)->void = {
+      var log_handle = open_log(l); //fopen_output (l.path+"/"+l.name);
+      return (proc (message:log_message)  {
+                log_handle = rotate_when_larger_than_max_size(log_handle,l);
+                fprintln (log_handle, "["+log_date()+"]"+" "+to_str(message));
+                fflush(log_handle);
+              });
+    }
     
-     publish """
-     Simple predicate generator. Returns closusre matching message against curried 
-     parameter handles
-     """
-     fun simple_log_handles [with Eq[log_level]] (handles:log_level) (message:log_message) =>
-       handles == message.(0);
-   
-     publish """
-     Simple log handler implementation. Creates log file give log_path and log_file
-     and returns clousre accepting log_message writeing to files specified
-     """
-     gen simple_log_handler_fn (l:log):(log_message)->void = {
-       var log_handle = open_log(l); //fopen_output (l.path+"/"+l.name);
-       return (proc (message:log_message)  {
-                 log_handle = rotate_when_larger_than_max_size(log_handle,l);
-                 fprintln (log_handle, "["+log_date()+"]"+" "+to_str(message));
-                 fflush(log_handle);
-               });
-     }
-     
-     publish """
-     Simple log handler implementation for logging to console.
-     """
-     fun console_log_handler_fn ():(log_message)->void = {
-       return (proc (message:log_message)  {
-                 println ("["+log_date()+"]"+" "+to_str(message));
-               });
-     }
-   
-     publish """
-     Convience log_handler creator for simple logger
-     """ 
-     fun simple_logger (l:log,level:log_level):list[log_handler] =>   
-      list(log_handler ((simple_log_handles(level))  ,
-                   simple_log_handler_fn(l)));
-   
-     publish """
-     Convience log_handler creator for simple console logger
-     """ 
-     fun console_logger (level:log_level):list[log_handler] =>   
-      list(log_handler ((simple_log_handles(level))  ,
-                         console_log_handler_fn()));
-   
-   
-     publish """
-     Generates logger handle used for sending messages to defined loggers.
-     Accepts a list of log_handler and returns a closure accepting log_message
-     writing to matching log handler
-     """
-     fun logger(handlers:list[log_handler]):log_message->void =  {
-       var channel = mk_schannel[log_message]();
-       spawn_fthread (listener(channel,handlers));
-       return sender(channel);
-     }
-   
-     publish  """Log writer runs as fthread"""
-     private proc listener(chan:schannel[log_message],log_handlers:list[log_handler]) (){
-       while true do 
-         var log_req:log_message = read chan;
-         iter (proc (handler:log_handler) {
-           if handler.handles log_req do
-             handler.handler_fn(log_req);
-           done
-         }) log_handlers;
-       done
-       return;
-     }
-   
-     private proc sender (log_channel:schannel[log_message]) (message:log_message) {
-       write (log_channel,message);
-     }
-   
-     instance Str[log_level] {
-       fun str : log_level ->string =
-         | #INFO => "[INFO]"
-         | #WARNING  => "[WARNING]"
-         | #ERROR  => "[ERROR]"
-         | #ACCESS => "[ACCESS]"
-         | #DEBUG => "[DEBUG]"
-         | #CUSTOM1 => "[CUSTOM1]"
-         | #CUSTOM2 => "[CUSTOM2]";
-     }
-   
-     
-     instance Eq[log_level]  {
-       fun == : log_level * log_level -> bool = "$1==$2";
-     }
-   
-     fun to_str (m:log_message):string  =>
-          str(m.(0))+"\t"+m.(1);
-   
-     fun log_date_fmt (dt:tm) => strftime("%d/%b/%Y:%H:%M:%S %Z",dt);
-   
-     fun log_date () = {
-       var time_epoch_seconds = time_t();
-       val tm_struct =  gmtime(time_epoch_seconds);
-       return log_date_fmt(tm_struct);
-     }
-   
-     fun open_log(l:log):ofile = {
-       val log_file = l.path+"/"+l.name;
-       if (FileStat::fileexists log_file) and l.archives > 0ui do
-         l.rotate();
-       done
-       var log_handle = fopen_output (log_file);
-       if not valid log_handle do
-         eprintln("Unable to open log at "+log_file+".\nLogging to console instead.");
-         return stdout;
-       else
-         return log_handle;
-       done
-     }
-   
-   
-     proc rotate(l:log) {
-       val log_file = l.path+"/"+l.name;
-       if FileStat::fileexists log_file do
-         var last ="";
-         for var i in l.archives downto 1ui  do
-           val rlog =  log_file+"."+str(i) ;
-           if FileStat::fileexists rlog and last != "" do
-             if 0 != (FileSystem::rename_file (rlog, (log_file+"."+str(i+1ui)))) do
-               eprintln("Unable to rotate log "+rlog+" to "+log_file+"."+str(i+1ui));
-             done
-           done
-           last = rlog;
-         done
-         if 0 != (FileSystem::rename_file (log_file,(log_file+".1"))) do
-           eprintln("Unable to rotate log "+log_file+" to "+log_file+".1");
-         done
-       done
-     }
-   
-     fun rotate_when_larger_than_max_size(handle:ofile,l:log) = {
-       if  l.max_size > size(0) and fsize(l.path+"/"+l.name) > l.max_size do
-          if valid(handle) do
-            fclose(handle);
+    publish """
+    Simple log handler implementation for logging to console.
+    """
+    fun console_log_handler_fn ():(log_message)->void = {
+      return (proc (message:log_message)  {
+                println ("["+log_date()+"]"+" "+to_str(message));
+              });
+    }
+  
+    publish """
+    Convience log_handler creator for simple logger
+    """ 
+    fun simple_logger (l:log,level:log_level):list[log_handler] =>   
+     list(log_handler ((simple_log_handles(level))  ,
+                  simple_log_handler_fn(l)));
+  
+    publish """
+    Convience log_handler creator for simple console logger
+    """ 
+    fun console_logger (level:log_level):list[log_handler] =>   
+     list(log_handler ((simple_log_handles(level))  ,
+                        console_log_handler_fn()));
+  
+  
+    publish """
+    Generates logger handle used for sending messages to defined loggers.
+    Accepts a list of log_handler and returns a closure accepting log_message
+    writing to matching log handler
+    """
+    fun logger(handlers:list[log_handler]):log_message->void =  {
+      var channel = mk_schannel[log_message]();
+      spawn_fthread (listener(channel,handlers));
+      return sender(channel);
+    }
+  
+    publish  """Log writer runs as fthread"""
+    private proc listener(chan:schannel[log_message],log_handlers:list[log_handler]) (){
+      while true do 
+        var log_req:log_message = read chan;
+        iter (proc (handler:log_handler) {
+          if handler.handles log_req do
+            handler.handler_fn(log_req);
           done
-          return open_log(l);
-       else
-         return handle;
-       done
-     }
-   
-     proc fsize_: string*&size = """
-       {struct stat st;
-        stat($1.c_str(), &st);
-        *$2 = st.st_size;}
-     """;
-   
-     gen fsize(name:string):size = {
-       var sz:size;
-       fsize_(name,&sz);
-       return sz;
-     }
-   }
-   
+        }) log_handlers;
+      done
+      return;
+    }
+  
+    private proc sender (log_channel:schannel[log_message]) (message:log_message) {
+      write (log_channel,message);
+    }
+  
+    instance Str[log_level] {
+      fun str : log_level ->string =
+        | #INFO => "[INFO]"
+        | #WARNING  => "[WARNING]"
+        | #ERROR  => "[ERROR]"
+        | #ACCESS => "[ACCESS]"
+        | #DEBUG => "[DEBUG]"
+        | #CUSTOM1 => "[CUSTOM1]"
+        | #CUSTOM2 => "[CUSTOM2]";
+    }
+  
+    
+    instance Eq[log_level]  {
+      fun == : log_level * log_level -> bool = "$1==$2";
+    }
+  
+    fun to_str (m:log_message):string  =>
+         str(m.(0))+"\t"+m.(1);
+  
+    fun log_date_fmt (dt:tm) => strftime("%d/%b/%Y:%H:%M:%S %Z",dt);
+  
+    fun log_date () = {
+      var time_epoch_seconds = time_t();
+      val tm_struct =  gmtime(time_epoch_seconds);
+      return log_date_fmt(tm_struct);
+    }
+  
+    fun open_log(l:log):ofile = {
+      val log_file = l.path+"/"+l.name;
+      if (FileStat::fileexists log_file) and l.archives > 0ui do
+        l.rotate();
+      done
+      var log_handle = fopen_output (log_file);
+      if not valid log_handle do
+        eprintln("Unable to open log at "+log_file+".\nLogging to console instead.");
+        return stdout;
+      else
+        return log_handle;
+      done
+    }
+  
+  
+    proc rotate(l:log) {
+      val log_file = l.path+"/"+l.name;
+      if FileStat::fileexists log_file do
+        var last ="";
+        for var i in l.archives downto 1ui  do
+          val rlog =  log_file+"."+str(i) ;
+          if FileStat::fileexists rlog and last != "" do
+            if 0 != (FileSystem::rename_file (rlog, (log_file+"."+str(i+1ui)))) do
+              eprintln("Unable to rotate log "+rlog+" to "+log_file+"."+str(i+1ui));
+            done
+          done
+          last = rlog;
+        done
+        if 0 != (FileSystem::rename_file (log_file,(log_file+".1"))) do
+          eprintln("Unable to rotate log "+log_file+" to "+log_file+".1");
+        done
+      done
+    }
+  
+    fun rotate_when_larger_than_max_size(handle:ofile,l:log) = {
+      if  l.max_size > size(0) and fsize(l.path+"/"+l.name) > l.max_size do
+         if valid(handle) do
+           fclose(handle);
+         done
+         return open_log(l);
+      else
+        return handle;
+      done
+    }
+  
+    proc fsize_: string*&size = """
+      {struct stat st;
+       stat($1.c_str(), &st);
+       *$2 = st.st_size;}
+    """;
+  
+    gen fsize(name:string):size = {
+      var sz:size;
+      fsize_(name,&sz);
+      return sz;
+    }
+  }
+  
 
 
 .. code-block:: felix
 
   //[simple_config.flx]
-   publish """
-   Simple config file reader. Splits key value pairs seperated by the equals character.
-   Skips lines where first non-space character is the # character. Max configuration file size 
-   is 65535 bytes
-   
-   Example input:
-     # Sample configuration file
-     delay         =    0.05
-     port          =    1234
-     document_root =  ./html
-   
-   Example code:
-     open SimpleConfig;
-     if System::argc > 0 do
-       var arg = System::argv 1;
-       println$ "config file:" + arg;
-       iter (proc (kv:string*string) { println(kv.(0)+":"+kv.(1)); })  
-            (read_config(System::argv 1));
-     else
-       println("No config file specified");
-     done
-   """
-   
-   class SimpleConfig {
-     requires header '#include <sys/stat.h>';
-     open Assoc_list;
-     open Csv;
-   
-     typedef configuration = assoc_list[string,string];
-   
-     publish """
-     Reads configuration file and returns associative list
-     """
-     fun read_config(config_file:string):configuration = {
-       val fsz =  fsize(config_file);
-       var config = Empty[string^2];
-       if fsz > size(0) and fsz < size(65535) do 
-         val handle = fopen_input config_file;
-         if valid handle do
-           val config_text = load(handle);
-           fclose(handle);
-           println$ "Loaded config file " + config_file;
-           config = config + read_config_text(config_text);
-         done
-       done
-       return config;
-     }
-     
-     fun read_config_text(config_text:string):configuration ={
-       print$ "[Config Data]\n" + config_text+"[End Config Data]\n";
-       var config = Cons(('INSTALL_ROOT',#Config::std_config.FLX_SHARE_DIR.[to -6]),
-                         Empty[string^2]);
-       iter (proc (line:string) {config = config + xparse(line);})  
-                (split(str(config_text),"\n"));
-       return apply_param_vars(config);
-     }    
-   
-   
-     publish """
-       returns opt param value for given key
-     """
-     fun get_param(params:list[string*string],name:string) =>
-        find (fun (a:string,b:string) => eq(a,b)) params name;
-   
-     publish """
-       return list strings from comma seperated parameter value
-     """
-     fun get_param_list(params:list[string*string],name:string) =>
-       match get_param(params,name) with |Some v => get_csv_values(v) |_ => Empty[string] endmatch;
-     
-     publish """
-        Supports $variables in config files. Uses previously defined paramater keys
-        as $ variables. Only supports first occurance of $variable. Also
-        $INSTALL_ROOT is available nad populated with the value for the felix
-        install root
-     """
-     fun apply_param_vars (par:list[string*string]):list[string*string] ={
-       var kp:string = ""; var vp:string = ""; 
-       return map (fun (k:string,v:string) = {
-         kp = k; vp = v; 
-         iter (proc (k1:string,v1:string) { 
-           kp,vp = match find(vp,k1) with
-             |Some p => (kp, substring(vp,0,(p - 1)) + v1 +
-                             substring(vp,p+int(k1.len),vp.len))
-             |_ => (kp,vp)
-           endmatch;
-         }) par;
-         return (kp,vp);
-       }) par;
-     }
-   
-     fun apply_param_vars_to (par:list[string*string],v:string):string ={
-       var vp:string;
-       vp = v; 
-       iter (proc (k1:string,v1:string) { 
-         vp = match find(vp,k1) with
-             |Some p => substring(vp,0,(p - 1)) + v1 +
-                         substring(vp,p+int(k1.len),vp.len)
-             |_ => vp
-           endmatch;
-         }) par;
-         return vp;
-     }
-   
-     fun apply_param_vars_to (par:list[string*string],l:list[string]):list[string] =>
-       (map (fun (s:string) => apply_param_vars_to (par,s)) (l));
-   
-     private fun xparse(line:string):list[string*string] =>
-       if startswith (strip line) (char '#') then
-         Empty[string*string]
-       else
-         match split_first(line, "=") with 
-           |Some s => list[string*string]((strip(s.(0)),strip(s.(1)))) 
-           |None => Empty[string*string] 
-         endmatch 
-       endif;
-     
-     private fun split_first (x:string, c:string): opt[string*string] ={
-       return match find_first_of (x, c) with
-         | #None => None[string*string]
-         | Some n => Some(strip(x.[to n]),strip(x.[n+1 to]))
-         endmatch
-       ;
-     }
-   
-     private proc fsize_: string*&size = """
-       {struct stat st;
-        stat($1.c_str(), &st);
-        *$2 = st.st_size;}
-     """;
-   
-     private gen fsize(name:string):size = {
-       var sz:size;
-       fsize_(name,&sz);
-       return sz;
-     }
-   }
+  publish """
+  Simple config file reader. Splits key value pairs seperated by the equals character.
+  Skips lines where first non-space character is the # character. Max configuration file size 
+  is 65535 bytes
+  
+  Example input:
+    # Sample configuration file
+    delay         =    0.05
+    port          =    1234
+    document_root =  ./html
+  
+  Example code:
+    open SimpleConfig;
+    if System::argc > 0 do
+      var arg = System::argv 1;
+      println$ "config file:" + arg;
+      iter (proc (kv:string*string) { println(kv.(0)+":"+kv.(1)); })  
+           (read_config(System::argv 1));
+    else
+      println("No config file specified");
+    done
+  """
+  
+  class SimpleConfig {
+    requires header '#include <sys/stat.h>';
+    open Assoc_list;
+    open Csv;
+  
+    typedef configuration = assoc_list[string,string];
+  
+    publish """
+    Reads configuration file and returns associative list
+    """
+    fun read_config(config_file:string):configuration = {
+      val fsz =  fsize(config_file);
+      var config = Empty[string^2];
+      if fsz > size(0) and fsz < size(65535) do 
+        val handle = fopen_input config_file;
+        if valid handle do
+          val config_text = load(handle);
+          fclose(handle);
+          println$ "Loaded config file " + config_file;
+          config = config + read_config_text(config_text);
+        done
+      done
+      return config;
+    }
+    
+    fun read_config_text(config_text:string):configuration ={
+      print$ "[Config Data]\n" + config_text+"[End Config Data]\n";
+      var config = Cons(('INSTALL_ROOT',#Config::std_config.FLX_SHARE_DIR.[to -6]),
+                        Empty[string^2]);
+      iter (proc (line:string) {config = config + xparse(line);})  
+               (split(str(config_text),"\n"));
+      return apply_param_vars(config);
+    }    
+  
+  
+    publish """
+      returns opt param value for given key
+    """
+    fun get_param(params:list[string*string],name:string) =>
+       find (fun (a:string,b:string) => eq(a,b)) params name;
+  
+    publish """
+      return list strings from comma seperated parameter value
+    """
+    fun get_param_list(params:list[string*string],name:string) =>
+      match get_param(params,name) with |Some v => get_csv_values(v) |_ => Empty[string] endmatch;
+    
+    publish """
+       Supports $variables in config files. Uses previously defined paramater keys
+       as $ variables. Only supports first occurance of $variable. Also
+       $INSTALL_ROOT is available nad populated with the value for the felix
+       install root
+    """
+    fun apply_param_vars (par:list[string*string]):list[string*string] ={
+      var kp:string = ""; var vp:string = ""; 
+      return map (fun (k:string,v:string) = {
+        kp = k; vp = v; 
+        iter (proc (k1:string,v1:string) { 
+          kp,vp = match find(vp,k1) with
+            |Some p => (kp, substring(vp,0,(p - 1)) + v1 +
+                            substring(vp,p+int(k1.len),vp.len))
+            |_ => (kp,vp)
+          endmatch;
+        }) par;
+        return (kp,vp);
+      }) par;
+    }
+  
+    fun apply_param_vars_to (par:list[string*string],v:string):string ={
+      var vp:string;
+      vp = v; 
+      iter (proc (k1:string,v1:string) { 
+        vp = match find(vp,k1) with
+            |Some p => substring(vp,0,(p - 1)) + v1 +
+                        substring(vp,p+int(k1.len),vp.len)
+            |_ => vp
+          endmatch;
+        }) par;
+        return vp;
+    }
+  
+    fun apply_param_vars_to (par:list[string*string],l:list[string]):list[string] =>
+      (map (fun (s:string) => apply_param_vars_to (par,s)) (l));
+  
+    private fun xparse(line:string):list[string*string] =>
+      if startswith (strip line) (char '#') then
+        Empty[string*string]
+      else
+        match split_first(line, "=") with 
+          |Some s => list[string*string]((strip(s.(0)),strip(s.(1)))) 
+          |None => Empty[string*string] 
+        endmatch 
+      endif;
+    
+    private fun split_first (x:string, c:string): opt[string*string] ={
+      return match find_first_of (x, c) with
+        | #None => None[string*string]
+        | Some n => Some(strip(x.[to n]),strip(x.[n+1 to]))
+        endmatch
+      ;
+    }
+  
+    private proc fsize_: string*&size = """
+      {struct stat st;
+       stat($1.c_str(), &st);
+       *$2 = st.st_size;}
+    """;
+  
+    private gen fsize(name:string):size = {
+      var sz:size;
+      fsize_(name,&sz);
+      return sz;
+    }
+  }
 
 
 .. code-block:: felix
 
   //[server_config.flx]
-   include "web/__init__";
-   
-   class ServerConfig {
-     open HTTPHandler;
-     open Logger;
-     open SimpleConfig;
-     open Assoc_list;
-   
-     struct server_config {
-           delay : double;
-           port : int;
-           server_root : string;
-           document_root : string;
-           handlers: list[http_handler];
-           log:log_message->void;
-           params:list[string*string];
-           file_name:string;
-           application:string;
-     };
-   
-     
-   
-     ctor server_config(handlers:list[http_handler]) => 
-       server_config(0.05,8080,".","./html",handlers,
-       logger(console_logger(INFO)+console_logger(ERROR)),Empty[string*string],"","");
-   
-     ctor server_config(handlers:list[http_handler],app:string) => 
-       server_config(0.05,8080,".","./html",handlers,
-       logger(console_logger(INFO)+console_logger(ERROR)),Empty[string*string],"",app);
-   
-   
-     fun basic_server_config(handlers:list[http_handler]):server_config = { 
-       var cfg = server_config(handlers);
-       match enhance_with_config_file( 
-        enhance_with_command_line_arguments(cfg)) with
-       |Some(cfg),_ => return cfg;
-       |None,m => return cfg;
-       endmatch;
-       
-     }
-     
-     fun basic_server_config(handlers:list[http_handler],application:string,default_config:string):server_config = {
-       var config = server_config(handlers,application);
-       match enhance_with_config_file( 
-         enhance_with_command_line_arguments(config)) with
-       |Some(cfg),_ => return cfg;
-       |None,m =>  set_params(&config,read_config_text(default_config));
-                    return config;
-       endmatch;
-   
+  include "web/__init__";
+  
+  class ServerConfig {
+    open HTTPHandler;
+    open Logger;
+    open SimpleConfig;
+    open Assoc_list;
+  
+    struct server_config {
+          delay : double;
+          port : int;
+          server_root : string;
+          document_root : string;
+          handlers: list[http_handler];
+          log:log_message->void;
+          params:list[string*string];
+          file_name:string;
+          application:string;
+    };
+  
+    
+  
+    ctor server_config(handlers:list[http_handler]) => 
+      server_config(0.05,8080,".","./html",handlers,
+      logger(console_logger(INFO)+console_logger(ERROR)),Empty[string*string],"","");
+  
+    ctor server_config(handlers:list[http_handler],app:string) => 
+      server_config(0.05,8080,".","./html",handlers,
+      logger(console_logger(INFO)+console_logger(ERROR)),Empty[string*string],"",app);
+  
+  
+    fun basic_server_config(handlers:list[http_handler]):server_config = { 
+      var cfg = server_config(handlers);
+      match enhance_with_config_file( 
+       enhance_with_command_line_arguments(cfg)) with
+      |Some(cfg),_ => return cfg;
+      |None,m => return cfg;
+      endmatch;
+      
     }
-   
-     fun enhance_with_command_line_arguments(var config:server_config):server_config = {
-       var cfg:server_config = config;
-       var arg = "";
-       var argno = 1;
-       while argno<System::argc do
-         arg = System::argv argno;
-         println$ "ARG=" + arg;
-         if prefix(arg,"--document_root=") do
-           cfg&.document_root <- arg.[16 to];
-         elif prefix(arg,"--server_root=") do
-           cfg&.server_root <- arg.[14 to];
-         elif prefix(arg,"--port=") do
-           cfg&.port <- atoi arg.[7 to];
-         elif prefix(arg,"--config=") do
-           cfg&.file_name <- arg.[9 to];
-           if( not (FileStat::fileexists(cfg.file_name))) do
-             proc_fail("unable to open config file:"+cfg.file_name); 
-           done
-         elif prefix(arg,"--debug") do
-           var dbg_log:list[log_handler];
-           if prefix(arg,"--debug=") do
-             val file:string =  str(arg.[8 to]);
-             dbg_log = simple_logger(Logger::log("log",file,size(0),0ui),DEBUG);
-           else
-             dbg_log = console_logger(DEBUG);
-           done;
-           cfg&.log <- logger(console_logger(INFO)+console_logger(ERROR)+dbg_log);
-         elif prefix(arg,"--help") do
-           println("Usage: "+(System::argv 0)+""" [OPTION]
-     --document-root=PATH    Path to document root directory defaults to ./html
-     --server-root=PATH      Path to server root direcory defaults to cwd
-     --port=PORT             Port to listen on
-     --debug                 Logs DEBUG messages to STDOUT
-     --debug=FILE            Logs DEBUG to log/FILE
-   """);
-           System::exit(0);      
-         done
-         ++argno;
-       done
-       return (cfg);
-     }
-   
-     private fun tolower: char->char = "(char)::std::tolower($1)" requires Cxx_headers::cctype ;
-     private fun toupper: char->char = "(char)::std::toupper($1)" requires Cxx_headers::cctype ;
-   
-   
-     fun enhance_with_config_file(var config:server_config):opt[server_config]*string = {
-       var cfg = config;
-       val config_file_default = Filename::join("config","server_config.cfg");
-       val enviro_config = Env::getenv((map toupper cfg.application)+"_CFG","");
-       if cfg.file_name == "" do
-           if enviro_config  == "" do
-               var cwd_config = Filename::join(".",config_file_default);
-               if FileStat::fileexists(cwd_config) do 
-                   cfg&.file_name <- cwd_config;
-               else
-                   var home = Env::getenv("HOME","");
-                   if home == "" do
-                      return None[server_config],"Unable to open configuration file HOME environment variable undefined.";
-                   else
-                       var home_config = Filename::join(home,
-                       Filename::join(".felix",Filename::join(cfg.application,config_file_default)));
-                       if FileStat::fileexists(home_config) do
-                           cfg&.file_name <- home_config;
-                       else
-                           return None[server_config],("Unable to open configurationfile:" + home_config);
-                       done
-                   done
-               done
-           else 
-               if FileStat::fileexists(enviro_config) do
-                   cfg&.file_name <- enviro_config;
-               else
-                   return None[server_config],("Unable to open configurationfile:" + enviro_config);
-               done
-           done
-       else
-           if not(FileStat::fileexists(cfg.file_name)) do
-               return None[server_config], ("Unable to open configurationfile:" + cfg.file_name);
-           done
-       done
-       set_params(&cfg,read_config(cfg.file_name));
-       return Some(cfg),("Configuration file " + cfg.file_name + " read.");
-     }
-   
-     proc set_params(cfg:&server_config,params:list[string^2]) {
-       cfg.params <- params;
-       match find (fun (a:string,b:string) => eq(a,b)) params "port" with 
-         |Some s => cfg.port <- int(s);
-         |_ => {}();
-       endmatch;
-       match find (fun (a:string,b:string) => eq(a,b)) params "server_root" with 
-         |Some s => cfg.server_root <- s;
-         |_ => {}();
-       endmatch;
-       match find (fun (a:string,b:string) => eq(a,b)) params "document_root" with 
-         |Some s => cfg.document_root <- s;
-         |_ => {}();
-       endmatch;
-       match find (fun (a:string,b:string) => eq(a,b)) params "delay" with 
-         |Some s => cfg.delay <- double(s);
-         |_ => {}();
-       endmatch;
-   
-     }
-   
-     fun strtod: string -> double = "strtod($1.data(),0)";
-   
-   
-     instance Str[server_config] {
-       fun str (cfg : server_config):string =>
-          "Config file:" + cfg.file_name "\n" +
-          (fold_left (fun(i:string) (c:string^2):string => 
-            (i + c.(0) + " = " + c.(1) + "\n") ) "" (cfg.params));
-     }
-   
+    
+    fun basic_server_config(handlers:list[http_handler],application:string,default_config:string):server_config = {
+      var config = server_config(handlers,application);
+      match enhance_with_config_file( 
+        enhance_with_command_line_arguments(config)) with
+      |Some(cfg),_ => return cfg;
+      |None,m =>  set_params(&config,read_config_text(default_config));
+                   return config;
+      endmatch;
+  
    }
-   
+  
+    fun enhance_with_command_line_arguments(var config:server_config):server_config = {
+      var cfg:server_config = config;
+      var arg = "";
+      var argno = 1;
+      while argno<System::argc do
+        arg = System::argv argno;
+        println$ "ARG=" + arg;
+        if prefix(arg,"--document_root=") do
+          cfg&.document_root <- arg.[16 to];
+        elif prefix(arg,"--server_root=") do
+          cfg&.server_root <- arg.[14 to];
+        elif prefix(arg,"--port=") do
+          cfg&.port <- atoi arg.[7 to];
+        elif prefix(arg,"--config=") do
+          cfg&.file_name <- arg.[9 to];
+          if( not (FileStat::fileexists(cfg.file_name))) do
+            proc_fail("unable to open config file:"+cfg.file_name); 
+          done
+        elif prefix(arg,"--debug") do
+          var dbg_log:list[log_handler];
+          if prefix(arg,"--debug=") do
+            val file:string =  str(arg.[8 to]);
+            dbg_log = simple_logger(Logger::log("log",file,size(0),0ui),DEBUG);
+          else
+            dbg_log = console_logger(DEBUG);
+          done;
+          cfg&.log <- logger(console_logger(INFO)+console_logger(ERROR)+dbg_log);
+        elif prefix(arg,"--help") do
+          println("Usage: "+(System::argv 0)+""" [OPTION]
+    --document-root=PATH    Path to document root directory defaults to ./html
+    --server-root=PATH      Path to server root direcory defaults to cwd
+    --port=PORT             Port to listen on
+    --debug                 Logs DEBUG messages to STDOUT
+    --debug=FILE            Logs DEBUG to log/FILE
+  """);
+          System::exit(0);      
+        done
+        ++argno;
+      done
+      return (cfg);
+    }
+  
+    private fun tolower: char->char = "(char)::std::tolower($1)" requires Cxx_headers::cctype ;
+    private fun toupper: char->char = "(char)::std::toupper($1)" requires Cxx_headers::cctype ;
+  
+  
+    fun enhance_with_config_file(var config:server_config):opt[server_config]*string = {
+      var cfg = config;
+      val config_file_default = Filename::join("config","server_config.cfg");
+      val enviro_config = Env::getenv((map toupper cfg.application)+"_CFG","");
+      if cfg.file_name == "" do
+          if enviro_config  == "" do
+              var cwd_config = Filename::join(".",config_file_default);
+              if FileStat::fileexists(cwd_config) do 
+                  cfg&.file_name <- cwd_config;
+              else
+                  var home = Env::getenv("HOME","");
+                  if home == "" do
+                     return None[server_config],"Unable to open configuration file HOME environment variable undefined.";
+                  else
+                      var home_config = Filename::join(home,
+                      Filename::join(".felix",Filename::join(cfg.application,config_file_default)));
+                      if FileStat::fileexists(home_config) do
+                          cfg&.file_name <- home_config;
+                      else
+                          return None[server_config],("Unable to open configurationfile:" + home_config);
+                      done
+                  done
+              done
+          else 
+              if FileStat::fileexists(enviro_config) do
+                  cfg&.file_name <- enviro_config;
+              else
+                  return None[server_config],("Unable to open configurationfile:" + enviro_config);
+              done
+          done
+      else
+          if not(FileStat::fileexists(cfg.file_name)) do
+              return None[server_config], ("Unable to open configurationfile:" + cfg.file_name);
+          done
+      done
+      set_params(&cfg,read_config(cfg.file_name));
+      return Some(cfg),("Configuration file " + cfg.file_name + " read.");
+    }
+  
+    proc set_params(cfg:&server_config,params:list[string^2]) {
+      cfg.params <- params;
+      match find (fun (a:string,b:string) => eq(a,b)) params "port" with 
+        |Some s => cfg.port <- int(s);
+        |_ => {}();
+      endmatch;
+      match find (fun (a:string,b:string) => eq(a,b)) params "server_root" with 
+        |Some s => cfg.server_root <- s;
+        |_ => {}();
+      endmatch;
+      match find (fun (a:string,b:string) => eq(a,b)) params "document_root" with 
+        |Some s => cfg.document_root <- s;
+        |_ => {}();
+      endmatch;
+      match find (fun (a:string,b:string) => eq(a,b)) params "delay" with 
+        |Some s => cfg.delay <- double(s);
+        |_ => {}();
+      endmatch;
+  
+    }
+  
+    fun strtod: string -> double = "strtod($1.data(),0)";
+  
+  
+    instance Str[server_config] {
+      fun str (cfg : server_config):string =>
+         "Config file:" + cfg.file_name "\n" +
+         (fold_left (fun(i:string) (c:string^2):string => 
+           (i + c.(0) + " = " + c.(1) + "\n") ) "" (cfg.params));
+    }
+  
+  }
+  
 
 
 .. code-block:: felix
 
   //[sundown.flx]
-   //$ A Markdown to Html translator.
-   class SunDown
-   {
-     fun sundown: string -> string requires package "sundown";
-   }
+  //$ A Markdown to Html translator.
+  class SunDown
+  {
+    fun sundown: string -> string requires package "sundown";
+  }
 
 
 .. code-block:: felix
 
   //[web_server.flx]
-   publish """ 
-   Accepts connection and spawns fthread to handle request 
-   See webapp.flx for usage example 
-   """
-   
-   if PLAT_POSIX do
-   PosixSignal::ignore_signal(PosixSignal::SIGPIPE);
-   done
-   
-   open Socket;
-   open IOStream;
-   
-   open TerminalIByteStream[fd_t];
-   open TerminalIOByteStream[socket_t];
-   
-   
-   // this is a hack to make close work on a listenter
-   // RF got this right the first time:
-   // in the abstract a listener is NOT a socket
-   // In fact, it is a socket server, with accept() a way to
-   // read new sockets off it ..
-   open TerminalIByteStream[socket_t];
-   
-   requires header '#include <stdlib.h>';
-   
-   class WebServer {
-     open ServerConfig;
-     open HTTPRequest;
-     open HTTPConnection;
-     open MIMEType;
-     open Eq[mime_type];
-     open Assoc_list;  
-     open HTTPHandler;  
-     open Logger;
-   
-     proc serve(conn:http_connection, request: http_request)
-     {
-       val s = conn.sock;
-       iter (proc (handler:http_handler) { 
-         if not *conn.dirty  do
-           if handler.handles(conn.config,request) do
-             handler.handler_fn(conn,request);
-           done
-         else
-           goto finished; 
-         done
-         }) conn.config.handlers;
-       finished:> 
-       return;
-     }
-   
-     proc start_webserver(config:server_config) {
-       val webby_port = config.port;
-       config.log(INFO, "Server started, listenting on "+str config.port);
-       // up the queue len for stress testing
-       var p = webby_port;
-       var listener: socket_t;
-       mk_listener(&listener, &p, 10);
-       var clock = Faio::mk_alarm_clock();
-       // noinline is necessary to stop the closure being
-       // inlined into the loop, preventing the socket variable k
-       // being duplicated as it must be [a bug in Felix]
-       noinline proc handler (var k:socket_t) ()
-       {
-         config.log(DEBUG,"Spawned fthread running for socket "+str k);
-         // should spawn fthread here to allow for more io overlap
-         val conn = http_connection(config ,k);
-         var request:http_request;
-         open HTTPRequest;
-         open  Eq[http_method];
-         open MIMEType;
-         HTTPRequest::get_request(conn,&request);
-          Faio::sleep(clock,config.delay);
-         /*Get entity form parameters if method is post and 
-           content type is application/x-www-form-urlencoded */
-         //if str(request.hmethod) == str(POST) do
-         match get_header(request,"Content-Type") with
-           | Some c => { 
-             match parse_media_type(c) with
-               | Some (m,a) => {
-                 if str(m) == str(application x_DASH_www_DASH_form_DASH_urlencoded) do
-                   HTTPRequest::get_entity_params(conn,&request,a);
-                 elif str(m) == str(form-data) do
-                   HTTPRequest::get_multipart_params(conn,&request,a);
-                 else 
-                   request.entity_params=Empty[string*string];
-                 done
-                 }
-               |_ =>  { request.entity_params=Empty[string*string]; }
-             endmatch; }
-           |_ => { request.entity_params=Empty[string*string]; }
-         endmatch;
-         serve(conn,request);
-         Faio::sleep(clock,config.delay); // give OS time to empty its buffers
-         // try this:
-         // Advised by: koettermarkus@gmx.de, MANY THANKS!
-   
-         gen hack_recv: socket_t * &char * int * int -> int = "recv($1,$2,$3,$4)";
-   
-         var buf:char ^1025;
-         var counter = 0;
-         var extra = 0;
-         shutdown(k,1); // shutdown write
-         retry:>
-           var b = hack_recv(k,C_hack::cast[&char] (&buf),1024,0);
-           //println$ "Error code " + str b + " from read after shutdown";
-           if b > 0 do
-             extra += b;
-             if extra > 2000 do
-               config.log(WARNING,"Read too many extraneous bytes from OS buffer");
-               goto force_close;
-             done;
-             goto retry;
-           elif b == -1 do
-           ++counter;
-           if counter > 200 do
-             config.log(WARNING,"Timeout waiting for write buffers to be flushed");
-             goto force_close;
-           done;
-           Faio::sleep(clock,0.1); // 100 ms
-           goto retry;
-         done;
-         assert b==0;
-   
-         force_close:> 
-         Socket::shutdown(k,2); 
-         ioclose(k);
-         
-       };
-   
-       noinline proc stuff {
-         var s: socket_t;
-         config.log(DEBUG,"Waiting for connection");
-         accept(listener, &s);  // blocking
-         config.log(DEBUG,"got connection "+str s);  // error check here
-   
-         //  - spawning an fthread is blocking the web server. don't know why
-         config.log(DEBUG,"spawning fthread to handle connection "+str s);
-         spawn_fthread$  handler s; 
-         collect(); // this hangs everything, no idea why!
-       };
-       while true do stuff; done
-   
-       config.log(INFO,"WEB SERVER SHUTDOWN");
-       iclose (listener);
-     }
-   
-   }
+  publish """ 
+  Accepts connection and spawns fthread to handle request 
+  See webapp.flx for usage example 
+  """
+  
+  if PLAT_POSIX do
+  PosixSignal::ignore_signal(PosixSignal::SIGPIPE);
+  done
+  
+  open Socket;
+  open IOStream;
+  
+  open TerminalIByteStream[fd_t];
+  open TerminalIOByteStream[socket_t];
+  
+  
+  // this is a hack to make close work on a listenter
+  // RF got this right the first time:
+  // in the abstract a listener is NOT a socket
+  // In fact, it is a socket server, with accept() a way to
+  // read new sockets off it ..
+  open TerminalIByteStream[socket_t];
+  
+  requires header '#include <stdlib.h>';
+  
+  class WebServer {
+    open ServerConfig;
+    open HTTPRequest;
+    open HTTPConnection;
+    open MIMEType;
+    open Eq[mime_type];
+    open Assoc_list;  
+    open HTTPHandler;  
+    open Logger;
+  
+    proc serve(conn:http_connection, request: http_request)
+    {
+      val s = conn.sock;
+      iter (proc (handler:http_handler) { 
+        if not *conn.dirty  do
+          if handler.handles(conn.config,request) do
+            handler.handler_fn(conn,request);
+          done
+        else
+          goto finished; 
+        done
+        }) conn.config.handlers;
+      finished:> 
+      return;
+    }
+  
+    proc start_webserver(config:server_config) {
+      val webby_port = config.port;
+      config.log(INFO, "Server started, listenting on "+str config.port);
+      // up the queue len for stress testing
+      var p = webby_port;
+      var listener: socket_t;
+      mk_listener(&listener, &p, 10);
+      var clock = Faio::mk_alarm_clock();
+      // noinline is necessary to stop the closure being
+      // inlined into the loop, preventing the socket variable k
+      // being duplicated as it must be [a bug in Felix]
+      noinline proc handler (var k:socket_t) ()
+      {
+        config.log(DEBUG,"Spawned fthread running for socket "+str k);
+        // should spawn fthread here to allow for more io overlap
+        val conn = http_connection(config ,k);
+        var request:http_request;
+        open HTTPRequest;
+        open  Eq[http_method];
+        open MIMEType;
+        HTTPRequest::get_request(conn,&request);
+         Faio::sleep(clock,config.delay);
+        /*Get entity form parameters if method is post and 
+          content type is application/x-www-form-urlencoded */
+        //if str(request.hmethod) == str(POST) do
+        match get_header(request,"Content-Type") with
+          | Some c => { 
+            match parse_media_type(c) with
+              | Some (m,a) => {
+                if str(m) == str(application x_DASH_www_DASH_form_DASH_urlencoded) do
+                  HTTPRequest::get_entity_params(conn,&request,a);
+                elif str(m) == str(form-data) do
+                  HTTPRequest::get_multipart_params(conn,&request,a);
+                else 
+                  request.entity_params=Empty[string*string];
+                done
+                }
+              |_ =>  { request.entity_params=Empty[string*string]; }
+            endmatch; }
+          |_ => { request.entity_params=Empty[string*string]; }
+        endmatch;
+        serve(conn,request);
+        Faio::sleep(clock,config.delay); // give OS time to empty its buffers
+        // try this:
+        // Advised by: koettermarkus@gmx.de, MANY THANKS!
+  
+        gen hack_recv: socket_t * &char * int * int -> int = "recv($1,$2,$3,$4)";
+  
+        var buf:char ^1025;
+        var counter = 0;
+        var extra = 0;
+        shutdown(k,1); // shutdown write
+        retry:>
+          var b = hack_recv(k,C_hack::cast[&char] (&buf),1024,0);
+          //println$ "Error code " + str b + " from read after shutdown";
+          if b > 0 do
+            extra += b;
+            if extra > 2000 do
+              config.log(WARNING,"Read too many extraneous bytes from OS buffer");
+              goto force_close;
+            done;
+            goto retry;
+          elif b == -1 do
+          ++counter;
+          if counter > 200 do
+            config.log(WARNING,"Timeout waiting for write buffers to be flushed");
+            goto force_close;
+          done;
+          Faio::sleep(clock,0.1); // 100 ms
+          goto retry;
+        done;
+        assert b==0;
+  
+        force_close:> 
+        Socket::shutdown(k,2); 
+        ioclose(k);
+        
+      };
+  
+      noinline proc stuff {
+        var s: socket_t;
+        config.log(DEBUG,"Waiting for connection");
+        accept(listener, &s);  // blocking
+        config.log(DEBUG,"got connection "+str s);  // error check here
+  
+        //  - spawning an fthread is blocking the web server. don't know why
+        config.log(DEBUG,"spawning fthread to handle connection "+str s);
+        spawn_fthread$  handler s; 
+        collect(); // this hangs everything, no idea why!
+      };
+      while true do stuff; done
+  
+      config.log(INFO,"WEB SERVER SHUTDOWN");
+      iclose (listener);
+    }
+  
+  }
 
