@@ -37,6 +37,21 @@ Misc Control Flow
 
 
 .. index:: Control
+.. index:: fix
+.. index:: flat_fact
+.. index:: _swap
+.. index:: forever
+.. index:: pass
+.. index:: for_each
+.. index:: branch
+.. index:: raise
+.. index:: proc_fail
+.. index:: fun_fail
+.. index:: entry_label
+.. index:: current_position
+.. index:: entry_label
+.. index:: current_continuation
+.. index:: throw_continuation
 .. code-block:: felix
 
   //[control.flx]

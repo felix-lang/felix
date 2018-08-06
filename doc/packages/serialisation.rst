@@ -197,6 +197,19 @@ Serialisation functions
 
 
 .. index:: Serialise
+.. index:: blit
+.. index:: ncode
+.. index:: encode_varray
+.. index:: find_pointers
+.. index:: essed
+.. index:: pclosure
+.. index:: add_pointer
+.. index:: find_closure
+.. index:: encode_closure
+.. index:: encode_pointer_closure
+.. index:: set_used
+.. index:: adjust_pointer
+.. index:: adjust_all_pointers
 .. code-block:: felix
 
   //[serialise.flx]

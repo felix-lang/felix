@@ -33,6 +33,11 @@ Random number generators.
 =========================
 
 
+.. index:: System_RNG
+.. index:: add_entropy
+.. index:: randomize_with_input
+.. index:: randomize_with_ts_input
+.. index:: randomize
 .. code-block:: felix
 
   //[rng.flx]
@@ -59,6 +64,23 @@ Big Integers
 ============
 
 
+.. index:: bigint
+.. index:: succ
+.. index:: pre_incr
+.. index:: post_incr
+.. index:: pred
+.. index:: pre_decr
+.. index:: post_decr
+.. index:: zero
+.. index:: neg
+.. index:: one
+.. index:: abs
+.. index:: sgn
+.. index:: str
+.. index:: gcd
+.. index:: lcm
+.. index:: jacobi
+.. index:: power_mod
 .. code-block:: felix
 
   //[bigint.flx]
@@ -157,6 +179,10 @@ Hash functions
 ==============
 
 
+.. index:: output_length
+.. index:: update
+.. index:: update
+.. index:: final
 .. code-block:: felix
 
   //[hash.flx]

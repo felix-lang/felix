@@ -29,7 +29,19 @@ C pointer
 
 
 .. index:: AbstractPointers
+.. index:: mkr
+.. index:: mkw
+.. index:: mkrw
+.. index:: deref
+.. index:: storeat
+.. index:: storeat
 .. index:: Cptr
+.. index:: _deref
+.. index:: deref
+.. index:: storeat
+.. index:: deref
+.. index:: is_nullptr
+.. index:: delete
 .. code-block:: felix
 
   //[cptr.flx]
@@ -160,6 +172,9 @@ to reserve such carrays for C datatypes.
 
 
 
+.. index:: array_alloc
+.. index:: array_calloc
+.. index:: free
 .. code-block:: felix
 
   //[carray.flx]
@@ -181,6 +196,9 @@ Dereference
 
 
 
+.. index:: get
+.. index:: set
+.. index:: apply
 .. code-block:: felix
 
   //[carray.flx]
@@ -203,6 +221,8 @@ familiar with C notation. Felix does not support the notion
 of lvalues in general: this is a very special case.
 
 
+.. index:: subscript
+.. index:: deref
 .. code-block:: felix
 
   //[carray.flx]
@@ -237,6 +257,10 @@ Mutators
 
 
 
+.. index:: pre_incr
+.. index:: post_incr
+.. index:: pre_decr
+.. index:: post_decr
 .. code-block:: felix
 
   //[carray.flx]
@@ -286,6 +310,10 @@ Conversions
 -----------
 
 
+.. index:: stl_begin
+.. index:: prefix_plus
+.. index:: neg
+.. index:: array_of
 .. code-block:: felix
 
   //[carray.flx]
@@ -349,6 +377,7 @@ Sort an array using STL sort.
 
 
 .. index:: Sort
+.. index:: stl_sort
 .. code-block:: felix
 
   //[sort.flx]
@@ -403,6 +432,13 @@ Reference counting pointer.
 
 
 .. index:: SharedPtr
+.. index:: reset
+.. index:: swap
+.. index:: get
+.. index:: deref
+.. index:: use_count
+.. index:: unique
+.. index:: is_null
 .. code-block:: felix
 
   //[shared_ptr.flx]

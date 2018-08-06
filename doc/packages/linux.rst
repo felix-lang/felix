@@ -32,6 +32,7 @@ the /proc directory would make sense.
   int get_cpu_nr();
   #endif
 
+.. index:: _nb
 .. code-block:: cpp
 
   //[plat_linux.cpp]

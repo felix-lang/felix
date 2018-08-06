@@ -278,6 +278,7 @@ Library index table.
 
 Lists symbols alphabetically.
 
+.. index:: str
 .. code-block:: felix
 
   //[flx_libindex.flx]
@@ -373,6 +374,8 @@ Synthesises an index page for tutorial groups
 with specified heading and pattern match.
 
 
+.. index:: make_index
+.. index:: mkentry
 .. code-block:: felix
 
   //[flx_mktutindex.flx]
@@ -437,6 +440,13 @@ with specified heading and pattern match.
 
 
 
+.. index:: code_fixer
+.. index:: url_fixer
+.. index:: code_markup
+.. index:: lexer_from_filename
+.. index:: process_file
+.. index:: emit_code
+.. index:: println
 .. code-block:: felix
 
   //[flx_fdoc2sphinx.flx]
@@ -452,11 +462,13 @@ with specified heading and pattern match.
   regdef tangler_r = "@tangler" spc_r group(fkey_r) spc_r  "=" spc_r group(any_r);
   regdef url_r = group(any_r) '<a href="' group(any_r) '">' group(any_r) "</a>" group(any_r);
   regdef class_r = spc_r "open"? spc_r "class" spc_r group(ident_r) any_r;
+  regdef fun_r = spc_r "virtual"? spc_r ("ctor"|"fun"|"proc") spc_r group(ident_r) any_r;
   
   var cmd_R = RE2 (render cmd_r);
   var tangler_R = RE2 (render tangler_r);
   var url_R = RE2 (render url_r);
   var class_R = RE2 (render class_r);
+  var fun_R = RE2 (render fun_r);
   
   typedef markup_t = (`Txt | `At | `Code | `Slosh | `Math | `MathSlosh);
   fun code_fixer (a:string): string =
@@ -557,11 +569,15 @@ with specified heading and pattern match.
     proc emit_code () { 
       var b = rev code_buf;
       for l in b do
-        var r = Match (class_R, l);
-        match r with
-        | None => ;
+        var rc = Match (class_R, l);
+        var rf = Match (fun_R, l);
+        chainmatch rc with
         | Some grp =>
           out+= ".. index:: " + grp.1 + "\n";
+        ormatch rf with
+        | Some grp =>
+          out+= ".. index:: " + grp.1 + "\n";
+        | None => ;
         endmatch;
       done
       out += prefix;

@@ -145,6 +145,56 @@ RE2 regexps
 
 
 .. index:: Re2
+.. index:: StringPiece
+.. index:: StringPiece
+.. index:: StringPiece
+.. index:: StringPiece
+.. index:: StringPiece
+.. index:: StringPiece
+.. index:: string
+.. index:: len
+.. index:: data
+.. index:: len
+.. index:: str
+.. index:: subscript
+.. index:: Copy
+.. index:: encoding
+.. index:: set_encoding
+.. index:: posix_syntax
+.. index:: set_posix_syntax
+.. index:: longest_match
+.. index:: set_longest_match
+.. index:: log_errors
+.. index:: set_log_errors
+.. index:: max_mem
+.. index:: set_max_mem
+.. index:: literal
+.. index:: set_literal
+.. index:: never_nl
+.. index:: set_never_nl
+.. index:: case_sensitive
+.. index:: set_case_sensitive
+.. index:: perl_classes
+.. index:: set_perl_classes
+.. index:: word_boundary
+.. index:: set_word_boundary
+.. index:: one_line
+.. index:: set_one_line
+.. index:: ParseFlags
+.. index:: pattern
+.. index:: str
+.. index:: error
+.. index:: error_code
+.. index:: error_arg
+.. index:: ok
+.. index:: ProgramSize
+.. index:: QuoteMeta
+.. index:: PossibleMatchRange
+.. index:: NumberOfCapturingGroups
+.. index:: NamedCapturingGroups
+.. index:: CheckRewriteString
+.. index:: extract
+.. index:: extract
 .. code-block:: felix
 
   //[re2.flx]
@@ -402,6 +452,8 @@ Regular definitions
 
 
 .. index:: Regdef
+.. index:: ngrp
+.. index:: render
 .. code-block:: felix
 
   //[regdef.flx]
@@ -595,6 +647,11 @@ Lexer
 
 
 .. index:: Lexer
+.. index:: start_iterator
+.. index:: end_iterator
+.. index:: bounds
+.. index:: string_between
+.. index:: deref
 .. code-block:: felix
 
   //[lexer.flx]

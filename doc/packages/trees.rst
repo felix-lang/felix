@@ -24,6 +24,17 @@ Array backed Heap
 We provide a min-heap using a  :code:`darray` for storage.
 
 .. index:: MinHeap
+.. index:: left_child
+.. index:: right_child
+.. index:: parent
+.. index:: minheap_t
+.. index:: heap_swap
+.. index:: bubble_up
+.. index:: heap_insert
+.. index:: bubble_down_lim
+.. index:: bubble_down
+.. index:: heap_sort
+.. index:: heapify
 .. code-block:: felix
 
   //[heap.flx]
@@ -119,6 +130,22 @@ AVL tree
 
 
 .. index:: Avl
+.. index:: _ctor_avl
+.. index:: _ctor_avl
+.. index:: insert
+.. index:: insert
+.. index:: find
+.. index:: last
+.. index:: all_but_last
+.. index:: first
+.. index:: all_but_first
+.. index:: join
+.. index:: remove
+.. index:: fold_left
+.. index:: fold_right
+.. index:: iter
+.. index:: iter
+.. index:: aux
 .. code-block:: felix
 
   //[avl.flx]
@@ -336,6 +363,33 @@ Directed Graph
 
 
 .. index:: DiGraph
+.. index:: digraph_t
+.. index:: len
+.. index:: default_vlabel
+.. index:: default_elabel
+.. index:: default_vertex
+.. index:: add_vertex
+.. index:: add_weighted_edge
+.. index:: add_edge
+.. index:: add_weighted_edge_pair
+.. index:: add_edge_pair
+.. index:: add_edge_pair
+.. index:: dump_digraph
+.. index:: ess_vertex_early
+.. index:: ess_vertex_late
+.. index:: ess_edge
+.. index:: dflt_pve
+.. index:: dflt_pvl
+.. index:: dflt_pe
+.. index:: digraph_visitor_processing_t
+.. index:: ess_vertex_early
+.. index:: ess_vertex_late
+.. index:: ess_edge
+.. index:: iter
+.. index:: breadth_first_iter
+.. index:: depth_first_iter
+.. index:: default_vlabel
+.. index:: default_elabel
 .. code-block:: felix
 
   //[graph.flx]
@@ -601,6 +655,11 @@ Features classic union-find data structure.
 
 
 .. index:: Partition
+.. index:: partition_t
+.. index:: find
+.. index:: merge
+.. index:: partition_t
+.. index:: mk_equiv
 .. code-block:: felix
 
   //[partition.flx]
@@ -731,6 +790,8 @@ Quick Checks.
 
 
 
+.. index:: leaf
+.. index:: leaf_or_empty
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -753,6 +814,7 @@ String representation
 
 
 
+.. index:: str
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -771,6 +833,7 @@ Find the subtree with top node equal to the given
 value, or Empty if not found.
 
 
+.. index:: find
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -795,6 +858,7 @@ Find the minimum subtree in the tree which is the left
 most bottom leaf.
 
 
+.. index:: min
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -815,6 +879,8 @@ Procedural preorder iteration visits values
 in ascending order.
 
 
+.. index:: iter
+.. index:: aux
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -838,6 +904,7 @@ Fold.
 Easily defined given iter, this should be generalised elsewhere!
 
 
+.. index:: fold_left
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -853,6 +920,7 @@ Map.
 Easily defined given iter. Note the tree structure is NOT preserved.
 
 
+.. index:: map
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -867,6 +935,11 @@ Constructors.
 
 
 
+.. index:: bstree_t
+.. index:: bstree_node_t
+.. index:: bstree_node_t
+.. index:: bstree_t
+.. index:: bstree_t
 .. code-block:: felix
 
   //[binary_search_tree.flx ]
@@ -882,6 +955,9 @@ Insert routine
 
 
 
+.. index:: insert_with_parent
+.. index:: aux
+.. index:: insert
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -909,6 +985,8 @@ Comprehension.
 Make a tree from an option stream.
 
 
+.. index:: bstree_t
+.. index:: aux
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -985,6 +1063,8 @@ As a container.
 
 
 
+.. index:: len
+.. index:: empty
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -1015,6 +1095,8 @@ Delete by value.
 Ensures the tree doesn't contain the specified value.
 
 
+.. index:: delete_element
+.. index:: aux
 .. code-block:: felix
 
   //[binary_search_tree.flx ]
@@ -1076,6 +1158,59 @@ Judy Arrays
 
 
 .. index:: Judy
+.. index:: word
+.. index:: word
+.. index:: int
+.. index:: uint
+.. index:: ulong
+.. index:: size
+.. index:: address
+.. index:: isNULL
+.. index:: isNULL
+.. index:: free
+.. index:: Judy1Set
+.. index:: Judy1Unset
+.. index:: Judy1Test
+.. index:: Judy1Count
+.. index:: Judy1ByCount
+.. index:: Judy1FreeArray
+.. index:: Judy1MemUsed
+.. index:: Judy1First
+.. index:: Judy1Next
+.. index:: Judy1Last
+.. index:: Judy1Prev
+.. index:: Judy1FirstEmpty
+.. index:: Judy1NextEmpty
+.. index:: Judy1LastEmpty
+.. index:: Judy1PrevEmpty
+.. index:: free
+.. index:: JudyLIns
+.. index:: JudyLDel
+.. index:: JudyLGet
+.. index:: JudyLCount
+.. index:: JudyLByCount
+.. index:: JudyLFreeArray
+.. index:: JudyLMemUsed
+.. index:: JudyLFirst
+.. index:: JudyLNext
+.. index:: JudyLLast
+.. index:: JudyLPrev
+.. index:: JudyLFirstEmpty
+.. index:: JudyLNextEmpty
+.. index:: JudyLLastEmpty
+.. index:: JudyLPrevEmpty
+.. index:: free
+.. index:: JudySLIns
+.. index:: JudySLDel
+.. index:: JudySLGet
+.. index:: JudySLFirst
+.. index:: JudySLNext
+.. index:: JudySLLast
+.. index:: JudySLPrev
+.. index:: free
+.. index:: JudyHSIns
+.. index:: JudyHSDel
+.. index:: JudyHSGet
 .. code-block:: felix
 
   //[judy.flx]

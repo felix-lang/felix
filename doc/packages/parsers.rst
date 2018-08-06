@@ -16,6 +16,28 @@ Chips to providing parsing functions.
 
 
 .. index:: Parsers
+.. index:: str
+.. index:: str
+.. index:: str
+.. index:: str
+.. index:: str
+.. index:: str
+.. index:: doaction
+.. index:: doaction
+.. index:: find
+.. index:: render_pgram
+.. index:: open_add_pgram
+.. index:: add_pgram
+.. index:: closure
+.. index:: unpack
+.. index:: expand_aux
+.. index:: expand
+.. index:: substitute
+.. index:: direct_left_recursion_elimination
+.. index:: direct_left_recursion_elimination
+.. index:: make_seq
+.. index:: left_recursion_elimination_step
+.. index:: left_recursion_elimination
 .. code-block:: felix
 
   //[parsers.flx]

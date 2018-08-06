@@ -22,6 +22,10 @@ or involve the null terminator.
 
 
 .. index:: CString
+.. index:: strcpy
+.. index:: strncpy
+.. index:: strlen
+.. index:: len
 .. code-block:: felix
 
   //[cstring.flx]
@@ -98,6 +102,18 @@ string length if they exceed it.
 
 
 .. index:: UniqueCStrings
+.. index:: ucstr
+.. index:: ucstr
+.. index:: dup
+.. index:: dup
+.. index:: delete
+.. index:: len
+.. index:: set
+.. index:: reserve
+.. index:: append
+.. index:: erase
+.. index:: insert
+.. index:: search
 .. code-block:: felix
 
   //[ucstr.flx]
@@ -273,6 +289,7 @@ ucstr_prim_01.flx
 =================
 
 
+.. index:: test
 .. code-block:: felix
 
   //[ucstr_prim_01.flx]
@@ -339,6 +356,18 @@ string length if they exceed it.
 
 
 .. index:: UniqueCountedStrings
+.. index:: ustr
+.. index:: ustr
+.. index:: dup
+.. index:: dup
+.. index:: delete
+.. index:: len
+.. index:: set
+.. index:: reserve
+.. index:: append
+.. index:: erase
+.. index:: insert
+.. index:: search
 .. code-block:: felix
 
   //[ustr.flx]
@@ -514,6 +543,7 @@ ustr_prim_01.flx
 ================
 
 
+.. index:: test
 .. code-block:: felix
 
   //[ustr_prim_01.flx]

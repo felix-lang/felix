@@ -230,6 +230,17 @@ C hackery
 Hackery for mapping between Felix and C/C++.
 
 .. index:: C_hack
+.. index:: ignore
+.. index:: cast
+.. index:: static_cast
+.. index:: dynamic_cast
+.. index:: const_cast
+.. index:: reinterpret_cast
+.. index:: reinterpret
+.. index:: isNULL
+.. index:: isNULL
+.. index:: dflt
+.. index:: destroy
 .. code-block:: felix
 
   //[c_hack.flx]
@@ -311,6 +322,8 @@ C stdlib Rand
 Just to get random functions.
 
 .. index:: Cstdlib
+.. index:: srand
+.. index:: rand
 .. code-block:: felix
 
   //[cstdlib.flx]
@@ -346,6 +359,7 @@ Linux specifics
 ===============
 
 
+.. index:: get_cpu_nr
 .. code-block:: felix
 
   //[linux.flx]

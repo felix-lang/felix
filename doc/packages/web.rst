@@ -56,6 +56,7 @@ Web Server Support Library
 
 
 .. index:: WebUtil
+.. index:: parse_attribute_list
 .. code-block:: felix
 
   //[web_util.flx]
@@ -73,6 +74,10 @@ Web Server Support Library
 
 
 .. index:: HTTPBasicAuth
+.. index:: app_handlers
+.. index:: http_basic_auth_route
+.. index:: requires_auth
+.. index:: requires_auth
 .. code-block:: felix
 
   //[http_auth.flx]
@@ -176,6 +181,18 @@ Web Server Support Library
 
 
 .. index:: HTTPRequest
+.. index:: str
+.. index:: str
+.. index:: get_params
+.. index:: get_entity_params
+.. index:: read_bytes
+.. index:: get_multipart_params
+.. index:: get_fname
+.. index:: get_path_and_fname
+.. index:: get_param
+.. index:: get_post_param
+.. index:: get_header
+.. index:: get_cookies
 .. code-block:: felix
 
   //[http_request.flx]
@@ -401,6 +418,28 @@ Web Server Support Library
 
 
 .. index:: HTTPResponse
+.. index:: no_headers
+.. index:: http_header
+.. index:: make_image
+.. index:: make_image
+.. index:: make_css
+.. index:: make_js
+.. index:: make_json
+.. index:: make_not_found
+.. index:: make_not_implemented
+.. index:: make_see_other
+.. index:: make_forbidden
+.. index:: make_unauthorized
+.. index:: make_unauthorized
+.. index:: make_continue
+.. index:: make_raw
+.. index:: make_raw
+.. index:: make_html
+.. index:: make_html
+.. index:: make_xhtml
+.. index:: make_xhtml
+.. index:: make_mime
+.. index:: make_mime
 .. code-block:: felix
 
   //[http_response.flx]
@@ -518,6 +557,16 @@ Web Server Support Library
 
 
 .. index:: HTTPHandler
+.. index:: find_and_map
+.. index:: get_fs_path
+.. index:: txt2html
+.. index:: do_handle_not_found
+.. index:: handle_not_found_route
+.. index:: handle_css_route
+.. index:: handle_js_route
+.. index:: handle_image_route
+.. index:: handle_html_route
+.. index:: default_handlers
 .. code-block:: felix
 
   //[http_handler.flx]
@@ -694,6 +743,8 @@ Web Server Support Library
   }
 
 .. index:: HTTPConnection
+.. index:: _ctor_http_connection
+.. index:: set_dirty
 .. code-block:: felix
 
   //[http_connection.flx]
@@ -749,6 +800,7 @@ Web Server Support Library
 
 
 .. index:: HTTPStatusCodes
+.. index:: str
 .. code-block:: felix
 
   //[http_status_code.flx]
@@ -800,6 +852,21 @@ Web Server Support Library
 
 
 .. index:: MIMEType
+.. index:: str
+.. index:: str
+.. index:: str
+.. index:: str
+.. index:: str
+.. index:: str
+.. index:: application_type_from_str
+.. index:: audio_type_from_str
+.. index:: image_type_from_str
+.. index:: text_type_from_str
+.. index:: multipart_type_from_str
+.. index:: from_str
+.. index:: mime_type_from_file
+.. index:: mime_type_from_extension
+.. index:: parse_media_type
 .. code-block:: felix
 
   //[mime_type.flx]
@@ -1235,6 +1302,10 @@ Web Server Support Library
 
 
 .. index:: Cookie
+.. index:: _ctor_cookie
+.. index:: str
+.. index:: set_cookie
+.. index:: set_cookies
 .. code-block:: felix
 
   //[cookie.flx]
@@ -1277,6 +1348,19 @@ Web Server Support Library
 
 
 .. index:: LowResTime
+.. index:: time
+.. index:: time_t
+.. index:: time_t
+.. index:: gmtime
+.. index:: localtime
+.. index:: asctime
+.. index:: strftime
+.. index:: rfc1123_date
+.. index:: rfc1123_date
+.. index:: rfc1123_date
+.. index:: hour
+.. index:: day
+.. index:: expires_seconds_from_now
 .. code-block:: felix
 
   //[low_res_time.flx]
@@ -1418,6 +1502,9 @@ Web Server Support Library
 
 
 .. index:: Json
+.. index:: str
+.. index:: str
+.. index:: parse_json
 .. code-block:: felix
 
   //[json.flx]
@@ -1669,6 +1756,19 @@ Web Server Support Library
 
 
 .. index:: Logger
+.. index:: simple_log_handles
+.. index:: console_log_handler_fn
+.. index:: simple_logger
+.. index:: console_logger
+.. index:: logger
+.. index:: str
+.. index:: to_str
+.. index:: log_date_fmt
+.. index:: log_date
+.. index:: open_log
+.. index:: rotate
+.. index:: rotate_when_larger_than_max_size
+.. index:: fsize_
 .. code-block:: felix
 
   //[logger.flx]
@@ -1877,6 +1977,13 @@ Web Server Support Library
 
 
 .. index:: SimpleConfig
+.. index:: read_config
+.. index:: read_config_text
+.. index:: get_param
+.. index:: get_param_list
+.. index:: apply_param_vars
+.. index:: apply_param_vars_to
+.. index:: apply_param_vars_to
 .. code-block:: felix
 
   //[simple_config.flx]
@@ -2020,6 +2127,16 @@ Web Server Support Library
 
 
 .. index:: ServerConfig
+.. index:: server_config
+.. index:: server_config
+.. index:: basic_server_config
+.. index:: basic_server_config
+.. index:: enhance_with_command_line_arguments
+.. index:: _fail
+.. index:: enhance_with_config_file
+.. index:: set_params
+.. index:: strtod
+.. index:: str
 .. code-block:: felix
 
   //[server_config.flx]
@@ -2196,6 +2313,7 @@ Web Server Support Library
 
 
 .. index:: SunDown
+.. index:: sundown
 .. code-block:: felix
 
   //[sundown.flx]
@@ -2207,6 +2325,8 @@ Web Server Support Library
 
 
 .. index:: WebServer
+.. index:: serve
+.. index:: start_webserver
 .. code-block:: felix
 
   //[web_server.flx]

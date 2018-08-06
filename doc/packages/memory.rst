@@ -18,6 +18,11 @@ Raw Address
 
 
 .. index:: Address
+.. index:: isNULL
+.. index:: str
+.. index:: repr
+.. index:: str
+.. index:: repr
 .. code-block:: felix
 
   //[address.flx]

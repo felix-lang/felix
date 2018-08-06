@@ -319,8 +319,41 @@ Simple Text I/O
 
 
 .. index:: Input_file
+.. index:: fclose
 .. index:: Output_file
+.. index:: fclose
+.. index:: writeln
+.. index:: write
+.. index:: write
+.. index:: write
+.. index:: fflush
+.. index:: save
+.. index:: save
+.. index:: space
+.. index:: endl
+.. index:: fprint
+.. index:: fprintln
 .. index:: Cstdio
+.. index:: raw_load
+.. index:: raw_load_text
+.. index:: load
+.. index:: load_text
+.. index:: fclose
+.. index:: fclose
+.. index:: writeln
+.. index:: write
+.. index:: write
+.. index:: write
+.. index:: fflush
+.. index:: print
+.. index:: println
+.. index:: endl
+.. index:: space
+.. index:: fflush
+.. index:: eprint
+.. index:: eprintln
+.. index:: eendl
+.. index:: espace
 .. code-block:: felix
 
   //[textio.flx]
@@ -609,6 +642,50 @@ Ansi Terminal
 
 
 .. index:: AnsiTerminal
+.. index:: NC_
+.. index:: NC_
+.. index:: NC
+.. index:: NC
+.. index:: blue_
+.. index:: blue_
+.. index:: blue
+.. index:: blue
+.. index:: BLUE_
+.. index:: BLUE_
+.. index:: BLUE
+.. index:: BLUE
+.. index:: cyan_
+.. index:: cyan_
+.. index:: cyan
+.. index:: cyan
+.. index:: CYAN_
+.. index:: CYAN_
+.. index:: CYAN
+.. index:: CYAN
+.. index:: green_
+.. index:: green_
+.. index:: green
+.. index:: green
+.. index:: GREEN_
+.. index:: GREEN_
+.. index:: GREEN
+.. index:: GREEN
+.. index:: red_
+.. index:: red_
+.. index:: red
+.. index:: red
+.. index:: RED_
+.. index:: RED_
+.. index:: RED
+.. index:: RED
+.. index:: yellow_
+.. index:: yellow_
+.. index:: yellow
+.. index:: yellow
+.. index:: YELLOW_
+.. index:: YELLOW_
+.. index:: YELLOW
+.. index:: YELLOW
 .. code-block:: felix
 
   //[ansi_terminal.flx]
@@ -684,11 +761,33 @@ Stream I/O
 
 .. index:: IOStream
 .. index:: IByteStream
+.. index:: read
 .. index:: OByteStream
+.. index:: write
 .. index:: IOByteStream
 .. index:: TerminalIByteStream
+.. index:: iclose
 .. index:: TerminalOByteStream
+.. index:: oclose
 .. index:: TerminalIOByteStream
+.. index:: ioclose
+.. index:: read
+.. index:: write
+.. index:: read
+.. index:: read
+.. index:: write
+.. index:: write
+.. index:: iclose
+.. index:: oclose
+.. index:: ioclose
+.. index:: cat
+.. index:: cat
+.. index:: cat
+.. index:: stream_cmp
+.. index:: cmp
+.. index:: echo
+.. index:: tee
+.. index:: write_string
 .. code-block:: felix
 
   //[iostream.flx]
@@ -1052,6 +1151,10 @@ These sockets are ONLY for TCP/IP.
 
 
 .. index:: Socket_class
+.. index:: mk_listener
+.. index:: accept
+.. index:: shutdown
+.. index:: connect
 .. code-block:: felix
 
   //[socket.flx]
@@ -1077,6 +1180,15 @@ Posix sockets
 
 
 .. index:: PosixSocket
+.. index:: mk_listener
+.. index:: accept
+.. index:: shutdown
+.. index:: connect
+.. index:: read
+.. index:: write
+.. index:: iclose
+.. index:: oclose
+.. index:: ioclose
 .. code-block:: felix
 
   //[socket.flx]
@@ -1166,6 +1278,15 @@ Windows sockets
 
 
 .. index:: Win32Socket
+.. index:: mk_listener
+.. index:: accept
+.. index:: shutdown
+.. index:: connect
+.. index:: read
+.. index:: write
+.. index:: iclose
+.. index:: oclose
+.. index:: ioclose
 .. code-block:: felix
 
   //[socket.flx]
@@ -1287,6 +1408,15 @@ Faio: Felix Asynchronous I/O service
 
 
 .. index:: Faio
+.. index:: faio_req
+.. index:: get_thread
+.. index:: get_bytes_done
+.. index:: init_pb
+.. index:: calc_eof
+.. index:: mk_alarm_clock
+.. index:: mk_sleep_request
+.. index:: sleep
+.. index:: sleep
 .. code-block:: felix
 
   //[faio.flx]
@@ -1349,6 +1479,41 @@ Posix Faio
 
 
 .. index:: Faio_posix
+.. index:: socklen_t
+.. index:: int
+.. index:: ss_family
+.. index:: sa_family
+.. index:: sockaddr_p
+.. index:: s_addr
+.. index:: sin_family
+.. index:: sin_port
+.. index:: sin_addr
+.. index:: sin_addr
+.. index:: s6_addr
+.. index:: sin6_family
+.. index:: sin6_port
+.. index:: sin6_addr
+.. index:: sin6_addr
+.. index:: inet_ntop
+.. index:: str
+.. index:: str
+.. index:: getpeername
+.. index:: getpeername
+.. index:: close
+.. index:: shutdown
+.. index:: bad_socket
+.. index:: get_pb
+.. index:: async_rw
+.. index:: async_read
+.. index:: async_write
+.. index:: mk_async_connect
+.. index:: get_socket
+.. index:: get_err
+.. index:: connect
+.. index:: mk_accept
+.. index:: get_socket
+.. index:: mk_listener
+.. index:: accept
 .. code-block:: felix
 
   //[posix_faio.flx]

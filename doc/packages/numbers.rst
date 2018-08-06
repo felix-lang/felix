@@ -22,6 +22,9 @@ General Numeric operations.
 ===========================
 
 
+.. index:: zero
+.. index:: neg
+.. index:: one
 .. code-block:: felix
 
   //[number.flx]
@@ -65,8 +68,41 @@ Operations on Real and Complex numbers.
 .. index:: Doubleinf
 .. index:: Ldoubleinf
 .. index:: Fcomplex
+.. index:: str
 .. index:: Dcomplex
+.. index:: str
 .. index:: Lcomplex
+.. index:: str
+.. index:: real
+.. index:: imag
+.. index:: abs
+.. index:: arg
+.. index:: neg
+.. index:: zero
+.. index:: one
+.. index:: sin
+.. index:: cos
+.. index:: tan
+.. index:: asin
+.. index:: acos
+.. index:: atan
+.. index:: sinh
+.. index:: cosh
+.. index:: tanh
+.. index:: asinh
+.. index:: acosh
+.. index:: atanh
+.. index:: exp
+.. index:: log
+.. index:: pow
+.. index:: abs
+.. index:: log10
+.. index:: sqrt
+.. index:: ceil
+.. index:: floor
+.. index:: trunc
+.. index:: embed
+.. index:: atan2
 .. index:: CartComplex
 .. code-block:: felix
 
@@ -191,6 +227,12 @@ Complex Constructors.
 
 
 
+.. index:: complex
+.. index:: complex
+.. index:: complex
+.. index:: complex
+.. index:: complex
+.. index:: complex
 .. code-block:: felix
 
   //[float_math.flx]
@@ -239,6 +281,14 @@ Floating Formats
 
 
 .. index:: float_format
+.. index:: fmt
+.. index:: fmt
+.. index:: fmt_default
+.. index:: fmt_fixed
+.. index:: fmt_scientific
+.. index:: xstr
+.. index:: xstr
+.. index:: xstr
 .. code-block:: felix
 
   //[float_format.flx ]
@@ -353,29 +403,56 @@ Conversion operators.
 
 
 .. index:: Tiny
+.. index:: tiny
 .. index:: Short
+.. index:: short
 .. index:: Int
+.. index:: int
+.. index:: int
+.. index:: int
 .. index:: Long
+.. index:: long
 .. index:: Vlong
+.. index:: vlong
 .. index:: Utiny
+.. index:: utiny
 .. index:: Ushort
+.. index:: ushort
 .. index:: Uint
+.. index:: uint
 .. index:: Ulong
+.. index:: ulong
 .. index:: Uvlong
+.. index:: uvlong
 .. index:: Int8
+.. index:: int8
 .. index:: Int16
+.. index:: int16
 .. index:: Int32
+.. index:: int32
 .. index:: Int64
+.. index:: int64
 .. index:: Uint8
+.. index:: uint8
 .. index:: Uint16
+.. index:: uint16
 .. index:: Uint32
+.. index:: uint32
 .. index:: Uint64
+.. index:: uint64
 .. index:: Size
+.. index:: size
+.. index:: size
 .. index:: Ptrdiff
+.. index:: ptrdiff
 .. index:: Intptr
+.. index:: intptr
 .. index:: Uintptr
+.. index:: uintptr
 .. index:: Intmax
+.. index:: intmax
 .. index:: Uintmax
+.. index:: uintmax
 .. code-block:: felix
 
   //[int.flx]
@@ -537,6 +614,9 @@ Convert to decimal string.
 
 
 
+.. index:: str
+.. index:: str
+.. index:: str
 .. code-block:: felix
 
   //[int.flx]
@@ -599,6 +679,12 @@ Methods of integers
 
 
 
+.. index:: succ
+.. index:: pre_incr
+.. index:: post_incr
+.. index:: pred
+.. index:: pre_decr
+.. index:: post_decr
 .. code-block:: felix
 
   //[int.flx]
@@ -641,6 +727,8 @@ Methods of signed integers
 
 
 
+.. index:: sgn
+.. index:: abs
 .. code-block:: felix
 
   //[int.flx]
@@ -703,6 +791,15 @@ Quaternions
 
 
 .. index:: Quaternion
+.. index:: quaternion
+.. index:: r
+.. index:: i
+.. index:: j
+.. index:: k
+.. index:: q
+.. index:: conj
+.. index:: norm
+.. index:: reciprocal
 .. code-block:: felix
 
   //[quaternion.flx]

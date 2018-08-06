@@ -28,6 +28,23 @@ Fibres (fthreads)
 
 
 .. index:: Fibres
+.. index:: spawn_fthread
+.. index:: schedule_fthread
+.. index:: suicide
+.. index:: swait
+.. index:: chain
+.. index:: fibre_scheduler
+.. index:: fibre_scheduler
+.. index:: delete_fibre_scheduler
+.. index:: spawn_fibre
+.. index:: frun
+.. index:: run
+.. index:: run
+.. index:: get_state
+.. index:: spawn_fthread
+.. index:: kill
+.. index:: run
+.. index:: send
 .. code-block:: felix
 
   //[fibres.flx]
@@ -205,6 +222,17 @@ Synchronous Channels
 
 
 .. index:: Schannel
+.. index:: isNULL
+.. index:: isNULL
+.. index:: isNULL
+.. index:: read
+.. index:: read
+.. index:: read
+.. index:: read
+.. index:: write
+.. index:: write
+.. index:: broadcast
+.. index:: broadcast
 .. code-block:: felix
 
   //[schannels.flx]
@@ -375,6 +403,8 @@ get all the input data, but the order is indeterminate.
 
 
 .. index:: Multiplexor
+.. index:: mux
+.. index:: mux
 .. code-block:: felix
 
   //[mux.flx]
@@ -515,6 +545,7 @@ schannel types.
   
 Let's now rewrite our example:
 
+.. index:: int_to_string
 .. code-block:: felix
 
   //[subrout-02.flx]
@@ -535,6 +566,7 @@ Let's now rewrite our example:
 Even more compactly:
 
 
+.. index:: int_to_string
 .. code-block:: felix
 
   //[subrout-03.flx]

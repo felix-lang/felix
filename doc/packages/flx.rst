@@ -40,6 +40,7 @@ run time loading.
 
 
 .. index:: FlxPluginSymbols
+.. index:: addsymbols
 .. code-block:: felix
 
   //[flx_tool.flx]
@@ -106,6 +107,9 @@ The flx cache manager.
 Check if the flx cache is stale and deletes it if it is.
 
 .. index:: FlxCache
+.. index:: gramtime
+.. index:: maxtime
+.. index:: cache_join
 .. code-block:: felix
 
   //[flx_cache.flx]
@@ -424,6 +428,8 @@ which determines where to find everything.
 
 
 .. index:: FlxProfile
+.. index:: dflt_profile
+.. index:: str
 .. code-block:: felix
 
   //[flx_profile.flx]
@@ -482,6 +488,20 @@ A more detailed layout configuration based
 on command line switches and the base profile.
 
 .. index:: Config
+.. index:: str
+.. index:: set_libs_and_rtls
+.. index:: cascade_FLX_INSTALL_DIR
+.. index:: cascade_FLX_TARGET_DIR
+.. index:: cascade_FLX_SHARE_DIR
+.. index:: cascade_FLX_HOME_DIR
+.. index:: copy_profile
+.. index:: dflt_config
+.. index:: process_config_text
+.. index:: config_env_overrides
+.. index:: process_config_text_with_env_overrides
+.. index:: ess_config_text
+.. index:: std_config
+.. index:: ess_config_text_with_env_overrides
 .. code-block:: felix
 
   //[config.flx]
@@ -674,6 +694,9 @@ Control Record.
 Just initialises the base configuration data.
 
 .. index:: FlxControl
+.. index:: print_options
+.. index:: init_loopctl
+.. index:: dflt_control
 .. code-block:: felix
 
   //[flx_control.flx]
@@ -836,6 +859,13 @@ Command line argument parser.
 Parses the command line options.
 
 .. index:: FlxCmdOpt
+.. index:: setup
+.. index:: debugln
+.. index:: debugln
+.. index:: debugln
+.. index:: debugln
+.. index:: link_strings
+.. index:: mkrel
 .. code-block:: felix
 
   //[flx_cmdopt.flx]
@@ -1743,6 +1773,7 @@ tools from a base configuration.
 
 
 .. index:: FlxDepvars
+.. index:: debugln
 .. code-block:: felix
 
   //[flx_depvars.flx]
@@ -2020,6 +2051,19 @@ This part of the flx tool is responsible for
 calculating dependencies and actually running the
 external compilers.
 
+.. index:: xdebugln
+.. index:: check_cache
+.. index:: debugln
+.. index:: echoln
+.. index:: showtime
+.. index:: ehandler
+.. index:: calpackages
+.. index:: find_cxx_pkgs
+.. index:: cal_time_from_flxdepfile
+.. index:: maxf
+.. index:: cal_files_time
+.. index:: cal_cxx_uptodate
+.. index:: maxf
 .. code-block:: felix
 
   //[flx_run.flx]
@@ -3055,7 +3099,11 @@ The {flx} tool.
 ---------------
 
 
+.. index:: startlib
+.. index:: repl
 .. index:: Flx
+.. index:: ehandler
+.. index:: ehandler
 .. code-block:: felix
 
   //[flx.flx]
@@ -3280,6 +3328,7 @@ which means it takes a very long time to compile.
 
 
 .. index:: BootFlx
+.. index:: ehandler
 .. code-block:: felix
 
   //[bootflx.flx]
@@ -3441,6 +3490,7 @@ program.
 
 
 .. index:: Flx_client
+.. index:: setup
 .. code-block:: felix
 
   //[flx_plugin_client.flx]

@@ -42,9 +42,54 @@ Filename
 
 
 .. index:: Filename_class
+.. index:: sep
+.. index:: is_absolute_filename
+.. index:: root_subdir
+.. index:: executable_extension
+.. index:: static_object_extension
+.. index:: dynamic_object_extension
+.. index:: static_library_extension
+.. index:: dynamic_library_extension
+.. index:: split1
+.. index:: split
+.. index:: join
+.. index:: basename
+.. index:: dirname
+.. index:: directories
+.. index:: join
+.. index:: join
+.. index:: join
+.. index:: join
+.. index:: split_extension
+.. index:: strip_extension
+.. index:: get_extension
 .. index:: Win32Filename
+.. index:: sep
+.. index:: executable_extension
+.. index:: static_object_extension
+.. index:: dynamic_object_extension
+.. index:: static_library_extension
+.. index:: dynamic_library_extension
+.. index:: is_absolute_filename
+.. index:: root_subdir
 .. index:: OsxFilename
+.. index:: sep
+.. index:: executable_extension
+.. index:: static_object_extension
+.. index:: dynamic_object_extension
+.. index:: static_library_extension
+.. index:: dynamic_library_extension
+.. index:: is_absolute_filename
+.. index:: root_subdir
 .. index:: PosixFilename
+.. index:: sep
+.. index:: executable_extension
+.. index:: static_object_extension
+.. index:: dynamic_object_extension
+.. index:: static_library_extension
+.. index:: dynamic_library_extension
+.. index:: is_absolute_filename
+.. index:: root_subdir
 .. index:: Filename
 .. code-block:: felix
 
@@ -226,6 +271,19 @@ Filestat
 
 
 .. index:: FileStat_class
+.. index:: stat
+.. index:: utime
+.. index:: file_type
+.. index:: mtime
+.. index:: ctime
+.. index:: filetime
+.. index:: fileexists
+.. index:: filetype
+.. index:: past_time
+.. index:: future_time
+.. index:: strfiletime0
+.. index:: strfiletime
+.. index:: dfiletime
 .. index:: FileStat
 .. code-block:: felix
 
@@ -370,6 +428,13 @@ Posix FileStat
 
 
 .. index:: PosixFileStat
+.. index:: raw_mode
+.. index:: file_type
+.. index:: file_perm
+.. index:: uint
+.. index:: stat
+.. index:: utime
+.. index:: file_type
 .. code-block:: felix
 
   //[posix_filestat.flx]
@@ -469,6 +534,13 @@ Win32 FileStat
 
 
 .. index:: Win32FileStat
+.. index:: raw_mode
+.. index:: file_type
+.. index:: file_perm
+.. index:: uint
+.. index:: stat
+.. index:: utime
+.. index:: file_type
 .. code-block:: felix
 
   //[win32_filestat.flx]
@@ -552,6 +624,13 @@ File Syetem
 
 .. index:: FileSystem_class
 .. index:: FileSystem
+.. index:: unlink
+.. index:: aux
+.. index:: rm
+.. index:: find_in_path
+.. index:: regfilesin
+.. index:: regfilesin
+.. index:: rfi
 .. code-block:: felix
 
   //[filesystem.flx]
@@ -688,6 +767,8 @@ Posix File Syetem
 
 
 .. index:: PosixFileSystem
+.. index:: valid
+.. index:: int
 .. code-block:: felix
 
   //[posix_filesystem.flx]
@@ -850,6 +931,8 @@ Win32 File Syetem
 
 
 .. index:: Win32FileSystem
+.. index:: valid
+.. index:: int
 .. code-block:: felix
 
   //[win32_filesystem.flx]
@@ -1016,6 +1099,10 @@ Directory
 
 
 .. index:: Directory_class
+.. index:: mkdirs
+.. index:: filesin
+.. index:: getcwd
+.. index:: mk_absolute_filename
 .. index:: Directory
 .. code-block:: felix
 
@@ -1068,6 +1155,16 @@ Posix Directory Services
 
 
 .. index:: PosixDirectory
+.. index:: opendir
+.. index:: isNULL
+.. index:: isNULL
+.. index:: readdir
+.. index:: closedir
+.. index:: filename
+.. index:: mkdirs
+.. index:: getcwd
+.. index:: mk_absolute_filename
+.. index:: filesin
 .. code-block:: felix
 
   //[posix_directory.flx]

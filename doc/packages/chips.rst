@@ -323,6 +323,7 @@ named io.inp, io.out.
 
 
 
+.. index:: pipe
 .. code-block:: felix
 
   //[chips.flx]
@@ -504,6 +505,7 @@ an argument.
 
 
 
+.. index:: aux
 .. code-block:: felix
 
   //[chips.flx]

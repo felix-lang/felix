@@ -49,6 +49,11 @@ Environment Variables
 
 
 .. index:: Env_class
+.. index:: pathsep
+.. index:: getenv
+.. index:: issetenv
+.. index:: getenv
+.. index:: getenvlist
 .. index:: Env
 .. code-block:: felix
 
@@ -97,6 +102,7 @@ Command Line Options
 
 
 .. index:: CmdOpt
+.. index:: cmdopt
 .. code-block:: felix
 
   //[cmdopt.flx]
@@ -294,7 +300,21 @@ Posix Errno
 
 
 .. index:: Errno
+.. index:: int
+.. index:: errno_t
+.. index:: maybe_exit
+.. index:: maybe_exit
+.. index:: maybe_exit
+.. index:: strerror_r
+.. index:: strerror_r
+.. index:: strerror
 .. index:: Check
+.. index:: int_to_proc
+.. index:: int_to_int
+.. index:: pointer_to_pointer
+.. index:: ehandler
+.. index:: ehandler
+.. index:: ehandler
 .. code-block:: felix
 
   //[posix_errno.flx]
@@ -388,6 +408,20 @@ Posix Process
 
 
 .. index:: PosixProcess
+.. index:: int
+.. index:: process_status_t
+.. index:: int_of_process_status_t
+.. index:: WIFCONTINUED
+.. index:: WIFEXITED
+.. index:: WIFSIGNALED
+.. index:: WIFSTOPPED
+.. index:: WEXITSTATUS
+.. index:: WTERMSIG
+.. index:: WSTOPSIG
+.. index:: WCOREDUMP
+.. index:: str
+.. index:: str
+.. index:: int
 .. code-block:: felix
 
   //[posix_process.flx]
@@ -574,6 +608,21 @@ Win32 Process
 
 
 .. index:: Win32Process
+.. index:: intptr
+.. index:: int
+.. index:: process_status_t
+.. index:: int_of_process_status_t
+.. index:: WIFCONTINUED
+.. index:: WIFEXITED
+.. index:: WIFSIGNALED
+.. index:: WIFSTOPPED
+.. index:: WEXITSTATUS
+.. index:: WTERMSIG
+.. index:: WSTOPSIG
+.. index:: WCOREDUMP
+.. index:: str
+.. index:: intptr
+.. index:: str
 .. code-block:: felix
 
   //[win32_process.flx]
@@ -730,6 +779,13 @@ System Call
 
 
 .. index:: System
+.. index:: argv
+.. index:: argv_dflt
+.. index:: args
+.. index:: setargs
+.. index:: setargs
+.. index:: pexit
+.. index:: pexit
 .. code-block:: felix
 
   //[system.flx]
@@ -820,6 +876,11 @@ Shell
 
 
 .. index:: Shell_class
+.. index:: quote_arg
+.. index:: quote_args
+.. index:: quote_line_for_system
+.. index:: parse
+.. index:: quote_line_for_popen
 .. index:: Shell
 .. code-block:: felix
 
@@ -923,6 +984,10 @@ Posix Shell (Bash)
 
 
 .. index:: Bash
+.. index:: quote_arg
+.. index:: quote_line_for_system
+.. index:: quote_line_for_popen
+.. index:: parse
 .. code-block:: felix
 
   //[posix_shell.flx]
@@ -1105,6 +1170,10 @@ Win32 Shell (cmd.exe)
 
 
 .. index:: CmdExe
+.. index:: quote_arg
+.. index:: quote_line_for_system
+.. index:: quote_line_for_popen
+.. index:: parse
 .. code-block:: felix
 
   //[win32_shell.flx]
@@ -1242,6 +1311,8 @@ Signals
 
 
 .. index:: Signal_class
+.. index:: set_ctrl_c_flag
+.. index:: trap_ctrl_c
 .. index:: Signal
 .. code-block:: felix
 
@@ -1275,6 +1346,11 @@ Posix Signal
 
 
 .. index:: PosixSignal
+.. index:: signal_t
+.. index:: int
+.. index:: str
+.. index:: ignore_signal
+.. index:: trap_ctrl_c
 .. code-block:: felix
 
   //[posix_signal.flx]

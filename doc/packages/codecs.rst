@@ -34,6 +34,10 @@ Base64
 
 
 .. index:: Base64
+.. index:: encode
+.. index:: encode
+.. index:: wrap
+.. index:: decode
 .. code-block:: felix
 
   //[base64.flx]
@@ -179,6 +183,10 @@ Csv
 
 
 .. index:: Csv
+.. index:: get_csv_value
+.. index:: add
+.. index:: eq
+.. index:: get_csv_values
 .. code-block:: felix
 
   //[csv.flx]

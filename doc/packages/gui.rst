@@ -189,6 +189,11 @@ from the well presented sum type Felix would use.
 
 
 .. index:: FlxGuiTypes
+.. index:: box_t
+.. index:: point_t
+.. index:: label_box_t
+.. index:: rect_t
+.. index:: rect_t
 .. code-block:: felix
 
   //[types.flx]
@@ -222,6 +227,27 @@ from the well presented sum type Felix would use.
 
 
 .. index:: FlxGuiEvents
+.. index:: _match_ctor_QUIT
+.. index:: _match_ctor_WINDOWEVENT
+.. index:: _ctor_arg_WINDOWEVENT
+.. index:: _match_ctor_KEYDOWN
+.. index:: _ctor_arg_KEYDOWN
+.. index:: _match_ctor_KEYUP
+.. index:: _ctor_arg_KEYUP
+.. index:: _match_ctor_MOUSEMOTION
+.. index:: _ctor_arg_MOUSEMOTION
+.. index:: _match_ctor_MOUSEBUTTONDOWN
+.. index:: _ctor_arg_MOUSEBUTTONDOWN
+.. index:: _match_ctor_MOUSEBUTTONUP
+.. index:: _ctor_arg_MOUSEBUTTONUP
+.. index:: _match_ctor_MOUSEWHEEL
+.. index:: _ctor_arg_MOUSEWHEEL
+.. index:: _match_ctor_TEXTINPUT
+.. index:: _ctor_arg_TEXTINPUT
+.. index:: _match_ctor_TEXTEDITING
+.. index:: _ctor_arg_TEXTEDITING
+.. index:: waitevent
+.. index:: demo_timer
 .. code-block:: felix
 
   //[events.flx]
@@ -314,6 +340,9 @@ Display versions of libraries, both the one from
 the compiled header files and the binary linked in.
 
 .. index:: FlxGuiInit
+.. index:: init
+.. index:: quit
+.. index:: versions
 .. code-block:: felix
 
   //[init.flx]
@@ -388,6 +417,12 @@ from having to set up a font library Felix knows about.
 
 
 .. index:: FlxGuiFont
+.. index:: dflt_mono_font
+.. index:: dflt_sans_serif_font
+.. index:: dflt_serif_font
+.. index:: get_lineskip
+.. index:: get_textsize
+.. index:: bounding_box
 .. code-block:: felix
 
   //[font.flx]
@@ -465,6 +500,7 @@ rendering.
 
 
 .. index:: FlxGuiColor
+.. index:: RGB
 .. code-block:: felix
 
   //[color.flx]
@@ -513,6 +549,11 @@ not need that in GUI.
 
 
 .. index:: FlxGuiSurface
+.. index:: clear
+.. index:: fill
+.. index:: write
+.. index:: blit
+.. index:: set
 .. code-block:: felix
 
   //[surface.flx]
@@ -958,6 +999,8 @@ listens for events.
 
 
 .. index:: FlxGuiWindowManager
+.. index:: find_window
+.. index:: find_window_index
 .. code-block:: felix
 
   //[window_manager.flx]
@@ -1328,6 +1371,28 @@ Cascading Menu
 
 
 .. index:: FlxGuiMenu
+.. index:: find
+.. index:: find_tag
+.. index:: width
+.. index:: width
+.. index:: depth
+.. index:: width
+.. index:: depth
+.. index:: width
+.. index:: depth
+.. index:: display_menu
+.. index:: show_entry
+.. index:: get_hotrecs
+.. index:: hotrecs
+.. index:: hotpos
+.. index:: width
+.. index:: width
+.. index:: width
+.. index:: width
+.. index:: display_menu
+.. index:: show_entry
+.. index:: get_hotrecs
+.. index:: hotrecs
 .. code-block:: felix
 
   //[menu.flx]

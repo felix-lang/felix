@@ -1491,6 +1491,8 @@ A lock free thread safe bag for holding non-null pointers.
 
 
 .. index:: LockFreeBag
+.. index:: lf_bag
+.. index:: enqueue
 .. code-block:: felix
 
   //[pthread_lf_bag.flx]
@@ -1932,6 +1934,10 @@ also do the check, to ensure blocked threads stay blocked.
 
 
 .. index:: FastLock
+.. index:: fast_lock
+.. index:: delete
+.. index:: lock
+.. index:: unlock
 .. code-block:: felix
 
   //[pthread_fast_lock.flx]

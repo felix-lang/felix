@@ -154,6 +154,7 @@ Note that sets are not necessarily finite.
 
 
 .. index:: Set
+.. index:: mem
 .. code-block:: felix
 
   //[set.flx]
@@ -219,6 +220,7 @@ as a noun by encapsulating the predicate in a closure and
 thereby abstracting it.
 
 
+.. index:: invimg
 .. code-block:: felix
 
   //[set.flx]
@@ -274,6 +276,8 @@ Containers.
 
 
 .. index:: Container
+.. index:: len
+.. index:: empty
 .. code-block:: felix
 
   //[container.flx]
@@ -332,6 +336,8 @@ An online reference on `Wikibooks <http://en.wikibooks.org/wiki/Abstract_Algebra
 
 
 .. index:: Eq
+.. index:: eq
+.. index:: ne
 .. code-block:: felix
 
   //[equiv.flx]
@@ -462,6 +468,12 @@ holding the mouse over the symbol briefly.
 
 
 .. index:: Tord
+.. index:: lt
+.. index:: gt
+.. index:: le
+.. index:: ge
+.. index:: max
+.. index:: min
 .. code-block:: felix
 
   //[tord.flx]
@@ -579,7 +591,13 @@ Sequences
 
 
 .. index:: Forward
+.. index:: succ
+.. index:: pre_incr
+.. index:: post_incr
 .. index:: Bidirectional
+.. index:: pred
+.. index:: pre_decr
+.. index:: post_decr
 .. code-block:: felix
 
   //[sequence.flx]
@@ -618,6 +636,14 @@ Note we use the  :code:`inherit` statement to include
 the functions from class  :code:`Eq`.
 
 .. index:: FloatAddgrp
+.. index:: zero
+.. index:: neg
+.. index:: prefix_plus
+.. index:: add
+.. index:: plus
+.. index:: sub
+.. index:: pluseq
+.. index:: minuseq
 .. code-block:: felix
 
   //[group.flx]
@@ -692,6 +718,11 @@ binary multiplication operator and a unit.
 
 
 .. index:: FloatMultSemi1
+.. index:: muleq
+.. index:: mul
+.. index:: sqr
+.. index:: cube
+.. index:: one
 .. code-block:: felix
 
   //[group.flx]
@@ -792,6 +823,11 @@ with a division operator.
 
 
 .. index:: FloatDring
+.. index:: div
+.. index:: mod
+.. index:: recip
+.. index:: diveq
+.. index:: modeq
 .. code-block:: felix
 
   //[ring.flx]
@@ -863,6 +899,10 @@ Bitwise operations
 
 
 .. index:: Bits
+.. index:: bxor
+.. index:: bor
+.. index:: band
+.. index:: bnot
 .. code-block:: felix
 
   //[bits.flx]
@@ -916,7 +956,13 @@ Integer
 
 
 .. index:: Integer
+.. index:: shl
+.. index:: shr
+.. index:: maxval
+.. index:: minval
 .. index:: Signed_integer
+.. index:: sgn
+.. index:: abs
 .. index:: Unsigned_integer
 .. code-block:: felix
 
@@ -965,7 +1011,38 @@ real and complex numbers.
 
 
 .. index:: Trig
+.. index:: sin
+.. index:: cos
+.. index:: tan
+.. index:: sec
+.. index:: csc
+.. index:: cot
+.. index:: asin
+.. index:: acos
+.. index:: atan
+.. index:: asec
+.. index:: acsc
+.. index:: acot
+.. index:: sinh
+.. index:: cosh
+.. index:: tanh
+.. index:: sech
+.. index:: csch
+.. index:: coth
+.. index:: asinh
+.. index:: acosh
+.. index:: atanh
+.. index:: asech
+.. index:: acsch
+.. index:: acoth
+.. index:: exp
+.. index:: log
+.. index:: ln
+.. index:: pow
+.. index:: pow
 .. index:: Special
+.. index:: erf
+.. index:: erfc
 .. code-block:: felix
 
   //[trig.flx]
@@ -1078,6 +1155,14 @@ Approximate Reals.
 
 
 .. index:: Real
+.. index:: embed
+.. index:: log10
+.. index:: abs
+.. index:: sqrt
+.. index:: ceil
+.. index:: floor
+.. index:: trunc
+.. index:: atan2
 .. code-block:: felix
 
   //[real.flx]
@@ -1114,6 +1199,11 @@ Complex numbers
 
 
 .. index:: Complex
+.. index:: real
+.. index:: imag
+.. index:: abs
+.. index:: arg
+.. index:: sqrt
 .. code-block:: felix
 
   //[complex.flx]

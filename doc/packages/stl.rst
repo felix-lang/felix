@@ -26,11 +26,18 @@ Stl Iterators
 
 
 .. index:: Iterator
+.. index:: deref
 .. index:: Forward_iterator
 .. index:: Bidirectional_iterator
 .. index:: Sequence
+.. index:: erase
+.. index:: erase_between
+.. index:: clear
+.. index:: fold
 .. index:: Reversible_Sequence
+.. index:: rfold
 .. index:: Stl
+.. index:: make_pair
 .. code-block:: felix
 
   //[stl.flx]
@@ -92,6 +99,43 @@ Stl Vector
 
 
 .. index:: Stl_Vector
+.. index:: create
+.. index:: create
+.. index:: create
+.. index:: insert
+.. index:: push_back
+.. index:: front
+.. index:: front
+.. index:: subscript
+.. index:: reserve
+.. index:: add
+.. index:: sub
+.. index:: pluseq
+.. index:: minuseq
+.. index:: subscript
+.. index:: len
+.. index:: empty
+.. index:: begin
+.. index:: end
+.. index:: erase
+.. index:: erase_between
+.. index:: clear
+.. index:: rbegin
+.. index:: rend
+.. index:: deref
+.. index:: succ
+.. index:: pre_incr
+.. index:: post_incr
+.. index:: pred
+.. index:: pre_decr
+.. index:: post_decr
+.. index:: deref
+.. index:: succ
+.. index:: pre_incr
+.. index:: post_incr
+.. index:: pred
+.. index:: pre_decr
+.. index:: post_decr
 .. code-block:: felix
 
   //[stl_vector.flx]
@@ -202,6 +246,33 @@ Stl Set
 
 
 .. index:: Stl_Set
+.. index:: create
+.. index:: insert
+.. index:: find
+.. index:: mem
+.. index:: len
+.. index:: empty
+.. index:: begin
+.. index:: end
+.. index:: erase
+.. index:: erase_between
+.. index:: clear
+.. index:: rbegin
+.. index:: rend
+.. index:: deref
+.. index:: succ
+.. index:: pre_incr
+.. index:: post_incr
+.. index:: pred
+.. index:: pre_decr
+.. index:: post_decr
+.. index:: deref
+.. index:: succ
+.. index:: pre_incr
+.. index:: post_incr
+.. index:: pred
+.. index:: pre_decr
+.. index:: post_decr
 .. code-block:: felix
 
   //[stl_set.flx]
@@ -301,6 +372,33 @@ Stl Multiset
 
 
 .. index:: Stl_MultiSet
+.. index:: create
+.. index:: insert
+.. index:: find
+.. index:: mem
+.. index:: len
+.. index:: empty
+.. index:: begin
+.. index:: end
+.. index:: erase
+.. index:: erase_between
+.. index:: clear
+.. index:: rbegin
+.. index:: rend
+.. index:: deref
+.. index:: succ
+.. index:: pre_incr
+.. index:: post_incr
+.. index:: pred
+.. index:: pre_decr
+.. index:: post_decr
+.. index:: deref
+.. index:: succ
+.. index:: pre_incr
+.. index:: post_incr
+.. index:: pred
+.. index:: pre_decr
+.. index:: post_decr
 .. code-block:: felix
 
   //[stl_multiset.flx]
@@ -399,6 +497,34 @@ Stl Map
 
 
 .. index:: Stl_Map
+.. index:: create
+.. index:: subscript
+.. index:: find
+.. index:: mem
+.. index:: insert
+.. index:: len
+.. index:: empty
+.. index:: begin
+.. index:: end
+.. index:: erase
+.. index:: erase_between
+.. index:: clear
+.. index:: rbegin
+.. index:: rend
+.. index:: deref
+.. index:: succ
+.. index:: pre_incr
+.. index:: post_incr
+.. index:: pred
+.. index:: pre_decr
+.. index:: post_decr
+.. index:: deref
+.. index:: succ
+.. index:: pre_incr
+.. index:: post_incr
+.. index:: pred
+.. index:: pre_decr
+.. index:: post_decr
 .. code-block:: felix
 
   //[stl_map.flx]
@@ -500,6 +626,34 @@ Stl Multimap
 
 
 .. index:: Stl_MultiMap
+.. index:: create
+.. index:: subscript
+.. index:: find
+.. index:: mem
+.. index:: insert
+.. index:: len
+.. index:: empty
+.. index:: begin
+.. index:: end
+.. index:: erase
+.. index:: erase_between
+.. index:: clear
+.. index:: rbegin
+.. index:: rend
+.. index:: deref
+.. index:: succ
+.. index:: pre_incr
+.. index:: post_incr
+.. index:: pred
+.. index:: pre_decr
+.. index:: post_decr
+.. index:: deref
+.. index:: succ
+.. index:: pre_incr
+.. index:: post_incr
+.. index:: pred
+.. index:: pre_decr
+.. index:: post_decr
 .. code-block:: felix
 
   //[stl_multimap.flx]
@@ -599,6 +753,38 @@ Stl List
 
 
 .. index:: Stl_List
+.. index:: create
+.. index:: create
+.. index:: create
+.. index:: insert
+.. index:: push_front
+.. index:: push_back
+.. index:: front
+.. index:: front
+.. index:: pop_front
+.. index:: len
+.. index:: empty
+.. index:: begin
+.. index:: end
+.. index:: erase
+.. index:: erase_between
+.. index:: clear
+.. index:: rbegin
+.. index:: rend
+.. index:: deref
+.. index:: succ
+.. index:: pre_incr
+.. index:: post_incr
+.. index:: pred
+.. index:: pre_decr
+.. index:: post_decr
+.. index:: deref
+.. index:: succ
+.. index:: pre_incr
+.. index:: post_incr
+.. index:: pred
+.. index:: pre_decr
+.. index:: post_decr
 .. code-block:: felix
 
   //[stl_list.flx]

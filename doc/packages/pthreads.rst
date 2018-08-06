@@ -68,6 +68,8 @@ synchronisation instead.
 
 
 .. index:: Pthread
+.. index:: spawn_pthread
+.. index:: thread_yield
 .. code-block:: felix
 
   //[pthread.flx]
@@ -125,6 +127,12 @@ error.
 
 
 .. index:: Pchannel
+.. index:: mk_pchannel
+.. index:: mk_iopchannel_pair
+.. index:: mk_iopchannel_pair
+.. index:: _read
+.. index:: _write
+.. index:: write
 .. code-block:: felix
 
   //[pchannels.flx]
@@ -213,6 +221,14 @@ Ppipes.
 
 
 .. index:: Ppipe
+.. index:: psource
+.. index:: pisrc
+.. index:: pipe
+.. index:: pipe
+.. index:: xpipe
+.. index:: pipe
+.. index:: pipe
+.. index:: sort
 .. code-block:: felix
 
   //[ppipe.flx]
@@ -336,6 +352,8 @@ Fork/Join.
 
 
 .. index:: ForkJoin
+.. index:: concurrently_by_iterator
+.. index:: concurrently
 .. code-block:: felix
 
   //[forkjoin.flx]
@@ -384,6 +402,10 @@ after use manually, they're not garbage collected.
 
 
 .. index:: Mutex
+.. index:: mutex
+.. index:: lock
+.. index:: unlock
+.. index:: destroy
 .. code-block:: felix
 
   //[mutex.flx]
@@ -428,6 +450,11 @@ to go elsewhere!
 
 
 .. index:: Semaphore
+.. index:: semaphore
+.. index:: semaphore
+.. index:: destroy
+.. index:: post
+.. index:: wait
 .. code-block:: felix
 
   //[semaphore.flx]
@@ -452,6 +479,13 @@ Condition Variables.
 
 
 .. index:: Condition_Variable
+.. index:: condition_variable
+.. index:: destroy
+.. index:: lock
+.. index:: unlock
+.. index:: wait
+.. index:: signal
+.. index:: broadcast
 .. code-block:: felix
 
   //[condition_variable.flx]
@@ -499,6 +533,10 @@ Probably redundant now we have upgraded to C++11 and have atomics.
 
 
 .. index:: Ts_counter
+.. index:: ts_counter
+.. index:: destroy
+.. index:: set
+.. index:: wait_zero
 .. code-block:: felix
 
   //[ts_counter.flx]
@@ -525,6 +563,9 @@ Thread Safe Bound Queue.
 
 
 .. index:: TS_Bound_Queue
+.. index:: enqueue
+.. index:: wait
+.. index:: resize
 .. code-block:: felix
 
   //[ts_bound_queue.flx]
@@ -604,6 +645,12 @@ Atomic operations
 
 
 .. index:: Atomic
+.. index:: delete
+.. index:: pre_incr
+.. index:: pre_decr
+.. index:: store
+.. index:: store
+.. index:: str
 .. code-block:: felix
 
   //[atomic.flx]
@@ -651,6 +698,16 @@ overhead posting a job.
 
 
 .. index:: ThreadPool
+.. index:: get_nthreads
+.. index:: barrier
+.. index:: start
+.. index:: start
+.. index:: queue_job
+.. index:: stop
+.. index:: post_barrier
+.. index:: notify
+.. index:: join
+.. index:: pfor_segment
 .. code-block:: felix
 
   //[threadpool.flx]

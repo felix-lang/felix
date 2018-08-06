@@ -23,6 +23,16 @@ Debugging Aid.
 
 
 .. index:: Debug
+.. index:: flx_location_t
+.. index:: filename
+.. index:: startline
+.. index:: startcol
+.. index:: endline
+.. index:: endcol
+.. index:: str
+.. index:: repr_expr
+.. index:: enable_local_udp_trace
+.. index:: send_udp_trace_message
 .. code-block:: felix
 
   //[debug.flx]

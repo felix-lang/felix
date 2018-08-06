@@ -126,7 +126,16 @@ Option
 
 
 .. index:: Option
+.. index:: str
+.. index:: or_else
+.. index:: or_else
+.. index:: iter
+.. index:: get
+.. index:: map
+.. index:: filter
 .. index:: DefaultValue
+.. index:: default
+.. index:: or_default
 .. code-block:: felix
 
   //[option.flx]
@@ -252,6 +261,8 @@ Slice
 
 
 
+.. index:: cal_slice
+.. index:: map
 .. code-block:: felix
 
   //[slice.flx]
@@ -422,6 +433,11 @@ Operations on sums of units
 Treated as finite cyclic groups.
 
 
+.. index:: str
+.. index:: str
+.. index:: zero
+.. index:: neg
+.. index:: str
 .. code-block:: felix
 
   //[unitsum.flx]
@@ -514,6 +530,17 @@ Category Theoretic Functional Operations
 
 
 .. index:: Functional
+.. index:: curry
+.. index:: curry
+.. index:: uncurry2
+.. index:: uncurry3
+.. index:: twist
+.. index:: proj1
+.. index:: proj2
+.. index:: dup
+.. index:: prdx
+.. index:: compose
+.. index:: rev_compose
 .. code-block:: felix
 
   //[functional.flx]
@@ -597,7 +624,31 @@ Tuples
 
 
 .. index:: Tuple
+.. index:: tuple_str
+.. index:: tuple_str
+.. index:: tuple_str
+.. index:: str
+.. index:: str
+.. index:: str
+.. index:: field
+.. index:: field
+.. index:: field
+.. index:: field
+.. index:: field
+.. index:: field
+.. index:: field
+.. index:: field
+.. index:: field
+.. index:: field
+.. index:: field
+.. index:: field
+.. index:: field
+.. index:: field
 .. index:: parallel_tuple_comp
+.. index:: ravel
+.. index:: ravel
+.. index:: ravel
+.. index:: ravel
 .. code-block:: felix
 
   //[tuple.flx]

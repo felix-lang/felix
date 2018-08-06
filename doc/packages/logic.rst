@@ -36,7 +36,26 @@ to only 8 cbools.
 
 
 .. index:: Bool
+.. index:: bool
+.. index:: land
+.. index:: nand
+.. index:: lor
+.. index:: nor
+.. index:: xor
+.. index:: lnot
+.. index:: implies
 .. index:: CBool
+.. index:: cbool
+.. index:: land
+.. index:: nand
+.. index:: lor
+.. index:: nor
+.. index:: xor
+.. index:: lnot
+.. index:: implies
+.. index:: zero
+.. index:: str
+.. index:: str
 .. code-block:: felix
 
   //[bool.flx]

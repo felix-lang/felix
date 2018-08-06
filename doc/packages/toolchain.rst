@@ -134,6 +134,10 @@ gcc and clang basically.
 
 
 .. index:: CxxCompiler
+.. index:: mkinc
+.. index:: mkincs
+.. index:: mkmac
+.. index:: mkmacs
 .. code-block:: felix
 
   //[flx_cxx.flx]
@@ -419,6 +423,8 @@ to invoke the compiler. The dependent file list is generated
 by the underlying compiler, which must support this ability.
 
 
+.. index:: maxf
+.. index:: maxf
 .. code-block:: felix
 
   //[flx_depchk.flx]
@@ -527,6 +533,10 @@ specification. Used by the flx_build_rtl tool.
 
 
 .. index:: FlxLibBuild
+.. index:: dbug
+.. index:: ehandler
+.. index:: objname
+.. index:: objname
 .. code-block:: felix
 
   //[flx_mklib.flx]
@@ -1752,6 +1762,8 @@ Cygwin interface.
 
 
 .. index:: Cygwin
+.. index:: cygwin_to_win32
+.. index:: win32_to_cygwin
 .. code-block:: felix
 
   //[cygwin.flx]
@@ -1814,6 +1826,7 @@ Object for MSVC++ on Windows
 ----------------------------
 
 
+.. index:: checkwarn
 .. code-block:: felix
 
   //[msvc_win32.flx]
@@ -2325,6 +2338,7 @@ iPhone Plugin
 -------------
 
 
+.. index:: setup
 .. code-block:: felix
 
   //[toolchain_iphoneos.flx]
@@ -2343,6 +2357,7 @@ iPhone Plugin
   export fun setup of (string) as "toolchain_iphoneos_setup";
 
 
+.. index:: setup
 .. code-block:: felix
 
   //[toolchain_iphonesimulator.flx]
@@ -2367,6 +2382,7 @@ Plugin for gcc on Linux
 ------------------------
 
 
+.. index:: setup
 .. code-block:: felix
 
   //[toolchain_gcc_linux.flx]
@@ -2388,6 +2404,7 @@ Plugin for gcc on OSX
 ---------------------
 
 
+.. index:: setup
 .. code-block:: felix
 
   //[toolchain_gcc_osx.flx]
@@ -2409,6 +2426,7 @@ Plugin for clang on Linux
 --------------------------
 
 
+.. index:: setup
 .. code-block:: felix
 
   //[toolchain_clang_linux.flx]
@@ -2433,6 +2451,7 @@ Plugin for clang on OSX
 -----------------------
 
 
+.. index:: setup
 .. code-block:: felix
 
   //[toolchain_clang_osx.flx]
@@ -2455,6 +2474,7 @@ MSVC++ Plugin for Win32
 -----------------------
 
 
+.. index:: setup
 .. code-block:: felix
 
   //[toolchain_msvc_win32.flx]

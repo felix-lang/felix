@@ -84,6 +84,9 @@ SDL2.flx
 
 
 .. index:: SDL2
+.. index:: SDL_Quit
+.. index:: SDL_QuitSubSystem
+.. index:: SDL_WasInit
 .. code-block:: felix
 
   //[SDL2.flx]
@@ -161,6 +164,7 @@ SDL_active.flx
 
 
 
+.. index:: SDL_GetAppState
 .. code-block:: felix
 
   //[SDL_active.flx]
@@ -193,6 +197,23 @@ SDL_audio.flx
 
 
 
+.. index:: eq
+.. index:: get_callback
+.. index:: SDL_AudioQuit
+.. index:: SDL_CloseAudio
+.. index:: SDL_FreeWAV
+.. index:: SDL_LockAudio
+.. index:: SDL_MixAudio
+.. index:: SDL_PauseAudio
+.. index:: SDL_UnlockAudio
+.. index:: SDL_AudioDriverName
+.. index:: SDL_AudioInit
+.. index:: SDL_BuildAudioCVT
+.. index:: SDL_ConvertAudio
+.. index:: SDL_GetAudioStatus
+.. index:: SDL_LoadWAV_RW
+.. index:: SDL_OpenAudio
+.. index:: SDL_LoadWAV
 .. code-block:: felix
 
   //[SDL_audio.flx]
@@ -326,6 +347,17 @@ SDL_cdrom.flx
 
 
 
+.. index:: SDL_CDClose
+.. index:: SDL_CDEject
+.. index:: SDL_CDName
+.. index:: SDL_CDNumDrives
+.. index:: SDL_CDOpen
+.. index:: SDL_CDPause
+.. index:: SDL_CDPlay
+.. index:: SDL_CDPlayTracks
+.. index:: SDL_CDResume
+.. index:: SDL_CDStatus
+.. index:: SDL_CDStop
 .. code-block:: felix
 
   //[SDL_cdrom.flx]
@@ -410,6 +442,8 @@ SDL_clipboard.flx
 
 
 .. index:: SDL_clipboard_h
+.. index:: SDL_GetClipboardText
+.. index:: SDL_HasClipboardText
 .. code-block:: felix
 
   //[SDL_clipboard.flx]
@@ -453,6 +487,21 @@ SDL_endian.flx
 
 
 
+.. index:: SDL_ReadBE16
+.. index:: SDL_ReadBE32
+.. index:: SDL_ReadBE64
+.. index:: SDL_ReadLE16
+.. index:: SDL_ReadLE32
+.. index:: SDL_ReadLE64
+.. index:: SDL_Swap16
+.. index:: SDL_Swap32
+.. index:: SDL_Swap64
+.. index:: SDL_WriteBE16
+.. index:: SDL_WriteBE32
+.. index:: SDL_WriteBE64
+.. index:: SDL_WriteLE16
+.. index:: SDL_WriteLE32
+.. index:: SDL_WriteLE64
 .. code-block:: felix
 
   //[SDL_endian.flx]
@@ -511,6 +560,8 @@ SDL_error.flx
 
 
 .. index:: SDL_error_h
+.. index:: SDL_ClearError
+.. index:: SDL_GetError
 .. code-block:: felix
 
   //[SDL_error.flx]
@@ -547,6 +598,22 @@ SDL_events.flx
 
 
 .. index:: SDL_events_h
+.. index:: str
+.. index:: uint32
+.. index:: SDL_EventType
+.. index:: str
+.. index:: uint8
+.. index:: SDL_WindowEventID
+.. index:: SDL_GetWindowID
+.. index:: SDL_PumpEvents
+.. index:: SDL_HasEvent
+.. index:: SDL_HasEvents
+.. index:: SDL_FlushEvent
+.. index:: SDL_FlushEvents
+.. index:: SDL_SetEventFilter
+.. index:: SDL_AddEventWatch
+.. index:: SDL_DelEventWatch
+.. index:: SDL_FilterEvents
 .. code-block:: felix
 
   //[SDL_events.flx]
@@ -1301,6 +1368,10 @@ SDL_framerate.flx
 
 
 
+.. index:: SDL_framerateDelay
+.. index:: SDL_initFramerate
+.. index:: SDL_getFramerate
+.. index:: SDL_setFramerate
 .. code-block:: felix
 
   //[SDL_framerate.flx]
@@ -1344,6 +1415,52 @@ SDL_gfxPrimitives.flx
 
 
 
+.. index:: aacircleColor
+.. index:: aacircleRGBA
+.. index:: aaellipseColor
+.. index:: aaellipseRGBA
+.. index:: aalineColor
+.. index:: aalineRGBA
+.. index:: aapolygonColor
+.. index:: aapolygonRGBA
+.. index:: aatrigonColor
+.. index:: aatrigonRGBA
+.. index:: bezierColor
+.. index:: bezierRGBA
+.. index:: boxColor
+.. index:: boxRGBA
+.. index:: characterColor
+.. index:: characterRGBA
+.. index:: circleColor
+.. index:: circleRGBA
+.. index:: ellipseColor
+.. index:: ellipseRGBA
+.. index:: filledCircleColor
+.. index:: filledCircleRGBA
+.. index:: filledEllipseColor
+.. index:: filledEllipseRGBA
+.. index:: filledPolygonColor
+.. index:: filledPolygonRGBA
+.. index:: filledTrigonColor
+.. index:: filledTrigonRGBA
+.. index:: filledpieColor
+.. index:: filledpieRGBA
+.. index:: hlineColor
+.. index:: hlineRGBA
+.. index:: lineColor
+.. index:: lineRGBA
+.. index:: pixelColor
+.. index:: pixelRGBA
+.. index:: polygonColor
+.. index:: polygonRGBA
+.. index:: rectangleColor
+.. index:: rectangleRGBA
+.. index:: stringColor
+.. index:: stringRGBA
+.. index:: trigonColor
+.. index:: trigonRGBA
+.. index:: vlineColor
+.. index:: vlineRGBA
 .. code-block:: felix
 
   //[SDL_gfxPrimitives.flx]
@@ -1454,6 +1571,36 @@ SDL_image.flx
 
 
 .. index:: SDL_image_h
+.. index:: IMG_Linked_Version
+.. index:: IMG_Compiled_Version
+.. index:: IMG_Compiled_Version
+.. index:: IMG_Quit
+.. index:: IMG_InvertAlpha
+.. index:: IMG_Load
+.. index:: IMG_LoadBMP_RW
+.. index:: IMG_LoadGIF_RW
+.. index:: IMG_LoadJPG_RW
+.. index:: IMG_LoadLBM_RW
+.. index:: IMG_LoadPCX_RW
+.. index:: IMG_LoadPNG_RW
+.. index:: IMG_LoadPNM_RW
+.. index:: IMG_LoadTGA_RW
+.. index:: IMG_LoadTIF_RW
+.. index:: IMG_LoadTyped_RW
+.. index:: IMG_LoadXCF_RW
+.. index:: IMG_LoadXPM_RW
+.. index:: IMG_Load_RW
+.. index:: IMG_ReadXPMFromArray
+.. index:: IMG_isBMP
+.. index:: IMG_isGIF
+.. index:: IMG_isJPG
+.. index:: IMG_isLBM
+.. index:: IMG_isPCX
+.. index:: IMG_isPNG
+.. index:: IMG_isPNM
+.. index:: IMG_isTIF
+.. index:: IMG_isXCF
+.. index:: IMG_isXPM
 .. code-block:: felix
 
   //[SDL_image.flx]
@@ -1531,6 +1678,44 @@ SDL_imageFilter.flx
 
 
 
+.. index:: SDL_imageFilterAlignStack
+.. index:: SDL_imageFilterMMXoff
+.. index:: SDL_imageFilterMMXon
+.. index:: SDL_imageFilterRestoreStack
+.. index:: SDL_imageFilterAbsDiff
+.. index:: SDL_imageFilterAdd
+.. index:: SDL_imageFilterAddByte
+.. index:: SDL_imageFilterAddByteToHalf
+.. index:: SDL_imageFilterBinarizeUsingThreshold
+.. index:: SDL_imageFilterBitAnd
+.. index:: SDL_imageFilterBitNegation
+.. index:: SDL_imageFilterBitOr
+.. index:: SDL_imageFilterClipToRange
+.. index:: SDL_imageFilterConvolveKernel3x3Divide
+.. index:: SDL_imageFilterConvolveKernel3x3ShiftRight
+.. index:: SDL_imageFilterConvolveKernel5x5Divide
+.. index:: SDL_imageFilterConvolveKernel5x5ShiftRight
+.. index:: SDL_imageFilterConvolveKernel7x7Divide
+.. index:: SDL_imageFilterConvolveKernel7x7ShiftRight
+.. index:: SDL_imageFilterConvolveKernel9x9Divide
+.. index:: SDL_imageFilterConvolveKernel9x9ShiftRight
+.. index:: SDL_imageFilterDiv
+.. index:: SDL_imageFilterMMXdetect
+.. index:: SDL_imageFilterMean
+.. index:: SDL_imageFilterMult
+.. index:: SDL_imageFilterMultByByte
+.. index:: SDL_imageFilterMultDivby2
+.. index:: SDL_imageFilterMultDivby4
+.. index:: SDL_imageFilterMultNor
+.. index:: SDL_imageFilterNormalizeLinear
+.. index:: SDL_imageFilterShiftLeft
+.. index:: SDL_imageFilterShiftLeftByte
+.. index:: SDL_imageFilterShiftRight
+.. index:: SDL_imageFilterShiftRightAndMultByByte
+.. index:: SDL_imageFilterSobelX
+.. index:: SDL_imageFilterSobelXShiftRight
+.. index:: SDL_imageFilterSub
+.. index:: SDL_imageFilterSubByte
 .. code-block:: felix
 
   //[SDL_imageFilter.flx]
@@ -1602,6 +1787,22 @@ SDL_joystick.flx
 
 
 
+.. index:: SDL_JoystickClose
+.. index:: SDL_JoystickUpdate
+.. index:: SDL_JoystickEventState
+.. index:: SDL_JoystickGetAxis
+.. index:: SDL_JoystickGetBall
+.. index:: SDL_JoystickGetButton
+.. index:: SDL_JoystickGetHat
+.. index:: SDL_JoystickIndex
+.. index:: SDL_JoystickName
+.. index:: SDL_JoystickNumAxes
+.. index:: SDL_JoystickNumBalls
+.. index:: SDL_JoystickNumButtons
+.. index:: SDL_JoystickNumHats
+.. index:: SDL_JoystickOpen
+.. index:: SDL_JoystickOpened
+.. index:: SDL_NumJoysticks
 .. code-block:: felix
 
   //[SDL_joystick.flx]
@@ -1663,6 +1864,12 @@ SDL_keyboard.flx
 
 
 
+.. index:: SDL_SetModState
+.. index:: SDL_EnableKeyRepeat
+.. index:: SDL_EnableUNICODE
+.. index:: SDL_GetKeyName
+.. index:: SDL_GetKeyState
+.. index:: SDL_GetModState
 .. code-block:: felix
 
   //[SDL_keyboard.flx]
@@ -1713,6 +1920,11 @@ SDL_keycode.flx
 
 
 .. index:: SDL_keycode_h
+.. index:: int
+.. index:: SDL_Keycode
+.. index:: str
+.. index:: uint16
+.. index:: strmods
 .. code-block:: felix
 
   //[SDL_keycode.flx]
@@ -2282,6 +2494,71 @@ SDL_mixer.flx
 
 
 
+.. index:: Mix_ChannelFinished
+.. index:: Mix_CloseAudio
+.. index:: Mix_FreeChunk
+.. index:: Mix_FreeMusic
+.. index:: Mix_HookMusic
+.. index:: Mix_HookMusicFinished
+.. index:: Mix_Pause
+.. index:: Mix_PauseMusic
+.. index:: Mix_Resume
+.. index:: Mix_ResumeMusic
+.. index:: Mix_RewindMusic
+.. index:: Mix_SetPostMix
+.. index:: Mix_AllocateChannels
+.. index:: Mix_ExpireChannel
+.. index:: Mix_FadeInChannelTimed
+.. index:: Mix_FadeInMusic
+.. index:: Mix_FadeInMusicPos
+.. index:: Mix_FadeOutChannel
+.. index:: Mix_FadeOutGroup
+.. index:: Mix_FadeOutMusic
+.. index:: Mix_FadingChannel
+.. index:: Mix_FadingMusic
+.. index:: Mix_GetChunk
+.. index:: Mix_GetMusicHookData
+.. index:: Mix_GetMusicType
+.. index:: Mix_GetSynchroValue
+.. index:: Mix_GroupAvailable
+.. index:: Mix_GroupChannel
+.. index:: Mix_GroupChannels
+.. index:: Mix_GroupCount
+.. index:: Mix_GroupNewer
+.. index:: Mix_GroupOldest
+.. index:: Mix_HaltChannel
+.. index:: Mix_HaltGroup
+.. index:: Mix_HaltMusic
+.. index:: Mix_Linked_Version
+.. index:: Mix_LoadMUS
+.. index:: Mix_LoadWAV_RW
+.. index:: Mix_OpenAudio
+.. index:: Mix_Paused
+.. index:: Mix_PausedMusic
+.. index:: Mix_PlayChannelTimed
+.. index:: Mix_PlayMusic
+.. index:: Mix_Playing
+.. index:: Mix_PlayingMusic
+.. index:: Mix_QuerySpec
+.. index:: Mix_QuickLoad_RAW
+.. index:: Mix_QuickLoad_WAV
+.. index:: Mix_RegisterEffect
+.. index:: Mix_ReserveChannels
+.. index:: Mix_SetDistance
+.. index:: Mix_SetMusicCMD
+.. index:: Mix_SetMusicPosition
+.. index:: Mix_SetPanning
+.. index:: Mix_SetPosition
+.. index:: Mix_SetReverseStereo
+.. index:: Mix_SetSynchroValue
+.. index:: Mix_UnregisterAllEffects
+.. index:: Mix_UnregisterEffect
+.. index:: Mix_Volume
+.. index:: Mix_VolumeChunk
+.. index:: Mix_VolumeMusic
+.. index:: wrapper_Mix_HookMusic
+.. index:: wrapper_Mix_RegisterEffect
+.. index:: wrapper_Mix_SetPostMix
 .. code-block:: felix
 
   //[SDL_mixer.flx]
@@ -2479,6 +2756,20 @@ SDL_mouse.flx
 
 
 .. index:: SDL_mouse_h
+.. index:: SDL_FreeCursor
+.. index:: SDL_SetCursor
+.. index:: SDL_WarpMouseInWindow
+.. index:: SDL_CreateCursor
+.. index:: SDL_CreateColorCursor
+.. index:: SDL_CreateSystemCursor
+.. index:: SDL_GetCursor
+.. index:: SDL_GetDefaultCursor
+.. index:: SDL_ShowCursor
+.. index:: SDL_GetMouseState
+.. index:: SDL_GetRelativeMouseState
+.. index:: SDL_GetMouseFocus
+.. index:: SDL_SetRelativeMouseMode
+.. index:: SDL_GetRelativeMouseMode
 .. code-block:: felix
 
   //[SDL_mouse.flx]
@@ -2545,6 +2836,25 @@ SDL_mutex.flx
 
 
 
+.. index:: SDL_DestroyCond
+.. index:: SDL_DestroyMutex
+.. index:: SDL_DestroySemaphore
+.. index:: SDL_CondBroadcast
+.. index:: SDL_CondSignal
+.. index:: SDL_CondWait
+.. index:: SDL_CondWaitTimeout
+.. index:: SDL_CreateCond
+.. index:: SDL_CreateMutex
+.. index:: SDL_CreateSemaphore
+.. index:: SDL_SemPost
+.. index:: SDL_SemTryWait
+.. index:: SDL_SemValue
+.. index:: SDL_SemWait
+.. index:: SDL_SemWaitTimeout
+.. index:: SDL_mutexP
+.. index:: SDL_mutexV
+.. index:: SDL_LockMutex
+.. index:: SDL_UnlockMutex
 .. code-block:: felix
 
   //[SDL_mutex.flx]
@@ -2601,6 +2911,39 @@ SDL_net.flx
 
 
 
+.. index:: SDLNet_FreePacket
+.. index:: SDLNet_FreePacketV
+.. index:: SDLNet_FreeSocketSet
+.. index:: SDLNet_Quit
+.. index:: SDLNet_TCP_Close
+.. index:: SDLNet_UDP_Close
+.. index:: SDLNet_UDP_Unbind
+.. index:: SDLNet_Write16
+.. index:: SDLNet_Write32
+.. index:: SDLNet_AddSocket
+.. index:: SDLNet_AllocPacket
+.. index:: SDLNet_AllocPacketV
+.. index:: SDLNet_AllocSocketSet
+.. index:: SDLNet_CheckSockets
+.. index:: SDLNet_DelSocket
+.. index:: SDLNet_Init
+.. index:: SDLNet_Read16
+.. index:: SDLNet_Read32
+.. index:: SDLNet_ResizePacket
+.. index:: SDLNet_ResolveHost
+.. index:: SDLNet_ResolveIP
+.. index:: SDLNet_TCP_Accept
+.. index:: SDLNet_TCP_GetPeerAddress
+.. index:: SDLNet_TCP_Open
+.. index:: SDLNet_TCP_Recv
+.. index:: SDLNet_TCP_Send
+.. index:: SDLNet_UDP_Bind
+.. index:: SDLNet_UDP_GetPeerAddress
+.. index:: SDLNet_UDP_Open
+.. index:: SDLNet_UDP_Recv
+.. index:: SDLNet_UDP_RecvV
+.. index:: SDLNet_UDP_Send
+.. index:: SDLNet_UDP_SendV
 .. code-block:: felix
 
   //[SDL_net.flx]
@@ -2727,6 +3070,8 @@ SDL_pixels.flx
 
 
 .. index:: SDL_pixels_h
+.. index:: SDL_MapRGB
+.. index:: SDL_MapRGBA
 .. code-block:: felix
 
   //[SDL_pixels.flx]
@@ -2785,6 +3130,8 @@ SDL_rect.flx
 
 
 .. index:: SDL_rect_h
+.. index:: inRect
+.. index:: str
 .. code-block:: felix
 
   //[SDL_rect.flx]
@@ -2820,6 +3167,8 @@ SDL_render.flx
 
 
 .. index:: SDL_Render_h
+.. index:: SDL_CreateSoftwareRenderer
+.. index:: SDL_DestroyRenderer
 .. code-block:: felix
 
   //[SDL_render.flx]
@@ -2841,6 +3190,10 @@ SDL_rotozoom.flx
 
 
 
+.. index:: rotozoomSurfaceSize
+.. index:: zoomSurfaceSize
+.. index:: rotozoomSurface
+.. index:: zoomSurface
 .. code-block:: felix
 
   //[SDL_rotozoom.flx]
@@ -2899,6 +3252,18 @@ SDL_rwops.flx
 
 
 .. index:: SDL_rwops_h
+.. index:: SDL_FreeRW
+.. index:: SDL_AllocRW
+.. index:: SDL_RWFromConstMem
+.. index:: SDL_RWFromFP
+.. index:: SDL_RWFromInputFile
+.. index:: SDL_RWFromFile
+.. index:: SDL_RWFromMem
+.. index:: get_read
+.. index:: get_write
+.. index:: get_seek
+.. index:: get_close
+.. index:: get_type
 .. code-block:: felix
 
   //[SDL_rwops.flx]
@@ -3325,6 +3690,20 @@ SDL_sound.flx
 
 
 
+.. index:: Sound_ClearError
+.. index:: Sound_FreeSample
+.. index:: Sound_GetLinkedVersion
+.. index:: Sound_AvailableDecoders
+.. index:: Sound_Decode
+.. index:: Sound_DecodeAll
+.. index:: Sound_GetError
+.. index:: Sound_Init
+.. index:: Sound_NewSample
+.. index:: Sound_NewSampleFromFile
+.. index:: Sound_Quit
+.. index:: Sound_Rewind
+.. index:: Sound_Seek
+.. index:: Sound_SetBufferSize
 .. code-block:: felix
 
   //[SDL_sound.flx]
@@ -3391,6 +3770,11 @@ SDL_surface.flx
 
 
 .. index:: SDL_surface_h
+.. index:: SDL_FreeSurface
+.. index:: SDL_ClearClipRect
+.. index:: SDL_MUSTLOCK
+.. index:: SDL_LockSurface
+.. index:: SDL_UnlockSurface
 .. code-block:: felix
 
   //[SDL_surface.flx]
@@ -3440,6 +3824,12 @@ SDL_timer.flx
 
 
 
+.. index:: SDL_Delay
+.. index:: SDL_AddTimer
+.. index:: SDL_GetTicks
+.. index:: SDL_RemoveTimer
+.. index:: SDL_SetTimer
+.. index:: wrapper_SDL_AddTimer
 .. code-block:: felix
 
   //[SDL_timer.flx]
@@ -3514,6 +3904,51 @@ SDL_ttf.flx
 
 
 .. index:: SDL_ttf_h
+.. index:: TTF_Compiled_Version
+.. index:: TTF_Linked_Version
+.. index:: TTF_Compiled_Version
+.. index:: TTF_Quit
+.. index:: TTF_WasInit
+.. index:: TTF_ByteSwappedUNICODE
+.. index:: TTF_OpenFontRW
+.. index:: TTF_CloseFont
+.. index:: TTF_ValidFont
+.. index:: TTF_GetFontStyle
+.. index:: TTF_SetFontStyle
+.. index:: TTF_GetFontOutline
+.. index:: TTF_SetFontOutline
+.. index:: TTF_GetFontHeight
+.. index:: TTF_GetFontHinting
+.. index:: TTF_SetFontHinting
+.. index:: TTF_GetFontKerning
+.. index:: TTF_SetFontKerning
+.. index:: TTF_FontHeight
+.. index:: TTF_FontAscent
+.. index:: TTF_FontDescent
+.. index:: TTF_FontLineSkip
+.. index:: TTF_FontFaces
+.. index:: TTF_FontFaceIsFixedWidth
+.. index:: TTF_FontFaceFamilyName
+.. index:: TTF_FontFaceStyleName
+.. index:: TTF_GlyphIsProvided
+.. index:: TTF_GlyphMetrics
+.. index:: TTF_RenderGlyph_Solid
+.. index:: TTF_RenderText_Solid
+.. index:: TTF_RenderUNICODE_Solid
+.. index:: TTF_RenderUTF8_Solid
+.. index:: TTF_RenderGlyph_Shaded
+.. index:: TTF_RenderText_Shaded
+.. index:: TTF_RenderUNICODE_Shaded
+.. index:: TTF_RenderUTF8_Shaded
+.. index:: TTF_RenderGlyph_Blended
+.. index:: TTF_RenderText_Blended
+.. index:: TTF_RenderUNICODE_Blended
+.. index:: TTF_RenderUTF8_Blended
+.. index:: TTF_RenderGlyph_Blended_Wrapped
+.. index:: TTF_RenderText_Blended_Wrapped
+.. index:: TTF_RenderUNICODE_Blended_Wrapped
+.. index:: TTF_RenderUTF8_Blended_Wrapped
+.. index:: TTF_GetFontKerningSize
 .. code-block:: felix
 
   //[SDL_ttf.flx]
@@ -3709,6 +4144,10 @@ SDL_version.flx
 
 
 .. index:: SDL_version_h
+.. index:: SDL_Linked_Version
+.. index:: SDL_Compiled_Version
+.. index:: SDL_Linked_Version
+.. index:: SDL_Compiled_Version
 .. code-block:: felix
 
   //[SDL_version.flx]
@@ -3754,6 +4193,28 @@ SDL_video.flx
 
 
 .. index:: SDL_video_h
+.. index:: SDL_DestroyWindow
+.. index:: SDL_GetWindowSurface
+.. index:: SDL_GetWindowID
+.. index:: SDL_GetWindowPosition
+.. index:: SDL_GetWindowSize
+.. index:: SDL_SetWindowGrab
+.. index:: SDL_GetWindowGrab
+.. index:: SDL_SetWindowMinumumSize
+.. index:: SDL_GetWindowMinumumSize
+.. index:: SDL_SetWindowMaximumSize
+.. index:: SDL_GetWindowMaximumSize
+.. index:: SDL_ShowWindow
+.. index:: SDL_HideWindow
+.. index:: SDL_RaiseWindow
+.. index:: SDL_MaximizeWindow
+.. index:: SDL_MinimizeWindow
+.. index:: SDL_RestoreWindow
+.. index:: SDL_SetWindowFullScreen
+.. index:: SDL_SetWindowBrightness
+.. index:: SDL_SetWindowBrightness
+.. index:: SDL_GetWindowBordered
+.. index:: SDL_SetWindowBordered
 .. code-block:: felix
 
   //[SDL_video.flx]
@@ -3862,6 +4323,9 @@ flx_faio_sdl.flx
 ================
 
 
+.. index:: event_type
+.. index:: block_sdl_events
+.. index:: unblock_sdl_events
 .. code-block:: felix
 
   //[flx_faio_sdl.flx]

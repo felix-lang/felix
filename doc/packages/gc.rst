@@ -2191,6 +2191,13 @@ Garbage Collector Interface
 
 
 .. index:: Gc
+.. index:: _collect
+.. index:: collect
+.. index:: gc_get_allocation_amt
+.. index:: gc_get_allocation_count
+.. index:: gc_get_root_count
+.. index:: add_root
+.. index:: remove_root
 .. code-block:: felix
 
   //[gc.flx]
@@ -2239,6 +2246,34 @@ Rtti introspection
 
 
 .. index:: Rtti
+.. index:: isNULL
+.. index:: get_fcops
+.. index:: isNULL
+.. index:: object_size
+.. index:: object_alignment
+.. index:: dflt_init
+.. index:: destroy
+.. index:: copy_init
+.. index:: move_init
+.. index:: copy_assign
+.. index:: move_assign
+.. index:: next_shape
+.. index:: cname
+.. index:: number_of_elements
+.. index:: bytes_per_element
+.. index:: finaliser
+.. index:: encoder
+.. index:: decoder
+.. index:: uses_offset_table
+.. index:: _unsafe_n_offsets
+.. index:: n_offsets
+.. index:: _unsafe_offsets
+.. index:: offsets
+.. index:: flags
+.. index:: shape_list_head
+.. index:: name
+.. index:: gxx_demangle
+.. index:: _link_shape
 .. code-block:: felix
 
   //[rtti.flx]
@@ -2385,6 +2420,16 @@ Low level Garbage Collector Access
 
 
 .. index:: Collector
+.. index:: get_pointer_data
+.. index:: is_felix_pointer
+.. index:: is_head_pointer
+.. index:: repeat_count
+.. index:: allocated_bytes
+.. index:: print_pointer_data
+.. index:: print_pointer_data
+.. index:: print_pointer_data
+.. index:: print_pointer_data
+.. index:: print_pointer_data
 .. code-block:: felix
 
   //[flx_gc.flx]

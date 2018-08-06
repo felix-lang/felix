@@ -31,6 +31,22 @@ is given.
 
 
 .. index:: FlxPkgConfig_core
+.. index:: print_help
+.. index:: pre_incr
+.. index:: lexit
+.. index:: lexstr
+.. index:: is_prefix_of
+.. index:: xfind
+.. index:: parse_args
+.. index:: prefix
+.. index:: reattach_drive_letters
+.. index:: check_id
+.. index:: get_field
+.. index:: get_variable
+.. index:: add_val
+.. index:: tail_val
+.. index:: keep_val
+.. index:: handle_pkg
 .. code-block:: felix
 
   //[flx_pkgconfig_core.flx]
@@ -433,6 +449,7 @@ It depends on only the flx_pkgconfig function.
 It exits with the return code that function returns.
 
 
+.. index:: kludge
 .. code-block:: felix
 
   //[flx_pkgconfig_tool.flx]
@@ -511,6 +528,7 @@ Database query object implementation.
 Depends on on the CLI function interface.
 
 .. index:: FlxPkgConfig_query
+.. index:: aux
 .. code-block:: felix
 
   //[flx_pkgconfig_query.flx]
@@ -715,6 +733,9 @@ This has to be FIXED so flx can run in non-stop mode.
 
 
 .. index:: FlxPkg
+.. index:: fix2word_flags
+.. index:: ehandler
+.. index:: write_include_file
 .. code-block:: felix
 
   //[flx_pkg.flx]

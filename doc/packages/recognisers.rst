@@ -29,6 +29,17 @@ StringPiece to represent it.
 
 
 .. index:: RecogniserBase
+.. index:: atend
+.. index:: get
+.. index:: next
+.. index:: advanced
+.. index:: lookahead
+.. index:: stl_end
+.. index:: Buffer
+.. index:: Buffer
+.. index:: Buffer
+.. index:: str
+.. index:: string
 .. code-block:: felix
 
   //[recogniser_base.flx]
@@ -757,6 +768,7 @@ Longest match
 
 
 
+.. index:: storemax
 .. code-block:: felix
 
   //[recogniser_base.flx]
