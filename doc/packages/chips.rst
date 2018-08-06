@@ -21,8 +21,9 @@ Write block.
 
 Blocks reader.
 
-.. code-block:: felix
 
+.. index:: BaseChips
+.. code-block:: felix
   //[chips.flx]
   open class BaseChips
   {
@@ -33,14 +34,13 @@ Blocks reader.
   {
   }
   
-
 Read block.
 -----------
 
 Blocks writer.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip readblock[T]
     connector io
@@ -49,14 +49,13 @@ Blocks writer.
   }
   
   
-
 Universal sink
 --------------
 
 Reads input forever.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip sink[T]
     connector io
@@ -68,14 +67,13 @@ Reads input forever.
     done
   }
   
-
 Constant Source.
 ----------------
 
 Write fixed value forever.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip source[T] (a:T)
     connector io
@@ -85,13 +83,12 @@ Write fixed value forever.
       write (io.out, a);
     done
   }
-
 One shot source
 ---------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip value[T] (a:T)
     connector io 
@@ -100,13 +97,12 @@ One shot source
     write (io.out, a);
   }
   
-
 Source from generator
 ---------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip generator[T] (g: 1->T)
     connector io
@@ -115,13 +111,12 @@ Source from generator
       repeat perform write (io.out, g());
     }
   
-
 Source from iterator
 --------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip iterate[T] (g: 1->opt[T])
     connector io
@@ -137,13 +132,12 @@ Source from iterator
         endmatch; 
     }
   
-
 Source from list
 ----------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip source_from_list[T] (a:list[T])
     connector io
@@ -161,14 +155,13 @@ Source from list
   }
   
   
-
 Function adaptor.
 -----------------
 
 Converts function to chip.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip function[D,C] (f:D->C)
     connector io
@@ -182,14 +175,13 @@ Converts function to chip.
     done
   }
   
-
 Procedure adaptor.
 ------------------
 
 Converts a procedure to a sink.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip procedure[D] (p:D->0)
     connector io
@@ -201,15 +193,14 @@ Converts a procedure to a sink.
     done
   }
   
-
 Filter
 ------
 
 Convert a predicate and function to a transducer.
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip filter[D,C] (c:D->bool) (f:D->C)
     connector io
@@ -238,13 +229,12 @@ Convert a predicate and function to a transducer.
     done
   }
   
-
 Sink to list
 ------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip sink_to_list[T] (p: &list[T])
     connector io
@@ -256,13 +246,12 @@ Sink to list
     done
   }
   
-
 Sink to unique list
 -------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip sink_to_unique_list[T with Eq[T]] (p: &list[T])
     connector io
@@ -278,14 +267,13 @@ Sink to unique list
   
   
   
-
 Buffer.
 -------
 
 One step buffer. Same as a function adaptor passed identity.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip buffer [T]
     connector io
@@ -312,7 +300,6 @@ One step buffer. Same as a function adaptor passed identity.
   }
   
   
-
 Connector symbol
 ----------------
 
@@ -321,8 +308,8 @@ We add overloads for chips with pins
 named io.inp, io.out.
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   // two transducers
   chip pipe[T,U,V] (a:iochip_t[T,U],b:iochip_t[U,V])
@@ -368,14 +355,13 @@ named io.inp, io.out.
   }
   
   
-
 Debug Buffer.
 -------------
 
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip debug_buffer [T with Str[T]] (tag:string)
     connector io
@@ -391,14 +377,13 @@ Debug Buffer.
     done
   }
   
-
 One Shot.
 ---------
 
 A one shot buffer.  
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip oneshot [T]
     connector io
@@ -409,14 +394,13 @@ A one shot buffer.
     write (io.out, x);
   }
   
-
 Store
 -----
 
 Stores read values in a variable.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip store[T] (p:&T)
     connector io
@@ -428,14 +412,13 @@ Stores read values in a variable.
     done
   }
   
-
 Fetch
 -----
 
 Writes current value of a variable.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip fetch[T] (p:&T)
     connector io
@@ -446,15 +429,14 @@ Writes current value of a variable.
     done
   }
   
-
 Printer
 -------
 
 Writes input to console.
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip debug_sink [T with Str[T]] (s:string)
     connector io
@@ -467,7 +449,6 @@ Writes input to console.
   }
   
   
-
 Asynchronous Latch.
 -------------------
 
@@ -475,8 +456,8 @@ Satisfied all reads with the last
 value written. Blocks readers until at least
 one value is written.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip latch[T]
     connector io
@@ -492,7 +473,6 @@ one value is written.
      endcircuit
   } 
   
-
 Serialise.
 ----------
 
@@ -502,8 +482,8 @@ The input channels are fixed by supplying them as
 an argument.
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip serialise_chan_list[T] (a: list[%<T])
    connector io
@@ -586,15 +566,14 @@ an argument.
     done
   }
   
-
 Deref
 -----
 
 This version spawns a clone of p for each input. 
 In particular it delays the spawn until there is an input.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip deref_each_read[D,C] (p:&iochip_t[D,C]) 
     connector io
@@ -624,15 +603,14 @@ In particular it delays the spawn until there is an input.
       write (rout,x);
     done
   }
-
 Epsilon
 -------
 
 Identity chip.
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip epsilon[T]
     connector io
@@ -645,7 +623,6 @@ Identity chip.
       write (io.out, x);
     done
   }
-
 Optional matcher.
 -----------------
 
@@ -653,8 +630,8 @@ Matches given matcher if possible and epsilon.
 Note the epsilon match is ALWAYS output!
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   chip optional[T] (p:iochip_t[T,T])
     connector io
@@ -671,13 +648,12 @@ Note the epsilon match is ALWAYS output!
     endcircuit
   }
   
-
 One or more matcher
 -------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[chips.flx]
   
   chip oneormore_matcher[T] (A:iochip_t[T,T]) 
@@ -694,13 +670,11 @@ One or more matcher
    endcircuit
   }
   
-
 Zero or more matcher
 --------------------
 
 
 .. code-block:: felix
-
   //[chips.flx]
   
   chip zeroormore_matcher[T] (A:iochip_t[T,T]) 
@@ -717,9 +691,3 @@ Zero or more matcher
   }
 
 
-.. code-block:: felix
-
-  //[chips.flx]
-  } // end class BaseChips
-  
-  

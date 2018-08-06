@@ -35,8 +35,8 @@ C89 Standard.
 The original ANSI Standard blessed as an ISO Standard.
 
 
+.. index:: C89_headers
 .. code-block:: text
-
   // reference: Wikipedia: http://en.wikibooks.org/wiki/C_Programming/Reference_Tables#List_of_Standard_Headers 
   
   // ANSI C89 = ISO C90
@@ -65,8 +65,8 @@ C95 Amendment
 
 Added support for wide characters.
 
+.. index:: C95_headers
 .. code-block:: text
-
   // ISO C94/95 Amendment 1
   class C95_headers  
   {
@@ -83,8 +83,8 @@ C99 Standard
 Added support for complex, exact integer types and
 bool.
 
+.. index:: C99_headers
 .. code-block:: text
-
   // ISO C99
   class C99_headers 
   {
@@ -113,8 +113,9 @@ C++90 Standard
 
 The original C++ Standard.
 
-.. code-block:: text
 
+.. index:: Cxx_headers
+.. code-block:: text
   class Cxx_headers
   {
     header exception = '#include <exception>';
@@ -173,15 +174,14 @@ The original C++ Standard.
     header cwctype = '#include <cwctype>';
   }
   
-
 C++11 Standard.
 ---------------
 
 A more recent standard from 2011. Added a huge number
 of new features.
 
+.. index:: Cxx11_headers
 .. code-block:: text
-
   class Cxx11_headers  // http://en.cppreference.com/w/cpp/header
   {
     inherit Cxx_headers;
@@ -220,8 +220,8 @@ There are multiple Posix standards but we just include headers
 from the most recent, most final one.
 
 
+.. index:: Posix_headers
 .. code-block:: text
-
   class Posix_headers {
     header aio_h = "#include <aio.h>";
     header arpa_inet_h = "#include <arpa/inet.h>";
@@ -292,8 +292,8 @@ The name win32 for the original 32 bit Windows has stuck,
 even for 64 bit Windows.
 
 
+.. index:: Win32_headers
 .. code-block:: text
-
   class Win32_headers {
     header windows_h = "#include <windows.h>";
     header io_h = "#include <io.h>";

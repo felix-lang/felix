@@ -42,7 +42,6 @@ RE2 Bootstrap Builder
 
 
 .. code-block:: python
-
   #[re2.py]
   
   import fbuild
@@ -129,8 +128,8 @@ String handling
 ===============
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[__init__.flx]
   include "std/regex/re2";
   include "std/regex/tre";
@@ -138,13 +137,13 @@ String handling
   include "std/regex/lexer";
   
   
-
 RE2 regexps
 ===========
 
 
-.. code-block:: felix
 
+.. index:: Re2
+.. code-block:: felix
   //[re2.flx]
   
   include "stl/stl_map";
@@ -394,13 +393,13 @@ RE2 regexps
   
   open Set[RE2, string];
   
-
 Regular definitions
 ===================
 
 
-.. code-block:: felix
 
+.. index:: Regdef
+.. code-block:: felix
   //[regdef.flx]
   
   class Regdef {
@@ -473,13 +472,12 @@ Regular definitions
     ;
   }
   
-
 Syntax
 ======
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[regexps.fsyn]
   
   //$ Syntax for regular definitions.
@@ -586,13 +584,13 @@ Syntax
    
   }
   
-
 Lexer
 =====
 
 
-.. code-block:: felix
 
+.. index:: Lexer
+.. code-block:: felix
   //[lexer.flx]
   class Lexer
   {
@@ -624,13 +622,11 @@ Lexer
   
   open Eq[Lexer::lex_iterator];
   
-
 Config
 ======
 
 
 .. code-block:: fpc
-
   //[unix_re2.fpc]
   Name: Re2
   Description: Google Re2 regexp library
@@ -646,7 +642,6 @@ Config
 
 
 .. code-block:: fpc
-
   //[win32_re2.fpc]
   Name: Re2
   Description: Google Re2 regexp library
@@ -662,7 +657,6 @@ Config
 
 
 .. code-block:: cpp
-
   //[flx_re2_config.hpp]
   #ifndef __FLX_RE2_CONFIG_H__
   #define __FLX_RE2_CONFIG_H__

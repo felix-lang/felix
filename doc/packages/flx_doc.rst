@@ -32,7 +32,6 @@ Generates an index of non-terminals used in
 the grammar.
 
 .. code-block:: felix
-
   //[flx_gramdoc.flx]
   var ishtml = System::argv 1 == "--html";
   var dir =  Filename::join ("src", "lib", "grammar");
@@ -130,7 +129,6 @@ Library contents table.
 Lists symbols per file.
 
 .. code-block:: felix
-
   //[flx_libcontents.flx]
   var ishtml = System::argv 1 == "--html";
   var dir =  Filename::join ("src", "lib", "std");
@@ -279,7 +277,6 @@ Library index table.
 Lists symbols alphabetically.
 
 .. code-block:: felix
-
   //[flx_libindex.flx]
   var ishtml = System::argv 1 == "--html";
   var dir =  Filename::join ("src", "lib", "std");
@@ -374,7 +371,6 @@ with specified heading and pattern match.
 
 
 .. code-block:: felix
-
   //[flx_mktutindex.flx]
   var dirname = System::argv_dflt 1 "src/web/tut";
   var homepage = System::argv_dflt 2 "";
@@ -438,7 +434,6 @@ with specified heading and pattern match.
 
 
 .. code-block:: felix
-
   //[flx_fdoc2sphinx.flx]
   open Regdef;
   
@@ -451,10 +446,12 @@ with specified heading and pattern match.
   regdef cmd_r = "@" group(cmd_name_r) spc_r group(any_r);
   regdef tangler_r = "@tangler" spc_r group(fkey_r) spc_r  "=" spc_r group(any_r);
   regdef url_r = group(any_r) '<a href="' group(any_r) '">' group(any_r) "</a>" group(any_r);
+  regdef class_r = spc_r "open"? spc_r "class" spc_r group(ident_r) any_r;
   
   var cmd_R = RE2 (render cmd_r);
   var tangler_R = RE2 (render tangler_r);
   var url_R = RE2 (render url_r);
+  var class_R = RE2 (render class_r);
   
   typedef markup_t = (`Txt | `At | `Code | `Slosh | `Math | `MathSlosh);
   fun code_fixer (a:string): string =
@@ -548,8 +545,28 @@ with specified heading and pattern match.
   fun process_file (f: string): string =
   {
     var tanglers = Empty[string * string];
+  
+    var code_buf = Empty[string];
+    var prefix = "";
     var out = "";
+    proc emit_code () { 
+      var b = rev code_buf;
+      for l in b do
+        var r = Match (class_R, l);
+        match r with
+        | None => ;
+        | Some grp =>
+          out+= ".. index:: " + grp.1 + "\n";
+        endmatch;
+      done
+      out += prefix;
+      for l in b perform out += "  " + l + "\n";
+      code_buf = Empty[string];
+      mode = (#`Doc) :>> mode_t;
+    }
+  
     proc println[T with Str[T]] (x:T) => out += x.str + "\n"; 
+  
     var mode : mode_t = (#`Doc) :>> mode_t;
     nextline: for line in split (f, char "\n") do
       var cmd = Match (tangler_R, line);
@@ -599,7 +616,7 @@ with specified heading and pattern match.
         if c == "title" do
           println$ "";
           match mode with
-          | `Code () => mode = (#`Doc) :>> mode_t;
+          | `Code () => emit_code(); 
           | _ => ;
           endmatch;
           a = code_markup a;
@@ -611,7 +628,7 @@ with specified heading and pattern match.
         elif c == "h1" do
           println$ "";
           match mode with
-          | `Code () => mode = (#`Doc) :>> mode_t;
+          | `Code () => emit_code();
           | _ => ;
           endmatch;
           a = code_markup a;
@@ -623,7 +640,7 @@ with specified heading and pattern match.
           a = code_markup a;
           println$ "";
           match mode with
-          | `Code => mode = (#`Doc) :>> mode_t;
+          | `Code => emit_code();
           | _ => ;
           endmatch;
           println$ a;
@@ -633,18 +650,17 @@ with specified heading and pattern match.
         elif c == "tangle" do
           println$ "";
           var lexer = lexer_from_filename a;
-          println$ ".. code-block:: "+lexer;
-          println$ "";
+          prefix = ".. code-block:: "+lexer + "\n";
+          prefix += "";
           if lexer in ("c","cpp","felix","fpc") do
-            println$ "  //[" + a + "]";
+            prefix += "  //[" + a + "]\n";
           elif lexer == "python" do
-            println$ "  #["+a+"]";
+            prefix += "  #["+a+"]\n";
           done
           mode = (#`Code) :>> mode_t;
         else 
           match mode with
-          | `Code =>
-            mode = (#`Doc) :>> mode_t;
+          | `Code => emit_code();
           | _ => ;
           endmatch;
         done
@@ -654,7 +670,7 @@ with specified heading and pattern match.
         match mode with
         | `Doc => 
            println$ code_markup line;
-        | `Code => println$ "  " + line;
+        | `Code => code_buf = line ! code_buf;
         endmatch;
       endmatch;
     done

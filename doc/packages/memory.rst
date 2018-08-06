@@ -17,8 +17,8 @@ Raw Address
 ===========
 
 
+.. index:: Address
 .. code-block:: felix
-
   //[address.flx]
   
   //$ Core operations on addresses.
@@ -78,87 +78,3 @@ Raw Address
   open Tord[address];
 
 
-.. code-block:: felix
-
-  //[memory.flx]
-  class Memory
-  {
-    proc memcpy: address * address * !ints =
-      "{if($1 && $2 && $3)::std::memcpy($1,$2,$3);}"
-      requires Cxx_headers::cstring
-    ;
-  
-    proc memmove: address * address * !ints =
-      "{if($1 && $2 && $3)::std::memmove($1,$2,$3);}"
-      requires Cxx_headers::cstring
-    ;
-  
-    fun memcmp: address * address * !ints -> int = 
-      "::std::memcmp($1,$2,$3)"
-      requires Cxx_headers::cstring
-    ;
-  
-    fun memchr: address * byte * !ints -> address = 
-      "::std::memchr($1,$2,$3)"
-      requires Cxx_headers::cstring
-    ;
-  
-  
-    proc memset: address * !ints * byte = 
-      "::std::memset($1,$2,$3);"
-      requires Cxx_headers::cstring
-    ;
-  
-    //$ Heap operations
-    gen calloc: !ints -> address = 
-      "::std::calloc($1)"
-      requires Cxx_headers::cstdlib
-    ;
-  
-    proc free: address = 
-      "::std::free($1);"
-      requires Cxx_headers::cstdlib
-    ;
-  
-    gen realloc: address * !ints -> address = 
-      "::std::realloc($1,$2)"
-      requires Cxx_headers::cstdlib
-    ;
-  
-    //$ Raw unchecked malloc.
-    gen raw_malloc: !ints -> address = 
-      '::std::malloc($1)' 
-      requires Cxx_headers::cstdlib
-    ;
-  
-    //$ Malloc with memory check.
-    //$ Throws c"out of memory" if out of memory.
-    body checked_malloc = """
-      void *checked_malloc(size_t n) {
-        void *p = ::std::malloc(n);
-        if(p) return p;
-        else throw "out of memory";
-      }
-    """; 
-  
-    gen malloc: !ints -> address = 'checked_malloc($1)' 
-      requires Cxx_headers::cstdlib, checked_malloc
-    ;
-  
-    // Standard C++ Search algorithm, 
-    // returns address of found string
-    // or $2 = pointer past end on fail
-    fun search: address ^ 4 -> address = 
-      """
-      (void*)::std::search(
-        (::std::uint8_t*)$1,
-        (::std::uint8_t*)$2,
-        (::std::uint8_t*)$3,
-        (::std::uint8_t*)$4)
-      """
-      requires Cxx_headers::algorithm
-    ;
-  }
-  
-  
-  

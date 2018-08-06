@@ -34,7 +34,6 @@ Random number generators.
 
 
 .. code-block:: felix
-
   //[rng.flx]
   library Botan { class Rng
   {
@@ -60,7 +59,6 @@ Big Integers
 
 
 .. code-block:: felix
-
   //[bigint.flx]
   library Botan { class BigInt
   {
@@ -158,7 +156,6 @@ Hash functions
 
 
 .. code-block:: felix
-
   //[hash.flx]
   library Botan { class Hash {
     type BufferedComputation = "::Botan::BufferedComputation*";
@@ -170,12 +167,8 @@ Hash functions
   }}
 
 
-.. code-block:: fpc
-
-  //[botan_unix.fpc]
 
 .. code-block:: fpc
-
   //[botan_unix.fpc]
   Name: botan 
   Platform: Unix 
@@ -186,7 +179,6 @@ Hash functions
 
 
 .. code-block:: fpc
-
   //[rng.fpc]
   Requires: botan
   includes: '"botan/rng.h"'
@@ -195,7 +187,6 @@ Hash functions
 
 
 .. code-block:: fpc
-
   //[system_rng.fpc]
   Requires: botan
   includes: '"botan/system_rng.h"'
@@ -203,7 +194,6 @@ Hash functions
 
 
 .. code-block:: fpc
-
   //[bigint.fpc]
   Requires: botan
   includes: '"botan/bigint.h"' '"botan/numthry.h"'

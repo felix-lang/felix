@@ -42,7 +42,6 @@ debugging.
 
 
 .. code-block:: cpp
-
   //[flx_ioutil.hpp]
   #ifndef FLX_IOUTIL
   #define FLX_IOUTIL
@@ -75,7 +74,6 @@ debugging.
 
 
 .. code-block:: cpp
-
   //[flx_ioutil.cpp]
   
   #include <cstdio>
@@ -286,7 +284,6 @@ debugging.
 
 
 .. code-block:: fpc
-
   //[flx_ioutil.fpc]
   Name: flx_ioutil
   Description: I/O support
@@ -298,8 +295,8 @@ Standard Library Synopsis
 =========================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[__init__.flx]
   
   include "std/io/textio";
@@ -313,13 +310,14 @@ Standard Library Synopsis
   include "std/io/directory";
   include "std/io/filesystem";
   
-
 Simple Text I/O
 ===============
 
 
+.. index:: Input_file
+.. index:: Output_file
+.. index:: Cstdio
 .. code-block:: felix
-
   //[textio.flx]
   
   //$ These classes provide simple I/O for text, primarily intended for
@@ -604,8 +602,9 @@ Ansi Terminal
 =============
 
 
-.. code-block:: felix
 
+.. index:: AnsiTerminal
+.. code-block:: felix
   //[ansi_terminal.flx]
   
   // Author Mike Maul
@@ -672,13 +671,19 @@ Ansi Terminal
   }
   
   
-
 Stream I/O
 ==========
 
 
-.. code-block:: felix
 
+.. index:: IOStream
+.. index:: IByteStream
+.. index:: OByteStream
+.. index:: IOByteStream
+.. index:: TerminalIByteStream
+.. index:: TerminalOByteStream
+.. index:: TerminalIOByteStream
+.. code-block:: felix
   //[iostream.flx]
   
   class IOStream {
@@ -1033,14 +1038,14 @@ Stream I/O
     }
   } // class Stream
   
-
 TCP/IP Sockets
 ==============
 
 These sockets are ONLY for TCP/IP.
 
-.. code-block:: felix
 
+.. index:: Socket_class
+.. code-block:: felix
   //[socket.flx]
   
   class Socket_class[socket_t] {
@@ -1059,13 +1064,12 @@ These sockets are ONLY for TCP/IP.
     inherit IOStream::TerminalIOByteStream[socket_t];
   }
   
-
 Posix sockets
 =============
 
 
+.. index:: PosixSocket
 .. code-block:: felix
-
   //[socket.flx]
   class PosixSocket
   {
@@ -1152,8 +1156,8 @@ Windows sockets
 ===============
 
 
+.. index:: Win32Socket
 .. code-block:: felix
-
   //[socket.flx]
   class Win32Socket
   {
@@ -1231,8 +1235,8 @@ Host sockets
 ============
 
 
+.. index:: Socket
 .. code-block:: felix
-
   //[socket.flx]
   
   class Socket
@@ -1251,8 +1255,9 @@ Demux: Felix Event notification service
 =======================================
 
 
-.. code-block:: felix
 
+.. index:: Demux
+.. code-block:: felix
   //[demux.flx]
   
   class Demux
@@ -1264,13 +1269,13 @@ Demux: Felix Event notification service
     var sys_demux =  mk_sys_demux();
   }
   
-
 Faio: Felix Asynchronous I/O service
 ====================================
 
 
-.. code-block:: felix
 
+.. index:: Faio
+.. code-block:: felix
   //[faio.flx]
   
   class Faio {
@@ -1325,13 +1330,13 @@ Faio: Felix Asynchronous I/O service
   
   } // class faio
   
-
 Posix Faio
 ==========
 
 
-.. code-block:: felix
 
+.. index:: Faio_posix
+.. code-block:: felix
   //[posix_faio.flx]
   
   class Faio_posix  {
@@ -1574,211 +1579,7 @@ Posix Faio
   
   } // class faio_posix
   
-
 Win32 Faio
 ==========
 
 
-.. code-block:: felix
-
-  //[win32_faio.flx]
-  
-  
-  module Faio_win32 {
-  requires package "demux";
-  requires package "faio";
-  // contains windows overlapped/iocp io & copipes. no stream wrapper yet.
-  open C_hack;
-  open Faio;
-  open Demux;
-  
-  header '#include "faio_winio.hpp"'; // this has everything (includes asyncio.h)
-  
-  // ------------ core file and socket definitions ----------------
-  // I could just use HANDLEs everywhere, but I want to see how this goes
-  type WFILE = 'HANDLE';
-  typedef fd_t = WFILE;
-  
-  const INVALID_HANDLE_VALUE: WFILE = 'INVALID_HANDLE_VALUE';
-  fun == : WFILE*WFILE -> bool = '($1 == $2)';
-  
-  type SOCKET = "SOCKET";
-  typedef socket_t = SOCKET;
-  
-  instance Str[socket_t] {
-     fun str: socket_t -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
-  }
-  
-  // --------------------------------------------------------------
-  
-  // useful windows function
-  fun GetLastError: 1 -> int = 'GetLastError()';
-  
-  // maybe don't use this - let the socket be passed in already associated
-  // with an IOCP. do I have to make this explicitly overlapped? If we
-  // want async io I think I'll need to associate this with the iocp.
-  fun cmk_socket : unit -> SOCKET = '::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)';
-  
-  // well that didn't help.
-  //fun cmk_socket : unit -> SOCKET = 'WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED)';
-  // must associate with iocp to do overlapped io with s (WSASend/Recv)
-  proc mk_socket(s: &SOCKET)
-  {
-      s <- cmk_socket();
-      associate_with_iocp(*s);                // associate with iocp (errors?).
-  }
-  
-  
-  type wasync_accept = "flx::faio::wasync_accept";
-  
-  fun mk_accept: demuxer *  SOCKET*SOCKET -> wasync_accept = 'flx::faio::wasync_accept($a)';
-  // make this a parameterised type
-  fun get_success[t]: t -> bool = '$1.success';
-  
-  // this feels silly
-  const INVALID_SOCKET: SOCKET = 'INVALID_SOCKET';
-  // oops, no good if we can't check against it
-  fun eq : SOCKET*SOCKET -> bool = '($1 == $2)';
-  
-  // windows style accept. accepted is an already created socket, unbound
-  proc Accept(success: &bool, listener: SOCKET, accepted: SOCKET)
-  {
-      var acc = mk_accept(sys_demux,listener, accepted);
-      faio_req$ &acc;    // causes AcceptEx to be called
-      success <- get_success(acc);
-  }
-  
-  type connect_ex="flx::faio::connect_ex";
-  fun mk_connect_ex: demuxer * SOCKET*+char*int -> connect_ex = 'flx::faio::connect_ex($a)';
-  
-  // for use on sockets you make yourself, who knows, maybe you want to
-  // reuse them
-  proc Connect(s: SOCKET, addr: +char, port: int, err: &int)
-  {
-      var con = mk_connect_ex(sys_demux,s, addr, port);
-      faio_req$ &con;    // causes ConnectEx to be called
-      var success = get_success(con);
-      err <- if success then 0 else -1 endif;
-  }
-  
-  proc Connect(s: &SOCKET, addr: +char, port: int, err: &int)
-  {
-      mk_socket s;            // error handling?
-      Connect(*s, addr, port, err);
-  }
-  
-  // listens on all interfaces, I guess
-  proc cmk_listener: &SOCKET*&int*int
-      = '*$1 = flx::demux::create_listener_socket($2, $3);';
-  
-  proc mk_listener(listener: &SOCKET, port: &int, backlog: int)
-  {
-      cmk_listener(listener,port, backlog);
-      associate_with_iocp(*listener);
-  }
-  
-  // ignores return value
-  proc closesocket: SOCKET = 'closesocket($1);';
-  
-  const SD_RECEIVE:int = 'SD_RECEIVE';
-  const SD_SEND:int = 'SD_SEND';
-  const SD_BOTH:int = 'SD_BOTH';
-  
-  proc shutdown: SOCKET*int = 'shutdown($1, $2);';
-  
-  type wasync_transmit_file = "flx::faio::wasync_transmit_file";
-  
-  // hacked for ro atm. the 0 means exclusive (not good, but I haven't deciphered
-  // the flags yet. NULL for non inheritable security attributes.
-  // OPEN_EXISTING is to make sure it doesn't create the file
-  // Geez, FILE_ATTRIBUTE_NORMAL? not hidden, not temp, etc.
-  // final NULL is for template file. not sure what it does, but I don't want it.
-  // notice that it's opened for SHARED reading
-  gen OpenFile: string -> WFILE =
-    '''CreateFile($1.c_str(), FILE_READ_DATA, FILE_SHARE_READ, NULL,
-      OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL)''';
-  
-  // basically for windows named pipes
-  gen OpenFileDuplex: string -> WFILE =
-    '''CreateFile($1.c_str(), FILE_READ_DATA | FILE_WRITE_DATA,
-       FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
-       FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL)''';
-  
-  proc CloseFile: WFILE = '''if(!CloseHandle($1))
-    fprintf(stderr, "CloseHandle(WFILE) failed: %i\\n", GetLastError());''';
-  
-  // error handling?
-  // proc CloseFile: WFILE = 'CloseHandle($1);';
-  
-  fun mk_transmit_file : demuxer * SOCKET*WFILE -> wasync_transmit_file
-      = 'flx::faio::wasync_transmit_file($a)';
-  
-  // toylike interface for now, but still fun
-  proc TransmitFile(s: SOCKET, f: WFILE)
-  {
-      var tf = mk_transmit_file(sys_demux,s, f);
-      faio_req$ &tf;
-  }
-  
-  // by passing special flags to TransmitFile we can transform a connected
-  // socket into a socket ready for use with AcceptEx. DisconnectEx explicitly
-  // does this and without the warning that accept-style & connect-style sockets
-  // cannot be reused as the other type (which isn't a problem for my use)
-  // however I already have TransmitFile code in place.
-  fun mk_reuse_socket : demuxer * SOCKET -> wasync_transmit_file
-      = 'flx::faio::wasync_transmit_file($a)';
-  
-  proc ReuseSocket(s: SOCKET)
-  {
-      var tf = mk_reuse_socket(sys_demux,s);
-      faio_req$ &tf;
-  }
-  
-  type wsa_socketio = "flx::faio::wsa_socketio";
-  gen mk_wsa_socketio: demuxer * SOCKET*sel_param_ptr*bool->wsa_socketio = 'flx::faio::wsa_socketio($a)';
-  
-  private fun to_ptr : sel_param -> sel_param_ptr = '&$1';
-  
-  
-  proc WSARecv(s: SOCKET, len: &int, buf: address, eof: &bool)
-  {
-      var pb: sel_param;
-      init_pb(pb, buf, *len);
-      var ppb: sel_param_ptr = to_ptr pb;
-  
-      var rev = mk_wsa_socketio(sys_demux,s, ppb, true);  // reading
-      faio_req$ &rev;
-  // we do have a success flag
-      calc_eof(ppb, len, eof);
-  }
-  
-  proc WSASend(s: SOCKET, len: &int, buf: address, eof: &bool)
-  {
-      var pb: sel_param;
-      init_pb(pb, buf, *len);
-      var ppb: sel_param_ptr = to_ptr pb;
-  
-      var rev = mk_wsa_socketio(sys_demux,s, ppb, false); // writing
-      faio_req$ &rev;
-      calc_eof(ppb, len, eof);
-  }
-  
-  
-  // general request for addition of socket to iocp. might be better to
-  // just create them that way.
-  type iocp_associator = "flx::faio::iocp_associator";
-  fun mk_iocp_associator: demuxer * SOCKET -> iocp_associator = 'flx::faio::iocp_associator($a)';
-  
-  // this ends up just casting to a handle, so I should be able to use
-  // this for other HANDLEs. Note that the user cookie is not settable
-  // via this interface.
-  proc associate_with_iocp(s: SOCKET)
-  {
-      // results? err code?
-      var req = mk_iocp_associator(sys_demux, s);
-      faio_req$ &req;
-  }
-  
-  } // module win32_faio
-  
-  

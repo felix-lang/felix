@@ -30,7 +30,6 @@ thrown as an exception.
 
 
 .. code-block:: cpp
-
   //[flx_continuation.hpp]
   #ifndef _FLX_CONTINUATION_HPP
   #define _FLX_CONTINUATION_HPP
@@ -56,8 +55,8 @@ thrown as an exception.
   #endif
 
 
-.. code-block:: cpp
 
+.. code-block:: cpp
   //[flx_continuation.cpp]
   #include "flx_continuation.hpp"
   namespace flx { namespace rtl {
@@ -77,7 +76,6 @@ thrown as an exception.
   }
   }} // namespaces
   
-
 Exceptions
 ==========
 
@@ -107,7 +105,6 @@ and should not be used.
 
 
 .. code-block:: cpp
-
   //[flx_exceptions.hpp]
   #ifndef __FLX_EXCEPTIONS_HPP__
   #define __FLX_EXCEPTIONS_HPP__
@@ -314,7 +311,6 @@ and should not be used.
 
 
 .. code-block:: cpp
-
   //[flx_exceptions.cpp]
   #include <stdio.h>
   
@@ -428,7 +424,6 @@ across DLL boundaries. Gcc does not have this bug.
 
 
 .. code-block:: cpp
-
   //[flx_eh.hpp]
   #ifndef __FLX_EH_H__
   #define __FLX_EH_H__
@@ -444,7 +439,6 @@ across DLL boundaries. Gcc does not have this bug.
 
 
 .. code-block:: cpp
-
   //[flx_eh.cpp]
   #include <stdio.h>
   #include "flx_exceptions.hpp"
@@ -559,7 +553,6 @@ Exception Grammar
 
 
 .. code-block:: felix
-
   //[exceptions.fsyn]
   syntax exceptions
   {
@@ -586,7 +579,6 @@ Exception Grammar
   
 
 .. code-block:: cpp
-
   //[flx_exceptions_config.hpp]
   #ifndef __FLX_EXCEPTIONS_CONFIG_H__
   #define __FLX_EXCEPTIONS_CONFIG_H__
@@ -600,7 +592,6 @@ Exception Grammar
 
 
 .. code-block:: fpc
-
   //[unix_flx_exceptions.fpc]
   Name: flx_exceptions
   Description: Felix exceptions
@@ -614,7 +605,6 @@ Exception Grammar
 
 
 .. code-block:: fpc
-
   //[win32_flx_exceptions.fpc]
   Name: flx
   Description: Felix exceptions
@@ -628,7 +618,6 @@ Exception Grammar
 
 
 .. code-block:: python
-
   #[flx_exceptions.py]
   import fbuild
   from fbuild.path import Path

@@ -47,8 +47,8 @@ Synopsis
 ========
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[__init__.flx]
   
   include "std/scalar/ctypedefs";
@@ -67,18 +67,16 @@ Synopsis
   include "std/scalar/quaternion";
   
   
-
 Character type
 ==============
 
 A basic 8 bit character type.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[scalar.flx]
   pod type char = "char";
   
-
 Efficient Integer types
 =======================
 
@@ -96,8 +94,10 @@ lengths and in particular can span byte arrays as large
 as can be addressed.
 
 
-.. code-block:: felix
 
+.. index:: PervasiveInts
+.. index:: PervasiveLogic
+.. code-block:: felix
   //[scalar.flx]
   pod type tiny = "signed char" requires index TYPE_tiny;
   pod type short = "short" requires index TYPE_short;
@@ -130,7 +130,6 @@ as can be addressed.
     private fun lnot: bool * bool -> bool = "!$1" requires index FUN_lnot;
   }
   
-
 Exact Integer types
 ===================
 
@@ -141,8 +140,8 @@ defined. This includes 64 bit signed and unsigned integers,
 even on a 32 bit machine.
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[scalar.flx]
   pod type int8 = "int8_t" requires C99_headers::stdint_h, index TYPE_int8;
   pod type int16 = "int16_t" requires C99_headers::stdint_h, index TYPE_int16;
@@ -153,7 +152,6 @@ even on a 32 bit machine.
   pod type uint32 = "uint32_t" requires C99_headers::stdint_h, index TYPE_uint32;
   pod type uint64 = "uint64_t" requires C99_headers::stdint_h, index TYPE_uint64;
   
-
 Raw Memory
 ==========
 
@@ -170,7 +168,6 @@ arbitrary integer operations.
 
 
 .. code-block:: felix
-
   //[scalar.flx]
   pod type byte = "unsigned char" requires index TYPE_byte;
   type caddress = "void *";
@@ -202,8 +199,8 @@ by the compiler.
 
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[int.fsyn]
   
   SCHEME """
@@ -452,7 +449,6 @@ by the compiler.
   }
   
   
-
 Floating types
 ==============
 
@@ -460,8 +456,8 @@ Note that Felix requires the long double type from C99.
 Also note that the complex types are taken from C++ and
 not C!
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[scalar.flx]
   pod type float = "float" requires index TYPE_float;
   pod type double = "double" requires index TYPE_double;
@@ -471,13 +467,12 @@ not C!
   pod type lcomplex = "::std::complex<long double>" requires Cxx_headers::complex, index TYPE_lcomplex;
   
   
-
 Float literal constructors
 ==========================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[float.fsyn]
    
   //$ Floating point literals.
@@ -536,7 +531,6 @@ Float literal constructors
   
   }
   
-
 Groupings of the types.
 =======================
 
@@ -552,8 +546,8 @@ union of two typesets.
 
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[scalar.flx]
   //$ Types associated with raw address calculations.
   typedef addressing = typesetof (
@@ -565,13 +559,12 @@ union of two typesets.
   //$ Character types.
   typedef chars = typesetof (char);
   
-
 Integers
 --------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[scalar.flx]
   //$ "natural" sized signed integer types.
   //$ These correspond to C/C++ core types.
@@ -614,13 +607,11 @@ Integers
   //$ All the integers.
   typedef ints = sints \cup uints;
   
-
 Floats
 ------
 
 
 .. code-block:: felix
-
   //[scalar.flx]
   //$ All the core floating point types.
   typedef floats = typesetof (float, double, ldouble);
@@ -639,18 +630,3 @@ All Scalars.
 ------------
 
 
-.. code-block:: felix
-
-  //[scalar.flx]
-  //$ All the basic scalar types.
-  typedef basic_types = bool \cup numbers \cup chars \cup addressing;
-  
-  // we define this now, we will open it later...
-  instance [t in basic_types] Eq[t] {
-    fun == : t * t -> bool = "$1==$2";
-  }
-  
-  // we open this now even though we haven't developed
-  // the instances yet....
-  open[T in basic_types] Show[T];
-  

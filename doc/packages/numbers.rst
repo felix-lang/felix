@@ -23,7 +23,6 @@ General Numeric operations.
 
 
 .. code-block:: felix
-
   //[number.flx]
   
   instance[t in numbers] FloatAddgrp[t] {
@@ -60,8 +59,15 @@ Floating Numbers.
 
 Operations on Real and Complex numbers.
 
-.. code-block:: felix
 
+.. index:: Floatinf
+.. index:: Doubleinf
+.. index:: Ldoubleinf
+.. index:: Fcomplex
+.. index:: Dcomplex
+.. index:: Lcomplex
+.. index:: CartComplex
+.. code-block:: felix
   //[float_math.flx]
   
   // note: has to be called Fcomplex to avoid clash with class Complex
@@ -178,13 +184,12 @@ Operations on Real and Complex numbers.
     endmatch
   ;
   
-
 Complex Constructors.
 ---------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[float_math.flx]
   
   ctor complex[float] (x:float, y:float) => fcomplex(x,y);
@@ -213,25 +218,24 @@ Complex Constructors.
   
   
   
-
 Real numbers
 ============
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[real.flx]
   instance[t in reals] Tord[t] {
     fun < : t * t -> bool = "$1<$2";
   }
   
-
 Floating Formats
 ================
 
 
-.. code-block:: felix
 
+.. index:: float_format
+.. code-block:: felix
   //[float_format.flx ]
   //$ Functions to format floating point numbers.
   open class float_format
@@ -316,13 +320,12 @@ Floating Formats
   
   
   
-
 Integral Promotion.
 ===================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[int.flx]
   
   typedef fun integral_promotion: TYPE -> TYPE =
@@ -338,13 +341,36 @@ Integral Promotion.
     | #uvlong => uvlong
   ;
   
-
 Conversion operators.
 =====================
 
 
-.. code-block:: felix
 
+.. index:: Tiny
+.. index:: Short
+.. index:: Int
+.. index:: Long
+.. index:: Vlong
+.. index:: Utiny
+.. index:: Ushort
+.. index:: Uint
+.. index:: Ulong
+.. index:: Uvlong
+.. index:: Int8
+.. index:: Int16
+.. index:: Int32
+.. index:: Int64
+.. index:: Uint8
+.. index:: Uint16
+.. index:: Uint32
+.. index:: Uint64
+.. index:: Size
+.. index:: Ptrdiff
+.. index:: Intptr
+.. index:: Uintptr
+.. index:: Intmax
+.. index:: Uintmax
+.. code-block:: felix
   //[int.flx]
   open class Tiny
   {
@@ -499,13 +525,12 @@ Conversion operators.
   }
   
   
-
 Convert to decimal string.
 ==========================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[int.flx]
   instance Str[tiny] {
     fun str: tiny -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
@@ -526,13 +551,12 @@ Convert to decimal string.
     fun str: T -> string = "::flx::rtl::strutil::str<#1>($1)" requires package "flx_strutil";
   }
   
-
 Convert to lexical string.
 ==========================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[int.flx]
   instance Repr[tiny]   { fun repr[with Str[tiny]]   (t:tiny)   : string => (str t) + "t";  }
   instance Repr[short]  { fun repr[with Str[short]]  (t:short)  : string => (str t) + "s";  }
@@ -561,13 +585,12 @@ Convert to lexical string.
   instance Repr[uintptr]  { fun repr[with Str[uintptr]]  (t:uintptr)  : string => (str t) + "up";  }
   
   
-
 Methods of integers
 ===================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[int.flx]
   instance[t in ints] Addgrp[t] {}
   instance[t in ints] Ring[t] {}
@@ -603,36 +626,33 @@ Methods of integers
     fun >> : t * t -> t = "$1>>$2";
   }
   
-
 Methods of signed integers
 ==========================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[int.flx]
   instance[t in sints] Signed_integer[t] {
     fun sgn: t -> int = "$1<0??-1:$1>0??1:0";
     fun abs: t -> t = "$1<0??-$1:$1";
   }
   
-
 Methods of unsigned integers
 ============================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[int.flx]
   instance[t in uints] Unsigned_integer[t] {}
   
-
 Make functions accessible without qualification
 ===============================================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[int.flx]
   //open[T in sints] Signed_integer[T];
   open Signed_integer[tiny];
@@ -664,13 +684,13 @@ Make functions accessible without qualification
   
   
   
-
 Quaternions
 ===========
 
 
-.. code-block:: felix
 
+.. index:: Quaternion
+.. code-block:: felix
   //[quaternion.flx]
   
   class Quaternion
@@ -711,58 +731,7 @@ Quaternions
     // by introducing typeclasses for arbitrary R-modules
   }
   
-
 Random number generation
 ========================
 
 
-.. code-block:: felix
-
-  //[random.flx]
-  
-  class Random {
-      private type random_device = "::std::random_device*"
-          requires Cxx11_headers::random;
-      private type random_engine = "::std::default_random_engine*"
-          requires Cxx11_headers::random;
-      private ctor random_device: 1 = "new ::std::random_device{}";
-      private ctor random_engine: random_device =
-          "new ::std::default_random_engine{(*$1)()}";
-      private gen generate_canonical: random_engine -> double =
-          "::std::generate_canonical<double, ::std::numeric_limits<float>::digits>(*$1)"
-          requires Cxx_headers::limits;
-  
-      private struct random_ctl {
-          rd: random_device;
-          e: random_engine;
-      }
-      type random = new random_ctl;
-      ctor random() => let rd = #random_device in
-                       _make_random$ random_ctl (rd, rd.random_engine);
-  
-      private gen range[I in ints]: random_engine * I * I -> I =
-          "::std::uniform_int_distribution<decltype($2)>{$2, $3-1}(*$1)";
-      gen range[I in ints](r: random)(start: I, stop: I) =>
-          range (r._repr_.e, start, stop);
-      gen range[I in ints](r: random)(stop: I): I =>
-           r.range (C_hack::cast[I] 0, stop);
-  
-      gen randint[I in ints with FloatAddgrp[I]](r: random)(start: I, stop: I) =>
-          r.range (start, stop+C_hack::cast[I] 1);
-  
-      gen choice[T,S with ArrayValue[S,T]](r: random)(seq: S): T =>
-          unsafe_get (seq, r.range seq.len);
-  
-      gen randflt(r: random) => r._repr_.e.generate_canonical;
-  
-      proc shuffle[T,S with ArrayObject[S,T]](r: random)(seq: S) {
-          for var i in 0zu upto seq.len - 2 do
-              j := r.randint (0zu, i);
-              ei := unsafe_get (seq, i);
-              ej := unsafe_get (seq, j);
-              unsafe_set (seq, i, ej);
-              unsafe_set (seq, j, ei);
-          done
-      }
-  }
-  

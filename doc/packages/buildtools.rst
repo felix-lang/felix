@@ -32,8 +32,9 @@ Run this one first to build the compiler.
 It is built directly from the repository.
 
 
-.. code-block:: felix
 
+.. index:: BuildFlxg
+.. code-block:: felix
   //[flx_build_flxg.flx]
   class BuildFlxg
   {
@@ -676,7 +677,6 @@ It is built directly from the repository.
   
   BuildFlxg::build_flx_drivers();
   
-
 Preparation for building.
 -------------------------
 
@@ -684,8 +684,8 @@ This tools copies things out of the repository and sets up
 the build target directory.
 
 
+.. index:: FlxPrepBuild
 .. code-block:: felix
-
   //[flx_build_prep.flx]
   include "std/felix/flx_cp";
   
@@ -1024,8 +1024,8 @@ Build the Run Time Library (RTL)
 Builds the run time library from the build target
 share directory. Does not look in the repository.
 
+.. index:: FlxRtlBuild
 .. code-block:: felix
-
   //[flx_build_rtl.flx]
   include "std/felix/toolchain_clang_config";
   include "std/felix/toolchain_interface";
@@ -1339,7 +1339,6 @@ directory.
 
 
 .. code-block:: felix
-
   //[build_boot.flx]
   web_plugin:      cpp2html
   web_plugin:      fdoc2html
@@ -1384,8 +1383,8 @@ directory.
   flx_tool: flx_build_flxg
 
 
+.. index:: FlxCoreBuild
 .. code-block:: felix
-
   //[flx_build_boot.flx]
   include "std/felix/toolchain_clang_config";
   include "std/felix/toolchain_interface";

@@ -27,8 +27,10 @@ C pointer
 =========
 
 
-.. code-block:: felix
 
+.. index:: AbstractPointers
+.. index:: Cptr
+.. code-block:: felix
   //[cptr.flx]
   
   // move to separate file later.
@@ -121,7 +123,6 @@ C pointer
   //$ Special notation @T for  type of a C pointer.
   typedef fun n"@" (T:TYPE) : TYPE => cptr[T]; 
   
-
 C Arrays
 ========
 
@@ -129,8 +130,9 @@ A  :code:`carray[T]`, with more suggestive shorthand notation  :code:`+T`,
 is an incrementable, non-NULL pointer to a contiguous store.
 
 
-.. code-block:: felix
 
+.. index:: Carray
+.. code-block:: felix
   //[carray.flx]
   
   
@@ -147,7 +149,6 @@ is an incrementable, non-NULL pointer to a contiguous store.
     //$ The carray type.
     type carray[T] = new &T;
   
-
 Allocation
 ----------
 
@@ -156,8 +157,8 @@ provide store of which the garbage collector is unaware. It is best
 to reserve such carrays for C datatypes.
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[carray.flx]
   
     //$ Allocate a C array on the C heap (malloc).
@@ -172,13 +173,12 @@ to reserve such carrays for C datatypes.
     //$ Must point to C heap allocated storage. Unsafe.
     proc free[T]: carray[T] = "::std::free($1);";
   
-
 Dereference
 -----------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[carray.flx]
   
     //$ Functional get by index.
@@ -191,7 +191,6 @@ Dereference
     //$ i x = x . i = get (x,i)
     fun apply [T,I in ints] (i:I, x:carray[T]) => get (x,i);
   
-
 Lvalue dereferences
 -------------------
 
@@ -199,8 +198,8 @@ Note that lvalue operators are for convenience of those
 familiar with C notation. Felix does not support the notion
 of lvalues in general: this is a very special case.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[carray.flx]
     //$ Lvalue reference to element by index position. Unsafe.
     //lvalue fun subscript[T]: carray[T] * !ints -> T = '$1[$2]';
@@ -210,13 +209,12 @@ of lvalues in general: this is a very special case.
     //lvalue fun deref[T]: carray[T] -> T = '*$1';
     fun deref[T]: carray[T] -> T = '*$1';
   
-
 Pointer operators
 -----------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[carray.flx]
     //$ Advance carray to next element.
     fun + [T]: carray[T] * !ints -> carray[T]= '$1+$2';
@@ -228,13 +226,12 @@ Pointer operators
     //$ two overlapping carrays.
     fun - [T]: carray[T] * carray[T]-> ptrdiff = '$1-$2';
   
-
 Mutators
 --------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[carray.flx]
   
     //$ Mutable pre-increment ++p.
@@ -255,13 +252,12 @@ Mutators
     //$ Mutable backup by offset amount.
     proc -= [T]: &carray[T] * !ints = '*$1-=$2;';
   
-
 Comparisons
 -----------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[carray.flx]
   
     //$ Pointer equality.
@@ -278,13 +274,11 @@ Comparisons
       fun >= : carray[T] * carray[T] -> bool = '$1>=$2';
     }
   
-
 Conversions
 -----------
 
 
 .. code-block:: felix
-
   //[carray.flx]
     //$ Get carray of an array.
     fun stl_begin[T,N]: carray[array[T,N]] -> carray[T] = "(?1*)&($1->data)";
@@ -311,7 +305,6 @@ Conversions
 
 
 .. code-block:: felix
-
   //[carray_test.flx]
   // carray test
   
@@ -326,7 +319,6 @@ Conversions
   free a;
 
 .. code-block:: text
-
   (1, 1, 1)
   (2, 2, 2)
   (5, 5, 5)
@@ -344,8 +336,9 @@ Array sort
 
 Sort an array using STL sort.
 
-.. code-block:: felix
 
+.. index:: Sort
+.. code-block:: felix
   //[sort.flx]
   
   //$ Utility class to leverage STL sort.
@@ -393,13 +386,12 @@ Sort an array using STL sort.
   
   }
   
-
 Reference counting pointer.
 ===========================
 
 
+.. index:: SharedPtr
 .. code-block:: felix
-
   //[shared_ptr.flx]
   open class SharedPtr
   {
@@ -427,96 +419,3 @@ MMap
 Address mapping facility. Note: this is the posix function mmap().
 Windows has a similar capability we have not modelled yet.
 
-.. code-block:: felix
-
-  //[posix_mmap.flx]
-  
-  class Mmap
-  {
-    requires package "mmap";
-    header """
-      // MAP_ANON is an older form of MAP_ANONYMOUS, and should be compatible
-      #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
-      #  define MAP_ANONYMOUS MAP_ANON
-      #endif
-    """;
-  
-    // Offset into file, should be defined elsewhere
-    typedef off_t = ulong;
-  
-    type mmap_prot = "int";
-    instance Eq[mmap_prot]{
-       fun == : mmap_prot * mmap_prot -> bool = "$1==$2"; 
-    }
-    instance Bits[mmap_prot]{}
-  
-    inherit Eq[mmap_prot];
-    inherit Bits[mmap_prot];
-  
-  
-    type mmap_flags = "int";
-    instance Eq[mmap_flags]{
-       fun == : mmap_flags * mmap_flags -> bool = "$1==$2"; 
-    }
-    instance Bits[mmap_flags]{}
-  
-    inherit Eq[mmap_flags];
-    inherit Bits[mmap_flags];
-  
-    // protection options
-    const PROT_NONE  : mmap_prot;  // Posix: inaccessible
-    const PROT_EXEC  : mmap_prot;  // Posix: allow exec
-    const PROT_READ  : mmap_prot;  // Posix: allow read (and perhaps exec)
-    const PROT_WRITE : mmap_prot;  // Posix: allow write (and perhaps write and exec)
-  
-    // Linux only
-    const MAP_DENYWRITE: mmap_flags; // Linux only
-  
-    // flags: mode
-    const MAP_FILE: mmap_flags;      // Posix: Default mode: map a file
-    const MAP_ANONYMOUS: mmap_flags; // Linux, OSX: Map from VM pool
-  
-    // flags: map address
-    const MAP_FIXED: mmap_flags;     // Posix: Client tries to fix the mapping address, 
-                              // must set address argument non-NULL
-                              // Implementation dependent
-                              // Default: system chooses address is not specified
-                              // must set address NULL 
-  
-    // flags: sharing
-    const MAP_SHARED : mmap_flags;   // Posix: write changes to backing store on msync
-    const MAP_PRIVATE : mmap_flags;  // Posix: don't write changes ever
-  
-    // System dependent:
-    const MAP_HASSEMAPHORE: mmap_flags;
-    const MAP_NORESERVE: mmap_flags;
-    const MAP_LOCKED: mmap_flags;
-    const MAP_GROWSDOWN: mmap_flags;
-    const MAP_32BIT: mmap_flags;
-    const MAP_POPULATE: mmap_flags;
-    const MAP_NONBLOCK: mmap_flags;
-  
-    // return value of mmap
-    const MAP_FAILED : address;
-  
-    // size of a page
-    const _SC_PAGESIZE : long = "sysconf(_SC_PAGESIZE)";
-  
-    // establish a mapping
-    fun mmap:
-      address * //< start address
-      size *    //< bytes to map
-      mmap_prot *     //< protection
-      mmap_flags *     //< flags
-      int *     //< file descriptor
-      off_t     //< offset into file, multiple of _SC_PAGESIZE
-      -> address; //< start of reserved address space
-  
-    // unmap a region
-    fun munmap: address * size -> int;
-  
-    // save region to backing store (MAP_SHARED only)
-    fun msync: address * size * int -> int;
-  }
-  
-  

@@ -20,8 +20,10 @@ RTC: Time of Day
 A Real Time Clock (RTC) is a device that provides the
 current date and time of day.
 
-.. code-block:: felix
 
+.. index:: Time_class
+.. index:: Time
+.. code-block:: felix
   //[time.flx]
   class Time_class [os] {
     virtual gen time: 1 -> double; // time in seconds since Jan 1 1970 UTC, seconds
@@ -36,13 +38,13 @@ current date and time of day.
     rename fun sleep =  Faio::sleep; 
   }
   
-
 Posix RTC
 =========
 
 
-.. code-block:: felix
 
+.. index:: PosixTime
+.. code-block:: felix
   //[posix_time.flx]
   
   class PosixTime
@@ -73,38 +75,7 @@ Posix RTC
     }
   }
   
-
 Win32 RTC
 =========
 
 
-.. code-block:: felix
-
-  //[win32_time.flx]
-  
-  class Win32Time
-  {
-    requires Posix_headers::sys_types_h;
-    requires Win32_headers::sys_timeb_h;
-  
-    private type time_t = "time_t";
-    private fun _ctor_double: time_t -> double = "static_cast<double>($1)";
-  
-    private cstruct __timeb64 {
-      time: time_t; // seconds
-      millitm: ushort; // milliseconds
-    };
-  
-    private proc _ftime64_s: &__timeb64 = "_ftime64_s($1);";
-  
-    inherit Time_class[Win32];
-  
-    instance Time_class[Win32] {
-      gen time () : double = {
-        var tv:__timeb64;
-        _ftime64_s(&tv);
-        return tv.time.double + tv.millitm.double / 1.0e3;
-      }
-    }
-  }
-  

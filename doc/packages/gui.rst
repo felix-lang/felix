@@ -55,7 +55,6 @@ and the Felix bindings thereof. SDL_ttf and SDL_image are
 required too for font and image handling.
 
 .. code-block:: felix
-
   //[__init__.flx]
   include "sdl/SDL2";
   include "sdl/SDL_ttf";
@@ -64,7 +63,6 @@ required too for font and image handling.
 The basic SDL initialisation stuff.
 
 .. code-block:: felix
-
   //[__init__.flx]
   include "gui/init";
   include "gui/types";
@@ -86,7 +84,6 @@ from the client mouse and keyboard.
 
 
 .. code-block:: felix
-
   //[__init__.flx]
   include "gui/color";
   include "gui/surface";
@@ -120,14 +117,12 @@ protocols which allow plugins to provide services.
 Buttons and menus.
 
 .. code-block:: felix
-
   //[__init__.flx]
   include "gui/button";
   include "gui/menu";
 
 
 .. code-block:: felix
-
   //[__init__.flx]
   include "gui/line_buffer_interface";
   include "gui/line_buffer_object";
@@ -142,8 +137,8 @@ Integrated presentation.
 Merge all the separate classes into a single
 class to make it a all a bit easier to use.
 
+.. index:: FlxGui
 .. code-block:: felix
-
   //[__init__.flx]
   class FlxGui 
   {
@@ -187,8 +182,8 @@ since SDL's emulation of unions in C is a long way
 from the well presented sum type Felix would use.
 
 
+.. index:: FlxGuiTypes
 .. code-block:: felix
-
   //[types.flx]
   class FlxGuiTypes
   {
@@ -219,8 +214,8 @@ from the well presented sum type Felix would use.
   
 
 
+.. index:: FlxGuiEvents
 .. code-block:: felix
-
   //[events.flx]
   class FlxGuiEvents
   {
@@ -310,8 +305,8 @@ Ensures we have visuals, sound, fonts, and images.
 Display versions of libraries, both the one from
 the compiled header files and the binary linked in.
 
+.. index:: FlxGuiInit
 .. code-block:: felix
-
   //[init.flx]
   class FlxGuiInit
   {
@@ -383,8 +378,8 @@ Felix provides three fonts borrowed from Apple to save the user
 from having to set up a font library Felix knows about.
 
 
+.. index:: FlxGuiFont
 .. code-block:: felix
-
   //[font.flx]
   class FlxGuiFont
   {
@@ -459,8 +454,8 @@ and full transparency, and 255 means maximum colour and opaque
 rendering.
 
 
+.. index:: FlxGuiColor
 .. code-block:: felix
-
   //[color.flx]
   class FlxGuiColor
   {
@@ -506,8 +501,8 @@ not need that in GUI.
 
 
 
+.. index:: FlxGuiSurface
 .. code-block:: felix
-
   //[surface.flx]
   class FlxGuiSurface
   {
@@ -631,8 +626,9 @@ The z coordinate is used to control drawing order: the drawables
 with lowest z are applied first.
 
 
-.. code-block:: felix
 
+.. index:: FlxGuiDrawable
+.. code-block:: felix
   //[drawable.flx]
   class FlxGuiDrawable
   {
@@ -666,7 +662,6 @@ with lowest z are applied first.
     
   }
   
-
 Draw Chain
 ----------
 
@@ -680,8 +675,9 @@ by events occuring at times different to the events such as mouse
 clicks triggering state changes.
 
 
-.. code-block:: felix
 
+.. index:: FlxGuiDrawChain
+.. code-block:: felix
   //[drawchain.flx]
   include "gui/__init__";
   class FlxGuiDrawChain
@@ -743,7 +739,6 @@ clicks triggering state changes.
   }
   
   
-
 Windows
 =======
 
@@ -764,8 +759,8 @@ on window creation as the unpopulated window image is shown then
 replaced by a populated display.
 
 
+.. index:: FlxGuiWindow
 .. code-block:: felix
-
   //[window.flx]
   class FlxGuiWindow
   {
@@ -866,8 +861,8 @@ on construction an active process is started which can
 service events.
 
 
+.. index:: FlxGuiWindowControllerInterface
 .. code-block:: felix
-
   //[window_controller_interface.flx]
   class FlxGuiWindowControllerInterface
   {
@@ -884,8 +879,8 @@ service events.
   }
 
 
+.. index:: FlxGuiWindowController
 .. code-block:: felix
-
   //[window_controller.flx]
   
   class FlxGuiWindowController
@@ -945,8 +940,8 @@ to windows each of which is running an active process that
 listens for events.
 
 
+.. index:: FlxGuiWindowManager
 .. code-block:: felix
-
   //[window_manager.flx]
   class FlxGuiWindowManager
   {
@@ -1125,8 +1120,8 @@ Simple Click Button
 -------------------
 
 
+.. index:: FlxGuiButton
 .. code-block:: felix
-
   //[button.flx]
   class FlxGuiButton
   {
@@ -1313,8 +1308,8 @@ Cascading Menu
 --------------
 
 
+.. index:: FlxGuiMenu
 .. code-block:: felix
-
   //[menu.flx]
   // interim menu stuff
   // these menus are transient, retaining state only when open
@@ -1978,8 +1973,8 @@ Cascading Menu
   }
   
 
+.. index:: FlxGuiLineBufferDisplayControllerInterface
 .. code-block:: felix
-
   //[line_buffer_display_controller_interface.flx]
   class FlxGuiLineBufferDisplayControllerInterface
   {
@@ -1995,8 +1990,8 @@ Cascading Menu
   }
   
 
+.. index:: FlxGuiLineBufferDisplayController
 .. code-block:: felix
-
   //[line_buffer_display_controller.flx]
   include "gui/line_buffer_display_controller_interface";
   
@@ -2058,8 +2053,8 @@ Cascading Menu
   }
   
 
+.. index:: FlxGuiLineBufferInterface
 .. code-block:: felix
-
   //[line_buffer_interface.flx]
   class FlxGuiLineBufferInterface
   {
@@ -2091,8 +2086,8 @@ Cascading Menu
   
 
 
+.. index:: FlxGuiLineBuffer
 .. code-block:: felix
-
   //[line_buffer_object.flx]
   include "gui/line_buffer_interface";
   
@@ -2171,8 +2166,8 @@ Cascading Menu
   
   }
 
+.. index:: FlxGuiLineEditor
 .. code-block:: felix
-
   //[line_editor.flx]
   class FlxGuiLineEditor
   {
@@ -2244,110 +2239,3 @@ Tools
 =====
 
 
-.. code-block:: felix
-
-  //[linegraph.flx]
-  include "gui/__init__";
-  
-  
-  library GraphTools {
-  open FlxGui;
-    interface linegraph_t {
-      title: string;
-      func: double -> double;
-      xmin: double;
-      xmax: double;
-      ymin: double;
-      ymax: double;
-      client: rect_t;
-    }
-  
-    proc linegraph (g:linegraph_t) {
-      // SDL
-      FlxGui::init();
-  
-      // window
-      var w = create_resizable_window(g.title, 
-        g.client.x,g.client.y,g.client.w,g.client.h
-      );
-      w.add$ mk_drawable FlxGui::clear lightgrey;
-  
-      // font and label
-      var font_name = dflt_sans_serif_font();
-      var font : font_t = get_font(font_name, 12);
-      var bigfont : font_t = get_font(font_name, 14);
-      var lineskip = get_lineskip font;
-  
-      // bounding box for graph
-      var t = 20;
-      var l = 50;
-      var b = g.client.h - 90;
-      var r = g.client.w - 10;
-      w.add$ mk_drawable FlxGui::write (l+(r - l)/2,10,bigfont,black,g.title);
-  
-  
-      var c = RGB(0,0,255);
-      var c2 = RGB(0,0,0);
-  
-      // top
-      w.add$ mk_drawable draw_line (c, l - 5,t,r,t);
-      w.add$ mk_drawable FlxGui::write (l - 40,t,font,black,g.ymax.str);
-  
-      // bottom
-      w.add$ mk_drawable draw_line (c, l - 5,b,r,b);
-      w.add$ mk_drawable FlxGui::write (l - 40,b,font,black,g.ymin.str);
-  
-      // left
-      w.add$ mk_drawable draw_line (c, l,t,l,b + 5);
-      w.add$ mk_drawable FlxGui::write (l,b + 15,font,black,g.xmin.str);
-  
-      // right
-      w.add$ mk_drawable draw_line (c, r,t,r,b + 5);
-      w.add$ mk_drawable FlxGui::write (r - 40,b + 15,font,black,g.xmax.str);
-  
-      // coordinate transforms
-      fun i2x (i:int): double =>  (i - l).double / (r - l).double * (g.xmax - g.xmin) + g.xmin; 
-      fun y2j (y:double) : int => b-((y - g.ymin)/ (g.ymax - g.ymin) * (b - t).double).int; 
-      fun x2i (x:double) : int => ((x - g.xmin) / (g.xmax - g.xmin) * (r - l).double).int + l;
-  
-      // x axis (y=0)
-      var jorig = y2j 0.0;
-      w.add$ mk_drawable FlxGui::write (l - 40,jorig,font,black,"0");
-      w.add$ mk_drawable draw_line (blue,l,jorig,r,jorig);
-  
-      // y axis (x=0)
-      var iorig = x2i 0.0;
-      w.add$ mk_drawable draw_line (red,iorig,t,iorig,b+5);
-      w.add$ mk_drawable FlxGui::write (iorig,b+15,font,black,"0");
-  
-      w.update();
-      w.show();
-  
-  
-      var oldi = -2000;
-      var oldj = 0;
-      rfor i in l..r do
-        var x = i2x i;
-        var y = g.func x;
-        var j = y2j y;
-        //println$ g.title+"(" + x.str + ")=" y.str + ", coord(" + i.str + "," + j.str + ")";
-        var data = c2,oldi,oldj,i,j;
-        if oldi != -2000 do
-          w.add$ mk_drawable draw_line data;
-        done
-        oldi = i;
-        oldj= j;
-        w.update();
-        sleep(0.01);
-      done
-      w.add$ mk_drawable draw_line (c, l,t,r,b);
-  
-      w.update();
-      var wm = window_manager();
-      wm.run_with_timeout 15.0;
-      FlxGui::quit();
-    } // lilnegraph
-  } // GraphTools
-  
-  
-  

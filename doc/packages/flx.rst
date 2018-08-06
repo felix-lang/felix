@@ -39,8 +39,8 @@ However it preloads some plugins that might be used to avoid
 run time loading.
 
 
+.. index:: FlxPluginSymbols
 .. code-block:: felix
-
   //[flx_tool.flx]
   // flx plugin linker
   //
@@ -92,7 +92,6 @@ This tool just runs the  :code:`runflx` library function
 with the executable command line arguments.
 
 .. code-block:: felix
-
   //[dflx_tool.flx]
   include "std/felix/flx/flx";
   
@@ -104,8 +103,8 @@ The flx cache manager.
 
 Check if the flx cache is stale and deletes it if it is.
 
+.. index:: FlxCache
 .. code-block:: felix
-
   //[flx_cache.flx]
   class FlxCache
   {
@@ -332,8 +331,8 @@ The compiler.
 
 A wrapper around the {flxg} command line compiler executable.
 
+.. index:: Flxg
 .. code-block:: felix
-
   //[flx_flxg.flx]
   class Flxg
   {
@@ -420,8 +419,8 @@ The profile is the most basic low level configuration data,
 which determines where to find everything.
 
 
+.. index:: FlxProfile
 .. code-block:: felix
-
   //[flx_profile.flx]
   class FlxProfile
   {
@@ -477,8 +476,8 @@ Config.
 A more detailed layout configuration based
 on command line switches and the base profile.
 
+.. index:: Config
 .. code-block:: felix
-
   //[config.flx]
   include "std/version";
   include "std/felix/flx_profile";
@@ -668,8 +667,8 @@ Control Record.
 
 Just initialises the base configuration data.
 
+.. index:: FlxControl
 .. code-block:: felix
-
   //[flx_control.flx]
   class FlxControl
   {
@@ -829,8 +828,8 @@ Command line argument parser.
 
 Parses the command line options.
 
+.. index:: FlxCmdOpt
 .. code-block:: felix
-
   //[flx_cmdopt.flx]
   // NOTE: below the string "host" is used to help find files eg flxg.
   // This is a temporary hack to get Felix working after filesystem reorgnisation.
@@ -1735,8 +1734,8 @@ Computes all the detailed variables needed to run the various
 tools from a base configuration.
 
 
+.. index:: FlxDepvars
 .. code-block:: felix
-
   //[flx_depvars.flx]
   include "std/felix/flx/flx_control";
   
@@ -2013,7 +2012,6 @@ calculating dependencies and actually running the
 external compilers.
 
 .. code-block:: felix
-
   //[flx_run.flx]
   include "std/felix/flx/flx_depchk";
   include "std/felix/flx/flx_control";
@@ -3047,8 +3045,8 @@ The {flx} tool.
 ---------------
 
 
+.. index:: Flx
 .. code-block:: felix
-
   //[flx.flx]
   include "std/felix/config";
   
@@ -3270,8 +3268,8 @@ tool, except it includes all the required source code
 which means it takes a very long time to compile.
 
 
+.. index:: BootFlx
 .. code-block:: felix
-
   //[bootflx.flx]
   include "std/felix/config";
   
@@ -3430,8 +3428,8 @@ it on demand so it is easy to call flx from any Felix
 program.
 
 
+.. index:: Flx_client
 .. code-block:: felix
-
   //[flx_plugin_client.flx]
   class Flx_client {
     var runflx : list[string] -> int;
@@ -3450,7 +3448,6 @@ toolchains are compiled in directly.
 
 
 .. code-block:: felix
-
   //[bootflx_tool.flx]
   include "std/felix/flx/bootflx";
   println$ "BOOTFLX";

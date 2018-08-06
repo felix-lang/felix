@@ -45,8 +45,8 @@ Synopsis.
 
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[init.flx]
   include "std/algebra/predicate";        // in logic.fdoc
   include "std/algebra/set";              // in algebra.fdoc
@@ -64,7 +64,6 @@ Synopsis.
   include "std/algebra/complex";          // in algebra.fdoc
   include "std/algebra/monad";            // in algebra.fdoc
   
-
 Description.
 ============
 
@@ -152,8 +151,9 @@ the asymmetic set difference or subtraction.
 
 Note that sets are not necessarily finite.
 
-.. code-block:: felix
 
+.. index:: Set
+.. code-block:: felix
   //[set.flx]
   // note: eq is not necessarily required for a membership test
   // for example: string member of regexp doesn't require
@@ -183,13 +183,12 @@ Note that sets are not necessarily finite.
     ;
   }
   
-
 Syntax
 ------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[setexpr.fsyn]
   syntax setexpr
   {
@@ -202,7 +201,6 @@ Syntax
     x[ssetintersection_pri] := x[ssetintersection_pri] "\cap" x[>ssetintersection_pri] =># "(Infix)" note "setintersection";
   }
   
-
 Set forms.
 ==========
 
@@ -217,8 +215,8 @@ A set_form is basically just the membership predicate remodelled
 as a noun by encapsulating the predicate in a closure and
 thereby abstracting it.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[set.flx]
   interface set_form[T] { has_elt: T -> bool; }
   
@@ -236,7 +234,6 @@ thereby abstracting it.
     { e : t | (f e) \in x }
   ;
   
-
 Cartesian Product of set_forms.
 -------------------------------
 
@@ -246,8 +243,8 @@ sequence of sets using the infix TeX operator :math:`\otimes`
 which is spelled  :code:`\otimes`. There's also a left associative
 binary operator :math:`\times`  spelled  :code:`\times`.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[set.flx]
   
   fun \times[U,V] (x:set_form[U],y:set_form[V]) => 
@@ -266,13 +263,13 @@ binary operator :math:`\times`  spelled  :code:`\times`.
     { h,,(oh,,ot) : NH ** (OH ** OT) | h \in head and (oh,,ot) \in tail }
   ;
   
-
 Containers.
 ===========
 
 
-.. code-block:: felix
 
+.. index:: Container
+.. code-block:: felix
   //[container.flx]
   // roughly, a finite Set
   class Container [c,v]
@@ -284,7 +281,6 @@ Containers.
   }
   
   
-
 Orders
 ======
 
@@ -328,8 +324,9 @@ are semantically equivalent.
 An online reference on `Wikibooks <http://en.wikibooks.org/wiki/Abstract_Algebra/Equivalence_relations_and_congruence_classes>`_
 
 
-.. code-block:: felix
 
+.. index:: Eq
+.. code-block:: felix
   //[equiv.flx]
   // equality: technically, equivalence relation
   class Eq[t] {
@@ -346,13 +343,11 @@ An online reference on `Wikibooks <http://en.wikibooks.org/wiki/Abstract_Algebra
     fun \neq(x:t, y:t)=> x != y;
   }
   
-
 Syntax
 ======
 
 
 .. code-block:: felix
-
   //[cmpexpr.fsyn]
   syntax cmpexpr
   {
@@ -383,8 +378,9 @@ or equivalence operator  :code:`==` applies.
 The choice of operators is motivated by the canonical
 exemplar of subset containment relations.
 
-.. code-block:: felix
 
+.. index:: Pord
+.. code-block:: felix
   //[pord.flx]
   // partial order
   class Pord[t]{
@@ -411,13 +407,12 @@ exemplar of subset containment relations.
     axiom antisym(x:t, y:t): \subset(x,y) or \subset(y,x) or x == y;
     axiom reflex(x:t, y:t): \subseteq(x,y) and \subseteq(y,x) implies x == y;
   }
-
 Syntax
 ------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[pordcmpexpr.fsyn]
   syntax pordcmpexpr
   {
@@ -439,7 +434,6 @@ Syntax
     cmp := "\supsetneqq" =># '(nos _1)'; 
   }
   
-
 Total Order
 -----------
 
@@ -456,8 +450,9 @@ The spelling of the TeX operators can be found by
 holding the mouse over the symbol briefly.
 
 
-.. code-block:: felix
 
+.. index:: Tord
+.. code-block:: felix
   //[tord.flx]
   // total order
   class Tord[t]{
@@ -525,13 +520,12 @@ holding the mouse over the symbol briefly.
   
   }
   
-
 Syntax
 ------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[tordcmpexpr.fsyn]
   syntax tordcmpexpr
   {
@@ -567,13 +561,14 @@ Syntax
     bin := "\wedge" =># '(nos _1)'; 
   }
   
-
 Sequences
 ---------
 
 
-.. code-block:: felix
 
+.. index:: Forward
+.. index:: Bidirectional
+.. code-block:: felix
   //[sequence.flx]
   
   class Forward[t] {
@@ -590,7 +585,6 @@ Sequences
   }
   
   
-
 Groupoids.
 ==========
 
@@ -610,8 +604,8 @@ numbers.
 Note we use the  :code:`inherit` statement to include
 the functions from class  :code:`Eq`.
 
+.. index:: FloatAddgrp
 .. code-block:: felix
-
   //[group.flx]
   //$ Additive symmetric float-approximate group, symbol +.
   //$ Note: associativity is not assumed.
@@ -645,8 +639,8 @@ Notation
 --------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[addexpr.fsyn]
   syntax addexpr
   {
@@ -657,15 +651,15 @@ Notation
     x[ssubtraction_pri] := x[ssubtraction_pri] "-" x[sproduct_pri] =># "(Infix)";
   }
   
-
 Additive Group
 --------------
 
 A proper additive group is derived from  :code:`FloatAddgrp`
 with associativity added.
 
-.. code-block:: felix
 
+.. index:: Addgrp
+.. code-block:: felix
   //[group.flx]
   //$ Additive symmetric group, symbol +.
   class Addgrp[t] {
@@ -674,15 +668,15 @@ with associativity added.
     //reduce inv(x:t,y:t): x + y - y => x;
   }
   
-
 Approximate Multiplicative Semi-Group With Unit.
 ------------------------------------------------
 
 An approximate multiplicative semigroup is a set with a symmetric
 binary multiplication operator and a unit. 
 
-.. code-block:: felix
 
+.. index:: FloatMultSemi1
+.. code-block:: felix
   //[group.flx]
   //$ Multiplicative symmetric float-approximate semi group with unit symbol *.
   //$ Note: associativity is not assumed.
@@ -699,13 +693,12 @@ binary multiplication operator and a unit.
     //reduce id (x:t): one()*x => x;
   }
   
-
 Syntax
 ------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[mulexpr.fsyn]
   syntax mulexpr
   {
@@ -714,7 +707,6 @@ Syntax
       "(chain 'ast_product _1 _2)" note "mul";
   }
   
-
 Multiplicative Semi-Group With Unit.
 ------------------------------------
 
@@ -722,8 +714,9 @@ A multiplicative semigroup with unit is an approximate
 multiplicative semigroup with unit and associativity
 and satisfies the cancellation law.
 
-.. code-block:: felix
 
+.. index:: MultSemi1
+.. code-block:: felix
   //[group.flx]
   //$ Multiplicative semi group with unit.
   class MultSemi1[t] {
@@ -732,7 +725,6 @@ and satisfies the cancellation law.
     //reduce cancel (x:t,y:t,z:t): x * z ==  y * z => x == y;
   }
   
-
 Rings
 =====
 
@@ -744,8 +736,9 @@ An approximate ring is a set which has addition and
 multiplication satisfying the rules for approximate
 additive group and multiplicative semigroup respectively.
 
-.. code-block:: felix
 
+.. index:: FloatRing
+.. code-block:: felix
   //[ring.flx]
   //$ Float-approximate ring.
   class FloatRing[t] {
@@ -753,7 +746,6 @@ additive group and multiplicative semigroup respectively.
     inherit FloatMultSemi1[t];
   }
   
-
 Ring
 ----
 
@@ -761,8 +753,9 @@ A ring is a type which is a both an additive group and
 multiplicative semigroup with unit, and which in
 addition satisfies the distributive law.
 
-.. code-block:: felix
 
+.. index:: Ring
+.. code-block:: felix
   //[ring.flx]
   //$ Ring.
   class Ring[t] {
@@ -770,15 +763,15 @@ addition satisfies the distributive law.
     inherit MultSemi1[t];
     axiom distrib (x:t,y:t,z:t): x * ( y + z) == x * y + x * z;
   }
-
 Approximate Division Ring
 -------------------------
 
 An approximate division ring is an approximate ring with unit
 with a division operator.
 
-.. code-block:: felix
 
+.. index:: FloatDring
+.. code-block:: felix
   //[ring.flx]
   //$ Float-approximate division ring.
   class FloatDring[t] {
@@ -799,13 +792,12 @@ with a division operator.
     proc modeq(px:&t, y:t) { %= (px,y); }
   }
   
-
 Syntax
 ------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[divexpr.fsyn]
   syntax divexpr
   {
@@ -823,13 +815,13 @@ Syntax
   }
   
   
-
 Division Ring
 -------------
 
 
-.. code-block:: felix
 
+.. index:: Dring
+.. code-block:: felix
   //[ring.flx]
   //$ Division ring.
   class Dring[t] {
@@ -837,7 +829,6 @@ Division Ring
     inherit FloatDring[t];
   }
   
-
 Integral.
 =========
 
@@ -846,8 +837,9 @@ Bitwise operations
 ------------------
 
 
-.. code-block:: felix
 
+.. index:: Bits
+.. code-block:: felix
   //[bits.flx]
   
   //$ Bitwise operators.
@@ -867,13 +859,12 @@ Bitwise operations
   
   }
   
-
 Syntax
 ------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[bitexpr.fsyn]
   syntax bitexpr
   {
@@ -893,13 +884,15 @@ Syntax
     x[sshift_pri] := x[sshift_pri] ">>" x[>sshift_pri] =># "(Infix)";
   }
   
-
 Integer
 -------
 
 
-.. code-block:: felix
 
+.. index:: Integer
+.. index:: Signed_integer
+.. index:: Unsigned_integer
+.. code-block:: felix
   //[integer.flx]
   
   //$ Integers.
@@ -933,7 +926,6 @@ Integer
   
   
   
-
 Float kinds
 ===========
 
@@ -944,8 +936,10 @@ Trigonometric Functions.
 Trigonometric functions are shared by
 real and complex numbers.
 
-.. code-block:: felix
 
+.. index:: Trig
+.. index:: Special
+.. code-block:: felix
   //[trig.flx]
   
   //$ Float-approximate trigonometric functions.
@@ -1050,13 +1044,13 @@ real and complex numbers.
     virtual fun erfc: t -> t;
   }
   
-
 Approximate Reals.
 ------------------
 
 
-.. code-block:: felix
 
+.. index:: Real
+.. code-block:: felix
   //[real.flx]
   //$ Float-approximate real numbers.
   class Real[t] {
@@ -1085,13 +1079,13 @@ Approximate Reals.
   }
   
   
-
 Complex numbers
 ---------------
 
 
-.. code-block:: felix
 
+.. index:: Complex
+.. code-block:: felix
   //[complex.flx]
   //$ Float-approximate Complex.
   class Complex[t,r] {
@@ -1116,14 +1110,13 @@ Complex numbers
   
   
   
-
 Summation and Product Quantifiers.
 ==================================
 
 To be moved. Folds over streams.
 
+.. index:: Quantifiers_add_mul
 .. code-block:: felix
-
   //[group.flx]
   open class Quantifiers_add_mul {
     fun \sum[T,C with FloatAddgrp[T], Streamable[C,T]] (a:C):T = 
@@ -1162,15 +1155,3 @@ Monad
 =====
 
 
-.. code-block:: felix
-
-  //[monad.flx]
-  
-  class Monad [M: TYPE->TYPE] {
-    virtual fun ret[a]: a -> M a;
-    virtual fun bind[a,b]: M a * (a -> M b) -> M b;
-    fun join[a] (n: M (M a)): M a => bind (n , (fun (x:M a):M a=>x));
-  }
-  
-  
-  

@@ -27,8 +27,9 @@ Recognisers work on an array of chars in memory. We use a Google
 StringPiece to represent it. 
 
 
-.. code-block:: felix
 
+.. index:: RecogniserBase
+.. code-block:: felix
   //[recogniser_base.flx]
   include "std/control/chips";
   class RecogniserBase
@@ -108,14 +109,13 @@ StringPiece to represent it.
   typedef recog_t = BaseChips::iochip_t[Buffer,Buffer];
   // rendering lazy terms to actual recognizer
   
-
 A string matcher.
 -----------------
 
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[recogniser_base.flx]
   chip match_string (s:string)
     connector io
@@ -134,14 +134,13 @@ A string matcher.
     goto nextmatch;  
   }
   
-
 Whitespace matcher.
 -------------------
 
 Note: never fails.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[recogniser_base.flx]
   chip match_white 
     connector io
@@ -155,14 +154,13 @@ Note: never fails.
     done
   }
   
-
 C++ comment matcher
 -------------------
 
 Note: cannot fail.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[recogniser_base.flx]
   chip match_cxx_comment 
     connector io
@@ -189,14 +187,13 @@ Note: cannot fail.
     goto again;
   }
   
-
 Nested C comment matcher
 ------------------------
 
 Note: cannot fail.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[recogniser_base.flx]
   chip match_nested_c_comment 
     connector io
@@ -243,14 +240,13 @@ Note: cannot fail.
     goto again;
   }
   
-
 Felix comments
 --------------
 
 Note: can fail.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[recogniser_base.flx]
   
   chip match_felix_white
@@ -280,14 +276,13 @@ Note: can fail.
     goto again;
   }
   
-
 regex matcher.
 --------------
 
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[recogniser_base.flx]
   chip match_regex (r:RE2)
     connector io
@@ -309,15 +304,14 @@ regex matcher.
     done
   }
   
-
 Identifier matcher.
 -------------------
 
 For C like identifiers.
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[recogniser_base.flx]
   device cident_matcher = match_regex (RE2 "[A-Za-z][A-Za-z0-9_]*");
   device flxident_matcher = match_regex (RE2 "[A-Za-z_][A-Za-z0-9_']*");
@@ -365,19 +359,17 @@ For C like identifiers.
   }
   
   
-
 Integer matcher.
 ----------------
 
 For plain identifiers.
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[recogniser_base.flx]
   device decimal_integer_matcher = match_regex (RE2 "[0-9]+");
   
-
 Felix integer matcher.
 ----------------------
 
@@ -387,8 +379,8 @@ underscores even though these are not allowed.
 I mean, what should we do if we find them?
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[recogniser_base.flx]
   
   chip felix_integer_matcher 
@@ -495,7 +487,6 @@ I mean, what should we do if we find them?
     goto nexttry;
   }
   
-
 Felix float matcher.
 --------------------
 
@@ -504,8 +495,8 @@ Felix float matcher.
 //$ x.0 works for tuple projections and 0.f is a function
 //$ application
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[recogniser_base.flx]
   chip felix_float_literal_matcher 
     connector io
@@ -589,15 +580,14 @@ Felix float matcher.
   }
   
   
-
 String Literal matcher.
 -----------------------
 
 One shot. Simple, matches single or double quoted
 string not spanning lines, with no escape codes, 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[recogniser_base.flx]
   chip match_string_literal 
     connector io
@@ -731,13 +721,12 @@ string not spanning lines, with no escape codes,
     goto restart;
   }
   
-
 End of string matcher
 ---------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[recogniser_base.flx]
   chip eos_matcher 
     connector io
@@ -750,13 +739,12 @@ End of string matcher
     done
   }
   
-
 Longest match
 -------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[recogniser_base.flx]
   chip longest_match (a: list[recog_t])
     connector io
@@ -780,14 +768,13 @@ Longest match
     endmatch;
   }
   
-
 Match to eos
 ------------
 
 Equivalent to .* but faster.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[recogniser_base.flx]
   chip toeos_matcher 
     connector io
@@ -802,109 +789,7 @@ Equivalent to .* but faster.
   }
   
   
-
 Lazy Syntactic form
 ===================
 
 
-.. code-block:: felix
-
-  //[recognisers.flx]
-  // this is a function, so it cannot construct pipeline
-  // chips, because they actually spawn the components internally
-  // and functions can't do service calls.
-  //
-  // So instead we just return a function 1->recog_t which does the
-  // job on invocation.
-  include "std/strings/recogniser_base";
-  include "std/strings/grammars";
-  
-  class Recognisers
-  {
-  inherit RecogniserBase;
-  open BaseChips;
-  
-  open Grammars;
-  
-  typedef ntdef_t = string * recog_t;
-  
-  fun find (v:varray[ntdef_t]) (nt:string) : size = 
-  {
-    for i in 0uz ..< v.len do
-      if v.i.0 == nt return i;
-    done
-    assert false;
-  }
-  
-  
-  fun render_prod 
-    (lib:gramlib_t,v:varray[ntdef_t]) 
-    (p:prod_t) 
-  : recog_t =>
-    match p with
-    | `Terminal (s,r) => r 
-    | `Epsilon =>  epsilon[Buffer] 
-    | `Seq ps =>  pipeline_list (
-        map (fun (p:prod_t) => render_prod (lib,v) p) ps) 
-    | `Alt ps =>   tryall_list (
-        map (fun (p:prod_t) => render_prod (lib,v) p) ps) 
-    | `Nonterminal nt => 
-      let idx = find v nt in
-      let pslot = -(v.stl_begin + idx) in
-      let pchip = pslot . 1 in
-      BaseChips::deref_first_read pchip
-    endmatch
-  ;
-  
-  fun recogniser
-    (start:string, lib:gramlib_t) : recog_t =
-  {
-      var cl = closure (start,lib);
-  
-      // allocate a varray with a slot for each nonterminal
-      var n = cl.len;
-      var v = varray[string * recog_t] n;
-  
-      // populate the varray with the terminal names and a dummy chip
-      for nt in cl call // initialise array
-        push_back (v,(nt,BaseChips::epsilon[Buffer]))
-      ;
-  
-      // now assign the real recogniser_base to the array
-      var index = 0uz;
-      for nt in cl do
-        match find lib nt with
-        | None => assert false;
-        | Some prod =>
-          // get wrapped recogniser
-          var entry = render_prod (lib, v) prod;
-  
-          // address of the slot
-          var pentry : &recog_t = (-(v.stl_begin+index)).1;
-  
-          // overwrite dummy value
-          pentry <- entry;
-        endmatch;
-        ++index;
-      done
-      return v.(find v start).1;
-  }
-  
-  fun in (s:string) (g:grammar_t) =
-  {
-    chip false_if_got (pr: &bool)
-       connector io
-         pin inp: %<Buffer
-    {
-      C_hack::ignore$ read io.inp;
-      pr <- true;
-    }
-    var r = recogniser g;
-    var result = false;
-    run (s.Buffer.value |-> r |-> eos_matcher |-> false_if_got &result);
-    return result;
-  }
-  
-  } // Recognisers
-  
-  

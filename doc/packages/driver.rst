@@ -42,7 +42,6 @@ Only one of these entry points will actually be defined in a given
 translation unit.
 
 .. code-block:: cpp
-
   //[flx_run.hpp]
   int felix_run(int, char**);
   int felix_arun(int, char**);
@@ -102,8 +101,8 @@ That would be PATH dependent, and the PATH might be *different*
 to the one the client DLL program requires.
 
 
-.. code-block:: text
 
+.. code-block:: text
   #include <cstdlib>
   #include <stdio.h>
   #include <string.h>
@@ -152,7 +151,6 @@ to the one the client DLL program requires.
   
   namespace flx { namespace run {
   
-
  :code:`init_ptr_create_async_hooker` callback #1
 -------------------------------------------------
 
@@ -203,8 +201,8 @@ dynamically, and use dlsym() or GetProcAddress() to fetch
 the service creator function from its string name. 
 
 
-.. code-block:: text
 
+.. code-block:: text
   
   void init_ptr_create_async_hooker(flx_config *c, bool debug_driver) {
   #if !FLX_SUPPORT_ASYNC
@@ -259,7 +257,6 @@ the service creator function from its string name.
   #endif
   }
   
-
  :code:`get_flx_args_config` callback
 -------------------------------------
 
@@ -279,7 +276,6 @@ and dynamic linkage.
 
 
 .. code-block:: text
-
   int get_flx_args_config(int argc, char **argv, flx_config *c) {
   #ifndef FLX_BUILD_FOR_STATIC_LINK
     c->static_link = false;
@@ -342,8 +338,8 @@ itself.
 This is a hack. It should be done in the library linkage class.
 
 
-.. code-block:: text
 
+.. code-block:: text
   #ifdef FLX_BUILD_FOR_STATIC_LINK
   static ::std::string modulenameoffilename(::std::string const &s)
   {
@@ -354,7 +350,6 @@ This is a hack. It should be done in the library linkage class.
   #endif
   
   
-
  :code:`link_library` callback #3
 ---------------------------------
 
@@ -384,7 +379,6 @@ static_link() method (although it doesn't check for NULLs).
 
 
 .. code-block:: text
-
   ::flx::dynlink::flx_dynlink_t *link_library(flx_config *c, ::flx::gc::collector::gc_profile_t *gcp) {
     ::flx::dynlink::flx_dynlink_t* library;
   #ifdef FLX_BUILD_FOR_STATIC_LINK
@@ -409,8 +403,8 @@ Mainline
 --------
 
 
-.. code-block:: text
 
+.. code-block:: text
   int FELIX_MAIN (int argc, char** argv)
   {
   //fprintf(stderr,"felix_run=FELIX_MAIN starts\n");
@@ -456,7 +450,6 @@ Mainline
   }
   
   
-
 Dynamic link loader with async support
 --------------------------------------
 
@@ -469,7 +462,6 @@ the async I/O library. Loading may fail if the
 async I/O library DLL cannot be found at run time.
 
 .. code-block:: cpp
-
   //[flx_arun_lib_dynamic.cpp]
   #define FLX_SUPPORT_ASYNC 1
   #define FELIX_MAIN felix_arun
@@ -486,7 +478,6 @@ This object file requires the async support library
 to be linked in, however it is only activated on demand.
 
 .. code-block:: cpp
-
   //[flx_arun_lib_static.cpp]
   #define FLX_SUPPORT_ASYNC 1
   #define FELIX_MAIN felix_arun
@@ -503,7 +494,6 @@ containing flx_run startup function suitable for
 loading a Felix program built as a shared library.
 
 .. code-block:: cpp
-
   //[flx_run_lib_dynamic.cpp]
   #define FLX_SUPPORT_ASYNC 0
   #define FELIX_MAIN felix_run
@@ -518,7 +508,6 @@ containing flx_run startup function suitable for
 running a Felix program built as an object file.
 
 .. code-block:: cpp
-
   //[flx_run_lib_static.cpp]
   #define FLX_SUPPORT_ASYNC 0
   #define FELIX_MAIN felix_run
@@ -533,7 +522,6 @@ Link this, together with translation units containing flx_arun,
 to create a static link executable with async support.
 
 .. code-block:: cpp
-
   //[flx_arun_main.cxx]
   #include "flx_run.hpp"
   
@@ -559,7 +547,6 @@ Link this, together with translation units containing flx_run,
 to create a static link executable without async support.
 
 .. code-block:: cpp
-
   //[flx_run_main.cxx]
   #include "flx_run.hpp"
   #include "stdio.h"
@@ -585,7 +572,6 @@ Driver executable config
 
 
 .. code-block:: fpc
-
   //[flx_arun.fpc]
   Name: flx_arun
   Description: Felix standard driver, async support
@@ -596,7 +582,6 @@ Driver executable config
 
 
 .. code-block:: fpc
-
   //[flx_run.fpc]
   Name: flx_run
   Description: Felix standard driver, no async support
@@ -606,7 +591,6 @@ Driver executable config
 
 
 .. code-block:: fpc
-
   //[flx_thread_free_run.fpc]
   Name: flx_thread_free_run
   Description: Felix driver, no thread or async support
@@ -621,7 +605,6 @@ Build Code
 
 
 .. code-block:: python
-
   #[flx_drivers.py]
   import fbuild
   from fbuild.functools import call

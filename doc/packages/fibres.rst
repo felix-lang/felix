@@ -26,8 +26,9 @@ Fibres (fthreads)
 =================
 
 
-.. code-block:: felix
 
+.. index:: Fibres
+.. code-block:: felix
   //[fibres.flx]
   
   //$ Low level management of Felix fthreads (fibres).
@@ -197,13 +198,13 @@ Fibres (fthreads)
   
   }
   
-
 Synchronous Channels
 ====================
 
 
-.. code-block:: felix
 
+.. index:: Schannel
+.. code-block:: felix
   //[schannels.flx]
   
   //$ Sychronous Channels.
@@ -361,7 +362,6 @@ Synchronous Channels
   
   }
   
-
 Synchronous multiplexor
 =======================
 
@@ -371,8 +371,9 @@ get all the input data, but the order is indeterminate.
 [Not clear how this is useful .. ]
 
 
-.. code-block:: felix
 
+.. index:: Multiplexor
+.. code-block:: felix
   //[mux.flx]
   
   //$ Schannel multiplexor.
@@ -406,16 +407,16 @@ get all the input data, but the order is indeterminate.
       mux (iterator a, out)
     ;
   }
-
 Schannel and Pipe syntax
 ========================
 
 Special syntax for both pipes and also abbreviation for
 schannel types.
 
-.. code-block:: felix
 
-  //[spipeexpr.fsyn]
+.. index:: DuplexSchannels
+.. code-block:: felix
+  //[schannels.flx]
   syntax spipeexpr 
   {
     //$ Left assoc, for schannel pipes.
@@ -446,10 +447,6 @@ schannel types.
   }
   
   
-
-.. code-block:: felix
-
-  //[schannels.flx]
   
   open class DuplexSchannels
   {
@@ -515,7 +512,6 @@ schannel types.
 Let's now rewrite our example:
 
 .. code-block:: felix
-
   //[subrout-02.flx]
   proc int_to_string (ch: %<int%>string)  ()
   {
@@ -528,14 +524,12 @@ Let's now rewrite our example:
   println$ rw 42;
 
 .. code-block:: text
-
   42
 
 Even more compactly:
 
 
 .. code-block:: felix
-
   //[subrout-03.flx]
   proc int_to_string (ch: %<int%>string)  ()
   {
@@ -546,7 +540,6 @@ Even more compactly:
   println$ int_to_string 42;
 
 .. code-block:: text
-
   42
 
 

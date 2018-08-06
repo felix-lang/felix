@@ -34,8 +34,10 @@ Although a sole bool is much bigger than a cbool,
 to only 8 cbools.
 
 
-.. code-block:: felix
 
+.. index:: Bool
+.. index:: CBool
+.. code-block:: felix
   //[bool.flx]
   typedef bool = 2;
   type cbool = "bool" requires index TYPE_cbool; 
@@ -178,13 +180,12 @@ to only 8 cbools.
   open Tord[cbool];
   open Show[cbool];
   
-
 Syntax
 ======
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[boolexpr.fsyn]
   syntax boolexpr
   {
@@ -240,7 +241,6 @@ Syntax
             """;
   }
   
-
 Predicate combinators.
 ======================
 
@@ -255,33 +255,3 @@ and negation  :code:`not`. The parser maps these operator onto the
 functions  :code:`land`,  :code:`lor`,  :code:`implies`, and  :code:`lnot` respectively.
 
 
-.. code-block:: felix
-
-  //[predicate.flx]
-  
-  // Some operations on predicates.
-  // These also automatically apply to relations, but just taking
-  // the argument as a tuple.
-  
-  open class Predicate[T]
-  {
-     fun land (f:T->bool,g:T->bool) =>
-       fun (x:T) => f x and g x
-     ;
-  
-     fun lor (f:T->bool,g:T->bool) =>
-       fun (x:T) => f x or g x
-     ;
-  
-     fun implies (f:T->bool,g:T->bool) =>
-       fun (x:T) => f x implies g x
-     ;
-  
-     fun lnot (f:T->bool) =>
-       fun (x:T) => not (f x)
-     ;
-  
-  }
-  
-  
-  

@@ -27,7 +27,6 @@ demux_cygwin.fpc  $PWD/src/config/cygwin/demux.fpc
 
 
 .. code-block:: fpc
-
   //[demux_default.fpc]
   Name: demux
   Description: Event handling: select
@@ -45,7 +44,6 @@ demux_cygwin.fpc  $PWD/src/config/cygwin/demux.fpc
   src: posix/.*\.cpp
 
 .. code-block:: fpc
-
   //[demux_unix.fpc]
   Name: demux
   Description: Event handling (poll)
@@ -65,7 +63,6 @@ demux_cygwin.fpc  $PWD/src/config/cygwin/demux.fpc
   
 
 .. code-block:: fpc
-
   //[demux_linux.fpc]
   Name: demux
   Description: Event handling (epoll)
@@ -85,7 +82,6 @@ demux_cygwin.fpc  $PWD/src/config/cygwin/demux.fpc
 
 
 .. code-block:: fpc
-
   //[demux_solaris.fpc]
   Name: demux
   Description: Event handling (event ports)
@@ -104,7 +100,6 @@ demux_cygwin.fpc  $PWD/src/config/cygwin/demux.fpc
   src: evtport/.*\.cpp
 
 .. code-block:: fpc
-
   //[demux_macosx.fpc]
   Name: demux
   Description: Event handling (kqueue)
@@ -123,7 +118,6 @@ demux_cygwin.fpc  $PWD/src/config/cygwin/demux.fpc
   src: kqueue/.*\.cpp
 
 .. code-block:: fpc
-
   //[demux_win32.fpc]
   Name: demux
   Description: Event handling (windows event ports with msvc)
@@ -143,7 +137,6 @@ demux_cygwin.fpc  $PWD/src/config/cygwin/demux.fpc
   src: win\\.*\.cpp
 
 .. code-block:: fpc
-
   //[demux_msys.fpc]
   Name: demux
   Description: Event handling (windows event ports with gcc)
@@ -163,7 +156,6 @@ demux_cygwin.fpc  $PWD/src/config/cygwin/demux.fpc
   src: win/.*\.cpp
 
 .. code-block:: fpc
-
   //[demux_cygwin.fpc]
   Name: demux
   Description: Event handling (poll)
@@ -183,7 +175,6 @@ demux_cygwin.fpc  $PWD/src/config/cygwin/demux.fpc
 
 
 .. code-block:: python
-
   #[demux.py]
   import fbuild
   from fbuild.functools import call
@@ -317,7 +308,6 @@ demux_cygwin.fpc  $PWD/src/config/cygwin/demux.fpc
 
 
 .. code-block:: cpp
-
   //[flx_demux_config.hpp]
   #ifndef __FLX_DEMUX_CONFIG_H__
   #define __FLX_DEMUX_CONFIG_H__

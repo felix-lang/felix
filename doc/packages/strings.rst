@@ -19,14 +19,13 @@ String handling
 ===============
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[__init__.flx]
   include "std/strings/string";
   include "std/strings/cstring";
   include "std/strings/ustr";
   
-
 Strings
 =======
 
@@ -39,8 +38,11 @@ the character base.
 This type is deprecated, to be repalced by C++11 unicode string type.
 
 
-.. code-block:: felix
 
+.. index:: Str
+.. index:: Repr
+.. index:: Show
+.. code-block:: felix
   //[string.flx]
   typedef cstring = +char;
   type string = "::std::basic_string<char>" 
@@ -65,13 +67,13 @@ This type is deprecated, to be repalced by C++11 unicode string type.
   }
   
   
-
 Equality and total ordering
 ---------------------------
 
 
-.. code-block:: felix
 
+.. index:: String
+.. code-block:: felix
   //[string.flx]
   instance[t in strings] Eq[t] {
     fun == : t * t -> bool = "$1==$2";
@@ -86,49 +88,45 @@ Equality and total ordering
   
     inherit Tord[string];
   
-
 Equality of  :code:`string` and  :code:`char`
 ---------------------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     fun == (s:string, c:char) => len s == 1uz and s.[0] == c;
     fun == (c:char, s:string) => len s == 1uz and s.[0] == c;
     fun != (s:string, c:char) => len s != 1uz or s.[0] != c;
     fun != (c:char, s:string) => len s != 1uz or s.[0] != c;
   
-
 Append to  :code:`string` object
 --------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     proc  += : &string * string = "$1->append($2:assign);";
     proc  += : &string * +char = "$1->append($2:assign);";
     proc  += : &string * char = "*$1 += $2;";
   
-
 Length of  :code:`string`
 -------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     // we need to cast to an int so that c++ won't complain
     fun len: string -> size = "$1.size()";
   
-
 String concatenation.
 ---------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     fun + : string * string -> string = "$1+$2";
     fun + : string * carray[char] -> string = "$1+$2";
@@ -142,58 +140,53 @@ String concatenation.
     // is this a string or a list of strings?
     //fun + [T with Str[T]] (x:string, y:T) => x + str y;
   
-
 Repetition of  :code:`string` or  :code:`char`
 ----------------------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     fun * : string * int -> string = "::flx::rtl::strutil::mul($1:assign,$2:assign)" requires package "flx_strutil";
     fun * : char * int -> string = "::std::string($2:assign,$1:assign)";
   
-
 Application of  :code:`string` to  :code:`string` or  :code:`int` is concatenation
 ----------------------------------------------------------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     fun apply (x:string, y:string):string => x + y;
     fun apply (x:string, y:int):string => x + y;
   
-
 Construct a char from first byte of a  :code:`string`.
 ------------------------------------------------------
 
 Returns nul char (code 0) if the string is empty.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     ctor char (x:string) => x.[0];
-
 Constructors for  :code:`string`
 --------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     ctor string (c:char) => ""+c;
     ctor string: +char = "::std::string($1:assign)";
     ctor string: +char  * !ints = "::std::string($1:assign,$2:assign)";
     fun utf8: int -> string = "::flx::rtl::i18n::utf8($1)" requires package "flx_i18n";
   
-
 Substrings
 ----------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     fun subscript: string * !ints -> char =
       "::flx::rtl::strutil::subscript($1:assign,$2:assign)" requires package "flx_strutil";
@@ -235,13 +228,12 @@ Substrings
    
     proc store: &string * !ints * char = "(*$1)[$2] = $3;";
   
-
 Map a string  :code:`char` by  :code:`char`
 -------------------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     fun map (f:char->char) (var x:string): string = {
       if len x > 0uz do
@@ -252,7 +244,6 @@ Map a string  :code:`char` by  :code:`char`
       return x;
     }
   
-
 STL string functions
 --------------------
 
@@ -260,8 +251,8 @@ These come in two flavours: the standard C++ operations
 which return  :code:`stl_npos` on failure, and a more Felix
 like variant which uses an  :code:`option` type.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     const stl_npos: size = "::std::string::npos";
   
@@ -350,25 +341,23 @@ like variant which uses an  :code:`option` type.
     fun find_last_not_of (s:string, e:char, i:size) : opt[size] => match stl_find_last_not_of (s, e, i) with | i when i == stl_npos => None[size] | i => Some i endmatch;
   
     
-
 Construe  :code:`string` as set of  :code:`char`
 ------------------------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     instance Set[string,char] {
       fun \in (c:char, s:string) => stl_find (s,c) != stl_npos;
     }
     
-
 Construe  :code:`string` as stream of  :code:`char`
 ---------------------------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     instance Iterable[string, char] {
       gen iterator(var x:string) () = {
@@ -378,13 +367,12 @@ Construe  :code:`string` as stream of  :code:`char`
     }
     inherit Streamable[string,char];
   
-
 Test if a string has given prefix or suffix
 -------------------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     fun prefix(arg:string,key:string)=>
       arg.[to len key]==key
@@ -403,13 +391,12 @@ Test if a string has given prefix or suffix
     fun startswith (x:string) (e:char) : bool => x.[0] == e;
     fun endswith (x:string) (e:char) : bool => x.[-1] == e;
   
-
 Trim off specified prefix or suffix or both
 -------------------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     fun ltrim (x:string) (e:string) : string =>
       if startswith x e then
@@ -429,13 +416,12 @@ Trim off specified prefix or suffix or both
   
     fun trim (x:string) (e:string) : string => ltrim (rtrim x e) e;
   
-
 Strip characters from left, right, or both end of a string.
 -----------------------------------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     fun lstrip (x:string, e:string) : string =
     {
@@ -481,13 +467,12 @@ Strip characters from left, right, or both end of a string.
     fun rstrip (x:string) : string => rstrip(x, " \t\n\r\f\v");
     fun strip (x:string) : string => lstrip$ rstrip x;
   
-
 Justify string contents
 -----------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     fun ljust(x:string, width:int) : string =>
       if x.len.int >= width
@@ -503,13 +488,13 @@ Justify string contents
       endif
     ;
   
-
 Split a string into a list on given separator
 ---------------------------------------------
 
 
-.. code-block:: felix
 
+.. index:: RespectfulParser
+.. code-block:: felix
   //[string.flx]
     fun split (x:string, d:char): List::list[string] => List::rev (rev_split (x,d));
   
@@ -744,13 +729,12 @@ Split a string into a list on given separator
       method fun get_parsed () => state.parsed;
     }
   
-
 erase, insert or replace substrings
 -----------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     // Note: pos, length!
     //$ mutators
@@ -764,14 +748,13 @@ erase, insert or replace substrings
     fun replace: string * size * size * string -> string = "::std::string($1).replace($2,$3,$4)";
   
   
-
 search and replace
 ------------------
 
 Search and replace by string.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     fun search_and_replace (x:string, var spos:size, s:string, r:string) : string =
     {
@@ -795,14 +778,13 @@ Search and replace by string.
       return v;
     }
   
-
 Regexp search and replace
 -------------------------
 
 Uses Google RE2 engine.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     // Replace \0 \1 \2 etc in s with text from v
     fun subst(s:string, v:varray[StringPiece]): string =
@@ -871,36 +853,33 @@ Uses Google RE2 engine.
       o+=x.[spos to];                  // rest of string
       return o;
     }
-
 Parse string to numeric type
 ----------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     fun atoi: string -> int = "::std::atoi($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
     fun atol: string -> long = "::std::atol($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
     fun atoll: string -> long = "::std::atoll($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
     fun atof: string -> double = "::std::atof($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
   
-
 Reserve store
 -------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     proc reserve: &string * !ints = "$1->reserve($2);";
   
-
 Fetch underlying cstring.
 -------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     // safely returns a malloc()'d copy, not garbage collected 
     fun _unsafe_cstr: string -> +char = "::flx::rtl::strutil::flx_cstr($1)" is atom;
@@ -912,13 +891,12 @@ Fetch underlying cstring.
     // this operation returns a char pointer to GC managed storage
     fun cstr (var s:string) => s.varray[char].stl_begin;
   
-
 Polymorphic vsprintf hack
 -------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     fun vsprintf[t]: +char  * t -> string =
       "::flx::rtl::strutil::flx_asprintf($1,$2)" requires package "flx_strutil"
@@ -928,13 +906,12 @@ Polymorphic vsprintf hack
       "::flx::rtl::strutil::flx_asprintf(const_cast<char*>($1.c_str()),$2)" requires package "flx_strutil"
     ;
   
-
 Case translation
 ----------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
     // Convert all characters to upper case  
     fun toupper(s:string):string => map (toupper of char) s;
@@ -943,13 +920,12 @@ Case translation
   }
   
   
-
 Transation to string
 --------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[string.flx]
   
   instance Str[string] {
@@ -975,27 +951,7 @@ Transation to string
   open[T in strings] Show[T];
   open Set[string,char];
   
-
 String syntax
 =============
 
 
-.. code-block:: felix
-
-  //[stringexpr.fsyn]
-  syntax stringexpr
-  {
-    //$ String subscript.
-    x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'subscript) (,_1 ,_4)))";
-  
-    //$ String substring.
-    x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'substring) (,_1 ,_4 ,_6)))";
-  
-    //$ String substring, to end of string.
-    x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" "]" =># "`(ast_apply ,_sr (,(noi 'copyfrom) (,_1 ,_4)))";
-  
-    //$ String substring, from start of string.
-    x[sfactor_pri] := x[sfactor_pri] "." "[" "to" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'copyto) (,_1 ,_5)))";
-  }
-  
-  

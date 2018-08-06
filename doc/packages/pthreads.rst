@@ -29,8 +29,8 @@ Pthread Synopsis
 ================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[__init__.flx]
   
   // pthreads (portable)
@@ -46,7 +46,6 @@ Pthread Synopsis
   //include "std/pthread/atomic";
   //include "std/pthread/threadpool";
   
-
 Pthreads.
 =========
 
@@ -66,8 +65,9 @@ semaphores or conditiona variables must be used for
 synchronisation instead.
 
 
-.. code-block:: felix
 
+.. index:: Pthread
+.. code-block:: felix
   //[pthread.flx]
   
   header pthread_hxx = '#include "pthread_thread.hpp"';
@@ -96,7 +96,6 @@ synchronisation instead.
     proc thread_yield : 1 = "PTF gcp->collector->get_thread_control()->yield();";
   }
   
-
 Pchannels.
 ==========
 
@@ -122,8 +121,9 @@ it cannot be resolved and should generally be considered a programming
 error.
 
 
-.. code-block:: felix
 
+.. index:: Pchannel
+.. code-block:: felix
   //[pchannels.flx]
   
   //$ Pchannels are unbuffered synchronisation points
@@ -204,13 +204,13 @@ error.
     proc write[t] (chan:opchannel[t], v:t) { write$ C_hack::cast[pchannel[t]] chan,v; }
   }
   
-
 Ppipes.
 =======
 
 
-.. code-block:: felix
 
+.. index:: Ppipe
+.. code-block:: felix
   //[ppipe.flx]
   
   //$ Asynchronous Synchronous Pipe.
@@ -326,13 +326,13 @@ Ppipes.
     }
   }
   
-
 Fork/Join.
 ==========
 
 
-.. code-block:: felix
 
+.. index:: ForkJoin
+.. code-block:: felix
   //[forkjoin.flx]
   include "std/pthread/pchannels";
   
@@ -366,7 +366,6 @@ Fork/Join.
     proc concurrently[T with Streamable[T,1->0]] (d:T) => concurrently_by_iterator d.iterator;
   
   }
-
 Mutual Exclusion Lock (Mutex)
 =============================
 
@@ -378,8 +377,9 @@ then be modified atomically.
 A Felix mutex is created on the heap and must be destroyed
 after use manually, they're not garbage collected.
 
-.. code-block:: felix
 
+.. index:: Mutex
+.. code-block:: felix
   //[mutex.flx]
   
   open class Mutex
@@ -393,7 +393,6 @@ after use manually, they're not garbage collected.
     proc unlock: mutex = "$1->unlock();";
     proc destroy: mutex = "delete $1;";
   }
-
 Semaphores.
 ===========
 
@@ -421,8 +420,9 @@ is the customer that, seeing there is no available stock, decides
 to go elsewhere!
 
 
-.. code-block:: felix
 
+.. index:: Semaphore
+.. code-block:: felix
   //[semaphore.flx]
   
   open class Semaphore
@@ -439,13 +439,13 @@ to go elsewhere!
     gen trywait: semaphore -> int = "$1->trywait()";
     int get: semaphore = "$1->get();";
   } 
-
 Condition Variables.
 ====================
 
 
-.. code-block:: felix
 
+.. index:: Condition_Variable
+.. code-block:: felix
   //[condition_variable.flx]
   
   //$ Condition Variable for pthread synchronisation.
@@ -484,14 +484,14 @@ Condition Variables.
     gen timedwait: condition_variable * double -> int = "$1->timedwait($3)";
   }
   
-
 Thread Safe Counter.
 ====================
 
 Probably redundant now we have upgraded to C++11 and have atomics.
 
-.. code-block:: felix
 
+.. index:: Ts_counter
+.. code-block:: felix
   //[ts_counter.flx]
   
   open class Ts_counter
@@ -510,13 +510,13 @@ Probably redundant now we have upgraded to C++11 and have atomics.
     proc wait_zero: ts_counter = "$1->wait_zero();";
   
   }
-
 Thread Safe Bound Queue.
 ========================
 
 
-.. code-block:: felix
 
+.. index:: TS_Bound_Queue
+.. code-block:: felix
   //[ts_bound_queue.flx]
   
   open class TS_Bound_Queue
@@ -588,13 +588,13 @@ Thread Safe Bound Queue.
    
   }
   
-
 Atomic operations
 =================
 
 
-.. code-block:: felix
 
+.. index:: Atomic
+.. code-block:: felix
   //[atomic.flx]
   open class Atomic
   {
@@ -622,7 +622,6 @@ Atomic operations
     inherit[T] Str[atomic[T]];
   }
   
-
 Thread Pool
 ===========
 
@@ -639,8 +638,9 @@ Do not use the threadpool for quick jobs, there is a significant
 overhead posting a job.
 
 
-.. code-block:: felix
 
+.. index:: ThreadPool
+.. code-block:: felix
   //[threadpool.flx]
   
   include "std/pthread/ts_bound_queue";
@@ -792,13 +792,12 @@ overhead posting a job.
    
   }
   
-
 Parallel loop grammar
 ---------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[pfor.fsyn]
   syntax pfor
   {
@@ -829,133 +828,7 @@ Parallel loop grammar
   
   }
   
-
 Thread Pool Demo
 ----------------
 
 
-.. code-block:: felix
-
-  //[threadpoolex1.flx]
-  include "std/pthread/threadpool";
-  open ThreadPool;
-  
-  // Matrix multiply
-  macro val N = 1000;
-  typedef vec_t = array[double, N];
-  typedef mx_t = array[vec_t,N];
-  var a : mx_t;
-  var b : mx_t;
-  var r : mx_t;
-  var s : mx_t;
-  
-  proc clear (mx:&mx_t) {
-    for i in 0..<N 
-    for j in 0..<N 
-      perform mx . i . j <- 0.0;
-  }
-  
-  proc rinit (mx:&mx_t) {
-    for i in 0..<N
-    for j in 0..<N
-      perform mx . i . j <- #rand.double / RAND_MAX.double;
-  }
-  
-  fun check() = {
-  //println$ "Verification check";
-    for i in 0..<N
-    for j in 0..<N
-      if r.i.j != s.i.j return false;
-    return true;
-  }
-  
-  proc verify() {
-  //println$ "Running verify";
-    if #check do
-      println$ "Verified";
-    else
-      println "Wrong!";
-    done 
-  //println$ "Verify ran";
-  }
-  
-  clear &r;
-  clear &s;
-  rinit &a;
-  rinit &b;
-  
-  fun inner_product (pr: &vec_t, pc: &vec_t) = 
-  {
-    var sum = 0.0;
-    for (var k=0; k<N; ++k;)
-      perform sum = sum + *(pr.k) * *(pc.k);
-    return sum;
-  }
-  
-  // naive multiply
-  var start = #time;
-  begin
-    for i in 0..<N 
-    for (var j=0; j<N; ++j;)
-      perform &r . i . j <- inner_product (&a.i, &b.j);
-    s = r;
-  end
-  var fin = #time;
-  println$ "Naive mul elapsed " + (fin - start).str + " seconds";
-  
-  //println$ "Starting thread pool";
-  ThreadPool::start 8;
-  //println$ "Thread pool started";
-  
-  // naive parallel multiply
-  noinline proc inner_products_proc (var i:int)
-  {
-    for (var j=0; j<N; ++j;) 
-      perform &r . i . j <- inner_product (&a.i, &b.j);
-  }
-  
-  noinline proc inner_products_job (var i:int) () {
-    for (var j=0; j<N; ++j;) 
-      perform &r . i . j <- inner_product (&a.i, &b.j);
-  }
-  
-  clear &r;
-  start = #time;
-  begin
-    for i in 0..<N
-      call ThreadPool::queue_job$ inner_products_job (i);
-    ThreadPool::join;
-  end
-  fin = #time;
-  println$ "Naive Parallel mul elapsed " + (fin - start).str + " seconds";
-  verify;
-  
-  // smart parallel multiply
-  clear &r;
-  start = #time;
-  begin
-  println$ "Using thread pool's pforloop";
-    ThreadPool::pforloop 0 (N - 1) inner_products_proc;
-  end
-  fin = #time;
-  println$ "Smart Parallel mul elapsed " + (fin - start).str + " seconds";
-  verify;
-  
-  // smart parallel multiply with syntax
-  clear &r;
-  start = #time;
-  begin
-    pfor i in 0 upto (N - 1) do
-    for (var j=0; j<N; ++j;) 
-      perform &r . i . j <- inner_product (&a.i, &b.j);
-    done
-  end
-  fin = #time;
-  println$ "pfor mul elapsed " + (fin - start).str + " seconds";
-  verify;
-  
-  
-  ThreadPool::stop;
-  
-  
-  

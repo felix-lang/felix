@@ -25,7 +25,6 @@ String utilities
 
 
 .. code-block:: cpp
-
   //[flx_strutil.hpp]
   
   #ifndef __FLX_STRUTIL_HPP_
@@ -126,7 +125,6 @@ String utilities
 
 
 .. code-block:: cpp
-
   //[flx_strutil.cpp]
   
   #include <stdio.h>
@@ -289,7 +287,6 @@ String utilities
 
 
 .. code-block:: cpp
-
   //[flx_strutil_config.hpp]
   #ifndef __FLX_STRUTIL_CONFIG_H__
   #define __FLX_STRUTIL_CONFIG_H__
@@ -303,7 +300,6 @@ String utilities
 
 
 .. code-block:: fpc
-
   //[unix_flx_strutil.fpc]
   Name: flx_strutil
   Description: String utilities
@@ -317,7 +313,6 @@ String utilities
 
 
 .. code-block:: fpc
-
   //[win32_flx_strutil.fpc]
   Name: flx_strutil
   Description: String utilities
@@ -335,7 +330,6 @@ UTF codec.
 
 
 .. code-block:: cpp
-
   //[flx_i18n.hpp]
   
   #ifndef __FLX_I18N_H__
@@ -350,7 +344,6 @@ UTF codec.
 
 
 .. code-block:: cpp
-
   //[flx_i18n.cpp]
   
   #include "flx_i18n.hpp"
@@ -413,7 +406,6 @@ Config database entry
 
 
 .. code-block:: fpc
-
   //[flx_i18n.fpc]
   Name: flx_i18n
   Description: Internationalisation support, Unicode, utf8
@@ -422,7 +414,6 @@ Config database entry
 
 
 .. code-block:: python
-
   #[flx_strutil.py]
   import fbuild
   from fbuild.path import Path

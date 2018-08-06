@@ -33,7 +33,6 @@ Web Server Support Library
 
 
 .. code-block:: felix
-
   //[__init__.flx]
   // codecs
   include "web/json";                    
@@ -55,8 +54,8 @@ Web Server Support Library
   include "web/simple_config";
 
 
+.. index:: WebUtil
 .. code-block:: felix
-
   //[web_util.flx]
   class WebUtil {
   
@@ -71,8 +70,8 @@ Web Server Support Library
   }
 
 
+.. index:: HTTPBasicAuth
 .. code-block:: felix
-
   //[http_auth.flx]
   include "web/__init__";
   
@@ -173,8 +172,8 @@ Web Server Support Library
   }
 
 
+.. index:: HTTPRequest
 .. code-block:: felix
-
   //[http_request.flx]
   include "web/__init__";
   
@@ -397,8 +396,8 @@ Web Server Support Library
   
 
 
+.. index:: HTTPResponse
 .. code-block:: felix
-
   //[http_response.flx]
   include "web/__init__";
   
@@ -513,8 +512,8 @@ Web Server Support Library
   //WWW-Authenticate: Basic realm="WallyWorld"
 
 
+.. index:: HTTPHandler
 .. code-block:: felix
-
   //[http_handler.flx]
   include "web/__init__";
   
@@ -688,8 +687,8 @@ Web Server Support Library
     
   }
 
+.. index:: HTTPConnection
 .. code-block:: felix
-
   //[http_connection.flx]
   include "web/__init__";
   
@@ -742,8 +741,8 @@ Web Server Support Library
   }
 
 
+.. index:: HTTPStatusCodes
 .. code-block:: felix
-
   //[http_status_code.flx]
   /*
   Example:
@@ -792,8 +791,8 @@ Web Server Support Library
   }
 
 
+.. index:: MIMEType
 .. code-block:: felix
-
   //[mime_type.flx]
   publish """
   Implements variant types representing MIME types.
@@ -1226,8 +1225,8 @@ Web Server Support Library
   
 
 
+.. index:: Cookie
 .. code-block:: felix
-
   //[cookie.flx]
   include "web/low_res_time";
   
@@ -1267,8 +1266,8 @@ Web Server Support Library
   }
 
 
+.. index:: LowResTime
 .. code-block:: felix
-
   //[low_res_time.flx]
   class LowResTime
   {
@@ -1407,8 +1406,8 @@ Web Server Support Library
    
 
 
+.. index:: Json
 .. code-block:: felix
-
   //[json.flx]
   open class Json 
   {
@@ -1657,8 +1656,8 @@ Web Server Support Library
   
 
 
+.. index:: Logger
 .. code-block:: felix
-
   //[logger.flx]
   publish """
   Extensible Flexible Logger
@@ -1864,8 +1863,8 @@ Web Server Support Library
   
 
 
+.. index:: SimpleConfig
 .. code-block:: felix
-
   //[simple_config.flx]
   publish """
   Simple config file reader. Splits key value pairs seperated by the equals character.
@@ -2006,8 +2005,8 @@ Web Server Support Library
   }
 
 
+.. index:: ServerConfig
 .. code-block:: felix
-
   //[server_config.flx]
   include "web/__init__";
   
@@ -2181,8 +2180,8 @@ Web Server Support Library
   
 
 
+.. index:: SunDown
 .. code-block:: felix
-
   //[sundown.flx]
   //$ A Markdown to Html translator.
   class SunDown
@@ -2191,8 +2190,8 @@ Web Server Support Library
   }
 
 
+.. index:: WebServer
 .. code-block:: felix
-
   //[web_server.flx]
   publish """ 
   Accepts connection and spawns fthread to handle request 

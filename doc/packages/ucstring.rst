@@ -20,8 +20,9 @@ corresponding byte operations in that they depend on
 or involve the null terminator.
 
 
-.. code-block:: felix
 
+.. index:: CString
+.. code-block:: felix
   //[cstring.flx]
   // Primitives
   class CString
@@ -50,7 +51,6 @@ or involve the null terminator.
   
   }
   
-
 Unique C Strings 
 =================
 
@@ -95,8 +95,9 @@ string length if they exceed it.
 
 
 
-.. code-block:: felix
 
+.. index:: UniqueCStrings
+.. code-block:: felix
   //[ucstr.flx]
   open class UniqueCStrings
   {
@@ -266,13 +267,11 @@ string length if they exceed it.
       
   }
   
-
 ucstr_prim_01.flx
 =================
 
 
 .. code-block:: felix
-
   //[ucstr_prim_01.flx]
   proc test() {
     var s = ucstr "hello";
@@ -284,7 +283,6 @@ ucstr_prim_01.flx
   test();
 
 .. code-block:: text
-
   hello
   eello
 
@@ -335,8 +333,9 @@ string length if they exceed it.
 
 
 
-.. code-block:: felix
 
+.. index:: UniqueCountedStrings
+.. code-block:: felix
   //[ustr.flx]
   open class UniqueCountedStrings
   {
@@ -506,13 +505,11 @@ string length if they exceed it.
       
   }
   
-
 ustr_prim_01.flx
 ================
 
 
 .. code-block:: felix
-
   //[ustr_prim_01.flx]
   proc test() {
     var s = ustr "hello";
@@ -524,7 +521,6 @@ ustr_prim_01.flx
   test();
 
 .. code-block:: text
-
   hello
   eello
 

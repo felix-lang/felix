@@ -25,7 +25,6 @@ Generic Serialisation
 
 
 .. code-block:: cpp
-
   //[flx_serialisers.hpp]
   #ifndef __FLX_SERIALISERS_HPP__
   #define __FLX_SERIALISERS_HPP__
@@ -60,7 +59,6 @@ Generic Serialisation
 
 
 .. code-block:: cpp
-
   //[flx_serialisers.cpp]
   #include "flx_serialisers.hpp"
   #include <string>
@@ -118,7 +116,6 @@ Judy Serialisers
 
 
 .. code-block:: cpp
-
   //[flx_judy_scanner.hpp]
   #include "flx_gc.hpp"
   
@@ -130,7 +127,6 @@ Judy Serialisers
   
 
 .. code-block:: cpp
-
   //[flx_judy_scanner.cpp]
   #include "flx_judy_scanner.hpp"
   #include <Judy.h>
@@ -196,8 +192,8 @@ Serialisation functions
 =======================
 
 
+.. index:: Serialise
 .. code-block:: felix
-
   //[serialise.flx]
   class Serialise 
   {

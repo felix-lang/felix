@@ -21,8 +21,9 @@ Debugging Aid.
 
 
 
-.. code-block:: felix
 
+.. index:: Debug
+.. code-block:: felix
   //[debug.flx]
   // the internal representation of a Felix source location
   // has to be global to simplify compiler hack
@@ -66,7 +67,6 @@ Debugging Aid.
   
   }
   
-
 Source Location  :code:`HERE`
 =============================
 
@@ -82,7 +82,6 @@ The translation from the C macros used are done by the C++ compiler.
 
 
 .. code-block:: felix
-
   //[debug.fsyn]
   syntax debug
   {
@@ -96,7 +95,6 @@ UDP based trace support
 This stuff only on Posix so far.
 
 .. code-block:: cpp
-
   //[flx_udp_trace.hpp]
   #include "flx_rtl_config.hpp"
   #include <string>
@@ -108,7 +106,6 @@ This stuff only on Posix so far.
   
 
 .. code-block:: cpp
-
   //[flx_udp_trace.cpp]
   #ifdef _WIN32
   #include <stdio.h>
@@ -181,37 +178,3 @@ Simple UDP Trace monitor
 
 A simple posix only executable tool to monitor program traces.
 
-.. code-block:: cpp
-
-  //[flx_udp_trace_monitor.cxx]
-  #include <sys/socket.h>
-  #include <stdio.h>
-  #include <arpa/inet.h>
-  #include <string.h>
-  #define BUFLEN 2000
-  #define PORT 1153
-  int main()
-  {
-    char buffer[BUFLEN];
-  
-    int sock = socket(PF_INET,SOCK_DGRAM,0); // 17=UDP
-    struct sockaddr_in addr;
-    memset((char *)&addr, 0, sizeof(sockaddr)); 
-    addr.sin_family = AF_INET; 
-    addr.sin_addr.s_addr = htonl(INADDR_ANY); 
-    addr.sin_port = htons(PORT);
-    int result = bind (sock, (struct sockaddr*)&addr, sizeof(addr));
-    if (result != 0)
-      printf("UDP Trace Monitor: bind on port %d failed\n",PORT);
-    printf("UDP Trace Monitor Listening on port %d\n",PORT); 
-  
-    struct sockaddr_in writer;
-    socklen_t addrlen = sizeof(writer);
-    for(;;){
-      memset(buffer,0,BUFLEN);
-      result = recvfrom (sock, buffer, BUFLEN,0,(struct sockaddr*)&writer, &addrlen);
-      printf("Received = %d\n",result); 
-      printf("Buffer = %s\n",buffer);
-    }
-  }
-  

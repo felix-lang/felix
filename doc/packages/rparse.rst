@@ -41,8 +41,8 @@ Felix is required to build it. The bootstrap version
 of Felix may not have all the required capabilities.
 
 
+.. index:: NewRespectfulParser
 .. code-block:: felix
-
   //[rparse.flx]
   class NewRespectfulParser 
   {
@@ -228,7 +228,6 @@ Resource files
 
 
 .. code-block:: fpc
-
   //[unix_rparse.fpc]
   Description: Respectful Parser, binary edition
   Location: Part of the standard library
@@ -237,7 +236,6 @@ Resource files
 
 
 .. code-block:: fpc
-
   //[win32_rparse.fpc]
   Description: Respectful Parser, binary edition
   Location: Part of the standard library
@@ -252,7 +250,6 @@ This is an interim build script for bash only.
 Until a proper Felix tool can be organised!
 
 .. code-block:: text
-
   rm -rf rparse
   build/release/host/bin/flx --felix=build.fpc --bundle-dir=rparse --staticlib -ox librparse_static build/release/share/src/flxlibs/rparse.flx
   build/release/host/bin/flx --felix=build.fpc --bundle-dir=rparse -c -ox librparse_dynamic build/release/share/src/flxlibs/rparse.flx
@@ -273,7 +270,6 @@ Note: currently interfaces don't contain package
 requjirements! So we have to add it manually!
 
 .. code-block:: felix
-
   //[testrparse.flx]
   include "std/strings/rparse_interface";
   var s = 'Hello "world ish" stuff'; 
@@ -282,7 +278,6 @@ requjirements! So we have to add it manually!
 
 
 .. code-block:: text
-
   build/release/host/bin/flx --felix=build.fpc --static --pkg=rparse testrparse.flx
   build/release/host/bin/flx --felix=build.fpc --pkg=rparse testrparse.flx
 

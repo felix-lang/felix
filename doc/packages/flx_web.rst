@@ -48,8 +48,8 @@ Webserver
 Standalone pretty printer for Felix  :code:`flx` format files.
 
 
+.. index:: Css4Html
 .. code-block:: felix
-
   //[flx_pretty.flx]
   // pretty printer for *.flx files
   // uses the flx2html plugin
@@ -134,8 +134,8 @@ Mainline for dynamic loading.
 
 This is the actual webserver code.
 
+.. index:: Css4Html
 .. code-block:: felix
-
   //[dflx_web.flx]
   if PLAT_POSIX do
   PosixSignal::ignore_signal(PosixSignal::SIGPIPE);
@@ -1377,8 +1377,8 @@ Mainline with preloaded plugins.
 --------------------------------
 
 
+.. index:: WebserverPluginSymbols
 .. code-block:: felix
-
   //[flx_web.flx]
   // webserver plugin linker
   
@@ -1442,7 +1442,6 @@ Felix Package Config  :code:`fpc` format.
 
 
 .. code-block:: felix
-
   //[fpc2html.flx]
   
   var FLX_PKGCONFIG_PATH = Empty[string];
@@ -1555,7 +1554,6 @@ Ocaml
 
 
 .. code-block:: felix
-
   //[ocaml2html.flx]
   // Ocaml
   module Ocaml2Html {
@@ -1729,7 +1727,6 @@ Python
 
 
 .. code-block:: felix
-
   //[py2html.flx]
   
   // Python 
@@ -1933,7 +1930,6 @@ Felix  :code:`flx` format.
 
 
 .. code-block:: felix
-
   //[flx2html.flx]
   include "./plugin_common";
   
@@ -2613,7 +2609,6 @@ C and C++ code.
 
 
 .. code-block:: felix
-
   //[cpp2html.flx]
   include "./plugin_common";
   
@@ -2873,7 +2868,6 @@ Note the former are real Felix programs.
 
 
 .. code-block:: felix
-
   //[fdoc2html.flx]
   
   open Regdef; // required
@@ -3450,7 +3444,6 @@ Decorator Interfaces.
 Web page architecture layout and decorators.
 
 .. code-block:: felix
-
   //[button-interface.flx]
   interface button-spec_t {
     id: string;
@@ -3465,7 +3458,6 @@ Web page architecture layout and decorators.
   }
 
 .. code-block:: felix
-
   //[toc_menu-interface.flx]
   
   interface toc_menu_interface {
@@ -3478,7 +3470,6 @@ Web page architecture layout and decorators.
   
 
 .. code-block:: felix
-
   //[edit-interface.flx]
   
   interface edit-interface_t {
@@ -3488,7 +3479,6 @@ Web page architecture layout and decorators.
   }
 
 .. code-block:: felix
-
   //[fdoc-frame-interface.flx]
   include "./heading-interface";
   include "./button-interface";
@@ -3507,7 +3497,6 @@ Web page architecture layout and decorators.
   
 
 .. code-block:: felix
-
   //[fdoc-interface.flx]
   interface fdoc_t {
     whatami : 1 -> string;
@@ -3519,7 +3508,6 @@ Web page architecture layout and decorators.
   
 
 .. code-block:: felix
-
   //[fileseq-interface.flx]
   interface fileseq-control_t {
     whatami: 1 -> string;
@@ -3529,7 +3517,6 @@ Web page architecture layout and decorators.
   }
 
 .. code-block:: felix
-
   //[heading-interface.flx]
   interface heading-control_t {
     whatami: 1 -> string;
@@ -3543,7 +3530,6 @@ Web page architecture layout and decorators.
   }
 
 .. code-block:: felix
-
   //[paragraph-interface.flx]
   interface paragraph-control_t {
     whatami: 1 -> string;
@@ -3554,7 +3540,6 @@ Web page architecture layout and decorators.
   }
 
 .. code-block:: felix
-
   //[scanner-interface.flx]
   // split up an fdoc into a stream of commands and text 
   union fdoc-data_t = 
@@ -3570,7 +3555,6 @@ Web page architecture layout and decorators.
   
 
 .. code-block:: felix
-
   //[slideshow-interface.flx]
   interface slideshow_t {
     whatami : 1 -> string;
@@ -3586,7 +3570,6 @@ Decorator Implementations.
 
 
 .. code-block:: felix
-
   //[fdoc_button.flx]
   //$ Make buttons in a consistent style
   include "./button-interface";
@@ -3686,7 +3669,6 @@ Decorator Implementations.
   
 
 .. code-block:: felix
-
   //[fdoc_edit.flx]
   include "./edit-interface";
   
@@ -3765,7 +3747,6 @@ Decorator Implementations.
   
 
 .. code-block:: felix
-
   //[fdoc_fileseq.flx]
   include "./fileseq-interface";
   
@@ -3848,7 +3829,6 @@ Decorator Implementations.
   
 
 .. code-block:: felix
-
   //[fdoc_frame.flx]
   include "./fdoc-frame-interface";
   include "./toc_menu-interface";
@@ -4114,7 +4094,6 @@ Decorator Implementations.
   
 
 .. code-block:: felix
-
   //[fdoc_heading.flx]
   include "./paragraph-interface";
   include "./heading-interface";
@@ -4260,7 +4239,6 @@ Decorator Implementations.
   
 
 .. code-block:: felix
-
   //[fdoc_paragraph.flx]
   include "./paragraph-interface";
   
@@ -4289,7 +4267,6 @@ Decorator Implementations.
   
 
 .. code-block:: felix
-
   //[fdoc_scanner.flx]
   include "./scanner-interface";
   
@@ -4356,7 +4333,6 @@ Decorator Implementations.
   
 
 .. code-block:: felix
-
   //[fdoc_slideshow.flx]
   
   
@@ -4532,8 +4508,8 @@ Decorator Implementations.
   export fun fdoc_slideshow of (string->0) as "fdoc_slideshow";
   
 
+.. index:: WebserverPluginCommon
 .. code-block:: felix
-
   //[plugin_common.flx]
   open class WebserverPluginCommon
   {
@@ -4562,7 +4538,6 @@ Decorator Implementations.
   
 
 .. code-block:: felix
-
   //[toc_menu.flx]
   include "./toc_menu-interface";
   

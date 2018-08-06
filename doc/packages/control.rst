@@ -17,8 +17,8 @@ Control Synopsis
 ================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[__init__.flx]
   // stream is part of datatype, included in std/datatype/__init__
   include "std/control/control";
@@ -31,13 +31,12 @@ Control Synopsis
   
   //include "std/control/mux";
   
-
 Misc Control Flow
 =================
 
 
+.. index:: Control
 .. code-block:: felix
-
   //[control.flx]
   open class Control
   {
@@ -189,7 +188,6 @@ Misc Control Flow
 
 
 .. code-block:: felix
-
   //[swapop.fsyn]
   syntax swapop
   {

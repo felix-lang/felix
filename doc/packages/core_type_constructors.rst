@@ -23,21 +23,21 @@ Core Type Classes
 =================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[special.flx]
   
   // Core types and type classes
   
   typedef any = any;
   
-
 Type Functors
 =============
 
 
-.. code-block:: felix
 
+.. index:: Typing
+.. code-block:: felix
   //[typing.flx]
   open class Typing
   {
@@ -118,13 +118,14 @@ Type Functors
     const arrayindexcount[t] : size = "#arrayindexcount";
   }
   
-
 Option
 ======
 
 
-.. code-block:: felix
 
+.. index:: Option
+.. index:: DefaultValue
+.. code-block:: felix
   //[option.flx]
   
   // Note: some felix internals expect this to be defined here, not in a class, and
@@ -243,13 +244,12 @@ Option
     
   }
   
-
 Slice
 =====
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[slice.flx]
   
   union slice[T] =
@@ -412,14 +412,13 @@ Slice
     GSMap (f,gs)
   ;
   
-
 Operations on sums of units
 ===========================
 
 Treated as finite cyclic groups.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[unitsum.flx]
   
   // -----------------------------------------------------------------------------
@@ -504,13 +503,13 @@ Treated as finite cyclic groups.
   open Str[15];
   open Str[16];
   
-
 Category Theoretic Functional Operations
 ========================================
 
 
-.. code-block:: felix
 
+.. index:: Functional
+.. code-block:: felix
   //[functional.flx]
   
   //$ Categorical Operators
@@ -586,13 +585,14 @@ Category Theoretic Functional Operations
   
   }
   
-
 Tuples
 ======
 
 
-.. code-block:: felix
 
+.. index:: Tuple
+.. index:: parallel_tuple_comp
+.. code-block:: felix
   //[tuple.flx]
   
   //------------------------------------------------------------------------------
@@ -732,25 +732,7 @@ Tuples
   
   }
   
-
 Tuple Constructor Syntax
 ========================
 
 
-.. code-block:: felix
-
-  //[tupleexpr.fsyn]
-  syntax tupleexpr
-  {
-    //$ Tuple formation by cons: right associative.
-    x[stuple_cons_pri] := x[>stuple_cons_pri] ",," x[stuple_cons_pri] =># "`(ast_tuple_cons ,_sr ,_1 ,_3)";
-  
-    //$ Tuple formation by append: left associative
-    x[stuple_cons_pri] := x[stuple_cons_pri] "<,,>" x[>stuple_cons_pri] =># "`(ast_tuple_snoc ,_sr ,_1 ,_3)";
-  
-    //$ Tuple formation non-associative.
-    x[stuple_pri] := x[>stuple_pri] ( "," x[>stuple_pri])+ =># "(chain 'ast_tuple _1 _2)";
-  
-  }
-  
-  

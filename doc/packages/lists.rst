@@ -23,8 +23,9 @@ The  :code:`list` type.
 
 The core data type for most functional programming languages.
 
-.. code-block:: felix
 
+.. index:: List
+.. code-block:: felix
   //[list.flx]
   open class List
   {
@@ -46,14 +47,13 @@ The core data type for most functional programming languages.
       }}
     """;
   
-
 Splice
 ------
 
 This is primarily a non-functional helper routine.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ The second list is made the tail of the
     //$ list stored at the location pointed at by the first argument.
@@ -75,14 +75,13 @@ This is primarily a non-functional helper routine.
       """
     ;
   
-
 In-place unsafe reversal.
 -------------------------
 
 Another helper routine.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ In place list reversal: unsafe!
     // second arg is a dummy to make overload work
@@ -108,14 +107,13 @@ Another helper routine.
       """
     ;
   
-
 In-place reversal.
 ------------------
 
 Another variant of the unsafe reversal.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     // in place list reversal, also returns the last element
     // as a list, empty iff the original list is
@@ -144,15 +142,14 @@ Another variant of the unsafe reversal.
       """
     ;
   
-
 List  :code:`copy`
 ==================
 
 Make an entirely new copy of a list.
 Primarily a helper.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Copy a list.
     fun copy[T] (x:list[T]):list[T]= {
@@ -161,14 +158,13 @@ Primarily a helper.
       return y;
     }
   
-
 Copy and return last  :code:`copy_last`
 ---------------------------------------
 
 Yet another helper.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Copy a list, and return last element as a list,
     //$ empty if original list was empty.
@@ -178,7 +174,6 @@ Yet another helper.
     }
   
   
-
 Constructors
 ============
 
@@ -187,34 +182,32 @@ Named constructor for empty list.
 ---------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Make an empty list.
     ctor[T] list[T] () => Empty[T];
   
-
 Construct a singleton list.
 ---------------------------
 
 Does not work if the argument is an array
 or option iterator.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Make a list with one element.
     //$ NOTE: list (1,2) is a list of 2 ints.
     //$ To get a list of one pair use list[int*int] (1,2) instead!
     ctor[T] list[T] (x:T) => Snoc(Empty[T],x);
   
-
 Construct a list from an array.
 -------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Make a list from an array.
     ctor[T,N] list[T] (x:array[T, N]) = {
@@ -227,15 +220,14 @@ Construct a list from an array.
       return o;
     }
   
-
 List comprehension.
 -------------------
 
 Make a list from an option stream.
 Named variant.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ List comprehension:
     //$ Make a list from a stream.
@@ -253,33 +245,29 @@ Named variant.
       return aux Empty[T];
     }
   
-
 List comprehension.
 -------------------
 
 Make a list from an option stream.
 Constructor variant.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
   //$ List comprehension:
     //$ Make a list from a stream.
     ctor[T] list[T](f: (1->opt[T])) => list_comprehension f;
   
-
 Construe a list as an array value.
 ==================================
 
 
 .. code-block:: felix
-
   //[list.flx]
     //$ Contrue a list as an array value
     instance[T] ArrayValue[list[T],T] {
 
 .. code-block:: felix
-
   //[list.flx]
       //$ Return umber of elements in a list.
       pure fun len (x:list[T]) = {
@@ -293,7 +281,6 @@ Construe a list as an array value.
       }
 
 .. code-block:: felix
-
   //[list.flx]
       //$ get n'th element
       pure fun unsafe_get: list[T] * size -> T =
@@ -303,7 +290,6 @@ Construe a list as an array value.
   
 
 .. code-block:: felix
-
   //[list.flx]
       //$ Apply a procedure to each element of a list.
       proc iter (_f:T->void) (x:list[T]) {
@@ -316,7 +302,6 @@ Construe a list as an array value.
   
 
 .. code-block:: felix
-
   //[list.flx]
       //$ Traditional left fold over list (tail rec).
       fun fold_left[U] (_f:U->T->U) (init:U) (x:list[T]):U =
@@ -331,8 +316,8 @@ Construe a list as an array value.
       }
   
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
       //$ Right fold over list (not tail rec!).
       fun fold_right[U] (_f:T->U->U) (x:list[T]) (init:U):U =
@@ -348,7 +333,6 @@ Construe a list as an array value.
   
     }
   
-
 Destructors
 ===========
 
@@ -357,8 +341,8 @@ Test for empty list  :code:`is_empty`
 -------------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Test if a list is empty.
     pure fun is_empty[T] : list[T] -> 2 =
@@ -366,13 +350,12 @@ Test for empty list  :code:`is_empty`
       | _ => false
     ;
   
-
 Tail of a list  :code:`tail`
 ----------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Tail of a list, abort with match failure if list is empty.
     pure fun tail[T] (x:list[T]) : list[T] = {
@@ -381,13 +364,12 @@ Tail of a list  :code:`tail`
       endmatch;
     }
   
-
 Head of a list  :code:`head`
 ----------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Head of a list, abort with match failure if list is empty.
     pure fun head[T] (x:list[T]) : T = {
@@ -396,7 +378,6 @@ Head of a list  :code:`head`
       endmatch;
     }
   
-
 Maps
 ====
 
@@ -406,8 +387,8 @@ Reverse map a list  :code:`rev_map`
 
 Tail recursive.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ map a list, return mapped list in reverse order (tail rec).
     fun rev_map[T,U] (_f:T->U) (x:list[T]): list[U] = {
@@ -420,15 +401,14 @@ Tail recursive.
       return aux x Empty[U];
     }
   
-
 Map a list  :code:`map`
 -----------------------
 
 Tail recursive. Uses rev_map and then inplace revseral.
 This is safe because we enforce linearity by abstraction.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ map a list (tail-rec).
     //  tail rec due to in-place reversal of result.
@@ -439,14 +419,13 @@ This is safe because we enforce linearity by abstraction.
       return r;
     }
   
-
 Reverse a list  :code:`rev`.
 ----------------------------
 
 Tail recursive.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ reverse a list (tail rec).
     pure fun rev[T] (x:list[T]):list[T]= {
@@ -462,14 +441,13 @@ Tail recursive.
       return aux x Empty[T];
     }
   
-
 Zip a pair of lists to a list of pairs  :code:`zip2`
 ----------------------------------------------------
 
 Returns a list the length of the shortest argument.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Zip two lists into a list of pairs.
     //$ Zips to length of shortest list.
@@ -484,7 +462,6 @@ Returns a list the length of the shortest argument.
       return aux l1 l2 Empty[T1 * T2];
     }
   
-
 Useful lists
 ============
 
@@ -494,8 +471,8 @@ A list of integers  :code:`range`.
 
 From  :code:`low` to  :code:`high` exclusive with given  :code:`step`.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Generate an ordered list of ints between low and high with given step.
     //$ Low included, high not included.
@@ -528,29 +505,26 @@ From  :code:`low` to  :code:`high` exclusive with given  :code:`step`.
       ;
     }
   
-
 Consecutive integers  :code:`range`
 -----------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Range with step 1.
     fun range (low:int, high:int) => range(low, high, 1);
   
-
 Non-negative integers to limit  :code:`range`
 ---------------------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Range from 0 to num (excluded).
     fun range (num:int) => range(0, num, 1);
   
-
 Operators
 =========
 
@@ -559,8 +533,8 @@ Concatenate two lists  :code:`join`.
 ------------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Concatenate two lists.
     fun join[T] (x:list[T]) (y:list[T]):list[T] =
@@ -581,25 +555,23 @@ Concatenate two lists  :code:`join`.
   
     proc += [T] (x:&list[T], y: list[T]) => x <- join (*x) y;
   
-
 Cons an element onto a list.
 ----------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Prepend element to head of list.
     pure fun + [T] (x:T, y:list[T]):list[T] => Snoc(y,x);
   
-
 Append an element onto a list.
 ------------------------------
 
 O(N) slow.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Append element to tail of list (slow!).
     noinline fun + [T] (x:list[T], y:T):list[T] => rev$ Snoc (rev x,y);
@@ -611,7 +583,6 @@ O(N) slow.
     proc -= [T] (x:&list[T], y:T) { x <- y ! *x; }
   
   
-
 Outer product.
 --------------
 
@@ -622,8 +593,8 @@ combination xelt + yelt where e in x, f in y.
 
 Note: this is a special case of a second order fold.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
   
   noinline fun outer_product[T] (x:list[list[T]]) (y:list[list[T]]): list[list[T]] =
@@ -637,13 +608,12 @@ Note: this is a special case of a second order fold.
   }
   
   
-
 Concatenate a list of lists  :code:`cat`
 ----------------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Concatenate all the lists in a list of lists.
     noinline fun cat[T] (x:list[list[T]]):list[T] =
@@ -656,7 +626,6 @@ Concatenate a list of lists  :code:`cat`
        ;
      }
   
-
 Lists and Strings
 =================
 
@@ -665,8 +634,8 @@ Pack list of strings into a string with separator  :code:`cat`
 --------------------------------------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Concatenate all the strings in a list with given separator.
     pure fun cat (sep:string) (x:list[string]):string =
@@ -692,13 +661,12 @@ Pack list of strings into a string with separator  :code:`cat`
       return r;
     }
   
-
 Map a list to a list of strings and cat with separator  :code:`catmap`
 ----------------------------------------------------------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     fun catmap[T] (sep:string) (f:T -> string) (ls: list[T]) =>
       cat sep (map f ls)
@@ -713,7 +681,6 @@ Map a list to a list of strings and cat with separator  :code:`catmap`
     ;
   
    
-
 Searching
 =========
 
@@ -722,8 +689,8 @@ Value membership
 ----------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Return true if one value in a list satisfies the predicate.
     fun mem[T] (eq:T -> bool) (xs:list[T]) : bool =>
@@ -746,14 +713,13 @@ Value membership
       fun \in (x:T, a:list[T]) => mem[T,T] eq of (T * T) a x;
     }
   
-
 Value Find by relation  :code:`find`
 ------------------------------------
 
 Returns option.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ return option of the first element in a list satisfying the predicate.
     fun find[T] (eq:T -> bool) (xs:list[T]) : opt[T] =>
@@ -880,13 +846,12 @@ Returns option.
       fun ==(a:list[T], b:list[T])=> list_eq(a,b); 
     } 
    
-
 Sort
 ====
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[list.flx]
     //$ Sort a list with given less than operator, which must be
     //$ total order. Uses varray sort (which uses STL sort).
@@ -907,13 +872,11 @@ Sort
     //$ Uses varray sort (which uses STL sort).
     fun sort[T with Tord[T]](x:list[T])=> sort lt x;
       
-
 Streaming list
 ==============
 
 
 .. code-block:: felix
-
   //[list.flx]
     instance[T] Iterable[list[T],T] {
     //$ Convert a list to a stream.
@@ -960,8 +923,8 @@ List syntax
 ===========
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[listexpr.fsyn]
   syntax listexpr
   {
@@ -975,15 +938,15 @@ List syntax
     ; 
   }
   
-
 Association List
 ================
 
 
 A list of pairs
 
-.. code-block:: felix
 
+.. index:: Assoc_list
+.. code-block:: felix
   //[assoc_list.flx]
   open class Assoc_list
   {
@@ -1027,13 +990,13 @@ A list of pairs
     ;
   }
   
-
 Purely Functional Random Access List.
 =====================================
 
 
-.. code-block:: felix
 
+.. index:: Ralist
+.. code-block:: felix
   //[ralist.flx]
   //$ Purely functional Random Access List.
   //$ Based on design from Okasaki, Purely Functional Datastructures.
@@ -1292,15 +1255,15 @@ Purely Functional Random Access List.
   }
   
   
-
 Dlist
 =====
 
 A dlist_t is a doubly linked mutable list.
 It is suitable for use as non-thread-safe queue.
 
-.. code-block:: felix
 
+.. index:: DList
+.. code-block:: felix
   //[dlist.flx]
   class DList[T]
   {
@@ -1315,13 +1278,12 @@ It is suitable for use as non-thread-safe queue.
   
     ctor dlist_t () => (first=nullptr[dnode_t],last=nullptr[dnode_t]);
   
-
 Length  :code:`len`
 -------------------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[dlist.flx]
     fun len (x:dlist_t) = {
       var n = 0;
@@ -1334,13 +1296,12 @@ Length  :code:`len`
       goto again; 
     }
   
-
 Inspection
 ----------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[dlist.flx]
     fun peek_front (dl:dlist_t) : opt[T] => 
       match dl.first with 
@@ -1356,13 +1317,12 @@ Inspection
       endmatch
     ;
   
-
 Insertion
 ---------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[dlist.flx]
     proc push_front (dl:&dlist_t, v:T) { 
       var oldfirst = dl*.first;
@@ -1384,13 +1344,12 @@ Insertion
       endmatch <- Ptr node; 
     }
   
-
 Deletion 
 ---------
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[dlist.flx]
   
     gen pop_front (dl:&dlist_t): opt[T] = {
@@ -1423,40 +1382,38 @@ Deletion
       done
     }
   
-
 Use as a queue
 --------------
 
 We can implement enqueue and dequeue at either end, we'll make
 enqueue push_front and dequeue pop_back for no particular reason.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[dlist.flx]
     typedef queue_t = dlist_t;
     proc enqueue (q:&queue_t) (v:T) => push_front (q,v);
     gen dequeue (q:&queue_t) :opt[T] => pop_back q;
     ctor queue_t () => dlist_t ();
-
 Queue iterator
 --------------
 
 Fetch everything from a queue.
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[dlist.flx]
     gen iterator (q:&queue_t) () => dequeue q;
   }
   
-
 S-expressions
 =============
 
 A scheme like data structure.
 
-.. code-block:: felix
 
+.. index:: S_expr
+.. code-block:: felix
   //[sexpr.flx]
   class S_expr 
   {
@@ -1498,50 +1455,9 @@ A scheme like data structure.
   open[T with Str[T]] Str[S_expr::sexpr[T]];
   open[T with Eq[T]] Set[S_expr::sexpr[T],T];
   
-
 LS-expressions
 ==============
 
 A scheme like data structure, similar to sexpr, only in this variant
 the tree nodes also have labels.
 
-.. code-block:: felix
-
-  //[lsexpr.flx]
-  class LS_expr 
-  {
-    union lsexpr[T,L] = | Leaf of T | Tree of L * list[lsexpr[T,L]]; 
-  
-    fun fold_left[T,L,U] (_f:U->T->U) (_g:U->L->U) (init:U) (x:lsexpr[T,L]):U =>
-      match x with
-      | Leaf a => _f init a
-      | Tree (a,b) => List::fold_left (LS_expr::fold_left _f _g) (_g init a) b
-    ;
-  
-    proc iter[T,L] (_f:T->void) (_g:L->void) (x:lsexpr[T,L]) {
-      match x with
-      | Leaf a => _f a;
-      | Tree (a,b) => _g a; List::iter (LS_expr::iter _f _g) b;
-      endmatch;
-    }
-  
-    fun map[T,L,U,V] (_f:T->U) (_g:L->V) (x:lsexpr[T,L]):lsexpr[U,V] =>
-      match x with
-      | Leaf a => Leaf[U,V] (_f a)
-      | Tree (a,b) => Tree ( _g a, List::map (LS_expr::map _f _g) b )
-    ;
-  
-    instance[T,L with Str[T], Str[L]] Str[lsexpr[T,L]] {
-      noinline fun str(x:lsexpr[T,L])=>
-        match x with 
-        | Leaf a => str a
-        | Tree (a,b) => str a + "(" + str b  + ")"
-      ;
-    }
-  
-  }
-  
-  open[T,L with Str[T], Str[L]] Str[LS_expr::lsexpr[T,L]];
-  
-  
-  

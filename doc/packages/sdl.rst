@@ -82,8 +82,9 @@ SDL2.flx
 ========
 
 
-.. code-block:: felix
 
+.. index:: SDL2
+.. code-block:: felix
   //[SDL2.flx]
   
   open class SDL2
@@ -154,13 +155,12 @@ SDL2.flx
   */
   
   
-
 SDL_active.flx
 ==============
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_active.flx]
   
   
@@ -186,13 +186,12 @@ SDL_active.flx
     //FUNCTIONS
     fun SDL_GetAppState: 1 -> uint8;
   }
-
 SDL_audio.flx
 =============
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_audio.flx]
   
   
@@ -319,13 +318,12 @@ SDL_audio.flx
     fun SDL_OpenAudio: &SDL_AudioSpec * &SDL_AudioSpec -> int;
     fun SDL_LoadWAV: &char * &SDL_AudioSpec * &&uint8 * &uint32 -> &SDL_AudioSpec;
   }
-
 SDL_cdrom.flx
 =============
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_cdrom.flx]
   
   //Module        : SDL_cdrom_h
@@ -402,13 +400,13 @@ SDL_cdrom.flx
     fun SDL_CDStop: &SDL_CD -> int;
   }
   
-
 SDL_clipboard.flx
 =================
 
 
-.. code-block:: felix
 
+.. index:: SDL_clipboard_h
+.. code-block:: felix
   //[SDL_clipboard.flx]
   
   
@@ -445,13 +443,12 @@ SDL_clipboard.flx
      */
     fun SDL_HasClipboardText: 1 -> bool;
   }
-
 SDL_endian.flx
 ==============
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_endian.flx]
   
   //Module        : SDL_endian_h
@@ -502,13 +499,13 @@ SDL_endian.flx
   }
   
   
-
 SDL_error.flx
 =============
 
 
-.. code-block:: felix
 
+.. index:: SDL_error_h
+.. code-block:: felix
   //[SDL_error.flx]
   
   //#define SDL_OutOfMemory()     SDL_Error(SDL_ENOMEM)
@@ -537,13 +534,13 @@ SDL_error.flx
     fun SDL_GetError: 1 -> string = "::std::string(SDL_GetError())";
   }
   
-
 SDL_events.flx
 ==============
 
 
-.. code-block:: felix
 
+.. index:: SDL_events_h
+.. code-block:: felix
   //[SDL_events.flx]
   
   open class SDL_events_h
@@ -1291,13 +1288,12 @@ SDL_events.flx
   
   }
   
-
 SDL_framerate.flx
 =================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_framerate.flx]
   
   //Module        : SDL_framerate_h
@@ -1334,13 +1330,12 @@ SDL_framerate.flx
     fun SDL_setFramerate: &FPSmanager * int -> int;
   }
   
-
 SDL_gfxPrimitives.flx
 =====================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_gfxPrimitives.flx]
   
   
@@ -1414,13 +1409,12 @@ SDL_gfxPrimitives.flx
     fun vlineColor: &SDL_Surface * int16 * int16 * int16 * uint32 -> int;
     fun vlineRGBA: &SDL_Surface * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
   }
-
 SDL_gfxPrimitives_font.flx
 ==========================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_gfxPrimitives_font.flx]
   
   
@@ -1443,13 +1437,13 @@ SDL_gfxPrimitives_font.flx
     //VARIABLES
     const gfxPrimitivesFontdata: &utiny = 'gfxPrimitivesFontdata';
   }
-
 SDL_image.flx
 =============
 
 
-.. code-block:: felix
 
+.. index:: SDL_image_h
+.. code-block:: felix
   //[SDL_image.flx]
   
   
@@ -1520,13 +1514,12 @@ SDL_image.flx
     fun IMG_isXCF: SDL_RWops -> int;
     fun IMG_isXPM: SDL_RWops -> int;
   }
-
 SDL_imageFilter.flx
 ===================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_imageFilter.flx]
   
   //Module        : SDL_imageFilter_h
@@ -1591,13 +1584,12 @@ SDL_imageFilter.flx
     fun SDL_imageFilterSubByte: &utiny * &utiny * int * utiny -> int;
   }
   
-
 SDL_joystick.flx
 ================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_joystick.flx]
   
   
@@ -1652,13 +1644,12 @@ SDL_joystick.flx
     fun SDL_JoystickOpened: int -> int;
     fun SDL_NumJoysticks: 1 -> int;
   }
-
 SDL_keyboard.flx
 ================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_keyboard.flx]
   
   //#define SDL_DEFAULT_REPEAT_INTERVAL   30
@@ -1701,13 +1692,13 @@ SDL_keyboard.flx
   
   }
   
-
 SDL_keycode.flx
 ===============
 
 
-.. code-block:: felix
 
+.. index:: SDL_keycode_h
+.. code-block:: felix
   //[SDL_keycode.flx]
   
   open class SDL_keycode_h
@@ -2270,13 +2261,12 @@ SDL_keycode.flx
   }
   
   
-
 SDL_mixer.flx
 =============
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_mixer.flx]
   
   //Module        : SDL_mixer_h
@@ -2466,13 +2456,13 @@ SDL_mixer.flx
     }
   }
   
-
 SDL_mouse.flx
 =============
 
 
-.. code-block:: felix
 
+.. index:: SDL_mouse_h
+.. code-block:: felix
   //[SDL_mouse.flx]
   
   
@@ -2532,13 +2522,12 @@ SDL_mouse.flx
     fun SDL_SetRelativeMouseMode : bool -> int;
     fun SDL_GetRelativeMouseMode : 1 -> bool;
   }
-
 SDL_mutex.flx
 =============
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_mutex.flx]
   
   
@@ -2588,13 +2577,12 @@ SDL_mutex.flx
     fun SDL_LockMutex: &SDL_mutex -> int;
     fun SDL_UnlockMutex: &SDL_mutex -> int;
   }
-
 SDL_net.flx
 ===========
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_net.flx]
   
   
@@ -2693,13 +2681,12 @@ SDL_net.flx
     fun SDLNet_UDP_Send: UDPsocket * int * &UDPpacket -> int;
     fun SDLNet_UDP_SendV: UDPsocket * &&UDPpacket * int -> int;
   }
-
 SDL_opengl.flx
 ==============
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_opengl.flx]
   
   header '#include "SDL_opengl.h"';
@@ -2713,13 +2700,13 @@ SDL_opengl.flx
     inherit GL_glu_h;
   }
   
-
 SDL_pixels.flx
 ==============
 
 
-.. code-block:: felix
 
+.. index:: SDL_pixels_h
+.. code-block:: felix
   //[SDL_pixels.flx]
   
   
@@ -2770,13 +2757,13 @@ SDL_pixels.flx
     fun SDL_MapRGB: &SDL_PixelFormat * uint8 * uint8 * uint8 -> uint32;
     fun SDL_MapRGBA: &SDL_PixelFormat * uint8 * uint8 * uint8 * uint8 -> uint32;
   }
-
 SDL_rect.flx
 ============
 
 
-.. code-block:: felix
 
+.. index:: SDL_rect_h
+.. code-block:: felix
   //[SDL_rect.flx]
   
   
@@ -2804,13 +2791,13 @@ SDL_rect.flx
       fun str (r:SDL_Rect)=>"Rect(x="+r.x.str+",y="+r.y.str+",h="+r.h.str+",w="+r.w.str+")"; 
     } 
   }
-
 SDL_render.flx
 ==============
 
 
-.. code-block:: felix
 
+.. index:: SDL_Render_h
+.. code-block:: felix
   //[SDL_render.flx]
   
   
@@ -2825,13 +2812,12 @@ SDL_render.flx
     gen SDL_RenderSetScale : SDL_Renderer * float * float -> int;
   }
   
-
 SDL_rotozoom.flx
 ================
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_rotozoom.flx]
   
   //Module        : SDL_rotozoom_h
@@ -2882,13 +2868,13 @@ SDL_rotozoom.flx
     fun zoomSurface: &SDL_Surface * double * double * int -> &SDL_Surface;
   }
   
-
 SDL_rwops.flx
 =============
 
 
-.. code-block:: felix
 
+.. index:: SDL_rwops_h
+.. code-block:: felix
   //[SDL_rwops.flx]
   
   //#define SDL_RWclose(ctx)              (ctx)->close(ctx)
@@ -2938,13 +2924,13 @@ SDL_rwops.flx
   
   }
   
-
 SDL_scancode.flx
 ================
 
 
-.. code-block:: felix
 
+.. index:: SDL_scancode_h
+.. code-block:: felix
   //[SDL_scancode.flx]
   
   
@@ -3307,13 +3293,12 @@ SDL_scancode.flx
     ;
   }
   
-
 SDL_sound.flx
 =============
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_sound.flx]
   
   
@@ -3372,13 +3357,13 @@ SDL_sound.flx
     fun Sound_Seek: &Sound_Sample * uint32 -> int;
     fun Sound_SetBufferSize: &Sound_Sample * uint32 -> int;
   }
-
 SDL_surface.flx
 ===============
 
 
-.. code-block:: felix
 
+.. index:: SDL_surface_h
+.. code-block:: felix
   //[SDL_surface.flx]
   
   
@@ -3421,13 +3406,12 @@ SDL_surface.flx
     proc SDL_LockSurface : &SDL_Surface = "SDL_LockSurface($1);";
     proc SDL_UnlockSurface : &SDL_Surface = "SDL_LockSurface($1);";
   }
-
 SDL_timer.flx
 =============
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_timer.flx]
   
   
@@ -3494,13 +3478,13 @@ SDL_timer.flx
       return SDL_AddTimer(a1, _fcbw_SDL_timer_h_cft_2, C_hack::cast[address]a2);
     }
   }
-
 SDL_ttf.flx
 ===========
 
 
-.. code-block:: felix
 
+.. index:: SDL_ttf_h
+.. code-block:: felix
   //[SDL_ttf.flx]
   
   //#define TTF_SetError  SDL_SetError
@@ -3635,13 +3619,12 @@ SDL_ttf.flx
   
   }
   
-
 SDL_types.flx
 =============
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[SDL_types.flx]
   
   //Module        : SDL_types_h
@@ -3688,13 +3671,13 @@ SDL_types.flx
     const SDL_FALSE: int = 'SDL_FALSE';
   }
   
-
 SDL_version.flx
 ===============
 
 
-.. code-block:: felix
 
+.. index:: SDL_version_h
+.. code-block:: felix
   //[SDL_version.flx]
   
   
@@ -3732,13 +3715,13 @@ SDL_version.flx
       return v;
     }
   }
-
 SDL_video.flx
 =============
 
 
-.. code-block:: felix
 
+.. index:: SDL_video_h
+.. code-block:: felix
   //[SDL_video.flx]
   
   //Module        : SDL_video_h
@@ -3841,13 +3824,11 @@ SDL_video.flx
   }
   
   
-
 flx_faio_sdl.flx
 ================
 
 
 .. code-block:: felix
-
   //[flx_faio_sdl.flx]
   
   
@@ -3879,7 +3860,6 @@ Package Configuration
 
 
 .. code-block:: fpc
-
   //[linux_sdl2.fpc]
   Name: SDL2 
   Description: Simple Direct Media Layer 2.0
@@ -3890,7 +3870,6 @@ Package Configuration
   
 
 .. code-block:: fpc
-
   //[linux_sdl2_image.fpc]
   Name: SDL2_image
   Description: Simple Direct Media Layer 2.0: image loader
@@ -3903,7 +3882,6 @@ Package Configuration
   
 
 .. code-block:: fpc
-
   //[linux_sdl2_ttf.fpc]
   Name: SDL2_ttf
   Description: Simple Direct Media Layer 2.0: free type interface
@@ -3916,7 +3894,6 @@ Package Configuration
   
 
 .. code-block:: fpc
-
   //[macosx_sdl2.fpc]
   Name: SDL2 
   Description: Simple Direct Media Layer 2.0
@@ -3929,7 +3906,6 @@ Package Configuration
   
 
 .. code-block:: fpc
-
   //[macosx_sdl2_image.fpc]
   Name: SDL2_image
   Description: Simple Direct Media Layer 2.0: image loader
@@ -3940,7 +3916,6 @@ Package Configuration
   
 
 .. code-block:: fpc
-
   //[macosx_sdl2_ttf.fpc]
   Name: SDL2_ttf
   Description: Simple Direct Media Layer 2.0: free type interface
@@ -3953,7 +3928,6 @@ Package Configuration
 
 
 .. code-block:: fpc
-
   //[macosx_SDL2_gfx.fpc]
   Name: SDL2_gfx
   Description: Simple Direct Media Layer 2.0: SDL2_gfx
@@ -3965,7 +3939,6 @@ Package Configuration
   
 
 .. code-block:: fpc
-
   //[win32_sdl2.fpc]
   Name: SDL2 
   Description: Simple Direct Media Layer 2.0
@@ -3975,7 +3948,6 @@ Package Configuration
   
 
 .. code-block:: fpc
-
   //[win32_sdl2_image.fpc]
   Name: SDL2_image
   Description: Simple Direct Media Layer 2.0: image loader
@@ -3985,7 +3957,6 @@ Package Configuration
   
 
 .. code-block:: fpc
-
   //[win32_sdl2_ttf.fpc]
   Name: SDL2_ttf
   Description: Simple Direct Media Layer 2.0: free type interface

@@ -29,8 +29,8 @@ Synopsis
 ========
 
 
-.. code-block:: felix
 
+.. code-block:: felix
   //[__init__.flx]
   
   include "std/program/cmdopt";
@@ -42,13 +42,14 @@ Synopsis
   include "std/program/signal";
   
   
-
 Environment Variables
 =====================
 
 
-.. code-block:: felix
 
+.. index:: Env_class
+.. index:: Env
+.. code-block:: felix
   //[env.flx]
   //$ Access environment variables.
   class Env_class[os]
@@ -88,13 +89,13 @@ Environment Variables
   }
   
   
-
 Command Line Options
 ====================
 
 
-.. code-block:: felix
 
+.. index:: CmdOpt
+.. code-block:: felix
   //[cmdopt.flx]
   
   open class CmdOpt 
@@ -259,13 +260,14 @@ Command Line Options
     }
   }
   
-
 Process
 =======
 
 
-.. code-block:: felix
 
+.. index:: Process_class
+.. index:: Process
+.. code-block:: felix
   //[process.flx]
   
   class Process_class[os, process_status_t]
@@ -282,13 +284,14 @@ Process
   done
   }
   
-
 Posix Errno
 ===========
 
 
-.. code-block:: felix
 
+.. index:: Errno
+.. index:: Check
+.. code-block:: felix
   //[posix_errno.flx]
   
   open class Errno 
@@ -374,13 +377,13 @@ Posix Errno
     }
   }
   
-
 Posix Process
 =============
 
 
-.. code-block:: felix
 
+.. index:: PosixProcess
+.. code-block:: felix
   //[posix_process.flx]
   
   class PosixProcess {
@@ -559,13 +562,13 @@ Posix Process
     const OUR_PROCESS_GROUP: pid_t = "0";
    
   }
-
 Win32 Process
 =============
 
 
-.. code-block:: felix
 
+.. index:: Win32Process
+.. code-block:: felix
   //[win32_process.flx]
   
   class Win32Process {
@@ -714,13 +717,13 @@ Win32 Process
   */ 
   }
   
-
 System Call
 ===========
 
 
-.. code-block:: felix
 
+.. index:: System
+.. code-block:: felix
   //[system.flx]
   
   class System
@@ -803,13 +806,14 @@ System Call
   
   }
   
-
 Shell
 =====
 
 
-.. code-block:: felix
 
+.. index:: Shell_class
+.. index:: Shell
+.. code-block:: felix
   //[shell.flx]
   
   // Note Shell_class interface doesn't use process_status_t
@@ -904,13 +908,13 @@ Shell
   done
   }
   
-
 Posix Shell (Bash)
 ==================
 
 
-.. code-block:: felix
 
+.. index:: Bash
+.. code-block:: felix
   //[posix_shell.flx]
   
   // Note: shell functions here only work with Bash.
@@ -1085,13 +1089,13 @@ Posix Shell (Bash)
     inherit Shell_class[Posix, PosixProcess::process_status_t];
   }
   
-
 Win32 Shell (cmd.exe)
 =====================
 
 
-.. code-block:: felix
 
+.. index:: CmdExe
+.. code-block:: felix
   //[win32_shell.flx]
   
   
@@ -1221,13 +1225,14 @@ Win32 Shell (cmd.exe)
   
   
   
-
 Signals
 =======
 
 
-.. code-block:: felix
 
+.. index:: Signal_class
+.. index:: Signal
+.. code-block:: felix
   //[signal.flx]
   
   body ctrl_c_flag = """
@@ -1252,13 +1257,13 @@ Signals
   done
   }
   
-
 Posix Signal
 ============
 
 
-.. code-block:: felix
 
+.. index:: PosixSignal
+.. code-block:: felix
   //[posix_signal.flx]
   
   class PosixSignal {
@@ -1340,65 +1345,7 @@ Posix Signal
   }
   
   
-
 Win32 Signal
 ============
 
 
-.. code-block:: felix
-
-  //[win32_signal.flx]
-  
-  class Win32Signal {
-    requires C89_headers::signal_h;
-    type signal_t = "int";
-    ctor signal_t: int = "$1";
-    ctor int: signal_t = "$1";
-  
-    header sig_t_def = "typedef void (__cdecl *sig_t)(int);";
-    type sig_t = "sig_t" requires sig_t_def; 
-    gen signal: signal_t * sig_t -> sig_t = "signal($1, $2)";
-    instance Eq[signal_t] {
-      fun == : signal_t * signal_t ->  bool = "$1==$2";
-    }
-    inherit Eq[signal_t];
-  
-    // http://pubs.opengroup.org/onlinepubs/009695399/basedefs/signal.h.html
-    const 
-      SIGABRT,  SIGFPE, SIGILL, SIGINT, 
-      SIGSEGV,  SIGTERM 
-    : signal_t;
-  
-    instance Str[signal_t] {
-      fun str: signal_t -> string =
-      | $(SIGABRT) =>  "SIGABRT" 
-      | $(SIGFPE) =>  "SIGFPE" 
-      | $(SIGILL) =>  "SIGILL" 
-      | $(SIGINT) =>  "SIGINT" 
-      | $(SIGSEGV) =>  "SIGSEGV" 
-      | $(SIGTERM) =>  "SIGTERM" 
-      | x => "signal " + x.int.str
-      ;
-    }
-    inherit Str[signal_t];
-  
-    body "void null_signal_handler(int){}";
-    const null_signal_handler: sig_t;
-    proc ignore_signal(s:signal_t) { C_hack::ignore(signal(s, null_signal_handler)); }
-  
-    // http://pubs.opengroup.org/onlinepubs/007904975/functions/sigaction.html
-    body ctrl_c_handling = """
-      void set_ctrl_c_flag(int);
-      void trap_ctrl_c () {
-       (void)signal(SIGINT,set_ctrl_c_flag); 
-     }
-    """ requires ctrl_c_flag;
-  
-    inherit Signal_class[Win32];
-  
-    instance Signal_class[Win32] {
-      proc trap_ctrl_c: unit requires ctrl_c_handling;
-    }
-  }
-  
-  

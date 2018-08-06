@@ -39,7 +39,6 @@ Std.flx
 The top level library module.
 
 .. code-block:: felix
-
   //[std.flx]
   header '#include "flx_rtl_config.hpp"';
   include "std/__init__";
@@ -49,7 +48,6 @@ Default includes for Standard library.
 
 
 .. code-block:: text
-
   
   open String;
   
@@ -109,7 +107,6 @@ C stuff
 Structure of C sublibrary.
 
 .. code-block:: text
-
   
   include "std/c/c_headers";
   include "std/c/cxx_headers";
@@ -127,7 +124,6 @@ Data types
 Structure of datatype library.
 
 .. code-block:: text
-
   
   // special
   include "std/datatype/typing";
@@ -169,7 +165,6 @@ Posix
 Structure of Posix support library.
 
 .. code-block:: text
-
   
   struct Posix {};
   include "std/posix/posix_headers";
@@ -191,7 +186,6 @@ Win32
 Structure of Win32 library.
 
 .. code-block:: text
-
   
   struct Win32 {};
   
@@ -218,7 +212,6 @@ compilations requiring platform specific macros.
 
 
 .. code-block:: text
-
   // Platform independent compilation enforced by
   // failing to set any platform macros.
   macro val PLAT_INDEP = 1;
@@ -229,8 +222,8 @@ C hackery
 
 Hackery for mapping between Felix and C/C++.
 
+.. index:: C_hack
 .. code-block:: felix
-
   //[c_hack.flx]
   
   //$ This class provides access to raw C/C++ encodings.
@@ -309,8 +302,8 @@ C stdlib Rand
 
 Just to get random functions.
 
+.. index:: Cstdlib
 .. code-block:: felix
-
   //[cstdlib.flx]
   
   open class Cstdlib
@@ -334,7 +327,6 @@ OSX platform tag
 
 
 .. code-block:: text
-
   
   struct Osx{};
   include "std/posix/__init__";
@@ -345,7 +337,6 @@ Linux specifics
 
 
 .. code-block:: felix
-
   //[linux.flx]
   
   module Linux {
@@ -360,109 +351,3 @@ Linux smap
 
 Parses and totals proc/PID/smaps memory stats. 
 
-.. code-block:: felix
-
-  //[linux_smaps.flx]
-  
-  publish """
-  Parses and totals proc/PID/smaps memory stats. 
-  See smaps_total
-  
-  ** don't do [stack] as is last map in smaps and feof appear to be broken or 
-  ** doesnt work with /proc files
-  
-  Example: (gets total smaps values for heap
-   open Smaps;
-    val my_smaps = smaps_total(getpid(),"[heap]");
-    println("Heap Size=>"+str(my_smaps.size)+" kB");
-    //Smaps for other processes
-    val m = smaps_total(uint_topid(23264ui),"/usr/lib/libsqlite3.so.0.8.6");
-    println("SQLite Size:RSS=>"+str((m.size))+" kB:"+ str((m.rss))+" kB");
-  """
-  
-  class Smaps {
-    open Smaps;
-    struct smaps_metric {
-       size:uint;
-       rss:uint;
-       pss:uint;
-       shared_clean:uint;
-       shared_dirty:uint;
-       private_clean:uint;
-       private_dirty:uint;
-       referenced:uint;
-       anonymous:uint;
-       anonhugepages:uint;
-       swap:uint;
-       kernelpagesize:uint;
-       mmupagesize:uint;
-       locked:uint;
-    }
-  
-    fun getpid: ()->Process::pid_t = "getpid()";
-  
-    fun pid_touint: Process::pid_t->uint = "((unsigned int)$1)";
-  
-    fun uint_topid: uint->Process::pid_t = "((pid_t)$1)";
-  
-    fun min_whitespace(s:string) = {
-      var fw = false;
-      var m = "";
-      for var i in 0ui upto (len s) - 1ui do
-        val c = s.[int(i)];
-        if  (c == char ' ' and not fw) do
-          fw = true; m = m + c;
-        elif not c == char ' ' do
-          fw = false; m = m + c;
-        done  
-      done
-      return m;
-    }
-  
-  publish """
-    Returns summation of blocks for each path specified for a given pid. 
-    Path is one of [heap] | [vdso] | [stack] | path dynamic lib (e.g /lib/libbz2.so.1.0.6)
-  """
-  fun smaps_total(p:Process::pid_t,path:string):smaps_metric ={
-    var y = pid_touint p;
-    val file = fopen_input ("/proc/"+str(pid_touint p)+"/smaps");
-    var at_map = false;
-    var end_of_map = false;
-    var nums = smaps_metric(0ui,0ui,0ui,0ui,0ui,0ui,0ui,0ui,0ui,0ui,0ui,0ui,0ui,0ui);
-    var size = 0ui;
-    while not (feof file) and not end_of_map do
-      val ln = min_whitespace(strip(readln file));
-      val cols = split(ln,' ');
-      var spath = let Cons (h,_) = rev cols in h;
-      if not at_map  do
-        at_map = match find (ln,path) with |Some _ => true |_ => false endmatch;
-      elif (at_map  and (len cols) > 5ui) and not spath == path do
-        end_of_map=true;
-      else 
-        var kv = let Cons (k,Cons (s,_)) = cols in (k,uint(s));
-        match kv with 
-          |("Size:",e) => nums.size = nums.size + uint(e);
-  	|("Rss:",e) => nums.rss = nums.rss + uint(e);
-  	|("Pss:",e) => nums.pss = nums.pss + uint(e);
-  	|("Shared_Clean:",e) => nums.shared_clean = nums.shared_clean + uint(e);
-  	|("Shared_Dirty:",e) => nums.shared_dirty = nums.shared_dirty + uint(e);
-  	|("Private_Clean:",e) => nums.private_clean = nums.private_clean + uint(e);
-  	|("Private_Dirty:",e) => nums.private_dirty = nums.private_dirty + uint(e);
-  	|("Referenced:",e) => nums.referenced = nums.referenced + uint(e);
-  	|("Anonymous:",e) => nums.anonymous = nums.anonymous + uint(e);
-  	|("AnonHugePages:",e) => nums.anonhugepages = nums.anonhugepages +  uint(e);
-  	|("Swap:",e) => nums.swap = nums.swap +  uint(e);
-  	|("KernelPageSize:",e) => nums.kernelpagesize = nums.kernelpagesize + uint(e);
-  	|("MMUPageSize:",e) => nums.mmupagesize = nums.mmupagesize + uint(e);
-  	|("Locked:",e) => nums.locked = nums.locked + uint(e);
-          |(k,v) => {}();
-        endmatch;
-      done;
-    done;
-    fclose file;
-    return nums;
-    }
-  }
-  
-   
-  

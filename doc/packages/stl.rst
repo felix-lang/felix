@@ -24,8 +24,14 @@ Stl Iterators
 ==============
 
 
-.. code-block:: felix
 
+.. index:: Iterator
+.. index:: Forward_iterator
+.. index:: Bidirectional_iterator
+.. index:: Sequence
+.. index:: Reversible_Sequence
+.. index:: Stl
+.. code-block:: felix
   //[stl.flx]
   
   class Iterator[it,t] {
@@ -79,13 +85,13 @@ Stl Iterators
     fun make_pair[k,v]: k * v ->pair[k,v] = "::std::make_pair($1,$2)";
   }
   
-
 Stl Vector
 ==========
 
 
-.. code-block:: felix
 
+.. index:: Stl_Vector
+.. code-block:: felix
   //[stl_vector.flx]
   
   include "stl/stl";
@@ -188,13 +194,13 @@ Stl Vector
   open[t] Bidirectional_iterator[Stl_Vector::stl_vector_reverse_iterator[t],t];
   
   
-
 Stl Set 
 ========
 
 
-.. code-block:: felix
 
+.. index:: Stl_Set
+.. code-block:: felix
   //[stl_set.flx]
   
   include "stl/stl";
@@ -286,13 +292,13 @@ Stl Set
   
   
   
-
 Stl Multiset 
 =============
 
 
-.. code-block:: felix
 
+.. index:: Stl_MultiSet
+.. code-block:: felix
   //[stl_multiset.flx]
   
   include "stl/stl";
@@ -383,13 +389,13 @@ Stl Multiset
   open[t] Bidirectional_iterator[Stl_MultiSet::stl_multiset_reverse_iterator[t],t];
   
   
-
 Stl Map 
 ========
 
 
-.. code-block:: felix
 
+.. index:: Stl_Map
+.. code-block:: felix
   //[stl_map.flx]
   
   include "stl/stl";
@@ -483,13 +489,13 @@ Stl Map
   
   
   
-
 Stl Multimap 
 =============
 
 
-.. code-block:: felix
 
+.. index:: Stl_MultiMap
+.. code-block:: felix
   //[stl_multimap.flx]
   
   include "stl/stl";
@@ -581,13 +587,13 @@ Stl Multimap
   open[k,v] Bidirectional_iterator[Stl_MultiMap::stl_multimap_reverse_iterator[k,v],k*v];
   
   
-
 Stl List
 ========
 
 
-.. code-block:: felix
 
+.. index:: Stl_List
+.. code-block:: felix
   //[stl_list.flx]
   
   include "stl/stl";
@@ -685,107 +691,7 @@ Stl List
   
   
   
-
 Stl Deque 
 ==========
 
 
-.. code-block:: felix
-
-  //[stl_deque.flx]
-  
-  
-  class Stl_Deque[t]
-  {
-      requires Cxx_headers::deque;
-      type stl_deque = "::std::deque<?1>";
-      fun create : unit -> stl_deque = "(FLX_GXX_PARSER_HACK std::deque<?1>())";
-      fun create : int * t -> stl_deque= "(FLX_GXX_PARSER_HACK std::deque<?1>($1,$2))";
-      fun create[i] : i * i -> stl_deque = "(FLX_GXX_PARSER_HACK std::deque<?1>($1,$2))";
-      type stl_deque_iterator = "::std::deque<?1>::iterator";
-      type stl_deque_reverse_iterator = "::std::deque<?1>::reverse_iterator";
-      proc insert: stl_deque * stl_deque_iterator *  t  = "$1.insert($2,$3);";
-      proc push_front : stl_deque *  t  = "$1.push_front($2);";
-      proc push_back : stl_deque *  t  = "$1.push_back($2);";
-      proc pop_front : stl_deque = "$1.pop_back();";
-      fun front : stl_deque -> t = "$1.front()";
-      fun front : stl_deque -> t = "$1.front()";
-      fun subscript : stl_deque * int -> t = "$1.at($2)";
-  // Stl_Deque
-    instance Eq[stl_deque] {
-      fun == : stl_deque * stl_deque -> bool = "$1==$2";
-    }
-    instance Container[stl_deque,t] {
-      fun len: stl_deque -> size = "$1.size()";
-      fun empty: stl_deque -> bool = "$1.empty()";
-    }
-    instance Sequence[stl_deque,stl_deque_iterator,t] {
-      fun begin : stl_deque-> stl_deque_iterator= "$1.begin()";
-      fun end : stl_deque-> stl_deque_iterator= "$1.end()";
-      proc erase : stl_deque * stl_deque_iterator = "$1.erase($1);";
-      proc erase_between : stl_deque * stl_deque_iterator * stl_deque_iterator = "$1.erase($1,$2);";
-      proc clear : stl_deque = "$1.clear();";
-    }
-    instance Reversible_Sequence[stl_deque,stl_deque_iterator,stl_deque_reverse_iterator,t] {
-      fun rbegin : stl_deque-> stl_deque_reverse_iterator= "$1.rbegin()";
-      fun rend : stl_deque-> stl_deque_reverse_iterator= "$1.rend()";
-    }
-  
-  // Stl_Deque iterator
-    instance Eq[stl_deque_iterator] {
-      fun == : stl_deque_iterator * stl_deque_iterator -> bool = "$1==$2";
-    }
-    instance Tord[stl_deque_iterator] {
-      fun < : stl_deque_iterator * stl_deque_iterator -> bool = "$1<$2";
-    }
-    instance Iterator[stl_deque_iterator,t] {
-      fun deref : stl_deque_iterator ->  t  = "*(#0*)(void*)&*$1";
-    }
-    instance Forward[stl_deque_iterator] {
-      fun succ: stl_deque_iterator -> stl_deque_iterator = "$1+1";
-      proc pre_incr : &stl_deque_iterator = "++*$1;";
-      proc post_incr : &stl_deque_iterator = "++*$1;";
-    }
-    instance Forward_iterator[stl_deque_iterator,t] {}
-    instance Bidirectional[stl_deque_iterator] {
-      fun pred: stl_deque_iterator -> stl_deque_iterator = "$1-1;";
-      proc pre_decr : &stl_deque_iterator = "--*$1;";
-      proc post_decr : &stl_deque_iterator = "--*$1;";
-    }
-    instance Bidirectional_iterator[stl_deque_iterator,t] {}
-  
-  // Stl_Deque reverse iterator
-    instance Eq[stl_deque_reverse_iterator] {
-      fun == : stl_deque_reverse_iterator * stl_deque_reverse_iterator -> bool = "$1==$2";
-    }
-    instance Tord[stl_deque_reverse_iterator] {
-      fun < : stl_deque_reverse_iterator * stl_deque_reverse_iterator -> bool = "$1<$2";
-    }
-    instance Iterator[stl_deque_reverse_iterator,t] {
-      fun deref : stl_deque_reverse_iterator ->  t  = "*(#0*)(void*)&*$1";
-    }
-    instance Forward[stl_deque_reverse_iterator] {
-      fun succ: stl_deque_reverse_iterator -> stl_deque_reverse_iterator = "$1+1";
-      proc pre_incr : &stl_deque_reverse_iterator = "++*$1;";
-      proc post_incr : &stl_deque_reverse_iterator = "++*$1;";
-    }
-    instance Forward_iterator[stl_deque_reverse_iterator,t] {}
-    instance Bidirectional[stl_deque_reverse_iterator] {
-      fun pred: stl_deque_reverse_iterator -> stl_deque_reverse_iterator = "$1-1;";
-      proc pre_decr : &stl_deque_reverse_iterator = "--*$1;";
-      proc post_decr : &stl_deque_reverse_iterator = "--*$1;";
-    }
-    instance Bidirectional_iterator[stl_deque_reverse_iterator,t] {}
-  
-  }
-  
-  open Stl_Deque;
-  open[t] Reversible_Sequence[
-    Stl_Deque::stl_deque[t],
-    Stl_Deque::stl_deque_iterator[t],
-    Stl:Stl_Deque::stl_deque_reverse_iterator[t],t];
-  open[t] Bidirectional_iterator[Stl_Deque::stl_deque_iterator[t],t];
-  open[t] Bidirectional_iterator[Stl_Deque::stl_deque_reverse_iterator[t],t];
-  
-  
-  

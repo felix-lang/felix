@@ -130,8 +130,9 @@ for a single threaded Felix world instantiation but we do not currently
 provide one as pthreads are considered mandatory for Felix.
 
 
+.. index:: PTHREAD_EXTERN
+.. index:: PTHREAD_EXTERN
 .. code-block:: cpp
-
   //[pthread_thread_control_base.hpp]
   #ifndef __PTHREAD_THREAD_CONTROL_BASE_HPP__
   #define __PTHREAD_THREAD_CONTROL_BASE_HPP__
@@ -193,7 +194,6 @@ Memory Management Abstraction Interface.
 
 
 .. code-block:: cpp
-
   //[flx_gc.hpp]
   
   #ifndef __FLX_GC_H__
@@ -235,8 +235,8 @@ used. Finally the  :code:`shape` field contains a pointer to the  :code:`gc_shap
 object for the element type. , that is, the <em>array bound</em>.
 
 
-.. code-block:: cpp
 
+.. code-block:: cpp
   //[flx_gc.hpp]
   struct GC_EXTERN pointer_data_t
   {
@@ -247,7 +247,6 @@ object for the element type. , that is, the <em>array bound</em>.
     gc_shape_t *shape;                  //< shape
   };
   
-
 <tt>gc_shape_t</tt> types
 -------------------------
 
@@ -255,7 +254,6 @@ Types required for the RTTI object.
 
 
 .. code-block:: cpp
-
   //[flx_gc.hpp]
   enum gc_shape_flags_t {
     gc_flags_default    = 0,            //< collectable and mobile
@@ -302,7 +300,6 @@ containing offsets into an object where pointers are located.
 
 
 .. code-block:: cpp
-
   //[flx_gc.hpp]
   struct GC_EXTERN offset_data_t
   {
@@ -320,8 +317,8 @@ and the zero allows the collector to skip the call
 to a do nothing finaliser function.
 
 
-.. code-block:: cpp
 
+.. code-block:: cpp
   //[flx_gc.hpp]
   
   /*
@@ -350,7 +347,6 @@ to a do nothing finaliser function.
     static_cast<T*>(t) -> ~T();
   }
   
-
 Allocator Abstraction
 ---------------------
 
@@ -362,8 +358,8 @@ Felix system. Nevertheless providing an abstraction helps
 with software organisation.
 
 
-.. code-block:: cpp
 
+.. code-block:: cpp
   //[flx_gc.hpp]
   /// Allocator abstraction.
   
@@ -376,7 +372,6 @@ with software organisation.
     void set_debug(bool d){debug=d;}
   };
   
-
 The collector abstraction
 -------------------------
 
@@ -400,7 +395,6 @@ rules which result in a quite complex structure.
 
 
 .. code-block:: cpp
-
   //[flx_gc.hpp]
   
   /// Collector abstraction.
@@ -575,20 +569,18 @@ rules which result in a quite complex structure.
   
   #endif
 
-.. code-block:: cpp
 
+.. code-block:: cpp
   //[flx_gc_private.hpp]
   
   #define _ROUNDUP(i,n) ((i + n - 1) / n * n)
   #define _ALIGN(i) _ROUNDUP(i,FLX_MAX_ALIGN)
   
-
 Memory Management Abstraction Implementation.
 ---------------------------------------------
 
 
 .. code-block:: cpp
-
   //[flx_gc.cpp]
   
   #include <cstdlib>
@@ -865,8 +857,8 @@ Collector interface.
 --------------------
 
 
-.. code-block:: cpp
 
+.. code-block:: cpp
   //[flx_collector.hpp]
   
   #ifndef __FLX_COLLECTOR_H__
@@ -1037,7 +1029,6 @@ Collector interface.
   }}} // end namespaces
   #endif
   
-
 Collector Implementation
 ------------------------
 
@@ -1065,8 +1056,8 @@ U: used JudyL
 T: temporary Judy1
 
 
-.. code-block:: cpp
 
+.. code-block:: cpp
   //[flx_collector.cpp]
   
   #include <cstdlib>
@@ -2183,13 +2174,12 @@ T: temporary Judy1
   
   }}} // end namespaces
   
-
 Garbage Collector Interface
 ===========================
 
 
+.. index:: Gc
 .. code-block:: felix
-
   //[gc.flx]
   
   //$ Generic garbage collector interface.
@@ -2235,8 +2225,8 @@ Rtti introspection
 ==================
 
 
+.. index:: Rtti
 .. code-block:: felix
-
   //[rtti.flx]
   class Rtti {
   
@@ -2380,8 +2370,8 @@ Low level Garbage Collector Access
 ==================================
 
 
+.. index:: Collector
 .. code-block:: felix
-
   //[flx_gc.flx]
   class Collector
   {
@@ -2448,7 +2438,6 @@ Bootstrap Build System
 
 
 .. code-block:: python
-
   #[flx_gc.py]
   import fbuild
   from fbuild.functools import call
@@ -2490,7 +2479,6 @@ Configuration Database Records
 
 
 .. code-block:: fpc
-
   //[unix_flx_gc.fpc]
   Name: flx_gc
   Platform: Unix 
@@ -2506,7 +2494,6 @@ Configuration Database Records
 
 
 .. code-block:: fpc
-
   //[win32_flx_gc.fpc]
   Name: flx_gc
   Platform: Win32
@@ -2523,7 +2510,6 @@ Configuration Database Records
 
 
 .. code-block:: cpp
-
   //[flx_gc_config.hpp]
   #ifndef __FLX_GC_CONFIG_H__
   #define __FLX_GC_CONFIG_H__

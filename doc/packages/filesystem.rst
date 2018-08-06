@@ -40,8 +40,13 @@ Filename
 ========
 
 
-.. code-block:: felix
 
+.. index:: Filename_class
+.. index:: Win32Filename
+.. index:: OsxFilename
+.. index:: PosixFilename
+.. index:: Filename
+.. code-block:: felix
   //[filename.flx]
   
   //$ Operations on filenames.
@@ -214,13 +219,14 @@ Filename
     inherit PosixFilename;
   done
   }
-
 Filestat
 ========
 
 
-.. code-block:: felix
 
+.. index:: FileStat_class
+.. index:: FileStat
+.. code-block:: felix
   //[filestat.flx]
   
   //$ Filesystem file kind query functions parametrised
@@ -356,13 +362,13 @@ Filestat
   done
   }
   
-
 Posix FileStat
 ==============
 
 
-.. code-block:: felix
 
+.. index:: PosixFileStat
+.. code-block:: felix
   //[posix_filestat.flx]
   
   class PosixFileStat
@@ -454,13 +460,13 @@ Posix FileStat
     } // instance
   }
   
-
 Win32 FileStat
 ==============
 
 
-.. code-block:: felix
 
+.. index:: Win32FileStat
+.. code-block:: felix
   //[win32_filestat.flx]
   
   class Win32FileStat
@@ -535,13 +541,14 @@ Win32 FileStat
   
   
   
-
 File Syetem
 ===========
 
 
-.. code-block:: felix
 
+.. index:: FileSystem_class
+.. index:: FileSystem
+.. code-block:: felix
   //[filesystem.flx]
   
   //$ Filesystem operations parametrised by operating system.
@@ -670,13 +677,13 @@ File Syetem
    
   }
   
-
 Posix File Syetem
 =================
 
 
-.. code-block:: felix
 
+.. index:: PosixFileSystem
+.. code-block:: felix
   //[posix_filesystem.flx]
   
   class PosixFileSystem 
@@ -831,13 +838,13 @@ Posix File Syetem
       
   }
   
-
 Win32 File Syetem
 =================
 
 
-.. code-block:: felix
 
+.. index:: Win32FileSystem
+.. code-block:: felix
   //[win32_filesystem.flx]
   
   class Win32FileSystem 
@@ -996,13 +1003,14 @@ Win32 File Syetem
   
   
   
-
 Directory
 =========
 
 
-.. code-block:: felix
 
+.. index:: Directory_class
+.. index:: Directory
+.. code-block:: felix
   //[directory.flx]
   
   //$ File system directory services,
@@ -1046,13 +1054,13 @@ Directory
   done
   }
   
-
 Posix Directory Services
 ========================
 
 
-.. code-block:: felix
 
+.. index:: PosixDirectory
+.. code-block:: felix
   //[posix_directory.flx]
   
   class PosixDirectory
@@ -1135,132 +1143,7 @@ Posix Directory Services
     }
   }
   
-
 Win32 Directory Services
 ========================
 
 
-.. code-block:: felix
-
-  //[win32_directory.flx]
-  
-  class Win32Directory
-  {
-    //Win32 specific stuff.
-  
-    type DIR_t = "intptr_t" requires Win32_headers::io_h ;
-    type FINDDATA_t = "struct _finddata_t" requires Win32_headers::io_h ;
-  
-    proc findfirst: string * &FINDDATA_t * &DIR_t = "*$3=_findfirst($1.c_str(), $2);" ;
-    proc findnext: DIR_t * &FINDDATA_t * &int = "*$3=_findnext($1, $2);" ;
-    proc findclose : DIR_t = "_findclose($1);" ;
-  
-    fun findfailed : DIR_t -> bool = "int($1) == -1" ;
-    fun filename : FINDDATA_t -> string = "std::string($1.name)" ;
-  
-    private fun getcwd: +char * size -> +char = "_getcwd($1,(int)$2)" requires Win32_headers::direct_h;
-  
-    // Generic stuff.
-  
-    inherit Directory_class[Win32, Win32FileStat::mode_t];
-  
-    // Instantiate generics.
-  
-    instance Directory_class[Win32, Win32FileStat::mode_t] 
-    {
-      //Make a directory.
-  
-      // warning: ignores the mode!
-      gen mkdir: string * Win32FileStat::mode_t -> int = "_mkdir($1.c_str())" requires Win32_headers::direct_h;
-      gen mkdir: string  -> int = "_mkdir($1.c_str())" requires Win32_headers::direct_h;
-      proc mkdirs (s:string)
-      {
-        if s == "" or s == "." or s == ".." or s.[-1] == char "\\" do 
-           return;
-        done
-        mkdirs$ Win32Filename::dirname s;
-        C_hack::ignore$ mkdir s;
-      }
-  
-      gen unlink_empty_dir: string->int=  "(int)RemoveDirectory($1.c_str())" requires Win32_headers::windows_h;
-   
-  
-      //Get the current working directory.
-  
-      fun getcwd():string = 
-      {
-        var b: array[char,1024]; 
-        var p = getcwd((&b).stl_begin,size 1024);
-        return if C_hack::isNULL p then "" else string p endif; 
-      }
-  
-      //Is the given path absolute?
-  
-      // this is wrong, because D:filename will have the
-      // current directory prepended instead of the 
-      // current directory for drive D, so it could end up
-      // referring to drive C instead .. 
-      // also none of this works with network names
-      fun mk_absolute_filename(s:string) => 
-         if Win32Filename::is_absolute_filename s then s else
-         #getcwd + "\\" + s
-      ;
-  
-      //List the files in a directory.
-    
-      fun filesin(dname:string): opt[list[string]] = 
-      {
-        //eprintln$ "hi in filesin dname=\""+dname+"\"" ;
-  
-        var d : DIR_t ;
-        var fileinfo : FINDDATA_t ;
-        var files = Empty[string]; 
-      
-        //eprintln$ "calling findfirst with expression = " + dname+"*";
-        findfirst (dname+"\\*", &fileinfo, &d) ;
-        //eprintln$ "returned from findfirst" ;
-  
-        if findfailed d  do
-          if errno == ENOENT or errno == EINVAL do
-            //eprintln$ "findfirst() failed with ENOENT or EINVAL" ;
-            return None[list[string]] ;
-          done
-          eprintln$ "findfirst() failed unexpectedly" ;
-          assert false ;
-        done
-      
-        var stat : int ;
-      
-      harvestnext:>
-      
-        var f : string  = filename fileinfo ;
-        if f != ".." and f != "." do
-          //println$ "Adding file" + (filename fileinfo) ;
-          files += filename fileinfo ;
-        done
-  
-        findnext(d, &fileinfo, &stat) ;
-        if stat == 0 goto harvestnext ;
-  
-        if stat == -1 do
-          if errno == ENOENT goto harvestexit ;
-          assert false ;
-        else
-          println "Error reading dir"; fflush;
-          findclose d ;
-          return None[list[string]] ;
-        done
-      
-      harvestexit:>
-      
-        //eprintln$ "Leaving normally with some files" ;
-  
-        findclose d ;
-        return Some files ;
-      }
-    }
-  }
-  
-  
-  
-  
