@@ -166,6 +166,9 @@ let flat_poly_fixup_exe syms bsym_table polyinst parent_ts mt exe =
     let j,ts = polyinst sr i parent_ts in
     bexe_ifgoto (sr,e,j)
 
+  | BEXE_catch (sr,s,t) ->
+    let t = poly_fixup_type syms bsym_table polyinst sr t in
+    bexe_catch sr s t
 
 
   | x -> x

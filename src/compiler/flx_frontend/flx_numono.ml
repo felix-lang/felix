@@ -173,6 +173,19 @@ let monomorphise2 debug syms bsym_table =
 
     Flx_print.print_bsym_table bsym_table;
 *)
+
+(*
+  begin try
+    Flx_bsym_table.validate "pre-monomorphisation" bsym_table  
+  with Flx_bsym_table.IncompleteBsymTable (bid,bid2,_) ->
+    print_endline ("Pre monomorphisation, symbol " ^string_of_int bid2 
+       ^ "used in " ^ string_of_int bid^ " missing from bound symbol table"
+    );
+    Flx_print.print_bsym_table  bsym_table;
+    failwith "SYSTEM ERROR: monomorphisation failed"
+  end;
+*)
+
   let roots: BidSet.t = !(syms.roots) in
   assert (BidSet.cardinal roots > 0);
 

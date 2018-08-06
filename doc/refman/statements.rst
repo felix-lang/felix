@@ -11,4 +11,5 @@ Statements
    goto
    call
    traps
+   trycatch
    debug
