@@ -619,7 +619,7 @@ fun process_file (f: string): string =
       elif c == "tangle" do
         println$ "";
         var lexer = lexer_from_filename a;
-        prefix = ".. code-block:: "+lexer + "\n";
+        prefix = ".. code-block:: "+lexer + "\n\n";
         prefix += "";
         if lexer in ("c","cpp","felix","fpc") do
           prefix += "  //[" + a + "]\n";
