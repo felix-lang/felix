@@ -42,6 +42,7 @@ debugging.
 
 
 .. code-block:: cpp
+
   //[flx_ioutil.hpp]
   #ifndef FLX_IOUTIL
   #define FLX_IOUTIL
@@ -74,6 +75,7 @@ debugging.
 
 
 .. code-block:: cpp
+
   //[flx_ioutil.cpp]
   
   #include <cstdio>
@@ -284,6 +286,7 @@ debugging.
 
 
 .. code-block:: fpc
+
   //[flx_ioutil.fpc]
   Name: flx_ioutil
   Description: I/O support
@@ -297,6 +300,7 @@ Standard Library Synopsis
 
 
 .. code-block:: felix
+
   //[__init__.flx]
   
   include "std/io/textio";
@@ -318,6 +322,7 @@ Simple Text I/O
 .. index:: Output_file
 .. index:: Cstdio
 .. code-block:: felix
+
   //[textio.flx]
   
   //$ These classes provide simple I/O for text, primarily intended for
@@ -605,6 +610,7 @@ Ansi Terminal
 
 .. index:: AnsiTerminal
 .. code-block:: felix
+
   //[ansi_terminal.flx]
   
   // Author Mike Maul
@@ -684,6 +690,7 @@ Stream I/O
 .. index:: TerminalOByteStream
 .. index:: TerminalIOByteStream
 .. code-block:: felix
+
   //[iostream.flx]
   
   class IOStream {
@@ -1046,6 +1053,7 @@ These sockets are ONLY for TCP/IP.
 
 .. index:: Socket_class
 .. code-block:: felix
+
   //[socket.flx]
   
   class Socket_class[socket_t] {
@@ -1070,6 +1078,7 @@ Posix sockets
 
 .. index:: PosixSocket
 .. code-block:: felix
+
   //[socket.flx]
   class PosixSocket
   {
@@ -1158,6 +1167,7 @@ Windows sockets
 
 .. index:: Win32Socket
 .. code-block:: felix
+
   //[socket.flx]
   class Win32Socket
   {
@@ -1237,6 +1247,7 @@ Host sockets
 
 .. index:: Socket
 .. code-block:: felix
+
   //[socket.flx]
   
   class Socket
@@ -1258,6 +1269,7 @@ Demux: Felix Event notification service
 
 .. index:: Demux
 .. code-block:: felix
+
   //[demux.flx]
   
   class Demux
@@ -1276,6 +1288,7 @@ Faio: Felix Asynchronous I/O service
 
 .. index:: Faio
 .. code-block:: felix
+
   //[faio.flx]
   
   class Faio {
@@ -1337,6 +1350,7 @@ Posix Faio
 
 .. index:: Faio_posix
 .. code-block:: felix
+
   //[posix_faio.flx]
   
   class Faio_posix  {

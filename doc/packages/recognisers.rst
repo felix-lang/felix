@@ -30,6 +30,7 @@ StringPiece to represent it.
 
 .. index:: RecogniserBase
 .. code-block:: felix
+
   //[recogniser_base.flx]
   include "std/control/chips";
   class RecogniserBase
@@ -116,6 +117,7 @@ A string matcher.
 
 
 .. code-block:: felix
+
   //[recogniser_base.flx]
   chip match_string (s:string)
     connector io
@@ -141,6 +143,7 @@ Note: never fails.
 
 
 .. code-block:: felix
+
   //[recogniser_base.flx]
   chip match_white 
     connector io
@@ -161,6 +164,7 @@ Note: cannot fail.
 
 
 .. code-block:: felix
+
   //[recogniser_base.flx]
   chip match_cxx_comment 
     connector io
@@ -194,6 +198,7 @@ Note: cannot fail.
 
 
 .. code-block:: felix
+
   //[recogniser_base.flx]
   chip match_nested_c_comment 
     connector io
@@ -247,6 +252,7 @@ Note: can fail.
 
 
 .. code-block:: felix
+
   //[recogniser_base.flx]
   
   chip match_felix_white
@@ -283,6 +289,7 @@ regex matcher.
 
 
 .. code-block:: felix
+
   //[recogniser_base.flx]
   chip match_regex (r:RE2)
     connector io
@@ -312,6 +319,7 @@ For C like identifiers.
 
 
 .. code-block:: felix
+
   //[recogniser_base.flx]
   device cident_matcher = match_regex (RE2 "[A-Za-z][A-Za-z0-9_]*");
   device flxident_matcher = match_regex (RE2 "[A-Za-z_][A-Za-z0-9_']*");
@@ -367,6 +375,7 @@ For plain identifiers.
 
 
 .. code-block:: felix
+
   //[recogniser_base.flx]
   device decimal_integer_matcher = match_regex (RE2 "[0-9]+");
   
@@ -381,6 +390,7 @@ I mean, what should we do if we find them?
 
 
 .. code-block:: felix
+
   //[recogniser_base.flx]
   
   chip felix_integer_matcher 
@@ -497,6 +507,7 @@ Felix float matcher.
 
 
 .. code-block:: felix
+
   //[recogniser_base.flx]
   chip felix_float_literal_matcher 
     connector io
@@ -588,6 +599,7 @@ string not spanning lines, with no escape codes,
 
 
 .. code-block:: felix
+
   //[recogniser_base.flx]
   chip match_string_literal 
     connector io
@@ -727,6 +739,7 @@ End of string matcher
 
 
 .. code-block:: felix
+
   //[recogniser_base.flx]
   chip eos_matcher 
     connector io
@@ -745,6 +758,7 @@ Longest match
 
 
 .. code-block:: felix
+
   //[recogniser_base.flx]
   chip longest_match (a: list[recog_t])
     connector io
@@ -775,6 +789,7 @@ Equivalent to .* but faster.
 
 
 .. code-block:: felix
+
   //[recogniser_base.flx]
   chip toeos_matcher 
     connector io

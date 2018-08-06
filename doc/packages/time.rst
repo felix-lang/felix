@@ -24,6 +24,7 @@ current date and time of day.
 .. index:: Time_class
 .. index:: Time
 .. code-block:: felix
+
   //[time.flx]
   class Time_class [os] {
     virtual gen time: 1 -> double; // time in seconds since Jan 1 1970 UTC, seconds
@@ -45,6 +46,7 @@ Posix RTC
 
 .. index:: PosixTime
 .. code-block:: felix
+
   //[posix_time.flx]
   
   class PosixTime

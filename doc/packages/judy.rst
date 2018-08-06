@@ -21,6 +21,7 @@ Judy Builder
 
 
 .. code-block:: python
+
   #[judy.py]
   import fbuild
   import fbuild.db
@@ -122,6 +123,7 @@ def build_runtime(phase):
 
 
 .. code-block:: fpc
+
   //[unix32_judy.fpc]
   Name: Judy
   Description: Judy arrays
@@ -137,6 +139,7 @@ def build_runtime(phase):
 
 
 .. code-block:: fpc
+
   //[unix64_judy.fpc]
   Name: Judy
   Description: Judy arrays
@@ -152,6 +155,7 @@ def build_runtime(phase):
 
 
 .. code-block:: fpc
+
   //[win32_judy.fpc]
   Name: Judy WIN32 64 BIT
   Description: Judy arrays

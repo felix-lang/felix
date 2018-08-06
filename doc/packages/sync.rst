@@ -47,6 +47,7 @@ off a synchronous channel into the active queue.
 
 
 .. code-block:: cpp
+
   //[flx_sync.hpp]
   
   #ifndef __FLX_SYNC_H__
@@ -123,6 +124,7 @@ off a synchronous channel into the active queue.
 
 
 .. code-block:: cpp
+
   //[flx_sync.cpp]
   
   #include <stdio.h>

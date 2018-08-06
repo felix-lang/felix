@@ -39,6 +39,7 @@ Std.flx
 The top level library module.
 
 .. code-block:: felix
+
   //[std.flx]
   header '#include "flx_rtl_config.hpp"';
   include "std/__init__";
@@ -48,6 +49,7 @@ Default includes for Standard library.
 
 
 .. code-block:: text
+
   
   open String;
   
@@ -107,6 +109,7 @@ C stuff
 Structure of C sublibrary.
 
 .. code-block:: text
+
   
   include "std/c/c_headers";
   include "std/c/cxx_headers";
@@ -124,6 +127,7 @@ Data types
 Structure of datatype library.
 
 .. code-block:: text
+
   
   // special
   include "std/datatype/typing";
@@ -165,6 +169,7 @@ Posix
 Structure of Posix support library.
 
 .. code-block:: text
+
   
   struct Posix {};
   include "std/posix/posix_headers";
@@ -186,6 +191,7 @@ Win32
 Structure of Win32 library.
 
 .. code-block:: text
+
   
   struct Win32 {};
   
@@ -212,6 +218,7 @@ compilations requiring platform specific macros.
 
 
 .. code-block:: text
+
   // Platform independent compilation enforced by
   // failing to set any platform macros.
   macro val PLAT_INDEP = 1;
@@ -224,6 +231,7 @@ Hackery for mapping between Felix and C/C++.
 
 .. index:: C_hack
 .. code-block:: felix
+
   //[c_hack.flx]
   
   //$ This class provides access to raw C/C++ encodings.
@@ -304,6 +312,7 @@ Just to get random functions.
 
 .. index:: Cstdlib
 .. code-block:: felix
+
   //[cstdlib.flx]
   
   open class Cstdlib
@@ -327,6 +336,7 @@ OSX platform tag
 
 
 .. code-block:: text
+
   
   struct Osx{};
   include "std/posix/__init__";
@@ -337,6 +347,7 @@ Linux specifics
 
 
 .. code-block:: felix
+
   //[linux.flx]
   
   module Linux {

@@ -47,6 +47,7 @@ Synopsis.
 
 
 .. code-block:: felix
+
   //[init.flx]
   include "std/algebra/predicate";        // in logic.fdoc
   include "std/algebra/set";              // in algebra.fdoc
@@ -154,6 +155,7 @@ Note that sets are not necessarily finite.
 
 .. index:: Set
 .. code-block:: felix
+
   //[set.flx]
   // note: eq is not necessarily required for a membership test
   // for example: string member of regexp doesn't require
@@ -189,6 +191,7 @@ Syntax
 
 
 .. code-block:: felix
+
   //[setexpr.fsyn]
   syntax setexpr
   {
@@ -217,6 +220,7 @@ thereby abstracting it.
 
 
 .. code-block:: felix
+
   //[set.flx]
   interface set_form[T] { has_elt: T -> bool; }
   
@@ -245,6 +249,7 @@ binary operator :math:`\times`  spelled  :code:`\times`.
 
 
 .. code-block:: felix
+
   //[set.flx]
   
   fun \times[U,V] (x:set_form[U],y:set_form[V]) => 
@@ -270,6 +275,7 @@ Containers.
 
 .. index:: Container
 .. code-block:: felix
+
   //[container.flx]
   // roughly, a finite Set
   class Container [c,v]
@@ -327,6 +333,7 @@ An online reference on `Wikibooks <http://en.wikibooks.org/wiki/Abstract_Algebra
 
 .. index:: Eq
 .. code-block:: felix
+
   //[equiv.flx]
   // equality: technically, equivalence relation
   class Eq[t] {
@@ -348,6 +355,7 @@ Syntax
 
 
 .. code-block:: felix
+
   //[cmpexpr.fsyn]
   syntax cmpexpr
   {
@@ -381,6 +389,7 @@ exemplar of subset containment relations.
 
 .. index:: Pord
 .. code-block:: felix
+
   //[pord.flx]
   // partial order
   class Pord[t]{
@@ -413,6 +422,7 @@ Syntax
 
 
 .. code-block:: felix
+
   //[pordcmpexpr.fsyn]
   syntax pordcmpexpr
   {
@@ -453,6 +463,7 @@ holding the mouse over the symbol briefly.
 
 .. index:: Tord
 .. code-block:: felix
+
   //[tord.flx]
   // total order
   class Tord[t]{
@@ -526,6 +537,7 @@ Syntax
 
 
 .. code-block:: felix
+
   //[tordcmpexpr.fsyn]
   syntax tordcmpexpr
   {
@@ -569,6 +581,7 @@ Sequences
 .. index:: Forward
 .. index:: Bidirectional
 .. code-block:: felix
+
   //[sequence.flx]
   
   class Forward[t] {
@@ -606,6 +619,7 @@ the functions from class  :code:`Eq`.
 
 .. index:: FloatAddgrp
 .. code-block:: felix
+
   //[group.flx]
   //$ Additive symmetric float-approximate group, symbol +.
   //$ Note: associativity is not assumed.
@@ -641,6 +655,7 @@ Notation
 
 
 .. code-block:: felix
+
   //[addexpr.fsyn]
   syntax addexpr
   {
@@ -660,6 +675,7 @@ with associativity added.
 
 .. index:: Addgrp
 .. code-block:: felix
+
   //[group.flx]
   //$ Additive symmetric group, symbol +.
   class Addgrp[t] {
@@ -677,6 +693,7 @@ binary multiplication operator and a unit.
 
 .. index:: FloatMultSemi1
 .. code-block:: felix
+
   //[group.flx]
   //$ Multiplicative symmetric float-approximate semi group with unit symbol *.
   //$ Note: associativity is not assumed.
@@ -699,6 +716,7 @@ Syntax
 
 
 .. code-block:: felix
+
   //[mulexpr.fsyn]
   syntax mulexpr
   {
@@ -717,6 +735,7 @@ and satisfies the cancellation law.
 
 .. index:: MultSemi1
 .. code-block:: felix
+
   //[group.flx]
   //$ Multiplicative semi group with unit.
   class MultSemi1[t] {
@@ -739,6 +758,7 @@ additive group and multiplicative semigroup respectively.
 
 .. index:: FloatRing
 .. code-block:: felix
+
   //[ring.flx]
   //$ Float-approximate ring.
   class FloatRing[t] {
@@ -756,6 +776,7 @@ addition satisfies the distributive law.
 
 .. index:: Ring
 .. code-block:: felix
+
   //[ring.flx]
   //$ Ring.
   class Ring[t] {
@@ -772,6 +793,7 @@ with a division operator.
 
 .. index:: FloatDring
 .. code-block:: felix
+
   //[ring.flx]
   //$ Float-approximate division ring.
   class FloatDring[t] {
@@ -798,6 +820,7 @@ Syntax
 
 
 .. code-block:: felix
+
   //[divexpr.fsyn]
   syntax divexpr
   {
@@ -822,6 +845,7 @@ Division Ring
 
 .. index:: Dring
 .. code-block:: felix
+
   //[ring.flx]
   //$ Division ring.
   class Dring[t] {
@@ -840,6 +864,7 @@ Bitwise operations
 
 .. index:: Bits
 .. code-block:: felix
+
   //[bits.flx]
   
   //$ Bitwise operators.
@@ -865,6 +890,7 @@ Syntax
 
 
 .. code-block:: felix
+
   //[bitexpr.fsyn]
   syntax bitexpr
   {
@@ -893,6 +919,7 @@ Integer
 .. index:: Signed_integer
 .. index:: Unsigned_integer
 .. code-block:: felix
+
   //[integer.flx]
   
   //$ Integers.
@@ -940,6 +967,7 @@ real and complex numbers.
 .. index:: Trig
 .. index:: Special
 .. code-block:: felix
+
   //[trig.flx]
   
   //$ Float-approximate trigonometric functions.
@@ -1051,6 +1079,7 @@ Approximate Reals.
 
 .. index:: Real
 .. code-block:: felix
+
   //[real.flx]
   //$ Float-approximate real numbers.
   class Real[t] {
@@ -1086,6 +1115,7 @@ Complex numbers
 
 .. index:: Complex
 .. code-block:: felix
+
   //[complex.flx]
   //$ Float-approximate Complex.
   class Complex[t,r] {
@@ -1117,6 +1147,7 @@ To be moved. Folds over streams.
 
 .. index:: Quantifiers_add_mul
 .. code-block:: felix
+
   //[group.flx]
   open class Quantifiers_add_mul {
     fun \sum[T,C with FloatAddgrp[T], Streamable[C,T]] (a:C):T = 

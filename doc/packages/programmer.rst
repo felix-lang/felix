@@ -14,6 +14,7 @@ flx_tangle.flx $PWD/src/tools/flx_tangle.flx
 
 
 .. code-block:: felix
+
   //[flx_tangle.flx]
   //$ flx_tangle --inoutdir --indir=indir --outdir=outdir pattern ...
   //$ processes the file indir/basename.fdoc and generates
@@ -221,6 +222,7 @@ flx_tangle.flx $PWD/src/tools/flx_tangle.flx
   
 
 .. code-block:: felix
+
   //[flx_perror.flx]
   val e = int (System::argv 1);
   println$ "Errno " + str e + " " + Errno::strerror e.Errno::errno_t;

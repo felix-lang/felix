@@ -18,6 +18,7 @@ Grammar
 
 .. index:: Grammars
 .. code-block:: felix
+
   //[grammars.flx]
   
   class Grammars {

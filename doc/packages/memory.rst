@@ -19,6 +19,7 @@ Raw Address
 
 .. index:: Address
 .. code-block:: felix
+
   //[address.flx]
   
   //$ Core operations on addresses.

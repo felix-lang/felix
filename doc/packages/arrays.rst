@@ -41,6 +41,7 @@ comparison. Arrays don't come equipped with a comparison.
 
 .. index:: ArrayValue
 .. code-block:: felix
+
   //[array_class.flx]
   //$ Array as Value (immutable).
   class ArrayValue[t,v]
@@ -48,6 +49,7 @@ comparison. Arrays don't come equipped with a comparison.
 The length of the array.
 
 .. code-block:: felix
+
   //[array_class.flx]
     //$ Length.
     virtual fun len: t -> size;
@@ -56,11 +58,13 @@ Performance routine to fetch the n'th element
 of an array without any bounds checking.
 
 .. code-block:: felix
+
   //[array_class.flx]
     //$ Unchecked common indexing.
     virtual fun unsafe_get: t * size -> v;
 
 .. code-block:: felix
+
   //[array_class.flx]
     //$ Checked common indexing.
     fun get[I in ints] (x:t, i:I) = { 
@@ -83,6 +87,7 @@ Note that the more usual reverse application using
 operator dot  :code:`.` is also made available this way.
 
 .. code-block:: felix
+
   //[array_class.flx]
   
     //$  Checked common indexing.
@@ -90,6 +95,7 @@ operator dot  :code:`.` is also made available this way.
   
 
 .. code-block:: felix
+
   //[array_class.flx]
     //$ Callback based value iterator.
     virtual proc iter (_f:v->void) (x:t) {
@@ -103,6 +109,7 @@ operator dot  :code:`.` is also made available this way.
   
 
 .. code-block:: felix
+
   //[array_class.flx]
     //$ Callback based index and value iterator.
     //$ Callback f index value.
@@ -128,6 +135,7 @@ When that object finally returns  :code:`None` to signal the end
 of data, the loop terminates.
 
 .. code-block:: felix
+
   //[array_class.flx]
     instance Iterable[t,v] {
       //$ Stream  value iterator.
@@ -147,6 +155,7 @@ This HOF folds the values in an array into an accumulator
 using the supplied function. The scan is left to right.
 
 .. code-block:: felix
+
   //[array_class.flx]
     //$ Traditional left fold.
     virtual fun fold_left[u] (_f:u->v->u) (init:u) (x:t): u = {
@@ -164,6 +173,7 @@ This HOF folds the values in an array into an accumulator
 using the supplied function. The scan is right to left.
 
 .. code-block:: felix
+
   //[array_class.flx]
   //$ Traditional right fold.
     virtual fun fold_right[u] (_f:v->u->u) (x:t) (init:u): u = {
@@ -186,6 +196,7 @@ fold but the function is virtual and may be replaced
 by another more efficient ordering in an overriding function.
 
 .. code-block:: felix
+
   //[array_class.flx]
     virtual fun fold[u] (_f:u->v->u) (init:u) (x:t): u => 
       fold_left _f init x
@@ -195,6 +206,7 @@ the given predicate and returns a boolean value
 indicating whether one exists.
 
 .. code-block:: felix
+
   //[array_class.flx]
     //$ Membership by predicate.
     virtual fun mem(pred:v->bool) (x:t): bool = {
@@ -215,6 +227,7 @@ where the relation is applied in that order:  :code:`rel(i,v)`.
 The usual relation to use is equality.
 
 .. code-block:: felix
+
   //[array_class.flx]
     //$ Membership by relation to given value. 
     virtual fun mem[u] (rel:v*u->bool) (x:t) (e:u): bool =>
@@ -225,6 +238,7 @@ This function uses the default equality operator  :code:`Eq[v]::==` for
 the array value type t to perform a search.
 
 .. code-block:: felix
+
   //[array_class.flx]
     //$ Array as Set:
     //$ Membership by equality of value type.
@@ -237,6 +251,7 @@ Same as our  :code:`mem` function except it returns the located value
 as an option type.
 
 .. code-block:: felix
+
   //[array_class.flx]
     //$ Searching for value satisfying predicate.
     virtual fun find(pred:v->bool) (x:t): opt[v] = {
@@ -255,6 +270,7 @@ Same as our  :code:`mem` function except it returns the located value
 as an option type.
 
 .. code-block:: felix
+
   //[array_class.flx ]
     //$ Searching for value satisfying relation to given value.
     virtual fun find (rel:v*v->bool) (x:t) (e:v): opt[v] = {
@@ -272,6 +288,7 @@ as an option type.
   
 
 .. code-block:: felix
+
   //[array_class.flx]
     fun \sum [with FloatAddgrp[v]] (it:t) =
     {
@@ -282,6 +299,7 @@ as an option type.
   
 
 .. code-block:: felix
+
   //[array_class.flx]
     fun \prod[with FloatMultSemi1[v]] (it:t) =
     {
@@ -298,6 +316,7 @@ version that also returns the index.
 
 
 .. code-block:: felix
+
   //[array_class.flx]
   }
   
@@ -315,6 +334,7 @@ This work is incomplete.
 
 .. index:: TrueArrayValue
 .. code-block:: felix
+
   //[array_class.flx]
   
   class TrueArrayValue [t,x,v] 
@@ -334,6 +354,7 @@ represented by a pointer, so it also uses pass by reference.
 
 .. index:: ArrayObject
 .. code-block:: felix
+
   //[array_class.flx]
   //$ Array as Object (mutable).
   class ArrayObject[t,v]
@@ -344,6 +365,7 @@ Modify an array object at a given index position
 by assigning a new value without a bounds check.
 
 .. code-block:: felix
+
   //[array_class.flx]
     // Unsafe store value into array by common index.
     virtual proc unsafe_set: t * size * v;
@@ -354,6 +376,7 @@ will not satisfy this requirement. Do we need
 another abstraction?
 
 .. code-block:: felix
+
   //[array_class.flx]
     virtual fun unsafe_get_ref : t * size -> &v;
   
@@ -361,6 +384,7 @@ Modify an array object by assigning a new value
 to the slot at a given index position. Bounds checked.
 
 .. code-block:: felix
+
   //[array_class.flx]
     // Checked store value into array by common index.
     proc set[I in ints] (x:t, i:I, a:v) { 
@@ -370,6 +394,7 @@ to the slot at a given index position. Bounds checked.
 
 
 .. code-block:: felix
+
   //[array_class.flx]
     fun n"&." [I in ints] (x:t, i:I) : &v = {
       assert i.size < x.len; 
@@ -386,6 +411,7 @@ where the index type is fixed.
 
 .. index:: TrueArrayObject
 .. code-block:: felix
+
   //[array_class.flx]
   class TrueArrayObject[t,x, v]
   {
@@ -410,6 +436,7 @@ type  :code:`carray[v]` is an alias for  :code:`+v`.
 
 .. index:: ContiguousArrayObject
 .. code-block:: felix
+
   //[array_class.flx]
   //$ Array as Contiguous STL Object.
   //$ Provides STL iterators type +v
@@ -419,6 +446,7 @@ type  :code:`carray[v]` is an alias for  :code:`+v`.
   
 
 .. code-block:: felix
+
   //[array_class.flx]
     //$ Start of array iterator.
     virtual fun stl_begin: t -> +v;
@@ -430,6 +458,7 @@ We allow adding an integer to an array object to yield
 an incrementable pointer to that element. 
 
 .. code-block:: felix
+
   //[array_class.flx]
     //$ Add integer to iterator.
     fun + [I in ints] (pa:t, i:I) : carray [v] = { 
@@ -442,6 +471,7 @@ sort and a supplied comparator, which must be a
 total order.
 
 .. code-block:: felix
+
   //[array_class.flx]
     //$ In place sort using STL sort with Felix comparator.
     proc sort (cmp: v * v -> bool) (a:t) {
@@ -455,6 +485,7 @@ Inplace sort using default comparator.
 
 
 .. code-block:: felix
+
   //[array_class.flx]
     //$ In place sort using STL sort with default comparison.
     proc sort[with Tord[v]] (a:t) => sort (< of (v*v)) a;
@@ -470,6 +501,7 @@ Incomplete.
 
 .. index:: TrueContiguousArrayObject
 .. code-block:: felix
+
   //[array_class.flx]
   class TrueContiguousArrayObject[t,x, v] 
   {
@@ -485,6 +517,7 @@ Array
 
 .. index:: Farray
 .. code-block:: felix
+
   //[array.flx]
   
   //$ Compile time fix length array.
@@ -693,6 +726,7 @@ Varray
 
 .. index:: Varray
 .. code-block:: felix
+
   //[varray.flx]
   
   //$ Bounded Variable length arrays, bound set at construction time.
@@ -1012,6 +1046,7 @@ Darray
 
 
 .. code-block:: felix
+
   //[darray.flx]
   
   
@@ -1036,6 +1071,7 @@ O(1) speed is obtained at the cost of a lot of memory wastage.
 
 .. index:: Darray
 .. code-block:: felix
+
   //[darray.flx]
   //$ Unbounded Variable length object array.
   open class Darray
@@ -1052,6 +1088,7 @@ recommended amount of store.
 
 
 .. code-block:: felix
+
   //[darray.flx]
     private struct darray_ctl[T]
     {
@@ -1073,6 +1110,7 @@ case the array is empty, when the size is set to 0.
 
 
 .. code-block:: felix
+
   //[darray.flx]
     //$ This is the default array resize function.
     //$ If we run out of space, allocate what we have + 50%.
@@ -1099,6 +1137,7 @@ the underlying control block.
 
 
 .. code-block:: felix
+
   //[darray.flx]
     //$ Type of a darray.
     type darray[T] = new &darray_ctl[T];
@@ -1117,6 +1156,7 @@ operation such as a  :code:`push_back` or  :code:`pop_back`.
 
 
 .. code-block:: felix
+
   //[darray.flx]
     //$ Force a resize.
     //$ Similar to C++ vector reserve function.
@@ -1132,6 +1172,7 @@ Constructors.
 
 
 .. code-block:: felix
+
   //[darray.flx]
     //$ Make an empty darray, give it 20 slots for no particular reason.
     ctor[T] darray[T] () => 
@@ -1158,6 +1199,7 @@ As a value.
 
 
 .. code-block:: felix
+
   //[darray.flx]
     //$ Basic array value stuff.
     instance[v] ArrayValue[darray[v],v] {
@@ -1171,6 +1213,7 @@ As an object.
 
 
 .. code-block:: felix
+
   //[darray.flx]
     //$ Basic array object stuff.
     instance[v] ArrayObject[darray[v],v] {
@@ -1184,6 +1227,7 @@ As an contiguous array.
 
 
 .. code-block:: felix
+
   //[darray.flx]
     //$ Contrue as contiguous store.
     instance[v] ContiguousArrayObject[darray[v],v] {
@@ -1199,6 +1243,7 @@ Generally, this class is very incomplete.
 
 
 .. code-block:: felix
+
   //[darray.flx]
     //$ Pop a value from the end.
     //$ Same as pop_back in C++.
@@ -1251,6 +1296,7 @@ Convert a darray to a string.
 
 
 .. code-block:: felix
+
   //[darray.flx]
     // uses _repr_ so has to be in the module
     instance[T with Show[T]] Str[Darray::darray[T]] {
@@ -1265,6 +1311,7 @@ Enable map on darray objects.
 
 
 .. code-block:: felix
+
   //[darray.flx]
     //$ Traditional map darray to darray.
     fun map[T, U] (_f:T->U) (arr:darray[T]): darray[U] = {
@@ -1285,6 +1332,7 @@ Enable filter on darray objects
 
 
 .. code-block:: felix
+
   //[darray.flx]
   
     //$ Return a sub list with elements satisfying the given predicate.
@@ -1313,6 +1361,7 @@ Should be in main class body.
 
 
 .. code-block:: felix
+
   //[darray.flx]
   //$ Construe a darray as a Set.
   instance[T with Eq[T]] Set[darray[T],T] {
@@ -1339,6 +1388,7 @@ Sarray
 
 .. index:: Sarray
 .. code-block:: felix
+
   //[sarray.flx]
   
   //$ Unbounded sparse psuedo-array sarray.

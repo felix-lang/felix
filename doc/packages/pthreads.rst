@@ -31,6 +31,7 @@ Pthread Synopsis
 
 
 .. code-block:: felix
+
   //[__init__.flx]
   
   // pthreads (portable)
@@ -68,6 +69,7 @@ synchronisation instead.
 
 .. index:: Pthread
 .. code-block:: felix
+
   //[pthread.flx]
   
   header pthread_hxx = '#include "pthread_thread.hpp"';
@@ -124,6 +126,7 @@ error.
 
 .. index:: Pchannel
 .. code-block:: felix
+
   //[pchannels.flx]
   
   //$ Pchannels are unbuffered synchronisation points
@@ -211,6 +214,7 @@ Ppipes.
 
 .. index:: Ppipe
 .. code-block:: felix
+
   //[ppipe.flx]
   
   //$ Asynchronous Synchronous Pipe.
@@ -333,6 +337,7 @@ Fork/Join.
 
 .. index:: ForkJoin
 .. code-block:: felix
+
   //[forkjoin.flx]
   include "std/pthread/pchannels";
   
@@ -380,6 +385,7 @@ after use manually, they're not garbage collected.
 
 .. index:: Mutex
 .. code-block:: felix
+
   //[mutex.flx]
   
   open class Mutex
@@ -423,6 +429,7 @@ to go elsewhere!
 
 .. index:: Semaphore
 .. code-block:: felix
+
   //[semaphore.flx]
   
   open class Semaphore
@@ -446,6 +453,7 @@ Condition Variables.
 
 .. index:: Condition_Variable
 .. code-block:: felix
+
   //[condition_variable.flx]
   
   //$ Condition Variable for pthread synchronisation.
@@ -492,6 +500,7 @@ Probably redundant now we have upgraded to C++11 and have atomics.
 
 .. index:: Ts_counter
 .. code-block:: felix
+
   //[ts_counter.flx]
   
   open class Ts_counter
@@ -517,6 +526,7 @@ Thread Safe Bound Queue.
 
 .. index:: TS_Bound_Queue
 .. code-block:: felix
+
   //[ts_bound_queue.flx]
   
   open class TS_Bound_Queue
@@ -595,6 +605,7 @@ Atomic operations
 
 .. index:: Atomic
 .. code-block:: felix
+
   //[atomic.flx]
   open class Atomic
   {
@@ -641,6 +652,7 @@ overhead posting a job.
 
 .. index:: ThreadPool
 .. code-block:: felix
+
   //[threadpool.flx]
   
   include "std/pthread/ts_bound_queue";
@@ -798,6 +810,7 @@ Parallel loop grammar
 
 
 .. code-block:: felix
+
   //[pfor.fsyn]
   syntax pfor
   {

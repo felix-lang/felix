@@ -47,6 +47,7 @@ Filename
 .. index:: PosixFilename
 .. index:: Filename
 .. code-block:: felix
+
   //[filename.flx]
   
   //$ Operations on filenames.
@@ -227,6 +228,7 @@ Filestat
 .. index:: FileStat_class
 .. index:: FileStat
 .. code-block:: felix
+
   //[filestat.flx]
   
   //$ Filesystem file kind query functions parametrised
@@ -369,6 +371,7 @@ Posix FileStat
 
 .. index:: PosixFileStat
 .. code-block:: felix
+
   //[posix_filestat.flx]
   
   class PosixFileStat
@@ -467,6 +470,7 @@ Win32 FileStat
 
 .. index:: Win32FileStat
 .. code-block:: felix
+
   //[win32_filestat.flx]
   
   class Win32FileStat
@@ -549,6 +553,7 @@ File Syetem
 .. index:: FileSystem_class
 .. index:: FileSystem
 .. code-block:: felix
+
   //[filesystem.flx]
   
   //$ Filesystem operations parametrised by operating system.
@@ -684,6 +689,7 @@ Posix File Syetem
 
 .. index:: PosixFileSystem
 .. code-block:: felix
+
   //[posix_filesystem.flx]
   
   class PosixFileSystem 
@@ -845,6 +851,7 @@ Win32 File Syetem
 
 .. index:: Win32FileSystem
 .. code-block:: felix
+
   //[win32_filesystem.flx]
   
   class Win32FileSystem 
@@ -1011,6 +1018,7 @@ Directory
 .. index:: Directory_class
 .. index:: Directory
 .. code-block:: felix
+
   //[directory.flx]
   
   //$ File system directory services,
@@ -1061,6 +1069,7 @@ Posix Directory Services
 
 .. index:: PosixDirectory
 .. code-block:: felix
+
   //[posix_directory.flx]
   
   class PosixDirectory

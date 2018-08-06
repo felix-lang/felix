@@ -55,6 +55,7 @@ and the Felix bindings thereof. SDL_ttf and SDL_image are
 required too for font and image handling.
 
 .. code-block:: felix
+
   //[__init__.flx]
   include "sdl/SDL2";
   include "sdl/SDL_ttf";
@@ -63,6 +64,7 @@ required too for font and image handling.
 The basic SDL initialisation stuff.
 
 .. code-block:: felix
+
   //[__init__.flx]
   include "gui/init";
   include "gui/types";
@@ -84,6 +86,7 @@ from the client mouse and keyboard.
 
 
 .. code-block:: felix
+
   //[__init__.flx]
   include "gui/color";
   include "gui/surface";
@@ -117,12 +120,14 @@ protocols which allow plugins to provide services.
 Buttons and menus.
 
 .. code-block:: felix
+
   //[__init__.flx]
   include "gui/button";
   include "gui/menu";
 
 
 .. code-block:: felix
+
   //[__init__.flx]
   include "gui/line_buffer_interface";
   include "gui/line_buffer_object";
@@ -139,6 +144,7 @@ class to make it a all a bit easier to use.
 
 .. index:: FlxGui
 .. code-block:: felix
+
   //[__init__.flx]
   class FlxGui 
   {
@@ -184,6 +190,7 @@ from the well presented sum type Felix would use.
 
 .. index:: FlxGuiTypes
 .. code-block:: felix
+
   //[types.flx]
   class FlxGuiTypes
   {
@@ -216,6 +223,7 @@ from the well presented sum type Felix would use.
 
 .. index:: FlxGuiEvents
 .. code-block:: felix
+
   //[events.flx]
   class FlxGuiEvents
   {
@@ -307,6 +315,7 @@ the compiled header files and the binary linked in.
 
 .. index:: FlxGuiInit
 .. code-block:: felix
+
   //[init.flx]
   class FlxGuiInit
   {
@@ -380,6 +389,7 @@ from having to set up a font library Felix knows about.
 
 .. index:: FlxGuiFont
 .. code-block:: felix
+
   //[font.flx]
   class FlxGuiFont
   {
@@ -456,6 +466,7 @@ rendering.
 
 .. index:: FlxGuiColor
 .. code-block:: felix
+
   //[color.flx]
   class FlxGuiColor
   {
@@ -503,6 +514,7 @@ not need that in GUI.
 
 .. index:: FlxGuiSurface
 .. code-block:: felix
+
   //[surface.flx]
   class FlxGuiSurface
   {
@@ -629,6 +641,7 @@ with lowest z are applied first.
 
 .. index:: FlxGuiDrawable
 .. code-block:: felix
+
   //[drawable.flx]
   class FlxGuiDrawable
   {
@@ -678,6 +691,7 @@ clicks triggering state changes.
 
 .. index:: FlxGuiDrawChain
 .. code-block:: felix
+
   //[drawchain.flx]
   include "gui/__init__";
   class FlxGuiDrawChain
@@ -761,6 +775,7 @@ replaced by a populated display.
 
 .. index:: FlxGuiWindow
 .. code-block:: felix
+
   //[window.flx]
   class FlxGuiWindow
   {
@@ -863,6 +878,7 @@ service events.
 
 .. index:: FlxGuiWindowControllerInterface
 .. code-block:: felix
+
   //[window_controller_interface.flx]
   class FlxGuiWindowControllerInterface
   {
@@ -881,6 +897,7 @@ service events.
 
 .. index:: FlxGuiWindowController
 .. code-block:: felix
+
   //[window_controller.flx]
   
   class FlxGuiWindowController
@@ -942,6 +959,7 @@ listens for events.
 
 .. index:: FlxGuiWindowManager
 .. code-block:: felix
+
   //[window_manager.flx]
   class FlxGuiWindowManager
   {
@@ -1122,6 +1140,7 @@ Simple Click Button
 
 .. index:: FlxGuiButton
 .. code-block:: felix
+
   //[button.flx]
   class FlxGuiButton
   {
@@ -1310,6 +1329,7 @@ Cascading Menu
 
 .. index:: FlxGuiMenu
 .. code-block:: felix
+
   //[menu.flx]
   // interim menu stuff
   // these menus are transient, retaining state only when open
@@ -1975,6 +1995,7 @@ Cascading Menu
 
 .. index:: FlxGuiLineBufferDisplayControllerInterface
 .. code-block:: felix
+
   //[line_buffer_display_controller_interface.flx]
   class FlxGuiLineBufferDisplayControllerInterface
   {
@@ -1992,6 +2013,7 @@ Cascading Menu
 
 .. index:: FlxGuiLineBufferDisplayController
 .. code-block:: felix
+
   //[line_buffer_display_controller.flx]
   include "gui/line_buffer_display_controller_interface";
   
@@ -2055,6 +2077,7 @@ Cascading Menu
 
 .. index:: FlxGuiLineBufferInterface
 .. code-block:: felix
+
   //[line_buffer_interface.flx]
   class FlxGuiLineBufferInterface
   {
@@ -2088,6 +2111,7 @@ Cascading Menu
 
 .. index:: FlxGuiLineBuffer
 .. code-block:: felix
+
   //[line_buffer_object.flx]
   include "gui/line_buffer_interface";
   
@@ -2168,6 +2192,7 @@ Cascading Menu
 
 .. index:: FlxGuiLineEditor
 .. code-block:: felix
+
   //[line_editor.flx]
   class FlxGuiLineEditor
   {

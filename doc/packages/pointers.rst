@@ -31,6 +31,7 @@ C pointer
 .. index:: AbstractPointers
 .. index:: Cptr
 .. code-block:: felix
+
   //[cptr.flx]
   
   // move to separate file later.
@@ -133,6 +134,7 @@ is an incrementable, non-NULL pointer to a contiguous store.
 
 .. index:: Carray
 .. code-block:: felix
+
   //[carray.flx]
   
   
@@ -159,6 +161,7 @@ to reserve such carrays for C datatypes.
 
 
 .. code-block:: felix
+
   //[carray.flx]
   
     //$ Allocate a C array on the C heap (malloc).
@@ -179,6 +182,7 @@ Dereference
 
 
 .. code-block:: felix
+
   //[carray.flx]
   
     //$ Functional get by index.
@@ -200,6 +204,7 @@ of lvalues in general: this is a very special case.
 
 
 .. code-block:: felix
+
   //[carray.flx]
     //$ Lvalue reference to element by index position. Unsafe.
     //lvalue fun subscript[T]: carray[T] * !ints -> T = '$1[$2]';
@@ -215,6 +220,7 @@ Pointer operators
 
 
 .. code-block:: felix
+
   //[carray.flx]
     //$ Advance carray to next element.
     fun + [T]: carray[T] * !ints -> carray[T]= '$1+$2';
@@ -232,6 +238,7 @@ Mutators
 
 
 .. code-block:: felix
+
   //[carray.flx]
   
     //$ Mutable pre-increment ++p.
@@ -258,6 +265,7 @@ Comparisons
 
 
 .. code-block:: felix
+
   //[carray.flx]
   
     //$ Pointer equality.
@@ -279,6 +287,7 @@ Conversions
 
 
 .. code-block:: felix
+
   //[carray.flx]
     //$ Get carray of an array.
     fun stl_begin[T,N]: carray[array[T,N]] -> carray[T] = "(?1*)&($1->data)";
@@ -305,6 +314,7 @@ Conversions
 
 
 .. code-block:: felix
+
   //[carray_test.flx]
   // carray test
   
@@ -319,6 +329,7 @@ Conversions
   free a;
 
 .. code-block:: text
+
   (1, 1, 1)
   (2, 2, 2)
   (5, 5, 5)
@@ -339,6 +350,7 @@ Sort an array using STL sort.
 
 .. index:: Sort
 .. code-block:: felix
+
   //[sort.flx]
   
   //$ Utility class to leverage STL sort.
@@ -392,6 +404,7 @@ Reference counting pointer.
 
 .. index:: SharedPtr
 .. code-block:: felix
+
   //[shared_ptr.flx]
   open class SharedPtr
   {

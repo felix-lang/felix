@@ -25,6 +25,7 @@ Core Type Classes
 
 
 .. code-block:: felix
+
   //[special.flx]
   
   // Core types and type classes
@@ -38,6 +39,7 @@ Type Functors
 
 .. index:: Typing
 .. code-block:: felix
+
   //[typing.flx]
   open class Typing
   {
@@ -126,6 +128,7 @@ Option
 .. index:: Option
 .. index:: DefaultValue
 .. code-block:: felix
+
   //[option.flx]
   
   // Note: some felix internals expect this to be defined here, not in a class, and
@@ -250,6 +253,7 @@ Slice
 
 
 .. code-block:: felix
+
   //[slice.flx]
   
   union slice[T] =
@@ -419,6 +423,7 @@ Treated as finite cyclic groups.
 
 
 .. code-block:: felix
+
   //[unitsum.flx]
   
   // -----------------------------------------------------------------------------
@@ -510,6 +515,7 @@ Category Theoretic Functional Operations
 
 .. index:: Functional
 .. code-block:: felix
+
   //[functional.flx]
   
   //$ Categorical Operators
@@ -593,6 +599,7 @@ Tuples
 .. index:: Tuple
 .. index:: parallel_tuple_comp
 .. code-block:: felix
+
   //[tuple.flx]
   
   //------------------------------------------------------------------------------

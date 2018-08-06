@@ -42,6 +42,7 @@ used to initiate a Felix world.
 
 .. index:: RTL_EXTERN
 .. code-block:: cpp
+
   //[flx_world_config.hpp]
   
   #ifndef __flx_world_config_H_
@@ -111,6 +112,7 @@ used to initiate a Felix world.
 
 
 .. code-block:: cpp
+
   //[flx_world_config.cpp]
   
   #include "flx_world_config.hpp"
@@ -249,6 +251,7 @@ a Felix world.
 
 .. index:: RTL_EXTERN
 .. code-block:: cpp
+
   //[flx_world.hpp]
   
   #ifndef __flx_world_H_
@@ -318,6 +321,7 @@ a Felix world.
 
 
 .. code-block:: cpp
+
   //[flx_world.cpp]
   
   #include "flx_world.hpp"
@@ -711,6 +715,7 @@ The Asychronous Support System
 
 
 .. code-block:: cpp
+
   //[flx_async_world.hpp]
   
   #ifndef __flx_async_world_H_
@@ -772,6 +777,7 @@ The Asychronous Support System
 
 
 .. code-block:: cpp
+
   //[flx_async_world.cpp ]
   
   
@@ -1011,6 +1017,7 @@ not the implementation.
 .. index:: ASYNC_EXTERN
 .. index:: ASYNC_EXTERN
 .. code-block:: cpp
+
   //[flx_async.hpp]
   #ifndef __FLX_ASYNC_H__
   #define __FLX_ASYNC_H__
@@ -1096,6 +1103,7 @@ not the implementation.
 .. index:: async_hooker_impl
 .. index:: proto_async
 .. code-block:: cpp
+
   //[flx_async.cpp]
   #include "flx_async.hpp"
   #include "pthread_bound_queue.hpp"
@@ -1213,6 +1221,7 @@ Config
 
 
 .. code-block:: fpc
+
   //[unix_flx_async.fpc]
   Name: flx_async
   Description: Async hook
@@ -1227,6 +1236,7 @@ Config
 
 
 .. code-block:: fpc
+
   //[win32_flx_async.fpc]
   Name: flx_async
   Description: Async hook
@@ -1241,6 +1251,7 @@ Config
 
 
 .. code-block:: python
+
   #[flx_async.py]
   import fbuild
   from fbuild.functools import call

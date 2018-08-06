@@ -32,6 +32,7 @@ is given.
 
 .. index:: FlxPkgConfig_core
 .. code-block:: felix
+
   //[flx_pkgconfig_core.flx]
   class FlxPkgConfig_core
   {
@@ -433,6 +434,7 @@ It exits with the return code that function returns.
 
 
 .. code-block:: felix
+
   //[flx_pkgconfig_tool.flx]
   include "std/felix/flx_pkgconfig";
   
@@ -487,6 +489,7 @@ Database query object interface.
 
 .. index:: FlxPkgConfigQuery_interface
 .. code-block:: felix
+
   //[flx_pkgconfig_query_interface.flx]
   class FlxPkgConfigQuery_interface
   {
@@ -509,6 +512,7 @@ Depends on on the CLI function interface.
 
 .. index:: FlxPkgConfig_query
 .. code-block:: felix
+
   //[flx_pkgconfig_query.flx]
   include "std/felix/flx_pkgconfig_core";
   include "std/felix/flx_pkgconfig_query_interface";
@@ -637,6 +641,7 @@ single include file and with a single wrapping namespace.
 
 .. index:: FlxPkgConfig
 .. code-block:: felix
+
   //[flx_pkgconfig.flx]
   include "std/felix/flx_pkgconfig_core";
   include "std/felix/flx_pkgconfig_query_interface";
@@ -661,6 +666,7 @@ exported.
 
 
 .. code-block:: felix
+
   //[flx_pkgconfig_export.flx]
   include "std/felix/flx_pkgconfig";
   
@@ -710,6 +716,7 @@ This has to be FIXED so flx can run in non-stop mode.
 
 .. index:: FlxPkg
 .. code-block:: felix
+
   //[flx_pkg.flx]
   include "std/felix/flx_pkgconfig";
   

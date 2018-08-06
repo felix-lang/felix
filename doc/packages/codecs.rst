@@ -20,6 +20,7 @@ Synopsis
 
 
 .. code-block:: felix
+
   //[__init__.flx]
   
   include "std/codec/csv";
@@ -34,6 +35,7 @@ Base64
 
 .. index:: Base64
 .. code-block:: felix
+
   //[base64.flx]
   
   //$ Base64 encode/decode functions.
@@ -178,6 +180,7 @@ Csv
 
 .. index:: Csv
 .. code-block:: felix
+
   //[csv.flx]
   
   //$ Comma Separated Values (CSV) reader

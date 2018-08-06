@@ -29,6 +29,7 @@ Fibres (fthreads)
 
 .. index:: Fibres
 .. code-block:: felix
+
   //[fibres.flx]
   
   //$ Low level management of Felix fthreads (fibres).
@@ -205,6 +206,7 @@ Synchronous Channels
 
 .. index:: Schannel
 .. code-block:: felix
+
   //[schannels.flx]
   
   //$ Sychronous Channels.
@@ -374,6 +376,7 @@ get all the input data, but the order is indeterminate.
 
 .. index:: Multiplexor
 .. code-block:: felix
+
   //[mux.flx]
   
   //$ Schannel multiplexor.
@@ -416,6 +419,7 @@ schannel types.
 
 .. index:: DuplexSchannels
 .. code-block:: felix
+
   //[schannels.flx]
   syntax spipeexpr 
   {
@@ -512,6 +516,7 @@ schannel types.
 Let's now rewrite our example:
 
 .. code-block:: felix
+
   //[subrout-02.flx]
   proc int_to_string (ch: %<int%>string)  ()
   {
@@ -524,12 +529,14 @@ Let's now rewrite our example:
   println$ rw 42;
 
 .. code-block:: text
+
   42
 
 Even more compactly:
 
 
 .. code-block:: felix
+
   //[subrout-03.flx]
   proc int_to_string (ch: %<int%>string)  ()
   {
@@ -540,6 +547,7 @@ Even more compactly:
   println$ int_to_string 42;
 
 .. code-block:: text
+
   42
 
 

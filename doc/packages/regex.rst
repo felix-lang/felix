@@ -42,6 +42,7 @@ RE2 Bootstrap Builder
 
 
 .. code-block:: python
+
   #[re2.py]
   
   import fbuild
@@ -130,6 +131,7 @@ String handling
 
 
 .. code-block:: felix
+
   //[__init__.flx]
   include "std/regex/re2";
   include "std/regex/tre";
@@ -144,6 +146,7 @@ RE2 regexps
 
 .. index:: Re2
 .. code-block:: felix
+
   //[re2.flx]
   
   include "stl/stl_map";
@@ -400,6 +403,7 @@ Regular definitions
 
 .. index:: Regdef
 .. code-block:: felix
+
   //[regdef.flx]
   
   class Regdef {
@@ -478,6 +482,7 @@ Syntax
 
 
 .. code-block:: felix
+
   //[regexps.fsyn]
   
   //$ Syntax for regular definitions.
@@ -591,6 +596,7 @@ Lexer
 
 .. index:: Lexer
 .. code-block:: felix
+
   //[lexer.flx]
   class Lexer
   {
@@ -627,6 +633,7 @@ Config
 
 
 .. code-block:: fpc
+
   //[unix_re2.fpc]
   Name: Re2
   Description: Google Re2 regexp library
@@ -642,6 +649,7 @@ Config
 
 
 .. code-block:: fpc
+
   //[win32_re2.fpc]
   Name: Re2
   Description: Google Re2 regexp library
@@ -657,6 +665,7 @@ Config
 
 
 .. code-block:: cpp
+
   //[flx_re2_config.hpp]
   #ifndef __FLX_RE2_CONFIG_H__
   #define __FLX_RE2_CONFIG_H__

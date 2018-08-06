@@ -28,6 +28,7 @@ Faio Driver
 
 
 .. code-block:: cpp
+
   //[faio_drv.hpp]
   #ifndef __FLX_FAIO_DRV_H__
   #define __FLX_FAIO_DRV_H__
@@ -75,6 +76,7 @@ Faio I/O
 .. index:: FAIO_EXTERN
 .. index:: FAIO_EXTERN
 .. code-block:: cpp
+
   //[faio_posixio.hpp]
   #ifndef __FLX_FAIO_POSIXIO_H__
   #define __FLX_FAIO_POSIXIO_H__
@@ -153,6 +155,7 @@ Faio I/O
   #endif
 
 .. code-block:: cpp
+
   //[faio_posixio.cpp]
   #include <stdio.h>      // printf
   #include "faio_posixio.hpp"
@@ -378,6 +381,7 @@ Faio I/O
 .. index:: FAIO_EXTERN
 .. index:: FAIO_EXTERN
 .. code-block:: cpp
+
   //[faio_winio.hpp]
   #ifndef __FLX_FAIO_WINIO_H__
   #define __FLX_FAIO_WINIO_H__
@@ -506,6 +510,7 @@ Faio I/O
   #endif  // __DWINIO__
 
 .. code-block:: cpp
+
   //[faio_winio.cpp]
   #include "faio_winio.hpp"
   #include <stdio.h>      // printf
@@ -634,6 +639,7 @@ Faio Timer
 
 .. index:: FAIO_EXTERN
 .. code-block:: cpp
+
   //[faio_timer.hpp]
   #ifndef __FLX_FAIO_TIMER_H__
   #define __FLX_FAIO_TIMER_H__
@@ -672,6 +678,7 @@ Faio Timer
   #endif
 
 .. code-block:: cpp
+
   //[faio_timer.cpp]
   #include "faio_timer.hpp"
   
@@ -694,6 +701,7 @@ Faio Timer
 
 
 .. code-block:: fpc
+
   //[timer.fpc]
   Name: Timer
   Description: Real time clock services
@@ -702,6 +710,7 @@ Faio Timer
 
 
 .. code-block:: fpc
+
   //[unix_faio.fpc]
   Name: faio
   Description: Asynchronous I/O support
@@ -717,6 +726,7 @@ Faio Timer
 
 
 .. code-block:: fpc
+
   //[win32_faio.fpc]
   Name: faio
   Description: Asynchronous I/O support
@@ -732,6 +742,7 @@ Faio Timer
 
 
 .. code-block:: python
+
   #[faio.py]
   import fbuild
   from fbuild.functools import call
@@ -786,6 +797,7 @@ Faio Timer
 
 
 .. code-block:: cpp
+
   //[flx_faio_config.hpp]
   #ifndef __FLX_FAIO_CONFIG_H__
   #define __FLX_FAIO_CONFIG_H__

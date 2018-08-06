@@ -38,6 +38,7 @@ to only 8 cbools.
 .. index:: Bool
 .. index:: CBool
 .. code-block:: felix
+
   //[bool.flx]
   typedef bool = 2;
   type cbool = "bool" requires index TYPE_cbool; 
@@ -186,6 +187,7 @@ Syntax
 
 
 .. code-block:: felix
+
   //[boolexpr.fsyn]
   syntax boolexpr
   {

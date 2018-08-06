@@ -52,6 +52,7 @@ Felix library concordance macros
 
 
 .. code-block:: text
+
   macro val FLX_CONCORDANCE_LOADED=true;
   // put other things here later when it is working.
   macro val TYPE_tiny     = 100;
@@ -108,6 +109,7 @@ Felix library concordance macros
 
 
 .. code-block:: felix
+
   //[concordance_check.flx]
   // if this compiles it should run.
   println$ "Checking concordance is loaded";
@@ -115,6 +117,7 @@ Felix library concordance macros
 
 
 .. code-block:: text
+
   let flx_tiny=100
   let flx_short=101
   let flx_int=102

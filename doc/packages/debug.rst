@@ -24,6 +24,7 @@ Debugging Aid.
 
 .. index:: Debug
 .. code-block:: felix
+
   //[debug.flx]
   // the internal representation of a Felix source location
   // has to be global to simplify compiler hack
@@ -82,6 +83,7 @@ The translation from the C macros used are done by the C++ compiler.
 
 
 .. code-block:: felix
+
   //[debug.fsyn]
   syntax debug
   {
@@ -95,6 +97,7 @@ UDP based trace support
 This stuff only on Posix so far.
 
 .. code-block:: cpp
+
   //[flx_udp_trace.hpp]
   #include "flx_rtl_config.hpp"
   #include <string>
@@ -106,6 +109,7 @@ This stuff only on Posix so far.
   
 
 .. code-block:: cpp
+
   //[flx_udp_trace.cpp]
   #ifdef _WIN32
   #include <stdio.h>

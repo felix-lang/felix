@@ -17,6 +17,7 @@ Chips to providing parsing functions.
 
 .. index:: Parsers
 .. code-block:: felix
+
   //[parsers.flx]
   include "std/control/chips";
   include "std/strings/recognisers";
@@ -638,6 +639,7 @@ Chips to providing parsing functions.
 
 
 .. code-block:: felix
+
   //[parser_syn.fsyn]
   
   syntax parser_syn

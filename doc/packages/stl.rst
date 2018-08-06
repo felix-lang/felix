@@ -32,6 +32,7 @@ Stl Iterators
 .. index:: Reversible_Sequence
 .. index:: Stl
 .. code-block:: felix
+
   //[stl.flx]
   
   class Iterator[it,t] {
@@ -92,6 +93,7 @@ Stl Vector
 
 .. index:: Stl_Vector
 .. code-block:: felix
+
   //[stl_vector.flx]
   
   include "stl/stl";
@@ -201,6 +203,7 @@ Stl Set
 
 .. index:: Stl_Set
 .. code-block:: felix
+
   //[stl_set.flx]
   
   include "stl/stl";
@@ -299,6 +302,7 @@ Stl Multiset
 
 .. index:: Stl_MultiSet
 .. code-block:: felix
+
   //[stl_multiset.flx]
   
   include "stl/stl";
@@ -396,6 +400,7 @@ Stl Map
 
 .. index:: Stl_Map
 .. code-block:: felix
+
   //[stl_map.flx]
   
   include "stl/stl";
@@ -496,6 +501,7 @@ Stl Multimap
 
 .. index:: Stl_MultiMap
 .. code-block:: felix
+
   //[stl_multimap.flx]
   
   include "stl/stl";
@@ -594,6 +600,7 @@ Stl List
 
 .. index:: Stl_List
 .. code-block:: felix
+
   //[stl_list.flx]
   
   include "stl/stl";

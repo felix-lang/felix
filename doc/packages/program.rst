@@ -31,6 +31,7 @@ Synopsis
 
 
 .. code-block:: felix
+
   //[__init__.flx]
   
   include "std/program/cmdopt";
@@ -50,6 +51,7 @@ Environment Variables
 .. index:: Env_class
 .. index:: Env
 .. code-block:: felix
+
   //[env.flx]
   //$ Access environment variables.
   class Env_class[os]
@@ -96,6 +98,7 @@ Command Line Options
 
 .. index:: CmdOpt
 .. code-block:: felix
+
   //[cmdopt.flx]
   
   open class CmdOpt 
@@ -268,6 +271,7 @@ Process
 .. index:: Process_class
 .. index:: Process
 .. code-block:: felix
+
   //[process.flx]
   
   class Process_class[os, process_status_t]
@@ -292,6 +296,7 @@ Posix Errno
 .. index:: Errno
 .. index:: Check
 .. code-block:: felix
+
   //[posix_errno.flx]
   
   open class Errno 
@@ -384,6 +389,7 @@ Posix Process
 
 .. index:: PosixProcess
 .. code-block:: felix
+
   //[posix_process.flx]
   
   class PosixProcess {
@@ -569,6 +575,7 @@ Win32 Process
 
 .. index:: Win32Process
 .. code-block:: felix
+
   //[win32_process.flx]
   
   class Win32Process {
@@ -724,6 +731,7 @@ System Call
 
 .. index:: System
 .. code-block:: felix
+
   //[system.flx]
   
   class System
@@ -814,6 +822,7 @@ Shell
 .. index:: Shell_class
 .. index:: Shell
 .. code-block:: felix
+
   //[shell.flx]
   
   // Note Shell_class interface doesn't use process_status_t
@@ -915,6 +924,7 @@ Posix Shell (Bash)
 
 .. index:: Bash
 .. code-block:: felix
+
   //[posix_shell.flx]
   
   // Note: shell functions here only work with Bash.
@@ -1096,6 +1106,7 @@ Win32 Shell (cmd.exe)
 
 .. index:: CmdExe
 .. code-block:: felix
+
   //[win32_shell.flx]
   
   
@@ -1233,6 +1244,7 @@ Signals
 .. index:: Signal_class
 .. index:: Signal
 .. code-block:: felix
+
   //[signal.flx]
   
   body ctrl_c_flag = """
@@ -1264,6 +1276,7 @@ Posix Signal
 
 .. index:: PosixSignal
 .. code-block:: felix
+
   //[posix_signal.flx]
   
   class PosixSignal {

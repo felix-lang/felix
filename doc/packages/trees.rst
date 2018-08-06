@@ -25,6 +25,7 @@ We provide a min-heap using a  :code:`darray` for storage.
 
 .. index:: MinHeap
 .. code-block:: felix
+
   //[heap.flx]
   class MinHeap[T with Tord[T]] 
   {
@@ -119,6 +120,7 @@ AVL tree
 
 .. index:: Avl
 .. code-block:: felix
+
   //[avl.flx]
   
   class Avl
@@ -335,6 +337,7 @@ Directed Graph
 
 .. index:: DiGraph
 .. code-block:: felix
+
   //[graph.flx]
   // Directed Cyclic graph
   
@@ -599,6 +602,7 @@ Features classic union-find data structure.
 
 .. index:: Partition
 .. code-block:: felix
+
   //[partition.flx]
   class Partition
   {
@@ -697,6 +701,7 @@ on the label.
 
 .. index:: BinarySearchTree
 .. code-block:: felix
+
   //[binary_search_tree.flx]
   class BinarySearchTree[T with Tord[T]]
   {
@@ -706,6 +711,7 @@ Type.
 
 
 .. code-block:: felix
+
   //[binary_search_tree.flx]
     typedef bstree_node_t =
       (
@@ -726,6 +732,7 @@ Quick Checks.
 
 
 .. code-block:: felix
+
   //[binary_search_tree.flx]
   
     fun leaf: bstree_t -> bool =
@@ -747,6 +754,7 @@ String representation
 
 
 .. code-block:: felix
+
   //[binary_search_tree.flx]
     instance Str[bstree_t] {
       fun str : bstree_t -> string =
@@ -764,6 +772,7 @@ value, or Empty if not found.
 
 
 .. code-block:: felix
+
   //[binary_search_tree.flx]
     // Skiena p78
     fun find (tree:bstree_t) (elt:T) : bstree_t =>
@@ -787,6 +796,7 @@ most bottom leaf.
 
 
 .. code-block:: felix
+
   //[binary_search_tree.flx]
     fun min (x:bstree_t) =>
       match x with 
@@ -806,6 +816,7 @@ in ascending order.
 
 
 .. code-block:: felix
+
   //[binary_search_tree.flx]
      proc iter (f: T -> 0) (x:bstree_t) =
      {
@@ -828,6 +839,7 @@ Easily defined given iter, this should be generalised elsewhere!
 
 
 .. code-block:: felix
+
   //[binary_search_tree.flx]
     fun fold_left[U] (_f:U->T->U) (init:U) (x:bstree_t): U = {
       var sum = init;
@@ -842,6 +854,7 @@ Easily defined given iter. Note the tree structure is NOT preserved.
 
 
 .. code-block:: felix
+
   //[binary_search_tree.flx]
     fun map[U] (_f:T->U) (x:bstree_t): BinarySearchTree[U]::bstree_t = {
       var res = BinarySearchTree::Empty[U];
@@ -855,6 +868,7 @@ Constructors.
 
 
 .. code-block:: felix
+
   //[binary_search_tree.flx ]
     ctor bstree_t () => Empty;
     ctor bstree_node_t (x:T) => (parent=Empty,elt=x,left=Empty,right=Empty);
@@ -869,6 +883,7 @@ Insert routine
 
 
 .. code-block:: felix
+
   //[binary_search_tree.flx]
     // Note: this routine disallows duplicates.
     proc insert_with_parent (p:&bstree_t) (parent:bstree_t) (elt:T)
@@ -895,6 +910,7 @@ Make a tree from an option stream.
 
 
 .. code-block:: felix
+
   //[binary_search_tree.flx]
     ctor bstree_t  (f:1->opt[T]) = {
       var x = Empty;
@@ -916,6 +932,7 @@ Ab interesting routine, related to  :code:`iter`.
 
 
 .. code-block:: felix
+
   //[binary_search_tree.flx]
     gen iterator (x:bstree_t) () : opt[T] =
     {
@@ -951,6 +968,7 @@ As a set.
 
 
 .. code-block:: felix
+
   //[binary_search_tree.flx]
     instance Set[bstree_t,T] {
       fun \in (elt:T, container:bstree_t) =>
@@ -968,6 +986,7 @@ As a container.
 
 
 .. code-block:: felix
+
   //[binary_search_tree.flx]
     instance Container[bstree_t, T] {
       // not tail rec
@@ -997,6 +1016,7 @@ Ensures the tree doesn't contain the specified value.
 
 
 .. code-block:: felix
+
   //[binary_search_tree.flx ]
     // deletes the first copy of the element found
     proc delete_element (p:&bstree_t) (elt:T)
@@ -1057,6 +1077,7 @@ Judy Arrays
 
 .. index:: Judy
 .. code-block:: felix
+
   //[judy.flx]
   
   // NOTES: The Felix type 'address' is the correct type for Judy Word

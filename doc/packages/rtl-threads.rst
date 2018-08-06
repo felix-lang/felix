@@ -81,6 +81,7 @@ threads and pchannels for synchronisation.
 .. index:: PTHREAD_EXTERN
 .. index:: PTHREAD_EXTERN
 .. code-block:: cpp
+
   //[pthread_thread.hpp]
   #ifndef __FLX_PTHREAD_THREAD_H__
   #define __FLX_PTHREAD_THREAD_H__
@@ -218,6 +219,7 @@ threads and pchannels for synchronisation.
   
 
 .. code-block:: cpp
+
   //[pthread_posix_thread.cpp]
   #include "pthread_thread.hpp"
   #if FLX_POSIX
@@ -413,6 +415,7 @@ threads and pchannels for synchronisation.
   #endif
 
 .. code-block:: cpp
+
   //[pthread_win_thread.cpp]
   #include "pthread_thread.hpp"
   #if FLX_WIN32
@@ -617,6 +620,7 @@ Condition Variable
 
 .. index:: PTHREAD_EXTERN
 .. code-block:: cpp
+
   //[pthread_condv.hpp]
   #ifndef __FLX_PTHREAD_CONDV_HPP__
   #define __FLX_PTHREAD_CONDV_HPP__
@@ -647,6 +651,7 @@ Condition Variable
   #endif
 
 .. code-block:: cpp
+
   //[pthread_condv.cpp]
   #include "pthread_condv.hpp"
   #include <stdint.h>
@@ -695,6 +700,7 @@ Monitor
 
 .. index:: PTHREAD_EXTERN
 .. code-block:: cpp
+
   //[pthread_monitor.hpp]
   #ifndef __FLX_PTHREAD_MONITOR_H__
   #define __FLX_PTHREAD_MONITOR_H__
@@ -733,6 +739,7 @@ Monitor
   
 
 .. code-block:: cpp
+
   //[pthread_monitor.cpp]
   #include "pthread_monitor.hpp"
   #include <string.h>       // strerror
@@ -807,6 +814,7 @@ Shared Counter
 
 .. index:: PTHREAD_EXTERN
 .. code-block:: cpp
+
   //[pthread_counter.hpp]
   #ifndef __FLX_PTHREAD_COUNTER_H__
   #define __FLX_PTHREAD_COUNTER_H__
@@ -854,6 +862,7 @@ Shared Counter
   
 
 .. code-block:: cpp
+
   //[pthread_counter.cpp]
   #include "pthread_counter.hpp"
   #include <stdio.h>
@@ -943,6 +952,7 @@ Shared Boolean
 
 .. index:: PTHREAD_EXTERN
 .. code-block:: cpp
+
   //[pthread_waitable_bool.hpp]
   #ifndef __FLX_PTHREAD_WAIT_BOOL_H__
   #define __FLX_PTHREAD_WAIT_BOOL_H__
@@ -970,6 +980,7 @@ Shared Boolean
   
 
 .. code-block:: cpp
+
   //[pthread_waitable_bool.cpp]
   #include "pthread_waitable_bool.hpp"
   
@@ -1015,6 +1026,7 @@ Thread Control
 
 
 .. code-block:: cpp
+
   //[pthread_thread_control.cpp]
   #include "pthread_thread.hpp"
   #include <stdio.h>
@@ -1340,6 +1352,7 @@ New bound queue
 A lock free thread safe bag for holding non-null pointers.
 
 .. code-block:: cpp
+
   //[pthread_lf_bag.hpp]
   #ifndef __FLX_PTHREAD_LF_BAG_H__
   #define __FLX_PTHREAD_LF_BAG_H__
@@ -1389,6 +1402,7 @@ A lock free thread safe bag for holding non-null pointers.
 
 
 .. code-block:: cpp
+
   //[pthread_lf_bag.cpp]
   // simple very efficient lock free bag
   #include <atomic>
@@ -1478,6 +1492,7 @@ A lock free thread safe bag for holding non-null pointers.
 
 .. index:: LockFreeBag
 .. code-block:: felix
+
   //[pthread_lf_bag.flx]
   class LockFreeBag
   {
@@ -1505,6 +1520,7 @@ Bound Queue
 
 .. index:: PTHREAD_EXTERN
 .. code-block:: cpp
+
   //[pthread_bound_queue.hpp]
   #ifndef __FLX_PTHREAD_BOUND_QUEUE_H__
   #define __FLX_PTHREAD_BOUND_QUEUE_H__
@@ -1562,6 +1578,7 @@ Bound Queue
 
 
 .. code-block:: cpp
+
   //[pthread_bound_queue.cpp]
   #include "pthread_bound_queue.hpp"
   #include <queue>        // stl to the bloated rescue
@@ -1716,6 +1733,7 @@ Bound Queue
 
 
 .. code-block:: fpc
+
   //[flx_bound_queue.fpc]
   Name: Pthread Bound Queue
   Requires: flx_pthread flx_gc
@@ -1730,6 +1748,7 @@ its base with locks as required.
 
 
 .. code-block:: cpp
+
   //[flx_ts_collector.hpp]
   
   #ifndef __FLX_TS_COLLECTOR_H__
@@ -1778,6 +1797,7 @@ its base with locks as required.
 
 
 .. code-block:: cpp
+
   //[flx_ts_collector.cpp]
   #include "flx_rtl_config.hpp"
   #include "flx_ts_collector.hpp"
@@ -1863,6 +1883,7 @@ also do the check, to ensure blocked threads stay blocked.
 
 .. index:: PTHREAD_EXTERN
 .. code-block:: cpp
+
   //[pthread_fast_lock.hpp]
   #ifndef __pthread_fast_lock__
   #define __pthread_fast_lock__
@@ -1889,6 +1910,7 @@ also do the check, to ensure blocked threads stay blocked.
 
 
 .. code-block:: cpp
+
   //[pthread_fast_lock.cpp]
   #include "pthread_fast_lock.hpp"
   #include <chrono>
@@ -1911,6 +1933,7 @@ also do the check, to ensure blocked threads stay blocked.
 
 .. index:: FastLock
 .. code-block:: felix
+
   //[pthread_fast_lock.flx]
   class FastLock
   {
@@ -1928,6 +1951,7 @@ Build System
 
 
 .. code-block:: python
+
   #[flx_pthread.py]
   import fbuild
   from fbuild.functools import call
@@ -1988,6 +2012,7 @@ Configuration Database
 
 
 .. code-block:: fpc
+
   //[unix_flx_pthread.fpc]
   Name: Flx_pthread
   Description: Felix Pre-emptive threading support
@@ -2003,6 +2028,7 @@ Configuration Database
 
 
 .. code-block:: fpc
+
   //[win32_flx_pthread.fpc]
   Name: Flx_pthread
   Description: Felix Pre-emptive threading support
@@ -2018,11 +2044,13 @@ Configuration Database
 
 
 .. code-block:: fpc
+
   //[default_pthread.fpc]
   Description: pthread support defaults to no requirements
 
 
 .. code-block:: fpc
+
   //[linux_pthread.fpc]
   Description: Linux pthread support
   requires_dlibs: -lpthread
@@ -2031,6 +2059,7 @@ Configuration Database
 
 
 .. code-block:: cpp
+
   //[flx_pthread_config.hpp]
   #ifndef __FLX_PTHREAD_CONFIG_H__
   #define __FLX_PTHREAD_CONFIG_H__

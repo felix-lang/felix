@@ -49,6 +49,7 @@ Synopsis
 
 
 .. code-block:: felix
+
   //[__init__.flx]
   
   include "std/scalar/ctypedefs";
@@ -74,6 +75,7 @@ A basic 8 bit character type.
 
 
 .. code-block:: felix
+
   //[scalar.flx]
   pod type char = "char";
   
@@ -98,6 +100,7 @@ as can be addressed.
 .. index:: PervasiveInts
 .. index:: PervasiveLogic
 .. code-block:: felix
+
   //[scalar.flx]
   pod type tiny = "signed char" requires index TYPE_tiny;
   pod type short = "short" requires index TYPE_short;
@@ -142,6 +145,7 @@ even on a 32 bit machine.
 
 
 .. code-block:: felix
+
   //[scalar.flx]
   pod type int8 = "int8_t" requires C99_headers::stdint_h, index TYPE_int8;
   pod type int16 = "int16_t" requires C99_headers::stdint_h, index TYPE_int16;
@@ -168,6 +172,7 @@ arbitrary integer operations.
 
 
 .. code-block:: felix
+
   //[scalar.flx]
   pod type byte = "unsigned char" requires index TYPE_byte;
   type caddress = "void *";
@@ -201,6 +206,7 @@ by the compiler.
 
 
 .. code-block:: felix
+
   //[int.fsyn]
   
   SCHEME """
@@ -458,6 +464,7 @@ not C!
 
 
 .. code-block:: felix
+
   //[scalar.flx]
   pod type float = "float" requires index TYPE_float;
   pod type double = "double" requires index TYPE_double;
@@ -473,6 +480,7 @@ Float literal constructors
 
 
 .. code-block:: felix
+
   //[float.fsyn]
    
   //$ Floating point literals.
@@ -548,6 +556,7 @@ union of two typesets.
 
 
 .. code-block:: felix
+
   //[scalar.flx]
   //$ Types associated with raw address calculations.
   typedef addressing = typesetof (
@@ -565,6 +574,7 @@ Integers
 
 
 .. code-block:: felix
+
   //[scalar.flx]
   //$ "natural" sized signed integer types.
   //$ These correspond to C/C++ core types.
@@ -612,6 +622,7 @@ Floats
 
 
 .. code-block:: felix
+
   //[scalar.flx]
   //$ All the core floating point types.
   typedef floats = typesetof (float, double, ldouble);

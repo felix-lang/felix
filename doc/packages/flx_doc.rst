@@ -32,6 +32,7 @@ Generates an index of non-terminals used in
 the grammar.
 
 .. code-block:: felix
+
   //[flx_gramdoc.flx]
   var ishtml = System::argv 1 == "--html";
   var dir =  Filename::join ("src", "lib", "grammar");
@@ -129,6 +130,7 @@ Library contents table.
 Lists symbols per file.
 
 .. code-block:: felix
+
   //[flx_libcontents.flx]
   var ishtml = System::argv 1 == "--html";
   var dir =  Filename::join ("src", "lib", "std");
@@ -277,6 +279,7 @@ Library index table.
 Lists symbols alphabetically.
 
 .. code-block:: felix
+
   //[flx_libindex.flx]
   var ishtml = System::argv 1 == "--html";
   var dir =  Filename::join ("src", "lib", "std");
@@ -371,6 +374,7 @@ with specified heading and pattern match.
 
 
 .. code-block:: felix
+
   //[flx_mktutindex.flx]
   var dirname = System::argv_dflt 1 "src/web/tut";
   var homepage = System::argv_dflt 2 "";
@@ -434,6 +438,7 @@ with specified heading and pattern match.
 
 
 .. code-block:: felix
+
   //[flx_fdoc2sphinx.flx]
   open Regdef;
   
@@ -650,7 +655,7 @@ with specified heading and pattern match.
         elif c == "tangle" do
           println$ "";
           var lexer = lexer_from_filename a;
-          prefix = ".. code-block:: "+lexer + "\n";
+          prefix = ".. code-block:: "+lexer + "\n\n";
           prefix += "";
           if lexer in ("c","cpp","felix","fpc") do
             prefix += "  //[" + a + "]\n";
