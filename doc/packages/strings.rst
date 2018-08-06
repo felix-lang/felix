@@ -40,11 +40,11 @@ This type is deprecated, to be repalced by C++11 unicode string type.
 
 
 
-.. index:: Str
-.. index:: str
-.. index:: Repr
-.. index:: repr
-.. index:: Show
+.. index:: Str(class)
+.. index:: str(fun)
+.. index:: Repr(class)
+.. index:: repr(fun)
+.. index:: Show(class)
 .. code-block:: felix
 
   //[string.flx]
@@ -76,7 +76,7 @@ Equality and total ordering
 
 
 
-.. index:: String
+.. index:: String(class)
 .. code-block:: felix
 
   //[string.flx]
@@ -123,7 +123,7 @@ Length of  :code:`string`
 
 
 
-.. index:: len
+.. index:: len(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -166,8 +166,8 @@ Application of  :code:`string` to  :code:`string` or  :code:`int` is concatenati
 
 
 
-.. index:: apply
-.. index:: apply
+.. index:: apply(fun)
+.. index:: apply(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -180,7 +180,7 @@ Construct a char from first byte of a  :code:`string`.
 Returns nul char (code 0) if the string is empty.
 
 
-.. index:: char
+.. index:: char(ctor)
 .. code-block:: felix
 
   //[string.flx]
@@ -190,10 +190,10 @@ Constructors for  :code:`string`
 
 
 
-.. index:: string
-.. index:: string
-.. index:: string
-.. index:: utf8
+.. index:: string(ctor)
+.. index:: string(ctor)
+.. index:: string(ctor)
+.. index:: utf8(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -207,13 +207,13 @@ Substrings
 
 
 
-.. index:: subscript
-.. index:: copyfrom
-.. index:: copyto
-.. index:: substring
-.. index:: subscript
-.. index:: subscript
-.. index:: store
+.. index:: subscript(fun)
+.. index:: copyfrom(fun)
+.. index:: copyto(fun)
+.. index:: substring(fun)
+.. index:: subscript(fun)
+.. index:: subscript(fun)
+.. index:: store(proc)
 .. code-block:: felix
 
   //[string.flx]
@@ -262,7 +262,7 @@ Map a string  :code:`char` by  :code:`char`
 
 
 
-.. index:: map
+.. index:: map(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -283,78 +283,79 @@ which return  :code:`stl_npos` on failure, and a more Felix
 like variant which uses an  :code:`option` type.
 
 
-.. index:: stl_find
-.. index:: stl_find
-.. index:: stl_find
-.. index:: stl_find
-.. index:: stl_find
-.. index:: stl_find
-.. index:: find
-.. index:: find
-.. index:: find
-.. index:: find
-.. index:: find
-.. index:: find
-.. index:: stl_rfind
-.. index:: stl_rfind
-.. index:: stl_rfind
-.. index:: stl_rfind
-.. index:: stl_rfind
-.. index:: stl_rfind
-.. index:: rfind
-.. index:: rfind
-.. index:: rfind
-.. index:: rfind
-.. index:: rfind
-.. index:: rfind
-.. index:: stl_find_first_of
-.. index:: stl_find_first_of
-.. index:: stl_find_first_of
-.. index:: stl_find_first_of
-.. index:: stl_find_first_of
-.. index:: stl_find_first_of
-.. index:: find_first_of
-.. index:: find_first_of
-.. index:: find_first_of
-.. index:: find_first_of
-.. index:: find_first_of
-.. index:: find_first_of
-.. index:: stl_find_first_not_of
-.. index:: stl_find_first_not_of
-.. index:: stl_find_first_not_of
-.. index:: stl_find_first_not_of
-.. index:: stl_find_first_not_of
-.. index:: stl_find_first_not_of
-.. index:: find_first_not_of
-.. index:: find_first_not_of
-.. index:: find_first_not_of
-.. index:: find_first_not_of
-.. index:: find_first_not_of
-.. index:: find_first_not_of
-.. index:: stl_find_last_of
-.. index:: stl_find_last_of
-.. index:: stl_find_last_of
-.. index:: stl_find_last_of
-.. index:: stl_find_last_of
-.. index:: stl_find_last_of
-.. index:: find_last_of
-.. index:: find_last_of
-.. index:: find_last_of
-.. index:: find_last_of
-.. index:: find_last_of
-.. index:: find_last_of
-.. index:: stl_find_last_not_of
-.. index:: stl_find_last_not_of
-.. index:: stl_find_last_not_of
-.. index:: stl_find_last_not_of
-.. index:: stl_find_last_not_of
-.. index:: stl_find_last_not_of
-.. index:: find_last_not_of
-.. index:: find_last_not_of
-.. index:: find_last_not_of
-.. index:: find_last_not_of
-.. index:: find_last_not_of
-.. index:: find_last_not_of
+.. index:: stl_npos(const)
+.. index:: stl_find(fun)
+.. index:: stl_find(fun)
+.. index:: stl_find(fun)
+.. index:: stl_find(fun)
+.. index:: stl_find(fun)
+.. index:: stl_find(fun)
+.. index:: find(fun)
+.. index:: find(fun)
+.. index:: find(fun)
+.. index:: find(fun)
+.. index:: find(fun)
+.. index:: find(fun)
+.. index:: stl_rfind(fun)
+.. index:: stl_rfind(fun)
+.. index:: stl_rfind(fun)
+.. index:: stl_rfind(fun)
+.. index:: stl_rfind(fun)
+.. index:: stl_rfind(fun)
+.. index:: rfind(fun)
+.. index:: rfind(fun)
+.. index:: rfind(fun)
+.. index:: rfind(fun)
+.. index:: rfind(fun)
+.. index:: rfind(fun)
+.. index:: stl_find_first_of(fun)
+.. index:: stl_find_first_of(fun)
+.. index:: stl_find_first_of(fun)
+.. index:: stl_find_first_of(fun)
+.. index:: stl_find_first_of(fun)
+.. index:: stl_find_first_of(fun)
+.. index:: find_first_of(fun)
+.. index:: find_first_of(fun)
+.. index:: find_first_of(fun)
+.. index:: find_first_of(fun)
+.. index:: find_first_of(fun)
+.. index:: find_first_of(fun)
+.. index:: stl_find_first_not_of(fun)
+.. index:: stl_find_first_not_of(fun)
+.. index:: stl_find_first_not_of(fun)
+.. index:: stl_find_first_not_of(fun)
+.. index:: stl_find_first_not_of(fun)
+.. index:: stl_find_first_not_of(fun)
+.. index:: find_first_not_of(fun)
+.. index:: find_first_not_of(fun)
+.. index:: find_first_not_of(fun)
+.. index:: find_first_not_of(fun)
+.. index:: find_first_not_of(fun)
+.. index:: find_first_not_of(fun)
+.. index:: stl_find_last_of(fun)
+.. index:: stl_find_last_of(fun)
+.. index:: stl_find_last_of(fun)
+.. index:: stl_find_last_of(fun)
+.. index:: stl_find_last_of(fun)
+.. index:: stl_find_last_of(fun)
+.. index:: find_last_of(fun)
+.. index:: find_last_of(fun)
+.. index:: find_last_of(fun)
+.. index:: find_last_of(fun)
+.. index:: find_last_of(fun)
+.. index:: find_last_of(fun)
+.. index:: stl_find_last_not_of(fun)
+.. index:: stl_find_last_not_of(fun)
+.. index:: stl_find_last_not_of(fun)
+.. index:: stl_find_last_not_of(fun)
+.. index:: stl_find_last_not_of(fun)
+.. index:: stl_find_last_not_of(fun)
+.. index:: find_last_not_of(fun)
+.. index:: find_last_not_of(fun)
+.. index:: find_last_not_of(fun)
+.. index:: find_last_not_of(fun)
+.. index:: find_last_not_of(fun)
+.. index:: find_last_not_of(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -478,12 +479,12 @@ Test if a string has given prefix or suffix
 
 
 
-.. index:: prefix
-.. index:: suffix
-.. index:: startswith
-.. index:: endswith
-.. index:: startswith
-.. index:: endswith
+.. index:: prefix(fun)
+.. index:: suffix(fun)
+.. index:: startswith(fun)
+.. index:: endswith(fun)
+.. index:: startswith(fun)
+.. index:: endswith(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -509,9 +510,9 @@ Trim off specified prefix or suffix or both
 
 
 
-.. index:: ltrim
-.. index:: rtrim
-.. index:: trim
+.. index:: ltrim(fun)
+.. index:: rtrim(fun)
+.. index:: trim(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -538,12 +539,12 @@ Strip characters from left, right, or both end of a string.
 
 
 
-.. index:: lstrip
-.. index:: rstrip
-.. index:: strip
-.. index:: lstrip
-.. index:: rstrip
-.. index:: strip
+.. index:: lstrip(fun)
+.. index:: rstrip(fun)
+.. index:: strip(fun)
+.. index:: lstrip(fun)
+.. index:: rstrip(fun)
+.. index:: strip(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -596,8 +597,8 @@ Justify string contents
 
 
 
-.. index:: ljust
-.. index:: rjust
+.. index:: ljust(fun)
+.. index:: rjust(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -620,19 +621,15 @@ Split a string into a list on given separator
 
 
 
-.. index:: split
-.. index:: rev_split
-.. index:: aux
-.. index:: split
-.. index:: rev_split
-.. index:: aux
-.. index:: split
-.. index:: rev_split
-.. index:: aux
-.. index:: split_first
-.. index:: RespectfulParser
-.. index:: respectful_split
-.. index:: respectful_split
+.. index:: split(fun)
+.. index:: rev_split(fun)
+.. index:: split(fun)
+.. index:: rev_split(fun)
+.. index:: split(fun)
+.. index:: rev_split(fun)
+.. index:: split_first(fun)
+.. index:: respectful_split(fun)
+.. index:: respectful_split(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -874,12 +871,12 @@ erase, insert or replace substrings
 
 
 
-.. index:: erase
-.. index:: insert
-.. index:: replace
-.. index:: erase
-.. index:: insert
-.. index:: replace
+.. index:: erase(proc)
+.. index:: insert(proc)
+.. index:: replace(proc)
+.. index:: erase(fun)
+.. index:: insert(fun)
+.. index:: replace(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -901,9 +898,9 @@ search and replace
 Search and replace by string.
 
 
-.. index:: search_and_replace
-.. index:: search_and_replace
-.. index:: search_and_replace
+.. index:: search_and_replace(fun)
+.. index:: search_and_replace(fun)
+.. index:: search_and_replace(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -935,8 +932,8 @@ Regexp search and replace
 Uses Google RE2 engine.
 
 
-.. index:: subst
-.. index:: search_and_replace
+.. index:: subst(fun)
+.. index:: search_and_replace(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -1012,10 +1009,10 @@ Parse string to numeric type
 
 
 
-.. index:: atoi
-.. index:: atol
-.. index:: atoll
-.. index:: atof
+.. index:: atoi(fun)
+.. index:: atol(fun)
+.. index:: atoll(fun)
+.. index:: atof(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -1029,7 +1026,7 @@ Reserve store
 
 
 
-.. index:: reserve
+.. index:: reserve(proc)
 .. code-block:: felix
 
   //[string.flx]
@@ -1040,10 +1037,10 @@ Fetch underlying cstring.
 
 
 
-.. index:: _unsafe_cstr
-.. index:: stl_begin
-.. index:: stl_end
-.. index:: cstr
+.. index:: _unsafe_cstr(fun)
+.. index:: stl_begin(fun)
+.. index:: stl_end(fun)
+.. index:: cstr(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -1062,8 +1059,8 @@ Polymorphic vsprintf hack
 
 
 
-.. index:: vsprintf
-.. index:: vsprintf
+.. index:: vsprintf(fun)
+.. index:: vsprintf(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -1080,8 +1077,8 @@ Case translation
 
 
 
-.. index:: toupper
-.. index:: tolower
+.. index:: toupper(fun)
+.. index:: tolower(fun)
 .. code-block:: felix
 
   //[string.flx]
@@ -1097,9 +1094,9 @@ Transation to string
 
 
 
-.. index:: str
-.. index:: str
-.. index:: repr
+.. index:: str(fun)
+.. index:: str(fun)
+.. index:: repr(fun)
 .. code-block:: felix
 
   //[string.flx]

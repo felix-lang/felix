@@ -39,8 +39,8 @@ However it preloads some plugins that might be used to avoid
 run time loading.
 
 
-.. index:: FlxPluginSymbols
-.. index:: addsymbols
+.. index:: FlxPluginSymbols(class)
+.. index:: addsymbols(proc)
 .. code-block:: felix
 
   //[flx_tool.flx]
@@ -106,10 +106,11 @@ The flx cache manager.
 
 Check if the flx cache is stale and deletes it if it is.
 
-.. index:: FlxCache
-.. index:: gramtime
-.. index:: maxtime
-.. index:: cache_join
+.. index:: FlxCache(class)
+.. index:: gramtime(fun)
+.. index:: def(type)
+.. index:: validate_cache(gen)
+.. index:: cache_join(fun)
 .. code-block:: felix
 
   //[flx_cache.flx]
@@ -338,7 +339,9 @@ The compiler.
 
 A wrapper around the {flxg} command line compiler executable.
 
-.. index:: Flxg
+.. index:: Flxg(class)
+.. index:: def(type)
+.. index:: run_felix_compiler(gen)
 .. code-block:: felix
 
   //[flx_flxg.flx]
@@ -427,9 +430,9 @@ The profile is the most basic low level configuration data,
 which determines where to find everything.
 
 
-.. index:: FlxProfile
-.. index:: dflt_profile
-.. index:: str
+.. index:: FlxProfile(class)
+.. index:: dflt_profile(fun)
+.. index:: def(type)
 .. code-block:: felix
 
   //[flx_profile.flx]
@@ -487,21 +490,19 @@ Config.
 A more detailed layout configuration based
 on command line switches and the base profile.
 
-.. index:: Config
-.. index:: str
-.. index:: set_libs_and_rtls
-.. index:: cascade_FLX_INSTALL_DIR
-.. index:: cascade_FLX_TARGET_DIR
-.. index:: cascade_FLX_SHARE_DIR
-.. index:: cascade_FLX_HOME_DIR
-.. index:: copy_profile
-.. index:: dflt_config
-.. index:: process_config_text
-.. index:: config_env_overrides
-.. index:: process_config_text_with_env_overrides
-.. index:: ess_config_text
-.. index:: std_config
-.. index:: ess_config_text_with_env_overrides
+.. index:: Config(class)
+.. index:: def(type)
+.. index:: set_libs_and_rtls(proc)
+.. index:: cascade_FLX_INSTALL_DIR(proc)
+.. index:: cascade_FLX_TARGET_DIR(proc)
+.. index:: cascade_FLX_SHARE_DIR(proc)
+.. index:: cascade_FLX_HOME_DIR(proc)
+.. index:: copy_profile(proc)
+.. index:: dflt_config(fun)
+.. index:: process_config_text(proc)
+.. index:: config_env_overrides(proc)
+.. index:: process_config_text_with_env_overrides(proc)
+.. index:: std_config(fun)
 .. code-block:: felix
 
   //[config.flx]
@@ -693,10 +694,7 @@ Control Record.
 
 Just initialises the base configuration data.
 
-.. index:: FlxControl
-.. index:: print_options
-.. index:: init_loopctl
-.. index:: dflt_control
+.. index:: FlxControl(class)
 .. code-block:: felix
 
   //[flx_control.flx]
@@ -858,14 +856,13 @@ Command line argument parser.
 
 Parses the command line options.
 
-.. index:: FlxCmdOpt
-.. index:: setup
-.. index:: debugln
-.. index:: debugln
-.. index:: debugln
-.. index:: debugln
-.. index:: link_strings
-.. index:: mkrel
+.. index:: FlxCmdOpt(class)
+.. index:: debugln(proc)
+.. index:: debugln(proc)
+.. index:: debugln(proc)
+.. index:: debugln(proc)
+.. index:: link_strings(fun)
+.. index:: mkrel(fun)
 .. code-block:: felix
 
   //[flx_cmdopt.flx]
@@ -1772,8 +1769,8 @@ Computes all the detailed variables needed to run the various
 tools from a base configuration.
 
 
-.. index:: FlxDepvars
-.. index:: debugln
+.. index:: FlxDepvars(class)
+.. index:: debugln(proc)
 .. code-block:: felix
 
   //[flx_depvars.flx]
@@ -2051,19 +2048,37 @@ This part of the flx tool is responsible for
 calculating dependencies and actually running the
 external compilers.
 
-.. index:: xdebugln
-.. index:: check_cache
-.. index:: debugln
-.. index:: echoln
-.. index:: showtime
-.. index:: ehandler
-.. index:: calpackages
-.. index:: find_cxx_pkgs
-.. index:: cal_time_from_flxdepfile
-.. index:: maxf
-.. index:: cal_files_time
-.. index:: cal_cxx_uptodate
-.. index:: maxf
+.. index:: debugln(proc)
+.. index:: echoln(proc)
+.. index:: showtime(proc)
+.. index:: ehandler(proc)
+.. index:: calpackages(proc)
+.. index:: find_cxx_pkgs(fun)
+.. index:: cal_time_from_flxdepfile(fun)
+.. index:: cal_cxx_uptodate(fun)
+.. index:: check_cxx_uptodate(gen)
+.. index:: run_felix_compiler_if_required(gen)
+.. index:: cxx_compile_dynamic1(gen)
+.. index:: cxx_compile_dynamic(gen)
+.. index:: cxx_compile_static(gen)
+.. index:: cxx_compile_static1(gen)
+.. index:: run_cxx_compiler_if_required(gen)
+.. index:: check_run_if_required_and_uptodate(gen)
+.. index:: run_with_calpackages(gen)
+.. index:: cxx_link_shared_library(gen)
+.. index:: cxx_link_shared_library_with_calpackages(gen)
+.. index:: cxx_link_shared_exe(gen)
+.. index:: cxx_link_shared_exe_with_calpackages(gen)
+.. index:: cxx_link_static_exe(gen)
+.. index:: cxx_link_static_exe_with_calpackages(gen)
+.. index:: cxx_static_library(gen)
+.. index:: check_binary_uptodate(gen)
+.. index:: run_linker_if_required(gen)
+.. index:: run_program_dynamic(gen)
+.. index:: run_program_static(gen)
+.. index:: run_dynamic_with_calpackages(gen)
+.. index:: run_program_if_required(gen)
+.. index:: check_output_if_required(gen)
 .. code-block:: felix
 
   //[flx_run.flx]
@@ -3099,11 +3114,9 @@ The {flx} tool.
 ---------------
 
 
-.. index:: startlib
-.. index:: repl
-.. index:: Flx
-.. index:: ehandler
-.. index:: ehandler
+.. index:: Flx(class)
+.. index:: flx_processing(gen)
+.. index:: runflx(gen)
 .. code-block:: felix
 
   //[flx.flx]
@@ -3327,8 +3340,9 @@ tool, except it includes all the required source code
 which means it takes a very long time to compile.
 
 
-.. index:: BootFlx
-.. index:: ehandler
+.. index:: BootFlx(class)
+.. index:: flx_processing(gen)
+.. index:: runflx(gen)
 .. code-block:: felix
 
   //[bootflx.flx]
@@ -3489,8 +3503,8 @@ it on demand so it is easy to call flx from any Felix
 program.
 
 
-.. index:: Flx_client
-.. index:: setup
+.. index:: Flx_client(class)
+.. index:: setup(proc)
 .. code-block:: felix
 
   //[flx_plugin_client.flx]

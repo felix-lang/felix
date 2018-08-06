@@ -67,9 +67,9 @@ synchronisation instead.
 
 
 
-.. index:: Pthread
-.. index:: spawn_pthread
-.. index:: thread_yield
+.. index:: Pthread(class)
+.. index:: spawn_pthread(proc)
+.. index:: thread_yield(proc)
 .. code-block:: felix
 
   //[pthread.flx]
@@ -126,13 +126,17 @@ error.
 
 
 
-.. index:: Pchannel
-.. index:: mk_pchannel
-.. index:: mk_iopchannel_pair
-.. index:: mk_iopchannel_pair
-.. index:: _read
-.. index:: _write
-.. index:: write
+.. index:: Pchannel(class)
+.. index:: pchannel(type)
+.. index:: ipchannel(type)
+.. index:: opchannel(type)
+.. index:: mk_pchannel(fun)
+.. index:: mk_iopchannel_pair(fun)
+.. index:: mk_iopchannel_pair(fun)
+.. index:: _read(proc)
+.. index:: read(gen)
+.. index:: _write(proc)
+.. index:: write(proc)
 .. code-block:: felix
 
   //[pchannels.flx]
@@ -220,15 +224,15 @@ Ppipes.
 
 
 
-.. index:: Ppipe
-.. index:: psource
-.. index:: pisrc
-.. index:: pipe
-.. index:: pipe
-.. index:: xpipe
-.. index:: pipe
-.. index:: pipe
-.. index:: sort
+.. index:: Ppipe(class)
+.. index:: psource(proc)
+.. index:: pisrc(proc)
+.. index:: pipe(fun)
+.. index:: pipe(fun)
+.. index:: xpipe(fun)
+.. index:: pipe(fun)
+.. index:: pipe(fun)
+.. index:: sort(proc)
 .. code-block:: felix
 
   //[ppipe.flx]
@@ -351,9 +355,9 @@ Fork/Join.
 
 
 
-.. index:: ForkJoin
-.. index:: concurrently_by_iterator
-.. index:: concurrently
+.. index:: ForkJoin(class)
+.. index:: concurrently_by_iterator(proc)
+.. index:: concurrently(proc)
 .. code-block:: felix
 
   //[forkjoin.flx]
@@ -401,11 +405,12 @@ A Felix mutex is created on the heap and must be destroyed
 after use manually, they're not garbage collected.
 
 
-.. index:: Mutex
-.. index:: mutex
-.. index:: lock
-.. index:: unlock
-.. index:: destroy
+.. index:: Mutex(class)
+.. index:: mutex(type)
+.. index:: mutex(ctor)
+.. index:: lock(proc)
+.. index:: unlock(proc)
+.. index:: destroy(proc)
 .. code-block:: felix
 
   //[mutex.flx]
@@ -449,12 +454,14 @@ to go elsewhere!
 
 
 
-.. index:: Semaphore
-.. index:: semaphore
-.. index:: semaphore
-.. index:: destroy
-.. index:: post
-.. index:: wait
+.. index:: Semaphore(class)
+.. index:: semaphore(type)
+.. index:: semaphore(ctor)
+.. index:: semaphore(ctor)
+.. index:: destroy(proc)
+.. index:: post(proc)
+.. index:: wait(proc)
+.. index:: trywait(gen)
 .. code-block:: felix
 
   //[semaphore.flx]
@@ -478,14 +485,16 @@ Condition Variables.
 
 
 
-.. index:: Condition_Variable
-.. index:: condition_variable
-.. index:: destroy
-.. index:: lock
-.. index:: unlock
-.. index:: wait
-.. index:: signal
-.. index:: broadcast
+.. index:: Condition_Variable(class)
+.. index:: condition_variable(type)
+.. index:: condition_variable(ctor)
+.. index:: destroy(proc)
+.. index:: lock(proc)
+.. index:: unlock(proc)
+.. index:: wait(proc)
+.. index:: signal(proc)
+.. index:: broadcast(proc)
+.. index:: timedwait(gen)
 .. code-block:: felix
 
   //[condition_variable.flx]
@@ -532,11 +541,19 @@ Thread Safe Counter.
 Probably redundant now we have upgraded to C++11 and have atomics.
 
 
-.. index:: Ts_counter
-.. index:: ts_counter
-.. index:: destroy
-.. index:: set
-.. index:: wait_zero
+.. index:: Ts_counter(class)
+.. index:: ts_counter(type)
+.. index:: ts_counter(ctor)
+.. index:: destroy(proc)
+.. index:: pre_incr(gen)
+.. index:: post_incr(gen)
+.. index:: pre_decr(gen)
+.. index:: post_decr(gen)
+.. index:: decr_pos(gen)
+.. index:: get(gen)
+.. index:: set(proc)
+.. index:: swap(gen)
+.. index:: wait_zero(proc)
 .. code-block:: felix
 
   //[ts_counter.flx]
@@ -562,10 +579,11 @@ Thread Safe Bound Queue.
 
 
 
-.. index:: TS_Bound_Queue
-.. index:: enqueue
-.. index:: wait
-.. index:: resize
+.. index:: TS_Bound_Queue(class)
+.. index:: enqueue(proc)
+.. index:: dequeue(gen)
+.. index:: wait(proc)
+.. index:: resize(proc)
 .. code-block:: felix
 
   //[ts_bound_queue.flx]
@@ -644,13 +662,14 @@ Atomic operations
 
 
 
-.. index:: Atomic
-.. index:: delete
-.. index:: pre_incr
-.. index:: pre_decr
-.. index:: store
-.. index:: store
-.. index:: str
+.. index:: Atomic(class)
+.. index:: atomic(type)
+.. index:: delete(proc)
+.. index:: pre_incr(proc)
+.. index:: pre_decr(proc)
+.. index:: load(gen)
+.. index:: store(proc)
+.. index:: store(proc)
 .. code-block:: felix
 
   //[atomic.flx]
@@ -697,17 +716,21 @@ overhead posting a job.
 
 
 
-.. index:: ThreadPool
-.. index:: get_nthreads
-.. index:: barrier
-.. index:: start
-.. index:: start
-.. index:: queue_job
-.. index:: stop
-.. index:: post_barrier
-.. index:: notify
-.. index:: join
-.. index:: pfor_segment
+.. index:: ThreadPool(class)
+.. index:: def(type)
+.. index:: get_nthreads(fun)
+.. index:: barrier(proc)
+.. index:: start(proc)
+.. index:: start(proc)
+.. index:: queue_job(proc)
+.. index:: stop(proc)
+.. index:: post_barrier(proc)
+.. index:: notify(proc)
+.. index:: join(proc)
+.. index:: pfor_segment(proc)
+.. index:: forloop(proc)
+.. index:: pforloop(proc)
+.. index:: tpfor(proc)
 .. code-block:: felix
 
   //[threadpool.flx]

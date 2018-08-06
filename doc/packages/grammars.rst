@@ -16,11 +16,8 @@ Grammar
 
 
 
-.. index:: Grammars
-.. index:: generic_cls
-.. index:: _fail
-.. index:: generic_closure
-.. index:: str
+.. index:: Grammars(class)
+.. index:: str(fun)
 .. code-block:: felix
 
   //[grammars.flx]

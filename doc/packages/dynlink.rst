@@ -97,6 +97,8 @@ The flx_dl.h header: portability macros.
 ----------------------------------------
 
 
+.. index:: def(type)
+.. index:: def(type)
 .. code-block:: c
 
   //[flx_dl.h]
@@ -615,6 +617,7 @@ The  :code:`flx_dynlink` unit:  :code:`flx_libinst_t` class implementation.
 ---------------------------------------------------------------------------
 
 
+.. index:: def(type)
 .. code-block:: cpp
 
   //[flx_dynlink.cpp]
@@ -738,7 +741,7 @@ The dynamic link library binding  :code:`Dynlink`
 
 
 
-.. index:: Dynlink
+.. index:: Dynlink(class)
 .. code-block:: felix
 
   //[dynlink.flx]
@@ -764,12 +767,13 @@ provide an interface based on option types which enforces
 user level error checking as well.
 
 
-.. index:: flx_link_failure_t
-.. index:: filename
-.. index:: operation
-.. index:: what
-.. index:: delete
-.. index:: get_debug_driver_flag
+.. index:: flx_link_failure_t(type)
+.. index:: flx_link_failure_t(ctor)
+.. index:: filename(fun)
+.. index:: operation(fun)
+.. index:: what(fun)
+.. index:: delete(proc)
+.. index:: get_debug_driver_flag(fun)
 .. code-block:: felix
 
   //[dynlink.flx]
@@ -812,7 +816,7 @@ The constructor makes an unpopulated library handle
 not associated with any particular DLL.
 
 
-.. index:: create_library_handle
+.. index:: create_library_handle(fun)
 .. code-block:: felix
 
   //[dynlink.flx]
@@ -827,9 +831,9 @@ This procedure associates a library handle with a particular
 file name and also attempts to load the library.
 
 
-.. index:: dlopen
-.. index:: modopen
-.. index:: set_entry_points
+.. index:: dlopen(proc)
+.. index:: modopen(proc)
+.. index:: set_entry_points(proc)
 .. code-block:: felix
 
   //[dynlink.flx]
@@ -854,7 +858,10 @@ Load a library from registry  :code:`regopen`
 Given a registry, simulate dynamic linkage.
 
 
-.. index:: get_module_registry_address_address
+.. index:: def(type)
+.. index:: def(type)
+.. index:: get_module_registry_address_address(fun)
+.. index:: get_module_registry(gen)
 .. code-block:: felix
 
   //[dynlink.flx]
@@ -908,10 +915,10 @@ Get the filename associated with a library handle:  :code:`filename`
 
 
 
-.. index:: filename
-.. index:: modulename
-.. index:: get_thread_frame_creator_as_address
-.. index:: get_start_as_address
+.. index:: filename(fun)
+.. index:: modulename(fun)
+.. index:: get_thread_frame_creator_as_address(fun)
+.. index:: get_start_as_address(fun)
 .. code-block:: felix
 
   //[dynlink.flx]
@@ -970,7 +977,7 @@ vtables, rtti objects, strings, other constants, and sometimes
 even variables.
 
 
-.. index:: dlclose
+.. index:: dlclose(proc)
 .. code-block:: felix
 
   //[dynlink.flx]
@@ -995,7 +1002,7 @@ DO not forget the extra dereference requires if the variable
 is itself a pointer.
 
 
-.. index:: raw_dlsym
+.. index:: raw_dlsym(fun)
 .. code-block:: felix
 
   //[dynlink.flx]
@@ -1050,7 +1057,7 @@ Create a new library instance handle unassociated with any
 library or thread frame.
 
 
-.. index:: create_instance_handle
+.. index:: create_instance_handle(fun)
 .. code-block:: felix
 
   //[dynlink.flx]
@@ -1068,9 +1075,9 @@ The instance handle should not already be associated with a library
 or thread frame.
 
 
-.. index:: create
-.. index:: create_with_args
-.. index:: create_with_args
+.. index:: create(proc)
+.. index:: create_with_args(proc)
+.. index:: create_with_args(proc)
 .. code-block:: felix
 
   //[dynlink.flx ]
@@ -1104,7 +1111,7 @@ Get the filename from an instance  :code:`filename`.
 
 
 
-.. index:: filename
+.. index:: filename(fun)
 .. code-block:: felix
 
   //[dynlink.flx ]
@@ -1137,7 +1144,7 @@ by a scheduler after associating it with a fibre:
 the procedure is <em>not</em> a C function.
 
 
-.. index:: get_init
+.. index:: get_init(fun)
 .. code-block:: felix
 
   //[dynlink.flx ]
@@ -1149,7 +1156,7 @@ Get the library associated with an instance.
 
 
 
-.. index:: get_library
+.. index:: get_library(fun)
 .. code-block:: felix
 
   //[dynlink.flx]
@@ -1163,7 +1170,7 @@ Since we don't know the type of the thread frame here,
 it is returned as a pure address.
 
 
-.. index:: get_thread_frame
+.. index:: get_thread_frame(fun)
 .. code-block:: felix
 
   //[dynlink.flx]
@@ -1231,8 +1238,8 @@ Convenience to run a program  :code:`run_lib`
 This function does the same as  :code:`init_lib`.
 
 
-.. index:: run_lib
-.. index:: run_program
+.. index:: run_lib(proc)
+.. index:: run_program(proc)
 .. code-block:: felix
 
   //[dynlink.flx]
@@ -1446,9 +1453,9 @@ Utilities and misc.
 
 
 
-.. index:: bind_proc
-.. index:: dlib_of
-.. index:: dlsym_err
+.. index:: bind_proc(fun)
+.. index:: dlib_of(fun)
+.. index:: dlsym_err(proc)
 .. code-block:: felix
 
   //[dynlink.flx]

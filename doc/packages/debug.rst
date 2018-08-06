@@ -22,17 +22,21 @@ Debugging Aid.
 
 
 
-.. index:: Debug
-.. index:: flx_location_t
-.. index:: filename
-.. index:: startline
-.. index:: startcol
-.. index:: endline
-.. index:: endcol
-.. index:: str
-.. index:: repr_expr
-.. index:: enable_local_udp_trace
-.. index:: send_udp_trace_message
+.. index:: Debug(class)
+.. index:: FLX_SRCLOC(const)
+.. index:: flx_location_t(ctor)
+.. index:: filename(fun)
+.. index:: startline(fun)
+.. index:: startcol(fun)
+.. index:: endline(fun)
+.. index:: endcol(fun)
+.. index:: CPP_FUNCTION(const)
+.. index:: CPP_FILE(const)
+.. index:: CPP_LINE(const)
+.. index:: repr_expr(fun)
+.. index:: repr_type(const)
+.. index:: enable_local_udp_trace(proc)
+.. index:: send_udp_trace_message(proc)
 .. code-block:: felix
 
   //[debug.flx]
@@ -118,6 +122,7 @@ This stuff only on Posix so far.
   }}
   
 
+.. index:: sockaddr_in(struct)
 .. code-block:: cpp
 
   //[flx_udp_trace.cpp]

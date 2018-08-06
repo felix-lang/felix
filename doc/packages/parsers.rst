@@ -15,29 +15,41 @@ Parsing
 Chips to providing parsing functions.
 
 
-.. index:: Parsers
-.. index:: str
-.. index:: str
-.. index:: str
-.. index:: str
-.. index:: str
-.. index:: str
-.. index:: doaction
-.. index:: doaction
-.. index:: find
-.. index:: render_pgram
-.. index:: open_add_pgram
-.. index:: add_pgram
-.. index:: closure
-.. index:: unpack
-.. index:: expand_aux
-.. index:: expand
-.. index:: substitute
-.. index:: direct_left_recursion_elimination
-.. index:: direct_left_recursion_elimination
-.. index:: make_seq
-.. index:: left_recursion_elimination_step
-.. index:: left_recursion_elimination
+.. index:: Parsers(class)
+.. index:: action_t(union)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: stack_node_t(union)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: doaction(fun)
+.. index:: doaction(fun)
+.. index:: def(type)
+.. index:: find(fun)
+.. index:: render_pgram(fun)
+.. index:: open_add_pgram(fun)
+.. index:: add_pgram(fun)
+.. index:: closure(fun)
+.. index:: make_parser_from_grammar(gen)
+.. index:: run_parser_on_string(gen)
+.. index:: unpack(fun)
+.. index:: expand_aux(fun)
+.. index:: expand(fun)
+.. index:: substitute(fun)
+.. index:: direct_left_recursion_elimination(fun)
+.. index:: fresh_sym(gen)
+.. index:: direct_left_recursion_elimination(fun)
+.. index:: make_seq(fun)
+.. index:: left_recursion_elimination_step(fun)
+.. index:: left_recursion_elimination(fun)
 .. code-block:: felix
 
   //[parsers.flx]

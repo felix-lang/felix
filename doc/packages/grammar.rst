@@ -749,7 +749,6 @@ Simple C grammar
 ----------------
 
 
-.. index:: ction_definition
 .. code-block:: felix
 
   //[cgram.fsyn]
@@ -1875,7 +1874,6 @@ Master DSSL dependency list.
 Defines the standard felix grammar by specifying
 all the DSSLs required for it.
 
-.. index:: ctions
 .. code-block:: felix
 
   //[felix.fsyn]
@@ -1916,14 +1914,14 @@ Function forms
 --------------
 
 
-.. index:: _return_type
-.. index:: _return_type
-.. index:: _return_type
-.. index:: _return_type
-.. index:: _return_type
-.. index:: _return_type
-.. index:: _return_type
-.. index:: _return_type
+.. index:: _return_type(fun)
+.. index:: _return_type(fun)
+.. index:: _return_type(fun)
+.. index:: _return_type(fun)
+.. index:: _return_type(fun)
+.. index:: _return_type(fun)
+.. index:: _return_type(fun)
+.. index:: _return_type(fun)
 .. code-block:: felix
 
   //[functions.fsyn]

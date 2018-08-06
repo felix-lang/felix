@@ -40,7 +40,10 @@ data used by subsequent initialisation steps
 used to initiate a Felix world.
 
 
-.. index:: RTL_EXTERN
+.. index:: RTL_EXTERN(class)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
 .. code-block:: cpp
 
   //[flx_world_config.hpp]
@@ -249,7 +252,8 @@ The  :code:`flx_world` class.
 Objects of the  :code:`flx_world` class are used to represent
 a Felix world.
 
-.. index:: RTL_EXTERN
+.. index:: RTL_EXTERN(class)
+.. index:: async_sched(struct)
 .. code-block:: cpp
 
   //[flx_world.hpp]
@@ -714,6 +718,7 @@ The Asychronous Support System
 ------------------------------
 
 
+.. index:: flx_world(struct)
 .. code-block:: cpp
 
   //[flx_async_world.hpp]
@@ -1013,9 +1018,9 @@ The embedding system depends on the interface but
 not the implementation.
  
 
-.. index:: ASYNC_EXTERN
-.. index:: ASYNC_EXTERN
-.. index:: ASYNC_EXTERN
+.. index:: ASYNC_EXTERN(class)
+.. index:: ASYNC_EXTERN(class)
+.. index:: ASYNC_EXTERN(class)
 .. code-block:: cpp
 
   //[flx_async.hpp]
@@ -1100,8 +1105,8 @@ not the implementation.
   #endif
 
 
-.. index:: async_hooker_impl
-.. index:: proto_async
+.. index:: async_hooker_impl(class)
+.. index:: proto_async(class)
 .. code-block:: cpp
 
   //[flx_async.cpp]

@@ -415,14 +415,20 @@ regdef any_r = perl(".*");
 regdef cmd_r = "@" group(cmd_name_r) spc_r group(any_r);
 regdef tangler_r = "@tangler" spc_r group(fkey_r) spc_r  "=" spc_r group(any_r);
 regdef url_r = group(any_r) '<a href="' group(any_r) '">' group(any_r) "</a>" group(any_r);
-regdef class_r = spc_r "open"? spc_r "class" spc_r group(ident_r) any_r;
-regdef fun_r = spc_r "virtual"? spc_r ("ctor"|"fun"|"proc") spc_r group(ident_r) any_r;
+
+// top level class
+regdef class_r = ("open" spc_r)? ("class"|"module") spc_r group(ident_r) any_r;
+
+// nested in class, exactltly 2 spaces in
+regdef def_r ="ctor"|"fun"|"proc"|"gen"|"type"|"union"|"struct"|"cstruct"|"const"|"header"|"typedef";
+regdef adj_r = "virtual" | "inline";
+regdef fun_r = "  " (adj_r spc_r)? group(def_r) spc_r group(ident_r) any_r;
 
 var cmd_R = RE2 (render cmd_r);
 var tangler_R = RE2 (render tangler_r);
 var url_R = RE2 (render url_r);
-var class_R = RE2 (render class_r);
 var fun_R = RE2 (render fun_r);
+var class_R = RE2 (render class_r);
 
 typedef markup_t = (`Txt | `At | `Code | `Slosh | `Math | `MathSlosh);
 fun code_fixer (a:string): string =
@@ -527,10 +533,10 @@ fun process_file (f: string): string =
       var rf = Match (fun_R, l);
       chainmatch rc with
       | Some grp =>
-        out+= ".. index:: " + grp.1 + "\n";
-      ormatch rf with
+        out+= ".. index:: " + grp.1+"(class)" + "\n";
+      ormatch rf with 
       | Some grp =>
-        out+= ".. index:: " + grp.1 + "\n";
+        out+= ".. index:: " + grp.2+"("+grp.1+")" + "\n";
       | None => ;
       endmatch;
     done

@@ -83,10 +83,20 @@ SDL2.flx
 
 
 
-.. index:: SDL2
-.. index:: SDL_Quit
-.. index:: SDL_QuitSubSystem
-.. index:: SDL_WasInit
+.. index:: SDL2(class)
+.. index:: SDL_INIT_EVERYTHING(const)
+.. index:: SDL_INIT_NOPARACHUTE(const)
+.. index:: SDL_INIT_JOYSTICK(const)
+.. index:: SDL_INIT_HAPTIC(const)
+.. index:: SDL_INIT_CDROM(const)
+.. index:: SDL_INIT_VIDEO(const)
+.. index:: SDL_INIT_AUDIO(const)
+.. index:: SDL_INIT_TIMER(const)
+.. index:: SDL_Quit(proc)
+.. index:: SDL_QuitSubSystem(proc)
+.. index:: SDL_Init(gen)
+.. index:: SDL_InitSubSystem(gen)
+.. index:: SDL_WasInit(fun)
 .. code-block:: felix
 
   //[SDL2.flx]
@@ -164,7 +174,8 @@ SDL_active.flx
 
 
 
-.. index:: SDL_GetAppState
+.. index:: SDL_active_h(class)
+.. index:: SDL_GetAppState(fun)
 .. code-block:: felix
 
   //[SDL_active.flx]
@@ -197,23 +208,47 @@ SDL_audio.flx
 
 
 
-.. index:: eq
-.. index:: get_callback
-.. index:: SDL_AudioQuit
-.. index:: SDL_CloseAudio
-.. index:: SDL_FreeWAV
-.. index:: SDL_LockAudio
-.. index:: SDL_MixAudio
-.. index:: SDL_PauseAudio
-.. index:: SDL_UnlockAudio
-.. index:: SDL_AudioDriverName
-.. index:: SDL_AudioInit
-.. index:: SDL_BuildAudioCVT
-.. index:: SDL_ConvertAudio
-.. index:: SDL_GetAudioStatus
-.. index:: SDL_LoadWAV_RW
-.. index:: SDL_OpenAudio
-.. index:: SDL_LoadWAV
+.. index:: SDL_audio_h(class)
+.. index:: SDL_MIX_MAXVOLUME(const)
+.. index:: AUDIO_S16MSB(const)
+.. index:: AUDIO_U16MSB(const)
+.. index:: AUDIO_S16LSB(const)
+.. index:: AUDIO_U16LSB(const)
+.. index:: AUDIO_S16SYS(const)
+.. index:: AUDIO_U16SYS(const)
+.. index:: AUDIO_S16(const)
+.. index:: AUDIO_U16(const)
+.. index:: AUDIO_S8(const)
+.. index:: AUDIO_U8(const)
+.. index:: SDL_audiostatus(type)
+.. index:: eq(fun)
+.. index:: SDL_AudioCVT(cstruct)
+.. index:: SDL_AudioSpec(cstruct)
+.. index:: get_callback(fun)
+.. index:: SDL_audio_h_cft_2(type)
+.. index:: SDL_audio_h_cft_1(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: SDL_AUDIO_PAUSED(const)
+.. index:: SDL_AUDIO_STOPPED(const)
+.. index:: SDL_AUDIO_PLAYING(const)
+.. index:: SDL_AudioQuit(proc)
+.. index:: SDL_CloseAudio(proc)
+.. index:: SDL_FreeWAV(proc)
+.. index:: SDL_LockAudio(proc)
+.. index:: SDL_MixAudio(proc)
+.. index:: SDL_PauseAudio(proc)
+.. index:: SDL_UnlockAudio(proc)
+.. index:: SDL_AudioDriverName(fun)
+.. index:: SDL_AudioInit(fun)
+.. index:: SDL_BuildAudioCVT(fun)
+.. index:: SDL_ConvertAudio(fun)
+.. index:: SDL_GetAudioStatus(fun)
+.. index:: SDL_LoadWAV_RW(fun)
+.. index:: SDL_OpenAudio(fun)
+.. index:: SDL_LoadWAV(fun)
 .. code-block:: felix
 
   //[SDL_audio.flx]
@@ -347,17 +382,28 @@ SDL_cdrom.flx
 
 
 
-.. index:: SDL_CDClose
-.. index:: SDL_CDEject
-.. index:: SDL_CDName
-.. index:: SDL_CDNumDrives
-.. index:: SDL_CDOpen
-.. index:: SDL_CDPause
-.. index:: SDL_CDPlay
-.. index:: SDL_CDPlayTracks
-.. index:: SDL_CDResume
-.. index:: SDL_CDStatus
-.. index:: SDL_CDStop
+.. index:: SDL_cdrom_h(class)
+.. index:: CDstatus(type)
+.. index:: SDL_CD(cstruct)
+.. index:: SDL_CDtrack(cstruct)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: CD_TRAYEMPTY(const)
+.. index:: CD_PLAYING(const)
+.. index:: CD_ERROR(const)
+.. index:: CD_PAUSED(const)
+.. index:: CD_STOPPED(const)
+.. index:: SDL_CDClose(proc)
+.. index:: SDL_CDEject(fun)
+.. index:: SDL_CDName(fun)
+.. index:: SDL_CDNumDrives(fun)
+.. index:: SDL_CDOpen(fun)
+.. index:: SDL_CDPause(fun)
+.. index:: SDL_CDPlay(fun)
+.. index:: SDL_CDPlayTracks(fun)
+.. index:: SDL_CDResume(fun)
+.. index:: SDL_CDStatus(fun)
+.. index:: SDL_CDStop(fun)
 .. code-block:: felix
 
   //[SDL_cdrom.flx]
@@ -441,9 +487,10 @@ SDL_clipboard.flx
 
 
 
-.. index:: SDL_clipboard_h
-.. index:: SDL_GetClipboardText
-.. index:: SDL_HasClipboardText
+.. index:: SDL_clipboard_h(class)
+.. index:: SDL_SetClipboardText(gen)
+.. index:: SDL_GetClipboardText(fun)
+.. index:: SDL_HasClipboardText(fun)
 .. code-block:: felix
 
   //[SDL_clipboard.flx]
@@ -487,21 +534,22 @@ SDL_endian.flx
 
 
 
-.. index:: SDL_ReadBE16
-.. index:: SDL_ReadBE32
-.. index:: SDL_ReadBE64
-.. index:: SDL_ReadLE16
-.. index:: SDL_ReadLE32
-.. index:: SDL_ReadLE64
-.. index:: SDL_Swap16
-.. index:: SDL_Swap32
-.. index:: SDL_Swap64
-.. index:: SDL_WriteBE16
-.. index:: SDL_WriteBE32
-.. index:: SDL_WriteBE64
-.. index:: SDL_WriteLE16
-.. index:: SDL_WriteLE32
-.. index:: SDL_WriteLE64
+.. index:: SDL_endian_h(class)
+.. index:: SDL_ReadBE16(fun)
+.. index:: SDL_ReadBE32(fun)
+.. index:: SDL_ReadBE64(fun)
+.. index:: SDL_ReadLE16(fun)
+.. index:: SDL_ReadLE32(fun)
+.. index:: SDL_ReadLE64(fun)
+.. index:: SDL_Swap16(fun)
+.. index:: SDL_Swap32(fun)
+.. index:: SDL_Swap64(fun)
+.. index:: SDL_WriteBE16(fun)
+.. index:: SDL_WriteBE32(fun)
+.. index:: SDL_WriteBE64(fun)
+.. index:: SDL_WriteLE16(fun)
+.. index:: SDL_WriteLE32(fun)
+.. index:: SDL_WriteLE64(fun)
 .. code-block:: felix
 
   //[SDL_endian.flx]
@@ -559,9 +607,9 @@ SDL_error.flx
 
 
 
-.. index:: SDL_error_h
-.. index:: SDL_ClearError
-.. index:: SDL_GetError
+.. index:: SDL_error_h(class)
+.. index:: SDL_ClearError(proc)
+.. index:: SDL_GetError(fun)
 .. code-block:: felix
 
   //[SDL_error.flx]
@@ -597,23 +645,58 @@ SDL_events.flx
 
 
 
-.. index:: SDL_events_h
-.. index:: str
-.. index:: uint32
-.. index:: SDL_EventType
-.. index:: str
-.. index:: uint8
-.. index:: SDL_WindowEventID
-.. index:: SDL_GetWindowID
-.. index:: SDL_PumpEvents
-.. index:: SDL_HasEvent
-.. index:: SDL_HasEvents
-.. index:: SDL_FlushEvent
-.. index:: SDL_FlushEvents
-.. index:: SDL_SetEventFilter
-.. index:: SDL_AddEventWatch
-.. index:: SDL_DelEventWatch
-.. index:: SDL_FilterEvents
+.. index:: SDL_events_h(class)
+.. index:: uint32(ctor)
+.. index:: SDL_EventType(ctor)
+.. index:: uint8(ctor)
+.. index:: SDL_WindowEventID(ctor)
+.. index:: SDL_Event(cstruct)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: SDL_SysWMmsg(struct)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: SDL_GetWindowID(fun)
+.. index:: SDL_PeepEvents(gen)
+.. index:: SDL_PumpEvents(proc)
+.. index:: SDL_HasEvent(fun)
+.. index:: SDL_HasEvents(fun)
+.. index:: SDL_FlushEvent(proc)
+.. index:: SDL_FlushEvents(proc)
+.. index:: SDL_WaitEvent(gen)
+.. index:: SDL_WaitEventTimeout(gen)
+.. index:: SDL_PushEvent(gen)
+.. index:: def(type)
+.. index:: SDL_SetEventFilter(proc)
+.. index:: SDL_GetEventFilter(gen)
+.. index:: SDL_AddEventWatch(proc)
+.. index:: SDL_FilterEvents(proc)
+.. index:: SDL_QUERY(const)
+.. index:: SDL_IGNORE(const)
+.. index:: SDL_DISABLE(const)
+.. index:: SDL_ENABLE(const)
+.. index:: SDL_EventState(gen)
 .. code-block:: felix
 
   //[SDL_events.flx]
@@ -1368,10 +1451,12 @@ SDL_framerate.flx
 
 
 
-.. index:: SDL_framerateDelay
-.. index:: SDL_initFramerate
-.. index:: SDL_getFramerate
-.. index:: SDL_setFramerate
+.. index:: SDL_framerate_h(class)
+.. index:: FPSmanager(type)
+.. index:: SDL_framerateDelay(proc)
+.. index:: SDL_initFramerate(proc)
+.. index:: SDL_getFramerate(fun)
+.. index:: SDL_setFramerate(fun)
 .. code-block:: felix
 
   //[SDL_framerate.flx]
@@ -1415,52 +1500,53 @@ SDL_gfxPrimitives.flx
 
 
 
-.. index:: aacircleColor
-.. index:: aacircleRGBA
-.. index:: aaellipseColor
-.. index:: aaellipseRGBA
-.. index:: aalineColor
-.. index:: aalineRGBA
-.. index:: aapolygonColor
-.. index:: aapolygonRGBA
-.. index:: aatrigonColor
-.. index:: aatrigonRGBA
-.. index:: bezierColor
-.. index:: bezierRGBA
-.. index:: boxColor
-.. index:: boxRGBA
-.. index:: characterColor
-.. index:: characterRGBA
-.. index:: circleColor
-.. index:: circleRGBA
-.. index:: ellipseColor
-.. index:: ellipseRGBA
-.. index:: filledCircleColor
-.. index:: filledCircleRGBA
-.. index:: filledEllipseColor
-.. index:: filledEllipseRGBA
-.. index:: filledPolygonColor
-.. index:: filledPolygonRGBA
-.. index:: filledTrigonColor
-.. index:: filledTrigonRGBA
-.. index:: filledpieColor
-.. index:: filledpieRGBA
-.. index:: hlineColor
-.. index:: hlineRGBA
-.. index:: lineColor
-.. index:: lineRGBA
-.. index:: pixelColor
-.. index:: pixelRGBA
-.. index:: polygonColor
-.. index:: polygonRGBA
-.. index:: rectangleColor
-.. index:: rectangleRGBA
-.. index:: stringColor
-.. index:: stringRGBA
-.. index:: trigonColor
-.. index:: trigonRGBA
-.. index:: vlineColor
-.. index:: vlineRGBA
+.. index:: SDL_gfxPrimitives_h(class)
+.. index:: aacircleColor(fun)
+.. index:: aacircleRGBA(fun)
+.. index:: aaellipseColor(fun)
+.. index:: aaellipseRGBA(fun)
+.. index:: aalineColor(fun)
+.. index:: aalineRGBA(fun)
+.. index:: aapolygonColor(fun)
+.. index:: aapolygonRGBA(fun)
+.. index:: aatrigonColor(fun)
+.. index:: aatrigonRGBA(fun)
+.. index:: bezierColor(fun)
+.. index:: bezierRGBA(fun)
+.. index:: boxColor(fun)
+.. index:: boxRGBA(fun)
+.. index:: characterColor(fun)
+.. index:: characterRGBA(fun)
+.. index:: circleColor(fun)
+.. index:: circleRGBA(fun)
+.. index:: ellipseColor(fun)
+.. index:: ellipseRGBA(fun)
+.. index:: filledCircleColor(fun)
+.. index:: filledCircleRGBA(fun)
+.. index:: filledEllipseColor(fun)
+.. index:: filledEllipseRGBA(fun)
+.. index:: filledPolygonColor(fun)
+.. index:: filledPolygonRGBA(fun)
+.. index:: filledTrigonColor(fun)
+.. index:: filledTrigonRGBA(fun)
+.. index:: filledpieColor(fun)
+.. index:: filledpieRGBA(fun)
+.. index:: hlineColor(fun)
+.. index:: hlineRGBA(fun)
+.. index:: lineColor(fun)
+.. index:: lineRGBA(fun)
+.. index:: pixelColor(fun)
+.. index:: pixelRGBA(fun)
+.. index:: polygonColor(fun)
+.. index:: polygonRGBA(fun)
+.. index:: rectangleColor(fun)
+.. index:: rectangleRGBA(fun)
+.. index:: stringColor(fun)
+.. index:: stringRGBA(fun)
+.. index:: trigonColor(fun)
+.. index:: trigonRGBA(fun)
+.. index:: vlineColor(fun)
+.. index:: vlineRGBA(fun)
 .. code-block:: felix
 
   //[SDL_gfxPrimitives.flx]
@@ -1541,6 +1627,8 @@ SDL_gfxPrimitives_font.flx
 
 
 
+.. index:: SDL_gfxPrimitives_font_h(class)
+.. index:: gfxPrimitivesFontdata(const)
 .. code-block:: felix
 
   //[SDL_gfxPrimitives_font.flx]
@@ -1570,37 +1658,43 @@ SDL_image.flx
 
 
 
-.. index:: SDL_image_h
-.. index:: IMG_Linked_Version
-.. index:: IMG_Compiled_Version
-.. index:: IMG_Compiled_Version
-.. index:: IMG_Quit
-.. index:: IMG_InvertAlpha
-.. index:: IMG_Load
-.. index:: IMG_LoadBMP_RW
-.. index:: IMG_LoadGIF_RW
-.. index:: IMG_LoadJPG_RW
-.. index:: IMG_LoadLBM_RW
-.. index:: IMG_LoadPCX_RW
-.. index:: IMG_LoadPNG_RW
-.. index:: IMG_LoadPNM_RW
-.. index:: IMG_LoadTGA_RW
-.. index:: IMG_LoadTIF_RW
-.. index:: IMG_LoadTyped_RW
-.. index:: IMG_LoadXCF_RW
-.. index:: IMG_LoadXPM_RW
-.. index:: IMG_Load_RW
-.. index:: IMG_ReadXPMFromArray
-.. index:: IMG_isBMP
-.. index:: IMG_isGIF
-.. index:: IMG_isJPG
-.. index:: IMG_isLBM
-.. index:: IMG_isPCX
-.. index:: IMG_isPNG
-.. index:: IMG_isPNM
-.. index:: IMG_isTIF
-.. index:: IMG_isXCF
-.. index:: IMG_isXPM
+.. index:: SDL_image_h(class)
+.. index:: IMG_Linked_Version(fun)
+.. index:: IMG_Compiled_Version(proc)
+.. index:: IMG_Compiled_Version(fun)
+.. index:: IMG_INIT_JPG(const)
+.. index:: IMG_INIT_PNG(const)
+.. index:: IMG_INIT_TIF(const)
+.. index:: IMG_INIT_WEBP(const)
+.. index:: IMG_Init(gen)
+.. index:: IMG_GetError(gen)
+.. index:: IMG_Quit(proc)
+.. index:: IMG_InvertAlpha(fun)
+.. index:: IMG_Load(fun)
+.. index:: IMG_LoadBMP_RW(fun)
+.. index:: IMG_LoadGIF_RW(fun)
+.. index:: IMG_LoadJPG_RW(fun)
+.. index:: IMG_LoadLBM_RW(fun)
+.. index:: IMG_LoadPCX_RW(fun)
+.. index:: IMG_LoadPNG_RW(fun)
+.. index:: IMG_LoadPNM_RW(fun)
+.. index:: IMG_LoadTGA_RW(fun)
+.. index:: IMG_LoadTIF_RW(fun)
+.. index:: IMG_LoadTyped_RW(fun)
+.. index:: IMG_LoadXCF_RW(fun)
+.. index:: IMG_LoadXPM_RW(fun)
+.. index:: IMG_Load_RW(fun)
+.. index:: IMG_ReadXPMFromArray(fun)
+.. index:: IMG_isBMP(fun)
+.. index:: IMG_isGIF(fun)
+.. index:: IMG_isJPG(fun)
+.. index:: IMG_isLBM(fun)
+.. index:: IMG_isPCX(fun)
+.. index:: IMG_isPNG(fun)
+.. index:: IMG_isPNM(fun)
+.. index:: IMG_isTIF(fun)
+.. index:: IMG_isXCF(fun)
+.. index:: IMG_isXPM(fun)
 .. code-block:: felix
 
   //[SDL_image.flx]
@@ -1678,44 +1772,45 @@ SDL_imageFilter.flx
 
 
 
-.. index:: SDL_imageFilterAlignStack
-.. index:: SDL_imageFilterMMXoff
-.. index:: SDL_imageFilterMMXon
-.. index:: SDL_imageFilterRestoreStack
-.. index:: SDL_imageFilterAbsDiff
-.. index:: SDL_imageFilterAdd
-.. index:: SDL_imageFilterAddByte
-.. index:: SDL_imageFilterAddByteToHalf
-.. index:: SDL_imageFilterBinarizeUsingThreshold
-.. index:: SDL_imageFilterBitAnd
-.. index:: SDL_imageFilterBitNegation
-.. index:: SDL_imageFilterBitOr
-.. index:: SDL_imageFilterClipToRange
-.. index:: SDL_imageFilterConvolveKernel3x3Divide
-.. index:: SDL_imageFilterConvolveKernel3x3ShiftRight
-.. index:: SDL_imageFilterConvolveKernel5x5Divide
-.. index:: SDL_imageFilterConvolveKernel5x5ShiftRight
-.. index:: SDL_imageFilterConvolveKernel7x7Divide
-.. index:: SDL_imageFilterConvolveKernel7x7ShiftRight
-.. index:: SDL_imageFilterConvolveKernel9x9Divide
-.. index:: SDL_imageFilterConvolveKernel9x9ShiftRight
-.. index:: SDL_imageFilterDiv
-.. index:: SDL_imageFilterMMXdetect
-.. index:: SDL_imageFilterMean
-.. index:: SDL_imageFilterMult
-.. index:: SDL_imageFilterMultByByte
-.. index:: SDL_imageFilterMultDivby2
-.. index:: SDL_imageFilterMultDivby4
-.. index:: SDL_imageFilterMultNor
-.. index:: SDL_imageFilterNormalizeLinear
-.. index:: SDL_imageFilterShiftLeft
-.. index:: SDL_imageFilterShiftLeftByte
-.. index:: SDL_imageFilterShiftRight
-.. index:: SDL_imageFilterShiftRightAndMultByByte
-.. index:: SDL_imageFilterSobelX
-.. index:: SDL_imageFilterSobelXShiftRight
-.. index:: SDL_imageFilterSub
-.. index:: SDL_imageFilterSubByte
+.. index:: SDL_imageFilter_h(class)
+.. index:: SDL_imageFilterAlignStack(proc)
+.. index:: SDL_imageFilterMMXoff(proc)
+.. index:: SDL_imageFilterMMXon(proc)
+.. index:: SDL_imageFilterRestoreStack(proc)
+.. index:: SDL_imageFilterAbsDiff(fun)
+.. index:: SDL_imageFilterAdd(fun)
+.. index:: SDL_imageFilterAddByte(fun)
+.. index:: SDL_imageFilterAddByteToHalf(fun)
+.. index:: SDL_imageFilterBinarizeUsingThreshold(fun)
+.. index:: SDL_imageFilterBitAnd(fun)
+.. index:: SDL_imageFilterBitNegation(fun)
+.. index:: SDL_imageFilterBitOr(fun)
+.. index:: SDL_imageFilterClipToRange(fun)
+.. index:: SDL_imageFilterConvolveKernel3x3Divide(fun)
+.. index:: SDL_imageFilterConvolveKernel3x3ShiftRight(fun)
+.. index:: SDL_imageFilterConvolveKernel5x5Divide(fun)
+.. index:: SDL_imageFilterConvolveKernel5x5ShiftRight(fun)
+.. index:: SDL_imageFilterConvolveKernel7x7Divide(fun)
+.. index:: SDL_imageFilterConvolveKernel7x7ShiftRight(fun)
+.. index:: SDL_imageFilterConvolveKernel9x9Divide(fun)
+.. index:: SDL_imageFilterConvolveKernel9x9ShiftRight(fun)
+.. index:: SDL_imageFilterDiv(fun)
+.. index:: SDL_imageFilterMMXdetect(fun)
+.. index:: SDL_imageFilterMean(fun)
+.. index:: SDL_imageFilterMult(fun)
+.. index:: SDL_imageFilterMultByByte(fun)
+.. index:: SDL_imageFilterMultDivby2(fun)
+.. index:: SDL_imageFilterMultDivby4(fun)
+.. index:: SDL_imageFilterMultNor(fun)
+.. index:: SDL_imageFilterNormalizeLinear(fun)
+.. index:: SDL_imageFilterShiftLeft(fun)
+.. index:: SDL_imageFilterShiftLeftByte(fun)
+.. index:: SDL_imageFilterShiftRight(fun)
+.. index:: SDL_imageFilterShiftRightAndMultByByte(fun)
+.. index:: SDL_imageFilterSobelX(fun)
+.. index:: SDL_imageFilterSobelXShiftRight(fun)
+.. index:: SDL_imageFilterSub(fun)
+.. index:: SDL_imageFilterSubByte(fun)
 .. code-block:: felix
 
   //[SDL_imageFilter.flx]
@@ -1787,22 +1882,25 @@ SDL_joystick.flx
 
 
 
-.. index:: SDL_JoystickClose
-.. index:: SDL_JoystickUpdate
-.. index:: SDL_JoystickEventState
-.. index:: SDL_JoystickGetAxis
-.. index:: SDL_JoystickGetBall
-.. index:: SDL_JoystickGetButton
-.. index:: SDL_JoystickGetHat
-.. index:: SDL_JoystickIndex
-.. index:: SDL_JoystickName
-.. index:: SDL_JoystickNumAxes
-.. index:: SDL_JoystickNumBalls
-.. index:: SDL_JoystickNumButtons
-.. index:: SDL_JoystickNumHats
-.. index:: SDL_JoystickOpen
-.. index:: SDL_JoystickOpened
-.. index:: SDL_NumJoysticks
+.. index:: SDL_joystick_h(class)
+.. index:: _struct__SDL_Joystick(type)
+.. index:: def(type)
+.. index:: SDL_JoystickClose(proc)
+.. index:: SDL_JoystickUpdate(proc)
+.. index:: SDL_JoystickEventState(fun)
+.. index:: SDL_JoystickGetAxis(fun)
+.. index:: SDL_JoystickGetBall(fun)
+.. index:: SDL_JoystickGetButton(fun)
+.. index:: SDL_JoystickGetHat(fun)
+.. index:: SDL_JoystickIndex(fun)
+.. index:: SDL_JoystickName(fun)
+.. index:: SDL_JoystickNumAxes(fun)
+.. index:: SDL_JoystickNumBalls(fun)
+.. index:: SDL_JoystickNumButtons(fun)
+.. index:: SDL_JoystickNumHats(fun)
+.. index:: SDL_JoystickOpen(fun)
+.. index:: SDL_JoystickOpened(fun)
+.. index:: SDL_NumJoysticks(fun)
 .. code-block:: felix
 
   //[SDL_joystick.flx]
@@ -1864,12 +1962,15 @@ SDL_keyboard.flx
 
 
 
-.. index:: SDL_SetModState
-.. index:: SDL_EnableKeyRepeat
-.. index:: SDL_EnableUNICODE
-.. index:: SDL_GetKeyName
-.. index:: SDL_GetKeyState
-.. index:: SDL_GetModState
+.. index:: SDL_keyboard_h(class)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: SDL_SetModState(proc)
+.. index:: SDL_EnableKeyRepeat(fun)
+.. index:: SDL_EnableUNICODE(fun)
+.. index:: SDL_GetKeyName(fun)
+.. index:: SDL_GetKeyState(fun)
+.. index:: SDL_GetModState(fun)
 .. code-block:: felix
 
   //[SDL_keyboard.flx]
@@ -1919,12 +2020,11 @@ SDL_keycode.flx
 
 
 
-.. index:: SDL_keycode_h
-.. index:: int
-.. index:: SDL_Keycode
-.. index:: str
-.. index:: uint16
-.. index:: strmods
+.. index:: SDL_keycode_h(class)
+.. index:: int(ctor)
+.. index:: SDL_Keycode(ctor)
+.. index:: uint16(ctor)
+.. index:: strmods(fun)
 .. code-block:: felix
 
   //[SDL_keycode.flx]
@@ -2494,71 +2594,100 @@ SDL_mixer.flx
 
 
 
-.. index:: Mix_ChannelFinished
-.. index:: Mix_CloseAudio
-.. index:: Mix_FreeChunk
-.. index:: Mix_FreeMusic
-.. index:: Mix_HookMusic
-.. index:: Mix_HookMusicFinished
-.. index:: Mix_Pause
-.. index:: Mix_PauseMusic
-.. index:: Mix_Resume
-.. index:: Mix_ResumeMusic
-.. index:: Mix_RewindMusic
-.. index:: Mix_SetPostMix
-.. index:: Mix_AllocateChannels
-.. index:: Mix_ExpireChannel
-.. index:: Mix_FadeInChannelTimed
-.. index:: Mix_FadeInMusic
-.. index:: Mix_FadeInMusicPos
-.. index:: Mix_FadeOutChannel
-.. index:: Mix_FadeOutGroup
-.. index:: Mix_FadeOutMusic
-.. index:: Mix_FadingChannel
-.. index:: Mix_FadingMusic
-.. index:: Mix_GetChunk
-.. index:: Mix_GetMusicHookData
-.. index:: Mix_GetMusicType
-.. index:: Mix_GetSynchroValue
-.. index:: Mix_GroupAvailable
-.. index:: Mix_GroupChannel
-.. index:: Mix_GroupChannels
-.. index:: Mix_GroupCount
-.. index:: Mix_GroupNewer
-.. index:: Mix_GroupOldest
-.. index:: Mix_HaltChannel
-.. index:: Mix_HaltGroup
-.. index:: Mix_HaltMusic
-.. index:: Mix_Linked_Version
-.. index:: Mix_LoadMUS
-.. index:: Mix_LoadWAV_RW
-.. index:: Mix_OpenAudio
-.. index:: Mix_Paused
-.. index:: Mix_PausedMusic
-.. index:: Mix_PlayChannelTimed
-.. index:: Mix_PlayMusic
-.. index:: Mix_Playing
-.. index:: Mix_PlayingMusic
-.. index:: Mix_QuerySpec
-.. index:: Mix_QuickLoad_RAW
-.. index:: Mix_QuickLoad_WAV
-.. index:: Mix_RegisterEffect
-.. index:: Mix_ReserveChannels
-.. index:: Mix_SetDistance
-.. index:: Mix_SetMusicCMD
-.. index:: Mix_SetMusicPosition
-.. index:: Mix_SetPanning
-.. index:: Mix_SetPosition
-.. index:: Mix_SetReverseStereo
-.. index:: Mix_SetSynchroValue
-.. index:: Mix_UnregisterAllEffects
-.. index:: Mix_UnregisterEffect
-.. index:: Mix_Volume
-.. index:: Mix_VolumeChunk
-.. index:: Mix_VolumeMusic
-.. index:: wrapper_Mix_HookMusic
-.. index:: wrapper_Mix_RegisterEffect
-.. index:: wrapper_Mix_SetPostMix
+.. index:: SDL_mixer_h(class)
+.. index:: Mix_MusicType(type)
+.. index:: Mix_Chunk(type)
+.. index:: Mix_Fading(type)
+.. index:: SDL_mixer_h_cft_3(type)
+.. index:: SDL_mixer_h_cft_1(type)
+.. index:: SDL_mixer_h_cft_2(type)
+.. index:: SDL_mixer_h_cft_5(type)
+.. index:: SDL_mixer_h_cft_4(type)
+.. index:: _struct__Mix_Music(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: MUS_CMD(const)
+.. index:: MIX_FADING_OUT(const)
+.. index:: MIX_NO_FADING(const)
+.. index:: MIX_FADING_IN(const)
+.. index:: MUS_WAV(const)
+.. index:: MUS_MID(const)
+.. index:: MUS_OGG(const)
+.. index:: MUS_NONE(const)
+.. index:: MUS_MOD(const)
+.. index:: MUS_MP3(const)
+.. index:: Mix_ChannelFinished(proc)
+.. index:: Mix_CloseAudio(proc)
+.. index:: Mix_FreeChunk(proc)
+.. index:: Mix_FreeMusic(proc)
+.. index:: Mix_HookMusic(proc)
+.. index:: Mix_HookMusicFinished(proc)
+.. index:: Mix_Pause(proc)
+.. index:: Mix_PauseMusic(proc)
+.. index:: Mix_Resume(proc)
+.. index:: Mix_ResumeMusic(proc)
+.. index:: Mix_RewindMusic(proc)
+.. index:: Mix_SetPostMix(proc)
+.. index:: Mix_AllocateChannels(fun)
+.. index:: Mix_ExpireChannel(fun)
+.. index:: Mix_FadeInChannelTimed(fun)
+.. index:: Mix_FadeInMusic(fun)
+.. index:: Mix_FadeInMusicPos(fun)
+.. index:: Mix_FadeOutChannel(fun)
+.. index:: Mix_FadeOutGroup(fun)
+.. index:: Mix_FadeOutMusic(fun)
+.. index:: Mix_FadingChannel(fun)
+.. index:: Mix_FadingMusic(fun)
+.. index:: Mix_GetChunk(fun)
+.. index:: Mix_GetMusicHookData(fun)
+.. index:: Mix_GetMusicType(fun)
+.. index:: Mix_GetSynchroValue(fun)
+.. index:: Mix_GroupAvailable(fun)
+.. index:: Mix_GroupChannel(fun)
+.. index:: Mix_GroupChannels(fun)
+.. index:: Mix_GroupCount(fun)
+.. index:: Mix_GroupNewer(fun)
+.. index:: Mix_GroupOldest(fun)
+.. index:: Mix_HaltChannel(fun)
+.. index:: Mix_HaltGroup(fun)
+.. index:: Mix_HaltMusic(fun)
+.. index:: Mix_Linked_Version(fun)
+.. index:: Mix_LoadMUS(fun)
+.. index:: Mix_LoadWAV_RW(fun)
+.. index:: Mix_OpenAudio(fun)
+.. index:: Mix_Paused(fun)
+.. index:: Mix_PausedMusic(fun)
+.. index:: Mix_PlayChannelTimed(fun)
+.. index:: Mix_PlayMusic(fun)
+.. index:: Mix_Playing(fun)
+.. index:: Mix_PlayingMusic(fun)
+.. index:: Mix_QuerySpec(fun)
+.. index:: Mix_QuickLoad_RAW(fun)
+.. index:: Mix_QuickLoad_WAV(fun)
+.. index:: Mix_RegisterEffect(fun)
+.. index:: Mix_ReserveChannels(fun)
+.. index:: Mix_SetDistance(fun)
+.. index:: Mix_SetMusicCMD(fun)
+.. index:: Mix_SetMusicPosition(fun)
+.. index:: Mix_SetPanning(fun)
+.. index:: Mix_SetPosition(fun)
+.. index:: Mix_SetReverseStereo(fun)
+.. index:: Mix_SetSynchroValue(fun)
+.. index:: Mix_UnregisterAllEffects(fun)
+.. index:: Mix_UnregisterEffect(fun)
+.. index:: Mix_Volume(fun)
+.. index:: Mix_VolumeChunk(fun)
+.. index:: Mix_VolumeMusic(fun)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: _fcbw_SDL_mixer_h_cft_2(const)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: _fcbw_SDL_mixer_h_cft_3(const)
+.. index:: wrapper_Mix_HookMusic(proc)
+.. index:: wrapper_Mix_RegisterEffect(fun)
+.. index:: wrapper_Mix_SetPostMix(proc)
 .. code-block:: felix
 
   //[SDL_mixer.flx]
@@ -2755,21 +2884,32 @@ SDL_mouse.flx
 
 
 
-.. index:: SDL_mouse_h
-.. index:: SDL_FreeCursor
-.. index:: SDL_SetCursor
-.. index:: SDL_WarpMouseInWindow
-.. index:: SDL_CreateCursor
-.. index:: SDL_CreateColorCursor
-.. index:: SDL_CreateSystemCursor
-.. index:: SDL_GetCursor
-.. index:: SDL_GetDefaultCursor
-.. index:: SDL_ShowCursor
-.. index:: SDL_GetMouseState
-.. index:: SDL_GetRelativeMouseState
-.. index:: SDL_GetMouseFocus
-.. index:: SDL_SetRelativeMouseMode
-.. index:: SDL_GetRelativeMouseMode
+.. index:: SDL_mouse_h(class)
+.. index:: SDL_BUTTON_RMASK(const)
+.. index:: SDL_BUTTON_MMASK(const)
+.. index:: SDL_BUTTON_LMASK(const)
+.. index:: SDL_BUTTON_X1MASK(const)
+.. index:: SDL_BUTTON_X2MASK(const)
+.. index:: SDL_BUTTON_RIGHT(const)
+.. index:: SDL_BUTTON_MIDDLE(const)
+.. index:: SDL_BUTTON_LEFT(const)
+.. index:: SDL_BUTTON_X1(const)
+.. index:: SDL_BUTTON_X2(const)
+.. index:: SDL_Cursor(type)
+.. index:: SDL_FreeCursor(proc)
+.. index:: SDL_SetCursor(proc)
+.. index:: SDL_WarpMouseInWindow(proc)
+.. index:: SDL_CreateCursor(fun)
+.. index:: SDL_CreateColorCursor(fun)
+.. index:: SDL_CreateSystemCursor(fun)
+.. index:: SDL_GetCursor(fun)
+.. index:: SDL_GetDefaultCursor(fun)
+.. index:: SDL_ShowCursor(fun)
+.. index:: SDL_GetMouseState(fun)
+.. index:: SDL_GetRelativeMouseState(fun)
+.. index:: SDL_GetMouseFocus(fun)
+.. index:: SDL_SetRelativeMouseMode(fun)
+.. index:: SDL_GetRelativeMouseMode(fun)
 .. code-block:: felix
 
   //[SDL_mouse.flx]
@@ -2836,25 +2976,26 @@ SDL_mutex.flx
 
 
 
-.. index:: SDL_DestroyCond
-.. index:: SDL_DestroyMutex
-.. index:: SDL_DestroySemaphore
-.. index:: SDL_CondBroadcast
-.. index:: SDL_CondSignal
-.. index:: SDL_CondWait
-.. index:: SDL_CondWaitTimeout
-.. index:: SDL_CreateCond
-.. index:: SDL_CreateMutex
-.. index:: SDL_CreateSemaphore
-.. index:: SDL_SemPost
-.. index:: SDL_SemTryWait
-.. index:: SDL_SemValue
-.. index:: SDL_SemWait
-.. index:: SDL_SemWaitTimeout
-.. index:: SDL_mutexP
-.. index:: SDL_mutexV
-.. index:: SDL_LockMutex
-.. index:: SDL_UnlockMutex
+.. index:: SDL_mutex_h(class)
+.. index:: SDL_DestroyCond(proc)
+.. index:: SDL_DestroyMutex(proc)
+.. index:: SDL_DestroySemaphore(proc)
+.. index:: SDL_CondBroadcast(fun)
+.. index:: SDL_CondSignal(fun)
+.. index:: SDL_CondWait(fun)
+.. index:: SDL_CondWaitTimeout(fun)
+.. index:: SDL_CreateCond(fun)
+.. index:: SDL_CreateMutex(fun)
+.. index:: SDL_CreateSemaphore(fun)
+.. index:: SDL_SemPost(fun)
+.. index:: SDL_SemTryWait(fun)
+.. index:: SDL_SemValue(fun)
+.. index:: SDL_SemWait(fun)
+.. index:: SDL_SemWaitTimeout(fun)
+.. index:: SDL_mutexP(fun)
+.. index:: SDL_mutexV(fun)
+.. index:: SDL_LockMutex(fun)
+.. index:: SDL_UnlockMutex(fun)
 .. code-block:: felix
 
   //[SDL_mutex.flx]
@@ -2911,39 +3052,49 @@ SDL_net.flx
 
 
 
-.. index:: SDLNet_FreePacket
-.. index:: SDLNet_FreePacketV
-.. index:: SDLNet_FreeSocketSet
-.. index:: SDLNet_Quit
-.. index:: SDLNet_TCP_Close
-.. index:: SDLNet_UDP_Close
-.. index:: SDLNet_UDP_Unbind
-.. index:: SDLNet_Write16
-.. index:: SDLNet_Write32
-.. index:: SDLNet_AddSocket
-.. index:: SDLNet_AllocPacket
-.. index:: SDLNet_AllocPacketV
-.. index:: SDLNet_AllocSocketSet
-.. index:: SDLNet_CheckSockets
-.. index:: SDLNet_DelSocket
-.. index:: SDLNet_Init
-.. index:: SDLNet_Read16
-.. index:: SDLNet_Read32
-.. index:: SDLNet_ResizePacket
-.. index:: SDLNet_ResolveHost
-.. index:: SDLNet_ResolveIP
-.. index:: SDLNet_TCP_Accept
-.. index:: SDLNet_TCP_GetPeerAddress
-.. index:: SDLNet_TCP_Open
-.. index:: SDLNet_TCP_Recv
-.. index:: SDLNet_TCP_Send
-.. index:: SDLNet_UDP_Bind
-.. index:: SDLNet_UDP_GetPeerAddress
-.. index:: SDLNet_UDP_Open
-.. index:: SDLNet_UDP_Recv
-.. index:: SDLNet_UDP_RecvV
-.. index:: SDLNet_UDP_Send
-.. index:: SDLNet_UDP_SendV
+.. index:: SDL_net_h(class)
+.. index:: SDLNet_GenericSocket(type)
+.. index:: IPaddress(type)
+.. index:: UDPpacket(type)
+.. index:: _struct__UDPsocket(type)
+.. index:: _struct__SDLNet_SocketSet(type)
+.. index:: _struct__TCPsocket(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: SDLNet_FreePacket(proc)
+.. index:: SDLNet_FreePacketV(proc)
+.. index:: SDLNet_FreeSocketSet(proc)
+.. index:: SDLNet_Quit(proc)
+.. index:: SDLNet_TCP_Close(proc)
+.. index:: SDLNet_UDP_Close(proc)
+.. index:: SDLNet_UDP_Unbind(proc)
+.. index:: SDLNet_Write16(proc)
+.. index:: SDLNet_Write32(proc)
+.. index:: SDLNet_AddSocket(fun)
+.. index:: SDLNet_AllocPacket(fun)
+.. index:: SDLNet_AllocPacketV(fun)
+.. index:: SDLNet_AllocSocketSet(fun)
+.. index:: SDLNet_CheckSockets(fun)
+.. index:: SDLNet_DelSocket(fun)
+.. index:: SDLNet_Init(fun)
+.. index:: SDLNet_Read16(fun)
+.. index:: SDLNet_Read32(fun)
+.. index:: SDLNet_ResizePacket(fun)
+.. index:: SDLNet_ResolveHost(fun)
+.. index:: SDLNet_ResolveIP(fun)
+.. index:: SDLNet_TCP_Accept(fun)
+.. index:: SDLNet_TCP_GetPeerAddress(fun)
+.. index:: SDLNet_TCP_Open(fun)
+.. index:: SDLNet_TCP_Recv(fun)
+.. index:: SDLNet_TCP_Send(fun)
+.. index:: SDLNet_UDP_Bind(fun)
+.. index:: SDLNet_UDP_GetPeerAddress(fun)
+.. index:: SDLNet_UDP_Open(fun)
+.. index:: SDLNet_UDP_Recv(fun)
+.. index:: SDLNet_UDP_RecvV(fun)
+.. index:: SDLNet_UDP_Send(fun)
+.. index:: SDLNet_UDP_SendV(fun)
 .. code-block:: felix
 
   //[SDL_net.flx]
@@ -3049,6 +3200,7 @@ SDL_opengl.flx
 
 
 
+.. index:: SDL_opengl_h(class)
 .. code-block:: felix
 
   //[SDL_opengl.flx]
@@ -3069,9 +3221,12 @@ SDL_pixels.flx
 
 
 
-.. index:: SDL_pixels_h
-.. index:: SDL_MapRGB
-.. index:: SDL_MapRGBA
+.. index:: SDL_pixels_h(class)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: SDL_MapRGB(fun)
+.. index:: SDL_MapRGBA(fun)
 .. code-block:: felix
 
   //[SDL_pixels.flx]
@@ -3129,9 +3284,10 @@ SDL_rect.flx
 
 
 
-.. index:: SDL_rect_h
-.. index:: inRect
-.. index:: str
+.. index:: SDL_rect_h(class)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: inRect(fun)
 .. code-block:: felix
 
   //[SDL_rect.flx]
@@ -3166,9 +3322,14 @@ SDL_render.flx
 
 
 
-.. index:: SDL_Render_h
-.. index:: SDL_CreateSoftwareRenderer
-.. index:: SDL_DestroyRenderer
+.. index:: SDL_Render_h(class)
+.. index:: SDL_Renderer(type)
+.. index:: SDL_CreateSoftwareRenderer(fun)
+.. index:: SDL_RenderDrawLine(gen)
+.. index:: SDL_SetRenderDrawColor(gen)
+.. index:: SDL_DestroyRenderer(proc)
+.. index:: SDL_RenderSetClipRect(gen)
+.. index:: SDL_RenderSetScale(gen)
 .. code-block:: felix
 
   //[SDL_render.flx]
@@ -3190,10 +3351,15 @@ SDL_rotozoom.flx
 
 
 
-.. index:: rotozoomSurfaceSize
-.. index:: zoomSurfaceSize
-.. index:: rotozoomSurface
-.. index:: zoomSurface
+.. index:: SDL_rotozoom_h(class)
+.. index:: tColorRGBA(cstruct)
+.. index:: tColorY(cstruct)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: rotozoomSurfaceSize(proc)
+.. index:: zoomSurfaceSize(proc)
+.. index:: rotozoomSurface(fun)
+.. index:: zoomSurface(fun)
 .. code-block:: felix
 
   //[SDL_rotozoom.flx]
@@ -3251,19 +3417,24 @@ SDL_rwops.flx
 
 
 
-.. index:: SDL_rwops_h
-.. index:: SDL_FreeRW
-.. index:: SDL_AllocRW
-.. index:: SDL_RWFromConstMem
-.. index:: SDL_RWFromFP
-.. index:: SDL_RWFromInputFile
-.. index:: SDL_RWFromFile
-.. index:: SDL_RWFromMem
-.. index:: get_read
-.. index:: get_write
-.. index:: get_seek
-.. index:: get_close
-.. index:: get_type
+.. index:: SDL_rwops_h(class)
+.. index:: SDL_RWops(type)
+.. index:: SDL_rwops_h_cft_1(type)
+.. index:: SDL_rwops_h_cft_3(type)
+.. index:: SDL_rwops_h_cft_2(type)
+.. index:: SDL_rwops_h_cft_4(type)
+.. index:: SDL_FreeRW(proc)
+.. index:: SDL_AllocRW(fun)
+.. index:: SDL_RWFromConstMem(fun)
+.. index:: SDL_RWFromFP(fun)
+.. index:: SDL_RWFromInputFile(fun)
+.. index:: SDL_RWFromFile(fun)
+.. index:: SDL_RWFromMem(fun)
+.. index:: get_read(fun)
+.. index:: get_write(fun)
+.. index:: get_seek(fun)
+.. index:: get_close(fun)
+.. index:: get_type(fun)
 .. code-block:: felix
 
   //[SDL_rwops.flx]
@@ -3320,7 +3491,7 @@ SDL_scancode.flx
 
 
 
-.. index:: SDL_scancode_h
+.. index:: SDL_scancode_h(class)
 .. code-block:: felix
 
   //[SDL_scancode.flx]
@@ -3690,20 +3861,31 @@ SDL_sound.flx
 
 
 
-.. index:: Sound_ClearError
-.. index:: Sound_FreeSample
-.. index:: Sound_GetLinkedVersion
-.. index:: Sound_AvailableDecoders
-.. index:: Sound_Decode
-.. index:: Sound_DecodeAll
-.. index:: Sound_GetError
-.. index:: Sound_Init
-.. index:: Sound_NewSample
-.. index:: Sound_NewSampleFromFile
-.. index:: Sound_Quit
-.. index:: Sound_Rewind
-.. index:: Sound_Seek
-.. index:: Sound_SetBufferSize
+.. index:: SDL_sound_h(class)
+.. index:: Sound_Sample(type)
+.. index:: Sound_Version(type)
+.. index:: Sound_AudioInfo(type)
+.. index:: Sound_SampleFlags(type)
+.. index:: Sound_DecoderInfo(type)
+.. index:: SOUND_SAMPLEFLAG_ERROR(const)
+.. index:: SOUND_SAMPLEFLAG_NONE(const)
+.. index:: SOUND_SAMPLEFLAG_EAGAIN(const)
+.. index:: SOUND_SAMPLEFLAG_EOF(const)
+.. index:: SOUND_SAMPLEFLAG_CANSEEK(const)
+.. index:: Sound_ClearError(proc)
+.. index:: Sound_FreeSample(proc)
+.. index:: Sound_GetLinkedVersion(proc)
+.. index:: Sound_AvailableDecoders(fun)
+.. index:: Sound_Decode(fun)
+.. index:: Sound_DecodeAll(fun)
+.. index:: Sound_GetError(fun)
+.. index:: Sound_Init(fun)
+.. index:: Sound_NewSample(fun)
+.. index:: Sound_NewSampleFromFile(fun)
+.. index:: Sound_Quit(fun)
+.. index:: Sound_Rewind(fun)
+.. index:: Sound_Seek(fun)
+.. index:: Sound_SetBufferSize(fun)
 .. code-block:: felix
 
   //[SDL_sound.flx]
@@ -3769,12 +3951,17 @@ SDL_surface.flx
 
 
 
-.. index:: SDL_surface_h
-.. index:: SDL_FreeSurface
-.. index:: SDL_ClearClipRect
-.. index:: SDL_MUSTLOCK
-.. index:: SDL_LockSurface
-.. index:: SDL_UnlockSurface
+.. index:: SDL_surface_h(class)
+.. index:: def(type)
+.. index:: SDL_BlitSurface(gen)
+.. index:: SDL_FreeSurface(proc)
+.. index:: SDL_FillRect(gen)
+.. index:: SDL_FillSurface(gen)
+.. index:: SDL_SetClipRect(gen)
+.. index:: SDL_ClearClipRect(proc)
+.. index:: SDL_MUSTLOCK(fun)
+.. index:: SDL_LockSurface(proc)
+.. index:: SDL_UnlockSurface(proc)
 .. code-block:: felix
 
   //[SDL_surface.flx]
@@ -3824,12 +4011,22 @@ SDL_timer.flx
 
 
 
-.. index:: SDL_Delay
-.. index:: SDL_AddTimer
-.. index:: SDL_GetTicks
-.. index:: SDL_RemoveTimer
-.. index:: SDL_SetTimer
-.. index:: wrapper_SDL_AddTimer
+.. index:: SDL_timer_h(class)
+.. index:: SDL_timer_h_cft_2(type)
+.. index:: SDL_timer_h_cft_1(type)
+.. index:: _struct__SDL_TimerID(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: SDL_Delay(proc)
+.. index:: SDL_AddTimer(fun)
+.. index:: SDL_GetTicks(fun)
+.. index:: SDL_RemoveTimer(fun)
+.. index:: SDL_SetTimer(fun)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: _fcbw_SDL_timer_h_cft_2(const)
+.. index:: wrapper_SDL_AddTimer(fun)
 .. code-block:: felix
 
   //[SDL_timer.flx]
@@ -3903,52 +4100,61 @@ SDL_ttf.flx
 
 
 
-.. index:: SDL_ttf_h
-.. index:: TTF_Compiled_Version
-.. index:: TTF_Linked_Version
-.. index:: TTF_Compiled_Version
-.. index:: TTF_Quit
-.. index:: TTF_WasInit
-.. index:: TTF_ByteSwappedUNICODE
-.. index:: TTF_OpenFontRW
-.. index:: TTF_CloseFont
-.. index:: TTF_ValidFont
-.. index:: TTF_GetFontStyle
-.. index:: TTF_SetFontStyle
-.. index:: TTF_GetFontOutline
-.. index:: TTF_SetFontOutline
-.. index:: TTF_GetFontHeight
-.. index:: TTF_GetFontHinting
-.. index:: TTF_SetFontHinting
-.. index:: TTF_GetFontKerning
-.. index:: TTF_SetFontKerning
-.. index:: TTF_FontHeight
-.. index:: TTF_FontAscent
-.. index:: TTF_FontDescent
-.. index:: TTF_FontLineSkip
-.. index:: TTF_FontFaces
-.. index:: TTF_FontFaceIsFixedWidth
-.. index:: TTF_FontFaceFamilyName
-.. index:: TTF_FontFaceStyleName
-.. index:: TTF_GlyphIsProvided
-.. index:: TTF_GlyphMetrics
-.. index:: TTF_RenderGlyph_Solid
-.. index:: TTF_RenderText_Solid
-.. index:: TTF_RenderUNICODE_Solid
-.. index:: TTF_RenderUTF8_Solid
-.. index:: TTF_RenderGlyph_Shaded
-.. index:: TTF_RenderText_Shaded
-.. index:: TTF_RenderUNICODE_Shaded
-.. index:: TTF_RenderUTF8_Shaded
-.. index:: TTF_RenderGlyph_Blended
-.. index:: TTF_RenderText_Blended
-.. index:: TTF_RenderUNICODE_Blended
-.. index:: TTF_RenderUTF8_Blended
-.. index:: TTF_RenderGlyph_Blended_Wrapped
-.. index:: TTF_RenderText_Blended_Wrapped
-.. index:: TTF_RenderUNICODE_Blended_Wrapped
-.. index:: TTF_RenderUTF8_Blended_Wrapped
-.. index:: TTF_GetFontKerningSize
+.. index:: SDL_ttf_h(class)
+.. index:: TTF_Compiled_Version(proc)
+.. index:: TTF_Linked_Version(fun)
+.. index:: TTF_Compiled_Version(fun)
+.. index:: TTF_Init(gen)
+.. index:: TTF_GetError(gen)
+.. index:: TTF_Quit(proc)
+.. index:: TTF_WasInit(fun)
+.. index:: TTF_ByteSwappedUNICODE(proc)
+.. index:: TTF_Font(type)
+.. index:: TTF_OpenFontIndexRW(gen)
+.. index:: TTF_OpenFontIndex(gen)
+.. index:: TTF_OpenFontRW(fun)
+.. index:: TTF_OpenFont(gen)
+.. index:: TTF_CloseFont(proc)
+.. index:: TTF_ValidFont(fun)
+.. index:: TTF_GetFontStyle(fun)
+.. index:: TTF_SetFontStyle(proc)
+.. index:: TTF_GetFontOutline(fun)
+.. index:: TTF_SetFontOutline(proc)
+.. index:: TTF_GetFontHeight(fun)
+.. index:: TTF_GetFontHinting(fun)
+.. index:: TTF_SetFontHinting(proc)
+.. index:: TTF_GetFontKerning(fun)
+.. index:: TTF_SetFontKerning(proc)
+.. index:: TTF_FontHeight(fun)
+.. index:: TTF_FontAscent(fun)
+.. index:: TTF_FontDescent(fun)
+.. index:: TTF_FontLineSkip(fun)
+.. index:: TTF_FontFaces(fun)
+.. index:: TTF_FontFaceIsFixedWidth(fun)
+.. index:: TTF_FontFaceFamilyName(fun)
+.. index:: TTF_FontFaceStyleName(fun)
+.. index:: TTF_GlyphIsProvided(fun)
+.. index:: TTF_GlyphMetrics(fun)
+.. index:: TTF_SizeText(gen)
+.. index:: TTF_SizeUNICODE(gen)
+.. index:: TTF_SizeUTF8(gen)
+.. index:: TTF_RenderGlyph_Solid(fun)
+.. index:: TTF_RenderText_Solid(fun)
+.. index:: TTF_RenderUNICODE_Solid(fun)
+.. index:: TTF_RenderUTF8_Solid(fun)
+.. index:: TTF_RenderGlyph_Shaded(fun)
+.. index:: TTF_RenderText_Shaded(fun)
+.. index:: TTF_RenderUNICODE_Shaded(fun)
+.. index:: TTF_RenderUTF8_Shaded(fun)
+.. index:: TTF_RenderGlyph_Blended(fun)
+.. index:: TTF_RenderText_Blended(fun)
+.. index:: TTF_RenderUNICODE_Blended(fun)
+.. index:: TTF_RenderUTF8_Blended(fun)
+.. index:: TTF_RenderGlyph_Blended_Wrapped(fun)
+.. index:: TTF_RenderText_Blended_Wrapped(fun)
+.. index:: TTF_RenderUNICODE_Blended_Wrapped(fun)
+.. index:: TTF_RenderUTF8_Blended_Wrapped(fun)
+.. index:: TTF_GetFontKerningSize(fun)
 .. code-block:: felix
 
   //[SDL_ttf.flx]
@@ -4090,6 +4296,23 @@ SDL_types.flx
 
 
 
+.. index:: SDL_types_h(class)
+.. index:: SDL_bool(type)
+.. index:: SDL_DUMMY_ENUM(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: SDL_PRESSED(const)
+.. index:: DUMMY_ENUM_VALUE(const)
+.. index:: SDL_RELEASED(const)
+.. index:: SDL_TRUE(const)
+.. index:: SDL_FALSE(const)
 .. code-block:: felix
 
   //[SDL_types.flx]
@@ -4143,11 +4366,12 @@ SDL_version.flx
 
 
 
-.. index:: SDL_version_h
-.. index:: SDL_Linked_Version
-.. index:: SDL_Compiled_Version
-.. index:: SDL_Linked_Version
-.. index:: SDL_Compiled_Version
+.. index:: SDL_version_h(class)
+.. index:: SDL_version(cstruct)
+.. index:: SDL_Linked_Version(proc)
+.. index:: SDL_Compiled_Version(proc)
+.. index:: SDL_Linked_Version(fun)
+.. index:: SDL_Compiled_Version(fun)
 .. code-block:: felix
 
   //[SDL_version.flx]
@@ -4192,29 +4416,48 @@ SDL_video.flx
 
 
 
-.. index:: SDL_video_h
-.. index:: SDL_DestroyWindow
-.. index:: SDL_GetWindowSurface
-.. index:: SDL_GetWindowID
-.. index:: SDL_GetWindowPosition
-.. index:: SDL_GetWindowSize
-.. index:: SDL_SetWindowGrab
-.. index:: SDL_GetWindowGrab
-.. index:: SDL_SetWindowMinumumSize
-.. index:: SDL_GetWindowMinumumSize
-.. index:: SDL_SetWindowMaximumSize
-.. index:: SDL_GetWindowMaximumSize
-.. index:: SDL_ShowWindow
-.. index:: SDL_HideWindow
-.. index:: SDL_RaiseWindow
-.. index:: SDL_MaximizeWindow
-.. index:: SDL_MinimizeWindow
-.. index:: SDL_RestoreWindow
-.. index:: SDL_SetWindowFullScreen
-.. index:: SDL_SetWindowBrightness
-.. index:: SDL_SetWindowBrightness
-.. index:: SDL_GetWindowBordered
-.. index:: SDL_SetWindowBordered
+.. index:: SDL_video_h(class)
+.. index:: SDL_WINDOWPOS_CENTERED(const)
+.. index:: SDL_WINDOWPOS_UNDEFINED(const)
+.. index:: SDL_WINDOW_FULLSCREEN(const)
+.. index:: SDL_WINDOW_FULLSCREEN_DESKTOP(const)
+.. index:: SDL_WINDOW_OPENGL(const)
+.. index:: SDL_WINDOW_SHOWN(const)
+.. index:: SDL_WINDOW_HIDDEN(const)
+.. index:: SDL_WINDOW_BORDERLESS(const)
+.. index:: SDL_WINDOW_RESIZABLE(const)
+.. index:: SDL_WINDOW_MINIMIZED(const)
+.. index:: SDL_WINDOW_MAXIMIZED(const)
+.. index:: SDL_WINDOW_INPUT_GRABBED(const)
+.. index:: SDL_WINDOW_INPUT_FOCUS(const)
+.. index:: SDL_WINDOW_MOUSE_FOCUS(const)
+.. index:: SDL_WINDOW_FOREIGN(const)
+.. index:: SDL_WINDOW_ALLOW_HIGHDPI(const)
+.. index:: SDL_Window(type)
+.. index:: SDL_CreateWindow(gen)
+.. index:: SDL_DestroyWindow(proc)
+.. index:: SDL_GetWindowSurface(fun)
+.. index:: SDL_UpdateWindowSurface(gen)
+.. index:: SDL_GetWindowID(fun)
+.. index:: SDL_GetWindowPosition(proc)
+.. index:: SDL_GetWindowSize(proc)
+.. index:: SDL_SetWindowGrab(proc)
+.. index:: SDL_GetWindowGrab(fun)
+.. index:: SDL_SetWindowMinumumSize(proc)
+.. index:: SDL_GetWindowMinumumSize(proc)
+.. index:: SDL_SetWindowMaximumSize(proc)
+.. index:: SDL_GetWindowMaximumSize(proc)
+.. index:: SDL_ShowWindow(proc)
+.. index:: SDL_HideWindow(proc)
+.. index:: SDL_RaiseWindow(proc)
+.. index:: SDL_MaximizeWindow(proc)
+.. index:: SDL_MinimizeWindow(proc)
+.. index:: SDL_RestoreWindow(proc)
+.. index:: SDL_SetWindowFullScreen(proc)
+.. index:: SDL_SetWindowBrightness(proc)
+.. index:: SDL_SetWindowBrightness(fun)
+.. index:: SDL_GetWindowBordered(fun)
+.. index:: SDL_SetWindowBordered(proc)
 .. code-block:: felix
 
   //[SDL_video.flx]
@@ -4323,9 +4566,10 @@ flx_faio_sdl.flx
 ================
 
 
-.. index:: event_type
-.. index:: block_sdl_events
-.. index:: unblock_sdl_events
+.. index:: SDL_events(class)
+.. index:: event_type(fun)
+.. index:: block_sdl_events(proc)
+.. index:: unblock_sdl_events(proc)
 .. code-block:: felix
 
   //[flx_faio_sdl.flx]

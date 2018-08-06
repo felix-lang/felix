@@ -30,23 +30,8 @@ This code always returns, it cannot fail EXCEPT if --help
 is given.
 
 
-.. index:: FlxPkgConfig_core
-.. index:: print_help
-.. index:: pre_incr
-.. index:: lexit
-.. index:: lexstr
-.. index:: is_prefix_of
-.. index:: xfind
-.. index:: parse_args
-.. index:: prefix
-.. index:: reattach_drive_letters
-.. index:: check_id
-.. index:: get_field
-.. index:: get_variable
-.. index:: add_val
-.. index:: tail_val
-.. index:: keep_val
-.. index:: handle_pkg
+.. index:: FlxPkgConfig_core(class)
+.. index:: flx_pkgconfig(gen)
 .. code-block:: felix
 
   //[flx_pkgconfig_core.flx]
@@ -449,7 +434,6 @@ It depends on only the flx_pkgconfig function.
 It exits with the return code that function returns.
 
 
-.. index:: kludge
 .. code-block:: felix
 
   //[flx_pkgconfig_tool.flx]
@@ -504,7 +488,7 @@ Database query object interface.
 --------------------------------
 
 
-.. index:: FlxPkgConfigQuery_interface
+.. index:: FlxPkgConfigQuery_interface(class)
 .. code-block:: felix
 
   //[flx_pkgconfig_query_interface.flx]
@@ -527,8 +511,7 @@ Database query object implementation.
 
 Depends on on the CLI function interface.
 
-.. index:: FlxPkgConfig_query
-.. index:: aux
+.. index:: FlxPkgConfig_query(class)
 .. code-block:: felix
 
   //[flx_pkgconfig_query.flx]
@@ -657,7 +640,7 @@ and the object based query wrapper, wrapped in a
 single include file and with a single wrapping namespace.
 
 
-.. index:: FlxPkgConfig
+.. index:: FlxPkgConfig(class)
 .. code-block:: felix
 
   //[flx_pkgconfig.flx]
@@ -732,10 +715,13 @@ process using it.
 This has to be FIXED so flx can run in non-stop mode.
 
 
-.. index:: FlxPkg
-.. index:: fix2word_flags
-.. index:: ehandler
-.. index:: write_include_file
+.. index:: FlxPkg(class)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: fix2word_flags(fun)
+.. index:: ehandler(proc)
+.. index:: map_package_requirements(gen)
+.. index:: write_include_file(proc)
 .. code-block:: felix
 
   //[flx_pkg.flx]

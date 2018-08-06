@@ -29,6 +29,7 @@ Needed here in the exceptions library because it can be
 thrown as an exception.
 
 
+.. index:: _uctor_(struct)
 .. code-block:: cpp
 
   //[flx_continuation.hpp]

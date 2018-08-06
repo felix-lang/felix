@@ -23,18 +23,20 @@ Array backed Heap
 
 We provide a min-heap using a  :code:`darray` for storage.
 
-.. index:: MinHeap
-.. index:: left_child
-.. index:: right_child
-.. index:: parent
-.. index:: minheap_t
-.. index:: heap_swap
-.. index:: bubble_up
-.. index:: heap_insert
-.. index:: bubble_down_lim
-.. index:: bubble_down
-.. index:: heap_sort
-.. index:: heapify
+.. index:: MinHeap(class)
+.. index:: left_child(fun)
+.. index:: right_child(fun)
+.. index:: parent(fun)
+.. index:: def(type)
+.. index:: minheap_t(ctor)
+.. index:: heap_swap(proc)
+.. index:: bubble_up(proc)
+.. index:: heap_insert(proc)
+.. index:: bubble_down_lim(proc)
+.. index:: bubble_down(proc)
+.. index:: extract_min(gen)
+.. index:: heap_sort(proc)
+.. index:: heapify(proc)
 .. code-block:: felix
 
   //[heap.flx]
@@ -129,23 +131,23 @@ AVL tree
 
 
 
-.. index:: Avl
-.. index:: _ctor_avl
-.. index:: _ctor_avl
-.. index:: insert
-.. index:: insert
-.. index:: find
-.. index:: last
-.. index:: all_but_last
-.. index:: first
-.. index:: all_but_first
-.. index:: join
-.. index:: remove
-.. index:: fold_left
-.. index:: fold_right
-.. index:: iter
-.. index:: iter
-.. index:: aux
+.. index:: Avl(class)
+.. index:: avl(union)
+.. index:: _ctor_avl(fun)
+.. index:: _ctor_avl(fun)
+.. index:: insert(fun)
+.. index:: insert(fun)
+.. index:: find(fun)
+.. index:: last(fun)
+.. index:: all_but_last(fun)
+.. index:: first(fun)
+.. index:: all_but_first(fun)
+.. index:: join(fun)
+.. index:: remove(fun)
+.. index:: fold_left(fun)
+.. index:: fold_right(fun)
+.. index:: iter(proc)
+.. index:: iter(proc)
 .. code-block:: felix
 
   //[avl.flx]
@@ -362,34 +364,36 @@ Directed Graph
 
 
 
-.. index:: DiGraph
-.. index:: digraph_t
-.. index:: len
-.. index:: default_vlabel
-.. index:: default_elabel
-.. index:: default_vertex
-.. index:: add_vertex
-.. index:: add_weighted_edge
-.. index:: add_edge
-.. index:: add_weighted_edge_pair
-.. index:: add_edge_pair
-.. index:: add_edge_pair
-.. index:: dump_digraph
-.. index:: ess_vertex_early
-.. index:: ess_vertex_late
-.. index:: ess_edge
-.. index:: dflt_pve
-.. index:: dflt_pvl
-.. index:: dflt_pe
-.. index:: digraph_visitor_processing_t
-.. index:: ess_vertex_early
-.. index:: ess_vertex_late
-.. index:: ess_edge
-.. index:: iter
-.. index:: breadth_first_iter
-.. index:: depth_first_iter
-.. index:: default_vlabel
-.. index:: default_elabel
+.. index:: DiGraph(class)
+.. index:: def(type)
+.. index:: digraph_t(ctor)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: len(fun)
+.. index:: default_vlabel(fun)
+.. index:: default_elabel(fun)
+.. index:: default_vertex(fun)
+.. index:: add_vertex(proc)
+.. index:: add_weighted_edge(proc)
+.. index:: add_edge(proc)
+.. index:: add_weighted_edge_pair(proc)
+.. index:: add_edge_pair(proc)
+.. index:: add_edge_pair(proc)
+.. index:: dump_digraph(fun)
+.. index:: Vstate(union)
+.. index:: def(type)
+.. index:: dflt_pve(proc)
+.. index:: dflt_pvl(proc)
+.. index:: dflt_pe(proc)
+.. index:: digraph_visitor_processing_t(ctor)
+.. index:: iterator(gen)
+.. index:: iter(proc)
+.. index:: breadth_first_iter(proc)
+.. index:: depth_first_iter(proc)
+.. index:: find_shortest_unweighted_path(gen)
+.. index:: prim(gen)
+.. index:: default_vlabel(fun)
+.. index:: default_elabel(fun)
 .. code-block:: felix
 
   //[graph.flx]
@@ -654,12 +658,15 @@ Partition range of integers 0 through n-1.
 Features classic union-find data structure.
 
 
-.. index:: Partition
-.. index:: partition_t
-.. index:: find
-.. index:: merge
-.. index:: partition_t
-.. index:: mk_equiv
+.. index:: Partition(class)
+.. index:: def(type)
+.. index:: partition_t(ctor)
+.. index:: find(fun)
+.. index:: merge(proc)
+.. index:: partition(gen)
+.. index:: equiv(gen)
+.. index:: partition_t(ctor)
+.. index:: mk_equiv(fun)
 .. code-block:: felix
 
   //[partition.flx]
@@ -758,7 +765,7 @@ on the label.
 
 
 
-.. index:: BinarySearchTree
+.. index:: BinarySearchTree(class)
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -769,6 +776,8 @@ Type.
 
 
 
+.. index:: def(type)
+.. index:: bstree_t(union)
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -790,8 +799,8 @@ Quick Checks.
 
 
 
-.. index:: leaf
-.. index:: leaf_or_empty
+.. index:: leaf(fun)
+.. index:: leaf_or_empty(fun)
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -814,7 +823,6 @@ String representation
 
 
 
-.. index:: str
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -833,7 +841,7 @@ Find the subtree with top node equal to the given
 value, or Empty if not found.
 
 
-.. index:: find
+.. index:: find(fun)
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -858,7 +866,7 @@ Find the minimum subtree in the tree which is the left
 most bottom leaf.
 
 
-.. index:: min
+.. index:: min(fun)
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -879,8 +887,6 @@ Procedural preorder iteration visits values
 in ascending order.
 
 
-.. index:: iter
-.. index:: aux
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -904,7 +910,7 @@ Fold.
 Easily defined given iter, this should be generalised elsewhere!
 
 
-.. index:: fold_left
+.. index:: fold_left(fun)
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -920,7 +926,7 @@ Map.
 Easily defined given iter. Note the tree structure is NOT preserved.
 
 
-.. index:: map
+.. index:: map(fun)
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -935,11 +941,11 @@ Constructors.
 
 
 
-.. index:: bstree_t
-.. index:: bstree_node_t
-.. index:: bstree_node_t
-.. index:: bstree_t
-.. index:: bstree_t
+.. index:: bstree_t(ctor)
+.. index:: bstree_node_t(ctor)
+.. index:: bstree_node_t(ctor)
+.. index:: bstree_t(ctor)
+.. index:: bstree_t(ctor)
 .. code-block:: felix
 
   //[binary_search_tree.flx ]
@@ -955,9 +961,8 @@ Insert routine
 
 
 
-.. index:: insert_with_parent
-.. index:: aux
-.. index:: insert
+.. index:: insert_with_parent(proc)
+.. index:: insert(proc)
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -985,8 +990,7 @@ Comprehension.
 Make a tree from an option stream.
 
 
-.. index:: bstree_t
-.. index:: aux
+.. index:: bstree_t(ctor)
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -1009,6 +1013,7 @@ Iterator.
 Ab interesting routine, related to  :code:`iter`.
 
 
+.. index:: iterator(gen)
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -1063,8 +1068,6 @@ As a container.
 
 
 
-.. index:: len
-.. index:: empty
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -1095,8 +1098,7 @@ Delete by value.
 Ensures the tree doesn't contain the specified value.
 
 
-.. index:: delete_element
-.. index:: aux
+.. index:: delete_element(proc)
 .. code-block:: felix
 
   //[binary_search_tree.flx ]
@@ -1157,60 +1159,68 @@ Judy Arrays
 
 
 
-.. index:: Judy
-.. index:: word
-.. index:: word
-.. index:: int
-.. index:: uint
-.. index:: ulong
-.. index:: size
-.. index:: address
-.. index:: isNULL
-.. index:: isNULL
-.. index:: free
-.. index:: Judy1Set
-.. index:: Judy1Unset
-.. index:: Judy1Test
-.. index:: Judy1Count
-.. index:: Judy1ByCount
-.. index:: Judy1FreeArray
-.. index:: Judy1MemUsed
-.. index:: Judy1First
-.. index:: Judy1Next
-.. index:: Judy1Last
-.. index:: Judy1Prev
-.. index:: Judy1FirstEmpty
-.. index:: Judy1NextEmpty
-.. index:: Judy1LastEmpty
-.. index:: Judy1PrevEmpty
-.. index:: free
-.. index:: JudyLIns
-.. index:: JudyLDel
-.. index:: JudyLGet
-.. index:: JudyLCount
-.. index:: JudyLByCount
-.. index:: JudyLFreeArray
-.. index:: JudyLMemUsed
-.. index:: JudyLFirst
-.. index:: JudyLNext
-.. index:: JudyLLast
-.. index:: JudyLPrev
-.. index:: JudyLFirstEmpty
-.. index:: JudyLNextEmpty
-.. index:: JudyLLastEmpty
-.. index:: JudyLPrevEmpty
-.. index:: free
-.. index:: JudySLIns
-.. index:: JudySLDel
-.. index:: JudySLGet
-.. index:: JudySLFirst
-.. index:: JudySLNext
-.. index:: JudySLLast
-.. index:: JudySLPrev
-.. index:: free
-.. index:: JudyHSIns
-.. index:: JudyHSDel
-.. index:: JudyHSGet
+.. index:: Judy(class)
+.. index:: word(type)
+.. index:: word(ctor)
+.. index:: word(ctor)
+.. index:: int(ctor)
+.. index:: uint(ctor)
+.. index:: ulong(ctor)
+.. index:: size(ctor)
+.. index:: address(ctor)
+.. index:: isNULL(fun)
+.. index:: isNULL(fun)
+.. index:: JError_t(type)
+.. index:: _ctor_J1Array(gen)
+.. index:: free(proc)
+.. index:: Judy1Set(proc)
+.. index:: Judy1Unset(proc)
+.. index:: Judy1Test(proc)
+.. index:: Judy1Count(proc)
+.. index:: Judy1ByCount(proc)
+.. index:: Judy1FreeArray(proc)
+.. index:: Judy1MemUsed(proc)
+.. index:: Judy1First(proc)
+.. index:: Judy1Next(proc)
+.. index:: Judy1Last(proc)
+.. index:: Judy1Prev(proc)
+.. index:: Judy1FirstEmpty(proc)
+.. index:: Judy1NextEmpty(proc)
+.. index:: Judy1LastEmpty(proc)
+.. index:: Judy1PrevEmpty(proc)
+.. index:: _ctor_JLArray(gen)
+.. index:: free(proc)
+.. index:: JudyLIns(proc)
+.. index:: JudyLDel(proc)
+.. index:: JudyLGet(proc)
+.. index:: JudyLCount(proc)
+.. index:: JudyLByCount(proc)
+.. index:: JudyLFreeArray(proc)
+.. index:: JudyLMemUsed(proc)
+.. index:: JudyLFirst(proc)
+.. index:: JudyLNext(proc)
+.. index:: JudyLLast(proc)
+.. index:: JudyLPrev(proc)
+.. index:: JudyLFirstEmpty(proc)
+.. index:: JudyLNextEmpty(proc)
+.. index:: JudyLLastEmpty(proc)
+.. index:: JudyLPrevEmpty(proc)
+.. index:: _ctor_JSLArray(gen)
+.. index:: free(proc)
+.. index:: JUDY_SL_MAXLEN(const)
+.. index:: JudySLIns(proc)
+.. index:: JudySLDel(proc)
+.. index:: JudySLGet(proc)
+.. index:: JudySLFirst(proc)
+.. index:: JudySLNext(proc)
+.. index:: JudySLLast(proc)
+.. index:: JudySLPrev(proc)
+.. index:: JHSArray(type)
+.. index:: _ctor_JHSArray(gen)
+.. index:: free(proc)
+.. index:: JudyHSIns(proc)
+.. index:: JudyHSDel(proc)
+.. index:: JudyHSGet(proc)
 .. code-block:: felix
 
   //[judy.flx]

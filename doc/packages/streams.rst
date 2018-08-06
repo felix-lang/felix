@@ -17,9 +17,9 @@ Iterators
 
 
 
-.. index:: Iterable
-.. index:: iterator
-.. index:: Streamable
+.. index:: Iterable(class)
+.. index:: iterator(fun)
+.. index:: Streamable(class)
 .. code-block:: felix
 
   //[iterator.flx]
@@ -125,8 +125,8 @@ dual to a list: it is a function
 First here is the class based definition of a stream.
 It has some problems as do all such definitions:
 
-.. index:: Fstream
-.. index:: uncons
+.. index:: Fstream(class)
+.. index:: uncons(fun)
 .. code-block:: felix
 
   //[stream.flx]
@@ -137,7 +137,7 @@ And now, we have a stream example.
 It is suprising? An integer is a stream.
 
 
-.. index:: uncons
+.. index:: uncons(fun)
 .. code-block:: felix
 
   //[stream.flx]
@@ -156,7 +156,7 @@ infinite list. Here is a stream of optional ints
 built from a list of ints.
 
 
-.. index:: uncons
+.. index:: uncons(fun)
 .. code-block:: felix
 
   //[stream.flx]
@@ -177,8 +177,7 @@ iterator we previously had is now degraded to an
 input iterator (where I use iterator in the C++ sense)
 
 
-.. index:: Stream
-.. index:: make_generator
+.. index:: Stream(class)
 .. code-block:: felix
 
   //[stream.flx]
@@ -202,7 +201,6 @@ of type
 We build such iterator out of a stream of optional values
 
 
-.. index:: make_iterator
 .. code-block:: felix
 
   //[stream.flx]
@@ -231,7 +229,7 @@ The critical thing we're doing is translating
 the internal uncons_f function, to one that
 returns a stream object
 
-.. index:: uncons
+.. index:: uncons(fun)
 .. code-block:: felix
 
   //[stream.flx]

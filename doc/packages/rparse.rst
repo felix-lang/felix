@@ -41,7 +41,7 @@ Felix is required to build it. The bootstrap version
 of Felix may not have all the required capabilities.
 
 
-.. index:: NewRespectfulParser
+.. index:: NewRespectfulParser(class)
 .. code-block:: felix
 
   //[rparse.flx]

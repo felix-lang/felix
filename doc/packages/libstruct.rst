@@ -229,18 +229,22 @@ C hackery
 
 Hackery for mapping between Felix and C/C++.
 
-.. index:: C_hack
-.. index:: ignore
-.. index:: cast
-.. index:: static_cast
-.. index:: dynamic_cast
-.. index:: const_cast
-.. index:: reinterpret_cast
-.. index:: reinterpret
-.. index:: isNULL
-.. index:: isNULL
-.. index:: dflt
-.. index:: destroy
+.. index:: C_hack(class)
+.. index:: va_list(type)
+.. index:: __builtin_va_list(type)
+.. index:: ignore(proc)
+.. index:: cast(fun)
+.. index:: static_cast(fun)
+.. index:: dynamic_cast(fun)
+.. index:: const_cast(fun)
+.. index:: reinterpret_cast(fun)
+.. index:: reinterpret(fun)
+.. index:: sizeof(const)
+.. index:: isNULL(fun)
+.. index:: isNULL(fun)
+.. index:: null(const)
+.. index:: dflt(fun)
+.. index:: destroy(proc)
 .. code-block:: felix
 
   //[c_hack.flx]
@@ -321,9 +325,10 @@ C stdlib Rand
 
 Just to get random functions.
 
-.. index:: Cstdlib
-.. index:: srand
-.. index:: rand
+.. index:: Cstdlib(class)
+.. index:: RAND_MAX(const)
+.. index:: srand(proc)
+.. index:: rand(fun)
 .. code-block:: felix
 
   //[cstdlib.flx]
@@ -359,7 +364,8 @@ Linux specifics
 ===============
 
 
-.. index:: get_cpu_nr
+.. index:: Linux(class)
+.. index:: get_cpu_nr(fun)
 .. code-block:: felix
 
   //[linux.flx]

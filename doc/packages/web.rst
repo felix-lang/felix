@@ -55,8 +55,8 @@ Web Server Support Library
   include "web/simple_config";
 
 
-.. index:: WebUtil
-.. index:: parse_attribute_list
+.. index:: WebUtil(class)
+.. index:: parse_attribute_list(fun)
 .. code-block:: felix
 
   //[web_util.flx]
@@ -73,11 +73,13 @@ Web Server Support Library
   }
 
 
-.. index:: HTTPBasicAuth
-.. index:: app_handlers
-.. index:: http_basic_auth_route
-.. index:: requires_auth
-.. index:: requires_auth
+.. index:: HTTPBasicAuth(class)
+.. index:: app_handlers(fun)
+.. index:: http_basic_auth_route(fun)
+.. index:: http_basic_auth(gen)
+.. index:: http_basic_auth(gen)
+.. index:: requires_auth(proc)
+.. index:: authorized_user(gen)
 .. code-block:: felix
 
   //[http_auth.flx]
@@ -180,19 +182,16 @@ Web Server Support Library
   }
 
 
-.. index:: HTTPRequest
-.. index:: str
-.. index:: str
-.. index:: get_params
-.. index:: get_entity_params
-.. index:: read_bytes
-.. index:: get_multipart_params
-.. index:: get_fname
-.. index:: get_path_and_fname
-.. index:: get_param
-.. index:: get_post_param
-.. index:: get_header
-.. index:: get_cookies
+.. index:: HTTPRequest(class)
+.. index:: get_params(fun)
+.. index:: get_entity_params(proc)
+.. index:: get_multipart_params(proc)
+.. index:: get_fname(fun)
+.. index:: get_path_and_fname(fun)
+.. index:: get_param(fun)
+.. index:: get_post_param(fun)
+.. index:: get_header(fun)
+.. index:: get_cookies(fun)
 .. code-block:: felix
 
   //[http_request.flx]
@@ -417,29 +416,31 @@ Web Server Support Library
   
 
 
-.. index:: HTTPResponse
-.. index:: no_headers
-.. index:: http_header
-.. index:: make_image
-.. index:: make_image
-.. index:: make_css
-.. index:: make_js
-.. index:: make_json
-.. index:: make_not_found
-.. index:: make_not_implemented
-.. index:: make_see_other
-.. index:: make_forbidden
-.. index:: make_unauthorized
-.. index:: make_unauthorized
-.. index:: make_continue
-.. index:: make_raw
-.. index:: make_raw
-.. index:: make_html
-.. index:: make_html
-.. index:: make_xhtml
-.. index:: make_xhtml
-.. index:: make_mime
-.. index:: make_mime
+.. index:: HTTPResponse(class)
+.. index:: http_response(struct)
+.. index:: def(type)
+.. index:: no_headers(fun)
+.. index:: http_header(fun)
+.. index:: make_image(fun)
+.. index:: make_image(fun)
+.. index:: make_css(fun)
+.. index:: make_js(fun)
+.. index:: make_json(fun)
+.. index:: make_not_found(fun)
+.. index:: make_not_implemented(fun)
+.. index:: make_see_other(fun)
+.. index:: make_forbidden(fun)
+.. index:: make_unauthorized(fun)
+.. index:: make_unauthorized(fun)
+.. index:: make_continue(fun)
+.. index:: make_raw(fun)
+.. index:: make_raw(fun)
+.. index:: make_html(fun)
+.. index:: make_html(fun)
+.. index:: make_xhtml(fun)
+.. index:: make_xhtml(fun)
+.. index:: make_mime(fun)
+.. index:: make_mime(fun)
 .. code-block:: felix
 
   //[http_response.flx]
@@ -556,17 +557,20 @@ Web Server Support Library
   //WWW-Authenticate: Basic realm="WallyWorld"
 
 
-.. index:: HTTPHandler
-.. index:: find_and_map
-.. index:: get_fs_path
-.. index:: txt2html
-.. index:: do_handle_not_found
-.. index:: handle_not_found_route
-.. index:: handle_css_route
-.. index:: handle_js_route
-.. index:: handle_image_route
-.. index:: handle_html_route
-.. index:: default_handlers
+.. index:: HTTPHandler(class)
+.. index:: http_handler(struct)
+.. index:: txt2html(fun)
+.. index:: do_handle_not_found(proc)
+.. index:: handle_not_found_route(fun)
+.. index:: handle_css(gen)
+.. index:: handle_css_route(fun)
+.. index:: handle_js(gen)
+.. index:: handle_js_route(fun)
+.. index:: handle_image(gen)
+.. index:: handle_image_route(fun)
+.. index:: handle_html(gen)
+.. index:: handle_html_route(fun)
+.. index:: default_handlers(fun)
 .. code-block:: felix
 
   //[http_handler.flx]
@@ -742,9 +746,10 @@ Web Server Support Library
     
   }
 
-.. index:: HTTPConnection
-.. index:: _ctor_http_connection
-.. index:: set_dirty
+.. index:: HTTPConnection(class)
+.. index:: http_connection(struct)
+.. index:: _ctor_http_connection(fun)
+.. index:: set_dirty(proc)
 .. code-block:: felix
 
   //[http_connection.flx]
@@ -799,8 +804,7 @@ Web Server Support Library
   }
 
 
-.. index:: HTTPStatusCodes
-.. index:: str
+.. index:: HTTPStatusCodes(class)
 .. code-block:: felix
 
   //[http_status_code.flx]
@@ -851,22 +855,23 @@ Web Server Support Library
   }
 
 
-.. index:: MIMEType
-.. index:: str
-.. index:: str
-.. index:: str
-.. index:: str
-.. index:: str
-.. index:: str
-.. index:: application_type_from_str
-.. index:: audio_type_from_str
-.. index:: image_type_from_str
-.. index:: text_type_from_str
-.. index:: multipart_type_from_str
-.. index:: from_str
-.. index:: mime_type_from_file
-.. index:: mime_type_from_extension
-.. index:: parse_media_type
+.. index:: MIMEType(class)
+.. index:: application_mime_subtype(union)
+.. index:: audio_mime_subtype(union)
+.. index:: image_mime_subtype(union)
+.. index:: text_mime_subtype(union)
+.. index:: multipart_mime_subtype(union)
+.. index:: mime_type(union)
+.. index:: def(type)
+.. index:: application_type_from_str(fun)
+.. index:: audio_type_from_str(fun)
+.. index:: image_type_from_str(fun)
+.. index:: text_type_from_str(fun)
+.. index:: multipart_type_from_str(fun)
+.. index:: from_str(fun)
+.. index:: mime_type_from_file(fun)
+.. index:: mime_type_from_extension(fun)
+.. index:: parse_media_type(fun)
 .. code-block:: felix
 
   //[mime_type.flx]
@@ -1301,11 +1306,11 @@ Web Server Support Library
   
 
 
-.. index:: Cookie
-.. index:: _ctor_cookie
-.. index:: str
-.. index:: set_cookie
-.. index:: set_cookies
+.. index:: Cookie(class)
+.. index:: cookie(struct)
+.. index:: _ctor_cookie(fun)
+.. index:: set_cookie(fun)
+.. index:: set_cookies(fun)
 .. code-block:: felix
 
   //[cookie.flx]
@@ -1347,20 +1352,22 @@ Web Server Support Library
   }
 
 
-.. index:: LowResTime
-.. index:: time
-.. index:: time_t
-.. index:: time_t
-.. index:: gmtime
-.. index:: localtime
-.. index:: asctime
-.. index:: strftime
-.. index:: rfc1123_date
-.. index:: rfc1123_date
-.. index:: rfc1123_date
-.. index:: hour
-.. index:: day
-.. index:: expires_seconds_from_now
+.. index:: LowResTime(class)
+.. index:: time_t(type)
+.. index:: time(proc)
+.. index:: time_t(ctor)
+.. index:: time_t(ctor)
+.. index:: tm(cstruct)
+.. index:: gmtime(fun)
+.. index:: localtime(fun)
+.. index:: asctime(fun)
+.. index:: strftime(fun)
+.. index:: rfc1123_date(fun)
+.. index:: rfc1123_date(fun)
+.. index:: rfc1123_date(fun)
+.. index:: hour(fun)
+.. index:: day(fun)
+.. index:: expires_seconds_from_now(fun)
 .. code-block:: felix
 
   //[low_res_time.flx]
@@ -1501,10 +1508,13 @@ Web Server Support Library
    
 
 
-.. index:: Json
-.. index:: str
-.. index:: str
-.. index:: parse_json
+.. index:: Json(class)
+.. index:: Jvalue(union)
+.. index:: def(type)
+.. index:: str(fun)
+.. index:: str(fun)
+.. index:: ParseResult(union)
+.. index:: parse_json(fun)
 .. code-block:: felix
 
   //[json.flx]
@@ -1755,20 +1765,25 @@ Web Server Support Library
   
 
 
-.. index:: Logger
-.. index:: simple_log_handles
-.. index:: console_log_handler_fn
-.. index:: simple_logger
-.. index:: console_logger
-.. index:: logger
-.. index:: str
-.. index:: to_str
-.. index:: log_date_fmt
-.. index:: log_date
-.. index:: open_log
-.. index:: rotate
-.. index:: rotate_when_larger_than_max_size
-.. index:: fsize_
+.. index:: Logger(class)
+.. index:: log(struct)
+.. index:: log_level(union)
+.. index:: def(type)
+.. index:: log_handler(struct)
+.. index:: simple_log_handles(fun)
+.. index:: simple_log_handler_fn(gen)
+.. index:: console_log_handler_fn(fun)
+.. index:: simple_logger(fun)
+.. index:: console_logger(fun)
+.. index:: logger(fun)
+.. index:: to_str(fun)
+.. index:: log_date_fmt(fun)
+.. index:: log_date(fun)
+.. index:: open_log(fun)
+.. index:: rotate(proc)
+.. index:: rotate_when_larger_than_max_size(fun)
+.. index:: fsize_(proc)
+.. index:: fsize(gen)
 .. code-block:: felix
 
   //[logger.flx]
@@ -1976,14 +1991,15 @@ Web Server Support Library
   
 
 
-.. index:: SimpleConfig
-.. index:: read_config
-.. index:: read_config_text
-.. index:: get_param
-.. index:: get_param_list
-.. index:: apply_param_vars
-.. index:: apply_param_vars_to
-.. index:: apply_param_vars_to
+.. index:: SimpleConfig(class)
+.. index:: def(type)
+.. index:: read_config(fun)
+.. index:: read_config_text(fun)
+.. index:: get_param(fun)
+.. index:: get_param_list(fun)
+.. index:: apply_param_vars(fun)
+.. index:: apply_param_vars_to(fun)
+.. index:: apply_param_vars_to(fun)
 .. code-block:: felix
 
   //[simple_config.flx]
@@ -2126,17 +2142,16 @@ Web Server Support Library
   }
 
 
-.. index:: ServerConfig
-.. index:: server_config
-.. index:: server_config
-.. index:: basic_server_config
-.. index:: basic_server_config
-.. index:: enhance_with_command_line_arguments
-.. index:: _fail
-.. index:: enhance_with_config_file
-.. index:: set_params
-.. index:: strtod
-.. index:: str
+.. index:: ServerConfig(class)
+.. index:: server_config(struct)
+.. index:: server_config(ctor)
+.. index:: server_config(ctor)
+.. index:: basic_server_config(fun)
+.. index:: basic_server_config(fun)
+.. index:: enhance_with_command_line_arguments(fun)
+.. index:: enhance_with_config_file(fun)
+.. index:: set_params(proc)
+.. index:: strtod(fun)
 .. code-block:: felix
 
   //[server_config.flx]
@@ -2312,8 +2327,8 @@ Web Server Support Library
   
 
 
-.. index:: SunDown
-.. index:: sundown
+.. index:: SunDown(class)
+.. index:: sundown(fun)
 .. code-block:: felix
 
   //[sundown.flx]
@@ -2324,9 +2339,9 @@ Web Server Support Library
   }
 
 
-.. index:: WebServer
-.. index:: serve
-.. index:: start_webserver
+.. index:: WebServer(class)
+.. index:: serve(proc)
+.. index:: start_webserver(proc)
 .. code-block:: felix
 
   //[web_server.flx]

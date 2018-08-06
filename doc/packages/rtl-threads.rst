@@ -76,10 +76,10 @@ threads and pchannels for synchronisation.
 
 
 
-.. index:: PTHREAD_EXTERN
-.. index:: PTHREAD_EXTERN
-.. index:: PTHREAD_EXTERN
-.. index:: PTHREAD_EXTERN
+.. index:: PTHREAD_EXTERN(class)
+.. index:: PTHREAD_EXTERN(class)
+.. index:: PTHREAD_EXTERN(class)
+.. index:: PTHREAD_EXTERN(class)
 .. code-block:: cpp
 
   //[pthread_thread.hpp]
@@ -618,7 +618,7 @@ Condition Variable
 ==================
 
 
-.. index:: PTHREAD_EXTERN
+.. index:: PTHREAD_EXTERN(class)
 .. code-block:: cpp
 
   //[pthread_condv.hpp]
@@ -698,7 +698,7 @@ Monitor
 =======
 
 
-.. index:: PTHREAD_EXTERN
+.. index:: PTHREAD_EXTERN(class)
 .. code-block:: cpp
 
   //[pthread_monitor.hpp]
@@ -812,7 +812,7 @@ Shared Counter
 ==============
 
 
-.. index:: PTHREAD_EXTERN
+.. index:: PTHREAD_EXTERN(class)
 .. code-block:: cpp
 
   //[pthread_counter.hpp]
@@ -950,7 +950,7 @@ Shared Boolean
 ==============
 
 
-.. index:: PTHREAD_EXTERN
+.. index:: PTHREAD_EXTERN(class)
 .. code-block:: cpp
 
   //[pthread_waitable_bool.hpp]
@@ -1490,9 +1490,13 @@ A lock free thread safe bag for holding non-null pointers.
     }
 
 
-.. index:: LockFreeBag
-.. index:: lf_bag
-.. index:: enqueue
+.. index:: LockFreeBag(class)
+.. index:: lf_bag(type)
+.. index:: lf_bag(ctor)
+.. index:: enqueue(proc)
+.. index:: dequeue(gen)
+.. index:: len(gen)
+.. index:: used(gen)
 .. code-block:: felix
 
   //[pthread_lf_bag.flx]
@@ -1520,7 +1524,7 @@ Bound Queue
 ===========
 
 
-.. index:: PTHREAD_EXTERN
+.. index:: PTHREAD_EXTERN(class)
 .. code-block:: cpp
 
   //[pthread_bound_queue.hpp]
@@ -1883,7 +1887,7 @@ unblock during the GC. That basically means unlocking must
 also do the check, to ensure blocked threads stay blocked.
 
 
-.. index:: PTHREAD_EXTERN
+.. index:: PTHREAD_EXTERN(class)
 .. code-block:: cpp
 
   //[pthread_fast_lock.hpp]
@@ -1933,11 +1937,7 @@ also do the check, to ensure blocked threads stay blocked.
   }}
 
 
-.. index:: FastLock
-.. index:: fast_lock
-.. index:: delete
-.. index:: lock
-.. index:: unlock
+.. index:: FastLock(class)
 .. code-block:: felix
 
   //[pthread_fast_lock.flx]

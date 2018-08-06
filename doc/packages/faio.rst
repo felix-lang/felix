@@ -70,11 +70,10 @@ Faio I/O
 ========
 
 
-.. index:: FAIO_EXTERN
-.. index:: socketio_request
-.. index:: FAIO_EXTERN
-.. index:: FAIO_EXTERN
-.. index:: FAIO_EXTERN
+.. index:: FAIO_EXTERN(class)
+.. index:: FAIO_EXTERN(class)
+.. index:: FAIO_EXTERN(class)
+.. index:: FAIO_EXTERN(class)
 .. code-block:: cpp
 
   //[faio_posixio.hpp]
@@ -374,12 +373,12 @@ Faio I/O
   
   }}
 
-.. index:: FAIO_EXTERN
-.. index:: FAIO_EXTERN
-.. index:: FAIO_EXTERN
-.. index:: FAIO_EXTERN
-.. index:: FAIO_EXTERN
-.. index:: FAIO_EXTERN
+.. index:: FAIO_EXTERN(class)
+.. index:: FAIO_EXTERN(class)
+.. index:: FAIO_EXTERN(class)
+.. index:: FAIO_EXTERN(class)
+.. index:: FAIO_EXTERN(class)
+.. index:: FAIO_EXTERN(class)
 .. code-block:: cpp
 
   //[faio_winio.hpp]
@@ -637,7 +636,7 @@ Faio Timer
 ==========
 
 
-.. index:: FAIO_EXTERN
+.. index:: FAIO_EXTERN(class)
 .. code-block:: cpp
 
   //[faio_timer.hpp]

@@ -144,57 +144,34 @@ RE2 regexps
 
 
 
-.. index:: Re2
-.. index:: StringPiece
-.. index:: StringPiece
-.. index:: StringPiece
-.. index:: StringPiece
-.. index:: StringPiece
-.. index:: StringPiece
-.. index:: string
-.. index:: len
-.. index:: data
-.. index:: len
-.. index:: str
-.. index:: subscript
-.. index:: Copy
-.. index:: encoding
-.. index:: set_encoding
-.. index:: posix_syntax
-.. index:: set_posix_syntax
-.. index:: longest_match
-.. index:: set_longest_match
-.. index:: log_errors
-.. index:: set_log_errors
-.. index:: max_mem
-.. index:: set_max_mem
-.. index:: literal
-.. index:: set_literal
-.. index:: never_nl
-.. index:: set_never_nl
-.. index:: case_sensitive
-.. index:: set_case_sensitive
-.. index:: perl_classes
-.. index:: set_perl_classes
-.. index:: word_boundary
-.. index:: set_word_boundary
-.. index:: one_line
-.. index:: set_one_line
-.. index:: ParseFlags
-.. index:: pattern
-.. index:: str
-.. index:: error
-.. index:: error_code
-.. index:: error_arg
-.. index:: ok
-.. index:: ProgramSize
-.. index:: QuoteMeta
-.. index:: PossibleMatchRange
-.. index:: NumberOfCapturingGroups
-.. index:: NamedCapturingGroups
-.. index:: CheckRewriteString
-.. index:: extract
-.. index:: extract
+.. index:: Re2(class)
+.. index:: RE2(type)
+.. index:: _ctor_RE2(gen)
+.. index:: StringPiece(type)
+.. index:: subscript(fun)
+.. index:: Arg(type)
+.. index:: Encoding(type)
+.. index:: RE2Options(type)
+.. index:: ErrorCode(type)
+.. index:: Anchor(type)
+.. index:: pattern(fun)
+.. index:: error(fun)
+.. index:: error_code(fun)
+.. index:: error_arg(fun)
+.. index:: ok(fun)
+.. index:: ProgramSize(fun)
+.. index:: GlobalReplace(gen)
+.. index:: Extract(gen)
+.. index:: QuoteMeta(fun)
+.. index:: PossibleMatchRange(fun)
+.. index:: NumberOfCapturingGroups(fun)
+.. index:: NamedCapturingGroups(fun)
+.. index:: Match(gen)
+.. index:: apply(gen)
+.. index:: CheckRewriteString(fun)
+.. index:: iterator(gen)
+.. index:: extract(fun)
+.. index:: extract(fun)
 .. code-block:: felix
 
   //[re2.flx]
@@ -451,9 +428,10 @@ Regular definitions
 
 
 
-.. index:: Regdef
-.. index:: ngrp
-.. index:: render
+.. index:: Regdef(class)
+.. index:: regex(union)
+.. index:: ngrp(fun)
+.. index:: render(fun)
 .. code-block:: felix
 
   //[regdef.flx]
@@ -646,12 +624,12 @@ Lexer
 
 
 
-.. index:: Lexer
-.. index:: start_iterator
-.. index:: end_iterator
-.. index:: bounds
-.. index:: string_between
-.. index:: deref
+.. index:: Lexer(class)
+.. index:: start_iterator(fun)
+.. index:: end_iterator(fun)
+.. index:: bounds(fun)
+.. index:: string_between(fun)
+.. index:: deref(fun)
 .. code-block:: felix
 
   //[lexer.flx]

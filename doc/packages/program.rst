@@ -48,13 +48,13 @@ Environment Variables
 
 
 
-.. index:: Env_class
-.. index:: pathsep
-.. index:: getenv
-.. index:: issetenv
-.. index:: getenv
-.. index:: getenvlist
-.. index:: Env
+.. index:: Env_class(class)
+.. index:: pathsep(fun)
+.. index:: getenv(fun)
+.. index:: issetenv(fun)
+.. index:: getenv(fun)
+.. index:: getenvlist(fun)
+.. index:: Env(class)
 .. code-block:: felix
 
   //[env.flx]
@@ -101,8 +101,10 @@ Command Line Options
 
 
 
-.. index:: CmdOpt
-.. index:: cmdopt
+.. index:: CmdOpt(class)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: cmdopt(ctor)
 .. code-block:: felix
 
   //[cmdopt.flx]
@@ -274,8 +276,10 @@ Process
 
 
 
-.. index:: Process_class
-.. index:: Process
+.. index:: Process_class(class)
+.. index:: popen_in(gen)
+.. index:: pclose(gen)
+.. index:: Process(class)
 .. code-block:: felix
 
   //[process.flx]
@@ -299,22 +303,27 @@ Posix Errno
 
 
 
-.. index:: Errno
-.. index:: int
-.. index:: errno_t
-.. index:: maybe_exit
-.. index:: maybe_exit
-.. index:: maybe_exit
-.. index:: strerror_r
-.. index:: strerror_r
-.. index:: strerror
-.. index:: Check
-.. index:: int_to_proc
-.. index:: int_to_int
-.. index:: pointer_to_pointer
-.. index:: ehandler
-.. index:: ehandler
-.. index:: ehandler
+.. index:: Errno(class)
+.. index:: int(ctor)
+.. index:: errno_t(ctor)
+.. index:: errno(const)
+.. index:: ENOERROR(const)
+.. index:: EACCES(const)
+.. index:: ENOENT(const)
+.. index:: EAGAIN(const)
+.. index:: ENOMEM(const)
+.. index:: EEXIST(const)
+.. index:: EINVAL(const)
+.. index:: EINTR(const)
+.. index:: maybe_exit(proc)
+.. index:: maybe_exit(proc)
+.. index:: maybe_exit(proc)
+.. index:: strerror_r(proc)
+.. index:: strerror_r(proc)
+.. index:: strerror(fun)
+.. index:: strerror(gen)
+.. index:: check_ignore(type)
+.. index:: check_throw(type)
 .. code-block:: felix
 
   //[posix_errno.flx]
@@ -407,21 +416,46 @@ Posix Process
 
 
 
-.. index:: PosixProcess
-.. index:: int
-.. index:: process_status_t
-.. index:: int_of_process_status_t
-.. index:: WIFCONTINUED
-.. index:: WIFEXITED
-.. index:: WIFSIGNALED
-.. index:: WIFSTOPPED
-.. index:: WEXITSTATUS
-.. index:: WTERMSIG
-.. index:: WSTOPSIG
-.. index:: WCOREDUMP
-.. index:: str
-.. index:: str
-.. index:: int
+.. index:: PosixProcess(class)
+.. index:: process_status_t(type)
+.. index:: int(ctor)
+.. index:: process_status_t(ctor)
+.. index:: int_of_process_status_t(fun)
+.. index:: WIFCONTINUED(fun)
+.. index:: WIFEXITED(fun)
+.. index:: WIFSIGNALED(fun)
+.. index:: WIFSTOPPED(fun)
+.. index:: WEXITSTATUS(fun)
+.. index:: WTERMSIG(fun)
+.. index:: WSTOPSIG(fun)
+.. index:: WCOREDUMP(fun)
+.. index:: str(fun)
+.. index:: environ(const)
+.. index:: exec_result_t(type)
+.. index:: bad_exec(const)
+.. index:: execv(gen)
+.. index:: execvp(gen)
+.. index:: execve(gen)
+.. index:: pid_t(type)
+.. index:: int(ctor)
+.. index:: child_process(const)
+.. index:: bad_process(const)
+.. index:: fork(gen)
+.. index:: spawn_result_t(union)
+.. index:: spawnv(gen)
+.. index:: spawnvp(gen)
+.. index:: spawnve(gen)
+.. index:: process_status_options_t(type)
+.. index:: WCONTINUED(const)
+.. index:: WNOHANG(const)
+.. index:: WUNTRACED(const)
+.. index:: WNONE(const)
+.. index:: waitpid(gen)
+.. index:: waitpid(gen)
+.. index:: ProcesStatus(union)
+.. index:: checkpid(gen)
+.. index:: kill(gen)
+.. index:: OUR_PROCESS_GROUP(const)
 .. code-block:: felix
 
   //[posix_process.flx]
@@ -607,22 +641,48 @@ Win32 Process
 
 
 
-.. index:: Win32Process
-.. index:: intptr
-.. index:: int
-.. index:: process_status_t
-.. index:: int_of_process_status_t
-.. index:: WIFCONTINUED
-.. index:: WIFEXITED
-.. index:: WIFSIGNALED
-.. index:: WIFSTOPPED
-.. index:: WEXITSTATUS
-.. index:: WTERMSIG
-.. index:: WSTOPSIG
-.. index:: WCOREDUMP
-.. index:: str
-.. index:: intptr
-.. index:: str
+.. index:: Win32Process(class)
+.. index:: process_status_t(type)
+.. index:: intptr(ctor)
+.. index:: int(ctor)
+.. index:: process_status_t(ctor)
+.. index:: int_of_process_status_t(fun)
+.. index:: WIFCONTINUED(fun)
+.. index:: WIFEXITED(fun)
+.. index:: WIFSIGNALED(fun)
+.. index:: WIFSTOPPED(fun)
+.. index:: WEXITSTATUS(fun)
+.. index:: WTERMSIG(fun)
+.. index:: WSTOPSIG(fun)
+.. index:: WCOREDUMP(fun)
+.. index:: str(fun)
+.. index:: environ(const)
+.. index:: exec_result_t(type)
+.. index:: bad_exec(const)
+.. index:: execv(gen)
+.. index:: execvp(gen)
+.. index:: execve(gen)
+.. index:: pid_t(type)
+.. index:: intptr(ctor)
+.. index:: bad_process(const)
+.. index:: spawn_result_t(union)
+.. index:: spawnv(gen)
+.. index:: spawnvp(gen)
+.. index:: spawnve(gen)
+.. index:: spawnv(gen)
+.. index:: spawnvp(gen)
+.. index:: spawnve(gen)
+.. index:: process_status_options_t(type)
+.. index:: WCONTINUED(const)
+.. index:: WNOHANG(const)
+.. index:: WUNTRACED(const)
+.. index:: WNONE(const)
+.. index:: waitpid(gen)
+.. index:: waitpid(gen)
+.. index:: ProcesStatus(union)
+.. index:: checkpid(gen)
+.. index:: kill(gen)
+.. index:: OUR_PROCESS_GROUP(const)
 .. code-block:: felix
 
   //[win32_process.flx]
@@ -778,14 +838,19 @@ System Call
 
 
 
-.. index:: System
-.. index:: argv
-.. index:: argv_dflt
-.. index:: args
-.. index:: setargs
-.. index:: setargs
-.. index:: pexit
-.. index:: pexit
+.. index:: System(class)
+.. index:: argc(const)
+.. index:: _argv(const)
+.. index:: argv(fun)
+.. index:: argv_dflt(fun)
+.. index:: args(fun)
+.. index:: setargs(proc)
+.. index:: setargs(proc)
+.. index:: system(gen)
+.. index:: exit(gen)
+.. index:: abort(gen)
+.. index:: ptf(const)
+.. index:: get_stdout(gen)
 .. code-block:: felix
 
   //[system.flx]
@@ -875,13 +940,23 @@ Shell
 
 
 
-.. index:: Shell_class
-.. index:: quote_arg
-.. index:: quote_args
-.. index:: quote_line_for_system
-.. index:: parse
-.. index:: quote_line_for_popen
-.. index:: Shell
+.. index:: Shell_class(class)
+.. index:: quote_arg(fun)
+.. index:: quote_args(fun)
+.. index:: quote_line_for_system(fun)
+.. index:: parse(fun)
+.. index:: raw_system(gen)
+.. index:: basic_system(gen)
+.. index:: system(gen)
+.. index:: system(gen)
+.. index:: system(gen)
+.. index:: quote_line_for_popen(fun)
+.. index:: raw_get_stdout(gen)
+.. index:: basic_get_stdout(gen)
+.. index:: get_stdout(gen)
+.. index:: get_stdout(gen)
+.. index:: get_stdout(gen)
+.. index:: Shell(class)
 .. code-block:: felix
 
   //[shell.flx]
@@ -983,11 +1058,7 @@ Posix Shell (Bash)
 
 
 
-.. index:: Bash
-.. index:: quote_arg
-.. index:: quote_line_for_system
-.. index:: quote_line_for_popen
-.. index:: parse
+.. index:: Bash(class)
 .. code-block:: felix
 
   //[posix_shell.flx]
@@ -1169,11 +1240,7 @@ Win32 Shell (cmd.exe)
 
 
 
-.. index:: CmdExe
-.. index:: quote_arg
-.. index:: quote_line_for_system
-.. index:: quote_line_for_popen
-.. index:: parse
+.. index:: CmdExe(class)
 .. code-block:: felix
 
   //[win32_shell.flx]
@@ -1310,10 +1377,11 @@ Signals
 
 
 
-.. index:: Signal_class
-.. index:: set_ctrl_c_flag
-.. index:: trap_ctrl_c
-.. index:: Signal
+.. index:: Signal_class(class)
+.. index:: get_ctrl_c_flag(gen)
+.. index:: set_ctrl_c_flag(proc)
+.. index:: trap_ctrl_c(proc)
+.. index:: Signal(class)
 .. code-block:: felix
 
   //[signal.flx]
@@ -1345,12 +1413,14 @@ Posix Signal
 
 
 
-.. index:: PosixSignal
-.. index:: signal_t
-.. index:: int
-.. index:: str
-.. index:: ignore_signal
-.. index:: trap_ctrl_c
+.. index:: PosixSignal(class)
+.. index:: signal_t(type)
+.. index:: signal_t(ctor)
+.. index:: int(ctor)
+.. index:: sig_t(type)
+.. index:: signal(gen)
+.. index:: null_signal_handler(const)
+.. index:: ignore_signal(proc)
 .. code-block:: felix
 
   //[posix_signal.flx]

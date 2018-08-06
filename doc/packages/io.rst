@@ -318,42 +318,52 @@ Simple Text I/O
 ===============
 
 
-.. index:: Input_file
-.. index:: fclose
-.. index:: Output_file
-.. index:: fclose
-.. index:: writeln
-.. index:: write
-.. index:: write
-.. index:: write
-.. index:: fflush
-.. index:: save
-.. index:: save
-.. index:: space
-.. index:: endl
-.. index:: fprint
-.. index:: fprintln
-.. index:: Cstdio
-.. index:: raw_load
-.. index:: raw_load_text
-.. index:: load
-.. index:: load_text
-.. index:: fclose
-.. index:: fclose
-.. index:: writeln
-.. index:: write
-.. index:: write
-.. index:: write
-.. index:: fflush
-.. index:: print
-.. index:: println
-.. index:: endl
-.. index:: space
-.. index:: fflush
-.. index:: eprint
-.. index:: eprintln
-.. index:: eendl
-.. index:: espace
+.. index:: Input_file(class)
+.. index:: raw_fopen_input(gen)
+.. index:: raw_fopen_input_text(gen)
+.. index:: fopen_input_text(gen)
+.. index:: fopen_input(gen)
+.. index:: valid(gen)
+.. index:: fclose(proc)
+.. index:: load(gen)
+.. index:: readln(gen)
+.. index:: read(gen)
+.. index:: iterator(gen)
+.. index:: feof(gen)
+.. index:: Output_file(class)
+.. index:: raw_fopen_output(gen)
+.. index:: raw_fopen_output_text(gen)
+.. index:: raw_fopen_append(gen)
+.. index:: raw_fopen_append_text(gen)
+.. index:: fopen_output(gen)
+.. index:: fopen_output_text(gen)
+.. index:: fopen_append(gen)
+.. index:: fopen_output_append_text(gen)
+.. index:: valid(gen)
+.. index:: fclose(proc)
+.. index:: writeln(proc)
+.. index:: write(proc)
+.. index:: write(proc)
+.. index:: write(proc)
+.. index:: fflush(proc)
+.. index:: save(proc)
+.. index:: save(proc)
+.. index:: space(proc)
+.. index:: endl(proc)
+.. index:: fprint(proc)
+.. index:: fprintln(proc)
+.. index:: Cstdio(class)
+.. index:: FILE(type)
+.. index:: raw_load(fun)
+.. index:: raw_load_text(fun)
+.. index:: load(fun)
+.. index:: load_text(fun)
+.. index:: stdin(const)
+.. index:: stdout(const)
+.. index:: stderr(const)
+.. index:: cstdin(const)
+.. index:: cstdout(const)
+.. index:: cstderr(const)
 .. code-block:: felix
 
   //[textio.flx]
@@ -641,51 +651,52 @@ Ansi Terminal
 
 
 
-.. index:: AnsiTerminal
-.. index:: NC_
-.. index:: NC_
-.. index:: NC
-.. index:: NC
-.. index:: blue_
-.. index:: blue_
-.. index:: blue
-.. index:: blue
-.. index:: BLUE_
-.. index:: BLUE_
-.. index:: BLUE
-.. index:: BLUE
-.. index:: cyan_
-.. index:: cyan_
-.. index:: cyan
-.. index:: cyan
-.. index:: CYAN_
-.. index:: CYAN_
-.. index:: CYAN
-.. index:: CYAN
-.. index:: green_
-.. index:: green_
-.. index:: green
-.. index:: green
-.. index:: GREEN_
-.. index:: GREEN_
-.. index:: GREEN
-.. index:: GREEN
-.. index:: red_
-.. index:: red_
-.. index:: red
-.. index:: red
-.. index:: RED_
-.. index:: RED_
-.. index:: RED
-.. index:: RED
-.. index:: yellow_
-.. index:: yellow_
-.. index:: yellow
-.. index:: yellow
-.. index:: YELLOW_
-.. index:: YELLOW_
-.. index:: YELLOW
-.. index:: YELLOW
+.. index:: AnsiTerminal(class)
+.. index:: cc(const)
+.. index:: NC_(fun)
+.. index:: NC_(fun)
+.. index:: NC(proc)
+.. index:: NC(proc)
+.. index:: blue_(fun)
+.. index:: blue_(fun)
+.. index:: blue(proc)
+.. index:: blue(proc)
+.. index:: BLUE_(fun)
+.. index:: BLUE_(fun)
+.. index:: BLUE(proc)
+.. index:: BLUE(proc)
+.. index:: cyan_(fun)
+.. index:: cyan_(fun)
+.. index:: cyan(proc)
+.. index:: cyan(proc)
+.. index:: CYAN_(fun)
+.. index:: CYAN_(fun)
+.. index:: CYAN(proc)
+.. index:: CYAN(proc)
+.. index:: green_(fun)
+.. index:: green_(fun)
+.. index:: green(proc)
+.. index:: green(proc)
+.. index:: GREEN_(fun)
+.. index:: GREEN_(fun)
+.. index:: GREEN(proc)
+.. index:: GREEN(proc)
+.. index:: red_(fun)
+.. index:: red_(fun)
+.. index:: red(proc)
+.. index:: red(proc)
+.. index:: RED_(fun)
+.. index:: RED_(fun)
+.. index:: RED(proc)
+.. index:: RED(proc)
+.. index:: yellow_(fun)
+.. index:: yellow_(fun)
+.. index:: yellow(proc)
+.. index:: yellow(proc)
+.. index:: YELLOW_(fun)
+.. index:: YELLOW_(fun)
+.. index:: YELLOW(proc)
+.. index:: YELLOW(proc)
 .. code-block:: felix
 
   //[ansi_terminal.flx]
@@ -759,35 +770,16 @@ Stream I/O
 
 
 
-.. index:: IOStream
-.. index:: IByteStream
-.. index:: read
-.. index:: OByteStream
-.. index:: write
-.. index:: IOByteStream
-.. index:: TerminalIByteStream
-.. index:: iclose
-.. index:: TerminalOByteStream
-.. index:: oclose
-.. index:: TerminalIOByteStream
-.. index:: ioclose
-.. index:: read
-.. index:: write
-.. index:: read
-.. index:: read
-.. index:: write
-.. index:: write
-.. index:: iclose
-.. index:: oclose
-.. index:: ioclose
-.. index:: cat
-.. index:: cat
-.. index:: cat
-.. index:: stream_cmp
-.. index:: cmp
-.. index:: echo
-.. index:: tee
-.. index:: write_string
+.. index:: IOStream(class)
+.. index:: devnull_t(union)
+.. index:: cat(proc)
+.. index:: cat(proc)
+.. index:: cat(proc)
+.. index:: stream_cmp(proc)
+.. index:: cmp(proc)
+.. index:: echo(proc)
+.. index:: tee(proc)
+.. index:: write_string(proc)
 .. code-block:: felix
 
   //[iostream.flx]
@@ -1150,11 +1142,11 @@ TCP/IP Sockets
 These sockets are ONLY for TCP/IP.
 
 
-.. index:: Socket_class
-.. index:: mk_listener
-.. index:: accept
-.. index:: shutdown
-.. index:: connect
+.. index:: Socket_class(class)
+.. index:: mk_listener(proc)
+.. index:: accept(proc)
+.. index:: shutdown(proc)
+.. index:: connect(proc)
 .. code-block:: felix
 
   //[socket.flx]
@@ -1179,16 +1171,8 @@ Posix sockets
 =============
 
 
-.. index:: PosixSocket
-.. index:: mk_listener
-.. index:: accept
-.. index:: shutdown
-.. index:: connect
-.. index:: read
-.. index:: write
-.. index:: iclose
-.. index:: oclose
-.. index:: ioclose
+.. index:: PosixSocket(class)
+.. index:: def(type)
 .. code-block:: felix
 
   //[socket.flx]
@@ -1277,16 +1261,8 @@ Windows sockets
 ===============
 
 
-.. index:: Win32Socket
-.. index:: mk_listener
-.. index:: accept
-.. index:: shutdown
-.. index:: connect
-.. index:: read
-.. index:: write
-.. index:: iclose
-.. index:: oclose
-.. index:: ioclose
+.. index:: Win32Socket(class)
+.. index:: def(type)
 .. code-block:: felix
 
   //[socket.flx]
@@ -1366,7 +1342,7 @@ Host sockets
 ============
 
 
-.. index:: Socket
+.. index:: Socket(class)
 .. code-block:: felix
 
   //[socket.flx]
@@ -1388,7 +1364,9 @@ Demux: Felix Event notification service
 
 
 
-.. index:: Demux
+.. index:: Demux(class)
+.. index:: demuxer(type)
+.. index:: mk_sys_demux(gen)
 .. code-block:: felix
 
   //[demux.flx]
@@ -1407,16 +1385,20 @@ Faio: Felix Asynchronous I/O service
 
 
 
-.. index:: Faio
-.. index:: faio_req
-.. index:: get_thread
-.. index:: get_bytes_done
-.. index:: init_pb
-.. index:: calc_eof
-.. index:: mk_alarm_clock
-.. index:: mk_sleep_request
-.. index:: sleep
-.. index:: sleep
+.. index:: Faio(class)
+.. index:: faio_req(proc)
+.. index:: get_thread(proc)
+.. index:: sel_param(type)
+.. index:: sel_param_ptr(type)
+.. index:: get_bytes_done(fun)
+.. index:: init_pb(proc)
+.. index:: calc_eof(proc)
+.. index:: sleep_request_t(type)
+.. index:: alarm_clock_t(type)
+.. index:: mk_alarm_clock(fun)
+.. index:: mk_sleep_request(fun)
+.. index:: sleep(proc)
+.. index:: sleep(proc)
 .. code-block:: felix
 
   //[faio.flx]
@@ -1478,42 +1460,9 @@ Posix Faio
 
 
 
-.. index:: Faio_posix
-.. index:: socklen_t
-.. index:: int
-.. index:: ss_family
-.. index:: sa_family
-.. index:: sockaddr_p
-.. index:: s_addr
-.. index:: sin_family
-.. index:: sin_port
-.. index:: sin_addr
-.. index:: sin_addr
-.. index:: s6_addr
-.. index:: sin6_family
-.. index:: sin6_port
-.. index:: sin6_addr
-.. index:: sin6_addr
-.. index:: inet_ntop
-.. index:: str
-.. index:: str
-.. index:: getpeername
-.. index:: getpeername
-.. index:: close
-.. index:: shutdown
-.. index:: bad_socket
-.. index:: get_pb
-.. index:: async_rw
-.. index:: async_read
-.. index:: async_write
-.. index:: mk_async_connect
-.. index:: get_socket
-.. index:: get_err
-.. index:: connect
-.. index:: mk_accept
-.. index:: get_socket
-.. index:: mk_listener
-.. index:: accept
+.. index:: Faio_posix(class)
+.. index:: str(fun)
+.. index:: str(fun)
 .. code-block:: felix
 
   //[posix_faio.flx]

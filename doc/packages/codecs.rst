@@ -33,11 +33,12 @@ Base64
 
 
 
-.. index:: Base64
-.. index:: encode
-.. index:: encode
-.. index:: wrap
-.. index:: decode
+.. index:: Base64(class)
+.. index:: make_string(gen)
+.. index:: encode(fun)
+.. index:: encode(fun)
+.. index:: wrap(fun)
+.. index:: decode(fun)
 .. code-block:: felix
 
   //[base64.flx]
@@ -182,11 +183,9 @@ Csv
 
 
 
-.. index:: Csv
-.. index:: get_csv_value
-.. index:: add
-.. index:: eq
-.. index:: get_csv_values
+.. index:: Csv(class)
+.. index:: get_csv_value(proc)
+.. index:: get_csv_values(fun)
 .. code-block:: felix
 
   //[csv.flx]

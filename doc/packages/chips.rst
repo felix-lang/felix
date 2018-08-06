@@ -22,7 +22,7 @@ Write block.
 Blocks reader.
 
 
-.. index:: BaseChips
+.. index:: BaseChips(class)
 .. code-block:: felix
 
   //[chips.flx]
@@ -323,7 +323,6 @@ named io.inp, io.out.
 
 
 
-.. index:: pipe
 .. code-block:: felix
 
   //[chips.flx]
@@ -505,7 +504,7 @@ an argument.
 
 
 
-.. index:: aux
+.. index:: aux(proc)
 .. code-block:: felix
 
   //[chips.flx]

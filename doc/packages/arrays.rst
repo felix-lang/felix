@@ -39,7 +39,7 @@ a membership operator which would require some standard
 comparison. Arrays don't come equipped with a comparison.
 
 
-.. index:: ArrayValue
+.. index:: ArrayValue(class)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -48,7 +48,7 @@ comparison. Arrays don't come equipped with a comparison.
   {
 The length of the array.
 
-.. index:: len
+.. index:: len(fun)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -58,14 +58,14 @@ The length of the array.
 Performance routine to fetch the n'th element
 of an array without any bounds checking.
 
-.. index:: unsafe_get
+.. index:: unsafe_get(fun)
 .. code-block:: felix
 
   //[array_class.flx]
     //$ Unchecked common indexing.
     virtual fun unsafe_get: t * size -> v;
 
-.. index:: get
+.. index:: get(fun)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -89,7 +89,7 @@ call on the get method:
 Note that the more usual reverse application using
 operator dot  :code:`.` is also made available this way.
 
-.. index:: apply
+.. index:: apply(fun)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -98,7 +98,7 @@ operator dot  :code:`.` is also made available this way.
     fun apply [I in ints] (i:I, x:t) => get (x,i.size);
   
 
-.. index:: iter
+.. index:: iter(proc)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -113,7 +113,7 @@ operator dot  :code:`.` is also made available this way.
     }
   
 
-.. index:: iiter
+.. index:: iiter(proc)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -160,7 +160,7 @@ of data, the loop terminates.
 This HOF folds the values in an array into an accumulator
 using the supplied function. The scan is left to right.
 
-.. index:: fold_left
+.. index:: fold_left(fun)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -179,7 +179,7 @@ using the supplied function. The scan is left to right.
 This HOF folds the values in an array into an accumulator
 using the supplied function. The scan is right to left.
 
-.. index:: fold_right
+.. index:: fold_right(fun)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -203,7 +203,7 @@ is currently not checked. The default order is a left
 fold but the function is virtual and may be replaced
 by another more efficient ordering in an overriding function.
 
-.. index:: fold
+.. index:: fold(fun)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -214,7 +214,7 @@ This function searches an array for a value that satifies
 the given predicate and returns a boolean value
 indicating whether one exists.
 
-.. index:: mem
+.. index:: mem(fun)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -236,7 +236,7 @@ in the specified relation  :code:`rel` to a given value  :code:`v`,
 where the relation is applied in that order:  :code:`rel(i,v)`.
 The usual relation to use is equality.
 
-.. index:: mem
+.. index:: mem(fun)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -261,7 +261,7 @@ the array value type t to perform a search.
 Same as our  :code:`mem` function except it returns the located value
 as an option type.
 
-.. index:: find
+.. index:: find(fun)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -281,7 +281,7 @@ as an option type.
 Same as our  :code:`mem` function except it returns the located value
 as an option type.
 
-.. index:: find
+.. index:: find(fun)
 .. code-block:: felix
 
   //[array_class.flx ]
@@ -345,9 +345,7 @@ required.
 This work is incomplete.
 
 
-.. index:: TrueArrayValue
-.. index:: render
-.. index:: true_unsafe_get
+.. index:: TrueArrayValue(class)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -367,7 +365,7 @@ by allowing mutation. A mutable array is typically abstract and
 represented by a pointer, so it also uses pass by reference.
 
 
-.. index:: ArrayObject
+.. index:: ArrayObject(class)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -379,7 +377,7 @@ represented by a pointer, so it also uses pass by reference.
 Modify an array object at a given index position
 by assigning a new value without a bounds check.
 
-.. index:: unsafe_set
+.. index:: unsafe_set(proc)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -391,7 +389,7 @@ addressabe be stored as an object. A bitarray
 will not satisfy this requirement. Do we need
 another abstraction?
 
-.. index:: unsafe_get_ref
+.. index:: unsafe_get_ref(fun)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -400,7 +398,7 @@ another abstraction?
 Modify an array object by assigning a new value
 to the slot at a given index position. Bounds checked.
 
-.. index:: set
+.. index:: set(proc)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -411,7 +409,7 @@ to the slot at a given index position. Bounds checked.
   
 
 
-.. index:: n
+.. index:: n(fun)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -428,8 +426,8 @@ Incomplete work for arrays in a more precise setting
 where the index type is fixed.
 
 
-.. index:: TrueArrayObject
-.. index:: true_unsafe_set
+.. index:: TrueArrayObject(class)
+.. index:: true_unsafe_set(proc)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -454,7 +452,7 @@ STL like array operations. These pointers have
 type  :code:`+v` where  :code:`v` is the element type. The named
 type  :code:`carray[v]` is an alias for  :code:`+v`.
 
-.. index:: ContiguousArrayObject
+.. index:: ContiguousArrayObject(class)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -465,8 +463,8 @@ type  :code:`carray[v]` is an alias for  :code:`+v`.
     inherit ArrayObject[t,v];
   
 
-.. index:: stl_begin
-.. index:: stl_end
+.. index:: stl_begin(fun)
+.. index:: stl_end(fun)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -492,7 +490,7 @@ In place sort the contents of a contiuous array using STL
 sort and a supplied comparator, which must be a
 total order.
 
-.. index:: sort
+.. index:: sort(proc)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -507,7 +505,7 @@ total order.
 Inplace sort using default comparator.
 
 
-.. index:: sort
+.. index:: sort(proc)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -523,7 +521,7 @@ A contiguous array in a more precise setting.
 Incomplete.
 
 
-.. index:: TrueContiguousArrayObject
+.. index:: TrueContiguousArrayObject(class)
 .. code-block:: felix
 
   //[array_class.flx]
@@ -539,26 +537,22 @@ Array
 
 
 
-.. index:: Farray
-.. index:: copy
-.. index:: len
-.. index:: unsafe_get
-.. index:: len
-.. index:: unsafe_get
-.. index:: unsafe_set
-.. index:: set
-.. index:: stl_begin
-.. index:: stl_end
-.. index:: map
-.. index:: rev_map
-.. index:: join
-.. index:: join
-.. index:: join
-.. index:: transpose
-.. index:: rev
-.. index:: sort
-.. index:: sort
-.. index:: str
+.. index:: Farray(class)
+.. index:: def(type)
+.. index:: copy(fun)
+.. index:: unsafe_set(proc)
+.. index:: set(proc)
+.. index:: stl_begin(fun)
+.. index:: stl_end(fun)
+.. index:: map(fun)
+.. index:: rev_map(fun)
+.. index:: join(fun)
+.. index:: join(fun)
+.. index:: join(fun)
+.. index:: transpose(fun)
+.. index:: rev(fun)
+.. index:: sort(fun)
+.. index:: sort(fun)
 .. code-block:: felix
 
   //[array.flx]
@@ -767,25 +761,19 @@ Varray
 
 
 
-.. index:: Varray
-.. index:: varray
-.. index:: varray_nonul
-.. index:: len
-.. index:: unsafe_get
-.. index:: unsafe_set
-.. index:: unsafe_get_ref
-.. index:: stl_begin
-.. index:: stl_end
-.. index:: maxlen
-.. index:: _push_back
-.. index:: push_back
-.. index:: pop_back
-.. index:: erase
-.. index:: erase
-.. index:: insert
-.. index:: map
-.. index:: rop
-.. index:: str
+.. index:: Varray(class)
+.. index:: varray(ctor)
+.. index:: varray_nonul(fun)
+.. index:: maxlen(fun)
+.. index:: _push_back(proc)
+.. index:: push_back(proc)
+.. index:: pop_back(proc)
+.. index:: erase(proc)
+.. index:: erase(proc)
+.. index:: insert(proc)
+.. index:: map(fun)
+.. index:: rop(fun)
+.. index:: str(fun)
 .. code-block:: felix
 
   //[varray.flx]
@@ -1130,7 +1118,7 @@ O(1) speed is obtained at the cost of a lot of memory wastage.
 
 
 
-.. index:: Darray
+.. index:: Darray(class)
 .. code-block:: felix
 
   //[darray.flx]
@@ -1197,6 +1185,7 @@ The definition is abstract, so the client us not able to fiddle with
 the underlying control block.
 
 
+.. index:: darray(type)
 .. code-block:: felix
 
   //[darray.flx]
@@ -1216,7 +1205,7 @@ is called the new bound will be adjusted on the next size changing
 operation such as a  :code:`push_back` or  :code:`pop_back`.
 
 
-.. index:: do_resize
+.. index:: do_resize(proc)
 .. code-block:: felix
 
   //[darray.flx]
@@ -1260,8 +1249,6 @@ As a value.
 
 
 
-.. index:: len
-.. index:: unsafe_get
 .. code-block:: felix
 
   //[darray.flx]
@@ -1276,8 +1263,6 @@ As an object.
 
 
 
-.. index:: unsafe_set
-.. index:: unsafe_get_ref
 .. code-block:: felix
 
   //[darray.flx]
@@ -1292,8 +1277,6 @@ As an contiguous array.
 
 
 
-.. index:: stl_begin
-.. index:: stl_end
 .. code-block:: felix
 
   //[darray.flx]
@@ -1310,11 +1293,11 @@ There's no  :code:`push_front` but there should be.
 Generally, this class is very incomplete.
 
 
-.. index:: pop_back
-.. index:: push_back
-.. index:: insert
-.. index:: erase
-.. index:: erase
+.. index:: pop_back(proc)
+.. index:: push_back(proc)
+.. index:: insert(proc)
+.. index:: erase(proc)
+.. index:: erase(proc)
 .. code-block:: felix
 
   //[darray.flx]
@@ -1368,7 +1351,6 @@ Convert a darray to a string.
 
 
 
-.. index:: str
 .. code-block:: felix
 
   //[darray.flx]
@@ -1384,7 +1366,7 @@ Enable map on darray objects.
 
 
 
-.. index:: map
+.. index:: map(fun)
 .. code-block:: felix
 
   //[darray.flx]
@@ -1406,7 +1388,7 @@ Enable filter on darray objects
 
 
 
-.. index:: filter
+.. index:: filter(fun)
 .. code-block:: felix
 
   //[darray.flx]
@@ -1462,11 +1444,12 @@ Sarray
 
 
 
-.. index:: Sarray
-.. index:: get
-.. index:: set
-.. index:: del
-.. index:: pack
+.. index:: Sarray(class)
+.. index:: sarray(type)
+.. index:: get(fun)
+.. index:: set(proc)
+.. index:: del(proc)
+.. index:: pack(proc)
 .. code-block:: felix
 
   //[sarray.flx]

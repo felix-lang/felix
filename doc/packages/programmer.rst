@@ -13,8 +13,6 @@ flx_tangle.flx $PWD/src/tools/flx_tangle.flx
 ============== =============================
 
 
-.. index:: print_help
-.. index:: save_tangle
 .. code-block:: felix
 
   //[flx_tangle.flx]

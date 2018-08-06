@@ -27,24 +27,29 @@ Fibres (fthreads)
 
 
 
-.. index:: Fibres
-.. index:: spawn_fthread
-.. index:: schedule_fthread
-.. index:: suicide
-.. index:: swait
-.. index:: chain
-.. index:: fibre_scheduler
-.. index:: fibre_scheduler
-.. index:: delete_fibre_scheduler
-.. index:: spawn_fibre
-.. index:: frun
-.. index:: run
-.. index:: run
-.. index:: get_state
-.. index:: spawn_fthread
-.. index:: kill
-.. index:: run
-.. index:: send
+.. index:: Fibres(class)
+.. index:: start(gen)
+.. index:: start(gen)
+.. index:: mk_thread(gen)
+.. index:: spawn_fthread(proc)
+.. index:: schedule_fthread(proc)
+.. index:: suicide(proc)
+.. index:: swait(proc)
+.. index:: chain(proc)
+.. index:: fibre_scheduler(type)
+.. index:: fibre_scheduler(ctor)
+.. index:: fibre_scheduler(ctor)
+.. index:: delete_fibre_scheduler(proc)
+.. index:: spawn_fibre(proc)
+.. index:: frun(proc)
+.. index:: run(proc)
+.. index:: run(proc)
+.. index:: get_state(fun)
+.. index:: spawn_fthread(proc)
+.. index:: step(gen)
+.. index:: kill(proc)
+.. index:: run(proc)
+.. index:: send(proc)
 .. code-block:: felix
 
   //[fibres.flx]
@@ -221,18 +226,34 @@ Synchronous Channels
 
 
 
-.. index:: Schannel
-.. index:: isNULL
-.. index:: isNULL
-.. index:: isNULL
-.. index:: read
-.. index:: read
-.. index:: read
-.. index:: read
-.. index:: write
-.. index:: write
-.. index:: broadcast
-.. index:: broadcast
+.. index:: Schannel(class)
+.. index:: mk_untyped_schannel(gen)
+.. index:: mk_schannel(gen)
+.. index:: mk_null_schannel(gen)
+.. index:: mk_null_ischannel(gen)
+.. index:: mk_null_oschannel(gen)
+.. index:: isNULL(fun)
+.. index:: isNULL(fun)
+.. index:: isNULL(fun)
+.. index:: mk_ioschannel_pair(gen)
+.. index:: mk_ioschannel_pair(gen)
+.. index:: read(proc)
+.. index:: read(proc)
+.. index:: read(gen)
+.. index:: read(proc)
+.. index:: read(proc)
+.. index:: read(gen)
+.. index:: ready(gen)
+.. index:: ready(gen)
+.. index:: maybe_read(gen)
+.. index:: maybe_read(gen)
+.. index:: write(proc)
+.. index:: write(proc)
+.. index:: broadcast(proc)
+.. index:: broadcast(proc)
+.. index:: iterator(gen)
+.. index:: subcall(gen)
+.. index:: apply(fun)
 .. code-block:: felix
 
   //[schannels.flx]
@@ -402,9 +423,9 @@ get all the input data, but the order is indeterminate.
 
 
 
-.. index:: Multiplexor
-.. index:: mux
-.. index:: mux
+.. index:: Multiplexor(class)
+.. index:: mux(proc)
+.. index:: mux(fun)
 .. code-block:: felix
 
   //[mux.flx]
@@ -447,7 +468,7 @@ Special syntax for both pipes and also abbreviation for
 schannel types.
 
 
-.. index:: DuplexSchannels
+.. index:: DuplexSchannels(class)
 .. code-block:: felix
 
   //[schannels.flx]
@@ -545,7 +566,6 @@ schannel types.
   
 Let's now rewrite our example:
 
-.. index:: int_to_string
 .. code-block:: felix
 
   //[subrout-02.flx]
@@ -566,7 +586,6 @@ Let's now rewrite our example:
 Even more compactly:
 
 
-.. index:: int_to_string
 .. code-block:: felix
 
   //[subrout-03.flx]

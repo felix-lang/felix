@@ -35,27 +35,29 @@ to only 8 cbools.
 
 
 
-.. index:: Bool
-.. index:: bool
-.. index:: land
-.. index:: nand
-.. index:: lor
-.. index:: nor
-.. index:: xor
-.. index:: lnot
-.. index:: implies
-.. index:: CBool
-.. index:: cbool
-.. index:: land
-.. index:: nand
-.. index:: lor
-.. index:: nor
-.. index:: xor
-.. index:: lnot
-.. index:: implies
-.. index:: zero
-.. index:: str
-.. index:: str
+.. index:: Bool(class)
+.. index:: bool(ctor)
+.. index:: land(fun)
+.. index:: nand(fun)
+.. index:: lor(fun)
+.. index:: nor(fun)
+.. index:: xor(fun)
+.. index:: lnot(fun)
+.. index:: implies(fun)
+.. index:: CBool(class)
+.. index:: cbool(ctor)
+.. index:: cfalse(const)
+.. index:: ctrue(const)
+.. index:: land(fun)
+.. index:: nand(fun)
+.. index:: lor(fun)
+.. index:: nor(fun)
+.. index:: xor(fun)
+.. index:: lnot(fun)
+.. index:: implies(fun)
+.. index:: zero(fun)
+.. index:: str(fun)
+.. index:: str(fun)
 .. code-block:: felix
 
   //[bool.flx]

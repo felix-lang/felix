@@ -142,7 +142,7 @@ Integrated presentation.
 Merge all the separate classes into a single
 class to make it a all a bit easier to use.
 
-.. index:: FlxGui
+.. index:: FlxGui(class)
 .. code-block:: felix
 
   //[__init__.flx]
@@ -188,12 +188,20 @@ since SDL's emulation of unions in C is a long way
 from the well presented sum type Felix would use.
 
 
-.. index:: FlxGuiTypes
-.. index:: box_t
-.. index:: point_t
-.. index:: label_box_t
-.. index:: rect_t
-.. index:: rect_t
+.. index:: FlxGuiTypes(class)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: box_t(ctor)
+.. index:: def(type)
+.. index:: point_t(ctor)
+.. index:: def(type)
+.. index:: label_box_t(ctor)
+.. index:: def(type)
+.. index:: rect_t(ctor)
+.. index:: rect_t(ctor)
+.. index:: def(type)
 .. code-block:: felix
 
   //[types.flx]
@@ -226,28 +234,28 @@ from the well presented sum type Felix would use.
   
 
 
-.. index:: FlxGuiEvents
-.. index:: _match_ctor_QUIT
-.. index:: _match_ctor_WINDOWEVENT
-.. index:: _ctor_arg_WINDOWEVENT
-.. index:: _match_ctor_KEYDOWN
-.. index:: _ctor_arg_KEYDOWN
-.. index:: _match_ctor_KEYUP
-.. index:: _ctor_arg_KEYUP
-.. index:: _match_ctor_MOUSEMOTION
-.. index:: _ctor_arg_MOUSEMOTION
-.. index:: _match_ctor_MOUSEBUTTONDOWN
-.. index:: _ctor_arg_MOUSEBUTTONDOWN
-.. index:: _match_ctor_MOUSEBUTTONUP
-.. index:: _ctor_arg_MOUSEBUTTONUP
-.. index:: _match_ctor_MOUSEWHEEL
-.. index:: _ctor_arg_MOUSEWHEEL
-.. index:: _match_ctor_TEXTINPUT
-.. index:: _ctor_arg_TEXTINPUT
-.. index:: _match_ctor_TEXTEDITING
-.. index:: _ctor_arg_TEXTEDITING
-.. index:: waitevent
-.. index:: demo_timer
+.. index:: FlxGuiEvents(class)
+.. index:: def(type)
+.. index:: _match_ctor_QUIT(fun)
+.. index:: _match_ctor_WINDOWEVENT(fun)
+.. index:: _ctor_arg_WINDOWEVENT(fun)
+.. index:: _match_ctor_KEYDOWN(fun)
+.. index:: _ctor_arg_KEYDOWN(fun)
+.. index:: _match_ctor_KEYUP(fun)
+.. index:: _ctor_arg_KEYUP(fun)
+.. index:: _match_ctor_MOUSEMOTION(fun)
+.. index:: _ctor_arg_MOUSEMOTION(fun)
+.. index:: _match_ctor_MOUSEBUTTONDOWN(fun)
+.. index:: _ctor_arg_MOUSEBUTTONDOWN(fun)
+.. index:: _match_ctor_MOUSEBUTTONUP(fun)
+.. index:: _ctor_arg_MOUSEBUTTONUP(fun)
+.. index:: _match_ctor_MOUSEWHEEL(fun)
+.. index:: _ctor_arg_MOUSEWHEEL(fun)
+.. index:: _match_ctor_TEXTINPUT(fun)
+.. index:: _ctor_arg_TEXTINPUT(fun)
+.. index:: _match_ctor_TEXTEDITING(fun)
+.. index:: _ctor_arg_TEXTEDITING(fun)
+.. index:: demo_timer(proc)
 .. code-block:: felix
 
   //[events.flx]
@@ -339,10 +347,10 @@ Ensures we have visuals, sound, fonts, and images.
 Display versions of libraries, both the one from
 the compiled header files and the binary linked in.
 
-.. index:: FlxGuiInit
-.. index:: init
-.. index:: quit
-.. index:: versions
+.. index:: FlxGuiInit(class)
+.. index:: init(proc)
+.. index:: quit(proc)
+.. index:: versions(proc)
 .. code-block:: felix
 
   //[init.flx]
@@ -416,13 +424,14 @@ Felix provides three fonts borrowed from Apple to save the user
 from having to set up a font library Felix knows about.
 
 
-.. index:: FlxGuiFont
-.. index:: dflt_mono_font
-.. index:: dflt_sans_serif_font
-.. index:: dflt_serif_font
-.. index:: get_lineskip
-.. index:: get_textsize
-.. index:: bounding_box
+.. index:: FlxGuiFont(class)
+.. index:: dflt_mono_font(fun)
+.. index:: dflt_sans_serif_font(fun)
+.. index:: dflt_serif_font(fun)
+.. index:: get_font(gen)
+.. index:: get_lineskip(fun)
+.. index:: get_textsize(fun)
+.. index:: bounding_box(fun)
 .. code-block:: felix
 
   //[font.flx]
@@ -499,8 +508,8 @@ and full transparency, and 255 means maximum colour and opaque
 rendering.
 
 
-.. index:: FlxGuiColor
-.. index:: RGB
+.. index:: FlxGuiColor(class)
+.. index:: RGB(fun)
 .. code-block:: felix
 
   //[color.flx]
@@ -548,12 +557,14 @@ not need that in GUI.
 
 
 
-.. index:: FlxGuiSurface
-.. index:: clear
-.. index:: fill
-.. index:: write
-.. index:: blit
-.. index:: set
+.. index:: FlxGuiSurface(class)
+.. index:: clear(proc)
+.. index:: fill(proc)
+.. index:: write(proc)
+.. index:: blit(proc)
+.. index:: surface_deleter(header)
+.. index:: surface_holder_t(type)
+.. index:: set(proc)
 .. code-block:: felix
 
   //[surface.flx]
@@ -680,7 +691,7 @@ with lowest z are applied first.
 
 
 
-.. index:: FlxGuiDrawable
+.. index:: FlxGuiDrawable(class)
 .. code-block:: felix
 
   //[drawable.flx]
@@ -730,7 +741,7 @@ clicks triggering state changes.
 
 
 
-.. index:: FlxGuiDrawChain
+.. index:: FlxGuiDrawChain(class)
 .. code-block:: felix
 
   //[drawchain.flx]
@@ -814,7 +825,9 @@ on window creation as the unpopulated window image is shown then
 replaced by a populated display.
 
 
-.. index:: FlxGuiWindow
+.. index:: FlxGuiWindow(class)
+.. index:: create_fixed_window(gen)
+.. index:: create_resizable_window(gen)
 .. code-block:: felix
 
   //[window.flx]
@@ -917,7 +930,7 @@ on construction an active process is started which can
 service events.
 
 
-.. index:: FlxGuiWindowControllerInterface
+.. index:: FlxGuiWindowControllerInterface(class)
 .. code-block:: felix
 
   //[window_controller_interface.flx]
@@ -936,7 +949,7 @@ service events.
   }
 
 
-.. index:: FlxGuiWindowController
+.. index:: FlxGuiWindowController(class)
 .. code-block:: felix
 
   //[window_controller.flx]
@@ -998,9 +1011,9 @@ to windows each of which is running an active process that
 listens for events.
 
 
-.. index:: FlxGuiWindowManager
-.. index:: find_window
-.. index:: find_window_index
+.. index:: FlxGuiWindowManager(class)
+.. index:: find_window(fun)
+.. index:: find_window_index(fun)
 .. code-block:: felix
 
   //[window_manager.flx]
@@ -1181,7 +1194,11 @@ Simple Click Button
 -------------------
 
 
-.. index:: FlxGuiButton
+.. index:: FlxGuiButton(class)
+.. index:: button_state_t(union)
+.. index:: button_action_t(union)
+.. index:: def(type)
+.. index:: def(type)
 .. code-block:: felix
 
   //[button.flx]
@@ -1370,29 +1387,17 @@ Cascading Menu
 --------------
 
 
-.. index:: FlxGuiMenu
-.. index:: find
-.. index:: find_tag
-.. index:: width
-.. index:: width
-.. index:: depth
-.. index:: width
-.. index:: depth
-.. index:: width
-.. index:: depth
-.. index:: display_menu
-.. index:: show_entry
-.. index:: get_hotrecs
-.. index:: hotrecs
-.. index:: hotpos
-.. index:: width
-.. index:: width
-.. index:: width
-.. index:: width
-.. index:: display_menu
-.. index:: show_entry
-.. index:: get_hotrecs
-.. index:: hotrecs
+.. index:: FlxGuiMenu(class)
+.. index:: menu_entry_active_t(union)
+.. index:: def(type)
+.. index:: menu_entry_t(union)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: menu_state_t(union)
+.. index:: menu_action_t(union)
+.. index:: def(type)
+.. index:: hotpos(fun)
 .. code-block:: felix
 
   //[menu.flx]
@@ -2058,7 +2063,7 @@ Cascading Menu
   }
   
 
-.. index:: FlxGuiLineBufferDisplayControllerInterface
+.. index:: FlxGuiLineBufferDisplayControllerInterface(class)
 .. code-block:: felix
 
   //[line_buffer_display_controller_interface.flx]
@@ -2076,7 +2081,7 @@ Cascading Menu
   }
   
 
-.. index:: FlxGuiLineBufferDisplayController
+.. index:: FlxGuiLineBufferDisplayController(class)
 .. code-block:: felix
 
   //[line_buffer_display_controller.flx]
@@ -2140,7 +2145,7 @@ Cascading Menu
   }
   
 
-.. index:: FlxGuiLineBufferInterface
+.. index:: FlxGuiLineBufferInterface(class)
 .. code-block:: felix
 
   //[line_buffer_interface.flx]
@@ -2174,7 +2179,7 @@ Cascading Menu
   
 
 
-.. index:: FlxGuiLineBuffer
+.. index:: FlxGuiLineBuffer(class)
 .. code-block:: felix
 
   //[line_buffer_object.flx]
@@ -2255,7 +2260,7 @@ Cascading Menu
   
   }
 
-.. index:: FlxGuiLineEditor
+.. index:: FlxGuiLineEditor(class)
 .. code-block:: felix
 
   //[line_editor.flx]

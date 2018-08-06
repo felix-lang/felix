@@ -48,7 +48,7 @@ Webserver
 Standalone pretty printer for Felix  :code:`flx` format files.
 
 
-.. index:: Css4Html
+.. index:: Css4Html(class)
 .. code-block:: felix
 
   //[flx_pretty.flx]
@@ -135,54 +135,17 @@ Mainline for dynamic loading.
 
 This is the actual webserver code.
 
-.. index:: Css4Html
-.. index:: dbg
-.. index:: strtod
-.. index:: atoi
-.. index:: getline_to_url
-.. index:: postline_to_url
-.. index:: split_url
-.. index:: parse_get_line
-.. index:: parse_post_line
-.. index:: parse_request_type
-.. index:: txt2html
-.. index:: make_image_from_suffix
-.. index:: serve_not_found
-.. index:: serve_not_implemented
-.. index:: serve_forbidden
-.. index:: find_defs
-.. index:: ction
-.. index:: ction
-.. index:: ction
-.. index:: serve_felix
-.. index:: serve_fpc
-.. index:: serve_py
-.. index:: serve_ocaml
-.. index:: serve_cpp
-.. index:: serve_text
-.. index:: serve_html
-.. index:: serve_xhtml
-.. index:: serve_fdoc
-.. index:: serve_xfdoc
-.. index:: serve_raw
-.. index:: serve_image
-.. index:: serve_css
-.. index:: mk_dir_lines
-.. index:: rf
-.. index:: mk_reg_lines
-.. index:: hd
-.. index:: chd
-.. index:: cft
-.. index:: rf
-.. index:: ft
-.. index:: twixt
-.. index:: cbrk
-.. index:: nxt
-.. index:: serve_directory
-.. index:: serve_file
-.. index:: serve_head
-.. index:: serve
-.. index:: split_suffix
+.. index:: Css4Html(class)
+.. index:: rf(fun)
+.. index:: hd(proc)
+.. index:: chd(proc)
+.. index:: cft(proc)
+.. index:: ft(proc)
+.. index:: twixt(proc)
+.. index:: cbrk(proc)
+.. index:: nxt(proc)
+.. index:: split_suffix(fun)
+.. index:: hack_recv(gen)
 .. code-block:: felix
 
   //[dflx_web.flx]
@@ -1426,8 +1389,8 @@ Mainline with preloaded plugins.
 --------------------------------
 
 
-.. index:: WebserverPluginSymbols
-.. index:: addsymbols
+.. index:: WebserverPluginSymbols(class)
+.. index:: addsymbols(proc)
 .. code-block:: felix
 
   //[flx_web.flx]
@@ -1492,12 +1455,10 @@ Felix Package Config  :code:`fpc` format.
 -----------------------------------------
 
 
-.. index:: get_file
-.. index:: xlat_fpc
-.. index:: handle_line
-.. index:: handle_pkg
-.. index:: handle_include
-.. index:: setup
+.. index:: Fpc2Html(class)
+.. index:: handle_line(proc)
+.. index:: handle_pkg(proc)
+.. index:: handle_include(proc)
 .. code-block:: felix
 
   //[fpc2html.flx]
@@ -1611,15 +1572,15 @@ Ocaml
 -----
 
 
-.. index:: xlat_ocaml
-.. index:: write_string
-.. index:: str
-.. index:: next
-.. index:: ahead
-.. index:: cp
-.. index:: ws
-.. index:: w
-.. index:: setup
+.. index:: Ocaml2Html(class)
+.. index:: write_string(proc)
+.. index:: state_t(union)
+.. index:: str(fun)
+.. index:: next(proc)
+.. index:: ahead(fun)
+.. index:: cp(proc)
+.. index:: ws(proc)
+.. index:: w(proc)
 .. code-block:: felix
 
   //[ocaml2html.flx]
@@ -1794,17 +1755,17 @@ Python
 ------
 
 
-.. index:: xlat_py
-.. index:: write_string
-.. index:: str
-.. index:: next
-.. index:: ahead
-.. index:: issq3
-.. index:: isdq3
-.. index:: cp
-.. index:: ws
-.. index:: w
-.. index:: setup
+.. index:: Py2Html(class)
+.. index:: write_string(proc)
+.. index:: state_t(union)
+.. index:: str(fun)
+.. index:: next(proc)
+.. index:: ahead(fun)
+.. index:: issq3(fun)
+.. index:: isdq3(fun)
+.. index:: cp(proc)
+.. index:: ws(proc)
+.. index:: w(proc)
 .. code-block:: felix
 
   //[py2html.flx]
@@ -2009,22 +1970,19 @@ Felix  :code:`flx` format.
 --------------------------
 
 
-.. index:: txt2html
-.. index:: lc
-.. index:: valof
-.. index:: xlat_felix
-.. index:: write_string
-.. index:: str
-.. index:: next
-.. index:: ahead
-.. index:: issq3
-.. index:: isdq3
-.. index:: cp
-.. index:: cpfdoc
-.. index:: ws
-.. index:: wfdoc
-.. index:: w
-.. index:: setup
+.. index:: Flx2Html(class)
+.. index:: write_string(proc)
+.. index:: state_t(union)
+.. index:: str(fun)
+.. index:: next(proc)
+.. index:: ahead(fun)
+.. index:: issq3(fun)
+.. index:: isdq3(fun)
+.. index:: cp(proc)
+.. index:: cpfdoc(proc)
+.. index:: ws(proc)
+.. index:: wfdoc(proc)
+.. index:: w(proc)
 .. code-block:: felix
 
   //[flx2html.flx]
@@ -2705,15 +2663,15 @@ C and C++ code.
 ---------------
 
 
-.. index:: xlat_cpp
-.. index:: write_string
-.. index:: str
-.. index:: next
-.. index:: ahead
-.. index:: cp
-.. index:: ws
-.. index:: w
-.. index:: setup
+.. index:: Cpp2Html(class)
+.. index:: write_string(proc)
+.. index:: state_t(union)
+.. index:: str(fun)
+.. index:: next(proc)
+.. index:: ahead(fun)
+.. index:: cp(proc)
+.. index:: ws(proc)
+.. index:: w(proc)
 .. code-block:: felix
 
   //[cpp2html.flx]
@@ -2974,33 +2932,29 @@ and also  :code:`fdoc` format  :code:`flx_iscr.py` package format.
 Note the former are real Felix programs.
 
 
-.. index:: get_flx
-.. index:: txt2html
-.. index:: boreq
-.. index:: markdown
-.. index:: write_string
-.. index:: split_first
-.. index:: def_tangler
-.. index:: sp
-.. index:: sp
-.. index:: ep
-.. index:: bp
-.. index:: h
-.. index:: inline_pre
-.. index:: inline_expect
-.. index:: inline_input
-.. index:: inline_cpp
-.. index:: inline_felix
-.. index:: inline_felix_unchecked
-.. index:: inline_ocaml
-.. index:: inline_python
-.. index:: felix_file
-.. index:: flx_and_expect
-.. index:: extern_cpp
-.. index:: extern_ocaml
-.. index:: extern_python
-.. index:: handle_cmd
-.. index:: setup
+.. index:: write_string(proc)
+.. index:: split_first(fun)
+.. index:: def_tangler(proc)
+.. index:: sp(proc)
+.. index:: sp(proc)
+.. index:: ep(proc)
+.. index:: bp(proc)
+.. index:: h(proc)
+.. index:: get_text(gen)
+.. index:: inline_pre(proc)
+.. index:: inline_expect(proc)
+.. index:: inline_input(proc)
+.. index:: inline_cpp(proc)
+.. index:: inline_felix(proc)
+.. index:: inline_felix_unchecked(proc)
+.. index:: inline_ocaml(proc)
+.. index:: inline_python(proc)
+.. index:: felix_file(proc)
+.. index:: flx_and_expect(proc)
+.. index:: extern_cpp(proc)
+.. index:: extern_ocaml(proc)
+.. index:: extern_python(proc)
+.. index:: handle_cmd(proc)
 .. code-block:: felix
 
   //[fdoc2html.flx]
@@ -3714,14 +3668,11 @@ Decorator Implementations.
 ==========================
 
 
-.. index:: setup
-.. index:: ction
-.. index:: ction
-.. index:: rect
-.. index:: text
-.. index:: span
-.. index:: span_hide
-.. index:: svg
+.. index:: rect(fun)
+.. index:: text(fun)
+.. index:: span(fun)
+.. index:: span_hide(fun)
+.. index:: svg(fun)
 .. code-block:: felix
 
   //[fdoc_button.flx]
@@ -3822,7 +3773,6 @@ Decorator Implementations.
   
   
 
-.. index:: setup
 .. code-block:: felix
 
   //[fdoc_edit.flx]
@@ -3902,8 +3852,7 @@ Decorator Implementations.
   
   
 
-.. index:: setup
-.. index:: calnav
+.. index:: calnav(fun)
 .. code-block:: felix
 
   //[fdoc_fileseq.flx]
@@ -3987,10 +3936,6 @@ Decorator Implementations.
   export fun fdoc_fileseq of (string) as "fdoc_fileseq";
   
 
-.. index:: setup
-.. index:: ction
-.. index:: ction
-.. index:: ction
 .. code-block:: felix
 
   //[fdoc_frame.flx]
@@ -4257,15 +4202,8 @@ Decorator Implementations.
   export fun fdoc_frame of (fdoc_frame_data_t) as "fdoc_frame";
   
 
-.. index:: ction
-.. index:: ction
-.. index:: ction
-.. index:: ction
-.. index:: ction
-.. index:: escape_sp
-.. index:: setup
-.. index:: edivs
-.. index:: hnum
+.. index:: edivs(proc)
+.. index:: hnum(fun)
 .. code-block:: felix
 
   //[fdoc_heading.flx]
@@ -4412,11 +4350,10 @@ Decorator Implementations.
   export fun fdoc_heading of (paragraph-control_t * (string->0)) as "fdoc_heading";
   
 
-.. index:: setup
-.. index:: start_p
-.. index:: start_p
-.. index:: end_p
-.. index:: break_p
+.. index:: start_p(proc)
+.. index:: start_p(proc)
+.. index:: end_p(proc)
+.. index:: break_p(proc)
 .. code-block:: felix
 
   //[fdoc_paragraph.flx]
@@ -4446,7 +4383,6 @@ Decorator Implementations.
   export fun fdoc_paragraph of (string->0) as "fdoc_paragraph";
   
 
-.. index:: setup
 .. code-block:: felix
 
   //[fdoc_scanner.flx]
@@ -4514,22 +4450,10 @@ Decorator Implementations.
   export fun fdoc_scanner of () as "fdoc_scanner";
   
 
-.. index:: ction
-.. index:: ction
-.. index:: ction
-.. index:: ction
-.. index:: ction
-.. index:: ction
-.. index:: ction
-.. index:: ction
-.. index:: ction
-.. index:: ction
-.. index:: ction
-.. index:: setup
-.. index:: end_slide_section
-.. index:: end_slide
-.. index:: start_slide
-.. index:: start_slide_section
+.. index:: end_slide_section(proc)
+.. index:: end_slide(proc)
+.. index:: start_slide(proc)
+.. index:: start_slide_section(proc)
 .. code-block:: felix
 
   //[fdoc_slideshow.flx]
@@ -4707,8 +4631,8 @@ Decorator Implementations.
   export fun fdoc_slideshow of (string->0) as "fdoc_slideshow";
   
 
-.. index:: WebserverPluginCommon
-.. index:: get_file
+.. index:: WebserverPluginCommon(class)
+.. index:: get_file(fun)
 .. code-block:: felix
 
   //[plugin_common.flx]
@@ -4738,14 +4662,9 @@ Decorator Implementations.
   }
   
 
-.. index:: setup
-.. index:: ction
-.. index:: ction
-.. index:: ction
-.. index:: escape_sp
-.. index:: head1
-.. index:: foot1
-.. index:: break1
+.. index:: ction(fun)
+.. index:: ction(fun)
+.. index:: ction(fun)
 .. code-block:: felix
 
   //[toc_menu.flx]

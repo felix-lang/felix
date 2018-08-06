@@ -28,18 +28,14 @@ StringPiece to represent it.
 
 
 
-.. index:: RecogniserBase
-.. index:: atend
-.. index:: get
-.. index:: next
-.. index:: advanced
-.. index:: lookahead
-.. index:: stl_end
-.. index:: Buffer
-.. index:: Buffer
-.. index:: Buffer
-.. index:: str
-.. index:: string
+.. index:: RecogniserBase(class)
+.. index:: atend(fun)
+.. index:: get(fun)
+.. index:: next(proc)
+.. index:: advanced(fun)
+.. index:: lookahead(fun)
+.. index:: stl_end(fun)
+.. index:: str(fun)
 .. code-block:: felix
 
   //[recogniser_base.flx]
@@ -768,7 +764,7 @@ Longest match
 
 
 
-.. index:: storemax
+.. index:: storemax(proc)
 .. code-block:: felix
 
   //[recogniser_base.flx]

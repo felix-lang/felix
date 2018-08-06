@@ -130,8 +130,8 @@ for a single threaded Felix world instantiation but we do not currently
 provide one as pthreads are considered mandatory for Felix.
 
 
-.. index:: PTHREAD_EXTERN
-.. index:: PTHREAD_EXTERN
+.. index:: PTHREAD_EXTERN(class)
+.. index:: PTHREAD_EXTERN(class)
 .. code-block:: cpp
 
   //[pthread_thread_control_base.hpp]
@@ -868,6 +868,8 @@ Collector interface.
 
 
 
+.. index:: def(type)
+.. index:: memdata_t(struct)
 .. code-block:: cpp
 
   //[flx_collector.hpp]
@@ -2190,14 +2192,14 @@ Garbage Collector Interface
 ===========================
 
 
-.. index:: Gc
-.. index:: _collect
-.. index:: collect
-.. index:: gc_get_allocation_amt
-.. index:: gc_get_allocation_count
-.. index:: gc_get_root_count
-.. index:: add_root
-.. index:: remove_root
+.. index:: Gc(class)
+.. index:: _collect(fun)
+.. index:: collect(proc)
+.. index:: gc_get_allocation_amt(fun)
+.. index:: gc_get_allocation_count(fun)
+.. index:: gc_get_root_count(fun)
+.. index:: add_root(proc)
+.. index:: remove_root(proc)
 .. code-block:: felix
 
   //[gc.flx]
@@ -2245,35 +2247,45 @@ Rtti introspection
 ==================
 
 
-.. index:: Rtti
-.. index:: isNULL
-.. index:: get_fcops
-.. index:: isNULL
-.. index:: object_size
-.. index:: object_alignment
-.. index:: dflt_init
-.. index:: destroy
-.. index:: copy_init
-.. index:: move_init
-.. index:: copy_assign
-.. index:: move_assign
-.. index:: next_shape
-.. index:: cname
-.. index:: number_of_elements
-.. index:: bytes_per_element
-.. index:: finaliser
-.. index:: encoder
-.. index:: decoder
-.. index:: uses_offset_table
-.. index:: _unsafe_n_offsets
-.. index:: n_offsets
-.. index:: _unsafe_offsets
-.. index:: offsets
-.. index:: flags
-.. index:: shape_list_head
-.. index:: name
-.. index:: gxx_demangle
-.. index:: _link_shape
+.. index:: Rtti(class)
+.. index:: collector_t(type)
+.. index:: gc_shape_t(type)
+.. index:: isNULL(fun)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: fcops_t(type)
+.. index:: get_fcops(fun)
+.. index:: isNULL(fun)
+.. index:: object_size(fun)
+.. index:: object_alignment(fun)
+.. index:: dflt_init(proc)
+.. index:: destroy(proc)
+.. index:: copy_init(proc)
+.. index:: move_init(proc)
+.. index:: copy_assign(proc)
+.. index:: move_assign(proc)
+.. index:: next_shape(fun)
+.. index:: cname(fun)
+.. index:: number_of_elements(fun)
+.. index:: bytes_per_element(fun)
+.. index:: finaliser(fun)
+.. index:: encoder(fun)
+.. index:: decoder(fun)
+.. index:: uses_offset_table(fun)
+.. index:: _unsafe_n_offsets(fun)
+.. index:: n_offsets(fun)
+.. index:: _unsafe_offsets(fun)
+.. index:: offsets(fun)
+.. index:: flags(fun)
+.. index:: shape_list_head(fun)
+.. index:: type_info(type)
+.. index:: name(fun)
+.. index:: typeid(const)
+.. index:: gxx_demangle(fun)
+.. index:: _link_shape(proc)
+.. index:: link_shape(gen)
 .. code-block:: felix
 
   //[rtti.flx]
@@ -2419,17 +2431,18 @@ Low level Garbage Collector Access
 ==================================
 
 
-.. index:: Collector
-.. index:: get_pointer_data
-.. index:: is_felix_pointer
-.. index:: is_head_pointer
-.. index:: repeat_count
-.. index:: allocated_bytes
-.. index:: print_pointer_data
-.. index:: print_pointer_data
-.. index:: print_pointer_data
-.. index:: print_pointer_data
-.. index:: print_pointer_data
+.. index:: Collector(class)
+.. index:: pointer_data_t(struct)
+.. index:: get_pointer_data(fun)
+.. index:: is_felix_pointer(fun)
+.. index:: is_head_pointer(fun)
+.. index:: repeat_count(fun)
+.. index:: allocated_bytes(fun)
+.. index:: print_pointer_data(proc)
+.. index:: print_pointer_data(proc)
+.. index:: print_pointer_data(proc)
+.. index:: print_pointer_data(proc)
+.. index:: print_pointer_data(proc)
 .. code-block:: felix
 
   //[flx_gc.flx]

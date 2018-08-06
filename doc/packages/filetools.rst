@@ -43,7 +43,6 @@ to the master directory.
 Note: regular expressions must match completely!
 
 
-.. index:: dbg
 .. code-block:: felix
 
   //[flx_ls.flx]
@@ -87,7 +86,6 @@ n is a digit from 0 to 9 represents a subgroup of the match.
 Note: regular expressions must match completely!
 
 
-.. index:: dbg
 .. code-block:: felix
 
   //[flx_cp_tool.flx]
@@ -128,13 +126,10 @@ Note: regular expressions must match completely!
   System::exit(0);
 
 
-.. index:: CopyFiles
-.. index:: processfiles
-.. index:: addfile
-.. index:: rfi
-.. index:: copyfiles
-.. index:: essfiles
-.. index:: copyfiles
+.. index:: CopyFiles(class)
+.. index:: processfiles(proc)
+.. index:: copyfiles(proc)
+.. index:: copyfiles(proc)
 .. code-block:: felix
 
   //[flx_cp.flx]
@@ -337,7 +332,6 @@ to another with renaming, and also replaces any lines in
 any of the files matching some pattern with another string
 specified by a replacement.
 
-.. index:: dbg
 .. code-block:: felix
 
   //[flx_batch_replace.flx]

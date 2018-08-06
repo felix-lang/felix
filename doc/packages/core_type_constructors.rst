@@ -37,7 +37,22 @@ Type Functors
 
 
 
-.. index:: Typing
+.. index:: Typing(class)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: memcount(const)
+.. index:: arrayindexcount(const)
 .. code-block:: felix
 
   //[typing.flx]
@@ -125,17 +140,17 @@ Option
 
 
 
-.. index:: Option
-.. index:: str
-.. index:: or_else
-.. index:: or_else
-.. index:: iter
-.. index:: get
-.. index:: map
-.. index:: filter
-.. index:: DefaultValue
-.. index:: default
-.. index:: or_default
+.. index:: Option(class)
+.. index:: or_else(fun)
+.. index:: or_else(fun)
+.. index:: iter(proc)
+.. index:: get(fun)
+.. index:: map(fun)
+.. index:: filter(fun)
+.. index:: iterator(gen)
+.. index:: DefaultValue(class)
+.. index:: default(fun)
+.. index:: or_default(fun)
 .. code-block:: felix
 
   //[option.flx]
@@ -261,8 +276,6 @@ Slice
 
 
 
-.. index:: cal_slice
-.. index:: map
 .. code-block:: felix
 
   //[slice.flx]
@@ -433,11 +446,11 @@ Operations on sums of units
 Treated as finite cyclic groups.
 
 
-.. index:: str
-.. index:: str
-.. index:: zero
-.. index:: neg
-.. index:: str
+.. index:: str(fun)
+.. index:: str(fun)
+.. index:: zero(fun)
+.. index:: neg(fun)
+.. index:: str(fun)
 .. code-block:: felix
 
   //[unitsum.flx]
@@ -529,18 +542,18 @@ Category Theoretic Functional Operations
 
 
 
-.. index:: Functional
-.. index:: curry
-.. index:: curry
-.. index:: uncurry2
-.. index:: uncurry3
-.. index:: twist
-.. index:: proj1
-.. index:: proj2
-.. index:: dup
-.. index:: prdx
-.. index:: compose
-.. index:: rev_compose
+.. index:: Functional(class)
+.. index:: curry(fun)
+.. index:: curry(fun)
+.. index:: uncurry2(fun)
+.. index:: uncurry3(fun)
+.. index:: twist(fun)
+.. index:: proj1(fun)
+.. index:: proj2(fun)
+.. index:: dup(fun)
+.. index:: prdx(fun)
+.. index:: compose(fun)
+.. index:: rev_compose(fun)
 .. code-block:: felix
 
   //[functional.flx]
@@ -623,32 +636,16 @@ Tuples
 
 
 
-.. index:: Tuple
-.. index:: tuple_str
-.. index:: tuple_str
-.. index:: tuple_str
-.. index:: str
-.. index:: str
-.. index:: str
-.. index:: field
-.. index:: field
-.. index:: field
-.. index:: field
-.. index:: field
-.. index:: field
-.. index:: field
-.. index:: field
-.. index:: field
-.. index:: field
-.. index:: field
-.. index:: field
-.. index:: field
-.. index:: field
-.. index:: parallel_tuple_comp
-.. index:: ravel
-.. index:: ravel
-.. index:: ravel
-.. index:: ravel
+.. index:: Tuple(class)
+.. index:: tuple_str(fun)
+.. index:: tuple_str(fun)
+.. index:: tuple_str(fun)
+.. index:: str(fun)
+.. index:: parallel_tuple_comp(class)
+.. index:: ravel(fun)
+.. index:: ravel(fun)
+.. index:: ravel(fun)
+.. index:: ravel(fun)
 .. code-block:: felix
 
   //[tuple.flx]

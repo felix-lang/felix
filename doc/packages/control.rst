@@ -36,22 +36,24 @@ Misc Control Flow
 =================
 
 
-.. index:: Control
-.. index:: fix
-.. index:: flat_fact
-.. index:: _swap
-.. index:: forever
-.. index:: pass
-.. index:: for_each
-.. index:: branch
-.. index:: raise
-.. index:: proc_fail
-.. index:: fun_fail
-.. index:: entry_label
-.. index:: current_position
-.. index:: entry_label
-.. index:: current_continuation
-.. index:: throw_continuation
+.. index:: Control(class)
+.. index:: fix(fun)
+.. index:: flat_fact(fun)
+.. index:: _swap(proc)
+.. index:: forever(proc)
+.. index:: pass(proc)
+.. index:: for_each(proc)
+.. index:: branch(proc)
+.. index:: throw(gen)
+.. index:: raise(proc)
+.. index:: proc_fail(proc)
+.. index:: fun_fail(fun)
+.. index:: entry_label(fun)
+.. index:: current_position(fun)
+.. index:: entry_label(fun)
+.. index:: current_continuation(fun)
+.. index:: throw_continuation(proc)
+.. index:: svc_req_t(union)
 .. code-block:: felix
 
   //[control.flx]

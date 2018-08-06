@@ -33,11 +33,12 @@ Random number generators.
 =========================
 
 
-.. index:: System_RNG
-.. index:: add_entropy
-.. index:: randomize_with_input
-.. index:: randomize_with_ts_input
-.. index:: randomize
+.. index:: RandomNumberGenerator(type)
+.. index:: System_RNG(fun)
+.. index:: add_entropy(proc)
+.. index:: randomize_with_input(proc)
+.. index:: randomize_with_ts_input(proc)
+.. index:: randomize(proc)
 .. code-block:: felix
 
   //[rng.flx]
@@ -64,23 +65,12 @@ Big Integers
 ============
 
 
-.. index:: bigint
-.. index:: succ
-.. index:: pre_incr
-.. index:: post_incr
-.. index:: pred
-.. index:: pre_decr
-.. index:: post_decr
-.. index:: zero
-.. index:: neg
-.. index:: one
-.. index:: abs
-.. index:: sgn
-.. index:: str
-.. index:: gcd
-.. index:: lcm
-.. index:: jacobi
-.. index:: power_mod
+.. index:: bigint(type)
+.. index:: bigint(ctor)
+.. index:: gcd(fun)
+.. index:: lcm(fun)
+.. index:: jacobi(fun)
+.. index:: power_mod(fun)
 .. code-block:: felix
 
   //[bigint.flx]
@@ -179,10 +169,11 @@ Hash functions
 ==============
 
 
-.. index:: output_length
-.. index:: update
-.. index:: update
-.. index:: final
+.. index:: BufferedComputation(type)
+.. index:: output_length(fun)
+.. index:: update(proc)
+.. index:: update(proc)
+.. index:: final(proc)
 .. code-block:: felix
 
   //[hash.flx]

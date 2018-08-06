@@ -41,56 +41,32 @@ Filename
 
 
 
-.. index:: Filename_class
-.. index:: sep
-.. index:: is_absolute_filename
-.. index:: root_subdir
-.. index:: executable_extension
-.. index:: static_object_extension
-.. index:: dynamic_object_extension
-.. index:: static_library_extension
-.. index:: dynamic_library_extension
-.. index:: split1
-.. index:: split
-.. index:: join
-.. index:: basename
-.. index:: dirname
-.. index:: directories
-.. index:: join
-.. index:: join
-.. index:: join
-.. index:: join
-.. index:: split_extension
-.. index:: strip_extension
-.. index:: get_extension
-.. index:: Win32Filename
-.. index:: sep
-.. index:: executable_extension
-.. index:: static_object_extension
-.. index:: dynamic_object_extension
-.. index:: static_library_extension
-.. index:: dynamic_library_extension
-.. index:: is_absolute_filename
-.. index:: root_subdir
-.. index:: OsxFilename
-.. index:: sep
-.. index:: executable_extension
-.. index:: static_object_extension
-.. index:: dynamic_object_extension
-.. index:: static_library_extension
-.. index:: dynamic_library_extension
-.. index:: is_absolute_filename
-.. index:: root_subdir
-.. index:: PosixFilename
-.. index:: sep
-.. index:: executable_extension
-.. index:: static_object_extension
-.. index:: dynamic_object_extension
-.. index:: static_library_extension
-.. index:: dynamic_library_extension
-.. index:: is_absolute_filename
-.. index:: root_subdir
-.. index:: Filename
+.. index:: Filename_class(class)
+.. index:: sep(fun)
+.. index:: is_absolute_filename(fun)
+.. index:: root_subdir(fun)
+.. index:: executable_extension(fun)
+.. index:: static_object_extension(fun)
+.. index:: dynamic_object_extension(fun)
+.. index:: static_library_extension(fun)
+.. index:: dynamic_library_extension(fun)
+.. index:: split1(fun)
+.. index:: split(fun)
+.. index:: join(fun)
+.. index:: basename(fun)
+.. index:: dirname(fun)
+.. index:: directories(fun)
+.. index:: join(fun)
+.. index:: join(fun)
+.. index:: join(fun)
+.. index:: join(fun)
+.. index:: split_extension(fun)
+.. index:: strip_extension(fun)
+.. index:: get_extension(fun)
+.. index:: Win32Filename(class)
+.. index:: OsxFilename(class)
+.. index:: PosixFilename(class)
+.. index:: Filename(class)
 .. code-block:: felix
 
   //[filename.flx]
@@ -270,21 +246,27 @@ Filestat
 
 
 
-.. index:: FileStat_class
-.. index:: stat
-.. index:: utime
-.. index:: file_type
-.. index:: mtime
-.. index:: ctime
-.. index:: filetime
-.. index:: fileexists
-.. index:: filetype
-.. index:: past_time
-.. index:: future_time
-.. index:: strfiletime0
-.. index:: strfiletime
-.. index:: dfiletime
-.. index:: FileStat
+.. index:: FileStat_class(class)
+.. index:: stat(proc)
+.. index:: utime(proc)
+.. index:: chmod(gen)
+.. index:: umask(gen)
+.. index:: file_type_t(union)
+.. index:: file_type(fun)
+.. index:: stat(gen)
+.. index:: mtime(fun)
+.. index:: ctime(fun)
+.. index:: filetime(fun)
+.. index:: utime(gen)
+.. index:: utime(gen)
+.. index:: fileexists(fun)
+.. index:: filetype(fun)
+.. index:: past_time(fun)
+.. index:: future_time(fun)
+.. index:: strfiletime0(fun)
+.. index:: strfiletime(fun)
+.. index:: dfiletime(fun)
+.. index:: FileStat(class)
 .. code-block:: felix
 
   //[filestat.flx]
@@ -427,14 +409,34 @@ Posix FileStat
 
 
 
-.. index:: PosixFileStat
-.. index:: raw_mode
-.. index:: file_type
-.. index:: file_perm
-.. index:: uint
-.. index:: stat
-.. index:: utime
-.. index:: file_type
+.. index:: PosixFileStat(class)
+.. index:: S_IFMT(const)
+.. index:: S_IFIFO(const)
+.. index:: S_IFCHR(const)
+.. index:: S_IFDIR(const)
+.. index:: S_IFBLK(const)
+.. index:: S_IFREG(const)
+.. index:: S_IFLNK(const)
+.. index:: S_IFSOCK(const)
+.. index:: S_IRWXU(const)
+.. index:: S_IRUSR(const)
+.. index:: S_IWUSR(const)
+.. index:: S_IXUSR(const)
+.. index:: S_IRWXG(const)
+.. index:: S_IRGRP(const)
+.. index:: S_IWGRP(const)
+.. index:: S_IXGRP(const)
+.. index:: S_IRWXO(const)
+.. index:: S_IROTH(const)
+.. index:: S_IWOTH(const)
+.. index:: S_IXOTH(const)
+.. index:: S_ISUID(const)
+.. index:: S_ISGID(const)
+.. index:: S_ISVXT(const)
+.. index:: raw_mode(fun)
+.. index:: file_type(fun)
+.. index:: file_perm(fun)
+.. index:: uint(ctor)
 .. code-block:: felix
 
   //[posix_filestat.flx]
@@ -533,14 +535,16 @@ Win32 FileStat
 
 
 
-.. index:: Win32FileStat
-.. index:: raw_mode
-.. index:: file_type
-.. index:: file_perm
-.. index:: uint
-.. index:: stat
-.. index:: utime
-.. index:: file_type
+.. index:: Win32FileStat(class)
+.. index:: _S_IFMT(const)
+.. index:: _S_IFDIR(const)
+.. index:: _S_IFREG(const)
+.. index:: _S_IWRITE(const)
+.. index:: _S_IREAD(const)
+.. index:: raw_mode(fun)
+.. index:: file_type(fun)
+.. index:: file_perm(fun)
+.. index:: uint(ctor)
 .. code-block:: felix
 
   //[win32_filestat.flx]
@@ -622,15 +626,13 @@ File Syetem
 
 
 
-.. index:: FileSystem_class
-.. index:: FileSystem
-.. index:: unlink
-.. index:: aux
-.. index:: rm
-.. index:: find_in_path
-.. index:: regfilesin
-.. index:: regfilesin
-.. index:: rfi
+.. index:: FileSystem_class(class)
+.. index:: FileSystem(class)
+.. index:: unlink(proc)
+.. index:: rm(proc)
+.. index:: find_in_path(fun)
+.. index:: regfilesin(fun)
+.. index:: regfilesin(fun)
 .. code-block:: felix
 
   //[filesystem.flx]
@@ -766,9 +768,44 @@ Posix File Syetem
 
 
 
-.. index:: PosixFileSystem
-.. index:: valid
-.. index:: int
+.. index:: PosixFileSystem(class)
+.. index:: O_RDONLY(const)
+.. index:: O_WRONLY(const)
+.. index:: O_RDWR(const)
+.. index:: O_NONBLOCK(const)
+.. index:: O_APPEND(const)
+.. index:: O_CREAT(const)
+.. index:: O_TRUNC(const)
+.. index:: O_EXCL(const)
+.. index:: O_SHLOCK(const)
+.. index:: O_EXLOCK(const)
+.. index:: O_NOFOLLOW(const)
+.. index:: O_SYMLINK(const)
+.. index:: O_EVTONLY(const)
+.. index:: valid(fun)
+.. index:: int(ctor)
+.. index:: fd0(const)
+.. index:: fd1(const)
+.. index:: fd2(const)
+.. index:: open(gen)
+.. index:: open(gen)
+.. index:: ropen(gen)
+.. index:: wopen(gen)
+.. index:: rwopen(gen)
+.. index:: creat(gen)
+.. index:: close(gen)
+.. index:: read(gen)
+.. index:: write(gen)
+.. index:: dup(gen)
+.. index:: dup2(gen)
+.. index:: piper_def(header)
+.. index:: pipe(gen)
+.. index:: fdopen_input(gen)
+.. index:: fdopen_output(gen)
+.. index:: unlink_file(gen)
+.. index:: rename_file(gen)
+.. index:: filecopy(gen)
+.. index:: tmp_filename(gen)
 .. code-block:: felix
 
   //[posix_filesystem.flx]
@@ -930,9 +967,45 @@ Win32 File Syetem
 
 
 
-.. index:: Win32FileSystem
-.. index:: valid
-.. index:: int
+.. index:: Win32FileSystem(class)
+.. index:: _O_BINARY(const)
+.. index:: _O_RDONLY(const)
+.. index:: _O_WRONLY(const)
+.. index:: _O_RDWR(const)
+.. index:: _O_NONBLOCK(const)
+.. index:: _O_APPEND(const)
+.. index:: _O_CREAT(const)
+.. index:: _O_TRUNC(const)
+.. index:: _O_EXCL(const)
+.. index:: _O_SHLOCK(const)
+.. index:: _O_EXLOCK(const)
+.. index:: _O_NOFOLLOW(const)
+.. index:: _O_SYMLINK(const)
+.. index:: _O_EVTONLY(const)
+.. index:: valid(fun)
+.. index:: int(ctor)
+.. index:: fd0(const)
+.. index:: fd1(const)
+.. index:: fd2(const)
+.. index:: open(gen)
+.. index:: open(gen)
+.. index:: ropen(gen)
+.. index:: wopen(gen)
+.. index:: rwopen(gen)
+.. index:: creat(gen)
+.. index:: close(gen)
+.. index:: read(gen)
+.. index:: write(gen)
+.. index:: dup(gen)
+.. index:: dup2(gen)
+.. index:: piper_def(header)
+.. index:: pipe(gen)
+.. index:: fdopen_input(gen)
+.. index:: fdopen_output(gen)
+.. index:: unlink_file(gen)
+.. index:: rename_file(gen)
+.. index:: filecopy(gen)
+.. index:: tmp_filename(gen)
 .. code-block:: felix
 
   //[win32_filesystem.flx]
@@ -1098,12 +1171,15 @@ Directory
 
 
 
-.. index:: Directory_class
-.. index:: mkdirs
-.. index:: filesin
-.. index:: getcwd
-.. index:: mk_absolute_filename
-.. index:: Directory
+.. index:: Directory_class(class)
+.. index:: mkdir(gen)
+.. index:: mkdir(gen)
+.. index:: mkdirs(proc)
+.. index:: unlink_empty_dir(gen)
+.. index:: filesin(fun)
+.. index:: getcwd(fun)
+.. index:: mk_absolute_filename(fun)
+.. index:: Directory(class)
 .. code-block:: felix
 
   //[directory.flx]
@@ -1154,17 +1230,15 @@ Posix Directory Services
 
 
 
-.. index:: PosixDirectory
-.. index:: opendir
-.. index:: isNULL
-.. index:: isNULL
-.. index:: readdir
-.. index:: closedir
-.. index:: filename
-.. index:: mkdirs
-.. index:: getcwd
-.. index:: mk_absolute_filename
-.. index:: filesin
+.. index:: PosixDirectory(class)
+.. index:: dirent_t(type)
+.. index:: DIR_t(type)
+.. index:: opendir(proc)
+.. index:: isNULL(fun)
+.. index:: isNULL(fun)
+.. index:: readdir(proc)
+.. index:: closedir(proc)
+.. index:: filename(fun)
 .. code-block:: felix
 
   //[posix_directory.flx]

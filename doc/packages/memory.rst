@@ -17,12 +17,11 @@ Raw Address
 ===========
 
 
-.. index:: Address
-.. index:: isNULL
-.. index:: str
-.. index:: repr
-.. index:: str
-.. index:: repr
+.. index:: Address(class)
+.. index:: isNULL(fun)
+.. index:: NULL(const)
+.. index:: addrstrfmt(const)
+.. index:: addrreprfmt(const)
 .. code-block:: felix
 
   //[address.flx]

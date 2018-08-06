@@ -35,7 +35,22 @@ C89 Standard.
 The original ANSI Standard blessed as an ISO Standard.
 
 
-.. index:: C89_headers
+.. index:: C89_headers(class)
+.. index:: assert_h(header)
+.. index:: ctype_h(header)
+.. index:: errno_h(header)
+.. index:: float_h(header)
+.. index:: limits_h(header)
+.. index:: locale_h(header)
+.. index:: math_h(header)
+.. index:: setjmp_h(header)
+.. index:: signal_h(header)
+.. index:: stdarg_h(header)
+.. index:: stddef_h(header)
+.. index:: stdio_h(header)
+.. index:: stdlib_h(header)
+.. index:: string_h(header)
+.. index:: time_h(header)
 .. code-block:: text
 
   // reference: Wikipedia: http://en.wikibooks.org/wiki/C_Programming/Reference_Tables#List_of_Standard_Headers 
@@ -66,7 +81,10 @@ C95 Amendment
 
 Added support for wide characters.
 
-.. index:: C95_headers
+.. index:: C95_headers(class)
+.. index:: iso646_h(header)
+.. index:: wchar_h(header)
+.. index:: wctype_h(header)
 .. code-block:: text
 
   // ISO C94/95 Amendment 1
@@ -85,7 +103,14 @@ C99 Standard
 Added support for complex, exact integer types and
 bool.
 
-.. index:: C99_headers
+.. index:: C99_headers(class)
+.. index:: complex_h(header)
+.. index:: fenv_h(header)
+.. index:: inttypes_h(header)
+.. index:: wctype_h(header)
+.. index:: stdbool_h(header)
+.. index:: stdint_h(header)
+.. index:: tgmath_h(header)
 .. code-block:: text
 
   // ISO C99
@@ -117,7 +142,55 @@ C++90 Standard
 The original C++ Standard.
 
 
-.. index:: Cxx_headers
+.. index:: Cxx_headers(class)
+.. index:: exception(header)
+.. index:: limits(header)
+.. index:: new(header)
+.. index:: typeinfo(header)
+.. index:: stdexcept(header)
+.. index:: utility(header)
+.. index:: memory(header)
+.. index:: string(header)
+.. index:: locale(header)
+.. index:: functional(header)
+.. index:: algorithm(header)
+.. index:: bitset(header)
+.. index:: deque(header)
+.. index:: iterator(header)
+.. index:: list(header)
+.. index:: map(header)
+.. index:: set(header)
+.. index:: stack(header)
+.. index:: vector(header)
+.. index:: complex(header)
+.. index:: numeric(header)
+.. index:: valarray(header)
+.. index:: fstream(header)
+.. index:: iomanip(header)
+.. index:: ios(header)
+.. index:: iosfwd(header)
+.. index:: iostream(header)
+.. index:: istream(header)
+.. index:: ostream(header)
+.. index:: streambuf(header)
+.. index:: sstream(header)
+.. index:: cassert(header)
+.. index:: cctype(header)
+.. index:: cerrno(header)
+.. index:: cfloat(header)
+.. index:: ciso646(header)
+.. index:: climits(header)
+.. index:: clocale(header)
+.. index:: cmath(header)
+.. index:: csetjmp(header)
+.. index:: csignal(header)
+.. index:: cstdarg(header)
+.. index:: cstdio(header)
+.. index:: cstdlib(header)
+.. index:: cstring(header)
+.. index:: ctime(header)
+.. index:: cwchar(header)
+.. index:: cwctype(header)
 .. code-block:: text
 
   class Cxx_headers
@@ -184,7 +257,32 @@ C++11 Standard.
 A more recent standard from 2011. Added a huge number
 of new features.
 
-.. index:: Cxx11_headers
+.. index:: Cxx11_headers(class)
+.. index:: system_error(header)
+.. index:: typeidex(header)
+.. index:: type_traits(header)
+.. index:: chrono(header)
+.. index:: initialiser_list(header)
+.. index:: tuple(header)
+.. index:: scope_allocator(header)
+.. index:: cuchar(header)
+.. index:: array(header)
+.. index:: forward_list(header)
+.. index:: unordered_set(header)
+.. index:: unordered_map(header)
+.. index:: ratio(header)
+.. index:: cfenv(header)
+.. index:: codecvt(header)
+.. index:: regex(header)
+.. index:: random(header)
+.. index:: atomic(header)
+.. index:: thread(header)
+.. index:: mutex(header)
+.. index:: future(header)
+.. index:: condition_variable(header)
+.. index:: ctgmath(header)
+.. index:: cstdalign(header)
+.. index:: cstdbool(header)
 .. code-block:: text
 
   class Cxx11_headers  // http://en.cppreference.com/w/cpp/header
@@ -225,7 +323,65 @@ There are multiple Posix standards but we just include headers
 from the most recent, most final one.
 
 
-.. index:: Posix_headers
+.. index:: Posix_headers(class)
+.. index:: aio_h(header)
+.. index:: arpa_inet_h(header)
+.. index:: cpio_h(header)
+.. index:: dirent_h(header)
+.. index:: dlfcn_h(header)
+.. index:: fcntl_h(header)
+.. index:: fmtmsg_h(header)
+.. index:: fnmatch_h(header)
+.. index:: ftw_h(header)
+.. index:: glob_h(header)
+.. index:: grp_h(header)
+.. index:: iconv_h(header)
+.. index:: langinfo_h(header)
+.. index:: libgen_h(header)
+.. index:: monetary_h(header)
+.. index:: mqueue_h(header)
+.. index:: ndbm_h(header)
+.. index:: net_if_h(header)
+.. index:: netdb_h(header)
+.. index:: netinet_in_h(header)
+.. index:: netinet_tcp_h(header)
+.. index:: nl_types_h(header)
+.. index:: poll_h(header)
+.. index:: pthread_h(header)
+.. index:: pwd_h(header)
+.. index:: regex_h(header)
+.. index:: sched_h(header)
+.. index:: search_h(header)
+.. index:: semaphore_h(header)
+.. index:: spawn_h(header)
+.. index:: strings_h(header)
+.. index:: stropts_h(header)
+.. index:: sys_ipc_h(header)
+.. index:: sys_mman_h(header)
+.. index:: sys_msg_h(header)
+.. index:: sys_resource_h(header)
+.. index:: sys_select_h(header)
+.. index:: sys_sem_h(header)
+.. index:: sys_shm_h(header)
+.. index:: sys_socket_h(header)
+.. index:: sys_stat_h(header)
+.. index:: sys_statvfs_h(header)
+.. index:: sys_time_h(header)
+.. index:: sys_times_h(header)
+.. index:: sys_types_h(header)
+.. index:: sys_uio_h(header)
+.. index:: sys_un_h(header)
+.. index:: sys_utsname_h(header)
+.. index:: sys_wait_h(header)
+.. index:: syslog_h(header)
+.. index:: tar_h(header)
+.. index:: termios_h(header)
+.. index:: trace_h(header)
+.. index:: ulimit_h(header)
+.. index:: unistd_h(header)
+.. index:: utime_h(header)
+.. index:: utmpx_h(header)
+.. index:: wordexp_h(header)
 .. code-block:: text
 
   class Posix_headers {
@@ -298,7 +454,13 @@ The name win32 for the original 32 bit Windows has stuck,
 even for 64 bit Windows.
 
 
-.. index:: Win32_headers
+.. index:: Win32_headers(class)
+.. index:: windows_h(header)
+.. index:: io_h(header)
+.. index:: direct_h(header)
+.. index:: sys_timeb_h(header)
+.. index:: sys_utime_h(header)
+.. index:: process_h(header)
 .. code-block:: text
 
   class Win32_headers {

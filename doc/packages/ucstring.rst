@@ -21,11 +21,12 @@ or involve the null terminator.
 
 
 
-.. index:: CString
-.. index:: strcpy
-.. index:: strncpy
-.. index:: strlen
-.. index:: len
+.. index:: CString(class)
+.. index:: strcpy(proc)
+.. index:: strncpy(proc)
+.. index:: strlen(fun)
+.. index:: len(fun)
+.. index:: strdup(gen)
 .. code-block:: felix
 
   //[cstring.flx]
@@ -101,19 +102,20 @@ string length if they exceed it.
 
 
 
-.. index:: UniqueCStrings
-.. index:: ucstr
-.. index:: ucstr
-.. index:: dup
-.. index:: dup
-.. index:: delete
-.. index:: len
-.. index:: set
-.. index:: reserve
-.. index:: append
-.. index:: erase
-.. index:: insert
-.. index:: search
+.. index:: UniqueCStrings(class)
+.. index:: def(type)
+.. index:: ucstr(ctor)
+.. index:: ucstr(ctor)
+.. index:: dup(fun)
+.. index:: dup(fun)
+.. index:: delete(proc)
+.. index:: len(fun)
+.. index:: set(fun)
+.. index:: reserve(fun)
+.. index:: append(fun)
+.. index:: erase(fun)
+.. index:: insert(fun)
+.. index:: search(fun)
 .. code-block:: felix
 
   //[ucstr.flx]
@@ -289,7 +291,6 @@ ucstr_prim_01.flx
 =================
 
 
-.. index:: test
 .. code-block:: felix
 
   //[ucstr_prim_01.flx]
@@ -355,19 +356,20 @@ string length if they exceed it.
 
 
 
-.. index:: UniqueCountedStrings
-.. index:: ustr
-.. index:: ustr
-.. index:: dup
-.. index:: dup
-.. index:: delete
-.. index:: len
-.. index:: set
-.. index:: reserve
-.. index:: append
-.. index:: erase
-.. index:: insert
-.. index:: search
+.. index:: UniqueCountedStrings(class)
+.. index:: def(type)
+.. index:: ustr(ctor)
+.. index:: ustr(ctor)
+.. index:: dup(fun)
+.. index:: dup(fun)
+.. index:: delete(proc)
+.. index:: len(fun)
+.. index:: set(fun)
+.. index:: reserve(fun)
+.. index:: append(fun)
+.. index:: erase(fun)
+.. index:: insert(fun)
+.. index:: search(fun)
 .. code-block:: felix
 
   //[ustr.flx]
@@ -543,7 +545,6 @@ ustr_prim_01.flx
 ================
 
 
-.. index:: test
 .. code-block:: felix
 
   //[ustr_prim_01.flx]

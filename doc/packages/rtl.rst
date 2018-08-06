@@ -151,9 +151,9 @@ Compiler Support
   #undef s
   #endif
 
-.. index:: ValueType
-.. index:: CxxValueType
-.. index:: ProductType
+.. index:: ValueType(class)
+.. index:: CxxValueType(class)
+.. index:: ProductType(class)
 .. code-block:: cpp
 
   //[flx_compiler_support_bodies.hpp]
@@ -564,6 +564,7 @@ RTL
 ===
 
 
+.. index:: slist_node_t(struct)
 .. code-block:: cpp
 
   //[flx_rtl.hpp]
@@ -1554,7 +1555,6 @@ Plat Linux
   int get_cpu_nr();
   #endif
 
-.. index:: _nb
 .. code-block:: cpp
 
   //[plat_linux.cpp]

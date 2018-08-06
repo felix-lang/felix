@@ -97,8 +97,8 @@ as can be addressed.
 
 
 
-.. index:: PervasiveInts
-.. index:: PervasiveLogic
+.. index:: PervasiveInts(class)
+.. index:: PervasiveLogic(class)
 .. code-block:: felix
 
   //[scalar.flx]

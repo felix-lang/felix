@@ -58,6 +58,7 @@ Toolchain support
 =================
 
 
+.. index:: _search_dirs(header)
 .. code-block:: felix
 
   //[toolchain_clang_config.flx]
@@ -133,11 +134,26 @@ For compilers with a gcc like command line interface:
 gcc and clang basically.
 
 
-.. index:: CxxCompiler
-.. index:: mkinc
-.. index:: mkincs
-.. index:: mkmac
-.. index:: mkmacs
+.. index:: CxxCompiler(class)
+.. index:: def(type)
+.. index:: mkinc(fun)
+.. index:: mkincs(fun)
+.. index:: mkmac(fun)
+.. index:: mkmacs(fun)
+.. index:: generic_cxx_gen_deps(gen)
+.. index:: generic_dependency_parser(gen)
+.. index:: def(type)
+.. index:: generic_cxx_compile_for_dynamic(gen)
+.. index:: def(type)
+.. index:: generic_cxx_compile_for_static(gen)
+.. index:: def(type)
+.. index:: generic_link_lib_dynamic(gen)
+.. index:: def(type)
+.. index:: generic_link_exe_dynamic(gen)
+.. index:: def(type)
+.. index:: generic_link_exe_static(gen)
+.. index:: def(type)
+.. index:: generic_static_library(gen)
 .. code-block:: felix
 
   //[flx_cxx.flx]
@@ -423,8 +439,8 @@ to invoke the compiler. The dependent file list is generated
 by the underlying compiler, which must support this ability.
 
 
-.. index:: maxf
-.. index:: maxf
+.. index:: cxx_depcheck(gen)
+.. index:: c_depcheck(gen)
 .. code-block:: felix
 
   //[flx_depchk.flx]
@@ -532,11 +548,7 @@ Builds a complete library from a flx_pkgconfig database
 specification. Used by the flx_build_rtl tool.
 
 
-.. index:: FlxLibBuild
-.. index:: dbug
-.. index:: ehandler
-.. index:: objname
-.. index:: objname
+.. index:: FlxLibBuild(class)
 .. code-block:: felix
 
   //[flx_mklib.flx]
@@ -1761,9 +1773,9 @@ Cygwin interface.
 -----------------
 
 
-.. index:: Cygwin
-.. index:: cygwin_to_win32
-.. index:: win32_to_cygwin
+.. index:: Cygwin(class)
+.. index:: cygwin_to_win32(fun)
+.. index:: win32_to_cygwin(fun)
 .. code-block:: felix
 
   //[cygwin.flx]
@@ -1826,7 +1838,9 @@ Object for MSVC++ on Windows
 ----------------------------
 
 
-.. index:: checkwarn
+.. index:: xpopen(gen)
+.. index:: shell(gen)
+.. index:: checkwarn(proc)
 .. code-block:: felix
 
   //[msvc_win32.flx]
@@ -2048,6 +2062,7 @@ Object for clang on iOS
 -----------------------
 
 
+.. index:: get(gen)
 .. code-block:: felix
 
   //[clang_iOS_generic.flx]
@@ -2338,7 +2353,6 @@ iPhone Plugin
 -------------
 
 
-.. index:: setup
 .. code-block:: felix
 
   //[toolchain_iphoneos.flx]
@@ -2357,7 +2371,6 @@ iPhone Plugin
   export fun setup of (string) as "toolchain_iphoneos_setup";
 
 
-.. index:: setup
 .. code-block:: felix
 
   //[toolchain_iphonesimulator.flx]
@@ -2382,7 +2395,6 @@ Plugin for gcc on Linux
 ------------------------
 
 
-.. index:: setup
 .. code-block:: felix
 
   //[toolchain_gcc_linux.flx]
@@ -2404,7 +2416,6 @@ Plugin for gcc on OSX
 ---------------------
 
 
-.. index:: setup
 .. code-block:: felix
 
   //[toolchain_gcc_osx.flx]
@@ -2426,7 +2437,6 @@ Plugin for clang on Linux
 --------------------------
 
 
-.. index:: setup
 .. code-block:: felix
 
   //[toolchain_clang_linux.flx]
@@ -2451,7 +2461,6 @@ Plugin for clang on OSX
 -----------------------
 
 
-.. index:: setup
 .. code-block:: felix
 
   //[toolchain_clang_osx.flx]
@@ -2474,7 +2483,6 @@ MSVC++ Plugin for Win32
 -----------------------
 
 
-.. index:: setup
 .. code-block:: felix
 
   //[toolchain_msvc_win32.flx]

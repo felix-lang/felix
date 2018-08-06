@@ -196,20 +196,23 @@ Serialisation functions
 =======================
 
 
-.. index:: Serialise
-.. index:: blit
-.. index:: ncode
-.. index:: encode_varray
-.. index:: find_pointers
-.. index:: essed
-.. index:: pclosure
-.. index:: add_pointer
-.. index:: find_closure
-.. index:: encode_closure
-.. index:: encode_pointer_closure
-.. index:: set_used
-.. index:: adjust_pointer
-.. index:: adjust_all_pointers
+.. index:: Serialise(class)
+.. index:: blit(fun)
+.. index:: ncode(fun)
+.. index:: unblit(gen)
+.. index:: encode_varray(fun)
+.. index:: find_pointers(fun)
+.. index:: pclosure(struct)
+.. index:: pclosure(ctor)
+.. index:: add_pointer(proc)
+.. index:: iterator(gen)
+.. index:: find_closure(fun)
+.. index:: encode_closure(fun)
+.. index:: encode_pointer_closure(fun)
+.. index:: create_empty_varray(gen)
+.. index:: set_used(proc)
+.. index:: decode_varray(gen)
+.. index:: decode_pointer_closure(gen)
 .. code-block:: felix
 
   //[serialise.flx]

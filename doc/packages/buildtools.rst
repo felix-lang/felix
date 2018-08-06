@@ -33,18 +33,12 @@ It is built directly from the repository.
 
 
 
-.. index:: BuildFlxg
-.. index:: pack
-.. index:: version_hook
-.. index:: first
-.. index:: second
-.. index:: build_flx_drivers
-.. index:: entmp
-.. index:: libdflt
-.. index:: exedflt
-.. index:: lexdflt
-.. index:: yaccflt
-.. index:: dypgendflt
+.. index:: BuildFlxg(class)
+.. index:: pack(fun)
+.. index:: version_hook(fun)
+.. index:: first(fun)
+.. index:: second(fun)
+.. index:: build_flx_drivers(proc)
 .. code-block:: felix
 
   //[flx_build_flxg.flx]
@@ -696,11 +690,12 @@ This tools copies things out of the repository and sets up
 the build target directory.
 
 
-.. index:: FlxPrepBuild
-.. index:: dirsetup
-.. index:: flx_build
-.. index:: print_help
-.. index:: setup_toolchain
+.. index:: FlxPrepBuild(class)
+.. index:: dirsetup(proc)
+.. index:: flx_build(proc)
+.. index:: print_help(proc)
+.. index:: setup_toolchain(proc)
+.. index:: def(type)
 .. code-block:: felix
 
   //[flx_build_prep.flx]
@@ -1041,16 +1036,12 @@ Build the Run Time Library (RTL)
 Builds the run time library from the build target
 share directory. Does not look in the repository.
 
-.. index:: FlxRtlBuild
-.. index:: ehandler
-.. index:: make_rtl
-.. index:: dbug
-.. index:: prgname
-.. index:: cobj_static
-.. index:: cobj_dynamic
-.. index:: prg
-.. index:: flx_build
-.. index:: print_help
+.. index:: FlxRtlBuild(class)
+.. index:: ehandler(proc)
+.. index:: make_rtl(proc)
+.. index:: flx_build(proc)
+.. index:: print_help(proc)
+.. index:: def(type)
 .. code-block:: felix
 
   //[flx_build_rtl.flx]
@@ -1411,15 +1402,16 @@ directory.
   flx_tool: flx_build_flxg
 
 
-.. index:: FlxCoreBuild
-.. index:: ehandler
-.. index:: build_plugins
-.. index:: build_exes
-.. index:: build_flx_tools
-.. index:: build_flx_web
-.. index:: build_flx
-.. index:: flx_build
-.. index:: print_help
+.. index:: FlxCoreBuild(class)
+.. index:: ehandler(proc)
+.. index:: build_plugins(proc)
+.. index:: build_exes(proc)
+.. index:: build_flx_tools(proc)
+.. index:: build_flx_web(proc)
+.. index:: build_flx(proc)
+.. index:: flx_build(proc)
+.. index:: print_help(proc)
+.. index:: def(type)
 .. code-block:: felix
 
   //[flx_build_boot.flx]

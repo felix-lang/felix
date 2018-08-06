@@ -153,8 +153,8 @@ the asymmetic set difference or subtraction.
 Note that sets are not necessarily finite.
 
 
-.. index:: Set
-.. index:: mem
+.. index:: Set(class)
+.. index:: mem(fun)
 .. code-block:: felix
 
   //[set.flx]
@@ -220,7 +220,6 @@ as a noun by encapsulating the predicate in a closure and
 thereby abstracting it.
 
 
-.. index:: invimg
 .. code-block:: felix
 
   //[set.flx]
@@ -275,9 +274,9 @@ Containers.
 
 
 
-.. index:: Container
-.. index:: len
-.. index:: empty
+.. index:: Container(class)
+.. index:: len(fun)
+.. index:: empty(fun)
 .. code-block:: felix
 
   //[container.flx]
@@ -335,9 +334,9 @@ An online reference on `Wikibooks <http://en.wikibooks.org/wiki/Abstract_Algebra
 
 
 
-.. index:: Eq
-.. index:: eq
-.. index:: ne
+.. index:: Eq(class)
+.. index:: eq(fun)
+.. index:: ne(fun)
 .. code-block:: felix
 
   //[equiv.flx]
@@ -393,7 +392,7 @@ The choice of operators is motivated by the canonical
 exemplar of subset containment relations.
 
 
-.. index:: Pord
+.. index:: Pord(class)
 .. code-block:: felix
 
   //[pord.flx]
@@ -467,13 +466,13 @@ holding the mouse over the symbol briefly.
 
 
 
-.. index:: Tord
-.. index:: lt
-.. index:: gt
-.. index:: le
-.. index:: ge
-.. index:: max
-.. index:: min
+.. index:: Tord(class)
+.. index:: lt(fun)
+.. index:: gt(fun)
+.. index:: le(fun)
+.. index:: ge(fun)
+.. index:: max(fun)
+.. index:: min(fun)
 .. code-block:: felix
 
   //[tord.flx]
@@ -590,14 +589,14 @@ Sequences
 
 
 
-.. index:: Forward
-.. index:: succ
-.. index:: pre_incr
-.. index:: post_incr
-.. index:: Bidirectional
-.. index:: pred
-.. index:: pre_decr
-.. index:: post_decr
+.. index:: Forward(class)
+.. index:: succ(fun)
+.. index:: pre_incr(proc)
+.. index:: post_incr(proc)
+.. index:: Bidirectional(class)
+.. index:: pred(fun)
+.. index:: pre_decr(proc)
+.. index:: post_decr(proc)
 .. code-block:: felix
 
   //[sequence.flx]
@@ -635,15 +634,15 @@ numbers.
 Note we use the  :code:`inherit` statement to include
 the functions from class  :code:`Eq`.
 
-.. index:: FloatAddgrp
-.. index:: zero
-.. index:: neg
-.. index:: prefix_plus
-.. index:: add
-.. index:: plus
-.. index:: sub
-.. index:: pluseq
-.. index:: minuseq
+.. index:: FloatAddgrp(class)
+.. index:: zero(fun)
+.. index:: neg(fun)
+.. index:: prefix_plus(fun)
+.. index:: add(fun)
+.. index:: plus(fun)
+.. index:: sub(fun)
+.. index:: pluseq(proc)
+.. index:: minuseq(proc)
 .. code-block:: felix
 
   //[group.flx]
@@ -699,7 +698,7 @@ A proper additive group is derived from  :code:`FloatAddgrp`
 with associativity added.
 
 
-.. index:: Addgrp
+.. index:: Addgrp(class)
 .. code-block:: felix
 
   //[group.flx]
@@ -717,12 +716,12 @@ An approximate multiplicative semigroup is a set with a symmetric
 binary multiplication operator and a unit. 
 
 
-.. index:: FloatMultSemi1
-.. index:: muleq
-.. index:: mul
-.. index:: sqr
-.. index:: cube
-.. index:: one
+.. index:: FloatMultSemi1(class)
+.. index:: muleq(proc)
+.. index:: mul(fun)
+.. index:: sqr(fun)
+.. index:: cube(fun)
+.. index:: one(fun)
 .. code-block:: felix
 
   //[group.flx]
@@ -764,7 +763,7 @@ multiplicative semigroup with unit and associativity
 and satisfies the cancellation law.
 
 
-.. index:: MultSemi1
+.. index:: MultSemi1(class)
 .. code-block:: felix
 
   //[group.flx]
@@ -787,7 +786,7 @@ multiplication satisfying the rules for approximate
 additive group and multiplicative semigroup respectively.
 
 
-.. index:: FloatRing
+.. index:: FloatRing(class)
 .. code-block:: felix
 
   //[ring.flx]
@@ -805,7 +804,7 @@ multiplicative semigroup with unit, and which in
 addition satisfies the distributive law.
 
 
-.. index:: Ring
+.. index:: Ring(class)
 .. code-block:: felix
 
   //[ring.flx]
@@ -822,12 +821,12 @@ An approximate division ring is an approximate ring with unit
 with a division operator.
 
 
-.. index:: FloatDring
-.. index:: div
-.. index:: mod
-.. index:: recip
-.. index:: diveq
-.. index:: modeq
+.. index:: FloatDring(class)
+.. index:: div(fun)
+.. index:: mod(fun)
+.. index:: recip(fun)
+.. index:: diveq(proc)
+.. index:: modeq(proc)
 .. code-block:: felix
 
   //[ring.flx]
@@ -879,7 +878,7 @@ Division Ring
 
 
 
-.. index:: Dring
+.. index:: Dring(class)
 .. code-block:: felix
 
   //[ring.flx]
@@ -898,11 +897,11 @@ Bitwise operations
 
 
 
-.. index:: Bits
-.. index:: bxor
-.. index:: bor
-.. index:: band
-.. index:: bnot
+.. index:: Bits(class)
+.. index:: bxor(fun)
+.. index:: bor(fun)
+.. index:: band(fun)
+.. index:: bnot(fun)
 .. code-block:: felix
 
   //[bits.flx]
@@ -955,15 +954,15 @@ Integer
 
 
 
-.. index:: Integer
-.. index:: shl
-.. index:: shr
-.. index:: maxval
-.. index:: minval
-.. index:: Signed_integer
-.. index:: sgn
-.. index:: abs
-.. index:: Unsigned_integer
+.. index:: Integer(class)
+.. index:: shl(fun)
+.. index:: shr(fun)
+.. index:: maxval(fun)
+.. index:: minval(fun)
+.. index:: Signed_integer(class)
+.. index:: sgn(fun)
+.. index:: abs(fun)
+.. index:: Unsigned_integer(class)
 .. code-block:: felix
 
   //[integer.flx]
@@ -1010,39 +1009,39 @@ Trigonometric functions are shared by
 real and complex numbers.
 
 
-.. index:: Trig
-.. index:: sin
-.. index:: cos
-.. index:: tan
-.. index:: sec
-.. index:: csc
-.. index:: cot
-.. index:: asin
-.. index:: acos
-.. index:: atan
-.. index:: asec
-.. index:: acsc
-.. index:: acot
-.. index:: sinh
-.. index:: cosh
-.. index:: tanh
-.. index:: sech
-.. index:: csch
-.. index:: coth
-.. index:: asinh
-.. index:: acosh
-.. index:: atanh
-.. index:: asech
-.. index:: acsch
-.. index:: acoth
-.. index:: exp
-.. index:: log
-.. index:: ln
-.. index:: pow
-.. index:: pow
-.. index:: Special
-.. index:: erf
-.. index:: erfc
+.. index:: Trig(class)
+.. index:: sin(fun)
+.. index:: cos(fun)
+.. index:: tan(fun)
+.. index:: sec(fun)
+.. index:: csc(fun)
+.. index:: cot(fun)
+.. index:: asin(fun)
+.. index:: acos(fun)
+.. index:: atan(fun)
+.. index:: asec(fun)
+.. index:: acsc(fun)
+.. index:: acot(fun)
+.. index:: sinh(fun)
+.. index:: cosh(fun)
+.. index:: tanh(fun)
+.. index:: sech(fun)
+.. index:: csch(fun)
+.. index:: coth(fun)
+.. index:: asinh(fun)
+.. index:: acosh(fun)
+.. index:: atanh(fun)
+.. index:: asech(fun)
+.. index:: acsch(fun)
+.. index:: acoth(fun)
+.. index:: exp(fun)
+.. index:: log(fun)
+.. index:: ln(fun)
+.. index:: pow(fun)
+.. index:: pow(fun)
+.. index:: Special(class)
+.. index:: erf(fun)
+.. index:: erfc(fun)
 .. code-block:: felix
 
   //[trig.flx]
@@ -1154,15 +1153,15 @@ Approximate Reals.
 
 
 
-.. index:: Real
-.. index:: embed
-.. index:: log10
-.. index:: abs
-.. index:: sqrt
-.. index:: ceil
-.. index:: floor
-.. index:: trunc
-.. index:: atan2
+.. index:: Real(class)
+.. index:: embed(fun)
+.. index:: log10(fun)
+.. index:: abs(fun)
+.. index:: sqrt(fun)
+.. index:: ceil(fun)
+.. index:: floor(fun)
+.. index:: trunc(fun)
+.. index:: atan2(fun)
 .. code-block:: felix
 
   //[real.flx]
@@ -1198,12 +1197,12 @@ Complex numbers
 
 
 
-.. index:: Complex
-.. index:: real
-.. index:: imag
-.. index:: abs
-.. index:: arg
-.. index:: sqrt
+.. index:: Complex(class)
+.. index:: real(fun)
+.. index:: imag(fun)
+.. index:: abs(fun)
+.. index:: arg(fun)
+.. index:: sqrt(fun)
 .. code-block:: felix
 
   //[complex.flx]
@@ -1235,7 +1234,7 @@ Summation and Product Quantifiers.
 
 To be moved. Folds over streams.
 
-.. index:: Quantifiers_add_mul
+.. index:: Quantifiers_add_mul(class)
 .. code-block:: felix
 
   //[group.flx]

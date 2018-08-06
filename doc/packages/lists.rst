@@ -24,8 +24,12 @@ The  :code:`list` type.
 The core data type for most functional programming languages.
 
 
-.. index:: List
-.. index:: _match_ctor_Cons
+.. index:: List(class)
+.. index:: list(union)
+.. index:: _match_ctor_Cons(fun)
+.. index:: _ctor_arg_Cons(fun)
+.. index:: Cons(fun)
+.. index:: snoc2cons_h(header)
 .. code-block:: felix
 
   //[list.flx]
@@ -55,7 +59,7 @@ Splice
 This is primarily a non-functional helper routine.
 
 
-.. index:: splice
+.. index:: splice(proc)
 .. code-block:: felix
 
   //[list.flx]
@@ -85,7 +89,7 @@ In-place unsafe reversal.
 Another helper routine.
 
 
-.. index:: rev
+.. index:: rev(proc)
 .. code-block:: felix
 
   //[list.flx]
@@ -119,7 +123,7 @@ In-place reversal.
 Another variant of the unsafe reversal.
 
 
-.. index:: rev_last
+.. index:: rev_last(proc)
 .. code-block:: felix
 
   //[list.flx]
@@ -157,7 +161,7 @@ Make an entirely new copy of a list.
 Primarily a helper.
 
 
-.. index:: copy
+.. index:: copy(fun)
 .. code-block:: felix
 
   //[list.flx]
@@ -174,7 +178,7 @@ Copy and return last  :code:`copy_last`
 Yet another helper.
 
 
-.. index:: copy_last
+.. index:: copy_last(proc)
 .. code-block:: felix
 
   //[list.flx]
@@ -242,8 +246,7 @@ Make a list from an option stream.
 Named variant.
 
 
-.. index:: list_comprehension
-.. index:: aux
+.. index:: list_comprehension(fun)
 .. code-block:: felix
 
   //[list.flx]
@@ -287,7 +290,6 @@ Construe a list as an array value.
     //$ Contrue a list as an array value
     instance[T] ArrayValue[list[T],T] {
 
-.. index:: aux
 .. code-block:: felix
 
   //[list.flx]
@@ -312,7 +314,6 @@ Construe a list as an array value.
       ;
   
 
-.. index:: iter
 .. code-block:: felix
 
   //[list.flx]
@@ -326,8 +327,6 @@ Construe a list as an array value.
       }
   
 
-.. index:: fold_left
-.. index:: aux
 .. code-block:: felix
 
   //[list.flx]
@@ -345,8 +344,6 @@ Construe a list as an array value.
   
 
 
-.. index:: fold_right
-.. index:: aux
 .. code-block:: felix
 
   //[list.flx]
@@ -422,8 +419,7 @@ Reverse map a list  :code:`rev_map`
 Tail recursive.
 
 
-.. index:: rev_map
-.. index:: aux
+.. index:: rev_map(fun)
 .. code-block:: felix
 
   //[list.flx]
@@ -445,7 +441,7 @@ Tail recursive. Uses rev_map and then inplace revseral.
 This is safe because we enforce linearity by abstraction.
 
 
-.. index:: map
+.. index:: map(fun)
 .. code-block:: felix
 
   //[list.flx]
@@ -464,7 +460,6 @@ Reverse a list  :code:`rev`.
 Tail recursive.
 
 
-.. index:: aux
 .. code-block:: felix
 
   //[list.flx]
@@ -488,8 +483,7 @@ Zip a pair of lists to a list of pairs  :code:`zip2`
 Returns a list the length of the shortest argument.
 
 
-.. index:: zip2
-.. index:: aux
+.. index:: zip2(fun)
 .. code-block:: felix
 
   //[list.flx]
@@ -516,8 +510,7 @@ A list of integers  :code:`range`.
 From  :code:`low` to  :code:`high` exclusive with given  :code:`step`.
 
 
-.. index:: range
-.. index:: inner
+.. index:: range(fun)
 .. code-block:: felix
 
   //[list.flx]
@@ -557,7 +550,7 @@ Consecutive integers  :code:`range`
 
 
 
-.. index:: range
+.. index:: range(fun)
 .. code-block:: felix
 
   //[list.flx]
@@ -569,7 +562,7 @@ Non-negative integers to limit  :code:`range`
 
 
 
-.. index:: range
+.. index:: range(fun)
 .. code-block:: felix
 
   //[list.flx]
@@ -585,7 +578,7 @@ Concatenate two lists  :code:`join`.
 
 
 
-.. index:: join
+.. index:: join(fun)
 .. code-block:: felix
 
   //[list.flx]
@@ -724,9 +717,9 @@ Map a list to a list of strings and cat with separator  :code:`catmap`
 
 
 
-.. index:: catmap
-.. index:: strcat
-.. index:: strcat
+.. index:: catmap(fun)
+.. index:: strcat(fun)
+.. index:: strcat(fun)
 .. code-block:: felix
 
   //[list.flx]
@@ -752,8 +745,8 @@ Value membership
 
 
 
-.. index:: mem
-.. index:: mem
+.. index:: mem(fun)
+.. index:: mem(fun)
 .. code-block:: felix
 
   //[list.flx]
@@ -784,19 +777,17 @@ Value Find by relation  :code:`find`
 Returns option.
 
 
-.. index:: find
-.. index:: find
-.. index:: aux
-.. index:: prepend_unique
-.. index:: insert_unique
-.. index:: remove
-.. index:: aux
-.. index:: take
-.. index:: drop
-.. index:: scroll1
-.. index:: scroll
-.. index:: revsplit
-.. index:: list_eq
+.. index:: find(fun)
+.. index:: find(fun)
+.. index:: prepend_unique(fun)
+.. index:: insert_unique(fun)
+.. index:: remove(fun)
+.. index:: take(fun)
+.. index:: drop(fun)
+.. index:: scroll1(fun)
+.. index:: scroll(fun)
+.. index:: revsplit(fun)
+.. index:: list_eq(fun)
 .. code-block:: felix
 
   //[list.flx]
@@ -930,8 +921,8 @@ Sort
 
 
 
-.. index:: sort
-.. index:: sort
+.. index:: sort(fun)
+.. index:: sort(fun)
 .. code-block:: felix
 
   //[list.flx]
@@ -1029,13 +1020,13 @@ Association List
 A list of pairs
 
 
-.. index:: Assoc_list
-.. index:: mem
-.. index:: mem
-.. index:: mem
-.. index:: find
-.. index:: find
-.. index:: find
+.. index:: Assoc_list(class)
+.. index:: def(type)
+.. index:: mem(fun)
+.. index:: mem(fun)
+.. index:: find(fun)
+.. index:: find(fun)
+.. index:: find(fun)
 .. code-block:: felix
 
   //[assoc_list.flx]
@@ -1086,20 +1077,21 @@ Purely Functional Random Access List.
 
 
 
-.. index:: Ralist
-.. index:: ralist_length
-.. index:: ralist_cons
-.. index:: ralist_empty
-.. index:: ralist_uncons
-.. index:: _match_ctor_Cons
-.. index:: _match_ctor_Empty
-.. index:: _ctor_arg_Cons
-.. index:: ralist_head
-.. index:: ralist_tail
-.. index:: ralist_lookup
-.. index:: ralist_update
-.. index:: ralist_foreach
-.. index:: str
+.. index:: Ralist(class)
+.. index:: pt(union)
+.. index:: ralist(union)
+.. index:: ralist_length(fun)
+.. index:: ralist_cons(fun)
+.. index:: ralist_empty(fun)
+.. index:: ralist_uncons(proc)
+.. index:: _match_ctor_Cons(fun)
+.. index:: _match_ctor_Empty(fun)
+.. index:: _ctor_arg_Cons(fun)
+.. index:: ralist_head(fun)
+.. index:: ralist_tail(fun)
+.. index:: ralist_lookup(fun)
+.. index:: ralist_update(fun)
+.. index:: ralist_foreach(proc)
 .. code-block:: felix
 
   //[ralist.flx]
@@ -1367,8 +1359,10 @@ A dlist_t is a doubly linked mutable list.
 It is suitable for use as non-thread-safe queue.
 
 
-.. index:: DList
-.. index:: dlist_t
+.. index:: DList(class)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: dlist_t(ctor)
 .. code-block:: felix
 
   //[dlist.flx]
@@ -1390,7 +1384,7 @@ Length  :code:`len`
 
 
 
-.. index:: len
+.. index:: len(fun)
 .. code-block:: felix
 
   //[dlist.flx]
@@ -1410,8 +1404,8 @@ Inspection
 
 
 
-.. index:: peek_front
-.. index:: peek_back
+.. index:: peek_front(fun)
+.. index:: peek_back(fun)
 .. code-block:: felix
 
   //[dlist.flx]
@@ -1434,8 +1428,8 @@ Insertion
 
 
 
-.. index:: push_front
-.. index:: push_back
+.. index:: push_front(proc)
+.. index:: push_back(proc)
 .. code-block:: felix
 
   //[dlist.flx]
@@ -1464,6 +1458,8 @@ Deletion
 
 
 
+.. index:: pop_front(gen)
+.. index:: pop_back(gen)
 .. code-block:: felix
 
   //[dlist.flx]
@@ -1505,8 +1501,10 @@ We can implement enqueue and dequeue at either end, we'll make
 enqueue push_front and dequeue pop_back for no particular reason.
 
 
-.. index:: enqueue
-.. index:: queue_t
+.. index:: def(type)
+.. index:: enqueue(proc)
+.. index:: dequeue(gen)
+.. index:: queue_t(ctor)
 .. code-block:: felix
 
   //[dlist.flx]
@@ -1520,6 +1518,7 @@ Queue iterator
 Fetch everything from a queue.
 
 
+.. index:: iterator(gen)
 .. code-block:: felix
 
   //[dlist.flx]
@@ -1532,10 +1531,11 @@ S-expressions
 A scheme like data structure.
 
 
-.. index:: S_expr
-.. index:: fold_left
-.. index:: iter
-.. index:: map
+.. index:: S_expr(class)
+.. index:: sexpr(union)
+.. index:: fold_left(fun)
+.. index:: iter(proc)
+.. index:: map(fun)
 .. code-block:: felix
 
   //[sexpr.flx]

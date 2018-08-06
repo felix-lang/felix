@@ -22,9 +22,9 @@ General Numeric operations.
 ===========================
 
 
-.. index:: zero
-.. index:: neg
-.. index:: one
+.. index:: zero(fun)
+.. index:: neg(fun)
+.. index:: one(fun)
 .. code-block:: felix
 
   //[number.flx]
@@ -64,46 +64,44 @@ Floating Numbers.
 Operations on Real and Complex numbers.
 
 
-.. index:: Floatinf
-.. index:: Doubleinf
-.. index:: Ldoubleinf
-.. index:: Fcomplex
-.. index:: str
-.. index:: Dcomplex
-.. index:: str
-.. index:: Lcomplex
-.. index:: str
-.. index:: real
-.. index:: imag
-.. index:: abs
-.. index:: arg
-.. index:: neg
-.. index:: zero
-.. index:: one
-.. index:: sin
-.. index:: cos
-.. index:: tan
-.. index:: asin
-.. index:: acos
-.. index:: atan
-.. index:: sinh
-.. index:: cosh
-.. index:: tanh
-.. index:: asinh
-.. index:: acosh
-.. index:: atanh
-.. index:: exp
-.. index:: log
-.. index:: pow
-.. index:: abs
-.. index:: log10
-.. index:: sqrt
-.. index:: ceil
-.. index:: floor
-.. index:: trunc
-.. index:: embed
-.. index:: atan2
-.. index:: CartComplex
+.. index:: Floatinf(class)
+.. index:: Doubleinf(class)
+.. index:: Ldoubleinf(class)
+.. index:: Fcomplex(class)
+.. index:: Dcomplex(class)
+.. index:: Lcomplex(class)
+.. index:: real(fun)
+.. index:: imag(fun)
+.. index:: abs(fun)
+.. index:: arg(fun)
+.. index:: neg(fun)
+.. index:: zero(fun)
+.. index:: one(fun)
+.. index:: sin(fun)
+.. index:: cos(fun)
+.. index:: tan(fun)
+.. index:: asin(fun)
+.. index:: acos(fun)
+.. index:: atan(fun)
+.. index:: sinh(fun)
+.. index:: cosh(fun)
+.. index:: tanh(fun)
+.. index:: asinh(fun)
+.. index:: acosh(fun)
+.. index:: atanh(fun)
+.. index:: exp(fun)
+.. index:: log(fun)
+.. index:: pow(fun)
+.. index:: abs(fun)
+.. index:: log10(fun)
+.. index:: sqrt(fun)
+.. index:: ceil(fun)
+.. index:: floor(fun)
+.. index:: trunc(fun)
+.. index:: embed(fun)
+.. index:: atan2(fun)
+.. index:: CartComplex(class)
+.. index:: def(type)
 .. code-block:: felix
 
   //[float_math.flx]
@@ -227,12 +225,6 @@ Complex Constructors.
 
 
 
-.. index:: complex
-.. index:: complex
-.. index:: complex
-.. index:: complex
-.. index:: complex
-.. index:: complex
 .. code-block:: felix
 
   //[float_math.flx]
@@ -280,15 +272,16 @@ Floating Formats
 
 
 
-.. index:: float_format
-.. index:: fmt
-.. index:: fmt
-.. index:: fmt_default
-.. index:: fmt_fixed
-.. index:: fmt_scientific
-.. index:: xstr
-.. index:: xstr
-.. index:: xstr
+.. index:: float_format(class)
+.. index:: mode(union)
+.. index:: fmt(fun)
+.. index:: fmt(fun)
+.. index:: fmt_default(fun)
+.. index:: fmt_fixed(fun)
+.. index:: fmt_scientific(fun)
+.. index:: xstr(fun)
+.. index:: xstr(fun)
+.. index:: xstr(fun)
 .. code-block:: felix
 
   //[float_format.flx ]
@@ -402,57 +395,57 @@ Conversion operators.
 
 
 
-.. index:: Tiny
-.. index:: tiny
-.. index:: Short
-.. index:: short
-.. index:: Int
-.. index:: int
-.. index:: int
-.. index:: int
-.. index:: Long
-.. index:: long
-.. index:: Vlong
-.. index:: vlong
-.. index:: Utiny
-.. index:: utiny
-.. index:: Ushort
-.. index:: ushort
-.. index:: Uint
-.. index:: uint
-.. index:: Ulong
-.. index:: ulong
-.. index:: Uvlong
-.. index:: uvlong
-.. index:: Int8
-.. index:: int8
-.. index:: Int16
-.. index:: int16
-.. index:: Int32
-.. index:: int32
-.. index:: Int64
-.. index:: int64
-.. index:: Uint8
-.. index:: uint8
-.. index:: Uint16
-.. index:: uint16
-.. index:: Uint32
-.. index:: uint32
-.. index:: Uint64
-.. index:: uint64
-.. index:: Size
-.. index:: size
-.. index:: size
-.. index:: Ptrdiff
-.. index:: ptrdiff
-.. index:: Intptr
-.. index:: intptr
-.. index:: Uintptr
-.. index:: uintptr
-.. index:: Intmax
-.. index:: intmax
-.. index:: Uintmax
-.. index:: uintmax
+.. index:: Tiny(class)
+.. index:: tiny(ctor)
+.. index:: Short(class)
+.. index:: short(ctor)
+.. index:: Int(class)
+.. index:: int(ctor)
+.. index:: int(ctor)
+.. index:: int(ctor)
+.. index:: Long(class)
+.. index:: long(ctor)
+.. index:: Vlong(class)
+.. index:: vlong(ctor)
+.. index:: Utiny(class)
+.. index:: utiny(ctor)
+.. index:: Ushort(class)
+.. index:: ushort(ctor)
+.. index:: Uint(class)
+.. index:: uint(ctor)
+.. index:: Ulong(class)
+.. index:: ulong(ctor)
+.. index:: Uvlong(class)
+.. index:: uvlong(ctor)
+.. index:: Int8(class)
+.. index:: int8(ctor)
+.. index:: Int16(class)
+.. index:: int16(ctor)
+.. index:: Int32(class)
+.. index:: int32(ctor)
+.. index:: Int64(class)
+.. index:: int64(ctor)
+.. index:: Uint8(class)
+.. index:: uint8(ctor)
+.. index:: Uint16(class)
+.. index:: uint16(ctor)
+.. index:: Uint32(class)
+.. index:: uint32(ctor)
+.. index:: Uint64(class)
+.. index:: uint64(ctor)
+.. index:: Size(class)
+.. index:: size(ctor)
+.. index:: size(ctor)
+.. index:: Ptrdiff(class)
+.. index:: ptrdiff(ctor)
+.. index:: Intptr(class)
+.. index:: intptr(ctor)
+.. index:: Uintptr(class)
+.. index:: uintptr(ctor)
+.. index:: Intmax(class)
+.. index:: intmax(ctor)
+.. index:: Uintmax(class)
+.. index:: uintmax(ctor)
 .. code-block:: felix
 
   //[int.flx]
@@ -614,9 +607,9 @@ Convert to decimal string.
 
 
 
-.. index:: str
-.. index:: str
-.. index:: str
+.. index:: str(fun)
+.. index:: str(fun)
+.. index:: str(fun)
 .. code-block:: felix
 
   //[int.flx]
@@ -679,12 +672,12 @@ Methods of integers
 
 
 
-.. index:: succ
-.. index:: pre_incr
-.. index:: post_incr
-.. index:: pred
-.. index:: pre_decr
-.. index:: post_decr
+.. index:: succ(fun)
+.. index:: pre_incr(proc)
+.. index:: post_incr(proc)
+.. index:: pred(fun)
+.. index:: pre_decr(proc)
+.. index:: post_decr(proc)
 .. code-block:: felix
 
   //[int.flx]
@@ -727,8 +720,8 @@ Methods of signed integers
 
 
 
-.. index:: sgn
-.. index:: abs
+.. index:: sgn(fun)
+.. index:: abs(fun)
 .. code-block:: felix
 
   //[int.flx]
@@ -790,16 +783,17 @@ Quaternions
 
 
 
-.. index:: Quaternion
-.. index:: quaternion
-.. index:: r
-.. index:: i
-.. index:: j
-.. index:: k
-.. index:: q
-.. index:: conj
-.. index:: norm
-.. index:: reciprocal
+.. index:: Quaternion(class)
+.. index:: quaternion(type)
+.. index:: quaternion(ctor)
+.. index:: r(fun)
+.. index:: i(fun)
+.. index:: j(fun)
+.. index:: k(fun)
+.. index:: q(ctor)
+.. index:: conj(fun)
+.. index:: norm(fun)
+.. index:: reciprocal(fun)
 .. code-block:: felix
 
   //[quaternion.flx]
