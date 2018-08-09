@@ -1,35 +1,6 @@
 Tuples
 ======
 
-Syntax
-^^^^^^
-
-
-  //$ Tuple type, non associative
-  x[sproduct_pri] := x[>sproduct_pri] ("*" x[>sproduct_pri])+ 
-
-  //$ Tuple type, right associative
-  x[spower_pri] := x[ssuperscript_pri] "**" x[sprefixed_pri]
-
-  //$ Tuple type, left associative
-  x[spower_pri] := x[ssuperscript_pri] "<**>" x[sprefixed_pri]
-
-  //$ Array type
-  x[ssuperscript_pri] := x[ssuperscript_pri] "^" x[srefr_pri]
-
-  //$ Tuple pattern match right associative
-  stuple_pattern := scoercive_pattern ("," scoercive_pattern )*
-
-  //$ Tuple pattern match non-associative
-  stuple_cons_pattern := stuple_pattern ",," stuple_cons_pattern
-
-  //$ Tuple pattern match left associative
-  stuple_cons_pattern := stuple_pattern "<,,>" stuple_cons_pattern 
-
-  //$ Tuple projection function.
-  x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri]
-
-
 Constructors
 ^^^^^^^^^^^^
 
@@ -54,95 +25,126 @@ one component. The right associative operator `,,`' prepends a value
 to an existing tuple, a heterogenous version of list cons. Finally
 the left associative `<,,>` operator appends a value to an existing tuple.
 
+.. code-block:: felix
+
+  var x = (1,2,3,4);
+  var y = (1,,2,,3,4);
+  var z = (1,2<,,>3<,,>4);
+
+  println$ x;
+  println$ y;
+  println$ z;
 
 No Tuples of one component
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+++++++++++++++++++++++++++
 
-There are no tuples of one component.
+Note that there are no tuples of one component.
 
-
-Recursive Formulations
-~~~~~~~~~~~~~~~~~~~~~~
-
-Tuples also have a recursive formulation for values
-using a right associative binary constructor:
+Types
+^^^^^
 
 .. code-block:: felix
 
-   var x = 1,,"hello",,42.3,77;
+  //$ Tuple type, non associative
+  x[sproduct_pri] := x[>sproduct_pri] ("*" x[>sproduct_pri])+ 
 
-Note carefully that the right most constructor above is a single comma ","!
-The double comma ",," constructor right argument must be a tuple.
-Nor will adding a unit tuple "() work!
+  //$ Tuple type, right associative
+  x[spower_pri] := x[ssuperscript_pri] "**" x[sprefixed_pri]
 
-.. code-block:: felix
+  //$ Tuple type, left associative
+  x[spower_pri] := x[ssuperscript_pri] "<**>" x[sprefixed_pri]
 
-   var x = 1,,"hello",,42.3,,77; // Fails, 77 not tuple
-   var x = 1,,"hello",,42.3,,77,,(); // Fails, 77,,() = 77 not tuple
+  //$ Array type
+  x[ssuperscript_pri] := x[ssuperscript_pri] "^" x[srefr_pri]
 
-There is a corresponding way to specify types:
+The first three types are alternate ways to express a tuple type.
+The different forms are significant with polymorphism.
 
-.. code-block:: felix
-
-   typedef tup = 1 ** string ** double * int;
-
-This is an alternate syntax in which a tuple is
-treated like a heterogenous list, the values
-contructed are identical to those using the n-ary
-formulation. The recursive format is useful for pattern matching
-associated with GADTs or type classes with polymorphic recursion.
-
-The right hand side of a `,,` value constructor or `**` type constructor
-must be a tuple of at least 2 components.
-
-The recursive formulation requires the right argument of the operator
-to be a tuple. The unit tuple can be used so that
-
-.. code-block:: felix
- 
-   1,2 == 1,,2,,()
-
-Note that
+For example consider the following code which 
+performs a lexicographic equality test on any tuple:
 
 .. code-block:: felix
 
-  42,,() = 42
+  class Eq[T] { virtual fun == : T * T -> bool }
 
-because a tuple with one component is identical to that component in Felix.
+  instance [T,U with Eq[T], Eq[U]] Eq[T ** U] {
+    fun == : (T ** U) * (T ** U) -> bool =
+    | (ah ,, at) , (bh ,, bt) => ah == bh and at == bt;
+    ;
+  }
 
-There is also a left associative binary constructor:
+  instance[T,U with Eq[T],Eq[U]] Eq[T*U] {
+    fun == : (T * U) * (T * U) -> bool =
+    | (x1,y1),(x2,y2) => x1==x2 and y1 == y2
+    ;
+  }
 
+  instance[t with Eq[T]] Eq[T*T] {
+    fun == : (T * T) * (T * T) -> bool =
+    | (x1,y1),(x2,y2) => x1==x2 and y1 == y2
+    ;
+  }
+
+This code uses polymorphic recursion via type class virtual
+function overloads to analyse a tuple like a list by using
+the tuple Cons operator `**`.
+
+There are two ground cases given, the first one checks for a pair
+to terminate the recursion, the second is more specialised and
+checks for a pair of the same type, that is, an array of two elements.
+
+
+Tuple Patterns
+^^^^^^^^^^^^^^
 
 .. code-block:: felix
 
-   var x = 1,"hello"<,,>42.3<,,>77;
+  //$ Tuple pattern match right associative
+  stuple_pattern := scoercive_pattern ("," scoercive_pattern )*
 
-with a corresponding type:
+  //$ Tuple pattern match non-associative
+  stuple_cons_pattern := stuple_pattern ",," stuple_cons_pattern
 
-.. code-block:: felix
+  //$ Tuple pattern match left associative
+  stuple_cons_pattern := stuple_pattern "<,,>" stuple_cons_pattern 
 
-   typedef tup = 1 * string ** double ** int;
+  //$ Tuple projection function.
+  x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri]
 
+Tuple patterns are an advanced kind of tuple destructor.
 
-Field Access
-~~~~~~~~~~~~
-
-Tuple fields are positional and accessed using a plain decimal integer literal:
-
-.. code-block:: felix
-
-   var x = 1, "Hello", 42.3;
-   println$ x.1; // hello
-   println$ 1 x; // hello
-
-The number is 0 origin. A standalone projection can be created like this:
+Projections
+^^^^^^^^^^^
 
 .. code-block:: felix
 
-   var x = 1, "Hello", 42.3;
-   var prj = proj 1 of (int * "Hello" * double);
-   println$ prj x; // hello
+  x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri]
 
+Projection functions for a given tuple type can be written.
+Projections are first class functions, like any other.
+The projection index must be a literal decimal integer
+between 0 and n-1, inclusive, where n is the number of
+components of the tuple.
+
+.. code-block:: felix
+
+  var x = 1,"hello",42;
+  var p = proj 1 of (int * string * int);
+  println$ p x; // "hello"
+
+Projection Applications
+^^^^^^^^^^^^^^^^^^^^^^^
+
+There is a short cut syntax for applying a projection to a tuple,
+you can just apply an integer literal directly:
+
+.. code-block:: felix
+
+  var x = 1,"hello",42;
+  println$ 0 x, x.1;
+
+Note that since operator dot `.` just means reverse application,
+then `x.1` is the same as `1 x`.
 
 Arrays
 ~~~~~~
@@ -155,9 +157,9 @@ annotation is available for arrays:
 
    var x : int ^ 4 = 1,2,3,4;
 
-In addition, arrays allow an expression for projections, as well
-as decimal integer literals. Two types may be used for an array
-index:
+In addition, arrays allow an expression for the shortcut form of
+projections applications, as well as decimal integer literals. 
+Two types may be used for an array index:
 
 .. code-block:: felix
 
