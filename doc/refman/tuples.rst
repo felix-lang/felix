@@ -19,11 +19,14 @@ Constructors
   x[stuple_cons_pri] := x[stuple_cons_pri] "<,,>" x[>stuple_cons_pri]
 
 
-There are four basic constructors. The syntax () specifies a canonical 
-unit tuple, a product with no components. There is no tuple with
-one component. The right associative operator `,,`' prepends a value
-to an existing tuple, a heterogenous version of list cons. Finally
-the left associative `<,,>` operator appends a value to an existing tuple.
+There are four basic constructors. 
+
+* The syntax () specifies a canonical 
+unit tuple, a product with no components. 
+* There is no tuple with one component. 
+* The right associative operator `,,` prepends a value
+to an existing tuple, a heterogenous version of list cons. 
+* Finally the left associative `<,,>` operator appends a value to an existing tuple.
 
 .. code-block:: felix
 
@@ -35,10 +38,7 @@ the left associative `<,,>` operator appends a value to an existing tuple.
   println$ y;
   println$ z;
 
-No Tuples of one component
-++++++++++++++++++++++++++
-
-Note that there are no tuples of one component.
+  var q = 42,,x;
 
 Types
 ^^^^^
@@ -94,25 +94,6 @@ to terminate the recursion, the second is more specialised and
 checks for a pair of the same type, that is, an array of two elements.
 
 
-Tuple Patterns
-^^^^^^^^^^^^^^
-
-.. code-block:: felix
-
-  //$ Tuple pattern match right associative
-  stuple_pattern := scoercive_pattern ("," scoercive_pattern )*
-
-  //$ Tuple pattern match non-associative
-  stuple_cons_pattern := stuple_pattern ",," stuple_cons_pattern
-
-  //$ Tuple pattern match left associative
-  stuple_cons_pattern := stuple_pattern "<,,>" stuple_cons_pattern 
-
-  //$ Tuple projection function.
-  x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri]
-
-Tuple patterns are an advanced kind of tuple destructor.
-
 Projections
 ^^^^^^^^^^^
 
@@ -146,12 +127,56 @@ you can just apply an integer literal directly:
 Note that since operator dot `.` just means reverse application,
 then `x.1` is the same as `1 x`.
 
+Tuple Patterns
+^^^^^^^^^^^^^^
+
+.. code-block:: felix
+
+  //$ Tuple pattern match right associative
+  stuple_pattern := scoercive_pattern ("," scoercive_pattern )*
+
+  //$ Tuple pattern match non-associative
+  stuple_cons_pattern := stuple_pattern ",," stuple_cons_pattern
+
+  //$ Tuple pattern match left associative
+  stuple_cons_pattern := stuple_pattern "<,,>" stuple_cons_pattern 
+
+  //$ Tuple projection function.
+  x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri]
+
+Tuple patterns are an advanced kind of tuple accessor.
+
+.. code-block:: felix
+
+  match 0,1,(2,3,(4,5,6),7,8) with
+  |  _,x1,(x2,_,(x4,,x56),,x78 => 
+     // x1=1, x2=2, x4=4, x56=(5,6), x78=(7,8)
+     ...
+  endmatch
+
+Tuple patterns are *irrefutable*, that is, they cannot fail to match
+if they type check, provided subcomponent matches are also
+irrefutable. For this reason they are often used in `let` form
+matches which only admit one branch syntactically:
+
+.. code-block:: felix
+
+  let _,x1,(x2,_,(x4,,x56),,x78 =
+    0,1,(2,3,(4,5,6),7,8)
+  in
+     // x1=1, x2=2, x4=4, x56=(5,6), x78=(7,8)
+     ...
+
+
 Arrays
 ~~~~~~
 
 If all the components of a tuple have the same type, then the 
-tuple is called an array. An alternate more compact type
-annotation is available for arrays:
+tuple is called an array. Perhaps more precisely, a fixed length array
+where the length is fixed at compile time. The jargon `farray` is
+sometimes used to be specific about this kind of array.
+
+An alternate more compact type annotation is available for arrays:
 
 .. code-block:: felix
 
@@ -173,6 +198,85 @@ should be of type 4, however Felix allows an integral type, which is
 coerced to type 4.
 
 See the section on `sum types` for more information on unit sums.
+
+Generalised Arrays
+^^^^^^^^^^^^^^^^^^
+
+By virtue of the existence of compact linear types and coercions
+representing isomorphisms on them, Felix supports a notion
+of generalised arrays. In particular, the structure of an array
+does not have to be linear.
+
+For example:
+
+.. code-block:: felix
+
+  var x : (int ^ 3) ^ 2 = ((1,2,3),(4,5,6));
+  var y : int ^ (2 * 3) = x :>> (int ^ (2 * 3));
+  var z = x :>> (int ^ 6);
+  for i in 0..<2
+    for j in 0..<3 do
+      println$ x.i.j;
+      println$ y.(i:>>2,j:>>3);
+      println z.(i * 3 + j);
+    done
+
+Note the unfortunate requirement to coerce the integer indices
+to the precisely correct type. [To be fixed]
+
+In this example, `x` is an array of arrays, however `y` 
+is a *matrix*: the index of the matrix is not a single
+linear value but rather, the index is a tuple. 
+
+The coercion used to convert type `x` to `y` is an isomorphism.
+Underneath in *both* cases we have a linear array of 6 elements, `z`.
+
+The coercions on the arrays above are called `reshaping` operations.
+They are casts which *reconsider*, or *reinterpret* the underlying linear array
+as a different type.
+
+Note: in the matrix form, Felix has chosen the indexing tuple
+to be of type `2 * 3` so that a reverse application can be thought
+of as first selecting one of the two subarrays, then selecting 
+one of the three elements. In other words, you write the `i` and `j`
+indices in the array of arrays form and matrix form in the same order
+when using reverse application. However the order differs if you
+use forward application:
+
+.. code-block:: felix
+
+  for i in 0..<2
+    for j in 0..<3 do
+      println$ j (i x);
+      println$ (i:>>2,j:>>3) y;
+    done
+
+The choice of ordering is arbitrary and confused by the fact
+that numbers are written in `big-endian` form which tuple
+indices are written in `little-endian` form. The use of
+big-endian numbers is unnatural in western culture
+where script is written from left to right, we should be
+using little-endian. However our number system is derived
+from tha Arabic, which is written right to left, so in that
+script, numbers put the least significant digits first.
+   
+Consequently there is a natural ordering conflict, since
+our numbers are backwards from our ordering of array elements.
+Take care with, for example, square matrices where the type
+system cannot detect an incorrect ordering. Take evem more
+care with coercions, since they override the type system!
+ 
+Polyadic Array Handling
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Because of the reshaping isomorphisms, it is possible to write
+a single *rank independent* routine which performs some action
+on a linear array which can be applied to an array of any shape.
+All you need to do is coerce the generalised array argument to a suitable
+isomorphic linear form, apply the routine, and cast the resulting
+linear array back.
+
+For more details please see :ref:`compact-linear-types`_.
 
 
 

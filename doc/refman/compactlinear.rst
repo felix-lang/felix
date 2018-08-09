@@ -1,6 +1,8 @@
 Compact Linear Types
 --------------------
 
+.. _compact-linear-types
+
 A type which is built entirely from the unit type 1,
 tuple or array constructors, and sum constructors,
 is called a `compact linear type`.
