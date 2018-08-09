@@ -679,6 +679,11 @@ open class Varray
     varray[t] (len x, len x, (fun (i:size):t=> x.i))
   ;
 
+  // construct a full varray from a varray and a slice[int]
+  //ctor[t] varray[t] (x:varray[t], s:slice[int]) = {
+  //   var sm = 
+  //}
+
   // Construct a varray from a list
   ctor[t] varray[t] (x:list[t]) = {
     val n = x.len.size;

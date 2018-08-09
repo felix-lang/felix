@@ -919,11 +919,12 @@ print_endline ("Apply stack");
 
 
   | BEXPR_tuple_cons ((eh',th' as xh'), (et', tt' as xt')) -> 
-    print_endline ("Flx_egen: Tuple_cons (" ^ sbe bsym_table xh' ^ " , " ^ sbe bsym_table xt');
+    print_endline ("Flx_egen: Tuple_cons (" ^ sbe bsym_table xh' ^ " ,, " ^ sbe bsym_table xt');
     print_endline ("Type " ^ sbt bsym_table t);
     print_endline ("Head Type " ^ sbt bsym_table th');
     print_endline ("Tail Type " ^ sbt bsym_table tt');
     print_endline ("Should be eliminated");
+    assert false;
     let tts = match tt' with
     | BTYP_tuple tts -> tts
     | BTYP_array (t,BTYP_unitsum n) -> 
@@ -959,6 +960,11 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
     ge' e
 
   | BEXPR_tuple_snoc ((et', tt' as xt'),(eh',th' as xh') ) ->
+    print_endline ("Flx_egen: Tuple_snoc (" ^ sbe bsym_table xh' ^ " , " ^ sbe bsym_table xt');
+    print_endline ("Type " ^ sbt bsym_table t);
+    print_endline ("Head Type " ^ sbt bsym_table th');
+    print_endline ("Tail Type " ^ sbt bsym_table tt');
+    print_endline ("Should be eliminated");
     assert false;
     let tts = match tt' with
     | BTYP_tuple tts -> tts

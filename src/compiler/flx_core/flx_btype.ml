@@ -368,19 +368,20 @@ let btyp_rev t =
 let btyp_uniq t = 
   BTYP_uniq t
 
-let btyp_tuple_snoc body last = 
-  match body with
-  | BTYP_tuple ts -> btyp_tuple (ts@[last])
-  | _ -> BTYP_tuple_snoc (body,last)
-
-
 (** Construct a BTYP_array type. *)
 let btyp_array (t, n) =
   match n with
   | BTYP_void -> BTYP_tuple []
-(*
+
+  (* Arrays of 1 element don't exist!  
+  This was previously allowed but it has to be inconsistent
+  to allow it
+  *)
   | BTYP_tuple [] -> t
-*)
+
+  (* if n isn't a sum type, what happens? Well .. what about
+    matrices indexed by a pair?
+  *)
   | _ -> BTYP_array (t, n)
 
 (** Construct a BTYP_record type. *)
@@ -905,6 +906,48 @@ and btyp_tuple_cons head tail =
     print_endline ("Second argument of tuple_cons type must be tuple, array, or type variable");
     print_endline ("Got tail=" ^ st tail);
     failwith ("Type constructor error: btyp_tuple_cons(" ^st head ^"," ^ st tail ^ ")")
+
+and btyp_tuple_snoc body last = 
+  match last, body with
+  | t1, BTYP_tuple ls ->
+    let ls = List.map adjust_fixpoint ls in
+    let r = btyp_tuple (ls @ [t1]) in
+    r
+
+  | t1, BTYP_array (t2, BTYP_unitsum n) when t1 = t2 ->
+    let r = btyp_array (t1, btyp_unitsum (n+1)) in
+    r
+
+  | t1, BTYP_array (t2, BTYP_unitsum n) ->
+    assert (n < 50);
+    let t2 = adjust_fixpoint t2 in
+    let rec arr n ts = match n with 0 -> ts | _ -> arr (n-1) (t2::ts) in
+    let ts = arr n [] in
+    let r = btyp_tuple (ts@[t1]) in
+    r
+
+  | BTYP_array (t2, BTYP_unitsum n),t1 ->
+    assert (n < 50);
+    let t1 = adjust_fixpoint t1 in
+    let rec arr n ts = match n with 0 -> ts | _ -> arr (n-1) (t2::ts) in
+    let ts = arr n [] in
+    let r = btyp_tuple (ts@[t1]) in
+    r
+
+  (* Cons onto another irreducible cons is irreducibe until the inner one is reduced *)
+  | _,(BTYP_tuple_snoc _ ) -> BTYP_tuple_cons (body, last)
+
+  (* Irreducible until variable replaced *)
+  | _,(BTYP_type_var _ ) -> BTYP_tuple_snoc (body,last)
+
+  (* Irreducible until virtual type replaced *)
+  | _,(BTYP_vinst _ ) -> BTYP_tuple_cons (body, last)
+
+  | _,_ ->
+    print_endline ("First argument of tuple_snoc type must be tuple, array, or type variable");
+    print_endline ("Got body =" ^ st body);
+    failwith ("Type constructor error: btyp_tuple_snoc (" ^st body ^"," ^ st last ^ ")")
+
 
 and btyp_polyvariant ls =
   let rec split ls =

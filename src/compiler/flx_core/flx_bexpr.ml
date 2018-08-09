@@ -815,10 +815,23 @@ print_endline ("Tuple cons:  " ^ Flx_btype.st t);
 
   | _ -> BEXPR_tuple_cons (eh,et), t
 
+(* These aren't correctly implemented yet! *)
 let bexpr_tuple_body t e = BEXPR_tuple_body e, complete_check "bexpr_tuple_body" t
 let bexpr_tuple_last t e = BEXPR_tuple_last e, complete_check "bexpr_tuple_last" t
-let bexpr_tuple_snoc t (eh,et) = BEXPR_tuple_snoc (eh,et), complete_check "bexpr_tuple_snoc" t
 
+(* left assoc operator appends element to tuple *)
+let bexpr_tuple_snoc t (_,th as eh,(_,tt as et)) = 
+  let th = Flx_btype.unfold "Flx_bexpr: bexpr_tuple_snoc (head)" th in
+  match th with
+  | Flx_btype.BTYP_tuple ts ->
+    let apls = List.map2 (fun i c -> bexpr_get_n c i eh ) (Flx_list.nlist (List.length ts)) ts in
+    bexpr_tuple t (apls @ [et])
+
+  | Flx_btype.BTYP_array (elt,Flx_btype.BTYP_unitsum n) -> 
+    let apls = List.map (fun i -> bexpr_get_n elt i eh ) (Flx_list.nlist n) in
+    bexpr_tuple t (apls @[et])
+
+  | _ -> BEXPR_tuple_snoc (eh,et), t
 
 
 (* -------------------------------------------------------------------------- *)

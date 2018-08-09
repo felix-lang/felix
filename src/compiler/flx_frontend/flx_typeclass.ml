@@ -170,8 +170,16 @@ print_endline (id ^ " Unified");
        let tsv =
          map
          (fun (s,i,_) ->
-           if not (mem_assoc i mgu) then
+           if not (mem_assoc i mgu) then 
+           begin
+            print_endline (id ^ " [flx_typeclass] Unification failure, equations:\n " ^
+               catmap "\n" (fun (a,b) -> sbt bsym_table a ^ " = " ^ sbt bsym_table b ) eqns 
+             );
+             print_endline (id ^ " With assignments \n " ^
+               catmap "\n" (fun (a,b) -> si a ^ " = " ^ sbt bsym_table b ) assigns
+             );
              failwith ("Didn't solve for instance type variable " ^ s)
+           end
            else
            (
              (*

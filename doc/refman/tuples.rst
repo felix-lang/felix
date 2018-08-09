@@ -1,84 +1,86 @@
 Tuples
 ======
 
-In Felix a tuple value may be specified with the n-ary infix comma operator:
-
-.. code-block:: felix
- 
-   var x = 1, "Hello", 42.3;
-   println$ x;
-
-The type of `x` above is given by 
-
-.. code-block:: felix
-
-    typedef tup_t = int * string * double;
+Syntax
+^^^^^^
 
 
-Tuples are the usual cartesian product. The comma operator
-is not associative, and it is not a binary operator. The following
-tuples are all distinct and have distinct types as indicated:
+  //$ Tuple type, non associative
+  x[sproduct_pri] := x[>sproduct_pri] ("*" x[>sproduct_pri])+ 
 
-.. code-block:: felix
+  //$ Tuple type, right associative
+  x[spower_pri] := x[ssuperscript_pri] "**" x[sprefixed_pri]
 
-    var a : int * string * double = 1,"Hello",42.3;
-    var b : (int * string) * double = (1,"Hello"),42.3;
-    var a : int * (string * double) = 1,("Hello",42.3);
+  //$ Tuple type, left associative
+  x[spower_pri] := x[ssuperscript_pri] "<**>" x[sprefixed_pri]
 
-Unit Tuple
-~~~~~~~~~~
+  //$ Array type
+  x[ssuperscript_pri] := x[ssuperscript_pri] "^" x[srefr_pri]
 
-There is a special tuple with no components known as the unit value
-or empty tuple, and written:
+  //$ Tuple pattern match right associative
+  stuple_pattern := scoercive_pattern ("," scoercive_pattern )*
 
-.. code-block:: felix
+  //$ Tuple pattern match non-associative
+  stuple_cons_pattern := stuple_pattern ",," stuple_cons_pattern
 
-      var x : 1 = ();
+  //$ Tuple pattern match left associative
+  stuple_cons_pattern := stuple_pattern "<,,>" stuple_cons_pattern 
 
-It has the type 1 as indicated, which has the alias
+  //$ Tuple projection function.
+  x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri]
+
+
+Constructors
+^^^^^^^^^^^^
 
 .. code-block:: felix
 
-    typedef unit = 1;
+  // unit tuple constructor
+  satom := "(" ")" 
 
-which is defined in the library.
+  //$ Tuple formation non-associative.
+  x[stuple_pri] := x[>stuple_pri] ( "," x[>stuple_pri])+ 
+
+  //$ Tuple formation by prepend: right associative
+  x[stuple_cons_pri] := x[>stuple_cons_pri] ",," x[stuple_cons_pri]
+
+  //$ Tuple formation by append: left associative
+  x[stuple_cons_pri] := x[stuple_cons_pri] "<,,>" x[>stuple_cons_pri]
+
+
+There are four basic constructors. The syntax () specifies a canonical 
+unit tuple, a product with no components. There is no tuple with
+one component. The right associative operator `,,`' prepends a value
+to an existing tuple, a heterogenous version of list cons. Finally
+the left associative `<,,>` operator appends a value to an existing tuple.
+
 
 No Tuples of one component
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are no tuples of one component. More precisely, every value
-may be consider as a tuple of one component.
-
-Field Access
-~~~~~~~~~~~~
-
-Tuple fields are positional and accessed using a plain decimal integer literal:
-
-.. code-block:: felix
-
-   var x = 1, "Hello", 42.3;
-   println$ x.1; // hello
-   println$ 1 x; // hello
-
-The number is 0 origin. A standalone projection can be created like this:
-
-.. code-block:: felix
-
-   var x = 1, "Hello", 42.3;
-   var prj = proj 1 of (int * "Hello" * double);
-   println$ prj x; // hello
+There are no tuples of one component.
 
 
-Recursive Formulation
-~~~~~~~~~~~~~~~~~~~~~
+Recursive Formulations
+~~~~~~~~~~~~~~~~~~~~~~
 
-Tuples also have a recursive formulation for values:
+Tuples also have a recursive formulation for values
+using a right associative binary constructor:
 
 .. code-block:: felix
 
    var x = 1,,"hello",,42.3,77;
 
-and for types:
+Note carefully that the right most constructor above is a single comma ","!
+The double comma ",," constructor right argument must be a tuple.
+Nor will adding a unit tuple "() work!
+
+.. code-block:: felix
+
+   var x = 1,,"hello",,42.3,,77; // Fails, 77 not tuple
+   var x = 1,,"hello",,42.3,,77,,(); // Fails, 77,,() = 77 not tuple
+
+There is a corresponding way to specify types:
 
 .. code-block:: felix
 
@@ -107,6 +109,40 @@ Note that
   42,,() = 42
 
 because a tuple with one component is identical to that component in Felix.
+
+There is also a left associative binary constructor:
+
+
+.. code-block:: felix
+
+   var x = 1,"hello"<,,>42.3<,,>77;
+
+with a corresponding type:
+
+.. code-block:: felix
+
+   typedef tup = 1 * string ** double ** int;
+
+
+Field Access
+~~~~~~~~~~~~
+
+Tuple fields are positional and accessed using a plain decimal integer literal:
+
+.. code-block:: felix
+
+   var x = 1, "Hello", 42.3;
+   println$ x.1; // hello
+   println$ 1 x; // hello
+
+The number is 0 origin. A standalone projection can be created like this:
+
+.. code-block:: felix
+
+   var x = 1, "Hello", 42.3;
+   var prj = proj 1 of (int * "Hello" * double);
+   println$ prj x; // hello
+
 
 Arrays
 ~~~~~~

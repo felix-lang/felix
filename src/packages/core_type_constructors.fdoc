@@ -218,6 +218,7 @@ class DefaultValue[T] {
 @h1 Slice
 @tangle slice.flx
 
+open class Slice {
 union slice[T] =
   | Slice_all
   | Slice_from of T
@@ -228,6 +229,46 @@ union slice[T] =
   | Slice_range_excl of T * T
   | Slice_one of T
   | Slice_none
+;
+
+fun min[T with Integer[T]] (x:slice[T]) => match x with
+  | ( Slice_all 
+    | Slice_to_incl _ 
+    | Slice_to_excl
+    ) => #minval[T]
+  | (Slice_from i 
+    | Slice_from_counted (i,_) 
+    | Slice_range_incl (i,_) 
+    | Slice_range_excl (i,_) 
+    | Slice_one i 
+    ) => i
+  | Slice_none => #maxval[T]
+;
+fun max[T with Integer[T]] (x:slice[T]) => match x with
+  | ( Slice_all 
+    | Slice_from _
+    ) => #maxval[T]
+  | Slice_from_counted (i,n) => i + n
+  | Slice_to_incl i => i
+  | Slice_to_excl i => i - #one[T]
+  | Slice_range_incl (_,i) => i
+  | Slice_range_excl (_,i) => i - #one[T] 
+  | Slice_one i => i
+  | Slice_none => #minval  
+;
+
+fun normalise_to_inclusive_range[T with Integer[T]] (x:slice[T]) =>
+  let l = x.min in
+  let u = x.max in
+  if l <= u then Slice_range_incl (l,u) 
+  else Slice_none[T]
+;
+
+fun \cap[T with Integer[T]] (x:slice[T], y:slice[T]) =>
+  let l = max (min x, min y) in
+  let u = min (max x, max y) in
+  if  l <= u then Slice_range_incl (l,u) 
+  else Slice_none[T]
 ;
 
 fun \in[T with Integer[T]] (x:T, s:slice[T]) => 
@@ -377,6 +418,7 @@ fun +[T with Integer[T]] (x:slice[T], y:slice[T]) =>
 fun map[T with Integer[T]] (f:T->T) (gs:gslice[T]) =>
   GSMap (f,gs)
 ;
+}
 
 @h1 Operations on sums of units
 Treated as finite cyclic groups.
