@@ -25,4 +25,3 @@ Contents:
    classes
    abstract
    overloading
-

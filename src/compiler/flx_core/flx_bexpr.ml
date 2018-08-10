@@ -347,6 +347,7 @@ let bexpr_reinterpret_cast (e, t) =
   | _ ->  BEXPR_reinterpret_cast (e, t), complete_check "bexpr_reinterpret_cast" t
 
 
+(* BUGGED! The codomain isn't checked *)
 let bexpr_prj n d c = 
   if (n = 0  && d == c) then bexpr_identity_function c
   else begin begin match d with
@@ -355,6 +356,8 @@ let bexpr_prj n d c =
  
   (* Arrays with unitsum indices *)
   | Flx_btype.BTYP_pointer ( Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
+  | Flx_btype.BTYP_rref ( Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
+  | Flx_btype.BTYP_wref ( Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
   |Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m) ->
     if n>= m then
       failwith ("Array length " ^ string_of_int m ^ 
@@ -364,6 +367,8 @@ let bexpr_prj n d c =
 
   (* Tuples *)
   | Flx_btype.BTYP_pointer ( Flx_btype.BTYP_tuple ls)
+  | Flx_btype.BTYP_rref ( Flx_btype.BTYP_tuple ls)
+  | Flx_btype.BTYP_wref ( Flx_btype.BTYP_tuple ls)
   | Flx_btype.BTYP_tuple ls -> 
     if n>= List.length ls then
       failwith ("Tuple length " ^ string_of_int (List.length ls) ^ 
@@ -373,6 +378,8 @@ let bexpr_prj n d c =
 
   (* Records *)
   | Flx_btype.BTYP_pointer (Flx_btype.BTYP_record ls)
+  | Flx_btype.BTYP_rref (Flx_btype.BTYP_record ls)
+  | Flx_btype.BTYP_wref (Flx_btype.BTYP_record ls)
   | Flx_btype.BTYP_record ls ->
     if n>= List.length ls then
       failwith ("Record length " ^ string_of_int (List.length ls) ^ 
@@ -382,6 +389,8 @@ let bexpr_prj n d c =
 
   (* Structs and cstructs but we can't check without lookup *)
   | Flx_btype.BTYP_pointer (Flx_btype.BTYP_inst _ )
+  | Flx_btype.BTYP_rref (Flx_btype.BTYP_inst _ )
+  | Flx_btype.BTYP_wref (Flx_btype.BTYP_inst _ )
   | Flx_btype.BTYP_inst _ -> ()
 
   (* polyrecords and anything else aren't allowed *)

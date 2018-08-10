@@ -21,11 +21,10 @@ Constructors
 
 There are four basic constructors. 
 
-* The syntax () specifies a canonical 
-unit tuple, a product with no components. 
+* The syntax () specifies a canonical unit tuple, a product with no components. 
 * There is no tuple with one component. 
 * The right associative operator `,,` prepends a value
-to an existing tuple, a heterogenous version of list cons. 
+  to an existing tuple, a heterogenous version of list cons. 
 * Finally the left associative `<,,>` operator appends a value to an existing tuple.
 
 .. code-block:: felix
@@ -94,8 +93,8 @@ to terminate the recursion, the second is more specialised and
 checks for a pair of the same type, that is, an array of two elements.
 
 
-Projections
-^^^^^^^^^^^
+Value Projections
+^^^^^^^^^^^^^^^^^
 
 .. code-block:: felix
 
@@ -112,6 +111,68 @@ components of the tuple.
   var x = 1,"hello",42;
   var p = proj 1 of (int * string * int);
   println$ p x; // "hello"
+  println$ x.p; // "hello"
+
+Pointer Projections
+^^^^^^^^^^^^^^^^^^^
+
+For every value projection, there is a corresponding pointer
+projection, represented as an overloaded function.
+That is, you can use the same syntax for projections on pointers
+as values.
+
+.. code-block:: felix
+
+  var x = 1,"hello",42;
+  var p = proj 1 of &(int * string * int);
+  println$ *(p &x); // "hello"
+  println$ *(&x.p); // "hello"
+  println$ *(x&.p); // "hello"
+  var wop = proj 1 of &>(int * string * int);
+  &>x . wop <- "bye";
+  var rop = proj 1 of &<(int * string * int);
+  println$ *(&<x . rop);
+
+Note the special sugar `x&.p` which is equivalent to `&x.p`.
+
+It's important to note that the application of projections to pointers
+as well as values *solves a major problem in C++* by eliminating
+entirely any need for the concept of lvalues and reference types.
+Pointers are first class values and the calculus illustrated above
+forms a coherent algebra which cleanly distinguishes purely
+functional values, but, via pointers, provides the same algebraic
+model for imperative code.
+
+The concept of a pointer cleanly distinguishes a value from
+a mutable object. In particular
+
+* all values are immutable, but
+* all products are mutable
+  and their components separately mutable, if you can obtain
+  a pointer to the value type.
+
+There are three basic ways to do this:
+
+* store the value in a variable and takes its address, or, 
+* copy the value onto the heap with
+  operator `new` which returns a pointer. 
+* Library functions can also provide pointers.
+
+The fundamental calculus of projections is just ordinary functional
+calculus. This is the point! In particular composition of pointer projections
+is equivalent to adding the offsets of components in a nested
+product. For example:
+
+.. code-block:: felix
+
+  var x = (1,(2,3));
+  var p1o = proj 1 of (&(int * int^2)); 
+  var p1i = proj 1 of (&(int^2));
+  var p = p1o \odot p1i; // reverse composition
+  println$ *(&x.p); // 3
+
+The address calculations are purely functional and referentially
+transparent.
 
 Projection Applications
 ^^^^^^^^^^^^^^^^^^^^^^^
