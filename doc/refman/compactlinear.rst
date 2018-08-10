@@ -1,7 +1,7 @@
 Compact Linear Types
 --------------------
 
-.. _compact-linear-types:
+.. _compactlineartypes:
 
 A type which is built entirely from the unit type 1,
 tuple or array constructors, and sum constructors,
