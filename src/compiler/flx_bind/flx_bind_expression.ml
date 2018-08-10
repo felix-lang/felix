@@ -149,6 +149,8 @@ let rec bind_expression'
   match e with
   | EXPR_rptsum_type _
   | EXPR_pclt_type _
+  | EXPR_rpclt_type _
+  | EXPR_wpclt_type _
   | EXPR_patvar _
   | EXPR_patany _
   | EXPR_vsprintf _
@@ -642,92 +644,7 @@ sbt bsym_table t);
 
   | EXPR_projection (sr,v,t) -> 
     let t = bt sr t in
-    begin match t with
-    (* Tuple Value *)
-    | BTYP_tuple ts ->
-      let n = List.length ts in
-      if v < 0 || v >= n then
-        clierrx "[flx_bind/flx_lookup.ml:4235: E184] " sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
-          " negative or >= " ^ si n ^ "for tuple type " ^ sbt bsym_table t)
-      else
-        let c = List.nth ts v in
-        bexpr_prj v t c
- 
-    (* Array value *)
-    | BTYP_array (base, BTYP_unitsum n) ->
-      if v < 0 || v >= n then
-        clierrx "[flx_bind/flx_lookup.ml:4243: E185] " sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
-          " negative or >= " ^ si n ^ "for array type " ^ sbt bsym_table t)
-      else
-        let c = base  in
-        bexpr_prj v t c
-
-    (* RW pointer to tuple *)
-    | BTYP_pointer (BTYP_tuple ts) ->
-      let n = List.length ts in
-      if v < 0 || v >= n then
-        clierrx "[flx_bind/flx_lookup.ml:4235: E184p] " sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
-          " negative or >= " ^ si n ^ "for tuple type " ^ sbt bsym_table t)
-      else
-        let c = List.nth ts v in
-        let c = btyp_pointer c in
-        bexpr_prj v t c
- 
-    (* RW pointer to array *)
-    | BTYP_pointer (BTYP_array (base, BTYP_unitsum n)) ->
-      if v < 0 || v >= n then
-        clierrx "[flx_bind/flx_lookup.ml:4243: E185p] " sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
-          " negative or >= " ^ si n ^ "for array type " ^ sbt bsym_table t)
-      else
-        let c = btyp_pointer base  in
-        bexpr_prj v t c
-
-    (* RO pointer to tuple *)
-    | BTYP_rref (BTYP_tuple ts) ->
-      let n = List.length ts in
-      if v < 0 || v >= n then
-        clierrx "[flx_bind/flx_lookup.ml:4235: E184r] " sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
-          " negative or >= " ^ si n ^ "for tuple type " ^ sbt bsym_table t)
-      else
-        let c = List.nth ts v in
-        let c = btyp_rref c in
-        bexpr_prj v t c
- 
-    (* RO pointer to array *)
-    | BTYP_rref (BTYP_array (base, BTYP_unitsum n)) ->
-      if v < 0 || v >= n then
-        clierrx "[flx_bind/flx_lookup.ml:4243: E185r] " sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
-          " negative or >= " ^ si n ^ "for array type " ^ sbt bsym_table t)
-      else
-        let c = btyp_rref base  in
-        bexpr_prj v t c
-
-    (* WO pointer to tuple *)
-    | BTYP_wref (BTYP_tuple ts) ->
-      let n = List.length ts in
-      if v < 0 || v >= n then
-        clierrx "[flx_bind/flx_lookup.ml:4235: E184w] " sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
-          " negative or >= " ^ si n ^ "for tuple type " ^ sbt bsym_table t)
-      else
-        let c = List.nth ts v in
-        let c = btyp_wref c in
-        bexpr_prj v t c
- 
-    (* WO pointer to array *)
-    | BTYP_wref (BTYP_array (base,BTYP_unitsum n)) ->
-      if v < 0 || v >= n then
-        clierrx "[flx_bind/flx_lookup.ml:4243: E185w] " sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
-          " negative or >= " ^ si n ^ "for array type " ^ sbt bsym_table t)
-      else
-        let c = btyp_wref base  in
-        bexpr_prj v t c
-
-    | _ ->
-      clierrx "[flx_bind/flx_lookup.ml:4249: E186] " sr 
-      ("[Flx_lookup.bind_expression] projection requires \n" ^ 
-      "tuple or array type, or pointer thereto, got\n " ^ 
-      sbt bsym_table t ^"\n= " ^ str_of_btype t);
-    end
+    Flx_bind_projection.bind_projection bsym_table sr v t 
 
   | EXPR_typed_case (sr,v,t) ->
 (*

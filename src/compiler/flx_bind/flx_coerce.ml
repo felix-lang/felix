@@ -128,7 +128,7 @@ print_endline ("  SubCheck " ^
 
 let coerce (state:Flx_lookup_state.lookup_state_t) bsym_table sr ((e',t') as x') t'' =
 (*
-print_endline ("Binding coercion " ^ sbe bsym_table x' ^ ": " ^ sbt bsym_table t' ^ " to " ^ sbt bsym_table t'');
+print_endline ("Flx_bind/flx_coerce:coerce] Binding coercion " ^ sbe bsym_table x' ^ ": " ^ sbt bsym_table t' ^ " to " ^ sbt bsym_table t'');
 *)
     if type_eq bsym_table state.Flx_lookup_state.counter t' t'' then x'
     else

@@ -1640,9 +1640,9 @@ syntax expressions {
 //------------------------------------------------------------------------
   x[satomic_pri] := satom =># "_1";
 
-  satom := "_pclt<" stypeexpr "," stypeexpr ">" =>#
-    "`(ast_pclt ,_sr ,_2 ,_4)"
-  ;
+  satom := "_pclt<" stypeexpr "," stypeexpr ">" =># "`(ast_pclt ,_sr ,_2 ,_4)" ;
+  satom := "_rpclt<" stypeexpr "," stypeexpr ">" =># "`(ast_rpclt ,_sr ,_2 ,_4)" ;
+  satom := "_wpclt<" stypeexpr "," stypeexpr ">" =># "`(ast_wpclt ,_sr ,_2 ,_4)" ;
 
   //$ record value (comma separated).
   satom := "(" rassign ("," rassign2 )* ")" =>#

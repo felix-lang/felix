@@ -653,6 +653,8 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   | EXPR_rptsum_type (sr,_,_)
   | EXPR_pclt_type (sr,_,_)
+  | EXPR_rpclt_type (sr,_,_)
+  | EXPR_wpclt_type (sr,_,_)
   | EXPR_record_type (sr,_)
   | EXPR_polyrecord_type (sr,_,_)
   | EXPR_variant_type (sr,_) ->

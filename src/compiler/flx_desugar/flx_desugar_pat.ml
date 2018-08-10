@@ -130,6 +130,8 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
 
   | EXPR_rptsum_type _ 
   | EXPR_pclt_type _
+  | EXPR_rpclt_type _
+  | EXPR_wpclt_type _
   | EXPR_record_type _
   | EXPR_polyrecord_type _
   | EXPR_variant_type _

@@ -26,6 +26,8 @@ let map_type f (t:typecode_t):typecode_t = match t with
       ) ts)
   | TYP_isin (a,b) -> TYP_isin (f a, f b)
   | TYP_pclt (a,b) -> TYP_pclt (f a, f b)
+  | TYP_rpclt (a,b) -> TYP_rpclt (f a, f b)
+  | TYP_wpclt (a,b) -> TYP_wpclt (f a, f b)
 
   (* we have to do this, so that a large unitsum
      can be specified without overflowing the compiler
@@ -148,6 +150,8 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
 *)
 
   | EXPR_pclt_type (sr,a,b) -> EXPR_pclt_type (sr, ft a, ft b)
+  | EXPR_rpclt_type (sr,a,b) -> EXPR_rpclt_type (sr, ft a, ft b)
+  | EXPR_wpclt_type (sr,a,b) -> EXPR_wpclt_type (sr, ft a, ft b)
 
   | EXPR_record_type (sr,ts) -> EXPR_record_type (sr, List.map (fun (s,t) -> s, ft t) ts) 
   | EXPR_polyrecord_type (sr,ts,v) -> EXPR_polyrecord_type (sr, List.map (fun (s,t)-> s,ft t) ts, ft v)
@@ -255,6 +259,8 @@ let iter_expr f (e:expr_t) =
   | EXPR_type_match _
   | EXPR_subtype_match _
   | EXPR_pclt_type _
+  | EXPR_rpclt_type _
+  | EXPR_wpclt_type _
   | EXPR_rptsum_type _
     -> ()
 

@@ -358,6 +358,9 @@ let bexpr_prj n d c =
   | Flx_btype.BTYP_pointer ( Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
   | Flx_btype.BTYP_rref ( Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
   | Flx_btype.BTYP_wref ( Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
+  | Flx_btype.BTYP_cltpointer (_, Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
+  | Flx_btype.BTYP_cltrref (_, Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
+  | Flx_btype.BTYP_cltwref (_, Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
   |Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m) ->
     if n>= m then
       failwith ("Array length " ^ string_of_int m ^ 
@@ -369,6 +372,9 @@ let bexpr_prj n d c =
   | Flx_btype.BTYP_pointer ( Flx_btype.BTYP_tuple ls)
   | Flx_btype.BTYP_rref ( Flx_btype.BTYP_tuple ls)
   | Flx_btype.BTYP_wref ( Flx_btype.BTYP_tuple ls)
+  | Flx_btype.BTYP_cltpointer (_, Flx_btype.BTYP_tuple ls)
+  | Flx_btype.BTYP_cltrref (_, Flx_btype.BTYP_tuple ls)
+  | Flx_btype.BTYP_cltwref (_, Flx_btype.BTYP_tuple ls)
   | Flx_btype.BTYP_tuple ls -> 
     if n>= List.length ls then
       failwith ("Tuple length " ^ string_of_int (List.length ls) ^ 

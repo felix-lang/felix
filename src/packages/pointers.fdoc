@@ -46,6 +46,11 @@ open class Cptr
   //lvalue fun deref[T]: &T -> T = "*$1";
   fun _deref[T]: &<T -> T = "*$t";
   fun deref[T] (p:&<T) => _deref p;
+
+  // deref a pointer to compact linear component
+  fun _deref[mach,clv]: _rpclt<mach,clv> -> clv = "::flx::rtl::deref($t)";
+  fun deref[mach,clv] (p: _rpclt<mach,clv>) => _deref p;
+
   //proc _storeat[T]: &>T * T = "*$1=$2;";
   proc storeat[T] (p: &>T, v:T) { _storeat (p,v); }
 

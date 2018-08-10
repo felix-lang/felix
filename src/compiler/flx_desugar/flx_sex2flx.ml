@@ -244,6 +244,8 @@ and xexpr_t sr x =
  | Lst [Id "ast_deref"; sr; e] -> EXPR_deref (xsr sr,ex e)
  | Lst [Id "ast_ref"; sr; e] -> EXPR_ref (xsr sr,ex e)
  | Lst [Id "ast_pclt"; sr; d; c] -> EXPR_pclt_type (xsr sr, ti d, ti c)
+ | Lst [Id "ast_rpclt"; sr; d; c] -> EXPR_rpclt_type (xsr sr, ti d, ti c)
+ | Lst [Id "ast_wpclt"; sr; d; c] -> EXPR_wpclt_type (xsr sr, ti d, ti c)
  | Lst [Id "ast_rptsum_type"; sr; d; c] -> EXPR_rptsum_type (xsr sr, ti d, ti c)
 
  | Lst [Id "ast_uniq"; sr; e] -> EXPR_uniq (xsr sr, ex e)

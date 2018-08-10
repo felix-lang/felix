@@ -96,6 +96,8 @@ and string_of_expr (e:expr_t) =
   let sqn e = string_of_qualified_name e in
   match e with
   | EXPR_pclt_type (_,a,b) -> "pclt_type<" ^ st a ^ "," ^ st b ^ ">"
+  | EXPR_rpclt_type (_,a,b) -> "rpclt_type<" ^ st a ^ "," ^ st b ^ ">"
+  | EXPR_wpclt_type (_,a,b) -> "wpclt_type<" ^ st a ^ "," ^ st b ^ ">"
   | EXPR_rptsum_type (_,a,b) -> st a ^ "*+" ^ st b 
 
   | EXPR_label (_,s) -> "(&&" ^ s ^ ")"
@@ -432,6 +434,8 @@ and st prec tc : string =
     | TYP_tuple_cons (sr, t1, t2) -> 6, st 4 t1 ^ "**" ^ st 4 t2
     | TYP_tuple_snoc (sr, t1, t2) -> 6, st 4 t1 ^ "<**>" ^ st 4 t2
     | TYP_pclt (a,b) -> 0, "_pclt<" ^ string_of_typecode a ^ "," ^ string_of_typecode b ^ ">"
+    | TYP_rpclt (a,b) -> 0, "_rpclt<" ^ string_of_typecode a ^ "," ^ string_of_typecode b ^ ">"
+    | TYP_wpclt (a,b) -> 0, "_wpclt<" ^ string_of_typecode a ^ "," ^ string_of_typecode b ^ ">"
     | TYP_rptsum (d,c) -> 6, st 4 d ^ "*+" ^ st 4 c
 
     | TYP_index (sr,name,idx) -> 0, name ^ "<" ^ string_of_bid idx ^ ">"

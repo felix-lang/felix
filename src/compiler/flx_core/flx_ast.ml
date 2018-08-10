@@ -61,6 +61,8 @@ and kindcode_t =
 and typecode_t =
   | TYP_rptsum of typecode_t * typecode_t
   | TYP_pclt of typecode_t * typecode_t
+  | TYP_rpclt of typecode_t * typecode_t
+  | TYP_wpclt of typecode_t * typecode_t
   | TYP_label 
   | TYP_void of Flx_srcref.t                   (** void type *)
   | TYP_name of Flx_srcref.t * Flx_id.t * typecode_t list
@@ -141,6 +143,8 @@ and expr_t =
   | EXPR_match_variant_subtype of Flx_srcref.t * (expr_t * typecode_t)
 
   | EXPR_pclt_type of Flx_srcref.t * typecode_t * typecode_t
+  | EXPR_rpclt_type of Flx_srcref.t * typecode_t * typecode_t
+  | EXPR_wpclt_type of Flx_srcref.t * typecode_t * typecode_t
   | EXPR_rptsum_type of Flx_srcref.t * typecode_t * typecode_t
   | EXPR_label of Flx_srcref.t * string
   | EXPR_vsprintf of Flx_srcref.t * string
@@ -762,6 +766,8 @@ let src_of_typecode = function
 
   | TYP_rptsum _
   | TYP_pclt _
+  | TYP_rpclt _
+  | TYP_wpclt _
   | TYP_label
   | TYP_tuple _
   | TYP_unitsum _
@@ -800,6 +806,8 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_rptsum_arg (s,_)
   | EXPR_match_variant_subtype (s,(_,_))
   | EXPR_pclt_type (s,_,_)
+  | EXPR_rpclt_type (s,_,_)
+  | EXPR_wpclt_type (s,_,_)
   | EXPR_rptsum_type (s,_,_)
   | EXPR_label (s,_)
   | EXPR_void s

@@ -55,6 +55,8 @@ let rec guess_metatype sr t : kind =
   (* usually actual types! *)
   | TYP_rptsum _
   | TYP_pclt _
+  | TYP_rpclt _
+  | TYP_wpclt _
   | TYP_uniq _
   | TYP_void _ 
   | TYP_case_tag _ 

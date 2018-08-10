@@ -478,10 +478,16 @@ print_endline ("Generated application of injection application " ^ sbe bsym_tabl
     let result = ce_rmd (ce_div a (ce_int x)) (ce_int y) in
     result
 
-  | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_tuple ts),_),_), ((_,at) as a)) 
-    when clt at ->
-    clierrx "[flx_cpp_backend/flx_egen.ml:441: E283] " sr "flx_egen: Cannot address component of compact linear type"
-
+  (* A projection on an ordinary pointer to a compact linear tuple yields a compect linear pointer! *)
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_tuple ts as vt),_),_), a) 
+    when clt vt ->
+    assert (0 <= n && n < List.length ts);
+    let rec aux ls i out = match ls with [] -> assert false | h :: t ->
+      if i = 0 then out else aux t (i-1) (sizeof_linear_type bsym_table h * out)
+    in 
+    let divisor = aux (List.rev ts) (List.length ts - n - 1) 1 in
+    let modulus = sizeof_linear_type bsym_table (nth ts n) in
+    ce_call (ce_atom "::flx::rtl::clptr_t") [ge' a; ce_int divisor; ce_int modulus]
 
   (* a constant projection of a non-compact linear tuple, just
      fetch the n'th component by its field name
@@ -492,6 +498,19 @@ print_endline ("Generated application of injection application " ^ sbe bsym_tabl
   (* constant projection of pointer to non-compact linear tuple *)
   | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_tuple _),_),_), a ) ->
     ce_prefix "&" (ce_arrow (ge' a) ("mem_" ^ si n)) 
+
+  (* constant projection of cltpointer to compact linear tuple *)
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_cltpointer (mach,BTYP_tuple ts),_),_), a ) ->
+    assert (0 <= n && n < List.length ts);
+    let rec aux ls i out = match ls with [] -> assert false | h :: t ->
+      if i = 0 then out else aux t (i-1) (sizeof_linear_type bsym_table h * out)
+    in 
+    let divisor = aux (List.rev ts) (List.length ts - n - 1) 1 in
+    let modulus = sizeof_linear_type bsym_table (nth ts n) in
+ 
+    let prj = ce_call (ce_atom "::flx::rtl::clprj_t") [ce_int divisor; ce_int modulus] in
+    let ptr = ge' a in
+    ce_call (ce_atom "::flx::rtl::applyprj") [ptr;prj]
 
 
   (* record projection *)
@@ -1524,7 +1543,7 @@ there's no need to do anything at all due to the universal representation.
 This also applies to covariant argument width subtyping on variants
 recursively.
 *)
-
+(*
       (* check for the special case where the argument constructors all
       have the same type as the corresponding parameters
       *)
@@ -1597,11 +1616,12 @@ recursively.
           ge' result
         end
       end
-
+*)
     | BTYP_record ls, BTYP_record rs ->
       print_endline ("Found record coercion, should have been be eliminted");
       print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
       assert false;
+(*
       (* count duplicate fields in target *)
       let counts = Hashtbl.create 97 in
       let get_rel_seq name = 
@@ -1636,7 +1656,7 @@ print_endline ("src field idx=" ^ string_of_int idx ^ ", type=" ^ sbt bsym_table
       with _ -> 
        failwith ("Bad record coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
       end
-
+*)
     (* C should handle integer to compact linear type ok *)
     (* could be some other type to unit sum but checking for
        an integer is nasty

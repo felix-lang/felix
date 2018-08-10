@@ -528,6 +528,8 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
     l @ List.concat lss,EXPR_extension (sr, xs, x)
 
   | EXPR_pclt_type (sr,a,b) -> [],e (* I'm lazy *)
+  | EXPR_rpclt_type (sr,a,b) -> [],e (* I'm lazy *)
+  | EXPR_wpclt_type (sr,a,b) -> [],e (* I'm lazy *)
 
 
   | EXPR_record_type (sr,ts) ->

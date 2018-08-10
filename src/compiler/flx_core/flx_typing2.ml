@@ -89,6 +89,8 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   match e with
   | EXPR_rptsum_type (sr,n,t) -> TYP_rptsum (n,t)
   | EXPR_pclt_type (_,d,c) -> TYP_pclt (d,c)
+  | EXPR_rpclt_type (_,d,c) -> TYP_rpclt (d,c)
+  | EXPR_wpclt_type (_,d,c) -> TYP_wpclt (d,c)
   | EXPR_name (_,"LABEL",[]) -> TYP_label
   | EXPR_name (sr,"DEFER",[]) -> TYP_defer (sr,ref None)
   | EXPR_name (sr,"_",[]) -> TYP_patany sr
@@ -309,6 +311,8 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
 
   (* The following cannot be converted. There's no analagous expression in EXPR. *)
   | TYP_pclt (a,b) -> EXPR_pclt_type (dsr, a, b)
+  | TYP_rpclt (a,b) -> EXPR_rpclt_type (dsr, a, b)
+  | TYP_wpclt (a,b) -> EXPR_wpclt_type (dsr, a, b)
   | TYP_rptsum (a,b) -> EXPR_rptsum_type (dsr, a, b)
 
   | TYP_label -> clierrx "[flx_core/flx_typing2.ml:250: E271] " dsr ("expr_of_typecode: TYP_label")
@@ -485,6 +489,8 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
 let string_of_type_name (t:typecode_t) = match t with
   | TYP_rptsum _ -> "TYP_rptsum"
   | TYP_pclt _ -> "TYP_pclt"
+  | TYP_rpclt _ -> "TYP_rpclt"
+  | TYP_wpclt _ -> "TYP_wpclt"
   | TYP_label -> "TYP_label"
   | TYP_none -> " TYP_none"
   | TYP_ellipsis -> "TYP_ellipsis"

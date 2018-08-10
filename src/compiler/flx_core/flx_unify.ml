@@ -67,6 +67,12 @@ let rec solve_subtypes bsym_table counter lhs rhs dvars (s:vassign_t option ref)
   | BTYP_wref l, BTYP_pointer r ->
     add_eq (l,r)
 
+  | BTYP_cltrref (lm, l), BTYP_cltpointer (rm,r) ->
+    add_eq (l,r); add_eq(lm,rm)
+
+  | BTYP_cltwref (lm,l), BTYP_cltpointer (rm,r) ->
+    add_eq (l,r); add_eq(lm,rm)
+
   | BTYP_function (dl,cl), BTYP_function (dr,cr) ->
     add_ge (dr, dl); (* contravariant *)
     add_ge (cl, cr) (* covariant *)
