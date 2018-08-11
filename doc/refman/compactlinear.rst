@@ -25,8 +25,8 @@ Let
 
 .. math::
 
-   z_0 = 1
-   z_i = c_iz_{i-1}=\Sigma_{j=0}^{i-1}c_j {\rm for\ } i \in 1..n-1
+   z_0 = 1\\
+   z_i = c_iz_{i-1}=\Sigma_{j=0}^{i-1}c_j {\rm\ \ for\ } i \in 1..n-1
 
 so that :math:`z_i` is the product of all the :math:`c_j` for 
 :math:`j<i`; these quantites are called *weights*.
