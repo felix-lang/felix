@@ -19,14 +19,14 @@ be a sequence of non-negative integers called *coefficients* such that
 
 .. math::
 
-  v_i < c_i\ {\rm for\ } i \in 0..n-1
+  v_i < c_i\ {\rm\ \ for\ } i \in 0..n-1
 
 Let
 
 .. math::
 
    z_0 = 1\\
-   z_i = c_iz_{i-1}=\Sigma_{j=0}^{i-1}c_j {\rm\ \ for\ } i \in 1..n-1
+   z_i = c_iz_{i-1}=\sum {j=0}^{i-1}c_j {\rm\ \ for\ } i \in 1..n-1
 
 so that :math:`z_i` is the product of all the :math:`c_j` for 
 :math:`j<i`; these quantites are called *weights*.
@@ -35,7 +35,7 @@ Let
 
 .. math::
 
-  a = \Pi_{i=0}^{n-1} v_iz_i
+  $$a = \prod_{i=0}^{n-1} v_iz_i$$
 
 Then the total number of values :math:`a` could take is :math:`z_{n-1}` 
 and the maximum is therefore :math:`z_{n-1}-1`. 
@@ -52,13 +52,13 @@ rewrite the formula for :math:`a` like this:
 
 .. math::
 
-  a = \Sum_{j=0}^{i-1} v_jz_j + v_iz_i \Sum_{k=i+1}^{n-1} v_kz_k
+  a = \sum_{j=0}^{i-1} v_jz_j + v_iz_i \sum_{k=i+1}^{n-1} v_kz_k
 
 Now, we perform integer division:
 
 .. math::
 
-  a = {\Sum_{j=0}^{i-1} v_jz_j \over z_i} + v_i + {\Sum_{k=i+1}^{n-1} v_kz_k \over z_i}
+  a = {\sum_{j=0}^{i-1} v_jz_j \over z_i} + v_i + {\sum_{k=i+1}^{n-1} v_kz_k \over z_i}
 
 Clearly the leftmost term must be zero. We now note :math:`c_i=z_{i+1}/z_i` divides the
 right most term exactly,  so the remainder
@@ -66,13 +66,13 @@ after a division must be :math:`v_i` as required. In other words:
 
 .. math::
 
-  v_i = (a / z_i) % c_i
+  $$v_i = (a / z_i) \% c_i$$
 
 An alternate formula applies the remainder operation first then divides:
 
 .. math::
 
-  v_i = (a % z_i ) / z_{i-1}
+  $$v_i = (a \% z_i ) / z_{i-1}$$
 
 However, we are not finished. Suppose this :math:`v_i` is itself
 composed in variadic positional form with radicies:
