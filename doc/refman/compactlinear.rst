@@ -80,7 +80,7 @@ rewrite the formula for :math:`a` like this:
 .. math::
 
   a &= \sum_{j=0}^{i-1} v_jz_j + v_iz_i + \sum_{k=i+1}^{n-1} v_kz_k\\
-  &= (\sum_{j=0}^{i-1} v_jz_j) + (v_i + \sum_{k=i+1}^{n-1} v_k^(z_k/z_i))z_i
+  &= (\sum_{j=0}^{i-1} v_jz_j) + (v_i + \sum_{k=i+1}^{n-1} v_k(z_k/z_i))z_i
 
 We note that this is of the required quotient and remainder form
 since the left term is clearly less than :math:`z_i`, 
@@ -89,14 +89,14 @@ so we can find
 
 .. math:: 
 
-  q = a \operatorname{div} z_i = v_i  + \sum_{k=i+1}^{n-1} v_k^(z_k/z_i)
+  q = a \operatorname{div} z_i = v_i  + \sum_{k=i+1}^{n-1} v_k(z_k/z_i)
 
 But now we can rewrite that term as well:
 
 .. math:: 
 
-  q &= v_i  + (\sum_{k=i+1}^{n-1} v_k^(z_k/(z_ic_i)))c_i\\
-  &= v_i  + (\sum_{k=i+1}^{n-1} v_k^(z_k/(z_{i+1)))c_i
+  q &= v_i  + (\sum_{k=i+1}^{n-1} v_k(z_k/(z_ic_i)))c_i\\
+  &= v_i  + (\sum_{k=i+1}^{n-1} v_k(z_k/(z_{i+1)))c_i
 
 Again it is true by specification that :math:`v_i < c_i`
 and :math:`z_{i+1}` divides :math:`z_k` exactly for 
