@@ -18,13 +18,13 @@ We define integer division:
 
 .. math::
 
-  a {\mathrm div} d = q
+  a \operatorname{div} d = q
 
 and remainder
 
 .. math::
 
-  a {\mathrm rmd} d = r
+  a \operatorname{rmd} d = r
 
 Note that in C, :code:`a/b` where the dividend and quotient
 are integral is integer division and :code:`a%b` is the remainder.
@@ -89,7 +89,7 @@ so we can find
 
 .. math:: 
 
-  q = a {\rm div} z_i = v_i  + \sum_{k=i+1}^{n-1} v_k^(z_k/z_i)
+  q = a \operatorname{div} z_i = v_i  + \sum_{k=i+1}^{n-1} v_k^(z_k/z_i)
 
 But now we can rewrite that term as well:
 
@@ -106,7 +106,7 @@ quotient and remainder form:
 
 .. math:: 
 
-  v_i = (a {\rm div} z_i) {\rm rmd} c_i
+  v_i = (a \operatorname{div} z_i) \operatorname{rmd} c_i
 
 or in C:
 
