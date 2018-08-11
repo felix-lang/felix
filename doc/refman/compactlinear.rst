@@ -95,8 +95,8 @@ But now we can rewrite that term as well:
 
 .. math:: 
 
-  q &= v_i  + (\sum_{k=i+1}^{n-1} v_k^(z_k/(z_ic_i))c_i\\
-  &= v_i  + (\sum_{k=i+1}^{n-1} v_k^(z_k/(z_{i+1))c_i\\
+  q &= v_i  + (\sum_{k=i+1}^{n-1} v_k^(z_k/(z_ic_i)))c_i\\
+  &= v_i  + (\sum_{k=i+1}^{n-1} v_k^(z_k/(z_{i+1)))c_i
 
 Again it is true by specification that :math:`v_i < c_i`
 and :math:`z_{i+1}` divides :math:`z_k` exactly for 
