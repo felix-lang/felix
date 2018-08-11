@@ -3,9 +3,11 @@ Compact Linear Types
 
 .. _compactlineartypes:
 
-A type which is built entirely from the unit type 1,
-tuple or array constructors, and sum constructors,
-is called a `compact linear type`.
+.. raw:: html
+
+  <p>A type which is built entirely from the unit type 1,
+  tuple or array constructors, and \(\sigma\)sum constructors,
+  is called a <it>compact linear type</it>.</p>
 
 Values of compact linear types have a special representation
 as a 64 bit integer.
