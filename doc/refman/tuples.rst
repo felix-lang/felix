@@ -337,7 +337,7 @@ All you need to do is coerce the generalised array argument to a suitable
 isomorphic linear form, apply the routine, and cast the resulting
 linear array back.
 
-For more details please see :ref:`Compact Linear TYPE <compactlineartypes>`.
+For more details please see :ref:`Compact Linear Type <compactlineartypes>`.
 
 
 
