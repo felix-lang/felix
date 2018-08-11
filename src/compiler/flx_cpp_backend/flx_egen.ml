@@ -450,11 +450,17 @@ print_endline ("Generated application of injection application " ^ sbe bsym_tabl
     let result = (ce_rmd (ce_div a sdiv) (ce_int array_value_size)) in
     result
 
+  (* constant projection on ordinary pointer to compact linear array
+     yield compact linear pointer 
+  *)
   | BEXPR_apply ( 
-      (BEXPR_prj (ix,(BTYP_pointer (BTYP_array (vt,aixt) as ixd)),ixc),_), 
+      (BEXPR_prj (ix,(BTYP_pointer (BTYP_array (vt,BTYP_unitsum  n) as ixd)),ixc),_), 
       (_,BTYP_pointer at as a)
     ) when clt at ->
-    clierrx "[flx_cpp_backend/flx_egen.ml:415: E282] " sr "flx_egen: can't address constant component of compact linear array"
+    assert (0 <= ix && ix < n);
+    let modulus = sizeof_linear_type bsym_table vt in 
+    let divisor = modulus * (n - ix - 1)  in
+    ce_call (ce_atom "::flx::rtl::clptr_t") [ge' a; ce_int divisor; ce_int modulus]
 
   (* if this is a constant projection of a non-compact linear array *) 
   | BEXPR_apply ( (BEXPR_prj (n,BTYP_array _,_),_), a) -> 

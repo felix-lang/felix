@@ -336,11 +336,23 @@ the C++ above (which is part of the Felix RTL):
   var px = &x;     // ordinary pointer
   var p1 = px . 1; // compact linear pointer
   p1 <- true;      // store 1 bit
+  println$ x;      // true, true, true
+  println$ *p1;    // true
+
+  var prj = proj 1 of 2^3;
+  p1 = &x. prj;
+  p1 <- false; 
+  println$ x;      // true, false, true
+  println$ *p1;    // false
+
 
 
 Compact linear pointers have read-only and write-only variants too,
 which are supertypes of the read-write pointer, the same
 as for ordinary pointers.
+
+
+
 
 Pointer type syntax
 ^^^^^^^^^^^^^^^^^^^
