@@ -17,12 +17,12 @@ in the standard representation with values from 0 to
 N-1.
 
 The size of 0 is 0, of 1 is 1, and of N is N.
-The value of a product A0 * A1 is given by \(N0 + size(A0) \times N1\)
+The value of a product A0 * A1 is given by (N0 + size(A0) :math:`\times` N1\)
 and ranges from 0 to size(A0) * size(A1). To otain the first component
 find the remainder with respect to size(A0), for the second 
 component find the quotient instead.
 
-The value of a sum A0 + A1 is given by N0 + size(A1) + A\N1.
+The value of a sum A0 + A1 is given by N0 + size(A1) + A :math:`\times` N1.
 This is somewhat confusing so here is the way to decode such
 a value: if the value is less than or equal to size(A0),
 the case is the first one (case 0), and has the given value.
@@ -57,12 +57,17 @@ Pointer syntax
 
 .. code-block:: felix
 
-  satom := "_pclt<" stypeexpr "," stypeexpr ">" =>#
-    "`(ast_pclt ,_sr ,_2 ,_4)"
-  ;
+  satom := "_pclt<" stypeexpr "," stypeexpr ">"
+  satom := "_rpclt<" stypeexpr "," stypeexpr ">"
+  satom := "_wpclt<" stypeexpr "," stypeexpr ">"
 
 A pointer to a compact linear type `_pclt<D,C>` specifies a pointer to a component 
 type `C` embedded in a complete compact linear type `D`, which occupies a machine word.
+This type is a subtype of the read-only pointer type `_rpclt<D,C>` and
+write only pointer type `_wpclt<D,C>`.
+
+Projections
+^^^^^^^^^^^
 
 Projections for components of compact linear products use the same syntax
 as for non-compact products, as do the overloads for pointers. In order
