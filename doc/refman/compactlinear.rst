@@ -118,7 +118,7 @@ We remark that for powers of radicies which are powers of 2,
 the above formula reduces to a right shift followed by mask.
 
 
-We are no finished though. Let us assume that :math:`v_i` itself 
+We are not finished though. Let us assume that :math:`v_i` itself 
 is suitably encoding a positional form using radices
 
 .. math::
@@ -154,7 +154,7 @@ form for a new variadic positional number system, and we only
 need relabel the radices and coefficients, using a new index
 from 0 through :math:`m+n-1` to obtain the original form.
 
-Therefore we simply have to divide by :math:`z_izj'`, and
+Therefore we simply have to divide by :math:`z_iz_j'`, and
 our remainder is just :math:`c_j'` and so:
 
 .. code-block:: felix
@@ -175,7 +175,7 @@ In Felix, we define a compact linear type inductively as:
 Felix has special notation for sums of units. Unit can also be
 written as type 1. A sum of n units can be written as n:
 
-.. code-block::
+.. code-block:: felix
 
   unit = 1
   2 = 1 + 1 // aka bool
@@ -211,7 +211,7 @@ for example. Now, with some luck, you might see this:
 
 .. math::
 
-  c0=3, c1=4, c2=5
+  c0=3, c1=4, c2=5\\
   v0=1, v1=2, v2=5
 
 and immediately recognize nothing more difficult than a variadic
@@ -277,7 +277,7 @@ functions, we obtain a purely functional, referentially
 transparent mechanism for address calculations.
 
 So you may wonder how we can get a pointer into a compact
-linear product since the value hidden inside an integers
+linear product since the value hidden is inside an integer
 and is not addressable.
 
 The answer is seen by the C++ representation again:
