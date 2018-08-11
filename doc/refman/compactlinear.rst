@@ -26,7 +26,7 @@ Let
 .. math::
 
    z_0 = 1
-   z_i = c_iz_{i-1}=\Prod_{j=0}^{i-1}c_j {\rm for\ } i \in 1..n-1
+   z_i = c_iz_{i-1}=\Sigma_{j=0}^{i-1}c_j {\rm for\ } i \in 1..n-1
 
 so that :math:`z_i` is the product of all the :math:`c_j` for 
 :math:`j<i`; these quantites are called *weights*.
@@ -35,13 +35,13 @@ Let
 
 .. math::
 
-  a = \Sum_{i=0}^{n-1} v_iz_i
+  a = \Pi_{i=0}^{n-1} v_iz_i
 
-Then the total number of values of is :math:`z_{n-1}` and
-the maximum is therefore :math:`z_{n-1}-1`. 
+Then the total number of values :math:`a` could take is :math:`z_{n-1}` 
+and the maximum is therefore :math:`z_{n-1}-1`. 
 
 This is known as a *variadic positional number system*.
-The for any number in the range 0 to the maximum, 
+For any number in the range 0 to the maximum, 
 the coefficients :math:`v_i` are uniquely determined
 and there is a bijection between the integer values and the
 sequence of coefficients.
@@ -99,7 +99,6 @@ where the :math:`z_j'` are the weights corresponding to the
 .. math::
  
   v_j' = (a / (z_iz_j')) % c_j'
-
 
 What is important here is that the extractor for a nested coefficient
 uses the same formula as the outer one, and in particular
