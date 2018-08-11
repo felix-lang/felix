@@ -3,11 +3,9 @@ Compact Linear Types
 
 .. _compactlineartypes:
 
-.. raw:: html
-
-  <p>A type which is built entirely from the unit type 1,
-  tuple or array constructors, and \(\sigma\)sum constructors,
-  is called a <it>compact linear type</it>.</p>
+A type which is built entirely from the unit type 1,
+tuple or array constructors, and sum constructors,
+is called a `compact linear type`.
 
 Values of compact linear types have a special representation
 as a 64 bit integer.
@@ -19,7 +17,7 @@ in the standard representation with values from 0 to
 N-1.
 
 The size of 0 is 0, of 1 is 1, and of N is N.
-The value of a product A0 * A1 is given by (N0 + size(A0) :math:`\times` N1\)
+The value of a product A0 * A1 is given by (N0 + size(A0) :math:`\times` N1)
 and ranges from 0 to size(A0) * size(A1). To otain the first component
 find the remainder with respect to size(A0), for the second 
 component find the quotient instead.
