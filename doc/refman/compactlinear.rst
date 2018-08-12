@@ -169,8 +169,8 @@ form for a new variadic positional number system:
 
 .. math::
 
-  a &=  (\sum_{j=0}^{i-1} v_jz_j+ \sum_{h=0}^{g-1} v_h'z_h'z_i)\\
-  &+ (v_g' + \sum_{k=g+1}^{m-1} v_k'z_k'z_i/(z_iz_g') + \sum_{k=i+1}^{n-1} v_k(z_k/(z_iz_h'))z_iz_g'
+  a &=  \Big(\sum_{j=0}^{i-1} v_jz_j+ \sum_{h=0}^{g-1} v_h'z_h'z_i\Big)\\
+  &+\Big (v_g' + \sum_{k=g+1}^{m-1} v_k'z_k'z_i/(z_iz_g') + \sum_{k=i+1}^{n-1} v_k(z_k/(z_iz_h')\Big)z_iz_g'
 
 
 and we only
