@@ -26,7 +26,6 @@ open Flx_btype_subst
 let debug = false
 module CS = Flx_code_spec
 module L = Flx_literal
-exception Recname of string
 exception Vfound (* for variants, Found already used elsewhere *)
 
 let string_of_string = Flx_string.c_quote_of_string
@@ -420,6 +419,10 @@ print_endline ("Generated application of injection application " ^ sbe bsym_tabl
     ge' (bexpr_cltpointer pd jc ptr (v1 * v2))
 
 (* -------------- CONSTANT PROJECTIONS ----------------------------- *)
+  | BEXPR_apply ( (BEXPR_prj (ix, domain,codomain),prjt), (_,argt as arg)) ->
+    Flx_egen_apply_prj.apply_prj syms bsym_table ge ge' (e,t) ix domain codomain arg
+(*
+
   (* if this is a constant projection of a compact linear array *) 
   | BEXPR_apply ( 
       (BEXPR_prj (ix,(BTYP_array (vt,aixt) as ixd),ixc),_), 
@@ -545,13 +548,6 @@ print_endline ("Generated application of injection application " ^ sbe bsym_tabl
       ce_dot (ge' a) s 
     end
 
-  (* record projection *)
-  | BEXPR_apply ( (BEXPR_rprj (name,seq,BTYP_record (es),_),_), a) ->
-print_endline "rprj should have been removed";
-assert false;
-    let field_name = if seq = 0 then name else "_" ^ name ^ "_" ^ string_of_int seq in
-    ce_dot (ge' a) (cid_of_flxid field_name)
-
   (* pointer to record projection *)
   | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_record (es)),_),_), a) ->
     let field_name,_ =
@@ -560,13 +556,6 @@ assert false;
         failwith "[flx_egen] Woops, index of non-existent struct field"
     in
     let field_name = if field_name = "" then "_blank_" else field_name in
-    ce_prefix "&" (ce_arrow (ge' a) (cid_of_flxid field_name))
-
-  (* pointer to record projection *)
-  | BEXPR_apply ( (BEXPR_rprj (name,seq,BTYP_pointer (BTYP_record (es)),_),_), a) ->
-print_endline "rprj should have been removed";
-assert false;
-    let field_name = if seq = 0 then name else "_" ^ name ^ "_" ^ string_of_int seq in
     ce_prefix "&" (ce_arrow (ge' a) (cid_of_flxid field_name))
 
   (* struct or cstruct projection *)
@@ -609,6 +598,23 @@ assert false;
 
   (* that's it, there are no more *)
   | BEXPR_apply ((BEXPR_prj (n,_,_),_),(e',t' as e2)) -> assert false;
+
+*)
+
+  (* record projection *)
+  | BEXPR_apply ( (BEXPR_rprj (name,seq,BTYP_record (es),_),_), a) ->
+print_endline "rprj should have been removed";
+assert false;
+    let field_name = if seq = 0 then name else "_" ^ name ^ "_" ^ string_of_int seq in
+    ce_dot (ge' a) (cid_of_flxid field_name)
+
+
+  (* pointer to record projection *)
+  | BEXPR_apply ( (BEXPR_rprj (name,seq,BTYP_pointer (BTYP_record (es)),_),_), a) ->
+print_endline "rprj should have been removed";
+assert false;
+    let field_name = if seq = 0 then name else "_" ^ name ^ "_" ^ string_of_int seq in
+    ce_prefix "&" (ce_arrow (ge' a) (cid_of_flxid field_name))
 
 
 (* ------------ ARRAY PROJECTIONS ---------------------- *)

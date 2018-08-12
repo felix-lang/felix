@@ -80,7 +80,7 @@ rewrite the formula for :math:`a` like this:
 .. math::
 
   a &= \sum_{j=0}^{i-1} v_jz_j + v_iz_i + \sum_{k=i+1}^{n-1} v_kz_k\\
-  &= \underbrace{(\sum_{j=0}^{i-1} v_jz_j)}_r + \underbrace{(v_i + \sum_{k=i+1}^{n-1} v_k(z_k/z_i))}_q\underbrace{z_i}_d
+  &= \underbrace{(\sum_{j=0}^{i-1} v_jz_j)}_r + \underbrace{(v_i + \sum_{k=i+1}^{n-1} v_k(z_k/z_i))}_q\underbrace{\vphantom{\sum_x^y}z_i}_d
 
 We note that this is of the required quotient and remainder form
 since the left term is clearly less than :math:`z_i`, 
@@ -131,6 +131,18 @@ with coefficents
 
   v_0', v_1', ..., v_{m-1'}
 
+so that again with
+
+.. math::
+
+  z_h = \prod_{q=0}^{h-1}c_q
+
+we have
+
+.. math::
+
+  v_j = \sum_{h=0}^{m-1} v_h'z_h' 
+
 
 and we want to find the :math:`v_g'`. Obviously we can 
 just do this:
@@ -170,13 +182,20 @@ form for a new variadic positional number system:
 .. math::
 
   a &=  \Big(\sum_{j=0}^{i-1} v_jz_j+ \sum_{h=0}^{g-1} v_h'z_h'z_i\Big)\\
-  &+\Big (v_g' + \sum_{k=g+1}^{m-1} v_k'z_k'/z_g' + \sum_{k=i+1}^{n-1} v_k(z_k/(z_iz_h')\Big)z_iz_g'
+  &+\Big (v_g' + \sum_{k=g+1}^{m-1} v_k'z_k'/z_g' + \sum_{k=i+1}^{n-1} v_k(z_k/(z_iz_g')\Big)z_iz_g'
 
 
-and we only
-need relabel the radices and coefficients, using a new index
-from 0 through :math:`m+n-1` to obtain the original form.
-We need to convince ourselves the invariants are satisfied.
+We need to convince ourselves the invariants are satisfied. Now we select:
+
+.. math::
+
+  q &= a \operatorname{div} z_iz_g' = v_g' + \sum_{k=g+1}^{m-1} v_k'z_k'/z_g' + \sum_{k=i+1}^{n-1} v_k(z_k/(z_iz_g')\\
+  &=v_g' + (\sum_{k=g+1}^{m-1} v_k'z_k'/(z_g'c_g') + \sum_{k=i+1}^{n-1} v_k(z_k/(z_iz_g'c_g')))c_g\\
+  &=v_g' + (\sum_{k=g+1}^{m-1} v_k'z_k'/(z_{g+1}') + \sum_{k=i+1}^{n-1} v_k(z_k/(z_iz_{g+1}')))c_g
+
+and again we have a normal form and need to convince ourselves the invariants are satisfied.
+The key to checking the invariants is to recall
+
 
 Therefore we simply have to divide by :math:`z_iz_g'`, and
 our remainder is just :math:`c_j'` and so:

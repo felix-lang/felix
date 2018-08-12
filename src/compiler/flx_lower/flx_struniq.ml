@@ -15,6 +15,11 @@ open Flx_maps
 open Flx_exceptions
 open Flx_btype_subst
 
+(* GENERAL LOWERING ROUTINES. WE degrade some specialised types to more
+general ones with the same semantics and representation. For example
+read only pointers are just pointers. The type checking is done already
+so the downgrade is safe.
+*)
 
 let fixtype bsym_table t =
   let rec f_btype t =
@@ -25,6 +30,8 @@ let fixtype bsym_table t =
 (* downgrade read and write pointers to ordinary pointers *)
     | BTYP_rref t -> btyp_pointer t
     | BTYP_wref t -> btyp_pointer t
+    | BTYP_cltrref (d,c) -> btyp_cltpointer d c
+    | BTYP_cltwref (d,c) -> btyp_cltpointer d c
     | _ -> t
   in
   f_btype t
