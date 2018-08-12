@@ -96,7 +96,7 @@ But now we can rewrite that term as well:
 .. math:: 
 
   q &= v_i  + (\sum_{k=i+1}^{n-1} v_k(z_k/(z_ic_i)))c_i\\
-  &= v_i  + (\sum_{k=i+1}^{n-1} v_k(z_k/(z_{i+1})))c_i
+  &= v_i  + (\sum_{k=i+1}^{n-1} v_k(z_k/z_{i+1}))c_i
 
 Again it is true by specification that :math:`v_i < c_i`
 and :math:`z_{i+1}` divides :math:`z_k` exactly for 
@@ -146,6 +146,12 @@ Can we do it with just two, calculated from the four?
 The intuition is very strong: instead of doing more
 complex maths, visualise *inserting* the expansion of
 :math:`v_i` into the original formula with parenthesis. 
+
+.. math::
+
+  a &=  \sum_{j=0}^{i-1} v_jz_j\\
+  &+ (\sum_{h=0}^{g-1} v_h'z_h' + v_g'z_g' + \sum_{k=g+1}^{m-1} v_k'z_k')z_i\\
+  &+ \sum_{k=i+1}^{n-1} v_kz_k
 
 Since addition is associative and multiplication distributive,
 we can remove the parenthesis by multiplying the inner terms
