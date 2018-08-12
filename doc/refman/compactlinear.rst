@@ -12,7 +12,7 @@ such that
 
 .. math::
 
-  a = r + qd + {\rm\ \ such that\ } q\ge0 {\rm\ and\ } r < d
+  a = r + qd + {\rm\ \ such\ that\ } q\ge0 {\rm\ and\ } r < d
 
 We define integer division:
 
@@ -80,7 +80,7 @@ rewrite the formula for :math:`a` like this:
 .. math::
 
   a &= \sum_{j=0}^{i-1} v_jz_j + v_iz_i + \sum_{k=i+1}^{n-1} v_kz_k\\
-  &= (\sum_{j=0}^{i-1} v_jz_j) + (v_i + \sum_{k=i+1}^{n-1} v_k(z_k/z_i))z_i
+  &= \underbrace{(\sum_{j=0}^{i-1} v_jz_j)}_r + \underbrace{(v_i + \sum_{k=i+1}^{n-1} v_k(z_k/z_i))}_q\underbrace{z_i}_d
 
 We note that this is of the required quotient and remainder form
 since the left term is clearly less than :math:`z_i`, 
@@ -170,7 +170,7 @@ form for a new variadic positional number system:
 .. math::
 
   a &=  \Big(\sum_{j=0}^{i-1} v_jz_j+ \sum_{h=0}^{g-1} v_h'z_h'z_i\Big)\\
-  &+\Big (v_g' + \sum_{k=g+1}^{m-1} v_k'z_k'z_i/(z_iz_g') + \sum_{k=i+1}^{n-1} v_k(z_k/(z_iz_h')\Big)z_iz_g'
+  &+\Big (v_g' + \sum_{k=g+1}^{m-1} v_k'z_k'/z_g' + \sum_{k=i+1}^{n-1} v_k(z_k/(z_iz_h')\Big)z_iz_g'
 
 
 and we only
