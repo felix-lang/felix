@@ -12,7 +12,7 @@ such that
 
 .. math::
 
-  a = r + qd + {\rm\ \ such\ that\ } q\ge0 {\rm\ and\ } r < d
+  a = r + qd {\rm\ \ such\ that\ } q\ge0 {\rm\ and\ } r < d
 
 We define integer division:
 
@@ -56,7 +56,15 @@ Let
    z_i &= c_iz_{i-1}=\sum_{j=0}^{i-1}c_j {\rm\ \ for\ } i \in 1..n-1
 
 so that :math:`z_i` is the product of all the :math:`c_j` for 
-:math:`j<i`; these quantites are called *weights*.
+:math:`j<i`; these quantites are called *weights*. We're also going to need this:
+
+.. math::
+
+  \delta_i^j = z_j/z_i = \prod_{k=i+1}^j {\rm\ \ when\ } j\ge i
+
+This is the ratio of weights which is a product of a slice of c's from :math:`i+1` upto :math:`j`,
+which is considered well defined only when :math:`j\ge i`in which case it is always a positive
+integer.
 
 Let 
 
@@ -80,11 +88,11 @@ rewrite the formula for :math:`a` like this:
 .. math::
 
   a &= \sum_{j=0}^{i-1} v_jz_j + v_iz_i + \sum_{k=i+1}^{n-1} v_kz_k\\
-  &= \underbrace{(\sum_{j=0}^{i-1} v_jz_j)}_r + \underbrace{(v_i + \sum_{k=i+1}^{n-1} v_k(z_k/z_i))}_q\underbrace{\vphantom{\sum_x^y}z_i}_d
+  &= \underbrace{(\sum_{j=0}^{i-1} v_jz_j)}_r + \underbrace{(v_i + \sum_{k=i+1}^{n-1} v_k\delta_i^k)}_q\underbrace{\vphantom{\sum_y^y}z_i}_d
 
 We note that this is of the required quotient and remainder form
 since the left term is clearly less than :math:`z_i`, 
-and, since :math:`z_i` divides `z_k` exactly for :math:`k\ge i`,
+and, since  :math:`k>i` in the :math:`\delta` symbol,
 so we can find
 
 .. math:: 
@@ -97,11 +105,11 @@ But now we can rewrite that term as well:
 
   q &= v_i  + (\sum_{k=i+1}^{n-1} v_k(z_k/(z_ic_i)))c_i\\
   &= v_i  + (\sum_{k=i+1}^{n-1} v_k(z_k/z_{i+1}))c_i
+  &= v_i  + (\sum_{k=i+1}^{n-1} v_k\delta_{i+1}^k)c_i
 
 Again it is true by specification that :math:`v_i < c_i`
-and :math:`z_{i+1}` divides :math:`z_k` exactly for 
-:math:`k\ge i+1` which is the lowest index of the
-sum, therefore since the equation has the required
+and :math:`k\ge i+1` in the :math:`\delta` symbol,
+therefore since the equation has the required
 quotient and remainder form:
 
 .. math:: 
