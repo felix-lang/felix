@@ -132,12 +132,12 @@ with coefficents
   v_0', v_1', ..., v_{m-1'}
 
 
-and we want to find the :math:`v_j'`. Obviously we can 
+and we want to find the :math:`v_g'`. Obviously we can 
 just do this:
 
 .. code-block:: felix
 
-  vj' = (a / zi % ci) / zj' % cj'
+  vj' = (a / zi % ci) / zg' % cg'
 
 by using the same formula recursively. However that formula
 is not good because it uses 4 constants.  
@@ -155,17 +155,35 @@ complex maths, visualise *inserting* the expansion of
 
 Since addition is associative and multiplication distributive,
 we can remove the parenthesis by multiplying the inner terms
-by :math:`z_i`. Now observe the resulting formula has the same
-form for a new variadic positional number system, and we only
+by :math:`z_i`. 
+
+.. math::
+
+  a &=  \sum_{j=0}^{i-1} v_jz_j+ \sum_{h=0}^{g-1} v_h'z_h'z_i\\
+  &+ v_g'z_g'z_i\\
+  &+ \sum_{k=g+1}^{m-1} v_k'z_k'z_i + \sum_{k=i+1}^{n-1} v_kz_k
+
+
+Now observe the resulting formula has the same
+form for a new variadic positional number system:
+
+.. math::
+
+  a &=  (\sum_{j=0}^{i-1} v_jz_j+ \sum_{h=0}^{g-1} v_h'z_h'z_i)\\
+  &+ (v_g' + \sum_{k=g+1}^{m-1} v_k'z_k'z_i/(z_iz_g') + \sum_{k=i+1}^{n-1} v_k(z_k/(z_iz_h'))z_iz_g'
+
+
+and we only
 need relabel the radices and coefficients, using a new index
 from 0 through :math:`m+n-1` to obtain the original form.
+We need to convince ourselves the invariants are satisfied.
 
-Therefore we simply have to divide by :math:`z_iz_j'`, and
+Therefore we simply have to divide by :math:`z_iz_g'`, and
 our remainder is just :math:`c_j'` and so:
 
 .. code-block:: felix
 
-  vj' = (a / zi * zj') % cj'
+  vj' = (a / zi * zg') % cg'
 
 
 Compact Linear Types
