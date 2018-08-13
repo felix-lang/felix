@@ -149,7 +149,7 @@ just do this:
 
 .. code-block:: felix
 
-  vj' = (a / zi % ci) / zg' % cg'
+  vg' = (a / zi % ci) / zg' % cg'
 
 by using the same formula recursively. However that formula
 is not good because it uses 4 constants.  
@@ -163,7 +163,7 @@ as an exercise. The result is we can use this formula:
 
 .. code-block:: felix
 
-  vj' = (a / zi * zg') % cg'
+  vg' = (a / zi * zg') % cg'
 
 
 Compact Linear Types
@@ -232,7 +232,7 @@ as for non-compact products.
 .. code-block:: felix
 
   typedef p345_t = 3 * 4 * 5;
-  var x : p234_t = `1:3,`2:4,`3:5;
+  var x : p345_t = `1:3,`2:4,`3:5;
   println$ x.1; // `2:4
 
   var p = proj 1 of (p345_t);
