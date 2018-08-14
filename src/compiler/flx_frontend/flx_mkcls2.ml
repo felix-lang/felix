@@ -134,12 +134,12 @@ let gen_composite_closure_entry state bsym_table sr (f1,t1) (f2,t2) =
  
 *)
 
-let rec chk_expr state bsym_table nutab sr exe e : Flx_bexpr.t = 
+let rec chk_expr state bsym_table nutab sr parent exe e : Flx_bexpr.t = 
 (*
 print_endline ("Closure wrapper generator: Check expr " ^ sbe bsym_table e);
 *)
   let sbx exe = string_of_bexe bsym_table 0 exe in
-  let ce e = chk_expr state bsym_table nutab sr exe e in 
+  let ce e = chk_expr state bsym_table nutab sr parent exe e in 
   match e with
   | BEXPR_apply ((BEXPR_closure (i,ts),ft),e),rt ->
     begin
@@ -202,7 +202,7 @@ end;
 *)
         let closure_bid = fresh_bid state.syms.counter in
         let closure_name = ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym) in
-        Flx_bsym_table.add nutab closure_bid None 
+        Flx_bsym_table.add nutab closure_bid parent 
           (Flx_bsym.create ~sr:fsr closure_name (bbdcl_invalid ()))
         ;
         let param, arg = make_inner_function state nutab closure_bid fsr vs ts ps in
@@ -232,7 +232,7 @@ end;
 *)
         let closure_bid = fresh_bid state.syms.counter in
         let closure_name = ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym) in
-        Flx_bsym_table.add nutab closure_bid None 
+        Flx_bsym_table.add nutab closure_bid parent 
           (Flx_bsym.create ~sr:fsr closure_name (bbdcl_invalid ()))
         ;
         let param, arg = make_inner_function state nutab closure_bid fsr vs ts (List.map snd ps) in
@@ -260,7 +260,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
 *)
         let closure_bid = fresh_bid state.syms.counter in
         let closure_name = ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym) in
-        Flx_bsym_table.add nutab closure_bid None 
+        Flx_bsym_table.add nutab closure_bid parent 
           (Flx_bsym.create ~sr:fsr closure_name (bbdcl_invalid ()))
         ;
         let param, arg = make_inner_function state nutab closure_bid fsr vs ts (List.map snd ps) in
@@ -285,7 +285,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
 *)
         let closure_bid = fresh_bid state.syms.counter in
         let closure_name = ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym) in
-        Flx_bsym_table.add nutab closure_bid None 
+        Flx_bsym_table.add nutab closure_bid parent 
           (Flx_bsym.create ~sr:fsr closure_name (bbdcl_invalid ()))
         ;
         let param, arg = make_inner_function state nutab closure_bid fsr vs ts [p] in
@@ -311,7 +311,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
     let f2 = ce f2 in
     let closure_bid = fresh_bid state.syms.counter in
     let closure_name = ("_a" ^ string_of_int closure_bid ^ "_strtyp") in
-    Flx_bsym_table.add nutab closure_bid None 
+    Flx_bsym_table.add nutab closure_bid parent 
       (Flx_bsym.create ~sr:sr closure_name (bbdcl_invalid ()))
     ;
     let dom2,cod2= 
@@ -359,7 +359,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
     print_endline ("in exe=" ^ sbx exe ^ "\nCLT Projection passed as argument " ^ sbe bsym_table e);
     let closure_bid = fresh_bid state.syms.counter in
     let closure_name = ("_a" ^ string_of_int closure_bid ^ "_strtyp") in
-    Flx_bsym_table.add nutab closure_bid None 
+    Flx_bsym_table.add nutab closure_bid parent
       (Flx_bsym.create ~sr:sr closure_name (bbdcl_invalid ()))
     ;
     let param, arg = make_inner_function state nutab closure_bid sr [] [] [fdomain] in
@@ -381,7 +381,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
 *)
     let closure_bid = fresh_bid state.syms.counter in
     let closure_name = ("_a" ^ string_of_int closure_bid ^ "_strtyp") in
-    Flx_bsym_table.add nutab closure_bid None 
+    Flx_bsym_table.add nutab closure_bid parent
       (Flx_bsym.create ~sr:sr closure_name (bbdcl_invalid ()))
     ;
     let param, arg = make_inner_function state nutab closure_bid sr [] [] [d] in
@@ -403,7 +403,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
 *)
     let closure_bid = fresh_bid state.syms.counter in
     let closure_name = ("_a" ^ string_of_int closure_bid ^ "_strtyp") in
-    Flx_bsym_table.add nutab closure_bid None 
+    Flx_bsym_table.add nutab closure_bid parent
       (Flx_bsym.create ~sr:sr closure_name (bbdcl_invalid ()))
     ;
     let param, arg = make_inner_function state nutab closure_bid sr [] [] [d] in
@@ -423,7 +423,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
     let idx = ce idx in
     let closure_bid = fresh_bid state.syms.counter in
     let closure_name = ("_a" ^ string_of_int closure_bid ^ "_strtyp") in
-    Flx_bsym_table.add nutab closure_bid None 
+    Flx_bsym_table.add nutab closure_bid parent
       (Flx_bsym.create ~sr:sr closure_name (bbdcl_invalid ()))
     ;
     let param, arg = make_inner_function state nutab closure_bid sr [] [] [d] in
@@ -446,7 +446,7 @@ print_endline ("[flx_mkcls2] Generating identity for " ^ sbt bsym_table t);
     let ft = btyp_function (t,t) in
     let closure_bid = fresh_bid state.syms.counter in
     let closure_name = ("_id_" ^ string_of_int closure_bid) in
-    Flx_bsym_table.add nutab closure_bid None 
+    Flx_bsym_table.add nutab closure_bid parent
       (Flx_bsym.create ~sr:sr closure_name (bbdcl_invalid ()))
     ;
 
@@ -462,8 +462,8 @@ print_endline ("[flx_mkcls2] Generating identity for " ^ sbt bsym_table t);
     let e = Flx_bexpr.map ~f_bexpr:ce e in
     e
 
-let chk_exe state bsym_table nutab exe =
-  let ce sr e = chk_expr state bsym_table nutab sr exe e in
+let chk_exe state bsym_table nutab parent exe =
+  let ce sr e = chk_expr state bsym_table nutab sr parent exe e in
   match exe with
   | BEXE_call (sr,(BEXPR_closure (i,ts),t),e2) -> 
     begin
@@ -540,13 +540,13 @@ let chk_exe state bsym_table nutab exe =
   | BEXE_call_stack _  -> assert false
 
 
-let process_exes state bsym_table nutab exes =
-  List.map (chk_exe state bsym_table nutab ) exes
+let process_exes state bsym_table nutab parent exes =
+  List.map (chk_exe state bsym_table nutab parent ) exes
 
 let process_entry state bsym_table nutab i parent bsym =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,vs,ps,ret,effects,exes) ->
-    let exes = process_exes state bsym_table nutab exes in
+    let exes = process_exes state bsym_table nutab (Some i) exes in
     let bbdcl = bbdcl_fun (props,vs,ps,ret,effects,exes) in
     let bsym = (Flx_bsym.replace_bbdcl bsym bbdcl) in
     Flx_bsym_table.add nutab i parent bsym
