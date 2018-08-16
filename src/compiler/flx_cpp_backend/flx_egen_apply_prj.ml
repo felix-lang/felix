@@ -327,13 +327,14 @@ end;
     result is a compact linear pointer
   *)
   | BTYP_pointer (BTYP_array (vt,aixt) as at) when clt at -> 
+if debug then begin
 print_endline ("Array projection of ordinary pointer to compact linear array type " ^ sbt bsym_table at);
 print_endline ("Array base value type = " ^ sbt bsym_table vt);
 print_endline ("Array exponent type = " ^ sbt bsym_table aixt);
 print_endline ("Projection: domain = " ^ sbt bsym_table ixd);
 print_endline ("Projection: codomain = " ^ sbt bsym_table ixc);
 print_endline ("Index type = " ^ sbt bsym_table (snd ix));
-
+end;
 (*
     ate "Array projection of ordinary pointer to compact linear array" "index domain" "array type" ixd  at;
     ate "Array projection of ordinary pointer to compact linear array" "index codomain" "array base type" ixc vt;

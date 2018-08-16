@@ -50,6 +50,10 @@ and suffixed_name_t =
  * of this type. *)
 and kindcode_t =
   | KND_type
+  | KND_unitsum
+  | KND_compactlinear
+  | KND_bool
+  | KND_nat
   | KND_generic
   | KND_typeset of string (* excl mark *)
   | KND_function of kindcode_t * kindcode_t 

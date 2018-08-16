@@ -1,0 +1,186 @@
+@title projection tests
+@h1 constant value projections
+@felix
+// struct : constant value projection
+begin
+  struct X { a:int; b:string; c:double; }
+  var x = X (1,"hello",4.2);
+  var px = b of X;
+  println$ x.px;
+end
+@expect
+hello
+@felix
+// record : constant value projection
+begin
+  typedef X = (a:int, b:string, c:double);
+  var x = (a=1,b="hello",c=4.2);
+  var px = b of X;
+  println$ x.px;
+end
+@expect
+hello
+@felix
+// tuple : constant value projection
+begin
+  typedef t3 = int * string * double;
+  var x = (1,"hello",4.2);
+  var px = proj 1 of t3;
+  println$ x.px;
+end
+@expect
+hello
+@felix
+// array : constant value projection
+begin
+  var x = 1,2,3;
+  var px = proj 1 of int^3;
+  println$ x.px;
+end
+@expect
+2
+@felix
+// compact linear tuple : constant value projection
+begin
+  typedef t3 = 2 * 3 * 4;
+  var x = (`1:2,`2:3,`3:4);
+  var px = proj 1 of t3;
+  println$ x.px._strr;
+end
+@expect
+case 2 of 3
+@felix
+// compact linear array : constant value projection
+begin
+  var x = `1:3,`2:3,`0:3;
+  var px = proj 1 of (3^3);
+  println$ x.px._strr;
+end
+@expect
+case 2 of 3
+@h1 constant pointer projections
+@felix
+// struct : constant pointer projection
+begin
+  struct X { a:int; b:string; c:double; }
+  var x = X (1,"hello",4.2);
+  var px = b of (&X);
+  println$ *(&x.px);
+end
+@expect
+hello
+@felix
+// record : constant pointer projection
+begin
+  typedef X = (a:int, b:string, c:double);
+  var x = (a=1,b="hello",c=4.2);
+  var px = b of &X;
+  println$ *(&x.px);
+end
+@expect
+hello
+@felix
+// tuple : constant pointer projection
+begin
+  typedef t3 = int * string * double;
+  var x = (1,"hello",4.2);
+  var px = proj 1 of &t3;
+  println$ *(&x.px);
+end
+@expect
+hello
+@felix
+// array : constant pointer projection
+begin
+  var x = 1,2,3;
+  var px = proj 1 of &(int^3);
+  println$ *(&x.px);
+end
+@expect
+2
+@felix
+// compact linear tuple : constant pointer projection
+begin
+  typedef t3 = 2 * 3 * 4;
+  var x = (`1:2,`2:3,`3:4);
+  var px = proj 1 of &t3;
+  println$ (*(&x.px))._strr;
+end
+@expect
+case 2 of 3
+@felix
+// compact linear array : constant pointer projection
+begin
+  var x = `1:3,`2:3,`0:3;
+  var px = proj 1 of &(3^3);
+  println$ (*(&x.px))._strr;
+end
+@expect
+case 2 of 3
+@felix
+// compact linear array : constant compact linear pointer projection
+begin
+  var x = `1:3,(`2:3,`0:3);
+  var po = proj 1 of &(3 * 3 ^ 2);
+  var pi = proj 1 of _pclt<3 * 3^2,3^2>;
+  println$ (*(&x.po.pi))._strr;
+end
+@expect
+case 0 of 3
+@h1 array value projections
+@felix
+// array : variable value projection
+begin
+  var x = 1,2,3;
+  var n = `1:3;
+  var px = aproj n of int^3;
+  println$ x.px;
+end
+@expect
+2
+@felix
+// compact linear array : variable value projection
+begin
+  var x = `1:3,`2:3,`0:3;
+  var n = `1:3;
+  var px = aproj n of (3^3);
+  println$ x.px._strr;
+end
+@expect
+case 2 of 3
+@h1 array pointer projections
+@felix
+// array : variable pointer projection
+begin
+  var x = 1,2,3;
+  var n = `1:3;
+  var px = aproj n of &(int^3);
+  println$ *(&x.px);
+end
+@expect
+2
+@felix
+// compact linear array : variable pointer projection
+begin
+  var x = `1:3,`2:3,`0:3;
+  var n = `1:3;
+  var px = aproj n of &(3^3);
+  println$ (*(&x.px))._strr;
+end
+@expect
+case 2 of 3
+@
+@felix
+// compact linear array : variable compact linear pointer projection
+begin
+  var x = `1:3,(`2:3,`0:3);
+  var po = proj 1 of &(3 * 3 ^ 2);
+  var n = `1:2;
+  var pi = aproj n of _pclt<3 * 3^2,3^2>;
+  println$ (*(&x.po.pi))._strr;
+end
+@expect
+case 0 of 3
+@
+
+

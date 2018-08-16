@@ -64,6 +64,10 @@ let rec kindcode_of_expr (e:expr_t) :kindcode_t =
   let te e = kindcode_of_expr e in
   match e with
   | EXPR_name (_,"TYPE",[]) -> KND_type
+  | EXPR_name (_,"UNITSUM",[]) -> KND_unitsum
+  | EXPR_name (_,"COMPACTLINEAR",[]) -> KND_compactlinear
+  | EXPR_name (_,"BOOL",[]) -> KND_bool
+  | EXPR_name (_,"NAT",[]) -> KND_nat
   | EXPR_name (_,"GENERIC",[]) -> KND_generic
   | EXPR_tuple (sr,ls) ->
     begin match ls with
@@ -77,8 +81,12 @@ let rec kindcode_of_expr (e:expr_t) :kindcode_t =
 let rec kindcode_of_typecode (t:typecode_t) : kindcode_t =
   let kt t = kindcode_of_typecode t in
   match t with
-  | TYP_name (_,"GENERIC",[]) -> KND_generic 
   | TYP_name (_,"TYPE",[]) -> KND_type
+  | TYP_name (_,"UNITSUM",[]) -> KND_unitsum
+  | TYP_name (_,"COMPACTLINEAR",[]) -> KND_compactlinear
+  | TYP_name (_,"BOOL",[]) -> KND_bool
+  | TYP_name (_,"NAT",[]) -> KND_nat
+  | TYP_name (_,"GENERIC",[]) -> KND_generic 
   | TYP_type_tuple ts -> KND_tuple (List.map kt ts) 
   | TYP_function (d,c) -> KND_function (kt d, kt c) 
   | _ -> 

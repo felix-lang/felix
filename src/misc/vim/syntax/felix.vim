@@ -61,6 +61,7 @@ syn keyword felixStatement break
 syn keyword felixStatement call
 syn keyword felixStatement case
 syn keyword felixStatement proj
+syn keyword felixStatement aproj
 syn keyword felixStatement caseno
 syn keyword felixStatement casearg
 syn keyword felixStatement cfun

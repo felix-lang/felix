@@ -420,6 +420,10 @@ and string_of_expr (e:expr_t) =
 and str_of_kindcode k : string =
   match k with
   | KND_type -> "TYPE"
+  | KND_unitsum -> "UNITSUM"
+  | KND_compactlinear -> "COMPACTLINEAR"
+  | KND_bool -> "BOOL"
+  | KND_nat -> "NAT"
   | KND_generic -> "GENERIC"
   | KND_typeset s -> "!" ^ s
   | KND_tuple ks -> catmap " * " str_of_kindcode ks
