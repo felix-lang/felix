@@ -122,6 +122,7 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | EXPR_typed_case (sr,n,t) -> EXPR_typed_case (sr,n, ft t)
   | EXPR_rptsum_type (sr,n,t) -> EXPR_rptsum_type (sr, ft n, ft t)
   | EXPR_projection (sr,n,t) -> EXPR_projection (sr,n,ft t)
+  | EXPR_array_projection (sr,e,t) -> EXPR_array_projection (sr,fe e,ft t)
   | EXPR_ainj (sr,n,t) -> EXPR_ainj (sr,fe n,ft t)
   | EXPR_rnprj (sr,name,seq,a) -> EXPR_rnprj (sr,name,seq, fe a)
   | EXPR_lookup (sr,(x,s,ts)) -> EXPR_lookup (sr,(fe x, s, List.map ft ts))
@@ -264,6 +265,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_rptsum_type _
     -> ()
 
+  | EXPR_array_projection (_,x,_)
   | EXPR_ainj (_,x,_)
   | EXPR_rptsum_arg (_,x)
   | EXPR_expr (_,_,_,x)

@@ -405,17 +405,17 @@ print_endline("  SPECIFIED RETURN TYPE =" ^ Flx_btype.st state.ret_type);
     begin match t with
     | BTYP_tuple [pt; vt] ->
       begin match pt with
-      | BTYP_pointer pat
-      | BTYP_wref pat -> 
+      | BTYP_cltwref (_,pat) 
+      | BTYP_wref (pat) -> 
         if Flx_typeeq.type_eq (Flx_print.sbt bsym_table) state.counter vt pat then
          let lhs = bexpr_apply pt ((bexpr_prj 0 t pt), be2) in
          let rhs = bexpr_apply vt ((bexpr_prj 1 t vt), be2) in
          [bexe_storeat (sr,lhs, rhs)]
         else
-         clierr sr ("_storeat intrinsic requires pair of type &T * T, or &>T * T:  got " ^ Flx_btype.st t) 
-      | _ -> clierr sr ("_storeat intrinsic requires pair of type &T * T, or &>T * T:  got " ^ Flx_btype.st t) 
+         clierr sr ("_storeat intrinsic requires pair of type &T * T, or &>T * T (or compact linear type versions):  got " ^ Flx_btype.st t) 
+      | _ -> clierr sr ("_storeat intrinsic requires pair of type &T * T, or &>T * T (or compact linear type versions):  got " ^ Flx_btype.st t) 
       end
-    | _ -> clierr sr ("_storeat intrinsic requires pair of type &T * T, got " ^ Flx_btype.st t)
+    | _ -> clierr sr ("_storeat intrinsic requires pair of type &T * T or &>T * T (or compact linear type versions), got " ^ Flx_btype.st t)
     end
 
   | EXE_call (EXPR_name (_,"axiom_check",[]), e2) ->

@@ -124,6 +124,7 @@ and xexpr_t sr x =
 
   | Lst [Id "ast_typed_case";  Int i; t] -> EXPR_typed_case (sr,ii i,ti t)
   | Lst [Id "ast_projection";  Int i; t] -> EXPR_projection (sr,ii i,ti t)
+  | Lst [Id "ast_array_projection";  index; t] -> EXPR_array_projection (sr,xexpr_t sr index,ti t)
   | Lst [Id "ast_typed_case";  i; t] -> 
     let i = ex i in
     let t = ex t in

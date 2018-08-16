@@ -132,6 +132,12 @@ print_endline ("Flx_bind/flx_coerce:coerce] Binding coercion " ^ sbe bsym_table 
 *)
     if type_eq bsym_table state.Flx_lookup_state.counter t' t'' then x'
     else
+    match t'' with
+    (* THIS IS A HACK. ALLOW COERCIONS TO TYPE VARIABLES. NEEDED AT THE MOMENT
+       FOR HANDLING ARRAYS POLYMORPHICALLY casting an int to the array index
+    *)
+    | BTYP_type_var _ -> bexpr_coerce (x',t'')
+    | _ -> 
     let t' = unfold "flx_coerce1" t' in
     let t'' = unfold "flx_coerce1" t'' in
     begin match t',t'' with

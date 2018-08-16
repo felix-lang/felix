@@ -1592,7 +1592,9 @@ let bind_expression state bsym_table env e  =
   | Not_found -> failwith "xxxx bind expression raised Not_found [BUG]"
   | GadtUnificationFailure as x -> raise x
   | exn ->  
-    print_endline ("Inner bind expression failed binding " ^ string_of_expr e);
+    let sr = src_of_expr e in
+    print_endline ("Error at:\n" ^ Flx_srcref.long_string_of_src sr);
+    print_endline ("[Flx_lookup.bind_expression] Inner bind expression failed binding " ^ string_of_expr e);
     raise exn
 
 let type_of_index state bsym_table sr bid =

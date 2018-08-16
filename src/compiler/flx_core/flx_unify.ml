@@ -72,6 +72,16 @@ let rec solve_subtypes bsym_table counter lhs rhs dvars (s:vassign_t option ref)
 
   | BTYP_cltwref (lm,l), BTYP_cltpointer (rm,r) ->
     add_eq (l,r); add_eq(lm,rm)
+(*
+  (* these special rules say a pointer &t is a subtype of a clt pointer <_,t> *)
+  | BTYP_cltpointer (lm,l), BTYP_pointer (t)
+  | BTYP_cltrref (lm,l), BTYP_pointer (t)
+  | BTYP_cltwref (lm,l), BTYP_pointer (t)
+  | BTYP_cltrref (lm,l), BTYP_rref (t)
+  | BTYP_cltwref (lm,l), BTYP_wref (t) 
+    ->
+    (* add_eq (lm,t); *) add_eq (l,t)
+*)
 
   | BTYP_function (dl,cl), BTYP_function (dr,cr) ->
     add_ge (dr, dl); (* contravariant *)

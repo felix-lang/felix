@@ -118,8 +118,10 @@ print_endline ("Flx_typeclass: bind_type var, HACKED KIND_type");
        eqns
      in
      let assignments = map (fun (i,t) -> 
+(*
 if i = 7141 then
 print_endline ("Flx_typeclass: HACKED assignments ");
+*)
         btyp_type_var (i,Flx_kind.KIND_type),t) assigns 
      in
      let mgu =
@@ -209,7 +211,7 @@ print_endline (id ^ " Unified");
 let fixup_typeclass_instance' syms bsym_table sr i ts =
   let id = Flx_bsym.id (Flx_bsym_table.find bsym_table i) in
 (*
-if id="g" then
+if id="unsafe_get" then
 print_endline ("Trying to instantiate virtual " ^ id ^ "<" ^ si i ^ ">[" ^ 
 catmap "," (sbt bsym_table) ts ^ "]");
 *)
@@ -219,14 +221,15 @@ catmap "," (sbt bsym_table) ts ^ "]");
   in
   match entries with
   | None -> 
+
 (*
-if id="g" then
+if id="unsafe_get" then
     print_endline ("Virtual not registered,is it virtual?");
 *)
     `NonVirtual,i,ts (* not virtual *)
   | Some [] -> 
 (*
-if id="g" then
+if id="unsafe_get" then
     print_endline ("Virtual registered with 0 instances");
 *)
     let sr2 = try Flx_bsym_table.find_sr bsym_table i with Not_found ->
@@ -236,7 +239,7 @@ if id="g" then
 
   | Some entries ->
 (*
-if id="g" then
+if id="unsafe_get" then
 print_endline ("Found " ^ si (List.length entries) ^ " functions for virtual " ^ id ^"<"^si i^">");
 *)
   let parent,bsym = try Flx_bsym_table.find_with_parent bsym_table i with Not_found -> assert false in
@@ -287,7 +290,7 @@ if id="h" then
     if not (Flx_bsym_table.mem bsym_table i) then
       failwith ("Woops can't find virtual function index "  ^ string_of_bid i);
 (*
-if id="g" then
+if id="unsafe_get" then
 begin
     print_endline
     ("Multiple matching instances for typeclass virtual instance\n"
@@ -306,7 +309,7 @@ begin
        print_endline (match matchkind with | `CannotMatch -> "cannot match" | `MatchesNow -> "matches now" | `MaybeMatchesLater -> "maybe match later");
        print_endline ("Function " ^ si j ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]");
        print_endline (" instance parent " ^ si parent ^ "[" ^ catmap "," (sbt bsym_table) inst_ts ^ "]");
-       print_endline (" instance vs= " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") inst_vs );
+       print_endline (" instance vs= " ^ catmap "," (fun (s,i,_) -> s^"<"^si i^">") inst_vs );
     )
     candidates
 end;
@@ -416,10 +419,15 @@ print_endline "Discard r";
 let id x = x
 
 let tcsubst syms bsym_table sr i ts =
+(*
+if i = 14871 then
+  print_endline ("tcsubst trying to instantiate " ^ si i ^ " with ts = " ^ catmap "," (sbt bsym_table) ts);
+*)
   let ts = List.map (Flx_remap_vtypes.remap_virtual_types syms bsym_table) ts in
   match fixup_typeclass_instance' syms bsym_table sr i ts with
   | `NonVirtual,i,ts->i,ts
-  | `MatchesNow,i,ts->i,ts
+  | `MatchesNow,i,ts->
+     i,ts
   | `CannotMatch, i,ts ->
      let bsym = Flx_bsym_table.find bsym_table i in
      let id = Flx_bsym.id bsym in

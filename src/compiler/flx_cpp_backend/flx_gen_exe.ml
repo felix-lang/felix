@@ -834,8 +834,17 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
 
     | BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
 
-    | BEXE_storeat (sr,l,r) ->
+    | BEXE_storeat (sr,(_,lt as l),r) ->
+      begin match lt with
+      (* use C++ procedure for compact linear pointers *)
+      | BTYP_cltpointer _ ->
+        "     storeat("^ge sr l ^","^ge sr r^"); // cltpointer\n";
+      (* use standard syntax for ordinary pointers *)
+      | BTYP_pointer _ ->
        "      *"^ge sr l^"="^ge sr r ^"; // storeat\n"
+      (* dunno what to do with abstract types yet! *)
+      | _ -> assert false
+      end
 
     | BEXE_assign (sr,(_,lhst as e1),(_,rhst as e2)) ->
       if lhst = btyp_unit () then "" else

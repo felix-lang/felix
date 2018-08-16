@@ -36,6 +36,8 @@ open Flx_prop
 open Flx_bid
 open Flx_btype_subst
 
+let debug = false 
+
 let noeffects = Flx_btype.btyp_unit ()
 
 type closure_state_t = {
@@ -419,7 +421,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
     bexpr_closure t (closure_bid, [])
 
   | BEXPR_aprj (idx,d,c),t as x->
-    print_endline ("in exe=" ^ sbx exe ^ "\nArray projection passed as argument " ^ sbe bsym_table e);
+if debug then    print_endline ("in exe=" ^ sbx exe ^ "\nArray projection passed as argument " ^ sbe bsym_table e);
     let idx = ce idx in
     let closure_bid = fresh_bid state.syms.counter in
     let closure_name = ("_a" ^ string_of_int closure_bid ^ "_strtyp") in

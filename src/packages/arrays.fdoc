@@ -425,16 +425,25 @@ open class Farray
   //$ Array as value.
   instance[t,n] ArrayValue[array[t,n], t] {
     fun len (x:array[t, n]): size => Typing::arrayindexcount[n];
-
-    //fun unsafe_get: array[t, n] * size -> t = "$1.data[$2]";
     fun unsafe_get (var a: array[t, n], j: size): t => a . (j :>> n);
   }
 
   //$ Pointer to array as value.
   instance[t,n] ArrayValue[&array[t,n], &t] {
     fun len (x:&array[t, n]): size => Typing::arrayindexcount[n];
-    /* won't work for compact linear types! */
-    fun unsafe_get: &array[t, n] * size  -> &t = "(&($1->data[$2]))";
+    fun unsafe_get (var a: &array[t, n],  j: size) : &t  => a.(aproj (j :>> n) of (&(t^n)));
+  }
+
+  //$ Pointer to array as value.
+  instance[t,n] ArrayValue[&array[t,n], _pclt<array[t,n],t>] {
+    fun len (x:&array[t, n]): size => Typing::arrayindexcount[n];
+    fun unsafe_get (var a: &array[t, n],  j: size) : _pclt<array[t,n],t>  => a.(aproj (j :>> n) of (&(t^n)));
+  }
+
+  //$ Compact Linear Pointer to array as value.
+  instance[t,n] ArrayValue[_pclt<array[t,n],t>, _pclt<array[t,n],t>] {
+    fun len (x:&array[t, n]): size => Typing::arrayindexcount[n];
+    fun unsafe_get (var a: &array[t, n],  j: size) => a.(aproj (j :>> n) of (&(t^n)));
   }
 
   // this one should

@@ -1491,6 +1491,7 @@ syntax expressions {
 
   //$ Tuple projection function.
   x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri] =># "`(ast_projection ,_2 ,_4)";
+  x[scase_literal_pri] := "aproj" sexpr "of" x[ssum_pri] =># "`(ast_array_projection ,_2 ,_4)";
 
   // coarray injection
   // (ainj (r:>>4) of (4 *+ int)) 42

@@ -623,6 +623,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_case_tag (sr, i) -> e
   | EXPR_typed_case (sr, i, t) ->EXPR_typed_case (sr,i,mt sr t) 
   | EXPR_projection (sr, i, t) -> EXPR_projection (sr, i, mt sr t)
+  | EXPR_array_projection (sr, e, t) -> EXPR_array_projection (sr, me e, mt sr t)
   | EXPR_ainj (sr, e, t) -> EXPR_ainj (sr, me e, mt sr t)
   | EXPR_rnprj (sr,name,seq,e) -> EXPR_rnprj (sr,name,seq, me e)
   | EXPR_case_index (sr,e) -> EXPR_case_index (sr,me e)

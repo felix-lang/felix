@@ -250,6 +250,7 @@ let rec gen_expr'
     ce_call (ce_atom "::flx::rtl::clptr_t") [ge' p; ce_int v; ce_int n]
 
   | BEXPR_cltpointer_prj (d,c,v) -> 
+    print_endline ("Construct compact linear pointer projection, should have been removed??");
     let n = Flx_btype.sizeof_linear_type () c in
     ce_call (ce_atom "::flx::rtl::clprj_t") [ce_int v; ce_int n]
  
@@ -420,7 +421,7 @@ print_endline ("Generated application of injection application " ^ sbe bsym_tabl
 
 (* -------------- CONSTANT PROJECTIONS ----------------------------- *)
   | BEXPR_apply ( (BEXPR_prj (ix, domain,codomain),prjt), (_,argt as arg)) ->
-    Flx_egen_apply_prj.apply_prj syms bsym_table ge ge' (e,t) ix domain codomain arg
+    Flx_egen_apply_prj.apply_prj syms bsym_table ge ge' sr (e,t) ix domain codomain arg
 
   (* record projection *)
   | BEXPR_apply ( (BEXPR_rprj (name,seq,BTYP_record (es),_),_), a) ->
@@ -429,7 +430,6 @@ assert false;
     let field_name = if seq = 0 then name else "_" ^ name ^ "_" ^ string_of_int seq in
     ce_dot (ge' a) (cid_of_flxid field_name)
 
-
   (* pointer to record projection *)
   | BEXPR_apply ( (BEXPR_rprj (name,seq,BTYP_pointer (BTYP_record (es)),_),_), a) ->
 print_endline "rprj should have been removed";
@@ -437,52 +437,9 @@ assert false;
     let field_name = if seq = 0 then name else "_" ^ name ^ "_" ^ string_of_int seq in
     ce_prefix "&" (ce_arrow (ge' a) (cid_of_flxid field_name))
 
-
 (* ------------ ARRAY PROJECTIONS ---------------------- *)
-
-  (* if this is an array projection of a compact linear array *)
-  | BEXPR_apply ( 
-      (BEXPR_aprj (ix,ixd,ixc),_), 
-      (_,(BTYP_array (vt,aixt) as at) as a)
-    ) when clt at ->
-    ate ixd  at;
-    ate ixc  vt;
-    assert (clt ixd);
-    assert (clt ixc);
-    let array_len = Flx_btype.sizeof_linear_type bsym_table aixt in
-    let seq = syms.Flx_mtypes2.counter in
-    let power_table = syms.Flx_mtypes2.power_table in
-    let ipow' base exp = 
-      match exp with
-      | `Ce_int i -> 
-        let rec ipow = begin function 0 -> 1 | n -> base * (ipow (n - 1)) end in
-        ce_int (ipow i)
-      | _ ->
-        let ipow = Flx_ixgen.get_power_table bsym_table power_table base array_len in
-        ce_array (ce_atom ipow) exp
-    in
-    let array_value_size = sizeof_linear_type bsym_table vt in
-    let a = ge' a in
-    let ix = ge' ix in
-    let sdiv = ipow' array_value_size (ce_sub (ce_int (array_len - 1)) ix) in
-    let result = (ce_rmd (ce_div a sdiv) (ce_int array_value_size)) in
-    result
-
-  | BEXPR_apply ( 
-      (BEXPR_aprj (ix,ixd,ixc),_), 
-      (_,(BTYP_pointer (BTYP_array (vt,aixt) as at)) as a)
-    ) when clt at -> 
-    clierrx "[flx_cpp_backend/flx_egen.ml:577: E284] " sr "flx_egen: can't address component of compact linear array"
-
-  (* if this is an array projection of a non-compact linear array *)
-  | BEXPR_apply ( (BEXPR_aprj (idx,BTYP_array _,_),_), a ) ->
-    ce_array (ce_dot (ge' a) "data") (ge' idx) 
-
-  (* if this is an array projection of a non-compact linear array *)
-  | BEXPR_apply ( (BEXPR_aprj (idx,BTYP_pointer (BTYP_array _),_),_), a ) ->
-    ce_prefix "&" (ce_array (ce_arrow (ge' a) "data") (ge' idx)) 
-
-
+  | BEXPR_apply ( (BEXPR_aprj (ix, domain,codomain),prjt), (_,argt as arg)) ->
+    Flx_egen_apply_prj.apply_array_prj syms bsym_table ge ge' sr (e,t) ix domain codomain arg
 
   (* Felix allows naked projections BUT they should have been eta-expanded
      away, that is, replaced by a closure containing an application

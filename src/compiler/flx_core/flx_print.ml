@@ -119,6 +119,11 @@ and string_of_expr (e:expr_t) =
     "(proj " ^ si v ^
     " of " ^ string_of_typecode t ^ ")"
 
+  | EXPR_array_projection (_,v,t) ->
+    "(aproj " ^ se v ^
+    " of " ^ string_of_typecode t ^ ")"
+
+
   | EXPR_ainj (_,v,t) ->
     "(ainj " ^ se v ^
     " of " ^ string_of_typecode t ^ ")"
@@ -150,7 +155,7 @@ and string_of_expr (e:expr_t) =
     "let " ^ string_of_pattern pat ^ " = " ^ se e1 ^ " in " ^ se e2
 
   | EXPR_coercion (_,(e,t)) ->
-    "(" ^ se e ^ ":" ^
+    "explicit_coercion(" ^ se e ^ ":>>" ^
     string_of_typecode t ^ ")"
 
   | EXPR_variant_subtype_match_coercion (_,(e,t)) ->

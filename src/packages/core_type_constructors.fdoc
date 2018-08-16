@@ -447,7 +447,7 @@ open Eq[unit];
 // -----------------------------------------------------------------------------
 
 typedef unitsums = typesetof (3,4,5,6,7,8,9,10,11,12,13,14,15,16);
-
+/*
 instance[T in unitsums] Eq[T] {
   fun == (x:T,y:T) => caseno x == caseno y;
 }
@@ -462,6 +462,7 @@ instance[T in unitsums] FloatAddgrp[T] {
 instance[T in unitsums] Str[T] {
   fun str(x:T)=> str (caseno x)+ ":"+str(memcount[T].int); 
 }
+*/
 
 // This doesn't work dues to a design fault in the
 // numerical class libraries using "-" as a function
@@ -475,7 +476,7 @@ instance[T in unitsums] Str[T] {
 
 // Note: we don't put type 2 here, that's a bool and should
 // be handled elsewhere more specially..
-
+/*
 open Addgrp[3];
 open Addgrp[4];
 open Addgrp[5];
@@ -505,6 +506,7 @@ open Str[13];
 open Str[14];
 open Str[15];
 open Str[16];
+*/
 
 @h1 Category Theoretic Functional Operations
 @tangle functional.flx

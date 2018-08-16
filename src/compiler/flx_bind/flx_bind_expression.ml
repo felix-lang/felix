@@ -646,6 +646,12 @@ sbt bsym_table t);
     let t = bt sr t in
     Flx_bind_projection.bind_projection bsym_table sr v t 
 
+  | EXPR_array_projection (sr,v,t) -> 
+    let t = bt sr t in
+    let v = be v in
+    Flx_bind_projection.bind_array_projection state.counter bsym_table sr v t 
+
+
   | EXPR_typed_case (sr,v,t) ->
 (*
 print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_of_typecode t);

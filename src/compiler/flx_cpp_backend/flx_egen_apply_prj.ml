@@ -6,7 +6,25 @@ open Flx_cexpr
 
 exception Recname of string
 
+let debug = false
+
 let si x = string_of_int x
+
+let max n m = if n < m then m else n 
+let pad n s = 
+  let s = s ^ "                  "  in
+  String.sub s 0 n
+
+let ate bsym_table counter sr msg t1desc t2desc t1 t2 = 
+  let n = String.length t1desc in
+  let m = String.length t2desc in
+  let n = max n m  + 1 in
+  let t1desc = pad n t1desc in
+  let t2desc = pad n t2desc in
+  if not (Flx_typeeq.type_eq (sbt bsym_table) counter t1 t2)
+  then clierr sr (msg ^ " got" ^
+    "\n" ^ t1desc ^ "type = " ^ sbt bsym_table t1 ^ 
+    "\n" ^ t2desc ^ "type = " ^ sbt bsym_table t2) 
 
 (* handle application of constant projections *)
 
@@ -20,9 +38,9 @@ closure forms yet.
 (* Application of projection to ordinary pointer value 
   Note the pointer can still point to a compact linear value!
 *)
-let apply_pointer_prj syms bsym_table ge ge' (e,t) (ix:int) target codomain (_,argt as arg) =
+let apply_pointer_prj syms bsym_table ge ge' sr (e,t) (ix:int) target codomain (_,argt as arg) =
   let clt t = islinear_type bsym_table t in
-  let ate t1 t2 = assert (Flx_typeeq.type_eq (sbt bsym_table) syms.Flx_mtypes2.counter t1 t2) in
+  let ate msg t1desc t2desc ixt expt = ate bsym_table syms.Flx_mtypes2.counter sr msg t1desc t2desc ixt expt in
   let a = arg in
   let at = argt in
   let ixc = codomain in
@@ -33,6 +51,7 @@ let apply_pointer_prj syms bsym_table ge ge' (e,t) (ix:int) target codomain (_,a
      yield compact linear pointer 
   *)
   | (BTYP_array (vt,BTYP_unitsum  n)) when clt vt ->
+    if debug then print_endline ("Constant projection of pointer to compact-linear array");
     assert (0 <= ix && ix < n);
     let modulus = sizeof_linear_type bsym_table vt in 
     let divisor = modulus * (n - ix - 1)  in
@@ -44,6 +63,7 @@ let apply_pointer_prj syms bsym_table ge ge' (e,t) (ix:int) target codomain (_,a
 
   (* A projection on an ordinary pointer to a compact linear tuple yields a compect linear pointer! *)
   | (BTYP_tuple ts as vt) when clt vt ->
+    if debug then print_endline ("Constant projection of pointer to compact-linear tuple");
     assert (0 <= n && n < List.length ts);
     let rec aux ls i out = match ls with [] -> assert false | h :: t ->
       if i = 0 then out else aux t (i-1) (sizeof_linear_type bsym_table h * out)
@@ -54,6 +74,7 @@ let apply_pointer_prj syms bsym_table ge ge' (e,t) (ix:int) target codomain (_,a
 
   (* constant projection of pointer to non-compact linear tuple *)
   | (BTYP_tuple _) ->
+    if debug then print_endline ("Constant projection of pointer to non-compact-linear tuple");
     ce_prefix "&" (ce_arrow (ge' a) ("mem_" ^ si n)) 
 
   (* pointer to record projection *)
@@ -88,9 +109,9 @@ let apply_pointer_prj syms bsym_table ge ge' (e,t) (ix:int) target codomain (_,a
  | _ -> assert false
 
 (* Application of projection to compact linear pointer *)
-let apply_cltpointer_prj syms bsym_table ge ge' (e,t) (ix:int) (mach, target) codomain (_,argt as arg) =
+let apply_cltpointer_prj syms bsym_table ge ge' sr (e,t) (ix:int) (mach, target) codomain (_,argt as arg) =
   let clt t = islinear_type bsym_table t in
-  let ate t1 t2 = assert (Flx_typeeq.type_eq (sbt bsym_table) syms.Flx_mtypes2.counter t1 t2) in
+  let ate msg t1desc t2desc ixt expt = ate bsym_table syms.Flx_mtypes2.counter sr msg t1desc t2desc ixt expt in
   let a = arg in
   let at = argt in
   let n = ix in
@@ -118,10 +139,19 @@ let apply_cltpointer_prj syms bsym_table ge ge' (e,t) (ix:int) (mach, target) co
  
   | _ -> assert false
 
+let ipow' bsym_table power_table base exp array_len = 
+  match exp with
+  | `Ce_int i -> 
+    let rec ipow = begin function 0 -> 1 | n -> base * (ipow (n - 1)) end in
+    ce_int (ipow i)
+  | _ ->
+    let ipow = Flx_ixgen.get_power_table bsym_table power_table base array_len in
+    ce_array (ce_atom ipow) exp
+
 (* Application of projection to non pointer value *)
-let apply_value_prj syms bsym_table ge ge' (e,t) (ix:int) domain codomain (_,argt as arg) =
+let apply_value_prj syms bsym_table ge ge' sr (e,t) (ix:int) domain codomain (_,argt as arg) =
   let clt t = islinear_type bsym_table t in
-  let ate t1 t2 = assert (Flx_typeeq.type_eq (sbt bsym_table) syms.Flx_mtypes2.counter t1 t2) in
+  let ate msg t1desc t2desc ixt expt = ate bsym_table syms.Flx_mtypes2.counter sr msg t1desc t2desc ixt expt in
   let a = arg in
   let at = argt in
   let ixc = codomain in
@@ -130,36 +160,30 @@ let apply_value_prj syms bsym_table ge ge' (e,t) (ix:int) domain codomain (_,arg
   match domain with
   (* if this is a constant projection of a compact linear array *) 
   | BTYP_array (vt,aixt) when clt at ->
-    ate ixd  at;
-    ate ixc vt;
+    if debug then print_endline ("Constant value projection  " ^ si ix ^ " of compact-linear array type " ^ sbt bsym_table at);
+    ate "value projection of compact linear array" "proj domain" "exponent" ixd  at;
+    ate "value projection of compact linear array" "proj codomain" "array base" ixc vt;
     assert (clt ixd);
     assert (clt ixc);
     let array_len = Flx_btype.sizeof_linear_type bsym_table aixt in
     let seq = syms.Flx_mtypes2.counter in
     let power_table = syms.Flx_mtypes2.power_table in
-    let ipow' base exp = 
-      match exp with
-      | `Ce_int i -> 
-        let rec ipow = begin function 0 -> 1 | n -> base * (ipow (n - 1)) end in
-        ce_int (ipow i)
-      | _ ->
-        let ipow = Flx_ixgen.get_power_table bsym_table power_table base array_len in
-        ce_array (ce_atom ipow) exp
-    in
     let array_value_size = sizeof_linear_type bsym_table vt in
     let a = ge' a in
     let ix = ce_int ix in
     let exp = ce_sub (ce_int (array_len - 1)) ix in
-    let sdiv = ipow' array_value_size exp in
+    let sdiv = ipow' bsym_table power_table array_value_size exp array_len in
     let result = (ce_rmd (ce_div a sdiv) (ce_int array_value_size)) in
     result
 
   (* if this is a constant projection of a non-compact linear array *) 
   | BTYP_array _-> 
+    if debug then print_endline ("Constant value projection " ^ si ix ^ " of non-compact-linear array type " ^ sbt bsym_table at);
     ce_array (ce_dot (ge' a) "data") (ce_int ix)
 
   (* if this is a constant projection of a compact linear tuple *) 
   | BTYP_tuple ts when clt at ->
+    if debug then print_endline ("Constant value projection "^si ix ^" of compact-linear tuple type" ^ sbt bsym_table at);
     let n = ix in 
     assert (0 <= n && n < List.length ts);
     let rec aux ls i out = match ls with [] -> assert false | h :: t ->
@@ -175,6 +199,7 @@ let apply_value_prj syms bsym_table ge ge' (e,t) (ix:int) domain codomain (_,arg
      fetch the n'th component by its field name
   *) 
   | BTYP_tuple _ ->
+    if debug then print_endline ("Constant value projection of non-compact-linear array type " ^ sbt bsym_table at);
     ce_dot (ge' a) ("mem_" ^ si ix) 
 
   (* record projection *)
@@ -224,7 +249,7 @@ let apply_value_prj syms bsym_table ge ge' (e,t) (ix:int) domain codomain (_,arg
 
   | _ -> assert false
 
-let apply_prj syms bsym_table ge ge' (e,t) (ix:int) domain codomain (argv,argt as arg) =
+let apply_prj syms bsym_table ge ge' sr (e,t) (ix:int) domain codomain (argv,argt as arg) =
   (* if the argument is literally a tuple we just extract the 
   ix'th component and discard the rest. Works for records too since name indexes have
   been replaced by integer ones by the time we get here
@@ -241,12 +266,120 @@ let apply_prj syms bsym_table ge ge' (e,t) (ix:int) domain codomain (argv,argt a
   | _ ->
   match domain with
   | BTYP_pointer target ->
-    apply_pointer_prj syms bsym_table ge ge' (e,t) ix target codomain arg
+    apply_pointer_prj syms bsym_table ge ge' sr (e,t) ix target codomain arg
 
   | BTYP_cltpointer (mach, target) -> 
-    apply_cltpointer_prj syms bsym_table ge ge' (e,t) ix (mach, target) codomain arg
+    apply_cltpointer_prj syms bsym_table ge ge' sr (e,t) ix (mach, target) codomain arg
 
   | target ->
-    apply_value_prj syms bsym_table ge ge' (e,t) ix target codomain arg
+    apply_value_prj syms bsym_table ge ge' sr (e,t) ix target codomain arg
 
 
+let apply_array_prj syms bsym_table ge ge' sr (e,t) ix ixd ixc (_,at as a) =
+  let ate msg t1desc t2desc ixt expt = ate bsym_table syms.Flx_mtypes2.counter sr msg t1desc t2desc ixt expt in
+  let clt t = islinear_type bsym_table t in
+
+  match at with 
+  (* if this is an array projection of a compact linear array *)
+  |  BTYP_array (vt,aixt) when clt at ->
+
+if debug then begin
+print_endline ("Array value projection of compact linear array type " ^ sbt bsym_table at);
+print_endline ("Array base value type = " ^ sbt bsym_table vt);
+print_endline ("Array exponent type = " ^ sbt bsym_table aixt);
+print_endline ("Projection: domain = " ^ sbt bsym_table ixd);
+print_endline ("Projection: codomain = " ^ sbt bsym_table ixc);
+print_endline ("Index type = " ^ sbt bsym_table (snd ix));
+end;
+    ate "Array value projection of compact linear array" "index domain" "array type" ixd  at;
+    ate "Array value projection of compact linear array" "index codomain" "array base type" ixc  vt;
+    assert (clt ixd);
+    assert (clt ixc);
+    let array_len = Flx_btype.sizeof_linear_type bsym_table aixt in
+    let seq = syms.Flx_mtypes2.counter in
+    let power_table = syms.Flx_mtypes2.power_table in
+    let array_value_size = sizeof_linear_type bsym_table vt in
+    let a = ge' a in
+    let ix = ge' ix in
+    let sdiv = ipow' bsym_table power_table array_value_size (ce_sub (ce_int (array_len - 1)) ix) array_len in
+    let result = (ce_rmd (ce_div a sdiv) (ce_int array_value_size)) in
+    result
+
+  (* if this is an array projection of a non-compact linear array with a compact linear index*)
+  (* this is general case at the moment because ALL array indices are compact linear *)
+  (* note this code "works" even if the array index type is not a unitsum! *)
+
+  | BTYP_array (vt,aixt) when clt aixt ->
+    if debug then print_endline ("Array projection of non-compact linear array, index is compact linear of course");
+    let cix = ge' ix in
+    if debug then print_endline ("Felix index expression is " ^ sbe bsym_table ix);
+    if debug then print_endline ("C expression to calculate index is " ^ Flx_cexpr.string_of_cexpr cix);
+    ce_array (ce_dot (ge' a) "data") (ge' ix) 
+
+  (* if this is an array projection of a non-compact linear array *)
+  | BTYP_array _ ->
+    print_endline ("Flx_egen: projection of array with non-compact linear index can't happen");
+    print_endline ("Flx_egen: no support for, eg, arrays indexed by strings");
+    assert false;
+    ce_array (ce_dot (ge' a) "data") (ge' ix) 
+
+  (* array projection of an ORINDARY pointer to a compact linear array 
+    result is a compact linear pointer
+  *)
+  | BTYP_pointer (BTYP_array (vt,aixt) as at) when clt at -> 
+print_endline ("Array projection of ordinary pointer to compact linear array type " ^ sbt bsym_table at);
+print_endline ("Array base value type = " ^ sbt bsym_table vt);
+print_endline ("Array exponent type = " ^ sbt bsym_table aixt);
+print_endline ("Projection: domain = " ^ sbt bsym_table ixd);
+print_endline ("Projection: codomain = " ^ sbt bsym_table ixc);
+print_endline ("Index type = " ^ sbt bsym_table (snd ix));
+
+(*
+    ate "Array projection of ordinary pointer to compact linear array" "index domain" "array type" ixd  at;
+    ate "Array projection of ordinary pointer to compact linear array" "index codomain" "array base type" ixc vt;
+    assert (clt ixd);
+    assert (clt ixc);
+*)
+    let array_len = Flx_btype.sizeof_linear_type bsym_table aixt in
+    let seq = syms.Flx_mtypes2.counter in
+    let power_table = syms.Flx_mtypes2.power_table in
+    let array_value_size = sizeof_linear_type bsym_table vt in
+    let a = ge' a in
+    let ix = ge' ix in
+    let exp = ce_sub (ce_int (array_len - 1)) ix in
+    let divisor = ipow' bsym_table power_table array_value_size exp array_len in
+    let modulus = ce_int array_value_size in
+    ce_call (ce_atom "::flx::rtl::clptr_t") [a; divisor; modulus]
+
+
+  (* array projection of a compact linear pointer to a compact linear array 
+     result is a compact linear pointer
+  *)
+  | BTYP_cltpointer (mach, BTYP_array (vt,aixt))  -> 
+(*
+    ate "Array projection of compact linear pointer to compact linear array" "index domain" "array type" ixd  at;
+    ate "Array projection of compact linear pointer to compact linear array" "index codomain" "array base type" ixc vt;
+    assert (clt ixd);
+    assert (clt ixc);
+*)
+    let array_len = Flx_btype.sizeof_linear_type bsym_table aixt in
+    let seq = syms.Flx_mtypes2.counter in
+    let power_table = syms.Flx_mtypes2.power_table in
+    let array_value_size = sizeof_linear_type bsym_table vt in
+    let a = ge' a in
+    let ix = ge' ix in
+    let exp = ce_sub (ce_int (array_len - 1)) ix in
+    let divisor = ipow' bsym_table power_table array_value_size exp array_len in
+    let modulus = ce_int array_value_size in
+
+    (* multiply new and old divisors *)
+    let old_divisor = ce_dot a "divisor" in
+    let divisor = ce_infix "*" old_divisor divisor in
+    let ptr = ce_dot a "p" in
+    ce_call (ce_atom "::flx::rtl::clptr_t") [ptr; divisor; modulus]
+
+  (* if this is an array projection of a POINTER to a non-compact linear array *)
+  | BTYP_pointer (BTYP_array _) ->
+    ce_prefix "&" (ce_array (ce_arrow (ge' a) "data") (ge' ix)) 
+
+  | _-> assert false

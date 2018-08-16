@@ -462,15 +462,26 @@ let btyp_wref ts =
 
 (** Construct a BTYP_pointer type. *)
 let btyp_cltpointer d c =
-  BTYP_cltpointer (d,c)
+  (* should us proper type equality here but it isn't defined yet *)
+  if d = c then
+    BTYP_pointer c
+  else
+    BTYP_cltpointer (d,c)
 
 (** Construct a BTYP_rref type. Pointer to temporary,
 rvalue, or just const pointer or something similar *)
 let btyp_cltrref d c =
-  BTYP_cltrref (d,c)
+  (* should us proper type equality here but it isn't defined yet *)
+  if d = c then
+    BTYP_rref c
+  else
+    BTYP_cltrref (d,c)
 
 let btyp_cltwref d c =
-  BTYP_cltwref (d,c)
+  if d = c then
+    BTYP_wref c
+  else
+    BTYP_cltwref (d,c)
 
 (** Construct a BTYP_function type. *)
 let btyp_function (args, ret) =
@@ -603,9 +614,16 @@ let rec int_of_linear_type bsym_table t = match t with
     ipow sa (int_of_linear_type bsym_table ix)
   | _ -> raise (Invalid_int_of_unitsum)
 
-let islinear_type bsym_table t =
-  try ignore( int_of_linear_type bsym_table t ); true 
-  with Invalid_int_of_unitsum -> false
+let rec islinear_type bsym_table t =
+  match t with
+  | BTYP_void
+  | BTYP_unitsum _  -> true
+  | BTYP_type_var _ -> true (* THIS IS NEW AND WILL PROBABLY BREAK STUFF *)
+  | BTYP_tuple ts
+  | BTYP_sum ts -> List.fold_left (fun acc t -> acc && islinear_type bsym_table t) true ts
+  | BTYP_rptsum (count,base) -> islinear_type bsym_table base (* coarray *)
+  | BTYP_array (base,index) -> islinear_type bsym_table base
+  | _ -> false
 
 let sizeof_linear_type bsym_table t = 
   try int_of_linear_type bsym_table t 

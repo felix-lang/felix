@@ -297,6 +297,9 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
   | EXPR_case_tag _ -> [],e
   | EXPR_typed_case _ -> [],e
   | EXPR_projection _ -> [],e
+  | EXPR_array_projection (sr,e,domain) ->
+    let d,x = rex e in
+    d, EXPR_array_projection (sr,x,domain)
 
   | EXPR_literal _ -> [],e
 
