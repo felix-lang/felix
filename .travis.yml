@@ -30,14 +30,9 @@ script:
 - #export FLX_SHELL_ECHO=1
 - gcc --version
 - g++ --version
-- echo '#include <string>' > test.cpp
-- echo 'void f(std::string s) {}' >> test.cpp
-- cat test.cpp
-- g++ -std=gnu++11 -c -o test.o test.cpp
-- nm test.o | c++filt
-- #FLX_MIN_MEM=100000 make "FBUILD_PARAMS=--build-cc=/usr/bin/gcc --build-cxx=/usr/bin/g++"
-- FLX_MIN_MEM=100000 make build 
-- #make rebuild uproot
+- FLX_MIN_MEM=100000 make "FBUILD_PARAMS=--build-cc=/usr/bin/gcc --build-cxx=/usr/bin/g++"
+- #FLX_MIN_MEM=100000 make build 
+- make rebuild uproot
 after_success:
 - mkdir linuxgccbinary/build
 - mkdir linuxgccbinary/build/release
