@@ -46,11 +46,11 @@ after_success:
 - cp -r build/release/share/* linuxgccbinary/build/release/share
 - cp -r build/release/host/* linuxgccbinary/build/release/host
 - cd linuxgccbinary
-- nm build/release/host/lib/rtl/libflx_static.a | c++filt | grep ioutil::write | grep FILE 
 - git add build/release/host/*
 - git add build/release/share/*
 - git commit -a -m "travis rebuild"
 - git push >/dev/null 2>1
+- cd ..
 before_deploy:
 - cp installscript/posixinstall.sh linuxinstall.sh
 - cp installscript/linuxsetup.sh .

@@ -203,8 +203,13 @@ uproot:
 	mv ${BUILDROOT}/trial ${BUILDROOT}/host
 
 src:
-	mkdir -p ${BUILDROOT}/share/
+	rm -rf ${BUILDROOT}/share/src
+	mkdir -p ${BUILDROOT}/share/src
 	cp -r src ${BUILDROOT}/share
+	rm -rf ${BUILDROOT}/share/test
+	mkdir -p ${BUILDROOT}/share/test
+	cp -r src/test ${BUILDROOT}/share/test
+	rm -rf ${BUILDROOT}/test
 
 iphonesimulator:
 	# prepare directory
@@ -288,6 +293,7 @@ tutopt-check: tutopt-dir
 
 
 test: regress-check tut-check tutopt-check extras-check
+fresh-test: src test
 
 install:
 	rm -rf ${INSTALLDIR}

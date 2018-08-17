@@ -76,7 +76,8 @@ let gen_get_arg ge tn bsym_table ct ut (e:Flx_bexpr.t) : cexpr_t =
   let cast = tn ct in
   match cal_variant_rep bsym_table ut with
   | VR_self -> ge e
-  | VR_int ->  assert false
+  | VR_int ->  print_endline ("Flx_vgen:gen_get_arg: VR_int rep unhandled, type= " ^ sbt bsym_table ct);
+    assert false
   | VR_nullptr ->
     begin match size ct with
     | 0 -> assert false
