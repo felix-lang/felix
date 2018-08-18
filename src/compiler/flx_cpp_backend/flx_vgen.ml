@@ -21,14 +21,51 @@ let check_case_index bsym_table t i =
   assert (0 <= i && i < n)
 
 (* get the index of a variant value for purpose of matching cases *)
-let gen_get_case_index ge bsym_table e: cexpr_t  =
-(*print_endline ("Gen_get_case_index " ^ Flx_print.string_of_bound_expression bsym_table e); *)
-  let _,t = e in
-  match cal_variant_rep bsym_table t with
+let gen_get_case_index (ge:Flx_bexpr.t -> cexpr_t) bsym_table array_sum_offset_table seq e: cexpr_t  =
+  let _,ut = e in
+  let rep = cal_variant_rep bsym_table ut in
+  match rep with
   | VR_self -> ce_atom "0"
-  | VR_int -> 
-    let n = cal_variant_cases bsym_table t in 
-     ce_infix "%" (ge e) (ce_atom (si n))
+  | VR_clt -> 
+    begin match ut with
+    | BTYP_unitsum n -> ge e (* circular?? *)
+    | BTYP_sum ts ->  
+(*
+print_endline ("Gen_get_case_index " ^ Flx_print.string_of_bound_expression bsym_table e);
+print_endline ("Gen_get_case_index, type = "  ^ sbt bsym_table ut);
+print_endline ("Gen_get_case_index, rep = " ^ Flx_vrep.string_of_variant_rep rep);
+*)
+      let series = Flx_ixgen.get_array_sum_offset_values bsym_table ts in
+      let series = List.tl series in (* n terms now *)
+      let n = List.length ts in
+      let s2 = Flx_list.nlist (n - 1) in (* n terms *)
+      let series =List.rev (List.combine series s2) in (* n - 1 terms *)
+(*
+      print_endline ("Array sum offset values for " ^ sbt bsym_table ut ^ "\n");
+      let j = ref 0 in
+      List.iter (fun (i,k) -> print_endline ("pos " ^ si !j ^ " lt " ^si i ^ " pos " ^ si k); incr j) (List.rev series);
+*)
+      let x = ce_atom "x" in
+      let v = 
+        List.fold_left (fun acc (lt, pos) ->
+          let cond = ce_infix "<" x (ce_int lt) in
+          ce_cond cond (ce_int pos) acc
+        )
+        (ce_int (n - 1))
+        series 
+      in
+      let v = ce_letin "x" "::flx::rtl::cl_t" (ge e) v in
+(*
+      print_endline ("Symbolc value = " ^ string_of_cexpr v);
+*)
+      v
+
+    | BTYP_rptsum _ ->
+      assert false
+    | _ -> assert false
+    end  
+
+  | VR_int -> ge e
   | VR_nullptr -> ce_call (ce_atom "FLX_VNI") [ge e]
   | VR_packed -> ce_call (ce_atom "FLX_VI") [ge e]
   | VR_uctor -> ce_dot (ge e) "variant"
@@ -76,8 +113,46 @@ let gen_get_arg ge tn bsym_table ct ut (e:Flx_bexpr.t) : cexpr_t =
   let cast = tn ct in
   match cal_variant_rep bsym_table ut with
   | VR_self -> ge e
-  | VR_int ->  print_endline ("Flx_vgen:gen_get_arg: VR_int rep unhandled, type= " ^ sbt bsym_table ct);
-    assert false
+  | VR_clt ->  
+    begin match ut with
+    | BTYP_unitsum n -> ce_atom "0" (* unit *)
+    | BTYP_sum ts ->  
+(*
+print_endline ("compact linear type] Gen_get_arg value=" ^ sbe bsym_table e);
+print_endline ("compact linear type] Gen_get_arg variant type = " ^ sbt bsym_table ut);
+print_endline ("compact linear type] Gen_get_arg constructor arg type = " ^ sbt bsym_table ct);
+*)
+      let series = Flx_ixgen.get_array_sum_offset_values bsym_table ts in
+      let s2 = List.tl series in
+      let last = List.hd (List.rev series) in
+      let series = List.rev (List.tl (List.rev series)) in
+      let series = List.rev (List.combine s2 series) in
+(*
+      print_endline ("Array sum offset values for " ^ sbt bsym_table ut ^ "\n");
+      let j = ref 0 in
+      List.iter (fun (i,k) -> print_endline ("pos " ^ si !j ^ " lt " ^si i ^ " subtractand " ^ si k); incr j) (List.rev series);
+*)
+      let x = ce_atom "x" in
+      let v = 
+        List.fold_left (fun acc (lt, sub) ->
+          let cond = ce_infix "<" x (ce_int lt) in
+          ce_cond cond (ce_sub x (ce_int sub)) acc
+        )
+        (ce_sub x (ce_int last))
+        series 
+      in
+      let v = ce_letin "x" "::flx::rtl::cl_t" (ge e) v in
+(*
+      print_endline ("Symbolc value = " ^ string_of_cexpr v);
+*)
+      v
+    | BTYP_rptsum _ -> 
+      print_endline ("Can't handle repeat sums (coarrays) yet");
+      assert false
+    | _ -> assert false
+   end
+
+  | VR_int -> ce_atom "0"  (* constant constructor argument is unit *)
   | VR_nullptr ->
     begin match size ct with
     | 0 -> assert false
@@ -117,7 +192,7 @@ let gen_get_rptsum_arg ge tn bsym_table (e:Flx_bexpr.t) : cexpr_t =
 
 
 (* Value constructor for constant (argumentless) variant constructor case *)
-let gen_make_const_ctor bsym_table e : cexpr_t =
+let gen_make_const_ctor bsym_table array_sum_offset_table seq ge' e : cexpr_t =
 (*print_endline "gen_make_const_ctor"; *)
   let x,ut = e in
   let v,ut' = 
@@ -151,37 +226,14 @@ assert false
   | VR_packed -> ce_cast "void* /*VR_packed*/ " (ce_atom (si v))
   | VR_uctor -> ce_atom ("::flx::rtl::_uctor_(" ^ si v ^ ",0)") 
 
-
-(*
-(* Helper function to make suitable argument for non-constant variant constructor *)
-let gen_make_ctor_arg rep ge tn syms bsym_table a : cexpr_t =
-(* print_endline "gen_make_ctor_arg"; *)
-  let _,ct = a in
-  match rep with
-  | VR_uctor ->
-  begin match size ct with
-  | 0 -> ce_atom "0"                (* NULL: for unit tuple *)
-  | 1 -> ce_cast "/* uctor, arg size1 */ void*" (ge a)   (* small value goes right into data slot *)
-  | _ ->                            (* make a copy on the heap and return pointer *)
-    let ctt = "/* tn= "^ tn ct ^ " */ "^ tn ct in
-    let ptrmap = Flx_pgen.direct_shape_of syms bsym_table tn ct in
-    ce_new [ce_atom "*PTF gcp /* uctor, arg size2 */ "; ce_atom ptrmap; ce_atom "true"] ctt [ge a]
- end
- | VR_packed ->
-   begin match size ct with
-   | 0 -> ce_atom "0"                (* NULL: for unit tuple *)
-   | 1 -> ce_cast "/* packed arg size1 */ void*" (ge a)   (* small value goes right into data slot *)
-   | _ ->
-    let ctt = "/* tn= "^ tn ct ^ " */ "^ tn ct in
-    let ptrmap = Flx_pgen.direct_shape_of syms bsym_table tn ct in
-    ce_new [ce_atom "*PTF gcp /* packed, arg size2 */ "; ce_atom ptrmap; ce_atom "true"] ctt [ge a]
- 
-   end
- | VR_int -> ge a
- | VR_nullptr -> ce_cast "void*" (ge a)
-
- | _ -> assert false
-*)
+  | VR_clt -> 
+print_endline ("vgen:BEXPR_case: sum type = " ^ sbt bsym_table ut );
+print_endline ("vgen:BEXPR_case: sum value = " ^ sbe bsym_table e);
+    let sidx = Flx_ixgen.cal_symbolic_compact_linear_value bsym_table e in
+print_endline ("vgen:BEXPR_case: Symbolic sum = " ^ Flx_ixgen.print_index bsym_table sidx );
+    let cidx = Flx_ixgen.render_compact_linear_value bsym_table ge' array_sum_offset_table seq sidx in
+print_endline ("vgen:BEXPR_case: rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
+    cidx
 
 let gen_make_ctor_arg rep ge tn syms bsym_table shape_map a : cexpr_t =
   let _,ct = a in
@@ -203,6 +255,7 @@ print_endline ("gen_make_nonconst_ctor arg=" ^ Flx_print.sbe bsym_table a ^
   let rep = cal_variant_rep bsym_table codt in
   match rep with
   | VR_self -> ge a
+  | VR_clt -> assert false; ce_call (ce_atom "/*VR_clt */") [ge a]
   | VR_int -> ce_call (ce_atom "/*VR_int*/") [ge a]
 
   | VR_nullptr -> 
@@ -225,6 +278,7 @@ print_endline ("gen_make_nonconst_ctor arg=" ^ Flx_print.sbe bsym_table a ^
   let rep = cal_variant_rep bsym_table codt in
   match rep with
   | VR_self -> assert false (* ge a*)
+  | VR_clt -> assert false (* ce_call (ce_atom "/*VR_int*/") [ge a] *)
   | VR_int -> assert false (* ce_call (ce_atom "/*VR_int*/") [ge a] *)
 
   | VR_nullptr -> 

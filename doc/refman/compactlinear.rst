@@ -355,7 +355,92 @@ Compact linear pointers have read-only and write-only variants too,
 which are supertypes of the read-write pointer, the same
 as for ordinary pointers.
 
+Sum Types
+^^^^^^^^^
 
+The representation of sums is simple. Consider a sum 
+
+.. code-block:: felix
+
+  typedef s567 = 5 + 6 + 7;
+
+We will be dealing with values of this type of the form:
+
+.. code-block:: felix
+
+  (case 1 of s567) `3:6
+
+The left term is an injection function which selects the second case
+(remember case numbers are zero origin) and encodes into the 
+sum type a value of the second case type, which is 6.
+
+Whatever the encoding is, we have to be able to extract the
+case number and the value, the value is called the argument
+because it is the argument of the injection function.
+
+We will calculate how to do the encoding based on how we are
+going to do the decoding. What we will do is assign successive
+integer ranges to the cases:
+
+.. code-block:: felix
+
+  case 0: 0..4    // size = 4 + 1 - 0 = 5
+  case 1: 5..10   // size = 10 + 1 - 5 = 6  
+  case 2: 11..17  // size = 17 + 1 - 11 = 7
+
+To encode a value, we just add the injection argument to the
+minium for that case.
+
+The decode must reverse this process:
+
+.. code-block:: felix
+
+  if v < 5 then case 0, value v
+  elif v  < 11 then case 1 value v - 5
+  elif v < 18 then case 2, value v - 11
+
+
+The minimum value of a case is the sum of all the previous cases, or 0 if
+there aren't any. The maximum is just the mimimum plus the case size minus 1.
+The comparator in the chain above is the minimum of the next case,
+the last test is not required since it is the only remaining altenative.
+
+The fastest way to perform the encoding is to take the sequence
+of types, considered as integers, and calculate an array
+of sums of all the previous values. The sum of previous values
+is called the `offset` of the case. The encoding then is just
+the sum of the value plus the offset of the case.
+
+The decoding, unforunately, requires a loop, however we can
+reduce the number of calculations by repeated subtractions
+of successive bases.  We start with the value to decode,
+setting the case number to 0. If the value is less than the
+base, we return the case number and use the value as the argument.
+Otherwise we increment the case number and subtract the size
+of the current base which is found from a lookup table,
+then repeat.
+
+It is instructive to consider that the representation of
+a unit sum is simply the case number. There is only one
+possible argument, which is always 0.
+
+In Felix, there are two closely related terms.
+The general term is an injection function. 
+However if the injection takes a unit argument,
+it is a constant function and the result of applying
+the injection is known, so there is a second term
+which represents the value of constant injections,
+so we can elide their application.
+
+The syntax using `inj n of type` is always an
+injection function. However the syntax `case n of type`
+is identical to the injection term of the injection
+is not a constant functions, otherwise, it is the
+value the injection would produce instead.
+
+In particular the notation `case 1 of 2` or `\`1:2` is the value `true`
+and not an injection function. It has type `2` whereas 
+`inj 1 of 2` has type `1->2`.
 
 
 Pointer type syntax

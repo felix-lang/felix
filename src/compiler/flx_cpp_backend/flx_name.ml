@@ -278,6 +278,7 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   | BTYP_sum _ ->
     begin match Flx_vrep.cal_variant_rep bsym_table t with
     | Flx_vrep.VR_self -> print_endline "WARNING cpp_type_classname of VR_self (1)"; assert false
+    | Flx_vrep.VR_clt -> "::flx::rtl::cl_t"
     | Flx_vrep.VR_int -> "int"
     | Flx_vrep.VR_nullptr -> "void*"
     | Flx_vrep.VR_packed -> "void*"
@@ -313,6 +314,7 @@ print_endline ("[flx_name] One component union should have been removed");
     | BBDCL_union _ ->
       begin match Flx_vrep.cal_variant_rep bsym_table t with
       | Flx_vrep.VR_self -> print_endline "WARNING cpp_type_classname of VR_self (2)"; assert false
+      | Flx_vrep.VR_clt -> "::flx::rtl::cl_t"
       | Flx_vrep.VR_int -> "int"
       | Flx_vrep.VR_nullptr -> "void*"
       | Flx_vrep.VR_packed -> "void*"
@@ -440,6 +442,7 @@ and cpp_structure_name syms bsym_table t =
   | BTYP_sum _ ->
     begin match Flx_vrep.cal_variant_rep bsym_table t with
     | Flx_vrep.VR_self -> print_endline ("WARNING cpp_structure_name of VR_self (1)"); assert false
+    | Flx_vrep.VR_clt -> "::flx::rtl::cl_t"
     | Flx_vrep.VR_int -> "int"
     | Flx_vrep.VR_nullptr -> "void*"
     | Flx_vrep.VR_packed -> "void*"
@@ -476,6 +479,7 @@ and cpp_structure_name syms bsym_table t =
     | BBDCL_union _ ->
       begin match Flx_vrep.cal_variant_rep bsym_table t with
       | Flx_vrep.VR_self -> print_endline ("WARNING cpp_structure_name of VR_self (2)"); assert false
+      | Flx_vrep.VR_clt -> "::flx::rtl::cl_t"
       | Flx_vrep.VR_int -> "int"
       | Flx_vrep.VR_nullptr -> "void*"
       | Flx_vrep.VR_packed -> "void*"

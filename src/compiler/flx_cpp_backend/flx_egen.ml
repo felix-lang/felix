@@ -483,7 +483,11 @@ assert false;
             
     end
 
-  | BEXPR_case_index e -> Flx_vgen.gen_get_case_index ge' bsym_table e
+  | BEXPR_case_index e -> 
+(*
+    print_endline ("Flx_egen: BEXPR_case_index " ^ sbe bsym_table e);
+*)
+    Flx_vgen.gen_get_case_index ge' bsym_table syms.Flx_mtypes2.array_sum_offset_table syms.Flx_mtypes2.counter e
 
   | BEXPR_range_check (e1,e2,e3) ->
      let f,sl,sc,el,ec = Flx_srcref.to_tuple sr in
@@ -918,12 +922,16 @@ assert false;
 
   | BEXPR_match_case (n,((e',t') as e)) ->
     let t' = beta_reduce "flx_egen get_n: match_case" syms.Flx_mtypes2.counter bsym_table sr t' in
-    let x = Flx_vgen.gen_get_case_index ge' bsym_table e in
+    let array_sum_offset_table = syms.Flx_mtypes2.array_sum_offset_table in
+    let seq = syms.Flx_mtypes2.counter in
+    let x = Flx_vgen.gen_get_case_index ge' bsym_table array_sum_offset_table seq e in
     ce_infix "==" x (ce_atom (si n))
 
   | BEXPR_not (BEXPR_match_case (n,((e',t') as e)),_) ->
     let t' = beta_reduce "flx_egen: not" syms.Flx_mtypes2.counter bsym_table sr t' in
-    let x = Flx_vgen.gen_get_case_index ge' bsym_table e in
+    let array_sum_offset_table = syms.Flx_mtypes2.array_sum_offset_table in
+    let seq = syms.Flx_mtypes2.counter in
+    let x = Flx_vgen.gen_get_case_index ge' bsym_table array_sum_offset_table seq e in
     ce_infix "!=" x (ce_atom (si n))
 
   | BEXPR_cond (c,t,f) -> ce_cond (ge' c) (ge' t) (ge' f)
@@ -935,7 +943,8 @@ assert false;
 
   | BEXPR_case_arg (n,e) ->
 (*
-    print_endline ("flx_egen[ge_carg]: Decoding nonconst ctor type " ^ sbt bsym_table t);
+    print_endline ("flx_egen[ge_carg]: Decoding nonconst ctor " ^ si n ^ " of value " ^ sbe bsym_table e);
+    print_endline ("flx_egen[ge_carg]: type " ^ sbt bsym_table t);
 *)
     Flx_vgen.gen_get_case_arg ge' tn bsym_table n e
     (*
@@ -1022,64 +1031,13 @@ print_endline ("Generating class new for t=" ^ ref_type);
    * particularly enums.
    *)
   | BEXPR_case (v,t') -> (* assert false; *)
-    if clt t then begin
-print_endline ("egen:BEXPR_case: index type = " ^ sbt bsym_table t );
-print_endline ("egen:BEXPR_case: index value = " ^ sbe bsym_table (e,t));
-      let sidx = Flx_ixgen.cal_symbolic_compact_linear_value bsym_table (e,t) in
-print_endline ("egen:BEXPR_case: Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
-      let cidx = Flx_ixgen.render_compact_linear_value bsym_table ge' array_sum_offset_table seq sidx in
-print_endline ("egen:BEXPR_case: rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
-      cidx
-    end
-    else
-begin (* print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^ 
-" ctor#= " ^ si v ^ " union type = " ^ sbt bsym_table t);
-*)
     print_endline ("making constant ctor");
-    Flx_vgen.gen_make_const_ctor bsym_table (e,t)
-end
-    (* 
-    begin match unfold t' with
-    | BTYP_unitsum n ->
-      if v < 0 or v >= n
-      then
-        failwith
-        (
-          "Invalid case index " ^ si v ^
-          " of " ^ si n ^ " cases  in unitsum"
-        )
-     else ce_atom (si v)
+    let array_sum_offset_table = syms.Flx_mtypes2.array_sum_offset_table in
+    let seq = syms.Flx_mtypes2.counter in
+    let clv = Flx_vgen.gen_make_const_ctor bsym_table array_sum_offset_table seq ge' (e,t) in
+    print_endline ("vgen:BEXPR_case: rendered lineralised index .. C index = " ^ string_of_cexpr clv);
+    clv
 
-    | BTYP_sum ls ->
-       let s =
-         let n = length ls in
-         if v < 0 or v >= n
-         then
-           failwith
-           (
-             "Invalid case index " ^ si v ^
-             " of " ^ si n ^ " cases"
-           )
-         else let t' = nth ls v in
-         if t' = btyp_tuple []
-         then (* closure of const ctor is just the const value ???? *)
-           if is_unitsum t then
-             si v
-           else
-             "::flx::rtl::_uctor_(" ^ si v ^ ",0)"
-         else
-           failwith
-           (
-              "Can't handle closure of case " ^
-              si v ^
-              " of " ^
-              sbt bsym_table t
-           )
-       in ce_atom s
-
-    | _ -> failwith "Case tag must have sum type"
-    end
-*)
 
   | BEXPR_varname (index,ts') ->
     let bsym_parent, bsym =
@@ -1098,7 +1056,9 @@ end
           ce_atom (get_var_ref syms bsym_table this index ts)
 
       | BBDCL_const_ctor (vs,uidx,udt, ctor_idx, evs, etraint) ->
-        Flx_vgen.gen_make_const_ctor bsym_table (e,t)
+        let array_sum_offset_table = syms.Flx_mtypes2.array_sum_offset_table in
+        let seq = syms.Flx_mtypes2.counter in
+        Flx_vgen.gen_make_const_ctor bsym_table array_sum_offset_table seq ge' (e,t)
 
       | BBDCL_external_const (props,_,_,ct,_) ->
         if mem `Virtual props then

@@ -1,6 +1,8 @@
 open Flx_ast
 open Flx_btype
 
+let si x = string_of_int x
+
 let apl2 (sr:Flx_srcref.t) (fn : string) (tup:expr_t list) =
   EXPR_apply
   (
@@ -102,6 +104,9 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
       be rs (EXPR_cond (sr,(a,mks "false",mks "true")))
 
     | BTYP_unitsum n ->
+(*
+      print_endline ("_strr of unitsum " ^ si n);
+*)
       let e = catss [(mks "case "); (apls "str" (EXPR_case_index (sr,a)));
         (mks " of "); (mks (string_of_int n))] 
       in

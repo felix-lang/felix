@@ -182,7 +182,8 @@ iter (fun (k,v) -> add prec_remap k v) remaps
 
 let pr cop =
  match cop with
-  | `Ce_atom _ -> 0
+  | `Ce_atom _ 
+  | `Ce_lambda _ -> 0
   | `Ce_postfix (s,_) -> find postfix s
   | `Ce_prefix (s,_) -> find prefix s
   | `Ce_infix (s,_,_) -> find infix s
@@ -243,6 +244,7 @@ and cep cp e =
     | `Ce_div (a,b) -> lce a ^ "/" ^ rce b
     | `Ce_rmd (a,b) -> lce a ^ "%" ^ rce b
     | `Ce_neg a  -> "-" ^ rce a
+    | `Ce_lambda (vname, vartype, expr) ->"[](" ^ vartype ^ " " ^vname ^"){ return " ^ lce expr ^ ";} "
 
   end
   ^
@@ -282,6 +284,8 @@ let ce_div a b = `Ce_div (a,b)
 let ce_rmd a b = `Ce_rmd (a,b)
 let ce_neg a  = `Ce_neg a
 let ce_int i = `Ce_int i
+let ce_lambda (vname:string) (vartype:string) expr = `Ce_lambda (vname, vartype, expr) 
+let ce_letin vname vartype expr1 expr2 = ce_call (ce_lambda vname vartype expr2) [expr1]
 
 let sc p e = cep (find_prec p) e
 let ce p s = ce_expr p s

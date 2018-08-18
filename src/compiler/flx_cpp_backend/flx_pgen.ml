@@ -34,6 +34,7 @@ print_endline ("[flx_pgen] One component union should have been removed");
     | BBDCL_union (vs,idts) ->
       begin match Flx_vrep.cal_variant_rep bsym_table t with
       | Flx_vrep.VR_self -> assert false
+      | Flx_vrep.VR_clt -> "::flx::rtl::_int_ptr_map"
       | Flx_vrep.VR_int -> "::flx::rtl::_int_ptr_map"
       | Flx_vrep.VR_nullptr -> "::flx::rtl::_address_ptr_map"
       | Flx_vrep.VR_packed -> "::flx::rtl::_address_ptr_map"
@@ -77,6 +78,7 @@ print_endline ("[flx_pgen] One component union should have been removed");
   | BTYP_sum _ ->
       begin match Flx_vrep.cal_variant_rep bsym_table t with
       | Flx_vrep.VR_self -> assert false
+      | Flx_vrep.VR_clt -> "::flx::rtl::_int_ptr_map"
       | Flx_vrep.VR_int -> "::flx::rtl::_int_ptr_map"
       | Flx_vrep.VR_nullptr -> "::flx::rtl::_address_ptr_map"
       | Flx_vrep.VR_packed -> "::flx::rtl::_address_ptr_map"

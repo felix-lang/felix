@@ -1,0 +1,41 @@
+@title injections
+@h1 injection functions
+@felix
+// injection: union
+begin
+  union X = | A of int | B of double;
+  var ia = A of int;
+  var x = ia 42;
+  println$ x._strr;
+end
+@expect
+A (42)
+@felix
+// injection: polymorphic variant
+begin
+  typedef X = (`A of int | `B of double);
+//  var ia = `A of int;
+//  var x = ia 42;
+//  println$ x._strr; 
+end
+@expect
+@felix
+// injection: sum
+begin 
+  typedef X = int + double;
+  var ia = case 0 of X;
+  var x = ia 42;
+  println$ x._strr;
+end
+@expect
+case 0 (42)
+@felix
+// compact linear sum
+begin
+  typedef X = 3 + 4 + 5;
+  var ia = case 1 of X;
+  var x = ia (`2:4);
+  println$ x._strr;
+end
+@
+

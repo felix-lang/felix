@@ -115,7 +115,8 @@ let is_gadt bsym_table t = match t with
 
 type variant_rep = 
   | VR_self       (* only one ctor so the union is just the argument *)
-  | VR_int        (* all constant ctors, just need the index *) 
+  | VR_clt        (* all clt types *)
+  | VR_int        (* all nonclt constant ctors, just need the index *) 
   | VR_nullptr    (* special case None or Some of T etc, use NULL for None, non-NULL ptr to T for Some *)
   | VR_packed     (* 4 or less ctors, use pointer with index in low 2 bits *)
   | VR_uctor      (* general form: int tag and pointer *)
@@ -126,6 +127,7 @@ type variant_rep =
 
 let string_of_variant_rep = function
   | VR_self -> "VR_self (DEPRECATED)"
+  | VR_clt -> "VR_clt"
   | VR_int -> "VR_int"
   | VR_nullptr -> "VR_nullptr"
   | VR_packed -> "VR_packed"
@@ -142,7 +144,7 @@ let cal_variant_rep bsym_table t =
   else if weird_unit bsym_table t then
     VR_packed
   else if Flx_btype.islinear_type bsym_table t then
-    VR_int
+    VR_clt
   else
   let n = cal_variant_cases bsym_table t in
   let z = cal_variant_maxarg bsym_table t in

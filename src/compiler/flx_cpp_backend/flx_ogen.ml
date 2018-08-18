@@ -373,6 +373,8 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
     | BTYP_sum _ ->
       begin match Flx_vrep.cal_variant_rep bsym_table btyp with
       | Flx_vrep.VR_self -> assert false
+      | Flx_vrep.VR_clt ->
+        bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_int_ptr_map;\n");
       | Flx_vrep.VR_int ->
         bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_int_ptr_map;\n");
       | Flx_vrep.VR_nullptr ->

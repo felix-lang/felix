@@ -27,7 +27,8 @@ val ce_rmd : cexpr_t -> cexpr_t -> cexpr_t
 val ce_neg : cexpr_t -> cexpr_t
 val ce_int : int -> cexpr_t
 
-
+val ce_lambda : string -> string -> cexpr_t -> cexpr_t
+val ce_letin : string -> string -> cexpr_t -> cexpr_t -> cexpr_t
 
 
 exception Unknown_prec of prec_t

@@ -19,6 +19,7 @@ type cexpr_t =
   | `Ce_rmd of cexpr_t * cexpr_t
   | `Ce_neg of cexpr_t
   | `Ce_int of int
+  | `Ce_lambda of string * string * cexpr_t
 ]
 
 type ctype_t =
