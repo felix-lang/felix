@@ -37,5 +37,19 @@ begin
   var x = ia (`2:4);
   println$ x._strr;
 end
+@expect
+fddd
+@felix
+// coarray injection
+begin
+  typedef X = 4 + 4 + 4;
+  var n = `1:3;
+  var ia = ainj n of X;
+  var x = ia (`2:4);
+  println$ x._strr;
+end
+@expect
+case 1 (case 2 of 4)
 @
+
 

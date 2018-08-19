@@ -441,6 +441,27 @@ if debug then    print_endline ("in exe=" ^ sbx exe ^ "\nArray projection passed
     Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
     bexpr_closure t (closure_bid, [])
 
+  | BEXPR_ainj (idx,d,c),t as x->
+if debug then    print_endline ("in exe=" ^ sbx exe ^ "\nCoarray injection passed as argument " ^ sbe bsym_table e);
+    let idx = ce idx in
+    let closure_bid = fresh_bid state.syms.counter in
+    let closure_name = ("_a" ^ string_of_int closure_bid ^ "_strtyp") in
+    Flx_bsym_table.add nutab closure_bid parent
+      (Flx_bsym.create ~sr:sr closure_name (bbdcl_invalid ()))
+    ;
+    let param, arg = make_inner_function state nutab closure_bid sr [] [] [d] in
+
+    (* Generate a call to the wrapped function. *)
+    let exes =
+       let p = bexpr_ainj idx d c in
+       let e = bexpr_apply c (p, arg) in
+       [ bexe_fun_return (sr, e) ]
+    in
+
+    let bbdcl = bbdcl_fun ([],[],(Satom param,None),c,noeffects,exes) in
+    Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
+    bexpr_closure t (closure_bid, [])
+
   | BEXPR_identity_function t,_ ->
 (*
 print_endline ("[flx_mkcls2] Generating identity for " ^ sbt bsym_table t);

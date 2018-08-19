@@ -286,18 +286,12 @@ let btyp_unitsum n =
 
 let btyp_rptsum (n,t) =
   match n with
-  | BTYP_void -> BTYP_void
-  | BTYP_tuple [] -> t
+  | BTYP_void -> BTYP_void (* 0 *+ t = 0 *)
+  | BTYP_tuple [] -> t (* 1 *+ t = t *)
   | _ -> match t with
-    | BTYP_void  -> BTYP_void
-    | BTYP_tuple [] -> n
-    | BTYP_unitsum k ->
-      begin match n with
-      | BTYP_unitsum j -> btyp_unitsum (j * k)
-      | _ -> BTYP_rptsum (n,t)
-      end
+    | BTYP_void  -> BTYP_void (* n *+ 0 = 0 *)
+    | BTYP_tuple [] -> n  (* n *+ 1 = n *)
     | _ -> BTYP_rptsum (n,t)
-     
 
 (** Construct a BTYP_sum type. *)
 let btyp_sum ts =
@@ -599,7 +593,7 @@ let is_unitsum t = match t with
 
 let rec ipow i j = if j = 0 then 1 else if j = 1 then i else i * ipow i (j - 1)
 
-(** Returns the integer value of the unit sum type. *)
+(** Returns the size of a compact linear type *)
 let rec int_of_linear_type bsym_table t = match t with
   | BTYP_void -> 0
   | BTYP_tuple [] -> 1
@@ -612,6 +606,9 @@ let rec int_of_linear_type bsym_table t = match t with
   | BTYP_array (a,ix) -> 
     let sa = int_of_linear_type bsym_table a in
     ipow sa (int_of_linear_type bsym_table ix)
+  | BTYP_rptsum (count,base) ->
+    int_of_linear_type bsym_table count * int_of_linear_type bsym_table base
+
   | _ -> raise (Invalid_int_of_unitsum)
 
 let rec islinear_type bsym_table t =
@@ -631,6 +628,7 @@ let sizeof_linear_type bsym_table t =
 
 let ncases_of_sum bsym_table t = match t with
   | BTYP_unitsum n -> n
+  | BTYP_rptsum (count,_) -> int_of_linear_type bsym_table count
   | BTYP_sum ls -> List.length ls 
   | BTYP_void -> 0
   | _ -> 1

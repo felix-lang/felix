@@ -60,8 +60,10 @@ print_endline ("Gen_get_case_index, rep = " ^ Flx_vrep.string_of_variant_rep rep
 *)
       v
 
-    | BTYP_rptsum _ ->
-      assert false
+    | BTYP_rptsum (rpt,base) ->
+      let size = sizeof_linear_type bsym_table base in
+      ce_infix "/" (ge e) (ce_int size)
+
     | _ -> assert false
     end  
 
@@ -146,9 +148,10 @@ print_endline ("compact linear type] Gen_get_arg constructor arg type = " ^ sbt 
       print_endline ("Symbolc value = " ^ string_of_cexpr v);
 *)
       v
-    | BTYP_rptsum _ -> 
-      print_endline ("Can't handle repeat sums (coarrays) yet");
-      assert false
+    | BTYP_rptsum (_,base) -> 
+      let size = sizeof_linear_type bsym_table base in
+      ce_infix "%" (ge e) (ce_int size)
+
     | _ -> assert false
    end
 
@@ -255,7 +258,18 @@ print_endline ("gen_make_nonconst_ctor arg=" ^ Flx_print.sbe bsym_table a ^
   let rep = cal_variant_rep bsym_table codt in
   match rep with
   | VR_self -> ge a
-  | VR_clt -> assert false; ce_call (ce_atom "/*VR_clt */") [ge a]
+  | VR_clt ->
+print_endline ("gen_make_nonconst_sum (clt): " ^
+"index = " ^ si cidx ^ "\n" ^
+" arg=" ^ sbe bsym_table a ^ ", domain type = " ^ sbt bsym_table codt);
+    (* formula is just ctor index * argtype size * value *)
+    let base_size = sizeof_linear_type bsym_table codt in
+    let v = ce_mul (ce_mul (ce_int cidx) (ce_int base_size)) (ge a) in
+    print_endline ("Formula = " ^ string_of_cexpr v);
+    v
+
+
+ 
   | VR_int -> ce_call (ce_atom "/*VR_int*/") [ge a]
 
   | VR_nullptr -> 
@@ -270,27 +284,34 @@ print_endline ("gen_make_nonconst_ctor arg=" ^ Flx_print.sbe bsym_table a ^
     let arg = gen_make_ctor_arg rep ge tn syms bsym_table shape_map a in
     ce_call (ce_atom "::flx::rtl::_uctor_") [ce_atom (si cidx); arg] 
 
-let gen_make_nonconst_rptsum ge tn syms bsym_table shape_map codt cidx a : cexpr_t =
-(*
-print_endline ("gen_make_nonconst_ctor arg=" ^ Flx_print.sbe bsym_table a ^ 
-" type=" ^ Flx_print.sbt bsym_table codt); 
-*)
+let gen_make_nonconst_rptsum ge tn syms bsym_table shape_map codt (_,idxt as cidx) a : cexpr_t =
   let rep = cal_variant_rep bsym_table codt in
   match rep with
   | VR_self -> assert false (* ge a*)
-  | VR_clt -> assert false (* ce_call (ce_atom "/*VR_int*/") [ge a] *)
+  | VR_clt -> 
+(*
+print_endline ("gen_make_nonconst_rptsum (clt): " ^
+"index = " ^ sbe bsym_table cidx ^ "\n" ^
+" arg=" ^ sbe bsym_table a ^ ", domain type = " ^ sbt bsym_table codt);
+*)
+    (* formula is just ctor index * argtype size * value *)
+    let idx_size = sizeof_linear_type bsym_table idxt in
+    let v = ce_mul (ce_mul (ge cidx) (ce_int idx_size)) (ge a) in
+    print_endline ("Formula = " ^ string_of_cexpr v);
+    v
+
   | VR_int -> assert false (* ce_call (ce_atom "/*VR_int*/") [ge a] *)
 
   | VR_nullptr -> 
     let arg = gen_make_ctor_arg rep ge tn syms bsym_table shape_map a in
-    ce_call (ce_atom "FLX_VNR") [cidx; arg]
+    ce_call (ce_atom "FLX_VNR") [ge cidx; arg]
 
   | VR_packed -> 
     let arg = gen_make_ctor_arg rep ge tn syms bsym_table shape_map a in
-    ce_call (ce_atom "FLX_VR") [cidx; arg]
+    ce_call (ce_atom "FLX_VR") [ge cidx; arg]
 
   | VR_uctor ->  
     let arg = gen_make_ctor_arg rep ge tn syms bsym_table shape_map a in
-    ce_call (ce_atom "::flx::rtl::_uctor_") [cidx; arg] 
+    ce_call (ce_atom "::flx::rtl::_uctor_") [ge cidx; arg] 
 
 

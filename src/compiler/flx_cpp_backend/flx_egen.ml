@@ -368,6 +368,7 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
   | BEXPR_apply ( (BEXPR_inj (caseno,_,_),_), ((_,at) as a) ) 
     when clt t ->
     assert (clt at);
+    (* should call vgen now! *)
     begin match t with
     | BTYP_sum ts ->
       let get_array_sum_offset_values bsym_table ts =
@@ -388,6 +389,7 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
     | _ -> assert false
     end
 
+  (* the v is an integer constant *)
   | BEXPR_apply ( (BEXPR_inj (v,d,c),ft' as f), (_,argt as a)) -> 
     ate d argt;
     ate c t;
@@ -398,13 +400,14 @@ print_endline ("Generated application of injection application " ^ sbe bsym_tabl
 *)
     cx
 
-(* co-array, that is, c = N * d = d + d + d .... + d, N time *)
+(* co-array, that is, c = N *+ d = d + d + d .... + d, N time *)
+  (* the v is an expression *)
   | BEXPR_apply ( (BEXPR_ainj (v,d,c),ft' as f), (_,argt as a)) -> 
     ate d argt;
     ate c t;
-    assert (not (clt c)); 
-    let vexpr = ge' v in
-    let cx = Flx_vgen.gen_make_nonconst_rptsum ge' tn syms bsym_table shape_map c vexpr a in
+    (* assert (not (clt c));  ???*)
+    (* The index is just the repeat count, the argument is of type d *)
+    let cx = Flx_vgen.gen_make_nonconst_rptsum ge' tn syms bsym_table shape_map c v a in
 (*
 print_endline ("Generated application of injection application " ^ sbe bsym_table (e,t) ^ " as " ^ string_of_cexpr cx);
 *)

@@ -145,6 +145,12 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
       in 
       be rs e
 
+    | BTYP_rptsum (n,t) ->
+      let index = EXPR_case_index (sr,a) in
+      let arg = EXPR_rptsum_arg (sr,a) in
+      be rs (catss [mks "case "; str index; mks " ("; str arg; mks ")"])
+
+      
     | BTYP_variant ls ->
 (*
 print_endline ("_strr Variant type " ^ Flx_print.sbt bsym_table t);
