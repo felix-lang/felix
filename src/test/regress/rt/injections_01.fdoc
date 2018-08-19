@@ -38,9 +38,22 @@ begin
   println$ x._strr;
 end
 @expect
-fddd
+case 1 (case 2 of 4)
 @felix
-// coarray injection
+// coarray injection (non-compact linear)
+begin
+  typedef X = string + string + string;
+  var n = `1:3;
+  var ia = ainj n of X;
+  var x = ia ("hello");
+  println$ x._strr;
+end
+@expect
+case 1 (case 2 of 4)
+@
+
+@felix
+// coarray injection (compact linear)
 begin
   typedef X = 4 + 4 + 4;
   var n = `1:3;
