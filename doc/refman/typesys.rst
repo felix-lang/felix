@@ -25,3 +25,5 @@ Contents:
    classes
    abstract
    overloading
+   unique
+   typeschema

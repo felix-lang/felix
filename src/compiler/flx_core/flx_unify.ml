@@ -41,6 +41,15 @@ let rec solve_subtypes bsym_table counter lhs rhs dvars (s:vassign_t option ref)
     if l <> r && not (Flx_bsym_table.is_supertype bsym_table l r)
     then raise Not_found
 
+  (* a non-uniq parameter accepts a uniq one, uniq T is a subtype of T,
+     also, covariant ???????
+  | BTYP_uniq t1, BTYP_uniq t2 ->
+    add_eq (t1,t2)
+
+  | t1, BTYP_uniq t2 ->
+    add_eq (t1,t2)
+  *)
+
   (* arrays and tuples, must be the same length, covariant by element *)
   | BTYP_tuple ls, BTYP_tuple rs ->
     if List.length ls <> List.length rs then raise Not_found;

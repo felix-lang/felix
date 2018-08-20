@@ -2,6 +2,73 @@ open Flx_btype
 open Flx_bexpr
 open Flx_ast
 
+(* generic function dispatcher *)
+let generic_function_dispatcher bsym_table counter sr f a =
+  match f with
+  (* ---------------------------------------------------------- *)
+  (* tie *) 
+  (* ---------------------------------------------------------- *)
+  | "_tie" -> Some (Flx_dot.try_bind_tie bsym_table counter sr a)
+
+  (* ---------------------------------------------------------- *)
+  (* special case, product of functions *) 
+  (* ---------------------------------------------------------- *)
+  | "\\prod" -> Some (Flx_bind_prod.try_bind_prod bsym_table counter a)
+
+  (* ---------------------------------------------------------- *)
+  (* special case, sum of functions *) 
+  (* ---------------------------------------------------------- *)
+  | "\\sum" -> Some ( Flx_bind_sum.try_bind_sum bsym_table counter a)
+
+  (* ---------------------------------------------------------- *)
+  (* special case, mediating morphism of product of functions *) 
+  (* ---------------------------------------------------------- *)
+  | "lrangle" -> Some (Flx_bind_lrangle.try_bind_lrangle bsym_table counter a)
+
+  (* ---------------------------------------------------------- *)
+  (* special case, mediating morphism of sum of functions *) 
+  (* ---------------------------------------------------------- *)
+  | "lrbrack" -> Some (Flx_bind_lrbrack.try_bind_lrbrack bsym_table counter a)
+
+  | _ -> None
+
+
+(* Note: the exception chaining machinery below is a superior HACK
+
+  WHat happens is that it just tries each case in turn until
+  one works, otherwise finally throws an OverloadResolutionError
+
+  This sucks but it is used because of a weakness in Ocaml that
+  its impossible to figure out deeply nested scopes, the code
+  gets too indented: the method used linearises the cases.
+
+  What SHOULD happen is that in most cases if there is a failure
+  it is final, what actually happens is that we merge a failure
+  to select the special case with an error handling the case
+  when it is selected. 
+
+  This does allow user overrides however.
+
+  Consider:
+
+    2 (1,2,3) vs 2 5
+
+  The first case is a tuple projection, the second could be
+  a user defined multiply using "apply" function. If we try
+  for a projection and fail, we can fall back to the user
+  apply function.
+
+  However in this case the user is not allowed to do an
+  apply of an int on a tuple so if we actually have a tuple
+  argument, we should fail outright and not fall back.
+
+  The problem is the specialised evaluators just fail
+  without a specifying why.
+
+*)
+
+exception TryNext
+  
 let cal_bind_apply 
   bsym_table state be bt env build_env
   koenig_lookup cal_apply bind_type' 
@@ -31,53 +98,18 @@ let cal_bind_apply
     print_endline ("Bound argument " ^ Flx_print.sbe bsym_table a ^ " type=" ^ Flx_btype.st ta);
 *)
       (* ---------------------------------------------------------- *)
-      (* tie *) 
+      (* generic function *) 
       (* ---------------------------------------------------------- *)
       try match f' with
-      | EXPR_name (sr,"_tie",[]) ->
-        Flx_dot.try_bind_tie bsym_table state.Flx_lookup_state.counter sr a
-      | _ ->  raise Flx_dot.OverloadResolutionError
-      with Flx_dot.OverloadResolutionError ->
-
-      (* ---------------------------------------------------------- *)
-      (* special case, product of functions *) 
-      (* ---------------------------------------------------------- *)
-      try match f' with
-      | EXPR_name (_,"\\prod",[]) ->
-        Flx_bind_prod.try_bind_prod bsym_table state.Flx_lookup_state.counter a
-      | _ ->  raise Flx_dot.OverloadResolutionError
-      with Flx_dot.OverloadResolutionError ->
-
-      (* ---------------------------------------------------------- *)
-      (* special case, sum of functions *) 
-      (* ---------------------------------------------------------- *)
-      try match f' with
-      | EXPR_name (_,"\\sum",[]) ->
-        Flx_bind_sum.try_bind_sum bsym_table state.Flx_lookup_state.counter a
-      | _ ->  raise Flx_dot.OverloadResolutionError
-      with Flx_dot.OverloadResolutionError ->
-
-      (* ---------------------------------------------------------- *)
-      (* special case, mediating morphism of product of functions *) 
-      (* ---------------------------------------------------------- *)
-      try match f' with
-      | EXPR_name (_,"lrangle",[]) ->
-        Flx_bind_lrangle.try_bind_lrangle bsym_table state.Flx_lookup_state.counter a
-      | _ ->  raise Flx_dot.OverloadResolutionError
-      with Flx_dot.OverloadResolutionError ->
-
-      (* ---------------------------------------------------------- *)
-      (* special case, mediating morphism of sum of functions *) 
-      (* ---------------------------------------------------------- *)
-      try match f' with
-      | EXPR_name (_,"lrbrack",[]) ->
-        Flx_bind_lrbrack.try_bind_lrbrack bsym_table state.Flx_lookup_state.counter a
-      | _ ->  raise Flx_dot.OverloadResolutionError
-      with Flx_dot.OverloadResolutionError ->
-
-      (* This really have to be the library "int" cause we're comparing a user int literal *)
-      let int_t = bt sr (TYP_name (sr,"int",[])) in
-      
+      | EXPR_name (sr,name,[]) ->
+        begin 
+          match generic_function_dispatcher bsym_table state.Flx_lookup_state.counter sr name a with 
+          | Some x -> x
+          | None ->raise TryNext (* not a known generic *) 
+         end
+      | _ -> raise TryNext (* function wasn't a name *)
+      with TryNext ->
+   
       (* ---------------------------------------------------------- *)
       (* special case, constant tuple projection  *) 
       (* ---------------------------------------------------------- *)
@@ -93,6 +125,7 @@ let cal_bind_apply
       (* ---------------------------------------------------------- *)
       try 
         let f = try be f' with _ -> raise Flx_dot.OverloadResolutionError in
+        let int_t = bt sr (TYP_name (sr,"int",[])) in
         if snd f = int_t then 
         begin
           match ta with
@@ -104,7 +137,7 @@ let cal_bind_apply
       with Flx_dot.OverloadResolutionError ->  
       
       (* ---------------------------------------------------------- *)
-      (* special case, unisum expression as tuple or array projection  *) 
+      (* special case, unitsum expression as tuple or array projection  *) 
       (* ---------------------------------------------------------- *)
       try match f' with
       (* a dirty hack .. doesn't check unitsum is right size or type *)

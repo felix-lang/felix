@@ -259,13 +259,17 @@ print_endline ("gen_make_nonconst_ctor arg=" ^ Flx_print.sbe bsym_table a ^
   match rep with
   | VR_self -> ge a
   | VR_clt ->
+(*
 print_endline ("gen_make_nonconst_sum (clt): " ^
 "index = " ^ si cidx ^ "\n" ^
 " arg=" ^ sbe bsym_table a ^ ", domain type = " ^ sbt bsym_table codt);
+*)
     (* formula is just ctor index * argtype size * value *)
     let base_size = sizeof_linear_type bsym_table codt in
     let v = ce_mul (ce_mul (ce_int cidx) (ce_int base_size)) (ge a) in
+(*
     print_endline ("Formula = " ^ string_of_cexpr v);
+*)
     v
 
 

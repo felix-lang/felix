@@ -101,7 +101,6 @@ let handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_
 
 
 
-
 let handle_constant_projection bsym_table sr a ta n =
   begin match unfold "flx_lookup" ta with
   | BTYP_record fs -> 
@@ -126,7 +125,27 @@ let handle_constant_projection bsym_table sr a ta n =
     else
     bexpr_get_n (btyp_pointer (snd (List.nth fs n))) n a
 
+  | BTYP_rref (BTYP_record fs) ->
+    let m = List.fold_left (fun acc (s,_) -> acc + (if s = "" then 1 else 0)) 0 fs in
+    if n < 0 || n >= m then
+      clierrx "[flx_bind/flx_dot.ml: E70A] " sr ("AST_dot, record index "^ string_of_int n ^ 
+      " out of range 0 to " ^ string_of_int (m-1) ^
+      " for type " ^ sbt bsym_table ta ^ "\n" ^
+      " only blank fields can be indexed!"
+      )
+    else
+    bexpr_get_n (btyp_rref (snd (List.nth fs n))) n a
 
+  | BTYP_wref (BTYP_record fs) ->
+    let m = List.fold_left (fun acc (s,_) -> acc + (if s = "" then 1 else 0)) 0 fs in
+    if n < 0 || n >= m then
+      clierrx "[flx_bind/flx_dot.ml: E70A] " sr ("AST_dot, record index "^ string_of_int n ^ 
+      " out of range 0 to " ^ string_of_int (m-1) ^
+      " for type " ^ sbt bsym_table ta ^ "\n" ^
+      " only blank fields can be indexed!"
+      )
+    else
+    bexpr_get_n (btyp_wref (snd (List.nth fs n))) n a
 
   | BTYP_tuple ls ->
     let m = List.length ls in
@@ -280,6 +299,41 @@ print_endline ("Divisor for term " ^ si n ^ " is " ^ si divisor);
     (* apply clt pointer projection to coerced pointer *)
     bexpr_apply codomain_cltptr_t ( prj, ptr )
 
+  | BTYP_rref (BTYP_array (array_base, BTYP_unitsum array_count) as tup) when Flx_btype.islinear_type () tup ->
+    let m = array_count in
+    if n < 0 || n >= m then
+      clierrx "[flx_bind/flx_dot.ml:146: E73] " sr ("AST_dot, tuple index "^ string_of_int n ^ 
+      " out of range 0 to " ^ string_of_int (m-1) ^
+      " for type " ^ sbt bsym_table ta
+      )
+    else
+    let c = array_base in
+    let codomain_cltptr_t = Flx_btype.btyp_cltrref tup c in
+    let ptr = bexpr_cltpointer_of_pointer a in
+    let rec pow a b = match b with | 0 -> 1 | 1 -> a | _ -> a * pow a (b - 1) in
+    let base_size = Flx_btype.sizeof_linear_type () array_base in
+    let divisor = pow base_size (m - n - 1) in 
+    let prj = bexpr_cltpointer_prj tup c divisor in
+    bexpr_apply codomain_cltptr_t ( prj, ptr )
+
+  | BTYP_wref (BTYP_array (array_base, BTYP_unitsum array_count) as tup) when Flx_btype.islinear_type () tup ->
+    let m = array_count in
+    if n < 0 || n >= m then
+      clierrx "[flx_bind/flx_dot.ml:146: E73] " sr ("AST_dot, tuple index "^ string_of_int n ^ 
+      " out of range 0 to " ^ string_of_int (m-1) ^
+      " for type " ^ sbt bsym_table ta
+      )
+    else
+    let c = array_base in
+    let codomain_cltptr_t = Flx_btype.btyp_cltwref tup c in
+    let ptr = bexpr_cltpointer_of_pointer a in
+    let rec pow a b = match b with | 0 -> 1 | 1 -> a | _ -> a * pow a (b - 1) in
+    let base_size = Flx_btype.sizeof_linear_type () array_base in
+    let divisor = pow base_size (m - n - 1) in 
+    let prj = bexpr_cltpointer_prj tup c divisor in
+    bexpr_apply codomain_cltptr_t ( prj, ptr )
+
+
   (* ARRAY CASE *)
   | BTYP_cltpointer (baseptr_t, (BTYP_array (array_base, BTYP_unitsum array_count) as tup)) when Flx_btype.islinear_type () tup ->
 (*
@@ -312,6 +366,40 @@ print_endline ("Divisor for term " ^ si n ^ " is " ^ si divisor);
     (* apply clt pointer projection to coerced pointer *)
     bexpr_apply codomain_cltptr_t ( prj, ptr )
 
+  | BTYP_cltrref (baseptr_t, (BTYP_array (array_base, BTYP_unitsum array_count) as tup)) when Flx_btype.islinear_type () tup ->
+    let m = array_count in
+    if n < 0 || n >= m then
+      clierrx "[flx_bind/flx_dot.ml:146: E73] " sr ("AST_dot, tuple index "^ string_of_int n ^ 
+      " out of range 0 to " ^ string_of_int (m-1) ^
+      " for type " ^ sbt bsym_table ta
+      )
+    else
+    let c = array_base in
+    let codomain_cltptr_t = Flx_btype.btyp_cltrref tup c in
+    let ptr =  a in
+    let rec pow a b = match b with | 0 -> 1 | 1 -> a | _ -> a * pow a (b - 1) in
+    let base_size = Flx_btype.sizeof_linear_type () array_base in
+    let divisor = pow base_size (m - n - 1) in 
+    let prj = bexpr_cltpointer_prj tup c divisor in
+    bexpr_apply codomain_cltptr_t ( prj, ptr )
+
+  | BTYP_cltwref (baseptr_t, (BTYP_array (array_base, BTYP_unitsum array_count) as tup)) when Flx_btype.islinear_type () tup ->
+    let m = array_count in
+    if n < 0 || n >= m then
+      clierrx "[flx_bind/flx_dot.ml:146: E73] " sr ("AST_dot, tuple index "^ string_of_int n ^ 
+      " out of range 0 to " ^ string_of_int (m-1) ^
+      " for type " ^ sbt bsym_table ta
+      )
+    else
+    let c = array_base in
+    let codomain_cltptr_t = Flx_btype.btyp_cltwref tup c in
+    let ptr =  a in
+    let rec pow a b = match b with | 0 -> 1 | 1 -> a | _ -> a * pow a (b - 1) in
+    let base_size = Flx_btype.sizeof_linear_type () array_base in
+    let divisor = pow base_size (m - n - 1) in 
+    let prj = bexpr_cltpointer_prj tup c divisor in
+    bexpr_apply codomain_cltptr_t ( prj, ptr )
+
   | BTYP_pointer (BTYP_tuple ls) ->
     let m = List.length ls in
     if n < 0 || n >= m then
@@ -322,6 +410,26 @@ print_endline ("Divisor for term " ^ si n ^ " is " ^ si divisor);
     else
       bexpr_get_n (btyp_pointer (List.nth ls n)) n a
 
+  | BTYP_rref (BTYP_tuple ls) ->
+    let m = List.length ls in
+    if n < 0 || n >= m then
+      clierrx "[flx_bind/flx_dot.ml:146: E73] " sr ("AST_dot, tuple index "^ string_of_int n ^ 
+      " out of range 0 to " ^ string_of_int (m-1) ^
+      " for type " ^ sbt bsym_table ta
+      )
+    else
+      bexpr_get_n (btyp_rref (List.nth ls n)) n a
+
+  | BTYP_wref (BTYP_tuple ls) ->
+    let m = List.length ls in
+    if n < 0 || n >= m then
+      clierrx "[flx_bind/flx_dot.ml:146: E73] " sr ("AST_dot, tuple index "^ string_of_int n ^ 
+      " out of range 0 to " ^ string_of_int (m-1) ^
+      " for type " ^ sbt bsym_table ta
+      )
+    else
+      bexpr_get_n (btyp_wref (List.nth ls n)) n a
+
   | BTYP_pointer (BTYP_array (t,BTYP_unitsum m)) -> 
     if n < 0 || n >= m then
       clierrx "[flx_bind/flx_dot.ml:155: E74] " sr ("AST_dot, constant array index "^ string_of_int n ^ 
@@ -331,6 +439,26 @@ print_endline ("Divisor for term " ^ si n ^ " is " ^ si divisor);
     else
      bexpr_get_n (btyp_pointer t) n a
 
+  | BTYP_rref (BTYP_array (t,BTYP_unitsum m)) -> 
+    if n < 0 || n >= m then
+      clierrx "[flx_bind/flx_dot.ml:155: E74] " sr ("AST_dot, constant array index "^ string_of_int n ^ 
+      " out of range 0 to " ^ string_of_int (m-1) ^
+      " for type " ^ sbt bsym_table ta
+      )
+    else
+     bexpr_get_n (btyp_rref t) n a
+
+  | BTYP_wref (BTYP_array (t,BTYP_unitsum m)) -> 
+    if n < 0 || n >= m then
+      clierrx "[flx_bind/flx_dot.ml:155: E74] " sr ("AST_dot, constant array index "^ string_of_int n ^ 
+      " out of range 0 to " ^ string_of_int (m-1) ^
+      " for type " ^ sbt bsym_table ta
+      )
+    else
+     bexpr_get_n (btyp_wref t) n a
+
+
+  (* soft error because user could overload with apply function *)
   | _ -> raise OverloadResolutionError
   end
 
@@ -352,9 +480,27 @@ let handle_array_projection bsym_table int_t sr a ta n =
   | BTYP_pointer (BTYP_array (vt,ixt)) ->
     assert (snd n = ixt);
     bexpr_apply (btyp_pointer vt) (bexpr_aprj n ta vt, a)
-  | _ -> assert false
+
+  | BTYP_rref (BTYP_array (vt,ixt)) ->
+    assert (snd n = ixt);
+    bexpr_apply (btyp_rref vt) (bexpr_aprj n ta vt, a)
+
+  | BTYP_wref (BTYP_array (vt,ixt)) ->
+    assert (snd n = ixt);
+    bexpr_apply (btyp_wref vt) (bexpr_aprj n ta vt, a)
+
+  | _ -> 
+    (* We have to do a warning not a hard error here, because applying
+       an integer to some non-array type is could be done with
+       an apply operator
+    *)
+    print_endline ("Flx_dot: Array projection requires array or pointer thereto, got type:\n" ^
+      sbt bsym_table ta);
+    print_endline (Flx_srcref.long_string_of_src sr);
+    raise OverloadResolutionError
 
 
+(* rref/wref .. did I get this right *)
 let try_bind_tie bsym_table counter sr ((_,ta) as a) =
   match ta with
   | BTYP_pointer (BTYP_tuple ls) ->
@@ -363,6 +509,21 @@ let try_bind_tie bsym_table counter sr ((_,ta) as a) =
     let t = btyp_tuple ts in
     let es = List.map2 (fun t i -> bexpr_get_n (btyp_pointer t) i a) ls (Flx_list.nlist n) in
     bexpr_tuple t es
+
+  | BTYP_rref (BTYP_tuple ls) ->
+    let n = List.length ls in
+    let ts = List.map (fun t -> btyp_rref t) ls in
+    let t = btyp_tuple ts in
+    let es = List.map2 (fun t i -> bexpr_get_n (btyp_rref t) i a) ls (Flx_list.nlist n) in
+    bexpr_tuple t es
+ 
+  | BTYP_wref (BTYP_tuple ls) ->
+    let n = List.length ls in
+    let ts = List.map (fun t -> btyp_wref t) ls in
+    let t = btyp_tuple ts in
+    let es = List.map2 (fun t i -> bexpr_get_n (btyp_wref t) i a) ls (Flx_list.nlist n) in
+    bexpr_tuple t es
+ 
  
   | BTYP_pointer (BTYP_array (bt,ixt)) -> 
     begin match ixt with
@@ -378,14 +539,56 @@ let try_bind_tie bsym_table counter sr ((_,ta) as a) =
       "tie of array requires index to be a unitsum, got " ^
       sbt bsym_table ixt)
     end
+
+  | BTYP_rref (BTYP_array (bt,ixt)) -> 
+    begin match ixt with
+    | BTYP_unitsum n when n<20 ->
+      let t = (btyp_array (btyp_rref bt, ixt)) in
+      let es = List.map (fun i -> bexpr_get_n (btyp_rref bt) i a) (Flx_list.nlist n) in
+      bexpr_tuple t es
+
+    | BTYP_unitsum _ -> clierr sr ("compiler restriction: " ^ 
+      "tie of array requires unitsum less than 20, got " ^
+      sbt bsym_table ixt)
+    | _ -> clierr sr ("compiler restriction: " ^ 
+      "tie of array requires index to be a unitsum, got " ^
+      sbt bsym_table ixt)
+    end
+
+  | BTYP_wref (BTYP_array (bt,ixt)) -> 
+    begin match ixt with
+    | BTYP_unitsum n when n<20 ->
+      let t = (btyp_array (btyp_wref bt, ixt)) in
+      let es = List.map (fun i -> bexpr_get_n (btyp_wref bt) i a) (Flx_list.nlist n) in
+      bexpr_tuple t es
+
+    | BTYP_unitsum _ -> clierr sr ("compiler restriction: " ^ 
+      "tie of array requires unitsum less than 20, got " ^
+      sbt bsym_table ixt)
+    | _ -> clierr sr ("compiler restriction: " ^ 
+      "tie of array requires index to be a unitsum, got " ^
+      sbt bsym_table ixt)
+    end
     
   | BTYP_pointer (BTYP_record fs) -> 
     let n = List.length fs in
     let es = List.map2 (fun (s,t) i -> s,bexpr_get_n (btyp_pointer t) i a) fs (Flx_list.nlist n) in
     bexpr_record es
  
+  | BTYP_rref (BTYP_record fs) -> 
+    let n = List.length fs in
+    let es = List.map2 (fun (s,t) i -> s,bexpr_get_n (btyp_rref t) i a) fs (Flx_list.nlist n) in
+    bexpr_record es
 
-  | _ -> raise OverloadResolutionError
+  | BTYP_wref (BTYP_record fs) -> 
+    let n = List.length fs in
+    let es = List.map2 (fun (s,t) i -> s,bexpr_get_n (btyp_wref t) i a) fs (Flx_list.nlist n) in
+    bexpr_record es
+ 
+  (* this is a hard error, the generic _tie cannot be overloaded *)
+  | _ -> 
+    clierr sr ("Flx_dot: Generic _tie requires product or pointer thereto, got type:\n" ^
+    sbt bsym_table ta)
 
 
 
