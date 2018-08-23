@@ -21,23 +21,107 @@ Constructors
 
 There are four basic constructors. 
 
-* The syntax () specifies a canonical unit tuple, a product with no components. 
-* There is no tuple with one component. 
-* The right associative operator `,,` prepends a value
-  to an existing tuple, a heterogenous version of list cons. 
-* Finally the left associative `<,,>` operator appends a value to an existing tuple.
+Unit Tuple
+++++++++++
+
+The syntax () specifies a canonical unit tuple, a product with no components. 
 
 .. code-block:: felix
 
-  var x = (1,2,3,4);
-  var y = (1,,2,,3,4);
-  var z = (1,2<,,>3<,,>4);
+  ()
 
-  println$ x;
-  println$ y;
-  println$ z;
 
-  var q = 42,,x;
+Tuple of one component
+++++++++++++++++++++++
+
+A tuple of one component is identical to that component.
+The projection for that tuple is the identity function.
+
+Chained comma
++++++++++++++
+
+A list of expressions separated by commas forms a tuple.
+The comma operator is said to be a chain operator.
+The operation is non-associative.
+
+Parentheses may be used to indicate grouping.
+
+.. code-block:: felix
+
+  1,"hello",42.1
+  (1,"hello"), 42.1
+  1,("hello", 42.1)
+
+All three of these tuples are disinct.
+
+Prepend operator
+++++++++++++++++
+
+The `cons` form of a tuple uses the right associative
+binary operator `,,` to prepend a value to an existing
+tuple of at least two components.
+
+.. code-block:: felix
+
+  var x = "a",,1,,"hello",42,1;
+  var y = "joy",,x;;
+
+Note that the first case must use a `,` because the right
+hand term of the `,,` operator must be a tuple. Although
+`()` is a tuple, `1,()` is equal to `1` and is not.
+
+
+Append operator
++++++++++++++++
+
+Finally the left associative `<,,>` operator appends a value to an existing tuple.
+It is provided for symmetry with `,,` but the syntax is arcane.
+
+.. code-block:: felix
+
+  var x = 1,"hello"<,,>42.4;
+  var y = x<,,>"bye";
+
+The left term of the append operator must be a tuple with at least two
+components.
+
+Addition operator
++++++++++++++++++
+
+The left associative infix binary addition operator `+` can also be used
+to append a value to a tuple. It has the same semantics as the `<,,>`
+operator but a different precedence. Its use can be confusing
+sometimes, as it can be mistaken of integer addition.
+
+.. code-block:: felix
+
+  var x = "Hello",1;
+
+  println$ x + x; // ("Hello", 1, ("Hello", 1))
+  println$ x + 1; // ("Hello", 1, 1)
+  println$ 1 + x; // (1, ("Hello", 1))
+
+Extend operation
+++++++++++++++++
+
+The `extend..with..end` operator packs a list
+of tuples or values into a tuple. The initial values are
+separated by commas, then a `with` keyword is used, then
+the remaining values are given, terminated by the `end` keyword:
+
+.. code-block:: felix
+
+  var y = extend (1,2), "hello", (42.2,("bye",99)) with (55,"hh") end;
+  // (1, 2, hello, 42.2, (bye, 99), 55, hh) 
+
+  var z = "hello",22;
+  println$ extend z with 34 end;
+  // ("hello", 22, 34) 
+
+Note that extend is expanded before monomorphisation, so a type
+variable will be treated as a single value, even if it is later
+replaced by a pair: had a pair been given both values would
+be in the result, instead of a single pair.
 
 Types
 ^^^^^
@@ -259,6 +343,33 @@ should be of type 4, however Felix allows an integral type, which is
 coerced to type 4.
 
 See the section on `sum types` for more information on unit sums.
+
+Array Projections
+^^^^^^^^^^^^^^^^^
+
+Array projections are similar to non-array projections except that
+the projection index can be an expression. The keyword `aproj` must
+be used for an array projection, and the indexing type must
+be precisely the type of the array exponent.
+
+.. code-block:: felix
+
+  var x = 1,2,3,4;
+  var n = `2:4; // index
+  var px = aproj n of (int ^ 4);
+  println$ x.px;
+
+A direct application may also use a one of two shortcut forms:
+
+.. code-block:: felix
+
+  var x = 1,2,3,4;
+  var n = `2:4;   // precise index
+  println$ x . n; // precise shortcut projection
+  var m = 2;      // integer index
+  println$ x . m; // checked shortcut
+
+The integer form requires a run time bounds check.
 
 Generalised Arrays
 ^^^^^^^^^^^^^^^^^^

@@ -80,7 +80,7 @@ let cal_bind_apply
 =
     let sigs = List.map snd args in
     begin (* apply *)
-(*
+    (*
     print_endline ("[bind_expression] GENERAL APPLY " ^ Flx_print.string_of_expr f' ^ " to " ^  Flx_print.string_of_expr a');
     print_env env;
     *)
@@ -227,7 +227,7 @@ end;
         | BTYP_effector _ 
         | BTYP_cfunction _ 
         | BTYP_function _ ->
-            cal_apply state bsym_table sr rs f a 
+          cal_apply state bsym_table sr rs f a 
 
         (* NOTE THIS CASE HASN'T BEEN CHECKED FOR POLYMORPHISM YET *)
         | BTYP_inst (i,ts',_) when

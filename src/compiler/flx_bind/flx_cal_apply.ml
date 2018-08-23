@@ -46,14 +46,18 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
       if type_match bsym_table state.counter argt t2
 *)
       let rel = Flx_unify.compare_sigs bsym_table state.counter argt t2 in
+(*
+      print_endline ("Function domain " ^ sbt bsym_table argt ^ " " ^str_of_cmp rel ^ " argument type " ^ sbt bsym_table t2);
+*)
       match rel with
-      | `Equal -> rest, `None
+      | `Equal -> 
 (*
         print_endline "Type of function parameter agrees with type of argument";
-*) 
+*)
+        rest, `None
       | `Greater ->
 (*
-        print_endline "Type of function parameter supertype of argument";
+        print_endline "Type of function parameter supertype of argument, add coercion";
 *)
         rest, `Coerce (t2,argt)
       | _ ->

@@ -24,6 +24,10 @@ let check_recursion bsym_table t =
     raise Bad_recursion 
 
 type relmode_t = [`Eq | `Ge]
+let string_of_relmode_t x = match x with
+| `Eq -> "="
+| `Ge -> ">="
+
 type tpair_t = Flx_btype.t * Flx_btype.t
 type rel_t = relmode_t * tpair_t
 type rels_t = rel_t list
@@ -43,13 +47,14 @@ let rec solve_subtypes bsym_table counter lhs rhs dvars (s:vassign_t option ref)
 
   (* a non-uniq parameter accepts a uniq one, uniq T is a subtype of T,
      also, covariant ???????
-  | BTYP_uniq t1, BTYP_uniq t2 ->
-    add_eq (t1,t2)
-
-  | t1, BTYP_uniq t2 ->
-    add_eq (t1,t2)
   *)
-
+  | BTYP_uniq t1, BTYP_uniq t2 ->
+    add_ge (t1,t2)
+(*
+  (* this is a hack *)
+  | BTYP_type_var _, BTYP_uniq _ -> raise Not_found
+  | t1, BTYP_uniq t2 -> add_ge (t1,t2)
+*)
   (* arrays and tuples, must be the same length, covariant by element *)
   | BTYP_tuple ls, BTYP_tuple rs ->
     if List.length ls <> List.length rs then raise Not_found;
@@ -214,14 +219,11 @@ and solve_subsumption bsym_table counter lhs rhs  dvars (s:vassign_t option ref)
         if not (BidSet.mem i dvars) then raise Not_found;
         if var_i_occurs i t
         then begin
-          (*
           print_endline
           (
             "recursion in unification, terms: " ^
-            match h with (a,b) ->
-            sbt sym_table a ^ " = " ^ sbt sym_table b
+            sbt bsym_table lhs ^ " = " ^ sbt bsym_table rhs
           );
-          *)
           s := Some (i, Flx_btype_rec.fix i t)
         end else begin
           (*
@@ -240,6 +242,7 @@ and solve_subsumption bsym_table counter lhs rhs  dvars (s:vassign_t option ref)
       | t,BTYP_rev (BTYP_type_var (i,m) as tvar) ->
         add_eqn (tvar,btyp_rev t)
  
+      | BTYP_uniq t1, BTYP_uniq t2 -> add_eqn (t1,t2)
 
       | BTYP_intersect ts,t
       | t,BTYP_intersect ts ->
@@ -265,10 +268,6 @@ and solve_subsumption bsym_table counter lhs rhs  dvars (s:vassign_t option ref)
       | BTYP_cltwref(d1,c1), BTYP_cltwref(d2,c2) ->
         add_eqn (d1,d2);
         add_eqn (c1,c2);
-
-      | BTYP_uniq t1, BTYP_uniq t2 ->
-        add_eqn (t1,t2)
-
 
       | BTYP_unitsum i, BTYP_unitsum j when i = j -> ()
 
@@ -527,9 +526,14 @@ print_endline "Trying to unify type map";
       end
 
 let unif bsym_table counter (inrels: rels_t) (dvars:dvars_t) =
-  (*
+(*
+print_endline ("Unif:");
   print_endline ( "Dvars = { " ^ catmap ", " si (BidSet.elements dvars) ^ "}");
-  *)
+  print_endline ("Eqns = \n");
+  List.iter  (fun (rel, (param, arg)) -> 
+    print_endline (sbt bsym_table param ^ " " ^string_of_relmode_t rel  ^ " " ^ sbt bsym_table arg)
+  ) inrels;
+*)
   let history : rels_t ref = ref inrels in
   let rels : rels_t ref = ref inrels in
   let mgu : mgu_t ref = ref [] in
@@ -551,6 +555,9 @@ let unif bsym_table counter (inrels: rels_t) (dvars:dvars_t) =
       let (mode,(lhs,rhs)): rel_t = h in 
       let lhs = unfold "unification" lhs in
       let rhs = unfold "unification" rhs in
+(*
+print_endline ("Trying " ^ sbt bsym_table lhs ^ " " ^ string_of_relmode_t mode ^ " " ^ sbt bsym_table rhs);
+*)
       begin match mode with
       | `Eq -> solve_subsumption bsym_table counter lhs rhs dvars s add_eq 
       | `Ge -> solve_subtypes bsym_table counter lhs rhs dvars s add_eq add_ge
@@ -655,6 +662,7 @@ let str_of_cmp = function
 | `Greater-> " > "
 
 let compare_sigs bsym_table counter a b =
+  let b = Flx_btype_subst.alpha_convert counter b in (* alpha convert one of the terms *)
   let result = match ge bsym_table counter a b, ge bsym_table counter b a with
   | true, true -> `Equal
   | false, false -> `Incomparable

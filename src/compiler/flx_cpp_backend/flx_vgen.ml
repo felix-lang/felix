@@ -301,7 +301,9 @@ print_endline ("gen_make_nonconst_rptsum (clt): " ^
     (* formula is just ctor index * argtype size * value *)
     let idx_size = sizeof_linear_type bsym_table idxt in
     let v = ce_mul (ce_mul (ge cidx) (ce_int idx_size)) (ge a) in
+(*
     print_endline ("Formula = " ^ string_of_cexpr v);
+*)
     v
 
   | VR_int -> assert false (* ce_call (ce_atom "/*VR_int*/") [ge a] *)

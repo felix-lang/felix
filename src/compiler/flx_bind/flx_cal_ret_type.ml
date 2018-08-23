@@ -157,8 +157,8 @@ print_endline (" %%%%% Setting return type to " ^ sbt bsym_table t');
           (
             "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<" ^
             string_of_bid index ^ ">" ^
-            "\nGot: " ^ sbt bsym_table !ret_type ^
-            "\nAnd: " ^ sbt bsym_table t
+            "\nGot: " ^ str_of_btype !ret_type ^ "\n  = " ^ sbt bsym_table !ret_type ^
+            "\nAnd: " ^ str_of_btype t ^ "\n  = " ^ sbt bsym_table t
           )
         end
       with
