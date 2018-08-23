@@ -13,6 +13,7 @@ Contents:
   openrecursion
   cofunctions
   coroutines1
+  badcxx
 
 Indices and tables
 ==================
