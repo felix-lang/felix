@@ -1468,7 +1468,7 @@ syntax expressions {
   x[sarrow_pri] := "..<" x[>sarrow_pri] =># "(prefix 'Slice_to_excl)";
   x[sarrow_pri] := ".." x[>sarrow_pri] =># "(prefix 'Slice_to_incl)";
   x[sarrow_pri] := x[>sarrow_pri] ".." =># "(suffix 'Slice_from)";
-  x[sarrow_pri] := ".." =># """`(ast_name ,_sr "Slice_all" (,(noi 'int)))""";
+  x[sarrow_pri] := ".." =># """`(ast_name ,_sr "Slice_all" () )""";
   x[sarrow_pri] := x[>sarrow_pri] ".+" x[>sarrow_pri] =># "(infix 'Slice_from_counted)";
 
 

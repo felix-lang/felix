@@ -49,7 +49,7 @@ begin
   println$ x._strr;
 end
 @expect
-case 1 (case 2 of 4)
+case 1 ('hello')
 @
 
 @felix

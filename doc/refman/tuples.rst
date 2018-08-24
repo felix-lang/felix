@@ -272,6 +272,29 @@ you can just apply an integer literal directly:
 Note that since operator dot `.` just means reverse application,
 then `x.1` is the same as `1 x`.
 
+Slice Value Projections
+^^^^^^^^^^^^^^^^^^^^^^^
+
+A slice with integer literal arguments can be applied to a tuple to construct
+a new tuple consisting of the components in range of the slice. The components
+selected are in the intersection of the given slice and a slice from 0 to
+the length of the tuple minus 1. No error is possible.
+
+.. code-block:: felix
+
+  var x = 1,4.2,"hello",42u;
+  println$ x. Slice_all;       // (1, 4.2, hello, 42)
+  //println$ x. (..);          // doesn't work for some reason
+  println$ x. (1..);           //  (4.2, hello, 42)
+  println$ x. (..3);           // (1, 4.2, hello, 42)
+  println$ x. (1..3);          // (4.2, hello, 42)
+  println$ x. (1..<3);         // (4.2, hello)
+  println$ x. (1.+2);          // (4.2, hello)
+  println$ x. (3..0);          // ()
+  println$ x. Slice_none;      // ()
+  println$ x. (Slice_one 2);   // "hello"
+
+
 Tuple Patterns
 ^^^^^^^^^^^^^^
 
