@@ -481,7 +481,16 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
 
   | EXPR_get_n (sr,(n,e')) ->
     let expr,typ = be e' in
-    let ctyp,k = match unfold "flx_lookup" typ with
+    let typ = unfold "flx_lookup" typ in
+    let ctyp,k = 
+    let base = match typ with 
+       | BTYP_pointer base -> base
+       | BTYP_wref base -> base
+       | BTYP_rref base -> base
+       | _ -> typ
+    in
+    let base = unfold "flx_lookup2" base in
+    match base with
     | BTYP_array (t,BTYP_unitsum len)  ->
       let n = if n = -1 then n + len else n in
       if n<0 || n>len-1
@@ -540,11 +549,18 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
         sbt bsym_table typ
       )
     in
-      let a = expr,typ in
+    let a = expr,typ in
 (*
       print_endline ("4:get_n arg" ^ sbe bsym_table a);         
 *)
-      bexpr_get_n ctyp n a
+    let ctyp = 
+      match typ with 
+      | BTYP_pointer _ -> btyp_pointer ctyp
+      | BTYP_rref  _ -> btyp_rref ctyp
+      | BTYP_wref  _ -> btyp_wref ctyp
+      | _ -> ctyp
+    in
+    bexpr_get_n ctyp n a
 
   | EXPR_get_named_variable (sr,(name,e')) ->
 (*

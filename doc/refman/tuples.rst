@@ -284,7 +284,7 @@ the length of the tuple minus 1. No error is possible.
 
   var x = 1,4.2,"hello",42u;
   println$ x. Slice_all;       // (1, 4.2, hello, 42)
-  //println$ x. (..);          // doesn't work for some reason
+  println$ x. (..);            // (1, 4.2, hello, 42) 
   println$ x. (1..);           //  (4.2, hello, 42)
   println$ x. (..3);           // (1, 4.2, hello, 42)
   println$ x. (1..3);          // (4.2, hello, 42)
@@ -294,6 +294,46 @@ the length of the tuple minus 1. No error is possible.
   println$ x. Slice_none;      // ()
   println$ x. (Slice_one 2);   // "hello"
 
+Ties and Slice Pointer Projections
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Felix has a generic operator `_tie` which takes a pointer
+to a structurally typed product and produces an isomorphic
+product type, where the type of each component becomes
+a pointer to the component type. This is called a tie:
+
+.. code-block:: felix
+
+  var x = 1,4.2,"hello",42u;
+  var px = _tie &x; // a tuple of pointers
+  println$ *(px . 2); // hello
+ 
+The same effect can be obtained for tuples, with a pointer slice:
+
+.. code-block:: felix
+
+  var x = 1,4.2,"hello",42u;
+  var px = &x . (..); // a tuple of pointers
+  println$ *(px . 2); // hello
+
+Of course, any slice can be used, and, it also works for read only
+and write only pointers.
+ 
+[And should if the product is a compact linear type or array,
+neither of which is implemented as at 2018/08/25]
+
+Reversed Tuple
+^^^^^^^^^^^^^^
+
+For any tuple the generic operator `_rev` forms a tuple
+with the components in reversed order.
+
+.. code-block:: felix
+
+  var x = 1,4.2,"hello",42u;
+  println$ _rev x; // (42, hello, 4.2, 1)
+
+ 
 
 Tuple Patterns
 ^^^^^^^^^^^^^^
