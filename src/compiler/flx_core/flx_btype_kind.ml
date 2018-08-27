@@ -94,6 +94,8 @@ and metatype' sr typ : kind =
   | BTYP_rev _
   | BTYP_uniq _
 
+  | BTYP_label
+
   | BTYP_intersect _
   | BTYP_union _
   | BTYP_polyrecord (_, _)
@@ -102,14 +104,15 @@ and metatype' sr typ : kind =
   | BTYP_tuple_cons (_, _)
   | BTYP_tuple_snoc (_, _)
   | BTYP_rptsum _
-  | BTYP_unitsum _ -> kind_type
+    -> kind_type
+
+  | BTYP_unitsum _ -> kind_unitsum
 
   | BTYP_type_set _
   | BTYP_type_set_union _
   | BTYP_type_set_intersection _
     -> kind_type (* WRONG but lets see what happens ! *)
 
-  | BTYP_label
   | BTYP_none
     ->
     clierrx "[flx_btype_kind:180: E246] " sr ("No meta type for type-like term " ^ 

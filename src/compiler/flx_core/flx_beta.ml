@@ -475,7 +475,7 @@ print_endline ("Flx_beta: BTYP_type_apply\n  " ^ Flx_btype.st t1 ^ "\nto\n  " ^
     let m2 = Flx_btype_kind.metatype sr t2 in
     begin match m1 with
     | KIND_function (d,c) ->
-      if d = m2 then () else
+      if Flx_kind.kind_ge [d, m2] then () else
       Flx_exceptions.clierr sr
       ("Flx_beta: In application: " ^ Flx_btype.st t ^ 
        "\ntype apply requires domain of type function to agree with argument\n" ^

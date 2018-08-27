@@ -127,27 +127,25 @@ let cal_bind_apply
         match ta with
         | BTYP_tuple ls ->
           let tmin = 0 and tmax = List.length ls - 1 in
-          let smin, smax = 
-          match f' with
-            | EXPR_name (_,"Slice_all",[]) -> tmin,tmax
-            | EXPR_name (_,"Slice_none",[]) -> tmax,tmin
-            | EXPR_apply(_,(EXPR_name (_,"Slice_from",[]), EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v1}))) ->
-              int_of_string v1,tmax
-            | EXPR_apply(_,(EXPR_name (_,"Slice_from_counted",[]),EXPR_tuple(_,[EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v1});EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v2})]))) -> (* second arg is count *)
-              int_of_string v1,int_of_string v1+int_of_string v2-1
-            | EXPR_apply(_,(EXPR_name (_,"Slice_to_incl",[]),EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v1}))) ->
-              0,int_of_string v1
-            | EXPR_apply(_,(EXPR_name (_,"Slice_to_excl",[]),EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v1}))) ->
-              0,int_of_string v1 - 1
-            | EXPR_apply(_,(EXPR_name (_,"Slice_range_incl",[]),EXPR_tuple(_,[EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v1});EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v2})])))->
-              int_of_string v1,int_of_string v2
-            | EXPR_apply(_,(EXPR_name (_,"Slice_range_excl",[]),EXPR_tuple(_,[EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v1});EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v2})])))->
-              int_of_string v1,int_of_string v2 - 1
-            | EXPR_apply(_,(EXPR_name (_,"Slice_one",[]),EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v1}))) -> 
-              int_of_string v1,int_of_string v1
-            | _ -> raise Flx_dot.OverloadResolutionError
-          in
-          let smin = max tmin smin and smax = min tmax smax  in
+          let smin, smax = Flx_cal_slice.cal_slice tmin tmax f' in 
+          let sls = ref [] in
+          for i = smin to smax do
+            sls := i :: !sls
+          done;
+          let sls = List.rev_map (fun i -> EXPR_get_n (sr,(i,a'))) !sls in
+          be (EXPR_tuple (sr,sls))
+        | _ -> raise Flx_dot.OverloadResolutionError
+      with Flx_dot.OverloadResolutionError ->
+
+     (* ---------------------------------------------------------- *)
+      (* special case, constant slice of small linear array *) 
+      (* ---------------------------------------------------------- *)
+      try 
+        match ta with
+        | BTYP_array (base,BTYP_unitsum n) ->
+          let tmin = 0 and tmax = n - 1 in
+          let smin, smax = Flx_cal_slice.cal_slice tmin tmax f' in 
+          if smax - smin > 65 then Flx_exceptions.clierr sr ("Array slice too large");
           let sls = ref [] in
           for i = smin to smax do
             sls := i :: !sls
@@ -158,33 +156,13 @@ let cal_bind_apply
       with Flx_dot.OverloadResolutionError ->
 
       (* ---------------------------------------------------------- *)
-      (* special case, constant slice of tuple *) 
+      (* special case, constant slice of tuple pointer *) 
       (* ---------------------------------------------------------- *)
       try 
         match ta with
         | BTYP_pointer (BTYP_tuple ls) ->
           let tmin = 0 and tmax = List.length ls - 1 in
-          let smin, smax = 
-          match f' with
-            | EXPR_name (_,"Slice_all",[]) -> tmin,tmax
-            | EXPR_name (_,"Slice_none",[]) -> tmax,tmin
-            | EXPR_apply(_,(EXPR_name (_,"Slice_from",[]), EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v1}))) ->
-              int_of_string v1,tmax
-            | EXPR_apply(_,(EXPR_name (_,"Slice_from_counted",[]),EXPR_tuple(_,[EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v1});EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v2})]))) -> (* second arg is count *)
-              int_of_string v1,int_of_string v1+int_of_string v2-1
-            | EXPR_apply(_,(EXPR_name (_,"Slice_to_incl",[]),EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v1}))) ->
-              0,int_of_string v1
-            | EXPR_apply(_,(EXPR_name (_,"Slice_to_excl",[]),EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v1}))) ->
-              0,int_of_string v1 - 1
-            | EXPR_apply(_,(EXPR_name (_,"Slice_range_incl",[]),EXPR_tuple(_,[EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v1});EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v2})])))->
-              int_of_string v1,int_of_string v2
-            | EXPR_apply(_,(EXPR_name (_,"Slice_range_excl",[]),EXPR_tuple(_,[EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v1});EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v2})])))->
-              int_of_string v1,int_of_string v2 - 1
-            | EXPR_apply(_,(EXPR_name (_,"Slice_one",[]),EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v1}))) -> 
-              int_of_string v1,int_of_string v1
-            | _ -> raise Flx_dot.OverloadResolutionError
-          in
-          let smin = max tmin smin and smax = min tmax smax  in
+          let smin, smax = Flx_cal_slice.cal_slice tmin tmax f' in 
           let sls = ref [] in
           for i = smin to smax do
             sls := i :: !sls

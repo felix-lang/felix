@@ -192,23 +192,32 @@ and solve_subsumption bsym_table counter lhs rhs  dvars (s:vassign_t option ref)
         *)
 
         (* meta type have to agree *)
-        if mi <> mj then begin
-          print_endline ("Unify: metatype mismatch T<"^string_of_int i^">" ^Flx_kind.sk mi ^ 
-          " != T<"^string_of_int j^">" ^ Flx_kind.sk mj);
-(* META TYPE ARE BUGGED *)
-(*
-          raise Not_found;
-*)
-        end;
-
         if i <> j then
           if BidSet.mem i dvars then
+          begin
+            if not (Flx_kind.kind_ge [mi, mj]) then
+            begin
+              print_endline ("Unify: metatype mismatch  T<"^string_of_int i^">" ^Flx_kind.sk mi ^ 
+              " is not superkind of  T<"^string_of_int j^">" ^ Flx_kind.sk mj);
+              raise Not_found;
+            end;
             s := Some (i,tj)
+          end 
           else if BidSet.mem j dvars then
+          begin
+            if not (Flx_kind.kind_ge [mi, mi]) then
+            begin
+              print_endline ("Unify: metatype mismatch  T<"^string_of_int j^">" ^Flx_kind.sk mj ^ 
+              " is not superkind of  T<"^string_of_int i^">" ^ Flx_kind.sk mi);
+              raise Not_found;
+            end;
             s := Some (j,ti)
+          end
           else raise Not_found
-      | BTYP_type_var (i,_), t
-      | t,BTYP_type_var (i,_) ->
+
+      (* TO DO: calculate the smallest metatype of the type and do a kinding check *)
+      | BTYP_type_var (i,mt), t
+      | t,BTYP_type_var (i,mt) ->
         (*
         print_endline ("variable assignment " ^ si i ^ " -> " ^ sbt sym_table t);
         *)
@@ -229,6 +238,13 @@ and solve_subsumption bsym_table counter lhs rhs  dvars (s:vassign_t option ref)
           (*
           print_endline "Adding substitution";
           *)
+          let mt2 = Flx_btype_kind.metatype Flx_srcref.dummy_sr t in
+          if not (Flx_kind.kind_ge [mt, mt2]) then
+          begin
+              print_endline ("Unify: metatype mismatch  T<"^string_of_int i^">" ^Flx_kind.sk mt ^ 
+              " is not superkind of " ^ Flx_kind.sk mt2 ^ " which is the kind of " ^ Flx_btype.st t);
+            raise Not_found;
+          end;
           s := Some (i,t)
         end
 

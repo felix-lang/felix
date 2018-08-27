@@ -555,6 +555,10 @@ let btyp_type_set_intersection ts =
 
 let rec bmt msg mt = match mt with
   | Flx_ast.KND_type -> kind_type 
+  | Flx_ast.KND_compactlinear-> kind_compactlinear
+  | Flx_ast.KND_unitsum -> kind_unitsum
+  | Flx_ast.KND_nat -> kind_nat
+  | Flx_ast.KND_bool -> kind_bool
   | Flx_ast.KND_function (t1,t2) -> kind_function (bmt msg t1, bmt msg t2)
   | Flx_ast.KND_tuple(ts) -> kind_tuple(List.map (bmt msg) ts)
   | _ -> kind_type 
