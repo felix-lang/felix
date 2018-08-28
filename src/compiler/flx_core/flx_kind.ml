@@ -41,7 +41,12 @@ let ksolve_subtypes add_eqn lhs rhs =
   | KIND_type,KIND_type
   | KIND_type,KIND_unitsum
   | KIND_type,KIND_compactlinear
+
   | KIND_compactlinear, KIND_unitsum
+
+  | KIND_unitsum, KIND_unitsum
+
+
   | KIND_nat, KIND_nat
   | KIND_bool, KIND_bool
     -> ()

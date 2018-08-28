@@ -27,6 +27,7 @@ let debug = false
 
 let rec guess_metatype sr t : kind =
   match t with
+  | TYP_typeop (sr,op,t,k) -> bmt "Flx_guess_meta_type" k 
   | TYP_defer _ -> print_endline "Guess metatype: defered type found"; assert false
   | TYP_tuple_cons (sr,t1,t2) -> assert false
   | TYP_tuple_snoc (sr,t1,t2) -> assert false

@@ -82,6 +82,7 @@ and t =
   (* the int is the binding context *)
   (* used during typedef binding process transiently *)
   | BTYP_typeof of int * Flx_ast.expr_t
+  | BTYP_typeop of string * t * kind 
 
 type overload_result =
  bid_t *  (* index of function *)
@@ -189,6 +190,7 @@ and str_of_btype typ =
   | BTYP_type_set_union ts -> "BTYP_type_set_union("^ ss ts^")"
   | BTYP_type_set_intersection ts -> "BTYP_type_set_intersection(" ^ ss ts ^ ")"
 
+  | BTYP_typeop (op,t,k) -> "BTYP_typeop(" ^ op ^ "," ^ s t ^","^sk k^")"
 
 let st t = str_of_btype t
 let sts ts = catmap "," st ts
@@ -653,6 +655,7 @@ let flat_iter
 =
   match btype with
   | BTYP_typeof (i, t) -> f_bid i
+  | BTYP_typeop (op, t,k) -> f_btype t
 
   | BTYP_hole -> ()
   | BTYP_label -> ()
@@ -731,11 +734,52 @@ let rec iter
   let f_btype btype = iter ~f_bid ~f_btype btype in
   flat_iter ~f_bid ~f_btype btype
 
+let unitsum_int t =
+  match t with
+  | BTYP_void -> Some 0
+  | BTYP_tuple [] -> Some 1
+  | BTYP_unitsum n -> Some n
+  | _ -> None
+
+let rec gcd m n = 
+  if m = 0  && n = 0 then 1  (* technically, infinity since all positive integers divide 0 *)
+  else if n = 0 then m       (* m can't be 0 because of previous test *)
+  else gcd n (m mod n)
+
+let lcm m n = 
+  let x = m * n in
+  if x = 0 then 0 
+  else x / (gcd m n)
+
+let btyp_typeop op t k =
+  match t with 
+  | BTYP_type_tuple [x; y] ->
+    let m,n = unitsum_int x, unitsum_int y in
+    begin match m,n with
+    | Some m, Some n ->
+      let r = match op with
+        | "+" -> m + n
+        | "-" -> abs (m - n)
+        | "*" -> m * n
+        | "/" -> m / n
+        | "%" -> m mod n
+        | "min" -> min m n
+        | "max"-> max m n
+        | "gcd" -> gcd m n
+        | "lcm" -> lcm m n
+        | op -> failwith ("Unknown operator " ^ op ^ ": " ^ str_of_btype t ^ " -> " ^ sk k)
+      in
+      btyp_unitsum r
+    | _ -> BTYP_typeop (op,t,k)
+    end
+  | _ -> failwith ("Unknown operator " ^ op ^ ": " ^ str_of_btype t ^ " -> " ^ sk k)
+
 
 (** Recursively iterate over each bound type and transform it with the
  * function. *)
 let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_typeof (i,t) -> btyp_typeof (f_bid i, t)
+  | BTYP_typeop (op,t,k) -> btyp_typeop op (f_btype t) k
 
   | BTYP_hole as x -> x
   | BTYP_label as x -> x
@@ -826,7 +870,6 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_type_set_union ls -> btyp_type_set_union (List.map f_btype ls)
   | BTYP_type_set_intersection ls ->
       btyp_type_set_intersection (List.map f_btype ls)
-
 
 (* this routine adds 1 to the fixpoint counter of free fixpoints,
 thereby allowing a subterm of a type to be lifted up one level

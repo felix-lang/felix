@@ -22,6 +22,7 @@ open Flx_btype_subst
 let rec is_pod bsym_table t =
   let is_pod t = is_pod bsym_table t in
   match t with
+  | BTYP_typeop _ -> assert false
   | BTYP_hole -> assert false
   | BTYP_uniq _ -> assert false
   | BTYP_rref _ -> assert false
@@ -71,6 +72,7 @@ let rec get_offsets' syms bsym_table typ : string list =
   let tname = cpp_typename syms bsym_table typ in
   let t' = unfold "flx_cal_type_offsets: get_offsets" typ in
   match t' with
+  | BTYP_typeop _ -> assert false
   | BTYP_typeof _ -> assert false
   | BTYP_hole -> assert false
   | BTYP_rev _ -> assert false

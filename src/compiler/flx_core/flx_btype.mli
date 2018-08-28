@@ -56,6 +56,7 @@ and t = private
   (* the int is the binding context *)
   (* used during typedef binding process transiently *)
   | BTYP_typeof of int * Flx_ast.expr_t
+  | BTYP_typeop of string * t * kind
 
 type overload_result =
     bid_t * t * t * (bid_t * t) list * t list
@@ -135,6 +136,7 @@ val btyp_type_set : t list -> t
 val btyp_type_set_union : t list -> t
 val btyp_type_set_intersection : t list -> t
 val btyp_typeof: (int * Flx_ast.expr_t) -> t
+val btyp_typeop: string -> t -> kind -> t
 
 val bmt: string -> Flx_ast.kindcode_t -> kind 
 

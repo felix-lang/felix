@@ -123,6 +123,8 @@ and typecode_t =
   | TYP_tuple_cons of Flx_srcref.t * typecode_t * typecode_t
   | TYP_tuple_snoc of Flx_srcref.t * typecode_t * typecode_t
 
+  | TYP_typeop of Flx_srcref.t * string * typecode_t * kindcode_t
+
 and raw_typeclass_insts_t = qualified_name_t list
 and vs_aux_t = {
   raw_type_constraint:typecode_t;
@@ -753,6 +755,7 @@ let src_of_suffixed_name (e : suffixed_name_t) = match e with
   -> s
 
 let src_of_typecode = function
+  | TYP_typeop (s,_,_,_)
   | TYP_defer (s,_)
   | TYP_void s
   | TYP_name  (s,_,_)

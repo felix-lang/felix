@@ -78,6 +78,21 @@ let rec kindcode_of_expr (e:expr_t) :kindcode_t =
   | EXPR_arrow (_,(a,b)) -> KND_function (te a, te b)
   | _ -> assert false
 
+let rec expr_of_kindcode (k:kindcode_t): expr_t =
+  let sr = Flx_srcref.dummy_sr in
+  match k with
+  | KND_type -> EXPR_name (sr,"TYPE",[])
+  | KND_unitsum -> EXPR_name (sr,"UNITSUM",[])
+  | KND_compactlinear -> EXPR_name (sr,"COMPACTLINEAR",[])
+  | KND_bool -> EXPR_name (sr,"BOOL",[])
+  | KND_nat -> EXPR_name (sr,"NAT",[])
+  | KND_generic -> EXPR_name (sr,"GENERIC",[])
+  | KND_tuple ks -> EXPR_tuple (sr,List.map expr_of_kindcode ks)
+  | KND_function (d,c) -> EXPR_arrow (sr,(expr_of_kindcode d,expr_of_kindcode c))
+  | KND_typeset _ 
+  | KND_tpattern  _
+  | KND_special _ -> failwith ("Can't convert kindcode " ^ str_of_kindcode k ^ " to expression")
+
 let rec kindcode_of_typecode (t:typecode_t) : kindcode_t =
   let kt t = kindcode_of_typecode t in
   match t with
@@ -245,6 +260,18 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
           | EXPR_tuple (_, [s1;s2]) -> TYP_union [typecode_of_expr s1; typecode_of_expr s2]
           | _ -> assert false
           end
+      | EXPR_name (_,"_typeop",[]) ->
+          begin match e2 with
+          | EXPR_tuple (_, [s1;s2;s3]) ->
+            begin match s1 with
+            | EXPR_literal (sr,{felix_type="string"; internal_value=op}) -> 
+              let t = typecode_of_expr s2 in
+              TYP_typeop (sr,op,typecode_of_expr s2, kindcode_of_expr s3) 
+            | _ -> assert false
+            end 
+          | _ -> assert false
+          end
+          
       | _ ->
           TYP_apply (typecode_of_expr e1, typecode_of_expr e2)
       end
@@ -493,7 +520,16 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
   | TYP_setintersection _
   | TYP_setunion _ -> 
       clierrx "[flx_core/flx_typing2.ml:401: E279] " dsr "expr_of_typecode: ignoring this case for now."
-      
+
+  | TYP_typeop (sr,op,t,k) ->
+    let f = EXPR_name (sr,"_typeop",[]) in
+    let e = expr_of_typecode sr t in
+    let k = expr_of_kindcode k in
+    let s = "\"" ^ op ^ "\"" in
+    let op = EXPR_literal (sr,{felix_type="string"; c_value=s; internal_value=s}) in
+    let args = EXPR_tuple (sr,[op; e; k]) in
+    EXPR_apply (sr,(f,args))
+
 let string_of_type_name (t:typecode_t) = match t with
   | TYP_rptsum _ -> "TYP_rptsum"
   | TYP_pclt _ -> "TYP_pclt"
@@ -545,4 +581,4 @@ let string_of_type_name (t:typecode_t) = match t with
   | TYP_tuple_cons _ -> "TYP_tuple_cons"
   | TYP_tuple_snoc _ -> "TYP_tuple_snoc"
   | TYP_typeof _ -> "TYP_typeof"
-
+  | TYP_typeop _ -> "TYP_typeop"

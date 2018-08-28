@@ -624,6 +624,8 @@ and st prec tc : string =
     | TYP_type_extension (sr,ts,t) ->
       0,"extend {" ^ cat ", " (map (st 0) ts) ^ " with " ^ st 0 t ^ "}"
 
+    | TYP_typeop (sr,op,ts,k) ->
+      0,"_typeop(" ^ op ^ "," ^ st 0 ts ^ "," ^ str_of_kindcode k ^ ")"
   in
     if iprec >= prec
     then "(" ^ txt ^ ")"
@@ -696,6 +698,9 @@ and sb bsym_table depth fixlist counter prec tc =
   let sbt prec t = sb bsym_table (depth+1) fixlist counter prec t in
   let iprec, term =
     match tc with
+    | BTYP_typeop (op,t,k) -> 0,
+      ("_typeop(" ^ op ^ "," ^ sbt 0 t ^ "," ^ sk k ^ ")")
+
     | BTYP_typeof (i,t) -> 0,
       "typeof<context=" ^ string_of_int i ^ ">(" ^ string_of_expr t ^ ")"
 
@@ -897,9 +902,6 @@ and sb bsym_table depth fixlist counter prec tc =
     | BTYP_cltpointer (d,c) -> 1,"cltref(" ^ sbt 1 d ^","^  sbt 1 c ^")"
     | BTYP_cltrref (d,c) -> 1,"cltrref(" ^ sbt 1 d ^ "," ^ sbt 1 c ^")"
     | BTYP_cltwref (d,c) -> 1,"cltwref(" ^ sbt 1 d ^ "," ^ sbt 1 c ^")"
-
-
-
 
     | BTYP_void -> 0,"void"
 

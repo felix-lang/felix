@@ -8,6 +8,7 @@ let fold (bsym_table: Flx_bsym_table.t) counter t =
   let rec aux trail depth t' =
     let ax t = aux ((depth,t')::trail) (depth+1) t in
     match t' with
+    | BTYP_typeop (op,t,k) -> ax t 
     | BTYP_intersect ls
     | BTYP_union ls
     | BTYP_sum ls

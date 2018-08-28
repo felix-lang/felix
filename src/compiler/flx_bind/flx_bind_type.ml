@@ -125,6 +125,11 @@ print_endline ("Bind type " ^ string_of_typecode t ^ " params = " ^
 
   let t =
   match t with
+  | TYP_typeop (sr,op,t,k) ->
+    let t = bt t in
+    let k = Flx_btype.bmt "Flx_bind_type.TYP_var" k in
+    btyp_typeop op t k
+
   | TYP_pclt (d,c) -> btyp_cltpointer (bt d) (bt c)
   | TYP_rpclt (d,c) -> btyp_cltrref (bt d) (bt c)
   | TYP_wpclt (d,c) -> btyp_cltwref (bt d) (bt c)
