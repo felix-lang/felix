@@ -34,8 +34,11 @@ print_endline ("Build type constraints for type variable " ^string_of_int i ^": 
   match p1 with
   | KND_generic (* treated as ordinary type variable here *)
   | KND_type
+  | KND_unitsum (* well this is wrong, it IS a constraint! *) 
+  | KND_compactlinear  
   | KND_function _ 
   | KND_tuple _ -> btyp_tuple []
+
   | KND_tpattern p1 ->
   begin
   (* special case, no constraint, represent by just 'true' (unit type) *)

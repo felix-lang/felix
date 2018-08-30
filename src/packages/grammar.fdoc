@@ -1836,7 +1836,8 @@ syntax felix {
     macros,
     plugins,
     debug,
-    chips
+    chips,
+    unitsum_ops
   ;
 }
 @

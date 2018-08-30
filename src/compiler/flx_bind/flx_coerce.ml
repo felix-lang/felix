@@ -205,6 +205,10 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
     | BTYP_variant lhs,BTYP_variant rhs ->
       variant_coercion state bsym_table sr x' t' t'' lhs rhs 
 
+    (* BUG! sizeof_linear_type fails if the size isn't a known integer
+       but we require structural equality in case we're using 
+       a newfangled typeop!
+    *)
     (* This isn't really right, but it's safe storage wise *)
     | BTYP_array (lhsv,lhst), BTYP_array (rhsv, rhst) 
       when lhsv = rhsv &&

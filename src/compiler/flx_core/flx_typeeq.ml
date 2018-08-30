@@ -220,6 +220,13 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
 *)
     result
 
+  (* this only handles structural equality, in general undecidable *)
+  | BTYP_typeop (lop,lt,lk), BTYP_typeop (rop, rt, rk) ->
+    lop = rop &&
+    lk  = rk &&
+    te lt rt
+    
+
   | l,r ->
 (*
     print_endline ("WOOOPS .. dunno.." ^ sbt l ^" vs " ^ sbt r);

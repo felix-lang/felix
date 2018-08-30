@@ -185,7 +185,7 @@ print_endline (" %%%%% Setting return type to " ^ sbt bsym_table t');
          match_skip_level := 1;
          ()
         | x ->
-        print_endline ("  .. Unable to compute type of " ^ string_of_expr e);
+        print_endline ("FLx_cal_ret_type:  .. Unable to compute type of " ^ string_of_expr e);
         print_endline ("Reason: " ^ Printexc.to_string x);
         raise x 
       end

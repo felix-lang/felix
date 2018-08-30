@@ -741,6 +741,16 @@ let unitsum_int t =
   | BTYP_unitsum n -> Some n
   | _ -> None
 
+let isunitsum x = match x with
+  | BTYP_void
+  | BTYP_tuple [] 
+  | BTYP_unitsum _ -> true
+  | BTYP_type_var (_,mt) 
+  | BTYP_typeop (_,_,mt)
+    -> (match mt with | KIND_unitsum -> true | _ -> false)
+  | _ -> false
+ 
+
 let rec gcd m n = 
   if m = 0  && n = 0 then 1  (* technically, infinity since all positive integers divide 0 *)
   else if n = 0 then m       (* m can't be 0 because of previous test *)
@@ -753,7 +763,7 @@ let lcm m n =
 
 let btyp_typeop op t k =
   match t with 
-  | BTYP_type_tuple [x; y] ->
+  | BTYP_type_tuple [x; y] when isunitsum x && isunitsum y->
     let m,n = unitsum_int x, unitsum_int y in
     begin match m,n with
     | Some m, Some n ->

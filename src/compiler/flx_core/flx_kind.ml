@@ -91,5 +91,10 @@ let kind_ge (eqns:keqns_t) =
 
   with Not_found -> false
 
+(* we could do this faster with a specialised equality routine, in fact just a = b 
+should work since there are, as yet, no kind variables or functions
+*)
+let kind_eq a b =
+  kind_ge [a,b] && kind_ge [b,a]
 
 

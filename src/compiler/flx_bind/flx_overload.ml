@@ -541,14 +541,17 @@ if name = "EInt" then
 
     List.iter begin fun (s,j',tp) ->
       let et,explicit_vars1,any_vars1, as_vars1, eqns1 =
+        (* this is not really right, kinds do act as constraints *)
         match tp with
         | KND_tpattern t -> type_of_tpattern counter t
         | KND_generic (* overload treats this as a type variable in this routine *)
         | KND_type
+        | KND_unitsum
+        | KND_compactlinear
         | KND_function _ 
         | KND_tuple _ -> TYP_var j',[],[],[],[]
         | _ -> 
-         print_endline ("Flx_overload. Expection KND_tpattern, got " ^ str_of_kindcode tp);
+         print_endline ("Flx_overload. Expected KND_tpattern, got " ^ str_of_kindcode tp);
          assert false
       in
       let et = bt sr et in

@@ -265,42 +265,42 @@ and inner_bind_expression state bsym_table env rs e  =
     with
      | Free_fixpoint b ->
        clierrx "[flx_bind/flx_lookup.ml:451: E92] " sr
-       ("inner_bind_expression: Free fixpoint: Circular dependency typing expression " ^ string_of_expr e)
+       ("Flx_lookup:inner_bind_expression: Free fixpoint: Circular dependency typing expression " ^ string_of_expr e)
 
      | SystemError (sr,msg) as x ->
        print_endline ("System Error binding expression " ^ string_of_expr e);
        raise x
 
      | ClientError (sr,msg) as x ->
-       print_endline ("inner_bind_expression: Client Error binding expression " ^ string_of_expr e);
+       print_endline ("Flx_lookup:inner_bind_expression: Client Error binding expression " ^ string_of_expr e);
        raise x
 
      | ClientError2 (sr,sr2,msg) as x ->
-       print_endline ("inner_bind_expression: Client Error2 binding expression " ^ string_of_expr e);
+       print_endline ("Flx_lookup:inner_bind_expression: Client Error2 binding expression " ^ string_of_expr e);
        raise x
 
      | SimpleNameNotFound (sr,name,routine) as x ->
-       print_endline ("inner_bind_expression: SimpleNameNotFound binding expression " ^ string_of_expr e);
+       print_endline ("Flx_lookup:inner_bind_expression: SimpleNameNotFound binding expression " ^ string_of_expr e);
        raise x
 
      | FunctionNameNotFound (sr,name,routine, args) as x ->
-       print_endline ("inner_bind_expression: FunctionNameNotFound binding expression " ^ string_of_expr e);
+       print_endline ("Flx_lookup:inner_bind_expression: FunctionNameNotFound binding expression " ^ string_of_expr e);
        raise x
 
 
      | Failure msg as x ->
-       print_endline ("inner_bind_expression: Failure binding expression " ^ string_of_expr e);
+       print_endline ("Flx_lookup:inner_bind_expression: Failure binding expression " ^ string_of_expr e);
        raise x
 
      | Not_found ->
-       print_endline ("inner_bind_expression raised Not_found [BUG] e="^
+       print_endline ("Flx_lookup:inner_bind_expression raised Not_found [BUG] e="^
        string_of_expr e);
        failwith "bind_expression' raised Not_found [BUG]"
 
      | GadtUnificationFailure as x -> raise x
 
      | exn ->
-       print_endline ("inner_bind_expression: unknown exception " ^  Printexc.to_string exn); 
+       print_endline ("Flx_lookup:inner_bind_expression: unknown exception " ^  Printexc.to_string exn); 
        raise exn
   in
     let t' = 

@@ -479,8 +479,8 @@ open class Farray
   // so we need a special test. 
 
   //$ Join two arrays (functional).
-  fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, N + M] = {
-    var o : array[T, N + M];
+  fun join[T, N:UNITSUM, M:UNITSUM] (x:array[T, N]) (y:array[T, M]):array[T, N `+ M] = {
+    var o : array[T, N `+ M];
 
     if x.len > 0uz
       for var i in 0uz upto len(x) - 1uz
@@ -495,8 +495,8 @@ open class Farray
   }
 
   //$ Append value to end of an array (functional).
-  fun join[T, N] (x:array[T, N]) (y:T):array[T, N + 1] = {
-    var o : array[T, N + 1];
+  fun join[T, N:UNITSUM] (x:array[T, N]) (y:T):array[T, N `+ 1] = {
+    var o : array[T, N `+ 1];
 
     if x.len > 0uz
       for var i in 0uz upto len(x) - 1uz
@@ -507,8 +507,8 @@ open class Farray
   }
 
   //$ Prepand value to start of an array (functional).
-  fun join[T, M] (x:T) (y:array[T, M]):array[T, 1 + M] = {
-    var o : array[T, 1 + M];
+  fun join[T, M:UNITSUM] (x:T) (y:array[T, M]):array[T, 1 `+ M] = {
+    var o : array[T, 1 `+ M];
 
     set (&o, 0, x);
     if y.len > 0uz
@@ -521,7 +521,7 @@ open class Farray
 
   //$ Join two arrays (functional).
   // will probably clash with tuple joining functions if we implement them
-  fun + [T, N, M] (x:array[T, N], y:array[T, M]):array[T, N + M] => join x y;
+  fun + [T, N:UNITSUM, M:UNITSUM] (x:array[T, N], y:array[T, M]):array[T, N `+ M] => join x y;
 
   //$ Transpose and array.
   //$ Subsumes zip.

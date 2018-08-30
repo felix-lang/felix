@@ -74,6 +74,10 @@ and metatype' sr typ : kind =
   | BTYP_inst (index,ts,k) -> k
   | BTYP_fix (i,k) -> k
 
+  | BTYP_void
+  | BTYP_unitsum _
+  | BTYP_tuple [] -> kind_unitsum
+
   (* Ordinary type expressions *)
   | BTYP_typeof _
   | BTYP_cfunction _
@@ -91,7 +95,6 @@ and metatype' sr typ : kind =
   | BTYP_sum _
   | BTYP_array _
   | BTYP_tuple _
-  | BTYP_void
   | BTYP_rev _
   | BTYP_uniq _
 
@@ -106,8 +109,6 @@ and metatype' sr typ : kind =
   | BTYP_tuple_snoc (_, _)
   | BTYP_rptsum _
     -> kind_type
-
-  | BTYP_unitsum _ -> kind_unitsum
 
   | BTYP_type_set _
   | BTYP_type_set_union _

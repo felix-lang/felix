@@ -523,6 +523,7 @@ print_endline ("Converted LHS body=" ^ sbt bsym_table b1);
 *)
         s := None
 
+
       | BTYP_type_apply (f1,a1), BTYP_type_apply (f2,a2)  ->
 (*
 print_endline ("Trying to unify type application " ^ Flx_btype.st lhs ^ " and " ^ Flx_btype.st rhs);
@@ -533,6 +534,10 @@ print_endline ("Trying to unify type application " ^ Flx_btype.st lhs ^ " and " 
 print_endline "Trying to unify type map";
         add_eqn (f1,f2); add_eqn (a1,a2)
 
+      | BTYP_typeop (lop,lt,lk), BTYP_typeop (rop, rt, rk) ->
+        if lop <> rop then raise Not_found;
+        if not (Flx_kind.kind_eq lk rk) then raise Not_found;
+        add_eqn (lt,rt);
 
       | x,y ->
 (*

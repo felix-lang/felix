@@ -1,12 +1,13 @@
 @title Core Type Constructors
-@tangler option.flx      = share/lib/std/datatype/option.flx
-@tangler unitsum.flx     = share/lib/std/datatype/unitsum.flx
-@tangler tuple.flx       = share/lib/std/datatype/tuple.flx
-@tangler tupleexpr.fsyn  = share/lib/std/datatype/tupleexpr.fsyn
-@tangler slice.flx       = share/lib/std/datatype/slice.flx
-@tangler typing.flx      = share/lib/std/datatype/typing.flx
-@tangler special.flx     = share/lib/std/datatype/special.flx
-@tangler functional.flx  = share/lib/std/datatype/functional.flx
+@tangler option.flx       = share/lib/std/datatype/option.flx
+@tangler unitsum.flx      = share/lib/std/datatype/unitsum.flx
+@tangler unitsum_ops.fsyn = share/lib/std/datatype/unitsum_ops.fsyn
+@tangler tuple.flx        = share/lib/std/datatype/tuple.flx
+@tangler tupleexpr.fsyn   = share/lib/std/datatype/tupleexpr.fsyn
+@tangler slice.flx        = share/lib/std/datatype/slice.flx
+@tangler typing.flx       = share/lib/std/datatype/typing.flx
+@tangler special.flx      = share/lib/std/datatype/special.flx
+@tangler functional.flx   = share/lib/std/datatype/functional.flx
 
 @h1 Core Type Classes
 @tangle special.flx
@@ -426,13 +427,13 @@ Treated as finite cyclic groups.
 
 // -----------------------------------------------------------------------------
 typedef void = 0;
+typedef unit = 1;
 
 instance Str[void] {
   fun str (x:void) => "void";
 }
 open Show[void];
 
-typedef unit = 1;
 
 instance Str[unit] {
   fun str (x:unit) => "()";
@@ -444,70 +445,25 @@ instance Eq[unit] {
 }
 open Eq[unit];
 
+typedef fun n"`+" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("+",(x,y),UNITSUM);
+typedef fun n"`-" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("-",(x,y),UNITSUM);
+typedef fun n"`*" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("*",(x,y),UNITSUM);
+typedef fun n"`/" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("/",(x,y),UNITSUM);
+typedef fun n"`%" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("%",(x,y),UNITSUM);
+typedef fun n"`min" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("min",(x,y),UNITSUM);
+typedef fun n"`max" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("max",(x,y),UNITSUM);
+typedef fun n"`gcd" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("gcd",(x,y),UNITSUM);
+typedef fun n"`lcd" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("lcd",(x,y),UNITSUM);
+@
+
+@tangle unitsum_ops.fsyn
+syntax unitsum_ops 
+{
+  x[ssum_pri] := x[ssum_pri] "`+" x[>ssum_pri] =># "(Infix)";
+}
+@
+
 // -----------------------------------------------------------------------------
-
-typedef unitsums = typesetof (3,4,5,6,7,8,9,10,11,12,13,14,15,16);
-/*
-instance[T in unitsums] Eq[T] {
-  fun == (x:T,y:T) => caseno x == caseno y;
-}
-
-instance[T in unitsums] FloatAddgrp[T] {
-  fun zero () => 0 :>> T;
-  fun neg (x:T) => (sub (memcount[T].int , caseno x)) :>> T;
-  fun + (x:T, y:T) : T => (add ((caseno x , caseno y)) % memcount[T].int) :>> T;
-  fun - (x:T, y:T) : T => (add (memcount[T].int, sub(caseno x , caseno y)) % memcount[T].int) :>> T;
-}
-
-instance[T in unitsums] Str[T] {
-  fun str(x:T)=> str (caseno x)+ ":"+str(memcount[T].int); 
-}
-*/
-
-// This doesn't work dues to a design fault in the
-// numerical class libraries using "-" as a function
-// name for both prefix (negation) and infix (subtraction).
-// But in a class we cannot distinguish the uses since
-// negation could apply to a tuple.
-// 
-// open[T in unitsums] Addgrp[T];
-
-// so we have to open them all individually
-
-// Note: we don't put type 2 here, that's a bool and should
-// be handled elsewhere more specially..
-/*
-open Addgrp[3];
-open Addgrp[4];
-open Addgrp[5];
-open Addgrp[6];
-open Addgrp[7];
-open Addgrp[8];
-open Addgrp[9];
-open Addgrp[10];
-open Addgrp[11];
-open Addgrp[12];
-open Addgrp[13];
-open Addgrp[14];
-open Addgrp[15];
-open Addgrp[16];
-
-open Str[3];
-open Str[4];
-open Str[5];
-open Str[6];
-open Str[7];
-open Str[8];
-open Str[9];
-open Str[10];
-open Str[11];
-open Str[12];
-open Str[13];
-open Str[14];
-open Str[15];
-open Str[16];
-*/
-
 @h1 Category Theoretic Functional Operations
 @tangle functional.flx
 
