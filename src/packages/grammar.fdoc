@@ -1837,7 +1837,8 @@ syntax felix {
     plugins,
     debug,
     chips,
-    unitsum_ops
+    unitsum_ops,
+    staticbool_ops
   ;
 }
 @

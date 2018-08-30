@@ -9,7 +9,8 @@ type btpattern_t = {
 }
 and pvpiece_t = [`Ctor of (string * t) | `Base of t]
 and t = private
-    BTYP_hole
+  | BBOOL of bool 
+  | BTYP_hole
   | BTYP_none
   | BTYP_sum of t list
   | BTYP_unitsum of int
@@ -137,6 +138,7 @@ val btyp_type_set_union : t list -> t
 val btyp_type_set_intersection : t list -> t
 val btyp_typeof: (int * Flx_ast.expr_t) -> t
 val btyp_typeop: string -> t -> kind -> t
+val bbool: bool -> t
 
 val bmt: string -> Flx_ast.kindcode_t -> kind 
 

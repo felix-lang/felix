@@ -61,6 +61,7 @@ let fold (bsym_table: Flx_bsym_table.t) counter t =
     | BTYP_type_apply (a,b) -> ax a; ax b
     | BTYP_type_map(a,b) -> ax a; ax b
 
+
     | BTYP_typeof _
     | BTYP_type_set_intersection _
     | BTYP_type_set_union _
@@ -69,6 +70,8 @@ let fold (bsym_table: Flx_bsym_table.t) counter t =
     | BTYP_type_tuple _
     | BTYP_type_match _ -> () (* assume fixpoint can't span these boundaries *)
     | BTYP_subtype_match _ -> () (* assume fixpoint can't span these boundaries *)
+
+    | BBOOL _ -> ()
       (* failwith ("[fold] unexpected metatype " ^ sbt sym_table t') *)
   in
     try aux [] 0 t; t

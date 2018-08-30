@@ -19,6 +19,7 @@ and pvpiece_t = [`Ctor of (string * t) | `Base of t]
 
 (** general typing *)
 and t = 
+  | BBOOL  of bool (* kind BOOL *)
   | BTYP_hole
   | BTYP_none
   | BTYP_sum of t list
@@ -119,6 +120,7 @@ and str_of_btype typ =
   let s t = str_of_btype t in
   let ss ts = String.concat "," (List.map str_of_btype ts) in
   match typ with
+  | BBOOL b -> "BBOOL(" ^ string_of_bool b ^ ")"
   | BTYP_typeof (i,t) -> "BTYP_typeof(" ^string_of_int i ^ " unrepresentable)"
 
   | BTYP_hole -> "BTYP_hole"
@@ -551,6 +553,7 @@ let btyp_type_set_union ts =
 let btyp_type_set_intersection ts =
   BTYP_type_set_intersection ts
 
+let bbool v = BBOOL v
 
 (* -------------------------------------------------------------------------- *)
 (* a HACK *) 
@@ -654,6 +657,7 @@ let flat_iter
   btype
 =
   match btype with
+  | BBOOL b -> ()
   | BTYP_typeof (i, t) -> f_bid i
   | BTYP_typeop (op, t,k) -> f_btype t
 
@@ -761,33 +765,106 @@ let lcm m n =
   if x = 0 then 0 
   else x / (gcd m n)
 
-let btyp_typeop op t k =
-  match t with 
-  | BTYP_type_tuple [x; y] when isunitsum x && isunitsum y->
-    let m,n = unitsum_int x, unitsum_int y in
-    begin match m,n with
-    | Some m, Some n ->
-      let r = match op with
-        | "+" -> m + n
-        | "-" -> abs (m - n)
-        | "*" -> m * n
-        | "/" -> m / n
-        | "%" -> m mod n
-        | "min" -> min m n
-        | "max"-> max m n
-        | "gcd" -> gcd m n
-        | "lcm" -> lcm m n
-        | op -> failwith ("Unknown operator " ^ op ^ ": " ^ str_of_btype t ^ " -> " ^ sk k)
-      in
-      btyp_unitsum r
+
+let unitsum_binop op t k eval =
+  if k <> Flx_kind.KIND_unitsum 
+  then failwith ("Flx_btype: typeop " ^ op ^ " requires unitsum result kind");
+
+  match t with
+  | BTYP_type_tuple [x; y] ->
+   if not (isunitsum x && isunitsum y) 
+   then failwith ("Flx_btype: typeop " ^ op ^ " requires unitsum arguments");
+
+   begin match unitsum_int x, unitsum_int y with
+   | Some m, Some n -> btyp_unitsum (eval m n)
+   | _ -> BTYP_typeop (op,t,k)
+   end
+ | _ -> failwith ("Flx_btype: typeop " ^ op ^ " requires two unitsum arguments")
+
+let unitsum_cmp op t k eval =
+  if k <> Flx_kind.KIND_bool
+  then failwith ("Flx_btype: typeop " ^ op ^ " requires staticbool result kind");
+
+  match t with
+  | BTYP_type_tuple [x; y] ->
+   if not (isunitsum x && isunitsum y) 
+   then failwith ("Flx_btype: typeop " ^ op ^ " requires unitsum arguments");
+
+   begin match unitsum_int x, unitsum_int y with
+   | Some m, Some n -> bbool (eval m n)
+   | _ -> BTYP_typeop (op,t,k)
+   end
+ | _ -> failwith ("Flx_btype: typeop " ^ op ^ " requires two unitsum arguments")
+
+
+let isstaticbool x = match x with 
+  | BBOOL _ -> true 
+  | BTYP_typeop (_,_,mt)
+    -> (match mt with | KIND_bool -> true | _ -> false)
+  | _ -> false
+
+let staticbool_binop op t k eval =
+  if k <> Flx_kind.KIND_bool
+  then failwith ("Flx_btype: typeop " ^ op ^ " requires staticbool result kind");
+
+  match t with
+  | BTYP_type_tuple [x; y] ->
+    if not (isstaticbool x && isstaticbool y) 
+    then failwith ("Flx_btype: typeop " ^ op ^ " requires staticbool arguments");
+
+    begin match x, y with
+    | BBOOL m, BBOOL n -> bbool (eval m n)
     | _ -> BTYP_typeop (op,t,k)
     end
-  | _ -> failwith ("Unknown operator " ^ op ^ ": " ^ str_of_btype t ^ " -> " ^ sk k)
+ | _ -> failwith ("Flx_btype: typeop " ^ op ^ " requires two bool arguments")
 
+let staticbool_unop op t k eval =
+  if k <> Flx_kind.KIND_bool
+  then failwith ("Flx_btype: typeop " ^ op ^ " requires staticbool result kind");
+
+  if not (isstaticbool t ) 
+  then failwith ("Flx_btype: typeop " ^ op ^ " requires staticbool argument");
+
+  match t with
+  | BBOOL m -> bbool (eval m)
+  | _ -> BTYP_typeop (op,t,k)
+
+let staticbool_nullop op t k eval =
+  if k <> Flx_kind.KIND_bool
+  then failwith ("Flx_btype: typeop " ^ op ^ " requires staticbool result kind");
+
+  match t with
+  |  BTYP_tuple [] -> bbool (eval ())
+  | _ -> failwith ("Flx_btype: typeop " ^ op ^ " requires unit argument")
+
+
+let btyp_typeop op t k =
+  match op with
+  | "_unitsum_add"  -> unitsum_binop op t k (fun m n -> m + n)
+  | "_unitsum_diff" -> unitsum_binop op t k (fun m n -> abs (m - n))
+  | "_unitsum_mul"  -> unitsum_binop op t k (fun m n ->  m * n)
+  | "_unitsum_div"  -> unitsum_binop op t k (fun m n -> m / n)
+  | "_unitsum_mod"  -> unitsum_binop op t k (fun m n -> m mod n)
+  | "_unitsum_min"  -> unitsum_binop op t k (fun m n -> min m n)
+  | "_unitsum_max"  -> unitsum_binop op t k (fun m n -> max m n)
+  | "_unitsum_gcd"  -> unitsum_binop op t k (fun m n -> gcd m n)
+  | "_unitsum_lcm"  -> unitsum_binop op t k (fun m n -> lcm m n)
+
+  | "_unitsum_lt"  -> unitsum_cmp op t k (fun m n -> m < n)
+
+  | "_staticbool_and"   -> staticbool_binop  op t k (fun m n -> m && n)
+  | "_staticbool_or"    -> staticbool_binop  op t k (fun m n -> m || n)
+  | "_staticbool_xor"   -> staticbool_binop  op t k (fun m n -> (m || n) && not (m && n))
+  | "_staticbool_not"   -> staticbool_unop   op t k (fun m -> not m)
+  | "_staticbool_true"  -> staticbool_nullop op t k (fun () -> true)
+  | "_staticbool_false" -> staticbool_nullop op t k (fun () -> false)
+
+  | _ -> failwith ("Unknown operator " ^ op ^ ": " ^ str_of_btype t ^ " -> " ^ sk k)
 
 (** Recursively iterate over each bound type and transform it with the
  * function. *)
 let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
+  | BBOOL v -> bbool v
   | BTYP_typeof (i,t) -> btyp_typeof (f_bid i, t)
   | BTYP_typeop (op,t,k) -> btyp_typeop op (f_btype t) k
 

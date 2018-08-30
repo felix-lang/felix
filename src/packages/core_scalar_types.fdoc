@@ -47,6 +47,7 @@ include "std/scalar/float_format";
 include "std/scalar/float_math";
 include "std/scalar/quaternion";
 
+include "std/kind/staticbool";
 
 @h1 Character type
 A basic 8 bit character type.

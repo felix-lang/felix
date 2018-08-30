@@ -698,6 +698,7 @@ and sb bsym_table depth fixlist counter prec tc =
   let sbt prec t = sb bsym_table (depth+1) fixlist counter prec t in
   let iprec, term =
     match tc with
+    | BBOOL b -> 0,("BBOOL " ^ string_of_bool b)
     | BTYP_typeop (op,t,k) -> 0,
       ("_typeop(" ^ op ^ "," ^ sbt 0 t ^ "," ^ sk k ^ ")")
 

@@ -140,6 +140,7 @@ then
   print_endline (sp ^ "Unfolded type " ^ sbt sym_table t');
   *)
   match t' with
+  | BBOOL _
   | BTYP_typeop _
   | BTYP_typeof _
   | BTYP_hole -> assert false

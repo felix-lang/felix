@@ -10,6 +10,7 @@ and metatype' sr typ : kind =
   let st t = Flx_btype.st t in
   let mt t = metatype' sr t in
   match typ with
+  | BBOOL _ -> KIND_bool
   | BTYP_typeop (_,_,k) -> k
   | BTYP_hole -> assert false
   | BTYP_type_function (a,r,body) ->
