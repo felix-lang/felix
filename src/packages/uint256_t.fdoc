@@ -48,8 +48,8 @@ includes: '"flx_uint256_t.hpp"'
 library: flx_uint256_t
 macros: BUILD_UINT256_T NOMINMAX
 srcdir: src\uint256_t
-headers: uint256_t\\(uint256_t|uint128_t)\.h  
-src: uint256_t.cpp
+headers: (uint256_t|uint128_t)\.h  
+src: flx_uint256_t.cpp
 build_includes: src
 @
 
