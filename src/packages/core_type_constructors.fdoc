@@ -450,13 +450,15 @@ typedef fun n"`-" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_diff",(x,y
 typedef fun n"`*" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_mul",(x,y),UNITSUM);
 typedef fun n"`/" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_div",(x,y),UNITSUM);
 typedef fun n"`%" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_mod",(x,y),UNITSUM);
+
 typedef fun n"`min" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_min",(x,y),UNITSUM);
 typedef fun n"`max" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_max",(x,y),UNITSUM);
 typedef fun n"`gcd" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_gcd",(x,y),UNITSUM);
-typedef fun n"`lcd" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_lcd",(x,y),UNITSUM);
+typedef fun n"`lcd" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_lcm",(x,y),UNITSUM);
+
 typedef fun n"`<" (x:UNITSUM,y:UNITSUM):BOOL=> _typeop ("_unitsum_lt",(x,y),BOOL);
 typedef fun n"`>" (x:UNITSUM,y:UNITSUM):BOOL=> _typeop ("_unitsum_lt",(y,x),BOOL);
-typedef fun n"`==" (x:UNITSUM,y:UNITSUM):BOOL=> x `< y and y `< x;
+typedef fun n"`==" (x:UNITSUM,y:UNITSUM):BOOL=> x `< y `and y `< x;
 @
 
 @tangle unitsum_ops.fsyn
@@ -467,6 +469,9 @@ syntax unitsum_ops
   x[ssum_pri] := x[ssum_pri] "`*" x[>ssum_pri] =># "(Infix)";
   x[ssum_pri] := x[ssum_pri] "`/" x[>ssum_pri] =># "(Infix)";
   x[ssum_pri] := x[ssum_pri] "`%" x[>ssum_pri] =># "(Infix)";
+  x[ssum_pri] := x[>scomparison_pri] "`==" x[>scomparison_pri] =># "(Infix)";
+  x[ssum_pri] := x[>scomparison_pri] "`<" x[>scomparison_pri] =># "(Infix)";
+  x[ssum_pri] := x[>scomparison_pri] "`>" x[>scomparison_pri] =># "(Infix)";
 }
 @
 

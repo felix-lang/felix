@@ -742,7 +742,7 @@ object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t =
   ;
   var base_cxx_compile_flags = 
     "-D_POSIX" ! "-g"! "-c" ! "-O1" ! "-fno-common"
-    ! "-fno-strict-aliasing" ! "-std=gnu++11" ! (cxx_compile_warning_flags+config.ccflags)
+    ! "-fno-strict-aliasing" ! "-std=gnu++14" ! (cxx_compile_warning_flags+config.ccflags)
   ;
 
   method fun whatami () => "toolchain_gcc_linux (version 2)";
@@ -785,7 +785,7 @@ object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t =
        CxxCompiler::generic_cxx_gen_deps 
        (
           CCDEP=cxx_compiler,
-          CCFLAGS = "-MM" ! "-D_POSIX" ! "-std=gnu++11" ! config.ccflags,
+          CCFLAGS = "-MM" ! "-D_POSIX" ! "-std=gnu++14" ! config.ccflags,
           INCLUDE_DIRS=config.header_search_dirs,
           MACROS=config.macros,
           debugln = config.debugln
@@ -841,7 +841,7 @@ object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t =
       (
         CCOBJ_STATIC_LIB = cxx_compiler, 
         CCFLAGS = "-fvisibility=hidden" !"-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" 
-          ! "-D_POSIX" ! "-std=gnu++11" ! "-D_GLIBCXX_USE_CXX11_ABI=1"
+          ! "-D_POSIX" ! "-std=gnu++14" ! "-D_GLIBCXX_USE_CXX11_ABI=1"
           ! (cxx_compile_warning_flags+config.ccflags),
         INCLUDE_DIRS = config.header_search_dirs,
         MACROS = config.macros,
@@ -977,7 +977,7 @@ object toolchain_gcc_osx (config:clang_config_t) implements toolchain_t =
     "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
   ;
   var base_cxx_compile_flags =
-    "-g"! "-c" ! "-O1" ! "-std=c++11" ! "-fno-common"! "-fno-strict-aliasing" !(cxx_compile_warning_flags+config.ccflags)
+    "-g"! "-c" ! "-O1" ! "-std=c++14" ! "-fno-common"! "-fno-strict-aliasing" !(cxx_compile_warning_flags+config.ccflags)
   ;
 
   method fun whatami () => "toolchain_gcc_osx (version 2)";
@@ -1020,7 +1020,7 @@ object toolchain_gcc_osx (config:clang_config_t) implements toolchain_t =
        CxxCompiler::generic_cxx_gen_deps 
        (
           CCDEP=cxx_compiler,
-          CCFLAGS = "-MM" ! '-std=c++11' ! config.ccflags,
+          CCFLAGS = "-MM" ! '-std=c++14' ! config.ccflags,
           INCLUDE_DIRS=config.header_search_dirs,
           MACROS=config.macros,
           debugln = config.debugln
@@ -1220,7 +1220,7 @@ object toolchain_clang_linux (config:clang_config_t) implements toolchain_t =
   var ccflags_for_dynamic_link = list[string] ("-shared");
 
   var base_cxx_compile_flags =  
-     "-std=c++11"! "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (cxx_compile_warning_flags+config.ccflags)
+     "-std=c++14"! "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (cxx_compile_warning_flags+config.ccflags)
   ;
 
   var base_c_compile_flags =  
@@ -1268,7 +1268,7 @@ object toolchain_clang_linux (config:clang_config_t) implements toolchain_t =
        CxxCompiler::generic_cxx_gen_deps 
        (
           CCDEP=cxx_compiler,
-          CCFLAGS = "-MM" ! "-std=c++11" ! config.ccflags,
+          CCFLAGS = "-MM" ! "-std=c++14" ! config.ccflags,
           INCLUDE_DIRS=config.header_search_dirs,
           MACROS=config.macros,
           debugln = config.debugln
@@ -1466,7 +1466,7 @@ object toolchain_clang_osx (config:clang_config_t) implements toolchain_t =
   ;
 
   var base_cxx_compile_flags = 
-    "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++11" ! (cxx_compile_warning_flags+config.ccflags)
+    "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++14" ! (cxx_compile_warning_flags+config.ccflags)
   ;
 
   method fun whatami () => "toolchain_clang_osx (version 2)";
@@ -1509,7 +1509,7 @@ object toolchain_clang_osx (config:clang_config_t) implements toolchain_t =
        CxxCompiler::generic_cxx_gen_deps 
        (
           CCDEP=cxx_compiler,
-          CCFLAGS = "-MM" ! "-std=c++11" ! config.ccflags,
+          CCFLAGS = "-MM" ! "-std=c++14" ! config.ccflags,
           INCLUDE_DIRS=config.header_search_dirs,
           MACROS=config.macros,
           debugln = config.debugln
@@ -1997,7 +1997,7 @@ object toolchain_clang_apple_iOS_maker (sdk_tag:string, archs:list[string])
   ;
   var base_cxx_compile_flags = 
     "-g"! "-c" ! "-isysroot" ! sdk ! "-O1" ! 
-    "-fno-common"! "-fno-strict-aliasing" ! "-fembed-bitcode" ! "-std=c++11" !  
+    "-fno-common"! "-fno-strict-aliasing" ! "-fembed-bitcode" ! "-std=c++14" !  
     (archlist + cxx_compile_warning_flags+config.ccflags)
   ;
 
@@ -2041,7 +2041,7 @@ object toolchain_clang_apple_iOS_maker (sdk_tag:string, archs:list[string])
        CxxCompiler::generic_cxx_gen_deps 
        (
           CCDEP=cxx_compiler,
-          CCFLAGS = "-std=c++11" ! "-isysroot" ! sdk ! "-MM" ! config.ccflags,
+          CCFLAGS = "-std=c++14" ! "-isysroot" ! sdk ! "-MM" ! config.ccflags,
           INCLUDE_DIRS=config.header_search_dirs,
           MACROS=config.macros,
           debugln = config.debugln

@@ -799,6 +799,7 @@ let unitsum_cmp op t k eval =
 
 let isstaticbool x = match x with 
   | BBOOL _ -> true 
+  | BTYP_type_var (_,mt) 
   | BTYP_typeop (_,_,mt)
     -> (match mt with | KIND_bool -> true | _ -> false)
   | _ -> false

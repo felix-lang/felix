@@ -289,13 +289,13 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
         #    'optimize_flags': ['-fomit-frame-pointer']}),
         ({'bsd'}, {
             'warnings': ['all', 'fatal-errors', 'no-constant-logical-operand', 'no-array-bounds', ],
-            'flags': ['-std=c++11', '-fno-common','-fvisibility=hidden'] + flags,
+            'flags': ['-std=c++14', '-fno-common','-fvisibility=hidden'] + flags,
             'link_flags' : ['-lpthread'],
             'link_flags-': ['-ldl'],
             'optimize_flags': ['-fomit-frame-pointer']}),
         ({'posix'}, {
             'warnings': ['fatal-errors', 'no-invalid-offsetof','no-parentheses'],
-            'flags': ['-std=gnu++11', '-D_POSIX', '-w',
+            'flags': ['-std=c++14', '-D_POSIX', '-w',
                '-fno-common', '-fvisibility=hidden', '-fno-strict-aliasing'] + flags,
             'optimize_flags': ['-fomit-frame-pointer']}),
         ({'windows'}, {

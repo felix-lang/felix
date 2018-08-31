@@ -1,0 +1,96 @@
+@h1 Jason Lee's uint256_t library
+@tangler flx_uint256_t.hpp          = share/lib/rtl/flx_uint256_t.hpp
+@tangler flx_uint256_t.cpp          = share/src/uint256_t/flx_uint256_t.cpp
+
+@tangler flx_uint256_t_config.hpp   = share/lib/rtl/flx_uint256_t_config.hpp
+
+@tangler unix_uint256_t.fpc         = $PWD/src/config/unix/flx_uint256_t.fpc
+@tangler win32_uint256_t.fpc        = $PWD/src/config/win32/flx_uint256_t.fpc
+@tangler flx_uint256_t.py           = $PWD/buildsystem/flx_uint256_t.py
+
+@h1 Header
+Wrapper to add visibility, includes uint128 as well
+@tangle flx_uint256_t.hpp
+#include "flx_uint256_t_config.hpp"
+class UINT256_T_EXTERN uint128_t;
+class UINT256_T_EXTERN uint256_t;
+
+#include "uint128_t.h"
+#include "uint256_t.h"
+
+@h1 Implementation
+@tangle flx_uint256_t.cpp
+#include "flx_uint256_t.hpp"
+#include "uint128_t.cpp"
+#include "uint256_t.cpp"
+
+@h1 Config
+@tangle unix_uint256_t.fpc
+Name: uint256_t 
+Description: Jason Lee's uint256_t library
+provides_dlib: -lflx_uint256_t_dynamic
+provides_slib: -lflx_uint256_t_static
+includes: '"flx_uint256_t.hpp"'
+library: flx_uint256_t
+macros: BUILD_UINT256_T
+srcdir: src/uint256_t
+headers: (uint256_t|uint126_t)\.h  
+src: flx_uint256_t.cpp
+build_includes: src
+@
+
+@tangle win32_uint256_t.fpc
+Name: uint256_t
+Description: Jason Lee's uint256_t library
+provides_dlib: /DEFAULTLIB:flx_uint256_t_dynamic
+provides_slib: /DEFAULTLIB:flx_uint256_t_static
+includes: '"flx_uint256_t.hpp"'
+library: flx_uint256_t
+macros: BUILD_UINT256_T NOMINMAX
+srcdir: src\uint256_t
+headers: uint256_t\\(uint256_t|uint128_t)\.h  
+src: uint256_t.cpp
+build_includes: src
+@
+
+@tangle flx_uint256_t_config.hpp
+#ifndef __FLX_UINT256_T_CONFIG_H__
+#define __FLX_UINT256_T_CONFIG_H__
+#include "flx_rtl_config.hpp"
+#ifdef BUILD_UINT256_T
+#define UINT256_T_EXTERN FLX_EXPORT
+#else
+#define UINT256_T_EXTERN FLX_IMPORT
+#endif
+#endif
+@
+
+@tangle flx_uint256_t.py
+import fbuild
+from fbuild.path import Path
+from fbuild.record import Record
+from fbuild.builders.file import copy
+
+import buildsystem
+
+# ------------------------------------------------------------------------------
+
+def build_runtime(phase):
+    print('[fbuild] [rtl] build uint256_t')
+    path = Path(phase.ctx.buildroot/'share'/'src'/'uint256_t')
+    srcs = [path/'flx_uint256_t.cpp']
+    includes = [phase.ctx.buildroot / 'host/lib/rtl', phase.ctx.buildroot / 'share/lib/rtl']
+    macros = ['BUILD_UINT256_T']
+
+    dst = 'host/lib/rtl/flx_uint256_t'
+    return Record(
+        static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
+            includes=includes,
+            macros=macros),
+        shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
+            includes=includes,
+            macros=macros))
+@
+
+
+

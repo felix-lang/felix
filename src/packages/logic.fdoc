@@ -1,9 +1,9 @@
 @title Logic
-@tangler bool.flx = share/lib/std/scalar/bool.flx
-@tangler boolexpr.fsyn = share/lib/std/scalar/boolexpr.fsyn
-@tangler predicate.flx = share/lib/std/algebra/predicate.flx
-@tangler staticbool.flx     = share/lib/std/kind/staticbool.flx
-@tangler staticbool_ops.flx = share/lib/std/kind/staticbool_ops.fsyn
+@tangler bool.flx             = share/lib/std/scalar/bool.flx
+@tangler boolexpr.fsyn        = share/lib/std/scalar/boolexpr.fsyn
+@tangler predicate.flx        = share/lib/std/algebra/predicate.flx
+@tangler staticbool.flx       = share/lib/std/kind/staticbool.flx
+@tangler staticbool_ops.fsyn  = share/lib/std/kind/staticbool_ops.fsyn
 
 @h1 Boolean Logic
 
@@ -272,13 +272,14 @@ typedef fun n"`false" ():BOOL => _typeop ("_staticbool_false",(),BOOL);
 @tangle staticbool_ops.fsyn
 syntax staticbool_ops 
 {
-  x[ssum_pri] := x[ssum_pri] "`and" x[>ssum_pri] =># "(Infix)";
-  x[ssum_pri] := x[ssum_pri] "`or" x[>ssum_pri] =># "(Infix)";
-  x[ssum_pri] := x[ssum_pri] "`xor" x[>ssum_pri] =># "(Infix)";
-  x[ssum_pri] := x[ssum_pri] "`not" x[>ssum_pri] =># "(Infix)";
-  x[ssum_pri] := x[ssum_pri] "`true" x[>ssum_pri] =># "(Infix)";
-  x[ssum_pri] := x[ssum_pri] "`false" x[>ssum_pri] =># "(Infix)";
+  x[sand_condition_pri] := x[sand_condition_pri] "`and" x[>sand_condition_pri] =># "(Infix)";
+  x[sor_condition_pri] := x[sor_condition_pri] "`or" x[>sor_condition_pri] =># "(Infix)";
+  x[sor_condition_pri] := x[sor_condition_pri] "`xor" x[>sor_condition_pri] =># "(Infix)";
+  x[snot_condition_pri] :=  "`not" x[snot_condition_pri] =># "(Prefix)";
+  satom := "`true"  =># '`(ast_apply (,_sr, (,(nos "`true") ())))';
+  satom := "`false"  =># '`(ast_apply (,_sr, (,(nos "`true") ())))';
 }
+
 @
 
 

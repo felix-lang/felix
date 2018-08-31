@@ -181,14 +181,16 @@ prep:
 	       	--source-bin=host --clean-target-bin-dir --copy-compiler --copy-pkg-db \
 	       	--copy-config-headers --toolchain=${TOOLCHAIN} --debug
 
-rtl:
+rtlbase:
 	# =========================================================
 	# rebuild rtl
 	# =========================================================
 	${LPATH}=build/release/host/lib/rtl flx_build_rtl --target-dir=build/release --target-bin=trial
 
 
-target: prep flxg rtl boot
+rtl: extract prep rtlbase
+
+target: prep flxg rtlbase boot
 
 boot:
 	# =========================================================

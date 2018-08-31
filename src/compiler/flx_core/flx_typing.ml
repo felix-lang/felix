@@ -9,7 +9,7 @@ open Flx_bid
 (* handle curried type functions *)
 let mktypefun sr name vs args return_type body =
   let argtyp t = match t with
-    | [] -> failwith "Lambda abstraction requires nonunit parameter"
+    | [] -> KND_tuple [] 
     | [x] -> x
     | x -> KND_tuple x
   in
