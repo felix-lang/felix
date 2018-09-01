@@ -9,6 +9,11 @@ open Flxg_state
 
 (* We have to set the felix version first. *)
 Flx_version_hook.set_version ()
+;;
+
+(* and the type operations table *)
+Flx_typeops.set_eval_typeop ()
+;;
 
 (* -------------------------------------------------------------------------- *)
 let generate_dep_file state =

@@ -165,4 +165,12 @@ val adjust_fixpoint: t -> t
 val widen_fixgap : int -> t -> t
 val is_recursive_type : t -> bool
 
+val eval_typeop: 
+  (
+    (string-> t -> Flx_kind.kind -> t) ->
+    string -> 
+    t -> 
+    Flx_kind.kind ->
+    t
+  ) option ref
 

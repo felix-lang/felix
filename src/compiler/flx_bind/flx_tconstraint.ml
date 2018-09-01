@@ -125,7 +125,7 @@ print_endline ("building type constraints for " ^ name);
   let type_constraints =
     map (fun (s,i,tp) ->
 (*
-if name = "accumulate" then print_endline ("type variable " ^ s ^ " constraint = " ^ string_of_typecode tp);
+print_endline ("type variable " ^ s ^ " constraint = " ^ str_of_kindcode tp);
 *)
       let tp = build_constraint_element counter bt sr i tp in
       (*
@@ -142,7 +142,12 @@ if name = "accumulate" then print_endline ("type variable " ^ s ^ " constraint =
     let tc = btyp_intersect type_constraints in
     let tc = Flx_beta.beta_reduce "build type constraints" counter bsym_table sr tc in
 (*
-    print_endline ("Flx_tconstraint: intersected individual type constraints = " ^ sbt bsym_table tc);
+    begin match tc with 
+    | BTYP_tuple [] -> ()
+    | BTYP_fix (0,_)-> ()
+    | _ -> 
+    print_endline ("Flx_tconstraint: `"^name^"` intersected individual type constraints = " ^ sbt bsym_table tc);
+    end;
 *)
     tc
 
