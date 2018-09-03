@@ -284,7 +284,13 @@ print_endline ("flx_lookup.EXPR_callback.bexpr_closure");
     be (Flx_strr.apl2 sri "pow" [a; b])
 
   | EXPR_coercion (sr,(x,t)) ->
+(*
+print_endline ("Trying to bind explicit coercion" ^ string_of_expr e);
+*)
     let (e',t') as x' = be x in
+(*
+print_endline ("explicit coercioni argument bound " ^ string_of_expr x);
+*)
     let t'' = bt sr t in
     Flx_coerce.coerce state bsym_table sr x' t''
 

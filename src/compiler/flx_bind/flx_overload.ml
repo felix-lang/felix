@@ -21,7 +21,7 @@ open Flx_btype_subst
 open Flx_kind
 open Flx_typeset
 
-let debugid = ""
+let debugid = "apply"
 
 (* a hack *)
 exception OverloadKindError of Flx_srcref.t * string
@@ -212,8 +212,10 @@ let fixup_argtypes be bid pnames base_domain argt rs =
 let resolve sym_table bsym_table base_sym bt be arg_types =
   let sym = Flx_sym_table.find sym_table base_sym in
   let name = sym.Flx_sym.id in
+(*
   if name = debugid then 
   print_endline ("Attempting to resolve " ^ name);
+*)
   let opt_bsym = try Some (Flx_bsym_table.find bsym_table base_sym) with Not_found -> None in
 
   let pvs, vs, { raw_type_constraint=con } =
@@ -229,11 +231,12 @@ let resolve sym_table bsym_table base_sym bt be arg_types =
     sym.Flx_sym.id
     base_sym
   in
+(*
 if name = debugid then begin
   print_endline ("Base_sym=" ^si base_sym^ ", base domain="^string_of_typecode base_domain ^
    ", base result="^string_of_typecode base_result^", pnames from sig_of_symdef");
 end;
-
+*)
   let arg_types =
     match arg_types with
     | BTYP_record (rs) as argt :: tail ->
@@ -245,8 +248,10 @@ end;
     | _ ->
         arg_types
   in
+(*
 if name = debugid then 
   print_endline ("Arg types = " ^ catmap "," (sbt bsym_table) arg_types);
+*)
   (* bind type in base context, then translate it to view context:
    * thus, base type variables are eliminated and specialisation
    * type variables introduced *)
@@ -264,7 +269,9 @@ if name = debugid then
    *)
   match opt_bsym with
   | Some {Flx_bsym.id=id;sr=sr;bbdcl=Flx_bbdcl.BBDCL_fun (props,base_bvs,ps,rt,effects,_)} ->
+(*
 if name = debugid then print_endline ("Found function binding for " ^ id);
+*)
     let domain = Flx_bparams.get_btype ps in
     let base_result = rt in
     domain, base_result
@@ -273,7 +280,9 @@ if name = debugid then print_endline ("Found function binding for " ^ id);
 (*
 print_endline ("Warning: didn't find function binding for " ^ sym.Flx_sym.id);
 *)
+(*
 if name = debugid then print_endline ("Can't find bound symbol table entry, binding:");
+*)
     let domain = 
       try bt sym.Flx_sym.sr base_domain 
       with exn -> 
@@ -287,9 +296,10 @@ if name = debugid then print_endline ("Can't find bound symbol table entry, bind
     in
     domain,base_result
   in
+(*
 if name = debugid then print_endline "Resolve complete";
+*)
   sym.Flx_sym.id, sym.Flx_sym.sr, vs, pvs, con, domain, base_result, arg_types
-
 
 let rec unravel_ret tin dts =
   match tin with
@@ -343,9 +353,11 @@ let make_equations
   spec_result
 =
   let name = id in
+(*
 if name = debugid then
   print_endline ("BASE Return type of function " ^ id ^ "<" ^
     si entry_kind.base_sym ^ ">=" ^ sbt bsym_table spec_result);
+*)
   (* unravel function a->b->c->d->..->z into domains a,b,c,..y
      to match curry argument list *)
   let curry_domains =
@@ -413,18 +425,22 @@ print_endline ("Flx_overload bind type var");
 
   let dvars = ref BidSet.empty in
   List.iter (fun (_,i,_)-> dvars := BidSet.add i !dvars) entry_kind.spec_vs;
+(*
 if name = debugid then begin
   print_endline "EQUATIONS ARE:";
   List.iter (fun (t1,t2) -> print_endline (sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2))
   eqns
 end;
+*)
   (* WRONG!! dunno why, but it is! *)
 (*
   print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
     (BidSet.fold (fun i l-> i::l) !dvars []));
   print_endline "...";
 *)
+(*
 if name = debugid then print_endline "Trying unification";
+*)
   let result = 
 (*
     if name = debugid then 
@@ -433,11 +449,13 @@ if name = debugid then print_endline "Trying unification";
       maybe_specialisation_with_dvars bsym_table counter eqns !dvars 
     else try Some (unification bsym_table counter eqns !dvars) with Not_found -> None
   in
+(*
 if name = debugid then
   begin match result with
   | None -> print_endline "Does not unify"
   | Some mgu -> print_endline ("UNIFIES with MGU = " ^ string_of_varlist bsym_table mgu)
   end;
+*)
   result
 
 
@@ -474,7 +492,7 @@ print_endline (" solve_mgu .. mgu = " ^ string_of_varlist bsym_table mgu);
   print_endline "Specialisation detected";
 *)
 (*
-if name = "EInt" then
+if name = debugid then
   print_endline (" solve_mgu .. mgu = " ^ string_of_varlist bsym_table mgu);
 *)
   let mgu = ref mgu in
@@ -558,12 +576,12 @@ if name = "EInt" then
       let et = specialize_domain sr base_vs entry_kind.sub_ts et in
       let et = list_subst counter !mgu et in
       let et = beta_reduce "flx_overload: make equations" counter bsym_table sr et in
-      (*
+(*
+if name = debugid then
       print_endline ("After substitution of mgu, Reduced type is:\n  " ^
         sbt bsym_table et)
       ;
-      *)
-
+*)
       (* tp is a metatype .. it could be a pattern-like thing, which is
       a constraint. But it could also be an actual meta-type! In that
       case it is a constraint too, but not the right kind of constraint.
@@ -677,6 +695,10 @@ print_endline ("Flx_overload, extra FUDGE");
     end base_vs;
 
     (* NOW A SUPER HACK! *)
+(*
+if name = debugid then
+print_endline ("Calculating constrait stuff");
+*)
     let rec xcons con =
       match con with
       | BTYP_intersect cons -> List.iter xcons cons
@@ -693,6 +715,7 @@ print_endline ("Flx_overload, extra FUDGE");
     xcons con;
 
 (*
+if name = debugid then begin
     print_endline "UNIFICATION STAGE 2";
     print_endline "EQUATIONS ARE:";
     List.iter (fun (t1,t2) -> print_endline (sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2))
@@ -702,6 +725,7 @@ print_endline ("Flx_overload, extra FUDGE");
     print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
       (BidSet.fold (fun i l-> i::l) !dvars [])
     );
+end;
 *)
     let maybe_extra_mgu =
       try Some (unification bsym_table counter !extra_eqns !dvars)
@@ -711,10 +735,11 @@ print_endline ("Flx_overload, extra FUDGE");
 print_endline "Constraint unification done";
 *)
     match maybe_extra_mgu with
-    | None ->  (* print_endline "COULDN'T RESOLVE EQUATIONS"; *) ()
+    | None ->  if name = debugid then print_endline "STAGE2: COULDN'T RESOLVE EQUATIONS";  ()
     | Some extra_mgu ->
 (*
-        print_endline ("Resolved equations with mgu:\n  " ^
+if name = debugid then
+        print_endline ("STAGE2: Resolved equations with mgu:\n  " ^
           string_of_varlist bsym_table extra_mgu)
         ;
 *)
@@ -770,7 +795,7 @@ if id = "EInt" || id == "EEqual" then
       end
     end arg_types;
 (*
-if id = "accumulate" then print_endline (match !ok with | true -> "Argtypes ok" | _ -> "argtypes BAD");
+if name = debugid then print_endline (match !ok with | true -> "STAGE2: Argtypes ok" | _ -> "STAGE2: argtypes BAD");
 *)
     if not (!ok) then None else
     (*
@@ -789,7 +814,7 @@ if id = "accumulate" then print_endline (match !ok with | true -> "Argtypes ok" 
     let base_ts = List.map (list_subst counter !mgu) entry_kind.sub_ts in
     let base_ts = List.map (beta_reduce "flx_overload: base_ts" counter bsym_table sr) base_ts in
 (*
-if id = "accumulate" then print_endline ("base_ts = " ^ catmap "," (sbt bsym_table) base_ts);
+if name = debugid then print_endline ("base_ts = " ^ catmap "," (sbt bsym_table) base_ts);
 *)
     (* we need to check the type constraint, it uses the
       raw vs type variable indicies. We need to substitute
@@ -813,26 +838,59 @@ print_endline ("Flx_overload, parent ts");
 btyp_type_var (i,mt))
       parent_vs
     in
+(*
+if name = debugid then print_endline ("BUILDING TYPE CONSTRAINTS");
+*)
     let type_constraint = build_type_constraints counter bsym_table (bt sr) id sr base_vs in
-if id = debugid then
-    print_endline ("type constraint " ^ sbt bsym_table type_constraint);
-    let type_constraint = btyp_intersect [type_constraint; con] in
-if id = debugid then
+(*
+if name = debugid then print_endline ("TYPE CONSTRAINTS BUILT");
+if name = debugid then
+    print_endline ("type constraint1(build_type_constraints) " ^ sbt bsym_table type_constraint);
+*)
+(*
+if name = debugid then
+    print_endline ("type constraint2(con) " ^ sbt bsym_table con);
+*)
+    let con = 
+       try  btyp_typeop "_type_to_staticbool" con Flx_kind.KIND_bool 
+       with exn -> 
+        print_endline ("CONVERSION TO STATIC BOOL FAILED"); raise exn
+    in
+(*
+    print_endline ("type constraint2(con) as staticbool: " ^ sbt bsym_table con);
+*)
+    let type_constraint = btyp_typeop "_staticbool_and" (btyp_type_tuple [type_constraint; con]) Flx_kind.KIND_bool in
+(*
+if name = debugid then
+    print_endline ("type constraint(merged) " ^ sbt bsym_table type_constraint);
+*)
+(*
+if name = debugid then
     print_endline ("Raw type constraint " ^ sbt bsym_table type_constraint);
+*)
     let vs = List.map (fun (s,i,mt)-> s,i,Flx_btype.bmt "Flx_overload2" mt) base_vs in
     let type_constraint = tsubst sr vs base_ts type_constraint in
-if id = debugid then
+(*
+if name = debugid then
     print_endline ("Substituted type constraint " ^ sbt bsym_table type_constraint);
+*)
     let reduced_constraint = beta_reduce "flx_overload: constraint" counter bsym_table sr type_constraint in
-if id = debugid then
+(*
+if name = debugid then
     print_endline ("Reduced type constraint " ^ sbt bsym_table reduced_constraint);
+*)
     begin match reduced_constraint with
-    | BTYP_void ->
-        (*
+    | BBOOL false ->
+(*
+if name = debugid then
         print_endline "Constraint failure, rejecting candidate";
-        *)
+*)
         None
-    | BTYP_tuple [] ->
+    | BBOOL true ->
+(*
+if name = debugid then
+        print_endline "Constraint success, accepting candidate";
+*)
         let parent_ts = List.map
           (fun (n,i,mt) -> btyp_type_var (i, bmt "Flx_overload.2" mt))
           parent_vs
@@ -840,6 +898,10 @@ if id = debugid then
         Some (entry_kind.base_sym,domain,spec_result,!mgu,parent_ts @ base_ts)
 
     | x ->
+(*
+   print_endline ("TRYING FOR IMPLICATION: Constraint not reduced, do special typeset implication check!");
+*)
+        let env_traint = btyp_typeop "_type_to_staticbool" env_traint Flx_kind.KIND_bool in
         let implied = constraint_implies bsym_table counter env_traint reduced_constraint in
         if implied then 
           let parent_ts = List.map
@@ -850,12 +912,12 @@ print_endline ("flx_overload: solve mgu2 : "^n^"=T<"^string_of_int i^">");
 btyp_type_var (i, bmt "Flx_overload.3" mt))
             parent_vs in
           Some (entry_kind.base_sym,domain,spec_result,!mgu,parent_ts @ base_ts)
-        else begin
-          print_endline "Can't resolve type constraint!";
+        else 
+        begin
+          print_endline "IMPLICATION FAILED: Can't resolve type constraint!";
           print_endline ("Env traint = " ^ sbt bsym_table env_traint);
           print_endline ("Fun traint = " ^ sbt bsym_table reduced_constraint);
           print_endline ("Implication result = " ^ if implied then "true" else "false");
-
           clierrx "[flx_bind/flx_overload.ml:896: E249] " sr ("[overload] Cannot resolve type constraint! " ^
             sbt bsym_table type_constraint ^
             "\nReduced to " ^ sbt bsym_table x)
@@ -882,11 +944,15 @@ let consider
   (* Helper function to simplify the bind type function. *)
   let bt sr t = bt sr entry_kind.base_sym t in
 
+(*
 if name = debugid then print_endline ("Considering .." ^ name);
+*)
   let id, sr, base_vs, parent_vs, con, domain, base_result, arg_types =
     resolve sym_table bsym_table entry_kind.base_sym bt be arg_types 
   in
+(*
 if name = debugid then print_endline ("Resolve done for " ^ name);
+*)
   (*
   if List.length rtcr > 0 then begin
     (*
@@ -990,8 +1056,10 @@ if name = "accumulate" then print_endline "Considering function .. ";
       clierrx "[flx_bind/flx_overload.ml:1028: E250] " sr ("Failed to bind candidate return type! fn='" ^ name ^
         "', type=" ^ sbt bsym_table base_result)
   in
+(*
 if name = debugid then 
 print_endline "Making equations for ts";
+*)
   (* Step1: make equations for the ts *)
   let mgu = make_equations
     counter
@@ -1004,8 +1072,10 @@ print_endline "Making equations for ts";
     (specialize_domain sr base_vs entry_kind.sub_ts domain)
     spec_result
   in
+(*
 if name = debugid then 
 print_endline "maybe got mgu ..";
+*)
 (*
   let mgu = maybe_specialisation counter bsym_table mgu in
 *)
@@ -1019,8 +1089,10 @@ print_endline "maybe got mgu ..";
      already by the instance match .. hmm .. *)
   match mgu with
   | Some mgu ->
+(*
 if name = debugid then
 print_endline "solving mgu";
+*)
       solve_mgu
         counter
         bsym_table
@@ -1040,7 +1112,7 @@ print_endline "solving mgu";
 
   | None ->
 (*
-if name = "EInt" then
+if name = debugid then
       print_endline "No match";
 *)
       None
@@ -1063,6 +1135,7 @@ let overload
 :
   overload_result option
 =
+(*
 if name = debugid then
 begin
   print_endline ("Overload " ^ name);
@@ -1072,6 +1145,7 @@ begin
     catmap ",\n" (full_string_of_entry_kind sym_table bsym_table) fs ^ "\n");
   print_endline ("Input ts = " ^ catmap ", " (sbt bsym_table) ts);
 end;
+*)
   let env_traint = btyp_intersect (
     filter_out_units  
     (List.map
@@ -1084,7 +1158,9 @@ end;
       env
     ))
   in
-
+(*
+if name = debugid then print_endline ("ENVIRONMENT CONSTRAINT BUILT");
+*)
   (* HACK for the moment *)
   let aux i =
     match
@@ -1104,12 +1180,12 @@ end;
     with
     | Some x -> 
 (*
-if name = "EInt" then print_endline "Found unique result";
+if name = debugid then print_endline "INSIDE AUX: Found unique result";
 *)
       Unique x
     | None -> 
 (*
-if name = "EInt" then print_endline "Failed to find result";
+if name = debugid then print_endline "INSIDE AUX: Failed to find result";
 *)
       Fail
   in
@@ -1122,9 +1198,11 @@ if name = "EInt" then print_endline "Failed to find result";
       | Fail -> false
     end fun_defs
   in
+(*
   if name = debugid then
-    print_endline ("First stage: matching Candidates are:\n" ^ 
+    print_endline ("INSIDE AUX: First stage: matching Candidates are:\n" ^ 
       catmap ",\n" (show_result bsym_table) candidates^"\n");
+*)
     (*
     print_endline "Got matching candidates .. ";
     *)
@@ -1154,6 +1232,9 @@ if name = "EInt" then print_endline "Failed to find result";
   *)
 
   let candidates =
+(*
+if name = debugid then print_endline ("INSIDE AUX: analysing candidates");
+*)
     List.fold_left begin fun oc r ->
       match r with
       | Unique (j,c,jtyp,_,jts) ->
@@ -1247,14 +1328,18 @@ if name = "EInt" then print_endline "Failed to find result";
     []
     candidates
   in
-  (*
-  if name = "ff" then
-  print_endline ("Second stage: most specialised matching candidates are:\n" ^ 
+(*
+  if name = debugid then
+  print_endline ("OVERLOAD: Second stage: most specialised matching candidates are:\n" ^ 
     catmap ",\n" (show_result bsym_table ) candidates^"\n");
-  *)
+*)
   match candidates with
-  | [Unique (i,t,rtyp,mgu,ts)] -> Some (i,t,rtyp,mgu,ts)
-  | [] -> None
+  | [Unique (i,t,rtyp,mgu,ts)] -> 
+    (* if name = debugid then print_endline "FOUND UNIQUE MATCHING OVERLOAD"; *)
+    Some (i,t,rtyp,mgu,ts)
+  | [] -> 
+    (* if name = debugid then print_endline "NO CANDIDATES MATCH"; *)
+    None
   | _ ->
       clierrx "[flx_bind/flx_overload.ml:1305: E251] " call_sr
       (

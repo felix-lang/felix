@@ -55,7 +55,6 @@ print_endline ("Cal ret type of " ^ id ^ "<" ^ string_of_int index ^ "> at " ^ F
 (*
 print_endline ("+++++ return type is " ^ sbt bsym_table rt);
 *)
-
 (* HACK! We skip instructions when the match skip level is > 0, except
   for begin/end match cases. This means once we have a GadtUnificationFailure,
   return types (and all other code) for that match case are ignored.
@@ -112,6 +111,9 @@ print_endline ("Cal ret type of " ^ id ^ " got return: " ^ string_of_expr e);
           *)
 (*
 print_endline ("Calling bind_epression'");
+*)
+(* NOTE: this is NOT necessary if the expression is an explicit coercion! In that case
+we should just find the type being coerced to! 
 *)
             snd
             (
@@ -187,6 +189,8 @@ print_endline (" %%%%% Setting return type to " ^ sbt bsym_table t');
         | x ->
         print_endline ("FLx_cal_ret_type:  .. Unable to compute type of " ^ string_of_expr e);
         print_endline ("Reason: " ^ Printexc.to_string x);
+        let sr = src_of_expr e in
+        print_endline (Flx_srcref.long_string_of_src sr);
         raise x 
       end
     | (sr,exe) -> 

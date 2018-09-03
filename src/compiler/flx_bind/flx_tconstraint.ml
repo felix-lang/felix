@@ -139,15 +139,19 @@ print_endline ("type variable " ^ s ^ " constraint = " ^ str_of_kindcode tp);
     )
     vs
   in
-    let tc = btyp_intersect type_constraints in
-    let tc = Flx_beta.beta_reduce "build type constraints" counter bsym_table sr tc in
-(*
-    begin match tc with 
-    | BTYP_tuple [] -> ()
-    | BTYP_fix (0,_)-> ()
+  let type_constraints =List.map (fun t -> Flx_beta.beta_reduce "build type constraints" counter bsym_table sr t) type_constraints in
+  let tc = List.fold_left (fun acc t -> 
+    match t with 
+    | BTYP_tuple [] -> acc 
     | _ -> 
-    print_endline ("Flx_tconstraint: `"^name^"` intersected individual type constraints = " ^ sbt bsym_table tc);
-    end;
+      let traint = btyp_typeop "_type_to_staticbool" t Flx_kind.KIND_bool in
+      btyp_typeop "_staticbool_and" (btyp_type_tuple [acc; traint]) Flx_kind.KIND_bool
+   )
+   (bbool true)
+   type_constraints
+  in
+(*
+  print_endline ("Flx_tconstraint: `"^name^"`  type constraint = " ^ sbt bsym_table tc);
 *)
-    tc
+  tc
 

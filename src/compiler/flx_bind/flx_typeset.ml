@@ -115,7 +115,33 @@ let filter_out_units ls =
 let split_conjuncts ls = filter_out_units (split_conjuncts' ls)
 
 let constraint_implies (bsym_table:Flx_bsym_table.t) counter a b =
-  let r = terms_imply bsym_table counter (split_conjuncts a) (split_conjuncts b) in
+
+  let r = 
+    (* for the moment we need to downgrade from staticbool kind for the
+       implication to work
+    *)
+    let a = match a with 
+      | BTYP_typeop ("_type_to_staticbool",t,_) -> t
+      |  _ -> a
+    in
+    let b = match b with 
+      | BTYP_typeop ("_type_to_staticbool",t,_) -> t
+      |  _ -> b
+    in
+    try terms_imply bsym_table counter (split_conjuncts a) (split_conjuncts b) 
+    with exn -> 
+      print_endline("EXCEPTION THROWN: Constraint implication:\n");
+      print_endline("destaticed: LHS = " ^ Flx_print.sbt bsym_table a);
+      print_endline("destaticed: RHS = " ^ Flx_print.sbt bsym_table b);
+      raise exn
+  in
+  begin match r with
+  | false  -> 
+      print_endline("CONSTRAINT IMPLICATION FAILED:\n");
+      print_endline("original: LHS = " ^ Flx_print.sbt bsym_table a);
+      print_endline("original: RHS = " ^ Flx_print.sbt bsym_table b);
+  | _-> ()
+  end; 
   r
 
 

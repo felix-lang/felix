@@ -251,16 +251,23 @@ print_endline (" &&&&&& bind_type_uses calling BBIND_SYMBOL");
       with Not_found ->
         clierrx "[flx_bind/flx_bbind.ml:332: E2] " sym.Flx_sym.sr "Can't build type constraints, type binding failed"
     in
+(*
+print_endline ("Binding type constraint: cons=" ^ sbt bsym_table cons);
+*)
     let {raw_type_constraint=icons} = snd ivs in
     let icons = bt icons in
-    let cons = btyp_intersect [cons; icons] in
+    let icons = btyp_typeop "_type_to_staticbool" icons Flx_kind.KIND_bool in
+(*
+print_endline ("Binding type constraint: icons=" ^ sbt bsym_table icons);
+*)
+    let cons = btyp_typeop "_staticbool_and" (btyp_type_tuple [cons; icons]) Flx_kind.KIND_bool in
     cons
   in
   let bcons = bind_type_constraint ivs in
   let bcons = Flx_beta.beta_reduce "flx_bbind: constraint" state.counter bsym_table sym.Flx_sym.sr bcons in
-  (*
-  print_endline ("[flx_bbind] Constraint = " ^ sbt bsym_table bcons);
-  *)
+(*
+  print_endline ("[flx_bbind] bound type constraint bcons = " ^ sbt bsym_table bcons);
+*)
   let btraint = function | Some x -> Some (be x) | None -> None in
   let bind_reqs reqs =
     bind_reqs bt state bsym_table env sym.Flx_sym.sr reqs
@@ -836,9 +843,9 @@ print_endline (" &&&&&& SYMDEF_instance calling BBIND_SYMBOL");
     (*
     print_endline "DOne ..";
     *)
-    (*
+(*
     print_endline ("Flx_bbind: adding instance with constraint " ^ sbt bsym_table bcons);
-    *)
+*)
     add_bsym true_parent (bbdcl_instance ([], bvs, bcons, k, ts))
 
   | SYMDEF_inherit _ -> ()

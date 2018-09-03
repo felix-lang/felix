@@ -314,8 +314,22 @@ end;
               )
             )
         in
-        try apl "apply"
-        with _ -> raise exn (* raise original error *)
+        try 
+          begin match f' with
+          | EXPR_name (_,"apply",_) ->
+            print_endline ("Application of `apply` function failed: terminating");
+            raise exn
+          | _ ->
+(*
+print_endline ("Application failed, trying to use `apply` function f'="^Flx_print.string_of_expr f');
+*)
+          apl "apply"
+          end
+        with _ -> 
+(*
+print_endline ("apply function failed too f'=" ^ Flx_print.string_of_expr f');
+*)
+          raise exn (* raise original error *)
       end (* as a function *)
       with exn ->
       try (* record addition *)

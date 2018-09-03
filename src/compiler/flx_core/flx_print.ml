@@ -910,7 +910,7 @@ and sb bsym_table depth fixlist counter prec tc =
     | BTYP_type_map (t1,t2) -> 2,"_map " ^ sbt 2 t1 ^ " " ^ sbt 2 t2
     | BTYP_type_tuple ls ->
       begin match ls with
-      | [] -> 0,"UNEXPECTED TYPE TUPLE NO ARGS"
+      | [] -> 0,"()"
       | _ -> 4, cat ", " (map (sbt 4) ls)
       end
 

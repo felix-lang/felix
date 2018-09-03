@@ -60,6 +60,9 @@ let drop l n = Flx_list.list_tail l n
 let tcinst_chk syms bsym_table id sr i ts 
   ((inst_vs:Flx_kind.bvs_t), inst_constraint, inst_ts, j) 
  =
+(*
+print_endline ("TYPECLASS: " ^ id ^ ": inst_constraint = " ^ sbt bsym_table inst_constraint);
+*)
      if length inst_ts > length ts then
        clierrx "[flx_frontend/flx_typeclass.ml:409: E365] " sr (
          "Not enough ts given, expected at least " ^
@@ -149,9 +152,12 @@ print_endline (id ^ " Unified");
 *)
            let con = try list_subst syms.counter mgu inst_constraint with Not_found -> assert false in
            let con = try Flx_beta.beta_reduce "flx_typeclass: handle mgu" syms.Flx_mtypes2.counter bsym_table sr con with Not_found -> assert false in
+(*
+print_endline ("TYPECLASS, constraint = " ^ sbt bsym_table con);
+*)
            begin match con with
-           | BTYP_tuple [] -> (* print_endline (id ^ " MATCHES LATER MAYBE"); *) `MaybeMatchesLater,0,[]
-           | BTYP_void ->  (* print_endline (id ^ " cannot match - void"); *) `CannotMatch,0,[]
+           | BBOOL true -> (* print_endline (id ^ " MATCHES LATER MAYBE"); *) `MaybeMatchesLater,0,[]
+           | BBOOL false  ->  (* print_endline (id ^ " cannot match - void"); *) `CannotMatch,0,[]
            | _ -> (* print_endline (id ^ " cannot match constraint fail"); *) `CannotMatch,0,[]
            end
          | None -> 
@@ -194,15 +200,18 @@ print_endline (id ^ " Unified");
        in
        let con = list_subst syms.counter mgu inst_constraint in
        let con = Flx_beta.beta_reduce "flx_typeclass: constraint" syms.Flx_mtypes2.counter bsym_table sr con in
+(*
+print_endline ("TYPECLASS(mgu found), constraint = " ^ sbt bsym_table con);
+*)
        match con with
-       | BTYP_tuple [] ->
+       | BBOOL true ->
          let tail = drop ts (length inst_ts) in
          let ts = tsv @ tail in
          (*
          print_endline ("Remap to " ^ si j ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]");
          *)
          (`MatchesNow,j,ts)
-       | BTYP_void -> (* print_endline "constraint reduce failure"; *) `CannotMatch,0,[]
+       | BBOOL false -> (* print_endline "constraint reduce failure"; *) `CannotMatch,0,[]
        | _ ->
          `CannotMatch,0,[]
      end
@@ -343,19 +352,19 @@ end;
 print_endline ("Equal elements? constraints x,r: " ^ sbt bsym_table x_con ^ " =? " ^ sbt bsym_table r_con);
 *)
              begin match x_con, r_con with
-             | BTYP_tuple [], BTYP_tuple [] ->
+             | BBOOL true , BBOOL true ->
 (*
 print_endline "Keep both";
 *)
                aux (x::lhs) tail (* keep element *)
 
-             | BTYP_tuple [], _ ->
+             | BBOOL true, _ ->
 (*
 print_endline "Discard x";
 *)
                aux lhs tail (* discard greater element *)
 
-             | _,BTYP_tuple [] ->
+             | _,BBOOL true ->
 (*
 print_endline "Discard r";
 *)

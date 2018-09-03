@@ -511,7 +511,7 @@ let build_typeclass_to_instance_table syms bsym_table : unit =
       try Hashtbl.find syms.virtual_to_instances i 
       with Not_found -> Hashtbl.add syms.virtual_to_instances i []; []  
     in
-    let cons = Flx_btype.btyp_unit () in
+    let cons = Flx_btype.bbool true in
     let ts = List.map (fun (s,j,k) -> Flx_btype.btyp_type_var (j,k)) bvs in
     let entry = bvs, cons, ts,i in (* self reference *)
     Hashtbl.replace syms.virtual_to_instances i (entry::v2i)
@@ -539,7 +539,7 @@ let build_typeclass_to_instance_table syms bsym_table : unit =
         with Not_found -> Hashtbl.add syms.virtual_to_instances i []; []  
       in
       if s <> "" then
-        let cons = Flx_btype.btyp_unit () in
+        let cons = Flx_btype.bbool true in
         let ts = List.map (fun (s,j,k) -> Flx_btype.btyp_type_var (j,k)) bvs in
         let entry = bvs, cons, ts,i in (* self reference *)
         Hashtbl.replace syms.virtual_to_instances i (entry::v2i)

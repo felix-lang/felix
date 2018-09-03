@@ -312,6 +312,11 @@ let btyp_sum ts =
 
 
 (** Construct a BTYP_intersect type. *)
+
+(* THIS IS WRONG! Intersection is the setwise value intersection!
+Replace wrong uses (all of them!) with BOOL kind thhings for constraints!
+*)
+
 let btyp_intersect ls =
   let void_t = btyp_void () in
   let any_t = btyp_any () in
@@ -509,7 +514,9 @@ let btyp_type i =
 
 (** Construct a BTYP_type_tuple type. *)
 let btyp_type_tuple ts =
-  BTYP_type_tuple ts
+  match ts with 
+  | [x] -> x
+  | _ -> BTYP_type_tuple ts
 
 (** Construct a BTYP_function type. *)
 let btyp_type_function (args, ret, body) =

@@ -83,6 +83,39 @@ let staticbool_binop mk_raw_typeop op t k eval =
     end
  | _ -> failwith ("Flx_btype: typeop " ^ op ^ " requires two bool arguments")
 
+(* accepts any number of arguments including none *)
+let staticbool_and mk_raw_typeop op (t:Flx_btype.t) =
+(*
+  print_endline ("STATICBOOL and of " ^ st t);
+*)
+  let conjuncts = 
+    match t with
+    | BTYP_type_tuple ts -> ts
+    | x -> [x]
+  in
+  List.iter (fun x -> 
+    if not (isstaticbool x)
+    then begin 
+      print_endline ("Flx_btype: typeop "^op^" requires staticbool arguments");
+      failwith ("Flx_btype: typeop "^op^" requires staticbool arguments")
+    end
+  ) conjuncts;
+  begin try 
+   let conjuncts = List.filter 
+     (fun t -> 
+       match t with | BBOOL false -> raise Not_found | BBOOL true -> false | _ -> true
+     )
+     conjuncts
+   in
+   begin match conjuncts with
+   | [] -> bbool true
+   | [x] -> x
+   | _ -> mk_raw_typeop op (btyp_type_tuple conjuncts) KIND_bool
+   end
+
+  with Not_found -> bbool false
+  end
+
 let staticbool_unop mk_raw_typeop op t k eval =
   if k <> KIND_bool
   then failwith ("Flx_btype: typeop " ^ op ^ " requires staticbool result kind");
@@ -102,6 +135,25 @@ let staticbool_nullop mk_raw_typeop op t k eval =
   |  BTYP_tuple [] -> bbool (eval ())
   | _ -> failwith ("Flx_btype: typeop " ^ op ^ " requires unit argument")
 
+let rec type_to_staticbool mk_raw_typeop op t =
+(*
+print_endline ("CONVERTING TYPE TO STATICBOOL: " ^ st t);
+*)
+  match t with
+  | BTYP_void -> bbool false
+  | BTYP_tuple [] -> bbool true
+  | BTYP_intersect ts -> 
+(*
+    print_endline ("FOUND INTERSECTION, converting parts to static bool then calling staticbool_and");
+*)
+    let ts = List.map (type_to_staticbool mk_raw_typeop op) ts in
+(*
+    print_endline ("FOUND INTERSECTION, converted parts to static bool, now calling staticbool_and");
+*)
+    staticbool_and mk_raw_typeop op (btyp_type_tuple ts)
+    
+  | _ -> mk_raw_typeop op t Flx_kind.KIND_bool
+
 let eval_typeop mk_raw_typeop op t k =
   match op with
   | "_unitsum_add"  -> unitsum_binop mk_raw_typeop op t k (fun m n -> m + n)
@@ -116,12 +168,16 @@ let eval_typeop mk_raw_typeop op t k =
 
   | "_unitsum_lt"  -> unitsum_cmp mk_raw_typeop op t k (fun m n -> m < n)
 
-  | "_staticbool_and"   -> staticbool_binop  mk_raw_typeop op t k (fun m n -> m && n)
+  (* shortcut and accepts any number of arguments in type_tuple *)
+  | "_staticbool_and"   -> staticbool_and  mk_raw_typeop op t 
+
   | "_staticbool_or"    -> staticbool_binop  mk_raw_typeop op t k (fun m n -> m || n)
   | "_staticbool_xor"   -> staticbool_binop  mk_raw_typeop op t k (fun m n -> (m || n) && not (m && n))
   | "_staticbool_not"   -> staticbool_unop   mk_raw_typeop op t k (fun m -> not m)
   | "_staticbool_true"  -> staticbool_nullop mk_raw_typeop op t k (fun () -> true)
   | "_staticbool_false" -> staticbool_nullop mk_raw_typeop op t k (fun () -> false)
+
+  | "_type_to_staticbool" -> type_to_staticbool mk_raw_typeop op t
 
   | _ -> failwith ("Unknown operator " ^ op ^ ": " ^ str_of_btype t ^ " -> " ^ sk k)
 
