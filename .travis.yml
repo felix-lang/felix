@@ -7,8 +7,8 @@ addons:
     - ubuntu-toolchain-r-test
     packages:
     - python3
-    - gcc
-    - g++
+    - gcc-8
+    - g++-8
 before_script:
 - wget https://github.com/ocaml/ocaml/archive/4.06.1.tar.gz
 - tar -xzf 4.06.1.tar.gz
