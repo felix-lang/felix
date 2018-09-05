@@ -21,18 +21,21 @@ before_script:
 - git config --global user.email "skaller@users.sourceforge.net"
 - git config --global user.name "skaller"
 - git config --global push.default simple
-- git clone -q --depth=1 https://skaller:${GITHUB_TOKEN}@github.com/felix-lang/linuxgccbinary.git
+- #git clone -q --depth=1 https://skaller:${GITHUB_TOKEN}@github.com/felix-lang/linuxgccbinary.git
 - mkdir -p build
-- cp -r linuxgccbinary/build/* build
-- rm -rf build/release/share/lib/
+- #cp -r linuxgccbinary/build/* build
+- #rm -rf build/release/share/lib/
 script:
 - mkdir -p bin
-- ln -s /usr/bin/g++-8 bin/g++
+- rm -rf /usr/bin/gcc
+- rm -rf /usr/bin/g++
+- ln -s /usr/bin/gcc-8 /usr/bin/gcc
+- ln -s /usr/bin/g++-8 /usr/bin/g++
 - export PATH=bin:build/release/host/bin:$PATH LD_LIBRARY_PATH=build/release/host/lib/rtl
 - #export FLX_SHELL_ECHO=1
 - gcc --version
 - g++ --version
-- FLX_MIN_MEM=100000 make "FBUILD_PARAMS=--build-cc=gcc-8 --build-cxx=g++-8"
+- FLX_MIN_MEM=100000 make "FBUILD_PARAMS=--build-cc=gcc --build-cxx=g++"
 - #FLX_MIN_MEM=100000 make build 
 - make rebuild uproot
 after_success:
