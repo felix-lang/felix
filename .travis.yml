@@ -27,7 +27,7 @@ before_script:
 - rm -rf build/release/share/lib/
 script:
 - mkdir -p bin
-- ln /usr/bin/g++-8 bin/g++
+- ln -S /usr/bin/g++-8 bin/g++
 - export PATH=bin:build/release/host/bin:$PATH LD_LIBRARY_PATH=build/release/host/lib/rtl
 - #export FLX_SHELL_ECHO=1
 - gcc --version
