@@ -170,7 +170,7 @@ flxg:
 	# =========================================================
 	# building flxg
 	# =========================================================
-	flx_build_flxg
+	FLX_SHELL_ECHO=1 flx_build_flxg
 	cp build/flxg-tmp/flxg build/release/host/bin
 
 prep: 
