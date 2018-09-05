@@ -32,7 +32,7 @@ script:
 - #export FLX_SHELL_ECHO=1
 - gcc --version
 - g++ --version
-- FLX_MIN_MEM=100000 make "FBUILD_PARAMS=--build-cc=/usr/bin/gcc --build-cxx=bin/g++"
+- FLX_MIN_MEM=100000 make "FBUILD_PARAMS=--build-cc=gcc-8 --build-cxx=g++-8"
 - #FLX_MIN_MEM=100000 make build 
 - make rebuild uproot
 after_success:
