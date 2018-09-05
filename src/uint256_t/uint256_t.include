@@ -37,8 +37,6 @@ to do a general rewrite of this class.
 #include <type_traits>
 #include <utility>
 
-#include "uint128_t.include"
-
 class UINT256_T_EXTERN uint256_t;
 
 // Give uint256_t type traits

@@ -41,7 +41,7 @@ to do a general rewrite of this class.
 #include <type_traits>
 #include <utility>
 
-class uint128_t;
+class UINT256_T_EXTERN uint128_t;
 
 // Give uint128_t type traits
 namespace std {  // This is probably not a good idea
@@ -50,7 +50,7 @@ namespace std {  // This is probably not a good idea
     template <> struct is_unsigned   <uint128_t> : std::true_type {};
 };
 
-class UINT256_T_EXTERN uint128_t{
+class uint128_t{
     private:
         uint64_t UPPER, LOWER;
 
