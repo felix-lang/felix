@@ -631,6 +631,7 @@ println$ "[make_lib] source directory " + srcpath;
         ;
         var dstlib = target_dir/libname;
         println$ "Dynamic Linking library " + dstlib;
+        //println$ "  Source object files = " + objs.str;
         result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
         if result != 0 do
           println$ "Linker result " + str result;
@@ -691,6 +692,7 @@ println$ "[make_lib] source directory " + srcpath;
       ;
       var dstlib = target_dir/libname;
       println$ "Static Linking Library " + dstlib;
+      //println$ "  Source object files = " + objs.str;
       result = toolchain.static_library_linker(srcs=objs, dst=dstlib);
       if result != 0 do
         println$ "Linker result " + str result;

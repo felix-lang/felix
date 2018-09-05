@@ -13,8 +13,8 @@ provides_slib: -lflx_uint256_t_static
 includes: '"uint256_t.h"'
 library: flx_uint256_t
 srcdir: src/uint256_t
-headers: (uint256_t.h|uint126_t.h)
-src: uint128.cpp uint256_t.cpp
+headers: (uint256_t.h|uint128_t.h|uint128_t.include|uint256_t.include|uint256_t_config.include)
+src: uint128_t.cpp uint256_t.cpp
 build_includes: src/uint256_t
 @
 
