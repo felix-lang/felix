@@ -28,7 +28,7 @@ library: flx_uint256_t
 srcdir: src\uint256_t
 headers: (uint256_t.h|uint128_t.h|uint128_t.include|uint256_t.include|uint256_t_config.include)
 src: uint128_t.cpp uint256_t.cpp 
-build_includes: src/uint256_t
+build_includes: src\uint256_t
 @
 
 @tangle flx_uint256_t.py
@@ -45,7 +45,7 @@ def build_runtime(phase):
     print('[fbuild] [rtl] build uint256_t')
     path = Path(phase.ctx.buildroot/'share'/'src'/'uint256_t')
 
-    buildsystem.copy_to(phase.ctx, phase.ctx.buildroot/"share/lib/rtl/uint256_t",[
+    buildsystem.copy_to(phase.ctx, phase.ctx.buildroot/'share'/'lib'/'rtl',[
       path/"uint128_t.h", path/"uint128_t.include",
       path/"uint256_t.h", path/"uint256_t.include",
       path/"uint256_t_config.include"
