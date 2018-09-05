@@ -27,10 +27,10 @@ before_script:
 - #rm -rf build/release/share/lib/
 script:
 - mkdir -p bin
-- rm -rf /usr/bin/gcc
-- rm -rf /usr/bin/g++
-- ln -s /usr/bin/gcc-8 /usr/bin/gcc
-- ln -s /usr/bin/g++-8 /usr/bin/g++
+- sudo rm -rf /usr/bin/gcc
+- sudo rm -rf /usr/bin/g++
+- sudo ln -s /usr/bin/gcc-8 /usr/bin/gcc
+- sudo ln -s /usr/bin/g++-8 /usr/bin/g++
 - export PATH=bin:build/release/host/bin:$PATH LD_LIBRARY_PATH=build/release/host/lib/rtl
 - #export FLX_SHELL_ECHO=1
 - gcc --version
