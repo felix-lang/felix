@@ -50,7 +50,7 @@ namespace std {  // This is probably not a good idea
     template <> struct is_unsigned   <uint128_t> : std::true_type {};
 };
 
-class uint128_t{
+class UINT256_T_EXTERN uint128_t{
     private:
         uint64_t UPPER, LOWER;
 
@@ -373,30 +373,30 @@ T & operator^=(T & lhs, const uint128_t & rhs){
 }
 
 // Bitshift operators
-uint128_t operator<<(const bool     & lhs, const uint128_t & rhs);
-uint128_t operator<<(const uint8_t  & lhs, const uint128_t & rhs);
-uint128_t operator<<(const uint16_t & lhs, const uint128_t & rhs);
-uint128_t operator<<(const uint32_t & lhs, const uint128_t & rhs);
-uint128_t operator<<(const uint64_t & lhs, const uint128_t & rhs);
-uint128_t operator<<(const int8_t   & lhs, const uint128_t & rhs);
-uint128_t operator<<(const int16_t  & lhs, const uint128_t & rhs);
-uint128_t operator<<(const int32_t  & lhs, const uint128_t & rhs);
-uint128_t operator<<(const int64_t  & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator<<(const bool     & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator<<(const uint8_t  & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator<<(const uint16_t & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator<<(const uint32_t & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator<<(const uint64_t & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator<<(const int8_t   & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator<<(const int16_t  & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator<<(const int32_t  & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator<<(const int64_t  & lhs, const uint128_t & rhs);
 
 template <typename T, typename = std::enable_if_t <std::is_integral<T>::value> >
 T & operator<<=(T & lhs, const uint128_t & rhs){
     return lhs = static_cast <T> (uint128_t(lhs) << rhs);
 }
 
-uint128_t operator>>(const bool     & lhs, const uint128_t & rhs);
-uint128_t operator>>(const uint8_t  & lhs, const uint128_t & rhs);
-uint128_t operator>>(const uint16_t & lhs, const uint128_t & rhs);
-uint128_t operator>>(const uint32_t & lhs, const uint128_t & rhs);
-uint128_t operator>>(const uint64_t & lhs, const uint128_t & rhs);
-uint128_t operator>>(const int8_t   & lhs, const uint128_t & rhs);
-uint128_t operator>>(const int16_t  & lhs, const uint128_t & rhs);
-uint128_t operator>>(const int32_t  & lhs, const uint128_t & rhs);
-uint128_t operator>>(const int64_t  & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator>>(const bool     & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator>>(const uint8_t  & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator>>(const uint16_t & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator>>(const uint32_t & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator>>(const uint64_t & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator>>(const int8_t   & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator>>(const int16_t  & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator>>(const int32_t  & lhs, const uint128_t & rhs);
+UINT256_T_EXTERN uint128_t operator>>(const int64_t  & lhs, const uint128_t & rhs);
 
 template <typename T, typename = std::enable_if_t <std::is_integral<T>::value> >
 T & operator>>=(T & lhs, const uint128_t & rhs){
@@ -495,5 +495,5 @@ T & operator%=(T & lhs, const uint128_t & rhs){
 }
 
 // IO Operator
-std::ostream & operator<<(std::ostream & stream, const uint128_t & rhs);
+UINT256_T_EXTERN std::ostream & operator<<(std::ostream & stream, const uint128_t & rhs);
 #endif

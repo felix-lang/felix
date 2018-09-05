@@ -50,11 +50,32 @@ let rec solve_subtypes bsym_table counter lhs rhs dvars (s:vassign_t option ref)
   *)
   | BTYP_uniq t1, BTYP_uniq t2 ->
     add_ge (t1,t2)
+
+  (* WARNING: HACK! SPECIAL RULES FOR UNIQUE TYPES.
+
+    We want a function accepting a T value to also accept
+    a uniq T; throwing away the uniq is safe!
+
+    We also want the same idea to work under pointers.
+
+    For values, we do that and also allow the usual value subtyping at
+    the same time. 
+
+    For pointers, the read/write property subtypes, but
+    the pointed at value does not, except for uniq.
+  *)
+
+  | BTYP_wref t1, BTYP_wref (BTYP_uniq t2)
+  | BTYP_wref t1, BTYP_pointer (BTYP_uniq t2)
 (*
-  (* this is a hack *)
-  | BTYP_type_var _, BTYP_uniq _ -> raise Not_found
-  | t1, BTYP_uniq t2 -> add_ge (t1,t2)
+  | BTYP_rref t1, BTYP_rref (BTYP_uniq t2)
+  | BTYP_rref t1, BTYP_pointer (BTYP_uniq t2)
 *)
+    -> add_eq (t1,t2)
+
+  (* here we throw away uniq part of argument type passing a value *)
+  | t1, BTYP_uniq t2 -> add_ge (t1,t2)
+
   (* arrays and tuples, must be the same length, covariant by element *)
   | BTYP_tuple ls, BTYP_tuple rs ->
     if List.length ls <> List.length rs then raise Not_found;

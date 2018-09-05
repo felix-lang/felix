@@ -18,7 +18,7 @@ open class Unique
 
   // peek inside the box without changing livenes state
   fun peek[T] : &<(uniq T) -> T = "*($t)";
- 
+
   // string representions
   instance[T] Repr[uniq T] {
     fun repr(var x:uniq T) => "uniq " + (C_hack::cast[T] x).str;
@@ -35,7 +35,6 @@ open class Unique
   instance[T with Str[T]] Str[&<(uniq T)] {
     fun str(var x:&<(uniq T)) => x.peek.str;
   }
-
 }
 
 

@@ -8,21 +8,6 @@
 @tangler win32_uint256_t.fpc        = $PWD/src/config/win32/flx_uint256_t.fpc
 @tangler flx_uint256_t.py           = $PWD/buildsystem/flx_uint256_t.py
 
-@h1 Header
-Wrapper to add visibility, includes uint128 as well
-@tangle flx_uint256_t.hpp
-#include "flx_uint256_t_config.hpp"
-class UINT256_T_EXTERN uint128_t;
-class UINT256_T_EXTERN uint256_t;
-
-#include "uint128_t.h"
-#include "uint256_t.h"
-
-@h1 Implementation
-@tangle flx_uint256_t.cpp
-#include "flx_uint256_t.hpp"
-#include "uint128_t.cpp"
-#include "uint256_t.cpp"
 
 @h1 Config
 @tangle unix_uint256_t.fpc
@@ -31,7 +16,7 @@ Description: Jason Lee's uint256_t library
 provides_dlib: -lflx_uint256_t_dynamic
 provides_slib: -lflx_uint256_t_static
 cflags: -fvisibility=default
-includes: '"flx_uint256_t.hpp"'
+includes: '"uint256_t.h"'
 macros: BUILD_UINT256_T
 srcdir: src/uint256_t
 headers: (uint256_t|uint126_t)\.h  
@@ -44,7 +29,7 @@ Name: uint256_t
 Description: Jason Lee's uint256_t library
 provides_dlib: /DEFAULTLIB:flx_uint256_t_dynamic
 provides_slib: /DEFAULTLIB:flx_uint256_t_static
-includes: '"flx_uint256_t.hpp"'
+includes: '"uint256_t.h"'
 library: flx_uint256_t
 macros: BUILD_UINT256_T NOMINMAX
 srcdir: src\uint256_t
