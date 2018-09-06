@@ -80,7 +80,7 @@ Operator     Type                       Syntax   Semantics
 <            double * double -> bool    Infix    Less
 >=           double * double -> bool    Infix    Greater or Equal
 >            double * double -> bool    Infix    Greater
-========     =======================     =======  =============
+========     =======================    =======  =============
 
 
 

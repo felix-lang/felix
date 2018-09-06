@@ -149,7 +149,7 @@ Operator     Type                       Syntax   Semantics
 <            string * string -> bool    Infix    Less
 >=           string * string -> bool    Infix    Greater or Equal
 >            string * string -> bool    Infix    Greater
-========     ======================     =======  =================
+========     =======================    =======  =================
 
 
 
