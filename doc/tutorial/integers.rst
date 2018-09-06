@@ -165,8 +165,12 @@ neg          int -> int              Prefix   Negation
 abs          int -> int              Prefix   Absolute Value
 ========     ===================     =======  =============
 
+More Integers
+-------------
 
-
+Felix has many more integer types. See the reference 
+manual https://felix-tutorial.readthedocs.io/en/latest/integers.html
+for details.
 
 
 

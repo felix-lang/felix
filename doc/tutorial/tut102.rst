@@ -7,6 +7,5 @@ Felix 102: More Detail
    
    lexicology
    identifiers2
-   ../refman/integers
    hofs
 
