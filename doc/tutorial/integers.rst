@@ -169,7 +169,10 @@ More Integers
 -------------
 
 Felix has many more integer types. See the reference 
-manual https://felix-tutorial.readthedocs.io/en/latest/integers.html
+manual:
+
+https://felix.readthedocs.io/en/latest/integers.html
+
 for details.
 
 

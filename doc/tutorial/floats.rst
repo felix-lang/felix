@@ -100,6 +100,15 @@ abs          double -> double             Prefix   Absolute Value
 ========     ==========================   =======  =============
 
 
+More Floats
+-----------
+
+Felix has more floating types. See the reference 
+manual:
+
+https://felix.readthedocs.io/en/latest/floats.html
+
+for details.
 
 
 
