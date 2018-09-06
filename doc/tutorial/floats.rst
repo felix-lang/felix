@@ -74,13 +74,13 @@ Summary: Double Comparisons
 ========     =======================    =======  =============
 Operator     Type                       Syntax   Semantics
 ========     =======================    =======  =============
-\==           double * double -> bool    Infix    Equality
+==           double * double -> bool    Infix    Equality
 !=           double * double -> bool    Infix    Not Equal
 <=           double * double -> bool    Infix    Less or Equal
 <            double * double -> bool    Infix    Less
 >=           double * double -> bool    Infix    Greater or Equal
 >            double * double -> bool    Infix    Greater
-========     ======================     =======  =============
+========     =======================     =======  =============
 
 
 
