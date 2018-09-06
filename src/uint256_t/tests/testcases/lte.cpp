@@ -13,40 +13,52 @@ TEST(Comparison, less_than_or_equals){
     EXPECT_EQ(big <= big,      true);
 }
 
-#define unsigned_compare_lte(Z)                                         \
-do                                                                      \
-{                                                                       \
-    static_assert(std::is_signed <Z>::value, "Type must be signed");    \
-                                                                        \
-    const T small = std::numeric_limits <Z>::min();                     \
-    const T big   = std::numeric_limits <Z>::max();                     \
-                                                                        \
-    const uint256_t int_small(small);                                   \
-    const uint256_t int_big(big);                                       \
-}                                                                       \
+#define unsigned_compare_lte(Z)                                           \
+do                                                                        \
+{                                                                         \
+    static_assert(std::is_unsigned <Z>::value, "Type must be signed");    \
+                                                                          \
+    const Z small = std::numeric_limits <Z>::min();                       \
+    const Z big   = std::numeric_limits <Z>::max();                       \
+                                                                          \
+    const uint256_t int_small(small);                                     \
+    const uint256_t int_big(big);                                         \
+                                                                          \
+    EXPECT_EQ(small <= int_small, true);                                  \
+    EXPECT_EQ(small <= int_big,   true);                                  \
+                                                                          \
+    EXPECT_EQ(big <= int_small,   false);                                 \
+    EXPECT_EQ(big <= int_big,     true);                                  \
+}                                                                         \
 while (0)
 
-#define signed_compare_lte(Z)                                           \
-do                                                                      \
-{                                                                       \
-    static_assert(std::is_signed <Z>::value, "Type must be signed");    \
-                                                                        \
-    const T small =  1;                                                 \
-    const T big = std::numeric_limits <Z>::max();                       \
-                                                                        \
-    const uint256_t int_small(small);                                   \
-    const uint256_t int_big(big);                                       \
-}                                                                       \
+#define signed_compare_lte(Z)                                             \
+do                                                                        \
+{                                                                         \
+    static_assert(std::is_signed <Z>::value, "Type must be signed");      \
+                                                                          \
+    const Z small =  1;                                                   \
+    const Z big = std::numeric_limits <Z>::max();                         \
+                                                                          \
+    const uint256_t int_small(small);                                     \
+    const uint256_t int_big(big);                                         \
+                                                                          \
+    EXPECT_EQ(small <= int_small, true);                                  \
+    EXPECT_EQ(small <= int_big,   true);                                  \
+                                                                          \
+    EXPECT_EQ(big <= int_small,   false);                                 \
+    EXPECT_EQ(big <= int_big,     true);                                  \
+}                                                                         \
 while (0)
 
-// TEST(External, less_than_or_equals){
-    // unsigned_compare_lte(bool);
-    // unsigned_compare_lte(uint8_t);
-    // unsigned_compare_lte(uint16_t);
-    // unsigned_compare_lte(uint32_t);
-    // unsigned_compare_lte(uint64_t);
-    // signed_compare_lte(int8_t);
-    // signed_compare_lte(int16_t);
-    // signed_compare_lte(int32_t);
-    // signed_compare_lte(int64_t);
-// }
+TEST(External, less_than_or_equals){
+    unsigned_compare_lte(bool);
+    unsigned_compare_lte(uint8_t);
+    unsigned_compare_lte(uint16_t);
+    unsigned_compare_lte(uint32_t);
+    unsigned_compare_lte(uint64_t);
+    signed_compare_lte(int8_t);
+    signed_compare_lte(int16_t);
+    signed_compare_lte(int32_t);
+    signed_compare_lte(int64_t);
+}

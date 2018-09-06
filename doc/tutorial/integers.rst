@@ -31,11 +31,12 @@ the decimal digits like this:
     23
     42
   
-You can also put an underscore between any two digits:
+You can also put an underscore or single quote between any two digits:
 
 .. code-block:: felix
 
     123_456
+    123'456
 
 Negation
 --------
