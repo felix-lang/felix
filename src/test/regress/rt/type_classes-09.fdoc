@@ -1,0 +1,17 @@
+@title Check default virtuals
+@felix
+class A[T] {
+  virtual fun f (x:T) => x;
+  virtual fun g: T -> T = "$1";
+}
+instance A[int] {
+  fun f (x:int) => 42;
+  fun g (x:int) => 42;
+}
+
+open[T] A[T];
+println$ f 2, g 2;
+@
+@expect
+(42, 42)
+@
