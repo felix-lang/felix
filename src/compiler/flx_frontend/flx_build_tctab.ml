@@ -66,6 +66,7 @@ let check_binding syms bsym_table
 
     let tc_ptv = List.length tck_bvs - List.length tc_bvs in
     let inst_ptv = List.length inst_funbvs - List.length inst_vs in
+(*
 if debug && id = "f" then
 begin
 print_endline ("Type class has " ^ si (List.length tc_bvs) ^ " type variables");
@@ -75,9 +76,12 @@ print_endline ("Instance has " ^ si (List.length inst_vs) ^ " type variables (to
 print_endline ("Virtual instance function has " ^ si (List.length inst_funbvs) ^ " type variables (total)");
 print_endline ("Virtual instance function has " ^ si inst_ptv ^ " type variables (local)");
 end;
+*)
     if inst_ptv <> tc_ptv then (
+(*
 if debug && id = "f" then
       print_endline ("Wrong no args: inst_ptv="^ si inst_ptv^"<>"^si tc_ptv);
+*)
       false
     )
     else
@@ -91,11 +95,15 @@ if debug && id = "f" then
       tctype'
     in
 let tct = remap_virtual_types syms bsym_table (* tc *) tct in
+(*
 if debug && id = "f" then
 print_endline ("Virtual type: " ^ sbt bsym_table tct ^ ", instance type: " ^ sbt bsym_table t);
+*)
     let matches =  tct = t in
+(*
 if debug && id = "f" then
 print_endline ("Matches= " ^ string_of_bool matches);
+*)
     matches
   in
 
@@ -105,16 +113,19 @@ print_endline ("Matches= " ^ string_of_bool matches);
     (fun (name,(i,(inst_funbvs,t))) -> 
        if name = id then begin
         let m = sigmatch i inst_funbvs t in
+(*
 if debug && id = "f" then
         print_endline ("  ... filtering functions found name: " ^ name ^ " sigmatch = " ^ string_of_bool m);
+*)
         m
        end else false
     )
     inst_map 
   in
+(*
 if debug && inst_id = "X" then
 print_endline ("We have " ^ si (List.length entries) ^ " functions left");
-
+*)
 (* see what we have left *)
   match entries with
 
@@ -122,10 +133,12 @@ print_endline ("We have " ^ si (List.length entries) ^ " functions left");
 in the typeclass might be used instead. This routine only handles actual instances!
 *)
   | [] -> 
+(*
 if debug && inst_id = "X" then
 begin
   print_endline ("     ** function: No binding found");
 end;
+*)
     ()
 
   | [_,(i,(inst_funbvs,t))] ->
@@ -155,10 +168,12 @@ end;
     if List.mem entry old then
       clierrx "[flx_frontend/flx_typeclass.ml:229: E362] " sr "Instance already registered??"
     else begin
+(*
 if debug && inst_id = "X" then
 begin
   print_endline ("      ** function: add virtual to instance binding")
 end;
+*)
 (* finally, add the instance to the virtual to instance mapping table for subsequent lookups *)
       Hashtbl.replace syms.virtual_to_instances tck (entry :: old);
     end
@@ -173,9 +188,10 @@ let check_type_binding syms bsym_table (inst, inst_id, inst_vs, inst_ts, inst_sr
     (fun (name,(i,(inst_funbvs,t))) -> name = id ) 
     inst_map 
   in
+(*
 if debug && inst_id = "X" then
 print_endline ("We have " ^ si (List.length entries) ^ " types left");
-
+*)
 (* see what we have left *)
   match entries with
 
@@ -183,10 +199,12 @@ print_endline ("We have " ^ si (List.length entries) ^ " types left");
 in the typeclass might be used instead. This routine only handles actual instances!
 *)
   | [] ->
+(*
 if debug && inst_id = "X" then
 begin
   print_endline ("     ** type: No binding found");
 end;
+*)
   ()
 
   | [_,(i,(inst_funbvs,t))] ->
@@ -219,10 +237,12 @@ end;
       clierrx "[flx_frontend/flx_typeclass.ml:229: E362] " sr "Instance already registered??"
     else begin
 (* finally, add the instance to the virtual to instance mapping table for subsequent lookups *)
+(*
 if debug && inst_id = "X" then
 begin
   print_endline ("      ** type: add virtual to instance binding")
 end;
+*)
       Hashtbl.replace syms.virtual_to_instances tck (entry :: old);
     end
 
@@ -392,7 +412,9 @@ begin
 end;
 *)
       match Flx_bsym.bbdcl tck_bsym with
-      | BBDCL_external_fun (_,bvs,params,ret,_,_,`Code Flx_code_spec.Virtual) ->
+(*      | BBDCL_external_fun (_,bvs,params,ret,_,_,`Code Flx_code_spec.Virtual) -> *)
+      | BBDCL_external_fun (props,bvs,params,ret,_,_,`Code _ ) 
+        when List.mem `Virtual props ->
 (*
 if debug && inst_id = "X" 
 then print_endline ("       virtual extern function");
@@ -423,8 +445,10 @@ then print_endline ("       virtual extern const");
         clierr (Flx_bsym.sr tck_bsym) ("instance type not allowed in type class?")
 
       | _ ->
+(*
 if debug && inst_id = "X" 
 then print_endline ("       non virtual entry");
+*)
         (*
         clierrx "[flx_frontend/flx_typeclass.ml:261: E364] " tcksr "Typeclass entry must be virtual function or procedure"
         *)
@@ -457,6 +481,9 @@ its original identity.
 *)
 
 let build_typeclass_to_instance_table syms bsym_table : unit =
+(*
+print_endline "BUILD TYPECLASS TO INSTANCE MAPPING";
+*)
   let get_insts tc =
     try Hashtbl.find syms.instances_of_typeclass tc
     with Not_found -> 
@@ -502,11 +529,16 @@ let build_typeclass_to_instance_table syms bsym_table : unit =
 
   (* virtual with default *)
   | BBDCL_fun (props,bvs,params,rettype,effects, exes) ->
+(*
+if id = "f" || id = "g" then 
+  print_endline ("Felix function " ^ id ^ " marked virtual? " ^ string_of_bool (List.mem `Virtual props));
+*)
     if List.mem `Virtual  props then
     let tc = match parent with
     | None -> assert false
     | Some p -> p
     in
+    (* ensure there is an entry in the table to add to *)
     let v2i = 
       try Hashtbl.find syms.virtual_to_instances i 
       with Not_found -> Hashtbl.add syms.virtual_to_instances i []; []  
@@ -514,36 +546,44 @@ let build_typeclass_to_instance_table syms bsym_table : unit =
     let cons = Flx_btype.bbool true in
     let ts = List.map (fun (s,j,k) -> Flx_btype.btyp_type_var (j,k)) bvs in
     let entry = bvs, cons, ts,i in (* self reference *)
+    (* add the default as an instance *)
     Hashtbl.replace syms.virtual_to_instances i (entry::v2i)
 
   (* virtual with default *)
   | BBDCL_external_fun (props,bvs,paramtypes,rettype,reqs,prec,kind) ->
+    (* verify the attribute is set *)
     begin match kind with
-    | `Code Flx_code_spec.Virtual -> 
-(*
-       print_endline ("Pure virtual primitive " ^ Flx_bsym.id bsym);
-*)
-       assert (List.mem `Virtual props)
+    | `Code Flx_code_spec.Virtual -> assert (List.mem `Virtual props)
     | _ -> ()
-(*
-      if List.mem `Virtual props then
-        print_endline ("Instantiated Virtual primitive " ^ Flx_bsym.id bsym);
-*)
     end;
+(*
+if id = "f" || id = "g" then 
+  print_endline ("External function " ^ id ^ " marked virtual? " ^ string_of_bool (List.mem `Virtual props));
+*)
     if List.mem `Virtual  props then
+    let v2i = 
+      try Hashtbl.find syms.virtual_to_instances i 
+      with Not_found -> Hashtbl.add syms.virtual_to_instances i []; []  
+    in
     begin match kind with
     | `Code (Flx_code_spec.Str_template s)
     | `Code (Flx_code_spec.Str s) ->
-      let v2i = 
-        try Hashtbl.find syms.virtual_to_instances i 
-        with Not_found -> Hashtbl.add syms.virtual_to_instances i []; []  
-      in
-      if s <> "" then
+      if s <> "" then begin
+(*
+if (id = "f") || (id = "g") then
+print_endline ("Virtual "^id ^" with non-empty default " ^ s);
+*)
         let cons = Flx_btype.bbool true in
         let ts = List.map (fun (s,j,k) -> Flx_btype.btyp_type_var (j,k)) bvs in
         let entry = bvs, cons, ts,i in (* self reference *)
         Hashtbl.replace syms.virtual_to_instances i (entry::v2i)
-
+      end 
+(*
+else
+if (id = "f") || (id = "g") then
+print_endline ("Virtual "^id ^" with empty default " ^ s);
+*)
+      
     | _ -> ()
     end
   | _ -> ()

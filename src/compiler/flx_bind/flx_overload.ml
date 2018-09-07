@@ -21,7 +21,7 @@ open Flx_btype_subst
 open Flx_kind
 open Flx_typeset
 
-let debugid = "apply"
+let debugid = ""
 
 (* a hack *)
 exception OverloadKindError of Flx_srcref.t * string
@@ -1335,7 +1335,14 @@ if name = debugid then print_endline ("INSIDE AUX: analysing candidates");
 *)
   match candidates with
   | [Unique (i,t,rtyp,mgu,ts)] -> 
-    (* if name = debugid then print_endline "FOUND UNIQUE MATCHING OVERLOAD"; *)
+    if name = debugid then begin 
+       print_endline "FOUND UNIQUE MATCHING OVERLOAD";
+       print_endline ("Index " ^ string_of_int i);
+       print_endline ("Type = " ^ sbt bsym_table t);
+       print_endline ("rtyp = " ^ sbt bsym_table rtyp);
+       print_endline ("mgu = " ^ string_of_varlist bsym_table mgu);
+       print_endline ("ts = " ^ Flx_util.catmap "," (sbt bsym_table) ts);
+    end;
     Some (i,t,rtyp,mgu,ts)
   | [] -> 
     (* if name = debugid then print_endline "NO CANDIDATES MATCH"; *)

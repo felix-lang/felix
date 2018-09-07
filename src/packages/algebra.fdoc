@@ -473,12 +473,26 @@ syntax tordcmpexpr
 @h2 Sequences
 @tangle sequence.flx
 
+// Forward iterable
 class Forward[t] {
   virtual fun succ: t -> t;
   virtual proc pre_incr: &t;
   virtual proc post_incr: &t;
 }
 
+// Totally ordered forward iterable
+class TordForward[t] {
+  inherit Forward[t];
+  inherit Tord[t];
+}
+
+// Bounded totally ordered forward iterable
+class BoundedTordForward[t] {
+  inherit TordForward[t];
+  virtual fun maxval: 1 -> t;// = "::std::numeric_limits<?1>::max()";
+}
+
+// Bidirectional
 class Bidirectional[t] {
   inherit Forward[t];
   virtual fun pred: t -> t;
@@ -486,6 +500,36 @@ class Bidirectional[t] {
   virtual proc post_decr: &t;
 }
 
+// Totally ordered bidirectional
+class TordBidirectional[t] {
+  inherit Bidirectional[t];
+  inherit Tord[t];
+}
+
+// Bounded totally ordered bidirectional
+class BoundedTordBidirectional[t] {
+  inherit TordBidirectional[t];
+  inherit BoundedTordForward[t];
+  virtual fun minval: 1 -> t = "::std::numeric_limits<?1>::min()";
+}
+
+// Bounded Random access totally ordered
+class BoundedTordRandom[t] {
+  inherit BoundedTordBidirectional[t];
+  virtual fun + : t * t -> t;// = "$1+$2";
+  virtual fun - : t * t -> t;// = "$1-$2";
+  virtual fun one : 1 -> t;
+  virtual fun zero : 1 -> t;
+}
+
+/*
+instance[T:UNITSUM] Eq[T] {
+  fun == (x:T,y:T) => caseno x == caseno y;
+}
+instance[T:UNITSUM] Tord[T] {
+  fun < (x:T,y:T) => caseno x < caseno y;
+}
+*/ 
 
 @h1 Groupoids.
 
@@ -718,8 +762,6 @@ class Integer[t] {
   fun shl(x:t,y:t)=> x << y;
   fun shr(x:t,y:t)=> x >> y;
 
-  virtual fun maxval: 1 -> t = "::std::numeric_limits<?1>::max()";
-  virtual fun minval: 1 -> t = "::std::numeric_limits<?1>::min()";
 
 }
 

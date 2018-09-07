@@ -109,6 +109,9 @@ and xexpr_t sr x =
     let arg = EXPR_tuple (sr, [mkcharp f;mkint sl;mkint sc;mkint el;mkint ec]) in
     EXPR_apply (sr,(ctor, arg))
 
+  (* type slice *)
+  | Lst [Id "ast_type_slice"; sr; t] -> EXPR_name (xsr sr,"Slice_all", [ti t])
+
   (* this term comes from the hard coded parser! *)
   | Lst [Id "ast_vsprintf";  sr; Str s] -> EXPR_vsprintf (xsr sr, s)
   | Lst [Id "ast_interpolate";  sr; Str s] -> EXPR_interpolate (xsr sr, s)

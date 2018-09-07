@@ -232,7 +232,7 @@ union slice[T] =
   | Slice_none
 ;
 
-fun min[T with Integer[T]] (x:slice[T]) => match x with
+fun min[T with BoundedTordRandom[T]] (x:slice[T]) => match x with
   | ( Slice_all 
     | Slice_to_incl _ 
     | Slice_to_excl
@@ -245,7 +245,7 @@ fun min[T with Integer[T]] (x:slice[T]) => match x with
     ) => i
   | Slice_none => #maxval[T]
 ;
-fun max[T with Integer[T]] (x:slice[T]) => match x with
+fun max[T with BoundedTordRandom[T]] (x:slice[T]) => match x with
   | ( Slice_all 
     | Slice_from _
     ) => #maxval[T]
@@ -258,21 +258,21 @@ fun max[T with Integer[T]] (x:slice[T]) => match x with
   | Slice_none => #minval  
 ;
 
-fun normalise_to_inclusive_range[T with Integer[T]] (x:slice[T]) =>
+fun normalise_to_inclusive_range[T with BoundedTordRandom[T]] (x:slice[T]) =>
   let l = x.min in
   let u = x.max in
   if l <= u then Slice_range_incl (l,u) 
   else Slice_none[T]
 ;
 
-fun \cap[T with Integer[T]] (x:slice[T], y:slice[T]) =>
+fun \cap[T with BoundedTordRandom[T]] (x:slice[T], y:slice[T]) =>
   let l = max (min x, min y) in
   let u = min (max x, max y) in
   if  l <= u then Slice_range_incl (l,u) 
   else Slice_none[T]
 ;
 
-fun \in[T with Integer[T]] (x:T, s:slice[T]) => 
+fun \in[T with BoundedTordRandom[T]] (x:T, s:slice[T]) => 
   match s with
   | #Slice_all => true
   | Slice_from i => x >= i
@@ -286,16 +286,16 @@ fun \in[T with Integer[T]] (x:T, s:slice[T]) =>
 ;
 
 
-gen iterator[T with Integer[T]] (s:slice[T]) =>
+gen iterator[T with BoundedTordRandom[T]] (s:slice[T]) =>
   match s with
   | Slice_one x => { yield Some x; return None[T]; }
   | Slice_range_incl (first, last) => slice_range_incl first last
   | Slice_range_excl (first, last) => slice_range_excl first last
-  | Slice_to_incl (last) => slice_range_incl #Integer[T]::minval last
-  | Slice_to_excl (last) => slice_range_excl #Integer[T]::minval last
-  | Slice_from (first) => slice_range_incl first #Integer[T]::maxval
+  | Slice_to_incl (last) => slice_range_incl #minval[T] last
+  | Slice_to_excl (last) => slice_range_excl #minval[T] last
+  | Slice_from (first) => slice_range_incl first #maxval[T]
   | Slice_from_counted (first, count) => slice_from_counted first count
-  | #Slice_all => slice_range_incl #Integer[T]::minval #Integer[T]::maxval
+  | #Slice_all => slice_range_incl #minval #maxval
   | #Slice_none => { return None[T]; } 
   endmatch
 ;
@@ -303,7 +303,7 @@ gen iterator[T with Integer[T]] (s:slice[T]) =>
 // Note: guarrantees no overflow
 // handles all cases for all integers correctly
 // produces nothing if first > last
-gen slice_range_incl[T with Integer[T]] (first:T) (last:T) () = {
+gen slice_range_incl[T with BoundedTordRandom[T]] (first:T) (last:T) () = {
   var i = first;
   while i < last do 
     yield Some i; 
@@ -313,7 +313,7 @@ gen slice_range_incl[T with Integer[T]] (first:T) (last:T) () = {
   return None[T]; 
 }
 
-gen slice_range_excl[T with Integer[T]] (first:T) (limit:T) () = {
+gen slice_range_excl[T with BoundedTordRandom[T]] (first:T) (limit:T) () = {
   var i = first;
   while i < limit do 
     yield Some i; 
@@ -323,7 +323,7 @@ gen slice_range_excl[T with Integer[T]] (first:T) (limit:T) () = {
 }
 
 
-gen slice_from_counted[T with Integer[T]] (first:T) (count:T) () = {
+gen slice_from_counted[T with BoundedTordRandom[T]] (first:T) (count:T) () = {
   var k = count; 
   while k > #zero[T] do 
     yield Some (first + (count - k)); 
