@@ -9,6 +9,7 @@ Felix define four significant platforms:
 * run platform: where you run the compiled binaries
 
 .. figure:: platform.jpg
+
    platform model
 
 
