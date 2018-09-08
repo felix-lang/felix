@@ -690,6 +690,9 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
 *)
         bexpr_unitsum_case v k  (* const ctor *)
       end
+    | BTYP_type_var (_,Flx_kind.KIND_unitsum) ->
+      bexpr_const_case (v, t)  (* const ctor *)
+
     | BTYP_sum ls ->
       if v<0 || v>= List.length ls
       then clierrx "[flx_bind/flx_lookup.ml:4270: E188] " sr "Case index out of range of sum"

@@ -218,20 +218,32 @@ and solve_subsumption bsym_table counter lhs rhs  dvars (s:vassign_t option ref)
           begin
             if not (Flx_kind.kind_ge [mi, mj]) then
             begin
-              print_endline ("Unify: metatype mismatch  T<"^string_of_int i^">" ^Flx_kind.sk mi ^ 
+(*
+              print_endline ("Unify1: metatype mismatch  T<"^string_of_int i^">" ^Flx_kind.sk mi ^ 
               " is not superkind of  T<"^string_of_int j^">" ^ Flx_kind.sk mj);
+*)
               raise Not_found;
             end;
+(*
+             print_endline ("Metatype unify T<" ^string_of_int i^">" ^Flx_kind.sk mi ^ 
+              " is i asuperkind of  T<"^string_of_int j^">" ^ Flx_kind.sk mj); 
+*)
             s := Some (i,tj)
           end 
           else if BidSet.mem j dvars then
           begin
-            if not (Flx_kind.kind_ge [mi, mi]) then
+            if not (Flx_kind.kind_ge [mj, mi]) then
             begin
-              print_endline ("Unify: metatype mismatch  T<"^string_of_int j^">" ^Flx_kind.sk mj ^ 
+(*
+              print_endline ("Unify2: metatype mismatch  T<"^string_of_int j^">" ^Flx_kind.sk mj ^ 
               " is not superkind of  T<"^string_of_int i^">" ^ Flx_kind.sk mi);
+*)
               raise Not_found;
             end;
+(*
+              print_endline ("Unify2: metatype unify T<"^string_of_int j^">" ^Flx_kind.sk mj ^ 
+              " is superkind of  T<"^string_of_int i^">" ^ Flx_kind.sk mi);
+*)
             s := Some (j,ti)
           end
           else raise Not_found
@@ -262,8 +274,10 @@ and solve_subsumption bsym_table counter lhs rhs  dvars (s:vassign_t option ref)
           let mt2 = Flx_btype_kind.metatype Flx_srcref.dummy_sr t in
           if not (Flx_kind.kind_ge [mt, mt2]) then
           begin
-              print_endline ("Unify: metatype mismatch  T<"^string_of_int i^">" ^Flx_kind.sk mt ^ 
+(*
+              print_endline ("Unify3: metatype mismatch  T<"^string_of_int i^">" ^Flx_kind.sk mt ^ 
               " is not superkind of " ^ Flx_kind.sk mt2 ^ " which is the kind of " ^ Flx_btype.st t);
+*)
             raise Not_found;
           end;
           s := Some (i,t)

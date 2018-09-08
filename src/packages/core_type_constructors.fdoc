@@ -223,7 +223,7 @@ open class Slice {
 union slice[T] =
   | Slice_all
   | Slice_from of T
-  | Slice_from_counted of T * T /* second arg is count */
+  | Slice_from_counted of T * int /* second arg is count */
   | Slice_to_incl of T
   | Slice_to_excl of T
   | Slice_range_incl of T * T
@@ -232,7 +232,7 @@ union slice[T] =
   | Slice_none
 ;
 
-fun min[T with BoundedTordRandom[T]] (x:slice[T]) => match x with
+fun min[T with BoundRandomSequence[T]] (x:slice[T]) => match x with
   | ( Slice_all 
     | Slice_to_incl _ 
     | Slice_to_excl
@@ -245,38 +245,38 @@ fun min[T with BoundedTordRandom[T]] (x:slice[T]) => match x with
     ) => i
   | Slice_none => #maxval[T]
 ;
-fun max[T with BoundedTordRandom[T]] (x:slice[T]) => match x with
+fun max[T with BoundRandomSequence[T]] (x:slice[T]) => match x with
   | ( Slice_all 
     | Slice_from _
     ) => #maxval[T]
-  | Slice_from_counted (i,n) => i + n
+  | Slice_from_counted (i,n) => advance (n, i)
   | Slice_to_incl i => i
-  | Slice_to_excl i => i - #one[T]
+  | Slice_to_excl i => pred i
   | Slice_range_incl (_,i) => i
-  | Slice_range_excl (_,i) => i - #one[T] 
+  | Slice_range_excl (_,i) => pred i
   | Slice_one i => i
   | Slice_none => #minval  
 ;
 
-fun normalise_to_inclusive_range[T with BoundedTordRandom[T]] (x:slice[T]) =>
+fun normalise_to_inclusive_range[T with BoundRandomSequence[T]] (x:slice[T]) =>
   let l = x.min in
   let u = x.max in
   if l <= u then Slice_range_incl (l,u) 
   else Slice_none[T]
 ;
 
-fun \cap[T with BoundedTordRandom[T]] (x:slice[T], y:slice[T]) =>
+fun \cap[T with BoundRandomSequence[T]] (x:slice[T], y:slice[T]) =>
   let l = max (min x, min y) in
   let u = min (max x, max y) in
   if  l <= u then Slice_range_incl (l,u) 
   else Slice_none[T]
 ;
 
-fun \in[T with BoundedTordRandom[T]] (x:T, s:slice[T]) => 
+fun \in[T with BoundRandomSequence[T]] (x:T, s:slice[T]) => 
   match s with
   | #Slice_all => true
   | Slice_from i => x >= i
-  | Slice_from_counted (i,n) => x >= i and x < i+n
+  | Slice_from_counted (i,n) => x >= i and x < advance (n, i)
   | Slice_to_incl j => x <= j
   | Slice_to_excl j => x < j
   | Slice_range_incl (i,j) => x >= i and x <= j
@@ -286,7 +286,7 @@ fun \in[T with BoundedTordRandom[T]] (x:T, s:slice[T]) =>
 ;
 
 
-gen iterator[T with BoundedTordRandom[T]] (s:slice[T]) =>
+gen iterator[T with BoundRandomSequence[T]] (s:slice[T]) =>
   match s with
   | Slice_one x => { yield Some x; return None[T]; }
   | Slice_range_incl (first, last) => slice_range_incl first last
@@ -303,31 +303,31 @@ gen iterator[T with BoundedTordRandom[T]] (s:slice[T]) =>
 // Note: guarrantees no overflow
 // handles all cases for all integers correctly
 // produces nothing if first > last
-gen slice_range_incl[T with BoundedTordRandom[T]] (first:T) (last:T) () = {
+gen slice_range_incl[T with BoundRandomSequence[T]] (first:T) (last:T) () = {
   var i = first;
   while i < last do 
     yield Some i; 
-    i = i + #one[T]; 
+    i = succ i;
   done 
-  if i == last do yield Some i; done
+  if i == last perform yield Some i;
   return None[T]; 
 }
 
-gen slice_range_excl[T with BoundedTordRandom[T]] (first:T) (limit:T) () = {
+gen slice_range_excl[T with BoundRandomSequence[T]] (first:T) (limit:T) () = {
   var i = first;
   while i < limit do 
     yield Some i; 
-    i = i + #one[T]; 
+    i = succ i;
   done 
   return None[T]; 
 }
 
 
-gen slice_from_counted[T with BoundedTordRandom[T]] (first:T) (count:T) () = {
+gen slice_from_counted[T with BoundRandomSequence[T]] (first:T) (count:int) () = {
   var k = count; 
-  while k > #zero[T] do 
-    yield Some (first + (count - k)); 
-    k = k - #one[T]; 
+  while k > 0 do 
+    yield Some (advance (count - k, first)); 
+    k = k - 1;
   done 
   return None[T]; 
 }
@@ -440,10 +440,31 @@ instance Str[unit] {
 }
 open Show[unit];
 
-instance Eq[unit] {
-  fun == (x:unit, y:unit) => true;
+instance[T:UNITSUM] Eq[T] {
+  fun == (x:T,y:T) => caseno x ==caseno y;
 }
-open Eq[unit];
+instance[T:UNITSUM] Tord[T] {
+  fun < (x:T,y:T) => caseno x < caseno y;
+}
+instance[T:UNITSUM] ForwardSequence[T] {
+  fun succ (x:T) => (caseno x + 1) :>> T;
+}
+instance[T:UNITSUM] BidirectionalSequence[T] {
+  fun pred (x:T) => (caseno x - 1) :>> T;
+}
+instance[T:UNITSUM] UpperBoundTotalOrder[T] {
+  fun maxval () => (memcount[T].int - 1) :>> T;
+}
+
+instance[T:UNITSUM] LowerBoundTotalOrder[T] {
+  fun minval () => 0 :>> T;
+}
+
+instance[T:UNITSUM] RandomSequence[T] {
+  fun advance (amt: int,  pos:T) => (caseno pos + amt) :>> T;
+}
+open[T:UNITSUM] BoundRandomSequence[T];
+
 
 typedef fun n"`+" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_add",(x,y),UNITSUM);
 typedef fun n"`-" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_diff",(x,y),UNITSUM);

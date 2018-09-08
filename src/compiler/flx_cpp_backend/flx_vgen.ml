@@ -28,6 +28,7 @@ let gen_get_case_index (ge:Flx_bexpr.t -> cexpr_t) bsym_table array_sum_offset_t
   | VR_self -> ce_atom "0"
   | VR_clt -> 
     begin match ut with
+    | BTYP_tuple [] -> ce_atom "0"
     | BTYP_unitsum n -> ge e (* circular?? *)
     | BTYP_sum ts ->  
 (*

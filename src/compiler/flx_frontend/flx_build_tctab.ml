@@ -298,7 +298,9 @@ let check_instance
 =
 (*
 if debug && inst_id = "X" then
-  print_endline ("Check instance, inst_constraint=" ^ sbt bsym_table inst_constraint);
+  print_endline ("Check instance " ^ inst_id ^ 
+   ", vs = " ^ catmap "," (fun (s,j,k) -> s ^ "<" ^ string_of_int j ^ ">:" ^ Flx_kind.sk k) inst_vs ^ 
+   ", inst_constraint=" ^ sbt bsym_table inst_constraint);
 *)
 (* STEP 1: find the typeclass *)
   let tc_bsym = Flx_bsym_table.find bsym_table tc in

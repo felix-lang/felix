@@ -354,6 +354,27 @@ syntax pordcmpexpr
   cmp := "\supsetneqq" =># '(nos _1)'; 
 }
 
+@h2 Bounded Partial Order
+A partial order may bave an upper or lower bound known as the supremum
+and infimum, respectively. If these values are in the type, they are called
+the maximum and minimum, respectively.
+
+@tangle pord.flx
+class UpperBoundPartialOrder[T] {
+  inherit Pord[T];
+  virtual fun upperbound: 1 -> T;
+}
+class LowerBoundPartialOrder[T] {
+  inherit Pord[T];
+  virtual fun lowerbound: 1 -> T;
+}
+class BoundPartialOrder[T] {
+  inherit LowerBoundPartialOrder[T];
+  inherit UpperBoundPartialOrder[T];
+}
+
+
+
 @h2 Total Order
 A <a href="https://en.wikipedia.org/wiki/Total_order">total order</a> is a 
 partial order with a <a href="https://en.wikipedia.org/wiki/Total_relation">totality law</a>.
@@ -469,67 +490,66 @@ syntax tordcmpexpr
   bin := "\vee" =># '(nos _1)'; 
   bin := "\wedge" =># '(nos _1)'; 
 }
+@h2 Bounded Total Orders.
+@tangle tord.flx
+class UpperBoundTotalOrder[T] {
+  inherit Pord[T];
+  virtual fun maxval: 1 -> T = "::std::numeric_limits<?1>::max()";
+}
+class LowerBoundTotalOrder[T] {
+  inherit Pord[T];
+  virtual fun minval: 1 -> T = "::std::numeric_limits<?1>::min()";
+}
+class BoundTotalOrder[T] {
+  inherit LowerBoundTotalOrder[T];
+  inherit UpperBoundTotalOrder[T];
+}
+
 
 @h2 Sequences
+Sequences are discrete total orders.
 @tangle sequence.flx
 
 // Forward iterable
-class Forward[t] {
-  virtual fun succ: t -> t;
-  virtual proc pre_incr: &t;
-  virtual proc post_incr: &t;
-}
-
-// Totally ordered forward iterable
-class TordForward[t] {
-  inherit Forward[t];
-  inherit Tord[t];
-}
-
-// Bounded totally ordered forward iterable
-class BoundedTordForward[t] {
-  inherit TordForward[t];
-  virtual fun maxval: 1 -> t;// = "::std::numeric_limits<?1>::max()";
+class ForwardSequence[T] {
+  inherit Tord[T];
+  virtual fun succ: T -> T;
+  virtual proc pre_incr: &T;
+  virtual proc post_incr: &T;
 }
 
 // Bidirectional
-class Bidirectional[t] {
-  inherit Forward[t];
-  virtual fun pred: t -> t;
-  virtual proc pre_decr: &t;
-  virtual proc post_decr: &t;
-}
-
-// Totally ordered bidirectional
-class TordBidirectional[t] {
-  inherit Bidirectional[t];
-  inherit Tord[t];
-}
-
-// Bounded totally ordered bidirectional
-class BoundedTordBidirectional[t] {
-  inherit TordBidirectional[t];
-  inherit BoundedTordForward[t];
-  virtual fun minval: 1 -> t = "::std::numeric_limits<?1>::min()";
+class BidirectionalSequence[T] {
+  inherit ForwardSequence[T];
+  virtual fun pred: T -> T;
+  virtual proc pre_decr: &T;
+  virtual proc post_decr: &T;
 }
 
 // Bounded Random access totally ordered
-class BoundedTordRandom[t] {
-  inherit BoundedTordBidirectional[t];
-  virtual fun + : t * t -> t;// = "$1+$2";
-  virtual fun - : t * t -> t;// = "$1-$2";
-  virtual fun one : 1 -> t;
-  virtual fun zero : 1 -> t;
+// int should be any integer type really .. fix later
+class RandomSequence[T] {
+  inherit BidirectionalSequence[T];
+  virtual fun advance : int * T -> T;
 }
 
-/*
-instance[T:UNITSUM] Eq[T] {
-  fun == (x:T,y:T) => caseno x == caseno y;
+// Bounded totally ordered forward iterable
+class BoundForwardSequence[T] {
+  inherit ForwardSequence[T];
+  inherit UpperBoundTotalOrder[T];
 }
-instance[T:UNITSUM] Tord[T] {
-  fun < (x:T,y:T) => caseno x < caseno y;
+
+// Bounded totally ordered bidirectional
+class BoundBidirectionalSequence[T] {
+  inherit BidirectionalSequence[T];
+  inherit BoundTotalOrder[T];
 }
-*/ 
+
+// Bounded Random access totally ordered
+class BoundRandomSequence[T] {
+  inherit RandomSequence[T];
+  inherit BoundBidirectionalSequence[T];
+}
 
 @h1 Groupoids.
 
@@ -755,14 +775,12 @@ syntax bitexpr
 class Integer[t] {
   inherit Tord[t];
   inherit Dring[t];
-  inherit Bidirectional[t];
+  inherit RandomSequence[t];
   virtual fun << : t * t -> t = "$1<<$2";
   virtual fun >> : t * t -> t = "$1>>$2";
 
   fun shl(x:t,y:t)=> x << y;
   fun shr(x:t,y:t)=> x >> y;
-
-
 }
 
 //$ Signed Integers.

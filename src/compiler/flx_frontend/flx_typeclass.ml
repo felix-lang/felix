@@ -61,7 +61,9 @@ let tcinst_chk syms bsym_table id sr i ts
   ((inst_vs:Flx_kind.bvs_t), inst_constraint, inst_ts, j) 
  =
 (*
-print_endline ("TYPECLASS: " ^ id ^ ": inst_constraint = " ^ sbt bsym_table inst_constraint);
+print_endline ("TYPECLASS: " ^ id ^ 
+   ", vs = " ^ catmap "," (fun (s,j,k) -> s ^ "<" ^ string_of_int j ^ ">:" ^ Flx_kind.sk k) inst_vs ^ 
+   ": inst_constraint = " ^ sbt bsym_table inst_constraint);
 *)
      if length inst_ts > length ts then
        clierrx "[flx_frontend/flx_typeclass.ml:409: E365] " sr (
@@ -71,13 +73,7 @@ print_endline ("TYPECLASS: " ^ id ^ ": inst_constraint = " ^ sbt bsym_table inst
      ;
      (* solve for vs' *)
      let vis = List.map (fun _ -> fresh_bid syms.counter) inst_vs in
-     let nuvs = map (fun i -> 
-(*
-if i = 7141 then
-print_endline ("Flx_typeclass: bind_type var, HACKED KIND_type");
-*)
-       btyp_type_var (i, Flx_kind.KIND_type)) vis 
-     in
+     let nuvs = map2 (fun i (_,_,k) -> btyp_type_var (i, k)) vis inst_vs in
      let inst_ts' = map (tsubst sr inst_vs nuvs) inst_ts in
      let vset = fold_left (fun acc i -> BidSet.add i acc) BidSet.empty vis in
 
