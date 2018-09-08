@@ -1,3 +1,57 @@
+Platform Model
+=============
+
+Felix define four significant platforms:
+
+* build platform: where Felix itself is built
+* host platform: where you edit Felix code and translate to C++
+* target platform: where you compile the C++
+* run platform: where you run the compiled binaries
+
+.. figure:: platform.jpg
+   platform model
+
+
+Build platform
+^^^^^^^^^^^^^^
+
+If you download the Felix system sources and build Felix yourself,
+your host platform is the build platform. However if you download
+tarballs of prebuilt binaries, or use a package manager to fetch 
+them, then another computer was used as the build platform.
+
+Host platform
+^^^^^^^^^^^^^
+
+The system you program on is the host platform. A platform
+is not just a computer, rather it is a machine together with
+an operating system and working environment. For example
+you can actually run Ubuntu on Windows 10 Summer Edition,
+or you can run Cygwin. On OSX you can run the system clang
+provided with Xcode, but you can also use `brew` to fetch
+a more recent clang or even gcc.
+
+Target platform
+^^^^^^^^^^^^^^^
+
+The target platform is where you run the C++ compiler.
+If you're on Windows using Cygwin you will probably
+be running a Posix hosted cross compiler targetting Windows.
+however you can also invoke Visual Studio's C++ compiler
+from Cygwin.
+
+Run platform
+^^^^^^^^^^^^
+
+The run platform is where the binaries get run. You can
+cross compile from Cygwin to produce binaries designed
+to run natively on Windows (for C code anyhow!).
+
+The model above is not a complete or accurate picture
+of reality, however it is a reasonable approximation
+which is used as a base for achieving your programming
+goals with good reusability.
+
 Platform Dependency Model
 =========================
 
@@ -123,56 +177,6 @@ What have we achieved?
   by the OS and process status types, which extends the base abstraction,
   without conditional compilation. The extension can then follow the 
   same platform model.
-
-Platform Model
---------------
-
-Felix define four significant platforms:
-
-* build platform: where Felix itself is built
-* host platform: where you edit Felix code and translate to C++
-* target platform: where you compile the C++
-* run platform: where you run the compiled binaries
-
-Build platform
-^^^^^^^^^^^^^^
-
-If you download the Felix system sources and build Felix yourself,
-your host platform is the build platform. However if you download
-tarballs of prebuilt binaries, or use a package manager to fetch 
-them, then another computer was used as the build platform.
-
-Host platform
-^^^^^^^^^^^^^
-
-The system you program on is the host platform. A platform
-is not just a computer, rather it is a machine together with
-an operating system and working environment. For example
-you can actually run Ubuntu on Windows 10 Summer Edition,
-or you can run Cygwin. On OSX you can run the system clang
-provided with Xcode, but you can also use `brew` to fetch
-a more recent clang or even gcc.
-
-Target platform
-^^^^^^^^^^^^^^^
-
-The target platform is where you run the C++ compiler.
-If you're on Windows using Cygwin you will probably
-be running a Posix hosted cross compiler targetting Windows.
-however you can also invoke Visual Studio's C++ compiler
-from Cygwin.
-
-Run platform
-^^^^^^^^^^^^
-
-The run platform is where the binaries get run. You can
-cross compile from Cygwin to produce binaries designed
-to run natively on Windows (for C code anyhow!).
-
-The model above is not a complete or accurate picture
-of reality, however it is a reasonable approximation
-which is used as a base for achieving your programming
-goals with good reusability.
 
 Code Description
 ----------------
