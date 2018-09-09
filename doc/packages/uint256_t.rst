@@ -1,0 +1,84 @@
+Package: src/packages/uint256_t.fdoc
+
+
+Jason Lee's uint256_t library
+=============================
+
+=================== =======================================
+key                 file                                    
+=================== =======================================
+unix_uint256_t.fpc  $PWD/src/config/unix/flx_uint256_t.fpc  
+win32_uint256_t.fpc $PWD/src/config/win32/flx_uint256_t.fpc 
+flx_uint256_t.py    $PWD/buildsystem/flx_uint256_t.py       
+=================== =======================================
+
+
+
+Config
+======
+
+
+.. code-block:: fpc
+
+  //[unix_uint256_t.fpc]
+  Name: uint256_t 
+  Description: Jason Lee's uint256_t library
+  provides_dlib: -lflx_uint256_t_dynamic
+  provides_slib: -lflx_uint256_t_static
+  includes: '"uint256_t.h"'
+  library: flx_uint256_t
+  srcdir: src/uint256_t
+  headers: (uint256_t.h|uint128_t.h|uint128_t.include|uint256_t.include|uint256_t_config.include)
+  src: uint128_t.cpp uint256_t.cpp
+  build_includes: src/uint256_t
+
+
+.. code-block:: fpc
+
+  //[win32_uint256_t.fpc]
+  Name: uint256_t
+  Description: Jason Lee's uint256_t library
+  provides_dlib: /DEFAULTLIB:flx_uint256_t_dynamic
+  provides_slib: /DEFAULTLIB:flx_uint256_t_static
+  includes: '"uint256_t.h"'
+  library: flx_uint256_t
+  srcdir: src\uint256_t
+  headers: (uint256_t.h|uint128_t.h|uint128_t.include|uint256_t.include|uint256_t_config.include)
+  src: uint128_t.cpp uint256_t.cpp 
+  build_includes: src\uint256_t
+
+
+.. code-block:: python
+
+  #[flx_uint256_t.py]
+  import fbuild
+  from fbuild.path import Path
+  from fbuild.record import Record
+  from fbuild.builders.file import copy
+  
+  import buildsystem
+  
+  # ------------------------------------------------------------------------------
+  
+  def build_runtime(phase):
+      print('[fbuild] [rtl] build uint256_t')
+      path = Path(phase.ctx.buildroot/'share'/'src'/'uint256_t')
+  
+      buildsystem.copy_to(phase.ctx, phase.ctx.buildroot/'share'/'lib'/'rtl',[
+        path/"uint128_t.h", path/"uint128_t.include",
+        path/"uint256_t.h", path/"uint256_t.include",
+        path/"uint256_t_config.include"
+        ])
+  
+      srcs = [path/'uint128_t.cpp',path/'uint256_t.cpp']
+  
+      dst = 'host/lib/rtl/flx_uint256_t'
+  
+      return Record(
+          static=buildsystem.build_cxx_static_lib(phase, dst, srcs),
+          shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs)
+          )
+
+
+
+
