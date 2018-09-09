@@ -137,5 +137,3 @@ Felix library concordance macros
   let flx_lnot = 212
 
 
-.. code-block:: text
-

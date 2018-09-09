@@ -695,6 +695,7 @@ with specified heading and pattern match.
         endmatch;
       endmatch;
     done
+    if not code_buf.is_empty call emit_code();
     return out;
   }
   
@@ -721,6 +722,3 @@ with specified heading and pattern match.
   System::exit(0);
 
 
-.. code-block:: felix
-
-  //[flx_fdoc2sphinx.flx]

@@ -662,6 +662,3 @@ Exception Grammar
               macros=macros))
 
 
-.. code-block:: python
-
-  #[flx_exceptions.py]

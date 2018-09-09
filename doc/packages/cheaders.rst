@@ -473,5 +473,3 @@ even for 64 bit Windows.
   }
 
 
-.. code-block:: text
-

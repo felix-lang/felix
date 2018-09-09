@@ -477,6 +477,3 @@ However it can be used on any sequenced file set.
   
 
 
-.. code-block:: felix
-
-  //[flx_renumber.flx]

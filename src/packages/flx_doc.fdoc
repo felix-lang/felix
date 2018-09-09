@@ -655,6 +655,7 @@ fun process_file (f: string): string =
       endmatch;
     endmatch;
   done
+  if not code_buf.is_empty call emit_code();
   return out;
 }
 

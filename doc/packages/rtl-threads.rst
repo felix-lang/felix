@@ -2079,6 +2079,3 @@ Configuration Database
 
 
 
-.. code-block:: cpp
-
-  //[flx_pthread_config.hpp]

@@ -809,6 +809,3 @@ Faio Timer
   #endif
 
 
-.. code-block:: cpp
-
-  //[flx_faio_config.hpp]

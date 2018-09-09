@@ -2598,6 +2598,3 @@ Configuration Database Records
   #endif
   #endif
 
-.. code-block:: cpp
-
-  //[flx_gc_config.hpp]

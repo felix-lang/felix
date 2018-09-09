@@ -603,5 +603,3 @@ Even more compactly:
 
 
 
-.. code-block:: text
-

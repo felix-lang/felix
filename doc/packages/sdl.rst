@@ -4719,6 +4719,3 @@ Package Configuration
   
 
 
-.. code-block:: fpc
-
-  //[win32_sdl2_ttf.fpc]

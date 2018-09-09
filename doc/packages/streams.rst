@@ -245,6 +245,3 @@ returns a stream object
   
 
 
-.. code-block:: felix
-
-  //[stream.flx]

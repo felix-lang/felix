@@ -1747,6 +1747,3 @@ directory.
   
   
 
-.. code-block:: felix
-
-  //[flx_build_boot.flx]

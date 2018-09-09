@@ -4798,6 +4798,3 @@ Decorator Implementations.
   export fun toc_menu of (list[int * string * string]) as "toc_menu";
   
 
-.. code-block:: felix
-
-  //[toc_menu.flx]

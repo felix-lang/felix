@@ -343,6 +343,3 @@ Compile time booleans
 
 
 
-.. code-block:: felix
-
-  //[staticbool_ops.fsyn]

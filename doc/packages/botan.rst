@@ -226,6 +226,3 @@ Hash functions
 
 
 
-.. code-block:: fpc
-
-  //[bigint.fpc]

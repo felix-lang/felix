@@ -929,6 +929,3 @@ This has to be FIXED so flx can run in non-stop mode.
   
 
 
-.. code-block:: felix
-
-  //[flx_pkg.flx]

@@ -2439,9 +2439,6 @@ Tools
       FlxGui::quit();
     } // lilnegraph
   } // GraphTools
-
-
-
-.. code-block:: felix
-
-  //[linegraph.flx]
+  
+  
+  
