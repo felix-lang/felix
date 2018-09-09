@@ -267,3 +267,6 @@ First Class Type Descriptor.
   
   } // end class DynamicMetaTyping
 
+.. code-block:: felix
+
+  //[typedesc.flx]

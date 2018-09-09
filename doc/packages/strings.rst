@@ -1128,3 +1128,22 @@ String syntax
 =============
 
 
+.. code-block:: felix
+
+  //[stringexpr.fsyn]
+  syntax stringexpr
+  {
+    //$ String subscript.
+    x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'subscript) (,_1 ,_4)))";
+  
+    //$ String substring.
+    x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'substring) (,_1 ,_4 ,_6)))";
+  
+    //$ String substring, to end of string.
+    x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" "]" =># "`(ast_apply ,_sr (,(noi 'copyfrom) (,_1 ,_4)))";
+  
+    //$ String substring, from start of string.
+    x[sfactor_pri] := x[sfactor_pri] "." "[" "to" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'copyto) (,_1 ,_5)))";
+  }
+  
+  

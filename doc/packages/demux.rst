@@ -329,3 +329,6 @@ demux_cygwin.fpc  $PWD/src/config/cygwin/demux.fpc
   #endif
   #endif
 
+.. code-block:: cpp
+
+  //[flx_demux_config.hpp]

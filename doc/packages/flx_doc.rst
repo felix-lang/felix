@@ -721,3 +721,6 @@ with specified heading and pattern match.
   System::exit(0);
 
 
+.. code-block:: felix
+
+  //[flx_fdoc2sphinx.flx]

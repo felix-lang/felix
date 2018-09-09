@@ -172,3 +172,6 @@ def build_runtime(phase):
 
 
 
+.. code-block:: fpc
+
+  //[win32_judy.fpc]

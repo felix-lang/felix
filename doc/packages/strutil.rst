@@ -450,3 +450,6 @@ Config database entry
               macros=macros))
 
 
+.. code-block:: python
+
+  #[flx_strutil.py]

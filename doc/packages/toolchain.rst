@@ -2516,3 +2516,6 @@ A wrapper around "flx" command.
   export fun flx_plugin (args:list[string]) = { return Flx::runflx (args); }
 
 
+.. code-block:: felix
+
+  //[flx_plugin.flx]

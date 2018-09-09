@@ -216,3 +216,6 @@ Misc Control Flow
 
 
 
+.. code-block:: felix
+
+  //[swapop.fsyn]

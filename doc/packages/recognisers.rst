@@ -816,3 +816,105 @@ Lazy Syntactic form
 ===================
 
 
+.. index:: Recognisers(class)
+.. code-block:: felix
+
+  //[recognisers.flx]
+  // this is a function, so it cannot construct pipeline
+  // chips, because they actually spawn the components internally
+  // and functions can't do service calls.
+  //
+  // So instead we just return a function 1->recog_t which does the
+  // job on invocation.
+  include "std/strings/recogniser_base";
+  include "std/strings/grammars";
+  
+  class Recognisers
+  {
+  inherit RecogniserBase;
+  open BaseChips;
+  
+  open Grammars;
+  
+  typedef ntdef_t = string * recog_t;
+  
+  fun find (v:varray[ntdef_t]) (nt:string) : size = 
+  {
+    for i in 0uz ..< v.len do
+      if v.i.0 == nt return i;
+    done
+    assert false;
+  }
+  
+  
+  fun render_prod 
+    (lib:gramlib_t,v:varray[ntdef_t]) 
+    (p:prod_t) 
+  : recog_t =>
+    match p with
+    | `Terminal (s,r) => r 
+    | `Epsilon =>  epsilon[Buffer] 
+    | `Seq ps =>  pipeline_list (
+        map (fun (p:prod_t) => render_prod (lib,v) p) ps) 
+    | `Alt ps =>   tryall_list (
+        map (fun (p:prod_t) => render_prod (lib,v) p) ps) 
+    | `Nonterminal nt => 
+      let idx = find v nt in
+      let pslot = -(v.stl_begin + idx) in
+      let pchip = pslot . 1 in
+      BaseChips::deref_first_read pchip
+    endmatch
+  ;
+  
+  fun recogniser
+    (start:string, lib:gramlib_t) : recog_t =
+  {
+      var cl = closure (start,lib);
+  
+      // allocate a varray with a slot for each nonterminal
+      var n = cl.len;
+      var v = varray[string * recog_t] n;
+  
+      // populate the varray with the terminal names and a dummy chip
+      for nt in cl call // initialise array
+        push_back (v,(nt,BaseChips::epsilon[Buffer]))
+      ;
+  
+      // now assign the real recogniser_base to the array
+      var index = 0uz;
+      for nt in cl do
+        match find lib nt with
+        | None => assert false;
+        | Some prod =>
+          // get wrapped recogniser
+          var entry = render_prod (lib, v) prod;
+  
+          // address of the slot
+          var pentry : &recog_t = (-(v.stl_begin+index)).1;
+  
+          // overwrite dummy value
+          pentry <- entry;
+        endmatch;
+        ++index;
+      done
+      return v.(find v start).1;
+  }
+  
+  fun in (s:string) (g:grammar_t) =
+  {
+    chip false_if_got (pr: &bool)
+       connector io
+         pin inp: %<Buffer
+    {
+      C_hack::ignore$ read io.inp;
+      pr <- true;
+    }
+    var r = recogniser g;
+    var result = false;
+    run (s.Buffer.value |-> r |-> eos_matcher |-> false_if_got &result);
+    return result;
+  }
+  
+  } // Recognisers
+  
+  

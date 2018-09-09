@@ -3532,3 +3532,6 @@ toolchains are compiled in directly.
   System::pexit$ BootFlx::runflx #System::args;
   
 
+.. code-block:: felix
+
+  //[bootflx_tool.flx]

@@ -642,3 +642,18 @@ All Scalars.
 ------------
 
 
+.. code-block:: felix
+
+  //[scalar.flx]
+  //$ All the basic scalar types.
+  typedef basic_types = bool \cup numbers \cup chars \cup addressing;
+  
+  // we define this now, we will open it later...
+  instance [t in basic_types] Eq[t] {
+    fun == : t * t -> bool = "$1==$2";
+  }
+  
+  // we open this now even though we haven't developed
+  // the instances yet....
+  open[T in basic_types] Show[T];
+  

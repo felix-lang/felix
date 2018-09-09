@@ -715,3 +715,6 @@ Config
 
 
 
+.. code-block:: cpp
+
+  //[flx_re2_config.hpp]

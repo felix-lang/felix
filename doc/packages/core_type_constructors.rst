@@ -828,3 +828,22 @@ Tuple Constructor Syntax
 ========================
 
 
+.. code-block:: felix
+
+  //[tupleexpr.fsyn]
+  syntax tupleexpr
+  {
+    //$ Tuple formation by cons: right associative.
+    x[stuple_cons_pri] := x[>stuple_cons_pri] ",," x[stuple_cons_pri] =># 
+      """`(ast_tuple_cons ,_sr ,_1 ,_3)""";
+  
+    //$ Tuple formation by append: left associative
+    x[stuple_cons_pri] := x[stuple_cons_pri] "<,,>" x[>stuple_cons_pri] =># 
+     """`(ast_tuple_snoc ,_sr ,_1 ,_3)""";
+  
+    //$ Tuple formation non-associative.
+    x[stuple_pri] := x[>stuple_pri] ( "," x[>stuple_pri])+ =># "(chain 'ast_tuple _1 _2)";
+  
+  }
+  
+  

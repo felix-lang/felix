@@ -735,3 +735,37 @@ Chips to providing parsing functions.
   }
 
 
+.. index:: Parser_synlib(class)
+.. index:: NT(fun)
+.. index:: TERM(fun)
+.. index:: STR(fun)
+.. index:: REDUCE(fun)
+.. index:: BINOP(fun)
+.. index:: SWAP(fun)
+.. index:: DROP(fun)
+.. index:: ALT(fun)
+.. index:: SEQ(fun)
+.. index:: EPS(fun)
+.. code-block:: felix
+
+  //[parser_synlib.flx]
+  include "std/strings/parsers";
+  
+  class Parser_synlib
+  {
+    open Parsers;
+    open Grammars;
+    fun NT (s:string) => `Nonterminal  s :>> pgram_t ;
+    fun TERM (s:string, r:Recognisers::recog_t) => `Terminal (s,r) :>> pgram_t;
+    fun STR (s:string) => (`Terminal (s, (Recognisers::match_string s)));
+    fun REDUCE (s:string, n:int) => `Action (Reduce (s,n)) :>> pgram_t;
+    fun BINOP(s:string) => `Action (Sequence ([Swap, Drop 1, (Reduce (s,2))])):>>pgram_t;
+    fun SWAP () => `Action (Swap) :>> pgram_t;
+    fun DROP (n:int) => `Action (Drop n) :>> pgram_t;
+    fun ALT (ls: list[pgram_t]) => `Alt ls :>> pgram_t;
+    fun SEQ (ls: list[pgram_t]) => `Seq ls :>> pgram_t;
+    fun EPS () => (#`Epsilon) :>> pgram_t;
+  }
+  
+  
+  

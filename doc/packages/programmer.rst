@@ -229,3 +229,6 @@ flx_tangle.flx $PWD/src/tools/flx_tangle.flx
   
 
 
+.. code-block:: felix
+
+  //[flx_perror.flx]

@@ -100,3 +100,208 @@ Closure
 -------
 
 
+.. index:: eric_closure(gen)
+.. code-block:: felix
+
+  //[grammars.flx]
+  
+  fun add_unique (acc:list[string]) (elt:string) : list[string] =>
+    if elt in acc then acc else Cons (elt,acc)
+  ;
+  
+  fun open_add_prod[T] 
+    (aux: list[string] -> T -> list[string])
+    (acc:list[string]) (p: open_prod_t[T]) 
+  : list[string] =>
+    match p with
+    | `Terminal _ => acc
+    | `Nonterminal name => Cons (name, acc) 
+    | `Epsilon => acc
+    | `Seq ps => fold_left aux acc ps
+    | `Alt ps => fold_left aux acc ps
+    endmatch
+  ;
+  
+  fun add_prod(acc:list[string]) (p:prod_t) : list[string] =>
+    fix open_add_prod[prod_t] acc p
+  ;
+  
+  fun closure (g:grammar_t): list[string] =>
+    generic_closure[prod_t] add_prod g
+  ;
+  
+  fun nullable_prod (lib:gramlib_t) (e:prod_t) (trail:list[string]) =>
+    match e with
+    | `Terminal _ => false
+    | `Seq es => fold_left (fun (acc:bool) (sym:prod_t) => 
+        acc and (nullable_prod lib sym trail)) true es
+  
+    | `Alt es => fold_left (fun (acc:bool) (sym:prod_t) => 
+        acc or (nullable_prod lib sym trail)) false es
+  
+    | `Nonterminal nt => nullable_nt lib nt trail
+    | `Epsilon => true
+  ;
+  
+  fun nullable_nt (lib: gramlib_t) (nt:string) (trail:list[string]) : bool =>
+    if nt in trail then false else
+    match find lib nt with
+    | None => false
+    | Some e => nullable_prod lib e (nt ! trail)
+  ;
+  
+  fun is_nullable_prod (lib:gramlib_t) (e:prod_t) => 
+    nullable_prod lib e Empty[string]
+  ;
+  
+  fun is_nullable_nt (lib:gramlib_t) (nt:string) => 
+    nullable_nt lib nt Empty[string]
+  ;
+  
+  fun recursive_prod (lib:gramlib_t) (e:prod_t) (orig:string) (trail:list[string]) =>
+    match e with
+    | `Terminal _ => false
+    | `Seq es => fold_left (fun (acc:bool) (sym:prod_t) => 
+        acc or (recursive_prod lib sym orig trail)) false es
+  
+    | `Alt es => fold_left (fun (acc:bool) (sym:prod_t) => 
+        acc or (recursive_prod lib sym orig trail)) false es
+  
+    | `Nonterminal nt => if nt == orig then true else recursive_nt lib nt orig trail
+    | `Epsilon => false
+  ;
+  
+  fun recursive_nt (lib: gramlib_t) (nt:string) (orig:string) (trail:list[string]) : bool =>
+    if nt in trail then false else
+    match find lib nt with
+    | None => false
+    | Some e => recursive_prod lib e orig (nt ! trail)
+  ;
+  
+  
+  fun is_recursive_nt (lib:gramlib_t) (nt:string) =>
+    recursive_nt lib nt nt Empty[string]
+  ;
+  
+  fun left_recursive_prod (lib:gramlib_t) (e:prod_t) (orig:string) (trail:list[string]) =>
+    match e with
+    | `Terminal _ => false
+  
+    | `Seq es =>
+      let fun aux (es:list[prod_t]) =>
+        match es with
+        | Empty => false
+        | Cons (head, tail) => 
+          if left_recursive_prod lib head orig trail then true
+          elif is_nullable_prod lib head then aux tail
+          else false
+        endmatch
+      in
+      aux es
+  
+    | `Alt es => fold_left (fun (acc:bool) (sym:prod_t) => 
+        acc or (left_recursive_prod lib sym orig trail)) false es
+  
+    | `Nonterminal nt => 
+      if nt == orig then true 
+      else left_recursive_nt lib nt orig trail
+  
+    | `Epsilon => false 
+  ;
+  
+  fun left_recursive_nt (lib: gramlib_t) (nt:string) (orig:string) (trail:list[string]) : bool =>
+    if nt in trail then false else
+    match find lib nt with
+    | None => false
+    | Some e => left_recursive_prod lib e orig (nt ! trail)
+  ;
+  
+  
+  fun is_left_recursive_nt (lib:gramlib_t) (nt:string) =>
+    left_recursive_nt lib nt nt Empty[string]
+  ;
+  
+  
+  fun unpack (fresh:1->string) (head:string, p:prod_t) : gramlib_t =
+  {
+   var out = Empty[gramentry_t];
+   match p with
+   | `Epsilon => out = ([head,p]);
+   | `Terminal _ => out = ([head,`Seq ([p]) :>> prod_t]);
+   | `Nonterminal s => out= ([head,`Seq ([p]) :>> prod_t]);
+  
+   | `Seq ps =>
+     var newseq = Empty[prod_t];
+     for term in ps do
+       match term with
+       | `Epsilon => ;
+       | `Nonterminal _ => newseq = term ! newseq;
+       | `Terminal _ => newseq = term ! newseq;
+       | _ =>
+         var newhead = fresh();
+         newseq = (`Nonterminal newhead ) :>> prod_t ! newseq;
+         out = unpack fresh (newhead,term);
+       endmatch;
+     done
+  
+     match newseq with 
+     | Empty => out = (head,#`Epsilon :>> prod_t ) ! out;
+     | _ => out = (head,`Seq (rev newseq) :>> prod_t) ! out;
+     endmatch;
+  
+   | `Alt ps =>
+     iter (proc (p:prod_t) { out = unpack fresh (head,p) + out; }) ps;
+   endmatch;
+   return out;
+  }
+  
+  fun normalise_lib (fresh:1->string) (lib:gramlib_t) = {
+    var normalised = Empty[gramentry_t];
+    for p in lib perform
+      normalised = unpack fresh p + normalised;
+    return normalised; 
+  }
+  
+  fun sort_merge (g:gramlib_t) : gramlib_t =>
+   let fun enlt (a:gramentry_t, b:gramentry_t) : bool => a.0 < b.0 in
+   merge (sort enlt g)
+  ;
+  
+  fun merge (var p:gramlib_t): gramlib_t =
+  {
+   if p.len == 0uz return p;
+  
+   var out: gramlib_t;
+  
+   var key: string;
+   var alts = Empty[prod_t];
+   var cur: gramentry_t;
+  
+   proc fetch() { 
+     match p with 
+     | Cons (head,tail) => cur = head; p = tail; 
+     | Empty => assert false;
+     endmatch;
+   }
+  
+   proc dohead() { key = cur.0; alts = Empty[prod_t]; }
+   proc dofoot() { out = (key,`Alt alts :>> prod_t ) ! out;  }
+   proc dobreak() { dofoot; dohead; }
+   proc check() { if key != cur.0 call dobreak; }
+  
+   fetch;
+   dohead;
+   while p.len > 0uz do
+     check;
+     alts = cur.1 ! alts;
+     fetch;
+   done
+   check;
+   alts = cur.1 ! alts;
+   dofoot;
+   return out;
+  }
+  
+  } // class Grammar
+  
+  

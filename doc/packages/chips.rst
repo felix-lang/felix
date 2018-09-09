@@ -719,3 +719,9 @@ Zero or more matcher
   }
 
 
+.. code-block:: felix
+
+  //[chips.flx]
+  } // end class BaseChips
+  
+  

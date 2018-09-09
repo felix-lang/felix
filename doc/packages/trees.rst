@@ -1505,3 +1505,304 @@ String Dictionary.
 ==================
 
 
+.. index:: StrDict(class)
+.. index:: get_dflt(fun)
+.. index:: del(gen)
+.. index:: Str2StrList(class)
+.. index:: def(type)
+.. index:: str2strlist(ctor)
+.. index:: trcls(fun)
+.. index:: transitive_closure(proc)
+.. code-block:: felix
+
+  //[strdict.flx]
+  
+  //$ A strdict is dictionary keyed by strings.
+  //$ The strings must not contain nul bytes.
+  //$
+  //$ This is an ultra high performance data structure
+  //$ implemented using a JudySLArray.
+  //$ Typically about the same speed as a hashtable on exact key retrieval,
+  //$ but with the ability to perform linear key seeking as well.
+  //$ Linear seeking means searching for a key satisfying one of the total
+  //$ ordering relations to a given key, including ordered iteration.
+  //$
+  //$ Scales to terabytes.
+  //$ No other data structure can do this.
+  
+  class StrDict[T] {
+     open Judy;
+  
+     //$ Type of a strdict.
+     type strdict = new JSLArray;
+  
+     //$ Construct and empty dictionary.
+     ctor strdict() => _make_strdict$ JSLArray ();
+  
+     proc add (x:strdict) (var key:string) (value: T) { 
+       var err: JError_t;
+       var slot : && T; 
+       JudySLIns (_repr_ x, &key.stl_begin, &err, C_hack::cast[&&word] (&slot));
+       slot <- new value;
+     }
+  
+     //$ Construct a dictionary from a list of pairs.
+     ctor strdict ( kv: list[string * T] ) = {
+       var x = strdict ();
+       match k,v in kv do add x k v; done
+       return x;
+     }
+  
+     
+     //$ Fetch a value optionally using the given key.
+     fun get (x:strdict) (var key: string) : opt[T] = {
+       var err: JError_t;
+       var slot : && T; 
+       JudySLGet (_repr_ x, &key.stl_begin, &err, C_hack::cast[&&word] (&slot));
+       return if C_hack::isNULL slot then None[T] else Some (**slot);
+     }
+  
+     //$ Check if value is in the dictionary.
+     fun haskey (x:strdict) (var key: string) : bool = 
+     {
+       var err: JError_t;
+       var slot : && T; 
+       JudySLGet (_repr_ x, &key.stl_begin, &err, C_hack::cast[&&word] (&slot));
+       return slot.C_hack::isNULL.lnot;
+     }
+  
+  
+     //$ Fetch a value using the given key.
+     //$ If there is no value in the dictionary with that key,
+     //$ then return a default value.
+    fun get_dflt (x:strdict) (key:string, dflt:T) => 
+      match get x key with
+      | Some v => v
+      | #None => dflt
+      endmatch
+    ;
+  
+    //$ Remove a key/value pair from the dictionary if it exists.
+    //$ Return a boolean value signalling if it existed. 
+    gen del (x:strdict) (key: string) : bool = {
+       var err: JError_t;
+       var found : int;
+       JudySLDel (_repr_ x, key.cstr, &err, &found);
+       return found == 1; 
+     }
+  
+     //$ Get an optional value with key greater than or equal to
+     //$ the supplied NTBS (unsafe!)
+     gen charp_get_ge (x:strdict) (var key: +char) : opt[T]= {
+       var err: JError_t;
+       var slot : && T; 
+       JudySLFirst (_repr_ x, key, &err, C_hack::cast[&&word] (&slot));
+       if C_hack::isNULL slot do 
+         return None[T];
+       else
+         return Some (**slot);
+       done
+     }
+  
+     //$ Get an optional value with key greater than or equal to
+     //$ the supplied string. Safer than the NTBS version but slower. 
+     //$ Fails if the string contains a nul byte.
+     fun get_ge (x:strdict) (var key: string)= {
+       var err: JError_t;
+       var slot : && T; 
+       var k = array_alloc[char]$ JUDY_SL_MAXLEN+1; 
+       CString::strncpy (k,key.cstr, JUDY_SL_MAXLEN);
+       var result = charp_get_ge x k;
+       match result with
+       | Some v =>
+         key = k.string;
+         free k; 
+         return Some (key,v);
+       | #None=>
+         free k;
+         return None[string * T];
+       endmatch ;
+     }
+  
+       //$ Get an optional value with key greater than  (>)
+       //$ the supplied NTBS (unsafe!)
+       gen charp_get_gt (x:strdict) (var key: +char)= {
+       var err: JError_t;
+       var slot : && T; 
+       JudySLNext(_repr_ x, key, &err, C_hack::cast[&&word] (&slot));
+       if C_hack::isNULL slot do 
+         return None[T];
+       else
+         return Some (**slot);
+       done
+     }
+  
+     //$ Get an optional value with key greater than (>) 
+     //$ the supplied string. Safer than the NTBS version but slower. 
+     //$ Fails if the string contains a nul byte.
+     fun get_gt (x:strdict) (var key: string)= {
+       var err: JError_t;
+       var slot : && T; 
+       var k = array_alloc[char]$ JUDY_SL_MAXLEN+1; 
+       CString::strncpy (k,key.cstr, JUDY_SL_MAXLEN);
+       var result = charp_get_gt x k;
+       match result with
+       | Some v =>
+         key = k.string;
+         free k; 
+         return Some (key,v);
+       | #None=>
+         free k;
+         return None[string * T];
+       endmatch ;
+     }
+  
+     //$ Get an optional value with key less than or equal to (<=)
+     //$ the supplied NTBS (unsafe!)
+     gen charp_get_le (x:strdict) (var key: +char)= {
+       var err: JError_t;
+       var slot : && T; 
+       JudySLLast(_repr_ x, key, &err, C_hack::cast[&&word] (&slot));
+       if C_hack::isNULL slot do 
+         return None[T];
+       else
+         return Some (**slot);
+       done
+     }
+  
+     //$ Get an optional value with key less than or equal to (<=)
+     //$ the supplied string. Safer than the NTBS version but slower. 
+     //$ Fails if the string contains a nul byte.
+     fun get_le (x:strdict) (var key: string)= {
+       var err: JError_t;
+       var slot : && T; 
+       var k = array_alloc[char]$ JUDY_SL_MAXLEN+1; 
+       CString::strncpy (k,key.cstr, JUDY_SL_MAXLEN);
+       var result = charp_get_le x k;
+       match result with
+       | Some v =>
+         key = k.string;
+         free k; 
+         return Some (key,v);
+       | #None=>
+         free k;
+         return None[string * T];
+       endmatch ;
+     }
+  
+     //$ Get an optional value with key less than (<)
+     //$ the supplied NTBS (unsafe!)
+     gen charp_get_lt (x:strdict) (var key: +char)= {
+       var err: JError_t;
+       var slot : && T; 
+       JudySLPrev (_repr_ x, key, &err, C_hack::cast[&&word] (&slot));
+       if C_hack::isNULL slot do 
+         return None[T];
+       else
+         return Some (**slot);
+       done
+     }
+  
+     //$ Get an optional value with key less than (<)
+     //$ the supplied string. Safer than the NTBS version but slower. 
+     //$ Fails if the string contains a nul byte.
+     fun get_lt (x:strdict) (var key: string)= {
+       var err: JError_t;
+       var slot : && T; 
+       var k = array_alloc[char]$ JUDY_SL_MAXLEN+1; 
+       CString::strncpy (k,key.cstr, JUDY_SL_MAXLEN);
+       var result = charp_get_lt x k;
+       match result with
+       | Some v =>
+         key = k.string;
+         free k; 
+         return Some (key,v);
+       | #None=>
+         free k;
+         return None[string * T];
+       endmatch ;
+     }
+  
+     //$ Get the optional first key in the dictionary into
+     //$ the supplied NTBS (unsafe!)
+     gen charp_first (x:strdict) (buffer:+char) = {
+       set(buffer,0,char "");
+       return x.charp_get_ge buffer;
+     }
+  
+     //$ Get the optional first key in the dictionary.
+     fun first (x:strdict) : opt[string * T] => x.get_ge("");
+  
+     instance Iterable[strdict, string * T] {
+       //$ Stream iterator scanning through all key value pairs
+       //$ in the dictionary, in key order.
+       gen iterator (x:strdict) () : opt[string * T]  = {
+         var buffer : +char = array_alloc[char](JUDY_SL_MAXLEN+1);
+         var v = charp_first x buffer;
+         while true do
+           match v with 
+           | Some vv => yield Some (string buffer, vv);
+           | #None => free buffer; return None[string * T];
+           endmatch;
+           v = charp_get_gt x buffer;
+         done
+       }
+    }
+    inherit Streamable[strdict, string * T];
+  
+    instance[with Str[T]] Str[strdict]
+    {
+      fun str(var x:strdict) : string = 
+      {
+        var s = "{";
+        match key,value in x.iterator do
+          var entry = key +"=" + str value;
+          if s == "{" do s+= entry; else s+= ", "+ entry; done
+        done 
+        s+="}";
+        return s;
+      }
+    }
+    inherit Str[strdict];
+  
+    instance Set[strdict,string] {
+      fun \in (key:string, dict:strdict) => haskey dict key;
+    }
+    inherit Set[strdict,string];
+  
+  }
+  
+  open[T] StrDict[T];
+  
+  // map from string to list of strings
+  open class Str2StrList
+  {
+    typedef str2strlist = strdict[list[string]];
+    ctor str2strlist () => strdict[list[string]] ();
+  
+    // transitive closure of a list of dependencies
+    fun trcls (x:str2strlist) (inp: list[string]) (out:list[string]) =>
+      match inp with
+      | Empty => out
+      | head ! tail => 
+        if not (head in out) then
+          trcls x (tail + x.get_dflt (head, Empty[string])) (head ! out)
+        else
+          trcls x tail out
+        endif
+      endmatch
+    ;
+  
+    // mutates the dictionary so each key maps to
+    // the transitive closure of its original value set
+    // the resulting value lists are unique lists even if
+    // the original list contained duplicates
+    proc transitive_closure (x:str2strlist) = {
+      match file,deps in x.iterator do
+        x.add file (trcls x deps Empty[string]);
+      done 
+    }
+  
+  }
+  
+  

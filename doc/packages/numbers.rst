@@ -829,3 +829,54 @@ Random number generation
 ========================
 
 
+.. index:: Random(class)
+.. code-block:: felix
+
+  //[random.flx]
+  
+  class Random {
+      private type random_device = "::std::random_device*"
+          requires Cxx11_headers::random;
+      private type random_engine = "::std::default_random_engine*"
+          requires Cxx11_headers::random;
+      private ctor random_device: 1 = "new ::std::random_device{}";
+      private ctor random_engine: random_device =
+          "new ::std::default_random_engine{(*$1)()}";
+      private gen generate_canonical: random_engine -> double =
+          "::std::generate_canonical<double, ::std::numeric_limits<float>::digits>(*$1)"
+          requires Cxx_headers::limits;
+  
+      private struct random_ctl {
+          rd: random_device;
+          e: random_engine;
+      }
+      type random = new random_ctl;
+      ctor random() => let rd = #random_device in
+                       _make_random$ random_ctl (rd, rd.random_engine);
+  
+      private gen range[I in ints]: random_engine * I * I -> I =
+          "::std::uniform_int_distribution<decltype($2)>{$2, $3-1}(*$1)";
+      gen range[I in ints](r: random)(start: I, stop: I) =>
+          range (r._repr_.e, start, stop);
+      gen range[I in ints](r: random)(stop: I): I =>
+           r.range (C_hack::cast[I] 0, stop);
+  
+      gen randint[I in ints with FloatAddgrp[I]](r: random)(start: I, stop: I) =>
+          r.range (start, stop+C_hack::cast[I] 1);
+  
+      gen choice[T,S with ArrayValue[S,T]](r: random)(seq: S): T =>
+          unsafe_get (seq, r.range seq.len);
+  
+      gen randflt(r: random) => r._repr_.e.generate_canonical;
+  
+      proc shuffle[T,S with ArrayObject[S,T]](r: random)(seq: S) {
+          for var i in 0zu upto seq.len - 2 do
+              j := r.randint (0zu, i);
+              ei := unsafe_get (seq, i);
+              ej := unsafe_get (seq, j);
+              unsafe_set (seq, i, ej);
+              unsafe_set (seq, j, ei);
+          done
+      }
+  }
+  

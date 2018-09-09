@@ -505,3 +505,6 @@ Serialisation functions
   }
   
 
+.. code-block:: felix
+
+  //[serialise.flx]

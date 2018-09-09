@@ -76,3 +76,6 @@ the /proc directory would make sense.
      return (cpu_nr + 1);
   }
 
+.. code-block:: cpp
+
+  //[plat_linux.cpp]

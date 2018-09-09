@@ -925,3 +925,128 @@ Thread Pool Demo
 ----------------
 
 
+.. code-block:: felix
+
+  //[threadpoolex1.flx]
+  include "std/pthread/threadpool";
+  open ThreadPool;
+  
+  // Matrix multiply
+  macro val N = 1000;
+  typedef vec_t = array[double, N];
+  typedef mx_t = array[vec_t,N];
+  var a : mx_t;
+  var b : mx_t;
+  var r : mx_t;
+  var s : mx_t;
+  
+  proc clear (mx:&mx_t) {
+    for i in 0..<N 
+    for j in 0..<N 
+      perform mx . i . j <- 0.0;
+  }
+  
+  proc rinit (mx:&mx_t) {
+    for i in 0..<N
+    for j in 0..<N
+      perform mx . i . j <- #rand.double / RAND_MAX.double;
+  }
+  
+  fun check() = {
+  //println$ "Verification check";
+    for i in 0..<N
+    for j in 0..<N
+      if r.i.j != s.i.j return false;
+    return true;
+  }
+  
+  proc verify() {
+  //println$ "Running verify";
+    if #check do
+      println$ "Verified";
+    else
+      println "Wrong!";
+    done 
+  //println$ "Verify ran";
+  }
+  
+  clear &r;
+  clear &s;
+  rinit &a;
+  rinit &b;
+  
+  fun inner_product (pr: &vec_t, pc: &vec_t) = 
+  {
+    var sum = 0.0;
+    for (var k=0; k<N; ++k;)
+      perform sum = sum + *(pr.k) * *(pc.k);
+    return sum;
+  }
+  
+  // naive multiply
+  var start = #time;
+  begin
+    for i in 0..<N 
+    for (var j=0; j<N; ++j;)
+      perform &r . i . j <- inner_product (&a.i, &b.j);
+    s = r;
+  end
+  var fin = #time;
+  println$ "Naive mul elapsed " + (fin - start).str + " seconds";
+  
+  //println$ "Starting thread pool";
+  ThreadPool::start 8;
+  //println$ "Thread pool started";
+  
+  // naive parallel multiply
+  noinline proc inner_products_proc (var i:int)
+  {
+    for (var j=0; j<N; ++j;) 
+      perform &r . i . j <- inner_product (&a.i, &b.j);
+  }
+  
+  noinline proc inner_products_job (var i:int) () {
+    for (var j=0; j<N; ++j;) 
+      perform &r . i . j <- inner_product (&a.i, &b.j);
+  }
+  
+  clear &r;
+  start = #time;
+  begin
+    for i in 0..<N
+      call ThreadPool::queue_job$ inner_products_job (i);
+    ThreadPool::join;
+  end
+  fin = #time;
+  println$ "Naive Parallel mul elapsed " + (fin - start).str + " seconds";
+  verify;
+  
+  // smart parallel multiply
+  clear &r;
+  start = #time;
+  begin
+  println$ "Using thread pool's pforloop";
+    ThreadPool::pforloop 0 (N - 1) inner_products_proc;
+  end
+  fin = #time;
+  println$ "Smart Parallel mul elapsed " + (fin - start).str + " seconds";
+  verify;
+  
+  // smart parallel multiply with syntax
+  clear &r;
+  start = #time;
+  begin
+    pfor i in 0 upto (N - 1) do
+    for (var j=0; j<N; ++j;) 
+      perform &r . i . j <- inner_product (&a.i, &b.j);
+    done
+  end
+  fin = #time;
+  println$ "pfor mul elapsed " + (fin - start).str + " seconds";
+  verify;
+  
+  
+  ThreadPool::stop;
+  
+  
+  

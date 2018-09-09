@@ -1360,3 +1360,19 @@ Monad
 =====
 
 
+.. index:: Monad(class)
+.. index:: ret(fun)
+.. index:: bind(fun)
+.. index:: join(fun)
+.. code-block:: felix
+
+  //[monad.flx]
+  
+  class Monad [M: TYPE->TYPE] {
+    virtual fun ret[a]: a -> M a;
+    virtual fun bind[a,b]: M a * (a -> M b) -> M b;
+    fun join[a] (n: M (M a)): M a => bind (n , (fun (x:M a):M a=>x));
+  }
+  
+  
+  

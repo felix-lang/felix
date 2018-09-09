@@ -5644,3 +5644,446 @@ CBLAS interface
 To be moved, since it doesn't really belong inside GSL.
 
 
+.. index:: cblas_sdsdot(fun)
+.. index:: cblas_dsdot(fun)
+.. index:: cblas_sdot(fun)
+.. index:: cblas_ddot(fun)
+.. index:: cblas_cdotu_sub(proc)
+.. index:: cblas_cdotc_sub(proc)
+.. index:: cblas_zdotu_sub(proc)
+.. index:: cblas_zdotc_sub(proc)
+.. index:: cblas_snrm2(fun)
+.. index:: cblas_sasum(fun)
+.. index:: cblas_dnrm2(fun)
+.. index:: cblas_dasum(fun)
+.. index:: cblas_scnrm2(fun)
+.. index:: cblas_scasum(fun)
+.. index:: cblas_dznrm2(fun)
+.. index:: cblas_dzasum(fun)
+.. index:: cblas_isamax(fun)
+.. index:: cblas_idamax(fun)
+.. index:: cblas_icamax(fun)
+.. index:: cblas_izamax(fun)
+.. index:: cblas_sswap(proc)
+.. index:: cblas_scopy(proc)
+.. index:: cblas_saxpy(proc)
+.. index:: cblas_dswap(proc)
+.. index:: cblas_dcopy(proc)
+.. index:: cblas_daxpy(proc)
+.. index:: cblas_cswap(proc)
+.. index:: cblas_ccopy(proc)
+.. index:: cblas_caxpy(proc)
+.. index:: cblas_zswap(proc)
+.. index:: cblas_zcopy(proc)
+.. index:: cblas_zaxpy(proc)
+.. index:: cblas_srotg(proc)
+.. index:: cblas_srotmg(proc)
+.. index:: cblas_srot(proc)
+.. index:: cblas_srotm(proc)
+.. index:: cblas_drotg(proc)
+.. index:: cblas_drotmg(proc)
+.. index:: cblas_drot(proc)
+.. index:: cblas_drotm(proc)
+.. index:: cblas_sscal(proc)
+.. index:: cblas_dscal(proc)
+.. index:: cblas_cscal(proc)
+.. index:: cblas_zscal(proc)
+.. index:: cblas_csscal(proc)
+.. index:: cblas_zdscal(proc)
+.. index:: cblas_sgemv(proc)
+.. index:: cblas_sgbmv(proc)
+.. index:: cblas_strmv(proc)
+.. index:: cblas_stbmv(proc)
+.. index:: cblas_stpmv(proc)
+.. index:: cblas_strsv(proc)
+.. index:: cblas_stbsv(proc)
+.. index:: cblas_stpsv(proc)
+.. index:: cblas_dgemv(proc)
+.. index:: cblas_dgbmv(proc)
+.. index:: cblas_dtrmv(proc)
+.. index:: cblas_dtbmv(proc)
+.. index:: cblas_dtpmv(proc)
+.. index:: cblas_dtrsv(proc)
+.. index:: cblas_dtbsv(proc)
+.. index:: cblas_dtpsv(proc)
+.. index:: cblas_cgemv(proc)
+.. index:: cblas_cgbmv(proc)
+.. index:: cblas_ctrmv(proc)
+.. index:: cblas_ctbmv(proc)
+.. index:: cblas_ctpmv(proc)
+.. index:: cblas_ctrsv(proc)
+.. index:: cblas_ctbsv(proc)
+.. index:: cblas_ctpsv(proc)
+.. index:: cblas_zgemv(proc)
+.. index:: cblas_zgbmv(proc)
+.. index:: cblas_ztrmv(proc)
+.. index:: cblas_ztbmv(proc)
+.. index:: cblas_ztpmv(proc)
+.. index:: cblas_ztrsv(proc)
+.. index:: cblas_ztbsv(proc)
+.. index:: cblas_ztpsv(proc)
+.. index:: cblas_ssymv(proc)
+.. index:: cblas_ssbmv(proc)
+.. index:: cblas_sspmv(proc)
+.. index:: cblas_sger(proc)
+.. index:: cblas_ssyr(proc)
+.. index:: cblas_sspr(proc)
+.. index:: cblas_ssyr2(proc)
+.. index:: cblas_sspr2(proc)
+.. index:: cblas_dsymv(proc)
+.. index:: cblas_dsbmv(proc)
+.. index:: cblas_dspmv(proc)
+.. index:: cblas_dger(proc)
+.. index:: cblas_dsyr(proc)
+.. index:: cblas_dspr(proc)
+.. index:: cblas_dsyr2(proc)
+.. index:: cblas_dspr2(proc)
+.. index:: cblas_chemv(proc)
+.. index:: cblas_chbmv(proc)
+.. index:: cblas_chpmv(proc)
+.. index:: cblas_cgeru(proc)
+.. index:: cblas_cgerc(proc)
+.. index:: cblas_cher(proc)
+.. index:: cblas_chpr(proc)
+.. index:: cblas_cher2(proc)
+.. index:: cblas_chpr2(proc)
+.. index:: cblas_zhemv(proc)
+.. index:: cblas_zhbmv(proc)
+.. index:: cblas_zhpmv(proc)
+.. index:: cblas_zgeru(proc)
+.. index:: cblas_zgerc(proc)
+.. index:: cblas_zher(proc)
+.. index:: cblas_zhpr(proc)
+.. index:: cblas_zher2(proc)
+.. index:: cblas_zhpr2(proc)
+.. index:: cblas_sgemm(proc)
+.. index:: cblas_ssymm(proc)
+.. index:: cblas_ssyrk(proc)
+.. index:: cblas_ssyr2k(proc)
+.. index:: cblas_strmm(proc)
+.. index:: cblas_strsm(proc)
+.. index:: cblas_dgemm(proc)
+.. index:: cblas_dsymm(proc)
+.. index:: cblas_dsyrk(proc)
+.. index:: cblas_dsyr2k(proc)
+.. index:: cblas_dtrmm(proc)
+.. index:: cblas_dtrsm(proc)
+.. index:: cblas_cgemm(proc)
+.. index:: cblas_csymm(proc)
+.. index:: cblas_csyrk(proc)
+.. index:: cblas_csyr2k(proc)
+.. index:: cblas_ctrmm(proc)
+.. index:: cblas_ctrsm(proc)
+.. index:: cblas_zgemm(proc)
+.. index:: cblas_zsymm(proc)
+.. index:: cblas_zsyrk(proc)
+.. index:: cblas_zsyr2k(proc)
+.. index:: cblas_ztrmm(proc)
+.. index:: cblas_ztrsm(proc)
+.. index:: cblas_chemm(proc)
+.. index:: cblas_cherk(proc)
+.. index:: cblas_cher2k(proc)
+.. index:: cblas_zhemm(proc)
+.. index:: cblas_zherk(proc)
+.. index:: cblas_zher2k(proc)
+.. index:: cblas_xerbla(proc)
+.. code-block:: felix
+
+  //[cblas.flx]
+  
+  //*****
+  // D .00.00 GSL-CBLAS.
+  //*****
+  // D .01.00 GSL-CBLAS-Level-1.
+  // Function: float cblas_sdsdot (const int N, const float alpha, const float * x, const int incx, const float * y, const int incy)
+    fun cblas_sdsdot: int * float * &float * int * &float * int -> float = 'cblas_sdsdot($a)';
+  // Function: double cblas_dsdot (const int N, const float * x, const int incx, const float * y, const int incy)
+    fun cblas_dsdot: int * &float * int * &float * int -> double = 'cblas_dsdot($a)';
+  // Function: float cblas_sdot (const int N, const float * x, const int incx, const float * y, const int incy)
+    fun cblas_sdot: int * &float * int * &float * int -> float = 'cblas_sdot($a)';
+  // Function: double cblas_ddot (const int N, const double * x, const int incx, const double * y, const int incy)
+    fun cblas_ddot: int * &double * int * &double * int -> double = 'cblas_ddot($a)';
+  // Function: void cblas_cdotu_sub (const int N, const void * x, const int incx, const void * y, const int incy, void * dotu)
+    proc cblas_cdotu_sub: int * &void * int * &void * int * &void = 'cblas_cdotu_sub($a);';
+  // Function: void cblas_cdotc_sub (const int N, const void * x, const int incx, const void * y, const int incy, void * dotc)
+    proc cblas_cdotc_sub: int * &void * int * &void * int * &void = 'cblas_cdotc_sub($a);';
+  // Function: void cblas_zdotu_sub (const int N, const void * x, const int incx, const void * y, const int incy, void * dotu)
+    proc cblas_zdotu_sub: int * &void * int * &void * int * &void = 'cblas_zdotu_sub($a);';
+  // Function: void cblas_zdotc_sub (const int N, const void * x, const int incx, const void * y, const int incy, void * dotc)
+    proc cblas_zdotc_sub: int * &void * int * &void * int * &void = 'cblas_zdotc_sub($a);';
+  // Function: float cblas_snrm2 (const int N, const float * x, const int incx)
+    fun cblas_snrm2: int * &float * int -> float = 'cblas_snrm2($a)';
+  // Function: float cblas_sasum (const int N, const float * x, const int incx)
+    fun cblas_sasum: int * &float * int -> float = 'cblas_sasum($a)';
+  // Function: double cblas_dnrm2 (const int N, const double * x, const int incx)
+    fun cblas_dnrm2: int * &double * int -> double = 'cblas_dnrm2($a)';
+  // Function: double cblas_dasum (const int N, const double * x, const int incx)
+    fun cblas_dasum: int * &double * int -> double = 'cblas_dasum($a)';
+  // Function: float cblas_scnrm2 (const int N, const void * x, const int incx)
+    fun cblas_scnrm2: int * &void * int -> float = 'cblas_scnrm2($a)';
+  // Function: float cblas_scasum (const int N, const void * x, const int incx)
+    fun cblas_scasum: int * &void * int -> float = 'cblas_scasum($a)';
+  // Function: double cblas_dznrm2 (const int N, const void * x, const int incx)
+    fun cblas_dznrm2: int * &void * int -> double = 'cblas_dznrm2($a)';
+  // Function: double cblas_dzasum (const int N, const void * x, const int incx)
+    fun cblas_dzasum: int * &void * int -> double = 'cblas_dzasum($a)';
+  // Function: CBLAS_INDEX cblas_isamax (const int N, const float * x, const int incx)
+    fun cblas_isamax: int * &float * int -> CBLAS_INDEX = 'cblas_isamax($a)';
+  // Function: CBLAS_INDEX cblas_idamax (const int N, const double * x, const int incx)
+    fun cblas_idamax: int * &double * int -> CBLAS_INDEX = 'cblas_idamax($a)';
+  // Function: CBLAS_INDEX cblas_icamax (const int N, const void * x, const int incx)
+    fun cblas_icamax: int * &void * int -> CBLAS_INDEX = 'cblas_icamax($a)';
+  // Function: CBLAS_INDEX cblas_izamax (const int N, const void * x, const int incx)
+    fun cblas_izamax: int * &void * int -> CBLAS_INDEX = 'cblas_izamax($a)';
+  // Function: void cblas_sswap (const int N, float * x, const int incx, float * y, const int incy)
+    proc cblas_sswap: int * &float * int * &float * int = 'cblas_sswap($a);';
+  // Function: void cblas_scopy (const int N, const float * x, const int incx, float * y, const int incy)
+    proc cblas_scopy: int * &float * int * &float * int = 'cblas_scopy($a);';
+  // Function: void cblas_saxpy (const int N, const float alpha, const float * x, const int incx, float * y, const int incy)
+    proc cblas_saxpy: int * float * &float * int * &float * int = 'cblas_saxpy($a);';
+  // Function: void cblas_dswap (const int N, double * x, const int incx, double * y, const int incy)
+    proc cblas_dswap: int * &double * int * &double * int = 'cblas_dswap($a);';
+  // Function: void cblas_dcopy (const int N, const double * x, const int incx, double * y, const int incy)
+    proc cblas_dcopy: int * &double * int * &double * int = 'cblas_dcopy($a);';
+  // Function: void cblas_daxpy (const int N, const double alpha, const double * x, const int incx, double * y, const int incy)
+    proc cblas_daxpy: int * double * &double * int * &double * int = 'cblas_daxpy($a);';
+  // Function: void cblas_cswap (const int N, void * x, const int incx, void * y, const int incy)
+    proc cblas_cswap: int * &void * int * &void * int = 'cblas_cswap($a);';
+  // Function: void cblas_ccopy (const int N, const void * x, const int incx, void * y, const int incy)
+    proc cblas_ccopy: int * &void * int * &void * int = 'cblas_ccopy($a);';
+  // Function: void cblas_caxpy (const int N, const void * alpha, const void * x, const int incx, void * y, const int incy)
+    proc cblas_caxpy: int * &void * &void * int * &void * int = 'cblas_caxpy($a);';
+  // Function: void cblas_zswap (const int N, void * x, const int incx, void * y, const int incy)
+    proc cblas_zswap: int * &void * int * &void * int = 'cblas_zswap($a);';
+  // Function: void cblas_zcopy (const int N, const void * x, const int incx, void * y, const int incy)
+    proc cblas_zcopy: int * &void * int * &void * int = 'cblas_zcopy($a);';
+  // Function: void cblas_zaxpy (const int N, const void * alpha, const void * x, const int incx, void * y, const int incy)
+    proc cblas_zaxpy: int * &void * &void * int * &void * int = 'cblas_zaxpy($a);';
+  // Function: void cblas_srotg (float * a, float * b, float * c, float * s)
+    proc cblas_srotg: &float * &float * &float * &float = 'cblas_srotg($a);';
+  // Function: void cblas_srotmg (float * d1, float * d2, float * b1, const float b2, float * P)
+    proc cblas_srotmg: &float * &float * &float * float * &float = 'cblas_srotmg($a);';
+  // Function: void cblas_srot (const int N, float * x, const int incx, float * y, const int incy, const float c, const float s)
+    proc cblas_srot: int * &float * int * &float * int * float * float = 'cblas_srot($a);';
+  // Function: void cblas_srotm (const int N, float * x, const int incx, float * y, const int incy, const float * P)
+    proc cblas_srotm: int * &float * int * &float * int * &float = 'cblas_srotm($a);';
+  // Function: void cblas_drotg (double * a, double * b, double * c, double * s)
+    proc cblas_drotg: &double * &double * &double * &double = 'cblas_drotg($a);';
+  // Function: void cblas_drotmg (double * d1, double * d2, double * b1, const double b2, double * P)
+    proc cblas_drotmg: &double * &double * &double * double * &double = 'cblas_drotmg($a);';
+  // Function: void cblas_drot (const int N, double * x, const int incx, double * y, const int incy, const double c, const double s)
+    proc cblas_drot: int * &double * int * &double * int * double * double = 'cblas_drot($a);';
+  // Function: void cblas_drotm (const int N, double * x, const int incx, double * y, const int incy, const double * P)
+    proc cblas_drotm: int * &double * int * &double * int * &double = 'cblas_drotm($a);';
+  // Function: void cblas_sscal (const int N, const float alpha, float * x, const int incx)
+    proc cblas_sscal: int * float * &float * int = 'cblas_sscal($a);';
+  // Function: void cblas_dscal (const int N, const double alpha, double * x, const int incx)
+    proc cblas_dscal: int * double * &double * int = 'cblas_dscal($a);';
+  // Function: void cblas_cscal (const int N, const void * alpha, void * x, const int incx)
+    proc cblas_cscal: int * &void * &void * int = 'cblas_cscal($a);';
+  // Function: void cblas_zscal (const int N, const void * alpha, void * x, const int incx)
+    proc cblas_zscal: int * &void * &void * int = 'cblas_zscal($a);';
+  // Function: void cblas_csscal (const int N, const float alpha, void * x, const int incx)
+    proc cblas_csscal: int * float * &void * int = 'cblas_csscal($a);';
+  // Function: void cblas_zdscal (const int N, const double alpha, void * x, const int incx)
+    proc cblas_zdscal: int * double * &void * int = 'cblas_zdscal($a);';
+  //*****
+  // D .02.00 GSL-CBLAS-Level-2.
+  // Function: void cblas_sgemv (const enum CBLAS_ORDER order, const enum CBLAS_TRANSPOSE TransA, const int M, const int N, const float alpha, const float * A, const int lda, const float * x, const int incx, const float beta, float * y, const int incy)
+    proc cblas_sgemv: CBLAS_ORDER * CBLAS_TRANSPOSE * int * int * float * &float * int * &float * int * float * &float * int = 'cblas_sgemv($a);';
+  // Function: void cblas_sgbmv (const enum CBLAS_ORDER order, const enum CBLAS_TRANSPOSE TransA, const int M, const int N, const int KL, const int KU, const float alpha, const float * A, const int lda, const float * x, const int incx, const float beta, float * y, const int incy)
+    proc cblas_sgbmv: CBLAS_ORDER * CBLAS_TRANSPOSE * int * int * int * int * float * &float * int * &float * int * float * &float * int = 'cblas_sgbmv($a);';
+  // Function: void cblas_strmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const float * A, const int lda, float * x, const int incx)
+    proc cblas_strmv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * &float * int * &float * int = 'cblas_strmv($a);';
+  // Function: void cblas_stbmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const int K, const float * A, const int lda, float * x, const int incx)
+    proc cblas_stbmv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * int * &float * int * &float * int = 'cblas_stbmv($a);';
+  // Function: void cblas_stpmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const float * Ap, float * x, const int incx)
+    proc cblas_stpmv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * &float * &float * int = 'cblas_stpmv($a);';
+  // Function: void cblas_strsv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const float * A, const int lda, float * x, const int incx)
+    proc cblas_strsv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * &float * int * &float * int = 'cblas_strsv($a);';
+  // Function: void cblas_stbsv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const int K, const float * A, const int lda, float * x, const int incx)
+    proc cblas_stbsv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * int * &float * int * &float * int = 'cblas_stbsv($a);';
+  // Function: void cblas_stpsv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const float * Ap, float * x, const int incx)
+    proc cblas_stpsv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * &float * &float * int = 'cblas_stpsv($a);';
+  // Function: void cblas_dgemv (const enum CBLAS_ORDER order, const enum CBLAS_TRANSPOSE TransA, const int M, const int N, const double alpha, const double * A, const int lda, const double * x, const int incx, const double beta, double * y, const int incy)
+    proc cblas_dgemv: CBLAS_ORDER * CBLAS_TRANSPOSE * int * int * double * &double * int * &double * int * double * &double * int = 'cblas_dgemv($a);';
+  // Function: void cblas_dgbmv (const enum CBLAS_ORDER order, const enum CBLAS_TRANSPOSE TransA, const int M, const int N, const int KL, const int KU, const double alpha, const double * A, const int lda, const double * x, const int incx, const double beta, double * y, const int incy)
+    proc cblas_dgbmv: CBLAS_ORDER * CBLAS_TRANSPOSE * int * int * int * int * double * &double * int * &double * int * double * &double * int = 'cblas_dgbmv($a);';
+  // Function: void cblas_dtrmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const double * A, const int lda, double * x, const int incx)
+    proc cblas_dtrmv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * &double * int * &double * int = 'cblas_dtrmv($a);';
+  // Function: void cblas_dtbmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const int K, const double * A, const int lda, double * x, const int incx)
+    proc cblas_dtbmv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * int * &double * int * &double * int = 'cblas_dtbmv($a);';
+  // Function: void cblas_dtpmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const double * Ap, double * x, const int incx)
+    proc cblas_dtpmv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * &double * &double * int = 'cblas_dtpmv($a);';
+  // Function: void cblas_dtrsv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const double * A, const int lda, double * x, const int incx)
+    proc cblas_dtrsv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * &double * int * &double * int = 'cblas_dtrsv($a);';
+  // Function: void cblas_dtbsv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const int K, const double * A, const int lda, double * x, const int incx)
+    proc cblas_dtbsv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * int * &double * int * &double * int = 'cblas_dtbsv($a);';
+  // Function: void cblas_dtpsv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const double * Ap, double * x, const int incx)
+    proc cblas_dtpsv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * &double * &double * int = 'cblas_dtpsv($a);';
+  // Function: void cblas_cgemv (const enum CBLAS_ORDER order, const enum CBLAS_TRANSPOSE TransA, const int M, const int N, const void * alpha, const void * A, const int lda, const void * x, const int incx, const void * beta, void * y, const int incy)
+    proc cblas_cgemv: CBLAS_ORDER * CBLAS_TRANSPOSE * int * int * &void * &void * int * &void * int * &void * &void * int = 'cblas_cgemv($a);';
+  // Function: void cblas_cgbmv (const enum CBLAS_ORDER order, const enum CBLAS_TRANSPOSE TransA, const int M, const int N, const int KL, const int KU, const void * alpha, const void * A, const int lda, const void * x, const int incx, const void * beta, void * y, const int incy)
+    proc cblas_cgbmv: CBLAS_ORDER * CBLAS_TRANSPOSE * int * int * int * int * &void * &void * int * &void * int * &void * &void * int = 'cblas_cgbmv($a);';
+  // Function: void cblas_ctrmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const void * A, const int lda, void * x, const int incx)
+    proc cblas_ctrmv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * &void * int * &void * int = 'cblas_ctrmv($a);';
+  // Function: void cblas_ctbmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const int K, const void * A, const int lda, void * x, const int incx)
+    proc cblas_ctbmv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * int * &void * int * &void * int = 'cblas_ctbmv($a);';
+  // Function: void cblas_ctpmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const void * Ap, void * x, const int incx)
+    proc cblas_ctpmv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * &void * &void * int = 'cblas_ctpmv($a);';
+  // Function: void cblas_ctrsv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const void * A, const int lda, void * x, const int incx)
+    proc cblas_ctrsv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * &void * int * &void * int = 'cblas_ctrsv($a);';
+  // Function: void cblas_ctbsv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const int K, const void * A, const int lda, void * x, const int incx)
+    proc cblas_ctbsv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * int * &void * int * &void * int = 'cblas_ctbsv($a);';
+  // Function: void cblas_ctpsv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const void * Ap, void * x, const int incx)
+    proc cblas_ctpsv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * &void * &void * int = 'cblas_ctpsv($a);';
+  // Function: void cblas_zgemv (const enum CBLAS_ORDER order, const enum CBLAS_TRANSPOSE TransA, const int M, const int N, const void * alpha, const void * A, const int lda, const void * x, const int incx, const void * beta, void * y, const int incy)
+    proc cblas_zgemv: CBLAS_ORDER * CBLAS_TRANSPOSE * int * int * &void * &void * int * &void * int * &void * &void * int = 'cblas_zgemv($a);';
+  // Function: void cblas_zgbmv (const enum CBLAS_ORDER order, const enum CBLAS_TRANSPOSE TransA, const int M, const int N, const int KL, const int KU, const void * alpha, const void * A, const int lda, const void * x, const int incx, const void * beta, void * y, const int incy)
+    proc cblas_zgbmv: CBLAS_ORDER * CBLAS_TRANSPOSE * int * int * int * int * &void * &void * int * &void * int * &void * &void * int = 'cblas_zgbmv($a);';
+  // Function: void cblas_ztrmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const void * A, const int lda, void * x, const int incx)
+    proc cblas_ztrmv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * &void * int * &void * int = 'cblas_ztrmv($a);';
+  // Function: void cblas_ztbmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const int K, const void * A, const int lda, void * x, const int incx)
+    proc cblas_ztbmv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * int * &void * int * &void * int = 'cblas_ztbmv($a);';
+  // Function: void cblas_ztpmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const void * Ap, void * x, const int incx)
+    proc cblas_ztpmv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * &void * &void * int = 'cblas_ztpmv($a);';
+  // Function: void cblas_ztrsv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const void * A, const int lda, void * x, const int incx)
+    proc cblas_ztrsv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * &void * int * &void * int = 'cblas_ztrsv($a);';
+  // Function: void cblas_ztbsv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const int K, const void * A, const int lda, void * x, const int incx)
+    proc cblas_ztbsv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * int * &void * int * &void * int = 'cblas_ztbsv($a);';
+  // Function: void cblas_ztpsv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int N, const void * Ap, void * x, const int incx)
+    proc cblas_ztpsv: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * &void * &void * int = 'cblas_ztpsv($a);';
+  // Function: void cblas_ssymv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const float alpha, const float * A, const int lda, const float * x, const int incx, const float beta, float * y, const int incy)
+    proc cblas_ssymv: CBLAS_ORDER * CBLAS_UPLO * int * float * &float * int * &float * int * float * &float * int = 'cblas_ssymv($a);';
+  // Function: void cblas_ssbmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const int K, const float alpha, const float * A, const int lda, const float * x, const int incx, const float beta, float * y, const int incy)
+    proc cblas_ssbmv: CBLAS_ORDER * CBLAS_UPLO * int * int * float * &float * int * &float * int * float * &float * int = 'cblas_ssbmv($a);';
+  // Function: void cblas_sspmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const float alpha, const float * Ap, const float * x, const int incx, const float beta, float * y, const int incy)
+    proc cblas_sspmv: CBLAS_ORDER * CBLAS_UPLO * int * float * &float * &float * int * float * &float * int = 'cblas_sspmv($a);';
+  // Function: void cblas_sger (const enum CBLAS_ORDER order, const int M, const int N, const float alpha, const float * x, const int incx, const float * y, const int incy, float * A, const int lda)
+    proc cblas_sger: CBLAS_ORDER * int * int * float * &float * int * &float * int * &float * int = 'cblas_sger($a);';
+  // Function: void cblas_ssyr (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const float alpha, const float * x, const int incx, float * A, const int lda)
+    proc cblas_ssyr: CBLAS_ORDER * CBLAS_UPLO * int * float * &float * int * &float * int = 'cblas_ssyr($a);';
+  // Function: void cblas_sspr (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const float alpha, const float * x, const int incx, float * Ap)
+    proc cblas_sspr: CBLAS_ORDER * CBLAS_UPLO * int * float * &float * int * &float = 'cblas_sspr($a);';
+  // Function: void cblas_ssyr2 (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const float alpha, const float * x, const int incx, const float * y, const int incy, float * A, const int lda)
+    proc cblas_ssyr2: CBLAS_ORDER * CBLAS_UPLO * int * float * &float * int * &float * int * &float * int = 'cblas_ssyr2($a);';
+  // Function: void cblas_sspr2 (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const float alpha, const float * x, const int incx, const float * y, const int incy, float * A)
+    proc cblas_sspr2: CBLAS_ORDER * CBLAS_UPLO * int * float * &float * int * &float * int * &float = 'cblas_sspr2($a);';
+  // Function: void cblas_dsymv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const double alpha, const double * A, const int lda, const double * x, const int incx, const double beta, double * y, const int incy)
+    proc cblas_dsymv: CBLAS_ORDER * CBLAS_UPLO * int * double * &double * int * &double * int * double * &double * int = 'cblas_dsymv($a);';
+  // Function: void cblas_dsbmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const int K, const double alpha, const double * A, const int lda, const double * x, const int incx, const double beta, double * y, const int incy)
+    proc cblas_dsbmv: CBLAS_ORDER * CBLAS_UPLO * int * int * double * &double * int * &double * int * double * &double * int = 'cblas_dsbmv($a);';
+  // Function: void cblas_dspmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const double alpha, const double * Ap, const double * x, const int incx, const double beta, double * y, const int incy)
+    proc cblas_dspmv: CBLAS_ORDER * CBLAS_UPLO * int * double * &double * &double * int * double * &double * int = 'cblas_dspmv($a);';
+  // Function: void cblas_dger (const enum CBLAS_ORDER order, const int M, const int N, const double alpha, const double * x, const int incx, const double * y, const int incy, double * A, const int lda)
+    proc cblas_dger: CBLAS_ORDER * int * int * double * &double * int * &double * int * &double * int = 'cblas_dger($a);';
+  // Function: void cblas_dsyr (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const double alpha, const double * x, const int incx, double * A, const int lda)
+    proc cblas_dsyr: CBLAS_ORDER * CBLAS_UPLO * int * double * &double * int * &double * int = 'cblas_dsyr($a);';
+  // Function: void cblas_dspr (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const double alpha, const double * x, const int incx, double * Ap)
+    proc cblas_dspr: CBLAS_ORDER * CBLAS_UPLO * int * double * &double * int * &double = 'cblas_dspr($a);';
+  // Function: void cblas_dsyr2 (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const double alpha, const double * x, const int incx, const double * y, const int incy, double * A, const int lda)
+    proc cblas_dsyr2: CBLAS_ORDER * CBLAS_UPLO * int * double * &double * int * &double * int * &double * int = 'cblas_dsyr2($a);';
+  // Function: void cblas_dspr2 (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const double alpha, const double * x, const int incx, const double * y, const int incy, double * A)
+    proc cblas_dspr2: CBLAS_ORDER * CBLAS_UPLO * int * double * &double * int * &double * int * &double = 'cblas_dspr2($a);';
+  // Function: void cblas_chemv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const void * alpha, const void * A, const int lda, const void * x, const int incx, const void * beta, void * y, const int incy)
+    proc cblas_chemv: CBLAS_ORDER * CBLAS_UPLO * int * &void * &void * int * &void * int * &void * &void * int = 'cblas_chemv($a);';
+  // Function: void cblas_chbmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const int K, const void * alpha, const void * A, const int lda, const void * x, const int incx, const void * beta, void * y, const int incy)
+    proc cblas_chbmv: CBLAS_ORDER * CBLAS_UPLO * int * int * &void * &void * int * &void * int * &void * &void * int = 'cblas_chbmv($a);';
+  // Function: void cblas_chpmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const void * alpha, const void * Ap, const void * x, const int incx, const void * beta, void * y, const int incy)
+    proc cblas_chpmv: CBLAS_ORDER * CBLAS_UPLO * int * &void * &void * &void * int * &void * &void * int = 'cblas_chpmv($a);';
+  // Function: void cblas_cgeru (const enum CBLAS_ORDER order, const int M, const int N, const void * alpha, const void * x, const int incx, const void * y, const int incy, void * A, const int lda)
+    proc cblas_cgeru: CBLAS_ORDER * int * int * &void * &void * int * &void * int * &void * int = 'cblas_cgeru($a);';
+  // Function: void cblas_cgerc (const enum CBLAS_ORDER order, const int M, const int N, const void * alpha, const void * x, const int incx, const void * y, const int incy, void * A, const int lda)
+    proc cblas_cgerc: CBLAS_ORDER * int * int * &void * &void * int * &void * int * &void * int = 'cblas_cgerc($a);';
+  // Function: void cblas_cher (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const float alpha, const void * x, const int incx, void * A, const int lda)
+    proc cblas_cher: CBLAS_ORDER * CBLAS_UPLO * int * float * &void * int * &void * int = 'cblas_cher($a);';
+  // Function: void cblas_chpr (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const float alpha, const void * x, const int incx, void * A)
+    proc cblas_chpr: CBLAS_ORDER * CBLAS_UPLO * int * float * &void * int * &void = 'cblas_chpr($a);';
+  // Function: void cblas_cher2 (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const void * alpha, const void * x, const int incx, const void * y, const int incy, void * A, const int lda)
+    proc cblas_cher2: CBLAS_ORDER * CBLAS_UPLO * int * &void * &void * int * &void * int * &void * int = 'cblas_cher2($a);';
+  // Function: void cblas_chpr2 (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const void * alpha, const void * x, const int incx, const void * y, const int incy, void * Ap)
+    proc cblas_chpr2: CBLAS_ORDER * CBLAS_UPLO * int * &void * &void * int * &void * int * &void = 'cblas_chpr2($a);';
+  // Function: void cblas_zhemv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const void * alpha, const void * A, const int lda, const void * x, const int incx, const void * beta, void * y, const int incy)
+    proc cblas_zhemv: CBLAS_ORDER * CBLAS_UPLO * int * &void * &void * int * &void * int * &void * &void * int = 'cblas_zhemv($a);';
+  // Function: void cblas_zhbmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const int K, const void * alpha, const void * A, const int lda, const void * x, const int incx, const void * beta, void * y, const int incy)
+    proc cblas_zhbmv: CBLAS_ORDER * CBLAS_UPLO * int * int * &void * &void * int * &void * int * &void * &void * int = 'cblas_zhbmv($a);';
+  // Function: void cblas_zhpmv (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const void * alpha, const void * Ap, const void * x, const int incx, const void * beta, void * y, const int incy)
+    proc cblas_zhpmv: CBLAS_ORDER * CBLAS_UPLO * int * &void * &void * &void * int * &void * &void * int = 'cblas_zhpmv($a);';
+  // Function: void cblas_zgeru (const enum CBLAS_ORDER order, const int M, const int N, const void * alpha, const void * x, const int incx, const void * y, const int incy, void * A, const int lda)
+    proc cblas_zgeru: CBLAS_ORDER * int * int * &void * &void * int * &void * int * &void * int = 'cblas_zgeru($a);';
+  // Function: void cblas_zgerc (const enum CBLAS_ORDER order, const int M, const int N, const void * alpha, const void * x, const int incx, const void * y, const int incy, void * A, const int lda)
+    proc cblas_zgerc: CBLAS_ORDER * int * int * &void * &void * int * &void * int * &void * int = 'cblas_zgerc($a);';
+  // Function: void cblas_zher (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const double alpha, const void * x, const int incx, void * A, const int lda)
+    proc cblas_zher: CBLAS_ORDER * CBLAS_UPLO * int * double * &void * int * &void * int = 'cblas_zher($a);';
+  // Function: void cblas_zhpr (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const double alpha, const void * x, const int incx, void * A)
+    proc cblas_zhpr: CBLAS_ORDER * CBLAS_UPLO * int * double * &void * int * &void = 'cblas_zhpr($a);';
+  // Function: void cblas_zher2 (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const void * alpha, const void * x, const int incx, const void * y, const int incy, void * A, const int lda)
+    proc cblas_zher2: CBLAS_ORDER * CBLAS_UPLO * int * &void * &void * int * &void * int * &void * int = 'cblas_zher2($a);';
+  // Function: void cblas_zhpr2 (const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N, const void * alpha, const void * x, const int incx, const void * y, const int incy, void * Ap)
+    proc cblas_zhpr2: CBLAS_ORDER * CBLAS_UPLO * int * &void * &void * int * &void * int * &void = 'cblas_zhpr2($a);';
+  //*****
+  // D .03.00 GSL-CBLAS-Level-3.
+  // Function: void cblas_sgemm (const enum CBLAS_ORDER Order, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_TRANSPOSE TransB, const int M, const int N, const int K, const float alpha, const float * A, const int lda, const float * B, const int ldb, const float beta, float * C, const int ldc)
+    proc cblas_sgemm: CBLAS_ORDER * CBLAS_TRANSPOSE * CBLAS_TRANSPOSE * int * int * int * float * &float * int * &float * int * float * &float * int = 'cblas_sgemm($a);';
+  // Function: void cblas_ssymm (const enum CBLAS_ORDER Order, const enum CBLAS_SIDE Side, const enum CBLAS_UPLO Uplo, const int M, const int N, const float alpha, const float * A, const int lda, const float * B, const int ldb, const float beta, float * C, const int ldc)
+    proc cblas_ssymm: CBLAS_ORDER * CBLAS_SIDE * CBLAS_UPLO * int * int * float * &float * int * &float * int * float * &float * int = 'cblas_ssymm($a);';
+  // Function: void cblas_ssyrk (const enum CBLAS_ORDER Order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE Trans, const int N, const int K, const float alpha, const float * A, const int lda, const float beta, float * C, const int ldc)
+    proc cblas_ssyrk: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * int * int * float * &float * int * float * &float * int = 'cblas_ssyrk($a);';
+  // Function: void cblas_ssyr2k (const enum CBLAS_ORDER Order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE Trans, const int N, const int K, const float alpha, const float * A, const int lda, const float * B, const int ldb, const float beta, float * C, const int ldc)
+    proc cblas_ssyr2k: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * int * int * float * &float * int * &float * int * float * &float * int = 'cblas_ssyr2k($a);';
+  // Function: void cblas_strmm (const enum CBLAS_ORDER Order, const enum CBLAS_SIDE Side, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int M, const int N, const float alpha, const float * A, const int lda, float * B, const int ldb)
+    proc cblas_strmm: CBLAS_ORDER * CBLAS_SIDE * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * int * float * &float * int * &float * int = 'cblas_strmm($a);';
+  // Function: void cblas_strsm (const enum CBLAS_ORDER Order, const enum CBLAS_SIDE Side, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int M, const int N, const float alpha, const float * A, const int lda, float * B, const int ldb)
+    proc cblas_strsm: CBLAS_ORDER * CBLAS_SIDE * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * int * float * &float * int * &float * int = 'cblas_strsm($a);';
+  // Function: void cblas_dgemm (const enum CBLAS_ORDER Order, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_TRANSPOSE TransB, const int M, const int N, const int K, const double alpha, const double * A, const int lda, const double * B, const int ldb, const double beta, double * C, const int ldc)
+    proc cblas_dgemm: CBLAS_ORDER * CBLAS_TRANSPOSE * CBLAS_TRANSPOSE * int * int * int * double * &double * int * &double * int * double * &double * int = 'cblas_dgemm($a);';
+  // Function: void cblas_dsymm (const enum CBLAS_ORDER Order, const enum CBLAS_SIDE Side, const enum CBLAS_UPLO Uplo, const int M, const int N, const double alpha, const double * A, const int lda, const double * B, const int ldb, const double beta, double * C, const int ldc)
+    proc cblas_dsymm: CBLAS_ORDER * CBLAS_SIDE * CBLAS_UPLO * int * int * double * &double * int * &double * int * double * &double * int = 'cblas_dsymm($a);';
+  // Function: void cblas_dsyrk (const enum CBLAS_ORDER Order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE Trans, const int N, const int K, const double alpha, const double * A, const int lda, const double beta, double * C, const int ldc)
+    proc cblas_dsyrk: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * int * int * double * &double * int * double * &double * int = 'cblas_dsyrk($a);';
+  // Function: void cblas_dsyr2k (const enum CBLAS_ORDER Order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE Trans, const int N, const int K, const double alpha, const double * A, const int lda, const double * B, const int ldb, const double beta, double * C, const int ldc)
+    proc cblas_dsyr2k: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * int * int * double * &double * int * &double * int * double * &double * int = 'cblas_dsyr2k($a);';
+  // Function: void cblas_dtrmm (const enum CBLAS_ORDER Order, const enum CBLAS_SIDE Side, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int M, const int N, const double alpha, const double * A, const int lda, double * B, const int ldb)
+    proc cblas_dtrmm: CBLAS_ORDER * CBLAS_SIDE * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * int * double * &double * int * &double * int = 'cblas_dtrmm($a);';
+  // Function: void cblas_dtrsm (const enum CBLAS_ORDER Order, const enum CBLAS_SIDE Side, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int M, const int N, const double alpha, const double * A, const int lda, double * B, const int ldb)
+    proc cblas_dtrsm: CBLAS_ORDER * CBLAS_SIDE * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * int * double * &double * int * &double * int = 'cblas_dtrsm($a);';
+  // Function: void cblas_cgemm (const enum CBLAS_ORDER Order, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_TRANSPOSE TransB, const int M, const int N, const int K, const void * alpha, const void * A, const int lda, const void * B, const int ldb, const void * beta, void * C, const int ldc)
+    proc cblas_cgemm: CBLAS_ORDER * CBLAS_TRANSPOSE * CBLAS_TRANSPOSE * int * int * int * &void * &void * int * &void * int * &void * &void * int = 'cblas_cgemm($a);';
+  // Function: void cblas_csymm (const enum CBLAS_ORDER Order, const enum CBLAS_SIDE Side, const enum CBLAS_UPLO Uplo, const int M, const int N, const void * alpha, const void * A, const int lda, const void * B, const int ldb, const void * beta, void * C, const int ldc)
+    proc cblas_csymm: CBLAS_ORDER * CBLAS_SIDE * CBLAS_UPLO * int * int * &void * &void * int * &void * int * &void * &void * int = 'cblas_csymm($a);';
+  // Function: void cblas_csyrk (const enum CBLAS_ORDER Order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE Trans, const int N, const int K, const void * alpha, const void * A, const int lda, const void * beta, void * C, const int ldc)
+    proc cblas_csyrk: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * int * int * &void * &void * int * &void * &void * int = 'cblas_csyrk($a);';
+  // Function: void cblas_csyr2k (const enum CBLAS_ORDER Order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE Trans, const int N, const int K, const void * alpha, const void * A, const int lda, const void * B, const int ldb, const void * beta, void * C, const int ldc)
+    proc cblas_csyr2k: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * int * int * &void * &void * int * &void * int * &void * &void * int = 'cblas_csyr2k($a);';
+  // Function: void cblas_ctrmm (const enum CBLAS_ORDER Order, const enum CBLAS_SIDE Side, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int M, const int N, const void * alpha, const void * A, const int lda, void * B, const int ldb)
+    proc cblas_ctrmm: CBLAS_ORDER * CBLAS_SIDE * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * int * &void * &void * int * &void * int = 'cblas_ctrmm($a);';
+  // Function: void cblas_ctrsm (const enum CBLAS_ORDER Order, const enum CBLAS_SIDE Side, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int M, const int N, const void * alpha, const void * A, const int lda, void * B, const int ldb)
+    proc cblas_ctrsm: CBLAS_ORDER * CBLAS_SIDE * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * int * &void * &void * int * &void * int = 'cblas_ctrsm($a);';
+  // Function: void cblas_zgemm (const enum CBLAS_ORDER Order, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_TRANSPOSE TransB, const int M, const int N, const int K, const void * alpha, const void * A, const int lda, const void * B, const int ldb, const void * beta, void * C, const int ldc)
+    proc cblas_zgemm: CBLAS_ORDER * CBLAS_TRANSPOSE * CBLAS_TRANSPOSE * int * int * int * &void * &void * int * &void * int * &void * &void * int = 'cblas_zgemm($a);';
+  // Function: void cblas_zsymm (const enum CBLAS_ORDER Order, const enum CBLAS_SIDE Side, const enum CBLAS_UPLO Uplo, const int M, const int N, const void * alpha, const void * A, const int lda, const void * B, const int ldb, const void * beta, void * C, const int ldc)
+    proc cblas_zsymm: CBLAS_ORDER * CBLAS_SIDE * CBLAS_UPLO * int * int * &void * &void * int * &void * int * &void * &void * int = 'cblas_zsymm($a);';
+  // Function: void cblas_zsyrk (const enum CBLAS_ORDER Order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE Trans, const int N, const int K, const void * alpha, const void * A, const int lda, const void * beta, void * C, const int ldc)
+    proc cblas_zsyrk: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * int * int * &void * &void * int * &void * &void * int = 'cblas_zsyrk($a);';
+  // Function: void cblas_zsyr2k (const enum CBLAS_ORDER Order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE Trans, const int N, const int K, const void * alpha, const void * A, const int lda, const void * B, const int ldb, const void * beta, void * C, const int ldc)
+    proc cblas_zsyr2k: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * int * int * &void * &void * int * &void * int * &void * &void * int = 'cblas_zsyr2k($a);';
+  // Function: void cblas_ztrmm (const enum CBLAS_ORDER Order, const enum CBLAS_SIDE Side, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int M, const int N, const void * alpha, const void * A, const int lda, void * B, const int ldb)
+    proc cblas_ztrmm: CBLAS_ORDER * CBLAS_SIDE * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * int * &void * &void * int * &void * int = 'cblas_ztrmm($a);';
+  // Function: void cblas_ztrsm (const enum CBLAS_ORDER Order, const enum CBLAS_SIDE Side, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_DIAG Diag, const int M, const int N, const void * alpha, const void * A, const int lda, void * B, const int ldb)
+    proc cblas_ztrsm: CBLAS_ORDER * CBLAS_SIDE * CBLAS_UPLO * CBLAS_TRANSPOSE * CBLAS_DIAG * int * int * &void * &void * int * &void * int = 'cblas_ztrsm($a);';
+  // Function: void cblas_chemm (const enum CBLAS_ORDER Order, const enum CBLAS_SIDE Side, const enum CBLAS_UPLO Uplo, const int M, const int N, const void * alpha, const void * A, const int lda, const void * B, const int ldb, const void * beta, void * C, const int ldc)
+    proc cblas_chemm: CBLAS_ORDER * CBLAS_SIDE * CBLAS_UPLO * int * int * &void * &void * int * &void * int * &void * &void * int = 'cblas_chemm($a);';
+  // Function: void cblas_cherk (const enum CBLAS_ORDER Order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE Trans, const int N, const int K, const float alpha, const void * A, const int lda, const float beta, void * C, const int ldc)
+    proc cblas_cherk: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * int * int * float * &void * int * float * &void * int = 'cblas_cherk($a);';
+  // Function: void cblas_cher2k (const enum CBLAS_ORDER Order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE Trans, const int N, const int K, const void * alpha, const void * A, const int lda, const void * B, const int ldb, const float beta, void * C, const int ldc)
+    proc cblas_cher2k: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * int * int * &void * &void * int * &void * int * float * &void * int = 'cblas_cher2k($a);';
+  // Function: void cblas_zhemm (const enum CBLAS_ORDER Order, const enum CBLAS_SIDE Side, const enum CBLAS_UPLO Uplo, const int M, const int N, const void * alpha, const void * A, const int lda, const void * B, const int ldb, const void * beta, void * C, const int ldc)
+    proc cblas_zhemm: CBLAS_ORDER * CBLAS_SIDE * CBLAS_UPLO * int * int * &void * &void * int * &void * int * &void * &void * int = 'cblas_zhemm($a);';
+  // Function: void cblas_zherk (const enum CBLAS_ORDER Order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE Trans, const int N, const int K, const double alpha, const void * A, const int lda, const double beta, void * C, const int ldc)
+    proc cblas_zherk: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * int * int * double * &void * int * double * &void * int = 'cblas_zherk($a);';
+  // Function: void cblas_zher2k (const enum CBLAS_ORDER Order, const enum CBLAS_UPLO Uplo, const enum CBLAS_TRANSPOSE Trans, const int N, const int K, const void * alpha, const void * A, const int lda, const void * B, const int ldb, const double beta, void * C, const int ldc)
+    proc cblas_zher2k: CBLAS_ORDER * CBLAS_UPLO * CBLAS_TRANSPOSE * int * int * &void * &void * int * &void * int * double * &void * int = 'cblas_zher2k($a);';
+  // Function: void cblas_xerbla (int p, const char * rout, const char * form, ...)
+    proc cblas_xerbla: int * &char * &char * ... = 'cblas_xerbla($a);';
+  //*****
+  

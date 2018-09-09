@@ -423,3 +423,6 @@ off a synchronous channel into the active queue.
   }}
 
 
+.. code-block:: cpp
+
+  //[flx_sync.cpp]

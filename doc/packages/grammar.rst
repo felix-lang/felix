@@ -5501,3 +5501,6 @@ Chips
   }
 
 
+.. code-block:: felix
+
+  //[chips.fsyn]

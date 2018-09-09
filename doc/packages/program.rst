@@ -1508,3 +1508,69 @@ Win32 Signal
 ============
 
 
+.. index:: Win32Signal(class)
+.. index:: signal_t(type)
+.. index:: signal_t(ctor)
+.. index:: int(ctor)
+.. index:: sig_t_def(header)
+.. index:: sig_t(type)
+.. index:: signal(gen)
+.. index:: null_signal_handler(const)
+.. index:: ignore_signal(proc)
+.. code-block:: felix
+
+  //[win32_signal.flx]
+  
+  class Win32Signal {
+    requires C89_headers::signal_h;
+    type signal_t = "int";
+    ctor signal_t: int = "$1";
+    ctor int: signal_t = "$1";
+  
+    header sig_t_def = "typedef void (__cdecl *sig_t)(int);";
+    type sig_t = "sig_t" requires sig_t_def; 
+    gen signal: signal_t * sig_t -> sig_t = "signal($1, $2)";
+    instance Eq[signal_t] {
+      fun == : signal_t * signal_t ->  bool = "$1==$2";
+    }
+    inherit Eq[signal_t];
+  
+    // http://pubs.opengroup.org/onlinepubs/009695399/basedefs/signal.h.html
+    const 
+      SIGABRT,  SIGFPE, SIGILL, SIGINT, 
+      SIGSEGV,  SIGTERM 
+    : signal_t;
+  
+    instance Str[signal_t] {
+      fun str: signal_t -> string =
+      | $(SIGABRT) =>  "SIGABRT" 
+      | $(SIGFPE) =>  "SIGFPE" 
+      | $(SIGILL) =>  "SIGILL" 
+      | $(SIGINT) =>  "SIGINT" 
+      | $(SIGSEGV) =>  "SIGSEGV" 
+      | $(SIGTERM) =>  "SIGTERM" 
+      | x => "signal " + x.int.str
+      ;
+    }
+    inherit Str[signal_t];
+  
+    body "void null_signal_handler(int){}";
+    const null_signal_handler: sig_t;
+    proc ignore_signal(s:signal_t) { C_hack::ignore(signal(s, null_signal_handler)); }
+  
+    // http://pubs.opengroup.org/onlinepubs/007904975/functions/sigaction.html
+    body ctrl_c_handling = """
+      void set_ctrl_c_flag(int);
+      void trap_ctrl_c () {
+       (void)signal(SIGINT,set_ctrl_c_flag); 
+     }
+    """ requires ctrl_c_flag;
+  
+    inherit Signal_class[Win32];
+  
+    instance Signal_class[Win32] {
+      proc trap_ctrl_c: unit requires ctrl_c_handling;
+    }
+  }
+  
+  

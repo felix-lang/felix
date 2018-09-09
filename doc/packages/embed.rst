@@ -1300,3 +1300,6 @@ Config
 
 
 
+.. code-block:: python
+
+  #[flx_async.py]
