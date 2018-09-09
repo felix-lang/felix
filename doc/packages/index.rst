@@ -16,8 +16,6 @@ Contents:
   concordance
   configs
   dynamic_metatyping
-  libstruct
-  linux
 
 Indices and tables
 ==================
