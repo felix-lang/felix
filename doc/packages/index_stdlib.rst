@@ -1,4 +1,4 @@
-.. felix rtl packages index
+.. felix standard library packages index
 
 Standard Library
 ================
@@ -8,37 +8,11 @@ Contents:
 .. toctree:: 1
   :maxdepth: 1
 
-  algebra
-  arrays
-  char
-  cheaders
-  chips
-  codecs
-  core_scalar_types
-  core_type_constructors
-  fibres
-  filesystem
+  index_datatype
+  index_control
+  index_environment
   grammar
-  grammars
-  io
   libstruct
-  lists
-  logic
-  memory
-  numbers
-  parsers
-  pointers
-  program
-  pthreads
-  recognisers
   rparse
-  streams
-  strings
-  time
-  trees
-  ucstring
-  uint256_t
-  unique
-  web
 
   

@@ -47,12 +47,12 @@ library Botan { class BigInt
 
   ctor bigint : string = "Botan::BigInt ($1)";
 
-  instance Forward[bigint] {
+  instance ForwardSequence[bigint] {
     fun succ: bigint -> bigint = "$1+Botan::BigInt(1)";
     proc pre_incr: &bigint = "$1->operator++();";
     proc post_incr: &bigint = "$1->operator++();";
   }
-  instance Bidirectional[bigint] {
+  instance BidirectionalSequence[bigint] {
     fun pred: bigint -> bigint = "$1-Botan::BigInt(1)";
     proc pre_decr: &bigint = "$1->operator--();";
     proc post_decr: &bigint = "$1->operator--();";
