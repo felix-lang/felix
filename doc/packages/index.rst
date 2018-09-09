@@ -14,8 +14,6 @@ Contents:
   index_tools.rst
 
   concordance
-  configs
-  dynamic_metatyping
 
 Indices and tables
 ==================
