@@ -37,6 +37,7 @@ Contents:
   time
   trees
   ucstring
+  uint256_t
   unique
   web
 

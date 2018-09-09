@@ -9,6 +9,8 @@ Contents:
   :maxdepth: 1
 
   botan
+  gmp
+  gsl
   gui
   regex
   sdl
