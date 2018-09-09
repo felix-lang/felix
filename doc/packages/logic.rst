@@ -5,13 +5,15 @@ Package: src/packages/logic.fdoc
 Logic
 =====
 
-============= ===================================
-key           file                                
-============= ===================================
-bool.flx      share/lib/std/scalar/bool.flx       
-boolexpr.fsyn share/lib/std/scalar/boolexpr.fsyn  
-predicate.flx share/lib/std/algebra/predicate.flx 
-============= ===================================
+=================== ======================================
+key                 file                                   
+=================== ======================================
+bool.flx            share/lib/std/scalar/bool.flx          
+boolexpr.fsyn       share/lib/std/scalar/boolexpr.fsyn     
+predicate.flx       share/lib/std/algebra/predicate.flx    
+staticbool.flx      share/lib/std/kind/staticbool.flx      
+staticbool_ops.fsyn share/lib/std/kind/staticbool_ops.fsyn 
+=================== ======================================
 
 
 Boolean Logic
@@ -276,5 +278,68 @@ directly using symbolic operators to form new predicates, using logical
 conjunction  :code:`and`, disjunction  :code:`or`, implication  :code:`implies`
 and negation  :code:`not`. The parser maps these operator onto the 
 functions  :code:`land`,  :code:`lor`,  :code:`implies`, and  :code:`lnot` respectively.
+
+
+
+.. index:: Predicate(class)
+.. code-block:: felix
+
+  //[predicate.flx]
+  
+  // Some operations on predicates.
+  // These also automatically apply to relations, but just taking
+  // the argument as a tuple.
+  
+  open class Predicate[T]
+  {
+     fun land (f:T->bool,g:T->bool) =>
+       fun (x:T) => f x and g x
+     ;
+  
+     fun lor (f:T->bool,g:T->bool) =>
+       fun (x:T) => f x or g x
+     ;
+  
+     fun implies (f:T->bool,g:T->bool) =>
+       fun (x:T) => f x implies g x
+     ;
+  
+     fun lnot (f:T->bool) =>
+       fun (x:T) => not (f x)
+     ;
+  
+  }
+  
+  
+Compile time booleans
+=====================
+
+
+.. code-block:: felix
+
+  //[staticbool.flx]
+  
+  typedef fun n"`and" (x:BOOL,y:BOOL):BOOL => _typeop ("_staticbool_and",(x,y),BOOL);
+  typedef fun n"`or" (x:BOOL,y:BOOL):BOOL => _typeop ("_staticbool_or",(x,y),BOOL);
+  typedef fun n"`xor" (x:BOOL,y:BOOL):BOOL => _typeop ("_staticbool_xor",(x,y),BOOL);
+  typedef fun n"`not" (x:BOOL):BOOL => _typeop ("_staticbool_not",(x),BOOL);
+  typedef fun n"`true" ():BOOL => _typeop ("_staticbool_true",(),BOOL);
+  typedef fun n"`false" ():BOOL => _typeop ("_staticbool_false",(),BOOL);
+
+
+.. code-block:: felix
+
+  //[staticbool_ops.fsyn]
+  syntax staticbool_ops 
+  {
+    x[sand_condition_pri] := x[sand_condition_pri] "`and" x[>sand_condition_pri] =># "(Infix)";
+    x[sor_condition_pri] := x[sor_condition_pri] "`or" x[>sor_condition_pri] =># "(Infix)";
+    x[sor_condition_pri] := x[sor_condition_pri] "`xor" x[>sor_condition_pri] =># "(Infix)";
+    x[snot_condition_pri] :=  "`not" x[snot_condition_pri] =># "(Prefix)";
+    satom := "`true"  =># '`(ast_apply (,_sr, (,(nos "`true") ())))';
+    satom := "`false"  =># '`(ast_apply (,_sr, (,(nos "`true") ())))';
+  }
+  
+
 
 

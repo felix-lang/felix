@@ -52,14 +52,13 @@ Stl Iterators
   }
   
   class Forward_iterator[it,t] {
-    inherit Tord[it];
-    inherit Forward[it];
+    inherit ForwardSequence[it];
     inherit Iterator[it,t];
   }
   
   class Bidirectional_iterator[it,t] {
     inherit Forward_iterator[it,t];
-    inherit Bidirectional[it];
+    inherit BidirectionalSequence[it];
   }
   
   class Sequence[c,it,v] {
@@ -162,13 +161,13 @@ Stl Vector
     instance Iterator[stl_vector_iterator,t] {
       fun deref : stl_vector_iterator ->  t  = "*(#0*)(void*)&*$1";
     }
-    instance Forward[stl_vector_iterator] {
+    instance ForwardSequence[stl_vector_iterator] {
       fun succ: stl_vector_iterator -> stl_vector_iterator = "$1+1";
       proc pre_incr : &stl_vector_iterator = "++*$1;";
       proc post_incr : &stl_vector_iterator = "++*$1;";
     }
     instance Forward_iterator[stl_vector_iterator,t] {}
-    instance Bidirectional[stl_vector_iterator] {
+    instance BidirectionalSequence[stl_vector_iterator] {
       fun pred: stl_vector_iterator -> stl_vector_iterator = "$1-1;";
       proc pre_decr : &stl_vector_iterator = "--*$1;";
       proc post_decr : &stl_vector_iterator = "--*$1;";
@@ -185,13 +184,13 @@ Stl Vector
     instance Iterator[stl_vector_reverse_iterator,t] {
       fun deref : stl_vector_reverse_iterator ->  t  = "*(#0*)(void*)&*$1";
     }
-    instance Forward[stl_vector_reverse_iterator] {
+    instance ForwardSequence[stl_vector_reverse_iterator] {
       fun succ: stl_vector_reverse_iterator -> stl_vector_reverse_iterator = "$1+1";
       proc pre_incr : &stl_vector_reverse_iterator = "++*$1;";
       proc post_incr : &stl_vector_reverse_iterator = "++*$1;";
     }
     instance Forward_iterator[stl_vector_reverse_iterator,t] {}
-    instance Bidirectional[stl_vector_reverse_iterator] {
+    instance BidirectionalSequence[stl_vector_reverse_iterator] {
       fun pred: stl_vector_reverse_iterator -> stl_vector_reverse_iterator = "$1-1;";
       proc pre_decr : &stl_vector_reverse_iterator = "--*$1;";
       proc post_decr : &stl_vector_reverse_iterator = "--*$1;";
@@ -258,13 +257,13 @@ Stl Set
     instance Iterator[stl_set_iterator,t] {
       fun deref : stl_set_iterator ->  t  = "*(#0*)(void*)&*$1";
     }
-    instance Forward[stl_set_iterator] {
+    instance ForwardSequence[stl_set_iterator] {
       fun succ: stl_set_iterator -> stl_set_iterator = "$1+1";
       proc pre_incr : &stl_set_iterator = "++*$1;";
       proc post_incr : &stl_set_iterator = "++*$1;";
     }
     instance Forward_iterator[stl_set_iterator,t] {}
-    instance Bidirectional[stl_set_iterator] {
+    instance BidirectionalSequence[stl_set_iterator] {
       fun pred: stl_set_iterator -> stl_set_iterator = "$1-1;";
       proc pre_decr : &stl_set_iterator = "--*$1;";
       proc post_decr : &stl_set_iterator = "--*$1;";
@@ -281,13 +280,13 @@ Stl Set
     instance Iterator[stl_set_reverse_iterator,t] {
       fun deref : stl_set_reverse_iterator ->  t  = "*(#0*)(void*)&*$1";
     }
-    instance Forward[stl_set_reverse_iterator] {
+    instance ForwardSequence[stl_set_reverse_iterator] {
       fun succ: stl_set_reverse_iterator -> stl_set_reverse_iterator = "$1+1";
       proc pre_incr : &stl_set_reverse_iterator = "++*$1;";
       proc post_incr : &stl_set_reverse_iterator = "++*$1;";
     }
     instance Forward_iterator[stl_set_reverse_iterator,t] {}
-    instance Bidirectional[stl_set_reverse_iterator] {
+    instance BidirectionalSequence[stl_set_reverse_iterator] {
       fun pred: stl_set_reverse_iterator -> stl_set_reverse_iterator = "$1-1;";
       proc pre_decr : &stl_set_reverse_iterator = "--*$1;";
       proc post_decr : &stl_set_reverse_iterator = "--*$1;";
@@ -357,13 +356,13 @@ Stl Multiset
     instance Iterator[stl_multiset_iterator,t] {
       fun deref : stl_multiset_iterator ->  t  = "*(#0*)(void*)&*$1";
     }
-    instance Forward[stl_multiset_iterator] {
+    instance ForwardSequence[stl_multiset_iterator] {
       fun succ: stl_multiset_iterator -> stl_multiset_iterator = "$1+1";
       proc pre_incr : &stl_multiset_iterator = "++*$1;";
       proc post_incr : &stl_multiset_iterator = "++*$1;";
     }
     instance Forward_iterator[stl_multiset_iterator,t] {}
-    instance Bidirectional[stl_multiset_iterator] {
+    instance BidirectionalSequence[stl_multiset_iterator] {
       fun pred: stl_multiset_iterator -> stl_multiset_iterator = "$1-1;";
       proc pre_decr : &stl_multiset_iterator = "--*$1;";
       proc post_decr : &stl_multiset_iterator = "--*$1;";
@@ -380,13 +379,13 @@ Stl Multiset
     instance Iterator[stl_multiset_reverse_iterator,t] {
       fun deref : stl_multiset_reverse_iterator ->  t  = "*(#0*)(void*)&*$1";
     }
-    instance Forward[stl_multiset_reverse_iterator] {
+    instance ForwardSequence[stl_multiset_reverse_iterator] {
       fun succ: stl_multiset_reverse_iterator -> stl_multiset_reverse_iterator = "$1+1";
       proc pre_incr : &stl_multiset_reverse_iterator = "++*$1;";
       proc post_incr : &stl_multiset_reverse_iterator = "++*$1;";
     }
     instance Forward_iterator[stl_multiset_reverse_iterator,t] {}
-    instance Bidirectional[stl_multiset_reverse_iterator] {
+    instance BidirectionalSequence[stl_multiset_reverse_iterator] {
       fun pred: stl_multiset_reverse_iterator -> stl_multiset_reverse_iterator = "$1-1;";
       proc pre_decr : &stl_multiset_reverse_iterator = "--*$1;";
       proc post_decr : &stl_multiset_reverse_iterator = "--*$1;";
@@ -457,13 +456,13 @@ Stl Map
     instance Iterator[stl_map_iterator,k*v] {
       fun deref : stl_map_iterator ->  k*v  = "*(#0*)(void*)&*$1";
     }
-    instance Forward[stl_map_iterator] {
+    instance ForwardSequence[stl_map_iterator] {
       fun succ: stl_map_iterator -> stl_map_iterator = "$1+1";
       proc pre_incr : &stl_map_iterator = "++*$1;";
       proc post_incr : &stl_map_iterator = "++*$1;";
     }
     instance Forward_iterator[stl_map_iterator,k*v] {}
-    instance Bidirectional[stl_map_iterator] {
+    instance BidirectionalSequence[stl_map_iterator] {
       fun pred: stl_map_iterator -> stl_map_iterator = "$1-1;";
       proc pre_decr : &stl_map_iterator = "--*$1;";
       proc post_decr : &stl_map_iterator = "--*$1;";
@@ -480,13 +479,13 @@ Stl Map
     instance Iterator[stl_map_reverse_iterator,k*v] {
       fun deref : stl_map_reverse_iterator ->  k*v  = "*(#0*)(void*)&*$1";
     }
-    instance Forward[stl_map_reverse_iterator] {
+    instance ForwardSequence[stl_map_reverse_iterator] {
       fun succ: stl_map_reverse_iterator -> stl_map_reverse_iterator = "$1+1";
       proc pre_incr : &stl_map_reverse_iterator = "++*$1;";
       proc post_incr : &stl_map_reverse_iterator = "++*$1;";
     }
     instance Forward_iterator[stl_map_reverse_iterator,k*v] {}
-    instance Bidirectional[stl_map_reverse_iterator] {
+    instance BidirectionalSequence[stl_map_reverse_iterator] {
       fun pred: stl_map_reverse_iterator -> stl_map_reverse_iterator = "$1-1;";
       proc pre_decr : &stl_map_reverse_iterator = "--*$1;";
       proc post_decr : &stl_map_reverse_iterator = "--*$1;";
@@ -557,13 +556,13 @@ Stl Multimap
     instance Iterator[stl_multimap_iterator,k*v] {
       fun deref : stl_multimap_iterator ->  k*v  = "*(#0*)(void*)&*$1";
     }
-    instance Forward[stl_multimap_iterator] {
+    instance ForwardSequence[stl_multimap_iterator] {
       fun succ: stl_multimap_iterator -> stl_multimap_iterator = "$1+1";
       proc pre_incr : &stl_multimap_iterator = "++*$1;";
       proc post_incr : &stl_multimap_iterator = "++*$1;";
     }
     instance Forward_iterator[stl_multimap_iterator,k*v] {}
-    instance Bidirectional[stl_multimap_iterator] {
+    instance BidirectionalSequence[stl_multimap_iterator] {
       fun pred: stl_multimap_iterator -> stl_multimap_iterator = "$1-1;";
       proc pre_decr : &stl_multimap_iterator = "--*$1;";
       proc post_decr : &stl_multimap_iterator = "--*$1;";
@@ -580,13 +579,13 @@ Stl Multimap
     instance Iterator[stl_multimap_reverse_iterator,k*v] {
       fun deref : stl_multimap_reverse_iterator ->  k*v  = "*(#0*)(void*)&*$1";
     }
-    instance Forward[stl_multimap_reverse_iterator] {
+    instance ForwardSequence[stl_multimap_reverse_iterator] {
       fun succ: stl_multimap_reverse_iterator -> stl_multimap_reverse_iterator = "$1+1";
       proc pre_incr : &stl_multimap_reverse_iterator = "++*$1;";
       proc post_incr : &stl_multimap_reverse_iterator = "++*$1;";
     }
     instance Forward_iterator[stl_multimap_reverse_iterator,k*v] {}
-    instance Bidirectional[stl_multimap_reverse_iterator] {
+    instance BidirectionalSequence[stl_multimap_reverse_iterator] {
       fun pred: stl_multimap_reverse_iterator -> stl_multimap_reverse_iterator = "$1-1;";
       proc pre_decr : &stl_multimap_reverse_iterator = "--*$1;";
       proc post_decr : &stl_multimap_reverse_iterator = "--*$1;";
@@ -661,13 +660,13 @@ Stl List
     instance Iterator[stl_list_iterator,t] {
       fun deref : stl_list_iterator ->  t  = "*(#0*)(void*)&*$1";
     }
-    instance Forward[stl_list_iterator] {
+    instance ForwardSequence[stl_list_iterator] {
       fun succ: stl_list_iterator -> stl_list_iterator = "$1+1";
       proc pre_incr : &stl_list_iterator = "++*$1;";
       proc post_incr : &stl_list_iterator = "++*$1;";
     }
     instance Forward_iterator[stl_list_iterator,t] {}
-    instance Bidirectional[stl_list_iterator] {
+    instance BidirectionalSequence[stl_list_iterator] {
       fun pred: stl_list_iterator -> stl_list_iterator = "$1-1;";
       proc pre_decr : &stl_list_iterator = "--*$1;";
       proc post_decr : &stl_list_iterator = "--*$1;";
@@ -684,13 +683,13 @@ Stl List
     instance Iterator[stl_list_reverse_iterator,t] {
       fun deref : stl_list_reverse_iterator ->  t  = "*(#0*)(void*)&*$1";
     }
-    instance Forward[stl_list_reverse_iterator] {
+    instance ForwardSequence[stl_list_reverse_iterator] {
       fun succ: stl_list_reverse_iterator -> stl_list_reverse_iterator = "$1+1";
       proc pre_incr : &stl_list_reverse_iterator = "++*$1;";
       proc post_incr : &stl_list_reverse_iterator = "++*$1;";
     }
     instance Forward_iterator[stl_list_reverse_iterator,t] {}
-    instance Bidirectional[stl_list_reverse_iterator] {
+    instance BidirectionalSequence[stl_list_reverse_iterator] {
       fun pred: stl_list_reverse_iterator -> stl_list_reverse_iterator = "$1-1;";
       proc pre_decr : &stl_list_reverse_iterator = "--*$1;";
       proc post_decr : &stl_list_reverse_iterator = "--*$1;";

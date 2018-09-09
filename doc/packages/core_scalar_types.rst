@@ -67,6 +67,7 @@ Synopsis
   include "std/scalar/float_math";
   include "std/scalar/quaternion";
   
+  include "std/kind/staticbool";
   
 Character type
 ==============

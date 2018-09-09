@@ -5,18 +5,19 @@ Package: src/packages/core_type_constructors.fdoc
 Core Type Constructors
 ======================
 
-============== =====================================
-key            file                                  
-============== =====================================
-option.flx     share/lib/std/datatype/option.flx     
-unitsum.flx    share/lib/std/datatype/unitsum.flx    
-tuple.flx      share/lib/std/datatype/tuple.flx      
-tupleexpr.fsyn share/lib/std/datatype/tupleexpr.fsyn 
-slice.flx      share/lib/std/datatype/slice.flx      
-typing.flx     share/lib/std/datatype/typing.flx     
-special.flx    share/lib/std/datatype/special.flx    
-functional.flx share/lib/std/datatype/functional.flx 
-============== =====================================
+================ =======================================
+key              file                                    
+================ =======================================
+option.flx       share/lib/std/datatype/option.flx       
+unitsum.flx      share/lib/std/datatype/unitsum.flx      
+unitsum_ops.fsyn share/lib/std/datatype/unitsum_ops.fsyn 
+tuple.flx        share/lib/std/datatype/tuple.flx        
+tupleexpr.fsyn   share/lib/std/datatype/tupleexpr.fsyn   
+slice.flx        share/lib/std/datatype/slice.flx        
+typing.flx       share/lib/std/datatype/typing.flx       
+special.flx      share/lib/std/datatype/special.flx      
+functional.flx   share/lib/std/datatype/functional.flx   
+================ =======================================
 
 
 Core Type Classes
@@ -276,14 +277,16 @@ Slice
 
 
 
+.. index:: Slice(class)
 .. code-block:: felix
 
   //[slice.flx]
   
+  open class Slice {
   union slice[T] =
     | Slice_all
     | Slice_from of T
-    | Slice_from_counted of T * T /* second arg is count */
+    | Slice_from_counted of T * int /* second arg is count */
     | Slice_to_incl of T
     | Slice_to_excl of T
     | Slice_range_incl of T * T
@@ -292,11 +295,51 @@ Slice
     | Slice_none
   ;
   
-  fun \in[T with Integer[T]] (x:T, s:slice[T]) => 
+  fun min[T with BoundRandomSequence[T]] (x:slice[T]) => match x with
+    | ( Slice_all 
+      | Slice_to_incl _ 
+      | Slice_to_excl
+      ) => #minval[T]
+    | (Slice_from i 
+      | Slice_from_counted (i,_) 
+      | Slice_range_incl (i,_) 
+      | Slice_range_excl (i,_) 
+      | Slice_one i 
+      ) => i
+    | Slice_none => #maxval[T]
+  ;
+  fun max[T with BoundRandomSequence[T]] (x:slice[T]) => match x with
+    | ( Slice_all 
+      | Slice_from _
+      ) => #maxval[T]
+    | Slice_from_counted (i,n) => advance (n, i)
+    | Slice_to_incl i => i
+    | Slice_to_excl i => pred i
+    | Slice_range_incl (_,i) => i
+    | Slice_range_excl (_,i) => pred i
+    | Slice_one i => i
+    | Slice_none => #minval  
+  ;
+  
+  fun normalise_to_inclusive_range[T with BoundRandomSequence[T]] (x:slice[T]) =>
+    let l = x.min in
+    let u = x.max in
+    if l <= u then Slice_range_incl (l,u) 
+    else Slice_none[T]
+  ;
+  
+  fun \cap[T with BoundRandomSequence[T]] (x:slice[T], y:slice[T]) =>
+    let l = max (min x, min y) in
+    let u = min (max x, max y) in
+    if  l <= u then Slice_range_incl (l,u) 
+    else Slice_none[T]
+  ;
+  
+  fun \in[T with BoundRandomSequence[T]] (x:T, s:slice[T]) => 
     match s with
     | #Slice_all => true
     | Slice_from i => x >= i
-    | Slice_from_counted (i,n) => x >= i and x < i+n
+    | Slice_from_counted (i,n) => x >= i and x < advance (n, i)
     | Slice_to_incl j => x <= j
     | Slice_to_excl j => x < j
     | Slice_range_incl (i,j) => x >= i and x <= j
@@ -306,16 +349,16 @@ Slice
   ;
   
   
-  gen iterator[T with Integer[T]] (s:slice[T]) =>
+  gen iterator[T with BoundRandomSequence[T]] (s:slice[T]) =>
     match s with
     | Slice_one x => { yield Some x; return None[T]; }
     | Slice_range_incl (first, last) => slice_range_incl first last
     | Slice_range_excl (first, last) => slice_range_excl first last
-    | Slice_to_incl (last) => slice_range_incl #Integer[T]::minval last
-    | Slice_to_excl (last) => slice_range_excl #Integer[T]::minval last
-    | Slice_from (first) => slice_range_incl first #Integer[T]::maxval
+    | Slice_to_incl (last) => slice_range_incl #minval[T] last
+    | Slice_to_excl (last) => slice_range_excl #minval[T] last
+    | Slice_from (first) => slice_range_incl first #maxval[T]
     | Slice_from_counted (first, count) => slice_from_counted first count
-    | #Slice_all => slice_range_incl #Integer[T]::minval #Integer[T]::maxval
+    | #Slice_all => slice_range_incl #minval #maxval
     | #Slice_none => { return None[T]; } 
     endmatch
   ;
@@ -323,31 +366,31 @@ Slice
   // Note: guarrantees no overflow
   // handles all cases for all integers correctly
   // produces nothing if first > last
-  gen slice_range_incl[T with Integer[T]] (first:T) (last:T) () = {
+  gen slice_range_incl[T with BoundRandomSequence[T]] (first:T) (last:T) () = {
     var i = first;
     while i < last do 
       yield Some i; 
-      i = i + #one[T]; 
+      i = succ i;
     done 
-    if i == last do yield Some i; done
+    if i == last perform yield Some i;
     return None[T]; 
   }
   
-  gen slice_range_excl[T with Integer[T]] (first:T) (limit:T) () = {
+  gen slice_range_excl[T with BoundRandomSequence[T]] (first:T) (limit:T) () = {
     var i = first;
     while i < limit do 
       yield Some i; 
-      i = i + #one[T]; 
+      i = succ i;
     done 
     return None[T]; 
   }
   
   
-  gen slice_from_counted[T with Integer[T]] (first:T) (count:T) () = {
+  gen slice_from_counted[T with BoundRandomSequence[T]] (first:T) (count:int) () = {
     var k = count; 
-    while k > #zero[T] do 
-      yield Some (first + (count - k)); 
-      k = k - #one[T]; 
+    while k > 0 do 
+      yield Some (advance (count - k, first)); 
+      k = k - 1;
     done 
     return None[T]; 
   }
@@ -439,104 +482,98 @@ Slice
   fun map[T with Integer[T]] (f:T->T) (gs:gslice[T]) =>
     GSMap (f,gs)
   ;
+  }
   
 Operations on sums of units
 ===========================
 
 Treated as finite cyclic groups.
 
-
 .. index:: str(fun)
 .. index:: str(fun)
-.. index:: zero(fun)
-.. index:: neg(fun)
-.. index:: str(fun)
+.. index:: succ(fun)
+.. index:: pred(fun)
+.. index:: maxval(fun)
+.. index:: minval(fun)
+.. index:: advance(fun)
 .. code-block:: felix
 
   //[unitsum.flx]
   
   // -----------------------------------------------------------------------------
   typedef void = 0;
+  typedef unit = 1;
   
   instance Str[void] {
     fun str (x:void) => "void";
   }
   open Show[void];
   
-  typedef unit = 1;
   
   instance Str[unit] {
     fun str (x:unit) => "()";
   }
   open Show[unit];
   
-  instance Eq[unit] {
-    fun == (x:unit, y:unit) => true;
+  instance[T:UNITSUM] Eq[T] {
+    fun == (x:T,y:T) => caseno x ==caseno y;
   }
-  open Eq[unit];
-  
-  // -----------------------------------------------------------------------------
-  
-  typedef unitsums = typesetof (3,4,5,6,7,8,9,10,11,12,13,14,15,16);
-  
-  instance[T in unitsums] Eq[T] {
-    fun == (x:T,y:T) => caseno x == caseno y;
+  instance[T:UNITSUM] Tord[T] {
+    fun < (x:T,y:T) => caseno x < caseno y;
   }
-  
-  instance[T in unitsums] FloatAddgrp[T] {
-    fun zero () => 0 :>> T;
-    fun neg (x:T) => (sub (memcount[T].int , caseno x)) :>> T;
-    fun + (x:T, y:T) : T => (add ((caseno x , caseno y)) % memcount[T].int) :>> T;
-    fun - (x:T, y:T) : T => (add (memcount[T].int, sub(caseno x , caseno y)) % memcount[T].int) :>> T;
+  instance[T:UNITSUM] ForwardSequence[T] {
+    fun succ (x:T) => (caseno x + 1) :>> T;
+  }
+  instance[T:UNITSUM] BidirectionalSequence[T] {
+    fun pred (x:T) => (caseno x - 1) :>> T;
+  }
+  instance[T:UNITSUM] UpperBoundTotalOrder[T] {
+    fun maxval () => (memcount[T].int - 1) :>> T;
   }
   
-  instance[T in unitsums] Str[T] {
-    fun str(x:T)=> str (caseno x)+ ":"+str(memcount[T].int); 
+  instance[T:UNITSUM] LowerBoundTotalOrder[T] {
+    fun minval () => 0 :>> T;
   }
   
-  // This doesn't work dues to a design fault in the
-  // numerical class libraries using "-" as a function
-  // name for both prefix (negation) and infix (subtraction).
-  // But in a class we cannot distinguish the uses since
-  // negation could apply to a tuple.
-  // 
-  // open[T in unitsums] Addgrp[T];
+  instance[T:UNITSUM] RandomSequence[T] {
+    fun advance (amt: int,  pos:T) => (caseno pos + amt) :>> T;
+  }
+  open[T:UNITSUM] BoundRandomSequence[T];
   
-  // so we have to open them all individually
   
-  // Note: we don't put type 2 here, that's a bool and should
-  // be handled elsewhere more specially..
+  typedef fun n"`+" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_add",(x,y),UNITSUM);
+  typedef fun n"`-" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_diff",(x,y),UNITSUM);
+  typedef fun n"`*" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_mul",(x,y),UNITSUM);
+  typedef fun n"`/" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_div",(x,y),UNITSUM);
+  typedef fun n"`%" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_mod",(x,y),UNITSUM);
   
-  open Addgrp[3];
-  open Addgrp[4];
-  open Addgrp[5];
-  open Addgrp[6];
-  open Addgrp[7];
-  open Addgrp[8];
-  open Addgrp[9];
-  open Addgrp[10];
-  open Addgrp[11];
-  open Addgrp[12];
-  open Addgrp[13];
-  open Addgrp[14];
-  open Addgrp[15];
-  open Addgrp[16];
+  typedef fun n"`min" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_min",(x,y),UNITSUM);
+  typedef fun n"`max" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_max",(x,y),UNITSUM);
+  typedef fun n"`gcd" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_gcd",(x,y),UNITSUM);
+  typedef fun n"`lcd" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_lcm",(x,y),UNITSUM);
   
-  open Str[3];
-  open Str[4];
-  open Str[5];
-  open Str[6];
-  open Str[7];
-  open Str[8];
-  open Str[9];
-  open Str[10];
-  open Str[11];
-  open Str[12];
-  open Str[13];
-  open Str[14];
-  open Str[15];
-  open Str[16];
-  
+  typedef fun n"`<" (x:UNITSUM,y:UNITSUM):BOOL=> _typeop ("_unitsum_lt",(x,y),BOOL);
+  typedef fun n"`>" (x:UNITSUM,y:UNITSUM):BOOL=> _typeop ("_unitsum_lt",(y,x),BOOL);
+  typedef fun n"`==" (x:UNITSUM,y:UNITSUM):BOOL=> x `< y `and y `< x;
+
+
+.. code-block:: felix
+
+  //[unitsum_ops.fsyn]
+  syntax unitsum_ops 
+  {
+    x[ssum_pri] := x[ssum_pri] "`+" x[>ssum_pri] =># "(Infix)";
+    x[ssum_pri] := x[ssum_pri] "`-" x[>ssum_pri] =># "(Infix)";
+    x[ssum_pri] := x[ssum_pri] "`*" x[>ssum_pri] =># "(Infix)";
+    x[ssum_pri] := x[ssum_pri] "`/" x[>ssum_pri] =># "(Infix)";
+    x[ssum_pri] := x[ssum_pri] "`%" x[>ssum_pri] =># "(Infix)";
+    x[ssum_pri] := x[>scomparison_pri] "`==" x[>scomparison_pri] =># "(Infix)";
+    x[ssum_pri] := x[>scomparison_pri] "`<" x[>scomparison_pri] =># "(Infix)";
+    x[ssum_pri] := x[>scomparison_pri] "`>" x[>scomparison_pri] =># "(Infix)";
+  }
+
+// -----------------------------------------------------------------------------
+
 Category Theoretic Functional Operations
 ========================================
 

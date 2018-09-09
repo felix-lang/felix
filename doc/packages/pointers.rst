@@ -37,12 +37,16 @@ C pointer
 .. index:: mkrw(fun)
 .. index:: deref(fun)
 .. index:: storeat(proc)
+.. index:: MachinePointers(class)
 .. index:: storeat(proc)
-.. index:: Cptr(class)
-.. index:: def(type)
 .. index:: _deref(fun)
 .. index:: deref(fun)
+.. index:: CompactLinearPointers(class)
 .. index:: storeat(proc)
+.. index:: _deref(fun)
+.. index:: deref(fun)
+.. index:: Cptr(class)
+.. index:: def(type)
 .. index:: cptr(union)
 .. index:: deref(fun)
 .. index:: is_nullptr(fun)
@@ -66,11 +70,29 @@ C pointer
   
     fun deref[T] (p: rptr T) => p.get ();
     proc storeat[T] (p: wptr T, v: T) { p.set v; }
-  
-    // concrete compact linear type pointers
-    proc storeat[D,C] : _pclt< D, C >  * C = "storeat ($1,$2);";
-  
   }
+  
+  open class MachinePointers
+  {
+    // ordinary pointers
+    proc storeat[T] ( p: &>T, v: T) = { _storeat (p,v); }
+  
+    //$ Dereference a Felx pointer.
+    //lvalue fun deref[T]: &T -> T = "*$1";
+    fun _deref[T]: &<T -> T = "*$t";
+    fun deref[T] (p:&<T) => _deref p;
+  }
+  
+  open class CompactLinearPointers 
+  {
+    // concrete compact linear type pointers
+    proc storeat[D,C] ( p:_wpclt< D, C >, v: C) = { _storeat (p,v); }
+  
+    // deref a pointer to compact linear component
+    fun _deref[mach,clv]: _rpclt<mach,clv> -> clv = "::flx::rtl::deref($t)";
+    fun deref[mach,clv] (p: _rpclt<mach,clv>) => _deref p;
+  }
+  
   
   //$ Felix and C pointers.
   //$ Felix pointer ptr[T] = &T.
@@ -83,13 +105,6 @@ C pointer
     //$ Cannot be NULL.
     //$ Cannot be incremented.
     typedef ptr[T] = &T;
-  
-    //$ Dereference a Felx pointer.
-    //lvalue fun deref[T]: &T -> T = "*$1";
-    fun _deref[T]: &<T -> T = "*$t";
-    fun deref[T] (p:&<T) => _deref p;
-    //proc _storeat[T]: &>T * T = "*$1=$2;";
-    proc storeat[T] (p: &>T, v:T) { _storeat (p,v); }
   
     //$ Type of a C pointer.
     //$ Either pointes to an object or is NULL.

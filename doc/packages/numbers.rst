@@ -367,29 +367,6 @@ Floating Formats
   }
   
   
-  
-Integral Promotion.
-===================
-
-
-
-.. code-block:: felix
-
-  //[int.flx]
-  
-  typedef fun integral_promotion: TYPE -> TYPE =
-    | #tiny => int
-    | #utiny => int
-    | #short => int
-    | #ushort => int
-    | #int => int
-    | #uint => uint
-    | #long => long
-    | #ulong => ulong
-    | #vlong => vlong
-    | #uvlong => uvlong
-  ;
-  
 Conversion operators.
 =====================
 
@@ -678,6 +655,9 @@ Methods of integers
 .. index:: pred(fun)
 .. index:: pre_decr(proc)
 .. index:: post_decr(proc)
+.. index:: advance(fun)
+.. index:: maxval(fun)
+.. index:: minval(fun)
 .. code-block:: felix
 
   //[int.flx]
@@ -698,16 +678,25 @@ Methods of integers
     proc &= : &t * t = "*$1&=$2;";
   }
   
-  instance[t in ints] Forward[t] {
+  instance[t in ints] ForwardSequence[t] {
     fun succ: t -> t = "$1+1";
     proc pre_incr: &t = "++*$1;";
     proc post_incr: &t = "(*$1)++;";
   }
   
-  instance[t in ints] Bidirectional[t] {
+  instance[t in ints] BidirectionalSequence[t] {
     fun pred: t -> t = "$1-1";
     proc pre_decr: &t = "--*$1;";
     proc post_decr: &t = "(*$1)--;";
+  }
+  instance[t in ints] RandomSequence[t] {
+    fun advance: int * t -> t = "$1+$2";
+  }
+  instance[t in ints] UpperBoundTotalOrder[t] {
+    fun maxval: 1 -> t = "::std::numeric_limits<?1>::max()";
+  }
+  instance[t in ints] LowerBoundTotalOrder[t] {
+    fun minval: 1 -> t = "::std::numeric_limits<?1>::min()";
   }
   
   instance[t in ints] Integer[t] {

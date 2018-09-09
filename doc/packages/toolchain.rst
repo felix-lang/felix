@@ -700,6 +700,7 @@ specification. Used by the flx_build_rtl tool.
           ;
           var dstlib = target_dir/libname;
           println$ "Dynamic Linking library " + dstlib;
+          //println$ "  Source object files = " + objs.str;
           result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
           if result != 0 do
             println$ "Linker result " + str result;
@@ -760,6 +761,7 @@ specification. Used by the flx_build_rtl tool.
         ;
         var dstlib = target_dir/libname;
         println$ "Static Linking Library " + dstlib;
+        //println$ "  Source object files = " + objs.str;
         result = toolchain.static_library_linker(srcs=objs, dst=dstlib);
         if result != 0 do
           println$ "Linker result " + str result;
@@ -819,7 +821,7 @@ Object for gcc on Linux
     ;
     var base_cxx_compile_flags = 
       "-D_POSIX" ! "-g"! "-c" ! "-O1" ! "-fno-common"
-      ! "-fno-strict-aliasing" ! "-std=gnu++11" ! (cxx_compile_warning_flags+config.ccflags)
+      ! "-fno-strict-aliasing" ! "-std=gnu++14" ! (cxx_compile_warning_flags+config.ccflags)
     ;
   
     method fun whatami () => "toolchain_gcc_linux (version 2)";
@@ -862,7 +864,7 @@ Object for gcc on Linux
          CxxCompiler::generic_cxx_gen_deps 
          (
             CCDEP=cxx_compiler,
-            CCFLAGS = "-MM" ! "-D_POSIX" ! "-std=gnu++11" ! config.ccflags,
+            CCFLAGS = "-MM" ! "-D_POSIX" ! "-std=gnu++14" ! config.ccflags,
             INCLUDE_DIRS=config.header_search_dirs,
             MACROS=config.macros,
             debugln = config.debugln
@@ -918,7 +920,7 @@ Object for gcc on Linux
         (
           CCOBJ_STATIC_LIB = cxx_compiler, 
           CCFLAGS = "-fvisibility=hidden" !"-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" 
-            ! "-D_POSIX" ! "-std=gnu++11" ! "-D_GLIBCXX_USE_CXX11_ABI=1"
+            ! "-D_POSIX" ! "-std=gnu++14" ! "-D_GLIBCXX_USE_CXX11_ABI=1"
             ! (cxx_compile_warning_flags+config.ccflags),
           INCLUDE_DIRS = config.header_search_dirs,
           MACROS = config.macros,
@@ -1059,7 +1061,7 @@ Object for gcc on OSX
       "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
     ;
     var base_cxx_compile_flags =
-      "-g"! "-c" ! "-O1" ! "-std=c++11" ! "-fno-common"! "-fno-strict-aliasing" !(cxx_compile_warning_flags+config.ccflags)
+      "-g"! "-c" ! "-O1" ! "-std=c++14" ! "-fno-common"! "-fno-strict-aliasing" !(cxx_compile_warning_flags+config.ccflags)
     ;
   
     method fun whatami () => "toolchain_gcc_osx (version 2)";
@@ -1102,7 +1104,7 @@ Object for gcc on OSX
          CxxCompiler::generic_cxx_gen_deps 
          (
             CCDEP=cxx_compiler,
-            CCFLAGS = "-MM" ! '-std=c++11' ! config.ccflags,
+            CCFLAGS = "-MM" ! '-std=c++14' ! config.ccflags,
             INCLUDE_DIRS=config.header_search_dirs,
             MACROS=config.macros,
             debugln = config.debugln
@@ -1307,7 +1309,7 @@ Object for clang on Linux
     var ccflags_for_dynamic_link = list[string] ("-shared");
   
     var base_cxx_compile_flags =  
-       "-std=c++11"! "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (cxx_compile_warning_flags+config.ccflags)
+       "-std=c++14"! "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (cxx_compile_warning_flags+config.ccflags)
     ;
   
     var base_c_compile_flags =  
@@ -1355,7 +1357,7 @@ Object for clang on Linux
          CxxCompiler::generic_cxx_gen_deps 
          (
             CCDEP=cxx_compiler,
-            CCFLAGS = "-MM" ! "-std=c++11" ! config.ccflags,
+            CCFLAGS = "-MM" ! "-std=c++14" ! config.ccflags,
             INCLUDE_DIRS=config.header_search_dirs,
             MACROS=config.macros,
             debugln = config.debugln
@@ -1558,7 +1560,7 @@ Object for clang on OSX
     ;
   
     var base_cxx_compile_flags = 
-      "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++11" ! (cxx_compile_warning_flags+config.ccflags)
+      "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++14" ! (cxx_compile_warning_flags+config.ccflags)
     ;
   
     method fun whatami () => "toolchain_clang_osx (version 2)";
@@ -1601,7 +1603,7 @@ Object for clang on OSX
          CxxCompiler::generic_cxx_gen_deps 
          (
             CCDEP=cxx_compiler,
-            CCFLAGS = "-MM" ! "-std=c++11" ! config.ccflags,
+            CCFLAGS = "-MM" ! "-std=c++14" ! config.ccflags,
             INCLUDE_DIRS=config.header_search_dirs,
             MACROS=config.macros,
             debugln = config.debugln
@@ -2116,7 +2118,7 @@ Object for clang on iOS
     ;
     var base_cxx_compile_flags = 
       "-g"! "-c" ! "-isysroot" ! sdk ! "-O1" ! 
-      "-fno-common"! "-fno-strict-aliasing" ! "-fembed-bitcode" ! "-std=c++11" !  
+      "-fno-common"! "-fno-strict-aliasing" ! "-fembed-bitcode" ! "-std=c++14" !  
       (archlist + cxx_compile_warning_flags+config.ccflags)
     ;
   
@@ -2160,7 +2162,7 @@ Object for clang on iOS
          CxxCompiler::generic_cxx_gen_deps 
          (
             CCDEP=cxx_compiler,
-            CCFLAGS = "-std=c++11" ! "-isysroot" ! sdk ! "-MM" ! config.ccflags,
+            CCFLAGS = "-std=c++14" ! "-isysroot" ! sdk ! "-MM" ! config.ccflags,
             INCLUDE_DIRS=config.header_search_dirs,
             MACROS=config.macros,
             debugln = config.debugln

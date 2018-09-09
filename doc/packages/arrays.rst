@@ -573,16 +573,25 @@ Array
     //$ Array as value.
     instance[t,n] ArrayValue[array[t,n], t] {
       fun len (x:array[t, n]): size => Typing::arrayindexcount[n];
-  
-      //fun unsafe_get: array[t, n] * size -> t = "$1.data[$2]";
       fun unsafe_get (var a: array[t, n], j: size): t => a . (j :>> n);
     }
   
     //$ Pointer to array as value.
     instance[t,n] ArrayValue[&array[t,n], &t] {
       fun len (x:&array[t, n]): size => Typing::arrayindexcount[n];
-      /* won't work for compact linear types! */
-      fun unsafe_get: &array[t, n] * size  -> &t = "(&($1->data[$2]))";
+      fun unsafe_get (var a: &array[t, n],  j: size) : &t  => a.(aproj (j :>> n) of (&(t^n)));
+    }
+  
+    //$ Pointer to array as value.
+    instance[t,n] ArrayValue[&array[t,n], _pclt<array[t,n],t>] {
+      fun len (x:&array[t, n]): size => Typing::arrayindexcount[n];
+      fun unsafe_get (var a: &array[t, n],  j: size) : _pclt<array[t,n],t>  => a.(aproj (j :>> n) of (&(t^n)));
+    }
+  
+    //$ Compact Linear Pointer to array as value.
+    instance[t,n] ArrayValue[_pclt<array[t,n],t>, _pclt<array[t,n],t>] {
+      fun len (x:&array[t, n]): size => Typing::arrayindexcount[n];
+      fun unsafe_get (var a: &array[t, n],  j: size) => a.(aproj (j :>> n) of (&(t^n)));
     }
   
     // this one should
@@ -618,8 +627,8 @@ Array
     // so we need a special test. 
   
     //$ Join two arrays (functional).
-    fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, N + M] = {
-      var o : array[T, N + M];
+    fun join[T, N:UNITSUM, M:UNITSUM] (x:array[T, N]) (y:array[T, M]):array[T, N `+ M] = {
+      var o : array[T, N `+ M];
   
       if x.len > 0uz
         for var i in 0uz upto len(x) - 1uz
@@ -634,8 +643,8 @@ Array
     }
   
     //$ Append value to end of an array (functional).
-    fun join[T, N] (x:array[T, N]) (y:T):array[T, N + 1] = {
-      var o : array[T, N + 1];
+    fun join[T, N:UNITSUM] (x:array[T, N]) (y:T):array[T, N `+ 1] = {
+      var o : array[T, N `+ 1];
   
       if x.len > 0uz
         for var i in 0uz upto len(x) - 1uz
@@ -646,8 +655,8 @@ Array
     }
   
     //$ Prepand value to start of an array (functional).
-    fun join[T, M] (x:T) (y:array[T, M]):array[T, 1 + M] = {
-      var o : array[T, 1 + M];
+    fun join[T, M:UNITSUM] (x:T) (y:array[T, M]):array[T, 1 `+ M] = {
+      var o : array[T, 1 `+ M];
   
       set (&o, 0, x);
       if y.len > 0uz
@@ -660,7 +669,7 @@ Array
   
     //$ Join two arrays (functional).
     // will probably clash with tuple joining functions if we implement them
-    fun + [T, N, M] (x:array[T, N], y:array[T, M]):array[T, N + M] => join x y;
+    fun + [T, N:UNITSUM, M:UNITSUM] (x:array[T, N], y:array[T, M]):array[T, N `+ M] => join x y;
   
     //$ Transpose and array.
     //$ Subsumes zip.
@@ -845,6 +854,11 @@ Varray
     ctor[t] varray[t] (x:varray[t]) =>
       varray[t] (len x, len x, (fun (i:size):t=> x.i))
     ;
+  
+    // construct a full varray from a varray and a slice[int]
+    //ctor[t] varray[t] (x:varray[t], s:slice[int]) = {
+    //   var sm = 
+    //}
   
     // Construct a varray from a list
     ctor[t] varray[t] (x:list[t]) = {

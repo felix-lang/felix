@@ -1529,7 +1529,8 @@ See also other packages containing extensions.
     x[sarrow_pri] := "..<" x[>sarrow_pri] =># "(prefix 'Slice_to_excl)";
     x[sarrow_pri] := ".." x[>sarrow_pri] =># "(prefix 'Slice_to_incl)";
     x[sarrow_pri] := x[>sarrow_pri] ".." =># "(suffix 'Slice_from)";
-    x[sarrow_pri] := ".." =># """`(ast_name ,_sr "Slice_all" (,(noi 'int)))""";
+    x[sarrow_pri] := ".." =># """`(ast_name ,_sr "Slice_all" () )""";
+    x[sarrow_pri] := "..[" stypeexpr "]" =># """`(ast_type_slice ,_sr ,_2 )""";
     x[sarrow_pri] := x[>sarrow_pri] ".+" x[>sarrow_pri] =># "(infix 'Slice_from_counted)";
   
   
@@ -1552,6 +1553,7 @@ See also other packages containing extensions.
   
     //$ Tuple projection function.
     x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri] =># "`(ast_projection ,_2 ,_4)";
+    x[scase_literal_pri] := "aproj" sexpr "of" x[ssum_pri] =># "`(ast_array_projection ,_2 ,_4)";
   
     // coarray injection
     // (ainj (r:>>4) of (4 *+ int)) 42
@@ -1701,9 +1703,9 @@ See also other packages containing extensions.
   //------------------------------------------------------------------------
     x[satomic_pri] := satom =># "_1";
   
-    satom := "_pclt<" stypeexpr "," stypeexpr ">" =>#
-      "`(ast_pclt ,_sr ,_2 ,_4)"
-    ;
+    satom := "_pclt<" stypeexpr "," stypeexpr ">" =># "`(ast_pclt ,_sr ,_2 ,_4)" ;
+    satom := "_rpclt<" stypeexpr "," stypeexpr ">" =># "`(ast_rpclt ,_sr ,_2 ,_4)" ;
+    satom := "_wpclt<" stypeexpr "," stypeexpr ">" =># "`(ast_wpclt ,_sr ,_2 ,_4)" ;
   
     //$ record value (comma separated).
     satom := "(" rassign ("," rassign2 )* ")" =>#
@@ -1905,7 +1907,9 @@ all the DSSLs required for it.
       macros,
       plugins,
       debug,
-      chips
+      chips,
+      unitsum_ops,
+      staticbool_ops
     ;
   }
 

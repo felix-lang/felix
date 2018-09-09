@@ -435,7 +435,7 @@ Config database entry
   
   def build_runtime(phase):
       print('[fbuild] [rtl] build strutil')
-      path = Path(phase.ctx.buildroot/'share'/'src/strutil')
+      path = Path(phase.ctx.buildroot/'share'/'src'/'strutil')
       srcs = [f for f in Path.glob(path / '*.cpp')]
       includes = [phase.ctx.buildroot / 'host/lib/rtl', phase.ctx.buildroot / 'share/lib/rtl']
       macros = ['BUILD_STRUTIL']
