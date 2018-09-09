@@ -5,6 +5,11 @@ The Felix translator takes several sets of files and translates them
 into a set of C++ files, compiles them, and links the results
 into a library.
 
+.. figure:: compilation.jpg
+
+  Compilation Model
+
+
 Source File kinds
 +++++++++++++++++
 
