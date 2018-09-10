@@ -2,6 +2,8 @@
 @tangler macosx64_clang_flx_rtl_config_params.hpp = $PWD/src/config/macosx64/clang/rtl/flx_rtl_config_params.hpp
 @tangler linux64_demux_sockety_config.hpp = $PWD/src/config/linux64/rtl/demux_sockety_config.hpp
 @tangler linux64_gcc_flx_rtl_config_params.hpp = $PWD/src/config/linux64/gcc/rtl/flx_rtl_config_params.hpp
+@tangler win64_demux_sockety_config.hpp = $PWD/src/config/linux64/rtl/demux_sockety_config.hpp
+@tangler win64_msvc_flx_rtl_config_params.hpp = $PWD/src/config/win64/msvc/rtl/flx_rtl_config_params.hpp
 
 @title Platform configs
 @h1 OSX
@@ -76,4 +78,51 @@ typedef socklen_t FLX_SOCKLEN_T;
 @
 
 @h1 Windows
+@tangle win64_msvc_flx_rtl_config_params.hpp 
+#ifndef __FLX_RTL_CONFIG_PARAMS_H__
+#define __FLX_RTL_CONFIG_PARAMS_H__
+
+#define FLX_HAVE_VSNPRINTF 1
+#define FLX_HAVE_GNU 0
+#define FLX_HAVE_GNU_BUILTIN_EXPECT 0
+#define FLX_HAVE_CGOTO 0
+#define FLX_HAVE_ASM_LABELS 0
+#define FLX_HAVE_DLOPEN 0
+#define FLX_CYGWIN 0
+#define FLX_MACOSX 0
+#define FLX_LINUX 0
+#define FLX_WIN32 1
+#define FLX_WIN64 1
+#define FLX_POSIX 0
+#define FLX_SOLARIS 0
+#define FLX_HAVE_MSVC 0
+#define FLX_HAVE_KQUEUE_DEMUXER 0
+#define FLX_HAVE_POLL 0
+#define FLX_HAVE_EPOLL 0
+#define FLX_HAVE_EVTPORTS 0
+#define FLX_HAVE_OPENMP 1
+#define FLX_MAX_ALIGN 16
+#endif
+@
+
+@tangle win64_demux_sockety_config.hpp
+#ifndef __DEMUX_SOCKETY_CONFIG_H__
+#define __DEMUX_SOCKETY_CONFIG_H__
+namespace flx { namespace demux {
+DEMUX_EXTERN  int create_listener_socket (int *io_port, int q_len);
+DEMUX_EXTERN  int create_async_listener(int *io_port, int q_len);
+DEMUX_EXTERN  int nice_accept(int *listener, int *err);
+DEMUX_EXTERN  int nice_connect(char const* addr, int port);
+DEMUX_EXTERN  int async_connect(char const* addr, int port, int *finished, int *err);
+DEMUX_EXTERN  int bind_sock(int s, int *io_port);
+DEMUX_EXTERN  int make_nonblock(int s);
+DEMUX_EXTERN  int make_linger(int s, int t);
+DEMUX_EXTERN  int set_tcp_nodelay(int s, int dsable_nagle);
+DEMUX_EXTERN  int get_socket_error(int s, int *socket_err);
+}}
+
+#endif
+
+@
+
 

@@ -164,6 +164,8 @@ print_endline ("Parent ts = " ^ catmap "," (sbt bsym_table) pts);
 module MM = Flx_monomap.MonoMap
 
 let monomorphise2 debug syms bsym_table =
+print_endline ("MONOMORPHISING");
+
 (*
     print_endline "";
     print_endline "---------------------------";
@@ -219,6 +221,7 @@ let monomorphise2 debug syms bsym_table =
   while not (MM.is_empty (!to_process)) do
     let (i,ts),j = MM.choose (!to_process) in
     assert (not (MM.mem (i,ts) (!processed) ));
+
     begin try List.iter (Flx_monocheck.check_mono bsym_table sr) ts with _ -> assert false end;
 
     to_process := MM.remove (i,ts) (!to_process);

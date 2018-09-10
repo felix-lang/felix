@@ -8,9 +8,9 @@
 @tangler dynlink.flx              = share/lib/std/program/dynlink.flx
 @tangler config_unix_dl.fpc       = $PWD/src/config/unix/dl.fpc
 @tangler config_macosx_dl.fpc     = $PWD/src/config/macosx/dl.fpc
-@tangler config_win32_dl.fpc      = $PWD/src/config/win32/dl.fpc
+@tangler config_win_dl.fpc      = $PWD/src/config/win/dl.fpc
 @tangler unix_flx_dynlink.fpc     = $PWD/src/config/unix/flx_dynlink.fpc
-@tangler win32_flx_dynlink.fpc    = $PWD/src/config/win32/flx_dynlink.fpc
+@tangler win_flx_dynlink.fpc    = $PWD/src/config/win/flx_dynlink.fpc
 @tangler flx_dynlink_config.hpp   = share/lib/rtl/flx_dynlink_config.hpp
 @tangler flx_dynlink.py           = $PWD/buildsystem/flx_dynlink.py
 
@@ -1296,7 +1296,7 @@ Description: dynamic loading support
 includes: '<dlfcn.h>'
 @
 
-@tangle config_win32_dl.fpc
+@tangle config_win_dl.fpc
 Name: dl
 Description: dynamic loading support
 @
@@ -1314,7 +1314,7 @@ srcdir: src/dynlink
 src: .*\.cpp
 @
 
-@tangle win32_flx_dynlink.fpc
+@tangle win_flx_dynlink.fpc
 Name: flx_dynlink
 Description: Felix Dynamic loading support
 provides_dlib: /DEFAULTLIB:flx_dynlink_dynamic

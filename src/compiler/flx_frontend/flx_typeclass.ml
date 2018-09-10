@@ -240,7 +240,7 @@ if id="unsafe_get" then
     let sr2 = try Flx_bsym_table.find_sr bsym_table i with Not_found ->
       failwith ("fixup_typeclass_instance': Can't find <" ^ string_of_bid i ^ ">")
     in
-    clierr2 sr sr2 "No instance for virtual"
+    clierr2 sr sr2 ("No instance for virtual " ^ id)
 
   | Some entries ->
 (*

@@ -1,7 +1,7 @@
 @title Felix library add ons
 @tangler rparse.flx        = share/src/flxlibs/rparse.flx
 @tangler unix_rparse.fpc   = $PWD/src/config/unix/rparse.fpc
-@tangler win32_rparse.fpc  = $PWD/src/config/win32/rparse.fpc
+@tangler win_rparse.fpc    = $PWD/src/config/win/rparse.fpc
 @tangler build_rparse.sh   = $PWD/build_rparse.sh
 @tangler test_rparse.sh    = $PWD/test_rparse.sh
 @tangler testrparse.flx    = $PWD/testrparse.flx
@@ -215,7 +215,7 @@ provides_slib: -lrparse_static
 provides_dlib: -lrparse_dynamic
 @
 
-@tangle win32_rparse.fpc
+@tangle win_rparse.fpc
 Description: Respectful Parser, binary edition
 Location: Part of the standard library
 provides_slib: /DEFAULTLIB:librparse_static

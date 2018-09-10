@@ -1,7 +1,7 @@
 @title Regular Expressions
 @tangler re2.py              = $PWD/buildsystem/re2.py
 @tangler unix_re2.fpc        = $PWD/src/config/unix/re2.fpc
-@tangler win32_re2.fpc       = $PWD/src/config/win32/re2.fpc
+@tangler win_re2.fpc         = $PWD/src/config/win/re2.fpc
 @tangler flx_re2_config.hpp  = share/lib/rtl/flx_re2_config.hpp
 
 @tangler __init__.flx        = share/lib/std/regex/__init__.flx
@@ -582,7 +582,7 @@ src: re2/[^/]*\.cc|util/arena\.cc|util/hash\.cc|util/rune\.cc|util/stringpiece\.
 build_includes: src/re2/re2
 @
 
-@tangle win32_re2.fpc
+@tangle win_re2.fpc
 Name: Re2
 Description: Google Re2 regexp library
 provides_dlib: /DEFAULTLIB:flx_re2_dynamic

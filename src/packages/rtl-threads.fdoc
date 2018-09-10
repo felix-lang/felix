@@ -29,7 +29,7 @@
 @tangler flx_pthread_config.hpp           = share/lib/rtl/flx_pthread_config.hpp
 
 @tangler unix_flx_pthread.fpc             = $PWD/src/config/unix/flx_pthread.fpc
-@tangler win32_flx_pthread.fpc            = $PWD/src/config/win32/flx_pthread.fpc
+@tangler win_flx_pthread.fpc              = $PWD/src/config/win/flx_pthread.fpc
 @tangler linux_pthread.fpc                = $PWD/src/config/linux/pthread.fpc
 @tangler default_pthread.fpc              = $PWD/src/config/pthread.fpc
 
@@ -1905,7 +1905,7 @@ srcdir: src/pthread
 src: .*\.cpp
 @
 
-@tangle win32_flx_pthread.fpc
+@tangle win_flx_pthread.fpc
 Name: Flx_pthread
 Description: Felix Pre-emptive threading support
 

@@ -1,6 +1,6 @@
 @h1 Jason Lee's uint256_t library
 @tangler unix_uint256_t.fpc         = $PWD/src/config/unix/flx_uint256_t.fpc
-@tangler win32_uint256_t.fpc        = $PWD/src/config/win32/flx_uint256_t.fpc
+@tangler win_uint256_t.fpc          = $PWD/src/config/win/flx_uint256_t.fpc
 @tangler flx_uint256_t.py           = $PWD/buildsystem/flx_uint256_t.py
 
 
@@ -18,7 +18,7 @@ src: uint128_t.cpp uint256_t.cpp
 build_includes: src/uint256_t
 @
 
-@tangle win32_uint256_t.fpc
+@tangle win_uint256_t.fpc
 Name: uint256_t
 Description: Jason Lee's uint256_t library
 provides_dlib: /DEFAULTLIB:flx_uint256_t_dynamic

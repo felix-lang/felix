@@ -9,7 +9,7 @@
 @tangler faio.py              = $PWD/buildsystem/faio.py
 @tangler timer.fpc            = $PWD/src/config/timer.fpc
 @tangler unix_faio.fpc        = $PWD/src/config/unix/faio.fpc
-@tangler win32_faio.fpc       = $PWD/src/config/win32/faio.fpc
+@tangler win_faio.fpc       = $PWD/src/config/win/faio.fpc
 @tangler flx_faio_config.hpp  = share/lib/rtl/flx_faio_config.hpp
 
 @h1 Faio Driver
@@ -675,7 +675,7 @@ src: faio_(timer|posixio)\.cpp
 headers: faio_(drv|timer|posixio)\.hpp
 @
 
-@tangle win32_faio.fpc
+@tangle win_faio.fpc
 Name: faio
 Description: Asynchronous I/O support
 provides_dlib: /DEFAULTLIB:faio_dynamic

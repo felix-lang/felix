@@ -2,7 +2,7 @@
 @tangler judy.py = $PWD/buildsystem/judy.py
 @tangler unix32_judy.fpc = $PWD/src/config/unix/unix32/judy.fpc
 @tangler unix64_judy.fpc = $PWD/src/config/unix/unix64/judy.fpc
-@tangler win32_judy.fpc  = $PWD/src/config/win32/judy.fpc
+@tangler win64_judy.fpc  = $PWD/src/config/win64/judy.fpc
 
 
 @h1 Judy Builder
@@ -136,7 +136,7 @@ src: (JudyCommon/JudyMalloc|JudySL/.*|JudyHS/.*|Judy1/.*|JudyL/.*)\.c
 build_includes: src/judy/src src/judy/src/Judy1 src/judy/src/JudyL src/judy/src/JudyHS src/judy/src/JudyCommon
 @
 
-@tangle win32_judy.fpc
+@tangle win64_judy.fpc
 Name: Judy WIN32 64 BIT
 Description: Judy arrays
 provides_dlib: /DEFAULTLIB:judy_dynamic

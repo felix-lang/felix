@@ -4,7 +4,7 @@
 @tangler flx_i18n.hpp             = share/lib/rtl/flx_i18n.hpp
 @tangler flx_i18n.cpp             = share/src/strutil/flx_i18n.cpp
 @tangler unix_flx_strutil.fpc     = $PWD/src/config/unix/flx_strutil.fpc
-@tangler win32_flx_strutil.fpc    = $PWD/src/config/win32/flx_strutil.fpc
+@tangler win_flx_strutil.fpc      = $PWD/src/config/win/flx_strutil.fpc
 @tangler flx_i18n.fpc             = $PWD/src/config/flx_i18n.fpc
 @tangler flx_strutil_config.hpp   = share/lib/rtl/flx_strutil_config.hpp
 @tangler flx_strutil.py           = $PWD/buildsystem/flx_strutil.py
@@ -294,7 +294,7 @@ srcdir: src/strutil
 src: .*\.cpp
 @
 
-@tangle win32_flx_strutil.fpc
+@tangle win_flx_strutil.fpc
 Name: flx_strutil
 Description: String utilities
 provides_dlib: /DEFAULTLIB:flx_strutil_dynamic

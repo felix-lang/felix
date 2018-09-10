@@ -7,7 +7,7 @@
 @tangler demux_linux.fpc     = $PWD/src/config/linux/demux.fpc
 @tangler demux_solaris.fpc   = $PWD/src/config/solaris/demux.fpc
 @tangler demux_macosx.fpc    = $PWD/src/config/macosx/demux.fpc
-@tangler demux_win32.fpc     = $PWD/src/config/win32/demux.fpc
+@tangler demux_win.fpc       = $PWD/src/config/win/demux.fpc
 @tangler demux_msys.fpc      = $PWD/src/config/msys/demux.fpc
 @tangler demux_cygwin.fpc    = $PWD/src/config/cygwin/demux.fpc
 
@@ -97,7 +97,7 @@ src: [^/\\]+\.cpp
 src: posix/.*\.cpp
 src: kqueue/.*\.cpp
 @
-@tangle demux_win32.fpc
+@tangle demux_win.fpc
 Name: demux
 Description: Event handling (windows event ports with msvc)
 Comment: Generated during configuration

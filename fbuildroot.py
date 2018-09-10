@@ -590,9 +590,17 @@ def configure(ctx):
 
     # enable this on win32 **instead** of the above to copy fpc files
     if "windows" in target.platform:
-        print("COPYING WIN32 RESOURCE DATABASE")
+        print("COPYING WINDOWS RESOURCE DATABASE")
         buildsystem.copy_to(ctx,
-            ctx.buildroot / 'host/config', Path('src/config/win32/*.fpc').glob())
+            ctx.buildroot / 'host/config', Path('src/config/win/*.fpc').glob())
+        if types.voidp.size == 4:
+            print("32 bit Windows")
+            buildsystem.copy_to(ctx,
+              ctx.buildroot / 'host/config', Path('src/config/win32/*.fpc').glob())
+        else:
+            print("64 bit Windows")
+            buildsystem.copy_to(ctx,
+            ctx.buildroot / 'host/config', Path('src/config/win64/*.fpc').glob())
 
     # enable this on solaris to clobber any fpc files
     # where the generic unix ones are inadequate
@@ -624,13 +632,13 @@ def configure(ctx):
 
 
     # extract the configuration
-    iscr = call('buildsystem.iscr.Iscr', ctx)
+    #iscr = call('buildsystem.iscr.Iscr', ctx)
 
     # convert the config into something iscr can use
-    call('buildsystem.iscr.config_iscr_config', ctx, build, host, target)
+    #call('buildsystem.iscr.config_iscr_config', ctx, build, host, target)
 
     # re-extract packages if any of them changed
-    ctx.scheduler.map(iscr, (src_dir(ctx)/'lpsrc/*.pak').glob())
+    #ctx.scheduler.map(iscr, (src_dir(ctx)/'lpsrc/*.pak').glob())
 
     # overwrite or add *.fpc files to the config directory
     call('buildsystem.post_config.copy_user_fpcs', ctx)
@@ -651,9 +659,9 @@ def configure(ctx):
     f.close()
 
     # make Felix representation of whole build config
-    call('buildsystem.show_build_config.build',ctx)
+    #call('buildsystem.show_build_config.build',ctx)
 
-    return Record(build=build, host=host, target=target), iscr
+    return Record(build=build, host=host, target=target)
 
 # ------------------------------------------------------------------------------
 
@@ -667,7 +675,7 @@ def build(ctx):
 
     print("[fbuild] CONFIGURING FELIX")
     # configure the phases
-    phases, iscr = configure(ctx)
+    phases = configure(ctx)
 
     # --------------------------------------------------------------------------
     # Compile the compiler.
@@ -732,5 +740,5 @@ def build(ctx):
     call('buildsystem.plugins.build', phases.target, felix)
 
     print("[fbuild] BUILD COMPLETE")
-    return phases, iscr, felix
+    return phases, felix
 

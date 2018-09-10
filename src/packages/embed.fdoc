@@ -9,7 +9,7 @@
 @tangler flx_async.cpp        = share/src/flx_async/flx_async.cpp
 @tangler flx_async.py         = $PWD/buildsystem/flx_async.py
 @tangler unix_flx_async.fpc   = $PWD/src/config/unix/flx_async.fpc
-@tangler win32_flx_async.fpc  = $PWD/src/config/win32/flx_async.fpc
+@tangler win_flx_async.fpc    = $PWD/src/config/win/flx_async.fpc
 
 
 @h1 Embedding
@@ -1178,7 +1178,7 @@ srcdir: src/flx_async
 src: .*\.cpp
 @
 
-@tangle win32_flx_async.fpc
+@tangle win_flx_async.fpc
 Name: flx_async
 Description: Async hook
 provides_dlib: /DEFAULTLIB:flx_async_dynamic

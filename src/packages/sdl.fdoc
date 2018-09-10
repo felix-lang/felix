@@ -44,9 +44,9 @@
 @tangler macosx_sdl2_image.fpc        = $PWD/src/config/macosx/sdl2_image.fpc
 @tangler macosx_sdl2_ttf.fpc          = $PWD/src/config/macosx/sdl2_ttf.fpc
 
-@tangler win32_sdl2.fpc              = $PWD/src/config/win32/sdl2.fpc
-@tangler win32_sdl2_image.fpc        = $PWD/src/config/win32/sdl2_image.fpc
-@tangler win32_sdl2_ttf.fpc          = $PWD/src/config/win32/sdl2_ttf.fpc
+@tangler win_sdl2.fpc                 = $PWD/src/config/win/sdl2.fpc
+@tangler win_sdl2_image.fpc           = $PWD/src/config/win/sdl2_image.fpc
+@tangler win_sdl2_ttf.fpc             = $PWD/src/config/win/sdl2_ttf.fpc
 
 @tangler macosx_SDL2_gfx.fpc         = $PWD/src/config/macosx/SDL2_gfx.fpc
 
@@ -3711,7 +3711,7 @@ provides_slib: -L/usr/local/lib -lSDL2_gfx
 
 
 @
-@tangle win32_sdl2.fpc
+@tangle win_sdl2.fpc
 Name: SDL2 
 Description: Simple Direct Media Layer 2.0
 cflags: /I\Users\skaller\Desktop\SDL2-2.0.3\include
@@ -3719,7 +3719,7 @@ includes: '"SDL.h"'
 provides_dlib: /DEFAULTLIB:\Users\skaller\Desktop\SDL2-2.0.3\lib\x64\SDL2
 
 @
-@tangle win32_sdl2_image.fpc
+@tangle win_sdl2_image.fpc
 Name: SDL2_image
 Description: Simple Direct Media Layer 2.0: image loader
 cflags: /I\Users\skaller\Desktop\SDL2_image-2.0.0\include
@@ -3727,7 +3727,7 @@ includes: '"SDL_image.h"'
 provides_dlib: /DEFAULTLIB:\Users\skaller\Desktop\SDL2_image-2.0.0\lib\x64\SDL2_image
 
 @
-@tangle win32_sdl2_ttf.fpc
+@tangle win_sdl2_ttf.fpc
 Name: SDL2_ttf
 Description: Simple Direct Media Layer 2.0: free type interface
 cflags: /I\Users\skaller\Desktop\SDL2_ttf-2.0.12\include
