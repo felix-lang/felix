@@ -164,8 +164,9 @@ print_endline ("Parent ts = " ^ catmap "," (sbt bsym_table) pts);
 module MM = Flx_monomap.MonoMap
 
 let monomorphise2 debug syms bsym_table =
+(*
 print_endline ("MONOMORPHISING");
-
+*)
 (*
     print_endline "";
     print_endline "---------------------------";

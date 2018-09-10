@@ -448,12 +448,6 @@ def src_dir(ctx):
 
 # ------------------------------------------------------------------------------
 
-# SHOULD USE REGEXP
-def hack_toolchain_name(s):
-  if s in ["gcc-5","gcc-6","gcc-7"]: return "gcc"
-  if s in ["clang","gcc"]: return s
-  return s
-
 def tangle_packages(package_dir, odir):
     # import the processing logic from flx_iscr
     sys.path.append("src/tools/")
@@ -535,6 +529,25 @@ def set_version(buildroot):
   print("FELIX VERSION " + flx_version)
   write_script(buildroot,flx_version)
 
+def hack_toolchain_name(s):
+  if s in ["gcc-5","gcc-6","gcc-7"]: return "gcc"
+  if s in ["clang","gcc"]: return s
+  return s
+
+def hack_size(size):
+  if size == 4: return "32"
+  else: return "64"
+
+
+def hack_os_name(platform):
+  if 'macosx' in platform: return "macosx"
+  if 'solaris' in platform: return "win"
+  if 'posix' in platform: return "unix"
+  if 'cygwin' in platform: return "cygwin"
+  if 'msys' in platform: return "msys"
+  if 'windows' in platform: return "win"
+  return "unknownos"
+
 @fbuild.db.caches
 def configure(ctx):
     """Configure Felix."""
@@ -551,106 +564,40 @@ def configure(ctx):
     # necessary
     #
     buildsystem.copy_to(ctx, ctx.buildroot/'host/config', Path('src/config/*.fpc').glob())
-    # most of these ones are actually platform independent
-    # just do the windows EXTERN to dllexport mapping
-    # which is controlled by compile time switches anyhow
-    # should probably move these out of config directory
-    # they're put in config in case there really are any
-    # platform mods.
-    buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl',
-        Path('src/config/target/*.hpp').glob())
-    buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl',
-        Path('src/config/target/*.h').glob())
 
     types = config_call('fbuild.config.c.c99.types',
         target.platform, target.c.static)
 
+    compiler = hack_toolchain_name(str(target.c.static))
+    os = hack_os_name (target.platform)
+    bits = hack_size(types.voidp.size)
 
-    # this is a hack: assume we're running on Unix.
-    # later when Erick figures out how to fix this
-    # we'd copy the win32 subdirectory entries instead
-    if "posix" in target.platform:
-        print("COPYING POSIX RESOURCE DATABASE")
-        buildsystem.copy_to(ctx,
-            ctx.buildroot / 'host/config', Path('src/config/unix/*.fpc').glob())
-        if types.voidp.size == 4:
-            print("32 bit Unix")
-            buildsystem.copy_to(ctx,
-              ctx.buildroot / 'host/config', Path('src/config/unix/unix32/*.fpc').glob())
-        else:
-            print("64 bit Unix")
-            buildsystem.copy_to(ctx,
-            ctx.buildroot / 'host/config', Path('src/config/unix/unix64/*.fpc').glob())
+    print("COPYING " + os + " RESOURCE DATABASE")
+    buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/'+os+'/*.fpc').glob())
+    print("COPYING " + os + bits + " RESOURCE DATABASE")
+    buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/'+os+bits+'/*.fpc').glob())
+    print("COPYING "+compiler+"_"+os+" RTL CONFIG")
+    buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl', Path('src/config/'+os+'/'+compiler+'/*.hpp').glob())
+    print("COPYING "+os+" SOCKET CONFIG")
+    buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl', Path('src/config/'+os+'/*.hpp').glob())
+
 
     if "linux" in target.platform:
         print("COPYING LINUX RESOURCE DATABASE")
         buildsystem.copy_to(ctx,
             ctx.buildroot / 'host/config', Path('src/config/linux/*.fpc').glob())
 
-
-    # enable this on win32 **instead** of the above to copy fpc files
-    if "windows" in target.platform:
-        print("COPYING WINDOWS RESOURCE DATABASE")
-        buildsystem.copy_to(ctx,
-            ctx.buildroot / 'host/config', Path('src/config/win/*.fpc').glob())
-        if types.voidp.size == 4:
-            print("32 bit Windows")
-            buildsystem.copy_to(ctx,
-              ctx.buildroot / 'host/config', Path('src/config/win32/*.fpc').glob())
-        else:
-            print("64 bit Windows")
-            buildsystem.copy_to(ctx,
-            ctx.buildroot / 'host/config', Path('src/config/win64/*.fpc').glob())
-
-    # enable this on solaris to clobber any fpc files
-    # where the generic unix ones are inadequate
-    #buildsystem.copy_to(ctx,
-    #    ctx.buildroot / 'config', Path('src/config/solaris/*.fpc').glob())
-
-    # enable this on osx to clobber any fpc files
-    # where the generic unix ones are inadequate
-    if 'macosx' in target.platform:
-        print("COPYING MACOSX RESOURCE DATABASE")
-        buildsystem.copy_to(ctx,
-            ctx.buildroot / 'host/config', Path('src/config/macosx/*.fpc').glob())
-
-    if 'cygwin' in target.platform:
-        print("COPYING CYWGIN (POSIX) RESOURCE DATABASE")
-        buildsystem.copy_to(ctx,
-            ctx.buildroot / 'host/config', Path('src/config/cygwin/*.fpc').glob())
-
-    if 'msys' in target.platform:
-        print("COPYING MSYS RESOURCE DATABASE")
-        buildsystem.copy_to(ctx,
-            ctx.buildroot / 'host/config', Path('src/config/msys/*.fpc').glob())
-
-
-    if 'solaris' in target.platform:
-        print("COPYING SOLARIS RESOURCE DATABASE")
-        buildsystem.copy_to(ctx,
-            ctx.buildroot / 'host/config', Path('src/config/solaris/*.fpc').glob())
-
-
-    # extract the configuration
-    #iscr = call('buildsystem.iscr.Iscr', ctx)
-
-    # convert the config into something iscr can use
-    #call('buildsystem.iscr.config_iscr_config', ctx, build, host, target)
-
-    # re-extract packages if any of them changed
-    #ctx.scheduler.map(iscr, (src_dir(ctx)/'lpsrc/*.pak').glob())
-
-    # overwrite or add *.fpc files to the config directory
     call('buildsystem.post_config.copy_user_fpcs', ctx)
 
     # set the toolchain
     dst = ctx.buildroot / 'host/config/toolchain.fpc'
     if 'macosx' in target.platform:
-        toolchain = "toolchain_"+hack_toolchain_name(str(target.c.static))+"_osx"
+        toolchain = "toolchain_"+compiler+"_osx"
     elif "windows" in target.platform:
         toolchain= "toolchain_msvc_win32"
     else:
-        toolchain = "toolchain_"+hack_toolchain_name(str(target.c.static))+"_linux"
+        toolchain = "toolchain_"+compiler+"_linux"
+
     print("**********************************************")
     print("SETTING TOOLCHAIN " + toolchain)
     print("**********************************************")
