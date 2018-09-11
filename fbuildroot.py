@@ -572,15 +572,26 @@ def configure(ctx):
     os = hack_os_name (target.platform)
     bits = hack_size(types.voidp.size)
 
+
+    print("COPYING unix RESOURCE DATABASE")
+    if 'posix' in target.platform: 
+      buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/unix/*.fpc').glob())
+      buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/unix'+bits+'/*.fpc').glob())
+
     print("COPYING " + os + " RESOURCE DATABASE")
     buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/'+os+'/*.fpc').glob())
+
     print("COPYING " + os + bits + " RESOURCE DATABASE")
     buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/'+os+bits+'/*.fpc').glob())
-    print("COPYING "+compiler+"_"+os+" RTL CONFIG")
-    buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl', Path('src/config/'+os+'/'+compiler+'/*.hpp').glob())
-    print("COPYING "+os+" SOCKET CONFIG")
-    buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl', Path('src/config/'+os+'/*.hpp').glob())
 
+    print("COPYING " + os + " PLAT MACROS")
+    buildsystem.copy_to(ctx, ctx.buildroot / 'host/lib/plat', Path('src/config/'+os+'/*.flxh').glob())
+
+    print("COPYING "+os+bits+"/"+compiler+" RTL CONFIG")
+    buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl', Path('src/config/'+os+bits+'/'+compiler+'/rtl/*.hpp').glob())
+
+    print("COPYING "+os+bits+" SOCKET CONFIG")
+    buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl', Path('src/config/'+os+bits+'/rtl/*.hpp').glob())
 
     if "linux" in target.platform:
         print("COPYING LINUX RESOURCE DATABASE")

@@ -6,6 +6,11 @@
 @tangler macosx64_demux_sockety_config.hpp         = $PWD/src/config/macosx64/rtl/demux_sockety_config.hpp
 @tangler win64_demux_sockety_config.hpp            = $PWD/src/config/linux64/rtl/demux_sockety_config.hpp
 
+@tangler linux.flxh                                = $PWD/src/config/unix/flx.flxh
+@tangler macosx.flxh                               = $PWD/src/config/macosx/flx.flxh
+@tangler win.flxh                                  = $PWD/src/config/win/flx.flxh
+
+
 
 @title Platform configs
 @h1 OSX
@@ -25,7 +30,7 @@ typedef socklen_t FLX_SOCKLEN_T;
 #define FLX_HAVE_GNU 1
 #define FLX_HAVE_GNU_BUILTIN_EXPECT 1
 #define FLX_HAVE_CGOTO 1
-#define FLX_HAVE_ASM_LABELS 0
+#define FLX_HAVE_ASM_LABELS 1
 #define FLX_HAVE_DLOPEN 1
 #define FLX_CYGWIN 0
 #define FLX_MACOSX 1
@@ -125,6 +130,33 @@ DEMUX_EXTERN  int get_socket_error(int s, int *socket_err);
 
 #endif
 
+@
+@tangle linux.flxh
+macro val PLAT_POSIX = true;
+macro val PLAT_LINUX = true;
+macro val PLAT_BSD = false;
+macro val PLAT_MACOSX = false;
+macro val PLAT_CYGWIN = false;
+macro val PLAT_WIN32 = false;
+macro val PLAT_SOLARIS = false;
+@
+@tangle macosx.flxh
+macro val PLAT_POSIX = true;
+macro val PLAT_LINUX = false;
+macro val PLAT_BSD = true;
+macro val PLAT_MACOSX = true;
+macro val PLAT_CYGWIN = false;
+macro val PLAT_WIN32 = false;
+macro val PLAT_SOLARIS = false;
+@
+@tangle win.flxh
+macro val PLAT_POSIX = false;
+macro val PLAT_LINUX = false;
+macro val PLAT_BSD = false;
+macro val PLAT_MACOSX = false;
+macro val PLAT_CYGWIN = false;
+macro val PLAT_WIN32 = true;
+macro val PLAT_SOLARIS = false;
 @
 
 
