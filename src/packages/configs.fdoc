@@ -4,7 +4,7 @@
 
 @tangler linux64_demux_sockety_config.hpp          = $PWD/src/config/linux64/rtl/demux_sockety_config.hpp
 @tangler macosx64_demux_sockety_config.hpp         = $PWD/src/config/macosx64/rtl/demux_sockety_config.hpp
-@tangler win64_demux_sockety_config.hpp            = $PWD/src/config/linux64/rtl/demux_sockety_config.hpp
+@tangler win64_demux_sockety_config.hpp            = $PWD/src/config/win64/rtl/demux_sockety_config.hpp
 
 @tangler linux.flxh                                = $PWD/src/config/unix/flx.flxh
 @tangler macosx.flxh                               = $PWD/src/config/macosx/flx.flxh
