@@ -541,6 +541,7 @@ def hack_size(size):
 
 
 def hack_os_name(platform):
+  if 'linux' in platform: return "linux"
   if 'macosx' in platform: return "macosx"
   if 'solaris' in platform: return "solaris"
   if 'posix' in platform: return "unix"
@@ -574,7 +575,7 @@ def configure(ctx):
     bits = hack_size(types.voidp.size)
 
 
-    print("COPYING unix RESOURCE DATABASE")
+    print("COPYING generic unix RESOURCE DATABASE")
     if 'posix' in target.platform: 
       buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/unix/*.fpc').glob())
       buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/unix'+bits+'/*.fpc').glob())
@@ -593,11 +594,6 @@ def configure(ctx):
 
     print("COPYING "+os+bits+" SOCKET CONFIG")
     buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl', Path('src/config/'+os+bits+'/rtl/*.hpp').glob())
-
-    if "linux" in target.platform:
-        print("COPYING LINUX RESOURCE DATABASE")
-        buildsystem.copy_to(ctx,
-            ctx.buildroot / 'host/config', Path('src/config/linux/*.fpc').glob())
 
     call('buildsystem.post_config.copy_user_fpcs', ctx)
 

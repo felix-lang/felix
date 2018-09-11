@@ -31,7 +31,8 @@ script:
 - sudo rm -rf /usr/bin/g++
 - sudo ln -s /usr/bin/gcc-8 /usr/bin/gcc
 - sudo ln -s /usr/bin/g++-8 /usr/bin/g++
-- export PATH=bin:build/release/host/bin:$PATH LD_LIBRARY_PATH=build/release/host/lib/rtl
+- export PATH=bin:build/release/host/bin:$PATH 
+- export LD_LIBRARY_PATH=build/release/host/lib/rtl:$LD_LIBRARY_PATH
 - #export FLX_SHELL_ECHO=1
 - gcc --version
 - g++ --version
