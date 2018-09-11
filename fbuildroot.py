@@ -613,9 +613,6 @@ def configure(ctx):
     f.write ("toolchain: "+toolchain+"\n")
     f.close()
 
-    # make Felix representation of whole build config
-    #call('buildsystem.show_build_config.build',ctx)
-
     return Record(build=build, host=host, target=target)
 
 # ------------------------------------------------------------------------------
