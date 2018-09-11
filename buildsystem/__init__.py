@@ -14,7 +14,7 @@ def copy_to(ctx, dstdir, srcs:fbuild.db.SRCS) -> fbuild.db.DSTS:
 
     dsts = []
 
-    print("copying " + srcs.len.str + " files");
+    print("copying " + str (len (srcs)) + " files");
     for src in srcs:
         src = Path(src)
         dst = dstdir / src.name
