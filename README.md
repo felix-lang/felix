@@ -2,10 +2,8 @@
 Felix
 =====
 
-https://travis-ci.org/felix-lang/felix.svg?branch=master
 
-https://ci.appveyor.com/api/projects/status/9wndcq726vrgx58c?svg=true
-
+[![Build Status](https://travis-ci.org/felix-lang/felix.svg?branch=master)](https://travis-ci.org/felix-lang/felix)
 
 
 [Master Documentation Index](http://felix-documentation-master.readthedocs.io/en/latest)
