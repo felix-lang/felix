@@ -532,7 +532,7 @@ def set_version(buildroot):
 def hack_toolchain_name(s):
   if s in ["gcc-5","gcc-6","gcc-7"]: return "gcc"
   if s in ["clang","gcc"]: return s
-  if s.[0:2] == "cl": return msvc
+  if s.[0:6] == "cl.exe": return "msvc"
   return s
 
 def hack_size(size):
