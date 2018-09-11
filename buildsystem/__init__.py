@@ -14,11 +14,13 @@ def copy_to(ctx, dstdir, srcs:fbuild.db.SRCS) -> fbuild.db.DSTS:
 
     dsts = []
 
+    print("copying " + srcs.len.str + " files");
     for src in srcs:
         src = Path(src)
         dst = dstdir / src.name
         #ctx.logger.check(' * copy', '%s -> %s' % (src, dst), color='yellow')
         try:
+            print("cp " + src + " -> " + dst)
             src.copy(dst)
         except shutil.SameFileError:
             pass

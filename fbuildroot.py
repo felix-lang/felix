@@ -532,6 +532,7 @@ def set_version(buildroot):
 def hack_toolchain_name(s):
   if s in ["gcc-5","gcc-6","gcc-7"]: return "gcc"
   if s in ["clang","gcc"]: return s
+  if s.[0:2] == "cl": return msvc
   return s
 
 def hack_size(size):
@@ -541,7 +542,7 @@ def hack_size(size):
 
 def hack_os_name(platform):
   if 'macosx' in platform: return "macosx"
-  if 'solaris' in platform: return "win"
+  if 'solaris' in platform: return "solaris"
   if 'posix' in platform: return "unix"
   if 'cygwin' in platform: return "cygwin"
   if 'msys' in platform: return "msys"
