@@ -8,7 +8,7 @@ Please see LICENSE file for license.
 
 [![Build status](https://ci.appveyor.com/api/projects/status/q9w45r6b2chnsre1?svg=true)](https://ci.appveyor.com/project/skaller/felix)
 
-[![Build Status](https://travis-ci.org/calccrypto/uint256_t.svg?branch=master)](https://travis-ci.org/calccrypto/uint256_t)
+[![Build Status](https://travis-ci.org/felix-lang/felix.svg?branch=master)](https://travis-ci.org/felix-lang/felix)
 
 With much help from Auston Sterling
 
