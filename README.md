@@ -1,6 +1,12 @@
 
 Felix
-========
+=====
+
+https://travis-ci.org/felix-lang/felix.svg?branch=master
+
+https://ci.appveyor.com/api/projects/status/9wndcq726vrgx58c?svg=true
+
+
 
 [Master Documentation Index](http://felix-documentation-master.readthedocs.io/en/latest)
 
