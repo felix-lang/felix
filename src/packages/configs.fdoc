@@ -1,5 +1,8 @@
 @title Platform configs
 
+@tangler flx_config.py                             = $PWD/buildsystem/flx_config.py
+@tangler flx_config_ncurses.flx                    = src/tools/flx_config_ncurses.flx
+
 @tangler linux64_gcc_flx_rtl_config_params.hpp     = $PWD/src/config/linux64/gcc/rtl/flx_rtl_config_params.hpp
 @tangler macosx64_clang_flx_rtl_config_params.hpp  = $PWD/src/config/macosx64/clang/rtl/flx_rtl_config_params.hpp
 @tangler win64_msvc_flx_rtl_config_params.hpp      = $PWD/src/config/win64/msvc/rtl/flx_rtl_config_params.hpp
@@ -264,5 +267,101 @@ cflags: -std:c++17
 Description: C++20 required
 includes: '"cplusplus_20.hpp"'
 cflags: -std:c++20
+@
+
+@tangle flx_config.py
+from fbuild.path import Path
+import buildsystem
+from os import getenv
+
+def target_config(ctx,target,os,bits,compiler):
+    print("[fbuild] COPYING UNIVERSAL RESOURCE DATABASE")
+    buildsystem.copy_to(ctx, ctx.buildroot/'host/config', Path('src/config/*.fpc').glob())
+
+    print("[fbuild] COPYING compiler/C++ version RESOURCE DATABASE")
+    buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/'+compiler+'/*.fpc').glob())
+
+    print("[fbuild] COPYING generic unix RESOURCE DATABASE")
+    if 'posix' in target.platform: 
+      buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/unix/*.fpc').glob())
+      buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/unix'+bits+'/*.fpc').glob())
+
+    print("[fbuild] COPYING " + os + " RESOURCE DATABASE")
+    buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/'+os+'/*.fpc').glob())
+
+    print("[fbuild] COPYING " + os + bits + " RESOURCE DATABASE")
+    buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/'+os+bits+'/*.fpc').glob())
+
+    print("[fbuild] COPYING " + os + " PLAT MACROS")
+    buildsystem.copy_to(ctx, ctx.buildroot / 'host/lib/plat', Path('src/config/'+os+'/*.flxh').glob())
+
+    print("C[fbuild] OPYING "+os+bits+"/"+compiler+" RTL CONFIG")
+    buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl', Path('src/config/'+os+bits+'/'+compiler+'/rtl/*.hpp').glob())
+
+    print("[fbuild] COPYING "+os+bits+" SOCKET CONFIG")
+    buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl', Path('src/config/'+os+bits+'/rtl/*.hpp').glob())
+
+    home = getenv("HOME")
+    if home is not None:
+        print("COPYING USER CONFIG DATA FROM " + home+"/.felix/config")
+        buildsystem.copy_fpc_to_config(ctx, Path(home, ".felix", "config", "*.fpc").glob())
+
+    # set the toolchain
+    dst = ctx.buildroot / 'host/config/toolchain.fpc'
+    if 'macosx' in target.platform:
+        toolchain = "toolchain_"+compiler+"_osx"
+    elif "windows" in target.platform:
+        toolchain= "toolchain_msvc_win32"
+    else:
+        toolchain = "toolchain_"+compiler+"_linux"
+
+    print("**********************************************")
+    print("SETTING TOOLCHAIN " + toolchain)
+    print("**********************************************")
+    f = open(dst,"w")
+    f.write ("toolchain: "+toolchain+"\n")
+    f.close()
+@
+
+@tangle flx_config_ncurses.flx
+include "std/io/ncurses";
+open Ncurses;
+open C_hack;
+
+proc config() {
+  var w = initscr();
+
+  var install  = array_calloc[char] 40;
+  var target   = array_calloc[char] 40;
+  var compiler = array_calloc[char] 40;
+  var wordsize = array_calloc[char] 40;
+  var os       = array_calloc[char] 40;
+
+  mvwprintw(0,0,w, "Felix target configuration tool");
+  mvwprintw(1,0,w, "INSTALL DIRECTORY:          " + install.str);
+  mvwprintw(2,0,w, "Target Subdirectory Name:   " + target.str);
+  mvwprintw(3,0,w, "Compiler family:            " + compiler.str);
+  mvwprintw(4,0,w, "Word size:                  " + worsize.str);
+  mvwprintw(5,0,w, "OS name:                    " + os.str);
+
+  mvwgetstr(1,30,install;
+  mvwgetstr(2,30,target);
+  mvwgetstr(3,30,compiler);
+  mvwgetstr(4,30,wordsize);
+  mvwgetstr(5,30,os);
+
+  free install;
+  free target;
+  free compiler;
+  free worsize;
+  free os;
+ 
+  ignore$ #refresh;
+  ignore$ wgetch(w);
+  ignore$ #endwin;
+
+  
+}
+config;
 @
 

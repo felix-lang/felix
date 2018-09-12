@@ -30,6 +30,7 @@ platform.shared_obj_suffix = shared_obj_suffix
 import buildsystem
 from buildsystem.config import config_call
 from buildsystem.version import flx_version
+from buildsystem.flx_config import target_config
 
 # HACK
 import os, sys
@@ -558,63 +559,15 @@ def configure(ctx):
     host = config_host(ctx, build)
     target = config_target(ctx, host)
 
-    # Make sure the config directories exist.
-    #(ctx.buildroot / 'host/config').makedirs()
-
-    # copy the config directory for initial config
-    # this will be overwritten by subsequent steps if
-    # necessary
-    #
-    buildsystem.copy_to(ctx, ctx.buildroot/'host/config', Path('src/config/*.fpc').glob())
-
     types = config_call('fbuild.config.c.c99.types',
         target.platform, target.c.static)
+
 
     compiler = hack_toolchain_name(str(target.c.static))
     os = hack_os_name (target.platform)
     bits = hack_size(types.voidp.size)
 
-    print("COPYING compiler/C++ version RESOURCE DATABASE")
-    buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/'+compiler+'/*.fpc').glob())
-
-    print("COPYING generic unix RESOURCE DATABASE")
-    if 'posix' in target.platform: 
-      buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/unix/*.fpc').glob())
-      buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/unix'+bits+'/*.fpc').glob())
-
-    print("COPYING " + os + " RESOURCE DATABASE")
-    buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/'+os+'/*.fpc').glob())
-
-    print("COPYING " + os + bits + " RESOURCE DATABASE")
-    buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/'+os+bits+'/*.fpc').glob())
-
-    print("COPYING " + os + " PLAT MACROS")
-    buildsystem.copy_to(ctx, ctx.buildroot / 'host/lib/plat', Path('src/config/'+os+'/*.flxh').glob())
-
-    print("COPYING "+os+bits+"/"+compiler+" RTL CONFIG")
-    buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl', Path('src/config/'+os+bits+'/'+compiler+'/rtl/*.hpp').glob())
-
-    print("COPYING "+os+bits+" SOCKET CONFIG")
-    buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl', Path('src/config/'+os+bits+'/rtl/*.hpp').glob())
-
-    call('buildsystem.post_config.copy_user_fpcs', ctx)
-
-    # set the toolchain
-    dst = ctx.buildroot / 'host/config/toolchain.fpc'
-    if 'macosx' in target.platform:
-        toolchain = "toolchain_"+compiler+"_osx"
-    elif "windows" in target.platform:
-        toolchain= "toolchain_msvc_win32"
-    else:
-        toolchain = "toolchain_"+compiler+"_linux"
-
-    print("**********************************************")
-    print("SETTING TOOLCHAIN " + toolchain)
-    print("**********************************************")
-    f = open(dst,"w")
-    f.write ("toolchain: "+toolchain+"\n")
-    f.close()
-
+    target_config(ctx,target,os,bits,compiler)
     return Record(build=build, host=host, target=target)
 
 # ------------------------------------------------------------------------------
