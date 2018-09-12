@@ -1,4 +1,3 @@
-
 sudo: true
 dist: trusty
 addons:
@@ -13,7 +12,7 @@ before_script:
 - wget https://github.com/ocaml/ocaml/archive/4.06.1.tar.gz
 - tar -xzf 4.06.1.tar.gz
 - cd ocaml-4.06.1
-- ./configure
+- "./configure"
 - make world
 - make world.opt
 - sudo make install
@@ -21,23 +20,23 @@ before_script:
 - git config --global user.email "skaller@users.sourceforge.net"
 - git config --global user.name "skaller"
 - git config --global push.default simple
-- #git clone -q --depth=1 https://skaller:${GITHUB_TOKEN}@github.com/felix-lang/linuxgccbinary.git
+- 
 - mkdir -p build
-- #cp -r linuxgccbinary/build/* build
-- #rm -rf build/release/share/lib/
+- 
+- 
 script:
 - mkdir -p bin
 - sudo rm -rf /usr/bin/gcc
 - sudo rm -rf /usr/bin/g++
 - sudo ln -s /usr/bin/gcc-8 /usr/bin/gcc
 - sudo ln -s /usr/bin/g++-8 /usr/bin/g++
-- export PATH=bin:build/release/host/bin:$PATH 
+- export PATH=bin:build/release/host/bin:$PATH
 - export LD_LIBRARY_PATH=build/release/host/lib/rtl:$LD_LIBRARY_PATH
-- #export FLX_SHELL_ECHO=1
+- 
 - gcc --version
 - g++ --version
 - FLX_MIN_MEM=100000 make "FBUILD_PARAMS=--build-cc=gcc --build-cxx=g++"
-- #FLX_MIN_MEM=100000 make build 
+- 
 - make rebuild uproot
 after_success:
 - mkdir linuxgccbinary/build
@@ -61,11 +60,10 @@ before_deploy:
 deploy:
   provider: releases
   api_key:
-    secure: n5+jnBuG3JZAoMMuBpkTtewiazORSRkQWje/yiwaT3NaU+IdfLFBnkazp5+QD7Ox7Z5auXOM1ngtJWykf5wPDjAtpKc4C82o67nvUgBJzS3+PvFNUWXCW+8rzPGJ6Xn9wiqP80XucQvmsAgfY8UCP4Hj8DswjDgVOR5utucyRj4=
-  file: felix-${FLX_VERSION}-linux64-gcc51.tgz
-  skip_cleanup: true
+    secure: AnV8qFgHkwitbfWJgb2TukDBk8FOrAMlIaby1BMVYOXGNwqROz3iUNPz0KYybVqbc2WvNOFfF8OuHKT2JdKqlKdMUoc0n1cTlHHn/ikkgVI38niO8eixAeuhgDSgGVRhkcW7eU/8dwJw0EoVhVm4yvQDZjyKTooWE6/Zlx2a49c=
+  file: ''
   on:
-    tags: true
+    repo: felix-lang/felix
 notifications:
   email: felix-builds@googlegroups.com
 env:
