@@ -39,29 +39,26 @@ script:
 - 
 - make rebuild uproot
 after_success:
-- mkdir linuxgccbinary/build
-- mkdir linuxgccbinary/build/release
-- mkdir linuxgccbinary/build/release/share
-- mkdir linuxgccbinary/build/release/host
-- cp -r build/release/share/* linuxgccbinary/build/release/share
-- cp -r build/release/host/* linuxgccbinary/build/release/host
-- cd linuxgccbinary
-- git add build/release/host/*
-- git add build/release/share/*
-- git commit -a -m "travis rebuild"
-- git push >/dev/null 2>1
-- cd ..
+#- mkdir linuxgccbinary/build
+#- mkdir linuxgccbinary/build/release
+#- mkdir linuxgccbinary/build/release/share
+#- mkdir linuxgccbinary/build/release/host
+#- cp -r build/release/share/* linuxgccbinary/build/release/share
+#- cp -r build/release/host/* linuxgccbinary/build/release/host
+#- cd linuxgccbinary
+#- git add build/release/host/*
+#- git add build/release/share/*
+#- git commit -a -m "travis rebuild"
+#- git push >/dev/null 2>1
+#- cd ..
 before_deploy:
-- cp installscript/posixinstall.sh linuxinstall.sh
-- cp installscript/linuxsetup.sh .
 - export FLX_VERSION=`python3 showversion.py`
-- tar -czvf felix-${FLX_VERSION}-linux64-gcc51.tgz build/release/host build/release/share
-  linuxinstall.sh linuxsetup.sh hello.flx INSTALL
+- tar -czvf felix-${FLX_VERSION}-linux64-gcc-8.tgz build/release/host build/release/share
 deploy:
   provider: releases
   api_key:
     secure: AnV8qFgHkwitbfWJgb2TukDBk8FOrAMlIaby1BMVYOXGNwqROz3iUNPz0KYybVqbc2WvNOFfF8OuHKT2JdKqlKdMUoc0n1cTlHHn/ikkgVI38niO8eixAeuhgDSgGVRhkcW7eU/8dwJw0EoVhVm4yvQDZjyKTooWE6/Zlx2a49c=
-  file: ''
+  file: felix-${FLX_VERSION}-linux64-gcc-8.tgz
   on:
     repo: felix-lang/felix
 notifications:

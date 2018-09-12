@@ -1,0 +1,760 @@
+@title ncurses binding
+@tangler ncurses.flx                   = share/lib/std/io/ncurses.flx
+@tangler ncurses_01.flx                = $PWD/src/examples/ncurses_01.flx
+@tangler ncurses_02.flx                = $PWD/src/examples/ncurses_02.flx
+@tangler ncurses_03.flx                = $PWD/src/examples/ncurses_03.flx
+@tangler unix_ncurses.fpc              = $PWD/src/config/unix/ncurses.fpc
+
+Expected to run on Unix platforms only.
+
+@tangle ncurses.flx
+// This library is licenced under FFAU
+class Ncurses 
+{
+  requires package "ncurses";
+  type WINDOW = "WINDOW*";
+  type SCREEN = "SCREEN*";
+  type NCURSES_SCREEN_CB = "NCURSE_SCREEN_CB";
+  type NCURSES_WINDOW_CB = "NCURSE_WINDOW_CB";
+  type NCURSES_ATTR_T = "NCURSES_ATTR_T";
+
+  // hackery!
+  typedef attr_t = uint;
+  typedef chtype = uint;
+  ctor chtype : int = "(unsigned int)$1"; 
+  ctor chtype : char = "(unsigned int)$1"; 
+  ctor char : chtype = "(char)$1";
+  ctor int : chtype = "(int)$1";
+  const stdscr : WINDOW = "stdscr";
+
+  gen addch: chtype -> int;   // generated
+  gen addchnstr: &chtype * int -> int;  // generated
+  gen addchstr: &chtype -> int;   // generated
+  gen addnstr: &char * int -> int;   // generated
+  gen addstr: &char -> int;   // generated
+  gen attroff: NCURSES_ATTR_T -> int;   // generated
+  gen attron: NCURSES_ATTR_T -> int;   // generated
+  gen attrset: NCURSES_ATTR_T -> int;   // generated
+  gen attr_get: &attr_t * &short * address -> int; // generated
+  gen attr_off: attr_t * address -> int;   // generated
+  gen attr_on: attr_t * address -> int;   // generated
+  gen attr_set: attr_t * short * address -> int;  // generated
+  gen baudrate: unit -> int;    // implemented 
+  gen beep : unit -> int;    // implemented 
+  gen bkgd: chtype -> int;    // generated
+  gen bkgdset: chtype -> void;    // generated
+  gen border: chtype * chtype * chtype * chtype * chtype * chtype * chtype * chtype -> int; // generated
+  gen box: WINDOW * chtype * chtype -> int;  // generated
+  gen can_change_color: unit -> bool;   // implemented 
+  gen cbreak: unit -> int;    // implemented 
+  gen chgat: int * attr_t * short * address -> int; // generated
+  gen clear: unit -> int;    // generated
+  gen clearok: WINDOW * bool -> int;   // implemented 
+  gen clrtobot: unit -> int;    // generated
+  gen clrtoeol: unit -> int;    // generated
+  gen color_content: short * &short * &short * &short -> int; // implemented 
+  gen color_set: short * address -> int;   // generated
+  gen COLOR_PAIR: int -> int;    // generated
+  gen copywin: WINDOW * WINDOW * int * int * int * int * int * int * int -> int; // implemented 
+  gen curs_set: int -> int;    // implemented 
+  gen def_prog_mode: unit -> int;   // implemented 
+  gen def_shell_mode: unit -> int;   // implemented 
+  gen delay_output: int -> int;    // implemented 
+  gen delch: unit -> int;    // generated
+  proc delscreen: SCREEN ;   // implemented 
+  gen delwin: WINDOW -> int;    // implemented 
+  gen deleteln: unit -> int;    // generated
+  gen derwin: WINDOW * int * int * int * int -> WINDOW; // implemented 
+  gen doupdate: unit -> int;    // implemented 
+  gen dupwin: WINDOW -> WINDOW;   // implemented 
+  gen echo: unit -> int;     // implemented 
+  gen echochar: chtype -> int;   // generated
+  gen erase: unit -> int;    // generated
+  gen endwin: unit -> int;    // implemented 
+  gen erasechar: unit -> char;    // implemented 
+  gen filter: unit -> void;    // implemented 
+  gen flash: unit -> int;    // implemented 
+  gen flushinp: unit -> int;    // implemented 
+  gen getbkgd: WINDOW -> chtype;   // generated
+  gen getch: unit -> int;    // generated
+  gen getnstr: +char * int -> int;   // generated
+  gen getstr: +char -> int;    // generated
+//  gen getwin: &FILE -> WINDOW;   // implemented 
+  gen halfdelay: int -> int;    // implemented 
+  gen has_colors: unit -> bool;    // implemented 
+  gen has_ic: unit -> bool;    // implemented 
+  gen has_il: unit -> bool;    // implemented 
+  gen hline: chtype * int -> int;    // generated
+  gen idcok: WINDOW * bool -> void;   // implemented 
+  gen idlok: WINDOW * bool -> int;   // implemented 
+  gen immedok: WINDOW * bool -> void;   // implemented 
+  gen inch: unit -> chtype;    // generated
+  gen inchnstr: &chtype * int -> int;   // generated
+  gen inchstr: &chtype -> int;    // generated
+  gen initscr: unit -> WINDOW;    // implemented 
+  gen init_color: short * short * short * short -> int; // implemented 
+  gen init_pair: short * short * short -> int;  // implemented 
+  gen innstr: &char * int -> int;   // generated
+  gen insch: chtype -> int;    // generated
+  gen insdelln: int -> int;    // generated
+  gen insertln: unit -> int;    // generated
+  gen insnstr: &char * int -> int;   // generated
+  gen insstr: &char -> int;   // generated
+  gen instr: &char -> int;    // generated
+  gen intrflush: WINDOW * bool -> int;   // implemented 
+  gen isendwin: unit -> bool;    // implemented 
+  gen is_linetouched: WINDOW * int -> bool;  // implemented 
+  gen is_wintouched: WINDOW -> bool;   // implemented 
+  gen keyname: int -> &char;  // implemented 
+  gen keypad: WINDOW * bool -> int;   // implemented 
+  gen killchar: unit -> char;    // implemented 
+  gen leaveok: WINDOW * bool -> int;   // implemented 
+  gen longname: unit -> &char;    // implemented 
+  gen meta: WINDOW * bool -> int;   // implemented 
+  gen move: int * int -> int;    // generated
+  gen mvaddch: int * int * chtype -> int;  // generated
+  gen mvaddchnstr: int * int * &chtype * int -> int; // generated
+  gen mvaddchstr: int * int * &chtype -> int; // generated
+  gen mvaddnstr: int * int * &char * int -> int; // generated
+  gen mvaddstr: int * int * &char -> int;  // generated
+  gen mvchgat: int * int * int * attr_t * short * address -> int; // generated
+  gen mvcur: int * int * int * int -> int;   // implemented 
+  gen mvdelch: int * int -> int;    // generated
+  gen mvderwin: WINDOW * int * int -> int;  // implemented 
+  gen mvgetch: int * int -> int;    // generated
+  gen mvgetnstr: int * int * +char * int -> int;  // generated
+  gen mvgetstr: int * int * +char -> int;   // generated
+  gen mvhline: int * int * chtype * int -> int;  // generated
+  gen mvinch: int * int -> chtype;   // generated
+  gen mvinchnstr: int * int * &chtype * int -> int; // generated
+  gen mvinchstr: int * int * &chtype -> int;  // generated
+  gen mvinnstr: int * int * &char * int -> int;  // generated
+  gen mvinsch: int * int * chtype -> int;   // generated
+  gen mvinsnstr: int * int * &char * int -> int; // generated
+  gen mvinsstr: int * int * &char -> int;  // generated
+  gen mvinstr: int * int * &char -> int;   // generated
+//extern NCURSES_EXPORT(int) mvprintw (int * int * &char * ...)  // implemented 
+//  GCC_PRINTFLIKE(3 * 4);
+//extern NCURSES_EXPORT(int) mvscanw (int * int * &char * ...) // implemented 
+//  GCC_SCANFLIKE(3 * 4);
+  proc mvprintw: int * int * string = '(void)mvprintw($1,$2,"%s",$1.c_str());';
+
+  gen mvvline: int * int * chtype * int -> int;  // generated
+  gen mvwaddch: WINDOW * int * int * chtype -> int; // generated
+  gen mvwaddchnstr: WINDOW * int * int * &chtype * int -> int;// generated
+  gen mvwaddchstr: WINDOW * int * int * &chtype -> int; // generated
+  gen mvwaddnstr: WINDOW * int * int * &char * int -> int; // generated
+  gen mvwaddstr: WINDOW * int * int * &char -> int; // generated
+  gen mvwchgat: WINDOW * int * int * int * attr_t * short * address -> int;// generated
+  gen mvwdelch: WINDOW * int * int -> int;  // generated
+  gen mvwgetch: WINDOW * int * int -> int;  // generated
+  gen mvwgetnstr: WINDOW * int * int * +char * int -> int; // generated
+  gen mvwgetstr: WINDOW * int * int * +char -> int; // generated
+  gen mvwhline: WINDOW * int * int * chtype * int -> int; // generated
+  gen mvwin: WINDOW * int * int -> int;   // implemented 
+  gen mvwinch: WINDOW * int * int -> chtype;   // generated
+  gen mvwinchnstr: WINDOW * int * int * &chtype * int -> int; // generated
+  gen mvwinchstr: WINDOW * int * int * &chtype -> int;  // generated
+  gen mvwinnstr: WINDOW * int * int * &char * int -> int;  // generated
+  gen mvwinsch: WINDOW * int * int * chtype -> int;  // generated
+  gen mvwinsnstr: WINDOW * int * int * &char * int -> int; // generated
+  gen mvwinsstr: WINDOW * int * int * &char -> int;  // generated
+  gen mvwinstr: WINDOW * int * int * &char -> int;  // generated
+//extern NCURSES_EXPORT(int) mvwprintw (&WINDOW * int * int * &char * ...) // implemented 
+//  GCC_PRINTFLIKE(4 * 5);
+//extern NCURSES_EXPORT(int) mvwscanw (WINDOW * int * int * &char * ...) // implemented 
+//  GCC_SCANFLIKE(4 * 5);
+  proc mvwprintw: WINDOW * int * int * string = '(void)mvwprintw($1,$2,$3,"%s",$4.c_str());';
+
+  gen mvwvline: WINDOW * int * int * chtype * int -> int; // generated
+  gen napms: int -> int;     // implemented 
+  gen newpad: int * int -> WINDOW;    // implemented 
+  gen newterm: string * ifile * ofile -> SCREEN = "newterm(strdup($1.c_str()),$2,$3)"; // implemented 
+  //gen newterm: &char * &FILE * &FILE -> &SCREEN; // implemented 
+  gen newwin: int * int * int * int -> WINDOW;   // implemented 
+  gen nl: unit -> int;     // implemented 
+  gen nocbreak: unit -> int;    // implemented 
+  gen nodelay: WINDOW * bool -> int;   // implemented 
+  gen noecho: unit -> int;    // implemented 
+  gen nonl: unit -> int;     // implemented 
+  gen noqiflush: unit -> void;    // implemented 
+  gen noraw: unit -> int;    // implemented 
+  gen notimeout: WINDOW * bool -> int;   // implemented 
+  gen overlay: &WINDOW * WINDOW -> int;  // implemented 
+  gen overwrite: &WINDOW * WINDOW -> int;  // implemented 
+  gen pair_content: short * &short * &short -> int;  // implemented 
+  gen PAIR_NUMBER: int -> int;    // generated
+  gen pechochar: WINDOW * chtype -> int;  // implemented 
+  gen pnoutrefresh: &WINDOW * int * int * int * int * int * int -> int;// implemented 
+  gen prefresh: WINDOW * int * int * int * int * int * int -> int; // implemented 
+//extern NCURSES_EXPORT(int) printw (&char * ...)   // implemented 
+//  GCC_PRINTFLIKE(1 * 2);
+
+  proc printw : string = '(void)printw("%s",$1.c_str());';
+
+  gen putwin: WINDOW * &FILE -> int;   // implemented 
+  gen qiflush: unit -> void;    // implemented 
+  gen raw: unit -> int;     // implemented 
+  gen redrawwin: WINDOW -> int;   // generated
+  gen refresh: unit -> int;    // generated
+  gen resetty: unit -> int;    // implemented 
+  gen reset_prog_mode: unit -> int;   // implemented 
+  gen reset_shell_mode: unit -> int;   // implemented 
+//   gen ripoffline (int * int: *)(WINDOW * int) -> int; // implemented 
+  gen savetty: unit -> int;    // implemented 
+//extern NCURSES_EXPORT(int) scanw (&char * ...)  // implemented 
+//  GCC_SCANFLIKE(1 * 2);
+  gen scr_dump: &char -> int;   // implemented 
+  gen scr_init: &char -> int;   // implemented 
+  gen scrl: int -> int;     // generated
+  gen scroll: WINDOW -> int;    // generated
+  gen scrollok: WINDOW * bool -> int;   // implemented 
+  gen scr_restore: &char -> int;   // implemented 
+  gen scr_set: &char -> int;   // implemented 
+  gen setscrreg: int * int -> int;    // generated
+  gen set_term: &SCREEN -> &SCREEN;   // implemented 
+  gen slk_attroff: chtype -> int;   // implemented 
+  gen slk_attr_off: attr_t * address -> int;  // generated:WIDEC
+  gen slk_attron: chtype -> int;   // implemented 
+  gen slk_attr_on: attr_t * address -> int;   // generated:WIDEC
+  gen slk_attrset: chtype -> int;   // implemented 
+  gen slk_attr: unit -> attr_t;    // implemented 
+  gen slk_attr_set: attr_t * short * address -> int; // implemented 
+  gen slk_clear: unit -> int;    // implemented 
+  gen slk_color: short -> int;    // implemented 
+  gen slk_init: int -> int;    // implemented 
+  gen slk_label: int -> &char;    // implemented 
+  gen slk_noutrefresh: unit -> int;   // implemented 
+  gen slk_refresh: unit -> int;    // implemented 
+  gen slk_restore: unit -> int;    // implemented 
+  gen slk_set: int * &char * int -> int;  // implemented 
+  gen slk_touch: unit -> int;    // implemented 
+  gen standout: unit -> int;    // generated
+  gen standend: unit -> int;    // generated
+  gen start_color: unit -> int;    // implemented 
+  gen subpad: WINDOW * int * int * int * int -> WINDOW; // implemented 
+  gen subwin: WINDOW * int * int * int * int -> WINDOW; // implemented 
+  gen syncok: WINDOW * bool -> int;   // implemented 
+  gen termattrs: unit -> chtype;    // implemented 
+  gen termname: unit -> &char;    // implemented 
+  gen timeout: int -> void;    // generated
+  gen touchline: WINDOW * int * int -> int;  // generated
+  gen touchwin: WINDOW -> int;    // generated
+  gen typeahead: int -> int;    // implemented 
+  gen ungetch: int -> int;    // implemented 
+  gen untouchwin: WINDOW -> int;   // generated
+  gen use_env: bool -> void;    // implemented 
+  gen vidattr: chtype -> int;    // implemented 
+//  gen vidputs (chtype * int: *)(int) -> int;  // implemented 
+  gen vline: chtype * int -> int;    // generated
+  gen vwprintw: WINDOW * &char * C_hack::va_list -> int; // implemented 
+  gen vw_printw: WINDOW * &char * C_hack::va_list -> int; // generated
+  gen vwscanw: WINDOW * &char * C_hack::va_list -> int; // implemented 
+  gen vw_scanw: WINDOW * &char * C_hack::va_list -> int; // generated
+  gen waddch: WINDOW * chtype -> int;  // implemented 
+  gen waddchnstr: WINDOW * &chtype * int -> int; // implemented 
+  gen waddchstr: WINDOW * &chtype -> int;  // generated
+  gen waddnstr: WINDOW * &char * int -> int; // implemented 
+  gen waddstr: WINDOW * &char -> int;  // generated
+  proc waddstr: WINDOW * string = '(void)waddstr($1,$2.c_str());';
+  gen wattron: WINDOW * int -> int;   // generated
+  gen wattroff: WINDOW * int -> int;   // generated
+  gen wattrset: WINDOW * int -> int;   // generated
+  gen wattr_get: WINDOW * &attr_t * &short * address -> int; // generated
+  gen wattr_on: WINDOW * attr_t * address -> int;  // implemented 
+  gen wattr_off: WINDOW * attr_t * address -> int; // implemented 
+  gen wattr_set: WINDOW * attr_t * short * address -> int; // generated
+  gen wbkgd: WINDOW * chtype -> int;   // implemented 
+  gen wbkgdset: WINDOW * chtype -> void;   // implemented 
+  gen wborder: WINDOW * chtype * chtype * chtype * chtype * chtype * chtype * chtype * chtype -> int; // implemented 
+  gen wchgat: WINDOW * int * attr_t * short * address -> int;// implemented 
+  gen wclear: WINDOW -> int;    // implemented 
+  gen wclrtobot: WINDOW -> int;   // implemented 
+  gen wclrtoeol: WINDOW -> int;   // implemented 
+  gen wcolor_set: &WINDOW * short * address -> int;  // implemented 
+  gen wcursyncup: WINDOW -> void;   // implemented 
+  gen wdelch: WINDOW -> int;    // implemented 
+  gen wdeleteln: WINDOW -> int;   // generated
+  gen wechochar: WINDOW * chtype -> int;  // implemented 
+  gen werase: WINDOW -> int;    // implemented 
+  gen wgetch: WINDOW -> int;    // implemented 
+  gen wgetnstr: WINDOW * &char * int -> int;  // implemented 
+  gen wgetstr: WINDOW * &char -> int;   // generated
+  gen whline: WINDOW * chtype * int -> int;  // implemented 
+  gen winch: WINDOW -> chtype;    // implemented 
+  gen winchnstr: WINDOW * &chtype * int -> int;  // implemented 
+  gen winchstr: WINDOW * &chtype -> int;  // generated
+  gen winnstr: WINDOW * &char * int -> int;  // implemented 
+  gen winsch: WINDOW * chtype -> int;   // implemented 
+  gen winsdelln: WINDOW * int -> int;   // implemented 
+  gen winsertln: WINDOW -> int;   // generated
+  gen winsnstr: WINDOW * &char * int -> int; // implemented 
+  gen winsstr: WINDOW * &char -> int;  // generated
+  gen winstr: WINDOW * &char -> int;   // generated
+  gen wmove: WINDOW * int * int -> int;   // implemented 
+  gen wnoutrefresh: WINDOW -> int;   // implemented 
+//extern NCURSES_EXPORT(int) wprintw (WINDOW * &char * ...)  // implemented 
+//  GCC_PRINTFLIKE(2 * 3);
+  proc wprintw: WINDOW * string = '(void)wprintw($1,$2.c_str());';
+  gen wredrawln: WINDOW * int * int -> int;  // implemented 
+  gen wrefresh: WINDOW -> int;    // implemented 
+//extern NCURSES_EXPORT(int) wscanw (WINDOW * &char * ...) // implemented 
+//  GCC_SCANFLIKE(2 * 3);
+  gen wscrl: WINDOW * int -> int;   // implemented 
+  gen wsetscrreg: WINDOW * int * int -> int;  // implemented 
+  gen wstandout: WINDOW -> int;   // generated
+  gen wstandend: WINDOW -> int;   // generated
+  gen wsyncdown: WINDOW -> void;   // implemented 
+  gen wsyncup: WINDOW -> void;    // implemented 
+  gen wtimeout: WINDOW * int -> void;   // implemented 
+  gen wtouchln: WINDOW * int * int * int -> int;  // implemented 
+  gen wvline: WINDOW * chtype * int -> int;  // implemented 
+
+/*
+ * These are also declared in <term.h>:
+ */
+  gen tigetflag: &char -> int;  // implemented 
+  gen tigetnum: &char -> int;  // implemented 
+  gen tigetstr: &char -> &char;  // implemented 
+  gen putp: &char -> int;    // implemented 
+
+//#if NCURSES_TPARM_VARARGS
+//  gen tparm: &char * ... -> &char; /* &special/
+//#else
+//  gen tparm: &char * long * long * long * long * long * long * long * long * long -> &char; /* &special/
+//  gen tparm_varargs: &char * ... -> &char; /* &special/
+//#endif
+
+/*
+ * These functions are not in X/Open * but we use them in macro definitions:
+ */
+  gen getattrs: WINDOW -> int;   // generated
+  gen getcurx: WINDOW -> int;   // generated
+  gen getcury: WINDOW -> int;   // generated
+  gen getbegx: WINDOW -> int;   // generated
+  gen getbegy: WINDOW -> int;   // generated
+  gen getmaxx: WINDOW -> int;   // generated
+  gen getmaxy: WINDOW -> int;   // generated
+  gen getparx: WINDOW -> int;   // generated
+  gen getpary: WINDOW -> int;   // generated
+
+/*
+ * vid_attr() was implemented originally based on a draft of X/Open curses.
+ */
+//#ifndef _XOPEN_SOURCE_EXTENDED
+//#define vid_attr(a * pair * opts) vidattr(a)
+//#endif
+
+/*
+ * These functions are extensions - not in X/Open Curses.
+ */
+//typedef int (*NCURSES_WINDOW_CB)(WINDOW * address);
+//typedef int (*NCURSES_SCREEN_CB)(&SCREEN * address);
+  gen is_term_resized: int * int -> bool;
+  gen keybound: int * int -> &char;
+  gen curses_version: unit -> &char;
+  gen assume_default_colors: int * int -> int;
+  gen define_key: &char * int -> int;
+  gen key_defined: &char -> int;
+  gen keyok: int * bool -> int;
+  gen resize_term: int * int -> int;
+  gen resizeterm: int * int -> int;
+  gen set_escdelay: int -> int;
+  gen set_tabsize: int -> int;
+  gen use_default_colors: unit -> int;
+  gen use_extended_names: bool -> int;
+  gen use_legacy_coding: int -> int;
+  gen use_screen: SCREEN * NCURSES_SCREEN_CB * address -> int;
+  gen use_window: WINDOW * NCURSES_WINDOW_CB * address -> int;
+  gen wresize: WINDOW * int * int -> int;
+  proc nofilter:1;
+
+/*
+ * These extensions provide access to information stored in the WINDOW even
+ * when NCURSES_OPAQUE is set:
+ */
+  gen wgetparent: WINDOW -> WINDOW; // generated
+  gen is_cleared: WINDOW -> bool; // generated
+  gen is_idcok: WINDOW -> bool;  // generated
+  gen is_idlok: WINDOW -> bool;  // generated
+  gen is_immedok: WINDOW -> bool; // generated
+  gen is_keypad: WINDOW -> bool;  // generated
+  gen is_leaveok: WINDOW -> bool; // generated
+  gen is_nodelay: WINDOW -> bool; // generated
+  gen is_notimeout: WINDOW -> bool; // generated
+  gen is_scrollok: WINDOW -> bool; // generated
+  gen is_syncok: WINDOW -> bool;  // generated
+  gen wgetscrreg: WINDOW * &int * &int -> int; // generated
+
+  // Colours
+  const 
+    COLOR_BLACK,
+    COLOR_RED,
+    COLOR_GREEN,
+    COLOR_YELLOW,
+    COLOR_BLUE,
+    COLOR_MAGENTA,
+    COLOR_CYAN,
+    COLOR_WHITE : short
+  ;
+
+  const A_NORMAL : attr_t;
+
+  // Mouse stuff
+  type mmask_t = "mmask_t";
+  cstruct MEVENT {
+    id:short;
+    x:int;
+    y:int;
+    z:int;
+    bstate: mmask_t;
+  };
+
+  const BUTTON1_RELEASED        : mmask_t;
+  const BUTTON1_PRESSED         : mmask_t;
+  const BUTTON1_CLICKED         : mmask_t;
+  const BUTTON1_DOUBLE_CLICKED  : mmask_t;
+  const BUTTON1_TRIPLE_CLICKED  : mmask_t;
+
+  const BUTTON2_RELEASED        : mmask_t;
+  const BUTTON2_PRESSED         : mmask_t;
+  const BUTTON2_CLICKED         : mmask_t;
+  const BUTTON2_DOUBLE_CLICKED  : mmask_t;
+  const BUTTON2_TRIPLE_CLICKED  : mmask_t;
+
+  const BUTTON3_RELEASED        : mmask_t;
+  const BUTTON3_PRESSED         : mmask_t;
+  const BUTTON3_CLICKED         : mmask_t;
+  const BUTTON3_DOUBLE_CLICKED  : mmask_t;
+  const BUTTON3_TRIPLE_CLICKED  : mmask_t;
+
+  const BUTTON4_RELEASED        : mmask_t;
+  const BUTTON4_PRESSED         : mmask_t;
+  const BUTTON4_CLICKED         : mmask_t;
+  const BUTTON4_DOUBLE_CLICKED  : mmask_t;
+  const BUTTON4_TRIPLE_CLICKED  : mmask_t;
+  const BUTTON_CTRL             : mmask_t;
+  const BUTTON_SHIFT            : mmask_t;
+  const BUTTON_ALT              : mmask_t;
+  const ALL_MOUSE_EVENTS        : mmask_t;
+  const REPORT_MOUSE_POSITION   : mmask_t;
+
+  gen getmouse: &MEVENT -> int;
+  gen ungetmouse: &MEVENT -> int;
+  gen mousemask: mmask_t * &mmask_t -> mmask_t;
+  gen wenclose: WINDOW * int * int -> bool;
+  gen mouseinterval: int -> int;
+  gen wmouse_trafo: WINDOW * &int * &int * bool -> bool;
+  gen mouse_trafo: &int * &int * bool -> bool;
+
+/* VT100 symbols begin here */
+  const ACS_ULCORNER    : char;
+  const ACS_LLCORNER    : char;
+  const ACS_URCORNER    : char;
+  const ACS_LRCORNER    : char;
+  const ACS_LTEE        : char;
+  const ACS_RTEE        : char;
+  const ACS_BTEE        : char;
+  const ACS_TTEE        : char;
+  const ACS_HLINE       : char;
+  const ACS_VLINE       : char;
+  const ACS_PLUS        : char;
+  const ACS_S1          : char;
+  const ACS_S9          : char;
+  const ACS_DIAMOND     : char;
+  const ACS_CKBOARD     : char;
+  const ACS_DEGREE      : char;
+  const ACS_PLMINUS     : char;
+  const ACS_BULLET      : char;
+/* Teletype 5410v1 symbols begin here */
+  const ACS_LARROW      : char;
+  const ACS_RARROW      : char;
+  const ACS_DARROW      : char;
+  const ACS_UARROW      : char;
+  const ACS_BOARD       : char;
+  const ACS_LANTERN     : char;
+  const ACS_BLOCK       : char;
+/*
+ * These aren't documented, but a lot of System Vs have them anyway
+ * (you can spot pprryyzz{{||}} in a lot of AT&T terminfo strings).
+ * The ACS_names may not match AT&T's, our source didn't know them.
+ */
+  const ACS_S3          : char;
+  const ACS_S7          : char;
+  const ACS_LEQUAL      : char;
+  const ACS_GEQUAL      : char;
+  const ACS_PI          : char;
+  const ACS_NEQUAL      : char;
+  const ACS_STERLING    : char;
+
+/*
+ * Line drawing ACS names are of the form ACS_trbl, where t is the top, r
+ * is the right, b is the bottom, and l is the left.  t, r, b, and l might
+ * be B (blank), S (single), D (double), or T (thick).  The subset defined
+ * here only uses B and S.
+ */
+  const ACS_BSSB        : char;
+  const ACS_SSBB        : char;
+  const ACS_BBSS        : char;
+  const ACS_SBBS        : char;
+  const ACS_SBSS        : char;
+  const ACS_SSSB        : char;
+  const ACS_SSBS        : char;
+  const ACS_BSSS        : char;
+  const ACS_BSBS        : char;
+  const ACS_SBSB        : char;
+  const ACS_SSSS        : char;
+/*
+ * Pseudo-character tokens outside ASCII range.  The curses wgetch() function
+ * will return any given one of these only if the corresponding k- capability
+ * is defined in your terminal's terminfo entry.
+ *
+ * Some keys (KEY_A1, etc) are arranged like this:
+ *	a1     up    a3
+ *	left   b2    right
+ *	c1     down  c3
+ *
+ * A few key codes do not depend upon the terminfo entry.
+ */
+
+  const KEY_CODE_YES    : int;
+  const KEY_MIN     : int;
+  const KEY_BREAK    : int;
+  const KEY_SRESET    : int;
+  const KEY_RESET    : int;
+/*
+ * These definitions were generated by /var/tmp/ncurses.roots/ncurses/ncurses/include/MKkey_defs.sh /var/tmp/ncurses.roots/ncurses/ncurses/include/Caps
+ */
+  const KEY_DOWN    : int;
+  const KEY_UP     : int;
+  const KEY_LEFT    : int;
+  const KEY_RIGHT    : int;
+  const KEY_HOME    : int;
+  const KEY_BACKSPACE    : int;
+  const KEY_F0     : int;
+  const KEY_F1     : int = 'KEY_F(1)';
+  const KEY_F2     : int = 'KEY_F(2)';
+  const KEY_F3     : int = 'KEY_F(3)';
+  const KEY_F4     : int = 'KEY_F(4)';
+  const KEY_F5     : int = 'KEY_F(5)';
+  const KEY_F6     : int = 'KEY_F(6)';
+  const KEY_F7     : int = 'KEY_F(7)';
+  const KEY_F8     : int = 'KEY_F(8)';
+  const KEY_F9     : int = 'KEY_F(9)';
+  const KEY_F10     : int = 'KEY_F(10)';
+  const KEY_F11    : int = 'KEY_F(11)';
+  const KEY_F12     : int = 'KEY_F(12)';
+  const KEY_DL     : int;
+  const KEY_IL     : int;
+  const KEY_DC     : int;
+  const KEY_IC     : int;
+  const KEY_EIC     : int;
+  const KEY_CLEAR    : int;
+  const KEY_EOS     : int;
+  const KEY_EOL     : int;
+  const KEY_SF     : int;
+  const KEY_SR     : int;
+  const KEY_NPAGE    : int;
+  const KEY_PPAGE    : int;
+  const KEY_STAB    : int;
+  const KEY_CTAB    : int;
+  const KEY_CATAB    : int;
+  const KEY_ENTER    : int;
+  const KEY_PRINT    : int;
+  const KEY_LL     : int;
+  const KEY_A1     : int;
+  const KEY_A3     : int;
+  const KEY_B2     : int;
+  const KEY_C1     : int;
+  const KEY_C3     : int;
+  const KEY_BTAB    : int;
+  const KEY_BEG     : int;
+  const KEY_CANCEL    : int;
+  const KEY_CLOSE    : int;
+  const KEY_COMMAND    : int;
+  const KEY_COPY    : int;
+  const KEY_CREATE    : int;
+  const KEY_END     : int;
+  const KEY_EXIT    : int;
+  const KEY_FIND    : int;
+  const KEY_HELP    : int;
+  const KEY_MARK    : int;
+  const KEY_MESSAGE    : int;
+  const KEY_MOVE    : int;
+  const KEY_NEXT    : int;
+  const KEY_OPEN    : int;
+  const KEY_OPTIONS    : int;
+  const KEY_PREVIOUS    : int;
+  const KEY_REDO    : int;
+  const KEY_REFERENCE    : int;
+  const KEY_REFRESH    : int;
+  const KEY_REPLACE    : int;
+  const KEY_RESTART    : int;
+  const KEY_RESUME    : int;
+  const KEY_SAVE    : int;
+  const KEY_SBEG    : int;
+  const KEY_SCANCEL    : int;
+  const KEY_SCOMMAND    : int;
+  const KEY_SCOPY    : int;
+  const KEY_SCREATE    : int;
+  const KEY_SDC     : int;
+  const KEY_SDL     : int;
+  const KEY_SELECT    : int;
+  const KEY_SEND    : int;
+  const KEY_SEOL    : int;
+  const KEY_SEXIT    : int;
+  const KEY_SFIND    : int;
+  const KEY_SHELP    : int;
+  const KEY_SHOME    : int;
+  const KEY_SIC     : int;
+  const KEY_SLEFT    : int;
+  const KEY_SMESSAGE    : int;
+  const KEY_SMOVE    : int;
+  const KEY_SNEXT    : int;
+  const KEY_SOPTIONS    : int;
+  const KEY_SPREVIOUS    : int;
+  const KEY_SPRINT    : int;
+  const KEY_SREDO    : int;
+  const KEY_SREPLACE    : int;
+  const KEY_SRIGHT    : int;
+  const KEY_SRSUME    : int;
+  const KEY_SSAVE    : int;
+  const KEY_SSUSPEND    : int;
+  const KEY_SUNDO    : int;
+  const KEY_SUSPEND    : int;
+  const KEY_UNDO    : int;
+  const KEY_MOUSE    : int;
+  const KEY_RESIZE    : int;
+  const KEY_EVENT    : int;
+
+  const KEY_MAX     : int;
+
+  fun LINES:1->int = "LINES";
+  fun COLS:1->int = "COLS";
+}
+@
+
+@h1 Test cases
+
+@tangle ncurses_01.flx
+include "std/io/ncurses";
+open Ncurses;
+//$ write output to a dummy file descriptor
+var term = FileSystem::pipe();
+var ttype = "vt100";
+var fdo = FileSystem::fdopen_output(term.(0));
+var fdi = FileSystem::fdopen_input(term.(1));
+var s = newterm(ttype,fdi,fdo); // get a screen
+var w = newpad(80,24); // get a window
+wprintw(w,"Hello World !!!"); // Hi	
+var r = refresh();
+delscreen(s);
+assert r == 0;
+@
+@tangle ncurses_02.flx
+include "std/io/ncurses";
+open C_hack;
+open Ncurses;
+//$ write output to a dummy file descriptor
+var w = initscr(); // get a screen
+wprintw(w,"Hello World !!!\nNow Press a key."); // Hi	
+ignore(refresh());
+ignore(wgetch(w));
+ignore(endwin());
+@
+@tangle ncurses_03.flx
+/* Example derived from http://www.tldp.org/HOWTO/NCURSES-Programming-HOWTO */
+include "std/io/ncurses";
+open Ncurses;
+open C_hack;
+
+  w := initscr();          // Start curses mode
+  ignore(cbreak());        // Line buffering disabled, Pass on
+		           // everty thing to me
+  ignore(keypad(w, true)); // I need that nifty F1
+
+  var height = 4;
+  var width = 8;
+  var starty = (LINES() - height) / 2;	// Calculating for a center placement
+  var startx = (COLS() - width) / 2;	// of the window
+  wprintw(w,"Movement: Arrows, Size: F2 F3 F4 F5, Exit: F1");
+  ignore(refresh());
+  var my_win = create_newwin(height, width, starty, startx);
+  var ch = getch();
+  LEFT := int$ord$char$ 'j'; RIGHT := int$ord$char$ 'k';
+  UP := int$ord$char$ 'i'; DOWN := int$ord$char$ 'm';
+  while not ch == KEY_F1 do
+    match ch with
+    |$(KEY_LEFT) => 
+      destroy_win(my_win); startx = startx - 1;
+      my_win = create_newwin(height, width, starty,startx);
+    |$(KEY_RIGHT) =>
+      destroy_win(my_win); startx = startx + 1;
+      my_win = create_newwin(height, width, starty,startx);
+    |$(KEY_UP) =>
+      destroy_win(my_win); starty = starty - 1;
+      my_win = create_newwin(height, width, starty,startx);
+    |$(KEY_DOWN) =>
+      destroy_win(my_win); starty = starty + 1;
+      my_win = create_newwin(height, width, starty,startx);
+    |$(KEY_F2) => 
+      destroy_win(my_win); width = if width > 2 then width - 1 else width endif;
+      my_win = create_newwin(height, width, starty,startx);
+    |$(KEY_F3) =>
+      destroy_win(my_win); width = if COLS() > width then width + 1 else width endif;
+      my_win = create_newwin(height, width, starty,startx);
+    |$(KEY_F4) =>
+      destroy_win(my_win); height = if height > 2 then height - 1 else height endif;
+      my_win = create_newwin(height, width, starty,startx);
+    |$(KEY_F5) =>
+      destroy_win(my_win); height = if LINES() > height then height + 1 else height endif;
+      my_win = create_newwin(height, width, starty,startx);
+    |_ => {}();
+    endmatch;
+    ch = getch();
+  done
+  ignore(endwin());			/* End curses mode		  */
+
+
+
+fun create_newwin(height:int, width:int, starty:int, startx:int) = {
+  local_win := newwin(height, width, starty, startx);
+  ignore(box(local_win, 0ui , 0ui));	/* 0, 0 gives default characters 
+					 * for the vertical and horizontal
+					 * lines			*/
+  ignore(wrefresh(local_win));		/* Show that box 		*/
+  return local_win;
+}
+
+proc destroy_win(local_win:WINDOW) {	
+  /* box(local_win, ' ', ' '); : This won't produce the desired
+   * result of erasing the window. It will leave it's four corners 
+   * and so an ugly remnant of window. 
+   */
+  var borderch = uint$ord$char$ ' ';
+  ignore(wborder(local_win,borderch ,borderch ,borderch ,borderch,
+                 borderch,borderch ,borderch ,borderch));
+  /* The parameters taken are 
+   * 1. win: the window on which to operate
+   * 2. ls: character to be used for the left side of the window 
+   * 3. rs: character to be used for the right side of the window 
+   * 4. ts: character to be used for the top side of the window 
+   * 5. bs: character to be used for the bottom side of the window 
+   * 6. tl: character to be used for the top left corner of the window 
+   * 7. tr: character to be used for the top right corner of the window 
+   * 8. bl: character to be used for the bottom left corner of the window 
+   * 9. br: character to be used for the bottom right corner of the window
+   */
+  ignore(wrefresh(local_win));
+  ignore(delwin(local_win));
+}
+
+@
+
+@tangle unix_ncurses.fpc
+Description: ncurses library
+provides_slib: -lncurses
+provides_dlib: -lncurses
+includes: '"ncurses.h"'
+@
+
