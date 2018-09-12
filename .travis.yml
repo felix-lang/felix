@@ -55,6 +55,7 @@ before_deploy:
 - export FLX_VERSION=`python3 showversion.py`
 - tar -czvf felix-${FLX_VERSION}-linux64-gcc-8.tgz build/release/host build/release/share
 deploy:
+  skip_cleanup: true
   provider: releases
   api_key:
     secure: AnV8qFgHkwitbfWJgb2TukDBk8FOrAMlIaby1BMVYOXGNwqROz3iUNPz0KYybVqbc2WvNOFfF8OuHKT2JdKqlKdMUoc0n1cTlHHn/ikkgVI38niO8eixAeuhgDSgGVRhkcW7eU/8dwJw0EoVhVm4yvQDZjyKTooWE6/Zlx2a49c=
@@ -66,3 +67,4 @@ notifications:
 env:
   global:
     secure: l2FEMgK9dogawsN45lgOMVuUchtVyyFdgJcBeJncCnF5Mz7lIVl1qwGbgZDV6fnWcunh7snaG5o7sUg5+g9ywFc4E9CYCyx/H7Xjcr4y1wHk9RV+K3EkSWtR1DoJnayl6n4vSvP+0o+JzLqJQS65bMNMIjDdkit8CrtEnjIpSas=
+
