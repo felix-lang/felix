@@ -9,7 +9,7 @@
 #
 # We currently make a debug build for 64 bit windows ONLY.
 
-all: showversion env bootstrap tools target uproot test
+all: extract showversion env bootstrap tools target uproot test
 
 showversion:
 	python showversion.py

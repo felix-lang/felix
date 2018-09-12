@@ -88,7 +88,7 @@ help:
 showversion:
 	echo Felix Version ${VERSION}
 
-build: showversion configure bootstrap bootstrap-tools rebuild uproot
+build: extract showversion configure bootstrap bootstrap-tools rebuild uproot
 
 bootstrap: fbuild
 	cp ${BUILDROOT}/host/bin/bootflx ${BUILDROOT}/host/bin/flx
