@@ -38,10 +38,40 @@ analysis.
 
 ### Build from Source
 
+#### Linux
+
 ```
 git clone https://github.com/felix-lang/felix.git
 cd felix
-make  # use nmake on Windows
+. buildscript/linuxsetup.sh
+make  
+sudo make install # optional!
+```
+
+#### OSX
+
+
+```
+git clone https://github.com/felix-lang/felix.git
+cd felix
+. buildscript/osxsetup.sh
+make  
+sudo make install # optional!
+```
+
+#### Windows
+Make sure git, Python3 and Ocaml are on your PATH.
+You can download a pre-built [Ocaml 6.01 for Windows](https://github.com/felix-lang/win64ocaml).
+
+Open a cmd.exe console with Visual Studio 2015 or above
+environment established or run vcvarsall x86. See [vcvarsall](https://msdn.microsoft.com/en-us/library/f2ccy3wt.aspx).
+
+```
+git clone https://github.com/felix-lang/felix.git
+cd felix
+. buildscript/winsetup.sh
+nmake  
+nmake install # optional!
 ```
 
 ## Tarballs
@@ -56,7 +86,7 @@ Travis, Linux build: [![Build Status](https://travis-ci.org/felix-lang/felix.svg
 # Links 
 
 Title                                | URL
-==================================== | ============================================================
+------------------------------------ | ------------------------------------------------------------
 Documentation Master                 | <http://felix-documentation-master.readthedocs.io/en/latest/>
 Felix Tutorial                       | <http://felix-tutorial.readthedocs.io/en/latest/>
 Installation and Tools Guide         | <http://felix-tools.readthedocs.io/en/latest/>
