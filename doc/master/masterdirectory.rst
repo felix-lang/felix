@@ -17,7 +17,7 @@ Specific Documents
 * Articles on Modern Computing <http://modern-computing.readthedocs.io/en/latest/>
 * Felix Home Page <http://felix-lang.org>
 * Git Repository <https://github.com/felix-lang/felix>
- 
+
 General Description
 ===================
 

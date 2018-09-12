@@ -1,7 +1,7 @@
 @title Platform configs
 
 @tangler flx_config.py                             = $PWD/buildsystem/flx_config.py
-@tangler flx_config_ncurses.flx                    = src/tools/flx_config_ncurses.flx
+@tangler flx_config_ncurses.flx                    = $PWD/src/tools/flx_config_ncurses.flx
 
 @tangler linux64_gcc_flx_rtl_config_params.hpp     = $PWD/src/config/linux64/gcc/rtl/flx_rtl_config_params.hpp
 @tangler macosx64_clang_flx_rtl_config_params.hpp  = $PWD/src/config/macosx64/clang/rtl/flx_rtl_config_params.hpp
@@ -337,14 +337,14 @@ proc config() {
   var wordsize = array_calloc[char] 40;
   var os       = array_calloc[char] 40;
 
-  mvwprintw(0,0,w, "Felix target configuration tool");
-  mvwprintw(1,0,w, "INSTALL DIRECTORY:          " + install.str);
-  mvwprintw(2,0,w, "Target Subdirectory Name:   " + target.str);
-  mvwprintw(3,0,w, "Compiler family:            " + compiler.str);
-  mvwprintw(4,0,w, "Word size:                  " + worsize.str);
-  mvwprintw(5,0,w, "OS name:                    " + os.str);
+  mvwprintw(0,0,w, c"Felix target configuration tool");
+  mvwprintw(1,0,w, c"INSTALL DIRECTORY:          ");
+  mvwprintw(2,0,w, c"Target Subdirectory Name:   ");
+  mvwprintw(3,0,w, c"Compiler family:            ");
+  mvwprintw(4,0,w, c"Word size:                  ");
+  mvwprintw(5,0,w, c"OS name:                    ");
 
-  mvwgetstr(1,30,install;
+  mvwgetstr(1,30,install);
   mvwgetstr(2,30,target);
   mvwgetstr(3,30,compiler);
   mvwgetstr(4,30,wordsize);
@@ -359,7 +359,6 @@ proc config() {
   ignore$ #refresh;
   ignore$ wgetch(w);
   ignore$ #endwin;
-
   
 }
 config;
