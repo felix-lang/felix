@@ -574,6 +574,8 @@ def configure(ctx):
     os = hack_os_name (target.platform)
     bits = hack_size(types.voidp.size)
 
+    print("COPYING compiler/C++ version RESOURCE DATABASE")
+    buildsystem.copy_to(ctx, ctx.buildroot / 'host/config', Path('src/config/'+compiler+'/*.fpc').glob())
 
     print("COPYING generic unix RESOURCE DATABASE")
     if 'posix' in target.platform: 

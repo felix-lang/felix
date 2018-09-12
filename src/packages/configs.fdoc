@@ -12,15 +12,26 @@
 @tangler macosx.flxh                               = $PWD/src/config/macosx/flx.flxh
 @tangler win.flxh                                  = $PWD/src/config/win/flx.flxh
 
-@tangler cplusplus_11.fpc                          = $PWD/src/config/cplusplus_11.fpc
-@tangler cplusplus_14.fpc                          = $PWD/src/config/cplusplus_14.fpc
-@tangler cplusplus_17.fpc                          = $PWD/src/config/cplusplus_17.fpc
-@tangler cplusplus_20.fpc                          = $PWD/src/config/cplusplus_20.fpc
-
 @tangler cplusplus_11.hpp                          = share/lib/rtl/cplusplus_11.hpp
 @tangler cplusplus_14.hpp                          = share/lib/rtl/cplusplus_14.hpp
 @tangler cplusplus_17.hpp                          = share/lib/rtl/cplusplus_17.hpp
 @tangler cplusplus_20.hpp                          = share/lib/rtl/cplusplus_20.hpp
+
+@tangler clang_cplusplus_11.fpc                    = $PWD/src/config/clang/cplusplus_11.fpc
+@tangler clang_cplusplus_14.fpc                    = $PWD/src/config/clang/cplusplus_14.fpc
+@tangler clang_cplusplus_17.fpc                    = $PWD/src/config/clang/cplusplus_17.fpc
+@tangler clang_cplusplus_20.fpc                    = $PWD/src/config/clang/cplusplus_20.fpc
+
+@tangler gcc_cplusplus_11.fpc                      = $PWD/src/config/gcc/cplusplus_11.fpc
+@tangler gcc_cplusplus_14.fpc                      = $PWD/src/config/gcc/cplusplus_14.fpc
+@tangler gcc_cplusplus_17.fpc                      = $PWD/src/config/gcc/cplusplus_17.fpc
+@tangler gcc_cplusplus_20.fpc                      = $PWD/src/config/gcc/cplusplus_20.fpc
+
+
+@tangler msvc_cplusplus_11.fpc                     = $PWD/src/config/msvc/cplusplus_11.fpc
+@tangler msvc_cplusplus_14.fpc                     = $PWD/src/config/msvc/cplusplus_14.fpc
+@tangler msvc_cplusplus_17.fpc                     = $PWD/src/config/msvc/cplusplus_17.fpc
+@tangler msvc_cplusplus_20.fpc                     = $PWD/src/config/msvc/cplusplus_20.fpc
 
 
 
@@ -170,6 +181,8 @@ macro val PLAT_WIN32 = true;
 macro val PLAT_SOLARIS = false;
 @
 
+@h1 C++ Standard Versions
+
 @tangle cplusplus_11.hpp
 #if __cplusplus < 201103L 
 #error "C++11 required"
@@ -191,4 +204,65 @@ macro val PLAT_SOLARIS = false;
 #endif
 @
 
+@tangle clang_cplusplus_11.fpc
+Description: C++11 required
+includes: '"cplusplus_11.hpp"'
+cflags: -std=c++11
+@
+@tangle clang_cplusplus_14.fpc
+Description: C++14 required
+includes: '"cplusplus_14.hpp"'
+cflags: -std=c++14
+@
+@tangle clang_cplusplus_17.fpc
+Description: C++17 required
+includes: '"cplusplus_17.hpp"'
+cflags: -std=c++17
+@
+@tangle clang_cplusplus_20.fpc
+Description: C++20 required
+includes: '"cplusplus_20.hpp"'
+cflags: -std=c++20
+@
+
+@tangle gcc_cplusplus_11.fpc
+Description: C++11 required
+includes: '"cplusplus_11.hpp"'
+cflags: -std=c++11
+@
+@tangle gcc_cplusplus_14.fpc
+Description: C++14 required
+includes: '"cplusplus_14.hpp"'
+cflags: -std=c++14
+@
+@tangle gcc_cplusplus_17.fpc
+Description: C++17 required
+includes: '"cplusplus_17.hpp"'
+cflags: -std=c++17
+@
+@tangle gcc_cplusplus_20.fpc
+Description: C++20 required
+includes: '"cplusplus_20.hpp"'
+cflags: -std=c++20
+@
+@tangle msvc_cplusplus_11.fpc
+Description: C++11 required
+includes: '"cplusplus_11.hpp"'
+cflags: -std:c++11
+@
+@tangle msvc_cplusplus_14.fpc
+Description: C++14 required
+includes: '"cplusplus_14.hpp"'
+cflags: -std:c++14
+@
+@tangle msvc_cplusplus_17.fpc
+Description: C++17 required
+includes: '"cplusplus_17.hpp"'
+cflags: -std:c++17
+@
+@tangle msvc_cplusplus_20.fpc
+Description: C++20 required
+includes: '"cplusplus_20.hpp"'
+cflags: -std:c++20
+@
 
