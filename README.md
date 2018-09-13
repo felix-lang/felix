@@ -169,12 +169,12 @@ var id = Seqs
   )]
 ;
 ```
-With the standard <span style='color:green;'>reggexp</span> grammar we can generate the
+With the standard regexp grammar we can generate the
 combinators and thus calls to Google RE2 using 
 the regexp DSSL:
 
-<pre style='color:red;'>
-<span style='color:blue;'>regdef</span> digit = "9";
+<pre style='color:green;'>
+regdef digit = "9";
 regdef letter = "x";
 regdef us = "_";
 regdef id = (us|letter)(letter|digit|us)*;
