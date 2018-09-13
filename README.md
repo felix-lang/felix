@@ -103,8 +103,17 @@ Functional programming uses _recursion_ to decode
 inductive data types, especially _lists_, a degenerate
 form of _trees_.
 
+```
+var out = fold_left 
+  (fun (acc:int) (elt:int) => acc + elt) 
+  0
+  ([1,2,3,4])
+;
+  
+```
+
 #### Purely Cofunctional Programming
-In Felix imperative programming is done with statements
+In Felix <span style='color:red;'>imperative</span> programming is done with statements
 and procedures, but procedures are a special case
 of coroutines. Any unit procedure can be spawned
 as a _fibre_ or _lighweight thread_ which communicates
@@ -173,12 +182,12 @@ With the standard regexp grammar we can generate the
 combinators and thus calls to Google RE2 using 
 the regexp DSSL:
 
-<pre style='color:green;'>
+```
 regdef digit = "9";
 regdef letter = "x";
 regdef us = "_";
 regdef id = (us|letter)(letter|digit|us)*;
-</pre>
+```
 
 which is much better than the string form:
 ```
