@@ -38,7 +38,7 @@ self-tail call elimination.
 Felix generates optimised C++ which is then compiled and optimised
 again by your system C++ compiler.
 
-## C and C++ embedding
+### C and C++ embedding
 
 Felix is a C++ code generator specifically designed so that 
 all your favourite C and C++ libraries can be embedded
@@ -80,7 +80,7 @@ println$ *v.stl_begin;
 ```
 
 ### Type System based on Algebra
-In particular, Felix uses a category theoretic model
+Felix uses a category theoretic model
 of types which includes products (tuples etc), coproducts 
 (variants etc), exponentials (closures), recursion, and pointers,
 _as well_ as providing both (unenforced) purely functional
@@ -89,18 +89,21 @@ and purely cofunctional (control flow) handling of
 cofunctional types.
 
 
-### Purely Functional Programming 
+#### Purely Functional Programming 
 With _parametric polymorphism_, _higher order functions_,
 _lexically scoped closures_, and _garbage collection_.
+Mutation is still possible by use of _uniqueness typing_
+which provides _move semantics_.
 
 Felix has both C++ style _ad hoc polymorphism_ with
-overloading and also Haskell style _type classes_.
+overloading and also Haskell style _type classes_,
+(what would be called _concepts_ in C++).
 
 Functional programming uses _recursion_ to decode
 inductive data types, especially _lists_, a degenerate
 form of _trees_.
 
-### Purely Cofunctional Programming
+#### Purely Cofunctional Programming
 In Felix imperative programming is done with statements
 and procedures, but procedures are a special case
 of coroutines. Any unit procedure can be spawned
@@ -117,7 +120,7 @@ form of _control flow graphs_.
 
 ### Duality Bridges
 Felix provides duality bridges. Pointers in the imperative
-model are dual to recursion in the functional model.
+model are dual to fix points of recursive types in the functional model.
 Infinte loops and continuation passing via channels in coroutines 
 are dual to recursion in the functional model.
 
@@ -170,12 +173,13 @@ With the standard regexp grammar we can generate the
 combinators and thus calls to Google RE2 using 
 the regexp DSSL:
 
-```
-regdef digit = "9";
+<pre>
+<span style='color:blue'>regdef</span> digit = "9";
 regdef letter = "x";
 regdef us = "_";
 regdef id = (us|letter)(letter|digit|us)*;
-```
+</pre>
+
 which is much better than the string form:
 ```
 (?:\x5F|[x])(?:[x]|[9]|\x5F)*
