@@ -174,7 +174,7 @@ combinators and thus calls to Google RE2 using
 the regexp DSSL:
 
 <pre>
-<span style='color:blue'>regdef</span> digit = "9";
+<span style='color:blue;'>regdef</span> digit = "9";
 regdef letter = "x";
 regdef us = "_";
 regdef id = (us|letter)(letter|digit|us)*;
