@@ -38,6 +38,14 @@ self-tail call elimination.
 Felix generates optimised C++ which is then compiled and optimised
 again by your system C++ compiler.
 
+Compiler     |  Ack   |  Takfp
+-------------|--------|-----------
+Felix/clang  |  3.71  |  6.23
+Clang/C++    |  3.95  |  6.29
+Felix/gcc    |  2.34  |  6.60
+Gcc/C++      |  2.25  |  6.25
+Ocaml        |  2.93  |  8.41
+ |
 ### C and C++ embedding
 
 Felix is a C++ code generator specifically designed so that 
@@ -79,7 +87,22 @@ println$ *v.stl_begin;
 
 ```
 
+### Simple Generics
+Just don't give the argument type.
+```
+// overloads
+fun f (x:int) =>  x + 1;
+fun f (x:string) => x + "!";
+fun f (x:double) => x +42.1;
+
+// generics
+fun g (x) => f (f x);
+println$ g 1, g "hello";
+println$ _map f (1,"hello",2.0);
+``
+
 ### Type System based on Algebra
+
 Felix uses a category theoretic model
 of types which includes products (tuples etc), coproducts 
 (variants etc), exponentials (closures), recursion, and pointers,
@@ -90,6 +113,7 @@ cofunctional types.
 
 
 #### Purely Functional Programming 
+
 With _parametric polymorphism_, _higher order functions_,
 _lexically scoped closures_, and _garbage collection_.
 Mutation is still possible by use of _uniqueness typing_
@@ -99,11 +123,6 @@ Felix has both C++ style _ad hoc polymorphism_ with
 overloading and also Haskell style _type classes_,
 (what would be called _concepts_ in C++).
 
-Functional programming uses _recursion_ to decode
-inductive data types, especially _lists_, a degenerate
-form of _trees_.
-
-```
 var out = fold_left 
   (fun (acc:int) (elt:int) => acc + elt) 
   0
@@ -112,44 +131,14 @@ var out = fold_left
   
 ```
 
-#### Purely Cofunctional Programming
+### Coroutines 
+
 In Felix imperative programming is done with statements
 and procedures, but procedures are a special case
 of coroutines. Any unit procedure can be spawned
 as a _fibre_ or _lighweight thread_ which communicates
 with other fibres using _synchronous channels_.
 
-Coroutines which depend only on channel I/O and
-have no side-effects are pure, __dual__ to the notion
-of a pure function.
-
-Coroutines use _iteration_ to decode coinductive
-data types, especially _streams_, a degenerate
-form of _control flow graphs_.
-
-### Duality Bridges
-Felix provides duality bridges. Pointers in the imperative
-model are dual to fix points of recursive types in the functional model.
-Infinte loops and continuation passing via channels in coroutines 
-are dual to recursion in the functional model.
-
-Felix provides bridges to lift functional code to the
-cofunctional model and drop it back again, so you can
-program with both functions and continuations and switch
-models. For example the function chain:
-
-```
-f . g . h 
-```
-can be lifted to a pipeline:
-
-```
-function f |-> function g |-> function h 
-```
-
-equivalent to a state monad: the pipeline processes
-an infinite stream of values, whereas the function
-composition has to be mapped over a finite list tail.
 
 ### User Domain Specific Sub-Languages
 
