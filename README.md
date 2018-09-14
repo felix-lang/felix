@@ -89,6 +89,7 @@ println$ *v.stl_begin;
 ### Simple Generics
 
 Just don't give the argument type.
+
 ```
 // overloads
 fun f (x:int) =>  x + 1;
