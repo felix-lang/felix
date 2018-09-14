@@ -86,21 +86,83 @@ v.push_back 42;
 println$ *v.stl_begin;
 ```
 
+### Overloading
+
+Ad hoc polymorphism.
+
+```
+// overloads
+fun f (x:double) => x +42.1;
+fun f (x:int) =>  x + 1;
+fun f (x:string) => x + "!";
+```
+
 ### Simple Generics
 
 Just don't give the argument type.
 
 ```
-// overloads
-fun f (x:int) =>  x + 1;
-fun f (x:string) => x + "!";
-fun f (x:double) => x +42.1;
-
 // generics
 fun g (x) => f (f x);
 println$ g 1, g "hello";
 println$ _map f (1,"hello",2.0);
 ```
+
+### Type Classes
+
+A better way of overloading:
+
+```
+class Eq[T] {
+  virtual fun == T * T -> T;
+  fun != (x:T, y:T) => not (x == y);
+}
+instance Eq[int] {
+  fun == : int * int -> int = "$1==$2"; //from C++
+}
+```
+
+### Products
+
+Aggregates
+
+```
+1,"hello",4.2 // tuple
+1,2,3,4       // array
+(x=1,y=2)     // record
+struct X { a:int; b:string } // struct
+```
+
+### Coproducts
+
+Discriminated unions:
+
+```
+union Opt[T] =
+| Some of T
+| None
+;
+```
+
+### Pattern matching
+
+```
+match x with
+| Some x => println$ x; 
+| None => println "NONE";
+endmatch;
+``` 
+
+### Pointers
+
+The only way to store a value. Felix has no references or
+lvalues. Pointers are better.
+
+```
+var x = 1;
+&x <- 2;
+```
+
 
 ### Type System based on Algebra
 
@@ -237,6 +299,12 @@ device toBuffer = function (fun (s:string)=> Buffer s);
 #(tests |-> toBuffer |-> parens |-> sayresult);
 
 ```
+
+### Graphics
+
+Felix has a builtin library for GUIs based on SDL2:
+
+![Felix the cat](/src/web/images/graphics_demo.jpg)
 
 ## Getting Started
 
