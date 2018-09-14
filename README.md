@@ -113,7 +113,7 @@ var out = fold_left
 ```
 
 #### Purely Cofunctional Programming
-In Felix <span style='color:red;'>imperative</span> programming is done with statements
+In Felix imperative programming is done with statements
 and procedures, but procedures are a special case
 of coroutines. Any unit procedure can be spawned
 as a _fibre_ or _lighweight thread_ which communicates
@@ -192,6 +192,59 @@ regdef id = (us|letter)(letter|digit|us)*;
 which is much better than the string form:
 ```
 (?:\x5F|[x])(?:[x]|[9]|\x5F)*
+```
+
+### Chips and Circuits DSSL
+This DSSL provides a syntactic model of coroutines as chips,
+and the topology of channel connections between these chips
+as circults. The code below is an advanced combination
+of this model, pipelines, and uses the fixpoint operator
+for recursion, to build a simple parser.
+
+```
+include "std/strings/recognisers";
+include "std/control/chips";
+
+open BaseChips;
+open Recognisers;
+
+device L = match_string "(";
+device R = match_string ")";
+device E = match_string "E";
+
+// Grammar:
+// p = epsilon
+// p = (p)p
+// s = pE
+var p = fix (proc (q:iochip_t[Buffer,Buffer]) 
+  (io: (
+    inp: %<Buffer,
+    out: %>Buffer
+  )) ()
+ {
+   device y = 
+     tryall_list ([
+       epsilon[Buffer],
+       L |-> q |-> R |-> q
+     ])
+   ;
+   circuit
+     wire io.inp to y.inp
+     wire io.out to y.out
+   endcircuit
+});
+
+device parens = p |-> E;
+
+device sayresult = procedure (proc (x:Buffer) {
+  println$ "Test: End pos=" + x.str; })
+;
+
+device tests = source_from_list (["(()(()))E", "E", "()E"]);
+device toBuffer = function (fun (s:string)=> Buffer s);
+
+#(tests |-> toBuffer |-> parens |-> sayresult);
+
 ```
 
 ## Getting Started
