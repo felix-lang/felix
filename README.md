@@ -390,4 +390,3 @@ mailto:felix-lang@googlegroups.com
 Felix is Free For Any Use (FFAU)/Public Domain.
 
 
-![Felix the cat](/src/web/images/FelixWork.jpg)
