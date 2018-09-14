@@ -45,7 +45,7 @@ Clang/C++    |  3.95  |  6.29
 Felix/gcc    |  2.34  |  6.60
 Gcc/C++      |  2.25  |  6.25
 Ocaml        |  2.93  |  8.41
- |
+
 ### C and C++ embedding
 
 Felix is a C++ code generator specifically designed so that 
@@ -84,10 +84,10 @@ fun deref[T] : viterator[T] -> T = "*$1";
 var v = vector[int]();
 v.push_back 42;
 println$ *v.stl_begin;
-
 ```
 
 ### Simple Generics
+
 Just don't give the argument type.
 ```
 // overloads
@@ -99,7 +99,7 @@ fun f (x:double) => x +42.1;
 fun g (x) => f (f x);
 println$ g 1, g "hello";
 println$ _map f (1,"hello",2.0);
-``
+```
 
 ### Type System based on Algebra
 
@@ -123,6 +123,7 @@ Felix has both C++ style _ad hoc polymorphism_ with
 overloading and also Haskell style _type classes_,
 (what would be called _concepts_ in C++).
 
+```
 var out = fold_left 
   (fun (acc:int) (elt:int) => acc + elt) 
   0
