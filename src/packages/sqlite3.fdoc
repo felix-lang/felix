@@ -3,7 +3,7 @@
 @tangler sqlite3.flx             = share/lib/std/db/sqlite3.flx
 
 @tangler unix_sqlite3.fpc        = $PWD/src/config/unix/sqlite3.fpc
-@tangler win32_sqlite3.fpc       = $PWD/src/config/win32/sqlite3.fpc
+@tangler win_sqlite3.fpc         = $PWD/src/config/win/sqlite3.fpc
 
 @tangler flx_sqlite3_config.hpp  = share/lib/rtl/flx_sqlite3_config.hpp
 @tangler flx_sqlite3.hpp         = share/lib/rtl/flx_sqlite3.hpp
@@ -445,7 +445,7 @@ srcdir: src/sqlite3
 src: sqlite3\.c
 @
 
-@tangle win32_sqlite3.fpc
+@tangle win_sqlite3.fpc
 provides_dlib: /DEFAULTLIB:flx_sqlite3_dynamic
 provides_slib: /DEFAULTLIB:flx_sqlite3_static
 includes: "<flx_sqlite3.hpp>"
