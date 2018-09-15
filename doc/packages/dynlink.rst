@@ -6,23 +6,23 @@ Dynamic Linker
 ==============
 
 
-====================== =====================================
-key                    file                                  
-====================== =====================================
-flx_dl.h               share/lib/rtl/flx_dl.h                
-flx_dlopen.hpp         share/lib/rtl/flx_dlopen.hpp          
-flx_dlopen.cpp         share/src/dynlink/flx_dlopen.cpp      
-flx_dynlink.hpp        share/lib/rtl/flx_dynlink.hpp         
-flx_dynlink.cpp        share/src/dynlink/flx_dynlink.cpp     
-dynlink.flx            share/lib/std/program/dynlink.flx     
-config_unix_dl.fpc     $PWD/src/config/unix/dl.fpc           
-config_macosx_dl.fpc   $PWD/src/config/macosx/dl.fpc         
-config_win32_dl.fpc    $PWD/src/config/win32/dl.fpc          
-unix_flx_dynlink.fpc   $PWD/src/config/unix/flx_dynlink.fpc  
-win32_flx_dynlink.fpc  $PWD/src/config/win32/flx_dynlink.fpc 
-flx_dynlink_config.hpp share/lib/rtl/flx_dynlink_config.hpp  
-flx_dynlink.py         $PWD/buildsystem/flx_dynlink.py       
-====================== =====================================
+====================== ====================================
+key                    file                                 
+====================== ====================================
+flx_dl.h               share/lib/rtl/flx_dl.h               
+flx_dlopen.hpp         share/lib/rtl/flx_dlopen.hpp         
+flx_dlopen.cpp         share/src/dynlink/flx_dlopen.cpp     
+flx_dynlink.hpp        share/lib/rtl/flx_dynlink.hpp        
+flx_dynlink.cpp        share/src/dynlink/flx_dynlink.cpp    
+dynlink.flx            share/lib/std/program/dynlink.flx    
+config_unix_dl.fpc     $PWD/src/config/unix/dl.fpc          
+config_macosx_dl.fpc   $PWD/src/config/macosx/dl.fpc        
+config_win_dl.fpc      $PWD/src/config/win/dl.fpc           
+unix_flx_dynlink.fpc   $PWD/src/config/unix/flx_dynlink.fpc 
+win_flx_dynlink.fpc    $PWD/src/config/win/flx_dynlink.fpc  
+flx_dynlink_config.hpp share/lib/rtl/flx_dynlink_config.hpp 
+flx_dynlink.py         $PWD/buildsystem/flx_dynlink.py      
+====================== ====================================
 
 
 
@@ -1534,7 +1534,7 @@ Dynamic Linkage support
 
 .. code-block:: fpc
 
-  //[config_win32_dl.fpc]
+  //[config_win_dl.fpc]
   Name: dl
   Description: dynamic loading support
 
@@ -1556,7 +1556,7 @@ Dynamic Linkage support
 
 .. code-block:: fpc
 
-  //[win32_flx_dynlink.fpc]
+  //[win_flx_dynlink.fpc]
   Name: flx_dynlink
   Description: Felix Dynamic loading support
   provides_dlib: /DEFAULTLIB:flx_dynlink_dynamic

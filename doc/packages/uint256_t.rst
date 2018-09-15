@@ -4,14 +4,19 @@ Package: src/packages/uint256_t.fdoc
 Jason Lee's uint256_t library
 =============================
 
-=================== =======================================
-key                 file                                    
-=================== =======================================
-unix_uint256_t.fpc  $PWD/src/config/unix/flx_uint256_t.fpc  
-win32_uint256_t.fpc $PWD/src/config/win32/flx_uint256_t.fpc 
-flx_uint256_t.py    $PWD/buildsystem/flx_uint256_t.py       
-=================== =======================================
+================== ======================================
+key                file                                   
+================== ======================================
+unix_uint256_t.fpc $PWD/src/config/unix/flx_uint256_t.fpc 
+win_uint256_t.fpc  $PWD/src/config/win/flx_uint256_t.fpc  
+flx_uint256_t.py   $PWD/buildsystem/flx_uint256_t.py      
+================== ======================================
 
+
+Main code
+=========
+
+The code is in src/uint256_t.
 
 
 Config
@@ -35,7 +40,7 @@ Config
 
 .. code-block:: fpc
 
-  //[win32_uint256_t.fpc]
+  //[win_uint256_t.fpc]
   Name: uint256_t
   Description: Jason Lee's uint256_t library
   provides_dlib: /DEFAULTLIB:flx_uint256_t_dynamic

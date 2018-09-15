@@ -10,7 +10,7 @@ key                file
 ================== ================================
 re2.py             $PWD/buildsystem/re2.py          
 unix_re2.fpc       $PWD/src/config/unix/re2.fpc     
-win32_re2.fpc      $PWD/src/config/win32/re2.fpc    
+win_re2.fpc        $PWD/src/config/win/re2.fpc      
 flx_re2_config.hpp share/lib/rtl/flx_re2_config.hpp 
 ================== ================================
 
@@ -685,7 +685,7 @@ Config
 
 .. code-block:: fpc
 
-  //[win32_re2.fpc]
+  //[win_re2.fpc]
   Name: Re2
   Description: Google Re2 regexp library
   provides_dlib: /DEFAULTLIB:flx_re2_dynamic

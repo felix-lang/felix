@@ -20,7 +20,7 @@ demux_unix.fpc    $PWD/src/config/unix/demux.fpc
 demux_linux.fpc   $PWD/src/config/linux/demux.fpc   
 demux_solaris.fpc $PWD/src/config/solaris/demux.fpc 
 demux_macosx.fpc  $PWD/src/config/macosx/demux.fpc  
-demux_win32.fpc   $PWD/src/config/win32/demux.fpc   
+demux_win.fpc     $PWD/src/config/win/demux.fpc     
 demux_msys.fpc    $PWD/src/config/msys/demux.fpc    
 demux_cygwin.fpc  $PWD/src/config/cygwin/demux.fpc  
 ================= =================================
@@ -124,7 +124,7 @@ demux_cygwin.fpc  $PWD/src/config/cygwin/demux.fpc
 
 .. code-block:: fpc
 
-  //[demux_win32.fpc]
+  //[demux_win.fpc]
   Name: demux
   Description: Event handling (windows event ports with msvc)
   Comment: Generated during configuration

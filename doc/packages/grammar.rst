@@ -421,7 +421,8 @@ C binding technology
             (if (eq? 'none _5)
               (if (memv 'Virtual _1)
                 'Virtual
-                 `(StrTemplate ,(string-append "(#0) ::" name "($a)"))
+                 ;; `(StrTemplate ,(string-append "(#0) ::" name "($a)"))
+                 `(StrTemplate ,(string-append "(#0) " name "($a)")) ;; the :: doesn't work cause it could be a macro!
                )
                (second _5))
           )

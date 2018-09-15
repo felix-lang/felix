@@ -5,14 +5,14 @@ Package: src/packages/judy.fdoc
 Judy Arrays
 ===========
 
-=============== ====================================
-key             file                                 
-=============== ====================================
-judy.py         $PWD/buildsystem/judy.py             
-unix32_judy.fpc $PWD/src/config/unix/unix32/judy.fpc 
-unix64_judy.fpc $PWD/src/config/unix/unix64/judy.fpc 
-win32_judy.fpc  $PWD/src/config/win32/judy.fpc       
-=============== ====================================
+=============== ===============================
+key             file                            
+=============== ===============================
+judy.py         $PWD/buildsystem/judy.py        
+unix32_judy.fpc $PWD/src/config/unix32/judy.fpc 
+unix64_judy.fpc $PWD/src/config/unix64/judy.fpc 
+win64_judy.fpc  $PWD/src/config/win64/judy.fpc  
+=============== ===============================
 
 
 
@@ -156,7 +156,7 @@ def build_runtime(phase):
 
 .. code-block:: fpc
 
-  //[win32_judy.fpc]
+  //[win64_judy.fpc]
   Name: Judy WIN32 64 BIT
   Description: Judy arrays
   provides_dlib: /DEFAULTLIB:judy_dynamic

@@ -629,11 +629,11 @@ Bounded Total Orders.
 
   //[tord.flx]
   class UpperBoundTotalOrder[T] {
-    inherit Pord[T];
+    inherit Tord[T];
     virtual fun maxval: 1 -> T = "::std::numeric_limits<?1>::max()";
   }
   class LowerBoundTotalOrder[T] {
-    inherit Pord[T];
+    inherit Tord[T];
     virtual fun minval: 1 -> T = "::std::numeric_limits<?1>::min()";
   }
   class BoundTotalOrder[T] {

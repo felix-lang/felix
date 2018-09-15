@@ -5,19 +5,19 @@ Package: src/packages/strutil.fdoc
 String Support Utilities.
 =========================
 
-====================== =====================================
-key                    file                                  
-====================== =====================================
-flx_strutil.hpp        share/lib/rtl/flx_strutil.hpp         
-flx_strutil.cpp        share/src/strutil/flx_strutil.cpp     
-flx_i18n.hpp           share/lib/rtl/flx_i18n.hpp            
-flx_i18n.cpp           share/src/strutil/flx_i18n.cpp        
-unix_flx_strutil.fpc   $PWD/src/config/unix/flx_strutil.fpc  
-win32_flx_strutil.fpc  $PWD/src/config/win32/flx_strutil.fpc 
-flx_i18n.fpc           $PWD/src/config/flx_i18n.fpc          
-flx_strutil_config.hpp share/lib/rtl/flx_strutil_config.hpp  
-flx_strutil.py         $PWD/buildsystem/flx_strutil.py       
-====================== =====================================
+====================== ====================================
+key                    file                                 
+====================== ====================================
+flx_strutil.hpp        share/lib/rtl/flx_strutil.hpp        
+flx_strutil.cpp        share/src/strutil/flx_strutil.cpp    
+flx_i18n.hpp           share/lib/rtl/flx_i18n.hpp           
+flx_i18n.cpp           share/src/strutil/flx_i18n.cpp       
+unix_flx_strutil.fpc   $PWD/src/config/unix/flx_strutil.fpc 
+win_flx_strutil.fpc    $PWD/src/config/win/flx_strutil.fpc  
+flx_i18n.fpc           $PWD/src/config/flx_i18n.fpc         
+flx_strutil_config.hpp share/lib/rtl/flx_strutil_config.hpp 
+flx_strutil.py         $PWD/buildsystem/flx_strutil.py      
+====================== ====================================
 
 
 String utilities
@@ -318,7 +318,7 @@ String utilities
 
 .. code-block:: fpc
 
-  //[win32_flx_strutil.fpc]
+  //[win_flx_strutil.fpc]
   Name: flx_strutil
   Description: String utilities
   provides_dlib: /DEFAULTLIB:flx_strutil_dynamic

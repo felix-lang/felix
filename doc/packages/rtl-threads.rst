@@ -46,14 +46,14 @@ flx_bound_queue.fpc        $PWD/src/config/flx_bound_queue.fpc
 flx_pthread_config.hpp     share/lib/rtl/flx_pthread_config.hpp            
 ========================== ===============================================
 
-===================== =====================================
-key                   file                                  
-===================== =====================================
-unix_flx_pthread.fpc  $PWD/src/config/unix/flx_pthread.fpc  
-win32_flx_pthread.fpc $PWD/src/config/win32/flx_pthread.fpc 
-linux_pthread.fpc     $PWD/src/config/linux/pthread.fpc     
-default_pthread.fpc   $PWD/src/config/pthread.fpc           
-===================== =====================================
+==================== ====================================
+key                  file                                 
+==================== ====================================
+unix_flx_pthread.fpc $PWD/src/config/unix/flx_pthread.fpc 
+win_flx_pthread.fpc  $PWD/src/config/win/flx_pthread.fpc  
+linux_pthread.fpc    $PWD/src/config/linux/pthread.fpc    
+default_pthread.fpc  $PWD/src/config/pthread.fpc          
+==================== ====================================
 
 
 Pthreads
@@ -2035,7 +2035,7 @@ Configuration Database
 
 .. code-block:: fpc
 
-  //[win32_flx_pthread.fpc]
+  //[win_flx_pthread.fpc]
   Name: Flx_pthread
   Description: Felix Pre-emptive threading support
   

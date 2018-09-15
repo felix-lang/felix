@@ -18,7 +18,7 @@ flx_exceptions_config.hpp share/lib/rtl/flx_exceptions_config.hpp
 exceptions.fsyn           share/lib/std/control/exceptions.fsyn     
 flx_exceptions.py         $PWD/buildsystem/flx_exceptions.py        
 unix_flx_exceptions.fpc   $PWD/src/config/unix/flx_exceptions.fpc   
-win32_flx_exceptions.fpc  $PWD/src/config/win32/flx_exceptions.fpc  
+win_flx_exceptions.fpc    $PWD/src/config/win/flx_exceptions.fpc    
 ========================= =========================================
 
 
@@ -616,7 +616,7 @@ Exception Grammar
 
 .. code-block:: fpc
 
-  //[win32_flx_exceptions.fpc]
+  //[win_flx_exceptions.fpc]
   Name: flx
   Description: Felix exceptions
   provides_dlib: /DEFAULTLIB:flx_exceptions_dynamic

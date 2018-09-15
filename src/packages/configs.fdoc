@@ -36,7 +36,9 @@
 @tangler msvc_cplusplus_17.fpc                     = $PWD/src/config/msvc/cplusplus_17.fpc
 @tangler msvc_cplusplus_20.fpc                     = $PWD/src/config/msvc/cplusplus_20.fpc
 
+@h1 test stuff
 
+@image hello.jpg
 
 @h1 OSX
 @tangle macosx64_demux_sockety_config.hpp 

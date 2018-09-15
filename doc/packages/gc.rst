@@ -19,7 +19,7 @@ rtti.flx                        share/lib/std/felix/rtti.flx
 flx_gc.flx                      share/lib/std/felix/flx_gc.flx                
 flx_gc.py                       $PWD/buildsystem/flx_gc.py                    
 unix_flx_gc.fpc                 $PWD/src/config/unix/flx_gc.fpc               
-win32_flx_gc.fpc                $PWD/src/config/win32/flx_gc.fpc              
+win_flx_gc.fpc                  $PWD/src/config/win/flx_gc.fpc                
 flx_gc_config.hpp               share/lib/rtl/flx_gc_config.hpp               
 =============================== =============================================
 
@@ -2570,9 +2570,9 @@ Configuration Database Records
 
 .. code-block:: fpc
 
-  //[win32_flx_gc.fpc]
+  //[win_flx_gc.fpc]
   Name: flx_gc
-  Platform: Win32
+  Platform: Windows
   Description: Felix default garbage collector (Windows)
   provides_dlib: /DEFAULTLIB:flx_gc_dynamic
   provides_slib: /DEFAULTLIB:flx_gc_static

@@ -5,16 +5,16 @@ Package: src/packages/rparse.fdoc
 Felix library add ons
 =====================
 
-================ ================================
-key              file                             
-================ ================================
-rparse.flx       share/src/flxlibs/rparse.flx     
-unix_rparse.fpc  $PWD/src/config/unix/rparse.fpc  
-win32_rparse.fpc $PWD/src/config/win32/rparse.fpc 
-build_rparse.sh  $PWD/build_rparse.sh             
-test_rparse.sh   $PWD/test_rparse.sh              
-testrparse.flx   $PWD/testrparse.flx              
-================ ================================
+=============== ===============================
+key             file                            
+=============== ===============================
+rparse.flx      share/src/flxlibs/rparse.flx    
+unix_rparse.fpc $PWD/src/config/unix/rparse.fpc 
+win_rparse.fpc  $PWD/src/config/win/rparse.fpc  
+build_rparse.sh $PWD/build_rparse.sh            
+test_rparse.sh  $PWD/test_rparse.sh             
+testrparse.flx  $PWD/testrparse.flx             
+=============== ===============================
 
 
 Synopsis
@@ -239,7 +239,7 @@ Resource files
 
 .. code-block:: fpc
 
-  //[win32_rparse.fpc]
+  //[win_rparse.fpc]
   Description: Respectful Parser, binary edition
   Location: Part of the standard library
   provides_slib: /DEFAULTLIB:librparse_static

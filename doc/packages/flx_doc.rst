@@ -668,6 +668,17 @@ with specified heading and pattern match.
           println$ "-" * a.len.int;
           println$ "";
   
+        elif c == "image" do
+          println$ "";
+          match mode with
+          | `Code => emit_code();
+          | _ => ;
+          endmatch;
+          println$ "";
+          println$ ".. image:: " + a;
+          println$ "";
+  
+       
         elif c == "tangle" do
           println$ "";
           var lexer = lexer_from_filename a;

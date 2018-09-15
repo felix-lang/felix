@@ -125,7 +125,17 @@ Operations on Real and Complex numbers.
      const LINFINITY : ldouble = "(long double)INFINITY" requires C99_headers::math_h;
   }
   
+  fun isinf[T in reals] : T -> bool = "::std::isinf($1)" requires Cxx_headers::cmath;
+  fun isfinite[T in reals] : T -> bool = "::std::isfinite($1)" requires Cxx_headers::cmath;
+  fun isnan[T in reals] : T -> bool = "::std::isnan($1)" requires Cxx_headers::cmath;
   
+  ctor[T in ints] float : T = "(float)($1)";
+  ctor[T in ints] double  : T = "(double)($1)";
+  ctor[T in ints] ldouble : T = "(long double)($1)";
+  
+  ctor float : string = "::std::stof($1)";
+  ctor double  : string = "::std::stod($1)";
+  ctor ldouble : string = "::std::stold($1)";
   
   
   open class Fcomplex
@@ -332,8 +342,8 @@ Floating Formats
   
     //$ Default format float, also supports nan, +inf, -inf.
     noinline fun str(x:float):string =>
-      if Float::isnan x then "nan"
-      elif Float::isinf x then
+      if isnan x then "nan"
+      elif isinf x then
         if x > 0.0f then "+inf" else "-inf" endif
       else xstr x
       endif
@@ -345,8 +355,8 @@ Floating Formats
   
     //$ Default format double, also supports nan, +inf, -inf.
     noinline fun str(x:double):string =>
-      if Double::isnan x then "nan"
-      elif Double::isinf x then
+      if isnan x then "nan"
+      elif isinf x then
         if x > 0.0 then "+inf" else "-inf" endif
       else xstr x
       endif
@@ -358,8 +368,8 @@ Floating Formats
   
     //$ Default format long double, also supports nan, +inf, -inf.
     noinline fun str(x:ldouble):string =>
-      if Ldouble::isnan x then "nan"
-      elif Ldouble::isinf x then
+      if isnan x then "nan"
+      elif isinf x then
         if x > 0.0l then "+inf" else "-inf" endif
       else xstr x
       endif

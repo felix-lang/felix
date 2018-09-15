@@ -18,7 +18,7 @@ faio_timer.cpp      share/src/faio/faio_timer.cpp
 faio.py             $PWD/buildsystem/faio.py          
 timer.fpc           $PWD/src/config/timer.fpc         
 unix_faio.fpc       $PWD/src/config/unix/faio.fpc     
-win32_faio.fpc      $PWD/src/config/win32/faio.fpc    
+win_faio.fpc        $PWD/src/config/win/faio.fpc      
 flx_faio_config.hpp share/lib/rtl/flx_faio_config.hpp 
 =================== =================================
 
@@ -726,7 +726,7 @@ Faio Timer
 
 .. code-block:: fpc
 
-  //[win32_faio.fpc]
+  //[win_faio.fpc]
   Name: faio
   Description: Asynchronous I/O support
   provides_dlib: /DEFAULTLIB:faio_dynamic

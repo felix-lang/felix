@@ -5,21 +5,21 @@ Package: src/packages/embed.fdoc
 Driver Embedding Technology
 ===========================
 
-==================== ===================================
-key                  file                                
-==================== ===================================
-flx_world_config.hpp share/lib/rtl/flx_world_config.hpp  
-flx_world_config.cpp share/src/rtl/flx_world_config.cpp  
-flx_world.hpp        share/lib/rtl/flx_world.hpp         
-flx_world.cpp        share/src/rtl/flx_world.cpp         
-flx_async_world.hpp  share/lib/rtl/flx_async_world.hpp   
-flx_async_world.cpp  share/src/rtl/flx_async_world.cpp   
-flx_async.hpp        share/lib/rtl/flx_async.hpp         
-flx_async.cpp        share/src/flx_async/flx_async.cpp   
-flx_async.py         $PWD/buildsystem/flx_async.py       
-unix_flx_async.fpc   $PWD/src/config/unix/flx_async.fpc  
-win32_flx_async.fpc  $PWD/src/config/win32/flx_async.fpc 
-==================== ===================================
+==================== ==================================
+key                  file                               
+==================== ==================================
+flx_world_config.hpp share/lib/rtl/flx_world_config.hpp 
+flx_world_config.cpp share/src/rtl/flx_world_config.cpp 
+flx_world.hpp        share/lib/rtl/flx_world.hpp        
+flx_world.cpp        share/src/rtl/flx_world.cpp        
+flx_async_world.hpp  share/lib/rtl/flx_async_world.hpp  
+flx_async_world.cpp  share/src/rtl/flx_async_world.cpp  
+flx_async.hpp        share/lib/rtl/flx_async.hpp        
+flx_async.cpp        share/src/flx_async/flx_async.cpp  
+flx_async.py         $PWD/buildsystem/flx_async.py      
+unix_flx_async.fpc   $PWD/src/config/unix/flx_async.fpc 
+win_flx_async.fpc    $PWD/src/config/win/flx_async.fpc  
+==================== ==================================
 
 
 
@@ -1242,7 +1242,7 @@ Config
 
 .. code-block:: fpc
 
-  //[win32_flx_async.fpc]
+  //[win_flx_async.fpc]
   Name: flx_async
   Description: Async hook
   provides_dlib: /DEFAULTLIB:flx_async_dynamic

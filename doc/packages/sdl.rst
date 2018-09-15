@@ -62,13 +62,13 @@ macosx_sdl2_image.fpc $PWD/src/config/macosx/sdl2_image.fpc
 macosx_sdl2_ttf.fpc   $PWD/src/config/macosx/sdl2_ttf.fpc   
 ===================== =====================================
 
-==================== ====================================
-key                  file                                 
-==================== ====================================
-win32_sdl2.fpc       $PWD/src/config/win32/sdl2.fpc       
-win32_sdl2_image.fpc $PWD/src/config/win32/sdl2_image.fpc 
-win32_sdl2_ttf.fpc   $PWD/src/config/win32/sdl2_ttf.fpc   
-==================== ====================================
+================== ==================================
+key                file                               
+================== ==================================
+win_sdl2.fpc       $PWD/src/config/win/sdl2.fpc       
+win_sdl2_image.fpc $PWD/src/config/win/sdl2_image.fpc 
+win_sdl2_ttf.fpc   $PWD/src/config/win/sdl2_ttf.fpc   
+================== ==================================
 
 =================== ===================================
 key                 file                                
@@ -4690,7 +4690,7 @@ Package Configuration
 
 .. code-block:: fpc
 
-  //[win32_sdl2.fpc]
+  //[win_sdl2.fpc]
   Name: SDL2 
   Description: Simple Direct Media Layer 2.0
   cflags: /I\Users\skaller\Desktop\SDL2-2.0.3\include
@@ -4700,7 +4700,7 @@ Package Configuration
 
 .. code-block:: fpc
 
-  //[win32_sdl2_image.fpc]
+  //[win_sdl2_image.fpc]
   Name: SDL2_image
   Description: Simple Direct Media Layer 2.0: image loader
   cflags: /I\Users\skaller\Desktop\SDL2_image-2.0.0\include
@@ -4710,7 +4710,7 @@ Package Configuration
 
 .. code-block:: fpc
 
-  //[win32_sdl2_ttf.fpc]
+  //[win_sdl2_ttf.fpc]
   Name: SDL2_ttf
   Description: Simple Direct Media Layer 2.0: free type interface
   cflags: /I\Users\skaller\Desktop\SDL2_ttf-2.0.12\include

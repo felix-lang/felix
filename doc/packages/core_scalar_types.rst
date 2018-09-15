@@ -62,7 +62,6 @@ Synopsis
   include "std/scalar/number";
   include "std/scalar/char";
   
-  include "plat/float";
   include "std/scalar/float_format";
   include "std/scalar/float_math";
   include "std/scalar/quaternion";
