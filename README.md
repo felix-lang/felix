@@ -122,28 +122,6 @@ instance Eq[int] {
 }
 ```
 
-### Products
-
-Aggregates
-
-```
-1,"hello",4.2 // tuple
-1,2,3,4       // array
-(x=1,y=2)     // record
-struct X { a:int; b:string } // struct
-```
-
-### Coproducts
-
-Discriminated unions:
-
-```
-union Opt[T] =
-| Some of T
-| None
-;
-```
-
 ### Pattern matching
 
 ```
@@ -175,7 +153,7 @@ and purely cofunctional (control flow) handling of
 cofunctional types.
 
 
-#### Purely Functional Programming 
+### Purely Functional Programming 
 
 With _parametric polymorphism_, _higher order functions_,
 _lexically scoped closures_, and _garbage collection_.
@@ -215,7 +193,11 @@ These S-expressions are reduced to standard Felix AST terms.
 
 Combining the syntax extension ability with library code
 and C++ embedding allows definition of an _integrated_ Domain Specific
-__sub__-language of Felix. For example the following 
+__sub__-language of Felix. 
+
+### Regular Definition DSSL
+
+The following 
 code uses library _combinators_ and embedded Google RE2
 binding to specify a C identifier (with only `x` for letters
 and `9` for digits):

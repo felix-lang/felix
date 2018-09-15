@@ -15,4 +15,5 @@ Contents:
   regex
   sdl
   stl
-
+  sqlite3
+  ncurses

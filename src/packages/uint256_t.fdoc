@@ -3,6 +3,8 @@
 @tangler win_uint256_t.fpc          = $PWD/src/config/win/flx_uint256_t.fpc
 @tangler flx_uint256_t.py           = $PWD/buildsystem/flx_uint256_t.py
 
+@h1 Main code
+The code is in src/uint256_t.
 
 @h1 Config
 @tangle unix_uint256_t.fpc
