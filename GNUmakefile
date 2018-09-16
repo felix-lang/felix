@@ -173,9 +173,28 @@ flxg:
 	flx_build_flxg
 	cp build/flxg-tmp/flxg build/release/host/bin
 
+gcc_macosx:
+	# =========================================================
+	# prepare for gcc build on macosx
+	# =========================================================
+	flx_build_prep --target-dir=build/release --target-bin=gcc_macosx --source-dir=build/release \
+	       	--source-bin=host --clean-target-bin-dir --copy-compiler  \
+	       	--configure --compiler=gcc --os=macosx --bits=64 --debug
+
+	# =========================================================
+	# build gcc rtl on macosx
+	# =========================================================
+	${LPATH}=build/release/host/lib/rtl flx_build_rtl --target-dir=build/release --target-bin=gcc_macosx
+
+	# =========================================================
+	# build Felix with gcc rtl on macosx
+	# =========================================================
+	${LPATH}=build/release/gcc_macosx/lib/rtl flx_build_boot --target-dir=build/release --target-bin=gcc_macosx --build-all
+
+
 prep: 
 	# =========================================================
-	# copying ./src to build/release/share/src
+	# prepare for host build
 	# =========================================================
 	flx_build_prep --target-dir=build/release --target-bin=trial --source-dir=build/release \
 	       	--source-bin=host --clean-target-bin-dir --copy-compiler --copy-pkg-db \

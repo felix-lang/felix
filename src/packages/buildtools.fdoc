@@ -731,20 +731,20 @@ class FlxPrepBuild
       done
 
       // setup fpc's to copy: ORDER MATTERS!
-      var fpcs = ([ '(.*\\.fpc)']);
+      var fpcs = ([ '([-/]*\\.fpc)']);
       if cmd.os in ('linux','macosx') do  
-        fpcs +=  'unix'/'(.*\\.fpc)';
+        fpcs +=  'unix'/'([-/]*\\.fpc)';
       done
-      fpcs += cmd.os/'(.*\\.fpc)';
-      fpcs += cmd.os+cmd.bits/'(.*\\.fpc)';
-      fpcs += cmd.os/'(.*\\.fpc)';
+      fpcs += cmd.os/'([-/]*\\.fpc)';
+      fpcs += cmd.os+cmd.bits/'([-/]*\\.fpc)';
+      fpcs += cmd.os/'([-/]*\\.fpc)';
 
       // Felix platform macro
-      var fmacs = ([cmd.os+'/(.*\\.flxh)']);
+      var fmacs = ([cmd.os+'/([-/]*\\.flxh)']);
 
       // setup header files to copy
-      var headers = ([cmd.os+cmd.bits/cmd.compiler/'rtl'/'(.*\\.hpp)']);
-      headers += cmd.os+cmd.bits/'rtl'/'(.*\\.hpp)';
+      var headers = ([cmd.os+cmd.bits/cmd.compiler/'rtl'/'([-/]*\\.hpp)']);
+      headers += cmd.os+cmd.bits/'rtl'/'([=/]*\\.hpp)';
 
       // do the copying
       println$ 'Copying fpcs ..';
