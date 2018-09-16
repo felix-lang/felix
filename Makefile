@@ -45,22 +45,22 @@ tools:
 	flx --felix=wbuild.fpc --static -c -od build\release\host\bin src\tools\flx_build_boot.flx 
 
 target:
-	flx_build_prep --target-dir=build\release --target-bin=win32 --source-dir=build\release \
+	flx_build_prep --target-dir=build\release --target-bin=win --source-dir=build\release \
 	       	--source-bin=host --clean-target-bin-dir --copy-compiler --copy-pkg-db \
-	       	--copy-config-headers --toolchain=toolchain_msvc_win32 --debug
+	       	--copy-config-headers --toolchain=toolchain_msvc_win --debug
 	flx_build_flxg
-	copy build\flxg-tmp\flxg build\release\win32\bin\flxg.exe
-	flx_build_rtl --target-dir=build\release --target-bin=win32
-	flx_build_boot --target-dir=build\release --target-bin=win32 --build-toolchain-plugins
-	flx_build_boot --target-dir=build\release --target-bin=win32 --build-flx
-	flx_build_boot --target-dir=build\release --target-bin=win32 --build-flx-tools
-	flx_build_boot --target-dir=build\release --target-bin=win32 --build-tools
-	flx_build_boot --target-dir=build\release --target-bin=win32 --build-web-plugins
-	flx_build_boot --target-dir=build\release --target-bin=win32 --build-flx-web
+	copy build\flxg-tmp\flxg build\release\win\bin\flxg.exe
+	flx_build_rtl --target-dir=build\release --target-bin=win
+	flx_build_boot --target-dir=build\release --target-bin=win --build-toolchain-plugins
+	flx_build_boot --target-dir=build\release --target-bin=win --build-flx
+	flx_build_boot --target-dir=build\release --target-bin=win --build-flx-tools
+	flx_build_boot --target-dir=build\release --target-bin=win --build-tools
+	flx_build_boot --target-dir=build\release --target-bin=win --build-web-plugins
+	flx_build_boot --target-dir=build\release --target-bin=win --build-flx-web
 
 uproot:
 	cmd.exe /C rmdir /Q /S build\release\host
-	cmd.exe /C move build\release\win32 build\release\host
+	cmd.exe /C move build\release\win build\release\host
 
 mktestdir:
 	cmd.exe /C if not exist build\release\test mkdir build\release\test
@@ -86,5 +86,5 @@ guitest:
 	flx --felix=wbuild.fpc --indir=src\web\tutopt\sdlgui --regex=".*\.fdoc"
 
 install:
-	installscript\win32install.bat
+	installscript\wininstall.bat
 

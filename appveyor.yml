@@ -42,11 +42,11 @@ build_script:
   - nmake
 
 after_build:
-  - copy installscript\win32install.bat .
-  - copy installscript\win32setup.bat .
-  - python win32_make_set_FLX_VERSION.py > tmp.bat
+  - copy installscript\wininstall.bat .
+  - copy installscript\winsetup.bat .
+  - python win_make_set_FLX_VERSION.py > tmp.bat
   - tmp.bat
-  - 7z a felix-%FLX_VERSION%-msvc-win64.zip build\release\share build\release\host win32install.bat win32setup.bat hello.flx INSTALL > tmp.bat
+  - 7z a felix-%FLX_VERSION%-msvc-win64.zip build\release\share build\release\host wininstall.bat winsetup.bat hello.flx INSTALL > tmp.bat
 
 on_success:
   #- git config --global credential.helper store
