@@ -39,13 +39,13 @@ class FlxPluginSymbols
   proc addsymbols ()
   {
     static-link-plugin 
-      toolchain_clang_osx,
+      toolchain_clang_macosx,
       toolchain_iphoneos,
       toolchain_iphonesimulator,
       toolchain_clang_linux,
-      toolchain_gcc_osx,
+      toolchain_gcc_macosx,
       toolchain_gcc_linux,
-      toolchain_msvc_win32
+      toolchain_msvc_win
     ;
     // flx
     static-link-symbol dflx_create_thread_frame in plugin dflx;
@@ -3213,12 +3213,12 @@ include "std/felix/toolchain_clang_config";
 include "std/felix/toolchain_interface";
 
 
-include "std/felix/toolchain/clang_osx";
+include "std/felix/toolchain/clang_macosx";
 include "std/felix/toolchain/clang_iOS_generic";
 include "std/felix/toolchain/clang_linux";
-include "std/felix/toolchain/gcc_osx";
+include "std/felix/toolchain/gcc_macosx";
 include "std/felix/toolchain/gcc_linux";
-include "std/felix/toolchain/msvc_win32";
+include "std/felix/toolchain/msvc_win";
 
 
 open FlxCache;
@@ -3268,15 +3268,15 @@ class BootFlx
     var toolchain =
        match toolchain_name with
       
-       | "toolchain_clang_osx" => toolchain_clang_osx 
+       | "toolchain_clang_macosx" => toolchain_clang_macosx 
        // not required in bootstrap, but the ONLY way to check for type errors ..
        | "toolchain_iphoneos" => toolchain_clang_apple_iPhoneOS_armv7_arm64 
        | "toolchain_iphonesimulator" => toolchain_clang_apple_iPhoneSimulator
 
        | "toolchain_clang_linux" => toolchain_clang_linux
-       | "toolchain_gcc_osx" => toolchain_gcc_osx
+       | "toolchain_gcc_macosx" => toolchain_gcc_macosx
        | "toolchain_gcc_linux" => toolchain_gcc_linux
-       | "toolchain_msvc_win32" => toolchain_msvc_win32
+       | "toolchain_msvc_win" => toolchain_msvc_win
        | x => 
          Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] ( dll-name=x, setup-str="")
        endmatch

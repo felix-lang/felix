@@ -473,7 +473,7 @@ def write_script(buildroot,version):
     f.write(r"cp -r build/release/host/* /usr/local/lib/felix/felix-"+version+r"/host"+"\n")
     f.close()
 
-    f = open (Path("installscript") / "win32install.bat","w")
+    f = open (Path("installscript") / "wininstall.bat","w")
     f.write(r"@echo off")
     f.write(r"mkdir c:\usr\local\lib\felix\felix-"+version+r"\crap"+"\n")
     f.write(r"rmdir /S /Q c:\usr\local\lib\felix\felix-"+version+r""+"\n")
@@ -488,12 +488,12 @@ def write_script(buildroot,version):
     f.write(r"export LD_LIBRARY_PATH=/usr/local/lib/felix/felix-"+version+r"/host/lib/rtl:$LD_LIBRARY_PATH"+"\n")
     f.close()
 
-    f = open (Path("installscript") / "osxsetup.sh","w")
+    f = open (Path("installscript") / "macosxsetup.sh","w")
     f.write(r"export PATH=/usr/local/lib/felix/felix-"+version+r"/host/bin:$PATH"+"\n")
     f.write(r"export DYLD_LIBRARY_PATH=/usr/local/lib/felix/felix-"+version+r"/host/lib/rtl:$DYLD_LIBRARY_PATH"+"\n")
     f.close()
 
-    f = open (Path("installscript") / "win32setup.bat","w")
+    f = open (Path("installscript") / "winsetup.bat","w")
     f.write(r"@echo off"+"\n")
     f.write(r"set PATH=C:\usr\local\lib\felix\felix-"+version+r"\host\bin;C:\usr\local\lib\felix\felix-"+version+r"\host\lib\rtl;%PATH%"+"\n")
     f.close()

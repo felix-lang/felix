@@ -6,29 +6,29 @@
 @tangler flx_mklib.flx                = share/lib/std/felix/flx_mklib.flx
 
 @tangler gcc_linux.flx                = share/lib/std/felix/toolchain/gcc_linux.flx
-@tangler gcc_osx.flx                  = share/lib/std/felix/toolchain/gcc_osx.flx 
+@tangler gcc_macosx.flx                  = share/lib/std/felix/toolchain/gcc_macosx.flx 
 @tangler clang_linux.flx              = share/lib/std/felix/toolchain/clang_linux.flx
-@tangler clang_osx.flx                = share/lib/std/felix/toolchain/clang_osx.flx
+@tangler clang_macosx.flx                = share/lib/std/felix/toolchain/clang_macosx.flx
 @tangler clang_iOS_generic.flx        = share/lib/std/felix/toolchain/clang_iOS_generic.flx
-@tangler msvc_win32.flx               = share/lib/std/felix/toolchain/msvc_win32.flx
+@tangler msvc_win.flx               = share/lib/std/felix/toolchain/msvc_win.flx
 @tangler cygwin.fpc                   = $PWD/src/config/cygwin.fpc
 @tangler cygwin.flx                   = share/lib/std/cygwin/cygwin.flx
 
 @tangler toolchain_gcc_linux.flx      = share/lib/plugins/toolchain_gcc_linux.flx
-@tangler toolchain_gcc_osx.flx        = share/lib/plugins/toolchain_gcc_osx.flx 
+@tangler toolchain_gcc_macosx.flx        = share/lib/plugins/toolchain_gcc_macosx.flx 
 @tangler toolchain_clang_linux.flx    = share/lib/plugins/toolchain_clang_linux.flx
-@tangler toolchain_clang_osx.flx      = share/lib/plugins/toolchain_clang_osx.flx
+@tangler toolchain_clang_macosx.flx      = share/lib/plugins/toolchain_clang_macosx.flx
 @tangler toolchain_iphoneos.flx       = share/lib/plugins/toolchain_iphoneos.flx
 @tangler toolchain_iphonesimulator.flx= share/lib/plugins/toolchain_iphonesimulator.flx
-@tangler toolchain_msvc_win32.flx     = share/lib/plugins/toolchain_msvc_win32.flx
+@tangler toolchain_msvc_win.flx     = share/lib/plugins/toolchain_msvc_win.flx
 @tangler flx_plugin.flx               = share/lib/plugins/flx_plugin.flx
 
 @tangler build_flx_rtl_gcc_linux.fpc         = $PWD/src/config/build_flx_rtl_gcc_linux.fpc
-@tangler build_flx_rtl_gcc_osx.fpc           = $PWD/src/config/build_flx_rtl_gcc_osx.fpc
+@tangler build_flx_rtl_gcc_macosx.fpc           = $PWD/src/config/build_flx_rtl_gcc_macosx.fpc
 @tangler build_flx_rtl_clang_linux.fpc       = $PWD/src/config/build_flx_rtl_clang_linux.fpc
-@tangler build_flx_rtl_clang_osx.fpc         = $PWD/src/config/build_flx_rtl_clang_osx.fpc
+@tangler build_flx_rtl_clang_macosx.fpc         = $PWD/src/config/build_flx_rtl_clang_macosx.fpc
 @tangler build_flx_rtl_clang_iphoneos.fpc    = $PWD/src/config/build_flx_rtl_clang_iphoneos.fpc
-@tangler build_flx_rtl_msvc_win32.fpc        = $PWD/src/config/build_flx_rtl_msvc_win32.fpc
+@tangler build_flx_rtl_msvc_win.fpc        = $PWD/src/config/build_flx_rtl_msvc_win.fpc
 
 
 @h1 Toolchain support
@@ -957,12 +957,12 @@ object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t =
 @
 
 @h2 Object for gcc on OSX
-@tangle gcc_osx.flx
+@tangle gcc_macosx.flx
 include "std/felix/toolchain_interface";
 include "std/felix/toolchain_clang_config";
 include "std/felix/flx_cxx";
 
-object toolchain_gcc_osx (config:clang_config_t) implements toolchain_t = 
+object toolchain_gcc_macosx (config:clang_config_t) implements toolchain_t = 
 {
 
   var cxx_compile_warning_flags = list$ "-w",
@@ -982,7 +982,7 @@ object toolchain_gcc_osx (config:clang_config_t) implements toolchain_t =
     "-g"! "-c" ! "-O1" ! "-std=c++14" ! "-fno-common"! "-fno-strict-aliasing" !(cxx_compile_warning_flags+config.ccflags)
   ;
 
-  method fun whatami () => "toolchain_gcc_osx (version 2)";
+  method fun whatami () => "toolchain_gcc_macosx (version 2)";
   method fun host_os () => "OSX";
   method fun target_os () => "OSX";
   method fun cxx_compiler_vendor () => "GNU";
@@ -1440,12 +1440,12 @@ object toolchain_clang_linux (config:clang_config_t) implements toolchain_t =
 @
 
 @h2 Object for clang on OSX
-@tangle clang_osx.flx
+@tangle clang_macosx.flx
 include "std/felix/toolchain_interface";
 include "std/felix/toolchain_clang_config";
 include "std/felix/flx_cxx";
 
-object toolchain_clang_osx (config:clang_config_t) implements toolchain_t = 
+object toolchain_clang_macosx (config:clang_config_t) implements toolchain_t = 
 {
 
   var cxx_compile_warning_flags = list$ 
@@ -1471,7 +1471,7 @@ object toolchain_clang_osx (config:clang_config_t) implements toolchain_t =
     "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++14" ! (cxx_compile_warning_flags+config.ccflags)
   ;
 
-  method fun whatami () => "toolchain_clang_osx (version 2)";
+  method fun whatami () => "toolchain_clang_macosx (version 2)";
   method fun host_os () => "OSX";
   method fun target_os () => "OSX";
   method fun cxx_compiler_vendor () => "clang";
@@ -1686,20 +1686,20 @@ class Cygwin
   requires package "cygwin";
 
   // outputs absolute filenames: src,dst
-  private gen p_cygwin_to_win32: +char * +char * size -> int = 
+  private gen p_cygwin_to_win: +char * +char * size -> int = 
      "cygwin_conv_path(CCP_POSIX_TO_WIN_A || CCP_ABSOLUTE,$1,$2,$3)"
   ;
-  private gen p_win32_to_cygwin: +char * +char * size -> int = 
+  private gen p_win_to_cygwin: +char * +char * size -> int = 
     "cygwin_conv_path(CCP_WIN_TO_POSIX)A || CCP_ABSOLUTE,$1,$2,$3)"
   ;
 
   // This function should ALWAYS work
-  fun cygwin_to_win32 (var s:string) = 
+  fun cygwin_to_win (var s:string) = 
   {
      var outbuf : +char;
-     var psiz = p_cygwin_to_win32 (s.cstr,outbuf,0uz);
+     var psiz = p_cygwin_to_win (s.cstr,outbuf,0uz);
      outbuf = array_alloc[char] psiz; 
-     var err = p_cygwin_to_win32 (s.cstr,outbuf,psiz.size);
+     var err = p_cygwin_to_win (s.cstr,outbuf,psiz.size);
      assert err == 0; // hackery!
      var t = string outbuf;
      free outbuf;
@@ -1707,14 +1707,14 @@ class Cygwin
   }
 
   // This function has two kinds of output:
-  // if the win32 filename is inside C:/cygwin we get name relative to /
+  // if the win filename is inside C:/cygwin we get name relative to /
   // if the filename is outside, we get /cygdrive/driveletter/rest-of-path
-  fun win32_to_cygwin(var s:string) = 
+  fun win_to_cygwin(var s:string) = 
   {
      var outbuf : +char;
-     var psiz = p_win32_to_cygwin(s.cstr,outbuf,0uz);
+     var psiz = p_win_to_cygwin(s.cstr,outbuf,0uz);
      outbuf = array_alloc[char] psiz; 
-     var err = p_win32_to_cygwin(s.cstr,outbuf,psiz.size);
+     var err = p_win_to_cygwin(s.cstr,outbuf,psiz.size);
      assert err == 0; // hackery!
      var t = string outbuf;
      free outbuf;
@@ -1732,12 +1732,12 @@ includes: '"sys/cygwin.h"'
 
 
 @h2 Object for MSVC++ on Windows
-@tangle msvc_win32.flx
+@tangle msvc_win.flx
 include "std/felix/toolchain_interface";
 include "std/felix/toolchain_clang_config";
 include "std/felix/flx_cxx";
 
-object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t = 
+object toolchain_msvc_win (config:clang_config_t) implements toolchain_t = 
 {
 
   var c_compiler = "cl";
@@ -1746,7 +1746,7 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
   var base_c_compile_flags = Empty[string];
   var base_cxx_compile_flags = Empty[string];
 
-  method fun whatami () => "toolchain_msvc_win32 (version 2)";
+  method fun whatami () => "toolchain_msvc_win (version 2)";
   method fun host_os () => "Win32";
   method fun target_os () => "Win32";
   method fun cxx_compiler_vendor () => "microsoft";
@@ -2233,7 +2233,7 @@ implementing it is only a stub.
 @tangle toolchain_iphoneos.flx
 include "std/felix/toolchain/clang_iOS_generic";
 
-// varies osx vs linus,  gcc vs clang
+// varies macosx vs linus,  gcc vs clang
 
 export fun toolchain_clang_apple_iPhoneOS_armv7_arm64 of (clang_config_t) as "toolchain_iphoneos";
 
@@ -2249,7 +2249,7 @@ export fun setup of (string) as "toolchain_iphoneos_setup";
 @tangle toolchain_iphonesimulator.flx
 include "std/felix/toolchain/clang_iOS_generic";
 
-// varies osx vs linus,  gcc vs clang
+// varies macosx vs linus,  gcc vs clang
 
 export fun toolchain_clang_apple_iPhoneSimulator of (clang_config_t) as "toolchain_iphonesimulator";
 
@@ -2281,18 +2281,18 @@ export fun setup of (string) as "toolchain_gcc_linux_setup";
 @
 
 @h2 Plugin for gcc on OSX
-@tangle toolchain_gcc_osx.flx
-include "std/felix/toolchain/gcc_osx";
+@tangle toolchain_gcc_macosx.flx
+include "std/felix/toolchain/gcc_macosx";
 
-export fun toolchain_gcc_osx of (clang_config_t) as "toolchain_gcc_osx";
+export fun toolchain_gcc_macosx of (clang_config_t) as "toolchain_gcc_macosx";
 
 fun setup(config_data:string) = {
    C_hack::ignore (config_data); // due to bug in Felix
-  //eprintln$ "Setup toolchain gcc+osx " + config_data;
+  //eprintln$ "Setup toolchain gcc+macosx " + config_data;
   return 0;
 }
 
-export fun setup of (string) as "toolchain_gcc_osx_setup";
+export fun setup of (string) as "toolchain_gcc_macosx_setup";
 
 @
 
@@ -2300,7 +2300,7 @@ export fun setup of (string) as "toolchain_gcc_osx_setup";
 @tangle toolchain_clang_linux.flx
 include "std/felix/toolchain/clang_linux";
 
-// varies osx vs linus,  gcc vs clang
+// varies macosx vs linus,  gcc vs clang
 
 export fun toolchain_clang_linux of (clang_config_t) as "toolchain_clang_linux";
 
@@ -2316,37 +2316,37 @@ export fun setup of (string) as "toolchain_clang_linux_setup";
 @
 
 @h2 Plugin for clang on OSX
-@tangle toolchain_clang_osx.flx
-include "std/felix/toolchain/clang_osx";
+@tangle toolchain_clang_macosx.flx
+include "std/felix/toolchain/clang_macosx";
 
-// varies osx vs linus,  gcc vs clang
+// varies macosx vs linus,  gcc vs clang
 
-export fun toolchain_clang_osx of (clang_config_t) as "toolchain_clang_osx";
+export fun toolchain_clang_macosx of (clang_config_t) as "toolchain_clang_macosx";
 
 fun setup(config_data:string) = {
    C_hack::ignore (config_data); // due to bug in Felix
-  //eprintln$ "Setup toolchain clang_osx " + config_data;
+  //eprintln$ "Setup toolchain clang_macosx " + config_data;
   return 0;
 }
 
-export fun setup of (string) as "toolchain_clang_osx_setup";
+export fun setup of (string) as "toolchain_clang_macosx_setup";
 @
 
 @h2 MSVC++ Plugin for Win32
-@tangle toolchain_msvc_win32.flx
-include "std/felix/toolchain/msvc_win32";
+@tangle toolchain_msvc_win.flx
+include "std/felix/toolchain/msvc_win";
 
-// varies osx vs linus,  gcc vs clang
+// varies macosx vs linus,  gcc vs clang
 
-export fun toolchain_msvc_win32 of (clang_config_t) as "toolchain_msvc_win32";
+export fun toolchain_msvc_win of (clang_config_t) as "toolchain_msvc_win";
 
 fun setup(config_data:string) = {
    C_hack::ignore (config_data); // due to bug in Felix
-  //eprintln$ "Setup toolchain msvc_win32 " + config_data;
+  //eprintln$ "Setup toolchain msvc_win " + config_data;
   return 0;
 }
 
-export fun setup of (string) as "toolchain_msvc_win32_setup";
+export fun setup of (string) as "toolchain_msvc_win_setup";
 @
 
 @h1 Flx Plugin

@@ -311,9 +311,9 @@ def target_config(ctx,target,os,bits,compiler):
     # set the toolchain
     dst = ctx.buildroot / 'host/config/toolchain.fpc'
     if 'macosx' in target.platform:
-        toolchain = "toolchain_"+compiler+"_osx"
+        toolchain = "toolchain_"+compiler+"_macosx"
     elif "windows" in target.platform:
-        toolchain= "toolchain_msvc_win32"
+        toolchain= "toolchain_msvc_win"
     else:
         toolchain = "toolchain_"+compiler+"_linux"
 

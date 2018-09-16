@@ -19,36 +19,6 @@ It is built directly from the repository.
 class BuildFlxg
 {
 
-/* HEY, this is FELIX! We have our own time services
-
-  // this utter rubbish is required just to format the time.
-  // Shame on the idiot C language, and even more on Posix!
-
-  // some kind of integer time in seconds
-  private type time_t = "time_t" requires Posix_headers::sys_time_h;
-  private fun _ctor_long : time_t -> long = "(long)$1";
-
-  // convert double to integer
-  private fun _ctor_time_t : double -> time_t = "static_cast<time_t>($1)";
-
-  // split up time structure
-  private type struct_tm = "struct tm" requires C89_headers::time_h;
-
-  // convert integer time to split up time
-  private proc gmtime_r : &time_t * &struct_tm;
-
-  // format split up time
-  private gen strftime: +char * size * +char * &struct_tm -> size;
-
-  private gen fmt_time (t: double, fmt:string) = {
-     var  tt = time_t t; // double to time_t
-     var tm:struct_tm;
-     gmtime_r(&tt,&tm); // split up time_t into pieces
-     var buffer = varray[char] (100uz, char 0);
-     var n = strftime(buffer.stl_begin,buffer.len, fmt.cstr, &tm);
-     return string(buffer.stl_begin, n);
-  }
-*/
 
   // remove slosh-newline
   fun pack(s:string) = {
@@ -740,6 +710,57 @@ class FlxPrepBuild
       done
     done
 
+    // configure and db copy are exclusive
+    if cmd.configure do
+      println$ 'Generating Configuration';
+      if cmd.compiler not in ('gcc', 'clang', 'msvc') do
+        println$ 'ERROR: Configuration compiler must be gcc,clang or msvc';
+        System::exit 1;
+      done
+      if cmd.os not in ('linux', 'macosx', 'win') do
+        println$ 'ERROR: Configuration os must be linux,macosx or win';
+        System::exit 1;
+      done
+      if cmd.bits not in ('32', '64') do
+        println$ 'ERROR: Configuration bits musty be 32 or 64';
+        System::exit 1;
+      done
+      if cmd.os == 'win' and cmd.bits == '32' do
+        println$ 'ERROR: Only 64 bit windows is supported';
+        System::exit 1;
+      done
+
+      // setup fpc's to copy: ORDER MATTERS!
+      var fpcs = ([ '(.*\\.fpc)']);
+      if cmd.os in ('linux','macosx') do  
+        fpcs +=  'unix'/'(.*\\.fpc)';
+      done
+      fpcs += cmd.os/'(.*\\.fpc)';
+      fpcs += cmd.os+cmd.bits/'(.*\\.fpc)';
+      fpcs += cmd.os/'(.*\\.fpc)';
+
+      // Felix platform macro
+      var fmacs = ([cmd.os+'/(.*\\.flxh)']);
+
+      // setup header files to copy
+      var headers = ([cmd.os+cmd.bits/cmd.compiler/'rtl'/'(.*\\.hpp)']);
+      headers += cmd.os+cmd.bits/'rtl'/'(.*\\.hpp)';
+
+      // do the copying
+      println$ 'Copying fpcs ..';
+      for pattern in fpcs perform
+        CopyFiles::copyfiles(cmd.repo/'src'/'config', pattern,
+          cmd.target_dir/cmd.target_bin/'config'/'${1}',true,cmd.debug);
+      println$ 'Copying platform macro ..';
+      for pattern in fmacs perform
+        CopyFiles::copyfiles(cmd.repo/'src'/'config', pattern,
+          cmd.target_dir/cmd.target_bin/'lib'/'plat'/'${1}',true,cmd.debug);
+      println$ 'Copying C++ headers ..';
+      for pattern in headers perform
+        CopyFiles::copyfiles(cmd.repo/'src'/'config', pattern,
+          cmd.target_dir/cmd.target_bin/'lib'/'rtl'/'${1}',true,cmd.debug);
+    done
+
     if cmd.setup_pkg != "" do
       var setupdata = load cmd.setup_pkg;
       var commands = split(setupdata,"\n");
@@ -793,6 +814,13 @@ class FlxPrepBuild
     println$ "  --target-bin=target_bin     default: host";
     println$ "  --source-dir=source_dir     default: build/release";
     println$ "  --source-bin=source_bin     default: host";
+    println$ "";
+    println$ "# configuration";
+    println$ "";
+    println$ "  --configure                 generate configuration";
+    println$ "  --compiler=(gcc/clang/msvc) no default!";
+    println$ "  --os=(linux/macosx/win)     no default!";
+    println$ "  --bits=(32/64)              defaut 64";
     println$ "";
     println$ "# cleaning options";
     println$ "";
@@ -851,14 +879,14 @@ class FlxPrepBuild
       &os <- os.strip;
       var compiler_family = Env::getenv "BUILD_FLX_TOOLCHAIN_FAMILY";
       match os,compiler_family do
-      | "","" => &toolchain <- "toolchain_mscv_win32";
+      | "","" => &toolchain <- "toolchain_mscv_win";
       | "Linux","" => &toolchain <- "toolchain_gcc_linux";
-      | "Darwin","" => &toolchain <- "toolchain_clang_osx";
+      | "Darwin","" => &toolchain <- "toolchain_clang_macosx";
 
       | "Linux","gcc" => &toolchain <- "toolchain_gcc_linux";
       | "Linux","clang" => &toolchain <- "toolchain_clang_linux";
-      | "Darwin","gcc" => &toolchain <- "toolchain_gcc_osx";
-      | "Darwin","clang" => &toolchain <- "toolchain_clang_osx";
+      | "Darwin","gcc" => &toolchain <- "toolchain_gcc_macosx";
+      | "Darwin","clang" => &toolchain <- "toolchain_clang_macosx";
 
       | _,_ => 
         println$ "No toolchain specified in toolchain.fpc or with --toolchain switch";
@@ -905,6 +933,10 @@ class FlxPrepBuild
        copy_version=false,
        copy_library=false,
        setup_pkg="",
+       configure=false,
+       compiler="notspecified",
+       os="notspecified",
+       bits="notspecified",
        debug = false
      );
 
@@ -946,7 +978,17 @@ class FlxPrepBuild
          &cmd.copy_version <- true;
        elif arg == "--copy-library" do
          &cmd.copy_library <- true;
- 
+
+       // configuration
+       elif prefix(arg,"--configure") do
+         &cmd.configure <-true;
+       elif prefix(arg,"--compiler") do
+         &cmd.compiler<- arg.[11 to];
+       elif prefix(arg,"--os=") do
+         &cmd.os<- arg.[5 to];
+       elif prefix(arg,"--bits=") do
+         &cmd.bits<- arg.[7 to];
+  
        // special configuration package
        elif prefix(arg,"--setup=") do
          &cmd.setup_pkg <- arg.[8 to];
@@ -979,6 +1021,10 @@ class FlxPrepBuild
     println$ "  target-bin       = " + cmd.target_bin;
     println$ "  source-dir       = " + cmd.source_dir;
     println$ "  source-bin       = " + cmd.source_bin;
+    if cmd.configure do
+      println$ "CONFIGURE compiler=" + cmd.compiler+", os=" + cmd.os + ", bits=" + cmd.bits;
+      cmd&.toolchain <- "toolchain_" + cmd.compiler + "_" + cmd.os;
+    done
     println$ "  setup-pkg        = " + cmd.setup_pkg;
     println$ "  toolchain (spec) = " + cmd.toolchain;
     flx_build (cmd);
@@ -1322,12 +1368,12 @@ web_plugin:      fpc2html
 web_plugin:      ocaml2html
 web_plugin:      py2html
 toolchain_plugin:      toolchain_clang_linux
-toolchain_plugin:      toolchain_clang_osx
+toolchain_plugin:      toolchain_clang_macosx
 toolchain_plugin:      toolchain_iphoneos
 toolchain_plugin:      toolchain_iphonesimulator
 toolchain_plugin:      toolchain_gcc_linux
-toolchain_plugin:      toolchain_gcc_osx
-toolchain_plugin:      toolchain_msvc_win32
+toolchain_plugin:      toolchain_gcc_macosx
+toolchain_plugin:      toolchain_msvc_win
 tool:      flx_cp
 tool:      flx_ls
 tool:      flx_grep

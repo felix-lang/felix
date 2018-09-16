@@ -53,9 +53,9 @@ else
 ifeq ($(platform), Darwin)
 		LPATH = DYLD_LIBRARY_PATH
 ifeq ($(FLX_BUILD_TOOLCHAIN_FAMILY),gcc)
-   TOOLCHAIN=toolchain_gcc_osx
+   TOOLCHAIN=toolchain_gcc_macosx
 else
-   TOOLCHAIN=toolchain_clang_osx
+   TOOLCHAIN=toolchain_clang_macosx
 endif
 endif
 endif
