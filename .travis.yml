@@ -62,6 +62,7 @@ deploy:
   file: felix-${FLX_VERSION}-linux64-gcc-8.tgz
   on:
     repo: felix-lang/felix
+    tags: true
 notifications:
   email: felix-builds@googlegroups.com
 env:

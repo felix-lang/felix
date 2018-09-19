@@ -189,7 +189,7 @@ gcc_macosx:
 	# =========================================================
 	# build Felix with gcc rtl on macosx
 	# =========================================================
-	${LPATH}=build/release/gcc_macosx/lib/rtl flx_build_boot --target-dir=build/release --target-bin=gcc_macosx --build-all
+	${LPATH}=build/release/host/lib/rtl flx_build_boot --target-dir=build/release --target-bin=gcc_macosx --build-all
 
 
 prep: 

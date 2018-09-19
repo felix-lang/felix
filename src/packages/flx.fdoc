@@ -442,6 +442,7 @@ include "std/felix/flx_profile";
 
 class Config {
   typedef config_type = (
+    FLX_INSTALL_DIR: string,
     FLX_SHARE_DIR: string,
     FLX_TARGET_DIR: string,
     FLX_HOME_DIR: string,
@@ -458,8 +459,9 @@ class Config {
     {
       var s = "";
       reserve$ &s,1000;
-      s+="(FLX_SHARE_DIR="+ x.FLX_SHARE_DIR+",\n";
-      s+= "FLX_TARGET_DIR="+ x.FLX_TARGET_DIR+",\n";
+      s+="(FLX_INSTALL_DIR="+ x.FLX_INSTALL_DIR+",\n";
+      s+="FLX_SHARE_DIR="+ x.FLX_SHARE_DIR+",\n";
+      s+="FLX_TARGET_DIR="+ x.FLX_TARGET_DIR+",\n";
       s+="FLX_HOME_DIR="+ x.FLX_HOME_DIR+",\n";
       s+="FLX_PROFILE_DIR="+ x.FLX_PROFILE_DIR+",\n";
       s+="FLX_CACHE_DIR="+ x.FLX_CACHE_DIR+",\n";
@@ -480,6 +482,7 @@ class Config {
   }
 
   proc cascade_FLX_INSTALL_DIR (x: &config_type)  (y: string) = {
+    x.FLX_INSTALL_DIR <- y;
     cascade_FLX_TARGET_DIR x (y/"host");
     cascade_FLX_SHARE_DIR x (y/"share");
   }
@@ -528,7 +531,7 @@ class Config {
   {
 
     var re = RE2 ("([-a-zA-Z_]+) *: *(.*)");
-    var FLX_INSTALL_DIR = "";
+    var FLX_INSTALL_DIR = cfg*.FLX_INSTALL_DIR;
 
     var lines = split (text, char "\n");
     for line in lines do
@@ -540,6 +543,7 @@ class Config {
         match p with
         | "FLX_INSTALL_DIR" => 
           FLX_INSTALL_DIR = a;
+//println$ "processing config text, setting FLX_INSTALL_DIR=" + a;
           cascade_FLX_INSTALL_DIR cfg a; 
 
         | "FLX_TARGET_SUBDIR" => 
@@ -573,7 +577,9 @@ class Config {
 
     match Env::getenv ("FLX_INSTALL_DIR","") with
     | "" => ;
-    | x => cascade_FLX_INSTALL_DIR cfg x;
+    | x => 
+//println$ "ENVIRONMENT OVERRIDE FOR FLX_INSTALL_DIR=" + x;
+      cascade_FLX_INSTALL_DIR cfg x;
     endmatch;
 
     match Env::getenv ("FLX_SHARE_DIR","") with
@@ -609,7 +615,9 @@ class Config {
   }
 
   fun std_config () = {
+//println$ "Setting up default config";
     var cfg = #dflt_config; 
+//println$ "Processing config file felix.fpc with env overrides";
     process_config_text_with_env_overrides &cfg (load (cfg.FLX_PROFILE_DIR / "felix.fpc"));
     return cfg; 
   }
@@ -674,7 +682,6 @@ typedef loopctl_type = typeof (#init_loopctl);
 fun dflt_control () =>
   struct {
 
-    var FLX_INSTALL_DIR= ""; // now a temporary!
     var PRINT_HELP=0;
 
     var FLXG_FORCE=0;
@@ -789,7 +796,7 @@ private proc print_help() {
   println "--repl               : enter REPL mode saving stuff in session.flx and library.flx";
   println "--test               : use felix installation in current directory";
   println "--test=dir           : use felix installation in dir";
-  println "--target-subdir=dir  : subdir of install dir containing target configuration (default 'host')";
+  println "--target=dir         : subdir of install dir containing target configuration (default 'host')";
   println "--target-dir=dir     : dir containing target configuration (default '$FLX_INSTALL_DIR/host')";
   println "--pkgconfig-path+=dir: prepend extra flx_pkgconfig search directory to standard path";
   println "--toolchain=toolchain: pick a non-default C++ compiler toolchain";
@@ -1007,12 +1014,15 @@ private noinline proc handle_switch
     debugln "Set install details";
     setup-from-file debugln[string] (config, control, arg.[8 to]);
 
-  elif prefix(arg,"--target-subdir=") do
+  elif prefix(arg,"--target=") do
     begin    
       debugln "Set target subdirectory";
-      var a = arg.[16 to];
+      var a = arg.[9 to];
       control.FLX_TARGET_SUBDIR <- a;
-      Config::cascade_FLX_TARGET_DIR config (Filename::join (control*.FLX_INSTALL_DIR, control*.FLX_TARGET_SUBDIR));
+//println$ "SET FLX_TARGET_SUBDIR TO " + control*.FLX_TARGET_SUBDIR;
+//println$ "Current FLX_INSTALL_DIR IS " + config*.FLX_INSTALL_DIR;
+      Config::cascade_FLX_TARGET_DIR config (Filename::join (config*.FLX_INSTALL_DIR, control*.FLX_TARGET_SUBDIR));
+//println$ "SET FLX_TARGET_DIR TO " + config*.FLX_TARGET_DIR;
     end
 
   elif prefix(arg,"--target-dir=") do
@@ -1031,7 +1041,6 @@ private noinline proc handle_switch
     var a = arg.[7 to];
     debugln "Set test directory";
     Config::cascade_FLX_INSTALL_DIR config a;
-    control.FLX_INSTALL_DIR <- a;
     control.FLX_TARGET_SUBDIR <- "host";
 
   elif arg=="--test" do
@@ -1039,7 +1048,6 @@ private noinline proc handle_switch
       debugln "Set test directory";
       a = ".";
       Config::cascade_FLX_INSTALL_DIR config a;
-      control.FLX_INSTALL_DIR <- a;
       control.FLX_TARGET_SUBDIR <- "host";
     end
 
@@ -1180,7 +1188,7 @@ private noinline proc handle_switch
 
   elif arg == "--where" do
     debugln "Print location of install directory and exit";
-    println(control*.FLX_INSTALL_DIR);
+    println(config*.FLX_INSTALL_DIR);
     System::exit(0);
 
   elif arg == "--time" do

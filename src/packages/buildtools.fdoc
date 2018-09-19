@@ -731,20 +731,23 @@ class FlxPrepBuild
       done
 
       // setup fpc's to copy: ORDER MATTERS!
-      var fpcs = ([ '([-/]*\\.fpc)']);
+      var fpcs = ([ '([^/]*\\.fpc)']);
       if cmd.os in ('linux','macosx') do  
-        fpcs +=  'unix'/'([-/]*\\.fpc)';
+        fpcs +=  'unix'/'([^/]*\\.fpc)';
+        fpcs +=  ('unix'+cmd.bits)/'([^/]*\\.fpc)';
       done
-      fpcs += cmd.os/'([-/]*\\.fpc)';
-      fpcs += cmd.os+cmd.bits/'([-/]*\\.fpc)';
-      fpcs += cmd.os/'([-/]*\\.fpc)';
+      fpcs += cmd.os/'([^/]*\\.fpc)';
+      fpcs += (cmd.os+cmd.bits)/'([^/]*\\.fpc)';
+      fpcs += cmd.os/'([^/]*\\.fpc)';
 
       // Felix platform macro
-      var fmacs = ([cmd.os+'/([-/]*\\.flxh)']);
+      var fmacs = ([cmd.os+'/([^/]*\\.flxh)']);
 
       // setup header files to copy
-      var headers = ([cmd.os+cmd.bits/cmd.compiler/'rtl'/'([-/]*\\.hpp)']);
-      headers += cmd.os+cmd.bits/'rtl'/'([=/]*\\.hpp)';
+      // os/bits/compiler config
+      var headers = ([(cmd.os+cmd.bits)/cmd.compiler/'rtl'/'([^/]*\\.hpp)']);
+      // socket config 
+      headers += (cmd.os+cmd.bits)/'rtl'/'([^/]*\\.hpp)';
 
       // do the copying
       println$ 'Copying fpcs ..';
@@ -1015,7 +1018,7 @@ class FlxPrepBuild
       System::exit(1);
     done
     var cmd = parse_args (tail xargs);
-    println$ "flx_build_prep v1.6";
+    println$ "flx_build_prep v2018.09.18";
     println$ "  repository       = " + cmd.repo;
     println$ "  target-dir       = " + cmd.target_dir;
     println$ "  target-bin       = " + cmd.target_bin;
@@ -1419,7 +1422,7 @@ class FlxCoreBuild
     for plugin in plugins do
       println$ "Building plugin " + plugin;
       var result = Flx_client::runflx$ list ('[flx]',
-        '--test='+target_dir, '--target-subdir='+target_bin, 
+        '--test='+target_dir, '--target='+target_bin, 
         '-c', '-ox',target_dir/target_bin/'lib'/'rtl'/plugin, 
         target_dir/'share'/'lib'/'plugins'/plugin);
       if result != 0 do 
@@ -1428,7 +1431,7 @@ class FlxCoreBuild
       done
 
       result = Flx_client::runflx$ list ('[flx]',
-        '--test='+target_dir, '--target-subdir='+target_bin, 
+        '--test='+target_dir, '--target='+target_bin, 
         '-c', '--nolink','-ox', target_dir/target_bin/'lib'/'rtl'/plugin, 
         target_dir/'share'/'lib'/'plugins'/plugin);
       if result != 0 do 
@@ -1437,7 +1440,7 @@ class FlxCoreBuild
       done
 
       result = Flx_client::runflx$ list ('[flx]',
-        '--test='+target_dir, '--target-subdir='+target_bin, 
+        '--test='+target_dir, '--target='+target_bin, 
         '--static','-c', '--nolink','-ox', target_dir/target_bin/'lib'/'rtl'/plugin, 
         target_dir/'share'/'lib'/'plugins'/plugin);
       if result != 0 do 
@@ -1455,7 +1458,7 @@ class FlxCoreBuild
       var src = Filename::join ("tools",exe);
       println$ src + " -> " + exe;
       var result = Flx_client::runflx$ list ('[flx]',
-        '--test='+target_dir, '--target-subdir='+target_bin, 
+        '--test='+target_dir, '--target='+target_bin, 
         '--static','-c',
         '-ox', target_dir/target_bin/'bin'/exe, target_dir/'share'/'src'/src);
       if result != 0 do 
@@ -1472,7 +1475,7 @@ class FlxCoreBuild
       var src = Filename::join ("tools",exe);
       println$ src + " -> " + exe;
       var result = Flx_client::runflx$ list ('[flx]',
-        '--test='+target_dir, '--target-subdir='+target_bin, 
+        '--test='+target_dir, '--target='+target_bin, 
         '--static','-c',
         '-ox', target_dir/target_bin/'bin'/exe, target_dir/'share'/'src'/src);
       if result != 0 do 
@@ -1492,7 +1495,7 @@ class FlxCoreBuild
 
     println$ "dflx_web  -> dflx_web object file";
     var result = Flx_client::runflx$ list ('[flx]',
-      '--test='+target_dir, '--target-subdir='+target_bin, 
+      '--test='+target_dir, '--target='+target_bin, 
       '--static','-c','--nolink',
       '-o', target_dir/target_bin/'lib'/'rtl'/'dflx_web'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx_web');
     if result != 0 do 
@@ -1510,7 +1513,7 @@ class FlxCoreBuild
     result = Flx_client::runflx$ 
       list (
         '[flx]',
-        '--test='+target_dir, '--target-subdir='+target_bin, 
+        '--test='+target_dir, '--target='+target_bin, 
         '--static','-c',
         '-ox', target_dir/target_bin/'bin'/'flx_web') + 
       web_plugin_objs +
@@ -1533,7 +1536,7 @@ class FlxCoreBuild
     done
     println$ "dflx  -> dflx object file";
     var result = Flx_client::runflx$ list ('[flx]',
-      '--test='+target_dir, '--target-subdir='+target_bin, 
+      '--test='+target_dir, '--target='+target_bin, 
       '-c','--nolink', '--static',
       '-o', target_dir/target_bin/'lib'/'rtl'/'dflx'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx');
     if result != 0 do 
@@ -1553,7 +1556,7 @@ class FlxCoreBuild
     println$ "Build flx. Note: requires --build-toolchain-plugins";
     println$ "flx  -> flx";
     result = Flx_client::runflx$ list ('[flx]',
-      '--test='+target_dir, '--target-subdir='+target_bin, 
+      '--test='+target_dir, '--target='+target_bin, 
       '--static','-c',
       '-ox', target_dir/target_bin/'bin'/'flx') + toolchain_objects +
       (target_dir/target_bin/'lib'/'rtl'/'dflx' + obj_extn) +
