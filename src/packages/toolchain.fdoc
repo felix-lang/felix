@@ -1,5 +1,5 @@
 @title C and C++ toolchains
-@tangler toolchain_clang_config.flx   = share/lib/std/felix/toolchain_clang_config.flx
+@tangler toolchain_config.flx   = share/lib/std/felix/toolchain_config.flx
 @tangler toolchain_interface.flx      = share/lib/std/felix/toolchain_interface.flx
 @tangler flx_cxx.flx                  = share/lib/std/felix/flx_cxx.flx
 @tangler flx_depchk.flx               = share/lib/std/felix/flx/flx_depchk.flx
@@ -32,7 +32,7 @@
 
 
 @h1 Toolchain support
-@tangle toolchain_clang_config.flx
+@tangle toolchain_config.flx
 
 typedef clang_config_t = (
   header_search_dirs: list[string],
@@ -483,7 +483,7 @@ Builds a complete library from a flx_pkgconfig database
 specification. Used by the flx_build_rtl tool.
 
 @tangle flx_mklib.flx
-include "std/felix/toolchain_clang_config";
+include "std/felix/toolchain_config";
 include "std/felix/flx_pkg"; // only for "fix2word_flags"
 include "std/felix/flx_cp";
 include "std/felix/flx/flx_depchk";
@@ -717,7 +717,7 @@ the toolchain interface.
 @h2 Object for gcc on Linux
 @tangle gcc_linux.flx
 include "std/felix/toolchain_interface";
-include "std/felix/toolchain_clang_config";
+include "std/felix/toolchain_config";
 include "std/felix/flx_cxx";
 
 object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t = 
@@ -959,7 +959,7 @@ object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t =
 @h2 Object for gcc on OSX
 @tangle gcc_macosx.flx
 include "std/felix/toolchain_interface";
-include "std/felix/toolchain_clang_config";
+include "std/felix/toolchain_config";
 include "std/felix/flx_cxx";
 
 object toolchain_gcc_macosx (config:clang_config_t) implements toolchain_t = 
@@ -1194,7 +1194,7 @@ object toolchain_gcc_macosx (config:clang_config_t) implements toolchain_t =
 @h2 Object for clang on Linux
 @tangle clang_linux.flx
 include "std/felix/toolchain_interface";
-include "std/felix/toolchain_clang_config";
+include "std/felix/toolchain_config";
 include "std/felix/flx_cxx";
 
 object toolchain_clang_linux (config:clang_config_t) implements toolchain_t = 
@@ -1442,7 +1442,7 @@ object toolchain_clang_linux (config:clang_config_t) implements toolchain_t =
 @h2 Object for clang on OSX
 @tangle clang_macosx.flx
 include "std/felix/toolchain_interface";
-include "std/felix/toolchain_clang_config";
+include "std/felix/toolchain_config";
 include "std/felix/flx_cxx";
 
 object toolchain_clang_macosx (config:clang_config_t) implements toolchain_t = 
@@ -1734,7 +1734,7 @@ includes: '"sys/cygwin.h"'
 @h2 Object for MSVC++ on Windows
 @tangle msvc_win.flx
 include "std/felix/toolchain_interface";
-include "std/felix/toolchain_clang_config";
+include "std/felix/toolchain_config";
 include "std/felix/flx_cxx";
 
 object toolchain_msvc_win (config:clang_config_t) implements toolchain_t = 
@@ -1950,7 +1950,7 @@ object toolchain_msvc_win (config:clang_config_t) implements toolchain_t =
 @h2 Object for clang on iOS
 @tangle clang_iOS_generic.flx
 include "std/felix/toolchain_interface";
-include "std/felix/toolchain_clang_config";
+include "std/felix/toolchain_config";
 include "std/felix/flx_cxx";
 
 object toolchain_clang_apple_iOS_maker (sdk_tag:string, archs:list[string])

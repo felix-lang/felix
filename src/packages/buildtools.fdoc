@@ -1046,7 +1046,7 @@ System::exit (0);
 Builds the run time library from the build target
 share directory. Does not look in the repository.
 @tangle flx_build_rtl.flx
-include "std/felix/toolchain_clang_config";
+include "std/felix/toolchain_config";
 include "std/felix/toolchain_interface";
 include "std/felix/flx_pkgconfig";
 include "std/felix/flx_pkg"; // only for "fix2word_flags"
@@ -1399,7 +1399,7 @@ flx_tool: flx_build_flxg
 @
 
 @tangle flx_build_boot.flx
-include "std/felix/toolchain_clang_config";
+include "std/felix/toolchain_config";
 include "std/felix/toolchain_interface";
 include "std/felix/flx_cp";
 include "std/felix/flx_pkgconfig";
