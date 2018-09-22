@@ -762,6 +762,20 @@ class FlxPrepBuild
       for pattern in headers perform
         CopyFiles::copyfiles(cmd.repo/'src'/'config', pattern,
           cmd.target_dir/cmd.target_bin/'lib'/'rtl'/'${1}',true,cmd.debug);
+
+      if cmd.c_compiler != "" do begin
+        println$ 'Specifying C compiler executable ' + cmd.c_compiler;
+        var fn = cmd.target_dir/cmd.target_bin/'config'/"toolchain_"+cmd.compiler+"_"+cmd.os+"_c_compiler_executable.fpc";
+        var txt = (["compiler: " + cmd.c_compiler]);
+        save (fn,txt);
+      end done
+
+      if cmd.cxx_compiler != "" do begin
+        println$ 'Specifying C++ compiler executable ' + cmd.cxx_compiler;
+        var fnam = cmd.target_dir/cmd.target_bin/'config'/"toolchain_"+cmd.compiler+"_"+cmd.os+"_cxx_compiler_executable.fpc";
+        var txt = (["compiler: " + cmd.cxx_compiler]);
+        save (fnam,txt);
+      end done
     done
 
     if cmd.setup_pkg != "" do
@@ -808,6 +822,7 @@ class FlxPrepBuild
 
   proc print_help()
   {
+    println$ "flx_build_prep v2018.09.22";
     println$ "Usage: flx_build_prep ";
     println$ "";
     println$ "# locations";
@@ -824,6 +839,9 @@ class FlxPrepBuild
     println$ "  --compiler=(gcc/clang/msvc) no default!";
     println$ "  --os=(linux/macosx/win)     no default!";
     println$ "  --bits=(32/64)              defaut 64";
+    println$ "  --c-compiler=               default std compiler name";
+    println$ "  --cxx-compiler=             default std compiler name";
+
     println$ "";
     println$ "# cleaning options";
     println$ "";
@@ -940,6 +958,8 @@ class FlxPrepBuild
        compiler="notspecified",
        os="notspecified",
        bits="notspecified",
+       c_compiler="",
+       cxx_compiler="",
        debug = false
      );
 
@@ -991,6 +1011,10 @@ class FlxPrepBuild
          &cmd.os<- arg.[5 to];
        elif prefix(arg,"--bits=") do
          &cmd.bits<- arg.[7 to];
+       elif prefix(arg,"--c-compiler=") do
+         &cmd.c_compiler<- arg.[13 to];
+       elif prefix(arg,"--cxx-compiler=") do
+         &cmd.cxx_compiler<- arg.[15 to];
   
        // special configuration package
        elif prefix(arg,"--setup=") do
@@ -1018,7 +1042,7 @@ class FlxPrepBuild
       System::exit(1);
     done
     var cmd = parse_args (tail xargs);
-    println$ "flx_build_prep v2018.09.18";
+    println$ "flx_build_prep v2018.09.22";
     println$ "  repository       = " + cmd.repo;
     println$ "  target-dir       = " + cmd.target_dir;
     println$ "  target-bin       = " + cmd.target_bin;
@@ -1090,9 +1114,19 @@ class FlxRtlBuild
     var db = FlxPkgConfig::FlxPkgConfigQuery (list[string] pkgdir);
 
     gen getbootfield (field:string) => db.getpkgfield1 ehandler (boot_package, field);
-    gen gettoolchain () => db.getpkgfield1 ehandler ("toolchain","toolchain");
-    var toolchain = gettoolchain();
-    println$ "toolchain    : " + str toolchain;
+    // toolchain pkg 1
+    var toolchain_name = db.getpkgfield1 ehandler ("toolchain","toolchain");
+
+    var c_compiler_executable = 
+      db.getpkgfielddflt ehandler (toolchain_name+"_c_compiler_executable", "compiler")
+    ;
+
+    var cxx_compiler_executable =
+      db.getpkgfielddflt ehandler (toolchain_name+"_cxx_compiler_executable", "compiler")
+    ;
+
+
+    println$ "toolchain    : " + str toolchain_name + ", c: "+ c_compiler_executable + ", c++: " + cxx_compiler_executable;
 
     var allpkgs = db.getclosure ehandler boot_package;
     //println$ "Closure      : " + str allpkgs;
@@ -1104,11 +1138,11 @@ class FlxRtlBuild
     end 
 
     var toolchain-maker = 
-      Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] 
+      Dynlink::load-plugin-func1 [toolchain_t,toolchain_config_t] 
       (
-        dll-name=toolchain, 
+        dll-name=toolchain_name, 
         setup-str="",
-        entry-point=toolchain
+        entry-point=toolchain_name
       )
     ;
     for pkg in allpkgs begin
@@ -1127,7 +1161,7 @@ class FlxRtlBuild
         var src_dir =  build / 'share';
         var share_rtl = src_dir / 'lib' / 'rtl';
         var target_dir =  build / target / 'lib' / 'rtl';
-        var result = FlxLibBuild::make_lib (db,toolchain-maker, src_dir, target_dir, share_rtl, pkg,tmpdir, static_only, debug) ();
+        var result = FlxLibBuild::make_lib (db,toolchain-maker, c_compiler_executable, cxx_compiler_executable,src_dir, target_dir, share_rtl, pkg,tmpdir, static_only, debug) ();
         if not result do
           eprintln$ "Library build " + pkg + " failed";
           System::exit 1;
@@ -1145,8 +1179,10 @@ class FlxRtlBuild
       println$ "Make drivers";
       println$ "------------";
       var srcdir = repo/"src"/"flx_drivers";
-      var config = 
+      var toolchain_config = 
         (
+          c_compiler_executable = c_compiler_executable,
+          cxx_compiler_executable = cxx_compiler_executable,
           header_search_dirs= list[string] (hrtl, srcdir, srtl),
           macros= Empty[string],
           ccflags = Empty[string],
@@ -1161,7 +1197,7 @@ class FlxRtlBuild
           bin / dstprg
       ;
 
-      var toolchain = toolchain-maker config;
+      var toolchain = toolchain-maker toolchain_config;
       println$ #(toolchain.whatami);
       proc cobj_static (s:string,dst:string) {
         var src = srcdir/s;
@@ -1329,7 +1365,7 @@ class FlxRtlBuild
       System::exit(1);
     done
     var cmd = parse_args (tail xargs);
-    println$ "flx_build_rtl v1.8";
+    println$ "flx_build_rtl v1.9";
     println$ "  build-package = " + cmd.boot_package;
     println$ "  target-dir    = " + cmd.target_dir;
     println$ "  target-bin    = " + cmd.target_bin;

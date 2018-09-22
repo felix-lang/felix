@@ -1705,7 +1705,9 @@ typedef dvars_type = (
   );
 
 gen cal_depvars(
-  toolchain: clang_config_t -> toolchain_t, 
+  toolchain_maker: toolchain_config_t -> toolchain_t, 
+  c_compiler_executable: string,
+  cxx_compiler_executable: string,
   config:Config::config_type,
   control:&FlxControl::control_type, 
   loopctl:FlxControl::loopctl_type) 
@@ -1717,7 +1719,10 @@ gen cal_depvars(
   }
   fun / (d:string, f:string) => Filename::join (d,f);
 
-  var dflt_clang_config = (
+  // case 1 of dflt
+  var dflt_toolchain_config = (
+      c_compiler_executable = c_compiler_executable,
+      cxx_compiler_executable = cxx_compiler_executable,
       header_search_dirs = Empty[string],
       macros = Empty[string],
       library_search_dirs= Empty[string],
@@ -1726,7 +1731,7 @@ gen cal_depvars(
       static_libraries= Empty[string],
       debugln = debugln[string]
   );
-  var tc = toolchain dflt_clang_config;
+  var tc = toolchain_maker dflt_toolchain_config;
   var EXT_LIB = #(tc.static_library_extension);
   var EXT_SHLIB = #(tc.dynamic_library_extension);
   var EXT_EXE = #(tc.executable_extension);
@@ -2011,7 +2016,9 @@ proc check_cache(
 }
 
 object processing_env(
-  toolchain: clang_config_t -> toolchain_t,
+  toolchain_maker: toolchain_config_t -> toolchain_t,
+  c_compiler_executable: string,
+  cxx_compiler_executable: string,
   config:Config::config_type, 
   var control:FlxControl::control_type,
   dvars:FlxDepvars::dvars_type)
@@ -2025,7 +2032,10 @@ object processing_env(
     if control.ECHO == 1 call fprintln (cstderr, "[flx] " + str x);
   }
 
-  var dflt_clang_config = (
+  // case 2 of dflt
+  var dflt_toolchain_config = (
+      c_compiler_executable = c_compiler_executable,
+      cxx_compiler_executable = cxx_compiler_executable,
       header_search_dirs = Empty[string],
       macros = Empty[string],
       library_search_dirs= Empty[string],
@@ -2075,7 +2085,7 @@ object processing_env(
   {
     debugln$ "[flx:calpackages] Calculating package requirements (calpackages_run="+str calpackages_run +")";
     if not calpackages_run  do
-      var tc = toolchain dflt_clang_config;
+      var tc = toolchain_maker dflt_toolchain_config;
       var x = FlxPkg::map_package_requirements ehandler
       (
          FLX_TARGET_DIR = config.FLX_TARGET_DIR,
@@ -2262,8 +2272,8 @@ object processing_env(
       done
       pkg_cflags = mycflags;
     done
-    var tc = toolchain 
-      extend dflt_clang_config with 
+    var tc = toolchain_maker
+      extend dflt_toolchain_config with 
       (
         ccflags = /* ccflags + */ control.CCFLAGS + pkg_cflags,
         header_search_dirs = config.FLX_RTL_DIRS+control.EXTRA_INCLUDE_DIRS,
@@ -2284,7 +2294,7 @@ object processing_env(
   // C++ dynamic (many files)
   gen cxx_compile_dynamic (ehandler:1->0) : int =
   {
-    var EXT_SHARED_OBJ = #((toolchain dflt_clang_config).dynamic_object_extension);
+    var EXT_SHARED_OBJ = #((toolchain_maker dflt_toolchain_config).dynamic_object_extension);
     if
       control.CXXONLY == 0 and (
       control.LINKIT == 1 or 
@@ -2326,7 +2336,7 @@ object processing_env(
     // i.e. skip compiling the thunk the output name was specified and 
     // represents an object file (or library archive?)
 //println$ "cxx_compile_static";
-    var EXT_STATIC_OBJ = #((toolchain dflt_clang_config).static_object_extension);
+    var EXT_STATIC_OBJ = #((toolchain_maker dflt_toolchain_config).static_object_extension);
     if 
       control.CXXONLY == 0 and (
       control.LINKIT == 1 or 
@@ -2390,8 +2400,8 @@ object processing_env(
       pkg_cflags = mycflags;
     done
  
-    var tc = toolchain  
-      extend dflt_clang_config with 
+    var tc = toolchain_maker  
+      extend dflt_toolchain_config with 
       (
         ccflags = /*ccflags + */ control.CCFLAGS + pkg_cflags,
         header_search_dirs = config.FLX_RTL_DIRS+control.EXTRA_INCLUDE_DIRS,
@@ -2524,8 +2534,8 @@ object processing_env(
       pkg_dstrings = mydstrings;
     done
  
-    var tc = toolchain 
-      extend dflt_clang_config with 
+    var tc = toolchain_maker 
+      extend dflt_toolchain_config with 
       (
         dynamic_libraries = control.LINK_STRINGS+pkg_dstrings, // a bit of a hack ..
         debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
@@ -2586,8 +2596,8 @@ object processing_env(
       done
       pkg_dstrings = mydstrings;
     done
-    var tc = toolchain  
-      extend dflt_clang_config with 
+    var tc = toolchain_maker  
+      extend dflt_toolchain_config with 
       (
         //ccflags = ccflags + control.CCFLAGS + control.LINK_STRINGS, 
         dynamic_libraries = control.LINK_STRINGS + pkg_dstrings, // a bit of a hack
@@ -2658,8 +2668,8 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
       done
       pkg_sstrings = mysstrings;
     done
-    var tc = toolchain  
-      extend dflt_clang_config with 
+    var tc = toolchain_maker  
+      extend dflt_toolchain_config with 
       (
         //ccflags = ccflags + control.CCFLAGS + control.LINK_STRINGS, 
         static_libraries = control.LINK_STRINGS + pkg_sstrings, // a bit of a hack
@@ -2708,8 +2718,8 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
   gen cxx_static_library (ehandler:1->0) : int = 
   {
     var t0 = #Time::time;
-    var tc = toolchain  
-      extend dflt_clang_config with 
+    var tc = toolchain_maker  
+      extend dflt_toolchain_config with 
       (
         //ccflags = ccflags + control.CCFLAGS,
         debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
@@ -3087,14 +3097,24 @@ class Flx
     }
  
     var toolchain_name = 
+      // toolchain pkg 1
       if control*.FLX_TOOLCHAIN == "" then pkgconfig.getpkgfield1 ehandler ("toolchain", "toolchain")
       else control*.FLX_TOOLCHAIN
     ;
 
-    var toolchain =
+    var c_compiler_executable = 
+      pkgconfig.getpkgfielddflt ehandler (toolchain_name+"_c_compiler_executable", "compiler")
+    ;
+
+    var cxx_compiler_executable = 
+      pkgconfig.getpkgfielddflt ehandler (toolchain_name+"_cxx_compiler_executable", "compiler")
+    ;
+
+
+    var toolchain_maker =
        match toolchain_name with
        | x => 
-         Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] ( dll-name=x, setup-str="")
+         Dynlink::load-plugin-func1 [toolchain_t,toolchain_config_t] ( dll-name=x, setup-str="")
        endmatch
     ;
 
@@ -3137,9 +3157,9 @@ class Flx
           control.STDOUT <- "";
           control.EXPECT <- "";
           control.STDIN <- "";
-          var dvars = FlxDepvars::cal_depvars(toolchain,*config,control,*loopctl);
+          var dvars = FlxDepvars::cal_depvars(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,control,*loopctl);
           println$ f"Processing [%02d/%02d]: %S" (i, n, file);
-          var pe = processing_env(toolchain,*config,*control,dvars);
+          var pe = processing_env(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,*control,dvars);
           call_with_trap {
             proc ehandler() {
               eprintln("BATCH MODE ERROR HANDLER");
@@ -3161,8 +3181,8 @@ class Flx
         again:>
         repl();
         if not feof (stdin) do
-          var dvars = FlxDepvars::cal_depvars(toolchain,*config,control, *loopctl);
-          var pe = processing_env(toolchain,*config,*control,dvars);
+          var dvars = FlxDepvars::cal_depvars(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,control, *loopctl);
+          var pe = processing_env(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,*control,dvars);
           result = pe.runit(ehandler);
           goto again;
         else
@@ -3180,8 +3200,8 @@ class Flx
             );
             print prg;
         done
-        var dvars = FlxDepvars::cal_depvars(toolchain,*config,control, *loopctl);
-        var pe = processing_env(toolchain,*config,*control,dvars);
+        var dvars = FlxDepvars::cal_depvars(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,control, *loopctl);
+        var pe = processing_env(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,*control,dvars);
         result = pe.runit(ehandler);
       end 
     done
@@ -3269,11 +3289,23 @@ class BootFlx
     var dbdir = config*.FLX_TARGET_DIR / "config";
     var pkgconfig = FlxPkgConfig::FlxPkgConfigQuery$ list[string] dbdir;
     var toolchain_name = 
+      // toolchain pkg 2
       if control*.FLX_TOOLCHAIN == "" then pkgconfig.getpkgfield1 ehandler ("toolchain", "toolchain")
       else control*.FLX_TOOLCHAIN
     ;
 
-    var toolchain =
+    var c_compiler_executable = "";
+    c_compiler_executable =  
+      pkgconfig.getpkgfielddflt ehandler (toolchain_name+"_c_compiler_executable", "compiler")
+    ;
+
+    var cxx_compiler_executable = "";
+    cxx_compiler_executable = 
+      pkgconfig.getpkgfielddflt ehandler (toolchain_name+"_cxx_compiler_executable", "compiler")
+    ;
+
+
+    var toolchain_maker =
        match toolchain_name with
       
        | "toolchain_clang_macosx" => toolchain_clang_macosx 
@@ -3286,7 +3318,7 @@ class BootFlx
        | "toolchain_gcc_linux" => toolchain_gcc_linux
        | "toolchain_msvc_win" => toolchain_msvc_win
        | x => 
-         Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] ( dll-name=x, setup-str="")
+         Dynlink::load-plugin-func1 [toolchain_t,toolchain_config_t] ( dll-name=x, setup-str="")
        endmatch
     ;
     if control*.INREGEX != "" do 
@@ -3317,9 +3349,9 @@ class BootFlx
           control.LINKER_OUTPUT_FILENAME <- "";
           control.STDOUT <- "";
           control.EXPECT <- "";
-          var dvars = FlxDepvars::cal_depvars(toolchain,*config,control,*loopctl);
+          var dvars = FlxDepvars::cal_depvars(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,control,*loopctl);
           println$ f"Processing [%02d/%02d]: %S" (i, n, file);
-          var pe = processing_env(toolchain,*config,*control,dvars);
+          var pe = processing_env(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,*control,dvars);
           result = pe.runit(ehandler);
           if result != 0 goto endoff;
           ++i;
@@ -3334,8 +3366,8 @@ class BootFlx
             );
             print prg;
         done
-        var dvars = FlxDepvars::cal_depvars(toolchain,*config,control, *loopctl);
-        var pe = processing_env(toolchain,*config,*control,dvars);
+        var dvars = FlxDepvars::cal_depvars(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,control, *loopctl);
+        var pe = processing_env(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,*control,dvars);
         result = pe.runit(ehandler);
       end 
     done

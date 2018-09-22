@@ -179,7 +179,7 @@ gcc_macosx:
 	# =========================================================
 	flx_build_prep --target-dir=build/release --target-bin=gcc_macosx --source-dir=build/release \
 	       	--source-bin=host --clean-target-bin-dir --copy-compiler  \
-	       	--configure --compiler=gcc --os=macosx --bits=64 --debug
+	       	--configure --compiler=gcc --os=macosx --bits=64 --cxx-compiler=g++-8 --debug
 
 	# =========================================================
 	# build gcc rtl on macosx

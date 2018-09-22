@@ -377,7 +377,7 @@ class FlxPkgConfig_core
        })
        dirs;
        if not found do
-         eprintln$ "package not found: " + pkg;
+         //eprintln$ "package not found: " + pkg;
          if require_pkg_exists do return_code = 1; done;
          if missing call add_val(pkg);
        done;
@@ -508,7 +508,7 @@ class FlxPkgConfig_query
     method gen getpkgfield (ehandler:1->0) (pkg:string, field:string) : list[string] = {
       var result,values = query$ list$ ("--field="+field, pkg);
       if result != 0 do
-        println$ "Can't find package " + pkg;
+        println$ "[FlxPkgConfigQuery: getpkgfield] Can't find package " + pkg;
         println$ "Searching in paths:";
         for path in paths do
           println$ "  " + path;
@@ -527,15 +527,11 @@ class FlxPkgConfig_query
       match values with
       | Cons (h,#Empty) => return h;
       | #Empty => 
-        println$ "Required field " + field + " not found in package "+pkg;
-        // FIXME
-        // System::exit(1);
+        println$ "[FlxPkgConfigQuery: getpkgfield1] Required field " + field + " not found in package "+pkg;
         throw_continuation ehandler;
 
       | _ =>
-        println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
-        // FIXME
-        // System::exit(1);
+        println$ "[FlxPkgConfigQuery: getpkgfield1] Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
         throw_continuation ehandler;
       endmatch;
     }
@@ -543,14 +539,13 @@ class FlxPkgConfig_query
     // Get the single value of a field in a particular package.
     // Bug out if multiple values.
     method gen getpkgfieldopt (ehandler:1->0) (pkg:string, field:string) : opt[string] = {
-      var values = getpkgfield ehandler (pkg,field);
+      var result,values = query$ list$ ("--field="+field, pkg);
+      if result !=0 return None[string]; // package or field missing 
       match values with
       | Cons (h,#Empty) => return Some h;
       | #Empty => return None[string];
       | _ =>
-        println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
-        // FIXME
-        // System::exit(1);
+        println$ "[FlxPkgConfigQuery: getpkgfieldopt ]Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
         throw_continuation ehandler;
       endmatch;
     }
@@ -570,7 +565,7 @@ class FlxPkgConfig_query
         "--keeprightmost" + "--rec" + "--list" +  pkg
       ;
       if result != 0 do
-        println$ "missing package for closure of " + pkg;
+        println$ "[GetPkgConfigQuery: getclosure] missing package for closure of " + pkg;
         // FIXME
         // System::exit(1);
         throw_continuation ehandler;

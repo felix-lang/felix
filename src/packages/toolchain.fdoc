@@ -34,7 +34,9 @@
 @h1 Toolchain support
 @tangle toolchain_config.flx
 
-typedef clang_config_t = (
+typedef toolchain_config_t = (
+  c_compiler_executable: string,
+  cxx_compiler_executable: string,
   header_search_dirs: list[string],
   macros : list[string],
   library_search_dirs: list[string],
@@ -495,7 +497,9 @@ class FlxLibBuild
   noinline gen make_lib 
   (
     db: FlxPkgConfig::FlxPkgConfigQuery_t,  
-    toolchain-maker: clang_config_t -> toolchain_t, 
+    toolchain-maker: toolchain_config_t -> toolchain_t, 
+    c_compiler_executable: string,
+    cxx_compiler_executable: string,
     src_dir:string, 
     target_dir:string, 
     share_rtl:string,
@@ -527,8 +531,10 @@ println$ "[make_lib] source directory " + srcpath;
     var result,depdlibs =  db.query("--field=provides_dlib"+deps); // packaged dlibs
     var macros = db.getpkgfield ehandler (pkg,"macros");
     var result2,ccflags = db.query$ list$ pkg, "--keepleftmost", "--field=cflags";
-    var config = 
+    var toolchain_config = 
       (
+        c_compiler_executable = c_compiler_executable,
+        cxx_compiler_executable = cxx_compiler_executable,
         header_search_dirs= list[string] (target_dir, srcpath, share_rtl)+build_includes,
         macros= macros,
         ccflags = ccflags,
@@ -538,7 +544,7 @@ println$ "[make_lib] source directory " + srcpath;
         debugln = dbug
       )
     ;
-    var toolchain = toolchain-maker config;
+    var toolchain = toolchain-maker toolchain_config;
     println$ #(toolchain.whatami);
 
     // THIS DOES NOT SEEM RIGHT, we're copying headers from share/src
@@ -720,7 +726,7 @@ include "std/felix/toolchain_interface";
 include "std/felix/toolchain_config";
 include "std/felix/flx_cxx";
 
-object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t = 
+object toolchain_gcc_linux (config:toolchain_config_t) implements toolchain_t = 
 {
 
   var cxx_compile_warning_flags = list$ "-w",
@@ -734,9 +740,11 @@ object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t =
     "-Wno-missing-braces"
   ;
   var c_compile_warning_flags = list[string]$ "-w", "-Wfatal-errors";
-  var c_compiler = "gcc";
-  var cxx_compiler = "g++";
-  var linker = "g++";
+
+  var c_compiler = let x = config.c_compiler_executable in if x == "" then "gcc" else x;
+  var cxx_compiler = let x = config.cxx_compiler_executable in if x == "" then "g++" else x;
+  var linker = cxx_compiler;
+
   var ccflags_for_dynamic_link = list[string] ("-shared");
   var base_c_compile_flags =
     "-D_POSIX" ! "-g" ! "-c" ! "-O1" ! "-fno-common"
@@ -805,6 +813,7 @@ object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t =
   {
     var result = 
       CxxCompiler::generic_cxx_compile_for_static
+  // case 2 of dflt
       (
         CCOBJ_STATIC_LIB = c_compiler, 
         CCFLAGS = "-fvisibility=hidden" ! base_c_compile_flags,
@@ -962,7 +971,7 @@ include "std/felix/toolchain_interface";
 include "std/felix/toolchain_config";
 include "std/felix/flx_cxx";
 
-object toolchain_gcc_macosx (config:clang_config_t) implements toolchain_t = 
+object toolchain_gcc_macosx (config:toolchain_config_t) implements toolchain_t = 
 {
 
   var cxx_compile_warning_flags = list$ "-w",
@@ -970,9 +979,11 @@ object toolchain_gcc_macosx (config:clang_config_t) implements toolchain_t =
     "-Wno-invalid-offsetof"
   ;
   var c_compile_warning_flags = list[string]$ "-w","-Wfatal-errors";
-  var c_compiler = "gcc";
-  var cxx_compiler = "g++";
-  var linker = "g++";
+
+  var c_compiler = let x = config.c_compiler_executable in if x == "" then "gcc" else x;
+  var cxx_compiler = let x = config.cxx_compiler_executable in if x == "" then "g++" else x;
+  var linker = cxx_compiler;
+
   var ccflags_for_dynamic_link = list[string] ("-dynamiclib");
 
   var base_c_compile_flags =
@@ -1197,7 +1208,7 @@ include "std/felix/toolchain_interface";
 include "std/felix/toolchain_config";
 include "std/felix/flx_cxx";
 
-object toolchain_clang_linux (config:clang_config_t) implements toolchain_t = 
+object toolchain_clang_linux (config:toolchain_config_t) implements toolchain_t = 
 {
 
   var cxx_compile_warning_flags = list$  "-w",
@@ -1216,9 +1227,11 @@ object toolchain_clang_linux (config:clang_config_t) implements toolchain_t =
     "-Wno-missing-braces"
   ;
   var c_compile_warning_flags = list[string]$ "-w","-Wfatal-errors";
-  var c_compiler = "clang";
-  var cxx_compiler = "clang++";
-  var linker = "clang++";
+
+  var c_compiler = let x = config.c_compiler_executable in if x == "" then "clang" else x;
+  var cxx_compiler = let x = config.cxx_compiler_executable in if x == "" then "clang++" else x;
+  var linker = cxx_compiler;
+
   var ccflags_for_dynamic_link = list[string] ("-shared");
 
   var base_cxx_compile_flags =  
@@ -1445,7 +1458,7 @@ include "std/felix/toolchain_interface";
 include "std/felix/toolchain_config";
 include "std/felix/flx_cxx";
 
-object toolchain_clang_macosx (config:clang_config_t) implements toolchain_t = 
+object toolchain_clang_macosx (config:toolchain_config_t) implements toolchain_t = 
 {
 
   var cxx_compile_warning_flags = list$ 
@@ -1458,10 +1471,10 @@ object toolchain_clang_macosx (config:clang_config_t) implements toolchain_t =
     "-Wfatal-errors", 
     "-Wno-array-bounds"
   ;
+  var c_compiler = let x = config.c_compiler_executable in if x == "" then "clang" else x;
+  var cxx_compiler = let x = config.cxx_compiler_executable in if x == "" then "clang++" else x;
+  var linker = cxx_compiler;
 
-  var c_compiler = "clang";
-  var cxx_compiler = "clang++";
-  var linker = "clang++";
   var ccflags_for_dynamic_link = list[string] ("-dynamiclib");
   var base_c_compile_flags = 
     "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
@@ -1737,12 +1750,13 @@ include "std/felix/toolchain_interface";
 include "std/felix/toolchain_config";
 include "std/felix/flx_cxx";
 
-object toolchain_msvc_win (config:clang_config_t) implements toolchain_t = 
+object toolchain_msvc_win (config:toolchain_config_t) implements toolchain_t = 
 {
 
-  var c_compiler = "cl";
-  var cxx_compiler = "cl";
-  var linker = "cl";
+  var c_compiler = let x = config.c_compiler_executable in if x == "" then "cl" else x;
+  var cxx_compiler = let x = config.cxx_compiler_executable in if x == "" then "cl" else x;
+  var linker = cxx_compiler;
+
   var base_c_compile_flags = Empty[string];
   var base_cxx_compile_flags = Empty[string];
 
@@ -1954,7 +1968,7 @@ include "std/felix/toolchain_config";
 include "std/felix/flx_cxx";
 
 object toolchain_clang_apple_iOS_maker (sdk_tag:string, archs:list[string])
-  (config:clang_config_t) implements toolchain_t = 
+  (config:toolchain_config_t) implements toolchain_t = 
 {
   //eprintln$ "toolchain_clang_apple_iOS_maker sdk=" + sdk_tag + ", arches=" + archs.str;
   gen get (s:string):string = {
@@ -2210,11 +2224,11 @@ object toolchain_clang_apple_iOS_maker (sdk_tag:string, archs:list[string])
   }
 }
 
-gen toolchain_clang_apple_iPhoneOS_armv7_arm64 (config:clang_config_t) : toolchain_t =>
+gen toolchain_clang_apple_iPhoneOS_armv7_arm64 (config:toolchain_config_t) : toolchain_t =>
   toolchain_clang_apple_iOS_maker ("iphoneos",(["armv7","arm64"])) config
 ;
 
-gen toolchain_clang_apple_iPhoneSimulator (config:clang_config_t) : toolchain_t = {
+gen toolchain_clang_apple_iPhoneSimulator (config:toolchain_config_t) : toolchain_t = {
   return toolchain_clang_apple_iOS_maker ("iphonesimulator",(["x86_64","i386"])) config;
 }
 
@@ -2235,7 +2249,7 @@ include "std/felix/toolchain/clang_iOS_generic";
 
 // varies macosx vs linus,  gcc vs clang
 
-export fun toolchain_clang_apple_iPhoneOS_armv7_arm64 of (clang_config_t) as "toolchain_iphoneos";
+export fun toolchain_clang_apple_iPhoneOS_armv7_arm64 of (toolchain_config_t) as "toolchain_iphoneos";
 
 fun setup(config_data:string) = {
    C_hack::ignore (config_data); // due to bug in Felix
@@ -2251,7 +2265,7 @@ include "std/felix/toolchain/clang_iOS_generic";
 
 // varies macosx vs linus,  gcc vs clang
 
-export fun toolchain_clang_apple_iPhoneSimulator of (clang_config_t) as "toolchain_iphonesimulator";
+export fun toolchain_clang_apple_iPhoneSimulator of (toolchain_config_t) as "toolchain_iphonesimulator";
 
 fun setup(config_data:string) = {
    C_hack::ignore (config_data); // due to bug in Felix
@@ -2268,7 +2282,7 @@ export fun setup of (string) as "toolchain_iphonesimulator_setup";
 @tangle toolchain_gcc_linux.flx
 include "std/felix/toolchain/gcc_linux";
 
-export fun toolchain_gcc_linux of (clang_config_t) as "toolchain_gcc_linux";
+export fun toolchain_gcc_linux of (toolchain_config_t) as "toolchain_gcc_linux";
 
 fun setup(config_data:string) = {
    C_hack::ignore (config_data); // due to bug in Felix
@@ -2284,7 +2298,7 @@ export fun setup of (string) as "toolchain_gcc_linux_setup";
 @tangle toolchain_gcc_macosx.flx
 include "std/felix/toolchain/gcc_macosx";
 
-export fun toolchain_gcc_macosx of (clang_config_t) as "toolchain_gcc_macosx";
+export fun toolchain_gcc_macosx of (toolchain_config_t) as "toolchain_gcc_macosx";
 
 fun setup(config_data:string) = {
    C_hack::ignore (config_data); // due to bug in Felix
@@ -2302,7 +2316,7 @@ include "std/felix/toolchain/clang_linux";
 
 // varies macosx vs linus,  gcc vs clang
 
-export fun toolchain_clang_linux of (clang_config_t) as "toolchain_clang_linux";
+export fun toolchain_clang_linux of (toolchain_config_t) as "toolchain_clang_linux";
 
 
 fun setup(config_data:string) = {
@@ -2321,7 +2335,7 @@ include "std/felix/toolchain/clang_macosx";
 
 // varies macosx vs linus,  gcc vs clang
 
-export fun toolchain_clang_macosx of (clang_config_t) as "toolchain_clang_macosx";
+export fun toolchain_clang_macosx of (toolchain_config_t) as "toolchain_clang_macosx";
 
 fun setup(config_data:string) = {
    C_hack::ignore (config_data); // due to bug in Felix
@@ -2338,7 +2352,7 @@ include "std/felix/toolchain/msvc_win";
 
 // varies macosx vs linus,  gcc vs clang
 
-export fun toolchain_msvc_win of (clang_config_t) as "toolchain_msvc_win";
+export fun toolchain_msvc_win of (toolchain_config_t) as "toolchain_msvc_win";
 
 fun setup(config_data:string) = {
    C_hack::ignore (config_data); // due to bug in Felix
