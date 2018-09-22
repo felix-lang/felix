@@ -178,7 +178,7 @@ var out = fold_left
 In Felix imperative programming is done with statements
 and procedures, but procedures are a special case
 of coroutines. Any unit procedure can be spawned
-as a _fibre_ or _lighweight thread_ which communicates
+as a _fibre_ or _lightweight thread_ which communicates
 with other fibres using _synchronous channels_.
 
 
