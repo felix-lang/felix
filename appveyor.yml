@@ -6,7 +6,7 @@ install:
   - cl
   - git clone -q -b ocaml-4.06.0 --depth 1 https://github.com/felix-lang/win64ocaml.git
   - move win64ocaml c:\ocaml
-  - set PATH=C:\Python35-x64;c:\ocaml\bin;%PATH%
+  - set PATH=C:\Python36-x64;c:\ocaml\bin;%PATH%
   - set OCAMLLIB=c:\ocaml\lib
   - set PWD=.
   - set PATH=build\release\host\bin;build\release\host\lib\rtl;%PATH%
@@ -27,8 +27,6 @@ install:
 environment:
   access_token:
     secure: Mh/B12zvz5BIkV7bDrjj9WOc2UR5fI0ZCpmwehs/PNsHGkzwMIHnvBDlSpumKlmz
-  matrix:
-    - PYTHON: "C:\\Python36-x64"
  
 platform: 
   - x64
