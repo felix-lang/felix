@@ -24,7 +24,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 from ctypes import c_void_p, POINTER, sizeof, Structure, windll, WinError, WINFUNCTYPE
-from ctypes.wintypes import BOOL, BYTE, DWORD, HANDLE, LPCWSTR, LPWSTR, UINT, WORD
+from ctypes.wintypes import BOOL, BYTE, DWORD, HANDLE, LPCWSTR, LPWSTR, UINT, WORD, LPCSTR
 
 LPVOID = c_void_p
 LPBYTE = POINTER(BYTE)
