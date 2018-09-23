@@ -27,7 +27,9 @@ install:
 environment:
   access_token:
     secure: Mh/B12zvz5BIkV7bDrjj9WOc2UR5fI0ZCpmwehs/PNsHGkzwMIHnvBDlSpumKlmz
-
+  matrix:
+    -- PYTHON: "C:\\Python36-x64"
+ 
 platform: 
   - x64
 
