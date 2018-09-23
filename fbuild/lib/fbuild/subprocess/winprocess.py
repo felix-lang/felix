@@ -127,7 +127,7 @@ class EnvironmentBlock:
             values = ["%s=%s" % (key, value)
                       for (key, value) in dict.items()]
             values.append("")
-            self._as_parameter_ = LPCWSTR("\0".join(values))
+            self._as_parameter_ = LPCSTR("\0".join(values).encode("utf-16le"))
 
 # CreateProcess()
 
