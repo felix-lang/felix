@@ -4,7 +4,7 @@ include "sdl/SDL_image";
 include "gui/__init__";
 open FlxGui;
 
-println$ "Basic Menu Test";
+println$ "Configuration Tool";
 
 // Initialise the SDL system (SDL + TTF + IMAGE)
 FlxGui::init();
@@ -412,7 +412,7 @@ proc display (w:window_t)
   var surf = get_surface w;
   w.remove "bg";
   w.add$ mk_drawable "bg" 0u32 FlxGui::clear lightgrey;
-  w.add$ mk_drawable "bg" 0u32 FlxGui::write (100,10,font,black,"Basic Menu Test");
+  w.add$ mk_drawable "bg" 0u32 FlxGui::write (100,10,font,black,"Configuration Tool");
 }
 
 proc mk_field 
@@ -473,10 +473,10 @@ connector pins
     | KEYDOWN kd when kd.keysym.sym \in (SDLK_TAB, SDLK_RETURN) =>
       var sel :SDL_Event;
       &sel.type <- SDL_WINDOWEVENT.uint32;
-      sel.window.event = SDL_WINDOWEVENT_FOCUS_LOST.uint8;
+      &sel.window.event <- SDL_WINDOWEVENT_FOCUS_LOST.uint8;
       write$ h.fields.selected_field.0,sel;
       selected_field = (selected_field + 1) % h.fields.len.int;
-      sel.window.event = SDL_WINDOWEVENT_FOCUS_GAINED.uint8;
+      &sel.window.event <- SDL_WINDOWEVENT_FOCUS_GAINED.uint8;
       write$ h.fields.selected_field.0,sel;
     | MOUSEBUTTONDOWN mbd =>
       for i in 0 ..< h.fields.len.int do
@@ -484,14 +484,14 @@ connector pins
         var x,y = mbd.x, mbd.y;
         if SDL_Point (x.int, y.int) \in d.get_client_rect() do
           //println$ "[Evt handler] Button down in client rect of line edit " + d.get_tag();
-          ev2.type = SDL_WINDOWEVENT.uint32;
-          ev2.window.event = SDL_WINDOWEVENT_FOCUS_GAINED.uint8;
+          &ev2.type <- SDL_WINDOWEVENT.uint32;
+          &ev2.window.event <- SDL_WINDOWEVENT_FOCUS_GAINED.uint8;
           write$ h.fields.i.0, ev2;
           write$ h.fields.i.0, e;
           selected_field = i;
         else
-          ev2.type = SDL_WINDOWEVENT.uint32;
-          ev2.window.event = SDL_WINDOWEVENT_FOCUS_LOST.uint8;
+          &ev2.type <- SDL_WINDOWEVENT.uint32;
+          &ev2.window.event <- SDL_WINDOWEVENT_FOCUS_LOST.uint8;
           write$ h.fields.i.0,ev2; 
         done
       done
@@ -529,10 +529,14 @@ begin
 
   // create a window
   var w1 = create_resizable_window("Config Manager",100,100,800,400);
+ 
+  
   w1.display ();
+  w1.add$ mk_drawable FlxGui::write (10,20,font,black,"Install Directory: ");
 
   var iresp,oresp = #mk_ioschannel_pair[menu_action_t];
   var ievent,oevent = #mk_ioschannel_pair[event_t];
+
 
   mk_menu (w1, 1,103, menu, init_state, oresp, ievent);
 /*
@@ -543,7 +547,7 @@ begin
   var ch1: oschannel[event_t]; 
   var ed1: line_buffer_interface; 
   var dc1: line_buffer_display_controller_interface;
-  mk_field (w1, 50, 50, font, black, white, "EDITFIELD ONE", &ed1, &dc1, &ch1);
+  mk_field (w1, 250, 20, font, black, white, "EDITFIELD ONE", &ed1, &dc1, &ch1);
   
   var handler_data : handler_data_t = (
     w = w1,
@@ -568,7 +572,7 @@ begin
   w1.update ();
 
   // run
-  wm.run_with_timeout 60.0;
+  wm.run_until_quit();
   println$ "Flx_config quitting";
 end
 

@@ -1,4 +1,4 @@
-@title GUI
+utitle GUI
 @tangler __init__.flx                                  = share/lib/gui/__init__.flx
 @tangler types.flx                                     = share/lib/gui/types.flx
 @tangler events.flx                                    = share/lib/gui/events.flx
