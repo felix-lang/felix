@@ -34,6 +34,7 @@ def ErrCheckBool(result, func, args):
     """errcheck function for Windows functions that return a BOOL True
     on success"""
     if not result:
+        print("ErrCheckBool failed: result = " + str result + ", args = " + str args)
         raise WinError()
     return args
 
