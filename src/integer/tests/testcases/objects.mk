@@ -1,0 +1,26 @@
+INTEGER_TESTCASES_OBJECTS=constructor.o   \
+                          assignment.o    \
+                          typecast.o      \
+                          accessors.o     \
+                          and.o           \
+                          or.o            \
+                          xor.o           \
+                          invert.o        \
+                          leftshift.o     \
+                          rightshift.o    \
+                          logical.o       \
+                          gt.o            \
+                          gte.o           \
+                          lt.o            \
+                          lte.o           \
+                          equals.o        \
+                          notequals.o     \
+                          add.o           \
+                          sub.o           \
+                          mult.o          \
+                          div.o           \
+                          mod.o           \
+                          fix.o           \
+                          unary.o         \
+                          functions.o     \
+                          type_traits.o

@@ -1,0 +1,19 @@
+#ifndef _INTEGER_CONFIG_
+  #define _INTEGER_CONFIG_
+  #if defined(_MSC_VER)
+    #if defined(_DLL)
+      #define _INTEGER_EXPORT __declspec(dllexport)
+      #define _INTEGER_IMPORT __declspec(dllimport)
+    #else
+      #define _INTEGER_EXPORT
+      #define _INTEGER_IMPORT
+    #endif
+  #else
+    // All modules on Unix are compiled with -fvisibility=hidden
+    // All API symbols get visibility default
+    // whether or not we're static linking or dynamic linking (with -fPIC)
+    #define _INTEGER_EXPORT __attribute__((visibility("default"))) 
+    #define _INTEGER_IMPORT __attribute__((visibility("default"))) 
+  #endif
+#endif
+

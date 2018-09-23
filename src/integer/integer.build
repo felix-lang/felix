@@ -1,0 +1,8 @@
+// IMPLEMENTATION BUILD HEADER
+#ifndef _INTEGER_BUILD
+  #define _INTEGER_BUILD
+  #include "integer_config.include"
+  #define INTEGER_EXTERN _INTEGER_EXPORT
+#endif
+#include "integer.include"
+
