@@ -15,7 +15,7 @@ Specific Documents
 * Felix Tutorial <http://felix-tutorial.readthedocs.io/en/latest/>
 * Felix Library Packages <http://felix-library-packages.readthedocs.io/en/latest/>
 * Articles on Modern Computing <http://modern-computing.readthedocs.io/en/latest/>
-* Felix Home Page <http://felix-lang.org>
+* Felix Home Page <http://felix-lang.github.io/felix/>
 * Git Repository <https://github.com/felix-lang/felix>
 
 General Description
