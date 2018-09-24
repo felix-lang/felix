@@ -45,6 +45,7 @@ def build_runtime(phase):
     macros = ['BUILD_RTL']
     libs = [
         call('buildsystem.flx_uint256_t.build_runtime', phase),
+        #call('buildsystem.flx_integer.build_runtime', phase),
         call('buildsystem.flx_strutil.build_runtime', phase),
         call('buildsystem.flx_dynlink.build_runtime', phase),
         call('buildsystem.flx_async.build_runtime', phase),
@@ -1668,7 +1669,7 @@ Description: Felix Core Run Time Libraries
 Requires: flx flx_gc 
 Requires: flx_exceptions flx_pthread flx_async 
 Requires: re2 flx_dynlink demux faio
-Requires: flx_uint256_t
+Requires: flx_uint256_t 
 Requires: sqlite3
 @
 
@@ -1677,7 +1678,7 @@ Description: Felix Core Run Time Libraries (no threads, no async I/O)
 Requires: flx flx_gc flx_thread_free_run 
 Requires: flx_exceptions
 Requires: re2 flx_dynlink
-Requires: flx_uint256_t
+Requires: flx_uint256_t 
 Requires: sqlite3
 @
 
