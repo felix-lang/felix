@@ -472,10 +472,10 @@ typedef fun n"`*" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_mul",(x,y)
 typedef fun n"`/" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_div",(x,y),UNITSUM);
 typedef fun n"`%" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_mod",(x,y),UNITSUM);
 
-typedef fun n"_min" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_min",(x,y),UNITSUM);
-typedef fun n"`max" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_max",(x,y),UNITSUM);
-typedef fun n"`gcd" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_gcd",(x,y),UNITSUM);
-typedef fun n"`lcd" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_lcm",(x,y),UNITSUM);
+typedef fun n"_unitsum_min" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_min",(x,y),UNITSUM);
+typedef fun n"_unitsum_max" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_max",(x,y),UNITSUM);
+typedef fun n"_unitsum_gcd" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_gcd",(x,y),UNITSUM);
+typedef fun n"_unitsum_lcm" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_lcm",(x,y),UNITSUM);
 
 typedef fun n"`<" (x:UNITSUM,y:UNITSUM):BOOL=> _typeop ("_unitsum_lt",(x,y),BOOL);
 typedef fun n"`>" (x:UNITSUM,y:UNITSUM):BOOL=> _typeop ("_unitsum_lt",(y,x),BOOL);

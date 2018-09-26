@@ -616,17 +616,20 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
 
   | EXPR_case_index (sr,e) ->
     let (e',t) as e  = be e in
-    begin if Flx_typeops.isunitsum t then ()
-    else match t with
-     | BTYP_inst (i,_,_) ->
-      begin match hfind "lookup" state.sym_table i with
-      | { Flx_sym.symdef=SYMDEF_union _} -> ()
-      | { Flx_sym.id=id} -> 
-        clierrx "[Flx_bind_expression:593: E181] " sr ("Argument of caseno must be sum or union type, got abstract type " ^ id)
-      end
-    | BTYP_type_var (_,Flx_kind.KIND_unitsum) -> ()
-    | BTYP_type_apply (BTYP_typeop (_,_,Flx_kind.KIND_unitsum),_) -> ()
-    | _ -> clierrx "[Flx_bind_expression:595: E182] " sr ("Argument of caseno must be sum or union type, got " ^ sbt bsym_table t)
+    begin 
+      if Flx_typeops.isunitsum t then ()
+      else match t with
+       | BTYP_type_var (_,mt) ->
+         failwith ("Type variable has wrong meta-type, expected UNITSUM got " ^ Flx_kind.sk mt)
+       | BTYP_inst (i,_,_) ->
+        begin match hfind "lookup" state.sym_table i with
+        | { Flx_sym.symdef=SYMDEF_union _} -> ()
+        | { Flx_sym.id=id} -> 
+          clierrx "[Flx_bind_expression:593: E181] " sr ("Argument of caseno must be sum or union type, got abstract type " ^ id)
+        end
+      (* | BTYP_type_var (_,Flx_kind.KIND_unitsum) -> () *)
+      | BTYP_type_apply (BTYP_typeop (_,_,Flx_kind.KIND_unitsum),_) -> ()
+      | _ -> clierrx "[Flx_bind_expression:595: E182] " sr ("Argument of caseno must be sum or union type, got " ^ sbt bsym_table t)
     end
     ;
     let int_t = bt sr (TYP_name (sr,"int",[])) in
