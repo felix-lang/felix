@@ -494,6 +494,24 @@ open class Farray
     return o;
   }
 
+  // this routine SHOULD check FIRST + LEN <= N
+  // we can perform that calculation now .. but there's no way yet to assert it
+  // we can, actually, add it as a constraint ..
+  // but we want the constraint to fail on monomorphisation
+  // NOT during overload resolution .. because that would just reject
+  // the candidate and lead to a not found error instead of a constraint violation error....
+  fun subarray[FIRST:UNITSUM,LEN:UNITSUM,T,N:UNITSUM] (a:T^N)= {
+    typedef K =_typeop("_unitsum_min",(LEN, N `- FIRST),UNITSUM);
+    var o : T ^ K;
+    for i in ..[K] do
+      var first = Typing::arrayindexcount[FIRST].int;
+      var outix = caseno i;
+      var inpix = (first + outix) :>> N; // checked at run time?
+      &o.i <- a.inpix;
+    done
+    return o;
+  }
+
   //$ Append value to end of an array (functional).
   fun join[T, N:UNITSUM] (x:array[T, N]) (y:T):array[T, N `+ 1] = {
     var o : array[T, N `+ 1];

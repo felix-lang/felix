@@ -478,22 +478,19 @@ let solve_mgu
 =
 let name = id in
 (*
+if id = debugid then begin
 print_endline ("Solve mgu, for "^id^", parent_vs= " ^
-catmap "," (fun (name,i,mt) -> name ^"<"^string_of_int i^">:"^ string_of_typecode mt)
+catmap "," (fun (name,i,mt) -> name ^"<"^string_of_int i^">:"^ str_of_kindcode mt)
 parent_vs)
 ;
 print_endline ("Solve mgu, for "^id^", = base_vs= " ^
-catmap "," (fun (name,i,mt) -> name ^"<"^string_of_int i^">:"^ string_of_typecode mt)
+catmap "," (fun (name,i,mt) -> name ^"<"^string_of_int i^">:"^ str_of_kindcode mt)
 base_vs)
 ;
 print_endline (" solve_mgu .. mgu = " ^ string_of_varlist bsym_table mgu);
-*)
-(*
   print_endline "Specialisation detected";
-*)
-(*
-if name = debugid then
   print_endline (" solve_mgu .. mgu = " ^ string_of_varlist bsym_table mgu);
+end;
 *)
   let mgu = ref mgu in
   (* each universally quantified variable must be fixed
@@ -552,16 +549,29 @@ if name = debugid then
     let extra_eqns = ref [] in
     let dvars = ref BidSet.empty in
 
-    List.iter begin fun (_,i,mt)->
+    List.iter begin fun (s,i,mt)->
       if not (List.mem_assoc i !mgu) then (* mgu vars get eliminated *)
-      dvars := BidSet.add i !dvars
+      begin
+if id = debugid then
+        print_endline ("Adding extra (dependent) type variable " ^ s ^ "<" ^ string_of_int i ^ ">");
+        dvars := BidSet.add i !dvars
+      end
     end entry_kind.spec_vs;
 
     List.iter begin fun (s,j',tp) ->
+(*
+if id = debugid then
+print_endline ("Scanning type variable " ^ s ^ "<" ^ si j' ^ ">: " ^ str_of_kindcode tp);
+*)
       let et,explicit_vars1,any_vars1, as_vars1, eqns1 =
         (* this is not really right, kinds do act as constraints *)
         match tp with
-        | KND_tpattern t -> type_of_tpattern counter t
+        | KND_tpattern t -> 
+(*
+if id = debugid then
+print_endline (" .. found tpattern .. analysing .. ");
+*)
+          type_of_tpattern counter t
         | KND_generic (* overload treats this as a type variable in this routine *)
         | KND_type
         | KND_unitsum
@@ -572,6 +582,15 @@ if name = debugid then
          print_endline ("Flx_overload. Expected KND_tpattern, got " ^ str_of_kindcode tp);
          assert false
       in
+(*
+if id = debugid then begin
+print_endline (".. et = " ^ string_of_typecode et);
+print_endline (".. explicit vars = " ^ catmap ", " (fun (i,s) -> s ^ "<" ^ string_of_int i ^ ">") explicit_vars1);
+print_endline (".. any vars = " ^ catmap ", " (fun (i) -> string_of_int i) any_vars1);
+print_endline (".. as vars = " ^ catmap ", " (fun (i,s) -> s ^ "<" ^ string_of_int i ^ ">") as_vars1);
+print_endline (".. eqns = " ^ catmap ", " (fun (i,e) -> string_of_int i  ^ " = " ^ string_of_typecode e) eqns1);
+end;
+*)
       let et = bt sr et in
       let et = specialize_domain sr base_vs entry_kind.sub_ts et in
       let et = list_subst counter !mgu et in
@@ -842,11 +861,9 @@ btyp_type_var (i,mt))
 if name = debugid then print_endline ("BUILDING TYPE CONSTRAINTS");
 *)
     let type_constraint = build_type_constraints counter bsym_table (bt sr) id sr base_vs in
-(*
 if name = debugid then print_endline ("TYPE CONSTRAINTS BUILT");
 if name = debugid then
     print_endline ("type constraint1(build_type_constraints) " ^ sbt bsym_table type_constraint);
-*)
 (*
 if name = debugid then
     print_endline ("type constraint2(con) " ^ sbt bsym_table con);
@@ -899,7 +916,7 @@ if name = debugid then
 
     | x ->
 (*
-   print_endline ("TRYING FOR IMPLICATION: Constraint not reduced, do special typeset implication check!");
+   print_endline ("TRYING FOR IMPLICATION: id = "^id^ ",  Constraint not reduced, do special typeset implication check!");
 *)
         let env_traint = btyp_typeop "_type_to_staticbool" env_traint Flx_kind.KIND_bool in
         let implied = constraint_implies bsym_table counter env_traint reduced_constraint in
@@ -1135,7 +1152,6 @@ let overload
 :
   overload_result option
 =
-(*
 if name = debugid then
 begin
   print_endline ("Overload " ^ name);
@@ -1145,11 +1161,15 @@ begin
     catmap ",\n" (full_string_of_entry_kind sym_table bsym_table) fs ^ "\n");
   print_endline ("Input ts = " ^ catmap ", " (sbt bsym_table) ts);
 end;
-*)
   let env_traint = btyp_intersect (
     filter_out_units  
     (List.map
+
       (fun (ix,id,_,_,con) -> 
+(*
+if name = debugid then
+  print_endline ("Considering ENVIRONMENT constraint: " ^ id ^ "<" ^ string_of_int ix ^">=" ^ string_of_typecode con);
+*)
         if List.mem ix rs.constraint_overload_trail then btyp_tuple [] else
         let rs = { rs with constraint_overload_trail = ix::rs.constraint_overload_trail } in
         let r = match con with | TYP_tuple [] -> Flx_btype.btyp_tuple [] | _ -> bt rs call_sr ix con in
@@ -1159,7 +1179,8 @@ end;
     ))
   in
 (*
-if name = debugid then print_endline ("ENVIRONMENT CONSTRAINT BUILT");
+if name = debugid then 
+print_endline ("ENVIRONMENT CONSTRAINT BUILT = " ^ sbt bsym_table env_traint);
 *)
   (* HACK for the moment *)
   let aux i =
@@ -1198,11 +1219,9 @@ if name = debugid then print_endline "INSIDE AUX: Failed to find result";
       | Fail -> false
     end fun_defs
   in
-(*
   if name = debugid then
     print_endline ("INSIDE AUX: First stage: matching Candidates are:\n" ^ 
       catmap ",\n" (show_result bsym_table) candidates^"\n");
-*)
     (*
     print_endline "Got matching candidates .. ";
     *)

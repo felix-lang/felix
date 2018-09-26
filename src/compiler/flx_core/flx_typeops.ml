@@ -15,6 +15,9 @@ let isunitsum x = match x with
   | BTYP_type_var (_,mt) 
   | BTYP_typeop (_,_,mt)
     -> (match mt with | KIND_unitsum -> true | _ -> false)
+  | BTYP_type_apply (BTYP_type_function (_,KIND_unitsum,_),_) -> true
+  | BTYP_type_apply (BTYP_inst(_,_,KIND_function (_,KIND_unitsum)),_) -> true
+  | BTYP_inst (_,_,KIND_unitsum)
   | _ -> false
  
 
@@ -37,7 +40,13 @@ let unitsum_binop mk_raw_typeop op t k eval =
   match t with
   | BTYP_type_tuple [x; y] ->
    if not (isunitsum x && isunitsum y) 
-   then failwith ("Flx_btype: typeop " ^ op ^ " requires unitsum arguments");
+   then begin
+     failwith ("Flx_btype: typeop " ^ op ^ " requires unitsum arguments, got:" ^
+       "\nArg1 = " ^ st x ^
+       "\nArg2 = " ^ st y ^
+       "\n"
+     );
+   end;
 
    begin match unitsum_int x, unitsum_int y with
    | Some m, Some n -> btyp_unitsum (eval m n)

@@ -242,6 +242,32 @@ let cal_bind_apply
           bexpr_apply t (prj,a)
         | _ -> raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->
+
+      (* ---------------------------------------------------------- *)
+      (* special case, array pointer projection  *) 
+      (* ---------------------------------------------------------- *)
+      try
+        let (bf,tf) as f = 
+          try be f' 
+          with 
+          | Flx_exceptions.SimpleNameNotFound _ as x -> raise x
+          | exn -> raise Flx_dot.OverloadResolutionError 
+        in
+        match tf, ta with
+        (* Check for array projection *)
+        | ixt1, BTYP_pointer (BTYP_array (t,ixt2)) when ixt1 = ixt2 -> (* SHOULD USE UNIFICATION *) 
+          let pt = btyp_pointer t in
+          let prj = bexpr_aprj f ta pt in
+          bexpr_apply pt (prj,a)
+        | _ -> raise Flx_dot.OverloadResolutionError
+      with Flx_dot.OverloadResolutionError ->
+
+
+
+
+
+
+
       (*
         print_endline ("Can't interpret apply function "^string_of_expr f'^" as projection, trying as an actual function");
       *)

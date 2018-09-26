@@ -616,17 +616,16 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
 
   | EXPR_case_index (sr,e) ->
     let (e',t) as e  = be e in
-    begin match t with
-    | BTYP_unitsum _ -> ()
-    | BTYP_rptsum _ -> ()
-    | BTYP_sum _ -> ()
-    | BTYP_variant _ -> ()
-    | BTYP_type_var _ -> ()
-    | BTYP_inst (i,_,_) ->
+    begin if Flx_typeops.isunitsum t then ()
+    else match t with
+     | BTYP_inst (i,_,_) ->
       begin match hfind "lookup" state.sym_table i with
       | { Flx_sym.symdef=SYMDEF_union _} -> ()
-      | { Flx_sym.id=id} -> clierrx "[Flx_bind_expression:593: E181] " sr ("Argument of caseno must be sum or union type, got abstract type " ^ id)
+      | { Flx_sym.id=id} -> 
+        clierrx "[Flx_bind_expression:593: E181] " sr ("Argument of caseno must be sum or union type, got abstract type " ^ id)
       end
+    | BTYP_type_var (_,Flx_kind.KIND_unitsum) -> ()
+    | BTYP_type_apply (BTYP_typeop (_,_,Flx_kind.KIND_unitsum),_) -> ()
     | _ -> clierrx "[Flx_bind_expression:595: E182] " sr ("Argument of caseno must be sum or union type, got " ^ sbt bsym_table t)
     end
     ;
