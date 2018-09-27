@@ -37,7 +37,7 @@ script:
 - g++ --version
 - FLX_MIN_MEM=100000 make "FBUILD_PARAMS=--build-cc=gcc --build-cxx=g++"
 - 
-- make rebuild uproot
+- #make rebuild uproot
 after_success:
 #- mkdir linuxgccbinary/build
 #- mkdir linuxgccbinary/build/release
