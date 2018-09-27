@@ -22,8 +22,10 @@ before_script:
 - git config --global push.default simple
 - 
 - mkdir -p build
-- 
-- 
+- git clone -q --depth=1 https://skaller:${GITHUB_TOKEN}@github.com/felix-lang/linuxgccbinary.git
+- mkdir -p build
+- cp -r linuxgccbinary/build/* build
+- rm -rf build/release/share/lib/
 script:
 - mkdir -p bin
 - sudo rm -rf /usr/bin/gcc
@@ -39,18 +41,18 @@ script:
 - 
 - #make rebuild uproot
 after_success:
-#- mkdir linuxgccbinary/build
-#- mkdir linuxgccbinary/build/release
-#- mkdir linuxgccbinary/build/release/share
-#- mkdir linuxgccbinary/build/release/host
-#- cp -r build/release/share/* linuxgccbinary/build/release/share
-#- cp -r build/release/host/* linuxgccbinary/build/release/host
-#- cd linuxgccbinary
-#- git add build/release/host/*
-#- git add build/release/share/*
-#- git commit -a -m "travis rebuild"
-#- git push >/dev/null 2>1
-#- cd ..
+- mkdir linuxgccbinary/build
+- mkdir linuxgccbinary/build/release
+- mkdir linuxgccbinary/build/release/share
+- mkdir linuxgccbinary/build/release/host
+- cp -r build/release/share/* linuxgccbinary/build/release/share
+- cp -r build/release/host/* linuxgccbinary/build/release/host
+- cd linuxgccbinary
+- git add build/release/host/*
+- git add build/release/share/*
+- git commit -a -m "travis rebuild"
+- git push >/dev/null 2>1
+- cd ..
 before_deploy:
 - export FLX_VERSION=`python3 showversion.py`
 - tar -czvf felix-${FLX_VERSION}-linux64-gcc-8.tgz build/release/host build/release/share
