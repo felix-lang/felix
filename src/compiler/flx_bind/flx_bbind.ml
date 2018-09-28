@@ -715,11 +715,11 @@ print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid 
       let counter = ref 0 in
       map
       (function
-        | TYP_name (_,id,[]) when id = sym.Flx_sym.id ->
+        | `TYP_name (_,id,[]) when id = sym.Flx_sym.id ->
           if !client_data_pos = -1 then
             client_data_pos := !counter
           ;
-          let address = TYP_name (sym.Flx_sym.sr, "address", []) in
+          let address = `TYP_name (sym.Flx_sym.sr, "address", []) in
           bt address
         | t -> incr counter; bt t
       )
@@ -735,7 +735,7 @@ print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid 
       (
         filter
         (function
-          | TYP_name (_,id,[]) when id = sym.Flx_sym.id -> false
+          | `TYP_name (_,id,[]) when id = sym.Flx_sym.id -> false
           | t -> true
         )
         ts_orig
@@ -755,7 +755,7 @@ print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid 
     let ts_cf =
       map
       (function
-        | TYP_name (_,id,[]) when id = sym.Flx_sym.id -> tf
+        | `TYP_name (_,id,[]) when id = sym.Flx_sym.id -> tf
         | t -> bt t
       )
       ts_orig
@@ -1249,10 +1249,10 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
 print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
 *)
       begin match sym.Flx_sym.symdef with
-      | Flx_types.SYMDEF_function ((Satom (psr,kind,pid,TYP_defer _,_),None),ret,effects,props,exes) ->
+      | Flx_types.SYMDEF_function ((Satom (psr,kind,pid,`TYP_defer _,_),None),ret,effects,props,exes) ->
 print_endline ("[flx_bbind] bind_symbol FUNCTION " ^ sym.Flx_sym.id ^ " .. DEFERED");
         defered := i :: !defered
-      | Flx_types.SYMDEF_parameter (kind,TYP_defer _) ->
+      | Flx_types.SYMDEF_parameter (kind,`TYP_defer _) ->
 print_endline ("[flx_bbind] bind_symbol PARAMETER " ^ sym.Flx_sym.id ^ " .. DEFERED");
         defered := i :: !defered
  

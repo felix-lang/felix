@@ -287,20 +287,20 @@ print_endline ("Not found in vmap, remaping with index remapper: " ^ si j);
     in
     let rec fe e = Flx_maps.full_map_expr fi ft fe e
     and ft t = match t with 
-    | TYP_typeof e ->
+    | `TYP_typeof e ->
       let e' = fe e in
 (*
 print_endline ("Unbound type remapper typeof " ^ string_of_expr e ^ " --> " ^ string_of_expr e');
 *)
-      TYP_typeof e'
+      `TYP_typeof e'
 
-    | TYP_var index -> 
+    | `TYP_var index -> 
       let j = fi index in
 (*
 print_endline ("Ubound type remapper type variable " ^ si index ^ " --> " ^ si j);
 *)
-      TYP_var j  
-    | TYP_name (sr,tname,[]) as t -> 
+      `TYP_var j  
+    | `TYP_name (sr,tname,[]) as t -> 
 (*
 print_endline ("Trying to bind type name=" ^ tname);
 *)

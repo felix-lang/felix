@@ -108,7 +108,7 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
           print_string ("Binding device " ^ s); flush stdout;
         end;
 
-        let name = EXPR_name (sr,s,[]) in
+        let name = `EXPR_name (sr,s,[]) in
         let (_,t) as bname = 
           try be name 
           with exn -> print_endline ("Cannot bind device name " ^ s); raise exn 
@@ -420,7 +420,7 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
 *)
       (* waste, already done but didn't save, FIXME *)
       let bdev = 
-        let name = EXPR_name (sr,device,[]) in
+        let name = `EXPR_name (sr,device,[]) in
         be name 
       in
       let device_closure = Flx_bexpr.bexpr_apply proc_t (bdev,record) in

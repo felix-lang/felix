@@ -18,7 +18,7 @@ open Flx_util
 open List
 
 let mkstring sr x = 
-  EXPR_literal (sr, {Flx_literal.felix_type="string"; internal_value=x; 
+  `EXPR_literal (sr, {Flx_literal.felix_type="string"; internal_value=x; 
    c_value="::std::string(" ^ Flx_string.c_quote_of_string x ^ ")" })
 
 let dyphack (ls : ( 'a * string) list) : 'a =
@@ -29,11 +29,11 @@ let dyphack (ls : ( 'a * string) list) : 'a =
 exception Macro_return
 
 let rec truthof x = match x with
-  | EXPR_typed_case (_,0,TYP_unitsum 2) -> Some false
-  | EXPR_typed_case (_,1,TYP_unitsum 2) -> Some true
-  | EXPR_likely (_,x) -> truthof x
-  | EXPR_unlikely (_,x) -> truthof x
-  | EXPR_not (_,x) -> 
+  | `EXPR_typed_case (_,0,`TYP_unitsum 2) -> Some false
+  | `EXPR_typed_case (_,1,`TYP_unitsum 2) -> Some true
+  | `EXPR_likely (_,x) -> truthof x
+  | `EXPR_unlikely (_,x) -> truthof x
+  | `EXPR_not (_,x) -> 
     begin match truthof x with
     | Some true -> Some false
     | Some false -> Some true
@@ -168,11 +168,11 @@ let fix_pattern counter pat =
 
   | PAT_expr (sr,e) -> 
     let n = "_sypv_" ^ (string_of_int !counter) in 
-    let v = EXPR_name (sr,n,[]) in
+    let v = `EXPR_name (sr,n,[]) in
     incr counter;
-    let eq = EXPR_name (sr,"==",[]) in
-    let args = EXPR_tuple (sr,[v;e]) in
-    let test = EXPR_apply (sr, (eq,args)) in
+    let eq = `EXPR_name (sr,"==",[]) in
+    let args = `EXPR_tuple (sr,[v;e]) in
+    let test = `EXPR_apply (sr, (eq,args)) in
     PAT_when (sr,PAT_name (sr,n),test)
 
   | PAT_alt _ -> assert false
@@ -319,7 +319,7 @@ let protect sr ps =
     match t with
     | [] -> macs
     | h :: t ->
-      let mac = h, MVal (EXPR_noexpand (sr,EXPR_name (sr,h,[]))) in
+      let mac = h, MVal (`EXPR_noexpand (sr,`EXPR_name (sr,h,[]))) in
       aux t (mac::macs)
   in
     aux ps []
@@ -374,26 +374,26 @@ and expand_type_expr sr recursion_limit local_prefix seq (macros:macro_dfn_t lis
   match Flx_maps.map_type mt t with
 
   (* Name expansion *)
-  | TYP_name (sr, name,[]) as t ->
+  | `TYP_name (sr, name,[]) as t ->
     begin try
       match List.assoc name macros with
       | MVal b -> typecode_of_expr (me b)
-      | MName _ -> TYP_name (sr,mi sr name,[])
+      | MName _ -> `TYP_name (sr,mi sr name,[])
     with
     | Not_found -> t
     end
 
-  | TYP_name (sr, name, ts) as t ->
+  | `TYP_name (sr, name, ts) as t ->
     let ts = List.map mt ts in
     begin try
       match List.assoc name macros with
-      | MName _ -> TYP_name (sr,mi sr name,ts)
-      | _ -> TYP_name (sr,name,ts)
+      | MName _ -> `TYP_name (sr,mi sr name,ts)
+      | _ -> `TYP_name (sr,name,ts)
     with
     | Not_found -> t
     end
 
-  | TYP_typeof e -> TYP_typeof (me e)
+  | `TYP_typeof e -> `TYP_typeof (me e)
 
   | x -> x
 
@@ -419,16 +419,16 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     with no meaning except as a proxy for a type, however
     at a macro level, it is an ordinary expression .. hmm
   *)
-  | EXPR_patvar _
-  | EXPR_patany _ -> print_endline "HACK.. AST_pat thing in expr"; e
+  | `EXPR_patvar _
+  | `EXPR_patany _ -> print_endline "HACK.. AST_pat thing in expr"; e
 
   (* Expansion block: don't even fold constants *)
-  | EXPR_noexpand _ -> e
-  | EXPR_vsprintf _ -> e
-  | EXPR_interpolate _ -> e
+  | `EXPR_noexpand _ -> e
+  | `EXPR_vsprintf _ -> e
+  | `EXPR_interpolate _ -> e
 
   (* and desugaring: x and y and z and ... *)
-  | EXPR_andlist (sr, es) ->
+  | `EXPR_andlist (sr, es) ->
     begin match es with
     | [] -> failwith "Unexpected empty and list"
     | h::t ->
@@ -436,12 +436,12 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       (fun x y ->
         me
         (
-          EXPR_apply
+          `EXPR_apply
           (
             sr,
             (
-              EXPR_name ( sr,"land",[]),
-              EXPR_tuple (sr,[me x; me y])
+              `EXPR_name ( sr,"land",[]),
+              `EXPR_tuple (sr,[me x; me y])
             )
           )
         )
@@ -450,7 +450,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     end
 
   (* or desugaring: x or y or z or ... *)
-  | EXPR_orlist (sr, es) ->
+  | `EXPR_orlist (sr, es) ->
     begin match es with
     | [] -> failwith "Unexpected empty alternative list"
     | h::t ->
@@ -458,12 +458,12 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       (fun x y ->
         me
         (
-          EXPR_apply
+          `EXPR_apply
           (
             sr,
             (
-              EXPR_name ( sr,"lor",[]),
-              EXPR_tuple (sr,[me x; me y])
+              `EXPR_name ( sr,"lor",[]),
+              `EXPR_tuple (sr,[me x; me y])
             )
           )
         )
@@ -472,7 +472,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     end
 
   (* Sum desugaring: x+y+z+ ... *)
-  | EXPR_sum (sr, es) ->
+  | `EXPR_sum (sr, es) ->
     begin match es with
     | [] -> failwith "Unexpected empty addition"
     | h::t ->
@@ -480,12 +480,12 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       (fun x y ->
         me
         (
-          EXPR_apply
+          `EXPR_apply
           (
             sr,
             (
-              EXPR_name ( sr,"+",[]),
-              EXPR_tuple (sr,[me x; me y])
+              `EXPR_name ( sr,"+",[]),
+              `EXPR_tuple (sr,[me x; me y])
             )
           )
         )
@@ -494,7 +494,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     end
 
   (* Product desugaring: x*y*z* ... *)
-  | EXPR_product (sr, es) ->
+  | `EXPR_product (sr, es) ->
     begin match es with
     | [] -> failwith "Unexpected empty multiply"
     | h::t ->
@@ -502,12 +502,12 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       (fun x y ->
         me
         (
-          EXPR_apply
+          `EXPR_apply
           (
             sr,
             (
-              EXPR_name ( sr,"*",[]),
-              EXPR_tuple (sr,[me x; me y])
+              `EXPR_name ( sr,"*",[]),
+              `EXPR_tuple (sr,[me x; me y])
             )
           )
         )
@@ -516,7 +516,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     end
 
   (* Name expansion *)
-  | EXPR_name (sr, name,[]) ->
+  | `EXPR_name (sr, name,[]) ->
     (*
     print_endline ("EXPANDING NAME " ^ name);
     *)
@@ -525,15 +525,15 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     | None -> e
     | Some mac -> match mac with
     | MVal b -> me b
-    | MName _ -> EXPR_name (sr,mi sr name,[])
+    | MName _ -> `EXPR_name (sr,mi sr name,[])
     end
 
-  | EXPR_name (sr, name,ts) ->
+  | `EXPR_name (sr, name,ts) ->
     let ts = List.map (mt sr) ts in
     begin try
       match List.assoc name macros with
-      | MName _ -> EXPR_name (sr,mi sr name,ts)
-      | _ -> EXPR_name (sr,name,ts)
+      | MName _ -> `EXPR_name (sr,mi sr name,ts)
+      | _ -> `EXPR_name (sr,name,ts)
     with
     | Not_found -> e
     end
@@ -544,26 +544,26 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
    (* convert arbitrary expression to string for debugging
     * _str expr -> "expr"
     *)
-  | EXPR_apply (sr, (
-      EXPR_name (_,"range_check",[]),
-      EXPR_tuple (_,[e1;e2;e3])
+  | `EXPR_apply (sr, (
+      `EXPR_name (_,"range_check",[]),
+      `EXPR_tuple (_,[e1;e2;e3])
     )) ->
-    EXPR_range_check (sr,me e1, me e2, me e3)
+    `EXPR_range_check (sr,me e1, me e2, me e3)
 
-  | EXPR_apply (sr,(EXPR_name(_,"_str",[]),x)) ->
+  | `EXPR_apply (sr,(`EXPR_name(_,"_str",[]),x)) ->
     let x = me x in
     let x = string_of_expr x in mkstring sr x
 
    (* artificially make singleton tuple 
     *   _tuple x 
     *)
-  | EXPR_apply (sr,(EXPR_name(_,"_tuple",[]),x)) ->
-    EXPR_tuple (sr,[me x])
+  | `EXPR_apply (sr,(`EXPR_name(_,"_tuple",[]),x)) ->
+    `EXPR_tuple (sr,[me x])
 
   (* _scheme string conversion to expression term *)
-  | EXPR_apply (sr,
-      (EXPR_name(srn,"_scheme", []),
-      EXPR_literal (srl, 
+  | `EXPR_apply (sr,
+      (`EXPR_name(srn,"_scheme", []),
+      `EXPR_literal (srl, 
       {
         Flx_literal.felix_type=felix_type; 
         internal_value=s
@@ -576,22 +576,22 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     flx
 
   (* general application *)
-  | EXPR_apply (sr, (e1, e2)) -> cf (EXPR_apply (sr, (me e1, me e2)))
+  | `EXPR_apply (sr, (e1, e2)) -> cf (`EXPR_apply (sr, (me e1, me e2)))
 
   (* optimise conditional with constant condition *)
-  | EXPR_cond (sr, (e1, e2, e3)) ->
+  | `EXPR_cond (sr, (e1, e2, e3)) ->
     let cond = me e1 in
     begin match cond with
-    | EXPR_typed_case (_,c,TYP_unitsum 2) ->
+    | `EXPR_typed_case (_,c,`TYP_unitsum 2) ->
       if c=1 then me e2 else me e3
     | _ ->
-      EXPR_cond (sr,(cond,me e2,me e3))
+      `EXPR_cond (sr,(cond,me e2,me e3))
     end
 
-  | EXPR_expr (sr,s,t,e) -> EXPR_expr (sr,s,t,me e)
+  | `EXPR_expr (sr,s,t,e) -> `EXPR_expr (sr,s,t,me e)
 
   (* Lambda hook *)
-  | EXPR_lambda (sr, (kind,vs,pss, t, sts)) ->
+  | `EXPR_lambda (sr, (kind,vs,pss, t, sts)) ->
     let rec aux ps : string list =
       match ps with
       | Satom (sr,x,name,z,d)->[name] 
@@ -604,116 +604,116 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       expand_statements recursion_limit local_prefix seq (ref true)
       (pr @ macros) sts
     in
-    EXPR_lambda (sr, (kind,vs,pss, t, sts))
+    `EXPR_lambda (sr, (kind,vs,pss, t, sts))
 
   (* the name here is just for diagnostics *)
-  | EXPR_index (sr, n, i) -> EXPR_index (sr,n,i)
-  | EXPR_intersect (sr, es) -> EXPR_intersect (sr, List.map me es)
-  | EXPR_union (sr, es) -> EXPR_union (sr, List.map me es)
-  | EXPR_isin (sr,(a,b)) -> EXPR_isin (sr, (me a, me b))
+  | `EXPR_index (sr, n, i) -> `EXPR_index (sr,n,i)
+  | `EXPR_intersect (sr, es) -> `EXPR_intersect (sr, List.map me es)
+  | `EXPR_union (sr, es) -> `EXPR_union (sr, List.map me es)
+  | `EXPR_isin (sr,(a,b)) -> `EXPR_isin (sr, (me a, me b))
 
-  | EXPR_get_tuple_tail (sr, e) -> EXPR_get_tuple_tail (sr, me e)
-  | EXPR_get_tuple_head (sr, e) -> EXPR_get_tuple_head (sr, me e)
-  | EXPR_get_tuple_body (sr, e) -> EXPR_get_tuple_body (sr, me e)
-  | EXPR_get_tuple_last (sr, e) -> EXPR_get_tuple_last (sr, me e)
+  | `EXPR_get_tuple_tail (sr, e) -> `EXPR_get_tuple_tail (sr, me e)
+  | `EXPR_get_tuple_head (sr, e) -> `EXPR_get_tuple_head (sr, me e)
+  | `EXPR_get_tuple_body (sr, e) -> `EXPR_get_tuple_body (sr, me e)
+  | `EXPR_get_tuple_last (sr, e) -> `EXPR_get_tuple_last (sr, me e)
 
-  | EXPR_lookup (sr, (e1, name,ts)) ->
-      EXPR_lookup (sr,(me e1, mi sr name, List.map (mt sr) ts))
+  | `EXPR_lookup (sr, (e1, name,ts)) ->
+      `EXPR_lookup (sr,(me e1, mi sr name, List.map (mt sr) ts))
 
-  | EXPR_case_tag (sr, i) -> e
-  | EXPR_typed_case (sr, i, t) ->EXPR_typed_case (sr,i,mt sr t) 
-  | EXPR_projection (sr, i, t) -> EXPR_projection (sr, i, mt sr t)
-  | EXPR_array_projection (sr, e, t) -> EXPR_array_projection (sr, me e, mt sr t)
-  | EXPR_ainj (sr, e, t) -> EXPR_ainj (sr, me e, mt sr t)
-  | EXPR_rnprj (sr,name,seq,e) -> EXPR_rnprj (sr,name,seq, me e)
-  | EXPR_case_index (sr,e) -> EXPR_case_index (sr,me e)
-  | EXPR_rptsum_arg (sr,e) -> EXPR_rptsum_arg (sr,me e)
+  | `EXPR_case_tag (sr, i) -> e
+  | `EXPR_typed_case (sr, i, t) ->`EXPR_typed_case (sr,i,mt sr t) 
+  | `EXPR_projection (sr, i, t) -> `EXPR_projection (sr, i, mt sr t)
+  | `EXPR_array_projection (sr, e, t) -> `EXPR_array_projection (sr, me e, mt sr t)
+  | `EXPR_ainj (sr, e, t) -> `EXPR_ainj (sr, me e, mt sr t)
+  | `EXPR_rnprj (sr,name,seq,e) -> `EXPR_rnprj (sr,name,seq, me e)
+  | `EXPR_case_index (sr,e) -> `EXPR_case_index (sr,me e)
+  | `EXPR_rptsum_arg (sr,e) -> `EXPR_rptsum_arg (sr,me e)
 
-  | EXPR_tuple (sr, es) -> EXPR_tuple (sr, List.map me es)
-  | EXPR_tuple_cons (sr, eh, et) -> EXPR_tuple_cons (sr, me eh, me et)
-  | EXPR_tuple_snoc (sr, eh, et) -> EXPR_tuple_snoc (sr, me eh, me et)
+  | `EXPR_tuple (sr, es) -> `EXPR_tuple (sr, List.map me es)
+  | `EXPR_tuple_cons (sr, eh, et) -> `EXPR_tuple_cons (sr, me eh, me et)
+  | `EXPR_tuple_snoc (sr, eh, et) -> `EXPR_tuple_snoc (sr, me eh, me et)
 
-  | EXPR_record (sr, es) ->
+  | `EXPR_record (sr, es) ->
     let all_blank = fold_left (fun acc (s,_) -> acc && s = "") true es in
-    if all_blank then EXPR_tuple (sr, List.map snd es) 
-    else EXPR_record (sr, List.map (fun (s,e)-> s, me e) es)
+    if all_blank then `EXPR_tuple (sr, List.map snd es) 
+    else `EXPR_record (sr, List.map (fun (s,e)-> s, me e) es)
 
-  | EXPR_polyrecord (sr, es,e) ->
-    EXPR_polyrecord (sr, List.map (fun (s,e)-> s, me e) es, me e)
+  | `EXPR_polyrecord (sr, es,e) ->
+    `EXPR_polyrecord (sr, List.map (fun (s,e)-> s, me e) es, me e)
 
-  | EXPR_replace_fields (sr, e, es) ->
-    EXPR_replace_fields (sr, me e, List.map (fun (s,e) -> s, me e) es)
+  | `EXPR_replace_fields (sr, e, es) ->
+    `EXPR_replace_fields (sr, me e, List.map (fun (s,e) -> s, me e) es)
 
-  | EXPR_remove_fields (sr,e,ss) ->
-    EXPR_remove_fields (sr, me e, ss)
+  | `EXPR_remove_fields (sr,e,ss) ->
+    `EXPR_remove_fields (sr, me e, ss)
 
-  | EXPR_variant (sr, (s,e)) ->
-    EXPR_variant (sr, ( s, me e))
+  | `EXPR_variant (sr, (s,e)) ->
+    `EXPR_variant (sr, ( s, me e))
 
-  | EXPR_extension (sr, es,e) -> EXPR_extension (sr, List.map me es, me e)
+  | `EXPR_extension (sr, es,e) -> `EXPR_extension (sr, List.map me es, me e)
 
-  | EXPR_rptsum_type (sr,_,_)
-  | EXPR_pclt_type (sr,_,_)
-  | EXPR_rpclt_type (sr,_,_)
-  | EXPR_wpclt_type (sr,_,_)
-  | EXPR_record_type (sr,_)
-  | EXPR_polyrecord_type (sr,_,_)
-  | EXPR_variant_type (sr,_) ->
+  | `EXPR_rptsum_type (sr,_,_)
+  | `EXPR_pclt_type (sr,_,_)
+  | `EXPR_rpclt_type (sr,_,_)
+  | `EXPR_wpclt_type (sr,_,_)
+  | `EXPR_record_type (sr,_)
+  | `EXPR_polyrecord_type (sr,_,_)
+  | `EXPR_variant_type (sr,_) ->
      clierrx "[flx_desugar/flx_macro.ml:613: E333] " sr 
      ("Record, polyrecord, variant or pointer to compact linear type types\n" ^
      "cannot be used as an expression")
 
 (*
-  | EXPR_record_type (sr,flds) -> EXPR_record_type (sr, List.map (fun (s,t) -> s, mt sr t) flds)
-  | EXPR_polyrecord_type (sr,flds,v) -> EXPR_polyrecord_type (sr, List.map (fun (s,t) -> s, mt sr t) flds, mt sr v)
-  | EXPR_variant_type (sr,flds) -> EXPR_variant_type (sr, List.map (fun (s,t) -> s, mt sr t) flds)
+  | `EXPR_record_type (sr,flds) -> `EXPR_record_type (sr, List.map (fun (s,t) -> s, mt sr t) flds)
+  | `EXPR_polyrecord_type (sr,flds,v) -> `EXPR_polyrecord_type (sr, List.map (fun (s,t) -> s, mt sr t) flds, mt sr v)
+  | `EXPR_variant_type (sr,flds) -> `EXPR_variant_type (sr, List.map (fun (s,t) -> s, mt sr t) flds)
 *)
-  | EXPR_arrayof (sr, es) -> EXPR_arrayof (sr, List.map me es)
-  | EXPR_coercion (sr, (e1, t)) -> EXPR_coercion (sr, (me e1,mt sr t))
-  | EXPR_variant_subtype_match_coercion (sr, (e1, t)) -> EXPR_variant_subtype_match_coercion (sr, (me e1,mt sr t))
-  | EXPR_suffix (sr, (qn, t)) ->
+  | `EXPR_arrayof (sr, es) -> `EXPR_arrayof (sr, List.map me es)
+  | `EXPR_coercion (sr, (e1, t)) -> `EXPR_coercion (sr, (me e1,mt sr t))
+  | `EXPR_variant_subtype_match_coercion (sr, (e1, t)) -> `EXPR_variant_subtype_match_coercion (sr, (me e1,mt sr t))
+  | `EXPR_suffix (sr, (qn, t)) ->
     let qn =
       match qualified_name_of_expr (me (expr_of_qualified_name qn)) with
       | Some x -> x
       | None -> assert false
     in
-    EXPR_suffix (sr, (qn,t))
+    `EXPR_suffix (sr, (qn,t))
 
-  | EXPR_callback (sr,qn) ->
+  | `EXPR_callback (sr,qn) ->
     let qn =
       match qualified_name_of_expr (me (expr_of_qualified_name qn)) with
       | Some x -> x
       | None -> assert false
     in
-    EXPR_callback (sr, qn)
+    `EXPR_callback (sr, qn)
 
-  | EXPR_arrow (sr, (e1, e2)) ->  EXPR_arrow (sr,(me e1, me e2))
-  | EXPR_effector (sr, (e1, e2, e3)) ->  EXPR_effector (sr,(me e1, me e2, me e3))
-  | EXPR_longarrow (sr, (e1, e2)) ->  EXPR_longarrow (sr,(me e1, me e2))
-  | EXPR_superscript (sr, (e1, e2)) ->  EXPR_superscript (sr,(me e1, me e2))
+  | `EXPR_arrow (sr, (e1, e2)) ->  `EXPR_arrow (sr,(me e1, me e2))
+  | `EXPR_effector (sr, (e1, e2, e3)) ->  `EXPR_effector (sr,(me e1, me e2, me e3))
+  | `EXPR_longarrow (sr, (e1, e2)) ->  `EXPR_longarrow (sr,(me e1, me e2))
+  | `EXPR_superscript (sr, (e1, e2)) ->  `EXPR_superscript (sr,(me e1, me e2))
 
-  | EXPR_literal (sr, literal) ->  e
-  | EXPR_map (sr, f, e) -> EXPR_map (sr, me f, me e)
-  | EXPR_deref (sr, e1) -> EXPR_deref (sr, me e1)
-  | EXPR_ref (sr, e1) ->  EXPR_ref (sr, me e1)
-  | EXPR_rref (sr, e1) ->  EXPR_rref (sr, me e1)
-  | EXPR_wref (sr, e1) ->  EXPR_wref (sr, me e1)
-  | EXPR_uniq (sr, e1) ->  EXPR_uniq (sr, me e1)
-  | EXPR_likely (sr, e1) ->  EXPR_likely (sr, me e1)
-  | EXPR_unlikely (sr, e1) ->  EXPR_unlikely (sr, me e1)
-  | EXPR_new (sr, e1) ->  EXPR_new (sr, me e1)
-  | EXPR_match_ctor (sr, (qn, e1)) -> EXPR_match_ctor (sr,(qn,me e1))
-  | EXPR_match_variant_subtype (sr, (e, t)) -> 
-      EXPR_match_variant_subtype (sr, (me e, mt sr t))
+  | `EXPR_literal (sr, literal) ->  e
+  | `EXPR_map (sr, f, e) -> `EXPR_map (sr, me f, me e)
+  | `EXPR_deref (sr, e1) -> `EXPR_deref (sr, me e1)
+  | `EXPR_ref (sr, e1) ->  `EXPR_ref (sr, me e1)
+  | `EXPR_rref (sr, e1) ->  `EXPR_rref (sr, me e1)
+  | `EXPR_wref (sr, e1) ->  `EXPR_wref (sr, me e1)
+  | `EXPR_uniq (sr, e1) ->  `EXPR_uniq (sr, me e1)
+  | `EXPR_likely (sr, e1) ->  `EXPR_likely (sr, me e1)
+  | `EXPR_unlikely (sr, e1) ->  `EXPR_unlikely (sr, me e1)
+  | `EXPR_new (sr, e1) ->  `EXPR_new (sr, me e1)
+  | `EXPR_match_ctor (sr, (qn, e1)) -> `EXPR_match_ctor (sr,(qn,me e1))
+  | `EXPR_match_variant_subtype (sr, (e, t)) -> 
+      `EXPR_match_variant_subtype (sr, (me e, mt sr t))
 
-  | EXPR_match_ho_ctor (sr, (qn, e1)) -> EXPR_match_ho_ctor (sr,(qn,map me e1))
-  | EXPR_match_variant (sr, (s, e1)) -> EXPR_match_variant (sr,(s,me e1))
-  | EXPR_match_case (sr, (i, e1)) ->  EXPR_match_case (sr,(i, me e1))
-  | EXPR_ctor_arg (sr, (qn, e1)) -> EXPR_ctor_arg (sr,(qn, me e1))
-  | EXPR_ho_ctor_arg (sr, (qn, e1)) -> EXPR_ho_ctor_arg (sr,(qn, map me e1))
-  | EXPR_variant_arg (sr, (s, e1)) -> EXPR_variant_arg (sr,(s, me e1))
-  | EXPR_case_arg (sr, (i, e1)) ->  EXPR_case_arg (sr,(i,me e1))
-  | EXPR_letin (sr, (pat, e1, e2)) -> 
+  | `EXPR_match_ho_ctor (sr, (qn, e1)) -> `EXPR_match_ho_ctor (sr,(qn,map me e1))
+  | `EXPR_match_variant (sr, (s, e1)) -> `EXPR_match_variant (sr,(s,me e1))
+  | `EXPR_match_case (sr, (i, e1)) ->  `EXPR_match_case (sr,(i, me e1))
+  | `EXPR_ctor_arg (sr, (qn, e1)) -> `EXPR_ctor_arg (sr,(qn, me e1))
+  | `EXPR_ho_ctor_arg (sr, (qn, e1)) -> `EXPR_ho_ctor_arg (sr,(qn, map me e1))
+  | `EXPR_variant_arg (sr, (s, e1)) -> `EXPR_variant_arg (sr,(s, me e1))
+  | `EXPR_case_arg (sr, (i, e1)) ->  `EXPR_case_arg (sr,(i,me e1))
+  | `EXPR_letin (sr, (pat, e1, e2)) -> 
     let pes = [pat, e2] in
     let pes = expand_pattern_branches pes in
     let pes =
@@ -740,15 +740,15 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       )
       pes
     in
-    EXPR_match (sr,(me e1, pes))
+    `EXPR_match (sr,(me e1, pes))
 
 
-  | EXPR_get_n (sr, (i, e1)) ->  EXPR_get_n (sr,(i,me e1))
-  | EXPR_get_named_variable (sr, (i, e1)) ->  EXPR_get_named_variable (sr,(i,me e1))
-  | EXPR_as (sr, (e1, id)) ->  EXPR_as (sr,(me e1, mi sr id))
-  | EXPR_as_var (sr, (e1, id)) ->  EXPR_as_var (sr,(me e1, mi sr id))
+  | `EXPR_get_n (sr, (i, e1)) ->  `EXPR_get_n (sr,(i,me e1))
+  | `EXPR_get_named_variable (sr, (i, e1)) ->  `EXPR_get_named_variable (sr,(i,me e1))
+  | `EXPR_as (sr, (e1, id)) ->  `EXPR_as (sr,(me e1, mi sr id))
+  | `EXPR_as_var (sr, (e1, id)) ->  `EXPR_as_var (sr,(me e1, mi sr id))
 
-  | EXPR_match (sr, (e1, pes)) ->
+  | `EXPR_match (sr, (e1, pes)) ->
     let pes = expand_pattern_branches pes in
     let pes =
       List.map
@@ -774,27 +774,27 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       )
       pes
     in
-    EXPR_match (sr,(me e1, pes))
+    `EXPR_match (sr,(me e1, pes))
 
-  | EXPR_type_match (sr, (e,ps)) ->
+  | `EXPR_type_match (sr, (e,ps)) ->
     let ps = List.map (fun (pat,e) -> pat, mt sr e) ps in
-    EXPR_type_match (sr,(mt sr e,ps))
+    `EXPR_type_match (sr,(mt sr e,ps))
 
-  | EXPR_subtype_match (sr, (e,ps)) ->
+  | `EXPR_subtype_match (sr, (e,ps)) ->
     let ps = List.map (fun (pat,e) -> pat, mt sr e) ps in
-    EXPR_subtype_match (sr,(mt sr e,ps))
+    `EXPR_subtype_match (sr,(mt sr e,ps))
 
-  | EXPR_typecase_match (sr, (t,ps)) ->
+  | `EXPR_typecase_match (sr, (t,ps)) ->
     let ps = List.map (fun (t,e) -> mt sr t, me e) ps in
-    EXPR_typecase_match (sr,(mt sr t,ps))
+    `EXPR_typecase_match (sr,(mt sr t,ps))
 
-  | EXPR_ellipsis _
-  | EXPR_void _ -> e
+  | `EXPR_ellipsis _
+  | `EXPR_void _ -> e
 
-  | EXPR_typeof (sr,e) -> EXPR_typeof (sr, me e)
-  | EXPR_range_check (sr, mi, v, mx) -> EXPR_range_check (sr, me mi, me v, me mx)
-  | EXPR_not (sr,e) -> EXPR_not (sr, me e)
-  | EXPR_label (sr,s) -> EXPR_label (sr, mi sr s)
+  | `EXPR_typeof (sr,e) -> `EXPR_typeof (sr, me e)
+  | `EXPR_range_check (sr, mi, v, mx) -> `EXPR_range_check (sr, me mi, me v, me mx)
+  | `EXPR_not (sr,e) -> `EXPR_not (sr, me e)
+  | `EXPR_label (sr,s) -> `EXPR_label (sr, mi sr s)
 
 and rqmap me sr reqs =
   let r req = rqmap me sr req in
@@ -815,13 +815,13 @@ and rqmap me sr reqs =
           in
           RREQ_atom (Named_req qn)
       | Named_index_req s ->
-        let x = me (EXPR_name (sr,s,[])) in
+        let x = me (`EXPR_name (sr,s,[])) in
 (*
 print_endline ("named req " ^ s ^ " expanded to " ^ string_of_expr x);
 *)
         begin try
           match x with
-          | EXPR_literal (_,{Flx_literal.internal_value=v}) ->   
+          | `EXPR_literal (_,{Flx_literal.internal_value=v}) ->   
             let n = int_of_string v in
             RREQ_atom (Index_req n) 
           | _ -> raise Not_found
@@ -1296,7 +1296,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     | None ->
       let n = !seq in incr seq;
       let lab = "_ifret_" ^ local_prefix ^ "_" ^ string_of_int n in
-      ctack (STMT_ifgoto (sr, EXPR_not (sr,e) , lab));
+      ctack (STMT_ifgoto (sr, `EXPR_not (sr,e) , lab));
       ctack (STMT_proc_return sr);
       ctack (STMT_label (sr,lab))
     end
@@ -1331,10 +1331,10 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
          BUT NOTE EXCEPTION IF THE EXPRESSION IS CONSTANT!
       *)
       begin match e with
-      | EXPR_not (_,e') ->
+      | `EXPR_not (_,e') ->
         ctack (STMT_ifgoto (sr, e', lab1))
       | _ ->
-        ctack (STMT_ifgoto (sr, EXPR_not (sr,e), lab1))
+        ctack (STMT_ifgoto (sr, `EXPR_not (sr,e), lab1))
       end
       ;
       let r1 = ref !reachable in
@@ -1476,7 +1476,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     (
       List.map
       (fun expr -> match expr with
-      | EXPR_name (sr',name,[]) ->
+      | `EXPR_name (sr',name,[]) ->
         print_endline ("Name " ^ name);
         let name = mi sr name in
         let d =
@@ -1485,13 +1485,13 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
         in
         begin match d with
         | Some (MName x) ->
-          expand_exprs sr [EXPR_name(sr,x,[])]
+          expand_exprs sr [`EXPR_name(sr,x,[])]
 
         | Some(_) -> [expr]
         | None -> [expr]
         end
 
-      | EXPR_tuple (sr',xs) -> List.map me xs
+      | `EXPR_tuple (sr',xs) -> List.map me xs
       | x -> [me x]
       )
       exprs
@@ -1506,7 +1506,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     else begin
       let vs =
         match e with
-        | EXPR_tuple (_,ls) -> ls
+        | `EXPR_tuple (_,ls) -> ls
         | _ -> clierrx "[flx_desugar/flx_macro.ml:1336: E335] " sr "Unpack non-tuple"
       in
       let m = List.length vs in
@@ -1531,7 +1531,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     *)
     let e = me e in
     let vals = match e with
-      | EXPR_tuple (_,vals) -> vals
+      | `EXPR_tuple (_,vals) -> vals
       | x -> [x]
     in
     List.iter (fun e ->
@@ -1546,7 +1546,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
         end else begin
           let vs =
             match e with
-            | EXPR_tuple (_,ls) -> ls
+            | `EXPR_tuple (_,ls) -> ls
             | _ -> clierrx "[flx_desugar/flx_macro.ml:1376: E337] " sr ("Unpack non-tuple " ^ string_of_expr e)
           in
           let m = List.length vs in
@@ -1581,8 +1581,8 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
    *)
 
   | STMT_call (sr,
-      EXPR_name(srn,"_scheme", []),
-      EXPR_literal (srl, {Flx_literal.felix_type="string"; internal_value=s})
+      `EXPR_name(srn,"_scheme", []),
+      `EXPR_literal (srl, {Flx_literal.felix_type="string"; internal_value=s})
     ) -> 
     print_endline "DETECTED STATEMENT ENCODED AS SCHEME";
     let sex = scheme_eval s in

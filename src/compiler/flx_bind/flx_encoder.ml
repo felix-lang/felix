@@ -36,8 +36,8 @@ print_endline("Bound type " ^ Flx_print.sbt bsym_table but);
 print_endline ("Generating union encoder chip _encoder_" ^ uname); 
 print_endline ("ubvs = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^">") ubvs);
 *)
-          let oschannel_t = Flx_btype_subst.tsubst sr ubvs ts (bt sr (Flx_ast.TYP_name (sr,"oschannel", [ut]))) in
-          let ischannel_t ubt = bt sr (Flx_ast.TYP_name (sr,"ischannel",[ubt])) in
+          let oschannel_t = Flx_btype_subst.tsubst sr ubvs ts (bt sr (`TYP_name (sr,"oschannel", [ut]))) in
+          let ischannel_t ubt = bt sr (`TYP_name (sr,"ischannel",[ubt])) in
 (*
 print_endline ("oschannel type = " ^ Flx_print.sbt bsym_table oschannel_t);
 *)

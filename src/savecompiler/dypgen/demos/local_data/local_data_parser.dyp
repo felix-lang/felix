@@ -1,0 +1,59 @@
+{
+open Parse_tree
+open Dyp
+
+module OrdString =
+struct
+  type t = string
+  let compare = Pervasives.compare
+end
+module String_map = Map.Make(OrdString)
+
+let is_bound map id =
+  try let _ = String_map.find id map in true
+  with Not_found -> false
+
+let insert_binding map id expr =
+  String_map.add id expr map
+
+let print_map map =
+  print_endline "symbol table :";
+  let f s t = print_string (s^" bound to "); print_tree t in
+  String_map.iter f map
+
+let local_data = String_map.empty
+let local_data_equal ld1 ld2 = String_map.equal (=) ld1 ld2
+
+let dyp_merge = keep_all
+}
+
+%start main
+
+%lexer
+
+let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
+let identchar =
+  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+
+main lexer =
+[' ' '\t'] ->
+lowercase identchar * -> IDENT { Dyp.lexeme lexbuf }
+
+%parser
+
+main: expr "\n" { $1 }
+
+expr: ['0'-'9']+           { Int (int_of_string $1) }
+  | IDENT                  { if is_bound dyp.local_data $1 then Ident $1
+                             else raise Giveup }
+  | "(" expr ")"           { $2 }
+  | expr "+" expr          { Plus ($1,$3) }
+  | "let" binding "in" expr { Let ($2,$4) }
+
+binding: IDENT "=" expr
+  @{ Binding ($1,$3),
+    [Local_data (insert_binding dyp.local_data $1 $3)] }
+
+%mlitop {
+module String_map : Map.S with type key = string
+}

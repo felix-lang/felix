@@ -1,0 +1,67 @@
+/* parser.dyp */
+
+{ open Parse_tree
+open Dyp
+
+let () = dypgen_verbose := 1
+
+let get_token_name s = match s with
+  | "[" -> "LBRACK"
+  | "]" -> "RBRACK"
+  | "::" -> "COLONCOLON"
+  | ";" -> "SEMICOLON"
+  | _ -> failwith "get_token_name"
+
+let a_define_in dyp (s,ol,e) =
+  let f o =
+    match o with
+      | Nt (s,_) -> Non_ter (s,No_priority)
+      | Token s -> Ter (get_token_name s)
+  in
+  let rule  = s,(List.map f ol),"default_priority",[] in
+  let action = (fun _ avl ->
+    let f2 env o av = match o with
+      | Nt (_,var_name) -> String_map.add var_name av env
+      | _ -> env
+    in
+    let f3 av = match av with
+      | Obj_expr exp -> exp
+      | _ -> Int 0
+    in
+    let avl = List.map f3 avl in
+    let env = List.fold_left2 f2 String_map.empty ol avl in
+    Obj_expr (substitute env e), [])
+  in rule, action
+}
+
+%token <string> UIDENT <string> LIDENT <int> INT <string> TOKEN
+%token COMMA EQUAL COLONEQUAL COLONCOLON SEMICOLON
+%token DEFINE IN LPAREN RPAREN LBRACK RBRACK EOF
+
+%start <Parse_tree.expr> main
+
+%%
+
+main : expr EOF { $1 }
+
+expr :
+  | INT { Int $1 }
+  | LPAREN expr COMMA expr RPAREN { Pair ($2,$4) }
+  | UIDENT expr
+    { match $2 with
+        | Pair (a,b) -> Cons ($1,(2,[a;b]))
+        | exp -> Cons ($1,(1,[exp])) }
+  | UIDENT { Cons ($1,(0,[])) }
+  | LIDENT { Lident $1 }
+  | define_in expr { $2 }
+
+define_in :
+  | DEFINE LIDENT COLONEQUAL rhs EQUAL expr IN
+    @{ (), [ Add_rules [a_define_in dyp ($2,$4,$6)];
+      Bind_to_cons [$2,"Obj_expr"]] }
+
+rhs :
+  | LIDENT LPAREN LIDENT RPAREN { [Nt ($1,$3)] }
+  | TOKEN { [Token $1] }
+  | LIDENT LPAREN LIDENT RPAREN rhs { (Nt ($1,$3))::$5 }
+  | TOKEN rhs { (Token $1)::$2 }

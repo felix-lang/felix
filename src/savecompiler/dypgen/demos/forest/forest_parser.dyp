@@ -1,0 +1,15 @@
+{
+open Parse_tree
+let dyp_merge = Dyp.keep_all
+}
+
+%start main
+%layout [' ' '\t']
+
+%%
+
+main : expr "\n" { $1 }
+
+expr :
+  | ['0'-'9']+     { Int (int_of_string $1) }
+  | expr "+" expr { Node ($1,$3) }

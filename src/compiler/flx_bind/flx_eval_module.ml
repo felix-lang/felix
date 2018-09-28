@@ -71,11 +71,11 @@ let rec eval_module_expr
   print_endline ("Eval module expr " ^ string_of_expr e);
   *)
   match e with
-  | EXPR_name (sr,name,ts) ->
+  | `EXPR_name (sr,name,ts) ->
     let entries = inner_lookup_name_in_env state bsym_table env rsground sr name in
     check_module state name sr entries ts
 
-  | EXPR_lookup (sr,(e,name,ts)) ->
+  | `EXPR_lookup (sr,(e,name,ts)) ->
     let result = eval_module_expr state bsym_table env e in
     begin match result with
       | Flx_bind_deferred.Simple_module (index,ts',htab,dirs) ->

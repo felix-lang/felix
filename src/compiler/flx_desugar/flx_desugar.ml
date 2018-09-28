@@ -25,24 +25,24 @@ let assign sr op l r =
   STMT_call
   (
     sr,
-    EXPR_name (sr, op,[]),
-    EXPR_tuple (sr, [l; r])
+    `EXPR_name (sr, op,[]),
+    `EXPR_tuple (sr, [l; r])
   )
 
   | _ ->
   STMT_call
   (
     sr,
-    EXPR_name (sr, op,[]),
-    EXPR_tuple (sr, [EXPR_ref (sr,l); r])
+    `EXPR_name (sr, op,[]),
+    `EXPR_tuple (sr, [`EXPR_ref (sr,l); r])
   )
 (* -------------------------------------------------------------------------- *)
 (* SHOULD BE UNUSED NOW ... *)
 let gen_call_init sr name' =
-  let mname = EXPR_name (sr,name',[]) in
+  let mname = `EXPR_name (sr,name',[]) in
   let pname = `AST_lookup (sr, (mname, "_init_", [])) in
-  let sname = EXPR_suffix (sr, (pname, TYP_tuple [])) in
-  let unitt = EXPR_tuple (generated,[]) in
+  let sname = `EXPR_suffix (sr, (pname, `TYP_tuple [])) in
+  let unitt = `EXPR_tuple (generated,[]) in
   Exe
   (
     sr,
@@ -55,7 +55,7 @@ let rec rst_with_ret state name access (parent_vs:vs_list_t) rettype (st:stateme
   (* construct an anonymous name *)
   let parent_ts sr : typecode_t list =
     List.map 
-      (fun (s,tp)-> TYP_name (sr,s,[])) 
+      (fun (s,tp)-> `TYP_name (sr,s,[])) 
       (fst parent_vs)
   in
 
@@ -75,7 +75,7 @@ let rec rst_with_ret state name access (parent_vs:vs_list_t) rettype (st:stateme
 
 
   let rst_with_ret name access parent_vs rettype st = rst_with_ret state name access parent_vs rettype st in 
-  let rst name access parent_vs st = rst_with_ret name access parent_vs TYP_none st in 
+  let rst name access parent_vs st = rst_with_ret name access parent_vs `TYP_none st in 
 
   let rsts_with_ret name vs access rettype sts = 
     List.concat 
@@ -83,7 +83,7 @@ let rec rst_with_ret state name access (parent_vs:vs_list_t) rettype (st:stateme
         (rst_with_ret name access vs rettype) 
         sts)
   in
-  let rsts name vs acces sts = rsts_with_ret name vs access TYP_none sts in 
+  let rsts name vs acces sts = rsts_with_ret name vs access `TYP_none sts in 
 
   (* rename _root headers *)
   let rex_with_ret x rettype = 
@@ -96,7 +96,7 @@ let rec rst_with_ret state name access (parent_vs:vs_list_t) rettype (st:stateme
       x 
       rettype
   in
-  let rex x = rex_with_ret x TYP_none in
+  let rex x = rex_with_ret x `TYP_none in
 
   let seq () = state.Flx_desugar_expr.fresh_bid () in
 
@@ -191,7 +191,7 @@ let rec rst_with_ret state name access (parent_vs:vs_list_t) rettype (st:stateme
 
   | STMT_var_decl (sr,name,vs,typ,expr) ->
     (* 
-    let vs_exprs = List.map (fun (s,_)->TYP_name (sr,s,[])) (fst vs) in
+    let vs_exprs = List.map (fun (s,_)->`TYP_name (sr,s,[])) (fst vs) in
     *)
     begin match typ,expr with
     | Some t, Some e ->
@@ -204,7 +204,7 @@ let rec rst_with_ret state name access (parent_vs:vs_list_t) rettype (st:stateme
       let d,x = rex e in
       d @ [
         Dcl (
-          sr,name,None,access,vs,DCL_value (TYP_typeof x, `Var));
+          sr,name,None,access,vs,DCL_value (`TYP_typeof x, `Var));
         (* Exe (sr,EXE_init (name,x))] *)
         Exe (sr,EXE_init (name,x))]
     | Some t,None ->
@@ -214,7 +214,7 @@ let rec rst_with_ret state name access (parent_vs:vs_list_t) rettype (st:stateme
 
   | STMT_val_decl (sr,name,vs,typ,expr) ->
     (*
-    let vs_exprs = List.map (fun (s,_)->TYP_name (sr,s,[])) (fst vs) in
+    let vs_exprs = List.map (fun (s,_)->`TYP_name (sr,s,[])) (fst vs) in
     *)
     begin match typ,expr with
     | Some t, Some e ->
@@ -226,7 +226,7 @@ let rec rst_with_ret state name access (parent_vs:vs_list_t) rettype (st:stateme
     | None, Some e ->
       let d,x = rex e in
       d @ [
-        Dcl (sr,name,None,access,vs,DCL_value (TYP_typeof x, `Val));
+        Dcl (sr,name,None,access,vs,DCL_value (`TYP_typeof x, `Val));
         (* Exe (sr,EXE_init (name,x))] *)
         Exe (sr,EXE_init ( name,x))]
     | Some t, None ->
@@ -237,20 +237,20 @@ let rec rst_with_ret state name access (parent_vs:vs_list_t) rettype (st:stateme
 
   | STMT_once_decl (sr,name,vs,typ,expr) ->
 print_endline ("Once decl detected, deprecated");
-    let vs_exprs = List.map (fun (s,_)->TYP_name (sr,s,[])) (fst vs) in
+    let vs_exprs = List.map (fun (s,_)->`TYP_name (sr,s,[])) (fst vs) in
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
       d @ [
         Dcl (sr,name,None,access,vs,DCL_value (t, `Once));
         (* Exe (sr,EXE_init (name,x))] *)
-        Exe (sr,EXE_assign ( EXPR_name (sr,name,vs_exprs) ,x))]
+        Exe (sr,EXE_assign ( `EXPR_name (sr,name,vs_exprs) ,x))]
     | None, Some e ->
       let d,x = rex e in
       d @ [
-        Dcl (sr,name,None,access,vs,DCL_value (TYP_typeof x, `Once));
+        Dcl (sr,name,None,access,vs,DCL_value (`TYP_typeof x, `Once));
         (* Exe (sr,EXE_init (name,x))] *)
-        Exe (sr,EXE_assign ( EXPR_name (sr,name,vs_exprs) ,x))]
+        Exe (sr,EXE_assign ( `EXPR_name (sr,name,vs_exprs) ,x))]
     | Some t, None ->
         (* allowed in interfaces *)
         [Dcl (sr,name,None,access,vs,DCL_value (t, `Once))]
@@ -264,12 +264,12 @@ print_endline ("Ref decl detected, deprecated");
       let d,x = rex e in
       d @ [
         Dcl (sr,name,None,access,vs,DCL_value (t, `Ref));
-        Exe (sr,EXE_init (name,EXPR_ref (sr,x)))]
+        Exe (sr,EXE_init (name,`EXPR_ref (sr,x)))]
     | None, Some e ->
       let d,x = rex e in
       d @ [
-        Dcl (sr,name,None,access,vs,DCL_value (TYP_typeof x, `Ref));
-        Exe (sr,EXE_init (name,EXPR_ref (sr,x)))]
+        Dcl (sr,name,None,access,vs,DCL_value (`TYP_typeof x, `Ref));
+        Exe (sr,EXE_init (name,`EXPR_ref (sr,x)))]
     | _,None -> failwith "Expected ref to have initialiser"
     end
 
@@ -282,7 +282,7 @@ print_endline ("Translating Lazy Declaration " ^ name);
       d @ [Dcl (sr,name,None,access,vs,DCL_value (t,`Lazy x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,None,access,vs,DCL_value (TYP_typeof x,`Lazy x))]
+      d @ [Dcl (sr,name,None,access,vs,DCL_value (`TYP_typeof x,`Lazy x))]
     | _,None -> failwith "Expected lazy value to have initialiser"
     end
 
@@ -400,7 +400,7 @@ print_endline ("STMT_curry " ^ name' ^ ", rettype=" ^ string_of_typecode ret);
       let domain = 
         match pps with
         | (ps,_)::_ -> typeof_paramspec_t ps
-        | [] -> TYP_tuple []
+        | [] -> `TYP_tuple []
       in
       let qn = `AST_name (sr,name',[]) in
       let sname = `AST_suffix (sr,(qn,domain)) in
@@ -493,8 +493,8 @@ ps;
       *)
 
       let name'' = "_wrap_" ^ name' in
-      let inner = EXPR_name (sr,name'',[]) in
-      let un = EXPR_tuple (sr,[]) in
+      let inner = `EXPR_name (sr,name'',[]) in
+      let un = `EXPR_tuple (sr,[]) in
 
       let pre_assert = (match pre with
         | None -> []
@@ -507,7 +507,7 @@ ps;
         begin match res with
 
         (* For procedures *)
-        | TYP_void _ ->
+        | `TYP_void _ ->
           [STMT_call (sr,inner,un) ] @
           begin match post with
           | None -> []
@@ -516,7 +516,7 @@ ps;
 
         (* For functions *)
         | _ ->
-          let retval = EXPR_apply (sr,(inner,un)) in
+          let retval = `EXPR_apply (sr,(inner,un)) in
           begin match post with
           | None ->
             [STMT_fun_return (sr,retval)]
@@ -524,7 +524,7 @@ ps;
             [
               STMT_val_decl (sr,"result",dfltvs,None,Some retval);
               STMT_assert (src_of_expr y,y);
-              STMT_fun_return (sr,EXPR_name (sr,"result",[]))
+              STMT_fun_return (sr,`EXPR_name (sr,"result",[]))
             ]
           end
         end
@@ -548,7 +548,7 @@ ps;
     (* hackery *)
     let vs,args = List.fold_left begin fun (vs,args) arg ->
       match arg with
-      | TYP_apply (TYP_name (_,"!",[]), TYP_name (sr,name,[])) ->
+      | `TYP_apply (`TYP_name (_,"!",[]), `TYP_name (sr,name,[])) ->
 (*
 print_endline ("Flx_desugar found ref to typeset " ^ name);
 *)
@@ -564,8 +564,8 @@ print_endline ("Flx_desugar found ref to typeset " ^ name);
           let v = var, KND_typeset name in
 *)
 
-          let v = var, KND_tpattern (TYP_name (sr,name,[])) in
-          let arg = TYP_name (sr,var,[]) in
+          let v = var, KND_tpattern (`TYP_name (sr,name,[])) in
+          let arg = `TYP_name (sr,var,[]) in
           v::vs, arg::args
       | x -> vs, x::args
     end (List.rev vs, []) args
@@ -603,7 +603,7 @@ print_endline ("Flx_desugar found ref to typeset " ^ name);
 print_endline ("STMT_fun_return " ^ string_of_expr e^ ", rettype=" ^ string_of_typecode rettype);
 *)
     let d,x = rex_with_ret e rettype in 
-    let x = if rettype = TYP_none then x else EXPR_coercion (sr,(x, rettype)) in
+    let x = if rettype = `TYP_none then x else `EXPR_coercion (sr,(x, rettype)) in
     d @ [Exe (sr,EXE_fun_return x)]
 
   | STMT_yield (sr,e) ->
@@ -634,14 +634,14 @@ print_endline ("STMT_fun_return " ^ string_of_expr e^ ", rettype=" ^ string_of_t
       match l with
       | `Expr (sr,e) ->
         begin match e with
-        | EXPR_tuple (_,ls) ->
+        | `EXPR_tuple (_,ls) ->
           let n = seq() in
           let vn = "_ds1_" ^ string_of_bid n in
           let sts = ref [] in
           let count = ref 0 in
           List.iter
           (fun l ->
-            let r' = EXPR_get_n (sr,(!count,EXPR_name (sr,vn,[]))) in
+            let r' = `EXPR_get_n (sr,(!count,`EXPR_name (sr,vn,[]))) in
             let l' = `Expr (sr,l),None in
             let asg = aux l' r' in
             sts := !sts @ asg;
@@ -654,14 +654,14 @@ print_endline ("STMT_fun_return " ^ string_of_expr e^ ", rettype=" ^ string_of_t
           if fid = "_init"
           then
             match e with
-            | EXPR_coercion (_,(EXPR_name (_,n,[]),t')) ->
+            | `EXPR_coercion (_,(`EXPR_name (_,n,[]),t')) ->
               let t = match t with
                 | None -> Some t'
                 | t -> t
               in
               [STMT_val_decl (sr,n,dfltvs,t,Some r)]
 
-            | EXPR_name (_,n,[]) ->
+            | `EXPR_name (_,n,[]) ->
               [STMT_val_decl (sr,n,dfltvs,t,Some r)]
             | x -> clierrx "[flx_desugar/flx_desugar.ml:568: E324] " sr ("identifier required in val init, got " ^ string_of_expr x)
           else
@@ -673,7 +673,7 @@ print_endline ("STMT_fun_return " ^ string_of_expr e^ ", rettype=" ^ string_of_t
           [STMT_var_decl (sr,n,dfltvs,t,Some r)]
       | `Skip (sr) ->  []
       | `Name (sr,n) ->
-        let n = EXPR_name(sr,n,[]) in
+        let n = `EXPR_name(sr,n,[]) in
           [assign sr fid n r]
 
       (* singleton case *)
@@ -691,7 +691,7 @@ print_endline ("STMT_fun_return " ^ string_of_expr e^ ", rettype=" ^ string_of_t
           let count = ref 0 in
           List.iter
           (fun l ->
-            let r' = EXPR_get_n (sr,(!count,EXPR_name (sr,vn,[]))) in
+            let r' = `EXPR_get_n (sr,(!count,`EXPR_name (sr,vn,[]))) in
             let asg = aux l r' in
             sts := !sts @ asg;
             incr count
@@ -772,7 +772,7 @@ let rec desugar_stmts state curpath stmts =
      string_of_int (Flx_macro.get_macro_seq (state.Flx_desugar_expr.macro_state))); 
 *)
   let asms = List.concat (List.map
-    (rst_with_ret state state.Flx_desugar_expr.name `Public dfltvs TYP_none) (* should be void? *)
+    (rst_with_ret state state.Flx_desugar_expr.name `Public dfltvs `TYP_none) (* should be void? *)
     stmts)
   in
 (*

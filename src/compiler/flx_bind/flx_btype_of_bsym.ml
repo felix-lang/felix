@@ -60,7 +60,7 @@ print_endline ("btype of bsym struct " ^ Flx_bsym.id bsym ^ "<" ^ si bid ^ ">, #
 *)
       (* Lower a struct type into a function that creates the struct. *)
       let ts = List.map
-        (fun (s,i,_) -> TYP_name (Flx_bsym.sr bsym,s,[]))
+        (fun (s,i,_) -> `TYP_name (Flx_bsym.sr bsym,s,[]))
         vs 
       in
       let ts = List.map (bt (Flx_bsym.sr bsym)) ts in

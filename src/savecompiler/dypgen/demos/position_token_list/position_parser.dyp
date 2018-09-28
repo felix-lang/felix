@@ -1,0 +1,53 @@
+{
+open Dyp
+open Parse_tree
+
+let print_pos pos =
+  Printf.printf "fname=%s, lnum=%d, bol=%d, cnum=%d\n"
+    pos.Lexing.pos_fname pos.Lexing.pos_lnum pos.Lexing.pos_bol
+      pos.Lexing.pos_cnum;
+  flush_all ()
+
+type lexbuf2 = {
+  mutable token_list : (token * (Lexing.position * Lexing.position)) list;
+  mutable token_position : (Lexing.position * Lexing.position) }
+
+let dypgen_lexbuf_position lb = lb.token_position
+
+}
+
+%token <int> INT PLUS TIMES EOF
+%start <Parse_tree.tree> main
+
+%%
+
+main : expr EOF { $1 }
+
+expr :
+  | INT            {
+      Printf.printf "int:%d\n" $1;
+      Printf.printf "%d--%d\n" (dyp.symbol_start ()) (dyp.symbol_end ());
+      print_pos (dyp.symbol_start_pos ());
+      print_pos (dyp.symbol_end_pos ());
+      Int $1 }
+  | expr PLUS expr TIMES expr {
+      print_tree (Node ($1,$3,$5));
+      print_newline ();
+      Printf.printf "%d--%d\n" (dyp.symbol_start ()) (dyp.symbol_end ());
+      print_pos (dyp.symbol_start_pos ());
+      print_pos (dyp.symbol_end_pos ());
+      print_endline "rhs positions";
+      let _ = for i=1 to 5 do
+        Printf.printf "symb %d\n" i;
+        Printf.printf "%d--%d\n" (dyp.rhs_start i) (dyp.rhs_end i);
+        print_pos (dyp.rhs_start_pos i);
+        print_pos (dyp.rhs_end_pos i)
+      done in
+      print_newline ();
+      Node ($1,$3,$5) }
+
+%mlimid {
+type lexbuf2 = {
+  mutable token_list : (token * (Lexing.position * Lexing.position)) list;
+  mutable token_position : (Lexing.position * Lexing.position) }
+}

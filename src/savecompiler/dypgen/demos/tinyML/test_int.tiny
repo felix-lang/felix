@@ -1,0 +1,16 @@
+define
+  list_contents := expr(x) = List(x,Nil)
+  and list_contents := expr(x) ";" list_contents(y) = List(x,y)
+  and expr := "[" "]" = Nil
+  and expr := "[" list_contents(x) "]" = x
+  and expr := expr(x) "::" expr(y) = List(x,y);;
+
+let rec f l = match l with
+  | [] -> 0
+  | h::t -> h+(f t);;
+
+let rec g n = match n with
+  | 0 -> [0]
+  | _ -> (n::(g (n-1)));;
+
+f (g 10);;

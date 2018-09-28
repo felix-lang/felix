@@ -1,0 +1,287 @@
+{
+open Parse_tree
+open Dyp
+
+let () = dypgen_verbose := Argument.verbose
+
+let a_comma  e1 e2 = match (e1,e2) with
+  | (Open_tuple (n1,a)),(Open_tuple (n2,b)) ->
+      Open_tuple (n1+n2,a@b)
+  | exp,(Open_tuple (n,a)) -> Open_tuple (n+1,exp::a)
+  | (Open_tuple (n,a)),exp -> Open_tuple (n+1,a@[exp])
+  | exp1,exp2 -> Open_tuple (2,[exp1;exp2])
+
+let a_paren exp = match exp with
+  | Open_tuple (a,b) -> Tuple (a,b)
+  | x -> x
+
+let a_cons cons e = match e with
+  | Tuple (n,l) -> Cons (cons,(n,l))
+  | exp -> Cons (cons,(1,[exp]))
+
+let prio = [|"p0";"p1";"p2";"p3";"p4";"p5";"p6";"p7";"p8";"p9"|]
+
+let action ol e dyp2 avl =
+  let f2 env o av = match o with
+    | Nt (_,var_name) -> String_map.add var_name av env
+    | _ -> env
+  in
+  let f3 av = match av with
+    | `EXPR exp -> exp
+    | _ -> Int 0
+  in
+  let avl = List.map f3 avl in
+  let env = List.fold_left2 f2 String_map.empty ol avl in
+  `EXPR (substitute env e), []
+
+let a_define_in (s,ol,e) =
+  let f o =
+    match o with
+      | Nt (s,_) -> Non_ter (s,No_priority)
+      | Token s -> Ter "s"
+      | Rhs_string s -> Regexp (RE_String s)
+  in
+  let rule = s,(List.map f ol),"default_priority",[] in
+  rule, action ol e
+
+(* The following merge function avoid that a-b is mistaken for a (-b) *)
+let dyp_merge_EXPR l =
+  let rec aux l = match l with
+    | (Minus x, gd, ld)::_ -> [Minus x], gd, ld
+    | _::t -> aux t
+    | [] -> raise Not_found
+  in
+  try aux l
+  with Not_found -> Dyp.keep_one l
+
+let global_data = (Op_map.empty, [])
+
+let infix_op l level asso op_map =
+  List.fold_left
+  (fun op_map op -> Op_map.add op (level,asso) op_map)
+  op_map l
+
+(* lexer helper functions *)
+
+let lex_define = ref false
+
+let string_buf = Buffer.create 100
+let ($) = Buffer.add_string
+let decimal_code  c d u =
+  100 * (Char.code c - 48) + 10 * (Char.code d - 48) + (Char.code u - 48)
+
+let char_for_hexadecimal_code d u =
+  let d1 = Char.code d in
+  let val1 = if d1 >= 97 then d1 - 87
+             else if d1 >= 65 then d1 - 55
+             else d1 - 48
+  in
+  let d2 = Char.code u in
+  let val2 = if d2 >= 97 then d2 - 87
+             else if d2 >= 65 then d2 - 55
+             else d2 - 48
+  in
+  Char.chr (val1 * 16 + val2)
+
+let char_for_backslash = function
+    'n' -> '\n'
+  | 't' -> '\t'
+  | 'b' -> '\b'
+  | 'r' -> '\r'
+  | c   -> c
+
+let string_of_char c = let x = " " in x.[0] <- c; x
+
+let rec dyp_merge_EXPR l =
+  match l with
+  | (((Minus _) as o),gd,ld)::_ -> [o],gd,ld
+  | [o,gd,ld] -> [o],gd,ld
+  | _::t -> dyp_merge_EXPR t
+  | [] -> assert false
+
+}
+
+%constructor EXPR %for expr
+
+%relation
+p9<p8<p7<p6<p5<p4<p3<p2<p1<p0
+
+%start main
+
+%lexer
+
+let newline = ('\010' | '\013' | "\013\010")
+let blank = [' ' '\009' '\012']
+let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
+let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
+let identchar =
+  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+let backslash_escapes =
+  ['\\' '"' '\'' 'n' 't' 'b' 'r']
+let symbolchar =
+  ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+
+rule string = parse
+    '"'
+    { () }
+  | '\\' backslash_escapes
+    { let s = Dyp.lexeme lexbuf in
+      string_buf $ (string_of_char(char_for_backslash s.[1]));
+      string lexbuf }
+  | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9']
+    { let s = Dyp.lexeme lexbuf in
+      let c,d,u = s.[1],s.[2],s.[3] in
+      let v = decimal_code c d u in
+      if v > 255 then
+       failwith
+        (Printf.sprintf
+          "illegal backslash escape in string: `\\%c%c%c'" c d u);
+      string_buf $ (string_of_char (Char.chr v));
+      string lexbuf }
+  | '\\' 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F']
+    { let s = Dyp.lexeme lexbuf in
+      let d,u = s.[2],s.[3] in
+      string_buf $ (string_of_char (char_for_hexadecimal_code d u));
+      string lexbuf }
+  | '\\' _
+    { let s = Dyp.lexeme lexbuf in
+      failwith
+        (Printf.sprintf "illegal backslash escape in string: `\\%c'" s.[1]) }
+  | eof
+    { failwith "unterminated string" }
+  | '\010'
+    { string_buf $ "\010";
+      (*update_loc lexbuf None 1 false 0;*)
+      string lexbuf }
+  | _
+    { string_buf $ (Dyp.lexeme lexbuf);
+      string lexbuf }
+
+main lexer =
+
+newline | blank + ->
+lowercase identchar * -> LIDENT { Dyp.lexeme lexbuf }
+uppercase identchar * -> UIDENT { Dyp.lexeme lexbuf }
+['0'-'9']+ -> INT { int_of_string (Dyp.lexeme lexbuf) }
+'"' -> STRING { Buffer.clear string_buf;
+      string lexbuf;
+      Buffer.contents string_buf }
+
+%parser
+
+main: statements eof { $1 }
+
+statements:
+  | { [] }
+  | statements statement
+      @{ $2::$1, [Keep_grammar] }
+  | statements load_statement
+      @{ $2@$1, [Keep_grammar] }
+  | statements "save" STRING<filename> ";" ";" @{
+      let oc = open_out filename in
+      Marshal.to_channel oc
+        ($1, (snd dyp.global_data), function_free_pdev dyp.parser_pilot.pp_dev)
+        [];
+      close_out oc;
+      $1, [Keep_grammar] }
+
+statement:
+  | expr ";" ";" { Expr_stm $1 }
+  | "let" "rec" LIDENT LIDENT "=" expr ";" ";"
+      { Let_rec_stm ($3,$4,$6) }
+  
+  | infix INT symbolchar+ ["," (symbolchar+)]* ";" ";"
+      @{ let gd = infix_op ($3::$4) $2 $1 (fst dyp.global_data), snd dyp.global_data in
+         Infix_stm, [Global_data gd] }
+  
+  | "let" LIDENT (symbolchar+)<op> LIDENT "=" expr ";" ";" @{
+      let p1,p2,p3 =
+        try
+        let lvl, asso = Op_map.find op (fst dyp.global_data) in
+        match asso with
+          | Non_assoc ->
+              (Lesseq_priority prio.(lvl)),
+              (Lesseq_priority prio.(lvl)),prio.(lvl)
+          | Right_assoc ->
+              (Less_priority prio.(lvl)),
+              (Lesseq_priority prio.(lvl)),prio.(lvl)
+          | Left_assoc ->
+              (Lesseq_priority prio.(lvl)),
+              (Less_priority prio.(lvl)),prio.(lvl)
+        with Not_found -> No_priority, No_priority, "default_priority"
+      in
+      let rhs =
+        (*(Non_ter ("expr",p1))::(
+        (List.map (fun _ -> Ter "TOKEN") op)
+        @[Non_ter ("expr",p2)]) *)
+        [Non_ter ("expr",p1);Regexp (RE_String op);Non_ter ("expr",p2)]
+      in
+      let rule = ("expr", rhs, p3, []) in
+      (*let ol = List.map (fun x -> Token x) op in
+      let ol = (Nt ("",$2))::(ol@[Nt ("",$4)]) in*)
+      let ol = [Nt ("",$2);Rhs_string op;Nt ("",$4)] in
+      Define_syntax,
+      [Add_rules [(rule,action ol $6)]] }
+  | "define" define_cont ";" ";" @{
+      let bind_cons = List.map (fun (s,_,_) -> (s,"EXPR")) $2 in
+      Define_syntax,
+      let gd = (fst dyp.global_data), $2@(snd dyp.global_data) in
+      [Global_data gd;
+      Add_rules (List.map a_define_in $2); Bind_to_cons bind_cons] }
+
+load_statement: "load" STRING<filename> ";" ";" @{
+      let ic = open_in filename in
+      let stmt_list, define_cont, pdev = Marshal.from_channel ic in
+      close_in ic;
+      let ral = List.map a_define_in define_cont in
+      let pdev = import_functions pdev dyp.parser_pilot ral in
+      stmt_list, [Parser pdev] }
+
+infix:
+  | "infix"  { Non_assoc }
+  | "infixl" { Left_assoc }
+  | "infixr" { Right_assoc }
+
+expr:
+  | expr(<=p4) "+" expr(<p4) { Plus ($1,$3) } p4
+  | expr(<=p4) "-" expr(<p4) { Minus ($1,$3) } p4
+  | expr(<=p5) "*" expr(<p5) { Times ($1,$3) } p5
+  | expr(<=p5) "/" expr(<p5) { Div ($1,$3) } p5
+  | "-" expr(=p9) { Opposite $2 } p9
+  | "(" expr ")" { a_paren $2 } p9
+  
+  | "match" expr "with" "|"? match ["|" match]*
+     { Match_with ($2,$5::$6) }
+  
+  | INT { Int $1 } p9
+  | STRING { String $1 } p9
+  | expr "," expr(<p2) { (a_comma $1 $3) } p2
+  | UIDENT expr { (a_cons $1 $2) } p3
+  | UIDENT { Cons ($1,(0,[])) } p3
+  | LIDENT { Lident $1 } p9
+  | "let" "rec" LIDENT LIDENT "=" expr "in" expr
+      { Let_rec ($3,$4,$6,$8) }
+  | LIDENT expr { App ($1,$2) }
+  | define_in expr { $2 }
+
+match: expr "->" expr { $1,$3 }
+
+define_in:
+  | "define" define_cont "in" @{
+      let bind_cons = List.map (fun (s,_,_) -> (s,"EXPR")) $2 in
+      (*dyp.next_state <- Some stdout;
+      dyp.next_grammar <- Some stdout;*)
+      (), [Add_rules (List.map a_define_in $2);
+        Bind_to_cons bind_cons] }
+
+define_cont:
+  | LIDENT ":=" rhs "=" expr { [($1,$3,$5)] }
+  | define_cont "and" LIDENT ":=" rhs "=" expr { ($3,$5,$7)::$1 }
+
+rhs:
+  | LIDENT "(" LIDENT ")" { [Nt ($1,$3)] }
+  | UIDENT { [Token $1] }
+  | STRING { [Rhs_string $1] }
+  | LIDENT "(" LIDENT ")" rhs { (Nt ($1,$3))::$5 }
+  | UIDENT rhs { (Token $1)::$2 }
+  | STRING rhs { (Rhs_string $1)::$2 }

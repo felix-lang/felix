@@ -1,0 +1,16 @@
+define
+  expr := "<|" expr(a) "|>" = Node(Leaf,a,Leaf)
+  and expr := "<" expr(l) "|" expr(a) "|>" = Node(l,a,Leaf)
+  and expr := "<|" expr(a) "|" expr(r) ">" = Node(Leaf,a,r)
+  and expr := "<" expr(l) "|" expr(a) "|" expr(r) ">" = Node(l,a,r);;
+
+let rec comb t = match t with
+  | <|a|>  -> <|a|>
+  | <l|a|> -> < comb l |a|>
+  | <l1|a| <l2|b|r2> > -> comb < <l1|a|l2> |b|r2>;;
+
+comb <<<|1|>|2|<|3|>>|4|<<|5|>|6|<|7|>>>;;
+
+comb <<|1|>|2|<|3|>>;;
+
+comb <<|5|>|6|<|7|>>;;

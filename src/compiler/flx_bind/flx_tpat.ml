@@ -25,10 +25,10 @@ let type_of_tpattern syms p :
   let eqns = ref [] in
   let rec tp p =
     match p with
-    | TPAT_function (a,b) -> TYP_function (tp a, tp b)
-    | TPAT_tuple ps -> TYP_tuple (map tp ps)
-    | TPAT_sum ps -> TYP_sum (map tp ps)
-    | TPAT_pointer p -> TYP_pointer (tp p)
+    | TPAT_function (a,b) -> `TYP_function (tp a, tp b)
+    | TPAT_tuple ps -> `TYP_tuple (map tp ps)
+    | TPAT_sum ps -> `TYP_sum (map tp ps)
+    | TPAT_pointer p -> `TYP_pointer (tp p)
     | TPAT_name (n,ps) -> `AST_name (dummy_sr,n,map tp ps)
     | TPAT_void -> `AST_void dummy_sr
 
@@ -36,13 +36,13 @@ let type_of_tpattern syms p :
       let j = !(syms.counter) in
       incr (syms.counter);
       explicit_vars := (j,n) :: !explicit_vars;
-      TYP_var j
+      `TYP_var j
 
     | TPAT_any ->
       let j = !(syms.counter) in
       incr (syms.counter);
       any_vars := j :: !any_vars;
-      TYP_var j
+      `TYP_var j
 
     | TPAT_as (t,n) ->
       let t = tp t in
@@ -52,8 +52,8 @@ let type_of_tpattern syms p :
       eqns := (j,t) :: !eqns;
       t
 
-    | TPAT_unitsum j -> TYP_unitsum j
-    | TPAT_type_tuple ts -> TYP_type_tuple (map tp ts)
+    | TPAT_unitsum j -> `TYP_unitsum j
+    | TPAT_type_tuple ts -> `TYP_type_tuple (map tp ts)
   in
     let t = tp p in
     t,!explicit_vars, !any_vars, !as_vars, !eqns
@@ -66,15 +66,15 @@ let type_of_tpattern counter p =
   let eqns = ref [] in
 
   let rec tp p = match map_type tp p with
-    | TYP_patvar (dummy_sr, n) ->
+    | `TYP_patvar (dummy_sr, n) ->
       let j = fresh_bid counter in
       explicit_vars := (j,n) :: !explicit_vars;
-      TYP_var j
+      `TYP_var j
 
-    | TYP_patany _ ->
+    | `TYP_patany _ ->
       let j = fresh_bid counter in
       any_vars := j :: !any_vars;
-      TYP_var j
+      `TYP_var j
 
     (* NOTE CONFUSION! Is this a pattern assignment,
        or is it fixpoint binder? Or is this the
@@ -84,7 +84,7 @@ let type_of_tpattern counter p =
 
        1 + int * list as list => list
     *)
-    | TYP_as (t,n) ->
+    | `TYP_as (t,n) ->
       let t = tp t in
       let j = fresh_bid counter in
       as_vars := (j,n) :: !as_vars;

@@ -1,0 +1,72 @@
+open Flx_token
+
+let string_of_string s = "\"" ^  Flx_string.c_quote_of_string s ^ "\""
+
+let sp p = match p with
+  | Priority_Var -> "[VARIABLE]"
+  | Priority_None -> ""
+  | Priority_Eq p -> "[="^p^"]"
+  | Priority_Less p -> "[<"^p^"]"
+  | Priority_Lesseq p -> "[<="^p^"]"
+  | Priority_Greater p -> "[>"^p^"]"
+  | Priority_Greatereq p -> "[>="^p^"]"
+
+let string_of_token = function
+  | DUMMY -> "DUMMY"
+  | NAME s -> s
+  | NONTERMINAL (s,p) -> s ^ sp p
+  | STRING s -> Flx_string.c_quote_of_string s
+  | REGEX r  -> "(some regex here ..)"
+  | QUEST -> "?"
+  | LPAR -> "("
+  | RPAR -> ")"
+  | LSQB -> "["
+  | RSQB -> "]"
+  | LBRACE -> "{"
+  | RBRACE -> "}"
+  | COMMA -> ","
+  | PLUS -> "+"
+  | STAR -> "*"
+  | VBAR -> "|"
+  | LESS -> "<"
+  | GREATER -> ">"
+  | EQUAL -> "="
+  | EQEQUAL -> "=="
+  | NOTEQUAL -> "!="
+  | LESSEQUAL -> "<="
+  | GREATEREQUAL -> ">="
+  | UNDERSCORE -> "_"
+  | NEWLINE -> "<NEWLINE>"
+  | ENDMARKER -> "<<EOF>>"
+  | ERRORTOKEN s -> "<<ERROR '"^ s ^"'>>"
+
+let name_of_token = function
+  | DUMMY -> "DUMMY"
+  | NAME _ -> "NAME"
+  | NONTERMINAL _ -> "NONTERMINAL"
+  | STRING _ -> "STRING"
+  | REGEX _ -> "REGEX"
+  | QUEST -> "QUEST"
+  | LPAR -> "LPAR"
+  | RPAR -> "RPAR"
+  | LSQB -> "LSQB"
+  | RSQB -> "RSQB"
+  | LBRACE -> "LBRACE"
+  | RBRACE -> "RBRACE"
+  | COMMA -> "COMMA"
+  | PLUS -> "PLUS"
+  | STAR -> "STAR"
+  | VBAR -> "VBAR"
+  | LESS -> "LESS"
+  | GREATER -> "GREATER"
+  | EQUAL -> "EQUAL"
+  | EQEQUAL -> "EQEQUAL"
+  | NOTEQUAL -> "NOTEQUAL"
+  | LESSEQUAL -> "LESSEQUAL"
+  | GREATEREQUAL -> "GREATEREQUAL"
+  | UNDERSCORE -> "UNDERSCORE"
+  | NEWLINE -> "NEWLINE"
+  | ENDMARKER -> "ENDMARKER"
+  | ERRORTOKEN _ -> "ERRORTOKEN"
+
+

@@ -1,0 +1,95 @@
+
+%constructor EXPR %for expr
+
+%constructor Void %for LPAREN RPAREN MATCH WITH COMMA LET REC DEFINE IN AND EQUAL COLONEQUAL INFIX INFIXL INFIXR EOF
+
+%relation
+p9<p8<p7<p6<p5<p4<p3<p2<p1<p0
+
+%start main
+
+
+let newline = ('\010' | '\013' | "\013\010")
+let blank = [' ' '\009' '\012']
+let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
+let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
+let identchar =
+  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+let backslash_escapes =
+  ['\\' '"' '\'' 'n' 't' 'b' 'r']
+let symbolchar =
+  ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+
+rule string = parse
+    '"'
+  | '\\' backslash_escapes
+  | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9']
+  | '\\' 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F']
+  | '\\' _
+  | eof
+  | '\010'
+  | _
+
+main lexer =
+
+newline | blank + ->
+lowercase identchar * -> LIDENT   
+uppercase identchar * -> UIDENT   
+['0'-'9']+ -> INT   
+'"' -> STRING 
+%parser
+
+main: statements eof   
+
+statements:
+  |   
+  | statements statement
+      @  
+
+statement:
+  | expr ";" ";"   
+  | "let" "rec" LIDENT LIDENT "=" expr ";" ";"
+  
+  | infix INT symbolchar+ ("," (symbolchar+)   )* ";" ";"
+      @  
+  | "let" LIDENT (symbolchar+)<op> LIDENT "=" expr ";" ";" @  | "define" define_cont ";" ";" @
+infix:
+  | "infix"    
+  | "infixl"   
+  | "infixr"   
+
+expr:
+  | expr(<=p4) "+" expr(<p4)    p4
+  | expr(<=p4) "-" expr(<p4)    p4
+  | expr(<=p5) "*" expr(<p5)    p5
+  | expr(<=p5) "/" expr(<p5)    p5
+  | "-" expr(=p9)    p9
+  | "(" expr ")"    p9
+  
+  | "match" expr "with" "|"? match ("|" match   )*
+  
+  | INT    p9
+  | STRING    p9
+  | expr "," expr(<p2)    p2
+  | UIDENT expr    p3
+  | UIDENT    p3
+  | LIDENT    p9
+  | "let" "rec" LIDENT LIDENT "=" expr "in" expr
+  | LIDENT expr   
+  | define_in expr   
+
+match: expr "->" expr   
+
+define_in:
+  | "define" define_cont "in" @
+define_cont:
+  | LIDENT ":=" rhs "=" expr   
+  | define_cont "and" LIDENT ":=" rhs "=" expr   
+
+rhs:
+  | LIDENT "(" LIDENT ")"   
+  | UIDENT   
+  | STRING   
+  | LIDENT "(" LIDENT ")" rhs   
+  | UIDENT rhs   
+  | STRING rhs   

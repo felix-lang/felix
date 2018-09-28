@@ -32,17 +32,17 @@ let make_desugar_state name seq = {
 
 
 let block sr body :statement_t =
-  let e = EXPR_lambda (sr,(`GeneratedInlineProcedure,dfltvs,[Slist [],None],TYP_void sr,body)) in
-  STMT_call (sr,e,EXPR_tuple(sr,[]))
+  let e = `EXPR_lambda (sr,(`GeneratedInlineProcedure,dfltvs,[Slist [],None],`TYP_void sr,body)) in
+  STMT_call (sr,e,`EXPR_tuple(sr,[]))
 
 (* This function has to lift lambdas out of types, 
-  this mainly (exclusively?) applies to TYP_typeof (e) term
+  this mainly (exclusively?) applies to `TYP_typeof (e) term
 *)
 let rec rett rex typ sr =
   match typ with
 
   (* Lift lambdas inside typeof() *)
-  | TYP_typeof _ ->
+  | `TYP_typeof _ ->
     let decls,use_t = rex (expr_of_typecode sr typ) in
     let typ = typecode_of_expr(use_t) in
     decls,typ
@@ -115,200 +115,200 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
   let seq () = state.fresh_bid () in
   match e with
 
-  | EXPR_rptsum_type _
-  | EXPR_patvar _
-  | EXPR_patany _
-  | EXPR_match_case _
-  | EXPR_case_arg _
-  | EXPR_arrow _
-  | EXPR_effector _
-  | EXPR_ellipsis _
-  | EXPR_intersect _
-  | EXPR_union _
-  | EXPR_isin _
+  | `EXPR_rptsum_type _
+  | `EXPR_patvar _
+  | `EXPR_patany _
+  | `EXPR_match_case _
+  | `EXPR_case_arg _
+  | `EXPR_arrow _
+  | `EXPR_effector _
+  | `EXPR_ellipsis _
+  | `EXPR_intersect _
+  | `EXPR_union _
+  | `EXPR_isin _
     ->
     clierrx "[flx_desugar/flx_desugar_expr.ml:127: E326] " sr ("[rex] Unexpected " ^ string_of_expr e)
 
 
-  | EXPR_void (x) -> [], EXPR_void x
-  | EXPR_longarrow (sr,x) -> [], EXPR_longarrow (sr,x)
+  | `EXPR_void (x) -> [], `EXPR_void x
+  | `EXPR_longarrow (sr,x) -> [], `EXPR_longarrow (sr,x)
 
-  | EXPR_superscript (sr,(e1,e2)) -> 
+  | `EXPR_superscript (sr,(e1,e2)) -> 
     let l1,x1 = rex e1 in
     let l2,x2 = rex e2 in
-    l1 @ l2, EXPR_superscript (sr, (x1, x2))
+    l1 @ l2, `EXPR_superscript (sr, (x1, x2))
  
-  | EXPR_product (sr,ls) ->
+  | `EXPR_product (sr,ls) ->
     let lss,xs = List.split (List.map rex ls) in
-    List.concat lss,EXPR_product (sr,xs)
+    List.concat lss,`EXPR_product (sr,xs)
 
-  | EXPR_sum (sr,ls) ->
+  | `EXPR_sum (sr,ls) ->
     let lss,xs = List.split (List.map rex ls) in
-    List.concat lss,EXPR_sum (sr,xs)
+    List.concat lss,`EXPR_sum (sr,xs)
 
-  | EXPR_andlist (sr,ls) ->
+  | `EXPR_andlist (sr,ls) ->
     let lss,xs = List.split (List.map rex ls) in
-    List.concat lss,EXPR_andlist (sr,xs)
+    List.concat lss,`EXPR_andlist (sr,xs)
 
-  | EXPR_orlist (sr,ls) ->
+  | `EXPR_orlist (sr,ls) ->
     let lss,xs = List.split (List.map rex ls) in
-    List.concat lss,EXPR_orlist (sr,xs)
+    List.concat lss,`EXPR_orlist (sr,xs)
 
-  | EXPR_match_ctor (sr,(name,arg)) ->
+  | `EXPR_match_ctor (sr,(name,arg)) ->
     let l1,x1 = rex arg in
-    l1, EXPR_match_ctor (sr,(name,x1))
+    l1, `EXPR_match_ctor (sr,(name,x1))
 
   (* lambda lifts out of patterns are suspect: premature evaluation! *)
-  | EXPR_match_variant_subtype (sr, (e,t)) ->
+  | `EXPR_match_variant_subtype (sr, (e,t)) ->
     let l1, x1 = rex e in
-    l1, EXPR_match_variant_subtype (sr, (x1, t))
+    l1, `EXPR_match_variant_subtype (sr, (x1, t))
 
-  | EXPR_match_ho_ctor (sr,(name,es)) ->
+  | `EXPR_match_ho_ctor (sr,(name,es)) ->
     let lxs = List.map rex es in
     let ls,xs = List.split lxs in
     let ls = List.concat ls in
-    ls, EXPR_match_ho_ctor (sr,(name,xs))
+    ls, `EXPR_match_ho_ctor (sr,(name,xs))
 
   (* lambda lifts out of patterns are suspect: premature evaluation! *)
-  | EXPR_match_variant (sr,(name,arg)) ->
+  | `EXPR_match_variant (sr,(name,arg)) ->
     let l1,x1 = rex arg in
-    l1, EXPR_match_variant (sr,(name,x1))
+    l1, `EXPR_match_variant (sr,(name,x1))
 
 
-  (* This term works like: EXPR_ctor_arg (sr, (Some, Some 1)) -> 1, that is,
+  (* This term works like: `EXPR_ctor_arg (sr, (Some, Some 1)) -> 1, that is,
    * it returns the argument of the given constructor in the expression,
    * which expression must be precisely that constructor applied to an argument
    *)
-  | EXPR_ctor_arg (sr,(qn,e)) -> 
+  | `EXPR_ctor_arg (sr,(qn,e)) -> 
     let l1,x1 = rex e in 
-    l1,EXPR_ctor_arg (sr,(qn,x1))
+    l1,`EXPR_ctor_arg (sr,(qn,x1))
 
-  | EXPR_ho_ctor_arg (sr,(qn,es)) -> 
+  | `EXPR_ho_ctor_arg (sr,(qn,es)) -> 
     let lxs = List.map rex es in
     let ls,xs = List.split lxs in
     let ls = List.concat ls in
-    ls,EXPR_ho_ctor_arg (sr,(qn,xs))
+    ls,`EXPR_ho_ctor_arg (sr,(qn,xs))
 
-  | EXPR_variant_arg (sr,(s,e)) -> 
+  | `EXPR_variant_arg (sr,(s,e)) -> 
     let l1,x1 = rex e in 
-    l1,EXPR_variant_arg (sr,(s,x1))
+    l1,`EXPR_variant_arg (sr,(s,x1))
 
-  | EXPR_get_tuple_tail (sr, e) ->
+  | `EXPR_get_tuple_tail (sr, e) ->
     let l1,x1 = rex e in 
-    l1,EXPR_get_tuple_tail (sr,x1)
+    l1,`EXPR_get_tuple_tail (sr,x1)
 
-  | EXPR_get_tuple_head (sr, e) ->
+  | `EXPR_get_tuple_head (sr, e) ->
     let l1,x1 = rex e in 
-    l1,EXPR_get_tuple_head (sr,x1)
+    l1,`EXPR_get_tuple_head (sr,x1)
 
-  | EXPR_get_tuple_body (sr, e) ->
+  | `EXPR_get_tuple_body (sr, e) ->
     let l1,x1 = rex e in 
-    l1,EXPR_get_tuple_body (sr,x1)
+    l1,`EXPR_get_tuple_body (sr,x1)
 
-  | EXPR_get_tuple_last (sr, e) ->
+  | `EXPR_get_tuple_last (sr, e) ->
     let l1,x1 = rex e in 
-    l1,EXPR_get_tuple_last (sr,x1)
+    l1,`EXPR_get_tuple_last (sr,x1)
 
 
-  | EXPR_as_var (sr,(e,name)) ->
+  | `EXPR_as_var (sr,(e,name)) ->
     let l1,x1 = rex e in
-    let dcl = Dcl (sr, name, None, `Private, dfltvs, DCL_value (TYP_typeof x1,`Var)) in
+    let dcl = Dcl (sr, name, None, `Private, dfltvs, DCL_value (`TYP_typeof x1,`Var)) in
     let asgn = Exe (sr,EXE_init (name,x1)) in
-    l1 @ [dcl] @ [asgn], EXPR_name (sr,name,[])
+    l1 @ [dcl] @ [asgn], `EXPR_name (sr,name,[])
 
 
-  | EXPR_as (sr,(e,name)) ->
+  | `EXPR_as (sr,(e,name)) ->
     let l1,x1 = rex e in
-    let dcl = Dcl (sr, name, None, `Private, dfltvs, DCL_value (TYP_typeof x1,`Val)) in
+    let dcl = Dcl (sr, name, None, `Private, dfltvs, DCL_value (`TYP_typeof x1,`Val)) in
     let asgn = Exe (sr,EXE_init (name,x1)) in
-    l1 @ [dcl] @ [asgn], EXPR_name (sr,name,[])
+    l1 @ [dcl] @ [asgn], `EXPR_name (sr,name,[])
 
-  | EXPR_typecase_match (sr,(t, es)) ->
+  | `EXPR_typecase_match (sr,(t, es)) ->
     let ts,es = List.split es in
     let lss,xs = List.split (List.map rex es) in
     List.concat lss,
-    EXPR_typecase_match (sr, (t, List.combine ts xs))
+    `EXPR_typecase_match (sr, (t, List.combine ts xs))
 
-  | EXPR_type_match _ -> [],e
-  | EXPR_subtype_match _ -> [],e
+  | `EXPR_type_match _ -> [],e
+  | `EXPR_subtype_match _ -> [],e
 
-  | EXPR_noexpand (_,e) -> rex e
-  | EXPR_name (sr,name,_) -> [],e
-  | EXPR_label (sr,name) -> [],e
+  | `EXPR_noexpand (_,e) -> rex e
+  | `EXPR_name (sr,name,_) -> [],e
+  | `EXPR_label (sr,name) -> [],e
 
-  | EXPR_deref (sr,e) ->
+  | `EXPR_deref (sr,e) ->
     let l1,x1 = rex e in
-    l1, EXPR_deref (sr,x1)
+    l1, `EXPR_deref (sr,x1)
 
-  | EXPR_ref (sr,e) ->
+  | `EXPR_ref (sr,e) ->
     let l1,x1 = rex e in
-    l1, EXPR_ref (sr,x1)
+    l1, `EXPR_ref (sr,x1)
 
-  | EXPR_rref (sr,e) ->
+  | `EXPR_rref (sr,e) ->
     let l1,x1 = rex e in
-    l1, EXPR_rref (sr,x1)
+    l1, `EXPR_rref (sr,x1)
 
-  | EXPR_wref (sr,e) ->
+  | `EXPR_wref (sr,e) ->
     let l1,x1 = rex e in
-    l1, EXPR_wref (sr,x1)
+    l1, `EXPR_wref (sr,x1)
 
-  | EXPR_ainj (sr,e,t) ->
+  | `EXPR_ainj (sr,e,t) ->
     let l1,x1 = rex e in
-    l1, EXPR_ainj (sr,x1, t)
+    l1, `EXPR_ainj (sr,x1, t)
 
 
 
 
-  | EXPR_uniq (sr,e) ->
+  | `EXPR_uniq (sr,e) ->
     let l1,x1 = rex e in
-    l1, EXPR_uniq (sr,x1)
+    l1, `EXPR_uniq (sr,x1)
 
-  | EXPR_not (sr,e) ->
+  | `EXPR_not (sr,e) ->
     let l1, x1 = rex e in
-    l1, EXPR_not (sr,x1)
+    l1, `EXPR_not (sr,x1)
 
-  | EXPR_likely (sr,e) ->
+  | `EXPR_likely (sr,e) ->
     let l1,x1 = rex e in
-    l1, EXPR_likely (sr,x1)
+    l1, `EXPR_likely (sr,x1)
 
-  | EXPR_unlikely (sr,e) ->
+  | `EXPR_unlikely (sr,e) ->
     let l1,x1 = rex e in
-    l1, EXPR_unlikely (sr,x1)
+    l1, `EXPR_unlikely (sr,x1)
 
-  | EXPR_new (sr,e) ->
+  | `EXPR_new (sr,e) ->
     let l1,x1 = rex e in
-    l1, EXPR_new (sr,x1)
+    l1, `EXPR_new (sr,x1)
 
-  | EXPR_suffix _ -> [],e  (* ?? *)
-  | EXPR_callback _ -> [],e  (* ?? *)
+  | `EXPR_suffix _ -> [],e  (* ?? *)
+  | `EXPR_callback _ -> [],e  (* ?? *)
 
-  | EXPR_range_check (sr, mi, v, mx) ->
+  | `EXPR_range_check (sr, mi, v, mx) ->
     let l1,x1 = rex mi in
     let l2,x2 = rex v in 
     let l3,x3 = rex mx in
-    l1 @ l2 @ l3, EXPR_range_check (sr,x1, x2, x3)
+    l1 @ l2 @ l3, `EXPR_range_check (sr,x1, x2, x3)
 
-  | EXPR_index (_,_,_) -> [],e
+  | `EXPR_index (_,_,_) -> [],e
 
-  | EXPR_lookup (sr,(e,id,ts)) ->
+  | `EXPR_lookup (sr,(e,id,ts)) ->
     let l1,x1 = rex e in
-    l1, EXPR_lookup (sr,(x1,id,ts))
+    l1, `EXPR_lookup (sr,(x1,id,ts))
 
-  | EXPR_case_tag _ -> [],e
-  | EXPR_typed_case _ -> [],e
-  | EXPR_projection _ -> [],e
-  | EXPR_array_projection (sr,e,domain) ->
+  | `EXPR_case_tag _ -> [],e
+  | `EXPR_typed_case _ -> [],e
+  | `EXPR_projection _ -> [],e
+  | `EXPR_array_projection (sr,e,domain) ->
     let d,x = rex e in
-    d, EXPR_array_projection (sr,x,domain)
+    d, `EXPR_array_projection (sr,x,domain)
 
-  | EXPR_literal _ -> [],e
+  | `EXPR_literal _ -> [],e
 
-  | EXPR_expr (sr,sc,t,e) -> 
+  | `EXPR_expr (sr,sc,t,e) -> 
     let d,x = rex e in
-    d , EXPR_expr (sr,sc,t,x)
+    d , `EXPR_expr (sr,sc,t,x)
 
 
-  | EXPR_interpolate (sr,s) -> 
+  | `EXPR_interpolate (sr,s) -> 
     let outstr = ref "" in
     let outexprs = ref [] in
     let outexpr = ref "" in
@@ -387,20 +387,20 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
       (!outexprs) 
     in
     (* List.iter (fun s -> print_endline ("Expr = " ^ s)) outexprs; *)
-    let xs = List.map (fun x -> EXPR_name (sr, x, [])) outexprs in
-    let str = EXPR_name (sr, "str",[]) in
-    let xs = List.map (fun x -> EXPR_apply (sr, (str,x) )) xs in
-    let res = EXPR_apply (sr, (EXPR_vsprintf (sr, !outstr), EXPR_tuple (sr,xs)))  in
+    let xs = List.map (fun x -> `EXPR_name (sr, x, [])) outexprs in
+    let str = `EXPR_name (sr, "str",[]) in
+    let xs = List.map (fun x -> `EXPR_apply (sr, (str,x) )) xs in
+    let res = `EXPR_apply (sr, (`EXPR_vsprintf (sr, !outstr), `EXPR_tuple (sr,xs)))  in
     rex res
 
-  | EXPR_vsprintf (sr,s) ->
+  | `EXPR_vsprintf (sr,s) ->
     let ix = seq () in
     let id = "_fmt_" ^ string_of_bid ix in
-    let str = TYP_name (sr,"string",[]) in
+    let str = `TYP_name (sr,"string",[]) in
     let fmt,its = Flx_cformat.types_of_cformat_string sr s in
     let args = catmap ","
       (fun (i,s) -> match s with
-      | TYP_name (_,"string",[]) -> "$" ^ si i ^ ".c_str()"
+      | `TYP_name (_,"string",[]) -> "$" ^ si i ^ ".c_str()"
       | _ ->  "$" ^ si i
       )
       its
@@ -412,17 +412,17 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
     assert (props = []);
     let ts =
       let n = List.fold_left (fun n (i,_) -> max n i) 0 its in
-      let a = Array.make n TYP_none in
+      let a = Array.make n `TYP_none in
       List.iter
       (fun (i,s) ->
-        if a.(i-1) = TYP_none then a.(i-1) <-s
+        if a.(i-1) = `TYP_none then a.(i-1) <-s
         else if a.(i-1) = s then ()
         else clierrx "[flx_desugar/flx_desugar_expr.ml:369: E331] " sr ("Conflicting types for argument " ^ si i)
       )
       its
       ;
       for i = 1 to n do
-        if a.(i-1) = TYP_none then
+        if a.(i-1) = `TYP_none then
           clierrx "[flx_desugar/flx_desugar_expr.ml:375: E332] " sr ("Missing format for argument " ^ si i)
       done
       ;
@@ -436,13 +436,13 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
       map_reqs sr req,
       "primary")
     in
-    let x = EXPR_index (sr,id,ix) in
+    let x = `EXPR_index (sr,id,ix) in
     Dcl (sr, id, Some ix, `Private, dfltvs, f) :: dcls, x
 
-  | EXPR_cond (sr,(e,b1,b2)) ->
+  | `EXPR_cond (sr,(e,b1,b2)) ->
      rex
      (
-       EXPR_match
+       `EXPR_match
        (
          sr,
          (
@@ -459,91 +459,91 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
      even though they're never called,
      so the typing works correctly
   *)
-  | EXPR_typeof (sr,e') ->
+  | `EXPR_typeof (sr,e') ->
     let l1,x1 = rex e' in
-    l1, EXPR_typeof (sr,(x1))
+    l1, `EXPR_typeof (sr,(x1))
 
-  | EXPR_get_n (sr,(n,e')) ->
+  | `EXPR_get_n (sr,(n,e')) ->
     let l1,x1 = rex e' in
-    l1, EXPR_get_n (sr,(n,x1))
+    l1, `EXPR_get_n (sr,(n,x1))
 
-  | EXPR_get_named_variable (sr,(n,e')) ->
+  | `EXPR_get_named_variable (sr,(n,e')) ->
     let l1,x1 = rex e' in
-    l1, EXPR_get_named_variable (sr,(n,x1))
+    l1, `EXPR_get_named_variable (sr,(n,x1))
 
-  | EXPR_case_index (sr,e) ->
+  | `EXPR_case_index (sr,e) ->
     let l,x = rex e in
-    l,EXPR_case_index (sr,x)
+    l,`EXPR_case_index (sr,x)
 
-  | EXPR_rptsum_arg (sr,e) ->
+  | `EXPR_rptsum_arg (sr,e) ->
     let l,x = rex e in
-    l,EXPR_rptsum_arg (sr,x)
+    l,`EXPR_rptsum_arg (sr,x)
 
 
-  | EXPR_apply (sr,(fn,arg)) ->
+  | `EXPR_apply (sr,(fn,arg)) ->
     let l1,x1 = rex fn in
     let l2,x2 = rex arg in
-    l1 @ l2, EXPR_apply (sr,(x1,x2))
+    l1 @ l2, `EXPR_apply (sr,(x1,x2))
 
-  | EXPR_map (sr,fn,arg) ->
+  | `EXPR_map (sr,fn,arg) ->
     let l1,x1 = rex fn in
     let l2,x2 = rex arg in
-    l1 @ l2, EXPR_map (sr,x1,x2)
+    l1 @ l2, `EXPR_map (sr,x1,x2)
 
-  | EXPR_tuple (sr,t) ->
+  | `EXPR_tuple (sr,t) ->
     let lss,xs = List.split (List.map rex t) in
-    List.concat lss,EXPR_tuple (sr,xs)
+    List.concat lss,`EXPR_tuple (sr,xs)
 
-  | EXPR_tuple_cons (sr,eh,et) ->
+  | `EXPR_tuple_cons (sr,eh,et) ->
     let l1,x1 = rex eh in
     let l2,x2 = rex et in
-    l1 @ l2, EXPR_tuple_cons (sr,x1,x2)
+    l1 @ l2, `EXPR_tuple_cons (sr,x1,x2)
 
-  | EXPR_tuple_snoc (sr,eh,et) ->
+  | `EXPR_tuple_snoc (sr,eh,et) ->
     let l1,x1 = rex eh in
     let l2,x2 = rex et in
-    l1 @ l2, EXPR_tuple_snoc (sr,x1,x2)
+    l1 @ l2, `EXPR_tuple_snoc (sr,x1,x2)
 
-  | EXPR_record (sr,es) ->
+  | `EXPR_record (sr,es) ->
     let ss,es = List.split es in
     let lss,xs = List.split (List.map rex es) in
-    List.concat lss,EXPR_record (sr, List.combine ss xs)
+    List.concat lss,`EXPR_record (sr, List.combine ss xs)
 
-  | EXPR_polyrecord(sr,es,e) -> 
-    let ss,es = List.split es in
-    let lss,xs = List.split (List.map rex es) in
-    let l,x = rex e in
-    l @ List.concat lss,EXPR_polyrecord(sr, List.combine ss xs, x)
-
-  | EXPR_replace_fields (sr, e, es) ->
+  | `EXPR_polyrecord(sr,es,e) -> 
     let ss,es = List.split es in
     let lss,xs = List.split (List.map rex es) in
     let l,x = rex e in
-    l @ List.concat lss,EXPR_replace_fields (sr, x, List.combine ss xs)
+    l @ List.concat lss,`EXPR_polyrecord(sr, List.combine ss xs, x)
 
-  | EXPR_remove_fields (sr,e,ss) ->
-    let l,x = rex e in
-    l,EXPR_remove_fields(sr,x,ss)
-
-  | EXPR_extension (sr,es,e) -> 
+  | `EXPR_replace_fields (sr, e, es) ->
+    let ss,es = List.split es in
     let lss,xs = List.split (List.map rex es) in
     let l,x = rex e in
-    l @ List.concat lss,EXPR_extension (sr, xs, x)
+    l @ List.concat lss,`EXPR_replace_fields (sr, x, List.combine ss xs)
 
-  | EXPR_pclt_type (sr,a,b) -> [],e (* I'm lazy *)
-  | EXPR_rpclt_type (sr,a,b) -> [],e (* I'm lazy *)
-  | EXPR_wpclt_type (sr,a,b) -> [],e (* I'm lazy *)
+  | `EXPR_remove_fields (sr,e,ss) ->
+    let l,x = rex e in
+    l,`EXPR_remove_fields(sr,x,ss)
+
+  | `EXPR_extension (sr,es,e) -> 
+    let lss,xs = List.split (List.map rex es) in
+    let l,x = rex e in
+    l @ List.concat lss,`EXPR_extension (sr, xs, x)
+
+  | `EXPR_pclt_type (sr,a,b) -> [],e (* I'm lazy *)
+  | `EXPR_rpclt_type (sr,a,b) -> [],e (* I'm lazy *)
+  | `EXPR_wpclt_type (sr,a,b) -> [],e (* I'm lazy *)
 
 
-  | EXPR_record_type (sr,ts) ->
+  | `EXPR_record_type (sr,ts) ->
     let to_expr (id,t) = (id, (expr_of_typecode sr t)) in
     let to_type (id,e) = (id, (typecode_of_expr e)) in
     let es = List.map to_expr ts in
     let ss,es = List.split es in
     let lss,xs = List.split (List.map rex es) in
-    List.concat lss,EXPR_record_type (sr, (List.map to_type (List.combine ss xs)))
+    List.concat lss,`EXPR_record_type (sr, (List.map to_type (List.combine ss xs)))
 
-  | EXPR_polyrecord_type (sr,ts,t) ->
+  | `EXPR_polyrecord_type (sr,ts,t) ->
     let to_expr (id,t) = (id, (expr_of_typecode sr t)) in
     let to_type (id,e) = (id, (typecode_of_expr e)) in
     let es = List.map to_expr ts in
@@ -553,26 +553,26 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
     let l,x = rex e in
     l @ List.concat 
           lss,
-          EXPR_polyrecord_type (sr, 
+          `EXPR_polyrecord_type (sr, 
             (List.map to_type (List.combine ss xs)), 
             (typecode_of_expr x))
 
-  | EXPR_rnprj (sr,name,seq,e) -> 
+  | `EXPR_rnprj (sr,name,seq,e) -> 
     let l,x = rex e in
-    l,EXPR_rnprj (sr,name,seq,x)
+    l,`EXPR_rnprj (sr,name,seq,x)
 
 
-  | EXPR_variant (sr,(s,e)) ->
+  | `EXPR_variant (sr,(s,e)) ->
     let l,x = rex e in
-    l,EXPR_variant (sr,(s,x))
+    l,`EXPR_variant (sr,(s,x))
 
-  | EXPR_variant_type _ -> assert false
+  | `EXPR_variant_type _ -> assert false
 
-  | EXPR_arrayof (sr,t) ->
+  | `EXPR_arrayof (sr,t) ->
     let lss,xs = List.split (List.map rex t) in
-    List.concat lss,EXPR_arrayof(sr,xs)
+    List.concat lss,`EXPR_arrayof(sr,xs)
 
-  | EXPR_lambda (sr,(kind,vs,pps,ret,sts)) ->
+  | `EXPR_lambda (sr,(kind,vs,pps,ret,sts)) ->
     let n = seq() in
     let name' = "_lam_" ^ string_of_bid n in
     let access = `Private in
@@ -586,7 +586,7 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
     if List.length pps = 0 then syserr sr "[rex] Lambda with no arguments?" else
     let t = typeof_paramspec_t (fst (List.hd pps)) in
     let e =
-      EXPR_suffix
+      `EXPR_suffix
       (
         sr,
         (
@@ -596,19 +596,19 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
     in
     sts,e
 
-  | EXPR_coercion (sr,(e,t)) ->
+  | `EXPR_coercion (sr,(e,t)) ->
     begin match t with
-    | TYP_none -> rex e (* allow system to coerce expression to unknown type as nop *)
+    | `TYP_none -> rex e (* allow system to coerce expression to unknown type as nop *)
     | _ ->
       let l1,x1 = rex e in
-      l1, EXPR_coercion (sr,(x1,t))
+      l1, `EXPR_coercion (sr,(x1,t))
     end
 
-  | EXPR_variant_subtype_match_coercion (sr,(e,t)) ->
+  | `EXPR_variant_subtype_match_coercion (sr,(e,t)) ->
     let l1,x1 = rex e in
-    l1, EXPR_variant_subtype_match_coercion (sr,(x1,t))
+    l1, `EXPR_variant_subtype_match_coercion (sr,(x1,t))
 
-  | EXPR_letin (sr,(pat,e1,e2)) -> assert false
+  | `EXPR_letin (sr,(pat,e1,e2)) -> assert false
 
   (* MATCH HANDLING NEEDS TO BE REWORKED, THE SWITCHING SHOULD BE
      DELAYED TO ALLOW TYPE BASED OPTIMISATION WHERE THE TOP
@@ -623,7 +623,7 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
      match x with | A x | B x => x endmatch
   *)
 
-  | EXPR_match (sr,(e,pss)) ->
+  | `EXPR_match (sr,(e,pss)) ->
     Flx_match.gen_match rex_with_ret rsts_with_ret seq name sr e pss rettype
 
 (* remove blocks *)

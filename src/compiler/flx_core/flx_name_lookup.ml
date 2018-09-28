@@ -9,7 +9,7 @@ let lookup_name_in_htab htab name : entry_set_t option =
 
 let rec mk_bare_env (sym_table:Flx_sym_table.t) index =
   let parent, sym = Flx_sym_table.find_with_parent sym_table index in
-  (index, sym.Flx_sym.id, sym.Flx_sym.privmap, [], Flx_ast.TYP_tuple []) ::
+  (index, sym.Flx_sym.id, sym.Flx_sym.privmap, [], `TYP_tuple []) ::
   match parent with
   | None -> []
   | Some index -> mk_bare_env sym_table index

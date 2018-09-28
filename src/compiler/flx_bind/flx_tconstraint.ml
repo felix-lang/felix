@@ -44,16 +44,16 @@ print_endline ("Build type constraints for type variable " ^string_of_int i ^": 
   (* special case, no constraint, represent by just 'true' (unit type) *)
   match p1 with
 (*
-  | TYP_generic _ -> (* print_endline ("constraint generic .. "); *) btyp_tuple []
+  | `TYP_generic _ -> (* print_endline ("constraint generic .. "); *) btyp_tuple []
 *)
 (*
-  | TYP_tuple _
+  | `TYP_tuple _
 *)
-  | TYP_patany _
+  | `TYP_patany _
 (*
-  | TYP_type
+  | `TYP_type
 *)
-  | TYP_function _ -> btyp_tuple []
+  | `TYP_function _ -> btyp_tuple []
   | _ ->
 
   (* more general cases *)

@@ -1,0 +1,54 @@
+{
+open Dyp
+open Parse_tree
+open Lexing
+
+let print_pos pos =
+  Printf.printf "fname=%s, lnum=%d, bol=%d, cnum=%d\n"
+    pos.pos_fname pos.pos_lnum pos.pos_bol
+      pos.pos_cnum;
+  flush_all ()
+
+let update_loc lexbuf file line absolute chars =
+  let pos = lexbuf.lex_curr_p in
+  let new_file = match file with
+                 | None -> pos.pos_fname
+                 | Some s -> s
+  in
+  lexbuf.lex_curr_p <- { pos with
+    pos_fname = new_file;
+    pos_lnum = if absolute then line else pos.pos_lnum + line;
+    pos_bol = pos.pos_cnum - chars;
+  }
+}
+
+%start main
+%layout [' ' '\t']
+%layout '\n' { update_loc (Dyp.std_lexbuf lexbuf) None 1 false 0 }
+
+%%
+
+main : expr eof { $1 }
+
+expr :
+  | ['0'-'9']+ {
+      Printf.printf "int:%s\n" $1;
+      Printf.printf "%d--%d\n" (dyp.symbol_start ()) (dyp.symbol_end ());
+      print_pos (dyp.symbol_start_pos ());
+      print_pos (dyp.symbol_end_pos ());
+      Int (int_of_string $1) }
+  | expr "+" expr "*" expr {
+      print_tree (Node ($1,$3,$5));
+      print_newline ();
+      Printf.printf "%d--%d\n" (dyp.symbol_start ()) (dyp.symbol_end ());
+      print_pos (dyp.symbol_start_pos ());
+      print_pos (dyp.symbol_end_pos ());
+      print_endline "rhs positions";
+      let _ = for i=1 to 5 do
+        Printf.printf "symb %d\n" i;
+        Printf.printf "%d--%d\n" (dyp.rhs_start i) (dyp.rhs_end i);
+        print_pos ($<i);
+        print_pos ($>i)
+      done in
+      print_newline ();
+      Node ($1,$3,$5) }

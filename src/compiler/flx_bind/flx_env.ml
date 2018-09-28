@@ -128,7 +128,7 @@ and bind_dir
   )
   (fst vs)
   ;
-  let cheat_env = (dummy_bid,"cheat",cheat_table,[],TYP_tuple []) in
+  let cheat_env = (dummy_bid,"cheat",cheat_table,[],`TYP_tuple []) in
   let rs2 = {rs with open_excludes = (vs,qn)::rs.open_excludes } in
   let {base_sym=i; spec_vs=spec_vs; sub_ts=ts}, ts' =
     try

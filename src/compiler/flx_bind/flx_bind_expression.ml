@@ -37,7 +37,7 @@ let grab_name qn = match qn with
 | `AST_lookup (sr,(e,name,ts)) -> name
 | _ -> failwith "expected qn .."
 
-let base_type_of_literal sr {Flx_literal.felix_type=t } = TYP_name (sr,t,[])
+let base_type_of_literal sr {Flx_literal.felix_type=t } = `TYP_name (sr,t,[])
 
 let type_of_literal inner_bind_type state bsym_table env sr v =
   let _,_,root,_,_ = List.hd (List.rev env) in
@@ -145,31 +145,31 @@ let rec bind_expression'
   let rt t = beta_reduce "flx_lookup: bind_expression'(2)" state.counter bsym_table sr t in
   let sr = src_of_expr e in
   (* Is this right? It fixes a weird behaviour but may break something else ... *)
-  let e = match e with | EXPR_noexpand (_,e) -> e | e -> e in
+  let e = match e with | `EXPR_noexpand (_,e) -> e | e -> e in
   match e with
-  | EXPR_rptsum_type _
-  | EXPR_pclt_type _
-  | EXPR_rpclt_type _
-  | EXPR_wpclt_type _
-  | EXPR_patvar _
-  | EXPR_patany _
-  | EXPR_vsprintf _
-  | EXPR_interpolate _
-  | EXPR_type_match _
-  | EXPR_subtype_match _
-  | EXPR_noexpand _
-  | EXPR_letin _
-  | EXPR_typeof _
-  | EXPR_as _
-  | EXPR_as_var _
-  | EXPR_void _
-  | EXPR_arrow _
-  | EXPR_effector _
-  | EXPR_longarrow _
-  | EXPR_ellipsis _
-  | EXPR_intersect _
-  | EXPR_union _
-  | EXPR_isin _
+  | `EXPR_rptsum_type _
+  | `EXPR_pclt_type _
+  | `EXPR_rpclt_type _
+  | `EXPR_wpclt_type _
+  | `EXPR_patvar _
+  | `EXPR_patany _
+  | `EXPR_vsprintf _
+  | `EXPR_interpolate _
+  | `EXPR_type_match _
+  | `EXPR_subtype_match _
+  | `EXPR_noexpand _
+  | `EXPR_letin _
+  | `EXPR_typeof _
+  | `EXPR_as _
+  | `EXPR_as_var _
+  | `EXPR_void _
+  | `EXPR_arrow _
+  | `EXPR_effector _
+  | `EXPR_longarrow _
+  | `EXPR_ellipsis _
+  | `EXPR_intersect _
+  | `EXPR_union _
+  | `EXPR_isin _
     ->
       clierrx "[flx_bind/flx_lookup.ml:3897: E166] " sr
      ("[bind_expression] Expected expression, got " ^ string_of_expr e)
@@ -178,7 +178,7 @@ let rec bind_expression'
     which returns a unit sum, then use that to select
     the expression to bind
   *)
-  | EXPR_typecase_match (sr,(uba,ms)) -> 
+  | `EXPR_typecase_match (sr,(uba,ms)) -> 
     let argt = bt sr uba in
 (*
     let uba = Flx_typecode_of_btype.typecode_of_btype bsym_table state.counter sr argt in
@@ -186,8 +186,8 @@ let rec bind_expression'
     let tpats,es = List.split ms in
     let n = List.length ms in
     let il = Flx_list.nlist n in
-    let ps = List.map2 (fun t u-> t,TYP_unitsum u) tpats il in
-    let ubt = TYP_type_match (uba,ps) in
+    let ps = List.map2 (fun t u-> t,`TYP_unitsum u) tpats il in
+    let ubt = `TYP_type_match (uba,ps) in
     let selector =
       let btp t params = bind_type' state bsym_table env
         {rs with depth = rs.depth+1}
@@ -216,12 +216,12 @@ print_endline ("Case number " ^ si index);
     let x = List.nth es index in
     be x
 
-  | EXPR_cond (sr,(c,t,f)) ->
+  | `EXPR_cond (sr,(c,t,f)) ->
     bexpr_cond (be c) (be t) (be f)
 
-  | EXPR_uniq (sr,e) -> bexpr_uniq (be e)
+  | `EXPR_uniq (sr,e) -> bexpr_uniq (be e)
 
-  | EXPR_label (sr,label) -> 
+  | `EXPR_label (sr,label) -> 
     let maybe_index = lookup_label_in_env state bsym_table env sr label in
     begin match maybe_index with
     | Some index -> bexpr_label index
@@ -229,61 +229,61 @@ print_endline ("Case number " ^ si index);
       clierrx "[flx_bind/flx_lookup.ml:3950: E168] " sr ("Flx_lookup: Cannot find label " ^ label ^ " in environment");
     end
 
-  | EXPR_range_check (sr, mi, v, mx) ->
+  | `EXPR_range_check (sr, mi, v, mx) ->
     let (x,t) as v' = be v in
     bexpr_range_check t (be mi, v', be mx)
 
-  | EXPR_callback (sr,qn) ->
+  | `EXPR_callback (sr,qn) ->
     let es,ts = lookup_qn_in_env2' state bsym_table env rs qn in
     begin match es with
     | FunctionEntry [index] ->
        print_endline "Callback closure ..";
        let ts = List.map (bt sr) ts in
 if debug then
-print_endline ("flx_lookup.EXPR_callback.bexpr_closure");
+print_endline ("flx_lookup.`EXPR_callback.bexpr_closure");
        bexpr_closure (ti sr (sye index) ts) (sye index, ts)
     | NonFunctionEntry  _
     | _ -> clierrx "[flx_bind/flx_lookup.ml:3965: E169] " sr
       "'callback' expression denotes non-singleton function set"
     end
 
-  | EXPR_expr (sr,s,t,e) ->
+  | `EXPR_expr (sr,s,t,e) ->
     let t = bt sr t in
     let e = be e in
     bexpr_expr (s,t,e)
 
-  | EXPR_andlist (sri,ls) ->
+  | `EXPR_andlist (sri,ls) ->
     begin let mksum a b = Flx_strr.apl2 sri "land" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mksum h t)
     | [] -> clierrx "[flx_bind/flx_lookup.ml:3978: E170] " sri "Not expecting empty and list"
     end
 
-  | EXPR_orlist (sri,ls) ->
+  | `EXPR_orlist (sri,ls) ->
     begin let mksum a b = Flx_strr.apl2 sri "lor" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mksum h t)
     | [] -> clierrx "[flx_bind/flx_lookup.ml:3985: E171] " sri "Not expecting empty or list"
     end
 
-  | EXPR_sum (sri,ls) ->
+  | `EXPR_sum (sri,ls) ->
     begin let mksum a b = Flx_strr.apl2 sri "+" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mksum h t)
     | [] -> clierrx "[flx_bind/flx_lookup.ml:3992: E172] " sri "Not expecting empty product (unit)"
     end
 
-  | EXPR_product (sri,ls) ->
+  | `EXPR_product (sri,ls) ->
     begin let mkprod a b = Flx_strr.apl2 sri "*" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mkprod h t)
     | [] -> clierrx "[flx_bind/flx_lookup.ml:3999: E173] " sri "Not expecting empty sum (void)"
     end
 
-  | EXPR_superscript (sri,(a,b)) ->
+  | `EXPR_superscript (sri,(a,b)) ->
     be (Flx_strr.apl2 sri "pow" [a; b])
 
-  | EXPR_coercion (sr,(x,t)) ->
+  | `EXPR_coercion (sr,(x,t)) ->
 (*
 print_endline ("Trying to bind explicit coercion" ^ string_of_expr e);
 *)
@@ -294,12 +294,12 @@ print_endline ("explicit coercioni argument bound " ^ string_of_expr x);
     let t'' = bt sr t in
     Flx_coerce.coerce state bsym_table sr x' t''
 
-  | EXPR_tuple_cons (_, eh, et) ->
+  | `EXPR_tuple_cons (_, eh, et) ->
     let _,eht' as xh' = be eh in
     let _,ett' as xt' = be et in
     bexpr_tuple_cons (xh',xt') 
 
-  | EXPR_tuple_snoc (_, eh, et) ->
+  | `EXPR_tuple_snoc (_, eh, et) ->
     let _,eht' as xh' = be eh in
     let _,ett' as xt' = be et in
     let t = btyp_tuple_snoc eht' ett' in
@@ -313,7 +313,7 @@ print_endline ("Bound tuple cons " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
       x
 
 
-  | EXPR_get_tuple_tail (sr,e) ->
+  | `EXPR_get_tuple_tail (sr,e) ->
 (*
 print_endline "Binding tuple tail";
 *)
@@ -364,7 +364,7 @@ print_endline ("Bound tuple tail " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
     | _ ->  print_endline ("tuple tail of type " ^ sbt bsym_table t'); assert false
     end
 
-  | EXPR_get_tuple_body (sr,e) ->
+  | `EXPR_get_tuple_body (sr,e) ->
 (*
 print_endline "Binding tuple tail";
 *)
@@ -416,7 +416,7 @@ print_endline ("Bound tuple tail " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
     end
 
 
-  | EXPR_get_tuple_head (sr,e) ->
+  | `EXPR_get_tuple_head (sr,e) ->
     let (e',t') as x' = be e in
     begin match t' with
     | BTYP_tuple [] -> assert false
@@ -450,7 +450,7 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
     | _ ->  print_endline ("tuple head of type " ^ sbt bsym_table t'); assert false
     end
 
-  | EXPR_get_tuple_last (sr,e) ->
+  | `EXPR_get_tuple_last (sr,e) ->
     let (e',t') as x' = be e in
     begin match t' with
     | BTYP_tuple [] -> assert false
@@ -485,7 +485,7 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
     end
 
 
-  | EXPR_get_n (sr,(n,e')) ->
+  | `EXPR_get_n (sr,(n,e')) ->
     let expr,typ = be e' in
     let typ = unfold "flx_lookup" typ in
     let ctyp,k = 
@@ -568,7 +568,7 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
     in
     bexpr_get_n ctyp n a
 
-  | EXPR_get_named_variable (sr,(name,e')) ->
+  | `EXPR_get_named_variable (sr,(name,e')) ->
 (*
 print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
 *)
@@ -606,7 +606,7 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
     | t -> 
      clierrx "[flx_bind/flx_lookup.ml:4198: E180] " sr ("[bind_expression] Projection requires record or polyrecord instance, got type:\n" ^ sbt bsym_table t)
     end
-  | EXPR_rptsum_arg (sr,e) ->
+  | `EXPR_rptsum_arg (sr,e) ->
     let (_,t) as e'  = be e in
     begin match t with
     | BTYP_rptsum (n,argt) -> bexpr_rptsum_arg e'
@@ -614,7 +614,7 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
       "\ngot: " ^ Flx_btype.st t )
     end
 
-  | EXPR_case_index (sr,e) ->
+  | `EXPR_case_index (sr,e) ->
     let (e',t) as e  = be e in
     begin 
       if Flx_typeops.isunitsum t then ()
@@ -632,17 +632,17 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
       | _ -> clierrx "[Flx_bind_expression:595: E182] " sr ("Argument of caseno must be sum or union type, got " ^ sbt bsym_table t)
     end
     ;
-    let int_t = bt sr (TYP_name (sr,"int",[])) in
+    let int_t = bt sr (`TYP_name (sr,"int",[])) in
     begin match e' with
     | BEXPR_case (i,_) ->
       bexpr_literal int_t {Flx_literal.felix_type="int"; internal_value=string_of_int i; c_value=string_of_int i}
     | _ -> bexpr_case_index int_t e
     end
 
-  | EXPR_case_tag (sr,v) ->
+  | `EXPR_case_tag (sr,v) ->
      clierrx "[flx_bind/flx_lookup.ml:4223: E183] " sr "plain case tag not allowed in expression (only in pattern)"
 
-  | EXPR_variant (sr,(s,e)) ->
+  | `EXPR_variant (sr,(s,e)) ->
     let (_,t) as e = be e in
 (*
 print_endline ("binding variant " ^ s ^ " argument " ^ sbe bsym_table e ^ ", argt=" ^ 
@@ -650,7 +650,7 @@ sbt bsym_table t);
 *)
     bexpr_variant (btyp_variant [s,t]) (s,e)
 
-  | EXPR_ainj (sr, v, sumt) ->
+  | `EXPR_ainj (sr, v, sumt) ->
     let bsumt = bt sr sumt in
     let (_,idxt) as e = be v in
     begin match bsumt with
@@ -666,17 +666,17 @@ sbt bsym_table t);
         "repeated sum type,\ngot: " ^ Flx_btype.st bsumt) 
     end
 
-  | EXPR_projection (sr,v,t) -> 
+  | `EXPR_projection (sr,v,t) -> 
     let t = bt sr t in
     Flx_bind_projection.bind_projection bsym_table sr v t 
 
-  | EXPR_array_projection (sr,v,t) -> 
+  | `EXPR_array_projection (sr,v,t) -> 
     let t = bt sr t in
     let v = be v in
     Flx_bind_projection.bind_array_projection state.counter bsym_table sr v t 
 
 
-  | EXPR_typed_case (sr,v,t) ->
+  | `EXPR_typed_case (sr,v,t) ->
 (*
 print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_of_typecode t);
 *)
@@ -721,13 +721,13 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
       )
     end
 
-  | EXPR_name (sr,"_decoder",ts) ->
+  | `EXPR_name (sr,"_decoder",ts) ->
     Flx_decoder.gen_decoder state bsym_table bt lookup_name_with_sig env rs sr ts
 
-  | EXPR_name (sr,"_encoder",ts) ->
+  | `EXPR_name (sr,"_encoder",ts) ->
     Flx_encoder.gen_encoder state bsym_table bt lookup_name_with_sig env rs sr ts
 
-  | EXPR_name (sr,name,ts) ->
+  | `EXPR_name (sr,name,ts) ->
 
 (*
 if name = "hhhhh" then 
@@ -735,7 +735,7 @@ print_endline ("In bind_expression: Lookup name hhhhh");
 *)
     if name = "_felix_type_name" then
        let sname = catmap "," string_of_typecode ts in
-       let x = EXPR_literal (sr, {Flx_literal.felix_type="string"; internal_value=sname; c_value=Flx_string.c_quote_of_string sname}) in
+       let x = `EXPR_literal (sr, {Flx_literal.felix_type="string"; internal_value=sname; c_value=Flx_string.c_quote_of_string sname}) in
        be x
     else
     let ts = List.map (bt sr) ts in
@@ -851,11 +851,11 @@ print_endline ("flx_lookup.BBDCL_const_ctor.bexpr_varname");
 
           | BBDCL_fun _ 
             ->
-            clierrx "[flx_bind/flx_lookup.ml:4405: E191] " sr ("Flx_lookup: bind_expression: EXPR_name] Nonfunction entry: Expected name "^name^ 
+            clierrx "[flx_bind/flx_lookup.ml:4405: E191] " sr ("Flx_lookup: bind_expression: `EXPR_name] Nonfunction entry: Expected name "^name^ 
             " of struct, cstruct, constructor, const, or variable, got function!")
  
           | _ ->
-            clierrx "[flx_bind/flx_lookup.ml:4409: E192] " sr ("Flx_lookup: bind_expression: EXPR_name] Nonfunction entry: Expected name "^name^ 
+            clierrx "[flx_bind/flx_lookup.ml:4409: E192] " sr ("Flx_lookup: bind_expression: `EXPR_name] Nonfunction entry: Expected name "^name^ 
             " of struct, cstruct, constructor, const, or variable")
  
           end
@@ -922,7 +922,7 @@ print_endline ("LOOKUP 7: varname " ^ si index);
 
 
           | _ -> 
-            clierrx "[flx_bind/flx_lookup.ml:4469: E193] " sr ("[Flx_lookup.bind_expression: EXPR_name]: Nonfunction entry: Binding " ^ 
+            clierrx "[flx_bind/flx_lookup.ml:4469: E193] " sr ("[Flx_lookup.bind_expression: `EXPR_name]: Nonfunction entry: Binding " ^ 
               name ^ "<"^si index^">"^ " requires closure or variable")
           end
       end
@@ -1019,7 +1019,7 @@ print_endline ("flx_lookup.function).bexpr_closure");
       end
     end
 
-  | EXPR_index (_,name,index) as x ->
+  | `EXPR_index (_,name,index) as x ->
     (*
     print_endline ("[bind expression] AST_index " ^ string_of_qualified_name x);
     *)
@@ -1041,14 +1041,14 @@ print_endline ("flx_lookup.function).bexpr_closure");
       print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to closure");
       *)
 if debug then
-print_endline ("flx_lookup.EXPR_index1.bexpr_closure");
+print_endline ("flx_lookup.`EXPR_index1.bexpr_closure");
       bexpr_closure t (index,ts)
 
 (* DEPRECATED *)
     | { Flx_sym.symdef=SYMDEF_nonconst_ctor _ }
       ->
 if debug then
-print_endline ("flx_lookup.EXPR_index2.bexpr_closure");
+print_endline ("flx_lookup.`EXPR_index2.bexpr_closure");
       bexpr_closure t (index,ts)
 
     | { Flx_sym.symdef=SYMDEF_const  _ }
@@ -1064,7 +1064,7 @@ print_endline ("flx_lookup.EXPR_index2.bexpr_closure");
 print_endline ("LOOKUP 8: varname " ^ si index);
 *)
 if debug then
-print_endline ("flx_lookup.EXPR_index3.bexpr_varname");
+print_endline ("flx_lookup.`EXPR_index3.bexpr_varname");
       bexpr_varname t (index,ts)
 
 (* DEPRECATED *)
@@ -1073,14 +1073,14 @@ print_endline ("flx_lookup.EXPR_index3.bexpr_varname");
 
 
     | _ ->
-      clierrx "[flx_bind/flx_lookup.ml:4590: E197] " sr ("[Flx_lookup.bind_expression: EXPR_index]: Indexed name: Binding " ^ 
+      clierrx "[flx_bind/flx_lookup.ml:4590: E197] " sr ("[Flx_lookup.bind_expression: `EXPR_index]: Indexed name: Binding " ^ 
         name ^ "<"^si index^">"^ " requires closure or variable")
       (* 
       bexpr_varname t (index,ts)
       *)
     end
 
-  | (EXPR_lookup (sr,(e,name,ts))) as qn ->
+  | (`EXPR_lookup (sr,(e,name,ts))) as qn ->
     (*
     print_endline ("Handling qn " ^ string_of_qualified_name qn);
     *)
@@ -1149,7 +1149,7 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
 
 
           | _ ->
-            clierrx "[flx_bind/flx_lookup.ml:4665: E198] " sr ("[Flx_lookup.bind_expression: EXPR_lookup] Non function entry "^name^
+            clierrx "[flx_bind/flx_lookup.ml:4665: E198] " sr ("[Flx_lookup.bind_expression: `EXPR_lookup] Non function entry "^name^
             " must be const, struct, cstruct, constructor or variable  ")
 
           end
@@ -1203,20 +1203,20 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
         )
       end
 
-  | EXPR_suffix (sr,(f,suf)) ->
+  | `EXPR_suffix (sr,(f,suf)) ->
     let sign = bt sr suf in
     let srn = src_of_qualified_name f in
     lookup_qn_with_sig' state bsym_table sr srn env rs f [sign]
 
-  | EXPR_likely (srr,e) -> bexpr_likely (be e)
-  | EXPR_unlikely (srr,e) -> bexpr_unlikely (be e)
-  | EXPR_not (sr,e) -> 
+  | `EXPR_likely (srr,e) -> bexpr_likely (be e)
+  | `EXPR_unlikely (srr,e) -> bexpr_unlikely (be e)
+  | `EXPR_not (sr,e) -> 
     let x = Flx_strr.apl2 sr "lnot" [e]  in
     be x
 
-  | EXPR_ref (_,(EXPR_deref (_,e))) -> be e
+  | `EXPR_ref (_,(`EXPR_deref (_,e))) -> be e
 
-  | EXPR_ref (srr,e) ->
+  | `EXPR_ref (srr,e) ->
       (* Helper function to look up a property in a symbol. *)
       let has_property bid property =
         (* If the bound symbol has the bid, check if that symbol has the
@@ -1326,7 +1326,7 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
             sbe bsym_table e)
       end
 
-  | EXPR_rref (_,e) -> 
+  | `EXPR_rref (_,e) -> 
 (*
     print_endline ("Binding rref");
 *)
@@ -1338,7 +1338,7 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
     | _ -> clierr sr ("Read pointer requires argument be variable")
     end
 
-  | EXPR_wref (_,e) -> 
+  | `EXPR_wref (_,e) -> 
 (*
     print_endline ("Binding rref");
 *)
@@ -1350,7 +1350,7 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
     | _ -> clierr sr ("Write pointer reference requires argument be variable")
     end
 
-  | EXPR_deref (_,(EXPR_ref (sr,e) as x)) ->
+  | `EXPR_deref (_,(`EXPR_ref (sr,e) as x)) ->
     begin 
       try ignore (be x) 
       with err -> 
@@ -1359,7 +1359,7 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
     end;
     be e
 
-  | EXPR_deref (sr,e') ->
+  | `EXPR_deref (sr,e') ->
 (*
 print_endline ("Binding _deref .. " ^ string_of_expr e);
 *)
@@ -1390,7 +1390,7 @@ print_endline ("Binding _deref .. " ^ string_of_expr e);
 (* Temporarily disable this so we can distinguish existing constuctors
    and calls to C++ class constructors
 
-  | EXPR_new (srr,(EXPR_apply(sre,(cls,a)) as e)) ->
+  | `EXPR_new (srr,(`EXPR_apply(sre,(cls,a)) as e)) ->
     begin try
       let cls = bt sre (typecode_of_expr cls) in
 print_endline ("CLASS NEW " ^sbt bsym_table cls);
@@ -1400,54 +1400,54 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
     end
 *)
 
-  | EXPR_new (srr,e) ->
+  | `EXPR_new (srr,e) ->
     bexpr_new (be e)
 
-  | EXPR_literal (sr,v) ->
+  | `EXPR_literal (sr,v) ->
     let t = type_of_literal inner_bind_type state bsym_table env sr v in
     bexpr_literal t v
 
-  | EXPR_map (sr,f,a) ->
+  | `EXPR_map (sr,f,a) ->
     handle_map sr (be f) (be a)
 
   (* generic str routine *)
-  | EXPR_apply (sr,(EXPR_name (_,"_strr",[]), a)) -> 
+  | `EXPR_apply (sr,(`EXPR_name (_,"_strr",[]), a)) -> 
     let be rs e = bind_expr env rs e [] in
     Flx_strr.strr bsym_table state.sym_table state.counter be rs sr a
 
 
   (* generic equality routine *)
-  | EXPR_apply (sr,(EXPR_name (_,"_eq",[]), pair)) -> 
+  | `EXPR_apply (sr,(`EXPR_name (_,"_eq",[]), pair)) -> 
     let be rs e = bind_expr env rs e [] in
     Flx_eq.bind_eq bsym_table state inner_lookup_name_in_env be rs sr env pair
 
-  | EXPR_apply 
+  | `EXPR_apply 
     (
       sr,
       (
-        EXPR_apply (_,(EXPR_name (_,"_map",[]), EXPR_name (_,func,[]))),
+        `EXPR_apply (_,(`EXPR_name (_,"_map",[]), `EXPR_name (_,func,[]))),
         b
       )
     ) ->
     let be rs e = bind_expr env rs e [] in
     Flx_gmap.generic_map bsym_table state.counter be rs sr env func b
 
-  | EXPR_apply 
+  | `EXPR_apply 
     (
       sr,
       (
-        EXPR_apply (_,(EXPR_name (_,"_rev_map",[]), EXPR_name (_,func,[]))),
+        `EXPR_apply (_,(`EXPR_name (_,"_rev_map",[]), `EXPR_name (_,func,[]))),
         b
       )
     ) ->
     let be rs e = bind_expr env rs e [] in
     Flx_gmap.generic_rev_map bsym_table state.counter be rs sr env func b
 
-  | EXPR_apply 
+  | `EXPR_apply 
     (
       sr,
       (
-        EXPR_name (_,"_rev",[]), 
+        `EXPR_name (_,"_rev",[]), 
         b
       )
     ) ->
@@ -1455,7 +1455,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
     Flx_gmap.generic_rev bsym_table state.counter be rs sr env b
 
 
-  | EXPR_apply (sr,(f',a')) -> 
+  | `EXPR_apply (sr,(f',a')) -> 
 (*
 print_endline ("Bind_expression general apply " ^ string_of_expr e);
 *)
@@ -1468,7 +1468,7 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
       bind_expr_orig
       rs sr f' a' args
 
-  | EXPR_arrayof (sr,es) ->
+  | `EXPR_arrayof (sr,es) ->
     let bets = List.map be es in
     let _, bts = List.split bets in
     let n = List.length bets in
@@ -1493,7 +1493,7 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
   (* actually no, it only works at binding time! we need tuple_cons, which
      should work at instantiation time!
   *)
-  | EXPR_extension (sr, es, e') ->  
+  | `EXPR_extension (sr, es, e') ->  
     let e'',t' = be e' in
     let es' = List.map be es in
     let ts = List.map snd es' in
@@ -1505,7 +1505,7 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
         match t with
         | BTYP_record (fields) -> 
           let fields = List.map (fun (s,t)-> 
-            s,EXPR_get_named_variable (sr,(s,e))
+            s,`EXPR_get_named_variable (sr,(s,e))
           )
           fields
           in
@@ -1514,7 +1514,7 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
       )
       es
       ;
-      let fields = List.map (fun (s,_)-> s,EXPR_get_named_variable (sr, (s,e'))) fields in
+      let fields = List.map (fun (s,_)-> s,`EXPR_get_named_variable (sr, (s,e'))) fields in
       new_fields := fields @ !new_fields;
       let unique_fields = ref [] in
       List.iter (fun (s,t) ->
@@ -1522,7 +1522,7 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
         unique_fields := (s,t) :: (!unique_fields)
       )
       (!new_fields);
-      be (EXPR_record (sr,!unique_fields))
+      be (`EXPR_record (sr,!unique_fields))
 
     | _ -> 
       let ntimes t n = 
@@ -1588,11 +1588,11 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
         ee
     end
 
-  | EXPR_record_type _ -> assert false
-  | EXPR_polyrecord_type _ -> assert false
-  | EXPR_variant_type _ -> assert false
+  | `EXPR_record_type _ -> assert false
+  | `EXPR_polyrecord_type _ -> assert false
+  | `EXPR_variant_type _ -> assert false
 
-  | EXPR_record (sr,ls) ->
+  | `EXPR_record (sr,ls) ->
     begin match ls with
     | [] -> bexpr_tuple (btyp_tuple []) []
     | _ ->
@@ -1601,7 +1601,7 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
     bexpr_record (List.combine ss es)
     end
 
-  | EXPR_rnprj (sr,name,seq,e) -> 
+  | `EXPR_rnprj (sr,name,seq,e) -> 
     let (e',domain) as e = be e in
     begin match domain with
     | BTYP_record flds ->
@@ -1627,15 +1627,15 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
     | _ -> clierrx "[flx_bind/flx_lookup.ml:5089: E213] " sr ("Argument of rnprj must be record or polyrecord type, got " ^ sbt bsym_table domain)
     end
  
-  | EXPR_polyrecord (sr,ls,e) ->
+  | `EXPR_polyrecord (sr,ls,e) ->
     let ss,es = List.split ls in
     let es = List.map be es in
     bexpr_polyrecord (List.combine ss es) (be e)
 
-  | EXPR_remove_fields (sr,e,ss) ->
+  | `EXPR_remove_fields (sr,e,ss) ->
     bexpr_remove_fields (be e) ss
 
-  | EXPR_replace_fields (sr, e, fs) ->
+  | `EXPR_replace_fields (sr, e, fs) ->
     let fs = List.map (fun (s,e) -> s,be e) fs in
     let cmp (s1,e1) (s2,e2) = compare s1 s2 in
     let fs = List.stable_sort cmp fs in
@@ -1666,7 +1666,7 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
     end;
     bexpr_polyrecord fs (bexpr_remove_fields e (List.map fst fs))
 
-  | EXPR_tuple (_,es) ->
+  | `EXPR_tuple (_,es) ->
     let bets = List.map be es in
     let _, bts = List.split bets in
     let n = List.length bets in
@@ -1687,18 +1687,18 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
     bexpr_tuple (btyp_tuple []) []
 
 
-  | EXPR_match_case (sr,(v,e)) ->
+  | `EXPR_match_case (sr,(v,e)) ->
      bexpr_match_case (v,be e)
 
-  | EXPR_match_variant(sr,(v,e)) ->
+  | `EXPR_match_variant(sr,(v,e)) ->
      bexpr_match_variant (v,be e)
 
   (* Note this ONLY checks the tags, not the types! To be correct, 
      the types have to work as well, the extractor must organise that
   *)
-  | EXPR_match_variant_subtype (sr, (e,t)) ->
+  | `EXPR_match_variant_subtype (sr, (e,t)) ->
 (*
-print_endline ("EXPR_match_variant_subtype");
+print_endline ("`EXPR_match_variant_subtype");
 *)
     let t = bt sr t in
     begin match unfold "Flx_lookup.match_variant_subtype(target)" t with
@@ -1718,9 +1718,9 @@ print_endline ("EXPR_match_variant_subtype");
       ("Variant subtype matching requires polymorphic variant type as pattern, got " ^ sbt bsym_table t);
     end
 
-  | EXPR_variant_subtype_match_coercion (sr,(e,t)) ->
+  | `EXPR_variant_subtype_match_coercion (sr,(e,t)) ->
 (*
-print_endline ("EXPR_variant_subtype_match_coercion");
+print_endline ("`EXPR_variant_subtype_match_coercion");
 *)
     (* we need to do TWO coercions here! The first one is the unsafe
        coercion that the pattern match checked was safe. This is a flat
@@ -1757,7 +1757,7 @@ print_endline ("EXPR_variant_subtype_match_coercion");
 
 
 
-  | EXPR_match_ctor (sr,(qn,e)) ->
+  | `EXPR_match_ctor (sr,(qn,e)) ->
     begin match qn with
     | `AST_name (sr,name,ts) ->
 (*
@@ -1794,10 +1794,10 @@ print_endline ("EXPR_variant_subtype_match_coercion");
 
           | None->
             begin try
-              let fname = EXPR_name (sr,"_match_ctor_" ^ name,ts) in
-              be (EXPR_apply ( sr, (fname,e)))
+              let fname = `EXPR_name (sr,"_match_ctor_" ^ name,ts) in
+              be (`EXPR_apply ( sr, (fname,e)))
             with _ -> 
-              clierrx "[flx_bind/flx_lookup.ml:5168: E214] " sr ("[flx_lookup: EXPR_match_ctor]: Can't find union variant " ^ name ^ 
+              clierrx "[flx_bind/flx_lookup.ml:5168: E214] " sr ("[flx_lookup: `EXPR_match_ctor]: Can't find union variant " ^ name ^ 
                  " or bind user function _match_ctor_" ^ name ^ " to arg " ^ 
                  string_of_expr e)
             end
@@ -1808,21 +1808,21 @@ print_endline ("EXPR_variant_subtype_match_coercion");
         as C primitives ..
         *)
         | { Flx_sym.id=id; symdef=SYMDEF_abs _ } ->
-          let fname = EXPR_name (sr,"_match_ctor_" ^ name,ts) in
-          be (EXPR_apply ( sr, (fname,e)))
+          let fname = `EXPR_name (sr,"_match_ctor_" ^ name,ts) in
+          be (`EXPR_apply ( sr, (fname,e)))
 
         (* experimental!! Allow for any nominal type other than union *)
         | _ ->
-          let fname = EXPR_name (sr,"_match_ctor_" ^ name,ts) in
-          be (EXPR_apply ( sr, (fname,e)))
+          let fname = `EXPR_name (sr,"_match_ctor_" ^ name,ts) in
+          be (`EXPR_apply ( sr, (fname,e)))
 
         (* | _ ->  clierrx "[flx_bind/flx_lookup.ml:5187: E215] " sr ("expected union of abstract type, got" ^ sbt bsym_table ut) *)
         end
 
       (* experimental!! Allow for any type other than union *)
       | _ -> 
-        let fname = EXPR_name (sr,"_match_ctor_" ^ name,ts) in
-        be (EXPR_apply ( sr, (fname,e)))
+        let fname = `EXPR_name (sr,"_match_ctor_" ^ name,ts) in
+        be (`EXPR_apply ( sr, (fname,e)))
 
  
       (* | _ -> clierrx "[flx_bind/flx_lookup.ml:5196: E216] " sr ("expected nominal type, got" ^ sbt bsym_table ut) *)
@@ -1830,22 +1830,22 @@ print_endline ("EXPR_variant_subtype_match_coercion");
 
     | `AST_typed_case (sr,v,_)
     | `AST_case_tag (sr,v) ->
-       be (EXPR_match_case (sr,(v,e)))
+       be (`EXPR_match_case (sr,(v,e)))
 
     | _ -> clierrx "[flx_bind/flx_lookup.ml:5203: E217] " sr "Expected variant constructor name in union decoder"
     end
 
-  | EXPR_match_ho_ctor (sr,(qn,es)) ->
+  | `EXPR_match_ho_ctor (sr,(qn,es)) ->
 (*
 print_endline ("match ho ctor : exprs = " ^ catmap "," string_of_expr es);
 *)
     begin match qn with
     | `AST_name (sr,name,ts) ->
-      let fname = EXPR_name (sr,"_match_ctor_" ^ name,ts) in
+      let fname = `EXPR_name (sr,"_match_ctor_" ^ name,ts) in
       begin match es with
       | [] -> assert false (* shouldn't allow less then 2 arguments! *)
       | ls ->  
-        let e = List.fold_left (fun acc e -> EXPR_apply (sr, (acc,e))) fname es in
+        let e = List.fold_left (fun acc e -> `EXPR_apply (sr, (acc,e))) fname es in
 (*
 print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
 *)
@@ -1854,7 +1854,7 @@ print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
     | _ -> clierrx "[flx_bind/flx_lookup.ml:5203: E217] " sr "Expected variant constructor name in union decoder"
     end
 
-  | EXPR_variant_arg (sr,(v,e)) ->
+  | `EXPR_variant_arg (sr,(v,e)) ->
      let (_,t) as e' = be e in
      ignore (try unfold "flx_lookup" t with _ -> failwith "AST_variant_arg unfold screwd");
      begin match unfold "flx_lookup" t with
@@ -1873,7 +1873,7 @@ print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
      | _ -> clierrx "[flx_bind/flx_lookup.ml:5222: E219] " sr ("Expected variant type, got " ^ sbt bsym_table t)
      end
 
-  | EXPR_case_arg (sr,(v,e)) ->
+  | `EXPR_case_arg (sr,(v,e)) ->
      let (_,t) as e' = be e in
      ignore (try unfold "flx_lookup" t with _ -> failwith "AST_case_arg unfold screwd");
      begin match unfold "flx_lookup" t with
@@ -1897,7 +1897,7 @@ print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
          bexpr_case_arg t (v, e')
 
 
-     (* EXPR_case_arg is used for variants with an integer index producted from
+     (* `EXPR_case_arg is used for variants with an integer index producted from
         the field name with a hash of the field name and type. We do this so a variant
         run time representation is the same as a union 
      *)
@@ -1927,7 +1927,7 @@ print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
      | _ -> clierrx "[flx_bind/flx_lookup.ml:5243: E222] " sr ("Expected sum type, got " ^ sbt bsym_table t)
      end
 
-  | EXPR_ctor_arg (sr,(qn,e)) ->
+  | `EXPR_ctor_arg (sr,(qn,e)) ->
 
     let (_,ut) as ue = be e in
     let ut = rt ut in
@@ -1965,14 +1965,14 @@ print_endline ("Union parent vs = " ^  catmap "," (fun (s,_,_) -> s) parent_vs ^
           begin match result with
           | None ->
             begin try
-              let fname = EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
-              be (EXPR_apply ( sr, (fname,e)))
+              let fname = `EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
+              be (`EXPR_apply ( sr, (fname,e)))
             with _ ->
-              clierrx "[flx_bind/flx_lookup.ml:5282: E223] " sr ("[flx_lookup: EXPR_ctor_arg]: Can't find union variant " ^ name ^ 
+              clierrx "[flx_bind/flx_lookup.ml:5282: E223] " sr ("[flx_lookup: `EXPR_ctor_arg]: Can't find union variant " ^ name ^ 
                  " or bind user function _ctor_arg_" ^ name ^ " to arg " ^ 
                  string_of_expr e)
             end
-(* failwith ("EXPR_ctor_arg: Can't find union variant " ^ name); *)
+(* failwith ("`EXPR_ctor_arg: Can't find union variant " ^ name); *)
 
           | Some ( vidx,vs', vt,vct) ->
 (*
@@ -2056,20 +2056,20 @@ print_endline ("Dependent variables to solve for = ");
         as C primitives ..
         *)
         | { Flx_sym.id=id; symdef=SYMDEF_abs _ } ->
-          let fname = EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
-          be (EXPR_apply ( sr, (fname,e)))
+          let fname = `EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
+          be (`EXPR_apply ( sr, (fname,e)))
 
         (* experimental allow for any nominal type other than union *)
         | _ ->
-          let fname = EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
-          be (EXPR_apply ( sr, (fname,e)))
+          let fname = `EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
+          be (`EXPR_apply ( sr, (fname,e)))
 
         (* | _ -> failwith "Woooops expected union or abstract type" *)
         end
       (* experimental allow for any type other than union *)
       | _ ->
-        let fname = EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
-        be (EXPR_apply ( sr, (fname,e)))
+        let fname = `EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
+        be (`EXPR_apply ( sr, (fname,e)))
 
       (* | _ -> failwith "Woops, expected nominal type" *)
       end
@@ -2077,22 +2077,22 @@ print_endline ("Dependent variables to solve for = ");
 
     | `AST_typed_case (sr,v,_)
     | `AST_case_tag (sr,v) ->
-      be (EXPR_case_arg (sr,(v,e)))
+      be (`EXPR_case_arg (sr,(v,e)))
 
     | _ -> clierrx "[flx_bind/flx_lookup.ml:5340: E224] " sr "Expected variant constructor name in union dtor"
     end
 
-  | EXPR_ho_ctor_arg (sr,(qn,es)) ->
+  | `EXPR_ho_ctor_arg (sr,(qn,es)) ->
 (*
 print_endline ("ho ctor arg: exprs = " ^ catmap "," string_of_expr es);
 *)
     begin match qn with
     | `AST_name (sr,name,ts) ->
-      let fname = EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
+      let fname = `EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
       begin match es with
       | [] -> assert false (* shouldn't allow less then 2 arguments! *)
       | ls ->  
-        let e = List.fold_left (fun acc e -> EXPR_apply (sr, (acc,e))) fname es in
+        let e = List.fold_left (fun acc e -> `EXPR_apply (sr, (acc,e))) fname es in
 (*
 print_endline ("ho ctor arg: expr = " ^ string_of_expr e);
 *)
@@ -2102,7 +2102,7 @@ print_endline ("ho ctor arg: expr = " ^ string_of_expr e);
     | _ -> clierr sr "Expected variant constructor name in union dtor"
     end
 
-  | EXPR_lambda (sr,_) ->
+  | `EXPR_lambda (sr,_) ->
     syserr sr
     (
       "[bind_expression] " ^
@@ -2110,7 +2110,7 @@ print_endline ("ho ctor arg: expr = " ^ string_of_expr e);
       string_of_expr e
     )
 
-  | EXPR_match (sr,_) ->
+  | `EXPR_match (sr,_) ->
     clierrx "[flx_bind/flx_lookup.ml:5352: E225] " sr
     (
       "[bind_expression] " ^

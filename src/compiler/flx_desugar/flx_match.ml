@@ -8,12 +8,12 @@ open Flx_bid
 
  
 let generated = Flx_srcref.make_dummy "[flx_match] generated"
-let etup = EXPR_tuple (generated,[])
+let etup = `EXPR_tuple (generated,[])
 
 let make_match_check sr rex_with_ret pat match_var_name match_var_index =
   let params = Slist [], None in
-  let match_expr = Flx_desugar_pat.gen_match_check pat (EXPR_index (sr,match_var_name, match_var_index)) in
-  let stmts, e = rex_with_ret match_expr TYP_none in
+  let match_expr = Flx_desugar_pat.gen_match_check pat (`EXPR_index (sr,match_var_name, match_var_index)) in
+  let stmts, e = rex_with_ret match_expr `TYP_none in
   let asms = stmts @ [Exe (sr,EXE_fun_return e)] in
   DCL_function (params, Flx_typing.flx_bool,Flx_typing.flx_unit,[`Generated "Flx_match.make_match_check"],asms)
 
@@ -27,7 +27,7 @@ print_endline ("Generating stmt match " ^ name ^ ", expr=" ^ string_of_expr e ^ 
     if List.length pss = 0 then clierrx "[flx_desugar/flx_match.ml:243: E340] " sr "Empty Pattern";
 
     (* step 1: evaluate e *)
-    let d,x = rex_with_ret e TYP_none in
+    let d,x = rex_with_ret e `TYP_none in
     let match_var_index : bid_t = seq () in
 
     let match_var_name = name^ "_mv_" ^ string_of_bid match_var_index in
@@ -47,7 +47,7 @@ print_endline ("Generating stmt match " ^ name ^ ", expr=" ^ string_of_expr e ^ 
           Some match_var_index,
           `Private,
           dfltvs,
-          DCL_value (TYP_typeof x, `Val));
+          DCL_value (`TYP_typeof x, `Val));
         Exe (expr_src,EXE_iinit ((match_var_name,match_var_index),x))
       ]
     in
@@ -70,7 +70,7 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
       iswild := is_irrefutable pat;
       let patsrc = src_of_pat pat in
       let match_checker_id = name ^ "_mc" ^ string_of_bid n1 in
-      let match_checker = EXPR_index (patsrc,match_checker_id,n1) in
+      let match_checker = `EXPR_index (patsrc,match_checker_id,n1) in
       let vars = ref [] in
       Flx_desugar_pat.get_pattern_vars vars pat [];
 (*
@@ -78,7 +78,7 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
           print_endline "VARIABLES ARE";
           List.iter (fun (vname, (sr,extractor)) ->
             let component =
-              Flx_desugar_pat.gen_extractor extractor (EXPR_index (sr,match_var_name,match_var_index))
+              Flx_desugar_pat.gen_extractor extractor (`EXPR_index (sr,match_var_name,match_var_index))
             in
             print_endline ("  " ^ vname ^ " := " ^ string_of_expr component);
           ) (List.rev (!vars));
@@ -88,7 +88,7 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
           (fun (vname, (sr,extractor)) ->
             let component =
               Flx_desugar_pat.gen_extractor extractor
-              (EXPR_index (sr,match_var_name,match_var_index))
+              (`EXPR_index (sr,match_var_name,match_var_index))
             in
             let dcl = STMT_val_decl (sr,vname,dfltvs,None,Some component) in
             new_sts := dcl :: !new_sts;
@@ -148,15 +148,15 @@ List.iter (fun st -> print_endline (string_of_asm 2 st)) body;
             patsrc,
             EXE_ifgoto
             (
-              EXPR_not
+              `EXPR_not
               (
                 patsrc,
-                EXPR_apply
+                `EXPR_apply
                 (
                   patsrc,
                   (
                     match_checker,
-                    EXPR_tuple (patsrc,[])
+                    `EXPR_tuple (patsrc,[])
                   )
                 )
               ),
@@ -224,7 +224,7 @@ print_endline ("gen_match, rettype=" ^ string_of_typecode rettype);
       name ^ "_mf_" ^ string_of_bid match_function_index
     in
     let match_function =
-      EXPR_index (sr,match_function_id,match_function_index)
+      `EXPR_index (sr,match_function_id,match_function_index)
     in
 
     let pss = List.map (fun (pat,exp) -> pat, [STMT_fun_return (sr, exp)]) pss in
@@ -249,12 +249,12 @@ print_endline ("gen_match, rettype=" ^ string_of_typecode rettype);
       )
     ]
     ,
-    EXPR_apply
+    `EXPR_apply
     (
       sr,
       (
         match_function,
-        EXPR_tuple (sr,[])
+        `EXPR_tuple (sr,[])
       )
     )
 

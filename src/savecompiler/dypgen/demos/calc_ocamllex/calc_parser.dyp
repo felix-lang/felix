@@ -1,0 +1,18 @@
+%token LPAREN RPAREN <int> INT PLUS MINUS TIMES DIV EOL
+
+%relation pi<pt<pp   /* same as  pi<pt pt<pp pi<pp */
+
+%start main
+
+%%
+
+main : expr EOL { $1 }
+
+expr :
+  | INT                        { $1 }      pi
+  | MINUS expr(=pi)            { -$2 }     pi
+  | LPAREN expr RPAREN         { $2 }      pi
+  | expr(<=pp) PLUS expr(<pp)  { $1 + $3 } pp
+  | expr(<=pp) MINUS expr(<pp) { $1 - $3 } pp
+  | expr(<=pt) TIMES expr(<pt) { $1 * $3 } pt
+  | expr(<=pt) DIV expr(<pt)   { $1 / $3 } pt

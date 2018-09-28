@@ -86,16 +86,16 @@ let sig_of_symdef symdef sr name i : typecode_t * typecode_t * ((string * expr_t
       let ts_f =
         List.filter
         (function
-          | TYP_name (_,id,[]) when id = name -> false
+          | `TYP_name (_,id,[]) when id = name -> false
           | t -> true
         )
         ts_orig
       in
       let tf_args = match ts_f with
         | [x] -> x
-        | lst -> TYP_tuple lst
+        | lst -> `TYP_tuple lst
       in
-      let tf = TYP_function (tf_args, r) in
+      let tf = `TYP_function (tf_args, r) in
 
       (* The type of the arguments Felix thinks the raw
          C function has on a call. A closure of this
@@ -105,7 +105,7 @@ let sig_of_symdef symdef sr name i : typecode_t * typecode_t * ((string * expr_t
       let ts_cf =
         List.map
         (function
-          | TYP_name (_,id,[]) when id = name -> tf
+          | `TYP_name (_,id,[]) when id = name -> tf
           | t -> t
         )
         ts_orig
@@ -121,22 +121,22 @@ let sig_of_symdef symdef sr name i : typecode_t * typecode_t * ((string * expr_t
     typeof_paramspec_t p,r,paramlist
 
   | SYMDEF_cstruct (ls, _) ->
-    type_of_list (List.map snd ls), TYP_index (sr,name,i),
+    type_of_list (List.map snd ls), `TYP_index (sr,name,i),
      Some (List.map (fun (p,_) -> p,None) ls)
 
   | SYMDEF_struct ls ->
-    type_of_list (List.map snd ls), TYP_index (sr,name,i),
+    type_of_list (List.map snd ls), `TYP_index (sr,name,i),
      Some (List.map (fun (p,_) -> p,None) ls)
 
-  | SYMDEF_const_ctor (_,r,_,_) -> TYP_void sr,r,None
+  | SYMDEF_const_ctor (_,r,_,_) -> `TYP_void sr,r,None
   | SYMDEF_nonconst_ctor (_,r,_,_,t) -> t,r,None
   | SYMDEF_type_alias t ->
 (*
     print_endline ("[sig_of_symdef] Found a typedef " ^ name);
 *)
     begin match t with
-    | TYP_typefun (ps,r,b) ->
-      print_endline "TYP_typefun";
+    | `TYP_typefun (ps,r,b) ->
+      print_endline "`TYP_typefun";
       assert false;
 (*
       kind_of_list (List.map snd ps),r,None
@@ -176,8 +176,8 @@ let fixup_argtypes be bid pnames base_domain argt rs =
       | false -> argt
       | true ->
           match base_domain with
-          | TYP_record _ -> argt
-          | TYP_tuple [] -> argt (* lazy *)
+          | `TYP_record _ -> argt
+          | `TYP_tuple [] -> argt (* lazy *)
           | _ ->
               let ps =
                 List.map begin fun (name,e) ->
@@ -256,7 +256,7 @@ if name = debugid then
    * thus, base type variables are eliminated and specialisation
    * type variables introduced *)
 
-  let con = match con with | TYP_tuple [] -> Flx_btype.btyp_tuple [] | _ -> bt sym.Flx_sym.sr con in
+  let con = match con with | `TYP_tuple [] -> Flx_btype.btyp_tuple [] | _ -> bt sym.Flx_sym.sr con in
   let domain,base_result = 
   (* this is primarily an optimisation to save recursive overload resolution
    * to find the return type of a function, which may itself involve a chain
@@ -577,7 +577,7 @@ print_endline (" .. found tpattern .. analysing .. ");
         | KND_unitsum
         | KND_compactlinear
         | KND_function _ 
-        | KND_tuple _ -> TYP_var j',[],[],[],[]
+        | KND_tuple _ -> `TYP_var j',[],[],[],[]
         | _ -> 
          print_endline ("Flx_overload. Expected KND_tpattern, got " ^ str_of_kindcode tp);
          assert false
@@ -1172,7 +1172,7 @@ if name = debugid then
 *)
         if List.mem ix rs.constraint_overload_trail then btyp_tuple [] else
         let rs = { rs with constraint_overload_trail = ix::rs.constraint_overload_trail } in
-        let r = match con with | TYP_tuple [] -> Flx_btype.btyp_tuple [] | _ -> bt rs call_sr ix con in
+        let r = match con with | `TYP_tuple [] -> Flx_btype.btyp_tuple [] | _ -> bt rs call_sr ix con in
         r
       ) 
       env

@@ -27,12 +27,12 @@ let debug = false
 
 let rec guess_metatype sr t : kind =
   match t with
-  | TYP_typeop (sr,op,t,k) -> bmt "Flx_guess_meta_type" k 
-  | TYP_defer _ -> print_endline "Guess metatype: defered type found"; assert false
-  | TYP_tuple_cons (sr,t1,t2) -> assert false
-  | TYP_tuple_snoc (sr,t1,t2) -> assert false
-  | TYP_type_tuple _ -> print_endline "A type tuple"; assert false
-  | TYP_typefun (d,c,body) -> 
+  | `TYP_typeop (sr,op,t,k) -> bmt "Flx_guess_meta_type" k 
+  | `TYP_defer _ -> print_endline "Guess metatype: defered type found"; assert false
+  | `TYP_tuple_cons (sr,t1,t2) -> assert false
+  | `TYP_tuple_snoc (sr,t1,t2) -> assert false
+  | `TYP_type_tuple _ -> print_endline "A type tuple"; assert false
+  | `TYP_typefun (d,c,body) -> 
 (*
     print_endline ("A type fun: " ^ 
     catmap "," (fun (n,t) -> string_of_typecode t) d ^ " -> " ^ string_of_typecode c);
@@ -46,61 +46,61 @@ let rec guess_metatype sr t : kind =
     Flx_btype.bmt "Flx_guess_meta_type" t
 
   (* name like, its a big guess! *)
-  | TYP_label
-  | TYP_suffix _
-  | TYP_index _
-  | TYP_lookup _ 
-  | TYP_name _ -> (* print_endline "A type name?"; *) kind_type
-  | TYP_as _ -> print_endline "A type as (recursion)?"; assert false
+  | `TYP_label
+  | `TYP_suffix _
+  | `TYP_index _
+  | `TYP_lookup _ 
+  | `TYP_name _ -> (* print_endline "A type name?"; *) kind_type
+  | `TYP_as _ -> print_endline "A type as (recursion)?"; assert false
 
   (* usually actual types! *)
-  | TYP_rptsum _
-  | TYP_pclt _
-  | TYP_rpclt _
-  | TYP_wpclt _
-  | TYP_uniq _
-  | TYP_void _ 
-  | TYP_case_tag _ 
-  | TYP_typed_case _
-  | TYP_callback _
-  | TYP_patvar _ 
-  | TYP_tuple _
-  | TYP_unitsum _
-  | TYP_sum _
-  | TYP_intersect _
-  | TYP_union _
-  | TYP_record _
-  | TYP_polyrecord _
-  | TYP_variant _
-  | TYP_cfunction _
-  | TYP_pointer _
-  | TYP_rref _
-  | TYP_wref _
-  | TYP_type_extension _
-  | TYP_array _ -> kind_type
+  | `TYP_rptsum _
+  | `TYP_pclt _
+  | `TYP_rpclt _
+  | `TYP_wpclt _
+  | `TYP_uniq _
+  | `TYP_void _ 
+  | `TYP_case_tag _ 
+  | `TYP_typed_case _
+  | `TYP_callback _
+  | `TYP_patvar _ 
+  | `TYP_tuple _
+  | `TYP_unitsum _
+  | `TYP_sum _
+  | `TYP_intersect _
+  | `TYP_union _
+  | `TYP_record _
+  | `TYP_polyrecord _
+  | `TYP_variant _
+  | `TYP_cfunction _
+  | `TYP_pointer _
+  | `TYP_rref _
+  | `TYP_wref _
+  | `TYP_type_extension _
+  | `TYP_array _ -> kind_type
 
   (* note this one COULD be a type function type *)
-  | TYP_function _ -> kind_type
-  | TYP_effector _ -> kind_type
+  | `TYP_function _ -> kind_type
+  | `TYP_effector _ -> kind_type
 
-  | TYP_dual t -> guess_metatype sr t
+  | `TYP_dual t -> guess_metatype sr t
 
-  | TYP_typeof _
-  | TYP_var _
-  | TYP_none 
-  | TYP_ellipsis   
-  | TYP_isin _ 
+  | `TYP_typeof _
+  | `TYP_var _
+  | `TYP_none 
+  | `TYP_ellipsis   
+  | `TYP_isin _ 
 
-  | TYP_typeset _
-  | TYP_setunion _
-  | TYP_setintersection _
+  | `TYP_typeset _
+  | `TYP_setunion _
+  | `TYP_setintersection _
 
 
-  | TYP_apply _
+  | `TYP_apply _
 
-  | TYP_subtype_match _
-  | TYP_type_match _ (* FIXME: calculate by examining branches ! *)
-  | TYP_patany _
+  | `TYP_subtype_match _
+  | `TYP_type_match _ (* FIXME: calculate by examining branches ! *)
+  | `TYP_patany _
     -> print_endline ("Woops, dunno meta type of " ^ string_of_typecode t); kind_type
 
 let guess_meta_type state bsym_table bt index : kind = 

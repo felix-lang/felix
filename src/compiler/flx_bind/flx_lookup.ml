@@ -345,7 +345,7 @@ RECURSION CYCLE:
 
 as_fixlist is a list of (name,depth) pairs, used by
 bind_type' to detect explicit fixpoint variables
-from the TYP_as terms (x as fv)
+from the `TYP_as terms (x as fv)
 [list contains depth]
 
 TEST CASE:

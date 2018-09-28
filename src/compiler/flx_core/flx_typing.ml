@@ -20,7 +20,7 @@ let mktypefun sr name vs args return_type body =
     while !p <> [] do
       let arg = List.hd !p in
       p := List.tl !p;
-      b := TYP_typefun (arg, !r, !b);
+      b := `TYP_typefun (arg, !r, !b);
       r := KND_function(argtyp (List.map snd (arg)),!r)
     done;
     !b
@@ -41,7 +41,7 @@ exception UnificationError of Flx_btype.t * Flx_btype.t
 (* unbound type *)
 let type_of_argtypes ls = match ls with
  | [x] -> x
- | _ -> TYP_tuple ls
+ | _ -> `TYP_tuple ls
 
 let funparamtype (_,_,t,_) = t
 
@@ -56,8 +56,8 @@ module FunInstSet = Set.Make(
   end
 )
 
-let flx_unit = TYP_tuple []
-let flx_bool = TYP_unitsum 2
+let flx_unit = `TYP_tuple []
+let flx_bool = `TYP_unitsum 2
 
 
 let flx_bbool = Flx_btype.btyp_unitsum 2

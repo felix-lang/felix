@@ -268,7 +268,7 @@ print_endline "Found function entry";
 
         let sym = get_data state.sym_table index in
         begin match sym.Flx_sym.symdef with
-        | SYMDEF_type_alias (TYP_typefun (args,ret,body) as tf)->
+        | SYMDEF_type_alias (`TYP_typefun (args,ret,body) as tf)->
           print_endline ("Got type function " ^ string_of_typecode body); 
           let btf = 
             try bt sr tf 
@@ -276,7 +276,7 @@ print_endline "Found function entry";
           in 
           btf
 
-        | SYMDEF_type_alias (TYP_name _) ->
+        | SYMDEF_type_alias (`TYP_name _) ->
           print_endline "Got some name, not expected!! "; assert false
         | _ -> print_endline "Got something weird"; assert false
         end

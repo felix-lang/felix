@@ -1,0 +1,127 @@
+{
+open Parse_tree
+open Dyp
+
+let () = dypgen_verbose := Argument.verbose
+
+let a_comma  e1 e2 = match (e1,e2) with
+  | (Open_tuple (n1,a)),(Open_tuple (n2,b)) ->
+      Open_tuple (n1+n2,a@b)
+  | exp,(Open_tuple (n,a)) -> Open_tuple (n+1,exp::a)
+  | (Open_tuple (n,a)),exp -> Open_tuple (n+1,a@[exp])
+  | exp1,exp2 -> Open_tuple (2,[exp1;exp2])
+
+let a_paren exp = match exp with
+  | Open_tuple (a,b) -> Tuple (a,b)
+  | x -> x
+
+let a_cons cons e = match e with
+  | Tuple (n,l) -> Cons (cons,(n,l))
+  | exp -> Cons (cons,(1,[exp]))
+
+let get_token_name s = match s with
+  | "[" -> "LBRACK"
+  | "]" -> "RBRACK"
+  | "::" -> "COLONCOLON"
+  | ";" -> "SEMICOLON"
+  | "|" -> "BAR"
+  | "<" -> "LESS"
+  | ">" -> "GREATER"
+  | "@" -> "APPEND"
+  | _ -> failwith "get_token_name"
+
+let a_define_in dyp (s,ol,e) =
+  let f o =
+    match o with
+      | Nt (s,_) -> Non_ter (s,No_priority)
+      | Token s -> Ter (get_token_name s)
+  in
+  let rule  = s,(List.map f ol),"default_priority",[] in
+  let action = (fun _ avl ->
+    let f2 env o av = match o with
+      | Nt (_,var_name) -> String_map.add var_name av env
+      | _ -> env
+    in
+    let f3 av = match av with
+      | EXPR exp -> exp
+      | _ -> Int 0
+    in
+    let avl = List.map f3 avl in
+    let env = List.fold_left2 f2 String_map.empty ol avl in
+    EXPR (substitute env e), [])
+  in rule, action
+
+let dypgen_lexbuf_position = Dyp.dummy_lexbuf_position
+}
+
+%constructor EXPR %for expr
+
+%constructor Void %for LPAREN RPAREN BAR MATCH WITH COMMA ARROW LET REC DEFINE IN AND EQUAL COLONEQUAL LBRACK RBRACK COLONCOLON SEMICOLON GREATER LESS APPEND EOF
+
+%token LPAREN       /* -> '('*/
+%token RPAREN       /* -> ')'*/
+%token BAR          /* -> '|'*/
+%token MATCH        /* -> 'match'*/
+%token WITH         /* -> 'with'*/
+%token COMMA        /* -> ','*/
+%token ARROW        /* -> '->'*/
+%token LET          /* -> 'let'*/
+%token REC          /* -> 'rec'*/
+%token DEFINE       /* -> 'define'*/
+%token IN           /* -> 'in'*/
+%token AND          /* -> 'and'*/
+%token EQUAL        /* -> '='*/
+%token COLONEQUAL   /* -> ':='*/
+%token LBRACK       /* -> '['*/
+%token RBRACK       /* -> ']'*/
+%token COLONCOLON   /* -> '::'*/
+%token SEMICOLON    /* -> ';'*/
+%token GREATER      /* -> '>'*/
+%token LESS         /* -> '<'*/
+%token APPEND       /* -> '@'*/
+
+%token EOF                /* := 'end of file' */
+%token <int> INT          /* := '[0-9]+'*/
+%token <string> UIDENT    /* := '[A-Z][a-a,A-Z,0-9,_]*' -> 'Identifier' */
+%token <string> LIDENT    /* := '[a-z,_][a-a,A-Z,0-9,_]*' -> 'identifier' */
+%token <string> TOKEN     /* := 'tokens used to extend the grammar' */
+
+%start <Parse_tree.expr> main
+
+%%
+
+main : expr EOF { $1 }
+
+expr :
+  | MATCH expr WITH match_seq { Match_with ($2,$4) }
+  | INT { Int $1 }
+  | expr COMMA expr @{ (a_comma $1 $3), [Dont_shift] }
+  | LPAREN expr RPAREN { a_paren $2 }
+  | UIDENT expr @{ (a_cons $1 $2), [Dont_shift] }
+  | UIDENT { Cons ($1,(0,[])) }
+  | LIDENT { Lident $1 }
+  | LET REC LIDENT LIDENT EQUAL expr IN expr
+      { Let_rec ($3,$4,$6,$8) }
+  | LIDENT expr { App ($1,$2) }
+  | define_in expr { $2 }
+
+match_seq :
+  | BAR expr ARROW expr { [($2,$4)] }
+  | BAR expr ARROW expr match_seq { ($2,$4)::$5 }
+
+define_in :
+  | DEFINE define_cont IN @{
+      let bind_cons = List.map (fun (s,_,_) -> (s,"EXPR")) $2 in
+      (*dyp.next_state <- Some stdout;
+      dyp.next_grammar <- Some stdout;*)
+      (), [Add_rules (List.map (a_define_in dyp) $2); Bind_to_cons bind_cons] }
+
+define_cont :
+  | LIDENT COLONEQUAL rhs EQUAL expr { [($1,$3,$5)] }
+  | define_cont AND LIDENT COLONEQUAL rhs EQUAL expr { ($3,$5,$7)::$1 }
+
+rhs :
+  | LIDENT LPAREN LIDENT RPAREN { [Nt ($1,$3)] }
+  | TOKEN { [Token $1] }
+  | LIDENT LPAREN LIDENT RPAREN rhs { (Nt ($1,$3))::$5 }
+  | TOKEN rhs { (Token $1)::$2 }

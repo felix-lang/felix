@@ -400,7 +400,7 @@ print_endline("  SPECIFIED RETURN TYPE =" ^ Flx_btype.st state.ret_type);
     bind_exe' state bsym_table (sr, EXE_call (a, b)) @
     bind_exe' state bsym_table (sr, EXE_proc_return) 
 
-  | EXE_call (EXPR_name (_,"_storeat",[]), e2) ->
+  | EXE_call (`EXPR_name (_,"_storeat",[]), e2) ->
     let (_,t) as be2 = be e2 in
     begin match t with
     | BTYP_tuple [pt; vt] ->
@@ -418,13 +418,13 @@ print_endline("  SPECIFIED RETURN TYPE =" ^ Flx_btype.st state.ret_type);
     | _ -> clierr sr ("_storeat intrinsic requires pair of type &T * T or &>T * T (or compact linear type versions), got " ^ Flx_btype.st t)
     end
 
-  | EXE_call (EXPR_name (_,"axiom_check",[]), e2) ->
+  | EXE_call (`EXPR_name (_,"axiom_check",[]), e2) ->
     [(bexe_axiom_check (sr,be e2))]
 
-  | EXE_call (EXPR_apply(_,(EXPR_name (_,"_iter",[]), EXPR_name (_,fn,[]))),arg) ->
+  | EXE_call (`EXPR_apply(_,(`EXPR_name (_,"_iter",[]), `EXPR_name (_,fn,[]))),arg) ->
     Flx_gmap.generic_map_proc bsym_table (bind_exe' state) be sr fn arg 
 
-  | EXE_call (EXPR_apply(_,(EXPR_name (_,"_rev_iter",[]), EXPR_name (_,fn,[]))),arg) ->
+  | EXE_call (`EXPR_apply(_,(`EXPR_name (_,"_rev_iter",[]), `EXPR_name (_,fn,[]))),arg) ->
     Flx_gmap.generic_rev_map_proc bsym_table (bind_exe' state) be sr fn arg 
 
 
@@ -501,8 +501,8 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
             sr,
             EXE_call
             (
-              EXPR_name (sr, name, []),
-              EXPR_tuple (sr, [f'; a'])
+              `EXPR_name (sr, name, []),
+              `EXPR_tuple (sr, [f'; a'])
             )
           )
       in
@@ -516,8 +516,8 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
             sr,
             EXE_call
             (
-              EXPR_name (sr, name, []),
-              EXPR_tuple (sr, [f'; a'])
+              `EXPR_name (sr, name, []),
+              `EXPR_tuple (sr, [f'; a'])
             )
           )
       in
@@ -526,7 +526,7 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
     with x ->
       begin try 
         match f',a' with
-        | EXPR_apply (sr,(f'',a'')), EXPR_tuple (_,[]) -> 
+        | `EXPR_apply (sr,(f'',a'')), `EXPR_tuple (_,[]) -> 
           bind_exe' state bsym_table (sr, EXE_call (f'',a''))
         | _ -> raise x
       with _ -> raise x

@@ -1,0 +1,14 @@
+(
+  "Hello" fred 1 (2 3) (+ 30 (+ 6 4) 2)
+  (lambda x (+ x x))
+  (apply (lambda x (+ x x)) 42)
+  (defin fact
+    (lambda x
+      (ifelse x
+        (* x (apply fact (- x 1)))
+        1
+      )
+    )
+    (apply fact 4)
+  )
+)

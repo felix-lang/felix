@@ -1,0 +1,508 @@
+{
+open Printf
+open Parse_tree
+open Dyp
+
+let () = dypgen_verbose := 0
+
+let use_dyplex = ref false
+
+let empty_ppi = {
+  token_list = [];
+  relation = [];
+  start = [];
+  generic_merge = [];
+  cons = [];
+  additional_cons = [];
+  nt_type = [];
+  single_nt = [];
+  layout = [] }
+
+module Ordered_string =
+struct
+  type t = string
+  let compare = Pervasives.compare
+end
+
+module String_set = Set.Make(Ordered_string)
+
+type gd = {
+  gd_count : int;
+  gd_symbs : String_set.t;
+  gd_regexp_decl : String_set.t }
+
+let global_data = {
+  gd_count = 0;
+  gd_symbs = String_set.empty;
+  gd_regexp_decl = String_set.empty }
+
+let is_nested nt =
+  try
+    let sub = String.sub nt 0 18 in
+    if sub = "dypgen__nested_nt_" then true else false
+  with Invalid_argument _ -> false
+
+let dummy_code = ("",Lexing.dummy_pos)
+let dummy_p = -1,-1,-1,""
+(*let dummy_pat_syn = "_", (Pat_syn ""), Lexing.dummy_pos*)
+let dummy_pat_inh = "_", (Pat_inh ""), Lexing.dummy_pos
+
+let symbol_list dyp op (symb, add_rules) =
+  let { gd_count=count; gd_symbs=symbs} = dyp.global_data in
+  let pat_typ = match symb with
+    | Symb_non_terminal ((s,_),_,_,_)
+    | Symb_non_terminal_NL ((s,_),_,_,_) -> s
+    | Symb_terminal s | Symb_terminal_NL s -> fst s
+    | _ -> assert false
+  in
+  let ssymb = "dypgen__"^op^"___"^pat_typ in
+  if String_set.mem ssymb symbs then
+    ((Symb_non_terminal
+     ((ssymb,dummy_p),("No_priority",dummy_p),Pr_eq,dummy_code)),
+    add_rules), []
+  else
+  let count, symbs, lnt2, lnt1 =
+    if is_nested pat_typ then
+      count+2, symbs,
+      "dypgen__nested_nt_"^(string_of_int count),
+      "dypgen__nested_nt_"^(string_of_int (count+1))
+    else
+      count+1, (String_set.add ssymb symbs), ssymb,
+      "dypgen__nested_nt_"^(string_of_int count)
+  in
+  let rule1 =
+    if op = "star" then
+      (lnt1,[dummy_pat_inh]),("default_priority",(-1,-1,-1,"")),[],
+      ("[]",(Lexing.dummy_pos,false)), (true,true)
+    else
+      (lnt1,[dummy_pat_inh]),("default_priority",(-1,-1,-1,"")),
+      [(symb,("_",(Pat_syn pat_typ),Lexing.dummy_pos))],
+      ("[_1]",(Lexing.dummy_pos,false)), (true,true)
+  in
+  let lnt1_pack, lnt2_pack =
+    (Symb_non_terminal ((lnt1,dummy_p),
+      ("No_priority",dummy_p),Pr_eq,dummy_code)),
+    (Symb_non_terminal ((lnt2,dummy_p),
+      ("No_priority",dummy_p),Pr_eq,dummy_code))
+  in
+  let rule2 =
+    (lnt1,[dummy_pat_inh]),("default_priority",dummy_p),
+    [(lnt1_pack,("_",(Pat_syn lnt1),Lexing.dummy_pos));
+    (symb,("_",(Pat_syn pat_typ),Lexing.dummy_pos))],
+    ("_2::_1",(Lexing.dummy_pos,false)), (true,true)
+  in
+  let rule3 =
+    (lnt2,[dummy_pat_inh]),("default_priority",dummy_p),
+    [(lnt1_pack,("_",(Pat_syn lnt1),Lexing.dummy_pos))],
+    ("List.rev _1",(Lexing.dummy_pos,false)), (true,true)
+  in
+  (lnt2_pack, (rule1::rule2::rule3::add_rules)),
+  [Dyp.Global_data {dyp.global_data with gd_count=count; gd_symbs=symbs}]
+
+let discard_nt nt =
+  if nt = "eof" then true else
+  is_nested nt
+
+let rec dyp_merge_Obj_symbol_list = function
+  | ((o1,gd,ld) as h)::((o2,_,_)::t as l1) ->
+  begin match o1 with
+  (*| (((Symb_regexp (RE_Seq _)),_)::_,_,_,_)
+    | (((Symb_regexp_NL (RE_Seq _)),_)::_,_,_,_) ->
+      dyp_merge_Obj_symbol_list l1 *)
+      (* prevents several non terminals to be mistaken with
+      a sequence of regular expressions *)
+    | (((Symb_non_terminal ((nt,_),_,_,_)),_)::_,_)
+    | (((Symb_non_terminal_NL ((nt,_),_,_,_)),_)::_,_)
+      when (discard_nt nt) ->
+      dyp_merge_Obj_symbol_list l1
+      (* eof is a regexp rather than a non terminal symbol *)
+      (* nested rules are discarded when in competition with other
+      interpretations: ['a'-'z'] is always a character set and not
+      a nested rule *)
+    | _ -> dyp_merge_Obj_symbol_list (h::t)
+  end
+  | [o,gd,ld] -> [o],gd,ld
+  | _ -> assert false
+
+let dypgen_keep_data = `none
+
+}
+
+%token LPAREN RPAREN COMMA SEMI COLON THREEDOTS PERCENTPERCENT LBRACE RBRACE BAR LESS EQUAL QUESTION STAR PLUS ARROW CARET LBRACK RBRACK DASH LPARENLESS LPARENGREATER BANG
+
+%token KWD_TOKEN KWD_START KWD_RELATION KWD_MLI KWD_MLITOP KWD_MLIMID KWD_MLTOP KWD_MERGE KWD_CONSTRUCTOR KWD_FOR KWD_TYPE KWD_NON_TERMINAL KWD_LEXER KWD_PARSER LET KWD_LAYOUT
+
+%token <string * (Lexing.position * bool)> OCAML_CODE <string> OCAML_TYPE <string * Lexing.position> PATTERN <string * (int * int * int * string)> UIDENT <string * (int * int * int * string)> LIDENT <char> CHAR <string> STRING
+
+%token EOF
+
+%relation
+p1<p2<pSeq<pAlt
+
+%start main
+
+%%
+
+main: optional_mltop optional_code parser_param_infos lexer ? parser_begin grammar optional_trailer optional_mlitop optional_mlimid optional_mli EOF
+  { ($1,$2,$3,$4,(*List.rev*) $6,$7,$8,$9,$10) }
+
+parser_begin:
+   PERCENTPERCENT {}
+  | KWD_PARSER     {}
+
+lexer:
+  KWD_LEXER regexp_decl * [aux_lexer ? main_lexer {$1,$2}] ?
+    { match $2, $3 with
+    | [], None -> [], [], []
+    | _, None -> use_dyplex := true; ($2, [], [])
+    | _, Some (auxl, mainl) ->
+    use_dyplex := true;
+    ($2, (match auxl with None -> [] | Some l -> l), mainl) }
+
+main_lexer:
+  LIDENT<"main",_> LIDENT<"lexer",_> EQUAL lexer_rule * { $4 }
+
+lexer_rule:
+  regexp ARROW opt_token_name optional_code { ($1,$3,$4) }
+
+opt_token_name:
+  | { "__dypgen_layout" }
+  | UIDENT<n,_> { n }
+
+regexp_decl:
+  LET LIDENT<n,_> EQUAL regexp
+    @{ (n,$4),
+    [Dyp.Global_data {dyp.global_data with gd_regexp_decl =
+      String_set.add n dyp.global_data.gd_regexp_decl}] }
+
+aux_lexer:
+  aux_lexer_rule aux_lexer_and * { $1::$2 }
+
+aux_lexer_rule:
+  LIDENT<"rule",_> lident + EQUAL LIDENT<"parse",_> aux_lexer_def
+  { ($2,$5) }
+
+aux_lexer_and:
+  LIDENT<"and",_> lident + EQUAL LIDENT<"parse",_> aux_lexer_def
+  { ($2,$5) }
+
+lident: LIDENT<name,_> { name }
+
+aux_lexer_def:
+  BAR ? [regexp OCAML_CODE {$1,$2}]
+  [BAR regexp OCAML_CODE {$2,$3}] *
+  { $2::$3 }
+
+regexp:
+  | CHAR { RE_Char $1 } p1
+  | LBRACK char_elt + RBRACK { RE_Char_set $2 } p1
+  | LBRACK CARET char_elt + RBRACK { RE_Char_set_exclu $3 } p1
+  | STRING { RE_String $1 } p1
+  | regexp BAR regexp(<pAlt) { RE_Alt [$1;$3] } pAlt
+  | regexp(<=pSeq) regexp(<pSeq) { RE_Seq [$1;$2] } pSeq
+  | regexp(=p1) STAR { RE_Star $1 } p2
+  | regexp(=p1) PLUS { RE_Plus $1 } p2
+  | regexp(=p1) QUESTION { RE_Option $1 } p2
+  | LIDENT<name,_> {
+      if name = "eof" then RE_Eof_char
+      else if name = "_" then
+        RE_Char_set [((Char.chr 0),(Char.chr 255))]
+      else if String_set.mem name dyp.global_data.gd_regexp_decl
+      then RE_Name name
+      else raise Giveup } p1
+  | LPAREN regexp RPAREN { $2 } p1
+
+regexp_ter: regexp(<pSeq) { $1 }
+
+char_elt:
+  | CHAR { ($1,$1) }
+  | CHAR DASH CHAR { ($1,$3) }
+
+optional_trailer:
+  |                           { ("",Lexing.dummy_pos) }
+  | PERCENTPERCENT OCAML_CODE { (fst $2,fst (snd $2)) }
+
+parser_param_info:
+  |  { empty_ppi }
+  | KWD_START optional_type LIDENT
+      { {empty_ppi with start = [((fst $3),$2)]} }
+  | token_list                   { {empty_ppi with token_list = $1} }
+  | relation                     { {empty_ppi with relation = $1} }
+  | KWD_CONSTRUCTOR UIDENT KWD_FOR ident_list
+      { { empty_ppi with cons = [(fst $2,List.rev $4)] }  }
+  | KWD_CONSTRUCTOR uident_list
+      { { empty_ppi with additional_cons = List.rev $2 }  }
+  | KWD_MERGE LIDENT uident_list
+      { {empty_ppi with generic_merge = [((fst $2),List.rev $3)]} }
+  | KWD_TYPE OCAML_TYPE lident_list
+      { {empty_ppi with nt_type = [$2,List.rev $3]} }
+  | KWD_LAYOUT regexp optional_code
+      { {empty_ppi with layout = [$2,$3]} }
+  | KWD_NON_TERMINAL lident_list
+      { {empty_ppi with single_nt = List.rev $2} }
+
+parser_param_infos:
+  | parser_param_info { $1 }
+  | parser_param_infos parser_param_info
+     @{
+      { token_list = ($2.token_list@$1.token_list);
+        relation = $2.relation@$1.relation;
+        start = $2.start@$1.start;
+        generic_merge = $2.generic_merge@$1.generic_merge;
+        cons = $2.cons@$1.cons;
+        additional_cons = $2.additional_cons@$1.additional_cons;
+        nt_type = $2.nt_type@$1.nt_type;
+        single_nt = $2.single_nt@$1.single_nt;
+        layout = $2.layout@$1.layout },
+        [Dyp.Dont_shift] }
+
+lident_list:
+  | LIDENT             { [(fst $1)] }
+  | lident_list LIDENT { (fst $2)::$1 }
+
+uident_list:
+  | UIDENT             { [(fst $1)] }
+  | uident_list UIDENT { (fst $2)::$1 }
+
+ident_list:
+  | UIDENT             { [(fst $1)] }
+  | LIDENT             { [(fst $1)] }
+  | ident_list UIDENT { (fst $2)::$1 }
+  | ident_list LIDENT { (fst $2)::$1 }
+
+optional_code:
+  |            { ("",Lexing.dummy_pos) }
+  | OCAML_CODE { (fst $1,fst (snd $1)) }
+
+optional_type:
+  |            { "No type" }
+  | OCAML_TYPE { $1 }
+
+optional_mli:
+  |                    { ("",Lexing.dummy_pos) }
+  | KWD_MLI OCAML_CODE { (fst $2,fst (snd $2)) }
+
+optional_mlimid:
+  |                    { ("",Lexing.dummy_pos) }
+  | KWD_MLIMID OCAML_CODE { (fst $2,fst (snd $2)) }
+
+optional_mlitop:
+  |                    { ("",Lexing.dummy_pos) }
+  | KWD_MLITOP OCAML_CODE { (fst $2,fst (snd $2)) }
+
+optional_mltop:
+  |                    { ("",Lexing.dummy_pos) }
+  | KWD_MLTOP OCAML_CODE { (fst $2,fst (snd $2)) }
+
+
+token_list:
+  | KWD_TOKEN UIDENT             { [((fst $2),"No_type")] }
+  | KWD_TOKEN OCAML_TYPE UIDENT  { [((fst $3),$2)] }
+  | token_list UIDENT            { ((fst $2),"No_type")::$1 }
+  | token_list OCAML_TYPE UIDENT { ((fst $3),$2)::$1 }
+
+relation:
+  | KWD_RELATION { [] }
+  | relation relation_list { (Rel_list (List.rev $2))::$1 }
+  | relation LIDENT { (Rel_single (fst $2))::$1 }
+
+relation_list:
+  | LIDENT LESS LIDENT { [(fst $3);(fst $1)] }
+  | relation_list LESS LIDENT { (fst $3)::$1 }
+
+grammar:
+  | grammar entry_def { $2@$1 }
+  | entry_def SEMI ? { $1 }
+
+entry_def:
+  LIDENT<lhs,_> opt_pattern <pat_code, pat_pos> COLON BAR ? rhs_list
+  { let f (rl1,rl2) (prio,symbl,code,rule_options,add_rules) =
+      ((lhs, [pat_code, (Pat_inh lhs), pat_pos]), prio, symbl, code, rule_options)
+       ::rl1,add_rules@rl2 in
+    let rl1, rl2 = List.fold_left f ([], []) (List.rev $5) in
+    rl2@rl1 }
+
+rhs_list:
+  | rhs { [$1] }
+  | rhs_list BAR rhs { $3::$1 }
+
+rhs: opt_bang symbol_list opt_dash action_prio<action, prio, b>
+    { let symbl, additional_rules = $2 in
+      let action =
+        if b then
+          if symbl=[] then raise Giveup
+          else ("_"^(string_of_int (List.length symbl))),
+            (Lexing.dummy_pos, false)
+        else action
+      in
+      (prio, (List.rev symbl), action, ($1,$3), additional_rules) }
+
+opt_bang:
+  | { true }
+  | BANG { false }
+
+opt_dash:
+  | { true }
+  | DASH { false }
+
+action_prio:
+  | OCAML_CODE priority { ($1,$2,false) }
+  |    { ("", (Lexing.dummy_pos,false)),
+       ("default_priority", (-1,-1,-1,"")), true }
+
+symbol_list:
+          { ([],[]) }
+  | symbol_list <l, add_rule>
+    [regexp_ter { Symb_regexp $1 } | DASH regexp_ter { Symb_regexp_NL $2 }]<symb>
+    opt_pattern <pat_code, pat_pos>
+      { use_dyplex := true;
+      ((symb, (pat_code, (Pat_syn "#Lexeme_matched"), pat_pos))::l), add_rule }
+  
+  | symbol_list <l, add_rule>
+    THREEDOTS OCAML_CODE opt_pattern <pat_code, pat_pos>
+      {
+      (*let count = dyp.global_data.gd_count in
+      let nt = "dypgen__nested_nt_"^(string_of_int count) in
+      let symb =
+        Symb_non_terminal_NL ((nt, dummy_p),
+          ("No_priority", dummy_p), Pr_eq, dummy_code) in
+      let rule =
+        (nt, [dummy_pat_inh]), ("default_priority", dummy_p), [],
+        ("_2::_1", (Lexing.dummy_pos, false)), (true, true)
+      in*)
+      let symb = Symb_early_action $3 in
+      ((symb, (pat_code, (Pat_syn ""), pat_pos))::l), add_rule
+      }
+  | symbol_list <l, rules1> symbol <symb, rules2> opt_pattern <pat_code, pat_pos>
+      { let pat_typ = match symb with
+          | Symb_terminal (s,_)
+          | Symb_terminal_NL (s,_)
+          | Symb_non_terminal ((s,_),_,_,_)
+          | Symb_non_terminal_NL ((s,_),_,_,_) -> s
+          | _ -> assert false
+        in
+        let pat_code =
+          try
+            if String.sub pat_typ 0 15 = "dypgen__option_" then
+              if pat_code = "_" then "_"
+              else "(Some ("^pat_code^")|None)"
+            else pat_code
+          with Invalid_argument _ -> pat_code
+        in
+        ( ((symb, (pat_code, (Pat_syn pat_typ), pat_pos))::l), rules2@rules1 ) }
+
+symbol:
+  | symb { $1 }
+  | symb STAR @{ symbol_list dyp "star" $1 }
+  | symb PLUS @{ symbol_list dyp "plus" $1 }
+  | symb<symb,add_rules> QUESTION
+    @{ let {gd_count=count; gd_symbs=symbs} = dyp.global_data in
+      let pat_typ = match symb with
+        | Symb_non_terminal ((s,_),_,_,_)
+        | Symb_non_terminal_NL ((s,_),_,_,_) -> s
+        | Symb_terminal s | Symb_terminal_NL s -> fst s
+        | _ -> assert false
+      in
+      let qsymb = "dypgen__option_"^pat_typ in
+      if String_set.mem qsymb symbs then
+        ((Symb_non_terminal
+         ((qsymb,dummy_p),("No_priority",dummy_p),Pr_eq,dummy_code)),
+        add_rules), []
+      else
+      let is_nested =
+        try
+          let sub = String.sub pat_typ 0 18 in
+          if sub = "dypgen__nested_nt_" then true else false
+        with Invalid_argument _ -> false
+      in
+      let count, symbs, left_nt =
+        if is_nested then
+          count+1, symbs,
+          "dypgen__nested_nt_"^(string_of_int count)
+        else
+          count, (String_set.add qsymb symbs), qsymb
+      in
+      let rule1 =
+        (left_nt,[dummy_pat_inh]),("default_priority",(-1,-1,-1,"")),
+        [symb,("_",(Pat_syn pat_typ),Lexing.dummy_pos)],
+        ("###",(Lexing.dummy_pos,false)), (true,true)
+        (* The string ### is replaced by None in dypgen.ml if symb
+        is a terminal with no argument and by Some _1 otherwise. *)
+      in
+      let rule2 =
+        (left_nt,[dummy_pat_inh]),("default_priority",(-1,-1,-1,"")),[],
+        ("None",(Lexing.dummy_pos,false)), (true,true)
+      in
+      ((Symb_non_terminal ((left_nt,dummy_p),
+        ("No_priority",dummy_p),Pr_eq,dummy_code)),
+      (rule1::rule2::add_rules)),
+      [Dyp.Global_data {dyp.global_data with gd_count=count;
+        gd_symbs=symbs}] }
+
+symb:
+  | LIDENT optional_code LPAREN EQUAL LIDENT RPAREN
+      { (Symb_non_terminal ($1,$5,Pr_eq,$2)),[] }
+  | LIDENT optional_code LPARENLESS EQUAL LIDENT RPAREN
+      { (Symb_non_terminal ($1,$5,Pr_lesseq,$2)),[] }
+  | LIDENT optional_code LPARENLESS LIDENT RPAREN
+      { (Symb_non_terminal ($1,$4,Pr_less,$2)),[] }
+  | LIDENT optional_code LPARENGREATER EQUAL LIDENT RPAREN
+      { (Symb_non_terminal ($1,$5,Pr_greatereq,$2)),[] }
+  | LIDENT optional_code LPARENGREATER LIDENT RPAREN
+      { (Symb_non_terminal ($1,$4,Pr_greater,$2)),[] }
+  | LIDENT<n,_> optional_code {
+      if String_set.mem n dyp.global_data.gd_regexp_decl
+      then raise Giveup else
+      (Symb_non_terminal
+      ((n,dummy_p),("No_priority",dummy_p),Pr_eq,$2)), [] }
+  | UIDENT { (Symb_terminal $1),[] }
+  | DASH LIDENT optional_code LPAREN EQUAL LIDENT RPAREN
+      { (Symb_non_terminal_NL ($2,$6,Pr_eq,$3)),[] }
+  | DASH LIDENT optional_code LPARENLESS EQUAL LIDENT RPAREN
+      { (Symb_non_terminal_NL ($2,$6,Pr_lesseq,$3)),[] }
+  | DASH LIDENT optional_code LPARENLESS LIDENT RPAREN
+      { (Symb_non_terminal_NL ($2,$5,Pr_less,$3)),[] }
+  | DASH LIDENT optional_code LPARENGREATER EQUAL LIDENT RPAREN
+      { (Symb_non_terminal_NL ($2,$6,Pr_greatereq,$3)),[] }
+  | DASH LIDENT optional_code LPARENGREATER LIDENT RPAREN
+      { (Symb_non_terminal_NL ($2,$5,Pr_greater,$3)),[] }
+  | DASH LIDENT<n,_> optional_code {
+      (Symb_non_terminal_NL
+      ((n,dummy_p),("No_priority",dummy_p),Pr_eq,$3)), [] }
+  | DASH UIDENT { (Symb_terminal_NL $2),[] }
+  | LBRACK rhs_list RBRACK
+    @{ let { gd_count=count; gd_symbs=symbs} = dyp.global_data in
+      let nt = "dypgen__nested_nt_"^(string_of_int count) in
+      let f (rl1,rl2) (prio,symbl,code,allow_layout,add_rules) =
+        ((nt,[dummy_pat_inh]),prio,symbl,code,allow_layout)::rl1,add_rules@rl2
+      in
+      let rl1, rl2 = List.fold_left f ([],[]) (List.rev $2) in
+      ((Symb_non_terminal
+        ((nt,dummy_p),("No_priority",dummy_p),Pr_eq,dummy_code)), rl2@rl1),
+      [Dyp.Global_data
+        {dyp.global_data with gd_count=count+1; gd_symbs=symbs}] }
+
+priority:
+          { ("default_priority",(-1,-1,-1,"")) }
+  | LIDENT { $1 }
+
+/*
+opt_early_act:
+    { (("",(Lexing.dummy_pos,false)), ["_","_",Lexing.dummy_pos]) }
+  | THREEDOTS OCAML_CODE opt_pattern { ($2,[fst $3,"_",snd $3]) }
+*/
+
+opt_pattern:
+           { ("_",Lexing.dummy_pos) }
+  | PATTERN { $1 }
+
+%mlitop{
+module String_set : Set.S with type elt = string
+
+type gd = {
+  gd_count : int;
+  gd_symbs : String_set.t;
+  gd_regexp_decl : String_set.t }
+
+val use_dyplex : bool ref
+}

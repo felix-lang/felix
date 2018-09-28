@@ -1,0 +1,648 @@
+%mltop {
+open Flx_token
+open Flx_drules
+}
+{
+
+(* parser header *)
+exception EndOfInput
+open Ocs_types
+open Dyp
+open Lexing
+open Flx_string
+open Flx_dssl
+open Flx_parse_data
+open Flx_define_syntax
+
+let lexeme x = Dyp.lexeme x
+
+let dyp_merge_Obj_sexpr ol = keep_all ol
+
+let dyphack (ls : ( 'a * string) list) : 'a =
+  match ls with
+  | [x,_] -> x
+  | [] -> failwith "No parse found"
+  | _ -> failwith "Multiple parses found"
+
+
+let open_syntax dyp namelist =
+  let sr = Flx_parse_srcref.getsr dyp in
+  print_endline
+    ("Opening syntax extensions " ^ Flx_srcref.short_string_of_src sr);
+
+  let dssls = List.map snd namelist in
+
+  print_endline
+    ("Parsed open of syntax extensions " ^ String.concat "," dssls);
+
+  let m = dyp.local_data in
+
+  let to_install = Flx_dssl.tran_cls_dssls m.drules m.installed_dssls dssls in
+  let rules, prios = Flx_dssl.extract_syntax to_install m.drules in
+  let add_rules, bindings = Flx_dssl.bind_grammar_rules dyp rules in
+  let local_data = 
+  { 
+    m with installed_dssls = to_install @ m.installed_dssls
+  } 
+  in
+  bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
+
+let define_syntax dyp dssl_name dyprods =
+  (* NOTE ORDER!! dyprods is reversed, but the fold reverses it again *)
+  let sr = Flx_parse_srcref.getsr dyp in
+  let local_data = dyp.local_data in
+  let macros,dyprods = Flx_define_syntax.process_rules dssl_name dyp.global_data.pcounter local_data.drules dyprods in
+  let dssl = { Flx_parse_data.fresh_dssl with macros = macros } in
+  let local_data =
+    if Drules.mem dssl_name local_data.drules then failwith ("DSSL " ^ dssl_name ^ " already defined!")
+    else { local_data with drules = Drules.add dssl_name dssl local_data.drules }
+  in
+  let global_data,local_data = Flx_export_syntax.add_rules dssl_name dyp.global_data local_data  dyprods in
+  (* This cal tries to avoid gratutions mods to global/local data
+     by checking for physical equality. Note changes to any
+     embedded mutable data structure propagate anyhow.
+  *)
+  let mods =
+    (if dyp.global_data != global_data then [Global_data global_data] else [])
+    @
+    (if dyp.local_data != local_data then [Local_data local_data] else [])
+  in
+  Snull, mods
+
+}
+
+/* special */
+%token <(Flx_srcref.t * string)> ERRORTOKEN
+%token ENDMARKER
+
+/* literals */
+%token <string> NAME
+%token <(string * prio_t)> NONTERMINAL
+%token <int> INTEGER
+%token <string> STRING
+%token <'obj Dyp.dyplexbuf> HASH_LINE
+%token DUMMY
+
+%token UNDERSCORE
+%constructor Obj_keyword %for UNDERSCORE
+
+/* top level entry */
+%constructor Obj_sexpr %for sterm
+
+/* predefined major non-terminals */
+%constructor Obj_sexpr %for sexpr schemevar
+%constructor Obj_sexpr %for sstatements stmt 
+
+/* nothing*/
+%constructor Obj_sexpr %for sepsilon
+%constructor Obj_sexpr %for strepsilon
+
+/* Note: BACKWARDS list */
+%start <local_data_t> compilation_unit
+%start <local_data_t> syntax_unit
+%relation ralt_prix<rseq_prix<rpostfix_prix<ratom_prix 
+
+
+%lexer
+
+/* ====================== REGULAR DEFINITIONS ============================ */
+/* special characters */
+let quote = '\''
+let dquote = '"'
+let slosh = '\\'
+let hash = '#'
+let linefeed = '\n'
+let tab = '\t'
+let space = ' '
+let formfeed = '\012'
+let vtab = '\011'
+let carriage_return = '\013'
+let underscore = '_'
+
+/* character sets */
+let bindigit = ['0'-'1']
+let octdigit = ['0'-'7']
+let digit = ['0'-'9']
+let hexdigit = digit | ['A'-'F'] | ['a'-'f']
+let lower = ['a'-'z']
+let upper = ['A'-'Z']
+let letter = lower | upper
+let hichar = ['\128'-'\255']
+let white = space | tab
+
+/* nasty: form control characters */
+let form_control = linefeed | carriage_return | vtab | formfeed
+let newline_prefix = linefeed | carriage_return
+let newline = formfeed | linefeed  | carriage_return linefeed
+let hash = '#'
+
+let ordinary = letter | digit | hichar |
+  '!' | '$' | '%' | '&' | '(' | ')' | '*' |
+  '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' |
+  '=' | '>' | '?' | '@' | '[' | ']' | '^' | '_' |
+  '`' | '{' | '|' | '}' | '~'
+
+let printable = ordinary | quote | dquote | slosh | hash
+
+/* identifiers */
+let ucn =
+    "\\u" hexdigit hexdigit hexdigit hexdigit
+  | "\\U" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit
+
+let prime = '\''
+let dash = '-'
+let idletter = letter | underscore | hichar | ucn
+let alphnum = idletter | digit
+let innerglyph = idletter | digit | dash
+let identifier = idletter (innerglyph? (alphnum | prime) +)* prime*
+
+/* Python strings */
+let qqq = quote quote quote
+let ddd = dquote dquote dquote
+
+let raw_dddnormal = ordinary | hash | quote | slosh | white | newline
+let raw_dddspecial = raw_dddnormal | dquote raw_dddnormal | dquote dquote raw_dddnormal
+
+let raw_qqqnormal = ordinary | hash | dquote | slosh | space | newline
+let raw_qqqspecial = raw_qqqnormal | quote raw_qqqnormal | quote quote raw_qqqnormal
+
+let qstring = quote (ordinary | hash | dquote | white | slosh) * quote
+let dstring = dquote (ordinary | hash | quote | white | slosh) * dquote
+
+let qqqstring = qqq raw_qqqspecial * qqq
+let dddstring = ddd raw_dddspecial * ddd
+
+let not_hash_or_newline = ordinary | quote | dquote | white | slosh
+let not_newline = not_hash_or_newline | hash
+
+
+rule parse_C_comment count = parse
+| "/*"    { parse_C_comment (count+1) lexbuf }
+| newline { Flx_parse_srcref.incr_lineno lexbuf; parse_C_comment count lexbuf }
+| "*/"    { if count = 1 then () else parse_C_comment (count - 1) lexbuf }
+| _       { parse_C_comment count lexbuf }
+
+and parse_fdoc_comment = parse
+| newline "@felix" white* newline  { Flx_parse_srcref.incr_lineno lexbuf; Flx_parse_srcref.incr_lineno lexbuf; }
+| newline { Flx_parse_srcref.incr_lineno lexbuf; parse_fdoc_comment lexbuf }
+| eof     { }
+| _       { parse_fdoc_comment lexbuf }
+
+
+main lexer =
+/* eof is not eaten up, so parent will find eof and emit ENDMARKER */
+ "//" not_newline * (newline | eof) -> {
+      Flx_parse_srcref.incr_lineno lexbuf
+  }
+
+  "#line"  -> HASH_LINE {
+     lexbuf
+  }
+
+  /* just drop #include directives, a special preprocessor
+     handles that
+  */
+  "#include" not_newline * (newline | eof) -> {
+      Flx_parse_srcref.incr_lineno lexbuf
+  }
+
+
+ "/*" -> { parse_C_comment 1 lexbuf }
+
+ newline "@" -> { Flx_parse_srcref.incr_lineno lexbuf; parse_fdoc_comment lexbuf }
+
+ digit+ -> INTEGER {
+      let s = lexeme lexbuf in
+      int_of_string s
+  }
+
+/* Python strings */
+ qstring -> STRING { 
+    let s = lexeme lexbuf in
+    Flx_parse_srcref.adjust_lineno lexbuf s;
+    let m = String.length s in
+    String.sub s 1 (m-2)
+  }
+
+qqqstring    -> STRING { 
+    let s = lexeme lexbuf in
+    Flx_parse_srcref.adjust_lineno lexbuf s;
+    let m = String.length s in
+    String.sub s 3 (m-3)
+  }
+
+dstring -> STRING {
+    let s = lexeme lexbuf in
+    Flx_parse_srcref.adjust_lineno lexbuf s;
+    let m = String.length s in
+    String.sub s 1 (m-2)
+  }
+
+dddstring -> STRING {
+    let s = lexeme lexbuf in
+    Flx_parse_srcref.adjust_lineno lexbuf s;
+    let m = String.length s in
+    String.sub s 3 (m-3)
+  }
+
+ identifier -> NAME { Flx_utf.utf8_to_ucn (lexeme lexbuf) }
+
+/* whitespace */
+ white+ -> { () }
+
+/* end of line */
+ newline -> { Flx_parse_srcref.incr_lineno lexbuf }
+
+/* end of file */
+ eof -> ENDMARKER { }
+
+/* Anything else is an error */
+ _ -> ERRORTOKEN { lexeme lexbuf }
+
+%parser
+
+syntax_unit:
+  | syntax_init top_statements ENDMARKER { dyp.last_local_data }
+
+syntax_init: 
+   {
+    let file = Flx_srcref.file (Flx_parse_srcref.getsr dyp) in
+    print_endline ("syninit: Parsing " ^ file)
+   }
+
+compilation_unit:
+  | grammar_init top_statements ENDMARKER { dyp.last_local_data }
+
+grammar_init: @{
+    (* print_endline ("grammar_init: Parsing " ^ file); *)
+    let m = dyp.local_data in
+
+    (* We need to reinstall the dssls that we loaded in syntax_unit. *)
+    let to_install = tran_cls_dssls m.drules [] m.installed_dssls in
+    let rules, prios = extract_syntax to_install m.drules in
+
+    match !(dyp.global_data.parsing_device) with
+    | Some device ->
+      (* print_endline "Parsing device detected"; *)
+
+      let ffpdev = Marshal.from_string device 0 in
+      (* print_endline "Unmarshalled parsing device"; *)
+
+      let add_rules, bindings = bind_grammar_rules dyp rules in
+      let pdev = import_functions ffpdev dyp.parser_pilot add_rules in
+      (), bindings @ [Parser pdev]
+
+    | None ->
+      (* print_endline "Parsing device missing"; *)
+
+      (* Since we don't have a parsing device, we will have to run the scheme
+       * commands. *)
+      let env = dyp.global_data.env in
+      let scm = List.rev m.scm in
+      load_scheme_defs env scm;
+
+      (* We need to bind after we've executed the scheme. *)
+      let add_rules, bindings = bind_grammar_rules dyp rules in
+
+      let local_data = { m with installed_dssls = to_install } in
+      (*
+      print_endline ("Mounting Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) m.drules ""));
+      *)
+
+      (),
+      bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
+  }
+
+stmt:
+  | HASH_LINE INTEGER STRING newline
+   {
+     let sr = Flx_parse_srcref.getsr dyp in
+     let lexbuf = $1 in
+     let n = $2 in
+     Flx_parse_srcref.set_lineno lexbuf n;
+     Dyp.set_fname lexbuf $3;
+     Snull
+   }
+
+  | HASH_LINE INTEGER newline
+   {
+     let sr = Flx_parse_srcref.getsr dyp in
+     let lexbuf = $1 in
+     let n = $2 in
+     Flx_parse_srcref.set_lineno lexbuf n;
+     Snull
+   }
+
+/* top level statements only */
+top_statements:
+ | sstatement_star 
+   @{
+     let local_data =
+        match $1 with
+        | [] -> dyp.last_local_data
+        | stmts -> 
+          { 
+            dyp.last_local_data with 
+            rev_stmts_as_scheme = stmts @ dyp.last_local_data.rev_stmts_as_scheme; 
+          }
+      in
+      (),[Keep_grammar; Local_data (local_data)]
+   }
+
+ | { () }
+
+
+/* inner statements only */
+sstatements:
+  | sstatement_star { Ocs_misc.make_slist Snull $1 } /* reverses order again */
+
+sstatement_star:
+ | sstatement_star stmt
+   @{
+     (match $2 with Snull -> $1 | stmt -> stmt :: $1), (* reverse order *)
+     [Keep_grammar; Local_data (dyp.last_local_data)]
+    }
+  | { [] }
+
+name_list: 
+  | NAME name_list { $1 :: $2 }
+  | { [] }
+
+dyprods:
+  | dyprods dyprod 
+    @{ 
+      $2 :: $1,  
+     [Keep_grammar; Local_data (dyp.last_local_data)]
+    }
+  | { [] }
+
+opt_private:
+  | "private" { Privacy_Private }
+  | { Privacy_Public }
+
+opt_prio:
+  | "[" NAME "]" { Priority_Name $2 }
+  | { Priority_Default }
+
+pri:
+  | NAME { $1 }
+
+prilist:
+  | pri "<" prilist { $1 :: $3 }
+  | pri { [$1] }
+
+dyprod:
+  | "open" "syntax" basic_name_comma_list ";"
+    @{
+      Rule_Nop, open_syntax dyp $3
+    }
+
+   | opt_private NAME opt_prio name_list ":=" dyalts ";"
+     {
+       (*
+       print_endline ("RULE " ^ snd $2);
+       *)
+       Rule_Unprocessed_Scheme_rule ($1, $2, $3, $4, $6)
+     }
+
+   | opt_private NAME opt_prio name_list "=" symbol ";"
+     {
+       (*
+       print_endline ("RULE " ^ snd $2);
+       *)
+       let prod = [$6] in
+       let action = Action_Scheme "_1" in
+       let anote = "" in
+       let dyalt = prod,Flx_parse_srcref.getsr dyp,action,anote in
+       let dyalts = [dyalt] in 
+       Rule_Unprocessed_Scheme_rule ($1, $2, $3, $4, dyalts)
+     }
+
+   | "requires" basic_name_comma_list ";"
+     {
+        let dssls = List.map snd $2 in
+       Rule_Requires dssls
+     }
+
+   | NAME prilist ";"
+     {
+       if $1 <> "priority" then raise Giveup;
+       Rule_Priorities $2
+     }
+
+   | "regdef" NAME "=" ssre ";" { Rule_Regex ($2,$4) }
+
+   | opt_private "literal" NAME "=>#" STRING ";" 
+     {
+       let priv = $1 in
+       let name = $3 in
+       let prio = Priority_Default in
+       let scm = $5 in
+       let action = Action_Scheme scm in
+       let anote = "" in
+       let prod = [Grammar_Regex (RE_Name name)] in
+(*
+       print_endline ("Defining literal " ^ name ^ " as " ^ scm);
+*)
+       let dyalts = [prod,Flx_parse_srcref.getsr dyp,action,anote] in
+       Rule_Unprocessed_Scheme_rule (priv,name,prio,[],dyalts) 
+     }
+
+  ssre :  ssre(>=ralt_prix) ["|" ssre(>ralt_prix)]+ { RE_Alt ($1::$2) } ralt_prix 
+  ssre :  ssre(>=rseq_prix) [ssre(>rseq_prix)]+ { RE_Seq ($1::$2)  } rseq_prix 
+  ssre :  ssre(>=rpostfix_prix) "*" { RE_Star $1 } rpostfix_prix
+  ssre :  ssre(>=rpostfix_prix) "+" { RE_Plus $1 } rpostfix_prix
+  ssre :  ssre(>=rpostfix_prix) "?" { RE_Option $1 } rpostfix_prix
+  ssre :  "(" ssre(>=ralt_prix) ")" {$2 } ratom_prix
+  ssre :  INTEGER { RE_Char (Char.chr $1) } ratom_prix
+  ssre :  "_" { RE_Char_set [Char.chr 0, Char.chr 255] } ratom_prix
+  ssre :  "." { RE_Char_set [Char.chr 32, Char.chr 255] } ratom_prix
+  ssre :  "[" INTEGER "-" INTEGER "]" { 
+    RE_Char_set [
+      Char.chr $2, 
+      Char.chr $4
+    ] } ratom_prix
+
+  ssre :  "charset" STRING {
+    let lst = ref [] in
+    String.iter (fun ch -> lst := (ch,ch)::(!lst)) $2;
+    RE_Char_set (!lst)
+  } ratom_prix
+
+  ssre :  "[" STRING "]" {
+    let lst = ref [] in
+    String.iter (fun ch -> lst := (ch,ch)::(!lst)) $2;
+    RE_Char_set (!lst)
+  } ratom_prix
+ 
+  ssre :  STRING { RE_String $1 } ratom_prix
+  ssre :  NAME {RE_Name $1 } ratom_prix /* probably won't work! */
+ 
+action:
+   | STRING { Action_Scheme $1 }
+   | "(" sexpr ")"  { Action_Expr $2 }
+   | "{" sstatements "}" { Action_Statements $2 }
+
+note:
+   | NAME STRING
+     {
+       if $1 <> "note" then raise Giveup;
+       $2
+     }
+   | { "" }
+
+dyalt:
+   | rhs "=>#" action note
+     {
+       let anote = $4 in
+       let prod = $1 in
+       let action = $3 in
+       let action : action_t =
+         match action with
+         | Action_Scheme _ as x -> x
+         | Action_Expr _ as x -> x
+         | Action_Statements _ as x -> x
+         | Action_None as x -> x
+       in
+       prod,Flx_parse_srcref.getsr dyp,action,anote
+     }
+   | rhs { $1,Flx_parse_srcref.getsr dyp,Action_None,"" }
+
+dyaltlist:
+   | { [] }
+   | "|" dyalt dyaltlist { $2 :: $3 }
+
+dyalts:
+   | dyalt dyaltlist { $1 :: $2 }
+   | "|"  dyalt dyaltlist { $2 :: $3 }
+
+rhs:
+  | symbol { [$1] }
+  | symbol rhs { $1 :: $2 }
+
+symbol:
+  | NAME { Grammar_Nonterminal ($1, Priority_None) }
+  | STRING { Grammar_String $1 }
+  | "(" dyalts ")" { Grammar_Group $2 }
+  | NAME "[" NAME "]" { Grammar_Nonterminal ($1, Priority_Greatereq $3) }
+  | NAME "[" ">" NAME "]" { Grammar_Nonterminal ($1, Priority_Greater $4) }
+  | NAME macro_args  { Grammar_Macro_Call ($1,$2) }
+  | NAME "::" NAME macro_args  { Grammar_External_Macro_Call ($1,$3,$4) }
+  | symbol "*" { Grammar_Star $1 }
+  | symbol "+" { Grammar_Plus $1 }
+  | symbol "?" { Grammar_Quest $1 }
+
+macro_args:
+  | "<" symbol ">" { [$2] }
+  | "<" symbol ">" macro_args { $2 :: $4 }
+
+
+stmt:
+  | "SCHEME" STRING ";"
+    @{
+      let sr = Flx_parse_srcref.getsr dyp in
+      let s = $2 in
+      let failwith x = print_endline ("Evaluating " ^ s); failwith x in
+      (*
+      let env = Ocs_env.env_copy dyp.local_data.env in
+      *)
+      let env = dyp.global_data.env in
+      let r =
+        try Flx_ocs_run.scheme_run sr env s
+        with Ocs_error.Error err | Ocs_error.ErrorL (_,err) ->
+          print_endline ("Error "^err^" executing " ^s);
+          failwith "Error executing SCHEME"
+      in
+      let local_data = { dyp.local_data with scm = (sr,s) :: dyp.local_data.scm } in
+      Snull, [Local_data local_data]
+    }
+
+  | "SAVE" ";"
+    {
+      print_endline "Setting automaton";
+      let sr = Flx_parse_srcref.getsr dyp in
+      let s = Marshal.to_string (function_free_pdev dyp.parser_pilot.pp_dev) [] in
+      dyp.global_data.parsing_device := Some s;
+      print_endline "Automaton set";
+      Snull
+    }
+
+  | "STMT" STRING ";"
+    @{
+      let sr = Flx_parse_srcref.getsr dyp in
+      let s = $2 in
+      let failwith x = print_endline ("Evaluating " ^ s); failwith x in
+      (*
+      let env = Ocs_env.env_copy dyp.local_data.env in
+      *)
+      let env = dyp.global_data.env in
+      let r =
+        try Flx_ocs_run.scheme_run sr env s
+        with Ocs_error.Error err | Ocs_error.ErrorL (_,err) ->
+          print_endline ("Error "^err^" executing " ^s);
+          failwith "Error executing SCHEME"
+      in
+      let local_data = { dyp.local_data with scm = (sr,s) :: dyp.local_data.scm } in
+      r, [Local_data local_data]
+    }
+
+schemevar:
+  | NAME
+    @{
+      let sr = Flx_parse_srcref.getsr dyp in
+      let s = $1 in
+      let failwith x = print_endline ("Evaluating " ^ s); failwith x in
+      (*
+      let env = Ocs_env.env_copy dyp.local_data.env in
+      *)
+      let env = dyp.global_data.env in
+      let r =
+        try Flx_ocs_run.scheme_run sr env s
+        with Ocs_error.Error err | Ocs_error.ErrorL (_,err) ->
+          print_endline ("Error "^err^" executing " ^s);
+          failwith "Error executing SCHEME"
+      in
+      print_endline ("NAME=" ^ s ^ ", evaluates to " ^ Ocs_print.string_of_ocs r);
+      let local_data = dyp.local_data in
+      r, [Local_data local_data]
+     }
+  
+stmt:
+  | "syntax" NAME "{" dyprods "}"
+    @{
+       define_syntax dyp $2 $4
+    }
+
+  | "open" "syntax" basic_name_comma_list ";"
+    @{
+       Snull,open_syntax dyp $3
+    }
+
+sexpr: | DUMMY { Snull }
+
+/*
+a definite non-terminal for a sequence of no tokens,
+since the production syntax cannot parse an empty
+production at the moment
+*/
+sepsilon: | { Snull }
+strepsilon: | { Sstring (Bytes.empty) }
+
+basic_name:
+  | NAME 
+   { 
+     let sr = Flx_parse_srcref.getsr dyp in
+     sr,$1 
+   }
+
+basic_name_comma_list:
+  | basic_name "," basic_name_comma_list { $1 :: $3 }
+  | basic_name { [$1] }
+
+epsilon: | { () }
+
+
+%%
+
+{
+}

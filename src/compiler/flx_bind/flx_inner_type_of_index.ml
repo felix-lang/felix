@@ -162,10 +162,10 @@ print_endline ("** FINISH **** Calculating Function type for function " ^ sym.Fl
 
   | SYMDEF_const_ctor (_,t,_,_) -> bt sym.Flx_sym.sr t
   | SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
-      bt sym.Flx_sym.sr (TYP_function (argt,ut))
+      bt sym.Flx_sym.sr (`TYP_function (argt,ut))
 
   | SYMDEF_fun (_,pts,rt,_,_,_) ->
-      bt sym.Flx_sym.sr (TYP_function (type_of_list pts,rt))
+      bt sym.Flx_sym.sr (`TYP_function (type_of_list pts,rt))
 
   | SYMDEF_union _ ->
       clierrx "[flx_bind/flx_lookup.ml:2048: E108] " sym.Flx_sym.sr ("Union " ^ sym.Flx_sym.id ^ " doesn't have a type")
@@ -175,7 +175,7 @@ print_endline ("** FINISH **** Calculating Function type for function " ^ sym.Fl
   | SYMDEF_struct ls ->
       let _,vs,_  = find_split_vs state.sym_table bsym_table index in
       let ts = List.map
-        (fun (s,i,_) -> TYP_name (sym.Flx_sym.sr,s,[]))
+        (fun (s,i,_) -> `TYP_name (sym.Flx_sym.sr,s,[]))
         vs
         (* (fst sym.Flx_sym.vs) *)
       in

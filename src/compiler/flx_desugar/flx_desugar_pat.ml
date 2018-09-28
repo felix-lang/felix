@@ -43,22 +43,22 @@ let gen_extractor
 : expr_t =
   List.fold_right
   (fun x marg -> match x with
-    | Proj_n (sr,n) -> EXPR_get_n (sr,(n,marg))
-    | Udtor (sr,qn) -> EXPR_ctor_arg (sr,(qn,marg))
-    | Hodtor (sr,qn,es) -> EXPR_ho_ctor_arg (sr,(qn,es@[marg]))
-    | Vdtor (sr,qn) -> EXPR_variant_arg (sr,(qn,marg))
-    | Proj_s (sr,s) -> EXPR_get_named_variable (sr,(s,marg))
-    | Proj_tail (sr) -> EXPR_get_tuple_tail (sr,(marg))
-    | Proj_head (sr) -> EXPR_get_tuple_head (sr,(marg))
-    | Proj_body (sr) -> EXPR_get_tuple_body (sr,(marg))
-    | Proj_last (sr) -> EXPR_get_tuple_last (sr,(marg))
-    | Polyrec_tail (sr,flds) -> EXPR_remove_fields (sr,marg,flds)
+    | Proj_n (sr,n) -> `EXPR_get_n (sr,(n,marg))
+    | Udtor (sr,qn) -> `EXPR_ctor_arg (sr,(qn,marg))
+    | Hodtor (sr,qn,es) -> `EXPR_ho_ctor_arg (sr,(qn,es@[marg]))
+    | Vdtor (sr,qn) -> `EXPR_variant_arg (sr,(qn,marg))
+    | Proj_s (sr,s) -> `EXPR_get_named_variable (sr,(s,marg))
+    | Proj_tail (sr) -> `EXPR_get_tuple_tail (sr,(marg))
+    | Proj_head (sr) -> `EXPR_get_tuple_head (sr,(marg))
+    | Proj_body (sr) -> `EXPR_get_tuple_body (sr,(marg))
+    | Proj_last (sr) -> `EXPR_get_tuple_last (sr,(marg))
+    | Polyrec_tail (sr,flds) -> `EXPR_remove_fields (sr,marg,flds)
     | Expr (sr,e) -> e
     | Subtype (sr,t) -> 
 (*
       print_endline ("Generating variant subtype match coercion extractor");
 *)
-      EXPR_variant_subtype_match_coercion (sr, (marg,t))
+      `EXPR_variant_subtype_match_coercion (sr, (marg,t))
   )
   extractor
   mv
@@ -85,108 +85,108 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
      name the types of the arguments now)
   *)
   match e with
-  | EXPR_noexpand (_,e) -> subst e
+  | `EXPR_noexpand (_,e) -> subst e
 
-  | EXPR_patvar _ 
-  | EXPR_patany _ ->
+  | `EXPR_patvar _ 
+  | `EXPR_patany _ ->
     let sr = src_of_expr e in
-    syserr sr ("flx_desugar/flx_desugar_pat:subst]1 found EXPR_patvar or EXPR_patany " ^
+    syserr sr ("flx_desugar/flx_desugar_pat:subst]1 found `EXPR_patvar or `EXPR_patany " ^
     "in pattern when clause\n" ^
     "should have been translated by compiler earlier")
 
-  | EXPR_vsprintf _
-  | EXPR_interpolate _
+  | `EXPR_vsprintf _
+  | `EXPR_interpolate _
 
-  | EXPR_subtype_match _ 
-  | EXPR_type_match _ ->
+  | `EXPR_subtype_match _ 
+  | `EXPR_type_match _ ->
       let sr = src_of_expr e in
       clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
       ("[desugar_pat:subst]4 Not expected in pattern when clause: " ^ string_of_expr e); 
 
-  | EXPR_expr _ ->
+  | `EXPR_expr _ ->
       let sr = src_of_expr e in
       clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
-      ("[desugar_pat:subst]6 Not expected EXPR_expr in pattern when clause: " ^ string_of_expr e); 
+      ("[desugar_pat:subst]6 Not expected `EXPR_expr in pattern when clause: " ^ string_of_expr e); 
 
-  | EXPR_typeof _
-  | EXPR_void _
-  | EXPR_typed_case _
-  | EXPR_projection _
-  | EXPR_array_projection _
-  | EXPR_ainj _
-  | EXPR_case_arg _
-  | EXPR_arrow _
-  | EXPR_effector _
-  | EXPR_longarrow _
-  | EXPR_ellipsis _
-  | EXPR_intersect _
-  | EXPR_union _
-  | EXPR_isin _ (* only used in type constraints *)
-  | EXPR_callback _
-  | EXPR_uniq _
+  | `EXPR_typeof _
+  | `EXPR_void _
+  | `EXPR_typed_case _
+  | `EXPR_projection _
+  | `EXPR_array_projection _
+  | `EXPR_ainj _
+  | `EXPR_case_arg _
+  | `EXPR_arrow _
+  | `EXPR_effector _
+  | `EXPR_longarrow _
+  | `EXPR_ellipsis _
+  | `EXPR_intersect _
+  | `EXPR_union _
+  | `EXPR_isin _ (* only used in type constraints *)
+  | `EXPR_callback _
+  | `EXPR_uniq _
     ->
       let sr = src_of_expr e in
       clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
       ("[desugar_pat:subst]7 Not expected in pattern when clause: " ^ string_of_expr e); 
 
-  | EXPR_rptsum_type _ 
-  | EXPR_pclt_type _
-  | EXPR_rpclt_type _
-  | EXPR_wpclt_type _
-  | EXPR_record_type _
-  | EXPR_polyrecord_type _
-  | EXPR_variant_type _
-  | EXPR_extension _
-  | EXPR_get_tuple_tail _
-  | EXPR_get_tuple_head _
-  | EXPR_get_tuple_body _
-  | EXPR_get_tuple_last _
-  | EXPR_label _
-  | EXPR_rnprj _
+  | `EXPR_rptsum_type _ 
+  | `EXPR_pclt_type _
+  | `EXPR_rpclt_type _
+  | `EXPR_wpclt_type _
+  | `EXPR_record_type _
+  | `EXPR_polyrecord_type _
+  | `EXPR_variant_type _
+  | `EXPR_extension _
+  | `EXPR_get_tuple_tail _
+  | `EXPR_get_tuple_head _
+  | `EXPR_get_tuple_body _
+  | `EXPR_get_tuple_last _
+  | `EXPR_label _
+  | `EXPR_rnprj _
     ->
       let sr = src_of_expr e in
       clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
       ("[desugar_pat:subst]8 Not expected in pattern when clause: " ^ string_of_expr e); 
 
-  | EXPR_remove_fields _
-  | EXPR_typecase_match _
-  | EXPR_ho_ctor_arg _
-  | EXPR_match_ho_ctor _
-  | EXPR_replace_fields _
+  | `EXPR_remove_fields _
+  | `EXPR_typecase_match _
+  | `EXPR_ho_ctor_arg _
+  | `EXPR_match_ho_ctor _
+  | `EXPR_replace_fields _
     ->
       let sr = src_of_expr e in
       clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
       ("[desugar_pat:subst]9 Not expected in pattern when clause: " ^ string_of_expr e); 
 
-  | EXPR_tuple_cons (sr, eh, et) -> EXPR_tuple_cons (sr, subst eh, subst et)
-  | EXPR_tuple_snoc (sr, eh, et) -> EXPR_tuple_snoc (sr, subst eh, subst et)
-  | EXPR_superscript (sr,(e1,e2)) -> EXPR_superscript (sr, (subst e1, subst e2))
-  | EXPR_product (sr,ls) -> EXPR_product (sr,map subst ls)
-  | EXPR_sum (sr,ls) -> EXPR_sum (sr, map subst ls)
-  | EXPR_andlist (sr, ls) -> EXPR_andlist (sr,map subst ls)
-  | EXPR_orlist (sr, ls) -> EXPR_orlist (sr, map subst ls)
-  | EXPR_cond (sr,(e,b1,b2)) -> EXPR_cond (sr, (subst e, subst b1, subst b2))
-  | EXPR_not (sr,e) -> EXPR_not (sr, subst e)
+  | `EXPR_tuple_cons (sr, eh, et) -> `EXPR_tuple_cons (sr, subst eh, subst et)
+  | `EXPR_tuple_snoc (sr, eh, et) -> `EXPR_tuple_snoc (sr, subst eh, subst et)
+  | `EXPR_superscript (sr,(e1,e2)) -> `EXPR_superscript (sr, (subst e1, subst e2))
+  | `EXPR_product (sr,ls) -> `EXPR_product (sr,map subst ls)
+  | `EXPR_sum (sr,ls) -> `EXPR_sum (sr, map subst ls)
+  | `EXPR_andlist (sr, ls) -> `EXPR_andlist (sr,map subst ls)
+  | `EXPR_orlist (sr, ls) -> `EXPR_orlist (sr, map subst ls)
+  | `EXPR_cond (sr,(e,b1,b2)) -> `EXPR_cond (sr, (subst e, subst b1, subst b2))
+  | `EXPR_not (sr,e) -> `EXPR_not (sr, subst e)
  
   (* NOTE: this is wrong, in the case the letin pattern has a variable
      which hides our current pattern variable 
   *)
-  | EXPR_letin (sr, (pat,e1,e2)) -> EXPR_letin (sr, (pat, subst e1, subst e2))
+  | `EXPR_letin (sr, (pat,e1,e2)) -> `EXPR_letin (sr, (pat, subst e1, subst e2))
 
   (* as above, it's wrong .. *)
-  | EXPR_match (sr, (e,ps)) -> EXPR_match (sr, (subst e, map (fun (p,e') -> p,subst e') ps))
+  | `EXPR_match (sr, (e,ps)) -> `EXPR_match (sr, (subst e, map (fun (p,e') -> p,subst e') ps))
 
-  | EXPR_rptsum_arg _ -> e
-  | EXPR_case_index _ -> e
-  | EXPR_index _  -> e
-  | EXPR_lookup _ -> e
-  | EXPR_suffix _ -> e
-  | EXPR_literal _ -> e
-  | EXPR_case_tag _ -> e
-  | EXPR_as _ -> e
-  | EXPR_as_var _ -> e
+  | `EXPR_rptsum_arg _ -> e
+  | `EXPR_case_index _ -> e
+  | `EXPR_index _  -> e
+  | `EXPR_lookup _ -> e
+  | `EXPR_suffix _ -> e
+  | `EXPR_literal _ -> e
+  | `EXPR_case_tag _ -> e
+  | `EXPR_as _ -> e
+  | `EXPR_as_var _ -> e
 
-  | EXPR_name (sr,name,idx) ->
+  | `EXPR_name (sr,name,idx) ->
     if idx = [] then
     if List.mem_assoc name vars
     then
@@ -197,39 +197,39 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
 
 
 
-  | EXPR_deref (sr,e') -> EXPR_deref (sr,subst e')
-  | EXPR_ref (sr,e') -> EXPR_ref (sr,subst e')
-  | EXPR_rref (sr,e') -> EXPR_rref (sr,subst e')
-  | EXPR_wref (sr,e') -> EXPR_wref (sr,subst e')
-  | EXPR_likely (sr,e') -> EXPR_likely (sr,subst e')
-  | EXPR_unlikely (sr,e') -> EXPR_unlikely (sr,subst e')
-  | EXPR_new (sr,e') -> EXPR_new (sr,subst e')
-  | EXPR_apply (sr,(f,e)) -> EXPR_apply (sr,(subst f,subst e))
-  | EXPR_map (sr,f,e) -> EXPR_map (sr,subst f,subst e)
-  | EXPR_tuple (sr,es) -> EXPR_tuple (sr,map subst es)
-  | EXPR_record (sr,es) -> EXPR_record (sr,map (fun (s,e)->s,subst e) es)
-  | EXPR_polyrecord (sr,es,e) -> EXPR_polyrecord (sr,map (fun (s,e)->s,subst e) es, subst e)
-  | EXPR_variant (sr,(s,e)) -> EXPR_variant (sr,(s,subst e))
-  | EXPR_arrayof (sr,es) -> EXPR_arrayof (sr,map subst es)
+  | `EXPR_deref (sr,e') -> `EXPR_deref (sr,subst e')
+  | `EXPR_ref (sr,e') -> `EXPR_ref (sr,subst e')
+  | `EXPR_rref (sr,e') -> `EXPR_rref (sr,subst e')
+  | `EXPR_wref (sr,e') -> `EXPR_wref (sr,subst e')
+  | `EXPR_likely (sr,e') -> `EXPR_likely (sr,subst e')
+  | `EXPR_unlikely (sr,e') -> `EXPR_unlikely (sr,subst e')
+  | `EXPR_new (sr,e') -> `EXPR_new (sr,subst e')
+  | `EXPR_apply (sr,(f,e)) -> `EXPR_apply (sr,(subst f,subst e))
+  | `EXPR_map (sr,f,e) -> `EXPR_map (sr,subst f,subst e)
+  | `EXPR_tuple (sr,es) -> `EXPR_tuple (sr,map subst es)
+  | `EXPR_record (sr,es) -> `EXPR_record (sr,map (fun (s,e)->s,subst e) es)
+  | `EXPR_polyrecord (sr,es,e) -> `EXPR_polyrecord (sr,map (fun (s,e)->s,subst e) es, subst e)
+  | `EXPR_variant (sr,(s,e)) -> `EXPR_variant (sr,(s,subst e))
+  | `EXPR_arrayof (sr,es) -> `EXPR_arrayof (sr,map subst es)
 
-  | EXPR_lambda _ -> assert false
+  | `EXPR_lambda _ -> assert false
 
-  | EXPR_match_variant_subtype _
-  | EXPR_match_case _
-  | EXPR_match_variant _
-  | EXPR_ctor_arg _
-  | EXPR_variant_arg _
-  | EXPR_get_n _
-  | EXPR_get_named_variable _
-  | EXPR_match_ctor _
+  | `EXPR_match_variant_subtype _
+  | `EXPR_match_case _
+  | `EXPR_match_variant _
+  | `EXPR_ctor_arg _
+  | `EXPR_variant_arg _
+  | `EXPR_get_n _
+  | `EXPR_get_named_variable _
+  | `EXPR_match_ctor _
     ->
     let sr = src_of_expr e in
     clierrx "[flx_desugar/flx_desugar_pat.ml:170: E342] " sr "[subst] not implemented in when part of pattern"
 
-  | EXPR_coercion _ -> failwith "subst: coercion"
-  | EXPR_variant_subtype_match_coercion _ -> failwith "subst: variant_subtype_match_coercion"
+  | `EXPR_coercion _ -> failwith "subst: coercion"
+  | `EXPR_variant_subtype_match_coercion _ -> failwith "subst: variant_subtype_match_coercion"
 
-  | EXPR_range_check (sr, mi, v, mx) -> EXPR_range_check (sr, subst mi, subst v, subst mx)
+  | `EXPR_range_check (sr, mi, v, mx) -> `EXPR_range_check (sr, subst mi, subst v, subst mx)
 
 (* This routine runs through a pattern looking for
   pattern variables, and adds a record to a hashtable
@@ -389,34 +389,34 @@ print_endline ("PAT_with: " ^ s ^ " = " ^ Flx_print.string_of_expr e);
 
 let closure sr e =
   let ret = STMT_fun_return (sr,e) in 
-  EXPR_lambda (sr, (`Function, dfltvs, [Slist [],None], flx_bool, [ret]))
+  `EXPR_lambda (sr, (`Function, dfltvs, [Slist [],None], flx_bool, [ret]))
  
 let rec gen_match_check pat (arg:expr_t) =
   let apl sr f x =
-    EXPR_apply
+    `EXPR_apply
     (
       sr,
       (
-        EXPR_name (sr,f,[]),
+        `EXPR_name (sr,f,[]),
         x
       )
     )
   and apl2 sr f x1 x2 =
     match f,x1,x2 with
-    | "land",EXPR_typed_case(_,1,TYP_unitsum 2),x -> x
-    | "land",x,EXPR_typed_case(_,1,TYP_unitsum 2) -> x
+    | "land",`EXPR_typed_case(_,1,`TYP_unitsum 2),x -> x
+    | "land",x,`EXPR_typed_case(_,1,`TYP_unitsum 2) -> x
     | _ ->
-    EXPR_apply
+    `EXPR_apply
     (
       sr,
       (
-        EXPR_name (sr,f,[]),
-        EXPR_tuple (sr,[x1;x2])
+        `EXPR_name (sr,f,[]),
+        `EXPR_tuple (sr,[x1;x2])
       )
     )
-  and truth sr = EXPR_typed_case (sr,1,flx_bool)
+  and truth sr = `EXPR_typed_case (sr,1,flx_bool)
   and ssrc x = Flx_srcref.short_string_of_src x
-  and mklit sr e = EXPR_literal (sr,e)
+  and mklit sr e = `EXPR_literal (sr,e)
   in
   match pat with
   | PAT_alt _
@@ -428,7 +428,7 @@ let rec gen_match_check pat (arg:expr_t) =
 (*
 print_endline ("Generating match variant subtype checker");
 *)
-    EXPR_match_variant_subtype (sr,(arg,t))
+    `EXPR_match_variant_subtype (sr,(arg,t))
 
   (* ranges *)
   | PAT_range (sr,l1,l2) ->
@@ -454,7 +454,7 @@ print_endline ("Generating match variant subtype checker");
        * that the argument is the right type.
        *
        * *)
-      apl2 sr "eq" (EXPR_tuple (sr, [])) arg
+      apl2 sr "eq" (`EXPR_tuple (sr, [])) arg
 
   | PAT_tuple (sr,pats) ->
     let counter = ref 1 in
@@ -464,13 +464,13 @@ print_endline ("Generating match variant subtype checker");
       incr counter;
       apl2 sr "land" init
         (
-          gen_match_check pat (EXPR_get_n (sr,(n, arg)))
+          gen_match_check pat (`EXPR_get_n (sr,(n, arg)))
         )
     )
     (
       let pat = List.hd pats in
       let sr = src_of_pat pat in
-      gen_match_check pat (EXPR_get_n (sr,(0, arg)))
+      gen_match_check pat (`EXPR_get_n (sr,(0, arg)))
     )
     (List.tl pats)
 
@@ -480,13 +480,13 @@ print_endline ("Generating match variant subtype checker");
       let sr = src_of_pat pat in
       apl2 sr "land" init
         (
-          gen_match_check pat (EXPR_get_named_variable (sr,(s, arg)))
+          gen_match_check pat (`EXPR_get_named_variable (sr,(s, arg)))
         )
     )
     (
       let s,pat = List.hd rpats in
       let sr = src_of_pat pat in
-      gen_match_check pat (EXPR_get_named_variable (sr,(s, arg)))
+      gen_match_check pat (`EXPR_get_named_variable (sr,(s, arg)))
     )
     (List.tl rpats)
 
@@ -496,13 +496,13 @@ print_endline ("Generating match variant subtype checker");
       let sr = src_of_pat pat in
       apl2 sr "land" init
         (
-          gen_match_check pat (EXPR_get_named_variable (sr,(s, arg)))
+          gen_match_check pat (`EXPR_get_named_variable (sr,(s, arg)))
         )
     )
     (
       let s,pat = List.hd rpats in
       let sr = src_of_pat pat in
-      gen_match_check pat (EXPR_get_named_variable (sr,(s, arg)))
+      gen_match_check pat (`EXPR_get_named_variable (sr,(s, arg)))
     )
     (List.tl rpats)
 
@@ -510,15 +510,15 @@ print_endline ("Generating match variant subtype checker");
   | PAT_any sr -> truth sr
   | PAT_setform_any sr -> truth sr
   | PAT_const_ctor (sr,name) ->
-    EXPR_match_ctor (sr,(name,arg))
+    `EXPR_match_ctor (sr,(name,arg))
 
   | PAT_const_variant (sr,name) ->
-    EXPR_match_variant (sr,(name,arg))
+    `EXPR_match_variant (sr,(name,arg))
 
 
   | PAT_nonconst_ctor (sr,name,pat) ->
-    let check_component = EXPR_match_ctor (sr,(name,arg)) in
-    let tuple = EXPR_ctor_arg (sr,(name,arg)) in
+    let check_component = `EXPR_match_ctor (sr,(name,arg)) in
+    let tuple = `EXPR_ctor_arg (sr,(name,arg)) in
     let check_tuple = gen_match_check pat tuple in
     apl2 sr "andthen" check_component (closure sr check_tuple)
 
@@ -527,14 +527,14 @@ print_endline ("Generating match variant subtype checker");
      two arguments, the regexp and the match.
   *)
   | PAT_ho_ctor (sr,name,es,pat) ->
-    let check_component = EXPR_match_ho_ctor (sr,(name,es@[arg])) in
-    let tuple = EXPR_ho_ctor_arg (sr,(name,es@[arg])) in
+    let check_component = `EXPR_match_ho_ctor (sr,(name,es@[arg])) in
+    let tuple = `EXPR_ho_ctor_arg (sr,(name,es@[arg])) in
     let check_tuple = gen_match_check pat tuple in
     apl2 sr "andthen" check_component (closure sr check_tuple)
 
   | PAT_nonconst_variant (sr,name,pat) ->
-    let check_component = EXPR_match_variant (sr,(name,arg)) in
-    let tuple = EXPR_variant_arg (sr,(name,arg)) in
+    let check_component = `EXPR_match_variant (sr,(name,arg)) in
+    let tuple = `EXPR_variant_arg (sr,(name,arg)) in
     let check_tuple = gen_match_check pat tuple in
     apl2 sr "andthen" check_component (closure sr check_tuple)
 
@@ -551,7 +551,7 @@ print_endline ("Generating match variant subtype checker");
     let mc = gen_match_check pat arg in 
     let mwhen = subst (!vars) expr arg in
     begin match mc with
-    | EXPR_typed_case(_,1,TYP_unitsum 2)  ->  mwhen
+    | `EXPR_typed_case(_,1,`TYP_unitsum 2)  ->  mwhen
     | _ -> apl2 sr "andthen" mc (closure sr mwhen)
     end
 
@@ -560,7 +560,7 @@ print_endline ("Generating match variant subtype checker");
        since we don't know the type of the argument, we don't know
        how many components are involved. So p2 had better be a wildcard!
     *)
-    gen_match_check p1 (EXPR_get_n (sr,(0, arg)))
+    gen_match_check p1 (`EXPR_get_n (sr,(0, arg)))
 
   | PAT_tuple_snoc (sr, p1, p2) -> 
     (* Not clear how to check p2 matches the rest of the argument,
@@ -569,6 +569,6 @@ print_endline ("Generating match variant subtype checker");
     *)
     
 (* OUCH! We need get_n to work with -1, meaning last component *)
-    gen_match_check p2 (EXPR_get_n (sr,(-1, arg)))
+    gen_match_check p2 (`EXPR_get_n (sr,(-1, arg)))
 
 

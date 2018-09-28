@@ -4,28 +4,28 @@ open Flx_btype
 let si x = string_of_int x
 
 let apl2 (sr:Flx_srcref.t) (fn : string) (tup:expr_t list) =
-  EXPR_apply
+  `EXPR_apply
   (
     sr,
     (
-      EXPR_name (sr,fn,[]),
-      EXPR_tuple (sr,tup)
+      `EXPR_name (sr,fn,[]),
+      `EXPR_tuple (sr,tup)
     )
   )
 
 let strr' bsym_table sym_table counter be rs sr a =
-    let mks s = EXPR_literal (sr, 
+    let mks s = `EXPR_literal (sr, 
       { Flx_literal.felix_type="string"; internal_value=s; c_value= "::std::string(" ^ Flx_string.c_quote_of_string s ^ ")" } )
     in
-    let intlit i = EXPR_literal (sr,
+    let intlit i = `EXPR_literal (sr,
       { Flx_literal.felix_type="int"; internal_value=string_of_int i; c_value=string_of_int i } )
     in
-    let apl a b = EXPR_apply (sr,(a,b)) in
-    let apls a b = EXPR_apply (sr,(EXPR_name (sr,a,[]),b)) in
+    let apl a b = `EXPR_apply (sr,(a,b)) in
+    let apls a b = `EXPR_apply (sr,(`EXPR_name (sr,a,[]),b)) in
     let cats a b =  apl2 sr "+" [a;b] in
     let catss ls = List.fold_left (fun acc e -> apl2 sr "+" [acc;e]) (List.hd ls) (List.tl ls) in
     let prj fld a = apls fld a in
-    let rprj fld seq a = EXPR_rnprj (sr,fld,seq,a) in
+    let rprj fld seq a = `EXPR_rnprj (sr,fld,seq,a) in
     let str x = apls "_strr" x in
     let repr x = apls "repr" x in
     let strf fld a = str (prj fld a) in
@@ -101,13 +101,13 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
       be rs e
 
     | BTYP_unitsum 2 ->
-      be rs (EXPR_cond (sr,(a,mks "false",mks "true")))
+      be rs (`EXPR_cond (sr,(a,mks "false",mks "true")))
 
     | BTYP_unitsum n ->
 (*
       print_endline ("_strr of unitsum " ^ si n);
 *)
-      let e = catss [(mks "case "); (apls "str" (EXPR_case_index (sr,a)));
+      let e = catss [(mks "case "); (apls "str" (`EXPR_case_index (sr,a)));
         (mks " of "); (mks (string_of_int n))] 
       in
       be rs e 
@@ -122,19 +122,19 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
           mks ("case " ^ string_of_int index^" VOID")
 
         | BTYP_tuple _ ->
-          let arg = EXPR_case_arg (sr, (index,a)) in
+          let arg = `EXPR_case_arg (sr, (index,a)) in
           let strarg = str arg in
           cats (mks ("case " ^ string_of_int index^" ")) strarg
 
         | _ ->
-          let arg = EXPR_case_arg (sr, (index,a)) in
+          let arg = `EXPR_case_arg (sr, (index,a)) in
           let strarg = str arg in
           cats (cats (mks ("case "^ string_of_int index^" (")) strarg) (mks ")")
       in 
       let condu index t other =
-        let cond = EXPR_match_case (sr, (index,a)) in
+        let cond = `EXPR_match_case (sr, (index,a)) in
         let u = urep index t in
-        EXPR_cond (sr, (cond,u,other)) 
+        `EXPR_cond (sr, (cond,u,other)) 
       in 
       let e = 
         List.fold_left (fun acc (index,t) -> 
@@ -146,8 +146,8 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
       be rs e
 
     | BTYP_rptsum (n,t) ->
-      let index = EXPR_case_index (sr,a) in
-      let arg = EXPR_rptsum_arg (sr,a) in
+      let index = `EXPR_case_index (sr,a) in
+      let arg = `EXPR_rptsum_arg (sr,a) in
       be rs (catss [mks "case "; str index; mks " ("; str arg; mks ")"])
 
       
@@ -168,20 +168,20 @@ print_endline ("_strr Variant type " ^ Flx_print.sbt bsym_table t);
 
 
         | BTYP_tuple _ ->
-          let arg = EXPR_case_arg (sr, (hashcode,a)) in
+          let arg = `EXPR_case_arg (sr, (hashcode,a)) in
           let strarg = str arg in
           cats (mks ("`"^ cname^" ")) strarg
 
         | _ ->
-          let arg = EXPR_case_arg (sr, (hashcode,a)) in
+          let arg = `EXPR_case_arg (sr, (hashcode,a)) in
           let strarg = str arg in
           cats (cats (mks ("`"^ cname^" (")) strarg) (mks ")")
       in 
       let condu cname t other =
         let hashcode = vhash (cname,t) in
-        let cond = EXPR_match_case (sr, (hashcode,a)) in
+        let cond = `EXPR_match_case (sr, (hashcode,a)) in
         let u = urep cname t hashcode in
-        EXPR_cond (sr, (cond,u,other)) 
+        `EXPR_cond (sr, (cond,u,other)) 
       in 
       let e = 
         List.fold_left (fun acc (cname,t) -> 
@@ -220,7 +220,7 @@ print_endline ("Strr on union " ^ name);
         let rs = { rs with Flx_types.strr_limit = limit } in
         let urep cname t =  
           match t with
-          | TYP_void _ ->
+          | `TYP_void _ ->
 (*
 print_endline ("Constant ctor " ^ cname);
 *)
@@ -230,11 +230,11 @@ print_endline (Flx_print.string_of_expr result);
 *)
             result
 
-          | TYP_tuple _ ->
+          | `TYP_tuple _ ->
 (*
 print_endline ("Tuple ctor " ^ cname);
 *)
-            let arg = EXPR_ctor_arg (sr, (qn cname,a)) in
+            let arg = `EXPR_ctor_arg (sr, (qn cname,a)) in
             let strarg = str arg in
             cats (mks (cname^" ")) strarg
 
@@ -242,14 +242,14 @@ print_endline ("Tuple ctor " ^ cname);
 (*
 print_endline ("Other ctor " ^ cname);
 *)
-            let arg = EXPR_ctor_arg (sr, (qn cname,a)) in
+            let arg = `EXPR_ctor_arg (sr, (qn cname,a)) in
             let strarg = str arg in
             cats (cats (mks (cname^" (")) strarg) (mks ")")
         in 
         let condu cname t other =
-          let cond = EXPR_match_ctor (sr, (qn cname,a)) in
+          let cond = `EXPR_match_ctor (sr, (qn cname,a)) in
           let u = urep cname t in
-          EXPR_cond (sr, (cond,u,other)) 
+          `EXPR_cond (sr, (cond,u,other)) 
         in 
         let e = 
           List.fold_left (fun acc (cname,ix,vs,d,c,gadt) -> 

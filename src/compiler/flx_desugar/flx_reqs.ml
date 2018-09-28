@@ -42,7 +42,7 @@ let bridge n sr parent_vs rqname' name : asm_t =
 (*
     print_endline ("Making bridge for " ^ n ^ " -> " ^ name ^ Flx_print.string_of_vs parent_vs);
 *)
-  let ts = List.map (fun (s,_)-> TYP_name (sr,s,[])) (fst parent_vs) in
+  let ts = List.map (fun (s,_)-> `TYP_name (sr,s,[])) (fst parent_vs) in
   let us = NREQ_atom (`AST_name (sr, "_rqs_" ^ name, ts)) in
   let body = DCL_insert (CS.Str "", `Body, us) in
   Dcl (sr, "_rqs_" ^ n, None, `Public, dfltvs, body)

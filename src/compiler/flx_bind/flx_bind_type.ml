@@ -125,34 +125,34 @@ print_endline ("Bind type " ^ string_of_typecode t ^ " params = " ^
 
   let t =
   match t with
-  | TYP_typeop (sr,op,t,k) ->
+  | `TYP_typeop (sr,op,t,k) ->
     let t = bt t in
-    let k = Flx_btype.bmt "Flx_bind_type.TYP_var" k in
+    let k = Flx_btype.bmt "Flx_bind_type.`TYP_var" k in
     btyp_typeop op t k
 
-  | TYP_pclt (d,c) -> btyp_cltpointer (bt d) (bt c)
-  | TYP_rpclt (d,c) -> btyp_cltrref (bt d) (bt c)
-  | TYP_wpclt (d,c) -> btyp_cltwref (bt d) (bt c)
-  | TYP_defer (sr, tor) -> 
+  | `TYP_pclt (d,c) -> btyp_cltpointer (bt d) (bt c)
+  | `TYP_rpclt (d,c) -> btyp_cltrref (bt d) (bt c)
+  | `TYP_wpclt (d,c) -> btyp_cltwref (bt d) (bt c)
+  | `TYP_defer (sr, tor) -> 
     begin match !tor with
     | None -> print_endline ("Bind type: undefined defered type found"); assert false
     | Some t -> bt t
     end
 
-  | TYP_rptsum (count, base) ->
+  | `TYP_rptsum (count, base) ->
     let n = bt count in
     let b = bt base in
     btyp_rptsum (n,b)
 
-  | TYP_label -> btyp_label ()
-  | TYP_patvar _ -> failwith "Not implemented patvar in typecode"
-  | TYP_patany _ -> failwith "Not implemented patany in typecode"
+  | `TYP_label -> btyp_label ()
+  | `TYP_patvar _ -> failwith "Not implemented patvar in typecode"
+  | `TYP_patany _ -> failwith "Not implemented patany in typecode"
 
-  | TYP_intersect ts -> btyp_intersect (List.map bt ts)
-  | TYP_union ts -> btyp_union (List.map bt ts)
-  | TYP_record ts -> btyp_record (List.map (fun (s,t) -> s,bt t) ts)
-  | TYP_polyrecord (ts,v) -> btyp_polyrecord (List.map (fun (s,t) -> s,bt t) ts) (bt v)
-  | TYP_variant ts -> 
+  | `TYP_intersect ts -> btyp_intersect (List.map bt ts)
+  | `TYP_union ts -> btyp_union (List.map bt ts)
+  | `TYP_record ts -> btyp_record (List.map (fun (s,t) -> s,bt t) ts)
+  | `TYP_polyrecord (ts,v) -> btyp_polyrecord (List.map (fun (s,t) -> s,bt t) ts) (bt v)
+  | `TYP_variant ts -> 
 (*
 print_endline ("\n******\nTrying to bind variant " ^ string_of_typecode t);
 *)
@@ -189,7 +189,7 @@ print_endline ("Bound variant = " ^ Flx_btype.st t);
 *)
      t
 
-  | TYP_type_extension (sr, ts, t') ->
+  | `TYP_type_extension (sr, ts, t') ->
 (*
     print_endline "Binding type extension : note THIS SCREWED UP FIXPOINTS! FIXME! -- FIXED";
 *)
@@ -299,53 +299,53 @@ print_endline ("Calling Flx_beta.adjust, possibly incorrectly, type = " ^ sbt bs
   (* We first attempt to perform the match at binding time as an optimisation,
    * if that fails, we generate a delayed matching construction. The latter
    * will be needed when the argument is a type variable. *)
-  | TYP_type_match (t,ps) as ubt ->
+  | `TYP_type_match (t,ps) as ubt ->
     let t = bt t in
     bind_type_match bsym_table state.counter bt btp params sr t ps ubt 
 
-  | TYP_subtype_match (t,ps) as ubt ->
+  | `TYP_subtype_match (t,ps) as ubt ->
     let t = bt t in
     bind_subtype_match bsym_table state.counter bt btp params sr t ps ubt 
 
 
-  | TYP_dual t -> Flx_btype_dual.dual (bt t)
+  | `TYP_dual t -> Flx_btype_dual.dual (bt t)
 
-  | TYP_ellipsis ->
-    failwith "Unexpected TYP_ellipsis (...) in bind type"
-  | TYP_none ->
-    failwith "Unexpected TYP_none in bind type"
+  | `TYP_ellipsis ->
+    failwith "Unexpected `TYP_ellipsis (...) in bind type"
+  | `TYP_none ->
+    failwith "Unexpected `TYP_none in bind type"
 
-  | TYP_typeset ts
-  | TYP_setunion ts ->
+  | `TYP_typeset ts
+  | `TYP_setunion ts ->
     btyp_type_set (expand_typeset (btyp_type_set (List.map bt ts)))
 
-  | TYP_setintersection ts -> btyp_type_set_intersection (List.map bt ts)
+  | `TYP_setintersection ts -> btyp_type_set_intersection (List.map bt ts)
 
 
-  | TYP_isin (elt,typeset) ->
+  | `TYP_isin (elt,typeset) ->
       let elt = bt elt in
       let typeset = bt typeset in
       handle_typeset state sr elt typeset
 
-  | TYP_var i ->
+  | `TYP_var i ->
 if i = 7141 then
-print_endline ("Flx_bind_type TYP_var " ^ string_of_int i);
+print_endline ("Flx_bind_type `TYP_var " ^ string_of_int i);
     begin try 
       let sym = Flx_sym_table.find state.sym_table i in
       match sym.Flx_sym.symdef with
       | SYMDEF_typevar mt -> 
-        let k = Flx_btype.bmt "Flx_bind_type.TYP_var" mt in
+        let k = Flx_btype.bmt "Flx_bind_type.`TYP_var" mt in
         btyp_type_var (i, k)
       | _ -> raise Not_found 
     with Not_found ->
       (* HACK .. assume variable is type TYPE *)
 (*
-print_endline ("FUDGE: Binding TYP_var " ^ si i ^ ", HACKING KIND TO TYPE");
+print_endline ("FUDGE: Binding `TYP_var " ^ si i ^ ", HACKING KIND TO TYPE");
 *)
       btyp_type_var (i, Flx_kind.KIND_type)
     end
 
-  | TYP_as (t,s) ->
+  | `TYP_as (t,s) ->
 (*
 print_endline ("\n\n+++++++++\nTrying to bind recursive type " ^ string_of_typecode t ^ " AS " ^ s);
 *)
@@ -362,10 +362,10 @@ print_endline ("\n+++++++++Bound recursive type is " ^ Flx_btype.st t^"\n\n");
 *)
     t
 
-  | TYP_typeof e ->
+  | `TYP_typeof e ->
     if get_structural_typedefs state then begin
       if debug then
-      print_endline ("Flx_bind_type.TYP_typeof(" ^ string_of_expr e ^ ")");
+      print_endline ("Flx_bind_type.`TYP_typeof(" ^ string_of_expr e ^ ")");
       if List.mem_assq e rs.expr_fixlist
       then begin
         (* Typeof is recursive *)
@@ -375,10 +375,10 @@ print_endline ("\n+++++++++Bound recursive type is " ^ Flx_btype.st t^"\n\n");
         btyp_fix fixdepth (Flx_kind.KIND_type)
       end else begin
         if debug then
-        print_endline ("Flx_bind_type.TYP_typeof.Start tentative binding of typeof (" ^ string_of_expr e ^ ")");
+        print_endline ("Flx_bind_type.`TYP_typeof.Start tentative binding of typeof (" ^ string_of_expr e ^ ")");
         let t = snd (bind_expression' state bsym_table env rs e []) in
         if debug then
-        print_endline ("Flx_bind_type.TYP_typeof.end tentative binding of typeof (" ^string_of_expr e^ ")");
+        print_endline ("Flx_bind_type.`TYP_typeof.end tentative binding of typeof (" ^string_of_expr e^ ")");
         t
       end
     end else begin
@@ -389,7 +389,7 @@ print_endline ("\n+++++++++Bound recursive type is " ^ Flx_btype.st t^"\n\n");
         btyp_typeof (0,e)
     end
 
-  | TYP_array (t1,t2)->
+  | `TYP_array (t1,t2)->
       let t2 =
         match bt t2 with
         | BTYP_tuple [] -> btyp_unitsum 1
@@ -397,34 +397,34 @@ print_endline ("\n+++++++++Bound recursive type is " ^ Flx_btype.st t^"\n\n");
       in
       btyp_array (bt t1, t2)
 
-  | TYP_tuple ts -> btyp_tuple (List.map bt ts)
-  | TYP_tuple_cons (_,t1,t2) -> btyp_tuple_cons (bt t1) (bt t2)
-  | TYP_tuple_snoc (_,t1,t2) -> btyp_tuple_snoc (bt t1) (bt t2)
-  | TYP_unitsum k ->
+  | `TYP_tuple ts -> btyp_tuple (List.map bt ts)
+  | `TYP_tuple_cons (_,t1,t2) -> btyp_tuple_cons (bt t1) (bt t2)
+  | `TYP_tuple_snoc (_,t1,t2) -> btyp_tuple_snoc (bt t1) (bt t2)
+  | `TYP_unitsum k ->
       begin match k with
       | 0 -> btyp_void ()
       | 1 -> btyp_tuple []
       | _ -> btyp_unitsum k
       end
 
-  | TYP_sum ts ->
+  | `TYP_sum ts ->
       let ts' = List.map bt ts in
       if Flx_btype.all_units ts' then
         btyp_unitsum (List.length ts)
       else
         btyp_sum ts'
 
-  | TYP_function (d,c) -> btyp_function (bt d, bt c)
-  | TYP_effector (d,e,c) -> btyp_effector (bt d, bt e,bt c)
-  | TYP_cfunction (d,c) -> btyp_cfunction (bt d, bt c)
-  | TYP_pointer t -> btyp_pointer (bt t)
-  | TYP_rref t -> btyp_rref (bt t)
-  | TYP_wref t -> btyp_wref (bt t)
-  | TYP_uniq t -> btyp_uniq (bt t)
+  | `TYP_function (d,c) -> btyp_function (bt d, bt c)
+  | `TYP_effector (d,e,c) -> btyp_effector (bt d, bt e,bt c)
+  | `TYP_cfunction (d,c) -> btyp_cfunction (bt d, bt c)
+  | `TYP_pointer t -> btyp_pointer (bt t)
+  | `TYP_rref t -> btyp_rref (bt t)
+  | `TYP_wref t -> btyp_wref (bt t)
+  | `TYP_uniq t -> btyp_uniq (bt t)
 
-  | TYP_void _ -> btyp_void ()
+  | `TYP_void _ -> btyp_void ()
 
-  | TYP_typefun (ps,r,body) ->
+  | `TYP_typefun (ps,r,body) ->
 (*
 print_endline ("Binding type function " ^ Flx_print.string_of_typecode t);
 *)
@@ -456,14 +456,14 @@ print_endline ("Binding type function " ^ Flx_print.string_of_typecode t);
 
       btyp_type_function (bparams, bmt "Flx_bind_type.2" r, bbody)
 
-  | TYP_apply (TYP_name (_,"_rev",[]),t2) ->
+  | `TYP_apply (`TYP_name (_,"_rev",[]),t2) ->
     let t2 = bt t2 in
     begin match t2 with
     | BTYP_tuple ts -> btyp_tuple (List.rev ts)
     | _ -> btyp_rev t2
     end
 
-  | TYP_apply (TYP_apply (TYP_name (_,"_map",[]), funct), t2) ->
+  | `TYP_apply (`TYP_apply (`TYP_name (_,"_map",[]), funct), t2) ->
     let bfunct = bt funct in
     let bt2 = bt t2 in
 (*
@@ -472,7 +472,7 @@ print_endline ("type _map datatype = " ^ sbt bsym_table bt2);
 *)
     btyp_type_map (bfunct, bt2)
 
-  | TYP_apply (TYP_name (_,"_flatten",[]),t2) ->
+  | `TYP_apply (`TYP_name (_,"_flatten",[]),t2) ->
       let make_ts a t =
         List.fold_left begin fun acc b ->
           match b with
@@ -500,30 +500,30 @@ print_endline ("type _map datatype = " ^ sbt bsym_table bt2);
 
       | _ -> clierrx "[flx_bind/flx_lookup.ml:1002: E98] " sr ("Cannot flatten type " ^ sbt bsym_table t2)
       end
-  | TYP_apply (t1,t2) -> 
+  | `TYP_apply (t1,t2) -> 
 (*
-print_endline ("Binding TYP_apply " ^ string_of_typecode t);
+print_endline ("Binding `TYP_apply " ^ string_of_typecode t);
 *)
     let x = btyp_type_apply (bt t1, bt t2) in
 (*
-print_endline ("  ***** Bound TYP_apply: " ^ Flx_btype.st x );
+print_endline ("  ***** Bound `TYP_apply: " ^ Flx_btype.st x );
 *)
     x
 
-  | TYP_type_tuple ts -> btyp_type_tuple (List.map bt ts)
+  | `TYP_type_tuple ts -> btyp_type_tuple (List.map bt ts)
 
-  | TYP_name (sr,s,[]) when List.mem_assoc s rs.as_fixlist ->
+  | `TYP_name (sr,s,[]) when List.mem_assoc s rs.as_fixlist ->
 (* HACK metatype guess *)
     btyp_fix ((List.assoc s rs.as_fixlist) - rs.depth) (Flx_kind.KIND_type)
 
-  | TYP_name (sr,s,[]) when List.mem_assoc s params ->
+  | `TYP_name (sr,s,[]) when List.mem_assoc s params ->
     let t = List.assoc s params in
 (*
-print_endline ("Binding TYP_name " ^s^ " via params to " ^ sbt bsym_table t);
+print_endline ("Binding `TYP_name " ^s^ " via params to " ^ sbt bsym_table t);
 *)
     t
 
-  | TYP_index (sr,name,index) as x ->
+  | `TYP_index (sr,name,index) as x ->
       let sym =
         try hfind "lookup" state.sym_table index
         with Not_found ->
@@ -548,11 +548,11 @@ print_endline ("Binding TYP_name " ^s^ " via params to " ^ sbt bsym_table t);
           syserr sr ("Synthetic name "^name ^ " is not a nominal type!")
       end
 
-  | TYP_name _
-  | TYP_case_tag _
-  | TYP_typed_case _
-  | TYP_lookup _
-  | TYP_callback _ as x ->
+  | `TYP_name _
+  | `TYP_case_tag _
+  | `TYP_typed_case _
+  | `TYP_lookup _
+  | `TYP_callback _ as x ->
       let x =
         match qualified_name_of_typecode x with
         | Some q -> q
@@ -569,7 +569,7 @@ end;
 if string_of_qualified_name x = "digraph_t" then begin
         print_endline ("bind_type': Type "^string_of_typecode t^"=Qualified name "^string_of_qualified_name x^" lookup finds index " ^
           string_of_bid entry_kind.base_sym);
-        print_endline ("Kind=" ^ match t with | TYP_name (_,s,ts) -> "TYP_name ("^s^"["^catmap ","string_of_typecode ts^"])" | _ -> "TYP_*");
+        print_endline ("Kind=" ^ match t with | `TYP_name (_,s,ts) -> "`TYP_name ("^s^"["^catmap ","string_of_typecode ts^"])" | _ -> "`TYP_*");
         print_endline ("spec_vs=" ^
           catmap ","
             (fun (s,j)-> s ^ "<" ^ string_of_bid j ^ ">")
@@ -598,7 +598,7 @@ end;
       begin
         print_endline ("bind_type': Type "^string_of_typecode t^"=Qualified name "^string_of_qualified_name x^" lookup finds index " ^
           string_of_bid entry_kind.base_sym);
-        print_endline ("Kind=" ^ match t with | TYP_name (_,s,ts) -> "TYP_name ("^s^"["^catmap ","string_of_typecode ts^"])" | _ -> "TYP_*");
+        print_endline ("Kind=" ^ match t with | `TYP_name (_,s,ts) -> "`TYP_name ("^s^"["^catmap ","string_of_typecode ts^"])" | _ -> "`TYP_*");
         print_endline ("spec_vs=" ^
           catmap ","
             (fun (s,j,mt)-> s ^ "<" ^ string_of_bid j ^ ">")
@@ -633,7 +633,7 @@ end;
 *)
       t
 
-  | TYP_suffix (sr,(qn,t)) ->
+  | `TYP_suffix (sr,(qn,t)) ->
       let sign = bt t in
       let result =
         lookup_qn_with_sig' state bsym_table sr sr env rs qn [sign]

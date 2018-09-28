@@ -16,13 +16,13 @@ let merge_vs
 :vs_list_t =
   let t =
     match con1,con2 with
-    | TYP_tuple[],TYP_tuple[] -> TYP_tuple[]
-    | TYP_tuple[],b -> b
-    | a,TYP_tuple[] -> a
-    | TYP_intersect a, TYP_intersect b -> TYP_intersect (a@b)
-    | TYP_intersect a, b -> TYP_intersect (a @[b])
-    | a,TYP_intersect b -> TYP_intersect (a::b)
-    | a,b -> TYP_intersect [a;b]
+    | `TYP_tuple[],`TYP_tuple[] -> `TYP_tuple[]
+    | `TYP_tuple[],b -> b
+    | a,`TYP_tuple[] -> a
+    | `TYP_intersect a, `TYP_intersect b -> `TYP_intersect (a@b)
+    | `TYP_intersect a, b -> `TYP_intersect (a @[b])
+    | a,`TYP_intersect b -> `TYP_intersect (a::b)
+    | a,b -> `TYP_intersect [a;b]
   and
     rtcr = uniq_list (rtcr1 @ rtcr2)
   in

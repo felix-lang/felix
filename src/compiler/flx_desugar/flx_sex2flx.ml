@@ -56,9 +56,9 @@ and type_of_sex sr w : typecode_t =
 *)
   let y =
     match x with
-    | EXPR_tuple (_,[]) -> TYP_tuple []
-    | EXPR_name (_,"none",[]) -> TYP_none
-    | EXPR_name (_,"typ_none",[]) -> TYP_none
+    | `EXPR_tuple (_,[]) -> `TYP_tuple []
+    | `EXPR_name (_,"none",[]) -> `TYP_none
+    | `EXPR_name (_,"typ_none",[]) -> `TYP_none
     | x ->
       try typecode_of_expr x
       with xn ->
@@ -90,63 +90,63 @@ and xexpr_t sr x =
   match x with
   | Str s ->
       print_endline ("Deprecated Scheme string '" ^ s ^ "' as Felix string");
-      EXPR_literal (sr, {Flx_literal.felix_type="string"; internal_value=s; c_value=Flx_string.c_quote_of_string s})
+      `EXPR_literal (sr, {Flx_literal.felix_type="string"; internal_value=s; c_value=Flx_string.c_quote_of_string s})
 
-  | Lst [] -> EXPR_tuple (sr,[])
+  | Lst [] -> `EXPR_tuple (sr,[])
   | Lst [x] -> ex x
 
   | Lst [Id "ast_here"; sr] -> 
     let sr = xsr sr in
-    let dmod = EXPR_name (sr,"Debug",[]) in
-    let ctor = EXPR_lookup (sr,(dmod,"_ctor_flx_location_t",[])) in
+    let dmod = `EXPR_name (sr,"Debug",[]) in
+    let ctor = `EXPR_lookup (sr,(dmod,"_ctor_flx_location_t",[])) in
     let f,sl,sc,el,ec = Flx_srcref.to_tuple sr in
     let mkint i = 
-      EXPR_literal (sr,{Flx_literal.felix_type="int"; internal_value=string_of_int i; c_value=string_of_int i}) 
+      `EXPR_literal (sr,{Flx_literal.felix_type="int"; internal_value=string_of_int i; c_value=string_of_int i}) 
     in
     let mkcharp s = 
-      EXPR_literal (sr,{Flx_literal.felix_type="cstring"; internal_value="c\""^s^"\""; c_value="\""^s^"\""}) 
+      `EXPR_literal (sr,{Flx_literal.felix_type="cstring"; internal_value="c\""^s^"\""; c_value="\""^s^"\""}) 
     in
-    let arg = EXPR_tuple (sr, [mkcharp f;mkint sl;mkint sc;mkint el;mkint ec]) in
-    EXPR_apply (sr,(ctor, arg))
+    let arg = `EXPR_tuple (sr, [mkcharp f;mkint sl;mkint sc;mkint el;mkint ec]) in
+    `EXPR_apply (sr,(ctor, arg))
 
   (* type slice *)
-  | Lst [Id "ast_type_slice"; sr; t] -> EXPR_name (xsr sr,"Slice_all", [ti t])
+  | Lst [Id "ast_type_slice"; sr; t] -> `EXPR_name (xsr sr,"Slice_all", [ti t])
 
   (* this term comes from the hard coded parser! *)
-  | Lst [Id "ast_vsprintf";  sr; Str s] -> EXPR_vsprintf (xsr sr, s)
-  | Lst [Id "ast_interpolate";  sr; Str s] -> EXPR_interpolate (xsr sr, s)
-  | Lst [Id "ast_noexpand"; sr; e] -> EXPR_noexpand (xsr sr,ex e)
-  | Lst [Id "ast_name"; sr; id; Lst ts] -> EXPR_name (xsr sr, xid id, map ti ts)
+  | Lst [Id "ast_vsprintf";  sr; Str s] -> `EXPR_vsprintf (xsr sr, s)
+  | Lst [Id "ast_interpolate";  sr; Str s] -> `EXPR_interpolate (xsr sr, s)
+  | Lst [Id "ast_noexpand"; sr; e] -> `EXPR_noexpand (xsr sr,ex e)
+  | Lst [Id "ast_name"; sr; id; Lst ts] -> `EXPR_name (xsr sr, xid id, map ti ts)
   (* can't occur in user code
-  | Lst [Id "ast_index";  Str s ; Int i] -> EXPR_index (sr,s,ii i)
+  | Lst [Id "ast_index";  Str s ; Int i] -> `EXPR_index (sr,s,ii i)
   *)
 
-  | Lst [Id "ast_case_tag";  sr; Int i] -> EXPR_case_tag (xsr sr,ii i)
+  | Lst [Id "ast_case_tag";  sr; Int i] -> `EXPR_case_tag (xsr sr,ii i)
   | Lst [Id "ast_ainj"; sr; ix; tp] -> 
-    EXPR_ainj (xsr sr, ex ix, ti tp) 
+    `EXPR_ainj (xsr sr, ex ix, ti tp) 
 
-  | Lst [Id "ast_typed_case";  Int i; t] -> EXPR_typed_case (sr,ii i,ti t)
-  | Lst [Id "ast_projection";  Int i; t] -> EXPR_projection (sr,ii i,ti t)
-  | Lst [Id "ast_array_projection";  index; t] -> EXPR_array_projection (sr,xexpr_t sr index,ti t)
+  | Lst [Id "ast_typed_case";  Int i; t] -> `EXPR_typed_case (sr,ii i,ti t)
+  | Lst [Id "ast_projection";  Int i; t] -> `EXPR_projection (sr,ii i,ti t)
+  | Lst [Id "ast_array_projection";  index; t] -> `EXPR_array_projection (sr,xexpr_t sr index,ti t)
   | Lst [Id "ast_typed_case";  i; t] -> 
     let i = ex i in
     let t = ex t in
     begin match i,t with
-    | EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=internal_value1; c_value=c_value1 }),
-      EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=internal_value2; c_value=c_value2 })
+    | `EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=internal_value1; c_value=c_value1 }),
+      `EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=internal_value2; c_value=c_value2 })
       ->
       let i = int_of_string internal_value1 in
       let t = int_of_string internal_value2 in
-      EXPR_typed_case (sr, i, TYP_unitsum t)
+      `EXPR_typed_case (sr, i, `TYP_unitsum t)
     | _ -> err x "case expression i:j requires i,j be integer literals"
     end
 
 
-  | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> EXPR_lookup (sr,(ex e, s,map ti ts))
-  | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> EXPR_apply(xsr sr,(xexpr_t (xsr sr) e1, xexpr_t (xsr sr) e2))
-  | Lst [Id "ast_tuple";  sr; Lst es] -> EXPR_tuple (xsr sr,map (xexpr_t (xsr sr)) es)
-  | Lst [Id "ast_tuple_cons";  sr; eh; et] -> EXPR_tuple_cons (xsr sr, xexpr_t (xsr sr) eh, xexpr_t (xsr sr) et)
-  | Lst [Id "ast_tuple_snoc";  sr; eh; et] -> EXPR_tuple_snoc (xsr sr, xexpr_t (xsr sr) eh, xexpr_t (xsr sr) et)
+  | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> `EXPR_lookup (sr,(ex e, s,map ti ts))
+  | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> `EXPR_apply(xsr sr,(xexpr_t (xsr sr) e1, xexpr_t (xsr sr) e2))
+  | Lst [Id "ast_tuple";  sr; Lst es] -> `EXPR_tuple (xsr sr,map (xexpr_t (xsr sr)) es)
+  | Lst [Id "ast_tuple_cons";  sr; eh; et] -> `EXPR_tuple_cons (xsr sr, xexpr_t (xsr sr) eh, xexpr_t (xsr sr) et)
+  | Lst [Id "ast_tuple_snoc";  sr; eh; et] -> `EXPR_tuple_snoc (xsr sr, xexpr_t (xsr sr) eh, xexpr_t (xsr sr) et)
   | Lst [Id "ast_record";  sr; Lst rs] ->
    let rs =
      map (function
@@ -154,7 +154,7 @@ and xexpr_t sr x =
      | x -> err x "Error in AST_record"
      )
      rs
-   in EXPR_record (xsr sr,rs)
+   in `EXPR_record (xsr sr,rs)
 
  | Lst [Id "ast_record_type"; Lst rs] ->
    let rs =
@@ -163,7 +163,7 @@ and xexpr_t sr x =
      | x -> err x "Error in AST_record_type"
      )
      rs
-   in EXPR_record_type (sr,rs)
+   in `EXPR_record_type (sr,rs)
 
  | Lst [Id "ast_polyrecord_type"; Lst rs; e] ->
    let rs =
@@ -172,7 +172,7 @@ and xexpr_t sr x =
      | x -> err x "Error in AST_polyrecord_type"
      )
      rs
-   in EXPR_polyrecord_type (sr,rs, ti e)
+   in `EXPR_polyrecord_type (sr,rs, ti e)
 
   | Lst [Id "ast_polyrecord";  sr; Lst rs; e] ->
    let rs =
@@ -181,7 +181,7 @@ and xexpr_t sr x =
      | x -> err x "Error in AST_polyrecord"
      )
      rs
-   in EXPR_polyrecord (xsr sr,rs, ex e)
+   in `EXPR_polyrecord (xsr sr,rs, ex e)
 
   | Lst [Id "ast_replace_fields";  sr; e; Lst rs] ->
    let rs =
@@ -190,7 +190,7 @@ and xexpr_t sr x =
      | x -> err x "Error in AST_replace_fields"
      )
      rs
-   in EXPR_replace_fields (xsr sr, ex e, rs)
+   in `EXPR_replace_fields (xsr sr, ex e, rs)
 
   | Lst [Id "ast_remove_fields";  sr; e; Lst ss] ->
    let ss =
@@ -199,9 +199,9 @@ and xexpr_t sr x =
      | x -> err x "Error in AST_remove_fields"
      )
      ss
-   in EXPR_remove_fields (xsr sr,ex e, ss)
+   in `EXPR_remove_fields (xsr sr,ex e, ss)
 
- | Lst [Id "ast_variant";  Lst [Str s; e]] -> EXPR_variant (sr,(s, ex e))
+ | Lst [Id "ast_variant";  Lst [Str s; e]] -> `EXPR_variant (sr,(s, ex e))
 
  | Lst [Id "ast_variant_type"; Lst rs] ->
    let rs =
@@ -211,33 +211,33 @@ and xexpr_t sr x =
      | x -> err x "Error in AST_variant_type"
      )
      rs
-   in EXPR_variant_type (sr,rs)
+   in `EXPR_variant_type (sr,rs)
 
 
- | Lst [Id "ast_arrayof";  sr; Lst es] -> EXPR_arrayof (xsr sr, map ex es)
- | Lst [Id "ast_coercion";  sr; Lst [e; t]] ->  EXPR_coercion (xsr sr,(ex e, ti t))
+ | Lst [Id "ast_arrayof";  sr; Lst es] -> `EXPR_arrayof (xsr sr, map ex es)
+ | Lst [Id "ast_coercion";  sr; Lst [e; t]] ->  `EXPR_coercion (xsr sr,(ex e, ti t))
 
- | Lst [Id "ast_suffix";  Lst [qn;t]] -> EXPR_suffix (sr,(xq "ast_suffix" qn,ti t))
+ | Lst [Id "ast_suffix";  Lst [qn;t]] -> `EXPR_suffix (sr,(xq "ast_suffix" qn,ti t))
 
- | Lst [Id "ast_patvar";  sr; Str s] -> EXPR_patvar (xsr sr, s)
+ | Lst [Id "ast_patvar";  sr; Str s] -> `EXPR_patvar (xsr sr, s)
 
- | Lst [Id "ast_patany"; sr] -> EXPR_patany (xsr sr)
- | Lst [Id "ast_void"; sr] -> EXPR_void (xsr sr)
- | Lst [Id "ast_ellipsis"; sr] -> EXPR_ellipsis (xsr sr)
+ | Lst [Id "ast_patany"; sr] -> `EXPR_patany (xsr sr)
+ | Lst [Id "ast_void"; sr] -> `EXPR_void (xsr sr)
+ | Lst [Id "ast_ellipsis"; sr] -> `EXPR_ellipsis (xsr sr)
 
- | Lst [Id "ast_product"; sr; Lst es] -> EXPR_product (xsr sr, map (xexpr_t (xsr sr)) es)
- | Lst [Id "ast_sum";  sr; Lst es] -> EXPR_sum (xsr sr,map (xexpr_t (xsr sr)) es)
- | Lst [Id "ast_intersect"; Lst es] -> EXPR_intersect (sr, map ex es)
- | Lst [Id "ast_isin"; Lst [a; b]] -> EXPR_isin (sr, (ex a, ex b))
- | Lst [Id "ast_orlist"; sr; Lst es] -> EXPR_orlist (xsr sr, map (xexpr_t (xsr sr)) es)
- | Lst [Id "ast_andlist"; sr; Lst es] -> EXPR_andlist (xsr sr, map (xexpr_t (xsr sr)) es)
- | Lst [Id "ast_not"; sr; e] -> EXPR_not (xsr sr, ex e)
- | Lst [Id "ast_arrow";  Lst [e1; e2]] -> EXPR_arrow (sr,(ex e1, ex e2))
- | Lst [Id "ast_effector";  Lst [e1; e2; e3]] -> EXPR_effector (sr,(ex e1, ex e2, ex e3))
- | Lst [Id "ast_longarrow";  Lst [e1; e2]] -> EXPR_longarrow (sr,(ex e1, ex e2))
- | Lst [Id "ast_superscript";  Lst [e1; e2]] -> EXPR_superscript (sr,(ex e1, ex e2))
+ | Lst [Id "ast_product"; sr; Lst es] -> `EXPR_product (xsr sr, map (xexpr_t (xsr sr)) es)
+ | Lst [Id "ast_sum";  sr; Lst es] -> `EXPR_sum (xsr sr,map (xexpr_t (xsr sr)) es)
+ | Lst [Id "ast_intersect"; Lst es] -> `EXPR_intersect (sr, map ex es)
+ | Lst [Id "ast_isin"; Lst [a; b]] -> `EXPR_isin (sr, (ex a, ex b))
+ | Lst [Id "ast_orlist"; sr; Lst es] -> `EXPR_orlist (xsr sr, map (xexpr_t (xsr sr)) es)
+ | Lst [Id "ast_andlist"; sr; Lst es] -> `EXPR_andlist (xsr sr, map (xexpr_t (xsr sr)) es)
+ | Lst [Id "ast_not"; sr; e] -> `EXPR_not (xsr sr, ex e)
+ | Lst [Id "ast_arrow";  Lst [e1; e2]] -> `EXPR_arrow (sr,(ex e1, ex e2))
+ | Lst [Id "ast_effector";  Lst [e1; e2; e3]] -> `EXPR_effector (sr,(ex e1, ex e2, ex e3))
+ | Lst [Id "ast_longarrow";  Lst [e1; e2]] -> `EXPR_longarrow (sr,(ex e1, ex e2))
+ | Lst [Id "ast_superscript";  Lst [e1; e2]] -> `EXPR_superscript (sr,(ex e1, ex e2))
  | Lst [Id "ast_literal";  sr; Str felix_type; Str internal_value; Str c_value ] ->
-   EXPR_literal (xsr sr, 
+   `EXPR_literal (xsr sr, 
      {
        Flx_literal.felix_type=felix_type; 
        internal_value=internal_value; 
@@ -245,53 +245,53 @@ and xexpr_t sr x =
      } 
    )
 
- | Lst [Id "ast_deref"; sr; e] -> EXPR_deref (xsr sr,ex e)
- | Lst [Id "ast_ref"; sr; e] -> EXPR_ref (xsr sr,ex e)
- | Lst [Id "ast_pclt"; sr; d; c] -> EXPR_pclt_type (xsr sr, ti d, ti c)
- | Lst [Id "ast_rpclt"; sr; d; c] -> EXPR_rpclt_type (xsr sr, ti d, ti c)
- | Lst [Id "ast_wpclt"; sr; d; c] -> EXPR_wpclt_type (xsr sr, ti d, ti c)
- | Lst [Id "ast_rptsum_type"; sr; d; c] -> EXPR_rptsum_type (xsr sr, ti d, ti c)
+ | Lst [Id "ast_deref"; sr; e] -> `EXPR_deref (xsr sr,ex e)
+ | Lst [Id "ast_ref"; sr; e] -> `EXPR_ref (xsr sr,ex e)
+ | Lst [Id "ast_pclt"; sr; d; c] -> `EXPR_pclt_type (xsr sr, ti d, ti c)
+ | Lst [Id "ast_rpclt"; sr; d; c] -> `EXPR_rpclt_type (xsr sr, ti d, ti c)
+ | Lst [Id "ast_wpclt"; sr; d; c] -> `EXPR_wpclt_type (xsr sr, ti d, ti c)
+ | Lst [Id "ast_rptsum_type"; sr; d; c] -> `EXPR_rptsum_type (xsr sr, ti d, ti c)
 
- | Lst [Id "ast_uniq"; sr; e] -> EXPR_uniq (xsr sr, ex e)
- | Lst [Id "ast_rref"; sr; e] -> EXPR_rref(xsr sr, ex e)
- | Lst [Id "ast_wref"; sr; e] -> EXPR_wref(xsr sr, ex e)
+ | Lst [Id "ast_uniq"; sr; e] -> `EXPR_uniq (xsr sr, ex e)
+ | Lst [Id "ast_rref"; sr; e] -> `EXPR_rref(xsr sr, ex e)
+ | Lst [Id "ast_wref"; sr; e] -> `EXPR_wref(xsr sr, ex e)
 
- | Lst [Id "ast_label_ref"; sr; id] -> EXPR_label (xsr sr,xid id)
- | Lst [Id "ast_new"; sr; e] -> EXPR_new (xsr sr,ex e)
- | Lst [Id "ast_likely"; sr; e] -> EXPR_likely (xsr sr,ex e)
- | Lst [Id "ast_unlikely"; sr; e] -> EXPR_unlikely (xsr sr,ex e)
- | Lst [Id "ast_callback";  sr; qn] -> EXPR_callback (xsr sr,xq "ast_callback" qn)
+ | Lst [Id "ast_label_ref"; sr; id] -> `EXPR_label (xsr sr,xid id)
+ | Lst [Id "ast_new"; sr; e] -> `EXPR_new (xsr sr,ex e)
+ | Lst [Id "ast_likely"; sr; e] -> `EXPR_likely (xsr sr,ex e)
+ | Lst [Id "ast_unlikely"; sr; e] -> `EXPR_unlikely (xsr sr,ex e)
+ | Lst [Id "ast_callback";  sr; qn] -> `EXPR_callback (xsr sr,xq "ast_callback" qn)
  | Lst [Id "ast_lambda";  sr; Lst [vs; Lst pss; t; sts]] -> 
    let rt = ti t in
-   let pdef = (* match rt with TYP_void _ -> `PVar | _ -> *) `PVal in 
-   EXPR_lambda  (xsr sr, (`GeneratedInlineFunction,xvs vs, map (xps pdef) pss, rt, xsts sts))
+   let pdef = (* match rt with `TYP_void _ -> `PVar | _ -> *) `PVal in 
+   `EXPR_lambda  (xsr sr, (`GeneratedInlineFunction,xvs vs, map (xps pdef) pss, rt, xsts sts))
  | Lst [Id "ast_object";  sr; Lst [vs; Lst pss; t; sts]] -> 
    let rt = ti t in
-   let pdef = (* match rt with TYP_void _ -> `PVar | _ -> *) `PVal in 
-   EXPR_lambda (xsr sr, (`Object,xvs vs, map (xps pdef) pss, rt, xsts sts))
+   let pdef = (* match rt with `TYP_void _ -> `PVar | _ -> *) `PVal in 
+   `EXPR_lambda (xsr sr, (`Object,xvs vs, map (xps pdef) pss, rt, xsts sts))
  | Lst [Id "ast_generator";  sr; Lst [vs; Lst pss; t; sts]] -> 
    let rt = ti t in
    let pdef = `PVar in 
-   EXPR_lambda (xsr sr, (`Generator,xvs vs, map (xps pdef) pss, rt, xsts sts))
+   `EXPR_lambda (xsr sr, (`Generator,xvs vs, map (xps pdef) pss, rt, xsts sts))
 
  (* can't occur in user code
- | Lst [Id "ast_match_ctor";  Lst [qn; e]] -> EXPR_match_ctor(sr,(xq "ast_match_ctor" qn,ex e))
- | Lst [Id "ast_match_case";  Lst [Int i; e]]-> EXPR_match_case (sr,(ii i, ex e))
- | Lst [Id "ast_ctor_arg";  Lst [qn; e]] -> EXPR_ctor_arg (sr,(xq "ast_ctor_arg" qn, ex e))
- | Lst [Id "ast_case_arg"; Lst [Int i; e]] -> EXPR_case_arg (sr,(ii i, ex e))
+ | Lst [Id "ast_match_ctor";  Lst [qn; e]] -> `EXPR_match_ctor(sr,(xq "ast_match_ctor" qn,ex e))
+ | Lst [Id "ast_match_case";  Lst [Int i; e]]-> `EXPR_match_case (sr,(ii i, ex e))
+ | Lst [Id "ast_ctor_arg";  Lst [qn; e]] -> `EXPR_ctor_arg (sr,(xq "ast_ctor_arg" qn, ex e))
+ | Lst [Id "ast_case_arg"; Lst [Int i; e]] -> `EXPR_case_arg (sr,(ii i, ex e))
  *)
- | Lst [Id "ast_case_index";  sr; e] -> EXPR_case_index (xsr sr, ex e)
- | Lst [Id "ast_rptsum_arg";  sr; e] -> EXPR_rptsum_arg (xsr sr, ex e)
- | Lst [Id "ast_letin";  sr; Lst [p; e1; e2]] -> EXPR_letin (xsr sr,(xp p, ex e1, ex e2))
+ | Lst [Id "ast_case_index";  sr; e] -> `EXPR_case_index (xsr sr, ex e)
+ | Lst [Id "ast_rptsum_arg";  sr; e] -> `EXPR_rptsum_arg (xsr sr, ex e)
+ | Lst [Id "ast_letin";  sr; Lst [p; e1; e2]] -> `EXPR_letin (xsr sr,(xp p, ex e1, ex e2))
 
 (*
- | Lst [Id "ast_get_n";  sr;  Lst [Int i; e]] -> EXPR_get_n(xsr sr,(ii i, ex e))
+ | Lst [Id "ast_get_n";  sr;  Lst [Int i; e]] -> `EXPR_get_n(xsr sr,(ii i, ex e))
 *)
  (* extractor for record components, can't occur in user code
- | Lst [Id "ast_get_named_variable";  Lst [Str s;e]]-> EXPR_get_named_variable (sr, (s, ex e))
+ | Lst [Id "ast_get_named_variable";  Lst [Str s;e]]-> `EXPR_get_named_variable (sr, (s, ex e))
  *)
- | Lst [Id "ast_as";  sr; Lst [e; Str s]] -> EXPR_as (xsr sr,(ex e, s))
- | Lst [Id "ast_as_var";  sr; Lst [e; Str s]] -> EXPR_as_var (xsr sr,(ex e, s))
+ | Lst [Id "ast_as";  sr; Lst [e; Str s]] -> `EXPR_as (xsr sr,(ex e, s))
+ | Lst [Id "ast_as_var";  sr; Lst [e; Str s]] -> `EXPR_as_var (xsr sr,(ex e, s))
  | Lst [Id "ast_match";  sr; Lst [e; Lst pes]]->
    let pes = map (function
      | Lst [p;e] -> xp p, ex e
@@ -299,14 +299,14 @@ and xexpr_t sr x =
      )
      pes
    in
-   EXPR_match (xsr sr, (ex e,pes))
+   `EXPR_match (xsr sr, (ex e,pes))
 
  (* handled in flx_typing2 now 
- | Lst [Id "ast_typeof";  e] -> EXPR_typeof (sr, ex e)
+ | Lst [Id "ast_typeof";  e] -> `EXPR_typeof (sr, ex e)
  *)
 
- | Lst [Id "ast_cond"; sr;  Lst [e1;e2;e3]] -> EXPR_cond (xsr sr,(ex e1, ex e2, ex e3))
- | Lst [Id "ast_expr"; sr; s; t; e] -> EXPR_expr (xsr sr, xc (xsr sr) s, ti t, ex e)
+ | Lst [Id "ast_cond"; sr;  Lst [e1;e2;e3]] -> `EXPR_cond (xsr sr,(ex e1, ex e2, ex e3))
+ | Lst [Id "ast_expr"; sr; s; t; e] -> `EXPR_expr (xsr sr, xc (xsr sr) s, ti t, ex e)
 
  | Lst [Id "ast_type_match";  sr; Lst [t; Lst ts]] ->
    let ts =
@@ -315,7 +315,7 @@ and xexpr_t sr x =
        | x -> err x "ast_typematch typerrror"
      )
      ts
-   in EXPR_type_match (xsr sr,(ti t, ts))
+   in `EXPR_type_match (xsr sr,(ti t, ts))
 
  | Lst [Id "ast_subtype_match";  sr; Lst [t; Lst ts]] ->
    let ts =
@@ -324,7 +324,7 @@ and xexpr_t sr x =
        | x -> err x "ast_subtypematch typerrror"
      )
      ts
-   in EXPR_subtype_match (xsr sr,(ti t, ts))
+   in `EXPR_subtype_match (xsr sr,(ti t, ts))
 
 
  | Lst [Id "ast_typecase_match";  sr; Lst [t; Lst ts]] ->
@@ -334,22 +334,22 @@ and xexpr_t sr x =
        | x -> err x "ast_typecase_match typerrror"
      )
      ts
-   in EXPR_typecase_match (xsr sr,(ti t, ts))
+   in `EXPR_typecase_match (xsr sr,(ti t, ts))
 
 
   | Lst [Id "ast_extension"; sr; Lst bases; extension] ->
     let bases = List.map ex bases in
-    EXPR_extension (xsr sr, bases, ex extension)
+    `EXPR_extension (xsr sr, bases, ex extension)
 
-  | Lst ls -> (* print_endline ("Unexpected literal tuple"); *) EXPR_tuple (sr, map ex ls)
+  | Lst ls -> (* print_endline ("Unexpected literal tuple"); *) `EXPR_tuple (sr, map ex ls)
 
   | Id id ->
       (*
       print_endline ("Unexpected ID=" ^ Flx_id.to_string id);
       *)
-      EXPR_name (sr, Flx_id.of_string id, [])
+      `EXPR_name (sr, Flx_id.of_string id, [])
   | Int i ->
-    EXPR_literal (sr, {Flx_literal.felix_type="int"; internal_value=i; c_value=i})
+    `EXPR_literal (sr, {Flx_literal.felix_type="int"; internal_value=i; c_value=i})
 
   | x ->
     err x "expression"
@@ -771,7 +771,7 @@ and xstatement_t sr x : statement_t =
   | _ -> err x "reduction format" 
   in
 
-  let lnot sr x = EXPR_not (sr, x) in
+  let lnot sr x = `EXPR_not (sr, x) in
   match x with
   | Lst [Id "ast_circuit"; sr; Lst cs] -> let sr = xsr sr in
     let cs = map (xconnection_t sr) cs in
@@ -818,7 +818,7 @@ print_endline ("sex2flx: ast_curry (function def) " ^ xid id ^ "sr=" ^ Flx_srcre
 *)
     let fret = xret sr ret in
     let rett, _ = fret in 
-    let pdef = (*  match rett with TYP_void _ -> `PVar | _ ->*)  `PVal in
+    let pdef = (*  match rett with `TYP_void _ -> `PVar | _ ->*)  `PVal in
     STMT_curry(
       sr,
       xid id,
@@ -839,7 +839,7 @@ print_endline ("ast_curry effects " ^ xid id ^ ", effects=" ^ Flx_print.string_o
 *)
     let fret = xret sr ret in
     let rett, _ = fret in 
-    let pdef = (*  match rett with TYP_void _ -> `PVar | _ ->*)  `PVal in
+    let pdef = (*  match rett with `TYP_void _ -> `PVar | _ ->*)  `PVal in
     STMT_curry(
       sr,
       xid id,
@@ -981,10 +981,10 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
   | Lst [Id "ast_ifgoto"; sr; e; id] -> let sr = xsr sr in STMT_ifgoto (sr,ex sr e, xid id)
   | Lst [Id "ast_ifgoto_indirect"; sr; e1; e2] -> let sr = xsr sr in STMT_ifcgoto (sr,ex sr e1, ex sr e2)
   | Lst [Id "ast_likely_ifgoto"; sr; e; id] -> let sr = xsr sr in 
-      STMT_ifgoto (sr, EXPR_likely (sr,ex sr e), xid id)
+      STMT_ifgoto (sr, `EXPR_likely (sr,ex sr e), xid id)
 
   | Lst [Id "ast_unlikely_ifgoto"; sr; e; id] -> let sr = xsr sr in 
-      STMT_ifgoto (sr, EXPR_unlikely (sr,ex sr e), xid id)
+      STMT_ifgoto (sr, `EXPR_unlikely (sr,ex sr e), xid id)
 
   | Lst [Id "ast_ifnotgoto"; sr; e; id] -> let sr = xsr sr in 
       STMT_ifgoto (sr, lnot (sr) (ex sr e), xid id)
@@ -992,13 +992,13 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
   | Lst [Id "ast_likely_ifnotgoto"; sr; e; id] -> let sr = xsr sr in 
       STMT_ifgoto (
         sr,
-        EXPR_likely (sr, lnot (sr) (ex sr e)),
+        `EXPR_likely (sr, lnot (sr) (ex sr e)),
         xid id)
 
   | Lst [Id "ast_unlikely_ifnotgoto"; sr; e; id] -> let sr = xsr sr in 
       STMT_ifgoto (
         sr,
-        EXPR_unlikely (sr, lnot (sr) (ex sr e)),
+        `EXPR_unlikely (sr, lnot (sr) (ex sr e)),
         xid id)
 
   | Lst [Id "ast_ifreturn"; sr; e] -> let sr = xsr sr in STMT_ifreturn (sr,ex sr e)

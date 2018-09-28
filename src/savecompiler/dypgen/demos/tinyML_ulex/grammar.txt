@@ -1,0 +1,44 @@
+
+%constructor EXPR %for expr
+
+%constructor Void %for LPAREN RPAREN BAR MATCH WITH COMMA ARROW LET REC DEFINE IN AND EQUAL COLONEQUAL LBRACK RBRACK COLONCOLON SEMICOLON GREATER LESS APPEND EOF
+
+
+%token  EOF  :=  end of file
+%token  INT  :=  [0-9]+
+%token  UIDENT  :=  [A-Z][a-a,A-Z,0-9,_]*
+%token  LIDENT  :=  [a-z,_][a-a,A-Z,0-9,_]*
+%token  TOKEN  :=  tokens used to extend the grammar
+
+%start main
+
+
+main : expr EOF   
+
+expr :
+  | "match" expr "with" match_seq   
+  | INT   
+  | expr "," expr @  
+  | "(" expr ")"   
+  | "Identifier" expr @  
+  | "Identifier"   
+  | "identifier"   
+  | "let" "rec" "identifier" LIDENT "=" expr "in" expr
+  | "identifier" expr   
+  | define_in expr   
+
+match_seq :
+  | "|" expr "->" expr   
+  | "|" expr "->" expr match_seq   
+
+define_in :
+  | "define" define_cont "in" @
+define_cont :
+  | "identifier" ":=" rhs "=" expr   
+  | define_cont "and" "identifier" ":=" rhs "=" expr   
+
+rhs :
+  | "identifier" "(" "identifier" ")"   
+  | TOKEN   
+  | "identifier" "(" "identifier" ")" rhs   
+  | TOKEN rhs   

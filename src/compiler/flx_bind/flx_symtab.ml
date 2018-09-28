@@ -55,7 +55,7 @@ let detail x =
         (match b with | None ->"" | Some i -> " <-- " ^ string_of_int i)) x.exports) 
 
 let make_call sr index = 
-  sr,EXE_call (EXPR_index (sr,"_init_",index),EXPR_tuple (sr,[]))
+  sr,EXE_call (`EXPR_index (sr,"_init_",index),`EXPR_tuple (sr,[]))
 
 let make_calls sr indices =
   List.map (make_call sr) indices
@@ -110,14 +110,14 @@ let rmerge_ivs
   =
   let t =
     match con1,con2 with
-    | TYP_tuple[], TYP_tuple[] -> TYP_tuple[]
-    | TYP_tuple[],b -> b
-    | a, TYP_tuple[] -> a
-    | TYP_intersect a, TYP_intersect b ->
-        TYP_intersect (a@b)
-    | TYP_intersect a, b -> TYP_intersect (a @[b])
-    | a, TYP_intersect b -> TYP_intersect (a::b)
-    | a,b -> TYP_intersect [a;b]
+    | `TYP_tuple[], `TYP_tuple[] -> `TYP_tuple[]
+    | `TYP_tuple[],b -> b
+    | a, `TYP_tuple[] -> a
+    | `TYP_intersect a, `TYP_intersect b ->
+        `TYP_intersect (a@b)
+    | `TYP_intersect a, b -> `TYP_intersect (a @[b])
+    | a, `TYP_intersect b -> `TYP_intersect (a::b)
+    | a,b -> `TYP_intersect [a;b]
   and
     rtcr = Flx_list.uniq_list (rtcr1 @ rtcr2)
   in
@@ -457,7 +457,7 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
 *)
 (*
     let is_generic vs = List.fold_left (fun acc (name,index,typ) ->
-      acc || match typ with | TYP_generic _ -> true | _ -> false) 
+      acc || match typ with | `TYP_generic _ -> true | _ -> false) 
       false
       (fst ivs) 
     in
@@ -497,7 +497,7 @@ print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", p
   =
 (*
     let is_generic vs = List.fold_left (fun acc (name,index,typ) ->
-      acc || match typ with | TYP_generic _ -> true | _ -> false) 
+      acc || match typ with | `TYP_generic _ -> true | _ -> false) 
       false
       (fst ivs) 
     in
@@ -532,9 +532,9 @@ print_endline ("add_tvars' " ^ Flx_print.string_of_ivs ivs);
 *)
 (*
       let mt = match tpat with
-      | TYP_patany _ -> KND_type (* default/unspecified *)
-      | TYP_none -> KND_type
-      | TYP_ellipsis -> Flx_exceptions.clierrx "[flx_bind/flx_symtab.ml:524: E256] " sr "Ellipsis ... as metatype"
+      | `TYP_patany _ -> KND_type (* default/unspecified *)
+      | `TYP_none -> KND_type
+      | `TYP_ellipsis -> Flx_exceptions.clierrx "[flx_bind/flx_symtab.ml:524: E256] " sr "Ellipsis ... as metatype"
       | _ -> tpat
       in
 *)
@@ -657,7 +657,7 @@ if id = "bind" then print_endline ("Adding function bind index=" ^ string_of_int
 
       if is_ctor then
         begin match t with
-        | TYP_void _ -> ()
+        | `TYP_void _ -> ()
         | _ -> Flx_exceptions.syserr sr "Constructor should return type void"
         end;
 
@@ -665,7 +665,7 @@ if id = "bind" then print_endline ("Adding function bind index=" ^ string_of_int
        * _ctor_. *)
       let id = if is_ctor then "_ctor_" ^ name else id in
 
-      let t = if t = TYP_none then TYP_var symbol_index else t in
+      let t = if t = `TYP_none then `TYP_var symbol_index else t in
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           ~pub_name_map:(Hashtbl.create 97)
@@ -715,11 +715,11 @@ print_endline ("Finished adding bind to symtab")
         let component =
           Flx_desugar_pat.gen_extractor
             extractor
-            (EXPR_index (sr,mvname,match_var_index))
+            (`EXPR_index (sr,mvname,match_var_index))
         in
         let dcl =
           Dcl (sr, vname, None,`Private, dfltvs,
-            DCL_value (TYP_typeof (component), `Val))
+            DCL_value (`TYP_typeof (component), `Val))
         and instr = Exe (sr, EXE_init (vname, component)) in
         new_asms := dcl :: instr :: !new_asms;
       end (List.rev (!vars));
@@ -742,7 +742,7 @@ print_endline ("Finished adding bind to symtab")
       (* Add symbols to sym_table. *)
       add_symbol ~pubtab ~privtab ~dirs symbol_index id sr (SYMDEF_function (
           unit_params_t,
-          TYP_var symbol_index,
+          `TYP_var symbol_index,
           noeffects,
           [`Generated "symtab:match handler" ; `GeneratedInline],
           exes));
@@ -813,10 +813,10 @@ print_endline ("ROOT: Init procs = " ^ string_of_int (List.length inner_inits));
                 (* Take all the exes and add them to a function called _init_ that's
                  * called when the module is loaded. *)
                 let exes = match old_init_proc with
-                  | Some x -> (sr,EXE_call (EXPR_index (sr,"_init_",x),EXPR_tuple (sr,[]))):: exes 
+                  | Some x -> (sr,EXE_call (`EXPR_index (sr,"_init_",x),`EXPR_tuple (sr,[]))):: exes 
                   | None -> exes
                 in
-                let init_def = SYMDEF_function (unit_params_t, TYP_void sr, noeffects, [], exes) in
+                let init_def = SYMDEF_function (unit_params_t, `TYP_void sr, noeffects, [], exes) in
 
                 (* Get a unique index for the _init_ function. *)
 
@@ -905,7 +905,7 @@ print_endline ("Checking parent's public map");
 
         (* Take all the exes and add them to a function called _init_ that's
          * called when the module is loaded. *)
-        let init_def = SYMDEF_function (unit_params_t, TYP_void sr, noeffects, [], exes) in
+        let init_def = SYMDEF_function (unit_params_t, `TYP_void sr, noeffects, [], exes) in
 
         (* Get a unique index for the _init_ function. *)
 
@@ -963,7 +963,7 @@ print_endline ("MODULE "^name^" Init procs = " ^ string_of_int (List.length inne
 
         (* Take all the exes and add them to a function called _init_ that's
          * called when the module is loaded. *)
-        let init_def = SYMDEF_function (unit_params_t, TYP_void sr, noeffects, [], exes) in
+        let init_def = SYMDEF_function (unit_params_t, `TYP_void sr, noeffects, [], exes) in
 
         (* Get a unique index for the _init_ function. *)
 
@@ -1064,7 +1064,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
 
         (* Take all the exes and add them to a function called _init_ that's
          * called when the module is loaded. *)
-        let init_def = SYMDEF_function (unit_params_t, TYP_void sr, noeffects, [], exes) in
+        let init_def = SYMDEF_function (unit_params_t, `TYP_void sr, noeffects, [], exes) in
 
         (* Get a unique index for the _init_ function. *)
 
@@ -1133,7 +1133,7 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       add_tvars privtab
 
   | DCL_value (t, kind) ->
-      let t = match t with | TYP_none -> TYP_var symbol_index | _ -> t in
+      let t = match t with | `TYP_none -> `TYP_var symbol_index | _ -> t in
 
       let symdef =
         match kind with
@@ -1200,8 +1200,8 @@ print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length i
       add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_newtype t);
 
       (* Create an identity function that doesn't do anything. *)
-      let ts = List.map (fun (n,_) -> TYP_name (sr,n,[])) (fst vs) in
-      let piname = TYP_name (sr,id,ts) in
+      let ts = List.map (fun (n,_) -> `TYP_name (sr,n,[])) (fst vs) in
+      let piname = `TYP_name (sr,id,ts) in
 
       (* XXX: What's the _repr_ function for? *)
       (* ANS: it gets the representation of the abstract type *)
@@ -1289,7 +1289,7 @@ print_endline (string_of_int symbol_index ^ " Adding virtual type " ^ id ^ " to 
 
 
   | DCL_const (props, t, c, reqs) ->
-      let t = if t = TYP_none then TYP_var symbol_index else t in
+      let t = if t = `TYP_none then `TYP_var symbol_index else t in
 
       (* Add the const to the sym_table. *)
       add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_const (props, t, c, reqs));
@@ -1350,8 +1350,8 @@ if id = "bind" then print_endline ("Finished Adding fun bind index=" ^ string_of
       add_tvars privtab
 
   | DCL_union (its) ->
-      let tvars = List.map (fun (s,_,_)-> TYP_name (sr,s,[])) (fst ivs) in
-      let utype = TYP_name (sr, id, tvars) in
+      let tvars = List.map (fun (s,_,_)-> `TYP_name (sr,s,[])) (fst ivs) in
+      let utype = `TYP_name (sr, id, tvars) in
       let its' =
         let ccount = ref 0 in (* count component constructors *)
         List.map begin fun (component_name,v,vs,d,c) ->
@@ -1384,7 +1384,7 @@ if id = "bind" then print_endline ("Finished Adding fun bind index=" ^ string_of
 
       let unit_sum =
         List.fold_left begin fun v (_,_,_,d,c,_) ->
-          v && (match d with TYP_void _ -> true | _ -> false)
+          v && (match d with `TYP_void _ -> true | _ -> false)
         end true its'
       in
 
@@ -1451,7 +1451,7 @@ if id = "bind" then print_endline ("Finished Adding fun bind index=" ^ string_of
             SYMDEF_const_ctor (symbol_index, c, ctor_idx, evs)
           end else
             match d with
-            | TYP_void _ -> (* constant constructor *)
+            | `TYP_void _ -> (* constant constructor *)
                 if access = `Public then full_add_unique counter_ref sym_table sr allivs pub_name_map component_name dfn_idx;
                 full_add_unique counter_ref sym_table sr allivs priv_name_map component_name dfn_idx;
                 SYMDEF_const_ctor (symbol_index, c, ctor_idx, evs)

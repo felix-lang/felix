@@ -4,19 +4,19 @@ open Flx_types
 open Flx_name_map
 
 let apl2 (sr:Flx_srcref.t) (fn : string) (tup:expr_t list) =
-  EXPR_apply
+  `EXPR_apply
   (
     sr,
     (
-      EXPR_name (sr,fn,[]),
-      EXPR_tuple (sr,tup)
+      `EXPR_name (sr,fn,[]),
+      `EXPR_tuple (sr,tup)
     )
   )
 
 let land2 sr x y = apl2 sr "land" [x;y]
 
-let truth sr = EXPR_typed_case (sr,1,TYP_unitsum 2) 
-let falsity sr = EXPR_typed_case (sr,0,TYP_unitsum 2) 
+let truth sr = `EXPR_typed_case (sr,1,`TYP_unitsum 2) 
+let falsity sr = `EXPR_typed_case (sr,0,`TYP_unitsum 2) 
 
 let landn eq sr xs ys = 
   assert (List.length xs = List.length ys);
@@ -33,14 +33,14 @@ let equal' bsym_table sym_table counter be rs sr a b t =
     assert false
 
   | BTYP_record flds ->
-    let xas = List.map (fun (s,t) ->  EXPR_get_named_variable (sr,(s,a))) flds in
-    let yas = List.map (fun (s,t) ->  EXPR_get_named_variable (sr,(s,b))) flds in
+    let xas = List.map (fun (s,t) ->  `EXPR_get_named_variable (sr,(s,a))) flds in
+    let yas = List.map (fun (s,t) ->  `EXPR_get_named_variable (sr,(s,b))) flds in
     landn eq sr xas yas
 
   | BTYP_tuple ts ->
     let ints = Flx_list.nlist (List.length ts) in
-    let xas = List.map (fun i ->  EXPR_get_n (sr,(i,a))) ints in
-    let yas = List.map (fun i ->  EXPR_get_n (sr,(i,b))) ints in
+    let xas = List.map (fun i ->  `EXPR_get_n (sr,(i,a))) ints in
+    let yas = List.map (fun i ->  `EXPR_get_n (sr,(i,b))) ints in
     landn eq sr xas yas
  
   | BTYP_pointer _
@@ -60,11 +60,11 @@ let bind_eq bsym_table state inner_lookup_name_in_env be rs sr env pair =
 *)
     let a,b = 
       match pair with
-      | EXPR_tuple (sr,[a;b]) -> a,b
+      | `EXPR_tuple (sr,[a;b]) -> a,b
       | _ -> Flx_exceptions.clierrx "[flx_bind/flx_eq.ml:63: E75] " sr ("polyadic _eq function requires explicit argument pair")
     in
     begin try 
-      let result = be rs (EXPR_apply (sr, (EXPR_name (sr,"__eq",[]), pair))) in
+      let result = be rs (`EXPR_apply (sr, (`EXPR_name (sr,"__eq",[]), pair))) in
 (*
       print_endline ("Found binding of __eq, using that");
 *)
@@ -84,8 +84,8 @@ let bind_eq bsym_table state inner_lookup_name_in_env be rs sr env pair =
 (*
 print_endline ("_eq of type " ^ sbt bsym_table ta);
 *)
-      let v1 = EXPR_name (sr,"_a",[]) in 
-      let v2 = EXPR_name (sr,"_b",[]) in 
+      let v1 = `EXPR_name (sr,"_a",[]) in 
+      let v2 = `EXPR_name (sr,"_b",[]) in 
       let retexpr = equal bsym_table state.Flx_lookup_state.sym_table state.Flx_lookup_state.counter be rs sr v1 v2 ta in
 (*
 print_endline ("Got return expression " ^ Flx_print.string_of_expr retexpr);
@@ -97,7 +97,7 @@ print_endline ("Unbound type = " ^ string_of_typecode ubt);
       let p1 = sr,`PVal,"_a",ubt,None in
       let p2 = sr,`PVal,"_b",ubt,None in
       let params = Slist [Satom p1; Satom p2], None in 
-      let typecode = TYP_unitsum 2 in
+      let typecode = `TYP_unitsum 2 in
       let properties = [] in
       let asms = [Exe (sr,EXE_fun_return retexpr)] in
       let dcl = DCL_function (params, typecode, Flx_typing.flx_unit,properties, asms) in
@@ -131,7 +131,7 @@ print_endline ("Assigning index " ^ si new_index);
 print_endline ("Added overload of __eq to lookup table!");
 *)
       let result = 
-        try be rs (EXPR_apply (sr, (EXPR_name (sr,"__eq",[]), pair))) 
+        try be rs (`EXPR_apply (sr, (`EXPR_name (sr,"__eq",[]), pair))) 
         with _ -> 
           print_endline ("Failed to bind application of __eq of "^Flx_print.sbt bsym_table ta^" we just added!!");
           let entries = inner_lookup_name_in_env state bsym_table env Flx_lookup_state.rsground sr "__eq" in

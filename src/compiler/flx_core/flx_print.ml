@@ -95,185 +95,185 @@ and string_of_expr (e:expr_t) =
   let se e = string_of_expr e in
   let sqn e = string_of_qualified_name e in
   match e with
-  | EXPR_pclt_type (_,a,b) -> "pclt_type<" ^ st a ^ "," ^ st b ^ ">"
-  | EXPR_rpclt_type (_,a,b) -> "rpclt_type<" ^ st a ^ "," ^ st b ^ ">"
-  | EXPR_wpclt_type (_,a,b) -> "wpclt_type<" ^ st a ^ "," ^ st b ^ ">"
-  | EXPR_rptsum_type (_,a,b) -> st a ^ "*+" ^ st b 
+  | `EXPR_pclt_type (_,a,b) -> "pclt_type<" ^ st a ^ "," ^ st b ^ ">"
+  | `EXPR_rpclt_type (_,a,b) -> "rpclt_type<" ^ st a ^ "," ^ st b ^ ">"
+  | `EXPR_wpclt_type (_,a,b) -> "wpclt_type<" ^ st a ^ "," ^ st b ^ ">"
+  | `EXPR_rptsum_type (_,a,b) -> st a ^ "*+" ^ st b 
 
-  | EXPR_label (_,s) -> "(&&" ^ s ^ ")"
-  | EXPR_not (sr,e) -> "not(" ^ se e ^ ")"
-  | EXPR_index (sr,name,idx) -> name ^ "<" ^ string_of_bid idx ^ ">"
-  | EXPR_void _ -> "void"
-  | EXPR_name (_,name,ts) ->
+  | `EXPR_label (_,s) -> "(&&" ^ s ^ ")"
+  | `EXPR_not (sr,e) -> "not(" ^ se e ^ ")"
+  | `EXPR_index (sr,name,idx) -> name ^ "<" ^ string_of_bid idx ^ ">"
+  | `EXPR_void _ -> "void"
+  | `EXPR_name (_,name,ts) ->
       string_of_id name ^
       (
         if List.length ts = 0 then ""
         else "[" ^ catmap ", " string_of_typecode ts ^ "]"
       )
-  | EXPR_case_tag (_,v) -> "case " ^ si v
-  | EXPR_typed_case (_,v,t) ->
+  | `EXPR_case_tag (_,v) -> "case " ^ si v
+  | `EXPR_typed_case (_,v,t) ->
     "(case " ^ si v ^
     " of " ^ string_of_typecode t ^ ")"
 
-  | EXPR_projection (_,v,t) ->
+  | `EXPR_projection (_,v,t) ->
     "(proj " ^ si v ^
     " of " ^ string_of_typecode t ^ ")"
 
-  | EXPR_array_projection (_,v,t) ->
+  | `EXPR_array_projection (_,v,t) ->
     "(aproj " ^ se v ^
     " of " ^ string_of_typecode t ^ ")"
 
 
-  | EXPR_ainj (_,v,t) ->
+  | `EXPR_ainj (_,v,t) ->
     "(ainj " ^ se v ^
     " of " ^ string_of_typecode t ^ ")"
 
 
-  | EXPR_rnprj (_,name,seq,arg) ->
+  | `EXPR_rnprj (_,name,seq,arg) ->
     "(rnproj " ^ name ^ "#"^ string_of_int seq ^ "(" ^ se arg ^ "))"
 
-  | EXPR_lookup (_, (e, name, ts)) ->
+  | `EXPR_lookup (_, (e, name, ts)) ->
       "(" ^ se e ^ ")::" ^ string_of_id name ^
       (
         if length ts = 0 then "" else
         "[" ^ catmap ", " string_of_typecode ts ^ "]"
       )
-  | EXPR_callback (_,name) -> "callback " ^string_of_qualified_name name
-  | EXPR_suffix (_,(name,suf)) ->
+  | `EXPR_callback (_,name) -> "callback " ^string_of_qualified_name name
+  | `EXPR_suffix (_,(name,suf)) ->
     string_of_qualified_name name ^ " of (" ^ string_of_typecode suf ^ ")"
 
-  | EXPR_patvar (sr,s) -> "?" ^ string_of_id s
-  | EXPR_patany sr -> "ANY"
-  | EXPR_interpolate (sr,s) -> "q"^string_of_string s
-  | EXPR_vsprintf (sr,s) -> "f"^string_of_string s
-  | EXPR_ellipsis _ -> "..."
-  | EXPR_noexpand (sr,e) -> "noexpand(" ^ string_of_expr e ^ ")"
+  | `EXPR_patvar (sr,s) -> "?" ^ string_of_id s
+  | `EXPR_patany sr -> "ANY"
+  | `EXPR_interpolate (sr,s) -> "q"^string_of_string s
+  | `EXPR_vsprintf (sr,s) -> "f"^string_of_string s
+  | `EXPR_ellipsis _ -> "..."
+  | `EXPR_noexpand (sr,e) -> "noexpand(" ^ string_of_expr e ^ ")"
   (* because 'noexpand' is too ugly .. *)
-  (* | EXPR_noexpand (sr,e) -> string_of_expr e *)
+  (* | `EXPR_noexpand (sr,e) -> string_of_expr e *)
 
-  | EXPR_letin (sr,(pat,e1, e2)) ->
+  | `EXPR_letin (sr,(pat,e1, e2)) ->
     "let " ^ string_of_pattern pat ^ " = " ^ se e1 ^ " in " ^ se e2
 
-  | EXPR_coercion (_,(e,t)) ->
+  | `EXPR_coercion (_,(e,t)) ->
     "explicit_coercion(" ^ se e ^ ":>>" ^
     string_of_typecode t ^ ")"
 
-  | EXPR_variant_subtype_match_coercion (_,(e,t)) ->
+  | `EXPR_variant_subtype_match_coercion (_,(e,t)) ->
     "variant_subtype_match_coercion(" ^ se e ^ ":>>" ^
     string_of_typecode t ^ ")"
 
 
-  | EXPR_expr (_,s,t,e) ->
+  | `EXPR_expr (_,s,t,e) ->
     "cexpr["^string_of_typecode t^"]" ^
     string_of_code_spec s  ^ se e ^ " endcexpr"
 
-  | EXPR_cond (_,(e,b1,b2)) ->
+  | `EXPR_cond (_,(e,b1,b2)) ->
     "if " ^ se e ^
     " then " ^ se b1 ^
     " else " ^ se b2 ^
     " endif"
 
-  | EXPR_typeof (_,e) -> "typeof("^se e^")"
-  | EXPR_as (_, (e1, name)) -> "(" ^ se e1 ^ ") as " ^ string_of_id name
-  | EXPR_as_var (_, (e1, name)) -> "(" ^ se e1 ^ ") as var " ^ string_of_id name
-  | EXPR_get_n (_,(n,e)) -> "get (" ^ si n ^ ", " ^se e^")"
-  | EXPR_get_named_variable (_,(n,e)) ->
+  | `EXPR_typeof (_,e) -> "typeof("^se e^")"
+  | `EXPR_as (_, (e1, name)) -> "(" ^ se e1 ^ ") as " ^ string_of_id name
+  | `EXPR_as_var (_, (e1, name)) -> "(" ^ se e1 ^ ") as var " ^ string_of_id name
+  | `EXPR_get_n (_,(n,e)) -> "get (" ^ si n ^ ", " ^se e^")"
+  | `EXPR_get_named_variable (_,(n,e)) ->
       "get (" ^ string_of_id n ^ ", " ^ se e ^ ")"
-  | EXPR_map (_,f,e) -> "map (" ^ se f ^ ") (" ^ se e ^ ")"
-  | EXPR_deref (_,e) -> "*(" ^ se e ^ ")"
-  | EXPR_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
-  | EXPR_rref (_,e) -> "rref" ^ "(" ^ se e ^ ")"
-  | EXPR_wref (_,e) -> "wref" ^ "(" ^ se e ^ ")"
-  | EXPR_uniq (_,e) -> "uniq(" ^ se e ^ ")"
+  | `EXPR_map (_,f,e) -> "map (" ^ se f ^ ") (" ^ se e ^ ")"
+  | `EXPR_deref (_,e) -> "*(" ^ se e ^ ")"
+  | `EXPR_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
+  | `EXPR_rref (_,e) -> "rref" ^ "(" ^ se e ^ ")"
+  | `EXPR_wref (_,e) -> "wref" ^ "(" ^ se e ^ ")"
+  | `EXPR_uniq (_,e) -> "uniq(" ^ se e ^ ")"
 
-  | EXPR_likely (_,e) -> "likely" ^ "(" ^ se e ^ ")"
-  | EXPR_unlikely (_,e) -> "unlikely" ^ "(" ^ se e ^ ")"
-  | EXPR_new (_,e) -> "new " ^ "(" ^ se e ^ ")"
-  | EXPR_literal (_,e) -> string_of_literal e
-  | EXPR_apply  (_,(fn, arg)) -> "(" ^
+  | `EXPR_likely (_,e) -> "likely" ^ "(" ^ se e ^ ")"
+  | `EXPR_unlikely (_,e) -> "unlikely" ^ "(" ^ se e ^ ")"
+  | `EXPR_new (_,e) -> "new " ^ "(" ^ se e ^ ")"
+  | `EXPR_literal (_,e) -> string_of_literal e
+  | `EXPR_apply  (_,(fn, arg)) -> "(" ^
     se fn ^ " " ^
     se arg ^
     ")"
 
-  | EXPR_product (_,ts) ->
+  | `EXPR_product (_,ts) ->
      cat "*" (map se ts)
 
-  | EXPR_sum (_,ts) ->
+  | `EXPR_sum (_,ts) ->
      cat "+" (map se ts)
 
-  | EXPR_intersect (_,ts) ->
+  | `EXPR_intersect (_,ts) ->
      cat "\\&" (map se ts)
 
-  | EXPR_union (_,ts) ->
+  | `EXPR_union (_,ts) ->
      cat "\\|" (map se ts)
 
 
-  | EXPR_isin (_,(a,b)) ->
+  | `EXPR_isin (_,(a,b)) ->
      se a ^ " isin " ^ se b
 
-  | EXPR_orlist (_,ts) ->
+  | `EXPR_orlist (_,ts) ->
      cat " or " (map se ts)
 
-  | EXPR_andlist (_,ts) ->
+  | `EXPR_andlist (_,ts) ->
      cat " and " (map se ts)
 
-  | EXPR_arrow (_,(a,b)) ->
+  | `EXPR_arrow (_,(a,b)) ->
     "(" ^ se a ^ " -> " ^ se b ^ ")"
 
-  | EXPR_effector (_,(a,e,b)) ->
+  | `EXPR_effector (_,(a,e,b)) ->
     "(" ^ se a ^ " ->["^se e^"] " ^ se b ^ ")"
 
-  | EXPR_longarrow (_,(a,b)) ->
+  | `EXPR_longarrow (_,(a,b)) ->
     "(" ^ se a ^ " --> " ^ se b ^ ")"
 
-  | EXPR_superscript (_,(a,b)) ->
+  | `EXPR_superscript (_,(a,b)) ->
     "(" ^ se a ^ " ^ " ^ se b ^ ")"
 
-  | EXPR_tuple (_,t) -> "(" ^ catmap ", " se t ^ ")"
-  | EXPR_get_tuple_tail (_,t) -> "get_tuple_tail(" ^ se t ^ ")"
-  | EXPR_get_tuple_head (_,t) -> "get_tuple_head(" ^ se t ^ ")"
-  | EXPR_get_tuple_body(_,t) -> "get_tuple_body(" ^ se t ^ ")"
-  | EXPR_get_tuple_last(_,t) -> "get_tuple_last(" ^ se t ^ ")"
-  | EXPR_tuple_cons (_,eh, et) -> "tuple_cons (" ^ se eh ^ "," ^ se et ^ ")"
-  | EXPR_tuple_snoc (_,eh, et) -> "tuple_snoc (" ^ se eh ^ "," ^ se et ^ ")"
+  | `EXPR_tuple (_,t) -> "(" ^ catmap ", " se t ^ ")"
+  | `EXPR_get_tuple_tail (_,t) -> "get_tuple_tail(" ^ se t ^ ")"
+  | `EXPR_get_tuple_head (_,t) -> "get_tuple_head(" ^ se t ^ ")"
+  | `EXPR_get_tuple_body(_,t) -> "get_tuple_body(" ^ se t ^ ")"
+  | `EXPR_get_tuple_last(_,t) -> "get_tuple_last(" ^ se t ^ ")"
+  | `EXPR_tuple_cons (_,eh, et) -> "tuple_cons (" ^ se eh ^ "," ^ se et ^ ")"
+  | `EXPR_tuple_snoc (_,eh, et) -> "tuple_snoc (" ^ se eh ^ "," ^ se et ^ ")"
 
-  | EXPR_record (_,ts) ->
+  | `EXPR_record (_,ts) ->
       "(" ^
       catmap ", " (fun (s,e) -> string_of_id s ^ "=" ^ se e ) ts ^
       ")"
 
-  | EXPR_polyrecord (_,ts,e) ->
+  | `EXPR_polyrecord (_,ts,e) ->
       "(" ^
       catmap ", " (fun (s,e) -> string_of_id s ^ "=" ^ se e ) ts ^
       " | " ^ se e ^
       ")"
 
-  | EXPR_replace_fields (_,e,es) ->
+  | `EXPR_replace_fields (_,e,es) ->
       "(" ^ se e ^ " with " ^ 
       catmap ", " (fun (s,e) -> string_of_id s ^ "=" ^ se e ) es ^
       ")"
 
 
-  | EXPR_record_type (_,ts) ->
+  | `EXPR_record_type (_,ts) ->
       "(" ^
       catmap ", "
         (fun (s,t) -> string_of_id s ^ ":" ^ string_of_typecode t)
         ts ^
       ")"
 
-  | EXPR_polyrecord_type (_,ts,v) ->
+  | `EXPR_polyrecord_type (_,ts,v) ->
       "(" ^
       catmap " "
         (fun (s,t) -> string_of_id s ^ ":" ^ string_of_typecode t ^ ",")
         ts ^ " | " ^ string_of_typecode v ^
       ")"
 
-  | EXPR_remove_fields (_,e,ss) -> 
+  | `EXPR_remove_fields (_,e,ss) -> 
     "(" ^ se e ^ " minus fields " ^ String.concat "," ss ^ ")"
 
-  | EXPR_variant (_, (s, e)) -> "case " ^ string_of_id s ^ " of (" ^ se e ^ ")"
+  | `EXPR_variant (_, (s, e)) -> "case " ^ string_of_id s ^ " of (" ^ se e ^ ")"
 
-  | EXPR_variant_type (_,ts) ->
+  | `EXPR_variant_type (_,ts) ->
       "(" ^
       catmap "| "
         (fun x -> match x with 
@@ -283,65 +283,65 @@ and string_of_expr (e:expr_t) =
         ts ^
       ")"
 
-  | EXPR_arrayof (_,t) -> "[|" ^ catmap ", " se t ^ "|]"
+  | `EXPR_arrayof (_,t) -> "[|" ^ catmap ", " se t ^ "|]"
 
-  | EXPR_lambda (_,(kind,vs,paramss,ret, sts)) ->
+  | `EXPR_lambda (_,(kind,vs,paramss,ret, sts)) ->
     "(" ^ string_of_funkind kind ^ " " ^
      string_of_vs vs ^
     catmap " "
     (fun ps -> "(" ^ string_of_parameters ps ^ ")") paramss
     ^
     (match ret with
-    | TYP_none -> ""
+    | `TYP_none -> ""
     | _ -> ": " ^string_of_typecode ret) ^
     " = " ^
     string_of_compound 0 sts ^ ")"
 
-  | EXPR_ctor_arg (_,(cn,e)) ->
+  | `EXPR_ctor_arg (_,(cn,e)) ->
     "ctor_arg " ^ sqn cn ^ "(" ^
     se e ^ ")"
   
-  | EXPR_ho_ctor_arg (_,(cn,es)) ->
+  | `EXPR_ho_ctor_arg (_,(cn,es)) ->
     "ctor_arg " ^ sqn cn ^ "(" ^
     catmap "," (fun e-> "("^se e^")") es ^ ")"
 
-  | EXPR_variant_arg (_,(cn,e)) ->
+  | `EXPR_variant_arg (_,(cn,e)) ->
     "variant_arg_case " ^ cn ^ "(" ^
     se e ^ ")"
 
 
-  | EXPR_case_arg (_,(n,e)) ->
+  | `EXPR_case_arg (_,(n,e)) ->
     "case_arg " ^ si n ^ "(" ^
     se e ^ ")"
 
-  | EXPR_case_index (_,e) ->
+  | `EXPR_case_index (_,e) ->
     "caseno (" ^ se e ^ ")"
 
-  | EXPR_rptsum_arg (_,e) ->
+  | `EXPR_rptsum_arg (_,e) ->
     "casearg (" ^ se e ^ ")"
 
 
-  | EXPR_match_ctor (_,(cn,e)) ->
+  | `EXPR_match_ctor (_,(cn,e)) ->
     "match_ctor " ^ sqn cn ^ "(" ^
     se e ^ ")"
 
-  | EXPR_match_variant_subtype (_, (e,t)) ->
+  | `EXPR_match_variant_subtype (_, (e,t)) ->
     "match_variant_subtype(" ^ se e ^ ", " ^ string_of_typecode t ^ ")"
 
-  | EXPR_match_ho_ctor (_,(cn,es)) ->
+  | `EXPR_match_ho_ctor (_,(cn,es)) ->
     "match_ctor " ^ sqn cn ^ "(" ^
     catmap "," (fun e-> "(" ^ se e ^")") es^ ")"
 
-  | EXPR_match_variant (_,(cn,e)) ->
+  | `EXPR_match_variant (_,(cn,e)) ->
     "match_variant_case " ^ cn ^ "(" ^
     se e ^ ")"
 
 
-  | EXPR_match_case (_,(v,e)) ->
+  | `EXPR_match_case (_,(v,e)) ->
     "match_case " ^ si v ^ "(" ^
     se e ^ ")"
 
-  | EXPR_match (_,(e, ps)) ->
+  | `EXPR_match (_,(e, ps)) ->
     "match " ^ se e ^ " with\n" ^
     catmap "\n"
     (fun (p,e')->
@@ -354,7 +354,7 @@ and string_of_expr (e:expr_t) =
     ^
     " endmatch"
 
-  | EXPR_type_match (_,(e, ps)) ->
+  | `EXPR_type_match (_,(e, ps)) ->
     "typematch " ^ string_of_typecode e ^ " with " ^
     catmap ""
     (fun (p,e')->
@@ -368,7 +368,7 @@ and string_of_expr (e:expr_t) =
     "\n endmatch"
 
 
-  | EXPR_subtype_match (_,(e, ps)) ->
+  | `EXPR_subtype_match (_,(e, ps)) ->
     "subtypematch " ^ string_of_typecode e ^ " with " ^
     catmap ""
     (fun (p,e')->
@@ -381,7 +381,7 @@ and string_of_expr (e:expr_t) =
     ^
     "\n endmatch"
 
-  | EXPR_typecase_match (_,(t, ps)) ->
+  | `EXPR_typecase_match (_,(t, ps)) ->
     "typecase " ^ string_of_typecode t ^ " with " ^
     catmap ""
     (fun (p,e')->
@@ -395,10 +395,10 @@ and string_of_expr (e:expr_t) =
     "\n endmatch"
 
 
-  | EXPR_range_check (_,mi,v,mx) ->
+  | `EXPR_range_check (_,mi,v,mx) ->
     "range_check " ^ se mi ^ " <= " ^ se v ^ " < " ^ se mx
 
-  | EXPR_extension (sr, bases, extension) ->
+  | `EXPR_extension (sr, bases, extension) ->
     "extend " ^ catmap "," se bases ^ " with " ^ se extension
 
 (* precedences for type operators ..
@@ -435,50 +435,50 @@ and str_of_kindcode k : string =
 and st prec tc : string =
   let iprec,txt =
     match tc with
-    | TYP_defer (sr,t) -> 
+    | `TYP_defer (sr,t) -> 
       begin match !t with 
       | None -> 0,"(DEFER:unset)" 
       | Some t -> 0,"(DEFER:"^string_of_typecode t^")" 
       end
-    | TYP_tuple_cons (sr, t1, t2) -> 6, st 4 t1 ^ "**" ^ st 4 t2
-    | TYP_tuple_snoc (sr, t1, t2) -> 6, st 4 t1 ^ "<**>" ^ st 4 t2
-    | TYP_pclt (a,b) -> 0, "_pclt<" ^ string_of_typecode a ^ "," ^ string_of_typecode b ^ ">"
-    | TYP_rpclt (a,b) -> 0, "_rpclt<" ^ string_of_typecode a ^ "," ^ string_of_typecode b ^ ">"
-    | TYP_wpclt (a,b) -> 0, "_wpclt<" ^ string_of_typecode a ^ "," ^ string_of_typecode b ^ ">"
-    | TYP_rptsum (d,c) -> 6, st 4 d ^ "*+" ^ st 4 c
+    | `TYP_tuple_cons (sr, t1, t2) -> 6, st 4 t1 ^ "**" ^ st 4 t2
+    | `TYP_tuple_snoc (sr, t1, t2) -> 6, st 4 t1 ^ "<**>" ^ st 4 t2
+    | `TYP_pclt (a,b) -> 0, "_pclt<" ^ string_of_typecode a ^ "," ^ string_of_typecode b ^ ">"
+    | `TYP_rpclt (a,b) -> 0, "_rpclt<" ^ string_of_typecode a ^ "," ^ string_of_typecode b ^ ">"
+    | `TYP_wpclt (a,b) -> 0, "_wpclt<" ^ string_of_typecode a ^ "," ^ string_of_typecode b ^ ">"
+    | `TYP_rptsum (d,c) -> 6, st 4 d ^ "*+" ^ st 4 c
 
-    | TYP_index (sr,name,idx) -> 0, name ^ "<" ^ string_of_bid idx ^ ">"
-    | TYP_label -> 0, "LABEL"
-    | TYP_void _ -> 0, "void"
-    | TYP_name (_,name,ts) ->
+    | `TYP_index (sr,name,idx) -> 0, name ^ "<" ^ string_of_bid idx ^ ">"
+    | `TYP_label -> 0, "LABEL"
+    | `TYP_void _ -> 0, "void"
+    | `TYP_name (_,name,ts) ->
         0, string_of_id name ^
         (
           if List.length ts = 0 then ""
           else "[" ^ catmap ", " string_of_typecode ts ^ "]"
         )
-    | TYP_case_tag (_,v) -> 0, "case " ^ si v
-    | TYP_typed_case (_,v,t) ->
+    | `TYP_case_tag (_,v) -> 0, "case " ^ si v
+    | `TYP_typed_case (_,v,t) ->
       0, "(case " ^ si v ^ " of " ^ string_of_typecode t ^ ")"
 
-    | TYP_lookup (_,(e,name, ts)) ->
+    | `TYP_lookup (_,(e,name, ts)) ->
         0,
         "(" ^ string_of_expr e ^ ")::" ^ string_of_id name ^
         (
           if length ts = 0 then "" else
           "[" ^ catmap ", " string_of_typecode ts ^ "]"
         )
-    | TYP_callback (_,name) -> 0, "callback " ^ string_of_qualified_name name
+    | `TYP_callback (_,name) -> 0, "callback " ^ string_of_qualified_name name
 
-    | TYP_suffix (_,(name,suf)) ->
+    | `TYP_suffix (_,(name,suf)) ->
       0,
       string_of_qualified_name name ^ " of (" ^ string_of_typecode suf ^ ")"
 
-    | TYP_patvar (sr,s) -> 0, "?" ^ string_of_id s
-    | TYP_patany sr -> 0,"ANY"
-    | TYP_none -> 0,"<none>"
-    | TYP_ellipsis-> 0,"..."
+    | `TYP_patvar (sr,s) -> 0, "?" ^ string_of_id s
+    | `TYP_patany sr -> 0,"ANY"
+    | `TYP_none -> 0,"<none>"
+    | `TYP_ellipsis-> 0,"..."
 
-    | TYP_type_match (e,ps) -> 0,
+    | `TYP_type_match (e,ps) -> 0,
       "typematch " ^ string_of_typecode e ^ " with " ^
       catmap ""
       (fun (p,t) ->
@@ -488,7 +488,7 @@ and st prec tc : string =
       ^
       "\nendmatch"
 
-    | TYP_subtype_match (e,ps) -> 0,
+    | `TYP_subtype_match (e,ps) -> 0,
       "subtypematch " ^ string_of_typecode e ^ " with " ^
       catmap ""
       (fun (p,t) ->
@@ -498,8 +498,8 @@ and st prec tc : string =
       ^
       "\nendmatch"
 
-    | TYP_var i -> 0,"<var " ^ string_of_bid i ^ ">"
-    | TYP_unitsum k ->
+    | `TYP_var i -> 0,"<var " ^ string_of_bid i ^ ">"
+    | `TYP_unitsum k ->
       0,
       begin match k with
       | 0 -> "void"
@@ -508,13 +508,13 @@ and st prec tc : string =
       | _ -> si k
       end
 
-    | TYP_tuple ls ->
+    | `TYP_tuple ls ->
       begin match ls with
       | [] -> 0,"unit"
       | _ -> 4, cat " * " (map (st 4) ls)
       end
 
-    | TYP_record ls ->
+    | `TYP_record ls ->
       begin match ls with
       | [] -> 0,"unit"
       | _ ->
@@ -523,14 +523,14 @@ and st prec tc : string =
           ")"
       end
 
-    | TYP_polyrecord (ls,v) ->
+    | `TYP_polyrecord (ls,v) ->
           0, "(" ^
           catmap "" (fun (s,t) -> string_of_id s ^ ":" ^ st 0 t ^ ", ") ls ^
           " | " ^ st 0 v ^
           ")"
 
 
-    | TYP_variant ls ->
+    | `TYP_variant ls ->
       begin match ls with
       | [] -> 0,"void"
       | _ ->
@@ -542,75 +542,75 @@ and st prec tc : string =
           ")"
       end
 
-    | TYP_sum ls ->
+    | `TYP_sum ls ->
       begin match ls with
       | [] -> 0,"void"
-      | [TYP_tuple[];TYP_tuple[]] -> 0,"bool"
+      | [`TYP_tuple[];`TYP_tuple[]] -> 0,"bool"
       | _ -> 5,cat " + " (map (st 5) ls)
       end
 
-    | TYP_typeset ls ->
+    | `TYP_typeset ls ->
       begin match ls with
       | [] -> 0,"void"
       | _ -> 0,"{" ^ cat ", " (map (st 0) ls) ^  "}"
       end
 
-    | TYP_intersect ls ->
-      let ls = filter (fun t -> t <> TYP_tuple []) ls in
+    | `TYP_intersect ls ->
+      let ls = filter (fun t -> t <> `TYP_tuple []) ls in
       begin match ls with
       | [] -> 0,"void"
       | _ -> 9,cat " \\& " (map (st 9) ls)
       end
 
-    | TYP_union ls ->
-      let ls = filter (fun t -> match t with | TYP_void _ -> false | _ -> true) ls in
+    | `TYP_union ls ->
+      let ls = filter (fun t -> match t with | `TYP_void _ -> false | _ -> true) ls in
       begin match ls with
       | [] -> 0,"any"
       | _ -> 9,cat " \\& " (map (st 9) ls)
       end
 
 
-    | TYP_setintersection ls ->
+    | `TYP_setintersection ls ->
       begin match ls with
       | [] -> 0,"void"
       | _ -> 9,cat " && " (map (st 9) ls)
       end
 
-    | TYP_setunion ls ->
+    | `TYP_setunion ls ->
       begin match ls with
       | [] -> 0,"unit"
       | _ -> 9,cat " || " (map (st 9) ls)
       end
 
-    | TYP_function (args, result) ->
+    | `TYP_function (args, result) ->
       9,st 9 args ^ " -> " ^ st 9 result
 
-    | TYP_effector (args, effects, result) ->
+    | `TYP_effector (args, effects, result) ->
       9,st 9 args ^ " ->["^st 0 effects^"] " ^ st 9 result
 
 
-    | TYP_cfunction (args, result) ->
+    | `TYP_cfunction (args, result) ->
       9,st 9 args ^ " --> " ^ st 9 result
 
-    | TYP_array (vt,it) -> 3, st 1 vt ^ "^" ^ st 3 it
+    | `TYP_array (vt,it) -> 3, st 1 vt ^ "^" ^ st 3 it
 
-    | TYP_pointer t -> 1,"&" ^ st 1 t
-    | TYP_rref t -> 1,"rref[" ^ st 1 t ^ "]"
-    | TYP_wref t -> 1,"wref[" ^ st 1 t ^ "]"
-    | TYP_uniq t -> 1,"uniq[" ^ st 0 t ^ "]"
+    | `TYP_pointer t -> 1,"&" ^ st 1 t
+    | `TYP_rref t -> 1,"rref[" ^ st 1 t ^ "]"
+    | `TYP_wref t -> 1,"wref[" ^ st 1 t ^ "]"
+    | `TYP_uniq t -> 1,"uniq[" ^ st 0 t ^ "]"
 
-    | TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
-    | TYP_as (t,s) -> 0, "([" ^ st 0 t ^ "] as " ^ string_of_id s ^ ")"
+    | `TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
+    | `TYP_as (t,s) -> 0, "([" ^ st 0 t ^ "] as " ^ string_of_id s ^ ")"
 
-    | TYP_dual t -> 2,"~"^ st 2 t
+    | `TYP_dual t -> 2,"~"^ st 2 t
 
-    | TYP_isin (t1,t2) -> 6,st 2 t1 ^ " isin " ^ st 6 t2
+    | `TYP_isin (t1,t2) -> 6,st 2 t1 ^ " isin " ^ st 6 t2
 
-    | TYP_apply (t1,t2) -> 2,st 2 t1 ^ " " ^ st 2 t2
-    | TYP_type_tuple ls ->
+    | `TYP_apply (t1,t2) -> 2,st 2 t1 ^ " " ^ st 2 t2
+    | `TYP_type_tuple ls ->
       4, cat ", " (map (st 4) ls)
 
-    | TYP_typefun (args,ret,body) ->
+    | `TYP_typefun (args,ret,body) ->
        10,
        (
          "fun(" ^ cat ", "
@@ -621,10 +621,10 @@ and st prec tc : string =
          ) ^
          "): " ^ str_of_kindcode ret ^ "=" ^ st 10 body
        )
-    | TYP_type_extension (sr,ts,t) ->
+    | `TYP_type_extension (sr,ts,t) ->
       0,"extend {" ^ cat ", " (map (st 0) ts) ^ " with " ^ st 0 t ^ "}"
 
-    | TYP_typeop (sr,op,ts,k) ->
+    | `TYP_typeop (sr,op,ts,k) ->
       0,"_typeop(" ^ op ^ "," ^ st 0 ts ^ "," ^ str_of_kindcode k ^ ")"
   in
     if iprec >= prec
@@ -1092,7 +1092,7 @@ and short_string_of_asm_compound level ss =
 
 and special_string_of_typecode ty =  (* used for constructors *)
   match ty with
-  | TYP_tuple [] -> ""
+  | `TYP_tuple [] -> ""
   | _ -> " of " ^ string_of_typecode ty
 
 and special_string_of_btypecode bsym_table evs ty =  (* used for constructors *)
@@ -1106,8 +1106,8 @@ and string_of_maybe_kindcode = function
 
 
 and string_of_tconstraint = function
-  | TYP_tuple [] -> ""
-  | TYP_intersect [TYP_tuple []] -> ""
+  | `TYP_tuple [] -> ""
+  | `TYP_intersect [`TYP_tuple []] -> ""
   | t -> let x = string_of_typecode t in
     if x <> "any" then " where " ^ x else ""
 
@@ -1127,7 +1127,7 @@ and string_of_plain_ivs ivs =
 
 and string_of_ivs (ivs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
   match ivs,tcon,rtcr with
-  | [],TYP_tuple [],[] -> ""
+  | [],`TYP_tuple [],[] -> ""
   | _ ->
       let ivs = catmap ", "
         (fun (name,ix,tpat) -> string_of_id name ^ string_of_maybe_kindcode tpat)
@@ -1137,7 +1137,7 @@ and string_of_ivs (ivs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as c
 
 and string_of_vs (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
   match vs,tcon,rtcr with
-  | [],TYP_tuple [],[] -> ""
+  | [],`TYP_tuple [],[] -> ""
   | _ ->
       let vs = catmap ", "
         (fun (name,tpat) -> string_of_id name ^ string_of_maybe_kindcode tpat)
@@ -1555,7 +1555,7 @@ and string_of_statement level s =
 
   | STMT_callback_decl (_,name,args,result, reqs) -> spaces level ^
     "callback " ^ string_of_id name ^ ": " ^
-    (string_of_typecode (TYP_tuple args)) ^ " -> " ^
+    (string_of_typecode (`TYP_tuple args)) ^ " -> " ^
     (string_of_typecode result) ^
     string_of_raw_reqs reqs ^
     ";"
@@ -1564,7 +1564,7 @@ and string_of_statement level s =
     spaces level ^
     "fun " ^ string_of_id name ^ string_of_vs vs ^
     ": " ^
-    (string_of_typecode (TYP_tuple args)) ^ " -> " ^
+    (string_of_typecode (`TYP_tuple args)) ^ " -> " ^
     (string_of_typecode result) ^
     " = " ^ string_of_code_spec code ^
     (if prec = "" then "" else ":"^prec^" ")^
@@ -1974,12 +1974,12 @@ and string_of_symdef entry name vs =
     "(C function binding) fun " ^ string_of_id name ^ string_of_ivs vs ^
     ": " ^ st
     (
-      TYP_function
+      `TYP_function
       (
         (
           match pts with
           | [x] -> x
-          | x -> TYP_tuple x
+          | x -> `TYP_tuple x
         )
         ,
         res
@@ -1994,12 +1994,12 @@ and string_of_symdef entry name vs =
     "callback fun " ^ string_of_id name ^ string_of_ivs vs ^
     ": " ^ st
     (
-      TYP_cfunction
+      `TYP_cfunction
       (
         (
           match pts with
           | [x] -> x
-          | x -> TYP_tuple x
+          | x -> `TYP_tuple x
         )
         ,
         res
@@ -2039,7 +2039,7 @@ and string_of_symdef entry name vs =
     "(Felix function) fun " ^ string_of_id name ^ string_of_ivs vs ^
     ": " ^ st
     (
-      TYP_effector
+      `TYP_effector
       (
         typeof_paramspec_t ps,
         effects , res
@@ -2543,7 +2543,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
 
   | DCL_fun (props, args, result, code, reqs,prec) ->
     let argtype:typecode_t = type_of_argtypes args in
-    let t:typecode_t = TYP_function (argtype,result) in
+    let t:typecode_t = `TYP_function (argtype,result) in
     sl ^
     string_of_properties props ^
     "fun " ^ string_of_id name ^ seq ^ string_of_vs vs ^
@@ -2555,7 +2555,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
 
   | DCL_callback (props, args, result, reqs) ->
     let argtype:typecode_t = type_of_argtypes args in
-    let t:typecode_t = TYP_cfunction (argtype,result) in
+    let t:typecode_t = `TYP_cfunction (argtype,result) in
     sl ^
     string_of_properties props ^
     "callback fun " ^ string_of_id name ^ seq ^ string_of_vs vs ^

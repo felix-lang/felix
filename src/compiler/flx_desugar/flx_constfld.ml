@@ -10,7 +10,7 @@ open Flx_literal
 
 let truth sr r =
   let r = if r then 1 else 0 in
-  EXPR_typed_case (sr,r,flx_bool)
+  `EXPR_typed_case (sr,r,flx_bool)
 
 (*
 let sbi x = string_of_big_int x
@@ -31,10 +31,10 @@ let eq x y = (eq_big_int (bis x) (bis y))
 let ge x y = (ge_big_int (bis x) (bis y))
 let gt x y = (gt_big_int (bis x) (bis y))
 
-let mkint sr x = EXPR_literal (sr, {felix_type="int"; internal_value=x; c_value=x}) 
+let mkint sr x = `EXPR_literal (sr, {felix_type="int"; internal_value=x; c_value=x}) 
 *)
 
-let mkstring sr x = EXPR_literal (sr, {felix_type="string"; internal_value=x; 
+let mkstring sr x = `EXPR_literal (sr, {felix_type="string"; internal_value=x; 
   c_value=Flx_string.c_quote_of_string x}) 
 
 let const_fold' e sr name arg =
@@ -46,44 +46,44 @@ let const_fold' e sr name arg =
 (*
   (* integers *)
   (* -x *)
-  | "neg", EXPR_literal (_,{felix_type="int"; internal_value=x})
+  | "neg", `EXPR_literal (_,{felix_type="int"; internal_value=x})
     -> mkint (minus x)
 
   (* +x *)
-  | "pos", EXPR_literal (_,{felix_type="int"; internal_value=x})
+  | "pos", `EXPR_literal (_,{felix_type="int"; internal_value=x})
     -> mkint x
 
   (* abs x *)
-  | "abs", EXPR_literal (_,{felix_type="int"; internal_value=x})
+  | "abs", `EXPR_literal (_,{felix_type="int"; internal_value=x})
     -> mkint (abs x)
 
   (* x+y *)
-  | "+", EXPR_tuple ( _, [
-           EXPR_literal (_,{felix_type="int"; internal_value=x});
-           EXPR_literal (_,{felix_type="int"; internal_value=y})
+  | "+", `EXPR_tuple ( _, [
+           `EXPR_literal (_,{felix_type="int"; internal_value=x});
+           `EXPR_literal (_,{felix_type="int"; internal_value=y})
           ])
     -> mkint (add x y)
 
   (* x-y *)
-  | "-", EXPR_tuple ( _, [
-           EXPR_literal (_,{felix_type="int"; internal_value=x});
-           EXPR_literal (_,{felix_type="int"; internal_value=y})
+  | "-", `EXPR_tuple ( _, [
+           `EXPR_literal (_,{felix_type="int"; internal_value=x});
+           `EXPR_literal (_,{felix_type="int"; internal_value=y})
           ])
     ->
      mkint (sub x y)
 
   (* x*y *)
-  | "*", EXPR_tuple ( _, [
-           EXPR_literal (_,{felix_type="int"; internal_value=x});
-           EXPR_literal (_,{felix_type="int"; internal_value=y})
+  | "*", `EXPR_tuple ( _, [
+           `EXPR_literal (_,{felix_type="int"; internal_value=x});
+           `EXPR_literal (_,{felix_type="int"; internal_value=y})
           ])
     ->
     mkint (mult x y)
 
   (* x/y *)
-  | "/", EXPR_tuple ( _, [
-           EXPR_literal (_,{felix_type="int"; internal_value=x});
-           EXPR_literal (_,{felix_type="int"; internal_value=y})
+  | "/", `EXPR_tuple ( _, [
+           `EXPR_literal (_,{felix_type="int"; internal_value=x});
+           `EXPR_literal (_,{felix_type="int"; internal_value=y})
           ])
     ->
     let r =
@@ -95,9 +95,9 @@ let const_fold' e sr name arg =
 
 
   (* x mod y *)
-  | "mod", EXPR_tuple ( _, [
-           EXPR_literal (_,{felix_type="int"; internal_value=x});
-           EXPR_literal (_,{felix_type="int"; internal_value=y})
+  | "mod", `EXPR_tuple ( _, [
+           `EXPR_literal (_,{felix_type="int"; internal_value=x});
+           `EXPR_literal (_,{felix_type="int"; internal_value=y})
           ])
     ->
     let r =
@@ -108,57 +108,57 @@ let const_fold' e sr name arg =
     mkint r
 
   (* x ** y *)
-  | "pow", EXPR_tuple ( _, [
-           EXPR_literal (_,{felix_type="int"; internal_value=x});
-           EXPR_literal (_,{felix_type="int"; internal_value=y})
+  | "pow", `EXPR_tuple ( _, [
+           `EXPR_literal (_,{felix_type="int"; internal_value=x});
+           `EXPR_literal (_,{felix_type="int"; internal_value=y})
           ])
     ->
     mkint (pow x y)
 
   (* x < y *)
-  | "<", EXPR_tuple ( _, [
-           EXPR_literal (_,{felix_type="int"; internal_value=x});
-           EXPR_literal (_,{felix_type="int"; internal_value=y})
+  | "<", `EXPR_tuple ( _, [
+           `EXPR_literal (_,{felix_type="int"; internal_value=x});
+           `EXPR_literal (_,{felix_type="int"; internal_value=y})
           ])
     ->
     truth sr (lt x y)
 
   (* x > y *)
-  | ">", EXPR_tuple ( _, [
-           EXPR_literal (_,{felix_type="int"; internal_value=x});
-           EXPR_literal (_,{felix_type="int"; internal_value=y})
+  | ">", `EXPR_tuple ( _, [
+           `EXPR_literal (_,{felix_type="int"; internal_value=x});
+           `EXPR_literal (_,{felix_type="int"; internal_value=y})
           ])
     ->
     truth sr (gt x y)
 
   (* x <= y *)
-  | "<=", EXPR_tuple ( _, [
-           EXPR_literal (_,{felix_type="int"; internal_value=x});
-           EXPR_literal (_,{felix_type="int"; internal_value=y})
+  | "<=", `EXPR_tuple ( _, [
+           `EXPR_literal (_,{felix_type="int"; internal_value=x});
+           `EXPR_literal (_,{felix_type="int"; internal_value=y})
           ])
     ->
     truth sr (le x y)
 
   (* x >= y *)
-  | ">=", EXPR_tuple ( _, [
-           EXPR_literal (_,{felix_type="int"; internal_value=x});
-           EXPR_literal (_,{felix_type="int"; internal_value=y})
+  | ">=", `EXPR_tuple ( _, [
+           `EXPR_literal (_,{felix_type="int"; internal_value=x});
+           `EXPR_literal (_,{felix_type="int"; internal_value=y})
           ])
     ->
     truth sr (ge x y)
 
   (* x == y *)
-  | "==", EXPR_tuple ( _, [
-           EXPR_literal (_,{felix_type="int"; internal_value=x});
-           EXPR_literal (_,{felix_type="int"; internal_value=y})
+  | "==", `EXPR_tuple ( _, [
+           `EXPR_literal (_,{felix_type="int"; internal_value=x});
+           `EXPR_literal (_,{felix_type="int"; internal_value=y})
           ])
     ->
     truth sr (eq x y)
 
   (* x != y *)
-  | "!=", EXPR_tuple ( _, [
-           EXPR_literal (_,{felix_type="int"; internal_value=x});
-           EXPR_literal (_,{felix_type="int"; internal_value=y})
+  | "!=", `EXPR_tuple ( _, [
+           `EXPR_literal (_,{felix_type="int"; internal_value=x});
+           `EXPR_literal (_,{felix_type="int"; internal_value=y})
           ])
     ->
     truth sr (not (eq x y))
@@ -166,17 +166,17 @@ let const_fold' e sr name arg =
 
   (* strings *)
   (* x+y *)
-  | "+", EXPR_tuple ( _, [
-           EXPR_literal (_,{felix_type="string"; internal_value=x});
-           EXPR_literal (_,{felix_type="string"; internal_value=y})
+  | "+", `EXPR_tuple ( _, [
+           `EXPR_literal (_,{felix_type="string"; internal_value=x});
+           `EXPR_literal (_,{felix_type="string"; internal_value=y})
           ])
     ->
     let r = String.concat "" [x; y] in mkstring r
 
   (* x*y *)
-  | "*", EXPR_tuple ( _, [
-           EXPR_literal (_,{felix_type="string"; internal_value=x});
-           EXPR_literal (_,{felix_type="int"; internal_value=y})
+  | "*", `EXPR_tuple ( _, [
+           `EXPR_literal (_,{felix_type="string"; internal_value=x});
+           `EXPR_literal (_,{felix_type="int"; internal_value=y})
           ])
     ->
     let y =
@@ -196,17 +196,17 @@ let const_fold' e sr name arg =
     mkstring r
 
   (* x == y *)
-  | "==", EXPR_tuple ( _, [
-           EXPR_literal (_,{felix_type="string"; internal_value=x});
-           EXPR_literal (_,{felix_type="string"; internal_value=y})
+  | "==", `EXPR_tuple ( _, [
+           `EXPR_literal (_,{felix_type="string"; internal_value=x});
+           `EXPR_literal (_,{felix_type="string"; internal_value=y})
           ])
     ->
     truth sr (x = y)
 
   (* x != y *)
-  | "!=", EXPR_tuple ( _, [
-           EXPR_literal (_,{felix_type="string"; internal_value=x});
-           EXPR_literal (_,{felix_type="string"; internal_value=y})
+  | "!=", `EXPR_tuple ( _, [
+           `EXPR_literal (_,{felix_type="string"; internal_value=x});
+           `EXPR_literal (_,{felix_type="string"; internal_value=y})
           ])
     ->
     truth sr (x <> y)
@@ -214,35 +214,35 @@ let const_fold' e sr name arg =
 
   (* bool *)
   (* not x *)
-  | "lnot", EXPR_typed_case (_,x,TYP_unitsum 2)
+  | "lnot", `EXPR_typed_case (_,x,`TYP_unitsum 2)
     ->
     truth sr (x=0)
 
   (* x or y *)
-  | "lor", EXPR_tuple ( _, [
-           EXPR_typed_case (_,x,TYP_unitsum 2);
-           EXPR_typed_case (_,y,TYP_unitsum 2)
+  | "lor", `EXPR_tuple ( _, [
+           `EXPR_typed_case (_,x,`TYP_unitsum 2);
+           `EXPR_typed_case (_,y,`TYP_unitsum 2)
           ])
     -> truth sr (x=1 || y=1)
 
   (* x and y *)
-  | "land", EXPR_tuple ( _, [
-           EXPR_typed_case (_,x,TYP_unitsum 2);
-           EXPR_typed_case (_,y,TYP_unitsum 2)
+  | "land", `EXPR_tuple ( _, [
+           `EXPR_typed_case (_,x,`TYP_unitsum 2);
+           `EXPR_typed_case (_,y,`TYP_unitsum 2)
           ])
     -> truth sr (x=1 && y=1)
 
   (* x eq y *)
-  | "==", EXPR_tuple ( _, [
-           EXPR_typed_case (_,x,TYP_unitsum 2);
-           EXPR_typed_case (_,y,TYP_unitsum 2)
+  | "==", `EXPR_tuple ( _, [
+           `EXPR_typed_case (_,x,`TYP_unitsum 2);
+           `EXPR_typed_case (_,y,`TYP_unitsum 2)
           ])
     -> truth sr (x=y)
 
   (* x ne y *)
-  | "!=", EXPR_tuple ( _, [
-           EXPR_typed_case (_,x,TYP_unitsum 2);
-           EXPR_typed_case (_,y,TYP_unitsum 2)
+  | "!=", `EXPR_tuple ( _, [
+           `EXPR_typed_case (_,x,`TYP_unitsum 2);
+           `EXPR_typed_case (_,y,`TYP_unitsum 2)
           ])
     -> truth sr (x<>y)
 
@@ -251,13 +251,13 @@ let const_fold' e sr name arg =
 let rec const_fold e =
   let e' = map_expr const_fold e in
   match e' with
-  | EXPR_not (sr, EXPR_not (sr2, e)) -> e (* could do more here .. *)
+  | `EXPR_not (sr, `EXPR_not (sr2, e)) -> e (* could do more here .. *)
 
-  | EXPR_apply (sr, (EXPR_name (_,name,[]),arg)) ->
+  | `EXPR_apply (sr, (`EXPR_name (_,name,[]),arg)) ->
     const_fold' e sr name arg
 
-  | EXPR_apply ( sr, ((EXPR_literal (_,{felix_type="string"; internal_value=_}) as x), y)) ->
-    const_fold' e sr "add" (EXPR_tuple (sr,[x;y]))
+  | `EXPR_apply ( sr, ((`EXPR_literal (_,{felix_type="string"; internal_value=_}) as x), y)) ->
+    const_fold' e sr "add" (`EXPR_tuple (sr,[x;y]))
 
   | _ -> e'
 

@@ -25,7 +25,7 @@ let set_deferred_type
   sr f' (ea, ta as a)
 =
   let pss = match f' with
-    | EXPR_name (sr,name,[]) ->
+    | `EXPR_name (sr,name,[]) ->
       let entries = 
         try inner_lookup_name_in_env state bsym_table env rs sr name
         with _ -> raise Flx_dot.OverloadResolutionError
@@ -40,7 +40,7 @@ let set_deferred_type
        raise Flx_dot.OverloadResolutionError
       end 
 
-    | EXPR_lookup (sr, (e,name,[]))  -> 
+    | `EXPR_lookup (sr, (e,name,[]))  -> 
       let entry =
         match
           eval_module_expr
@@ -68,20 +68,20 @@ let set_deferred_type
       | None -> raise Flx_dot.OverloadResolutionError
       end
 
-    | EXPR_index (sr,name,idx) ->
+    | `EXPR_index (sr,name,idx) ->
       begin match hfind "lookup(defered?)" state.sym_table idx with
       | { Flx_sym.symdef=SYMDEF_function (pss, ret, effects,props,exes) } -> pss
       | _ -> raise Flx_dot.OverloadResolutionError 
       end 
-    | EXPR_suffix (sr,(qn,TYP_defer (sr2,dt))) -> 
-      Satom (sr,`PVal,"defered-lambda-param",TYP_defer (sr2,dt),None),None
-    | EXPR_suffix _ -> raise Flx_dot.OverloadResolutionError 
+    | `EXPR_suffix (sr,(qn,`TYP_defer (sr2,dt))) -> 
+      Satom (sr,`PVal,"defered-lambda-param",`TYP_defer (sr2,dt),None),None
+    | `EXPR_suffix _ -> raise Flx_dot.OverloadResolutionError 
     | _ -> 
       raise Flx_dot.OverloadResolutionError
   in 
 
   match pss with
-  | Satom (sr,kind,pid,TYP_defer (_,tref),_),None -> 
+  | Satom (sr,kind,pid,`TYP_defer (_,tref),_),None -> 
     begin match !tref with
     | Some t -> print_endline ("DEFERED TYPE IS ALREADY SET")
     | None -> 

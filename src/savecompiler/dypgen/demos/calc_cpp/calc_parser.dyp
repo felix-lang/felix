@@ -1,0 +1,10 @@
+%start main
+
+%relation pi<pt<pp
+%layout [' ' '\t']
+
+%parser
+
+main: expr "\n" { $1 }
+
+#include "expr.dyp"

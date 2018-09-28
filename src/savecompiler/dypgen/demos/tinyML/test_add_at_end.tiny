@@ -1,0 +1,12 @@
+define
+  list_contents := expr(x) = List(x,Nil)
+  and list_contents := expr(x) ";" list_contents(y) = List(x,y)
+  and expr := "[" "]" = Nil
+  and expr := "[" list_contents(x) "]" = x
+  and expr := expr(x) "::" expr(y) = List(x,y);;
+
+let rec add_at_end arg = match arg with
+  | ([],elt) -> [elt]
+  | ((head::tail),elt) -> (head::(add_at_end (tail,elt)));;
+
+add_at_end ([3;2;1],0);;

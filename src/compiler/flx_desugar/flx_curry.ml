@@ -22,9 +22,9 @@ let inv_join l r sr =
   | None, Some i2 -> r
   | Some i1, None -> l
   | Some i1, Some i2 -> 
-      Some( EXPR_apply (sr, 
-        (EXPR_name (sr, "land", []), 
-         EXPR_tuple (sr, [i1; i2]))))
+      Some( `EXPR_apply (sr, 
+        (`EXPR_name (sr, "land", []), 
+         `EXPR_tuple (sr, [i1; i2]))))
 
 (** Scoop up invariants from the body of a function and return them as an expression *)
 let invariants_of_stmts body sr =
@@ -49,10 +49,10 @@ let invariants_of_stmts body sr =
           (fun x y -> 
             match y with
             | STMT_invariant (sr, e) ->
-               EXPR_apply (sr, (EXPR_name (sr, "land", []), EXPR_tuple (sr, [x; e]))) 
+               `EXPR_apply (sr, (`EXPR_name (sr, "land", []), `EXPR_tuple (sr, [x; e]))) 
             | _ -> failwith "Unexpected statement type found processing invariants"
           ) 
-          (EXPR_typed_case (sr, 1, TYP_unitsum 2)) 
+          (`EXPR_typed_case (sr, 1, `TYP_unitsum 2)) 
           !invariants
       )
     in
@@ -67,7 +67,7 @@ let propagate_invariants body invariants sr =
       | None,None -> None
       | None,Some _ -> i
       | Some _, None -> p
-      | Some post, Some inv -> Some( EXPR_apply (sr, (EXPR_name (sr, "land", []), EXPR_tuple (sr, [post; inv]))))
+      | Some post, Some inv -> Some( `EXPR_apply (sr, (`EXPR_name (sr, "land", []), `EXPR_tuple (sr, [post; inv]))))
       end
   in
 
@@ -112,10 +112,10 @@ let fix_param sr seq p =
 
     (* The case where the param type is none. 
        This is where things like 'could not match type "_v4029" with "int" in "x + 3"' originate *)
-    | (sr,kind,id,TYP_none,expr) ->
+    | (sr,kind,id,`TYP_none,expr) ->
 
       let v = "_v" ^ string_of_bid (seq()) in  (* Create a fresh identifier *)
-      let vt = TYP_name (generated,v,[]) in    (* Create a new type variable w/ dummy source ref. *)
+      let vt = `TYP_name (generated,v,[]) in    (* Create a new type variable w/ dummy source ref. *)
       [v,KND_generic],(sr,kind,id,vt,expr)
 
     | p -> [],p
@@ -158,7 +158,7 @@ let cal_props kind props = match kind with
 let mkcurry seq sr name vs args return_type effects kind body props =
 
   (* preflight checks *)
-  if List.mem `Pure props && match return_type with  | TYP_void _,_ -> true | _ -> false then
+  if List.mem `Pure props && match return_type with  | `TYP_void _,_ -> true | _ -> false then
     clierrx "[flx_desugar/flx_curry.ml:159: E319] " sr "Felix procedure cannot be pure";
 
   (* Manipulate the type variables ----- *)
@@ -179,7 +179,7 @@ let mkcurry seq sr name vs args return_type effects kind body props =
   let return_type, postcondition = return_type in
   let mkret arg (eff,ret) = 
     Flx_typing.flx_unit,
-    TYP_effector 
+    `TYP_effector 
     (
       typeof_paramspec_t (fst arg),
       eff,
@@ -191,7 +191,7 @@ let mkcurry seq sr name vs args return_type effects kind body props =
 
   let rettype args eff =
     match return_type with
-    | TYP_none -> TYP_none
+    | `TYP_none -> `TYP_none
     | _ -> 
         snd 
           (List.fold_right 
@@ -231,7 +231,7 @@ let mkcurry seq sr name vs args return_type effects kind body props =
     match args with
     | [] ->
         begin match return_type with
-        | TYP_void _ ->
+        | `TYP_void _ ->
           let body = 
             let reved = List.rev body in
             List.rev (STMT_label (sr,"_endof_" ^ synthname n) ::
@@ -247,7 +247,7 @@ let mkcurry seq sr name vs args return_type effects kind body props =
           begin match body with
           | [STMT_fun_return (_,e)] ->
             let rt = match return_type with
-            | TYP_none -> None
+            | `TYP_none -> None
             | x -> Some x
             in
             STMT_lazy_decl (sr, synthname n, vs, rt, Some e)
@@ -281,8 +281,8 @@ let mkcurry seq sr name vs args return_type effects kind body props =
 
         (* Calculate methods to attach to return type *)
         let revbody = List.rev body in 
-        let mkfield s = s,EXPR_name (sr,s,[]) in
-        let record = EXPR_record (sr, List.map mkfield (!methods)) in
+        let mkfield s = s,`EXPR_name (sr,s,[]) in
+        let record = `EXPR_record (sr, List.map mkfield (!methods)) in
 (*
         print_endline ("Object method record: " ^ string_of_expr record);
 *)
@@ -297,7 +297,7 @@ let mkcurry seq sr name vs args return_type effects kind body props =
       end else 
         let body = 
           match return_type with
-          | TYP_void _  ->
+          | `TYP_void _  ->
 (*
             print_endline ("(args) Name = " ^ name ^ "synthname n = " ^ synthname n);
 *)
@@ -320,7 +320,7 @@ let mkcurry seq sr name vs args return_type effects kind body props =
       let m = List.length args in
       let body = [ 
         aux t dfltvs [] [h];
-        STMT_fun_return ( sr, EXPR_suffix ( sr, ( `AST_name (sr,synthname (m-1),[]),argt))) ] 
+        STMT_fun_return ( sr, `EXPR_suffix ( sr, ( `AST_name (sr,synthname (m-1),[]),argt))) ] 
       in
       let noeffects = Flx_typing.flx_unit in
       STMT_function (sr, synthname m, vs, h, (rettype t effects,postcondition), noeffects,`Generated "curry"::props, body)

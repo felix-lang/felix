@@ -1,0 +1,2521 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{ hmargin=2cm, vmargin=2cm }
+\usepackage{hyperref}
+\hypersetup{
+colorlinks=true,       % false: boxed links; true: colored links
+    linkcolor=black,          % color of internal links
+    citecolor=black,        % color of links to bibliography
+    filecolor=black,      % color of file links
+    urlcolor=blue           % color of external links
+}
+\title{\texttt{dypgen} User's Manual}
+\author{Emmanuel Onzon}
+
+\newcommand{\comment}[1]{}
+
+\begin{document}
+\maketitle
+
+\section*{Overview}
+
+\texttt{dypgen} is a parser generator for Objective Caml.
+  To use it you need to learn the BNF syntax for grammars
+  which is briefly explained in section \ref{BNF}.
+ Its main features are:
+\begin{itemize}
+%\item  But you should not
+%  need to learn the various notions of stack automaton (LR(0), LALR(1),
+%  \dots).
+\item This is a GLR parser. This means it can handle ambiguous
+  grammars and outputs the list of all possible parse trees. Even for
+  non ambiguous grammars, GLR parsing allows to define the grammar in
+  a more natural way. It is possible to extract a definition suitable
+  for the documentation directly from the parser source file.
+  
+\item Ambiguities can be removed by introducing {\em priorities} and
+  relations between them. This gives a very natural way to express a
+  grammar (the examples in this documentation illustrate this).
+
+\item Grammars are self-extensible, i.e. an action can add new rules to the
+  current grammar. Moreover, the modifications can be local. The new
+  grammar is valid only for a well delimited section of the parsed input.
+ 
+\item \verb#dypgen# provides management of local and global immutable data.
+  The user actions can access it and return it modified. These mechanisms
+  adress the problem posed by global mutable data with GLR parsing and let
+  the user control the scope of the data.
+  
+  Modifications of local data are preserved when traveling from right to
+  left in a rule or when going down in the parse tree. Modifications of
+  global data are preserved across the complete traversal of the parse
+  tree.
+
+  These data may be used for instance to do type-checking at parsing
+  time in an elegant and acceptable way. The local data may
+  contain the environment that associates a type to each variable while the
+  global data would contain the substitution over types that is
+  usually produced by unification.
+  
+\item Pattern matching for symbols in right-hand sides of rules is possible.
+  In particular this allows guarded reductions and to bind names
+  to the arguments of actions.
+
+\item \verb#dypgen# allows {\em early actions}, that are semantic actions
+  performed before the end of a rule.
+
+\item It is possible to use dypgen as the lexer generator too. In this case regular expressions that match characters strings are allowed in the right-hand side of grammar rules and it is possible to extend the lexer by introducing such rules.
+
+\item The operators \verb|*|, \verb|+| and \verb|?| of regular expressions are available for non terminals and nested rules too.
+\end{itemize} 
+\newpage
+
+\tableofcontents
+
+\section{Introduction to dypgen}
+
+\subsection{The calculator example}
+
+It is traditional to start the documentation of a parser generator
+with the calculator exemple.  Here we only give the grammar file:
+\texttt{dypgen} takes a file ending with \texttt{.dyp} as input and
+generates a \texttt{.ml} file and a \texttt{.mli} file.
+
+For the program to be complete, one also need to generate a lexical
+analyser, which can be done with ocamllex, dypgen or other lexer generators. The complete source for this example lies in the directory \verb|demos/calc_ocamllex| of the distribution.
+
+Here is the file defining the calculator grammar:
+
+\newcommand{\verbatimfile}[1]{\expandafter\beginverb\inputfile{#1}}
+\newcommand{\beginverb}{\begin{verbatim}}
+\newcommand{\inputfile}[1]{\input{#1}}
+
+\verbatimfile{demos/calc_ocamllex/calc_parser.dyp}
+\end{verbatim}
+%\end{verbatim}
+
+Let us comment it briefly. More details are available later in  this
+documentation. 
+
+\begin{itemize}
+\item The first two lines starting with \verb#%token# define the {\em
+tokens} also called {\em terminal symbols} of the grammar. The lexical analyser
+is supposed to transform a character stream into a token stream. 
+
+For instance, the token \verb#PLUS# will probably (this is defined by
+the lexical analyser) correspond to the character
+\verb#+# in the input stream.
+
+On the second line, we also indicate that the \verb#INT# tokens comes
+with a value of type \verb#int#. They correspond to integer values in
+the input stream.
+
+\item The third line starting with \verb#%relation# defines three
+priority levels, which intuitively will correspond to atomic
+expressions (\verb#pi#), products (\verb#pt#) and sums (\verb#pp#).
+
+\item The line starting with \verb#%start# gives the entry point of
+the grammar. This means that one can parse an input stream using the function
+\verb#Calc_parser.main# which is the function you need to call to
+actually parse something.
+
+\item The characters \verb|%%| tell dypgen where the grammar of the parser begins. They are equivalent to the keyword \verb|%parser|.
+
+\item All the other lines define the grammar. The next section will
+  explain how to write grammars. Briefly we remark a BNF grammar
+  (explained below) decorated with the new concept of priority and with
+  semantical actions between curly braces.
+
+\end{itemize}
+
+\subsection{BNF grammars}\label{BNF} 
+
+A BNF grammar is a concise way of defining a language, that is a set of
+sequences of characters. However, it is traditional and may be more efficient to define a language in to steps: lexical analysis and grammatical analysis.
+
+We will not describe lexical analysis here. We will assume an already
+defined lexer (for instance using \texttt{ocamllex}) which defines 
+some sets of words denoted using capital letters. For instance, 
+in that calculator example above, \verb#PLUS# denotes one word 
+``\verb#+#'' while \verb#INT# denoted the set of all words representing
+an integer.
+
+These set of words defined by the lexer are usually called {\em
+  tokens} or {\em terminal symbols}.
+
+Then a BNF grammar, describe the language as a set of sequences of
+terminal symbols 
+(they sometime have to be separated by {\em spaces}). 
+
+The calculator grammar in this context is 
+
+\begin{verbatim}
+expr: INT | MINUS expr | LEFTPAR expr RIGHTPAR
+  | expr PLUS expr | expr MINUS expr 
+  | expr TIMES expr | expr DIV expr
+\end{verbatim}
+ 
+This in fact just defines the language \texttt{expr} as the smallest language
+containing \texttt{INT} and closed by the following construction
+rules:
+\begin{itemize}
+\item If $w \in \mathtt{expr}$ then $\mathtt{-}w \in \mathtt{expr}$ (we assume
+  here that $\texttt{MINUS}$ contains only the word \verb#-#, and
+  similar assumptions for the other tokens).
+\item If $w \in \mathtt{expr}$ then $(w) \in \mathtt{expr}$
+\item If $w,w' \in \mathtt{expr}$ then $w\mathtt{+}w' \in \mathtt{expr}$
+\item If $w,w' \in \mathtt{expr}$ then $w\mathtt{-}w' \in \mathtt{expr}$
+\item If $w,w' \in \mathtt{expr}$ then $w\mathtt{*}w' \in \mathtt{expr}$
+\item If $w,w' \in \mathtt{expr}$ then $w\mathtt{/}w' \in \mathtt{expr}$
+\end{itemize}
+
+In general, a grammar is define by a finite number of non-terminal
+symbols (the calculator grammar has only one non-terminal:
+\texttt{expr}) and a set of rules describing the elements of each
+non-terminal symbols.  
+A rule associates to one non-terminal symbol a sequence of symbols
+(terminal or non-terminal). 
+
+Then the languages corresponding to each non-terminals are defined
+simultaneously as the smallest language satisfying every rules.
+
+Let us consider another example:
+
+\begin{verbatim}
+a: INT | a MINUS b
+b: INT | b PLUS a
+\end{verbatim}
+ 
+This means that \verb#a# and \verb#b# are the smallest languages
+containing the integers and such that:
+\begin{itemize}
+\item If $w \in \mathtt{a}$ and $w' \in \mathtt{b}$ then $w\mathtt{-}w' \in \mathtt{a}$
+\item If $w \in \mathtt{b}$ and $w' \in \mathtt{a}$ then $w\mathtt{+}w' \in \mathtt{b}$
+\end{itemize}
+
+Then, it is easy to see that \verb#0-0+0-0# is in the language
+\verb#a#, because \verb#0# is both in \verb#a# and \verb#b# which
+implies
+that \verb#0-0# is in \verb#a#, from which we deduce that \verb#0+0-0#
+is in \verb#b# and then, it is easy to conclude. However,
+\verb#0-0+0-0# is not in \verb#b# (an easy exercise).
+
+\subsection{Priorities}\label{priorities}
+
+The problem with our calculator grammar as written in the previous section
+is that it is ambiguous and wrong because for instance, there 
+are to way to parse \verb#3-2+1#, one way equivalent to \verb#(3-2)+1#
+and the other way leading to \verb#3-(2+1)#.
+
+The second way is not the usual way to read this expression and will
+give a wrong answer when we will compute the value of the expression
+in the semantical action.
+
+We forget to say that our operator should be associated with the left
+and also that product and division have priority over addition and subtraction.
+
+To say so, \texttt{dypgen} provides priority constant and relation
+over them. In the case of the calculator, we define three priorities
+constants: \verb#pi#, \verb#pt# and \verb#pp#. We define the relation
+\verb#<# by \verb#pi<pt#, \verb#pi<pp# and \verb#pt<pp#.
+
+For each rule, we say to which priority it belongs
+ and for each non terminal in a
+rule,
+we give the priority it accepts.
+
+
+The calculator grammar in this context is 
+
+\begin{verbatim}
+expr: INT pi 
+  | MINUS expr(<=pi) pi 
+  | LEFTPAR expr RIGHTPAR pi
+  | expr(<=pp) PLUS expr(<pp) pp
+  | expr(<=pp) MINUS expr(<pp) pp
+  | expr(<=pt) TIMES expr(<pt) pt
+  | expr(<=pt) DIV expr(<pt) pt
+\end{verbatim}
+
+Let us comment some rules: in the rule  
+\verb#E: expr(<=pp) PLUS expr(<pp) pp#, 
+we say that an expression produced by this rule will be associated with
+the priority constant \verb#pp#. We also say that on the left of the
+\verb#PLUS#
+token, only an expression of priority less or equal than \verb#pp# can
+appear while on the right, we are more restrictive since we only
+accept a priority stricly less that \verb#pp#.
+
+For the rule \verb#E: LEFTPAR expr RIGHTPAR pi#, we associate the
+smallest priority to the resulting expression and we give no
+constraint for the expression between parentheses.
+
+More details about priorities will be given in the section \ref{priority}.
+
+\subsection{Semantical actions}\label{actions}
+
+Now, parsing is not just defining acceptable sequence. One as to
+produce something from the parsed sequence. This is performed using
+semantical actions, given after each rule.
+
+ An action is a piece of
+\verb#ocaml# code returning data associated with the parsed sequence, it can
+be used to build a parse-tree or, as with the calculator, to compute a value.
+Actions can access the semantics (that is the data
+associated with) each non-terminal. Terminal symbols also can have
+semantics associated with them by the lexical analyser. 
+
+In the code of
+an action, we access the semantical data of each symbol in the rule
+using notation \verb#$1, $2, $3... # (\verb#$3# is the semantics of 
+the third symbol in the rule).
+
+Action must be placed after each rule between curly braces and before
+the priority of the rule.
+
+Let us look again at the calculator grammar, but with the
+semantical action added:
+
+\begin{verbatim}
+expr:
+  | INT                        { $1 }      pi
+  | MINUS expr(<=pi)           { -$2 }     pi
+  | LPAREN expr RPAREN         { $2 }      pi
+  | expr(<=pp) PLUS expr(<pp)  { $1 + $3 } pp
+  | expr(<=pp) MINUS expr(<pp) { $1 - $3 } pp
+  | expr(<=pt) TIMES expr(<pt) { $1 * $3 } pt
+  | expr(<=pt) DIV expr(<pt)   { $1 / $3 } pt
+\end{verbatim}
+
+Here, the actions compute the value of the numerical expression and
+the example is self explaining.
+
+Remark: a non terminal can accept the empty sequence, by writing no
+symbol before the opening curly brace of the action.
+
+\subsection{The calculator with dypgen lexer generator}
+
+The calculator example above assumes that we use an external lexer generator like ocamllex. One can use instead the lexer generator provided by dypgen and define both the lexer and the parser in the .dyp file. Here is a version of the calculator that uses dypgen own lexer generator:
+
+\verbatimfile{demos/calc/calc_parser.dyp}
+\end{verbatim}
+%\end{verbatim}
+You can find this example in the directory \verb|demos/calc|. Here are the differences with the previous example:
+\begin{itemize}
+\item The line starting with \verb|%layout| defines which characters are considered to be simple layout and that must be discarded by the lexer. They are defined with a regular expression. Here the lexer discards any space and tabulation character.
+
+\item Regular expressions can be written directly on the right-hand sides of grammar rules, allowing to define the lexer and the parser at the same time.
+\end{itemize}
+
+In this simple example no terminal symbol appears anymore. However dypgen lexer generator can produce terminal symbols too. Here is another version of the calculator more similar to the first example but still using dypgen's lexer generator:
+
+\begin{verbatim}
+%start main
+%relation pi<pt<pp
+
+%lexer
+
+main lexer =
+[' ' '\t'] ->
+['0'-'9'] -> INT { int_of_string (Dyp.lexeme lexbuf) }
+"+" -> PLUS
+"-" -> MINUS
+"*" -> TIMES
+"/" -> DIV
+"(" -> LPAREN
+")" -> RPAREN
+
+%parser
+
+main : expr EOL { $1 }
+
+expr :
+  | INT                        { $1 }      pi
+  | MINUS expr(=pi)            { -$2 }     pi
+  | LPAREN expr RPAREN         { $2 }      pi
+  | expr(<=pp) PLUS expr(<pp)  { $1 + $3 } pp
+  | expr(<=pp) MINUS expr(<pp) { $1 - $3 } pp
+  | expr(<=pt) TIMES expr(<pt) { $1 * $3 } pt
+  | expr(<=pt) DIV expr(<pt)   { $1 / $3 } pt
+\end{verbatim}
+
+\section{Lexer generators}
+
+You can use dypgen to generate a lexer for your parser or you can use an external lexer generator like ocamllex or ulex.
+
+\subsection {dypgen lexer generator}\label{dyplex}
+
+If you use dypgen to generate your lexer then the entry functions (declared with \verb|%start|) have the following type:
+\begin{verbatim}
+  ?global_data:global_data_type ->
+  ?local_data:local_data_type ->
+  obj Dyp.dyplexbuf ->
+  (ast_type * string) list
+\end{verbatim}
+
+The nature of \verb|global_data| and \verb|local_data| is explained in section \ref{data}, \verb|obj Dyp.dyplexbuf| is the type of the lexer buffer (the type \verb|obj| is explained in section \ref{obj}). You make a lexer buffer from a string, an input channel or a function with the following functions of the module \verb|Dyp| of the library:
+\begin{verbatim}
+val from_string :
+  ('token,'obj,'global_data,'local_data,'lexbuf) parser_pilot ->
+  string ->
+  'obj dyplexbuf
+
+val from_channel :
+  ('token,'obj,'global_data,'local_data,'lexbuf) parser_pilot ->
+  in_channel ->
+  'obj dyplexbuf
+
+val from_function :
+  ('token,'obj,'global_data,'local_data,'lexbuf) parser_pilot ->
+  (string -> int -> int) ->
+  'obj dyplexbuf
+\end{verbatim}
+
+These functions are similar to the functions of the same names of the module \verb|Lexing| from the standard library. They expect an argument of type \verb|parser_pilot|, this argument is yielded by a function named \verb|pp| that is generated in the \verb|.ml| file. For instance if you want to parse the string \verb|s| you can use:
+\begin{verbatim}
+let lexbuf = Dyp.from_string (Parser.pp ()) s
+let result = Parser.main lexbuf
+\end{verbatim}
+assuming your parser is defined in the file \verb|parser.dyp| and the starting non terminal is \verb|main|. The result is of type:
+\begin{verbatim}
+  (ast_type * string) list
+\end{verbatim}
+\verb|ast_type| denotes the type of the values yielded by the non terminal \verb|main|, the string is the name of the associated priority. The list contains one couple for each interpretation of the input string. The list contains just one couple if the input is unambiguous.
+The frame of a lexer definition is as follows:
+\begin{verbatim}
+%lexer
+
+let ident = regexp ...
+
+rule aux_lexer_1 [arg1 ... argn] =
+  parse regexp { action }
+       | ...
+       | regexp { action }
+and aux_lexer_2 [arg1 ... argn] =
+  parse ...
+and ...
+
+main lexer =
+  regexp -> [Token] [{ action }]
+  regexp -> [Token] [{ action }]
+  ...
+\end{verbatim}
+This definition takes place before the definition of the parser. It begins with declarations of alias for regular expressions. Then come the definitions of auxiliary lexers, those can be used for instance to parse strings or comments. The syntax of their definitions is similar to definitions for ocamllex. Finally the main lexer is defined after the line
+\begin{verbatim}
+main lexer =
+\end{verbatim}
+A line
+\begin{verbatim}
+  regexp -> Token { action }
+\end{verbatim}
+means that when \verb|regexp| is matched, the lexer returns the token \verb|Token| with the associated value returned by \verb|action|. The action is optional. The token is optional too. If no token name is written then the text matched by the regular expression is considered to be layout characters and is discarded by the lexer. An action can be stated in this case too for its side-effect.
+Layout characters can also be declared before the definition of the lexer with the keyword \verb|%layout| followed by the regular expression and an action code inside curly braces if needed. Auxiliary lexers can be called from the user action code of the main lexer and of the auxiliary lexers. They are called with their names followed by the arguments the last one being the lexer buffer. The current lexer buffer is always available inside the action code with the name \verb|lexbuf|. You can use a lexer defined by ocamllex as an auxiliary lexer and call it from a user action. To do this you must convert the lexer buffer to the lexer buffer type of ocamllex with the function:
+\begin{verbatim}
+val std_lexbuf : 'obj dyplexbuf -> Lexing.lexbuf
+\end{verbatim}
+of the module \verb|Dyp|. For instance say you want to match strings with a lexer \verb|string| defined in a file \verb|lex_string.mll|, you can use the following entry in your main lexer definition:
+\begin{verbatim}
+'"' -> STRING { Buffer.clear Lex_string.string_buf;
+      Lex_string.string (Dyp.std_lexbuf lexbuf);
+      Buffer.contents Lex_string.string_buf }
+\end{verbatim}
+assuming the lexer \verb|string| stores the matched string in the buffer \verb|string_buf| defined in the file \verb|lex_string.mll|.\\
+
+When using dypgen lexer generator you can write regular expressions directly in the right-hand sides of the production rules of the grammar of the parser. They return a value of type \verb|string| that is available in action code in the corresponding variable like \verb|$1|. A sequence of several regular expressions yields as many variables. For instance in the action of the rule:
+\begin{verbatim}
+nt: "hello" "world"
+\end{verbatim}
+the variable \verb|$1| has the value \verb|"hello"| and \verb|$2| the value \verb|"world"|. Any layout character can be matched between \verb|"hello"| and \verb|"world"|. If you enclose the sequence inside parenthesis then it is considered as one regular expression. In the action of the rule:
+\begin{verbatim}
+nt: ("hello" "world")
+\end{verbatim}
+the variable \verb|$1| has the value \verb|"helloworld"|. The string \verb|"helloworld"| must be matched to be able to reduce with this rule.\\
+
+Regular expressions have the same syntax as those of ocamllex except that the operator \verb|#| of character set difference is not available and it is not possible to do binding to sub-patterns (this is done with the keyword \verb|as| in ocamllex).\\
+
+As with ocamllex the lexer always yields a unique token when there is at least one match. A lexer generated by dypgen deals with ambiguity a bit differently than ocamllex does. Here is how dypgen chooses the matching of the lexer:
+The matches that are not expected, taking into account what has been parsed so far, are discarded. Among those which are expected the longest are selected, then those belonging to the most recent lexer (if the lexer has been extended), then the one generated by the higher regular expression in the precedence order. The order in which the regular expressions appear in the file is their precedence order. The precedence of regular expressions in right-hand side of grammar rule is unspecified but lower than that of the regular expressions defined in the section \verb|main lexer =| except for those that are just a string: they are of higher precedence instead. The lexer can be extended when new grammar rules containing regular expressions are introduced. In this case the precedence of these new regular expressions follows the same rule. The precedence of regular expressions that match layout characters is lower than that of other regular expressions (including those that match less characters) and is left unspecified among them. Contrary to ocamllex it is not possible to select the shortest match instead of the longest.\\
+
+You can also keep all the tokens of maximum length (and which are expected). To do so define the following variable:
+\begin{verbatim}
+let dypgen_choose_token = `all
+\end{verbatim}
+in the header of the parser definition. And when you call the function \verb|lexparse| (see section \ref{parse} for more information about this function) use the optional argument:
+\begin{verbatim}
+  ~choose_token:`all
+\end{verbatim}
+Note that in this case if there are several entries for the same terminal symbol in the lexer that are matched then this terminal symbol is yielded as many times with its corresponding action each time. Suppose these lines are in the lexer:
+\begin{verbatim}
+['0'-'9']+ -> INT { int_of_string (Dyp.lexeme lexbuf) }
+['0'-'9']+ -> INT { -int_of_string (Dyp.lexeme lexbuf) }
+\end{verbatim}
+Then when the lexer reads the integer \verb|17| it returns to the lexer two tokens: \verb|INT(17)| and \verb|INT(-17)|.\\
+
+Note that when using \verb|`all| the behaviour of the lexer pertaining to layout regular expressions stays the same as the default one. If the lexer matches several layout regular expressions (all of maximal length), then there are two possible cases:
+\begin{itemize}
+\item Only layout regular expressions are matched. Then one action is chosen among them and executed.
+\item In addition to layout regular expressions, some non-layout regular expression is matched. Then no action associated to layout regular expression is executed.
+\end{itemize}
+
+Remark that even when returning several tokens the lexer only returns the tokens of the maximal length and drop the ones with a shorter length. This has counter-intuitive consequences. For example consider the following grammar :
+\begin{verbatim}
+{ let dypgen_choose_token = `all }
+%start main
+
+%lexer
+main lexer =
+  ['a'-'z']+ -> ID
+
+%parser
+
+main:
+  | 'a'? d { "ab" }
+  | ID 'c'   { "id" }
+
+d: 'b' { }
+\end{verbatim}
+Parsing fails on the string \verb|b| even with
+\begin{verbatim}
+let dypgen_choose_token = `all
+\end{verbatim}
+When parsing \verb|b| the lexer first matches \verb|'a'?| with the empty string, then it matches \verb|ID| with the string \verb|b| and the match with \verb|'a'?| is thrown because it is of shorter length. Afterwards the rule \verb|main: 'a'? b| is disqualified.\\
+
+A nested rule can solve this problem. Change the first rule with this one:
+\begin{verbatim}
+main:
+  | ["a"]? d { "ab" }
+\end{verbatim}
+and the parsing of \verb|b| does not fail anymore. For more informations about nested rules see the section \ref{nested}.\\
+
+When parsing a file you want to be able to track the number of lines and maybe from which file the code you are parsing originates before possible preprocessing. To do so the two following functions are available:
+\begin{verbatim}
+val set_newline : 'obj dyplexbuf -> unit
+val set_fname : 'obj dyplexbuf -> string -> unit
+\end{verbatim}
+These functions update the fields \verb|pos_lnum| and \verb|pos_bol|, and \verb|pos_fname| of the lexer buffer respectively. If \verb|lexbuf| is your lexer buffer, you can access these fields with:
+\begin{verbatim}
+(Dyp.std_lexbuf lexbuf).lex_curr_p.pos_lnum
+(Dyp.std_lexbuf lexbuf).lex_curr_p.pos_bol
+(Dyp.std_lexbuf lexbuf).lex_curr_p.pos_fname
+\end{verbatim}
+
+\subsection{External lexer generators}\label{other-lexer}
+
+If you use an external lexer generator like ocamllex to generate your lexer then the entry functions (declared with \verb|%start|) have the following type:
+\begin{verbatim}
+  ?global_data:global_data_type ->
+  ?local_data:local_data_type ->
+  (lexbuf_type -> token) ->
+  lexbuf_type ->
+  (ast_type * string) list
+\end{verbatim}
+
+Compared with the use of dypgen as a lexer generator, the function expects one extra argument: a function of type:
+\begin{verbatim}
+  lexbuf_type -> token
+\end{verbatim}
+This function is the lexer that produces tokens for the parser. The type \verb|lexbuf_type| denotes the type of the lexer buffer (with ocamllex it is \verb|Lexing.lexbuf|) and \verb|token| is a type declared by dypgen. The type \verb|token| owns one constructor for each token that is declared with the keyword \verb|%token|.\\
+
+Note that you cannot use regular expressions in the right-hand side of the
+rules of the parser for lexing purpose if you do not use dypgen as lexer generator. More precisely: if you write a regular expression in a rhs then dypgen will assume that you use dypgen as lexer generator too.
+
+\subsection{Using a lexer generator different from ocamllex or dypgen}
+
+If you want to use another lexer than ocamllex or dypgen then you have to define the function \verb|dypgen_lexbuf_position| in the header. If you don't need the position of the lexer you may use the line:
+\begin{verbatim}
+let dypgen_lexbuf_position = Dyp.dummy_lexbuf_position
+\end{verbatim}
+The function \verb|dummy_lexbuf_position| is:
+\begin{verbatim}
+let dummy_lexbuf_position _ = (Lexing.dummy_pos, Lexing.dummy_pos)
+\end{verbatim}
+
+With this function you don't have access to relevant information about the position of the lexer while parsing. If you need the position of the lexer in your action code, then you have to define the function \verb|dypgen_lexbuf_position| in the header accordingly (see \ref{position}).\\
+
+If the type of the lexer buffer is constructed with some types defined in the header of the parser definition, then you must include them in the \verb|.mli| (see section \ref{mli}).\\
+
+The demo program \verb|tinyML_ulex| uses Ulex as its lexer generator.\\
+The demo program \verb|position_parser_token_list| uses ocamllex but a different lexer buffer than \verb|Lexing.lexbuf|.
+
+\subsection{Position of the lexer}\label{position}
+
+The following functions allow to know the location of the part of the input that is reduced to the symbols that appear in the rule currently applied. They are available from the action code.
+\begin{verbatim}
+val symbol_start : unit -> int
+val symbol_start_pos : unit -> Lexing.position
+val symbol_end : unit -> int
+val symbol_end_pos : unit -> Lexing.position
+val rhs_start : int -> int
+val rhs_start_pos : int -> Lexing.position
+val rhs_end : int -> int
+val rhs_end_pos : int -> Lexing.position
+\end{verbatim}
+These functions tell what is the part of the input that is reduced to a given non terminal. They should behave the same way as the functions of the same names of the module \texttt{Parsing} do in \texttt{ocamlyacc}.
+These functions are part of the record \verb|dyp|. When you use them you must use the record \verb|dyp|, like:
+\begin{verbatim}
+dyp.symbol_start ()
+\end{verbatim}
+
+The demo program \verb|position| illustrates the use of these functions with dypgen as lexer generator, and the program \verb|position_ocamllex| with ocamllex.\\
+
+If you want these functions to return relevant information when you use a lexer generator different from ocamllex or dypgen, or when you do not use the interface of ocamllex directly with dypgen, then you have to define the function \verb|dypgen_lexbuf_position| in the header of the parser accordingly. The type of this function is:
+\begin{verbatim}
+val dypgen_lexbuf_position : lexbuf_type -> (Lexing.position * Lexing.position)
+\end{verbatim}
+where \verb|lexbuf_type| is the type of the lexer buffer (it is infered by Caml). The two positions are the position of the beginning of the last token that has been read by the parser and its end. The type \verb|Lexing.position| is:
+\begin{verbatim}
+type position = {
+   pos_fname : string;
+   pos_lnum : int;
+   pos_bol : int;
+   pos_cnum : int;
+}
+\end{verbatim}
+
+The demo program \verb|position_token_list| is the same as \verb|position| except that it first uses ocamllex to make a list of tokens and then uses dypgen to parse this list of tokens. It makes use of \verb|dypgen_lexbuf_position|.\\
+
+Note: the following abbreviations are available in the \verb|.dyp| file: \verb|$<| for \verb|dyp.Dyp.rhs_start_pos| and \verb|$>| for \verb|dyp.Dyp.rhs_end_pos|.\\
+
+Remark that in some instances, the position returned by \verb|symbol_start| and \verb|symbol_start_pos| looks inconsistent with the position returned by the functions for the right-hand side. This may be the case when the right-hand side of the rule, which is used to reduce, begins with nullable non terminals. In such a case the position returned by \verb|rhs_start| and \verb|rhs_end| for these symbols may be smaller than the position returned by \verb|symbol_start|. This is the case when there are layout characters before the characters matched by the first non nullable symbol of the right-hand side of the rule. Here is an example.
+\begin{verbatim}
+%start main
+%layout ' '
+%parser
+main: eps "abc"
+  { Printf.printf "eps start: %d, eps end: %d, main start: %d\n"
+     (dyp.Dyp.rhs_start 1) (dyp.Dyp.rhs_end 1)
+     (dyp.Dyp.symbol_start ());
+    0 }
+eps: { 0 }
+\end{verbatim}
+Parsing the string \verb|"   abc"|, where the string begins with 3 spaces, returns
+\begin{verbatim}
+eps start: 0, eps end: 0, main start: 4
+\end{verbatim}
+The reason for this inconsistency is that no layout character is read before reducing with a rule with an empty right-end side, therefore the 3 spaces are not read. But those layout characters are not included when computing the start of \verb|main|. This seems to be the most useful convention.
+
+
+\subsection{Extending the lexer}
+
+It is possible to extend indirectly the main lexer generated by dypgen. The way to do it is to introduce new grammar rules for the \emph{parser} with regular expressions in the right-hand sides. It is not possible to extend the definition of an existing terminal symbol neither to create a new terminal symbol at runtime. However this does not prevent you from introducing new tokens. If you want a new token at runtime then you can introduce a new rule with a new non terminal in the left-hand side. This new non terminal will represent the new token. The right-hand side of the new rule contains the regular expression that matches the lexemes for the new token. The section \ref{grammar-extension} explains how to extend the grammar at runtime.
+
+\section{Resolving ambiguities}\label{ambiguities}
+
+There are two main mechanisms to handle ambiguities in \texttt{dypgen}: a system of priorities with relations between them and the merge functions which can decide which parse-tree to keep when a given part of the input is reduced to the same non terminal by two different ways. Two other secondary mechanisms make possible to decide to give up a reduction with a rule (by raising the exception \texttt{Dyp.Giveup}) or to prevent a shift (i.e. the parser is prevented from reading more input without performing a reduction).
+
+\subsection{Priorities with relations}\label{priority}
+
+Each time a reduction by a rule happens, the corresponding parse-tree is yielded with a value which is called a priority.
+Priorities are named and declared along with relations between them which hold true with the keyword \texttt{\%relation}. The symbol for the relation is \texttt{<} (but this does not mean that it has to be an order). A declaration of priorities can be for instance:
+\begin{verbatim}
+%relation pi<pt pt<pp pi<pp
+\end{verbatim}
+It is possible to declare a relation which is transitive on a subset of the priorities with a more compact syntax.
+\begin{verbatim}
+%relation p1<p2<...<pn
+\end{verbatim}
+means that the following relations hold: \texttt{p1<p2}, ... , \texttt{p1<pn}, \texttt{p2<p3}, ... , \texttt{p2<pn}, ... , \texttt{p(n-1)<pn}. Thus the first example of relations declaration can also be written:
+\begin{verbatim}
+%relation pi<pt<pp
+\end{verbatim}
+The declarations can use several lines, the following declaration is valid:
+\begin{verbatim}
+%relation pi<pt
+pt<pp
+%relation pi<pp
+\end{verbatim}
+
+Each rule in the grammar returns a priority value when it is used to reduce. This priority is stated by the user after the action code. For instance:
+\begin{verbatim}
+expr: INT { $1 } pi
+\end{verbatim}
+If the parser reduces with this rule then it returns the value associated with the token \texttt{INT} and the priority \texttt{pi}. The user can state no priority, then the default priority \texttt{default\_priority} is returned each time a reduction with this rule happens. The value \verb|default_priority| is part of the module \verb|Dyp_priority_data| available in the parser code.\\
+
+Each non terminal in the right-hand side of a rule is associated with a set of priorities that it accepts to perform a reduction. This set of priorities is denoted using the following symbols \texttt{<}, \texttt{>} and \texttt{=} and a priority \texttt{p}.\\
+
+\texttt{(<p)} denotes the set of all priorities \texttt{q} such that \texttt{q<p} holds. \texttt{(<=p)} denotes the previous set to which the priority \texttt{p} is added. \texttt{(>p)} is the set of all priorities \texttt{q} such that \texttt{p<q} holds. Obviously \texttt{(>=p)} denotes the previous set to which the priority \texttt{p} is added and \texttt{(=p)} is the set of just \texttt{p}. Note that when declaring relations between priorities, the symbols \texttt{>} and \texttt{=} cannot be used.\\
+
+If no set of priorities is stated after a non terminal in a right-hand side of a rule, then it means that it accepts any priority. Thus to not state any set of priority is equivalent to state the set of all priorities.\\
+
+A basic example, you have the following rules:
+\begin{verbatim}
+expr: INT { $1 } pi
+expr: MINUS expr(<=pi) { -$2 }
+\end{verbatim}
+You parse the string: `\texttt{-1}'. First \texttt{1} is reduced to \texttt{expr} with the first rule. \texttt{1} is the returned value and \texttt{pi} is the returned priority. Then the reduction with the second rule can happen because the non terminal \texttt{expr} in its right-hand side accepts the priority \texttt{pi}. This reduction is performed, the returned value is \texttt{-1} and the returned priority is \texttt{default\_priority}. Now if we want to parse the string `\texttt{--1}' a syntax error will happen, because when \texttt{-1} is reduced, the priority \texttt{default\_priority} is yielded, which is not accepted by the second rule and therefore a reduction by this rule cannot happen a second time.\\
+
+Another example, we have the relations \texttt{pi<pt<pp} and the following grammar:
+\begin{verbatim}
+expr:
+  | INT                        { $1 }      pi
+  | LPAREN expr RPAREN         { $2 }      pi
+  | expr(<=pp) PLUS expr(<pp)  { $1 + $3 } pp
+  | expr(<=pt) TIMES expr(<pt) { $1 * $3 } pt
+\end{verbatim}
+and we parse the following input: \texttt{1 + 2 * 3}\\
+
+\texttt{1} and \texttt{2} are reduced to \texttt{expr}, each returning the priority \texttt{pi}, then the parser explores the shift and the reduction.
+The parser can reduce with the third rule because \texttt{pi<pp} holds, the priority \texttt{pp} is returned. After \texttt{3} is reduced to \texttt{expr}, the parser cannot reduce with rule 4 after the reduction by rule 3 because \texttt{pp<pt} does not hold.
+But the exploration of the possibility of a shift of \texttt{*} after reducing \texttt{2} to \texttt{expr} leads to a successful parsing (which respects the precedence of \texttt{*} over \texttt{+}).\\
+
+The user can declare a priority without stating any relation with it by adding it in the section after \texttt{\%relation}. You should declare any prorities which has no relation. If you use a priority that is not declared and has no relation, in a rule, then \texttt{dypgen} will emit a warning.\\
+
+\comment{When a priority is declared a corresponding Caml value of type \texttt{priority} is introduced with the same name. You should beware of identifier collision and not name other variables with the names of your priorities or \texttt{default\_priority}. This value can be used in action codes. All the information about relations are stored in a structure of type \texttt{priority\_data}. This structure is accessible from the action code with the record field \texttt{dyp.priority\_data}. The following function allows to know whether the relation holds between two priorities:
+\begin{verbatim}
+val is_relation: priority_data -> priority -> priority -> bool
+\end{verbatim}
+\texttt{is\_relation dyp.priority\_data p q} returns true if \texttt{p<q} holds and false otherwise. The type of the record \verb|dyp| is defined in the module \verb|Dyp| of the library \verb|dyp.cm[x]a|, see the section \ref{dyp} for more information about it. Other functions pertaining to priorities are available, see section \ref{dynamic priority} about changing the priorities at runtime.}
+
+\subsection{Merge functions and keeping several trees}\label{merge}
+
+\subsubsection{Specific merge functions}
+
+When a part of the input is reduced by several different ways to a same non terminal \texttt{nt} then the parser must decide whether to keep all the abstract syntax trees (ASTs) yielded or to choose just one or a few of them, or to make a new tree from them. By default only one tree is kept, and the other ones are discarded. It is not possible to know which one is kept. The user can override the default choice. It is possible to define a function \verb|dyp_merge_Obj_nt| of type:
+\begin{verbatim}
+val dyp_merge_Obj_nt:
+  (nt_type * global_data_t * local_data_t) list ->
+  nt_type list * global_data_t * local_data_t
+\end{verbatim}
+The type names stated here are not actually defined anywhere but are used here to make understand the nature of the argument and result of the merge functions. The type \verb|nt_type| represents the type of the value returned when one reduces to the non terminal \verb|nt|.
+The argument of the function is the list of the ASTs which are the different interpretations which were yielded and kept for the non terminal \verb|nt| for a given part of the input. Theses ASTs are associated with their corresponding \verb|global_data| and \verb|local_data| in a triple (see section \ref{data} for more information about \verb|global_data| and \verb|local_data|). The default behavior of dypgen is to not merge when the data are different. Therefore by default all the global data are actually the same as well as all the local data. This behavior can be made different (see \ref{keep_data}).\\
+
+The merge function returns a result like:
+\begin{verbatim}
+(tree_list, global_data, local_data)
+\end{verbatim}
+Where \verb|tree_list| is a list of ASTs which are kept as the different interpretations for the non terminal \verb|nt| for the considered part of the input. \verb|global_data| and \verb|local_data| are the \verb|global_data| and \verb|local_data| that are kept for the parsing.\\
+
+The user can define such a merge function for each non terminal in the header of the parser.\\
+
+For example the following merge function keeps all the ASTs for the non terminal \verb|nt|, without considering \verb|global_data| and \verb|local_data|:
+\begin{verbatim}
+let dyp_merge_Obj_nt l = match l with
+  | (_,gd,ld)::_ -> List.map (fun (o,_,_) -> o) l, gd, ld
+  | [] -> assert false
+\end{verbatim}
+
+A merge function is only called on ASTs which were yielded with the same priority. If a part of the input is reduced to the same non terminal by two different ways but yielding two distinct priorities, then each AST is kept and used independently for the parsing, but they are not merged.
+
+\subsubsection{Example}
+
+Here is an example of using a merge function to enforce the precedence of the multiplication over the addition. Suppose we have the following grammar:
+\begin{verbatim}
+expr:
+  | INT             { Int $1 }
+  | expr PLUS expr  { Plus ($1,$2) }
+  | expr TIMES expr { Times ($1,$2) }
+\end{verbatim}
+And the following string: \texttt{3+10*7} should be parsed \texttt{Plus (3,Times (10,7))}, more generally the parse result of any string should respect the precedence of \texttt{*} over \texttt{+}. Then we can do this by defining the following merge function:
+\begin{verbatim}
+let rec dyp_merge_Obj_expr = function
+  | (o1,gd,ld)::(o2,_,_)::t ->
+  begin match o1 with
+    | Times ((Plus _),_)
+    | Times (_,(Plus _)) -> dyp_merge_Obj_expr ((o2,gd,ld)::t)
+    | _ -> dyp_merge_Obj_expr ((o1,gd,ld)::t)
+  end
+  | [o,gd,ld] -> [o],gd,ld
+  | _ -> assert false
+\end{verbatim}
+You can find this example implemented in the directory \verb|demos/merge_times_plus|.\\
+
+Note that the argument of the merge function (the list) always has at least two elements when called by dypgen.\\
+
+Since it is not possible to know which tree is kept by the default merge function, you should only rely on it when all the trees yielded by the ambiguous non terminal are actually the same, or when it does not matter which one is chosen.
+
+\subsubsection{Global and generic merge functions}
+
+In addition to these merge functions which are specific to one non terminal, the user can also define one global merge function called \verb|dyp_merge|, and several generic merge functions. A generic merge function can be the merge function of several different non terminals. The type of the global merge function is the following:
+\begin{verbatim}
+type 'a merge_function =
+  ('a * global_data_t * local_data_t) list ->
+  'a list * global_data_t * local_data_t
+\end{verbatim}
+
+The global merge function can be defined in the header of the parser definition, for instance to define a global merge function which keeps all the parse trees:
+\begin{verbatim}
+let dyp_merge l = match l with
+  | (_,gd,ld)::_ -> List.map (fun (o,_,_) -> o) l, gd, ld
+  | [] -> assert false
+\end{verbatim}
+Then it will be the merge function of any non terminal \texttt{nt} which has not its own function \verb|dyp_merge_nt| and has no generic merge function assigned to it.\\
+
+Generic merge functions are defined in the header. Then to assign a merge function to one or several non terminal one uses the keyword \verb|%merge| in the following way:
+\begin{verbatim}
+%merge my_merge_function Obj_nt1 Obj_nt2 Obj_nt3 Obj_nt4 Obj_nt5
+\end{verbatim}
+where \verb|my_merge_function| is the name of the generic merge function which has been defined in the header and \verb|nt1| ... \verb|nt5| are the names of the non terminal which are assigned this generic merge function.\\
+
+Note that the global merge function must be polymorphic and accept the type of values yielded by any non terminal. This is not the case for a generic merge function as long as it is used for non terminals that return values of the same type. In the special case when all the non terminals return values of the same type, the global merge function does not have to be polymorphic.\\
+
+There are two predefined generic merge functions available to the user in the module \verb|Dyp| of the library:
+\begin{verbatim}
+val keep_all : 'a merge_function
+val keep_one : 'a merge_function
+\end{verbatim}
+They keep respectively all the ASTs, and one of the AST, they choose \verb|global_data| and \verb|local_data| arbitrarily. If no global merge function is defined then by default it is \verb|keep_one|.\\
+
+Note that you can use the predefined merge functions as generic functions and as the global merge function as well. If you want to keep all the ASTs for all the non terminals, just define the following in the header:
+\begin{verbatim}
+let dyp_merge = keep_all
+\end{verbatim}
+
+You can find a very simple example using \verb|keep_all| in the directory \texttt{demos/forest} where a parse forest is yielded.\\
+
+Note that the merge functions are in fact associated with the constructors of the type \verb|obj| (see section \ref{obj}) rather than with the non terminals. Which means that any non terminal that shares the same constructor is assigned the same specific merge function. And that using \verb|%merge| you can assign a generic merge function to constructors introduced with the keyword \verb|%constructor| (see section \ref{obj} for more information). Now keep in mind that despite the fact merge is associated with a constructor, merge is only applied to different parsings of the \emph{same non terminal} (and same part of the input and yielding the same priority) and never to distinct non terminals even if they have the same constructor.
+
+\subsubsection{Merging on different global and local data}\label{keep_data}
+
+You may want to merge ASTs even if their corresponding global data or local data are different. Then you have to define the variable:
+\begin{verbatim}
+val dypgen_keep_data : [`both|`global|`local|`none]
+\end{verbatim}
+in the header of the parser, or use the functions \verb|parse| or \verb|lexparse| (discussed in section \ref{parse}) with the optional argument:
+\begin{verbatim}
+  ?keep_data : [`both|`global|`local|`none]
+\end{verbatim}
+\begin{itemize}
+\item\verb|`both| is the default behavior: if global data is different or local data is different then the ASTs are not merged.
+\item\verb|`global| allows merging only when global data are equal but local data may be different.
+\item\verb|`local| allows merging only when local data are equal but global data may be different.
+\item\verb|`none| makes merging happen disregarding whether the data are equal or not.
+\end{itemize}
+
+\subsubsection{Self-derivable non terminals and empty reductions}
+
+In the general case, when a merge function is called for a non terminal \verb|nt| and a given part of the input, it means that this part will never be reduced to \verb|nt| again. The arguments passed to the merge function are all the ASTs that are possible when reducing this part of the input to \verb|nt|.\\
+
+As a special exception this is not true in two cases:
+\begin{itemize}
+\item When the part of the input that is considered is the empty string
+\item When the non terminal can derive itself. For instance with the rules:
+\begin{verbatim}
+a: b c
+b: a
+c:
+\end{verbatim}
+the non terminal \verb|a| can derive itself (this is also true for \verb|b|).
+\end{itemize}
+In such cases, as soon as two possible ASTs are yielded for a part of the input and a given non terminal, the corresponding merge function is called on them. If afterward a third AST is yielded then the merge function is called again on this third AST and on the result of the previous call to the merge function.\\
+
+In the general case, the reductions are performed in an order such that an AST is never merged \emph{after} being used by another reduction. This ensures, in particular, that a reduction that spans a bigger part of the input does not miss the results of reductions of subparts of the input when they are relevant.\\
+
+However it is not always possible to avoid this situation when reducing to a self-derivable non terminal. In such a case, a possible solution is to use a reference on a list of all possible ASTs for the nodes corresponding to self-derivable non terminals, and when a merge happen, to update the list.
+
+\subsubsection{Merge warning}
+
+To know whether a merge happens you can use the command line option \texttt{--merge-warning} with \texttt{dypgen}. Then the generated parser will emit a warning on the standard output each time a merge is added to its merge working list and print the name of the non terminal which will be merged. The number of merge warnings is equal to the length of the list passed in argument to the merge function minus one.\\
+
+Warning: when there is an error of type with the arguments or the result of a merge function, Caml reports it and points to the \texttt{.ml} file generated by \texttt{dypgen}, not to the \texttt{.dyp} input file, which may be puzzling. In particular make sure your merge functions return a list of ASTs as the first value of the returned tuple and not just an AST, otherwise you will have an error message pointing to the generated \verb|.ml| file.
+
+\subsection{Giving up a reduction}
+
+When a reduction occurs this reduction is given up if the exception \texttt{Dyp.Giveup} is raised in the corresponding action code.
+\begin{verbatim}
+expr:
+  | INT           { $1 }
+  | expr DIV expr { if $3=0 then raise Dyp.Giveup else ($1 / $3) }
+\end{verbatim}
+This is an example where a division by zero is not syntaxically correct, the parser refuses to reduce a division by zero. We can also imagine a language with input files being parsed and typed at the same time and an action would give up a reduction if it detected an incompatibility of type. Let us assume we have the following input for such a language:
+\begin{verbatim}
+exception Exception
+let head l = match l with
+  | x::_ -> x
+  | _ -> raise Exception
+let a = head 1::[2]
+\end{verbatim}
+Then the parser tries to reduce \texttt{head 1} to an expression, but the typing concludes to an incompatibility of type. Hence an exception \texttt{Giveup} is raised which tells the parser not to explore this possibility any further. Then the parser reduces \texttt{1::[2]} to an expression and thereafter \texttt{head 1::[2]} is reduced to an expression without type error.
+
+\subsection{Preventing a shift}\label{will_shift}
+
+When a reduction occurs it is possible to prevent the shift with the action code. You have to state the character `\verb|@|' before the left brace which begins the action code and returns the following list along with the returned value of your action in a couple:
+\begin{verbatim}
+@{ returned_value, [Dyp.Dont_shift] }
+\end{verbatim}
+The list after \verb|returned_value| is called the parser commands list, see section \ref{dyp_action} for more information about it.
+Here is an example, we have the following rules in a grammar:
+\begin{verbatim}
+expr:
+  | INT { Int $1 }
+  | expr COMMA expr { action_comma $1 $3 }
+\end{verbatim}
+Assuming we have the following input: \texttt{1,2,3}, there are two ways to reduce it to \texttt{expr}. First one: \texttt{1,2} is reduced to \texttt{expr} then \texttt{expr,3} is reduced to \texttt{expr}. Second one: \texttt{2,3} is reduced to \texttt{expr} then \texttt{1,expr} is reduced to \texttt{expr}. Now if we have the input \texttt{1,2,...,n} there are as many ways to reduce it to \texttt{expr} as there are binary trees with n leaves. But we can use the following action code instead:
+\begin{verbatim}
+expr:
+  | INT { Int $1 }
+  | expr COMMA expr @{ action_comma $1 $3, [Dyp.Dont_shift] }
+\end{verbatim}
+Then there is only one way to reduce \texttt{1,2,3} to \texttt{expr}: the first one, because when \verb|[Dyp.Dont_shift]| is returned the parser will not shift the comma without reducing. And there is only one way to reduce \verb|1,...,n| to \verb|expr|.\\
+
+The constructor \verb|Dont_shift| is part of the type \verb|dyp_action| (see section \ref{dyp_action}), which is defined in the module \verb|Dyp| of the library.
+
+\section{Auxiliary data}\label{data}
+
+\subsection{The fields \texttt{global\_data} and \texttt{local\_data}}
+
+With GLR, the parsing can follow different interpretations independently and simultaneously if there are local ambiguities. As a consequence if there are accesses and changes to data
+through side-effects for each of these parsings, there can be unwanted
+interactions between them. For this reason, using side effects for the purpose of storing data should be avoided during the parsing. If you want to build and store data while parsing and access this data from within the action code then you should use immutable data and the record fields \verb|dyp.global_data| or \verb|dyp.local_data|. The record \verb|dyp| is available in any user action code, its type is defined in the module \verb|Dyp| of the library \verb|dyp.cm[x]a|, see the section \ref{dyp} for more information about it. If \verb|dyp.global_data| or \verb|dyp.local_data| are used, then the user must define their initial values in the header with the names:
+\begin{verbatim}
+let global_data = some_initial_data
+let local_data = some_other_data
+\end{verbatim}
+
+\verb|global_data| and \verb|local_data| can be passed to the parser as argument since they are optional arguments of the parser. For instance if `\verb|main|' is a start symbol of the grammar and it returns values of type \verb|main_type| then the following function is defined in the generated code:
+\begin{verbatim}
+val main :
+  ?global_data:gd_type ->
+  ?local_data:ld_type ->
+  (lexbuf_type -> token) ->
+  lexbuf_type ->
+  (main_type * string) list
+\end{verbatim}
+where \verb|gd_type| and \verb|ld_type| represents the type of the global and local data. \verb|lexbuf_type| is the type of the lexing buffer, if you use ocamllex then it is \verb|Lexing.lexbuf|.\\
+
+If you use dypgen to generate your lexer then the type of \verb|main| is:
+\begin{verbatim}
+val main :
+  ?global_data:global_data_type ->
+  ?local_data:local_data_type ->
+  obj Dyp.dyplexbuf ->
+  (main_type * string) list
+\end{verbatim}
+
+The record \verb|dyp| is available in the action code and you can access the values of \verb|global_data| and \verb|local_data| through the fields of \verb|dyp| that have the corresponding names. You can return new values for \verb|global_data| and \verb|local_data| using the list of values of type \verb|dyp_action|. To do that you state the character `\verb|@|' before the action code and you return the list
+\begin{verbatim}
+[Dyp.Global_data new_global_data]
+\end{verbatim}
+along with the returned value of your action if you want to change \verb|global_data|. Or the list
+\begin{verbatim}
+[Dyp.Local_data new_local_data]
+\end{verbatim}
+if you want to change \verb|local_data|. Or the list
+\begin{verbatim}
+[Dyp.Global_data new_global_data; Dyp.Local_data new_local_data]
+\end{verbatim}
+if you want to change both \verb|global_data| and \verb|local_data|. For more information about the type of the constructors \verb|Global_data| and \verb|Local_data| and the parser commands list see section \ref{dyp_action}.
+
+%The initial values can also be accessed from outside the parser definition if you declare them with their type in the \verb|.mli| file (by using \verb|%mli|, see section \ref{mli}). If you change them before calling the parser, then these changes will be taken into account as new initial values for \verb|global_data| and \verb|local_data|.\\
+
+The data accessible with \verb|dyp.global_data| follows the parsing during the reductions and the shifts. If at one point the parser follows different alternatives then it evolves independently for each alternative (but side-effects may cause unwanted interactions between them, therefore they should be avoided).\\
+
+The same is true for \texttt{dyp.local\_data} except that when a reduction happens, it is `forgotten' and returned to its previous value. More precisely: when you return a new value for \verb|local_data| in an action which yields a non terminal \texttt{nt}, then this \verb|local_data| is not forgotten (unless you do it) in any action which follows until this non terminal \texttt{nt} is used in another reduction. When this happens, \verb|dyp.local_data| is forgotten and returns to its previous value just before the execution of the action code of this reduction.\\
+
+Here is an example:
+\begin{verbatim}
+a: TOK_1 b TOK_2 c TOK_3 d EOF @{ action_8, [Local_data some_ld] }
+b: e f   @{ action_3, [Local_data local_data_3] }
+e: A1    @{ action_1, [Local_data local_data_1] }
+f: A2    @{ action_2, [Local_data local_data_2] }
+c: g h   @{ action_6, [Local_data local_data_6] }
+g: B1    @{ action_4, [Local_data local_data_4] }
+h: B2    @{ action_5, [Local_data local_data_5] }
+d: C     @{ action_7, [Local_data local_data_7] }
+\end{verbatim}
+We parse the string:
+\begin{verbatim}
+TOK_1 A1 A2 TOK_2 B1 B2 TOK_3 C EOF}
+\end{verbatim}
+\begin{itemize}
+\item Assume that at the beginning of the parsing 
+\verb|dyp.local_data| has some initial value \verb|local_data_0|.
+\item The first action to be performed is \verb|action_1|, it has access to \verb|local_data_0| and it returns \verb|local_data_1|,
+\item then the next action is \verb|action_2|, it has access to \verb|local_data_1| and returns \verb|local_data_2|, although this is useless in this case because it is about to be forgotten.
+\item Then the reduction of \verb|e f| to \verb|b| happens. \verb|dyp.local_data| comes back to its value before \verb|action_1| was performed, that is \verb|local_data_0|. \verb|action_3| is performed and it returns the value \verb|local_data_3| for \verb|local_data|.
+\item The next action to be performed is \verb|action_4|, \verb|dyp.local_data| has the value \verb|local_data_3| and it returns \verb|local_data_4|,
+\item then \verb|action_5| has access to this new value and returns \verb|local_data_5| but it is useless in this case.
+\item The reduction of \verb|g h| to \verb|c| happens and the value of \verb|dyp.local_data| is again \verb|local_data_3|, the value it had just after \verb|action_3| was applied. \verb|action_6| returns the value \verb|local_data_6| for \verb|local_data|.
+\item The next action is \verb|action_7| which has access to \verb|local_data_6|. It returns \verb|local_data_7| but it is useless since it is about to be forgotten.
+\item The reduction with the first rule is performed, the value of \verb|dyp.local_data| comes back to \verb|local_data_0| and the last action \verb|action_8| is performed.
+\end{itemize}
+
+\subsection{Example with \texttt{local\_data}}
+
+\texttt{dyp.local\_data} is useful, for instance, to build a symbol table, and makes possible to use it to disambiguate. Assume the following grammar and action code:
+\begin{verbatim}
+main: expr "\n" { $1 }
+
+expr: ['0'-'9']+           { Int (int_of_string $1) }
+  | IDENT                  { if is_bound dyp.local_data $1 then Ident $1
+                             else raise Giveup }
+  | "(" expr ")"           { $2 }
+  | expr "+" expr          { Plus ($1,$3) }
+  | "let" binding "in" expr { Let ($2,$4) }
+
+binding: IDENT "=" expr
+  @{ Binding ($1,$3),
+    [Local_data (insert_binding dyp.local_data $1 $3)] }
+\end{verbatim}
+If we keep all the parse trees (see merge functions section \ref{merge}), then the following input string: \begin{verbatim}
+let x = 1 in x+1
+\end{verbatim}
+yields the two following parse trees:
+\begin{verbatim}
+(let x = 1 in (x+1))
+((let x = 1 in x)+1)
+\end{verbatim}
+But this input string:
+\begin{verbatim}
+let x = 1 in 1+x
+\end{verbatim}
+only yields one parse-tree:
+\begin{verbatim}
+(let x = 1 in (1+x))
+\end{verbatim}
+Moreover some input are detected as invalid because of unbound identifiers before the whole string has been parsed, like:
+\begin{verbatim}
+(let x = 1 in y+2) + ...
+\end{verbatim}
+This example is available in the directory \texttt{demos/local\_data}.
+
+\subsection{Equality between data}
+
+A function of equality between two global data named \verb|global_data_equal| can be defined otherwise it is by default the physical equality \texttt{(==)}, same thing for \verb|local_data| but the function is called \verb|local_data_equal|. These equality functions are used by the parser for optimization purpose. In some cases two distinct GLR parsings may share their \verb|global_data| and \verb|local_data| if both of them are deemed equal by \verb|global_data_equal| and \verb|local_data_equal| respectively. In this case one the two data is chosen and the other is discarded for each of the \verb|global_data| and \verb|local_data|.
+
+\subsection{Example with \texttt{global\_data}}
+
+Here is a very simple example of use of \verb|dyp.global_data|, it counts the number of reductions.
+\verbatimfile{demos/global_data/global_data_parser.dyp}
+\end{verbatim}
+%\end{verbatim}
+For instance we parse \texttt{5*7+3*4}, when \texttt{4} is reduced, \verb|global_data| is incremented from 4 to 5 (note that it will actually not count the real total number of reductions, but only the number of reductions made for the first interpretation of the input). This example is available in the directory \verb|demos/global_data|.\\
+
+Here is a less basic example and where \verb|dyp.global_data| can be useful, suppose we have the following grammar:
+\begin{verbatim}
+expr:
+  | LIDENT
+  | INT
+  | FLOAT
+  | LPAREN expr COMMA expr RPAREN
+  | expr PLUS expr
+  | LPAREN expr RPAREN
+  | expr PLUSDOT expr
+\end{verbatim}
+
+We parse an input and the following string is a part of this input:
+\begin{verbatim}
+(x+.3.14,(x+1,(x+5, ... )))
+\end{verbatim}
+Where \texttt{...} stands for something long. Suppose we are typing the expressions in parallel with their parsing and we want to reject the previous string as early as possible. We do not want to wait for reducing the whole string to detect the type incompatibility of \texttt{x}. Then we can use \verb|dyp.global_data| for that purpose and when reducing \texttt{x+.3.14} we store in \verb|global_data| that \texttt{x} is of type float and then when we reduce \texttt{x+1} we have this information still stored in \verb|global_data| which is accessible from the action code. And we can detect the type incompatibility whithout having to parse more input.
+
+\subsection{Extending the scope of \texttt{local\_data}}\label{last_local_data}
+
+In addition to \verb|dyp.local_data| a field \verb|dyp.last_local_data| is available. It contains the value of \verb|local_data| when the reduction of the last non terminal of the right-hand side of the current rule occured. This makes possible to extend the scope of \verb|local_data| using:
+\begin{verbatim}
+[Dyp.Local_data dyp.last_local_data]
+\end{verbatim}
+
+Extensions of the scope of \verb|local_data| are useful when you want to use a left-recursive rule instead of a right-recursive one and you still want to use \verb|local_data| but not \verb|global_data|. For instance:
+
+\begin{verbatim}
+rev_ident_list:
+  |   { [] }
+  | rev_ident_list IDENT
+      @{ $2::$1, [Dyp.Local_data (String_set.add $2 dyp.last_local_data)] }
+
+ident_list:
+  | rev_ident_list @{ List.rev $1, [Dyp.Local_data dyp.last_local_data] }
+\end{verbatim}
+
+Left-recursive rules are more efficient than right-recursive ones with a GLR parser driven by an LR(0) automaton, which is currently what dypgen generates.
+
+\section{User actions and rules}
+
+\subsection{Several actions for a rule}
+
+It is possible to bind several actions to the same rule, but only one will be completely performed. When there are several actions for the same rule, the parser tries them one after the other until the first one that does not raise \texttt{Giveup}. To bind several actions to a rule, write the rule as many times as you need actions and state a different action after the rule each time. The actions are tried by the parser in the same order as they appear in the definition file \texttt{.dyp}. For instance with the following actions:
+\begin{verbatim}
+expr:
+  | INT  { if $1 = 0 then raise Dyp.Giveup else $1 }
+  | INT  { 100 }
+\end{verbatim}
+an integer returns its value except for \texttt{0} which returns \texttt{100}.\\
+
+When a rule is dynamically added to the grammar, if it was already in the grammar, then the action it was bound to is still in the grammar but when a reduction by the rule occurs the old action will be applied only if the new one raises \texttt{Giveup}.\\
+
+It is possible to execute all the actions bound to each rule instead
+of just the first that does not raise Giveup. For this use the option:
+\verb|--use-all-actions| or declare:
+\begin{verbatim}
+let dypgen_use_all_actions = true
+\end{verbatim}
+in the header of the parser definition.
+
+\subsection{Pattern matching on symbols}\label{pattern}
+
+It is possible to match the value returned by any symbol in a right-hand side against a pattern. The syntax is just to add the pattern inside \verb|<| and \verb|>| after the symbol name and after the possible priority constraint. For instance we may have the following:
+\begin{verbatim}
+expr: INT<x>  { x }
+\end{verbatim}
+which is identical to:
+\begin{verbatim}
+expr: INT  { $1 }
+\end{verbatim}
+One can use pattern matching to have a guarded reduction. Assuming the lexer return \texttt{OP("+")} on `\texttt{+}' and \texttt{OP("*")} on `\texttt{*}', we can have the following rules:
+\begin{verbatim}
+expr:
+  | expr OP<"+"> expr { $1 + $2 }
+  | expr OP<"*"> expr { $1 * $2 }
+\end{verbatim}
+
+The patterns can be any Caml patterns (but without the keyword \verb|when|). For instance this is possible:
+\begin{verbatim}
+expr: expr<(Function([arg1;arg2],f_body)) as f> expr  { some action }
+\end{verbatim}
+
+The value returned by an early action can also be matched. You can write:
+\begin{verbatim}
+nt0: TOK1 nt1 ...{ early_action }<pattern> nt2 TOK2 nt3 { action }
+\end{verbatim}
+
+One can use a pattern after a regular expression too (the value is always of type \verb|string|).\\
+
+The directory \verb|calc_pattern| contains a version of the calculator which uses patterns (in a basic way).
+
+\subsection{Nested rules}\label{nested}
+
+A non terminal in a right-hand side can be replaced by a list of right-hand sides in brackets, like:
+\begin{verbatim}
+nt1:
+| symb1 [  symb2 symb3 { action1 } prio1
+         | symb4 symb5 { action2 } prio2
+         | symb6 symb7 { action3 } prio3 ]<pattern> symb8 symb9 { action4 } prio4
+| ...
+\end{verbatim}
+The pattern in \verb|<| and \verb|>| after the list of nested rules is optional.\\
+
+In addition to be a convenient way to embed subrules, nested rules allow a useful trick when you use dypgen as the lexer generator. Consider the following grammar :
+\begin{verbatim}
+{ let dypgen_choose_token = `all }
+%start main
+
+%lexer
+main lexer =
+  ['a'-'z']+ -> ID
+
+%parser
+
+main:
+  | 'a'? d { "ab" }
+  | ID 'c'   { "id" }
+
+d: 'b' { }
+\end{verbatim}
+Parsing fails on the string \verb|b| for reasons explained at the end of section \ref{dyplex}.\\
+
+A nested rule can solve this problem by changing the first rule with:
+\begin{verbatim}
+main:
+  | ["a" { }]? d { "ab" }
+\end{verbatim}
+then the parsing of \verb|b| does not fail anymore. You can also omit the action and write it:
+\begin{verbatim}
+main:
+  | ["a"]? d { "ab" }
+\end{verbatim}
+When an action is omitted then by default the reduction by the rule returns the value bound to the last symbol of the right-hand-side (however it is not allowed to omit the action when the right-hand-side is empty). Note that something like: \verb|['a']| will still be interpreted as a character set and not as a nested rule.
+
+\subsection{Inherited attributes}
+
+Inherited attributes are a way to send information down the parse tree in a way that is more explicit than with the global and local data discussed in section \ref{data} and that is specific to a non terminal. It can be seen as a parameterization of a non terminal with a Caml value. Here is a simple example:
+\begin{verbatim}
+main: a{1} "b" { $1 }
+a: "a" { $0 }
+\end{verbatim}
+on the input \verb|ab| the parser returns \verb|1|. Here \verb|{1}| states that the caml integer \verb|1| is sent to the next rule with left-hand side \verb|a|. The symbol \verb|$0| in the action of the second rule is bound to the \emph{inherited attribute} which is \verb|1| here.\\
+Here is an example with one more level:
+\begin{verbatim}
+main: a{1} "c" { $1 }
+a: b{$0+1} "b" { $1 }
+b: "a"         { $0 }
+\end{verbatim}
+On the input \verb|abc| it returns \verb|2|. A version with pattern matching on left-hand side:
+\begin{verbatim}
+main: a{1} "c"   { $1 }
+a<i>: b{i+1} "b" { $1 }
+b<j>: "a"        { j }
+\end{verbatim}
+
+Inherited attributes are experimental currently, and the full class of L-attribute grammar is not quite supported yet. Left-recursive rules compute inherited attributes for a depth of 2 at most. For example with the following grammar:
+\begin{verbatim}
+main: a{1} "b"   { $1 }
+a<i>:
+  | a{i+1} "a" { $1 }
+  | "a"        { i }
+\end{verbatim}
+the input \verb|ab| returns 1 and the input \verb|aab| returns 2, as expected. But the input \verb|aaab| and any input with more than 2 \verb|a| returns the integer 2, and not the number of \verb|a|.
+
+\subsection{Early actions}
+
+It is possible to insert action code in the right-hand side of a rule before the end (the final action) of this right-hand side. This is an early action. For instance you may have:
+\begin{verbatim}
+expr: LET IDENT EQUAL expr ...@{ binding dyp $2 $4 } IN expr { Let ($5, $7) }
+\end{verbatim}
+Note that you have to write three dots `\verb|...|' before the early action. The value returned by the early action is accessible to the final action as if the early action were a symbol in the right-hand side. In the rule above it is accessible with \verb|$5|. The record \verb|dyp| is passed to \verb|binding| to have access to \verb|dyp.local_data|. You may use the character `\verb|@|' depending whether you want to return a parser commands list or not.\\
+
+For the parser the rule:
+\begin{verbatim}
+expr: LET IDENT EQUAL expr IN expr
+\end{verbatim}
+does not exist. Instead dypgen creates the following rule:
+\begin{verbatim}
+expr: LET IDENT EQUAL expr dypgen__early_action_0 IN expr
+\end{verbatim}
+Where \verb|dypgen__early_action_0| is a non terminal symbol created by dypgen that sends down inherited attributes that carry the information of the preceding non terminals. Therefore writing
+\begin{verbatim}
+expr: LET IDENT EQUAL expr ...@{ binding dyp $2 $4 } IN expr { Let ($5, $7) }
+\end{verbatim}
+is equivalent to:
+\begin{verbatim}
+expr: LET IDENT EQUAL expr a{$2, $4} IN expr { Let ($5, $7) }
+a<ident, exp>: { binding dyp ident exp }
+\end{verbatim}
+
+As a consequence if you return a value for \verb|local_data| in the early action, then this new value of \verb|local_data| is accessible to any action which is performed before the final action is applied (the final action not included). For instance if we have:
+\begin{verbatim}
+expr: LET IDENT EQUAL expr ...@{ binding dyp $2 $4 } IN expr { Let ($5,$7) }
+\end{verbatim}
+with
+\begin{verbatim}
+let binding dyp name exp =
+  Binding (name,exp),
+  [Local_data (insert_binding dyp.local_data name exp)]
+\end{verbatim}
+Then during the recognition of the last non terminal \verb|expr| of the righ-hand side of the rule, any action has access to the value of \verb|dyp.local_data| that is the value for \verb|local_data| returned by \texttt{binding} called by the early action. But it is not accessible anymore when \verb|{ Let ($5,$7) }| is executed.\\
+
+It is possible to insert several early actions in a rule, like:
+\begin{verbatim}
+nt1: TOK1 nt2 ...@{ pa_1 } nt2 nt3 ...{ pa_2 } nt4 TOK2 ...{ pa_3 } TOK3
+     { final_action }
+\end{verbatim}
+
+Note that if a rule exists two times in the parser definition, one time with early actions and another time whithout early action, or both times with early actions, then each of them may be tried by the parser to reduce regardless of whether the other raised \texttt{Giveup} or not. This differs from the case where both of them do not have early action where at most one of the actions assigned to the same rule is executed entirely.\\
+
+Note: if your parser makes use of at least one early action that returns a parser commands list (i.e. of the form \verb|...@{ pa }|), then you must compile with the option \verb|-rectypes| and use the option \verb|--ocaml "-rectypes"| with dypgen (see the end of section \ref{dyp_action}).
+
+\subsection{The operators \texttt{*}, \texttt{+} and \texttt{?}}
+
+When a symbol on a right-hand side of a rule is followed by `\verb|*|' then the parser must match nothing or several times this symbol. And the result is a list. For instance the following rule:
+\begin{verbatim}
+list: "(" expr * ")"  { $2 }
+\end{verbatim}
+matches a list of zero or more \verb|expr| inside parentheses and \verb|$2| has the type \verb|expr list| assuming \verb|expr| is the type of the values returned when the parser reduces to the non terminal \verb|expr|.\\
+
+Nested rules can also be followed by \verb|*|. Example of a rule:
+\begin{verbatim}
+tuple: "(" expr ["," expr {$2}]* ")"  { $2::$3 }
+\end{verbatim}
+This can also be written without the action \verb|{$2}| since when an action is omitted then by default the reduction by the rule returns the value bound to the last symbol of the right-hand-side (however it is not allowed to omit the action when the right-hand-side is empty):
+\begin{verbatim}
+tuple: "(" expr ["," expr]* ")"  { $2::$3 }
+\end{verbatim}
+
+The operator `\verb|+|' has the same effect as \verb|*| except that the symbol must be matched at least once. Example of a rule:
+\begin{verbatim}
+expr: "fun" arg + "->" expr
+\end{verbatim}
+
+When a symbol is followed by the operator `\verb|?|' it is matched zero or one time. The returned type is an option. The operators \verb|*|, \verb|+| and \verb|?| can be followed by a pattern (see section \ref{pattern} for more information about pattern matching on symbols). After \verb|*| and \verb|+| a pattern must match a list. But after a \verb|?| it does not have to match an option since a pattern \verb|pat| stated after \verb|?| is automatically replaced with: \verb:(Some pat|None):. For instance you can use: \verb:TOKEN?<"|">: if you want to match either nothing or a terminal named \verb|TOKEN| with the associated value \verb:"|":. Note that a pattern following a \verb|?| must not contain any binding.\\
+
+Here are other examples of rules:
+\begin{verbatim}
+statement: infix INT symbolchar+ ["," (symbolchar+)]* ";" ";"
+      @{ let gd = infix_op ($3::$4) $2 $1 dyp.global_data in
+         Infix_stm, [Global_data gd] }
+
+expr: "match" expr "with" "|"? match ["|" match]*
+      { Match_with ($2,$5::$6) }
+\end{verbatim}
+These rules are used in the demo program \verb|tinyML|.
+
+\subsection{Preventing layout characters to be matched with \texttt{!} and \texttt{-}}\label{bang}
+
+When you use dypgen as the lexer generator you can make a rule match only when no layout character has been matched in the part of the input that is reduced with the rule. To do this state the character `\verb|!|' at the beginning of the right-hand side of the rule. It has no effect when using another lexer generator than dypgen.\\
+
+You can use the character `\verb|-|' before a symbol to forbid layout characters just before the symbol. When stated at the end of a right-hand side before the user action it forbids layout characters before the next token to be read after the reduction by this rule.\\
+
+Note that when some part of the input is reduced to the same non terminal by two different ways but that in one case layout characters are allowed to follow and in the other case they are not, no merge happen (see section \ref{merge} for more information about merge functions).
+
+\subsection{Knowing the next lexeme in a user action}\label{next_lexeme}
+
+You may want to know the next lexeme to be matched by the lexer in a user action. If you are using a lexer generated by dypgen then you can do this calling the function \verb|dyp.next_lexeme|:
+\begin{verbatim}
+next_lexeme : unit -> string list
+\end{verbatim}
+\verb|next_lexeme| is a field of the record \verb|dyp| (see section \ref{dyp} for more information about this record).\\
+
+When \verb|dyp.next_lexeme| is called in a user action it returns the list of the next lexemes matched by the parser until the first non-layout lexeme.
+The list is in reverse order, i.e. the first element of the list is the non-layout lexeme. If the lexer does not match anything then an empty list is returned. If one or several layout lexemes are matched but no non-layout lexeme then a list with the layout lexemes is returned, with the last match first.\\
+
+Note however that \verb|next_lexeme| does not always exactly returns the lexeme the lexer will read. These discrepancies have two causes. First, \verb|next_lexeme| does not take into account the preceding context as the lexer does, because at this stage \verb|next_lexeme| does not have enough information to do so. Second, when matching the regular expressions of the lexer, \verb|next_lexeme| does not execute the associated user actions, in particular auxiliary lexers are not called. Theses cases are detailed below.\\
+
+The non-layout lexeme returned by \verb|next_lexeme| might be longer than the one that will be matched by the lexer, i.e. the lexeme read by the lexer is a prefix of the lexeme returned by \verb|next_lexeme|. This case may happen when the lexer can recognize two tokens, one being a prefix of the other, and the context prevents the longer to be matched. An example of this is the following grammar:
+\begin{verbatim}
+%start main
+%parser
+main: nt "b" "c" "d" { () }
+nt: "a"   { print_endline (List.hd (dyp.Dyp.next_lexeme ())) }
+  | "bc"  { () }
+\end{verbatim}
+Assuming one calls the parser on the string \verb|"abcd"|, \verb|next_lexeme| returns \verb|["bc"]| because the lexer has the regular expression matching the string \verb|"bc"| and when the user action is called the string \verb|"bc"| is a prefix of the remaining of the character stream (i.e. \verb|"bcd"|), and the string \verb|"bc"| is chosen over the string \verb|"b"| because it is longer.
+Whereas the lexer will only read the character \verb|b| because it does not expect the string \verb|"bc"| given what has already been parsed.\\
+
+Another case where there is a discrepancy between \verb|next_lexeme| and the lexer is when \verb|next_lexeme| matches a non-layout lexeme whereas the lexer only matches a layout lexeme. Here is an example:
+\begin{verbatim}
+%start main
+%layout ' '
+%parser
+main: nt "bcd" { () }
+nt: "a"        { print_endline (List.hd (dyp.Dyp.next_lexeme ())) }
+  | " b"       { () }
+\end{verbatim}
+Calling the parser on \verb|"a bcd"|, \verb|next_lexeme| returns \verb|[" b"]|, whereas the lexer will first read the layout lexeme \verb|' '|, skip it and then will read the lexeme \verb|"bcd"|.\\
+
+Finally here are two cases where \verb|next_lexeme| returns a wrong result because it does not call the auxiliary lexer:
+\begin{verbatim}
+{ open Dyp
+let string_buf = Buffer.create 10 }
+%start main
+%lexer
+rule string = parse
+  | '"' { () }
+  | _ { Buffer.add_string string_buf (Dyp.lexeme lexbuf); string lexbuf }
+
+main lexer =
+'"' -> STRING { Buffer.clear string_buf; string lexbuf;
+      Buffer.contents string_buf }
+
+%parser
+main: nt STRING { () }
+nt: "a" { print_endline (List.hd (dyp.next_lexeme ())) }
+\end{verbatim}
+Calling the lexer on \verb|a"hello"|, \verb|next_lexeme| just returns \verb|["\""]| (a string containing the character `\verb|"|'), whereas the lexer will read the string \verb|"hello"| (`\verb|"|' included).\\
+
+Calling an auxiliary lexer to parse commentaries may have this effect too:
+\begin{verbatim}
+%start main
+%lexer
+rule comment n = parse
+  | "*/" { if n>0 then comment (n-1) lexbuf }
+  | "/*" { comment (n+1) lexbuf }
+  | _ { comment n lexbuf }
+
+main lexer = "/*" -> { comment 0 lexbuf }
+
+%parser
+main: nt "bcd" { () }
+nt: "a" { print_endline (List.hd (dyp.Dyp.next_lexeme ())) }
+  | "efg" { () }
+\end{verbatim}
+Calling the lexer on \verb|a/*efg*/bcd|, \verb|next_lexeme| returns \verb|["efg";"/*"]|, whereas the lexer reads \verb|/*efg*/|, skips it and then reads the lexeme \verb|bcd|.\\
+
+These cases may not be typical but you should watch out for them if you intend to use \verb|next_lexeme|.
+
+\section{Dynamic extension of the grammar}\label{grammar-extension}
+
+\subsection{Adding rules}\label{adding rules}
+
+Dynamic changes to the grammar are performed by action code. To add rules to the grammar from an action code one states the character `\verb|@|' before the code of the action and uses the parser commands list (a list of values of type \verb|dyp_action|, see section \ref{dyp_action} for more information about it). The constructor that is used for this purpose is:
+\begin{verbatim}
+  | Add_rules of
+      (rule * (('token,'obj,'gd,'ld,'l) dypgen_toolbox ->
+      ('obj list -> 'obj * ('token,'obj,'gd,'ld,'l) dyp_action list))) list
+\end{verbatim}
+Where \verb|dypgen_toolbox| is the type of the record \verb|dyp| (see section \ref{dyp}), and the type \verb|obj| is explained a bit further. To add several rules and their respective actions to the grammar, the action returns the list of the corresponding couples \texttt{(rule, action)} as argument to the constructor \verb|Add_rules| in the list of parser commands. For instance the action may look like:\\
+\begin{verbatim}
+@{ returned_value, [Add_rules [(rule1,action1);(rule2,action2);(rule3,action3)]] }
+\end{verbatim}
+
+The types used to construct rules are:
+\begin{verbatim}
+  type 'a nt_prio =
+    | No_priority
+    | Eq_priority of 'a
+    | Less_priority of 'a
+    | Lesseq_priority of 'a
+    | Greater_priority of 'a
+    | Greatereq_priority of 'a
+
+  type regexp =
+    | RE_Char of char
+    | RE_Char_set of (char * char) list
+    | RE_Char_set_exclu of (char * char) list
+    | RE_String of string
+    | RE_Alt of regexp list
+    | RE_Seq of regexp list
+    | RE_Star of regexp
+    | RE_Plus of regexp
+    | RE_Option of regexp
+    | RE_Name of string (* name of a regexp declared with let *)
+    | RE_Eof_char
+
+  type symb =
+    | Ter        of string
+    | Ter_NL     of string
+    | Non_ter    of string * (string nt_prio)
+    | Non_ter_NL of string * (string nt_prio)
+    | Regexp     of regexp
+    | Regexp_NL  of regexp
+
+  type rule_options = No_layout_inside | No_layout_follows
+
+  type rule = string * (symb list) * string * (rule_options list)
+\end{verbatim}
+In the type \verb|rule|, the first string is the non terminal of the left-hand side of the rule, \verb|symb list| is the list of symbols in the right-hand side of the rule, the second string is the name of the priority that is returned by this rule. If you don't want your rule to return any particular priority then use \verb|"default_priority"|. The \verb|rule_options list| tells whether layout characters are allowed to be matched for this rule inside and after the rule. \verb|No_layout_inside| is equivalent to the use of the character `\verb|!|' at the beginning of the right-hand side in the parser definition and \verb|No_layout_follows| is equivalent to `\verb|-|' at the end of the right-hand side. The suffix `\verb|_NL|' in the constructors of the type \verb|symb| tells the parser that the symbol must not be preceded by layout characters, it amounts to the use of `\verb|-|' before a symbol in a right-hand side in the parser definition (see section \ref{bang} for more information). These types are part of the module \verb|Dyp| which is not open by default.\\
+
+For example the rule \verb|expr: LPAREN expr RPAREN| is written:
+\begin{verbatim}
+let rule_paren =
+  ("expr",
+  [Ter "LPAREN"; Non_ter ("expr",No_priority); Ter "RPAREN"],
+  "default_priority",[])
+\end{verbatim}
+The rule \verb|expr: "(" expr ")"| is written:
+\begin{verbatim}
+let rule_paren =
+  ("expr",
+  [Regexp (RE_String "("); Non_ter ("expr",No_priority); Regexp (RE_String ")")],
+  "default_priority",[])
+\end{verbatim}
+The rule \verb|expr: expr(<=pp) "+" expr(<pp) pp| is written:
+\begin{verbatim}
+let rule_plus =
+  ("expr",
+    [Non_ter ("expr",Lesseq_priority "pp");
+     Regexp (RE_String "+");
+     Non_ter ("expr",Less_priority "pp")],
+  "default_priority",[])
+\end{verbatim}
+
+The type of actions is:
+\begin{verbatim}
+('token,'obj,'gd,'ld,'l) dypgen_toolbox ->
+'obj list ->
+'obj * ('token,'obj,'gd,'ld,'l) dyp_action list
+\end{verbatim}
+
+For example the action bound to the rule
+\begin{verbatim}
+expr: expr(<=pp) "+" expr(<pp) pp
+\end{verbatim}
+can be written:
+\begin{verbatim}
+let action_plus _ l =
+  let x1, x2 = match l with
+    | [Obj_expr x1;_;Obj_expr x2] -> x1, x2
+    | _ -> failwith "action_plus"
+  in
+  (Obj_expr (x1+x2)), []
+\end{verbatim}
+The constructor \verb|Obj_expr| is part of the type \verb|obj| which is discussed in the following subsection.
+
+\subsection{The type \texttt{obj}}\label{obj}
+
+The type \texttt{obj} is a sum of constructors with each constructor corresponding to a terminal or a non terminal. For each symbol of name \texttt{symbol} in the grammar, the corresponding constructor of the type obj is \texttt{Obj\_symbol}. \texttt{Obj\_symbol} has an argument if \texttt{symbol} is a non terminal or a token with argument. The type of this argument is the type of the argument of the corresponding token or the type of the value returned by the corresponding non terminal.\\
+
+When you write the function that builds the action associated with a rule added dynamically to the grammar, you have to use one of these constructors for the result of the action. If the constructor is not the good one, i.e. the one that is associated with the non terminal in the left-hand side of the rule, then an exception will be raised when reducing by this rule. This exception is:
+\begin{verbatim}
+exception Bad_constructor of (string * string * string)
+\end{verbatim}
+where the first string represents the rule, the second string represents the constructor that was expected for this left-hand side non terminal and the third string is the name of the constructor that has been used.\\
+
+If you want several symbols to have the same constructor then you can use the directive:
+\begin{verbatim}
+%constructor Cons %for symb1 symb2 ...
+\end{verbatim}
+where \verb|Cons| is the name of the common constructor you want to assign for all these symbols, and \verb|symb1|, \verb|symb2| can be either a non terminal (an identifier beginning with a lower case letter) or a terminal (an identifier beginning with an upper case letter). Of course all these symbols need to return values of the same type, in particular you can share the same constructor between different non terminals and tokens associated with one argument (all of them of the same type), but you cannot share a constructor between tokens without argument and tokens with arguments or non terminals. Regardless of whether you use polymorphic variants (see below) or not, you should not write \verb|`Cons| here but just \verb|Cons|. You can also use the keyword \verb|%constructor| to declare constructors that are not used by any token or non terminal in the initial grammar but that may be used for new non terminals when new rules are added dynamically (see section \ref{new nt}). For instance:
+\begin{verbatim}
+%constructor Cons1 Cons2 Cons3
+\end{verbatim}
+
+Note that \texttt{obj} is actually a polymorphic type constructor. The types of the arguments of the constructors that accept an argument that are not known to dypgen are its type parameters. But these type parameters are not explicitly written in this manual to avoid clutter. See the next subsection for an example of type constructor \verb|obj|. Note that if your grammar has a lot of symbols, the maximal number of non-constant constructors (246) may be reached. Then use the option \verb|--pv-obj| with \verb|dypgen|. With this option, dypgen uses polymorphic variants instead of constructors. Another way to avoid reaching the maximum number of constructors is to share constructors between several symbols, for instance to use a constructor \verb|Void| for all the tokens that have no argument. When using polymorphic variants sharing constructor may make the compilation of the generated code less demanding because it uses fewer polymorphic variants.\\
+
+In addition to the constructors assigned to terminals and non terminals symbols, the type \verb|obj| owns the following constructors:
+\begin{verbatim}
+  Lexeme_matched of string
+\end{verbatim}
+It is the constructor for the strings returned by regular expressions.
+This constructor is present even if you don't use dypgen lexer generator.
+When dypgen is used as the lexer generator there is also one constructor
+\begin{verbatim}
+  Lex_lexer_name
+\end{verbatim}
+for each auxiliary lexer (where \verb|lexer_name| is the name of the lexer), and one constructor
+\begin{verbatim}
+  Lex_lexer_name_Arg_arg_name
+\end{verbatim}
+for each parameter of the lexer (where \verb|arg_name| is the name of the
+parameter). The user won't have to deal with these constructors but you should avoid introducing constructor that begins with \verb|Lex_| or giving a name that contains \verb|_Arg_| to a lexer.\\
+
+The \verb|.mli| file generated by dypgen includes the declaration of the type \verb|obj| (when neither \verb|--pv-obj| nor \verb|--no-obj| is used).
+
+\subsection{Example}\label{example}
+\begin{verbatim}
+{ open Dyp
+
+let rule_plus = ("expr", [
+  Non_ter ("expr",No_priority);
+  Regexp (RE_String "+");
+  Non_ter ("expr",No_priority)
+  ], "default_priority", true)
+(* define the rule: expr: expr "+" expr *)
+
+let action_plus = (fun dyp l ->
+  let x1,x2 = match l with
+    | [Obj_expr x1;_;Obj_expr x2] -> x1,x2
+    | _ -> failwith "action_plus"
+  in
+  Obj_expr (x1+x2), [Dont_shift]) }
+
+%start main
+
+%lexer
+main lexer =
+' ' ->
+['0'-'9']+ -> INT { int_of_string (Dyp.lexeme lexbuf) }
+
+%parser
+
+main: expr "\n"    { $1 }
+
+expr:
+  | INT           { $1 }
+  | a expr        { $2 }
+
+a: "&" @{ (), [Add_rules [(rule_plus, action_plus)]] }
+\end{verbatim}
+
+Now if we parse the following input
+\begin{verbatim}
+& 1 + 2 + 3 + 4
+\end{verbatim}
+the parser reduces \texttt{\&} to \texttt{a}, the action code of this reduction adds the rule \verb|expr: expr "+" expr| to the initial grammar which does not contain it. And the action code associated with this rule is \verb|action_plus| which is the addition. Then the rest of the input is parsed with this new rule and the whole string is reduced to the integer 10.\\
+
+The type constructor \verb|obj| discussed in the previous subsection is:
+\begin{verbatim}
+type ('a, 'b, 'c, 'd) obj =
+    Lexeme_matched of string
+  | Obj_INT of 'a
+  | Obj___dypgen_layout
+  | Obj_a of 'b
+  | Obj_expr of 'c
+  | Obj_main of 'd
+  | Dypgen__dummy_obj_cons
+\end{verbatim}
+
+Note that with an early action we can use alternatively the following grammar:
+\begin{verbatim}
+main: expr "\n"    { $1 }
+expr:
+  | INT            { $1 }
+  | "&" ...@{ (), [Add_rules [(rule_plus, action_plus)]] } expr { $3 }
+\end{verbatim}
+
+Now the type constructor \verb|obj| becomes:
+\begin{verbatim}
+type ('a, 'b, 'c, 'd) obj =
+    Lexeme_matched of string
+  | Obj_INT of 'a
+  | Obj___dypgen_layout
+  | Obj_dypgen__nt_0 of 'b
+  | Obj_expr of 'c
+  | Obj_main of 'd
+  | Dypgen__dummy_obj_cons
+\end{verbatim}
+
+\subsection{Scope of the changes}\label{scope}
+
+The changes to the grammar introduced by an action do not apply anywhere in the input. When an action code changes the grammar a reduction occurs and yield a non terminal (the non terminal \texttt{a} in the previous example). Once this non terminal is itself reduced, the changes to the grammar are forgotten and the grammar which was used before the changes is used again. The scope of the changes to the grammar is the same as the scope of \verb|local_data|.\\
+
+We add parentheses to the previous example:
+
+\begin{verbatim}
+{
+  (* same as previous example *)
+}
+
+%start main
+%lexer /* same as previous example */
+
+%parser
+main: expr "\n"    { $1 }
+
+expr:
+  | INT            { $1 }
+  | a expr         { $2 }
+  | "(" expr ")" { $2 }
+
+a: "&" @{ (), [Add_rules [(rule_plus, action_plus)]] }
+\end{verbatim}
+
+The input
+\begin{verbatim}
+(& 1 + 2 + 3 + 4)
+\end{verbatim}
+is correct, but
+\begin{verbatim}
+(& 1 + 2) + 3 + 4
+\end{verbatim}
+is not and raises \verb|Dyp.Syntax_error|. In order to reduce \texttt{(\& 1 + 2)} the parser reduces \verb|& 1 + 2| to \texttt{a expr} and then to \texttt{expr}. At this moment the old grammar applies again and the rule \texttt{expr: expr "+" expr} does not apply any more. This is why the parser cannot shift \texttt{+} after \texttt{(\& 1 + 2)}. In the directory \texttt{demos/sharp} there is an example which is similar to this one.\\
+
+It is possible to extend the scope of the grammatical changes, but you have to tell it to the parser. The constructor
+\begin{verbatim}
+Keep_grammar
+\end{verbatim}
+of the type \verb|dyp_action| is available to do that. If \verb|Dyp.Keep_grammar| is returned in the list of instructions to the parser, then the grammar that was in use when the reduction of the last non terminal of the right-hand side of the current rule occured is kept instead of being forgotten. Using:
+\begin{verbatim}
+ @{ returned_value, [Dyp.Keep_grammar] }
+\end{verbatim}
+extends the scope of the grammar the same way that
+\begin{verbatim}
+ @{ returned_value, [Dyp.Local_data dyp.last_local_data] }
+\end{verbatim}
+extends the scope of \verb|local_data| (see section \ref{last_local_data}).\\
+
+Extensions of the scope of the changes to the grammar are useful when you want to use a left-recursive rule instead of a right-recursive one. Left-recursive rules are more efficient than right-recursive ones with a GLR parser driven by an LR(0) automaton, which is currently what dypgen generates. For an example of use of \verb|Keep_grammar| with a left-recursive rule, see the example \verb|tinyML|.\\
+
+Using \verb|Dyp.Keep_grammar| is expensive since it needs to rebuild an automaton. There is an exception, when the rule is left-recursive then no additional construction of an automaton is needed.\\
+
+Note that \verb|Dyp.Keep_grammar| has no effect when the current action itself changes the grammar.\\
+
+\subsection{Adding new non terminals}\label{new nt}
+
+To add a new non terminal to the grammar just use its string in some new rules and bind this new non terminal to an existing constructor of the type \verb|obj|. To do this binding place the following in the parser commands list:
+\begin{verbatim}
+Bind_to_cons [(nt,cons)]
+\end{verbatim}
+is used to insert a new non terminal which string is \verb|nt| and which associated constructor has the string \verb|cons|. The string \verb|nt| can be any string, the string \verb|cons| must be either:
+\begin{itemize}
+\item A valid constructor of the form \verb|Obj_nt| where \verb|nt| is a non terminal which has not been assigned a different constructor than its default.
+\item Or a constructor that has been declared with the keyword \verb|%constructor| and without using the backquote even if the option \verb|--pv-obj| is used.
+\end{itemize}
+If the non terminal which string is \verb|nt| is already bound to a constructor then there are two possible outcomes:
+\begin{itemize}
+\item The string \verb|cons| is the same as the one that this non terminal is already bound to, then  nothing is changed.
+\item The string \verb|cons| is different from the one that this non terminal is already bound to, then the parser raises:
+\begin{verbatim}
+exception Constructor_mismatch of (string * string)
+\end{verbatim}
+where the first string is the one representing the constructor that the non terminal was previously bound to and the second string is \verb|cons|.\\
+\end{itemize}
+Note that if an action returns \verb|Keep_grammar| and uses \verb|Bind_to_cons binding_list| in the parser commands list then the bindings introduced by \verb|Bind_to_cons| will not be taken into account.\\
+
+Note that you cannot define new terminal symbols. If you add a new rule with a token that is not in the initial grammar then the parser will raise the exception:
+\begin{verbatim}
+exception Undefined_ter of string
+\end{verbatim}
+The string is the name of the undefined token. If you want to extend the lexer then use dypgen as the lexer generator and use regular expressions in the right hand-side of the new rules that need the lexer to be extended.\\
+
+It is not possible to define new named regexp at runtime but it is possible to use the ones defined statically to build new rules using the constructor \verb|RE_Name|. If this constructor is used with a string that does not correspond to an existing named regexp then the exception \verb|Not_found| is raised. Therefore it is useful to check whether the string is the name of a named regexp. To do so it is possible to use the following function.
+\begin{verbatim}
+val is_re_name : ('t,'o,'gd,'ld,'l) parser_pilot -> string -> bool
+\end{verbatim}
+For instance, the code
+\begin{verbatim}
+if is_re_name dyp.parser_pilot s
+then Regexp (RE_Name s)
+else failwith "regexp name undefined"
+\end{verbatim}
+fails when trying to use a string \verb|s| that does not correspond to an existing named regexp.\\
+
+Note that you can also include non terminals in the initial grammar without being part of any rule. To do this use the keyword \verb|%non_terminal| followed by the names of the non terminals you want to include, like:
+\begin{verbatim}
+%non_terminal nt1 nt2 nt3
+\end{verbatim}
+This directive is put in the section after the header, before the grammar.\\
+
+For a complete example of grammar extension, see appendix \ref{complete example}. It describes a small language that is somewhat extensible.
+
+\subsection{Extending dynamically priority data}\label{dynamic priority}
+
+To make the relation true between priorities, use the constructor \verb|Relation| of the parser commands list:
+\begin{verbatim}
+Relation of string list list
+\end{verbatim}
+For instance the following parser commands list
+\begin{verbatim}
+[ Relation [["p1";"p2"];["p3";"p4";"p5"]] ]
+\end{verbatim}
+adds the relations: \verb|p1<p2| and \verb|p3<p4<p5| to the priority data. (where \verb|p3<p4<p5| is transitively closed, i.e. \verb|p3<p5| does also hold)\\
+
+The scope of the changes to the priority data is the same as the scope of the changes to the grammar. In particular the parser command \verb|Keep_grammar| extends this scope the same way it does for the scope of new rules.\\
+
+Note that it is not possible to make the relation false between two priorities for which the relation is true at parsing time. You can see the priorities as the vertices of a graph and the relation as directed edges between these vertices. You can dynamically add new vertices and edges, but not remove them. Of course when the parsing goes out of the scope of the changes, the priority data returns to its previous state.\\
+
+To add a new priority to the grammar just use it in a rule or with \verb|Relation|.\\
+
+You can find a very basic example of extension of priority data in the directory \verb|calc_ext|. This is the example of a calculator that only has the plus operator and where the times operator can be added with the use of the character \verb|&| in the string. Initially the priorities are \verb|pi<pp|, when the grammar is extended to include the times operator, the priority data is changed to \verb|pi<pt<pp|.
+
+\section{Parsing control structures}
+
+\subsection{The record \texttt{dyp} and the type \texttt{dypgen\_toolbox}}\label{dyp}
+
+The record \verb|dyp| is accessible in any action code, its type is \verb|dypgen_toolbox|, it is defined in the module \verb|Dyp|:
+\begin{verbatim}
+type ('token,'obj,'gd,'ld,'lexbuf) dypgen_toolbox = {
+  parser_pilot : ('token,'obj,'gd,'ld,'lexbuf) parser_pilot;
+  global_data : 'gd;
+  local_data : 'ld;
+  last_local_data : 'ld;
+  next_lexeme : unit -> string list;
+  symbol_start : unit -> int;
+  symbol_start_pos : unit -> Lexing.position;
+  symbol_end : unit -> int;
+  symbol_end_pos : unit -> Lexing.position;
+  rhs_start : int -> int;
+  rhs_start_pos : int -> Lexing.position;
+  rhs_end : int -> int;
+  rhs_end_pos : int -> Lexing.position;
+  print_state : out_channel -> unit;
+  print_grammar : out_channel -> unit;
+}
+\end{verbatim}
+Where \verb|'gd| and \verb|'ld| are replaced by the type for global data and local data chosen by the user (and infered by Caml), and \verb|'obj| is replaced by the type \verb|obj| discussed in section \ref{obj}, and \verb|'lexbuf| is replaced by the type of the lexer buffer. To know more about the field \verb|parser_pilot| see section \ref{parse}, and for more information about \verb|next_lexeme| see section \ref{next_lexeme}.
+
+\subsection{The parser commands list and the type \texttt{dyp\_action}}\label{dyp_action}
+
+To give instructions to the parser from the user actions one returns a list of values of type \verb|dyp_action|, called the parser commands list, along with the returned AST. This list is returned by the action when the code is preceded by the character `\verb|@|' and it is returned by the actions introduced at parsing time.
+\begin{verbatim}
+type ('token,'obj,'gd,'ld,'lexbuf) dyp_action =
+  | Add_rules of
+      (rule * (('token,'obj,'gd,'ld,'lexbuf) dypgen_toolbox ->
+      ('obj list -> 'obj * ('token,'obj,'gd,'ld,'lexbuf) dyp_action list))) list
+  | Bind_to_cons of (string * string) list
+  | Dont_shift
+  | Global_data of 'gd
+  | Keep_grammar
+  | Local_data of 'ld
+  | Next_grammar of out_channel
+  | Next_state of out_channel
+  | Parser of ('token,'obj,'gd,'ld,'lexbuf) parser_pilot
+  | Relation of string list list
+\end{verbatim}
+
+Here are the sections where each of these constructors are discussed:
+
+\begin{center}
+\begin{tabular}{lclclc}
+  Constructor & See section & Constructor & See section & Constructor & See section\\
+  \verb|Add_rules|&\ref{adding rules}&\verb|Keep_grammar|&\ref{scope}&\verb|Parser|&\ref{load_parser}\\
+  \verb|Bind_to_cons|&\ref{new nt}&\verb|Local_data|&\ref{data}&\verb|Relation|&\ref{dynamic priority}\\
+  \verb|Dont_shift|&\ref{will_shift}&\verb|Next_grammar|&\ref{verbose}\\
+  \verb|Global_data|&\ref{data}&\verb|Next_state|&\ref{verbose}\\
+\end{tabular}
+\end{center}
+
+The type \verb|dyp_action| is also used with the function \verb|update_pp|, see section \ref{parse}.\\
+
+Because of the recursive nature of the types \verb|dyp_action| and \verb|dypgen_toolbox| the typechecker of ocamlc complains in some cases, like when using an early action that returns a parser commands list (i.e. beginning with \verb|...@{| ). The error message looks like:
+\begin{verbatim}
+This expression has type
+  ('a * unit, 'b) obj * ('c, ('d, int) obj, 'e, 'f, 'g) Dyp.dyp_action list
+but is here used with type 'a * ('h, 'a, 'i, 'j, 'k) Dyp.dyp_action list
+\end{verbatim}
+In such cases you will have to use the option \verb|-rectypes| of ocamlc and use \verb|--ocamlc "-rectypes"| with dypgen or the option \verb|command| (These options are documented in \ref{ocamlc})
+
+\subsection{\texttt{parser\_pilot}, \texttt{parse}, \texttt{lexparse} and \texttt{update\_pp}}\label{parse}
+
+The record \verb|dyp| available inside the action code has a field:
+\begin{verbatim}
+parser_pilot : ('token,'obj,'global_data,'local_data,'lexbuf) Dyp.parser_pilot;
+\end{verbatim}
+that describes the current parser with information such as the current grammar, its corresponding parse table and the current global and local data. The type is
+\begin{verbatim}
+type ('token,'obj,'global_data,'local_data,'lexbuf) parser_pilot = {
+  pp_dev : ('token,'obj,'global_data,'local_data,'lexbuf) parsing_device;
+  pp_par : ('token,'obj,'global_data,'local_data,'lexbuf) parser_parameters;
+  pp_gd : 'global_data;
+  pp_ld : 'local_data }
+\end{verbatim}
+The \verb|.ml| file generated by dypgen defines the value:
+\begin{verbatim}
+val pp : unit -> ('token,'obj,'global_data,'local_data,'lexbuf) Dyp.parser_pilot
+\end{verbatim}
+which is declared in the \verb|.mli| generated file. It is defined after the grammar, therefore it is not available in the header and in the grammar. This value describes the parser defined in the \verb|.dyp| file. The global and local data included inside are the values \verb|global_data| and \verb|local_data| defined by the user (or the default otherwise).\\
+
+The following function is defined in the module \verb|Dyp| of the library and makes possible to parse for any non terminal symbol of the grammar when you use dypgen as the lexer generator.
+\begin{verbatim}
+val lexparse :
+  ('token,'obj,'global_data,'local_data,'obj dyplexbuf) parser_pilot ->
+  string ->
+  ?global_data:'global_data ->
+  ?local_data:'local_data ->
+  ?match_len:[`longest|`shortest] ->
+  ?choose_token:[`first|`all] ->
+  'obj dyplexbuf ->
+  (('obj * string) list)
+\end{verbatim}
+If you use an external lexer generator like ocamllex then the corresponding function is:
+\begin{verbatim}
+val parse :
+  ('token,'obj,'global_data,'local_data,'lexbuf) parser_pilot ->
+  string ->
+  ?global_data:'global_data ->
+  ?local_data:'local_data ->
+  ?match_len:[`longest|`shortest] ->
+  ?lexpos:('lexbuf -> (Lexing.position * Lexing.position)) ->
+  ('lexbuf -> 'token) ->
+  'lexbuf ->
+  (('obj * string) list)
+\end{verbatim}
+For instance the following expression inside a user action:
+\begin{verbatim}
+parse dyp.parser_pilot "expr" lexfun lexbuf
+\end{verbatim}
+parses with the current grammar and the current global and local data with the lexer \verb|lexfun| and the lexer buffer \verb|lexbuf| and tries to reduce to the non terminal \verb|expr|. If you want to have access to your lexer inside the actions, you may put it in \verb|global_data| or \verb|local_data|. Assuming you want to put it in \verb|local_data|, then when you define  \verb|local_data| in the header you may put a dummy lexer of the right type:
+\begin{verbatim}
+let local_data = fun _ -> LPAREN
+\end{verbatim}
+where \verb|LPAREN| is any token. And when you call the parser, use the label \verb|~local_data:| to have \verb|local_data| contains your real lexer.\\
+
+Assuming that a parser is defined in a file named \verb|my_parser.dyp| then the following expression in a file different from the parser:
+\begin{verbatim}
+parse (My_parser.pp ()) "program" lexfun lexbuf
+\end{verbatim}
+parses with the grammar defined in \verb|my_parser.dyp| and the values \verb|global_data| and \verb|local_data| defined by the user. It tries to reduce to the non terminal \verb|program|.\\
+
+The non terminal passed as second argument to \verb|parse| does not need to be declared as a start non terminal in the \verb|.dyp| file. Any non terminal of the grammar can be used. The default value for \verb|match_len| is \verb|`longest| (see section \ref{match_length} for more information about  \verb|`shortest| and \verb|`longest|). The default value for \verb|choose_token| is \verb|`first| (see the end of the section \ref{dyplex} for more information about this argument).\\
+
+The following function is defined in the module \verb|Dyp| of the library and makes possible to modify a value of type \verb|parser_pilot|.
+\begin{verbatim}
+val update_pp :
+  ('token,'obj,'global_data,'local_data,'lexbuf) parser_pilot ->
+  ('token,'obj,'global_data,'local_data,'lexbuf) dyp_action list ->
+  ('token,'obj,'global_data,'local_data,'lexbuf) parser_pilot
+\end{verbatim}
+Note: when you use this function, only the following constructors of the type \verb|dyp_action| have an effect on the parser:
+\begin{verbatim}
+  Add_rules
+  Bind_to_cons
+  Global_data
+  Local_data
+  Relation
+\end{verbatim}
+To know more about the type \verb|dyp_action| see section \ref{dyp_action}.
+
+\subsection{Saving and loading a parser}\label{load_parser}
+
+It is possible to save to a file and load from a file a parser. This may be useful to save the time of generation of the automaton for an extended grammar. To do this you need to use the field \verb|parser_pilot.pp_dev| of the record \verb|dyp| and the constructor
+\begin{verbatim}
+Parser of ('token,'obj,'global_data,'local_data,'lexbuf) parsing_device
+\end{verbatim}
+of the parser commands list. The field \verb|parser_pilot.pp_dev| gives you access to the current parser and make you able to save it to a file using the \verb|Marshal| module of the Caml standard library (you have to use the flag \verb|Closures| since a value of type \verb|parsing_device| contains functional values). To load a parser and use it, you need to return it to the current parser with the constructor \verb|Parser| in a parser commands list.\\
+For instance the demo program \verb|tinyML| could contain the following productions to save and load the \verb|parsing_device|.
+\begin{verbatim}
+statements:
+  | { [] }
+  | statements statement       @{ $2::$1, [Keep_grammar] }
+  | statements load_statement  @{ $2@$1, [Keep_grammar] }
+  | statements "save" STRING<filename> ";" ";" @{
+      let oc = open_out filename in
+      Marshal.to_channel oc ($1, dyp.parser_pilot.pp_dev) [Marshal.Closures];
+      close_out oc;
+      $1, [Keep_grammar] }
+
+load_statement: "load" STRING<filename> ";" ";"
+  @{let ic = open_in filename in
+    let stmt_list, pdev = Marshal.from_channel ic in
+    close_in ic;
+    stmt_list, [Parser pdev] }
+\end{verbatim}
+
+The files \verb|test_list_syntax.tiny| and \verb|test_load_parser.tiny| test this feature. The file \verb|test_list_syntax.tiny| is
+\begin{verbatim}
+define
+  list_contents := expr(x) = List(x,Nil)
+  and list_contents := expr(x) ";" list_contents(y) = List(x,y)
+  and expr := "[" "]" = Nil
+  and expr := "[" list_contents(x) "]" = x
+  and expr := expr(x) "::" expr(y) = List(x,y)
+;;
+
+let rec append arg = match arg with
+  | ([],list) -> list
+  | ((head::tail),list) -> (head::(append (tail,list)))
+;;
+
+define
+  expr := expr(x) "@" expr(y) = append (x,y)
+;;
+
+save "list_syntax";;
+\end{verbatim}
+When interpreted it creates a file \verb|list_syntax| containing a parser for the syntax of tinyML and an extension parsing the syntax of lists.\\
+The file \verb|test_load_parser.tiny| is
+\begin{verbatim}
+load "list_syntax";;
+
+let rec reverse l = match l with
+  | [] -> []
+  | head::tail -> ((reverse tail)@[head])
+;;
+
+reverse [0;1;2;3];;
+\end{verbatim}
+When interpreted it outputs
+\begin{verbatim}
+= List(3,List(2,List(1,List(0,Nil))))
+\end{verbatim}
+
+It is possible to save the automaton without functional values and to attach them to the \verb|parsing_device| after loading it. To do this, two functions are available:
+\begin{verbatim}
+val function_free_pdev :
+  ('t,'o,'gd,'ld,'lb) parsing_device -> ('t,'o,'gd,'ld,'lb) parsing_device
+
+val import_functions :
+  ('t,'o,'gd,'ld,'l) parsing_device ->
+  ('t,'o,'gd,'ld,'l) parser_pilot ->
+  (rule * (('t,'o,'gd,'ld,'l) dypgen_toolbox ->
+      'o list -> 'o * ('t,'o,'gd,'ld,'l) dyp_action list)) list ->
+  ('t,'o,'gd,'ld,'l) parsing_device
+\end{verbatim}
+The function \verb|function_free_pdev| returns a \verb|parsing_device| without any functional value. And \verb|import_functions| allows to attach them. For instance the demo program \verb|tinyML| contains the following productions:
+\begin{verbatim}
+statements:
+  | { [] }
+  | statements statement
+      @{ $2::$1, [Keep_grammar] }
+  | statements load_statement
+      @{ $2@$1, [Keep_grammar] }
+  | statements "save" STRING<filename> ";" ";" @{
+      let oc = open_out filename in
+      Marshal.to_channel oc
+        ($1, (snd dyp.global_data), function_free_pdev dyp.parser_pilot.pp_dev)
+        [];
+      close_out oc;
+      $1, [Keep_grammar] }
+
+statement:
+/* ... */
+  | "define" define_cont ";" ";" @{
+      let bind_cons = List.map (fun (s,_,_) -> (s,"EXPR")) $2 in
+      Define_syntax,
+      let gd = (fst dyp.global_data), $2@(snd dyp.global_data) in
+      [Global_data gd;
+      Add_rules (List.map (a_define_in dyp) $2); Bind_to_cons bind_cons] }
+
+load_statement: "load" STRING<filename> ";" ";" @{
+      let ic = open_in filename in
+      let stmt_list, define_cont, pdev = Marshal.from_channel ic in
+      close_in ic;
+      let ral = List.map (a_define_in dyp) define_cont in
+      let pdev = import_functions pdev dyp.parser_pilot ral in
+      stmt_list, [Parser pdev] }
+\end{verbatim}
+Here the information about all the grammar rules that have been added to the initial grammar and the information to build the corresponding user actions are stored in \verb|global_data| and marshalled too when saving the \verb|parsing_device|.
+
+\section{Names defined by dypgen}
+
+To avoid names conflicts you should not use identifier beginning with \verb|__dypgen_| and take into account the names that are listed in this section. You sould not give your non terminal symbols names beginning with \verb|dypgen__|.\\
+
+\subsection{Types and values defined in the \texttt{.ml} file}
+
+The following values are available in the code of the parser. They are defined before the header but after the code introduced by \verb|%mltop|.
+\begin{verbatim}
+type token =
+  | TOKEN_1 of t1
+  | TOKEN_2 of t2
+...
+\end{verbatim}
+The type \verb|token| is defined only if an external lexer generator is used and the options \verb|--pv-token| and \verb|--noemit-token-type| are not used.
+\begin{verbatim}
+type ('nt1,'nt2,...) obj =
+  | Obj_TOKEN_1 of t1
+  | Obj_TOKEN_2 of t2
+...
+  | Obj_non_ter_1 of 'nt1
+  | Obj_non_ter_2 of 'nt2
+...
+\end{verbatim}
+The type \verb|obj| is defined only if the options \verb|--pv-obj| and \verb|--no-obj| are not used.
+\begin{verbatim}
+val global_data : int ref (* by default, can be defined by the user *)
+val local_data : int ref (* by default, can be defined by the user *)
+val global_data_equal : 'a -> 'a -> bool (* is (==) by default *)
+val local_data_equal : 'a -> 'a -> bool (* is (==) by default *)
+
+val dyp_merge : 'a list -> 'a -> 'a list
+val dyp_merge_nt1 : 'a list -> 'a -> 'a list
+val dyp_merge_nt2 : 'a list -> 'a -> 'a list
+...
+
+val dypgen_lexbuf_position : Lexing.position * Lexing.position
+val dypgen_match_length : [ `shortest | `longest ]
+val dypgen_choose_token : [ `first | `all ]
+
+module Dyp_symbols:
+sig
+  val get_token_name : token -> int
+  val str_token : token -> string
+  val ter_string_list : (string * token_name) list
+end
+
+module Dyp_priority_data:
+sig
+  val relations : string list list
+end
+\end{verbatim}
+
+In addition the following module names are used:
+\begin{verbatim}
+module Dyp_symbols_array
+module Dyp_aux_functions
+\end{verbatim}
+
+\subsection{Types and values defined in the \texttt{.mli} file}
+
+The \verb|.mli| file generated by dypgen declares automatically the types \verb|token| when using an external lexer generator and \verb|obj| (if \verb|--pv-token| or \verb|--noemit-token-type| is used then \verb|token| is not declared, if \verb|--pv-obj| or \verb|--no-obj| is used then \verb|obj| is not declared, see \ref{--pv-obj} for information about \verb|--pv-obj|). It then declares the value \verb|pp| (see section \ref{parse} for more information about it) and one function for each entry point of the grammar declared as such with the keyword \verb|%start|.\\
+
+The types written by dypgen are extracted as strings from a file ending with \verb|.extract_type| created by calling \verb|ocamlc -i|. As \verb|ocamlc -i| does not output a compilable file, dypgen does the following modifications to the strings. Polymorphic variants are fixed: \verb|_[>|, \verb|_[<|, \verb|[>| and \verb|[<| are replaced with \verb|[|. Type variables beginning with \verb|'_| (like \verb|'_a|) are replaced with \verb|unit|. These automatic modifications may be the cause of puzzling type errors in some cases. Avoid such errors with type annotations.\\
+
+You may want to use some options with ocamlc when dypgen calls \verb|ocamlc -i|, like the paths where ocamlc must look for modules. Then uses the options \verb|--ocamlc| or \verb|--command| documented in section \ref{ocamlc}.
+
+\subsection{Adding code to the \texttt{.mli} file and at the top of the \texttt{.ml} file}\label{mli}
+
+The general frame of a \verb|.dyp| file is:
+\begin{verbatim}
+%mltop { (* optional OCaml code *) }
+
+{ (* optional OCaml code: "the header" *) }
+
+/* parser informations introduced with keywords (priorities, tokens, ...) */
+
+%%
+
+/* the grammar */
+
+{ (* optional OCaml code: "the trailer" *) }
+
+%mlitop { (* optional OCaml interface code *) }
+%mlimid { (* optional OCaml interface code *) }
+%mli { (* optional OCaml interface code *) }
+\end{verbatim}
+
+The keyword \verb|%mltop { }| makes possible to add code to the top of the \verb|.ml| generated file. The code inside the braces is copied to the beginning of the \texttt{.ml} file, before the values defined by dypgen. The keyword \verb|%mltop| is used first in the parser definition, before the optional header.\\
+
+The keyword \verb|%mlitop { }| makes possible to add code to the top of the interface file of the parser. The code inside the braces is copied to the beginning of the \texttt{.mli} file.\\
+
+With the keyword \verb|%mlimid { }| the code inside the braces is copied between the declaration of type token and the declaration of the entry point functions in the \verb|.mli| file.\\
+
+The keyword \verb|%mli { }| makes possible to add code at the end of the interface file of the parser. The code inside the braces is appended to the end of the \texttt{.mli} file. The keyword \verb|%mli| is used at the end of the parser definition.\\
+
+Remark: the block \verb|%mlitop { }| and the trailer make possible to encapsulate the parser definition in a functor.
+
+\subsection{No generation of the \texttt{.mli} file and other options}
+
+With the option \verb|--no-mli| dypgen does not generate a \verb|.mli| file.\\
+
+The option \verb|--noemit-token-type| prevents dypgen from writing the type \verb|token| in the generated code. This is useful when you want to define this type in another file.\\
+
+The option \verb|--no-pp| prevents dypgen from declaring pp in the \verb|.mli| file.\\
+
+The option \verb|--no-obj| prevents dypgen from declaring the type \verb|obj| in the \verb|.mli| file (it has no effect if \verb|pp| is declared).
+
+\subsection{Defining the token type in a separate file}
+
+To do this, use the option \verb|--noemit-token-type| when calling dypgen, and do the following:
+Supposing your parser file is \verb|parser.dyp| and your token type is the type \verb|t| defined in the file \verb|token.ml|, put this at the beginning of \verb|parser.dyp|:
+\begin{verbatim}
+%mltop{
+open Token
+type token = Token.t
+}
+\end{verbatim}
+ 
+and put this at the end of \verb|parser.dyp|:
+
+\begin{verbatim}
+%mlitop{
+type token = Token.t
+}
+\end{verbatim}
+
+\subsection{The module \texttt{Dyp} of the library}
+Names defined in the module \verb|Dyp| are listed here:
+\begin{verbatim}
+val dypgen_verbose : int ref
+
+type 'a nt_prio =
+  | No_priority
+  | Eq_priority of 'a
+  | Less_priority of 'a
+  | Lesseq_priority of 'a
+  | Greater_priority of 'a
+  | Greatereq_priority of 'a
+
+type regexp =
+  | RE_Char of char
+  | RE_Char_set of (char * char) list
+  | RE_Char_set_exclu of (char * char) list
+  | RE_String of string
+  | RE_Alt of regexp list
+  | RE_Seq of regexp list
+  | RE_Star of regexp
+  | RE_Plus of regexp
+  | RE_Option of regexp
+  | RE_Name of string (* name of a regexp declared with let *)
+  | RE_Eof_char
+
+type symb =
+  | Ter of string
+  | Non_ter of string * (string nt_prio)
+  | Regexp of regexp
+  | Ter_NL of string
+  | Non_ter_NL of string * (string nt_prio)
+  | Regexp_NL of regexp
+
+type rule_options = No_layout_inside | No_layout_follows
+type rule = string * (symb list) * string * rule_options list
+type nt_cons_map
+
+type ('obj,'gd,'ld) merge_function =
+  ('obj * 'gd * 'ld) list -> ('obj list * 'gd * 'ld)
+
+type debug_infos = {
+  prt_state : out_channel -> unit;
+  prt_grammar : out_channel -> unit; }
+
+type ('t,'o,'gd,'ld,'l) action =
+    Dypgen_action of (...)
+and ('token,'obj,'global_data,'local_data,'lexbuf) parser_pilot
+
+type ('token,'obj,'gd,'ld,'l) dypgen_toolbox = {
+  parser_pilot : ('token,'obj,'gd,'ld,'l) parser_pilot;
+  global_data : 'gd;
+  local_data : 'ld;
+  last_local_data : 'ld;
+  next_lexeme : unit -> string list;
+  symbol_start : unit -> int;
+  symbol_start_pos : unit -> Lexing.position;
+  symbol_end : unit -> int;
+  symbol_end_pos : unit -> Lexing.position;
+  rhs_start : int -> int;
+  rhs_start_pos : int -> Lexing.position;
+  rhs_end : int -> int;
+  rhs_end_pos : int -> Lexing.position;
+  print_state : out_channel -> unit;
+  print_grammar : out_channel -> unit;
+}
+
+type ('token,'obj,'gd,'ld,'l) dyp_action =
+  | Add_rules of
+      (rule * (('token,'obj,'gd,'ld,'l) dypgen_toolbox ->
+      ('obj list -> 'obj * ('token,'obj,'gd,'ld,'l) dyp_action list))) list
+  | Bind_to_cons of (string * string) list
+  | Global_data of 'gd
+  | Keep_grammar
+  | Local_data of 'ld
+  | Next_grammar of out_channel
+  | Next_state of out_channel
+  | Relation of string list list
+  | Dont_shift
+
+exception Giveup
+exception Undefined_nt of string
+exception Undefined_ter of string
+exception Bad_constructor of (string * string * string)
+exception Constructor_mismatch of (string * string)
+exception Syntax_error
+
+val keep_all : ('obj,'gd,'ld) merge_function
+val keep_one : ('obj,'gd,'ld) merge_function
+val dummy_lexbuf_position : 'a -> (Lexing.position * Lexing.position)
+
+module Tools
+
+val print_regexp : regexp -> string
+
+type 'obj dyplexbuf
+
+val lexeme : 'obj dyplexbuf -> string
+val lexeme_char : 'obj dyplexbuf -> int -> char
+val lexeme_start : 'obj dyplexbuf -> int
+val lexeme_end : 'obj dyplexbuf -> int
+val lexeme_start_p : 'obj dyplexbuf -> Lexing.position
+val lexeme_end_p : 'obj dyplexbuf -> Lexing.position
+val flush_input : 'obj dyplexbuf -> unit
+
+val from_string :
+  ('token,'obj,'global_data,'local_data,'lexbuf) parser_pilot ->
+  string ->
+  'obj dyplexbuf
+
+val from_channel :
+  ('token,'obj,'global_data,'local_data,'lexbuf) parser_pilot ->
+  in_channel ->
+  'obj dyplexbuf
+
+val from_function :
+  ('token,'obj,'global_data,'local_data,'lexbuf) parser_pilot ->
+  (string -> int -> int) ->
+  'obj dyplexbuf
+
+val dyplex_lexbuf_position :
+  'obj dyplexbuf -> (Lexing.position * Lexing.position)
+
+val std_lexbuf : 'obj dyplexbuf -> Lexing.lexbuf
+val set_newline : 'obj dyplexbuf -> unit
+val set_fname : 'obj dyplexbuf -> string -> unit
+
+val make_parser
+
+val update_pp :
+  ('token,'obj,'global_data,'local_data,'lexbuf) parser_pilot ->
+  ('token,'obj,'global_data,'local_data,'lexbuf) dyp_action list ->
+  ('token,'obj,'global_data,'local_data,'lexbuf) parser_pilot
+
+val lex :
+  string -> (* name of the auxiliary lexer that is called *)
+  'obj list ->
+  'obj dyplexbuf ->
+  'obj
+
+val parse :
+  ('token, 'obj,'global_data,'local_data,'lexbuf) parser_pilot ->
+  string ->
+  ?global_data:'global_data ->
+  ?local_data:'local_data ->
+  ?match_len:[`longest|`shortest] ->
+  ?lexpos:('lexbuf -> (Lexing.position * Lexing.position)) ->
+  ('lexbuf -> 'token) ->
+  'lexbuf ->
+  (('obj * string) list)
+
+val lexparse :
+  ('token, 'obj,'global_data,'local_data,'obj dyplexbuf) parser_pilot ->
+  string ->
+  ?global_data:'global_data ->
+  ?local_data:'local_data ->
+  ?match_len:[`longest|`shortest] ->
+  ?choose_token:[`first|`all] ->
+  'obj dyplexbuf ->
+  (('obj * string) list)
+
+val log_channel : out_channel ref
+
+val function_free_pdev :
+  ('t,'o,'gd,'ld,'lb) parsing_device -> ('t,'o,'gd,'ld,'lb) parsing_device
+
+val import_functions :
+  ('t,'o,'gd,'ld,'l) parsing_device ->
+  ('t,'o,'gd,'ld,'l) parser_pilot ->
+  (rule * (('t,'o,'gd,'ld,'l) dypgen_toolbox ->
+      'o list -> 'o * ('t,'o,'gd,'ld,'l) dyp_action list)) list ->
+  ('t,'o,'gd,'ld,'l) parsing_device
+
+val is_re_name : ('t,'o,'gd,'ld,'l) parser_pilot -> string -> bool
+
+val version : string
+\end{verbatim}
+
+\section{Other features}
+
+\subsection{Preprocessing with cpp}
+
+dypgen is compatible with the C preprocessor. The option \verb|--cpp| makes dypgen call cpp on the input file before processing it.\\
+
+This allows to have the grammar definition spread over several files and to have some form of parameterization for the rules via the macros.\\
+
+Here is an example with the calculator. The file \verb|calc_parser.dyp|:
+\verbatimfile{demos/calc_cpp/calc_parser.dyp}
+\end{verbatim}
+%\end{verbatim}
+The file \verb|expr.dyp|:
+\verbatimfile{demos/calc_cpp/expr.dyp}
+\end{verbatim}
+%\end{verbatim}
+
+The option \verb|--cpp-options "options"| allows to make dypgen pass some options to cpp. It is useful to pass the flag \verb|-w| to cpp to avoid
+the warning messages. \verb|--cpp| is not needed when using \verb|--cpp-options|.
+
+
+\subsection{Generated documentation of the grammar}
+
+A quick and ugly perl script to generate a BNF documentation for your grammar
+is provided with dypgen. This script is not guaranteed to generate anything of
+interest but it works as a proof of concept. The grammar generated in this way
+is more readable than the original dypgen file, and since a lot of conflict
+resolving can be done inside the actions, the grammar is usually much more
+concise than a corresponding Ocamlyacc grammar. The generated file can thus be
+used as such in the documentation.
+
+You invoke this script by the following command:
+\begin{verbatim}
+dyp2gram.pl path_to/parser.dyp path_to/parser.txt
+\end{verbatim}
+
+The file \verb|parser.txt| does not contain the OCaml parts of the file \verb|parser.dyp| (action, preamble, etc). Everything else is included without changes except for the following rules:
+
+\begin{itemize}
+
+\item The comments starting with \verb|/*--| are removed. Other dypgen comments
+are kept. Remark: the OCaml comments are removed together with all OCaml code.
+
+\item If a \verb|%token| line is annotated with a comment like
+\verb|/* -> 'xxxxx' */| then, in every action, the terminal is replaced by the provided string \verb|xxxxx| and the \verb|%token| line is removed.  This allows to replace \verb|PLUS| by \verb|+|, removing the need for a separate documentation for the lexer.
+
+\item If a \verb|%token| line is annotated with a comment like
+\verb|/*:= 'xxxxx' -> 'yyyyy' */| then the same as above applies, but the \verb|%token| line is
+not removed and the comment is just replaced by the given definition
+``\verb|:= xxxxxx|''.  This allows to put the definition of terminal like \verb|IDENT|, \verb|INT|, \ldots  inside the generated file.
+
+\item If a \verb|%token| line is annotated with a comment like
+\verb|/*:= 'xxxxx' */|, the \verb|%token| line is kept, but no substitution is performed.
+
+\item All other \verb|%token| lines are kept unchanged
+
+\end{itemize}
+
+When a rule can parse the empty stream, it disappears because the action
+disappears. It is thus a good idea to put a comment like in
+
+\begin{verbatim}
+  /*
+   * telescopes: lists of (typed) identifiers
+   */
+  telescope:
+      /* possibly empty */
+          { [] }
+    | argument telescope
+          { $1::$2 }
+\end{verbatim}
+
+As an example, look at the grammar text file generated from the dypgen
+parser for \verb|tinyML_ulex| (in the \verb|demo| directory)\ldots
+
+\subsection{Information about the parsing}\label{verbose}
+
+The user can assign the following reference that is part of the module \verb|Dyp|:
+\begin{verbatim}
+val dypgen_verbose: int ref
+\end{verbatim}
+in the header of the parser definition. The value \texttt{1} makes the parser print information about dynamically built automata on the standard output. The value \texttt{2} adds the following information: number of reductions performed while parsing and the size of the graph-structured stack of the parser. Any value \texttt{>2} makes the parser logs information in a file about the parsing which are useful for debugging \texttt{dypgen} but unlikely to be useful for the user. Setting a value \verb|>2| currently breaks re-entrancy.\\
+
+The following functions may be useful for debugging purpose:
+\begin{verbatim}
+  dyp.print_state out_channel;
+\end{verbatim}
+prints the current state of the automaton on \verb|out_channel|.
+
+\begin{verbatim}
+  dyp.print_grammar out_channel;
+\end{verbatim}
+prints the current grammar on \verb|out_channel|.
+
+\begin{verbatim}
+  Next_state of out_channel
+\end{verbatim}
+is a constructor of the type \verb|dyp_action| that makes possible to print the next state of the automaton (the one where the parser goes after the current reduction). Use it in your action like:
+\begin{verbatim}
+@{ returned_value, [Dyp.Next_state channel] }
+\end{verbatim}
+
+\begin{verbatim}
+  Next_grammar of out_channel
+\end{verbatim}
+is a constructor of the type \verb|dyp_action| that makes possible to print the grammar after the current reduction (and possible changes). Use it in your action like:
+\begin{verbatim}
+@{ returned_value, [Dyp.Next_grammar channel] }
+\end{verbatim}
+
+If the option \texttt{--merge-warning} is used then a warning is issued on the standard output each time a merge happens. If the \texttt{lexbuf} structure is updated by user actions in the lexer then the beginning and the end of the part of the input is given.
+
+\subsection{Warnings}
+
+Dypgen issues warnings at compile time in the following situations:
+\begin{itemize}
+\item When a non terminal symbol is only in right-hand side and not in a left-hand side and inversely (except for start symbols).
+\item When a lexer name contains the string `\verb|_Arg_|'.
+\item When a priority is not declared.
+\end{itemize}
+
+In addition dypgen issues warning at run time when a merge is done if the option \verb|--merge-warning| is used.
+
+Compile time warnings become failing errors when using the command option \verb|--Werror|.
+
+\subsection{Error}
+
+When the parser is stuck in a situation where it cannot reduce and cannot shift but had not reduced to the start symbol, it raises the exception \verb|Dyp.Syntax_error|.\\
+
+When there is in the grammar a non terminal that is in a right-hand side but never in a left-hand side (i.e. it is never defined) then the following exception is raised by the parser:
+\begin{verbatim}
+exception Undefined_nt of string
+\end{verbatim}
+where the string is the name of this non terminal. The option \verb|--no-undef-nt| prevents this exception from being raised.
+
+\subsection{Maximum number of constructors and using polymorphic variants}\label{--pv-obj}
+
+If you have a lot of tokens or non terminals then you may reach the maximum number of non-constant constructors. To solve this problem you can use the options \verb|--pv-token| and \verb|--pv-obj|. With \verb|--pv-token|, the type \verb|token| is a sum of polymorphic variants, and with \verb|--pv-obj| the type constructor \verb|obj| uses polymorphic variants.
+
+\subsection{Command-line options for \texttt{ocamlc} and include paths}\label{ocamlc}
+
+In order to know some types, dypgen calls:
+\begin{verbatim}
+ocamlc -i parser.temp.ml > parser.extract_type
+\end{verbatim}
+if one assume that \verb|parser.dyp| is the input file of dypgen. If \verb|parser.ml| needs some command-line options to be compiled, then you can pass them to \verb|ocamlc| with the option \verb|--ocamlc| \texttt{\emph{string\_of\_options}}. For instance if you need the inlcude path \verb|../dypgen/dyplib| and the option \verb|-rectypes| you can call dypgen with:
+\begin{verbatim}
+dypgen --ocamlc "-I ../dypgen/dyplib -rectypes" parser.dyp
+\end{verbatim}
+
+Some type errors involving the type \verb|dyp_action| are solved by using \verb|--ocamlc "-rectypes"| with dypgen (see section \ref{dyp_action}).\\
+
+Alternatively, instead of the option \verb|--ocamlc|, you can use the option \verb|--command| which lets you state a complete command to produce the file \verb|myparser.extract_type| (where \verb|myparser.dyp| is the parser definition file). For instance you may use:
+\begin{verbatim}
+dypgen --command "ocamlfind ocamlc -package mypackage -i parser.temp.ml > \
+  parser.extract_type" parser.dyp
+\end{verbatim}
+And then dypgen uses the command
+\begin{verbatim}
+ocamlfind ocamlc -package mypackage -i parser.temp.ml > parser.extract_type
+\end{verbatim}
+to generate the file \verb|parser.extract_type|.
+
+\subsection{Longest and shortest match for the parser}\label{match_length}
+
+The functions named after entry points of the grammar that are generated by dypgen match the shortest part of the input that can be reduced to the entry point. The user can make them match the longest by stating the following line in the header:
+\begin{verbatim}
+let dypgen_match_length = `longest
+\end{verbatim}
+Note that by default the function \verb|parse| of the module \verb|Dyp| match the longest string. You can make it match the shortest using the optional argument \verb|~match_len:`shortest|.\\
+
+If you use \verb|Dyp.keep_all| as merge function to keep all the parse trees, then you will get all the parse trees but for the same part of the input. Either the one with the shortest or the longest possible length. If you need a parser that collects several interpretations that span different lengths of the input send me an email.\\
+
+Off course if your grammar makes matching the end of file mandatory then \verb|`shortest| and \verb|`longest| have the same effect. It makes a difference, for example, with interactive use, like in the demo program \verb|calc|.\\
+
+Note: \verb|dypgen_match_length| has no effect on the length of the matching of the lexer, included dypgen own lexer which always selects the longest match.
+
+\subsection{Building with ocamlbuild}
+
+Here is a rule that can be used with ocamlbuild:
+\begin{verbatim}
+rule "dypgen"
+    ~tags:["dypgen"]
+    ~prods:["%.ml";]
+    ~deps:["%.dyp"]
+    begin fun env _ ->
+     let dyp = env "%.dyp" in
+       Cmd(S[A"dypgen"; A"--no-mli"; Px dyp])
+    end;
+\end{verbatim}
+
+%\subsection{Automaton options}
+
+%By default \texttt{dypgen} builds LR(0) automata but the user can make it otherwise by using the option \texttt{--automaton LALR} or \texttt{--automaton LR1} with \texttt{dypgen} on the command line. Then the generated parser will use an LALR(1) or LR(1) automaton and the dynamically generated automata will be of the same kind. In any case the generated parser is a GLR parser. The LR(1) automaton is significantly longer to generate than the LALR(1) which is significantly longer to generate than the LR(0), but parsing with it may be faster than with LALR(1) and parsing with LR(1) faster than with LALR(1).\\
+
+%By default the priorities are enforced while parsing, which is done with tests. Another method is to embed their enforcement into the automaton. With this method the generation of the automaton is significantly longer but the parsing is faster. To make \texttt{dypgen} use this method, use the option \texttt{--prio-aut}.
+
+%By default the enforcement of the priorities is embedded into the automaton. This makes the parsing faster than if they were enforced at parsing time but the automaton is bigger and longer to generate. You can not embed the priorities in the automaton and make them enforced at parsing time with the option \verb|--prio-pt|.
+
+\section{Demonstration programs}
+
+The directory \verb|demos| contains a few small programs that illustrate the use of \verb|dypgen|.\\
+
+\verb|calc| is a simple calculator that uses priorities. It does not use dynamic change of the grammar. \verb|calc_pattern| is the same calculator but the parser definition uses pattern matching of symbols (see section \ref{pattern}), \verb|calc_nested| uses nested rules, \verb|calc_ocamllex| uses ocamllex as lexer generator and \verb|calc_ext| is an example of extending the grammar and the priority data.\\
+
+\verb|demo| is the example of appendix \ref{complete example}, \verb|demo_ocamllex| is (almost) the same but uses ocamllex as lexer generator.\\
+
+\verb|forest| is an example of how to use the function \verb|dyp_merge| to yield a parse forest.\\
+
+\verb|global_data| and \verb|local_data| are examples of using \verb|global_data| and \verb|local_data|.\\
+\verb|local_data_early_action| is the same as \verb|local_data| except that it uses an early action.\\
+
+\verb|merge_times_plus| is an example of using a merge function to enforce the precedence of the multiplication over the addition.\\
+
+\verb|position| is a small example using the functions \verb|dyp.symbol_start|, \verb|dyp.symbol_end|, \ldots which return the position of a part of the input which is reduced to a given non terminal. \verb|position_ocamllex| uses ocamllex, \verb|position_token_list| also uses ocamllex but it makes a list of tokens first and then parses this list.\\
+
+\verb|sharp| is a very basic demonstration of adding a rule and replacing it by another. When entering \verb|&+| the user adds a rule which makes the character \verb|#| like a \verb|+| and entering \verb|&*| makes the character \verb|#| like a \verb|*|.\\
+
+\verb|tinyML| is a very limited interpreted language which includes integers, tuples, constructors \`a la Caml, some basic pattern matching and recursive functions with one argument. It also includes a construct \verb|define| ... \verb|in| which makes possible to extend somewhat the syntax of the language by defining macros. This construct allows to add several rules at the same time as opposed to the construct \verb|define| ... \verb|in| of \verb|demo| which can only add one rule at a time. A few input examples are included in the directory \verb|tinyML|. To interpret them with \verb|tinyML| do: \verb|./tinyML test_*.tiny| where \verb|*| is \verb|append|, \verb|add_at_end|, \verb|reverse| or \verb|comb|.\\
+
+\verb|tinyML_ulex| is an example of how to use \verb|ulex| as a lexer before parsing with \verb|dypgen|. The makefile requires \verb|findlib|. Note that this example does not use the possibilities of UTF, it is just an example of how to use \verb|ulex| with \verb|dypgen|. The language of \verb|tinyML_ulex| is smaller than that of \verb|tinyML| you can only use the following characters as tokens \verb|[|, \verb|]|, \verb$|$, \verb|::|, \verb|;|, \verb|<|, \verb|>|, \verb|@|.\\
+
+\appendix
+
+\section{Acknowledgements}
+
+Christophe Raffalli: ideas for self-extensibility and disambiguation with the system of priorities and the relation between priorities. Dypgen began as a school work supervised by Christophe Raffalli in 2005. Pierre Hyvernat made the documentation generation script.\\
+
+The primary goal of dypgen is to be a convenient and useful tool for OCaml developers. To achieve this, dypgen introduces new ideas as well as gathers and implements other ideas found in other projects.\\
+
+Previous versions of dypgen used Martin Bravenboer and Eelco Visser algorithm of parse table composition, adapted to handle dypgen's system of priorities and local extensibility. (it is not used anymore in this version of dypgen instead an algorithm that computes a new LR(0) table from scratch is used, which is easier for me to maintain)\\
+
+[1] Martin Bravenboer and Eelco Visser, Parse Table Composition: Separate Compilation and Binary Extensibility of Grammars, 2007.\\
+
+http://www.stratego-language.org/Stratego/ParseTableComposition\\
+
+The idea of merge functions as well as some ideas for the GLR algorithm are borrowed from the following technical report about the parser generator Elkhound from Scott McPeak:\\
+
+[2] Scott McPeak. Elkhound: A fast, efficient GLR parser generator. Technical Report CSD-02-1214, University of California, Berkeley, December 2002.\\
+
+http://www.cs.berkeley.edu/\~smcpeak/elkhound\\
+
+\section{Migration from \texttt{ocamlyacc}}
+
+\texttt{dypgen} takes a file ending with \texttt{.dyp} as input and generates a \texttt{.ml} file and a \texttt{.mli} file. The frame of an input file for \texttt{dypgen} is somewhat similar to an input file for \texttt{ocamlyacc}. The syntax differs in the following points:
+\begin{itemize}
+\item The header and trailer codes are placed between braces \texttt{\{\}} (instead of \texttt{\%\{\%\}} for the header in \texttt{ocamlyacc}).
+\item The keywords \texttt{\%right}, \texttt{\%left} and \texttt{\%nonassoc} do not exist, precedence and associativity assigned to symbol is not implemented yet. Ambiguities are managed by other means.
+\item The entry points are declared with their type like: \texttt{\%start <int> main}, with one keyword \texttt{\%start} for each entry point. The type is not mandatory.
+\item When tokens are declared the type statement only applies to the following token and a type statement can be stated anywhere on a line beginning with \texttt{\%token}, provided it is followed by a token name. For instance:\\
+\texttt{\%token BAR <string> UIDENT COMMA <string> LIDENT COLON}\\
+is the declaration of \texttt{BAR}, \texttt{COMMA} and \texttt{COLON} as tokens with 0 argument and \texttt{UIDENT} and \texttt{LIDENT} as tokens with a \texttt{string} as argument. Tokens do not need to be declared when using dypgen's lexer generator.
+\item There is no special symbol \texttt{error} for rules.
+\item There is no `\texttt{;}' between rules.
+\item To avoid identifier collision identifiers beginning with \verb|__dypgen| should not be used and the name of your non terminals should not begin with \verb|dypgen__|.
+\item The parser must be linked against the library \texttt{dyp.cma} (or \texttt{dyp.cmxa}) which is found in the directory \texttt{dyplib}.
+\end{itemize}
+
+\section{A complete example of grammar extension}\label{complete example}
+
+The following example is implemented in the directory \verb|demos/demo|. It is a small language with integers, pairs, constructors and variable names. The program parses the input and then prints it. If one enters the input \texttt{List(1,List(2,Nil))} the program outputs \texttt{= List(1,List(2,Nil))}. The language is somewhat extensible, with the following construction: \texttt{define lhs:= \emph{rhs} = \emph{expression} in} where \texttt{lhs} is the left-hand side non terminal of the rule the user wants to add, \texttt{\emph{rhs}} is the right hand side of this new rule, \texttt{\emph{expression}} is the expression which will be yielded when a reduction by this new rule occurs. Here is an example of introduction of a specific syntax for lists:
+\begin{verbatim}
+define list_contents := expr(x) = List(x,Nil) in
+define list_contents := expr(x) ";" list_contents(y) = List(x,y) in
+define expr := "[" "]" = Nil in
+define expr := "[" list_contents(x) "]" = x in
+define expr := expr(x) "::" expr(y) = List(x,y) in
+[1;2;3]
+\end{verbatim}
+The output is
+\begin{verbatim}
+= List(1,List(2,List(3,Nil)))
+\end{verbatim}
+
+The example is made of 3 files: \texttt{parse\_tree.ml}, \texttt{parser.dyp} and \texttt{demo.ml}.
+
+\verbatimfile{demos/demo/parse_tree.ml}
+\end{verbatim}
+%\end{verbatim}
+
+This file declares the two types associated with the two non terminals \texttt{expr} and \texttt{rhs}. \texttt{str\_expr} prints expressions and \texttt{substitute env expr} substitutes in \texttt{expr} the variables names by the expressions which they are bound to in \texttt{env} if they are present in \texttt{env}. This is used in the parser to define the action associated with a new rule.
+\verbatimfile{demos/demo/parser.dyp}
+\end{verbatim}
+%\end{verbatim}
+This file contains the definitions of the parser and the lexer.\\
+The reduction by the rule:
+\begin{verbatim}
+define_in: "define" LIDENT ":=" rhs "=" expr "in"
+\end{verbatim}
+introduces a new rule. The string returned by \texttt{LIDENT} (\emph{i.e.} \texttt{\$2}) is the name of the non terminal of the left-hand side. The function \verb|a_define_in| is called. It returns a rule and an action. The new rule is made of four values:
+\begin{itemize}
+\item The non terminal of the left-hand side, that is the string \verb|s|.
+\item The list of symbols of the right-hand side of the rule, that is the result of \verb|List.map f ol|.
+\item The priority returned by the rule, which is denoted by the string of its name, here it is \verb|"default_priority"|.
+\item A boolean that tells whether layout characters are allowed to be read in the part of the input that is reduced when applying the rule. This is only relevant when using dypgen own lexer (which is the case here).
+\end{itemize}
+For each non terminal in the right-hand side \verb|rhs|, a variable name follows in parentheses. The action code of the new rule is defined as returning the expression which follows the second \verb|=| in which some variable names are substituted by some expressions. The variable names which appear in the right-hand side of the rule are substituted by the results yielded by the corresponding non terminals.\\
+
+\verbatimfile{demos/demo/demo.ml}
+\end{verbatim}
+%\end{verbatim}
+
+This is the main implementation file, it opens the file given as argument, parses it and prints the corresponding expression.\\
+
+All the files of this example are available in the directory \texttt{demos/demo}. To test it with a test input do: \begin{verbatim}
+./demo test1.tiny
+\end{verbatim}
+
+
+\end{document}

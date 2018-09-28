@@ -101,7 +101,7 @@ let cal_bind_apply
       (* generic function *) 
       (* ---------------------------------------------------------- *)
       try match f' with
-      | EXPR_name (sr,name,[]) ->
+      | `EXPR_name (sr,name,[]) ->
         begin 
           match generic_function_dispatcher bsym_table state.Flx_lookup_state.counter sr name a with 
           | Some x -> x
@@ -114,7 +114,7 @@ let cal_bind_apply
       (* special case, constant tuple projection  *) 
       (* ---------------------------------------------------------- *)
       try match f' with
-      | EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=s}) ->
+      | `EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=s}) ->
         let n = int_of_string s in
         Flx_dot.handle_constant_projection bsym_table sr a ta n
       | _ -> raise Flx_dot.OverloadResolutionError
@@ -132,8 +132,8 @@ let cal_bind_apply
           for i = smin to smax do
             sls := i :: !sls
           done;
-          let sls = List.rev_map (fun i -> EXPR_get_n (sr,(i,a'))) !sls in
-          be (EXPR_tuple (sr,sls))
+          let sls = List.rev_map (fun i -> `EXPR_get_n (sr,(i,a'))) !sls in
+          be (`EXPR_tuple (sr,sls))
         | _ -> raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->
 
@@ -150,13 +150,13 @@ let cal_bind_apply
             for i = smin to smax do
               sls := i :: !sls
             done;
-            let sls = List.rev_map (fun i -> EXPR_get_n (sr,(i,a'))) !sls in
-            be (EXPR_tuple (sr,sls))
+            let sls = List.rev_map (fun i -> `EXPR_get_n (sr,(i,a'))) !sls in
+            be (`EXPR_tuple (sr,sls))
           end else begin
-            let first = TYP_unitsum smin in
-            let len = TYP_unitsum (smax - smin + 1) in
-            let subarray = EXPR_name (sr,"subarray",[first;len]) in
-            be (EXPR_apply (sr,(subarray,a')))
+            let first = `TYP_unitsum smin in
+            let len = `TYP_unitsum (smax - smin + 1) in
+            let subarray = `EXPR_name (sr,"subarray",[first;len]) in
+            be (`EXPR_apply (sr,(subarray,a')))
           end
         | _ -> raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->
@@ -173,8 +173,8 @@ let cal_bind_apply
           for i = smin to smax do
             sls := i :: !sls
           done;
-          let sls = List.rev_map (fun i -> EXPR_get_n (sr,(i,a'))) !sls in
-          be (EXPR_tuple (sr,sls))
+          let sls = List.rev_map (fun i -> `EXPR_get_n (sr,(i,a'))) !sls in
+          be (`EXPR_tuple (sr,sls))
         | _ -> raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->
 
@@ -183,7 +183,7 @@ let cal_bind_apply
       (* ---------------------------------------------------------- *)
       try 
         let f = try be f' with _ -> raise Flx_dot.OverloadResolutionError in
-        let int_t = bt sr (TYP_name (sr,"int",[])) in
+        let int_t = bt sr (`TYP_name (sr,"int",[])) in
         if snd f = int_t then 
         begin
           match ta with
@@ -199,7 +199,7 @@ let cal_bind_apply
       (* ---------------------------------------------------------- *)
       try match f' with
       (* a dirty hack .. doesn't check unitsum is right size or type *)
-      | EXPR_typed_case (sr,n,sumt) when (match bt sr sumt with | BTYP_unitsum _ -> true | _ -> false)  ->
+      | `EXPR_typed_case (sr,n,sumt) when (match bt sr sumt with | BTYP_unitsum _ -> true | _ -> false)  ->
         Flx_dot.handle_constant_projection bsym_table sr a ta n
       | _ -> raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->
@@ -214,7 +214,7 @@ let cal_bind_apply
       (* without requiring a qualified name *) 
       (* ---------------------------------------------------------- *)
       try match f' with
-      | EXPR_name (sr, name, ts) ->
+      | `EXPR_name (sr, name, ts) ->
         Flx_bind_record_proj.try_bind_record_proj 
           bsym_table state build_env koenig_lookup be bt env rs cal_apply bind_type' mkenv
           f' a' a sr name ts
@@ -336,19 +336,19 @@ end;
         let apl name =
             be
             (
-              EXPR_apply
+              `EXPR_apply
               (
                 sr,
                 (
-                  EXPR_name (sr,name,[]),
-                  EXPR_tuple (sr,[f';a'])
+                  `EXPR_name (sr,name,[]),
+                  `EXPR_tuple (sr,[f';a'])
                 )
               )
             )
         in
         try 
           begin match f' with
-          | EXPR_name (_,"apply",_) ->
+          | `EXPR_name (_,"apply",_) ->
             print_endline ("Application of `apply` function failed: terminating");
             raise exn
           | _ ->
