@@ -145,13 +145,19 @@ let cal_bind_apply
         | BTYP_array (base,BTYP_unitsum n) ->
           let tmin = 0 and tmax = n - 1 in
           let smin, smax = Flx_cal_slice.cal_slice tmin tmax f' in 
-          if smax - smin > 65 then Flx_exceptions.clierr sr ("Array slice too large");
-          let sls = ref [] in
-          for i = smin to smax do
-            sls := i :: !sls
-          done;
-          let sls = List.rev_map (fun i -> EXPR_get_n (sr,(i,a'))) !sls in
-          be (EXPR_tuple (sr,sls))
+          if smax - smin < 20 then begin 
+            let sls = ref [] in
+            for i = smin to smax do
+              sls := i :: !sls
+            done;
+            let sls = List.rev_map (fun i -> EXPR_get_n (sr,(i,a'))) !sls in
+            be (EXPR_tuple (sr,sls))
+          end else begin
+            let first = TYP_unitsum smin in
+            let len = TYP_unitsum (smax - smin + 1) in
+            let subarray = EXPR_name (sr,"subarray",[first;len]) in
+            be (EXPR_apply (sr,(subarray,a')))
+          end
         | _ -> raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->
 

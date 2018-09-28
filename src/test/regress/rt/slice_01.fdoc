@@ -1,0 +1,26 @@
+@title Slice tests
+@h1 Tuple slice
+@felix
+println$ (1,"hello",42.1) . (1..2);
+@expect
+(hello, 42.1)
+@h1 Small Array Slice
+@felix
+begin
+  var x = (1,2,3) . (1..2);
+  println$ x;
+end
+@expect
+(2, 3)
+@h1 Large Array Slice
+@felix
+begin
+  var x : int ^ 100;
+  for i in ..[100] perform x&.i <- caseno i;
+  var s : int ^ 99= x . (1..2000);
+  println$ s.0, s.2, s.8;
+end
+@expect
+(1, 3, 9)
+@
+

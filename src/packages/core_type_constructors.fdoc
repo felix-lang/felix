@@ -249,7 +249,7 @@ fun max[T with BoundRandomSequence[T]] (x:slice[T]) => match x with
   | ( Slice_all 
     | Slice_from _
     ) => #maxval[T]
-  | Slice_from_counted (i,n) => advance (n, i)
+  | Slice_from_counted (i,n) => pred (advance (n, i))
   | Slice_to_incl i => i
   | Slice_to_excl i => pred i
   | Slice_range_incl (_,i) => i
