@@ -85,6 +85,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
      name the types of the arguments now)
   *)
   match e with
+  | #typecode_t as t -> assert false
   | `EXPR_noexpand (_,e) -> subst e
 
   | `EXPR_patvar _ 
@@ -96,20 +97,11 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
 
   | `EXPR_vsprintf _
   | `EXPR_interpolate _
-
-  | `EXPR_subtype_match _ 
-  | `EXPR_type_match _ ->
-      let sr = src_of_expr e in
-      clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
-      ("[desugar_pat:subst]4 Not expected in pattern when clause: " ^ string_of_expr e); 
-
   | `EXPR_expr _ ->
       let sr = src_of_expr e in
       clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
       ("[desugar_pat:subst]6 Not expected `EXPR_expr in pattern when clause: " ^ string_of_expr e); 
 
-  | `EXPR_typeof _
-  | `EXPR_void _
   | `EXPR_typed_case _
   | `EXPR_projection _
   | `EXPR_array_projection _
@@ -118,7 +110,6 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   | `EXPR_arrow _
   | `EXPR_effector _
   | `EXPR_longarrow _
-  | `EXPR_ellipsis _
   | `EXPR_intersect _
   | `EXPR_union _
   | `EXPR_isin _ (* only used in type constraints *)
@@ -129,6 +120,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
       clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
       ("[desugar_pat:subst]7 Not expected in pattern when clause: " ^ string_of_expr e); 
 
+(*
   | `EXPR_rptsum_type _ 
   | `EXPR_pclt_type _
   | `EXPR_rpclt_type _
@@ -136,6 +128,17 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   | `EXPR_record_type _
   | `EXPR_polyrecord_type _
   | `EXPR_variant_type _
+  | `EXPR_void _
+  | `EXPR_ellipsis _
+  | `EXPR_typeof _
+
+  | `EXPR_subtype_match _ 
+  | `EXPR_type_match _ ->
+      let sr = src_of_expr e in
+      clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
+      ("[desugar_pat:subst]4 Not expected in pattern when clause: " ^ string_of_expr e); 
+
+*)
   | `EXPR_extension _
   | `EXPR_get_tuple_tail _
   | `EXPR_get_tuple_head _

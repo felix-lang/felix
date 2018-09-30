@@ -147,26 +147,32 @@ let rec bind_expression'
   (* Is this right? It fixes a weird behaviour but may break something else ... *)
   let e = match e with | `EXPR_noexpand (_,e) -> e | e -> e in
   match e with
+  | #typecode_t as t -> assert false
+(*
   | `EXPR_rptsum_type _
   | `EXPR_pclt_type _
   | `EXPR_rpclt_type _
   | `EXPR_wpclt_type _
+  | `EXPR_record_type _ -> assert false
+  | `EXPR_polyrecord_type _ -> assert false
+  | `EXPR_variant_type _ -> assert false
+  | `EXPR_void _
+  | `EXPR_ellipsis _
+  | `EXPR_type_match _
+  | `EXPR_subtype_match _
+  | `EXPR_typeof _
+*)
   | `EXPR_patvar _
   | `EXPR_patany _
   | `EXPR_vsprintf _
   | `EXPR_interpolate _
-  | `EXPR_type_match _
-  | `EXPR_subtype_match _
   | `EXPR_noexpand _
   | `EXPR_letin _
-  | `EXPR_typeof _
   | `EXPR_as _
   | `EXPR_as_var _
-  | `EXPR_void _
   | `EXPR_arrow _
   | `EXPR_effector _
   | `EXPR_longarrow _
-  | `EXPR_ellipsis _
   | `EXPR_intersect _
   | `EXPR_union _
   | `EXPR_isin _
@@ -1588,9 +1594,6 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
         ee
     end
 
-  | `EXPR_record_type _ -> assert false
-  | `EXPR_polyrecord_type _ -> assert false
-  | `EXPR_variant_type _ -> assert false
 
   | `EXPR_record (sr,ls) ->
     begin match ls with

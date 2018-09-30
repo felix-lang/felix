@@ -104,6 +104,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
 
 
 let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
+  | #typecode_t as t -> (ft t :> expr_t)
   | `EXPR_rptsum_arg (sr, e) -> `EXPR_rptsum_arg (sr, fe e)
   | `EXPR_label _
   | `EXPR_patvar _
@@ -121,7 +122,18 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
     `EXPR_index (sr,s,fi ix)
   | `EXPR_case_tag _ -> e
   | `EXPR_typed_case (sr,n,t) -> `EXPR_typed_case (sr,n, ft t)
+(*
   | `EXPR_rptsum_type (sr,n,t) -> `EXPR_rptsum_type (sr, ft n, ft t)
+  | `EXPR_pclt_type (sr,a,b) -> `EXPR_pclt_type (sr, ft a, ft b)
+  | `EXPR_rpclt_type (sr,a,b) -> `EXPR_rpclt_type (sr, ft a, ft b)
+  | `EXPR_wpclt_type (sr,a,b) -> `EXPR_wpclt_type (sr, ft a, ft b)
+  | `EXPR_record_type (sr,ts) -> assert false 
+  | `EXPR_polyrecord_type (sr,ts,v) -> assert false
+  | `EXPR_variant_type (sr,ts) -> assert false
+  | `EXPR_typeof (sr,x) -> `EXPR_typeof (sr,fe x)
+  | `EXPR_type_match _ -> e
+  | `EXPR_subtype_match _ -> e
+*)
   | `EXPR_projection (sr,n,t) -> `EXPR_projection (sr,n,ft t)
   | `EXPR_array_projection (sr,e,t) -> `EXPR_array_projection (sr,fe e,ft t)
   | `EXPR_ainj (sr,n,t) -> `EXPR_ainj (sr,fe n,ft t)
@@ -141,28 +153,6 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | `EXPR_suffix (sr,(qn,t)) -> `EXPR_suffix (sr,(qn, ft t))
   | `EXPR_uniq (sr,e) -> `EXPR_uniq (sr, fe e)
 
-
-  (* these ones are types and should have been desugared out a long way back *)
-  (* BUT Garrets code reintroduces them .. *)
-(*
-  | `EXPR_record_type (sr,ts) -> assert false 
-  | `EXPR_polyrecord_type (sr,ts,v) -> assert false
-  | `EXPR_variant_type (sr,ts) -> assert false
-  | `EXPR_void sr -> assert false 
-*)
-
-  | `EXPR_pclt_type (sr,a,b) -> `EXPR_pclt_type (sr, ft a, ft b)
-  | `EXPR_rpclt_type (sr,a,b) -> `EXPR_rpclt_type (sr, ft a, ft b)
-  | `EXPR_wpclt_type (sr,a,b) -> `EXPR_wpclt_type (sr, ft a, ft b)
-
-  | `EXPR_record_type (sr,ts) -> `EXPR_record_type (sr, List.map (fun (s,t) -> s, ft t) ts) 
-  | `EXPR_polyrecord_type (sr,ts,v) -> `EXPR_polyrecord_type (sr, List.map (fun (s,t)-> s,ft t) ts, ft v)
-  | `EXPR_variant_type (sr,ts) -> `EXPR_variant_type (sr, List.map (
-      fun x -> match x with | `Ctor (s,t) -> `Ctor (s, ft t) | `Base t -> `Base (ft t)
-    ) ts)
-  | `EXPR_void sr -> `EXPR_void sr
-
-  | `EXPR_ellipsis sr -> e
   | `EXPR_product (sr,es) -> `EXPR_product (sr, List.map fe es)
   | `EXPR_sum (sr,es) -> `EXPR_sum (sr, List.map fe es)
   | `EXPR_intersect (sr,es) -> `EXPR_intersect (sr, List.map fe es)
@@ -209,12 +199,9 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | `EXPR_match (sr,(a,pes)) ->
     `EXPR_match (sr, (fe a, List.map (fun (pat,x) -> pat, fe x) pes))
 
-  | `EXPR_typeof (sr,x) -> `EXPR_typeof (sr,fe x)
   | `EXPR_cond (sr,(a,b,c)) -> `EXPR_cond (sr, (fe a, fe b, fe c))
 
   | `EXPR_expr (sr,s,t,e) -> `EXPR_expr (sr,s,ft t, fe e)
-  | `EXPR_type_match _ -> e
-  | `EXPR_subtype_match _ -> e
   | `EXPR_typecase_match (sr,(t,ps)) ->
     let ps = List.map (fun (t,e) -> ft t, fe e) ps in
     `EXPR_typecase_match (sr, (ft t, ps))
@@ -238,6 +225,7 @@ let map_expr fe (e:expr_t):expr_t = full_map_expr idf idf fe e
 let iter_expr f (e:expr_t) =
   f e;
   match e with
+  | #typecode_t as t -> ()
   | `EXPR_label _
   | `EXPR_patvar _
   | `EXPR_patany _
@@ -249,21 +237,24 @@ let iter_expr f (e:expr_t) =
   | `EXPR_case_tag _
   | `EXPR_typed_case _
   | `EXPR_projection _
-  | `EXPR_record_type _
-  | `EXPR_polyrecord_type _
-  | `EXPR_variant_type _
-  | `EXPR_void _
-  | `EXPR_ellipsis _
   | `EXPR_noexpand _
   | `EXPR_suffix _
   | `EXPR_literal _
   | `EXPR_lambda _
-  | `EXPR_type_match _
-  | `EXPR_subtype_match _
+(*
+  | `EXPR_void _
+  | `EXPR_ellipsis _
   | `EXPR_pclt_type _
   | `EXPR_rpclt_type _
   | `EXPR_wpclt_type _
   | `EXPR_rptsum_type _
+  | `EXPR_record_type _
+  | `EXPR_polyrecord_type _
+  | `EXPR_variant_type _
+  | `EXPR_type_match _
+  | `EXPR_subtype_match _
+  | `EXPR_typeof (_,x)
+*)
     -> ()
 
   | `EXPR_array_projection (_,x,_)
@@ -272,7 +263,6 @@ let iter_expr f (e:expr_t) =
   | `EXPR_expr (_,_,_,x)
   | `EXPR_rnprj (_,_,_,x)
   | `EXPR_variant (_,(_,x))
-  | `EXPR_typeof (_,x)
   | `EXPR_as (_,(x,_))
   | `EXPR_as_var (_,(x,_))
   | `EXPR_get_n (_,(_,x))

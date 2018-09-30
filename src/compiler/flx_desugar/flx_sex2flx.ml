@@ -163,7 +163,10 @@ and xexpr_t sr x =
      | x -> err x "Error in AST_record_type"
      )
      rs
+   in `TYP_record (rs)
+(*
    in `EXPR_record_type (sr,rs)
+*)
 
  | Lst [Id "ast_polyrecord_type"; Lst rs; e] ->
    let rs =
@@ -172,7 +175,10 @@ and xexpr_t sr x =
      | x -> err x "Error in AST_polyrecord_type"
      )
      rs
+   in `TYP_polyrecord (rs, ti e)
+(*
    in `EXPR_polyrecord_type (sr,rs, ti e)
+*)
 
   | Lst [Id "ast_polyrecord";  sr; Lst rs; e] ->
    let rs =
@@ -211,8 +217,10 @@ and xexpr_t sr x =
      | x -> err x "Error in AST_variant_type"
      )
      rs
+   in `TYP_variant (rs)
+(*
    in `EXPR_variant_type (sr,rs)
-
+*)
 
  | Lst [Id "ast_arrayof";  sr; Lst es] -> `EXPR_arrayof (xsr sr, map ex es)
  | Lst [Id "ast_coercion";  sr; Lst [e; t]] ->  `EXPR_coercion (xsr sr,(ex e, ti t))
@@ -222,8 +230,8 @@ and xexpr_t sr x =
  | Lst [Id "ast_patvar";  sr; Str s] -> `EXPR_patvar (xsr sr, s)
 
  | Lst [Id "ast_patany"; sr] -> `EXPR_patany (xsr sr)
- | Lst [Id "ast_void"; sr] -> `EXPR_void (xsr sr)
- | Lst [Id "ast_ellipsis"; sr] -> `EXPR_ellipsis (xsr sr)
+ | Lst [Id "ast_void"; sr] -> `TYP_void (xsr sr)
+ | Lst [Id "ast_ellipsis"; sr] -> `TYP_ellipsis
 
  | Lst [Id "ast_product"; sr; Lst es] -> `EXPR_product (xsr sr, map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_sum";  sr; Lst es] -> `EXPR_sum (xsr sr,map (xexpr_t (xsr sr)) es)
@@ -247,10 +255,16 @@ and xexpr_t sr x =
 
  | Lst [Id "ast_deref"; sr; e] -> `EXPR_deref (xsr sr,ex e)
  | Lst [Id "ast_ref"; sr; e] -> `EXPR_ref (xsr sr,ex e)
+(*
  | Lst [Id "ast_pclt"; sr; d; c] -> `EXPR_pclt_type (xsr sr, ti d, ti c)
  | Lst [Id "ast_rpclt"; sr; d; c] -> `EXPR_rpclt_type (xsr sr, ti d, ti c)
  | Lst [Id "ast_wpclt"; sr; d; c] -> `EXPR_wpclt_type (xsr sr, ti d, ti c)
- | Lst [Id "ast_rptsum_type"; sr; d; c] -> `EXPR_rptsum_type (xsr sr, ti d, ti c)
+   `EXPR_rptsum_type (xsr sr, ti d, ti c)
+*)
+ | Lst [Id "ast_pclt"; sr; d; c] -> `TYP_pclt (ti d, ti c)
+ | Lst [Id "ast_rpclt"; sr; d; c] -> `TYP_rpclt (ti d, ti c)
+ | Lst [Id "ast_wpclt"; sr; d; c] -> `TYP_wpclt (ti d, ti c)
+ | Lst [Id "ast_rptsum_type"; sr; d; c] -> `TYP_rptsum (ti d, ti c)
 
  | Lst [Id "ast_uniq"; sr; e] -> `EXPR_uniq (xsr sr, ex e)
  | Lst [Id "ast_rref"; sr; e] -> `EXPR_rref(xsr sr, ex e)
@@ -315,7 +329,8 @@ and xexpr_t sr x =
        | x -> err x "ast_typematch typerrror"
      )
      ts
-   in `EXPR_type_match (xsr sr,(ti t, ts))
+   in `TYP_type_match (ti t, ts)
+   (* in `EXPR_type_match (xsr sr,(ti t, ts)) *)
 
  | Lst [Id "ast_subtype_match";  sr; Lst [t; Lst ts]] ->
    let ts =
@@ -324,7 +339,8 @@ and xexpr_t sr x =
        | x -> err x "ast_subtypematch typerrror"
      )
      ts
-   in `EXPR_subtype_match (xsr sr,(ti t, ts))
+   in `TYP_subtype_match (ti t, ts)
+   (* in `EXPR_subtype_match (xsr sr,(ti t, ts)) *)
 
 
  | Lst [Id "ast_typecase_match";  sr; Lst [t; Lst ts]] ->

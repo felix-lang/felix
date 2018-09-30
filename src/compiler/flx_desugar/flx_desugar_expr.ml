@@ -114,15 +114,31 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
   let sr = src_of_expr e in
   let seq () = state.fresh_bid () in
   match e with
-
+  | #typecode_t as t -> assert false 
+(*
   | `EXPR_rptsum_type _
+  | `EXPR_ellipsis _
+  | `EXPR_void (x) -> [], `EXPR_void x
+
+  (* we have to lift lambdas out of typeof exprs,
+     even though they're never called,
+     so the typing works correctly
+  *)
+  | `EXPR_typeof (sr,e') ->
+    let l1,x1 = rex e' in
+    l1, `EXPR_typeof (sr,(x1))
+
+
+  | `EXPR_type_match _ -> [],e
+  | `EXPR_subtype_match _ -> [],e
+
+*)
   | `EXPR_patvar _
   | `EXPR_patany _
   | `EXPR_match_case _
   | `EXPR_case_arg _
   | `EXPR_arrow _
   | `EXPR_effector _
-  | `EXPR_ellipsis _
   | `EXPR_intersect _
   | `EXPR_union _
   | `EXPR_isin _
@@ -130,7 +146,6 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
     clierrx "[flx_desugar/flx_desugar_expr.ml:127: E326] " sr ("[rex] Unexpected " ^ string_of_expr e)
 
 
-  | `EXPR_void (x) -> [], `EXPR_void x
   | `EXPR_longarrow (sr,x) -> [], `EXPR_longarrow (sr,x)
 
   | `EXPR_superscript (sr,(e1,e2)) -> 
@@ -228,10 +243,6 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
     let lss,xs = List.split (List.map rex es) in
     List.concat lss,
     `EXPR_typecase_match (sr, (t, List.combine ts xs))
-
-  | `EXPR_type_match _ -> [],e
-  | `EXPR_subtype_match _ -> [],e
-
   | `EXPR_noexpand (_,e) -> rex e
   | `EXPR_name (sr,name,_) -> [],e
   | `EXPR_label (sr,name) -> [],e
@@ -454,15 +465,6 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
          )
        )
      )
-
-  (* we have to lift lambdas out of typeof exprs,
-     even though they're never called,
-     so the typing works correctly
-  *)
-  | `EXPR_typeof (sr,e') ->
-    let l1,x1 = rex e' in
-    l1, `EXPR_typeof (sr,(x1))
-
   | `EXPR_get_n (sr,(n,e')) ->
     let l1,x1 = rex e' in
     l1, `EXPR_get_n (sr,(n,x1))
@@ -530,10 +532,10 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
     let l,x = rex e in
     l @ List.concat lss,`EXPR_extension (sr, xs, x)
 
+(*
   | `EXPR_pclt_type (sr,a,b) -> [],e (* I'm lazy *)
   | `EXPR_rpclt_type (sr,a,b) -> [],e (* I'm lazy *)
   | `EXPR_wpclt_type (sr,a,b) -> [],e (* I'm lazy *)
-
 
   | `EXPR_record_type (sr,ts) ->
     let to_expr (id,t) = (id, (expr_of_typecode sr t)) in
@@ -557,6 +559,9 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
             (List.map to_type (List.combine ss xs)), 
             (typecode_of_expr x))
 
+  | `EXPR_variant_type _ -> assert false
+*)
+
   | `EXPR_rnprj (sr,name,seq,e) -> 
     let l,x = rex e in
     l,`EXPR_rnprj (sr,name,seq,x)
@@ -566,7 +571,6 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
     let l,x = rex e in
     l,`EXPR_variant (sr,(s,x))
 
-  | `EXPR_variant_type _ -> assert false
 
   | `EXPR_arrayof (sr,t) ->
     let lss,xs = List.split (List.map rex t) in

@@ -6,7 +6,7 @@ open List
 
 let qualified_name_of_expr e =
   match e with
-  | `EXPR_void sr -> Some (`AST_void sr)
+  (* | `EXPR_void sr -> Some (`AST_void sr) *)
   | `EXPR_name (sr,name,ts) -> Some (`AST_name (sr,name,ts))
   | `EXPR_case_tag (sr,v) -> Some (`AST_case_tag (sr,v))
   | `EXPR_typed_case (sr,v,t) -> Some (`AST_typed_case (sr,v,t))
@@ -22,7 +22,7 @@ let suffixed_name_of_expr e =
 
 let expr_of_qualified_name e =
   match e with
-  | `AST_void sr -> `EXPR_void sr
+  (* | `AST_void sr -> `EXPR_void sr *)
   | `AST_name (sr,name,ts) -> `EXPR_name (sr,name,ts)
   | `AST_case_tag (sr,v) -> `EXPR_case_tag (sr,v)
   | `AST_typed_case (sr,v,t) -> `EXPR_typed_case (sr,v,t)
@@ -32,7 +32,7 @@ let expr_of_qualified_name e =
 
 let expr_of_suffixed_name e =
   match e with
-  | `AST_void sr -> `EXPR_void sr
+  (* | `AST_void sr -> `EXPR_void sr *)
   | `AST_name (sr,name,ts) -> `EXPR_name (sr,name,ts)
   | `AST_case_tag (sr,v) -> `EXPR_case_tag (sr,v)
   | `AST_typed_case (sr,v,t) -> `EXPR_typed_case (sr,v,t)
@@ -110,15 +110,34 @@ let rec kindcode_of_typecode (t:typecode_t) : kindcode_t =
 let rec typecode_of_expr (e:expr_t) :typecode_t =
   let te e = typecode_of_expr e in
   match e with
+  | #typecode_t as t -> t
+(*
   | `EXPR_rptsum_type (sr,n,t) -> `TYP_rptsum (n,t)
   | `EXPR_pclt_type (_,d,c) -> `TYP_pclt (d,c)
   | `EXPR_rpclt_type (_,d,c) -> `TYP_rpclt (d,c)
   | `EXPR_wpclt_type (_,d,c) -> `TYP_wpclt (d,c)
+  | `EXPR_record_type (sr,es) -> 
+    let all_blank = fold_left (fun acc (s,_) -> acc && s = "") true es in
+    if all_blank then `TYP_tuple (List.map snd es) 
+    else `TYP_record es
+
+  | `EXPR_polyrecord_type (sr,es,e) -> `TYP_polyrecord (es,e)
+  | `EXPR_variant_type (sr,es) -> `TYP_variant es
+  | `EXPR_void sr -> `TYP_void sr
+  | `EXPR_ellipsis _ -> `TYP_ellipsis
+  | `EXPR_typeof (_,e) -> `TYP_typeof e
+
+  | `EXPR_type_match (sr,(e,ps)) ->
+    `TYP_type_match (e,ps)
+
+  | `EXPR_subtype_match (sr,(e,ps)) ->
+    `TYP_subtype_match (e,ps)
+
+
+*)
   | `EXPR_name (_,"LABEL",[]) -> `TYP_label
   | `EXPR_name (sr,"DEFER",[]) -> `TYP_defer (sr,ref None)
   | `EXPR_name (sr,"_",[]) -> `TYP_patany sr
-  | `EXPR_ellipsis _ -> `TYP_ellipsis
-  | `EXPR_void sr -> `TYP_void sr
   | `EXPR_name (sr,name,ts) -> `TYP_name (sr,name,ts)
   | `EXPR_case_tag (sr,v) -> `TYP_case_tag (sr,v)
   | `EXPR_typed_case (sr,v,t) -> `TYP_typed_case (sr,v,t)
@@ -132,14 +151,6 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
     | [x] -> failwith "Unexpected one element tuple converting to type tuple"
     | _ -> `TYP_type_tuple (map te ls)
     end
-  | `EXPR_record_type (sr,es) -> 
-    let all_blank = fold_left (fun acc (s,_) -> acc && s = "") true es in
-    if all_blank then `TYP_tuple (List.map snd es) 
-    else `TYP_record es
-
-  | `EXPR_polyrecord_type (sr,es,e) -> `TYP_polyrecord (es,e)
-  | `EXPR_variant_type (sr,es) -> `TYP_variant es
-
   | `EXPR_product (_,ts) -> `TYP_tuple (map te ts)
   | `EXPR_intersect (_,ts) -> `TYP_intersect (map te ts)
   | `EXPR_union (_,ts) -> `TYP_union (map te ts)
@@ -183,7 +194,6 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
     let lnot = `TYP_name (sr,"lnot",[]) in
     `TYP_apply (lnot, `TYP_type_tuple [te e])
 
-  | `EXPR_typeof (_,e) -> `TYP_typeof e
   | `EXPR_as (sr,(t,x)) -> `TYP_as (te t,x)
 
   | `EXPR_literal (sr, ({Flx_literal.felix_type=t; internal_value=v} as l) ) ->
@@ -320,13 +330,6 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
        "Type lambda only allowed one argument (arity=1)"
      end
 
-  | `EXPR_type_match (sr,(e,ps)) ->
-    `TYP_type_match (e,ps)
-
-  | `EXPR_subtype_match (sr,(e,ps)) ->
-    `TYP_subtype_match (e,ps)
-
-
   | `EXPR_noexpand (sr,e) -> te e
 
   | `EXPR_patvar (sr,s) -> `TYP_patvar (sr,s)
@@ -345,10 +348,45 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
   match t with 
 
   (* The following cannot be converted. There's no analagous expression in EXPR. *)
-  | `TYP_pclt (a,b) -> `EXPR_pclt_type (dsr, a, b)
-  | `TYP_rpclt (a,b) -> `EXPR_rpclt_type (dsr, a, b)
-  | `TYP_wpclt (a,b) -> `EXPR_wpclt_type (dsr, a, b)
-  | `TYP_rptsum (a,b) -> `EXPR_rptsum_type (dsr, a, b)
+  | `TYP_pclt (a,b) -> assert false (* `EXPR_pclt_type (dsr, a, b) *)
+  | `TYP_rpclt (a,b) -> assert false (* `EXPR_rpclt_type (dsr, a, b) *)
+  | `TYP_wpclt (a,b) -> assert false (* `EXPR_wpclt_type (dsr, a, b) *)
+  | `TYP_rptsum (a,b) -> assert false (* `EXPR_rptsum_type (dsr, a, b) *)
+  | `TYP_record _  -> assert false 
+  | `TYP_polyrecord _  -> assert false 
+  | `TYP_variant _  -> assert false 
+  | `TYP_ellipsis   -> assert false 
+  | `TYP_void _ -> assert false 
+  | `TYP_type_match (e,ps) -> assert false
+  | `TYP_subtype_match (e,ps) -> assert false
+  | `TYP_typeof (e) -> 
+     `EXPR_apply (Flx_srcref.dummy_sr, (`EXPR_name (Flx_srcref.dummy_sr, "typeof", []), e))
+
+(* 
+  | `TYP_record (ids_and_ts) -> 
+      `EXPR_record_type (dsr, ids_and_ts)
+
+  | `TYP_polyrecord (ids_and_ts, t2) -> 
+      let ids_and_es = 
+          (List.map 
+            (fun (id,t) -> (id, (expr_of_typecode dsr t))) 
+            ids_and_ts) 
+      in
+      let e2 = (expr_of_typecode dsr t2) in
+      `EXPR_polyrecord (dsr, ids_and_es, e2)
+
+  | `TYP_variant _ ->
+      clierrx "[flx_core/flx_typing2.ml:282: E278] " dsr ("Unable to convert " 
+        ^ (string_of_typecode t)  
+        ^ " to an expression. Seems incompatible.")
+  | `TYP_ellipsis -> `EXPR_ellipsis (dsr)
+
+  | `TYP_void (sr) -> `EXPR_void (sr)
+
+  | `TYP_type_match (e,ps) -> `EXPR_type_match (dsr,(e,ps))
+  | `TYP_subtype_match (e,ps) -> `EXPR_subtype_match (dsr,(e,ps))
+
+*)
 
   | `TYP_label -> clierrx "[flx_core/flx_typing2.ml:250: E271] " dsr ("expr_of_typecode: `TYP_label")
   | `TYP_none -> clierrx "[flx_core/flx_typing2.ml:251: E272] " dsr ("expr_of_typecode: `TYP_none")
@@ -372,19 +410,11 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
                            c_value=(string_of_int len)}))
 
   | `TYP_type_tuple ls -> `EXPR_tuple (dsr, List.map (expr_of_typecode dsr) ls)
-  | `TYP_type_match (e,ps) -> `EXPR_type_match (dsr,(e,ps))
-  | `TYP_subtype_match (e,ps) -> `EXPR_subtype_match (dsr,(e,ps))
 
   | `TYP_type_extension (sr, bases, extension) -> 
       `EXPR_extension (sr,
         List.map (expr_of_typecode dsr) bases, 
         (expr_of_typecode dsr extension))
-
-  | `TYP_variant _ ->
-      clierrx "[flx_core/flx_typing2.ml:282: E278] " dsr ("Unable to convert " 
-        ^ (string_of_typecode t)  
-        ^ " to an expression. Seems incompatible.")
-
   (* This is a hack, we're trying to build a function out of nothing. *)
   | `TYP_function (param,t) -> 
       `EXPR_lambda (dsr,
@@ -414,7 +444,6 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
   | `TYP_wref t -> `EXPR_wref (dsr,(expr_of_typecode dsr t))
   | `TYP_uniq t -> `EXPR_uniq (dsr, (expr_of_typecode dsr t))
 
-  | `TYP_void (sr) -> `EXPR_void (sr)
   | `TYP_name (sr, id, ts) -> `EXPR_name (sr, id, ts)
   | `TYP_case_tag (sr, i) -> `EXPR_case_tag (sr, i)
   | `TYP_typed_case (sr, i, ts) -> `EXPR_typed_case (sr, i, ts)
@@ -424,9 +453,6 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
   | `TYP_suffix (sr, (qn, t)) -> `EXPR_suffix (sr, (qn, t))
   | `TYP_patvar (sr,id) -> `EXPR_patvar (sr,id)
   | `TYP_patany (sr) -> `EXPR_patany (sr)
-  | `TYP_typeof (e) -> `EXPR_typeof (dsr, e)
-  | `TYP_ellipsis -> `EXPR_ellipsis (dsr)
-
   | `TYP_as (t, id) -> 
       let e = (expr_of_typecode dsr t) in
       `EXPR_as (dsr, (e, id))
@@ -446,20 +472,7 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
    | `TYP_union (ts) -> 
       let exprs = (List.map (expr_of_typecode dsr) ts) in
       `EXPR_union (dsr, exprs)
-  
-  | `TYP_record (ids_and_ts) -> 
-      `EXPR_record_type (dsr, ids_and_ts)
-
-  | `TYP_polyrecord (ids_and_ts, t2) -> 
-      let ids_and_es = 
-          (List.map 
-            (fun (id,t) -> (id, (expr_of_typecode dsr t))) 
-            ids_and_ts) 
-      in
-      let e2 = (expr_of_typecode dsr t2) in
-      `EXPR_polyrecord (dsr, ids_and_es, e2)
-
-  | `TYP_effector (t1,t2,t3) -> 
+   | `TYP_effector (t1,t2,t3) -> 
       let e1= (expr_of_typecode dsr t1) in
       let e2 = (expr_of_typecode dsr t2) in
       let e3 = (expr_of_typecode dsr t3) in

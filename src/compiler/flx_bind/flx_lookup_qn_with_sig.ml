@@ -230,8 +230,9 @@ print_endline ("LOOKUP 1: varname " ^ si index);
   | `AST_callback (sr,qn) ->
     failwith "[lookup_qn_with_sig] Callbacks not implemented yet"
 
+(*
   | `AST_void _ -> clierrx "[flx_bind/flx_lookup.ml:2490: E126] " sra "qualified-name is void"
-
+*)
   | `AST_case_tag _ -> clierrx "[flx_bind/flx_lookup.ml:2492: E127] " sra "Can't lookup case tag here"
 
   (* WEIRD .. this is a qualified name syntactically ..

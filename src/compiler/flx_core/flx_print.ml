@@ -1,4 +1,4 @@
-open Flx_util
+open Flx_util 
 open Flx_ast
 open Flx_types
 open Flx_btype
@@ -43,7 +43,7 @@ let rec string_of_qualified_name (n:qualified_name_t) =
   let se e = string_of_expr e in
   match n with
   | `AST_index (sr,name,idx) -> name ^ "<" ^ string_of_bid idx ^ ">"
-  | `AST_void _ -> "void"
+  (* | `AST_void _ -> "void" *)
   | `AST_name (_,name,ts) ->
       string_of_id name ^
       (
@@ -95,15 +95,74 @@ and string_of_expr (e:expr_t) =
   let se e = string_of_expr e in
   let sqn e = string_of_qualified_name e in
   match e with
+  | #typecode_t as t -> st t 
+(*
   | `EXPR_pclt_type (_,a,b) -> "pclt_type<" ^ st a ^ "," ^ st b ^ ">"
   | `EXPR_rpclt_type (_,a,b) -> "rpclt_type<" ^ st a ^ "," ^ st b ^ ">"
   | `EXPR_wpclt_type (_,a,b) -> "wpclt_type<" ^ st a ^ "," ^ st b ^ ">"
   | `EXPR_rptsum_type (_,a,b) -> st a ^ "*+" ^ st b 
 
+
+  | `EXPR_record_type (_,ts) ->
+      "(" ^
+      catmap ", "
+        (fun (s,t) -> string_of_id s ^ ":" ^ string_of_typecode t)
+        ts ^
+      ")"
+
+  | `EXPR_polyrecord_type (_,ts,v) ->
+      "(" ^
+      catmap " "
+        (fun (s,t) -> string_of_id s ^ ":" ^ string_of_typecode t ^ ",")
+        ts ^ " | " ^ string_of_typecode v ^
+      ")"
+
+  | `EXPR_variant_type (_,ts) ->
+      "(" ^
+      catmap "| "
+        (fun x -> match x with 
+           | `Ctor (s,t) -> "`" ^ string_of_id s ^ " of " ^ string_of_typecode t
+           | `Base t -> string_of_typecode t
+        )
+        ts ^
+      ")"
+  | `EXPR_void _ -> "void"
+  | `EXPR_ellipsis _ -> "..."
+
+  | `EXPR_typeof (_,e) -> "typeof("^se e^")"
+  | `EXPR_type_match (_,(e, ps)) ->
+    "typematch " ^ string_of_typecode e ^ " with " ^
+    catmap ""
+    (fun (p,e')->
+      "\n  | " ^
+      string_of_typecode p ^
+      " => " ^
+      string_of_typecode e'
+    )
+    ps
+    ^
+    "\n endmatch"
+
+
+  | `EXPR_subtype_match (_,(e, ps)) ->
+    "subtypematch " ^ string_of_typecode e ^ " with " ^
+    catmap ""
+    (fun (p,e')->
+      "\n  | " ^
+      string_of_typecode p ^
+      " => " ^
+      string_of_typecode e'
+    )
+    ps
+    ^
+    "\n endmatch"
+
+
+*)
+
   | `EXPR_label (_,s) -> "(&&" ^ s ^ ")"
   | `EXPR_not (sr,e) -> "not(" ^ se e ^ ")"
   | `EXPR_index (sr,name,idx) -> name ^ "<" ^ string_of_bid idx ^ ">"
-  | `EXPR_void _ -> "void"
   | `EXPR_name (_,name,ts) ->
       string_of_id name ^
       (
@@ -146,7 +205,6 @@ and string_of_expr (e:expr_t) =
   | `EXPR_patany sr -> "ANY"
   | `EXPR_interpolate (sr,s) -> "q"^string_of_string s
   | `EXPR_vsprintf (sr,s) -> "f"^string_of_string s
-  | `EXPR_ellipsis _ -> "..."
   | `EXPR_noexpand (sr,e) -> "noexpand(" ^ string_of_expr e ^ ")"
   (* because 'noexpand' is too ugly .. *)
   (* | `EXPR_noexpand (sr,e) -> string_of_expr e *)
@@ -173,7 +231,6 @@ and string_of_expr (e:expr_t) =
     " else " ^ se b2 ^
     " endif"
 
-  | `EXPR_typeof (_,e) -> "typeof("^se e^")"
   | `EXPR_as (_, (e1, name)) -> "(" ^ se e1 ^ ") as " ^ string_of_id name
   | `EXPR_as_var (_, (e1, name)) -> "(" ^ se e1 ^ ") as var " ^ string_of_id name
   | `EXPR_get_n (_,(n,e)) -> "get (" ^ si n ^ ", " ^se e^")"
@@ -253,35 +310,10 @@ and string_of_expr (e:expr_t) =
       catmap ", " (fun (s,e) -> string_of_id s ^ "=" ^ se e ) es ^
       ")"
 
-
-  | `EXPR_record_type (_,ts) ->
-      "(" ^
-      catmap ", "
-        (fun (s,t) -> string_of_id s ^ ":" ^ string_of_typecode t)
-        ts ^
-      ")"
-
-  | `EXPR_polyrecord_type (_,ts,v) ->
-      "(" ^
-      catmap " "
-        (fun (s,t) -> string_of_id s ^ ":" ^ string_of_typecode t ^ ",")
-        ts ^ " | " ^ string_of_typecode v ^
-      ")"
-
   | `EXPR_remove_fields (_,e,ss) -> 
     "(" ^ se e ^ " minus fields " ^ String.concat "," ss ^ ")"
 
   | `EXPR_variant (_, (s, e)) -> "case " ^ string_of_id s ^ " of (" ^ se e ^ ")"
-
-  | `EXPR_variant_type (_,ts) ->
-      "(" ^
-      catmap "| "
-        (fun x -> match x with 
-           | `Ctor (s,t) -> "`" ^ string_of_id s ^ " of " ^ string_of_typecode t
-           | `Base t -> string_of_typecode t
-        )
-        ts ^
-      ")"
 
   | `EXPR_arrayof (_,t) -> "[|" ^ catmap ", " se t ^ "|]"
 
@@ -353,33 +385,6 @@ and string_of_expr (e:expr_t) =
     ps
     ^
     " endmatch"
-
-  | `EXPR_type_match (_,(e, ps)) ->
-    "typematch " ^ string_of_typecode e ^ " with " ^
-    catmap ""
-    (fun (p,e')->
-      "\n  | " ^
-      string_of_typecode p ^
-      " => " ^
-      string_of_typecode e'
-    )
-    ps
-    ^
-    "\n endmatch"
-
-
-  | `EXPR_subtype_match (_,(e, ps)) ->
-    "subtypematch " ^ string_of_typecode e ^ " with " ^
-    catmap ""
-    (fun (p,e')->
-      "\n  | " ^
-      string_of_typecode p ^
-      " => " ^
-      string_of_typecode e'
-    )
-    ps
-    ^
-    "\n endmatch"
 
   | `EXPR_typecase_match (_,(t, ps)) ->
     "typecase " ^ string_of_typecode t ^ " with " ^

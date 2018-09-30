@@ -21,7 +21,7 @@ type base_type_qual_t = [
 (** type of a qualified name *)
 type qualified_name_t =
   [
-  | `AST_void of Flx_srcref.t
+  (* | `AST_void of Flx_srcref.t *)
   | `AST_name of Flx_srcref.t * Flx_id.t * typecode_t list
   | `AST_case_tag of Flx_srcref.t * int
   | `AST_typed_case of Flx_srcref.t * int * typecode_t
@@ -33,7 +33,7 @@ type qualified_name_t =
 (** type of a suffixed name *)
 and suffixed_name_t =
   [
-  | `AST_void of Flx_srcref.t
+  (* | `AST_void of Flx_srcref.t *)
   | `AST_name of Flx_srcref.t * Flx_id.t * typecode_t list
   | `AST_case_tag of Flx_srcref.t * int
   | `AST_typed_case of Flx_srcref.t * int * typecode_t
@@ -143,16 +143,87 @@ and axiom_method_t = Predicate of expr_t | Equation of expr_t * expr_t
  * Raw expression terms. *)
 and variant_item_t = [`Ctor of Flx_id.t * typecode_t | `Base of typecode_t]
 and expr_t = [
+  | `TYP_rptsum of typecode_t * typecode_t
+  | `TYP_pclt of typecode_t * typecode_t
+  | `TYP_rpclt of typecode_t * typecode_t
+  | `TYP_wpclt of typecode_t * typecode_t
+  | `TYP_label 
+  | `TYP_void of Flx_srcref.t                   (** void type *)
+  | `TYP_name of Flx_srcref.t * Flx_id.t * typecode_t list
+  | `TYP_case_tag of Flx_srcref.t * int
+  | `TYP_typed_case of Flx_srcref.t * int * typecode_t
+  | `TYP_lookup of Flx_srcref.t * (expr_t * Flx_id.t * typecode_t list)
+  | `TYP_index of Flx_srcref.t * string * index_t
+  | `TYP_callback of Flx_srcref.t * qualified_name_t
+  | `TYP_suffix of Flx_srcref.t * (qualified_name_t * typecode_t)
+  | `TYP_patvar of Flx_srcref.t * Flx_id.t
+  | `TYP_patany of Flx_srcref.t
+  | `TYP_tuple of typecode_t list               (** product type *)
+  | `TYP_unitsum of int                         (** sum of units  *)
+  | `TYP_sum of typecode_t list                 (** numbered sum type *)
+  | `TYP_intersect of typecode_t list           (** intersection type *)
+  | `TYP_union of typecode_t list               (** union type *)
+  | `TYP_record of (Flx_id.t * typecode_t) list
+  | `TYP_polyrecord of (Flx_id.t * typecode_t) list * typecode_t
+  | `TYP_variant of variant_item_t list (** anon sum *)
+  | `TYP_function of typecode_t * typecode_t    (** function type *)
+  | `TYP_effector of typecode_t * typecode_t * typecode_t    (** function type *)
+  | `TYP_cfunction of typecode_t * typecode_t   (** C function type *)
+  | `TYP_pointer of typecode_t                  (** pointer type *)
+  | `TYP_rref of typecode_t                     (** read pointer type *)
+  | `TYP_wref of typecode_t                     (** write pointer type *)
+  | `TYP_uniq of typecode_t                     (** uniq type *)
+  | `TYP_array of typecode_t * typecode_t       (** array type base ^ index *)
+  | `TYP_as of typecode_t * Flx_id.t            (** fixpoint *)
+  | `TYP_typeof of expr_t                       (** typeof *)
+  | `TYP_var of index_t                         (** unknown type *)
+  | `TYP_none                                   (** unspecified *)
+  | `TYP_ellipsis                               (** ... for varargs *)
+  | `TYP_isin of typecode_t * typecode_t        (** typeset membership *)
+
+  | `TYP_defer of Flx_srcref.t * typecode_t option ref
+
+
+  (* sets of types *)
+  | `TYP_typeset of typecode_t list             (** discrete set of types *)
+  | `TYP_setunion of typecode_t list            (** union of typesets *)
+  | `TYP_setintersection of typecode_t list     (** intersection of typesets *)
+
+  (* dualizer *)
+  | `TYP_dual of typecode_t                     (** dual *)
+
+  | `TYP_apply of typecode_t * typecode_t       (** type function application *)
+  | `TYP_typefun of kind_parameter_t list * kindcode_t * typecode_t
+                                                (** type lambda *)
+  | `TYP_type_tuple of typecode_t list          (** meta type product *)
+
+  | `TYP_type_match of typecode_t * (typecode_t * typecode_t) list
+  | `TYP_subtype_match of typecode_t * (typecode_t * typecode_t) list
+  | `TYP_type_extension of Flx_srcref.t * typecode_t list * typecode_t
+  | `TYP_tuple_cons of Flx_srcref.t * typecode_t * typecode_t
+  | `TYP_tuple_snoc of Flx_srcref.t * typecode_t * typecode_t
+
+  | `TYP_typeop of Flx_srcref.t * string * typecode_t * kindcode_t
 
   (* returns true if the expression is one of the polymorphic variant
      cases in the specified type
   *)
   | `EXPR_match_variant_subtype of Flx_srcref.t * (expr_t * typecode_t)
 
+(*
   | `EXPR_pclt_type of Flx_srcref.t * typecode_t * typecode_t
   | `EXPR_rpclt_type of Flx_srcref.t * typecode_t * typecode_t
   | `EXPR_wpclt_type of Flx_srcref.t * typecode_t * typecode_t
   | `EXPR_rptsum_type of Flx_srcref.t * typecode_t * typecode_t
+  | `EXPR_record_type of Flx_srcref.t * (Flx_id.t * typecode_t) list
+  | `EXPR_polyrecord_type of Flx_srcref.t * (Flx_id.t * typecode_t) list * typecode_t
+  | `EXPR_variant_type of Flx_srcref.t * variant_item_t list
+  | `EXPR_void of Flx_srcref.t
+  | `EXPR_ellipsis of Flx_srcref.t
+  | `EXPR_typeof of Flx_srcref.t * expr_t
+  | `EXPR_type_match of Flx_srcref.t * (typecode_t * (typecode_t * typecode_t) list)
+  | `EXPR_subtype_match of Flx_srcref.t * (typecode_t * (typecode_t * typecode_t) list)
+*)
   | `EXPR_label of Flx_srcref.t * string
   | `EXPR_vsprintf of Flx_srcref.t * string
   | `EXPR_interpolate of Flx_srcref.t * string
@@ -170,21 +241,16 @@ and expr_t = [
   | `EXPR_apply of Flx_srcref.t * (expr_t * expr_t)
   | `EXPR_tuple of Flx_srcref.t * expr_t list
   | `EXPR_record of Flx_srcref.t * (Flx_id.t * expr_t) list
-  | `EXPR_record_type of Flx_srcref.t * (Flx_id.t * typecode_t) list
   | `EXPR_polyrecord of Flx_srcref.t * (Flx_id.t * expr_t) list * expr_t
   | `EXPR_remove_fields of Flx_srcref.t * expr_t * string list
   | `EXPR_replace_fields of Flx_srcref.t * expr_t * (Flx_id.t * expr_t ) list
-  | `EXPR_polyrecord_type of Flx_srcref.t * (Flx_id.t * typecode_t) list * typecode_t
   | `EXPR_variant of Flx_srcref.t * (Flx_id.t * expr_t)
-  | `EXPR_variant_type of Flx_srcref.t * variant_item_t list
   | `EXPR_arrayof of Flx_srcref.t * expr_t list
   | `EXPR_coercion of Flx_srcref.t * (expr_t * typecode_t)
   | `EXPR_variant_subtype_match_coercion of Flx_srcref.t * (expr_t * typecode_t)
   | `EXPR_suffix of Flx_srcref.t * (qualified_name_t * typecode_t)
   | `EXPR_patvar of Flx_srcref.t * Flx_id.t
   | `EXPR_patany of Flx_srcref.t
-  | `EXPR_void of Flx_srcref.t
-  | `EXPR_ellipsis of Flx_srcref.t
   | `EXPR_product of Flx_srcref.t * expr_t list
   | `EXPR_sum of Flx_srcref.t * expr_t list
   | `EXPR_intersect of Flx_srcref.t * expr_t list
@@ -254,13 +320,10 @@ and expr_t = [
   | `EXPR_get_tuple_last of Flx_srcref.t * expr_t
 
 
-  | `EXPR_typeof of Flx_srcref.t * expr_t
   | `EXPR_cond of Flx_srcref.t * (expr_t * expr_t * expr_t)
 
   | `EXPR_expr of Flx_srcref.t * Flx_code_spec.t * typecode_t * expr_t
 
-  | `EXPR_type_match of Flx_srcref.t * (typecode_t * (typecode_t * typecode_t) list)
-  | `EXPR_subtype_match of Flx_srcref.t * (typecode_t * (typecode_t * typecode_t) list)
   | `EXPR_typecase_match of Flx_srcref.t * (typecode_t * (typecode_t * expr_t) list)
 
   | `EXPR_extension of Flx_srcref.t * expr_t list * expr_t
@@ -742,7 +805,7 @@ type sexe_t = Flx_srcref.t * exe_t
 type compilation_unit_t = statement_t list
 
 let src_of_qualified_name (e : qualified_name_t) = match e with
-  | `AST_void s
+  (* | `AST_void s *)
   | `AST_name  (s,_,_)
   | `AST_case_tag (s,_)
   | `AST_typed_case (s,_,_)
@@ -813,14 +876,24 @@ let src_of_typecode = function
   -> Flx_srcref.dummy_sr
 
 let src_of_expr (e : expr_t) = match e with
+  | #typecode_t as t -> src_of_typecode t
   | `EXPR_rptsum_arg (s,_)
   | `EXPR_match_variant_subtype (s,(_,_))
+(*
   | `EXPR_pclt_type (s,_,_)
   | `EXPR_rpclt_type (s,_,_)
   | `EXPR_wpclt_type (s,_,_)
   | `EXPR_rptsum_type (s,_,_)
-  | `EXPR_label (s,_)
+  | `EXPR_record_type (s,_)
+  | `EXPR_polyrecord_type (s,_,_)
+  | `EXPR_variant_type (s,_)
   | `EXPR_void s
+  | `EXPR_ellipsis s
+  | `EXPR_type_match (s, _)
+  | `EXPR_subtype_match (s, _)
+  | `EXPR_typeof (s,_)
+*)
+  | `EXPR_label (s,_)
   | `EXPR_name (s,_,_)
   | `EXPR_case_tag (s,_)
   | `EXPR_typed_case (s,_,_)
@@ -836,7 +909,6 @@ let src_of_expr (e : expr_t) = match e with
   | `EXPR_patany s
   | `EXPR_vsprintf (s,_)
   | `EXPR_interpolate (s,_)
-  | `EXPR_ellipsis s
   | `EXPR_noexpand (s,_)
   | `EXPR_product (s,_)
   | `EXPR_sum (s,_)
@@ -866,9 +938,6 @@ let src_of_expr (e : expr_t) = match e with
   | `EXPR_remove_fields (s,_,_)
   | `EXPR_replace_fields (s,_,_)
   | `EXPR_variant (s,_)
-  | `EXPR_record_type (s,_)
-  | `EXPR_polyrecord_type (s,_,_)
-  | `EXPR_variant_type (s,_)
   | `EXPR_arrayof (s,_)
   | `EXPR_lambda (s,_)
   | `EXPR_match_ctor (s,_)
@@ -887,13 +956,10 @@ let src_of_expr (e : expr_t) = match e with
   | `EXPR_as (s,_)
   | `EXPR_as_var (s,_)
   | `EXPR_match (s, _)
-  | `EXPR_type_match (s, _)
-  | `EXPR_subtype_match (s, _)
   | `EXPR_typecase_match (s, _)
   | `EXPR_cond (s,_)
   | `EXPR_expr (s,_,_,_)
   | `EXPR_letin (s,_)
-  | `EXPR_typeof (s,_)
   | `EXPR_range_check (s,_,_,_)
   | `EXPR_not (s,_)
   | `EXPR_extension (s, _, _)
@@ -1024,7 +1090,9 @@ let src_of_pat (e : pattern_t) = match e with
   -> s
 
 let typecode_of_qualified_name = function
+(*
   | `AST_void sr -> `TYP_void sr
+*)
   | `AST_name (sr,name,ts) -> `TYP_name (sr,name,ts)
   | `AST_case_tag (sr,v) -> `TYP_case_tag (sr,v)
   | `AST_typed_case (sr,v,t) -> `TYP_typed_case (sr,v,t)
@@ -1033,7 +1101,9 @@ let typecode_of_qualified_name = function
   | `AST_callback (sr,name) -> `TYP_callback (sr,name)
 
 let qualified_name_of_typecode = function
+(*
   | `TYP_void sr -> Some (`AST_void sr)
+*)
   | `TYP_name (sr,name,ts) -> Some (`AST_name (sr,name,ts))
   | `TYP_case_tag (sr,v) -> Some (`AST_case_tag (sr,v))
   | `TYP_typed_case (sr,v,t) -> Some (`AST_typed_case (sr,v,t))

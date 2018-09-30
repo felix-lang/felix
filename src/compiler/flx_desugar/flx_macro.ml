@@ -414,7 +414,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   let cf e = const_fold e in
   let e = cf e in
   match e with
-
+  | #typecode_t as t -> (mt Flx_srcref.dummy_sr t :> expr_t) 
   (* This CAN happen: typecase is an ordinary expression
     with no meaning except as a proxy for a type, however
     at a macro level, it is an ordinary expression .. hmm
@@ -652,6 +652,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   | `EXPR_extension (sr, es,e) -> `EXPR_extension (sr, List.map me es, me e)
 
+(*
   | `EXPR_rptsum_type (sr,_,_)
   | `EXPR_pclt_type (sr,_,_)
   | `EXPR_rpclt_type (sr,_,_)
@@ -662,11 +663,24 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
      clierrx "[flx_desugar/flx_macro.ml:613: E333] " sr 
      ("Record, polyrecord, variant or pointer to compact linear type types\n" ^
      "cannot be used as an expression")
+*)
 
 (*
   | `EXPR_record_type (sr,flds) -> `EXPR_record_type (sr, List.map (fun (s,t) -> s, mt sr t) flds)
   | `EXPR_polyrecord_type (sr,flds,v) -> `EXPR_polyrecord_type (sr, List.map (fun (s,t) -> s, mt sr t) flds, mt sr v)
   | `EXPR_variant_type (sr,flds) -> `EXPR_variant_type (sr, List.map (fun (s,t) -> s, mt sr t) flds)
+  | `EXPR_ellipsis _
+  | `EXPR_void _ -> e
+
+  | `EXPR_typeof (sr,e) -> `EXPR_typeof (sr, me e)
+  | `EXPR_type_match (sr, (e,ps)) ->
+    let ps = List.map (fun (pat,e) -> pat, mt sr e) ps in
+    `EXPR_type_match (sr,(mt sr e,ps))
+
+  | `EXPR_subtype_match (sr, (e,ps)) ->
+    let ps = List.map (fun (pat,e) -> pat, mt sr e) ps in
+    `EXPR_subtype_match (sr,(mt sr e,ps))
+
 *)
   | `EXPR_arrayof (sr, es) -> `EXPR_arrayof (sr, List.map me es)
   | `EXPR_coercion (sr, (e1, t)) -> `EXPR_coercion (sr, (me e1,mt sr t))
@@ -776,22 +790,11 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     in
     `EXPR_match (sr,(me e1, pes))
 
-  | `EXPR_type_match (sr, (e,ps)) ->
-    let ps = List.map (fun (pat,e) -> pat, mt sr e) ps in
-    `EXPR_type_match (sr,(mt sr e,ps))
-
-  | `EXPR_subtype_match (sr, (e,ps)) ->
-    let ps = List.map (fun (pat,e) -> pat, mt sr e) ps in
-    `EXPR_subtype_match (sr,(mt sr e,ps))
-
   | `EXPR_typecase_match (sr, (t,ps)) ->
     let ps = List.map (fun (t,e) -> mt sr t, me e) ps in
     `EXPR_typecase_match (sr,(mt sr t,ps))
 
-  | `EXPR_ellipsis _
-  | `EXPR_void _ -> e
 
-  | `EXPR_typeof (sr,e) -> `EXPR_typeof (sr, me e)
   | `EXPR_range_check (sr, mi, v, mx) -> `EXPR_range_check (sr, me mi, me v, me mx)
   | `EXPR_not (sr,e) -> `EXPR_not (sr, me e)
   | `EXPR_label (sr,s) -> `EXPR_label (sr, mi sr s)

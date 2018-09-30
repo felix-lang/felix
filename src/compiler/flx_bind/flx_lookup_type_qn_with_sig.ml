@@ -137,8 +137,9 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
   | `AST_callback (sr,qn) ->
     failwith "[lookup_qn_with_sig] Callbacks not implemented yet"
 
+(*
   | `AST_void _ -> clierrx "[flx_bind/flx_lookup.ml:2796: E142] " sra "qualified-name is void"
-
+*)
   | `AST_case_tag _ -> clierrx "[flx_bind/flx_lookup.ml:2798: E143] " sra "Can't lookup case tag here"
 
   | `AST_typed_case (sr,v,t) ->
