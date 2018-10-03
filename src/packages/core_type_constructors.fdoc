@@ -1,9 +1,7 @@
 @title Core Type Constructors
 @tangler option.flx         = share/lib/std/datatype/option.flx
 @tangler unitsum.flx        = share/lib/std/datatype/unitsum.flx
-@tangler unitsum_ops.fsyn   = share/lib/std/datatype/unitsum_ops.fsyn
 @tangler tuple.flx          = share/lib/std/datatype/tuple.flx
-@tangler tupleexpr.fsyn     = share/lib/std/datatype/tupleexpr.fsyn
 @tangler slice.flx          = share/lib/std/datatype/slice.flx
 @tangler typing.flx         = share/lib/std/datatype/typing.flx
 @tangler special.flx        = share/lib/std/datatype/special.flx
@@ -481,21 +479,6 @@ typedef fun n"`<" (x:UNITSUM,y:UNITSUM):BOOL=> _typeop ("_unitsum_lt",(x,y),BOOL
 typedef fun n"`>" (x:UNITSUM,y:UNITSUM):BOOL=> _typeop ("_unitsum_lt",(y,x),BOOL);
 typedef fun n"`==" (x:UNITSUM,y:UNITSUM):BOOL=> x `< y `and y `< x;
 @
-
-@tangle unitsum_ops.fsyn
-syntax unitsum_ops 
-{
-  x[ssum_pri] := x[ssum_pri] "`+" x[>ssum_pri] =># "(Infix)";
-  x[ssum_pri] := x[ssum_pri] "`-" x[>ssum_pri] =># "(Infix)";
-  x[ssum_pri] := x[ssum_pri] "`*" x[>ssum_pri] =># "(Infix)";
-  x[ssum_pri] := x[ssum_pri] "`/" x[>ssum_pri] =># "(Infix)";
-  x[ssum_pri] := x[ssum_pri] "`%" x[>ssum_pri] =># "(Infix)";
-  x[ssum_pri] := x[>scomparison_pri] "`==" x[>scomparison_pri] =># "(Infix)";
-  x[ssum_pri] := x[>scomparison_pri] "`<" x[>scomparison_pri] =># "(Infix)";
-  x[ssum_pri] := x[>scomparison_pri] "`>" x[>scomparison_pri] =># "(Infix)";
-}
-@
-
 // -----------------------------------------------------------------------------
 @h1 Category Theoretic Functional Operations
 @tangle functional.flx
@@ -710,23 +693,6 @@ open class parallel_tuple_comp
      f5:u5->r5
     ) : u1 * u2 * u3 * u4 * u5 -> r1 * r2 * r3 * r4 * r5 => 
     fun (x1:u1,x2:u2,x3:u3,x4:u4,x5:u5) => f1 x1, f2 x2, f3 x3, f4 x4, f5 x5;
-
-}
-
-@h1 Tuple Constructor Syntax
-@tangle tupleexpr.fsyn
-syntax tupleexpr
-{
-  //$ Tuple formation by cons: right associative.
-  x[stuple_cons_pri] := x[>stuple_cons_pri] ",," x[stuple_cons_pri] =># 
-    """`(ast_tuple_cons ,_sr ,_1 ,_3)""";
-
-  //$ Tuple formation by append: left associative
-  x[stuple_cons_pri] := x[stuple_cons_pri] "<,,>" x[>stuple_cons_pri] =># 
-   """`(ast_tuple_snoc ,_sr ,_1 ,_3)""";
-
-  //$ Tuple formation non-associative.
-  x[stuple_pri] := x[>stuple_pri] ( "," x[>stuple_pri])+ =># "(chain 'ast_tuple _1 _2)";
 
 }
 

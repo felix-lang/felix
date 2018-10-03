@@ -81,10 +81,14 @@ let cal_bind_apply
     let sigs = List.map snd args in
     begin (* apply *)
     (*
-    print_endline ("[bind_expression] GENERAL APPLY " ^ Flx_print.string_of_expr f' ^ " to " ^  Flx_print.string_of_expr a');
     print_env env;
     *)
     let (ea,ta as a) = be a' in
+(*
+    print_endline ("[bind_expression] GENERAL APPLY " ^ 
+      Flx_print.string_of_expr f' ^ " to " ^  Flx_print.string_of_expr a' ^ ", type= " ^ Flx_print.sbt bsym_table ta
+    );
+*)
 (*
     if not (complete_type ta) then
       print_endline ("*************>>>>>>>>> Apply argument type is not complete!!" ^ sbt bsym_table ta);
@@ -137,7 +141,7 @@ let cal_bind_apply
         | _ -> raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->
 
-     (* ---------------------------------------------------------- *)
+      (* ---------------------------------------------------------- *)
       (* special case, constant slice of small linear array *) 
       (* ---------------------------------------------------------- *)
       try 
@@ -267,13 +271,6 @@ let cal_bind_apply
           bexpr_apply pt (prj,a)
         | _ -> raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->
-
-
-
-
-
-
-
       (*
         print_endline ("Can't interpret apply function "^string_of_expr f'^" as projection, trying as an actual function");
       *)
@@ -311,8 +308,21 @@ end;
         | BTYP_effector _ 
         | BTYP_cfunction _ 
         | BTYP_function _ ->
-          cal_apply state bsym_table sr rs f a 
-
+          begin try
+(*
+           print_endline (" ** Bound LHS of application as function!");
+*)
+           let result =  cal_apply state bsym_table sr rs f a  in
+(*
+           print_endline (" ** application of function done!");
+*)
+           result
+          with exn -> 
+(*
+            print_endline ("!!! cal_apply failed");
+*)
+            raise exn
+          end
         (* NOTE THIS CASE HASN'T BEEN CHECKED FOR POLYMORPHISM YET *)
         | BTYP_inst (i,ts',_) when
           (
@@ -333,38 +343,36 @@ end;
         (*
           print_endline ("Expected f to be function, got " ^ sbt bsym_table t);
         *)
-        let apl name =
-            be
-            (
-              `EXPR_apply
-              (
-                sr,
-                (
-                  `EXPR_name (sr,name,[]),
-                  `EXPR_tuple (sr,[f';a'])
-                )
-              )
-            )
-        in
-        try 
+        begin try 
           begin match f' with
           | `EXPR_name (_,"apply",_) ->
-            print_endline ("Application of `apply` function failed: terminating");
+(*
+            print_endline ("Application of `apply` function failed: terminating RECURSION?");
+*)
             raise exn
           | _ ->
 (*
-print_endline ("Application failed, trying to use `apply` function f'="^Flx_print.string_of_expr f');
+            print_endline ("RECURSION: Application failed, trying to bind:");
 *)
-          apl "apply"
+            let x = `EXPR_apply ( sr, ( `EXPR_name (sr,"apply",[]), `EXPR_tuple (sr,[f';a']))) in
+(*
+            print_endline ("  expr = " ^ Flx_print.string_of_expr x);
+*)
+            be x
           end
         with _ -> 
 (*
 print_endline ("apply function failed too f'=" ^ Flx_print.string_of_expr f');
 *)
           raise exn (* raise original error *)
+        end
       end (* as a function *)
       with exn ->
-      try (* record addition *)
+
+      begin try (* record addition *)
+(*
+        print_endline ("Finally, trying record addition");
+*)
         match Flx_typing2.qualified_name_of_expr f' with
         | Some (`AST_name (_,"+",[])) ->
           begin match (ta::sigs) with
@@ -376,7 +384,12 @@ print_endline ("apply function failed too f'=" ^ Flx_print.string_of_expr f');
           end
         | _ ->raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError -> 
-      raise exn (* tell the user about the usual case not the special cases *)
+(*
+        print_endline ("Record addition failed, raising original error");
+*)
+        raise exn (* tell the user about the usual case not the special cases *)
+      end (* record addition *)
+
     end (* apply *)
 
 

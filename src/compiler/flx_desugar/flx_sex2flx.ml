@@ -116,7 +116,15 @@ and xexpr_t sr x =
   | Lst [Id "ast_vsprintf";  sr; Str s] -> `EXPR_vsprintf (xsr sr, s)
   | Lst [Id "ast_interpolate";  sr; Str s] -> `EXPR_interpolate (xsr sr, s)
   | Lst [Id "ast_noexpand"; sr; e] -> `EXPR_noexpand (xsr sr,ex e)
-  | Lst [Id "ast_name"; sr; id; Lst ts] -> `EXPR_name (xsr sr, xid id, map ti ts)
+  | Lst [Id "ast_name"; sr; id; Lst ts] -> 
+    let ts = map ti ts in
+    let id = xid id in
+(*
+    if List.length ts > 0 then
+print_endline ("EXPR_name " ^ id ^ "[" ^ Flx_util.catmap "," Flx_print.string_of_typecode ts ^ "]");
+*)
+    `EXPR_name (xsr sr, id, ts)
+
   (* can't occur in user code
   | Lst [Id "ast_index";  Str s ; Int i] -> `EXPR_index (sr,s,ii i)
   *)
@@ -143,8 +151,31 @@ and xexpr_t sr x =
 
 
   | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> `EXPR_lookup (sr,(ex e, s,map ti ts))
-  | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> `EXPR_apply(xsr sr,(xexpr_t (xsr sr) e1, xexpr_t (xsr sr) e2))
+
+  | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> 
+    let sr = xsr sr in
+    let e1 = xexpr_t sr e1 in
+    let e2 = xexpr_t sr e2 in
+    begin match e1 with
+    | `EXPR_name (_,"!",_) -> print_endline ("Woops got ! in expression application"); assert false
+    | _ -> ()
+    end;
+    `EXPR_apply(sr,(e1,e2))
+
+  | Lst [Id "typ_apply";  sr; Lst [e1; e2]] -> 
+    let e1 = ti e1 and e2 = ti e2 in
+(*
+    print_endline ("typ_apply " ^ Flx_print.string_of_typecode e1 ^ " to " ^ Flx_print.string_of_typecode e2);
+*)
+    `TYP_apply(e1, e2)
+
+
   | Lst [Id "ast_tuple";  sr; Lst es] -> `EXPR_tuple (xsr sr,map (xexpr_t (xsr sr)) es)
+
+  | Lst [Id "typ_type_tuple";  sr; Lst es] -> `TYP_type_tuple (map ti es)
+  | Lst [Id "typ_typeop"; sr; Str name; ty; kd] ->
+    `TYP_typeop  (xsr sr, name, ti ty, kind_of_sex (xsr sr) kd)
+
   | Lst [Id "ast_tuple_cons";  sr; eh; et] -> `EXPR_tuple_cons (xsr sr, xexpr_t (xsr sr) eh, xexpr_t (xsr sr) et)
   | Lst [Id "ast_tuple_snoc";  sr; eh; et] -> `EXPR_tuple_snoc (xsr sr, xexpr_t (xsr sr) eh, xexpr_t (xsr sr) et)
   | Lst [Id "ast_record";  sr; Lst rs] ->
@@ -228,21 +259,36 @@ and xexpr_t sr x =
  | Lst [Id "ast_suffix";  Lst [qn;t]] -> `EXPR_suffix (sr,(xq "ast_suffix" qn,ti t))
 
  | Lst [Id "ast_patvar";  sr; Str s] -> `EXPR_patvar (xsr sr, s)
+ | Lst [Id "typ_patvar";  sr; Str s] -> `TYP_patvar (xsr sr, s)
 
  | Lst [Id "ast_patany"; sr] -> `EXPR_patany (xsr sr)
+ | Lst [Id "typ_patany"; sr] -> `TYP_patany (xsr sr)
+
  | Lst [Id "ast_void"; sr] -> `TYP_void (xsr sr)
  | Lst [Id "ast_ellipsis"; sr] -> `TYP_ellipsis
 
  | Lst [Id "ast_product"; sr; Lst es] -> `EXPR_product (xsr sr, map (xexpr_t (xsr sr)) es)
+ | Lst [Id "typ_product"; sr; Lst es] -> `EXPR_product (xsr sr, map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_sum";  sr; Lst es] -> `EXPR_sum (xsr sr,map (xexpr_t (xsr sr)) es)
+ | Lst [Id "typ_sum";  sr; Lst es] -> `EXPR_sum (xsr sr,map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_intersect"; Lst es] -> `EXPR_intersect (sr, map ex es)
  | Lst [Id "ast_isin"; Lst [a; b]] -> `EXPR_isin (sr, (ex a, ex b))
  | Lst [Id "ast_orlist"; sr; Lst es] -> `EXPR_orlist (xsr sr, map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_andlist"; sr; Lst es] -> `EXPR_andlist (xsr sr, map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_not"; sr; e] -> `EXPR_not (xsr sr, ex e)
+(*
  | Lst [Id "ast_arrow";  Lst [e1; e2]] -> `EXPR_arrow (sr,(ex e1, ex e2))
+*)
+ | Lst [Id "typ_arrow";  Lst [e1; e2]] -> `TYP_function (ti e1, ti e2)
+(*
  | Lst [Id "ast_effector";  Lst [e1; e2; e3]] -> `EXPR_effector (sr,(ex e1, ex e2, ex e3))
+*)
+ | Lst [Id "typ_effector";  Lst [e1; e2; e3]] -> `TYP_effector (ti e1, ti e2, ti e3)
+(*
  | Lst [Id "ast_longarrow";  Lst [e1; e2]] -> `EXPR_longarrow (sr,(ex e1, ex e2))
+*)
+ | Lst [Id "typ_longarrow";  Lst [e1; e2]] -> `TYP_cfunction (ti e1, ti e2)
+
  | Lst [Id "ast_superscript";  Lst [e1; e2]] -> `EXPR_superscript (sr,(ex e1, ex e2))
  | Lst [Id "ast_literal";  sr; Str felix_type; Str internal_value; Str c_value ] ->
    `EXPR_literal (xsr sr, 
@@ -315,9 +361,7 @@ and xexpr_t sr x =
    in
    `EXPR_match (xsr sr, (ex e,pes))
 
- (* handled in flx_typing2 now 
- | Lst [Id "ast_typeof";  e] -> `EXPR_typeof (sr, ex e)
- *)
+ | Lst [Id "typ_typeof";  sr; e] -> `TYP_typeof (ex e)
 
  | Lst [Id "ast_cond"; sr;  Lst [e1;e2;e3]] -> `EXPR_cond (xsr sr,(ex e1, ex e2, ex e3))
  | Lst [Id "ast_expr"; sr; s; t; e] -> `EXPR_expr (xsr sr, xc (xsr sr) s, ti t, ex e)
@@ -355,7 +399,18 @@ and xexpr_t sr x =
 
   | Lst [Id "ast_extension"; sr; Lst bases; extension] ->
     let bases = List.map ex bases in
+(*
+print_endline ("EXPR: Extension of bases = " ^ Flx_util.catmap "," Flx_print.string_of_expr bases);
+*)
     `EXPR_extension (xsr sr, bases, ex extension)
+
+  | Lst [Id "typ_type_extension"; sr; Lst bases; extension] ->
+    let bases = List.map ti bases in
+(*
+print_endline ("TYP: Extension of bases = " ^ Flx_util.catmap "," Flx_print.string_of_typecode bases);
+*)
+    `TYP_type_extension (xsr sr, bases, ti extension)
+
 
   | Lst ls -> (* print_endline ("Unexpected literal tuple"); *) `EXPR_tuple (sr, map ex ls)
 

@@ -17,7 +17,7 @@ let isunitsum x = match x with
     -> (match mt with | KIND_unitsum -> true | _ -> false)
   | BTYP_type_apply (BTYP_type_function (_,KIND_unitsum,_),_) -> true
   | BTYP_type_apply (BTYP_inst(_,_,KIND_function (_,KIND_unitsum)),_) -> true
-  | BTYP_inst (_,_,KIND_unitsum)
+  | BTYP_inst (_,_,KIND_unitsum) -> true
   | _ -> false
  
 
@@ -142,7 +142,7 @@ let staticbool_nullop mk_raw_typeop op t k eval =
 
   match t with
   |  BTYP_tuple [] -> bbool (eval ())
-  | _ -> failwith ("Flx_btype: typeop " ^ op ^ " requires unit argument")
+  | _ -> failwith ("Flx_btype: typeop " ^ op ^ " requires unit argument, got " ^ Flx_btype.st t)
 
 let rec type_to_staticbool mk_raw_typeop op t =
 (*

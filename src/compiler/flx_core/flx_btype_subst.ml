@@ -123,7 +123,8 @@ let mk_varmap sr (vs:Flx_kind.bvs_t) ts =
       si (List.length vs) ^
       ", got ts=" ^
       si (List.length ts) ^
-      "\nvs= " ^ Flx_util.catmap "," (fun (s,i,mt) -> s ^ "<" ^ string_of_bid i ^ ">") vs
+      "\nvs= " ^ Flx_util.catmap "," (fun (s,i,mt) -> s ^ "<" ^ string_of_bid i ^ ">") vs ^
+      "\nts= " ^ Flx_util.catmap "," Flx_btype.st ts
     )
   ;
   let varmap = Hashtbl.create 97 in

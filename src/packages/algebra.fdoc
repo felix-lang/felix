@@ -13,17 +13,6 @@
 @tangler bits.flx      = share/lib/std/algebra/bits.flx
 @tangler sequence.flx  = share/lib/std/algebra/sequence.flx
 @tangler monad.flx     = share/lib/std/algebra/monad.flx
-
-@tangler setexpr.fsyn      = share/lib/std/algebra/setexpr.fsyn
-@tangler cmpexpr.fsyn      = share/lib/std/algebra/cmpexpr.fsyn
-@tangler pordcmpexpr.fsyn  = share/lib/std/algebra/pordcmpexpr.fsyn
-@tangler tordcmpexpr.fsyn  = share/lib/std/algebra/tordcmpexpr.fsyn
-@tangler addexpr.fsyn      = share/lib/std/algebra/addexpr.fsyn
-@tangler mulexpr.fsyn      = share/lib/std/algebra/mulexpr.fsyn
-@tangler divexpr.fsyn      = share/lib/std/algebra/divexpr.fsyn
-@tangler bitexpr.fsyn      = share/lib/std/algebra/bitexpr.fsyn
-
-
 @title Core Algebraic Structures.
 @h1 Synopsis.
 
@@ -148,19 +137,6 @@ class Set[c,t] {
   ;
 }
 
-@h2 Syntax
-@tangle setexpr.fsyn
-syntax setexpr
-{
-  cmp := "in" =># '(nos "\\in")'; 
-  cmp := "\in" =># "(nos _1)"; 
-  cmp := "\notin" =># '(nos _1)'; 
-  cmp := "\owns" =># '(nos _1)'; 
-
-  x[ssetunion_pri] := x[ssetunion_pri] "\cup" x[>ssetunion_pri] =># "(Infix)" note "setunion";
-  x[ssetintersection_pri] := x[ssetintersection_pri] "\cap" x[>ssetintersection_pri] =># "(Infix)" note "setintersection";
-}
-
 @h1 Set forms.
 A @{set_form} is a record type with a single 
 member @{has_elt} which returns true if it's argument
@@ -278,19 +254,6 @@ class Eq[t] {
   fun \neq(x:t, y:t)=> x != y;
 }
 
-@h1 Syntax
-@tangle cmpexpr.fsyn
-syntax cmpexpr
-{
-  x[scomparison_pri]:= x[>scomparison_pri] cmp x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
-  x[scomparison_pri]:= x[>scomparison_pri] "not" cmp x[>scomparison_pri] =># "`(ast_not ,_sr (ast_apply ,_sr (,_3 (,_1 ,_4))))";
-  cmp := "==" =># "(nos _1)"; 
-  cmp := "!=" =># "(nos _1)"; 
-  cmp := "\ne" =># '(nos _1)'; 
-  cmp := "\neq" =># '(nos _1)'; 
-}
-@
-
 
 @h2 Partial Order
 A proper <a href="https://en.wikipedia.org/wiki/Partially_ordered_set">partial order</a> 
@@ -332,28 +295,6 @@ class Pord[t]{
   axiom antisym(x:t, y:t): \subset(x,y) or \subset(y,x) or x == y;
   axiom reflex(x:t, y:t): \subseteq(x,y) and \subseteq(y,x) implies x == y;
 }
-@h2 Syntax
-@tangle pordcmpexpr.fsyn
-syntax pordcmpexpr
-{
-  cmp := "\subset" =># '(nos _1)'; 
-  cmp := "\supset" =># '(nos _1)'; 
-  cmp := "\subseteq" =># '(nos _1)'; 
-  cmp := "\subseteqq" =># '(nos _1)'; 
-  cmp := "\supseteq" =># '(nos _1)'; 
-  cmp := "\supseteqq" =># '(nos _1)'; 
-
-  cmp := "\nsubseteq" =># '(nos _1)'; 
-  cmp := "\nsubseteqq" =># '(nos _1)'; 
-  cmp := "\nsupseteq" =># '(nos _1)'; 
-  cmp := "\nsupseteqq" =># '(nos _1)'; 
-
-  cmp := "\subsetneq" =># '(nos _1)'; 
-  cmp := "\subsetneqq" =># '(nos _1)'; 
-  cmp := "\supsetneq" =># '(nos _1)'; 
-  cmp := "\supsetneqq" =># '(nos _1)'; 
-}
-
 @h2 Bounded Partial Order
 A partial order may bave an upper or lower bound known as the supremum
 and infimum, respectively. If these values are in the type, they are called
@@ -453,42 +394,6 @@ class Tord[t]{
   fun \wedge(x:t,y:t):t => min (x,y);
 
 
-}
-
-@h2 Syntax
-@tangle tordcmpexpr.fsyn
-syntax tordcmpexpr
-{
-  cmp := "<" =># "(nos _1)"; 
-
-  cmp := "\lt" =># '(nos _1)'; 
-  cmp := "\lneq" =># '(nos _1)'; 
-  cmp := "\lneqq" =># '(nos _1)'; 
-
-  cmp := "<=" =># "(nos _1)"; 
-  cmp := "\le" =># '(nos _1)'; 
-  cmp := "\leq" =># '(nos _1)'; 
-  cmp := "\leqq" =># '(nos _1)'; 
-
-  cmp := ">" =># "(nos _1)"; 
-  cmp := "\gt" =># '(nos _1)'; 
-  cmp := "\gneq" =># '(nos _1)'; 
-  cmp := "\gneqq" =># '(nos _1)'; 
-
-  cmp := ">=" =># "(nos _1)"; 
-  cmp := "\ge" =># '(nos _1)'; 
-  cmp := "\geq" =># '(nos _1)'; 
-  cmp := "\geqq" =># '(nos _1)'; 
-
-  cmp := "\nless" =># '(nos _1)'; 
-  cmp := "\nleq" =># '(nos _1)'; 
-  cmp := "\nleqq" =># '(nos _1)'; 
-  cmp := "\ngtr" =># '(nos _1)'; 
-  cmp := "\ngeq" =># '(nos _1)'; 
-  cmp := "\ngeqq" =># '(nos _1)'; 
-
-  bin := "\vee" =># '(nos _1)'; 
-  bin := "\wedge" =># '(nos _1)'; 
 }
 @h2 Bounded Total Orders.
 @tangle tord.flx
@@ -592,18 +497,6 @@ class FloatAddgrp[t] {
   proc  minuseq(px:&t, y:t) { -= (px,y); }
 }
 @
-
-@h2 Notation
-@tangle addexpr.fsyn
-syntax addexpr
-{
-  //$ Addition: left non-associative.
-  x[ssum_pri] := x[>ssum_pri] ("+" x[>ssum_pri])+ =># "(chain 'ast_sum _1 _2)" note "add";
-
-  //$ Subtraction: left associative.
-  x[ssubtraction_pri] := x[ssubtraction_pri] "-" x[sproduct_pri] =># "(Infix)";
-}
-
 @h2 Additive Group
 A proper additive group is derived from @{FloatAddgrp}
 with associativity added.
@@ -632,15 +525,6 @@ class FloatMultSemi1[t] {
   virtual proc *= (px:&t, y:t) { px <- *px * y; }
   //reduce id (x:t): x*one() => x;
   //reduce id (x:t): one()*x => x;
-}
-
-@h2 Syntax
-@tangle mulexpr.fsyn
-syntax mulexpr
-{
-  //$ multiplication: non-associative.
-  x[sproduct_pri] := x[>sproduct_pri] ("*" x[>sproduct_pri])+ =># 
-    "(chain 'ast_product _1 _2)" note "mul";
 }
 
 @h2 Multiplicative Semi-Group With Unit.
@@ -701,24 +585,6 @@ class FloatDring[t] {
   proc modeq(px:&t, y:t) { %= (px,y); }
 }
 
-@h2 Syntax
-@tangle divexpr.fsyn
-syntax divexpr
-{
-  //$ division: right associative low precedence fraction form
-  x[stuple_pri] := x[>stuple_pri] "\over" x[>stuple_pri] =># "(Infix)";
-
-  //$ division: left associative.
-  x[s_term_pri] := x[s_term_pri] "/" x[>s_term_pri] =># "(Infix)";
-
-  //$ remainder: left associative.
-  x[s_term_pri] := x[s_term_pri] "%" x[>s_term_pri] =># "(Infix)";
-
-  //$ remainder: left associative.
-  x[s_term_pri] := x[s_term_pri] "\bmod" x[>s_term_pri] =># "(Infix)";
-}
-
-
 @h2 Division Ring
 @tangle ring.flx
 //$ Division ring.
@@ -747,27 +613,6 @@ class Bits[t] {
   fun bnot(x:t)=> ~ x;
 
 }
-
-@h2 Syntax
-@tangle bitexpr.fsyn
-syntax bitexpr
-{
-  //$ Bitwise or, left associative.
-  x[sbor_pri] := x[sbor_pri] "\|" x[>sbor_pri] =># "(Infix)";
-
-  //$ Bitwise xor, left associative.
-  x[sbxor_pri] := x[sbxor_pri] "\^" x[>sbxor_pri] =># "(Infix)";
-
-  //$ Bitwise exclusive and, left associative.
-  x[sband_pri] := x[sband_pri] "\&" x[>sband_pri] =># "(Infix)";
-
-  //$ Bitwise left shift, left associative.
-  x[sshift_pri] := x[sshift_pri] "<<" x[>sshift_pri] =># "(Infix)";
-
-  //$ Bitwise right shift, left associative.
-  x[sshift_pri] := x[sshift_pri] ">>" x[>sshift_pri] =># "(Infix)";
-}
-
 @h2 Integer
 @tangle integer.flx
 

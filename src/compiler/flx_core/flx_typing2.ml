@@ -60,9 +60,25 @@ let all_tunits ts =
     true
   with Not_found -> false
 
+let rec kindcode_of_typecode (t:typecode_t) : kindcode_t =
+  let kt t = kindcode_of_typecode t in
+  match t with
+  | `TYP_name (_,"TYPE",[]) -> KND_type
+  | `TYP_name (_,"UNITSUM",[]) -> KND_unitsum
+  | `TYP_name (_,"COMPACTLINEAR",[]) -> KND_compactlinear
+  | `TYP_name (_,"BOOL",[]) -> KND_bool
+  | `TYP_name (_,"NAT",[]) -> KND_nat
+  | `TYP_name (_,"GENERIC",[]) -> KND_generic 
+  | `TYP_type_tuple ts -> KND_tuple (List.map kt ts) 
+  | `TYP_function (d,c) -> KND_function (kt d, kt c) 
+  | _ -> 
+   failwith ("Typecode can't convert to kindcode: " ^ string_of_typecode t)
+
+
 let rec kindcode_of_expr (e:expr_t) :kindcode_t =
   let te e = kindcode_of_expr e in
   match e with
+  | #typecode_t as t -> kindcode_of_typecode t
   | `EXPR_name (_,"TYPE",[]) -> KND_type
   | `EXPR_name (_,"UNITSUM",[]) -> KND_unitsum
   | `EXPR_name (_,"COMPACTLINEAR",[]) -> KND_compactlinear
@@ -75,7 +91,9 @@ let rec kindcode_of_expr (e:expr_t) :kindcode_t =
     | [x] -> failwith "Unexpected one element tuple converting to type tuple"
     | _ -> KND_tuple (map te ls)
     end
+(*
   | `EXPR_arrow (_,(a,b)) -> KND_function (te a, te b)
+*)
   | _ -> assert false
 
 let rec expr_of_kindcode (k:kindcode_t): expr_t =
@@ -92,20 +110,6 @@ let rec expr_of_kindcode (k:kindcode_t): expr_t =
   | KND_typeset _ 
   | KND_tpattern  _
   | KND_special _ -> failwith ("Can't convert kindcode " ^ str_of_kindcode k ^ " to expression")
-
-let rec kindcode_of_typecode (t:typecode_t) : kindcode_t =
-  let kt t = kindcode_of_typecode t in
-  match t with
-  | `TYP_name (_,"TYPE",[]) -> KND_type
-  | `TYP_name (_,"UNITSUM",[]) -> KND_unitsum
-  | `TYP_name (_,"COMPACTLINEAR",[]) -> KND_compactlinear
-  | `TYP_name (_,"BOOL",[]) -> KND_bool
-  | `TYP_name (_,"NAT",[]) -> KND_nat
-  | `TYP_name (_,"GENERIC",[]) -> KND_generic 
-  | `TYP_type_tuple ts -> KND_tuple (List.map kt ts) 
-  | `TYP_function (d,c) -> KND_function (kt d, kt c) 
-  | _ -> 
-   failwith ("Typecode can't convert to kindcode: " ^ string_of_typecode t)
 
 let rec typecode_of_expr (e:expr_t) :typecode_t =
   let te e = typecode_of_expr e in

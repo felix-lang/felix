@@ -286,7 +286,7 @@ if name = debugid then print_endline ("Can't find bound symbol table entry, bind
     let domain = 
       try bt sym.Flx_sym.sr base_domain 
       with exn -> 
-       print_endline ("Can't bind base domain type " ^ string_of_typecode base_domain);
+       print_endline ("[Flx_overload] Binding: " ^ name ^ ": Can't bind base domain type " ^ string_of_typecode base_domain);
        print_endline (Printexc.to_string exn);
        assert false
     in

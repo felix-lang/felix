@@ -4,7 +4,6 @@
 @tangler mux.flx=share/lib/std/control/mux.flx
 @tangler spipes.flx=share/lib/std/control/spipes.flx
 
-@tangler spipeexpr.fsyn = share/lib/std/control/spipeexpr.fsyn
 @tangler spipesex-01.flx=test/regress/rt/spipesex-01.flx
 @tangler spipesex-01.expect=test/regress/rt/spipesex-01.expect
 @tangler spipesex-02.flx=test/regress/rt/spipesex-02.flx
@@ -395,35 +394,6 @@ open class Multiplexor
 @h1 Schannel and Pipe syntax
 Special syntax for both pipes and also abbreviation for
 schannel types.
-@tangle spipeexpr.fsyn
-syntax spipeexpr 
-{
-  //$ Left assoc, for schannel pipes.
-  x[ssetunion_pri] := x[ssetunion_pri] "|->" x[>ssetunion_pri] =># "(infix 'pipe)"; 
-
-  //$ Right assoc, for schannel pipes transformers
-  // => BREAKS PATTERN MATCHING, replaced with >=> but can't find any uses
-  //x[ssetunion_pri] := x[>ssetunion_pri] ">=>" x[ssetunion_pri] =># "(infix 'trans_type)"; 
-
-  //$ Non associative, streaming data structure into transducer.
-  x[ssetunion_pri] := x[>ssetunion_pri] ">->" x[>ssetunion_pri] =># "(infix 'xpipe)"; 
-
-  //$ input schannel type %<T
-  x[sprefixed_pri] := "%<" x[spower_pri] =># '`(ast_name ,_sr "ischannel" (,_2))';
-
-  //$ output schannel type %>T
-  x[sprefixed_pri] := "%>" x[spower_pri] =># '`(ast_name ,_sr "oschannel" (,_2))';
-
-  //$ input/output schannel type %<>T
-  x[sprefixed_pri] := "%<>" x[spower_pri] =># '`(ast_name ,_sr "ioschannel" (,_2))';
-
-  //$ duplex schannel type %<INPUT%>OUTPUT
-  x[sprefixed_pri] := "%<" x[spower_pri] "%>" x[spower_pri] =># 
-    '`(ast_name ,_sr "duplex_schannel" (,_2 ,_4))'
-  ;
-
-
-}
 
 
 @tangle schannels.flx

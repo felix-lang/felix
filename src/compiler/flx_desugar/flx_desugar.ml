@@ -546,28 +546,26 @@ ps;
     let vs,con = vs in
     let index,_,props, dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
     (* hackery *)
-    let vs,args = List.fold_left begin fun (vs,args) arg ->
-      match arg with
-      | `TYP_apply (`TYP_name (_,"!",[]), `TYP_name (sr,name,[])) ->
-(*
-print_endline ("Flx_desugar found ref to typeset " ^ name);
-*)
-          let n = seq() in
-          let var = "T" ^ string_of_bid n in
-          (*
-          print_endline ("Implicit var " ^ var);
-          *)
-          (*
-          let v = var,TPAT_name (name,[]) in
-          *)
-(*
-          let v = var, KND_typeset name in
-*)
+    let fix_typeset t =
+      let extra_tvars = ref [] in
+      let rec fix_excl t =
+	match t with
+	| `TYP_apply (`TYP_name (_,"!",[]), `TYP_name (sr,name,[])) ->
+	  let n = seq() in
+	  let var = "T" ^ string_of_bid n in
+	  let v = var, KND_tpattern (`TYP_name (sr,name,[])) in
+	  let arg = `TYP_name (sr,var,[]) in
+	  extra_tvars := v :: !extra_tvars;
+	  arg
+       | t -> Flx_maps.map_type fix_excl t
+      in
+      let t = fix_excl t in
+      !extra_tvars, t
+    in 
 
-          let v = var, KND_tpattern (`TYP_name (sr,name,[])) in
-          let arg = `TYP_name (sr,var,[]) in
-          v::vs, arg::args
-      | x -> vs, x::args
+    let vs,args = List.fold_left begin fun (vs,args) arg ->
+      let vs', arg = fix_typeset arg in
+      vs' @ vs, arg :: args
     end (List.rev vs, []) args
     in
     Dcl (sr, name', index, access, (List.rev vs, con),

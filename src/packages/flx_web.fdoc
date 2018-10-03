@@ -3596,7 +3596,7 @@ object fdoc_button () implements button-factory_t = {
 }
 
 export fun setup of (string) as "fdoc_button_setup";
-export fun fdoc_button of () as "fdoc_button";
+export fun fdoc_button of (unit) as "fdoc_button";
 
 
 @
@@ -3673,7 +3673,7 @@ object fdoc_edit () implements edit-interface_t = {
 }
 
 export fun setup of (string) as "fdoc_edit_setup";
-export fun fdoc_edit of () as "fdoc_edit";
+export fun fdoc_edit of (unit) as "fdoc_edit";
 
 
 @
@@ -4255,7 +4255,7 @@ object fdoc_scanner () implements fdocscanner-control_t = {
 
  
 export fun setup of (string) as "fdoc_scanner_setup";
-export fun fdoc_scanner of () as "fdoc_scanner";
+export fun fdoc_scanner of (unit) as "fdoc_scanner";
 
 @
 @tangle fdoc_slideshow.flx

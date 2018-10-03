@@ -1,7 +1,7 @@
 @title Control Basics
 @tangler __init__.flx = share/lib/std/control/__init__.flx
 @tangler control.flx  = share/lib/std/control/control.flx
-@tangler swapop.fsyn  = share/lib/grammar/swapop.fsyn
+
 @h1 Control Synopsis
 @tangle __init__.flx
 // stream is part of datatype, included in std/datatype/__init__
@@ -165,12 +165,4 @@ open class Control
 
 }
 @
-
-@tangle swapop.fsyn
-syntax swapop
-{
-  sswapop := "<->" =># "'_swap";
-}
-@
-
 

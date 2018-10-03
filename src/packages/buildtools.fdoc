@@ -93,13 +93,13 @@ class BuildFlxg
     typedef exespec_t = typeof (#exedflt);
 
     fun lexdflt () => (flags=Empty[string]);
-    typedef lexspec_t = typeof #lexdflt;
+    typedef lexspec_t = typeof (#lexdflt);
 
     fun yaccflt () => (flags=Empty[string]);
-    typedef yaccspec_t = typeof #lexdflt;
+    typedef yaccspec_t = typeof (#lexdflt);
 
     fun dypgendflt () => (flags=Empty[string]);
-    typedef dypgenspec_t = typeof #dypgendflt;
+    typedef dypgenspec_t = typeof (#dypgendflt);
 
     gen ocamldep (dir:string, src:string) = {
       var result, dep = Shell::get_stdout$ list$ "ocamldep.opt", "-native","-I", Filename::dirname src, "-I", dir, "-I", tmpdir, src;
