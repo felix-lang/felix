@@ -286,7 +286,7 @@ syntax blocks
 syntax brackets 
 {
   //$ Array expression (deprecated).
-  satom := "[|" sexpr "|]" =># "`(ast_arrayof ,_sr ,(mkl _2))";
+  satom := "[|" sexpr "|]" =># "`(ast_arrayof ,_sr ,(mkexlist _2))";
 
   //$ Short form anonymous function closure.
   satom := "{" sexpr "}" =># "(lazy `((ast_fun_return ,_sr ,_2)))";
@@ -370,7 +370,7 @@ syntax cbind {
   //$ Export a type into C. 
   //$ This is done using a typedef that defines the alias
   //$ specified in the "as" phase to be the type expression.
-  private cbind_stmt := "export" "type" "(" stypexpr ")" "as" sstring ";" =>#
+  private cbind_stmt := "export" "type" "(" stypeexpr ")" "as" sstring ";" =>#
     "`(ast_export_type ,_sr ,_4 ,_7)";
 
   //$ The optional precedence phase specifies
@@ -429,7 +429,7 @@ syntax cbind {
         (let (
           (argt (caadr t))
           (ret (cadadr t)))
-        `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
+        `(ast_fun_decl ,_sr ,name ,vs ,(mktylist argt) ,ret ,ct ,reqs ,prec)
         )
         (giveup))))
     """;
@@ -452,7 +452,7 @@ syntax cbind {
         (prec _7)
         (reqs _8)
       )
-      `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
+      `(ast_fun_decl ,_sr ,name ,vs ,(mktylist argt) ,ret ,ct ,reqs ,prec)
     )
     """;
   stmt := "supertype" stvarlist squalified_name ":" stypeexpr sopt_cstring sopt_prec srequires_clause ";" =>#
@@ -473,7 +473,7 @@ syntax cbind {
         (xreqs _8)
         (reqs `(rreq_and (rreq_atom (Subtype_req)) ,xreqs))
       )
-      `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
+      `(ast_fun_decl ,_sr ,name ,vs ,(mktylist argt) ,ret ,ct ,reqs ,prec)
     )
     """;
   cbind_stmt:= "virtual" "type" sname ";" =># 
@@ -490,7 +490,7 @@ syntax cbind {
   //$ as a C callback.
   private cbind_stmt := "callback" "proc" sname ":" stypeexpr srequires_clause ";" =>#
     """
-    `(ast_callback_decl ,_sr ,_3 ,(mkl2 _5) (ast_void ,_sr) ,_6)
+    `(ast_callback_decl ,_sr ,_3 ,(mktylist _5) (ast_void ,_sr) ,_6)
     """;
 
   //$ Define a special kind of function which can be used
@@ -503,7 +503,7 @@ syntax cbind {
           (ft (second _5))
           (dom (first ft))
           (cod (second ft))
-          (args (mkl2 dom))
+          (args (mktylist dom))
         )
       `(ast_callback_decl ,_sr ,_3 ,args ,cod ,_6)
       )
@@ -660,7 +660,7 @@ syntax cbind {
              (
                (tdec `(ast_abs_decl ,_sr ,_2 ,dfltvs (Pod) (Str ,_2) ,_5))
                (argt `(ast_product ,_sr (,(nos _2) ,(nos _2))))
-               (eqdef `(ast_fun_decl ,_sr "==" ,dfltvs ,(mkl2 argt) ,(nos "bool") (StrTemplate "$1==$2") rreq_true ""))
+               (eqdef `(ast_fun_decl ,_sr "==" ,dfltvs ,(mktylist argt) ,(nos "bool") (StrTemplate "$1==$2") rreq_true ""))
                (instdef `(ast_instance ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2))) (,eqdef)))
                (inherit `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2)))))
              )
@@ -685,7 +685,7 @@ syntax cbind {
              (
                (tdec `(ast_abs_decl ,_sr ,_2 ,dfltvs (Pod) (Str ,_2) ,_5))
                (argt `(ast_product ,_sr (,(nos _2) ,(nos _2))))
-               (eqdef `(ast_fun_decl ,_sr "==" ,dfltvs ,(mkl2 argt) ,(nos "bool") (StrTemplate "$1==$2") rreq_true ""))
+               (eqdef `(ast_fun_decl ,_sr "==" ,dfltvs ,(mktylist argt) ,(nos "bool") (StrTemplate "$1==$2") rreq_true ""))
                (instdef `(ast_instance ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2))) (,eqdef)))
                (inherit `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2)))))
                (inherit2 `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Bits" (,(nos _2)))))
@@ -732,7 +732,7 @@ syntax cbind {
       (let (
         (argt t)
         (ret `(ast_void ,_sr)))
-        `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs "")
+        `(ast_fun_decl ,_sr ,name ,vs ,(mktylist argt) ,ret ,ct ,reqs "")
         )))
     """;
 }
@@ -1427,17 +1427,26 @@ syntax expressions {
 
 // TYPE LANGUAGE (move out later) 
 
-  stype := t[stuple_pri] =># "_1";
+  stype := t[slambda_pri] =># "_1";
+  stypeexpr := t[>sor_condition_pri] =># "_1";
+  stypeexpr_comma_list = list::commalist1<stypeexpr>;
+
+  //$ Anonymous function (lamda).
+  // FIXME: STOP USING EXPR! (works for now)
+  t[slambda_pri] := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=>" sexpr =>#
+    """
+    `(ast_lambda ,_sr (,_3 ,_4 ,(first (first _5)) ((ast_fun_return ,_sr ,_7))))
+    """;
+
   t[stuple_pri] := stypeexpr ("," stypeexpr )+ =># "(chain 'typ_type_tuple _1 _2)";
 
-  stypeexpr := t[>sor_condition_pri] =># "_1";
-
-  t[scomparison_pri]:= t[>scomparison_pri] bin t[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
+  t[scomparison_pri]:= t[>scomparison_pri] bin t[>scomparison_pri] =># 
+   "`(typ_apply ,_sr (,_2 (,_1 ,_3)))";
 
   // right arrows: RIGHT ASSOCIATIVE!
   //$ Function type, right associative.
   t[sarrow_pri] := t[>sarrow_pri] "->" t[sarrow_pri] =># "`(typ_arrow (,_1 ,_3))";
-  t[sarrow_pri] := t[>sarrow_pri] "->" "[" stypeexpr "]" t[sarrow_pri] =># "`(typ_effector (,_1 ,_4 ,_6))";
+  t[sarrow_pri] := t[>sarrow_pri] "->" "[" stype "]" t[sarrow_pri] =># "`(typ_effector (,_1 ,_4 ,_6))";
 
   //$ C function type, right associative.
   t[sarrow_pri] := t[>sarrow_pri] "-->" t[sarrow_pri] =># "`(typ_longarrow (,_1 ,_3))";
@@ -1446,14 +1455,13 @@ syntax expressions {
   t[ssum_pri] := t[>ssum_pri] ("+" t[>ssum_pri])+ =># "(chain 'typ_sum _1 _2)" note "add";
 
   //$ multiplication: non-associative.
-  t[sproduct_pri] := t[>sproduct_pri] ("*" t[>sproduct_pri])+ =># "(chain 'typ_product _1 _2)" note "mul";
+  t[sproduct_pri] := t[>sproduct_pri] ("*" t[>sproduct_pri])+ =># "(chain 'typ_tuple _1 _2)" note "mul";
 
-  //$ Prefix complement.
+  //$ Prefix 
   t[sprefixed_pri] := "~" t[sprefixed_pri] =># "(tPrefix)";
   t[sprefixed_pri] := "!" t[sprefixed_pri] =># "(tPrefix)";
   t[sprefixed_pri] := "+" t[sprefixed_pri] =># "(tprefix 'prefix_plus)";
   t[sprefixed_pri] := "-" t[sprefixed_pri] =># "(tprefix 'neg)";
-  t[sprefixed_pri] := "~" t[sprefixed_pri] =># "(tPrefix)";
 
 
   //$ Fortran power.
@@ -1463,23 +1471,24 @@ syntax expressions {
   //$ Superscript, exponential.
   t[ssuperscript_pri] := t[ssuperscript_pri] "^" t[srefr_pri] =># "`(ast_superscript (,_1 ,_3))";
 
-  t[sapplication_pri] := t[sapplication_pri] t[>sapplication_pri] =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
+  t[sapplication_pri] := t[sapplication_pri] t[>sapplication_pri] =># 
+    "`(typ_apply ,_sr (,_1 ,_2))" note "apply";
 
-  t[sfactor_pri] := t[sfactor_pri] "." t[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
+  t[sfactor_pri] := t[sfactor_pri] "." t[>sfactor_pri] =># "`(typ_apply ,_sr (,_3 ,_1))";
 
  
   t[sthename_pri] := "typeof" "(" sexpr ")" =># "`(typ_typeof ,_sr ,_3)";
 
   t[sthename_pri] := "_typeop" "(" sstring "," stypeexpr "," stypeexpr ")" =>#
     "`(typ_typeop ,_sr ,_3 ,_5 ,_7)";
-  t[sthename_pri] := "&" t[sthename_pri] =># "`(ast_ref ,_sr ,_2)";
+  t[sthename_pri] := "&" t[sthename_pri] =># "`(typ_ref ,_sr ,_2)";
 
   //$ Felix pointer type and address of operator.
   t[sthename_pri] := "_uniq"   t[sthename_pri] =># "`(ast_uniq ,_sr ,_2)";
-  t[sthename_pri] := "_rref"   t[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
-  t[sthename_pri] := "&<"      t[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
-  t[sthename_pri] := "_wref"   t[sthename_pri] =># "`(ast_wref ,_sr ,_2)";
-  t[sthename_pri] := "&>"      t[sthename_pri] =># "`(ast_wref ,_sr ,_2)";
+  t[sthename_pri] := "_rref"   t[sthename_pri] =># "`(typ_rref ,_sr ,_2)";
+  t[sthename_pri] := "&<"      t[sthename_pri] =># "`(typ_rref ,_sr ,_2)";
+  t[sthename_pri] := "_wref"   t[sthename_pri] =># "`(typ_wref ,_sr ,_2)";
+  t[sthename_pri] := "&>"      t[sthename_pri] =># "`(typ_wref ,_sr ,_2)";
   t[sthename_pri] := "@"       t[sthename_pri] =># "(Prefix)";
   t[sthename_pri] := squalified_name =># "_1";
 
@@ -1510,9 +1519,9 @@ syntax expressions {
   // INCONSISTENT GRAMMAR (no separator between items??
   //$ Variant type.
   tatom := "(" stype_variant_items ")" =># "`(ast_variant_type ,_2)";
-    stype_variant_item := "case" sname "of" sexpr =># "`(ctor ,_2 ,_4)";
+    stype_variant_item := "case" sname "of" stypeexpr =># "`(ctor ,_2 ,_4)";
     stype_variant_item := "case" sname =># "`(ctor ,_2 ,(noi 'unit))";
-    stype_variant_item := "`" sname "of" sexpr =># "`(ctor ,_2 ,_4)";
+    stype_variant_item := "`" sname "of" stypeexpr =># "`(ctor ,_2 ,_4)";
     stype_variant_item := "`" sname =># "`(ctor ,_2 ,(noi 'unit))";
 
     stype_variant_item_bar := "|" stype_variant_item =># "_2";
@@ -1522,16 +1531,16 @@ syntax expressions {
     stype_variant_items := stype_variant_item_bar+ =># "_1";
 
   // can't use typeexpr here because trailing ">" is a comparison operator ..
-  tatom := "_pclt<" t[>scomparison_pri] "," t[>scomparison_pri] ">" =># "`(ast_pclt ,_sr ,_2 ,_4)" ;
-  tatom := "_rpclt<" t[>scomparison_pri] "," t[>scomparison_pri] ">" =># "`(ast_rpclt ,_sr ,_2 ,_4)" ;
-  tatom := "_wpclt<" t[>scomparison_pri] "," t[>scomparison_pri] ">" =># "`(ast_wpclt ,_sr ,_2 ,_4)" ;
+  tatom := "_pclt<" t[>scomparison_pri] "," t[>scomparison_pri] ">" =># "`(typ_pclt ,_sr ,_2 ,_4)" ;
+  tatom := "_rpclt<" t[>scomparison_pri] "," t[>scomparison_pri] ">" =># "`(typ_rpclt ,_sr ,_2 ,_4)" ;
+  tatom := "_wpclt<" t[>scomparison_pri] "," t[>scomparison_pri] ">" =># "`(typ_wpclt ,_sr ,_2 ,_4)" ;
 
 
   //$ scalar literals (numbers, strings).
   tatom := sliteral =># "_1";
   tatom := "(" ")" =># "`(typ_type_tuple ,_sr ())";
   tatom := "(" stype ")" =># "_2";
-  tsatom := "extend" stypeexpr_comma_list "with" sexpr "end" =># """
+  tatom := "extend" stypeexpr_comma_list "with" stypeexpr "end" =># """
     `(typ_type_extension ,_sr ,_2 ,_4)
   """;
 
@@ -1601,13 +1610,16 @@ syntax expressions {
 
 
   //$ Low precedence right associative application.
-  x[sdollar_apply_pri] := x[>sdollar_apply_pri] "$" x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
+  x[sdollar_apply_pri] := x[>sdollar_apply_pri] "$" x[sdollar_apply_pri] =># 
+    "`(ast_apply ,_sr (,_1 ,_3))";
 
   //$ Low precedence left associative reverse application.
-  x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[>spipe_apply_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
+  x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[>spipe_apply_pri] =># 
+    "`(ast_apply ,_sr (,_3 ,_1))";
 
   //$ Haskell-ish style infix notation of functions   foo(x,y) => x `(foo) y
-  x[stuple_pri]  := x[stuple_pri] "`(" sexpr ")" sexpr =># " `(ast_apply ,_sr ( ,_3 (,_1 ,_5)))";
+  x[stuple_pri]  := x[stuple_pri] "`(" sexpr ")" sexpr =># 
+    "(binop _3 _1 _5)";
 
   //$ Named temporary value.
   x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";
@@ -1638,9 +1650,9 @@ syntax expressions {
   x[scase_literal_pri] := "`" sinteger =># "`(ast_case_tag ,_sr ,_2))";
 
   //$ Case value.
-  x[scase_literal_pri] := "case" sinteger "of" t[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
-  x[scase_literal_pri] := "`" sinteger "of" t[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
-  x[scase_literal_pri] := "`" sinteger ":" t[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
+  x[scase_literal_pri] := "case" sinteger "of" t[ssum_pri] =># "`(ast_unitsum_literal  ,_sr ,_2 ,_4)";
+  x[scase_literal_pri] := "`" sinteger "of" t[ssum_pri] =># "`(ast_unitsum_literal ,_sr  ,_2 ,_4)";
+  x[scase_literal_pri] := "`" sinteger ":" t[ssum_pri] =># "`(ast_unitsum_literal ,_sr ,_2 ,_4)";
 
   //$ Tuple projection function.
   x[scase_literal_pri] := "proj" sinteger "of" t[ssum_pri] =># "`(ast_projection ,_2 ,_4)";
@@ -1701,7 +1713,8 @@ syntax expressions {
 
 //------------------------------------------------------------------------
   //$ Operator whitespace: application.
-  x[sapplication_pri] := x[sapplication_pri] x[>sapplication_pri] =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
+  x[sapplication_pri] := x[sapplication_pri] x[>sapplication_pri] =># 
+    "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
 
   //$ Variant index.
   x[sapplication_pri] := "caseno" x[>sapplication_pri] =># "`(ast_case_index ,_sr ,_2)";
@@ -1723,7 +1736,8 @@ syntax expressions {
 
 //------------------------------------------------------------------------
   //$ Reverse application.
-  x[sfactor_pri] := x[sfactor_pri] "." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
+  x[sfactor_pri] := x[sfactor_pri] "." x[>sfactor_pri] =># 
+    "`(ast_apply ,_sr (,_3 ,_1))";
 
 
   //$ Reverse application with dereference.
@@ -1893,7 +1907,7 @@ syntax expressions {
       (
          (argt _3)
          (ret (nos "bool"))
-         (matchings `((,_1 ,_5)((pat_setform_any ,_sr)(ast_typed_case 0 2))))
+         (matchings `((,_1 ,_5)((pat_setform_any ,_sr)(ast_false ,_sr))))
          (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,matchings)))))
          (param `(,_sr PVal _a ,argt none)) ;; one parameter
          (params `( Satom ,param ))            ;; parameter tuple list
@@ -2214,8 +2228,6 @@ syntax functions {
      `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,noretype Function () ,body)
     )
     """;
-
-    stypeexpr_comma_list = list::commalist1<stypeexpr>;
 
 
   sopt_cstring := "=" scode_spec =># "`(some ,_2)";
@@ -2618,12 +2630,16 @@ SCHEME """
   (define (qnoi c x)`(ast_lookup (,(noi c) ,(symbol->string x) ())))
 
   ;; polymorphic parameters
+  (define dummysr '("dummysr" 0 0 0 0))
   (define (typesoftvarlist x) (map nos (map first (first x))))
-  (define dfltaux '( (ast_tuple ("dummy" 0 0 0 0) ()) ()))
-  (define dfltvs `( () ,dfltaux)) ;; vs list: name,type,constraint triple
+
+
+  (define tunit `(typ_tuple ,dummysr ())) ;; unit type
+  (define dfltaux `(,tunit ())) ;; constraint unit, typeclass list empty
+  (define dfltvs `( () ,dfltaux)) ;; vs list: name list and constraint pair
   (define unitparam '((Slist ()) none))
   (define dfltparams `(,unitparam))
-  (define dflteffects '(ast_tuple ("dummy" 0 0 0 0) ())) ;; type unit
+  (define dflteffects tunit)
 )
 """;
 
@@ -2670,9 +2686,9 @@ SCHEME """
 """;
 
 SCHEME """
-(define (mkl x)
+(define (mkexlist x)
   (begin
-  ;;(display "mkl x=")(display x)
+  ;;(display "mkexlist x=")(display x)
   (if (pair? x)
     (if (eq? (first x) 'ast_tuple)
       (if (pair? (cddr x)) (caddr x) (list x))
@@ -2682,16 +2698,17 @@ SCHEME """
 """;
 
 SCHEME """
-(define (mkl2 x)
+(define (mktylist x)
   (begin
-  ;;(display "mkl2 x=")(display x)
+  ;;(display "mkl x=")(display x)
   (if (pair? x)
-    (if (eq? (first x) 'ast_product)
+    (if (eq? (first x) 'typ_tuple )
       (if (pair? (cddr x)) (caddr x) (list x))
       (list x))
     (list x)))
 )
 """;
+
 
 SCHEME """
 (define (cal_funkind adjs fk)
@@ -2708,7 +2725,7 @@ SCHEME """
 """;
 SCHEME """
 (define (tvfixup_folder vsct vtc)
-  (begin ;;(display "tvfixup_folder vsct=")(display vsct)(display ", vtc=")(display vtc)(display "\\n")
+  (begin ;;(display "\n*********\ntvfixup_folder vsct=")(display vsct)(display ", vtc=")(display vtc)(display "\n")
   (let*
     (
       (vs (first vsct))
@@ -2720,13 +2737,13 @@ SCHEME """
         (cond
           ((eq? 'NoConstraint c) ct )
           ((eq? 'Eq (first c)) ;; type  valconstraint
-            `(ast_intersect
+            `(typ_intersect
               ((ast_type_match ,_sr ((ast_name ,_sr ,v ()) ((,(second c) ()))))
               ,ct)
             )
           )
           ((eq? 'In (first c)) ;; type constraint
-            `(ast_intersect
+            `(typ_intersect
               ((ast_isin ((ast_name ,_sr ,v ()) ,(second c)))
               ,ct)
             )
@@ -2736,13 +2753,13 @@ SCHEME """
       )
     )
     (begin
-    ;;  (display "vs=")(display vs)
-    ;;  (display "\\nct=")(display ct)
-    ;;  (display "\\nv=")(display v)
-    ;;  (display "\\nt=")(display t)
-    ;;  (display "\\nc=")(display c)
-    ;;  (display "\\nct2=")(display ct2)
-    ;;  (display "\\n")
+    ;; (display "vs=")(display vs)
+    ;; (display "\nct=")(display ct)
+    ;; (display "\nv=")(display v)
+    ;; (display "\nt=")(display t)
+    ;; (display "\nc=")(display c)
+    ;; (display "\nct2=")(display ct2)
+    ;; (display "\n")
     (list (cons `(,v ,t) vs) ct2))
 ))))
 """;
@@ -2756,12 +2773,12 @@ SCHEME """
   (begin ;;(display "tvfixup tv=")(display tv)(display ", ct=")(display ct)(display "\\n")
   (let*
     (
-      (vscs (fold_left tvfixup_folder `(() (ast_tuple ,_sr ())) tv))
+      (vscs (fold_left tvfixup_folder `(() (typ_tuple ,_sr ())) tv))
       (vs (first vscs))
       (cs (second vscs))
       (rtc (first ct))
       (rtr (second ct))
-      (ct `((ast_intersect (,rtc ,cs)) ,rtr))
+      (ct `((typ_intersect (,rtc ,cs)) ,rtr))
     )
     (begin
     ;;  (display "vs=")(display vs)
@@ -2801,9 +2818,13 @@ SCHEME """
 """;
 
 SCHEME """
-  (define (infix op) `(ast_apply ,_sr (,(noi op) (,_1 ,_3))))
+  (define (infix op) `(ast_apply ,_sr (,(noi op) (ast_tuple ,_sr (,_1 ,_3)))))
 """;
 
+SCHEME """
+  (define (binop f a b)`(ast_apply ,_sr (,f (ast_tuple ,_sr (,a ,b)))))
+""";
+ 
 SCHEME """
   (define (prefix op) `(ast_apply ,_sr (,(noi op) ,_2)))
 """;
@@ -2826,7 +2847,11 @@ SCHEME """
 
 
 SCHEME """
-  (define (Infix) `(ast_apply ,_sr (,(nos _2) (,_1 ,_3))))
+  (define (Infix) (binop (nos _2) _1 _3))
+""";
+
+SCHEME """
+  (define (tInfix) `(typ_apply ,_sr (,(nos _2) (,_1 ,_3))))
 """;
 
 SCHEME """
@@ -3265,7 +3290,7 @@ SCHEME """
         `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_3 ()),_7)))
+          ,(binop (noi '<=) ,(ast_name ,_sr ,_3 ()) _7)
           ,(string-append "break_" _1)
         ))
         `(,_8)
@@ -3284,7 +3309,7 @@ SCHEME """
         `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi '<) ((ast_name ,_sr ,_3 ()),_7)))
+          ,(binop (noi '<) ,(ast_name ,_sr ,_3 ()) _7)
           ,(string-append "break_" _1)
         ))
         `(,_8)
@@ -3506,7 +3531,7 @@ syntax loops
         `((ast_var_decl ,_sr ,_4 ,dfltvs (some ,_6) (some ,_8)))
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_4 ()),_10)))
+         ,(binop (noi '<=) `(ast_name ,_sr ,_4 ()) _10)
           ,(string-append "break_" _1)
         ))
         `(,_11)
@@ -3530,7 +3555,7 @@ syntax loops
         `((ast_var_decl ,_sr ,_4 ,dfltvs none (some ,_6)))
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_4 ()) ,_8)))
+          ,(binop (noi '<=) `(ast_name ,_sr ,_4 ()) _8)
           ,(string-append "break_" _1)
         ))
         `(,_9)
@@ -3554,7 +3579,7 @@ syntax loops
         `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi '>) ((ast_name ,_sr ,_3 ()),_7)))
+          ,(binop (noi '>) `(ast_name ,_sr ,_3 ()) _7)
           ,(string-append "break_" _1)
         ))
         `((ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
@@ -3579,7 +3604,7 @@ syntax loops
         `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi '>) ((ast_name ,_sr ,_4 ()),_10)))
+          (binop (noi '>) `(ast_name ,_sr ,_4 ()) _10)
           ,(string-append "break_" _1)
         ))
         `((ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
@@ -3604,7 +3629,7 @@ syntax loops
         `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi '>) ((ast_name ,_sr ,_4 ()) ,_8)))
+          ,(binop (noi '>) `(ast_name ,_sr ,_4 ()) _8)
           ,(string-append "break_" _1)
         ))
         `((ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
@@ -3980,11 +4005,14 @@ syntax patterns {
   //$ This allows for variables in the list syntax and bindings should "just work"
   private scons_pattern :="[" slist_pattern "]" =># 
     "_2";
-  private slist_pattern := scoercive_pattern "," slist_pattern  =># """`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))""";
+  private slist_pattern := scoercive_pattern "," slist_pattern  =># 
+    """`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))""";
   private slist_pattern := scoercive_pattern =># 
     """`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 
       (pat_const_ctor ,_sr ,(nos "Empty") ))))""";
-  private slist_pattern := scoercive_pattern ",," scoercive_pattern =># """`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))""";
+  private slist_pattern := scoercive_pattern ",," scoercive_pattern =># 
+    """`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))""";
+
   private scons_pattern :="[" "]" =># """`(pat_const_ctor ,_sr ,(nos "Empty"))""";
 
   //$ Match a tuple of at least 3 elements.
@@ -4118,6 +4146,8 @@ syntax patterns {
   //$ The range is inclusive.
   //$ The underlying type must support less than operator (<).
   //$ Usually it would be an instance of class Tord.
+
+// FIXME: use slices!!!!
   private satomic_pattern := sliteral ".." sliteral =># "`(pat_range ,_sr ,_1 ,_3)";
 
 }
@@ -4483,12 +4513,12 @@ syntax statements {
   //$ details of the type to be accessed so as to define operations
   //$ on it, inside the same space as the definition, but leaves
   //$ the type abstract externally.
-  stmt := stype_qual* "type" sdeclname "=" "new" sexpr ";" =>#
+  stmt := stype_qual* "type" sdeclname "=" "new" stype ";" =>#
     """
     `(ast_newtype ,_sr ,(first _3) ,(second _3) ,_6)
     """;
 
-  stmt := "instance" "type" sdeclname "=" sexpr ";" =>#
+  stmt := "instance" "type" sdeclname "=" stype ";" =>#
     """
     `(ast_instance_type ,_sr ,(first _3) ,(second _3) ,_5)
     """;
@@ -4508,21 +4538,22 @@ syntax statements {
 
   //$ A constraint specifying types require an instance
   //$ of a particular type class.
-  stype_constraint := "with" stypeclass_constraint_list =># "`((ast_tuple,_sr()) ,_2)";
+  stype_constraint := "with" stypeclass_constraint_list =># 
+   "`((typ_tuple ,_sr ()) ,_2)";
 
   //$ A predicative or equational constraint.
-  stype_constraint := "where" sexpr =># "`(,_2 ())";
+  stype_constraint := "where" stype =># "`(,_2 ())";
 
   //$ Both types of constraint together.
-  stype_constraint := "with" stypeclass_constraint_list "where" sexpr =>#
+  stype_constraint := "with" stypeclass_constraint_list "where" stype =>#
     "`(,_4 ,_2)";
   
   //$ Both types of constraint together.
-  stype_constraint := "where" sexpr "with" stypeclass_constraint_list =>#
+  stype_constraint := "where" stype "with" stypeclass_constraint_list =>#
     "`(,_2 ,_4)";
 
   //$ The constraint is empty if the polymorphism is parametric.
-  stype_constraint := sepsilon =># "`((ast_tuple,_sr())())";
+  stype_constraint := sepsilon =># "`((typ_tuple ,_sr ())())";
 
   //$ Individual type variable equational constraint.
   seqorin:= "=" stypeexpr =># "`(Eq ,_2)";
@@ -4548,12 +4579,12 @@ syntax statements {
   //$ a possibly empty list of type variables with 
   //$ individual constraints, plus an optional
   //$ type constraint relating the specified variables.
-  stvarlist:= sepsilon =># "dfltvs";
-  stvarlist:= "[" stvar_comma_list stype_constraint "]" =>#
+  stvarlist := sepsilon =># "dfltvs";
+  stvarlist := "[" stvar_comma_list stype_constraint "]" =>#
     "(tvfixup _2 _3)";
 
-  stypeparameter:= sname ":" x[sarrow_pri] =># "`(,_1 ,_3)";
-  stypeparameter:= sname =># "`(,_1 ,(noi 'typ_none))";
+  stypeparameter := sname ":" t[sarrow_pri] =># "`(,_1 ,_3)";
+  stypeparameter := sname =># "`(,_1 ,(noi 'typ_none))";
   stypeparameter_comma_list := sepsilon =># "()";
   stypeparameter_comma_list := stypeparameter ("," stypeparameter)* =># "(cons _1 (map second _2))";
 
@@ -4905,13 +4936,16 @@ syntax texsyms {
   x[stuple_pri] := x[>stuple_pri] "\brack" x[>stuple_pri] =># "(Infix)";
 
 
-  x[scomparison_pri]:= x[>scomparison_pri] bin x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
+  x[scomparison_pri]:= x[>scomparison_pri] bin x[>scomparison_pri] =># 
+    "(binop _2 _1 _3)";
+
   // set ops (note: no setminus, its a standard binop at the moment ;)
   // note: no \Cap or other variants .. would interfere with chain 
   // there's no reason at all to chain these anyhow, they're standard left assoc operators 
 
   // All arrows are right associative .. hmm ..
-  x[sarrow_pri] := x[scase_literal_pri] arr x[sarrow_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))"; 
+  x[sarrow_pri] := x[scase_literal_pri] arr x[sarrow_pri] =># 
+    "(binop _2 _1 _3)";
 }
 
 @
@@ -4989,7 +5023,7 @@ syntax type_decls {
   satom := stypecasematch =># "_1";
 
   //$ Typedef creates an alias for a type.
-  stmt := "typedef" sdeclname "=" stypeexpr ";" =>#
+  stmt := "typedef" sdeclname "=" stype ";" =>#
     """
     `(ast_type_alias ,_sr ,(first _2) ,(second _2) ,_4)
     """;
@@ -4997,7 +5031,7 @@ syntax type_decls {
   //$ Typedef fun create a type function or functor.
   //$ It maps some types to another type.
   //$ This is the simple expression form.
-  stmt := "typedef" "fun" sdeclname stypefun_args ":" stypeexpr "=>" stypeexpr ";" =>#
+  stmt := "typedef" "fun" sdeclname stypefun_args ":" stypeexpr "=>" stype ";" =>#
     """
     `(mktypefun ,_sr ,(first _3) ,(second _3) ,_4 ,_6 ,_8)
     """;
@@ -5019,17 +5053,17 @@ syntax type_decls {
     )
     """;
 
-  stype_matching := "|" sexpr "=>" stypeexpr =># "`(,_2 ,_4)";
+  stype_matching := "|" sexpr "=>" stype =># "`(,_2 ,_4)";
 
   //$ A typematch expression computes a type based on a pattern match.
   //$ The matching process never rejects a type variable which 
   //$ mighht later match after substitution.
   //$ It also never accepts a match which might later fail to match
   //$ after substitution.
-  stypematch := "typematch" stypeexpr "with" stype_matching+ "endmatch" =>#
+  stypematch := "typematch" stype "with" stype_matching+ "endmatch" =>#
     "`(ast_type_match ,_sr (,_2 ,_4))";
 
-  stypematch := "subtypematch" stypeexpr "with" stype_matching+ "endmatch" =>#
+  stypematch := "subtypematch" stype "with" stype_matching+ "endmatch" =>#
     "`(ast_subtype_match ,_sr (,_2 ,_4))";
 
   //$ A typecase expression computes an expression based on a type match.
@@ -5096,7 +5130,7 @@ syntax type_decls {
                (self-name 'self)
                (self-type 
                  (if (equal? (first (first t5)) 'ast_void)
-                   `(ast_ref ,_sr (ast_name ,_sr ,struct-name ,struct-pvs))
+                   `(typ_ref ,_sr (ast_name ,_sr ,struct-name ,struct-pvs))
                    `(ast_name ,_sr ,struct-name ,struct-pvs)
                  )
                )
@@ -5272,8 +5306,7 @@ syntax type_decls {
 
     srecord_type := srecord_mem_decl (";" srecord_mem_decl)* ";" =># 
      "`(ast_record_type ,(cons _1 (map second _2)))";
-    stypelist := stypeexpr ("," stypeexpr)* =># "(cons _1 (map second _2))";
-    stype_extension := "extends" stypelist =># "_2";
+    stype_extension := "extends" stypeexpr_comma_list =># "_2";
     stype_extension := sepsilon =># "()";
 }
 
@@ -5310,7 +5343,7 @@ syntax variables {
     (let
       (
         (names (cons _2 _3))
-        (vals (mkl _5))
+        (vals (mkexlist _5))
       )
       (begin
       ;;(display "names=")(display names)
@@ -5364,7 +5397,7 @@ syntax variables {
     (let
       (
         (names (cons _2 _3))
-        (vals (mkl _5))
+        (vals (mkexlist _5))
       )
       (begin
       ;;(display "names=")(display names)
@@ -5477,8 +5510,10 @@ syntax setexpr
 @tangle cmpexpr.fsyn
 syntax cmpexpr
 {
-  x[scomparison_pri]:= x[>scomparison_pri] cmp x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
-  x[scomparison_pri]:= x[>scomparison_pri] "not" cmp x[>scomparison_pri] =># "`(ast_not ,_sr (ast_apply ,_sr (,_3 (,_1 ,_4))))";
+  x[scomparison_pri]:= x[>scomparison_pri] cmp x[>scomparison_pri] =># 
+    "(binop _2 _1 _3)";
+  x[scomparison_pri]:= x[>scomparison_pri] "not" cmp x[>scomparison_pri] =># 
+   "`(ast_not ,_sr ,(binop _3 _1 _4))";
   cmp := "==" =># "(nos _1)"; 
   cmp := "!=" =># "(nos _1)"; 
   cmp := "\ne" =># '(nos _1)'; 
@@ -5823,7 +5858,7 @@ syntax felix_int_lexer {
     (
       (val (stripus _1))
       (x (parse-int val))
-      (type (first x))
+      ;; (type (first x))
       (value (second x))
     )
     value
@@ -5927,14 +5962,14 @@ syntax felix_float_lexer {
 @tangle unitsum_ops.fsyn
 syntax unitsum_ops 
 {
-  t[ssum_pri] := t[ssum_pri] "`+" t[>ssum_pri] =># "(Infix)";
-  t[ssum_pri] := t[ssum_pri] "`-" t[>ssum_pri] =># "(Infix)";
-  t[ssum_pri] := t[ssum_pri] "`*" t[>ssum_pri] =># "(Infix)";
-  t[ssum_pri] := t[ssum_pri] "`/" t[>ssum_pri] =># "(Infix)";
-  t[ssum_pri] := t[ssum_pri] "`%" t[>ssum_pri] =># "(Infix)";
-  t[ssum_pri] := t[>scomparison_pri] "`==" t[>scomparison_pri] =># "(Infix)";
-  t[ssum_pri] := t[>scomparison_pri] "`<" t[>scomparison_pri] =># "(Infix)";
-  t[ssum_pri] := t[>scomparison_pri] "`>" t[>scomparison_pri] =># "(Infix)";
+  t[ssum_pri] := t[ssum_pri] "`+" t[>ssum_pri] =># "(tInfix)";
+  t[ssum_pri] := t[ssum_pri] "`-" t[>ssum_pri] =># "(tInfix)";
+  t[ssum_pri] := t[ssum_pri] "`*" t[>ssum_pri] =># "(tInfix)";
+  t[ssum_pri] := t[ssum_pri] "`/" t[>ssum_pri] =># "(tInfix)";
+  t[ssum_pri] := t[ssum_pri] "`%" t[>ssum_pri] =># "(tInfix)";
+  t[ssum_pri] := t[>scomparison_pri] "`==" t[>scomparison_pri] =># "(tInfix)";
+  t[ssum_pri] := t[>scomparison_pri] "`<" t[>scomparison_pri] =># "(tInfix)";
+  t[ssum_pri] := t[>scomparison_pri] "`>" t[>scomparison_pri] =># "(tInfix)";
 }
 @
 
@@ -6037,10 +6072,10 @@ syntax listexpr
 syntax boolexpr
 {
   //$ Boolean false.
-  satom := "false" =># "'(ast_typed_case  0 2)";
+  satom := "false" =># "`(ast_false ,_sr)";
 
   //$ Boolean true.
-  satom := "true" =># "'(ast_typed_case  1 2)";
+  satom := "true" =># "`(ast_true ,_sr)";
 
   //$ Logical implication.
   x[simplies_condition_pri] := x[>simplies_condition_pri] "implies" x[>simplies_condition_pri] =># "(Infix)";
@@ -6054,12 +6089,17 @@ syntax boolexpr
   //$ Logical negation (not).
   x[snot_condition_pri] := "not" x[snot_condition_pri]  =># "`(ast_not ,_sr ,_2)";
 
-  x[scomparison_pri]:= x[>scomparison_pri] "\not" cmp x[>scomparison_pri] =># "`(ast_not ,_sr (ast_apply ,_sr (,_3 (,_1 ,_4))))";
+  x[scomparison_pri]:= x[>scomparison_pri] "\not" cmp x[>scomparison_pri] =># 
+    "`(ast_not ,_sr (binop _3 _1 _4))";
 
   // tex logic operators
-  x[stex_implies_condition_pri] := x[>stex_implies_condition_pri]  "\implies" x[>stex_implies_condition_pri] =># "(infix 'implies)";
-  x[stex_or_condition_pri] := x[>stex_or_condition_pri] ( "\lor" x[>stex_or_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
-  x[stex_and_condition_pri] := x[>stex_and_condition_pri] ( "\land" x[>stex_and_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
+  x[stex_implies_condition_pri] := x[>stex_implies_condition_pri]  "\implies" x[>stex_implies_condition_pri] =># 
+    "(infix 'implies)";
+
+  x[stex_or_condition_pri] := x[>stex_or_condition_pri] ( "\lor" x[>stex_or_condition_pri])+ =># 
+    "(chain 'ast_orlist _1 _2)" note "lor";
+  x[stex_and_condition_pri] := x[>stex_and_condition_pri] ( "\land" x[>stex_and_condition_pri])+ =># 
+    "(chain 'ast_andlist _1 _2)" note "land";
   x[stex_not_condition_pri] := "\lnot" x[stex_not_condition_pri]  =># "`(ast_not ,_sr ,_2)";
 
 
@@ -6311,15 +6351,19 @@ syntax regexps {
 syntax stringexpr
 {
   //$ String subscript.
-  x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'subscript) (,_1 ,_4)))";
+  x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "]" =># 
+    "(binop (noi 'subscript) _1 _4)";
 
   //$ String substring.
-  x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'substring) (,_1 ,_4 ,_6)))";
+  x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" sexpr "]" =># 
+    "`(ast_apply ,_sr (,(noi 'substring) (ast_tuple ,_sr (,_1 ,_4 ,_6))))";
 
   //$ String substring, to end of string.
-  x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" "]" =># "`(ast_apply ,_sr (,(noi 'copyfrom) (,_1 ,_4)))";
+  x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" "]" =># 
+   "(binop (noi 'copyfrom) _1 _4)";
 
   //$ String substring, from start of string.
-  x[sfactor_pri] := x[sfactor_pri] "." "[" "to" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'copyto) (,_1 ,_5)))";
+  x[sfactor_pri] := x[sfactor_pri] "." "[" "to" sexpr "]" =># 
+   "(binop (noi 'copyto) _1 _5)";
 }
 

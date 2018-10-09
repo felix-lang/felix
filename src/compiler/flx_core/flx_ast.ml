@@ -71,7 +71,6 @@ and typecode_t = [
   | `TYP_void of Flx_srcref.t                   (** void type *)
   | `TYP_name of Flx_srcref.t * Flx_id.t * typecode_t list
   | `TYP_case_tag of Flx_srcref.t * int
-  | `TYP_typed_case of Flx_srcref.t * int * typecode_t
   | `TYP_lookup of Flx_srcref.t * (expr_t * Flx_id.t * typecode_t list)
   | `TYP_index of Flx_srcref.t * string * index_t
   | `TYP_callback of Flx_srcref.t * qualified_name_t
@@ -151,7 +150,6 @@ and expr_t = [
   | `TYP_void of Flx_srcref.t                   (** void type *)
   | `TYP_name of Flx_srcref.t * Flx_id.t * typecode_t list
   | `TYP_case_tag of Flx_srcref.t * int
-  | `TYP_typed_case of Flx_srcref.t * int * typecode_t
   | `TYP_lookup of Flx_srcref.t * (expr_t * Flx_id.t * typecode_t list)
   | `TYP_index of Flx_srcref.t * string * index_t
   | `TYP_callback of Flx_srcref.t * qualified_name_t
@@ -825,7 +823,6 @@ let src_of_typecode = function
   | `TYP_void s
   | `TYP_name  (s,_,_)
   | `TYP_case_tag (s,_)
-  | `TYP_typed_case (s,_,_)
   | `TYP_lookup (s,_)
   | `TYP_index (s,_,_)
   | `TYP_callback (s,_)
@@ -1095,7 +1092,6 @@ let typecode_of_qualified_name = function
 *)
   | `AST_name (sr,name,ts) -> `TYP_name (sr,name,ts)
   | `AST_case_tag (sr,v) -> `TYP_case_tag (sr,v)
-  | `AST_typed_case (sr,v,t) -> `TYP_typed_case (sr,v,t)
   | `AST_lookup (sr,(e,name,ts)) -> `TYP_lookup (sr,(e,name,ts))
   | `AST_index (sr,name,index) -> `TYP_index (sr,name,index)
   | `AST_callback (sr,name) -> `TYP_callback (sr,name)
@@ -1106,7 +1102,6 @@ let qualified_name_of_typecode = function
 *)
   | `TYP_name (sr,name,ts) -> Some (`AST_name (sr,name,ts))
   | `TYP_case_tag (sr,v) -> Some (`AST_case_tag (sr,v))
-  | `TYP_typed_case (sr,v,t) -> Some (`AST_typed_case (sr,v,t))
   | `TYP_lookup (sr,(e,name,ts)) -> Some (`AST_lookup (sr,(e,name,ts)))
   | `TYP_index (sr,name,index) -> Some (`AST_index (sr,name,index))
   | `TYP_callback (sr,name) -> Some (`AST_callback (sr,name))

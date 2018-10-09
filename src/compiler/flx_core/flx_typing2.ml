@@ -7,9 +7,11 @@ open List
 let qualified_name_of_expr e =
   match e with
   (* | `EXPR_void sr -> Some (`AST_void sr) *)
+  | `TYP_name (sr,name,ts) -> Some (`AST_name (sr,name,ts))
   | `EXPR_name (sr,name,ts) -> Some (`AST_name (sr,name,ts))
   | `EXPR_case_tag (sr,v) -> Some (`AST_case_tag (sr,v))
   | `EXPR_typed_case (sr,v,t) -> Some (`AST_typed_case (sr,v,t))
+  | `TYP_lookup (sr,(e,name,ts)) -> Some (`AST_lookup (sr,(e,name,ts)))
   | `EXPR_lookup (sr,(e,name,ts)) -> Some (`AST_lookup (sr,(e,name,ts)))
   | `EXPR_index (sr,name,index) -> Some (`AST_index (sr,name,index))
   | `EXPR_callback (sr,name) -> Some (`AST_callback (sr,name))
@@ -115,36 +117,16 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   let te e = typecode_of_expr e in
   match e with
   | #typecode_t as t -> t
+  | e ->
 (*
-  | `EXPR_rptsum_type (sr,n,t) -> `TYP_rptsum (n,t)
-  | `EXPR_pclt_type (_,d,c) -> `TYP_pclt (d,c)
-  | `EXPR_rpclt_type (_,d,c) -> `TYP_rpclt (d,c)
-  | `EXPR_wpclt_type (_,d,c) -> `TYP_wpclt (d,c)
-  | `EXPR_record_type (sr,es) -> 
-    let all_blank = fold_left (fun acc (s,_) -> acc && s = "") true es in
-    if all_blank then `TYP_tuple (List.map snd es) 
-    else `TYP_record es
-
-  | `EXPR_polyrecord_type (sr,es,e) -> `TYP_polyrecord (es,e)
-  | `EXPR_variant_type (sr,es) -> `TYP_variant es
-  | `EXPR_void sr -> `TYP_void sr
-  | `EXPR_ellipsis _ -> `TYP_ellipsis
-  | `EXPR_typeof (_,e) -> `TYP_typeof e
-
-  | `EXPR_type_match (sr,(e,ps)) ->
-    `TYP_type_match (e,ps)
-
-  | `EXPR_subtype_match (sr,(e,ps)) ->
-    `TYP_subtype_match (e,ps)
-
-
+print_endline ("Translating exprssion " ^ string_of_expr e ^ " to type");
 *)
+  match e with
   | `EXPR_name (_,"LABEL",[]) -> `TYP_label
   | `EXPR_name (sr,"DEFER",[]) -> `TYP_defer (sr,ref None)
   | `EXPR_name (sr,"_",[]) -> `TYP_patany sr
   | `EXPR_name (sr,name,ts) -> `TYP_name (sr,name,ts)
   | `EXPR_case_tag (sr,v) -> `TYP_case_tag (sr,v)
-  | `EXPR_typed_case (sr,v,t) -> `TYP_typed_case (sr,v,t)
   | `EXPR_lookup (sr,(e,name,ts)) -> `TYP_lookup (sr,(e,name,ts))
   | `EXPR_index (sr,name,index) -> `TYP_index (sr,name,index)
   | `EXPR_callback (sr,name) -> `TYP_callback (sr,name)
@@ -222,6 +204,11 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
 
   (* NOTE SPECIAL NAME HANDLING HACKS!! *)
   | `EXPR_apply (sr, (e1, e2)) ->
+
+
+(* FIXME: we could have a TYP_name as well as EXPR_name .. this should
+all go away when this routine goes away .. but for now ..
+*)
       begin match e1 with
       | `EXPR_name (_, "\\in", []) ->
           begin match typecode_of_expr e2 with
@@ -233,14 +220,20 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
                 "Implementation limitation, 'in' operator requires two " ^
                 "explicit arguments")
           end
+
+      | `TYP_name (_, "~", []) 
       | `EXPR_name (_, "~", []) -> `TYP_dual (typecode_of_expr e2)
+
       | `EXPR_name (_, "typeof", []) -> `TYP_typeof e2
+
+      | `TYP_name (sr, "pow", []) 
       | `EXPR_name (sr, "pow", []) -> 
           begin match e2 with
           | `EXPR_tuple (_,[s1;s2]) -> `TYP_tuple_cons ( sr, typecode_of_expr s1, typecode_of_expr s2)
           | _ -> assert false
           end
 
+      | `TYP_name (sr, "tuple_snoc", []) 
       | `EXPR_name (sr, "tuple_snoc", []) -> 
           begin match e2 with
           | `EXPR_tuple (_,[s1;s2]) -> `TYP_tuple_snoc ( sr, typecode_of_expr s1, typecode_of_expr s2)
@@ -248,11 +241,13 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
           end
 
 
+      | `TYP_name (_, "\\cap", [])
       | `EXPR_name (_, "\\cap", []) -> 
           begin match e2 with
           | `EXPR_tuple (_,[s1;s2]) -> `TYP_setintersection[typecode_of_expr s1; typecode_of_expr s2]
           | _ -> assert false
           end
+      | `TYP_name (_, "\\cup", []) 
       | `EXPR_name (_, "\\cup", []) -> 
           begin match e2 with
           | `EXPR_tuple (_, [s1;s2]) -> `TYP_setunion [typecode_of_expr s1; typecode_of_expr s2]
@@ -264,16 +259,21 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
           | x -> `TYP_typeset [x]
           end
 
+      | `TYP_name (_, "\\&", []) 
       | `EXPR_name (_, "\\&", []) -> 
           begin match e2 with
           | `EXPR_tuple (_,[s1;s2]) -> `TYP_intersect[typecode_of_expr s1; typecode_of_expr s2]
           | _ -> assert false
           end
+
+      | `TYP_name (_, "\\|", []) 
       | `EXPR_name (_, "\\|", []) -> 
           begin match e2 with
           | `EXPR_tuple (_, [s1;s2]) -> `TYP_union [typecode_of_expr s1; typecode_of_expr s2]
           | _ -> assert false
           end
+
+      | `TYP_name (_,"_typeop",[])
       | `EXPR_name (_,"_typeop",[]) ->
           begin match e2 with
           | `EXPR_tuple (_, [s1;s2;s3]) ->
@@ -450,7 +450,6 @@ let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) =
 
   | `TYP_name (sr, id, ts) -> `EXPR_name (sr, id, ts)
   | `TYP_case_tag (sr, i) -> `EXPR_case_tag (sr, i)
-  | `TYP_typed_case (sr, i, ts) -> `EXPR_typed_case (sr, i, ts)
   | `TYP_lookup (sr, (ex,id,ts)) -> `EXPR_lookup (sr, (ex,id,ts))
   | `TYP_index (sr, name, index) -> `EXPR_index (sr, name, index)
   | `TYP_callback (sr, qn) -> `EXPR_callback (sr, qn)
@@ -558,7 +557,6 @@ let string_of_type_name (t:typecode_t) = match t with
   | `TYP_void _ -> "`TYP_void"
   | `TYP_name _ -> " `TYP_name"
   | `TYP_case_tag _ -> " `TYP_case_tag"
-  | `TYP_typed_case _ -> " `TYP_typed_case"
   | `TYP_lookup _ -> " `TYP_lookup"
   | `TYP_index _ -> " `TYP_index"
   | `TYP_callback _ -> " `TYP_callback"

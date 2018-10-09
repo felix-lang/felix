@@ -550,7 +550,6 @@ print_endline ("Binding `TYP_name " ^s^ " via params to " ^ sbt bsym_table t);
 
   | `TYP_name _
   | `TYP_case_tag _
-  | `TYP_typed_case _
   | `TYP_lookup _
   | `TYP_callback _ as x ->
       let x =

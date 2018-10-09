@@ -67,6 +67,51 @@ let generic_function_dispatcher bsym_table counter sr f a =
 
 *)
 
+(* 
+Cases
+
+1. f is an integer literal:
+   1.1 a is a tuple: tuple projection or fail
+   1.2 a is an array: tuple projection or fail
+   1.3 otherwise, try appy (f,a), if that fails, fail
+
+2. f is a unitsum literal (as above):
+   2.1 a is a tuple or pointer thereto: tuple projection or fail
+   2.2 a is an array or pointer thereto: tuple projection or fail
+   2.3 otherwise, try appy (f,a), if that fails, fail
+
+3. f is a constant integer slice:
+   3.1 a is an array or pointer thereto: array slice or fail
+   3.2 otherwise, try "apply" (f,a), if that fails, fila
+
+4. f is a simple name
+   4.1 if it is "apply", try to do a lookup, if that fails, fail
+   4.2 if it is a special name, try to handle that, if that fails, fail
+   4.3 otherwise there are some cases:
+       4.3.1 f is "+" and the argument is a pair of records/tuples/arrays
+             record/tuple/array addition
+       4.3.2 its a function, so lookup with sig, if that fails fail
+             (functions include projections, injections, C funs,
+             etc etc)
+       4.3.3 its a struct: lookup _ctor_name, if that fails, fail
+       4.3.4 its a non-function, so try "apply"
+
+5. f is a qualified name
+   As above more or less .. (except + case)
+
+6. f is a suffixed name
+   6.1 it must be a function or struct, lookup with suffix
+       if that fails, fail, otherwise check the argument
+       agrees with the suffix, if not add a coercion
+7. f is an integer expression:
+   7.1 if the argument is an array, try a projection
+   7.2 fail is tuple
+   7.3 otherwise try "apply"
+
+
+*)
+
+
 exception TryNext
   
 let cal_bind_apply 
@@ -115,7 +160,7 @@ let cal_bind_apply
       with TryNext ->
    
       (* ---------------------------------------------------------- *)
-      (* special case, constant tuple projection  *) 
+      (* special case, constant tuple or array projection given by integer *) 
       (* ---------------------------------------------------------- *)
       try match f' with
       | `EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=s}) ->
@@ -183,7 +228,7 @@ let cal_bind_apply
       with Flx_dot.OverloadResolutionError ->
 
       (* ---------------------------------------------------------- *)
-      (* special case, integer expression as tuple or array projection  *) 
+      (* special case, integer expression as array projection  *) 
       (* ---------------------------------------------------------- *)
       try 
         let f = try be f' with _ -> raise Flx_dot.OverloadResolutionError in

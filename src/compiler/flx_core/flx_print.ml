@@ -462,8 +462,6 @@ and st prec tc : string =
           else "[" ^ catmap ", " string_of_typecode ts ^ "]"
         )
     | `TYP_case_tag (_,v) -> 0, "case " ^ si v
-    | `TYP_typed_case (_,v,t) ->
-      0, "(case " ^ si v ^ " of " ^ string_of_typecode t ^ ")"
 
     | `TYP_lookup (_,(e,name, ts)) ->
         0,

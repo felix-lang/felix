@@ -114,7 +114,15 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
   let sr = src_of_expr e in
   let seq () = state.fresh_bid () in
   match e with
-  | #typecode_t as t -> assert false 
+  (* FIXME:  this shouldn't happen but .. its all hacks for now *)
+  | `TYP_name (sr,name,ts) -> 
+    [],`EXPR_name (sr,name,ts)
+
+  | #typecode_t as t -> 
+print_endline ("[Flx_desugar: rex] analysing expression got a type " ^
+  string_of_expr e);
+print_endline (Flx_srcref.long_string_of_src sr);
+    assert false 
 (*
   | `EXPR_rptsum_type _
   | `EXPR_ellipsis _

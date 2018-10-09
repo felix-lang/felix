@@ -7,7 +7,8 @@ open Flx_bid
 *)
 
 (* handle curried type functions *)
-let mktypefun sr name vs args return_type body =
+
+let mktypelambda sr args return_type body =
   let argtyp t = match t with
     | [] -> KND_tuple [] 
     | [x] -> x
@@ -25,6 +26,12 @@ let mktypefun sr name vs args return_type body =
     done;
     !b
   in
+  body
+
+
+
+let mktypefun sr name vs args return_type body =
+  let body = mktypelambda sr args return_type body in
   STMT_type_alias
   (
     sr,

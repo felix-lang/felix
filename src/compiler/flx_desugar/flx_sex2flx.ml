@@ -4,6 +4,8 @@ open Sex_types
 open Flx_typing2
 open List
 
+exception Not_type
+
 let prefix p s =
   let n = String.length p in
   n <= String.length s && p = String.sub s 0 n
@@ -46,7 +48,8 @@ and kind_of_sex sr w : kindcode_t =
   let x = xexpr_t sr w in
   kindcode_of_expr x
 
-and type_of_sex sr w : typecode_t =
+and type_of_sex sr w : typecode_t = xtype_t sr w
+(*
 (*
   print_endline ("[type_of_sex] Converting sexp " ^ Sex_print.string_of_sex w ^ " to a type");
 *)
@@ -71,6 +74,116 @@ and type_of_sex sr w : typecode_t =
   print_endline ("Felix type is " ^ Flx_print.string_of_typecode y);
 *)
   y
+*)
+
+and xtype_t sr x : typecode_t = 
+  let ti t = xtype_t sr t in
+  let ex e = xexpr_t sr e in
+  match x with
+ | Lst [Id "ast_literal";  sr; Str "int"; Str internal_value; Str c_value ] ->
+   let v = 
+     begin 
+       try int_of_string internal_value 
+       with _ -> 
+         err x "Translating integer literal to type"
+     end
+   in
+   `TYP_unitsum v
+
+  | Lst [Id "ast_name"; sr; id; Lst ts] -> 
+    let ts = map ti ts in
+    let id = xid id in
+    `TYP_name (xsr sr, id, ts)
+
+  | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> 
+   (* this is a hack should just process qualified names .. *)
+    `TYP_lookup (sr,(ex e, s,map ti ts))
+
+  | Lst [Id "typ_apply";  sr; Lst [e1; e2]] -> `TYP_apply(ti e1, ti e2)
+  | Lst [Id "typ_type_tuple";  sr; Lst es] -> `TYP_type_tuple (map ti es)
+  | Lst [Id "typ_typeop"; sr; Str name; ty; kd] ->
+    `TYP_typeop  (xsr sr, name, ti ty, kind_of_sex (xsr sr) kd)
+ | Lst [Id "ast_record_type"; Lst rs] ->
+   let rs =
+     map (function
+     | Lst [Str s; e] -> s, ti e
+     | x -> err x "Error in AST_record_type"
+     )
+     rs
+   in `TYP_record (rs)
+
+ | Lst [Id "ast_polyrecord_type"; Lst rs; e] ->
+   let rs =
+     map (function
+     | Lst [Str s; e] -> s, ti e
+     | x -> err x "Error in AST_polyrecord_type"
+     )
+     rs
+   in `TYP_polyrecord (rs, ti e)
+
+ | Lst [Id "ast_variant_type"; Lst rs] ->
+   let rs =
+     map (function
+     | Lst [Id "ctor"; Str s; e] -> `Ctor (s, ti e)
+     | Lst [Id "base"; e] -> `Base (ti e)
+     | x -> err x "Error in AST_variant_type"
+     )
+     rs
+   in `TYP_variant (rs)
+
+ | Lst [Id "typ_intersect"; Lst es] -> `TYP_intersect (map ti es)
+
+ | Lst [Id "typ_patvar";  sr; Str s] -> `TYP_patvar (xsr sr, s)
+ | Lst [Id "typ_patany"; sr] -> `TYP_patany (xsr sr)
+ | Lst [Id "ast_void"; sr] -> `TYP_void (xsr sr)
+ | Lst [Id "ast_ellipsis"; sr] -> `TYP_ellipsis
+ | Lst [Id "typ_arrow";  Lst [e1; e2]] -> `TYP_function (ti e1, ti e2)
+ | Lst [Id "typ_effector";  Lst [e1; e2; e3]] -> `TYP_effector (ti e1, ti e2, ti e3)
+ | Lst [Id "typ_longarrow";  Lst [e1; e2]] -> `TYP_cfunction (ti e1, ti e2)
+
+ (* pointers *)
+ | Lst [Id "typ_ref"; sr; e] -> `TYP_pointer (ti e)
+ | Lst [Id "typ_rref"; sr; e] -> `TYP_rref (ti e)
+ | Lst [Id "typ_wref"; sr; e] -> `TYP_wref (ti e)
+ | Lst [Id "typ_pclt"; sr; d; c] -> `TYP_pclt (ti d, ti c)
+ | Lst [Id "typ_rpclt"; sr; d; c] -> `TYP_rpclt (ti d, ti c)
+ | Lst [Id "typ_wpclt"; sr; d; c] -> `TYP_wpclt (ti d, ti c)
+
+ | Lst [Id "typ_tuple"; sr; Lst es] -> `TYP_tuple (map ti es)
+ | Lst [Id "typ_sum";  sr; Lst es] -> `TYP_sum (map ti es)
+ | Lst [Id "ast_rptsum_type"; sr; d; c] -> `TYP_rptsum (ti d, ti c)
+ | Lst [Id "typ_typeof";  sr; e] -> `TYP_typeof (ex e)
+
+ | Lst [Id "ast_type_match";  sr; Lst [t; Lst ts]] ->
+   let ts =
+     map (function
+       | Lst [t1; t2] -> ti t1, ti t2
+       | x -> err x "ast_typematch typerrror"
+     )
+     ts
+   in `TYP_type_match (ti t, ts)
+   (* in `EXPR_type_match (xsr sr,(ti t, ts)) *)
+
+ | Lst [Id "ast_subtype_match";  sr; Lst [t; Lst ts]] ->
+   let ts =
+     map (function
+       | Lst [t1; t2] -> ti t1, ti t2
+       | x -> err x "ast_subtypematch typerrror"
+     )
+     ts
+   in `TYP_subtype_match (ti t, ts)
+   (* in `EXPR_subtype_match (xsr sr,(ti t, ts)) *)
+
+  | Lst [Id "typ_type_extension"; sr; Lst bases; extension] ->
+    let bases = List.map ti bases in
+    `TYP_type_extension (xsr sr, bases, ti extension)
+
+  | Lst ls ->  
+    print_endline ("Unexpected type term"); 
+    print_endline ("(" ^ Flx_util.catmap "\n" Sex_print.string_of_sex ls ^ ")");
+    raise Not_type
+
+  | _ -> raise Not_type
 
 and xid x = match x with
   | Str id | Id id -> Flx_id.of_string id
@@ -87,6 +200,10 @@ and xexpr_t sr x =
   let xvs x = xvs_list_t sr x in
   let xs x = xstatement_t sr x in
   let xsts x =  lst "statement" xs x in
+(*
+  try (xtype_t sr x :> expr_t)
+  with Not_type ->
+*)
   match x with
   | Str s ->
       print_endline ("Deprecated Scheme string '" ^ s ^ "' as Felix string");
@@ -117,39 +234,21 @@ and xexpr_t sr x =
   | Lst [Id "ast_interpolate";  sr; Str s] -> `EXPR_interpolate (xsr sr, s)
   | Lst [Id "ast_noexpand"; sr; e] -> `EXPR_noexpand (xsr sr,ex e)
   | Lst [Id "ast_name"; sr; id; Lst ts] -> 
+print_endline ("Processing ast_name "^xid id^" in xexpr");
     let ts = map ti ts in
     let id = xid id in
-(*
-    if List.length ts > 0 then
-print_endline ("EXPR_name " ^ id ^ "[" ^ Flx_util.catmap "," Flx_print.string_of_typecode ts ^ "]");
-*)
     `EXPR_name (xsr sr, id, ts)
-
-  (* can't occur in user code
-  | Lst [Id "ast_index";  Str s ; Int i] -> `EXPR_index (sr,s,ii i)
-  *)
 
   | Lst [Id "ast_case_tag";  sr; Int i] -> `EXPR_case_tag (xsr sr,ii i)
   | Lst [Id "ast_ainj"; sr; ix; tp] -> 
     `EXPR_ainj (xsr sr, ex ix, ti tp) 
 
-  | Lst [Id "ast_typed_case";  Int i; t] -> `EXPR_typed_case (sr,ii i,ti t)
+  | Lst [Id "ast_false"; sr] -> `EXPR_typed_case (xsr sr,0,`TYP_unitsum 2)
+  | Lst [Id "ast_true"; sr ] -> `EXPR_typed_case (xsr sr,1,`TYP_unitsum 2)
+  | Lst [Id "ast_unitsum_literal";  sr; Int i; t] -> `EXPR_typed_case (xsr sr,ii i,ti t)
+  
   | Lst [Id "ast_projection";  Int i; t] -> `EXPR_projection (sr,ii i,ti t)
   | Lst [Id "ast_array_projection";  index; t] -> `EXPR_array_projection (sr,xexpr_t sr index,ti t)
-  | Lst [Id "ast_typed_case";  i; t] -> 
-    let i = ex i in
-    let t = ex t in
-    begin match i,t with
-    | `EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=internal_value1; c_value=c_value1 }),
-      `EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=internal_value2; c_value=c_value2 })
-      ->
-      let i = int_of_string internal_value1 in
-      let t = int_of_string internal_value2 in
-      `EXPR_typed_case (sr, i, `TYP_unitsum t)
-    | _ -> err x "case expression i:j requires i,j be integer literals"
-    end
-
-
   | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> `EXPR_lookup (sr,(ex e, s,map ti ts))
 
   | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> 
@@ -162,19 +261,9 @@ print_endline ("EXPR_name " ^ id ^ "[" ^ Flx_util.catmap "," Flx_print.string_of
     end;
     `EXPR_apply(sr,(e1,e2))
 
-  | Lst [Id "typ_apply";  sr; Lst [e1; e2]] -> 
-    let e1 = ti e1 and e2 = ti e2 in
-(*
-    print_endline ("typ_apply " ^ Flx_print.string_of_typecode e1 ^ " to " ^ Flx_print.string_of_typecode e2);
-*)
-    `TYP_apply(e1, e2)
-
-
+ 
   | Lst [Id "ast_tuple";  sr; Lst es] -> `EXPR_tuple (xsr sr,map (xexpr_t (xsr sr)) es)
 
-  | Lst [Id "typ_type_tuple";  sr; Lst es] -> `TYP_type_tuple (map ti es)
-  | Lst [Id "typ_typeop"; sr; Str name; ty; kd] ->
-    `TYP_typeop  (xsr sr, name, ti ty, kind_of_sex (xsr sr) kd)
 
   | Lst [Id "ast_tuple_cons";  sr; eh; et] -> `EXPR_tuple_cons (xsr sr, xexpr_t (xsr sr) eh, xexpr_t (xsr sr) et)
   | Lst [Id "ast_tuple_snoc";  sr; eh; et] -> `EXPR_tuple_snoc (xsr sr, xexpr_t (xsr sr) eh, xexpr_t (xsr sr) et)
@@ -186,30 +275,6 @@ print_endline ("EXPR_name " ^ id ^ "[" ^ Flx_util.catmap "," Flx_print.string_of
      )
      rs
    in `EXPR_record (xsr sr,rs)
-
- | Lst [Id "ast_record_type"; Lst rs] ->
-   let rs =
-     map (function
-     | Lst [Str s; e] -> s, ti e
-     | x -> err x "Error in AST_record_type"
-     )
-     rs
-   in `TYP_record (rs)
-(*
-   in `EXPR_record_type (sr,rs)
-*)
-
- | Lst [Id "ast_polyrecord_type"; Lst rs; e] ->
-   let rs =
-     map (function
-     | Lst [Str s; e] -> s, ti e
-     | x -> err x "Error in AST_polyrecord_type"
-     )
-     rs
-   in `TYP_polyrecord (rs, ti e)
-(*
-   in `EXPR_polyrecord_type (sr,rs, ti e)
-*)
 
   | Lst [Id "ast_polyrecord";  sr; Lst rs; e] ->
    let rs =
@@ -240,37 +305,18 @@ print_endline ("EXPR_name " ^ id ^ "[" ^ Flx_util.catmap "," Flx_print.string_of
 
  | Lst [Id "ast_variant";  Lst [Str s; e]] -> `EXPR_variant (sr,(s, ex e))
 
- | Lst [Id "ast_variant_type"; Lst rs] ->
-   let rs =
-     map (function
-     | Lst [Id "ctor"; Str s; e] -> `Ctor (s, ti e)
-     | Lst [Id "base"; e] -> `Base (ti e)
-     | x -> err x "Error in AST_variant_type"
-     )
-     rs
-   in `TYP_variant (rs)
-(*
-   in `EXPR_variant_type (sr,rs)
-*)
-
  | Lst [Id "ast_arrayof";  sr; Lst es] -> `EXPR_arrayof (xsr sr, map ex es)
  | Lst [Id "ast_coercion";  sr; Lst [e; t]] ->  `EXPR_coercion (xsr sr,(ex e, ti t))
 
  | Lst [Id "ast_suffix";  Lst [qn;t]] -> `EXPR_suffix (sr,(xq "ast_suffix" qn,ti t))
 
  | Lst [Id "ast_patvar";  sr; Str s] -> `EXPR_patvar (xsr sr, s)
- | Lst [Id "typ_patvar";  sr; Str s] -> `TYP_patvar (xsr sr, s)
 
  | Lst [Id "ast_patany"; sr] -> `EXPR_patany (xsr sr)
- | Lst [Id "typ_patany"; sr] -> `TYP_patany (xsr sr)
 
- | Lst [Id "ast_void"; sr] -> `TYP_void (xsr sr)
- | Lst [Id "ast_ellipsis"; sr] -> `TYP_ellipsis
 
  | Lst [Id "ast_product"; sr; Lst es] -> `EXPR_product (xsr sr, map (xexpr_t (xsr sr)) es)
- | Lst [Id "typ_product"; sr; Lst es] -> `EXPR_product (xsr sr, map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_sum";  sr; Lst es] -> `EXPR_sum (xsr sr,map (xexpr_t (xsr sr)) es)
- | Lst [Id "typ_sum";  sr; Lst es] -> `EXPR_sum (xsr sr,map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_intersect"; Lst es] -> `EXPR_intersect (sr, map ex es)
  | Lst [Id "ast_isin"; Lst [a; b]] -> `EXPR_isin (sr, (ex a, ex b))
  | Lst [Id "ast_orlist"; sr; Lst es] -> `EXPR_orlist (xsr sr, map (xexpr_t (xsr sr)) es)
@@ -279,15 +325,12 @@ print_endline ("EXPR_name " ^ id ^ "[" ^ Flx_util.catmap "," Flx_print.string_of
 (*
  | Lst [Id "ast_arrow";  Lst [e1; e2]] -> `EXPR_arrow (sr,(ex e1, ex e2))
 *)
- | Lst [Id "typ_arrow";  Lst [e1; e2]] -> `TYP_function (ti e1, ti e2)
 (*
  | Lst [Id "ast_effector";  Lst [e1; e2; e3]] -> `EXPR_effector (sr,(ex e1, ex e2, ex e3))
 *)
- | Lst [Id "typ_effector";  Lst [e1; e2; e3]] -> `TYP_effector (ti e1, ti e2, ti e3)
 (*
  | Lst [Id "ast_longarrow";  Lst [e1; e2]] -> `EXPR_longarrow (sr,(ex e1, ex e2))
 *)
- | Lst [Id "typ_longarrow";  Lst [e1; e2]] -> `TYP_cfunction (ti e1, ti e2)
 
  | Lst [Id "ast_superscript";  Lst [e1; e2]] -> `EXPR_superscript (sr,(ex e1, ex e2))
  | Lst [Id "ast_literal";  sr; Str felix_type; Str internal_value; Str c_value ] ->
@@ -299,18 +342,10 @@ print_endline ("EXPR_name " ^ id ^ "[" ^ Flx_util.catmap "," Flx_print.string_of
      } 
    )
 
- | Lst [Id "ast_deref"; sr; e] -> `EXPR_deref (xsr sr,ex e)
+ | Lst [Id "ast_deref"; sr; e] -> 
+   print_endline ("ast_deref " ^ Flx_print.string_of_expr (ex e));
+   `EXPR_deref (xsr sr,ex e)
  | Lst [Id "ast_ref"; sr; e] -> `EXPR_ref (xsr sr,ex e)
-(*
- | Lst [Id "ast_pclt"; sr; d; c] -> `EXPR_pclt_type (xsr sr, ti d, ti c)
- | Lst [Id "ast_rpclt"; sr; d; c] -> `EXPR_rpclt_type (xsr sr, ti d, ti c)
- | Lst [Id "ast_wpclt"; sr; d; c] -> `EXPR_wpclt_type (xsr sr, ti d, ti c)
-   `EXPR_rptsum_type (xsr sr, ti d, ti c)
-*)
- | Lst [Id "ast_pclt"; sr; d; c] -> `TYP_pclt (ti d, ti c)
- | Lst [Id "ast_rpclt"; sr; d; c] -> `TYP_rpclt (ti d, ti c)
- | Lst [Id "ast_wpclt"; sr; d; c] -> `TYP_wpclt (ti d, ti c)
- | Lst [Id "ast_rptsum_type"; sr; d; c] -> `TYP_rptsum (ti d, ti c)
 
  | Lst [Id "ast_uniq"; sr; e] -> `EXPR_uniq (xsr sr, ex e)
  | Lst [Id "ast_rref"; sr; e] -> `EXPR_rref(xsr sr, ex e)
@@ -361,31 +396,8 @@ print_endline ("EXPR_name " ^ id ^ "[" ^ Flx_util.catmap "," Flx_print.string_of
    in
    `EXPR_match (xsr sr, (ex e,pes))
 
- | Lst [Id "typ_typeof";  sr; e] -> `TYP_typeof (ex e)
-
  | Lst [Id "ast_cond"; sr;  Lst [e1;e2;e3]] -> `EXPR_cond (xsr sr,(ex e1, ex e2, ex e3))
  | Lst [Id "ast_expr"; sr; s; t; e] -> `EXPR_expr (xsr sr, xc (xsr sr) s, ti t, ex e)
-
- | Lst [Id "ast_type_match";  sr; Lst [t; Lst ts]] ->
-   let ts =
-     map (function
-       | Lst [t1; t2] -> ti t1, ti t2
-       | x -> err x "ast_typematch typerrror"
-     )
-     ts
-   in `TYP_type_match (ti t, ts)
-   (* in `EXPR_type_match (xsr sr,(ti t, ts)) *)
-
- | Lst [Id "ast_subtype_match";  sr; Lst [t; Lst ts]] ->
-   let ts =
-     map (function
-       | Lst [t1; t2] -> ti t1, ti t2
-       | x -> err x "ast_subtypematch typerrror"
-     )
-     ts
-   in `TYP_subtype_match (ti t, ts)
-   (* in `EXPR_subtype_match (xsr sr,(ti t, ts)) *)
-
 
  | Lst [Id "ast_typecase_match";  sr; Lst [t; Lst ts]] ->
    let ts =
@@ -404,15 +416,11 @@ print_endline ("EXPR: Extension of bases = " ^ Flx_util.catmap "," Flx_print.str
 *)
     `EXPR_extension (xsr sr, bases, ex extension)
 
-  | Lst [Id "typ_type_extension"; sr; Lst bases; extension] ->
-    let bases = List.map ti bases in
-(*
-print_endline ("TYP: Extension of bases = " ^ Flx_util.catmap "," Flx_print.string_of_typecode bases);
-*)
-    `TYP_type_extension (xsr sr, bases, ti extension)
 
-
-  | Lst ls -> (* print_endline ("Unexpected literal tuple"); *) `EXPR_tuple (sr, map ex ls)
+  | Lst ls -> 
+    print_endline ("[sex2flx] Unexpected list! processing expression"); 
+    print_endline ("(" ^ Flx_util.catmap "\n" Sex_print.string_of_sex ls ^ ")");
+    assert false; 
 
   | Id id ->
       (*
@@ -552,11 +560,18 @@ and xraw_typeclass_insts_t sr x =
   | x -> err x "raw_typeclass_insts_t"
 
 and xvs_aux_t sr x : vs_aux_t =
+(*
+print_endline ("Translating auxilliary vs data" ^ Sex_print.string_of_sex x);
+*)
   let ex x = xexpr_t sr x in
-  let ti x = type_of_sex sr x in
+  let ti x = xtype_t sr x in
   let xrtc x = xraw_typeclass_insts_t sr x in
   match x with
-  | Lst [ct; tcr] -> { raw_type_constraint=ti ct; raw_typeclass_reqs=xrtc tcr }
+  | Lst [ct; tcr] -> 
+(*
+    print_endline ("Raw type constraint = " ^ Sex_print.string_of_sex ct);
+*)
+   { raw_type_constraint=ti ct; raw_typeclass_reqs=xrtc tcr }
   | x -> err x "xvs_aux_t"
 
 and xsimple_parameter_list sr x : simple_parameter_t list =
@@ -581,6 +596,9 @@ and xplain_vs_list_t sr x : plain_vs_list_t =
   | x -> err x "xplain_vs_list"
 
 and xvs_list_t sr x : vs_list_t =
+(*
+print_endline ("Translating vs list " ^ Sex_print.string_of_sex x);
+*)
   let xpvs x = xplain_vs_list_t sr x in
   let xaux x = xvs_aux_t sr x in
   match x with
@@ -813,6 +831,7 @@ and xconnection_t sr = function
   | x -> err x "connection specification"
 
 and xstatement_t sr x : statement_t =
+print_endline ("sex2flx:stmt] " ^ Sex_print.string_of_sex x);
   let pdef = `PVal in
   let xspl sr x = xsimple_parameter_list sr x in 
   let xpvs sr x = xplain_vs_list_t sr x in
@@ -1129,7 +1148,13 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
       STMT_callback_decl (sr, xid id, map (ti sr) ps, ti sr t, xrr sr req)
 
   | Lst [Id "ast_insert"; sr; id; vs; ct; ik; req] -> 
+print_endline ("Translating ast insert!");
       let sr = xsr sr in 
+begin try ignore(xvs sr vs); 
+print_endline ("vs list translated");
+with _ -> 
+print_endline ("Error translating vs list")
+end;
       let xik = function
         | Id "header" -> `Header
         | Id "body" -> `Body

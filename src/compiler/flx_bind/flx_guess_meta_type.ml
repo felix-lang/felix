@@ -61,7 +61,6 @@ let rec guess_metatype sr t : kind =
   | `TYP_uniq _
   | `TYP_void _ 
   | `TYP_case_tag _ 
-  | `TYP_typed_case _
   | `TYP_callback _
   | `TYP_patvar _ 
   | `TYP_tuple _

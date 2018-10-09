@@ -18,7 +18,6 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | `TYP_name (sr,name,ts) -> `TYP_name (sr, name, List.map f ts)
   | `TYP_lookup (sr,(e,name,ts)) -> `TYP_lookup (sr, (e, name, List.map f ts))
   | `TYP_suffix (sr,(qn,t)) -> `TYP_suffix (sr, (qn, f t))
-  | `TYP_typed_case (sr,i,t) -> `TYP_typed_case (sr,i, f t)
   | `TYP_tuple ts -> `TYP_tuple (List.map f ts)
   | `TYP_record ts -> `TYP_record (List.map (fun (s,t) -> s,f t) ts)
   | `TYP_polyrecord (ts,v) -> `TYP_polyrecord (List.map (fun (s,t) -> s,f t) ts, f v)
