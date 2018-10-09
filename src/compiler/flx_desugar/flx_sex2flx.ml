@@ -132,6 +132,7 @@ and xtype_t sr x : typecode_t =
    in `TYP_variant (rs)
 
  | Lst [Id "typ_intersect"; Lst es] -> `TYP_intersect (map ti es)
+ | Lst [Id "typ_isin"; Lst [a; b]] -> `TYP_isin (ti a, ti b)
 
  | Lst [Id "typ_patvar";  sr; Str s] -> `TYP_patvar (xsr sr, s)
  | Lst [Id "typ_patany"; sr] -> `TYP_patany (xsr sr)
@@ -153,6 +154,9 @@ and xtype_t sr x : typecode_t =
  | Lst [Id "typ_sum";  sr; Lst es] -> `TYP_sum (map ti es)
  | Lst [Id "ast_rptsum_type"; sr; d; c] -> `TYP_rptsum (ti d, ti c)
  | Lst [Id "typ_typeof";  sr; e] -> `TYP_typeof (ex e)
+
+ | Lst [Id "typ_tuple_cons"; sr; t1; t2] -> `TYP_tuple_cons (xsr sr, ti t1, ti t2)
+ | Lst [Id "typ_tuple_snoc"; sr; t1; t2] -> `TYP_tuple_snoc (xsr sr, ti t1, ti t2)
 
  | Lst [Id "ast_type_match";  sr; Lst [t; Lst ts]] ->
    let ts =

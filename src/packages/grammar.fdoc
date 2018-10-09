@@ -1465,8 +1465,8 @@ syntax expressions {
 
 
   //$ Fortran power.
-  t[spower_pri] := t[ssuperscript_pri] "**" t[sprefixed_pri] =># "(infix 'pow)";
-  t[spower_pri] := t[ssuperscript_pri] "<**>" t[sprefixed_pri] =># "(infix 'tuple_snoc)";
+  t[spower_pri] := t[ssuperscript_pri] "**" t[sprefixed_pri] =># "`(typ_tuple_cons ,_sr ,_1 ,_3)";
+  t[spower_pri] := t[ssuperscript_pri] "<**>" t[sprefixed_pri] =># "(typ_tuple_snoc ,_sr ,_1 ,_3)";
 
   //$ Superscript, exponential.
   t[ssuperscript_pri] := t[ssuperscript_pri] "^" t[srefr_pri] =># "`(ast_superscript (,_1 ,_3))";
@@ -2744,7 +2744,7 @@ SCHEME """
           )
           ((eq? 'In (first c)) ;; type constraint
             `(typ_intersect
-              ((ast_isin ((ast_name ,_sr ,v ()) ,(second c)))
+              ((typ_isin ((ast_name ,_sr ,v ()) ,(second c)))
               ,ct)
             )
           )
