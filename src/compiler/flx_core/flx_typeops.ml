@@ -1,26 +1,33 @@
 open Flx_btype
 open Flx_kind
+(* checks for explicily specified as exact type, call this AFTER checking
+specific types.
 
+FIXME: this doesn't handle subkinding!
+*)
+
+let iskind k x = match x with
+  | BTYP_type_var (_,mt) 
+  | BTYP_typeop (_,_,mt) 
+  | BTYP_type_apply (BTYP_type_function (_,mt,_),_)
+  | BTYP_type_apply (BTYP_inst(_,_,KIND_function (_,mt)),_) 
+  | BTYP_inst (_,_,mt) when mt = k -> true
+  | _ -> false
+ 
+(* ====== UNITSUM SUPPORT ================== *)
+
+let isunitsum x = match x with
+  | BTYP_void
+  | BTYP_tuple [] 
+  | BTYP_unitsum _ -> true
+  | _ -> iskind KIND_unitsum x
+ 
 let unitsum_int t =
   match t with
   | BTYP_void -> Some 0
   | BTYP_tuple [] -> Some 1
   | BTYP_unitsum n -> Some n
   | _ -> None
-
-let isunitsum x = match x with
-  | BTYP_void
-  | BTYP_tuple [] 
-  | BTYP_unitsum _ -> true
-  | BTYP_type_var (_,mt) 
-  | BTYP_typeop (_,_,mt)
-    -> (match mt with | KIND_unitsum -> true | _ -> false)
-  | BTYP_type_apply (BTYP_type_function (_,KIND_unitsum,_),_) -> true
-  | BTYP_type_apply (BTYP_inst(_,_,KIND_function (_,KIND_unitsum)),_) -> true
-  | BTYP_inst (_,_,KIND_unitsum) -> true
-  | _ -> false
- 
-
 
 let rec gcd m n = 
   if m = 0  && n = 0 then 1  (* technically, infinity since all positive integers divide 0 *)
@@ -69,13 +76,11 @@ let unitsum_cmp mk_raw_typeop op t k eval =
    end
  | _ -> failwith ("Flx_btype: typeop " ^ op ^ " requires two unitsum arguments")
 
+(* ====== BOOL SUPPORT ================== *)
 
-let isstaticbool x = match x with 
+let isstaticbool x = match x with
   | BBOOL _ -> true 
-  | BTYP_type_var (_,mt) 
-  | BTYP_typeop (_,_,mt)
-    -> (match mt with | KIND_bool -> true | _ -> false)
-  | _ -> false
+  | _ -> iskind KIND_bool x
 
 let staticbool_binop mk_raw_typeop op t k eval =
   if k <> KIND_bool

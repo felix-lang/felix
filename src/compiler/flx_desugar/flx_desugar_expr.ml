@@ -42,10 +42,16 @@ let rec rett rex typ sr =
   match typ with
 
   (* Lift lambdas inside typeof() *)
+(*
   | `TYP_typeof _ ->
     let decls,use_t = rex (expr_of_typecode sr typ) in
     let typ = typecode_of_expr(use_t) in
     decls,typ
+*)
+
+  | `TYP_typeof e ->
+    let decls, x = rex e in
+    decls, `TYP_typeof x
 
   | _ ->
     [],typ
@@ -539,36 +545,6 @@ print_endline (Flx_srcref.long_string_of_src sr);
     let lss,xs = List.split (List.map rex es) in
     let l,x = rex e in
     l @ List.concat lss,`EXPR_extension (sr, xs, x)
-
-(*
-  | `EXPR_pclt_type (sr,a,b) -> [],e (* I'm lazy *)
-  | `EXPR_rpclt_type (sr,a,b) -> [],e (* I'm lazy *)
-  | `EXPR_wpclt_type (sr,a,b) -> [],e (* I'm lazy *)
-
-  | `EXPR_record_type (sr,ts) ->
-    let to_expr (id,t) = (id, (expr_of_typecode sr t)) in
-    let to_type (id,e) = (id, (typecode_of_expr e)) in
-    let es = List.map to_expr ts in
-    let ss,es = List.split es in
-    let lss,xs = List.split (List.map rex es) in
-    List.concat lss,`EXPR_record_type (sr, (List.map to_type (List.combine ss xs)))
-
-  | `EXPR_polyrecord_type (sr,ts,t) ->
-    let to_expr (id,t) = (id, (expr_of_typecode sr t)) in
-    let to_type (id,e) = (id, (typecode_of_expr e)) in
-    let es = List.map to_expr ts in
-    let e = expr_of_typecode sr t in
-    let ss,es = List.split es in
-    let lss,xs = List.split (List.map rex es) in
-    let l,x = rex e in
-    l @ List.concat 
-          lss,
-          `EXPR_polyrecord_type (sr, 
-            (List.map to_type (List.combine ss xs)), 
-            (typecode_of_expr x))
-
-  | `EXPR_variant_type _ -> assert false
-*)
 
   | `EXPR_rnprj (sr,name,seq,e) -> 
     let l,x = rex e in

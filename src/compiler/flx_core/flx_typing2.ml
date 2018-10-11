@@ -63,6 +63,7 @@ let all_tunits ts =
   with Not_found -> false
 
 let rec kindcode_of_typecode (t:typecode_t) : kindcode_t =
+print_endline ("[kindcode_of_typecode] Translating typecode to kindcode" ^ string_of_typecode t);
   let kt t = kindcode_of_typecode t in
   match t with
   | `TYP_name (_,"TYPE",[]) -> KND_type
@@ -78,6 +79,7 @@ let rec kindcode_of_typecode (t:typecode_t) : kindcode_t =
 
 
 let rec kindcode_of_expr (e:expr_t) :kindcode_t =
+print_endline ("[kindcode_of_expr] Translating expr to kindcode" ^ string_of_expr e);
   let te e = kindcode_of_expr e in
   match e with
   | #typecode_t as t -> kindcode_of_typecode t
@@ -99,6 +101,7 @@ let rec kindcode_of_expr (e:expr_t) :kindcode_t =
   | _ -> assert false
 
 let rec expr_of_kindcode (k:kindcode_t): expr_t =
+print_endline ("[expr_of_kindcode] Translating kindcode to expr " ^ str_of_kindcode k);
   let sr = Flx_srcref.dummy_sr in
   match k with
   | KND_type -> `EXPR_name (sr,"TYPE",[])
@@ -118,9 +121,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   match e with
   | #typecode_t as t -> t
   | e ->
-(*
-print_endline ("Translating exprssion " ^ string_of_expr e ^ " to type");
-*)
+print_endline ("[typecode_of_expr] Translating expression " ^ string_of_expr e ^ " to type");
   match e with
   | `EXPR_name (_,"LABEL",[]) -> `TYP_label
   | `EXPR_name (sr,"DEFER",[]) -> `TYP_defer (sr,ref None)
@@ -349,6 +350,7 @@ all go away when this routine goes away .. but for now ..
 (** Conversion function from TYP expression to EXPR expression *)
 (* passing in a default source location (dsr) can fill in some missing info *)
 let rec expr_of_typecode (dsr:Flx_srcref.t) (t:typecode_t) = 
+print_endline ("[expr_of_typecode] Converting typecode to kindcode: " ^ string_of_typecode t);
   match t with 
 
   (* The following cannot be converted. There's no analagous expression in EXPR. *)

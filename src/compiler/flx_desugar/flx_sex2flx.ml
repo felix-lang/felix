@@ -5,6 +5,7 @@ open Flx_typing2
 open List
 
 exception Not_type
+exception Not_kind
 
 let prefix p s =
   let n = String.length p in
@@ -44,37 +45,32 @@ let rec xsr x : Flx_srcref.t =
       Flx_srcref.make (fn,ii fl,ii fc,ii ll,ii lc)
   | x -> err x "Invalid source reference"
 
-and kind_of_sex sr w : kindcode_t =
-  let x = xexpr_t sr w in
-  kindcode_of_expr x
+and kind_of_sex sr x : kindcode_t =
+  let ki k = kind_of_sex sr k in
+  match x with
+  | Lst [Id "ast_name"; sr; Str "TYPE"; Lst []] ->  KND_type
+  | Lst [Id "ast_name"; sr; Str "UNITSUM"; Lst []] ->  KND_unitsum
+  | Lst [Id "ast_name"; sr; Str "BOOL"; Lst []] ->  KND_bool
+  | Lst [Id "ast_name"; sr; Str "NAT"; Lst []] ->  KND_nat
+  | Lst [Id "ast_name"; sr; Str "COMPACTLINEAR"; Lst []] ->  KND_compactlinear
+  | Lst [Id "ast_name"; sr; Str "GENERIC"; Lst []] ->  KND_generic
+
+  | Lst [Id "typ_arrow"; Lst[dom; cod]] -> KND_function (ki dom, ki cod)
+  | Lst [Id "typ_tuple"; sr; Lst ts] -> KND_tuple (List.map ki ts)
+  | _ ->
+    print_endline ("Unexpected kind term"); 
+    print_endline ( Sex_print.string_of_sex x );
+    raise Not_kind
+
+
+(*
+  | KND_typeset of string (* excl mark *)
+  | KND_tpattern of typecode_t
+  | KND_special of string
+*)
+
 
 and type_of_sex sr w : typecode_t = xtype_t sr w
-(*
-(*
-  print_endline ("[type_of_sex] Converting sexp " ^ Sex_print.string_of_sex w ^ " to a type");
-*)
-  let x = xexpr_t sr w in
-(*
-  print_endline ("[type_of_sex] Felix expression is " ^ Flx_print.string_of_expr x);
-*)
-  let y =
-    match x with
-    | `EXPR_tuple (_,[]) -> `TYP_tuple []
-    | `EXPR_name (_,"none",[]) -> `TYP_none
-    | `EXPR_name (_,"typ_none",[]) -> `TYP_none
-    | x ->
-      try typecode_of_expr x
-      with xn ->
-        print_endline ("[type_of_sex] Converting sexp " ^ Sex_print.string_of_sex w ^ " to a type");
-        print_endline ("[type_of_sex] Felix expression is " ^ Flx_print.string_of_expr x);
-        print_endline ("[type_of_sex] Got error: " ^ Printexc.to_string xn);
-        raise xn
-  in
-(*
-  print_endline ("Felix type is " ^ Flx_print.string_of_typecode y);
-*)
-  y
-*)
 
 and xtype_t sr x : typecode_t = 
   let ti t = xtype_t sr t in
@@ -90,6 +86,12 @@ and xtype_t sr x : typecode_t =
    in
    `TYP_unitsum v
 
+  | Lst [Id "ast_name"; sr; Str "LABEL"; Lst []] -> 
+    `TYP_label
+
+  | Id "typ_none" -> 
+    `TYP_none
+
   | Lst [Id "ast_name"; sr; id; Lst ts] -> 
     let ts = map ti ts in
     let id = xid id in
@@ -98,11 +100,22 @@ and xtype_t sr x : typecode_t =
   | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> 
    (* this is a hack should just process qualified names .. *)
     `TYP_lookup (sr,(ex e, s,map ti ts))
+  | Lst [Id "typ_typeset"; sr; Lst ts] ->
+    `TYP_typeset (List.map ti ts)
 
   | Lst [Id "typ_apply";  sr; Lst [e1; e2]] -> `TYP_apply(ti e1, ti e2)
   | Lst [Id "typ_type_tuple";  sr; Lst es] -> `TYP_type_tuple (map ti es)
   | Lst [Id "typ_typeop"; sr; Str name; ty; kd] ->
     `TYP_typeop  (xsr sr, name, ti ty, kind_of_sex (xsr sr) kd)
+
+ | Lst [Id "typ_implies"; sr; t1; t2] -> `TYP_typeop (xsr sr, "_staticbool_implies", `TYP_type_tuple [ti t1; ti t2], KND_bool)
+ | Lst [Id "typ_and"; sr; t1; t2] -> `TYP_typeop (xsr sr, "_staticbool_and", `TYP_type_tuple [ti t1; ti t2], KND_bool)
+ | Lst [Id "typ_or"; sr; t1; t2] -> `TYP_typeop (xsr sr, "_staticbool_or", `TYP_type_tuple [ti t1; ti t2], KND_bool)
+ | Lst [Id "typ_not"; sr; t] -> `TYP_typeop (xsr sr, "_staticbool_not", ti t, KND_bool)
+ | Lst [Id "typ_true"; sr; t] -> `TYP_typeop (xsr sr, "_staticbool_true", `TYP_type_tuple [], KND_bool)
+ | Lst [Id "typ_false"; sr; t] -> `TYP_typeop (xsr sr, "_staticbool_false", `TYP_type_tuple [], KND_bool)
+
+
  | Lst [Id "ast_record_type"; Lst rs] ->
    let rs =
      map (function
@@ -141,6 +154,7 @@ and xtype_t sr x : typecode_t =
  | Lst [Id "typ_arrow";  Lst [e1; e2]] -> `TYP_function (ti e1, ti e2)
  | Lst [Id "typ_effector";  Lst [e1; e2; e3]] -> `TYP_effector (ti e1, ti e2, ti e3)
  | Lst [Id "typ_longarrow";  Lst [e1; e2]] -> `TYP_cfunction (ti e1, ti e2)
+ | Lst [Id "typ_uniq"; sr; e] -> `TYP_uniq (ti e)
 
  (* pointers *)
  | Lst [Id "typ_ref"; sr; e] -> `TYP_pointer (ti e)
@@ -150,22 +164,30 @@ and xtype_t sr x : typecode_t =
  | Lst [Id "typ_rpclt"; sr; d; c] -> `TYP_rpclt (ti d, ti c)
  | Lst [Id "typ_wpclt"; sr; d; c] -> `TYP_wpclt (ti d, ti c)
 
+ | Lst [Id "typ_superscript"; t1; t2] -> `TYP_array (ti t1, ti t2)
  | Lst [Id "typ_tuple"; sr; Lst es] -> `TYP_tuple (map ti es)
  | Lst [Id "typ_sum";  sr; Lst es] -> `TYP_sum (map ti es)
  | Lst [Id "ast_rptsum_type"; sr; d; c] -> `TYP_rptsum (ti d, ti c)
- | Lst [Id "typ_typeof";  sr; e] -> `TYP_typeof (ex e)
+ | Lst [Id "typ_typeof";  sr; e] -> 
+   `TYP_typeof (ex e)
 
  | Lst [Id "typ_tuple_cons"; sr; t1; t2] -> `TYP_tuple_cons (xsr sr, ti t1, ti t2)
  | Lst [Id "typ_tuple_snoc"; sr; t1; t2] -> `TYP_tuple_snoc (xsr sr, ti t1, ti t2)
 
  | Lst [Id "ast_type_match";  sr; Lst [t; Lst ts]] ->
    let ts =
-     map (function
-       | Lst [t1; t2] -> ti t1, ti t2
-       | x -> err x "ast_typematch typerrror"
+     map (fun x -> 
+       match x with
+       | Lst [t1; t2] -> 
+         let t1 = ti t1 in
+         let t2 = ti t2 in
+         t1, t2
+       | x -> 
+         err x "ast_typematch typerrror"
      )
      ts
-   in `TYP_type_match (ti t, ts)
+   in 
+   `TYP_type_match (ti t, ts)
    (* in `EXPR_type_match (xsr sr,(ti t, ts)) *)
 
  | Lst [Id "ast_subtype_match";  sr; Lst [t; Lst ts]] ->
@@ -181,6 +203,9 @@ and xtype_t sr x : typecode_t =
   | Lst [Id "typ_type_extension"; sr; Lst bases; extension] ->
     let bases = List.map ti bases in
     `TYP_type_extension (xsr sr, bases, ti extension)
+
+  | Lst[Id "typ_typesetunion"; sr; t1; t2] -> `TYP_setunion [ti t1; ti t2]
+  | Lst[Id "typ_typesetintersection"; sr; t1; t2] -> `TYP_setintersection [ti t1; ti t2]
 
   | Lst ls ->  
     print_endline ("Unexpected type term"); 
@@ -238,7 +263,9 @@ and xexpr_t sr x =
   | Lst [Id "ast_interpolate";  sr; Str s] -> `EXPR_interpolate (xsr sr, s)
   | Lst [Id "ast_noexpand"; sr; e] -> `EXPR_noexpand (xsr sr,ex e)
   | Lst [Id "ast_name"; sr; id; Lst ts] -> 
+(*
 print_endline ("Processing ast_name "^xid id^" in xexpr");
+*)
     let ts = map ti ts in
     let id = xid id in
     `EXPR_name (xsr sr, id, ts)
@@ -347,7 +374,6 @@ print_endline ("Processing ast_name "^xid id^" in xexpr");
    )
 
  | Lst [Id "ast_deref"; sr; e] -> 
-   print_endline ("ast_deref " ^ Flx_print.string_of_expr (ex e));
    `EXPR_deref (xsr sr,ex e)
  | Lst [Id "ast_ref"; sr; e] -> `EXPR_ref (xsr sr,ex e)
 
@@ -574,6 +600,8 @@ print_endline ("Translating auxilliary vs data" ^ Sex_print.string_of_sex x);
   | Lst [ct; tcr] -> 
 (*
     print_endline ("Raw type constraint = " ^ Sex_print.string_of_sex ct);
+    let xx = try ti ct with _ -> print_endline "ERROR translating type constraint"; assert false in
+    print_endline ("Translated type constraint = " ^ Flx_print.string_of_typecode (ti ct));
 *)
    { raw_type_constraint=ti ct; raw_typeclass_reqs=xrtc tcr }
   | x -> err x "xvs_aux_t"
@@ -835,7 +863,9 @@ and xconnection_t sr = function
   | x -> err x "connection specification"
 
 and xstatement_t sr x : statement_t =
+(*
 print_endline ("sex2flx:stmt] " ^ Sex_print.string_of_sex x);
+*)
   let pdef = `PVal in
   let xspl sr x = xsimple_parameter_list sr x in 
   let xpvs sr x = xplain_vs_list_t sr x in
@@ -1139,6 +1169,12 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
       STMT_const_decl (sr, xid id, xvs sr vs, ti sr t, xc sr ct, xrr sr req)
 
   | Lst [Id "ast_fun_decl"; sr; id; vs; Lst ps; t; ct; req; Str prec] -> let sr = xsr sr in 
+(*
+print_endline ("processig fun decl " ^ xid id);
+print_endline ("vs list as sex = " ^ Sex_print.string_of_sex vs);
+print_endline ("vs = " ^ Flx_print.string_of_vs (xvs sr vs));
+print_endline ("Argtypes = " ^ Flx_util.catmap ", " Flx_print.string_of_typecode (List.map (ti sr) ps));
+*)
       STMT_fun_decl (
         sr,
         xid id,
@@ -1152,13 +1188,7 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
       STMT_callback_decl (sr, xid id, map (ti sr) ps, ti sr t, xrr sr req)
 
   | Lst [Id "ast_insert"; sr; id; vs; ct; ik; req] -> 
-print_endline ("Translating ast insert!");
       let sr = xsr sr in 
-begin try ignore(xvs sr vs); 
-print_endline ("vs list translated");
-with _ -> 
-print_endline ("Error translating vs list")
-end;
       let xik = function
         | Id "header" -> `Header
         | Id "body" -> `Body

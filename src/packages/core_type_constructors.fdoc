@@ -477,7 +477,7 @@ typedef fun n"_unitsum_lcm" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_
 
 typedef fun n"`<" (x:UNITSUM,y:UNITSUM):BOOL=> _typeop ("_unitsum_lt",(x,y),BOOL);
 typedef fun n"`>" (x:UNITSUM,y:UNITSUM):BOOL=> _typeop ("_unitsum_lt",(y,x),BOOL);
-typedef fun n"`==" (x:UNITSUM,y:UNITSUM):BOOL=> x `< y `and y `< x;
+typedef fun n"`==" (x:UNITSUM,y:UNITSUM):BOOL=> x `< y and y `< x;
 @
 // -----------------------------------------------------------------------------
 @h1 Category Theoretic Functional Operations

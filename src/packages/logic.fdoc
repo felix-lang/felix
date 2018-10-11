@@ -200,14 +200,3 @@ open class Predicate[T]
 }
 
 
-@h1 Compile time booleans
-@tangle staticbool.flx
-
-typedef fun n"`and" (x:BOOL,y:BOOL):BOOL => _typeop ("_staticbool_and",(x,y),BOOL);
-typedef fun n"`or" (x:BOOL,y:BOOL):BOOL => _typeop ("_staticbool_or",(x,y),BOOL);
-typedef fun n"`xor" (x:BOOL,y:BOOL):BOOL => _typeop ("_staticbool_xor",(x,y),BOOL);
-typedef fun n"`not" (x:BOOL):BOOL => _typeop ("_staticbool_not",(x),BOOL);
-typedef fun n"`true" ():BOOL => _typeop ("_staticbool_true",1,BOOL);
-typedef fun n"`false" ():BOOL => _typeop ("_staticbool_false",1,BOOL);
-@
-

@@ -52,9 +52,9 @@ let gen_call_init sr name' =
 (* -------------------------------------------------------------------------- *)
 (** Recursive statement desugerer *)
 let rec rst_with_ret state name access (parent_vs:vs_list_t) rettype (st:statement_t): asm_t list =
-
+(*
 print_endline ("Flx_desugar: desugar " ^ Flx_print.string_of_statement 0 st);
-
+*)
   (* construct an anonymous name *)
   let parent_ts sr : typecode_t list =
     List.map 
