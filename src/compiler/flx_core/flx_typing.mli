@@ -20,6 +20,13 @@ module FunInstSet : Set.S with type elt = bid_t * Flx_btype.t list
 
 val sye: Flx_name_map.entry_kind_t -> bid_t
 
+val mktypelambda:
+  Flx_srcref.t ->
+  (Flx_id.t * kindcode_t) list list ->
+  kindcode_t ->
+  typecode_t ->
+  typecode_t
+
 val mktypefun:
   Flx_srcref.t ->
   Flx_id.t ->
@@ -28,3 +35,5 @@ val mktypefun:
   kindcode_t ->
   typecode_t ->
   statement_t
+
+

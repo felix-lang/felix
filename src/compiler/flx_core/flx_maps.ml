@@ -103,7 +103,9 @@ let map_type f (t:typecode_t):typecode_t = match t with
 
 
 let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
+(*
   | #typecode_t as t -> (ft t :> expr_t)
+*)
   | `EXPR_rptsum_arg (sr, e) -> `EXPR_rptsum_arg (sr, fe e)
   | `EXPR_label _
   | `EXPR_patvar _
@@ -224,7 +226,6 @@ let map_expr fe (e:expr_t):expr_t = full_map_expr idf idf fe e
 let iter_expr f (e:expr_t) =
   f e;
   match e with
-  | #typecode_t as t -> ()
   | `EXPR_label _
   | `EXPR_patvar _
   | `EXPR_patany _

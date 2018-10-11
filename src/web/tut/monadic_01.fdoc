@@ -189,7 +189,7 @@ It's suprising what looking at things a different way can bring.
 @felix
 syntax monad //Override the right shift assignment operator.
 {
-  x[ssetunion_pri] := x[ssetunion_pri] ">>=" x[>ssetunion_pri] =># "`(ast_apply ,_sr (bind (,_1 ,_3)))";
+  x[ssetunion_pri] := x[ssetunion_pri] ">>=" x[>ssetunion_pri] =># "`(ast_apply ,_sr (bind (ast_tuple ,_sr (,_1 ,_3))))";
 }
 open syntax monad;
 @

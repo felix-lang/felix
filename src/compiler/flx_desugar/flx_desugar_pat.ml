@@ -85,7 +85,6 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
      name the types of the arguments now)
   *)
   match e with
-  | #typecode_t as t -> assert false
   | `EXPR_noexpand (_,e) -> subst e
 
   | `EXPR_patvar _ 

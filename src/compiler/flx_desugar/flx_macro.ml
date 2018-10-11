@@ -361,6 +361,7 @@ and alpha_stmts sr local_prefix seq ps sts =
     let ps = List.combine psn' pst in
     ps,sts
 
+(* NOTE: this routine now ONLY replaces identifiers *)
 and expand_type_expr sr recursion_limit local_prefix seq (macros:macro_dfn_t list) (t:typecode_t):typecode_t=
   if recursion_limit < 1
   then failwith "Recursion limit exceeded expanding macros";
@@ -373,6 +374,16 @@ and expand_type_expr sr recursion_limit local_prefix seq (macros:macro_dfn_t lis
   in
   match Flx_maps.map_type mt t with
 
+(* FIXME??
+
+  Expansion of macros in type expressions has to be disabled
+  because by specification now, macro vals are expressions,
+  not types. The syntax and AST forms are no longer unified.
+ 
+  In particular the typecode_of_expr function is going
+  to be deleted.
+
+
   (* Name expansion *)
   | `TYP_name (sr, name,[]) as t ->
     begin try
@@ -382,6 +393,7 @@ and expand_type_expr sr recursion_limit local_prefix seq (macros:macro_dfn_t lis
     with
     | Not_found -> t
     end
+*)
 
   | `TYP_name (sr, name, ts) as t ->
     let ts = List.map mt ts in
@@ -414,7 +426,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   let cf e = const_fold e in
   let e = cf e in
   match e with
-  | #typecode_t as t -> (mt Flx_srcref.dummy_sr t :> expr_t) 
   (* This CAN happen: typecase is an ordinary expression
     with no meaning except as a proxy for a type, however
     at a macro level, it is an ordinary expression .. hmm

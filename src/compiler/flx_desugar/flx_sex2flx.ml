@@ -73,6 +73,9 @@ and kind_of_sex sr x : kindcode_t =
 and type_of_sex sr w : typecode_t = xtype_t sr w
 
 and xtype_t sr x : typecode_t = 
+(*
+print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
+*)
   let ti t = xtype_t sr t in
   let ex e = xexpr_t sr e in
   match x with
@@ -102,6 +105,10 @@ and xtype_t sr x : typecode_t =
     `TYP_lookup (sr,(ex e, s,map ti ts))
   | Lst [Id "typ_typeset"; sr; Lst ts] ->
     `TYP_typeset (List.map ti ts)
+
+  | Lst [Id "typ_as"; sr; Lst[t;id]] -> 
+    let sr = xsr sr in
+    `TYP_as (ti t, xid id)
 
   | Lst [Id "typ_apply";  sr; Lst [e1; e2]] -> `TYP_apply(ti e1, ti e2)
   | Lst [Id "typ_type_tuple";  sr; Lst es] -> `TYP_type_tuple (map ti es)
@@ -164,6 +171,8 @@ and xtype_t sr x : typecode_t =
  | Lst [Id "typ_rpclt"; sr; d; c] -> `TYP_rpclt (ti d, ti c)
  | Lst [Id "typ_wpclt"; sr; d; c] -> `TYP_wpclt (ti d, ti c)
 
+ | Lst [Id "typ_dual"; sr; e] -> `TYP_dual (ti e)
+
  | Lst [Id "typ_superscript"; t1; t2] -> `TYP_array (ti t1, ti t2)
  | Lst [Id "typ_tuple"; sr; Lst es] -> `TYP_tuple (map ti es)
  | Lst [Id "typ_sum";  sr; Lst es] -> `TYP_sum (map ti es)
@@ -207,18 +216,41 @@ and xtype_t sr x : typecode_t =
   | Lst[Id "typ_typesetunion"; sr; t1; t2] -> `TYP_setunion [ti t1; ti t2]
   | Lst[Id "typ_typesetintersection"; sr; t1; t2] -> `TYP_setintersection [ti t1; ti t2]
 
+  | Lst [Id "typ_typefun"; sr; argss; ret; body] -> let sr = xsr sr in 
+    let fixarg  arg = match arg with
+    | Lst [id; t] -> xid id, kind_of_sex sr t
+    | x -> err x "mktypefun:unpack args1"
+    in
+    let fixargs args = match args with
+    | Lst args -> map fixarg args
+    | x -> err x "mktypefun:unpack args2"
+    in
+    let argss = match argss with
+    | Lst args -> map fixargs args
+    | x -> err x "mktypefun:unpack args3"
+    in
+    Flx_typing.mktypelambda sr argss (kind_of_sex sr ret) (xtype_t sr body)
+
   | Lst ls ->  
-    print_endline ("Unexpected type term"); 
-    print_endline ("(" ^ Flx_util.catmap "\n" Sex_print.string_of_sex ls ^ ")");
+    print_endline ("flx_sex2flx]: Type expected: Unexpected sexp list: not type term"); 
+    print_endline ("elt=" ^ Flx_util.catmap "\nelt= " Sex_print.string_of_sex ls);
     raise Not_type
 
-  | _ -> raise Not_type
+  | _ -> 
+    print_endline ("[flx_sex2flx]: Type expected: Unexpected sexp, not type term:"); 
+    print_endline ("ex= " ^ Sex_print.string_of_sex x );
+    raise Not_type
+
+
 
 and xid x = match x with
   | Str id | Id id -> Flx_id.of_string id
   | x -> err x "identifier"
 
 and xexpr_t sr x =
+(*
+print_endline ("sex2flx:expr] " ^ Sex_print.string_of_sex x);
+*)
   let xc sr x = xcode_spec_t sr x in
   let ex x = xexpr_t sr x in
   let ti x = type_of_sex sr x in
@@ -229,10 +261,6 @@ and xexpr_t sr x =
   let xvs x = xvs_list_t sr x in
   let xs x = xstatement_t sr x in
   let xsts x =  lst "statement" xs x in
-(*
-  try (xtype_t sr x :> expr_t)
-  with Not_type ->
-*)
   match x with
   | Str s ->
       print_endline ("Deprecated Scheme string '" ^ s ^ "' as Felix string");
@@ -390,10 +418,16 @@ print_endline ("Processing ast_name "^xid id^" in xexpr");
    let rt = ti t in
    let pdef = (* match rt with `TYP_void _ -> `PVar | _ -> *) `PVal in 
    `EXPR_lambda  (xsr sr, (`GeneratedInlineFunction,xvs vs, map (xps pdef) pss, rt, xsts sts))
+
  | Lst [Id "ast_object";  sr; Lst [vs; Lst pss; t; sts]] -> 
+
+(*
+print_endline ("ast_object, type = " ^ Sex_print.string_of_sex t);
+*)
    let rt = ti t in
    let pdef = (* match rt with `TYP_void _ -> `PVar | _ -> *) `PVal in 
    `EXPR_lambda (xsr sr, (`Object,xvs vs, map (xps pdef) pss, rt, xsts sts))
+
  | Lst [Id "ast_generator";  sr; Lst [vs; Lst pss; t; sts]] -> 
    let rt = ti t in
    let pdef = `PVar in 
@@ -938,11 +972,13 @@ print_endline ("sex2flx:stmt] " ^ Sex_print.string_of_sex x);
 
   | Lst [Id "ast_curry"; sr; id; vs; Lst pss; ret; fk; Lst props; sts] -> let sr = xsr sr in 
 (*
-print_endline ("sex2flx: ast_curry (function def) " ^ xid id ^ "sr=" ^ Flx_srcref.short_string_of_src sr);
+print_endline ("sex2flx: ast_curry (function def) " ^ xid id ^ ", sr=" ^ Flx_srcref.short_string_of_src sr);
 *)
     let fret = xret sr ret in
     let rett, _ = fret in 
     let pdef = (*  match rett with `TYP_void _ -> `PVar | _ ->*)  `PVal in
+    let sts = xsts sr sts in
+    let result = 
     STMT_curry(
       sr,
       xid id,
@@ -952,7 +988,12 @@ print_endline ("sex2flx: ast_curry (function def) " ^ xid id ^ "sr=" ^ Flx_srcre
       Flx_typing.flx_unit,
       xfk sr fk,
       map xadjective_t props,
-      xsts sr sts)
+      sts)
+    in
+(*
+    print_endline "ast_curry done";
+*)
+    result
 
   | Lst [Id "ast_curry_effects"; sr; id; vs; Lst pss; ret; effects; fk; Lst props; sts] -> let sr = xsr sr in 
 (*

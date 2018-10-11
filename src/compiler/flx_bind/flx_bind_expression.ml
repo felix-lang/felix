@@ -147,21 +147,6 @@ let rec bind_expression'
   (* Is this right? It fixes a weird behaviour but may break something else ... *)
   let e = match e with | `EXPR_noexpand (_,e) -> e | e -> e in
   match e with
-  | #typecode_t as t -> assert false
-(*
-  | `EXPR_rptsum_type _
-  | `EXPR_pclt_type _
-  | `EXPR_rpclt_type _
-  | `EXPR_wpclt_type _
-  | `EXPR_record_type _ -> assert false
-  | `EXPR_polyrecord_type _ -> assert false
-  | `EXPR_variant_type _ -> assert false
-  | `EXPR_void _
-  | `EXPR_ellipsis _
-  | `EXPR_type_match _
-  | `EXPR_subtype_match _
-  | `EXPR_typeof _
-*)
   | `EXPR_patvar _
   | `EXPR_patany _
   | `EXPR_vsprintf _

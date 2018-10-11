@@ -138,25 +138,25 @@ syntax infix_c
   //orelse
   x[ssetunion_pri] := 
    x[ssetunion_pri] "|~" x[>ssetunion_pri] =># 
-    '''`(ast_apply ,_sr (,(nos "orelse") (,_1 ,_3)))'''
+    '''`(ast_apply ,_sr (,(nos "orelse") (ast_tuple ,_sr (,_1 ,_3))))'''
   ;
 
   //andalso
   x[ssetintersection_pri] := 
    x[ssetintersection_pri] "&~" x[>ssetintersection_pri] =># 
-    '''`(ast_apply ,_sr (,(nos "andalso") (,_1 ,_3)))'''
+    '''`(ast_apply ,_sr (,(nos "andalso") (ast_tuple ,_sr (,_1 ,_3))))'''
   ;
 
   //gives
   x[scomparison_pri]:= 
    x[scomparison_pri] ">=~" x[>scomparison_pri] =># 
-    '''`(ast_apply ,_sr (,(nos "gives") (,_1 ,_3)))'''
+    '''`(ast_apply ,_sr (,(nos "gives") (ast_tuple ,_sr (,_1 ,_3))))'''
   ;
 
   //givento
   x[scomparison_pri]:= 
    x[scomparison_pri] ">>=~" x[>scomparison_pri] =># 
-    '''`(ast_apply ,_sr (,(nos "givento") (,_1 ,_3)))'''
+    '''`(ast_apply ,_sr (,(nos "givento") (ast_tuple ,_sr (,_1 ,_3))))'''
   ;
 
 }
