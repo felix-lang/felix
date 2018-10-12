@@ -425,6 +425,7 @@ and connection_t =
   | Wire of expr_t * (string * string)
 
 and statement_t =
+  | STMT_static_assert of Flx_srcref.t * typecode_t
   | STMT_circuit of Flx_srcref.t * connection_t list
   | STMT_type_error of Flx_srcref.t * statement_t
   | STMT_type_assert of Flx_srcref.t * statement_t
@@ -686,6 +687,7 @@ and statement_t =
   | STMT_scheme_string of Flx_srcref.t * string
 
 type exe_t =
+  | EXE_static_assert of typecode_t
   | EXE_circuit of connection_t list
   | EXE_type_error of exe_t
   | EXE_type_assert of exe_t
@@ -879,9 +881,7 @@ let src_of_expr (e : expr_t) = match e with
   -> s
 
 let src_of_stmt (e : statement_t) = match e with
-  (*
-  | STMT_public (s,_,_)
-  *)
+  | STMT_static_assert (s,_)
   | STMT_virtual_type (s,_)
   | STMT_circuit (s,_)
   | STMT_type_error (s,_)

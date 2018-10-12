@@ -900,6 +900,8 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   let cf e = const_fold e in
 
   begin match st with
+  | STMT_static_assert (sr, typ) -> tack (STMT_static_assert (sr, mt sr typ))
+
   | STMT_virtual_type (sr, name) -> tack (STMT_virtual_type (sr, mi sr name))
 
   | STMT_circuit (sr,cs) -> tack st

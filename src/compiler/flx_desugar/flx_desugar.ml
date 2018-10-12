@@ -107,6 +107,8 @@ print_endline ("Flx_desugar: desugar " ^ Flx_print.string_of_statement 0 st);
     bindings defined in this entity
   *)
   match st with
+  | STMT_static_assert (sr,typ) ->
+    [Exe (sr, EXE_static_assert typ)]
 
   | STMT_circuit (sr,cs) -> 
     [Exe (sr,(EXE_circuit (cs)))]

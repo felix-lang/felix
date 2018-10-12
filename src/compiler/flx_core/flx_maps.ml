@@ -341,6 +341,7 @@ let scan_expr e =
   Flx_list.uniq_list !ls
 
 let rec map_exe fi ft fe (x:exe_t):exe_t = match x with
+  | EXE_static_assert typ -> EXE_static_assert (ft typ)
   | EXE_begin_match_case
   | EXE_end_match_case -> x
 
@@ -381,6 +382,7 @@ let rec map_exe fi ft fe (x:exe_t):exe_t = match x with
 let rec iter_exe fi ft fe (x:exe_t):unit = match x with
   | EXE_begin_match_case
   | EXE_end_match_case -> ()
+  | EXE_static_assert typ -> ft typ
 
   | EXE_circuit cs ->  () 
   | EXE_type_error (x) -> iter_exe fi ft fe x

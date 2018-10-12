@@ -77,6 +77,9 @@ syntax assertions {
   //$ Cannot be switched off!
   private assertion_stmt := "assert" sexpr ";" =># "`(ast_assert ,_sr ,_2)";
 
+  //$ Static assert: type expression of kind BOOL required
+  private assertion_stmt := "static-assert" stype ";" =># "`(ast_static_assert ,_sr ,_2)";
+
   //$ Define an axiom with a general predicate.
   //$ An axiom is a function which is true for all arguments.
   //$ Axioms are core assertions about invariants which

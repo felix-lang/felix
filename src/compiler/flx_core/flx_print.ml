@@ -1303,6 +1303,7 @@ and string_of_statement level s =
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
   match s with
+  | STMT_static_assert (_,t) -> spaces level ^ "static-assert " ^ string_of_typecode t ^ ";"
 
   | STMT_virtual_type (_,s) -> spaces level ^ "virtual type " ^ s ^ ";"
 
@@ -2007,6 +2008,7 @@ and string_of_exe level s =
   | EXE_begin_match_case -> "begin_match_case"
   | EXE_end_match_case -> "end_match_case"
 
+  | EXE_static_assert typ -> "static-assert " ^ string_of_typecode typ ^ ";"
   | EXE_circuit cs ->
     "connections\n" ^
     fold_left (fun acc con ->

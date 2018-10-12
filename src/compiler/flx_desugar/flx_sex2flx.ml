@@ -931,6 +931,11 @@ print_endline ("sex2flx:stmt] " ^ Sex_print.string_of_sex x);
 
   let lnot sr x = `EXPR_not (sr, x) in
   match x with
+  | Lst [Id "ast_static_assert"; sr; t] -> 
+    let sr = xsr sr in
+    let t = xtype_t sr t in
+    STMT_static_assert (sr,t)
+
   | Lst [Id "ast_circuit"; sr; Lst cs] -> let sr = xsr sr in
     let cs = map (xconnection_t sr) cs in
     STMT_circuit (sr,cs)

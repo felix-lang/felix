@@ -268,6 +268,18 @@ print_endline("  SPECIFIED RETURN TYPE =" ^ Flx_btype.st state.ret_type);
   | EXE_comment s ->
       [bexe_comment (sr,s)]
 
+  | EXE_static_assert typ ->
+    let t = bind_type state.lookup_state bsym_table state.env sr typ in
+    begin match t with
+    | BBOOL true -> []
+    | BBOOL false ->
+      print_endline ("Static assert failed");
+      clierr sr ("Static assert failed");
+    | _ -> 
+      print_endline ("Static assert required static_bool kind, got type " ^ sbt bsym_table t);
+      clierr sr ("Static assert required static_bool kind, got type " ^ sbt bsym_table t);
+    end 
+
   | EXE_type_error x ->
     let result = try Some (bind_exe' state bsym_table (sr, x)) with _ -> None
     in begin match result with
