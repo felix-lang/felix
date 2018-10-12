@@ -1476,7 +1476,7 @@ syntax expressions {
   t[sproduct_pri] := t[>sproduct_pri] ("*" t[>sproduct_pri])+ =># "(chain 'typ_tuple _1 _2)" note "mul";
 
   //$ Prefix 
-  t[sprefixed_pri] := "~" t[sprefixed_pri] =># "`(typ_dual`(typ_dual ,_sr ,_2))";
+  t[sprefixed_pri] := "~" t[sprefixed_pri] =># "`(typ_dual ,_sr ,_2)";
 
   t[sprefixed_pri] := "!" t[sprefixed_pri] =># "(tPrefix)";
   t[sprefixed_pri] := "+" t[sprefixed_pri] =># "(tprefix 'prefix_plus)";
