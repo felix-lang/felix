@@ -688,6 +688,7 @@ and statement_t =
 
 type exe_t =
   | EXE_static_assert of typecode_t
+
   | EXE_circuit of connection_t list
   | EXE_type_error of exe_t
   | EXE_type_assert of exe_t

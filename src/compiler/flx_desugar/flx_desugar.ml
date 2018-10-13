@@ -86,7 +86,7 @@ print_endline ("Flx_desugar: desugar " ^ Flx_print.string_of_statement 0 st);
         (rst_with_ret name access vs rettype) 
         sts)
   in
-  let rsts name vs acces sts = rsts_with_ret name vs access `TYP_none sts in 
+  let rsts name vs access sts = rsts_with_ret name vs access `TYP_none sts in 
 
   (* rename _root headers *)
   let rex_with_ret x rettype = 

@@ -6,6 +6,5 @@ Felix 102: More Detail
    :maxdepth: 2
    
    lexicology
-   identifiers2
    hofs
 
