@@ -139,22 +139,6 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
     let l1,x1 = rex e1 in
     let l2,x2 = rex e2 in
     l1 @ l2, `EXPR_superscript (sr, (x1, x2))
- 
-  | `EXPR_product (sr,ls) ->
-    let lss,xs = List.split (List.map rex ls) in
-    List.concat lss,`EXPR_product (sr,xs)
-
-  | `EXPR_sum (sr,ls) ->
-    let lss,xs = List.split (List.map rex ls) in
-    List.concat lss,`EXPR_sum (sr,xs)
-
-  | `EXPR_andlist (sr,ls) ->
-    let lss,xs = List.split (List.map rex ls) in
-    List.concat lss,`EXPR_andlist (sr,xs)
-
-  | `EXPR_orlist (sr,ls) ->
-    let lss,xs = List.split (List.map rex ls) in
-    List.concat lss,`EXPR_orlist (sr,xs)
 
   | `EXPR_match_ctor (sr,(name,arg)) ->
     let l1,x1 = rex arg in

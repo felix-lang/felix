@@ -5625,8 +5625,7 @@ syntax tordcmpexpr
 syntax mulexpr
 {
   //$ multiplication: non-associative.
-  x[sproduct_pri] := x[>sproduct_pri] ("*" x[>sproduct_pri])+ =># 
-    "(chain 'ast_product _1 _2)" note "mul";
+  x[sproduct_pri] := x[sproduct_pri] "*" x[>sproduct_pri] =># "(Infix)";
 }
 
 
@@ -5634,11 +5633,11 @@ syntax mulexpr
 @tangle addexpr.fsyn
 syntax addexpr
 {
-  //$ Addition: left non-associative.
-  x[ssum_pri] := x[>ssum_pri] ("+" x[>ssum_pri])+ =># "(chain 'ast_sum _1 _2)" note "add";
+  //$ Addition: left associative.
+  x[ssum_pri] := x[ssum_pri] "+" x[>ssum_pri] =># "(Infix)";
 
   //$ Subtraction: left associative.
-  x[ssubtraction_pri] := x[ssubtraction_pri] "-" x[sproduct_pri] =># "(Infix)";
+  x[ssum_pri] := x[ssum_pri] "-" x[>ssum_pri] =># "(Infix)";
 }
 
 
@@ -5651,13 +5650,13 @@ syntax divexpr
   x[stuple_pri] := x[>stuple_pri] "\over" x[>stuple_pri] =># "(Infix)";
 
   //$ division: left associative.
-  x[s_term_pri] := x[s_term_pri] "/" x[>s_term_pri] =># "(Infix)";
+  x[sproduct_pri] := x[sproduct_pri] "/" x[>sproduct_pri] =># "(Infix)";
 
   //$ remainder: left associative.
-  x[s_term_pri] := x[s_term_pri] "%" x[>s_term_pri] =># "(Infix)";
+  x[sproduct_pri] := x[sproduct_pri] "%" x[>sproduct_pri] =># "(Infix)";
 
   //$ remainder: left associative.
-  x[s_term_pri] := x[s_term_pri] "\bmod" x[>s_term_pri] =># "(Infix)";
+  x[sproduct_pri] := x[sproduct_pri] "\bmod" x[>sproduct_pri] =># "(Infix)";
 }
 
 
@@ -6103,13 +6102,13 @@ syntax boolexpr
   satom := "true" =># "`(ast_true ,_sr)";
 
   //$ Logical implication.
-  x[simplies_condition_pri] := x[>simplies_condition_pri] "implies" x[>simplies_condition_pri] =># "(Infix)";
+  x[simplies_condition_pri] := x[>simplies_condition_pri] "implies" x[>simplies_condition_pri] =># "(infix 'implies)";
 
   //$ Logical disjunction (or).
-  x[sor_condition_pri] := x[>sor_condition_pri] ( "or" x[>sor_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
+  x[sor_condition_pri] := x[sor_condition_pri] "or" x[>sor_condition_pri] =># "(infix 'lor)";
 
   //$ Logical conjunction (and).
-  x[sand_condition_pri] := x[>sand_condition_pri] ( "and" x[>sand_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
+  x[sand_condition_pri] := x[sand_condition_pri] "and" x[>sand_condition_pri] =># "(infix 'land)";
 
   //$ Logical negation (not).
   x[snot_condition_pri] := "not" x[snot_condition_pri]  =># "`(ast_not ,_sr ,_2)";
@@ -6121,10 +6120,12 @@ syntax boolexpr
   x[stex_implies_condition_pri] := x[>stex_implies_condition_pri]  "\implies" x[>stex_implies_condition_pri] =># 
     "(infix 'implies)";
 
-  x[stex_or_condition_pri] := x[>stex_or_condition_pri] ( "\lor" x[>stex_or_condition_pri])+ =># 
-    "(chain 'ast_orlist _1 _2)" note "lor";
-  x[stex_and_condition_pri] := x[>stex_and_condition_pri] ( "\land" x[>stex_and_condition_pri])+ =># 
-    "(chain 'ast_andlist _1 _2)" note "land";
+  x[stex_or_condition_pri] := x[stex_or_condition_pri] "\lor" x[>stex_or_condition_pri] =># 
+    "(infix 'lor)";
+
+  x[stex_and_condition_pri] := x[stex_and_condition_pri] ( "\land" x[>stex_and_condition_pri])+ =># 
+    "(infix 'land)" note "land";
+
   x[stex_not_condition_pri] := "\lnot" x[stex_not_condition_pri]  =># "`(ast_not ,_sr ,_2)";
 
 

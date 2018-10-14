@@ -187,27 +187,14 @@ and string_of_expr (e:expr_t) =
     se arg ^
     ")"
 
-  | `EXPR_product (_,ts) ->
-     cat "*" (map se ts)
-
-  | `EXPR_sum (_,ts) ->
-     cat "+" (map se ts)
-
   | `EXPR_intersect (_,ts) ->
      cat "\\&" (map se ts)
 
   | `EXPR_union (_,ts) ->
      cat "\\|" (map se ts)
 
-
   | `EXPR_isin (_,(a,b)) ->
      se a ^ " isin " ^ se b
-
-  | `EXPR_orlist (_,ts) ->
-     cat " or " (map se ts)
-
-  | `EXPR_andlist (_,ts) ->
-     cat " and " (map se ts)
 
   | `EXPR_arrow (_,(a,b)) ->
     "(" ^ se a ^ " -> " ^ se b ^ ")"

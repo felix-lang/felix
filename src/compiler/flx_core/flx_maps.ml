@@ -154,13 +154,9 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | `EXPR_suffix (sr,(qn,t)) -> `EXPR_suffix (sr,(qn, ft t))
   | `EXPR_uniq (sr,e) -> `EXPR_uniq (sr, fe e)
 
-  | `EXPR_product (sr,es) -> `EXPR_product (sr, List.map fe es)
-  | `EXPR_sum (sr,es) -> `EXPR_sum (sr, List.map fe es)
   | `EXPR_intersect (sr,es) -> `EXPR_intersect (sr, List.map fe es)
   | `EXPR_union (sr,es) -> `EXPR_union(sr, List.map fe es)
   | `EXPR_isin (sr,(a,b)) -> `EXPR_isin (sr, (fe a, fe b))
-  | `EXPR_orlist (sr,es) -> `EXPR_orlist (sr, List.map fe es)
-  | `EXPR_andlist (sr,es) -> `EXPR_andlist (sr, List.map fe es)
   | `EXPR_arrow (sr,(a,b)) -> `EXPR_arrow (sr,(fe a, fe b))
   | `EXPR_effector (sr,(a,e,b)) -> `EXPR_effector (sr,(fe a, fe e, fe b))
   | `EXPR_longarrow (sr,(a,b)) -> `EXPR_longarrow (sr,(fe a, fe b))
@@ -309,12 +305,8 @@ let iter_expr f (e:expr_t) =
     -> f a; f e; f b
 
   | `EXPR_tuple (_,es)
-  | `EXPR_product (_,es)
-  | `EXPR_sum (_,es)
   | `EXPR_intersect (_,es)
   | `EXPR_union (_,es)
-  | `EXPR_orlist (_,es)
-  | `EXPR_andlist (_,es)
   | `EXPR_arrayof (_, es)
   | `EXPR_match_ho_ctor (_,(_,es))
   | `EXPR_ho_ctor_arg (_,(_,es)) ->

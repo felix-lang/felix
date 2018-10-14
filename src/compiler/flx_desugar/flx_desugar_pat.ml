@@ -163,10 +163,6 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   | `EXPR_tuple_cons (sr, eh, et) -> `EXPR_tuple_cons (sr, subst eh, subst et)
   | `EXPR_tuple_snoc (sr, eh, et) -> `EXPR_tuple_snoc (sr, subst eh, subst et)
   | `EXPR_superscript (sr,(e1,e2)) -> `EXPR_superscript (sr, (subst e1, subst e2))
-  | `EXPR_product (sr,ls) -> `EXPR_product (sr,map subst ls)
-  | `EXPR_sum (sr,ls) -> `EXPR_sum (sr, map subst ls)
-  | `EXPR_andlist (sr, ls) -> `EXPR_andlist (sr,map subst ls)
-  | `EXPR_orlist (sr, ls) -> `EXPR_orlist (sr, map subst ls)
   | `EXPR_cond (sr,(e,b1,b2)) -> `EXPR_cond (sr, (subst e, subst b1, subst b2))
   | `EXPR_not (sr,e) -> `EXPR_not (sr, subst e)
  

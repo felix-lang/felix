@@ -374,12 +374,8 @@ print_endline ("Processing ast_name "^xid id^" in xexpr");
  | Lst [Id "ast_patany"; sr] -> `EXPR_patany (xsr sr)
 
 
- | Lst [Id "ast_product"; sr; Lst es] -> `EXPR_product (xsr sr, map (xexpr_t (xsr sr)) es)
- | Lst [Id "ast_sum";  sr; Lst es] -> `EXPR_sum (xsr sr,map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_intersect"; Lst es] -> `EXPR_intersect (sr, map ex es)
  | Lst [Id "ast_isin"; Lst [a; b]] -> `EXPR_isin (sr, (ex a, ex b))
- | Lst [Id "ast_orlist"; sr; Lst es] -> `EXPR_orlist (xsr sr, map (xexpr_t (xsr sr)) es)
- | Lst [Id "ast_andlist"; sr; Lst es] -> `EXPR_andlist (xsr sr, map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_not"; sr; e] -> `EXPR_not (xsr sr, ex e)
 (*
  | Lst [Id "ast_arrow";  Lst [e1; e2]] -> `EXPR_arrow (sr,(ex e1, ex e2))

@@ -173,13 +173,9 @@ and expr_t = [
   | `EXPR_suffix of Flx_srcref.t * (qualified_name_t * typecode_t)
   | `EXPR_patvar of Flx_srcref.t * Flx_id.t
   | `EXPR_patany of Flx_srcref.t
-  | `EXPR_product of Flx_srcref.t * expr_t list
-  | `EXPR_sum of Flx_srcref.t * expr_t list
   | `EXPR_intersect of Flx_srcref.t * expr_t list
   | `EXPR_union of Flx_srcref.t * expr_t list
   | `EXPR_isin of Flx_srcref.t * (expr_t * expr_t)
-  | `EXPR_orlist of Flx_srcref.t * expr_t list
-  | `EXPR_andlist of Flx_srcref.t * expr_t list
   | `EXPR_arrow of Flx_srcref.t * (expr_t * expr_t)
   | `EXPR_effector of Flx_srcref.t * (expr_t * expr_t * expr_t)
   | `EXPR_longarrow of Flx_srcref.t * (expr_t * expr_t)
@@ -819,13 +815,9 @@ let src_of_expr (e : expr_t) = match e with
   | `EXPR_vsprintf (s,_)
   | `EXPR_interpolate (s,_)
   | `EXPR_noexpand (s,_)
-  | `EXPR_product (s,_)
-  | `EXPR_sum (s,_)
   | `EXPR_intersect (s,_)
   | `EXPR_union (s,_)
   | `EXPR_isin (s,_)
-  | `EXPR_orlist (s,_)
-  | `EXPR_andlist (s,_)
   | `EXPR_arrow (s,_)
   | `EXPR_effector (s,_)
   | `EXPR_longarrow (s,_)

@@ -243,34 +243,6 @@ print_endline ("flx_lookup.`EXPR_callback.bexpr_closure");
     let e = be e in
     bexpr_expr (s,t,e)
 
-  | `EXPR_andlist (sri,ls) ->
-    begin let mksum a b = Flx_strr.apl2 sri "land" [a;b] in
-    match ls with
-    | h::t -> be (List.fold_left mksum h t)
-    | [] -> clierrx "[flx_bind/flx_lookup.ml:3978: E170] " sri "Not expecting empty and list"
-    end
-
-  | `EXPR_orlist (sri,ls) ->
-    begin let mksum a b = Flx_strr.apl2 sri "lor" [a;b] in
-    match ls with
-    | h::t -> be (List.fold_left mksum h t)
-    | [] -> clierrx "[flx_bind/flx_lookup.ml:3985: E171] " sri "Not expecting empty or list"
-    end
-
-  | `EXPR_sum (sri,ls) ->
-    begin let mksum a b = Flx_strr.apl2 sri "+" [a;b] in
-    match ls with
-    | h::t -> be (List.fold_left mksum h t)
-    | [] -> clierrx "[flx_bind/flx_lookup.ml:3992: E172] " sri "Not expecting empty product (unit)"
-    end
-
-  | `EXPR_product (sri,ls) ->
-    begin let mkprod a b = Flx_strr.apl2 sri "*" [a;b] in
-    match ls with
-    | h::t -> be (List.fold_left mkprod h t)
-    | [] -> clierrx "[flx_bind/flx_lookup.ml:3999: E173] " sri "Not expecting empty sum (void)"
-    end
-
   | `EXPR_superscript (sri,(a,b)) ->
     be (Flx_strr.apl2 sri "pow" [a; b])
 
