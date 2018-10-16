@@ -13,6 +13,11 @@ and metatype' sr typ : kind =
   | BBOOL _ -> KIND_bool
   | BTYP_typeop (_,_,k) -> k
   | BTYP_hole -> assert false
+
+  | BTYP_type_match (_, bs)
+  | BTYP_subtype_match (_, bs) ->
+    kind_max (List.map (fun (_,t) -> mt t) bs)
+ 
   | BTYP_type_function (a,r,body) ->
     let ps = List.map snd a in
     let argt =
@@ -20,18 +25,19 @@ and metatype' sr typ : kind =
       | [x] -> x
       | _ -> kind_tuple ps
     in
-      let rt = mt body in
-      if r<>rt then
-        clierrx "[Flx_btype_kind:24: E239] " sr
+    let bk =  mt body in
+    if kind_ge2 r bk then
+      kind_function (argt,r)
+    else 
+      clierrx "[Flx_btype_kind:32: E239] " sr
         (
           "Flx_btype_kind: In type function \n" ^
           st typ ^
           "\nFunction body metatype \n"^
-          sk rt^
-          "\ndoesn't agree with declared kind \n" ^
+          sk bk^
+          "\nis not subkind or equal to declared kind \n" ^
           sk r
-        );
-      kind_function (argt,r)
+        )
 
   | BTYP_type_tuple ts ->
     kind_tuple (List.map mt ts)
@@ -104,8 +110,6 @@ and metatype' sr typ : kind =
   | BTYP_intersect _
   | BTYP_union _
   | BTYP_polyrecord (_, _)
-  | BTYP_type_match (_, _)
-  | BTYP_subtype_match (_, _)
   | BTYP_tuple_cons (_, _)
   | BTYP_tuple_snoc (_, _)
   | BTYP_rptsum _

@@ -125,6 +125,7 @@ print_endline ("Bind type " ^ string_of_typecode t ^ " params = " ^
 
   let t =
   match t with
+  | `TYP_bool b -> bbool b
   | `TYP_typeop (sr,op,t,k) ->
     let t = bt t in
     let k = Flx_btype.bmt "Flx_bind_type.`TYP_var" k in
@@ -371,7 +372,11 @@ print_endline ("\n+++++++++Bound recursive type is " ^ Flx_btype.st t^"\n\n");
         (* Typeof is recursive *)
         let outer_depth = List.assq e rs.expr_fixlist in
         let fixdepth = outer_depth -rs.depth in
-(* HACK metatype guess *)
+(* HACK metatype guess : expressions generally ARE of kind TYPE, it just might be
+an over-generalisation *)
+(*
+print_endline ("Flx_bind_type.TYP_typeof fixpoint metatype hack! Expression " ^ string_of_expr e);
+*)
         btyp_fix fixdepth (Flx_kind.KIND_type)
       end else begin
         if debug then
@@ -514,6 +519,7 @@ print_endline ("  ***** Bound `TYP_apply: " ^ Flx_btype.st x );
 
   | `TYP_name (sr,s,[]) when List.mem_assoc s rs.as_fixlist ->
 (* HACK metatype guess *)
+print_endline ("Flx_bind_type: TYP_name metatype hack!");
     btyp_fix ((List.assoc s rs.as_fixlist) - rs.depth) (Flx_kind.KIND_type)
 
   | `TYP_name (sr,s,[]) when List.mem_assoc s params ->

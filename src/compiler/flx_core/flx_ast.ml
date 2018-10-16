@@ -63,6 +63,8 @@ and kindcode_t =
 
 (** type of a type *)
 and typecode_t = [
+  | `TYP_bool of bool (* KND_bool *)
+
   | `TYP_rptsum of typecode_t * typecode_t
   | `TYP_pclt of typecode_t * typecode_t
   | `TYP_rpclt of typecode_t * typecode_t

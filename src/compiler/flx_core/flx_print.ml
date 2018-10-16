@@ -362,6 +362,7 @@ and str_of_kindcode k : string =
 and st prec tc : string =
   let iprec,txt =
     match tc with
+    | `TYP_bool b -> 0,(if b then "TRUE" else "FALSE")
     | `TYP_defer (sr,t) -> 
       begin match !t with 
       | None -> 0,"(DEFER:unset)" 

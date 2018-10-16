@@ -89,8 +89,9 @@ print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
    in
    `TYP_unitsum v
 
-  | Lst [Id "ast_name"; sr; Str "LABEL"; Lst []] -> 
-    `TYP_label
+  | Lst [Id "ast_name"; sr; Str "LABEL"; Lst []] -> `TYP_label
+  | Lst [Id "ast_name"; sr; Str "TRUE"; Lst []] -> `TYP_bool true
+  | Lst [Id "ast_name"; sr; Str "FALSE"; Lst []] -> `TYP_bool false
 
   | Id "typ_none" -> 
     `TYP_none

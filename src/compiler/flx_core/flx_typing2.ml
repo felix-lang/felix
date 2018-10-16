@@ -60,6 +60,7 @@ let all_tunits ts =
 
 
 let string_of_type_name (t:typecode_t) = match t with
+  | `TYP_bool _ -> "`TYP_bool"
   | `TYP_rptsum _ -> "`TYP_rptsum"
   | `TYP_pclt _ -> "`TYP_pclt"
   | `TYP_rpclt _ -> "`TYP_rpclt"

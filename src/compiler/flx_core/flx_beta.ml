@@ -107,6 +107,7 @@ let rec fixup counter ps body =
      && i + depth +1  = 0 (* looking inside application, one more level *)
      -> print_endline "SPECIAL REDUCTION";
 (* HACK: meta type of fixpoint guessed *)
+print_endline ("Flx_beta:fixup:aux: hacking meta type of fixpoint!");
      btyp_fix (i+2) (kind_type) (* elide application AND skip under lambda abstraction *)
 
    | BTYP_type_function (a,b,c) ->
@@ -261,7 +262,12 @@ and beta_reduce' calltag counter bsym_table sr termlist t =
     print_endline ("Repeated term " ^ sbt bsym_table t);
     *)
 (* HACK: meta type of fixpoint guessed *)
-    let fp = btyp_fix (-j - 1)  (kind_type) in
+    let mt = Flx_btype_kind.metatype sr t in
+(*
+print_endline ("Flx_beta: beta-reduce: hacking metatype of fixpoint, type is " ^ sbt bsym_table t);
+print_endline ("Flx_beta: kind is " ^ sk mt);
+*)
+    let fp = btyp_fix (-j - 1) mt  in
 (*
 print_endline ("Beta-reduce: type list index found term in trail, returning fixpoint " ^ sbt bsym_table fp);
 *)

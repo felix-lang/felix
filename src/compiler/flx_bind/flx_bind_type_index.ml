@@ -137,6 +137,7 @@ end;
     );
 *)
     let mt = Flx_guess_meta_type.guess_meta_type state bsym_table bt index in
+print_endline ("Flx_bind_type_index: fixpoint, meta type calculated by guess_meta_type!"); 
     let fixated = btyp_fix ((List.assoc index rs.type_alias_fixlist)-rs.depth) mt in
 (*
 print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table fixated);

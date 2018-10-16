@@ -25,9 +25,28 @@ open Flx_kind
 
 let debug = false
 
+(* FIXME: one problem of this routine is that the guess can be overly general.
+One reason (at least) for that is that the unbound TYP_* terms are not necessarily
+fully abstract. The bound terms they generate are abstract. For example
+you can have `TYP_sum [`TYP_unitsum 1; `TYP_unitsum 1] or write the same type
+as `TYP_unitsum 2, or as `TYP_rptsumn (2,`TYP_unitsum).
+
+When bound, all types have a canonical (unique) representation which ensures
+the most specialised kind can be generated.
+
+This has to be fixed. Unfortunately. The way forward is that purely structural
+types should be the SAME terms bound and unbound, and in particular the
+abstraction invariants applied when they're constructed.
+
+TODO!
+*)
+
 let rec guess_metatype sr t : kind =
   match t with
+  | `TYP_bool _ -> kind_bool 
   | `TYP_typeop (sr,op,t,k) -> bmt "Flx_guess_meta_type" k 
+  | `TYP_unitsum _ -> kind_unitsum
+
   | `TYP_defer _ -> print_endline "Guess metatype: defered type found"; assert false
   | `TYP_tuple_cons (sr,t1,t2) -> assert false
   | `TYP_tuple_snoc (sr,t1,t2) -> assert false
@@ -44,6 +63,10 @@ let rec guess_metatype sr t : kind =
     in
     let t = KND_function (atyp, c) in
     Flx_btype.bmt "Flx_guess_meta_type" t
+
+  | `TYP_subtype_match (_,bs) 
+  | `TYP_type_match (_,bs) ->
+    kind_max (List.map (fun (_,t) -> guess_metatype sr t) bs)
 
   (* name like, its a big guess! *)
   | `TYP_label
@@ -64,7 +87,6 @@ let rec guess_metatype sr t : kind =
   | `TYP_callback _
   | `TYP_patvar _ 
   | `TYP_tuple _
-  | `TYP_unitsum _
   | `TYP_sum _
   | `TYP_intersect _
   | `TYP_union _
@@ -95,10 +117,8 @@ let rec guess_metatype sr t : kind =
   | `TYP_setintersection _
 
 
-  | `TYP_apply _
+  | `TYP_apply _ (* FIXME! *)
 
-  | `TYP_subtype_match _
-  | `TYP_type_match _ (* FIXME: calculate by examining branches ! *)
   | `TYP_patany _
     -> print_endline ("Woops, dunno meta type of " ^ string_of_typecode t); kind_type
 

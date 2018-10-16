@@ -18,7 +18,15 @@ let rec expand bsym_table  counter sr t =
         "diff is " ^ string_of_int (i - level)
       );
 *)
-      Flx_btype.btyp_fix (i - level) Flx_kind.KIND_type (* CHECK!! *)
+(*
+print_endline ("Flx_expand_typedef: fixpoint, fudge metatype");
+print_endline ("Type is " ^ Flx_print.sbt bsym_table t);
+*)
+let mt = Flx_btype_kind.metatype sr t in
+(*
+print_endline ("KIND is " ^ Flx_kind.sk mt);
+*)
+      Flx_btype.btyp_fix (i - level) mt 
     | None ->
       match t with
       | Flx_btype.BTYP_inst (k,ts,mt) ->

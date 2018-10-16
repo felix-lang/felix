@@ -8,6 +8,7 @@ open Flx_typing
 let ident x = x
 
 let map_type f (t:typecode_t):typecode_t = match t with
+  | `TYP_bool _ -> t 
   | `TYP_typeop (sr,op,t,k) -> `TYP_typeop (sr,op, f t, k)
   | `TYP_rptsum (i,t) -> `TYP_rptsum (f i, f t)
   | `TYP_defer (sr,dt) -> 

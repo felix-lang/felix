@@ -1,4 +1,4 @@
-
+(* See Flx_btype_kind for routine metatype, which finds the bound kind of a bound type *)
 type kind =
   | KIND_type
   | KIND_unitsum
@@ -91,10 +91,33 @@ let kind_ge (eqns:keqns_t) =
 
   with Not_found -> false
 
+let kind_ge2 a b = kind_ge [a,b]
+
 (* we could do this faster with a specialised equality routine, in fact just a = b 
 should work since there are, as yet, no kind variables or functions
 *)
-let kind_eq a b =
-  kind_ge [a,b] && kind_ge [b,a]
+let kind_eq2 a b =
+  kind_ge2 a b  && kind_ge2 b a
+
+(* returns the most specialised kind *)
+(* FIXME: should throw exception which can be trapped by caller *)
+let kind_min2 a b =
+  if kind_ge [a, b] then b else if kind_ge [b, a] then a
+  else failwith ("Flx_kind: kind_unify, " ^ sk a ^ " doesn't unify with " ^ sk b)
+
+(* returns most general kind *)
+let kind_max2 a b =
+  if kind_ge [a, b] then a else if kind_ge [b, a] then b
+  else failwith ("Flx_kind: kind_unify, " ^ sk a ^ " doesn't unify with " ^ sk b)
+
+let kind_min ks = 
+  match ks with
+  | [] -> assert false (* should return BOTTOM *)
+  | h::t -> List.fold_left kind_min2 h t
+
+let kind_max ks = 
+  match ks with
+  | [] -> assert false (* should return BOTTOM *)
+  | h::t -> List.fold_left kind_min2 h t
 
 

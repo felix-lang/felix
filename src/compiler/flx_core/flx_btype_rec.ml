@@ -32,7 +32,12 @@ let fix i t =
     | BTYP_tuple_cons _ -> assert false
     | BTYP_tuple_snoc _ -> assert false
     | BTYP_none -> assert false
-    | BTYP_type_var (k,mt) -> if k = i then btyp_fix n mt else t
+    | BTYP_type_var (k,mt) -> 
+      if k = i then begin 
+        print_endline ("Flx_btype_rec: fixpoint inheriting metatype from type variabe"); 
+        btyp_fix n mt 
+      end
+      else t
     | BTYP_inst (k,ts,mt) -> btyp_inst (k, List.map aux ts,mt)
     | BTYP_vinst (k,ts,mt) -> btyp_vinst (k, List.map aux ts,mt)
     | BTYP_tuple ts -> btyp_tuple (List.map aux ts)
