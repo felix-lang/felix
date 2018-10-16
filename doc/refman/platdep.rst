@@ -53,6 +53,101 @@ of reality, however it is a reasonable approximation
 which is used as a base for achieving your programming
 goals with good reusability.
 
+Installation Structure
+======================
+
+Installation Files
+------------------
+
+Files in the installation belong to a particular platform.
+
+
+Build Files
+^^^^^^^^^^^
+
+These are shared source code, including build scripts,
+Ocaml source for the compiler, C++ sources for the run time
+library, Felix sources for the Felix standard libraries,
+standard database configuration data, and documentation.
+
+This set of files is version dependent, but platform independent.
+
+Host Files
+^^^^^^^^^^
+
+The host system requires the build files together
+with the built executables flxg (the compiler), 
+flx (the compiler driver), the toolchain plugins,
+flx_pkgconfig (the database inspector), and other build tools.
+
+It also includes the configured database, and the control files
+in $HOME/.felix. 
+
+Target Files
+^^^^^^^^^^^^
+
+The target files include the C++ run time library objects files,
+static archive libraries, and C++ RTL ++ header files, and all
+the data requires to compile C++ code to object files and link
+it to executables or shared libraries.
+
+Run Files
+^^^^^^^^^
+
+The run files consist of the build executables and shared libraries
+required to run the user code on the run platform.
+
+Installation Structure
+----------------------
+
+The current installation structure defaults to use of two directories.
+
+Installation Directories
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The root install directory is /usr/local/lib/felix. Each version of Felix
+is a separate subdirectory of the root install directory.
+
+Each install directory contains at least two subdirectories.
+The share subdirectory contains the build files.
+
+The host subdirectory contains the host files, and the target files for
+the host platform as well.
+
+Additional target subdirectories can be created. These must contain at least
+the target files for the selected target platform. At present the build
+tools also attempt to add host files to the target as well.
+
+Control Directory
+^^^^^^^^^^^^^^^^^
+
+There is one control directory per user account, which is the
+subdirectory .felix contains in the users HOME directory.
+
+This directory has several subdirectories.
+
+Configuration Override
+++++++++++++++++++++++
+
+The config subdirectory of the control directory contains
+overrides for the standard configuration which are applied
+when initially configuring, or later reconfiguring, Felix.
+They apply to the user host only.
+
+It also contains the control file felix.fpc which is the master
+control file used to locate other files in non-default locations.
+
+Cache
++++++
+
+The cache subdirectory has two subdirectories.
+The text subdirectory containes generates source files, including
+C++ files.
+The binary subdirectory contains build object files, libraries,
+and other binary data for the target and run platforms.
+
+
+
 Platform Dependency Model
 =========================
 

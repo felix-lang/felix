@@ -9,6 +9,7 @@
 @tangler control.fsyn                    = share/lib/grammar/control.fsyn
 @tangler executable.fsyn                 = share/lib/grammar/executable.fsyn
 @tangler expressions.fsyn                = share/lib/grammar/expressions.fsyn
+@tangler types.fsyn                      = share/lib/grammar/types.fsyn
 @tangler extra.files                     = share/lib/grammar/extra.files
 @tangler felix.fsyn                      = share/lib/grammar/felix.fsyn
 @tangler functions.fsyn                  = share/lib/grammar/functions.fsyn
@@ -60,6 +61,618 @@
 
 @tangler regexps.fsyn        = share/lib/std/regex/regexps.fsyn
 @tangler stringexpr.fsyn     = share/lib/std/strings/stringexpr.fsyn
+
+@h1 Type Grammar
+@tangle types.fsyn
+
+syntax types {
+  requires expressions;
+
+  stype := t[slambda_pri] =># "_1";
+  stypeexpr := t[>sor_condition_pri] =># "_1";
+  stypeexpr_comma_list = list::commalist1<stypeexpr>;
+
+  //$ Anonymous type function (lamda).
+  t[slambda_pri] := "fun" stypefun_args ":" stypeexpr "=>" stype =>#
+    """
+    `(typ_typefun ,_sr ,_2 ,_4 ,_6)
+    """;
+
+  t[sas_expr_pri] := t[sas_expr_pri] "as" sname =># "`(typ_as ,_sr (,_1 ,_3))";
+
+  t[stuple_pri] := stypeexpr ("," stypeexpr )+ =># "(chain 'typ_type_tuple _1 _2)";
+
+  t[simplies_condition_pri] := t[simplies_condition_pri] "implies" t[>simplies_condition_pri] =># "`(typ_implies ,_sr ,_1 ,_3)";
+  t[sor_condition_pri] := t[sor_condition_pri] "or" t[>sor_condition_pri] =># "`(typ_or ,_sr ,_1 ,_3)";
+  t[sand_condition_pri] := t[sand_condition_pri]  "and" t[>sand_condition_pri] =># "`(typ_and ,_sr ,_1 ,_3)";
+  t[snot_condition_pri] := "not" t[snot_condition_pri]  =># "`(typ_not ,_sr ,_2)";
+  t[satomic_pri] := "true"  =># "`(typ_true,_sr)";
+  t[satomic_pri] := "false"  =># "`(typ_false ,_sr)";
+
+  t[ssum_pri] := t[ssum_pri] "`+" t[>ssum_pri] =># "(tInfix)";
+  t[ssum_pri] := t[ssum_pri] "`-" t[>ssum_pri] =># "(tInfix)";
+  t[ssum_pri] := t[ssum_pri] "`*" t[>ssum_pri] =># "(tInfix)";
+  t[ssum_pri] := t[ssum_pri] "`/" t[>ssum_pri] =># "(tInfix)";
+  t[ssum_pri] := t[ssum_pri] "`%" t[>ssum_pri] =># "(tInfix)";
+  t[ssum_pri] := t[>scomparison_pri] "`==" t[>scomparison_pri] =># "(tInfix)";
+  t[ssum_pri] := t[>scomparison_pri] "`<" t[>scomparison_pri] =># "(tInfix)";
+  t[ssum_pri] := t[>scomparison_pri] "`>" t[>scomparison_pri] =># "(tInfix)";
+
+  t[scomparison_pri]:= t[>scomparison_pri] cmp t[>scomparison_pri] =># 
+   "`(tbinop _2 _1 _3))";
+
+  t[ssetunion_pri] := t[ssetunion_pri] "\cup" t[>ssetunion_pri] =># "`(typ_typesetunion ,_sr ,_1 ,_3)";
+  t[ssetintersection_pri] := t[ssetintersection_pri] "\cap" t[>ssetintersection_pri] =># "`(typ_typesetintersection ,_sr ,_1 ,_3)";
+
+  // right arrows: RIGHT ASSOCIATIVE!
+  //$ Function type, right associative.
+  t[sarrow_pri] := t[>sarrow_pri] "->" t[sarrow_pri] =># "`(typ_arrow (,_1 ,_3))";
+  t[sarrow_pri] := t[>sarrow_pri] "->" "[" stype "]" t[sarrow_pri] =># "`(typ_effector (,_1 ,_4 ,_6))";
+
+  //$ C function type, right associative.
+  t[sarrow_pri] := t[>sarrow_pri] "-->" t[sarrow_pri] =># "`(typ_longarrow (,_1 ,_3))";
+
+  //$ Addition: left non-associative.
+  t[ssum_pri] := t[>ssum_pri] ("+" t[>ssum_pri])+ =># "(chain 'typ_sum _1 _2)" note "add";
+
+  //$ multiplication: non-associative.
+  t[sproduct_pri] := t[>sproduct_pri] ("*" t[>sproduct_pri])+ =># "(chain 'typ_tuple _1 _2)" note "mul";
+
+  //$ Prefix 
+  t[sprefixed_pri] := "~" t[sprefixed_pri] =># "`(typ_dual ,_sr ,_2)";
+
+  t[sprefixed_pri] := "!" t[sprefixed_pri] =># "(tPrefix)";
+  t[sprefixed_pri] := "+" t[sprefixed_pri] =># "(tprefix 'prefix_plus)";
+  t[sprefixed_pri] := "-" t[sprefixed_pri] =># "(tprefix 'neg)";
+
+
+  //$ Fortran power.
+  t[spower_pri] := t[ssuperscript_pri] "**" t[sprefixed_pri] =># "`(typ_tuple_cons ,_sr ,_1 ,_3)";
+  t[spower_pri] := t[ssuperscript_pri] "<**>" t[sprefixed_pri] =># "(typ_tuple_snoc ,_sr ,_1 ,_3)";
+
+  //$ Superscript, exponential.
+  t[ssuperscript_pri] := t[ssuperscript_pri] "^" t[srefr_pri] =># "`(typ_superscript ,_1 ,_3)";
+
+  t[sapplication_pri] := t[sapplication_pri] t[>sapplication_pri] =># 
+    "`(typ_apply ,_sr (,_1 ,_2))" note "apply";
+
+  t[sapplication_pri] := "typesetof" "(" list::commalist1<stypeexpr> ")" =># 
+    "`(typ_typeset ,_sr ,_3)"; 
+
+  t[sfactor_pri] := t[sfactor_pri] "." t[>sfactor_pri] =># "`(typ_apply ,_sr (,_3 ,_1))";
+
+ 
+  t[sthename_pri] := "typeof" "(" sexpr ")" =># "`(typ_typeof ,_sr ,_3)";
+
+  t[sthename_pri] := "_typeop" "(" sstring "," stypeexpr "," stypeexpr ")" =>#
+    "`(typ_typeop ,_sr ,_3 ,_5 ,_7)";
+  t[sthename_pri] := "&" t[sthename_pri] =># "`(typ_ref ,_sr ,_2)";
+
+  //$ Felix pointer type and address of operator.
+  t[sthename_pri] := "_uniq"   t[sthename_pri] =># "`(typ_uniq ,_sr ,_2)";
+  t[sthename_pri] := "_rref"   t[sthename_pri] =># "`(typ_rref ,_sr ,_2)";
+  t[sthename_pri] := "&<"      t[sthename_pri] =># "`(typ_rref ,_sr ,_2)";
+  t[sthename_pri] := "_wref"   t[sthename_pri] =># "`(typ_wref ,_sr ,_2)";
+  t[sthename_pri] := "&>"      t[sthename_pri] =># "`(typ_wref ,_sr ,_2)";
+  t[sthename_pri] := "@"       t[sthename_pri] =># "(Prefix)";
+  t[sthename_pri] := squalified_name =># "_1";
+
+// TYPE MATCH HACKS .. FIX LATER
+  t[sthename_pri] := "?" sname =># "`(typ_patvar ,_sr ,_2)";
+
+  t[sthename_pri] := "#?" sinteger =># "`(PARSER_ARGUMENT ,_2)";
+
+  //$ Match anything without naming the subexpression.
+  tatom := "_" =># "`(typ_patany ,_sr)";
+
+  t[satomic_pri] := tatom =># "_1";
+
+  //$ Record type.
+  tatom := "(" srecord_mem_decl ("," srecord_mem_decl2)*  ")" =># 
+   "`(ast_record_type ,(cons _2 (map second _3)))";
+    srecord_mem_decl := sname ":" stypeexpr =># "`(,_1 ,_3)";
+    srecord_mem_decl := ":" stypeexpr =># '`("" ,_2)';
+    srecord_mem_decl2 := sname ":" stypeexpr =># "`(,_1 ,_3)";
+    srecord_mem_decl2 := ":" stypeexpr =># '`("" ,_2)';
+    srecord_mem_decl2 := stypeexpr =># '`("" ,_1)';
+
+  //$ polyRecord type.
+  tatom := "(" srecord_mem_decl ("," srecord_mem_decl2)*  "|" stypeexpr ")" =># 
+   "`(ast_polyrecord_type ,(cons _2 (map second _3)) ,_5)";
+
+
+  // INCONSISTENT GRAMMAR (no separator between items??
+  //$ Variant type.
+  tatom := "(" stype_variant_items ")" =># "`(ast_variant_type ,_2)";
+    stype_variant_item := "case" sname "of" stypeexpr =># "`(ctor ,_2 ,_4)";
+    stype_variant_item := "case" sname =># "`(ctor ,_2 ,(noi 'unit))";
+    stype_variant_item := "`" sname "of" stypeexpr =># "`(ctor ,_2 ,_4)";
+    stype_variant_item := "`" sname =># "`(ctor ,_2 ,(noi 'unit))";
+
+    stype_variant_item_bar := "|" stype_variant_item =># "_2";
+    stype_variant_item_bar := "|" stypeexpr =># "`(base ,_2)";
+    stype_variant_items := stypeexpr stype_variant_item_bar+ =># "(cons `(base ,_1) _2)";
+    stype_variant_items := stype_variant_item stype_variant_item_bar* =># "(cons _1 _2)";
+    stype_variant_items := stype_variant_item_bar+ =># "_1";
+
+  // can't use typeexpr here because trailing ">" is a comparison operator ..
+  tatom := "_pclt<" t[>scomparison_pri] "," t[>scomparison_pri] ">" =># "`(typ_pclt ,_sr ,_2 ,_4)" ;
+  tatom := "_rpclt<" t[>scomparison_pri] "," t[>scomparison_pri] ">" =># "`(typ_rpclt ,_sr ,_2 ,_4)" ;
+  tatom := "_wpclt<" t[>scomparison_pri] "," t[>scomparison_pri] ">" =># "`(typ_wpclt ,_sr ,_2 ,_4)" ;
+
+
+  //$ scalar literals (numbers, strings).
+  tatom := sliteral =># "_1";
+  tatom := "(" ")" =># "`(typ_type_tuple ,_sr ())";
+  tatom := "(" stype ")" =># "_2";
+  tatom := "extend" stypeexpr_comma_list "with" stypeexpr "end" =># """
+    `(typ_type_extension ,_sr ,_2 ,_4)
+  """;
+
+  tatom := stypematch =># '_1';
+
+  stypematch := "typematch" stype "with" stype_matching+ "endmatch" =>#
+    "`(ast_type_match ,_sr (,_2 ,_4))";
+  stypematch := "subtypematch" stype "with" stype_matching+ "endmatch" =>#
+    "`(ast_subtype_match ,_sr (,_2 ,_4))";
+  stype_matching := "|" stype "=>" stype =># "`(,_2 ,_4)";
+
+
+// TYPE LANGUAGE ENDS
+}
+
+@h2 Expressions.
+See also other packages containing extensions.
+@tangle expressions.fsyn
+syntax expressions {
+  priority 
+    let_pri < 
+    slambda_pri <
+    spipe_apply_pri <
+    sdollar_apply_pri < 
+
+    // TUPLES
+    stuple_cons_pri <
+    stuple_pri <
+
+    // LOGIC
+    simplies_condition_pri <
+    sor_condition_pri <
+    sand_condition_pri <
+    snot_condition_pri <
+
+    // TEX LOGIC
+    stex_implies_condition_pri <
+    stex_or_condition_pri <
+    stex_and_condition_pri <
+    stex_not_condition_pri <
+
+    // COMPARISONS
+    scomparison_pri <
+    sas_expr_pri <
+
+    // SETWISE OPERATORS
+    ssetunion_pri <
+    ssetintersection_pri <
+    sarrow_pri <
+    scase_literal_pri <
+
+    // BITWISE OPERATORS
+    sbor_pri <
+    sbxor_pri <
+    sband_pri <
+    sshift_pri <
+
+    // NUMERIC OPERATORS
+    ssum_pri <
+    ssubtraction_pri <
+    sproduct_pri <
+    s_term_pri <        // division 
+
+    // STUFF
+    sprefixed_pri <
+    spower_pri <
+    ssuperscript_pri <
+    srefr_pri <
+    scoercion_pri <
+
+    // WHITESPACE APPLICATION
+    sapplication_pri <
+    sfactor_pri <
+    srcompose_pri <
+    sthename_pri <
+    satomic_pri
+  ;
+
+  requires 
+    types, setexpr, cmpexpr, pordcmpexpr, tordcmpexpr, 
+    addexpr, mulexpr, divexpr,
+    bitexpr,
+    spipeexpr, boolexpr, stringexpr, listexpr, tupleexpr
+  ;
+  sexpr := x[let_pri] =># "_1";
+
+  //$ Let binding.
+  x[let_pri] := "let" spattern "=" x[let_pri] "in" x[let_pri] =># "`(ast_letin ,_sr (,_2 ,_4 ,_6))";
+
+  //$ Let fun binding.
+  x[let_pri] := "let" "fun" sdeclname sfun_arg* fun_return_type "=>" x[let_pri] "in" x[let_pri] =># 
+    """
+    (let* 
+      (
+        (body `((ast_fun_return ,_sr ,_7)))
+        (fun_decl `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ,(first _5) ,(second _5) Function () ,body))
+        (final_return `(ast_fun_return ,_sr ,_9))
+      )
+      (block_expr `(,fun_decl ,final_return))
+    )
+    """;
+
+  // FIXME
+  x[let_pri] := "let" "fun" sdeclname fun_return_type "=" smatching+ "in" x[let_pri] =>#
+    """
+    (let* 
+      (
+        (ixname _3)
+        (name (first ixname))
+        (tvars (second ixname))
+        (t (first (first _4)))
+        (traint (second (first _4)))
+        (matching _6)
+        (expr _8)
+      )
+      (if (eq? 'typ_arrow (first t))
+        (let*
+          (
+            (argt (caadr t))
+            (ret (cadadr t))
+            (params `((((,_sr PVal _a ,argt none)) none))) ;; parameters
+            (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,matching)))))
+            (fun_decl `(ast_curry ,_sr ,name ,tvars ,params
+               (,ret ,traint)
+               Function () ,body)
+            )
+            (final_return `(ast_fun_return ,_sr ,expr))
+          )
+          (block_expr `(,fun_decl ,final_return))
+        )
+        'ERROR
+      )
+    )
+    """;
+
+
+
+  //$ Unterminated match
+  x[let_pri] := "let" pattern_match =># "_2"; 
+
+  //$ Conditional expression.
+  x[let_pri] := sconditional =># '_1';
+
+  //$ Pattern matching.
+  x[let_pri] := pattern_match =># '_1';
+
+
+  //$ Low precedence right associative application.
+  x[sdollar_apply_pri] := x[>sdollar_apply_pri] "$" x[sdollar_apply_pri] =># 
+    "`(ast_apply ,_sr (,_1 ,_3))";
+
+  //$ Low precedence left associative reverse application.
+  x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[>spipe_apply_pri] =># 
+    "`(ast_apply ,_sr (,_3 ,_1))";
+
+  //$ Haskell-ish style infix notation of functions   foo(x,y) => x `(foo) y
+  x[stuple_pri]  := x[stuple_pri] "`(" sexpr ")" sexpr =># 
+    "(binop _3 _1 _5)";
+
+  //$ Named temporary value.
+  x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";
+
+  //$ Named variable.
+  x[sas_expr_pri] := x[sas_expr_pri] "as" "var" sname =># "`(ast_as_var ,_sr (,_1 ,_4))";
+
+
+//  x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># '''
+//    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range") ,_1)) ,_3))
+//  ''';
+//
+//  x[sarrow_pri] := x[>sarrow_pri] "..<" x[>sarrow_pri] =># '''
+//    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range_excl") ,_1)) ,_3))
+//  ''';
+
+  x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># "(infix 'Slice_range_incl)";
+  x[sarrow_pri] := x[>sarrow_pri] "..<" x[>sarrow_pri] =># "(infix 'Slice_range_excl)";
+  x[sarrow_pri] := "..<" x[>sarrow_pri] =># "(prefix 'Slice_to_excl)";
+  x[sarrow_pri] := ".." x[>sarrow_pri] =># "(prefix 'Slice_to_incl)";
+  x[sarrow_pri] := x[>sarrow_pri] ".." =># "(suffix 'Slice_from)";
+  x[sarrow_pri] := ".." =># """`(ast_name ,_sr "Slice_all" () )""";
+  x[sarrow_pri] := "..[" stypeexpr "]" =># """`(ast_type_slice ,_sr ,_2 )""";
+  x[sarrow_pri] := x[>sarrow_pri] ".+" x[>sarrow_pri] =># "(infix 'Slice_from_counted)";
+
+
+  x[scase_literal_pri] := "case" sinteger =># "`(ast_case_tag ,_sr ,_2))";
+  x[scase_literal_pri] := "`" sinteger =># "`(ast_case_tag ,_sr ,_2))";
+
+  //$ Case value.
+  x[scase_literal_pri] := "case" sinteger "of" t[ssum_pri] =># "`(ast_unitsum_literal  ,_sr ,_2 ,_4)";
+  x[scase_literal_pri] := "`" sinteger "of" t[ssum_pri] =># "`(ast_unitsum_literal ,_sr  ,_2 ,_4)";
+  x[scase_literal_pri] := "`" sinteger ":" t[ssum_pri] =># "`(ast_unitsum_literal ,_sr ,_2 ,_4)";
+
+  //$ Tuple projection function.
+  x[scase_literal_pri] := "proj" sinteger "of" t[ssum_pri] =># "`(ast_projection ,_2 ,_4)";
+  x[scase_literal_pri] := "aproj" sexpr "of" t[ssum_pri] =># "`(ast_array_projection ,_2 ,_4)";
+
+  // coarray injection
+  // (ainj (r:>>4) of (4 *+ int)) 42
+  x[scase_literal_pri] := "ainj"  stypeexpr "of" t[ssum_pri] =># "`(ast_ainj ,_sr ,_2 ,_4)";
+
+  spv_name := "case" sname =># "_2";
+  spv_name := "`" sname =># "_2";
+
+  //$ Variant value.
+  x[sthename_pri] := "#" spv_name =># "`(ast_variant (,_2 ()))";
+  x[sapplication_pri] := spv_name  x[>sapplication_pri] =># "`(ast_variant (,_1 ,_2))";
+
+  //$ multiplication: right associative
+  x[sproduct_pri] := x[>sproduct_pri] "\otimes" x[sproduct_pri] =># "(Infix)";
+
+  // repeated sum type, eg 4 *+ int == int + int + int + int
+  // right associative:  2 *+ 3 *+ int is approx 6 *+ int
+  x[sproduct_pri] := x[>sproduct_pri] "*+" x[sproduct_pri] =># "`(ast_rptsum_type ,_sr ,_1 ,_3)";
+
+//------------------------------------------------------------------------
+
+  //$ Prefix exclaim.
+  x[sprefixed_pri] := "!" x[sprefixed_pri] =># "(Prefix)";
+
+  //$ Prefix plus.
+  x[sprefixed_pri] := "+" x[sprefixed_pri] =># "(prefix 'prefix_plus)";
+
+  //$ Prefix negation.
+  x[sprefixed_pri] := "-" x[sprefixed_pri] =># "(prefix 'neg)";
+
+  //$ Prefix complement.
+  x[sprefixed_pri] := "~" x[sprefixed_pri] =># "(Prefix)";
+
+  //$ Fortran power.
+  x[spower_pri] := x[ssuperscript_pri] "**" x[sprefixed_pri] =># "(infix 'pow)";
+  x[spower_pri] := x[ssuperscript_pri] "<**>" x[sprefixed_pri] =># "(infix 'tuple_snoc)";
+
+  //$ Superscript, exponential.
+  x[ssuperscript_pri] := x[ssuperscript_pri] "^" x[srefr_pri] =># "`(ast_superscript (,_1 ,_3))";
+
+  //$ composition
+  x[ssuperscript_pri] := x[ssuperscript_pri] "\circ" x[>ssuperscript_pri] =># "(Infix)";
+  x[ssuperscript_pri] := x[ssuperscript_pri] "\cdot" x[>ssuperscript_pri] =># "(Infix)";
+
+//------------------------------------------------------------------------
+  //$ C dereference.
+  x[srefr_pri] := "*" x[srefr_pri] =># "(prefix 'deref)";
+
+  //$ Deref primitive.
+  //x[srefr_pri] := "_deref" x[srefr_pri] =># "`(ast_deref ,_sr ,_2)";
+
+  //$ Operator new.
+  x[srefr_pri] := "new" x[srefr_pri] =># "`(ast_new ,_sr ,_2)";
+
+//------------------------------------------------------------------------
+  //$ Operator whitespace: application.
+  x[sapplication_pri] := x[sapplication_pri] x[>sapplication_pri] =># 
+    "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
+
+  //$ Variant index.
+  x[sapplication_pri] := "caseno" x[>sapplication_pri] =># "`(ast_case_index ,_sr ,_2)";
+  x[sapplication_pri] := "casearg" x[>sapplication_pri] =># "`(ast_rptsum_arg ,_sr ,_2)";
+
+  //$ Optimisation hint: likely.
+  //$ Use in conditionals, e.g. if likely(x) do ...
+  x[sapplication_pri] := "likely" x[>sapplication_pri] =># "`(ast_likely ,_sr ,_2)";
+
+  //$ Optimisation hint: unlikely.
+  //$ Use in conditionals, e.g. if unlikely(x) do ...
+  x[sapplication_pri] := "unlikely" x[>sapplication_pri] =># "`(ast_unlikely ,_sr ,_2)";
+
+//------------------------------------------------------------------------
+  //$ Suffixed coercion.
+  x[scoercion_pri] := x[scoercion_pri] ":>>" t[>scoercion_pri] =># "`(ast_coercion ,_sr (,_1 ,_3))";
+
+  x[sfactor_pri] := ssuffixed_name =># "_1";
+
+//------------------------------------------------------------------------
+  //$ Reverse application.
+  x[sfactor_pri] := x[sfactor_pri] "." x[>sfactor_pri] =># 
+    "`(ast_apply ,_sr (,_3 ,_1))";
+
+
+  //$ Reverse application with dereference.
+  //$ a *. b same as (*a) . b, like C  a -> b.
+  x[sfactor_pri] := x[sfactor_pri] "*." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 (ast_deref ,_sr ,_1)))";
+
+  //$ a &. b is similar to &a . b for an array, but can be overloaded
+  //$ for abstract arrays: like a + b in C. Returns pointer.
+  // x[sfactor_pri] := x[sfactor_pri] "&." sthe_name =># "(Infix)";
+  x[sfactor_pri] := x[sfactor_pri] "&." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 (ast_ref ,_sr ,_1)))";
+
+//------------------------------------------------------------------------
+
+  //$ Reverse composition
+  x[srcompose_pri] := x[srcompose_pri] "\odot" x[>srcompose_pri] =># "(Infix)";
+
+//------------------------------------------------------------------------
+  //$ High precedence unit application. #f = f ().
+  x[sthename_pri] := "#" x[sthename_pri] =># "`(ast_apply ,_sr (,_2 (ast_tuple ,_sr ())))";
+
+  //$ Felix pointer type and address of operator.
+  x[sthename_pri] := "&" x[sthename_pri] =># "`(ast_ref ,_sr ,_2)";
+
+  //$ Felix pointer type and address of operator.
+  x[sthename_pri] := "_uniq" x[sthename_pri] =># "`(ast_uniq ,_sr ,_2)";
+  x[sthename_pri] := "_rref" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
+  x[sthename_pri] := "&<" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
+  x[sthename_pri] := "_wref" x[sthename_pri] =># "`(ast_wref ,_sr ,_2)";
+  x[sthename_pri] := "&>" x[sthename_pri] =># "`(ast_wref ,_sr ,_2)";
+
+
+  //$ Felix address of operator.
+  x[sthename_pri] := "label_address" sname =># "`(ast_label_ref ,_sr ,_2)";
+
+
+  //$ C pointer type.
+  x[sthename_pri] :=  "@" x[sthename_pri] =># "(Prefix)";
+
+  //$ macro expansion freezer.
+  x[sthename_pri] := "noexpand" squalified_name =># "`(ast_noexpand ,_sr ,_2)";
+
+  //$ pattern variable.
+  x[sthename_pri] := "?" sname =># "`(ast_patvar ,_sr ,_2)";
+
+  //$ Template replacement index.
+  x[sthename_pri] := "#?" sinteger =># "`(PARSER_ARGUMENT ,_2)";
+
+  x[sthename_pri] := squalified_name =># "_1";
+
+
+  //$ Qualified name.
+  sreally_qualified_name := squalified_name "::" ssimple_name_parts =>#
+    "`(ast_lookup (,_1 ,(first _3) ,(second _3)))";
+
+  squalified_name := sreally_qualified_name =># '_1';
+
+  squalified_name := ssimple_name_parts =>#
+    "`(ast_name ,_sr ,(first _1) ,(second _1))";
+
+  ssimple_name_parts := sname =># "`(,_1 ())";
+  ssimple_name_parts := sname "[" "]" =># "`(,_1 ())";
+  ssimple_name_parts := sname "[" stypeexpr_comma_list "]" =># "`(,_1 ,_3)";
+
+  //$ Suffixed name (to name functions).
+  ssuffixed_name := squalified_name "of" t[sthename_pri] =>#
+    "`(ast_suffix (,_1 ,_3))";
+
+//------------------------------------------------------------------------
+  x[satomic_pri] := satom =># "_1";
+  //$ record value (comma separated).
+  satom := "(" rassign ("," rassign2 )* ")" =>#
+    "`(ast_record ,_sr ,(cons _2 (map second _3)))"
+  ;
+    rassign := sname "=" x[sor_condition_pri] =># "`(,_1 ,_3)";
+    rassign := "=" x[sor_condition_pri] =># '`("" ,_2)';
+    rassign2 := sname "=" x[sor_condition_pri] =># "`(,_1 ,_3)";
+    rassign2 := "=" x[sor_condition_pri] =># '`("" ,_2)';
+    rassign2 := x[sor_condition_pri] =># '`("" ,_1)';
+
+  //$ polyrecord value
+  //$ record value (comma separated).
+  satom := "(" rassign ("," rassign2 )* "|" sexpr ")" =>#
+    "`(ast_polyrecord ,_sr ,(cons _2 (map second _3)) ,_5)"
+  ;
+
+  satom := "(" sexpr "without" sname+ ")" =>#
+    "`(ast_remove_fields ,_sr ,_2 ,_4)"
+  ;
+
+  satom := "(" sexpr "with" rassign ("," rassign2 )* ")" =>#
+    "`(ast_replace_fields ,_sr ,_2 ,(cons _4 (map second _5)))"
+  ;
+
+
+  //$ record value, statement list.
+  //$ this variant is useful for encapsulating
+  //$ a series of var x = y; style statements.
+  satom := "struct" "{" vassign+ "}" =>#
+    "`(ast_record ,_sr ,_3 )"
+  ;
+    vassign := "var" sname "=" sexpr ";" =># "`(,_2 ,_4)";
+
+  //$ scalar literals (numbers, strings).
+  satom := sliteral =># "_1";
+
+  //$ Wildcard pattern.
+  satom := _ =># "`(ast_patany ,_sr)";
+
+  //$ Ellipsis (for binding C varags functions).
+  satom := "..." =># "`(ast_ellipsis ,_sr)";
+
+  //$ Callback expression.
+  satom := "callback" "[" sexpr "]" =># "`(ast_callback ,_sr ,_3)";
+
+  //$ Short form anonymous procedure closure.
+  satom := scompound =># "(lazy _1)";
+
+  //$ Short form sequence operator.
+  //$ ( stmt; expr ) means the same as #{stmt; return expr; }
+  satom := "(" stmt+ sexpr ")" =>#
+    """
+    (
+      let* 
+      (
+        (stmts _2)
+        (expr _3)
+        (retexp `(ast_fun_return ,_sr ,expr))
+        (nustmts (append stmts (list retexp)))
+      )
+      (block_expr nustmts)
+    )
+    """ 
+  ;
+
+  //$ special anonymous variable forces eager eval.
+  satom := "(" "var" sexpr ")" =># 
+    """
+    (
+      let
+      (
+        (name (fresh_name "asvar"))
+      )
+      `(ast_as_var ,_sr (,_3 ,name))
+    )
+    """
+  ;
+
+  //$ inline scheme
+  satom := "schemelex" sstring =># "(schemelex _2)";
+  satom := "schemerun" sstring =># "(schemerun _2)";
+  //$ Empty tuple (unit tuple).
+  satom := "(" ")" =># "'()";
+
+  //$ Object extension.
+  expr_comma_list := list::commalist1<x[scomparison_pri]> =># "_1";
+  satom := "extend" expr_comma_list "with" sexpr "end" =># """
+    `(ast_extension ,_sr ,_2 ,_4)
+  """;
+
+    setbar := "|" =># "_1";
+    setbar := "\|" =># "_1";
+    setbar := "\mid" =># "_1";
+
+  setform := spattern ":" stypeexpr setbar sexpr =>#
+    """
+    (let* 
+      (
+         (argt _3)
+         (ret (nos "bool"))
+         (matchings `((,_1 ,_5)((pat_setform_any ,_sr)(ast_false ,_sr))))
+         (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,matchings)))))
+         (param `(,_sr PVal _a ,argt none)) ;; one parameter
+         (params `( Satom ,param ))            ;; parameter tuple list
+         (paramsx `(,params none))     ;; parameter tuple list with precondition
+         (paramsxs `(,paramsx))        ;; curry parameters 
+         (method `(ast_curry ,_sr "has_elt"  ,dfltvs ,paramsxs (,ret none) Method () ,body))
+         (objsts `(,method))
+         (object `(ast_object ,_sr (,dfltvs ,dfltparams typ_none ,objsts))) 
+      )
+      `(ast_apply ,_sr (,object (ast_tuple ,_sr ())))
+    )
+    """;
+
+  satom := "{" setform  "}" =># "_2";
+  satom := "\{" setform  "\}" =># "_2";
+
+
+
+}
+
+@
 
 @h1 Grammar Base
 @h2 Assertions
@@ -1356,613 +1969,6 @@ syntax executable {
 
 @
 
-@h2 Expressions.
-See also other packages containing extensions.
-@tangle expressions.fsyn
-syntax expressions {
-  priority 
-    let_pri < 
-    slambda_pri <
-    spipe_apply_pri <
-    sdollar_apply_pri < 
-
-    // TUPLES
-    stuple_cons_pri <
-    stuple_pri <
-
-    // LOGIC
-    simplies_condition_pri <
-    sor_condition_pri <
-    sand_condition_pri <
-    snot_condition_pri <
-
-    // TEX LOGIC
-    stex_implies_condition_pri <
-    stex_or_condition_pri <
-    stex_and_condition_pri <
-    stex_not_condition_pri <
-
-    // COMPARISONS
-    scomparison_pri <
-    sas_expr_pri <
-
-    // SETWISE OPERATORS
-    ssetunion_pri <
-    ssetintersection_pri <
-    sarrow_pri <
-    scase_literal_pri <
-
-    // BITWISE OPERATORS
-    sbor_pri <
-    sbxor_pri <
-    sband_pri <
-    sshift_pri <
-
-    // NUMERIC OPERATORS
-    ssum_pri <
-    ssubtraction_pri <
-    sproduct_pri <
-    s_term_pri <        // division 
-
-    // STUFF
-    sprefixed_pri <
-    spower_pri <
-    ssuperscript_pri <
-    srefr_pri <
-    scoercion_pri <
-
-    // WHITESPACE APPLICATION
-    sapplication_pri <
-    sfactor_pri <
-    srcompose_pri <
-    sthename_pri <
-    satomic_pri
-  ;
-
-  requires 
-    setexpr, cmpexpr, pordcmpexpr, tordcmpexpr, 
-    addexpr, mulexpr, divexpr,
-    bitexpr,
-    spipeexpr, boolexpr, stringexpr, listexpr, tupleexpr
-  ;
-
-// TYPE LANGUAGE (move out later) 
-
-  stype := t[slambda_pri] =># "_1";
-  stypeexpr := t[>sor_condition_pri] =># "_1";
-  stypeexpr_comma_list = list::commalist1<stypeexpr>;
-
-  //$ Anonymous type function (lamda).
-  t[slambda_pri] := "fun" stypefun_args ":" stypeexpr "=>" stype =>#
-    """
-    `(typ_typefun ,_sr ,_2 ,_4 ,_6)
-    """;
-
-  t[sas_expr_pri] := t[sas_expr_pri] "as" sname =># "`(typ_as ,_sr (,_1 ,_3))";
-
-  t[stuple_pri] := stypeexpr ("," stypeexpr )+ =># "(chain 'typ_type_tuple _1 _2)";
-
-  t[simplies_condition_pri] := t[simplies_condition_pri] "implies" t[>simplies_condition_pri] =># "`(typ_implies ,_sr ,_1 ,_3)";
-  t[sor_condition_pri] := t[sor_condition_pri] "or" t[>sor_condition_pri] =># "`(typ_or ,_sr ,_1 ,_3)";
-  t[sand_condition_pri] := t[sand_condition_pri]  "and" t[>sand_condition_pri] =># "`(typ_and ,_sr ,_1 ,_3)";
-  t[snot_condition_pri] := "not" t[snot_condition_pri]  =># "`(typ_not ,_sr ,_2)";
-  t[satomic_pri] := "true"  =># "`(typ_true,_sr)";
-  t[satomic_pri] := "false"  =># "`(typ_false ,_sr)";
-
-  t[ssum_pri] := t[ssum_pri] "`+" t[>ssum_pri] =># "(tInfix)";
-  t[ssum_pri] := t[ssum_pri] "`-" t[>ssum_pri] =># "(tInfix)";
-  t[ssum_pri] := t[ssum_pri] "`*" t[>ssum_pri] =># "(tInfix)";
-  t[ssum_pri] := t[ssum_pri] "`/" t[>ssum_pri] =># "(tInfix)";
-  t[ssum_pri] := t[ssum_pri] "`%" t[>ssum_pri] =># "(tInfix)";
-  t[ssum_pri] := t[>scomparison_pri] "`==" t[>scomparison_pri] =># "(tInfix)";
-  t[ssum_pri] := t[>scomparison_pri] "`<" t[>scomparison_pri] =># "(tInfix)";
-  t[ssum_pri] := t[>scomparison_pri] "`>" t[>scomparison_pri] =># "(tInfix)";
-
-  t[scomparison_pri]:= t[>scomparison_pri] cmp t[>scomparison_pri] =># 
-   "`(tbinop _2 _1 _3))";
-
-  t[ssetunion_pri] := t[ssetunion_pri] "\cup" t[>ssetunion_pri] =># "`(typ_typesetunion ,_sr ,_1 ,_3)";
-  t[ssetintersection_pri] := t[ssetintersection_pri] "\cap" t[>ssetintersection_pri] =># "`(typ_typesetintersection ,_sr ,_1 ,_3)";
-
-  // right arrows: RIGHT ASSOCIATIVE!
-  //$ Function type, right associative.
-  t[sarrow_pri] := t[>sarrow_pri] "->" t[sarrow_pri] =># "`(typ_arrow (,_1 ,_3))";
-  t[sarrow_pri] := t[>sarrow_pri] "->" "[" stype "]" t[sarrow_pri] =># "`(typ_effector (,_1 ,_4 ,_6))";
-
-  //$ C function type, right associative.
-  t[sarrow_pri] := t[>sarrow_pri] "-->" t[sarrow_pri] =># "`(typ_longarrow (,_1 ,_3))";
-
-  //$ Addition: left non-associative.
-  t[ssum_pri] := t[>ssum_pri] ("+" t[>ssum_pri])+ =># "(chain 'typ_sum _1 _2)" note "add";
-
-  //$ multiplication: non-associative.
-  t[sproduct_pri] := t[>sproduct_pri] ("*" t[>sproduct_pri])+ =># "(chain 'typ_tuple _1 _2)" note "mul";
-
-  //$ Prefix 
-  t[sprefixed_pri] := "~" t[sprefixed_pri] =># "`(typ_dual ,_sr ,_2)";
-
-  t[sprefixed_pri] := "!" t[sprefixed_pri] =># "(tPrefix)";
-  t[sprefixed_pri] := "+" t[sprefixed_pri] =># "(tprefix 'prefix_plus)";
-  t[sprefixed_pri] := "-" t[sprefixed_pri] =># "(tprefix 'neg)";
-
-
-  //$ Fortran power.
-  t[spower_pri] := t[ssuperscript_pri] "**" t[sprefixed_pri] =># "`(typ_tuple_cons ,_sr ,_1 ,_3)";
-  t[spower_pri] := t[ssuperscript_pri] "<**>" t[sprefixed_pri] =># "(typ_tuple_snoc ,_sr ,_1 ,_3)";
-
-  //$ Superscript, exponential.
-  t[ssuperscript_pri] := t[ssuperscript_pri] "^" t[srefr_pri] =># "`(typ_superscript ,_1 ,_3)";
-
-  t[sapplication_pri] := t[sapplication_pri] t[>sapplication_pri] =># 
-    "`(typ_apply ,_sr (,_1 ,_2))" note "apply";
-
-  t[sapplication_pri] := "typesetof" "(" list::commalist1<stypeexpr> ")" =># 
-    "`(typ_typeset ,_sr ,_3)"; 
-
-  t[sfactor_pri] := t[sfactor_pri] "." t[>sfactor_pri] =># "`(typ_apply ,_sr (,_3 ,_1))";
-
- 
-  t[sthename_pri] := "typeof" "(" sexpr ")" =># "`(typ_typeof ,_sr ,_3)";
-
-  t[sthename_pri] := "_typeop" "(" sstring "," stypeexpr "," stypeexpr ")" =>#
-    "`(typ_typeop ,_sr ,_3 ,_5 ,_7)";
-  t[sthename_pri] := "&" t[sthename_pri] =># "`(typ_ref ,_sr ,_2)";
-
-  //$ Felix pointer type and address of operator.
-  t[sthename_pri] := "_uniq"   t[sthename_pri] =># "`(typ_uniq ,_sr ,_2)";
-  t[sthename_pri] := "_rref"   t[sthename_pri] =># "`(typ_rref ,_sr ,_2)";
-  t[sthename_pri] := "&<"      t[sthename_pri] =># "`(typ_rref ,_sr ,_2)";
-  t[sthename_pri] := "_wref"   t[sthename_pri] =># "`(typ_wref ,_sr ,_2)";
-  t[sthename_pri] := "&>"      t[sthename_pri] =># "`(typ_wref ,_sr ,_2)";
-  t[sthename_pri] := "@"       t[sthename_pri] =># "(Prefix)";
-  t[sthename_pri] := squalified_name =># "_1";
-
-// TYPE MATCH HACKS .. FIX LATER
-  t[sthename_pri] := "?" sname =># "`(typ_patvar ,_sr ,_2)";
-
-  t[sthename_pri] := "#?" sinteger =># "`(PARSER_ARGUMENT ,_2)";
-
-  //$ Match anything without naming the subexpression.
-  tatom := "_" =># "`(typ_patany ,_sr)";
-
-  t[satomic_pri] := tatom =># "_1";
-
-  //$ Record type.
-  tatom := "(" srecord_mem_decl ("," srecord_mem_decl2)*  ")" =># 
-   "`(ast_record_type ,(cons _2 (map second _3)))";
-    srecord_mem_decl := sname ":" stypeexpr =># "`(,_1 ,_3)";
-    srecord_mem_decl := ":" stypeexpr =># '`("" ,_2)';
-    srecord_mem_decl2 := sname ":" stypeexpr =># "`(,_1 ,_3)";
-    srecord_mem_decl2 := ":" stypeexpr =># '`("" ,_2)';
-    srecord_mem_decl2 := stypeexpr =># '`("" ,_1)';
-
-  //$ polyRecord type.
-  tatom := "(" srecord_mem_decl ("," srecord_mem_decl2)*  "|" stypeexpr ")" =># 
-   "`(ast_polyrecord_type ,(cons _2 (map second _3)) ,_5)";
-
-
-  // INCONSISTENT GRAMMAR (no separator between items??
-  //$ Variant type.
-  tatom := "(" stype_variant_items ")" =># "`(ast_variant_type ,_2)";
-    stype_variant_item := "case" sname "of" stypeexpr =># "`(ctor ,_2 ,_4)";
-    stype_variant_item := "case" sname =># "`(ctor ,_2 ,(noi 'unit))";
-    stype_variant_item := "`" sname "of" stypeexpr =># "`(ctor ,_2 ,_4)";
-    stype_variant_item := "`" sname =># "`(ctor ,_2 ,(noi 'unit))";
-
-    stype_variant_item_bar := "|" stype_variant_item =># "_2";
-    stype_variant_item_bar := "|" stypeexpr =># "`(base ,_2)";
-    stype_variant_items := stypeexpr stype_variant_item_bar+ =># "(cons `(base ,_1) _2)";
-    stype_variant_items := stype_variant_item stype_variant_item_bar* =># "(cons _1 _2)";
-    stype_variant_items := stype_variant_item_bar+ =># "_1";
-
-  // can't use typeexpr here because trailing ">" is a comparison operator ..
-  tatom := "_pclt<" t[>scomparison_pri] "," t[>scomparison_pri] ">" =># "`(typ_pclt ,_sr ,_2 ,_4)" ;
-  tatom := "_rpclt<" t[>scomparison_pri] "," t[>scomparison_pri] ">" =># "`(typ_rpclt ,_sr ,_2 ,_4)" ;
-  tatom := "_wpclt<" t[>scomparison_pri] "," t[>scomparison_pri] ">" =># "`(typ_wpclt ,_sr ,_2 ,_4)" ;
-
-
-  //$ scalar literals (numbers, strings).
-  tatom := sliteral =># "_1";
-  tatom := "(" ")" =># "`(typ_type_tuple ,_sr ())";
-  tatom := "(" stype ")" =># "_2";
-  tatom := "extend" stypeexpr_comma_list "with" stypeexpr "end" =># """
-    `(typ_type_extension ,_sr ,_2 ,_4)
-  """;
-
-  tatom := stypematch =># '_1';
-
-  stypematch := "typematch" stype "with" stype_matching+ "endmatch" =>#
-    "`(ast_type_match ,_sr (,_2 ,_4))";
-  stypematch := "subtypematch" stype "with" stype_matching+ "endmatch" =>#
-    "`(ast_subtype_match ,_sr (,_2 ,_4))";
-  stype_matching := "|" stype "=>" stype =># "`(,_2 ,_4)";
-
-
-// TYPE LANGUAGE ENDS
-
-  sexpr := x[let_pri] =># "_1";
-
-  //$ Let binding.
-  x[let_pri] := "let" spattern "=" x[let_pri] "in" x[let_pri] =># "`(ast_letin ,_sr (,_2 ,_4 ,_6))";
-
-  //$ Let fun binding.
-  x[let_pri] := "let" "fun" sdeclname sfun_arg* fun_return_type "=>" x[let_pri] "in" x[let_pri] =># 
-    """
-    (let* 
-      (
-        (body `((ast_fun_return ,_sr ,_7)))
-        (fun_decl `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ,(first _5) ,(second _5) Function () ,body))
-        (final_return `(ast_fun_return ,_sr ,_9))
-      )
-      (block_expr `(,fun_decl ,final_return))
-    )
-    """;
-
-  // FIXME
-  x[let_pri] := "let" "fun" sdeclname fun_return_type "=" smatching+ "in" x[let_pri] =>#
-    """
-    (let* 
-      (
-        (ixname _3)
-        (name (first ixname))
-        (tvars (second ixname))
-        (t (first (first _4)))
-        (traint (second (first _4)))
-        (matching _6)
-        (expr _8)
-      )
-      (if (eq? 'typ_arrow (first t))
-        (let*
-          (
-            (argt (caadr t))
-            (ret (cadadr t))
-            (params `((((,_sr PVal _a ,argt none)) none))) ;; parameters
-            (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,matching)))))
-            (fun_decl `(ast_curry ,_sr ,name ,tvars ,params
-               (,ret ,traint)
-               Function () ,body)
-            )
-            (final_return `(ast_fun_return ,_sr ,expr))
-          )
-          (block_expr `(,fun_decl ,final_return))
-        )
-        'ERROR
-      )
-    )
-    """;
-
-
-
-  //$ Unterminated match
-  x[let_pri] := "let" pattern_match =># "_2"; 
-
-  //$ Conditional expression.
-  x[let_pri] := sconditional =># '_1';
-
-  //$ Pattern matching.
-  x[let_pri] := pattern_match =># '_1';
-
-
-  //$ Low precedence right associative application.
-  x[sdollar_apply_pri] := x[>sdollar_apply_pri] "$" x[sdollar_apply_pri] =># 
-    "`(ast_apply ,_sr (,_1 ,_3))";
-
-  //$ Low precedence left associative reverse application.
-  x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[>spipe_apply_pri] =># 
-    "`(ast_apply ,_sr (,_3 ,_1))";
-
-  //$ Haskell-ish style infix notation of functions   foo(x,y) => x `(foo) y
-  x[stuple_pri]  := x[stuple_pri] "`(" sexpr ")" sexpr =># 
-    "(binop _3 _1 _5)";
-
-  //$ Named temporary value.
-  x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";
-
-  //$ Named variable.
-  x[sas_expr_pri] := x[sas_expr_pri] "as" "var" sname =># "`(ast_as_var ,_sr (,_1 ,_4))";
-
-
-//  x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># '''
-//    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range") ,_1)) ,_3))
-//  ''';
-//
-//  x[sarrow_pri] := x[>sarrow_pri] "..<" x[>sarrow_pri] =># '''
-//    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range_excl") ,_1)) ,_3))
-//  ''';
-
-  x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># "(infix 'Slice_range_incl)";
-  x[sarrow_pri] := x[>sarrow_pri] "..<" x[>sarrow_pri] =># "(infix 'Slice_range_excl)";
-  x[sarrow_pri] := "..<" x[>sarrow_pri] =># "(prefix 'Slice_to_excl)";
-  x[sarrow_pri] := ".." x[>sarrow_pri] =># "(prefix 'Slice_to_incl)";
-  x[sarrow_pri] := x[>sarrow_pri] ".." =># "(suffix 'Slice_from)";
-  x[sarrow_pri] := ".." =># """`(ast_name ,_sr "Slice_all" () )""";
-  x[sarrow_pri] := "..[" stypeexpr "]" =># """`(ast_type_slice ,_sr ,_2 )""";
-  x[sarrow_pri] := x[>sarrow_pri] ".+" x[>sarrow_pri] =># "(infix 'Slice_from_counted)";
-
-
-  x[scase_literal_pri] := "case" sinteger =># "`(ast_case_tag ,_sr ,_2))";
-  x[scase_literal_pri] := "`" sinteger =># "`(ast_case_tag ,_sr ,_2))";
-
-  //$ Case value.
-  x[scase_literal_pri] := "case" sinteger "of" t[ssum_pri] =># "`(ast_unitsum_literal  ,_sr ,_2 ,_4)";
-  x[scase_literal_pri] := "`" sinteger "of" t[ssum_pri] =># "`(ast_unitsum_literal ,_sr  ,_2 ,_4)";
-  x[scase_literal_pri] := "`" sinteger ":" t[ssum_pri] =># "`(ast_unitsum_literal ,_sr ,_2 ,_4)";
-
-  //$ Tuple projection function.
-  x[scase_literal_pri] := "proj" sinteger "of" t[ssum_pri] =># "`(ast_projection ,_2 ,_4)";
-  x[scase_literal_pri] := "aproj" sexpr "of" t[ssum_pri] =># "`(ast_array_projection ,_2 ,_4)";
-
-  // coarray injection
-  // (ainj (r:>>4) of (4 *+ int)) 42
-  x[scase_literal_pri] := "ainj"  stypeexpr "of" t[ssum_pri] =># "`(ast_ainj ,_sr ,_2 ,_4)";
-
-  spv_name := "case" sname =># "_2";
-  spv_name := "`" sname =># "_2";
-
-  //$ Variant value.
-  x[sthename_pri] := "#" spv_name =># "`(ast_variant (,_2 ()))";
-  x[sapplication_pri] := spv_name  x[>sapplication_pri] =># "`(ast_variant (,_1 ,_2))";
-
-  //$ multiplication: right associative
-  x[sproduct_pri] := x[>sproduct_pri] "\otimes" x[sproduct_pri] =># "(Infix)";
-
-  // repeated sum type, eg 4 *+ int == int + int + int + int
-  // right associative:  2 *+ 3 *+ int is approx 6 *+ int
-  x[sproduct_pri] := x[>sproduct_pri] "*+" x[sproduct_pri] =># "`(ast_rptsum_type ,_sr ,_1 ,_3)";
-
-//------------------------------------------------------------------------
-
-  //$ Prefix exclaim.
-  x[sprefixed_pri] := "!" x[sprefixed_pri] =># "(Prefix)";
-
-  //$ Prefix plus.
-  x[sprefixed_pri] := "+" x[sprefixed_pri] =># "(prefix 'prefix_plus)";
-
-  //$ Prefix negation.
-  x[sprefixed_pri] := "-" x[sprefixed_pri] =># "(prefix 'neg)";
-
-  //$ Prefix complement.
-  x[sprefixed_pri] := "~" x[sprefixed_pri] =># "(Prefix)";
-
-  //$ Fortran power.
-  x[spower_pri] := x[ssuperscript_pri] "**" x[sprefixed_pri] =># "(infix 'pow)";
-  x[spower_pri] := x[ssuperscript_pri] "<**>" x[sprefixed_pri] =># "(infix 'tuple_snoc)";
-
-  //$ Superscript, exponential.
-  x[ssuperscript_pri] := x[ssuperscript_pri] "^" x[srefr_pri] =># "`(ast_superscript (,_1 ,_3))";
-
-  //$ composition
-  x[ssuperscript_pri] := x[ssuperscript_pri] "\circ" x[>ssuperscript_pri] =># "(Infix)";
-  x[ssuperscript_pri] := x[ssuperscript_pri] "\cdot" x[>ssuperscript_pri] =># "(Infix)";
-
-//------------------------------------------------------------------------
-  //$ C dereference.
-  x[srefr_pri] := "*" x[srefr_pri] =># "(prefix 'deref)";
-
-  //$ Deref primitive.
-  //x[srefr_pri] := "_deref" x[srefr_pri] =># "`(ast_deref ,_sr ,_2)";
-
-  //$ Operator new.
-  x[srefr_pri] := "new" x[srefr_pri] =># "`(ast_new ,_sr ,_2)";
-
-//------------------------------------------------------------------------
-  //$ Operator whitespace: application.
-  x[sapplication_pri] := x[sapplication_pri] x[>sapplication_pri] =># 
-    "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
-
-  //$ Variant index.
-  x[sapplication_pri] := "caseno" x[>sapplication_pri] =># "`(ast_case_index ,_sr ,_2)";
-  x[sapplication_pri] := "casearg" x[>sapplication_pri] =># "`(ast_rptsum_arg ,_sr ,_2)";
-
-  //$ Optimisation hint: likely.
-  //$ Use in conditionals, e.g. if likely(x) do ...
-  x[sapplication_pri] := "likely" x[>sapplication_pri] =># "`(ast_likely ,_sr ,_2)";
-
-  //$ Optimisation hint: unlikely.
-  //$ Use in conditionals, e.g. if unlikely(x) do ...
-  x[sapplication_pri] := "unlikely" x[>sapplication_pri] =># "`(ast_unlikely ,_sr ,_2)";
-
-//------------------------------------------------------------------------
-  //$ Suffixed coercion.
-  x[scoercion_pri] := x[scoercion_pri] ":>>" t[>scoercion_pri] =># "`(ast_coercion ,_sr (,_1 ,_3))";
-
-  x[sfactor_pri] := ssuffixed_name =># "_1";
-
-//------------------------------------------------------------------------
-  //$ Reverse application.
-  x[sfactor_pri] := x[sfactor_pri] "." x[>sfactor_pri] =># 
-    "`(ast_apply ,_sr (,_3 ,_1))";
-
-
-  //$ Reverse application with dereference.
-  //$ a *. b same as (*a) . b, like C  a -> b.
-  x[sfactor_pri] := x[sfactor_pri] "*." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 (ast_deref ,_sr ,_1)))";
-
-  //$ a &. b is similar to &a . b for an array, but can be overloaded
-  //$ for abstract arrays: like a + b in C. Returns pointer.
-  // x[sfactor_pri] := x[sfactor_pri] "&." sthe_name =># "(Infix)";
-  x[sfactor_pri] := x[sfactor_pri] "&." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 (ast_ref ,_sr ,_1)))";
-
-//------------------------------------------------------------------------
-
-  //$ Reverse composition
-  x[srcompose_pri] := x[srcompose_pri] "\odot" x[>srcompose_pri] =># "(Infix)";
-
-//------------------------------------------------------------------------
-  //$ High precedence unit application. #f = f ().
-  x[sthename_pri] := "#" x[sthename_pri] =># "`(ast_apply ,_sr (,_2 (ast_tuple ,_sr ())))";
-
-  //$ Felix pointer type and address of operator.
-  x[sthename_pri] := "&" x[sthename_pri] =># "`(ast_ref ,_sr ,_2)";
-
-  //$ Felix pointer type and address of operator.
-  x[sthename_pri] := "_uniq" x[sthename_pri] =># "`(ast_uniq ,_sr ,_2)";
-  x[sthename_pri] := "_rref" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
-  x[sthename_pri] := "&<" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
-  x[sthename_pri] := "_wref" x[sthename_pri] =># "`(ast_wref ,_sr ,_2)";
-  x[sthename_pri] := "&>" x[sthename_pri] =># "`(ast_wref ,_sr ,_2)";
-
-
-  //$ Felix address of operator.
-  x[sthename_pri] := "label_address" sname =># "`(ast_label_ref ,_sr ,_2)";
-
-
-  //$ C pointer type.
-  x[sthename_pri] :=  "@" x[sthename_pri] =># "(Prefix)";
-
-  //$ macro expansion freezer.
-  x[sthename_pri] := "noexpand" squalified_name =># "`(ast_noexpand ,_sr ,_2)";
-
-  //$ pattern variable.
-  x[sthename_pri] := "?" sname =># "`(ast_patvar ,_sr ,_2)";
-
-  //$ Template replacement index.
-  x[sthename_pri] := "#?" sinteger =># "`(PARSER_ARGUMENT ,_2)";
-
-  x[sthename_pri] := squalified_name =># "_1";
-
-
-  //$ Qualified name.
-  sreally_qualified_name := squalified_name "::" ssimple_name_parts =>#
-    "`(ast_lookup (,_1 ,(first _3) ,(second _3)))";
-
-  squalified_name := sreally_qualified_name =># '_1';
-
-  squalified_name := ssimple_name_parts =>#
-    "`(ast_name ,_sr ,(first _1) ,(second _1))";
-
-  ssimple_name_parts := sname =># "`(,_1 ())";
-  ssimple_name_parts := sname "[" "]" =># "`(,_1 ())";
-  ssimple_name_parts := sname "[" stypeexpr_comma_list "]" =># "`(,_1 ,_3)";
-
-  //$ Suffixed name (to name functions).
-  ssuffixed_name := squalified_name "of" t[sthename_pri] =>#
-    "`(ast_suffix (,_1 ,_3))";
-
-//------------------------------------------------------------------------
-  x[satomic_pri] := satom =># "_1";
-  //$ record value (comma separated).
-  satom := "(" rassign ("," rassign2 )* ")" =>#
-    "`(ast_record ,_sr ,(cons _2 (map second _3)))"
-  ;
-    rassign := sname "=" x[sor_condition_pri] =># "`(,_1 ,_3)";
-    rassign := "=" x[sor_condition_pri] =># '`("" ,_2)';
-    rassign2 := sname "=" x[sor_condition_pri] =># "`(,_1 ,_3)";
-    rassign2 := "=" x[sor_condition_pri] =># '`("" ,_2)';
-    rassign2 := x[sor_condition_pri] =># '`("" ,_1)';
-
-  //$ polyrecord value
-  //$ record value (comma separated).
-  satom := "(" rassign ("," rassign2 )* "|" sexpr ")" =>#
-    "`(ast_polyrecord ,_sr ,(cons _2 (map second _3)) ,_5)"
-  ;
-
-  satom := "(" sexpr "without" sname+ ")" =>#
-    "`(ast_remove_fields ,_sr ,_2 ,_4)"
-  ;
-
-  satom := "(" sexpr "with" rassign ("," rassign2 )* ")" =>#
-    "`(ast_replace_fields ,_sr ,_2 ,(cons _4 (map second _5)))"
-  ;
-
-
-  //$ record value, statement list.
-  //$ this variant is useful for encapsulating
-  //$ a series of var x = y; style statements.
-  satom := "struct" "{" vassign+ "}" =>#
-    "`(ast_record ,_sr ,_3 )"
-  ;
-    vassign := "var" sname "=" sexpr ";" =># "`(,_2 ,_4)";
-
-  //$ scalar literals (numbers, strings).
-  satom := sliteral =># "_1";
-
-  //$ Wildcard pattern.
-  satom := _ =># "`(ast_patany ,_sr)";
-
-  //$ Ellipsis (for binding C varags functions).
-  satom := "..." =># "`(ast_ellipsis ,_sr)";
-
-  //$ Callback expression.
-  satom := "callback" "[" sexpr "]" =># "`(ast_callback ,_sr ,_3)";
-
-  //$ Short form anonymous procedure closure.
-  satom := scompound =># "(lazy _1)";
-
-  //$ Short form sequence operator.
-  //$ ( stmt; expr ) means the same as #{stmt; return expr; }
-  satom := "(" stmt+ sexpr ")" =>#
-    """
-    (
-      let* 
-      (
-        (stmts _2)
-        (expr _3)
-        (retexp `(ast_fun_return ,_sr ,expr))
-        (nustmts (append stmts (list retexp)))
-      )
-      (block_expr nustmts)
-    )
-    """ 
-  ;
-
-  //$ special anonymous variable forces eager eval.
-  satom := "(" "var" sexpr ")" =># 
-    """
-    (
-      let
-      (
-        (name (fresh_name "asvar"))
-      )
-      `(ast_as_var ,_sr (,_3 ,name))
-    )
-    """
-  ;
-
-  //$ inline scheme
-  satom := "schemelex" sstring =># "(schemelex _2)";
-  satom := "schemerun" sstring =># "(schemerun _2)";
-  //$ Empty tuple (unit tuple).
-  satom := "(" ")" =># "'()";
-
-  //$ Object extension.
-  expr_comma_list := list::commalist1<x[scomparison_pri]> =># "_1";
-  satom := "extend" expr_comma_list "with" sexpr "end" =># """
-    `(ast_extension ,_sr ,_2 ,_4)
-  """;
-
-    setbar := "|" =># "_1";
-    setbar := "\|" =># "_1";
-    setbar := "\mid" =># "_1";
-
-  setform := spattern ":" stypeexpr setbar sexpr =>#
-    """
-    (let* 
-      (
-         (argt _3)
-         (ret (nos "bool"))
-         (matchings `((,_1 ,_5)((pat_setform_any ,_sr)(ast_false ,_sr))))
-         (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,matchings)))))
-         (param `(,_sr PVal _a ,argt none)) ;; one parameter
-         (params `( Satom ,param ))            ;; parameter tuple list
-         (paramsx `(,params none))     ;; parameter tuple list with precondition
-         (paramsxs `(,paramsx))        ;; curry parameters 
-         (method `(ast_curry ,_sr "has_elt"  ,dfltvs ,paramsxs (,ret none) Method () ,body))
-         (objsts `(,method))
-         (object `(ast_object ,_sr (,dfltvs ,dfltparams typ_none ,objsts))) 
-      )
-      `(ast_apply ,_sr (,object (ast_tuple ,_sr ())))
-    )
-    """;
-
-  satom := "{" setform  "}" =># "_2";
-  satom := "\{" setform  "\}" =># "_2";
-
-
-
-}
-
-@
 
 @h2 Stub extension file inclusion support
 This file is included in the main include file
@@ -1997,6 +2003,7 @@ syntax felix {
     namespaces,
     requirements,
     expressions,
+    types,
     brackets,
     texsyms,
     functions,
