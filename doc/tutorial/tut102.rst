@@ -5,6 +5,7 @@ Felix 102: More Detail
 .. toctree::
    :maxdepth: 2
    
-   lexicology
-   hofs
-
+   classes
+   genericfunctions
+   lists
+   optiontype
