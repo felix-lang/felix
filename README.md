@@ -359,6 +359,7 @@ Felix Language Reference Manual      | <http://felix.readthedocs.io/en/latest/>
 Felix Library Packages               | <http://felix-library-packages.readthedocs.io/en/latest/>
 Articles on Modern Computing         | <http://modern-computing.readthedocs.io/en/latest/>
 Felix Home Page                      | <http://felix-lang.github.io/felix>
+Felix Wiki                           | <https://github.com/felix-lang/felix/wiki>
 Git Repository                       | <https://github.com/felix-lang/felix>
 Binary Download                      | <http://github.com/felix-lang/felix/releases>
 
