@@ -101,7 +101,7 @@ class MinHeap[T with Tord[T]]
 
 class Avl
 {
-  union avl[T] =
+  variant avl[T] =
     | Nil
     | Tree of int * T * avl[T] * avl[T] // (Height,Object,Left,Right)
   ;
@@ -395,7 +395,7 @@ class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
     return out;
   }
 
-  union Vstate = Undiscovered | Discovered | Processed;
+  variant Vstate = Undiscovered | Discovered | Processed;
 
   typedef digraph_visitor_processing_t = 
   (
@@ -664,7 +664,7 @@ class BinarySearchTree[T with Tord[T]]
       right:bstree_t
     )
   ;
-  union bstree_t = 
+  variant bstree_t = 
     | #Empty 
     | Node of &bstree_node_t 
   ;

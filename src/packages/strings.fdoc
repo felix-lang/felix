@@ -423,24 +423,24 @@ like variant which uses an @{option} type.
   // leading and trailing space is removed. Embedded
   // multiple spaces cause a single split.
   class RespectfulParser {
-    union quote_action_t = 
+    variant quote_action_t = 
       | ignore-quote
       | keep-quote
       | drop-quote
     ; 
-    union dquote_action_t = 
+    variant dquote_action_t = 
       | ignore-dquote
       | keep-dquote
       | drop-dquote
     ; 
-    union escape_action_t = 
+    variant escape_action_t = 
       | ignore-escape
       | keep-escape
       | drop-escape
     ; 
     typedef action_t = (quote:quote_action_t, dquote:dquote_action_t, escape:escape_action_t);
 
-    union mode_t = | copying | skipping | quote | dquote | escape-copying | escape-quote | escape-dquote;
+    variant mode_t = | copying | skipping | quote | dquote | escape-copying | escape-quote | escape-dquote;
     typedef state_t = (mode:mode_t, current:string, parsed: list[string] );
 
     noinline fun respectful_parse (action:action_t) (var state:state_t) (var s:string) : state_t = 

@@ -138,7 +138,7 @@ open class Control
   // LAYOUT CHANGE: pointers are now stored in the _uctor_
   // instead of on the heap with a pointer in the uctor
   // This doesn't affect abstract types, even if they're pointers in C
-  union svc_req_t =
+  variant svc_req_t =
   /*0*/ | svc_yield
   /*1*/ | svc_get_fthread         of &fthread    // CHANGED LAYOUT
   /*2*/ | svc_read                of address

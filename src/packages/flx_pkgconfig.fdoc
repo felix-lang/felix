@@ -52,7 +52,7 @@ class FlxPkgConfig_core
 
     proc pre_incr:&lex_iterator = "++*$1;";
 
-    union token_t = Str of string | Cmd of string | Eos;
+    variant token_t = Str of string | Cmd of string | Eos;
 
     fun lexit(ini:lex_iterator, finish:lex_iterator): lex_iterator * token_t=
     {

@@ -101,7 +101,7 @@ open class Typing
 // Note: some felix internals expect this to be defined here, not in a class, and
 // in this order.  Don't mess with it!
 publish "option type"
-union opt[T] =
+variant opt[T] =
   | None
   | Some of T
 ;
@@ -218,7 +218,7 @@ class DefaultValue[T] {
 @tangle slice.flx
 
 open class Slice {
-union slice[T] =
+variant slice[T] =
   | Slice_all
   | Slice_from of T
   | Slice_from_counted of T * int /* second arg is count */
@@ -362,7 +362,7 @@ fun cal_slice (n:int, var b:int, var e:int) = {
   // assert m = 0 or  0 <= b <= e <= n and 0 < m < n
 }
 
-union gslice[T] =
+variant gslice[T] =
   | GSlice of slice[T]
   | GSSList of list[gslice[T]]
   | GSIList of list[T]

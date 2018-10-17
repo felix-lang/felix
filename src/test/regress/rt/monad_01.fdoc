@@ -1,7 +1,7 @@
 @title
 Monad test
 @felix
-union success[T] = 
+variant success[T] = 
   | Success of T
   | Failure of string
   ;

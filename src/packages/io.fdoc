@@ -696,7 +696,7 @@ class IOStream {
 
   // ---------------------------------------------------------------------------
 
-  union devnull_t = DEVNULL;
+  variant devnull_t = DEVNULL;
 
   publish "devnull_t"
   instance IByteStream[devnull_t]

@@ -978,7 +978,7 @@ syntax cbind {
     "`(ast_export_struct ,_sr ,_3 ,_5)";
 
   //$ Export a Felix union into C.
-  private cbind_stmt := "export" "union" ssuffixed_name "as" sstring ";" =>#
+  private cbind_stmt := "export" "variant" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_union,_sr ,_3 ,_5)";
 
   //$ Export a type into C. 
@@ -5283,7 +5283,7 @@ syntax type_decls {
   suexport := "export" =># "'export";
   suexport := sepsilon =># "'noexport";
   suexport := "export" sstring =># "`(namedexport ,_2)";
-  stmt := suexport "union" sdeclname "=" stype_sum_items ";" =>#
+  stmt := suexport "variant" sdeclname "=" stype_sum_items ";" =>#
     """
     (let*
       ( 
@@ -5306,7 +5306,7 @@ syntax type_decls {
     """;
 
   //$ Deprecated C like syntax for unionx.
-  stmt := "union" sdeclname "{" stype_sum_item1* "}" =>#
+  stmt := "variant" sdeclname "{" stype_sum_item1* "}" =>#
     """
     `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
      """;

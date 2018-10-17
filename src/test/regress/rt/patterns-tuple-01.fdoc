@@ -6,7 +6,7 @@ println
   | () => "()"
   endmatch;
 
-union t1 =
+variant t1 =
   | T1_1 of int
   | T1_2 of unit;
 
@@ -22,7 +22,7 @@ println
   | T1_2 () => "T1_2 ()"
   endmatch;
 
-union t2 =
+variant t2 =
   | T2_1 of int * unit;
 
 println

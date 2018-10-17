@@ -2,7 +2,7 @@
 @h1 From Wikipedia
 @felix
 @
-union Expr[T] =
+variant Expr[T] =
   | EBool of bool => Expr[bool]
   | EInt of int => Expr[int]
   | EEqual of Expr[int] * Expr[int] => Expr[bool]

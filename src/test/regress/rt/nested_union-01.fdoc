@@ -1,10 +1,10 @@
 
-@h1 nested_union-01.flx
+@h1 nested_variant-01.flx
 @felix
 //Check types:nested
 
 fun f(x:int) = {
-  union x_t = | X of int;
+  variant x_t = | X of int;
   fun pr(a:x_t): int = {
     return
       match a with

@@ -1,7 +1,7 @@
 
 @felix
 // Nonconst ctor wrapper
-union X = 
+variant X = 
   | First of int
   | Second of string
 ;

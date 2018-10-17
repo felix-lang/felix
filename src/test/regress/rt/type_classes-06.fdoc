@@ -2,7 +2,7 @@
 @h1 type_classes-06.flx
 @felix
 open class X[T] {
-  union A = V of varray[T];
+  variant A = V of varray[T];
   proc p(x:A) {
     match x with | V v => println v; endmatch;
   }

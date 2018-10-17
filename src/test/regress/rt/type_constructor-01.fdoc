@@ -3,7 +3,7 @@
 @felix
 module Foo
 {
-  union foo = | A | B;
+  variant foo = | A | B;
 
   fun _ctor_foo (x:int):foo => A;
 }

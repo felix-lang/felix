@@ -11,7 +11,7 @@ The core data type for most functional programming languages.
 @tangle list.flx
 open class List
 {
-  union list[T] = | Empty | Snoc of list[T] * T;
+  variant list[T] = | Empty | Snoc of list[T] * T;
   fun _match_ctor_Cons[T] : list[T] -> bool = "!!$1"; 
   inline fun _ctor_arg_Cons[T]: list[T] -> T * list[T] = 
     "reinterpret<#0>(flx::list::snoc2cons<?1>($1))" 
@@ -777,10 +777,10 @@ class Ralist
 {
 
   //$ Auxilliary data structure.
-  union pt[a] = | N1 of a | N2 of pt[a] * pt[a];
+  variant pt[a] = | N1 of a | N2 of pt[a] * pt[a];
 
   //$ Type of an ralist.
-  union ralist[a] = 
+  variant ralist[a] = 
     | RAnil
     | RAevn of ralist[a]
     | RAodd of pt[a] * ralist[a]
@@ -1142,7 +1142,7 @@ A scheme like data structure.
 @tangle sexpr.flx
 class S_expr 
 {
-  union sexpr[T] = Leaf of T | Tree of list[sexpr[T]]; 
+  variant sexpr[T] = Leaf of T | Tree of list[sexpr[T]]; 
 
   fun fold_left[T,U] (_f:U->T->U) (init:U) (x:sexpr[T]):U =>
     match x with
@@ -1186,7 +1186,7 @@ the tree nodes also have labels.
 @tangle lsexpr.flx
 class LS_expr 
 {
-  union lsexpr[T,L] = | Leaf of T | Tree of L * list[lsexpr[T,L]]; 
+  variant lsexpr[T,L] = | Leaf of T | Tree of L * list[lsexpr[T,L]]; 
 
   fun fold_left[T,L,U] (_f:U->T->U) (_g:U->L->U) (init:U) (x:lsexpr[T,L]):U =>
     match x with

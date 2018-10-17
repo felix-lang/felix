@@ -30,24 +30,24 @@ of Felix may not have all the required capabilities.
 @tangle rparse.flx
 class NewRespectfulParser 
 {
-    export union quote_action_t = 
+    export variant quote_action_t = 
       | ignore-quote
       | keep-quote
       | drop-quote
     ; 
-    export union dquote_action_t = 
+    export variant dquote_action_t = 
       | ignore-dquote
       | keep-dquote
       | drop-dquote
     ; 
-    export union escape_action_t = 
+    export variant escape_action_t = 
       | ignore-escape
       | keep-escape
       | drop-escape
     ; 
     typedef action_t = (quote:quote_action_t, dquote:dquote_action_t, escape:escape_action_t);
 
-    export "rparse_mode_t" union mode_t  = | copying | skipping | quote | dquote | escape-copying | escape-quote | escape-dquote;
+    export "rparse_mode_t" variant mode_t  = | copying | skipping | quote | dquote | escape-copying | escape-quote | escape-dquote;
     typedef state_t = (mode:mode_t, current:string, parsed: list[string] );
 
     export noinline fun respectful_parse (action:action_t) (var state:state_t) (var s:string) : state_t = 

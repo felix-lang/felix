@@ -468,7 +468,7 @@ fun parse_post_line (get:string) =>
   split_url$ postline_to_url get
 ;
 
-union request_type = reqGET | reqPOST | reqHEAD | reqERROR;
+variant request_type = reqGET | reqPOST | reqHEAD | reqERROR;
 
 fun parse_request_type (r:string) =>
   if startswith r "GET" then reqGET
@@ -1555,7 +1555,7 @@ fun xlat_ocaml(t:string, dir:string) : bool * string =
    out += t;
   }
 
-  union state_t = 
+  variant state_t = 
     | sot // start of token
     | id // processing identifier
     | num // in a number
@@ -1715,7 +1715,7 @@ fun xlat_py(t:string, dir:string) : bool * string =
    out += t;
   }
 
-  union state_t = 
+  variant state_t = 
     | sot // start of token
     | id // processing identifier
     | num // in a number
@@ -2147,7 +2147,7 @@ fun xlat_felix(t:string, dir:string): bool * string =
    out += t;
   }
 
-  union state_t = 
+  variant state_t = 
     | sot // start of token
     | id // processing identifier
     | texid // processing identifier
@@ -2603,7 +2603,7 @@ fun xlat_cpp(t:string, dir:string) : bool * string=
     out += t;
   }
 
-  union state_t = 
+  variant state_t = 
     | sot // start of token
     | id // processing identifier
     | num // in a number
@@ -3479,7 +3479,7 @@ interface paragraph-control_t {
 @
 @tangle scanner-interface.flx
 // split up an fdoc into a stream of commands and text 
-union fdoc-data_t = 
+variant fdoc-data_t = 
   | Cmd of string
   | Text of string
 ;

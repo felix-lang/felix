@@ -1,9 +1,9 @@
 @title injections
 @h1 injection functions
 @felix
-// injection: union
+// injection: variant
 begin
-  union X = | A of int | B of double;
+  variant X = | A of int | B of double;
   var ia = A of int;
   var x = ia 42;
   println$ x._strr;

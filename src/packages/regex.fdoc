@@ -358,7 +358,7 @@ open Set[RE2, string];
 @tangle regdef.flx
 
 class Regdef {
-  union regex =
+  variant regex =
   | Alts of list[regex]
   | Seqs of list[regex]
   | Rpt of regex * int * int

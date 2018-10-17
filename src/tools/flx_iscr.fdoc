@@ -83,7 +83,7 @@ skipping over documentation, or, it's writing code
 out to some file.
 
 @felix
-union state_t = Doc | Tangling of &file_buffer; 
+variant state_t = Doc | Tangling of &file_buffer; 
 var state = Doc;
 @
 

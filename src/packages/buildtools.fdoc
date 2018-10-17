@@ -138,7 +138,7 @@ class BuildFlxg
       return dfiles;
     }
 
-    union build_kind = Library | Executable;
+    variant build_kind = Library | Executable;
 
     gen ocaml_build(kind:build_kind, dir:string, lib:string, spec:libspec_t) =
     {

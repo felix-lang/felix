@@ -3,7 +3,7 @@
 @felix
 //Check generators
 
-union tree = TEmpty | Leaf of int | Node of tree * tree;
+variant tree = TEmpty | Leaf of int | Node of tree * tree;
 
 var example =
   Node

@@ -238,7 +238,7 @@ class Sqlite3 {
   gen sqlite3_finalize: sqlite3_stmt_t -> int = "sqlite3_finalize($1)";
 
   //$ A unified type to fetch a field value.
-  union column_value =
+  variant column_value =
      |int_val of int
      |double_val of double
      |text_val of string
@@ -246,13 +246,13 @@ class Sqlite3 {
      |null_val;
 
   //$ A unified result of a statement.
-  union ret_val[t] =
+  variant ret_val[t] =
      |row of t
      |row_fail of sqlite3_result_codes*string
      |end_of_results;
 
   //$ A unified result code.
-  union result_code[t] =
+  variant result_code[t] =
     | qry_ok of t
     | qry_fail of sqlite3_result_codes*string;
 

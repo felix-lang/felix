@@ -151,6 +151,7 @@ syn keyword felixStatement to
 syn keyword felixStatement typedef
 syn keyword felixStatement type
 syn keyword felixStatement union
+syn keyword felixStatement variant
 syn keyword felixStatement use
 syn keyword felixStatement val
 syn keyword felixStatement var

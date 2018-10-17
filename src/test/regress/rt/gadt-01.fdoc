@@ -1,7 +1,7 @@
 @title GADT tests
 Basic GADT
 @felix
-union pair[T] =
+variant pair[T] =
 | PUnit of unit => pair[unit]
 | PInt[T] of int * pair[T] => pair[int * pair[T]]
 | PFloat[T] of float * pair[T] => pair[float * pair[T]]

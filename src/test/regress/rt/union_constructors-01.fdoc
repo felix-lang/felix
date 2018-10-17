@@ -1,10 +1,10 @@
 
-@h1 union_constructors-01.flx
+@h1 variant_constructors-01.flx
 @felix
 // named variant type constructor with one element as function
-union U = | A | B of int;
+variant U = | A | B of int;
 proc print (u:U) {
-  print "union U ";
+  print "variant U ";
   print$ match u with | #A => "A" | B b => f"B %d" b endmatch;
 }
 fun exec (p:int -> U, x:int) => p x;
@@ -24,13 +24,13 @@ print (exec (B of (int), 8)); endl;
 print (exec (B,          9)); endl;
 
 @expect
-union U B 1
-union U B 2
-union U B 3
-union U B 4
-union U B 5
-union U B 6
-union U B 7
-union U B 8
-union U B 9
+variant U B 1
+variant U B 2
+variant U B 3
+variant U B 4
+variant U B 5
+variant U B 6
+variant U B 7
+variant U B 8
+variant U B 9
 @

@@ -1,10 +1,10 @@
 
-@h1 union_constructors-03.flx
+@h1 variant_constructors-03.flx
 @felix
 // named variant type constructor with one element as function
 typedef U = 1 + int;
 proc print (u:U) {
-  print "union U ";
+  print "variant U ";
   print$
     match u with
     | case 0 => "1"
@@ -24,9 +24,9 @@ val f1 = case 1 of U; val u4 = f1 4; print u4; endl;
 print (exec (case 1 of U, 5)); endl;
 
 @expect
-union U int 1
-union U int 2
-union U int 3
-union U int 4
-union U int 5
+variant U int 1
+variant U int 2
+variant U int 3
+variant U int 4
+variant U int 5
 @

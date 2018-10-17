@@ -1,7 +1,7 @@
 @title GADT test
 GADT with existential: parametrised constructor.
 @felix
-union pair[T] =
+variant pair[T] =
 | PUnit of unit => pair[unit]
 | Pair[T,U] of U * pair[T] => pair[U * pair[T]]
 ;

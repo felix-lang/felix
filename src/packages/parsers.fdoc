@@ -13,7 +13,7 @@ class Parsers
   open Recognisers;
   open Grammars;
    
-  union action_t =  
+  variant action_t =  
   | Reduce of string * int
   | Scroll of int
   | Unscroll of int
@@ -65,7 +65,7 @@ class Parsers
 
   typedef lexeme = (start:Buffer, finish:Buffer);
 
-  union stack_node_t = 
+  variant stack_node_t = 
   | RTerminal of string * lexeme
   | RNonterminal of string * list[stack_node_t]
   ;

@@ -4,7 +4,7 @@
 include "std/datatype/sexpr";
 open class Example1
 {
-  union SetKind[T] = 
+  variant SetKind[T] = 
     | Varray of varray[T]
     | Darray of darray[T]
     | List of list[T]

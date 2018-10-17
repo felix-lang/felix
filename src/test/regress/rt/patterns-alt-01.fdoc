@@ -45,7 +45,7 @@ fun jim (x:list[int]) : string =>
 println$ jim fred;
 
 
-union shape = 
+variant shape = 
   | Square of int 
   | Rect of int * int
 ;

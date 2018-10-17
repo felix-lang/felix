@@ -63,7 +63,7 @@ open class Cptr
   //$ Type of a C pointer.
   //$ Either pointes to an object or is NULL.
   //$ Cannot be incremented.
-  union cptr[T] = | nullptr | Ptr of &T;
+  variant cptr[T] = | nullptr | Ptr of &T;
 
   //$ Demote a Felix pointer to a C pointer. Safe.
   ctor[T] cptr[T]: &T = "$t";

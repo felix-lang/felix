@@ -214,7 +214,7 @@ class FileStat_class[OS,stat_t, mode_t]
   virtual gen umask: mode_t -> mode_t;
 
   //$ Abstracted platform independent file type taxonomy.
-  union file_type_t = 
+  variant file_type_t = 
     | PIPE 
     | STREAM 
     | DIRECTORY 
