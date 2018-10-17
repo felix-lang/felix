@@ -9,3 +9,4 @@ Felix 102: More Detail
    genericfunctions
    lists
    optiontype
+   varray

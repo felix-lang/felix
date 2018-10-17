@@ -11,7 +11,7 @@ any type.
 
 This is called parametric polymorphism. The names
 `A` and `B` are called type variables. The above
-fuction will work for any actual types:
+function will work for any actual types:
 
 .. code-block:: felix
 

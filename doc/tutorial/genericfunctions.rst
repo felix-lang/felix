@@ -19,9 +19,9 @@ actually call these automatically generated functions:
 
 .. code-block:: felix
 
-  add3 (x:int, y:int, z:int) => x + y + z;
-  add3 (x:double, y:double, z:double) => x + y + z;
-  add3 (x:string, y:string, z:string) => x + y + z;
+  fun add3 (x:int, y:int, z:int) => x + y + z;
+  fun add3 (x:double, y:double, z:double) => x + y + z;
+  fun add3 (x:string, y:string, z:string) => x + y + z;
 
 Note that the rewritten functions are generated in the same
 scope as the generic function so any names used in the generic
