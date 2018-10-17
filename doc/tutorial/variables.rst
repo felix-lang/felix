@@ -74,8 +74,8 @@ Assignments are executed when control flows through
 the assignment.
 
 
-Semantics of var binder
------------------------
+Variable Hoisting
+-----------------
 
 Var binders are equivalent to declaration of an uninitialised
 variable and an assignment. The location of the declaration
@@ -95,16 +95,3 @@ is equivalent to
     var a = 1;
     var b = a;
 
-In Javascript this is called hoisting. The var binder with
-initialiser is syntactic sugar for two statements, an uninitialised
-variable declaration, and a separate assignment.
-
-Note that in Felix, the scope of a declaration or definition
-of a name is the whole of the containing scope, similar to 
-the scope of a label in a function in C, or a member function in 
-a C++ class. 
-
-This results in  what is called "set-wise lookup" since all lookups 
-in a scope can find all identifiers declared in that scope (not just
-previously declared ones).
-    

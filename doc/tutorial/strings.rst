@@ -45,8 +45,8 @@ you can concatenate them by juxtaposition:
       'and I am the second.'
     ;
 
-Notice the special encoding `\n` which inserts an end of
-line character into the string rather than a `\` followed
+Notice the special encoding `\\n` which inserts an end of
+line character into the string rather than a `\\` followed
 by an `n`. This is called an escape.
 
 You can prevent escapes being translated with raw

@@ -57,10 +57,7 @@ There is also a slice over the whole range of a type:
 .. code-block:: felix
 
   Slice_all[int]
-  ..
-
-The second form has no associated type and can only be used in some
-circumstances. 
+  ..[int]
 
 Empty Slice
 -----------
