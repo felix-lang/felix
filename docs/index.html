@@ -51,8 +51,8 @@ flx hello.flx
 
 It <it>works</it>. No makefiles. No compiler switches.
 Automatic caching and dependency checking for Felix and C++.
-Uses a *flx_pkgconfig* database consisting of a directory
-of `*.fpc` files to specify and find libraries and header
+Uses a <b>flx_pkgconfig</b> database consisting of a directory
+of <code>*.fpc</code> files to specify and find libraries and header
 files based on in language abstract keys.
 
 <h3>Hyperlight Performance</h3>
@@ -317,22 +317,24 @@ device toBuffer = function (fun (s:string)=> Buffer s);
 
 <h3>Graphics</h3>
 
-Felix has a builtin library for GUIs based on SDL2:
-
-![Felix the cat](/src/web/images/graphics_demo.jpg)
+Felix has a builtin library for GUIs based on SDL2.
 
 <h2>Getting Started</h2>
 
 <h3>Prerequisites</h3>
 
-* Python 3
-* Ocaml 4.06.1 (only for source build)
-* C++ compiler: g++, clang++, or msvc
+<ul>
+<li>Python 3
+<li>Ocaml 4.06.1 (only for source build)
+<li>C++ compiler: g++, clang++, or msvc
+</ul>
 
 <h3>Extras (can be installed later)</h3>
 
-* SDL2 for graphics
-* GNU GMP, GNU GSL 
+<ul>
+<li>SDL2 for graphics
+<li>GNU GMP, GNU GSL 
+</ul>
 
 <h3>Build from Source</h3>
 
@@ -343,7 +345,7 @@ git clone https://github.com/felix-lang/felix.git
 cd felix
 . buildscript/linuxsetup.sh
 make  
-sudo make install <h1>optional!</h1>
+sudo make install #optional
 </pre>
 
 <h4>OSX</h4>
@@ -354,7 +356,7 @@ git clone https://github.com/felix-lang/felix.git
 cd felix
 . buildscript/macosxsetup.sh
 make  
-sudo make install <h1>optional!</h1>
+sudo make install #optional
 </pre>
 
 <h4>Windows</h4>
@@ -369,7 +371,7 @@ git clone https://github.com/felix-lang/felix.git
 cd felix
 . buildscript/winsetup.sh
 nmake  
-nmake install <h1>optional!</h1>
+nmake install #optional!
 </pre>
 
 <h2>Tarballs</h2>
