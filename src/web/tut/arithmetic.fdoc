@@ -22,7 +22,7 @@ failure.
 
 @felix
 //Result of a parse
-union parsed[A, B] = 
+variant parsed[A, B] = 
   | Returns of B * list[A] 
   | Parse_failed
   ;
@@ -333,7 +333,7 @@ we will admit into our language of arithmetic expressions.
 
 @felix
 //Tokens
-union token_t  =
+variant token_t  =
   | T_num of double
   | T_ident of string
   | T_lparen | T_rparen
@@ -490,7 +490,7 @@ of this type that arithmetic expressions will be realized.
 
 @felix
 //Arithmetic expressions
-union ast_t =
+variant ast_t =
   | E_const of double
   | E_var of string
   | E_add of ast_t * ast_t
@@ -795,7 +795,7 @@ Here's is how the success or failure of parsing and evaluation will be
 represented.
 
 @felix
-union result[A, B] =  Ok of A | Error of B ;
+variant result[A, B] =  Ok of A | Error of B ;
 @
 
 For our interpreter, in the above @{A} will be fixed to @{double} (the
@@ -803,7 +803,7 @@ only "values" admitted by our language of arithmetic expressions will
 be real numbers) and @{B} to @{error_t} defined by the following.
 
 @felix
-union error_t =
+variant error_t =
   | Syntax_error
   | Unbound_variable of string
   | Division_by_zero

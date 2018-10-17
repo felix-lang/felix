@@ -28,7 +28,7 @@ out for division by zero and overflow.
 To get going first define the sum <code>success[T]</code> to which
 later will be imbued monadic properties.
 @felix
-union success[T] = 
+variant success[T] = 
   | Success of T
   | Failure of string
   ;

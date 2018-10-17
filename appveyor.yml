@@ -49,18 +49,18 @@ after_build:
   - 7z a felix-%FLX_VERSION%-msvc-win64.zip build\release\share build\release\host wininstall.bat winsetup.bat hello.flx INSTALL > tmp.bat
 
 on_success:
-  - git config --global credential.helper store
-  - ps: Add-Content "$env:USERPROFILE\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
-  - git config --global user.email "skaller@users.sourceforge.net"
-  - git config --global user.name "skaller"
-  - cmd.exe /C mkdir build\rtl-tmp\crap
-  - cmd.exe /C mkdir build\flxg-tmp\crap
-  - cmd.exe /C rmdir /Q /S build\rtl-tmp
-  - cmd.exe /C rmdir /Q /S build\flxg-tmp
-  - move build win32binary\build
-  - cd win32binary
-  - git commit -a -m "Appveyor rebuild"
-  - git push
+  #- git config --global credential.helper store
+  #- ps: Add-Content "$env:USERPROFILE\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
+  #- git config --global user.email "skaller@users.sourceforge.net"
+  #- git config --global user.name "skaller"
+  #- cmd.exe /C mkdir build\rtl-tmp\crap
+  #- cmd.exe /C mkdir build\flxg-tmp\crap
+  #- cmd.exe /C rmdir /Q /S build\rtl-tmp
+  #- cmd.exe /C rmdir /Q /S build\flxg-tmp
+  #- move build win32binary\build
+  #- cd win32binary
+  #- git commit -a -m "Appveyor rebuild"
+  #- git push
  
 artifacts:
   - path: felix-$(FLX_VERSION)-msvc-win64.zip

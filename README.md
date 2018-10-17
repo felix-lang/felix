@@ -293,7 +293,7 @@ Felix has a builtin library for GUIs based on SDL2:
 ### Prerequisites
 
 * Python 3
-* Ocaml 6.01 (only for source build)
+* Ocaml 4.06.1 (only for source build)
 * C++ compiler: g++, clang++, or msvc
 
 ### Extras (can be installed later)
@@ -319,14 +319,14 @@ sudo make install # optional!
 ```
 git clone https://github.com/felix-lang/felix.git
 cd felix
-. buildscript/osxsetup.sh
+. buildscript/macosxsetup.sh
 make  
 sudo make install # optional!
 ```
 
 #### Windows
 Make sure git, Python3 and Ocaml are on your PATH.
-You can download a pre-built [Ocaml 6.01 for Windows](https://github.com/felix-lang/win64ocaml).
+You can download a pre-built [Ocaml 4.06.1 for Windows](https://github.com/felix-lang/win64ocaml).
 
 Open a cmd.exe console with Visual Studio 2015 or above
 environment established or run vcvarsall x86. See [vcvarsall](https://msdn.microsoft.com/en-us/library/f2ccy3wt.aspx).

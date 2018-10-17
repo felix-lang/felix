@@ -9,7 +9,7 @@ and handle it in a typesafe manner. A @{match} is an advanced form
 of a @{switch}: @{union}s are an advanced form of an @{enum}eration.
 
 @felix
-union boolean = 
+variant boolean = 
   | True
   | False
 ;
@@ -33,7 +33,7 @@ statements, and a function @{match} whose handlers are expressions.
 A more sophisticated example:
 
 @felix
-union Z = 
+variant Z = 
   | Cart of double * double // cartesian complex x+iy
   | Polar of double * double // polar complex re^(i\theta)
 ;
