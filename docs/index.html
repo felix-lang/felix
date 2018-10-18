@@ -1,5 +1,41 @@
 <html>
 <head>
+<style type="text/css">
+body {margin:3%; }
+h1 {color:gray; font-size:120%;}
+h2 {color:gray; font-size:105%;}
+h3 {font-size:100%;}
+h4 {font-size:95%;}
+h5 {font-size:95%;}
+span.fstring {color:darkblue; font-style:italic; }
+span.comment {font-family:arial; color:blue; font-style:italic; }
+span.doccomment {font-family:arial; color:green; font-style:italic; }
+span.big_keyword {color:#FF1010; }
+span.small_keyword {color:#802040; }
+span.qualifier {color:#A02020; }
+span.library {color:#A02000; }
+span.ctor {color:#406020; }
+span.hack {color:#66DD00; }
+span.preproc {color:#005500; }
+span.embedded_c{background-color:#DDDDDD; }
+span.fpc_fieldname {color:#DD0000; }
+span.lineno {color:#101010; background-color:#E0E0E0; font-size:80%; font-family:"courier",monospace; font-style:normal; }
+pre.flxbg {background-color:#A0FFA0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
+pre.uncheckedflxbg {background-color:#D0D0D0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
+pre.cppbg {background-color:#80FF80; color:black; }
+pre.prefmtbg {background-color:#D0D0D0; color:black; }
+pre.expected {background-color:#E0FF80; color:black; }
+pre.input {background-color:#E08080; color:black; }
+pre.inclusion {background-color:#D070D0; color:black; }
+code.inclusion {background-color:#D070D0; color:black; }
+.obsolete { background-color:#FFEFEF; font-size: small; color:black; }
+.future { background-color:#FF8080; font-size: small; color:black; }
+.implementation_detail { background-color:#E0E0E0; font-size: small; color:black;  }
+.bug { background-color:#FFE0E0; font-size: small; color:black; }
+.fixed{ background-color:#FFE0E0; font-size: small; color:black; }
+.done { background-color:#FFE0E0; font-size: small; color:black; }
+.caveat { background-color:#FF8080; color:black; }
+</style>
 <style>
 table {
   font-family: arial, sans-serif;
@@ -85,6 +121,44 @@ Felix is a C++ code generator specifically designed so that
 all your favourite C and C++ libraries can be embedded
 with little or no glue logic:
 
+Formatted with flx_pretty:
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="comment">// required header </span>
+<span class="lineno" id=line2></span>  <span class="big_keyword" title="Specify C code to be inserted into header file">header</span> vector_h = '<span class="embedded_c">#<span class="preproc">include</span> <span class="fstring">&lt;vector&gt;</span></span>';
+<span class="lineno" id=line3></span>  
+<span class="lineno" id=line4></span>  <span class="comment">// C++11 for smart pointers</span>
+<span class="lineno" id=line5></span>  <span class="big_keyword" title="Specify C code to be inserted into header file">header</span> memory_h = '<span class="embedded_c">#<span class="preproc">include</span> <span class="fstring">&lt;memory&gt;</span></span>' 
+<span class="lineno" id=line6></span>    <span class="big_keyword" title="specify requirements">requires</span> <span class="small_keyword" title="specifies an abstract package name">package</span> <span class="fstring">"cplusplus_11"</span>
+<span class="lineno" id=line7></span>  ;
+<span class="lineno" id=line8></span>   
+<span class="lineno" id=line9></span>  <span class="comment">// types</span>
+<span class="lineno" id=line10></span>  <span class="big_keyword" title="Define a primitive type by binding to a C type">type</span> vector[T] = <span class="fstring">"::std::shared_ptr&lt;::std::vector&lt;?1&gt;&gt;"</span> 
+<span class="lineno" id=line11></span>    <span class="big_keyword" title="specify requirements">requires</span> vector_h, memory_h
+<span class="lineno" id=line12></span>  ;
+<span class="lineno" id=line13></span>  
+<span class="lineno" id=line14></span>  <span class="big_keyword" title="Define a primitive type by binding to a C type">type</span> viterator[T] = <span class="fstring">"::std::vector&lt;?1&gt;::iterator"</span>
+<span class="lineno" id=line15></span>    <span class="big_keyword" title="specify requirements">requires</span> vector_h
+<span class="lineno" id=line16></span>  ;
+<span class="lineno" id=line17></span>  
+<span class="lineno" id=line18></span>  <span class="comment">// constructor</span>
+<span class="lineno" id=line19></span>  <span class="big_keyword" title="Define a value constructor or conversion operator for a type">ctor</span>[T] vector[T] : <span class="library" title="Type with one values (), the empty tuple">unit</span> = <span class="fstring">"::std::make_shared&lt;::std::vector&lt;?1&gt;&gt;()"</span>;
+<span class="lineno" id=line20></span>  
+<span class="lineno" id=line21></span>  <span class="comment">// operations</span>
+<span class="lineno" id=line22></span>  <span class="big_keyword" title="Define a procedure, a function with side-effects not returning a value">proc</span> push_back[T] : vector[T] * T =  <span class="fstring">"$1-&gt;push_back($2);"</span>;
+<span class="lineno" id=line23></span>  <span class="big_keyword" title="Define a procedure, a function with side-effects not returning a value">proc</span> push_back[T] (v: vector[T]) (elt:T) =&gt; push_back(v,elt);
+<span class="lineno" id=line24></span>  
+<span class="lineno" id=line25></span>  <span class="big_keyword" title="Define a function with no side-effects">fun</span> stl_begin[T] : vector[T] -&gt; viterator[T] = <span class="fstring">"$1-&gt;begin()"</span>;
+<span class="lineno" id=line26></span>  <span class="big_keyword" title="Define a function with no side-effects">fun</span> deref[T] : viterator[T] -&gt; T = <span class="fstring">"*$1"</span>;
+<span class="lineno" id=line27></span>  
+<span class="lineno" id=line28></span>  <span class="comment">// example use</span>
+<span class="lineno" id=line29></span>  <span class="big_keyword" title="Define a mutable variable">var</span> v = vector[<span class="library" title="binding of C int type">int</span>]();
+<span class="lineno" id=line30></span>  v.push_back 42;
+<span class="lineno" id=line31></span>  <span class="library" title="Print a string to standard output with newline appended">println</span>$ *v.stl_begin;
+<span class="lineno" id=line32></span>  
+
+</pre>
+
+Unformatted:
 <pre>
 // required header 
 header vector_h = '#include <vector>';
