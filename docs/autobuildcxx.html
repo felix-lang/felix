@@ -138,18 +138,21 @@ img {vertical-align: middle;}
 </div>
 
 <script>
-var slideIndex = 1;
-showSlides(slideIndex);
+var slideIndex = 0;
+showSlides();
 
 function plusSlides(n) {
-  showSlides(slideIndex += n);
+  slideIndex += n;
+  showSlides();
 }
 
 function currentSlide(n) {
-  showSlides(slideIndex = n);
+  slideIndex = n;
+  showSlides();
 }
 
-function showSlides(n) {
+function showSlides() {
+  ++ slideIndex;
   var i;
   var slides = document.getElementsByClassName("mySlides");
   var dots = document.getElementsByClassName("dot");
