@@ -154,18 +154,18 @@ with little or no glue logic:
 <span class="lineno" id=line30></span>  v.push_back 42;
 <span class="lineno" id=line31></span>  <span class="library" title="Print a string to standard output with newline appended">println</span>$ *v.stl_begin;
 <span class="lineno" id=line32></span>  
-
 </pre>
 
 <h3>Overloading</h3>
 
 Ad hoc polymorphism.
 
-<pre>
-// overloads
-fun f (x:double) => x +42.1;
-fun f (x:int) =>  x + 1;
-fun f (x:string) => x + "!";
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="comment">// overloads</span>
+<span class="lineno" id=line2></span>  <span class="big_keyword" title="Define a function with no side-effects">fun</span> f (x:<span class="library" title="binding of C double float type">double</span>) =&gt; x +42.1;
+<span class="lineno" id=line3></span>  <span class="big_keyword" title="Define a function with no side-effects">fun</span> f (x:<span class="library" title="binding of C int type">int</span>) =&gt;  x + 1;
+<span class="lineno" id=line4></span>  <span class="big_keyword" title="Define a function with no side-effects">fun</span> f (x:<span class="library" title="binding of C++ string type">string</span>) =&gt; x + <span class="fstring">"!"</span>;
+<span class="lineno" id=line5></span>  
 </pre>
 
 <h3>Simple Generics</h3>
@@ -178,8 +178,8 @@ Just don't give the argument type.
 <span class="lineno" id=line3></span>  <span class="library" title="Print a string to standard output with newline appended">println</span>$ g 1, g <span class="fstring">"hello"</span>;
 <span class="lineno" id=line4></span>  <span class="library" title="Print a string to standard output with newline appended">println</span>$ _<span class="library" title="return data structure with function applied to each value">map</span> f (1,<span class="fstring">"hello"</span>,2.0);
 <span class="lineno" id=line5></span>  
-
 </pre>
+
 <h3>Type Classes</h3>
 
 A better way of overloading:
@@ -193,8 +193,8 @@ A better way of overloading:
 <span class="lineno" id=line6></span>    <span class="big_keyword" title="Define a function with no side-effects">fun</span> == : <span class="library" title="binding of C int type">int</span> * <span class="library" title="binding of C int type">int</span> -&gt; <span class="library" title="binding of C int type">int</span> = <span class="fstring">"$1==$2"</span>; <span class="comment">//from C++</span>
 <span class="lineno" id=line7></span>  }
 <span class="lineno" id=line8></span>  
-
 </pre>
+
 <h3>Pattern matching</h3>
 
 <pre class='flxbg'>
@@ -203,8 +203,8 @@ A better way of overloading:
 <span class="lineno" id=line3></span>  | None =&gt; <span class="library" title="Print a string to standard output with newline appended">println</span> <span class="fstring">"NONE"</span>;
 <span class="lineno" id=line4></span>  <span class="small_keyword" title="end a match statement or expression">endmatch</span>;
 <span class="lineno" id=line5></span>  
-
 </pre>
+
 <h3>Pointers</h3>
 
 The only way to store a value. Felix has no references or
