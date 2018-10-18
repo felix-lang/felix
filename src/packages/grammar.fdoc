@@ -2025,7 +2025,7 @@ syntax functions {
   requires expressions;
 
   //$ Anonymous function (lamda).
-  satom := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
+  satom := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "="? scompound =>#
     """
     `(ast_lambda ,_sr (,_3 ,_4 ,(first (first _5)) ,_7))
     """;
@@ -2037,7 +2037,7 @@ syntax functions {
     """;
 
   //$ Anonymous generator (lamda).
-  satom := sadjectives "gen" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
+  satom := sadjectives "gen" stvarlist slambda_fun_args fun_return_type "="? scompound =>#
     """
     `(ast_generator ,_sr (,_3 ,_4 ,(first (first _5)) ,_7))
     """;
@@ -2063,7 +2063,7 @@ syntax functions {
 
   //$ Anonymous object constructor (lamda).
   //$ UGLY.
-  satom := sadjectives "object" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
+  satom := sadjectives "object" stvarlist slambda_fun_args fun_return_type "="? scompound =>#
     """
     `(ast_object ,_sr (,_3 ,_4 ,(first (first _5)) ,_7))
     """;
@@ -2212,14 +2212,14 @@ syntax functions {
 
   //$ General function definition. Multiple tuple arguments, body of statements.
   //$ inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l { return x.long + y; }
-  sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=" scompound =>#
+  sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "="? scompound =>#
     """
       (begin ;;(display "COMPOUND FUNCTION")
       `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ,(first _5) ,(second _5) ,(cal_funkind _1 _2) ,_1 ,_7))
     """;
 
   //$ Object factory definition with interface type.
-  sfunction := "object" sdeclname sfun_arg* "implements" object_return_type "=" scompound =>#
+  sfunction := "object" sdeclname sfun_arg* "implements" object_return_type "="? scompound =>#
     """
       `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,_5 Object () ,_7)
     """;

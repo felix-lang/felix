@@ -5,8 +5,7 @@
 <style>
 * {box-sizing: border-box}
 body {font-family: Verdana, sans-serif; margin:0}
-.mySlides {display: block}
-img {vertical-align: middle;}
+.mySlides {display: block; margin-left: 100px; border: 1px solid; height:5cm; }
 
 /* Slideshow container */
 .slideshow-container {
@@ -156,6 +155,7 @@ function plusSlides(n) {
 function nextSlide() {
   slideIndex++;
   showSlide();
+}
 
 function setSlide(n) {
   slideIndex = n;
@@ -171,15 +171,16 @@ function showSlide() {
   if (slideIndex < 1) {slideIndex = slides.length;}
 
   for (i = 0; i < slides.length; i++) {
-      slides[i].style.display = "block";  
+      slides[i].style.display = "none";  
   }
+
   for (i = 0; i < dots.length; i++) {
       dots[i].className = dots[i].className.replace(" active", "");
   }
 
   slides[slideIndex-1].style.display = "block";  
   dots[slideIndex-1].className += " active";
-  // setTimeout(nextSlide, 2000); // Change image every 2 seconds
+  setTimeout(nextSlide, 2000); // Change image every 2 seconds
 }
 
 showSlide();
