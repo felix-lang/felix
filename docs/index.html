@@ -20,7 +20,7 @@ span.preproc {color:#005500; }
 span.embedded_c{background-color:#DDDDDD; }
 span.fpc_fieldname {color:#DD0000; }
 span.lineno {color:#101010; background-color:#E0E0E0; font-size:80%; font-family:"courier",monospace; font-style:normal; }
-pre.flxbg {background-color:#A0FFA0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
+pre.flxbg {background-color:#C0FFC0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
 pre.uncheckedflxbg {background-color:#D0D0D0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
 pre.cppbg {background-color:#80FF80; color:black; }
 pre.prefmtbg {background-color:#D0D0D0; color:black; }
@@ -121,7 +121,6 @@ Felix is a C++ code generator specifically designed so that
 all your favourite C and C++ libraries can be embedded
 with little or no glue logic:
 
-Formatted with flx_pretty:
 <pre class='flxbg'>
 <span class="lineno" id=line1></span>  <span class="comment">// required header </span>
 <span class="lineno" id=line2></span>  <span class="big_keyword" title="Specify C code to be inserted into header file">header</span> vector_h = '<span class="embedded_c">#<span class="preproc">include</span> <span class="fstring">&lt;vector&gt;</span></span>';
@@ -158,41 +157,6 @@ Formatted with flx_pretty:
 
 </pre>
 
-Unformatted:
-<pre>
-// required header 
-header vector_h = '#include <vector>';
-
-// C++11 for smart pointers
-header memory_h = '#include <memory>' 
-  requires package "cplusplus_11"
-;
- 
-// types
-type vector[T] = "::std::shared_ptr<::std::vector<?1>>" 
-  requires vector_h, memory_h
-;
-
-type viterator[T] = "::std::vector<?1>::iterator"
-  requires vector_h
-;
-
-// constructor
-ctor[T] vector[T] : unit = "::std::make_shared<::std::vector<?1>>()";
-
-// operations
-proc push_back[T] : vector[T] * T =  "$1->push_back($2);";
-proc push_back[T] (v: vector[T]) (elt:T) => push_back(v,elt);
-
-fun stl_begin[T] : vector[T] -> viterator[T] = "$1->begin()";
-fun deref[T] : viterator[T] -> T = "*$1";
-
-// example use
-var v = vector[int]();
-v.push_back 42;
-println$ *v.stl_begin;
-</pre>
-
 <h3>Overloading</h3>
 
 Ad hoc polymorphism.
@@ -208,44 +172,48 @@ fun f (x:string) => x + "!";
 
 Just don't give the argument type.
 
-<pre>
-// generics
-fun g (x) => f (f x);
-println$ g 1, g "hello";
-println$ _map f (1,"hello",2.0);
-</pre>
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="comment">// generics</span>
+<span class="lineno" id=line2></span>  <span class="big_keyword" title="Define a function with no side-effects">fun</span> g (x) =&gt; f (f x);
+<span class="lineno" id=line3></span>  <span class="library" title="Print a string to standard output with newline appended">println</span>$ g 1, g <span class="fstring">"hello"</span>;
+<span class="lineno" id=line4></span>  <span class="library" title="Print a string to standard output with newline appended">println</span>$ _<span class="library" title="return data structure with function applied to each value">map</span> f (1,<span class="fstring">"hello"</span>,2.0);
+<span class="lineno" id=line5></span>  
 
+</pre>
 <h3>Type Classes</h3>
 
 A better way of overloading:
 
-<pre>
-class Eq[T] {
-  virtual fun == T * T -> T;
-  fun != (x:T, y:T) => not (x == y);
-}
-instance Eq[int] {
-  fun == : int * int -> int = "$1==$2"; //from C++
-}
-</pre>
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="big_keyword" title="Define a type class">class</span> Eq[T] {
+<span class="lineno" id=line2></span>    <span class="qualifier" title="Type of a function to be provided in type class instances">virtual</span> <span class="big_keyword" title="Define a function with no side-effects">fun</span> == T * T -&gt; T;
+<span class="lineno" id=line3></span>    <span class="big_keyword" title="Define a function with no side-effects">fun</span> != (x:T, y:T) =&gt; <span class="small_keyword" title="logical negation">not</span> (x == y);
+<span class="lineno" id=line4></span>  }
+<span class="lineno" id=line5></span>  <span class="big_keyword" title="Provide an instance of a typeclass">instance</span> Eq[<span class="library" title="binding of C int type">int</span>] {
+<span class="lineno" id=line6></span>    <span class="big_keyword" title="Define a function with no side-effects">fun</span> == : <span class="library" title="binding of C int type">int</span> * <span class="library" title="binding of C int type">int</span> -&gt; <span class="library" title="binding of C int type">int</span> = <span class="fstring">"$1==$2"</span>; <span class="comment">//from C++</span>
+<span class="lineno" id=line7></span>  }
+<span class="lineno" id=line8></span>  
 
+</pre>
 <h3>Pattern matching</h3>
 
-<pre>
-match x with
-| Some x => println$ x; 
-| None => println "NONE";
-endmatch;
-</pre> 
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="small_keyword" title="match statement or expression">match</span> x <span class="small_keyword" title="type-class constraint">with</span>
+<span class="lineno" id=line2></span>  | Some x =&gt; <span class="library" title="Print a string to standard output with newline appended">println</span>$ x; 
+<span class="lineno" id=line3></span>  | None =&gt; <span class="library" title="Print a string to standard output with newline appended">println</span> <span class="fstring">"NONE"</span>;
+<span class="lineno" id=line4></span>  <span class="small_keyword" title="end a match statement or expression">endmatch</span>;
+<span class="lineno" id=line5></span>  
 
+</pre>
 <h3>Pointers</h3>
 
 The only way to store a value. Felix has no references or
 lvalues. Pointers are better.
 
-<pre>
-var x = 1;
-&x <- 2;
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="big_keyword" title="Define a mutable variable">var</span> x = 1;
+<span class="lineno" id=line2></span>  &amp;x &lt;- 2;
+<span class="lineno" id=line3></span>  
 </pre>
 
 
@@ -271,13 +239,14 @@ Felix has both C++ style _ad hoc polymorphism_ with
 overloading and also Haskell style <it>type classes</it>,
 (what would be called <it>concepts</it> in C++).
 
-<pre>
-var out = fold_left 
-  (fun (acc:int) (elt:int) => acc + elt) 
-  0
-  ([1,2,3,4])
-;
-  
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="big_keyword" title="Define a mutable variable">var</span> out = <span class="library" title="accumulated values of data structure from left into initial value using function">fold_left</span> 
+<span class="lineno" id=line2></span>    (<span class="big_keyword" title="Define a function with no side-effects">fun</span> (acc:<span class="library" title="binding of C int type">int</span>) (elt:<span class="library" title="binding of C int type">int</span>) =&gt; acc + elt) 
+<span class="lineno" id=line3></span>    0
+<span class="lineno" id=line4></span>    ([1,2,3,4])
+<span class="lineno" id=line5></span>  ;
+<span class="lineno" id=line6></span>    
+<span class="lineno" id=line7></span>  
 </pre>
 
 <h3>Coroutines </h3>
@@ -309,26 +278,27 @@ code uses library _combinators_ and embedded Google RE2
 binding to specify a C identifier (with only `x` for letters
 and `9` for digits):
 
-<pre>
-var digit = Charset "9";
-var letter = Charset "x";
-var us = Regdef::String "_";
-var id = Seqs 
-  ([   
-     Alts ([us,letter]),
-     Rpt( Alts([letter,digit,us]), 0,-1)
-  )]
-;
-</pre>
 With the standard regexp grammar we can generate the
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="big_keyword" title="Define a mutable variable">var</span> digit = Charset <span class="fstring">"9"</span>;
+<span class="lineno" id=line2></span>  <span class="big_keyword" title="Define a mutable variable">var</span> letter = Charset <span class="fstring">"x"</span>;
+<span class="lineno" id=line3></span>  <span class="big_keyword" title="Define a mutable variable">var</span> us = Regdef::String <span class="fstring">"_"</span>;
+<span class="lineno" id=line4></span>  <span class="big_keyword" title="Define a mutable variable">var</span> id = Seqs 
+<span class="lineno" id=line5></span>    ([   
+<span class="lineno" id=line6></span>       Alts ([us,letter]),
+<span class="lineno" id=line7></span>       Rpt( Alts([letter,digit,us]), 0,-1)
+<span class="lineno" id=line8></span>    )]
+<span class="lineno" id=line9></span>  ;
+<span class="lineno" id=line10></span>  
+</pre>
 combinators and thus calls to Google RE2 using 
 the regexp DSSL:
 
-<pre>
-regdef digit = "9";
-regdef letter = "x";
-regdef us = "_";
-regdef id = (us|letter)(letter|digit|us)*;
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="big_keyword" title="define named regular expression">regdef</span> digit = <span class="fstring">"9"</span>;
+<span class="lineno" id=line2></span>  <span class="big_keyword" title="define named regular expression">regdef</span> letter = <span class="fstring">"x"</span>;
+<span class="lineno" id=line3></span>  <span class="big_keyword" title="define named regular expression">regdef</span> us = <span class="fstring">"_"</span>;
+<span class="lineno" id=line4></span>  <span class="big_keyword" title="define named regular expression">regdef</span> id = (us|letter)(letter|digit|us)*;
 </pre>
 
 which is much better than the string form:
@@ -343,50 +313,51 @@ as circults. The code below is an advanced combination
 of this model, pipelines, and uses the fixpoint operator
 for recursion, to build a simple parser.
 
-<pre>
-include "std/strings/recognisers";
-include "std/control/chips";
-
-open BaseChips;
-open Recognisers;
-
-device L = match_string "(";
-device R = match_string ")";
-device E = match_string "E";
-
-// Grammar:
-// p = epsilon
-// p = (p)p
-// s = pE
-var p = fix (proc (q:iochip_t[Buffer,Buffer]) 
-  (io: (
-    inp: %<Buffer,
-    out: %>Buffer
-  )) ()
- {
-   device y = 
-     tryall_list ([
-       epsilon[Buffer],
-       L |-> q |-> R |-> q
-     ])
-   ;
-   circuit
-     wire io.inp to y.inp
-     wire io.out to y.out
-   endcircuit
-});
-
-device parens = p |-> E;
-
-device sayresult = procedure (proc (x:Buffer) {
-  println$ "Test: End pos=" + x.str; })
-;
-
-device tests = source_from_list (["(()(()))E", "E", "()E"]);
-device toBuffer = function (fun (s:string)=> Buffer s);
-
-#(tests |-> toBuffer |-> parens |-> sayresult);
-
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="big_keyword" title="Include a Felix file">include</span> <span class="fstring">"std/strings/recognisers"</span>;
+<span class="lineno" id=line2></span>  <span class="big_keyword" title="Include a Felix file">include</span> <span class="fstring">"std/control/chips"</span>;
+<span class="lineno" id=line3></span>  
+<span class="lineno" id=line4></span>  <span class="big_keyword" title="Open a module or class">open</span> BaseChips;
+<span class="lineno" id=line5></span>  <span class="big_keyword" title="Open a module or class">open</span> Recognisers;
+<span class="lineno" id=line6></span>  
+<span class="lineno" id=line7></span>  device L = match_string <span class="fstring">"("</span>;
+<span class="lineno" id=line8></span>  device R = match_string <span class="fstring">")"</span>;
+<span class="lineno" id=line9></span>  device E = match_string <span class="fstring">"E"</span>;
+<span class="lineno" id=line10></span>  
+<span class="lineno" id=line11></span>  <span class="comment">// Grammar:</span>
+<span class="lineno" id=line12></span>  <span class="comment">// p = epsilon</span>
+<span class="lineno" id=line13></span>  <span class="comment">// p = (p)p</span>
+<span class="lineno" id=line14></span>  <span class="comment">// s = pE</span>
+<span class="lineno" id=line15></span>  <span class="big_keyword" title="Define a mutable variable">var</span> p = fix (<span class="big_keyword" title="Define a procedure, a function with side-effects not returning a value">proc</span> (q:iochip_t[Buffer,Buffer]) 
+<span class="lineno" id=line16></span>    (io: (
+<span class="lineno" id=line17></span>      inp: %&lt;Buffer,
+<span class="lineno" id=line18></span>      out: %&gt;Buffer
+<span class="lineno" id=line19></span>    )) ()
+<span class="lineno" id=line20></span>   {
+<span class="lineno" id=line21></span>     device y = 
+<span class="lineno" id=line22></span>       tryall_list ([
+<span class="lineno" id=line23></span>         epsilon[Buffer],
+<span class="lineno" id=line24></span>         L |-&gt; q |-&gt; R |-&gt; q
+<span class="lineno" id=line25></span>       ])
+<span class="lineno" id=line26></span>     ;
+<span class="lineno" id=line27></span>     circuit
+<span class="lineno" id=line28></span>       wire io.inp <span class="small_keyword" title="substring range separator">to</span> y.inp
+<span class="lineno" id=line29></span>       wire io.out <span class="small_keyword" title="substring range separator">to</span> y.out
+<span class="lineno" id=line30></span>     endcircuit
+<span class="lineno" id=line31></span>  });
+<span class="lineno" id=line32></span>  
+<span class="lineno" id=line33></span>  device parens = p |-&gt; E;
+<span class="lineno" id=line34></span>  
+<span class="lineno" id=line35></span>  device sayresult = procedure (<span class="big_keyword" title="Define a procedure, a function with side-effects not returning a value">proc</span> (x:Buffer) {
+<span class="lineno" id=line36></span>    <span class="library" title="Print a string to standard output with newline appended">println</span>$ <span class="fstring">"Test: End pos="</span> + x.<span class="library" title="Convert a value to a string">str</span>; })
+<span class="lineno" id=line37></span>  ;
+<span class="lineno" id=line38></span>  
+<span class="lineno" id=line39></span>  device tests = source_from_list ([<span class="fstring">"(()(()))E"</span>, <span class="fstring">"E"</span>, <span class="fstring">"()E"</span>]);
+<span class="lineno" id=line40></span>  device toBuffer = function (<span class="big_keyword" title="Define a function with no side-effects">fun</span> (s:<span class="library" title="binding of C++ string type">string</span>)=&gt; Buffer s);
+<span class="lineno" id=line41></span>  
+<span class="lineno" id=line42></span>  #(tests |-&gt; toBuffer |-&gt; parens |-&gt; sayresult);
+<span class="lineno" id=line43></span>  
+<span class="lineno" id=line44></span>  
 </pre>
 
 <h3>Graphics</h3>
