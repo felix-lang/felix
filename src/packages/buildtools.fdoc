@@ -3,7 +3,7 @@
 @tangler flx_build_prep.flx  = $PWD/src/tools/flx_build_prep.flx
 @tangler flx_build_rtl.flx   = $PWD/src/tools/flx_build_rtl.flx
 @tangler flx_build_boot.flx  = $PWD/src/tools/flx_build_boot.flx
-@tangler build_boot.flx      = $PWD/src/config/build_boot.fpc
+@tangler build_boot.fpc      = $PWD/src/config/build_boot.fpc
 
 
 @h1 Tools to build the core Felix system.
@@ -1390,7 +1390,7 @@ It uses a specified build configuration file to determine what
 to build. The standard file is @{build_boot.fpc} in the configuration
 directory.
 
-@tangle build_boot.flx
+@tangle build_boot.fpc
 web_plugin:      cpp2html
 web_plugin:      fdoc2html
 web_plugin:      fdoc_edit
@@ -1427,6 +1427,8 @@ tool:      flx_mktutindex
 tool:      flx_renumber
 tool:      flx_iscr
 tool:      flx_pretty
+flx_tool: flx_find_cxx_packages
+flx_tool: flx_gen_cxx_includes
 flx_tool: flx_pkgconfig
 flx_tool: flx_build_prep
 flx_tool: flx_build_rtl

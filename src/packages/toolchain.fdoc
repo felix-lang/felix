@@ -1,4 +1,7 @@
 @title C and C++ toolchains
+@tangler flx_find_cxx_packages.flx    = $PWD/src/tools/flx_find_cxx_packages.flx
+@tangler flx_gen_cxx_includes.flx      = $PWD/src/tools/flx_gen_cxx_includes.flx
+
 @tangler toolchain_config.flx   = share/lib/std/felix/toolchain_config.flx
 @tangler toolchain_interface.flx      = share/lib/std/felix/toolchain_interface.flx
 @tangler flx_cxx.flx                  = share/lib/std/felix/flx_cxx.flx
@@ -30,6 +33,88 @@
 @tangler build_flx_rtl_clang_iphoneos.fpc    = $PWD/src/config/build_flx_rtl_clang_iphoneos.fpc
 @tangler build_flx_rtl_msvc_win.fpc        = $PWD/src/config/build_flx_rtl_msvc_win.fpc
 
+@h1 Find C++ packages.
+Doesn't really belong here but had to go somewhere!
+
+Scans a C or C++ files and produces a list of required packages
+on standard output. To be redirected to a *.resh file.
+
+Felix compiler generates *.resh file for Felix generated C++,
+and puts the #include "filename.includes" into filename.hpp.
+For C++ only builds, the user has to put the #include in themselves.
+The resulting C++ won't work. This tool makes the filename.resh
+file which can then be fed to flx_pkgconfig along with a request
+for the include field, to help generate the include file.
+
+@tangle flx_find_cxx_packages.flx
+
+// FIXME: this function cut and paste from flx.fdoc
+// hidden inside an object
+
+  fun find_cxx_pkgs (src:string) : list[string] =
+  {
+    //eprintln$ "[flx_find_cxx_pkgs] Scanning " + src + " for package requirements";
+    var out = Empty[string];
+    var pat = RE2('.*@requires package ([A-Za-z][A-Za-z0-9_-]*).*');
+    var f = fopen_input_text src;
+    if valid f do
+      for line in f do
+        var result = Match (pat,line);
+        match result do
+        | #None => ;
+        | Some v => out = v.1  + out;
+        done
+      done
+      fclose f;
+    else
+      eprintln("Can't find C++ source file " + src);
+      System::exit(1);
+    done
+    out = rev out;
+    //if out != Empty[string] call
+    //  eprintln$ "[flx_find_cxx_packages] C++ file "+src+" requires packages " + str (out);
+    return out;
+  }
+
+
+
+var filename = System::argv_dflt 1 "";
+if filename == "" do
+  println$ "Usage: flx_find_cxx_packages filename.cxx > filename.resh";
+  System::exit 1;
+done
+
+var pkgs = find_cxx_pkgs filename;
+
+for pkg in pkgs perform println$ pkg;
+@
+
+@tangle flx_gen_cxx_includes.flx
+include "std/felix/flx_pkgconfig";
+ 
+var pkgconfig_flags = tail #System::args;
+//println$ "Args to flx_gen_cxx_includes=" + pkgconfig_flags.str;
+
+var infile = stdin;
+var pkgdata = load infile;
+var pkgs = split (pkgdata, "\n");
+pkgs = filter (fun (x:string) => x != "") pkgs;
+//for pkg in pkgs perform println$ "PKG=" +  pkg;
+//var err, result = System::get_stdout("flx_pkgconfig " + cat " " pkgconfig_flags + " --field=includes " + cat " " pkgs);
+var allargs = pkgconfig_flags + "--field=includes" + pkgs;
+//println$ "Calling flx_pkgconfig with args = " + allargs.str;
+var err,result = FlxPkgConfig::flx_pkgconfig(allargs);
+
+if err == 0 do
+  //println$ "Result = " + result;
+  //var files = split (result," "); // won't work on Windows well ... spaces .. ugg
+  var files = result;
+  for file in files perform println$ "#include " + file;
+else
+  eprintln$ "Error " + err.str + " running flx_pkgconfig";
+done
+
+@
 
 @h1 Toolchain support
 @tangle toolchain_config.flx

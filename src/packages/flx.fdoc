@@ -2531,7 +2531,7 @@ object processing_env(
         //System::exit (1);
         throw_continuation ehandler;
       done
-      pkg_dstrings = mydstrings;
+      pkg_dstrings = FlxPkg::fix2word_flags mydstrings;
     done
  
     var tc = toolchain_maker 
@@ -2594,7 +2594,7 @@ object processing_env(
         //System::exit (1);
         throw_continuation ehandler;
       done
-      pkg_dstrings = mydstrings;
+      pkg_dstrings = FlxPkg::fix2word_flags mydstrings;
     done
     var tc = toolchain_maker  
       extend dflt_toolchain_config with 
@@ -2666,7 +2666,7 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
         //System::exit (1);
         throw_continuation ehandler;
       done
-      pkg_sstrings = mysstrings;
+      pkg_sstrings = FlxPkg::fix2word_flags mysstrings;
     done
     var tc = toolchain_maker  
       extend dflt_toolchain_config with 
