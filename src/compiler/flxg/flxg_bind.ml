@@ -19,6 +19,7 @@ let make_module module_name asms =
 
 (** Bind the assemblies *)
 let flxg_bind_asms state sym_table bsym_table start_counter asms =
+
   if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//BINDING";
 

@@ -41,7 +41,8 @@ open class Typing
     | _ * ?b => b
     endmatch
   ;
-
+/*
+  // THESE SHOULD PROBABLY BE FIXED OR DELETED
   typedef fun type_lnot(x:TYPE):TYPE=>
     typematch x with
     | 0 => 1
@@ -89,7 +90,29 @@ open class Typing
 
   typedef fun type_gt (x:TYPE, y:TYPE):TYPE=> type_le (y, x);
   typedef fun type_lt (x:TYPE, y:TYPE):TYPE=> type_ge (y, x);
+*/
 
+  // Polymorphic type comparisons, including subtyping AND subsumption
+  typedef fun <= (arg:TYPE, param:TYPE):BOOL =>
+    subtypematch arg with
+    | param => TRUE
+    | _ => FALSE
+    endmatch
+  ;
+
+  typedef fun >= (param:TYPE, arg:TYPE):BOOL =>
+    subtypematch arg with
+    | param => TRUE
+    | _ => FALSE
+    endmatch
+  ;
+
+  typedef fun equal (a:TYPE, b:TYPE):BOOL =>
+    typematch a with
+    | b => TRUE
+    | _ => FALSE
+    endmatch
+  ;
 
   const memcount[t] : size = "#memcount";
   const arrayindexcount[t] : size = "#arrayindexcount";

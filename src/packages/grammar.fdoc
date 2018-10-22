@@ -99,7 +99,7 @@ syntax types {
   t[ssum_pri] := t[>scomparison_pri] "`>" t[>scomparison_pri] =># "(tInfix)";
 
   t[scomparison_pri]:= t[>scomparison_pri] cmp t[>scomparison_pri] =># 
-   "`(tbinop _2 _1 _3))";
+   "(tbinop _2 _1 _3))";
 
   t[ssetunion_pri] := t[ssetunion_pri] "\cup" t[>ssetunion_pri] =># "`(typ_typesetunion ,_sr ,_1 ,_3)";
   t[ssetintersection_pri] := t[ssetintersection_pri] "\cap" t[>ssetintersection_pri] =># "`(typ_typesetintersection ,_sr ,_1 ,_3)";

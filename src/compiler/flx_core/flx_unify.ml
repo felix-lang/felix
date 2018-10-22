@@ -23,27 +23,21 @@ let check_recursion bsym_table t =
       sbt bsym_table t);
     raise Bad_recursion 
 
-type relmode_t = [`Eq | `Ge]
-let string_of_relmode_t x = match x with
-| `Eq -> "="
-| `Ge -> ">="
-
-type tpair_t = Flx_btype.t * Flx_btype.t
-type rel_t = relmode_t * tpair_t
-type rels_t = rel_t list
-type vassign_t = int * Flx_btype.t
-type mgu_t = vassign_t list
-type maybe_vassign_t = vassign_t option
-type reladd_t = tpair_t -> unit
-type dvars_t = BidSet.t
-
-(* LHS ge RHS, parameter supertype of argument *)
-let rec solve_subtypes bsym_table counter lhs rhs dvars (s:vassign_t option ref) (add_eq:reladd_t) (add_ge:reladd_t) =
+let nominal_subtype bsym_table lhs rhs =
   match lhs, rhs with
   | BTYP_inst (l,[],_),BTYP_inst(r,[],_) ->
     (* meta types have to agree if types do? *)
     if l <> r && not (Flx_bsym_table.is_supertype bsym_table l r)
     then raise Not_found
+  | _ -> raise Not_found
+
+
+(* LHS ge RHS, parameter supertype of argument *)
+let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option ref) (add_eq:reladd_t) (add_ge:reladd_t) =
+  try nominal_subtype lhs rhs
+  with Not_found ->
+
+  match lhs, rhs with
 
   (* a non-uniq parameter accepts a uniq one, uniq T is a subtype of T,
      also, covariant ???????
@@ -151,20 +145,11 @@ let rec solve_subtypes bsym_table counter lhs rhs dvars (s:vassign_t option ref)
     in
     List.iter (fun (name,ltyp) ->
       let rel_seq = get_rel_seq name in
-(*
-print_endline ("Unify: Param Field " ^ name ^ ", rel_seq=" ^ string_of_int rel_seq ^ ",type=" ^ str_of_btype ltyp);
-*)
       let maybe = find_seq name rel_seq rhs in
       match maybe with
       | None -> 
-(*
-print_endline ("Unify: not found in Argument!");
-*)
         raise Not_found 
       | Some (_,rtyp) -> 
-(*
-print_endline ("Found in argument, type=" ^ str_of_btype rtyp);
-*)
         add_ge (ltyp, rtyp) (* covariant *)
     )
     lhs
@@ -179,71 +164,42 @@ print_endline ("Found in argument, type=" ^ str_of_btype rtyp);
     in
     List.iter (fun (name,rtyp) ->
       let rel_seq = get_rel_seq name in
-(*
-print_endline ("Unify: Arg Ctor " ^ name ^ ", rel_seq=" ^ string_of_int rel_seq ^ ",type=" ^ str_of_btype rtyp);
-*)
       let maybe = find_seq name rel_seq lhs in
       match maybe with
       | None -> 
-(*
-print_endline ("Unify: not found in Param!");
-*)
         raise Not_found 
       | Some (_,ltyp) -> 
-(*
-print_endline ("Found in param, type=" ^ str_of_btype ltyp);
-*)
         add_ge (ltyp, rtyp) (* covariant *)
     )
     rhs
 
 
   | _ ->  
-    solve_subsumption bsym_table counter lhs rhs dvars s add_eq
+    solve_subsumption nominal_subtype counter lhs rhs dvars s add_eq
 
-and solve_subsumption bsym_table counter lhs rhs  dvars (s:vassign_t option ref) (add_eqn:reladd_t) =
+and solve_subsumption nominal_subtype counter lhs rhs  dvars (s:vassign_t option ref) (add_eqn:reladd_t) =
       begin match lhs,rhs with
       | BTYP_rev t1, BTYP_rev t2 ->
         add_eqn (t1,t2)
 
 
       | (BTYP_type_var (i,mi) as ti), (BTYP_type_var (j,mj) as tj)->
-        (*
-        print_endline ("Equated variables " ^ si i ^ " <-> " ^ si j);
-        *)
-
         (* meta type have to agree *)
         if i <> j then
           if BidSet.mem i dvars then
           begin
             if not (Flx_kind.kind_ge [mi, mj]) then
             begin
-(*
-              print_endline ("Unify1: metatype mismatch  T<"^string_of_int i^">" ^Flx_kind.sk mi ^ 
-              " is not superkind of  T<"^string_of_int j^">" ^ Flx_kind.sk mj);
-*)
               raise Not_found;
             end;
-(*
-             print_endline ("Metatype unify T<" ^string_of_int i^">" ^Flx_kind.sk mi ^ 
-              " is i asuperkind of  T<"^string_of_int j^">" ^ Flx_kind.sk mj); 
-*)
             s := Some (i,tj)
           end 
           else if BidSet.mem j dvars then
           begin
             if not (Flx_kind.kind_ge [mj, mi]) then
             begin
-(*
-              print_endline ("Unify2: metatype mismatch  T<"^string_of_int j^">" ^Flx_kind.sk mj ^ 
-              " is not superkind of  T<"^string_of_int i^">" ^ Flx_kind.sk mi);
-*)
               raise Not_found;
             end;
-(*
-              print_endline ("Unify2: metatype unify T<"^string_of_int j^">" ^Flx_kind.sk mj ^ 
-              " is superkind of  T<"^string_of_int i^">" ^ Flx_kind.sk mi);
-*)
             s := Some (j,ti)
           end
           else raise Not_found
@@ -251,33 +207,19 @@ and solve_subsumption bsym_table counter lhs rhs  dvars (s:vassign_t option ref)
       (* TO DO: calculate the smallest metatype of the type and do a kinding check *)
       | BTYP_type_var (i,mt), t
       | t,BTYP_type_var (i,mt) ->
-        (*
-        print_endline ("variable assignment " ^ si i ^ " -> " ^ sbt sym_table t);
-        *)
-
-        (* WE SHOULD CHECK THAT t has the right meta type .. but
-        the metatype routine isn't defined yet ..
-        *)
         if not (BidSet.mem i dvars) then raise Not_found;
         if var_i_occurs i t
         then begin
           print_endline
           (
             "recursion in unification, terms: " ^
-            sbt bsym_table lhs ^ " = " ^ sbt bsym_table rhs
+            str_of_btype lhs ^ " = " ^ str_of_btype rhs
           );
           s := Some (i, Flx_btype_rec.fix i t)
         end else begin
-          (*
-          print_endline "Adding substitution";
-          *)
           let mt2 = Flx_btype_kind.metatype Flx_srcref.dummy_sr t in
           if not (Flx_kind.kind_ge [mt, mt2]) then
           begin
-(*
-              print_endline ("Unify3: metatype mismatch  T<"^string_of_int i^">" ^Flx_kind.sk mt ^ 
-              " is not superkind of " ^ Flx_kind.sk mt2 ^ " which is the kind of " ^ Flx_btype.st t);
-*)
             raise Not_found;
           end;
           s := Some (i,t)
@@ -493,23 +435,6 @@ print_endline "Trying to unify instances (2)";
           add_eqn (btyp_tuple (ts), ts')
         | _ -> ()
         end
-(*
-      (* T ^ N = T by setting N = 1 *)
-      | BTYP_array (t11, (BTYP_type_var (i,_) as tv)), t21 
-      | t21, BTYP_array (t11, (BTYP_type_var (i,_) as tv))
-        when BidSet.mem i dvars 
-       ->
-let lhs,rhs = h in
-print_endline ("Weird array thing " ^ Flx_print.sbt bsym_table lhs ^ " <--> " ^ Flx_print.sbt bsym_table rhs);
-        eqns := (t11,t21) :: (tv, btyp_tuple []) :: !eqns
-*)
-
-      (* type tuple is handled same as a tuple type .. not
-        really sure this is right. Certainly, the corresponding
-        terms in both must unify, however possibly we should
-        return distinct MGU for each case for the type tuple,
-        possibly with distinct bindings for the same variable..
-      *)
 
       | (BTYP_type_tuple ls1, BTYP_type_tuple ls2)
       | (BTYP_tuple ls1, BTYP_tuple ls2)
@@ -534,23 +459,13 @@ print_endline ("Weird array thing " ^ Flx_print.sbt bsym_table lhs ^ " <--> " ^ 
       (* structural, not functional, equality of lambdas by alpha equivalence *)
       | BTYP_type_function (p1,r1,b1), BTYP_type_function (p2,r2,b2)
         when List.length p1 = List.length p2 ->
-(*
-print_endline "Trying to unify type functions";
-print_endline (sbt bsym_table lhs);
-print_endline (sbt bsym_table rhs);
-*)
+
         (* This is overly ambitious! Maybe should just do a plain type equality test *)
         let meta_type_equations = List.map2 (fun (_,t1) (_,t2) -> (t1,t2)) p1 p2 in
         let meta_type_equations = (r1,r2) :: meta_type_equations in
 
         let vs = List.map2 (fun (i1,_) (i2,t) -> i1,btyp_type_var (i2,t))  p1 p2 in
-(*
-print_endline ("vs=" ^ catmap "," (fun (i,t) -> string_of_int i^":"^sbt bsym_table t) vs);
-*)
         let b1 = list_subst counter vs b1 in
-(*
-print_endline ("Converted LHS body=" ^ sbt bsym_table b1);
-*)
         add_eqn (b1, b2);
 (* META TYPES ARE BUGGED: IGNORE *)
 (*
@@ -581,7 +496,7 @@ print_endline "Trying to unify type map";
         raise Not_found
       end
 
-let unif bsym_table counter (inrels: rels_t) (dvars:dvars_t) =
+let unif nominal_subtype counter (inrels: rels_t) (dvars:dvars_t) =
 (*
 print_endline ("Unif:");
   print_endline ( "Dvars = { " ^ catmap ", " si (BidSet.elements dvars) ^ "}");
@@ -615,8 +530,8 @@ print_endline ("Unif:");
 print_endline ("Trying " ^ sbt bsym_table lhs ^ " " ^ string_of_relmode_t mode ^ " " ^ sbt bsym_table rhs);
 *)
       begin match mode with
-      | `Eq -> solve_subsumption bsym_table counter lhs rhs dvars s add_eq 
-      | `Ge -> solve_subtypes bsym_table counter lhs rhs dvars s add_eq add_ge
+      | `Eq -> solve_subsumption nominal_subtype counter lhs rhs dvars s add_eq 
+      | `Ge -> solve_subtypes nominal_subtype counter lhs rhs dvars s add_eq add_ge
       end
       ;
       begin match !s with
@@ -661,54 +576,52 @@ let find_vars_eqns eqns =
   !lhs_vars,!rhs_vars
 
 let unification bsym_table counter eqns dvars =
+  let nominal_subtype lhs rhs = nominal_subtype bsym_table lhs rhs in
   let eqns = List.map (fun x -> `Eq, x) eqns in
-  unif bsym_table counter eqns dvars
+  unif nominal_subtype counter eqns dvars
 
 let maybe_unification bsym_table counter eqns =
+  let nominal_subtype lhs rhs = nominal_subtype bsym_table lhs rhs in
   let l,r = find_vars_eqns eqns in
   let dvars = BidSet.union l r in
   let eqns = List.map (fun x -> `Eq, x) eqns in
-  try Some (unif bsym_table counter eqns dvars)
+  try Some (unif nominal_subtype counter eqns dvars)
   with Not_found -> None
 
 (* same as unifies so why is this here? *)
 let maybe_matches bsym_table counter eqns =
+  let nominal_subtype lhs rhs = nominal_subtype bsym_table lhs rhs in
   let l,r = find_vars_eqns eqns in
   let dvars = BidSet.union l r in
   let eqns = List.map (fun x -> `Eq, x) eqns in
-  try Some (unif bsym_table counter eqns dvars)
+  try Some (unif nominal_subtype counter eqns dvars)
   with Not_found -> None
 
 (* LHS is parameter, RHS is argument, we require LHS >= RHS *)
 let maybe_specialisation_with_dvars bsym_table counter eqns dvars =
+  let nominal_subtype lhs rhs = nominal_subtype bsym_table lhs rhs in
   let eqns = List.map (fun x -> `Ge, x) eqns in
-  try Some (unif bsym_table counter eqns dvars)
+  try Some (unif nominal_subtype counter eqns dvars)
   with Not_found -> None
 
+(* DERIVED *)
 let maybe_specialisation bsym_table counter eqns =
   let l,_ = find_vars_eqns eqns in
   maybe_specialisation_with_dvars bsym_table counter eqns l
 
 let unifies bsym_table counter t1 t2 =
+  let nominal_subtype lhs rhs = nominal_subtype bsym_table lhs rhs in
   let eqns = [t1,t2] in
   match maybe_unification bsym_table counter eqns with
   | None -> false
   | Some _ -> true
 
-let ge bsym_table counter a b =
-(*
-  print_endline ("Compare terms " ^ sbt bsym_table a ^ " >? " ^ sbt bsym_table b);
-*)
+let ge bsym_table counter a b : bool =
   let eqns = [a,b] in
   let l,_ = find_vars_eqns eqns in
   match maybe_specialisation bsym_table counter eqns with
   | None -> (* print_endline "    ** false"; *) false
   | Some mgu ->
-(*
-    print_endline ("MGU from specialisation = ");
-    List.iter (fun (i, t) -> print_endline (si i ^ " --> " ^ sbt bsym_table t)) mgu;
-    print_endline "";
-*)
     true
 
 let str_of_cmp = function

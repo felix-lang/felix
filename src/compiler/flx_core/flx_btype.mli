@@ -59,6 +59,25 @@ and t = private
   | BTYP_typeof of int * Flx_ast.expr_t
   | BTYP_typeop of string * t * kind
 
+type relmode_t = [`Eq | `Ge]
+val string_of_relmode_t : relmode_t -> string
+
+type tpair_t = t * t
+type rel_t = relmode_t * tpair_t
+type rels_t = rel_t list
+type vassign_t = int * t
+type mgu_t = vassign_t list
+type maybe_vassign_t = vassign_t option
+type reladd_t = tpair_t -> unit
+type dvars_t = BidSet.t
+
+(* Unification forward reference hack *)
+type nominal_subtype_checker_t = t -> t -> unit (* Throws Not_found on fail *)
+type unif_t = rels_t -> dvars_t -> mgu_t 
+val unif_thunk: unif_t option ref
+val set_unif_thunk: unif_t -> unit
+val unif: unif_t
+
 type overload_result =
     bid_t * t * t * (bid_t * t) list * t list
 val trivorder : t -> int option

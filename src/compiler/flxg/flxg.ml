@@ -147,6 +147,10 @@ let handle_bind state main_prog module_name =
   
   let t0 = Unix.gettimeofday () in
 
+  let ntsc lhs rhs = Flx_unify.nominal_subtype bsym_table lhs rhs in
+  Flx_btype.set_unif_thunk (Flx_unify.unif ntsc start_counter);
+
+
   (* Do the binding here *)
   let root_proc = Flx_profile.call
     "Flxg_bind.bind"
