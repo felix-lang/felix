@@ -168,6 +168,28 @@ print_endline ("CONVERTING TYPE TO STATICBOOL: " ^ st t);
     
   | _ -> mk_raw_typeop op t Flx_kind.KIND_bool
 
+let type_le mk_raw_typeop op t k =
+  if k <> KIND_bool
+  then failwith ("Flx_btype: typeop " ^ op ^ " requires staticbool result kind");
+
+  match t with
+  | BTYP_type_tuple [lhs; rhs] ->
+print_endline ("type_lt, args = " ^ st lhs ^ ", " ^ st rhs);
+    let d = Flx_bid.BidSet.empty in
+    let eqn = `Ge, (rhs, lhs) in
+    let eqns = [eqn] in
+    let r = 
+      try
+        ignore(Flx_btype.unif eqns d);
+        bbool true
+      with Not_found -> bbool false
+
+    in
+    r
+
+  | _ -> failwith ("Flx_btype: typeop " ^ op ^ " requires two type arguments")
+
+
 let eval_typeop mk_raw_typeop op t k =
   match op with
   | "_unitsum_add"  -> unitsum_binop mk_raw_typeop op t k (fun m n -> m + n)
@@ -192,6 +214,9 @@ let eval_typeop mk_raw_typeop op t k =
   | "_staticbool_false" -> staticbool_nullop mk_raw_typeop op t k (fun () -> false)
 
   | "_type_to_staticbool" -> type_to_staticbool mk_raw_typeop op t
+
+  | "_type_le" -> type_le mk_raw_typeop op t k
+
 
   | _ -> failwith ("Unknown operator " ^ op ^ ": " ^ str_of_btype t ^ " -> " ^ sk k)
 

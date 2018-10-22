@@ -777,12 +777,25 @@ let eval_typeop : ((string -> t-> Flx_kind.kind -> t) -> string -> t -> Flx_kind
 
 
 let btyp_typeop op t k =
+(*
   let eval_typeop = match !eval_typeop with
   | None -> failwith "TYPEOP TABLE NOT INITIALISED"
   | Some x -> x
   in
+*)
+  BTYP_typeop (op,t,k)
+(*
   let mk_raw_typeop op t k : t = BTYP_typeop (op,t,k) in
   eval_typeop mk_raw_typeop op t k
+*)
+
+let reduce_typeop op t k =
+  let eval_typeop = match !eval_typeop with
+  | None -> failwith "TYPEOP TABLE NOT INITIALISED"
+  | Some x -> x
+  in
+  eval_typeop btyp_typeop op t k
+
 
 (** Recursively iterate over each bound type and transform it with the
  * function. *)

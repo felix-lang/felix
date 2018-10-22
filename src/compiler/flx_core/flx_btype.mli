@@ -157,6 +157,8 @@ val btyp_type_set_union : t list -> t
 val btyp_type_set_intersection : t list -> t
 val btyp_typeof: (int * Flx_ast.expr_t) -> t
 val btyp_typeop: string -> t -> kind -> t
+val reduce_typeop : string -> t -> kind -> t
+
 val bbool: bool -> t
 
 val bmt: string -> Flx_ast.kindcode_t -> kind 

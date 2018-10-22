@@ -284,7 +284,7 @@ print_endline "Type list index returned None";
 (*
 print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
 *)
-    btyp_typeop op (br t) k
+    reduce_typeop op (br t) k
   | BTYP_typeof _ -> t
   | BTYP_hole -> assert false
   | BTYP_none -> assert false
@@ -480,8 +480,11 @@ print_endline ("Flx_beta: BTYP_type_apply\n  " ^ Flx_btype.st t1 ^ "\nto\n  " ^
   Flx_btype.st t2);
 *)
 (* NOT clear if this is OK or not *)
+(* ITS NOT! WE REQUIRE LAZY EVALUATION! Substitutiuon first, THEN reduction! *)
+(*
     let t1 = br t1 in
     let t2 = br t2 in
+*)
     begin
     let m1 = Flx_btype_kind.metatype sr t1 in
     let m2 = Flx_btype_kind.metatype sr t2 in
