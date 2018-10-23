@@ -25,9 +25,6 @@ let rec dual t =
     let rec aux ds k = if k = 0 then ds else aux (btyp_unit () :: ds) (k-1) in
     btyp_tuple (aux [] k)
 
-  | BTYP_type_set ts -> btyp_intersect (List.map dual ts)
-  | BTYP_intersect ts -> btyp_union (List.map dual ts)
-  | BTYP_union ts -> btyp_intersect (List.map dual ts)
   | BTYP_record (ts) -> btyp_variant ts
   | t -> Flx_btype.map ~f_btype:dual t
 

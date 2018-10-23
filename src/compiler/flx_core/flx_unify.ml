@@ -116,26 +116,6 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
     add_ge (dr, dl); (* contravariant *)
     add_ge (cl, cr) (* covariant *)
 
-  (* This rule isn't variant but should be!
-     The rule basically says, the parameter type is a super type
-     of the argument type if the argument type is one of the types
-     in the union. This will only work if the union is monomorphic.
-
-     The correct rule is the same as overloading and is very complex.
-     The rule should be to first calculate ALL of the union components
-     that the argument type is a subtype of, keeping track of the 
-     resultant MGUs. Then, of all the candidates we have to find
-     the most specialised one, so we have to recursively apply
-     the unification engine and matching stuff as in overloading.
-
-     An ambiguous result is a problem. It means, we have to unify,
-     but the problem now is that we have to inject the MGU into
-     the solutions obtained so far, but now we have a choice
-     of MGUs.
-  *)
-  | BTYP_union lhs, t ->
-    if List.mem t lhs then () else raise Not_found
-
   | BTYP_record lhs, BTYP_record rhs ->
     let counts = Hashtbl.create 97 in
     let get_rel_seq name = 
@@ -236,15 +216,6 @@ and solve_subsumption nominal_subtype counter lhs rhs  dvars (s:vassign_t option
         add_eqn (tvar,btyp_rev t)
  
       | BTYP_uniq t1, BTYP_uniq t2 -> add_eqn (t1,t2)
-
-      | BTYP_intersect ts,t
-      | t,BTYP_intersect ts ->
-        List.iter (function t' -> add_eqn (t,t')) ts
-
-      | BTYP_union ts,t
-      | t,BTYP_union ts ->
-        print_endline ("Unify union type not implemented");
-        assert false
 
       | BTYP_pointer t1, BTYP_pointer t2 ->
         add_eqn (t1,t2)

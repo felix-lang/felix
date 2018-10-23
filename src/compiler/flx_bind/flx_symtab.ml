@@ -108,16 +108,10 @@ let rmerge_ivs
   (vs2,{ raw_type_constraint=con2; raw_typeclass_reqs=rtcr2 }) :
   ivs_list_t
   =
-  let t =
-    match con1,con2 with
-    | `TYP_tuple[], `TYP_tuple[] -> `TYP_tuple[]
-    | `TYP_tuple[],b -> b
-    | a, `TYP_tuple[] -> a
-    | `TYP_intersect a, `TYP_intersect b ->
-        `TYP_intersect (a@b)
-    | `TYP_intersect a, b -> `TYP_intersect (a @[b])
-    | a, `TYP_intersect b -> `TYP_intersect (a::b)
-    | a,b -> `TYP_intersect [a;b]
+(*
+print_endline ("Flx_symtab.rmerge_ivs: Merging type constraints " ^ Flx_print.string_of_typecode con1 ^ " and " ^ Flx_print.string_of_typecode con2);
+*)
+  let t = `TYP_typeop (Flx_srcref.dummy_sr, "_staticbool_and", `TYP_type_tuple[con1;con2],KND_bool) 
   and
     rtcr = Flx_list.uniq_list (rtcr1 @ rtcr2)
   in
@@ -771,6 +765,9 @@ print_endline ("Finished adding bind to symtab")
       add_function priv_name_map id symbol_index
 
   | DCL_root asms ->
+(*
+print_endline ("Flx_symtab: handling DCL_root");
+*)
       let capture_inits = ref [] in
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
@@ -804,6 +801,9 @@ print_endline ("ROOT: Init procs = " ^ string_of_int (List.length inner_inits));
         let symdef = 
           match symdef with 
           | SYMDEF_root old_init_proc -> 
+(*
+print_endline("Found old root, old init proc = "  ^ (match old_init_proc with | Some x -> string_of_int x | None ->  "NONE!"));
+*)
             let new_init_proc =
               if List.length exes > 0 then begin
                 let init_fun = fresh_bid counter_ref in
@@ -831,9 +831,17 @@ print_endline ("ROOT: Init procs = " ^ string_of_int (List.length inner_inits));
 
                 (* Add the _init_ function to the symbol table. *)
                 add_function privtab "_init_" init_fun;
+(*
+print_endline ("Constructing new init proc index " ^ string_of_int init_fun);
+*)
                 Some  init_fun
               end
-              else old_init_proc
+              else begin
+(*
+print_endline ("No executable code, so using old init proc");
+*)
+                old_init_proc
+              end
             in 
             SYMDEF_root new_init_proc 
           | _ -> failwith "flx_symtab: expected index 0 to be SYMDEF_root!"
@@ -849,6 +857,8 @@ print_endline ("ROOT: Init procs = " ^ string_of_int (List.length inner_inits));
   | DCL_library asms ->
 (*
 print_endline ("BUILDING LIBRARY " ^ id ^ " parent " ^ name);
+*)
+(*
 print_endline ("Checking parent's public map");
 *)
       let fresh,pub,priv,library_index =
@@ -931,6 +941,9 @@ print_endline ("Checking parent's public map");
 *)
 
   | DCL_module asms ->
+(*
+print_endline ("BUILDING MODULE " ^ id ^ " parent " ^ name);
+*)
       let complete_vs = rmerge_ivs inherit_ivs ivs in
       let capture_inits = ref [] in
       let pubtab, privtab, exes, ifaces, dirs=
@@ -951,9 +964,13 @@ print_endline ("Checking parent's public map");
 print_endline ("Length of exes " ^ string_of_int (List.length exes));
 print_endline ("MODULE "^name^" Init procs = " ^ string_of_int (List.length inner_inits));
 *)
+      let has_novs = List.length (fst complete_vs) = 0 in
+(*
+print_endline ("Has vs = " ^ string_of_bool (not has_novs));
+*)
       let exes = 
         (make_calls sr (List.rev !capture_inits)) @ 
-        (if complete_vs = dfltivs then exes else []) 
+        (if has_novs then exes else []) 
       in
       if List.length exes > 0 then begin
         let init_fun = fresh_bid counter_ref in
@@ -998,6 +1015,9 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
       add_tvars privtab
 
   | DCL_typeclass asms ->
+(*
+print_endline ("BUILDING TYPECLASS " ^ id ^ " parent " ^ name);
+*)
       let complete_vs = rmerge_ivs inherit_ivs ivs in
       let capture_inits = ref [] in
       let pubtab, privtab, exes, ifaces, dirs=
@@ -1052,9 +1072,13 @@ let k = Flx_btype.bmt "Flx_symtab.typeclass" mt in
 print_endline ("Length of exes " ^ string_of_int (List.length exes));
 print_endline ("TYPECLASS "^name^" Init procs = " ^ string_of_int (List.length inner_inits));
 *)
+      let has_novs = List.length (fst complete_vs) = 0 in
+(*
+print_endline ("Has vs = " ^ string_of_bool (not has_novs));
+*)
       let exes = 
         (make_calls sr (List.rev !capture_inits)) @ 
-        (if complete_vs = dfltivs then exes else []) 
+        (if has_novs then exes else []) 
       in
       if List.length exes > 0 then begin
         let init_fun = fresh_bid counter_ref in

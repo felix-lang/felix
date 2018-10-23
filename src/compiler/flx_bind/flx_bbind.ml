@@ -256,7 +256,7 @@ print_endline ("Binding type constraint: cons=" ^ sbt bsym_table cons);
 *)
     let {raw_type_constraint=icons} = snd ivs in
     let icons = bt icons in
-    let icons = btyp_typeop "_type_to_staticbool" icons Flx_kind.KIND_bool in
+    (* et icons = btyp_typeop "_type_to_staticbool" icons Flx_kind.KIND_bool in *)
 (*
 print_endline ("Binding type constraint: icons=" ^ sbt bsym_table icons);
 *)

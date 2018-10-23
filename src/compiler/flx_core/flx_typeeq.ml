@@ -33,6 +33,7 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
   in
   *)
   match t1,t2 with
+  | BBOOL a, BBOOL b -> a = b
   | BTYP_hole,_ (* for zippers *)
   | _,BTYP_hole -> true
 

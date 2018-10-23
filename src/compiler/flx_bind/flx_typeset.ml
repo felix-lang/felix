@@ -52,22 +52,28 @@ let is_subset tss1 tss2 : bool =
  * as well, since typematches are ordered.
  *)
 
-let rec scancases bsym_table counter tss1 tss2 = match (tss1, tss2) with
-  | [],_ -> true
-  | _,[] -> false
+let rec scancases bsym_table counter tss1 tss2 = 
+  match (tss1, tss2) with
+  | [],_ ->  (* print_endline ("LHS OUT OF CASES, TRUE"); *) true
+  | _,[] -> (* print_endline ("RHS OUT OF CASES, FALSE"); *) false
   | (p1,v1)::t1 as c1, (p2,v2)::t2  ->
     if p1.assignments = [] 
     && p2.assignments = []
     then
       if BidSet.is_empty (p1.pattern_vars)
       && BidSet.is_empty (p2.pattern_vars)
-      then
-        if Flx_unify.type_eq bsym_table counter p1.pattern p2.pattern
-        && Flx_unify.type_eq bsym_table counter v1 v2
+      then begin
+        let pateq = Flx_unify.type_eq bsym_table counter p1.pattern p2.pattern in
+        let ceq = Flx_unify.type_eq bsym_table counter v1 v2 in
+(*
+print_endline ("Pats eq = " ^ string_of_bool pateq);
+print_endline ("Ceq = " ^ string_of_bool ceq);
+*)
+        if pateq && ceq
         then scancases bsym_table counter t1 t2 (* advance both *)
         else scancases bsym_table counter c1 t2 (* skip rhs case *)
       (* special case of wildcard, somewhat hacked *)
-      else match p1.pattern,p2.pattern with
+      end else match p1.pattern,p2.pattern with
       | BTYP_type_var _, BTYP_type_var _ ->
          if Flx_unify.type_eq bsym_table counter v1 v2
          then scancases bsym_table counter t1 t2 (* advance both *)
@@ -78,6 +84,9 @@ let rec scancases bsym_table counter tss1 tss2 = match (tss1, tss2) with
 
 let typematch_implies (bsym_table:Flx_bsym_table.t) counter a b = match a, b with
   | BTYP_type_match (v1,tss1), BTYP_type_match (v2,tss2) ->
+(*
+print_endline ("Typematch implication");
+*)
      Flx_unify.type_eq bsym_table counter v1 v2 &&
      if is_typeset tss1 && is_typeset tss2 
      then is_subset tss1 tss2
@@ -105,12 +114,15 @@ let terms_imply (bsym_table:Flx_bsym_table.t) counter ls1 ls2 =
 
 let rec split_conjuncts' t =
   match t with
-  | BTYP_intersect ls ->
-    List.concat (List.map split_conjuncts' ls)
+  | BTYP_typeop ("_staticbool_and", args,Flx_kind.KIND_bool) ->
+    begin match args with
+    | BTYP_type_tuple ls -> List.concat (List.map split_conjuncts' ls)
+    | _ -> [args]
+    end
   | _ -> [t]
 
 let filter_out_units ls = 
-   List.filter (fun x -> x <> btyp_tuple []) ls
+   List.filter (fun x -> match x with | Flx_btype.BBOOL true -> false | _ -> true) ls
 
 let split_conjuncts ls = filter_out_units (split_conjuncts' ls)
 
@@ -128,7 +140,14 @@ let constraint_implies (bsym_table:Flx_bsym_table.t) counter a b =
       | BTYP_typeop ("_type_to_staticbool",t,_) -> t
       |  _ -> b
     in
-    try terms_imply bsym_table counter (split_conjuncts a) (split_conjuncts b) 
+    try 
+      let conjuncts_a = split_conjuncts a in
+      let conjuncts_b = split_conjuncts a in
+(*
+print_endline ("Conjuncts_a = " ^ Flx_util.catmap "\n AND " Flx_btype.st conjuncts_a);
+print_endline ("Conjuncts_b = " ^ Flx_util.catmap "\n AND " Flx_btype.st conjuncts_b);
+*)
+      terms_imply bsym_table counter conjuncts_a conjuncts_b 
     with exn -> 
       print_endline("EXCEPTION THROWN: Constraint implication:\n");
       print_endline("destaticed: LHS = " ^ Flx_print.sbt bsym_table a);

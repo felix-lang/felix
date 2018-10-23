@@ -24,8 +24,6 @@ and t =
   | BTYP_none
   | BTYP_sum of t list
   | BTYP_unitsum of int
-  | BTYP_intersect of t list (** intersection type *)
-  | BTYP_union of t list (** intersection type *)
   | BTYP_inst of bid_t * t list * Flx_kind.kind
   | BTYP_vinst of bid_t * t list * Flx_kind.kind
   | BTYP_tuple of t list
@@ -154,8 +152,6 @@ and str_of_btype typ =
   | BTYP_none -> "BTYP_none"
   | BTYP_sum ts -> "BTYP_sum(" ^ ss ts ^")"
   | BTYP_unitsum n -> string_of_int n
-  | BTYP_intersect ts -> "BTYP_intersect(" ^ ss ts ^ ")"
-  | BTYP_union ts -> "BTYP_union (" ^ ss ts ^ ")"
   | BTYP_inst (i,ts,mt) -> "BTYP_inst("^string_of_int i^"["^ss ts^"]:"^Flx_kind.sk mt^")"
   | BTYP_vinst (i,ts,mt) -> "BTYP_vinst("^string_of_int i^"["^ss ts^"]:"^Flx_kind.sk mt^")"
   | BTYP_tuple ts -> "BTYP_tuple(" ^ ss ts ^ ")"
@@ -336,36 +332,6 @@ let btyp_sum ts =
     btyp_rptsum (n,first)
   with Not_found -> BTYP_sum ts
   end
-
-
-(** Construct a BTYP_intersect type. *)
-
-(* THIS IS WRONG! Intersection is the setwise value intersection!
-Replace wrong uses (all of them!) with BOOL kind thhings for constraints!
-*)
-
-let btyp_intersect ls =
-  let void_t = btyp_void () in
-  let any_t = btyp_any () in
-  if List.mem void_t ls then void_t
-  else let ls = List.filter (fun i -> i <> any_t) ls in
-  let ls = Flx_list.uniq_list ls in (* mandatory for type constraints to work *)
-  match ls with
-  | [] -> BTYP_tuple [] (* don't think this is right ... was "any" *)
-  | [t] -> t
-  | ls -> BTYP_intersect ls
-
-(** Construct a BTYP_intersect type. *)
-let btyp_union ls =
-  let void_t = btyp_void () in
-  let any_t = btyp_any () in
-  if List.mem any_t ls then any_t 
-  else let ls = List.filter (fun i -> i <> void_t ) ls in
-  let ls = Flx_list.uniq_list ls in 
-  match ls with
-  | [] -> void_t
-  | [t] -> t
-  | ls -> BTYP_union ls
 
 let btyp_inst (bid, ts,mt) =
   BTYP_inst (bid, ts,mt)
@@ -702,8 +668,9 @@ let flat_iter
   | BTYP_unitsum k ->
       let unitrep = BTYP_tuple [] in
       for i = 1 to k do f_btype unitrep done
+(*
   | BTYP_intersect ts -> List.iter f_btype ts
-  | BTYP_union ts -> List.iter f_btype ts
+*)
   | BTYP_inst (i,ts,mt) -> f_bid i; List.iter f_btype ts
   | BTYP_vinst (i,ts,mt) -> f_bid i; List.iter f_btype ts
   | BTYP_tuple ts -> List.iter f_btype ts
@@ -814,8 +781,6 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
     | BTYP_tuple [] -> BTYP_unitsum k
     | _ -> BTYP_sum (Flx_list.repeat mapped_unit k)
     end
-  | BTYP_intersect ts -> btyp_intersect (List.map f_btype ts)
-  | BTYP_union ts -> btyp_union (List.map f_btype ts)
   | BTYP_inst (i,ts,mt) -> btyp_inst (f_bid i, List.map f_btype ts,mt)
   | BTYP_vinst (i,ts,mt) -> btyp_vinst (f_bid i, List.map f_btype ts,mt)
   | BTYP_tuple ts -> btyp_tuple (List.map f_btype ts)

@@ -82,8 +82,6 @@ and typecode_t = [
   | `TYP_tuple of typecode_t list               (** product type *)
   | `TYP_unitsum of int                         (** sum of units  *)
   | `TYP_sum of typecode_t list                 (** numbered sum type *)
-  | `TYP_intersect of typecode_t list           (** intersection type *)
-  | `TYP_union of typecode_t list               (** union type *)
   | `TYP_record of (Flx_id.t * typecode_t) list
   | `TYP_polyrecord of (Flx_id.t * typecode_t) list * typecode_t
   | `TYP_variant of variant_item_t list (** anon sum *)
@@ -767,8 +765,6 @@ let src_of_typecode = function
   | `TYP_tuple _
   | `TYP_unitsum _
   | `TYP_sum _
-  | `TYP_intersect _
-  | `TYP_union _
   | `TYP_record _
   | `TYP_polyrecord _
   | `TYP_variant _
@@ -1013,7 +1009,7 @@ let qualified_name_of_typecode = function
 
 (** Define a default vs_aux_t. *)
 let dfltvs_aux =
-  { raw_type_constraint = `TYP_tuple []; raw_typeclass_reqs = []; }
+  { raw_type_constraint = `TYP_bool true; raw_typeclass_reqs = []; }
 
 (** Define a default vs_list_t. *)
 let dfltvs : vs_list_t = [], dfltvs_aux

@@ -123,6 +123,8 @@ print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
  | Lst [Id "typ_true"; sr; t] -> `TYP_typeop (xsr sr, "_staticbool_true", `TYP_type_tuple [], KND_bool)
  | Lst [Id "typ_false"; sr; t] -> `TYP_typeop (xsr sr, "_staticbool_false", `TYP_type_tuple [], KND_bool)
 
+ | Lst [Id "typ_andchain"; Lst es] -> `TYP_typeop (sr,"_staticbool_and", `TYP_type_tuple (map ti es), KND_bool)
+
 
  | Lst [Id "ast_record_type"; Lst rs] ->
    let rs =
@@ -152,7 +154,7 @@ print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
      rs
    in `TYP_variant (rs)
 
- | Lst [Id "typ_intersect"; Lst es] -> `TYP_intersect (map ti es)
+
  | Lst [Id "typ_isin"; Lst [a; b]] -> `TYP_isin (ti a, ti b)
 
  | Lst [Id "typ_patvar";  sr; Str s] -> `TYP_patvar (xsr sr, s)
@@ -633,6 +635,10 @@ print_endline ("Translating auxilliary vs data" ^ Sex_print.string_of_sex x);
     print_endline ("Raw type constraint = " ^ Sex_print.string_of_sex ct);
     let xx = try ti ct with _ -> print_endline "ERROR translating type constraint"; assert false in
     print_endline ("Translated type constraint = " ^ Flx_print.string_of_typecode (ti ct));
+    begin match ti ct with
+    | `TYP_tuple [] -> print_endline "BUGGED constraint, got unit!"; assert false
+    | _ -> ()
+    end;
 *)
    { raw_type_constraint=ti ct; raw_typeclass_reqs=xrtc tcr }
   | x -> err x "xvs_aux_t"

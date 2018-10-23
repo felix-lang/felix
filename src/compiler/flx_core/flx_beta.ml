@@ -348,37 +348,6 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
       | `Base t -> `Base (br t)
     ) ts)
 
-
-  (* Intersection type reduction rule: if any term is 0,
-     the result is 0, otherwise the result is the intersection
-     of the reduced terms with 1 terms removed: if there
-     are no terms return 1, if a single term return it,
-     otherwise return the intersection of non units
-     (at least two)
-  *)
-
-(*
-  (* FIXME: this is WRONG WRONG WRONG. *)
-  | BTYP_intersect ls ->
-    let ls = List.map br ls in
-    let void_t = btyp_void () in
-    if List.mem void_t ls then void_t
-    else let ls = List.filter (fun i -> i <> btyp_tuple []) ls in
-    begin match ls with
-    | [] -> btyp_tuple []
-    | [t] -> t
-    | ls -> btyp_intersect ls
-    end
-*)
-
-  | BTYP_intersect ls -> 
-    let ls = List.map br ls in
-    btyp_intersect ls
-
-  | BTYP_union ls -> 
-    let ls = List.map br ls in
-    btyp_union ls
-
   | BTYP_type_set ls -> btyp_type_set (List.map br ls)
 
   | BTYP_type_set_union ls ->

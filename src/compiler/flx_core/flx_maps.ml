@@ -47,8 +47,6 @@ let map_type f (t:typecode_t):typecode_t = match t with
      we have already used up storage
   *)
   | `TYP_sum ts -> `TYP_sum (List.map f ts)
-  | `TYP_intersect ts -> `TYP_intersect (List.map f ts)
-  | `TYP_union ts -> `TYP_union (List.map f ts)
   | `TYP_function (a,b) -> `TYP_function (f a, f b)
   | `TYP_effector (a,e,b) -> `TYP_effector (f a, f e, f b)
   | `TYP_cfunction (a,b) -> `TYP_cfunction (f a, f b)
@@ -238,20 +236,6 @@ let iter_expr f (e:expr_t) =
   | `EXPR_suffix _
   | `EXPR_literal _
   | `EXPR_lambda _
-(*
-  | `EXPR_void _
-  | `EXPR_ellipsis _
-  | `EXPR_pclt_type _
-  | `EXPR_rpclt_type _
-  | `EXPR_wpclt_type _
-  | `EXPR_rptsum_type _
-  | `EXPR_record_type _
-  | `EXPR_polyrecord_type _
-  | `EXPR_variant_type _
-  | `EXPR_type_match _
-  | `EXPR_subtype_match _
-  | `EXPR_typeof (_,x)
-*)
     -> ()
 
   | `EXPR_array_projection (_,x,_)

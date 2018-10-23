@@ -1195,7 +1195,7 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
           (*
           print_endline ("VS Constraint = " ^ sbt bsym_table icons);
           *)
-          let cons = btyp_intersect [cons; icons] in
+          let cons = btyp_typeop "_staticbool_and" (btyp_type_tuple [cons; icons]) Flx_kind.kind_bool in
           let cons = list_subst state.counter mgu cons in
           let cons = beta_reduce "flx_lookup: check_instances: constraints" state.counter bsym_table sr cons in
           (*

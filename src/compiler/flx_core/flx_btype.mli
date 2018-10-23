@@ -14,8 +14,6 @@ and t = private
   | BTYP_none
   | BTYP_sum of t list
   | BTYP_unitsum of int
-  | BTYP_intersect of t list
-  | BTYP_union of t list
   | BTYP_inst of bid_t * t list * Flx_kind.kind
   | BTYP_vinst of bid_t * t list * Flx_kind.kind
   | BTYP_tuple of t list
@@ -115,8 +113,6 @@ val btyp_bool : unit -> t
 val btyp_any : unit -> t
 val btyp_sum : t list -> t
 val btyp_unitsum : int -> t
-val btyp_intersect : t list -> t
-val btyp_union : t list -> t
 val btyp_inst : bid_t * t list * kind -> t
 val btyp_vinst : bid_t * t list * kind -> t
 val btyp_tuple : t list -> t

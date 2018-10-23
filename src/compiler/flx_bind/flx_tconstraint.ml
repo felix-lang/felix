@@ -37,7 +37,7 @@ print_endline ("Build type constraints for type variable " ^string_of_int i ^": 
   | KND_unitsum (* well this is wrong, it IS a constraint! *) 
   | KND_compactlinear  
   | KND_function _ 
-  | KND_tuple _ -> btyp_tuple []
+  | KND_tuple _ -> bbool true
 
   | KND_tpattern p1 ->
   begin
@@ -53,7 +53,7 @@ print_endline ("Build type constraints for type variable " ^string_of_int i ^": 
 (*
   | `TYP_type
 *)
-  | `TYP_function _ -> btyp_tuple []
+  | `TYP_function _ -> bbool true
   | _ ->
 
   (* more general cases *)
@@ -86,7 +86,7 @@ print_endline ("Build type constraints for type variable " ^string_of_int i ^": 
     fold_left (fun s (i,_) -> BidSet.add i s)
     varset1 explicit_vars1
   in
-  let un = btyp_tuple [] in (* the 'true' value of the type system *)
+  let un = bbool true in (* the 'true' value of the type system *)
   let elt = btyp_type_var (i, btyp_type 0) in
   let p1 = bt p1 in
   let rec fe t = match t with
@@ -97,17 +97,20 @@ print_endline ("Build type constraints for type variable " ^string_of_int i ^": 
   | t -> [t]
   in
   let tyset ls =
+(*
+print_endline ("Generating type match for typeset " ^ Flx_util.catmap ", " Flx_btype.st ls);
+*)
     let e = BidSet.empty in
-    let un = btyp_tuple [] in
+    let un = bbool true in
     let lss = rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
     let fresh = fresh_bid counter in
     let dflt =
       {
-        pattern = btyp_type_var (fresh, btyp_type 0);
+        pattern = btyp_type_var (fresh, Flx_kind.KIND_type);
         pattern_vars = BidSet.singleton fresh;
         assignments=[]
       },
-      btyp_void ()
+      bbool false
     in
     let lss = rev (dflt :: lss) in
     btyp_type_match (elt, lss)
@@ -142,9 +145,10 @@ print_endline ("type variable " ^ s ^ " constraint = " ^ str_of_kindcode tp);
   let type_constraints =List.map (fun t -> Flx_beta.beta_reduce "build type constraints" counter bsym_table sr t) type_constraints in
   let tc = List.fold_left (fun acc t -> 
     match t with 
-    | BTYP_tuple [] -> acc 
+    | BTYP_tuple [] -> assert false; acc 
     | _ -> 
-      let traint = btyp_typeop "_type_to_staticbool" t Flx_kind.KIND_bool in
+      (* let traint = btyp_typeop "_type_to_staticbool" t Flx_kind.KIND_bool in *)
+      let traint = t in
       btyp_typeop "_staticbool_and" (btyp_type_tuple [acc; traint]) Flx_kind.KIND_bool
    )
    (bbool true)

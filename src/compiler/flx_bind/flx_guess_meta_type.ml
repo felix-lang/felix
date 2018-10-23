@@ -88,8 +88,6 @@ let rec guess_metatype sr t : kind =
   | `TYP_patvar _ 
   | `TYP_tuple _
   | `TYP_sum _
-  | `TYP_intersect _
-  | `TYP_union _
   | `TYP_record _
   | `TYP_polyrecord _
   | `TYP_variant _

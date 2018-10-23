@@ -66,7 +66,7 @@ let handle_typeset state sr elt tset =
 
   *)
   let e = BidSet.empty in
-  let un = btyp_tuple [] in
+  let un = bbool true in
   let lss = List.rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
   let fresh = fresh_bid state.counter in
   let dflt =
@@ -75,7 +75,7 @@ let handle_typeset state sr elt tset =
       pattern_vars = BidSet.singleton fresh;
       assignments=[]
     },
-    btyp_void ()
+    bbool false
   in
   let lss = List.rev (dflt :: lss) in
   btyp_type_match (elt, lss)
@@ -149,8 +149,6 @@ print_endline ("Bind type " ^ string_of_typecode t ^ " params = " ^
   | `TYP_patvar _ -> failwith "Not implemented patvar in typecode"
   | `TYP_patany _ -> failwith "Not implemented patany in typecode"
 
-  | `TYP_intersect ts -> btyp_intersect (List.map bt ts)
-  | `TYP_union ts -> btyp_union (List.map bt ts)
   | `TYP_record ts -> btyp_record (List.map (fun (s,t) -> s,bt t) ts)
   | `TYP_polyrecord (ts,v) -> btyp_polyrecord (List.map (fun (s,t) -> s,bt t) ts) (bt v)
   | `TYP_variant ts -> 
@@ -329,8 +327,10 @@ print_endline ("Calling Flx_beta.adjust, possibly incorrectly, type = " ^ sbt bs
       handle_typeset state sr elt typeset
 
   | `TYP_var i ->
+(*
 if i = 7141 then
 print_endline ("Flx_bind_type `TYP_var " ^ string_of_int i);
+*)
     begin try 
       let sym = Flx_sym_table.find state.sym_table i in
       match sym.Flx_sym.symdef with

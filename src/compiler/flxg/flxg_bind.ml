@@ -34,21 +34,29 @@ let flxg_bind_asms state sym_table bsym_table start_counter asms =
 let bind_root_module state sym_table bsym_table module_name =
   let entry =
     try Hashtbl.find sym_table 0
-    with Not_found -> failwith "flxg: can't find root"
+    with Not_found -> 
+print_endline ("Flxg_bind: CANT FIND ROOT MODULE 0 IN SYM TABLE!");
+      failwith "flxg: can't find root"
   in
 
   let sym =
     match entry with
     | { Flx_sym_table.parent=None; sym=sym } -> sym
-    | _ -> failwith "flxg: expected root entry to have parent None"
+    | _ -> 
+print_endline ("Flxg_bind: ROOT MODULE HAS A PARENT, CANNOT BE ROOT!!");
+     failwith "flxg: expected root entry to have parent None"
   in
 
   let root_proc =
     match sym with
     | { Flx_sym.symdef=SYMDEF_root init_proc } -> init_proc
-    | _ -> failwith "flxg: expected root entry to be SYMDEF_root"
+    | _ -> 
+print_endline ("Flxg_bind: ROOT MODULE NOT `SYMDEF_root init_proc` as expected!!");
+     failwith "flxg: expected root entry to be SYMDEF_root"
   in
-
+(*
+print_endline ("Flxg_bind: Found root proc " ^ (match root_proc with | Some x -> string_of_int x | None -> "WHAT?? NONE??"));
+*)
 (*
   (* this is a hack .. oh well .. *)
   let root_proc = Flx_mtypes2.fresh_bid (state.syms.counter) in
@@ -102,6 +110,11 @@ let bind state sym_table bsym_table module_name start_counter asms =
     (bind_root_module state sym_table bsym_table)
     module_name
   in
-
+(*
+  begin match root_proc with
+  | Some x -> print_endline ("[Flxg_bind:bind] found root_proc = " ^ string_of_int x);
+  | None -> print_endline ("[Flxg_bind:bind] couldn't find root proc!");
+  end;
+*)
   root_proc
 

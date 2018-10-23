@@ -222,6 +222,7 @@ let resolve sym_table bsym_table base_sym bt be arg_types =
     find_split_vs sym_table bsym_table base_sym
   in
 (*
+print_endline ("Flx_overload: resolve: split_vs finds constraint " ^ Flx_print.string_of_typecode con);
     print_endline ("SPLITVS: PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") pvs);
     print_endline ("SPLITVS: base   VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") vs);
 *)
@@ -256,7 +257,17 @@ if name = debugid then
    * thus, base type variables are eliminated and specialisation
    * type variables introduced *)
 
+(*
   let con = match con with | `TYP_tuple [] -> Flx_btype.btyp_tuple [] | _ -> bt sym.Flx_sym.sr con in
+*)
+
+(*
+print_endline ("UNBOUND Constraint2 = " ^ string_of_typecode con);
+*)
+  let con = bt sym.Flx_sym.sr con in
+(*
+print_endline ("BOUND Constraint2 = " ^ Flx_btype.st con);
+*)
   let domain,base_result = 
   (* this is primarily an optimisation to save recursive overload resolution
    * to find the return type of a function, which may itself involve a chain
@@ -477,6 +488,9 @@ let solve_mgu
   env_traint
 =
 let name = id in
+(*
+print_endline ("Solve MGU .. constraint = " ^ Flx_btype.st con);
+*)
 (*
 if id = debugid then begin
 print_endline ("Solve mgu, for "^id^", parent_vs= " ^
@@ -720,8 +734,8 @@ print_endline ("Calculating constrait stuff");
 *)
     let rec xcons con =
       match con with
-      | BTYP_intersect cons -> List.iter xcons cons
-      | BTYP_type_match (arg,[{pattern=pat},BTYP_tuple[]]) ->
+      (* | BTYP_intersect cons -> List.iter xcons cons *)
+      | BTYP_type_match (arg,[{pattern=pat},BBOOL true]) ->
           let arg = specialize_domain sr base_vs entry_kind.sub_ts arg in
           let arg = list_subst counter !mgu arg in
           let arg = beta_reduce "flx_overload: typematch arg" counter bsym_table sr arg in
@@ -862,17 +876,21 @@ if name = debugid then print_endline ("BUILDING TYPE CONSTRAINTS");
 *)
     let type_constraint = build_type_constraints counter bsym_table (bt sr) id sr base_vs in
 if name = debugid then print_endline ("TYPE CONSTRAINTS BUILT");
+(*
 if name = debugid then
     print_endline ("type constraint1(build_type_constraints) " ^ sbt bsym_table type_constraint);
+*)
 (*
 if name = debugid then
     print_endline ("type constraint2(con) " ^ sbt bsym_table con);
 *)
+(*
     let con = 
        try  btyp_typeop "_type_to_staticbool" con Flx_kind.KIND_bool 
        with exn -> 
         print_endline ("CONVERSION TO STATIC BOOL FAILED"); raise exn
     in
+*)
 (*
     print_endline ("type constraint2(con) as staticbool: " ^ sbt bsym_table con);
 *)
@@ -918,7 +936,9 @@ if name = debugid then
 (*
    print_endline ("TRYING FOR IMPLICATION: id = "^id^ ",  Constraint not reduced, do special typeset implication check!");
 *)
+(*
         let env_traint = btyp_typeop "_type_to_staticbool" env_traint Flx_kind.KIND_bool in
+*)
         let implied = constraint_implies bsym_table counter env_traint reduced_constraint in
         if implied then 
           let parent_ts = List.map
@@ -1161,23 +1181,25 @@ begin
     catmap ",\n" (full_string_of_entry_kind sym_table bsym_table) fs ^ "\n");
   print_endline ("Input ts = " ^ catmap ", " (sbt bsym_table) ts);
 end;
-  let env_traint = btyp_intersect (
-    filter_out_units  
-    (List.map
+  let ls =   (List.map
 
       (fun (ix,id,_,_,con) -> 
 (*
 if name = debugid then
   print_endline ("Considering ENVIRONMENT constraint: " ^ id ^ "<" ^ string_of_int ix ^">=" ^ string_of_typecode con);
 *)
-        if List.mem ix rs.constraint_overload_trail then btyp_tuple [] else
+        if List.mem ix rs.constraint_overload_trail then bbool true else
         let rs = { rs with constraint_overload_trail = ix::rs.constraint_overload_trail } in
-        let r = match con with | `TYP_tuple [] -> Flx_btype.btyp_tuple [] | _ -> bt rs call_sr ix con in
+(*
+        let r = match con with | `TYP_tuple [] -> bbool true | _ -> bt rs call_sr ix con in
+*)
+        let r = bt rs call_sr ix con in
         r
       ) 
       env
-    ))
+    )
   in
+  let env_traint = btyp_typeop "_staticbool_and" (btyp_type_tuple (filter_out_units ls)) kind_bool in
 (*
 if name = debugid then 
 print_endline ("ENVIRONMENT CONSTRAINT BUILT = " ^ sbt bsym_table env_traint);

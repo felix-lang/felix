@@ -6,12 +6,17 @@ specific types.
 FIXME: this doesn't handle subkinding!
 *)
 
+(* FIXME should just use kind_ge2 and metatype! *)
 let iskind k x = match x with
   | BTYP_type_var (_,mt) 
   | BTYP_typeop (_,_,mt) 
   | BTYP_type_apply (BTYP_type_function (_,mt,_),_)
   | BTYP_type_apply (BTYP_inst(_,_,KIND_function (_,mt)),_) 
   | BTYP_inst (_,_,mt) when mt = k -> true
+  | BTYP_type_match _ 
+  | BTYP_subtype_match _ ->
+    Flx_kind.kind_ge2 k (Flx_btype_kind.metatype Flx_srcref.dummy_sr x)
+
   | _ -> false
  
 (* ====== UNITSUM SUPPORT ================== *)
@@ -110,7 +115,8 @@ let staticbool_and mk_raw_typeop op (t:Flx_btype.t) =
   List.iter (fun x -> 
     if not (isstaticbool x)
     then begin 
-      print_endline ("Flx_btype: typeop "^op^" requires staticbool arguments");
+      print_endline ("Flx_btype: typeop "^op^" requires staticbool arguments, got " ^ Flx_btype.st x
+      );
       failwith ("Flx_btype: typeop "^op^" requires staticbool arguments")
     end
   ) conjuncts;
@@ -156,16 +162,6 @@ print_endline ("CONVERTING TYPE TO STATICBOOL: " ^ st t);
   match t with
   | BTYP_void -> bbool false
   | BTYP_tuple [] -> bbool true
-  | BTYP_intersect ts -> 
-(*
-    print_endline ("FOUND INTERSECTION, converting parts to static bool then calling staticbool_and");
-*)
-    let ts = List.map (type_to_staticbool mk_raw_typeop op) ts in
-(*
-    print_endline ("FOUND INTERSECTION, converted parts to static bool, now calling staticbool_and");
-*)
-    staticbool_and mk_raw_typeop op (btyp_type_tuple ts)
-    
   | _ -> mk_raw_typeop op t Flx_kind.KIND_bool
 
 let type_le mk_raw_typeop op t k =

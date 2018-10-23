@@ -80,8 +80,6 @@ let string_of_type_name (t:typecode_t) = match t with
   | `TYP_tuple _ -> "`TYP_tuple"
   | `TYP_unitsum _ -> "`TYP_unitsum"
   | `TYP_sum _ -> "`TYP_sum"
-  | `TYP_intersect _ -> "`TYP_intersect"
-  | `TYP_union _ -> "`TYP_union"
   | `TYP_record _ -> "`TYP_record"
   | `TYP_polyrecord _ -> "`TYP_polyrecord"
   | `TYP_variant _ -> "`TYP_variant"

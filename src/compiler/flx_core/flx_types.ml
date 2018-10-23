@@ -19,7 +19,7 @@ open Flx_ast
 type plain_ivs_list_t = (Flx_id.t * bid_t * kindcode_t) list
 type ivs_list_t = plain_ivs_list_t * vs_aux_t
 
-let dfltivs : ivs_list_t = [], dfltvs_aux
+let dfltivs : ivs_list_t = [], Flx_ast.dfltvs_aux
 
 
 type recstop = {

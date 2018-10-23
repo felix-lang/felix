@@ -481,21 +481,6 @@ and st prec tc : string =
       | _ -> 0,"{" ^ cat ", " (map (st 0) ls) ^  "}"
       end
 
-    | `TYP_intersect ls ->
-      let ls = filter (fun t -> t <> `TYP_tuple []) ls in
-      begin match ls with
-      | [] -> 0,"void"
-      | _ -> 9,cat " \\& " (map (st 9) ls)
-      end
-
-    | `TYP_union ls ->
-      let ls = filter (fun t -> match t with | `TYP_void _ -> false | _ -> true) ls in
-      begin match ls with
-      | [] -> 0,"any"
-      | _ -> 9,cat " \\& " (map (st 9) ls)
-      end
-
-
     | `TYP_setintersection ls ->
       begin match ls with
       | [] -> 0,"void"
@@ -771,21 +756,6 @@ and sb bsym_table depth fixlist counter prec tc =
           0,"{" ^ cat "," (map (sbt 0) ls) ^ "}"
       end
 
-    | BTYP_intersect ls ->
-      begin match ls with
-      | [] -> 9,"/*intersect*/void"
-      | _ ->
-          4,cat " and " (map (sbt 5) ls)
-      end
-
-    | BTYP_union ls ->
-      begin match ls with
-      | [] -> 9,"/*union*/any"
-      | _ ->
-          4,cat " and " (map (sbt 5) ls)
-      end
-
-
     | BTYP_type_set_intersection ls ->
       begin match ls with
       | [] -> 9,"/*typesetintersect*/void"
@@ -1032,8 +1002,6 @@ and string_of_maybe_kindcode = function
 
 
 and string_of_tconstraint = function
-  | `TYP_tuple [] -> ""
-  | `TYP_intersect [`TYP_tuple []] -> ""
   | t -> let x = string_of_typecode t in
     if x <> "any" then " where " ^ x else ""
 

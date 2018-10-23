@@ -2676,7 +2676,8 @@ SCHEME """
 
 
   (define tunit `(typ_tuple ,dummysr ())) ;; unit type
-  (define dfltaux `(,tunit ())) ;; constraint unit, typeclass list empty
+  (define ttrue `(ast_name ,dummysr "TRUE" ()))
+  (define dfltaux `(,ttrue ())) ;; constraint TRUE, typeclass list empty
   (define dfltvs `( () ,dfltaux)) ;; vs list: name list and constraint pair
   (define unitparam '((Slist ()) none))
   (define dfltparams `(,unitparam))
@@ -2787,13 +2788,14 @@ SCHEME """
         (cond
           ((eq? 'NoConstraint c) ct )
           ((eq? 'Eq (first c)) ;; type  valconstraint
-            `(typ_intersect
-              ((ast_type_match ,_sr ((ast_name ,_sr ,v ()) ((,(second c) (typ_tuple ,_sr ())))))
+            `(typ_andchain
+              ;;((ast_type_match ,_sr ((ast_name ,_sr ,v ()) ((,(second c) (typ_tuple ,_sr ())))))
+              ((ast_type_match ,_sr ((ast_name ,_sr ,v ()) ((,(second c) ,ttrue))))
               ,ct)
             )
           )
           ((eq? 'In (first c)) ;; type constraint
-            `(typ_intersect
+            `(typ_andchain
               ((typ_isin ((ast_name ,_sr ,v ()) ,(second c)))
               ,ct)
             )
@@ -2823,12 +2825,13 @@ SCHEME """
   (begin ;;(display "tvfixup tv=")(display tv)(display ", ct=")(display ct)(display "\\n")
   (let*
     (
-      (vscs (fold_left tvfixup_folder `(() (typ_tuple ,_sr ())) tv))
+      ;;(vscs (fold_left tvfixup_folder `(() (typ_tuple ,_sr ())) tv))
+      (vscs (fold_left tvfixup_folder `(() ,ttrue ) tv))
       (vs (first vscs))
       (cs (second vscs))
       (rtc (first ct))
       (rtr (second ct))
-      (ct `((typ_intersect (,rtc ,cs)) ,rtr))
+      (ct `((typ_andchain (,rtc ,cs)) ,rtr))
     )
     (begin
     ;;  (display "vs=")(display vs)
@@ -4594,7 +4597,7 @@ syntax statements {
   //$ A constraint specifying types require an instance
   //$ of a particular type class.
   stype_constraint := "with" stypeclass_constraint_list =># 
-   "`((typ_tuple ,_sr ()) ,_2)";
+   "`(,ttrue ,_2)";
 
   //$ A predicative or equational constraint.
   stype_constraint := "where" stype =># "`(,_2 ())";
@@ -4608,7 +4611,7 @@ syntax statements {
     "`(,_2 ,_4)";
 
   //$ The constraint is empty if the polymorphism is parametric.
-  stype_constraint := sepsilon =># "`((typ_tuple ,_sr ()) ())";
+  stype_constraint := sepsilon =># "`(,ttrue ())";
 
   //$ Individual type variable equational constraint.
   seqorin:= "=" stypeexpr =># "`(Eq ,_2)";

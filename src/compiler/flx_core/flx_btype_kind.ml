@@ -107,8 +107,6 @@ and metatype' sr typ : kind =
 
   | BTYP_label
 
-  | BTYP_intersect _
-  | BTYP_union _
   | BTYP_polyrecord (_, _)
   | BTYP_tuple_cons (_, _)
   | BTYP_tuple_snoc (_, _)

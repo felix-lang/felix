@@ -218,11 +218,6 @@ let rec get_offsets' syms bsym_table typ : string list =
   | BTYP_unitsum _ -> []
 
   | BTYP_label -> ["0"] (* see jump_address_t, target_frame at offset 0 *)
-  | BTYP_intersect _
-    -> failwith "[ogen] Type intersection has no representation"
-
-  | BTYP_union _
-    -> failwith "[ogen] Type union has no representation"
 
   (* this is a lie .. it does, namely a plain C union *)
   | BTYP_type_set _

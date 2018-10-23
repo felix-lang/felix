@@ -31,7 +31,6 @@ let var_list_occurs ls t =
 let var_occurs bsym_table t =
   let rec aux' excl t = let aux t = aux' excl t in
     match t with
-    | BTYP_intersect ls
     | BTYP_type_set ls
     | BTYP_type_set_intersection ls
     | BTYP_type_set_union ls

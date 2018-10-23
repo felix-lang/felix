@@ -45,18 +45,11 @@ let merge_con
   {raw_type_constraint=con1; raw_typeclass_reqs=rtcr1}
   {raw_type_constraint=con2; raw_typeclass_reqs=rtcr2}
 : vs_aux_t =
-  let t =
-    match con1,con2 with
-    | `TYP_tuple[],`TYP_tuple[] -> `TYP_tuple[]
-    | `TYP_tuple[],b -> b
-    | a,`TYP_tuple[] -> a
-    | `TYP_intersect a, `TYP_intersect b -> `TYP_intersect (a@b)
-    | `TYP_intersect a, b -> `TYP_intersect (a @[b])
-    | a,`TYP_intersect b -> `TYP_intersect (a::b)
-    | a,b -> `TYP_intersect [a;b]
-  and
-    rtcr = uniq_list (rtcr1 @ rtcr2)
-  in
+(*
+print_endline ("Merge cons: " ^ string_of_typecode con1 ^ " and " ^ string_of_typecode con2);
+*)
+  let t = `TYP_typeop (Flx_srcref.dummy_sr,"_staticbool_and", (`TYP_type_tuple [con1; con2]), Flx_ast.KND_bool) in
+  let rtcr = uniq_list (rtcr1 @ rtcr2) in
   { raw_type_constraint=t; raw_typeclass_reqs=rtcr}
 
 let merge_ivs (vs1,con1) (vs2,con2) :ivs_list_t =
@@ -67,8 +60,20 @@ let rec find_vs sym_table bsym_table bid =
   let parent, sym = Flx_sym_table.find_with_parent sym_table bid in
   match parent with
   | Some parent ->
-      merge_ivs (find_vs sym_table bsym_table parent) sym.Flx_sym.vs
-  | None -> sym.Flx_sym.vs
+(*
+    begin match snd sym.Flx_sym.vs with | { raw_type_constraint=con } -> 
+    print_endline ("find_vs: parent, sym=" ^sym.Flx_sym.id^ ", constraint = " ^ string_of_typecode con);
+    end;
+*)
+    merge_ivs (find_vs sym_table bsym_table parent) sym.Flx_sym.vs
+
+  | None -> 
+(*
+    begin match snd sym.Flx_sym.vs with | { raw_type_constraint=con } -> 
+    print_endline ("find_vs: No parent, sym=" ^sym.Flx_sym.id^ ", constraint = " ^ string_of_typecode con);
+    end;
+*)
+    sym.Flx_sym.vs
 
 let rec find_func_vs sym_table bsym_table vs bid =
   let parent, sym = Flx_sym_table.find_with_parent sym_table bid in
@@ -78,10 +83,20 @@ let rec find_func_vs sym_table bsym_table vs bid =
   | SYMDEF_typeclass ->
       begin match parent with
       | None ->
-          let vs = merge_ivs sym.Flx_sym.vs vs in
-          [], fst vs, snd vs
+(*
+        begin match snd sym.Flx_sym.vs with | { raw_type_constraint=con } -> 
+        print_endline ("find_func_vs: No parent, sym=" ^sym.Flx_sym.id^ ", constraint = " ^ string_of_typecode con);
+        end;
+*)
+        let vs = merge_ivs sym.Flx_sym.vs vs in
+        [], fst vs, snd vs
       | Some parent ->
-          find_func_vs sym_table bsym_table (merge_ivs sym.Flx_sym.vs vs) parent
+(*
+        begin match snd sym.Flx_sym.vs with | { raw_type_constraint=con } -> 
+        print_endline ("find_func_vs: parent, sym=" ^sym.Flx_sym.id^ ", constraint = " ^ string_of_typecode con);
+        end;
+*)
+        find_func_vs sym_table bsym_table (merge_ivs sym.Flx_sym.vs vs) parent
       end
 
   | _ ->
@@ -99,21 +114,38 @@ let rec find_func_vs sym_table bsym_table vs bid =
        *)
       vs', fst vs, snd vs
 
+
+let print_ivs vs =
+  catmap ", " (fun (s,i,_) -> s ^ "<" ^ string_of_bid i ^ ">") vs
+
 (* finds the triple pvs,vs,con where vs is the entity
    vs INCLUDING module vs. pvs is the vs of
    the ultimately containing function and its ancestors.
 *)
 let find_split_vs sym_table bsym_table bid =
   let parent, sym = Flx_sym_table.find_with_parent sym_table bid in
+(*
+print_endline ("Split vs of " ^ sym.Flx_sym.id);
+*)
   match sym.Flx_sym.symdef with
   | SYMDEF_typevar _ -> [],[],Flx_ast.dfltvs_aux
   | _ ->
       match parent with
-      | None -> [], fst sym.Flx_sym.vs, snd sym.Flx_sym.vs
-      | Some parent -> find_func_vs sym_table bsym_table sym.Flx_sym.vs parent
+      | None -> 
+        begin match snd sym.Flx_sym.vs with | { raw_type_constraint=con } -> 
+        print_endline ("No parent, constraint = " ^ string_of_typecode con);
+        end;
+ 
+        [], fst sym.Flx_sym.vs, snd sym.Flx_sym.vs
+      | Some parent -> 
+        let vs1, vs2, aux = find_func_vs sym_table bsym_table sym.Flx_sym.vs parent in
+(*
+        begin match aux with | { raw_type_constraint=con } -> 
+        print_endline ("parent, constraint = " ^ string_of_typecode con);
+        end;
+*)
+        vs1, vs2, aux
 
-let print_ivs vs =
-  catmap ", " (fun (s,i,_) -> s ^ "<" ^ string_of_bid i ^ ">") vs
 
 let adjust_ts sym_table bsym_table sr index ts =
   let pvs,vs,con = find_split_vs sym_table bsym_table index in

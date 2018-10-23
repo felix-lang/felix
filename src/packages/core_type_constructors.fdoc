@@ -93,21 +93,21 @@ open class Typing
 */
 
   // Polymorphic type comparisons, including subtyping AND subsumption
-  typedef fun <= (arg:TYPE, param:TYPE):BOOL =>
+  typedef fun is_subtype (arg:TYPE, param:TYPE):BOOL =>
     subtypematch arg with
     | param => TRUE
     | _ => FALSE
     endmatch
   ;
 
-  typedef fun >= (param:TYPE, arg:TYPE):BOOL =>
+  typedef fun is_supertype (param:TYPE, arg:TYPE):BOOL =>
     subtypematch arg with
     | param => TRUE
     | _ => FALSE
     endmatch
   ;
 
-  typedef fun equal (a:TYPE, b:TYPE):BOOL =>
+  typedef fun type_eq(a:TYPE, b:TYPE):BOOL =>
     typematch a with
     | b => TRUE
     | _ => FALSE
