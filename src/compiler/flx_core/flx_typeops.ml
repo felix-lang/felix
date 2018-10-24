@@ -7,7 +7,7 @@ FIXME: this doesn't handle subkinding!
 *)
 
 (* FIXME should just use kind_ge2 and metatype! *)
-let iskind k x = match x with
+let iskind k x = (* match x with
   | BTYP_type_var (_,mt) 
   | BTYP_typeop (_,_,mt) 
   | BTYP_type_apply (BTYP_type_function (_,mt,_),_)
@@ -15,17 +15,23 @@ let iskind k x = match x with
   | BTYP_inst (_,_,mt) when mt = k -> true
   | BTYP_type_match _ 
   | BTYP_subtype_match _ ->
+*)
     Flx_kind.kind_ge2 k (Flx_btype_kind.metatype Flx_srcref.dummy_sr x)
 
+(*
   | _ -> false
- 
+*) 
 (* ====== UNITSUM SUPPORT ================== *)
 
-let isunitsum x = match x with
+let isunitsum x = 
+(*
+  match x with
   | BTYP_void
   | BTYP_tuple [] 
   | BTYP_unitsum _ -> true
-  | _ -> iskind KIND_unitsum x
+  | _ -> 
+*)
+iskind KIND_unitsum x
  
 let unitsum_int t =
   match t with
@@ -83,9 +89,10 @@ let unitsum_cmp mk_raw_typeop op t k eval =
 
 (* ====== BOOL SUPPORT ================== *)
 
-let isstaticbool x = match x with
+let isstaticbool x = (* match x with
   | BBOOL _ -> true 
-  | _ -> iskind KIND_bool x
+  | _ -> *) 
+  iskind KIND_bool x
 
 let staticbool_binop mk_raw_typeop op t k eval =
   if k <> KIND_bool
@@ -170,7 +177,6 @@ let type_le mk_raw_typeop op t k =
 
   match t with
   | BTYP_type_tuple [lhs; rhs] ->
-print_endline ("type_lt, args = " ^ st lhs ^ ", " ^ st rhs);
     let d = Flx_bid.BidSet.empty in
     let eqn = `Ge, (rhs, lhs) in
     let eqns = [eqn] in
@@ -179,6 +185,27 @@ print_endline ("type_lt, args = " ^ st lhs ^ ", " ^ st rhs);
         ignore(Flx_btype.unif eqns d);
         bbool true
       with Not_found -> bbool false
+
+    in
+    r
+
+  | _ -> failwith ("Flx_btype: typeop " ^ op ^ " requires two type arguments")
+
+let type_eq mk_raw_typeop op t k =
+  if k <> KIND_bool
+  then failwith ("Flx_btype: typeop " ^ op ^ " requires staticbool result kind");
+
+  match t with
+  | BTYP_type_tuple [lhs; rhs] ->
+    let d = Flx_bid.BidSet.empty in
+    let eqn = `Eq, (rhs, lhs) in
+    let eqns = [eqn] in
+    let r = 
+      try
+        ignore(Flx_btype.unif eqns d);
+        bbool true
+      with Not_found -> 
+        bbool false
 
     in
     r
@@ -212,6 +239,7 @@ let eval_typeop mk_raw_typeop op t k =
   | "_type_to_staticbool" -> type_to_staticbool mk_raw_typeop op t
 
   | "_type_le" -> type_le mk_raw_typeop op t k
+  | "_type_eq" -> type_eq mk_raw_typeop op t k
 
 
   | _ -> failwith ("Unknown operator " ^ op ^ ": " ^ str_of_btype t ^ " -> " ^ sk k)

@@ -117,6 +117,8 @@ syntax types {
 
   //$ multiplication: non-associative.
   t[sproduct_pri] := t[>sproduct_pri] ("*" t[>sproduct_pri])+ =># "(chain 'typ_tuple _1 _2)" note "mul";
+  
+  t[sproduct_pri] := t[>sproduct_pri] "*+" t[sproduct_pri] =># "`(typ_rptsum ,_sr ,_1 ,_3)";
 
   //$ Prefix 
   t[sprefixed_pri] := "~" t[sprefixed_pri] =># "`(typ_dual ,_sr ,_2)";
@@ -418,7 +420,7 @@ syntax expressions {
 
   // repeated sum type, eg 4 *+ int == int + int + int + int
   // right associative:  2 *+ 3 *+ int is approx 6 *+ int
-  x[sproduct_pri] := x[>sproduct_pri] "*+" x[sproduct_pri] =># "`(ast_rptsum_type ,_sr ,_1 ,_3)";
+  //x[sproduct_pri] := x[>sproduct_pri] "*+" x[sproduct_pri] =># "`(ast_rptsum_type ,_sr ,_1 ,_3)";
 
 //------------------------------------------------------------------------
 

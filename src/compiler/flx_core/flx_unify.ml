@@ -419,9 +419,19 @@ print_endline "Trying to unify instances (2)";
       (* repeated sums *)
       | BTYP_rptsum (n1,t1), BTYP_rptsum (n2,t2) ->
         add_eqn (n1,n2);
+        (* FIXME: in Felix, sum types don't support width subtyping,
+           but they DO support depth subtyping, so, this should be an
+           inequation not an equation. Which means this check has to
+           be moved up to the subtyping part of the engine.
+        *)
         add_eqn(t1,t2)
 
       (* linearly repeated sum and sum *)
+      (* NOTE: this can happen because one of the sum components might be
+        a type variable. In this case the rptsum will force the variable
+        to be assigned to the repeated base type. I have to remember
+        that canonical forms change when type variables are replaced!
+      *)
       | BTYP_sum (ts), BTYP_rptsum (BTYP_unitsum n,t) 
       | BTYP_rptsum (BTYP_unitsum n,t), BTYP_sum (ts) 
         when List.length ts = n ->

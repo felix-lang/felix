@@ -330,7 +330,8 @@ let btyp_sum ts =
   begin try List.iter (fun t -> if t <> first then raise Not_found) ts;
     let n = btyp_unitsum (List.length ts) in
     btyp_rptsum (n,first)
-  with Not_found -> BTYP_sum ts
+  with Not_found -> 
+    BTYP_sum ts
   end
 
 let btyp_inst (bid, ts,mt) =
