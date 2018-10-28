@@ -3,7 +3,7 @@ open Flx_ast
 open Flx_bid
 open Flx_bind_state
 
-let debug = false 
+let debug = false
 
 let bind_asms bind_state bsym_table start_counter asms =
 if debug then

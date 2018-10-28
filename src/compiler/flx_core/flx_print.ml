@@ -2942,8 +2942,6 @@ let print_symbols bsym_table =
     | BBDCL_axiom -> print_endline ("AXIOM " ^ id)
     | BBDCL_lemma -> print_endline ("LEMMA " ^ id)
     | BBDCL_reduce -> print_endline ("REDUCE " ^ id)
-
-
   end bsym_table
 
 let string_of_name_map name_map =

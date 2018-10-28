@@ -30,7 +30,7 @@ open Flx_bid
 
 *)
 
-let debug = false 
+let debug = match Sys.getenv_opt "Flx_numono" with Some _ -> true | _ -> false ;;
 
 (* ----------------------------------------------------------- *)
 (* ROUTINES FOR REPLACING TYPE VARIABLES IN TYPES              *)
@@ -238,16 +238,32 @@ print_endline ("MONOMORPHISING");
   done
   ;
 
-  Hashtbl.clear syms.instances_of_typeclass;
-  Hashtbl.clear syms.virtual_to_instances;
   syms.axioms := [];
 
 (*
   syms.reductions := [];
 *)
-(*
-print_endline ("Allowing " ^ string_of_int (List.length !(syms.reductions)) ^ " reductions");
+
+(* This routine tries to keep fully monomorphic reductions for later use,
+provided the non-parameter symbols (both expression and type parameters)
+are in the monomorphised symbol table. Any reduction based on or producing
+virtual functions is sure to be lost. Any reduction involving a polymorphic
+function or type is also sure to be lost. To keep a reduction it has to be
+entirely monomorphic. Even expressions like -1 are polymorphic, since negation
+is a virtual function. Not much is going to be kept.
 *)
+
+  let reductions= Flx_bsym_table.get_reductions bsym_table in
+  let reductions = Flx_reduce.filter_viable_reductions nutab reductions in
+  (*
+     print_endline ("Flx_numono: retaining " ^ string_of_int (List.length reductions) ^ " reductions");
+  *)
+  Flx_bsym_table.set_reductions nutab reductions;
+
+  Hashtbl.clear syms.instances_of_typeclass;
+  Hashtbl.clear syms.virtual_to_instances;
+
+
 (* Add coercions to new table now *)
 
   Flx_bsym_table.iter_coercions bsym_table

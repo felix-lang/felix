@@ -67,6 +67,7 @@ let rec istriv t = match Flx_btype.trivorder t with
   | Some _ -> true
   | None -> false
 
+(* TYPES *)
 let rec uses_btype add bsym_table count_inits t =
   let f_btype t = uses_btype add bsym_table count_inits t in
  
@@ -78,6 +79,7 @@ let rec uses_btype add bsym_table count_inits t =
 
   | _ -> Flx_btype.flat_iter ~f_btype t
 
+(* STATEMENTS *)
 and uses_bexe' add bsym_table count_inits exe =
   let sr = Flx_bexe.get_srcref exe in
   let f_bexpr e = uses_bexpr add bsym_table count_inits e in
@@ -180,12 +182,14 @@ and uses_bexe add bsym_table count_inits exe =
    )
 
 
+(* EXPRESSION *)
 and uses_bexpr add bsym_table count_inits ((e,t) as x) =
   Flx_bexpr.iter
     ~f_bid:(add)
     ~f_btype:(uses_btype add bsym_table count_inits)
     x
 
+(* SYMBOL *)
 and uses_symbol add bsym_table count_inits i =
     let xbbdcl =
       try Some (let bsym = Flx_bsym_table.find bsym_table i in bsym,Flx_bsym.bbdcl bsym)
@@ -209,6 +213,7 @@ print_endline ("  ^^^^ END   Flx_use.uses processing index " ^ si i ^ " symbol "
     | None ->
         raise (NotFoundDefn i)
 
+(* ROOTS *)
 let find_roots syms bsym_table (root: int option) bifaces =
   (* make a list of the root and all exported functions,
   add exported types and components thereof into the used
@@ -365,22 +370,27 @@ I'm going to skip this for the moment!
   (* Reduction parameters don't exist, if a reduction is applied
      the parameter is substituted with the argument.
   *)
+*)
+
   let maybe_add ignores j = 
     if not (List.mem j ignores) then add j
   in
+  let reductions = Flx_bsym_table.get_reductions bsym_table in
 (*
-  if List.length (!(syms.reductions)) <> 0 then
-     failwith ("Reductions exist!!")
+  if List.length reductions <> 0 then
+     print_endline ("Flx_use: Reductions exist!!")
   ;
 *)
   List.iter
-  (fun (id,bvs,bps,lhs, rhs) ->
-    let ignorelist = List.map (fun p -> p.Flx_bparameter.pindex) bps in
-    uses_bexpr (maybe_add ignorelist) bsym_table count_inits rhs;
+  (fun (id,reds) -> 
+    List.iter (fun (bvs,bps,lhs, rhs) ->
+      let ignorelist = List.map (fun p -> p.Flx_bparameter.pindex) bps in
+      uses_bexpr (maybe_add ignorelist) bsym_table count_inits rhs;
+    )
+    reds
   )
-  !(syms.reductions)
+  reductions
   ;
-*)
 
   while not (BidSet.is_empty !untraced) do
     let bid = BidSet.choose !untraced in
@@ -426,6 +436,7 @@ let strip_inits bsym_table bidset exes =
   in
   aux exes [] 
 
+(* ONE PASS of COPYING COLLECTOR *)
 let copy_used1' syms bsym_table =
 (*
 print_endline ("copy used ... ");
@@ -507,9 +518,17 @@ print_endline ("Flx_use: END   Handling function " ^ Flx_bsym.id bsym);
   (* Add all the symbols to the new symbol bsym_table. *)
   BidSet.iter aux bidset;
 
+  let reductions= Flx_bsym_table.get_reductions bsym_table in
+(*
+print_endline ("Flx_use: checking viability for " ^ string_of_int (List.length reductions) ^ " reductions");
+*)
+  let reductions = Flx_reduce.filter_viable_reductions new_bsym_table reductions in
+  Flx_bsym_table.set_reductions new_bsym_table reductions;
+  
   (* Return the new symbol bsym_table. *)
   new_bsym_table
 
+(* TOP LEVEL COPYING COLLECTOR, ONE PASS WITH TRAP *)
 let copy_used1 syms bsym_table =
   try
     copy_used1' syms bsym_table
@@ -517,6 +536,7 @@ let copy_used1 syms bsym_table =
     NotFoundDefn i ->
       failwith ("[Flx_use.uses] Cannot find bound defn for <" ^ string_of_bid i ^ ">")
 
+(* TOP LEVEL COPYING COLLECTOR, MULTI PASS *)
 let copy_used syms bsym_table =
   if syms.compiler_options.Flx_options.print_flag then begin
     print_endline "COPY USED";

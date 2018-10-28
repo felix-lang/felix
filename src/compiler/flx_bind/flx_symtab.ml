@@ -575,13 +575,12 @@ print_endline ("Adding type variable 7141!");
   in
 
   (* Add simple parameters to the symbol table. *)
-(*
   let add_simple_parameters pubtab privtab parent =
     List.map begin fun (name, typ) ->
       add_parameter pubtab privtab parent (sr,`PVal, name, typ, None)
     end
   in
-*)
+
   let add_labels parent privtab exes = 
     List.iter (fun exe -> match exe with
       | sr,EXE_label name -> 
@@ -603,13 +602,23 @@ print_endline ("Adding type variable 7141!");
 
   (* Add the declarations to the symbol table. *)
   begin match (dcl:Flx_types.dcl_t) with
-  | DCL_reduce reds -> assert false
+  | DCL_reduce reds ->
 (*
+print_endline ("Adding reduction " ^ id ^ " to symbol table");
+*)
       let reds = 
         List.map (fun (vs, ps, e1, e2) ->
           let ips: parameter_t list = add_simple_parameters pubtab privtab (Some symbol_index) ps in
           let ivs : ivs_list_t = make_ivs vs in
           add_tvars' (Some symbol_index) privtab ivs;
+
+(* Pre-monomorphisation reductions are applied "out of scope" so the parent class type variables
+have to be included, that is, reductions are effectively parentless
+
+Seems weird ..
+*)
+
+let ivs = rmerge_ivs inherit_ivs ivs in 
           (ivs,ips, e1, e2)
         )
         reds
@@ -619,7 +628,7 @@ print_endline ("Adding type variable 7141!");
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
-*)
+
   | DCL_axiom ((ps, pre), e1) ->
       let ips = add_parameters pubtab privtab (Some symbol_index) ps in
 

@@ -47,8 +47,8 @@ let save_profile () =
 
 (* -------------------------------------------------------------------------- *)
 let showtime (s:string) (t0:float) =
-  let s = s ^ "                   " in 
-  let s = String.sub s 0 8 in
+  let s = s ^ " ................................................" in 
+  let s = String.sub s 0 36 in
   let elapsed = Unix.gettimeofday() -. t0 in
   let minutes = floor (elapsed /. 60.0) in
   let seconds = elapsed -. minutes *. 60.0 in
@@ -148,7 +148,7 @@ let handle_bind state main_prog module_name =
   let t0 = Unix.gettimeofday () in
 
   let ntsc lhs rhs = Flx_unify.nominal_subtype bsym_table lhs rhs in
-  Flx_btype.set_unif_thunk (Flx_unify.unif ntsc start_counter);
+  Flx_btype.set_unif_thunk (Flx_unify.unif ntsc state.syms.counter);
 
 
   (* Do the binding here *)

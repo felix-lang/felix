@@ -509,7 +509,7 @@ print_endline ("type _map datatype = " ^ sbt bsym_table bt2);
 (*
 print_endline ("Binding `TYP_apply " ^ string_of_typecode t);
 *)
-    let x = btyp_type_apply (bt t1, bt t2) in
+    let x = br (btyp_type_apply (bt t1, bt t2)) in
 (*
 print_endline ("  ***** Bound `TYP_apply: " ^ Flx_btype.st x );
 *)

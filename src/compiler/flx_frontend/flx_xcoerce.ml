@@ -367,5 +367,11 @@ let expand_coercions syms bsym_table =
    (fun i parent bsym -> process_entry new_table bsym_table syms.Flx_mtypes2.counter parent i bsym)
     bsym_table
   ;
-  new_table
+  let reductions= Flx_bsym_table.get_reductions bsym_table in
+(*
+print_endline ("Flx_xcoerce: checking viability for " ^ string_of_int (List.length reductions) ^ " reductions");
+*)
+  let reductions = Flx_reduce.filter_viable_reductions new_table reductions in
+  Flx_bsym_table.set_reductions new_table reductions;
+    new_table
 

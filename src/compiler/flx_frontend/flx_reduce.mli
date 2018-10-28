@@ -9,14 +9,20 @@ val remove_useless_reductions:
 *)
 
 val reduce_exes:
-  Flx_mtypes2.sym_state_t ->
+  int ref -> (* reduction count *)
+  int ref -> (* system counter *)
   Flx_bsym_table.t ->
   Flx_mtypes2.reduction_t list ->
   Flx_bexe.t list ->
   Flx_bexe.t list
 
 val reduce_all:
-  Flx_mtypes2.sym_state_t ->
+  int ref ->
   Flx_bsym_table.t ->
   unit
+
+val filter_viable_reductions:
+  Flx_bsym_table.t ->
+  Flx_mtypes2.reduction_t list ->
+  Flx_mtypes2.reduction_t list
 

@@ -25,6 +25,9 @@ val is_supertype: t -> bid_t -> bid_t -> bool
 val maybe_coercion: t -> bid_t -> bid_t -> bid_t option
 val iter_coercions: t -> (coercion_t -> unit) -> unit
 val fold_coercions: t -> ('a -> coercion_t -> 'a) -> 'a -> 'a
+val get_reductions: t -> Flx_mtypes2.reduction_t list
+val set_reductions: t -> Flx_mtypes2.reduction_t list -> unit
+val add_reduction_case: t -> string -> Flx_mtypes2.reduction_case_t ->  unit
 
 (* UNSAFE
 (** Updates a bound symbol in place while preserving the child-parent

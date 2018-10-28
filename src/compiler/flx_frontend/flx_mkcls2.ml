@@ -36,7 +36,7 @@ open Flx_prop
 open Flx_bid
 open Flx_btype_subst
 
-let debug = false 
+let debug = match Sys.getenv_opt "Flx_mkcls2" with Some _ -> true | _ -> false ;;
 
 let noeffects = Flx_btype.btyp_unit ()
 
@@ -590,11 +590,49 @@ let process_entry state bsym_table nutab i parent bsym =
     cstructs 
     c function pointers
 *)
- 
+
+(* cut down version of the wrapper generator: just lowers closure applications to
+specialised form, doesn't make any wrappers or do other fancy stuff, this means
+some reduction rules will fail to match when they could match were this
+routine improved, but the cut down rule covers much territory
+*)
+
+let rec lower_expr nutab e =
+  let ce e = lower_expr nutab e in
+  match e with
+  | BEXPR_apply ((BEXPR_closure (i,ts),ft),e),rt ->
+    begin
+      let bsym = Flx_bsym_table.find nutab i in
+      match Flx_bsym.bbdcl bsym with
+      | BBDCL_external_fun _ -> bexpr_apply_prim rt (i,ts,ce e)
+      | BBDCL_struct _  -> bexpr_apply_struct rt (i,ts,ce e)
+      | BBDCL_cstruct  _  -> bexpr_apply_struct rt (i,ts,ce e)
+      | BBDCL_nonconst_ctor  _  -> bexpr_apply_struct rt (i,ts,ce e)
+      | BBDCL_fun _ -> bexpr_apply_direct rt (i,ts,ce e)
+      | _ -> assert false 
+    end
+  | e -> 
+    let e = Flx_bexpr.map ~f_bexpr:ce e in
+    e
+
+let lower_case nutab (bvs,bps,x1,x2) =
+  bvs,bps, lower_expr nutab x1, lower_expr nutab x2
+
+let lower_reduction nutab (id,cases) =
+  let cases = List.map (lower_case nutab) cases in
+  id,cases
+
 let make_wrappers syms bsym_table =
   let nutab = Flx_bsym_table.create_from bsym_table in
   let state = make_closure_state syms in 
   Flx_bsym_table.iter (process_entry state bsym_table nutab) bsym_table;
+  let reductions= Flx_bsym_table.get_reductions bsym_table in
+(*
+print_endline ("Flx_mkcls2: checking viability for " ^ string_of_int (List.length reductions) ^ " reductions");
+*)
+  let reductions = Flx_reduce.filter_viable_reductions nutab reductions in
+  let reductions = List.map (lower_reduction nutab) reductions in
+  Flx_bsym_table.set_reductions nutab reductions;
   nutab
 
 

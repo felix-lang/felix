@@ -35,7 +35,6 @@ let make_bind_state syms sym_table =
    ~ticache: syms.Flx_mtypes2.ticache  
    ~varmap: syms.Flx_mtypes2.varmap
    ~axioms: syms.Flx_mtypes2.axioms
-   ~reductions: syms.Flx_mtypes2.reductions
  in
   {
     syms = syms;

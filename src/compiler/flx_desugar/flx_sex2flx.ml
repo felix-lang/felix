@@ -179,7 +179,7 @@ print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
  | Lst [Id "typ_superscript"; t1; t2] -> `TYP_array (ti t1, ti t2)
  | Lst [Id "typ_tuple"; sr; Lst es] -> `TYP_tuple (map ti es)
  | Lst [Id "typ_sum";  sr; Lst es] -> `TYP_sum (map ti es)
- | Lst [Id "ast_rptsum_type"; sr; d; c] -> `TYP_rptsum (ti d, ti c)
+ | Lst [Id "typ_rptsum"; sr; d; c] -> `TYP_rptsum (ti d, ti c)
  | Lst [Id "typ_typeof";  sr; e] -> 
    `TYP_typeof (ex e)
 
@@ -956,11 +956,17 @@ print_endline ("sex2flx:stmt] " ^ Sex_print.string_of_sex x);
   | Lst [Id "ast_private"; sr; x] -> let sr = xsr sr in STMT_private (sr, xs sr x)
 
   | Lst [Id "ast_reduce"; sr; id; Lst reductions]  -> let sr = xsr sr in 
-    STMT_reduce (
-      sr,
-      xid id,
-      map (xred sr) reductions 
-      )
+    let stmt = 
+      STMT_reduce (
+        sr,
+        xid id,
+        map (xred sr) reductions 
+        )
+    in
+(*
+    print_endline ("Flx_sex2flx: Reduction: " ^ Flx_print.string_of_statement 0 stmt); 
+*)
+    stmt
 
   | Lst [Id "ast_axiom"; sr; id; vs; ps; axm] -> let sr = xsr sr in 
     STMT_axiom (

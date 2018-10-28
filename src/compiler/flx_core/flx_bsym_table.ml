@@ -11,19 +11,36 @@ type t = {
   table: (bid_t, elt) Hashtbl.t;
   childmap: (int, BidSet.t) Hashtbl.t; (** All of this bsym table's roots. *)
   mutable subtype_map: ((int * int) * int) list; (* super=cod:param, sub=dom:arg -> coercion *)
+  mutable reductions:  Flx_mtypes2.reduction_t list;
 }
+
+let get_reductions (bsym_table: t) = bsym_table.reductions
+
+let set_reductions (bsym_table: t) r = bsym_table.reductions <- r
+
+let add_reduction_case (bsym_table:t) (id: string) (x:Flx_mtypes2.reduction_case_t) =
+  let reds = bsym_table.reductions in
+  try
+    let old = List.assoc id reds in
+    let stripped = List.filter (fun (key,value) -> key <> id) reds in 
+    let added_case = x :: old in
+    bsym_table.reductions <- (id, added_case) :: stripped
+  with Not_found ->
+    bsym_table.reductions <- (id, [x]) :: reds 
 
 (** Construct a bound symbol table. *)
 let create_fresh () =
   { table=Hashtbl.create 97;
     childmap=Hashtbl.create 97; 
     subtype_map = [];
+    reductions = []
   }
 
 let create_from bsym_table =
   { table=Hashtbl.create 97;
     childmap=Hashtbl.create 97; 
-    subtype_map = bsym_table.subtype_map
+    subtype_map = bsym_table.subtype_map;
+    reductions = []
   }
 
 

@@ -72,7 +72,7 @@ let process_lib
   in
 
   (* Determine whether the file has been changed since it was cached. *)
-  let validate (_,depnames,_,_,_,_,_,_,_,_,_) =
+  let validate (_,depnames,_,_,_,_,_,_,_,_) =
 
     (* Of all the lib files, get the newest file time. *)
     let newest_file_time = 
@@ -100,7 +100,6 @@ let process_lib
     virtual_to_instances,
     instances_of_typeclass,
     axioms,
-    reductions,
     out_sym_table,
     out_bsym_table
   =
@@ -155,7 +154,6 @@ let process_lib
         state.syms.virtual_to_instances,
         state.syms.instances_of_typeclass,
         !(state.syms.axioms),
-        !(state.syms.reductions),
         !sym_table_ref,
         !bsym_table_ref
       end)
@@ -175,7 +173,6 @@ let process_lib
   state.syms.virtual_to_instances <- virtual_to_instances;
   state.syms.instances_of_typeclass <- instances_of_typeclass;
   state.syms.axioms := axioms;
-  state.syms.reductions := reductions;
   start_counter := !(state.syms.counter);
   sym_table_ref := out_sym_table;
   bsym_table_ref := out_bsym_table;

@@ -8,7 +8,7 @@ let print_time syms msg f =
   let result = f () in
   let elapsed = Unix.gettimeofday () -. t0 in
   if syms.Flx_mtypes2.compiler_options.Flx_options.showtime
-  then print_endline (String.sub (msg ^ "                                        ") 0 40
+  then print_endline (String.sub (msg ^ " ............................................................................ ") 0 60
         ^ string_of_int (int_of_float elapsed) ^ "s");
   result
 
@@ -66,10 +66,11 @@ let stack_calls syms bsym_table =
 (* Do some platform independent optimizations of the code. *)
 let optimize_bsym_table' syms bsym_table (root_proc: int option) =
   print_debug syms "//OPTIMISING";
-(*
-  print_time syms "[flx_opt]; Performing reductions" begin fun () ->
-  Flx_reduce.reduce_all syms bsym_table end; 
-*)
+
+  if syms.compiler_options.doreductions then 
+    print_time syms "[flx_opt]; Pre-monomorphisation user reductions" begin fun () ->
+    Flx_reduce.reduce_all syms.counter bsym_table end; 
+
   print_time syms "[flx_opt]; Finding roots" begin fun () ->
   (* Find the root and exported functions and types. *)
   Flx_use.find_roots syms bsym_table root_proc syms.Flx_mtypes2.bifaces end;
@@ -156,6 +157,12 @@ print_endline "Wrapper generation DONE";
   print_time syms "[flx_opt]; Inlining" begin fun () -> 
   (* Perform the inlining. *)
   Flx_inline.heavy_inlining syms bsym_table end;
+
+
+  if syms.compiler_options.doreductions then 
+  print_time syms "[flx_opt]; Post-monomorphisation user reductions" begin fun () ->
+  Flx_reduce.reduce_all syms.counter bsym_table end;
+
 
   let bsym_table = print_time syms "[flx_opt]; Remove unused symbols" begin fun () -> 
   (* Clean up the symbol table. *)

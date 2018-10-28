@@ -70,7 +70,6 @@ type sym_state_t =
   roots : BidSet.t ref;
   quick_names : (string, (bid_t * Flx_btype.t list)) Hashtbl.t;
   mutable bifaces : Flx_btype.biface_t list;
-  reductions : reduction_t list ref;
   axioms : axiom_t list ref;
   variant_map: (Flx_btype.t * Flx_btype.t, bid_t) Hashtbl.t;
   mutable virtual_to_instances: (bid_t, (Flx_kind.bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t;

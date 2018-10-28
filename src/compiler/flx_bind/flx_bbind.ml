@@ -273,15 +273,20 @@ print_endline ("Binding type constraint: icons=" ^ sbt bsym_table icons);
     bind_reqs bt state bsym_table env sym.Flx_sym.sr reqs
   in
   let bind_quals quals = bind_quals bt quals in
+
+  let bind_param (sr,k,s,t,_) =
+    let i = find_param sym.Flx_sym.privmap s in
+    let t =
+      let t = bt t in
+      match k with
+      | _ -> t
+    in
+    { pid=s; pindex=i; pkind=k; ptyp=t}
+  in
+
   let rec bind_basic_ps ps = match ps with
-     | Satom (sr,k,s,t,_) ->
-      let i = find_param sym.Flx_sym.privmap s in
-      let t =
-        let t = bt t in
-        match k with
-        | _ -> t
-      in
-      Satom { pid=s; pindex=i; pkind=k; ptyp=t }
+    | Satom p ->
+      let p = bind_param p in Satom p
     | Slist pss -> Slist (List.map bind_basic_ps pss)
   in
   let bindps (ps,traint) =
@@ -336,11 +341,13 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
   | SYMDEF_virtual_type ->
     add_bsym true_parent (bbdcl_virtual_type bvs)
  
-  | SYMDEF_reduce reds -> assert false
-(* 
+  | SYMDEF_reduce reds ->
+(*
+print_endline ("Binding reduction, "^ sym.Flx_sym.id^ " adding to reductions list");
+*)
     let reds =
       List.map (fun (ivs,ps,e1,e2) ->
-        let bps = bind_basic_ps ps in
+        let bps = List.map bind_param ps in
         let be1 = be e1 in
         let be2 = be e2 in
         let bvs = map (fun (s,i,tp) -> s,i,Flx_btype.bmt "Flx_bbind.2" tp) (fst ivs) in
@@ -348,15 +355,13 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
       )
       reds
     in
-    let r = sym.Flx_sym.id,reds in
-    state.reductions := r :: !(state.reductions);
+    List.iter (fun red -> Flx_bsym_table.add_reduction_case bsym_table sym.Flx_sym.id red) reds;
 
     if state.print_flag then
       print_endline ("//bound reduction  " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" );
 
     add_bsym true_parent (bbdcl_reduce ())
-*)
 
   | SYMDEF_axiom (ps,e1) ->
     let bps = bindps ps in

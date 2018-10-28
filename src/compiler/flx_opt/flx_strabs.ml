@@ -370,6 +370,12 @@ let strabs bsym_table =
     )
     bsym_table
   ;
+  let reductions= Flx_bsym_table.get_reductions bsym_table in
+(*
+print_endline ("Flx_strabs: checking viability for " ^ string_of_int (List.length reductions) ^ " reductions");
+*)
+  let reductions = Flx_reduce.filter_viable_reductions bsym_table' reductions in
+  Flx_bsym_table.set_reductions bsym_table' reductions;
   bsym_table'
 
 

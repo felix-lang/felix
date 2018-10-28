@@ -8,7 +8,6 @@ type bbind_state_t = {
   sym_table: Flx_sym_table.t;
   ticache : (bid_t, Flx_btype.t) Hashtbl.t;
   varmap : typevarmap_t;
-  reductions: reduction_t list ref;
   axioms: axiom_t list ref;
   lookup_state: Flx_lookup_state.lookup_state_t;
 
@@ -24,7 +23,6 @@ let make_bbind_state
   ~varmap 
   ~sym_table 
   ~axioms 
-  ~reductions
   ~lookup_state 
 =
   {
@@ -34,7 +32,6 @@ let make_bbind_state
     ticache=ticache;
     varmap=varmap;
     axioms = axioms;
-    reductions = reductions;
     lookup_state = lookup_state;
     visited = Hashtbl.create 97;
   }

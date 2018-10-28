@@ -157,7 +157,16 @@ let rec expr_unification bsym_table counter
       loop ()
     in
       loop ();
+(*
+print_endline ("Expressions unified ..");
+List.iter (fun (i,e) -> print_endline (string_of_int i ^ " <-- " ^ Flx_print.sbe bsym_table e)) !mgu;
+print_endline ("Trying to unify types, dependent vars = " ^ Flx_print.string_of_bidset tdvars);
+List.iter (fun (t1,t2) -> print_endline (st t1 ^ " == " ^ st t2)) !teqns;
+*)
       let tmgu = Flx_unify.unification bsym_table counter !teqns tdvars in
+(*
+print_endline ("Types unified ..");
+*) 
       tmgu,
       !mgu
 
