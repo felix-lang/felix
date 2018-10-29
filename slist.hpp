@@ -36,6 +36,8 @@ namespace Felix
         friend slist<U> cons(U,slist<U>);
 
     public:
+      //slist& operator =(slist const&) = default;
+
       // type constructor: Empty
       slist () : data (nullptr) {}
 
@@ -44,10 +46,10 @@ namespace Felix
       bool empty() const { return data.get() == nullptr; }
 
       // destructor: head; undefined on empty
-      T head () const { return data.head; }
+      T head () const { return data->head; }
 
       // destructor: tail; undefined on empty
-      T tail () const { return slist (data.tail); }
+      slist tail () const { return slist (data->tail); }
     
       // destructor: tail; undefined on empty
       std::pair<T,slist> uncons () const { return make_pair (head(),tail()); }  
