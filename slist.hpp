@@ -9,6 +9,7 @@ namespace Felix
     struct slist_node {
       T head;
       std::shared_ptr<slist_node<T> > tail;
+      slist_node (T h, std::shared_ptr<slist_node<T> > t) : head(h), tail(t) {}
     };
 
   // slist is a wrapper for the shared pointer
@@ -21,7 +22,7 @@ namespace Felix
 
       // cons
       slist (T head, slist_rep tail) : data(
-        std::make_shared (slist_node<T> (head, tail))
+        std::make_shared<slist_node<T> > (slist_node<T> (head, tail))
       ) {}
 
       // copy constructor
@@ -30,13 +31,14 @@ namespace Felix
       // move constructor
       slist (slist_rep && other) : data (other) {}
 
+      // cons type constructor
+      template<typename U>
+        friend slist<U> cons(U,slist<U>);
 
     public:
       // type constructor: Empty
       slist () : data (nullptr) {}
 
-      // type constructor: Cons
-      slist cons (T h, slist t) const { return slist (h,t.data); }
 
       // check if empty
       bool empty() const { return data.get() == nullptr; }
@@ -65,5 +67,10 @@ namespace Felix
          return Fcons (head(), tail());
        }
   };
+
+  // type constructor: Cons
+  template<typename T>
+    inline slist<T> cons (T h, slist<T> t) { return slist (h,t.data); }
+
 } // namespace
 
