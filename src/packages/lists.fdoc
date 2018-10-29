@@ -324,6 +324,13 @@ Tail recursive.
     return aux x Empty[T];
   }
 
+  fun urev[T](x:list[T]) => box (rev x);
+  fun urev[T](var x:uniq (list[T])) : uniq (list[T]) {
+    var y = unbox x;
+    rev &y;
+    return box y;
+  }
+
 @h2 Zip a pair of lists to a list of pairs @{zip2}
 Returns a list the length of the shortest argument.
 @tangle list.flx

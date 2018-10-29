@@ -69,11 +69,13 @@ class String
   proc  += : &string * string = "$1->append($2:assign);";
   proc  += : &string * +char = "$1->append($2:assign);";
   proc  += : &string * char = "*$1 += $2;";
+  proc  += : &string * &string = "$1->append(*$2);";
 
 @h2 Length of @{string}
 @tangle string.flx
   // we need to cast to an int so that c++ won't complain
   fun len: string -> size = "$1.size()";
+  fun len: &string -> size = "$1->size()";
 
 @h2 String concatenation.
 @tangle string.flx
