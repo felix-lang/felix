@@ -1,0 +1,60 @@
+// define a rope as a list of strings in reverse order
+struct rope {
+  r: list[&string];
+}
+
+// constructor from one string
+ctor rope(s:string) => (new s).list[&string].rope;
+
+// appending a string just prepends it to the list
+fun + (r:rope,s:string) => rope ((new s)!r.r);
+
+// appending a rope is just list concatenation
+fun + (r:rope,s:rope) => rope (s.r + r.r);
+
+fun count (r:rope) => r.r.len;
+
+// the length of a rope is the sum of the lengths of its pieces
+fun len (r:rope): size =>
+  fold_left (fun (acc:size) (s:&string) => acc + s.len) 0uz r.r
+;
+
+fun render (r:rope): &string {
+  var out = "";
+  reserve (&out, r.len + 1uz);
+  var x = rev r.r;
+next:>
+  match x with
+  | Empty => return &out;
+  | head ! tail =>
+    x = tail;
+    out += head;
+    goto next;
+  endmatch;
+}
+
+proc test () {
+  var s = "Hello";
+  for i in 0..12 perform s += s;
+  println$ "String length = " + s.len.str;
+
+  begin
+    var t = #time;
+    var k = s;
+    for i in 0 .. 10 perform k = k + k + k;
+    println$ "Len = " + k.len.str;
+    println$ "Strings: Elapsed = " + (#time - t).str + "s";
+  end
+
+  begin
+    var t = #time;
+    var k = rope s;
+    for i in 0 .. 10 perform k = k + k + k;
+    var q = render k;
+    println$ "Len = " + q.len.str;
+    println$ "Ropes total: Elapsed = " + (#time - t).str + "s";
+  end
+}
+
+test;
+
