@@ -5,11 +5,10 @@
 <style>
 * {box-sizing: border-box}
 body {font-family: Verdana, sans-serif; margin:0}
-.mySlides {display: block; margin-left: 100px; border: 1px solid; height:5cm; }
+.mySlides {display: block; margin-left: 10px; margin-right: 10px; border: 1px solid; height:17cm; }
 
 /* Slideshow container */
 .slideshow-container {
-  max-width: 1000px;
   position: relative;
   margin: auto;
 }
@@ -18,7 +17,7 @@ body {font-family: Verdana, sans-serif; margin:0}
 .prev, .next {
   cursor: pointer;
   position: absolute;
-  top: 50%;
+  top: 18cm;
   width: auto;
   padding: 16px;
   margin-top: -22px;
@@ -111,8 +110,7 @@ body {font-family: Verdana, sans-serif; margin:0}
 
 <div class="mySlides">
   <div class="numbertext">2 / 3</div>
-  <p>start text
-  <p>more text
+  <div src="index.html"></div>
 </div>
 
 <div class="mySlides">
@@ -132,8 +130,6 @@ body {font-family: Verdana, sans-serif; margin:0}
 
 </div>
 
-<br>
--------
 <br>
 
 <div style="text-align:center">
@@ -180,7 +176,7 @@ function showSlide() {
 
   slides[slideIndex-1].style.display = "block";  
   dots[slideIndex-1].className += " active";
-  setTimeout(nextSlide, 2000); // Change image every 2 seconds
+  setTimeout(nextSlide, 5000); // Change image every 2 seconds
 }
 
 showSlide();

@@ -714,11 +714,6 @@ open class Varray
     varray[t] (len x, len x, (fun (i:size):t=> x.i))
   ;
 
-  // construct a full varray from a varray and a slice[int]
-  //ctor[t] varray[t] (x:varray[t], s:slice[int]) = {
-  //   var sm = 
-  //}
-
   // Construct a varray from a list
   ctor[t] varray[t] (x:list[t]) = {
     val n = x.len.size;
@@ -826,6 +821,7 @@ open class Varray
     done
     _push_back (x,v);  
   }
+  proc push_back[t] (x:varray[t]) (v:t) => push_back(x,v);
 
   //$ Pop an element off the end of a varray.
   //$ Aborts if the array is empty.
@@ -899,6 +895,14 @@ open class Varray
     done
   }
 
+  fun apply[T] (x:slice[int], v:varray[T])  {
+    var minr = max (min x,0);
+    var maxr = min (max x,v.len.int - 1);
+    var out = varray[T] (maxr - minr + 1).size;
+    for var i in minr upto maxr perform
+      out.push_back v.i;
+    return out;
+  }
 
   //$ Traditional map varray to varray.
   fun map[T, U] (_f:T->U) (x:varray[T]): varray[U] = {
@@ -1144,6 +1148,17 @@ Generally, this class is very incomplete.
   //$ probably should ..
   proc erase[t] (a:darray[t], first:int, last:int) => 
     erase ((_repr_ a)*.a, first,last);
+@h2 Slice
+
+@tangle darray.flx
+  fun apply[T] (x:slice[int], v:darray[T])  {
+    var minr = max (min x,0);
+    var maxr = min (max x,v.len.int - 1);
+    var out = varray[T] (maxr - minr + 1).size;
+    for var i in minr upto maxr perform
+      out.push_back v.i;
+    return darray out;
+  }
 
 @h2 Convert a darray to a string.
 @tangle darray.flx

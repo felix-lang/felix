@@ -135,6 +135,7 @@ Returns nul char (code 0) if the string is empty.
     | Slice_one (index) => string x.[index]
     endmatch
   ;
+  fun apply (s:slice[int], x:string) => subscript (x,s);
 
   fun subscript (x:string, gs:gslice[int]):string = {
     var r = "";
