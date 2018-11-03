@@ -43,7 +43,7 @@ open class CompactLinearPointers
   proc storeat[D,C] ( p:_wpclt< D, C >, v: C) = { _storeat (p,v); }
 
   // deref a pointer to compact linear component
-  fun _deref[mach,clv]: _rpclt<mach,clv> -> clv = "::flx::rtl::deref($t)";
+  fun _deref[mach,clv]: _rpclt<mach,clv> -> clv = "::flx::rtl::clt_deref($t)";
   fun deref[mach,clv] (p: _rpclt<mach,clv>) => _deref p;
 }
 

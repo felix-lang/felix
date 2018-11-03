@@ -1,0 +1,24 @@
+@title Stand Alone Tuple Pointer Integer (Constant) Projection Tuple domain
+@felix
+typedef t_t = int * string * double;
+typedef d_t = &t_t;
+var x : t_t = 1,"Hello",42.1;
+var px : d_t = &x;
+var p0 = proj 0 of d_t;
+var p1 = proj 1 of d_t;
+var p2 = proj 2 of d_t;
+println$ *px . p0;
+println$ *px . p1;
+println$ *px . p2;
+px . p0 <- 42;
+px . p1 <- "World";
+px . p2 <- 99.3;
+println$ x;
+@expect
+1
+Hello
+42.1
+(42, World, 99.3)
+@
+
+

@@ -262,6 +262,12 @@ test-dir:
 	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/test --outdir=${BUILDROOT}/test
 	for file in src/test/regress/rt/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file ${BUILDROOT}/test; done
 
+unit-dir:
+	mkdir -p ${BUILDROOT}/test/unit.projection
+	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/test/unit/projection \
+      --outdir=${BUILDROOT}/test/unit/projection
+
+
 tutopt-dir:
 	mkdir -p ${BUILDROOT}/tutopt
 	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/web/tutopt --outdir=${BUILDROOT}/test/tutopt
@@ -288,6 +294,10 @@ regress-check: test-dir
 	@echo "All of the following tests should pass"
 	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/regress/rt --regex='.*\.flx' ${BUILDROOT}/test
 
+unit-check: unit-dir
+	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --input \
+     --nonstop --indir=${BUILDROOT}/test/unit/projection --regex='.*\.flx' ${BUILDROOT}/test/unit/projection
+
 
 tut-check: tut-dir
 	# ============================================================
@@ -313,7 +323,7 @@ tutopt-check: tutopt-dir
 		--indir=${BUILDROOT}/test/tutopt --regex='.*\.flx' ${BUILDROOT}/test/tutopt
 
 
-test: regress-check tut-check tutopt-check extras-check
+test: unit-check regress-check tut-check tutopt-check extras-check
 fresh-test: src test
 
 install:

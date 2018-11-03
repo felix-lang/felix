@@ -6,7 +6,7 @@ open Flx_cexpr
 
 exception Recname of string
 
-let debug = false
+let debug = false 
 
 let si x = string_of_int x
 
@@ -39,6 +39,8 @@ closure forms yet.
   Note the pointer can still point to a compact linear value!
 *)
 let apply_pointer_prj syms bsym_table ge ge' sr (e,t) (ix:int) target codomain (_,argt as arg) =
+if debug then
+print_endline "Apply pointer projection to pointer";
   let clt t = islinear_type bsym_table t in
   let ate msg t1desc t2desc ixt expt = ate bsym_table syms.Flx_mtypes2.counter sr msg t1desc t2desc ixt expt in
   let a = arg in
@@ -54,7 +56,10 @@ let apply_pointer_prj syms bsym_table ge ge' sr (e,t) (ix:int) target codomain (
     if debug then print_endline ("Constant projection of pointer to compact-linear array");
     assert (0 <= ix && ix < n);
     let modulus = sizeof_linear_type bsym_table vt in 
-    let divisor = modulus * (n - ix - 1)  in
+    let ipow v i = match i with 0 -> 1 | _ -> v * ipow v (i-1) in
+    let divisor = ipow modulus (n - ix - 1)  in
+if debug then
+print_endline ("Divisor = " ^ string_of_int divisor);
     ce_call (ce_atom "::flx::rtl::clptr_t") [ge' a; ce_int divisor; ce_int modulus]
 
   (* if this is a constant projection of a pointer to a non-compact linear array *) 
@@ -110,6 +115,8 @@ let apply_pointer_prj syms bsym_table ge ge' sr (e,t) (ix:int) target codomain (
 
 (* Application of projection to compact linear pointer *)
 let apply_cltpointer_prj syms bsym_table ge ge' sr (e,t) (ix:int) (mach, target) codomain (_,argt as arg) =
+if debug then
+print_endline ("Apply projection to compact linear pointer");
   let clt t = islinear_type bsym_table t in
   let ate msg t1desc t2desc ixt expt = ate bsym_table syms.Flx_mtypes2.counter sr msg t1desc t2desc ixt expt in
   let a = arg in
@@ -130,6 +137,8 @@ let apply_cltpointer_prj syms bsym_table ge ge' sr (e,t) (ix:int) (mach, target)
     ce_call (ce_atom "::flx::rtl::applyprj") [ptr;prj]
 
   | BTYP_array (vt,BTYP_unitsum n) -> (* vt has to be compact linear *)
+if debug then
+print_endline (" .. Apply projection to compact linear pointeri: ARRAY CASE");
     let ipow v i = match i with 0 -> 1 | _ -> v * ipow v (i-1) in
     let modulus = Flx_btype.sizeof_linear_type bsym_table vt in 
     let divisor = ipow modulus (n - ix - 1) in

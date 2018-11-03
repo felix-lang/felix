@@ -732,7 +732,7 @@ inline clptr_t applyprj (clptr_t cp, clprj_t d)  {
 }
 
 // dereference
-inline cl_t deref(clptr_t q) { return *q.p / q.divisor % q.modulus; }
+inline cl_t clt_deref(clptr_t q) { return *q.p / q.divisor % q.modulus; }
 
 // storeat
 inline void storeat (clptr_t q, cl_t v) {

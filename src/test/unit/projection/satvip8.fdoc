@@ -1,0 +1,24 @@
+@title Stand Alone Tuple RW Pointer Integer (Constant) Projection Compact Linear array  
+@felix
+typedef t_t = 5^3;
+typedef d_t = &t_t;
+var x : t_t = `1:5,`3:5,`4:5;
+var px : d_t = &x;
+var p0 = proj 0 of d_t;
+var p1 = proj 1 of d_t;
+var p2 = proj 2 of d_t;
+println$ (*(px . p0)) . _strr;
+println$ (*(px . p1)) . _strr;
+println$ (*(px . p2)) . _strr;
+px . p0 <- `0:5;
+px . p1 <- `1:5;
+px . p2 <-  `2:5;
+println$ x._strr;
+@expect
+case 1 of 5
+case 3 of 5
+case 4 of 5
+(case 0 of 5,case 1 of 5,case 2 of 5)
+@
+
+

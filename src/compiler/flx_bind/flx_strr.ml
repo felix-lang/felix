@@ -101,7 +101,7 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
       be rs e
 
     | BTYP_unitsum 2 ->
-      be rs (`EXPR_cond (sr,(a,mks "false",mks "true")))
+      be rs (`EXPR_cond (sr,(a,mks "true",mks "false")))
 
     | BTYP_unitsum n ->
 (*

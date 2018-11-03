@@ -1,0 +1,16 @@
+@title Stand Alone Tuple Value Integer (Constant) Projection Compact Linear Tuple domain
+@felix
+typedef d_t = 2 * 3 * 4;
+var x : d_t = `1:2, `2:3, `3:4;
+var p0 = proj 0 of d_t;
+var p1 = proj 1 of d_t;
+var p2 = proj 2 of d_t;
+println$ x . p0 . _strr;
+println$ x . p1 . _strr;
+println$ x . p2 . _strr;
+@expect
+true
+case 2 of 3
+case 3 of 4
+@
+
