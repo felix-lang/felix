@@ -1,0 +1,13 @@
+@title Stand Alone  Precise Array value projection
+@felix
+typedef a_t = int^3;
+var x : a_t = 1,2,3;
+for i in ..[3] do
+  var  p = aproj i of a_t;
+  println$ x.p;
+done
+@expect
+1
+2
+3
+@

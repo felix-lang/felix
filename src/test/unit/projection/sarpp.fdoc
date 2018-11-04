@@ -21,7 +21,7 @@ println$ x._strr;
 @expect
 1
 Hello
-(a=42, b=Hello, c=99.3)
+(a=42,b='Hello',c=99.3)
 @
 
 

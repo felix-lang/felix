@@ -1,0 +1,32 @@
+@title Stand Alone  Precise Array pointer projection
+Checks RW, R and W pointers.
+@felix
+typedef a_t = int^3;
+var x : a_t = 1,2,3;
+
+var rwpx = &x;
+for i in ..[3] do
+  var  rwp = aproj i of &a_t;
+  println$ *rwpx.rwp;
+done
+
+var wpx = &>x;
+for i in ..[3] do
+  var wp = aproj i of &>a_t;
+  wpx . wp <- 42 - caseno i;
+done
+
+
+var rpx = &<x;
+for i in ..[3] do
+  var rp = aproj i of &<a_t;
+  println$ *rpx.rp;
+done
+@expect
+1
+2
+3
+42
+41
+40
+@

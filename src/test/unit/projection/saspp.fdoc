@@ -24,7 +24,7 @@ println$ x._strr;
 @expect
 1
 Hello
-X {a=42,b=Hello,c=99.3}
+X {a=42,b='Hello',c=99.3}
 @
 
 

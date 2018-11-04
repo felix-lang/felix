@@ -156,6 +156,13 @@ let bind_array_projection counter bsym_table sr (_,ix_t as v) t =
     let c = if iscompact_linear_product vt then btyp_cltpointer vt c else btyp_pointer c in
     bexpr_aprj v t c
 
+  (* WO pointer to array *)
+  | BTYP_wref (BTYP_array (base,  supt) as vt) ->
+    ate ix_t supt;
+    let c = base in 
+    let c = if iscompact_linear_product vt then btyp_cltwref vt c else btyp_wref c in
+    bexpr_aprj v t c
+
   (* RO pointer to array *)
   | BTYP_rref (BTYP_array (base,  supt) as vt) ->
     ate ix_t supt;

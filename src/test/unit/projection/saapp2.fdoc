@@ -1,0 +1,32 @@
+@title Stand Alone  Precise Array pointer projection compact linear
+Checks RW, R and W pointers.
+@felix
+typedef a_t = 5^3;
+var x : a_t = `1:5,`2:5,`3:5;
+
+var rwpx = &x;
+for i in ..[3] do
+  var  rwp = aproj i of &a_t;
+  println$ (*rwpx.rwp)._strr;
+done
+
+var wpx = &>x;
+for i in ..[3] do
+  var wp = aproj i of &>a_t;
+  wpx . wp <- ((41 - caseno i) % 5) :>> 5;
+done
+
+
+var rpx = &<x;
+for i in ..[3] do
+  var rp = aproj i of &<a_t;
+  println$ (*rpx.rp)._strr;
+done
+@expect
+case 1 of 5
+case 2 of 5
+case 3 of 5
+case 1 of 5
+case 0 of 5
+case 4 of 5
+@
