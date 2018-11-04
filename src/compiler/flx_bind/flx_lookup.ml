@@ -948,6 +948,106 @@ and lookup_name_with_sig
        end
      end
 
+   | [BTYP_rref (BTYP_inst (j,ts',_)) as d] ->
+     let bsym = try Some (Flx_bsym_table.find bsym_table j) with Not_found -> None in
+     begin match bsym with
+     | Some bsym ->
+(*
+       print_endline ("Found nominal type "^si j ^" in bound symbol table");
+*)
+       begin match Flx_bsym.bbdcl bsym with
+       | BBDCL_struct (vs,fields) 
+       | BBDCL_cstruct (vs, fields,_) ->
+         begin match
+            Flx_list.list_assoc_index_with_assoc fields name
+         with
+         | Some (k,ft) ->
+           (*
+           print_endline ("FOUND STRUCT FIELD " ^ name ^ " in bound table");
+           *)
+           let ft = 
+             try tsubst (Flx_bsym.sr bsym) vs ts' ft 
+             with _ -> print_endline "[lookup_name_with_sig] Hassle replacing vs with ts??"; assert false
+           in
+           Some (bexpr_prj k d (btyp_rref ft)) 
+         | None -> None
+         end
+       | _ -> None
+       end
+     | None -> 
+(*
+       print_endline ("Can't find nominal type " ^ si j ^ " in bound symbol table .. trying unbound table");
+*)
+       begin try
+         match hfind "lookup" state.sym_table j with
+         | { Flx_sym.symdef=SYMDEF_struct fields; vs=vs } 
+         | { Flx_sym.symdef=SYMDEF_cstruct (fields,_); vs=vs } ->
+           begin match
+              Flx_list.list_assoc_index_with_assoc fields name
+           with
+           | Some _ ->
+             print_endline ("FOUND STRUCT FIELD " ^ name ^ " in unbound table: FIXME!!");
+             assert false;
+             None
+           | None -> None
+           end
+         | _ -> None
+       with _ ->
+         print_endline ("Can't find nominal type " ^ si j ^ " in unbound symbol table????");
+         assert false
+       end
+     end
+
+   | [BTYP_wref (BTYP_inst (j,ts',_)) as d] ->
+     let bsym = try Some (Flx_bsym_table.find bsym_table j) with Not_found -> None in
+     begin match bsym with
+     | Some bsym ->
+(*
+       print_endline ("Found nominal type "^si j ^" in bound symbol table");
+*)
+       begin match Flx_bsym.bbdcl bsym with
+       | BBDCL_struct (vs,fields) 
+       | BBDCL_cstruct (vs, fields,_) ->
+         begin match
+            Flx_list.list_assoc_index_with_assoc fields name
+         with
+         | Some (k,ft) ->
+           (*
+           print_endline ("FOUND STRUCT FIELD " ^ name ^ " in bound table");
+           *)
+           let ft = 
+             try tsubst (Flx_bsym.sr bsym) vs ts' ft 
+             with _ -> print_endline "[lookup_name_with_sig] Hassle replacing vs with ts??"; assert false
+           in
+           Some (bexpr_prj k d (btyp_wref ft)) 
+         | None -> None
+         end
+       | _ -> None
+       end
+     | None -> 
+(*
+       print_endline ("Can't find nominal type " ^ si j ^ " in bound symbol table .. trying unbound table");
+*)
+       begin try
+         match hfind "lookup" state.sym_table j with
+         | { Flx_sym.symdef=SYMDEF_struct fields; vs=vs } 
+         | { Flx_sym.symdef=SYMDEF_cstruct (fields,_); vs=vs } ->
+           begin match
+              Flx_list.list_assoc_index_with_assoc fields name
+           with
+           | Some _ ->
+             print_endline ("FOUND STRUCT FIELD " ^ name ^ " in unbound table: FIXME!!");
+             assert false;
+             None
+           | None -> None
+           end
+         | _ -> None
+       with _ ->
+         print_endline ("Can't find nominal type " ^ si j ^ " in unbound symbol table????");
+         assert false
+       end
+     end
+
 
    | [BTYP_record (fields) as d] ->
      begin match

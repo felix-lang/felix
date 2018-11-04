@@ -1,0 +1,19 @@
+@title Stand Alone struct Value Projection 
+@felix
+struct X { a:int; b:string; c:double; };
+typedef d_t = X;
+
+var x : d_t = X (a=1,b="Hello",c=42.1);
+var p0 = a of d_t;
+var p1 = b of d_t;
+var p2 = c of d_t;
+println$ x . p0;
+println$ x . p1;
+println$ x . p2;
+@expect
+1
+Hello
+42.1
+@
+
+

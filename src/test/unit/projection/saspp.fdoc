@@ -1,0 +1,30 @@
+@title Stand Alone Struct Pointer Projection 
+Checks RW, R and W pointers.
+@felix
+struct X { a:int; b:string; c:double; };
+typedef s_t = X;
+
+typedef rwd_t = &s_t;
+typedef rd_t = &<s_t;
+typedef wd_t = &>s_t;
+
+var x : s_t = X (a=1,b="Hello",c=42.1);
+var rwpx : rwd_t = &x;
+var rpx : rd_t = &<x;
+var wpx : wd_t = &>x;
+
+var rwp = a of rwd_t;
+var rp = b of rd_t;
+var wp = c of wd_t;
+println$ *(rwpx . rwp);
+println$ *(rpx . rp);
+rwpx . rwp <- 42;
+wpx . wp <- 99.3;
+println$ x._strr;
+@expect
+1
+Hello
+X {a=42,b=Hello,c=99.3}
+@
+
+
