@@ -1,24 +1,26 @@
-@title Stand Alone Tuple RW Pointer Integer (Constant) Projection Array domain
+@title Stand Alone Tuple Pointer Integer (Constant) Projection Array domain
+Checks RW, R and W pointers.
 @felix
 typedef t_t = int * int * int ;
-typedef d_t = &t_t;
+typedef rwd_t = &t_t;
+typedef rd_t = &<t_t;
+typedef wd_t = &>t_t;
 var x : t_t = 1,2,3;
-var px : d_t = &x;
-var p0 = proj 0 of d_t;
-var p1 = proj 1 of d_t;
-var p2 = proj 2 of d_t;
-println$ *(px . p0);
-println$ *(px . p1);
-println$ *(px . p2);
-px . p0 <- 4;
-px . p1 <- 5;
-px . p2 <- 6;
+var rwpx : rwd_t = &x;
+var rpx : rd_t = &<x;
+var wpx : wd_t = &>x;
+var rwp0 = proj 0 of rwd_t;
+var rp1 = proj 1 of rd_t;
+var wp2 = proj 2 of wd_t;
+println$ *(rwpx . rwp0);
+println$ *(rpx . rp1);
+rwpx . rwp0 <- 4;
+wpx . wp2 <- 6;
 println$ x;
 @expect
 1
 2
-3
-(4, 5, 6)
+(4, 2, 6)
 @
 
 

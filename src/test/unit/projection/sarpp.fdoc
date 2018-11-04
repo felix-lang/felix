@@ -1,0 +1,27 @@
+@title Stand Alone Record Pointer Projection 
+Checks RW, R and W pointers.
+@felix
+typedef r_t = (a:int, b:string, c:double);
+typedef rwd_t = &r_t;
+typedef rd_t = &<r_t;
+typedef wd_t = &>r_t;
+var x : r_t = (a=1,b="Hello",c=42.1);
+var rwpx : rwd_t = &x;
+var rpx : rd_t = &<x;
+var wpx : wd_t = &>x;
+
+var rwp = a of rwd_t;
+var rp = b of rd_t;
+var wp = c of wd_t;
+println$ *(rwpx . rwp);
+println$ *(rpx . rp);
+rwpx . rwp <- 42;
+wpx . wp <- 99.3;
+println$ x._strr;
+@expect
+1
+Hello
+(a=42, b=Hello, c=99.3)
+@
+
+

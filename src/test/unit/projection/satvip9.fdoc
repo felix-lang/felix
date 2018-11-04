@@ -1,0 +1,44 @@
+@title Stand Alone Tuple RW Pointer Integer (Constant) Projection Compact Linear tuple pointer
+Mouthful! Given a compact linear tuple of tuples, a pointer projection
+can be first applied to the machine address of the outer tuple,
+to get a compact linear pointer. Since that too points at a compact
+linear value, a second projection can be applied to get a compact
+linear pointer to the inner value.
+
+This test is known to be required because the application of a projection
+to a compact linear pointer producing a compact linear pointer is NOT
+the same as the application of a projection to a machine pointer.
+@felix
+typedef t0_t = 2 * 3;             // inner tuple types
+typedef t1_t = 4 * 5;
+typedef t_t = t0_t * t1_t;        // outer tuple type
+typedef d_t = &t_t;               // outer pointer type
+typedef d0_t = _pclt<t_t,t0_t>;   // inner pointer types
+typedef d1_t = _pclt<t_t,t1_t>;
+ 
+var x : t_t = (`1:2,`2:3),(`3:4,`4:5);
+var px : d_t = &x;
+var p0 = proj 0 of d_t;           // outer projections
+var p1 = proj 1 of d_t;
+var p0_0 = proj 0 of d0_t;        // inner projections
+var p0_1 = proj 1 of d0_t;
+var p1_0 = proj 0 of d1_t;
+var p1_1 = proj 1 of d1_t;
+var px0 = px . p0;  // outer pointers
+var px1 = px . p1;
+var px0_0 = px0 . p0_0; // inner pointers
+var px0_1 = px0 . p0_1;
+var px1_0 = px1 . p1_0;
+var px1_1 = px1 . p1_1;
+println$ (*px0_0) . _strr;
+println$ (*px0_1) . _strr;
+println$ (*px1_0) . _strr;
+println$ (*px1_1) . _strr;
+@expect
+true
+case 2 of 3
+case 3 of 4
+case 4 of 5
+@
+
+

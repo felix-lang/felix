@@ -44,6 +44,45 @@ match unfold "flx_lookup" ta with
   | _ -> assert false
   end
 
+(* pointer to record *)
+| BTYP_rref(BTYP_record _ as r) 
+| BTYP_rref(BTYP_polyrecord _ as r) ->
+  begin match unfold "flx_lookup" r with
+  | BTYP_polyrecord (es,_) 
+  | BTYP_record (es) ->
+    if (ts != []) then raise Flx_dot.OverloadResolutionError; 
+    let k = List.length es in
+    let field_name = name in
+    begin match Flx_list.list_index (List.map fst es) field_name with
+    | Some n -> 
+      let t = List.assoc field_name es in
+      let t = bexpr_get_named (btyp_rref t) name a in
+      t
+    | None -> 
+      raise Flx_dot.OverloadResolutionError
+    end
+  | _ -> assert false
+  end
+(* pointer to record *)
+| BTYP_wref(BTYP_record _ as r) 
+| BTYP_wref(BTYP_polyrecord _ as r) ->
+  begin match unfold "flx_lookup" r with
+  | BTYP_polyrecord (es,_) 
+  | BTYP_record (es) ->
+    if (ts != []) then raise Flx_dot.OverloadResolutionError; 
+    let k = List.length es in
+    let field_name = name in
+    begin match Flx_list.list_index (List.map fst es) field_name with
+    | Some n -> 
+      let t = List.assoc field_name es in
+      let t = bexpr_get_named (btyp_wref t) name a in
+      t
+    | None -> 
+      raise Flx_dot.OverloadResolutionError
+    end
+  | _ -> assert false
+  end
+
 (* Instance *)
 | BTYP_inst (i,ts',_) ->
   begin try

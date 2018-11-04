@@ -953,11 +953,7 @@ and lookup_name_with_sig
      begin match
        Flx_list.list_assoc_index_with_assoc fields name
      with
-     | Some (k,ft) ->
-(*
-       print_endline ("projection: FOUND RECORD FIELD " ^ name);
-*)
-       Some (bexpr_prj k d ft)
+     | Some (k,ft) -> Some (bexpr_prj k d ft)
      | None -> None
      end
 
@@ -972,11 +968,7 @@ and lookup_name_with_sig
      begin match
        Flx_list.list_assoc_index_with_assoc fields name
      with
-     | Some (k,ft) ->
-(*
-       print_endline ("projection: FOUND RECORD POINTER FIELD " ^ name);
-*)
-       Some (bexpr_prj k d (btyp_pointer ft))
+     | Some (k,ft) -> Some (bexpr_prj k d (btyp_pointer ft))
      | None -> None
      end
 
@@ -985,6 +977,36 @@ and lookup_name_with_sig
      then 
       let ft = List.assoc name fields in
       Some (bexpr_rprj name d (btyp_pointer ft))  (* MIGHT REQUIRE FIXPOINT FIXUP! *)
+     else None
+
+   | [BTYP_rref (BTYP_record (fields)) as d] ->
+     begin match
+       Flx_list.list_assoc_index_with_assoc fields name
+     with
+     | Some (k,ft) -> Some (bexpr_prj k d (btyp_rref ft))
+     | None -> None
+     end
+
+   | [BTYP_rref (BTYP_polyrecord (fields,v)) as d] ->
+     if List.mem_assoc name fields 
+     then 
+      let ft = List.assoc name fields in
+      Some (bexpr_rprj name d (btyp_rref ft))  (* MIGHT REQUIRE FIXPOINT FIXUP! *)
+     else None
+
+   | [BTYP_wref (BTYP_record (fields)) as d] ->
+     begin match
+       Flx_list.list_assoc_index_with_assoc fields name
+     with
+     | Some (k,ft) -> Some (bexpr_prj k d (btyp_wref ft))
+     | None -> None
+     end
+
+   | [BTYP_wref (BTYP_polyrecord (fields,v)) as d] ->
+     if List.mem_assoc name fields 
+     then 
+      let ft = List.assoc name fields in
+      Some (bexpr_rprj name d (btyp_wref ft))  (* MIGHT REQUIRE FIXPOINT FIXUP! *)
      else None
 
    | _ -> None
