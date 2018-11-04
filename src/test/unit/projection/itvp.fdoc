@@ -1,0 +1,14 @@
+@title Inline Tuple Value Integer (Constant) Projection Tuple domain
+@felix
+typedef d_t = int * string * double;
+var x : d_t = 1,"Hello",42.1;
+println$ x . 0;
+println$ x . 1;
+println$ x . 2;
+@expect
+1
+Hello
+42.1
+@
+
+

@@ -1,0 +1,14 @@
+@title Inline Tuple Value Integer (Constant) Projection Small Array domain
+@felix
+typedef d_t = int ^ 3;
+var x : d_t = 1,2,3;
+println$ x . 0;
+println$ x . 1;
+println$ x . 2;
+@expect
+1
+2
+3
+@
+
+

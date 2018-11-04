@@ -1,0 +1,12 @@
+@title Inline Tuple Value Precise (Variable) Projection Small Array domain
+@felix
+typedef d_t = int ^ 3;
+var x : d_t = 1,2,3;
+for i in ..[3] perform
+  println$ x . i;
+@expect
+1
+2
+3
+@
+

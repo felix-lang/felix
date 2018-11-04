@@ -1,0 +1,14 @@
+@title Inline Tuple Value Integer (Constant) Projection Compact Linear Array domain
+@felix
+typedef d_t = 5 ^ 3;
+var x : d_t = `1:5,`2:5,`4:5;
+println$ x . 0 . _strr;
+println$ x . 1 . _strr;
+println$ x . 2 . _strr;
+@expect
+case 1 of 5
+case 2 of 5
+case 4 of 5
+@
+
+

@@ -1,0 +1,13 @@
+@title Inline Tuple Value Integer (Constant) Projection Compact Linear Tuple domain
+@felix
+typedef d_t = 2 * 3 * 4;
+var x : d_t = `1:2,`2:3,`3:4;
+println$ x . 0 . _strr;
+println$ x . 1 . _strr;
+println$ x . 2 . _strr;
+@expect
+true
+case 2 of 3
+case 3 of 4
+@
+
