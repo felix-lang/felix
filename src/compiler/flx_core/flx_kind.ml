@@ -38,11 +38,12 @@ type keqns_t = keqn_t list
 
 let ksolve_subtypes add_eqn lhs rhs =
   match lhs, rhs with
-  | KIND_type,KIND_type
-  | KIND_type,KIND_unitsum
-  | KIND_type,KIND_compactlinear
+  | KIND_type, KIND_type
+  | KIND_type, KIND_unitsum
+  | KIND_type, KIND_compactlinear
 
   | KIND_compactlinear, KIND_unitsum
+  | KIND_compactlinear, KIND_compactlinear
 
   | KIND_unitsum, KIND_unitsum
 

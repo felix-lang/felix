@@ -85,6 +85,27 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
       in 
       be rs e
 
+    | BTYP_array (vl,index) when Flx_btype.islinear_type bsym_table index  -> 
+      let n = 
+        try Some (sizeof_linear_type bsym_table index)
+        with Invalid_int_of_unitsum -> None
+      in
+      begin match n with
+      | Some n ->
+        let count = ref 0 in
+        let e = cats (
+          List.fold_left (fun acc _ -> 
+            let res = if (!count) = 0 then vrep1 (!count) a else vrep2 (!count) a in
+            incr count;
+            cats acc res
+          )
+          (mks "(")
+          (Flx_list.nlist n) 
+          ) (mks ")") 
+        in 
+        be rs e
+     | None -> Flx_exceptions.syserr sr ("can't decode array index type " ^ Flx_print.sbt bsym_table index) 
+     end
       
     | BTYP_tuple ls ->
       let count = ref 0 in

@@ -112,7 +112,6 @@ Cases
 *)
 
 
-exception TryNext
   
 let cal_bind_apply 
   bsym_table state be bt env build_env
@@ -154,105 +153,12 @@ let cal_bind_apply
         begin 
           match generic_function_dispatcher bsym_table state.Flx_lookup_state.counter sr name a with 
           | Some x -> x
-          | None ->raise TryNext (* not a known generic *) 
+          | None ->raise Flx_exceptions.TryNext (* not a known generic *) 
          end
-      | _ -> raise TryNext (* function wasn't a name *)
-      with TryNext ->
+      | _ -> raise Flx_exceptions.TryNext (* function wasn't a name *)
+      with Flx_exceptions.TryNext ->
    
-      (* ---------------------------------------------------------- *)
-      (* special case, constant tuple or array projection given by integer *) 
-      (* ---------------------------------------------------------- *)
-      try match f' with
-      | `EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=s}) ->
-        let n = int_of_string s in
-        Flx_dot.handle_constant_projection bsym_table sr a ta n
-      | _ -> raise Flx_dot.OverloadResolutionError
-      with Flx_dot.OverloadResolutionError ->
-      
-      (* ---------------------------------------------------------- *)
-      (* special case, constant slice of tuple *) 
-      (* ---------------------------------------------------------- *)
-      try 
-        match ta with
-        | BTYP_tuple ls ->
-          let tmin = 0 and tmax = List.length ls - 1 in
-          let smin, smax = Flx_cal_slice.cal_slice tmin tmax f' in 
-          let sls = ref [] in
-          for i = smin to smax do
-            sls := i :: !sls
-          done;
-          let sls = List.rev_map (fun i -> `EXPR_get_n (sr,(i,a'))) !sls in
-          be (`EXPR_tuple (sr,sls))
-        | _ -> raise Flx_dot.OverloadResolutionError
-      with Flx_dot.OverloadResolutionError ->
-
-      (* ---------------------------------------------------------- *)
-      (* special case, constant slice of small linear array *) 
-      (* ---------------------------------------------------------- *)
-      try 
-        match ta with
-        | BTYP_array (base,BTYP_unitsum n) ->
-          let tmin = 0 and tmax = n - 1 in
-          let smin, smax = Flx_cal_slice.cal_slice tmin tmax f' in 
-          if smax - smin < 20 then begin 
-            let sls = ref [] in
-            for i = smin to smax do
-              sls := i :: !sls
-            done;
-            let sls = List.rev_map (fun i -> `EXPR_get_n (sr,(i,a'))) !sls in
-            be (`EXPR_tuple (sr,sls))
-          end else begin
-            let first = `TYP_unitsum smin in
-            let len = `TYP_unitsum (smax - smin + 1) in
-            let subarray = `EXPR_name (sr,"subarray",[first;len]) in
-            be (`EXPR_apply (sr,(subarray,a')))
-          end
-        | _ -> raise Flx_dot.OverloadResolutionError
-      with Flx_dot.OverloadResolutionError ->
-
-      (* ---------------------------------------------------------- *)
-      (* special case, constant slice of tuple pointer *) 
-      (* ---------------------------------------------------------- *)
-      try 
-        match ta with
-        | BTYP_pointer (BTYP_tuple ls) ->
-          let tmin = 0 and tmax = List.length ls - 1 in
-          let smin, smax = Flx_cal_slice.cal_slice tmin tmax f' in 
-          let sls = ref [] in
-          for i = smin to smax do
-            sls := i :: !sls
-          done;
-          let sls = List.rev_map (fun i -> `EXPR_get_n (sr,(i,a'))) !sls in
-          be (`EXPR_tuple (sr,sls))
-        | _ -> raise Flx_dot.OverloadResolutionError
-      with Flx_dot.OverloadResolutionError ->
-
-      (* ---------------------------------------------------------- *)
-      (* special case, integer expression as array projection  *) 
-      (* ---------------------------------------------------------- *)
-      try 
-        let f = try be f' with _ -> raise Flx_dot.OverloadResolutionError in
-        let int_t = bt sr (`TYP_name (sr,"int",[])) in
-        if snd f = int_t then 
-        begin
-          match ta with
-          | BTYP_array _ ->
-            Flx_dot.handle_array_projection bsym_table int_t sr a ta f
-          | _ -> raise Flx_dot.OverloadResolutionError
-        end
-        else raise Flx_dot.OverloadResolutionError
-      with Flx_dot.OverloadResolutionError ->  
-      
-      (* ---------------------------------------------------------- *)
-      (* special case, unitsum expression as tuple or array projection  *) 
-      (* ---------------------------------------------------------- *)
-      try match f' with
-      (* a dirty hack .. doesn't check unitsum is right size or type *)
-      | `EXPR_typed_case (sr,n,sumt) when (match bt sr sumt with | BTYP_unitsum _ -> true | _ -> false)  ->
-        Flx_dot.handle_constant_projection bsym_table sr a ta n
-      | _ -> raise Flx_dot.OverloadResolutionError
-      with Flx_dot.OverloadResolutionError ->
-
+ 
       (* ---------------------------------------------------------- *)
       (* special case, name as record projection *)
       (* NOTE: this tries to handle projections of structs too *)
@@ -280,42 +186,14 @@ let cal_bind_apply
           sr f' a
       with Flx_dot.OverloadResolutionError ->
 
-      (* ---------------------------------------------------------- *)
-      (* special case, array projection  *) 
-      (* ---------------------------------------------------------- *)
       try
-        let (bf,tf) as f = 
-          try be f' 
-          with 
-          | Flx_exceptions.SimpleNameNotFound _ as x -> raise x
-          | exn -> raise Flx_dot.OverloadResolutionError 
-        in
-        match tf, ta with
-        (* Check for array projection *)
-        | ixt1, BTYP_array (t,ixt2) when ixt1 = ixt2 -> (* SHOULD USE UNIFICATION *) 
-          let prj = bexpr_aprj f ta t in
-          bexpr_apply t (prj,a)
-        | _ -> raise Flx_dot.OverloadResolutionError
-      with Flx_dot.OverloadResolutionError ->
+        Flx_bind_inline_projection.bind_inline_projection bsym_table be bt sr f' a' ta a  
+      with Flx_exceptions.TryNext ->
+      try
+        Flx_bind_slice.bind_constant_slice bsym_table be bt sr f' a' ta a 
+      with Flx_exceptions.TryNext ->
 
-      (* ---------------------------------------------------------- *)
-      (* special case, array pointer projection  *) 
-      (* ---------------------------------------------------------- *)
-      try
-        let (bf,tf) as f = 
-          try be f' 
-          with 
-          | Flx_exceptions.SimpleNameNotFound _ as x -> raise x
-          | exn -> raise Flx_dot.OverloadResolutionError 
-        in
-        match tf, ta with
-        (* Check for array projection *)
-        | ixt1, BTYP_pointer (BTYP_array (t,ixt2)) when ixt1 = ixt2 -> (* SHOULD USE UNIFICATION *) 
-          let pt = btyp_pointer t in
-          let prj = bexpr_aprj f ta pt in
-          bexpr_apply pt (prj,a)
-        | _ -> raise Flx_dot.OverloadResolutionError
-      with Flx_dot.OverloadResolutionError ->
+
       (*
         print_endline ("Can't interpret apply function "^string_of_expr f'^" as projection, trying as an actual function");
       *)

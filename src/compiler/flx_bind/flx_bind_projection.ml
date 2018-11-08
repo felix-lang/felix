@@ -45,6 +45,18 @@ let bind_projection bsym_table sr v t =
       let c = if iscompact_linear_product vt then btyp_cltpointer vt c else btyp_pointer c in
       bexpr_prj v t c
 
+  (* Constant RO pointer to array projection *)
+  | BTYP_rref (BTYP_array (base, _) as vt) ->
+      let c = base in 
+      let c = if iscompact_linear_product vt then btyp_cltrref vt c else btyp_rref c in
+      bexpr_prj v t c
+
+  (* WO pointer to array *)
+  | BTYP_wref (BTYP_array (base,_) as vt) ->
+      let c = base in
+      let c = if iscompact_linear_product vt then btyp_cltwref vt c else btyp_wref c  in
+      bexpr_prj v t c
+
   (* Constant RO pointer to tuple projection *)
   | BTYP_rref (BTYP_tuple ts as vt) ->
     let n = List.length ts in
@@ -53,12 +65,6 @@ let bind_projection bsym_table sr v t =
         " negative or >= " ^ si n ^ "for tuple type " ^ sbt bsym_table t)
     else
       let c = List.nth ts v in
-      let c = if iscompact_linear_product vt then btyp_cltrref vt c else btyp_rref c in
-      bexpr_prj v t c
-
-  (* Constant RO pointer to array projection *)
-  | BTYP_rref (BTYP_array (base, _) as vt) ->
-      let c = base in 
       let c = if iscompact_linear_product vt then btyp_cltrref vt c else btyp_rref c in
       bexpr_prj v t c
 
@@ -71,12 +77,6 @@ let bind_projection bsym_table sr v t =
     else
       let c = List.nth ts v in
       let c = if iscompact_linear_product vt then btyp_cltwref vt c else btyp_wref c in
-      bexpr_prj v t c
-
-  (* WO pointer to array *)
-  | BTYP_wref (BTYP_array (base,_) as vt) ->
-      let c = base in
-      let c = if iscompact_linear_product vt then btyp_cltwref vt c else btyp_wref c  in
       bexpr_prj v t c
 
   (* Compact Linear Type Pointers *)
@@ -136,6 +136,9 @@ let bind_projection bsym_table sr v t =
 
 (* Array projections, non-constant projection index *)
 let bind_array_projection counter bsym_table sr (_,ix_t as v) t = 
+(*
+print_endline ("binding array projection, array type = " ^ sbt bsym_table t);
+*)
   let ate t1 t2 = 
     if not (Flx_typeeq.type_eq (sbt bsym_table) counter t1 t2) then
     clierr sr ("bind_array_projection: index type must equal array index type, got:\n" ^
@@ -154,21 +157,34 @@ let bind_array_projection counter bsym_table sr (_,ix_t as v) t =
     ate ix_t supt;
     let c = base in
     let c = if iscompact_linear_product vt then btyp_cltpointer vt c else btyp_pointer c in
-    bexpr_aprj v t c
+    let (_,pt as p) = bexpr_aprj v t c in
+(*
+print_endline ("Projection type " ^ sbt bsym_table pt);
+*)
+    p
 
   (* WO pointer to array *)
   | BTYP_wref (BTYP_array (base,  supt) as vt) ->
     ate ix_t supt;
     let c = base in 
     let c = if iscompact_linear_product vt then btyp_cltwref vt c else btyp_wref c in
-    bexpr_aprj v t c
+    let (_,pt as p) = bexpr_aprj v t c in
+(*
+print_endline ("Projection type " ^ sbt bsym_table pt);
+*)
+    p
+    
 
   (* RO pointer to array *)
   | BTYP_rref (BTYP_array (base,  supt) as vt) ->
     ate ix_t supt;
     let c = base in 
     let c = if iscompact_linear_product vt then btyp_cltrref vt c else btyp_rref c in
-    bexpr_aprj v t c
+    let (_,pt as p) = bexpr_aprj v t c in
+(*
+print_endline ("Projection type " ^ sbt bsym_table pt);
+*)
+    p
 
   (* Compact Linear Type Pointers *)
   (* RW pointer to array *)

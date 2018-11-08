@@ -309,8 +309,9 @@ print_endline ("Processing ast_name "^xid id^" in xexpr");
   | Lst [Id "ast_true"; sr ] -> `EXPR_typed_case (xsr sr,1,`TYP_unitsum 2)
   | Lst [Id "ast_unitsum_literal";  sr; Int i; t] -> `EXPR_typed_case (xsr sr,ii i,ti t)
   
-  | Lst [Id "ast_projection";  Int i; t] -> `EXPR_projection (sr,ii i,ti t)
-  | Lst [Id "ast_array_projection";  index; t] -> `EXPR_array_projection (sr,xexpr_t sr index,ti t)
+  | Lst [Id "ast_projection";  sr; Int i; t] -> `EXPR_projection (xsr sr,ii i,ti t)
+  | Lst [Id "ast_identity_function"; sr; t] -> `EXPR_identity_function (xsr sr, ti t)
+  | Lst [Id "ast_array_projection";  sr; index; t] -> `EXPR_array_projection (xsr sr,xexpr_t (xsr sr) index,ti t)
   | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> `EXPR_lookup (sr,(ex e, s,map ti ts))
 
   | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> 

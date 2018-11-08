@@ -409,9 +409,9 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
   | CS.Str_template s -> s
   in
   let rec gexe exe =
-    (*
+(*
     print_endline (string_of_bexe bsym_table 0 exe);
-    *)
+*)
     (if with_comments then "    // # " ^ Flx_srcref.short_string_of_src sr ^ "\n"
     else "") ^
     match exe with
@@ -838,7 +838,10 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       begin match lt with
       (* use C++ procedure for compact linear pointers *)
       | BTYP_cltpointer _ ->
-        "     storeat("^ge sr l ^","^ge sr r^"); // cltpointer\n";
+(*
+print_endline ("Storeat, clt case: " ^ sbe bsym_table l ^ " <- " ^ sbe bsym_table r);
+*)
+        "     ::flx::rtl::storeat("^ge sr l ^","^ge sr r^"); // cltpointer\n";
       (* use standard syntax for ordinary pointers *)
       | BTYP_pointer _ ->
        "      *"^ge sr l^"="^ge sr r ^"; // storeat\n"

@@ -532,7 +532,7 @@ val num:parsa[token_t, ast_t] =
 
 @felix
 //Identifiers
-val ident:parsa[token_t, ast_t] =
+val xident:parsa[token_t, ast_t] =
   token (
     fun (t:token_t):opt[ast_t] =>
       match t with
@@ -705,7 +705,7 @@ bind := identifier '=' expr
 
 @felix
 var bind : parsa[token_t, ast_t] =
-   (((ident &~ equals) >=~ fst[ast_t, unit]) &~ expr) >=~ 
+   (((xident &~ equals) >=~ fst[ast_t, unit]) &~ expr) >=~ 
    (fun (p : ast_t * ast_t) : ast_t => 
       match p.0 with
       | E_var e => E_let (e, p.1)
@@ -733,7 +733,7 @@ fact :=
 
 @felix
 fun fact (toks : list[token_t]) : parsed[token_t, ast_t] =>
-  (num |~ ident |~ 
+  (num |~ xident |~ 
     ((open_paren &~ expr &~ close_paren) >=~ 
         (fun (p:(unit * ast_t), u:unit) : ast_t => p.1))
    ) toks

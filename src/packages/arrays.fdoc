@@ -520,6 +520,27 @@ open class Farray
     return o;
   }
 
+  fun compact_linear_subarray[
+    FIRST:UNITSUM,
+    LEN:UNITSUM,
+    T:COMPACTLINEAR,
+    N:UNITSUM, 
+    K:UNITSUM=_unitsum_min(LEN, N `- FIRST)
+  ] 
+  (a:T^N) : T ^ K
+  = 
+  {
+    var o : T ^ K;
+    for i in ..[K] do
+      var first = Typing::arrayindexcount[FIRST].int;
+      var outix = caseno i;
+      var inpix = (first + outix) :>> N; // checked at run time?
+      &o.i <- a.inpix;
+    done
+    return o;
+  }
+
+
   //$ Append value to end of an array (functional).
   fun join[T, N:UNITSUM] (x:array[T, N]) (y:T):array[T, N `+ 1] = {
     var o : array[T, N `+ 1];

@@ -113,6 +113,9 @@ and string_of_expr (e:expr_t) =
     "(proj " ^ si v ^
     " of " ^ string_of_typecode t ^ ")"
 
+  | `EXPR_identity_function (_,t) ->
+    "(ident of " ^ string_of_typecode t ^ ")"
+
   | `EXPR_array_projection (_,v,t) ->
     "(aproj " ^ se v ^
     " of " ^ string_of_typecode t ^ ")"

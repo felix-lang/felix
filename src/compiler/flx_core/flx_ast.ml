@@ -157,6 +157,7 @@ and expr_t = [
   | `EXPR_typed_case of Flx_srcref.t * int * typecode_t
   | `EXPR_projection of Flx_srcref.t * int * typecode_t
   | `EXPR_array_projection of Flx_srcref.t * expr_t * typecode_t
+  | `EXPR_identity_function of Flx_srcref.t * typecode_t
   | `EXPR_ainj of Flx_srcref.t * expr_t * typecode_t
   | `EXPR_rnprj of Flx_srcref.t * string * int * expr_t
   | `EXPR_lookup of Flx_srcref.t * (expr_t * Flx_id.t * typecode_t list)
@@ -801,6 +802,7 @@ let src_of_expr (e : expr_t) = match e with
   | `EXPR_case_tag (s,_)
   | `EXPR_typed_case (s,_,_)
   | `EXPR_projection (s,_,_)
+  | `EXPR_identity_function (s,_)
   | `EXPR_array_projection (s,_,_)
   | `EXPR_ainj (s,_,_)
   | `EXPR_rnprj (s,_,_,_)

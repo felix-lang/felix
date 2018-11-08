@@ -266,8 +266,10 @@ syntax_unit:
 
 syntax_init: 
    {
+(*
     let file = Flx_srcref.file (Flx_parse_srcref.getsr dyp) in
     print_endline ("syninit: Parsing " ^ file)
+*)
    }
 
 compilation_unit:

@@ -26,9 +26,9 @@ assert ijk . 0 == i;
 assert ijk . 1 == j;
 assert ijk . 2 == k;
 
-assert ijk . 0 :>> int == 1;
-assert ijk . 1 :>> int == 2;
-assert ijk . 2 :>> int == 3;
+assert (ijk . 0 :>> int) == 1;
+assert (ijk . 1 :>> int) == 2;
+assert (ijk . 2 :>> int) == 3;
 
 // Encoding test
 println$ "Encoding test";
@@ -40,7 +40,7 @@ for var ii in 0 upto 2 do
       k = kk :>> 5;
       ijk = i,j,k;
       println$ ijk.0.str + "," + ijk.1.str + "," + ijk.2.str+" encoding=" + (ijk :>>int) .str;
-      assert 20 * (i:>>int) + 5 * (j:>>int) + (k:>>int) == ijk :>>int;
+      assert 20 * (i:>>int) + 5 * (j:>>int) + (k:>>int) == (ijk :>>int);
     done
   done
 done
@@ -54,7 +54,7 @@ println$ "Decoding test";
 for var v in 0 upto 59 do
   ijk = v :>> (3 * 4 * 5);
   println$ ijk.0.str + "," + ijk.1.str + "," + ijk.2.str+" encoding=" + (ijk :>>int) .str;
-  assert 20 * (ijk.0 :>>int)+ 5 * (ijk.1:>>int)+ (ijk.2 :>>int) == ijk :>>int;
+  assert 20 * (ijk.0 :>>int)+ 5 * (ijk.1:>>int)+ (ijk.2 :>>int) == (ijk :>>int);
 done
 
 // Assignment test
@@ -69,7 +69,7 @@ for ii in 0 upto 2 do
       &ijk.1 <- j;
       &ijk.2 <- k;
       println$ ijk.0.str + "," + ijk.1.str + "," + ijk.2.str+" encoding=" + (ijk :>>int) .str;
-      assert 20 * (i:>>int) + 5 * (j:>>int) + (k:>>int) == ijk :>>int;
+      assert 20 * (i:>>int) + 5 * (j:>>int) + (k:>>int) == (ijk :>>int);
     done
   done
 done

@@ -1,0 +1,36 @@
+@title Compact Linear Matrx pointer projections
+@felix
+// Array
+var x : (7 ^ 3) ^ 2 = ((`1:7,`2:7,`3:7),(`4:7,`5:7,`6:7));
+println$ x . _strr;
+
+// Matrix!
+var y = x :>> (7^(2*3));
+println$ y . _strr;
+
+var rwpy = &y;
+var rpy = &<y;
+var wpy = &>y;
+
+// inline projection
+for i in ..[2] for j in ..[3] do 
+  rwpy . (i,j) <- (caseno (y. (i,j)) + 42) % 7  :>> 7;
+  wpy . (i,j) <-  (caseno (*rpy . (i,j)) * 2 + 1) % 7 :>> 7;
+done
+println$ y . _strr;
+
+// stand-alone projection
+for i in ..[2] for j in ..[3] do
+  var rwpr = aproj (i,j) of &(7 ^ (2 * 3));
+  var rpr = aproj (i,j) of &<(7 ^ (2 * 3));
+  var wpr = aproj (i,j) of &>(7 ^ (2 * 3));
+  rwpy . rwpr <- ((caseno (y. (i,j)) + 42) % 7) :>> 7;
+  wpy . wpr <-  (caseno (*(rpy . rpr)) * 2 + 1) % 7 :>> 7;
+done
+println$ y . _strr;
+@expect
+((case 1 of 7,case 2 of 7,case 3 of 7),(case 4 of 7,case 5 of 7,case 6 of 7))
+(case 1 of 7,case 2 of 7,case 3 of 7,case 4 of 7,case 5 of 7,case 6 of 7)
+(case 3 of 7,case 5 of 7,case 0 of 7,case 2 of 7,case 4 of 7,case 6 of 7)
+(case 0 of 7,case 4 of 7,case 1 of 7,case 5 of 7,case 2 of 7,case 6 of 7)
+@

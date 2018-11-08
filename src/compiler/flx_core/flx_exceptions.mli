@@ -18,6 +18,7 @@ exception Unresolved_return of Flx_srcref.t * string
 exception SimpleNameNotFound of Flx_srcref.t * string * string
 exception FunctionNameNotFound of Flx_srcref.t * string * string * string list
 
+exception TryNext
 
 val clierrn: Flx_srcref.t list -> string -> 'a
 val clierr: Flx_srcref.t -> string -> 'a

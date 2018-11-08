@@ -85,6 +85,12 @@ and metatype' sr typ : kind =
   | BTYP_unitsum _
   | BTYP_tuple [] -> kind_unitsum
 
+  | BTYP_sum _
+  | BTYP_array _
+  | BTYP_tuple _ ->
+    if islinear_type () typ then kind_compactlinear else kind_type 
+    
+
   (* Ordinary type expressions *)
   | BTYP_typeof _
   | BTYP_cfunction _
@@ -99,9 +105,6 @@ and metatype' sr typ : kind =
   | BTYP_variant _
   | BTYP_polyvariant _
   | BTYP_record _
-  | BTYP_sum _
-  | BTYP_array _
-  | BTYP_tuple _
   | BTYP_rev _
   | BTYP_uniq _
 

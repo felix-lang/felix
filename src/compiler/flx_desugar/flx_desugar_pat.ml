@@ -103,6 +103,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
 
   | `EXPR_typed_case _
   | `EXPR_projection _
+  | `EXPR_identity_function _
   | `EXPR_array_projection _
   | `EXPR_ainj _
   | `EXPR_case_arg _

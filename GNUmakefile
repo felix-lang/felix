@@ -263,7 +263,7 @@ test-dir:
 	for file in src/test/regress/rt/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file ${BUILDROOT}/test; done
 
 unit-dir:
-	mkdir -p ${BUILDROOT}/test/unit.projection
+	mkdir -p ${BUILDROOT}/test/unit/projection
 	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/test/unit/projection \
       --outdir=${BUILDROOT}/test/unit/projection
 
@@ -287,11 +287,6 @@ regress-check: test-dir
 	# RUNNING REGRESSION TESTS
 	#
 	# ============================================================
-	@echo "--------------------------------------"
-	@echo "All of the following tests should fail"
-	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/regress/bt --regex='.*\.flx' ${BUILDROOT}/test 2>&1 | egrep "Processing|Batch|Felix location"
-	@echo "--------------------------------------"
-	@echo "All of the following tests should pass"
 	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/regress/rt --regex='.*\.flx' ${BUILDROOT}/test
 
 unit-check: unit-dir

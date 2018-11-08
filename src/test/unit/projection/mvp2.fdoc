@@ -1,0 +1,36 @@
+@title Compact Linear Matrx value projections
+@felix
+// Array
+var x : (7 ^ 3) ^ 2 = ((`1:7,`2:7,`3:7),(`4:7,`5:7,`6:7));
+println$ x . _strr;
+
+// Matrix!
+var y = x :>> (7^(2*3));
+println$ y . _strr;
+
+// inline projection
+for i in ..[2] for j in ..[3] perform
+  println$ y. (i,j) . _strr;
+
+// stand-alone projection
+for i in ..[2] for j in ..[3] do
+  var p = aproj (i,j) of 7 ^ (2 * 3);
+  println$ y . p . _strr;
+done
+@expect
+((case 1 of 7,case 2 of 7,case 3 of 7),(case 4 of 7,case 5 of 7,case 6 of 7))
+(case 1 of 7,case 2 of 7,case 3 of 7,case 4 of 7,case 5 of 7,case 6 of 7)
+case 1 of 7
+case 2 of 7
+case 3 of 7
+case 4 of 7
+case 5 of 7
+case 6 of 7
+case 1 of 7
+case 2 of 7
+case 3 of 7
+case 4 of 7
+case 5 of 7
+case 6 of 7
+@
+

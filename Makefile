@@ -77,10 +77,16 @@ tut:
 	flx --felix=wbuild.fpc --usage=prototype --expect --input --nonstop \
 		--indir=build\release\test\tut --regex=".*\.flx" build\release\test\tut
 
+unit:
+	flx_tangle --indir=build\release\share\src\test\unit\projection --outdir=build\release\test\unit\projection
+	cmd.exe /C for /r %x in ("src\test\unit\projection\*.fdoc") do flx_iscr %x build\release\test\unit\projection
+	flx --felix=wbuild.fpc --usage=prototype --expect --nonstop \
+		--indir=build\release\test\unit\projection --regex=".*\.flx" build\release\unit\projection
+
 
 regress-test: copy mktestdir regress
 
-test: copy mktestdir regress tut
+test: copy mktestdir unit regress tut
 
 guitest:
 	flx --felix=wbuild.fpc --indir=src\web\tutopt\sdlgui --regex=".*\.fdoc"

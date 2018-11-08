@@ -38,7 +38,6 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
   with Not_found ->
 
   match lhs, rhs with
-
   (* a non-uniq parameter accepts a uniq one, uniq T is a subtype of T,
      also, covariant ???????
   *)
@@ -182,7 +181,8 @@ and solve_subsumption nominal_subtype counter lhs rhs  dvars (s:vassign_t option
             end;
             s := Some (j,ti)
           end
-          else raise Not_found
+          else raise Not_found (* distinct variables, neither is dependent so its a fail *)
+        else () (* same variable .. we should check kinds agree .. *)
 
       (* TO DO: calculate the smallest metatype of the type and do a kinding check *)
       | BTYP_type_var (i,mt), t
@@ -588,6 +588,7 @@ let maybe_specialisation_with_dvars bsym_table counter eqns dvars =
 (* DERIVED *)
 let maybe_specialisation bsym_table counter eqns =
   let l,_ = find_vars_eqns eqns in
+ 
   maybe_specialisation_with_dvars bsym_table counter eqns l
 
 let unifies bsym_table counter t1 t2 =
@@ -613,7 +614,9 @@ let str_of_cmp = function
 
 let compare_sigs bsym_table counter a b =
   let b = Flx_btype_subst.alpha_convert counter b in (* alpha convert one of the terms *)
-  let result = match ge bsym_table counter a b, ge bsym_table counter b a with
+  let ab = ge bsym_table counter a b in
+  let ba =  ge bsym_table counter b a in
+  let result = match ab,ba with
   | true, true -> `Equal
   | false, false -> `Incomparable
   | true, false -> `Greater

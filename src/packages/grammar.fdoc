@@ -401,8 +401,9 @@ syntax expressions {
   x[scase_literal_pri] := "`" sinteger ":" t[ssum_pri] =># "`(ast_unitsum_literal ,_sr ,_2 ,_4)";
 
   //$ Tuple projection function.
-  x[scase_literal_pri] := "proj" sinteger "of" t[ssum_pri] =># "`(ast_projection ,_2 ,_4)";
-  x[scase_literal_pri] := "aproj" sexpr "of" t[ssum_pri] =># "`(ast_array_projection ,_2 ,_4)";
+  x[scase_literal_pri] := "proj" sinteger "of" t[ssum_pri] =># "`(ast_projection ,_sr ,_2 ,_4)";
+  x[scase_literal_pri] := "aproj" sexpr "of" t[ssum_pri] =># "`(ast_array_projection ,_sr ,_2 ,_4)";
+  x[scase_literal_pri] := "ident" "of" t[ssum_pri] =># "`(ast_identity_function ,_sr ,_3)";
 
   // coarray injection
   // (ainj (r:>>4) of (4 *+ int)) 42
@@ -476,7 +477,7 @@ syntax expressions {
 
 //------------------------------------------------------------------------
   //$ Suffixed coercion.
-  x[scoercion_pri] := x[scoercion_pri] ":>>" t[>scoercion_pri] =># "`(ast_coercion ,_sr (,_1 ,_3))";
+  x[slambda_pri] := x[>slambda_pri] ":>>" stypeexpr =># "`(ast_coercion ,_sr (,_1 ,_3))";
 
   x[sfactor_pri] := ssuffixed_name =># "_1";
 

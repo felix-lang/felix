@@ -135,6 +135,7 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | `EXPR_subtype_match _ -> e
 *)
   | `EXPR_projection (sr,n,t) -> `EXPR_projection (sr,n,ft t)
+  | `EXPR_identity_function (sr,t) -> `EXPR_identity_function (sr,ft t)
   | `EXPR_array_projection (sr,e,t) -> `EXPR_array_projection (sr,fe e,ft t)
   | `EXPR_ainj (sr,n,t) -> `EXPR_ainj (sr,fe n,ft t)
   | `EXPR_rnprj (sr,name,seq,a) -> `EXPR_rnprj (sr,name,seq, fe a)
@@ -232,6 +233,7 @@ let iter_expr f (e:expr_t) =
   | `EXPR_case_tag _
   | `EXPR_typed_case _
   | `EXPR_projection _
+  | `EXPR_identity_function _
   | `EXPR_noexpand _
   | `EXPR_suffix _
   | `EXPR_literal _

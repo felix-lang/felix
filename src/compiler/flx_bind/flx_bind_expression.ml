@@ -641,7 +641,8 @@ sbt bsym_table t);
     let t = bt sr t in
     let v = be v in
     Flx_bind_projection.bind_array_projection state.counter bsym_table sr v t 
-
+ 
+  | `EXPR_identity_function (sr,t) -> bexpr_identity_function (bt sr t)
 
   | `EXPR_typed_case (sr,v,t) ->
 (*

@@ -1,0 +1,36 @@
+@title Matrx pointer projections
+@felix
+// Array
+var x : (int ^ 3) ^ 2 = ((1,2,3),(4,5,6));
+println$ x;
+
+// Matrix!
+var y = x :>> (int^(2*3));
+println$ y;
+var rwpy = &y;
+var rpy = &<y;
+var wpy = &>y;
+
+// inline projection
+for i in ..[2] for j in ..[3] do 
+  rwpy . (i,j) <- y. (i,j) + 42;
+  wpy . (i,j) <-  *rpy . (i,j) * 2 + 1;
+done
+
+println$ y;
+
+// stand-alone projection
+for i in ..[2] for j in ..[3] do
+  var rwpr = aproj (i,j) of &(int ^ (2 * 3));
+  var rpr = aproj (i,j) of &<(int ^ (2 * 3));
+  var wpr = aproj (i,j) of &>(int ^ (2 * 3));
+  rwpy . rwpr <- y. (i,j) + 42;
+  wpy . wpr <-  *rpy . rpr * 2 + 1;
+done
+println$ y;
+@expect
+((1, 2, 3), (4, 5, 6))
+(1, 2, 3, 4, 5, 6)
+(87, 89, 91, 93, 95, 97)
+(259, 263, 267, 271, 275, 279)
+@

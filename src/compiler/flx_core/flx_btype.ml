@@ -625,7 +625,12 @@ let rec islinear_type bsym_table t =
   match t with
   | BTYP_void
   | BTYP_unitsum _  -> true
-  | BTYP_type_var _ -> true (* THIS IS NEW AND WILL PROBABLY BREAK STUFF *)
+  | BTYP_type_var (_,k) ->
+    (* k must be compact linear, i.e. a subtype of KIND_compact_linear,
+       this includes unitsums, etc
+    *) 
+    Flx_kind.kind_ge2 Flx_kind.KIND_compactlinear k  
+
   | BTYP_tuple ts
   | BTYP_sum ts -> List.fold_left (fun acc t -> acc && islinear_type bsym_table t) true ts
   | BTYP_rptsum (count,base) -> islinear_type bsym_table base (* coarray *)

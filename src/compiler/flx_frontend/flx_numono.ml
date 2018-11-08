@@ -167,15 +167,16 @@ let monomorphise2 debug syms bsym_table =
 (*
 print_endline ("MONOMORPHISING");
 *)
-(*
+  if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then 
+  begin
     print_endline "";
     print_endline "---------------------------";
     print_endline "PRE NUMONO";
     print_endline "---------------------------";
     print_endline "";
 
-    Flx_print.print_bsym_table bsym_table;
-*)
+    Flx_print.print_bsym_table bsym_table
+  end;
 
 (*
   begin try

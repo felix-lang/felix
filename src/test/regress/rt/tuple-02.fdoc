@@ -14,7 +14,7 @@ println$ 1,2,3;
 println$ 1,2,3,4;
 println$ 1,2,3,4,5;
 a :=  1,2,3,4,5,6,7,8,9,10;
-println$ (a, a) :>> (int ^ 20);
+println$ ((a, a) :>> (int ^ 20));
 
 println$ (1,"x") == (1,"x");
 println$ (1,"x",4.2) == (1,"x",4.2);

@@ -388,8 +388,8 @@ class Parsers
    match p with
    | `Action a => out = ([head,p]); 
    | `Epsilon => out = ([head,p]);
-   | `Terminal _ => out = ([head,`Seq ([p]):>>pgram_t]);
-   | `Nonterminal s => out= ([head,`Seq ([p]):>>pgram_t]);
+   | `Terminal _ => out = ([head,(`Seq ([p]):>>pgram_t)]);
+   | `Nonterminal s => out= ([head,(`Seq ([p]):>>pgram_t)]);
 
    | `Seq ps =>
      var newseq = Empty[pgram_t];
@@ -401,14 +401,14 @@ class Parsers
        | `Terminal _ => newseq = term ! newseq;
        | _ =>
          var newhead = fresh();
-         newseq = `Nonterminal newhead :>>pgram_t ! newseq;
+         newseq = (`Nonterminal newhead :>>pgram_t) ! newseq;
          out = unpack fresh (newhead,term);
        endmatch;
      done
 
      match newseq with 
-     | Empty => out = (head,#`Epsilon:>> pgram_t) ! out;
-     | _ => out = (head,`Seq(rev newseq):>>pgram_t) ! out;
+     | Empty => out = (head,(#`Epsilon:>> pgram_t)) ! out;
+     | _ => out = (head,(`Seq(rev newseq):>>pgram_t)) ! out;
      endmatch;
 
    | `Alt ps =>
@@ -515,9 +515,9 @@ class Parsers
        var newntname = fresh();
        var newnt = `Nonterminal newntname :>> pgram_t; 
        var alts = map (fun (b:list[pgram_t]) => `Seq (b + newnt):>>pgram_t) betas;
-       outgram =  (nt, `Alt alts :>>pgram_t) !  outgram ;
-       alts = map (fun (a:list[pgram_t]) => `Seq (a + newnt):>>pgram_t) alphas + (#`Epsilon):>>pgram_t;
-       outgram = (newntname, `Alt alts:>>pgram_t) ! outgram;
+       outgram =  (nt, (`Alt alts :>>pgram_t)) !  outgram ;
+       alts = map (fun (a:list[pgram_t]) => (`Seq (a + newnt):>>pgram_t)) alphas + (#`Epsilon:>>pgram_t);
+       outgram = (newntname, (`Alt alts:>>pgram_t)) ! outgram;
      done
    done
    return outgram;
@@ -611,7 +611,7 @@ println$ "      NO: keep";
          if not (counter in toremove) perform
            toadd = elt ! toadd;
        done
-       var newa_i = direct_left_recursion_elimination fresh ([rnt, `Alt toadd :>> pgram_t]);
+       var newa_i = direct_left_recursion_elimination fresh ([rnt, (`Alt toadd :>> pgram_t)]);
        return left_recursion_elimination_step fresh (newa_i + left) tail;
      endmatch;
   }

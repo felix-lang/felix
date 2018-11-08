@@ -19,6 +19,8 @@ exception Unresolved_return of Flx_srcref.t * string
 exception SimpleNameNotFound of Flx_srcref.t * string * string
 exception FunctionNameNotFound of Flx_srcref.t * string * string * string list
 
+exception TryNext
+
 
 let clierrn srs s = raise (ClientErrorn (srs,s))
 let clierr2 sr sr2 s = raise (ClientError2 (sr,sr2,s))

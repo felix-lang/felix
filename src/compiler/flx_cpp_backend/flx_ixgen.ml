@@ -252,6 +252,9 @@ let get_power_table bsym_table power_table size count =
 
 (* Linearise a structured index *)
 let rec render_compact_linear_value bsym_table ge' array_sum_offset_table seq idx : Flx_ctypes.cexpr_t = 
+(*
+print_endline ("Render compact linear value");
+*)
   let ri x = render_compact_linear_value bsym_table ge' array_sum_offset_table seq x in
   match idx with
   | `Int n -> ce_atom (siu n)
