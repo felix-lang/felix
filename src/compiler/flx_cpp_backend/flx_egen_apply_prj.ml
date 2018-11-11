@@ -274,10 +274,10 @@ let apply_prj syms bsym_table ge ge' sr (e,t) (ix:int) domain codomain (argv,arg
  
   | _ ->
   match domain with
-  | BTYP_pointer target ->
+  | BTYP_ptr (_,target,[]) ->
     apply_pointer_prj syms bsym_table ge ge' sr (e,t) ix target codomain arg
 
-  | BTYP_cltpointer (mach, target) -> 
+  | BTYP_ptr (_,target,[mach]) -> 
     apply_cltpointer_prj syms bsym_table ge ge' sr (e,t) ix (mach, target) codomain arg
 
   | target ->
@@ -335,7 +335,7 @@ end;
   (* array projection of an ORINDARY pointer to a compact linear array 
     result is a compact linear pointer
   *)
-  | BTYP_pointer (BTYP_array (vt,aixt) as at) when clt at -> 
+  | BTYP_ptr (_,(BTYP_array (vt,aixt) as at),[]) when clt at -> 
 if debug then begin
 print_endline ("Array projection of ordinary pointer to compact linear array type " ^ sbt bsym_table at);
 print_endline ("Array base value type = " ^ sbt bsym_table vt);
@@ -365,7 +365,7 @@ end;
   (* array projection of a compact linear pointer to a compact linear array 
      result is a compact linear pointer
   *)
-  | BTYP_cltpointer (mach, BTYP_array (vt,aixt))  -> 
+  | BTYP_ptr (_,BTYP_array (vt,aixt),[mach])  -> 
 (*
     ate "Array projection of compact linear pointer to compact linear array" "index domain" "array type" ixd  at;
     ate "Array projection of compact linear pointer to compact linear array" "index codomain" "array base type" ixc vt;
@@ -389,7 +389,7 @@ end;
     ce_call (ce_atom "::flx::rtl::clptr_t") [ptr; divisor; modulus]
 
   (* if this is an array projection of a POINTER to a non-compact linear array *)
-  | BTYP_pointer (BTYP_array _) ->
+  | BTYP_ptr (_,BTYP_array _,[]) ->
     ce_prefix "&" (ce_array (ce_arrow (ge' a) "data") (ge' ix)) 
 
   | _-> assert false

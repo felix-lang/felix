@@ -146,7 +146,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
       gen_offset_data module_name s n name offsets false false [] None last_ptr_map encoder_name decoder_name
 
     (* This is a pointer, the offset data is in the system library *)
-    | BTYP_pointer t -> ()
+    | BTYP_ptr (_,t,[]) -> ()
 
     (* for an array, we only have offsets for the first element *)
     | BTYP_array (t,i) ->

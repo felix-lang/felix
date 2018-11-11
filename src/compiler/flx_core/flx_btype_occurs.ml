@@ -49,14 +49,8 @@ let var_occurs bsym_table t =
     | BTYP_effector (a,e,b) -> aux a; aux e; aux b
     | BTYP_cfunction (a,b) -> aux a; aux b
 
-    | BTYP_pointer a  -> aux a
-    | BTYP_rref a  -> aux a
-    | BTYP_wref a  -> aux a
+    | BTYP_ptr (_,t,ts)  -> aux t; List.iter aux ts
     | BTYP_rev a -> aux a
-
-    | BTYP_cltpointer (a,b) -> aux a; aux b
-    | BTYP_cltwref (a,b) -> aux a; aux b
-    | BTYP_cltrref (a,b) -> aux a; aux b
 
     | BTYP_uniq a -> aux a
 

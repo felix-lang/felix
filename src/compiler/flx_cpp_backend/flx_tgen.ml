@@ -171,10 +171,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
   | BTYP_fix (i,_) -> ""
   | BTYP_type_var (i,mt) -> failwith "[gen_type_name] Can't gen name of type variable"
 
-  | BTYP_cltpointer _ 
-  | BTYP_cltwref _
-  | BTYP_cltrref _
-  | BTYP_pointer _ -> ""
+  | BTYP_ptr _ -> ""
     (* NEW *)
     (*
     descr ^
@@ -426,11 +423,7 @@ let rec gen_type syms bsym_table (index,typ) =
      descr ^
      gen_record (cn typ) tn ts
 
-  | BTYP_cltpointer _
-  | BTYP_cltrref _
-  | BTYP_cltwref _
-  | BTYP_pointer _ ->
-    ""
+  | BTYP_ptr _ ->  ""
     (*
     let name = tn typ in
     let t = tn t in

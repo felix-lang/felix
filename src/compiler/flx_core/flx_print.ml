@@ -795,14 +795,9 @@ and sb bsym_table depth fixlist counter prec tc =
       | _ -> 3, sbt 3 t1 ^"^"^sbt 3 t2
       end
 
-    | BTYP_pointer t -> 1,"&" ^ sbt 1 t
-    | BTYP_rref t -> 1,"rref(" ^ sbt 1 t ^ ")"
-    | BTYP_wref t -> 1,"wref(" ^ sbt 1 t ^ ")"
+    | BTYP_ptr (m,t,ts) -> 1,str_of_pmode m^"ptr(" ^ sbt 1 t^","^catmap "," (sbt 1) ts ^")"
 
-    | BTYP_cltpointer (d,c) -> 1,"cltref(" ^ sbt 1 d ^","^  sbt 1 c ^")"
-    | BTYP_cltrref (d,c) -> 1,"cltrref(" ^ sbt 1 d ^ "," ^ sbt 1 c ^")"
-    | BTYP_cltwref (d,c) -> 1,"cltwref(" ^ sbt 1 d ^ "," ^ sbt 1 c ^")"
-
+  
     | BTYP_void -> 0,"void"
 
     | BTYP_type_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2

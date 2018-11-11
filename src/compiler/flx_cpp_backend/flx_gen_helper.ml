@@ -146,7 +146,7 @@ let is_gc_pointer syms bsym_table sr t =
   *)
   match t with
   | BTYP_function _ -> true
-  | BTYP_pointer _ -> true
+  | BTYP_ptr _ -> true
   | BTYP_inst (i,_,_) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i with Not_found ->

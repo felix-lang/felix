@@ -25,17 +25,12 @@ let rec is_pod bsym_table t =
   | BTYP_typeop _ -> assert false
   | BTYP_hole -> assert false
   | BTYP_uniq _ -> assert false
-  | BTYP_rref _ -> assert false
-  | BTYP_wref _ -> assert false
 
   | BTYP_label
   | BTYP_unitsum _ 
   | BTYP_sum _ 
   | BTYP_rptsum _ 
-  | BTYP_pointer _
-  | BTYP_cltpointer _
-  | BTYP_cltrref _
-  | BTYP_cltwref _
+  | BTYP_ptr _
   | BTYP_function _
   | BTYP_cfunction _
   | BTYP_variant _ -> true
@@ -78,13 +73,7 @@ let rec get_offsets' syms bsym_table typ : string list =
   | BTYP_hole -> assert false
   | BTYP_rev _ -> assert false
   | BTYP_uniq _ -> assert false
-  | BTYP_rref _ -> assert false
-  | BTYP_wref _ -> assert false
-  | BTYP_pointer t -> ["0"]
-
-  | BTYP_cltpointer _
-  | BTYP_cltrref _
-  | BTYP_cltwref _ -> ["0"] (* RTL rep clptr_t *)
+  | BTYP_ptr (_,t,_) -> ["0"]
 
 
   | BTYP_variant _ ->

@@ -43,14 +43,6 @@ let check_mono_vars bsym_table vars sr t =
     print_endline (" **** using varmap " ^ showvars bsym_table vars);
     assert false
 *)
-(*
-let monomap_compare (i,ts) (i',ts') = 
-  let counter = ref 1 in (* HACK *)
-  let dummy = Flx_bsym_table.create () in 
-  if i = i' && List.length ts = List.length ts' &&
-    List.fold_left2 (fun r t t' -> r && Flx_unify.type_eq dummy counter t t') true ts ts'
-  then 0 else compare (i,ts) (i',ts') 
-*)
 let rec mono_element debug syms to_process processed bsym_table nutab nubids i ts j =
 (*
   print_endline ("mono_element: " ^ si i ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]" ^ " --> " ^ si j);

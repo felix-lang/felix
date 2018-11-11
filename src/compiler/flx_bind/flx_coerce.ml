@@ -217,7 +217,7 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       bexpr_coerce (x',t'')
 
     (* This isn't really right, but it's safe storage wise *)
-    | BTYP_pointer lhst, BTYP_pointer rhst
+    | BTYP_ptr (`RW,lhst,[]), BTYP_ptr (`RW,rhst,[])
     | lhst, rhst 
       when 
       islinear_type bsym_table lhst && islinear_type bsym_table rhst &&
@@ -226,8 +226,8 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
 
     | BTYP_array(v',BTYP_tuple ls),BTYP_array (v,ix)
     | BTYP_array (v,ix),BTYP_array(v',BTYP_tuple ls) 
-    | BTYP_pointer (BTYP_array(v',BTYP_tuple ls)), BTYP_pointer (BTYP_array (v,ix))
-    | BTYP_pointer (BTYP_array (v,ix)),BTYP_pointer (BTYP_array(v',BTYP_tuple ls))
+    | BTYP_ptr (`RW,BTYP_array(v',BTYP_tuple ls),[]), BTYP_ptr (`RW,BTYP_array (v,ix),[])
+    | BTYP_ptr (`RW,BTYP_array (v,ix),[]),BTYP_ptr (`RW,BTYP_array(v',BTYP_tuple ls),[])
       ->
       let result = check_array bsym_table v ix v' ls in
 (*
@@ -242,8 +242,8 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
 
     | BTYP_array(v',BTYP_array (ix',BTYP_unitsum n)),BTYP_array (v,ix)
     | BTYP_array (v,ix),BTYP_array(v',BTYP_array (ix',BTYP_unitsum n)) 
-    | BTYP_pointer (BTYP_array(v',BTYP_array (ix',BTYP_unitsum n))), BTYP_pointer (BTYP_array (v,ix))
-    | BTYP_pointer (BTYP_array (v,ix)),BTYP_pointer (BTYP_array(v',BTYP_array (ix',BTYP_unitsum n)))
+    | BTYP_ptr (`RW,BTYP_array(v',BTYP_array (ix',BTYP_unitsum n)),[]), BTYP_ptr (`RW,BTYP_array (v,ix),[])
+    | BTYP_ptr (`RW,BTYP_array (v,ix),[]),BTYP_ptr (`RW,BTYP_array(v',BTYP_array (ix',BTYP_unitsum n)),[])
       ->
       let ls = let rec aux n out = match n with 1 -> out | _ -> aux (n-1) (ix::out) in aux n [ix] in 
       assert (List.length ls = n);

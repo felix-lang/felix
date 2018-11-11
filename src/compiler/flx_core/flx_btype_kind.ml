@@ -96,12 +96,7 @@ and metatype' sr typ : kind =
   | BTYP_cfunction _
   | BTYP_function _
   | BTYP_effector _
-  | BTYP_cltpointer _
-  | BTYP_cltrref _
-  | BTYP_cltwref _
-  | BTYP_pointer _
-  | BTYP_rref _
-  | BTYP_wref _
+  | BTYP_ptr _
   | BTYP_variant _
   | BTYP_polyvariant _
   | BTYP_record _

@@ -316,7 +316,7 @@ print_endline "Type has ptr reached recursion limit, polymorphic recursion?";
     with Not_found ->
       Hashtbl.add cache t `Recurse;
       match t with
-      | BTYP_pointer _ ->
+      | BTYP_ptr _ ->
         (* encode the more lenient condition here!! *)
         Hashtbl.replace cache t `Unsafe;
         raise Unsafe

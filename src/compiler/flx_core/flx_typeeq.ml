@@ -128,18 +128,15 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
     when List.length ts = n ->
     List.fold_left (fun tr t -> tr && te t ta) true ts
 
-  | BTYP_uniq p1,BTYP_uniq p2
+  | BTYP_uniq p1,BTYP_uniq p2 -> te p1 p2
 
-  | BTYP_rref p1,BTYP_rref p2
-  | BTYP_wref p1,BTYP_wref p2
-  | BTYP_pointer p1,BTYP_pointer p2
-    -> te p1 p2
-
-  | BTYP_cltrref (d1,c1),BTYP_cltrref (d2,c2)
-  | BTYP_cltwref (d1,c1),BTYP_cltwref (d2,c2)
-  | BTYP_cltpointer (d1,c1),BTYP_cltpointer (d2,c2)
-    -> te d1 d2 && te c1 c2
-
+  | BTYP_ptr (m1,t1,ts1),BTYP_ptr (m2,t2,ts2) ->
+    m1 = m2 && te t1 t2 && 
+   List.length ts1 = List.length ts2 &&
+   List.fold_left2
+   (fun tr a b -> tr && te a b)
+   true ts1 ts2
+ 
 
   | BTYP_void,BTYP_void
     -> true

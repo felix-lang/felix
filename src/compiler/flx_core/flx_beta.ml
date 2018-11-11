@@ -411,13 +411,7 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
   | BTYP_effector (a,e,b) -> btyp_effector (br a, br e, br b)
   | BTYP_cfunction (a,b) -> btyp_cfunction (br a, br b)
 
-  | BTYP_cltpointer (d,c) -> btyp_cltpointer (br d) (br c)
-  | BTYP_cltrref(d,c) -> btyp_cltrref (br d) (br c)
-  | BTYP_cltwref(d,c) -> btyp_cltwref (br d) (br c)
-
-  | BTYP_pointer a -> btyp_pointer (br a)
-  | BTYP_rref a -> btyp_rref (br a)
-  | BTYP_wref a -> btyp_wref (br a)
+  | BTYP_ptr (m,t,ts)  -> btyp_ptr m (br t) (List.map br ts)
 
   | BTYP_label -> t
   | BTYP_void -> t

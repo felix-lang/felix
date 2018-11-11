@@ -74,7 +74,7 @@ display;
     map
     (fun (index,t)->
       cpp_instance_name syms bsym_table index ts
-      ^ "(0)"
+      ^ "()" (* used to be (0) doesn't work with compact linear type pointers *)
     )
     funs
     @

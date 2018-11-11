@@ -418,8 +418,8 @@ print_endline("  SPECIFIED RETURN TYPE =" ^ Flx_btype.st state.ret_type);
     begin match t with
     | BTYP_tuple [pt; vt] ->
       begin match pt with
-      | BTYP_cltwref (_,pat) 
-      | BTYP_wref (pat) -> 
+      | BTYP_ptr (`W,pat,ts)
+      | BTYP_ptr (`RW,pat,ts) ->
         if Flx_typeeq.type_eq (Flx_print.sbt bsym_table) state.counter vt pat then
          let lhs = bexpr_apply pt ((bexpr_prj 0 t pt), be2) in
          let rhs = bexpr_apply vt ((bexpr_prj 1 t vt), be2) in
@@ -933,8 +933,8 @@ print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
        
     let lhsvt = 
       match lhst with
-      | BTYP_pointer t -> t
-      | BTYP_wref t -> t
+      | BTYP_ptr (`RW,t,[]) -> t
+      | BTYP_ptr (`W,t,[]) -> t
       | _ -> 
         clierrx "[flx_bind/flx_bind_bexe.ml:765: E36A] " sr 
           (

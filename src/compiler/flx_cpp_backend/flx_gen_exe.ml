@@ -837,13 +837,13 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     | BEXE_storeat (sr,(_,lt as l),r) ->
       begin match lt with
       (* use C++ procedure for compact linear pointers *)
-      | BTYP_cltpointer _ ->
+      | BTYP_ptr (_,_,[_]) ->
 (*
 print_endline ("Storeat, clt case: " ^ sbe bsym_table l ^ " <- " ^ sbe bsym_table r);
 *)
         "     ::flx::rtl::storeat("^ge sr l ^","^ge sr r^"); // cltpointer\n";
       (* use standard syntax for ordinary pointers *)
-      | BTYP_pointer _ ->
+      | BTYP_ptr (_,_,[]) ->
        "      *"^ge sr l^"="^ge sr r ^"; // storeat\n"
       (* dunno what to do with abstract types yet! *)
       | _ -> assert false

@@ -69,23 +69,15 @@ let bind_inline_projection bsym_table be bt sr f' a' ta a =
     in
     match tf, ta with
     (* Check for array projection *)
-    | ixt1, BTYP_pointer (BTYP_array (base,ixt2) as vt) when ixt1 = ixt2 -> (* SHOULD USE UNIFICATION *) 
+    | ixt1, BTYP_ptr (mode,(BTYP_array (base,ixt2) as vt),[]) when ixt1 = ixt2 -> (* SHOULD USE UNIFICATION *) 
 (*
 print_endline ("array pointer projection, base type " ^ Flx_print.sbt bsym_table base);
 *)
-      let pt = if iscompact_linear_product vt then btyp_cltpointer vt base else btyp_pointer base in
+      let pt = if iscompact_linear_product vt then btyp_ptr mode base [vt] else btyp_ptr mode base [] in
 (*
 print_endline ("   array pointer projection, index type " ^ Flx_print.sbt bsym_table ixt1);
 print_endline ("   array pointer projection, codomain type " ^ Flx_print.sbt bsym_table pt);
 *)
-      let prj = bexpr_aprj f ta pt in
-      bexpr_apply pt (prj,a)
-    | ixt1, BTYP_rref(BTYP_array (base,ixt2) as vt) when ixt1 = ixt2 -> (* SHOULD USE UNIFICATION *) 
-      let pt = if iscompact_linear_product vt then btyp_cltrref vt base else btyp_rref base in
-      let prj = bexpr_aprj f ta pt in
-      bexpr_apply pt (prj,a)
-    | ixt1, BTYP_wref (BTYP_array (base,ixt2) as vt) when ixt1 = ixt2 -> (* SHOULD USE UNIFICATION *) 
-      let pt = if iscompact_linear_product vt then btyp_cltwref vt base else btyp_wref base in
       let prj = bexpr_aprj f ta pt in
       bexpr_apply pt (prj,a)
     | _ -> raise Flx_dot.OverloadResolutionError

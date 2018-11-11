@@ -2,6 +2,15 @@ open Flx_bid
 open Flx_kind
 
 exception Invalid_int_of_unitsum
+type pmode = [
+ | `RW (* read/write *)
+ | `R (* read only *)
+ | `W (* write only *)
+ | `N (* pointer to unit : no read or write *)
+]
+
+val str_of_pmode: pmode -> string
+
 type btpattern_t = {
   pattern : t;
   pattern_vars : BidSet.t;
@@ -24,13 +33,7 @@ and t = private
   | BTYP_variant of (string * t) list
   | BTYP_polyvariant of pvpiece_t list
 
-  | BTYP_pointer of t
-  | BTYP_rref of t
-  | BTYP_wref of t
-
-  | BTYP_cltpointer of t * t
-  | BTYP_cltrref of t * t
-  | BTYP_cltwref of t * t
+  | BTYP_ptr of pmode * t * t list
 
   | BTYP_function of t * t
   | BTYP_effector of t * t * t
@@ -127,6 +130,7 @@ val btyp_polyrecord : (string * t) list -> t -> t
 val btyp_variant : (string * t) list -> t
 val btyp_polyvariant : pvpiece_t list -> t
 
+val btyp_ptr: pmode -> t -> t list -> t
 val btyp_pointer : t -> t
 val btyp_rref : t -> t
 val btyp_wref : t -> t

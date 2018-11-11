@@ -5,6 +5,24 @@ open Flx_kind
 
 exception Invalid_int_of_unitsum
 
+(* `N is top, `R and `W are subtypes of it, and `RW is subtype of all
+   There is only one canonical unit. So all pointers to it are equivalent.
+   A read always produces a unit value, and a write never changes anything.
+   Therefore, it can be elided just as unit can be.
+*)
+type pmode = [
+ | `RW (* read/write *)
+ | `R (* read only *)
+ | `W (* write only *)
+ | `N (* pointer to unit : no read or write *)
+]
+
+let str_of_pmode  = function
+  | `RW -> "RW"
+  | `R -> "R"
+  | `W -> "W"
+  | `N -> "NULL"
+
 type btpattern_t = {
   pattern: t;
 
@@ -34,18 +52,7 @@ and t =
   | BTYP_variant of (string * t) list
   | BTYP_polyvariant of pvpiece_t list
 
-  | BTYP_pointer of t
-  | BTYP_rref of t
-  | BTYP_wref of t
-
-  (* Compact linear type pointers required two types: the domain
-    is the whole compact linear type, and the codomain is the 
-    type pointer at
-  *)
-  | BTYP_cltpointer of t * t
-  | BTYP_cltrref of t * t
-  | BTYP_cltwref of t * t
-
+  | BTYP_ptr of pmode * t * t list
 
   | BTYP_function of t * t
   | BTYP_effector of t * t * t
@@ -119,7 +126,7 @@ type overload_result =
 
 let rec trivorder t = match t with
   | BTYP_tuple [] -> Some 0
-  | BTYP_pointer t -> 
+  | BTYP_ptr (_,t,_) -> 
     begin match trivorder t with
     | Some k -> Some (k + 1)
     | None -> None
@@ -133,7 +140,7 @@ let rec istriv t =
 
 let rec trivtype i = match i with
   | 0 -> BTYP_tuple []
-  | _ -> BTYP_pointer (trivtype (i - 1))
+  | _ -> BTYP_ptr (`N,(trivtype (i - 1)),[])
   
 let catmap sep f ls = String.concat sep (List.map f ls) 
 
@@ -162,14 +169,7 @@ and str_of_btype typ =
   | BTYP_variant (ls) -> "BTYP_variant(" ^String.concat " | " (List.map (fun (name,t)->name^" of "^s t) ls)^")"
   | BTYP_polyvariant ls -> "BTYP_polyvariant(" ^ String.concat " | " (List.map str_of_pvpiece ls) ^ ")"
 
-  | BTYP_pointer t -> "BTYP_pointer("^s t^")"
-  | BTYP_rref t -> "BTYP_rref("^s t^")"
-  | BTYP_wref t -> "BTYP_wref("^s t^")"
-
-  | BTYP_cltpointer (dt, ct) -> "BTYP_cltpointer("^s dt^", " ^ s ct^")"
-  | BTYP_cltrref (dt, ct) -> "BTYP_cltrref("^s dt^", " ^ s ct^")"
-  | BTYP_cltwref (dt, ct) -> "BTYP_cltwref("^s dt^", " ^ s ct^")"
-
+  | BTYP_ptr (m,t,ts) -> "BTYP_ptr(" ^ str_of_pmode m ^"," ^s t^",["^ss ts^"])"
 
   | BTYP_function (d,c) -> "BTYP_function(" ^ s d ^ " -> " ^ s c ^")"
   | BTYP_cfunction (d,c) -> "BTYP_cfunction(" ^ s d ^ " --> " ^ s c ^")"
@@ -257,7 +257,7 @@ let complete_type t =
     | BTYP_function (a,b) -> uf a;uf b
     | BTYP_effector (a,e,b) -> uf a; uf e; uf b
     | BTYP_cfunction (a,b) -> uf a;uf b
-    | BTYP_pointer a -> uf a
+    | BTYP_ptr (_,a,_) -> uf a
     | BTYP_fix (i,_) when (-i) = depth -> ()
     | BTYP_fix (i,_) when (-i) > depth -> raise (Free_fixpoint t')
     | BTYP_type_apply (a,b) -> uf a;uf b
@@ -443,42 +443,44 @@ let btyp_variant ls =
       let ts = List.stable_sort cmp ts in
       BTYP_variant ts
 
+(* Invariants of ptr:
 
-(** Construct a BTYP_pointer type. *)
-let btyp_pointer ts =
-  BTYP_pointer ts
+  1. The projection list is stored forwards from
+the initial base to the final product containing
+the ultimate target.
 
-(** Construct a BTYP_rref type. Pointer to temporary,
-rvalue, or just const pointer or something similar *)
-let btyp_rref ts =
-  BTYP_rref ts
+  2. Therefore, to apply a projection of type D -> C
+to a pointer of type ptr (mode,D, ts) we obtain
+a pointer of type ptr (mode, C, ts @[D])
 
-let btyp_wref ts =
-  BTYP_wref ts
+  3. After initial construction of the trail,
+any leading terms which are manifestly not compact
+linear must be remmoved, so that the head of the trail,
+if it is exists, is compact linear. Such a term cannot
+be a type variable BUT, it may be a product containing one
+as a component.
+
+  4. After monomorphisation, the head, if it exists,
+must be non-polymorphic and compact linear, and,
+the rest of the trail is no longer required and can
+be ignored.
+
+  5. Therefore, we can simply remove all non-polymorphic
+components from the tail of the trail.
 
 
-(** Construct a BTYP_pointer type. *)
-let btyp_cltpointer d c =
-  (* should us proper type equality here but it isn't defined yet *)
-  if d = c then
-    BTYP_pointer c
-  else
-    BTYP_cltpointer (d,c)
 
-(** Construct a BTYP_rref type. Pointer to temporary,
-rvalue, or just const pointer or something similar *)
-let btyp_cltrref d c =
-  (* should us proper type equality here but it isn't defined yet *)
-  if d = c then
-    BTYP_rref c
-  else
-    BTYP_cltrref (d,c)
 
-let btyp_cltwref d c =
-  if d = c then
-    BTYP_wref c
-  else
-    BTYP_cltwref (d,c)
+*)
+let btyp_ptr m t ts =
+  BTYP_ptr (m,t,ts)
+
+let btyp_pointer t       = btyp_ptr `RW t []
+let btyp_rref t          = btyp_ptr `R t []
+let btyp_wref t          = btyp_ptr `W t []
+let btyp_cltpointer d c  = btyp_ptr `RW c [d]
+let btyp_cltrref d c     = btyp_ptr `R c [d]
+let btyp_cltwref d c     = btyp_ptr `W c [d]
 
 (** Construct a BTYP_function type. *)
 let btyp_function (args, ret) =
@@ -691,13 +693,7 @@ let flat_iter
       | `Base t -> f_btype t
     ) ts
 
-  | BTYP_pointer t -> f_btype t
-  | BTYP_rref t -> f_btype t
-  | BTYP_wref t -> f_btype t
-
-  | BTYP_cltpointer (a,b)
-  | BTYP_cltrref (a,b)
-  | BTYP_cltwref (a,b)
+  | BTYP_ptr (m,t,ts) -> f_btype t; List.iter f_btype ts
 
   | BTYP_function (a,b) -> f_btype a; f_btype b
   | BTYP_effector (a,e,b) -> f_btype a; f_btype e; f_btype b
@@ -801,14 +797,7 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
       | `Base t -> `Base (f_btype t) 
     ) ts)
 
-  | BTYP_pointer t -> btyp_pointer (f_btype t)
-  | BTYP_rref t -> btyp_rref (f_btype t)
-  | BTYP_wref t -> btyp_wref (f_btype t)
-
-  | BTYP_cltpointer (d,c) -> btyp_cltpointer (f_btype d) (f_btype c)
-  | BTYP_cltrref (d,c) -> btyp_cltrref (f_btype d) (f_btype c)
-  | BTYP_cltwref (d,c) -> btyp_cltwref (f_btype d) (f_btype c) 
-
+  | BTYP_ptr (m,t,ts) -> btyp_ptr m (f_btype t) (List.map f_btype ts)
 
   | BTYP_function (a,b) -> btyp_function (f_btype a, f_btype b)
   | BTYP_effector (a,e,b) -> btyp_effector (f_btype a, f_btype e, f_btype b)
@@ -1057,7 +1046,7 @@ and unfold msg t =
     | BTYP_function (a,b) -> btyp_function (uf a,uf b)
     | BTYP_effector (a,e, b) -> btyp_effector (uf a,uf e,uf b)
     | BTYP_cfunction (a,b) -> btyp_cfunction (uf a,uf b)
-    | BTYP_pointer a -> btyp_pointer (uf a)
+    | BTYP_ptr (m,t,ts)  -> btyp_ptr m (uf t) (List.map uf ts)
     | BTYP_fix (i,_) when (-i) = depth -> t
     | BTYP_fix (i,_) when (-i) > depth -> 
 (*

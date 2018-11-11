@@ -202,9 +202,10 @@ let bexpr_cltpointer d c p v =
   let t = Flx_btype.btyp_cltpointer d c in 
   BEXPR_cltpointer (d,c,p,v), complete_check "bexpr_cltpointer" t
 
-let bexpr_cltpointer_of_pointer ((_,pt) as p) =
+(* FIXME! *)
+let bexpr_cltpointer_of_pointer ((_,pt) as p) = 
   match pt with
-  | Flx_btype.BTYP_pointer vt ->
+  | Flx_btype.BTYP_ptr (m,vt,ts) ->
     if Flx_btype.islinear_type () vt then
       bexpr_cltpointer vt vt p 1
     else
@@ -355,13 +356,9 @@ let bexpr_prj n d c =
     failwith ("Projection from unique type " ^ Flx_btype.st d ^ " not allowed")
  
   (* Arrays with unitsum indices *)
-  | Flx_btype.BTYP_pointer ( Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
-  | Flx_btype.BTYP_rref ( Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
-  | Flx_btype.BTYP_wref ( Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
-  | Flx_btype.BTYP_cltpointer (_, Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
-  | Flx_btype.BTYP_cltrref (_, Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
-  | Flx_btype.BTYP_cltwref (_, Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m))
-  |Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m) ->
+
+  | Flx_btype.BTYP_ptr (_, Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m), _)
+  | Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m) ->
     if n>= m then
       failwith ("Array length " ^ string_of_int m ^ 
       " projection index " ^
@@ -369,12 +366,7 @@ let bexpr_prj n d c =
     )
 
   (* Tuples *)
-  | Flx_btype.BTYP_pointer ( Flx_btype.BTYP_tuple ls)
-  | Flx_btype.BTYP_rref ( Flx_btype.BTYP_tuple ls)
-  | Flx_btype.BTYP_wref ( Flx_btype.BTYP_tuple ls)
-  | Flx_btype.BTYP_cltpointer (_, Flx_btype.BTYP_tuple ls)
-  | Flx_btype.BTYP_cltrref (_, Flx_btype.BTYP_tuple ls)
-  | Flx_btype.BTYP_cltwref (_, Flx_btype.BTYP_tuple ls)
+  | Flx_btype.BTYP_ptr (_, Flx_btype.BTYP_tuple ls,_)
   | Flx_btype.BTYP_tuple ls -> 
     if n>= List.length ls then
       failwith ("Tuple length " ^ string_of_int (List.length ls) ^ 
@@ -383,9 +375,7 @@ let bexpr_prj n d c =
     )
 
   (* Records *)
-  | Flx_btype.BTYP_pointer (Flx_btype.BTYP_record ls)
-  | Flx_btype.BTYP_rref (Flx_btype.BTYP_record ls)
-  | Flx_btype.BTYP_wref (Flx_btype.BTYP_record ls)
+  | Flx_btype.BTYP_ptr (_,Flx_btype.BTYP_record ls,[])
   | Flx_btype.BTYP_record ls ->
     if n>= List.length ls then
       failwith ("Record length " ^ string_of_int (List.length ls) ^ 
@@ -394,9 +384,7 @@ let bexpr_prj n d c =
     )
 
   (* Structs and cstructs but we can't check without lookup *)
-  | Flx_btype.BTYP_pointer (Flx_btype.BTYP_inst _ )
-  | Flx_btype.BTYP_rref (Flx_btype.BTYP_inst _ )
-  | Flx_btype.BTYP_wref (Flx_btype.BTYP_inst _ )
+  | Flx_btype.BTYP_ptr (_,Flx_btype.BTYP_inst _,[] )
   | Flx_btype.BTYP_inst _ -> ()
 
   (* polyrecords and anything else aren't allowed *)
@@ -429,7 +417,7 @@ let find_seq name seq fs : (int * Flx_btype.t) option =
 
 let bexpr_rnprj name seq d c =
   match d with
-  | Flx_btype.BTYP_pointer (Flx_btype.BTYP_record ts) 
+  | Flx_btype.BTYP_ptr (_,Flx_btype.BTYP_record ts,[]) 
   | Flx_btype.BTYP_record ts ->
     begin match find_seq name seq ts with
     | Some (idx,t) -> bexpr_prj idx d c

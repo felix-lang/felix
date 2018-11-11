@@ -28,104 +28,38 @@ let bind_projection bsym_table sr v t =
   (* Pointer projections. NOTE: if the pointed at type is a compact linear type,
      the codomain of the projection is a compact linear pointer not an ordinary pointer
   *) 
-  (* Constant RW pointer to tuple projection *)
-  | BTYP_pointer (BTYP_tuple ts as vt) ->
+  (* Constant pointer to tuple projection *)
+  | BTYP_ptr (mode,(BTYP_tuple ts as vt),[]) ->
     let n = List.length ts in
     if v < 0 || v >= n then
       clierrx "[flx_bind/flx_lookup.ml:4235: E184p] " sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
         " negative or >= " ^ si n ^ "for tuple type " ^ sbt bsym_table t)
     else
       let c = List.nth ts v in
-      let c = if iscompact_linear_product vt then btyp_cltpointer vt c else btyp_pointer c in
+      let c = if iscompact_linear_product vt then btyp_ptr mode c [vt] else btyp_ptr mode c [] in
       bexpr_prj v t c
 
-  (* Constant RW pointer to array projection *)
-  | BTYP_pointer (BTYP_array (base, _) as vt) ->
+  (* Constant pointer to array projection *)
+  | BTYP_ptr (mode,(BTYP_array (base, _) as vt),[]) ->
       let c = base in
-      let c = if iscompact_linear_product vt then btyp_cltpointer vt c else btyp_pointer c in
-      bexpr_prj v t c
-
-  (* Constant RO pointer to array projection *)
-  | BTYP_rref (BTYP_array (base, _) as vt) ->
-      let c = base in 
-      let c = if iscompact_linear_product vt then btyp_cltrref vt c else btyp_rref c in
-      bexpr_prj v t c
-
-  (* WO pointer to array *)
-  | BTYP_wref (BTYP_array (base,_) as vt) ->
-      let c = base in
-      let c = if iscompact_linear_product vt then btyp_cltwref vt c else btyp_wref c  in
-      bexpr_prj v t c
-
-  (* Constant RO pointer to tuple projection *)
-  | BTYP_rref (BTYP_tuple ts as vt) ->
-    let n = List.length ts in
-    if v < 0 || v >= n then
-      clierrx "[flx_bind/flx_lookup.ml:4235: E184r] " sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
-        " negative or >= " ^ si n ^ "for tuple type " ^ sbt bsym_table t)
-    else
-      let c = List.nth ts v in
-      let c = if iscompact_linear_product vt then btyp_cltrref vt c else btyp_rref c in
-      bexpr_prj v t c
-
-  (* Constant WO pointer to tuple projection *)
-  | BTYP_wref (BTYP_tuple ts as vt) ->
-    let n = List.length ts in
-    if v < 0 || v >= n then
-      clierrx "[flx_bind/flx_lookup.ml:4235: E184w] " sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
-        " negative or >= " ^ si n ^ "for tuple type " ^ sbt bsym_table t)
-    else
-      let c = List.nth ts v in
-      let c = if iscompact_linear_product vt then btyp_cltwref vt c else btyp_wref c in
+      let c = if iscompact_linear_product vt then btyp_ptr mode c [vt] else btyp_ptr mode c [] in
       bexpr_prj v t c
 
   (* Compact Linear Type Pointers *)
-  (* Constant RW pointer to CLT tuple projection *)
-  | BTYP_cltpointer (mach,BTYP_tuple ts) ->
+  (* Constant pointer to CLT tuple projection *)
+  | BTYP_ptr (mode,BTYP_tuple ts,[mach]) ->
     let n = List.length ts in
     if v < 0 || v >= n then
       clierrx "[flx_bind/flx_lookup.ml:4235: E184p] " sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
         " negative or >= " ^ si n ^ "for tuple type " ^ sbt bsym_table t)
     else
       let c = List.nth ts v in
-      let c = btyp_cltpointer mach c in
+      let c = btyp_ptr mode c [mach] in
       bexpr_prj v t c
 
-  (* Constant RW pointer to CLT array projection *)
-  | BTYP_cltpointer (mach,BTYP_array (base, _)) ->
-      let c = btyp_cltpointer mach base  in
-      bexpr_prj v t c
-
-  (* Constant RO pointer to CLT tuple projection *)
-  | BTYP_cltrref (mach,BTYP_tuple ts) ->
-    let n = List.length ts in
-    if v < 0 || v >= n then
-      clierrx "[flx_bind/flx_lookup.ml:4235: E184r] " sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
-        " negative or >= " ^ si n ^ "for tuple type " ^ sbt bsym_table t)
-    else
-      let c = List.nth ts v in
-      let c = btyp_cltrref mach c in
-      bexpr_prj v t c
-
-  (* Constant RO pointer to array projection *)
-  | BTYP_cltrref (mach,BTYP_array (base, _)) ->
-      let c = btyp_cltrref mach base  in
-      bexpr_prj v t c
-
-  (* Constant WO pointer to tuple projection *)
-  | BTYP_cltwref (mach,BTYP_tuple ts) ->
-    let n = List.length ts in
-    if v < 0 || v >= n then
-      clierrx "[flx_bind/flx_lookup.ml:4235: E184w] " sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
-        " negative or >= " ^ si n ^ "for tuple type " ^ sbt bsym_table t)
-    else
-      let c = List.nth ts v in
-      let c = btyp_cltwref mach c in
-      bexpr_prj v t c
-
-  (* Constant WO pointer to CLT array *)
-  | BTYP_cltwref (mach,BTYP_array (base,_)) ->
-      let c = btyp_cltwref mach base  in
+  (* Constant pointer to CLT array projection *)
+  | BTYP_ptr (mode,BTYP_array (base, _),[mach]) ->
+      let c = btyp_ptr mode base [mach] in
       bexpr_prj v t c
 
   | _ ->
@@ -153,33 +87,10 @@ print_endline ("binding array projection, array type = " ^ sbt bsym_table t);
     bexpr_aprj v t c
 
   (* RW pointer to array *)
-  | BTYP_pointer (BTYP_array (base,  supt) as vt) ->
+  | BTYP_ptr (mode,(BTYP_array (base,  supt) as vt),[]) ->
     ate ix_t supt;
     let c = base in
-    let c = if iscompact_linear_product vt then btyp_cltpointer vt c else btyp_pointer c in
-    let (_,pt as p) = bexpr_aprj v t c in
-(*
-print_endline ("Projection type " ^ sbt bsym_table pt);
-*)
-    p
-
-  (* WO pointer to array *)
-  | BTYP_wref (BTYP_array (base,  supt) as vt) ->
-    ate ix_t supt;
-    let c = base in 
-    let c = if iscompact_linear_product vt then btyp_cltwref vt c else btyp_wref c in
-    let (_,pt as p) = bexpr_aprj v t c in
-(*
-print_endline ("Projection type " ^ sbt bsym_table pt);
-*)
-    p
-    
-
-  (* RO pointer to array *)
-  | BTYP_rref (BTYP_array (base,  supt) as vt) ->
-    ate ix_t supt;
-    let c = base in 
-    let c = if iscompact_linear_product vt then btyp_cltrref vt c else btyp_rref c in
+    let c = if iscompact_linear_product vt then btyp_ptr mode c [vt] else btyp_ptr mode c [] in
     let (_,pt as p) = bexpr_aprj v t c in
 (*
 print_endline ("Projection type " ^ sbt bsym_table pt);
@@ -188,21 +99,9 @@ print_endline ("Projection type " ^ sbt bsym_table pt);
 
   (* Compact Linear Type Pointers *)
   (* RW pointer to array *)
-  | BTYP_cltpointer (mach,BTYP_array (base, supt)) ->
+  | BTYP_ptr (mode,BTYP_array (base, supt),[mach]) ->
     ate ix_t supt;
-    let c = btyp_cltpointer mach base  in
-    bexpr_aprj v t c
-
-  (* RO pointer to array *)
-  | BTYP_cltrref (mach,BTYP_array (base, ( supt))) ->
-    ate ix_t supt;
-    let c = btyp_cltrref mach base  in
-    bexpr_aprj v t c
-
- (* WO pointer to array *)
-  | BTYP_cltwref (mach,BTYP_array (base,supt)) ->
-    ate ix_t supt;
-    let c = btyp_cltwref mach base  in
+    let c = btyp_ptr mode base [mach]  in
     bexpr_aprj v t c
 
   | _ ->

@@ -43,7 +43,7 @@ let equal' bsym_table sym_table counter be rs sr a b t =
     let yas = List.map (fun i ->  `EXPR_get_n (sr,(i,b))) ints in
     landn eq sr xas yas
  
-  | BTYP_pointer _
+  | BTYP_ptr _
   | BTYP_array _ 
   | BTYP_unitsum _ 
   | BTYP_sum _ 

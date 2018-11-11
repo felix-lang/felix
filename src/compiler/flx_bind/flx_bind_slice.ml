@@ -40,7 +40,7 @@ let bind_constant_slice bsym_table be bt sr f' a' ta a =
 (*
 print_endline ("Bind slice, large slice, delegate to library");
 *)
-        let routine = if islinear_type bsym_table base then "compact_linear_subarray" else "subarray" in
+        let routine = "subarray" in
         let first = `TYP_unitsum smin in
         let len = `TYP_unitsum (smax - smin + 1) in
         let subarray = `EXPR_name (sr,routine,[first;len]) in
@@ -54,7 +54,7 @@ print_endline ("Bind slice, large slice, delegate to library");
   (* ---------------------------------------------------------- *)
   try 
     match ta with
-    | BTYP_pointer (BTYP_tuple ls) ->
+    | BTYP_ptr (mode,BTYP_tuple ls,[]) ->
       let tmin = 0 and tmax = List.length ls - 1 in
       let smin, smax = Flx_cal_slice.cal_slice tmin tmax f' in 
       let sls = ref [] in

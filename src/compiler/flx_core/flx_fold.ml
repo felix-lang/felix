@@ -21,18 +21,14 @@ let fold (bsym_table: Flx_bsym_table.t) counter t =
        | `Base t -> ax t) ls
 
 
-    | BTYP_cltpointer (a,b)
-    | BTYP_cltrref (a,b)
-    | BTYP_cltwref (a,b)
+    | BTYP_ptr (_,t,ts) -> ax t; List.iter ax ts
+
     | BTYP_array (a,b)
     | BTYP_rptsum (a,b)
     | BTYP_function (a,b) -> ax a; ax b
     | BTYP_effector (a,e, b) -> ax a; ax e; ax b
     | BTYP_cfunction (a,b) -> ax a; ax b
 
-    | BTYP_pointer a -> ax a
-    | BTYP_rref a -> ax a
-    | BTYP_wref a -> ax a
     | BTYP_rev a -> ax a
 
     | BTYP_uniq a -> ax a

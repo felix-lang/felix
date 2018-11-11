@@ -355,8 +355,8 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
   *)
   | BEXPR_cltpointer_prj (domain_value_type,codomain_value_type,divisor),
     (BTYP_function(
-      (BTYP_cltpointer (base_type,domain_value_type2) as fdomain),
-      (BTYP_cltpointer (base_type2, codomain_value_type2) as fcodomain)
+      (BTYP_ptr (`RW,domain_value_type2,[base_type]) as fdomain),
+      (BTYP_ptr (`RW, codomain_value_type2,[base_type2]) as fcodomain)
     ) as t) as x ->
     print_endline ("in exe=" ^ sbx exe ^ "\nCLT Projection passed as argument " ^ sbe bsym_table e);
     let closure_bid = fresh_bid state.syms.counter in

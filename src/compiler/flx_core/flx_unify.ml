@@ -12,6 +12,13 @@ open Flx_btype_occurs
 open Flx_btype_subst
 open Flx_bid
 
+let mode_supertype m1 m2 = match m1,m2 with
+  | `R, `RW
+  | `W, `RW
+  | `N, _ -> ()
+  | x,y when x = y -> ()
+  | _ -> raise Not_found
+
 let unit_t = btyp_tuple []
 
 let check_recursion bsym_table t =
@@ -58,8 +65,8 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
     the pointed at value does not, except for uniq.
   *)
 
-  | BTYP_wref t1, BTYP_wref (BTYP_uniq t2)
-  | BTYP_wref t1, BTYP_pointer (BTYP_uniq t2)
+  | BTYP_ptr (`W,t1,[]), BTYP_ptr (`W,BTYP_uniq t2,[])
+  | BTYP_ptr (`W,t1,[]), BTYP_ptr (`RW,BTYP_uniq t2,[])
 (*
   | BTYP_rref t1, BTYP_rref (BTYP_uniq t2)
   | BTYP_rref t1, BTYP_pointer (BTYP_uniq t2)
@@ -86,20 +93,31 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
     if m <> n then raise Not_found;
     add_ge (l,r)
 
-  (* pointer is a subtype of read only pointer and write only pointer.
-     no variance at the moment
+  (* FIXME: these are the ordinary pointer and clt pointer cases
+     we had before. There's an obvious generalisation to just require
+     the projection traces to unify, but I think that's WRONG.
+
+     In fact I think these two discrete cases are wrong too because
+     a CLT pointer argument should be able to accept a non-clt pointer
+     parameter.
+
+     In fact, I don't believe it should be possible to specify
+     a clt pointer as a parameter. No algorithm can actually use that
+     fact. The parameter is just a plain pointer, for which there are
+     only three operations anyhow: read, write, and project, if it
+     points at a product.
+
+     Only hassle is comparison of pointers. Probably should ban that!
   *)
-  | BTYP_rref l, BTYP_pointer r ->
+  | BTYP_ptr (ml,l,[]), BTYP_ptr (mr,r,[]) ->
+    mode_supertype ml mr;
     add_eq (l,r)
 
-  | BTYP_wref l, BTYP_pointer r ->
-    add_eq (l,r)
+  | BTYP_ptr (ml,l,[machl]), BTYP_ptr (mr,r,[machr]) ->
+    mode_supertype ml mr;
+    add_eq (l,r);
+    add_eq (machl, machr);
 
-  | BTYP_cltrref (lm, l), BTYP_cltpointer (rm,r) ->
-    add_eq (l,r); add_eq(lm,rm)
-
-  | BTYP_cltwref (lm,l), BTYP_cltpointer (rm,r) ->
-    add_eq (l,r); add_eq(lm,rm)
 (*
   (* these special rules say a pointer &t is a subtype of a clt pointer <_,t> *)
   | BTYP_cltpointer (lm,l), BTYP_pointer (t)
@@ -217,21 +235,19 @@ and solve_subsumption nominal_subtype counter lhs rhs  dvars (s:vassign_t option
  
       | BTYP_uniq t1, BTYP_uniq t2 -> add_eqn (t1,t2)
 
-      | BTYP_pointer t1, BTYP_pointer t2 ->
-        add_eqn (t1,t2)
-
-      | BTYP_wref t1, BTYP_wref t2
-      | BTYP_rref t1, BTYP_rref t2 ->
-        add_eqn (t1,t2)
-
-      (* Compact linear type pointers, invariant on both params
-         for now
+      (* FIXME: this is the non-subtyping version of the
+         code in the inequality unification, it needs
+         to be generalised as for that case.
       *)
-      | BTYP_cltpointer (d1,c1), BTYP_cltpointer (d2,c2)
-      | BTYP_cltrref(d1,c1), BTYP_cltrref (d2,c2)
-      | BTYP_cltwref(d1,c1), BTYP_cltwref(d2,c2) ->
-        add_eqn (d1,d2);
-        add_eqn (c1,c2);
+      | BTYP_ptr (ml,l,[]), BTYP_ptr (mr,r,[]) ->
+        if ml =  mr then add_eqn (l,r) else raise Not_found
+
+      | BTYP_ptr (ml,l,[machl]), BTYP_ptr (mr,r,[machr]) ->
+        if ml =  mr then begin 
+          add_eqn (l,r);
+          add_eqn (machl, machr);
+        end
+        else raise Not_found
 
       | BTYP_unitsum i, BTYP_unitsum j when i = j -> ()
 

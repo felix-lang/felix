@@ -28,10 +28,7 @@ let fixtype bsym_table t =
 (* Remove uniqueness types *)
     | BTYP_uniq t -> t
 (* downgrade read and write pointers to ordinary pointers *)
-    | BTYP_rref t -> btyp_pointer t
-    | BTYP_wref t -> btyp_pointer t
-    | BTYP_cltrref (d,c) -> btyp_cltpointer d c
-    | BTYP_cltwref (d,c) -> btyp_cltpointer d c
+    | BTYP_ptr (_,t,ts) -> btyp_ptr `RW t ts 
     | _ -> t
   in
   f_btype t

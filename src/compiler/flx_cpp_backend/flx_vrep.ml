@@ -41,7 +41,7 @@ let cal_variant_cases bsym_table t =
 let size t = match t with
   | BTYP_void -> -1
   | BTYP_tuple [] -> 0
-  | BTYP_pointer _  (* this is WRONG won't work for char* at odd address *)
+  | BTYP_ptr (_,_,[])  (* this is WRONG won't work for char* at odd address *)
   | BTYP_function _
   | BTYP_cfunction _
     -> 1

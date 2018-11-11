@@ -313,7 +313,7 @@ print_endline ("Flxg_codegen.codegen_bsyms");
     (fun index ->
       "  " ^
       Flx_name.cpp_instance_name state.syms bsym_table index [] ^
-      "(0)"
+      "()" (* used to be (0) but that fails for pointers to compact linear *)
     )
     topfuns
   in

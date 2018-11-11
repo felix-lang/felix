@@ -434,7 +434,7 @@ assert false;
     ce_dot (ge' a) (cid_of_flxid field_name)
 
   (* pointer to record projection *)
-  | BEXPR_apply ( (BEXPR_rprj (name,seq,BTYP_pointer (BTYP_record (es)),_),_), a) ->
+  | BEXPR_apply ( (BEXPR_rprj (name,seq,BTYP_ptr (_,(BTYP_record (es)),[]),_),_), a) ->
 print_endline "rprj should have been removed";
 assert false;
     let field_name = if seq = 0 then name else "_" ^ name ^ "_" ^ string_of_int seq in
@@ -961,7 +961,7 @@ assert false;
     end
     *)
 
-  | BEXPR_deref ((BEXPR_ref (index,ts)),BTYP_pointer t) ->
+  | BEXPR_deref ((BEXPR_ref (index,ts)),BTYP_ptr (_,t,[])) ->
     ge' (bexpr_varname t (index,ts))
 
   | BEXPR_address e -> ce_prefix "&" (ge' e)

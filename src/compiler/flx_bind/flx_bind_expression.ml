@@ -453,9 +453,7 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
     let typ = unfold "flx_lookup" typ in
     let ctyp,k = 
     let base = match typ with 
-       | BTYP_pointer base -> base
-       | BTYP_wref base -> base
-       | BTYP_rref base -> base
+       | BTYP_ptr (_,base,[]) -> base
        | _ -> typ
     in
     let base = unfold "flx_lookup2" base in
@@ -524,9 +522,7 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
 *)
     let ctyp = 
       match typ with 
-      | BTYP_pointer _ -> btyp_pointer ctyp
-      | BTYP_rref  _ -> btyp_rref ctyp
-      | BTYP_wref  _ -> btyp_wref ctyp
+      | BTYP_ptr (mode,_,[]) -> btyp_ptr mode ctyp []
       | _ -> ctyp
     in
     bexpr_get_n ctyp n a
@@ -696,7 +692,6 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
     Flx_encoder.gen_encoder state bsym_table bt lookup_name_with_sig env rs sr ts
 
   | `EXPR_name (sr,name,ts) ->
-
 (*
 if name = "hhhhh" then 
 print_endline ("In bind_expression: Lookup name hhhhh");
@@ -774,7 +769,7 @@ print_endline ("In bind_expression: Lookup name hhhhh");
               (* We've got a reference, so make sure the type is a pointer. *)
               let t' = 
                 match t with 
-                | BTYP_pointer t' -> t' 
+                | BTYP_ptr (`RW,t',[]) -> t' 
                 | _ ->
                   failwith ("[lookup, AST_name] expected ref " ^ name ^
                   " to have pointer type")
@@ -835,7 +830,7 @@ print_endline ("flx_lookup.BBDCL_const_ctor.bexpr_varname");
               (* We've got a reference, so make sure the type is a pointer. *)
               let t' = 
                 match t with 
-                | BTYP_pointer t' -> t' 
+                | BTYP_ptr (`RW,t',[]) -> t' 
                 | _ ->
                 failwith ("[lookup, AST_name] expected ref " ^ name ^
                   " to have pointer type")
@@ -1171,10 +1166,11 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
         )
       end
 
-  | `EXPR_suffix (sr,(f,suf)) ->
+  | `EXPR_suffix (sr,(f,suf)) as x ->
     let sign = bt sr suf in
     let srn = src_of_qualified_name f in
-    lookup_qn_with_sig' state bsym_table sr srn env rs f [sign]
+    let result = lookup_qn_with_sig' state bsym_table sr srn env rs f [sign] in
+    result
 
   | `EXPR_likely (srr,e) -> bexpr_likely (be e)
   | `EXPR_unlikely (srr,e) -> bexpr_unlikely (be e)
@@ -1230,7 +1226,7 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
                     index
                     ts
                   in
-                  bexpr_ref (btyp_pointer vtype) (index, ts)
+                  bexpr_ref (btyp_ptr `RW vtype []) (index, ts)
 
               | BBDCL_val (_,_,(`Val | `Tmp)) ->
                   clierr2 srr (Flx_bsym.sr bsym) ("[bind_expression] " ^
@@ -1260,7 +1256,7 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
                     index
                     ts
                   in
-                  bexpr_ref (btyp_pointer vtype) (index, ts)
+                  bexpr_ref (btyp_ptr `RW vtype []) (index, ts)
 
               | SYMDEF_parameter _ ->
                   clierr2 srr sym.Flx_sym.sr ("[bind_expression] [2]Address " ^
@@ -1333,8 +1329,8 @@ print_endline ("Binding _deref .. " ^ string_of_expr e);
 *)
     let e,t = be e' in
     begin match unfold "flx_lookup" t with
-    | BTYP_rref t' 
-    | BTYP_pointer t' -> bexpr_deref t' (e,t)
+    | BTYP_ptr (`R,t',_) 
+    | BTYP_ptr (`RW,t',_) -> bexpr_deref t' (e,t)
     | _ -> clierrx "[flx_bind/flx_lookup.ml:4856: E207] " sr 
      ("[bind_expression'] Dereference non pointer, type " ^ sbt bsym_table t)
     end

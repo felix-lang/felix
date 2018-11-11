@@ -3,9 +3,7 @@ open Flx_exceptions
 
 (* top down check for fix point not under sum or pointer *)
 let rec check_rec t = match t with
-   | BTYP_pointer _
-   | BTYP_rref _
-   | BTYP_wref _
+   | BTYP_ptr _
    | BTYP_sum _
    | BTYP_function _
    | BTYP_effector _
@@ -47,15 +45,7 @@ let fix i t =
     | BTYP_effector (a,e,b) -> btyp_effector (aux a, aux e, aux b)
     | BTYP_cfunction (a,b) -> btyp_cfunction (aux a, aux b)
 
-    | BTYP_pointer a -> btyp_pointer (aux a)
-    | BTYP_rref a -> btyp_rref (aux a)
-    | BTYP_wref a -> btyp_wref (aux a)
-
-    | BTYP_cltpointer (d,c) -> btyp_cltpointer (aux d) (aux c)
-    | BTYP_cltrref (d,c) -> btyp_cltrref (aux d) (aux c)
-    | BTYP_cltwref (d,c) -> btyp_cltwref (aux d) (aux c)
-
-
+    | BTYP_ptr (m,t,ts) -> btyp_ptr m (aux t) (List.map aux ts)
 
     | BTYP_array (a,b) -> btyp_array (aux a, aux b)
     | BTYP_rptsum (a,b) -> btyp_rptsum (aux a, aux b)

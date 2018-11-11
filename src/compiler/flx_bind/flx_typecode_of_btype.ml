@@ -18,7 +18,7 @@ let typecode_of_btype ?sym_table:(sym_table=None) bsym_table counter sr t0 =
       | BTYP_array (a,n) -> `TYP_array (tc a, tc n)
       | BTYP_sum ts -> `TYP_sum (List.map tc ts)
       | BTYP_unitsum n -> `TYP_unitsum n
-      | BTYP_pointer t -> `TYP_pointer (tc t)
+      | BTYP_ptr (`RW,t,[]) -> `TYP_pointer (tc t)
       | BTYP_function (d,c) -> `TYP_function (tc d, tc c)
       | BTYP_cfunction (d,c) -> `TYP_function (tc d, tc c)
       | BTYP_void -> `TYP_void sr

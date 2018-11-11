@@ -19,7 +19,6 @@ let rec dual t =
   | BTYP_cfunction (a,b) -> btyp_cfunction (dual b,dual a)
   | BTYP_array (a,b) -> btyp_rptsum (b,dual a)
 
-  | BTYP_pointer t -> btyp_pointer (dual t)
   | BTYP_void -> btyp_unit ()
   | BTYP_unitsum k -> 
     let rec aux ds k = if k = 0 then ds else aux (btyp_unit () :: ds) (k-1) in

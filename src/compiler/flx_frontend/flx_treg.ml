@@ -230,17 +230,16 @@ print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table
    *)
 
   (* GUESS! *)
-  | BTYP_uniq t' -> assert false; rr t'
-  | BTYP_rref t' -> assert false; rr t'
-  | BTYP_wref t' -> assert false; rr t'
+  | BTYP_uniq _ -> assert false
+
+  | BTYP_ptr (`N,_,_) -> assert false
+  | BTYP_ptr (`R,_,_) -> assert false
+  | BTYP_ptr (`W,_,_) -> assert false
+  | BTYP_ptr (_,_,(_::_::_)) -> assert false
 
 
-  | BTYP_pointer t' -> add_weak weak t'; rnr t
-  | BTYP_cltpointer (d,c) -> rr d; rr c; rnr t
-
-  (* I wonder if these should be here .. probably not *)
-  | BTYP_cltrref (d,c) -> rr d; rr c; rnr t
-  | BTYP_cltwref (d,c) -> rr d; rr c; rnr t
+  | BTYP_ptr (`RW,t',[]) -> add_weak weak t'; rnr t
+  | BTYP_ptr (`RW,c,[d]) -> rr d; rr c; rnr t
 
   | BTYP_inst (i,ts,_)->
 (*

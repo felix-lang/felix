@@ -95,7 +95,7 @@ print_endline ("[flx_pgen] One component union should have been removed");
     (* print_endline "Function/procedure type shape: using address"; *)
     "::flx::rtl::_address_ptr_map"
 
-  | BTYP_pointer _ -> "::flx::rtl::_address_ptr_map"
+  | BTYP_ptr (_,_,[]) -> "::flx::rtl::_address_ptr_map"
   | _ -> tn t ^ "_ptr_map"
 
 let shape_of syms bsym_table shape_map tn t = 

@@ -232,8 +232,9 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   | BTYP_typeof _ -> assert false
   | BTYP_hole -> assert false
   | BTYP_uniq _ -> assert false
-  | BTYP_rref _ -> assert false
-  | BTYP_wref _ -> assert false
+  | BTYP_ptr (`R,_,_) -> assert false
+  | BTYP_ptr (`W,_,_) -> assert false
+  | BTYP_ptr (_,_,(_::_::_)) -> assert false
 
   | BTYP_type_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
@@ -245,12 +246,8 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   | BTYP_tuple [] -> " ::flx::rtl::cl_t" (* COMPACT LINEAR! *)
   | t when islinear_type bsym_table t -> " ::flx::rtl::cl_t"
 
-  | BTYP_pointer t' -> cpp_type_classname syms bsym_table t' ^ "*"
-
-  | BTYP_cltpointer (d,c)
-  | BTYP_cltrref (d,c)
-  | BTYP_cltwref (d,c) ->
-      "::flx::rtl::clptr_t";
+  | BTYP_ptr (_,t',[]) -> cpp_type_classname syms bsym_table t' ^ "*"
+  | BTYP_ptr (_,c,[d]) -> "::flx::rtl::clptr_t";
 
   | BTYP_effector (d,e,c) -> 
     print_endline ("[Flx_name:cpp_type_classname] Attempt to name effector type in code generator:" ^ sbt bsym_table t');
@@ -412,7 +409,8 @@ and cpp_structure_name syms bsym_table t =
   | BTYP_void -> print_endline ("WARNING cpp_structure_name of void"); "void" (* failwith "void doesn't have a classname" *)
   | BTYP_tuple [] -> "int" (* COMPACT LINEAR! *)
 
-  | BTYP_pointer t' -> cpp_type_classname syms bsym_table t' ^ "*"
+  | BTYP_ptr (_,t',[]) -> cpp_type_classname syms bsym_table t' ^ "*"
+  | BTYP_ptr (_,c,[d]) -> "::flx::rtl::clptr_t";
  
   | BTYP_effector (d,_,BTYP_void) -> "_pt<" ^tn d ^ ">"
   | BTYP_effector (d,_,c) -> "_ft<" ^ tn d ^ "," ^ tn c ^ ">" 
@@ -426,17 +424,8 @@ and cpp_structure_name syms bsym_table t =
 
   | BTYP_tuple ts -> "_tt"^string_of_int (List.length ts)^"<" ^ catmap "," tn ts ^ ">" 
   | BTYP_record _  -> "_art" ^ cid_of_bid (tix t)
-(*
-  | BTYP_variant _ -> "_avt" ^ cid_of_bid (tix t)
-  | BTYP_sum _ -> "_st" ^ cid_of_bid (tix t)
-*)
+
   | BTYP_variant _ -> "::flx::rtl::_uctor_"
-
-  | BTYP_cltpointer (d,c)
-  | BTYP_cltrref (d,c)
-  | BTYP_cltwref (d,c) ->
-      "::flx::rtl::clptr_t";
-
 
   | BTYP_rptsum _
   | BTYP_sum _ ->
@@ -519,18 +508,7 @@ and cpp_typename syms bsym_table t =
   | BTYP_effector _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_function _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_cfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
-  | BTYP_pointer t -> cpp_typename syms bsym_table t ^ "*"
-(*
-  | BTYP_inst (i,ts) ->
-    let bsym = Flx_bsym_table.find bsym_table i in
-    let fname = Flx_bsym.id bsym in
-    let bbdcl = Flx_bsym.bbdcl bsym in
-    let sr = Flx_bsym.sr bsym in
-    begin match bbdcl with
-    | _ -> cpp_type_classname syms bsym_table t
-    end
-*)
-
+  | BTYP_ptr (_,t,[]) -> cpp_typename syms bsym_table t ^ "*"
   | _ -> cpp_type_classname syms bsym_table t
 
 let cpp_ltypename syms bsym_table t = cpp_typename syms bsym_table t
