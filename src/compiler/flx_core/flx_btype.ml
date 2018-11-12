@@ -90,6 +90,90 @@ and t =
   | BTYP_typeof of int * Flx_ast.expr_t
   | BTYP_typeop of string * t * kind 
 
+(** Iterate over each bound type and call the function on it. *)
+let flat_iter
+  ?(f_bid=fun _ -> ())
+  ?(f_btype=fun _ -> ())
+  btype
+=
+  match btype with
+  | BBOOL b -> ()
+  | BTYP_typeof (i, t) -> f_bid i
+  | BTYP_typeop (op, t,k) -> f_btype t
+
+  | BTYP_hole -> ()
+  | BTYP_label -> ()
+  | BTYP_none -> ()
+  | BTYP_sum ts -> List.iter f_btype ts
+  | BTYP_unitsum k ->
+      let unitrep = BTYP_tuple [] in
+      for i = 1 to k do f_btype unitrep done
+(*
+  | BTYP_intersect ts -> List.iter f_btype ts
+*)
+  | BTYP_inst (i,ts,mt) -> f_bid i; List.iter f_btype ts
+  | BTYP_vinst (i,ts,mt) -> f_bid i; List.iter f_btype ts
+  | BTYP_tuple ts -> List.iter f_btype ts
+  | BTYP_rptsum (t1,t2)
+  | BTYP_array (t1,t2)->  f_btype t1; f_btype t2
+  | BTYP_record (ts) -> List.iter (fun (s,t) -> f_btype t) ts
+  | BTYP_polyrecord (ts,v) -> List.iter (fun (s,t) -> f_btype t) ts; f_btype v
+  | BTYP_variant ts -> List.iter (fun (s,t) -> f_btype t) ts
+  | BTYP_polyvariant ts -> List.iter (fun k -> 
+      match k with 
+      | `Ctor (s,t) -> f_btype t
+      | `Base t -> f_btype t
+    ) ts
+
+  | BTYP_ptr (m,t,ts) -> f_btype t; List.iter f_btype ts
+
+  | BTYP_function (a,b) -> f_btype a; f_btype b
+  | BTYP_effector (a,e,b) -> f_btype a; f_btype e; f_btype b
+  | BTYP_cfunction (a,b) -> f_btype a; f_btype b
+  | BTYP_rev t -> f_btype t
+  | BTYP_uniq t -> f_btype t
+
+  | BTYP_void -> ()
+  | BTYP_fix _ -> ()
+  | BTYP_tuple_cons (a,b) -> f_btype a; f_btype b
+  | BTYP_tuple_snoc (a,b) -> f_btype a; f_btype b
+  | BTYP_type_tuple ts -> List.iter f_btype ts
+  | BTYP_type_function (its, a, b) ->
+      (* The first argument of [its] is an index, not a bid. *)
+      (* List.iter (fun (_,t) -> f_btype t) its; *)
+      f_btype b
+  | BTYP_type_var (_,t) -> ()
+      (* The first argument of [BTYP_type_var] is just a unique integer, not a
+       * bid. *)
+  | BTYP_type_apply (a,b) -> f_btype a; f_btype b
+  | BTYP_type_map (a,b) -> f_btype a; f_btype b
+
+  | BTYP_subtype_match (t,ps)
+  | BTYP_type_match (t,ps) ->
+      f_btype t;
+      List.iter begin fun (tp, t) ->
+        f_btype tp.pattern;
+        (* Assignment variables are type variable indices not bids 
+        List.iter (fun (i, t) -> f_bid i; f_btype t) tp.assignments;
+        *)
+        f_btype t
+      end ps
+  | BTYP_type_set ts -> List.iter f_btype ts
+  | BTYP_type_set_union ts -> List.iter f_btype ts
+  | BTYP_type_set_intersection ts -> List.iter f_btype ts
+
+
+(** Recursively iterate over each bound type and call the function on it. *)
+let rec iter
+  ?(f_bid=fun _ -> ())
+  ?(f_btype=fun _ -> ())
+  btype
+=
+  f_btype btype;
+  let f_btype btype = iter ~f_bid ~f_btype btype in
+  flat_iter ~f_bid ~f_btype btype
+
+
 (* for unification *)
 type relmode_t = [`Eq | `Ge]
 let string_of_relmode_t x = match x with
@@ -216,6 +300,20 @@ and str_of_btype typ =
   | BTYP_type_set_intersection ts -> "BTYP_type_set_intersection(" ^ ss ts ^ ")"
 
   | BTYP_typeop (op,t,k) -> "BTYP_typeop(" ^ op ^ "," ^ s t ^","^sk k^")"
+
+
+let rec islinear_type bsym_table t =
+  match t with
+  | BTYP_void
+  | BTYP_unitsum _  -> true
+  | BTYP_type_var (_,k) -> true
+
+  | BTYP_tuple ts
+  | BTYP_sum ts -> List.fold_left (fun acc t -> acc && islinear_type bsym_table t) true ts
+  | BTYP_rptsum (count,base) -> islinear_type bsym_table base (* coarray *)
+  | BTYP_array (base,index) -> islinear_type bsym_table base
+  | _ -> false
+
 
 let st t = str_of_btype t
 let sts ts = catmap "," st ts
@@ -458,22 +556,47 @@ any leading terms which are manifestly not compact
 linear must be remmoved, so that the head of the trail,
 if it is exists, is compact linear. Such a term cannot
 be a type variable BUT, it may be a product containing one
-as a component.
+as a component. [It can't be a type variable because it
+isn't legal to run a projection against a type variable ..
+even if the type variable is considered compact linear ... ]
 
   4. After monomorphisation, the head, if it exists,
 must be non-polymorphic and compact linear, and,
 the rest of the trail is no longer required and can
 be ignored.
 
-  5. Therefore, we can simply remove all non-polymorphic
-components from the tail of the trail.
-
-
-
+  5. Once a monomorphic compact linear head is
+present, no projection can remove it. However a polymorphic
+compact linear head can be deleted if the type variable
+in it is replace by a non-compact linear type. 
 
 *)
+
+let ismonomorphic t = 
+  let f_btype t = match t with BTYP_type_var _ -> raise Not_found | _ -> () in
+  try iter ~f_btype t; true
+  with Not_found -> false
+
+let rec strip_nonclt ts = match ts with
+  | [] -> []
+  | h :: t  ->
+    if not (islinear_type () h) 
+    then strip_nonclt t
+    else ts
+
+let throw_tail ts = match ts with
+  | [] -> []
+  | h :: t ->
+    if ismonomorphic h then [h]
+    else ts
+
+
 let btyp_ptr m t ts =
   BTYP_ptr (m,t,ts)
+
+let reduce_ptr m t ts = 
+  let ts = throw_tail (strip_nonclt ts) in
+  btyp_ptr m t ts
 
 let btyp_pointer t       = btyp_ptr `RW t []
 let btyp_rref t          = btyp_ptr `R t []
@@ -623,22 +746,6 @@ let rec int_of_linear_type bsym_table t = match t with
 
   | _ -> raise (Invalid_int_of_unitsum)
 
-let rec islinear_type bsym_table t =
-  match t with
-  | BTYP_void
-  | BTYP_unitsum _  -> true
-  | BTYP_type_var (_,k) ->
-    (* k must be compact linear, i.e. a subtype of KIND_compact_linear,
-       this includes unitsums, etc
-    *) 
-    Flx_kind.kind_ge2 Flx_kind.KIND_compactlinear k  
-
-  | BTYP_tuple ts
-  | BTYP_sum ts -> List.fold_left (fun acc t -> acc && islinear_type bsym_table t) true ts
-  | BTYP_rptsum (count,base) -> islinear_type bsym_table base (* coarray *)
-  | BTYP_array (base,index) -> islinear_type bsym_table base
-  | _ -> false
-
 let sizeof_linear_type bsym_table t = 
   try int_of_linear_type bsym_table t 
   with Invalid_int_of_unitsum -> assert false
@@ -657,90 +764,6 @@ let iscompact_linear_product t =
   | _ -> false
 
 (* -------------------------------------------------------------------------- *)
-
-(** Iterate over each bound type and call the function on it. *)
-let flat_iter
-  ?(f_bid=fun _ -> ())
-  ?(f_btype=fun _ -> ())
-  btype
-=
-  match btype with
-  | BBOOL b -> ()
-  | BTYP_typeof (i, t) -> f_bid i
-  | BTYP_typeop (op, t,k) -> f_btype t
-
-  | BTYP_hole -> ()
-  | BTYP_label -> ()
-  | BTYP_none -> ()
-  | BTYP_sum ts -> List.iter f_btype ts
-  | BTYP_unitsum k ->
-      let unitrep = BTYP_tuple [] in
-      for i = 1 to k do f_btype unitrep done
-(*
-  | BTYP_intersect ts -> List.iter f_btype ts
-*)
-  | BTYP_inst (i,ts,mt) -> f_bid i; List.iter f_btype ts
-  | BTYP_vinst (i,ts,mt) -> f_bid i; List.iter f_btype ts
-  | BTYP_tuple ts -> List.iter f_btype ts
-  | BTYP_rptsum (t1,t2)
-  | BTYP_array (t1,t2)->  f_btype t1; f_btype t2
-  | BTYP_record (ts) -> List.iter (fun (s,t) -> f_btype t) ts
-  | BTYP_polyrecord (ts,v) -> List.iter (fun (s,t) -> f_btype t) ts; f_btype v
-  | BTYP_variant ts -> List.iter (fun (s,t) -> f_btype t) ts
-  | BTYP_polyvariant ts -> List.iter (fun k -> 
-      match k with 
-      | `Ctor (s,t) -> f_btype t
-      | `Base t -> f_btype t
-    ) ts
-
-  | BTYP_ptr (m,t,ts) -> f_btype t; List.iter f_btype ts
-
-  | BTYP_function (a,b) -> f_btype a; f_btype b
-  | BTYP_effector (a,e,b) -> f_btype a; f_btype e; f_btype b
-  | BTYP_cfunction (a,b) -> f_btype a; f_btype b
-  | BTYP_rev t -> f_btype t
-  | BTYP_uniq t -> f_btype t
-
-  | BTYP_void -> ()
-  | BTYP_fix _ -> ()
-  | BTYP_tuple_cons (a,b) -> f_btype a; f_btype b
-  | BTYP_tuple_snoc (a,b) -> f_btype a; f_btype b
-  | BTYP_type_tuple ts -> List.iter f_btype ts
-  | BTYP_type_function (its, a, b) ->
-      (* The first argument of [its] is an index, not a bid. *)
-      (* List.iter (fun (_,t) -> f_btype t) its; *)
-      f_btype b
-  | BTYP_type_var (_,t) -> ()
-      (* The first argument of [BTYP_type_var] is just a unique integer, not a
-       * bid. *)
-  | BTYP_type_apply (a,b) -> f_btype a; f_btype b
-  | BTYP_type_map (a,b) -> f_btype a; f_btype b
-
-  | BTYP_subtype_match (t,ps)
-  | BTYP_type_match (t,ps) ->
-      f_btype t;
-      List.iter begin fun (tp, t) ->
-        f_btype tp.pattern;
-        (* Assignment variables are type variable indices not bids 
-        List.iter (fun (i, t) -> f_bid i; f_btype t) tp.assignments;
-        *)
-        f_btype t
-      end ps
-  | BTYP_type_set ts -> List.iter f_btype ts
-  | BTYP_type_set_union ts -> List.iter f_btype ts
-  | BTYP_type_set_intersection ts -> List.iter f_btype ts
-
-
-(** Recursively iterate over each bound type and call the function on it. *)
-let rec iter
-  ?(f_bid=fun _ -> ())
-  ?(f_btype=fun _ -> ())
-  btype
-=
-  f_btype btype;
-  let f_btype btype = iter ~f_bid ~f_btype btype in
-  flat_iter ~f_bid ~f_btype btype
-
 (* EXTREME FORWARD REFERENCE HACK .. Ocaml sucks .. *)
 let eval_typeop : ((string -> t-> Flx_kind.kind -> t) -> string -> t -> Flx_kind.kind -> t) option ref = ref None
 

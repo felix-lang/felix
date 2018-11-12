@@ -131,7 +131,20 @@ print_endline ("Bind type " ^ string_of_typecode t ^ " params = " ^
     let k = Flx_btype.bmt "Flx_bind_type.`TYP_var" k in
     btyp_typeop op t k
 
-  | `TYP_pclt (d,c) -> btyp_cltpointer (bt d) (bt c)
+  | `TYP_pclt (d,c) -> 
+(*
+print_endline ("Binding pointer to clt: base " ^ string_of_typecode d ^ ", target " ^ string_of_typecode c);
+    let d' = bt d in
+    let c' = bt c in
+print_endline (".. Bound base = " ^ sbt bsym_table d');
+print_endline (".. Bound target = " ^ sbt bsym_table c');
+*)
+    let result = btyp_cltpointer (bt d) (bt c) in
+(*
+print_endline ("  .. result = " ^ sbt bsym_table result);
+*)
+    result
+
   | `TYP_rpclt (d,c) -> btyp_cltrref (bt d) (bt c)
   | `TYP_wpclt (d,c) -> btyp_cltwref (bt d) (bt c)
   | `TYP_defer (sr, tor) -> 

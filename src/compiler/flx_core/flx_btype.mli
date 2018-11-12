@@ -131,6 +131,7 @@ val btyp_variant : (string * t) list -> t
 val btyp_polyvariant : pvpiece_t list -> t
 
 val btyp_ptr: pmode -> t -> t list -> t
+val reduce_ptr: pmode -> t -> t list -> t
 val btyp_pointer : t -> t
 val btyp_rref : t -> t
 val btyp_wref : t -> t
