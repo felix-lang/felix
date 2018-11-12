@@ -55,7 +55,7 @@ let flat_poly_fixup_type syms bsym_table polyinst sr t =
       print_endline ("poly_fixup_type: " ^ Flx_monodebug.showts bsym_table i ts ^ " --> " ^ Flx_monodebug.showts bsym_table i' ts');
       t'
       end
-   | BTYP_ptr (mode,t,ts) -> reduce_ptr mode t ts
+  | BTYP_ptr (mode,target,chain) -> reduce_ptr mode target chain
   | x -> x
 
 (* this has to be top down, so instances i,ts use the original
