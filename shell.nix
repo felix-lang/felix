@@ -15,7 +15,7 @@ stdenv.mkDerivation {
     gcc
     git
     gmp
-    ocaml
+    ocaml-ng.ocamlPackages_4_06.ocaml
     python36Full
     SDL2
   ];
@@ -26,8 +26,9 @@ stdenv.mkDerivation {
     export FLX_INSTALL_DIR=$PWD/build/release
     #
     # So far my attempts at getting the build script to recognize
-    # sdl-config are not working (I also tried an alias):
+    # sdl-config are not working (I also tried an alias).
+    # The package db needs to be modified; see discussion on
+    # https://github.com/felix-lang/felix/pull/126
     # 
-    ln -fs ${SDL2.dev}/bin/sdl2-config $(pwd)/build/release/host/bin/sdl-config
   '';
 }
