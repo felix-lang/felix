@@ -306,7 +306,7 @@ let rec islinear_type bsym_table t =
   match t with
   | BTYP_void
   | BTYP_unitsum _  -> true
-  | BTYP_type_var (_,k) -> true
+  | BTYP_type_var (_,k) -> kind_ge2 KIND_compactlinear k
 
   | BTYP_tuple ts
   | BTYP_sum ts -> List.fold_left (fun acc t -> acc && islinear_type bsym_table t) true ts
