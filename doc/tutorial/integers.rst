@@ -116,7 +116,7 @@ back to the smaller `int` representation.
 
 If the result of the calculations exceeds the size of the
 compiler internal representation, or, the final result
-is to large for an `int`, the result is indeterminate.
+is too large for an `int`, the result is indeterminate.
 
 Division by Zero
 ----------------
