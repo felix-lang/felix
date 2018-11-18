@@ -122,6 +122,23 @@ make
 sudo make install # optional!
 ```
 
+#### Building with Nix
+
+On platforms supporting Nix, you can set up a build and runtime environment
+by running:
+
+```
+git clone https://github.com/felix-lang/felix.git
+cd felix
+nix-shell shell.nix
+. buildscript/linuxsetup.sh
+make  
+```
+
+This will do an in place "install" of the Felix binaries. Note that
+this should work on OS X with Nix, but needs to be tested. 
+
+
 #### Windows
 Make sure git, Python3 and Ocaml are on your PATH.
 You can download a pre-built [Ocaml 4.06.1 for Windows](https://github.com/felix-lang/win64ocaml).
