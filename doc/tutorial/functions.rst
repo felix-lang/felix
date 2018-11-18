@@ -113,13 +113,14 @@ are assumed to have no side effects, the other function calls
 The output of the program is just:
 
 .. code-block:: none
+
     hi from g!
     15
 
 Purity
 ------
 Functions can further be annotated to be ``pure`` or ``impure``, but at the 
-moment, the semantics of this are not defined and are not checked:
+moment, the semantics of these are not defined and are not checked:
 
 .. code-block:: felix
 
