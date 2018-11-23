@@ -142,6 +142,8 @@ syn keyword felixStatement SCHEME
 syn keyword felixStatement syntax
 syn keyword felixStatement literal
 syn keyword felixStatement spawn_fthread
+syn keyword felixStatement schedule_fthread 
+syn keyword felixStatement spawn_process 
 syn keyword felixStatement spawn_pthread
 syn keyword felixStatement static
 syn keyword felixStatement struct

@@ -49,19 +49,17 @@ open class Fibres
   {
       var con = start p;              // get continuation of p
       var fthr = mk_thread con;
-      svc$ svc_spawn_detached fthr;
+      svc$ svc_spawn_fthread fthr;
   }
 
   proc schedule_fthread(p:1->0)
   {
       var con = start p;              // get continuation of p
       var fthr = mk_thread con;
-      svc$ svc_schedule_detached fthr;
+      svc$ svc_schedule_fthread fthr;
   }
 
   proc suicide: 1 = "throw (con_t*)NULL;";
-
-  proc swait() { svc$ svc_swait; }
 
   proc chain : cont = "return $1;" requires property "heap_closure";
 

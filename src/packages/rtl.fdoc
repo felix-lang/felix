@@ -553,6 +553,7 @@ extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
 #include <string>
 #include <functional>
 #include <cstdint>
+#include <mutex>
 
 namespace flx { namespace rtl {
 
@@ -568,6 +569,8 @@ typedef ::std::uint64_t cl_t;
 // Felix system classes
 // ********************************************************
 
+struct RTL_EXTERN muxguard;
+
 // MOVED TO flx_exceptions
 //struct RTL_EXTERN con_t;     // continuation
 struct RTL_EXTERN jump_address_t;     // label variable type
@@ -581,6 +584,17 @@ struct RTL_EXTERN slist_node_t;   // singly linked list of void*
 struct RTL_EXTERN clptr_t;  // pointer to compact linear product component
 struct RTL_EXTERN clprj_t;  // compact linear projection
 
+struct RTL_EXTERN muxguard {
+private:
+   muxguard() = delete;
+   muxguard(muxguard const&) = delete;
+   muxguard *operator=(muxguard const&)=delete;
+  ::std::mutex *m;
+public:
+  muxguard (::std::mutex *p);
+  ~muxguard ();
+};
+  
 // MOVE THIS TO RTL AND PROVIDE SUITABLE RTTI SO GC KNOWS ABOUT THE FRAME POINTER
 struct RTL_EXTERN jump_address_t
 {
@@ -754,15 +768,15 @@ enum svc_t               // what the dispatch should do
   svc_get_fthread=1,
   svc_read=2,
   svc_general=3,               // temporary hack by RF
-  svc_reserved1=4,
+  svc_spawn_process=4,
   svc_spawn_pthread=5,
-  svc_spawn_detached=6,        // schedule fthread and invoke
+  svc_spawn_fthread=6,           // schedule fthread and invoke
   svc_sread=7,                 // synchronous read
   svc_swrite=8,                // synchronous write
   svc_kill=9,                  // kill fthread
   svc_reserved2=10,          
   svc_multi_swrite=11,         // multi-write
-  svc_schedule_detached=12,    // schedule fthread (continue)
+  svc_schedule_fthread=12,    // schedule fthread (continue)
   svc_end
 };
 
@@ -808,15 +822,15 @@ static char const *svc_desc[13] = {
   "svc_get_fthread",
   "svc_read",
   "svc_general",
-  "svc_reserved1",
+  "svc_spawn_process",
   "svc_spawn_pthread",
-  "svc_spawn_detached",
+  "svc_spawn_fthread",
   "svc_sread",
   "svc_swrite",
   "svc_kill",
   "svc_reserved2",
   "svc_multi_swrite",
-  "svc_schedule_detached"
+  "svc_schedule_fthread"
 };
 
 char const *describe_service_call(int x)
@@ -824,6 +838,9 @@ char const *describe_service_call(int x)
   if (x < 0 || x >12) return "Unknown service call";
   else return svc_desc[x];
 }
+
+muxguard::muxguard (::std::mutex *p): m(p) { if (m)m->lock(); }
+muxguard::~muxguard () { if (m)m->unlock(); }
 
 // ********************************************************
 // slist implementation

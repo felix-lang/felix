@@ -45,10 +45,19 @@ namespace flx { namespace run {
 
 // This class handles synchronous channel I/O and fthreads
 struct RTL_EXTERN sync_sched {
+  sync_sched () = delete;
+  sync_sched (sync_sched const&) = delete;
+  sync_sched &operator=(sync_sched const&) = delete;
+
   bool debug_driver;
 
   // the garbage collector and general control object
   ::flx::gc::generic::collector_t *collector;
+
+  // pointer to critical section mutex
+  // usually NULL, set to system critical section lock
+  // if the active queue is shared
+  ::std::mutex *critical_section;
 
   // scheduler queue
   ::std::list<flx::rtl::fthread_t*> *active;
@@ -91,8 +100,8 @@ struct RTL_EXTERN sync_sched {
 protected:
   // handlers for synchronous service calls.
   void do_yield();
-  void do_spawn_detached();
-  void do_schedule_detached();
+  void do_spawn_fthread();
+  void do_schedule_fthread();
   void do_sread();
   void do_swrite();
   void do_multi_swrite();
@@ -145,14 +154,15 @@ sync_sched::sync_sched (
   debug_driver(debug_driver_),
   collector(gcp_->collector),
   active(active_),
-  ft(0)
+  critical_section (nullptr),
+  ft(nullptr)
 {}
 
 // if the active list is not empty,
 // take the top of the active list and make it current,
 // popping it off the active list.
 // If the active list is empty, make the current NULL.
-
+// MUST BE USED INSIDE A CRITCAL SECTION
 void sync_sched::pop_current()
   {
      if(active->size() > 0) 
@@ -204,29 +214,34 @@ void sync_sched::do_yield()
     {
       if(debug_driver)
          fprintf(stderr,"[sync: svc_yield] yield");
+      
+      muxguard dummy(critical_section);
       active->push_back(ft);
       pop_current();
     }
 
-void sync_sched::do_spawn_detached()
+void sync_sched::do_spawn_fthread()
     {
+      muxguard dummy(critical_section);
       fthread_t *ftx = *(fthread_t**)request->data;
       if(debug_driver)
-        fprintf(stderr,"[sync: svc_spawn_detached] Spawn fthread %p\n",ftx);
+        fprintf(stderr,"[sync: svc_spawn_fthread] Spawn fthread %p\n",ftx);
       push_new(ftx);
     }
 
-void sync_sched::do_schedule_detached()
+void sync_sched::do_schedule_fthread()
     {
+      muxguard dummy(critical_section);
       fthread_t *ftx = *(fthread_t**)request->data;
       if(debug_driver)
-        fprintf(stderr,"[sync: svc_schedule_detached] Schedule fthread %p\n",ftx);
+        fprintf(stderr,"[sync: svc_schedule_fthread] Schedule fthread %p\n",ftx);
       collector->add_root(ftx);
       active->push_back(ftx);
     }
 
 void sync_sched::do_sread()
     {
+      muxguard dummy(critical_section);
       readreq_t * pr = (readreq_t*)request->data;
       schannel_t *chan = pr->chan;
       if(debug_driver)
@@ -265,6 +280,7 @@ show_state();
 
 void sync_sched::do_swrite()
     {
+      muxguard dummy(critical_section);
       readreq_t * pw = (readreq_t*)request->data;
       schannel_t *chan = pw->chan;
       if(debug_driver)
@@ -299,6 +315,7 @@ show_state();
       return;
     }
 
+// NOTE: not protected by mutex
 void sync_sched::external_multi_swrite (schannel_t *chan, void *data)
     {
       if(chan==NULL) return;
@@ -320,6 +337,7 @@ void sync_sched::external_multi_swrite (schannel_t *chan, void *data)
 
 void sync_sched::do_multi_swrite()
     {
+      muxguard dummy(critical_section);
       readreq_t * pw = (readreq_t*)request->data;
       void *data = *(void**)pw->variable;
       schannel_t *chan = pw->chan;
@@ -330,6 +348,7 @@ void sync_sched::do_multi_swrite()
 
 void sync_sched::do_kill()
     {
+      muxguard dummy(critical_section);
       fthread_t *ftx = *(fthread_t**)request->data;
       if(debug_driver)fprintf(stderr,"[sync: svc_kill] Request to kill fthread %p\n",ftx);
       ftx -> kill();
@@ -337,12 +356,19 @@ void sync_sched::do_kill()
     }
 
 
+// NOTE: the currently running fibre variable is owned
+// by this sync scheduler and is not shared, so access to
+// it does not required serialisation
+
 sync_sched::fstate_t sync_sched::frun()
 {
   if (debug_driver)
      fprintf(stderr,"[sync] frun: entry ft=%p, active size=%zu\n", ft,active->size());
 dispatch:
-  if (ft == 0) pop_current();
+  if (ft == 0) {
+     muxguard dummy(critical_section);
+     pop_current();
+   }
   if (ft == 0) return blocked; 
   request = ft->run();        // run fthread to get request
   if(request == 0)            // euthenasia request
@@ -360,7 +386,8 @@ dispatch:
   {
     case svc_yield: do_yield(); goto dispatch;
 
-    case svc_spawn_detached: do_spawn_detached(); goto dispatch;
+    case svc_spawn_fthread : do_spawn_fthread(); goto dispatch;
+    case svc_schedule_fthread: do_schedule_fthread(); goto dispatch;
 
     case svc_sread: do_sread(); goto dispatch;
 

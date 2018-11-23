@@ -70,6 +70,13 @@ open class Pthread
       var fthr = mk_thread con;
       svc$ svc_spawn_pthread fthr;
   }
+  //$ spawn a detached pthread sharing active list with spawner
+  proc spawn_process(p:1->0)
+  {
+      var con = start p;              // get continuation of p
+      var fthr = mk_thread con;
+      svc$ svc_spawn_process fthr;
+  }
   proc thread_yield : 1 = "PTF gcp->collector->get_thread_control()->yield();";
 }
 

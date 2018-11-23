@@ -55,6 +55,8 @@ struct async_sched
 
   int prun(block_flag_t);
   void do_spawn_pthread();
+  void do_spawn_process();
+  void spawn_impl(::std::list<::flx::rtl::fthread_t*>*);
   void do_general();
 
   void external_multi_swrite(::flx::rtl::schannel_t *, void *data);
@@ -90,13 +92,22 @@ static void prun_pthread_entry(void *data) {
 // CREATES ITS OWN PRIVATE SYNC SCHEDULER
 // SHARES WORLD INCLUDING COLLECTOR
 // REGISTERS IN THREAD_CONTROL
+void async_sched::do_spawn_process()
+{
+  spawn_impl (active);
+}
 void async_sched::do_spawn_pthread()
 {
+  std::list<fthread_t*> *pactive = new std::list<fthread_t*>;
+  spawn_impl (pactive);
+}
+
+void async_sched::spawn_impl(std::list<fthread_t*> *pactive) {
+
   fthread_t *ftx = *(fthread_t**)ss.request->data;
   if (debug_driver)
     fprintf(stderr, "[prun: spawn_pthread] Spawn pthread %p\n", ftx);
   gcp->collector->add_root(ftx);
-  std::list<fthread_t*> *pactive = new std::list<fthread_t*>;
   pactive->push_front(ftx);
   void *data = new async_sched(world,debug_driver, gcp, pactive);
   flx_detached_thread_t dummy;
@@ -217,12 +228,13 @@ sync_run:
         switch (ss.request->variant) 
         {
           case svc_spawn_pthread: do_spawn_pthread(); goto sync_run;
+          case svc_spawn_process: do_spawn_process(); goto sync_run;
 
           case svc_general: do_general(); goto sync_run;
 
           default:
             fprintf(stderr,
-              "prun: Unknown service request code 0x%4x\n", ss.request->variant);
+              "prun: Unknown service request code 0x%x\n", ss.request->variant);
             abort();
         }
 
