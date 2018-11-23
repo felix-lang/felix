@@ -27,11 +27,31 @@ Fields names in a record can be duplicated:
   var x = (a=1,a=2,32,77);
 
 In this case, when the field name is used to access a component
-it refers to the left most instance of the field.
+it refers to the left most instance of the field. While this may
+seem like an unusual feature in isolation, it is needed to support
+polyrecords (row polymorphism).
 
 There is a special case: if all the field names are blank,
 the the record is a tuple. So in fact tuples are just a special
 case of records.
+
+Function Application
+--------------------
+
+Earlier we saw examples of :ref:`function application <functions-101>`, but
+function application is implicitly performed on tuples and records:
+
+.. code-block:: felix
+
+  fun f(x:int,y:double)
+  // accepts either of the following
+  f (1,2.1)
+  f (x=1,y=2.1)
+
+The order doesn’t matter if you use names, except for duplicates.
+
+  
+  
 
 
 
