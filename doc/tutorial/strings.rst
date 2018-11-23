@@ -106,7 +106,7 @@ In this case, the first concatenation of x is done first,
 then the second one which appends "end". The result
 is independent of the ordering because concatenation
 is associative, the run time performance, however, is not,
-because concatenation requires coping.
+because concatenation requires copying.
 
 Substring Extraction
 --------------------

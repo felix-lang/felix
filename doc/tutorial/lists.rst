@@ -39,7 +39,7 @@ provided the values in the list can be converted as well:
 
 .. code-block:: felix
 
-  println$ "A list is " + ([1,2,3,4)].str;
+  println$ "A list is " + ([1,2,3,4]).str;
 
 Concatenation
 -------------

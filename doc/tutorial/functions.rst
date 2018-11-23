@@ -1,3 +1,5 @@
+.. _functions-101
+
 Functions
 =========
 
