@@ -41,16 +41,31 @@ off a synchronous channel into the active queue.
 #include "flx_rtl.hpp"
 #include <list>
 #include <atomic>
+#include "flx_async.hpp"
 
 namespace flx { namespace run {
 
+// *************************************
+// fthread_list has grown to include the async control object
+// and its ready list
+//
+// this object contains the data shared by multiple pthreads
+// pooled to run coroutines concurrently
+// *************************************
+
 struct RTL_EXTERN fthread_list {
-  ::std::atomic<int> thread_count; // n threads sharing list
   ::std::list<::flx::rtl::fthread_t*> fthreads;
   fthread_list(fthread_list const&) = delete;
   fthread_list& operator=(fthread_list const&) = delete;
 public:
+
+  ::std::atomic<int> thread_count; // n threads sharing list
+  size_t async_count; // pending async jobs
+  async_hooker* async; // async dispatch and ready list object
+
   fthread_list ();
+  ~fthread_list ();
+
   void push_back(::flx::rtl::fthread_t *);
   void push_front(::flx::rtl::fthread_t *);
   size_t size() const;
@@ -145,7 +160,12 @@ namespace flx { namespace run {
 // ***************************************************
 // fthread_list
 // ***************************************************
-fthread_list::fthread_list() : thread_count(1) {}
+fthread_list::fthread_list() : 
+  thread_count(1),
+  async_count(0),
+  async(nullptr)
+{}
+
 
 fthread_t *fthread_list::front() const { return fthreads.front(); }
 
@@ -165,7 +185,7 @@ void fthread_list::push_back(fthread_t *p) { fthreads.push_back(p); }
 size_t fthread_list::size()const { return fthreads.size(); }
 ::std::list<::flx::rtl::fthread_t*>::iterator fthread_list::begin() { return fthreads.begin(); }
 ::std::list<::flx::rtl::fthread_t*>::iterator fthread_list::end() { return fthreads.end(); }
-
+fthread_list::~fthread_list () { delete async; }
 
 // ***************************************************
 // sync_sched
