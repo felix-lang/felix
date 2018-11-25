@@ -69,7 +69,7 @@ open class Fibres
   //$ Construct a fibre scheduler.
   //$  NOTE: NOT GARBAGE COLLECTED!
   ctor fibre_scheduler: bool = """new ::flx::run::sync_sched($1, PTF gcp, 
-    new ::std::list<::flx::rtl::fthread_t*>)"""
+    new ::flx::run::fthread_list)"""
   ;
   ctor fibre_scheduler () =>
     fibre_scheduler (Env::getenv "FLX_DEBUG_DRIVER" != "")
@@ -94,6 +94,7 @@ open class Fibres
 
   //$ Spawn a fibre on a given scheduler with a given continuation.
   //$ Note: does NOT run it!
+  //$ FIXME: no mutex guard!!
   proc spawn_fibre: fibre_scheduler * fthread = """
     $1->collector->add_root($2);
     $1->active->push_back($2);

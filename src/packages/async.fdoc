@@ -30,7 +30,7 @@ struct async_sched
   struct flx_world *world;
   bool debug_driver;
   ::flx::gc::generic::gc_profile_t *gcp;
-  ::std::list< ::flx::rtl::fthread_t*> *active;
+  fthread_list *active;
 
   size_t async_count;
   async_hooker* async;
@@ -40,7 +40,7 @@ struct async_sched
     flx_world *world_arg, 
     bool d, 
     ::flx::gc::generic::gc_profile_t *g, 
-    ::std::list< ::flx::rtl::fthread_t*> *a
+    fthread_list *a
   ) : 
     world(world_arg), 
     debug_driver(d), 
@@ -56,7 +56,7 @@ struct async_sched
   int prun(block_flag_t);
   void do_spawn_pthread();
   void do_spawn_process();
-  void spawn_impl(::std::list<::flx::rtl::fthread_t*>*);
+  void spawn_impl(fthread_list*);
   void do_general();
 
   void external_multi_swrite(::flx::rtl::schannel_t *, void *data);
@@ -98,11 +98,11 @@ void async_sched::do_spawn_process()
 }
 void async_sched::do_spawn_pthread()
 {
-  std::list<fthread_t*> *pactive = new std::list<fthread_t*>;
+  fthread_list *pactive = new fthread_list;
   spawn_impl (pactive);
 }
 
-void async_sched::spawn_impl(std::list<fthread_t*> *pactive) {
+void async_sched::spawn_impl(fthread_list *pactive) {
 
   fthread_t *ftx = *(fthread_t**)ss.request->data;
   if (debug_driver)

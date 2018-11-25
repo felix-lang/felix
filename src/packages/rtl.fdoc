@@ -1107,9 +1107,7 @@ void run(::flx::rtl::con_t *p)
 
 void frun (::flx::gc::generic::gc_profile_t* gcp, ::flx::rtl::con_t *p)
 {
-  ::std::list< ::flx::rtl::fthread_t*> *q = 
-    new ::std::list<::flx::rtl::fthread_t*>()
-  ;
+  ::flx::run::fthread_list *q = new ::flx::run::fthread_list;
 
   ::flx::run::sync_sched *ss = 
      new ::flx::run::sync_sched(false, gcp, q)

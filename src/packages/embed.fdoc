@@ -351,14 +351,14 @@ static void *get_stack_pointer() { void *x=(void*)&x; return x; }
 // RETURNS A LIST OF FTHREADS
 // 
 
-static std::list<fthread_t*>*
+static fthread_list*
 run_felix_pthread_ctor(
   flx::gc::generic::gc_profile_t *gcp,
   ::flx::dynlink::flx_libinst_t *instance)
 {
   //fprintf(stderr, "run_felix_pthread_ctor -- the MAIN THREAD: library instance: %p\n", instance);
   flx::gc::generic::collector_t *collector = gcp->collector;
-  std::list<fthread_t*> *active = new std::list<fthread_t*>;
+  fthread_list *active = new fthread_list;
 
   {
     con_t *top = instance->main_proc;

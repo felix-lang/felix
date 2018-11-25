@@ -40,8 +40,26 @@ off a synchronous channel into the active queue.
 #include "flx_gc.hpp"
 #include "flx_rtl.hpp"
 #include <list>
+#include <atomic>
 
 namespace flx { namespace run {
+
+struct RTL_EXTERN fthread_list {
+  ::std::atomic<int> thread_count; // n threads sharing list
+  ::std::list<::flx::rtl::fthread_t*> fthreads;
+  fthread_list(fthread_list const&) = delete;
+  fthread_list& operator=(fthread_list const&) = delete;
+public:
+  fthread_list ();
+  void push_back(::flx::rtl::fthread_t *);
+  void push_front(::flx::rtl::fthread_t *);
+  size_t size() const;
+  ::flx::rtl::fthread_t *front()const;
+  ::flx::rtl::fthread_t *pop_front();
+  ::std::list<::flx::rtl::fthread_t*>::iterator begin();
+  ::std::list<::flx::rtl::fthread_t*>::iterator end();
+};
+
 
 // This class handles synchronous channel I/O and fthreads
 struct RTL_EXTERN sync_sched {
@@ -60,7 +78,7 @@ struct RTL_EXTERN sync_sched {
   ::std::mutex *critical_section;
 
   // scheduler queue
-  ::std::list<flx::rtl::fthread_t*> *active;
+  fthread_list *active;
 
   // temporary for currently running fibre
   ::flx::rtl::fthread_t *ft;
@@ -83,7 +101,7 @@ struct RTL_EXTERN sync_sched {
   sync_sched (
     bool debug_driver_,
     ::flx::gc::generic::gc_profile_t *gcp_,
-    ::std::list<flx::rtl::fthread_t*> *active_
+    fthread_list *active_
   );
 
   // helper routines.
@@ -124,6 +142,34 @@ using namespace flx::rtl;
 
 namespace flx { namespace run {
 
+// ***************************************************
+// fthread_list
+// ***************************************************
+fthread_list::fthread_list() : thread_count(1) {}
+
+fthread_t *fthread_list::front() const { return fthreads.front(); }
+
+fthread_t *fthread_list::pop_front() 
+{
+  if(fthreads.size() > 0) 
+  {
+    auto ft = fthreads.front();
+    fthreads.pop_front();
+    return ft; 
+  }
+  else return nullptr;
+}
+
+void fthread_list::push_front(fthread_t *p) { fthreads.push_front(p); }
+void fthread_list::push_back(fthread_t *p) { fthreads.push_back(p); }
+size_t fthread_list::size()const { return fthreads.size(); }
+::std::list<::flx::rtl::fthread_t*>::iterator fthread_list::begin() { return fthreads.begin(); }
+::std::list<::flx::rtl::fthread_t*>::iterator fthread_list::end() { return fthreads.end(); }
+
+
+// ***************************************************
+// sync_sched
+// ***************************************************
 char const *sync_sched::get_fstate_desc(fstate_t fs)
 {
   switch(fs)
@@ -149,7 +195,7 @@ char const *sync_sched::get_fpc_desc()
 sync_sched::sync_sched (
   bool debug_driver_,
   ::flx::gc::generic::gc_profile_t *gcp_,
-  ::std::list<fthread_t*> *active_
+  fthread_list *active_
 ) :
   debug_driver(debug_driver_),
   collector(gcp_->collector),
@@ -163,18 +209,9 @@ sync_sched::sync_sched (
 // popping it off the active list.
 // If the active list is empty, make the current NULL.
 // MUST BE USED INSIDE A CRITCAL SECTION
-void sync_sched::pop_current()
-  {
-     if(active->size() > 0) 
-     {
-       ft = active->front();
-       active->pop_front();
-     }
-     else
-       ft = 0;
-  }
+void sync_sched::pop_current() { ft = active->pop_front(); }
 
-  void sync_sched::show_state () {
+void sync_sched::show_state () {
     if (debug_driver)
       fprintf(stderr, "CUR[%p] ACT[%p]\n",ft,
         active->size()?active->front():NULL);
