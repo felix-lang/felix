@@ -1,0 +1,34 @@
+
+fun thrid: 1 -> address ="pthread_self()"
+  requires Posix_headers::pthread_h;
+
+proc p (i:int) () {
+   var j = 1;
+  println$ #thrid,i; 
+  for i in 1..1000000 do
+    ++j;
+  done
+}
+var q = p;
+
+var start = time();
+proc many()
+{
+  for i in 1..20 perform schedule_fthread (q i);
+  println$ "Spawned";
+  start = time();
+  schedule_fthread { println$ "Elapsed " + (time() - start).str; };
+/*
+  spawn_process { println$ "New thread"; };
+  spawn_process { println$ "New thread"; };
+  spawn_process { println$ "New thread"; };
+  spawn_process { println$ "New thread"; };
+  spawn_process { println$ "New thread"; };
+  spawn_process { println$ "New thread"; };
+  spawn_process { println$ "New thread"; };
+*/
+}
+
+many();
+
+
