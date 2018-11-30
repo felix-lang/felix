@@ -1794,7 +1794,7 @@ void flx_collector_t::impl_remove_root(void *memory)
   rootmap_t::iterator iter = roots.find(memory);
   if(iter == roots.end())
   {
-    fprintf(stderr, "[gc] GC ERROR: REMOVE ROOT WHICH IS NOT ROOT\n");
+    fprintf(stderr, "[gc] GC ERROR: REMOVE ROOT %p WHICH IS NOT ROOT\n", memory);
     abort();
   }
   if((*iter).second == (uintptr_t)1)

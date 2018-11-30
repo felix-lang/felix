@@ -90,6 +90,7 @@ static void prun_pthread_entry(void *data) {
 // REGISTERS IN THREAD_CONTROL
 void async_sched::do_spawn_process()
 {
+  active->pactive_lock = &(active->active_lock);
   spawn_impl (active);
 }
 void async_sched::do_spawn_pthread()
@@ -100,11 +101,11 @@ void async_sched::do_spawn_pthread()
 
 void async_sched::spawn_impl(fthread_list *pactive) {
 
+  ++ss.active->thread_count;
   fthread_t *ftx = *(fthread_t**)ss.request->data;
   if (debug_driver)
     fprintf(stderr, "[prun: spawn_pthread] Spawn pthread %p\n", ftx);
-  gcp->collector->add_root(ftx);
-  pactive->push_front(ftx);
+  ss.push_new(ftx);
   void *data = new async_sched(world,debug_driver, gcp, pactive);
   flx_detached_thread_t dummy;
 
@@ -326,7 +327,7 @@ async_sched::~async_sched() {
   try
   {
     if (debug_driver)
-      fprintf(stderr, "prun: Terminating Felix subsystem\n");
+      fprintf(stderr, "prun: Terminating async scheduler\n");
     --active->thread_count;
     if(active->thread_count == 0)
       delete active;

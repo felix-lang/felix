@@ -42,6 +42,7 @@ off a synchronous channel into the active queue.
 #include <list>
 #include <atomic>
 #include "flx_async.hpp"
+#include "pthread_thread.hpp"
 
 namespace flx { namespace run {
 
@@ -60,6 +61,9 @@ struct RTL_EXTERN fthread_list {
 public:
 
   ::std::atomic<int> thread_count; // n threads sharing list
+  ::std::mutex active_lock;
+  ::std::mutex *pactive_lock;
+
   size_t async_count; // pending async jobs
   async_hooker* async; // async dispatch and ready list object
 
@@ -86,11 +90,6 @@ struct RTL_EXTERN sync_sched {
 
   // the garbage collector and general control object
   ::flx::gc::generic::collector_t *collector;
-
-  // pointer to critical section mutex
-  // usually NULL, set to system critical section lock
-  // if the active queue is shared
-  ::std::mutex *critical_section;
 
   // scheduler queue
   fthread_list *active;
@@ -119,12 +118,14 @@ struct RTL_EXTERN sync_sched {
     fthread_list *active_
   );
 
+private:
   // helper routines.
-  void forget_current();
-  void pop_current();
+  void impl_push_new(::flx::rtl::fthread_t*);
+  void impl_push_old(::flx::rtl::fthread_t*);
+
+public:
   void push_new(::flx::rtl::fthread_t*);
   void push_old(::flx::rtl::fthread_t*);
-
   fstate_t frun();
 
   // a special routine to allow a multiwrite to be performed
@@ -151,6 +152,9 @@ protected:
 
 #include <stdio.h>
 
+// FOR DEBUG, ONLY ON UNIX .. REMEMBER TO REMOVE FOR REAL BUILD!
+#include <pthread.h>
+
 #include "flx_sync.hpp"
 
 using namespace flx::rtl;
@@ -163,7 +167,8 @@ namespace flx { namespace run {
 fthread_list::fthread_list() : 
   thread_count(1),
   async_count(0),
-  async(nullptr)
+  async(nullptr),
+  pactive_lock(nullptr)
 {}
 
 
@@ -220,16 +225,9 @@ sync_sched::sync_sched (
   debug_driver(debug_driver_),
   collector(gcp_->collector),
   active(active_),
-  critical_section (nullptr),
   ft(nullptr)
 {}
 
-// if the active list is not empty,
-// take the top of the active list and make it current,
-// popping it off the active list.
-// If the active list is empty, make the current NULL.
-// MUST BE USED INSIDE A CRITCAL SECTION
-void sync_sched::pop_current() { ft = active->pop_front(); }
 
 void sync_sched::show_state () {
     if (debug_driver)
@@ -237,34 +235,29 @@ void sync_sched::show_state () {
         active->size()?active->front():NULL);
   }
 
-// if the current fibre is not NULL, forget it,
-// then set the current fibre to the top of the
-// active list and pop it
-void sync_sched::forget_current()
-  {
-    if(ft) 
-    {
-       collector->remove_root(ft);
-       pop_current();
-    }
-  }
+// so it is made a root first
+void sync_sched::push_new(fthread_t *f) {
+  muxguard dummy(active->pactive_lock);
+  impl_push_new (f);
+}
 
-
-// make the argument f the current fibre
-// if there was a non-NULL current fibre before,
-// push it onto the active list
-void sync_sched::push_old(fthread_t *f)
+// used by async to activate fthread in ready (async complete) queue
+void sync_sched::push_old(fthread_t *f) {
+  muxguard dummy(active->pactive_lock);
+  impl_push_old (f);
+}
+void sync_sched::impl_push_old(fthread_t *f) 
   {
     if(ft) active->push_front(ft);
     ft = f;
   }
 
-// same as push_old except the argument is fresh
-// so it is made a root first
-void sync_sched::push_new(fthread_t *f)
+void sync_sched::impl_push_new(fthread_t *f)
   {
+    if (debug_driver)
+      fprintf(stderr,"[sync] pthread %p adding(new root) fthread %p\n",::flx::pthread::mythrid(),ft);
     collector->add_root(f);
-    push_old(f);
+    impl_push_old(f);
   }
 
 void sync_sched::do_yield()
@@ -272,23 +265,23 @@ void sync_sched::do_yield()
       if(debug_driver)
          fprintf(stderr,"[sync: svc_yield] yield");
       
-      muxguard dummy(critical_section);
+      muxguard dummy(active->pactive_lock);
       active->push_back(ft);
-      pop_current();
+      ft = active->pop_front();
     }
 
 void sync_sched::do_spawn_fthread()
     {
-      muxguard dummy(critical_section);
+      muxguard dummy(active->pactive_lock);
       fthread_t *ftx = *(fthread_t**)request->data;
       if(debug_driver)
         fprintf(stderr,"[sync: svc_spawn_fthread] Spawn fthread %p\n",ftx);
-      push_new(ftx);
+      impl_push_new(ftx);
     }
 
 void sync_sched::do_schedule_fthread()
     {
-      muxguard dummy(critical_section);
+      muxguard dummy(active->pactive_lock);
       fthread_t *ftx = *(fthread_t**)request->data;
       if(debug_driver)
         fprintf(stderr,"[sync: svc_schedule_fthread] Schedule fthread %p\n",ftx);
@@ -298,7 +291,7 @@ void sync_sched::do_schedule_fthread()
 
 void sync_sched::do_sread()
     {
-      muxguard dummy(critical_section);
+      muxguard dummy(active->pactive_lock);
       readreq_t * pr = (readreq_t*)request->data;
       schannel_t *chan = pr->chan;
       if(debug_driver)
@@ -330,14 +323,18 @@ show_state();
       if(debug_driver)
         fprintf(stderr,"[sync: svc_read] No writers on channel %p: fibre %p HUNGRY\n",chan,ft);
       chan->push_reader(ft);
-      forget_current();
+      if(ft) 
+      {
+         collector->remove_root(ft);
+         ft = active->pop_front();
+      }
 show_state();
       return;
     }
 
 void sync_sched::do_swrite()
     {
-      muxguard dummy(critical_section);
+      muxguard dummy(active->pactive_lock);
       readreq_t * pw = (readreq_t*)request->data;
       schannel_t *chan = pw->chan;
       if(debug_driver)
@@ -359,7 +356,7 @@ void sync_sched::do_swrite()
 
         // WE are the writer, push us onto the active list
         // and make the reader on the channel current
-        push_new (reader);
+        impl_push_new (reader);
 show_state();
         return;
       }
@@ -367,7 +364,11 @@ show_state();
       if(debug_driver)
         fprintf(stderr,"[sync: svc_write] No readers on channel %p: fibre %p BLOCKING\n",chan,ft);
       chan->push_writer(ft);
-      forget_current();
+      if(ft) 
+      {
+         collector->remove_root(ft);
+         ft = active->pop_front();
+      }
 show_state();
       return;
     }
@@ -387,14 +388,14 @@ void sync_sched::external_multi_swrite (schannel_t *chan, void *data)
              data, pr->variable);
         if (pr->variable)
           *(void**)pr->variable = data;
-        push_new(reader);
+        impl_push_new(reader);
       }
       goto svc_multi_write_next;
     }
 
 void sync_sched::do_multi_swrite()
     {
-      muxguard dummy(critical_section);
+      muxguard dummy(active->pactive_lock);
       readreq_t * pw = (readreq_t*)request->data;
       void *data = *(void**)pw->variable;
       schannel_t *chan = pw->chan;
@@ -405,7 +406,7 @@ void sync_sched::do_multi_swrite()
 
 void sync_sched::do_kill()
     {
-      muxguard dummy(critical_section);
+      muxguard dummy(active->pactive_lock);
       fthread_t *ftx = *(fthread_t**)request->data;
       if(debug_driver)fprintf(stderr,"[sync: svc_kill] Request to kill fthread %p\n",ftx);
       ftx -> kill();
@@ -423,15 +424,18 @@ sync_sched::fstate_t sync_sched::frun()
      fprintf(stderr,"[sync] frun: entry ft=%p, active size=%zu\n", ft,active->size());
 dispatch:
   if (ft == 0) {
-     muxguard dummy(critical_section);
-     pop_current();
+     muxguard dummy(active->pactive_lock);
+     ft = active->pop_front(); 
+     if (debug_driver)
+       fprintf(stderr,"[sync] pthread %p fetching fthread %p\n",::flx::pthread::mythrid(),ft);
    }
   if (ft == 0) return blocked; 
   request = ft->run();        // run fthread to get request
   if(request == 0)            // euthenasia request
   {
+    muxguard dummy(active->pactive_lock);
     if(debug_driver)
-      fprintf(stderr,"[sync] unrooting fthread %p\n",ft);
+      fprintf(stderr,"[sync] pthread %p unrooting fthread %p\n",::flx::pthread::mythrid(),ft);
     collector->remove_root(ft);
     ft = 0;
     goto dispatch;
