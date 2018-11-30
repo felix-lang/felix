@@ -152,9 +152,6 @@ protected:
 
 #include <stdio.h>
 
-// FOR DEBUG, ONLY ON UNIX .. REMEMBER TO REMOVE FOR REAL BUILD!
-#include <pthread.h>
-
 #include "flx_sync.hpp"
 
 using namespace flx::rtl;
