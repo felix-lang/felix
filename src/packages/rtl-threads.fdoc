@@ -694,6 +694,7 @@ public:
 #include <assert.h>
 #include <thread>
 #include <atomic>
+#include "pthread_thread.hpp"
 
 using namespace std;
 
@@ -710,13 +711,16 @@ static void sleep(thread_control_base_t *tc, size_t ns)
 {
   assert(tc);
   tc->yield();
-  //::std::this_thread::sleep_for(::std::chrono::nanoseconds(ns));
+//  ::std::this_thread::sleep_for(::std::chrono::milliseconds(ns));
+//fprintf(stderr, "pthread_monitor: sleep: thread %p calling std::this_thread::yield()\n",::flx::pthread::mythrid());
   ::std::this_thread::yield();
 }
 
 void
 monitor_t::enqueue(void* elt)
 {
+//fprintf(stderr, "pthread_monitor: enqueue : thread %p, this=%p \n",::flx::pthread::mythrid(),this);
+
   // wrap user data up with a flag so this thread
   // can wait until our user data elt is consumed
   monitor_data_t monitor_data (elt);
@@ -738,6 +742,7 @@ monitor_t::enqueue(void* elt)
 void*
 monitor_t::dequeue()
 {
+//fprintf(stderr, "pthread_monitor: dequeue : thread %p , this=%p\n",::flx::pthread::mythrid(),this);
   monitor_data_t *p = 0;
 
   // Swap NULL into the monitor until we get a non-NULL value back.
@@ -1264,7 +1269,7 @@ void thread_control_t::yield()
 //fprintf(stderr,"Thread control yield starts\n");
   ::std::unique_lock< ::std::mutex> m(stop_mutex);
   if(debug)
-    fprintf(stderr,"[yield: thread=%p]\n", (void*)mythrid());
+    fprintf(stderr,"[Thread_control:yield: thread=%p]\n", (void*)mythrid());
 //fprintf(stderr,"Unsafe stop check starts\n");
   unsafe_stop_check();
 //fprintf(stderr,"Unsafe stop check done\n");
@@ -1332,6 +1337,7 @@ struct PTHREAD_EXTERN pthread_lf_bag {
 #include <stdlib.h>
 #include "pthread_lf_bag.hpp"
 #include <assert.h>
+#include <pthread_thread.hpp>
 
 using namespace flx::pthread;
 
@@ -1340,6 +1346,7 @@ using namespace flx::pthread;
 
 static void sleep(thread_control_base_t *tc, size_t ns) 
 {
+fprintf(stderr, "pthread_lf_bag: sleep: thread %p calling std::this_thread::yield()",::flx::pthread::mythrid());
   assert(tc);
   tc->yield();
   //::std::this_thread::sleep_for(::std::chrono::nanoseconds(ns));
@@ -1815,6 +1822,7 @@ void fast_lock::lock() {
   while (!flag.test_and_set())
   {
     tc->yield();
+fprintf(stderr, "thread_fast_lock: thread %p calling std::this_thread::yield()",::flx::pthread::mythrid());
     ::std::this_thread::sleep_for(::std::chrono::nanoseconds (200));
   }
 }

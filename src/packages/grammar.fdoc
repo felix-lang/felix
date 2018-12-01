@@ -6247,7 +6247,7 @@ syntax pfor
         (last _6)
         (body _7)
         (int (nos "int"))
-        (param `(PVar ,ctlvar ,int none)) ;; kind name type defaultvalue
+        (param `(,_sr PVar ,ctlvar ,int none)) ;; kind name type defaultvalue
         (params `((,param) none))               ;; parameter list with constraint
         (sfunargs `(,params))                   ;; HOF list of parameter lists
         (proc `(ast_lambda ,_sr (,dfltvs ,sfunargs (ast_void ,_sr) (,body))))

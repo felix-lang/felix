@@ -90,6 +90,12 @@ static void prun_pthread_entry(void *data) {
 // REGISTERS IN THREAD_CONTROL
 void async_sched::do_spawn_process()
 {
+  // this is safe (at the moment) because, if the active list
+  // is already in use by other processes, we're just overwriting
+  // the lock pointer with its existing value. If the list isn't
+  // in use by other processes, the lock pointer is NULL,
+  // but this thread is the one running the current process,
+  // so it can't race with itself. 
   active->pactive_lock = &(active->active_lock);
   spawn_impl (active);
 }
@@ -101,19 +107,28 @@ void async_sched::do_spawn_pthread()
 
 void async_sched::spawn_impl(fthread_list *pactive) {
 
-  ++ss.active->thread_count;
   fthread_t *ftx = *(fthread_t**)ss.request->data;
   if (debug_driver)
-    fprintf(stderr, "[prun: spawn_pthread] Spawn pthread %p\n", ftx);
-  ss.push_new(ftx);
+    fprintf(stderr, "[prun %p: spawn_pthread] Spawn pthread %p\n", mythrid(), ftx);
+  {
+    muxguard dummy(pactive->pactive_lock);
+    // SHOULD THIS BE HERE?? The async scheduler isn't created yet.
+    // maybe we should do this "properly" after it is (in the next statement!)
+    ++pactive->thread_count;
+    gcp->collector->add_root(ftx);
+    pactive->push_front(ftx);
+  }
   void *data = new async_sched(world,debug_driver, gcp, pactive);
   flx_detached_thread_t dummy;
 
   if (debug_driver)
-    fprintf(stderr, "[prun: spawn_pthread] Starting new pthread, thread counter= %zu\n",
-      gcp->collector->get_thread_control()->thread_count());
+    fprintf(stderr, "[prun %p: spawn_pthread] Starting new pthread, thread counter= %zu\n",
+      mythrid(), gcp->collector->get_thread_control()->thread_count());
 
   {
+    // We use a hard (not Felix aware) lock here
+    // because the Felix system is in an incoherent state
+    // between the OS thread spawn, and the thread's registration
     ::std::mutex spawner_lock;
     ::std::condition_variable_any spawner_cond;
     bool spawner_flag = false;
@@ -141,11 +156,11 @@ void async_sched::spawn_impl(fthread_list *pactive) {
 void async_sched::do_general()
 {
   if (debug_driver)
-    fprintf(stderr, "[prun: svc_general] from fthread=%p\n", ss.ft);
+    fprintf(stderr, "[prun %p: svc_general] from fthread=%p\n", mythrid(),ss.ft);
 
   if(debug_driver)
-    fprintf(stderr, "[prun: svc_general] async=%p, ptr_create_async_hooker=%p\n", 
-      active-> async,
+    fprintf(stderr, "[prun %p: svc_general] async=%p, ptr_create_async_hooker=%p\n", 
+      mythrid(), active-> async,
       world->c->ptr_create_async_hooker)
     ;
   if (!active->async) 
@@ -204,16 +219,16 @@ int async_sched::prun(block_flag_t block_flag) {
 sync_run:
     // RUN SYNCHRONOUS SCHEDULER
     if (debug_driver)
-      fprintf(stderr, "prun: sync_run\n");
+      fprintf(stderr, "prun %p: sync_run\n", mythrid());
 
     if (debug_driver)
-      fprintf(stderr, "prun: Before running: Sync state is %s\n",
+      fprintf(stderr, "prun %p: Before running: Sync state is %s\n", mythrid(),
         ss.get_fpc_desc());
 
     sync_sched::fstate_t fs = ss.frun();
 
     if (debug_driver)
-      fprintf(stderr, "prun: After running: Sync state is %s/%s\n",
+      fprintf(stderr, "prun %p: After running: Sync state is %s/%s\n", mythrid(),
         ss.get_fstate_desc(fs), ss.get_fpc_desc());
 
     switch(fs)
@@ -221,7 +236,7 @@ sync_run:
       // HANDLE DELEGATED SERVICE REQUESTS
       case sync_sched::delegated:
         if (debug_driver)
-          fprintf(stderr, "sync_sched:delegated request %d\n", ss.request->variant);
+          fprintf(stderr, "sync_sched %p:delegated request %d\n", mythrid(), ss.request->variant);
         switch (ss.request->variant) 
         {
           case svc_spawn_pthread: do_spawn_pthread(); goto sync_run;
@@ -246,7 +261,7 @@ sync_run:
 
   // TEMPORARILY OUT OF JOBS TO DO
   if (debug_driver)
-    fprintf(stderr, "prun: Out of ready jobs, %zu pending\n", active->async_count);
+    fprintf(stderr, "prun %p: Out of ready jobs, %zu pending\n", mythrid(), active->async_count);
   return active->async_count;
 }
 
@@ -285,7 +300,7 @@ sync_run:
 bool async_sched::schedule_queued_fthreads(block_flag_t block_flag) {
   if (debug_driver) {
     fprintf(stderr,
-      "prun: out of active synchronous threads, trying async, pending=%zu\n", active->async_count);
+      "prun %p: out of active synchronous threads, trying async, pending=%zu\n", mythrid(), active->async_count);
   }
   int scheduled_some = 0;
   if (active->async && active->async_count > 0) {
@@ -293,7 +308,7 @@ bool async_sched::schedule_queued_fthreads(block_flag_t block_flag) {
     {
       fthread_t* ftp = active->async->dequeue();
       if (debug_driver)
-        fprintf(stderr, "prun: block mode: Async Retrieving fthread %p\n", ftp);
+        fprintf(stderr, "prun %p: block mode: Async Retrieving fthread %p\n", mythrid(), ftp);
 
       ss.push_old(ftp);
       --active->async_count;
@@ -304,7 +319,7 @@ bool async_sched::schedule_queued_fthreads(block_flag_t block_flag) {
       fthread_t* ftp = active->async->maybe_dequeue();
       while (ftp) {
         if (debug_driver)
-          fprintf(stderr, "prun:ret mode: Async Retrieving fthread %p\n", ftp);
+          fprintf(stderr, "prun %p:ret mode: Async Retrieving fthread %p\n", mythrid(), ftp);
 
         ss.push_old(ftp);
         --active->async_count;
@@ -323,14 +338,20 @@ void async_sched::external_multi_swrite(::flx::rtl::schannel_t *chan, void *data
     ss.external_multi_swrite (chan,data);
   }
 
+// FIXME: shouldn't this be serialised?????
 async_sched::~async_sched() {
   try
   {
     if (debug_driver)
-      fprintf(stderr, "prun: Terminating async scheduler\n");
+      fprintf(stderr, "prun %p: Terminating async scheduler\n",mythrid());
     --active->thread_count;
-    if(active->thread_count == 0)
+    if (debug_driver)
+      fprintf(stderr, "prun %p: async scheduler, fibre queue length %d\n",mythrid(), active->thread_count.load());
+    if(active->thread_count.load() == 0) {
+    if (debug_driver)
+      fprintf(stderr, "prun %p: async scheduler, deleting fibre queue!\n",mythrid());
       delete active;
+    }
   }
   catch (...) { fprintf(stderr, "Unknown exception deleting async!\n"); }
 }

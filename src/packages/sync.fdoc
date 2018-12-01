@@ -418,7 +418,7 @@ void sync_sched::do_kill()
 sync_sched::fstate_t sync_sched::frun()
 {
   if (debug_driver)
-     fprintf(stderr,"[sync] frun: entry ft=%p, active size=%zu\n", ft,active->size());
+     fprintf(stderr,"[sync] frun: pthread %p, entry ft=%p, active size=%zu\n", ::flx::pthread::mythrid(), ft,active->size());
 dispatch:
   if (ft == 0) {
      muxguard dummy(active->pactive_lock);
