@@ -156,7 +156,7 @@ syntax types {
   t[sthename_pri] := "&<"      t[sthename_pri] =># "`(typ_rref ,_sr ,_2)";
   t[sthename_pri] := "_wref"   t[sthename_pri] =># "`(typ_wref ,_sr ,_2)";
   t[sthename_pri] := "&>"      t[sthename_pri] =># "`(typ_wref ,_sr ,_2)";
-  t[sthename_pri] := "@"       t[sthename_pri] =># "(Prefix)";
+  t[sthename_pri] := "@"       t[sthename_pri] =># "(tPrefix)";
   t[sthename_pri] := squalified_name =># "_1";
 
 // TYPE MATCH HACKS .. FIX LATER
@@ -519,9 +519,6 @@ syntax expressions {
   //$ Felix address of operator.
   x[sthename_pri] := "label_address" sname =># "`(ast_label_ref ,_sr ,_2)";
 
-
-  //$ C pointer type.
-  x[sthename_pri] :=  "@" x[sthename_pri] =># "(Prefix)";
 
   //$ macro expansion freezer.
   x[sthename_pri] := "noexpand" squalified_name =># "`(ast_noexpand ,_sr ,_2)";
