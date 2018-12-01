@@ -554,6 +554,7 @@ extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
 #include <functional>
 #include <cstdint>
 #include <mutex>
+#include <list> 
 
 namespace flx { namespace rtl {
 
@@ -568,6 +569,11 @@ typedef ::std::uint64_t cl_t;
 // ********************************************************
 // Felix system classes
 // ********************************************************
+
+struct RTL_EXTERN stl_dlist_t {
+  stl_dlist_t();
+  ::std::list<void*> data;
+};
 
 struct RTL_EXTERN muxguard;
 
@@ -815,6 +821,8 @@ RTL_EXTERN void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char const *fil
 // main run time library code
 
 namespace flx { namespace rtl {
+
+RTL_EXTERN stl_dlist_t::stl_dlist_t () {}
 
 
 static char const *svc_desc[13] = {
@@ -1166,6 +1174,8 @@ namespace flx { namespace rtl {
 // we provide a shape for C 'int' type as well
 // ********************************************************
 
+RTL_EXTERN extern ::flx::gc::generic::scanner_t scan_stl_dlist;
+
 // special: just the offset data for a pointer
 RTL_EXTERN extern ::flx::gc::generic::offset_data_t const _address_offset_data;
 
@@ -1182,6 +1192,7 @@ RTL_EXTERN extern ::flx::gc::generic::gc_shape_t clptr_t_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t clprj_t_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t jump_address_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t cl_t_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t stl_dlist_t_ptr_map;
 
 }}
 #endif
@@ -1196,6 +1207,41 @@ RTL_EXTERN extern ::flx::gc::generic::gc_shape_t cl_t_ptr_map;
 
 namespace flx { namespace rtl {
 
+void *scan_stl_dlist(
+  ::flx::gc::generic::collector_t *collector, 
+  ::flx::gc::generic::gc_shape_t *shape, 
+  void *p, 
+  size_t dyncount, 
+  int reclimit
+)
+{
+  auto q = reinterpret_cast<::flx::rtl::stl_dlist_t*>(p);
+
+  // calculate the absolute number of used array slots
+  size_t n_used = dyncount  * shape->count;
+  for (size_t j=0; j<n_used; ++j) 
+    for (auto elt  : q->data) 
+      if (collector->inrange(elt))
+        collector->register_pointer (elt, reclimit -1);
+  return nullptr;
+}
+// ********************************************************
+// SHAPE for stl_dlist_t 
+// ********************************************************
+
+::flx::gc::generic::gc_shape_t stl_dlist_t_ptr_map = {
+  NULL,
+  "rtl::stl_dlist_t",
+  1,sizeof(stl_dlist_t),
+  0, // no finaliser,
+  0, // fcops
+  0, // no offset data
+  scan_stl_dlist,
+  0,0, // no serialisation as yet
+  ::flx::gc::generic::gc_flags_default,
+  0UL, 0UL
+};
+
 
 // ********************************************************
 //OFFSETS for slist_node_t
@@ -1207,7 +1253,7 @@ static const std::size_t slist_node_offsets[2]={
 
 static ::flx::gc::generic::offset_data_t const slist_node_offset_data = { 2, slist_node_offsets };
 ::flx::gc::generic::gc_shape_t slist_node_ptr_map = {
-  NULL,
+  &stl_dlist_t_ptr_map,
   "rtl::slist_node_t",
   1,sizeof(slist_node_t),
   0, // no finaliser,
