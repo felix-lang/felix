@@ -55,10 +55,11 @@ namespace flx { namespace run {
 // *************************************
 
 struct RTL_EXTERN fthread_list {
-  ::std::list<::flx::rtl::fthread_t*> fthreads;
+  ::flx::gc::generic::gc_profile_t *gcp;
   fthread_list(fthread_list const&) = delete;
   fthread_list& operator=(fthread_list const&) = delete;
 public:
+  ::flx::rtl::sysdlist_t *fthreads; // has to be public for shape spec
 
   ::std::atomic<int> thread_count; // n threads sharing list
   ::std::mutex active_lock;
@@ -67,7 +68,7 @@ public:
   size_t async_count; // pending async jobs
   async_hooker* async; // async dispatch and ready list object
 
-  fthread_list ();
+  fthread_list (::flx::gc::generic::gc_profile_t *gcp);
   ~fthread_list ();
 
   void push_back(::flx::rtl::fthread_t *);
@@ -75,9 +76,8 @@ public:
   size_t size() const;
   ::flx::rtl::fthread_t *front()const;
   ::flx::rtl::fthread_t *pop_front();
-  ::std::list<::flx::rtl::fthread_t*>::iterator begin();
-  ::std::list<::flx::rtl::fthread_t*>::iterator end();
 };
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t fthread_list_ptr_map;
 
 
 // This class handles synchronous channel I/O and fthreads
@@ -143,6 +143,9 @@ protected:
   void show_state();
 };
 
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t sync_sched_ptr_map;
+
+
 }}
 
 #endif
@@ -158,36 +161,90 @@ using namespace flx::rtl;
 
 namespace flx { namespace run {
 
+// ********************************************************
+// SHAPE for sync_sched 
+// ********************************************************
+
+static const std::size_t sync_sched_offsets[2]={
+    offsetof(sync_sched,active),
+    offsetof(sync_sched,ft)
+};
+
+static ::flx::gc::generic::offset_data_t const sync_sched_offset_data = { 2, sync_sched_offsets };
+
+::flx::gc::generic::gc_shape_t sync_sched_ptr_map = {
+  NULL,
+  "rtl::sync_sched",
+  1,sizeof(sync_sched),
+  0, // no finaliser,
+  0, // fcops
+  &sync_sched_offset_data, 
+  ::flx::gc::generic::scan_by_offsets,
+  0,0, // no serialisation as yet
+  ::flx::gc::generic::gc_flags_default,
+  0UL, 0UL
+};
+
+
+
 // ***************************************************
 // fthread_list
 // ***************************************************
-fthread_list::fthread_list() : 
+fthread_list::fthread_list(::flx::gc::generic::gc_profile_t *gcp_) : 
   thread_count(1),
   async_count(0),
   async(nullptr),
-  pactive_lock(nullptr)
-{}
-
-
-fthread_t *fthread_list::front() const { return fthreads.front(); }
-
-fthread_t *fthread_list::pop_front() 
+  pactive_lock(nullptr),
+  gcp(gcp_)
 {
-  if(fthreads.size() > 0) 
-  {
-    auto ft = fthreads.front();
-    fthreads.pop_front();
-    return ft; 
-  }
-  else return nullptr;
+  fthreads = new(*gcp, ::flx::rtl::sysdlist_t_ptr_map, false) ::flx::rtl::sysdlist_t();
+}
+fthread_list::~fthread_list () { 
+  fprintf(stderr,"[fthread_list: destructor] Pthread %p delete async queue\n",::flx::pthread::mythrid());
+  delete async; 
 }
 
-void fthread_list::push_front(fthread_t *p) { fthreads.push_front(p); }
-void fthread_list::push_back(fthread_t *p) { fthreads.push_back(p); }
-size_t fthread_list::size()const { return fthreads.size(); }
-::std::list<::flx::rtl::fthread_t*>::iterator fthread_list::begin() { return fthreads.begin(); }
-::std::list<::flx::rtl::fthread_t*>::iterator fthread_list::end() { return fthreads.end(); }
-fthread_list::~fthread_list () { delete async; }
+
+fthread_t *fthread_list::front() const { 
+  if(fthreads->data.empty()) return nullptr;
+  return (fthread_t*)fthreads->data.front(); 
+}
+
+fthread_t *fthread_list::pop_front() { 
+  if(fthreads->data.empty()) return nullptr;
+  auto x = (fthread_t*)fthreads->data.front(); 
+  fthreads->data.pop_front(); 
+  return x;
+}
+
+void fthread_list::push_front(fthread_t *p) { fthreads->data.push_front(p); }
+void fthread_list::push_back(fthread_t *p) { fthreads->data.push_back(p); }
+
+size_t fthread_list::size()const { return fthreads->data.size(); }
+
+// ********************************************************
+// SHAPE for fthread_list
+// ********************************************************
+
+static const std::size_t fthread_list_offsets[1]={
+    offsetof(fthread_list,fthreads)
+};
+
+static ::flx::gc::generic::offset_data_t const fthread_list_offset_data = { 1, fthread_list_offsets };
+
+::flx::gc::generic::gc_shape_t fthread_list_ptr_map = {
+  NULL,
+  "rtl::fthread_list",
+  1,sizeof(fthread_list),
+  0, // no finaliser,
+  0, // fcops
+  &fthread_list_offset_data, 
+  ::flx::gc::generic::scan_by_offsets,
+  0,0, // no serialisation as yet
+  ::flx::gc::generic::gc_flags_default,
+  0UL, 0UL
+};
+
 
 // ***************************************************
 // sync_sched
@@ -232,7 +289,6 @@ void sync_sched::show_state () {
         active->size()?active->front():NULL);
   }
 
-// so it is made a root first
 void sync_sched::push_new(fthread_t *f) {
   muxguard dummy(active->pactive_lock);
   impl_push_new (f);
@@ -251,9 +307,6 @@ void sync_sched::impl_push_old(fthread_t *f)
 
 void sync_sched::impl_push_new(fthread_t *f)
   {
-    if (debug_driver)
-      fprintf(stderr,"[sync] pthread %p adding(new root) fthread %p\n",::flx::pthread::mythrid(),ft);
-    collector->add_root(f);
     impl_push_old(f);
   }
 
@@ -282,7 +335,6 @@ void sync_sched::do_schedule_fthread()
       fthread_t *ftx = *(fthread_t**)request->data;
       if(debug_driver)
         fprintf(stderr,"[sync: svc_schedule_fthread] Schedule fthread %p\n",ftx);
-      collector->add_root(ftx);
       active->push_back(ftx);
     }
 
@@ -311,7 +363,6 @@ void sync_sched::do_sread()
         // WE are the reader, stay current, push writer
         // onto active list
         active->push_front(writer);
-        collector->add_root(writer);
 show_state();
         return;
       }
@@ -320,11 +371,7 @@ show_state();
       if(debug_driver)
         fprintf(stderr,"[sync: svc_read] No writers on channel %p: fibre %p HUNGRY\n",chan,ft);
       chan->push_reader(ft);
-      if(ft) 
-      {
-         collector->remove_root(ft);
-         ft = active->pop_front();
-      }
+      ft = active->pop_front();
 show_state();
       return;
     }
@@ -361,11 +408,7 @@ show_state();
       if(debug_driver)
         fprintf(stderr,"[sync: svc_write] No readers on channel %p: fibre %p BLOCKING\n",chan,ft);
       chan->push_writer(ft);
-      if(ft) 
-      {
-         collector->remove_root(ft);
-         ft = active->pop_front();
-      }
+      ft = active->pop_front();
 show_state();
       return;
     }
@@ -418,7 +461,8 @@ void sync_sched::do_kill()
 sync_sched::fstate_t sync_sched::frun()
 {
   if (debug_driver)
-     fprintf(stderr,"[sync] frun: pthread %p, entry ft=%p, active size=%zu\n", ::flx::pthread::mythrid(), ft,active->size());
+     fprintf(stderr,"[sync] frun: pthread %p, entry ft=%p, active size=%d\n",
+        ::flx::pthread::mythrid(), ft,(int)active->size());
 dispatch:
   if (ft == 0) {
      muxguard dummy(active->pactive_lock);
@@ -431,9 +475,6 @@ dispatch:
   if(request == 0)            // euthenasia request
   {
     muxguard dummy(active->pactive_lock);
-    if(debug_driver)
-      fprintf(stderr,"[sync] pthread %p unrooting fthread %p\n",::flx::pthread::mythrid(),ft);
-    collector->remove_root(ft);
     ft = 0;
     goto dispatch;
   }

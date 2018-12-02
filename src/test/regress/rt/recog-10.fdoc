@@ -46,7 +46,6 @@ fun get_result () =
   var sched = fibre_scheduler();
   spawn_fthread sched pipeline;
   sched.run;
-  delete_fibre_scheduler sched;
 
   return result;
 }

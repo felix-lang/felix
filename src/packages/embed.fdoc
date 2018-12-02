@@ -274,7 +274,7 @@ public:
   void external_multi_swrite (::flx::rtl::schannel_t *chan, void *data);
 
   async_sched *get_async_scheduler()const { return async_scheduler; }
-  sync_sched *get_sync_scheduler()const { return &async_scheduler->ss; }
+  sync_sched *get_sync_scheduler()const { return async_scheduler->ss; }
 };
 
 
@@ -358,7 +358,7 @@ run_felix_pthread_ctor(
 {
   //fprintf(stderr, "run_felix_pthread_ctor -- the MAIN THREAD: library instance: %p\n", instance);
   flx::gc::generic::collector_t *collector = gcp->collector;
-  fthread_list *active = new fthread_list;
+  fthread_list *active = new(*gcp, ::flx::run::fthread_list_ptr_map,false)  fthread_list(gcp);
 
   {
     con_t *top = instance->main_proc;
@@ -366,7 +366,6 @@ run_felix_pthread_ctor(
     if (top)
     {
       fthread_t *flx_main = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
-      collector->add_root(flx_main);
       active->push_front(flx_main);
     }
   }
@@ -377,7 +376,6 @@ run_felix_pthread_ctor(
     if (top)
     {
       fthread_t *ft = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
-      collector->add_root(ft);
       active->push_front(ft);
     }
   }

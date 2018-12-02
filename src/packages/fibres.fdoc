@@ -67,36 +67,26 @@ open class Fibres
   type fibre_scheduler = "::flx::run::sync_sched*" requires header '#include "flx_sync.hpp"';
 
   //$ Construct a fibre scheduler.
-  //$  NOTE: NOT GARBAGE COLLECTED!
-  ctor fibre_scheduler: bool = """new ::flx::run::sync_sched($1, PTF gcp, 
-    new ::flx::run::fthread_list)"""
+  //$  NOTE: NOW GARBAGE COLLECTED!
+  ctor fibre_scheduler: bool = """
+    new(*PTF gcp,::flx::run::sync_sched_ptr_map,false) 
+      ::flx::run::sync_sched
+      (
+        $1, 
+        PTF gcp, 
+        new(*PTF gcp, ::flx::run::fthread_list_ptr_map, false) ::flx::run::fthread_list(PTF gcp)
+      )
+    """
   ;
   ctor fibre_scheduler () =>
     fibre_scheduler (Env::getenv "FLX_DEBUG_DRIVER" != "")
   ;
      
 
-  // NOTE: all this derooting shouldn't be required
-  // because normally the deletion balances the construction
-  // on a function's machine stack, you can't get up to the
-  // deletion until all the active threads are gone
-  // because the spawn_fthread runs the fthread immediately
-  proc delete_fibre_scheduler : fibre_scheduler = """
-    if ($1->ft) $1->collector->remove_root($1->ft);
-    for(
-     ::std::list<::flx::rtl::fthread_t*>::iterator p = $1->active->begin();
-     p != $1->active->end();
-     p++
-    )
-    $1->collector->remove_root(*p);
-    delete $1->active; delete $1->ft; delete $1;
-  """;
-
   //$ Spawn a fibre on a given scheduler with a given continuation.
   //$ Note: does NOT run it!
   //$ FIXME: no mutex guard!!
   proc spawn_fibre: fibre_scheduler * fthread = """
-    $1->collector->add_root($2);
     $1->active->push_back($2);
   """;
 
@@ -110,7 +100,6 @@ open class Fibres
     var s = fibre_scheduler();
     spawn_fthread s p;
     s.run;
-    delete_fibre_scheduler s;
   }
 
  

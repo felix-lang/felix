@@ -1146,27 +1146,19 @@ void run(::flx::rtl::con_t *p)
 
 void frun (::flx::gc::generic::gc_profile_t* gcp, ::flx::rtl::con_t *p)
 {
-  ::flx::run::fthread_list *q = new ::flx::run::fthread_list;
+  ::flx::run::fthread_list *q = new(*gcp,::flx::run::fthread_list_ptr_map,false) ::flx::run::fthread_list(gcp);
 
   ::flx::run::sync_sched *ss = 
-     new ::flx::run::sync_sched(false, gcp, q)
+     new(*gcp,::flx::run::sync_sched_ptr_map,false) ::flx::run::sync_sched(false, gcp, q)
   ;
 
   ::flx::rtl::fthread_t *ft = 
     new(*gcp,::flx::rtl::_fthread_ptr_map,false) ::flx::rtl::fthread_t(p)
   ;
 
-  ss->collector->add_root(ft);
-  ss->active->push_back(ft);
+  gcp->collector->add_root(ss);
   ss->frun();
-  if (ss->ft) ss->collector->remove_root(ss->ft);
-  for(
-    ::std::list<::flx::rtl::fthread_t*>::iterator pf = ss->active->begin();
-    pf != ss->active->end();
-    pf++
-  )
-  ss->collector->remove_root(*pf);
-  delete ss->active; delete ss->ft; delete ss;
+  gcp->collector->remove_root(ss);
 }
 
 }}}
