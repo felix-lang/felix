@@ -169,6 +169,23 @@ where $PWD has to be replaced by the absolute path of the repository,
 and then the command above should be put into your $HOME/.profile.
 I personally use the first method.
 
+Installing to an Alternate Location
+-------------------------------------
+
+`PREFIX` needs to be set and exported to the location to install,
+otherwise it defaults to `/usr/local`, e.g.:
+
+.. code-block:: bash
+
+    export PREFIX=/home/user/local
+
+If you want to install it to the same location as previously
+(or to the configured location) you can just do:
+
+.. code-block:: bash
+   
+    export PREFIX=$FLX_INSTALL_DIR
+
 Test it
 -------
 
