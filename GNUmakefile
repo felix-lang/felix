@@ -322,6 +322,10 @@ test: unit-check regress-check tut-check tutopt-check extras-check
 fresh-test: src test
 
 install:
+	mkdir -p ${PREFIX}'/bin'
+	mkdir -p ${PREFIX}'/host'
+	mkdir -p ${PREFIX}'/lib'
+	mkdir -p ${PREFIX}'/share'
 	rm -rf ${INSTALLDIR}
 	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host '(.*)' ${INSTALLDIR}'/host/$${1}'
 	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/share '(.*)' ${INSTALLDIR}'/share/$${1}'
@@ -331,7 +335,8 @@ install:
 
 	rm -f ${INSTALLROOT}/felix-latest
 	ln -s felix-${VERSION} ${INSTALLROOT}/felix-latest
-
+	ln -sfn ${INSTALLROOT}/felix-latest/host/* ${PREFIX}/host/
+	ln -sfn ${INSTALLROOT}/felix-latest/share/* ${PREFIX}/share/
  
 .PHONY : test extras bootstrap configure packages grammar
 .PHONY : doc install websites-linux  release install-bin
