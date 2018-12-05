@@ -200,13 +200,14 @@ fthread_list::fthread_list(::flx::gc::generic::gc_profile_t *gcp_) :
   async(nullptr),
   //pactive_lock(nullptr),
   lockneeded(false),
-  active_lock(ATOMIC_FLAG_INIT),
+  active_lock(),
   gcp(gcp_)
 {
+  active_lock.clear();
   fthreads = new(*gcp, ::flx::rtl::sysdlist_t_ptr_map, false) ::flx::rtl::sysdlist_t();
 }
 fthread_list::~fthread_list () { 
-  fprintf(stderr,"[fthread_list: destructor] Pthread %p delete async queue\n",::flx::pthread::mythrid());
+  fprintf(stderr,"[fthread_list: destructor] Pthread %p delete async queue\n",(void*)::flx::pthread::mythrid());
   delete async; 
 }
 
@@ -468,13 +469,13 @@ sync_sched::fstate_t sync_sched::frun()
 {
   if (debug_driver)
      fprintf(stderr,"[sync] frun: pthread %p, entry ft=%p, active size=%d\n",
-        ::flx::pthread::mythrid(), ft,(int)active->size());
+        (void*)::flx::pthread::mythrid(), ft,(int)active->size());
 dispatch:
   if (ft == 0) {
      spinguard dummy(active->lockneeded,&(active->active_lock));
      ft = active->pop_front(); 
      if (debug_driver)
-       fprintf(stderr,"[sync] pthread %p fetching fthread %p\n",::flx::pthread::mythrid(),ft);
+       fprintf(stderr,"[sync] pthread %p fetching fthread %p\n",(void*)::flx::pthread::mythrid(),ft);
    }
   if (ft == 0) return blocked; 
   request = ft->run();        // run fthread to get request
