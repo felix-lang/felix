@@ -18,10 +18,10 @@ proc many()
   println$ "Spawned";
   start = system_clock_now();
   schedule_fthread { println$ "Elapsed " + (system_clock_now() - start).double.str; };
+  spawn_process { println$ "New thread"; };
+  spawn_process { println$ "New thread"; };
+  spawn_process { println$ "New thread"; };
 /*
-  spawn_process { println$ "New thread"; };
-  spawn_process { println$ "New thread"; };
-  spawn_process { println$ "New thread"; };
   spawn_process { println$ "New thread"; };
   spawn_process { println$ "New thread"; };
   spawn_process { println$ "New thread"; };

@@ -1,0 +1,42 @@
+include "std/pthread/threadpool";
+
+var x : (double ^ 2000) ^ 2000;
+for i in 0..<2000 for j in 0..<2000 perform &x.i.j <- 2.0;
+
+var r : (double ^ 2000) ^ 2000;
+for i in 0..<2000 for j in 0..<2000 perform &r.i.j <- 1.0;
+
+
+fun inner_product (pr: &(double^2000), pc: &(double^2000)) = 
+{
+  var sum = 0.0;
+  for (var k=0; k<2000; ++k;) do
+    sum = sum + *(pr.k) * *(pc.k);
+  done
+  return sum;
+}
+
+
+noinline proc inner_products_proc (var i:int)
+{
+  for (var j=0; j<2000; ++j;) do 
+    var sum  = inner_product (&x.i, &x.j);
+    // should be 400 = 2000 x 2 * 2
+    &r . i . j <- sum;
+  done
+}
+
+
+println $ "Starting";
+var start= system_clock_now();
+for k in 0 .. 1999 perform inner_products_proc k;
+var fin = system_clock_now();
+println$ "Single thread Done " + (fin - start).double.str;
+start = system_clock_now();
+ThreadPool::pforloop 0 1999 inner_products_proc;
+fin = system_clock_now();
+println$ "Thread pool Done " + (fin - start).double.str;
+//println$ r;
+      
+ThreadPool::stop();
+
