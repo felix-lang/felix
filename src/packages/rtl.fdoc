@@ -556,6 +556,7 @@ extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
 #include <cstdint>
 #include <mutex>
 #include <list> 
+#include <atomic>
 
 namespace flx { namespace rtl {
 
