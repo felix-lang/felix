@@ -66,7 +66,7 @@ class PosixTime
   fun -: system_timepoint * system_timepoint -> system_duration = "$1-$2";
   
   ctor double : system_duration = """
-    (::std::chrono::duration<double>($1)).count())
+    ((::std::chrono::duration<double>($1)).count())
   """;
 
 }
