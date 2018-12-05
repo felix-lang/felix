@@ -601,7 +601,20 @@ public:
   muxguard (::std::mutex *p);
   ~muxguard ();
 };
-  
+ 
+struct RTL_EXTERN spinguard {
+private:
+  spinguard() = delete;
+  spinguard(spinguard const&) = delete;
+  spinguard *operator=(spinguard const&)=delete;
+  bool cond;
+  ::std::atomic_flag *plock;
+public:
+  spinguard (bool,::std::atomic_flag *p);
+  ~spinguard ();
+};
+
+ 
 // MOVE THIS TO RTL AND PROVIDE SUITABLE RTTI SO GC KNOWS ABOUT THE FRAME POINTER
 struct RTL_EXTERN jump_address_t
 {
@@ -850,6 +863,12 @@ char const *describe_service_call(int x)
 
 muxguard::muxguard (::std::mutex *p): m(p) { if (m)m->lock(); }
 muxguard::~muxguard () { if (m)m->unlock(); }
+
+spinguard::spinguard (bool cond_, ::std::atomic_flag *p): cond(cond_), plock(p) { 
+  if (cond) while (plock->test_and_set(std::memory_order_acquire));
+}
+spinguard::~spinguard () { if (cond)plock->clear(std::memory_order_release); }
+
 
 // ********************************************************
 // slist implementation

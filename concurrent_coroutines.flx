@@ -11,17 +11,17 @@ proc p (i:int) () {
 }
 var q = p;
 
-var start = time();
+var start = system_clock_now();
 proc many()
 {
   for i in 1..20 perform schedule_fthread (q i);
   println$ "Spawned";
-  start = time();
-  schedule_fthread { println$ "Elapsed " + (time() - start).str; };
-  spawn_process { println$ "New thread"; };
-  spawn_process { println$ "New thread"; };
-  spawn_process { println$ "New thread"; };
+  start = system_clock_now();
+  schedule_fthread { println$ "Elapsed " + (system_clock_now() - start).double.str; };
 /*
+  spawn_process { println$ "New thread"; };
+  spawn_process { println$ "New thread"; };
+  spawn_process { println$ "New thread"; };
   spawn_process { println$ "New thread"; };
   spawn_process { println$ "New thread"; };
   spawn_process { println$ "New thread"; };

@@ -98,7 +98,7 @@ void async_sched::do_spawn_process()
   // in use by other processes, the lock pointer is NULL,
   // but this thread is the one running the current process,
   // so it can't race with itself. 
-  active->pactive_lock = &(active->active_lock);
+  active->lockneeded = true;
   spawn_impl (active);
 }
 void async_sched::do_spawn_pthread()
@@ -113,7 +113,7 @@ void async_sched::spawn_impl(fthread_list *pactive) {
   if (debug_driver)
     fprintf(stderr, "[prun %p: spawn_pthread] Spawn pthread %p\n", mythrid(), ftx);
   {
-    muxguard dummy(pactive->pactive_lock);
+    spinguard dummy(pactive->lockneeded, &(pactive->active_lock));
     // SHOULD THIS BE HERE?? The async scheduler isn't created yet.
     // maybe we should do this "properly" after it is (in the next statement!)
     ++pactive->thread_count;

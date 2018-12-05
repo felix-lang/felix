@@ -62,8 +62,12 @@ public:
   ::flx::rtl::sysdlist_t *fthreads; // has to be public for shape spec
 
   ::std::atomic<int> thread_count; // n threads sharing list
-  ::std::mutex active_lock;
-  ::std::mutex *pactive_lock;
+
+//  ::std::mutex active_lock;
+//  ::std::mutex *pactive_lock;
+
+  bool lockneeded;
+  ::std::atomic_flag active_lock;
 
   size_t async_count; // pending async jobs
   async_hooker* async; // async dispatch and ready list object
@@ -194,7 +198,9 @@ fthread_list::fthread_list(::flx::gc::generic::gc_profile_t *gcp_) :
   thread_count(1),
   async_count(0),
   async(nullptr),
-  pactive_lock(nullptr),
+  //pactive_lock(nullptr),
+  lockneeded(false),
+  active_lock(ATOMIC_FLAG_INIT),
   gcp(gcp_)
 {
   fthreads = new(*gcp, ::flx::rtl::sysdlist_t_ptr_map, false) ::flx::rtl::sysdlist_t();
@@ -290,13 +296,13 @@ void sync_sched::show_state () {
   }
 
 void sync_sched::push_new(fthread_t *f) {
-  muxguard dummy(active->pactive_lock);
+  spinguard dummy(active->lockneeded,&(active->active_lock));
   impl_push_new (f);
 }
 
 // used by async to activate fthread in ready (async complete) queue
 void sync_sched::push_old(fthread_t *f) {
-  muxguard dummy(active->pactive_lock);
+  spinguard dummy(active->lockneeded,&(active->active_lock));
   impl_push_old (f);
 }
 void sync_sched::impl_push_old(fthread_t *f) 
@@ -315,14 +321,14 @@ void sync_sched::do_yield()
       if(debug_driver)
          fprintf(stderr,"[sync: svc_yield] yield");
       
-      muxguard dummy(active->pactive_lock);
+      spinguard dummy(active->lockneeded,&(active->active_lock));
       active->push_back(ft);
       ft = active->pop_front();
     }
 
 void sync_sched::do_spawn_fthread()
     {
-      muxguard dummy(active->pactive_lock);
+      spinguard dummy(active->lockneeded,&(active->active_lock));
       fthread_t *ftx = *(fthread_t**)request->data;
       if(debug_driver)
         fprintf(stderr,"[sync: svc_spawn_fthread] Spawn fthread %p\n",ftx);
@@ -331,7 +337,7 @@ void sync_sched::do_spawn_fthread()
 
 void sync_sched::do_schedule_fthread()
     {
-      muxguard dummy(active->pactive_lock);
+      spinguard dummy(active->lockneeded,&(active->active_lock));
       fthread_t *ftx = *(fthread_t**)request->data;
       if(debug_driver)
         fprintf(stderr,"[sync: svc_schedule_fthread] Schedule fthread %p\n",ftx);
@@ -340,7 +346,7 @@ void sync_sched::do_schedule_fthread()
 
 void sync_sched::do_sread()
     {
-      muxguard dummy(active->pactive_lock);
+      spinguard dummy(active->lockneeded,&(active->active_lock));
       readreq_t * pr = (readreq_t*)request->data;
       schannel_t *chan = pr->chan;
       if(debug_driver)
@@ -378,7 +384,7 @@ show_state();
 
 void sync_sched::do_swrite()
     {
-      muxguard dummy(active->pactive_lock);
+      spinguard dummy(active->lockneeded,&(active->active_lock));
       readreq_t * pw = (readreq_t*)request->data;
       schannel_t *chan = pw->chan;
       if(debug_driver)
@@ -435,7 +441,7 @@ void sync_sched::external_multi_swrite (schannel_t *chan, void *data)
 
 void sync_sched::do_multi_swrite()
     {
-      muxguard dummy(active->pactive_lock);
+      spinguard dummy(active->lockneeded,&(active->active_lock));
       readreq_t * pw = (readreq_t*)request->data;
       void *data = *(void**)pw->variable;
       schannel_t *chan = pw->chan;
@@ -446,7 +452,7 @@ void sync_sched::do_multi_swrite()
 
 void sync_sched::do_kill()
     {
-      muxguard dummy(active->pactive_lock);
+      spinguard dummy(active->lockneeded,&(active->active_lock));
       fthread_t *ftx = *(fthread_t**)request->data;
       if(debug_driver)fprintf(stderr,"[sync: svc_kill] Request to kill fthread %p\n",ftx);
       ftx -> kill();
@@ -465,7 +471,7 @@ sync_sched::fstate_t sync_sched::frun()
         ::flx::pthread::mythrid(), ft,(int)active->size());
 dispatch:
   if (ft == 0) {
-     muxguard dummy(active->pactive_lock);
+     spinguard dummy(active->lockneeded,&(active->active_lock));
      ft = active->pop_front(); 
      if (debug_driver)
        fprintf(stderr,"[sync] pthread %p fetching fthread %p\n",::flx::pthread::mythrid(),ft);
@@ -474,7 +480,7 @@ dispatch:
   request = ft->run();        // run fthread to get request
   if(request == 0)            // euthenasia request
   {
-    muxguard dummy(active->pactive_lock);
+    spinguard dummy(active->lockneeded,&(active->active_lock));
     ft = 0;
     goto dispatch;
   }
