@@ -22,7 +22,7 @@ noinline proc inner_products_proc (var i:int)
   for (var j=0; j<2000; ++j;) do 
     var sum  = inner_product (&x.i, &x.j);
     // should be 400 = 2000 x 2 * 2
-    &r . i . j <- sum;
+    &r . j . i <- sum;
   done
 }
 

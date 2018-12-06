@@ -6245,7 +6245,7 @@ syntax pfor
         (body _7)
         (int (nos "int"))
         (param `(,_sr PVar ,ctlvar ,int none)) ;; kind name type defaultvalue
-        (params `((,param) none))               ;; parameter list with constraint
+        (params `((Satom ,param) none))               ;; parameter list with constraint
         (sfunargs `(,params))                   ;; HOF list of parameter lists
         (proc `(ast_lambda ,_sr (,dfltvs ,sfunargs (ast_void ,_sr) (,body))))
         (call `(ast_call ,_sr ,(nos "tpfor")  (ast_tuple ,_sr (,first ,last ,proc))))

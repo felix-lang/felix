@@ -685,12 +685,12 @@ class ThreadPool
       for var counter in 0 upto nt - 2 do
         var sfirst = first + (N * counter) / nt;
         var slast = first + (N * (counter + 1)) / nt - 1;
-//  println$ "QUEUE JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
+//println$ "QUEUE JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
         ThreadPool::queue_job$ lbody (sfirst, slast);
       done
       sfirst = first + (N * (nt - 1)) / nt;
       slast = last;
-//  println$ "UNQUEUED JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
+//println$ "UNQUEUED JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
       lbody (sfirst, slast) ();
       join;
       pforrunning.store 0;
@@ -700,13 +700,14 @@ class ThreadPool
     done
   }
 
-  inline proc forloop (lbody: int -> 0) (first:int, last:int) ()
+  noinline proc forloop (lbody: int -> 0) (first:int, last:int) ()
   {
 //println$ "forloop " + first.str + "," + last.str;
     for var i in first upto last call lbody i; 
   }
-  inline proc pforloop (first: int) (last:int) (lbody: int -> 0)
+  noinline proc pforloop (first: int) (last:int) (lbody: int -> 0)
   {
+//println$ "Pfor segment " + first.str + "," last.str;
     pfor_segment (first, last)  (forloop lbody);
   }
   inline proc tpfor (first:int, last:int, lbody: int-> 0)
@@ -722,6 +723,8 @@ open ThreadPool;
 
 // Matrix multiply
 macro val N = 1000;
+typedef N = 1000;
+
 typedef vec_t = array[double, N];
 typedef mx_t = array[vec_t,N];
 var a : mx_t;
