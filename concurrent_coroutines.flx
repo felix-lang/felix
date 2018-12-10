@@ -2,33 +2,33 @@
 fun thrid: 1 -> address ="pthread_self()"
   requires Posix_headers::pthread_h;
 
+var kk = 0;
 proc p (i:int) () {
-   var j = 1;
-  println$ #thrid,i; 
-  for i in 1..100000 do
-    ++j;
-  done
+ var j = 1;
+ var k : int;
+  //println$ #thrid,i; 
+  for(k=0; k<1000; ++k;) perform ++j;
+  kk += j;
 }
 var q = p;
-
-var start = system_clock_now();
-proc many()
+proc many(threading:bool)
 {
-  for i in 1..20 perform schedule_fthread (q i);
+  for i in 1..200000 perform schedule_fthread (q i);
+var start = system_clock_now();
   println$ "Spawned";
   start = system_clock_now();
   schedule_fthread { println$ "Elapsed " + (system_clock_now() - start).double.str; };
+if threading do
   spawn_process { println$ "New thread"; };
   spawn_process { println$ "New thread"; };
   spawn_process { println$ "New thread"; };
-/*
   spawn_process { println$ "New thread"; };
   spawn_process { println$ "New thread"; };
   spawn_process { println$ "New thread"; };
-  spawn_process { println$ "New thread"; };
-*/
+done
 }
 
-many();
+many(false);
+many(true);
 
 

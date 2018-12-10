@@ -28,38 +28,35 @@ namespace flx { namespace run {
 // be made a GC root
 struct async_sched
 {
-  enum block_flag_t {block, ret};
+  enum thread_kind_t {mainline,embedded,pthread,process};
+  thread_kind_t thread_kind;
+  static char const *str(thread_kind_t);
 
   struct flx_world *world;
   bool debug_driver;
+
+
   ::flx::gc::generic::gc_profile_t *gcp;
 
-
-  // NOTE: this is a WEAK POINTER
-  // The owner is the synchronous scheduler
-  fthread_list *active;
-
-  // NOTE: STRONG POINTER, garbage collected
-  // owns the active list
   sync_sched *ss;  // (d, gcp, active), (ft, request), (pc, fs)
 
   async_sched(
     flx_world *world_arg, 
     bool d, 
     ::flx::gc::generic::gc_profile_t *g, 
-    fthread_list *a
+    fthread_list *a, thread_kind_t
   );
   ~async_sched();
 
-  int prun(block_flag_t);
+  int prun();
   void do_spawn_pthread();
   void do_spawn_process();
-  void spawn_impl(fthread_list*);
+  void spawn_impl(fthread_list*, thread_kind_t);
   void do_general();
 
   void external_multi_swrite(::flx::rtl::schannel_t *, void *data);
 private:
-  bool schedule_queued_fthreads(block_flag_t);
+  bool nonblocking_schedule_queued_fthreads();
 };
 
 
@@ -79,11 +76,69 @@ using namespace ::flx::pthread;
 
 namespace flx { namespace run {
 
+char const *async_sched::str(thread_kind_t k) {
+  switch (k) {
+  case mainline: return "mainline";
+  case embedded: return "embedded";
+  case pthread: return "pthread";
+  case process: return "process";
+  }
+}
+
+// ***************************************************
+// Async_sched: CONSTRUCTOR
+// ***************************************************
+
+async_sched::async_sched(
+    flx_world *world_arg, 
+    bool d, 
+    ::flx::gc::generic::gc_profile_t *g, 
+    fthread_list *a, thread_kind_t k
+  ) : 
+    world(world_arg), 
+    debug_driver(d), 
+    gcp(g),
+    thread_kind(k)
+  { 
+    if (debug_driver)
+      fprintf(stderr, "prun %p: async scheduler, creating and rooting synchronous scheduler!\n",mythrid());
+    ss = new(*gcp,sync_sched_ptr_map, false) sync_sched(debug_driver, gcp, a); 
+    ++a->thread_count;
+    ++a->busy_count;
+    gcp->collector->add_root(ss);
+  }
+
+
+// ***************************************************
+// Async_sched: DESTRUCTOR
+// ***************************************************
+async_sched::~async_sched() {
+  try
+  {
+    if (debug_driver)
+      fprintf(stderr, "prun %p: Terminating async scheduler\n",mythrid());
+    --ss->active->thread_count;
+    if (debug_driver)
+      fprintf(stderr, "prun %p: async scheduler, fibre queue length %d\n",mythrid(), ss->active->thread_count.load());
+    if (debug_driver)
+      fprintf(stderr, "prun %p: async scheduler, unrooting synchronous scheduler!\n",mythrid());
+    gcp->collector->remove_root(ss);
+  }
+  catch (...) { fprintf(stderr, "Unknown exception deleting async!\n"); }
+}
+
+// ***************************************************
+// Async_sched: Thread procedure 
+// ***************************************************
 static void prun_pthread_entry(void *data) {
   async_sched *d = (async_sched*)data;
-  d->prun(async_sched::block);
+  d->prun();
   delete d;
 }
+
+// ***************************************************
+// Async_sched: SPAWNING
+// ***************************************************
 
 // SPAWNING A NEW FELIX PTHREAD
 // CREATES ITS OWN PRIVATE ASYNC SCHEDULER 
@@ -98,16 +153,16 @@ void async_sched::do_spawn_process()
   // in use by other processes, the lock pointer is NULL,
   // but this thread is the one running the current process,
   // so it can't race with itself. 
-  active->lockneeded = true;
-  spawn_impl (active);
+  ss->active->lockneeded = true;
+  spawn_impl (ss->active,process);
 }
 void async_sched::do_spawn_pthread()
 {
   fthread_list *pactive = new(*gcp, ::flx::run::fthread_list_ptr_map,false) fthread_list(gcp);
-  spawn_impl (pactive);
+  spawn_impl (pactive,pthread);
 }
 
-void async_sched::spawn_impl(fthread_list *pactive) {
+void async_sched::spawn_impl(fthread_list *pactive, thread_kind_t k) {
 
   fthread_t *ftx = *(fthread_t**)ss->request->data;
   if (debug_driver)
@@ -116,10 +171,9 @@ void async_sched::spawn_impl(fthread_list *pactive) {
     spinguard dummy(pactive->lockneeded, &(pactive->active_lock));
     // SHOULD THIS BE HERE?? The async scheduler isn't created yet.
     // maybe we should do this "properly" after it is (in the next statement!)
-    ++pactive->thread_count;
     pactive->push_front(ftx);
   }
-  void *data = new async_sched(world,debug_driver, gcp, pactive);
+  void *data = new async_sched(world,debug_driver, gcp, pactive,k);
   flx_detached_thread_t dummy;
 
   if (debug_driver)
@@ -154,6 +208,9 @@ void async_sched::spawn_impl(fthread_list *pactive) {
   }
 }
 
+// ***************************************************
+// Async_sched: ASYNC REQUEST DISPATCH
+// ***************************************************
 void async_sched::do_general()
 {
   if (debug_driver)
@@ -161,10 +218,10 @@ void async_sched::do_general()
 
   if(debug_driver)
     fprintf(stderr, "[prun %p: svc_general] async=%p, ptr_create_async_hooker=%p\n", 
-      mythrid(), active-> async,
+      mythrid(), ss->active-> async,
       world->c->ptr_create_async_hooker)
     ;
-  if (!active->async) 
+  if (!ss->active->async) 
   {
     if(debug_driver)
       fprintf(stderr,"[prun: svc_general] trying to create async system..\n");
@@ -183,7 +240,7 @@ void async_sched::do_general()
 
     // CREATE A NEW ASYNCHRONOUS EVENT MANAGER
     // DONE ON DEMAND ONLY
-    active->async = (*world->c->ptr_create_async_hooker)(
+    ss->active->async = (*world->c->ptr_create_async_hooker)(
       gcp->collector->get_thread_control(), // thread_control object
       20000, // bound on resumable thread queue
       50,    // bound on general input job queue
@@ -192,10 +249,11 @@ void async_sched::do_general()
       1      // number of threads doing async fileio
     );
   }
-  ++active->async_count;
+  ++ss->active->async_count;
   if (debug_driver)
     fprintf(stderr,
-       "[prun: svc_general] Async system created: %p, count %zu\n",active->async,active->async_count);
+       "[prun: svc_general] Async system created: %p, count %zu\n",
+       ss->active->async,ss->active->async_count);
   // CHANGED TO USE NEW UNION LAYOUT RULES
   // One less level of indirection for pointers
   // void *dreq =  *(void**)ss.request->data;
@@ -205,7 +263,7 @@ void async_sched::do_general()
 
   // requests are now ALWAYS considered asynchronous
   // even if the request handler reschedules them immediately
-  active->async->handle_request(dreq, ss->ft);
+  ss->active->async->handle_request(dreq, ss->ft);
   if (debug_driver)
     fprintf(stderr, "[prun: svc_general] Request object %p captured fthread %p \n", dreq, ss->ft);
   if (debug_driver)
@@ -216,56 +274,135 @@ void async_sched::do_general()
     fprintf(stderr,"[prun: svc_general] request dispatched..\n");
 }
 
-
-int async_sched::prun(block_flag_t block_flag) {
-sync_run:
-    // RUN SYNCHRONOUS SCHEDULER
-    if (debug_driver)
-      fprintf(stderr, "prun %p: sync_run\n", mythrid());
-
-    if (debug_driver)
-      fprintf(stderr, "prun %p: Before running: Sync state is %s\n", mythrid(),
-        ss->get_fpc_desc());
-
-    sync_sched::fstate_t fs = ss->frun();
-
-    if (debug_driver)
-      fprintf(stderr, "prun %p: After running: Sync state is %s/%s\n", mythrid(),
-        ss->get_fstate_desc(fs), ss->get_fpc_desc());
-
-    switch(fs)
-    {
-      // HANDLE DELEGATED SERVICE REQUESTS
-      case sync_sched::delegated:
-        if (debug_driver)
-          fprintf(stderr, "sync_sched %p:delegated request %d\n", mythrid(), ss->request->variant);
-        switch (ss->request->variant) 
-        {
-          case svc_spawn_pthread: do_spawn_pthread(); goto sync_run;
-          case svc_spawn_process: do_spawn_process(); goto sync_run;
-
-          case svc_general: do_general(); goto sync_run;
-
-          default:
-            fprintf(stderr,
-              "prun: Unknown service request code 0x%x\n", ss->request->variant);
-            abort();
-        }
-
-      // SCHEDULE ANY ASYNCHRONOUSLY QUEUED FTHREADS
-      case sync_sched::blocked: // ran out of active threads - are there any in the async queue?
-        if(schedule_queued_fthreads(block_flag)) goto sync_run;
-        break;
-      default:
-        fprintf(stderr, "prun: Unknown frun return status 0x%4x\n", fs);
-        abort();
-    }
-
-  // TEMPORARILY OUT OF JOBS TO DO
-  if (debug_driver)
-    fprintf(stderr, "prun %p: Out of ready jobs, %zu pending\n", mythrid(), active->async_count);
-  return active->async_count;
+static void sleep(thread_control_base_t *tc, size_t ns) 
+{
+  assert(tc);
+  tc->yield();
+  ::std::this_thread::sleep_for(::std::chrono::milliseconds(1000)); // 1 second, temporarily
+  ::std::this_thread::yield();
 }
+
+
+// ***************************************************
+// Async_sched:  MASTER SCHEDULER
+// ***************************************************
+int async_sched::prun() {
+sync_run:
+  // RUN SYNCHRONOUS SCHEDULER
+  if (debug_driver)
+    fprintf(stderr, "prun %s %p: sync_run\n", str(thread_kind),mythrid());
+
+  if (debug_driver)
+    fprintf(stderr, "prun %s %p: Before running: Sync state is %s\n", str(thread_kind),mythrid(),
+      ss->get_fpc_desc());
+
+  sync_sched::fstate_t fs = ss->frun();
+
+  if (debug_driver)
+    fprintf(stderr, "prun %s %p: After running: Sync state is %s/%s\n", str(thread_kind),mythrid(),
+      ss->get_fstate_desc(fs), ss->get_fpc_desc());
+
+  switch(fs)
+  {
+    // HANDLE DELEGATED SERVICE REQUESTS
+    case sync_sched::delegated:
+      if (debug_driver)
+        fprintf(stderr, "sync_sched %p:delegated request %d\n", str(thread_kind),mythrid(), ss->request->variant);
+      switch (ss->request->variant) 
+      {
+        case svc_spawn_pthread: do_spawn_pthread(); goto sync_run;
+        case svc_spawn_process: do_spawn_process(); goto sync_run;
+
+        case svc_general: do_general(); goto sync_run;
+
+        default:
+          fprintf(stderr,
+            "prun: Unknown service request code 0x%x\n", ss->request->variant);
+          abort();
+      }
+
+    // SCHEDULE ANY ASYNCHRONOUSLY QUEUED FTHREADS
+    case sync_sched::blocked: // ran out of active threads - are there any in the async queue?
+      --ss->active->busy_count;
+      switch (thread_kind) 
+      {
+        case mainline:
+        case pthread:
+          // gain exclusive control
+          while(!ss->active->qisblocked.test_and_set());
+          if (ss->active->async_count > 0) 
+          {
+            if (debug_driver)
+              fprintf(stderr, "prun: %s %p Async blocking\n", str(thread_kind), mythrid());
+            ss->ft = ss->active->async->dequeue(); // get fibre
+            gcp->collector->remove_root(ss->ft); // transfer ownership
+            --ss->active->async_count; // accounting
+            ss->active->qisblocked.clear(); // release control
+            ++ss->active->busy_count;
+            goto sync_run; // do work
+          }
+          if (ss->active->busy_count.load() == 0) {
+            // no work to do, no jobs pending, and no workers to make work, so return
+            if (debug_driver)
+              fprintf(stderr, "prun: %s %p Async returning\n", str(thread_kind), mythrid());
+            return 0;
+          }
+          else  // some processes are busy, they might make work so delay and retry later
+          {
+            ss->active->qisblocked.clear(); // release control
+            // DELAY
+            if (debug_driver)
+              fprintf(stderr, "prun: %s %p Async delaying thread_count=%d, busy_count=%d\n", 
+                str(thread_kind), mythrid(), ss->active->thread_count.load(),ss->active->busy_count.load());
+            sleep(gcp->collector->get_thread_control(), 10.00); // nanoseconds
+            ++ss->active->busy_count;
+            goto sync_run;
+          }
+
+        case process:
+          if (ss->active->qisblocked.test_and_set()) 
+          {
+            if (ss->active->async_count > 0) 
+            {
+              if (debug_driver)
+                fprintf(stderr, "prun: %s %p Async blocking\n", str(thread_kind), mythrid());
+              auto ftp = ss->active->async->maybe_dequeue(); // get fibre
+              ss->push_old(ftp);
+              gcp->collector->remove_root(ftp); // transfer ownership
+              --ss->active->async_count; // accounting
+              ss->active->qisblocked.clear(); // release control
+              ++ss->active->busy_count;
+              goto sync_run; // do work
+            }
+            if (ss->active->busy_count.load() == 0) {
+              // no work to do, no jobs pending, and no workers to make work, so return
+              if (debug_driver)
+                fprintf(stderr, "prun: %s %p Async returning\n", str(thread_kind), mythrid());
+              return 0;
+            }
+          }
+
+          // DELAY
+          sleep(gcp->collector->get_thread_control(), 10.00); // nanoseconds
+          ++ss->active->busy_count;
+          goto sync_run;
+
+        case embedded:
+          if (ss->active->qisblocked.test_and_set())
+            if(nonblocking_schedule_queued_fthreads()) goto sync_run;
+          return ss->active->async_count;
+       }
+
+    default:
+      fprintf(stderr, "prun: Unknown frun return status 0x%4x\n", fs);
+      abort();
+  } // switch
+
+}
+
+// ***************************************************
+// Async_sched:  COMPLETED ASYNC RETRIEVAL
+// ***************************************************
 
 // this routine is used when there are no fthreads left on the
 // sync scheduler list
@@ -299,82 +436,37 @@ sync_run:
 // the thread can dive in and become the waiter.
 
 
-bool async_sched::schedule_queued_fthreads(block_flag_t block_flag) {
+bool async_sched::nonblocking_schedule_queued_fthreads() {
   if (debug_driver) {
     fprintf(stderr,
-      "prun %p: out of active synchronous threads, trying async, pending=%zu\n", mythrid(), active->async_count);
+      "prun %s %p: out of active synchronous threads, trying async, pending=%zu\n", str(thread_kind), mythrid(), ss->active->async_count);
   }
   int scheduled_some = 0;
-  if (active->async && active->async_count > 0) {
-    if (block_flag==block)
-    {
-      fthread_t* ftp = active->async->dequeue();
-      if (debug_driver)
-        fprintf(stderr, "prun %p: block mode: Async Retrieving fthread %p\n", mythrid(), ftp);
-
-      gcp->collector->remove_root(ftp);
-      ss->push_old(ftp);
-      --active->async_count;
-      ++scheduled_some;
-    }
-    else
-    {
-      fthread_t* ftp = active->async->maybe_dequeue();
+  if (ss->active->async && ss->active->async_count > 0) {
+      fthread_t* ftp = ss->active->async->maybe_dequeue();
       while (ftp) {
         if (debug_driver)
           fprintf(stderr, "prun %p:ret mode: Async Retrieving fthread %p\n", mythrid(), ftp);
         gcp->collector->remove_root(ftp);
         ss->push_old(ftp);
-        --active->async_count;
+        --ss->active->async_count;
         ++scheduled_some;
-        ftp = active->async->maybe_dequeue();
-      }
+        ftp = ss->active->async->maybe_dequeue();
     }
   }
-  if (debug_driver)
-    fprintf(stderr, "prun: Async returning: scheduled %d, pending=%zu\n", scheduled_some, active->async_count);
   return scheduled_some != 0;
 }
+
+
+// ***************************************************
+// Async_sched:  EXTERNAL MULTIWRITE HOOK
+// ***************************************************
 
 void async_sched::external_multi_swrite(::flx::rtl::schannel_t *chan, void *data)
   {
     ss->external_multi_swrite (chan,data);
   }
 
-async_sched::async_sched(
-    flx_world *world_arg, 
-    bool d, 
-    ::flx::gc::generic::gc_profile_t *g, 
-    fthread_list *a
-  ) : 
-    world(world_arg), 
-    debug_driver(d), 
-    gcp(g), 
-    active(a)
-  { 
-    if (debug_driver)
-      fprintf(stderr, "prun %p: async scheduler, creating and rooting synchronous scheduler!\n",mythrid());
-    ss = new(*gcp,sync_sched_ptr_map, false) sync_sched(debug_driver, gcp, a); 
-    gcp->collector->add_root(ss);
-  }
-
-
-async_sched::~async_sched() {
-  try
-  {
-    if (debug_driver)
-      fprintf(stderr, "prun %p: Terminating async scheduler\n",mythrid());
-    --active->thread_count;
-    if (debug_driver)
-      fprintf(stderr, "prun %p: async scheduler, fibre queue length %d\n",mythrid(), active->thread_count.load());
-    if(active->thread_count.load() == 0) {
-    if (debug_driver)
-      fprintf(stderr, "prun %p: async scheduler, unrooting synchronous scheduler!\n",mythrid());
-    gcp->collector->remove_root(ss);
-    }
-  }
-  catch (...) { fprintf(stderr, "Unknown exception deleting async!\n"); }
-}
 
 }} // namespaces
 

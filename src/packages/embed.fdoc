@@ -264,8 +264,7 @@ public:
   // returns number of pending operations scheduled by svc_general
   // return error code < 0 otherwise
   // catches all known exceptions
-  int run_until_blocked();
-  int run_until_complete();
+  int run();
 
   void* ptf()const { return instance->thread_frame; }	// for creating con_t
 
@@ -533,7 +532,7 @@ int flx_world::setup(int argc, char **argv) {
   async_scheduler = new async_sched(
     this,
     debug_driver,
-    gcp, schedlist
+    gcp, schedlist,async_sched::mainline
     ); // deletes active for us!
 
   return 0;
@@ -620,31 +619,13 @@ void flx_world::end_flx_code() {
   collector->get_thread_control()->remove_thread();
 }
 
-// returns number of pending operations scheduled by svc_general
-// return error code < 0 otherwise
-// catches all known exceptions
-//
-int flx_world::run_until_blocked() {
+
+int flx_world::run() {
   // this may not be called on the same thread, so let thread control know
   // when we exit, main thread is not running so pthreads can garbage collect without waiting for us
 
   try {
-    return async_scheduler->prun(async_sched::ret);
-  }
-  catch (flx_exception_t &x) { return - flx_exception_handler (&x); }
-  catch (std::exception &x) { return - std_exception_handler (&x); }
-  catch (int &x) { fprintf (stderr, "Exception type int: %d\n", x); return -x; }
-  catch (::std::string &x) { fprintf (stderr, "Exception type string : %s\n", x.c_str()); return -1; }
-  catch (::flx::rtl::con_t &x) { fprintf (stderr, "Rogue continuatiuon caught\n"); return -6; }
-  catch (...) { fprintf(stderr, "[flx_world:run_until_blocked] Unknown exception in thread!\n"); return -5; }
-}
-
-int flx_world::run_until_complete () {
-  // this may not be called on the same thread, so let thread control know
-  // when we exit, main thread is not running so pthreads can garbage collect without waiting for us
-
-  try {
-    return async_scheduler->prun(async_sched::block);
+    return async_scheduler->prun();
   }
   catch (flx_exception_t &x) { return - flx_exception_handler (&x); }
   catch (std::exception &x) { return - std_exception_handler (&x); }

@@ -61,7 +61,9 @@ struct RTL_EXTERN fthread_list {
 public:
   ::flx::rtl::sysdlist_t *fthreads; // has to be public for shape spec
 
+  ::std::atomic_flag qisblocked;
   ::std::atomic<int> thread_count; // n threads sharing list
+  ::std::atomic<int> busy_count; // n threads actually working
 
 //  ::std::mutex active_lock;
 //  ::std::mutex *pactive_lock;
@@ -196,6 +198,7 @@ static ::flx::gc::generic::offset_data_t const sync_sched_offset_data = { 2, syn
 // ***************************************************
 fthread_list::fthread_list(::flx::gc::generic::gc_profile_t *gcp_) : 
   thread_count(1),
+  busy_count(0),
   async_count(0),
   async(nullptr),
   //pactive_lock(nullptr),
@@ -203,6 +206,7 @@ fthread_list::fthread_list(::flx::gc::generic::gc_profile_t *gcp_) :
   active_lock(),
   gcp(gcp_)
 {
+  qisblocked.clear();
   active_lock.clear();
   fthreads = new(*gcp, ::flx::rtl::sysdlist_t_ptr_map, false) ::flx::rtl::sysdlist_t();
 }
@@ -476,8 +480,10 @@ dispatch:
      ft = active->pop_front(); 
      if (debug_driver)
        fprintf(stderr,"[sync] pthread %p fetching fthread %p\n",(void*)::flx::pthread::mythrid(),ft);
-   }
-  if (ft == 0) return blocked; 
+  }
+  if (ft == 0) { 
+    return blocked; 
+  }
   request = ft->run();        // run fthread to get request
   if(request == 0)            // euthenasia request
   {
