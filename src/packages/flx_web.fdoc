@@ -1283,6 +1283,8 @@ noinline proc handler (var k:socket_t) ()
       serve_head(k,file);
     | #None => println$ "BAD HEAD line: '"+line+"'";
     endmatch;
+  | #reqPOST =>
+    println$ "Unsupported POST; line: '"+line+"'";        
   | #reqERROR =>
     println$ "BAD request line: '"+line+"'";
   endmatch;
