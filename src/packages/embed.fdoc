@@ -31,7 +31,6 @@ used to initiate a Felix world.
 #include "flx_sync.hpp"
 
 namespace flx { namespace run {
-
 class RTL_EXTERN flx_config {
 public:
   bool  debug;
@@ -77,7 +76,6 @@ public:
 
 
 };
-
 }} // namespaces
 #endif
 @
@@ -97,7 +95,7 @@ static double egetv(char const *name, double dflt)
 namespace flx { namespace run {
 
 // =================================================================
-// // Constructor
+// flx_config: Constructor
 // =================================================================
 flx_config::flx_config 
 (
@@ -113,7 +111,7 @@ flx_config::flx_config
 }
 
 // =================================================================
-// Initialiser
+// flx_config: Initialiser
 // =================================================================
 
 int
@@ -268,6 +266,8 @@ public:
 
   void* ptf()const { return instance->thread_frame; }	// for creating con_t
 
+  async_hooker *create_demux();
+
   void spawn_fthread(::flx::rtl::con_t *top);
 
   void external_multi_swrite (::flx::rtl::schannel_t *chan, void *data);
@@ -294,6 +294,10 @@ using namespace ::flx::pthread;
 using namespace ::flx::run;
 
 namespace flx { namespace run {
+
+// =================================================================
+// flx_world : final cleanup
+// =================================================================
 
 // terminates process!
 // Not called by default (let the OS clean up)
@@ -344,6 +348,9 @@ static int do_final_cleanup(
 
 static void *get_stack_pointer() { void *x=(void*)&x; return x; }
 
+// =================================================================
+// flx_world : run mainline pthread constructor
+// =================================================================
 // RUN A FELIX INSTANCE IN THE CURRENT PTHREAD
 //
 // CURRENTLY ONLY CALLED ONCE IN MAIN THREAD
@@ -381,6 +388,9 @@ run_felix_pthread_ctor(
   return active;
 }
 
+// =================================================================
+// flx_world : run mainline pthread destructor
+// =================================================================
 static void run_felix_pthread_dtor(
   bool debug_driver,
   flx::gc::generic::gc_profile_t *gcp,
@@ -415,6 +425,9 @@ static void run_felix_pthread_dtor(
    
 }
 
+// =================================================================
+// flx_world : Constructor
+// =================================================================
 // construct from flx_config pointer
 flx_world::flx_world(flx_config *c_arg) : c(c_arg) {}
 
@@ -460,6 +473,7 @@ int flx_world::setup(int argc, char **argv) {
     }
   }
 
+  // Create Garbage Collector
   collector = new flx::gc::collector::flx_ts_collector_t(
     allocator, 
     thread_control, 
@@ -469,6 +483,7 @@ int flx_world::setup(int argc, char **argv) {
   if(debug)
     fprintf(stderr, "[flx_world: setup] Created ts collector\n");
 
+  // Create Collector Profile
   gcp = new flx::gc::generic::gc_profile_t(
     c->debug_driver,
     c->debug_allocations,
@@ -510,6 +525,7 @@ int flx_world::setup(int argc, char **argv) {
   instance->create(
     library,
     gcp,
+    this,
     c->flx_argc,
     c->flx_argv,
     stdin,
@@ -538,6 +554,9 @@ int flx_world::setup(int argc, char **argv) {
   return 0;
 }
 
+// =================================================================
+// flx_world : Explicit Destructor
+// =================================================================
 int flx_world::explicit_dtor()
 {
   if (debug_driver)
@@ -567,6 +586,9 @@ int flx_world::explicit_dtor()
   return 0;
 }
 
+// =================================================================
+// flx_world : Teardown
+// =================================================================
 int flx_world::teardown() {
   if (debug_driver)
     fprintf(stderr, "[teardown] entry\n");
@@ -611,15 +633,24 @@ int flx_world::teardown() {
   return error_exit_code;
 }
 
+// =================================================================
+// flx_world : Resume Felix
+// =================================================================
 void flx_world::begin_flx_code() {
   collector->get_thread_control() -> add_thread(get_stack_pointer());
 }
 
+// =================================================================
+// flx_world :  Suspend Felix
+// =================================================================
 void flx_world::end_flx_code() {
   collector->get_thread_control()->remove_thread();
 }
 
 
+// =================================================================
+// flx_world :  Run Felix Mainline
+// =================================================================
 int flx_world::run() {
   // this may not be called on the same thread, so let thread control know
   // when we exit, main thread is not running so pthreads can garbage collect without waiting for us
@@ -636,16 +667,56 @@ int flx_world::run() {
 }
 
 
+// =================================================================
+// flx_world :  Spawn fibre hook
+// =================================================================
 // TODO: factor into async_sched. run_felix_pthread_ctor does this twice
 void flx_world::spawn_fthread(con_t *top) {
 	fthread_t *ft = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
-  get_sync_scheduler()->push_new(ft);
+  get_sync_scheduler()->push_front(ft);
 }
 
+// =================================================================
+// flx_world :  External multiwrite hook
+// =================================================================
 void flx_world::external_multi_swrite (schannel_t *chan, void *data) 
 {
   async_scheduler->external_multi_swrite (chan,data);
 } 
+
+// =================================================================
+// flx_world :  Create Demux event polling system and thread
+// =================================================================
+async_hooker *flx_world::create_demux() 
+{
+  if(debug_driver)
+    fprintf(stderr,"[create_demux]: svc_general] trying to create async system..\n");
+
+  if (c->ptr_create_async_hooker == NULL) {
+    if(debug_driver)
+      fprintf(stderr,"[create_demux: svc_general] trying to create async hooker..\n");
+    c->init_ptr_create_async_hooker(c,debug_driver);
+  }
+  // Error out if we don't have the hooker function.
+  if (c->ptr_create_async_hooker == NULL) {
+    fprintf(stderr,
+      "[create_demux: svc_general] Unable to initialise async I/O system: terminating\n");
+    exit(1);
+  }
+
+  // CREATE A NEW ASYNCHRONOUS EVENT MANAGER
+  // DONE ON DEMAND ONLY
+  auto demux_hook = (*c->ptr_create_async_hooker)(
+    gcp->collector->get_thread_control(), // thread_control object
+    20000, // bound on resumable thread queue
+    50,    // bound on general input job queue
+    2,     // number of threads in job pool
+    50,    // bound on async fileio job queue
+    1      // number of threads doing async fileio
+  );
+  return demux_hook;
+}
+
 
 }} // namespaces
 

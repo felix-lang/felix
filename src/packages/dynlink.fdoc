@@ -320,7 +320,8 @@ struct DYNLINK_EXTERN flx_libinst_t;
 /// frame creators.
 typedef void *(*thread_frame_creator_t)
 (
-  ::flx::gc::generic::gc_profile_t*
+  ::flx::gc::generic::gc_profile_t*,
+  void*
 );
 
 /// library initialisation routine.
@@ -418,12 +419,14 @@ struct DYNLINK_EXTERN flx_libinst_t
   ::flx::rtl::con_t *main_proc;
   flx_dynlink_t *lib;
   ::flx::gc::generic::gc_profile_t *gcp;
+  void *world;  // FIXME: flx_world*, can't specify atm due to circularity
   bool debug;
 
   void create
   (
     flx_dynlink_t *lib_a,
     ::flx::gc::generic::gc_profile_t *gcp_a,
+    void *world_a, // FIXME as above
     int argc,
     char **argv,
     FILE *stdin_,
@@ -591,6 +594,7 @@ void flx_libinst_t::create
 (
   flx_dynlink_t *lib_a,
   flx::gc::generic::gc_profile_t *gcp_a,
+  void *world_a,
   int argc,
   char **argv,
   FILE *stdin_,
@@ -601,12 +605,13 @@ void flx_libinst_t::create
 {
   lib = lib_a;
   gcp = gcp_a;
+  world = world_a;
   debug = debug_;
   if (debug)
     fprintf(stderr,"[libinst:create] Creating instance for library %p->'%s'\n",lib, lib->filename.c_str());
   if (debug)
     fprintf(stderr, "[libinst:create] Creating thread frame\n");
-  thread_frame = lib->thread_frame_creator( gcp);
+  thread_frame = lib->thread_frame_creator( gcp, world);
   if (debug)
     fprintf(stderr, "[libinst:create] thread frame CREATED %p\n", thread_frame);
   if (debug)
@@ -927,12 +932,12 @@ or thread frame.
   //$ This is a procedure, so maybe the caller is too
   //$ which means the thread frame must be available.
   proc create: flx_library * flx_instance =
-    "$2->create($1,PTF gcp,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
+    "$2->create($1,PTF gcp,PTF world,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
     requires property "needs_gc"
   ;
 
   proc create_with_args: flx_library * flx_instance * int * + (+char) =
-    "$2->create($1,PTF gcp,$3,$4,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
+    "$2->create($1,PTF gcp,PTF world,$3,$4,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
     requires property "needs_gc"
   ;
 

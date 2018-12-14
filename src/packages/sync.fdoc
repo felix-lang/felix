@@ -126,12 +126,10 @@ struct RTL_EXTERN sync_sched {
 
 private:
   // helper routines.
-  void impl_push_new(::flx::rtl::fthread_t*);
-  void impl_push_old(::flx::rtl::fthread_t*);
+  void impl_push_front(::flx::rtl::fthread_t*);
 
 public:
-  void push_new(::flx::rtl::fthread_t*);
-  void push_old(::flx::rtl::fthread_t*);
+  void push_front(::flx::rtl::fthread_t*);
   fstate_t frun();
 
   // a special routine to allow a multiwrite to be performed
@@ -300,25 +298,15 @@ void sync_sched::show_state () {
         active->size()?active->front():NULL);
   }
 
-void sync_sched::push_new(fthread_t *f) {
-  spinguard dummy(active->lockneeded,&(active->active_lock));
-  impl_push_new (f);
-}
-
 // used by async to activate fthread in ready (async complete) queue
-void sync_sched::push_old(fthread_t *f) {
+void sync_sched::push_front(fthread_t *f) {
   spinguard dummy(active->lockneeded,&(active->active_lock));
-  impl_push_old (f);
+  impl_push_front(f);
 }
-void sync_sched::impl_push_old(fthread_t *f) 
+void sync_sched::impl_push_front(fthread_t *f) 
   {
     if(ft) active->push_front(ft);
     ft = f;
-  }
-
-void sync_sched::impl_push_new(fthread_t *f)
-  {
-    impl_push_old(f);
   }
 
 void sync_sched::do_yield()
@@ -337,7 +325,7 @@ void sync_sched::do_spawn_fthread()
       fthread_t *ftx = *(fthread_t**)request->data;
       if(debug_driver)
         fprintf(stderr,"[sync: svc_spawn_fthread] Spawn fthread %p\n",ftx);
-      impl_push_new(ftx);
+      impl_push_front(ftx);
     }
 
 void sync_sched::do_schedule_fthread()
@@ -411,7 +399,7 @@ void sync_sched::do_swrite()
 
         // WE are the writer, push us onto the active list
         // and make the reader on the channel current
-        impl_push_new (reader);
+        impl_push_front(reader);
 show_state();
         return;
       }
@@ -439,7 +427,7 @@ void sync_sched::external_multi_swrite (schannel_t *chan, void *data)
              data, pr->variable);
         if (pr->variable)
           *(void**)pr->variable = data;
-        impl_push_new(reader);
+        impl_push_front(reader);
       }
       goto svc_multi_write_next;
     }

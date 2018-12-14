@@ -4,20 +4,22 @@ fun thrid: 1 -> address ="pthread_self()"
 
 var kk = 0;
 proc p (i:int) () {
- var j = 1;
+ var j = 0;
  var k : int;
   //println$ #thrid,i; 
-  for(k=0; k<1000; ++k;) perform ++j;
+  for(k=0; k<1000000; ++k;) perform ++j;
   kk += j;
 }
 var q = p;
 proc many(threading:bool)
 {
-  for i in 1..200000 perform schedule_fthread (q i);
+  println$ "Start";
+  kk=0;
+  for (var i=0; i<200000; ++i;) perform schedule_fthread (q i);
 var start = system_clock_now();
   println$ "Spawned";
   start = system_clock_now();
-  schedule_fthread { println$ "Elapsed " + (system_clock_now() - start).double.str; };
+  schedule_fthread { println$ "Elapsed " + (system_clock_now() - start).double.str;  println$ "kk=" + kk.str;};
 if threading do
   spawn_process { println$ "New thread"; };
   spawn_process { println$ "New thread"; };
@@ -29,6 +31,7 @@ done
 }
 
 many(false);
+sleep 5.0;
 many(true);
-
+sleep 5.0;
 

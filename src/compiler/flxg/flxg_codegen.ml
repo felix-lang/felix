@@ -157,6 +157,7 @@ print_endline ("Flxg_codegen.codegen_bsyms");
   plh "#include \"flx_rtl.hpp\"";
   (* plh "using namespace ::flx::rtl;";  *)
   plh "#include \"flx_gc.hpp\"";
+  plh "#include \"flx_world.hpp\"";
   (* plh "using namespace ::flx::gc::generic;"; *)
 
   plh "#ifndef FLX_NO_INCLUDES";
@@ -232,6 +233,7 @@ print_endline ("Flxg_codegen.codegen_bsyms");
   "  FILE *flx_stdout;";
   "  FILE *flx_stderr;";
   "  ::flx::gc::generic::gc_profile_t *gcp;";
+  "  ::flx::run::flx_world *world;";
   "  ::flx::gc::generic::gc_shape_t * const shape_list_head;";
   "  thread_frame_t(";
   "  );";

@@ -208,7 +208,6 @@ void async_sched::spawn_impl(fthread_list *pactive, thread_kind_t k) {
         (void*)get_current_native_thread());
   }
 }
-
 // ***************************************************
 // Async_sched: ASYNC REQUEST DISPATCH
 // ***************************************************
@@ -224,31 +223,7 @@ void async_sched::do_general()
     ;
   if (!ss->active->async) 
   {
-    if(debug_driver)
-      fprintf(stderr,"[prun: svc_general] trying to create async system..\n");
-
-    if (world->c->ptr_create_async_hooker == NULL) {
-      if(debug_driver)
-        fprintf(stderr,"[prun: svc_general] trying to create async hooker..\n");
-      world->c->init_ptr_create_async_hooker(world->c,debug_driver);
-    }
-    // Error out if we don't have the hooker function.
-    if (world->c->ptr_create_async_hooker == NULL) {
-      fprintf(stderr,
-        "[prun: svc_general] Unable to initialise async I/O system: terminating\n");
-      exit(1);
-    }
-
-    // CREATE A NEW ASYNCHRONOUS EVENT MANAGER
-    // DONE ON DEMAND ONLY
-    ss->active->async = (*world->c->ptr_create_async_hooker)(
-      gcp->collector->get_thread_control(), // thread_control object
-      20000, // bound on resumable thread queue
-      50,    // bound on general input job queue
-      2,     // number of threads in job pool
-      50,    // bound on async fileio job queue
-      1      // number of threads doing async fileio
-    );
+    ss->active->async = world->create_demux();
   }
   ++ss->active->async_count;
   if (debug_driver)
@@ -368,9 +343,11 @@ sync_run:
               if (debug_driver)
                 fprintf(stderr, "prun: %s %p Async blocking\n", str(thread_kind), (void*)mythrid());
               auto ftp = ss->active->async->maybe_dequeue(); // get fibre
-              ss->push_old(ftp);
-              gcp->collector->remove_root(ftp); // transfer ownership
-              --ss->active->async_count; // accounting
+              if(ftp != nullptr) {
+                ss->push_front(ftp);
+                gcp->collector->remove_root(ftp); // transfer ownership
+                --ss->active->async_count; // accounting
+              }
               ss->active->qisblocked.clear(); // release control
               ++ss->active->busy_count;
               goto sync_run; // do work
@@ -449,7 +426,7 @@ bool async_sched::nonblocking_schedule_queued_fthreads() {
         if (debug_driver)
           fprintf(stderr, "prun %p:ret mode: Async Retrieving fthread %p\n", (void*)mythrid(), ftp);
         gcp->collector->remove_root(ftp);
-        ss->push_old(ftp);
+        ss->push_front(ftp);
         --ss->active->async_count;
         ++scheduled_some;
         ftp = ss->active->async->maybe_dequeue();

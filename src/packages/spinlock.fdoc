@@ -1,0 +1,64 @@
+@title Spinlocks
+@tangler flx_spinlock.hpp = share/lib/rtl/flx_spinlock.hpp
+@tangler flx_spinlock.cpp = share/src/rtl/flx_spinlock.cpp
+@h1 Spinlock
+@tangle flx_spinlock.hpp
+#ifndef _FLX_SPINLOCK_HPP
+#define _FLX_SPINLOCK_HPP
+#include "flx_rtl_config.hpp"
+
+#include <atomic>
+
+namespace flx { namespace rtl {
+
+// C++ compliant Lockable
+struct RTL_EXTERN flx_spinlock {
+private:
+  flx_spinlock(flx_spinlock const&)=delete; // no copying
+  flx_spinlock(flx_spinlock &&)=delete; // no moving
+  flx_spinlock &operator=(flx_spinlock const &)=delete; // no assignment
+
+  ::std::atomic_flag volatile flag;
+public:
+  flx_spinlock() noexcept; // init to clear
+  void lock() volatile;
+  void unlock() volatile;
+};
+ 
+struct RTL_EXTERN spinguard {
+private:
+  spinguard() = delete;
+  spinguard(spinguard const&) = delete;
+  spinguard *operator=(spinguard const&)=delete;
+  bool cond;
+  ::std::atomic_flag *plock;
+public:
+  spinguard (bool,::std::atomic_flag *p);
+  ~spinguard ();
+};
+}}
+
+#endif
+@
+
+
+
+@tangle flx_spinlock.cpp
+#include "flx_spinlock.hpp"
+
+using namespace std;
+using namespace flx;
+using namespace rtl;
+
+flx_spinlock::flx_spinlock() noexcept { flag.clear(memory_order_release); }
+void flx_spinlock::lock() volatile { while(flag.test_and_set(memory_order_acquire)); }
+void flx_spinlock::unlock() volatile { flag.clear(memory_order_release); }
+
+
+spinguard::spinguard (bool cond_, ::std::atomic_flag *p): cond(cond_), plock(p) { 
+  if (cond) while (plock->test_and_set(std::memory_order_acquire));
+}
+spinguard::~spinguard () { if (cond)plock->clear(std::memory_order_release); }
+@
+
+
