@@ -26,7 +26,7 @@ namespace flx { namespace run {
 // NOTE: currently async_sched is NOT garbage collected
 // Hence, the synchronous scheduler is creates must
 // be made a GC root
-struct async_sched
+struct RTL_EXTERN async_sched
 {
   enum thread_kind_t {mainline,embedded,pthread,process};
   thread_kind_t thread_kind;

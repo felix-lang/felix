@@ -7,7 +7,7 @@ proc p (i:int) () {
  var j = 0;
  var k : int;
   //println$ #thrid,i; 
-  for(k=0; k<1000000; ++k;) perform ++j;
+  for(k=0; k<10000; ++k;) perform ++j;
   kk += j;
 }
 var q = p;
@@ -16,9 +16,10 @@ proc many(threading:bool)
   println$ "Start";
   kk=0;
   for (var i=0; i<200000; ++i;) perform schedule_fthread (q i);
-var start = system_clock_now();
+  collect();
+  sleep 0.5;
   println$ "Spawned";
-  start = system_clock_now();
+  var start = system_clock_now();
   schedule_fthread { println$ "Elapsed " + (system_clock_now() - start).double.str;  println$ "kk=" + kk.str;};
 if threading do
   spawn_process { println$ "New thread"; };
@@ -30,8 +31,8 @@ if threading do
 done
 }
 
-many(false);
-sleep 5.0;
-many(true);
-sleep 5.0;
+async_run { many(false); };
+println$ "Done kk = " + kk.str;
+async_run { many(true); };
+println$ "Done kk = " + kk.str;
 
