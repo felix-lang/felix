@@ -63,6 +63,10 @@ open class Fibres
 
   proc chain : cont = "return $1;" requires property "heap_closure";
 
+  // *********************************************************
+  // NESTED SYNC SCHEDULER
+  // NOTE: deprecated in favour of async scheduler below
+  // *********************************************************
   //$ The type of a fibre scheduler.
   type fibre_scheduler = "::flx::run::sync_sched*" requires header '#include "flx_sync.hpp"';
 
@@ -125,6 +129,59 @@ open class Fibres
 
   //$ Core user procedure for launching a fibre.
   proc spawn_fthread (fs:fibre_scheduler) (p:1->0) { spawn_fibre (fs,p.start.mk_thread); }
+
+  // *********************************************************
+  // ASYNC SCHEDULER
+  // *********************************************************
+  // FIXME: it is leaked .. to be fixed shortly
+
+  // async scheduler type
+  type async_scheduler = "::flx::run::async_sched*" 
+    requires header '#include "flx_async.hpp"',
+    package "flx_arun"
+  ;
+
+  // async scheduler constructor
+  ctor async_scheduler: bool = """
+    new 
+    ::flx::run::async_sched
+        (
+          PTF world, // world object
+          $1, // debug driver flag 
+          PTF gcp,  // GC profile object
+          new(*PTF gcp, ::flx::run::fthread_list_ptr_map, false) ::flx::run::fthread_list(PTF gcp),
+          ::flx::run::async_sched::mainline // temporary hack! thread kind (should be inherited)
+        )
+      """
+    ;
+
+  // async scheduler constructor wrapper
+  ctor async_scheduler () =>
+    async_scheduler (Env::getenv "FLX_DEBUG_DRIVER" != "")
+  ;
+
+  // spawn fibre on async scheduler from fthread object
+  proc spawn_fibre: async_scheduler * fthread = """
+      $1->ss->active->push_back($2);
+  """;
+
+  // spawn fibre on async scheduler from procedure
+  proc spawn_fthread (fs:async_scheduler) (p:1->0) { spawn_fibre (fs,p.start.mk_thread); }
+
+  proc prun: async_scheduler = "$1->prun();";
+
+
+  proc async_run (p: 1 -> 0) {
+    var s = async_scheduler();
+    spawn_fthread s p;
+    s.prun;
+  }
+
+// *********************************************************
+// MISC STUFF THAT MAY NOT BE USED, CONSIDER DELETING IT
+// UNRELIABLE ANYHOW .. CHECK PLUGINS ... 
+// *********************************************************
+
 
   //$ Execute a single step of a fibre.
   gen step: cont -> cont = "$1->resume()";

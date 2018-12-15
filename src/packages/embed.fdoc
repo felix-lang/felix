@@ -436,13 +436,14 @@ int flx_world::setup(int argc, char **argv) {
   if((res = c->init(argc, argv) != 0)) return res;
 
   debug = c->debug;
-  if(debug)
-    fprintf(stderr, "[flx_world: setup]\n");
   debug_driver = c->debug_driver;
 
-  if(debug)
-    fprintf(stderr, "[flx_world: setup] Created allocator\n");
+  if(debug_driver)
+    fprintf(stderr, "[flx_world %p: setup]\n", this);
+
   allocator = new flx::gc::collector::malloc_free();
+  if(debug_driver)
+    fprintf(stderr, "[flx_world: setup] Created allocator %p\n", allocator);
   allocator->set_debug(c->debug_allocations);
 
   char *tracecmd = getenv("FLX_TRACE_ALLOCATIONS");
@@ -459,8 +460,8 @@ int flx_world::setup(int argc, char **argv) {
   // previous direct ctor scope ended at closing brace of FLX_MAIN
   // but delete can probably be moved up after collector delete (also used by explicit_dtor)
   ::flx::pthread::thread_control_t *thread_control = new ::flx::pthread::thread_control_t(c->debug_threads);
-  if(debug)
-    fprintf(stderr, "[flx_world: setup] Created thread control object\n");
+  if(debug_driver)
+    fprintf(stderr, "[flx_world: setup] Created thread control object  %p\n", thread_control);
 
   // NB: !FLX_SUPPORT_ASYNC refers to async IO, hence ts still needed thanks to flx pthreads
   FILE *tracefile = NULL;
@@ -480,8 +481,8 @@ int flx_world::setup(int argc, char **argv) {
     c->gcthreads, tracefile
   );
   collector->set_debug(c->debug_collections, c->report_gcstats);
-  if(debug)
-    fprintf(stderr, "[flx_world: setup] Created ts collector\n");
+  if(debug_driver)
+    fprintf(stderr, "[flx_world: setup] Created ts collector %p\n", collector);
 
   // Create Collector Profile
   gcp = new flx::gc::generic::gc_profile_t(
@@ -499,14 +500,14 @@ int flx_world::setup(int argc, char **argv) {
     collector
   );
 
-  if(debug)
-    fprintf(stderr, "[flx_world: setup] Created gc profile object\n");
+  if(debug_driver)
+    fprintf(stderr, "[flx_world: setup] Created gc profile object gcp=%p\n",gcp);
 
   library = c->link_library(c,gcp);
   collector->add_root (library);
 
-  if(debug)
-    fprintf(stderr, "[flx_world: setup] Created library object\n");
+  if(debug_driver)
+    fprintf(stderr, "[flx_world: setup] Created library object %p\n", library);
 
   if (debug_driver)
   {
@@ -543,6 +544,10 @@ int flx_world::setup(int argc, char **argv) {
     fprintf(stderr, "[flx_world:setup] creating async scheduler\n");
   }
 
+  // FIXME: this doesn't belong in this subroutine
+  // The above stuff sets universal variables
+  // the below stuff sets variables that ONLY apply
+  // to the mainline thread
   auto schedlist = run_felix_pthread_ctor(gcp, instance);
 
   async_scheduler = new async_sched(
