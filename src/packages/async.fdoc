@@ -101,12 +101,12 @@ async_sched::async_sched(
     gcp(g),
     thread_kind(k)
   { 
-    if (debug_driver)
-      fprintf(stderr, "prun %p: async scheduler, creating and rooting synchronous scheduler!\n",(void*)mythrid());
     ss = new(*gcp,sync_sched_ptr_map, false) sync_sched(debug_driver, gcp, a); 
     ++a->thread_count;
     ++a->busy_count;
     gcp->collector->add_root(ss);
+    if (debug_driver)
+      fprintf(stderr, "prun %p: async scheduler, creating and rooting synchronous scheduler! threads=1,busy=1\n",(void*)mythrid());
   }
 
 
@@ -116,11 +116,12 @@ async_sched::async_sched(
 async_sched::~async_sched() {
   try
   {
-    if (debug_driver)
-      fprintf(stderr, "prun %p: Terminating async scheduler\n",(void*)mythrid());
     --ss->active->thread_count;
     if (debug_driver)
-      fprintf(stderr, "prun %p: async scheduler, fibre queue length %d\n",(void*)mythrid(), ss->active->thread_count.load());
+      fprintf(stderr, "prun %p: Terminating async scheduler, threads=%d\n",(void*)mythrid(), ss->active->thread_count.load());
+    if (debug_driver)
+      fprintf(stderr, "prun %p: async scheduler, fibre queue length %d, async_cound=%d\n",
+         (void*)mythrid(), ss->active->size(), ss->active->async_count);
     if (debug_driver)
       fprintf(stderr, "prun %p: async scheduler, unrooting synchronous scheduler!\n",(void*)mythrid());
     gcp->collector->remove_root(ss);
@@ -341,7 +342,7 @@ sync_run:
             if (ss->active->async_count > 0) 
             {
               if (debug_driver)
-                fprintf(stderr, "prun: %s %p Async blocking\n", str(thread_kind), (void*)mythrid());
+                fprintf(stderr, "prun: %s %p Async WAIT\n", str(thread_kind), (void*)mythrid());
               auto ftp = ss->active->async->maybe_dequeue(); // get fibre
               if(ftp != nullptr) {
                 ss->push_front(ftp);

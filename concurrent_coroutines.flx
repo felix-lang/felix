@@ -1,38 +1,56 @@
+fun ack(x:int,y:int):int =>
+  if x == 0 then y + 1
+  elif y == 0 then ack(x - 1, 1)
+  else ack(x - 1, ack(x, y - 1))
+  endif
+;
+
 
 fun thrid: 1 -> address ="pthread_self()"
   requires Posix_headers::pthread_h;
 
-var kk = 0;
+type atom = "::std::atomic_size_t" requires Cxx11_headers::atomic;
+proc reset: &atom = "$1->store(0);";
+proc incr: &atom * int = "*$1+=$2;";
+fun get : atom -> size = "$1.load()";
+
+var kk : atom;
+reset &kk;
+
 proc p (i:int) () {
  var j = 0;
  var k : int;
   //println$ #thrid,i; 
-  for(k=0; k<10000; ++k;) perform ++j;
-  kk += j;
+  var x = ack(3,10);
+  assert x > 0;
+  incr (&kk,1);
 }
 var q = p;
 proc many(threading:bool)
 {
   println$ "Start";
-  kk=0;
-  for (var i=0; i<200000; ++i;) perform schedule_fthread (q i);
+  reset &kk;
+  for (var i=0; i<200; ++i;) perform schedule_fthread (q i);
   collect();
-  sleep 0.5;
   println$ "Spawned";
   var start = system_clock_now();
-  schedule_fthread { println$ "Elapsed " + (system_clock_now() - start).double.str;  println$ "kk=" + kk.str;};
+  schedule_fthread {  println$ "Elapsed " + (system_clock_now() - start).double.str;  println$ "kk=" + kk.get.str;};
+  println$ "Scheduling done";
 if threading do
+  println$ "spawning processes";
   spawn_process { println$ "New thread"; };
   spawn_process { println$ "New thread"; };
   spawn_process { println$ "New thread"; };
   spawn_process { println$ "New thread"; };
   spawn_process { println$ "New thread"; };
   spawn_process { println$ "New thread"; };
+  println$ "processes spawned";
+  println$ "Many completed";
 done
 }
 
 async_run { many(false); };
-println$ "Done kk = " + kk.str;
+println$ "Done kk = " + kk.get.str;
 async_run { many(true); };
-println$ "Done kk = " + kk.str;
+println$ "Done kk = " + kk.get.str;
 
