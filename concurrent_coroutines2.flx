@@ -26,18 +26,19 @@ var q = p;
 proc many(threading:bool)
 {
   reset &kk;
-  for (var i=0; i<200; ++i;) perform schedule_fthread (q i);
-  if threading do
-    spawn_process { ; };
-    spawn_process { ; };
-    spawn_process { ; };
-    spawn_process { ; };
-    spawn_process { ; };
-    spawn_process { ; };
-  done
+if threading do
+  spawn_process { ; };
+  spawn_process { ; };
+  spawn_process { ; };
+  spawn_process { ; };
+  spawn_process { ; };
+  spawn_process { ; };
+done
+  for (var i=0; i<200; ++i;) perform schedule_fthread(q i);
 }
 
-println$ "Schedule before launch";
+
+println$ "Schedule after launch";
 var start = time();
 async_run { many(false); };
 println$ "Done Serial     kk = " + kk.get.str + ", elapsed=" + (time() - start).str;
