@@ -6,34 +6,52 @@ fun ack(x:int,y:int):int =>
 ;
 
 fun slow (x:int)  {
-  println$ "Slow " + x.str;
-  assert ack(3,11) > 0;
+  //println$ "Slow " + x.str;
+  assert ack(3,12) > 0;
   return 1;
 }
 
 proc  countem (y:int) {
-  println$ "Got one";
+  //println$ "Got one";
+}
+
+proc check(concurrent:bool)
+{
+  async_run {
+    if concurrent do
+      spawn_process { println$ "Helper 1"; };
+      spawn_process { println$ "Helper 2"; };
+      spawn_process { println$ "Helper 3"; };
+      spawn_process { println$ "Helper 4"; };
+      spawn_process { println$ "Helper 5"; };
+      spawn_process { println$ "Helper 6"; };
+      spawn_process { println$ "Helper 7"; };
+    done
+    #(source_from_list ([1,2,3,4,5,6,7,8]) |->
+    function slow |-> 
+    function slow |-> 
+    function slow |-> 
+    function slow |-> 
+    function slow |-> 
+    function slow |-> 
+    function slow |-> 
+    function slow |-> 
+    procedure countem);
+  };
 }
 
 var start = time();
-async_run {
-  //spawn_process { println$ "Helper 1"; };
-  spawn_process { println$ "Helper 2"; };
-  #(source_from_list ([1,2,3,4,5,6,7,8]) |->
-  function slow |-> 
-  function slow |-> 
-  function slow |-> 
-  function slow |-> 
-  function slow |-> 
-  function slow |-> 
-  function slow |-> 
-  function slow |-> 
-  procedure countem);
-};
+check(false);
 var elapsed = time() - start;
+println$ "Serial     Elapsed " + elapsed.str;
 
-println$ "Elapsed " + elapsed.str;
+
+start = time();
+check(true);
+elapsed = time() - start;
+println$ "Concurrent Elapsed " + elapsed.str;
 
 
   
+ 
 
