@@ -251,6 +251,7 @@ void async_sched::do_general()
     fprintf(stderr,"[prun: svc_general] request dispatched..\n");
 }
 
+// calls thread_control_t::yield which does a world stop check
 static void sleep(thread_control_base_t *tc, size_t ns) 
 {
   assert(tc);

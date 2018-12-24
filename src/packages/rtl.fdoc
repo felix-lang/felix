@@ -867,7 +867,7 @@ bool slist_t::isempty()const { return head == 0; }
 
 void slist_t::push(void *data)
 {
-  head = new(*gcp,slist_node_ptr_map,true) slist_node_t(head,data);
+  head = new(*gcp,slist_node_ptr_map,false) slist_node_t(head,data);
 }
 
 // note: never fails, return NULL pointer if the list is empty
