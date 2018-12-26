@@ -550,7 +550,7 @@ int flx_world::setup(int argc, char **argv) {
   // to the mainline thread
   auto schedlist = run_felix_pthread_ctor(gcp, instance);
 
-  async_scheduler = new async_sched(
+  async_scheduler = new (*gcp,async_sched_ptr_map,false) async_sched(
     this,
     debug_driver,
     gcp, schedlist,async_sched::mainline
@@ -593,18 +593,15 @@ int flx_world::explicit_dtor()
 
 // =================================================================
 // flx_world : Teardown
+//
+// IRREVERSIBLY DESTROYS THE WORLD. Kills the allocator, collector,
+// collector profile and thread control object.
 // =================================================================
 int flx_world::teardown() {
   if (debug_driver)
     fprintf(stderr, "[teardown] entry\n");
 
   collector->get_thread_control()->add_thread(get_stack_pointer());
-
-  delete async_scheduler;
-
-  if (debug_driver)
-    fprintf(stderr, "[teardown] deleted async_scheduler\n");
-
 
   // could this override error_exit_code if something throws?
   int error_exit_code = explicit_dtor();

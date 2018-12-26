@@ -32,12 +32,16 @@ struct RTL_EXTERN async_sched
   thread_kind_t thread_kind;
   static char const *str(thread_kind_t);
 
+  // weak pointer
   struct flx_world *world;
+
   bool debug_driver;
 
 
+  // weak pointer
   ::flx::gc::generic::gc_profile_t *gcp;
 
+  // Strong pointer
   sync_sched *ss;  // (d, gcp, active), (ft, request), (pc, fs)
 
   async_sched(
@@ -59,6 +63,8 @@ private:
   bool nonblocking_schedule_queued_fthreads();
 };
 
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t async_sched_ptr_map;
+
 
 }} // namespaces
 #endif //__flx_async_world_H_
@@ -76,6 +82,34 @@ using namespace ::flx::rtl;
 using namespace ::flx::pthread;
 
 namespace flx { namespace run {
+
+// ********************************************************
+// SHAPE for async_sched 
+// ********************************************************
+
+static const std::size_t async_sched_offsets[1]={
+    offsetof(async_sched,ss)
+};
+
+static ::flx::gc::generic::offset_data_t const async_sched_offset_data = { 1, async_sched_offsets };
+
+::flx::gc::generic::gc_shape_t async_sched_ptr_map = {
+  NULL,
+  "flx::run::async_sched",
+  1,sizeof(async_sched),
+  0, // no finaliser,
+  0, // fcops
+  &async_sched_offset_data, 
+  ::flx::gc::generic::scan_by_offsets,
+  0,0, // no serialisation as yet
+  ::flx::gc::generic::gc_flags_default,
+  0UL, 0UL
+};
+
+// ***************************************************
+// Async_sched: Thread kind pretty printer
+// ***************************************************
+
 
 char const *async_sched::str(thread_kind_t k) {
   switch (k) {
@@ -104,7 +138,6 @@ async_sched::async_sched(
     ss = new(*gcp,sync_sched_ptr_map, false) sync_sched(debug_driver, gcp, a); 
     ++a->thread_count;
     ++a->busy_count;
-    gcp->collector->add_root(ss);
     if (debug_driver)
       fprintf(stderr, "prun %p: async scheduler, creating and rooting synchronous scheduler! threads=1,busy=1\n",(void*)mythrid());
   }
@@ -123,8 +156,7 @@ async_sched::~async_sched() {
       fprintf(stderr, "prun %p: async scheduler, fibre queue length %d, async_cound=%d\n",
          (void*)mythrid(), ss->active->size(), ss->active->async_count);
     if (debug_driver)
-      fprintf(stderr, "prun %p: async scheduler, unrooting synchronous scheduler!\n",(void*)mythrid());
-    gcp->collector->remove_root(ss);
+      fprintf(stderr, "prun %p: async scheduler returns!\n",(void*)mythrid());
   }
   catch (...) { fprintf(stderr, "Unknown exception deleting async!\n"); }
 }
@@ -175,7 +207,7 @@ void async_sched::spawn_impl(fthread_list *pactive, thread_kind_t k) {
     // maybe we should do this "properly" after it is (in the next statement!)
     pactive->push_front(ftx);
   }
-  void *data = new async_sched(world,debug_driver, gcp, pactive,k);
+  void *data = new  (*gcp, async_sched_ptr_map, false) async_sched(world,debug_driver, gcp, pactive,k);
   flx_detached_thread_t dummy;
 
   if (debug_driver)
