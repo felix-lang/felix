@@ -204,6 +204,7 @@ void async_sched::spawn_impl(fthread_list *pactive, thread_kind_t k) {
     spinguard dummy(pactive->lockneeded, &(pactive->active_lock));
     // SHOULD THIS BE HERE?? The async scheduler isn't created yet.
     // maybe we should do this "properly" after it is (in the next statement!)
+    // NO NO! This is ALL BAD! Some OTHER thread might run this routine!
     pactive->push_front(ftx);
   }
   void *data = new  (*gcp, async_sched_ptr_map, false) async_sched(world,debug_driver, gcp, pactive,k);
