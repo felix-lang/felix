@@ -1,7 +1,7 @@
 @title Lock Free Bag
 
-@tangler pthread_lf_bag.hpp               = $PWD/CRAP/share/lib/rtl/pthread_lf_bag.hpp
-@tangler pthread_lf_bag.cpp               = $PWD/CRAP/share/src/pthread/pthread_lf_bag.cpp
+@tangler pthread_lf_bag.hpp               = share/lib/rtl/pthread_lf_bag.hpp
+@tangler pthread_lf_bag.cpp               = share/src/pthread/pthread_lf_bag.cpp
 @tangler pthread_lf_bag.flx               = share/lib/std/pthread/pthread_lf_bag.flx
 
 @h1 Lock Free Bag

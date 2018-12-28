@@ -167,7 +167,6 @@ async_sched::~async_sched() {
 static void prun_pthread_entry(void *data) {
   async_sched *d = (async_sched*)data;
   d->prun();
-  delete d;
 }
 
 // ***************************************************
@@ -208,7 +207,6 @@ void async_sched::spawn_impl(fthread_list *pactive, thread_kind_t k) {
     pactive->push_front(ftx);
   }
   void *data = new  (*gcp, async_sched_ptr_map, false) async_sched(world,debug_driver, gcp, pactive,k);
-  flx_detached_thread_t dummy;
 
   if (debug_driver)
     fprintf(stderr, "[prun %p: spawn_pthread] Starting new pthread, thread counter= %zu\n",
@@ -222,7 +220,7 @@ void async_sched::spawn_impl(fthread_list *pactive, thread_kind_t k) {
     ::std::condition_variable_any spawner_cond;
     bool spawner_flag = false;
     ::std::unique_lock< ::std::mutex> locktite(spawner_lock);
-    dummy.init(prun_pthread_entry, data, gcp->collector->get_thread_control(), 
+    flx_detached_thread_t().init(prun_pthread_entry, data, gcp->collector->get_thread_control(), 
       &spawner_lock, &spawner_cond,
       &spawner_flag
     );
