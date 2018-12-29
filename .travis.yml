@@ -22,10 +22,10 @@ before_script:
 - git config --global push.default simple
 - 
 - mkdir -p build
-- git clone -q --depth=1 https://skaller:${GITHUB_TOKEN}@github.com/felix-lang/linuxgccbinary.git
-- mkdir -p build
-- cp -r linuxgccbinary/build/* build
-- rm -rf build/release/share/lib/
+#- git clone -q --depth=1 https://skaller:${GITHUB_TOKEN}@github.com/felix-lang/linuxgccbinary.git
+#- mkdir -p build
+#- cp -r linuxgccbinary/build/* build
+#- rm -rf build/release/share/lib/
 script:
 - mkdir -p bin
 - sudo rm -rf /usr/bin/gcc

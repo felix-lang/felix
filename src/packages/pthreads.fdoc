@@ -7,7 +7,6 @@
 @tangler mutex.flx              = share/lib/std/pthread/mutex.flx
 @tangler semaphore.flx          = share/lib/std/pthread/semaphore.flx
 @tangler condition_variable.flx = share/lib/std/pthread/condition_variable.flx
-@tangler ts_counter.flx         = share/lib/std/pthread/ts_counter.flx
 @tangler ts_bound_queue.flx     = share/lib/std/pthread/ts_bound_queue.flx
 @tangler atomic.flx             = share/lib/std/pthread/atomic.flx
 @tangler threadpool.flx         = share/lib/std/pthread/threadpool.flx
@@ -20,7 +19,6 @@
 include "std/pthread/pthread";
 //include "std/pthread/pchannels";
 include "std/pthread/mutex";
-//include "std/pthread/ts_counter";
 //include "std/pthread/ts_bound_queue";
 //include "std/pthread/semaphore";
 //include "std/pthread/condition_variable";
@@ -50,7 +48,6 @@ synchronisation instead.
 header pthread_hxx = '#include "pthread_thread.hpp"';
 header mutex_hxx = '#include "pthread_mutex.hpp"';
 header condv_hxx = '#include "pthread_condv.hpp"';
-header counter_hxx = '#include "pthread_counter.hpp"';
 header semaphore_hxx = '#include "pthread_semaphore.hpp"';
 header monitor_hxx = '#include "pthread_monitor.hpp"';
 header work_fifo_hxx = '#include "pthread_work_fifo.hpp"';
@@ -432,26 +429,6 @@ open class Condition_Variable
   gen timedwait: condition_variable * double -> int = "$1->timedwait($3)";
 }
 
-@h1 Thread Safe Counter.
-Probably redundant now we have upgraded to C++11 and have atomics.
-@tangle ts_counter.flx
-
-open class Ts_counter
-{
-  type ts_counter = "::flx::pthread::flx_ts_counter_t*";
-  ctor ts_counter : 1 = "new ::flx::pthread::flx_ts_counter_t;";
-  proc destroy : ts_counter = "delete $1;";
-  gen pre_incr: ts_counter -> long = "$1->pre_incr()";
-  gen post_incr: ts_counter-> long  = "$1->post_incr()";
-  gen pre_decr: ts_counter -> long = "$1->pre_decr()";
-  gen post_decr: ts_counter -> long = "$1->post_decr()";
-  gen decr_pos: ts_counter -> long = "$1->decr_pos()";
-  gen get: ts_counter -> long = "$1->get()";
-  proc set: ts_counter * long = "$1->set($2);";
-  gen swap: ts_counter * long -> long  = "$1->swap($2)";
-  proc wait_zero: ts_counter = "$1->wait_zero();";
-
-}
 @h1 Thread Safe Bound Queue.
 @tangle ts_bound_queue.flx
 
