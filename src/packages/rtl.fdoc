@@ -672,13 +672,14 @@ private: // uncopyable
 
 struct RTL_EXTERN schannel_t
 {
-  slist_t *waiting_to_read;             ///< fthreads waiting for a writer
-  slist_t *waiting_to_write;            ///< fthreads waiting for a reader
-  schannel_t(gc::generic::gc_profile_t*);
+  fthread_t *top; // has to be public for offsetof macro
+
   void push_reader(fthread_t *);        ///< add a reader
   fthread_t *pop_reader();              ///< pop a reader, NULL if none
   void push_writer(fthread_t *);        ///< add a writer
   fthread_t *pop_writer();              ///< pop a writer, NULL if none
+  schannel_t();
+
 private: // uncopyable
   schannel_t(schannel_t const&) = delete;
   void operator= (schannel_t const&) = delete;
@@ -931,35 +932,38 @@ step:
 // schannel_t implementation
 // ********************************************************
 
-schannel_t::schannel_t (gc::generic::gc_profile_t *gcp) :
-  waiting_to_read(0), waiting_to_write(0)
-{
-  waiting_to_read = new (*gcp, slist_ptr_map,false) slist_t(gcp);
-  waiting_to_write = new (*gcp, slist_ptr_map,false) slist_t(gcp);
-}
+schannel_t::schannel_t () : top(nullptr) {}
 
-// uncopyable object but implementation needed for linker
-//schannel_t::schannel_t(schannel_t const&) { assert(false); }
-//void schannel_t::operator=(schannel_t const&) { assert(false); }
-
+// PRECONDITION: channel is empty or has readers
 void schannel_t::push_reader(fthread_t *r)
 {
-  waiting_to_read->push(r);
+  r->next = top;
+  top = r;
 }
 
+// PRECONDITION: channel is empty or has writers
 void schannel_t::push_writer(fthread_t *w)
 {
-  waiting_to_write->push(w);
+  w->next = top;
+  top = (fthread_t*)((uintptr_t)w | 1u);
 }
 
 fthread_t *schannel_t::pop_reader()
 {
-  return (fthread_t*)waiting_to_read->pop();
+  if (top == nullptr || (uintptr_t)top & 1u) return nullptr; // NULL or low bit set
+  fthread_t *tmp = top;
+  top = tmp->next;
+  tmp->next = nullptr; // for GC
+  return tmp;
 }
 
 fthread_t *schannel_t::pop_writer()
 {
-  return (fthread_t*)waiting_to_write->pop();
+  if (!((uintptr_t)top & 1u)) return nullptr; // low bit clear (includes NULL case)
+  fthread_t *tmp = (fthread_t*)((uintptr_t)top & ~(uintptr_t)1u); // mask out low bit
+  top = tmp->next;
+  tmp->next = nullptr; // for GC
+  return tmp;
 }
 // ********************************************************
 // trace feature
@@ -1341,12 +1345,11 @@ static ::flx::gc::generic::offset_data_t const _fthread_offset_data = { 2, _fthr
 // ********************************************************
 //OFFSETS for schannel_t
 // ********************************************************
-static const std::size_t schannel_offsets[2]={
-    offsetof(schannel_t,waiting_to_read),
-    offsetof(schannel_t,waiting_to_write)
+static const std::size_t schannel_offsets[1]={
+    offsetof(schannel_t,top),
 };
 
-static ::flx::gc::generic::offset_data_t const schannel_offset_data = { 2, schannel_offsets };
+static ::flx::gc::generic::offset_data_t const schannel_offset_data = { 1, schannel_offsets };
 
 ::flx::gc::generic::gc_shape_t schannel_ptr_map = {
   &_fthread_ptr_map,

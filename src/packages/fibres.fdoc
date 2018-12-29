@@ -258,7 +258,7 @@ open class Schannel
   _gc_pointer type oschannel[t] = "::flx::rtl::schannel_t*";
 
   gen mk_untyped_schannel: 1 -> address = 
-    "new(*PTF gcp,::flx::rtl::schannel_ptr_map,false) ::flx::rtl::schannel_t(PTF gcp)"
+    "new(*PTF gcp,::flx::rtl::schannel_ptr_map,false) ::flx::rtl::schannel_t()"
     requires property "needs_gc"
   ;
   //$ Create a bidirectional synchronous channel.
@@ -335,8 +335,8 @@ open class Schannel
   inline gen read[T] (chan:ischannel[T]) => read$ C_hack::cast[schannel[T]] chan;
 
   //$ Test if channel is read for a read.
-  inline gen ready[T] :ischannel[T] -> bool = "$1->waiting_to_write!=NULL";
-  inline gen ready[T] : schannel[T] -> bool = "$1->waiting_to_write!=NULL";
+  inline gen ready[T] :ischannel[T] -> bool = "$1->top!=nullptr && !(uintptr_t)$1->top &1u)";
+  inline gen ready[T] : schannel[T] -> bool = "$1->top!=nullptr && (uintptr_t)$1->top &1u)";
 
   //$ Return Some value if ready, otherwise None
   inline gen maybe_read[T] (chan:ischannel[T]) =>
