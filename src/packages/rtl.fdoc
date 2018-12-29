@@ -654,7 +654,7 @@ struct RTL_EXTERN slist_t {
 struct RTL_EXTERN fthread_t // fthread abstraction
 {
   con_t *cc;                    ///< current continuation
-
+  fthread_t *next;              ///< link to next fthread, to be used in scheduler queue and schannels
   fthread_t();                  ///< dead thread, suitable for assignment
   fthread_t(con_t*);            ///< make thread from a continuation
   _uctor_ *run();               ///< run until dead or driver service request
@@ -884,28 +884,24 @@ void *slist_t::pop()
 // fthread_t implementation
 // ********************************************************
 
-fthread_t::fthread_t() : cc(0) {}
-fthread_t::fthread_t(con_t *a) : cc(a) {}
+fthread_t::fthread_t() : cc(nullptr), next(nullptr) {}
+fthread_t::fthread_t(con_t *a) : cc(a), next(nullptr) {}
 
-// uncopyable object but implementation needed for linker????
-//fthread_t::fthread_t(fthread_t const&){ assert(false); }
-//void fthread_t::operator=(fthread_t const&){ assert(false); }
+void fthread_t::kill() { cc = nullptr; }
 
-void fthread_t::kill() { cc = 0; }
-
-_uctor_ *fthread_t::get_svc()const { return cc?cc->p_svc:0; }
+_uctor_ *fthread_t::get_svc()const { return cc?cc->p_svc:nullptr; }
 
 _uctor_ *fthread_t::run() {
-  if(!cc) return 0; // dead
+  if(!cc) return nullptr; // dead
 restep:
-  cc->p_svc = 0;
+  cc->p_svc = nullptr;
 step:
   //fprintf(stderr,"[fthread_t::run::step] cc=%p->",cc);
   try { cc = cc->resume(); }
   catch (con_t *x) { cc = x; }
 
   //fprintf(stderr,"[fthread_t::run::step] ->%p\n",cc);
-  if(!cc) return 0; // died
+  if(!cc) return nullptr; // died
 
   if(cc->p_svc)
   {
@@ -1321,11 +1317,12 @@ static CxxValueType<slist_t> _slist_t_fcops {};
 // ********************************************************
 //OFFSETS for fthread_t
 // ********************************************************
-static const std::size_t _fthread_offsets[1]={
-    offsetof(fthread_t,cc)
+static const std::size_t _fthread_offsets[2]={
+    offsetof(fthread_t,cc),
+    offsetof(fthread_t,next)
 };
 
-static ::flx::gc::generic::offset_data_t const _fthread_offset_data = { 1, _fthread_offsets };
+static ::flx::gc::generic::offset_data_t const _fthread_offset_data = { 2, _fthread_offsets };
 
 ::flx::gc::generic::gc_shape_t _fthread_ptr_map = {
   &slist_ptr_map,
