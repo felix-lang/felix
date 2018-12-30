@@ -59,9 +59,14 @@ struct RTL_EXTERN fthread_list {
   fthread_list(fthread_list const&) = delete;
   fthread_list& operator=(fthread_list const&) = delete;
 public:
-  ::flx::rtl::sysdlist_t *fthreads; // has to be public for shape spec
+  // INVARIANT fthread_first==nullptr equiv fthread_last=nullptr
+  ::flx::rtl::fthread_t *fthread_first; // has to be public for shape spec
+  ::flx::rtl::fthread_t *fthread_last; // WEAK
 
   ::std::atomic_flag qisblocked;
+
+  // FIXME: THESE SHOULDNT BE ATOMIC BECAUSE IDIOT C++ MIGHT MUTEX WRAP THEM
+  // Instead they should only be used inside our spinlock
   ::std::atomic<int> thread_count; // n threads sharing list
   ::std::atomic<int> busy_count; // n threads actually working
 
@@ -79,9 +84,11 @@ public:
 
   void push_back(::flx::rtl::fthread_t *);
   void push_front(::flx::rtl::fthread_t *);
+  ::flx::rtl::fthread_t *pop_front();
+
+  // DIAGNOSTICS ONLY
   size_t size() const;
   ::flx::rtl::fthread_t *front()const;
-  ::flx::rtl::fthread_t *pop_front();
 };
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t fthread_list_ptr_map;
 
@@ -202,11 +209,12 @@ fthread_list::fthread_list(::flx::gc::generic::gc_profile_t *gcp_) :
   //pactive_lock(nullptr),
   lockneeded(false),
   active_lock(),
-  gcp(gcp_)
+  gcp(gcp_),
+  fthread_first(nullptr),
+  fthread_last(nullptr)
 {
   qisblocked.clear();
   active_lock.clear();
-  fthreads = new(*gcp, ::flx::rtl::sysdlist_t_ptr_map, false) ::flx::rtl::sysdlist_t();
 }
 fthread_list::~fthread_list () { 
   fprintf(stderr,"[fthread_list: destructor] Pthread %p delete async queue\n",(void*)::flx::pthread::mythrid());
@@ -214,29 +222,53 @@ fthread_list::~fthread_list () {
 }
 
 
+// FIXME: doesn't clear next pointer .. this routine shouldn't be used now
 fthread_t *fthread_list::front() const { 
-  if(fthreads->data.empty()) return nullptr;
-  return (fthread_t*)fthreads->data.front(); 
+  return fthread_first;
 }
 
 fthread_t *fthread_list::pop_front() { 
-  if(fthreads->data.empty()) return nullptr;
-  auto x = (fthread_t*)fthreads->data.front(); 
-  fthreads->data.pop_front(); 
-  return x;
+  auto tmp = fthread_first;
+  if (!tmp) return nullptr; // queue empty
+
+  // point at next
+  fthread_first = tmp->next;
+  // if next is null, null out last pointer
+  if(!fthread_first) fthread_last = nullptr;
+
+  tmp->next = nullptr; // for GC, null out link
+  return tmp;
 }
 
-void fthread_list::push_front(fthread_t *p) { fthreads->data.push_front(p); }
-void fthread_list::push_back(fthread_t *p) { fthreads->data.push_back(p); }
+// INVARIANT fthread_first==nullptr equiv fthread_last=nullptr
+// PRECONDITION: p != nullptr
+void fthread_list::push_front(fthread_t *p) { 
+  p->next = fthread_first;
+  fthread_first = p;
+  if (!fthread_last) fthread_last = p;
+}
 
-size_t fthread_list::size()const { return fthreads->data.size(); }
+// INVARIANT fthread_first==nullptr equiv fthread_last=nullptr
+// PRECONDITION: p != nullptr
+void fthread_list::push_back(fthread_t *p) { 
+  if(!fthread_last) fthread_first=fthread_last=p;
+  else {
+    fthread_last->next = p;
+    fthread_last = p;
+  }
+}
+
+size_t fthread_list::size()const { 
+  auto count = 0; 
+  for(auto it=fthread_first; it; it=it->next)++count; return count; 
+}
 
 // ********************************************************
 // SHAPE for fthread_list
 // ********************************************************
 
 static const std::size_t fthread_list_offsets[1]={
-    offsetof(fthread_list,fthreads)
+    offsetof(fthread_list,fthread_first) // fthread_last is weak
 };
 
 static ::flx::gc::generic::offset_data_t const fthread_list_offset_data = { 1, fthread_list_offsets };
