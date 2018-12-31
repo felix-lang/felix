@@ -586,8 +586,6 @@ struct RTL_EXTERN fthread_t; // f-thread
 struct RTL_EXTERN _uctor_;   // union constructor
 //struct RTL_EXTERN _variant_;   // variant constructor
 struct RTL_EXTERN schannel_t;   // synchronous channel type
-struct RTL_EXTERN slist_t;   // singly linked list of void*
-struct RTL_EXTERN slist_node_t;   // singly linked list of void*
 struct RTL_EXTERN clptr_t;  // pointer to compact linear product component
 struct RTL_EXTERN clprj_t;  // compact linear projection
 
@@ -615,32 +613,6 @@ struct RTL_EXTERN jump_address_t
   jump_address_t () : target_frame (0), local_pc(0) {}
   jump_address_t (con_t *tf) : target_frame(tf), local_pc(0) {}
   // default copy constructor and assignment
-};
-
-
-// ********************************************************
-/// SLIST. singly linked lists: SHARABLE and COPYABLE
-/// SLIST manages pointers to memory managed by the collector
-// ********************************************************
-
-struct RTL_EXTERN slist_node_t {
-  slist_node_t *next;
-  void *data;
-  slist_node_t(slist_node_t *n, void *d) : next(n), data(d) {}
-};
-
-
-struct RTL_EXTERN slist_t {
-  slist_t(){}
-
-  gc::generic::gc_profile_t *gcp;
-  struct slist_node_t *head;
-
-  slist_t (gc::generic::gc_profile_t*); ///< create empty list
-
-  void push(void *data);                ///< push a gc pointer
-  void *pop();                          ///< pop a gc pointer
-  bool isempty()const;
 };
 
 // ********************************************************
@@ -852,30 +824,6 @@ char const *describe_service_call(int x)
 muxguard::muxguard (::std::mutex *p): m(p) { if (m)m->lock(); }
 muxguard::~muxguard () { if (m)m->unlock(); }
 
-
-// ********************************************************
-// slist implementation
-// ********************************************************
-
-slist_t::slist_t(::flx::gc::generic::gc_profile_t *_gcp) : gcp (_gcp), head(0) {}
-
-bool slist_t::isempty()const { return head == 0; }
-
-void slist_t::push(void *data)
-{
-  head = new(*gcp,slist_node_ptr_map,false) slist_node_t(head,data);
-}
-
-// note: never fails, return NULL pointer if the list is empty
-void *slist_t::pop()
-{
-  if(head) {
-    void *data = head->data;
-    head=head->next;
-    return data;
-  }
-  else return 0;
-}
 // ********************************************************
 // fthread_t implementation
 // ********************************************************
@@ -1180,8 +1128,6 @@ RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _uctor_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _int_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _address_ptr_map;
 //RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _caddress_ptr_map;
-RTL_EXTERN extern ::flx::gc::generic::gc_shape_t slist_node_ptr_map;
-RTL_EXTERN extern ::flx::gc::generic::gc_shape_t slist_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t clptr_t_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t clprj_t_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t jump_address_ptr_map;
@@ -1194,58 +1140,10 @@ RTL_EXTERN extern ::flx::gc::generic::gc_shape_t cl_t_ptr_map;
 @tangle flx_rtl_shapes.cpp
 #include "flx_rtl_shapes.hpp"
 #include "flx_rtl.hpp"
-//#include "flx_collector.hpp"
 #include "flx_dynlink.hpp"
 #include <stddef.h>
 
 namespace flx { namespace rtl {
-
-// ********************************************************
-//OFFSETS for slist_node_t
-// ********************************************************
-static const std::size_t slist_node_offsets[2]={
-    offsetof(slist_node_t,next),
-    offsetof(slist_node_t,data)
-};
-
-static ::flx::gc::generic::offset_data_t const slist_node_offset_data = { 2, slist_node_offsets };
-::flx::gc::generic::gc_shape_t slist_node_ptr_map = {
-  nullptr,
-  "rtl::slist_node_t",
-  1,sizeof(slist_node_t),
-  0, // no finaliser,
-  0, // fcops
-  &slist_node_offset_data,
-  ::flx::gc::generic::scan_by_offsets,
-  ::flx::gc::generic::tblit<slist_node_t>,::flx::gc::generic::tunblit<slist_node_t>, 
-  ::flx::gc::generic::gc_flags_default,
-  0UL, 0UL
-};
-
-
-// ********************************************************
-//OFFSETS for slist_t
-// ********************************************************
-static const std::size_t slist_offsets[1]={
-    offsetof(slist_t,head)
-};
-static ::flx::gc::generic::offset_data_t const slist_offset_data = { 1, slist_offsets };
-
-static CxxValueType<slist_t> _slist_t_fcops {};
-
-::flx::gc::generic::gc_shape_t slist_ptr_map = {
-  &slist_node_ptr_map,
-  "rtl::slist_t",
-  1,sizeof(slist_t),
-  0, // no finaliser
-  &_slist_t_fcops, // fcops
-  &slist_offset_data,
-  ::flx::gc::generic::scan_by_offsets,
-  ::flx::gc::generic::tblit<slist_t>,::flx::gc::generic::tunblit<slist_t>, 
-  ::flx::gc::generic::gc_flags_default,
-  0UL, 0UL
-};
-
 // ********************************************************
 //OFFSETS for fthread_t
 // ********************************************************
@@ -1257,7 +1155,7 @@ static const std::size_t _fthread_offsets[2]={
 static ::flx::gc::generic::offset_data_t const _fthread_offset_data = { 2, _fthread_offsets };
 
 ::flx::gc::generic::gc_shape_t _fthread_ptr_map = {
-  &slist_ptr_map,
+  nullptr,
   "rtl::fthread_t",
   1,sizeof(fthread_t),
   0,

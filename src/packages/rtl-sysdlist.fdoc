@@ -1,14 +1,14 @@
-@Title Sysdlist
+@title Sysdlist
 @tangler flx_sysdlist.cpp                  = share/src/rtl/flx_sysdlist.cpp
 @tangler flx_sysdlist.hpp                  = share/lib/rtl/flx_sysdlist.hpp
 @tangler sysdlist.flx                      = share/lib/datatype/sysdlist.flx
 
 @h1 Double linked list of pointers
-Not use any more.
+Not used any more.
 
 @tangle flx_sysdlist.hpp
-#ifndef __FLX_RTL_H__
-#define __FLX_RTL_H__
+#ifndef __FLX_SYSDLIST_H__
+#define __FLX_SYSDLIST_H__
 #include "flx_rtl_config.hpp"
 #include "flx_gc.hpp"
 
