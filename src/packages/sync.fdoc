@@ -222,7 +222,6 @@ fthread_list::~fthread_list () {
 }
 
 
-// FIXME: doesn't clear next pointer .. this routine shouldn't be used now
 fthread_t *fthread_list::front() const { 
   return fthread_first;
 }

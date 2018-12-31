@@ -575,10 +575,6 @@ typedef ::std::uint64_t cl_t;
 // Felix system classes
 // ********************************************************
 
-struct RTL_EXTERN sysdlist_t {
-  sysdlist_t();
-  ::std::list<void*> data;
-};
 
 struct RTL_EXTERN muxguard;
 
@@ -829,7 +825,6 @@ RTL_EXTERN void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char const *fil
 
 namespace flx { namespace rtl {
 
-sysdlist_t::sysdlist_t () {}
 
 
 static char const *svc_desc[13] = {
@@ -1094,34 +1089,6 @@ void ProductType::move_assign_impl(void *dst, void *src) {
 
 @
 
-@h1 Sysdlist 
-Doubly linked gc aware list of adresses.
-@tangle sysdlist.flx
-class SysDlist {
-  _gc_pointer type sysdlist[T] = "::flx::rtl::sysdlist_t*";
-  ctor[T] sysdlist[T] : 1 = "new (*(ptf->gcp), ::flx::rtl::sysdlist_t_ptr_map, true) ::flx::rtl::sysdlist_t()";
-  proc push_front[T] : sysdlist[T] * &T = "$1->data.push_front((void*)$2);";
-  proc push_back[T]: sysdlist[T] * &T = "$1->data.push_front((void*)$2);";
-  fun front[T]: sysdlist[T]  -> &T = "(?1*)$1->data.front();";
-  gen pop_front[T]: sysdlist[T] -> @T = """
-  (?1*)(
-    ([&] () 
-    { 
-      if ($1->data.empty()) return (void*)nullptr; 
-      auto x = $1->data.front(); 
-      $1->data.pop_front(); 
-      return x; 
-    })
-    ()
-  )""";
-
-  gen unsafe_pop_front[T](x:sysdlist[T]): &T => C_hack::cast[&T](pop_front x);
-
-  fun empty[T]: sysdlist[T] -> bool = "$1->data.empty()";
-  fun len[T]: sysdlist[T] -> size = "$1->data.size()";
-}
-
-@
 
 @h1 Exec Util
 @tangle flx_executil.hpp
@@ -1203,8 +1170,6 @@ namespace flx { namespace rtl {
 // we provide a shape for C 'int' type as well
 // ********************************************************
 
-RTL_EXTERN extern ::flx::gc::generic::scanner_t scan_sysdlist;
-
 // special: just the offset data for a pointer
 RTL_EXTERN extern ::flx::gc::generic::offset_data_t const _address_offset_data;
 
@@ -1221,7 +1186,6 @@ RTL_EXTERN extern ::flx::gc::generic::gc_shape_t clptr_t_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t clprj_t_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t jump_address_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t cl_t_ptr_map;
-RTL_EXTERN extern ::flx::gc::generic::gc_shape_t sysdlist_t_ptr_map;
 
 }}
 #endif
@@ -1236,42 +1200,6 @@ RTL_EXTERN extern ::flx::gc::generic::gc_shape_t sysdlist_t_ptr_map;
 
 namespace flx { namespace rtl {
 
-void *scan_sysdlist(
-  ::flx::gc::generic::collector_t *collector, 
-  ::flx::gc::generic::gc_shape_t *shape, 
-  void *p, 
-  size_t dyncount, 
-  int reclimit
-)
-{
-  auto q = reinterpret_cast<::flx::rtl::sysdlist_t*>(p);
-
-  // calculate the absolute number of used array slots
-  size_t n_used = dyncount  * shape->count;
-  for (size_t j=0; j<n_used; ++j) 
-    for (auto elt  : q->data) 
-      if (collector->inrange(elt))
-        collector->register_pointer (elt, reclimit -1);
-  return nullptr;
-}
-// ********************************************************
-// SHAPE for sysdlist_t 
-// ********************************************************
-
-::flx::gc::generic::gc_shape_t sysdlist_t_ptr_map = {
-  NULL,
-  "rtl::sysdlist_t",
-  1,sizeof(sysdlist_t),
-  0, // no finaliser,
-  0, // fcops
-  0, // no offset data
-  scan_sysdlist,
-  0,0, // no serialisation as yet
-  ::flx::gc::generic::gc_flags_default,
-  0UL, 0UL
-};
-
-
 // ********************************************************
 //OFFSETS for slist_node_t
 // ********************************************************
@@ -1282,7 +1210,7 @@ static const std::size_t slist_node_offsets[2]={
 
 static ::flx::gc::generic::offset_data_t const slist_node_offset_data = { 2, slist_node_offsets };
 ::flx::gc::generic::gc_shape_t slist_node_ptr_map = {
-  &sysdlist_t_ptr_map,
+  nullptr,
   "rtl::slist_node_t",
   1,sizeof(slist_node_t),
   0, // no finaliser,
