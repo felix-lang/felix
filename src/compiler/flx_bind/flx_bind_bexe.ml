@@ -555,6 +555,7 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
       in
       begin match entry with
       | SYMDEF_var _ -> ()
+      | SYMDEF_parameter (`PVar,_) -> () (* NEW .. does this work?? *)
       | SYMDEF_val _ -> clierrx "[flx_bind/flx_bind_bexe.ml:520: E25] " sr ("Can't svc into value " ^ id)
       | SYMDEF_parameter _ -> clierrx "[flx_bind/flx_bind_bexe.ml:521: E26] " sr ("Can't svc into parameter value " ^ id)
       | _ -> clierrx "[flx_bind/flx_bind_bexe.ml:522: E27] " sr ("[bexe] svc requires variable, got " ^ id)

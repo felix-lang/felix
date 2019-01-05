@@ -85,7 +85,6 @@ static const std::size_t slist_node_offsets[2]={
 
 static ::flx::gc::generic::offset_data_t const slist_node_offset_data = { 2, slist_node_offsets };
 ::flx::gc::generic::gc_shape_t slist_node_ptr_map = {
-  nullptr,
   "rtl::slist_node_t",
   1,sizeof(slist_node_t),
   0, // no finaliser,
@@ -109,7 +108,6 @@ static ::flx::gc::generic::offset_data_t const slist_offset_data = { 1, slist_of
 static CxxValueType<slist_t> _slist_t_fcops {};
 
 ::flx::gc::generic::gc_shape_t slist_ptr_map = {
-  nullptr,
   "rtl::slist_t",
   1,sizeof(slist_t),
   0, // no finaliser

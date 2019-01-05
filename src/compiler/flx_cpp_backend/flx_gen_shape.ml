@@ -13,10 +13,8 @@ open Flx_print
 open Flx_exceptions
 open Flx_maps
 
-let gen_offset_data module_name s n name offsets isfun is_pod props flags last_ptr_map encoder_name decoder_name =
+let gen_offset_data module_name s n name offsets isfun is_pod props flags encoder_name decoder_name =
   let this_ptr_map = name ^ "_ptr_map" in
-  let old_ptr_map = !last_ptr_map in
-  last_ptr_map := "&"^this_ptr_map;
   let noffsets =
     if isfun && mem `Requires_ptf props then si (n-1)^"+FLX_PASS_PTF"
     else si n
@@ -33,7 +31,6 @@ let gen_offset_data module_name s n name offsets isfun is_pod props flags last_p
 
   if not is_pod then bcat s ("FLX_FINALISER("^name^")\n");
   bcat s (  "static ::flx::gc::generic::gc_shape_t "^ this_ptr_map ^" ={\n");
-  bcat s ("  " ^ old_ptr_map ^ ",\n");
   bcat s ("  \"" ^ module_name ^ "::" ^ name ^ "\",\n");
   bcat s ("  1,sizeof("^name^"),\n");
   bcat s ( if not is_pod then ("  "^name^"_finaliser,\n") else ("  0, // finaliser\n"));

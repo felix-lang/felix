@@ -234,7 +234,6 @@ print_endline ("Flxg_codegen.codegen_bsyms");
   "  FILE *flx_stderr;";
   "  ::flx::gc::generic::gc_profile_t *gcp;";
   "  ::flx::run::flx_world *world;";
-  "  ::flx::gc::generic::gc_shape_t * const shape_list_head;";
   "  thread_frame_t(";
   "  );";
   ]
@@ -308,7 +307,6 @@ print_endline ("Flxg_codegen.codegen_bsyms");
   let topinits =
     [
       "  gcp(0)";
-      "  shape_list_head("^Flx_name.cid_of_flxid state.module_name ^"_head_shape)";
     ]
     @
     List.map
@@ -541,12 +539,11 @@ print_endline ("Flxg_codegen.codegen_bsyms");
   (!shapes);
   let extras = !extras in
 
-  let _, tables = Flx_ogen.gen_offset_tables
+  let tables = Flx_ogen.gen_offset_tables
     state.syms
     bsym_table
     extras
     state.module_name
-    "&::flx::rtl::_address_ptr_map"
   in
    plr tables
   ;

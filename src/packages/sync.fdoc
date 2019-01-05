@@ -111,7 +111,7 @@ struct RTL_EXTERN sync_sched {
   ::flx::rtl::fthread_t *ft;
 
   // variable to hold service request
-  ::flx::rtl::_uctor_ *request;
+  ::flx::rtl::svc_req_t *request;
 
   // type for the state of the scheduler
   // when it suspends by returning.
@@ -184,7 +184,6 @@ static const std::size_t sync_sched_offsets[2]={
 static ::flx::gc::generic::offset_data_t const sync_sched_offset_data = { 2, sync_sched_offsets };
 
 ::flx::gc::generic::gc_shape_t sync_sched_ptr_map = {
-  NULL,
   "rtl::sync_sched",
   1,sizeof(sync_sched),
   0, // no finaliser,
@@ -273,7 +272,6 @@ static const std::size_t fthread_list_offsets[1]={
 static ::flx::gc::generic::offset_data_t const fthread_list_offset_data = { 1, fthread_list_offsets };
 
 ::flx::gc::generic::gc_shape_t fthread_list_ptr_map = {
-  NULL,
   "rtl::fthread_list",
   1,sizeof(fthread_list),
   0, // no finaliser,
@@ -353,7 +351,7 @@ void sync_sched::do_yield()
 void sync_sched::do_spawn_fthread()
     {
       spinguard dummy(active->lockneeded,&(active->active_lock));
-      fthread_t *ftx = *(fthread_t**)request->data;
+      fthread_t *ftx = request->svc_fthread_req.fthread;
       if(debug_driver)
         fprintf(stderr,"[sync: svc_spawn_fthread] Spawn fthread %p\n",ftx);
       impl_push_front(ftx);
@@ -362,17 +360,19 @@ void sync_sched::do_spawn_fthread()
 void sync_sched::do_schedule_fthread()
     {
       spinguard dummy(active->lockneeded,&(active->active_lock));
-      fthread_t *ftx = *(fthread_t**)request->data;
+      fthread_t *ftx = request->svc_fthread_req.fthread;
       if(debug_driver)
         fprintf(stderr,"[sync: svc_schedule_fthread] Schedule fthread %p\n",ftx);
       active->push_back(ftx);
     }
 
+// FIXME: HANDLE NULL. Read & Write variable addresses can be NULL
+// if the data type is unit
 void sync_sched::do_sread()
     {
       spinguard dummy(active->lockneeded,&(active->active_lock));
-      readreq_t * pr = (readreq_t*)request->data;
-      schannel_t *chan = pr->chan;
+      svc_sio_req_t pr = request->svc_sio_req;
+      schannel_t *chan = pr.chan;
       if(debug_driver)
         fprintf(stderr,"[sync: svc_read] Fibre %p Request to read on channel %p\n",ft,chan);
       if(chan==NULL) goto svc_read_none;
@@ -381,12 +381,13 @@ void sync_sched::do_sread()
         fthread_t *writer= chan->pop_writer();
         if(writer == 0) goto svc_read_none;       // no writers
         if(writer->cc == 0) goto svc_read_next;   // killed
-        readreq_t * pw = (readreq_t*)writer->get_svc()->data;
-        if(debug_driver)
-          fprintf(stderr,"[sync: svc_read] Writer @%p=%p, read into %p\n", 
-            pw->variable,*(void**)pw->variable, pr->variable);
-        if (pr->variable && pw->variable)
-          *(void**)pr->variable = *(void**)pw->variable;
+        svc_sio_req_t pw = writer->get_svc()->svc_sio_req;
+        if (pr.data && pw.data) {
+          if(debug_driver)
+            fprintf(stderr,"[sync: svc_read] Writer @%p=%p, read into %p\n", 
+              pw.data,*pw.data, pr.data);
+          *pr.data= *pw.data;
+        }
         if(debug_driver)
           fprintf(stderr,"[sync: svc_read] current fibre %p FED, fibre %p UNBLOCKED\n",ft, writer);
 
@@ -409,8 +410,8 @@ show_state();
 void sync_sched::do_swrite()
     {
       spinguard dummy(active->lockneeded,&(active->active_lock));
-      readreq_t * pw = (readreq_t*)request->data;
-      schannel_t *chan = pw->chan;
+      svc_sio_req_t pw = request->svc_sio_req;
+      schannel_t *chan = pw.chan;
       if(debug_driver)
          fprintf(stderr,"[sync: svc_write] Fibre %p Request to write on channel %p\n",ft,chan);
       if(chan==NULL)goto svc_write_none;
@@ -419,12 +420,13 @@ void sync_sched::do_swrite()
         fthread_t *reader= chan->pop_reader();
         if(reader == 0) goto svc_write_none;     // no readers
         if(reader->cc == 0) goto svc_write_next; // killed
-        readreq_t * pr = (readreq_t*)reader->get_svc()->data;
-        if(debug_driver)
-          fprintf(stderr,"[sync: svc_write] Writer @%p=%p, read into %p\n", 
-            pw->variable,*(void**)pw->variable, pr->variable);
-        if (pr->variable && pw->variable)
-          *(void**)pr->variable = *(void**)pw->variable;
+        svc_sio_req_t pr = reader->get_svc()->svc_sio_req;
+        if (pr.data && pw.data) {
+          if(debug_driver)
+            fprintf(stderr,"[sync: svc_write] Writer @%p=%p, read into %p\n", 
+              pw.data,*pw.data, pr.data);
+          *pr.data= *pw.data;
+        }
         if(debug_driver)
           fprintf(stderr,"[sync: svc_write] hungry fibre %p FED\n",reader);
 
@@ -452,12 +454,11 @@ void sync_sched::external_multi_swrite (schannel_t *chan, void *data)
       if(reader == 0)  return;    // no readers left
       if(reader->cc == 0) goto svc_multi_write_next; // killed
       {
-        readreq_t * pr = (readreq_t*)reader->get_svc()->data;
+        svc_sio_req_t pr = reader->get_svc()->svc_sio_req;
         if(debug_driver)
            fprintf(stderr,"[sync: svc_multi_write] Write data %p, read into %p\n", 
-             data, pr->variable);
-        if (pr->variable)
-          *(void**)pr->variable = data;
+             data, pr.data);
+        *pr.data = data;
         impl_push_front(reader);
       }
       goto svc_multi_write_next;
@@ -466,9 +467,9 @@ void sync_sched::external_multi_swrite (schannel_t *chan, void *data)
 void sync_sched::do_multi_swrite()
     {
       spinguard dummy(active->lockneeded,&(active->active_lock));
-      readreq_t * pw = (readreq_t*)request->data;
-      void *data = *(void**)pw->variable;
-      schannel_t *chan = pw->chan;
+      svc_sio_req_t pw = request->svc_sio_req;
+      void *data = pw.data;
+      schannel_t *chan = pw.chan;
       if(debug_driver)
         fprintf(stderr,"[sync: svc_multi_write] Request to write on channel %p\n",chan);
       external_multi_swrite (chan, data);
@@ -477,7 +478,7 @@ void sync_sched::do_multi_swrite()
 void sync_sched::do_kill()
     {
       spinguard dummy(active->lockneeded,&(active->active_lock));
-      fthread_t *ftx = *(fthread_t**)request->data;
+      fthread_t *ftx = request->svc_fthread_req.fthread;
       if(debug_driver)fprintf(stderr,"[sync: svc_kill] Request to kill fthread %p\n",ftx);
       ftx -> kill();
       return;
@@ -512,8 +513,8 @@ dispatch:
   }
 
   if (debug_driver)
-    fprintf(stderr,"[flx_sync:sync_sched] dispatching service request %d\n", request->variant);
-  switch(request->variant)
+    fprintf(stderr,"[flx_sync:sync_sched] dispatching service request %d\n", request->svc_req);
+  switch(request->svc_req)
   {
     case svc_yield: do_yield(); goto dispatch;
 

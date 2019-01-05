@@ -5,6 +5,7 @@
 @h1 Control Synopsis
 @tangle __init__.flx
 // stream is part of datatype, included in std/datatype/__init__
+include "std/control/svc";
 include "std/control/control";
 include "std/control/unique";
 include "std/control/iterator";
@@ -132,36 +133,6 @@ open class Control
   //$ and also needed in schannels to do the svc call.
 
   _gc_pointer type _schannel = "::flx::rtl::schannel_t*";
-
-  //$ Felix-OS service call codes.
-  // THESE VALUES MUST SYNC WITH THE RTL
-  // LAYOUT CHANGE: pointers are now stored in the _uctor_
-  // instead of on the heap with a pointer in the uctor
-  // This doesn't affect abstract types, even if they're pointers in C
-  variant svc_req_t =
-  /*0*/ | svc_yield
-  /*1*/ | svc_get_fthread         of &fthread    // CHANGED LAYOUT
-  /*2*/ | svc_read                of address
-  /*3*/ | svc_general             of &address    // CHANGED LAYOUT
-  /*4*/ | svc_spawn_process       of fthread // pthread (shared active list)
-  /*5*/ | svc_spawn_pthread       of fthread // pthread (fresh active list)
-  /*6*/ | svc_spawn_fthread       of fthread  // fibre (immediate)
-  /*7*/ | svc_sread               of _schannel * &address
-  /*8*/ | svc_swrite              of _schannel * &address
-  /*9*/ | svc_kill                of fthread
-  /*10*/ | svc_reserved2 
-  /*11*/ | svc_multi_swrite       of _schannel * &address 
-  /*12*/ | svc_schedule_fthread   of fthread // fibre (delayed)
-  ;
-
-  //$ Procedure to perform a supervisor call. 
-  //$ this interface just gets rid of the horrible requirement
-  //$ the request be in a variable so it is addressable.
-  //$ The _svc statement is a compiler intrinsic.
-  noinline proc svc(svc_x:svc_req_t) {
-    var svc_y=svc_x;
-    _svc svc_y;
-  }
 
 }
 @

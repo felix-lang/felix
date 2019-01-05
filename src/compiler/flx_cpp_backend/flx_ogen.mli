@@ -5,6 +5,5 @@ val gen_offset_tables:
   Flx_bsym_table.t ->
   Flx_btype.t list ->
   string ->
-  string -> (* prior ptr_map, NULL if required *)
-  string * string (* last_ptr_map, tables *)
+  string (*  tables *)
 

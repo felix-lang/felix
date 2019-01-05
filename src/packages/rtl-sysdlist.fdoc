@@ -58,7 +58,6 @@ void *scan_sysdlist(
 // ********************************************************
 
 ::flx::gc::generic::gc_shape_t sysdlist_t_ptr_map = {
-  NULL,
   "rtl::sysdlist_t",
   1,sizeof(sysdlist_t),
   0, // no finaliser,

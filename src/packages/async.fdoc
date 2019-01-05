@@ -94,7 +94,6 @@ static const std::size_t async_sched_offsets[1]={
 static ::flx::gc::generic::offset_data_t const async_sched_offset_data = { 1, async_sched_offsets };
 
 ::flx::gc::generic::gc_shape_t async_sched_ptr_map = {
-  NULL,
   "flx::run::async_sched",
   1,sizeof(async_sched),
   0, // no finaliser,
@@ -197,7 +196,7 @@ void async_sched::do_spawn_pthread()
 
 void async_sched::spawn_impl(fthread_list *pactive, thread_kind_t k) {
 
-  fthread_t *ftx = *(fthread_t**)ss->request->data;
+  fthread_t *ftx = ss->request->svc_fthread_req.fthread;
   if (debug_driver)
     fprintf(stderr, "[prun %p: spawn_pthread] Spawn pthread %p\n", (void*)mythrid(), ftx);
   {
@@ -262,10 +261,7 @@ void async_sched::do_general()
     fprintf(stderr,
        "[prun: svc_general] Async system created: %p, count %zu\n",
        ss->active->async,ss->active->async_count);
-  // CHANGED TO USE NEW UNION LAYOUT RULES
-  // One less level of indirection for pointers
-  // void *dreq =  *(void**)ss.request->data;
-  void *dreq =  (void*)ss->request->data;
+  ::flx::async::flx_driver_request_base *dreq =  ss->request->svc_general_req.pgeneral;
   if (debug_driver)
     fprintf(stderr, "[prun: svc_general] Request object %p\n", dreq);
 
@@ -316,8 +312,8 @@ sync_run:
     // HANDLE DELEGATED SERVICE REQUESTS
     case sync_sched::delegated:
       if (debug_driver)
-        fprintf(stderr, "sync_sched %p:delegated request %d\n", str(thread_kind),(void*)mythrid(), ss->request->variant);
-      switch (ss->request->variant) 
+        fprintf(stderr, "sync_sched %p:delegated request %d\n", str(thread_kind),(void*)mythrid(), ss->request->svc_req);
+      switch (ss->request->svc_req) 
       {
         case svc_spawn_pthread: do_spawn_pthread(); goto sync_run;
         case svc_spawn_process: do_spawn_process(); goto sync_run;
@@ -326,7 +322,7 @@ sync_run:
 
         default:
           fprintf(stderr,
-            "prun: Unknown service request code 0x%x\n", ss->request->variant);
+            "prun: Unknown service request code 0x%x\n", ss->request->svc_req);
           abort();
       }
 
@@ -504,7 +500,7 @@ class ASYNC_EXTERN async_hooker {
 public:
   virtual flx::rtl::fthread_t *dequeue()=0;
   virtual flx::rtl::fthread_t *maybe_dequeue()=0;
-  virtual void handle_request(void *data, flx::rtl::fthread_t *ss)=0;
+  virtual void handle_request(::flx::async::flx_driver_request_base *data, flx::rtl::fthread_t *ss)=0;
   virtual ~async_hooker();
 };
 
@@ -598,11 +594,9 @@ class async_hooker_impl : public async_hooker {
 public:
   virtual bound_queue_t *get_ready_queue()=0;
   ~async_hooker_impl() {}
-  void handle_request(void *data,fthread_t *ss)
+  void handle_request(flx::async::flx_driver_request_base *pgeneral,fthread_t *ss)
   {
-    flx::async::flx_driver_request_base* dreq =
-          (flx::async::flx_driver_request_base*)data
-    ;
+    flx::async::flx_driver_request_base* dreq = pgeneral;
     finote_t *fn = new wakeup_fthread_t(get_ready_queue(),ss);
     dreq->start_async_op(fn);
   }

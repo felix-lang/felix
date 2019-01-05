@@ -552,6 +552,7 @@ extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
 #include "flx_compiler_support_headers.hpp"
 #include "flx_compiler_support_bodies.hpp"
 #include "flx_continuation.hpp"
+#include "flx_svc.hpp"
 
 #include <string>
 #include <functional>
@@ -625,9 +626,9 @@ struct RTL_EXTERN fthread_t // fthread abstraction
   fthread_t *next;              ///< link to next fthread, to be used in scheduler queue and schannels
   fthread_t();                  ///< dead thread, suitable for assignment
   fthread_t(con_t*);            ///< make thread from a continuation
-  _uctor_ *run();               ///< run until dead or driver service request
+  svc_req_t *run();               ///< run until dead or driver service request
   void kill();                  ///< kill by detaching the continuation
-  _uctor_ *get_svc()const;      ///< get current service request of waiting thread
+  svc_req_t *get_svc()const;      ///< get current service request of waiting thread
 private: // uncopyable
   fthread_t(fthread_t const&) = delete;
   void operator=(fthread_t const&) = delete;
@@ -667,7 +668,6 @@ struct RTL_EXTERN _uctor_
   _uctor_(int *a, _uctor_ x) : variant(a[x.variant]), data(x.data) {}
 };
 
-RTL_EXTERN char const *describe_service_call(int);
 
 // ********************************************************
 /// VARIANTS. Felix variant type
@@ -738,34 +738,6 @@ inline void storeat (clptr_t q, cl_t v) {
     //*q.p -= ((*q.p / q.divisor % q.modulus) - v) * q.divisor; //???
 }
 
-// ********************************************************
-// SERVICE REQUEST CODE
-// THESE VALUES MUST SYNCH WITH THE STANDARD LIBRARY
-// ********************************************************
-
-enum svc_t               // what the dispatch should do
-{                        // when the resume callback returns
-  svc_yield = 0,
-  svc_get_fthread=1,
-  svc_read=2,
-  svc_general=3,               // temporary hack by RF
-  svc_spawn_process=4,
-  svc_spawn_pthread=5,
-  svc_spawn_fthread=6,           // schedule fthread and invoke
-  svc_sread=7,                 // synchronous read
-  svc_swrite=8,                // synchronous write
-  svc_kill=9,                  // kill fthread
-  svc_reserved2=10,          
-  svc_multi_swrite=11,         // multi-write
-  svc_schedule_fthread=12,    // schedule fthread (continue)
-  svc_end
-};
-
-struct readreq_t {
-  schannel_t *chan;
-  void *variable;
-};
-
 struct flx_trace_t
 {
   size_t count;
@@ -798,29 +770,6 @@ RTL_EXTERN void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char const *fil
 namespace flx { namespace rtl {
 
 
-
-static char const *svc_desc[13] = {
-  "svc_yield",
-  "svc_get_fthread",
-  "svc_read",
-  "svc_general",
-  "svc_spawn_process",
-  "svc_spawn_pthread",
-  "svc_spawn_fthread",
-  "svc_sread",
-  "svc_swrite",
-  "svc_kill",
-  "svc_reserved2",
-  "svc_multi_swrite",
-  "svc_schedule_fthread"
-};
-
-char const *describe_service_call(int x)
-{
-  if (x < 0 || x >12) return "Unknown service call";
-  else return svc_desc[x];
-}
-
 muxguard::muxguard (::std::mutex *p): m(p) { if (m)m->lock(); }
 muxguard::~muxguard () { if (m)m->unlock(); }
 
@@ -833,9 +782,9 @@ fthread_t::fthread_t(con_t *a) : cc(a), next(nullptr) {}
 
 void fthread_t::kill() { cc = nullptr; }
 
-_uctor_ *fthread_t::get_svc()const { return cc?cc->p_svc:nullptr; }
+svc_req_t *fthread_t::get_svc()const { return cc?cc->p_svc:nullptr; }
 
-_uctor_ *fthread_t::run() {
+svc_req_t *fthread_t::run() {
   if(!cc) return nullptr; // dead
 restep:
   cc->p_svc = nullptr;
@@ -850,15 +799,16 @@ step:
   if(cc->p_svc)
   {
     //fprintf(stderr,"[fthread_t::run::service call] ->%d\n",cc->p_svc);
-    switch(cc->p_svc->variant)
+    switch(cc->p_svc->svc_req)
     {
+/*
       case svc_get_fthread:
         // NEW VARIANT LAYOUT RULES
         // One less level of indirection here
         //**(fthread_t***)(cc->p_svc->data) = this;
         *(fthread_t**)(cc->p_svc->data) = this;
         goto restep;      // handled
-
+*/
       //case svc_yield:
       //  goto restep;
 
@@ -1155,7 +1105,6 @@ static const std::size_t _fthread_offsets[2]={
 static ::flx::gc::generic::offset_data_t const _fthread_offset_data = { 2, _fthread_offsets };
 
 ::flx::gc::generic::gc_shape_t _fthread_ptr_map = {
-  nullptr,
   "rtl::fthread_t",
   1,sizeof(fthread_t),
   0,
@@ -1178,7 +1127,6 @@ static const std::size_t schannel_offsets[1]={
 static ::flx::gc::generic::offset_data_t const schannel_offset_data = { 1, schannel_offsets };
 
 ::flx::gc::generic::gc_shape_t schannel_ptr_map = {
-  &_fthread_ptr_map,
   "rtl::schannel_t",
   1,sizeof(schannel_t),
   0, // no finaliser
@@ -1204,7 +1152,6 @@ static ::flx::gc::generic::offset_data_t const _uctor_offset_data = { 1, _uctor_
 static CxxValueType<_uctor_> _uctor_fcops {};
 
 ::flx::gc::generic::gc_shape_t _uctor_ptr_map = {
-  &schannel_ptr_map,
   "rtl::_uctor_",
   1,
   sizeof(_uctor_),
@@ -1231,7 +1178,6 @@ static CxxValueType<_variant_> _variant_fcops {};
 static ::flx::gc::generic::offset_data_t const _variant_offset_data = { 1, _variant_offsets };
 
 ::flx::gc::generic::gc_shape_t _variant_ptr_map = {
-  &_uctor_ptr_map,
   "rtl::_variant_",
   1,
   sizeof(_variant_),
@@ -1262,7 +1208,6 @@ static ::flx::gc::generic::offset_data_t const
 static CxxValueType<jump_address_t> jump_address_t_fcops {};
 
 ::flx::gc::generic::gc_shape_t jump_address_ptr_map = {
-  &_uctor_ptr_map,
   "rtl::jump_address_t",
   1,
   sizeof(_uctor_),
@@ -1281,7 +1226,6 @@ static CxxValueType<jump_address_t> jump_address_t_fcops {};
 
 
 ::flx::gc::generic::gc_shape_t _int_ptr_map = {
-  &jump_address_ptr_map,
   "rtl::int",
   1,
   sizeof(int),
@@ -1303,7 +1247,6 @@ static CxxValueType<jump_address_t> jump_address_t_fcops {};
 static CxxValueType<cl_t> cl_t_fcops {};
 
 ::flx::gc::generic::gc_shape_t cl_t_ptr_map = {
-  &_int_ptr_map,
   "rtl::cl_t",
   1,
   sizeof(cl_t),
@@ -1328,7 +1271,6 @@ static const std::size_t _clptr_t_offsets[1]={ 0 };
 
 
 ::flx::gc::generic::gc_shape_t clptr_t_ptr_map = {
-  &cl_t_ptr_map,
   "rtl::clptr_t",
   1,
   sizeof(clptr_t),
@@ -1352,7 +1294,6 @@ static CxxValueType<clprj_t> clprj_t_fcops {};
 
 
 ::flx::gc::generic::gc_shape_t clprj_t_ptr_map = {
-  &clptr_t_ptr_map,
   "rtl::clprj_t",
   1,
   sizeof(clprj_t),
@@ -1390,7 +1331,6 @@ static size_t address_decoder (void *p, char *s, size_t i) {
 // ********************************************************
 
 ::flx::gc::generic::gc_shape_t _address_ptr_map = {
-  &clprj_t_ptr_map,
   "rtl::address",
   1,
   sizeof(void*),

@@ -646,7 +646,6 @@ void flx_libinst_t::create
 // ********************************************************
 FLX_FINALISER(flx_dynlink_t)
 ::flx::gc::generic::gc_shape_t flx_dynlink_ptr_map = {
-  NULL,
   "dynlink::flx_dynlink_t",
   1,sizeof(flx_dynlink_t),
   flx_dynlink_t_finaliser, 
@@ -672,7 +671,6 @@ static const std::size_t flx_libinst_offsets[4]={
 FLX_FINALISER(flx_libinst_t)
 static ::flx::gc::generic::offset_data_t const flx_libinst_offset_data = { 4, flx_libinst_offsets };
 ::flx::gc::generic::gc_shape_t flx_libinst_ptr_map = {
-  &flx_dynlink_ptr_map,
   "dynlink::flx_libinst",
   1,sizeof(flx_libinst_t),
   flx_libinst_t_finaliser, 

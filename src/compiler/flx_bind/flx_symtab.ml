@@ -551,7 +551,7 @@ print_endline ("Adding type variable 7141!");
 
     if print_flag then
       print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n ^ " -> " ^
-        name ^ " (parameter) of "^str_parent parent ^
+        name ^ " ("^Flx_print.string_of_param_kind k^" parameter) of "^str_parent parent ^
         "  at " ^ Flx_srcref.short_string_of_src sr);
 
     (* Add the paramater to the symbol table. *)

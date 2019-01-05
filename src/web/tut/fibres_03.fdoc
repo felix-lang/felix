@@ -73,7 +73,7 @@ spawn_fthread { commuter 2; };
 // yield so that the commuters get a chance to subscribe
 // to the new before the broadcast begins
 // (this is a hack just to make the demo work)
-svc$ svc_yield;
+svc$ #svc_yield;
 
 // create a reporter that just sends numbers as news
 spawn_fthread {

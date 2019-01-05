@@ -1,0 +1,128 @@
+@title Service Requests
+
+@tangler flx_svc.hpp                 = share/lib/rtl/flx_svc.hpp
+@tangler flx_svc.cpp                 = share/src/rtl/flx_svc.cpp
+@tangler svc.flx                     = share/lib/std/control/svc.flx
+
+
+@h1 Service Request layout
+@tangle flx_svc.hpp
+#ifndef __FLX_SVC_H__
+#define __FLX_SVC_H__
+#include "flx_rtl_config.hpp"
+
+namespace flx { namespace async { struct flx_driver_request_base; }}
+
+namespace flx { namespace rtl {
+// ********************************************************
+// SERVICE REQUEST CODE
+// THESE VALUES MUST SYNCH WITH THE STANDARD LIBRARY
+// ********************************************************
+
+enum svc_t               // what the dispatch should do
+{                        // when the resume callback returns
+  svc_yield = 0,
+  svc_general=1,               // temporary hack by RF
+  svc_spawn_process=2,
+  svc_spawn_pthread=3,
+  svc_spawn_fthread=4,           // schedule fthread and invoke
+  svc_schedule_fthread=5,    // schedule fthread (continue)
+  svc_sread=6,                 // synchronous read
+  svc_swrite=7,                // synchronous write
+  svc_multi_swrite=8,         // multi-write
+  svc_kill=9,                  // kill fthread
+  svc_end
+};
+
+RTL_EXTERN char const *describe_service_call(int);
+
+struct svc_general_req_t {
+  svc_general_req_t () {} // unfortunately required even though unsafe due to way compiler generates code 
+  svc_t tag;
+  struct flx::async::flx_driver_request_base *pgeneral;
+  svc_general_req_t (svc_t t, struct flx::async::flx_driver_request_base *d) : tag(t), pgeneral(d) {}
+};
+
+struct svc_sio_req_t {
+  svc_sio_req_t () {} // unfortunately required even though unsafe due to way compiler generates code
+  svc_t tag;
+  struct schannel_t *chan;
+  void **data;
+  svc_sio_req_t(svc_t t, schannel_t *s, void **d) : tag(t), chan(s), data(d) {}
+};
+struct svc_fthread_req_t {
+  svc_fthread_req_t() {} // unfortunately required even though unsafe due to way compiler generates code
+  svc_t tag;
+  struct fthread_t *fthread;
+  svc_fthread_req_t (svc_t t, fthread_t *f) : tag(t), fthread(f) {}
+};
+
+union svc_req_t {
+  svc_req_t() {} // unsafe as above
+  svc_t svc_req;
+  svc_general_req_t svc_general_req;
+  svc_sio_req_t svc_sio_req;
+  svc_fthread_req_t svc_fthread_req;
+};
+
+}} // namespaces
+#endif
+
+@
+
+
+
+@tangle flx_svc.cpp
+#include "flx_svc.hpp"
+
+namespace flx { namespace rtl {
+static char const *svc_desc[10] = {
+  "svc_yield",
+  "svc_general",
+  "svc_spawn_process",
+  "svc_spawn_pthread",
+  "svc_spawn_fthread",
+  "svc_schedule_fthread"
+  "svc_sread",
+  "svc_swrite",
+  "svc_kill",
+  "svc_multi_swrite",
+};
+
+char const *describe_service_call(int x)
+{
+  if (x < 0 || x >12) return "Unknown service call";
+  else return svc_desc[x];
+}
+
+}}
+
+@
+
+@tangle svc.flx
+open class Svc 
+{
+  type svc_yield_req_t = "::flx::rtl::svc_t"; 
+  type svc_general_req_t = "::flx::rtl::svc_general_req_t";
+  type svc_sio_req_t = "::flx::rtl::svc_sio_req_t";
+  type svc_fthread_req_t = "::flx::rtl::svc_fthread_req_t";
+  type driver_request_base = "struct ::flx::async::flx_driver_request_base*";
+
+  fun svc_yield            : 1 -> svc_yield_req_t = "::flx::rtl::svc_yield";
+  fun svc_general          : driver_request_base-> svc_general_req_t = "::flx::rtl::svc_general_req_t (::flx::rtl::svc_general,$1)";
+  fun svc_spawn_process    : fthread -> svc_fthread_req_t = "::flx::rtl::svc_fthread_req_t (::flx::rtl::svc_spawn_process,$1)";
+  fun svc_spawn_pthread    : fthread -> svc_fthread_req_t = "::flx::rtl::svc_fthread_req_t (::flx::rtl::svc_spawn_pthread,$1)";
+  fun svc_spawn_fthread    : fthread -> svc_fthread_req_t = "::flx::rtl::svc_fthread_req_t (::flx::rtl::svc_spawn_fthread,$1)";
+  fun svc_schedule_fthread : fthread -> svc_fthread_req_t = "::flx::rtl::svc_fthread_req_t (::flx::rtl::svc_schedule_fthread,$1)";
+  fun svc_sread            : _schannel * &address -> svc_sio_req_t = "::flx::rtl::svc_sio_req_t (::flx::rtl::svc_sread,$1,$2)";
+  fun svc_swrite           : _schannel * &address -> svc_sio_req_t = "::flx::rtl::svc_sio_req_t (::flx::rtl::svc_swrite,$1,$2)";
+  fun svc_multi_swrite     : _schannel * &address -> svc_sio_req_t = "::flx::rtl::svc_sio_req_t (::flx::rtl::svc_multi_swrite,$1,$2)";
+  fun svc_kill             : fthread -> svc_fthread_req_t = "::flx::rtl::svc_fthread_req_t (::flx::rtl::svc_kill,$1)";
+
+  proc svc(var svc_req:svc_yield_req_t) { _svc svc_req; }
+  proc svc(var svc_req:svc_general_req_t) { _svc svc_req; }
+  proc svc(var svc_req:svc_fthread_req_t) { _svc svc_req; }
+  proc svc(var svc_req:svc_sio_req_t) { _svc svc_req; }
+}
+@
+

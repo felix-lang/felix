@@ -79,7 +79,7 @@ let scan_exe syms bsym_table allocable_types exe : unit =
 let scan_exes syms bsym_table allocable_types exes : unit =
   iter (scan_exe syms bsym_table allocable_types) exes
 
-let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primitive_shapes btyp index =
+let rec gen_type_shape module_name s syms bsym_table need_int primitive_shapes btyp index =
     print_debug syms ("allocable type --> " ^ sbt bsym_table btyp);
     let name = cpp_type_classname syms bsym_table btyp in
     if name = "int" then need_int := true else
@@ -143,7 +143,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
       let decoder_name = gen_decoder () in
       let oname  = "&" ^ (gen_first_class ()) in
       bcat s ("\n//OFFSETS for tuple type " ^ string_of_bid index ^ "\n");
-      gen_offset_data module_name s n name offsets false false [] None last_ptr_map encoder_name decoder_name
+      gen_offset_data module_name s n name offsets false false [] None encoder_name decoder_name
 
     (* This is a pointer, the offset data is in the system library *)
     | BTYP_ptr (_,t,[]) -> ()
@@ -171,8 +171,6 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
       ;
 
       let this_ptr_map = name ^ "_ptr_map" in
-      let old_ptr_map = !last_ptr_map in
-      last_ptr_map := "&"^this_ptr_map;
 
       if not is_pod then begin
         bcat s ("static void " ^ name ^ "_finaliser(::flx::gc::generic::collector_t *, void *p){\n");
@@ -181,7 +179,6 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
       end
       ;
       bcat s ("static ::flx::gc::generic::gc_shape_t "^ name ^"_ptr_map = {\n");
-      bcat s ("  " ^ old_ptr_map ^ ",\n");
       bcat s ("  \"" ^ module_name ^ "::"^ name ^ "\",\n");
       bcat s ("  " ^ si k ^ ",\n");
       bcat s ("  sizeof("^tname^"),\n"); (* NOTE: size of ONE element!! *)
@@ -266,12 +263,9 @@ bcat s ("\n//ABSTRACT TYPE " ^ name ^"\n");
             );
 
             let this_ptr_map = name ^ "_ptr_map" in
-            let old_ptr_map = !last_ptr_map in
-            last_ptr_map := "&"^this_ptr_map;
 
             if gen_dflt_finaliser then bcat s ("FLX_FINALISER("^name^")\n");
             bcat s ( "static ::flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map = {\n") ;
-            bcat s ("  " ^ old_ptr_map ^ ",\n");
             bcat s ("  \"" ^ module_name ^"::" ^ name ^ "\",\n");
             bcat s ("  1,sizeof("^name^"),\n");
             bcat s ("  "^finaliser^","^(if is_pod then " // no finaliser" else "")^"\n");
@@ -305,7 +299,7 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
         let decoder_name = gen_decoder () in
         print_endline "Warning VR_self rep not handled right?";
         let t'' = tsubst (Flx_bsym.sr bsym) vs ts t' in
-        gen_type_shape module_name s syms bsym_table need_int last_ptr_map primitive_shapes t'' index
+        gen_type_shape module_name s syms bsym_table need_int primitive_shapes t'' index
         
       | BBDCL_union _ -> () (* handled by universal uctor, int, etc *) 
 
@@ -313,8 +307,6 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
         (* cstruct shouldn't have allocable stuff in it *)
 
         let this_ptr_map = name ^ "_ptr_map" in
-        let old_ptr_map = !last_ptr_map in
-        last_ptr_map := "&"^this_ptr_map;
 
         bcat s ("\n//OFFSETS for cstruct type " ^ name ^ " instance\n");
 
@@ -322,7 +314,6 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
         let is_pod = false in
         if not is_pod then bcat s ("FLX_FINALISER("^name^")\n");
         bcat s ( "static ::flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map ={\n") ;
-        bcat s ("  " ^ old_ptr_map ^ ",\n");
         bcat s ("  \"" ^ module_name ^ "::" ^ name ^ "\",\n");
         if is_pod then begin
           bcat s ("  1,sizeof("^name^"),\n");
@@ -350,7 +341,7 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
         bcat s ("\n//OFFSETS for struct type " ^ name ^ " instance\n");
         let offsets = get_offsets syms bsym_table btyp in
         let n = length offsets in
-        gen_offset_data module_name s n name offsets false false [] None last_ptr_map encoder_name decoder_name
+        gen_offset_data module_name s n name offsets false false [] None encoder_name decoder_name
 
       | _ ->
         failwith
@@ -367,7 +358,7 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
       bcat s ("\n//OFFSETS for record type " ^ name ^ " instance\n");
       let offsets = get_offsets syms bsym_table btyp in
       let n = length offsets in
-      gen_offset_data module_name s n name offsets false false [] None last_ptr_map encoder_name decoder_name
+      gen_offset_data module_name s n name offsets false false [] None encoder_name decoder_name
  
     | BTYP_rptsum _
     | BTYP_sum _ ->
@@ -394,20 +385,19 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
         sbt bsym_table btyp
       )
 
-let gen_offset_tables syms bsym_table extras module_name first_ptr_map=
+let gen_offset_tables syms bsym_table extras module_name =
   print_debug syms "GEN OFFSET TABLES";
   let allocable_types = Hashtbl.create 97 in
-  let last_ptr_map = ref first_ptr_map in
   let primitive_shapes = Hashtbl.create 97 in
   let s = Buffer.create 20000 in
   
   (* Make a shape for every non-C style function with the property `Heap_closure *)
   print_debug syms "Make fun shapes";
-  gen_all_fun_shapes module_name (scan_exes syms bsym_table allocable_types) s syms bsym_table last_ptr_map;
+  gen_all_fun_shapes module_name (scan_exes syms bsym_table allocable_types) s syms bsym_table;
 
   (* generate offsets for all pointers store in the thread_frame *)
   print_debug syms "Make thread frame offsets";
-  gen_thread_frame_offsets module_name s syms bsym_table last_ptr_map;
+  gen_thread_frame_offsets module_name s syms bsym_table;
 
   (* We're not finished: we need offsets dynamically allocated types too *)
 
@@ -534,7 +524,7 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
   (fun btyp index -> 
      if not (Hashtbl.mem generated index) then begin
        Hashtbl.add generated index ();
-       gen_type_shape module_name s syms bsym_table need_int last_ptr_map primitive_shapes btyp index 
+       gen_type_shape module_name s syms bsym_table need_int primitive_shapes btyp index 
      end
   )
   allocable_types
@@ -546,6 +536,5 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
   bcat s ("// Head of shape list, included so dlsym() can find it when\n");
   bcat s ("// this file is a shared lib, uses module name for uniqueness.\n");
   bcat s ("extern \"C\" FLX_EXPORT ::flx::gc::generic::gc_shape_t * const " ^ cid_of_flxid module_name ^ "_head_shape;\n");
-  bcat s ("::flx::gc::generic::gc_shape_t * const " ^ cid_of_flxid module_name ^ "_head_shape=" ^ !last_ptr_map ^ ";\n");
-  !last_ptr_map,Buffer.contents s
+  Buffer.contents s
 

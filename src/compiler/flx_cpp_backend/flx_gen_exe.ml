@@ -220,7 +220,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
             "          ->call(" ^ args ^ ");\n" ^
             "        while(_p) {\n" ^
             "          if(_p->p_svc) {\n" ^
-            "            int svc = _p->p_svc->variant;\n" ^
+            "            int svc = _p->p_svc->svc_req;\n" ^
             "            fprintf(stderr,\"Function calls procedure which does service call %d: %s\\n\",\n"^
             "                svc,::flx::rtl::describe_service_call(svc));\n"^
             "            fprintf(stderr,\"Caller "^caller_name^"\\n\");\n" ^
@@ -666,7 +666,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         "        ::flx::rtl::con_t *_p = ("^ge sr p ^ ")->clone()\n      ->call("^args^");\n" ^
         "        retry: while(_p) {\n" ^
         "          if(_p->p_svc) {\n" ^
-        "            int svc = _p->p_svc->variant;\n" ^
+        "            int svc = _p->p_svc->svc_req;\n" ^
         "            fprintf(stderr,\"call_with_trap procedure which does service call %d: %s\\n\",\n"^
         "                svc,::flx::rtl::describe_service_call(svc));\n"^
         "            abort();\n" ^
@@ -724,7 +724,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         "        ::flx::rtl::con_t *_p = ("^ge sr p ^ ")->clone()\n      ->call("^args^");\n" ^
         "        while(_p) {\n" ^
         "          if(_p->p_svc) {\n" ^
-        "            int svc = _p->p_svc->variant;\n" ^
+        "            int svc = _p->p_svc->svc_req;\n" ^
         "            fprintf(stderr,\"Function calls procedure which does service call %d: %s\\n\",\n"^
         "                svc,::flx::rtl::describe_service_call(svc));\n"^
         "            abort();\n" ^
@@ -794,7 +794,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         let n = fresh_bid counter in
         needs_switch := true;
         "      //read variable\n" ^
-        "      p_svc = &" ^ get_var_ref syms bsym_table this index ts^";\n" ^
+        "      p_svc = (::flx::rtl::svc_req_t*)&" ^ get_var_ref syms bsym_table this index ts^";\n" ^
         "      FLX_SET_PC(" ^ cid_of_bid n ^ ")\n" ^
         "      return this;\n" ^
         "    FLX_CASE_LABEL(" ^ cid_of_bid n ^ ")\n"

@@ -1200,14 +1200,17 @@ class Faio {
 
   open C_hack;
 
-  proc faio_req[t](x:&t) {
-    val y : &address = reinterpret[&address] x;
-    svc (svc_general y);
+  proc faio_req[t](preq: &t ) { // FIXME: HACK! It has to be driver request base
+    var p = C_hack::cast[driver_request_base]preq;
+    svc (svc_general p);
   }
 
+// this svc call doesn't exist now 
+/*
   proc get_thread(thread: &fthread) {
       svc (svc_get_fthread thread );
   }
+*/
 
   type sel_param = "flx::demux::sel_param";
   type sel_param_ptr = "flx::demux::sel_param*";
