@@ -61,13 +61,13 @@ run time loading.
     proc addsymbols ()
     {
       static-link-plugin 
-        toolchain_clang_osx,
+        toolchain_clang_macosx,
         toolchain_iphoneos,
         toolchain_iphonesimulator,
         toolchain_clang_linux,
-        toolchain_gcc_osx,
+        toolchain_gcc_macosx,
         toolchain_gcc_linux,
-        toolchain_msvc_win32
+        toolchain_msvc_win
       ;
       // flx
       static-link-symbol dflx_create_thread_frame in plugin dflx;
@@ -513,6 +513,7 @@ on command line switches and the base profile.
   
   class Config {
     typedef config_type = (
+      FLX_INSTALL_DIR: string,
       FLX_SHARE_DIR: string,
       FLX_TARGET_DIR: string,
       FLX_HOME_DIR: string,
@@ -529,8 +530,9 @@ on command line switches and the base profile.
       {
         var s = "";
         reserve$ &s,1000;
-        s+="(FLX_SHARE_DIR="+ x.FLX_SHARE_DIR+",\n";
-        s+= "FLX_TARGET_DIR="+ x.FLX_TARGET_DIR+",\n";
+        s+="(FLX_INSTALL_DIR="+ x.FLX_INSTALL_DIR+",\n";
+        s+="FLX_SHARE_DIR="+ x.FLX_SHARE_DIR+",\n";
+        s+="FLX_TARGET_DIR="+ x.FLX_TARGET_DIR+",\n";
         s+="FLX_HOME_DIR="+ x.FLX_HOME_DIR+",\n";
         s+="FLX_PROFILE_DIR="+ x.FLX_PROFILE_DIR+",\n";
         s+="FLX_CACHE_DIR="+ x.FLX_CACHE_DIR+",\n";
@@ -551,6 +553,7 @@ on command line switches and the base profile.
     }
   
     proc cascade_FLX_INSTALL_DIR (x: &config_type)  (y: string) = {
+      x.FLX_INSTALL_DIR <- y;
       cascade_FLX_TARGET_DIR x (y/"host");
       cascade_FLX_SHARE_DIR x (y/"share");
     }
@@ -599,7 +602,7 @@ on command line switches and the base profile.
     {
   
       var re = RE2 ("([-a-zA-Z_]+) *: *(.*)");
-      var FLX_INSTALL_DIR = "";
+      var FLX_INSTALL_DIR = cfg*.FLX_INSTALL_DIR;
   
       var lines = split (text, char "\n");
       for line in lines do
@@ -611,6 +614,7 @@ on command line switches and the base profile.
           match p with
           | "FLX_INSTALL_DIR" => 
             FLX_INSTALL_DIR = a;
+  //println$ "processing config text, setting FLX_INSTALL_DIR=" + a;
             cascade_FLX_INSTALL_DIR cfg a; 
   
           | "FLX_TARGET_SUBDIR" => 
@@ -644,7 +648,9 @@ on command line switches and the base profile.
   
       match Env::getenv ("FLX_INSTALL_DIR","") with
       | "" => ;
-      | x => cascade_FLX_INSTALL_DIR cfg x;
+      | x => 
+  //println$ "ENVIRONMENT OVERRIDE FOR FLX_INSTALL_DIR=" + x;
+        cascade_FLX_INSTALL_DIR cfg x;
       endmatch;
   
       match Env::getenv ("FLX_SHARE_DIR","") with
@@ -680,7 +686,9 @@ on command line switches and the base profile.
     }
   
     fun std_config () = {
+  //println$ "Setting up default config";
       var cfg = #dflt_config; 
+  //println$ "Processing config file felix.fpc with env overrides";
       process_config_text_with_env_overrides &cfg (load (cfg.FLX_PROFILE_DIR / "felix.fpc"));
       return cfg; 
     }
@@ -751,7 +759,6 @@ Just initialises the base configuration data.
   fun dflt_control () =>
     struct {
   
-      var FLX_INSTALL_DIR= ""; // now a temporary!
       var PRINT_HELP=0;
   
       var FLXG_FORCE=0;
@@ -878,7 +885,7 @@ Parses the command line options.
     println "--repl               : enter REPL mode saving stuff in session.flx and library.flx";
     println "--test               : use felix installation in current directory";
     println "--test=dir           : use felix installation in dir";
-    println "--target-subdir=dir  : subdir of install dir containing target configuration (default 'host')";
+    println "--target=dir         : subdir of install dir containing target configuration (default 'host')";
     println "--target-dir=dir     : dir containing target configuration (default '$FLX_INSTALL_DIR/host')";
     println "--pkgconfig-path+=dir: prepend extra flx_pkgconfig search directory to standard path";
     println "--toolchain=toolchain: pick a non-default C++ compiler toolchain";
@@ -1096,12 +1103,15 @@ Parses the command line options.
       debugln "Set install details";
       setup-from-file debugln[string] (config, control, arg.[8 to]);
   
-    elif prefix(arg,"--target-subdir=") do
+    elif prefix(arg,"--target=") do
       begin    
         debugln "Set target subdirectory";
-        var a = arg.[16 to];
+        var a = arg.[9 to];
         control.FLX_TARGET_SUBDIR <- a;
-        Config::cascade_FLX_TARGET_DIR config (Filename::join (control*.FLX_INSTALL_DIR, control*.FLX_TARGET_SUBDIR));
+  //println$ "SET FLX_TARGET_SUBDIR TO " + control*.FLX_TARGET_SUBDIR;
+  //println$ "Current FLX_INSTALL_DIR IS " + config*.FLX_INSTALL_DIR;
+        Config::cascade_FLX_TARGET_DIR config (Filename::join (config*.FLX_INSTALL_DIR, control*.FLX_TARGET_SUBDIR));
+  //println$ "SET FLX_TARGET_DIR TO " + config*.FLX_TARGET_DIR;
       end
   
     elif prefix(arg,"--target-dir=") do
@@ -1120,7 +1130,6 @@ Parses the command line options.
       var a = arg.[7 to];
       debugln "Set test directory";
       Config::cascade_FLX_INSTALL_DIR config a;
-      control.FLX_INSTALL_DIR <- a;
       control.FLX_TARGET_SUBDIR <- "host";
   
     elif arg=="--test" do
@@ -1128,7 +1137,6 @@ Parses the command line options.
         debugln "Set test directory";
         a = ".";
         Config::cascade_FLX_INSTALL_DIR config a;
-        control.FLX_INSTALL_DIR <- a;
         control.FLX_TARGET_SUBDIR <- "host";
       end
   
@@ -1269,7 +1277,7 @@ Parses the command line options.
   
     elif arg == "--where" do
       debugln "Print location of install directory and exit";
-      println(control*.FLX_INSTALL_DIR);
+      println(config*.FLX_INSTALL_DIR);
       System::exit(0);
   
     elif arg == "--time" do
@@ -1793,7 +1801,9 @@ tools from a base configuration.
     );
   
   gen cal_depvars(
-    toolchain: clang_config_t -> toolchain_t, 
+    toolchain_maker: toolchain_config_t -> toolchain_t, 
+    c_compiler_executable: string,
+    cxx_compiler_executable: string,
     config:Config::config_type,
     control:&FlxControl::control_type, 
     loopctl:FlxControl::loopctl_type) 
@@ -1805,7 +1815,10 @@ tools from a base configuration.
     }
     fun / (d:string, f:string) => Filename::join (d,f);
   
-    var dflt_clang_config = (
+    // case 1 of dflt
+    var dflt_toolchain_config = (
+        c_compiler_executable = c_compiler_executable,
+        cxx_compiler_executable = cxx_compiler_executable,
         header_search_dirs = Empty[string],
         macros = Empty[string],
         library_search_dirs= Empty[string],
@@ -1814,7 +1827,7 @@ tools from a base configuration.
         static_libraries= Empty[string],
         debugln = debugln[string]
     );
-    var tc = toolchain dflt_clang_config;
+    var tc = toolchain_maker dflt_toolchain_config;
     var EXT_LIB = #(tc.static_library_extension);
     var EXT_SHLIB = #(tc.dynamic_library_extension);
     var EXT_EXE = #(tc.executable_extension);
@@ -2135,7 +2148,9 @@ external compilers.
   }
   
   object processing_env(
-    toolchain: clang_config_t -> toolchain_t,
+    toolchain_maker: toolchain_config_t -> toolchain_t,
+    c_compiler_executable: string,
+    cxx_compiler_executable: string,
     config:Config::config_type, 
     var control:FlxControl::control_type,
     dvars:FlxDepvars::dvars_type)
@@ -2149,7 +2164,10 @@ external compilers.
       if control.ECHO == 1 call fprintln (cstderr, "[flx] " + str x);
     }
   
-    var dflt_clang_config = (
+    // case 2 of dflt
+    var dflt_toolchain_config = (
+        c_compiler_executable = c_compiler_executable,
+        cxx_compiler_executable = cxx_compiler_executable,
         header_search_dirs = Empty[string],
         macros = Empty[string],
         library_search_dirs= Empty[string],
@@ -2199,7 +2217,7 @@ external compilers.
     {
       debugln$ "[flx:calpackages] Calculating package requirements (calpackages_run="+str calpackages_run +")";
       if not calpackages_run  do
-        var tc = toolchain dflt_clang_config;
+        var tc = toolchain_maker dflt_toolchain_config;
         var x = FlxPkg::map_package_requirements ehandler
         (
            FLX_TARGET_DIR = config.FLX_TARGET_DIR,
@@ -2386,8 +2404,8 @@ external compilers.
         done
         pkg_cflags = mycflags;
       done
-      var tc = toolchain 
-        extend dflt_clang_config with 
+      var tc = toolchain_maker
+        extend dflt_toolchain_config with 
         (
           ccflags = /* ccflags + */ control.CCFLAGS + pkg_cflags,
           header_search_dirs = config.FLX_RTL_DIRS+control.EXTRA_INCLUDE_DIRS,
@@ -2408,7 +2426,7 @@ external compilers.
     // C++ dynamic (many files)
     gen cxx_compile_dynamic (ehandler:1->0) : int =
     {
-      var EXT_SHARED_OBJ = #((toolchain dflt_clang_config).dynamic_object_extension);
+      var EXT_SHARED_OBJ = #((toolchain_maker dflt_toolchain_config).dynamic_object_extension);
       if
         control.CXXONLY == 0 and (
         control.LINKIT == 1 or 
@@ -2450,7 +2468,7 @@ external compilers.
       // i.e. skip compiling the thunk the output name was specified and 
       // represents an object file (or library archive?)
   //println$ "cxx_compile_static";
-      var EXT_STATIC_OBJ = #((toolchain dflt_clang_config).static_object_extension);
+      var EXT_STATIC_OBJ = #((toolchain_maker dflt_toolchain_config).static_object_extension);
       if 
         control.CXXONLY == 0 and (
         control.LINKIT == 1 or 
@@ -2514,8 +2532,8 @@ external compilers.
         pkg_cflags = mycflags;
       done
    
-      var tc = toolchain  
-        extend dflt_clang_config with 
+      var tc = toolchain_maker  
+        extend dflt_toolchain_config with 
         (
           ccflags = /*ccflags + */ control.CCFLAGS + pkg_cflags,
           header_search_dirs = config.FLX_RTL_DIRS+control.EXTRA_INCLUDE_DIRS,
@@ -2645,11 +2663,11 @@ external compilers.
           //System::exit (1);
           throw_continuation ehandler;
         done
-        pkg_dstrings = mydstrings;
+        pkg_dstrings = FlxPkg::fix2word_flags mydstrings;
       done
    
-      var tc = toolchain 
-        extend dflt_clang_config with 
+      var tc = toolchain_maker 
+        extend dflt_toolchain_config with 
         (
           dynamic_libraries = control.LINK_STRINGS+pkg_dstrings, // a bit of a hack ..
           debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
@@ -2708,10 +2726,10 @@ external compilers.
           //System::exit (1);
           throw_continuation ehandler;
         done
-        pkg_dstrings = mydstrings;
+        pkg_dstrings = FlxPkg::fix2word_flags mydstrings;
       done
-      var tc = toolchain  
-        extend dflt_clang_config with 
+      var tc = toolchain_maker  
+        extend dflt_toolchain_config with 
         (
           //ccflags = ccflags + control.CCFLAGS + control.LINK_STRINGS, 
           dynamic_libraries = control.LINK_STRINGS + pkg_dstrings, // a bit of a hack
@@ -2780,10 +2798,10 @@ external compilers.
           //System::exit (1);
           throw_continuation ehandler;
         done
-        pkg_sstrings = mysstrings;
+        pkg_sstrings = FlxPkg::fix2word_flags mysstrings;
       done
-      var tc = toolchain  
-        extend dflt_clang_config with 
+      var tc = toolchain_maker  
+        extend dflt_toolchain_config with 
         (
           //ccflags = ccflags + control.CCFLAGS + control.LINK_STRINGS, 
           static_libraries = control.LINK_STRINGS + pkg_sstrings, // a bit of a hack
@@ -2832,8 +2850,8 @@ external compilers.
     gen cxx_static_library (ehandler:1->0) : int = 
     {
       var t0 = #Time::time;
-      var tc = toolchain  
-        extend dflt_clang_config with 
+      var tc = toolchain_maker  
+        extend dflt_toolchain_config with 
         (
           //ccflags = ccflags + control.CCFLAGS,
           debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
@@ -3131,7 +3149,7 @@ The {flx} tool.
   include "std/felix/flx/flx_cmdopt";
   include "std/felix/flx/flx_depvars";
   include "std/felix/flx/flx_run";
-  include "std/felix/toolchain_clang_config";
+  include "std/felix/toolchain_config";
   include "std/felix/toolchain_interface";
   
   open FlxCache;
@@ -3219,14 +3237,24 @@ The {flx} tool.
       }
    
       var toolchain_name = 
+        // toolchain pkg 1
         if control*.FLX_TOOLCHAIN == "" then pkgconfig.getpkgfield1 ehandler ("toolchain", "toolchain")
         else control*.FLX_TOOLCHAIN
       ;
   
-      var toolchain =
+      var c_compiler_executable = 
+        pkgconfig.getpkgfielddflt ehandler (toolchain_name+"_c_compiler_executable", "compiler")
+      ;
+  
+      var cxx_compiler_executable = 
+        pkgconfig.getpkgfielddflt ehandler (toolchain_name+"_cxx_compiler_executable", "compiler")
+      ;
+  
+  
+      var toolchain_maker =
          match toolchain_name with
          | x => 
-           Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] ( dll-name=x, setup-str="")
+           Dynlink::load-plugin-func1 [toolchain_t,toolchain_config_t] ( dll-name=x, setup-str="")
          endmatch
       ;
   
@@ -3269,9 +3297,9 @@ The {flx} tool.
             control.STDOUT <- "";
             control.EXPECT <- "";
             control.STDIN <- "";
-            var dvars = FlxDepvars::cal_depvars(toolchain,*config,control,*loopctl);
+            var dvars = FlxDepvars::cal_depvars(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,control,*loopctl);
             println$ f"Processing [%02d/%02d]: %S" (i, n, file);
-            var pe = processing_env(toolchain,*config,*control,dvars);
+            var pe = processing_env(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,*control,dvars);
             call_with_trap {
               proc ehandler() {
                 eprintln("BATCH MODE ERROR HANDLER");
@@ -3293,8 +3321,8 @@ The {flx} tool.
           again:>
           repl();
           if not feof (stdin) do
-            var dvars = FlxDepvars::cal_depvars(toolchain,*config,control, *loopctl);
-            var pe = processing_env(toolchain,*config,*control,dvars);
+            var dvars = FlxDepvars::cal_depvars(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,control, *loopctl);
+            var pe = processing_env(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,*control,dvars);
             result = pe.runit(ehandler);
             goto again;
           else
@@ -3312,8 +3340,8 @@ The {flx} tool.
               );
               print prg;
           done
-          var dvars = FlxDepvars::cal_depvars(toolchain,*config,control, *loopctl);
-          var pe = processing_env(toolchain,*config,*control,dvars);
+          var dvars = FlxDepvars::cal_depvars(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,control, *loopctl);
+          var pe = processing_env(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,*control,dvars);
           result = pe.runit(ehandler);
         end 
       done
@@ -3357,16 +3385,16 @@ which means it takes a very long time to compile.
   include "std/felix/flx/flx_cmdopt";
   include "std/felix/flx/flx_depvars";
   include "std/felix/flx/flx_run";
-  include "std/felix/toolchain_clang_config";
+  include "std/felix/toolchain_config";
   include "std/felix/toolchain_interface";
   
   
-  include "std/felix/toolchain/clang_osx";
+  include "std/felix/toolchain/clang_macosx";
   include "std/felix/toolchain/clang_iOS_generic";
   include "std/felix/toolchain/clang_linux";
-  include "std/felix/toolchain/gcc_osx";
+  include "std/felix/toolchain/gcc_macosx";
   include "std/felix/toolchain/gcc_linux";
-  include "std/felix/toolchain/msvc_win32";
+  include "std/felix/toolchain/msvc_win";
   
   
   open FlxCache;
@@ -3409,24 +3437,36 @@ which means it takes a very long time to compile.
       var dbdir = config*.FLX_TARGET_DIR / "config";
       var pkgconfig = FlxPkgConfig::FlxPkgConfigQuery$ list[string] dbdir;
       var toolchain_name = 
+        // toolchain pkg 2
         if control*.FLX_TOOLCHAIN == "" then pkgconfig.getpkgfield1 ehandler ("toolchain", "toolchain")
         else control*.FLX_TOOLCHAIN
       ;
   
-      var toolchain =
+      var c_compiler_executable = "";
+      c_compiler_executable =  
+        pkgconfig.getpkgfielddflt ehandler (toolchain_name+"_c_compiler_executable", "compiler")
+      ;
+  
+      var cxx_compiler_executable = "";
+      cxx_compiler_executable = 
+        pkgconfig.getpkgfielddflt ehandler (toolchain_name+"_cxx_compiler_executable", "compiler")
+      ;
+  
+  
+      var toolchain_maker =
          match toolchain_name with
         
-         | "toolchain_clang_osx" => toolchain_clang_osx 
+         | "toolchain_clang_macosx" => toolchain_clang_macosx 
          // not required in bootstrap, but the ONLY way to check for type errors ..
          | "toolchain_iphoneos" => toolchain_clang_apple_iPhoneOS_armv7_arm64 
          | "toolchain_iphonesimulator" => toolchain_clang_apple_iPhoneSimulator
   
          | "toolchain_clang_linux" => toolchain_clang_linux
-         | "toolchain_gcc_osx" => toolchain_gcc_osx
+         | "toolchain_gcc_macosx" => toolchain_gcc_macosx
          | "toolchain_gcc_linux" => toolchain_gcc_linux
-         | "toolchain_msvc_win32" => toolchain_msvc_win32
+         | "toolchain_msvc_win" => toolchain_msvc_win
          | x => 
-           Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] ( dll-name=x, setup-str="")
+           Dynlink::load-plugin-func1 [toolchain_t,toolchain_config_t] ( dll-name=x, setup-str="")
          endmatch
       ;
       if control*.INREGEX != "" do 
@@ -3457,9 +3497,9 @@ which means it takes a very long time to compile.
             control.LINKER_OUTPUT_FILENAME <- "";
             control.STDOUT <- "";
             control.EXPECT <- "";
-            var dvars = FlxDepvars::cal_depvars(toolchain,*config,control,*loopctl);
+            var dvars = FlxDepvars::cal_depvars(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,control,*loopctl);
             println$ f"Processing [%02d/%02d]: %S" (i, n, file);
-            var pe = processing_env(toolchain,*config,*control,dvars);
+            var pe = processing_env(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,*control,dvars);
             result = pe.runit(ehandler);
             if result != 0 goto endoff;
             ++i;
@@ -3474,8 +3514,8 @@ which means it takes a very long time to compile.
               );
               print prg;
           done
-          var dvars = FlxDepvars::cal_depvars(toolchain,*config,control, *loopctl);
-          var pe = processing_env(toolchain,*config,*control,dvars);
+          var dvars = FlxDepvars::cal_depvars(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,control, *loopctl);
+          var pe = processing_env(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,*control,dvars);
           result = pe.runit(ehandler);
         end 
       done

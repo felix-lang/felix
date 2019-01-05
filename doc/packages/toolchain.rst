@@ -5,25 +5,32 @@ Package: src/packages/toolchain.fdoc
 C and C++ toolchains
 ====================
 
-========================== ==============================================
-key                        file                                           
-========================== ==============================================
-toolchain_clang_config.flx share/lib/std/felix/toolchain_clang_config.flx 
-toolchain_interface.flx    share/lib/std/felix/toolchain_interface.flx    
-flx_cxx.flx                share/lib/std/felix/flx_cxx.flx                
-flx_depchk.flx             share/lib/std/felix/flx/flx_depchk.flx         
-flx_mklib.flx              share/lib/std/felix/flx_mklib.flx              
-========================== ==============================================
+========================= ========================================
+key                       file                                     
+========================= ========================================
+flx_find_cxx_packages.flx $PWD/src/tools/flx_find_cxx_packages.flx 
+flx_gen_cxx_includes.flx  $PWD/src/tools/flx_gen_cxx_includes.flx  
+========================= ========================================
+
+======================= ===========================================
+key                     file                                        
+======================= ===========================================
+toolchain_config.flx    share/lib/std/felix/toolchain_config.flx    
+toolchain_interface.flx share/lib/std/felix/toolchain_interface.flx 
+flx_cxx.flx             share/lib/std/felix/flx_cxx.flx             
+flx_depchk.flx          share/lib/std/felix/flx/flx_depchk.flx      
+flx_mklib.flx           share/lib/std/felix/flx_mklib.flx           
+======================= ===========================================
 
 ===================== ===================================================
 key                   file                                                
 ===================== ===================================================
 gcc_linux.flx         share/lib/std/felix/toolchain/gcc_linux.flx         
-gcc_osx.flx           share/lib/std/felix/toolchain/gcc_osx.flx           
+gcc_macosx.flx        share/lib/std/felix/toolchain/gcc_macosx.flx        
 clang_linux.flx       share/lib/std/felix/toolchain/clang_linux.flx       
-clang_osx.flx         share/lib/std/felix/toolchain/clang_osx.flx         
+clang_macosx.flx      share/lib/std/felix/toolchain/clang_macosx.flx      
 clang_iOS_generic.flx share/lib/std/felix/toolchain/clang_iOS_generic.flx 
-msvc_win32.flx        share/lib/std/felix/toolchain/msvc_win32.flx        
+msvc_win.flx          share/lib/std/felix/toolchain/msvc_win.flx          
 cygwin.fpc            $PWD/src/config/cygwin.fpc                          
 cygwin.flx            share/lib/std/cygwin/cygwin.flx                     
 ===================== ===================================================
@@ -32,12 +39,12 @@ cygwin.flx            share/lib/std/cygwin/cygwin.flx
 key                           file                                            
 ============================= ===============================================
 toolchain_gcc_linux.flx       share/lib/plugins/toolchain_gcc_linux.flx       
-toolchain_gcc_osx.flx         share/lib/plugins/toolchain_gcc_osx.flx         
+toolchain_gcc_macosx.flx      share/lib/plugins/toolchain_gcc_macosx.flx      
 toolchain_clang_linux.flx     share/lib/plugins/toolchain_clang_linux.flx     
-toolchain_clang_osx.flx       share/lib/plugins/toolchain_clang_osx.flx       
+toolchain_clang_macosx.flx    share/lib/plugins/toolchain_clang_macosx.flx    
 toolchain_iphoneos.flx        share/lib/plugins/toolchain_iphoneos.flx        
 toolchain_iphonesimulator.flx share/lib/plugins/toolchain_iphonesimulator.flx 
-toolchain_msvc_win32.flx      share/lib/plugins/toolchain_msvc_win32.flx      
+toolchain_msvc_win.flx        share/lib/plugins/toolchain_msvc_win.flx        
 flx_plugin.flx                share/lib/plugins/flx_plugin.flx                
 ============================= ===============================================
 
@@ -45,13 +52,103 @@ flx_plugin.flx                share/lib/plugins/flx_plugin.flx
 key                              file                                             
 ================================ ================================================
 build_flx_rtl_gcc_linux.fpc      $PWD/src/config/build_flx_rtl_gcc_linux.fpc      
-build_flx_rtl_gcc_osx.fpc        $PWD/src/config/build_flx_rtl_gcc_osx.fpc        
+build_flx_rtl_gcc_macosx.fpc     $PWD/src/config/build_flx_rtl_gcc_macosx.fpc     
 build_flx_rtl_clang_linux.fpc    $PWD/src/config/build_flx_rtl_clang_linux.fpc    
-build_flx_rtl_clang_osx.fpc      $PWD/src/config/build_flx_rtl_clang_osx.fpc      
+build_flx_rtl_clang_macosx.fpc   $PWD/src/config/build_flx_rtl_clang_macosx.fpc   
 build_flx_rtl_clang_iphoneos.fpc $PWD/src/config/build_flx_rtl_clang_iphoneos.fpc 
-build_flx_rtl_msvc_win32.fpc     $PWD/src/config/build_flx_rtl_msvc_win32.fpc     
+build_flx_rtl_msvc_win.fpc       $PWD/src/config/build_flx_rtl_msvc_win.fpc       
 ================================ ================================================
 
+
+Find C++ packages.
+==================
+
+Doesn't really belong here but had to go somewhere!
+
+Scans a C or C++ files and produces a list of required packages
+on standard output. To be redirected to a *.resh file.
+
+Felix compiler generates *.resh file for Felix generated C++,
+and puts the #include "filename.includes" into filename.hpp.
+For C++ only builds, the user has to put the #include in themselves.
+The resulting C++ won't work. This tool makes the filename.resh
+file which can then be fed to flx_pkgconfig along with a request
+for the include field, to help generate the include file.
+
+
+.. index:: find_cxx_pkgs(fun)
+.. code-block:: felix
+
+  //[flx_find_cxx_packages.flx]
+  
+  // FIXME: this function cut and paste from flx.fdoc
+  // hidden inside an object
+  
+    fun find_cxx_pkgs (src:string) : list[string] =
+    {
+      //eprintln$ "[flx_find_cxx_pkgs] Scanning " + src + " for package requirements";
+      var out = Empty[string];
+      var pat = RE2('.*@requires package ([A-Za-z][A-Za-z0-9_-]*).*');
+      var f = fopen_input_text src;
+      if valid f do
+        for line in f do
+          var result = Match (pat,line);
+          match result do
+          | #None => ;
+          | Some v => out = v.1  + out;
+          done
+        done
+        fclose f;
+      else
+        eprintln("Can't find C++ source file " + src);
+        System::exit(1);
+      done
+      out = rev out;
+      //if out != Empty[string] call
+      //  eprintln$ "[flx_find_cxx_packages] C++ file "+src+" requires packages " + str (out);
+      return out;
+    }
+  
+  
+  
+  var filename = System::argv_dflt 1 "";
+  if filename == "" do
+    println$ "Usage: flx_find_cxx_packages filename.cxx > filename.resh";
+    System::exit 1;
+  done
+  
+  var pkgs = find_cxx_pkgs filename;
+  
+  for pkg in pkgs perform println$ pkg;
+
+
+.. code-block:: felix
+
+  //[flx_gen_cxx_includes.flx]
+  include "std/felix/flx_pkgconfig";
+   
+  var pkgconfig_flags = tail #System::args;
+  //println$ "Args to flx_gen_cxx_includes=" + pkgconfig_flags.str;
+  
+  var infile = stdin;
+  var pkgdata = load infile;
+  var pkgs = split (pkgdata, "\n");
+  pkgs = filter (fun (x:string) => x != "") pkgs;
+  //for pkg in pkgs perform println$ "PKG=" +  pkg;
+  //var err, result = System::get_stdout("flx_pkgconfig " + cat " " pkgconfig_flags + " --field=includes " + cat " " pkgs);
+  var allargs = pkgconfig_flags + "--field=includes" + pkgs;
+  //println$ "Calling flx_pkgconfig with args = " + allargs.str;
+  var err,result = FlxPkgConfig::flx_pkgconfig(allargs);
+  
+  if err == 0 do
+    //println$ "Result = " + result;
+    //var files = split (result," "); // won't work on Windows well ... spaces .. ugg
+    var files = result;
+    for file in files perform println$ "#include " + file;
+  else
+    eprintln$ "Error " + err.str + " running flx_pkgconfig";
+  done
+  
 
 
 Toolchain support
@@ -61,9 +158,11 @@ Toolchain support
 .. index:: _search_dirs(header)
 .. code-block:: felix
 
-  //[toolchain_clang_config.flx]
+  //[toolchain_config.flx]
   
-  typedef clang_config_t = (
+  typedef toolchain_config_t = (
+    c_compiler_executable: string,
+    cxx_compiler_executable: string,
     header_search_dirs: list[string],
     macros : list[string],
     library_search_dirs: list[string],
@@ -552,7 +651,7 @@ specification. Used by the flx_build_rtl tool.
 .. code-block:: felix
 
   //[flx_mklib.flx]
-  include "std/felix/toolchain_clang_config";
+  include "std/felix/toolchain_config";
   include "std/felix/flx_pkg"; // only for "fix2word_flags"
   include "std/felix/flx_cp";
   include "std/felix/flx/flx_depchk";
@@ -564,7 +663,9 @@ specification. Used by the flx_build_rtl tool.
     noinline gen make_lib 
     (
       db: FlxPkgConfig::FlxPkgConfigQuery_t,  
-      toolchain-maker: clang_config_t -> toolchain_t, 
+      toolchain-maker: toolchain_config_t -> toolchain_t, 
+      c_compiler_executable: string,
+      cxx_compiler_executable: string,
       src_dir:string, 
       target_dir:string, 
       share_rtl:string,
@@ -596,8 +697,10 @@ specification. Used by the flx_build_rtl tool.
       var result,depdlibs =  db.query("--field=provides_dlib"+deps); // packaged dlibs
       var macros = db.getpkgfield ehandler (pkg,"macros");
       var result2,ccflags = db.query$ list$ pkg, "--keepleftmost", "--field=cflags";
-      var config = 
+      var toolchain_config = 
         (
+          c_compiler_executable = c_compiler_executable,
+          cxx_compiler_executable = cxx_compiler_executable,
           header_search_dirs= list[string] (target_dir, srcpath, share_rtl)+build_includes,
           macros= macros,
           ccflags = ccflags,
@@ -607,7 +710,7 @@ specification. Used by the flx_build_rtl tool.
           debugln = dbug
         )
       ;
-      var toolchain = toolchain-maker config;
+      var toolchain = toolchain-maker toolchain_config;
       println$ #(toolchain.whatami);
   
       // THIS DOES NOT SEEM RIGHT, we're copying headers from share/src
@@ -794,10 +897,10 @@ Object for gcc on Linux
 
   //[gcc_linux.flx]
   include "std/felix/toolchain_interface";
-  include "std/felix/toolchain_clang_config";
+  include "std/felix/toolchain_config";
   include "std/felix/flx_cxx";
   
-  object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t = 
+  object toolchain_gcc_linux (config:toolchain_config_t) implements toolchain_t = 
   {
   
     var cxx_compile_warning_flags = list$ "-w",
@@ -811,9 +914,11 @@ Object for gcc on Linux
       "-Wno-missing-braces"
     ;
     var c_compile_warning_flags = list[string]$ "-w", "-Wfatal-errors";
-    var c_compiler = "gcc";
-    var cxx_compiler = "g++";
-    var linker = "g++";
+  
+    var c_compiler = let x = config.c_compiler_executable in if x == "" then "gcc" else x;
+    var cxx_compiler = let x = config.cxx_compiler_executable in if x == "" then "g++" else x;
+    var linker = cxx_compiler;
+  
     var ccflags_for_dynamic_link = list[string] ("-shared");
     var base_c_compile_flags =
       "-D_POSIX" ! "-g" ! "-c" ! "-O1" ! "-fno-common"
@@ -882,6 +987,7 @@ Object for gcc on Linux
     {
       var result = 
         CxxCompiler::generic_cxx_compile_for_static
+    // case 2 of dflt
         (
           CCOBJ_STATIC_LIB = c_compiler, 
           CCFLAGS = "-fvisibility=hidden" ! base_c_compile_flags,
@@ -1039,12 +1145,12 @@ Object for gcc on OSX
 
 .. code-block:: felix
 
-  //[gcc_osx.flx]
+  //[gcc_macosx.flx]
   include "std/felix/toolchain_interface";
-  include "std/felix/toolchain_clang_config";
+  include "std/felix/toolchain_config";
   include "std/felix/flx_cxx";
   
-  object toolchain_gcc_osx (config:clang_config_t) implements toolchain_t = 
+  object toolchain_gcc_macosx (config:toolchain_config_t) implements toolchain_t = 
   {
   
     var cxx_compile_warning_flags = list$ "-w",
@@ -1052,9 +1158,11 @@ Object for gcc on OSX
       "-Wno-invalid-offsetof"
     ;
     var c_compile_warning_flags = list[string]$ "-w","-Wfatal-errors";
-    var c_compiler = "gcc";
-    var cxx_compiler = "g++";
-    var linker = "g++";
+  
+    var c_compiler = let x = config.c_compiler_executable in if x == "" then "gcc" else x;
+    var cxx_compiler = let x = config.cxx_compiler_executable in if x == "" then "g++" else x;
+    var linker = cxx_compiler;
+  
     var ccflags_for_dynamic_link = list[string] ("-dynamiclib");
   
     var base_c_compile_flags =
@@ -1064,7 +1172,7 @@ Object for gcc on OSX
       "-g"! "-c" ! "-O1" ! "-std=c++14" ! "-fno-common"! "-fno-strict-aliasing" !(cxx_compile_warning_flags+config.ccflags)
     ;
   
-    method fun whatami () => "toolchain_gcc_osx (version 2)";
+    method fun whatami () => "toolchain_gcc_macosx (version 2)";
     method fun host_os () => "OSX";
     method fun target_os () => "OSX";
     method fun cxx_compiler_vendor () => "GNU";
@@ -1281,10 +1389,10 @@ Object for clang on Linux
 
   //[clang_linux.flx]
   include "std/felix/toolchain_interface";
-  include "std/felix/toolchain_clang_config";
+  include "std/felix/toolchain_config";
   include "std/felix/flx_cxx";
   
-  object toolchain_clang_linux (config:clang_config_t) implements toolchain_t = 
+  object toolchain_clang_linux (config:toolchain_config_t) implements toolchain_t = 
   {
   
     var cxx_compile_warning_flags = list$  "-w",
@@ -1303,9 +1411,11 @@ Object for clang on Linux
       "-Wno-missing-braces"
     ;
     var c_compile_warning_flags = list[string]$ "-w","-Wfatal-errors";
-    var c_compiler = "clang";
-    var cxx_compiler = "clang++";
-    var linker = "clang++";
+  
+    var c_compiler = let x = config.c_compiler_executable in if x == "" then "clang" else x;
+    var cxx_compiler = let x = config.cxx_compiler_executable in if x == "" then "clang++" else x;
+    var linker = cxx_compiler;
+  
     var ccflags_for_dynamic_link = list[string] ("-shared");
   
     var base_cxx_compile_flags =  
@@ -1532,12 +1642,12 @@ Object for clang on OSX
 
 .. code-block:: felix
 
-  //[clang_osx.flx]
+  //[clang_macosx.flx]
   include "std/felix/toolchain_interface";
-  include "std/felix/toolchain_clang_config";
+  include "std/felix/toolchain_config";
   include "std/felix/flx_cxx";
   
-  object toolchain_clang_osx (config:clang_config_t) implements toolchain_t = 
+  object toolchain_clang_macosx (config:toolchain_config_t) implements toolchain_t = 
   {
   
     var cxx_compile_warning_flags = list$ 
@@ -1550,10 +1660,10 @@ Object for clang on OSX
       "-Wfatal-errors", 
       "-Wno-array-bounds"
     ;
+    var c_compiler = let x = config.c_compiler_executable in if x == "" then "clang" else x;
+    var cxx_compiler = let x = config.cxx_compiler_executable in if x == "" then "clang++" else x;
+    var linker = cxx_compiler;
   
-    var c_compiler = "clang";
-    var cxx_compiler = "clang++";
-    var linker = "clang++";
     var ccflags_for_dynamic_link = list[string] ("-dynamiclib");
     var base_c_compile_flags = 
       "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
@@ -1563,7 +1673,7 @@ Object for clang on OSX
       "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++14" ! (cxx_compile_warning_flags+config.ccflags)
     ;
   
-    method fun whatami () => "toolchain_clang_osx (version 2)";
+    method fun whatami () => "toolchain_clang_macosx (version 2)";
     method fun host_os () => "OSX";
     method fun target_os () => "OSX";
     method fun cxx_compiler_vendor () => "clang";
@@ -1776,8 +1886,8 @@ Cygwin interface.
 
 
 .. index:: Cygwin(class)
-.. index:: cygwin_to_win32(fun)
-.. index:: win32_to_cygwin(fun)
+.. index:: cygwin_to_win(fun)
+.. index:: win_to_cygwin(fun)
 .. code-block:: felix
 
   //[cygwin.flx]
@@ -1786,20 +1896,20 @@ Cygwin interface.
     requires package "cygwin";
   
     // outputs absolute filenames: src,dst
-    private gen p_cygwin_to_win32: +char * +char * size -> int = 
+    private gen p_cygwin_to_win: +char * +char * size -> int = 
        "cygwin_conv_path(CCP_POSIX_TO_WIN_A || CCP_ABSOLUTE,$1,$2,$3)"
     ;
-    private gen p_win32_to_cygwin: +char * +char * size -> int = 
+    private gen p_win_to_cygwin: +char * +char * size -> int = 
       "cygwin_conv_path(CCP_WIN_TO_POSIX)A || CCP_ABSOLUTE,$1,$2,$3)"
     ;
   
     // This function should ALWAYS work
-    fun cygwin_to_win32 (var s:string) = 
+    fun cygwin_to_win (var s:string) = 
     {
        var outbuf : +char;
-       var psiz = p_cygwin_to_win32 (s.cstr,outbuf,0uz);
+       var psiz = p_cygwin_to_win (s.cstr,outbuf,0uz);
        outbuf = array_alloc[char] psiz; 
-       var err = p_cygwin_to_win32 (s.cstr,outbuf,psiz.size);
+       var err = p_cygwin_to_win (s.cstr,outbuf,psiz.size);
        assert err == 0; // hackery!
        var t = string outbuf;
        free outbuf;
@@ -1807,14 +1917,14 @@ Cygwin interface.
     }
   
     // This function has two kinds of output:
-    // if the win32 filename is inside C:/cygwin we get name relative to /
+    // if the win filename is inside C:/cygwin we get name relative to /
     // if the filename is outside, we get /cygdrive/driveletter/rest-of-path
-    fun win32_to_cygwin(var s:string) = 
+    fun win_to_cygwin(var s:string) = 
     {
        var outbuf : +char;
-       var psiz = p_win32_to_cygwin(s.cstr,outbuf,0uz);
+       var psiz = p_win_to_cygwin(s.cstr,outbuf,0uz);
        outbuf = array_alloc[char] psiz; 
-       var err = p_win32_to_cygwin(s.cstr,outbuf,psiz.size);
+       var err = p_win_to_cygwin(s.cstr,outbuf,psiz.size);
        assert err == 0; // hackery!
        var t = string outbuf;
        free outbuf;
@@ -1845,21 +1955,22 @@ Object for MSVC++ on Windows
 .. index:: checkwarn(proc)
 .. code-block:: felix
 
-  //[msvc_win32.flx]
+  //[msvc_win.flx]
   include "std/felix/toolchain_interface";
-  include "std/felix/toolchain_clang_config";
+  include "std/felix/toolchain_config";
   include "std/felix/flx_cxx";
   
-  object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t = 
+  object toolchain_msvc_win (config:toolchain_config_t) implements toolchain_t = 
   {
   
-    var c_compiler = "cl";
-    var cxx_compiler = "cl";
-    var linker = "cl";
+    var c_compiler = let x = config.c_compiler_executable in if x == "" then "cl" else x;
+    var cxx_compiler = let x = config.cxx_compiler_executable in if x == "" then "cl" else x;
+    var linker = cxx_compiler;
+  
     var base_c_compile_flags = Empty[string];
     var base_cxx_compile_flags = Empty[string];
   
-    method fun whatami () => "toolchain_msvc_win32 (version 2)";
+    method fun whatami () => "toolchain_msvc_win (version 2)";
     method fun host_os () => "Win32";
     method fun target_os () => "Win32";
     method fun cxx_compiler_vendor () => "microsoft";
@@ -2069,11 +2180,11 @@ Object for clang on iOS
 
   //[clang_iOS_generic.flx]
   include "std/felix/toolchain_interface";
-  include "std/felix/toolchain_clang_config";
+  include "std/felix/toolchain_config";
   include "std/felix/flx_cxx";
   
   object toolchain_clang_apple_iOS_maker (sdk_tag:string, archs:list[string])
-    (config:clang_config_t) implements toolchain_t = 
+    (config:toolchain_config_t) implements toolchain_t = 
   {
     //eprintln$ "toolchain_clang_apple_iOS_maker sdk=" + sdk_tag + ", arches=" + archs.str;
     gen get (s:string):string = {
@@ -2329,11 +2440,11 @@ Object for clang on iOS
     }
   }
   
-  gen toolchain_clang_apple_iPhoneOS_armv7_arm64 (config:clang_config_t) : toolchain_t =>
+  gen toolchain_clang_apple_iPhoneOS_armv7_arm64 (config:toolchain_config_t) : toolchain_t =>
     toolchain_clang_apple_iOS_maker ("iphoneos",(["armv7","arm64"])) config
   ;
   
-  gen toolchain_clang_apple_iPhoneSimulator (config:clang_config_t) : toolchain_t = {
+  gen toolchain_clang_apple_iPhoneSimulator (config:toolchain_config_t) : toolchain_t = {
     return toolchain_clang_apple_iOS_maker ("iphonesimulator",(["x86_64","i386"])) config;
   }
   
@@ -2360,9 +2471,9 @@ iPhone Plugin
   //[toolchain_iphoneos.flx]
   include "std/felix/toolchain/clang_iOS_generic";
   
-  // varies osx vs linus,  gcc vs clang
+  // varies macosx vs linus,  gcc vs clang
   
-  export fun toolchain_clang_apple_iPhoneOS_armv7_arm64 of (clang_config_t) as "toolchain_iphoneos";
+  export fun toolchain_clang_apple_iPhoneOS_armv7_arm64 of (toolchain_config_t) as "toolchain_iphoneos";
   
   fun setup(config_data:string) = {
      C_hack::ignore (config_data); // due to bug in Felix
@@ -2378,9 +2489,9 @@ iPhone Plugin
   //[toolchain_iphonesimulator.flx]
   include "std/felix/toolchain/clang_iOS_generic";
   
-  // varies osx vs linus,  gcc vs clang
+  // varies macosx vs linus,  gcc vs clang
   
-  export fun toolchain_clang_apple_iPhoneSimulator of (clang_config_t) as "toolchain_iphonesimulator";
+  export fun toolchain_clang_apple_iPhoneSimulator of (toolchain_config_t) as "toolchain_iphonesimulator";
   
   fun setup(config_data:string) = {
      C_hack::ignore (config_data); // due to bug in Felix
@@ -2402,7 +2513,7 @@ Plugin for gcc on Linux
   //[toolchain_gcc_linux.flx]
   include "std/felix/toolchain/gcc_linux";
   
-  export fun toolchain_gcc_linux of (clang_config_t) as "toolchain_gcc_linux";
+  export fun toolchain_gcc_linux of (toolchain_config_t) as "toolchain_gcc_linux";
   
   fun setup(config_data:string) = {
      C_hack::ignore (config_data); // due to bug in Felix
@@ -2420,18 +2531,18 @@ Plugin for gcc on OSX
 
 .. code-block:: felix
 
-  //[toolchain_gcc_osx.flx]
-  include "std/felix/toolchain/gcc_osx";
+  //[toolchain_gcc_macosx.flx]
+  include "std/felix/toolchain/gcc_macosx";
   
-  export fun toolchain_gcc_osx of (clang_config_t) as "toolchain_gcc_osx";
+  export fun toolchain_gcc_macosx of (toolchain_config_t) as "toolchain_gcc_macosx";
   
   fun setup(config_data:string) = {
      C_hack::ignore (config_data); // due to bug in Felix
-    //eprintln$ "Setup toolchain gcc+osx " + config_data;
+    //eprintln$ "Setup toolchain gcc+macosx " + config_data;
     return 0;
   }
   
-  export fun setup of (string) as "toolchain_gcc_osx_setup";
+  export fun setup of (string) as "toolchain_gcc_macosx_setup";
   
 
 
@@ -2444,9 +2555,9 @@ Plugin for clang on Linux
   //[toolchain_clang_linux.flx]
   include "std/felix/toolchain/clang_linux";
   
-  // varies osx vs linus,  gcc vs clang
+  // varies macosx vs linus,  gcc vs clang
   
-  export fun toolchain_clang_linux of (clang_config_t) as "toolchain_clang_linux";
+  export fun toolchain_clang_linux of (toolchain_config_t) as "toolchain_clang_linux";
   
   
   fun setup(config_data:string) = {
@@ -2465,20 +2576,20 @@ Plugin for clang on OSX
 
 .. code-block:: felix
 
-  //[toolchain_clang_osx.flx]
-  include "std/felix/toolchain/clang_osx";
+  //[toolchain_clang_macosx.flx]
+  include "std/felix/toolchain/clang_macosx";
   
-  // varies osx vs linus,  gcc vs clang
+  // varies macosx vs linus,  gcc vs clang
   
-  export fun toolchain_clang_osx of (clang_config_t) as "toolchain_clang_osx";
+  export fun toolchain_clang_macosx of (toolchain_config_t) as "toolchain_clang_macosx";
   
   fun setup(config_data:string) = {
      C_hack::ignore (config_data); // due to bug in Felix
-    //eprintln$ "Setup toolchain clang_osx " + config_data;
+    //eprintln$ "Setup toolchain clang_macosx " + config_data;
     return 0;
   }
   
-  export fun setup of (string) as "toolchain_clang_osx_setup";
+  export fun setup of (string) as "toolchain_clang_macosx_setup";
 
 
 MSVC++ Plugin for Win32
@@ -2487,20 +2598,20 @@ MSVC++ Plugin for Win32
 
 .. code-block:: felix
 
-  //[toolchain_msvc_win32.flx]
-  include "std/felix/toolchain/msvc_win32";
+  //[toolchain_msvc_win.flx]
+  include "std/felix/toolchain/msvc_win";
   
-  // varies osx vs linus,  gcc vs clang
+  // varies macosx vs linus,  gcc vs clang
   
-  export fun toolchain_msvc_win32 of (clang_config_t) as "toolchain_msvc_win32";
+  export fun toolchain_msvc_win of (toolchain_config_t) as "toolchain_msvc_win";
   
   fun setup(config_data:string) = {
      C_hack::ignore (config_data); // due to bug in Felix
-    //eprintln$ "Setup toolchain msvc_win32 " + config_data;
+    //eprintln$ "Setup toolchain msvc_win " + config_data;
     return 0;
   }
   
-  export fun setup of (string) as "toolchain_msvc_win32_setup";
+  export fun setup of (string) as "toolchain_msvc_win_setup";
 
 
 Flx Plugin

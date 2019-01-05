@@ -9,7 +9,6 @@ Debugging
 key                       file                                     
 ========================= ========================================
 debug.flx                 share/lib/std/debug.flx                  
-debug.fsyn                share/lib/grammar/debug.fsyn             
 flx_udp_trace.hpp         share/lib/rtl/flx_udp_trace.hpp          
 flx_udp_trace.cpp         share/src/rtl/flx_udp_trace.cpp          
 flx_udp_trace_monitor.cxx $PWD/src/tools/flx_udp_trace_monitor.cxx 
@@ -94,15 +93,6 @@ in which case the location in the generator is used.
 
 The translation from the parser term is perform by the Felix compiler.
 The translation from the C macros used are done by the C++ compiler.
-
-
-.. code-block:: felix
-
-  //[debug.fsyn]
-  syntax debug
-  {
-     satom := "HERE" =># "`(ast_here ,_sr)";
-  }
 
 
 UDP based trace support

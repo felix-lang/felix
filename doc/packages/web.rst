@@ -214,7 +214,7 @@ Web Server Support Library
      open TerminalIOByteStream[socket_t];
      open WebUtil;
    
-     union http_method = 
+     variant http_method = 
        | GET
        | POST
        | BAD;
@@ -856,12 +856,6 @@ Web Server Support Library
 
 
 .. index:: MIMEType(class)
-.. index:: application_mime_subtype(union)
-.. index:: audio_mime_subtype(union)
-.. index:: image_mime_subtype(union)
-.. index:: text_mime_subtype(union)
-.. index:: multipart_mime_subtype(union)
-.. index:: mime_type(union)
 .. index:: def(type)
 .. index:: application_type_from_str(fun)
 .. index:: audio_type_from_str(fun)
@@ -892,7 +886,7 @@ Web Server Support Library
   */  
   
     open WebUtil;
-    union application_mime_subtype =
+    variant application_mime_subtype =
       | atom_PLUS_xml //: Atom feeds
       | ecmascript // ECMAScript/JavaScript; Defined in RFC 4329
       | EDI_DASH_X12 // EDI X12 data; Defined in RFC 1767
@@ -913,7 +907,7 @@ Web Server Support Library
       | x_DASH_gzip //: Gzip
       | x_DASH_www_DASH_form_DASH_urlencoded;  
   
-    union audio_mime_subtype =
+    variant audio_mime_subtype =
       | basic //: mulaw audio at 8 kHz, 1 channel; Defined in RFC 2046
       | L24 //: 24bit Linear PCM audio at 8-48kHz, 1-N channels; Defined in RFC 3190
       | mp4 //: MP4 audio
@@ -927,7 +921,7 @@ Web Server Support Library
       | webm //: WebM open media format
     ;   
   
-    union image_mime_subtype =
+    variant image_mime_subtype =
       | gif //: GIF image; Defined in RFC 2045 and RFC 2046
       | jpeg // JPEG JFIF image; Defined in RFC 2045 and RFC 2046
       | pjpeg //: JPEG JFIF image; Associated with Internet Explorer;
@@ -937,7 +931,7 @@ Web Server Support Library
       | vnd_DOT_microsoft_DOT_icon //: ICO image; Registered[9]
     ;
   
-    union text_mime_subtype =
+    variant text_mime_subtype =
       | cmd //: commands; subtype resident in Gecko browsers like Firefox 3.5
       | css //: Cascading Style Sheets; Defined in RFC 2318
       | csv //: Comma-separated values; Defined in RFC 4180
@@ -954,7 +948,7 @@ Web Server Support Library
       | x_DASH_python
     ;
    
-    union multipart_mime_subtype =
+    variant multipart_mime_subtype =
       | mixed
       | alternative
       | related
@@ -962,7 +956,7 @@ Web Server Support Library
       | signed
       | encrypted;
   
-    union mime_type =
+    variant mime_type =
       | application of application_mime_subtype
       | audio of audio_mime_subtype
       | image of image_mime_subtype
@@ -1509,18 +1503,16 @@ Web Server Support Library
 
 
 .. index:: Json(class)
-.. index:: Jvalue(union)
 .. index:: def(type)
 .. index:: str(fun)
 .. index:: str(fun)
-.. index:: ParseResult(union)
 .. index:: parse_json(fun)
 .. code-block:: felix
 
   //[json.flx]
   open class Json 
   {
-    union Jvalue = 
+    variant Jvalue = 
     | Jstring of string
     | Jnumber of string
     | Jdictionary of list[Jpair]
@@ -1540,7 +1532,7 @@ Web Server Support Library
     endmatch
     ;
   
-    union ParseResult =
+    variant ParseResult =
     | Good of Jvalue
     | Bad of int
     ;
@@ -1767,7 +1759,6 @@ Web Server Support Library
 
 .. index:: Logger(class)
 .. index:: log(struct)
-.. index:: log_level(union)
 .. index:: def(type)
 .. index:: log_handler(struct)
 .. index:: simple_log_handles(fun)
@@ -1812,7 +1803,7 @@ Web Server Support Library
     }
   
     publish """ Log Level definitions """
-    union log_level = 
+    variant log_level = 
       | INFO
       | WARNING
       | ERROR

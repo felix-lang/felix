@@ -20,21 +20,6 @@ sequence.flx  share/lib/std/algebra/sequence.flx
 monad.flx     share/lib/std/algebra/monad.flx        
 ============= ======================================
 
-================ ======================================
-key              file                                   
-================ ======================================
-setexpr.fsyn     share/lib/std/algebra/setexpr.fsyn     
-cmpexpr.fsyn     share/lib/std/algebra/cmpexpr.fsyn     
-pordcmpexpr.fsyn share/lib/std/algebra/pordcmpexpr.fsyn 
-tordcmpexpr.fsyn share/lib/std/algebra/tordcmpexpr.fsyn 
-addexpr.fsyn     share/lib/std/algebra/addexpr.fsyn     
-mulexpr.fsyn     share/lib/std/algebra/mulexpr.fsyn     
-divexpr.fsyn     share/lib/std/algebra/divexpr.fsyn     
-bitexpr.fsyn     share/lib/std/algebra/bitexpr.fsyn     
-================ ======================================
-
-
-
 ==========================
 Core Algebraic Structures.
 ==========================
@@ -184,25 +169,6 @@ Note that sets are not necessarily finite.
       (x:c, y:c2) => 
       { e : t | e \in x and e \notin y }
     ;
-  }
-  
-Syntax
-------
-
-
-
-.. code-block:: felix
-
-  //[setexpr.fsyn]
-  syntax setexpr
-  {
-    cmp := "in" =># '(nos "\\in")'; 
-    cmp := "\in" =># "(nos _1)"; 
-    cmp := "\notin" =># '(nos _1)'; 
-    cmp := "\owns" =># '(nos _1)'; 
-  
-    x[ssetunion_pri] := x[ssetunion_pri] "\cup" x[>ssetunion_pri] =># "(Infix)" note "setunion";
-    x[ssetintersection_pri] := x[ssetintersection_pri] "\cap" x[>ssetintersection_pri] =># "(Infix)" note "setintersection";
   }
   
 Set forms.
@@ -355,25 +321,7 @@ An online reference on `Wikibooks <http://en.wikibooks.org/wiki/Abstract_Algebra
     fun \neq(x:t, y:t)=> x != y;
   }
   
-Syntax
-======
-
-
-.. code-block:: felix
-
-  //[cmpexpr.fsyn]
-  syntax cmpexpr
-  {
-    x[scomparison_pri]:= x[>scomparison_pri] cmp x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
-    x[scomparison_pri]:= x[>scomparison_pri] "not" cmp x[>scomparison_pri] =># "`(ast_not ,_sr (ast_apply ,_sr (,_3 (,_1 ,_4))))";
-    cmp := "==" =># "(nos _1)"; 
-    cmp := "!=" =># "(nos _1)"; 
-    cmp := "\ne" =># '(nos _1)'; 
-    cmp := "\neq" =># '(nos _1)'; 
-  }
-
-
-
+  
 Partial Order
 -------------
 
@@ -421,34 +369,6 @@ exemplar of subset containment relations.
     axiom antisym(x:t, y:t): \subset(x,y) or \subset(y,x) or x == y;
     axiom reflex(x:t, y:t): \subseteq(x,y) and \subseteq(y,x) implies x == y;
   }
-Syntax
-------
-
-
-
-.. code-block:: felix
-
-  //[pordcmpexpr.fsyn]
-  syntax pordcmpexpr
-  {
-    cmp := "\subset" =># '(nos _1)'; 
-    cmp := "\supset" =># '(nos _1)'; 
-    cmp := "\subseteq" =># '(nos _1)'; 
-    cmp := "\subseteqq" =># '(nos _1)'; 
-    cmp := "\supseteq" =># '(nos _1)'; 
-    cmp := "\supseteqq" =># '(nos _1)'; 
-  
-    cmp := "\nsubseteq" =># '(nos _1)'; 
-    cmp := "\nsubseteqq" =># '(nos _1)'; 
-    cmp := "\nsupseteq" =># '(nos _1)'; 
-    cmp := "\nsupseteqq" =># '(nos _1)'; 
-  
-    cmp := "\subsetneq" =># '(nos _1)'; 
-    cmp := "\subsetneqq" =># '(nos _1)'; 
-    cmp := "\supsetneq" =># '(nos _1)'; 
-    cmp := "\supsetneqq" =># '(nos _1)'; 
-  }
-  
 Bounded Partial Order
 ---------------------
 
@@ -572,48 +492,6 @@ holding the mouse over the symbol briefly.
     fun \wedge(x:t,y:t):t => min (x,y);
   
   
-  }
-  
-Syntax
-------
-
-
-
-.. code-block:: felix
-
-  //[tordcmpexpr.fsyn]
-  syntax tordcmpexpr
-  {
-    cmp := "<" =># "(nos _1)"; 
-  
-    cmp := "\lt" =># '(nos _1)'; 
-    cmp := "\lneq" =># '(nos _1)'; 
-    cmp := "\lneqq" =># '(nos _1)'; 
-  
-    cmp := "<=" =># "(nos _1)"; 
-    cmp := "\le" =># '(nos _1)'; 
-    cmp := "\leq" =># '(nos _1)'; 
-    cmp := "\leqq" =># '(nos _1)'; 
-  
-    cmp := ">" =># "(nos _1)"; 
-    cmp := "\gt" =># '(nos _1)'; 
-    cmp := "\gneq" =># '(nos _1)'; 
-    cmp := "\gneqq" =># '(nos _1)'; 
-  
-    cmp := ">=" =># "(nos _1)"; 
-    cmp := "\ge" =># '(nos _1)'; 
-    cmp := "\geq" =># '(nos _1)'; 
-    cmp := "\geqq" =># '(nos _1)'; 
-  
-    cmp := "\nless" =># '(nos _1)'; 
-    cmp := "\nleq" =># '(nos _1)'; 
-    cmp := "\nleqq" =># '(nos _1)'; 
-    cmp := "\ngtr" =># '(nos _1)'; 
-    cmp := "\ngeq" =># '(nos _1)'; 
-    cmp := "\ngeqq" =># '(nos _1)'; 
-  
-    bin := "\vee" =># '(nos _1)'; 
-    bin := "\wedge" =># '(nos _1)'; 
   }
 Bounded Total Orders.
 ---------------------
@@ -749,12 +627,10 @@ the functions from class  :code:`Eq`.
     virtual proc += (px:&t,y:t) { px <- *px + y; }
     virtual proc -= (px:&t,y:t) { px <- *px - y; }
   
-  /*
     reduce id (x:t): x+zero() => x;
     reduce id (x:t): zero()+x => x;
     reduce inv(x:t): x - x => zero();
     reduce inv(x:t): - (-x) => x;
-  */
     axiom sym (x:t,y:t): x+y == y+x;
   
     fun add(x:t,y:t)=> x + y;
@@ -764,24 +640,6 @@ the functions from class  :code:`Eq`.
     proc  minuseq(px:&t, y:t) { -= (px,y); }
   }
 
-
-Notation
---------
-
-
-
-.. code-block:: felix
-
-  //[addexpr.fsyn]
-  syntax addexpr
-  {
-    //$ Addition: left non-associative.
-    x[ssum_pri] := x[>ssum_pri] ("+" x[>ssum_pri])+ =># "(chain 'ast_sum _1 _2)" note "add";
-  
-    //$ Subtraction: left associative.
-    x[ssubtraction_pri] := x[ssubtraction_pri] "-" x[sproduct_pri] =># "(Infix)";
-  }
-  
 Additive Group
 --------------
 
@@ -797,7 +655,7 @@ with associativity added.
   class Addgrp[t] {
     inherit FloatAddgrp[t];
     axiom assoc (x:t,y:t,z:t): (x + y) + z == x + (y + z);
-    //reduce inv(x:t,y:t): x + y - y => x;
+    reduce inv(x:t,y:t): x + y - y => x;
   }
   
 Approximate Multiplicative Semi-Group With Unit.
@@ -827,23 +685,8 @@ binary multiplication operator and a unit.
     virtual fun one: unit -> t;
     virtual fun * : t * t -> t;
     virtual proc *= (px:&t, y:t) { px <- *px * y; }
-    //reduce id (x:t): x*one() => x;
-    //reduce id (x:t): one()*x => x;
-  }
-  
-Syntax
-------
-
-
-
-.. code-block:: felix
-
-  //[mulexpr.fsyn]
-  syntax mulexpr
-  {
-    //$ multiplication: non-associative.
-    x[sproduct_pri] := x[>sproduct_pri] ("*" x[>sproduct_pri])+ =># 
-      "(chain 'ast_product _1 _2)" note "mul";
+    reduce id (x:t): x*one() => x;
+    reduce id (x:t): one()*x => x;
   }
   
 Multiplicative Semi-Group With Unit.
@@ -862,7 +705,7 @@ and satisfies the cancellation law.
   class MultSemi1[t] {
     inherit FloatMultSemi1[t];
     axiom assoc (x:t,y:t,z:t): (x * y) * z == x * (y * z);
-    //reduce cancel (x:t,y:t,z:t): x * z ==  y * z => x == y;
+    reduce cancel (x:t,y:t,z:t): x * z ==  y * z => x == y;
   }
   
 Rings
@@ -940,30 +783,6 @@ with a division operator.
     proc modeq(px:&t, y:t) { %= (px,y); }
   }
   
-Syntax
-------
-
-
-
-.. code-block:: felix
-
-  //[divexpr.fsyn]
-  syntax divexpr
-  {
-    //$ division: right associative low precedence fraction form
-    x[stuple_pri] := x[>stuple_pri] "\over" x[>stuple_pri] =># "(Infix)";
-  
-    //$ division: left associative.
-    x[s_term_pri] := x[s_term_pri] "/" x[>s_term_pri] =># "(Infix)";
-  
-    //$ remainder: left associative.
-    x[s_term_pri] := x[s_term_pri] "%" x[>s_term_pri] =># "(Infix)";
-  
-    //$ remainder: left associative.
-    x[s_term_pri] := x[s_term_pri] "\bmod" x[>s_term_pri] =># "(Infix)";
-  }
-  
-  
 Division Ring
 -------------
 
@@ -1013,33 +832,6 @@ Bitwise operations
     fun bnot(x:t)=> ~ x;
   
   }
-  
-Syntax
-------
-
-
-
-.. code-block:: felix
-
-  //[bitexpr.fsyn]
-  syntax bitexpr
-  {
-    //$ Bitwise or, left associative.
-    x[sbor_pri] := x[sbor_pri] "\|" x[>sbor_pri] =># "(Infix)";
-  
-    //$ Bitwise xor, left associative.
-    x[sbxor_pri] := x[sbxor_pri] "\^" x[>sbxor_pri] =># "(Infix)";
-  
-    //$ Bitwise exclusive and, left associative.
-    x[sband_pri] := x[sband_pri] "\&" x[>sband_pri] =># "(Infix)";
-  
-    //$ Bitwise left shift, left associative.
-    x[sshift_pri] := x[sshift_pri] "<<" x[>sshift_pri] =># "(Infix)";
-  
-    //$ Bitwise right shift, left associative.
-    x[sshift_pri] := x[sshift_pri] ">>" x[>sshift_pri] =># "(Infix)";
-  }
-  
 Integer
 -------
 

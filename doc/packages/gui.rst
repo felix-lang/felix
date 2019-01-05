@@ -1,10 +1,6 @@
 Package: src/packages/gui.fdoc
 
-
-===
-GUI
-===
-
+utitle GUI
 ============ ==========================
 key          file                       
 ============ ==========================
@@ -1195,8 +1191,6 @@ Simple Click Button
 
 
 .. index:: FlxGuiButton(class)
-.. index:: button_state_t(union)
-.. index:: button_action_t(union)
 .. index:: def(type)
 .. index:: def(type)
 .. code-block:: felix
@@ -1204,14 +1198,14 @@ Simple Click Button
   //[button.flx]
   class FlxGuiButton
   {
-    union button_state_t =  
+    variant button_state_t =  
       | Up       // ready
       | Down     // being clicked
       | Disabled // inactive
       | Mouseover // ready and mouse is over
     ;
   
-    union button_action_t =
+    variant button_action_t =
       | NoAction
       | ClickAction of string
     ;
@@ -1388,14 +1382,10 @@ Cascading Menu
 
 
 .. index:: FlxGuiMenu(class)
-.. index:: menu_entry_active_t(union)
-.. index:: def(type)
-.. index:: menu_entry_t(union)
 .. index:: def(type)
 .. index:: def(type)
 .. index:: def(type)
-.. index:: menu_state_t(union)
-.. index:: menu_action_t(union)
+.. index:: def(type)
 .. index:: def(type)
 .. index:: hotpos(fun)
 .. code-block:: felix
@@ -1412,10 +1402,10 @@ Cascading Menu
     // A menu entry is either some text or a separator
     // The text has a visual label and a separate tag 
     // returned when an entry is selected
-    union menu_entry_active_t = Active | Disabled;
+    variant menu_entry_active_t = Active | Disabled;
     typedef menu_text_entry_t = (tag:string, label:string, active:menu_entry_active_t);
   
-    union menu_entry_t = Separator | Text of menu_text_entry_t;
+    variant menu_entry_t = Separator | Text of menu_text_entry_t;
   
     // A menu is a list of trees with both leaves and nodes labelled
     typedef menu_item_t = LS_expr::lsexpr[menu_entry_t, menu_entry_t];
@@ -1426,9 +1416,9 @@ Cascading Menu
     typedef menu_position_t = list[int];
   
     // A menu is either closed, or open at a particular position
-    union menu_state_t = Closed | Open of menu_position_t;
+    variant menu_state_t = Closed | Open of menu_position_t;
   
-    union menu_action_t = NoAction | ChangedPosition | SelectedAction of string;
+    variant menu_action_t = NoAction | ChangedPosition | SelectedAction of string;
   
     interface menu_model_t
     {

@@ -771,7 +771,6 @@ Stream I/O
 
 
 .. index:: IOStream(class)
-.. index:: devnull_t(union)
 .. index:: cat(proc)
 .. index:: cat(proc)
 .. index:: cat(proc)
@@ -845,7 +844,7 @@ Stream I/O
   
     // ---------------------------------------------------------------------------
   
-    union devnull_t = DEVNULL;
+    variant devnull_t = DEVNULL;
   
     publish "devnull_t"
     instance IByteStream[devnull_t]
@@ -1409,14 +1408,17 @@ Faio: Felix Asynchronous I/O service
   
     open C_hack;
   
-    proc faio_req[t](x:&t) {
-      val y : &address = reinterpret[&address] x;
-      svc (svc_general y);
+    proc faio_req[t](preq: &t ) { // FIXME: HACK! It has to be driver request base
+      var p = C_hack::cast[driver_request_base]preq;
+      svc (svc_general p);
     }
   
+  // this svc call doesn't exist now 
+  /*
     proc get_thread(thread: &fthread) {
         svc (svc_get_fthread thread );
     }
+  */
   
     type sel_param = "flx::demux::sel_param";
     type sel_param_ptr = "flx::demux::sel_param*";

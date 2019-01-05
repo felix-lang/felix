@@ -14,11 +14,6 @@ mux.flx       share/lib/std/control/mux.flx
 spipes.flx    share/lib/std/control/spipes.flx    
 ============= ===================================
 
-============== ====================================
-key            file                                 
-============== ====================================
-spipeexpr.fsyn share/lib/std/control/spipeexpr.fsyn 
-============== ====================================
 
 
 
@@ -34,18 +29,23 @@ Fibres (fthreads)
 .. index:: spawn_fthread(proc)
 .. index:: schedule_fthread(proc)
 .. index:: suicide(proc)
-.. index:: swait(proc)
 .. index:: chain(proc)
 .. index:: fibre_scheduler(type)
 .. index:: fibre_scheduler(ctor)
 .. index:: fibre_scheduler(ctor)
-.. index:: delete_fibre_scheduler(proc)
 .. index:: spawn_fibre(proc)
 .. index:: frun(proc)
 .. index:: run(proc)
 .. index:: run(proc)
 .. index:: get_state(fun)
 .. index:: spawn_fthread(proc)
+.. index:: async_scheduler(type)
+.. index:: async_scheduler(ctor)
+.. index:: async_scheduler(ctor)
+.. index:: spawn_fibre(proc)
+.. index:: spawn_fthread(proc)
+.. index:: prun(proc)
+.. index:: async_run(proc)
 .. index:: step(gen)
 .. index:: kill(proc)
 .. index:: run(proc)
@@ -76,55 +76,48 @@ Fibres (fthreads)
     {
         var con = start p;              // get continuation of p
         var fthr = mk_thread con;
-        svc$ svc_spawn_detached fthr;
+        svc$ svc_spawn_fthread fthr;
     }
   
     proc schedule_fthread(p:1->0)
     {
         var con = start p;              // get continuation of p
         var fthr = mk_thread con;
-        svc$ svc_schedule_detached fthr;
+        svc$ svc_schedule_fthread fthr;
     }
   
     proc suicide: 1 = "throw (con_t*)NULL;";
   
-    proc swait() { svc$ svc_swait; }
-  
     proc chain : cont = "return $1;" requires property "heap_closure";
   
+    // *********************************************************
+    // NESTED SYNC SCHEDULER
+    // NOTE: deprecated in favour of async scheduler below
+    // *********************************************************
     //$ The type of a fibre scheduler.
     type fibre_scheduler = "::flx::run::sync_sched*" requires header '#include "flx_sync.hpp"';
   
     //$ Construct a fibre scheduler.
-    //$  NOTE: NOT GARBAGE COLLECTED!
-    ctor fibre_scheduler: bool = """new ::flx::run::sync_sched($1, PTF gcp, 
-      new ::std::list<::flx::rtl::fthread_t*>)"""
+    //$  NOTE: NOW GARBAGE COLLECTED!
+    ctor fibre_scheduler: bool = """
+      new(*PTF gcp,::flx::run::sync_sched_ptr_map,false) 
+        ::flx::run::sync_sched
+        (
+          $1, 
+          PTF gcp, 
+          new(*PTF gcp, ::flx::run::fthread_list_ptr_map, false) ::flx::run::fthread_list(PTF gcp)
+        )
+      """
     ;
     ctor fibre_scheduler () =>
       fibre_scheduler (Env::getenv "FLX_DEBUG_DRIVER" != "")
     ;
        
   
-    // NOTE: all this derooting shouldn't be required
-    // because normally the deletion balances the construction
-    // on a function's machine stack, you can't get up to the
-    // deletion until all the active threads are gone
-    // because the spawn_fthread runs the fthread immediately
-    proc delete_fibre_scheduler : fibre_scheduler = """
-      if ($1->ft) $1->collector->remove_root($1->ft);
-      for(
-       ::std::list<::flx::rtl::fthread_t*>::iterator p = $1->active->begin();
-       p != $1->active->end();
-       p++
-      )
-      $1->collector->remove_root(*p);
-      delete $1->active; delete $1->ft; delete $1;
-    """;
-  
     //$ Spawn a fibre on a given scheduler with a given continuation.
     //$ Note: does NOT run it!
+    //$ FIXME: no mutex guard!!
     proc spawn_fibre: fibre_scheduler * fthread = """
-      $1->collector->add_root($2);
       $1->active->push_back($2);
     """;
   
@@ -138,7 +131,6 @@ Fibres (fthreads)
       var s = fibre_scheduler();
       spawn_fthread s p;
       s.run;
-      delete_fibre_scheduler s;
     }
   
    
@@ -164,6 +156,59 @@ Fibres (fthreads)
   
     //$ Core user procedure for launching a fibre.
     proc spawn_fthread (fs:fibre_scheduler) (p:1->0) { spawn_fibre (fs,p.start.mk_thread); }
+  
+    // *********************************************************
+    // ASYNC SCHEDULER
+    // *********************************************************
+    // FIXME: it is leaked .. to be fixed shortly
+  
+    // async scheduler type
+    type async_scheduler = "::flx::run::async_sched*" 
+      requires header '#include "flx_async.hpp"',
+      package "flx_arun"
+    ;
+  
+    // async scheduler constructor
+    ctor async_scheduler: bool = """
+      new 
+      ::flx::run::async_sched
+          (
+            PTF world, // world object
+            $1, // debug driver flag 
+            PTF gcp,  // GC profile object
+            new(*PTF gcp, ::flx::run::fthread_list_ptr_map, false) ::flx::run::fthread_list(PTF gcp),
+            ::flx::run::async_sched::mainline // temporary hack! thread kind (should be inherited)
+          )
+        """
+      ;
+  
+    // async scheduler constructor wrapper
+    ctor async_scheduler () =>
+      async_scheduler (Env::getenv "FLX_DEBUG_DRIVER" != "")
+    ;
+  
+    // spawn fibre on async scheduler from fthread object
+    proc spawn_fibre: async_scheduler * fthread = """
+        $1->ss->active->push_back($2);
+    """;
+  
+    // spawn fibre on async scheduler from procedure
+    proc spawn_fthread (fs:async_scheduler) (p:1->0) { spawn_fibre (fs,p.start.mk_thread); }
+  
+    proc prun: async_scheduler = "$1->prun();";
+  
+  
+    proc async_run (p: 1 -> 0) {
+      var s = async_scheduler();
+      spawn_fthread s p;
+      s.prun;
+    }
+  
+  // *********************************************************
+  // MISC STUFF THAT MAY NOT BE USED, CONSIDER DELETING IT
+  // UNRELIABLE ANYHOW .. CHECK PLUGINS ... 
+  // *********************************************************
+  
   
     //$ Execute a single step of a fibre.
     gen step: cont -> cont = "$1->resume()";
@@ -274,7 +319,7 @@ Synchronous Channels
     _gc_pointer type oschannel[t] = "::flx::rtl::schannel_t*";
   
     gen mk_untyped_schannel: 1 -> address = 
-      "new(*PTF gcp,::flx::rtl::schannel_ptr_map,false) ::flx::rtl::schannel_t(PTF gcp)"
+      "new(*PTF gcp,::flx::rtl::schannel_ptr_map,false) ::flx::rtl::schannel_t()"
       requires property "needs_gc"
     ;
     //$ Create a bidirectional synchronous channel.
@@ -351,8 +396,8 @@ Synchronous Channels
     inline gen read[T] (chan:ischannel[T]) => read$ C_hack::cast[schannel[T]] chan;
   
     //$ Test if channel is read for a read.
-    inline gen ready[T] :ischannel[T] -> bool = "$1->waiting_to_write!=NULL";
-    inline gen ready[T] : schannel[T] -> bool = "$1->waiting_to_write!=NULL";
+    inline gen ready[T] :ischannel[T] -> bool = "$1->top!=nullptr && !(uintptr_t)$1->top &1u)";
+    inline gen ready[T] : schannel[T] -> bool = "$1->top!=nullptr && (uintptr_t)$1->top &1u)";
   
     //$ Return Some value if ready, otherwise None
     inline gen maybe_read[T] (chan:ischannel[T]) =>
@@ -468,40 +513,11 @@ Special syntax for both pipes and also abbreviation for
 schannel types.
 
 
+
 .. index:: DuplexSchannels(class)
 .. code-block:: felix
 
   //[schannels.flx]
-  syntax spipeexpr 
-  {
-    //$ Left assoc, for schannel pipes.
-    x[ssetunion_pri] := x[ssetunion_pri] "|->" x[>ssetunion_pri] =># "(infix 'pipe)"; 
-  
-    //$ Right assoc, for schannel pipes transformers
-    // => BREAKS PATTERN MATCHING, replaced with >=> but can't find any uses
-    //x[ssetunion_pri] := x[>ssetunion_pri] ">=>" x[ssetunion_pri] =># "(infix 'trans_type)"; 
-  
-    //$ Non associative, streaming data structure into transducer.
-    x[ssetunion_pri] := x[>ssetunion_pri] ">->" x[>ssetunion_pri] =># "(infix 'xpipe)"; 
-  
-    //$ input schannel type %<T
-    x[sprefixed_pri] := "%<" x[spower_pri] =># '`(ast_name ,_sr "ischannel" (,_2))';
-  
-    //$ output schannel type %>T
-    x[sprefixed_pri] := "%>" x[spower_pri] =># '`(ast_name ,_sr "oschannel" (,_2))';
-  
-    //$ input/output schannel type %<>T
-    x[sprefixed_pri] := "%<>" x[spower_pri] =># '`(ast_name ,_sr "ioschannel" (,_2))';
-  
-    //$ duplex schannel type %<INPUT%>OUTPUT
-    x[sprefixed_pri] := "%<" x[spower_pri] "%>" x[spower_pri] =># 
-      '`(ast_name ,_sr "duplex_schannel" (,_2 ,_4))'
-    ;
-  
-  
-  }
-  
-  
   
   open class DuplexSchannels
   {

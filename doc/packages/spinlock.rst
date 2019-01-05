@@ -1,0 +1,187 @@
+Package: src/packages/spinlock.fdoc
+
+
+=========
+Spinlocks
+=========
+
+===================== ===============================================
+key                   file                                            
+===================== ===============================================
+flx_spinlock.hpp      share/lib/rtl/flx_spinlock.hpp                  
+flx_spinlock.cpp      share/src/rtl/flx_spinlock.cpp                  
+pthread_fast_lock.hpp share/lib/rtl/pthread_fast_lock.hpp             
+pthread_fast_lock.cpp $PWD/CRAP/src/pthread/pthread_fast_lock.cpp     
+pthread_fast_lock.flx $PWD/CRAP/lib/std/pthread/pthread_fast_lock.flx 
+===================== ===============================================
+
+
+Spinlock
+========
+
+
+.. code-block:: cpp
+
+  //[flx_spinlock.hpp]
+  #ifndef _FLX_SPINLOCK_HPP
+  #define _FLX_SPINLOCK_HPP
+  #include "flx_rtl_config.hpp"
+  
+  #include <atomic>
+  
+  namespace flx { namespace rtl {
+  
+  // C++ compliant Lockable
+  struct RTL_EXTERN flx_spinlock {
+  private:
+    flx_spinlock(flx_spinlock const&)=delete; // no copying
+    flx_spinlock(flx_spinlock &&)=delete; // no moving
+    flx_spinlock &operator=(flx_spinlock const &)=delete; // no assignment
+  
+    ::std::atomic_flag volatile flag;
+  public:
+    flx_spinlock() noexcept; // init to clear
+    void lock() volatile;
+    void unlock() volatile;
+  };
+   
+  struct RTL_EXTERN spinguard {
+  private:
+    spinguard() = delete;
+    spinguard(spinguard const&) = delete;
+    spinguard *operator=(spinguard const&)=delete;
+    bool cond;
+    ::std::atomic_flag *plock;
+  public:
+    spinguard (bool,::std::atomic_flag *p);
+    ~spinguard ();
+  };
+  }}
+  
+  #endif
+
+
+
+
+.. code-block:: cpp
+
+  //[flx_spinlock.cpp]
+  #include "flx_spinlock.hpp"
+  
+  using namespace std;
+  using namespace flx;
+  using namespace rtl;
+  
+  flx_spinlock::flx_spinlock() noexcept { flag.clear(memory_order_release); }
+  void flx_spinlock::lock() volatile { while(flag.test_and_set(memory_order_acquire)); }
+  void flx_spinlock::unlock() volatile { flag.clear(memory_order_release); }
+  
+  
+  spinguard::spinguard (bool cond_, ::std::atomic_flag *p): cond(cond_), plock(p) { 
+    if (cond) while (plock->test_and_set(std::memory_order_acquire));
+  }
+  spinguard::~spinguard () { if (cond)plock->clear(std::memory_order_release); }
+
+
+
+Fast Resource Lock
+==================
+
+This is a fast application level lock to be used for serialisation
+of transient accessed to data structures. It is a mutex, however
+unlike system mutex, it is safe to use with the Felix GC. 
+
+System mutex are NOT GC safe because in Felix every allocation
+may potentially trigger a garbage collection which requires a world
+stop. Since world stops are cooperative, the collector must wait
+until all threads have voluntarily yielded, usually by themselves
+performing an allocation or an explicit call to perform a collection,
+but suicide should work too. 
+
+However if a thread blocks trying to lock a mutex held by another
+thread which is now stopped for the GC, we have a deadlock.
+So a user level lock must have a timeout and a spin loop which
+includes regular checking for a GC world stop request.
+
+It would be acceptable if the check were done atomically with
+blocking on a lock request followed by another check,
+because locking itself does not change reachability state.
+With those semantics, it's fine for the thread to block,
+provided the GC counts it as having yielded, and it cannot
+unblock during the GC. That basically means unlocking must
+also do the check, to ensure blocked threads stay blocked.
+
+
+.. index:: PTHREAD_EXTERN(class)
+.. code-block:: cpp
+
+  //[pthread_fast_lock.hpp]
+  /*
+  #ifndef __pthread_fast_lock__
+  #define __pthread_fast_lock__
+  #include "flx_pthread_config.hpp"
+  #include "pthread_thread_control_base.hpp"
+  #include <atomic>
+  
+  namespace flx { namespace rtl {
+  
+  class PTHREAD_EXTERN fast_lock
+  {
+    ::std::atomic_flag flag;
+    ::flx::pthread::thread_control_base_t *tc;
+  public:
+    fast_lock(::flx::pthread::thread_control_base_t *);
+    fast_lock() = delete;
+    fast_lock(fast_lock const&)  = delete;
+    void operator = (fast_lock const&) = delete;
+    void lock();
+    void unlock();
+  };
+  }}
+  #endif
+  */
+
+
+.. code-block:: cpp
+
+  //[pthread_fast_lock.cpp]
+  /*
+  #include "pthread_fast_lock.hpp"
+  #include <chrono>
+  #include <thread>
+  #include <mutex>
+  
+  namespace flx { namespace rtl {
+  fast_lock::fast_lock(::flx::pthread::thread_control_base_t *tc_) : tc(tc_) { flag.clear(); }
+  void fast_lock::unlock() { flag.clear(); }
+  void fast_lock::lock() {
+    while (!flag.test_and_set())
+    {
+      tc->yield();
+  fprintf(stderr, "thread_fast_lock: thread %p calling std::this_thread::yield()",::flx::pthread::mythrid());
+      ::std::this_thread::sleep_for(::std::chrono::nanoseconds (200));
+    }
+  }
+  
+  }}
+  */
+
+
+.. index:: FastLock(class)
+.. code-block:: felix
+
+  //[pthread_fast_lock.flx]
+  /*
+  class FastLock
+  {
+     type fast_lock = "::flx::rtl::fast_lock*" 
+       requires header '#include "pthread_fast_lock.hpp"';
+     ctor fast_lock : unit = "new ::flx::rtl::fast_lock(PTF gcp->collector->get_thread_control())";
+     proc delete : fast_lock = "delete $1;";
+     proc lock : fast_lock = "$1->lock();";
+     proc unlock : fast_lock = "$1->unlock();";
+  
+  }
+  */
+  
+

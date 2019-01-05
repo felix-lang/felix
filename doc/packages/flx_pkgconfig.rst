@@ -70,7 +70,7 @@ is given.
   
       proc pre_incr:&lex_iterator = "++*$1;";
   
-      union token_t = Str of string | Cmd of string | Eos;
+      variant token_t = Str of string | Cmd of string | Eos;
   
       fun lexit(ini:lex_iterator, finish:lex_iterator): lex_iterator * token_t=
       {
@@ -395,7 +395,7 @@ is given.
          })
          dirs;
          if not found do
-           eprintln$ "package not found: " + pkg;
+           //eprintln$ "package not found: " + pkg;
            if require_pkg_exists do return_code = 1; done;
            if missing call add_val(pkg);
          done;
@@ -546,7 +546,7 @@ Depends on on the CLI function interface.
       method gen getpkgfield (ehandler:1->0) (pkg:string, field:string) : list[string] = {
         var result,values = query$ list$ ("--field="+field, pkg);
         if result != 0 do
-          println$ "Can't find package " + pkg;
+          println$ "[FlxPkgConfigQuery: getpkgfield] Can't find package " + pkg;
           println$ "Searching in paths:";
           for path in paths do
             println$ "  " + path;
@@ -565,15 +565,11 @@ Depends on on the CLI function interface.
         match values with
         | Cons (h,#Empty) => return h;
         | #Empty => 
-          println$ "Required field " + field + " not found in package "+pkg;
-          // FIXME
-          // System::exit(1);
+          println$ "[FlxPkgConfigQuery: getpkgfield1] Required field " + field + " not found in package "+pkg;
           throw_continuation ehandler;
   
         | _ =>
-          println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
-          // FIXME
-          // System::exit(1);
+          println$ "[FlxPkgConfigQuery: getpkgfield1] Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
           throw_continuation ehandler;
         endmatch;
       }
@@ -581,14 +577,13 @@ Depends on on the CLI function interface.
       // Get the single value of a field in a particular package.
       // Bug out if multiple values.
       method gen getpkgfieldopt (ehandler:1->0) (pkg:string, field:string) : opt[string] = {
-        var values = getpkgfield ehandler (pkg,field);
+        var result,values = query$ list$ ("--field="+field, pkg);
+        if result !=0 return None[string]; // package or field missing 
         match values with
         | Cons (h,#Empty) => return Some h;
         | #Empty => return None[string];
         | _ =>
-          println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
-          // FIXME
-          // System::exit(1);
+          println$ "[FlxPkgConfigQuery: getpkgfieldopt ]Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
           throw_continuation ehandler;
         endmatch;
       }
@@ -608,7 +603,7 @@ Depends on on the CLI function interface.
           "--keeprightmost" + "--rec" + "--list" +  pkg
         ;
         if result != 0 do
-          println$ "missing package for closure of " + pkg;
+          println$ "[GetPkgConfigQuery: getclosure] missing package for closure of " + pkg;
           // FIXME
           // System::exit(1);
           throw_continuation ehandler;
@@ -744,6 +739,10 @@ This has to be FIXED so flx can run in non-stop mode.
       cpp_filebase : string
     );
   
+    instance Str[pkgconfig_inspec_t] {
+      fun str (spec: pkgconfig_inspec_t) => spec._strr;
+    }
+  
     typedef pkgconfig_outspec_t = (
       CFLAGS: list[string],
       INCLUDE_FILES: list[string],
@@ -783,21 +782,20 @@ This has to be FIXED so flx can run in non-stop mode.
   */
     gen map_package_requirements (ehandler:1->0) (spec:pkgconfig_inspec_t) : pkgconfig_outspec_t =
     {
+      fun / (a:string, b:string) => Filename::join (a,b);
   
-  /*
-  println$ "MAP PACKAGE REQUIREMENTS: LINK " + 
-    if spec.LINKEXE==1 
-    then "EXE"  + " ("+if spec.STATIC==1 then "full" else "with DLL support" endif + ")" 
-    else "DLL"
-    endif
-  ; 
-  */
+  // println$ "MAP PACKAGE REQUIREMENTS: " + spec.str;
+  
       var PKGCONFIG_PATH=map 
          (fun (s:string) => "--path+="+s) 
          spec.FLX_CONFIG_DIRS
       ;
+  
+      // to hook any extra packages found by the compiler
       var RESH = "@"+spec.cpp_filebase+".resh";
   
+      // find all the compiler or switches
+      // args are the args to flx_pkgconfig
       gen pkgconfl(args:list[string]) : list[string] =
       {
         if spec.EXTRA_PACKAGES != Empty[string] call
@@ -813,6 +811,7 @@ This has to be FIXED so flx can run in non-stop mode.
         done
         return s;
       }
+      // convert list of switches to a single string
       gen pkgconfs(args:list[string]) : string => cat ' ' $ pkgconfl(args);
   
       var e = Empty[string];
@@ -825,51 +824,31 @@ This has to be FIXED so flx can run in non-stop mode.
   
   
       // find the driver package
+      // not useful for C++ only
       var DRIVER_PKG=pkgconfs(e+'--field=flx_requires_driver');
       if DRIVER_PKG == "" do DRIVER_PKG="flx_run"; done
   
       // find the driver entity
+      // not useful for C++ only
       if spec.STATIC == 0 do
         // dynamic linkage: the driver executable
         if spec.LINKEXE == 0 do
-          var DRIVER_EXE= Filename::join$ list (
-            spec.FLX_TARGET_DIR,
-            "bin",
-            DRIVER_PKG+spec.EXT_EXE
-          );
+          var DRIVER_EXE= spec.FLX_TARGET_DIR/ "bin"/ DRIVER_PKG+spec.EXT_EXE;
           var DRIVER_OBJS = Empty[string];
         else
         // dynamic linkage: the object files for executable with DLL support
-          DRIVER_OBJS =list(
-            Filename::join (list (
-              spec.FLX_TARGET_DIR,
-              "lib",
-              "rtl",
-              DRIVER_PKG+"_lib_static"+
-              spec.EXT_DYNAMIC_OBJ)),
-            Filename::join (list (
-              spec.FLX_TARGET_DIR,
-              "lib",
-              "rtl",
-              DRIVER_PKG+"_main"+spec.EXT_DYNAMIC_OBJ))
-          );
+          DRIVER_OBJS =([
+              spec.FLX_TARGET_DIR / "lib" / "rtl" / (DRIVER_PKG+"_lib_static"+ spec.EXT_DYNAMIC_OBJ),
+              spec.FLX_TARGET_DIR / "lib" / "rtl" / (DRIVER_PKG+"_main"+spec.EXT_DYNAMIC_OBJ)
+          ]);
           DRIVER_EXE = "";
         done
       else
         // static linkage: the object files for full static link
-        DRIVER_OBJS =list(
-          Filename::join (list (
-            spec.FLX_TARGET_DIR,
-            "lib",
-            "rtl",
-            DRIVER_PKG+"_lib_static"+
-            spec.EXT_STATIC_OBJ)),
-          Filename::join (list (
-            spec.FLX_TARGET_DIR,
-            "lib",
-            "rtl",
-            DRIVER_PKG+"_main"+spec.EXT_STATIC_OBJ))
-        );
+        DRIVER_OBJS = ([
+            spec.FLX_TARGET_DIR/ "lib"/ "rtl"/ (DRIVER_PKG+"_lib_static"+ spec.EXT_STATIC_OBJ),
+            spec.FLX_TARGET_DIR/ "lib"/ "rtl"/ (DRIVER_PKG+"_main"+spec.EXT_STATIC_OBJ)
+        ]);
         DRIVER_EXE = "";
       done
   
@@ -896,24 +875,17 @@ This has to be FIXED so flx can run in non-stop mode.
           spec.LINKER_SWITCHES+
           pkgconfl(e+'-r'+'--keeprightmost'+'--field=provides_slib'+'--field=requires_slibs'+DRIVER_PKG);
       done
-      LINK_STRINGS = fold_left
-        (fun (acc:list[string]) (elt:string) =>
-          if prefix (elt, "---") then
-           acc + split (elt.[2 to], char "=")
-          else acc + elt
-          endif
-        )
-        Empty[string]
-        LINK_STRINGS
-      ;
+      LINK_STRINGS = fix2word_flags LINK_STRINGS;
   
-      return ( 
+      var result = ( 
         CFLAGS = CFLAGS,
         INCLUDE_FILES = INCLUDE_FILES,
         DRIVER_EXE = DRIVER_EXE,
         DRIVER_OBJS = DRIVER_OBJS,
         LINK_STRINGS = LINK_STRINGS
       );
+      //println$ "Mapped requirements = " + result._strr;
+      return result;
     }
   
     proc write_include_file(path:string, INCLUDE_FILES:list[string]) {

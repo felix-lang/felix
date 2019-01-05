@@ -363,7 +363,8 @@ notorious  :code:`errno`.
   /// frame creators.
   typedef void *(*thread_frame_creator_t)
   (
-    ::flx::gc::generic::gc_profile_t*
+    ::flx::gc::generic::gc_profile_t*,
+    void*
   );
   
   /// library initialisation routine.
@@ -461,12 +462,14 @@ notorious  :code:`errno`.
     ::flx::rtl::con_t *main_proc;
     flx_dynlink_t *lib;
     ::flx::gc::generic::gc_profile_t *gcp;
+    void *world;  // FIXME: flx_world*, can't specify atm due to circularity
     bool debug;
   
     void create
     (
       flx_dynlink_t *lib_a,
       ::flx::gc::generic::gc_profile_t *gcp_a,
+      void *world_a, // FIXME as above
       int argc,
       char **argv,
       FILE *stdin_,
@@ -645,6 +648,7 @@ The  :code:`flx_dynlink` unit:  :code:`flx_libinst_t` class implementation.
   (
     flx_dynlink_t *lib_a,
     flx::gc::generic::gc_profile_t *gcp_a,
+    void *world_a,
     int argc,
     char **argv,
     FILE *stdin_,
@@ -655,12 +659,13 @@ The  :code:`flx_dynlink` unit:  :code:`flx_libinst_t` class implementation.
   {
     lib = lib_a;
     gcp = gcp_a;
+    world = world_a;
     debug = debug_;
     if (debug)
       fprintf(stderr,"[libinst:create] Creating instance for library %p->'%s'\n",lib, lib->filename.c_str());
     if (debug)
       fprintf(stderr, "[libinst:create] Creating thread frame\n");
-    thread_frame = lib->thread_frame_creator( gcp);
+    thread_frame = lib->thread_frame_creator( gcp, world);
     if (debug)
       fprintf(stderr, "[libinst:create] thread frame CREATED %p\n", thread_frame);
     if (debug)
@@ -695,7 +700,6 @@ The  :code:`flx_dynlink` unit:  :code:`flx_libinst_t` class implementation.
   // ********************************************************
   FLX_FINALISER(flx_dynlink_t)
   ::flx::gc::generic::gc_shape_t flx_dynlink_ptr_map = {
-    NULL,
     "dynlink::flx_dynlink_t",
     1,sizeof(flx_dynlink_t),
     flx_dynlink_t_finaliser, 
@@ -721,7 +725,6 @@ The  :code:`flx_dynlink` unit:  :code:`flx_libinst_t` class implementation.
   FLX_FINALISER(flx_libinst_t)
   static ::flx::gc::generic::offset_data_t const flx_libinst_offset_data = { 4, flx_libinst_offsets };
   ::flx::gc::generic::gc_shape_t flx_libinst_ptr_map = {
-    &flx_dynlink_ptr_map,
     "dynlink::flx_libinst",
     1,sizeof(flx_libinst_t),
     flx_libinst_t_finaliser, 
@@ -1085,12 +1088,12 @@ or thread frame.
     //$ This is a procedure, so maybe the caller is too
     //$ which means the thread frame must be available.
     proc create: flx_library * flx_instance =
-      "$2->create($1,PTF gcp,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
+      "$2->create($1,PTF gcp,PTF world,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
       requires property "needs_gc"
     ;
   
     proc create_with_args: flx_library * flx_instance * int * + (+char) =
-      "$2->create($1,PTF gcp,$3,$4,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
+      "$2->create($1,PTF gcp,PTF world,$3,$4,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
       requires property "needs_gc"
     ;
   

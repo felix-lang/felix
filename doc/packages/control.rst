@@ -10,8 +10,8 @@ key          file
 ============ ==================================
 __init__.flx share/lib/std/control/__init__.flx 
 control.flx  share/lib/std/control/control.flx  
-swapop.fsyn  share/lib/grammar/swapop.fsyn      
 ============ ==================================
+
 
 Control Synopsis
 ================
@@ -22,6 +22,7 @@ Control Synopsis
 
   //[__init__.flx]
   // stream is part of datatype, included in std/datatype/__init__
+  include "std/control/svc";
   include "std/control/control";
   include "std/control/unique";
   include "std/control/iterator";
@@ -53,7 +54,6 @@ Misc Control Flow
 .. index:: entry_label(fun)
 .. index:: current_continuation(fun)
 .. index:: throw_continuation(proc)
-.. index:: svc_req_t(union)
 .. code-block:: felix
 
   //[control.flx]
@@ -173,46 +173,6 @@ Misc Control Flow
   
     _gc_pointer type _schannel = "::flx::rtl::schannel_t*";
   
-    //$ Felix-OS service call codes.
-    // THESE VALUES MUST SYNC WITH THE RTL
-    // LAYOUT CHANGE: pointers are now stored in the _uctor_
-    // instead of on the heap with a pointer in the uctor
-    // This doesn't affect abstract types, even if they're pointers in C
-    union svc_req_t =
-    /*0*/ | svc_yield
-    /*1*/ | svc_get_fthread         of &fthread    // CHANGED LAYOUT
-    /*2*/ | svc_read                of address
-    /*3*/ | svc_general             of &address    // CHANGED LAYOUT
-    /*4*/ | svc_reserved1
-    /*5*/ | svc_spawn_pthread       of fthread
-    /*6*/ | svc_spawn_detached      of fthread
-    /*7*/ | svc_sread               of _schannel * &address
-    /*8*/ | svc_swrite              of _schannel * &address
-    /*9*/ | svc_kill                of fthread
-    /*10*/ | svc_swait
-    /*11*/ | svc_multi_swrite       of _schannel * &address 
-    /*12*/ | svc_schedule_detached  of fthread
-    ;
-  
-    //$ Procedure to perform a supervisor call. 
-    //$ this interface just gets rid of the horrible requirement
-    //$ the request be in a variable so it is addressable.
-    //$ The _svc statement is a compiler intrinsic.
-    noinline proc svc(svc_x:svc_req_t) {
-      var svc_y=svc_x;
-      _svc svc_y;
-    }
-  
   }
-
-
-.. code-block:: felix
-
-  //[swapop.fsyn]
-  syntax swapop
-  {
-    sswapop := "<->" =># "'_swap";
-  }
-
 
 

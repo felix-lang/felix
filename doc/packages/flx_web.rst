@@ -499,7 +499,7 @@ This is the actual webserver code.
     split_url$ postline_to_url get
   ;
   
-  union request_type = reqGET | reqPOST | reqHEAD | reqERROR;
+  variant request_type = reqGET | reqPOST | reqHEAD | reqERROR;
   
   fun parse_request_type (r:string) =>
     if startswith r "GET" then reqGET
@@ -1314,6 +1314,8 @@ This is the actual webserver code.
         serve_head(k,file);
       | #None => println$ "BAD HEAD line: '"+line+"'";
       endmatch;
+    | #reqPOST =>
+      println$ "Unsupported POST; line: '"+line+"'";        
     | #reqERROR =>
       println$ "BAD request line: '"+line+"'";
     endmatch;
@@ -1574,7 +1576,6 @@ Ocaml
 
 .. index:: Ocaml2Html(class)
 .. index:: write_string(proc)
-.. index:: state_t(union)
 .. index:: str(fun)
 .. index:: next(proc)
 .. index:: ahead(fun)
@@ -1619,7 +1620,7 @@ Ocaml
      out += t;
     }
   
-    union state_t = 
+    variant state_t = 
       | sot // start of token
       | id // processing identifier
       | num // in a number
@@ -1757,7 +1758,6 @@ Python
 
 .. index:: Py2Html(class)
 .. index:: write_string(proc)
-.. index:: state_t(union)
 .. index:: str(fun)
 .. index:: next(proc)
 .. index:: ahead(fun)
@@ -1795,7 +1795,7 @@ Python
      out += t;
     }
   
-    union state_t = 
+    variant state_t = 
       | sot // start of token
       | id // processing identifier
       | num // in a number
@@ -1972,7 +1972,6 @@ Felix  :code:`flx` format.
 
 .. index:: Flx2Html(class)
 .. index:: write_string(proc)
-.. index:: state_t(union)
 .. index:: str(fun)
 .. index:: next(proc)
 .. index:: ahead(fun)
@@ -2245,7 +2244,7 @@ Felix  :code:`flx` format.
      out += t;
     }
   
-    union state_t = 
+    variant state_t = 
       | sot // start of token
       | id // processing identifier
       | texid // processing identifier
@@ -2665,7 +2664,6 @@ C and C++ code.
 
 .. index:: Cpp2Html(class)
 .. index:: write_string(proc)
-.. index:: state_t(union)
 .. index:: str(fun)
 .. index:: next(proc)
 .. index:: ahead(fun)
@@ -2715,7 +2713,7 @@ C and C++ code.
       out += t;
     }
   
-    union state_t = 
+    variant state_t = 
       | sot // start of token
       | id // processing identifier
       | num // in a number
@@ -3640,7 +3638,7 @@ Web page architecture layout and decorators.
 
   //[scanner-interface.flx]
   // split up an fdoc into a stream of commands and text 
-  union fdoc-data_t = 
+  variant fdoc-data_t = 
     | Cmd of string
     | Text of string
   ;
@@ -3769,7 +3767,7 @@ Decorator Implementations.
   }
   
   export fun setup of (string) as "fdoc_button_setup";
-  export fun fdoc_button of () as "fdoc_button";
+  export fun fdoc_button of (unit) as "fdoc_button";
   
   
 
@@ -3848,7 +3846,7 @@ Decorator Implementations.
   }
   
   export fun setup of (string) as "fdoc_edit_setup";
-  export fun fdoc_edit of () as "fdoc_edit";
+  export fun fdoc_edit of (unit) as "fdoc_edit";
   
   
 
@@ -4447,7 +4445,7 @@ Decorator Implementations.
   
    
   export fun setup of (string) as "fdoc_scanner_setup";
-  export fun fdoc_scanner of () as "fdoc_scanner";
+  export fun fdoc_scanner of (unit) as "fdoc_scanner";
   
 
 .. index:: end_slide_section(proc)

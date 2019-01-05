@@ -441,7 +441,6 @@ Posix Process
 .. index:: child_process(const)
 .. index:: bad_process(const)
 .. index:: fork(gen)
-.. index:: spawn_result_t(union)
 .. index:: spawnv(gen)
 .. index:: spawnvp(gen)
 .. index:: spawnve(gen)
@@ -452,7 +451,6 @@ Posix Process
 .. index:: WNONE(const)
 .. index:: waitpid(gen)
 .. index:: waitpid(gen)
-.. index:: ProcesStatus(union)
 .. index:: checkpid(gen)
 .. index:: kill(gen)
 .. index:: OUR_PROCESS_GROUP(const)
@@ -527,7 +525,7 @@ Posix Process
   
     gen fork: unit -> pid_t = "fork()" requires Posix_headers::unistd_h;
   
-    union spawn_result_t = 
+    variant spawn_result_t = 
     // returned to parent process
     | BadFork of errno_t  
     | ProcessId of pid_t 
@@ -617,7 +615,7 @@ Posix Process
       done
     }
   
-    union ProcesStatus= | Running | Stopped of process_status_t;
+    variant ProcesStatus = | Running | Stopped of process_status_t;
   
     gen checkpid(pid:pid_t) = {
       var status: process_status_t;
@@ -665,7 +663,6 @@ Win32 Process
 .. index:: pid_t(type)
 .. index:: intptr(ctor)
 .. index:: bad_process(const)
-.. index:: spawn_result_t(union)
 .. index:: spawnv(gen)
 .. index:: spawnvp(gen)
 .. index:: spawnve(gen)
@@ -679,7 +676,6 @@ Win32 Process
 .. index:: WNONE(const)
 .. index:: waitpid(gen)
 .. index:: waitpid(gen)
-.. index:: ProcesStatus(union)
 .. index:: checkpid(gen)
 .. index:: kill(gen)
 .. index:: OUR_PROCESS_GROUP(const)
@@ -751,7 +747,7 @@ Win32 Process
       fun str: pid_t -> string = "::flx::rtl::strutil::str<intptr_t>($1)" requires package "flx_strutil";
     }
   
-    union spawn_result_t = 
+    variant spawn_result_t = 
     // returned to parent process
     | BadFork of errno_t  
     | ProcessId of pid_t 
@@ -813,7 +809,7 @@ Win32 Process
       done
     }
   
-    union ProcesStatus= | Running | Stopped of process_status_t;
+    variant ProcesStatus = | Running | Stopped of process_status_t;
   
     gen checkpid(pid:pid_t) = {
       var status: process_status_t;
@@ -1165,7 +1161,7 @@ Posix Shell (Bash)
       {
         var args = Empty[string];
         var current = "";
-        union mode_t = | copy | skip | quote | dquote | escape-copy | escape-dquote;
+        variant mode_t = | copy | skip | quote | dquote | escape-copy | escape-dquote;
         var mode = skip;
         for ch in s do
           match mode with
@@ -1306,7 +1302,7 @@ Win32 Shell (cmd.exe)
       {
         var args = Empty[string];
         var current = "";
-        union mode_t = | copy | skip | dquote | escape-copy | escape-dquote;
+        variant mode_t = | copy | skip | dquote | escape-copy | escape-dquote;
         var mode = skip;
         for ch in s do
           match mode with

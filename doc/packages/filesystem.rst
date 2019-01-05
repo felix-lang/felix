@@ -251,7 +251,6 @@ Filestat
 .. index:: utime(proc)
 .. index:: chmod(gen)
 .. index:: umask(gen)
-.. index:: file_type_t(union)
 .. index:: file_type(fun)
 .. index:: stat(gen)
 .. index:: mtime(fun)
@@ -296,7 +295,7 @@ Filestat
     virtual gen umask: mode_t -> mode_t;
   
     //$ Abstracted platform independent file type taxonomy.
-    union file_type_t = 
+    variant file_type_t = 
       | PIPE 
       | STREAM 
       | DIRECTORY 

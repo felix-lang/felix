@@ -547,6 +547,7 @@ Array
 .. index:: map(fun)
 .. index:: rev_map(fun)
 .. index:: join(fun)
+.. index:: subarray(fun)
 .. index:: join(fun)
 .. index:: join(fun)
 .. index:: transpose(fun)
@@ -641,6 +642,33 @@ Array
       ;
       return o;
     }
+  
+    // this routine SHOULD check FIRST + LEN <= N
+    // we can perform that calculation now .. but there's no way yet to assert it
+    // we can, actually, add it as a constraint ..
+    // but we want the constraint to fail on monomorphisation
+    // NOT during overload resolution .. because that would just reject
+    // the candidate and lead to a not found error instead of a constraint violation error....
+    fun subarray[
+      FIRST:UNITSUM,
+      LEN:UNITSUM,
+      T,
+      N:UNITSUM, 
+      K:UNITSUM=_unitsum_min(LEN, N `- FIRST)
+    ] 
+    (a:T^N) : T ^ K
+    = 
+    {
+      var o : T ^ K;
+      for i in ..[K] do
+        var first = Typing::arrayindexcount[FIRST].int;
+        var outix = caseno i;
+        var inpix = (first + outix) :>> N; // checked at run time?
+        &o.i <- a.inpix;
+      done
+      return o;
+    }
+  
   
     //$ Append value to end of an array (functional).
     fun join[T, N:UNITSUM] (x:array[T, N]) (y:T):array[T, N `+ 1] = {
@@ -776,10 +804,12 @@ Varray
 .. index:: maxlen(fun)
 .. index:: _push_back(proc)
 .. index:: push_back(proc)
+.. index:: push_back(proc)
 .. index:: pop_back(proc)
 .. index:: erase(proc)
 .. index:: erase(proc)
 .. index:: insert(proc)
+.. index:: apply(fun)
 .. index:: map(fun)
 .. index:: rop(fun)
 .. index:: str(fun)
@@ -854,11 +884,6 @@ Varray
     ctor[t] varray[t] (x:varray[t]) =>
       varray[t] (len x, len x, (fun (i:size):t=> x.i))
     ;
-  
-    // construct a full varray from a varray and a slice[int]
-    //ctor[t] varray[t] (x:varray[t], s:slice[int]) = {
-    //   var sm = 
-    //}
   
     // Construct a varray from a list
     ctor[t] varray[t] (x:list[t]) = {
@@ -967,6 +992,7 @@ Varray
       done
       _push_back (x,v);  
     }
+    proc push_back[t] (x:varray[t]) (v:t) => push_back(x,v);
   
     //$ Pop an element off the end of a varray.
     //$ Aborts if the array is empty.
@@ -1040,6 +1066,14 @@ Varray
       done
     }
   
+    fun apply[T] (x:slice[int], v:varray[T])  {
+      var minr = max (min x,0);
+      var maxr = min (max x,v.len.int - 1);
+      var out = varray[T] (maxr - minr + 1).size;
+      for var i in minr upto maxr perform
+        out.push_back v.i;
+      return out;
+    }
   
     //$ Traditional map varray to varray.
     fun map[T, U] (_f:T->U) (x:varray[T]): varray[U] = {
@@ -1359,6 +1393,24 @@ Generally, this class is very incomplete.
     //$ probably should ..
     proc erase[t] (a:darray[t], first:int, last:int) => 
       erase ((_repr_ a)*.a, first,last);
+Slice
+-----
+
+
+
+
+.. index:: apply(fun)
+.. code-block:: felix
+
+  //[darray.flx]
+    fun apply[T] (x:slice[int], v:darray[T])  {
+      var minr = max (min x,0);
+      var maxr = min (max x,v.len.int - 1);
+      var out = varray[T] (maxr - minr + 1).size;
+      for var i in minr upto maxr perform
+        out.push_back v.i;
+      return darray out;
+    }
   
 Convert a darray to a string.
 -----------------------------

@@ -20,9 +20,20 @@ Contents:
   gc
   linux
   judy
-  rtl-threads
   rtl
+  spinlock
+  svc
+  rtl-threads
+  rtl-pthread-impl
+  rtl-conditionvariable
+  rtl-boundqueue
+  rtl-monitor
+  rtl-lfbag
+  rtl-slist
+  rtl-sysdlist
+  rtl-waitablebool
   serialisation
   strutil
   sync
+  async
 

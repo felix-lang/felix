@@ -16,12 +16,10 @@ forkjoin.flx           share/lib/std/pthread/forkjoin.flx
 mutex.flx              share/lib/std/pthread/mutex.flx              
 semaphore.flx          share/lib/std/pthread/semaphore.flx          
 condition_variable.flx share/lib/std/pthread/condition_variable.flx 
-ts_counter.flx         share/lib/std/pthread/ts_counter.flx         
 ts_bound_queue.flx     share/lib/std/pthread/ts_bound_queue.flx     
 atomic.flx             share/lib/std/pthread/atomic.flx             
 threadpool.flx         share/lib/std/pthread/threadpool.flx         
 threadpoolex1.flx      share/demo/threadpoolex1.flx                 
-pfor.fsyn              share/lib/grammar/pfor.fsyn                  
 ====================== ============================================
 
 
@@ -38,7 +36,6 @@ Pthread Synopsis
   include "std/pthread/pthread";
   //include "std/pthread/pchannels";
   include "std/pthread/mutex";
-  //include "std/pthread/ts_counter";
   //include "std/pthread/ts_bound_queue";
   //include "std/pthread/semaphore";
   //include "std/pthread/condition_variable";
@@ -69,6 +66,7 @@ synchronisation instead.
 
 .. index:: Pthread(class)
 .. index:: spawn_pthread(proc)
+.. index:: spawn_process(proc)
 .. index:: thread_yield(proc)
 .. code-block:: felix
 
@@ -77,7 +75,6 @@ synchronisation instead.
   header pthread_hxx = '#include "pthread_thread.hpp"';
   header mutex_hxx = '#include "pthread_mutex.hpp"';
   header condv_hxx = '#include "pthread_condv.hpp"';
-  header counter_hxx = '#include "pthread_counter.hpp"';
   header semaphore_hxx = '#include "pthread_semaphore.hpp"';
   header monitor_hxx = '#include "pthread_monitor.hpp"';
   header work_fifo_hxx = '#include "pthread_work_fifo.hpp"';
@@ -96,6 +93,13 @@ synchronisation instead.
         var con = start p;              // get continuation of p
         var fthr = mk_thread con;
         svc$ svc_spawn_pthread fthr;
+    }
+    //$ spawn a detached pthread sharing active list with spawner
+    proc spawn_process(p:1->0)
+    {
+        var con = start p;              // get continuation of p
+        var fthr = mk_thread con;
+        svc$ svc_spawn_process fthr;
     }
     proc thread_yield : 1 = "PTF gcp->collector->get_thread_control()->yield();";
   }
@@ -535,45 +539,6 @@ Condition Variables.
     gen timedwait: condition_variable * double -> int = "$1->timedwait($3)";
   }
   
-Thread Safe Counter.
-====================
-
-Probably redundant now we have upgraded to C++11 and have atomics.
-
-
-.. index:: Ts_counter(class)
-.. index:: ts_counter(type)
-.. index:: ts_counter(ctor)
-.. index:: destroy(proc)
-.. index:: pre_incr(gen)
-.. index:: post_incr(gen)
-.. index:: pre_decr(gen)
-.. index:: post_decr(gen)
-.. index:: decr_pos(gen)
-.. index:: get(gen)
-.. index:: set(proc)
-.. index:: swap(gen)
-.. index:: wait_zero(proc)
-.. code-block:: felix
-
-  //[ts_counter.flx]
-  
-  open class Ts_counter
-  {
-    type ts_counter = "::flx::pthread::flx_ts_counter_t*";
-    ctor ts_counter : 1 = "new ::flx::pthread::flx_ts_counter_t;";
-    proc destroy : ts_counter = "delete $1;";
-    gen pre_incr: ts_counter -> long = "$1->pre_incr()";
-    gen post_incr: ts_counter-> long  = "$1->post_incr()";
-    gen pre_decr: ts_counter -> long = "$1->pre_decr()";
-    gen post_decr: ts_counter -> long = "$1->post_decr()";
-    gen decr_pos: ts_counter -> long = "$1->decr_pos()";
-    gen get: ts_counter -> long = "$1->get()";
-    proc set: ts_counter * long = "$1->set($2);";
-    gen swap: ts_counter * long -> long  = "$1->swap($2)";
-    proc wait_zero: ts_counter = "$1->wait_zero();";
-  
-  }
 Thread Safe Bound Queue.
 ========================
 
@@ -728,8 +693,6 @@ overhead posting a job.
 .. index:: notify(proc)
 .. index:: join(proc)
 .. index:: pfor_segment(proc)
-.. index:: forloop(proc)
-.. index:: pforloop(proc)
 .. index:: tpfor(proc)
 .. code-block:: felix
 
@@ -853,12 +816,12 @@ overhead posting a job.
         for var counter in 0 upto nt - 2 do
           var sfirst = first + (N * counter) / nt;
           var slast = first + (N * (counter + 1)) / nt - 1;
-  //  println$ "QUEUE JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
+  //println$ "QUEUE JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
           ThreadPool::queue_job$ lbody (sfirst, slast);
         done
         sfirst = first + (N * (nt - 1)) / nt;
         slast = last;
-  //  println$ "UNQUEUED JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
+  //println$ "UNQUEUED JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
         lbody (sfirst, slast) ();
         join;
         pforrunning.store 0;
@@ -868,13 +831,14 @@ overhead posting a job.
       done
     }
   
-    inline proc forloop (lbody: int -> 0) (first:int, last:int) ()
+    noinline proc forloop (lbody: int -> 0) (first:int, last:int) ()
     {
   //println$ "forloop " + first.str + "," + last.str;
       for var i in first upto last call lbody i; 
     }
-    inline proc pforloop (first: int) (last:int) (lbody: int -> 0)
+    noinline proc pforloop (first: int) (last:int) (lbody: int -> 0)
     {
+  //println$ "Pfor segment " + first.str + "," last.str;
       pfor_segment (first, last)  (forloop lbody);
     }
     inline proc tpfor (first:int, last:int, lbody: int-> 0)
@@ -883,44 +847,6 @@ overhead posting a job.
     }
    
   }
-  
-Parallel loop grammar
----------------------
-
-
-
-.. code-block:: felix
-
-  //[pfor.fsyn]
-  syntax pfor
-  {
-     requires loops, blocks;
-  
-     //$ Parallel For loop
-     loop_stmt := "pfor" sname "in" sexpr "upto" sexpr block =>#
-      """
-      (let* 
-        (
-          (ctlvar _2)
-          (first _4)
-          (last _6)
-          (body _7)
-          (int (nos "int"))
-          (param `(PVar ,ctlvar ,int none)) ;; kind name type defaultvalue
-          (params `((,param) none))               ;; parameter list with constraint
-          (sfunargs `(,params))                   ;; HOF list of parameter lists
-          (proc `(ast_lambda ,_sr (,dfltvs ,sfunargs (ast_void ,_sr) (,body))))
-          (call `(ast_call ,_sr ,(nos "tpfor")  (ast_tuple ,_sr (,first ,last ,proc))))
-        )
-        ;;(begin (display body) (display "\n*****\n")
-        call
-        ;;)
-      )
-      """;
-  
-  
-  }
-  
 Thread Pool Demo
 ----------------
 
@@ -933,6 +859,8 @@ Thread Pool Demo
   
   // Matrix multiply
   macro val N = 1000;
+  typedef N = 1000;
+  
   typedef vec_t = array[double, N];
   typedef mx_t = array[vec_t,N];
   var a : mx_t;

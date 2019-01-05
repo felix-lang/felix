@@ -12,7 +12,7 @@ flx_build_flxg.flx $PWD/src/tools/flx_build_flxg.flx
 flx_build_prep.flx $PWD/src/tools/flx_build_prep.flx 
 flx_build_rtl.flx  $PWD/src/tools/flx_build_rtl.flx  
 flx_build_boot.flx $PWD/src/tools/flx_build_boot.flx 
-build_boot.flx     $PWD/src/config/build_boot.fpc    
+build_boot.fpc     $PWD/src/config/build_boot.fpc    
 ================== =================================
 
 
@@ -45,36 +45,6 @@ It is built directly from the repository.
   class BuildFlxg
   {
   
-  /* HEY, this is FELIX! We have our own time services
-  
-    // this utter rubbish is required just to format the time.
-    // Shame on the idiot C language, and even more on Posix!
-  
-    // some kind of integer time in seconds
-    private type time_t = "time_t" requires Posix_headers::sys_time_h;
-    private fun _ctor_long : time_t -> long = "(long)$1";
-  
-    // convert double to integer
-    private fun _ctor_time_t : double -> time_t = "static_cast<time_t>($1)";
-  
-    // split up time structure
-    private type struct_tm = "struct tm" requires C89_headers::time_h;
-  
-    // convert integer time to split up time
-    private proc gmtime_r : &time_t * &struct_tm;
-  
-    // format split up time
-    private gen strftime: +char * size * +char * &struct_tm -> size;
-  
-    private gen fmt_time (t: double, fmt:string) = {
-       var  tt = time_t t; // double to time_t
-       var tm:struct_tm;
-       gmtime_r(&tt,&tm); // split up time_t into pieces
-       var buffer = varray[char] (100uz, char 0);
-       var n = strftime(buffer.stl_begin,buffer.len, fmt.cstr, &tm);
-       return string(buffer.stl_begin, n);
-    }
-  */
   
     // remove slosh-newline
     fun pack(s:string) = {
@@ -149,13 +119,13 @@ It is built directly from the repository.
       typedef exespec_t = typeof (#exedflt);
   
       fun lexdflt () => (flags=Empty[string]);
-      typedef lexspec_t = typeof #lexdflt;
+      typedef lexspec_t = typeof (#lexdflt);
   
       fun yaccflt () => (flags=Empty[string]);
-      typedef yaccspec_t = typeof #lexdflt;
+      typedef yaccspec_t = typeof (#lexdflt);
   
       fun dypgendflt () => (flags=Empty[string]);
-      typedef dypgenspec_t = typeof #dypgendflt;
+      typedef dypgenspec_t = typeof (#dypgendflt);
   
       gen ocamldep (dir:string, src:string) = {
         var result, dep = Shell::get_stdout$ list$ "ocamldep.opt", "-native","-I", Filename::dirname src, "-I", dir, "-I", tmpdir, src;
@@ -194,7 +164,7 @@ It is built directly from the repository.
         return dfiles;
       }
   
-      union build_kind = Library | Executable;
+      variant build_kind = Library | Executable;
   
       gen ocaml_build(kind:build_kind, dir:string, lib:string, spec:libspec_t) =
       {
@@ -777,6 +747,74 @@ the build target directory.
         done
       done
   
+      // configure and db copy are exclusive
+      if cmd.configure do
+        println$ 'Generating Configuration';
+        if cmd.compiler not in ('gcc', 'clang', 'msvc') do
+          println$ 'ERROR: Configuration compiler must be gcc,clang or msvc';
+          System::exit 1;
+        done
+        if cmd.os not in ('linux', 'macosx', 'win') do
+          println$ 'ERROR: Configuration os must be linux,macosx or win';
+          System::exit 1;
+        done
+        if cmd.bits not in ('32', '64') do
+          println$ 'ERROR: Configuration bits musty be 32 or 64';
+          System::exit 1;
+        done
+        if cmd.os == 'win' and cmd.bits == '32' do
+          println$ 'ERROR: Only 64 bit windows is supported';
+          System::exit 1;
+        done
+  
+        // setup fpc's to copy: ORDER MATTERS!
+        var fpcs = ([ '([^/]*\\.fpc)']);
+        if cmd.os in ('linux','macosx') do  
+          fpcs +=  'unix'/'([^/]*\\.fpc)';
+          fpcs +=  ('unix'+cmd.bits)/'([^/]*\\.fpc)';
+        done
+        fpcs += cmd.os/'([^/]*\\.fpc)';
+        fpcs += (cmd.os+cmd.bits)/'([^/]*\\.fpc)';
+        fpcs += cmd.os/'([^/]*\\.fpc)';
+  
+        // Felix platform macro
+        var fmacs = ([cmd.os+'/([^/]*\\.flxh)']);
+  
+        // setup header files to copy
+        // os/bits/compiler config
+        var headers = ([(cmd.os+cmd.bits)/cmd.compiler/'rtl'/'([^/]*\\.hpp)']);
+        // socket config 
+        headers += (cmd.os+cmd.bits)/'rtl'/'([^/]*\\.hpp)';
+  
+        // do the copying
+        println$ 'Copying fpcs ..';
+        for pattern in fpcs perform
+          CopyFiles::copyfiles(cmd.repo/'src'/'config', pattern,
+            cmd.target_dir/cmd.target_bin/'config'/'${1}',true,cmd.debug);
+        println$ 'Copying platform macro ..';
+        for pattern in fmacs perform
+          CopyFiles::copyfiles(cmd.repo/'src'/'config', pattern,
+            cmd.target_dir/cmd.target_bin/'lib'/'plat'/'${1}',true,cmd.debug);
+        println$ 'Copying C++ headers ..';
+        for pattern in headers perform
+          CopyFiles::copyfiles(cmd.repo/'src'/'config', pattern,
+            cmd.target_dir/cmd.target_bin/'lib'/'rtl'/'${1}',true,cmd.debug);
+  
+        if cmd.c_compiler != "" do begin
+          println$ 'Specifying C compiler executable ' + cmd.c_compiler;
+          var fn = cmd.target_dir/cmd.target_bin/'config'/"toolchain_"+cmd.compiler+"_"+cmd.os+"_c_compiler_executable.fpc";
+          var txt = (["compiler: " + cmd.c_compiler]);
+          save (fn,txt);
+        end done
+  
+        if cmd.cxx_compiler != "" do begin
+          println$ 'Specifying C++ compiler executable ' + cmd.cxx_compiler;
+          var fnam = cmd.target_dir/cmd.target_bin/'config'/"toolchain_"+cmd.compiler+"_"+cmd.os+"_cxx_compiler_executable.fpc";
+          var txt = (["compiler: " + cmd.cxx_compiler]);
+          save (fnam,txt);
+        end done
+      done
+  
       if cmd.setup_pkg != "" do
         var setupdata = load cmd.setup_pkg;
         var commands = split(setupdata,"\n");
@@ -821,6 +859,7 @@ the build target directory.
   
     proc print_help()
     {
+      println$ "flx_build_prep v2018.09.22";
       println$ "Usage: flx_build_prep ";
       println$ "";
       println$ "# locations";
@@ -830,6 +869,16 @@ the build target directory.
       println$ "  --target-bin=target_bin     default: host";
       println$ "  --source-dir=source_dir     default: build/release";
       println$ "  --source-bin=source_bin     default: host";
+      println$ "";
+      println$ "# configuration";
+      println$ "";
+      println$ "  --configure                 generate configuration";
+      println$ "  --compiler=(gcc/clang/msvc) no default!";
+      println$ "  --os=(linux/macosx/win)     no default!";
+      println$ "  --bits=(32/64)              defaut 64";
+      println$ "  --c-compiler=               default std compiler name";
+      println$ "  --cxx-compiler=             default std compiler name";
+  
       println$ "";
       println$ "# cleaning options";
       println$ "";
@@ -888,14 +937,14 @@ the build target directory.
         &os <- os.strip;
         var compiler_family = Env::getenv "BUILD_FLX_TOOLCHAIN_FAMILY";
         match os,compiler_family do
-        | "","" => &toolchain <- "toolchain_mscv_win32";
+        | "","" => &toolchain <- "toolchain_mscv_win";
         | "Linux","" => &toolchain <- "toolchain_gcc_linux";
-        | "Darwin","" => &toolchain <- "toolchain_clang_osx";
+        | "Darwin","" => &toolchain <- "toolchain_clang_macosx";
   
         | "Linux","gcc" => &toolchain <- "toolchain_gcc_linux";
         | "Linux","clang" => &toolchain <- "toolchain_clang_linux";
-        | "Darwin","gcc" => &toolchain <- "toolchain_gcc_osx";
-        | "Darwin","clang" => &toolchain <- "toolchain_clang_osx";
+        | "Darwin","gcc" => &toolchain <- "toolchain_gcc_macosx";
+        | "Darwin","clang" => &toolchain <- "toolchain_clang_macosx";
   
         | _,_ => 
           println$ "No toolchain specified in toolchain.fpc or with --toolchain switch";
@@ -942,6 +991,12 @@ the build target directory.
          copy_version=false,
          copy_library=false,
          setup_pkg="",
+         configure=false,
+         compiler="notspecified",
+         os="notspecified",
+         bits="notspecified",
+         c_compiler="",
+         cxx_compiler="",
          debug = false
        );
   
@@ -983,7 +1038,21 @@ the build target directory.
            &cmd.copy_version <- true;
          elif arg == "--copy-library" do
            &cmd.copy_library <- true;
-   
+  
+         // configuration
+         elif prefix(arg,"--configure") do
+           &cmd.configure <-true;
+         elif prefix(arg,"--compiler") do
+           &cmd.compiler<- arg.[11 to];
+         elif prefix(arg,"--os=") do
+           &cmd.os<- arg.[5 to];
+         elif prefix(arg,"--bits=") do
+           &cmd.bits<- arg.[7 to];
+         elif prefix(arg,"--c-compiler=") do
+           &cmd.c_compiler<- arg.[13 to];
+         elif prefix(arg,"--cxx-compiler=") do
+           &cmd.cxx_compiler<- arg.[15 to];
+    
          // special configuration package
          elif prefix(arg,"--setup=") do
            &cmd.setup_pkg <- arg.[8 to];
@@ -1010,12 +1079,16 @@ the build target directory.
         System::exit(1);
       done
       var cmd = parse_args (tail xargs);
-      println$ "flx_build_prep v1.6";
+      println$ "flx_build_prep v2018.09.22";
       println$ "  repository       = " + cmd.repo;
       println$ "  target-dir       = " + cmd.target_dir;
       println$ "  target-bin       = " + cmd.target_bin;
       println$ "  source-dir       = " + cmd.source_dir;
       println$ "  source-bin       = " + cmd.source_bin;
+      if cmd.configure do
+        println$ "CONFIGURE compiler=" + cmd.compiler+", os=" + cmd.os + ", bits=" + cmd.bits;
+        cmd&.toolchain <- "toolchain_" + cmd.compiler + "_" + cmd.os;
+      done
       println$ "  setup-pkg        = " + cmd.setup_pkg;
       println$ "  toolchain (spec) = " + cmd.toolchain;
       flx_build (cmd);
@@ -1045,7 +1118,7 @@ share directory. Does not look in the repository.
 .. code-block:: felix
 
   //[flx_build_rtl.flx]
-  include "std/felix/toolchain_clang_config";
+  include "std/felix/toolchain_config";
   include "std/felix/toolchain_interface";
   include "std/felix/flx_pkgconfig";
   include "std/felix/flx_pkg"; // only for "fix2word_flags"
@@ -1089,9 +1162,19 @@ share directory. Does not look in the repository.
       var db = FlxPkgConfig::FlxPkgConfigQuery (list[string] pkgdir);
   
       gen getbootfield (field:string) => db.getpkgfield1 ehandler (boot_package, field);
-      gen gettoolchain () => db.getpkgfield1 ehandler ("toolchain","toolchain");
-      var toolchain = gettoolchain();
-      println$ "toolchain    : " + str toolchain;
+      // toolchain pkg 1
+      var toolchain_name = db.getpkgfield1 ehandler ("toolchain","toolchain");
+  
+      var c_compiler_executable = 
+        db.getpkgfielddflt ehandler (toolchain_name+"_c_compiler_executable", "compiler")
+      ;
+  
+      var cxx_compiler_executable =
+        db.getpkgfielddflt ehandler (toolchain_name+"_cxx_compiler_executable", "compiler")
+      ;
+  
+  
+      println$ "toolchain    : " + str toolchain_name + ", c: "+ c_compiler_executable + ", c++: " + cxx_compiler_executable;
   
       var allpkgs = db.getclosure ehandler boot_package;
       //println$ "Closure      : " + str allpkgs;
@@ -1103,11 +1186,11 @@ share directory. Does not look in the repository.
       end 
   
       var toolchain-maker = 
-        Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] 
+        Dynlink::load-plugin-func1 [toolchain_t,toolchain_config_t] 
         (
-          dll-name=toolchain, 
+          dll-name=toolchain_name, 
           setup-str="",
-          entry-point=toolchain
+          entry-point=toolchain_name
         )
       ;
       for pkg in allpkgs begin
@@ -1126,7 +1209,7 @@ share directory. Does not look in the repository.
           var src_dir =  build / 'share';
           var share_rtl = src_dir / 'lib' / 'rtl';
           var target_dir =  build / target / 'lib' / 'rtl';
-          var result = FlxLibBuild::make_lib (db,toolchain-maker, src_dir, target_dir, share_rtl, pkg,tmpdir, static_only, debug) ();
+          var result = FlxLibBuild::make_lib (db,toolchain-maker, c_compiler_executable, cxx_compiler_executable,src_dir, target_dir, share_rtl, pkg,tmpdir, static_only, debug) ();
           if not result do
             eprintln$ "Library build " + pkg + " failed";
             System::exit 1;
@@ -1144,8 +1227,10 @@ share directory. Does not look in the repository.
         println$ "Make drivers";
         println$ "------------";
         var srcdir = repo/"src"/"flx_drivers";
-        var config = 
+        var toolchain_config = 
           (
+            c_compiler_executable = c_compiler_executable,
+            cxx_compiler_executable = cxx_compiler_executable,
             header_search_dirs= list[string] (hrtl, srcdir, srtl),
             macros= Empty[string],
             ccflags = Empty[string],
@@ -1160,7 +1245,7 @@ share directory. Does not look in the repository.
             bin / dstprg
         ;
   
-        var toolchain = toolchain-maker config;
+        var toolchain = toolchain-maker toolchain_config;
         println$ #(toolchain.whatami);
         proc cobj_static (s:string,dst:string) {
           var src = srcdir/s;
@@ -1328,7 +1413,7 @@ share directory. Does not look in the repository.
         System::exit(1);
       done
       var cmd = parse_args (tail xargs);
-      println$ "flx_build_rtl v1.8";
+      println$ "flx_build_rtl v1.9";
       println$ "  build-package = " + cmd.boot_package;
       println$ "  target-dir    = " + cmd.target_dir;
       println$ "  target-bin    = " + cmd.target_bin;
@@ -1356,9 +1441,9 @@ to build. The standard file is  :code:`build_boot.fpc` in the configuration
 directory.
 
 
-.. code-block:: felix
+.. code-block:: fpc
 
-  //[build_boot.flx]
+  //[build_boot.fpc]
   web_plugin:      cpp2html
   web_plugin:      fdoc2html
   web_plugin:      fdoc_edit
@@ -1375,12 +1460,12 @@ directory.
   web_plugin:      ocaml2html
   web_plugin:      py2html
   toolchain_plugin:      toolchain_clang_linux
-  toolchain_plugin:      toolchain_clang_osx
+  toolchain_plugin:      toolchain_clang_macosx
   toolchain_plugin:      toolchain_iphoneos
   toolchain_plugin:      toolchain_iphonesimulator
   toolchain_plugin:      toolchain_gcc_linux
-  toolchain_plugin:      toolchain_gcc_osx
-  toolchain_plugin:      toolchain_msvc_win32
+  toolchain_plugin:      toolchain_gcc_macosx
+  toolchain_plugin:      toolchain_msvc_win
   tool:      flx_cp
   tool:      flx_ls
   tool:      flx_grep
@@ -1395,6 +1480,8 @@ directory.
   tool:      flx_renumber
   tool:      flx_iscr
   tool:      flx_pretty
+  flx_tool: flx_find_cxx_packages
+  flx_tool: flx_gen_cxx_includes
   flx_tool: flx_pkgconfig
   flx_tool: flx_build_prep
   flx_tool: flx_build_rtl
@@ -1415,7 +1502,7 @@ directory.
 .. code-block:: felix
 
   //[flx_build_boot.flx]
-  include "std/felix/toolchain_clang_config";
+  include "std/felix/toolchain_config";
   include "std/felix/toolchain_interface";
   include "std/felix/flx_cp";
   include "std/felix/flx_pkgconfig";
@@ -1438,7 +1525,7 @@ directory.
       for plugin in plugins do
         println$ "Building plugin " + plugin;
         var result = Flx_client::runflx$ list ('[flx]',
-          '--test='+target_dir, '--target-subdir='+target_bin, 
+          '--test='+target_dir, '--target='+target_bin, 
           '-c', '-ox',target_dir/target_bin/'lib'/'rtl'/plugin, 
           target_dir/'share'/'lib'/'plugins'/plugin);
         if result != 0 do 
@@ -1447,7 +1534,7 @@ directory.
         done
   
         result = Flx_client::runflx$ list ('[flx]',
-          '--test='+target_dir, '--target-subdir='+target_bin, 
+          '--test='+target_dir, '--target='+target_bin, 
           '-c', '--nolink','-ox', target_dir/target_bin/'lib'/'rtl'/plugin, 
           target_dir/'share'/'lib'/'plugins'/plugin);
         if result != 0 do 
@@ -1456,7 +1543,7 @@ directory.
         done
   
         result = Flx_client::runflx$ list ('[flx]',
-          '--test='+target_dir, '--target-subdir='+target_bin, 
+          '--test='+target_dir, '--target='+target_bin, 
           '--static','-c', '--nolink','-ox', target_dir/target_bin/'lib'/'rtl'/plugin, 
           target_dir/'share'/'lib'/'plugins'/plugin);
         if result != 0 do 
@@ -1474,7 +1561,7 @@ directory.
         var src = Filename::join ("tools",exe);
         println$ src + " -> " + exe;
         var result = Flx_client::runflx$ list ('[flx]',
-          '--test='+target_dir, '--target-subdir='+target_bin, 
+          '--test='+target_dir, '--target='+target_bin, 
           '--static','-c',
           '-ox', target_dir/target_bin/'bin'/exe, target_dir/'share'/'src'/src);
         if result != 0 do 
@@ -1491,7 +1578,7 @@ directory.
         var src = Filename::join ("tools",exe);
         println$ src + " -> " + exe;
         var result = Flx_client::runflx$ list ('[flx]',
-          '--test='+target_dir, '--target-subdir='+target_bin, 
+          '--test='+target_dir, '--target='+target_bin, 
           '--static','-c',
           '-ox', target_dir/target_bin/'bin'/exe, target_dir/'share'/'src'/src);
         if result != 0 do 
@@ -1511,7 +1598,7 @@ directory.
   
       println$ "dflx_web  -> dflx_web object file";
       var result = Flx_client::runflx$ list ('[flx]',
-        '--test='+target_dir, '--target-subdir='+target_bin, 
+        '--test='+target_dir, '--target='+target_bin, 
         '--static','-c','--nolink',
         '-o', target_dir/target_bin/'lib'/'rtl'/'dflx_web'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx_web');
       if result != 0 do 
@@ -1529,7 +1616,7 @@ directory.
       result = Flx_client::runflx$ 
         list (
           '[flx]',
-          '--test='+target_dir, '--target-subdir='+target_bin, 
+          '--test='+target_dir, '--target='+target_bin, 
           '--static','-c',
           '-ox', target_dir/target_bin/'bin'/'flx_web') + 
         web_plugin_objs +
@@ -1552,7 +1639,7 @@ directory.
       done
       println$ "dflx  -> dflx object file";
       var result = Flx_client::runflx$ list ('[flx]',
-        '--test='+target_dir, '--target-subdir='+target_bin, 
+        '--test='+target_dir, '--target='+target_bin, 
         '-c','--nolink', '--static',
         '-o', target_dir/target_bin/'lib'/'rtl'/'dflx'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx');
       if result != 0 do 
@@ -1572,7 +1659,7 @@ directory.
       println$ "Build flx. Note: requires --build-toolchain-plugins";
       println$ "flx  -> flx";
       result = Flx_client::runflx$ list ('[flx]',
-        '--test='+target_dir, '--target-subdir='+target_bin, 
+        '--test='+target_dir, '--target='+target_bin, 
         '--static','-c',
         '-ox', target_dir/target_bin/'bin'/'flx') + toolchain_objects +
         (target_dir/target_bin/'lib'/'rtl'/'dflx' + obj_extn) +

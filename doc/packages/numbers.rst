@@ -283,7 +283,6 @@ Floating Formats
 
 
 .. index:: float_format(class)
-.. index:: mode(union)
 .. index:: fmt(fun)
 .. index:: fmt(fun)
 .. index:: fmt_default(fun)
@@ -302,7 +301,7 @@ Floating Formats
     //$ default (w,d)    : like C "w.dG" format
     //$ fixed (w,d)      : like C "w.dF" format
     //$ scientific (w,d) : like C "w.dE" format
-    union mode =
+    variant mode =
       | default of int * int
       | fixed of int * int
       | scientific of int * int

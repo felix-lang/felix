@@ -38,7 +38,9 @@ current date and time of day.
     inherit PosixTime;
   done
     rename fun sleep =  Faio::sleep; 
+  
   }
+  
   
 Posix RTC
 =========
@@ -46,6 +48,10 @@ Posix RTC
 
 
 .. index:: PosixTime(class)
+.. index:: system_timepoint(type)
+.. index:: system_duration(type)
+.. index:: system_clock_now(gen)
+.. index:: double(ctor)
 .. code-block:: felix
 
   //[posix_time.flx]
@@ -76,6 +82,24 @@ Posix RTC
         return tv.tv_sec.double + tv.tv_usec.double / 1.0e6;
       }
     }
+  
+    type system_timepoint  = "::std::chrono::time_point<::std::chrono::system_clock>"
+      requires Cxx11_headers::chrono, Cxx11_headers::ratio
+    ;
+  
+    type system_duration = "::std::chrono::system_clock::duration"
+      requires Cxx11_headers::chrono, Cxx11_headers::ratio
+    ;
+  
+    gen system_clock_now : 1 -> system_timepoint = "::std::chrono::system_clock::now()";
+  
+    // elapsed time
+    fun -: system_timepoint * system_timepoint -> system_duration = "$1-$2";
+    
+    ctor double : system_duration = """
+      ((::std::chrono::duration<double>($1)).count())
+    """;
+  
   }
   
 Win32 RTC

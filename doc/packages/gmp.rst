@@ -232,8 +232,10 @@ Test code
   open Gmp;
   
   syntax gmp_syntax {
-    x[ssetunion_pri] := x[ssetunion_pri] "/\" x[>ssetunion_pri] =># "`(ast_apply ,_sr (lcm (,_1 ,_3)))" note "lcm";
-    x[ssetintersection_pri] := x[ssetintersection_pri] "\/" x[>ssetintersection_pri] =># "`(ast_apply ,_sr (gcd (,_1 ,_3)))" note "gcd";
+    x[ssetunion_pri] := x[ssetunion_pri] "/\" x[>ssetunion_pri] =># 
+      "`(ast_apply ,_sr (lcm (ast_tuple ,_sr (,_1 ,_3))))" note "lcm";
+    x[ssetintersection_pri] := x[ssetintersection_pri] "\/" x[>ssetintersection_pri] =># 
+      "`(ast_apply ,_sr (gcd (ast_tuple ,_sr (,_1 ,_3))))" note "gcd";
   }
   open syntax gmp_syntax;
   

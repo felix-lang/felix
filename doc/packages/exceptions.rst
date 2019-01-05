@@ -15,7 +15,6 @@ flx_eh.cpp                share/src/exceptions/flx_eh.cpp
 flx_exceptions.hpp        share/lib/rtl/flx_exceptions.hpp          
 flx_exceptions.cpp        share/src/exceptions/flx_exceptions.cpp   
 flx_exceptions_config.hpp share/lib/rtl/flx_exceptions_config.hpp   
-exceptions.fsyn           share/lib/std/control/exceptions.fsyn     
 flx_exceptions.py         $PWD/buildsystem/flx_exceptions.py        
 unix_flx_exceptions.fpc   $PWD/src/config/unix/flx_exceptions.fpc   
 win_flx_exceptions.fpc    $PWD/src/config/win/flx_exceptions.fpc    
@@ -29,7 +28,7 @@ Needed here in the exceptions library because it can be
 thrown as an exception.
 
 
-.. index:: _uctor_(struct)
+.. index:: svc_req_t(union)
 .. code-block:: cpp
 
   //[flx_continuation.hpp]
@@ -46,7 +45,7 @@ thrown as an exception.
   struct FLX_EXCEPTIONS_EXTERN con_t ///< abstract base for mutable continuations
   {
     FLX_PC_DECL               ///< interior program counter
-    struct _uctor_ *p_svc;           ///< pointer to service request
+    union svc_req_t *p_svc;           ///< pointer to service request
   
     con_t();                  ///< initialise pc, p_svc to 0
     virtual con_t *resume()=0;///< method to perform a computational step
@@ -553,38 +552,6 @@ across DLL boundaries. Gcc does not have this bug.
       return 5;
     }
   }
-
-
-Exception Grammar
-=================
-
-
-.. code-block:: felix
-
-  //[exceptions.fsyn]
-  syntax exceptions
-  {
-    //$ Exception handling.
-    //$
-    //$ try .. catch x : T => handler endtry
-    //$
-    //$ can be used to execute code which might throw
-    //$ an exception, and catch the exception.
-    //$
-    //$ This is primarily intended to for wrapping C bindings.
-    //$ Exceptions do not propage properly in Felix across
-    //$ multiple function/procedure layers. If you have to use
-    //$ this construction be sure to keep wrap the try block
-    //$ closely around the throwing code.
-    block := "try" stmt+ catches "endtry" =>#
-      "`(ast_seq ,_sr ,(append `((ast_try ,_sr)) _2 _3 `((ast_endtry ,_sr))))";
-  
-    catch := "catch" sname ":" sexpr  "=>" stmt+ =>#
-      "`(ast_seq ,_sr ,(cons `(ast_catch ,_sr ,_2 ,_4) _6))";
-  
-    catches := catch+ =># "_1";
-  }
-  
 
 .. code-block:: cpp
 

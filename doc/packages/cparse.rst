@@ -205,7 +205,7 @@ header files only, i.e. interfaces.
   typedef enum_t = string * list[enumconst_t];
   
   
-  union ctyp_t =
+  variant ctyp_t =
   | Base of string
   | Ptr of ctyp_t
   | ConstPtr of ctyp_t

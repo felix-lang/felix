@@ -433,7 +433,7 @@ Mainline
       world->begin_flx_code();
   
       // Run the felix usercode.
-      error_exit_code = world->run_until_complete();
+      error_exit_code = world->run();
       if(0 != error_exit_code) return error_exit_code;
   
       world->end_flx_code();

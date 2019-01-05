@@ -25,6 +25,7 @@ flx_rtl_config.hpp               share/lib/rtl/flx_rtl_config.hpp
 flx_rtl_config.h                 share/lib/rtl/flx_rtl_config.h                 
 flx_rtl_core.fpc                 $PWD/src/config/flx_rtl_core.fpc               
 flx_thread_free_rtl_core.fpc     $PWD/src/config/flx_thread_free_rtl_core.fpc   
+sysdlist.flx                     share/lib/std/control/sysdlist.flx             
 unix_flx.fpc                     $PWD/src/config/unix/flx.fpc                   
 win_flx.fpc                      $PWD/src/config/win/flx.fpc                    
 ================================ ==============================================
@@ -61,6 +62,7 @@ Bootstrap builder.
       macros = ['BUILD_RTL']
       libs = [
           call('buildsystem.flx_uint256_t.build_runtime', phase),
+          #call('buildsystem.flx_integer.build_runtime', phase),
           call('buildsystem.flx_strutil.build_runtime', phase),
           call('buildsystem.flx_dynlink.build_runtime', phase),
           call('buildsystem.flx_async.build_runtime', phase),
@@ -459,9 +461,11 @@ Compiler Support
   
   #define FLX_FRAME_WRAPPERS(mname,name) \
   extern "C" FLX_EXPORT mname::thread_frame_t *name##_create_thread_frame(\
-    ::flx::gc::generic::gc_profile_t *gcp\
+    ::flx::gc::generic::gc_profile_t *gcp,\
+    ::flx::run::flx_world *world\
   ) {\
     mname::thread_frame_t *p = new(*gcp,mname::thread_frame_t_ptr_map,false) mname::thread_frame_t();\
+    p->world = world;\
     p->gcp = gcp;\
     return p;\
   }
@@ -565,7 +569,6 @@ RTL
 ===
 
 
-.. index:: slist_node_t(struct)
 .. code-block:: cpp
 
   //[flx_rtl.hpp]
@@ -580,10 +583,15 @@ RTL
   #include "flx_compiler_support_headers.hpp"
   #include "flx_compiler_support_bodies.hpp"
   #include "flx_continuation.hpp"
+  #include "flx_svc.hpp"
   
   #include <string>
   #include <functional>
   #include <cstdint>
+  #include <mutex>
+  #include <list> 
+  #include <atomic>
+  #include "flx_spinlock.hpp"
   
   namespace flx { namespace rtl {
   
@@ -599,18 +607,32 @@ RTL
   // Felix system classes
   // ********************************************************
   
+  
+  struct RTL_EXTERN muxguard;
+  
   // MOVED TO flx_exceptions
   //struct RTL_EXTERN con_t;     // continuation
   struct RTL_EXTERN jump_address_t;     // label variable type
   struct RTL_EXTERN fthread_t; // f-thread
+  
   struct RTL_EXTERN _uctor_;   // union constructor
   //struct RTL_EXTERN _variant_;   // variant constructor
   struct RTL_EXTERN schannel_t;   // synchronous channel type
-  struct RTL_EXTERN slist_t;   // singly linked list of void*
-  struct RTL_EXTERN slist_node_t;   // singly linked list of void*
   struct RTL_EXTERN clptr_t;  // pointer to compact linear product component
   struct RTL_EXTERN clprj_t;  // compact linear projection
   
+  struct RTL_EXTERN muxguard {
+  private:
+     muxguard() = delete;
+     muxguard(muxguard const&) = delete;
+     muxguard *operator=(muxguard const&)=delete;
+    ::std::mutex *m;
+  public:
+    muxguard (::std::mutex *p);
+    ~muxguard ();
+  };
+   
+   
   // MOVE THIS TO RTL AND PROVIDE SUITABLE RTTI SO GC KNOWS ABOUT THE FRAME POINTER
   struct RTL_EXTERN jump_address_t
   {
@@ -625,31 +647,6 @@ RTL
     // default copy constructor and assignment
   };
   
-  
-  // ********************************************************
-  /// SLIST. singly linked lists: SHARABLE and COPYABLE
-  /// SLIST manages pointers to memory managed by the collector
-  // ********************************************************
-  
-  struct RTL_EXTERN slist_node_t {
-    slist_node_t *next;
-    void *data;
-    slist_node_t(slist_node_t *n, void *d) : next(n), data(d) {}
-  };
-  
-  
-  struct RTL_EXTERN slist_t {
-    slist_t(){} // hack
-    gc::generic::gc_profile_t *gcp;
-    struct slist_node_t *head;
-  
-    slist_t (gc::generic::gc_profile_t*); ///< create empty list
-  
-    void push(void *data);                ///< push a gc pointer
-    void *pop();                          ///< pop a gc pointer
-    bool isempty()const;
-  };
-  
   // ********************************************************
   /// FTHREAD. Felix threads
   // ********************************************************
@@ -657,16 +654,17 @@ RTL
   struct RTL_EXTERN fthread_t // fthread abstraction
   {
     con_t *cc;                    ///< current continuation
-  
+    fthread_t *next;              ///< link to next fthread, to be used in scheduler queue and schannels
     fthread_t();                  ///< dead thread, suitable for assignment
     fthread_t(con_t*);            ///< make thread from a continuation
-    _uctor_ *run();               ///< run until dead or driver service request
+    svc_req_t *run();               ///< run until dead or driver service request
     void kill();                  ///< kill by detaching the continuation
-    _uctor_ *get_svc()const;      ///< get current service request of waiting thread
+    svc_req_t *get_svc()const;      ///< get current service request of waiting thread
   private: // uncopyable
     fthread_t(fthread_t const&) = delete;
     void operator=(fthread_t const&) = delete;
   };
+  
   
   // ********************************************************
   /// SCHANNEL. Synchronous channels
@@ -674,13 +672,14 @@ RTL
   
   struct RTL_EXTERN schannel_t
   {
-    slist_t *waiting_to_read;             ///< fthreads waiting for a writer
-    slist_t *waiting_to_write;            ///< fthreads waiting for a reader
-    schannel_t(gc::generic::gc_profile_t*);
+    fthread_t *top; // has to be public for offsetof macro
+  
     void push_reader(fthread_t *);        ///< add a reader
     fthread_t *pop_reader();              ///< pop a reader, NULL if none
     void push_writer(fthread_t *);        ///< add a writer
     fthread_t *pop_writer();              ///< pop a writer, NULL if none
+    schannel_t();
+  
   private: // uncopyable
     schannel_t(schannel_t const&) = delete;
     void operator= (schannel_t const&) = delete;
@@ -700,7 +699,6 @@ RTL
     _uctor_(int *a, _uctor_ x) : variant(a[x.variant]), data(x.data) {}
   };
   
-  RTL_EXTERN char const *describe_service_call(int);
   
   // ********************************************************
   /// VARIANTS. Felix variant type
@@ -763,41 +761,13 @@ RTL
   }
   
   // dereference
-  inline cl_t deref(clptr_t q) { return *q.p / q.divisor % q.modulus; }
+  inline cl_t clt_deref(clptr_t q) { return *q.p / q.divisor % q.modulus; }
   
   // storeat
   inline void storeat (clptr_t q, cl_t v) {
       *q.p = *q.p - (*q.p / q.divisor % q.modulus) * q.divisor + v * q.divisor;
       //*q.p -= ((*q.p / q.divisor % q.modulus) - v) * q.divisor; //???
   }
-  
-  // ********************************************************
-  // SERVICE REQUEST CODE
-  // THESE VALUES MUST SYNCH WITH THE STANDARD LIBRARY
-  // ********************************************************
-  
-  enum svc_t               // what the dispatch should do
-  {                        // when the resume callback returns
-    svc_yield = 0,
-    svc_get_fthread=1,
-    svc_read=2,
-    svc_general=3,               // temporary hack by RF
-    svc_reserved1=4,
-    svc_spawn_pthread=5,
-    svc_spawn_detached=6,        // schedule fthread and invoke
-    svc_sread=7,                 // synchronous read
-    svc_swrite=8,                // synchronous write
-    svc_kill=9,                  // kill fthread
-    svc_swait =10,          
-    svc_multi_swrite=11,         // multi-write
-    svc_schedule_detached=12,    // schedule fthread (continue)
-    svc_end
-  };
-  
-  struct readreq_t {
-    schannel_t *chan;
-    void *variable;
-  };
   
   struct flx_trace_t
   {
@@ -833,90 +803,45 @@ RTL
   namespace flx { namespace rtl {
   
   
-  static char const *svc_desc[13] = {
-    "svc_yield",
-    "svc_get_fthread",
-    "svc_read",
-    "svc_general",
-    "svc_reserved1",
-    "svc_spawn_pthread",
-    "svc_spawn_detached",
-    "svc_sread",
-    "svc_swrite",
-    "svc_kill",
-    "svc_swait",
-    "svc_multi_swrite",
-    "svc_schedule_detached"
-  };
+  muxguard::muxguard (::std::mutex *p): m(p) { if (m)m->lock(); }
+  muxguard::~muxguard () { if (m)m->unlock(); }
   
-  char const *describe_service_call(int x)
-  {
-    if (x < 0 || x >12) return "Unknown service call";
-    else return svc_desc[x];
-  }
-  
-  // ********************************************************
-  // slist implementation
-  // ********************************************************
-  
-  slist_t::slist_t(::flx::gc::generic::gc_profile_t *_gcp) : gcp (_gcp), head(0) {}
-  
-  bool slist_t::isempty()const { return head == 0; }
-  
-  void slist_t::push(void *data)
-  {
-    head = new(*gcp,slist_node_ptr_map,true) slist_node_t(head,data);
-  }
-  
-  // note: never fails, return NULL pointer if the list is empty
-  void *slist_t::pop()
-  {
-    if(head) {
-      void *data = head->data;
-      head=head->next;
-      return data;
-    }
-    else return 0;
-  }
   // ********************************************************
   // fthread_t implementation
   // ********************************************************
   
-  fthread_t::fthread_t() : cc(0) {}
-  fthread_t::fthread_t(con_t *a) : cc(a) {}
+  fthread_t::fthread_t() : cc(nullptr), next(nullptr) {}
+  fthread_t::fthread_t(con_t *a) : cc(a), next(nullptr) {}
   
-  // uncopyable object but implementation needed for linker????
-  //fthread_t::fthread_t(fthread_t const&){ assert(false); }
-  //void fthread_t::operator=(fthread_t const&){ assert(false); }
+  void fthread_t::kill() { cc = nullptr; }
   
-  void fthread_t::kill() { cc = 0; }
+  svc_req_t *fthread_t::get_svc()const { return cc?cc->p_svc:nullptr; }
   
-  _uctor_ *fthread_t::get_svc()const { return cc?cc->p_svc:0; }
-  
-  _uctor_ *fthread_t::run() {
-    if(!cc) return 0; // dead
+  svc_req_t *fthread_t::run() {
+    if(!cc) return nullptr; // dead
   restep:
-    cc->p_svc = 0;
+    cc->p_svc = nullptr;
   step:
     //fprintf(stderr,"[fthread_t::run::step] cc=%p->",cc);
     try { cc = cc->resume(); }
     catch (con_t *x) { cc = x; }
   
     //fprintf(stderr,"[fthread_t::run::step] ->%p\n",cc);
-    if(!cc) return 0; // died
+    if(!cc) return nullptr; // died
   
     if(cc->p_svc)
     {
       //fprintf(stderr,"[fthread_t::run::service call] ->%d\n",cc->p_svc);
-      switch(cc->p_svc->variant)
+      switch(cc->p_svc->svc_req)
       {
+  /*
         case svc_get_fthread:
           // NEW VARIANT LAYOUT RULES
           // One less level of indirection here
           //**(fthread_t***)(cc->p_svc->data) = this;
           *(fthread_t**)(cc->p_svc->data) = this;
           goto restep;      // handled
-  
+  */
         //case svc_yield:
         //  goto restep;
   
@@ -933,35 +858,38 @@ RTL
   // schannel_t implementation
   // ********************************************************
   
-  schannel_t::schannel_t (gc::generic::gc_profile_t *gcp) :
-    waiting_to_read(0), waiting_to_write(0)
-  {
-    waiting_to_read = new (*gcp, slist_ptr_map,false) slist_t(gcp);
-    waiting_to_write = new (*gcp, slist_ptr_map,false) slist_t(gcp);
-  }
+  schannel_t::schannel_t () : top(nullptr) {}
   
-  // uncopyable object but implementation needed for linker
-  //schannel_t::schannel_t(schannel_t const&) { assert(false); }
-  //void schannel_t::operator=(schannel_t const&) { assert(false); }
-  
+  // PRECONDITION: channel is empty or has readers
   void schannel_t::push_reader(fthread_t *r)
   {
-    waiting_to_read->push(r);
+    r->next = top;
+    top = r;
   }
   
+  // PRECONDITION: channel is empty or has writers
   void schannel_t::push_writer(fthread_t *w)
   {
-    waiting_to_write->push(w);
+    w->next = top;
+    top = (fthread_t*)((uintptr_t)w | 1u);
   }
   
   fthread_t *schannel_t::pop_reader()
   {
-    return (fthread_t*)waiting_to_read->pop();
+    if (top == nullptr || (uintptr_t)top & 1u) return nullptr; // NULL or low bit set
+    fthread_t *tmp = top;
+    top = tmp->next;
+    tmp->next = nullptr; // for GC
+    return tmp;
   }
   
   fthread_t *schannel_t::pop_writer()
   {
-    return (fthread_t*)waiting_to_write->pop();
+    if (!((uintptr_t)top & 1u)) return nullptr; // low bit clear (includes NULL case)
+    fthread_t *tmp = (fthread_t*)((uintptr_t)top & ~(uintptr_t)1u); // mask out low bit
+    top = tmp->next;
+    tmp->next = nullptr; // for GC
+    return tmp;
   }
   // ********************************************************
   // trace feature
@@ -1091,6 +1019,8 @@ RTL
   
   
 
+
+
 Exec Util
 =========
 
@@ -1127,29 +1057,19 @@ Exec Util
   
   void frun (::flx::gc::generic::gc_profile_t* gcp, ::flx::rtl::con_t *p)
   {
-    ::std::list< ::flx::rtl::fthread_t*> *q = 
-      new ::std::list<::flx::rtl::fthread_t*>()
-    ;
+    ::flx::run::fthread_list *q = new(*gcp,::flx::run::fthread_list_ptr_map,false) ::flx::run::fthread_list(gcp);
   
     ::flx::run::sync_sched *ss = 
-       new ::flx::run::sync_sched(false, gcp, q)
+       new(*gcp,::flx::run::sync_sched_ptr_map,false) ::flx::run::sync_sched(false, gcp, q)
     ;
   
     ::flx::rtl::fthread_t *ft = 
       new(*gcp,::flx::rtl::_fthread_ptr_map,false) ::flx::rtl::fthread_t(p)
     ;
   
-    ss->collector->add_root(ft);
-    ss->active->push_back(ft);
+    gcp->collector->add_root(ss);
     ss->frun();
-    if (ss->ft) ss->collector->remove_root(ss->ft);
-    for(
-      ::std::list<::flx::rtl::fthread_t*>::iterator pf = ss->active->begin();
-      pf != ss->active->end();
-      pf++
-    )
-    ss->collector->remove_root(*pf);
-    delete ss->active; delete ss->ft; delete ss;
+    gcp->collector->remove_root(ss);
   }
   
   }}}
@@ -1210,8 +1130,6 @@ Shapes
   RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _int_ptr_map;
   RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _address_ptr_map;
   //RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _caddress_ptr_map;
-  RTL_EXTERN extern ::flx::gc::generic::gc_shape_t slist_node_ptr_map;
-  RTL_EXTERN extern ::flx::gc::generic::gc_shape_t slist_ptr_map;
   RTL_EXTERN extern ::flx::gc::generic::gc_shape_t clptr_t_ptr_map;
   RTL_EXTERN extern ::flx::gc::generic::gc_shape_t clprj_t_ptr_map;
   RTL_EXTERN extern ::flx::gc::generic::gc_shape_t jump_address_ptr_map;
@@ -1226,71 +1144,21 @@ Shapes
   //[flx_rtl_shapes.cpp]
   #include "flx_rtl_shapes.hpp"
   #include "flx_rtl.hpp"
-  //#include "flx_collector.hpp"
   #include "flx_dynlink.hpp"
   #include <stddef.h>
   
   namespace flx { namespace rtl {
-  
-  
-  // ********************************************************
-  //OFFSETS for slist_node_t
-  // ********************************************************
-  static const std::size_t slist_node_offsets[2]={
-      offsetof(slist_node_t,next),
-      offsetof(slist_node_t,data)
-  };
-  
-  static ::flx::gc::generic::offset_data_t const slist_node_offset_data = { 2, slist_node_offsets };
-  ::flx::gc::generic::gc_shape_t slist_node_ptr_map = {
-    NULL,
-    "rtl::slist_node_t",
-    1,sizeof(slist_node_t),
-    0, // no finaliser,
-    0, // fcops
-    &slist_node_offset_data,
-    ::flx::gc::generic::scan_by_offsets,
-    ::flx::gc::generic::tblit<slist_node_t>,::flx::gc::generic::tunblit<slist_node_t>, 
-    ::flx::gc::generic::gc_flags_default,
-    0UL, 0UL
-  };
-  
-  
-  // ********************************************************
-  //OFFSETS for slist_t
-  // ********************************************************
-  static const std::size_t slist_offsets[1]={
-      offsetof(slist_t,head)
-  };
-  static ::flx::gc::generic::offset_data_t const slist_offset_data = { 1, slist_offsets };
-  
-  static CxxValueType<slist_t> _slist_t_fcops {};
-  
-  ::flx::gc::generic::gc_shape_t slist_ptr_map = {
-    &slist_node_ptr_map,
-    "rtl::slist_t",
-    1,sizeof(slist_t),
-    0, // no finaliser
-    &_slist_t_fcops, // fcops
-    &slist_offset_data,
-    ::flx::gc::generic::scan_by_offsets,
-    ::flx::gc::generic::tblit<slist_t>,::flx::gc::generic::tunblit<slist_t>, 
-    ::flx::gc::generic::gc_flags_default,
-    0UL, 0UL
-  };
-  
-  
   // ********************************************************
   //OFFSETS for fthread_t
   // ********************************************************
-  static const std::size_t _fthread_offsets[1]={
-      offsetof(fthread_t,cc)
+  static const std::size_t _fthread_offsets[2]={
+      offsetof(fthread_t,cc),
+      offsetof(fthread_t,next)
   };
   
-  static ::flx::gc::generic::offset_data_t const _fthread_offset_data = { 1, _fthread_offsets };
+  static ::flx::gc::generic::offset_data_t const _fthread_offset_data = { 2, _fthread_offsets };
   
   ::flx::gc::generic::gc_shape_t _fthread_ptr_map = {
-    &slist_ptr_map,
     "rtl::fthread_t",
     1,sizeof(fthread_t),
     0,
@@ -1306,15 +1174,13 @@ Shapes
   // ********************************************************
   //OFFSETS for schannel_t
   // ********************************************************
-  static const std::size_t schannel_offsets[2]={
-      offsetof(schannel_t,waiting_to_read),
-      offsetof(schannel_t,waiting_to_write)
+  static const std::size_t schannel_offsets[1]={
+      offsetof(schannel_t,top),
   };
   
-  static ::flx::gc::generic::offset_data_t const schannel_offset_data = { 2, schannel_offsets };
+  static ::flx::gc::generic::offset_data_t const schannel_offset_data = { 1, schannel_offsets };
   
   ::flx::gc::generic::gc_shape_t schannel_ptr_map = {
-    &_fthread_ptr_map,
     "rtl::schannel_t",
     1,sizeof(schannel_t),
     0, // no finaliser
@@ -1340,7 +1206,6 @@ Shapes
   static CxxValueType<_uctor_> _uctor_fcops {};
   
   ::flx::gc::generic::gc_shape_t _uctor_ptr_map = {
-    &schannel_ptr_map,
     "rtl::_uctor_",
     1,
     sizeof(_uctor_),
@@ -1367,7 +1232,6 @@ Shapes
   static ::flx::gc::generic::offset_data_t const _variant_offset_data = { 1, _variant_offsets };
   
   ::flx::gc::generic::gc_shape_t _variant_ptr_map = {
-    &_uctor_ptr_map,
     "rtl::_variant_",
     1,
     sizeof(_variant_),
@@ -1398,7 +1262,6 @@ Shapes
   static CxxValueType<jump_address_t> jump_address_t_fcops {};
   
   ::flx::gc::generic::gc_shape_t jump_address_ptr_map = {
-    &_uctor_ptr_map,
     "rtl::jump_address_t",
     1,
     sizeof(_uctor_),
@@ -1417,7 +1280,6 @@ Shapes
   
   
   ::flx::gc::generic::gc_shape_t _int_ptr_map = {
-    &jump_address_ptr_map,
     "rtl::int",
     1,
     sizeof(int),
@@ -1439,7 +1301,6 @@ Shapes
   static CxxValueType<cl_t> cl_t_fcops {};
   
   ::flx::gc::generic::gc_shape_t cl_t_ptr_map = {
-    &_int_ptr_map,
     "rtl::cl_t",
     1,
     sizeof(cl_t),
@@ -1464,7 +1325,6 @@ Shapes
   
   
   ::flx::gc::generic::gc_shape_t clptr_t_ptr_map = {
-    &cl_t_ptr_map,
     "rtl::clptr_t",
     1,
     sizeof(clptr_t),
@@ -1488,7 +1348,6 @@ Shapes
   
   
   ::flx::gc::generic::gc_shape_t clprj_t_ptr_map = {
-    &clptr_t_ptr_map,
     "rtl::clprj_t",
     1,
     sizeof(clprj_t),
@@ -1526,7 +1385,6 @@ Shapes
   // ********************************************************
   
   ::flx::gc::generic::gc_shape_t _address_ptr_map = {
-    &clprj_t_ptr_map,
     "rtl::address",
     1,
     sizeof(void*),
@@ -1739,7 +1597,7 @@ generated by the configuration system.
   Requires: flx flx_gc 
   Requires: flx_exceptions flx_pthread flx_async 
   Requires: re2 flx_dynlink demux faio
-  Requires: flx_uint256_t
+  Requires: flx_uint256_t 
   Requires: sqlite3
 
 
@@ -1750,7 +1608,7 @@ generated by the configuration system.
   Requires: flx flx_gc flx_thread_free_run 
   Requires: flx_exceptions
   Requires: re2 flx_dynlink
-  Requires: flx_uint256_t
+  Requires: flx_uint256_t 
   Requires: sqlite3
 
 

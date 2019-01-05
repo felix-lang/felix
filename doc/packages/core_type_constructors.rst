@@ -5,19 +5,17 @@ Package: src/packages/core_type_constructors.fdoc
 Core Type Constructors
 ======================
 
-================ =======================================
-key              file                                    
-================ =======================================
-option.flx       share/lib/std/datatype/option.flx       
-unitsum.flx      share/lib/std/datatype/unitsum.flx      
-unitsum_ops.fsyn share/lib/std/datatype/unitsum_ops.fsyn 
-tuple.flx        share/lib/std/datatype/tuple.flx        
-tupleexpr.fsyn   share/lib/std/datatype/tupleexpr.fsyn   
-slice.flx        share/lib/std/datatype/slice.flx        
-typing.flx       share/lib/std/datatype/typing.flx       
-special.flx      share/lib/std/datatype/special.flx      
-functional.flx   share/lib/std/datatype/functional.flx   
-================ =======================================
+============== =====================================
+key            file                                  
+============== =====================================
+option.flx     share/lib/std/datatype/option.flx     
+unitsum.flx    share/lib/std/datatype/unitsum.flx    
+tuple.flx      share/lib/std/datatype/tuple.flx      
+slice.flx      share/lib/std/datatype/slice.flx      
+typing.flx     share/lib/std/datatype/typing.flx     
+special.flx    share/lib/std/datatype/special.flx    
+functional.flx share/lib/std/datatype/functional.flx 
+============== =====================================
 
 
 Core Type Classes
@@ -39,6 +37,9 @@ Type Functors
 
 
 .. index:: Typing(class)
+.. index:: def(type)
+.. index:: def(type)
+.. index:: def(type)
 .. index:: def(type)
 .. index:: def(type)
 .. index:: def(type)
@@ -82,7 +83,8 @@ Type Functors
       | _ * ?b => b
       endmatch
     ;
-  
+  /*
+    // THESE SHOULD PROBABLY BE FIXED OR DELETED
     typedef fun type_lnot(x:TYPE):TYPE=>
       typematch x with
       | 0 => 1
@@ -130,7 +132,29 @@ Type Functors
   
     typedef fun type_gt (x:TYPE, y:TYPE):TYPE=> type_le (y, x);
     typedef fun type_lt (x:TYPE, y:TYPE):TYPE=> type_ge (y, x);
+  */
   
+    // Polymorphic type comparisons, including subtyping AND subsumption
+    typedef fun is_subtype (arg:TYPE, param:TYPE):BOOL =>
+      subtypematch arg with
+      | param => TRUE
+      | _ => FALSE
+      endmatch
+    ;
+  
+    typedef fun is_supertype (param:TYPE, arg:TYPE):BOOL =>
+      subtypematch arg with
+      | param => TRUE
+      | _ => FALSE
+      endmatch
+    ;
+  
+    typedef fun type_eq(a:TYPE, b:TYPE):BOOL =>
+      typematch a with
+      | b => TRUE
+      | _ => FALSE
+      endmatch
+    ;
   
     const memcount[t] : size = "#memcount";
     const arrayindexcount[t] : size = "#arrayindexcount";
@@ -159,7 +183,7 @@ Option
   // Note: some felix internals expect this to be defined here, not in a class, and
   // in this order.  Don't mess with it!
   publish "option type"
-  union opt[T] =
+  variant opt[T] =
     | None
     | Some of T
   ;
@@ -283,7 +307,7 @@ Slice
   //[slice.flx]
   
   open class Slice {
-  union slice[T] =
+  variant slice[T] =
     | Slice_all
     | Slice_from of T
     | Slice_from_counted of T * int /* second arg is count */
@@ -312,7 +336,7 @@ Slice
     | ( Slice_all 
       | Slice_from _
       ) => #maxval[T]
-    | Slice_from_counted (i,n) => advance (n, i)
+    | Slice_from_counted (i,n) => pred (advance (n, i))
     | Slice_to_incl i => i
     | Slice_to_excl i => pred i
     | Slice_range_incl (_,i) => i
@@ -427,7 +451,7 @@ Slice
     // assert m = 0 or  0 <= b <= e <= n and 0 < m < n
   }
   
-  union gslice[T] =
+  variant gslice[T] =
     | GSlice of slice[T]
     | GSSList of list[gslice[T]]
     | GSIList of list[T]
@@ -547,31 +571,14 @@ Treated as finite cyclic groups.
   typedef fun n"`/" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_div",(x,y),UNITSUM);
   typedef fun n"`%" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_mod",(x,y),UNITSUM);
   
-  typedef fun n"`min" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_min",(x,y),UNITSUM);
-  typedef fun n"`max" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_max",(x,y),UNITSUM);
-  typedef fun n"`gcd" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_gcd",(x,y),UNITSUM);
-  typedef fun n"`lcd" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_lcm",(x,y),UNITSUM);
+  typedef fun n"_unitsum_min" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_min",(x,y),UNITSUM);
+  typedef fun n"_unitsum_max" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_max",(x,y),UNITSUM);
+  typedef fun n"_unitsum_gcd" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_gcd",(x,y),UNITSUM);
+  typedef fun n"_unitsum_lcm" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_lcm",(x,y),UNITSUM);
   
   typedef fun n"`<" (x:UNITSUM,y:UNITSUM):BOOL=> _typeop ("_unitsum_lt",(x,y),BOOL);
   typedef fun n"`>" (x:UNITSUM,y:UNITSUM):BOOL=> _typeop ("_unitsum_lt",(y,x),BOOL);
-  typedef fun n"`==" (x:UNITSUM,y:UNITSUM):BOOL=> x `< y `and y `< x;
-
-
-.. code-block:: felix
-
-  //[unitsum_ops.fsyn]
-  syntax unitsum_ops 
-  {
-    x[ssum_pri] := x[ssum_pri] "`+" x[>ssum_pri] =># "(Infix)";
-    x[ssum_pri] := x[ssum_pri] "`-" x[>ssum_pri] =># "(Infix)";
-    x[ssum_pri] := x[ssum_pri] "`*" x[>ssum_pri] =># "(Infix)";
-    x[ssum_pri] := x[ssum_pri] "`/" x[>ssum_pri] =># "(Infix)";
-    x[ssum_pri] := x[ssum_pri] "`%" x[>ssum_pri] =># "(Infix)";
-    x[ssum_pri] := x[>scomparison_pri] "`==" x[>scomparison_pri] =># "(Infix)";
-    x[ssum_pri] := x[>scomparison_pri] "`<" x[>scomparison_pri] =># "(Infix)";
-    x[ssum_pri] := x[>scomparison_pri] "`>" x[>scomparison_pri] =># "(Infix)";
-  }
-
+  typedef fun n"`==" (x:UNITSUM,y:UNITSUM):BOOL=> x `< y and y `< x;
 // -----------------------------------------------------------------------------
 
 Category Theoretic Functional Operations
@@ -670,7 +677,6 @@ Category Theoretic Functional Operations
   
 Tuples
 ======
-
 
 
 .. index:: Tuple(class)
@@ -821,28 +827,6 @@ Tuples
        f5:u5->r5
       ) : u1 * u2 * u3 * u4 * u5 -> r1 * r2 * r3 * r4 * r5 => 
       fun (x1:u1,x2:u2,x3:u3,x4:u4,x5:u5) => f1 x1, f2 x2, f3 x3, f4 x4, f5 x5;
-  
-  }
-  
-Tuple Constructor Syntax
-========================
-
-
-.. code-block:: felix
-
-  //[tupleexpr.fsyn]
-  syntax tupleexpr
-  {
-    //$ Tuple formation by cons: right associative.
-    x[stuple_cons_pri] := x[>stuple_cons_pri] ",," x[stuple_cons_pri] =># 
-      """`(ast_tuple_cons ,_sr ,_1 ,_3)""";
-  
-    //$ Tuple formation by append: left associative
-    x[stuple_cons_pri] := x[stuple_cons_pri] "<,,>" x[>stuple_cons_pri] =># 
-     """`(ast_tuple_snoc ,_sr ,_1 ,_3)""";
-  
-    //$ Tuple formation non-associative.
-    x[stuple_pri] := x[>stuple_pri] ( "," x[>stuple_pri])+ =># "(chain 'ast_tuple _1 _2)";
   
   }
   

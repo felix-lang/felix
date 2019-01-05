@@ -227,8 +227,8 @@ Closure
    var out = Empty[gramentry_t];
    match p with
    | `Epsilon => out = ([head,p]);
-   | `Terminal _ => out = ([head,`Seq ([p]) :>> prod_t]);
-   | `Nonterminal s => out= ([head,`Seq ([p]) :>> prod_t]);
+   | `Terminal _ => out = ([head,(`Seq ([p]) :>> prod_t)]);
+   | `Nonterminal s => out= ([head,(`Seq ([p]) :>> prod_t)]);
   
    | `Seq ps =>
      var newseq = Empty[prod_t];
@@ -239,14 +239,14 @@ Closure
        | `Terminal _ => newseq = term ! newseq;
        | _ =>
          var newhead = fresh();
-         newseq = (`Nonterminal newhead ) :>> prod_t ! newseq;
+         newseq = (`Nonterminal newhead  :>> prod_t) ! newseq;
          out = unpack fresh (newhead,term);
        endmatch;
      done
   
      match newseq with 
-     | Empty => out = (head,#`Epsilon :>> prod_t ) ! out;
-     | _ => out = (head,`Seq (rev newseq) :>> prod_t) ! out;
+     | Empty => out = (head,(#`Epsilon :>> prod_t)) ! out;
+     | _ => out = (head,(`Seq (rev newseq) :>> prod_t)) ! out;
      endmatch;
   
    | `Alt ps =>
@@ -285,7 +285,7 @@ Closure
    }
   
    proc dohead() { key = cur.0; alts = Empty[prod_t]; }
-   proc dofoot() { out = (key,`Alt alts :>> prod_t ) ! out;  }
+   proc dofoot() { out = (key,(`Alt alts :>> prod_t)) ! out;  }
    proc dobreak() { dofoot; dohead; }
    proc check() { if key != cur.0 call dobreak; }
   

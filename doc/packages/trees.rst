@@ -132,7 +132,6 @@ AVL tree
 
 
 .. index:: Avl(class)
-.. index:: avl(union)
 .. index:: _ctor_avl(fun)
 .. index:: _ctor_avl(fun)
 .. index:: insert(fun)
@@ -154,7 +153,7 @@ AVL tree
   
   class Avl
   {
-    union avl[T] =
+    variant avl[T] =
       | Nil
       | Tree of int * T * avl[T] * avl[T] // (Height,Object,Left,Right)
     ;
@@ -380,7 +379,6 @@ Directed Graph
 .. index:: add_edge_pair(proc)
 .. index:: add_edge_pair(proc)
 .. index:: dump_digraph(fun)
-.. index:: Vstate(union)
 .. index:: def(type)
 .. index:: dflt_pve(proc)
 .. index:: dflt_pvl(proc)
@@ -484,7 +482,7 @@ Directed Graph
       return out;
     }
   
-    union Vstate = Undiscovered | Discovered | Processed;
+    variant Vstate = Undiscovered | Discovered | Processed;
   
     typedef digraph_visitor_processing_t = 
     (
@@ -777,7 +775,6 @@ Type.
 
 
 .. index:: def(type)
-.. index:: bstree_t(union)
 .. code-block:: felix
 
   //[binary_search_tree.flx]
@@ -789,7 +786,7 @@ Type.
         right:bstree_t
       )
     ;
-    union bstree_t = 
+    variant bstree_t = 
       | #Empty 
       | Node of &bstree_node_t 
     ;

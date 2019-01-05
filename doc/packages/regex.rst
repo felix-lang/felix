@@ -20,15 +20,14 @@ key          file
 __init__.flx share/lib/std/regex/__init__.flx 
 ============ ================================
 
-============ ================================
-key          file                             
-============ ================================
-re2.flx      share/lib/std/regex/re2.flx      
-tre.flx      share/lib/std/regex/tre.flx      
-regdef.flx   share/lib/std/regex/regdef.flx   
-regexps.fsyn share/lib/std/regex/regexps.fsyn 
-lexer.flx    share/lib/std/regex/lexer.flx    
-============ ================================
+========== ==============================
+key        file                           
+========== ==============================
+re2.flx    share/lib/std/regex/re2.flx    
+tre.flx    share/lib/std/regex/tre.flx    
+regdef.flx share/lib/std/regex/regdef.flx 
+lexer.flx  share/lib/std/regex/lexer.flx  
+========== ==============================
 
 ================= ==================================
 key               file                               
@@ -429,7 +428,6 @@ Regular definitions
 
 
 .. index:: Regdef(class)
-.. index:: regex(union)
 .. index:: ngrp(fun)
 .. index:: render(fun)
 .. code-block:: felix
@@ -437,7 +435,7 @@ Regular definitions
   //[regdef.flx]
   
   class Regdef {
-    union regex =
+    variant regex =
     | Alts of list[regex]
     | Seqs of list[regex]
     | Rpt of regex * int * int
@@ -505,120 +503,6 @@ Regular definitions
     | Perl s => s
     ;
   }
-  
-Syntax
-======
-
-
-
-.. code-block:: felix
-
-  //[regexps.fsyn]
-  
-  //$ Syntax for regular definitions.
-  //$ Binds to library class Regdef,
-  //$ which in turn binds to the binding of Google RE2.
-  SCHEME """(define (regdef x) `(ast_lookup (,(noi 'Regdef) ,x ())))""";
-  
-  syntax regexps {
-    priority 
-      ralt_pri <
-      rseq_pri <
-      rpostfix_pri <
-      ratom_pri
-    ;
-  
-   
-    //$ Regular definition binder.
-    //$ Statement to name a regular expression.
-    //$ The expression may contain names of previously named regular expressions.
-    //$ Defines the LHS symbol as a value of type Regdef::regex.
-    stmt := "regdef" sdeclname "=" sregexp[ralt_pri] ";" =># 
-      """
-      `(ast_val_decl ,_sr ,(first _2) ,(second _2) (some ,(regdef "regex" )) (some ,_4))
-      """;
-  
-    //$ Inline regular expression.
-    //$ Can be used anywhere in Felix code.
-    //$ Returns a a value of type Regdef::regex.
-    x[sapplication_pri] := "regexp" "(" sregexp[ralt_pri] ")" =># "_3";
-  
-    //$ Alternatives.
-    private sregexp[ralt_pri] := sregexp[>ralt_pri] ("|" sregexp[>ralt_pri])+ =># 
-      """`(ast_apply ,_sr (  
-        ,(regdef "Alts")
-        (ast_apply ,_sr (,(noi 'list) ,(cons _1 (map second _2))))))"""
-    ;
-  
-    //$ Sequential concatenation.
-    private sregexp[rseq_pri] := sregexp[>rseq_pri] (sregexp[>rseq_pri])+ =># 
-      """`(ast_apply ,_sr ( 
-        ,(regdef "Seqs")
-        (ast_apply ,_sr (,(noi 'list) ,(cons _1 _2)))))"""
-    ;
-  
-  
-    //$ Postfix star (*).
-    //$ Kleene closure: zero or more repetitions.
-    private sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "*" =># 
-      """`(ast_apply ,_sr ( ,(regdef "Rpt") (,_1,0,-1)))"""
-    ;
-  
-    //$ Postfix plus (+).
-    //$ One or more repetitions.
-    private sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "+" =>#
-      """`(ast_apply ,_sr ( ,(regdef "Rpt") (,_1,1,-1)))"""
-    ;
-  
-    //$ Postfix question mark (?).
-    //$ Optional. Zero or one repetitions.
-    private sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "?" =>#
-      """`(ast_apply ,_sr (,(regdef "Rpt") (,_1,0,1)))"""
-    ;
-  
-    //$ Parenthesis. Non-capturing group.
-    private sregexp[ratom_pri] := "(" sregexp[ralt_pri] ")" =># "_2";
-  
-    //$ Group psuedo function.
-    //$ Capturing group.
-    private sregexp[ratom_pri] := "group" "(" sregexp[ralt_pri] ")" =># 
-      """`(ast_apply ,_sr ( ,(regdef "Group") ,_3))"""
-    ;
-  
-    //$ The charset prefix operator.
-    //$ Treat the string as a set of characters,
-    //$ that is, one of the contained characters.
-    private sregexp[ratom_pri] := "charset" String =># 
-      """`(ast_apply ,_sr ( ,(regdef "Charset") ,_2))"""
-    ;
-  
-    //$ The string literal.
-    //$ The given sequence of characters.
-    //$ Any valid Felix string can be used here.
-    private sregexp[ratom_pri] := String =># 
-      """`(ast_apply ,_sr ( ,(regdef "String") ,_1)) """
-    ;
-  
-    //$ The Perl psuedo function.
-    //$ Treat the argument string expression as
-    //$ a Perl regular expression, with constraints
-    //$ as specified for Google RE2.
-    private sregexp[ratom_pri] := "perl" "(" sexpr ")" =># 
-      """`(ast_apply ,_sr ( ,(regdef "Perl") ,_3)) """
-    ;
-  
-    //$ The regex psuedo function.
-    //$ Treat the argument Felix expression of type Regdef::regex
-    //$ as a regular expression.
-    private sregexp[ratom_pri] := "regex" "(" sexpr ")" =># "_3";
-  
-    //$ Identifier.
-    //$ Must name a previously defined variable of type Regdef:;regex.
-    //$ For example, the LHS of a regdef binder.
-    private sregexp[ratom_pri] := sname=># "`(ast_name ,_sr ,_1 ())";
-   
-  }
-  
 Lexer
 =====
 

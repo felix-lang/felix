@@ -47,7 +47,6 @@ C pointer
 .. index:: deref(fun)
 .. index:: Cptr(class)
 .. index:: def(type)
-.. index:: cptr(union)
 .. index:: deref(fun)
 .. index:: is_nullptr(fun)
 .. index:: cnew(gen)
@@ -89,7 +88,7 @@ C pointer
     proc storeat[D,C] ( p:_wpclt< D, C >, v: C) = { _storeat (p,v); }
   
     // deref a pointer to compact linear component
-    fun _deref[mach,clv]: _rpclt<mach,clv> -> clv = "::flx::rtl::deref($t)";
+    fun _deref[mach,clv]: _rpclt<mach,clv> -> clv = "::flx::rtl::clt_deref($t)";
     fun deref[mach,clv] (p: _rpclt<mach,clv>) => _deref p;
   }
   
@@ -109,7 +108,7 @@ C pointer
     //$ Type of a C pointer.
     //$ Either pointes to an object or is NULL.
     //$ Cannot be incremented.
-    union cptr[T] = | nullptr | Ptr of &T;
+    variant cptr[T] = | nullptr | Ptr of &T;
   
     //$ Demote a Felix pointer to a C pointer. Safe.
     ctor[T] cptr[T]: &T = "$t";

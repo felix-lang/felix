@@ -276,7 +276,6 @@ Types required for the RTTI object.
   
   struct GC_EXTERN gc_shape_t
   {
-    gc_shape_t *next_shape;         ///< pointer to next shape in list or NULL
     char const *cname;              ///< C++ typename
     ::std::size_t count;            ///< static array element count
     ::std::size_t amt;              ///< bytes allocated
@@ -613,7 +612,6 @@ Memory Management Abstraction Implementation.
   namespace gc {
   namespace generic {
   gc_shape_t _ptr_void_map = {
-    NULL,
     "void",
     0,0,
     0, // no finaliser
@@ -1865,7 +1863,7 @@ T: temporary Judy1
     rootmap_t::iterator iter = roots.find(memory);
     if(iter == roots.end())
     {
-      fprintf(stderr, "[gc] GC ERROR: REMOVE ROOT WHICH IS NOT ROOT\n");
+      fprintf(stderr, "[gc] GC ERROR: REMOVE ROOT %p WHICH IS NOT ROOT\n", memory);
       abort();
     }
     if((*iter).second == (uintptr_t)1)
@@ -2266,7 +2264,6 @@ Rtti introspection
 .. index:: move_init(proc)
 .. index:: copy_assign(proc)
 .. index:: move_assign(proc)
-.. index:: next_shape(fun)
 .. index:: cname(fun)
 .. index:: number_of_elements(fun)
 .. index:: bytes_per_element(fun)
@@ -2322,9 +2319,6 @@ Rtti introspection
     proc move_init : fcops_t * address * address  = "$1->move_init($2,$3);";
     proc copy_assign: fcops_t * address * address  = "$1->copy_assign($2,$3);";
     proc move_assign: fcops_t * address * address  = "$1->move_assign($2,$3);";
-  
-    //$ Iterator to find the next shape after a given one.
-    fun next_shape: gc_shape_t -> gc_shape_t = "$1->next_shape";
   
     //$ The C++ name of the Felix type.
     fun cname: gc_shape_t -> +char = "$1->cname";
@@ -2400,7 +2394,6 @@ Rtti introspection
   
     proc _link_shape[T]: &gc_shape_t = """
       ::flx::gc::generic::gc_shape_t *p = (gc_shape_t*)malloc(sizeof(gc_shape_t));
-      p->next_shape = PTF shape_list_head;
       PTF shape_list_head = p;
       p->cname = typeid(?1).name();
       p->count = 1;
@@ -2412,10 +2405,9 @@ Rtti introspection
       *$1 = p;
       """ requires property "needs_gc";
   
-    //$ Put a new shape record into the global list.
+    //$ Create a new shape record.
     //$ This routine constructs a new shape record on the heap.
     //$ It fills in some of the data based on the type.
-    //$ It links the new record into the shape list.
     //$ Then it stores the shape at the user specified address.
     //$ Since the shape is represented in Felix by a pointer,
     //$ subsequent modifications carry through to the linked shape object.

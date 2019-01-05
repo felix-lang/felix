@@ -5,7 +5,6 @@ key               file
 ================= =======================================
 parsers.flx       share/lib/std/strings/parsers.flx       
 parser_synlib.flx share/lib/std/strings/parser_synlib.flx 
-parser_syn.fsyn   share/lib/std/strings/parser_syn.fsyn   
 ================= =======================================
 
 
@@ -16,7 +15,6 @@ Chips to providing parsing functions.
 
 
 .. index:: Parsers(class)
-.. index:: action_t(union)
 .. index:: def(type)
 .. index:: def(type)
 .. index:: def(type)
@@ -26,7 +24,6 @@ Chips to providing parsing functions.
 .. index:: def(type)
 .. index:: def(type)
 .. index:: def(type)
-.. index:: stack_node_t(union)
 .. index:: def(type)
 .. index:: def(type)
 .. index:: def(type)
@@ -61,7 +58,7 @@ Chips to providing parsing functions.
     open Recognisers;
     open Grammars;
      
-    union action_t =  
+    variant action_t =  
     | Reduce of string * int
     | Scroll of int
     | Unscroll of int
@@ -113,7 +110,7 @@ Chips to providing parsing functions.
   
     typedef lexeme = (start:Buffer, finish:Buffer);
   
-    union stack_node_t = 
+    variant stack_node_t = 
     | RTerminal of string * lexeme
     | RNonterminal of string * list[stack_node_t]
     ;
@@ -436,8 +433,8 @@ Chips to providing parsing functions.
      match p with
      | `Action a => out = ([head,p]); 
      | `Epsilon => out = ([head,p]);
-     | `Terminal _ => out = ([head,`Seq ([p]):>>pgram_t]);
-     | `Nonterminal s => out= ([head,`Seq ([p]):>>pgram_t]);
+     | `Terminal _ => out = ([head,(`Seq ([p]):>>pgram_t)]);
+     | `Nonterminal s => out= ([head,(`Seq ([p]):>>pgram_t)]);
   
      | `Seq ps =>
        var newseq = Empty[pgram_t];
@@ -449,14 +446,14 @@ Chips to providing parsing functions.
          | `Terminal _ => newseq = term ! newseq;
          | _ =>
            var newhead = fresh();
-           newseq = `Nonterminal newhead :>>pgram_t ! newseq;
+           newseq = (`Nonterminal newhead :>>pgram_t) ! newseq;
            out = unpack fresh (newhead,term);
          endmatch;
        done
   
        match newseq with 
-       | Empty => out = (head,#`Epsilon:>> pgram_t) ! out;
-       | _ => out = (head,`Seq(rev newseq):>>pgram_t) ! out;
+       | Empty => out = (head,(#`Epsilon:>> pgram_t)) ! out;
+       | _ => out = (head,(`Seq(rev newseq):>>pgram_t)) ! out;
        endmatch;
   
      | `Alt ps =>
@@ -563,9 +560,9 @@ Chips to providing parsing functions.
          var newntname = fresh();
          var newnt = `Nonterminal newntname :>> pgram_t; 
          var alts = map (fun (b:list[pgram_t]) => `Seq (b + newnt):>>pgram_t) betas;
-         outgram =  (nt, `Alt alts :>>pgram_t) !  outgram ;
-         alts = map (fun (a:list[pgram_t]) => `Seq (a + newnt):>>pgram_t) alphas + (#`Epsilon):>>pgram_t;
-         outgram = (newntname, `Alt alts:>>pgram_t) ! outgram;
+         outgram =  (nt, (`Alt alts :>>pgram_t)) !  outgram ;
+         alts = map (fun (a:list[pgram_t]) => (`Seq (a + newnt):>>pgram_t)) alphas + (#`Epsilon:>>pgram_t);
+         outgram = (newntname, (`Alt alts:>>pgram_t)) ! outgram;
        done
      done
      return outgram;
@@ -659,7 +656,7 @@ Chips to providing parsing functions.
            if not (counter in toremove) perform
              toadd = elt ! toadd;
          done
-         var newa_i = direct_left_recursion_elimination fresh ([rnt, `Alt toadd :>> pgram_t]);
+         var newa_i = direct_left_recursion_elimination fresh ([rnt, (`Alt toadd :>> pgram_t)]);
          return left_recursion_elimination_step fresh (newa_i + left) tail;
        endmatch;
     }
@@ -670,69 +667,6 @@ Chips to providing parsing functions.
     => left_recursion_elimination_step fresh Empty[pgramentry_t] right;
   
   } // class
-
-
-.. code-block:: felix
-
-  //[parser_syn.fsyn]
-  
-  syntax parser_syn
-  {
-    priority 
-      palt_pri <
-      pseq_pri <
-      patom_pri
-    ;
-    
-    stmt := plibrary =># "_1";
-  
-    plibrary := "gramlib" sname "{" plibentry* "}" =>#
-      """
-      (let*
-        (
-          (tup `(ast_tuple ,_sr ,_4))
-          (v `(ast_apply ,_sr (,(nos "list") ,tup)))
-        )
-        `(ast_var_decl ,_sr ,_2 ,dfltvs none (some ,v))
-      )
-      """
-    ; 
-  
-    plibentry := sname "=" pexpr[palt_pri] ";" =>#
-    """`(ast_tuple ,_sr (,(strlit _1) ,_3))""";
-  
-    sexpr := "parser" "(" pexpr[palt_pri] ")" =># "_3";
-  
-    private pexpr[palt_pri] := "|"? pexpr[>palt_pri] ("|" pexpr[>palt_pri])+ =># 
-      """`(ast_apply ,_sr (  
-        ,(qnoi 'Parser_synlib 'ALT)
-        (ast_apply ,_sr (,(noi 'list) ,(cons _2 (map second _3))))))"""
-    ;
-  
-    private pexpr[pseq_pri] := pexpr[>pseq_pri] (pexpr[>pseq_pri])+ =># 
-      """`(ast_apply ,_sr ( 
-        ,(qnoi 'Parser_synlib 'SEQ)
-        (ast_apply ,_sr (,(noi 'list) ,(cons _1 _2)))))"""
-    ;
-  
-    private pexpr[patom_pri] := "(" pexpr[palt_pri] ")" =># "_2";
-  
-    private pexpr[patom_pri] := String =># 
-      """`(ast_apply ,_sr ( ,(qnoi 'Parser_synlib 'STR) ,_1)) """
-    ;
-  
-    private pexpr[patom_pri] := "#EPS" =>#
-      """`(ast_apply ,_sr ( ,(qnoi 'Parser_synlib 'EPS) ())) """
-    ;
-  
-    private pexpr[patom_pri] := sname=>#
-      """`(ast_apply ,_sr ( ,(qnoi 'Parser_synlib 'NT) ,(strlit _1))) """
-    ;
-  
-    private pexpr[patom_pri] := "{" sexpr "}" =># "_2";
-  
-  
-  }
 
 
 .. index:: Parser_synlib(class)

@@ -18,6 +18,7 @@ key                                      file
 ======================================== ============================================================
 linux64_gcc_flx_rtl_config_params.hpp    $PWD/src/config/linux64/gcc/rtl/flx_rtl_config_params.hpp    
 macosx64_clang_flx_rtl_config_params.hpp $PWD/src/config/macosx64/clang/rtl/flx_rtl_config_params.hpp 
+macosx64_gcc_flx_rtl_config_params.hpp   $PWD/src/config/macosx64/gcc/rtl/flx_rtl_config_params.hpp   
 win64_msvc_flx_rtl_config_params.hpp     $PWD/src/config/win64/msvc/rtl/flx_rtl_config_params.hpp     
 ======================================== ============================================================
 
@@ -75,6 +76,16 @@ msvc_cplusplus_20.fpc $PWD/src/config/msvc/cplusplus_20.fpc
 ===================== =====================================
 
 
+test stuff
+==========
+
+
+
+
+.. image:: hello.jpg
+
+
+
 OSX
 ===
 
@@ -116,6 +127,36 @@ OSX
   #define FLX_HAVE_OPENMP 0
   #define FLX_MAX_ALIGN 16
   #endif
+
+
+.. code-block:: cpp
+
+  //[macosx64_gcc_flx_rtl_config_params.hpp ]
+  #ifndef __FLX_RTL_CONFIG_PARAMS_H__
+  #define __FLX_RTL_CONFIG_PARAMS_H__
+  
+  #define FLX_HAVE_VSNPRINTF 1
+  #define FLX_HAVE_GNU 1
+  #define FLX_HAVE_GNU_BUILTIN_EXPECT 1
+  #define FLX_HAVE_CGOTO 1
+  #define FLX_HAVE_ASM_LABELS 1
+  #define FLX_HAVE_DLOPEN 1
+  #define FLX_CYGWIN 0
+  #define FLX_MACOSX 1
+  #define FLX_LINUX 0
+  #define FLX_WIN32 0
+  #define FLX_WIN64 0
+  #define FLX_POSIX 1
+  #define FLX_SOLARIS 0
+  #define FLX_HAVE_MSVC 0
+  #define FLX_HAVE_KQUEUE_DEMUXER 1
+  #define FLX_HAVE_POLL 1
+  #define FLX_HAVE_EPOLL 0
+  #define FLX_HAVE_EVTPORTS 0
+  #define FLX_HAVE_OPENMP 0
+  #define FLX_MAX_ALIGN 16
+  #endif
+
 
 Linux
 =====
@@ -407,9 +448,9 @@ C++ Standard Versions
       # set the toolchain
       dst = ctx.buildroot / 'host/config/toolchain.fpc'
       if 'macosx' in target.platform:
-          toolchain = "toolchain_"+compiler+"_osx"
+          toolchain = "toolchain_"+compiler+"_macosx"
       elif "windows" in target.platform:
-          toolchain= "toolchain_msvc_win32"
+          toolchain= "toolchain_msvc_win"
       else:
           toolchain = "toolchain_"+compiler+"_linux"
   

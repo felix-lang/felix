@@ -6,13 +6,12 @@ Strings
 =======
 
 
-=============== =====================================
-key             file                                  
-=============== =====================================
-__init__.flx    share/lib/std/strings/__init__.flx    
-string.flx      share/lib/std/strings/string.flx      
-stringexpr.fsyn share/lib/std/strings/stringexpr.fsyn 
-=============== =====================================
+============ ==================================
+key          file                               
+============ ==================================
+__init__.flx share/lib/std/strings/__init__.flx 
+string.flx   share/lib/std/strings/string.flx   
+============ ==================================
 
 
 String handling
@@ -117,6 +116,7 @@ Append to  :code:`string` object
     proc  += : &string * string = "$1->append($2:assign);";
     proc  += : &string * +char = "$1->append($2:assign);";
     proc  += : &string * char = "*$1 += $2;";
+    proc  += : &string * &string = "$1->append(*$2);";
   
 Length of  :code:`string`
 -------------------------
@@ -124,11 +124,13 @@ Length of  :code:`string`
 
 
 .. index:: len(fun)
+.. index:: len(fun)
 .. code-block:: felix
 
   //[string.flx]
     // we need to cast to an int so that c++ won't complain
     fun len: string -> size = "$1.size()";
+    fun len: &string -> size = "$1->size()";
   
 String concatenation.
 ---------------------
@@ -212,6 +214,7 @@ Substrings
 .. index:: copyto(fun)
 .. index:: substring(fun)
 .. index:: subscript(fun)
+.. index:: apply(fun)
 .. index:: subscript(fun)
 .. index:: store(proc)
 .. code-block:: felix
@@ -238,6 +241,7 @@ Substrings
       | Slice_one (index) => string x.[index]
       endmatch
     ;
+    fun apply (s:slice[int], x:string) => subscript (x,s);
   
     fun subscript (x:string, gs:gslice[int]):string = {
       var r = "";
@@ -682,24 +686,24 @@ Split a string into a list on given separator
     // leading and trailing space is removed. Embedded
     // multiple spaces cause a single split.
     class RespectfulParser {
-      union quote_action_t = 
+      variant quote_action_t = 
         | ignore-quote
         | keep-quote
         | drop-quote
       ; 
-      union dquote_action_t = 
+      variant dquote_action_t = 
         | ignore-dquote
         | keep-dquote
         | drop-dquote
       ; 
-      union escape_action_t = 
+      variant escape_action_t = 
         | ignore-escape
         | keep-escape
         | drop-escape
       ; 
       typedef action_t = (quote:quote_action_t, dquote:dquote_action_t, escape:escape_action_t);
   
-      union mode_t = | copying | skipping | quote | dquote | escape-copying | escape-quote | escape-dquote;
+      variant mode_t = | copying | skipping | quote | dquote | escape-copying | escape-quote | escape-dquote;
       typedef state_t = (mode:mode_t, current:string, parsed: list[string] );
   
       noinline fun respectful_parse (action:action_t) (var state:state_t) (var s:string) : state_t = 
@@ -1093,7 +1097,6 @@ Transation to string
 --------------------
 
 
-
 .. index:: str(fun)
 .. index:: str(fun)
 .. index:: repr(fun)
@@ -1123,27 +1126,5 @@ Transation to string
   
   open[T in strings] Show[T];
   open Set[string,char];
-  
-String syntax
-=============
-
-
-.. code-block:: felix
-
-  //[stringexpr.fsyn]
-  syntax stringexpr
-  {
-    //$ String subscript.
-    x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'subscript) (,_1 ,_4)))";
-  
-    //$ String substring.
-    x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'substring) (,_1 ,_4 ,_6)))";
-  
-    //$ String substring, to end of string.
-    x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" "]" =># "`(ast_apply ,_sr (,(noi 'copyfrom) (,_1 ,_4)))";
-  
-    //$ String substring, from start of string.
-    x[sfactor_pri] := x[sfactor_pri] "." "[" "to" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'copyto) (,_1 ,_5)))";
-  }
   
   

@@ -5,15 +5,13 @@ Package: src/packages/logic.fdoc
 Logic
 =====
 
-=================== ======================================
-key                 file                                   
-=================== ======================================
-bool.flx            share/lib/std/scalar/bool.flx          
-boolexpr.fsyn       share/lib/std/scalar/boolexpr.fsyn     
-predicate.flx       share/lib/std/algebra/predicate.flx    
-staticbool.flx      share/lib/std/kind/staticbool.flx      
-staticbool_ops.fsyn share/lib/std/kind/staticbool_ops.fsyn 
-=================== ======================================
+============== ===================================
+key            file                                
+============== ===================================
+bool.flx       share/lib/std/scalar/bool.flx       
+predicate.flx  share/lib/std/algebra/predicate.flx 
+staticbool.flx share/lib/std/kind/staticbool.flx   
+============== ===================================
 
 
 Boolean Logic
@@ -204,68 +202,6 @@ to only 8 cbools.
   open Tord[cbool];
   open Show[cbool];
   
-Syntax
-======
-
-
-
-.. code-block:: felix
-
-  //[boolexpr.fsyn]
-  syntax boolexpr
-  {
-    //$ Boolean false.
-    satom := "false" =># "'(ast_typed_case  0 2)";
-  
-    //$ Boolean true.
-    satom := "true" =># "'(ast_typed_case  1 2)";
-  
-    //$ Logical implication.
-    x[simplies_condition_pri] := x[>simplies_condition_pri] "implies" x[>simplies_condition_pri] =># "(Infix)";
-  
-    //$ Logical disjunction (or).
-    x[sor_condition_pri] := x[>sor_condition_pri] ( "or" x[>sor_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
-  
-    //$ Logical conjunction (and).
-    x[sand_condition_pri] := x[>sand_condition_pri] ( "and" x[>sand_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
-  
-    //$ Logical negation (not).
-    x[snot_condition_pri] := "not" x[snot_condition_pri]  =># "`(ast_not ,_sr ,_2)";
-  
-    x[scomparison_pri]:= x[>scomparison_pri] "\not" cmp x[>scomparison_pri] =># "`(ast_not ,_sr (ast_apply ,_sr (,_3 (,_1 ,_4))))";
-  
-    // tex logic operators
-    x[stex_implies_condition_pri] := x[>stex_implies_condition_pri]  "\implies" x[>stex_implies_condition_pri] =># "(infix 'implies)";
-    x[stex_or_condition_pri] := x[>stex_or_condition_pri] ( "\lor" x[>stex_or_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
-    x[stex_and_condition_pri] := x[>stex_and_condition_pri] ( "\land" x[>stex_and_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
-    x[stex_not_condition_pri] := "\lnot" x[stex_not_condition_pri]  =># "`(ast_not ,_sr ,_2)";
-  
-  
-    bin := "\iff" =># '(nos _1)'; // NOT IMPLEMENTED FIXME
-    bin := "\impliedby" =># '(nos _1)'; // NOT IMPLEMENTED FIXME
-  
-    //$ Conditional expression.
-    satom := sconditional "endif" =># "_1";
-  
-    //$ Conditional expression (prefix).
-    sconditional := "if" sexpr "then" sexpr selse_part =>#
-        "`(ast_cond ,_sr (,_2 ,_4 ,_5))";
-  
-        selif := "elif" sexpr "then" sexpr =># "`(,_2 ,_4)";
-  
-        selifs := selif =># "`(,_1)";
-        selifs := selifs selif =># "(cons _2 _1)";
-  
-        selse_part:= "else" sexpr =># "_2";
-        selse_part:= selifs "else" sexpr =>#
-            """
-              (let ((f (lambda (result condthn)
-                (let ((cond (first condthn)) (thn (second condthn)))
-                  `(ast_cond ,_sr (,cond ,thn ,result))))))
-              (fold_left f _3 _1))
-            """;
-  }
-  
 Predicate combinators.
 ======================
 
@@ -278,7 +214,6 @@ directly using symbolic operators to form new predicates, using logical
 conjunction  :code:`and`, disjunction  :code:`or`, implication  :code:`implies`
 and negation  :code:`not`. The parser maps these operator onto the 
 functions  :code:`land`,  :code:`lor`,  :code:`implies`, and  :code:`lnot` respectively.
-
 
 
 .. index:: Predicate(class)
@@ -311,35 +246,4 @@ functions  :code:`land`,  :code:`lor`,  :code:`implies`, and  :code:`lnot` respe
   }
   
   
-Compile time booleans
-=====================
-
-
-.. code-block:: felix
-
-  //[staticbool.flx]
   
-  typedef fun n"`and" (x:BOOL,y:BOOL):BOOL => _typeop ("_staticbool_and",(x,y),BOOL);
-  typedef fun n"`or" (x:BOOL,y:BOOL):BOOL => _typeop ("_staticbool_or",(x,y),BOOL);
-  typedef fun n"`xor" (x:BOOL,y:BOOL):BOOL => _typeop ("_staticbool_xor",(x,y),BOOL);
-  typedef fun n"`not" (x:BOOL):BOOL => _typeop ("_staticbool_not",(x),BOOL);
-  typedef fun n"`true" ():BOOL => _typeop ("_staticbool_true",(),BOOL);
-  typedef fun n"`false" ():BOOL => _typeop ("_staticbool_false",(),BOOL);
-
-
-.. code-block:: felix
-
-  //[staticbool_ops.fsyn]
-  syntax staticbool_ops 
-  {
-    x[sand_condition_pri] := x[sand_condition_pri] "`and" x[>sand_condition_pri] =># "(Infix)";
-    x[sor_condition_pri] := x[sor_condition_pri] "`or" x[>sor_condition_pri] =># "(Infix)";
-    x[sor_condition_pri] := x[sor_condition_pri] "`xor" x[>sor_condition_pri] =># "(Infix)";
-    x[snot_condition_pri] :=  "`not" x[snot_condition_pri] =># "(Prefix)";
-    satom := "`true"  =># '`(ast_apply (,_sr, (,(nos "`true") ())))';
-    satom := "`false"  =># '`(ast_apply (,_sr, (,(nos "`true") ())))';
-  }
-  
-
-
-

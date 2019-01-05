@@ -4,7 +4,6 @@ Package: src/packages/lists.fdoc
 key            file                                  
 ============== =====================================
 list.flx       share/lib/std/datatype/list.flx       
-listexpr.fsyn  share/lib/std/datatype/listexpr.fsyn  
 assoc_list.flx share/lib/std/datatype/assoc_list.flx 
 ralist.flx     share/lib/std/datatype/ralist.flx     
 sexpr.flx      share/lib/std/datatype/sexpr.flx      
@@ -25,7 +24,6 @@ The core data type for most functional programming languages.
 
 
 .. index:: List(class)
-.. index:: list(union)
 .. index:: _match_ctor_Cons(fun)
 .. index:: _ctor_arg_Cons(fun)
 .. index:: Cons(fun)
@@ -35,7 +33,7 @@ The core data type for most functional programming languages.
   //[list.flx]
   open class List
   {
-    union list[T] = | Empty | Snoc of list[T] * T;
+    variant list[T] = | Empty | Snoc of list[T] * T;
     fun _match_ctor_Cons[T] : list[T] -> bool = "!!$1"; 
     inline fun _ctor_arg_Cons[T]: list[T] -> T * list[T] = 
       "reinterpret<#0>(flx::list::snoc2cons<?1>($1))" 
@@ -460,6 +458,8 @@ Reverse a list  :code:`rev`.
 Tail recursive.
 
 
+.. index:: urev(fun)
+.. index:: urev(fun)
 .. code-block:: felix
 
   //[list.flx]
@@ -475,6 +475,13 @@ Tail recursive.
         ;
       }
       return aux x Empty[T];
+    }
+  
+    fun urev[T](x:list[T]) => box (rev x);
+    fun urev[T](var x:uniq (list[T])) : uniq (list[T]) {
+      var y = unbox x;
+      rev &y;
+      return box y;
     }
   
 Zip a pair of lists to a list of pairs  :code:`zip2`
@@ -993,26 +1000,6 @@ Streaming list
   }
   
 
-List syntax
-===========
-
-
-
-.. code-block:: felix
-
-  //[listexpr.fsyn]
-  syntax listexpr
-  {
-    //$ List cons, right associative.
-    x[sarrow_pri] := x[>sarrow_pri] "!" x[sarrow_pri] =># 
-      '''`(ast_apply ,_sr (,(nos "Snoc") (,_3 ,_1)))'''
-    ;
-  
-    satom := "(" "[" stypeexpr_comma_list "]" ")" =># 
-      '''`(ast_apply ,_sr (,(nos "list") (ast_tuple ,_sr ,_3)))'''
-    ; 
-  }
-  
 Association List
 ================
 
@@ -1078,8 +1065,6 @@ Purely Functional Random Access List.
 
 
 .. index:: Ralist(class)
-.. index:: pt(union)
-.. index:: ralist(union)
 .. index:: ralist_length(fun)
 .. index:: ralist_cons(fun)
 .. index:: ralist_empty(fun)
@@ -1107,10 +1092,10 @@ Purely Functional Random Access List.
   {
   
     //$ Auxilliary data structure.
-    union pt[a] = | N1 of a | N2 of pt[a] * pt[a];
+    variant pt[a] = | N1 of a | N2 of pt[a] * pt[a];
   
     //$ Type of an ralist.
-    union ralist[a] = 
+    variant ralist[a] = 
       | RAnil
       | RAevn of ralist[a]
       | RAodd of pt[a] * ralist[a]
@@ -1532,7 +1517,6 @@ A scheme like data structure.
 
 
 .. index:: S_expr(class)
-.. index:: sexpr(union)
 .. index:: fold_left(fun)
 .. index:: iter(proc)
 .. index:: map(fun)
@@ -1541,7 +1525,7 @@ A scheme like data structure.
   //[sexpr.flx]
   class S_expr 
   {
-    union sexpr[T] = Leaf of T | Tree of list[sexpr[T]]; 
+    variant sexpr[T] = Leaf of T | Tree of list[sexpr[T]]; 
   
     fun fold_left[T,U] (_f:U->T->U) (init:U) (x:sexpr[T]):U =>
       match x with
@@ -1586,7 +1570,6 @@ A scheme like data structure, similar to sexpr, only in this variant
 the tree nodes also have labels.
 
 .. index:: LS_expr(class)
-.. index:: lsexpr(union)
 .. index:: fold_left(fun)
 .. index:: iter(proc)
 .. index:: map(fun)
@@ -1595,7 +1578,7 @@ the tree nodes also have labels.
   //[lsexpr.flx]
   class LS_expr 
   {
-    union lsexpr[T,L] = | Leaf of T | Tree of L * list[lsexpr[T,L]]; 
+    variant lsexpr[T,L] = | Leaf of T | Tree of L * list[lsexpr[T,L]]; 
   
     fun fold_left[T,L,U] (_f:U->T->U) (_g:U->L->U) (init:U) (x:lsexpr[T,L]):U =>
       match x with
