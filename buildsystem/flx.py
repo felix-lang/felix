@@ -161,7 +161,7 @@ class Builder(fbuild.db.PersistentObject):
             flags=lflags,
             buildroot=buildroot)
 
-    def link_exe(self, *args, async=False, macros=[], objects=[], **kwargs):
+    def link_exe(self, *args, aasync=False, macros=[], objects=[], **kwargs):
         macros = macros + ['FLX_STATIC_LINK']
         objs = objects + [
           (self.flx_run_lib_static_static) ] + [
@@ -178,8 +178,8 @@ class Builder(fbuild.db.PersistentObject):
 
     # --------------------------------------------------------------------------
 
-    def run_lib(self, src, *args, async=True, **kwargs):
-        if async:
+    def run_lib(self, src, *args, aasync=True, **kwargs):
+        if aasync:
             cmd = [self.flx_arun_exe]
         else:
             cmd = [self.flx_run_exe]
@@ -222,7 +222,7 @@ class Builder(fbuild.db.PersistentObject):
 
 
     def _build_link(self, function, src, dst=None, *,
-            async=False,
+            aasync=False,
             includes=[],
             flags=[],
             cxx_includes=[],
@@ -233,7 +233,7 @@ class Builder(fbuild.db.PersistentObject):
         self._run_flx_pkgconfig(obj)
 
         return function(obj, dst,
-            async=async,
+            aasync=aasync,
             includes=cxx_includes,
             libs=cxx_libs,
             cflags=cxx_cflags,
@@ -241,7 +241,7 @@ class Builder(fbuild.db.PersistentObject):
         )
 
     def _build_flx_pkgconfig_link(self, function, src, dst=None, *,
-            async=False,
+            aasync=False,
             includes=[],
             flags=[],
             cxx_includes=[],
@@ -253,7 +253,7 @@ class Builder(fbuild.db.PersistentObject):
         obj = self.compile(src, includes=includes, flags=flags)
 
         return function(obj, dst,
-            async=async,
+            aasync=aasync,
             includes=cxx_includes,
             libs=cxx_libs,
             cflags=cxx_cflags,
@@ -337,7 +337,7 @@ def build_flx( phase, flx_builder):
 
     #print("[fbuild:flx.py:build_flx] ********** BUILDING FLX ***********************************************")
     return flx_builder.build_exe(
-        async=False,
+        aasync=False,
         dst=Path('host')/'bin'/'bootflx',
         src=phase.ctx.buildroot/'share'/'src'/'tools'/'bootflx.flx',
         includes=[
