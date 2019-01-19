@@ -230,7 +230,9 @@ print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table
    *)
 
   (* GUESS! *)
-  | BTYP_uniq _ -> assert false
+  | BTYP_uniq t -> 
+print_endline ("ERROR, trying to register uniq type " ^ Flx_btype.st t'); 
+  assert false
 
   | BTYP_ptr (`N,_,_) -> assert false
   | BTYP_ptr (`R,_,_) -> assert false

@@ -877,40 +877,21 @@ print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
 *)
       if type_match bsym_table state.counter lhst rhst
       then [(bexe_assign (sr,lx,rx))]
-      else begin match unfold "bind_exe_v2" rhst, unfold "bind_exe_v1" lhst with
-      | BTYP_variant ts, BTYP_variant rs ->
-        begin try List.iter (fun (name,t) ->
-           let r = List.assoc name rs in
-           if not (type_eq bsym_table state.counter r t) then raise Not_found
-        ) ts;
-  (*
-        print_endline ("Coercing init value");
-  *)
+      else 
+      if ge bsym_table state.counter lhst rhst then
         let bexe = bexe_assign (sr,lx,bexpr_coerce (rx, lhst)) in
         [bexe]
-        with Not_found -> 
-        clierrx "[flx_bind/flx_bind_bexe.ml:856: E30B] " sr
-          (
-            "[bind_exe: assign] RHS expression \n" ^
-            sbe bsym_table rx ^
-            "\nof type\n" ^
-            sbt bsym_table rhst ^
-            "\nis not a supertype of the LHS type:\n" ^ 
-            sbt bsym_table lhst 
-          )
-        end (* try *)
-      | _ ->
+      else
       clierrx "[flx_bind/flx_bind_bexe.ml:867: E36] " sr
       (
         "[bind_exe: assign ] Assignment "^
           sbe bsym_table lx^"="^
           sbe bsym_table rx^";\n"^
         "LHS type: " ^ sbt bsym_table lhst^
-        "\nmust have same type as\n"^
+        "\nmust have be super type of\n"^
         "RHS type: " ^ sbt bsym_table rhst ^
         record_field_diag bsym_table lhst rhst
       )
-      end (* variant check *)
 
   | EXE_storeat (l,r) ->
     let _,lhst as lx = be l in

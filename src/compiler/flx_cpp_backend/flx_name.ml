@@ -9,7 +9,7 @@ open Flx_exceptions
 open Flx_backend_config
 
 module CS = Flx_code_spec
-let debug =false 
+let debug = false 
 
 (* these words are either keywords or peculiar to the
    compiler code generator, so we have to avoid a clash.

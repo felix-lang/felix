@@ -228,7 +228,7 @@ let bexpr_address ((_,t) as e) =
   | Some k -> bexpr_unitptr (k + 1)
   | _ -> BEXPR_address e, complete_check "bexpr_address" (Flx_btype.btyp_pointer t)
 
-let bexpr_new ((_,t) as e) = 
+let bexpr_new t ((_,t) as e) = 
   match Flx_btype.trivorder t with
   | Some k ->bexpr_unitptr (k + 1)
   | _ -> BEXPR_new e, complete_check "bexpr_new" (Flx_btype.btyp_pointer t)
@@ -1133,7 +1133,7 @@ let map
   | BEXPR_cltpointer_prj (d,c,divisor) -> bexpr_cltpointer_prj (f_btype d) (f_btype c) divisor
 
   | BEXPR_uniq e -> bexpr_uniq (f_bexpr e)
-  | BEXPR_new e -> bexpr_new (f_bexpr e)
+  | BEXPR_new e -> bexpr_new t (f_bexpr e)
   | BEXPR_class_new (cl,e) ->  bexpr_class_new (f_btype cl) (f_bexpr e)
   | BEXPR_address e -> bexpr_address (f_bexpr e)
   | BEXPR_likely e -> bexpr_likely (f_bexpr e)

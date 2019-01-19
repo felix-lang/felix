@@ -29,6 +29,8 @@ open Flx_gen_helper
 open Flx_btype_subst
 open Flx_bid
 
+let debug = false
+
 module CS = Flx_code_spec
 
 (* NOTE: it isn't possible to pass an explicit tuple as a single
@@ -88,11 +90,11 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
   
 (*
   print_endline ("generating exe " ^ string_of_bexe bsym_table 0 exe);
-  print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs);
+  print_endline ("vs = " ^ catmap "," (fun (s,i,k) -> s ^ "->" ^ si i) vs);
   print_endline ("ts = " ^ catmap ","  (sbt bsym_table) ts);
 *)
   let tsub t = beta_reduce "gen_exe" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr vs ts t) in
-  let ge = gen_expr syms bsym_table shapes shape_map label_info this vs ts in
+  let ge sr e = gen_expr syms bsym_table shapes shape_map label_info this vs ts sr e in
   let ge' = gen_expr' syms bsym_table shapes shape_map label_info this vs ts in
   let tn t = cpp_typename syms bsym_table (tsub t) in
   let bsym =
@@ -409,9 +411,9 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
   | CS.Str_template s -> s
   in
   let rec gexe exe =
-(*
-    print_endline (string_of_bexe bsym_table 0 exe);
-*)
+    if debug then
+    print_endline ("GEN EXE: " ^ string_of_bexe bsym_table 0 exe);
+
     (if with_comments then "    // # " ^ Flx_srcref.short_string_of_src sr ^ "\n"
     else "") ^
     match exe with
@@ -850,6 +852,9 @@ print_endline ("Storeat, clt case: " ^ sbe bsym_table l ^ " <- " ^ sbe bsym_tabl
       end
 
     | BEXE_assign (sr,(_,lhst as e1),(_,rhst as e2)) ->
+(*
+print_endline "BEXE_ASSIGN";
+*)
       if lhst = btyp_unit () then "" else
       let comment = (if with_comments then "      //"^src_str^"\n" else "") in
       (* j: component to assign, ts: types of components *)
@@ -1040,7 +1045,13 @@ print_endline ("Assign type = " ^ sbt bsym_table lhst ^ " lhs term = " ^ sbe bsy
 *)
 
     | BEXE_init (sr,v,((_,t) as e)) ->
+(*
+print_endline ("BEXE_INIT, RHS type = " ^ Flx_btype.st t);
+*)
       let t = tsub t in
+(*
+print_endline ("BEXE_INIT, RHS type after tsub = " ^ Flx_btype.st t);
+*)
       begin match t with
       | BTYP_tuple [] -> ""
       | _ ->
@@ -1055,6 +1066,17 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
 print_endline ("init " ^ Flx_bsym.id bsym ^"< instno="^si instance_no^",this="^ si this^ ">:\nLHS type = "^
       sbt bsym_table vt^ "\nRHS type = " ^ sbt bsym_table t ^ "\nLHS ts = " ^ catmap "," (sbt bsym_table) ts);
 *)
+
+(*
+            print_endline ("Trying to generate initialiser " ^ sbe bsym_table e ^ " type = " ^ Flx_btype.st t ^ " =? " ^ Flx_btype.st (snd e));
+            let initialiser = ge sr e in
+            print_endline ("Got initialiser");
+            let ref_ref = get_ref_ref syms bsym_table this v ts in
+            print_endline ("Got ref_ref");
+            let vtn = get_variable_typename syms bsym_table v [] in
+            print_endline ("Got variable type name"); 
+*)
+
             (if with_comments then "      //"^src_str^"\n" else "") ^
             "      " ^
             begin match kind with

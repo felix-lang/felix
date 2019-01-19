@@ -23,7 +23,7 @@ open Flx_beta
 open Flx_label
 open Flx_btype_subst
 
-let debug = false
+let debug = false 
 module CS = Flx_code_spec
 module L = Flx_literal
 exception Vfound (* for variants, Found already used elsewhere *)
@@ -150,7 +150,7 @@ let rec gen_expr'
   : cexpr_t
 =
   if debug then
-  print_endline ("Flx_egen: Gen_expr': " ^ sbe bsym_table (e,t));
+  print_endline ("Flx_egen: Gen_expr': " ^ sbe bsym_table (e,t) ^ ", type = " ^ Flx_btype.st t);
   let rec f_bexpr e = Flx_bexpr.map ~f_bexpr e in
   let e,t = f_bexpr (e,t) in
   match e with

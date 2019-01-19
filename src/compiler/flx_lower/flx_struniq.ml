@@ -23,13 +23,12 @@ so the downgrade is safe.
 
 let fixtype bsym_table t =
   let rec f_btype t =
-    let t = Flx_btype.map ~f_btype t in
     match t with 
 (* Remove uniqueness types *)
-    | BTYP_uniq t -> t
+    | BTYP_uniq t -> f_btype t
 (* downgrade read and write pointers to ordinary pointers *)
-    | BTYP_ptr (_,t,ts) -> btyp_ptr `RW t ts 
-    | _ -> t
+    | BTYP_ptr (_,t,ts) -> btyp_ptr `RW (f_btype t) ts 
+    | t -> Flx_btype.map ~f_btype t
   in
   f_btype t
 
@@ -46,27 +45,28 @@ let fixreq bsym_table  (bid,ts) =
 
 let fixreqs bsym_table reqs = map (fixreq bsym_table) reqs
 
-(* this analysis has to be top down not bottom up, so that
-the solo union detectors work
-*)
 let rec fixexpr' bsym_table e =
   let f_btype t = fixtype bsym_table t in 
   let f_bexpr e = fixexpr' bsym_table e in
-  let e = 
-    match e with
-    | BEXPR_uniq e,_ -> e
-    | _ -> e
-  in
-  Flx_bexpr.map ~f_btype ~f_bexpr e 
+  match Flx_bexpr.map ~f_btype ~f_bexpr e with
+  | BEXPR_uniq e, _ -> e
+  | e,BTYP_uniq t -> e,t
+  | e -> e
 
-let fixexpr bsym_table x = 
-  let y = fixexpr' bsym_table x in
-(* print_endline ("  %%%%% Fixexpr " ^ sbe bsym_table x ^ " --> " ^ sbe bsym_table y); *)
+let fixexpr bsym_table (_,tx as x) = 
+  let (_,ty as y) = fixexpr' bsym_table x in
+(*
+print_endline ("  %%%%% Fixexpr " ^ sbe bsym_table x ^ ": " ^ Flx_btype.st tx ^ "\n ++++ --> " ^ 
+   sbe bsym_table y ^ ": " ^ Flx_btype.st ty); 
+*)
   y
 
 let fixbexe bsym_table x =
   let y = Flx_bexe.map ~f_btype:(fixtype bsym_table) ~f_bexpr:(fixexpr bsym_table) x in
-(* print_endline ("    &&&&&& Fixbexe " ^ string_of_bexe bsym_table 4 x ^ " ----> " ^ string_of_bexe bsym_table 4 y); *)
+(*
+print_endline ("    &&&&&& Fixbexe " ^ string_of_bexe bsym_table 4 x ^ " ----> " ^ string_of_bexe bsym_table 4 y);
+print_endline (" .. ");
+*)
   y
 
 let fixbexes bsym_table bexes = 
@@ -75,7 +75,8 @@ let fixbexes bsym_table bexes =
   let pr lst x = match fbx x with
   | Flx_bexe.BEXE_assign (sr,(a,at),(_,t)) when t = unit_t -> assert (t=at); lst
   | Flx_bexe.BEXE_init (sr,_,(_,t)) when t = unit_t -> lst
-  | y -> y::lst
+
+  | y ->  y::lst
   in
   List.rev (
     List.fold_left pr [] bexes
@@ -92,7 +93,7 @@ let fix_symbol bsym_table index parent bsym bsym_table' =
   let fp bps = fixps bsym_table bps in
   let fb rqs = fixreqs bsym_table rqs in
   let fq qs = fixquals bsym_table qs in
-
+  let id = Flx_bsym.id bsym in
   let h bbdcl = Flx_bsym_table.add bsym_table' index parent { bsym with Flx_bsym.bbdcl= bbdcl } in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_nominal_type_alias _
