@@ -14,7 +14,7 @@ end
 Using the heap:
 @felix
 begin
-  val px = new 0;
+  val px = unbox (new 0);
   px <- 1;
   println$ *px;
 end

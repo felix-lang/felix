@@ -489,7 +489,14 @@ syntax expressions {
 
   //$ Reverse application with dereference.
   //$ a *. b same as (*a) . b, like C  a -> b.
-  x[sfactor_pri] := x[sfactor_pri] "*." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 (ast_deref ,_sr ,_1)))";
+  x[sfactor_pri] := x[sfactor_pri] "*." x[>sfactor_pri] =># 
+    "`(ast_apply ,_sr (,_3 (ast_apply ,_sr (,(noi 'deref) ,_1))))"
+  ;
+  x[sfactor_pri] := x[sfactor_pri] "->" x[>sfactor_pri] =># 
+    "`(ast_apply ,_sr (,_3 (ast_apply ,_sr (,(noi 'deref) ,_1))))"
+  ;
+
+
 
   //$ a &. b is similar to &a . b for an array, but can be overloaded
   //$ for abstract arrays: like a + b in C. Returns pointer.

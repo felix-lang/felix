@@ -228,10 +228,10 @@ let bexpr_address ((_,t) as e) =
   | Some k -> bexpr_unitptr (k + 1)
   | _ -> BEXPR_address e, complete_check "bexpr_address" (Flx_btype.btyp_pointer t)
 
-let bexpr_new t ((_,t) as e) = 
-  match Flx_btype.trivorder t with
+let bexpr_new pt ((_,argt) as e) = 
+  match Flx_btype.trivorder argt with
   | Some k ->bexpr_unitptr (k + 1)
-  | _ -> BEXPR_new e, complete_check "bexpr_new" (Flx_btype.btyp_pointer t)
+  | _ -> BEXPR_new e, complete_check "bexpr_new"  pt
 
 let bexpr_class_new cl e = BEXPR_class_new (cl,e), complete_check "bexpr_class_new" (Flx_btype.btyp_pointer cl)
 

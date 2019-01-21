@@ -1079,7 +1079,7 @@ class DList[T]
 @tangle dlist.flx
   proc push_front (dl:&dlist_t, v:T) { 
     var oldfirst = dl*.first;
-    var node = new (data=v, next=oldfirst, prev=nullptr[dnode_t]); 
+    var node = unbox (new (data=v, next=oldfirst, prev=nullptr[dnode_t])); 
     dl.first <- Ptr node;
     match oldfirst with
     | #nullptr => dl.last
@@ -1089,7 +1089,7 @@ class DList[T]
 
   proc push_back (dl:&dlist_t, v:T) {
     var oldlast = dl*.last;
-    var node = new (data=v, next=nullptr[dnode_t], prev=oldlast); 
+    var node = unbox (new (data=v, next=nullptr[dnode_t], prev=oldlast)); 
     dl.last <- Ptr node;
     match oldlast with
     | #nullptr => dl.first

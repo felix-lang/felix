@@ -1366,7 +1366,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
 
   | `EXPR_new (srr,e) ->
     let (_,t as x) = be e in
-    bexpr_new (btyp_uniq t) x
+    bexpr_new (btyp_uniq (btyp_pointer t)) x
 
   | `EXPR_literal (sr,v) ->
     let t = type_of_literal inner_bind_type state bsym_table env sr v in

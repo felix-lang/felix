@@ -123,6 +123,8 @@ syn keyword felixStatement module
 syn keyword felixStatement namespace
 syn keyword felixStatement NaN
 syn keyword felixStatement new
+syn keyword felixStatement box
+syn keyword felixStatement unbox
 syn keyword felixStatement noinline
 syn keyword felixStatement nonterm
 syn keyword felixStatement noreturn

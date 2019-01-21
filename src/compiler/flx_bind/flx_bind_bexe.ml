@@ -762,84 +762,45 @@ print_endline ("Flx_bind_bexe: UNIFICATION DONE");
       )
 
   | EXE_init (s,e) ->
-(*
-print_endline ("Bind EXE_init "^s);
-*)
-      begin match lun sr s with
-      | FunctionEntry _ -> clierrx "[flx_bind/flx_bind_bexe.ml:686: E34] " sr "Can't init function constant"
-      | NonFunctionEntry (index) ->
-          let index = sye index in
-          let e',rhst = be e in
-          (* a type variable in executable code just has to be of kind TYPE *)
-          let parent_ts = map
-            (fun (s,i,k) -> btyp_type_var (i,k))
-            state.parent_vs
-          in
-          let lhst =
-            type_of_index_with_ts
-              state.lookup_state
-              bsym_table
-              sr
-              index
-              parent_ts
-          in
-          let rhst = Flx_fold.minimise bsym_table state.counter rhst in
-          (*
-          print_endline ("Checking type match " ^ sbt state.sym_table lhst ^ " ?= " ^ sbt state.sym_table rhst);
-          *)
-          (*
-          let lhst =
-            let { Flx_sym.symdef=entry; id=id} = hfind "bexe" state.sym_table index in
-            match entry with
-            | SYMDEF_ref _ -> btyp_pointer lhst
-            | _ -> lhst
-          in
-          *)
-          if type_match bsym_table state.counter lhst rhst
-          then begin 
-            let bexe = bexe_init (sr,index,(e',rhst)) in
-(*
-            print_endline ("Index = " ^ si index ^ " initexpr=" ^ sbe bsym_table (e',rhst) ^ " type of variable is " ^ sbt bsym_table rhst);
-*)
-            [bexe]
-          end 
-        else begin match unfold "bind_exe_v2" rhst, unfold "bind_exe_v1" lhst with
-        | BTYP_variant ts, BTYP_variant rs ->
-          begin try List.iter (fun (name,t) ->
-             let r = List.assoc name rs in
-             if not (type_eq bsym_table state.counter r t) then raise Not_found
-          ) ts;
-    (*
-          print_endline ("Coercing init value");
-    *)
-          let bexe = bexe_init (sr,index,bexpr_coerce ((e',rhst), lhst)) in
-          [bexe]
-          with Not_found -> 
-          clierrx "[flx_bind/flx_bind_bexe.ml:782: E30A] " sr
-            (
-              "[bind_exe: init] initialising expression \n" ^
-              sbe bsym_table (e',rhst) ^
-              "\nof type\n" ^
-              sbt bsym_table rhst ^
-              "\nis not a supertype of the declared variable type:\n" ^ 
-              sbt bsym_table lhst 
-            )
-          end (* try *)
-        | _ ->
-          clierrx "[flx_bind/flx_bind_bexe.ml:793: E35] " sr
-          (
-            "[bind_exe: init] LHS[" ^ s ^ "<" ^ string_of_bid index ^ ">]:\n" ^
-            sbt bsym_table lhst^
-            "\n of initialisation must have same type as RHS:\n"^
-            sbt bsym_table rhst^
-            "\nunfolded LHS = " ^ sbt bsym_table (unfold "flx_bind_bexe" lhst) ^
-            (if length state.parent_vs > 0 then
-            "\nenvironment type variables are " ^
-            print_bvs state.parent_vs
-            else "")
-          )
-        end (* variant check *)
-      end
+    begin match lun sr s with
+    | FunctionEntry _ -> clierrx "[flx_bind/flx_bind_bexe.ml:686: E34] " sr "Can't init function constant"
+    | NonFunctionEntry (index) ->
+      let index = sye index in
+      let e',rhst = be e in
+      (* a type variable in executable code just has to be of kind TYPE *)
+      let parent_ts = map
+        (fun (s,i,k) -> btyp_type_var (i,k))
+        state.parent_vs
+      in
+      let lhst =
+        type_of_index_with_ts
+          state.lookup_state
+          bsym_table
+          sr
+          index
+          parent_ts
+      in
+      let rhst = Flx_fold.minimise bsym_table state.counter rhst in
+      if type_match bsym_table state.counter lhst rhst
+      then begin 
+        let bexe = bexe_init (sr,index,(e',rhst)) in
+        [bexe]
+      end 
+    else 
+    if ge bsym_table state.counter lhst rhst then
+    let bexe = bexe_init (sr,index,bexpr_coerce ((e',rhst), lhst)) in
+      [bexe]
+    else
+      clierrx "[flx_bind/flx_bind_bexe.ml:782: E30A] " sr
+        (
+          "[bind_exe: init] initialising expression \n" ^
+          sbe bsym_table (e',rhst) ^
+          "\nof type\n" ^
+          sbt bsym_table rhst ^
+          "\nis not a supertype of the declared variable type:\n" ^ 
+          sbt bsym_table lhst 
+        )
+    end
 
   | EXE_assign (l,r) ->
 (*

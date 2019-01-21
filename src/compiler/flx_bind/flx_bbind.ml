@@ -489,6 +489,7 @@ print_endline "BINDING PARAMETER";
         let bbdcl = match k with
         | `POnce -> bbdcl_val (bvs,t,`Once)
         | `PVal ->  
+(*
            if Flx_btype.contains_uniq t then begin
              print_endline ("Flx_bbind: WARNING: Parameter " ^ sym.Flx_sym.id ^ 
                " type " ^ sbt bsym_table t ^
@@ -499,6 +500,7 @@ print_endline "BINDING PARAMETER";
                " is or contains uniq specified or defaults to val, var is required")
 *)
            end;
+*)
            bbdcl_val (bvs,t,`Val)
         | `PVar -> bbdcl_val (bvs,t,`Var)
         in
@@ -564,6 +566,7 @@ print_endline ("flx_bind: Adding label " ^ s ^ " index " ^ string_of_int symbol_
 *)
         btyp_void ()
     in
+(*
     if Flx_btype.contains_uniq t then begin
       print_endline ("Flx_bbind: WARNING: Local val " ^ sym.Flx_sym.id ^ " type " ^ 
         sbt bsym_table t ^
@@ -574,7 +577,7 @@ print_endline ("flx_bind: Adding label " ^ s ^ " index " ^ string_of_int symbol_
         " is or contains uniq, var is required")
 *)
     end;
-
+*)
     if state.print_flag then
       print_endline ("//bound val " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
