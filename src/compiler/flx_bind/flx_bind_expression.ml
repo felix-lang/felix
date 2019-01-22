@@ -1727,19 +1727,11 @@ print_endline ("`EXPR_variant_subtype_match_coercion");
 *)
       let (_,ut) as ue = be e in
       let ut = rt ut in
-(*
-      print_endline ("Union type is " ^ sbt bsym_table ut);
-*)
+      let ut = match ut with | BTYP_uniq t -> t | t -> t in
       begin match ut with
       | BTYP_inst (i,ts',_) ->
-(*
-        print_endline ("OK got type " ^ si i);
-*)
         begin match hfind "lookup" state.sym_table i with
         | { Flx_sym.id=id; symdef=SYMDEF_union ls } ->
-(*
-          print_endline ("UNION TYPE! " ^ id);
-*)
           let vidx =
             let rec scan = function
             | [] -> None
@@ -1749,9 +1741,6 @@ print_endline ("`EXPR_variant_subtype_match_coercion");
           in
           begin match vidx with
           | Some vidx ->
-(*
-            print_endline ("Index is " ^ si vidx);
-*)
             bexpr_match_case (vidx,ue)
 
           | None->
@@ -1890,10 +1879,9 @@ print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
      end
 
   | `EXPR_ctor_arg (sr,(qn,e)) ->
-
     let (_,ut) as ue = be e in
     let ut = rt ut in
-
+    let ut = match ut with BTYP_uniq t -> t |  t -> t in
     begin match qn with
     | `AST_name (sr,name,ts) ->
 (*

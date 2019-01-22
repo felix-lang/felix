@@ -950,6 +950,7 @@ if funame = "join" then
           let processed, tail = get_subextent tail in
           bind tail (result @ processed) 
         with GadtUnificationFailure ->
+print_endline ("get_subextent, GADT uniication failure");
           (* skip up to end of match case, take account of 
              any nested match cases too, this should drop
              the WHOLE subextent containing a unification
