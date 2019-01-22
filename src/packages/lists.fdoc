@@ -52,12 +52,21 @@ This is primarily a non-functional helper routine.
     """
   ;
 
+  // safe list splice 
+  fun splice[T] (var x: uniq (list[T]), var y: uniq (list[T])): uniq (list[T]) =
+  {
+    splice (C_hack::cast[&list[T]] &x,unbox y);
+    return  x;
+  }
+
+
 @h2 In-place unsafe reversal.
 Another helper routine.
 @tangle list.flx
   //$ In place list reversal: unsafe!
   // second arg is a dummy to make overload work
   proc rev[T,PLT=&list[T]] : &list[T] = "_rev($1,(?1*)0);" requires _iprev_[T,PLT];
+  proc rev[T,PLT=&list[T]] : &(uniq list[T]) = "_rev($1,(?1*)0);" requires _iprev_[T,PLT];
 
   body _iprev_[T,PLT]=
     """
@@ -284,14 +293,14 @@ Constructor variant.
 Tail recursive.
 @tangle list.flx
   //$ map a list, return mapped list in reverse order (tail rec).
-  fun rev_map[T,U] (_f:T->U) (x:list[T]): list[U] = {
+  fun rev_map[T,U] (_f:T->U) (x:list[T]): uniq list[U] = {
     fun aux (inp:list[T]) (out:list[U]) : list[U] =>
       match inp with
       | #Empty => out
       | Snoc(t,h) => aux t (Snoc(out,_f(h)))
       endmatch
     ;
-    return aux x Empty[U];
+    return box (aux x Empty[U]);
   }
 
 @h2 Map a list @{map}
@@ -300,18 +309,15 @@ This is safe because we enforce linearity by abstraction.
 @tangle list.flx
   //$ map a list (tail-rec).
   //  tail rec due to in-place reversal of result.
-  fun map[T,U] (_f:T->U) (x:list[T]): list[U] =
-  {
-    var r = rev_map _f x;
-    rev$ &r;
-    return r;
-  }
+  fun map[T,U] (_f:T->U) (x:list[T]): uniq list[U] =>
+    rev (rev_map _f x)
+  ;
 
 @h2 Reverse a list @{rev}.
 Tail recursive.
 @tangle list.flx
   //$ reverse a list (tail rec).
-  pure fun rev[T] (x:list[T]):list[T]= {
+  pure fun rev[T] (x:list[T]):uniq (list[T])= {
     fun aux (x:list[T]) (y:list[T]) : list[T] =
     {
       return
@@ -324,8 +330,8 @@ Tail recursive.
     return aux x Empty[T];
   }
 
-  fun urev[T](x:list[T]) => box (rev x);
-  fun urev[T](var x:uniq (list[T])) : uniq (list[T]) {
+  // safe inplace reversal
+  fun rev[T](var x:uniq (list[T])) : uniq (list[T]) {
     var y = unbox x;
     rev &y;
     return box y;

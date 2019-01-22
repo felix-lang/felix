@@ -272,9 +272,9 @@ class Parsers
     | `Terminal (s,r) => ActionSecond s white r 
     | `Epsilon => BaseChips::epsilon[parser_state_t] 
     | `Seq ps => BaseChips::pipeline_list (
-          map (fun (p:pgram_t) => render_pgram (lib,v) white p) ps) 
+          unbox (map (fun (p:pgram_t) => render_pgram (lib,v) white p) ps))
     | `Alt ps =>  BaseChips::tryall_list (
-          map (fun (p:pgram_t) => render_pgram (lib,v) white p) ps)
+          unbox (map (fun (p:pgram_t) => render_pgram (lib,v) white p) ps))
     | `Nonterminal nt => 
          let idx : size = find v nt in
          let pslot : &pntdef_t = -(v.stl_begin + idx) in
@@ -408,7 +408,7 @@ class Parsers
 
      match newseq with 
      | Empty => out = (head,(#`Epsilon:>> pgram_t)) ! out;
-     | _ => out = (head,(`Seq(rev newseq):>>pgram_t)) ! out;
+     | _ => out = (head,(`Seq(unbox (rev newseq)):>>pgram_t)) ! out;
      endmatch;
 
    | `Alt ps =>
@@ -429,7 +429,7 @@ class Parsers
    | `Action a  
    | `Terminal _
    | `Nonterminal s => 
-     out = map (fun (ss: list[pgram_t]) => Cons (p,ss)) out; 
+     out = unbox (map (fun (ss: list[pgram_t]) => Cons (p,ss)) out); 
 
    // A sequence is unpacked by successively unpacking each
    // symbol. The result is then prepended to each alternative.
@@ -444,7 +444,7 @@ class Parsers
      done
  
    | `Alt ps =>
-     var alts = cat (map expand_aux ps);
+     var alts = cat (unbox (map expand_aux ps));
      out2 = Empty[list[pgram_t]];
      for left in alts perform
        for right in out perform
@@ -457,7 +457,7 @@ class Parsers
 
   fun expand (p:pgram_t) : pgram_t =>
     let ps = expand_aux p in
-    (`Alt (map (fun (seqs: list[pgram_t]) => `Seq(rev seqs):>>pgram_t) ps)) :>> pgram_t
+    (`Alt (unbox (map (fun (seqs: list[pgram_t]) => `Seq(unbox (rev seqs)):>>pgram_t) ps))) :>> pgram_t
   ;
 
   // in p replace nonterminal name with value (where q=name,value)
@@ -465,8 +465,8 @@ class Parsers
     let name,value = q in
     match p with
     | `Nonterminal s when name == s => value
-    | `Seq ls => `Seq (map (substitute q) ls) :>> pgram_t
-    | `Alt ls => `Alt (map (substitute q) ls) :>> pgram_t
+    | `Seq ls => `Seq (unbox (map (substitute q) ls)) :>> pgram_t
+    | `Alt ls => `Alt (unbox (map (substitute q) ls)) :>> pgram_t
     | _ => p
   ;
 
@@ -514,9 +514,9 @@ class Parsers
      else 
        var newntname = fresh();
        var newnt = `Nonterminal newntname :>> pgram_t; 
-       var alts = map (fun (b:list[pgram_t]) => `Seq (b + newnt):>>pgram_t) betas;
+       var alts = unbox (map (fun (b:list[pgram_t]) => `Seq (b + newnt):>>pgram_t) betas);
        outgram =  (nt, (`Alt alts :>>pgram_t)) !  outgram ;
-       alts = map (fun (a:list[pgram_t]) => (`Seq (a + newnt):>>pgram_t)) alphas + (#`Epsilon:>>pgram_t);
+       alts = unbox (map (fun (a:list[pgram_t]) => (`Seq (a + newnt):>>pgram_t)) alphas) + (#`Epsilon:>>pgram_t);
        outgram = (newntname, (`Alt alts:>>pgram_t)) ! outgram;
      done
    done

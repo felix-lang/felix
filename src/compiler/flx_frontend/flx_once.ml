@@ -606,7 +606,8 @@ if debug then print_endline ("flow: first entry at label  " ^ str_of_label bsym_
   | BEXE_yield _ 
     -> 
     print_endline ("Once analysis can't handle yield yet"); 
-    assert false
+    (* Hack so stuff doesn't actually crash! *)
+    flow liveness (return bsym_table ix2chain stack liveness)
 
   | BEXE_halt _
     -> 

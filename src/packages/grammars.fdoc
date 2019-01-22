@@ -218,7 +218,7 @@ fun unpack (fresh:1->string) (head:string, p:prod_t) : gramlib_t =
 
    match newseq with 
    | Empty => out = (head,(#`Epsilon :>> prod_t)) ! out;
-   | _ => out = (head,(`Seq (rev newseq) :>> prod_t)) ! out;
+   | _ => out = (head,(`Seq (unbox (rev newseq)) :>> prod_t)) ! out;
    endmatch;
 
  | `Alt ps =>
