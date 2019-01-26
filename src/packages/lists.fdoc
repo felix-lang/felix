@@ -40,10 +40,9 @@ This is primarily a non-functional helper routine.
 
   // NOTE: this will fail if the second argument is named "p"!
   // fix as for rev, rev_last!
-  proc splice[T] : &list[T] * list[T] =
+  proc _unsafe_splice[T] : &list[T] * list[T] =
     """
     { // list splice
-      //struct node_t { ?1 elt; void *tail; };
       struct node_t { void *tail; ?1 elt; };
       void **p = $1;
       while(*p) p = &((node_t*)FLX_VNP(*p))->tail;
@@ -55,9 +54,19 @@ This is primarily a non-functional helper routine.
   // safe list splice 
   fun splice[T] (var x: uniq (list[T]), var y: uniq (list[T])): uniq (list[T]) =
   {
-    splice (C_hack::cast[&list[T]] &x,unbox y);
-    return  x;
+    var x1 = unbox x; // hack
+    _unsafe_splice (&x1,unbox y);
+    return  box x1;
   }
+
+  // safe list splice 
+  fun splice[T] (var x: uniq (list[T]), var y: list[T]): list[T] =
+  {
+    var x1 = unbox x; // hack
+    _unsafe_splice (&x1,y);
+    return  x1;
+  }
+
 
 
 @h2 In-place unsafe reversal.
@@ -123,11 +132,8 @@ Make an entirely new copy of a list.
 Primarily a helper.
 @tangle list.flx
   //$ Copy a list.
-  fun copy[T] (x:list[T]):list[T]= {
-    var y = rev x;
-    rev (&y);
-    return y;
-  }
+  fun copy[T] (x:list[T]):uniq list[T]=> rev (rev x);
+  fun copy[T] (x:uniq list[T]):uniq list[T]=> x;
 
 @h2 Copy and return last @{copy_last}
 Yet another helper.
@@ -403,21 +409,14 @@ From @{low} to @{high} exclusive with given @{step}.
 @h2 Concatenate two lists @{join}.
 @tangle list.flx
   //$ Concatenate two lists.
-  fun join[T] (x:list[T]) (y:list[T]):list[T] =
-  {
-    if is_empty x do
-      return y;
-    else
-      var z: list[T];
-      var last: list[T];
-      copy_last (x,&z,&last);
-      splice (&last, y);
-      return z;
-    done;
-  }
+  //$ Slow; required for fold
+  pure fun join [T] (x:list[T]) (y: list[T]):list[T] => splice (copy x,y);
 
-  //$ Concatenate two lists.
-  pure fun + [T] (x:list[T], y: list[T]):list[T] => join x y;
+
+  // fast
+  pure fun + [T] (x:list[T], y: list[T]):list[T] => splice (copy x,y);
+  pure fun + [T] (x:uniq list[T], y: list[T]):list[T] => splice (x, y);
+  pure fun + [T] (x:uniq list[T], y: uniq list[T]):uniq list[T] => splice(x,y);
 
   proc += [T] (x:&list[T], y: list[T]) => x <- join (*x) y;
 
