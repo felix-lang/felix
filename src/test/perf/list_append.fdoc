@@ -1,0 +1,39 @@
+@h1 Unique List Append performance test
+@felix
+// List performance test
+var elapsed1 : double;
+
+begin
+  var x = Empty[int];
+  var y = ([1]);
+  var start = time();
+  for (var i = 1; i < 2000; ++i;) perform
+    x = x + y;
+  elapsed1 = time() - start;
+  println$ x.len.str;
+  eprintln$ "Standard append " + elapsed1.str;
+  collect();
+end
+
+var elapsed2 : double;
+begin
+  var x = box Empty[int];
+  var start = time();
+  for (var i = 1; i < 2000 ; ++i;) do
+    var y = box ([1]);
+    x = x + y;
+  done
+  elapsed2 = time() - start;
+  eprintln$ "Unique   append " + elapsed2.str;
+  println$ x.len.str;
+  collect();
+end
+
+println$ elapsed2 < elapsed1 / 4.0;
+@expect
+1999
+1999
+true
+@
+
+

@@ -294,10 +294,20 @@ regress-check: test-dir
 	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/regress/rt --regex='.*\.flx' ${BUILDROOT}/test
 
 unit-check: unit-dir
+	# ============================================================
+	#
+	# RUNNING UNIT TESTS
+	#
+	# ============================================================
 	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --input \
      --nonstop --indir=${BUILDROOT}/test/unit/projection --regex='.*\.flx' ${BUILDROOT}/test/unit/projection
 
 perf-check: perf-dir
+	# ============================================================
+	#
+	# RUNNING PERFORMANCE TESTS
+	#
+	# ============================================================
 	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --input \
      --nonstop --indir=${BUILDROOT}/test/perf --regex='.*\.flx' ${BUILDROOT}/test/perf
 

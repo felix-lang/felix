@@ -15,6 +15,7 @@ begin
     x = rev x;
   elapsed1 = time() - start;
   println$ x.len.str;
+  eprintln$ "Standard rev " + elapsed1.str;
   collect();
 end
 
@@ -25,6 +26,7 @@ begin
   for (var i = 1; i < 16 ; ++i;) perform
     x = rev x;
   elapsed2 = time() - start;
+  eprintln$ "Unique   rev " + elapsed2.str;
   println$ x.len.str;
   collect();
 end
