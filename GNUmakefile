@@ -267,6 +267,10 @@ unit-dir:
 	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/test/unit/projection \
       --outdir=${BUILDROOT}/test/unit/projection
 
+perf-dir:
+	mkdir -p ${BUILDROOT}/test/perf
+	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/test/perf \
+      --outdir=${BUILDROOT}/test/perf
 
 tutopt-dir:
 	mkdir -p ${BUILDROOT}/tutopt
@@ -293,6 +297,10 @@ unit-check: unit-dir
 	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --input \
      --nonstop --indir=${BUILDROOT}/test/unit/projection --regex='.*\.flx' ${BUILDROOT}/test/unit/projection
 
+perf-check: perf-dir
+	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --input \
+     --nonstop --indir=${BUILDROOT}/test/perf --regex='.*\.flx' ${BUILDROOT}/test/perf
+
 
 tut-check: tut-dir
 	# ============================================================
@@ -318,7 +326,7 @@ tutopt-check: tutopt-dir
 		--indir=${BUILDROOT}/test/tutopt --regex='.*\.flx' ${BUILDROOT}/test/tutopt
 
 
-test: unit-check regress-check tut-check tutopt-check extras-check
+test: unit-check regress-check tut-check perf-check tutopt-check extras-check
 fresh-test: src test
 
 install:

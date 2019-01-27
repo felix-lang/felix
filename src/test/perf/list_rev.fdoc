@@ -1,0 +1,40 @@
+@h1 Unique List Reverse performance test
+@felix
+// List performance test
+var y = ([1,2,3,4]);
+for (var j=0; j<14; ++j;) perform y = y + y;
+println$ "Length " + y.len.str;
+collect();
+
+var elapsed1 : double;
+
+begin
+  var x = y;
+  var start = time();
+  for (var i = 1; i < 16 ; ++i;) perform
+    x = rev x;
+  elapsed1 = time() - start;
+  println$ x.len.str;
+  collect();
+end
+
+var elapsed2 : double;
+begin
+  var x = box y;
+  var start = time();
+  for (var i = 1; i < 16 ; ++i;) perform
+    x = rev x;
+  elapsed2 = time() - start;
+  println$ x.len.str;
+  collect();
+end
+
+println$ elapsed2 < elapsed1 / 4.0;
+@expect
+Length 65536
+65536
+65536
+true
+@
+
+
