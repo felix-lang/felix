@@ -11,14 +11,37 @@ The core data type for most functional programming languages.
 @tangle list.flx
 open class List
 {
+@doc
+Felix uses Snoc lists:
+@tangle list.flx
   variant list[T] = | Empty | Snoc of list[T] * T;
+@doc
+Note Snoc is Cons spelled backwards. The representation of this
+variant is a NULL pointer for an empty list, or a pointer to
+a node object otherwise. In the node object, the pointer to the
+next node comes first, followed by the data. Had we used the
+usual Cons, the data would come first. The advantage of having the
+next pointer first is that some operations written in C, such
+as in place reversal and appending two lists can be independent
+of the value type T.
+
+However, we utilise Felix user defined pattern matching feature
+to allow the client to use the more familiar Cons anyhow.
+This requires two functions
+@tangle list.flx
+  // match checker
   fun _match_ctor_Cons[T] : list[T] -> bool = "!!$1"; 
+
+  // argument extractor
   inline fun _ctor_arg_Cons[T]: list[T] -> T * list[T] = 
     "reinterpret<#0>(flx::list::snoc2cons<?1>($1))" 
     requires snoc2cons_h
   ;
+
+  // Cons pseudo constructor
   inline fun Cons[T] (h:T, t:list[T]) => Snoc (t,h);
 
+  // C++ code use to reverse Cons order to Snoc order and vice versa
   header snoc2cons_h = """
     namespace flx { namespace list {
       template<class T> struct snoc { void *mem_0; T mem_1; };
@@ -29,46 +52,65 @@ open class List
     }}
   """;
 
-@h2 Splice
-This is primarily a non-functional helper routine.
+@h1 Constructors
+@h2 Named constructor for empty list.
 @tangle list.flx
-  //$ The second list is made the tail of the
-  //$ list stored at the location pointed at by the first argument.
-  //$ If the first list is empty, the variable will point
-  //$ at the second list. This operation is DANGEROUS because
-  //$ it is a mutator: lists are traditionally purely functional.
+  //$ Make an empty list.
+  ctor[T] list[T] () => Empty[T];
 
-  // NOTE: this will fail if the second argument is named "p"!
-  // fix as for rev, rev_last!
-  proc _unsafe_splice[T] : &list[T] * list[T] =
-    """
-    { // list splice
-      struct node_t { void *tail; ?1 elt; };
-      void **p = $1;
-      while(*p) p = &((node_t*)FLX_VNP(*p))->tail;
-      *p = $2;
+@h2 Construct a singleton list.
+Does not work if the argument is an array
+or option iterator.
+@tangle list.flx
+  //$ Make a list with one element.
+  //$ NOTE: list (1,2) is a list of 2 ints.
+  //$ To get a list of one pair use list[int*int] (1,2) instead!
+  ctor[T] list[T] (x:T) => Snoc(Empty[T],x);
+
+@h2 Construct a list from an array.
+You can also use the notation ([1,2,3]).
+@tangle list.flx
+  //$ Make a list from an array.
+  ctor[T,N] list[T] (x:array[T, N]) = {
+    var o = Empty[T];
+    if x.len > 0uz do
+      for var i in x.len.int - 1 downto 0 do
+        o = Snoc(o,x.i);
+      done
+    done
+    return o;
+  }
+
+@h2 List comprehension.
+Make a list from an option stream.
+Named variant.
+@tangle list.flx
+  //$ List comprehension:
+  //$ Make a list from a stream.
+  fun list_comprehension[T] (f: (1->opt[T])) = {
+    var ff = f;
+    fun aux (l:list[T]) = {
+      var x = ff();
+      return 
+        match x with 
+       | Some elt => aux (Snoc(l,elt)) 
+       | #None => rev l
+       endmatch
+      ;
     }
-    """
-  ;
-
-  // safe list splice 
-  fun splice[T] (var x: uniq (list[T]), var y: uniq (list[T])): uniq (list[T]) =
-  {
-    var x1 = unbox x; // hack
-    _unsafe_splice (&x1,unbox y);
-    return  box x1;
+    return aux Empty[T];
   }
 
-  // safe list splice 
-  fun splice[T] (var x: uniq (list[T]), var y: list[T]): list[T] =
-  {
-    var x1 = unbox x; // hack
-    _unsafe_splice (&x1,y);
-    return  x1;
-  }
+@h2 List comprehension.
+Make a list from an option stream.
+Constructor variant.
+@tangle list.flx
+//$ List comprehension:
+  //$ Make a list from a stream.
+  ctor[T] list[T](f: (1->opt[T])) => list_comprehension f;
 
 
-
+@h1 Reversing a list
 @h2 In-place unsafe reversal.
 Another helper routine.
 @tangle list.flx
@@ -81,7 +123,6 @@ Another helper routine.
     """
     static void _rev(?2 plt, ?1*) // second arg is a dummy
     { // in place reversal
-      //struct node_t { ?1 elt; void *tail; };
       struct node_t { void *tail; ?1 elt; };
       void *nutail = 0; 
       void *cur = *plt;
@@ -127,6 +168,16 @@ Another variant of the unsafe reversal.
     """
   ;
 
+@h2 Copy and return last @{copy_last}
+Yet another helper.
+@tangle list.flx
+  //$ Copy a list, and return last element as a list,
+  //$ empty if original list was empty.
+  private proc copy_last[T] (inp:list[T], out:&list[T], last:&list[T]) {
+    out <- rev inp;
+    rev_last (out, last);
+  }
+
 @h1 List @{copy}
 Make an entirely new copy of a list.
 Primarily a helper.
@@ -134,73 +185,82 @@ Primarily a helper.
   //$ Copy a list.
   fun copy[T] (x:list[T]):uniq list[T]=> rev (rev x);
   fun copy[T] (x:uniq list[T]):uniq list[T]=> x;
+  fun dup[T] (x:uniq list[T]):uniq list[T] * uniq list[T] => x, copy (unbox x);
 
-@h2 Copy and return last @{copy_last}
-Yet another helper.
+
+@h2 Splice
+This is primarily a non-functional helper routine.
 @tangle list.flx
-  //$ Copy a list, and return last element as a list,
-  //$ empty if original list was empty.
-  proc copy_last[T] (inp:list[T], out:&list[T], last:&list[T]) {
-    out <- rev inp;
-    rev_last (out, last);
-  }
+  //$ The second list is made the tail of the
+  //$ list stored at the location pointed at by the first argument.
+  //$ If the first list is empty, the variable will point
+  //$ at the second list. This operation is DANGEROUS because
+  //$ it is a mutator: lists are traditionally purely functional.
 
-
-@h1 Constructors
-@h2 Named constructor for empty list.
-@tangle list.flx
-  //$ Make an empty list.
-  ctor[T] list[T] () => Empty[T];
-
-@h2 Construct a singleton list.
-Does not work if the argument is an array
-or option iterator.
-@tangle list.flx
-  //$ Make a list with one element.
-  //$ NOTE: list (1,2) is a list of 2 ints.
-  //$ To get a list of one pair use list[int*int] (1,2) instead!
-  ctor[T] list[T] (x:T) => Snoc(Empty[T],x);
-
-@h2 Construct a list from an array.
-@tangle list.flx
-  //$ Make a list from an array.
-  ctor[T,N] list[T] (x:array[T, N]) = {
-    var o = Empty[T];
-    if x.len > 0uz do
-      for var i in x.len.int - 1 downto 0 do
-        o = Snoc(o,x.i);
-      done
-    done
-    return o;
-  }
-
-@h2 List comprehension.
-Make a list from an option stream.
-Named variant.
-@tangle list.flx
-  //$ List comprehension:
-  //$ Make a list from a stream.
-  fun list_comprehension[T] (f: (1->opt[T])) = {
-    var ff = f;
-    fun aux (l:list[T]) = {
-      var x = ff();
-      return 
-        match x with 
-       | Some elt => aux (Snoc(l,elt)) 
-       | #None => rev l
-       endmatch
-      ;
+  // NOTE: this will fail if the second argument is named "p"!
+  // fix as for rev, rev_last!
+  proc _unsafe_splice[T] : &list[T] * list[T] =
+    """
+    { // list splice
+      struct node_t { void *tail; ?1 elt; };
+      void **p = $1;
+      while(*p) p = &((node_t*)FLX_VNP(*p))->tail;
+      *p = $2;
     }
-    return aux Empty[T];
+    """
+  ;
+
+  // safe list splice 
+  fun splice[T] (var x: uniq (list[T]), var y: uniq (list[T])): uniq (list[T]) =
+  {
+    var x1 = unbox x; // hack
+    _unsafe_splice (&x1,unbox y);
+    return  box x1;
   }
 
-@h2 List comprehension.
-Make a list from an option stream.
-Constructor variant.
+  // safe list splice 
+  fun splice[T] (var x: uniq (list[T]), var y: list[T]): list[T] =
+  {
+    var x1 = unbox x; // hack
+    _unsafe_splice (&x1,y);
+    return  x1;
+  }
+
+
+
+@h2 Concatenate two lists @{join}.
 @tangle list.flx
-//$ List comprehension:
-  //$ Make a list from a stream.
-  ctor[T] list[T](f: (1->opt[T])) => list_comprehension f;
+  //$ Concatenate two lists.
+  //$ Slow; required for fold
+  pure fun join [T] (x:list[T]) (y: list[T]):list[T] => splice (copy x,y);
+
+
+  // fast
+  pure fun + [T] (x:list[T], y: list[T]):list[T] => splice (copy x,y);
+  pure fun + [T] (x:uniq list[T], y: list[T]):list[T] => splice (x, y);
+  pure fun + [T] (x:uniq list[T], y: uniq list[T]):uniq list[T] => splice(x,y);
+
+  proc += [T] (x:&list[T], y: list[T]) => x <- join (*x) y;
+
+@h2 Cons an element onto a list.
+@tangle list.flx
+  //$ Prepend element to head of list.
+  pure fun + [T] (x:T, y:list[T]):list[T] => Snoc(y,x);
+
+@h2 Append an element onto a list.
+O(N) slow.
+@tangle list.flx
+  //$ Append element to tail of list (slow!).
+  noinline fun + [T] (x:list[T], y:T):list[T] => rev$ Snoc (rev x,y);
+
+  //$ Append element to tail of list (slow!).
+  proc += [T] (x:&list[T], y:T) { x <- *x + y; }
+
+  //$ Prepend element to head of list (fast!).
+  proc -= [T] (x:&list[T], y:T) { x <- y ! *x; }
+
+
+
 
 @h1 Construe a list as an array value.
 @tangle list.flx
@@ -404,39 +464,6 @@ From @{low} to @{high} exclusive with given @{step}.
 @tangle list.flx
   //$ Range from 0 to num (excluded).
   fun range (num:int) => range(0, num, 1);
-
-@h1 Operators
-@h2 Concatenate two lists @{join}.
-@tangle list.flx
-  //$ Concatenate two lists.
-  //$ Slow; required for fold
-  pure fun join [T] (x:list[T]) (y: list[T]):list[T] => splice (copy x,y);
-
-
-  // fast
-  pure fun + [T] (x:list[T], y: list[T]):list[T] => splice (copy x,y);
-  pure fun + [T] (x:uniq list[T], y: list[T]):list[T] => splice (x, y);
-  pure fun + [T] (x:uniq list[T], y: uniq list[T]):uniq list[T] => splice(x,y);
-
-  proc += [T] (x:&list[T], y: list[T]) => x <- join (*x) y;
-
-@h2 Cons an element onto a list.
-@tangle list.flx
-  //$ Prepend element to head of list.
-  pure fun + [T] (x:T, y:list[T]):list[T] => Snoc(y,x);
-
-@h2 Append an element onto a list.
-O(N) slow.
-@tangle list.flx
-  //$ Append element to tail of list (slow!).
-  noinline fun + [T] (x:list[T], y:T):list[T] => rev$ Snoc (rev x,y);
-
-  //$ Append element to tail of list (slow!).
-  proc += [T] (x:&list[T], y:T) { x <- *x + y; }
-
-  //$ Prepend element to head of list (fast!).
-  proc -= [T] (x:&list[T], y:T) { x <- y ! *x; }
-
 
 @h2 Outer product.
 Given a list of lists of T named x and 

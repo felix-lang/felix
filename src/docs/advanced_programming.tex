@@ -1,0 +1,252 @@
+\documentclass[oneside]{book}
+\usepackage{xcolor}
+\definecolor{bg}{rgb}{0.95,0.95,0.95}
+\definecolor{exbg}{rgb}{0.80,0.95,0.95}
+\definecolor{emphcolor}{rgb}{0.5,0.0,0.0}
+\newcommand{\empha}{\bf\color{emphcolor}}
+\usepackage[framemethod=TikZ]{mdframed}
+\newtheorem{example}{Example}
+\mdfdefinestyle{MyFrame}{innerleftmargin=20pt}
+\newenvironment{myexample}%
+  {\begin{mdframed}[style=MyFrame,backgroundcolor=exbg]}%
+  {\end{mdframed}}
+\usepackage{parskip}
+\usepackage{minted}
+\usepackage{caption}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amscd}
+\usemintedstyle{friendly}
+\setminted{bgcolor=bg,xleftmargin=20pt}
+\usepackage{hyperref}
+\hypersetup{pdftex,colorlinks=true,allcolors=blue}
+\usepackage{hypcap}
+\title{Advanced Programming Technniques}
+\author{John Skaller}
+\begin{document}
+\maketitle
+\tableofcontents
+
+\chapter{High Performance Lists}
+\section{A naive list in Felix}
+\subsection{Definition}
+The usual definition of a purely functional list 
+looks like this:
+
+\begin{minted}{felix}
+variant list[T] = Empty | Cons of T * list[T];
+\end{minted}
+
+This single line provides the complete functional specification.
+
+\subsection{Constructors}
+For construction our defintion says:
+
+\begin{itemize}
+\item \verb%Empty[T]% is a list of T
+\item if $t$ is a list of T, and $h$ is a value of type T, then
+\verb%Cons(h,T)% is a list of T.
+\end{itemize}
+
+This is an inductive specification of how to create a list.
+For example the following are lists of int:
+
+\begin{minted}{felix}
+Empty[int]
+Cons (1, Empty[int])
+Cons (2, Cons (1, Empty[int]))
+Cons (3, Cons (2, Cons (1, Empty[int])))
+\end{minted}
+
+It is usual to provide some syntactic sugars for these list constructions:
+
+\begin{minted}{felix}
+([3,2,1])
+list (3,2,1)
+\end{minted}
+can be used in Felix.
+
+\subsection{Destructors}
+Destructors typically use pattern matching and recursion:
+
+\begin{minted}{felix}
+fun showlist (lst: list[int]) (init: string) =>
+  match lst with
+  | Empty => init
+  | Cons (h, t) => init + " " + h.str + showlist t
+  endmatch
+;
+\end{minted}
+
+\subsection{Linearity}
+However the functional specification is not enough. To be complete
+we need to add an operational requirement: \verb%Cons(h,t)% must be $O(1)$.
+The destructor form used in a pattern match must also be $O(1)$.
+
+The constant time constraint ensures that a new list created
+by \verb%Cons% cannot copy the list, because that would be $O(N)$,
+therefore, the tail $t$ must be shared. To ensure referential transparency,
+it must therefore also be immutable. This means, indirection must be used
+in the representation, so that a list acts like a pointer.
+
+In Felix the C representation of a Cons node would be layout compatible with
+
+\begin{minted}{C}
+struct node_t { T data; node_t *next; };
+\end{minted}
+
+and a list would be a pointer to a \verb%node_t%, \verb%nullptr%
+if \verb%Empty%.
+
+As we will see next, the constant time constraint for the 
+core primitive \verb%Cons% leads to linear performance
+for most operations on lists. 
+
+\subsection{Operations}
+There is a set of operations usually provided with lists,
+these can all be defined with the constructors and destructors
+explained above.
+
+\subsubsection{fold\_left}
+This is one of the most fundamental operations on a list.
+\begin{minted}{felix}
+fun fold_left[T,U] (f:U->T->U) (accum:U) (x:list[T]):U =>
+  match x with
+  | Empty => accum
+  | Cons (h,t) => fold_left f (f accum h) t
+  endmatch
+;
+\end{minted}
+The function operand $f$ folds each element of the list into 
+the initial value \verb%accum%.
+
+The function is tail recursive and $O(N)$.
+
+\subsubsection{len}
+Calculating the length of a list is now easy:
+\begin{minted}{felix}
+fun len[T] (x:list[T]) => 
+  let fun add (x:int) (y:int) => x + y in
+  fold_left add 0 x
+;
+\end{minted}
+
+\subsubsection{cons}
+A curried form of the Cons function:
+\begin{minted}{felix}
+  fun cons (h:T) (t:list[T]) => Cons (h,t);
+\end{minted}
+
+\subsubsection{unroll}
+Unroll moves the value of its first argument
+onto the top of its second argument one at a time.
+\begin{minted}{felix}
+fun unroll[T] (inp:list[T]) (out:list[T]) =>
+  fold_left cons[T] out inp
+;
+\end{minted}
+
+This function is again $O(N)$, however from now we wish to be
+more precise in our costing. We shall count evaluations
+of the \verb%Cons% operation as a basis for a more precise
+performance measure because it requires the heap allocation
+of a new node to put at the head of the list. At some stage,
+at least by termination, the Felix garbage collector must reap 
+the node and there is a cost in freeing it, as well as a cost
+in keeping track of the node. So our count is both a measure
+of allocation, construction, and deallocation time as well
+as an approximation of the amount of store required.
+
+If the two lists \verb%inp% and \verb%out% have length $N$ and $M$ respectively
+then \verb%unroll% costs $N$.
+
+\subsubsection{rev}
+Using unroll we can reverse a list:
+\begin{minted}{felix}
+fun rev[T] (x:list[T]) => unroll x Empty[T];
+\end{minted}
+
+The cost is clearly N.
+
+\subsubsection{copy}
+We can copy a list by just reversing it twice.
+\begin{minted}{felix}
+fun copy[T] (x:list[T]) => rev (rev x);
+\end{minted}
+
+And now we have a cost of $2N$.
+
+\subsubsection{append}
+Append is now easy:
+
+\begin{minted}{felix}
+fun rev_append[T] (x:list[T]) (y:list[T])=> unroll (rev x) y;
+fun append[T] (x:list[T]) (y:list[T]) => rev (rev_append x y);
+\end{minted}
+
+If the two lists $x$ and $y$ have length $N$ and $M$ respectively
+then \verb%rev_append% costs $N+M$
+
+\subsubsection{map}
+An important function!
+\begin{minted}{felix}
+fun rev_map[T,U] (f:T -> U) (x:list[T]) : list[U] =>
+  let fun acc (out: list[U]) (h:T) => Cons (f h, out) in
+  fold_left acc Empty[U] x
+;
+fun map[T,U] (f:T -> U) (x:list[T]) : list[U] =>
+  rev (rev_map f x)
+;
+\end{minted}
+
+Here \verb%rev_map% costs $N$ and \verb%map% costs $2N$.
+
+\subsubsection{fold\_right}
+Similar to \verb%fold_left% except it start at the end of the list.
+\begin{minted}{felix}
+fun fold_right[T,U] (f:T->U->U) (x:list[T]) (init:U):U =>
+  let g(acc:U) (elt:T) : U => f elt acc in
+  fold_left g init (rev x)
+;
+\end{minted}
+
+This formulation of \verb%fold_right% is unconventional 
+because it is tail recursive but costs $2N$. 
+
+\subsection{Tail Recursion}
+A more conventional implementation of \verb%fold_right% uses the 
+machine stack to reverse the list structure:
+
+\begin{minted}{felix}
+fun fold_right[T,U] (f:T->U->U) (x:list[T]) (init:U):U =>
+  match x with
+  | Empty => init
+  | Cons (h,t) => f (fold_right f init) h
+;
+\end{minted}
+
+This technically has cost of $N$, which is achieved by
+storing a pointer to each \verb%Cons% node on the machine
+stack as we traverse the list, seeking the end. We have to also
+store the program counter on the stack. When we get to the end
+we unwind the recursion, thereby processing the list in
+reverse order as required. The machine stack therefore
+holds $2N$ machine words when we hit the end of the list.
+This is cheaper than constructing a new list, which has 
+$N$ machine words and $N$ values of type $T$ if the size
+of a $T$ is larger than a machine word.
+
+However non-tail recursive list processing has a serious
+problem: on many systems the machine stack is much smaller
+than the heap, and on large lists, the function can
+crash with a stack overflow. In fact, the theoretical
+costs of the two methods are much the same, the in-practice
+costs is platform dependent but also requires costing
+the risk of a stack overflow.
+
+We should probably provide both methods, so we can use
+the conventional non-tail recursive implementation
+on small lists and the tail recursive one on big lists.
+
+\end{document}
+

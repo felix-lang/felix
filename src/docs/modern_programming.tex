@@ -1,6 +1,6 @@
 
 \documentclass[oneside]{book}
-\usepackage{color}
+\usepackage{xcolor}
 \definecolor{bg}{rgb}{0.95,0.95,0.95}
 \definecolor{emphcolor}{rgb}{0.5,0.0,0.0}
 \newcommand{\empha}{\bf\color{emphcolor}}
@@ -320,11 +320,11 @@ println$ \Gamma\alpha;
 
 should be typeset as
 
-\begin{minted}[escapeinside=||]{felix}
-var |$\alpha$| = 1;
-fun |$\Gamma$| (x:int)=> x * x;
-println$ |$\Gamma\alpha$|;
-\end{minted}
+%\begin{minted}[escapeinside=||]{felix}
+%var |$\alpha$| = 1;
+%fun |$\Gamma$| (x:int)=> x * x;
+%println$ |$\Gamma\alpha$|;
+%\end{minted}
 
 
 
@@ -1462,7 +1462,7 @@ end
 
 \subsection{Loops}
 Low level inclusive loops are flat code. Jumping
-in and out with \verb%goto% is permitted. The control
+in and out with \verb!goto! is permitted. The control
 variable can optionally be declared in a loop, and
 exists in the whole containing scope.
 

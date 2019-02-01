@@ -1,5 +1,5 @@
 \documentclass[oneside]{book}
-\usepackage{color}
+\usepackage{xcolor}
 \definecolor{bg}{rgb}{0.95,0.95,0.95}
 \definecolor{emphcolor}{rgb}{0.5,0.0,0.0}
 \newcommand{\empha}{\bf\color{emphcolor}}
@@ -139,9 +139,9 @@ println$
 
 A better looking way:
 
-\begin{minted}[escapeinside=||]{felix}
-fun hypot (x:double, y:double) => |$\sqrt {x^2 + y^2}$|;
-\end{minted}
+%\begin{minted}[escapeinside=||]{felix}
+%fun hypot (x:double, y:double) => |$\sqrt {x^2 + y^2}$|;
+%\end{minted}
 
 encoded like this:
 
@@ -6368,13 +6368,13 @@ Two operators are provided for typesets, union and intersection
 which are spelled \verb%\cup% and \verb%cap% respectively and
 are printed as set theoretic union and intersection symbols $\cup$ and $\cap$.
 
-\begin{minted}[escapeinside=||]{felix}
-typedef sints = typesetof (int,long);
-typedef uints = typesetof (uint,ulong);
-typedef ints = sints |$\cup$| uints;
-typedef shorts = typesetof (short,int,long);
-typedef ssints =  ints |$\cap$| shorts;
-\end{minted}
+%\begin{minted}[escapeinside=||]{felix}
+%typedef sints = typesetof (int,long);
+%typedef uints = typesetof (uint,ulong);
+%typedef ints = sints |$\cup$| uints;
+%typedef shorts = typesetof (short,int,long);
+%typedef ssints =  ints |$\cap$| shorts;
+%\end{minted}
 
 
 \subsection{Membership}
@@ -6383,10 +6383,10 @@ of a typeset, it is spelled \verb%in% or \verb%\in%, the latter
 being typeset as the set theoretic symbol $\in$. It serves to define the semantics
 of a typeset as a typematch.
 
-\begin{minted}[escapeinside=||]{felix}
-typedef ints = typesetof(short,int,long);
-typedef result = int |$\in$| ints;
-\end{minted}
+%\begin{minted}[escapeinside=||]{felix}
+%typedef ints = typesetof(short,int,long);
+%typedef result = int |$\in$| ints;
+%\end{minted}
 
 The membership test above is precisely equivalent to
 
@@ -10186,7 +10186,7 @@ representing the AST terms for the expression as would be
 presented in a compiler diagnostic. Useful to examine exactly
 how the parser translates a particular Felix expression.
 
-\iterm{{\tt range\_check}}
+\item{{\tt range\_check}}
 Applied to a tuple of three expressions, this psuedo function
 is translated by the macro processor into a system range
 check expression which checks that the middle term is greater
