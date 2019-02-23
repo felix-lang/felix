@@ -134,6 +134,8 @@ syn keyword felixStatement pod
 syn keyword felixStatement private
 syn keyword felixStatement proc
 syn keyword felixStatement property
+syn keyword felixStatement routine
+syn keyword felixStatement callcc
 syn keyword felixStatement reduce
 syn keyword felixStatement ref
 syn keyword felixStatement rename

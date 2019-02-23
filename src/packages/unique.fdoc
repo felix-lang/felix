@@ -8,7 +8,7 @@ open class Unique
   fun box[T] : T -> _uniq T = "($t)";
 
   // unsafely unpack the unique box
-  fun unbox[T] : _uniq T -> T = "($t)";
+  gen unbox[T] : _uniq T -> T = "($t)";
 
   // kill a live unique value
   proc kill[T] : uniq T = ";";

@@ -3,6 +3,19 @@
 \definecolor{bg}{rgb}{0.95,0.95,0.95}
 \definecolor{emphcolor}{rgb}{0.5,0.0,0.0}
 \newcommand{\empha}{\bf\color{emphcolor}}
+\usepackage[framemethod=TikZ]{mdframed}
+\newtheorem{example}{Example}
+\mdfdefinestyle{MyFrame}{innerleftmargin=20pt}
+
+\definecolor{warningbg}{rgb}{0.95,0.90,0.90}
+\newenvironment{warning}%
+  {\begin{mdframed}[style=MyFrame,backgroundcolor=warningbg]}%
+  {\end{mdframed}}
+\definecolor{explanationbg}{rgb}{0.90,0.95,0.95}
+\newenvironment{explanation}%
+  {\begin{mdframed}[style=MyFrame,backgroundcolor=explanationbg]}%
+  {\end{mdframed}}
+
 \usepackage{parskip}
 \usepackage{minted}
 \usepackage{caption}
@@ -74,7 +87,6 @@ on the types in terms of C++.
 \part{Scripting}
 Felix is primarily a scripting language, meaning, it is intended
 for writing a program in one file and immediately running it.
-
 It's hard to define what this means but the lack of separate 
 interfaces  is one of the things that makes writing script simpler.
 
@@ -139,9 +151,9 @@ println$
 
 A better looking way:
 
-%\begin{minted}[escapeinside=||]{felix}
-%fun hypot (x:double, y:double) => |$\sqrt {x^2 + y^2}$|;
-%\end{minted}
+\begin{minted}[escapeinside=||]{text}
+fun hypot (x:double, y:double) => |$\sqrt {x^2 + y^2}$|;
+\end{minted}
 
 encoded like this:
 
@@ -319,12 +331,21 @@ done
 \chapter{Variable Definitions}\index{variable}
 \href{http://felix-lang.org/share/lib/grammar/variables.fsyn}{Syntax}
 
-A definition is a statement which defines a name, but does
+A {\em definition} is a statement, clause, expression, phrase
+or other term which defines a name, but does
 not cause any observable behavior, or, a class statement, or, 
 a var or val statement. The latter two exceptions define a name
 but may also have associated behaviour.
 
-\section{The {\tt var} statement}
+Felix provides two primary kinds of variables:
+
+\begin{enumerate}
+\item a \verb%var% variable names mutable store, and.
+\item a \verb%val% variable names a functional expression
+\end{enumerate}
+
+\section{The {\tt var} binder}
+\subsection{The {\tt var} statement}
 The \verb%var% statement is used to introduce a variable name
 and potential executable behaviour. It has one of three 
 basic forms:
@@ -337,7 +358,7 @@ var z = 1;
 
 \begin{enumerate}
 \item The first form specifies the type and an initialising
-expression which must be of the specified type.
+expression which must be of the specified type or a subtype thereof.
 
 \item The second form specifies a variable of the given type
 without an explicit initialiser, however the variable
@@ -350,10 +371,11 @@ from the initialiser.
 \end{enumerate}
 
 \subsection{Semantic rules}
-If the initialiser has observable behaviour it will be observed
+\begin{enumerate}
+\item If the initialiser has observable behaviour it will be observed
 if at all, when control passes through the variable statement.
 
-If the variable introduced by the \verb%var% statement is not used,
+\item If the variable introduced by the \verb%var% statement is not used,
 the variable and its initaliser will be elided and any observable
 behaviour will be lost.
 
@@ -366,7 +388,7 @@ through which control passes.
 In other words, the variable is used if the behaviour of
 the program appears to depend on its value or its address.
 
-The library procedure \verb%C_hack::ignore% ensures the compiler
+\item The library procedure \verb%C_hack::ignore% ensures the compiler
 believes a variable is used:
 
 \begin{minted}{felix}
@@ -375,35 +397,16 @@ C_hack::ignore x;
 \end{minted}
 
 so that any side effects of \verb%expr% will be seen.
-In general the argument to any primitive function, generator
+
+\item In general the argument to any primitive function, generator
 or procedure will be considered used if its containing 
 entity is also considered used. In general this means there
 is a possible execution path from a root procedure of the
 program.
-
-\subsection{Addressing}
-A variable may have its address taken:
-
-\begin{minted}{felix}
-var x = 1;
-var px = &x;
-\end{minted}
-
-it may be assigned a new value directly or indirectly:
-
-\begin{minted}{felix}
-x = 2;
-px <- 3;
-*px = 4;
-\end{minted}
-
-
-A variable is said to name an object\index{object!variable as}, not a value.
-This basically means it is associated with the address of a typed
-storage location.
+\end{enumerate}
 
 \subsection{Multiple variables}
-Multipls variables can be defined at once:
+Multiple variables can be defined at once:
 
 
 \begin{minted}{felix}
@@ -412,9 +415,207 @@ var a,b = 1,2;
 var c,d = m;
 \end{minted}
 
-With this syntax, no type annotation may be given.
+With this syntax, no type annotation may be given. The RHS of the statement
+must be an expression of tuple type, with the number of components of the
+tuple equal to the number of variables being defined.
 
-\section{The \tt{val} statement.}
+\subsection{Var expressions}
+Variables can also be defined inside expressions:
+
+\begin{minted}{felix}
+var x = 1 + (2 as var y) + (var z = y+1);
+println$ x,y,z;
+\end{minted}
+
+The \verb%as var% form has low precedence and usually requires
+parenthesis, in the assignment form parenthesis are mandatory.
+
+Nested \verb%var% definitions are evaluated before their containing expression,
+and for several expressions directly contained within the same expression,
+in left to right order. The order is therefore deterministic.
+
+Unnamed one use temporary variables can also be specified in
+a \verb%var% subexpression:
+
+\begin{minted}{felix}
+var x = 1 + (var rand());
+println$ x;
+\end{minted}
+
+The effect is to enforce eager, single evaluation of the subexpression
+prior to its containing expression.
+
+
+\subsection{Addressing}
+A variable may have its address taken:
+
+\begin{minted}{felix}
+var x = 1;
+var rwpx = &x; // read-write pointer
+var rpx = &<x; // read-only pointer
+var wpx = &>x; // write-only pointer
+\end{minted}
+
+A variable may be assigned a value directly by an assignment
+statement:
+
+\begin{minted}{felix}
+x = 2;
+\end{minted}
+
+or indirectly via a a call to the system intrinsic \verb%_storeat% procedure:
+
+\begin{minted}{felix}
+_storeat(rwpx,3);
+_storeat(wpx,4);
+\end{minted}
+
+If a variable stored no previous value and assignment sets the first value.
+Otherwise, if a variable previously stored a value, an assignment
+replaces it.
+
+The standard grammar also provides the infix operator \verb%<-% which invokes
+the standard library procedure \verb%storeat% which by default 
+invokes the procedure \verb%_storeat%:
+
+\begin{minted}{felix}
+storeat(rwpx,3);
+wpx <- 4;
+\end{minted}
+
+The standard library procedure \verb%storeat% can be overloaded, which also
+changes the behaviour of the infix operator \verb%<-%.
+
+\subsection{Referencing}
+If a value is stored in a variable it can be referred to in an expression by using
+the name of the variable.
+
+\begin{minted}{felix}
+var x = 1;
+println$ x; // prints 1
+\end{minted}
+
+If a read-write or read only pointer to a variable is obtained, the
+stored value, if it exists, can be referred to by using the system intrinsic 
+\verb%_deref% function:
+
+\begin{minted}{felix}
+println$ _deref &x; // prints 1
+println$ _deref &<x; // prints 1
+\end{minted}
+
+The standard grammar also provides the prefix operator \verb%*% which 
+invokes the standard library function \verb%deref% which by default invokes
+the system intrinsic \verb%_deref%:
+
+\begin{minted}{felix}
+println$ deref &x; // prints 1
+println$ *(&x); // prints 1
+\end{minted}
+
+The standard library function \verb%deref% can be overloaded, which also
+changes the behaviour of the prefix operator \verb%*%.
+
+\subsection{Object Concept}
+
+A variable is said to name an object\index{object!variable as}, not a value.
+This basically means it is associated with the address of a typed
+storage location.
+
+\subsection{Hoisting and lookup}
+A variable can be assigned to, addressed, or otherwise used
+before the \verb%var% statement or expression which introduces it.
+This is because Felix does set-wise, not linear, lookup.
+
+An initialising definition such as
+
+\begin{minted}{felix}
+var x = 1;
+\end{minted}
+
+is split into an uninitialised variable definition
+and an assignment, and the definition is then hoisted
+to the top of the scope. For example:
+
+\begin{minted}{felix}
+x = 1;
+var x = 2;
+\end{minted}
+
+is converted to:
+
+\begin{minted}{felix}
+var x: int;
+x = 1;
+x = 2;
+\end{minted}
+
+Javascript behaves the same way, and the phenomena is called {\em hoisting}.
+
+\begin{warning}
+Care should be taken because it is possible to refer to an uninitialised variable,
+a variable unexpectedly initialised by the underlying C++ default constructor,
+or the wrong variable entirely. 
+
+For example here:
+
+\begin{minted}{felix}
+var x = 1;     //1
+begin          //2
+  var y = x;   //3
+  var x = 2;   //4
+end            //5
+\end{minted}
+
+the variable y is set to an indeterminate value because its initialiser
+x is the one which is subsequently set to 2 on line 4, not the one set 
+to 1 on line 1. This also means this code is legitimate:
+
+\begin{minted}{felix}
+x = 1;
+x = 2;
+var x = 3;
+\end{minted}
+
+because $x$ is in fact defined as a variable on the third line.
+\end{warning}
+
+\subsection{{\tt var} parameters}
+A function or procedure may have a parameter marked \verb%var%:
+
+\begin{minted}{felix}
+fun f(var x: int) => 1; //1
+var g = f;              //2
+println$ f (rand());    //3
+println$ g (rand());    //4
+\end{minted}
+
+An argument bound to a \verb%var% parameter will always be evaluated,
+if at all, before the main body of the function is entered; that is,
+it ensure eager evaluation.
+
+A var parameter in a direct call or application may or may not
+be eliminated, unlike a local variable which will always be eliminated
+if not used.
+
+\begin{explanation}
+If the function or procedure is inlined, it is likely but not assured
+that the parameter and its initialising argument will be eliminated,
+hence in the example the evaluation of \verb%rand()% on line 3
+could be eliminated because the parameter $x$ is not ised in $f$.
+
+On the other hand it is very unlikely that the argument to $g$ will
+be eliminated, because parameters of a closure cannot be, without
+changing the closure's type. Therefore the \verb%rand()% on line 4
+will almost certainly be evaluated.
+\end{explanation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% VAL 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{The {\tt val} binder}
+\subsection{The {\tt val} statement}
 A \verb%val% statement defines a name for an expression.
 
 \begin{minted}{felix}
@@ -437,7 +638,10 @@ a \verb%var% when there is any doubt.
 
 Since a \verb%val% simply names an expression, it is associated
 with a value not an object and cannot be addressed
-or assigned to. However this does NOT mean its value cannot
+or assigned to. 
+
+\begin{warning}
+However this does NOT mean its value cannot
 change:
 
 \begin{minted}{felix}
@@ -464,6 +668,7 @@ iterations of the previously given for loop. However in
 this case there is no assurance \verb%x% will change after \verb%i%
 is incremented because the compiler is free to replace
 any \verb%val% definition with a \verb%var% definition.
+\end{warning}
 
 \subsection{Multiple values}
 Multiple values can be defined at once:
@@ -476,42 +681,278 @@ val c,d = m;
 
 With this syntax, no type annotation may be given.
 
+\subsection{Val expressions}
+Values can also be defined inside expressions:
+
+\begin{minted}{felix}
+val x = 1 + (2 as val y) + (val z = y+1);
+println$ x,y,z;
+\end{minted}
+
+The \verb%as val% form has low precedence and usually requires
+parenthesis, in the assignment form parenthesis are mandatory.
+
+\subsection{Pattern variables}
+In a pattern match, pattern variables are implicitly \verb%val% variables
+with their scope limited to the branch for which they're specified:
+For example the statement:
+
+\begin{minted}{felix}
+match 1,2 with
+| (x,y) => println$ x +y;
+endmatch;
+\end{minted}
+
+the variables $x$ and $y$ act as if:
+
+\begin{minted}{felix}
+begin
+  val x = 1;
+  val y =2 ;
+  println$ x + y;
+end
+\end{minted}
+
+had been written. 
+
+
+\subsection{{\tt let} expressions}
+A \verb%let% expresion can be used to introduce a named value within
+an expression which has scope limited to the let expression:
+
+\begin{minted}{felix}
+var y = 42;
+var x = let y = 1 in y + y;
+println$ x,y; // 2,42
+\end{minted}
+
+\begin{explanation}
+In fact, in a \verb%let% expression, the phrase after \verb%let%
+and before %=% can be an arbitrary expression because the \verb%let% expression:
+
+\begin{minted}{felix}
+let pattern = expr1 in expr2
+\end{minted}
+
+is syntactic sugar for
+
+\begin{minted}{felix}
+match expr1 with
+| pattern => expr2
+endmatch
+\end{minted}
+\end{explanation}
+
+\subsection{{\tt val} parameters}
+A function or procedure may have a parameter marked \verb%var%:
+
+\begin{minted}{felix}
+fun f(val x: int, y: int) => x + y;
+\end{minted}
+
+If a parameter is not explicitly marked \verb%var%, then it is
+a \verb%val% parameter. The explicit spelling of \verb%val% is allowed
+but not required.
+
+\subsection{{\tt val} semantics}
+A name introduced by a \verb%val% or \verb%let% binder is assumed to
+bind to a purely functional expression. This means the expression
+depends only on explicitly visible terms of the expression, has
+no side-effects, and, has a value which is temporaly invariant or
+{\em referentially transparent}. 
+
+\begin{explanation}
+The compiler may treat the val precisely as a \verb%var% and allocate
+store to hold the value its initialiser designates. Alternatvely,
+the compiler may replace occurences of the use of the defined name
+in an an expresion with the initialising value, or, a combination
+of both. The compiler may also shift the position of the initialising
+assignment, in the case it choses to allocate store, to any point
+after the definition and before the first use. It may also evaluate
+the expression earlier, provided it does not impact the evaluation.
+\end{explanation}
+
+The kind of evaluation strategy described is a key feature of Felix
+and is called {\em indeterminate evaluation} strategy. It is one
+of the primary semantic design principles which provide high performance
+by allowing the compiler to choose whether to evaluate the val
+eagerly or lazily. In particular, val parameters of a closure
+are almost universally eagerly evaluated, which avoids the need
+to pass the closure a closure over the expression. On the other hand
+if a function is called directly and is inlined, the compiler is free
+to elide the parameter and substitue the expression for its occurrences,
+thus evaluating it lazily and saving a storage location as well.
+
+\section{{\tt def} statement}
+
+A special statement called a \verb%def% statement can be used to
+introduce zero or more \verb%var% variables, zero or more \verb%val%
+variables, and perform simple assignments, simultaneously:
+
+\begin{minted}{felix}
+var x = 1;
+def var a, (val b, x, _) = 2,(3,4,42);
+\end{minted}
+
+The LHS pattern is called an {\em l-pattern} which consists of
+a list of {\em l-terms} each of which may be either a \verb%var%
+binder introducing a new variable, a \verb%val% binder introducing
+a new variable, a simple name refering to an existing \verb%var%
+variable, an underscore, or a nested l-pattern enclosed in parens. 
+
+The components other than underscore, are assigned the corresponding values 
+from the term on the RHS which
+must be of tuple type with the same number of components, recursively
+for nested l-patterns; underscore is a place holder for a component which is to be ignored.
+
+A component matching an underscore may or may not be evaluated.
+
+\subsection{Uniquely typed components}
+
+Uniqueness typing is provided to provide a way to implement 
+move semantics instead of the usual copy and overwrite semantics
+of assignment; it allows the programmer to assert acquisition
+of exclusive ownership of an object, and transfer that ownership
+along with the objects value.
+
+Felix provides an intrinsic type constructor \verb%_uniq% which
+maps a type T to its unique equivalent.
+
+The programmer announces a value is acquired using the \verb%box% intrinsic,
+which when applied to an object of type T returns an object of
+type \verb%_uniq T%. The programmer can then pass the object to
+a function which requires a uniquely typed parameter. The function
+can then pass the object on, or use the \verb%kill% intrinsic to
+forget it, otherwise, to use the boxed object the \verb%unbox%
+intrinsic is appled to return the boxed type T.
+
+\begin{minted}{felix}
+begin 
+  fun toupper (var s: uniq varray[char]) { 
+    var x = unbox s;
+    for i in 0 ..< x.len.int perform
+      set(x,i,toupper (get(x,i)));
+    return box x;
+  }
+
+  var u = box (varray "hello");
+  u = toupper u;
+  println$ (unbox u);
+end
+\end{minted}
+
+Because a function acquiring a uniquely typed object is the
+exclusive owner, it is free to modify the object without
+compromising referential transparency, because by specification
+there can be no other observer. 
+
+In other words box/unbox together perform a move from
+the caller of a function to the function's implementation,
+using the uniquness typing of the interface to facilitate
+enforcement of the contract.
+
+Variables which have a type which is \verb%_uniq%, or a product type
+with one or more component \verb%_uniq% are treated specially.
+Control flow analysis attempts to assign a consistent state to such
+variables or components, either {\em dead} or {\em live}. 
+
+The library provides a functor \verb%uniq: TYPE -> TYPE% which maps
+a type $T$ to \verb%_uniq T%.
+
+\begin{enumerate}
+\item Assignment to a live variable or component is not permitted and
+an error reported if detected. 
+
+\item Use of a dead variable or component
+in an expression is not permitted and an error reported if detected.
+
+\item Using a live variable or component changes the state of the component
+from live to dead. 
+
+\item Assigning to a dead component changes the state
+from dead to live. 
+
+\item If the variable or component is a parameter or
+part of a parameter it is initially considered live, otherwise
+if it is a local variable it is considered dead. 
+
+\item A variable must be dead when control exits.
+
+\item If a variable is used in one branch of a pattern match or
+conditional it must be used in all of them.
+
+\item A uniquely typed component of an variable of a product type
+is treated as if it were a whole variable.
+
+\begin{explanation}
+This rule is subtle! For example:
+\begin{minted}{felix}
+begin
+  var x = 1, uniq 2;
+  var y = x; // kills x.1
+  println$ y.0;
+end  // ERROR: y.1 unused! 
+\end{minted}
+\end{explanation}
+
+\item \verb%_uniq T% is a subtype of $T$. Therefore,
+a variable of unique type can be passed as an argument
+to a function with the corresponding non-unique type,
+the argument will be implicitly unboxed.
+\end{enumerate}
+
+\begin{warning}
+Top level global variables are not analysed and should not be uniquely typed
+because they're not considered by the flow analyser.
+\end{warning}
+
+\begin{warning}
+Taking the address of a uniquely type variable is ignored by the flow analyser. 
+For therefore the correctness of the analysis depends on the programmer
+not abusing pointers to unique variables or components.
+\end{warning}
+
+The flow analyser will report an error if a consistent state cannot
+be assigned to a variable or component.
+
+\begin{warning}
+The flow analyser does first order static analysis only. It cannot
+cope with either indirect or dynamic access.
+\end{warning}
 
 \chapter{Assignment Statements}
 \href{http://felix-lang.org/share/lib/grammar/assignment.fsyn}{Syntax}
 
 \section{Basic Assignment}
-In Felix, the core assignment operation is a procedure:
+In Felix, the core assignment operation is an instrinsic procedure
 
 \begin{minted}{felix}
-  &T * T -> 0
+  _storeat: &>T * T -> 0
 \end{minted}
 
-This operator is pronounced "store at", its use is like so:
+which is wrapped by a library procedure:
+
+\begin{minted}{felix}
+  proc storeat[T] (p:&>T,v:T) => _storeat(p,v);
+\end{minted}
+
+so it can be overloaded. The parser, in turn, maps the
+statement
+
+\begin{minted}{felix}
+  p <- v;
+\end{minted}
+
+to call the library procedure. The type \verb%&>T% denotes a write-only
+pointer to T, however the type \verb%&T% of a read-write pointer to T
+is a subtype, so a pointer of that type can also be used for assignment:
 
 \begin{minted}{felix}
   var x = 1;
   &x <- 2;
 \end{minted}
 
-Conceptually, this says to store the value 2 in the object at
-address \verb%&x%. The operator \verb%&% here is sometimes 
-called "address of" but this is a mistake in Felix. 
-Rather, 
-\begin{center}
-\framebox{\em a variable is an address,}
-\end{center}
-
-and the spelling
-of the variable named in a definition denotes a 
-dereference of that address.
-
-Therefore, the address of operator can only be applied to
-a variable. You cannot take the address of an expression.
-Felix has no concept of lvalues! (Except for C bindings).
-
-However Felix does provide a conventional assignment 
-operator which is syntactic sugar:
+Felix provides a conventional assignment operator:
 
 \begin{minted}{felix}
   var x = 1;
@@ -526,61 +967,21 @@ or a dereference of a pointer expression:
   *px = 2;        // means px <- 2;
 \end{minted}
 
-The true understanding of this is to be found by
-examining access to the subcomponents of a product:
-
-\begin{minted}{felix}
-  var x = (3.0, 7.0);
-  (&x).0  <- x.1; // x is (7.0,7.0) now
-\end{minted}
-
-The projection operation denoted by \verb%.1% on the RHS
-is applied to a tuple value, and selects the first component 
-of the tuple as a value. However, the projection \verb%.0% 
-on the LHS is not applied to a value of tuple type, but
-a value of type pointer to a tuple type!
-
-\begin{minted}{felix}
-  double * double -> double        
-    // type of RHS projection function
-  &(double * double) -> &double    
-    // type of LHS projection function
-\end{minted}
-
-Felix overloads the meaning of projections, so that a projection
-can also be applied to a value which has the type of a pointer
-to a product. In this case it returns a pointer to the selected
-component.
-
-The effect of this mechanism is to eliminate the need for
-the notion of lvalues, and ensure the underlying semantics
-is entirely based on values. 
-
-\begin{center}
-\framebox{\em Pointers provide the bridge
-between objects and values. }
-\end{center}
-
-Thus, any value can be turned into an object by storing
-it in a variable, or copying it onto the heap with operator \verb%new%.
-
-Felix also supports a short form of value definition:
-
-\begin{minted}{felix}
-  x:= 1; // means val x = 1;
-\end{minted}
+Initialisation of a variable in a \verb%var% statement, or \verb%var% l-term
+of a \verb%def% statement is also an assignment.
 
 \section{Read-modify-write operations}
 The following read/modify/write operations are similar to those in C.
 Each of these dispatches to a {\em procedure} of the same name,
-taking two arguments, the first being a pointer and the second a value.
+taking two arguments, the first being a read-write pointer and the second a value.
 The parser automatically takes the address of the LHS of the assignment
 when calling the procedure. Therefore, the LHS must be a simple variable.
 
 \begin{minted}{felix}
   var x = 1u; var y=1u;
-  var b = true; var c = true;
 
+  // from class Integer
+  // all integers
   x += y; // means +=(&x,y)
   x -= y; // means -=(&x,y)
   x *= y; // means *=(&x,y)
@@ -588,15 +989,31 @@ when calling the procedure. Therefore, the LHS must be a simple variable.
   x %= y; // means %=(&x,y)
   x <<= y; // means <<=(&x,y)
   x >>= y; // means >>=(&x,y)
-  b ^= c; // means ^=(&b,c)
-  b |= c; // means |=(&b,c)
-  b &= c; // means &=(&b,c)
+
+  // from class Bits
+  // unsigned integers only
+  x ^= y; // means ^=(&b,y)
+  x |= y; // means |=(&b,y)
+  x &= y; // means &=(&b,y)
 \end{minted}
 
+
+\begin{warning}
+Felix does not guarrantee these operations are atomic.
+\end{warning}
+
 \section{Swap operator}
-Felix provides a swap operator
+Felix provides the \verb%_swap% intrinsic procedure
 to swap the contents of two variables.
+
+\begin{minted}{felix}
+var x,y = 1,2;
+_swap (&x,&y); // now x=2, y=1 
+\end{minted}
+
 The variables must be of the same type.
+The parser maps the infix operator \verb%<->% to the procedure \verb%swap%
+which is defined in the library to call \verb%_swap% by default.
 
 \begin{minted}{felix}
   var x = 1;
@@ -617,25 +1034,6 @@ as indicated:
   x++; // means post_incr (&x);
   x--; // means post_decr (&x);
 \end{minted}
-
-\section{Special Assignment}\index{assignment}
-Compound assignment form uses leadin \verb%def% to allows
-recursive decoding of tuples and a mix of variable
-initialisation, value initialisation and assignment to
-existing variables from projections of the RHS in the
-corresponding position.
-
-The pattern of variables, \verb%var% and \verb%val% terms in
-the LHS is called an \verb%l-expression%. An underscore \verb%_%
-may also be used.
-
-\begin{minted}{felix}
-  var a = (1,2,(3,4),5);
-  var z: int;
-  def var x, val y,(z,_),_ = a;
-  println$ x,y,z;
-\end{minted}
-
 
 \chapter{Control Flow Statements}
 \section{The {\tt goto} statement and label {\tt prefix}}\index{goto}\index{label}
@@ -6365,16 +6763,16 @@ typedef Integers = typesetof (short, int, long, vlong);
 
 \subsection{Union and Intersection}
 Two operators are provided for typesets, union and intersection
-which are spelled \verb%\cup% and \verb%cap% respectively and
+which are spelled \verb%\cup% and \verb%\cap% respectively and
 are printed as set theoretic union and intersection symbols $\cup$ and $\cap$.
 
-%\begin{minted}[escapeinside=||]{felix}
-%typedef sints = typesetof (int,long);
-%typedef uints = typesetof (uint,ulong);
-%typedef ints = sints |$\cup$| uints;
-%typedef shorts = typesetof (short,int,long);
-%typedef ssints =  ints |$\cap$| shorts;
-%\end{minted}
+\begin{minted}[escapeinside=||]{felix}
+typedef sints = typesetof (int,long);
+typedef uints = typesetof (uint,ulong);
+typedef ints = sints |$\cup$| uints;
+typedef shorts = typesetof (short,int,long);
+typedef ssints =  ints |$\cap$| shorts;
+\end{minted}
 
 
 \subsection{Membership}
@@ -6383,10 +6781,10 @@ of a typeset, it is spelled \verb%in% or \verb%\in%, the latter
 being typeset as the set theoretic symbol $\in$. It serves to define the semantics
 of a typeset as a typematch.
 
-%\begin{minted}[escapeinside=||]{felix}
-%typedef ints = typesetof(short,int,long);
-%typedef result = int |$\in$| ints;
-%\end{minted}
+\begin{minted}[escapeinside=||]{felix}
+typedef ints = typesetof(short,int,long);
+typedef result = int |$\in$| ints;
+\end{minted}
 
 The membership test above is precisely equivalent to
 

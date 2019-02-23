@@ -347,6 +347,9 @@ syntax expressions {
 
   //$ Unterminated match
   x[let_pri] := "let" pattern_match =># "_2"; 
+  // below gets confused with statement expression .. :-)
+  satom :=  "(" "var" sname "=" sexpr ")" =># "`(ast_as_var ,_sr (,_5 ,_3))";
+  satom :=  "(" "val" sname "=" sexpr ")" =># "`(ast_as ,_sr (,_5 ,_3))";
 
   //$ Conditional expression.
   x[let_pri] := sconditional =># '_1';
@@ -5701,7 +5704,7 @@ syntax bitexpr
 @tangle swapop.fsyn
 syntax swapop
 {
-  sswapop := "<->" =># "'_swap";
+  sswapop := "<->" =># "'swap";
 }
 @
 
