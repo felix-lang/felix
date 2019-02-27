@@ -1049,12 +1049,21 @@ alabel:>
 
 The label must be visible from the goto statement.
 
-There are two kinds of gotos. A local goto is a jump
+There are three kinds of gotos.
+
+\begin{enumerate} 
+
+\item A {\em local goto} is a direct jump
 to a label in the same scope as the goto statement.
 
-A non-local goto is a jump to any other label,
+\item A {\em non-local goto} is a direct jump to any other label,
 visible in an ancestor scope.
 
+\item An {\em indirect goto} is a goto with a non-constant 
+expression of \verb%LABEL% type as its operand.
+\end{enumerate}
+
+\subsection{Non-local gotos}
 Non-local transfers of control may cross procedure
 boundaries. They may not cross function or generator 
 boundaries.
@@ -1062,13 +1071,14 @@ boundaries.
 The procedure or function containing the label 
 must be active at the time of the control transfer.
 
+\begin{explanation}
 A non-local goto may be wrapped in a procedure closure
 and passed to a procedure from which the goto target
 is not visible.
 
 
 \begin{minted}{felix}
-proc doit (err: 1 -> 0) { e; }
+proc doit (err: 1 -> 0) { err; }
 
 proc outer () {
   proc handler () { goto error; }
@@ -1083,10 +1093,11 @@ This is a valid way to handle errors.
 the code is correct because \verb%outer% is active
 at the time that \verb%handler% performs the
 control transfer.
+\end{explanation}
 
 \subsection{Label values}
 Labels are first class values of the kind \verb%LABEL%.
-The can be stored in variables, and targetted by a goto statement.
+They can be stored in variables, and targetted by a goto statement.
 
 \begin{minted}{felix}
 proc demo (selector:int) {
@@ -1104,16 +1115,29 @@ lab2:>
 }
 \end{minted}
 
-Used of saved label values is not safe unless the procedure
+Used of saved label values may not be sound unless the procedure
 frame of the procedure containing the label at the time
 it is saved remains live at the time it is jumped to.
 
+\begin{explanation}
 Label values are not merely code addresses, they are
 closures which capture the state of the containing
 procedure frame. This prevents the frame from being
 garbage collected, but it does not prevent control
-being returned from the frame. The effect of returning
-to an already returned frame is undefined.
+being returned from the frame. The effect of executing
+an already returned frame will cause the program
+to refer to local variables which have the values they had
+when last modified.  This is well defined!
+
+In the current implementation, returning from a procedure
+resets the return address to NULL which means a return statement
+will actually return to the invoking scheduler terminating the fibre.
+Decoupling an exhausted frame from its caller is not done to
+make returning to a dead frame safe. This is a side effect
+of an optimisation which is intended to prevent a data pointer
+into the frame making the call chain reachable.
+\end{explanation}
+
 
 \subsection{Exchange of control}
 Built on top of label adressing and indirect gotos,
@@ -1133,81 +1157,41 @@ inline proc branch-and-link (target:LABEL, save:LABEL)
 A good example is \href{http://felix-lang.org/share/src/test/regress/rt/coroutines-01.fdoc}{here},
 which shows an example of coroutines.
 
-
-\section{halt}
-Stops the program with a diagnostic.
+\section{Conditional Statements}
+\subsection{if/goto}
+If the condition is true, jump to the goto target, otherwise
+continue without jumping.
 
 \begin{minted}{felix}
-halt "Program complete";
+if c goto lab;
 \end{minted}
 
 
-\section{try/catch/endtry}
-The try/catch construction may only be used to wrap
-calls to C++ primitives, so as to catch exceptions.
+\subsection{if/return}
+If the condition is true, return from the current procedure, otherwise
+continue without returning.
 
 \begin{minted}{felix}
-proc mythrow 1 = "throw 0;";
-try
-   mythrow;
-catch (x:int) =>
-   println$ "Caughht integer " + x.str;
-endtry
+if c return;
 \end{minted}
 
 
-\section{match/endmatch}\index{pattern matching}
-The form:
+\subsection{if/call}
+If the condition is true, call the specified procedure,
+otherwise continue without calling it.
 
 \begin{minted}{felix}
-match expr with
-| pattern1 => stmts1
-| pattern2 => stmts2
-...
-endmatch
+if c call f x;
 \end{minted}
 
-is an extension of the C switch statement. See \fullref{Pattern Matching}.
-
-\section{if/goto}{conditional}
-The conditional goto is an abbreviation for 
-the more verbose conditional:
-
-\begin{minted}{felix}
-if c goto lab; // equivalent to
-if c do goto lab; done
-\end{minted}
-
-
-\section{if/return}
-The conditional return is an abbreviation for
-the more verbose conditional:
-
-\begin{minted}{felix}
-if c return; // equivalent to
-if c do return; done
-\end{minted}
-
-
-\section{if/call}
-The conditional call is an abbreviation for
-the more verbose conditional:
-
-\begin{minted}{felix}
-if c call f x; // equivalent to
-if c do call f x; done
-\end{minted}
-
-\section{if/perform}
-The conditional perform is an abbreviation for
-the more verbose conditional:
-
+\subsection{if/perform}
+If the condition is true, execute the specified statement,
+otherwise continue without executing it.
 \begin{minted}{felix}
 if c perform x = 1; // equivalent to
-if c do x=1; done
 \end{minted}
 
-\section{if/do/elif/else/done}
+\subsection{if/do/elif/else/done}
 The procedural conditional branch is used to select
 a control path based on a boolean expression.
 
@@ -1246,18 +1230,44 @@ done
 \end{minted}
 
 One or more statements may be given in the selected control path.
+The bodies of the subclasses do not form a scope. Variables declared
+therein are visible in the containing context. Labels therein can
+be targetted by gotos.
 
-A simple conditional is an abbreviation for a statement match:
+\section{halt}
+Stops the program with a diagnostic.
 
 \begin{minted}{felix}
-if c do stmt1; stmt2; else stmt3; stmt4; done
-// is equivalent to
-match c with
-| true => stmt1; stmt2; 
-| false => stmt3; stmt4;
-endmatch;
+halt "Program complete";
 \end{minted}
 
+
+\section{try/catch/endtry}
+The try/catch construction may only be used to wrap
+calls to C++ primitives, so as to catch exceptions.
+
+\begin{minted}{felix}
+proc mythrow 1 = "throw 0;";
+try
+   mythrow;
+catch (x:int) =>
+   println$ "Caughht integer " + x.str;
+endtry
+\end{minted}
+
+
+\section{match/endmatch}\index{pattern matching}
+The form:
+
+\begin{minted}{felix}
+match expr with
+| pattern1 => stmts1
+| pattern2 => stmts2
+...
+endmatch
+\end{minted}
+
+is an extension of the C switch statement. See \fullref{Pattern Matching}.
 
 \section{call}\index{procedure call}
 The \verb%call% statement is used to invoke a procedure.
@@ -1317,7 +1327,7 @@ proc outer () {
 \end{minted}
 
 
-\section{jump }
+\section{jump}
 The procedural jump is an abbreviation for 
 the more verbose sequence:
 
@@ -1327,6 +1337,38 @@ call procedure arg;
 return;
 \end{minted}
 
+\section{callcc}
+The callcc statement 
+\begin{minted}{felix}
+  callcc f a;
+\end{minted}
+
+calls the function $f$ passing the location
+of the next statement as its argument. The returned value is
+then called with $a$ as its argument.
+
+The location is represented
+as a value of \verb%LABEL% type. If the procedure wishes
+to return to this point it should goto the parameter which received
+the argument.
+
+\begin{minted}{felix}
+  proc f(cc:LABEL) (x:int) {
+    println$ "F got " + x.str;
+    goto cc;
+  }
+  callcc f 42;
+  println$ "Back";
+\end{minted}
+
+\begin{explanation}
+The callcc statement above is equivalent to:
+\begin{minted}{felix}
+  var tmo = f next;
+  call tmp 42;
+next:>
+\end{minted}
+\end{explanation}
 
 \section{function return}
 The functional return statement returns a value from
@@ -1401,90 +1443,44 @@ println$ "Done";
 
 
 
-\section{{\tt spawn\_fthread}}
-\href{http://felix-lang.org/share/lib/std/control/fibres.flx}{Library Reference}
-
-The \verb%spawn_fthread% library function invokes the corresponding
-service call to schedule the initial continuation of a procedure 
-taking a unit argument as an fthread (fibre). 
-
-The spawned fthread begins executing immediately.
-If control returns before yielding by a synchronous
-channel operation, the action is equivalent to calling
-the procedure.
-
-Otherwise the spawned fthread is suspended when the first
-write, or the first unmatched read operation occurs.
-
-See \fullref{Fibres and Schannels} for a more complete
-description.
-
-
-\section{read/write/broadcast schannel}\index{read!schannel}\index{write!schannel}
-\href{http://felix-lang.org/share/lib/std/control/schannels.flx}{Library Reference}
-
-See \fullref{Fibres and Schannels} for a more complete
-description.
-
-
-\section{{\tt spawn\_pthread}}\index{spawn}
-\href{http://felix-lang.org/share/lib/std/control/pthread.flx}{Library Reference}
-
-Spawns a new \gls{pthread} which executes the argument procedure.
-
-See \fullref{Preemptive Threading} for a more complete
-description.
-
-
-\section{read/write pchannel}\index{read}\index{write}
-\href{http://felix-lang.org/share/lib/std/control/pchannels.flx}{Library Reference}
-
-See \fullref{Preemptive Threading} for a more complete
-description.
-
-
 \section{loops}
 \href{http://felix-lang.org/share/lib/grammar/loops.fsyn}{Library Reference}
 
-Felix has some low level and high level loop constructions.
+Felix has two kinds of loops, low level loops and high level loops.
 
-The low level for, while, and repeat loops are equivalent
-to loops implemented with gotos.
+Felix loops consist of a control section and a body. The body must be
+a group statement. There are two kinds of group statements:
 
-The bodies of do loops do not constitute a scope,
-therefore any symbol defined in such a body is also visible
-in the surrounding code.
+\begin{enumerate}
+\item An {\em basic group} is a \verb%perform% statement,
+a \verb%do%/\verb%done% group, an \verb%if%/\verb%do%/\verb%done%
+statment, or a loop whose body is a basic group.
 
-Low level loops may be labelled with a loop label
-which is used to allow break, continue, and redo
-statements to exit from any containing loop.
+Basic groups do not constitute a scope.
 
+\item A {\em block} A \verb%begin%/\verb%end% statement
+or a statement \verb%match% statement is a block.
+
+Block define an anonymous scope. Variables defined in a block
+do not escape, and you cannot jump to a label in a block.
+
+\end{enumerate}
+
+\subsection{C like loop}
+This loop is similar to a C for loop except that the increment operation
+is a statement, not an expression, and so may need a semi-colon as a terminator.
+It is the fastest and most flexible loop, but it is hardest to optimise.
 
 \begin{minted}{felix}
-outer:for var i in 0 upto 9 do
-   inner: for var j in 0 upto 9 do
-     println$ i,j;
-     if i == j do break inner; done
-     if i * j > 60 do break outer; done
-   done
-done
+for(var i=0; i<20; ++i;) 
+  perform println$ i;
+println$ "Final i " + i.str;
 \end{minted}
 
+Note the control variable is defined in the containing scope
+and is not local to the loop.
 
-\subsection{redo}\index{redo}
-The redo statement causes control to jump to the start
-of the specified loop without incrementing the control variable.
-
-\subsection{break}\index{break}
-The break statement causes control to jump past the end of
-the specified loop, terminating iteration.
-
-\subsection{continue}\index{continue}
-The continue statement causes the control variable to
-be incremented and tests and the next iteration commenced
-or the loop terminated.
-
-\subsection{for/in/upto/downto/do/done}\index{for loop}
+\subsection{for/in/upto/downto}\index{for loop}
 A basic loop with an inclusive range.
 
 \begin{minted}{felix}
@@ -1506,15 +1502,15 @@ annotation, that type must agree with the control variable.
 
 The type must support comparison with the equality operator \verb%==%
 the less than or equals operator \verb%<=% and increment with 
-the pre increment procedure \verb%++%.
-
-For loops over unsigned types cannot handle the empty case.
-For loops over signed types cannot span the whole range of the type.
+the pre increment procedure \verb%pre_incr%
 
 The loop logic takes care to ensure the control variable is not
 incremented (resp. decremented) past the end (resp.start) value.
 
-\subsection{while/do/done}\index{while loop}
+Loops over unsigned integer types cannot handle the empty case.
+Loops over signed integer types cannot span the whole range of the type.
+
+\subsection{while loop}\index{while loop}
 The while loop executes the body repeatedly whilst the control
 condition is true at the start of the loop body.
 
@@ -1535,10 +1531,149 @@ until i == 9 do println$ i; ++i; done
 \end{minted}
 
 
-\subsection{for/match/done}
-TBD
-\subsection{loop}
-TBD
+\subsection{Control Flow modifiers}
+Low level loops may be labelled with a loop label
+which is used to allow break, continue, and redo
+statements to modify the usual control flow. 
+
+\begin{minted}{felix}
+outer:for var i in 0 upto 9 do
+   inner: for var j in 0 upto 9 do
+     println$ i,j;
+     if i == j do break inner; done
+     if i * j > 60 do break outer; done
+   done
+done
+\end{minted}
+
+
+\subsubsection{redo}\index{redo}
+The redo statement causes control to jump to the start
+of the specified loop without incrementing the control variable.
+
+\subsubsection{break}\index{break}
+The break statement causes control to jump past the end of
+the specified loop, terminating iteration.
+
+\subsubsection{continue}\index{continue}
+The continue statement causes the control variable to
+be incremented and tests and the next iteration commenced
+or the loop terminated.
+
+\subsection{Parallel for loop}
+The pfor loop is a high level loop which uses a thread pool to execute loops
+over subranges of the specified range in parallel.
+
+\begin{minted}{felix}
+proc copy(inp: varray[uinptr], out: varray[uintptr]) {
+  pfor i in 0 upto 99 do
+    set(out, i, f (get(inp,j));
+  done
+}
+\end{minted}
+
+If the system thread pool is not created, it is constructed.
+The range of the control variable is divided into $n$ subranges,
+where $n$ is the number of threads. Then $n$ procedures are created
+which run the loop over each subrange and are submitted to the
+thread pool. The statement after the \verb%pfor% statement is executed
+after all the threads have completed.
+
+\begin{warning}
+Note the thread pool is not destroyed, even if it was created,
+the programmer must do this or the program will not terminate.
+[This is a design fault!]
+\end{warning}
+
+The \verb%pfor% statement requires that iterations of the loop
+be either uncoupled, or coupled appropriately, for example,
+by using atomic variables.
+
+\begin{warning}
+If \verb%pfor% statements are nested, the result is undefined.
+It is always bad for performance and is likely to lead to a deadlock.
+A nested \verb%pfor% is executed from a job running in the thread
+pool and will submit further jobs to the thread pool and then
+wait for them to complete. Unfortunately it is likely the won't
+start because the submitting job is still active, even though
+it is waiting.
+\end{warning}
+
+\section{Loops over iterators}
+The iterator based for loop takes sets a variable to each value stored in any
+data type with an iterator:
+
+\begin{minted}{felix}
+for i in (1,2,3) perform println$ i;
+for i in 0..<10 perform println$ i;
+\end{minted}
+
+An iterator is a generator taking the data type as an argument
+and returning an option type. The iterator over the data type 
+constructs and iterator and then repeatedly calls it until
+it returns None, storing the argument $v$ of the \verb%Some v% 
+otherwise returned in $i$ and then executing the loop body.
+
+The iterator is obtained generically, that is, by attempting
+to apply a function named \verb%iterator% to the container.
+
+The argument can also be any generator returning an option type,
+including any iterator.
+
+This loop is wrapped in a block so that the control variable
+is {\em not} available at the end of the loop, definitions 
+in the body do not leak into the surrounding context,
+and jumps into the loop body are not possible.
+
+\subsection{Recursive for loop}
+The \verb%rfor% loop is similar to the iterator based for loop,
+however it constructs a new data frame for each iteration.
+It does this by converting the loop into a procedure which 
+self-tail calls itself to implement the iteration.
+
+The compiler may optimise an \verb%rfor% loop using self-tail-call
+optimisation, so it uses a single frame, as for a \verb%for% loop.
+However, the optimisation is not performed unless it is safe,
+and in particular if a pointer to a local variable is exported 
+from the body, it cannot be performed.
+
+\begin{explanation}
+An rfor loop should be used when creating a closure that
+binds to the loop body, if you wish it to bind to the
+current values of that iteration. If a for loop is used
+instead the closure will bind to the sole data frame
+and containing the values of the last iteration, not
+the values current at the time the closure is formed.
+For example:
+
+\begin{minted}{felix}
+begin
+  println$ "for loop ------";
+  var v = varray[1->int] 4uz;
+  for i in (0,1,2,3) perform push_back(v,{i});
+  for j in 0..3 perform println$ #(v.j);
+  // 3,3,3,3
+end
+begin
+  println$ "rfor loop ------";
+  var v = varray[1->int] 4uz;
+  rfor i in (0,1,2,3) perform push_back (v,{i});
+  for j in 0..3 perform println$ #(v.j);
+  // 0,1,2,3
+end
+\end{minted}
+\end{explanation}
+
+\subsection{match/in}
+This is an advanced iterator based loop which allows a single
+arbitrary pattern match to be applied to the values supplied by
+the iterator and present only those which match to the loop body.
+
+\begin{minted}{felix}
+  match x,y when x < y in ((1,2),(4,3)) 
+    perform println$ x,y;
+\end{minted}
+
 \section{Assertions}
 \href{http://felix-lang.org/share/lib/grammar/assertions.fsyn}{Library Reference}
 \subsection{assert}

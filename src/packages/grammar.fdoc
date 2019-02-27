@@ -3351,7 +3351,7 @@ syntax felix_string_lexer {
    
 //$ Primary looping contructs.
 SCHEME """
-   (define (incluploop)
+   (define (assign_incluploop)
     `(ast_seq ,_sr
       ,(append 
         `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
@@ -3362,6 +3362,10 @@ SCHEME """
         ))
         `(,_8)
         `((ast_label ,_sr ,(string-append "continue_" _1)))
+        `((ast_unlikely_ifgoto ,_sr 
+          ,(binop (noi '==) `(ast_name ,_sr ,_3 ()) _7) ;; unfortunate but necessary to stop incrementing past the bound
+          ,(string-append "break_" _1)
+        ))
         `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
         `((ast_goto ,_sr ,(string-append "redo_" _1)))
         `((ast_label ,_sr ,(string-append "break_" _1)))
@@ -3370,10 +3374,33 @@ SCHEME """
     """;
 
 SCHEME """
-   (define (excluploop)
-    `(ast_seq ,_sr
-      ,(append 
-        `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
+   (define (define_incluploop)
+    (block 
+      (append 
+        `((ast_var_decl ,_sr ,_3 ,dfltvs none (some ,_5)))
+        `((ast_label ,_sr ,(string-append "redo_" _1)))
+        `((ast_unlikely_ifnotgoto ,_sr
+          ,(binop (noi '<=) `(ast_name ,_sr ,_3 ()) _7)
+          ,(string-append "break_" _1)
+        ))
+        `(,_8)
+        `((ast_label ,_sr ,(string-append "continue_" _1)))
+        `((ast_unlikely_ifgoto ,_sr 
+          ,(binop (noi '==) `(ast_name ,_sr ,_3 ()) _7) ;; unfortunate but necessary to stop incrementing past the bound
+          ,(string-append "break_" _1)
+        ))
+        `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
+        `((ast_goto ,_sr ,(string-append "redo_" _1)))
+        `((ast_label ,_sr ,(string-append "break_" _1)))
+       ))
+    )
+    """;
+
+SCHEME """
+   (define (define_excluploop)
+    (block 
+      (append 
+        `((ast_var_decl ,_sr ,_3 ,dfltvs none (some ,_5)))
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr
           ,(binop (noi '<) `(ast_name ,_sr ,_3 ()) _7)
@@ -3387,6 +3414,8 @@ SCHEME """
        ))
     )
     """;
+
+
 
 SCHEME """
   (define iterator_recursive_loop 
@@ -3580,9 +3609,9 @@ syntax loops
   // the incr/decr is to be done, this is because it might be the max/min value
   // in the range and the incr/decr would be invalid.
 
-  //loop_stmt := optlabel "for" sname "in" sexpr ".." sexpr block =># "(incluploop)";
-  loop_stmt := optlabel "for" sname "in" sexpr "upto" sexpr block =># "(incluploop)";
-  //loop_stmt := optlabel "for" sname "in" sexpr "..<" sexpr block =># "(excluploop)";
+  loop_stmt := optlabel "for" sname "in" sexpr ".." sexpr block =># "(define_incluploop)";
+  loop_stmt := optlabel "for" sname "in" sexpr "upto" sexpr block =># "(assign_incluploop)";
+  loop_stmt := optlabel "for" sname "in" sexpr "..<" sexpr block =># "(define_excluploop)";
  
 
   //$ Numeric upwards for loop, also declares the control variable with type.
@@ -6265,8 +6294,6 @@ syntax pfor
       ;;)
     )
     """;
-
-
 }
 
 

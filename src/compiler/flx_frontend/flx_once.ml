@@ -602,10 +602,15 @@ if debug then print_endline ("flow: first entry at label  " ^ str_of_label bsym_
 
   (* FIXME: temporary hack for concept testing, handle all the
     other cases now!
+
+    These warnings should be issued only if there is actually
+    something uniq around for it to matter!
+
+    QUESTION is how did we get here if there isn't??
   *)
   | BEXE_yield _ 
     -> 
-    print_endline ("Once analysis can't handle yield yet"); 
+    if debug then print_endline ("WARNING: Once analysis can't handle yield yet"); 
     (* Hack so stuff doesn't actually crash! *)
     flow liveness (return bsym_table ix2chain stack liveness)
 
@@ -613,11 +618,16 @@ if debug then print_endline ("flow: first entry at label  " ^ str_of_label bsym_
     -> 
     final ()
 
+(* We can't handle this so pretend its final *)
   | BEXE_cgoto _
   | BEXE_ifcgoto _
     -> 
+    if debug then print_endline ("WARNING: Once analysis can't handle computed gotos"); 
+    flow liveness (return bsym_table ix2chain stack liveness)
+(*
     print_endline ("Once analysis can't handle computed gotos"); 
     assert false
+*)
 
   (* handled by diffset *)
   | BEXE_storeat _

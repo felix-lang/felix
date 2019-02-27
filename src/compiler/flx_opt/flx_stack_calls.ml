@@ -396,12 +396,13 @@ let rec can_stack_proc
   label_info
   i
   recstop
-=
+= 
   let children =
     try Flx_bsym_table.find_children bsym_table i
     with Not_found -> BidSet.empty
   in
   let bsym = Flx_bsym_table.find bsym_table i in
+  let id = bsym.id in
   let bbdcl = Flx_bsym.bbdcl bsym in
   match bbdcl with
   | BBDCL_fun (props,_,_,BTYP_fix (0,_),effects,exes) 
@@ -431,8 +432,8 @@ let rec can_stack_proc
 
     (* this case needed for virtuals/typeclasses .. *)
     | BEXE_call_prim (_,j,_,_)
-      ->
-      if not (check_stackable_proc
+      when not 
+      (check_stackable_proc
         syms
         bsym_table
         fn_cache
@@ -440,17 +441,17 @@ let rec can_stack_proc
         label_info
         j
         (i::recstop))
-      then begin
-        (*
-        print_endline (id ^ " calls unstackable proc " ^ si j);
-        *)
-        raise Unstackable
-      end
+      -> raise Unstackable 
 
     (* assignments to a local variable are safe *)
     | BEXE_init (_,j,_)
     | BEXE_assign (_,(BEXPR_varname (j,_),_),_)
       when BidSet.mem j children -> ()
+
+    (* NEW: direct calls, we have to analyse the argument as if the call were an assignment *)
+    | BEXE_call (sr,(BEXPR_closure (_,_),_),(_,t))
+    | BEXE_call_direct (sr,_,_,(_,t))
+    | BEXE_call_prim (sr,_,_,(_,t))
 
     (* assignments not involving pointers or functions are safe *)
     | BEXE_init (sr,_,(_,t))
@@ -567,14 +568,12 @@ let rec can_stack_proc
       -> ()
     )
     exes;
-    (*
     print_endline (id ^ " is stackable");
-    *)
     true
     with Unstackable ->
-      (*
+(*
       print_endline (id ^ " cannot be stacked ..");
-      *)
+*)
       false
     | Not_found ->
       failwith "Not_found error unexpected!"
