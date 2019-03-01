@@ -899,7 +899,7 @@ syntax blocks
 {
   stmt = block;
   block := "do" stmt* "done" =># '`(ast_seq ,_sr ,_2)';
-  block := "begin" stmt* "end" =># '(block _2)';
+  block := "begin" stmt* "end" =># '(block_stmts _2)';
   block := "perform" stmt =># '_2';
 }
 
@@ -1807,7 +1807,7 @@ syntax conditional
 
   //$ Short form one branch conditional.
   if_stmt := "if" sexpr "begin" stmt* "end" =>#
-    "(block (list `(ast_ifdo ,_sr ,_2 ,_4 ())))";
+    "(block_stmts (list `(ast_ifdo ,_sr ,_2 ,_4 ())))";
 
   //$ General conditional chain statement.
   //$
@@ -1823,7 +1823,7 @@ syntax conditional
     "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
 
   if_stmt := "if" sexpr "begin" stmt* selse_clause "end" =>#
-    "(block (list `(ast_ifdo ,_sr ,_2 ,_4 ,_5)))";
+    "(block_stmts (list `(ast_ifdo ,_sr ,_2 ,_4 ,_5)))";
 
   //$ General elif clause.
   private selif_clause := "elif" sexpr "do" stmt* =># "`(,_2 ,_4)";
@@ -2723,7 +2723,7 @@ SCHEME """
 (begin
   (define (lazy stmts) `(ast_lambda ,_sr (,dfltvs ,dfltparams typ_none ,stmts)))
   (define (lazy_proc stmts) `(ast_lambda ,_sr (,dfltvs ,dfltparams (ast_void ,_sr) ,stmts)))
-  (define (block stmts)`(ast_call ,_sr ,(lazy_proc stmts) ()))
+  (define (block_stmts stmts)`(ast_call ,_sr ,(lazy_proc stmts) ()))
   (define (block_expr stmts) `(ast_apply ,_sr (,(lazy stmts) ())))
   (define call (lambda (f a) `(ast_call ,_sr (ast_name ,_sr ,f ()) ,a)))
 )
@@ -3375,8 +3375,8 @@ SCHEME """
 
 SCHEME """
    (define (define_incluploop)
-    (block 
-      (append 
+    `(ast_seq ,_sr
+      ,(append 
         `((ast_var_decl ,_sr ,_3 ,dfltvs none (some ,_5)))
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr
@@ -3393,13 +3393,15 @@ SCHEME """
         `((ast_goto ,_sr ,(string-append "redo_" _1)))
         `((ast_label ,_sr ,(string-append "break_" _1)))
        ))
-    )
-    """;
+  )
+  """;
 
+//  loop_stmt := optlabel "for" sname "in" sexpr "..<" sexpr block =># "(define_excluploop)";
+//                   1           3          5            7     8
 SCHEME """
    (define (define_excluploop)
-    (block 
-      (append 
+    `(ast_seq ,_sr
+      ,(append 
         `((ast_var_decl ,_sr ,_3 ,dfltvs none (some ,_5)))
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr

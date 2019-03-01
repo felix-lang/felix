@@ -570,7 +570,7 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
   *)
 
   | `EXPR_match (sr,(e,pss)) ->
-    Flx_match.gen_match rex_with_ret rsts_with_ret seq name sr e pss rettype
+    Flx_match.gen_expr_match rex_with_ret rsts_with_ret seq name sr e pss rettype
 
 (* remove blocks *)
 (* parent vs is containing module vs .. only for modules *)

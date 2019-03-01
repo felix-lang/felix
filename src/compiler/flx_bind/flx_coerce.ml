@@ -143,6 +143,9 @@ print_endline ("Flx_bind/flx_coerce:coerce] Binding coercion " ^ sbe bsym_table 
     begin match t',t'' with
     | BTYP_inst (i,[],_),t when Flx_btype.islinear_type bsym_table t->
       let n = Flx_btype.sizeof_linear_type bsym_table  t in
+(*
+print_endline ("Trying to coerce value of type " ^ si i ^ " to linear type " ^ Flx_btype.st t ^ " size " ^ si n);
+*)
       begin match hfind "lookup" state.sym_table i with
       | { Flx_sym.id="int";
           symdef=SYMDEF_abs (_, Flx_code_spec.Str_template "int", _) }  ->
@@ -179,7 +182,7 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       | _ ->
         clierrx "[flx_bind/flx_coerce.ml:161: E49] " sr ("Attempt to to coerce type:\n"^
         sbt bsym_table t'
-        ^"to unitsum " ^ si n)
+        ^" to unitsum " ^ si n)
       end
 
     | t,(BTYP_inst (i,[],_) as inttype) when Flx_btype.islinear_type bsym_table t->

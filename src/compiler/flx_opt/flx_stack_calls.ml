@@ -568,7 +568,9 @@ let rec can_stack_proc
       -> ()
     )
     exes;
+(*
     print_endline (id ^ " is stackable");
+*)
     true
     with Unstackable ->
 (*

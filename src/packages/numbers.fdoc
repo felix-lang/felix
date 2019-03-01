@@ -298,13 +298,14 @@ open class Short
 {
   ctor short: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] short: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor short: short = "$1";
 }
 
 open class Int
 {
   ctor int: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] int: T = "static_cast<#0>($1)/*int.flx: ctor*/";
-  ctor int : int = "($1)/*int.flx: ctor int IDENT*/";
+  ctor int : int = "$1";
   // special hack
   ctor int(x:bool)=> match x with | true => 1 | false => 0 endmatch;
 }
@@ -313,90 +314,105 @@ open class Long
 {
   ctor long: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] long: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor long: long = "$1";
 }
 
 open class Vlong
 {
   ctor vlong: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] vlong: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor vlong: vlong = "$1";
 }
 
 open class Utiny
 {
   ctor utiny: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] utiny: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor utiny: utiny = "$1";
 }
 
 open class Ushort
 {
   ctor ushort: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] ushort: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor ushort: ushort= "$1";
 }
 
 open class Uint
 {
   ctor uint: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] uint: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor uint: uint= "$1";
 }
 
 open class Ulong
 {
   ctor ulong: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] ulong: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor ulong: ulong= "$1";
 }
 
 open class Uvlong
 {
   ctor uvlong: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] uvlong: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor uvlong: uvlong= "$1";
 }
 
 open class Int8
 {
   ctor int8: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] int8: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor int8: int8= "$1";
 }
 
 open class Int16
 {
   ctor int16: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] int16: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor int16: int16= "$1";
 }
 
 open class Int32
 {
   ctor int32: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] int32: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor int32: int32= "$1";
 }
 
 open class Int64
 {
   ctor int64: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] int64: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor int64: int64= "$1";
 }
 
 open class Uint8
 {
   ctor uint8: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] uint8: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor uint8: uint8= "$1";
 }
 
 open class Uint16
 {
   ctor uint16: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] uint16: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor uint16: uint16= "$1";
 }
 
 open class Uint32
 {
   ctor uint32: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] uint32: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor uint32: uint32= "$1";
 }
 
 open class Uint64
 {
   ctor uint64: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] uint64: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor uint64: uint64= "$1";
 }
 
 open class Size

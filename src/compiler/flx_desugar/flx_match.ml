@@ -20,7 +20,7 @@ let make_match_check sr rex_with_ret pat match_var_name match_var_index =
 let make_match_handler sr rex pat match_var_name match_var_index body =
  assert false (* TO BE DONE *)
 
-let gen_stmt_match seq rex_with_ret rsts_with_ret name (* parent_vs access *) sr e pss rettype =
+let gen_match seq rex_with_ret rsts_with_ret name (* parent_vs access *) sr e pss rettype =
 (*
 print_endline ("Generating stmt match " ^ name ^ ", expr=" ^ string_of_expr e ^ ", rettype=" ^ string_of_typecode rettype);
 *)
@@ -214,8 +214,10 @@ List.iter (fun st -> print_endline (string_of_asm 2 st)) body;
     in
     match_function_body
 
+let gen_stmt_match seq rex_with_ret rsts_with_ret name (* parent_vs access *) sr e pss rettype =
+  gen_match seq rex_with_ret rsts_with_ret name (* parent_vs access *) sr e pss rettype
 
-let gen_match rex_with_ret rsts_with_ret seq name sr e pss rettype =
+let gen_expr_match rex_with_ret rsts_with_ret seq name sr e pss rettype =
 (*
 print_endline ("gen_match, rettype=" ^ string_of_typecode rettype);
 *)
@@ -228,7 +230,7 @@ print_endline ("gen_match, rettype=" ^ string_of_typecode rettype);
     in
 
     let pss = List.map (fun (pat,exp) -> pat, [STMT_fun_return (sr, exp)]) pss in
-    let match_function_body = gen_stmt_match seq rex_with_ret rsts_with_ret name sr e pss rettype in
+    let match_function_body = gen_match seq rex_with_ret rsts_with_ret name sr e pss rettype in
  
 
     [
