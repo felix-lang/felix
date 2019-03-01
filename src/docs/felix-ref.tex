@@ -1264,10 +1264,54 @@ match expr with
 | pattern1 => stmts1
 | pattern2 => stmts2
 ...
-endmatch
+endmatch;
 \end{minted}
 
 is an extension of the C switch statement. See \fullref{Pattern Matching}.
+
+The match argument expression is compared in turn with each
+pattern. If a match is found, the pattern variables in the pattern
+are bound to the corresponding sub-expressions of the argument expression.
+Then the statements of that branch are executed with those variables in scope.
+The variables are \verb%val% bound and so immutable. The branch statements
+form a scope.
+
+\section{chainmatch/ormatch}\index{pattern matching}
+The form:
+
+\begin{minted}{felix}
+chainmatch expr1 with
+| pattern1 => stmts1
+| pattern2 => stmts2
+ormatch expr2 with
+| pattern3 => stmts3
+| pattern4 => stmts4
+ormatch expr3 with
+| pattern5 => stmts5
+| pattern6 => stmts6
+| _ =>  stmts7 
+endmatch;
+\end{minted}
+
+is sugar for:
+
+\begin{minted}{felix}
+match expr1 with
+| pattern1 => stmts1
+| pattern2 => stmts2
+| _ =>
+  match expr2 with
+  | pattern3 => stmts3
+  | pattern4 => stmts4
+  | _ =>
+    match expr3 with
+    | pattern5 => stmts5
+    | pattern6 => stmts6
+    | _ =>  stmts7 
+    endmatch;
+  endmatch;
+endmatch;
+\end{minted}
 
 \section{call}\index{procedure call}
 The \verb%call% statement is used to invoke a procedure.
@@ -2059,6 +2103,27 @@ A chaining operator for function \verb%lor%.
 var x = true or false;
 \end{minted}
 
+A shortcut enabled disjunction is available too:
+
+\begin{minted}{felix}
+fun f(x:int, y:int) =>
+  y == 0 or else  x / y > 1 
+;
+println$ f(1,0), f(10,1), f(1,10);
+\end{minted}
+
+This operation is very expensive. The second argument is translated
+to a closure and the system \verb%orelse% function is called:
+
+\begin{minted}{felix}
+  noinline fun orelse (x: bool, y:1->bool) : bool => 
+    if x then true else #y
+  ;
+\end{minted}
+
+The closure and conditional ensure the second argument
+is only evaluated if the first is false. 
+
  
 \section{Logical conjunction}
 A chaining operator for function \verb%land%.
@@ -2067,6 +2132,26 @@ A chaining operator for function \verb%land%.
 var x = true and false;
 \end{minted}
 
+A shortcut enable conjunction is available too:
+
+\begin{minted}{felix}
+  fun g(x:int, y:int) => 
+    y != 0 and then x / y <= 1
+  ;
+  println$ g(1,0), g(10,1), g(1,10);
+\end{minted}
+
+This operation is very expensive. The second argument is translated
+to a closure and the system \verb%andthen% function is called:
+
+\begin{minted}{felix}
+  noinline fun andthen (x: bool, y:1->bool) : bool => 
+    if x then #y else false
+  ;
+\end{minted}
+
+The closure and conditional ensure the second argument 
+is only evaluated if the first is true.
 
 \section{Logical negation}
 A bool operator for function \verb%lnot%.
