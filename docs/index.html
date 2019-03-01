@@ -1,0 +1,459 @@
+
+<html>
+<head>
+<style type="text/css">
+body {margin:3%; background-color: #F0F0F0; }
+h1 {font-size:120%;}
+h2 {font-size:105%;}
+h3 {font-size:100%;}
+h4 {font-size:95%;}
+h5 {font-size:95%;}
+span.fstring {color:darkblue; font-style:italic; }
+span.comment {font-family:arial; color:blue; font-style:italic; font-size: 80%; }
+span.doccomment {font-family:arial; color:green; font-style:italic; }
+span.big_keyword {color:#FF1010; }
+span.small_keyword {color:#802040; }
+span.qualifier {color:#A02020; }
+span.library {color:#A02000; }
+span.ctor {color:#406020; }
+span.hack {color:#66DD00; }
+span.preproc {color:#005500; }
+span.embedded_c{background-color:#DDDDDD; }
+span.fpc_fieldname {color:#DD0000; }
+span.lineno {color:#101010; background-color:#E0E0E0; font-size:80%; font-family:"courier",monospace; font-style:normal; }
+pre.flxbg {background-color:#D0FFD0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
+pre.uncheckedflxbg {background-color:#D0D0D0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
+pre.cppbg {background-color:#80FF80; color:black; }
+pre.prefmtbg {background-color:#D0D0D0; color:black; }
+pre.expected {background-color:#E0FF80; color:black; }
+pre.input {background-color:#E08080; color:black; }
+pre.inclusion {background-color:#D070D0; color:black; }
+code.inclusion {background-color:#D070D0; color:black; }
+.obsolete { background-color:#FFEFEF; font-size: small; color:black; }
+.future { background-color:#FF8080; font-size: small; color:black; }
+.implementation_detail { background-color:#E0E0E0; font-size: small; color:black;  }
+.bug { background-color:#FFE0E0; font-size: small; color:black; }
+.fixed{ background-color:#FFE0E0; font-size: small; color:black; }
+.done { background-color:#FFE0E0; font-size: small; color:black; }
+.caveat { background-color:#FF8080; color:black; }
+</style>
+<style>
+table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  margin-left: 40pt;
+  margin-right: 40pt;
+}
+
+td, th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+}
+
+tr:nth-child(even) {
+    background-color: #dddddd;
+}
+pre {
+  background-color: rgb(210,255,210);
+  margin-left: 20pt;
+  margin-right: 20pt;
+  padding-left: 10pt;
+  padding-top: 5pt;
+  padding-bottom: 5pt;
+}
+</style>
+</head>
+<body>
+<h1>Felix Programming language</h1>
+<img src="FelixWork.jpg">
+
+<h1>Felix</h1>
+
+An advanced, statically typed, high performance scripting language with native C++ embedding.
+
+<h2>Features</h2>
+<h3>Autobuilder</h3>
+This file:
+<pre>
+// hello.flx
+println$ "Hello World";
+</pre>
+
+can be run directly:
+
+<pre>bash
+flx hello.flx
+</pre>
+
+It <it>works</it>. No makefiles. No compiler switches.
+Automatic caching and dependency checking for Felix and C++.
+Uses a <b>flx_pkgconfig</b> database consisting of a directory
+of <code>*.fpc</code> files to specify and find libraries and header
+files based on in language abstract keys.
+
+<h3>Hyperlight Performance</h3>
+
+The aim is to run faster than C.
+
+Underneath Felix generates highly optimised machine
+binaries which outperform most interpreters, bytecode compilers,
+virtual machines, and sometimes compiled languages including C and C++.
+
+Felix is an aggressive inliner which performs whole program
+analysis and high level optimisations such as parallel assignment,
+self-tail call elimination.
+
+Felix generates optimised C++ which is then compiled and optimised
+again by your system C++ compiler.
+
+<table>
+<tr><th>Compiler     <th>Ack   <th> Takfp
+<tr><td>Felix/clang  <td>  3.71  <td>  6.23
+<tr><td>Clang/C++    <td>  3.95  <td>  6.29
+<tr><td>Felix/gcc    <td>  2.34  <td>  6.60
+<tr><td>Gcc/C++      <td>  2.25  <td>  6.25
+<tr><td>Ocaml        <td>  2.93  <td>  8.41
+</table>
+
+<h3>C and C++ embedding</h3>
+
+Felix is a C++ code generator specifically designed so that 
+all your favourite C and C++ libraries can be embedded
+with little or no glue logic:
+
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="comment">// required header </span>
+<span class="lineno" id=line2></span>  <span class="big_keyword" title="Specify C code to be inserted into header file">header</span> vector_h = '<span class="embedded_c">#<span class="preproc">include</span> <span class="fstring">&lt;vector&gt;</span></span>';
+<span class="lineno" id=line3></span>  
+<span class="lineno" id=line4></span>  <span class="comment">// C++11 for smart pointers</span>
+<span class="lineno" id=line5></span>  <span class="big_keyword" title="Specify C code to be inserted into header file">header</span> memory_h = '<span class="embedded_c">#<span class="preproc">include</span> <span class="fstring">&lt;memory&gt;</span></span>' 
+<span class="lineno" id=line6></span>    <span class="big_keyword" title="specify requirements">requires</span> <span class="small_keyword" title="specifies an abstract package name">package</span> <span class="fstring">"cplusplus_11"</span>
+<span class="lineno" id=line7></span>  ;
+<span class="lineno" id=line8></span>   
+<span class="lineno" id=line9></span>  <span class="comment">// types</span>
+<span class="lineno" id=line10></span>  <span class="big_keyword" title="Define a primitive type by binding to a C type">type</span> vector[T] = <span class="fstring">"::std::shared_ptr&lt;::std::vector&lt;?1&gt;&gt;"</span> 
+<span class="lineno" id=line11></span>    <span class="big_keyword" title="specify requirements">requires</span> vector_h, memory_h
+<span class="lineno" id=line12></span>  ;
+<span class="lineno" id=line13></span>  
+<span class="lineno" id=line14></span>  <span class="big_keyword" title="Define a primitive type by binding to a C type">type</span> viterator[T] = <span class="fstring">"::std::vector&lt;?1&gt;::iterator"</span>
+<span class="lineno" id=line15></span>    <span class="big_keyword" title="specify requirements">requires</span> vector_h
+<span class="lineno" id=line16></span>  ;
+<span class="lineno" id=line17></span>  
+<span class="lineno" id=line18></span>  <span class="comment">// constructor</span>
+<span class="lineno" id=line19></span>  <span class="big_keyword" title="Define a value constructor or conversion operator for a type">ctor</span>[T] vector[T] : <span class="library" title="Type with one values (), the empty tuple">unit</span> = <span class="fstring">"::std::make_shared&lt;::std::vector&lt;?1&gt;&gt;()"</span>;
+<span class="lineno" id=line20></span>  
+<span class="lineno" id=line21></span>  <span class="comment">// operations</span>
+<span class="lineno" id=line22></span>  <span class="big_keyword" title="Define a procedure, a function with side-effects not returning a value">proc</span> push_back[T] : vector[T] * T =  <span class="fstring">"$1-&gt;push_back($2);"</span>;
+<span class="lineno" id=line23></span>  <span class="big_keyword" title="Define a procedure, a function with side-effects not returning a value">proc</span> push_back[T] (v: vector[T]) (elt:T) =&gt; push_back(v,elt);
+<span class="lineno" id=line24></span>  
+<span class="lineno" id=line25></span>  <span class="big_keyword" title="Define a function with no side-effects">fun</span> stl_begin[T] : vector[T] -&gt; viterator[T] = <span class="fstring">"$1-&gt;begin()"</span>;
+<span class="lineno" id=line26></span>  <span class="big_keyword" title="Define a function with no side-effects">fun</span> deref[T] : viterator[T] -&gt; T = <span class="fstring">"*$1"</span>;
+<span class="lineno" id=line27></span>  
+<span class="lineno" id=line28></span>  <span class="comment">// example use</span>
+<span class="lineno" id=line29></span>  <span class="big_keyword" title="Define a mutable variable">var</span> v = vector[<span class="library" title="binding of C int type">int</span>]();
+<span class="lineno" id=line30></span>  v.push_back 42;
+<span class="lineno" id=line31></span>  <span class="library" title="Print a string to standard output with newline appended">println</span>$ *v.stl_begin;
+<span class="lineno" id=line32></span>  
+</pre>
+
+<h3>Overloading</h3>
+
+Ad hoc polymorphism.
+
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="comment">// overloads</span>
+<span class="lineno" id=line2></span>  <span class="big_keyword" title="Define a function with no side-effects">fun</span> f (x:<span class="library" title="binding of C double float type">double</span>) =&gt; x +42.1;
+<span class="lineno" id=line3></span>  <span class="big_keyword" title="Define a function with no side-effects">fun</span> f (x:<span class="library" title="binding of C int type">int</span>) =&gt;  x + 1;
+<span class="lineno" id=line4></span>  <span class="big_keyword" title="Define a function with no side-effects">fun</span> f (x:<span class="library" title="binding of C++ string type">string</span>) =&gt; x + <span class="fstring">"!"</span>;
+<span class="lineno" id=line5></span>  
+</pre>
+
+<h3>Simple Generics</h3>
+
+Just don't give the argument type.
+
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="comment">// generics</span>
+<span class="lineno" id=line2></span>  <span class="big_keyword" title="Define a function with no side-effects">fun</span> g (x) =&gt; f (f x);
+<span class="lineno" id=line3></span>  <span class="library" title="Print a string to standard output with newline appended">println</span>$ g 1, g <span class="fstring">"hello"</span>;
+<span class="lineno" id=line4></span>  <span class="library" title="Print a string to standard output with newline appended">println</span>$ _<span class="library" title="return data structure with function applied to each value">map</span> f (1,<span class="fstring">"hello"</span>,2.0);
+<span class="lineno" id=line5></span>  
+</pre>
+
+<h3>Type Classes</h3>
+
+A better way of overloading:
+
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="big_keyword" title="Define a type class">class</span> Eq[T] {
+<span class="lineno" id=line2></span>    <span class="qualifier" title="Type of a function to be provided in type class instances">virtual</span> <span class="big_keyword" title="Define a function with no side-effects">fun</span> == T * T -&gt; T;
+<span class="lineno" id=line3></span>    <span class="big_keyword" title="Define a function with no side-effects">fun</span> != (x:T, y:T) =&gt; <span class="small_keyword" title="logical negation">not</span> (x == y);
+<span class="lineno" id=line4></span>  }
+<span class="lineno" id=line5></span>  <span class="big_keyword" title="Provide an instance of a typeclass">instance</span> Eq[<span class="library" title="binding of C int type">int</span>] {
+<span class="lineno" id=line6></span>    <span class="big_keyword" title="Define a function with no side-effects">fun</span> == : <span class="library" title="binding of C int type">int</span> * <span class="library" title="binding of C int type">int</span> -&gt; <span class="library" title="binding of C int type">int</span> = <span class="fstring">"$1==$2"</span>; <span class="comment">//from C++</span>
+<span class="lineno" id=line7></span>  }
+<span class="lineno" id=line8></span>  
+</pre>
+
+<h3>Pattern matching</h3>
+
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="small_keyword" title="match statement or expression">match</span> x <span class="small_keyword" title="type-class constraint">with</span>
+<span class="lineno" id=line2></span>  | Some x =&gt; <span class="library" title="Print a string to standard output with newline appended">println</span>$ x; 
+<span class="lineno" id=line3></span>  | None =&gt; <span class="library" title="Print a string to standard output with newline appended">println</span> <span class="fstring">"NONE"</span>;
+<span class="lineno" id=line4></span>  <span class="small_keyword" title="end a match statement or expression">endmatch</span>;
+<span class="lineno" id=line5></span>  
+</pre>
+
+<h3>Pointers</h3>
+
+The only way to store a value. Felix has no references or
+lvalues. Pointers are better.
+
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="big_keyword" title="Define a mutable variable">var</span> x = 1;
+<span class="lineno" id=line2></span>  &amp;x &lt;- 2;
+<span class="lineno" id=line3></span>  
+</pre>
+
+
+<h3>Type System based on Algebra</h3>
+
+Felix uses a category theoretic model
+of types which includes products (tuples etc), coproducts 
+(variants etc), exponentials (closures), recursion, and pointers,
+<it>as well</it> as providing both (unenforced) purely functional
+(declarative) handling of inductive types and
+and purely cofunctional (control flow) handling of
+cofunctional types.
+
+
+<h3>Purely Functional Programming </h3>
+
+With <it>parametric polymorphism</it>, <it>higher order functions</it>,
+<it>lexically scoped closures</it>, and <it>garbage collection</it>.
+Mutation is still possible by use of <it>uniqueness typing</it>
+which provides <it>move semantics</it>.
+
+Felix has both C++ style _ad hoc polymorphism_ with
+overloading and also Haskell style <it>type classes</it>,
+(what would be called <it>concepts</it> in C++).
+
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="big_keyword" title="Define a mutable variable">var</span> out = <span class="library" title="accumulated values of data structure from left into initial value using function">fold_left</span> 
+<span class="lineno" id=line2></span>    (<span class="big_keyword" title="Define a function with no side-effects">fun</span> (acc:<span class="library" title="binding of C int type">int</span>) (elt:<span class="library" title="binding of C int type">int</span>) =&gt; acc + elt) 
+<span class="lineno" id=line3></span>    0
+<span class="lineno" id=line4></span>    ([1,2,3,4])
+<span class="lineno" id=line5></span>  ;
+<span class="lineno" id=line6></span>    
+<span class="lineno" id=line7></span>  
+</pre>
+
+<h3>Coroutines </h3>
+
+In Felix imperative programming is done with statements
+and procedures, but procedures are a special case
+of coroutines. Any unit procedure can be spawned
+as a <it>fibre</it> or <it>lightweight thread</it> which communicates
+with other fibres using <it>synchronous channels</it>.
+
+
+<h3>User Domain Specific Sub-Languages</h3>
+
+The Felix grammar is part of the library.
+The programmer can design new syntax as desired
+using standard EBNF grammar rules, with action
+codes written in R5RS Scheme which transform the
+non-terminal arguments into arbitrary S-expressions.
+These S-expressions are reduced to standard Felix AST terms.
+
+Combining the syntax extension ability with library code
+and C++ embedding allows definition of an <it>integrated</it> Domain Specific
+<b>sub</b>language of Felix. 
+
+<h3>Regular Definition DSSL</h3>
+
+The following 
+code uses library _combinators_ and embedded Google RE2
+binding to specify a C identifier (with only `x` for letters
+and `9` for digits):
+
+With the standard regexp grammar we can generate the
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="big_keyword" title="Define a mutable variable">var</span> digit = Charset <span class="fstring">"9"</span>;
+<span class="lineno" id=line2></span>  <span class="big_keyword" title="Define a mutable variable">var</span> letter = Charset <span class="fstring">"x"</span>;
+<span class="lineno" id=line3></span>  <span class="big_keyword" title="Define a mutable variable">var</span> us = Regdef::String <span class="fstring">"_"</span>;
+<span class="lineno" id=line4></span>  <span class="big_keyword" title="Define a mutable variable">var</span> id = Seqs 
+<span class="lineno" id=line5></span>    ([   
+<span class="lineno" id=line6></span>       Alts ([us,letter]),
+<span class="lineno" id=line7></span>       Rpt( Alts([letter,digit,us]), 0,-1)
+<span class="lineno" id=line8></span>    )]
+<span class="lineno" id=line9></span>  ;
+<span class="lineno" id=line10></span>  
+</pre>
+combinators and thus calls to Google RE2 using 
+the regexp DSSL:
+
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="big_keyword" title="define named regular expression">regdef</span> digit = <span class="fstring">"9"</span>;
+<span class="lineno" id=line2></span>  <span class="big_keyword" title="define named regular expression">regdef</span> letter = <span class="fstring">"x"</span>;
+<span class="lineno" id=line3></span>  <span class="big_keyword" title="define named regular expression">regdef</span> us = <span class="fstring">"_"</span>;
+<span class="lineno" id=line4></span>  <span class="big_keyword" title="define named regular expression">regdef</span> id = (us|letter)(letter|digit|us)*;
+</pre>
+
+which is much better than the string form:
+<pre>
+(?:\x5F|[x])(?:[x]|[9]|\x5F)*
+</pre>
+
+<h3>Chips and Circuits DSSL</h3>
+This DSSL provides a syntactic model of coroutines as chips,
+and the topology of channel connections between these chips
+as circults. The code below is an advanced combination
+of this model, pipelines, and uses the fixpoint operator
+for recursion, to build a simple parser.
+
+<pre class='flxbg'>
+<span class="lineno" id=line1></span>  <span class="big_keyword" title="Include a Felix file">include</span> <span class="fstring">"std/strings/recognisers"</span>;
+<span class="lineno" id=line2></span>  <span class="big_keyword" title="Include a Felix file">include</span> <span class="fstring">"std/control/chips"</span>;
+<span class="lineno" id=line3></span>  
+<span class="lineno" id=line4></span>  <span class="big_keyword" title="Open a module or class">open</span> BaseChips;
+<span class="lineno" id=line5></span>  <span class="big_keyword" title="Open a module or class">open</span> Recognisers;
+<span class="lineno" id=line6></span>  
+<span class="lineno" id=line7></span>  device L = match_string <span class="fstring">"("</span>;
+<span class="lineno" id=line8></span>  device R = match_string <span class="fstring">")"</span>;
+<span class="lineno" id=line9></span>  device E = match_string <span class="fstring">"E"</span>;
+<span class="lineno" id=line10></span>  
+<span class="lineno" id=line11></span>  <span class="comment">// Grammar:</span>
+<span class="lineno" id=line12></span>  <span class="comment">// p = epsilon</span>
+<span class="lineno" id=line13></span>  <span class="comment">// p = (p)p</span>
+<span class="lineno" id=line14></span>  <span class="comment">// s = pE</span>
+<span class="lineno" id=line15></span>  <span class="big_keyword" title="Define a mutable variable">var</span> p = fix (<span class="big_keyword" title="Define a procedure, a function with side-effects not returning a value">proc</span> (q:iochip_t[Buffer,Buffer]) 
+<span class="lineno" id=line16></span>    (io: (
+<span class="lineno" id=line17></span>      inp: %&lt;Buffer,
+<span class="lineno" id=line18></span>      out: %&gt;Buffer
+<span class="lineno" id=line19></span>    )) ()
+<span class="lineno" id=line20></span>   {
+<span class="lineno" id=line21></span>     device y = 
+<span class="lineno" id=line22></span>       tryall_list ([
+<span class="lineno" id=line23></span>         epsilon[Buffer],
+<span class="lineno" id=line24></span>         L |-&gt; q |-&gt; R |-&gt; q
+<span class="lineno" id=line25></span>       ])
+<span class="lineno" id=line26></span>     ;
+<span class="lineno" id=line27></span>     circuit
+<span class="lineno" id=line28></span>       wire io.inp <span class="small_keyword" title="substring range separator">to</span> y.inp
+<span class="lineno" id=line29></span>       wire io.out <span class="small_keyword" title="substring range separator">to</span> y.out
+<span class="lineno" id=line30></span>     endcircuit
+<span class="lineno" id=line31></span>  });
+<span class="lineno" id=line32></span>  
+<span class="lineno" id=line33></span>  device parens = p |-&gt; E;
+<span class="lineno" id=line34></span>  
+<span class="lineno" id=line35></span>  device sayresult = procedure (<span class="big_keyword" title="Define a procedure, a function with side-effects not returning a value">proc</span> (x:Buffer) {
+<span class="lineno" id=line36></span>    <span class="library" title="Print a string to standard output with newline appended">println</span>$ <span class="fstring">"Test: End pos="</span> + x.<span class="library" title="Convert a value to a string">str</span>; })
+<span class="lineno" id=line37></span>  ;
+<span class="lineno" id=line38></span>  
+<span class="lineno" id=line39></span>  device tests = source_from_list ([<span class="fstring">"(()(()))E"</span>, <span class="fstring">"E"</span>, <span class="fstring">"()E"</span>]);
+<span class="lineno" id=line40></span>  device toBuffer = function (<span class="big_keyword" title="Define a function with no side-effects">fun</span> (s:<span class="library" title="binding of C++ string type">string</span>)=&gt; Buffer s);
+<span class="lineno" id=line41></span>  
+<span class="lineno" id=line42></span>  #(tests |-&gt; toBuffer |-&gt; parens |-&gt; sayresult);
+<span class="lineno" id=line43></span>  
+<span class="lineno" id=line44></span>  
+</pre>
+
+<h3>Graphics</h3>
+
+Felix has a builtin library for GUIs based on SDL2.
+
+<h2>Getting Started</h2>
+
+<h3>Prerequisites</h3>
+
+<ul>
+<li>Python 3
+<li>Ocaml 4.06.1 (only for source build)
+<li>C++ compiler: g++, clang++, or msvc
+</ul>
+
+<h3>Extras (can be installed later)</h3>
+
+<ul>
+<li>SDL2 for graphics
+<li>GNU GMP, GNU GSL 
+</ul>
+
+<h3>Build from Source</h3>
+
+<h4>Linux</h4>
+
+<pre>
+git clone https://github.com/felix-lang/felix.git
+cd felix
+. buildscript/linuxsetup.sh
+make  
+sudo make install #optional
+</pre>
+
+<h4>OSX</h4>
+
+
+<pre>
+git clone https://github.com/felix-lang/felix.git
+cd felix
+. buildscript/macosxsetup.sh
+make  
+sudo make install #optional
+</pre>
+
+<h4>Windows</h4>
+Make sure git, Python3 and Ocaml are on your PATH.
+You can download a pre-built [Ocaml 4.06.1 for Windows](https://github.com/felix-lang/win64ocaml).
+
+Open a cmd.exe console with Visual Studio 2015 or above
+environment established or run vcvarsall x86. See [vcvarsall](https://msdn.microsoft.com/en-us/library/f2ccy3wt.aspx).
+
+<pre>
+git clone https://github.com/felix-lang/felix.git
+cd felix
+. buildscript/winsetup.sh
+nmake  
+nmake install #optional!
+</pre>
+
+<h2>Tarballs</h2>
+
+<http://github.com/felix-lang/felix/releases>
+
+<h1>Build Status</h1>
+
+Appveyor, Windows build: <a href=https://ci.appveyor.com/project/skaller/felix><img src=https://ci.appveyor.com/api/projects/status/q9w45r6b2chnsre1?svg=true></a>
+Travis, Linux build: <a href= https://travis-ci.org/felix-lang/felix><img src=https://travis-ci.org/felix-lang/felix.svg?branch=master></a>
+
+<h1>Links </h1>
+
+<table>
+<tr><th>Title                                <th> URL
+<tr><td>Documentation Master                 <td> <a href=http://felix-documentation-master.readthedocs.io/en/latest>http://felix-documentation-master.readthedocs.io/en/latest</a>
+<tr><td>Felix Tutorial                       <td> <a href=http://felix-tutorial.readthedocs.io/en/latest>http://felix-tutorial.readthedocs.io/en/latest</a>
+<tr><td>Installation and Tools Guide         <td> <a href=http://felix-tools.readthedocs.io/en/latest>http://felix-tools.readthedocs.io/en/latest</a>
+<tr><td>Felix Language Reference Manual      <td> <a href=http://felix.readthedocs.io/en/latest>http://felix.readthedocs.io/en/latest</a>
+<tr><td>Felix Library Packages               <td> <a href=http://felix-library-packages.readthedocs.io/en/latest>http://felix-library-packages.readthedocs.io/en/latest</a>
+<tr><td>Articles on Modern Computing         <td> <a href=http://modern-computing.readthedocs.io/en/latest>http://modern-computing.readthedocs.io/en/latest</a>
+<tr><td>Felix Home Page                      <td> <a href=http://felix-lang.github.io/felix>http://felix-lang.github.io/felix</a>
+<tr><td>Felix Wiki                           <td> <a href=https://github.com/felix-lang/felix/wiki>https://github.com/felix-lang/felix/wiki</a>
+<tr><td>Git Repository                       <td> <a href=https://github.com/felix-lang/felix>https://github.com/felix-lang/felix</a>
+<tr><td>Binary Download                      <td> <a href=http://github.com/felix-lang/felix/releases>http://github.com/felix-lang/felix/releases</a>
+</table>
+
+<h1>Mailing List</h1>
+
+mailto:felix-lang@googlegroups.com
+
+
+<h1>Licence</h1>
+
+Felix is Free For Any Use (FFAU)/Public Domain.
+
+</body>
+
+
