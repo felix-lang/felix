@@ -7,7 +7,7 @@ notation systems representing algebras.
 For example let us start with a sketch of the library
 class `Eq` which introduces equivalence relations:
 
-.. code-block::
+.. code-block:: felix
 
   class Eq[t] {
     virtual fun == : t * t -> bool;

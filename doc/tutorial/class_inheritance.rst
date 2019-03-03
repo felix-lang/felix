@@ -4,7 +4,7 @@ Inheritance
 When defining classes, you can inherit methods from other classes
 or specialisations thereof. For example here is a `total order`:
 
-.. code-block::
+.. code-block:: felix
 
   class Tord[t]{
     inherit Eq[t];
@@ -36,7 +36,7 @@ or specialisations thereof. For example here is a `total order`:
 The `inherit` statement pulls in the methods of Eq so you can
 write:
 
-.. code-block::
+.. code-block:: felix
 
   println$ Tord[int]::eq(1,2);
 
@@ -44,7 +44,7 @@ and expect it to work. However when instantiating a total order
 you *cannot* provide a definition for inherited methods, you must
 provide the instance for the original class:
 
-.. code-block::
+.. code-block:: felix
 
   instance Eq[int] { 
     fun ==: int * int -> bool = "$1==$2"; 

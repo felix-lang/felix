@@ -5,7 +5,7 @@ Our `Eq` class defines a simple algebra which specifies an interface for
 equivalence relations together with their semantics. We have to use
 an `instance` to populate the algebra.
 
-.. code-block::
+.. code-block:: felix
 
   instance Eq[int] {
     fun == int * int -> bool = "$1==$2";
@@ -20,7 +20,7 @@ using a binding.
 
 We would like equality for `double` as well:
 
-.. code-block::
+.. code-block:: felix
 
   instance Eq[double] {
     fun == int * int -> bool = "$1==$2";
