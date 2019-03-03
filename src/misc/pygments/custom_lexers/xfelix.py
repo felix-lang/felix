@@ -33,7 +33,7 @@ class FelixBase(RegexLexer):
         'regexp', 'reglex', 'regmatch', 'rename', 'return', 'the', 'then',
         'to', 'type', 'typecase', 'typedef', 'typematch', 'typeof', 'upto',
         'when', 'whilst', 'with', 'yield',
-        'circuit','endcircuit','connect','wire','connector','pin'
+        'circuit','endcircuit','connect','wire','connector','pin','supertype'
     )
 
     keyword_directives = (
