@@ -22,7 +22,7 @@ The `struct` construction introduces a nominally typed, or named product.
   var p = Point (2,3);
   println$ p.str;
 
-Here, we not a Point consists of two integers, x and y, and we can make a Point
+Here, we note a Point consists of two integers, x and y, and we can make a Point
 by applying the type name Point to a pair of integers.
 
 Also we provide an instance of the `Str` class with method `str`

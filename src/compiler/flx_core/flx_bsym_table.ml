@@ -44,6 +44,10 @@ let create_from bsym_table =
   }
 
 
+(* The coercion from subtype B to supertype P
+is function F, encoding ((P,B),F), P is the parameter
+and B is the argument
+*)
 type coercion_t = (bid_t * bid_t) * bid_t
 
 (* temporary hackery *)

@@ -106,7 +106,9 @@ let rec heavily_inline_bbdcl syms uses bsym_table excludes i =
       let bbdcl = bbdcl_fun (props,[],ps,ret,effects, exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
+(* FIXME: doesn't take coercions into account correctly ..
       Flx_remove_unused_children.remove_unused_children syms uses bsym_table i;
+*)
     end
   | _ -> ()
 
