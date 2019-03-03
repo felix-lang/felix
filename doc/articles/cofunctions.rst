@@ -116,7 +116,7 @@ Suppose I give you a list and ask you how long it is:
 
    fun len (x: list[int]) => match x with
     | Empty => 0
-    | Cons (head, tail) => 1 + len x
+    | Cons (head, tail) => 1 + len tail
   ;
 
 You would use that algorithm and say that
