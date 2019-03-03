@@ -9,5 +9,10 @@ An introduction to parametric polymorphism.
    
    polymorphic_functions
    hofs
+   polymorphic_classes
+   class_instances
+   class_use
+   class_inheritance
+ 
 
 
