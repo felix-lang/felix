@@ -6,7 +6,7 @@ Definition
 
 The `struct` construction introduces a nominally typed, or named product.
 
-.. code-block::
+.. code-block:: felix
 
   struct Point {
     x: int;
@@ -35,7 +35,7 @@ Methods
 Struct can have methods of two kinds: `accessors` and `mutators`.
 Here is an expanded version of Point:
 
-.. code-block::
+.. code-block:: felix
 
   struct Point {
     x: int;
@@ -60,7 +60,7 @@ Object Closures
 In fact, these methods are ordinary functions and procedures.
 The nesting is just syntactic sugar for:
 
-.. code-block::
+.. code-block:: felix
 
   struct Point {
     x: int;
@@ -74,7 +74,15 @@ The nesting is just syntactic sugar for:
 Because of this, the methods are higher order functions and we can form closures
 over objects of type Point:
 
-.. code-block::
+.. code-block:: felix
 
   var p = Point (1,2);
+  var setp = &p.set; // object closure
+  var resetp = { &p.reset; }; // object closure
+  setp (23,42);
+  println$ p.str;
+  resetp;
+  println$ p.str;
 
+Note that `&p.reset` would call reset so we need to
+wrap the call in the general closure constructor `{_}`.
