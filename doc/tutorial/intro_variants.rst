@@ -23,7 +23,7 @@ functions* because they inject their argument into the variant type.
 Construction
 ++++++++++++
 
-Here's how we can make a values of the option type:
+Here's how we can make values of the option type:
 
 .. code-block:: felix
 

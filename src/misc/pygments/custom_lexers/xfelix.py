@@ -32,7 +32,7 @@ class FelixBase(RegexLexer):
         'new', 'noexpand', 'nonterm', 'obj', 'of', 'open', 'parse', 'raise',
         'regexp', 'reglex', 'regmatch', 'rename', 'return', 'the', 'then',
         'to', 'type', 'typecase', 'typedef', 'typematch', 'typeof', 'upto',
-        'when', 'whilst', 'with', 'yield',
+        'when', 'whilst', 'with', 'yield','variant',
         'circuit','endcircuit','connect','wire','connector','pin','supertype'
     )
 
