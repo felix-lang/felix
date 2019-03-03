@@ -47,10 +47,10 @@ provide the instance for the original class:
 .. code-block:: felix
 
   instance Eq[int] { 
-    fun ==: int * int -> bool = "$1==$2"; 
+    fun == : int * int -> bool = "$1==$2"; 
   }
   instance Tord[int] { 
-    fun <int * int -> bool = "$1<$2"; 
+    fun < : int * int -> bool = "$1<$2"; 
   }
 
 Although in this case, we inherited Eq[t], for all t, we could have

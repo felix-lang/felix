@@ -1,0 +1,12 @@
+Felix 104: Nominal Types
+========================
+
+Structs and Variants
+
+.. toctree::
+   :maxdepth: 2
+   
+  intro_structs
+  intro_variants
+
+

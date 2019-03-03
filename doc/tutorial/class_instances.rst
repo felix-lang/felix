@@ -23,8 +23,8 @@ We would like equality for `double` as well:
 .. code-block:: felix
 
   instance Eq[double] {
-    fun == int * int -> bool = "$1==$2";
-    fun != int * int -> bool = "$1!=$2";
+    fun == double * double -> bool = "$1==$2";
+    fun != double * double -> bool = "$1!=$2";
   }
 
 Here we choose to also define the `!=` function as well, 
