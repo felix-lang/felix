@@ -28,8 +28,8 @@ is all about modularity. Lets see a better way:
   proc start_network () {
     // schannels for communication
     var inp, out = mk_ioschannel_pair[int]();
-    var co_reader = writer out;
-    var co_writer = reader inp;
+    var co_writer = writer inp;
+    var co_reader = reader  out;
     spawn_fibre co_writer;
     spawn_fibre co_reader;
   }

@@ -21,8 +21,8 @@ Fibre States
 
 Every fibre is in one of four states. It is either *running*, *active*, *waiting*, or *dead*.
 
-At any time, for any pthread, there is only ever one running fibre.
-If there are no running fibres, the pthread terminates. Every pthread
+At any time, for any scheduler, there is only ever one running fibre.
+If there are no running fibres, the scheduler terminates. Every pthread
 that is spawned automatically runs a fibre scheduler, including the mainline
 thread!
 
@@ -43,7 +43,7 @@ waiting to write, the writing fibre is also added to the channel wait list.
 But if the channel contains a list of fibres waiting to read, then one of the
 fibres is taken off the channel wait list instead, the object being written
 is transfered from the writer to the reader, and both the fibres are
-added to the schedulers active list. Since the write was running, and is
+added to the schedulers active list. Since the writer was running, and is
 now merely active, the scheduler picks another fibre to run.
 
 Read operations work exactly the same way, swapping the meaning or read
@@ -54,8 +54,8 @@ Reachability
 
 If a fibre is waiting to read, but no other fibre ever writes to the channel
 it is waiting on, the fibres is said to be *starved*. If a fibre is waiting
-to write, but no other fibre ever reads to the channel it is waiting on,
-the fibres is said to be *blocked*.
+to write, but no other fibre ever reads from the channel it is waiting on,
+the fibre is said to be *blocked*.
 
 With pthreads, this lockup is fatal and invariably a design fault.
 Not so with fibres! Recall our reader:
@@ -74,13 +74,13 @@ Not so with fibres! Recall our reader:
 This is an infinite loop but our write only wrote 10 integers.
 So after reading 10 integers our fibre starves!
 
-Now here is the trick! Only thread reader and writer fibres can
+Now here is the trick! Only the reader and writer fibres can
 reach the channel that connects them. No one else could write
 on that channel, because no one else knows its name. What is more,
 the writer has returned so is now dead, so it cannot reach the
 channel either, because it doesn't exist!
 
-So since the read is not running or active, even the scheduler
+So since the reader is not running or active, even the scheduler
 doesn't know about it. Only the channel knows about it,
 and only the reader knows about the channel.
 

@@ -9,6 +9,7 @@ Coroutines and Chips
   intro_coroutines
   intro_coroutines_hofs
   intro_coroutines_termination
-
+  intro_coroutines_pipelines
+  intro_coroutines_chips
 
 
