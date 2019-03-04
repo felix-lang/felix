@@ -20,6 +20,8 @@ open Flx_bexe_state
 open Flx_name_map
 open Flx_bid
 
+let debug = match Sys.getenv_opt "Flx_bind_circuit" with Some _ -> true | _ -> false ;;
+
 type pin_descr_t = string * (string * int * Flx_btype.t)
 type device_descr_t = string * pin_descr_t list
 
@@ -82,7 +84,7 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
            acc
       ) [] cs
     in 
-    if print_flag then
+    if debug || print_flag then
       begin 
         print_endline ("Device list");
         List.iter (fun s -> print_endline ("  device " ^ s)) devices;
@@ -96,9 +98,12 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
       ) [] cs
     in 
 
-    if print_flag then
+    if debug || print_flag then
     begin
-      print_endline ("Named wires: " ^ catmap "," (fun e -> string_of_expr e) named_wires);
+      if List.length named_wires = 0 then
+        print_endline ("No named wires")
+      else
+        print_endline ("Named wires: " ^ catmap "," (fun e -> string_of_expr e) named_wires);
     end;
 
     let device_data : device_descr_t list =
@@ -113,7 +118,7 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
           try be name 
           with exn -> print_endline ("Cannot bind device name " ^ s); raise exn 
         in
-        if print_flag then
+        if debug || print_flag then
           print_endline (" device " ^ s ^ ": " ^ sbt bsym_table t);
 
         match t with
@@ -124,9 +129,8 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
               print_endline ("  pin " ^ name ^ ":" ^ sbt bsym_table typ);
 *)
               let i,direction,vt = cal_channel bsym_table (schannel,ischannel,oschannel) sr typ in
-(*
-                 print_endline ("      pin " ^ name ^ ":" ^ direction ^ " " ^ sbt bsym_table t);
-*)
+              if debug then
+                print_endline ("      pin " ^ name ^ ":" ^ direction ^ " " ^ sbt bsym_table vt);
               (name,(direction,i,vt))::acc
             )
             [] pins 
@@ -218,7 +222,7 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
     ;
 
     (* show named wires *)
-    if print_flag then
+    if debug || print_flag then
     for pinno = 0 to npins - 1 do
       let term = Array.get named_wire_con pinno in
       match term with
@@ -259,7 +263,7 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
     in  
 
     (* show wires *)
-    if print_flag then
+    if debug || print_flag then
     List.iter (fun (wireno,pins) -> 
       print_endline ("WIRE " ^ string_of_int wireno ^ " connects " ^ str_of_pins pins)
     )
@@ -268,6 +272,16 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
     (* validate I/O directions *)
     List.iter (fun (wireno,pins) -> 
       let reads = ref 0 and writes = ref 0 and ios = ref 0 in
+      let transport_type = ref None in
+      let set_transport_type device pin t =
+        match !transport_type with
+        | None -> transport_type := Some t
+        | Some t' ->
+          if t <> t' then
+            print_endline ("WARNING: " ^ device^"." ^ pin ^ " transport type " ^ sbt bsym_table t ^
+             "\nconflicts with connected wire "^string_of_int wireno ^" type " ^ sbt bsym_table t');
+      in
+       
       let check_named_wire pinindex pc =
         let nw = Array.get named_wire_con pinindex in
         begin match nw with
@@ -291,6 +305,7 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
       in
       let handle_pin pinindex =
         let device,pin,dir,_,vt = List.assoc pinindex (pin_data) in
+          set_transport_type device pin vt;
           match dir with
           | "input" -> incr reads
           | "output" -> incr writes
