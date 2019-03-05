@@ -41,7 +41,7 @@ the current directory:
   }
 
   export fun setup of string as "ob_implementation_setup";
-  export fun ob of string as "ob";
+  export fun ob of string as "ob_implementation";
 
 Here the `include` directive is loading the interface relative
 to the including file. Put both in the current directory for

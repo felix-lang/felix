@@ -18,12 +18,12 @@ To load a plugin named "ob_implementation" we do this:
   var joe =  
      Dynlink::load-plugin-func1 
        [ob_t,string] 
-       ( dll-name="ob_implementation", setup-str="", entry-point="ob")
+       ( dll-name="ob_implementation", setup-str="")
   ;
 
-The `load-plugin-func1` loads a plugin with DLL basename "joe", initialising
+The `load-plugin-func1` loads a plugin with DLL basename "ob_implementation", initialising
 global memory by calling a function `setup_ob_implementation` and passing it the empty string "",
-then it calls the entry-point function `ob` which accepts a value of
+then it calls the entry-point function `ob_implementation` which accepts a value of
 type `string` and returns a value of type `ob_t`.
 
 The DLL will be searched for on the standard OS search path, given by the
