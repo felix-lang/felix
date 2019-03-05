@@ -1,5 +1,5 @@
-Felix 105: Objects
-==================
+Felix 105: Objects and Plugins
+==============================
 
 Java Like Dynamic Objects and Plugins
 

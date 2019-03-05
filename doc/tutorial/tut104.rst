@@ -1,7 +1,7 @@
 Felix 104: Nominal Types
 ========================
 
-Structs and Variants
+Structs, Variants, and C bindings 
 
 .. toctree::
    :maxdepth: 2
@@ -10,5 +10,7 @@ Structs and Variants
   intro_struct_constructors
   intro_struct_subtype
   intro_variants
+  intro_cbind
+
 
 
