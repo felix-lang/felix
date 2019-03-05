@@ -11,19 +11,19 @@ with a specific structure.
 Loading Plugins
 +++++++++++++++
 
-To load a plugin named "joe" we do this:
+To load a plugin named "ob" we do this:
 
 .. code-block:: felix
 
   var joe =  
      Dynlink::load-plugin-func1 
        [ob_t,string] 
-       ( dll-name="joe", setup-str="", entry-point="joe")
+       ( dll-name="ob", setup-str="", entry-point="ob")
   ;
 
 The `load-plugin-func1` loads a plugin with DLL basename "joe", initialising
 global memory by calling a function `setup` and passing it the empty string "",
-then it calls the entry-point function `joe` which accepts a value of
+then it calls the entry-point function `ob` which accepts a value of
 type `string` and returns a value of type `ob_t`.
 
 The DLL will be searched for on the standard OS search path, given by the
