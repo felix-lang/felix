@@ -8,5 +8,6 @@ Java Like Dynamic Objects
    
   intro_objects
   intro_objects_plugins
+  intro_objects_plugins2
 
 
