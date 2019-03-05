@@ -2235,7 +2235,7 @@ syntax functions {
     """;
 
   //$ Object factory definition without interface type.
-  sfunction := "object" sdeclname sfun_arg*  "=" scompound =>#
+  sfunction := "object" sdeclname sfun_arg*  "="? scompound =>#
     """
       `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 (typ_none none) Object () ,_5)
     """;
@@ -2244,7 +2244,7 @@ syntax functions {
   //$ interface type.
   sfunction := 
     "object" sdeclname sfun_arg* "extends" expr_comma_list 
-    "implements" object_return_type "=" scompound 
+    "implements" object_return_type "="? scompound 
   =>#
     """
    (begin ;; (display "object function1\n")

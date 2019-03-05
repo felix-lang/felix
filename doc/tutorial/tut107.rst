@@ -11,5 +11,6 @@ Coroutines and Chips
   intro_coroutines_termination
   intro_coroutines_pipelines
   intro_coroutines_chips
+  intro_coroutines_cicruits
 
 
