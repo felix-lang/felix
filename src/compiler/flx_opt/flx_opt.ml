@@ -67,6 +67,9 @@ let stack_calls syms bsym_table =
 let optimize_bsym_table' syms bsym_table (root_proc: int option) =
   print_debug syms "//OPTIMISING";
 
+  print_time syms "[flx_opt]; Polymorphic Uniqueness Verification" begin fun () ->
+  Flx_once.once_bsym_table "Polymorphic" bsym_table syms.counter end;
+
   if syms.compiler_options.doreductions then 
     print_time syms "[flx_opt]; Pre-monomorphisation user reductions" begin fun () ->
     Flx_reduce.reduce_all syms.counter bsym_table end; 
@@ -211,7 +214,8 @@ print_endline "DONE Dead code elim";
   Flx_mkcls.mark_heap_closures syms bsym_table end;
 
   (* new once check by control flow analysis *)
-  Flx_once.once_bsym_table bsym_table syms.Flx_mtypes2.counter;
+  print_time syms "[flx_opt]; Very Late Uniquness Verification" begin fun () ->
+  Flx_once.once_bsym_table "Monomorphic" bsym_table syms.Flx_mtypes2.counter end;
 
   bsym_table
 

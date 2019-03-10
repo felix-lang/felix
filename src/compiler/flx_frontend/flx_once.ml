@@ -179,7 +179,7 @@ let rec find_once bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : uni
 print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e);
 *)
   match e with
-  | BEXPR_varname (i,[]),_ -> 
+  | BEXPR_varname (i,_),_ -> 
     let prefix = List.rev path in
     List.iter  (fun ((j,path),ix) ->
       if j = i then
@@ -199,8 +199,8 @@ let rec find_ponce bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : un
 print_endline ("Find pointers to once for expresssion " ^ Flx_print.sbe bsym_table e);
 *)
   match e with
-  | BEXPR_wref (i,[]),_  
-  | BEXPR_ref (i,[]),_ -> 
+  | BEXPR_wref (i,_),_  
+  | BEXPR_ref (i,_),_ -> 
     let prefix = List.rev path in
     List.iter  (fun ((j,path),ix) ->
       if j = i then
@@ -712,7 +712,11 @@ end;
 
   | _ -> ()
 
-let once_bsym_table bsym_table counter = 
-  Flx_bsym_table.iter (once_bsym bsym_table counter) bsym_table
+let once_bsym_table phase bsym_table counter = 
+  try
+    Flx_bsym_table.iter (once_bsym bsym_table counter) bsym_table
+  with exn ->
+    print_endline ("ERROR in uniqueness verification phase " ^ phase);
+    raise exn
 
 

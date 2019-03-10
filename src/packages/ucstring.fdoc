@@ -296,6 +296,7 @@ string length if they exceed it.
 
 
 @tangle ustr.flx
+/*
 open class UniqueCountedStrings
 {
   open CString;
@@ -463,6 +464,7 @@ open class UniqueCountedStrings
   }
     
 }
+*/
 
 @h1 ustr_prim_01.flx
 @tangle ustr_prim_01.flx

@@ -242,12 +242,13 @@ let is_child bsym_table parent child =
 
 (** Returns whether or not one symbol is an ancestor of another. *)
 (** WARNING: the logic is backards here, should be called is_descendant *)
-let is_ancestor bsym_table child anc =
+let is_ancestor bsym_table (child:bid_t) (anc:bid_t) =
   assert (child <> 0);
   assert (anc <> 0);
-  let rec is_anc child anc =
+  let rec is_anc (child:bid_t) (anc:bid_t) : bool =
     match find_parent bsym_table child with
     | None -> false
+    | Some 0 -> false
     | Some x ->
       if x = anc then true
       else is_anc x anc

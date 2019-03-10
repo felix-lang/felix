@@ -194,3 +194,6 @@ val map :
   ?f_btype:(Flx_btype.t -> Flx_btype.t) ->
   ?f_bexpr:(t -> t) -> t -> t
 val reduce : t -> t
+
+val contains_uniq : t -> bool
+ 

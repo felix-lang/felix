@@ -1246,3 +1246,10 @@ let rec reduce e =
     | x -> x
   in f_bexpr e
 
+let contains_uniq e = 
+  let uniq_type_throw t = if Flx_btype.contains_uniq t then raise Not_found in
+  try
+    iter ~f_btype:uniq_type_throw e;
+    false
+  with Not_found -> true
+

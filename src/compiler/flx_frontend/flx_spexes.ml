@@ -108,11 +108,14 @@ let gen_body syms uses bsym_table id
   ps revariable exes argument
   sr caller callee inline_method props
 =
-  if syms.compiler_options.Flx_options.print_flag then
-  print_endline ("Gen body caller = " ^ Flx_bsym.id (Flx_bsym_table.find bsym_table caller) ^ 
-    "<" ^string_of_bid caller ^
-    ">, callee=" ^ id ^ "<" ^ string_of_bid callee ^ ">"
-  );
+  if syms.compiler_options.Flx_options.print_flag then begin
+    print_endline ("Gen body caller = " ^ Flx_bsym.id (Flx_bsym_table.find bsym_table caller) ^ 
+      "<" ^string_of_bid caller ^
+      ">, callee=" ^ id ^ "<" ^ string_of_bid callee ^ ">"
+    );
+    print_endline ("Argument = " ^ sbe bsym_table argument)
+  end;
+
   (*
   let argument = Flx_bexpr.reduce bsym_table argument in
   *)
@@ -309,7 +312,15 @@ let gen_body syms uses bsym_table id
          let x = bexe_init (sr,index,argument) in
          prolog := x :: !prolog
       in
-      if Flx_btype.contains_uniq typ then eagerly () else
+(*
+      begin if Flx_bexpr.contains_uniq argument then
+        print_endline ("Argument " ^ sbe bsym_table argument ^ " CONTAINS uniq")
+      else
+        print_endline ("Argument type " ^ sbe bsym_table argument ^ " DOES NOT CONTAIN uniq")
+      end;
+*) 
+
+      if Flx_bexpr.contains_uniq argument then eagerly () else
       match kind with
       | `POnce
       | `PVal ->
