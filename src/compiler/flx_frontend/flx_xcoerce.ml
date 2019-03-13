@@ -12,6 +12,11 @@ exception Vfound (* for variants, Found already used elsewhere *)
 let si x = string_of_int x
 
 let rec function_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt ld lc rd rc sr =
+(*
+let sbt b = Flx_print.sbt b in
+print_endline ("xcoerce, function coercion: l=" ^ sbt bsym_table ld ^ " -> " ^ sbt bsym_table rd ^
+ ", r=" ^ sbt bsym_table rd ^ " - > " ^ sbt bsym_table rc);
+*)
   let coerce parent e dstt = expand_coercion new_table bsym_table counter parent remap e dstt sr in
   (* coerce function argument value to function parameter value 
      value subtype of parameter
@@ -19,6 +24,9 @@ let rec function_coercion new_table bsym_table counter parent remap ((srcx,srct)
    *)
 
    let fidx = fresh_bid counter in
+(*
+print_endline ("Coercion function index = " ^ string_of_int fidx);
+*)
    let pidx = fresh_bid counter in
 
    (* parameter symbol table entry *)
@@ -48,7 +56,7 @@ let rec function_coercion new_table bsym_table counter parent remap ((srcx,srct)
    (* wrapper function *)
    let effects = Flx_btype.btyp_unit () in
    let param = {Flx_bparameter.pid=pname;pindex=pidx;pkind=`PVal;ptyp=rd} in
-   let params = Flx_bparams.unit_bparams in
+   let params = Flx_ast.Satom param, None in 
    let bbdcl = Flx_bbdcl.bbdcl_fun ([],[],params,rc,effects,exe) in
    let bsym = Flx_bsym.create ("_coerce" ^ string_of_int fidx) bbdcl in
    Flx_bsym_table.add new_table  fidx parent bsym;
