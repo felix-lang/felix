@@ -5116,6 +5116,48 @@ syntax texsyms {
   )
   """;
 
+SCHEME """
+(
+  define (make_struct_fun struct-name struct-polyvars struct-pvs x) 
+   (let* 
+     (
+       (lst (first x))
+       (t0 (list-ref lst 0)) ; ast_curry_effects
+       (t1 (list-ref lst 1)) ; sr
+       (t2 (list-ref lst 2)) ; name
+       ;;(dummy (begin (display "t2=")(display t2)(display "\n")))
+       (polyspec (list-ref lst 3)) ; polyvars
+       (t4 (list-ref lst 4)) ; args
+       (t5 (list-ref lst 5)) ; return type, constraint
+       ;;(dummy (begin (display "t5=")(display t5)(display "\n")))
+       (t6 (list-ref lst 6)) ; effects
+       (t7 (list-ref lst 7)) ; fun kind
+       (t8 (list-ref lst 8)) ; adjective properties
+       (t9 (list-ref lst 9)) ; body
+       (polyvars (first polyspec))
+       (polyaux (second polyspec))
+       (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
+       (self-name 'self)
+       (self-type 
+         (if (isvoid? (first t5))
+           (begin ;; (display "procedure\n") 
+             `(typ_ref ,_sr (ast_name ,_sr ,struct-name ,struct-pvs))
+           )
+           (begin ;; (display "function\n")
+             `(ast_name ,_sr ,struct-name ,struct-pvs)
+           )
+         )
+       )
+       (self-arg `(,_sr PVal ,self-name ,self-type none)) 
+       (self-args `((Satom ,self-arg) none))
+       (args (cons self-args t4))
+     ) 
+     `(,t0 ,t1 ,t2 ,outpolyvars ,args ,t5 ,t6 ,t7 ,t8 ,t9)
+  )
+)
+""";
+
+
 syntax type_decls {
   requires statements;
 
@@ -5178,72 +5220,37 @@ syntax type_decls {
   //$ // f is equivalent to
   //$ fun f (self:X) (b:int) => self.a + b;
   //$
+
   sexport := "export" =># "'export";
   sexport := sepsilon =># "'noexport";
   stmt := sexport "struct" sdeclname "=" ? "{" sstruct_mem_decl * "}" =>#
     """
-     (begin ;;(display "defining struct .. \n")
-     ;;(display "struct name=")(display (first _3))(display "\n")
      (let* 
        (
-         (vals (filter_first 'Pval _6))
-         (funs (filter_first 'Pfun _6))
-         (struct-name (first _3))
-         (struct-polyspec (second _3))
+         (export_clause _1)
+         (decl_name _3)
+         (body _6)
+         (vals (filter_first 'Pval body))
+         (funs (filter_first 'Pfun body))
+         (struct-name (first decl_name))
+         (struct-polyspec (second decl_name))
          (struct-polyvars (first struct-polyspec))
          (struct-pvids (map first struct-polyvars))
          (struct-pvs (map nos struct-pvids))
          (struct-polyaux (second struct-polyspec))
          (struct `(ast_struct ,_sr ,struct-name ,struct-polyspec ,vals))
-         (mfuns (map (lambda (x) 
-           (begin ;; (display "nested fun=")(display x)(display "\n")
-           (let* 
-             (
-               (lst (first x))
-               (t0 (list-ref lst 0)) ; ast_curry_effects
-               (t1 (list-ref lst 1)) ; sr
-               (t2 (list-ref lst 2)) ; name
-               ;;(dummy (begin (display "t2=")(display t2)(display "\n")))
-               (polyspec (list-ref lst 3)) ; polyvars
-               (t4 (list-ref lst 4)) ; args
-               (t5 (list-ref lst 5)) ; return type, constraint
-               ;;(dummy (begin (display "t5=")(display t5)(display "\n")))
-               (t6 (list-ref lst 6)) ; effects
-               (t7 (list-ref lst 7)) ; fun kind
-               (t8 (list-ref lst 8)) ; adjective properties
-               (t9 (list-ref lst 9)) ; body
-               (polyvars (first polyspec))
-               (polyaux (second polyspec))
-               (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
-               (self-name 'self)
-               (self-type 
-                 (if (isvoid? (first t5))
-                   (begin ;; (display "procedure\n") 
-                     `(typ_ref ,_sr (ast_name ,_sr ,struct-name ,struct-pvs))
-                   )
-                   (begin ;; (display "function\n")
-                     `(ast_name ,_sr ,struct-name ,struct-pvs)
-                   )
-                 )
-               )
-               (self-arg `(,_sr PVal ,self-name ,self-type none)) 
-               (self-args `((Satom ,self-arg) none))
-               (args (cons self-args t4))
-             ) 
-             `(,t0 ,t1 ,t2 ,outpolyvars ,args ,t5 ,t6 ,t7 ,t8 ,t9)
-           ))) funs)
-         )
+         (mfuns (map (lambda (x)(make_struct_fun struct-name struct-polyvars struct-pvs x)) funs))
          (sts (cons struct mfuns))
          (sts 
            (if 
-             (equal? _1 'export) 
+             (equal? export_clause 'export) 
              (cons `(ast_export_struct ,_sr ,struct-name) sts)
              sts
            )
          )
        )
        `(ast_seq ,_sr ,sts)
-     ))
+     )
      """;
     sstruct_mem_decl := stypeexpr sname ";" =># "`(Pval ,_2 ,_1)"; // like C: int x;!
     sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(Pval ,_1 ,_3)";
