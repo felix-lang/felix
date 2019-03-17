@@ -34,7 +34,7 @@ let nominal_subtype bsym_table lhs rhs =
   match lhs, rhs with
   | BTYP_inst (l,[],_),BTYP_inst(r,[],_) ->
     (* meta types have to agree if types do? *)
-    if l <> r && not (Flx_bsym_table.is_supertype bsym_table l r)
+    if l <> r && not (Flx_bsym_table.is_indirect_supertype bsym_table l r)
     then raise Not_found
   | _ -> raise Not_found
 

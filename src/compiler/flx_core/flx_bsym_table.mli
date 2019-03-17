@@ -21,7 +21,9 @@ val remove : t -> bid_t -> unit
 type coercion_t = (bid_t * bid_t) * bid_t
 
 val add_supertype: t -> coercion_t -> unit
-val is_supertype: t -> bid_t -> bid_t -> bool
+val is_direct_supertype: t -> bid_t -> bid_t -> bool
+val is_indirect_supertype: t -> bid_t -> bid_t -> bool
+val find_coercion_chains : t -> bid_t -> bid_t -> bid_t list list
 val maybe_coercion: t -> bid_t -> bid_t -> bid_t option
 val iter_coercions: t -> (coercion_t -> unit) -> unit
 val fold_coercions: t -> ('a -> coercion_t -> 'a) -> 'a -> 'a

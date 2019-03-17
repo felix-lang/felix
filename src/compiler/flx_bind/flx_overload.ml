@@ -336,6 +336,7 @@ type variables from the view.
 *)
 let specialize_domain sr (base_vs:plain_ivs_list_t) sub_ts t =
 (*
+print_endline "";
   print_endline ("BUGGED! specialise Base type " ^ Flx_btype.st t);
   print_endline ("BASEVS=" ^ catmap "," (fun (n,i,k) -> n ^ "<" ^ si i ^ ">") base_vs);
   print_endline ("SUBTS=" ^ catmap "," Flx_btype.st sub_ts);
@@ -1093,6 +1094,14 @@ if name = "accumulate" then print_endline "Considering function .. ";
       clierrx "[flx_bind/flx_overload.ml:1028: E250] " sr ("Failed to bind candidate return type! fn='" ^ name ^
         "', type=" ^ sbt bsym_table base_result)
   in
+
+  let spec_domain = 
+    specialize_domain sr base_vs entry_kind.sub_ts domain
+  in
+(*
+  print_endline ("Spec domain input to make_equations " ^ sbt bsym_table spec_domain);
+*)
+
 (*
 if name = debugid then 
 print_endline "Making equations for ts";
@@ -1106,13 +1115,11 @@ print_endline "Making equations for ts";
     entry_kind
     input_ts
     arg_types
-    (specialize_domain sr base_vs entry_kind.sub_ts domain)
+    spec_domain
     spec_result
   in
-(*
 if name = debugid then 
 print_endline "maybe got mgu ..";
-*)
 (*
   let mgu = maybe_specialisation counter bsym_table mgu in
 *)
@@ -1143,7 +1150,7 @@ print_endline "solving mgu";
         con
         arg_types
         parent_vs
-        domain
+        spec_domain
         spec_result
         env_traint
 

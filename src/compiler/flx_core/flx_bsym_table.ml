@@ -46,7 +46,12 @@ let create_from bsym_table =
 
 (* The coercion from subtype B to supertype P
 is function F, encoding ((P,B),F), P is the parameter
-and B is the argument
+and B is the argument, note, the map is:
+
+  F: B -> P
+
+so the codomain is actually first in the pair.
+
 *)
 type coercion_t = (bid_t * bid_t) * bid_t
 
@@ -54,15 +59,65 @@ type coercion_t = (bid_t * bid_t) * bid_t
 let add_supertype bsym_table x =
   bsym_table.subtype_map <- x :: bsym_table.subtype_map
 
+
+let iter_coercions bsym_table f =
+  List.iter f bsym_table.subtype_map 
+
+
 let maybe_coercion bsym_table param arg  = 
   try Some (List.assoc (param,arg) bsym_table.subtype_map)
   with Not_found -> None
 
-let is_supertype bsym_table param arg =
+let is_direct_supertype bsym_table param arg =
   List.mem_assoc (param, arg) bsym_table.subtype_map
 
-let iter_coercions bsym_table f =
-  List.iter f bsym_table.subtype_map 
+let find_coercion_chains bsym_table param arg : int list list = 
+  let limit = 10 in
+  let chains = ref [] in
+  let rec iis counter chain a = 
+    if counter > limit then failwith ("circular subtype definition, chain limit " ^ string_of_int limit ^ ", exceeded");
+
+     (* find all the types to which the argument can be coerced *)
+    let cands = List.fold_left (fun acc ((p',a'),j) -> if a = a' then (p',j)::acc else acc) [] bsym_table.subtype_map in
+    if List.mem_assoc param cands 
+    then chains := (List.assoc param cands :: chain) :: !chains
+    else
+      if cands = [] then ()
+      else
+        List.iter (fun (p',j) -> iis (counter + 1) (j::chain) p') cands
+  in 
+  iis 0 [] arg;
+(*
+  print_endline (string_of_int (List.length !chains) ^ " coercion chains to parameter " ^ string_of_int param ^ " from argument  " ^ string_of_int arg);
+  List.iter (fun chain -> print_endline ("Chain=" ^ String.concat "," (List.map string_of_int chain))) !chains;
+*)
+  !chains
+
+let is_indirect_supertype bsym_table param arg : bool =
+(*
+   print_endline ("??? Supertype " ^ string_of_int param ^ " > subtype " ^ string_of_int arg);
+   print_endline ("*** coercion table");
+  iter_coercions bsym_table (fun ((p,a),_) -> print_endline ("   ++  Supertype " ^ string_of_int p ^ " > subtype " ^ string_of_int a));
+*)
+  let limit = 10 in
+  let rec iis counter a = 
+    if counter > limit then failwith ("circular subtype definition, chain limit " ^ string_of_int limit ^ ", exceeded");
+    (* find all the types to which the argument can be coerced *)
+    let cands = List.fold_left (fun acc ((p',a'),_) -> if a = a' then p'::acc else acc) [] bsym_table.subtype_map in
+    if List.mem param cands then true
+    else
+      if cands = [] then false
+      else
+        List.fold_left (fun acc p' -> acc || iis (counter + 1) p') false cands
+  in 
+  let result = iis 0 arg in
+(*
+(if result then
+ignore(find_coercion_chains bsym_table param arg));
+*)
+  result
+ 
+
 
 let fold_coercions bsym_table f init =
   List.fold_left f init bsym_table.subtype_map 

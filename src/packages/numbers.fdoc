@@ -74,7 +74,6 @@ ctor float : string = "::std::stof($1)";
 ctor double  : string = "::std::stod($1)";
 ctor ldouble : string = "::std::stold($1)";
 
-
 open class Fcomplex
 {
   ctor[t in reals] fcomplex : t * t = "::std::complex<float>($1,$2)";
@@ -155,11 +154,6 @@ instance[t in floats] Real[t] {
   fun atan2: t * t -> t = "::std::atan2($1,$2)";
 }
 
-class CartComplex[r] {
-  typedef t = complex[r];
-  inherit Complex[t,r];
-}
-
 typedef complex[t in floats] = typematch t with
   | float => fcomplex
   | double => dcomplex
@@ -169,7 +163,6 @@ typedef complex[t in floats] = typematch t with
 
 @h2 Complex Constructors.
 @tangle float_math.flx
-
 ctor complex[float] (x:float, y:float) => fcomplex(x,y);
 ctor complex[double] (x:double, y:double) => dcomplex(x,y);
 ctor complex[ldouble] (x:ldouble, y:ldouble) => lcomplex(x,y);
@@ -190,11 +183,6 @@ open Real[ldouble];
 open Complex[fcomplex, float];
 open Complex[dcomplex, double];
 open Complex[lcomplex, ldouble];
-open CartComplex[float];
-open CartComplex[double];
-open CartComplex[ldouble];
-
-
 
 @h1 Real numbers
 @tangle real.flx

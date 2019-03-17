@@ -248,9 +248,9 @@ and expand_coercion new_table bsym_table counter parent remap ((srcx,srct) as sr
     if debug then
     print_endline ("Searching for nominal type conversion from " ^ 
     si src  ^ " -> " ^ si dst);
-    let maybe_coercion = Flx_bsym_table.maybe_coercion bsym_table dst src in
-    begin match maybe_coercion with
-    | None -> 
+    let coercion_chains = Flx_bsym_table.find_coercion_chains bsym_table dst src in
+    begin match coercion_chains with
+    | [] -> 
 
       let srcid = Flx_bsym.id (Flx_bsym_table.find bsym_table src) in
       let dstid = Flx_bsym.id (Flx_bsym_table.find bsym_table dst) in
@@ -262,11 +262,17 @@ and expand_coercion new_table bsym_table counter parent remap ((srcx,srct) as sr
       Flx_exceptions.clierr sr ("Unable to find supertype coercion from " ^ 
       srcid ^ "<" ^ si src ^ "> to " ^ dstid ^ "<" ^ si dst ^ ">");
  
-    | Some fn ->
+    | chains ->
       if debug then
-      print_endline ("Found coercion function " ^ si fn ^ " from " ^
+      print_endline ("Found "^string_of_int (List.length chains) ^" coercion chains from " ^
       si src ^ " to " ^ si dst);
-      Flx_bexpr.bexpr_apply_direct dstt (fn, [], srce)
+      let shortest_chain = 
+        List.fold_left (fun acc chain -> 
+          let n = List.length acc in if n = 0 || n > List.length chain then chain else acc
+        ) [] chains
+      in
+      List.fold_left (fun acc fn ->
+        Flx_bexpr.bexpr_apply_direct dstt (fn, [], acc)) srce (List.rev shortest_chain)
     end
      
   | BTYP_function (ld,lc) , BTYP_function (rd,rc)  ->
