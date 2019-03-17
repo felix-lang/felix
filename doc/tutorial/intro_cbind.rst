@@ -4,9 +4,12 @@ C Bindings
 In Felix you can use C bindings to lift types from C and C++.
 The resulting nominal types are abstract.
 Unless otherwise specified, all types lifted from C or C++
-must be first class.  This means they values of those types
+must be first class; that is, semi-regular.  This means that values of those types
 can be default constructed, copy constructed, copy assigned,
-move constructed, move assigned, and destroyed.
+move constructed, move assigned, and destroyed; in other words, behave "like an integer".
+
+
+To lift immobile objects, lift a pointer instead.
 
 Lifting Primitives
 ------------------
@@ -36,10 +39,10 @@ Class types require a bit more work:
   ;
 
 Here, the `?1` annotation means the first type variable
-so that for example `vector[ulong]` lfts `::std::vector<unsigned long>`.
+so that for example `vector[ulong]` lifts `::std::vector<unsigned long>`.
 
 When lifting C++ types make sure to always specify the absolute pathname
-of the type. Starting with `::`` is strongly recommended. This avoids any
+of the type. Starting with `::` is strongly recommended. This avoids any
 possible ambiguity in generated code.
 
 The `requires` clause with `header` option tells Felix to emit the quoted
@@ -111,4 +114,54 @@ to be able to define operations on them with C bindings too.
 
 
 We use `$1` abd `$2` fir the first and second arguments, respectively.
+
+Lifting Constants and Expressions
+---------------------------------
+
+You can lift a C constant, variable, or even expressions using
+the `const` binder:
+
+.. code-block:: felix
+
+  const pi : double = "M_PI" requires math_h;
+
+Lifting enums
+-------------
+
+A special shorthand is available for lifting C enums,
+intended for sequences:
+
+.. code-block:: felix
+
+  cenum color = red,blue,green;
+
+This is (roughly) equivalent to:
+
+.. code-block:: felix
+
+  type color = "color";
+  const red: color = "red";
+  const blue: color = "blue";
+  const green: color = "green";
+  fun == : color * color -> bool = "$1==$2";
+
+Note in particular equality is automatically defined.
+This is required for using the enumeration values in pattern matches.
+
+Lifting Flags
+-------------
+
+A special shorthand is available for lifting C enums,
+intended for flags:
+
+.. code-block:: felix
+
+  cflags color = red,blue,green;
+
+This defines equality as for cenums, but also makes all
+the standard bitwise operations available.
+
+
+
+
 

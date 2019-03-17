@@ -5,6 +5,9 @@ Felix 104: C bindings
    :maxdepth: 2
    
   intro_cbind
+  intro_floating_insertions
+  intro_fxed_insertions
+  intro_callbacks
 
 
 
