@@ -175,8 +175,6 @@ typedef polar[t in floats] = complex[t];
 ctor[t in floats] polar[t] : t * t = "::std::polar($1,$2)";
 
 
-instance[r in floats] CartComplex[r] {}
-
 open Real[float];
 open Real[double];
 open Real[ldouble];
@@ -580,6 +578,11 @@ open Unsigned_integer[uint64];
 open Unsigned_integer[uintmax];
 open Unsigned_integer[size];
 open Unsigned_integer[uintptr];
+
+supertype vlong: long = "(long long)$1";
+supertype long: int = "(long)$1";
+supertype int : short= "(int)$1";
+supertype short : tiny = "(short)$1";
 
 
 
