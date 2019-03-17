@@ -1,0 +1,11 @@
+Felix 106: Uniqueness Typing
+============================
+
+Uniqueness Types
+
+.. toctree::
+   :maxdepth: 2
+   
+  intro_unique
+
+
