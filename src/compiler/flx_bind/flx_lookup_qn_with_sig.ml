@@ -336,7 +336,7 @@ print_endline ("lookup_qn_with_sig' [AST_name] " ^ name ^ ", sigs=" ^ catmap ","
 print_endline ("Free fixpoint");
 *)
         raise x
-      | OverloadKindError (sr1,s1) ->
+      | Flx_sig_of_symdef.OverloadKindError (sr1,s1) ->
 (*
 print_endline ("OverloadKindError .. (trying ctor hack)");
 *)

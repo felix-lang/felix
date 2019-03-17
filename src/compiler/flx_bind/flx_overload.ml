@@ -11,7 +11,6 @@ open Flx_typing
 open Flx_typing2
 open Flx_unify
 open Flx_beta
-open Flx_generic
 open Flx_tconstraint
 open Flx_tpat
 open Flx_maps
@@ -22,9 +21,6 @@ open Flx_kind
 open Flx_typeset
 
 let debugid = ""
-
-(* a hack *)
-exception OverloadKindError of Flx_srcref.t * string
 
 type overload_result = Flx_btype.overload_result
 
@@ -66,251 +62,6 @@ let get_data table index =
  * result of a syntax trick or user defined application or x
  * constructor.
  *)
-let get_pnames_and_unbound_dflts ps : (string * expr_t option) list =
-  List.map 
-    begin fun p -> match p with
-    | Flx_ast.Satom (sr,_,name,_,d) -> name,d
-    | Flx_ast.Slist _ -> raise Not_found (* can't allow nested param tuples *)
-    end 
-    ps
-
-
-let sig_of_symdef symdef sr name i : typecode_t * typecode_t * ((string * expr_t option) list) option = 
-  match symdef with
-  (* primitives *)
-  | SYMDEF_fun (_,ps,r,_,_,_)
-    -> type_of_list ps,r,None
-
-  | SYMDEF_callback (_,ts_orig,r,_)
-    ->
-      let ts_f =
-        List.filter
-        (function
-          | `TYP_name (_,id,[]) when id = name -> false
-          | t -> true
-        )
-        ts_orig
-      in
-      let tf_args = match ts_f with
-        | [x] -> x
-        | lst -> `TYP_tuple lst
-      in
-      let tf = `TYP_function (tf_args, r) in
-
-      (* The type of the arguments Felix thinks the raw
-         C function has on a call. A closure of this
-         function is a Felix function .. NOT the raw
-         C function.
-      *)
-      let ts_cf =
-        List.map
-        (function
-          | `TYP_name (_,id,[]) when id = name -> tf
-          | t -> t
-        )
-        ts_orig
-      in
-      type_of_list ts_cf,r,None
-
-  | SYMDEF_function (ps,r,effects,_,_) ->
-    let p = fst ps in
-    let paramlist = match p with
-    | Satom _ -> None
-    | Slist ps -> try Some (get_pnames_and_unbound_dflts ps) with Not_found -> None
-    in
-    typeof_paramspec_t p,r,paramlist
-
-  | SYMDEF_cstruct (ls, _) ->
-    type_of_list (List.map snd ls), `TYP_index (sr,name,i),
-     Some (List.map (fun (p,_) -> p,None) ls)
-
-  | SYMDEF_struct ls ->
-    type_of_list (List.map snd ls), `TYP_index (sr,name,i),
-     Some (List.map (fun (p,_) -> p,None) ls)
-
-  | SYMDEF_const_ctor (_,r,_,_) -> `TYP_void sr,r,None
-  | SYMDEF_nonconst_ctor (_,r,_,_,t) -> t,r,None
-  | SYMDEF_type_alias t ->
-(*
-    print_endline ("[sig_of_symdef] Found a typedef " ^ name);
-*)
-    begin match t with
-    | `TYP_typefun (ps,r,b) ->
-      print_endline "`TYP_typefun";
-      assert false;
-(*
-      kind_of_list (List.map snd ps),r,None
-*)
-    | symdef ->
-      (*
-      print_endline "OverloadKindError";
-      *)
-      raise (OverloadKindError (sr,
-        "[sig_of_symdef] Expected "^
-        name
-        ^" to be a type function, got " ^
-        string_of_typecode t
-      ))
-    end
-
-  | symdef ->
-    raise (OverloadKindError (sr,
-      "[sig_of_symdef] Expected "^
-      name
-      ^" to be function or procedure, got " ^
-     string_of_symdef symdef name dfltivs
-    ))
-
-
-(* see also "reorder" function .. hmm .. *)
-let fixup_argtypes be bid pnames base_domain argt rs =
-  match pnames with
-  | None -> argt
-  | Some ps ->
-      match
-        try
-          List.iter (fun (name,_) -> ignore (List.assoc name ps)) rs;
-          true
-        with Not_found -> false
-      with
-      | false -> argt
-      | true ->
-          match base_domain with
-          | `TYP_record _ -> argt
-          | `TYP_tuple [] -> argt (* lazy *)
-          | _ ->
-              let ps =
-                List.map begin fun (name,e) ->
-                  name,
-                  match e with
-                  | None -> None
-                  | Some e -> Some (be bid e)
-                end ps
-              in
-              begin
-                try
-                  let ats =
-                    List.map begin fun (name,d) ->
-                      try List.assoc name rs
-                      with Not_found ->
-                        match d with (* ok to skip if there is a default *)
-                        | Some (e,t) -> t
-                        | None -> raise Not_found
-                    end ps
-                  in
-                  let t =
-                    match ats with
-                    | [] -> assert false
-                    | [x] -> x
-                    | _ -> btyp_tuple ats
-                  in
-                  t
-                with Not_found -> argt
-              end
-
-
-let resolve sym_table bsym_table base_sym bt be arg_types =
-  let sym = Flx_sym_table.find sym_table base_sym in
-  let name = sym.Flx_sym.id in
-(*
-  if name = debugid then 
-  print_endline ("Attempting to resolve " ^ name);
-*)
-  let opt_bsym = try Some (Flx_bsym_table.find bsym_table base_sym) with Not_found -> None in
-
-  let pvs, vs, { raw_type_constraint=con } =
-    find_split_vs sym_table bsym_table base_sym
-  in
-(*
-print_endline ("Flx_overload: resolve: split_vs finds constraint " ^ Flx_print.string_of_typecode con);
-    print_endline ("SPLITVS: PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") pvs);
-    print_endline ("SPLITVS: base   VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") vs);
-*)
-  let base_domain, base_result, pnames = sig_of_symdef
-    sym.Flx_sym.symdef
-    sym.Flx_sym.sr
-    sym.Flx_sym.id
-    base_sym
-  in
-(*
-if name = debugid then begin
-  print_endline ("Base_sym=" ^si base_sym^ ", base domain="^string_of_typecode base_domain ^
-   ", base result="^string_of_typecode base_result^", pnames from sig_of_symdef");
-end;
-*)
-  let arg_types =
-    match arg_types with
-    | BTYP_record (rs) as argt :: tail ->
-        fixup_argtypes be base_sym pnames base_domain argt rs :: tail
-
-    | BTYP_tuple [] as argt :: tail ->
-        fixup_argtypes be base_sym pnames base_domain argt [] :: tail
-
-    | _ ->
-        arg_types
-  in
-(*
-if name = debugid then 
-  print_endline ("Arg types = " ^ catmap "," (sbt bsym_table) arg_types);
-*)
-  (* bind type in base context, then translate it to view context:
-   * thus, base type variables are eliminated and specialisation
-   * type variables introduced *)
-
-(*
-  let con = match con with | `TYP_tuple [] -> Flx_btype.btyp_tuple [] | _ -> bt sym.Flx_sym.sr con in
-*)
-
-(*
-print_endline ("UNBOUND Constraint2 = " ^ string_of_typecode con);
-*)
-  let con = bt sym.Flx_sym.sr con in
-(*
-print_endline ("BOUND Constraint2 = " ^ Flx_btype.st con);
-*)
-  let domain,base_result = 
-  (* this is primarily an optimisation to save recursive overload resolution
-   * to find the return type of a function, which may itself involve a chain
-   * of overload resolutions. However it also helps if a function isn't declared
-   * with a return type, to find the computed return type: however this will ONLY
-   * WORK if the function is already bound, so it can't be relied on. This needs
-   * to be fixed! Because the results of a call with multiple arguments depend
-   * on the return type, and we can't have the success of overloading depend on
-   * the order of binding the compiler happens to pick! FIX IT!
-   *)
-  match opt_bsym with
-  | Some {Flx_bsym.id=id;sr=sr;bbdcl=Flx_bbdcl.BBDCL_fun (props,base_bvs,ps,rt,effects,_)} ->
-(*
-if name = debugid then print_endline ("Found function binding for " ^ id);
-*)
-    let domain = Flx_bparams.get_btype ps in
-    let base_result = rt in
-    domain, base_result
-
-  | _ -> 
-(*
-print_endline ("Warning: didn't find function binding for " ^ sym.Flx_sym.id);
-*)
-(*
-if name = debugid then print_endline ("Can't find bound symbol table entry, binding:");
-*)
-    let domain = 
-      try bt sym.Flx_sym.sr base_domain 
-      with exn -> 
-       print_endline ("[Flx_overload] Binding: " ^ name ^ ": Can't bind base domain type " ^ string_of_typecode base_domain);
-       print_endline (Printexc.to_string exn);
-       assert false
-    in
-    let base_result = 
-     try bt sym.Flx_sym.sr base_result 
-     with _ -> print_endline ("Can't bind base result type " ^ string_of_typecode base_result); btyp_none()
-    in
-    domain,base_result
-  in
-(*
-if name = debugid then print_endline "Resolve complete";
-*)
-  sym.Flx_sym.id, sym.Flx_sym.sr, vs, pvs, con, domain, base_result, arg_types
 
 let rec unravel_ret tin dts =
   match tin with
@@ -986,7 +737,7 @@ let consider
 if name = debugid then print_endline ("Considering .." ^ name);
 *)
   let id, sr, base_vs, parent_vs, con, domain, base_result, arg_types =
-    resolve sym_table bsym_table entry_kind.base_sym bt be arg_types 
+    Flx_resolve.resolve sym_table bsym_table entry_kind.base_sym bt be arg_types 
   in
 (*
 if name = debugid then print_endline ("Resolve done for " ^ name);
