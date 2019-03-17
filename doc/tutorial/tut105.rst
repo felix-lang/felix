@@ -1,14 +1,15 @@
-Felix 105: Objects and Plugins
-==============================
+Felix 105: Nominal Types
+========================
 
-Java Like Dynamic Objects and Plugins
+Structs, Variants, and C bindings 
 
 .. toctree::
    :maxdepth: 2
    
-  intro_objects
-  intro_objects_plugins
-  intro_objects_plugins2
-  intro_objects_plugins3
+  intro_structs
+  intro_struct_constructors
+  intro_struct_subtype
+  intro_variants
+
 
 

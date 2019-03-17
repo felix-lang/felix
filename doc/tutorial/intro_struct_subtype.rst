@@ -35,8 +35,4 @@ whilst read-pointers are covariant, write pointers are actually
 contra-variant.
 
 Finally note, explicit subtyping coercions given by the `supertype`
-construction are not transitive. Although in theory, subtyping
-is transitive, the `supertype` construction does not chain
-coercions together. If you have defined a coercion from A to B,
-and from B to C, then if you want A to act as a subtype of C,
-you have to explicitly define a coercion from A to C.
+construction are transitive.
