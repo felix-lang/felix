@@ -1,0 +1,11 @@
+Felix 110: Generalised Algebraic Data types
+===========================================
+
+Variants with generalised type indices.
+
+.. toctree::
+   :maxdepth: 2
+   
+   gadts
+
+

@@ -1,0 +1,10 @@
+Row Polymorphism
+================
+
+An alternative to subtyping for records with row variables.
+
+.. toctree::
+   :maxdepth: 2
+ 
+   rowpoly
+

@@ -1,0 +1,12 @@
+Felix 107: Polymorphic Variants
+===============================
+
+An advanced and flexible variant based on Ocaml's polymorphic variant types.
+
+
+.. toctree::
+   :maxdepth: 2
+   
+   polyvars
+
+
