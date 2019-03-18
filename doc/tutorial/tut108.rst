@@ -1,5 +1,5 @@
-Row Polymorphism
-================
+Felix 108: Row Polymorphism
+===========================
 
 An alternative to subtyping for records with row variables.
 
