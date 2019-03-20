@@ -10,5 +10,8 @@ Java Like Dynamic Objects and Plugins
   intro_objects_plugins
   intro_objects_plugins2
   intro_objects_plugins3
+  web_server_plugin
+  flx_plugin
+
 
 
