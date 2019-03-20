@@ -1,4 +1,4 @@
-Flx Server Plugins
+Web Server Plugins
 ==================
 
 The Felix webserver consists of a program `dflx_web` which is loads several plugins.
