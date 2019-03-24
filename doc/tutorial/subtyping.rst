@@ -41,7 +41,7 @@ Depth and width subtyping can be used simulaneously and
 apply recursively.
 
 Tuple and array subtyping
-+++++++++++++++++++++++++
+-------------------------
 
 Tuples, and thus arrays, support covariant depth subtyping.
 For example:
@@ -57,7 +57,7 @@ of record subtyping. This is because it is likely to be
 confusing in the presence of overloading.
 
 Polymorphic Variant Subtyping
-+++++++++++++++++++++++++++++
+-----------------------------
 
 Polymorphic variants support width and covariant depth
 subtyping, however, the width subtyping rule is the
@@ -82,7 +82,7 @@ The function `f` can handle 4 cases, so passing an argument which could
 only be one of three of them is safe.
 
 Anonymous Sum Type Subtyping
-++++++++++++++++++++++++++++
+----------------------------
 
 Like tuples anonymous sums support covariant depth subtyping
 but not width subtyping, for the same reason. It would be confusing
@@ -90,9 +90,20 @@ if a function with a bool parameter accepted a unit argument,
 even though in principle 1 is a subtype of 2.
 
 Function subtyping
-++++++++++++++++++
+------------------
 
 Functions support subtyping, the domain is contravariant and
 the codomain is covariant.
+
+Pointer Subtyping
+-----------------
+
+TBD
+
+
+Subtyping with Nominal Types
+----------------------------
+
+TBD
 
 
