@@ -584,6 +584,13 @@ supertype long: int = "(long)$1";
 supertype int : short= "(int)$1";
 supertype short : tiny = "(short)$1";
 
+supertype int64: int32 = "(int64_t)$1";
+supertype int32 : int16 = "(nt32_t)$1";
+supertype int16 : int8  "(int16_t)$1";
+
+supertype fcomplex: float = "::std::complex<float>($1,0.0f)";
+supertype dcomplex: double = "::std::complex<double>($1)";
+supertype lcomplex: ldouble = "::std::complex<long double>($1)";
 
 
 @h1 Quaternions
