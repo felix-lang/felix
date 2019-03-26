@@ -589,9 +589,25 @@ supertype int32 : int16 = "(nt32_t)$1";
 supertype int16 : int8 =  "(int16_t)$1";
 
 /* currently breaks instance Str[fcomplex] for unknown reason! 
-supertype fcomplex: float = "::std::complex<float>($1,0.0f)";
+
+But almost certainly its because of the definition of complex[t]
+by a type match, plus, then open[t in floats] Complex[complex[t],t]
+*/
+/*
+supertype fcomplex: float = "::std::complex<float>($1)";
 supertype dcomplex: double = "::std::complex<double>($1)";
 supertype lcomplex: ldouble = "::std::complex<long double>($1)";
+
+Guessing name map contains unreduced type match ... indeed I think
+it HAS to, because there is no provision in the type map data structure
+for constraints. This is why above
+
+open[T in units] Unsigned_integer[T] is commented out.
+
+open supports specialisations but not constraints including typeset constraints
+
+However we don't open Complex with a constraint. The instances use
+constraints but this is unrelated to the failure.
 */
 
 @h1 Quaternions
