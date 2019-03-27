@@ -163,7 +163,7 @@ print_endline ("  .. result = " ^ sbt bsym_table result);
   | `TYP_patany _ -> failwith "Not implemented patany in typecode"
 
   | `TYP_record ts -> btyp_record (List.map (fun (s,t) -> s,bt t) ts)
-  | `TYP_polyrecord (ts,v) -> btyp_polyrecord (List.map (fun (s,t) -> s,bt t) ts) (bt v)
+  | `TYP_polyrecord (ts,s,v) -> btyp_polyrecord (List.map (fun (s,t) -> s,bt t) ts) s (bt v)
   | `TYP_variant ts -> 
 (*
 print_endline ("\n******\nTrying to bind variant " ^ string_of_typecode t);

@@ -105,7 +105,7 @@ and metatype' sr typ : kind =
 
   | BTYP_label
 
-  | BTYP_polyrecord (_, _)
+  | BTYP_polyrecord (_, _, _)
   | BTYP_tuple_cons (_, _)
   | BTYP_tuple_snoc (_, _)
   | BTYP_rptsum _

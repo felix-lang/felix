@@ -576,36 +576,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   | `EXPR_extension (sr, es,e) -> `EXPR_extension (sr, List.map me es, me e)
 
-(*
-  | `EXPR_rptsum_type (sr,_,_)
-  | `EXPR_pclt_type (sr,_,_)
-  | `EXPR_rpclt_type (sr,_,_)
-  | `EXPR_wpclt_type (sr,_,_)
-  | `EXPR_record_type (sr,_)
-  | `EXPR_polyrecord_type (sr,_,_)
-  | `EXPR_variant_type (sr,_) ->
-     clierrx "[flx_desugar/flx_macro.ml:613: E333] " sr 
-     ("Record, polyrecord, variant or pointer to compact linear type types\n" ^
-     "cannot be used as an expression")
-*)
-
-(*
-  | `EXPR_record_type (sr,flds) -> `EXPR_record_type (sr, List.map (fun (s,t) -> s, mt sr t) flds)
-  | `EXPR_polyrecord_type (sr,flds,v) -> `EXPR_polyrecord_type (sr, List.map (fun (s,t) -> s, mt sr t) flds, mt sr v)
-  | `EXPR_variant_type (sr,flds) -> `EXPR_variant_type (sr, List.map (fun (s,t) -> s, mt sr t) flds)
-  | `EXPR_ellipsis _
-  | `EXPR_void _ -> e
-
-  | `EXPR_typeof (sr,e) -> `EXPR_typeof (sr, me e)
-  | `EXPR_type_match (sr, (e,ps)) ->
-    let ps = List.map (fun (pat,e) -> pat, mt sr e) ps in
-    `EXPR_type_match (sr,(mt sr e,ps))
-
-  | `EXPR_subtype_match (sr, (e,ps)) ->
-    let ps = List.map (fun (pat,e) -> pat, mt sr e) ps in
-    `EXPR_subtype_match (sr,(mt sr e,ps))
-
-*)
   | `EXPR_arrayof (sr, es) -> `EXPR_arrayof (sr, List.map me es)
   | `EXPR_coercion (sr, (e1, t)) -> `EXPR_coercion (sr, (me e1,mt sr t))
   | `EXPR_variant_subtype_match_coercion (sr, (e1, t)) -> `EXPR_variant_subtype_match_coercion (sr, (me e1,mt sr t))

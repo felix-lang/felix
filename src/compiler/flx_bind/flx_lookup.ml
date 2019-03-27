@@ -957,12 +957,18 @@ and lookup_name_with_sig
      | None -> None
      end
 
-   | [BTYP_polyrecord (fields,v) as d] ->
+   | [BTYP_polyrecord (fields,s,v) as d] ->
      if List.mem_assoc name fields 
      then 
       let ft = List.assoc name fields in
       Some (bexpr_rprj name d ft)  (* MIGHT REQUIRE FIXPOINT FIXUP! *)
-     else None
+     else
+     if name = s then begin
+print_endline ("Flx_lookup: found ROWVAR " ^ s);
+assert false;
+     end 
+     else
+     None
 
    | [BTYP_ptr (mode,BTYP_record (fields),[]) as d] ->
      begin match
@@ -972,12 +978,18 @@ and lookup_name_with_sig
      | None -> None
      end
 
-   | [BTYP_ptr (mode,BTYP_polyrecord (fields,v),[]) as d] ->
+   | [BTYP_ptr (mode,BTYP_polyrecord (fields,s,v),[]) as d] ->
      if List.mem_assoc name fields 
      then 
       let ft = List.assoc name fields in
       Some (bexpr_rprj name d (btyp_ptr mode ft []))  (* MIGHT REQUIRE FIXPOINT FIXUP! *)
-     else None
+     else 
+     if name = s then begin
+print_endline ("Flx_lookup: found pointer to ROWVAR " ^ s);
+assert false;
+     end 
+     else
+     None
  
    | _ -> None
  in
@@ -1342,80 +1354,6 @@ and build_env state bsym_table parent : env_t =
 (* MODULE STUFF *)
 (*===========================================================*)
 
-(* This routine takes a bound type, and produces a unique form
-   of the bound type, by again factoring out type aliases.
-   The type aliases can get reintroduced by map_type,
-   if an abstract type is mapped to a typedef, so we have
-   to factor them out again .. YUK!!
-*)
-
-(* THIS ROUTINE APPEARS TO BE UNUSED! *)
-(*
-and rebind_btype state bsym_table env sr ts t =
-  let rbt t = rebind_btype state bsym_table env sr ts t in
-  match t with
-  | BTYP_hole -> assert false
-  | BTYP_tuple_cons _ -> assert false
-  | BTYP_tuple_snoc _ -> assert false
-  | BTYP_none -> assert false
-  | BTYP_inst (i,_) ->
-    begin match get_data state.sym_table i with
-    | { Flx_sym.symdef=SYMDEF_type_alias t'} ->
-      inner_bind_type state bsym_table env sr rsground t'
-    | _ -> t
-    end
-
-  | BTYP_type_set_union ts -> btyp_type_set_union (List.map rbt ts)
-  | BTYP_type_set_intersection ts -> btyp_type_set_intersection (List.map rbt ts)
-
-  | BTYP_tuple ts -> btyp_tuple (List.map rbt ts)
-  | BTYP_record (ts) ->
-      let ss,ts = List.split ts in
-      btyp_record (List.combine ss (List.map rbt ts))
-
-  | BTYP_polyrecord (ts,v) ->
-      let ss,ts = List.split ts in
-      btyp_polyrecord (List.combine ss (List.map rbt ts)) (rbt v)
-
-
-  | BTYP_variant ts ->
-      let ss,ts = List.split ts in
-      btyp_variant (List.combine ss (List.map rbt ts))
-
-  | BTYP_type_set ts -> btyp_type_set (List.map rbt ts)
-  | BTYP_intersect ts -> btyp_intersect (List.map rbt ts)
-  | BTYP_union ts -> btyp_union (List.map rbt ts)
-
-  | BTYP_sum ts ->
-    let ts = List.map rbt ts in
-    if all_units ts then
-      btyp_unitsum (List.length ts)
-    else
-      btyp_sum ts
-
-  | BTYP_function (a,r) -> btyp_function (rbt a, rbt r)
-  | BTYP_effector (a,e,r) -> btyp_effector (rbt a, rbt e, rbt r)
-  | BTYP_cfunction (a,r) -> btyp_cfunction (rbt a, rbt r)
-  | BTYP_pointer t -> btyp_pointer (rbt t)
-  | BTYP_rev t -> btyp_rev (rbt t)
-  | BTYP_array (t1,t2) -> btyp_array (rbt t1, rbt t2)
-
-  | BTYP_int
-  | BTYP_label
-  | BTYP_unitsum _
-  | BTYP_void
-  | BTYP_fix _ -> t
-
-  | BTYP_type_var (i,mt) -> clierrx "[flx_bind/flx_lookup.ml:6403: E229] " sr ("[rebind_type] Unexpected type variable " ^ sbt bsym_table t)
-  | BTYP_type_apply _
-  | BTYP_type_map _
-  | BTYP_type_function _
-  | BTYP_type _
-  | BTYP_type_tuple _
-  | BTYP_type_match _
-    -> clierrx "[flx_bind/flx_lookup.ml:6409: E230] " sr ("[rebind_type] Unexpected metatype " ^ sbt bsym_table t)
-
-*)
 
 and eval_module_expr state bsym_table env e : module_rep_t =
   Flx_eval_module.eval_module_expr

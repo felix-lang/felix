@@ -452,10 +452,10 @@ and st prec tc : string =
           ")"
       end
 
-    | `TYP_polyrecord (ls,v) ->
+    | `TYP_polyrecord (ls,s,v) ->
           0, "(" ^
           catmap "" (fun (s,t) -> string_of_id s ^ ":" ^ st 0 t ^ ", ") ls ^
-          " | " ^ st 0 v ^
+          " | " ^ string_of_id s ^ ":" ^ st 0 v ^
           ")"
 
 
@@ -711,8 +711,8 @@ and sb bsym_table depth fixlist counter prec tc =
       | _ -> 0,"record("^catmap "," (fun (s,t)->s^":"^sbt 0 t) ls ^")"
       end
 
-    | BTYP_polyrecord (ls,v) ->
-      0,"polyrec("^catmap "," (fun (s,t)->s^":"^sbt 0 t) ls ^ " | " ^ sbt 0 v^ ")"
+    | BTYP_polyrecord (ls,s,v) ->
+      0,"polyrec("^catmap "," (fun (s,t)->s^":"^sbt 0 t) ls ^ " | " ^ s ^ ":"^ sbt 0 v^ ")"
 
 
     | BTYP_variant ls ->

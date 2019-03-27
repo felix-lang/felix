@@ -533,13 +533,18 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
 *)
     let e'',t'' as x2 = be e' in
     begin match t'' with
-    | BTYP_polyrecord (es,_) ->
+    | BTYP_polyrecord (es,s,v) ->
       begin try 
         let ct = List.assoc name es in
         let prj = bexpr_rprj name t'' ct in
         bexpr_apply ct (prj,x2)
       with 
         Not_found ->
+        if name = s then begin
+print_endline ("flx_bind_expression: EXPR_get_named_variable ROW NAME " ^ s);
+assert false
+        end
+        else
           clierrx "[flx_bind/flx_lookup.ml:4175: E178] " sr ("Field " ^ name ^ " is not a field of " ^ sbt bsym_table t'')
       end
 
@@ -1583,7 +1588,7 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
         bexpr_apply codomain (bexpr_prj (!idx) domain codomain,e)
       end
 
-    | BTYP_polyrecord (flds,x) ->
+    | BTYP_polyrecord (flds,s,x) ->
       failwith "rnprj not implemented for polyrecord type argument yet"
 
     | _ -> clierrx "[flx_bind/flx_lookup.ml:5089: E213] " sr ("Argument of rnprj must be record or polyrecord type, got " ^ sbt bsym_table domain)
@@ -1623,7 +1628,7 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
     in
     begin match t with
     | BTYP_record ls -> check ls
-    | BTYP_polyrecord (ls,_) -> check ls
+    | BTYP_polyrecord (ls,_,_) -> check ls
     | _ -> clierr sr ("flx_lookup: replace fields in non record type " ^ sbt bsym_table t)
     end;
     bexpr_polyrecord fs (bexpr_remove_fields e (List.map fst fs))

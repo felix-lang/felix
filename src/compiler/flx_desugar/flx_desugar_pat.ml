@@ -119,26 +119,6 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
       let sr = src_of_expr e in
       clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
       ("[desugar_pat:subst]7 Not expected in pattern when clause: " ^ string_of_expr e); 
-
-(*
-  | `EXPR_rptsum_type _ 
-  | `EXPR_pclt_type _
-  | `EXPR_rpclt_type _
-  | `EXPR_wpclt_type _
-  | `EXPR_record_type _
-  | `EXPR_polyrecord_type _
-  | `EXPR_variant_type _
-  | `EXPR_void _
-  | `EXPR_ellipsis _
-  | `EXPR_typeof _
-
-  | `EXPR_subtype_match _ 
-  | `EXPR_type_match _ ->
-      let sr = src_of_expr e in
-      clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 
-      ("[desugar_pat:subst]4 Not expected in pattern when clause: " ^ string_of_expr e); 
-
-*)
   | `EXPR_extension _
   | `EXPR_get_tuple_tail _
   | `EXPR_get_tuple_head _

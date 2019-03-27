@@ -10,7 +10,6 @@ let try_bind_record_proj
 =
 match unfold "flx_lookup" ta with 
 (* record and polyrecord value *)
-| BTYP_polyrecord (es,_)
 | BTYP_record (es) ->
   if (ts != []) then raise Flx_dot.OverloadResolutionError; 
   let k = List.length es in
@@ -24,11 +23,30 @@ match unfold "flx_lookup" ta with
     raise Flx_dot.OverloadResolutionError
   end
 
+| BTYP_polyrecord (es,s,v) ->
+  if (ts != []) then raise Flx_dot.OverloadResolutionError; 
+  let k = List.length es in
+  let field_name = name in
+  begin match Flx_list.list_index (List.map fst es) field_name with
+  | Some n -> 
+    let t = List.assoc field_name es in
+    let t = bexpr_get_named t name a in
+    t
+  | None -> 
+    if name = s then begin
+    let ss = List.map fst es in
+    bexpr_remove_fields a ss
+    end 
+    else
+      raise Flx_dot.OverloadResolutionError
+  end
+
+
 (* pointer to record *)
 | BTYP_ptr (mode,(BTYP_record _ as r),[])
 | BTYP_ptr (mode,(BTYP_polyrecord _ as r),[]) ->
   begin match unfold "flx_lookup" r with
-  | BTYP_polyrecord (es,_) 
+  | BTYP_polyrecord (es,_,_) 
   | BTYP_record (es) ->
     if (ts != []) then raise Flx_dot.OverloadResolutionError; 
     let k = List.length es in

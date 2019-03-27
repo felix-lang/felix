@@ -10,7 +10,7 @@ let get_field_types t =
   | BTYP_array (t,BTYP_unitsum n) -> List.map (fun _ -> "",t) (Flx_list.nlist n)
   | BTYP_tuple ts -> List.map (fun t-> "",t) ts
   | BTYP_record ts -> ts
-  | BTYP_polyrecord (ts,v) -> ts
+  | BTYP_polyrecord (ts,s,v) -> ts
   | _ -> ["",t]
 
 let isproduct t = 

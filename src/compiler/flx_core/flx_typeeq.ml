@@ -73,7 +73,12 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
   | BTYP_record ([]),BTYP_tuple []
   | BTYP_tuple [],BTYP_record ([]) -> true
 
-  | BTYP_polyrecord (t1,v1), BTYP_polyrecord (t2,v2) ->
+  | BTYP_polyrecord (t,s,v), t2
+  | t2,BTYP_polyrecord (t,s,v) when s <> "" ->
+    te t2 (btyp_polyrecord t "" v)
+
+
+  | BTYP_polyrecord (t1,_,v1), BTYP_polyrecord (t2,_,v2) ->
    te (btyp_record t1) (btyp_record t2) && te v1 v2 
 
   | BTYP_record (t1),BTYP_record (t2) ->

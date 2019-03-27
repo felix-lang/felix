@@ -280,7 +280,7 @@ and solve_subsumption nominal_subtype counter lhs rhs  dvars (s:vassign_t option
       | BTYP_record ([]),BTYP_tuple []
       | BTYP_tuple [],BTYP_record ([]) -> ()
 
-      | BTYP_polyrecord (t1,v1),BTYP_polyrecord (t2,v2) ->
+      | BTYP_polyrecord (t1,_,v1),BTYP_polyrecord (t2,_,v2) ->
 (*
 print_endline ("Polyrecord/polyrecord unification " ^ sbt bsym_table lhs ^ " = " ^ sbt bsym_table rhs);
 *)
@@ -309,13 +309,13 @@ print_endline ("Polyrecord/polyrecord unification " ^ sbt bsym_table lhs ^ " = "
           print_endline "  *** more fields on left";
           print_endline ("  *** add eqn " ^ sbt bsym_table (btyp_polyrecord x v1) ^ " = " ^ sbt bsym_table v2);
 *)
-          add_eqn (btyp_polyrecord x v1, v2)
+          add_eqn (btyp_polyrecord x "" v1, v2)
         | [],x -> 
 (*
           print_endline "  *** more fields on right";
           print_endline ("  *** add eqn " ^ sbt bsym_table v1 ^ " = " ^ sbt bsym_table (btyp_polyrecord x v2));
 *)
-          add_eqn (v1, btyp_polyrecord x v2)
+          add_eqn (v1, btyp_polyrecord x "" v2)
         | _ -> 
 (*
           print_endline "  *** FAILED"; 
@@ -324,8 +324,8 @@ print_endline ("Polyrecord/polyrecord unification " ^ sbt bsym_table lhs ^ " = "
         end
   
 
-      | BTYP_polyrecord (t1,v),BTYP_record (t2)
-      | BTYP_record (t2),BTYP_polyrecord (t1,v) -> 
+      | BTYP_polyrecord (t1,_,v),BTYP_record (t2)
+      | BTYP_record (t2),BTYP_polyrecord (t1,_,v) -> 
 (*
 print_endline ("Polyrecord/record unification " ^ sbt bsym_table lhs ^ " = " ^ sbt bsym_table rhs);
 *)

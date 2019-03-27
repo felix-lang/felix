@@ -56,8 +56,8 @@ let fix i t =
     | BTYP_record (ts) ->
        btyp_record (List.map (fun (s,t) -> s, aux t) ts)
 
-    | BTYP_polyrecord (ts,v) ->
-       btyp_polyrecord (List.map (fun (s,t) -> s, aux t) ts) (aux v)
+    | BTYP_polyrecord (ts,s,v) ->
+       btyp_polyrecord (List.map (fun (s,t) -> s, aux t) ts) s (aux v)
 
     | BTYP_variant ts ->
        btyp_variant (List.map (fun (s,t) -> s, aux t) ts)

@@ -48,7 +48,7 @@ and t =
   | BTYP_array of t * t
   | BTYP_rptsum of t * t
   | BTYP_record of (string * t) list
-  | BTYP_polyrecord of (string * t) list * t
+  | BTYP_polyrecord of (string * t) list * string * t
   | BTYP_variant of (string * t) list
   | BTYP_polyvariant of pvpiece_t list
 
@@ -117,7 +117,7 @@ let flat_iter
   | BTYP_rptsum (t1,t2)
   | BTYP_array (t1,t2)->  f_btype t1; f_btype t2
   | BTYP_record (ts) -> List.iter (fun (s,t) -> f_btype t) ts
-  | BTYP_polyrecord (ts,v) -> List.iter (fun (s,t) -> f_btype t) ts; f_btype v
+  | BTYP_polyrecord (ts,s,v) -> List.iter (fun (s,t) -> f_btype t) ts; f_btype v
   | BTYP_variant ts -> List.iter (fun (s,t) -> f_btype t) ts
   | BTYP_polyvariant ts -> List.iter (fun k -> 
       match k with 
@@ -249,7 +249,7 @@ and str_of_btype typ =
   | BTYP_array (b,x) -> "BTYP_array(" ^ s b ^"," ^s x^")"
   | BTYP_rptsum (b,x) -> "BTYP_rptsum(" ^ s b ^"," ^s x^")"
   | BTYP_record (ls) -> "BTYP_record("^String.concat "," (List.map (fun (name,t)->name^":"^s t) ls)^")"
-  | BTYP_polyrecord (ls,t) -> "BTYP_polyrecord("^String.concat "," (List.map (fun (name,t)->name^":"^s t) ls)^" | "^s t^")"
+  | BTYP_polyrecord (ls,name,t) -> "BTYP_polyrecord("^String.concat "," (List.map (fun (name,t)->name^":"^s t) ls)^" | "^name^ ":" ^ s t^")"
   | BTYP_variant (ls) -> "BTYP_variant(" ^String.concat " | " (List.map (fun (name,t)->name^" of "^s t) ls)^")"
   | BTYP_polyvariant ls -> "BTYP_polyvariant(" ^ String.concat " | " (List.map str_of_pvpiece ls) ^ ")"
 
@@ -347,7 +347,7 @@ let complete_type t =
     | BTYP_sum ls -> List.iter uf ls
     | BTYP_tuple ls -> List.iter uf ls
     | BTYP_record (ls) -> List.iter (fun (s,t) -> uf t) ls
-    | BTYP_polyrecord (ls,v) -> List.iter (fun (s,t) -> uf t) ls; uf v
+    | BTYP_polyrecord (ls,s,v) -> List.iter (fun (s,t) -> uf t) ls; uf v
     | BTYP_variant ls -> (List.iter (fun (s,t) -> uf t) ls)
     | BTYP_polyvariant ls -> (List.iter (fun k -> match k with | `Ctor (s,t) -> uf t | `Base t -> uf t) ls)
     | BTYP_array (a,b) -> uf a; uf b
@@ -488,26 +488,34 @@ let btyp_record ts =
    BTYP_record (ts)
 
 (** Construct a BTYP_polyrecord type. *)
-let btyp_polyrecord ts v = 
+
+(* NOTE: we cannot move fields out of a name row: the name is needed 
+until after the name is replaced by the whole type minus the leading
+fields (remove_fields). But it has to be removed during monomorphisation
+otherwise the polyrecord will survive to the back end which cannot handle
+polyrecords. Use Flx_btype_subst.neuter_polyrecord to strip the name out!
+*)
+
+let btyp_polyrecord ts s v = 
 (*
 print_endline ("Constructing polyrecord, extensions=" ^ catmap "," (fun (s,t) -> s^":"^str_of_btype t) ts);
 print_endline ("   ... core = " ^ st v);
 *)
    match ts with [] -> v | _ ->
-   match v with
-   | BTYP_record flds -> 
+   match s,v with
+   | "",BTYP_record flds -> 
      btyp_record (ts @ flds)
 
-   | BTYP_void -> btyp_record ts
+   | _,BTYP_void -> btyp_record ts
 
-   | BTYP_polyrecord (flds,v2) ->
+   | "",BTYP_polyrecord (flds,s2,v2) ->
      let cmp (s1,t1) (s2, t2) = compare s1 s2 in
      let fields = List.stable_sort cmp (ts @ flds) in
-     BTYP_polyrecord (fields,v2)
+     BTYP_polyrecord (fields,s2,v2)
    | _ -> 
      let cmp (s1,t1) (s2, t2) = compare s1 s2 in
      let ts = List.stable_sort cmp ts in
-     BTYP_polyrecord (ts,v)
+     BTYP_polyrecord (ts,s,v)
 
 
 (* FIXME: Idiot Ocaml strikes again. We need to minimise t before hashing
@@ -812,7 +820,7 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_array (t1,t2) -> btyp_array (f_btype t1, f_btype t2)
   | BTYP_rptsum (t1,t2) -> btyp_rptsum (f_btype t1, f_btype t2)
   | BTYP_record (ts) -> btyp_record (List.map (fun (s,t) -> s, f_btype t) ts)
-  | BTYP_polyrecord (ts,v) -> btyp_polyrecord (List.map (fun (s,t) -> s, f_btype t) ts) (f_btype v)
+  | BTYP_polyrecord (ts,s,v) -> btyp_polyrecord (List.map (fun (s,t) -> s, f_btype t) ts) s (f_btype v)
   | BTYP_variant ts -> btyp_variant (List.map (fun (s,t) -> s, f_btype t) ts)
   | BTYP_polyvariant ts -> btyp_polyvariant (List.map (fun k -> 
       match k with 
@@ -1055,7 +1063,7 @@ and unfold msg t =
     | BTYP_sum ls -> btyp_sum (List.map uf ls)
     | BTYP_tuple ls -> btyp_tuple (List.map uf ls)
     | BTYP_record (ls) -> btyp_record (List.map (fun (s,t) -> s,uf t) ls)
-    | BTYP_polyrecord (ls,v) -> btyp_polyrecord (List.map (fun (s,t) -> s,uf t) ls) (uf v)
+    | BTYP_polyrecord (ls,s,v) -> btyp_polyrecord (List.map (fun (s,t) -> s,uf t) ls) s (uf v)
     | BTYP_variant ls -> btyp_variant (List.map (fun (s,t) -> s,uf t) ls)
 
     | BTYP_polyvariant ls -> btyp_polyvariant (List.map (fun k ->

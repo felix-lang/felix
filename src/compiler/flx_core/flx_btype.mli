@@ -29,7 +29,7 @@ and t = private
   | BTYP_array of t * t
   | BTYP_rptsum of t * t
   | BTYP_record of (string * t) list
-  | BTYP_polyrecord of (string * t) list * t
+  | BTYP_polyrecord of (string * t) list * string * t
   | BTYP_variant of (string * t) list
   | BTYP_polyvariant of pvpiece_t list
 
@@ -126,7 +126,7 @@ val btyp_tuple_snoc : t -> t -> t
 val btyp_array : t * t -> t
 val btyp_rptsum : t * t -> t
 val btyp_record : (string * t) list -> t
-val btyp_polyrecord : (string * t) list -> t -> t
+val btyp_polyrecord : (string * t) list -> string -> t -> t
 val btyp_variant : (string * t) list -> t
 val btyp_polyvariant : pvpiece_t list -> t
 

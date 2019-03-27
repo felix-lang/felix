@@ -135,14 +135,14 @@ print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
      rs
    in `TYP_record (rs)
 
- | Lst [Id "ast_polyrecord_type"; Lst rs; e] ->
+ | Lst [Id "ast_polyrecord_type"; Lst rs; Lst [Str  s; e]] ->
    let rs =
      map (function
      | Lst [Str s; e] -> s, ti e
      | x -> err x "Error in AST_polyrecord_type"
      )
      rs
-   in `TYP_polyrecord (rs, ti e)
+   in `TYP_polyrecord (rs, s, ti e)
 
  | Lst [Id "ast_variant_type"; Lst rs] ->
    let rs =

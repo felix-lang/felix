@@ -509,13 +509,13 @@ print_endline "Type record";
     let result = bexpr_record components in
     result
  
-  | Flx_btype.BTYP_polyrecord (ts,t) ->
+  | Flx_btype.BTYP_polyrecord (ts,s,t) ->
 (*
 print_endline "Type poly record";
 *)
     let components = cal_removal e ts ss in
     let field_types = List.map (fun (name,(_,t)) -> name,t) components in
-    let result_type = Flx_btype.btyp_polyrecord field_types t in
+    let result_type = Flx_btype.btyp_polyrecord field_types s t in
 (*
 print_endline ("Type is " ^ st result_type);
 *)
@@ -532,7 +532,7 @@ print_endline ("[bexpr_polyrecord] Constructing polyrecord: extension fields = "
 print_endline ("[bexpr_polyrecord] Constructing polyrecord: core type= " ^ st t');
 *)
   let fldts = List.map (fun (s,(_,t)) -> s,t) es in
-  let result_type : Flx_btype.t = complete_check "bexpr_polyrecord" (Flx_btype.btyp_polyrecord fldts t') in
+  let result_type : Flx_btype.t = complete_check "bexpr_polyrecord" (Flx_btype.btyp_polyrecord fldts "" t') in
 (*
 print_endline ("[bexpr_polyrecord] expected result type = " ^ st domain);  
 *)
@@ -575,7 +575,7 @@ print_endline ("[bexpr_polyrecord] actual result type = " ^ st t);
 *)
     e
 
-  | Flx_btype.BTYP_polyrecord (flds,v) ->
+  | Flx_btype.BTYP_polyrecord (flds,s,v) ->
 (*
 print_endline "Constructing polyrecord value";
 *)

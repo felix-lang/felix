@@ -179,7 +179,7 @@ syntax types {
     srecord_mem_decl2 := stypeexpr =># '`("" ,_1)';
 
   //$ polyRecord type.
-  tatom := "(" srecord_mem_decl ("," srecord_mem_decl2)*  "|" stypeexpr ")" =># 
+  tatom := "(" srecord_mem_decl ("," srecord_mem_decl2)*  "|" srecord_mem_decl2 ")" =># 
    "`(ast_polyrecord_type ,(cons _2 (map second _3)) ,_5)";
 
 

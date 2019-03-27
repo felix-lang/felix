@@ -26,9 +26,11 @@ the assertion.
 
 let mono_type syms bsym_table vars sr t = 
 (*
-print_endline (" ** begin mono_type " ^ sbt bsym_table t);
+print_endline (" ** begin mono_type " ^ Flx_print.sbt bsym_table t);
 *)
   let t = Flx_btype_subst.list_subst syms.Flx_mtypes2.counter vars t in
+  let t = Flx_btype_subst.neuter_polyrecs "mono_type" t in
+
 (*
 print_endline (" ** mono_type after variable replacement " ^ sbt bsym_table t);
 *)

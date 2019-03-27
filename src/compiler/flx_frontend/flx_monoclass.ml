@@ -25,6 +25,7 @@ let flat_typeclass_fixup_type syms bsym_table virtualinst sr t =
 
 (* bottom up mapping *)
 let rec typeclass_fixup_type syms bsym_table virtualinst sr t =
+  (* let t = Flx_btype_subst.neuter_polyrecs "typeclass fixup" t in  *)
   let f_btype t = typeclass_fixup_type syms bsym_table virtualinst sr t in
   let t = Flx_btype.map ~f_btype t in
   let t = flat_typeclass_fixup_type syms bsym_table virtualinst sr t in

@@ -40,7 +40,7 @@ let var_occurs bsym_table t =
     | BTYP_tuple ls -> List.iter aux ls
 
     | BTYP_record (ls) -> List.iter (fun (s,t) -> aux t) ls
-    | BTYP_polyrecord (ls,v) -> List.iter (fun (s,t) -> aux t) ls; aux v
+    | BTYP_polyrecord (ls,s,v) -> List.iter (fun (s,t) -> aux t) ls; aux v
     | BTYP_variant ls -> List.iter (fun (s,t) -> aux t) ls
 
     | BTYP_rptsum (a,b)

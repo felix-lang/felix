@@ -143,4 +143,15 @@ let varmap_of_mgu mgu =
 let tsubst sr (vs:Flx_kind.bvs_t) ts t =
   varmap_subst (mk_varmap sr vs ts) t
 
+let neuter_polyrecs msg t = 
+  let rec aux t = 
+    match Flx_btype.map ~f_btype:aux t with
+    | Flx_btype.BTYP_polyrecord (flds,s,v) -> 
+      (* if s <> "" then print_endline (msg ^ " Neutering row variable " ^ s);  *)
+      Flx_btype.btyp_polyrecord flds "" v
+    | t -> t
+  in aux t
+
+
+
 

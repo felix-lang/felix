@@ -34,13 +34,13 @@ let merge_svc_field es =
 let get_polyfields t =
   match t with
   | BTYP_record es -> es, btyp_unit ()
-  | BTYP_polyrecord (es,v) -> es, v
+  | BTYP_polyrecord (es,s,v) -> es, v
   | _ -> [], t
 
 let merge_svc effects = 
   let es, v = get_polyfields effects in
   let es = merge_svc_field es in
-  btyp_polyrecord es v
+  btyp_polyrecord es "" v
 
 let does_svc exes = try List.iter (fun exe -> 
    match exe with | BEXE_svc _ -> raise Not_found | _ -> ()) exes; false

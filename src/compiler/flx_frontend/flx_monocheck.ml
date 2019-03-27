@@ -19,15 +19,21 @@ let check_mono bsym_table sr t =
   match t with
   | BTYP_none 
   | BTYP_type_apply _
-  | BTYP_type_function _
   | BTYP_type_tuple _
   | BTYP_type_match _
   | BTYP_type_set _
   | BTYP_type_set_union _
   | BTYP_type_set_intersection _
+  | BTYP_polyrecord _
     -> 
-    (* print_endline ("[flx_numono:check_mono]: Unexpected type expression" ^ sbt bsym_table t); *)
-     ()
+    print_endline ("[flx_numono:check_mono]: Unexpected type expression " ^ Flx_print.sbt bsym_table t);
+(*
+    let t = Flx_btype_subst.neuter_polyrecs "monocheck" t in
+    print_endline ("[flx_numono:check_mono]: After neutering " ^ Flx_print.sbt bsym_table t);
+*)
+    assert false
+
+  | BTYP_type_function _
   | _ -> ()
 
 

@@ -201,7 +201,7 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       let n = List.length ls' in
       record_coercion state bsym_table sr x' n t' t'' ls' ls'' 
 
-    | BTYP_record (ls'),BTYP_polyrecord (ls'',r)->
+    | BTYP_record (ls'),BTYP_polyrecord (ls'',s,r)->
       syserr sr "Flx_coerce: coercion to polyrecord not implemented"
 
 

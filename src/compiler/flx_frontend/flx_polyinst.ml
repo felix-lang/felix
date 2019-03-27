@@ -75,6 +75,7 @@ let rec rec_poly_fixup_type trail syms bsym_table polyinst sr t =
   t'
 
 let poly_fixup_type syms bsym_table polyinst sr t =
+ (* let t = Flx_btype_subst.neuter_polyrecs "polyfixup type" t in *)
  let t' = rec_poly_fixup_type [] syms bsym_table polyinst sr t in
 (*
  print_endline ("POLY FIXUP TYPE: " ^ sbt bsym_table t ^ " --> " ^ sbt bsym_table t');

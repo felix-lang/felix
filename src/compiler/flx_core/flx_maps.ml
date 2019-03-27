@@ -21,7 +21,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | `TYP_suffix (sr,(qn,t)) -> `TYP_suffix (sr, (qn, f t))
   | `TYP_tuple ts -> `TYP_tuple (List.map f ts)
   | `TYP_record ts -> `TYP_record (List.map (fun (s,t) -> s,f t) ts)
-  | `TYP_polyrecord (ts,v) -> `TYP_polyrecord (List.map (fun (s,t) -> s,f t) ts, f v)
+  | `TYP_polyrecord (ts,s,v) -> `TYP_polyrecord (List.map (fun (s,t) -> s,f t) ts, s, f v)
   | `TYP_variant ts -> `TYP_variant (List.map (
       fun x -> match x with `Ctor (s,t) -> `Ctor (s, f t) | `Base t -> `Base (f t)
       ) ts)
@@ -122,18 +122,6 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
     `EXPR_index (sr,s,fi ix)
   | `EXPR_case_tag _ -> e
   | `EXPR_typed_case (sr,n,t) -> `EXPR_typed_case (sr,n, ft t)
-(*
-  | `EXPR_rptsum_type (sr,n,t) -> `EXPR_rptsum_type (sr, ft n, ft t)
-  | `EXPR_pclt_type (sr,a,b) -> `EXPR_pclt_type (sr, ft a, ft b)
-  | `EXPR_rpclt_type (sr,a,b) -> `EXPR_rpclt_type (sr, ft a, ft b)
-  | `EXPR_wpclt_type (sr,a,b) -> `EXPR_wpclt_type (sr, ft a, ft b)
-  | `EXPR_record_type (sr,ts) -> assert false 
-  | `EXPR_polyrecord_type (sr,ts,v) -> assert false
-  | `EXPR_variant_type (sr,ts) -> assert false
-  | `EXPR_typeof (sr,x) -> `EXPR_typeof (sr,fe x)
-  | `EXPR_type_match _ -> e
-  | `EXPR_subtype_match _ -> e
-*)
   | `EXPR_projection (sr,n,t) -> `EXPR_projection (sr,n,ft t)
   | `EXPR_identity_function (sr,t) -> `EXPR_identity_function (sr,ft t)
   | `EXPR_array_projection (sr,e,t) -> `EXPR_array_projection (sr,fe e,ft t)

@@ -333,9 +333,9 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
      let ss,ls = List.split ts in
      btyp_record (List.combine ss (List.map br ls))
 
-  | BTYP_polyrecord (ts,v) ->
+  | BTYP_polyrecord (ts,s,v) ->
      let ss,ls = List.split ts in
-     btyp_polyrecord (List.combine ss (List.map br ls)) (br v)
+     btyp_polyrecord (List.combine ss (List.map br ls)) s (br v)
 
 
   | BTYP_variant ts ->

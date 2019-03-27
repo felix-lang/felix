@@ -83,7 +83,7 @@ and typecode_t = [
   | `TYP_unitsum of int                         (** sum of units  *)
   | `TYP_sum of typecode_t list                 (** numbered sum type *)
   | `TYP_record of (Flx_id.t * typecode_t) list
-  | `TYP_polyrecord of (Flx_id.t * typecode_t) list * typecode_t
+  | `TYP_polyrecord of (Flx_id.t * typecode_t) list * Flx_id.t * typecode_t
   | `TYP_variant of variant_item_t list (** anon sum *)
   | `TYP_function of typecode_t * typecode_t    (** function type *)
   | `TYP_effector of typecode_t * typecode_t * typecode_t    (** function type *)
