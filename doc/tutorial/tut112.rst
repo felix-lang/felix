@@ -1,0 +1,7 @@
+Felix 112: Compact Linear Types
+===============================
+
+.. toctree::
+   :maxdepth: 2
+   
+   compact_linear_types

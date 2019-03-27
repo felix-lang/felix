@@ -1,0 +1,14 @@
+Felix 114: Kinds
+================
+
+Felix has a basic explicit kinding system used primarily
+to express constraints.
+
+.. toctree::
+   :maxdepth: 2
+   
+   kinds
+
+
+
+
