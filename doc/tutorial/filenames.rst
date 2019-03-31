@@ -1,9 +1,7 @@
-Directories and Files
-=====================
+Filenames
+=========
 
-class Filename
---------------
-
+Filename function reside in class Filename.
 This class is not open by default, it is recommended the functions
 below are called explicitly qualified by `Filename::`.
 
