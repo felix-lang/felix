@@ -9,7 +9,7 @@ Sets error code at argument 3 pointer.
 
 .. code-block:: felix
 
-  virtual proc stat: string * &stat_t * &int;
+  proc stat: string * &stat_t * &int;
 
 set access and modification time of a file.
 Sets error code at argument 4 pointer.
@@ -17,7 +17,7 @@ Times are in seconds, nominally from Epoch (Jan 1 1970).
 
 .. code-block:: felix
 
-  virtual proc utime: string * double * double * &int;
+  proc utime: string * double * double * &int;
 
 Change read,write permissions for group, owner etc.
 Return 0 on success.
@@ -26,7 +26,7 @@ unsupported operations.
 
 .. code-block:: felix
 
-  virtual gen chmod: string * mode_t -> int;
+  gen chmod: string * mode_t -> int;
 
 set mask for subsequent permissions.
 On Windows this function may silently fail to obey
@@ -34,7 +34,7 @@ unsupported operations.
 
 .. code-block:: felix
 
-  virtual gen umask: mode_t -> mode_t;
+  gen umask: mode_t -> mode_t;
 
 Abstracted platform independent file type taxonomy.
 
@@ -60,11 +60,10 @@ Get the file type from a file stat buffer.
   virtual fun file_type: &stat_t -> file_type_t;
 
 Fill a stat buffer with information about a file.
-  gen stat(file: string, statbuf:&stat_t) = { 
-    var res: int; 
-    stat(file, statbuf, &res); 
-    return res == 0;
-  }
+
+.. code-block:: felix
+
+  gen stat(file: string, statbuf:&stat_t);
 
 Get a file last modification time from a stat buffer.
 Time is in seconds.
@@ -86,30 +85,20 @@ Time is in seconds.
 
 .. code-block:: felix
 
-  fun filetime(f:string):double =
-  {
-    var b: stat_t;
-    var err:int;
-    stat(f,&b,&err);
-    return if err == 0 then mtime (&b) else 0.0 endif;
-  }
+  fun filetime(f:string):double;
 
 Set the last access and modification time of a file by name.
 
 .. code-block:: felix
 
-  gen utime(f:string, a:double, m:double): bool = {
-    var r:int;
-    utime(f,a,m,&r);
-    return r == 0;
-  }
+  gen utime(f:string, a:double, m:double): bool;
 
 Set the last access and modification time of a file by name,
 where the two times are given by a single argument.
 
 .. code-block:: felix
 
-  gen utime(f:string, t:double) => utime(f,t,t);
+  gen utime(f:string, t:double);
 
 Check if a file exists.
 
@@ -121,49 +110,16 @@ Find the type of a file.
 
 .. code-block:: felix
 
-  fun filetype(f:string):file_type_t = 
-  {
-    var b:stat_t;
-    var err:int;
-    stat(f,&b,&err);
-    return 
-      if err == 0 then file_type (&b)
-      elif errno == EACCES then NOPERMISSION
-      elif errno == ENOENT then NONEXISTANT  
-      else INDETERMINATE
-      endif
-    ;
-  }
+  fun filetype(f:string):file_type_t;
 
+File time conversions.
 
 .. code-block:: felix
 
   fun past_time () => -1.0;
   fun future_time () => double(ulong(-1)); // a hacky way to get a big number
 
-  fun strfiletime0 (x:double) = {
-    return
-      if x == #past_time then "BIG BANG"
-      elif x == #future_time then "BIG CRUNCH"
-      else fmt (x, fixed (0,3))
-      endif
-    ;
-  }
-
-  fun strfiletime (x:double) = {
-    assert x != 0.0;
-    return strfiletime0 x;
-  }
-
-  fun dfiletime(var f:string, dflt:double)=
-  {
-    var x = FileStat::filetime (f);
-    x = if x == 0.0 then dflt else x endif;
-    //debugln$ "Time of file '" + f + "' is " + strfiletime x; 
-    return x;
-  }
-
-
-}
-
+  fun strfiletime0 (x:double) :string;
+  fun strfiletime (x:double) : string;
+  fun dfiletime(var f:string, dflt:double) : double;
 
