@@ -14,7 +14,7 @@ To lift immobile objects, lift a pointer instead.
 Lifting Primitives
 ------------------
 
-Here's how you lift types primitive types:
+Here's how you lift primitive types:
 
 .. code-block:: felix
 
@@ -26,6 +26,7 @@ Here's how you lift types primitive types:
 The quoted name must be usable in the forms `T x`, `T *x`. This means you cannot
 lift a C function pointer type such as `int (*)(double, long)` because the
 variable name has to go just before the `*`. 
+
 
 Lifting Class types
 -------------------
@@ -57,6 +58,7 @@ C function types can be defined directly in Felix:
 .. code-block:: felix
 
   typedef int2int = int --> int;
+  // typedef int (nt2int*)(int)
 
 The type `int2int` is an alias, and the C function type is a structural type,
 not nominal type.
