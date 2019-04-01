@@ -21,6 +21,7 @@ INSTALLROOT ?= ${PREFIX}/lib/felix
 INSTALLDIR ?= ${INSTALLROOT}/felix-$(VERSION)
 FBUILDROOT ?= build
 BUILDROOT ?= ${FBUILDROOT}/release
+BUILDBIN ?= ${BUILDROOT}/host/bin
 DEBUGBUILDROOT ?= ${FBUILDROOT}/debug
 PYTHON ?= python3
 # If running as root skip sudo
@@ -91,7 +92,7 @@ showversion:
 build: extract showversion configure bootstrap bootstrap-tools rebuild uproot
 
 bootstrap: fbuild
-	cp ${BUILDROOT}/host/bin/bootflx ${BUILDROOT}/host/bin/flx
+	cp ${BUILDBIN}/bootflx ${BUILDBIN}/flx
 	${BUILDROOT}/host/bin/flx --felix=build.fpc -c -od ${BUILDROOT}/host/lib/rtl ${BUILDROOT}/share/lib/plugins/flx_plugin
 
 clean:
@@ -108,7 +109,7 @@ configure: extract
 	#
 	# CONFIGURING FELIX
 	#
-	#   See build/release/fbuild.log for full transcript
+	#   See ${BUILDROOT}/fbuild.log for full transcript
 	#
 	# ============================================================
 	#
@@ -120,7 +121,7 @@ do-fbuild:
 	#
 	# BOOTSTRAPPING FELIX
 	#
-	#   See build/release/fbuild.log for full transcript
+	#   See ${BUILDROOT}/fbuild.log for full transcript
 	#
 	# ============================================================
 	#
@@ -161,50 +162,53 @@ bootstrap-tools:
 	# This is to be done right after building the bootstrap.
 	# The tools are placed in the host.
 	# =========================================================
-	build/release/host/bin/flx --felix=build.fpc --static -c -od build/release/host/bin src/tools/flx_build_flxg.flx
-	build/release/host/bin/flx --felix=build.fpc --static -c -od build/release/host/bin src/tools/flx_build_prep.flx
-	build/release/host/bin/flx --felix=build.fpc --static -c -od build/release/host/bin src/tools/flx_build_rtl.flx
-	build/release/host/bin/flx --felix=build.fpc --static -c -od build/release/host/bin src/tools/flx_build_boot.flx
+	${BUILDBIN}/flx --felix=build.fpc --static -c -od ${BUILDBIN} src/tools/flx_build_flxg.flx
+	${BUILDBIN}/flx --felix=build.fpc --static -c -od ${BUILDBIN} src/tools/flx_build_prep.flx
+	${BUILDBIN}/flx --felix=build.fpc --static -c -od ${BUILDBIN} src/tools/flx_build_rtl.flx
+	${BUILDBIN}/flx --felix=build.fpc --static -c -od ${BUILDBIN} src/tools/flx_build_boot.flx
 
 flxg:
 	# =========================================================
 	# building flxg
 	# =========================================================
-	flx_build_flxg
-	cp build/flxg-tmp/flxg build/release/host/bin
+	${BUILDBIN}/flx_build_flxg
+	cp build/flxg-tmp/flxg ${BUILDBIN}
 
 gcc_macosx:
 	# =========================================================
 	# prepare for gcc build on macosx
 	# =========================================================
-	flx_build_prep --target-dir=build/release --target-bin=gcc_macosx --source-dir=build/release \
-	       	--source-bin=host --clean-target-bin-dir --copy-compiler  \
-	       	--configure --compiler=gcc --os=macosx --bits=64 --cxx-compiler=g++-8 --debug
+	${BUILDBIN}/flx_build_prep --target-dir=${BUILDROOT}		\
+		--target-bin=gcc_macosx --source-dir=${BUILDROOT}	\
+		--source-bin=host --clean-target-bin-dir --copy-compiler\
+	       	--configure --compiler=gcc --os=macosx --bits=64	\
+		--cxx-compiler=g++-8 --debug
 
 	# =========================================================
 	# build gcc rtl on macosx
 	# =========================================================
-	${LPATH}=build/release/host/lib/rtl flx_build_rtl --target-dir=build/release --target-bin=gcc_macosx
+	${LPATH}=${BUILDROOT}/host/lib/rtl flx_build_rtl --target-dir=${BUILDROOT} --target-bin=gcc_macosx
 
 	# =========================================================
 	# build Felix with gcc rtl on macosx
 	# =========================================================
-	${LPATH}=build/release/host/lib/rtl flx_build_boot --target-dir=build/release --target-bin=gcc_macosx --build-all
+	${LPATH}=${BUILDROOT}/host/lib/rtl flx_build_boot --target-dir=${BUILDROOT} --target-bin=gcc_macosx --build-all
 
 
 prep: 
 	# =========================================================
 	# prepare for host build
 	# =========================================================
-	flx_build_prep --target-dir=build/release --target-bin=trial --source-dir=build/release \
-	       	--source-bin=host --clean-target-bin-dir --copy-compiler --copy-pkg-db \
+	${BUILDBIN}/flx_build_prep --target-dir=${BUILDROOT}		      \
+		--target-bin=trial --source-dir=${BUILDROOT} --source-bin=host\
+		--clean-target-bin-dir --copy-compiler --copy-pkg-db	      \
 	       	--copy-config-headers --toolchain=${TOOLCHAIN} --debug
 
 rtlbase:
 	# =========================================================
 	# rebuild rtl
 	# =========================================================
-	${LPATH}=build/release/host/lib/rtl flx_build_rtl --target-dir=build/release --target-bin=trial
+	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDBIN}/flx_build_rtl --target-dir=${BUILDROOT} --target-bin=trial
 
 
 rtl: extract prep rtlbase
@@ -215,7 +219,7 @@ boot:
 	# =========================================================
 	# rebuild flx build tools and plugins
 	# =========================================================
-	${LPATH}=build/release/host/lib/rtl flx_build_boot --target-dir=build/release --target-bin=trial --build-all
+	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDBIN}/flx_build_boot --target-dir=${BUILDROOT} --target-bin=trial --build-all
 
 rebuild: extract target uproot
 
@@ -234,24 +238,24 @@ src:
 
 iphonesimulator:
 	# prepare directory
-	flx_build_prep --target-dir=build/release --target-bin=iphonesimulator --source-dir=build/release \
+	${BUILDBIN}/flx_build_prep --target-dir=${BUILDROOT} --target-bin=iphonesimulator --source-dir=${BUILDROOT} \
 	       	--source-bin=host --clean-target-bin-dir --copy-compiler --copy-pkg-db \
 	       	--copy-config-headers --toolchain=toolchain_iphonesimulator --debug
 	rm -rf build/rtl-tmp
 	# build rtl
-	DYLD_LIBRARY_PATH=build/release/host/lib/rtl flx_build_rtl \
-		--target-dir=build/release --target-bin=iphonesimulator --static --noexes
+	DYLD_LIBRARY_PATH=${BUILDROOT}/host/lib/rtl ${BUILDBIN}/flx_build_rtl \
+		--target-dir=${BUILDROOT} --target-bin=iphonesimulator --static --noexes
 
 
 iphoneos:
 	# prepare directory
-	flx_build_prep --target-dir=build/release --target-bin=iphoneos --source-dir=build/release \
+	${BUILDBIN}/flx_build_prep --target-dir=${BUILDROOT} --target-bin=iphoneos --source-dir=${BUILDROOT} \
 	       	--source-bin=host --clean-target-bin-dir --copy-compiler --copy-pkg-db \
 	       	--copy-config-headers --toolchain=toolchain_iphoneos --debug
 	rm -rf build/rtl-tmp
 	# build rtl
-	DYLD_LIBRARY_PATH=build/release/host/lib/rtl flx_build_rtl \
-		--target-dir=build/release --target-bin=iphoneos --static --noexes
+	DYLD_LIBRARY_PATH=${BUILDROOT}/host/lib/rtl ${BUILDBIN}/flx_build_rtl \
+		--target-dir=${BUILDROOT} --target-bin=iphoneos --static --noexes
 
 
 #
@@ -259,31 +263,31 @@ iphoneos:
 #
 test-dir:
 	mkdir -p ${BUILDROOT}/test
-	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/test --outdir=${BUILDROOT}/test
-	for file in src/test/regress/rt/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file ${BUILDROOT}/test; done
+	${BUILDBIN}/flx_tangle --indir=${BUILDROOT}/share/src/test --outdir=${BUILDROOT}/test
+	for file in src/test/regress/rt/*.fdoc; do ${BUILDBIN}/flx_iscr $$file ${BUILDROOT}/test; done
 
 unit-dir:
 	mkdir -p ${BUILDROOT}/test/unit/projection
-	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/test/unit/projection \
-      --outdir=${BUILDROOT}/test/unit/projection
+	${BUILDBIN}/flx_tangle --indir=${BUILDROOT}/share/src/test/unit/projection \
+      	      --outdir=${BUILDROOT}/test/unit/projection
 
 perf-dir:
 	mkdir -p ${BUILDROOT}/test/perf
-	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/test/perf \
-      --outdir=${BUILDROOT}/test/perf
+	${BUILDBIN}/flx_tangle --indir=${BUILDROOT}/share/src/test/perf \
+      	      --outdir=${BUILDROOT}/test/perf
 
 tutopt-dir:
 	mkdir -p ${BUILDROOT}/tutopt
-	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/web/tutopt --outdir=${BUILDROOT}/test/tutopt
-	for file in src/web/tutopt/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file ${BUILDROOT}/test/tutopt; done
+	${BUILDBIN}/flx_tangle --indir=${BUILDROOT}/share/src/web/tutopt --outdir=${BUILDROOT}/test/tutopt
+	for file in src/web/tutopt/*.fdoc; do ${BUILDBIN}/flx_iscr $$file ${BUILDROOT}/test/tutopt; done
 
 tut-dir:
 	mkdir -p ${BUILDROOT}/tut
-	${BUILDROOT}/host/bin/flx_tangle --linenos --indir=src/web/tut --outdir=${BUILDROOT}/test/tut
-	for file in src/web/tut/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file ${BUILDROOT}/test/tut; done
+	${BUILDBIN}/flx_tangle --linenos --indir=src/web/tut --outdir=${BUILDROOT}/test/tut
+	for file in src/web/tut/*.fdoc; do ${BUILDBIN}/flx_iscr $$file ${BUILDROOT}/test/tut; done
 
 extras-check:
-	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/extras --regex='.*\.flx' ${BUILDROOT}/test
+	-${BUILDBIN}/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/extras --regex='.*\.flx' ${BUILDROOT}/test
  
 regress-check: test-dir
 	# ============================================================
@@ -291,7 +295,7 @@ regress-check: test-dir
 	# RUNNING REGRESSION TESTS
 	#
 	# ============================================================
-	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/regress/rt --regex='.*\.flx' ${BUILDROOT}/test
+	-${BUILDBIN}/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/regress/rt --regex='.*\.flx' ${BUILDROOT}/test
 
 unit-check: unit-dir
 	# ============================================================
@@ -299,7 +303,7 @@ unit-check: unit-dir
 	# RUNNING UNIT TESTS
 	#
 	# ============================================================
-	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --input \
+	-${BUILDBIN}/flx --felix=build.fpc --usage=prototype --expect --input \
      --nonstop --indir=${BUILDROOT}/test/unit/projection --regex='.*\.flx' ${BUILDROOT}/test/unit/projection
 
 perf-check: perf-dir
@@ -308,7 +312,7 @@ perf-check: perf-dir
 	# RUNNING PERFORMANCE TESTS
 	#
 	# ============================================================
-	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --input \
+	-${BUILDBIN}/flx --felix=build.fpc --usage=prototype --expect --input \
      --nonstop --indir=${BUILDROOT}/test/perf --regex='.*\.flx' ${BUILDROOT}/test/perf
 
 
@@ -318,7 +322,7 @@ tut-check: tut-dir
 	# CHECKING CORRECTNESS OF TUTORIAL EXAMPLES
 	#
 	# ============================================================
-	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --input --nonstop --indir=${BUILDROOT}/test/tut --regex='.*\.flx' ${BUILDROOT}/test/tut
+	-${BUILDBIN}/flx --felix=build.fpc --usage=prototype --expect --input --nonstop --indir=${BUILDROOT}/test/tut --regex='.*\.flx' ${BUILDROOT}/test/tut
 
 tutopt-check: tutopt-dir
 	#
@@ -331,7 +335,7 @@ tutopt-check: tutopt-dir
 	# to use it.
 	# ============================================================
 	#
-	-FLX_INSTALL_DIR=${BUILDROOT} ${BUILDROOT}/host/bin/flx --felix=build.fpc \
+	-FLX_INSTALL_DIR=${BUILDROOT} ${BUILDBIN}/flx --felix=build.fpc \
 		--usage=prototype --expect --input --nonstop \
 		--indir=${BUILDROOT}/test/tutopt --regex='.*\.flx' ${BUILDROOT}/test/tutopt
 
@@ -345,11 +349,11 @@ install:
 	mkdir -p ${PREFIX}'/lib'
 	mkdir -p ${PREFIX}'/share'
 	rm -rf ${INSTALLDIR}
-	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host '(.*)' ${INSTALLDIR}'/host/$${1}'
-	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/share '(.*)' ${INSTALLDIR}'/share/$${1}'
-	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT} '(VERSION)' ${INSTALLDIR}'/$${1}'
-	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host/bin '(flx)' ${EXECPREFIX}'/$${1}'
-	${BUILDROOT}/host/bin/flx_cp speed/ '(.*)' ${INSTALLDIR}'/speed/$${1}'
+	${BUILDBIN}/flx_cp ${BUILDROOT}/host '(.*)' ${INSTALLDIR}'/host/$${1}'
+	${BUILDBIN}/flx_cp ${BUILDROOT}/share '(.*)' ${INSTALLDIR}'/share/$${1}'
+	${BUILDBIN}/flx_cp ${BUILDROOT} '(VERSION)' ${INSTALLDIR}'/$${1}'
+	${BUILDBIN}/flx_cp ${BUILDBIN} '(flx)' ${EXECPREFIX}'/$${1}'
+	${BUILDBIN}/flx_cp speed/ '(.*)' ${INSTALLDIR}'/speed/$${1}'
 
 	rm -f ${INSTALLROOT}/felix-latest
 	ln -s felix-${VERSION} ${INSTALLROOT}/felix-latest
