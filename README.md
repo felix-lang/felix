@@ -154,6 +154,13 @@ nmake
 nmake install # optional!
 ```
 
+## Packages
+
+#### Arch Linux
+
+There is a [Felix package](https://aur.archlinux.org/packages/felix/)
+available in the AUR repository.
+
 ## Tarballs
 
 <http://github.com/felix-lang/felix/releases>
