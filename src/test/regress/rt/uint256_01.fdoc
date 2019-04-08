@@ -1,12 +1,5 @@
 @title Uint256 test
 @felix
-type uint256 = "uint256_t" requires package "flx_uint256_t";
-fun + : uint256 * uint256 -> uint256 = "$1+$2";
-ctor uint256 : int = "uint256_t($1)";
-instance Str[uint256] {
-  fun str: uint256 -> string = "($1).str()";
-}
-
 var x  = uint256(42);
 println$ x;
 @
