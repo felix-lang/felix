@@ -1,5 +1,5 @@
 @title Approximate Quaternions
-@tangler quaternion.flx = share/lib/scalar/quaternion.flx
+@tangler quaternion.flx = share/lib/std/scalar/quaternion.flx
 
 @h1 Quaternions
 @tangle quaternion.flx

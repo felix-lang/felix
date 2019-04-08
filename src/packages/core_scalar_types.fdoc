@@ -38,7 +38,6 @@ include "std/scalar/bool";
 include "std/scalar/int";
 include "std/scalar/real";
 include "std/scalar/complex";
-include "std/scalar/number";
 include "std/scalar/quaternion";
 
 include "std/scalar/char";
