@@ -21,7 +21,7 @@ INSTALLROOT ?= ${PREFIX}/lib/felix
 INSTALLDIR ?= ${INSTALLROOT}/felix-$(VERSION)
 FBUILDROOT ?= build
 BUILDROOT ?= ${FBUILDROOT}/release
-BUILDBIN ?= ${BUILDROOT}/host/bin
+BUILDBIN = ${BUILDROOT}/host/bin
 DEBUGBUILDROOT ?= ${FBUILDROOT}/debug
 PYTHON ?= python3
 # If running as root skip sudo

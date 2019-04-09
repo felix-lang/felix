@@ -154,6 +154,19 @@ nmake
 nmake install # optional!
 ```
 
+## Packages
+
+#### Arch Linux
+
+Use provided [PKGBUILD](./src/misc/PKGBUILD) to make an installable package.
+It is also available in the [AUR repository](https://aur.archlinux.org/packages/felix/)
+
+```
+cd src/misc
+makepkg
+sudo pacman -U felix-VERSION.pkg.tar.xz
+```
+
 ## Tarballs
 
 <http://github.com/felix-lang/felix/releases>
