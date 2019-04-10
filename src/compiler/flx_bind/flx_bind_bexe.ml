@@ -613,13 +613,13 @@ if funame = "join" then
 print_endline ("Flx_bind_bexe: Function return value has MINIMISED type " ^ sbt bsym_table t');
 *)
 (*
-if funame="join" then
-print_endline ("Flx_bind_bexe: UNIFIYING");
+if funame="insert_unique'3_mf_3732" then
+print_endline ("Flx_bind_bexe: UNIFIYING explicit ret="  ^ sbt bsym_table state.ret_type ^ " and expr ret=" ^ sbt bsym_table t');
 *)
-    ignore (do_unify state bsym_table state.ret_type t');
+    let uresult = do_unify state bsym_table state.ret_type t' in
 (*
-if funame="join" then
-print_endline ("Flx_bind_bexe: UNIFICATION DONE");
+if funame="insert_unique'3_mf_3732" then
+print_endline ("Flx_bind_bexe: UNIFICATION DONE, result= " ^ string_of_bool uresult);
 *)
     state.ret_type <- varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type;
     if type_match bsym_table state.counter state.ret_type t' then
@@ -659,7 +659,7 @@ print_endline ("Flx_bind_bexe: UNIFICATION DONE");
 *)
       [(bexe_fun_return (sr,bexpr_coerce ((e',t'), state.ret_type)))]
       with Not_found -> 
-      clierrx "[flx_bind/flx_bind_bexe.ml:593: E30] " sr
+      clierrx "[flx_bind/flx_bind_bexe.ml:593: E30a] " sr
         (
           "[bind_exe: fun_return ] return expression \n" ^
           sbe bsym_table e ^
@@ -669,10 +669,13 @@ print_endline ("Flx_bind_bexe: UNIFICATION DONE");
           sbt bsym_table state.ret_type
         )
       end
+    | _ when uresult ->
+      (* Unifies, so insert a coercion *)
+      [(bexe_fun_return (sr,bexpr_coerce ((e',t'), state.ret_type)))]
     | _ ->
-    clierrx "[flx_bind/flx_bind_bexe.ml:593: E30] " sr
+    clierrx "[flx_bind/flx_bind_bexe.ml:593: E30b] " sr
       (
-        "[bind_exe: fun_return ] return expression \n" ^
+        "[bind_exe: fun_return ] In function " ^ funame ^ "\nreturn expression \n" ^
         sbe bsym_table e ^
         "\nof type\n" ^
         sbt bsym_table t' ^

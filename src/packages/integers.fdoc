@@ -4,6 +4,8 @@
 
 @h1 Conversion operators.
 @tangle int.flx
+include "std/scalar/int256";
+
 open class Tiny
 {
   ctor tiny: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
@@ -134,7 +136,7 @@ open class Uint64
 open class Uint128
 {
   ctor uint128: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uint64: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor[T in reals] uint128: T = "static_cast<#0>($1)/*int.flx: ctor*/";
   ctor uint128: uint128= "$1";
 }
 

@@ -604,7 +604,6 @@ let maybe_specialisation_with_dvars bsym_table counter eqns dvars =
 (* DERIVED *)
 let maybe_specialisation bsym_table counter eqns =
   let l,_ = find_vars_eqns eqns in
- 
   maybe_specialisation_with_dvars bsym_table counter eqns l
 
 let unifies bsym_table counter t1 t2 =

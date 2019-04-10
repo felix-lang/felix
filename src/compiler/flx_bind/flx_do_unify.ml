@@ -21,7 +21,7 @@ let do_unify counter varmap sym_table bsym_table a b =
   let eqns = [a',b'] in
   if debug then
   print_endline ("Calling unification " ^ Flx_btype.st a' ^ " ==? " ^ Flx_btype.st b');
-  match Flx_unify.maybe_unification bsym_table counter eqns with
+  match Flx_unify.maybe_specialisation bsym_table counter eqns with
   | None ->  (*print_endline ("Unification failed");*) false
   | Some mgu ->
 (*

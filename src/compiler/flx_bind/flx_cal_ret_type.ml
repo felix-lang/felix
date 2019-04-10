@@ -43,6 +43,7 @@ let cal_ret_type'
 (*
 print_endline ("+++++++++++++++++++++++++++++");
 print_endline ("Cal ret type of " ^ id ^ "<" ^ string_of_int index ^ "> at " ^ Flx_srcref.short_string_of_src sr);
+print_endline ("+++++ UNBOUND return type is " ^ string_of_typecode rt);
 *)
     let rt = bind_type' state bsym_table env rs sr rt args mkenv in
     let rt = beta_reduce "flx_lookup: cal_ret_type" state.counter bsym_table sr rt in
@@ -155,7 +156,7 @@ print_endline (" %%%%% Setting return type to " ^ sbt bsym_table t');
           )
           ;
           *)
-          clierrx "[flx_bind/flx_lookup.ml:1776: E105] " sr
+          clierrx "[flx_bind/flx_cal_ret_type.ml:159: E105a] " sr
           (
             "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<" ^
             string_of_bid index ^ ">" ^

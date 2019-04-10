@@ -109,13 +109,33 @@ let rec rett_fixparams rex ps =
 *)
 
 let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) rettype : asm_t list * expr_t =
-  let rex_with_ret e rettype = rex rst_with_ret mkreqs map_reqs state name e rettype in
-  let rex e = rex_with_ret e rettype in
 
-  let rst st = rst_with_ret name `Private dfltvs rettype st in
+  (* NOTE: the top level function propagates the return type into nested expressions and rst_with_ret
+     into nested statements.
+
+     Generally, propagation is INCORRECT. However there is at least one important special
+     case where we want it: match expressions. The idea is that for functions
+
+      fun f: D -> C =
+      | P => V
+      ...
+      
+     the value V should be coerced to type C. This is the same as a function saying
+
+      return match ...
+
+     Roughly, each branch return value is in tail position.
+
+
+  *)
+
+  let rex_with_ret e rettype = rex rst_with_ret mkreqs map_reqs state name e rettype in
+  let rex e = rex_with_ret e `TYP_none in
+
+  let rst st = rst_with_ret name `Private dfltvs `TYP_none st in
 
   let rsts_with_ret rettype sts = List.concat (List.map (rst_with_ret name `Private dfltvs rettype) sts) in
-  let rsts sts = rsts_with_ret rettype sts in
+  (* let rsts sts = rsts_with_ret `TYP_none sts in *)
 
   let sr = src_of_expr e in
   let seq () = state.fresh_bid () in
