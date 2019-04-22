@@ -77,7 +77,7 @@ Here is a monomorphic example:
 
 .. code-block:: felix
 
-  fun eq3 (x:int, y:int, z:int with Eq[int]) =>
+  fun eq3[with Eq[int]] (x:int, y:int, z:int) =>
     x == y and y == z
   ;
 
@@ -90,7 +90,7 @@ Here is a polymorphic example:
 
 .. code-block:: felix
 
-  fun eq3[T] (x:T, y:T, z:T with Eq[T]) =>
+  fun eq3[T with Eq[T]] (x:T, y:T, z:T) =>
     x == y and y == z
   ;
 

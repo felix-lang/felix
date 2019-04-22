@@ -54,7 +54,7 @@ must be given:
   
 .. code-block:: felix
 
-  var x = cexpr[int]"42";
+  var x = cexpr[int]"42" endcexpr;
 
 If the expression is not atomic, it is wise to enclose it
 in parentheses.
@@ -72,7 +72,7 @@ which is equivalent to:
 
 .. code-block:: felix
 
-  cexpr[int]"M_PI";
+  cexpr[int]"M_PI" endcexpr;
 
 
 

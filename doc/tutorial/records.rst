@@ -5,7 +5,7 @@ A record is like a tuple, except the components are named:
 
 .. code-block:: felix
 
-  var x = (a=1,b="hello", c=42.0);
+  var x = (a=1, b="hello", c=42.0);
   println$ x.b;
 
 Actually, you can use a blank name, or leave a name out:

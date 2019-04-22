@@ -125,7 +125,7 @@ the `const` binder:
 
 .. code-block:: felix
 
-  const pi : double = "M_PI" requires math_h;
+  const pi : double = "M_PI" requires C99_headers::math_h;
 
 Lifting enums
 -------------

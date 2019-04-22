@@ -13,10 +13,11 @@ and an initialiser.
 
 .. code-block:: felix
 
-    var c : bool = true;
-    var k : int = 1;
+    var b : bool = true;
+    var i : int = 1;
     var s : string = "Hello";
-    var b : double = 4.2;
+    var d : double = 4.2;
+    var f : float = 4.2f;
 
 The specified type must agree with the type of the initialiser.
 
@@ -28,10 +29,11 @@ provided it has an initialiser.
 
 .. code-block:: felix
 
-    var c = true;
-    var k = 1;
+    var b = true;
+    var i = 1;
     var s = "Hello";
-    var b = 4.2;
+    var d = 4.2;
+    var f = 4.2f;
 
 In these cases the type of the variable is the type of the initialiser.
 
@@ -42,10 +44,11 @@ Variables can be defined without an initialiser.
 
 .. code-block:: felix
 
-    var c : bool;
-    var k : int;
+    var b : bool;
+    var i : int;
     var s : string;
-    var b : double;
+    var d : double;
+    var f : float;
 
 In this case the variable will be initialised by the underlying C++
 default initialiser. It is an error to specify a variable this way
@@ -65,10 +68,10 @@ default initialiser provided.
 
 .. code-block:: felix
 
-    var c : bool;
-    var k = 1; 
-    c = false; 
-    k = 2;
+    var b : bool;
+    var i = 1;
+    b = true;
+    i = 2;
 
 Assignments are executed when control flows through
 the assignment.

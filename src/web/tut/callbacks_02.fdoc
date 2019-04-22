@@ -11,7 +11,7 @@ There must be a better way! And of course, there is!
 
 Let's start again with our requirement, the registration function:
 @felix
-  body cback_h =
+  body cback =
   """
   void register_callback(int x, void (*cb)(int, void*), void *client_data)
   {
@@ -21,10 +21,10 @@ Let's start again with our requirement, the registration function:
 @
 which, for pedagogical purpose will actually call the callback.
 
-Here is te Felix binding for the function we need to use.
+Here is the Felix binding for the function we need to use.
 @felix
 proc register_callback: int * (int * address --> void) * address
-  requires cback_h;
+  requires cback;
 @
 
 

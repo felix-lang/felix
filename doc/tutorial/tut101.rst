@@ -1,4 +1,4 @@
-Felix 101: the Basics
+Felix 101: The Basics
 =====================
 
 The first module gives a brief overview of some basics.

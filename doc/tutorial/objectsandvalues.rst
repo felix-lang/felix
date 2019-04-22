@@ -21,9 +21,9 @@ name denotes the location:
   var y = *px;      //3: y is a copy of x
   px <- 5,6,7,8;    //4: x now stores a new array
 
-This code illustrates how to get the addres of a variable
+This code illustrates how to get the address of a variable
 on line 2, to fetch the value at the address in line 3,
-and to moodify the value at the address, in line 4.
+and to modify the value at the address, in line 4.
 
 The prefix symbol `&` is sometimes called the address-of operator,
 however it is not an operator! Rather, it is just a way to specify
@@ -51,7 +51,7 @@ a value onto the heap and returns pointer to it.
 
   var px = new 42;
   var x = *px;  // x is 42
-  px <- 43;     // px now points to 42
+  px <- 43;     // px now points to 43
 
 This is another way to get a pointer to an object, which allows
 the value stored to be replaced or modified.
@@ -66,7 +66,7 @@ the parts are called components:
 .. code-block:: felix
 
   var ax = 1,2,3,4;                  // array
-  var ax1 = x.1;                     // apply projection 1 to get value 2
+  var ax1 = ax.1;                    // apply projection 1 to get value 2
 
   var tx = 1, "hello", 42.0;         // tuple
   var tx1 = tx.1;                    // apply projection 1 to get value "hello"
@@ -108,7 +108,7 @@ the rest of the product alone:
 
   &ax . 1 <- 42;         // array
   &tx . 1 <- "world";    // tuple
-  &tx . b <- "world";    // record
+  &rx . b <- "world";    // record
   &sx . b <- "world";    // struct
 
 In each case we use the same projection index, a number or a name,

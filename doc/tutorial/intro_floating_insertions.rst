@@ -60,7 +60,7 @@ and dummy parameters specified, as with a C type binding:
   ;
 
 In this example we defined a function `_rev` in C++, used to reverse a list in place.
-The insertion containingt it, `_iprev_[T,PLT]` is polymorphic, the actuual types
+The insertion containing it, `_iprev_[T,PLT]` is polymorphic, the actuual types
 are specified in the C bindings for `rev`.
 
 Requires Clause

@@ -20,7 +20,7 @@ This is done like:
 
 .. code-block:: felix
   
-  printopt (x: opt[int]) {
+  proc printopt (x: opt[int]) {
     match x with
     | Some v => println$ "Result is " + v.str;
     | None => println$ "No result";

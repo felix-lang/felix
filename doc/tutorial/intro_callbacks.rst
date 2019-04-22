@@ -55,15 +55,82 @@ To actually define the callbacks in Felix:
   fun cback1 (x:int, y:double) => (x.double + y).int;
 
   proc cback2 (x:int, y:double) { 
-    println$ "x="+x.str + ",y=" + y.str; 
+    println$ "x=" + x.str + ",y=" + y.str;
   }
  
 Now, when you register your callback pass `cb1` or `cb2` as the callback,
-and pass `C_hack::cast[address]cback1` or `C_hack::cast[address[cback2`
+and pass `C_hack::cast[address]cback1` or `C_hack::cast[address]cback2`
 as the client data pointer.
 
 Complete Example
 ----------------
 
-TODO.
+A function callback with an `int` argument.
 
+.. code-block:: felix
+  body demo =
+  """
+  int register_cback(int x, void *client_data, int (*cback)(int, void*))
+  {
+    // for pedagogical purpose directly call the callback
+    return cback(x, client_data);
+  }
+  """;
+
+  fun register_cback: int * address * (int * address --> int) -> int
+    requires demo;
+
+  callback fun cback_wrapper : int * cback_wrapper -> int;
+
+  fun increment (x:int) => x + 1;
+
+  var x = register_cback(
+    8,
+    C_hack::cast[address] increment,
+    C_hack::cast[int * address --> int] cback_wrapper
+  );
+
+  println$ "Callback function returned " + x; // 9
+
+
+Procedure callbacks with an `int` and `double` arguments.
+
+.. code-block:: felix
+  body demo =
+  """
+  void register_cback(
+    int x,
+    double y,
+    void *client_data,
+    void (*cback)(int, double, void*))
+  {
+    cback(x, y, client_data);
+  }
+  """;
+
+  proc register_cback: int * double * address * (int * double * address--> void)
+    requires demo;
+
+  callback proc cback_wrapper : int * double * cback_wrapper;
+
+  proc add (x:int, y:double) {
+    println$ x.double + y;
+  }
+
+  proc sub (x:int, y:double) {
+    println$ x.double - y;
+  }
+
+  register_cback(
+    8,
+    1.5,
+    C_hack::cast[address] add,
+    C_hack::cast[int * double * address --> void] cback_wrapper
+  ); // prints 9.5
+
+  register_cback(
+    8,
+    1.5,
+    C_hack::cast[address] sub,
+    C_hack::cast[int * double * address --> void] cback_wrapper
+  ); // prints 6.5

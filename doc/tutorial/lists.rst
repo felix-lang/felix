@@ -97,7 +97,7 @@ pattern matching:
 
   proc show(x:list[int]) =>
     match x with
-    | Empty => println$ "end"
+    | Empty => println$ "end";
     | head ! tail => 
       println$ "elt= " + head.str;
       show tail;
