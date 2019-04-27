@@ -1083,7 +1083,7 @@ syntax cbind {
     """
     (let*
       (
-        (name (string-append "_ctor_" (base_of_qualified_name _3)))
+        (name (string-append "_supertype_" (base_of_qualified_name _3)))
         (vs _2)
         (ret _3)
         (argt _5)
@@ -2405,7 +2405,7 @@ syntax functions {
     """
     (let*
       (
-        (name (string-append "_ctor_" (base_of_qualified_name _3)))
+        (name (string-append "_supertype_" (base_of_qualified_name _3)))
         (vs _2)
         (ret _3)
         (traint (first _5))
@@ -2437,7 +2437,7 @@ syntax functions {
     """
     (let*
       (
-        (name (string-append "_ctor_" (base_of_qualified_name _3)))
+        (name (string-append "_supertype_" (base_of_qualified_name _3)))
         (vs _2)
         (ret _3)
         (traint (first _5))

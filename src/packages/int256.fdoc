@@ -5,7 +5,8 @@
 @tangle int256.flx
 open class Int128 {
   type int128 = new uint128;
-  ctor int128: uint128 = "$1";
+  ctor int128: uint128 = "/*xx*/$1";
+  ctor int128: int64 = "uint128_t($1)/*ctor-int128-from-int64*/";
 
   fun isneg: int128 -> bool = "bool($1 & uint128_t(uint64_t(1) << uint64_t(63),0))";
   fun iszero: int128 -> bool = "$1==0";
@@ -101,6 +102,7 @@ open class Int128 {
 open class Int256 {
   type int256 = new uint256;
   ctor int256: uint256 = "$1";
+  ctor int256 : int128 = "uint256_t($1)";
 
   fun isneg: int256 -> bool = "bool($1 & uint256_t(uint64_t(1) << uint64_t(63),0,0,0))";
   fun iszero: int256 -> bool = "$1==0";
@@ -192,8 +194,8 @@ open class Int256 {
 
 }
 
-//supertype int128 (x: int64) => x.int128;
-//supertype int256 (x: int128) => x.int256;
+supertype int128 (x: int64) => x.int128;
+supertype int256 (x: int128) => x.int256;
 
 open Signed_integer[int128];
 open Signed_integer[int256];

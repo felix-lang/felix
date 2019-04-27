@@ -102,7 +102,7 @@ open class Int64
 {
   ctor int64: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] int64: T = "static_cast<#0>($1)/*int.flx: ctor*/";
-  ctor int64: int64= "$1";
+  ctor int64: int64= "$1 /*int64 ident*/";
 }
 
 open class Uint8
@@ -200,6 +200,13 @@ instance Str[tiny] {
 instance Str[utiny] {
   fun str: utiny -> string = "::flx::rtl::strutil::str<unsigned int>($1)" requires package "flx_strutil";
 }
+instance Str[int8] {
+  fun str: int8 -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
+}
+
+instance Str[uint8] {
+  fun str: uint8-> string = "::flx::rtl::strutil::str<unsigned int>($1)" requires package "flx_strutil";
+}
 
 instance
 [
@@ -211,6 +218,12 @@ Str[T]
 {
   fun str: T -> string = "::flx::rtl::strutil::str<#1>($1)" requires package "flx_strutil";
 }
+
+fun hex[T]: T -> string = '(::flx::rtl::strutil::fmt_hex<#1>($1))' requires package "flx_strutil";
+fun hex: tiny -> string = '(::flx::rtl::strutil::fmt_hex((int)$1)+"TINY")' requires package "flx_strutil";
+fun hex: utiny -> string = '(::flx::rtl::strutil::fmt_hex((unsigned int)$1)+"UTINY")' requires package "flx_strutil";
+fun hex: int8 -> string = '(::flx::rtl::strutil::fmt_hex((int)$1)+"INT8")' requires package "flx_strutil";
+fun hex: uint8 -> string = '(::flx::rtl::strutil::fmt_hex((unsigned int)$1)+"UINT8")' requires package "flx_strutil";
 
 @h1 Convert to lexical string.
 @tangle int.flx
@@ -335,7 +348,7 @@ supertype int : short= "(int)$1";
 supertype short : tiny = "(short)$1";
 
 supertype int64: int32 = "(int64_t)$1";
-supertype int32 : int16 = "(nt32_t)$1";
+supertype int32 : int16 = "(int32_t)$1";
 supertype int16 : int8 =  "(int16_t)$1";
 
 /* currently breaks instance Str[fcomplex] for unknown reason! 
