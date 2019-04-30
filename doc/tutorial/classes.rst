@@ -10,7 +10,7 @@ functions and procedures.
 
     // quadratic ax^2 + bx + c, solution:
     fun qplus (a:double, b:double, c:double) =>
-      (-b + sqrt (sqr b + 4.0 * a * c)) / ( 2.0 * a) 
+      (-b + sqrt (sqr b + 4.0 * a * c)) / (2.0 * a)
     ;
 
     // square it
@@ -32,7 +32,7 @@ Alternatively, we can open the class:
 .. code-block:: felix
 
   open X;
-  show (qplus 42);
+  println$ qplus(1.0, 2.0, 3.0);
 
 However we cannot access the function `sqr`, because it is private to the class.
 

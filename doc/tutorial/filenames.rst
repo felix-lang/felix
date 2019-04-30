@@ -122,13 +122,12 @@ fold them back from the left
 
   fun join(p:string, b:string) : string;
 
-Note it is common to write this:
+Note it is common to write in your code:
 
-  fun /(p:string, b:string) => Filename::join (a,b);
+.. code-block:: felix
 
-in your code.
+  fun /(p:string, b:string) => Filename::join (p,b);
 
- 
 Join all the strings in a list into a pathname.
 
 .. code-block:: felix

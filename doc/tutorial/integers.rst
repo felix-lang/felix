@@ -75,9 +75,9 @@ zero, so:
 
    -3/2 == -1
 
-The the quotient is non-negative if the two operands
-are both negative or both non-negative, otherwise
-it is non-positive.
+The quotient is non-negative if the two operands are
+both negative or both non-negative, otherwise it is
+non-positive.
 
 The remainder, then, must satifsy the formula:
 

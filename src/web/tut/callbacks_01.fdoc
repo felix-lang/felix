@@ -11,7 +11,7 @@ Here's how callbacks work. Suppose in C, we have callback function type:
 @
 It is registered by a function like this:
 @felix
-  body cback_h =
+  body cback =
   """
   void register_callback(int x, void (*cb)(int, void*), void *client_data)
   {
@@ -22,7 +22,7 @@ It is registered by a function like this:
 which, for pedagogical purpose will actually call the callback.
 
 @h3 The Felix code
-Now, what we want to do here is use a felix function for the callback:
+Now, what we want to do here is use a Felix procedure for the callback:
 @felix
 proc flx_cb(x:int){ println$ "Called back with " + str x; }
 @
@@ -44,7 +44,7 @@ To do this we would like to generate a C function:
     // run the continuation
     while(p) p = p->resume();
   }
-  """ requires cback_h;
+  """;
 @
 This casts the @{client_data} to a pointer to the C++ class
 type of the Felix function, @{flx_cb_t}, 
@@ -65,7 +65,7 @@ Now, to register it, something like this:
 @felix
 // bind the registration function
 proc register_callback: int * (int * address --> void) * address
-  requires cback_h;
+  requires cback;
 
 // bind to our wrapper
 const wrap_flx_cb: int * address --> void

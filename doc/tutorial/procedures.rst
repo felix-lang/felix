@@ -45,7 +45,7 @@ finished.
         println$ x;
         return;
       done
-      x = -x
+      x = -x;
       println$ x;
     }
 

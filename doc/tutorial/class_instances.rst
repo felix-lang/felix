@@ -8,7 +8,7 @@ an `instance` to populate the algebra.
 .. code-block:: felix
 
   instance Eq[int] {
-    fun == int * int -> bool = "$1==$2";
+    fun == : int * int -> bool = "$1==$2";
   }
 
 Here we have defined an instance of the Eq class for the argument type `int`.
