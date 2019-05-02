@@ -2231,11 +2231,14 @@ and string_of_biface bsym_table level s =
 
 
 
-and sbx bsym_table s =  string_of_bexe bsym_table 0 s
+and sbx bsym_table s =  string_of_bexe' sbe bsym_table 0 s
+and tsbx bsym_table s =  string_of_bexe' tsbe bsym_table 0 s
 
-and string_of_bexe bsym_table level s =
+and string_of_bexe bsym_table level s = string_of_bexe' sbe bsym_table 0 s
+
+and string_of_bexe' se bsym_table level s =
   let spc = spaces level in
-  let se e = string_of_bound_expression bsym_table e in
+  let se e = se bsym_table e in
   let sid n = bound_name_of_bindex bsym_table n in
   match s with
   | BEXE_goto (_,i) -> spc ^ "goto " ^ sid i ^ ";"

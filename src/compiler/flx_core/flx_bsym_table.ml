@@ -59,6 +59,10 @@ type coercion_t = (bid_t * bid_t) * bid_t
 let add_supertype bsym_table x =
   bsym_table.subtype_map <- x :: bsym_table.subtype_map
 
+let set_coercions bsym_table x =
+  bsym_table.subtype_map <- x
+
+let get_coercions bsym_table = bsym_table.subtype_map
 
 let iter_coercions bsym_table f =
   List.iter f bsym_table.subtype_map 
@@ -377,5 +381,22 @@ let validate_types f_btype bsym_table =
   end bsym_table
 
 
+let is_prim bsym_table i = match find_bbdcl bsym_table i with
+  | BBDCL_external_fun _ 
+  | BBDCL_external_const _ 
+  | BBDCL_external_type _ -> true
+  | _ -> false
 
+
+  
+let get_fun_type bsym_table i = match find_bbdcl bsym_table i with
+  | BBDCL_external_fun (_,bvs,params,ret,_,_,_) -> 
+    let domain = Flx_btype.btyp_tuple (List.rev (List.fold_left (fun acc elt -> (elt::acc)) [] params)) in
+    Flx_btype.btyp_function (domain, ret)
+ 
+  | BBDCL_fun (_,bvs, ps, ret, _, _) ->
+    let domain = Flx_bparams.get_btype ps in 
+    Flx_btype.btyp_function (domain, ret)
+
+  | _ -> assert false
 

@@ -14,6 +14,7 @@ open Flx_maps
 open Flx_exceptions
 open Flx_btype_subst
 
+let debug = false
 
 (* this module, strabs, is responsible for upgrading an abstract
   type to its implementation: strip abstract types
@@ -132,7 +133,10 @@ let rec fixexpr' bsym_table e =
        try Flx_bsym_table.is_identity bsym_table i 
        with Not_found -> 
          failwith ("strabs:is_identity checked not found on " ^ string_of_int i)
-      ) -> f_bexpr a
+      ) -> 
+if debug then
+print_endline ("APPLICATION OF IDENTITY ELIDED, function = " ^ string_of_int i ^ " type: " ^ sbt bsym_table (Flx_bsym_table.get_fun_type bsym_table i));
+      f_bexpr a
 
 (* for union U with one constant constructor C, replace C with unit *)
     | BEXPR_case (_,ut),_ when is_solo_union bsym_table ut -> 
@@ -239,12 +243,14 @@ print_endline ("[  ** [fixexp] Found constructor of solo union used as closure u
 
 let fixexpr bsym_table x = 
   let y = fixexpr' bsym_table x in
-(* print_endline ("  %%%%% Fixexpr " ^ sbe bsym_table x ^ " --> " ^ sbe bsym_table y); *)
+if debug then
+print_endline ("  %%%%% Fixexpr " ^ tsbe bsym_table x ^ " --> " ^ tsbe bsym_table y); 
   y
 
 let fixbexe bsym_table x =
   let y = Flx_bexe.map ~f_btype:(fixtype bsym_table) ~f_bexpr:(fixexpr bsym_table) x in
-(* print_endline ("    &&&&&& Fixbexe " ^ string_of_bexe bsym_table 4 x ^ " ----> " ^ string_of_bexe bsym_table 4 y); *)
+if debug then
+print_endline ("    &&&&&& Fixbexe " ^ tsbx bsym_table x ^ "\n---->      \n" ^ tsbx bsym_table y);
   y
 
 let fixbexes bsym_table bexes = 
@@ -315,7 +321,9 @@ let strabs_symbol bsym_table index parent bsym bsym_table' =
         | `Callback (ts2, j) -> `Callback (fts ts2, j)
         | _ -> kind
       in
-      h (bbdcl_external_fun (props, bvs, fts ts, ft t, fb breqs, prec, kind))
+      h (bbdcl_external_fun (props, bvs, fts ts, ft t, fb breqs, prec, kind));
+if debug then
+print_endline ("Replace external fun "^Flx_bsym.id bsym ^ "<" ^ string_of_int index^"> : new type is " ^ sbt bsym_table' (Flx_bsym_table.get_fun_type bsym_table' index));
 
   | BBDCL_external_code (bvs, c, ikind, breqs) ->
       h (bbdcl_external_code (bvs, c, ikind, fb breqs))

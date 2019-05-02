@@ -1229,6 +1229,9 @@ print_endline ("Has vs = " ^ string_of_bool (not has_novs));
       add_tvars privtab
 
   | DCL_newtype t ->
+(*
+print_endline ("Adding abstract type " ^ id ^ " rep " ^ Flx_print.string_of_typecode t);
+*)
       (* Add the newtype to the sym_table. *)
       add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_newtype t);
 
@@ -1266,13 +1269,13 @@ print_endline ("Has vs = " ^ string_of_bool (not has_novs));
         NREQ_true,
         "expr"));
 
-      (* Add the _make_ function to the sym_table. *)
+      (* Add the _make_ function to the class private name map . *)
       add_function priv_name_map ("_make_" ^ id) n_make;
 
-      (* Possibly add the _make_ function to the public symbol table. *)
+      (* Possibly add the type to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
 
-      (* Add the _make_ function to the private symbol table. *)
+      (* Add the type to the private symbol table. *)
       add_unique priv_name_map id symbol_index;
 
       (* Add the type variables to the private symbol table. *)

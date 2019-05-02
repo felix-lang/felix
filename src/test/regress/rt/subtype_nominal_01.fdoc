@@ -1,22 +1,32 @@
 @title User defined subtyping
 @felix
+open Str[double]; // Why???
+open class A {
+  type mylong = new long;
+  ctor mylong (x:int) => x.long._make_mylong;
+  supertype mylong (x:int) => x.mylong;
 
-typedef mylong = long;
-supertype mylong (x:int) => x.long;
+  type mydouble = new double;
+  ctor mydouble : int = "(double)$1";
+  supertype mydouble (x:int) => x.mydouble;
+  supertype mydouble : double = "$1";
+
+  fun + (x:mydouble, y:mydouble) => (add of (double * double)) (x._repr_, y._repr_);
+
+  instance Str[mylong] { fun str (x:mylong) => x._repr_.str; }
+  instance Str[mydouble] { fun str (x:mydouble) => x._repr_.(Str::str of double); }
+}
 
 println$ 12.mylong;
 
-typedef mydouble = double;
-supertype mydouble : int = "(double)$1"; 
-
 println$ 42.mydouble + 0.3;
 
-proc check (x:long, y: double) { 
+proc check (x:long, y: double) {
   println$ "Check long,double = " + x.str + "," + y.str;
 }
 
 check$ 22L, 42.3;
-check$ 42,33;
+check$ 42,33.0;
 
 struct XX {
   a : int;

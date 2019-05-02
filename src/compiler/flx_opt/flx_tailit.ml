@@ -21,6 +21,8 @@ open Flx_use
 open Flx_util
 open Flx_bid
 
+let debug = false
+
 let add_xclosure syms cls e =
   (*
   print_endline ("chk cls for " ^ sbe bsym_table e);
@@ -124,7 +126,7 @@ let check_proj_wrap_closure syms bsym_table descend usage n i e =
   BidSet.iter (check_proj_wrap_entry syms bsym_table n i) u
 
 let tailit syms bsym_table uses id this sr ps exes =
-  if syms.compiler_options.print_flag then
+  if syms.compiler_options.print_flag || debug then
   begin
     print_endline ("======= Tailing " ^ id ^ "<" ^ si this ^ "> exes=====");
     List.iter (fun x -> print_endline (string_of_bexe bsym_table 0 x)) exes;
@@ -242,6 +244,8 @@ let tailit syms bsym_table uses id this sr ps exes =
           )
           params args
         in
+if debug then
+print_endline ("Calling passign (2)");
         let tmps,exes = Flx_passign.passign syms bsym_table pinits sr in
         parameters := tmps @ !parameters;
         let result = ref exes in
@@ -306,6 +310,8 @@ let tailit syms bsym_table uses id this sr ps exes =
       )
       pas
     in
+if debug then
+print_endline ("Calling passign (3)");
       let tmps,exes = Flx_passign.passign syms bsym_table asgns sr in
       parameters := tmps @ !parameters;
       if syms.compiler_options.print_flag then begin
@@ -592,6 +598,8 @@ print_endline ("tailit:asgn2 assign to projection");
         )
         (nlist n)
         in
+if debug then
+print_endline ("Calling passign (1)");
         let tmps,exes = Flx_passign.passign syms bsym_table asgns sr in
         parameters := tmps @ !parameters;
         if syms.compiler_options.print_flag then

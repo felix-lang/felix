@@ -27,6 +27,10 @@ val find_coercion_chains : t -> bid_t -> bid_t -> bid_t list list
 val maybe_coercion: t -> bid_t -> bid_t -> bid_t option
 val iter_coercions: t -> (coercion_t -> unit) -> unit
 val fold_coercions: t -> ('a -> coercion_t -> 'a) -> 'a -> 'a
+val set_coercions: t -> coercion_t list -> unit
+val get_coercions: t -> coercion_t list
+val get_fun_type: t -> bid_t -> Flx_btype.t 
+
 val get_reductions: t -> Flx_mtypes2.reduction_t list
 val set_reductions: t -> Flx_mtypes2.reduction_t list -> unit
 val add_reduction_case: t -> string -> Flx_mtypes2.reduction_case_t ->  unit
@@ -127,4 +131,5 @@ val is_function : t -> bid_t -> bool
 (** Assert that the bound symbol table is well formed. *)
 val validate : string -> t -> unit
 val validate_types: (Flx_btype.t -> unit) -> t -> unit
+val is_prim: t -> bid_t -> bool
 

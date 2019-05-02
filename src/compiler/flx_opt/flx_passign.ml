@@ -15,6 +15,8 @@ open Flx_use
 open Flx_call
 open Flx_bid
 
+let debug = false
+
 type aentry_t =
   bid_t *
   (string * Flx_btype.t * Flx_bexpr.t * BidSet.t)
@@ -104,7 +106,7 @@ Output:
 
 *)
 
-let passign syms bsym_table (pinits:aentry_t list) sr =
+let passign syms bsym_table (pinits:aentry_t list) sr : (Flx_btype.t * bid_t) list * Flx_bexe.t list =
 (*
 print_endline ("Running parallel assignment routine");
 *)
@@ -128,16 +130,17 @@ print_endline ("Running parallel assignment routine");
     )
     pinits
   in
-  (*
-  iter
-  (fun (i,(name,t,e,u)) ->
-    print_endline ("ASG " ^ name ^ "<"^string_of_bid i ^ "> = " ^ sbe bsym_table e);
-    print_string "  Depends: ";
-      BidSet.iter (fun i -> print_string (string_of_bid i ^ ", ")) u;
-    print_endline "";
-  )
-  pinits;
-  *)
+  if debug then begin
+    print_endline ("PARALLEL ASSIGNMENT INPUT");
+    iter
+    (fun (i,(name,t,e,u)) ->
+      print_endline ("ASG " ^ name ^ "<"^string_of_bid i ^ "> = " ^ sbe bsym_table e);
+      print_string "  Depends: ";
+        BidSet.iter (fun i -> print_string (string_of_bid i ^ ", ")) u;
+      print_endline "";
+    )
+    pinits;
+  end;
   (* this function measures if the expression assigning i
   depends on the old value of j
   *)
@@ -216,16 +219,16 @@ print_endline ("Running parallel assignment routine");
       aux3 (h' :: h, ta, t' :: t)
   in
   let m = aux3 ([],pinits,[]) in
-  (*
-  print_endline "FINAL SPLIT UP:";
-  iter
-  (fun (i,(name,t,e,u)) ->
-    print_endline ("ASG " ^ name ^ "<"^string_of_bid i ^ "> = " ^ sbe bsym_table e)
-  )
-  m;
-  *)
+  if debug then begin
+    print_endline "FINAL SPLIT UP:";
+    iter
+    (fun (i,(name,t,e,u)) ->
+      print_endline ("ASG " ^ name ^ "<"^string_of_bid i ^ "> = " ^ sbe bsym_table e)
+    )
+    m
+  end;
   let result = ref [] in
-  result :=  bexe_comment (sr,"parallel assignment") :: !result;
+  result :=  bexe_comment (sr,"parallel assignment ("^string_of_int (List.length pinits)^")") :: !result;
   iter
   (fun (i,(name,ty,e,_)) ->
     if i <> 0 then begin (* unit assign if i = 0 *)
@@ -235,6 +238,8 @@ print_endline ("Running parallel assignment routine");
     end
   )
   m;
+if debug then
+print_endline ("Parallel assignment " ^ String.concat "\n" (List.map (tsbx bsym_table) !result));
   while length !tmplist > 0 do
     result := bexe_end () :: !result;
     tmplist := tl !tmplist

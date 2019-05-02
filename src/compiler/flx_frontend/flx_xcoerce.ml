@@ -271,8 +271,19 @@ and expand_coercion new_table bsym_table counter parent remap ((srcx,srct) as sr
           let n = List.length acc in if n = 0 || n > List.length chain then chain else acc
         ) [] chains
       in
-      List.fold_left (fun acc fn ->
-        Flx_bexpr.bexpr_apply_direct dstt (fn, [], acc)) srce (List.rev shortest_chain)
+      let result = List.fold_left (fun acc fn ->
+        let ft = Flx_bsym_table.get_fun_type bsym_table fn in
+        let cod = match ft with | BTYP_function (dom,cod) -> cod | _ -> assert false in
+        if debug then
+        print_endline ("Function " ^ (Flx_bsym_table.find bsym_table fn).id ^ "<" ^ string_of_int fn ^">:" ^ Flx_print.sbt bsym_table ft);
+        let cls = bexpr_closure ft (fn,[]) in
+        bexpr_apply cod (cls, acc)
+        ) 
+        srce 
+       (List.rev shortest_chain)
+      in
+      assert (dstt = snd result);
+      result
     end
      
   | BTYP_function (ld,lc) , BTYP_function (rd,rc)  ->

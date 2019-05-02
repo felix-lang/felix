@@ -44,8 +44,12 @@ let cal_ret_type'
 print_endline ("+++++++++++++++++++++++++++++");
 print_endline ("Cal ret type of " ^ id ^ "<" ^ string_of_int index ^ "> at " ^ Flx_srcref.short_string_of_src sr);
 print_endline ("+++++ UNBOUND return type is " ^ string_of_typecode rt);
+print_endline ("Trying to bind type .. if function index variable, we get a recurse?");
 *)
     let rt = bind_type' state bsym_table env rs sr rt args mkenv in
+(*
+print_endline ("Type bound; " ^ sbt bsym_table rt);
+*)
     let rt = beta_reduce "flx_lookup: cal_ret_type" state.counter bsym_table sr rt in
     let pvtype = match rt with BTYP_variant _ -> true | _ -> false in
 (*
@@ -106,15 +110,15 @@ print_endline ("Cal ret type of " ^ id ^ " got return: " ^ string_of_expr e);
       incr return_counter;
       begin try
         let t =
-          (* this is bad code .. we lose detection
-          of errors other than recursive dependencies ..
-          which shouldn't be errors anyhow ..
-          *)
+          match e with
+          | `EXPR_coercion (sr,(_,coercion_target)) -> 
+(*
+print_endline ("Typing coercion");
+*)
+            bind_type' state bsym_table env rs sr coercion_target args mkenv 
+          | _ ->
 (*
 print_endline ("Calling bind_epression'");
-*)
-(* NOTE: this is NOT necessary if the expression is an explicit coercion! In that case
-we should just find the type being coerced to! 
 *)
             snd
             (
@@ -131,39 +135,41 @@ print_endline ("Return expression type = " ^ Flx_btype.st t);
         if pvtype then
           () (* use the declared return type, let the coercion be inserted later *) 
         else
-        let result = Flx_do_unify.do_unify
-           state.counter
-           state.varmap
-           state.sym_table
-           bsym_table
-           !ret_type
-           t
-          (* the argument order is crucial *)
-        in 
-        if result then
-          let t' = varmap_subst state.varmap !ret_type in
+        begin 
+          let result = Flx_do_unify.do_unify
+             state.counter
+             state.varmap
+             state.sym_table
+             bsym_table
+             !ret_type
+             t
+            (* the argument order is crucial *)
+          in 
+          if result then
+            let t' = varmap_subst state.varmap !ret_type in
 (*
-print_endline (" %%%%% Setting return type to " ^ sbt bsym_table t');
+  print_endline (" %%%%% Setting return type to " ^ sbt bsym_table t');
 *)
-          ret_type := t'
-        else begin
-          (*
-          print_endline
-          (
-            "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<"^string_of_int index^">" ^
-            "\nGot: " ^ sbt bsym_table !ret_type ^
-            "\nAnd: " ^ sbt bsym_table t
-          )
-          ;
-          *)
-          clierrx "[flx_bind/flx_cal_ret_type.ml:159: E105a] " sr
-          (
-            "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<" ^
-            string_of_bid index ^ ">" ^
-            "\nGot: " ^ str_of_btype !ret_type ^ "\n  = " ^ sbt bsym_table !ret_type ^
-            "\nAnd: " ^ str_of_btype t ^ "\n  = " ^ sbt bsym_table t
-          )
-        end
+            ret_type := t'
+          else begin
+            (*
+            print_endline
+            (
+              "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<"^string_of_int index^">" ^
+              "\nGot: " ^ sbt bsym_table !ret_type ^
+              "\nAnd: " ^ sbt bsym_table t
+            )
+            ;
+            *)
+            clierrx "[flx_bind/flx_cal_ret_type.ml:159: E105a] " sr
+            (
+              "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<" ^
+              string_of_bid index ^ ">" ^
+              "\nGot: " ^ str_of_btype !ret_type ^ "\n  = " ^ sbt bsym_table !ret_type ^
+              "\nAnd: " ^ str_of_btype t ^ "\n  = " ^ sbt bsym_table t
+            )
+          end
+       end
       with
         | Stack_overflow -> failwith "[cal_ret_type] Stack overflow"
         | Expr_recursion e -> (* print_endline "Expr recursion"; *)  ()

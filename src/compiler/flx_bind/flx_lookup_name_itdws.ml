@@ -182,6 +182,8 @@ whereas a failure returning an empty FunctionEntry does.
     | Some x -> x
     | None -> FunctionEntry []
   in
+if name = debugid then
+  print_endline ("Result of lookup = " ^ (match result with | FunctionEntry [] -> "Not Found" | _ -> "FOUND"));
   match result with
   | NonFunctionEntry (index) ->
     begin match get_data state.sym_table (sye index) with
