@@ -165,6 +165,11 @@ let bexpr_deref t e : t =
   | Some k -> bexpr_unitptr k
   | _ -> BEXPR_deref e, complete_check "bexpr_deref" t
 
+(* bexpr lambda i vt e allows an expression e containing a variable
+index i of type vt to be used as a function, by treating the 
+variable index i as a parameter, that is, it performs lambda
+abstraction.
+*)
 let bexpr_lambda i vt ((x,rt) as e)  = 
   BEXPR_lambda (i,vt,e),Flx_btype.btyp_function (vt,rt)
 

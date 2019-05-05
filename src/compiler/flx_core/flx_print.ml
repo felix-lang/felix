@@ -2620,6 +2620,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     "module " ^ name ^ " {}"
 
   | BBDCL_fun (props,vs,ps,res,effects,es) ->
+    begin try
     let is_proc = Flx_btype.is_void res in
     string_of_properties props ^
     (if is_proc then "proc " else "fun ") ^
@@ -2633,6 +2634,8 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     "{\n" ^
     cat "\n" (map (string_of_bexe bsym_table 1) es) ^
     "}"
+    with Not_found -> assert false
+    end
 
   | BBDCL_val (vs,ty,kind) ->
     begin match kind with

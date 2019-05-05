@@ -11,7 +11,7 @@ let subst_expr expr varidx arg =
   in replace expr
 
 let add_var_param new_table fidx pidx dt =
-  (* parameter symbol table entry *)
+  (* parameter or other local variable symbol table entry *)
   let bbdcl = Flx_bbdcl.bbdcl_val ([],dt, `Var)  in
   let pname = "_lambda_local" ^ string_of_int pidx in
   let bsym = Flx_bsym.create pname bbdcl in
@@ -28,6 +28,15 @@ let add_wrapper_function new_table parent fidx pidx dt effects ct exes =
   let fname = "_lambda" ^ string_of_int fidx in
   let bsym = Flx_bsym.create fname bbdcl in
   Flx_bsym_table.add new_table fidx parent bsym;
+(*
+print_endline ("Flx_lambda.add_wrapper_function: Added wrapper function to symbol table " ^ string_of_int fidx);
+*)
+  let bsym = Flx_bsym_table.find new_table fidx in
+(*
+  print_endline ("Flx_lambda.add_wrapper_function: Verified, entry " ^ string_of_int fidx ^ " in table, id=" ^
+  Flx_bsym.id bsym);
+*)
+
   fname
 
 let add_label new_table sr fidx label_index =
@@ -37,9 +46,11 @@ let add_label new_table sr fidx label_index =
   Flx_bsym_table.add new_table label_index (Some fidx) bsym;
   s
  
-let add_array_map new_table counter parent fidx src lambda = 
-  match src,lambda with
-  | (_,(BTYP_array (elt_t, BTYP_unitsum n) as srct)),
+let add_array_map new_table counter parent srct lambda = 
+  let si x = string_of_int x in
+
+  match srct,lambda with
+  | (BTYP_array (elt_t, BTYP_unitsum n) as srct),
     (_,BTYP_function (d,c)) 
   ->
   assert (elt_t = d);
@@ -51,12 +62,20 @@ let add_array_map new_table counter parent fidx src lambda =
   let iidx = fresh_bid counter in (* loop index *)
   let pidx = fresh_bid counter in (* parameter index *)
   let didx = fresh_bid counter in (* target local index *)
-  let si x = string_of_int x in
+
+(*
+  print_endline ("Function index " ^ si fidx);
+  print_endline ("Loop index " ^ si iidx);
+  print_endline ("Parameter index " ^ si pidx);
+  print_endline ("Result index " ^ si didx);
+*)
 
   let int_t = btyp_int () in
 
-  let iname = add_var_param new_table fidx iidx int_t in
-  let dname = add_var_param new_table fidx didx dstt in
+  (* add local variables, including parameter *)
+  let iname = add_var_param new_table fidx iidx int_t in (* index *)
+  let dname = add_var_param new_table fidx didx dstt in (* result *)
+  (* NOTE: parameter is added by 'add_wrapper_function' below so don't add here *)
 
   (* destination element pointer type *)
   let dptr_t = btyp_pointer c in 
@@ -64,9 +83,13 @@ let add_array_map new_table counter parent fidx src lambda =
   (* index variable *)
   let idx_val = bexpr_varname int_t (iidx,[]) in
 
+  (* input array parameter *)
+  let src = bexpr_varname srct (pidx, []) in
+
   (* source array element *)
   let srcprj = bexpr_aprj idx_val srct elt_t in
   let srcval = bexpr_apply elt_t (srcprj, src) in
+
   (* mapped value *)
   let dval = bexpr_apply c (lambda, srcval) in
 
@@ -84,8 +107,10 @@ let add_array_map new_table counter parent fidx src lambda =
 
   let idx_ptr = bexpr_ref pint_t (iidx,[]) in
   let init_idx = bexpr_literal_int (n-1) in
-  let isnonneg_idx = bexpr_apply_prim bool_t (Flx_concordance.flx_isnonneg_int, [], idx_val) in
-  let decr_idx = bexe_call_prim (sr,Flx_concordance.flx_decr_int, [], idx_ptr) in
+  let int2bool_t = btyp_function (int_t, bool_t) in
+  let isnonneg_idx = bexpr_apply bool_t (bexpr_closure int2bool_t (Flx_concordance.flx_isnonneg_int, []), idx_val) in
+  let intptr_proc_t = btyp_function (btyp_pointer int_t, btyp_void ()) in
+  let decr_idx = bexe_call (sr,bexpr_closure intptr_proc_t (Flx_concordance.flx_decr_int, []), idx_ptr) in
 
   let exes = [
      bexe_init (sr,iidx,init_idx); (* i = n - 1 *)
@@ -97,6 +122,9 @@ let add_array_map new_table counter parent fidx src lambda =
   ]
   in
   let fname = add_wrapper_function new_table parent fidx pidx srct effects dstt exes in
+(*
+print_endline ("Flx_lambda.add_array_map : added function " ^ si fidx ^ " with parameter " ^ si pidx ^ " to bsym_table");
+*)
   fidx
   | _ -> 
    print_endline ("Bad array map");

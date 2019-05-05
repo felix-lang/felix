@@ -183,7 +183,9 @@ let find_bparams bsym_table bid = Flx_bsym.get_bparams (find bsym_table bid)
 let find_bvs bsym_table bid = Flx_bsym.get_bvs (find bsym_table bid)
 
 (** Helper function to replace an elt in the table. *)
-let replace_elt bsym_table = Hashtbl.replace bsym_table.table
+let replace_elt bsym_table bid elt =
+  Hashtbl.replace bsym_table.table bid elt
+
 
 (** Helper to add a bid to the table roots or it's parent's children. *)
 let add_bid_to_parent bsym_table parent bid =

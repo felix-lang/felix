@@ -220,12 +220,40 @@ and tuple_coercion new_table bsym_table counter parent remap ((srcx,srct) as src
 
 and array_coercion new_table bsym_table counter parent remap ((_,srct) as srce) dstt l r n sr =
   let coerce parent e t = expand_coercion new_table bsym_table counter parent remap e t sr in
-  let fidx = Flx_bid.fresh_bid counter in
-  let ix = Flx_bid.fresh_bid counter in
-  let ixval = bexpr_varname l (ix,[]) in
-  let mapping = coerce parent ixval r in
-  let lam = bexpr_lambda ix l mapping in
-  let acidx = Flx_lambda.add_array_map new_table counter parent fidx srce lam in
+  let si i = string_of_int i in
+
+  let lam = 
+    let dt = l in (* domain array element type *)
+    let ct = r in (* target array element type *)
+    let fidx = Flx_bid.fresh_bid counter in
+(*
+print_endline ("array_coercion: element lambda function index  = " ^ si fidx);
+*)
+    let pidx = Flx_bid.fresh_bid counter in
+(*
+print_endline ("array_coercion: element lambda parameter index = " ^ si pidx);
+*)
+    let effects = Flx_btype.btyp_unit () in
+    let param = bexpr_varname dt (pidx,[]) in 
+    let retexpr = coerce parent param ct in
+    let ret_stmt = Flx_bexe.bexe_fun_return (sr,retexpr) in
+    let exes = [ret_stmt] in
+    let lamname = Flx_lambda.add_wrapper_function new_table parent fidx pidx dt effects ct exes in
+(*
+print_endline ("array_coercion: added element lambda function index = " ^ string_of_int fidx);
+*)
+    let lamt = btyp_function (dt,ct) in
+    let lam = bexpr_closure lamt (fidx, []) in
+    lam
+  in
+  let acidx = Flx_lambda.add_array_map new_table counter parent srct lam in
+
+(*
+print_endline ("array_coercion: whole array function added, index= " ^ string_of_int acidx);
+let bbdcl = Flx_bsym_table.find_bbdcl new_table acidx in
+print_endline (Flx_print.string_of_bbdcl new_table bbdcl acidx);
+*)
+  (* apply the function to the array argument *)
   let ft = btyp_function (srct, dstt) in
   bexpr_apply dstt (bexpr_closure ft (acidx,[]), srce)
 
