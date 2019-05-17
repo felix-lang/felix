@@ -108,6 +108,7 @@ let gen_offset_tables syms bsym_table extras module_name =
   )
   extras;
 
+  (* Run through type registry *)
   List.iter
   (fun (btyp, index) ->
 print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index);
@@ -217,15 +218,23 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
   (* somehow, we can get duplicates, probably because the types are not uniquely represented *)
   let generated = Hashtbl.create 97 in
   let functor_maps = ref [] in
-  Hashtbl.iter
-  (fun btyp index -> 
-     if not (Hashtbl.mem generated index) then begin
-       Hashtbl.add generated index ();
-       Flx_gen_type_shape.gen_type_shape module_name s syms bsym_table need_int primitive_shapes btyp index functor_maps
-     end
-  )
-  allocable_types
-  ;
+  let process_table table =
+    let new_table = Hashtbl.create 97 in
+    Hashtbl.iter
+    (fun btyp index -> 
+       if not (Hashtbl.mem generated index) then begin
+         Hashtbl.add generated index ();
+         Flx_gen_type_shape.gen_type_shape module_name s syms bsym_table need_int primitive_shapes btyp index functor_maps new_table
+       end
+    )
+    table;
+    new_table
+  in
+  let table = ref allocable_types in
+  while Hashtbl.length !table > 0 do
+     table := process_table !table
+  done;
+
   bcat s ("\n");
 
  
@@ -233,7 +242,7 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
   bcat s ("static ::flx::gc::generic::gc_shape_t &int_ptr_map = ::flx::rtl::_int_ptr_map;\n");
 
   List.iter (fun (name, shapes) ->
-    let shapes = List.map (fun s -> "&" ^ (if s = "int_ptr_map" then "_int_ptr_map" else s)) shapes in
+    let shapes = List.map (fun s -> "&" ^ s) shapes in
     bcat s ("extern ::flx::gc::generic::gc_shape_t *" ^ name ^ "[" ^ si (List.length shapes) ^ "]={" ^String.concat "," shapes ^  "};\n")
   )
   !functor_maps;

@@ -27,7 +27,7 @@ open Flx_findvars
 open Flx_gen_shape
 open Flx_btype_subst
 
-let rec gen_type_shape module_name s syms bsym_table need_int primitive_shapes btyp index functor_maps =
+let rec gen_type_shape module_name s syms bsym_table need_int primitive_shapes btyp index functor_maps new_table =
     print_debug syms ("allocable type --> " ^ sbt bsym_table btyp);
     let name = cpp_type_classname syms bsym_table btyp in
     if name = "int" then need_int := true else
@@ -215,7 +215,11 @@ bcat s ("\n//ABSTRACT TYPE " ^ name ^"\n");
               bcat s ("//FUNCTOR, arg types = " ^  catmap "," (sbt bsym_table) ts^ "\n");
               bcat s ("extern ::flx::gc::generic::gc_shape_t *"^fmap_name^"[" ^ si (List.length ts) ^ "];\n");
               let tarray = List.map (fun t -> cpp_type_classname syms bsym_table t^ "_ptr_map") ts in
-              functor_maps := (fmap_name, tarray) :: !functor_maps
+              functor_maps := (fmap_name, tarray) :: !functor_maps;
+              List.iter (fun t -> 
+                let index' = Flx_treg.find_type_index syms bsym_table t in
+                Hashtbl.replace new_table t index'
+              ) ts
             end;
               
             let this_ptr_map = name ^ "_ptr_map" in
@@ -257,7 +261,7 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
         let decoder_name = gen_decoder () in
         print_endline "Warning VR_self rep not handled right?";
         let t'' = tsubst (Flx_bsym.sr bsym) vs ts t' in
-        gen_type_shape module_name s syms bsym_table need_int primitive_shapes t'' index functor_maps
+        gen_type_shape module_name s syms bsym_table need_int primitive_shapes t'' index functor_maps new_table
         
       | BBDCL_union _ -> () (* handled by universal uctor, int, etc *) 
 
