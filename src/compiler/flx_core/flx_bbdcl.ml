@@ -12,6 +12,7 @@ type btype_qual_t = [
   | `Finaliser of CS.t
   | `Encoder of CS.t
   | `Decoder of CS.t
+  | `TypeTag of string
 ]
 
 
@@ -227,6 +228,7 @@ let iter
     | `Finaliser cs -> ()
     | `Encoder cs -> ()
     | `Decoder cs -> ()
+    | `TypeTag _ -> ()
   in
   match bbdcl with
   | BBDCL_label _ -> ()
@@ -306,6 +308,7 @@ let map
     | `Finaliser cs -> `Finaliser cs
     | `Encoder cs -> `Encoder cs
     | `Decoder cs -> `Decoder cs
+    | `TypeTag s -> `TypeTag s
   in
   match bbdcl with
   | BBDCL_label s -> bbdcl
@@ -396,6 +399,7 @@ let iter_uses f bbdcl =
     | `Finaliser cs -> ()
     | `Encoder cs -> ()
     | `Decoder cs -> ()
+    | `TypeTag _ -> ()
   in
   match bbdcl with
   | BBDCL_fun (_,_,ps,res,effects,_) ->

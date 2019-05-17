@@ -57,6 +57,7 @@ let bind_qual bt qual = match qual with
   | `Finaliser cs -> `Finaliser cs
   | `Encoder cs -> `Encoder cs
   | `Decoder cs -> `Decoder cs
+  | `TypeTag s -> `TypeTag s
 
 let bind_quals bt quals = map (bind_qual bt) quals
 

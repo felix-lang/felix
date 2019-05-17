@@ -369,6 +369,7 @@ and type_qual_t = [
   | `Finaliser of CS.t
   | `Encoder of CS.t
   | `Decoder of CS.t
+  | `TypeTag of string
 ]
 
 and requirement_t =

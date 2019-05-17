@@ -60,6 +60,7 @@ let mkprop sr s = match s with
     | "pure" -> `Pure
     | "generator" -> `Generator
     | "virtual" -> `Virtual
+    | "functor" -> `Tag "functor"
     | x -> clierrx "[flx_desugar/flx_reqs.ml:62: E353] " sr ("Unknown property " ^ x)
 
 let mkreqs state access parent_ts sr (rqs :raw_req_expr_t) : 
@@ -101,14 +102,18 @@ let mkreqs state access parent_ts sr (rqs :raw_req_expr_t) :
         props := `Subtype :: !props;
         NREQ_true
 
-
       | Property_req "virtual" ->
         props := `Virtual:: !props;
+        NREQ_true
+
+      | Property_req "functor" ->
+        quals := `TypeTag "functor" :: !quals;
         NREQ_true
 
       | Property_req s ->
         props := mkprop sr s :: !props;
         NREQ_true
+
       | Scanner_req s ->
         quals := `Scanner s :: !quals;
         NREQ_true

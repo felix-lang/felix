@@ -10,6 +10,7 @@ type btype_qual_t = [
   | `Finaliser of Flx_code_spec.t
   | `Encoder of Flx_code_spec.t
   | `Decoder of Flx_code_spec.t
+  | `TypeTag of string
 ]
 
 (** Used to represent all the different value types. *)
