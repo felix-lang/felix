@@ -164,7 +164,11 @@ print_endline ("NOMINAL TYPE");
           with Scanner cs -> Some cs 
         in
         let scanner = 
-          if gc_pointer then "&::flx::gc::generic::scan_by_offsets" else
+          if is_functor && List.length ts > 0 then 
+            "::flx::gc::generic::stl_container_scanner<" ^ name ^ ">"
+          else if gc_pointer then 
+            "&::flx::gc::generic::scan_by_offsets" 
+          else
           match scanner with 
           | None -> "0" 
           | Some (CS.Str s) -> s
@@ -212,9 +216,12 @@ bcat s ("\n//ABSTRACT TYPE " ^ name ^"\n");
             );
             let fmap_name =  name ^ "_value_type_shapes_index_"^si i^"_instance_"^si index in
             if is_functor then begin
+              let shape t = 
+                Flx_pgen.shape_of' true syms bsym_table (cpp_typename syms bsym_table) t
+              in
               bcat s ("//FUNCTOR, arg types = " ^  catmap "," (sbt bsym_table) ts^ "\n");
               bcat s ("extern ::flx::gc::generic::gc_shape_t *"^fmap_name^"[" ^ si (List.length ts) ^ "];\n");
-              let tarray = List.map (fun t -> cpp_type_classname syms bsym_table t^ "_ptr_map") ts in
+              let tarray = List.map (fun t -> shape t) ts in
               functor_maps := (fmap_name, tarray) :: !functor_maps;
               List.iter (fun t -> 
                 let index' = Flx_treg.find_type_index syms bsym_table t in

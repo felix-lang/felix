@@ -240,6 +240,7 @@ typedef ::std::size_t decoder_t(void *, char *, ::std::size_t);
 typedef void copier_t (void*,void*);
 typedef void dflt_init_t (void*);
 
+
 struct GC_EXTERN gc_shape_t
 {
   char const *cname;              ///< C++ typename
@@ -261,6 +262,34 @@ struct GC_EXTERN gc_shape_t
   size_t allocations;
   size_t deallocations;
 };
+
+// STL CONTAINER SCANNER
+template<typename C>
+void *stl_container_scanner(
+  ::flx::gc::generic::collector_t *gc, 
+  ::flx::gc::generic::gc_shape_t *container_shape, 
+  void *location, 
+  size_t nobjects, 
+  int recdepth)
+{
+  auto object_shape = ((::flx::gc::generic::gc_shape_t * *)(container_shape->private_data))[0];
+  auto object_scanner = object_shape->scanner;
+  printf("stl_container_scanner,\n  loc=%p shape=%s@%p, size=%ld,\n  value shape=%s@%p value_scanner=%p\n", 
+    location, 
+    container_shape->cname, container_shape, ((C*)location)->size(),
+    object_shape->cname, object_shape,
+    object_scanner
+  );
+  if (object_scanner) {
+    auto & container = *(C*)location;
+    for (auto & v : container) {
+      printf("    .. invoking element scanner for address %p\n", &v);
+      object_scanner (gc,object_shape,&v,1,recdepth+1);
+    }
+  }
+  return nullptr;
+}
+
 
 GC_EXTERN extern gc_shape_t _ptr_void_map;
 
