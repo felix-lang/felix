@@ -14,45 +14,19 @@ open Flx_exceptions
 open Flx_maps
 open Flx_btype_subst
 
-(* EVERYTHING is a plain old data type, except primitives
-   which are not declared as such, non-pod primitives
-   require a destructor. Note function types are pod because
-   they're represented by pointers.
-*)
-let rec is_pod bsym_table t =
-  let is_pod t = is_pod bsym_table t in
-  match t with
-  | BTYP_typeop _ -> assert false
-  | BTYP_hole -> assert false
-  | BTYP_uniq _ -> assert false
+exception NestedFunctor of Flx_btype.t * string
 
-  | BTYP_label
-  | BTYP_unitsum _ 
-  | BTYP_sum _ 
-  | BTYP_rptsum _ 
-  | BTYP_ptr _
-  | BTYP_function _
-  | BTYP_cfunction _
-  | BTYP_variant _ -> true
-  | BTYP_tuple cps ->fold_left (fun acc t -> acc && is_pod t) true cps 
-  | BTYP_record (cps) ->fold_left (fun acc (_,t) -> acc && is_pod t) true cps 
-  | BTYP_array (t,_) -> is_pod t
-  | BTYP_vinst (k,ts,_) -> assert false
+(* BAD BAD this code is copied from flx_cal_type_shape .. *)
+let has_user_scanner quals = 
+  try 
+    List.iter (fun q-> match q with | `Scanner cs -> raise Not_found | _ -> () ) quals; 
+    false
+  with Not_found -> true
 
-  | BTYP_inst (k,ts,_) ->
-    let bsym = Flx_bsym_table.find bsym_table k in
-    let bbdcl = Flx_bsym.bbdcl bsym in
-  begin match Flx_bsym_table.find_bbdcl bsym_table k with
-    | BBDCL_union _ -> true
-    | BBDCL_external_type (_,quals,_,_) -> mem `Pod quals
-    | BBDCL_struct (vs,idts) -> 
-      let varmap = mk_varmap (Flx_bsym.sr bsym) vs ts in
-      let idts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
-      fold_left (fun acc (_,t) -> acc && is_pod t) true idts
-    | BBDCL_cstruct _ -> false
-    | _ -> failwith ("[flx_cal_type_offsets: is_pod] Unexpected nominal type " ^ sbt bsym_table t)
-  end
-  | _ -> failwith ("[flx_cal_type_offsets: is_pod] Unexpected structural type " ^ sbt bsym_table t)
+let has_scanner quals = 
+  has_user_scanner quals ||
+  mem (`TypeTag "functor") quals 
+ 
  
 
 let unitsum bsym_table t = 
@@ -140,8 +114,10 @@ let rec get_offsets' syms bsym_table typ : string list =
       ;
       !lst
 
-    | BBDCL_external_type (_,type_quals,_,_)
-       when mem `GC_pointer type_quals -> ["0"]
+    | BBDCL_external_type (_,type_quals,_,_) ->
+       if mem `GC_pointer type_quals then ["0"]
+       else if has_scanner type_quals then raise (NestedFunctor (t', sbt bsym_table t'))
+       else []
 
     | _ -> []
     end
@@ -237,187 +213,4 @@ let get_offsets syms bsym_table typ =
   map (fun s -> s^",") (get_offsets' syms bsym_table typ)
 
 (**********************************************************************)
-
-module CS = Flx_code_spec
-exception Scanner of CS.t
-
-let rec get_encoder' syms bsym_table p typ : string list =
-  let tname = cpp_typename syms bsym_table typ in
-  let t' = unfold "flx_cal_type_offsets: encoder" typ in
-  if is_pod bsym_table typ
-  then
-    ["b+=::flx::gc::generic::blit("^p^",sizeof("^tname^")); // pod"]
-  else match t' with
-  | BTYP_vinst _ -> assert false
-  | BTYP_inst (i,ts,_) ->
-    let bsym =
-      try Flx_bsym_table.find bsym_table i
-      with Not_found -> failwith
-        ("get_encoder'] can't find index " ^ string_of_bid i)
-    in
-    begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_union (vs,idts) ->
-      ["b+=::flx::gc::generic::blit("^p^",sizeof("^tname^")); // union"]
-
-    | BBDCL_cstruct (vs, idts,_) (* this is NOT really correct ... *)
-    | BBDCL_struct (vs,idts) ->
-      let varmap = mk_varmap (Flx_bsym.sr bsym) vs ts in
-      let idts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
-      let n = ref 0 in
-      "//Struct" ::
-      List.concat ( List.map 
-      (fun (fld,t) ->
-        let s= "offsetof("^tname^","^cid_of_flxid fld^")" in
-        (get_encoder' syms bsym_table (p^"+"^s) t)
-      )
-      idts
-      )
-
-    | BBDCL_external_type (_,quals,_,_) ->
-      let encoder = 
-         try 
-          List.iter (fun q-> match q with | `Encoder cs -> raise (Scanner cs) | _ -> () ) quals; 
-          None 
-        with Scanner cs -> Some cs 
-      in
-      let encoder = 
-        match encoder with 
-        | None -> ["b+=::flx::gc::generic::blit("^p^",sizeof("^tname^")); // prim"]
-        | Some (CS.Str s) 
-        | Some (CS.Str_template s) -> ["b+=::flx::gc::generic::string_blit("^ s ^ "("^p^")); //prim"]
-        | Some _ -> assert false
-      in
-      encoder
-     | _ -> 
-      print_endline ("get_encoder encountered unexpected instance kind for type: " ^ sbt bsym_table t');
-      print_endline ("Kind is " ^ string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) i );
-      assert false
-    end
-
-  | BTYP_array (t,u) when unitsum bsym_table u = 0 -> []
-  | BTYP_array (t,u) when unitsum bsym_table u > 0 -> 
-    let k = unitsum bsym_table u in
-    if k> 100 then
-      failwith ("[get_encoder] Too many elements in array for shape, type " ^ sbt bsym_table t')
-    else begin
-      let eltype = cpp_typename syms bsym_table t in
-      let seq = !(syms.counter) in incr (syms.counter);
-      let index = "i"^si seq in 
-      "//Array" ::
-      ("for(::std::size_t "^index^"=0; "^index^"<"^si k^"; ++"^index^") {") ::
-      get_encoder' syms bsym_table (p^"+"^index^"*sizeof("^eltype^")") t @
-      ["}"]
-    end
-
-  | BTYP_tuple args ->
-    let k = List.length args in
-    "//Tuple"::
-    List.concat ( List.map
-    (fun (k,t) ->
-      let s = "offsetof("^tname^",mem_"^si k^")" in
-      (get_encoder' syms bsym_table (p^"+"^s) t)
-    )
-    (List.combine (nlist k) args))
-
-  | BTYP_record (es) ->
-    "//Record" ::
-    List.concat (List.map 
-    (fun (fld,t) ->
-      let s = "offsetof("^tname^","^cid_of_flxid fld^")" in
-      (get_encoder' syms bsym_table (p^"+"^s) t)
-    )
-    es
-    )
-
-  | _ -> assert false
-
-(**********************************************************************)
-
-let rec get_decoder' syms bsym_table p typ : string list =
-  let tname = cpp_typename syms bsym_table typ in
-  let t' = unfold "flx_cal_type_offsets: get_decoder" typ in
-  if is_pod bsym_table typ
-  then
-    ["i=::flx::gc::generic::unblit("^p^",sizeof("^tname^"),s,i); // pod"]
-  else match t' with
-  | BTYP_vinst _ -> assert false
-  | BTYP_inst (i,ts,_) ->
-    let bsym =
-      try Flx_bsym_table.find bsym_table i
-      with Not_found -> failwith
-        ("get_decoder'] can't find index " ^ string_of_bid i)
-    in
-    begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_union (vs,idts) ->
-      ["i=::flx::gc::generic::blit("^p^",sizeof("^tname^"),s,i); // union"]
-
-    | BBDCL_cstruct (vs, idts,_) (* this is NOT really correct ... *)
-    | BBDCL_struct (vs,idts) ->
-      let varmap = mk_varmap (Flx_bsym.sr bsym) vs ts in
-      let idts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
-      let n = ref 0 in
-      "//Struct" ::
-      List.concat ( List.map 
-      (fun (fld,t) ->
-        let s= "offsetof("^tname^","^cid_of_flxid fld^")" in
-        (get_decoder' syms bsym_table (p^"+"^s) t)
-      )
-      idts
-      )
-
-    | BBDCL_external_type (_,quals,_,_) ->
-      let decoder = 
-         try 
-          List.iter (fun q-> match q with | `Decoder cs -> raise (Scanner cs) | _ -> () ) quals; 
-          None 
-        with Scanner cs -> Some cs 
-      in
-      let decoder = 
-        match decoder with 
-        | None -> ["i=::flx::gc::generic::unblit("^p^",sizeof("^tname^"),s,i); // prim"]
-        | Some (CS.Str cs) 
-        | Some (CS.Str_template cs) -> ["i="^ cs ^ "("^p^",s,i); //prim"]
-        | Some _ -> assert false
-      in
-      decoder
-     | _ -> assert false
-    end
-
-  | BTYP_array (t,u) when unitsum bsym_table u = 0 -> []
-  | BTYP_array (t,u) when unitsum bsym_table u > 0 -> 
-    let k = unitsum bsym_table u in
-    if k> 100 then
-      failwith ("[get_decoder] Too many elements in array for shape, type " ^ sbt bsym_table t')
-    else begin
-      let eltype = cpp_typename syms bsym_table t in
-      let seq = !(syms.counter) in incr (syms.counter);
-      let index = "i"^si seq in 
-      "//Array" ::
-      ("for(::std::size_t "^index^"=0; "^index^"<"^si k^"; ++"^index^") {") ::
-      (get_decoder' syms bsym_table (p^"+"^index^"*sizeof("^eltype^")") t) @
-      ["}"]
-    end
-
-  | BTYP_tuple args ->
-    let k = List.length args in
-    "//Tuple"::
-    List.concat ( List.map
-    (fun (k,t) ->
-      let s = "offsetof("^tname^",mem_"^si k^")" in
-      (get_decoder' syms bsym_table (p^"+"^s) t)
-    )
-    (List.combine (nlist k) args))
-
-  | BTYP_record (es) ->
-    "//Record" ::
-    List.concat (List.map 
-    (fun (fld,t) ->
-      let s = "offsetof("^tname^","^cid_of_flxid fld^")" in
-      (get_decoder' syms bsym_table (p^"+"^s) t)
-    )
-    es
-    )
-
-  | _ -> assert false
-
 

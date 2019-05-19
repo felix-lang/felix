@@ -27,6 +27,10 @@ open Flx_findvars
 open Flx_gen_shape
 open Flx_btype_subst
 
+
+module CS = Flx_code_spec
+exception Scanner of CS.t
+
 let rec gen_type_shape module_name s syms bsym_table need_int primitive_shapes btyp index functor_maps new_table =
     print_debug syms ("allocable type --> " ^ sbt bsym_table btyp);
     let name = cpp_type_classname syms bsym_table btyp in
@@ -34,7 +38,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int primitive_shapes b
     let btyp' = unfold "flx_ogen: gen_type_shape" btyp in 
     let gen_encoder () =
       let encoder_name = name ^ "_encoder" in
-      let encoder_stmts = get_encoder' syms bsym_table "p" btyp' in
+      let encoder_stmts = Flx_codec.get_encoder' syms bsym_table "p" btyp' in
       bcat s ("\n// ENCODER for type " ^sbt bsym_table btyp' ^ "\n"); 
       bcat s ("  ::std::string "^encoder_name^"(void *d) {\n");
       bcat s ("    char *p = (char*)d;\n");
@@ -46,7 +50,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int primitive_shapes b
     in
     let gen_decoder () =
       let decoder_name = name ^ "_decoder" in
-      let decoder_stmts = get_decoder' syms bsym_table "p" btyp' in
+      let decoder_stmts = Flx_codec.get_decoder' syms bsym_table "p" btyp' in
       bcat s ("\n// DECODER for type " ^sbt bsym_table btyp' ^ "\n"); 
       bcat s ("  size_t "^decoder_name^"(void *d,char *s, size_t i) {\n");
       bcat s ("    char *p = (char*)d;\n");
@@ -106,7 +110,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int primitive_shapes b
       let decoder_name = gen_decoder () in
       let tname = cpp_typename syms bsym_table t in
       let offsets = get_offsets syms bsym_table t in
-      let is_pod = is_pod bsym_table t in
+      let is_pod = Flx_pod.is_pod bsym_table t in
       let n = length offsets in
       bcat s ("\n//OFFSETS for array type " ^ string_of_bid index ^ "\n");
       if n <> 0 then begin
@@ -141,7 +145,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int primitive_shapes b
 
     | BTYP_inst (i,ts,_) ->
 (*
-print_endline ("NOMINAL TYPE");
+print_endline ("NOMINAL TYPE " ^ sbt bsym_table btyp);
 *)
       let bsym =
         try Flx_bsym_table.find bsym_table i
@@ -197,8 +201,7 @@ print_endline ("NOMINAL TYPE");
           else finaliser, false
         in
 
-bcat s ("\n//ABSTRACT TYPE " ^ name ^"\n");
-
+        bcat s ("\n//ABSTRACT TYPE " ^ name ^"\n");
         if complete then
           let oname =
             if copyable then "&" ^ gen_first_class () else "0"
