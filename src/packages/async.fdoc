@@ -87,8 +87,8 @@ namespace flx { namespace run {
 // SHAPE for async_sched 
 // ********************************************************
 
-static const std::size_t async_sched_offsets[1]={
-    offsetof(async_sched,ss)
+static const ::flx::gc::generic::offset_entry_t async_sched_offsets[1]={
+    {offsetof(async_sched,ss),nullptr}
 };
 
 static ::flx::gc::generic::offset_data_t const async_sched_offset_data = { 1, async_sched_offsets };

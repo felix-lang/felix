@@ -37,7 +37,19 @@ let unitsum bsym_table t =
  * it returns a list of strings which are C expressions for the
  * offsets of each pointer in the type.
  *)
-let rec get_offsets' syms bsym_table typ : string list =
+
+type offset_kind_t = [`Ptr of string | `Prim of string * Flx_btype.t]
+
+let add_offset o inner =
+  match inner with 
+  | `Ptr i -> `Ptr (o ^ "+" ^ i) 
+  | `Prim (i,t) -> `Prim (o ^ "+" ^ i, t)
+
+
+let offsetof s e =
+  "offsetof(" ^ s ^ "," ^ e ^ ")"
+
+let rec get_offsets' syms bsym_table typ : offset_kind_t list =
   let tname = cpp_typename syms bsym_table typ in
   let t' = unfold "flx_cal_type_offsets: get_offsets" typ in
   match t' with
@@ -47,11 +59,11 @@ let rec get_offsets' syms bsym_table typ : string list =
   | BTYP_hole -> assert false
   | BTYP_rev _ -> assert false
   | BTYP_uniq _ -> assert false
-  | BTYP_ptr (_,t,_) -> ["0"]
+  | BTYP_ptr (_,t,_) -> [`Ptr "0"]
 
 
   | BTYP_variant _ ->
-    ["offsetof("^tname^",data)"]
+    [`Ptr (offsetof tname "data")]
 
   (* need to fix the rule for optimisation here .. *)
   | BTYP_rptsum _ 
@@ -60,9 +72,9 @@ let rec get_offsets' syms bsym_table typ : string list =
     | Flx_vrep.VR_self -> assert false (* FIXME! *) 
     | Flx_vrep.VR_clt -> []
     | Flx_vrep.VR_int -> []
-    | Flx_vrep.VR_nullptr -> ["0"]
-    | Flx_vrep.VR_packed -> ["0"]
-    | Flx_vrep.VR_uctor -> ["offsetof("^tname^",data)"]
+    | Flx_vrep.VR_nullptr -> [`Ptr "0"]
+    | Flx_vrep.VR_packed -> [`Ptr "0"]
+    | Flx_vrep.VR_uctor -> [`Ptr (offsetof tname "data")]
     end
 
   | BTYP_vinst _ -> assert false
@@ -91,9 +103,9 @@ let rec get_offsets' syms bsym_table typ : string list =
       | Flx_vrep.VR_self -> assert false (* FIXME! *)
       | Flx_vrep.VR_clt -> []
       | Flx_vrep.VR_int -> []
-      | Flx_vrep.VR_nullptr -> ["0"]
-      | Flx_vrep.VR_packed -> ["0"]
-      | Flx_vrep.VR_uctor -> ["offsetof("^tname^",data)"]
+      | Flx_vrep.VR_nullptr -> [`Ptr "0"]
+      | Flx_vrep.VR_packed -> [`Ptr "0"]
+      | Flx_vrep.VR_uctor -> [`Ptr (offsetof tname "data")]
       end
 
     | BBDCL_struct (vs,idts) ->
@@ -103,11 +115,9 @@ let rec get_offsets' syms bsym_table typ : string list =
       let lst = ref [] in
       iter
       (fun (s,t) ->
-        let prefix =
-          "offsetof("^tname^","^cid_of_flxid s^")+"
-        in
+        let prefix = offsetof tname (cid_of_flxid s) in
         iter
-        (fun s -> lst := !lst @ [prefix ^ s])
+        (fun s -> lst := !lst @ [add_offset prefix  s])
         (get_offsets' syms bsym_table t)
       )
       idts
@@ -115,8 +125,8 @@ let rec get_offsets' syms bsym_table typ : string list =
       !lst
 
     | BBDCL_external_type (_,type_quals,_,_) ->
-       if mem `GC_pointer type_quals then ["0"]
-       else if has_scanner type_quals then raise (NestedFunctor (t', sbt bsym_table t'))
+       if mem `GC_pointer type_quals then [`Ptr "0"]
+       else if has_scanner type_quals then [`Prim ("0",t')]
        else []
 
     | _ -> []
@@ -133,9 +143,9 @@ let rec get_offsets' syms bsym_table typ : string list =
       let eltype = cpp_typename syms bsym_table t in
       fold_left
       (fun result i ->
-        let ss = "+" ^ si i ^ "*sizeof("^eltype^")" in
+        let ss = si i ^ "*sizeof("^eltype^")" in
         fold_left
-        (fun result s -> (s ^ ss) :: result)
+        (fun result s -> (add_offset ss s) :: result)
         result
         toffsets
       )
@@ -148,11 +158,9 @@ let rec get_offsets' syms bsym_table typ : string list =
     let lst = ref [] in
     iter
     (fun t ->
-      let prefix =
-        "offsetof("^tname^",mem_"^si !n^")+"
-      in
+      let prefix = offsetof tname ("mem_"^si !n) in
       iter
-      (fun s -> lst := !lst @ [prefix ^ s])
+      (fun s -> lst := !lst @ [add_offset prefix s])
       (get_offsets' syms bsym_table t)
       ;
       incr n
@@ -165,11 +173,9 @@ let rec get_offsets' syms bsym_table typ : string list =
     let lst = ref [] in
     iter
     (fun (s,t) ->
-      let prefix =
-        "offsetof("^tname^","^cid_of_flxid s^")+"
-      in
+      let prefix = offsetof tname (cid_of_flxid s) in
       iter
-      (fun s -> lst := !lst @ [prefix ^ s])
+      (fun s -> lst := !lst @ [add_offset prefix s])
       (get_offsets' syms bsym_table t)
     )
     es 
@@ -177,12 +183,12 @@ let rec get_offsets' syms bsym_table typ : string list =
     !lst
 
   | BTYP_effector _ 
-  | BTYP_function _ -> ["0"]
+  | BTYP_function _ -> [`Ptr "0"]
   | BTYP_cfunction _ -> []
 
   | BTYP_unitsum _ -> []
 
-  | BTYP_label -> ["0"] (* see jump_address_t, target_frame at offset 0 *)
+  | BTYP_label -> [`Ptr "0"] (* see jump_address_t, target_frame at offset 0 *)
 
   (* this is a lie .. it does, namely a plain C union *)
   | BTYP_type_set _
@@ -209,8 +215,11 @@ let rec get_offsets' syms bsym_table typ : string list =
   | BTYP_type_set_intersection _
   | BTYP_type_set_union _ -> assert false
 
-let get_offsets syms bsym_table typ =
-  map (fun s -> s^",") (get_offsets' syms bsym_table typ)
+let render_offset bsym_table s =
+  match s with 
+    | `Ptr s -> "{" ^ s ^",nullptr}"
+    | `Prim (s,t) -> "{" ^ s ^",nullptr/*FIXME "^sbt bsym_table t^"*/}"
 
-(**********************************************************************)
+let get_offsets syms bsym_table typ =
+  map  (render_offset bsym_table) (get_offsets' syms bsym_table typ)
 

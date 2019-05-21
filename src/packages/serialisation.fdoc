@@ -235,7 +235,7 @@ class Serialise
       var element_size = shape.bytes_per_element;
       for var sindex in 0uz upto repeat_count - 1uz do
         for var oindex in 0uz upto n_offsets - 1uz do
-          var bindex = sindex * element_size + *(offsets+oindex);
+          var bindex = sindex * element_size + (offsets + oindex)*.offset;
           var ptr = *((head + bindex).C_hack::cast[&address]);
           pointers = Cons (ptr, pointers);
         done
@@ -431,7 +431,7 @@ class Serialise
         var element_size = shape.bytes_per_element;
         for var sindex in 0uz upto repeat_count - 1uz do
           for var oindex in 0uz upto n_offsets - 1uz do
-            var bindex = sindex * element_size + *(offsets+oindex);
+            var bindex = sindex * element_size + (offsets+oindex)*.offset;
             var pptr = ((head + bindex).C_hack::cast[&address]);
             adjust_pointer (pptr);
           done

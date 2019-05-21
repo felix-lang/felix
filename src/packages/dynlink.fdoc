@@ -662,11 +662,11 @@ FLX_FINALISER(flx_dynlink_t)
 // ********************************************************
 // OFFSETS for flx_libinst 
 // ********************************************************
-static const std::size_t flx_libinst_offsets[4]={
-    offsetof(flx_libinst_t,thread_frame),
-    offsetof(flx_libinst_t,start_proc),
-    offsetof(flx_libinst_t,main_proc),
-    offsetof(flx_libinst_t,lib)
+static const ::flx::gc::generic::offset_entry_t flx_libinst_offsets[4]={
+    {offsetof(flx_libinst_t,thread_frame),nullptr},
+    {offsetof(flx_libinst_t,start_proc),nullptr},
+    {offsetof(flx_libinst_t,main_proc),nullptr},
+    {offsetof(flx_libinst_t,lib),nullptr}
 };
 FLX_FINALISER(flx_libinst_t)
 static ::flx::gc::generic::offset_data_t const flx_libinst_offset_data = { 4, flx_libinst_offsets };

@@ -176,9 +176,9 @@ namespace flx { namespace run {
 // SHAPE for sync_sched 
 // ********************************************************
 
-static const std::size_t sync_sched_offsets[2]={
-    offsetof(sync_sched,active),
-    offsetof(sync_sched,ft)
+static const ::flx::gc::generic::offset_entry_t sync_sched_offsets[2]={
+    {offsetof(sync_sched,active),nullptr},
+    {offsetof(sync_sched,ft),nullptr}
 };
 
 static ::flx::gc::generic::offset_data_t const sync_sched_offset_data = { 2, sync_sched_offsets };
@@ -265,8 +265,8 @@ size_t fthread_list::size()const {
 // SHAPE for fthread_list
 // ********************************************************
 
-static const std::size_t fthread_list_offsets[1]={
-    offsetof(fthread_list,fthread_first) // fthread_last is weak
+static const ::flx::gc::generic::offset_entry_t fthread_list_offsets[1]={
+    {offsetof(fthread_list,fthread_first),nullptr} // fthread_last is weak
 };
 
 static ::flx::gc::generic::offset_data_t const fthread_list_offset_data = { 1, fthread_list_offsets };

@@ -12,25 +12,24 @@ open List
 open Flx_print
 open Flx_exceptions
 open Flx_maps
+open Flx_cal_type_offsets
 
-let gen_offset_data module_name s n name offsets isfun is_pod props flags encoder_name decoder_name =
+let gen_offset_data bsym_table module_name s h n name (offsets: offset_kind_t list) isfun is_pod props flags encoder_name decoder_name =
   let this_ptr_map = name ^ "_ptr_map" in
-  let noffsets =
-    if isfun && mem `Requires_ptf props then si (n-1)^"+FLX_PASS_PTF"
-    else si n
-  in
+  let noffsets = si n in
   if n <> 0 then
   begin
-    bcat s ("static ::std::size_t const " ^ name ^
+    bcat s ("static ::flx::gc::generic::offset_entry_t const " ^ name ^
       "_offsets["^noffsets^ "]={\n");
-    bcat s ("  " ^ cat "\n  " offsets);
+    bcat s ("  " ^ catmap ",\n  " (render_offset bsym_table) offsets);
     bcat s ("\n" ^  "};\n");
     bcat s ("static ::flx::gc::generic::offset_data_t const " ^name^"_offset_data = { " ^ 
      noffsets ^", " ^ name^ "_offsets};\n");
   end;
 
   if not is_pod then bcat s ("FLX_FINALISER("^name^")\n");
-  bcat s (  "static ::flx::gc::generic::gc_shape_t "^ this_ptr_map ^" ={\n");
+  bcat h (  "extern ::flx::gc::generic::gc_shape_t "^ this_ptr_map ^";\n");
+  bcat s (  "extern ::flx::gc::generic::gc_shape_t "^ this_ptr_map ^" ={\n");
   bcat s ("  \"" ^ module_name ^ "::" ^ name ^ "\",\n");
   bcat s ("  1,sizeof("^name^"),\n");
   bcat s ( if not is_pod then ("  "^name^"_finaliser,\n") else ("  0, // finaliser\n"));

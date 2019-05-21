@@ -84,14 +84,19 @@ let gen_offset_tables syms bsym_table extras module_name =
   let allocable_types = Hashtbl.create 97 in
   let primitive_shapes = Hashtbl.create 97 in
   let s = Buffer.create 20000 in
-  
+  let h = Buffer.create 20000 in
+  bcat h ("\n//**************************************\n");
+  bcat h "// Shape decls\n";
+  bcat h ("//**************************************\n");
+  bcat h "\n";
+ 
   (* Make a shape for every non-C style function with the property `Heap_closure *)
   print_debug syms "Make fun shapes";
-  gen_all_fun_shapes module_name (scan_exes syms bsym_table allocable_types) s syms bsym_table;
+  gen_all_fun_shapes module_name (scan_exes syms bsym_table allocable_types) s h syms bsym_table;
 
   (* generate offsets for all pointers store in the thread_frame *)
   print_debug syms "Make thread frame offsets";
-  gen_thread_frame_offsets module_name s syms bsym_table;
+  gen_thread_frame_offsets module_name s h syms bsym_table;
 
   (* We're not finished: we need offsets dynamically allocated types too *)
 
@@ -217,14 +222,13 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
 
   (* somehow, we can get duplicates, probably because the types are not uniquely represented *)
   let generated = Hashtbl.create 97 in
-  let functor_maps = ref [] in
   let process_table table =
     let new_table = Hashtbl.create 97 in
     Hashtbl.iter
     (fun btyp index -> 
        if not (Hashtbl.mem generated index) then begin
          Hashtbl.add generated index ();
-         Flx_gen_type_shape.gen_type_shape module_name s syms bsym_table need_int primitive_shapes btyp index functor_maps new_table
+         Flx_gen_type_shape.gen_type_shape module_name s h syms bsym_table need_int primitive_shapes btyp index new_table
        end
     )
     table;
@@ -239,16 +243,10 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
 
  
   if !need_int then
-  bcat s ("static ::flx::gc::generic::gc_shape_t &int_ptr_map = ::flx::rtl::_int_ptr_map;\n");
+  bcat h ("static ::flx::gc::generic::gc_shape_t &int_ptr_map = ::flx::rtl::_int_ptr_map;\n");
+  bcat h ("\n//**************************************\n");
 
-  List.iter (fun (name, shapes) ->
-    let shapes = List.map (fun s -> "&" ^ s) shapes in
-    bcat s ("extern ::flx::gc::generic::gc_shape_t *" ^ name ^ "[" ^ si (List.length shapes) ^ "]={" ^String.concat "," shapes ^  "};\n")
-  )
-  !functor_maps;
   bcat s "";
-  bcat s ("// Head of shape list, included so dlsym() can find it when\n");
-  bcat s ("// this file is a shared lib, uses module name for uniqueness.\n");
-  bcat s ("extern \"C\" FLX_EXPORT ::flx::gc::generic::gc_shape_t * const " ^ cid_of_flxid module_name ^ "_head_shape;\n");
+  Buffer.contents h ^
   Buffer.contents s
 

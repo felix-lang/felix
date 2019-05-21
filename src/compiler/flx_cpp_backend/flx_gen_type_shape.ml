@@ -31,7 +31,7 @@ open Flx_btype_subst
 module CS = Flx_code_spec
 exception Scanner of CS.t
 
-let rec gen_type_shape module_name s syms bsym_table need_int primitive_shapes btyp index functor_maps new_table =
+let rec gen_type_shape module_name s h syms bsym_table need_int primitive_shapes btyp index new_table =
     print_debug syms ("allocable type --> " ^ sbt bsym_table btyp);
     let name = cpp_type_classname syms bsym_table btyp in
     if name = "int" then need_int := true else
@@ -60,23 +60,6 @@ let rec gen_type_shape module_name s syms bsym_table need_int primitive_shapes b
       decoder_name
     in
 
-(*
-    let gen_cpy_fun (f:string) = 
-      let f_name = name ^ "_" ^ f in
-      bcat s ("\n// "^f^" for type " ^name ^ " = "^sbt bsym_table btyp' ^ "\n"); 
-      bcat s ("  void "^f_name^"(void *d, void *s) {\n");
-      bcat s ("   "^f^"(("^name^"*)d,("^name^"*)s);\n");
-      bcat s ("  }\n");
-      f_name
-    in
-    let gen_first_class () =
-       gen_cpy_fun ("copy_init"),
-       gen_cpy_fun ("move_init"),
-       gen_cpy_fun ("copy_assign"),
-       gen_cpy_fun ("move_assign")
-    in
-*)
-
    let gen_first_class () = 
       let o_name = name ^ "_fcops" in
       bcat s ("\nCxxValueType<"^name^"> " ^o_name ^ ";\n"); 
@@ -89,13 +72,14 @@ let rec gen_type_shape module_name s syms bsym_table need_int primitive_shapes b
     | BTYP_function _ -> ()
 
     | BTYP_tuple args ->
-      let offsets = get_offsets syms bsym_table btyp in
+      let offsets = get_offsets' syms bsym_table btyp in
       let n = length offsets in
       let encoder_name = gen_encoder () in
       let decoder_name = gen_decoder () in
       let oname  = "&" ^ (gen_first_class ()) in
-      bcat s ("\n//OFFSETS for tuple type " ^ string_of_bid index ^ "\n");
-      gen_offset_data module_name s n name offsets false false [] None encoder_name decoder_name
+      bcat s ("\n//**************************************\n");
+      bcat s ("//SHAPE for tuple type " ^ string_of_bid index ^ "\n");
+      gen_offset_data bsym_table module_name s h n name offsets false false [] None encoder_name decoder_name
 
     (* This is a pointer, the offset data is in the system library *)
     | BTYP_ptr (_,t,[]) -> ()
@@ -109,13 +93,14 @@ let rec gen_type_shape module_name s syms bsym_table need_int primitive_shapes b
       let encoder_name = gen_encoder () in
       let decoder_name = gen_decoder () in
       let tname = cpp_typename syms bsym_table t in
-      let offsets = get_offsets syms bsym_table t in
+      let offsets = get_offsets' syms bsym_table t in
       let is_pod = Flx_pod.is_pod bsym_table t in
       let n = length offsets in
-      bcat s ("\n//OFFSETS for array type " ^ string_of_bid index ^ "\n");
+      bcat s ("\n//**************************************\n");
+      bcat s ("//SHAPE for array type " ^ string_of_bid index ^ "\n");
       if n <> 0 then begin
-        bcat s ("static ::std::size_t const " ^ name ^ "_offsets["^si n^"]={\n  ");
-        bcat s ("  " ^ cat ",\n  " offsets);
+        bcat s ("static ::flx::gc::generic::offset_entry_t const " ^ name ^ "_offsets["^si n^"]={\n  ");
+        bcat s ("  " ^ catmap ",\n  " (render_offset bsym_table) offsets);
         bcat s "};\n";
         bcat s ("static ::flx::gc::generic::offset_data_t const " ^name^"_offset_data = { " ^ 
           string_of_int n ^", " ^ name^ "_offsets};\n");
@@ -130,7 +115,8 @@ let rec gen_type_shape module_name s syms bsym_table need_int primitive_shapes b
         bcat s ("}\n")
       end
       ;
-      bcat s ("static ::flx::gc::generic::gc_shape_t "^ name ^"_ptr_map = {\n");
+      bcat h ("extern ::flx::gc::generic::gc_shape_t "^ name ^"_ptr_map;\n");
+      bcat s ("extern ::flx::gc::generic::gc_shape_t "^ name ^"_ptr_map = {\n");
       bcat s ("  \"" ^ module_name ^ "::"^ name ^ "\",\n");
       bcat s ("  " ^ si k ^ ",\n");
       bcat s ("  sizeof("^tname^"),\n"); (* NOTE: size of ONE element!! *)
@@ -201,7 +187,8 @@ print_endline ("NOMINAL TYPE " ^ sbt bsym_table btyp);
           else finaliser, false
         in
 
-        bcat s ("\n//ABSTRACT TYPE " ^ name ^"\n");
+        bcat s ("\n//**************************************\n");
+        bcat s ("//ABSTRACT TYPE " ^ name ^"\n");
         if complete then
           let oname =
             if copyable then "&" ^ gen_first_class () else "0"
@@ -211,7 +198,8 @@ print_endline ("NOMINAL TYPE " ^ sbt bsym_table btyp);
             let encoder_name = gen_encoder () in
             let decoder_name = gen_decoder () in
             Hashtbl.add primitive_shapes name true;
-            bcat s ("\n//OFFSETS for complete abstract "^(if is_pod then "pod " else "finalisable ")^
+            bcat s ("\n//**************************************\n");
+            bcat s ("//SHAPE for complete abstract "^(if is_pod then "pod " else "finalisable ")^
               (if gc_pointer then "GC pointer " else "") ^ "type " ^ name ^ "="^sbt bsym_table btyp' ^ " instance "^
               (if scanner="0" then "" else "with custom scanner ")^
               (if is_pod || gen_dflt_finaliser then "" else "with custom finaliser ")^
@@ -222,10 +210,9 @@ print_endline ("NOMINAL TYPE " ^ sbt bsym_table btyp);
               let shape t = 
                 Flx_pgen.shape_of' true syms bsym_table (cpp_typename syms bsym_table) t
               in
+              let tarray = List.map (fun t -> "&" ^ shape t) ts in
               bcat s ("//FUNCTOR, arg types = " ^  catmap "," (sbt bsym_table) ts^ "\n");
-              bcat s ("extern ::flx::gc::generic::gc_shape_t *"^fmap_name^"[" ^ si (List.length ts) ^ "];\n");
-              let tarray = List.map (fun t -> shape t) ts in
-              functor_maps := (fmap_name, tarray) :: !functor_maps;
+              bcat s ("static ::flx::gc::generic::gc_shape_t *"^fmap_name^"[" ^ si (List.length ts) ^ "]={"^ String.concat ", " tarray^"};\n");
               List.iter (fun t -> 
                 let index' = Flx_treg.find_type_index syms bsym_table t in
                 Hashtbl.replace new_table t index'
@@ -235,7 +222,8 @@ print_endline ("NOMINAL TYPE " ^ sbt bsym_table btyp);
             let this_ptr_map = name ^ "_ptr_map" in
 
             if gen_dflt_finaliser then bcat s ("FLX_FINALISER("^name^")\n");
-            bcat s ( "static ::flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map = {\n") ;
+            bcat h ( "extern ::flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map;\n") ;
+            bcat s ( "extern ::flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map = {\n") ;
             bcat s ("  \"" ^ module_name ^"::" ^ name ^ "\",\n");
             bcat s ("  1,sizeof("^name^"),\n");
             bcat s ("  "^finaliser^","^(if is_pod then " // no finaliser" else "")^"\n");
@@ -253,7 +241,8 @@ print_endline ("NOMINAL TYPE " ^ sbt bsym_table btyp);
             bcat s ("  ::flx::gc::generic::gc_flags_default,0ul,0ul\n");
             bcat s "};\n"
           end else begin
-            bcat s ("\n//OFFSETS for abstract type " ^ name ^ " instance\n");
+            bcat s ("\n//**************************************\n");
+            bcat s ("//SHAPE for abstract type " ^ name ^ " instance\n");
             bcat s ("//Use "^name^"_ptr_map\n");
           end
         else
@@ -271,7 +260,7 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
         let decoder_name = gen_decoder () in
         print_endline "Warning VR_self rep not handled right?";
         let t'' = tsubst (Flx_bsym.sr bsym) vs ts t' in
-        gen_type_shape module_name s syms bsym_table need_int primitive_shapes t'' index functor_maps new_table
+        gen_type_shape module_name s h syms bsym_table need_int primitive_shapes t'' index new_table
         
       | BBDCL_union _ -> () (* handled by universal uctor, int, etc *) 
 
@@ -280,12 +269,14 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
 
         let this_ptr_map = name ^ "_ptr_map" in
 
-        bcat s ("\n//OFFSETS for cstruct type " ^ name ^ " instance\n");
+        bcat s ("\n//**************************************\n");
+        bcat s ("//SHAPE for cstruct type " ^ name ^ " instance\n");
 
         (* HACK .. in fact, some C structs might have finalisers! *)
         let is_pod = false in
         if not is_pod then bcat s ("FLX_FINALISER("^name^")\n");
-        bcat s ( "static ::flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map ={\n") ;
+        bcat h ( "extern ::flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map;\n") ;
+        bcat s ( "extern ::flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map ={\n") ;
         bcat s ("  \"" ^ module_name ^ "::" ^ name ^ "\",\n");
         if is_pod then begin
           bcat s ("  1,sizeof("^name^"),\n");
@@ -310,10 +301,11 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
         let decoder_name = gen_decoder () in
         let oname = "&" ^ ( gen_first_class ()) in
 
-        bcat s ("\n//OFFSETS for struct type " ^ name ^ " instance\n");
-        let offsets = get_offsets syms bsym_table btyp in
+        bcat s ("\n//**************************************\n");
+        bcat s ("//SHAPE for struct type " ^ name ^ " instance\n");
+        let offsets = get_offsets' syms bsym_table btyp in
         let n = length offsets in
-        gen_offset_data module_name s n name offsets false false [] None encoder_name decoder_name
+        gen_offset_data bsym_table module_name s h n name offsets false false [] None encoder_name decoder_name
 
       | _ ->
         failwith
@@ -327,10 +319,11 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
       let encoder_name = gen_encoder () in
       let decoder_name = gen_decoder () in
       let oname = "&" ^ (gen_first_class ()) in
-      bcat s ("\n//OFFSETS for record type " ^ name ^ " instance\n");
-      let offsets = get_offsets syms bsym_table btyp in
+      bcat s ("\n//**************************************\n");
+      bcat s ("//SHAPE for record type " ^ name ^ " instance\n");
+      let offsets = get_offsets' syms bsym_table btyp in
       let n = length offsets in
-      gen_offset_data module_name s n name offsets false false [] None encoder_name decoder_name
+      gen_offset_data bsym_table module_name s h n name offsets false false [] None encoder_name decoder_name
  
     | BTYP_rptsum _
     | BTYP_sum _ ->
