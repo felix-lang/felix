@@ -49,6 +49,7 @@ let add_offset o inner =
 let offsetof s e =
   "offsetof(" ^ s ^ "," ^ e ^ ")"
 
+
 let rec get_offsets' syms bsym_table typ : offset_kind_t list =
   let tname = cpp_typename syms bsym_table typ in
   let t' = unfold "flx_cal_type_offsets: get_offsets" typ in
@@ -215,11 +216,15 @@ let rec get_offsets' syms bsym_table typ : offset_kind_t list =
   | BTYP_type_set_intersection _
   | BTYP_type_set_union _ -> assert false
 
-let render_offset bsym_table s =
+let render_offset syms bsym_table new_table s =
   match s with 
     | `Ptr s -> "{" ^ s ^",nullptr}"
-    | `Prim (s,t) -> "{" ^ s ^",nullptr/*FIXME "^sbt bsym_table t^"*/}"
+    | `Prim (s,t) -> 
+      let index' = Flx_treg.find_type_index syms bsym_table t in
+      Hashtbl.replace new_table t index';
+      let shape = Flx_pgen.shape_of' true syms bsym_table (cpp_typename syms bsym_table) t in
+      "{" ^ s ^", &"^shape^"/* "^sbt bsym_table t^"*/}"
 
-let get_offsets syms bsym_table typ =
-  map  (render_offset bsym_table) (get_offsets' syms bsym_table typ)
+let get_offsets syms bsym_table new_table typ =
+  map  (render_offset syms bsym_table new_table ) (get_offsets' syms bsym_table typ)
 

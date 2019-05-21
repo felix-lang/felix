@@ -772,9 +772,19 @@ void *scan_by_offsets(collector_t *collector, gc_shape_t *shape, void *p, size_t
   // so just return the value stored at that offset immediately
   if (n_used * n_offsets == 1) // tail rec optimisation
   {
-      void **pq = (void**)(void*)((unsigned char*)fp + offsets[0].offset);
-      void *q = *pq;
+    offset_entry_t oe =((offset_entry_t*)offsets)[0];
+    void *loc = (unsigned char*)fp + oe.offset;
+    gc_shape_t *descriptor = (gc_shape_t*)oe.descriptor;
+    if(descriptor) {
+      scanner_t *scanner = descriptor->scanner;
+      if(scanner) scanner (collector, descriptor, loc, 1, reclimit - 1);
+      // do nothing if no scanner
+    }
+    else {
+      void *q = *(void**)loc; // fetch
       if(q) return q; // tail rec optimisation
+      // do nothing if null
+    }
   }
   else
   // otherwise we have to scan through all the offsets in every array element
@@ -782,14 +792,23 @@ void *scan_by_offsets(collector_t *collector, gc_shape_t *shape, void *p, size_t
   {
     for(unsigned int i=0; i<n_offsets; ++i)
     {
-      void **pq = (void**)(void*)((unsigned char*)fp + offsets[i].offset);
-      void *q = *pq;
-      //fprintf(stderr, "scan by offsets %s, #%d, offset %zu, address %p, value %p\n", 
-      //  shape->cname, i, offsets[i], pq, q);
-      // instead of returning the pointer, register it for later processing
-      if(collector->inrange(q))
-      {
-        collector->register_pointer(q, reclimit);
+      offset_entry_t oe =((offset_entry_t*)offsets)[i];
+      void *loc = (unsigned char*)fp + oe.offset;
+      gc_shape_t *descriptor = (gc_shape_t*)oe.descriptor;
+      if(descriptor) {
+        scanner_t *scanner = descriptor->scanner;
+        if(scanner) scanner (collector, descriptor, loc, 1, reclimit - 1);
+        // do nothing if no scanner
+      }
+      else {
+        void *q = *(void**)loc; // fetch
+        //fprintf(stderr, "scan by offsets %s, #%d, offset %zu, address %p, value %p\n", 
+        //  shape->cname, i, offsets[i], pq, q);
+        // instead of returning the pointer, register it for later processing
+        if(collector->inrange(q))
+        {
+          collector->register_pointer(q, reclimit);
+        }
       }
     }
     // on to the next array element

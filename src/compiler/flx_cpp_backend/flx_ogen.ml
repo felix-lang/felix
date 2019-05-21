@@ -91,19 +91,16 @@ let gen_offset_tables syms bsym_table extras module_name =
   bcat h "\n";
  
   (* Make a shape for every non-C style function with the property `Heap_closure *)
+  (* last arg, allocable_types, is used for dependent types found in process *)
   print_debug syms "Make fun shapes";
-  gen_all_fun_shapes module_name (scan_exes syms bsym_table allocable_types) s h syms bsym_table;
+  gen_all_fun_shapes module_name (scan_exes syms bsym_table allocable_types) s h syms bsym_table allocable_types;
 
   (* generate offsets for all pointers store in the thread_frame *)
   print_debug syms "Make thread frame offsets";
-  gen_thread_frame_offsets module_name s h syms bsym_table;
+  gen_thread_frame_offsets module_name s h syms bsym_table allocable_types;
 
   (* We're not finished: we need offsets dynamically allocated types too *)
 
-  (* currently the ONLY non-function types that can be allocated
-    are the arguments of non-constant variant constructors:
-    this WILL change when a 'new' operator is introduced.
-  *)
   print_debug syms "Make shapes for dynamically allocated types";
 
   (* extra shapes required by primitives *)

@@ -18,7 +18,7 @@ open Flx_gen_shape
 open Flx_findvars
 
 
-let gen_thread_frame_offsets module_name s h syms bsym_table =
+let gen_thread_frame_offsets module_name s h syms bsym_table new_table =
   let vars = find_thread_vars_with_type bsym_table in
   let ts = [] in
   let name = "thread_frame_t" in
@@ -41,9 +41,9 @@ let gen_thread_frame_offsets module_name s h syms bsym_table =
   let n = length offsets in
   bcat s ("\n//**************************************\n");
   bcat s ( "//SHAPE for "^ name ^ "\n");
-  gen_offset_data bsym_table module_name s h n name offsets 
+  gen_offset_data syms bsym_table module_name s h n name offsets 
     false false [] (Some "::flx::gc::generic::gc_flags_immobile") 
-    "0" "0"
+    "0" "0" new_table
 
 
 

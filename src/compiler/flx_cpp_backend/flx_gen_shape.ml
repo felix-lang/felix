@@ -14,14 +14,14 @@ open Flx_exceptions
 open Flx_maps
 open Flx_cal_type_offsets
 
-let gen_offset_data bsym_table module_name s h n name (offsets: offset_kind_t list) isfun is_pod props flags encoder_name decoder_name =
+let gen_offset_data syms bsym_table module_name s h n name (offsets: offset_kind_t list) isfun is_pod props flags encoder_name decoder_name new_table =
   let this_ptr_map = name ^ "_ptr_map" in
   let noffsets = si n in
   if n <> 0 then
   begin
     bcat s ("static ::flx::gc::generic::offset_entry_t const " ^ name ^
       "_offsets["^noffsets^ "]={\n");
-    bcat s ("  " ^ catmap ",\n  " (render_offset bsym_table) offsets);
+    bcat s ("  " ^ catmap ",\n  " (render_offset syms bsym_table new_table) offsets);
     bcat s ("\n" ^  "};\n");
     bcat s ("static ::flx::gc::generic::offset_data_t const " ^name^"_offset_data = { " ^ 
      noffsets ^", " ^ name^ "_offsets};\n");

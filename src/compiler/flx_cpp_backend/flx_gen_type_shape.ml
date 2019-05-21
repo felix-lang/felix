@@ -79,7 +79,7 @@ let rec gen_type_shape module_name s h syms bsym_table need_int primitive_shapes
       let oname  = "&" ^ (gen_first_class ()) in
       bcat s ("\n//**************************************\n");
       bcat s ("//SHAPE for tuple type " ^ string_of_bid index ^ "\n");
-      gen_offset_data bsym_table module_name s h n name offsets false false [] None encoder_name decoder_name
+      gen_offset_data syms bsym_table module_name s h n name offsets false false [] None encoder_name decoder_name new_table
 
     (* This is a pointer, the offset data is in the system library *)
     | BTYP_ptr (_,t,[]) -> ()
@@ -100,7 +100,7 @@ let rec gen_type_shape module_name s h syms bsym_table need_int primitive_shapes
       bcat s ("//SHAPE for array type " ^ string_of_bid index ^ "\n");
       if n <> 0 then begin
         bcat s ("static ::flx::gc::generic::offset_entry_t const " ^ name ^ "_offsets["^si n^"]={\n  ");
-        bcat s ("  " ^ catmap ",\n  " (render_offset bsym_table) offsets);
+        bcat s ("  " ^ catmap ",\n  " (render_offset syms bsym_table new_table) offsets);
         bcat s "};\n";
         bcat s ("static ::flx::gc::generic::offset_data_t const " ^name^"_offset_data = { " ^ 
           string_of_int n ^", " ^ name^ "_offsets};\n");
@@ -305,7 +305,7 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
         bcat s ("//SHAPE for struct type " ^ name ^ " instance\n");
         let offsets = get_offsets' syms bsym_table btyp in
         let n = length offsets in
-        gen_offset_data bsym_table module_name s h n name offsets false false [] None encoder_name decoder_name
+        gen_offset_data syms bsym_table module_name s h n name offsets false false [] None encoder_name decoder_name new_table
 
       | _ ->
         failwith
@@ -323,7 +323,7 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
       bcat s ("//SHAPE for record type " ^ name ^ " instance\n");
       let offsets = get_offsets' syms bsym_table btyp in
       let n = length offsets in
-      gen_offset_data bsym_table module_name s h n name offsets false false [] None encoder_name decoder_name
+      gen_offset_data syms bsym_table module_name s h n name offsets false false [] None encoder_name decoder_name new_table
  
     | BTYP_rptsum _
     | BTYP_sum _ ->
