@@ -137,6 +137,7 @@ let rec expand_ident sr macros noexpand id =
     | _ -> id
   with Not_found -> id
 
+(* Eliminates PAT_expr by replacing it with a variable and guard *)
 let fix_pattern counter pat =
   let rec aux p = match p with
   | PAT_none _
@@ -175,7 +176,7 @@ let fix_pattern counter pat =
     let test = `EXPR_apply (sr, (eq,args)) in
     PAT_when (sr,PAT_name (sr,n),test)
 
-  | PAT_alt _ -> assert false
+  | PAT_alt (sr,ps) ->  assert false
   in aux pat
 
 (* Find variable names in patterns so as to protect them *)
@@ -192,9 +193,9 @@ let rec mac_get_pattern_vars pat =
   | PAT_tuple_snoc (sr,a,b) -> mac_get_pattern_vars a @ mac_get_pattern_vars b
   | PAT_record (_,ps) -> List.concat(List.map mac_get_pattern_vars (List.map snd ps))
   | PAT_polyrecord (_,ps,r) -> r :: List.concat(List.map mac_get_pattern_vars (List.map snd ps))
-  | PAT_alt _ -> assert false
   | PAT_with (_,p,asgns) -> List.map fst asgns @ mac_get_pattern_vars p
   | PAT_subtype (_,_,v) -> [v] 
+  | PAT_alt _ -> assert false
   | _ -> []
 
 (* cartesian product of two lists N x M is a single list of N x M pairs *)
@@ -233,6 +234,12 @@ let add_components_to_tuples (ps: component_pats) (rs: tuple_t list) =
 
 let cartt (ps: component_pats list) : tuple_t list =
   fold_right add_components_to_tuples  ps [[]]
+
+(* Eliminates PAT_alt by replacing match branches whose patterns contain alternatives
+with multiple branches each selecting one alternative. Recursive so handles nested
+alternatiives as well. Returns a list of patterns. Initially, apply to top level
+pattern. Attach branch code to each pattern afterwards to get multiple branches.
+*)
 
 let expand_pattern_branches pes =
   let rec aux p = match p with
@@ -280,7 +287,8 @@ let expand_pattern_branches pes =
       let pss = map (fun (s,p) -> s,aux p) ps in
       map (fun rs -> PAT_polyrecord (sr, rs, r)) (cartr pss)
    
-    | PAT_alt (sr,ps) -> ps
+    | PAT_alt (sr,ps) ->
+      concat (map aux ps)
 
   in 
   let pss= map (fun (p,e) -> map (fun p ->p,e) (aux p)) pes in

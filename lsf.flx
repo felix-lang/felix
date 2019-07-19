@@ -1,0 +1,246 @@
+var testlsf = 
+  "lam x. lam y. S F (lam z. F a z) x"
+; 
+//lexer  
+
+chip lex (s:string) 
+  connector io
+    pin out: %>string
+{
+  var n = s.len.int;
+  variant state_t = Skip | Grab;
+  var token = "";
+  proc emit() { 
+    if token != "" perform write (io.out,token);
+    token = "";
+    state = Skip;
+  }
+
+  var state = Skip;
+  nextch: for ch in s do
+    match state with
+    | Skip =>
+      if ch in "()." do
+        write (io.out,string ch);
+      elif ch > char ' '  do
+        token += ch;
+        state = Grab; 
+      done
+    | Grab =>
+      if ch in "()." do
+        emit;
+        write (io.out,string ch);
+      elif ch <= char ' ' do
+        emit;
+      else
+       token += ch;
+      done
+    endmatch;
+  done
+  emit;
+  write (io.out, "End");
+}
+
+proc testlex(s:string) {
+  proc printstring (s:string) { println$ "Lexeme= " + s; }
+  #(lex s |-> procedure printstring);
+}
+
+testlex(testlsf);
+
+//tokeniser
+variant token_t = 
+  | TVar of string
+  | TokS
+  | TokF
+  | Left
+  | Right
+  | TLam
+  | Dot
+  | TEnd
+;
+
+instance Str[token_t] {
+  fun str: token_t -> string = 
+  | TVar s => s
+  | TokS => "S"
+  | TokF => "F"
+  | Left => "("
+  | Right => ")"
+  | TLam => "Lam" 
+  | Dot => "."
+  | TEnd => "End"
+  ;
+}
+
+  
+chip tokeniser 
+  connector io
+   pin inp: %<string
+   pin out: %>token_t
+{
+  while true do
+    var x = read io.inp;
+    write (io.out, 
+      match x with
+      | "(" => Left
+      | ")" => Right
+      | "S" => TokS
+      | "F" => TokF
+      | "." => Dot
+      | "lam" => TLam
+      | "End" => TEnd
+      | _ => TVar x
+      endmatch
+    );
+  done
+}
+
+proc testtok (s:string) {
+  var counter = 0;
+  proc printtok (t:token_t) { ++counter; println$ "Token #" + counter.str + "=" + t.str; }
+  #(lex s |-> tokeniser |-> procedure printtok);
+}
+
+testtok (testlsf);
+
+
+
+
+//parser
+// term = |  var | lam var . term | term term | S  | F | ( term )
+// constraint: lam must be preceded by either .  or ( or be the first symbol
+
+variant term_t = 
+  | Var of string
+  | Lam of string * term_t
+  | Node of term_t * term_t
+  | S 
+  | F 
+  | Error of string
+;
+
+instance Str[term_t] {
+  fun str: term_t -> string =
+  | Var s => s 
+  | Lam (s,t) => "{lam " + s + "." + t.str+"}"
+  | Node (t1, t2) => "(" + t1.str + " " +t2.str + ")"
+  | S => "\\S"
+  | F => "\\F"
+  | Error s => "ERROR " + s
+  ;
+}
+  
+chip lsfparser
+  connector io
+    pin inp: %<token_t
+    pin out: %>term_t
+{
+  var counter = 0;
+  var tok : token_t;
+  proc fetch () { tok = read io.inp; ++counter; }
+  
+  proc fail () {
+    write (io.out, Error ("Syntax Error on token #" + counter.str +  "=" + tok.str + "\nStack=" + stack.str));
+    goto terminate;
+  }
+
+  variant elt_t = 
+    | Tok of token_t
+    | Term of term_t
+  ;
+  instance Str[elt_t] {
+    fun str : elt_t -> string =
+    | Tok t => "Tok " + t.str
+    | Term t => "Term " + t.str
+    ;
+  }
+  var stack = Empty[elt_t];
+  proc push () { stack = Tok tok ! stack; }
+  proc maybe_node () { 
+    match stack with
+    | Term a ! Term b ! tail => stack = Term (Node (b,a)) ! tail;
+    | _ => ; 
+    endmatch;
+  }
+
+  while true do
+    maybe_node;
+    fetch();
+    match tok with
+    | TEnd =>
+reduce_lam1:>
+      match stack with
+      | ([Term term]) => write (io.out, term);
+
+      | Term term ! Tok Dot ! Tok (TVar v) ! Tok TLam ! tail =>
+        stack = Term (Lam (v,term)) ! tail;
+        maybe_node;
+        goto reduce_lam1;
+
+      | Empty => write (io.out, Error "No input");
+      | _ => fail;
+      endmatch;
+
+    | Left =>
+      push;
+
+    | Right =>
+reduce_lam2:>
+      match stack with
+      | Term t ! Tok Left ! tail => stack = Term t ! tail;
+
+      | Term term ! Tok Dot ! Tok (TVar v) ! Tok TLam ! tail =>
+        stack = Term (Lam (v,term)) ! tail;
+        maybe_node;
+        goto reduce_lam2;
+
+      | _ => fail;
+      endmatch;
+
+    | TokS =>
+      match stack with
+      | Term t ! tail => stack =  Term (Node (t, S)) ! tail;
+      | _ => stack = Term S ! stack;
+      endmatch;
+
+    | TokF =>
+      match stack with
+      | Term t ! tail => stack = Term (Node (t, F)) ! tail;
+      | _ => stack = Term F ! stack;
+      endmatch;
+   
+    | TLam =>
+      match stack with
+      | (Empty | ((Tok Dot | Tok Left) ! _)) =>  push;
+      | _ => fail;
+      endmatch;
+
+    | TVar v =>
+      match stack with
+      | Tok TLam ! _ => push; 
+      | Term t ! tail => stack = Term (Node (t, Var v)) ! tail;
+      | _ => stack = Term (Var v) ! stack;
+      endmatch; 
+
+    | Dot =>
+      match stack with
+      | Tok (TVar v) ! Tok TLam ! tail => push;
+      | _ => fail;
+      endmatch;
+
+    endmatch;
+  done 
+
+terminate:> ;    
+
+}
+
+
+proc testlsfparser (s:string) {
+  proc printterm (t:term_t) { println$ "Term=" + t.str; }
+  #(lex s |-> tokeniser |-> lsfparser |-> procedure printterm);
+}
+
+testlsfparser("lam x. lam y. S F (lam z. F a z) x");
+
