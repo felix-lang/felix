@@ -1,7 +1,7 @@
-var testlsf = 
-  "lam x. lam y. S F (lam z. F a z) x"
-; 
-//lexer  
+macro val testing = true;
+
+/////////////////////////////////////////////////////////////////////////////////////
+// A CRUDE LEXER
 
 chip lex (s:string) 
   connector io
@@ -41,14 +41,22 @@ chip lex (s:string)
   write (io.out, "End");
 }
 
-proc testlex(s:string) {
-  proc printstring (s:string) { println$ "Lexeme= " + s; }
-  #(lex s |-> procedure printstring);
-}
+if testing do
+  var testlsf = 
+    "lam x. lam y. S F (lam z. F a z) x"
+  ; 
 
-testlex(testlsf);
+  proc testlex(s:string) {
+    proc printstring (s:string) { println$ "Lexeme= " + s; }
+    #(lex s |-> procedure printstring);
+  }
 
-//tokeniser
+  testlex(testlsf);
+done
+
+/////////////////////////////////////////////////////////////////////////////////////
+// TOKEN DEFINITION
+
 variant token_t = 
   | TVar of string
   | TokS
@@ -74,6 +82,9 @@ instance Str[token_t] {
 }
 
   
+/////////////////////////////////////////////////////////////////////////////////////
+// TOKENISER
+
 chip tokeniser 
   connector io
    pin inp: %<string
@@ -96,20 +107,19 @@ chip tokeniser
   done
 }
 
-proc testtok (s:string) {
-  var counter = 0;
-  proc printtok (t:token_t) { ++counter; println$ "Token #" + counter.str + "=" + t.str; }
-  #(lex s |-> tokeniser |-> procedure printtok);
-}
+if testing do
+  proc testtok (s:string) {
+    var counter = 0;
+    proc printtok (t:token_t) { ++counter; println$ "Token #" + counter.str + "=" + t.str; }
+    #(lex s |-> tokeniser |-> procedure printtok);
+  }
 
-testtok (testlsf);
+  testtok (testlsf);
+done
 
 
-
-
-//parser
-// term = |  var | lam var . term | term term | S  | F | ( term )
-// constraint: lam must be preceded by either .  or ( or be the first symbol
+/////////////////////////////////////////////////////////////////////////////////////
+// TERM DEFINITION
 
 variant term_t = 
   | Var of string
@@ -130,7 +140,17 @@ instance Str[term_t] {
   | Error s => "ERROR " + s
   ;
 }
-  
+
+// We can write N M in Felix code to mean Node (N,M)
+// but only in expressions, not in patterns unfortunately
+fun apply (l:term_t,r:term_t) => Node (l,r);
+
+/////////////////////////////////////////////////////////////////////////////////////
+// PARSER
+//
+// term = |  var | lam var . term | term term | S  | F | ( term )
+// constraint: lam must be preceded by either .  or ( or be the first symbol
+
 chip lsfparser
   connector io
     pin inp: %<token_t
@@ -236,11 +256,174 @@ terminate:> ;
 
 }
 
+if testing do
+  proc testlsfparser (s:string) {
+    proc printterm (t:term_t) { println$ "Term=" + t.str; }
+    #(lex s |-> tokeniser |-> lsfparser |-> procedure printterm);
+  }
 
-proc testlsfparser (s:string) {
-  proc printterm (t:term_t) { println$ "Term=" + t.str; }
-  #(lex s |-> tokeniser |-> lsfparser |-> procedure printterm);
+  var testexpr = "lam x. lam y. S F (lam z. F a z) x";
+  testlsfparser(testexpr);
+done
+
+fun lsfparse (s:string) : term_t = {
+  var t: term_t;
+  proc saveterm (x:term_t) { t = x; }
+  run (lex s |-> tokeniser |-> lsfparser |-> procedure saveterm);
+  return t;
 }
 
-testlsfparser("lam x. lam y. S F (lam z. F a z) x");
+if testing do
+  println$ "Parsed again = " + (lsfparse testexpr).str;
+done
+
+/////////////////////////////////////////////////////////////////////////////////////
+// ALPHA CONVERSION
+
+// fresh integer generator for alpha conversion
+gen freshint_gen () : int = { for i in 100.. yield i; }
+var freshint =  freshint_gen;
+
+// alpha conversion
+fun alpha (t:term_t) : term_t =>
+  let fun aux (env:list[string * string]) (t:term_t) : term_t =>
+    match t with
+    | Var s' as t =>  
+      match find env s' with
+      | None => t
+      | Some x => Var x
+      endmatch
+
+    | Lam (s', t') => 
+      let r = "_" + #freshint.str in
+      Lam (r, aux ((s',r) ! env) t')
+
+    | Node (a,b) => Node (aux env a, aux env b)
+
+    | x => x // S or F
+  in aux Empty[string * string]  t
+;
+
+/////////////////////////////////////////////////////////////////////////////////////
+// BETA REDUCTION
+fun beta (s: string, bdy: term_t, r: term_t) : term_t =>
+  let b = alpha bdy in
+  let fun aux (t:term_t) =>
+    match t with
+    | Var v when v == s => r
+    | Lam (s,t) => Lam (s, aux t)
+    | Node (a,b) => Node (aux a, aux b) 
+    | x => x
+    endmatch
+  in aux b
+;
+
+if testing do
+  proc checkbeta (s:string, b: term_t, r: term_t) {
+    var a = Node (Lam (s,b),r);
+    println$ "To reduce = " + a.str;
+    println$ "Reduced = " + (beta (s,b,r)).str;
+  }
+
+  var testexpr2 = "x y";
+  var testexpr3 = "z";
+  checkbeta ("x", lsfparse testexpr2, lsfparse testexpr3);
+done
+
+/////////////////////////////////////////////////////////////////////////////////////
+// DEFINE ACTIVE VARIABLE
+fun active: term_t -> opt[string] =
+  | Var x => Some x
+  | S => None[string]
+  | F => None[string]
+  | Lam (s,t) =>
+    match active t with // active t - {s}
+    | Some s' as a => if s == s' then None[string] else a
+    | None => None[string]
+    endmatch
+  | Node ((S|F),m) => None[string]
+  | Node (Node ((S|F),m),n) => None[string]
+  | Node (Node(Node(S,m),n),p) => None[string]
+  | Node (Node(Node(F,m),n),p) => active m
+  | Node (m,n) => active m
+; 
+
+fun has_active (t:term_t): bool =>
+  match active t with
+  | Some _ => true
+  | None => false
+;
+
+/////////////////////////////////////////////////////////////////////////////////////
+// DEFINE STAR REDUCTION
+// 
+// Eliminates lambda terms
+
+var K = F F;
+var I = S K K; 
+var abs_left = S K F;
+
+fun star (s:string, t:term_t) => match t with
+  | Var x when x == s => I
+  | Var y => K (Var y)
+  | (S|F) as O => K O
+  | Lam (y,m) => Lam (s, star (y,m))
+  | Node (m,n) => S (Lam(s,m)) (Lam(s,n))
+;
+
+if testing do
+  var teststar = "lam x. lam y. y";
+  println$ lsfparse teststar;
+  println$ star("x",lsfparse "lam y.y");
+done
+
+/////////////////////////////////////////////////////////////////////////////////////
+// DEFINE LEFT AND RIGHT COMPONENTS
+fun left : term_t -> term_t =
+  | Node (m,n) => m
+  | _ => S K F
+;
+
+fun right : term_t -> term_t =
+  | Node (m,n) => n
+  | Lam (s,t) => star (s,t)
+  | m => m
+;
+
+fun split (t:term_t) : term_t => t.left t.right;
+
+/////////////////////////////////////////////////////////////////////////////////////
+// DEFINE NORMAL FORM
+
+fun normal: term_t -> bool =
+ | (S|F|Var _) => true
+ | Lam (_,t) => normal t
+ | Node (m,n) as t =>
+   normal m and normal n and (compound t or has_active t)
+;
+
+/////////////////////////////////////////////////////////////////////////////////////
+// DEFINE COMPOUND
+fun compound : term_t -> bool =
+ | (S|F) => false
+ | _ => true
+;
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+// REDUCTION
+
+fun sfreduce: term_t -> term_t =
+  | Node (f,x) => 
+    match f,x with
+    | Lam (s,f), x => beta (s,f,x)
+    | S,Node (m,Node (n,p)) => (m n) (n p)
+    | F,Node(Node (p,m),n) =>
+      match p with
+      | (S|F) => m
+      | _ => n p.split
+      endmatch
+    endmatch
+  | x => x
+;
 
