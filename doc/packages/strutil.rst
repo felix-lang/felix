@@ -34,10 +34,11 @@ String utilities
   #include <string>
   #include <sstream>
   #include <iomanip>
+  #include <iostream>
   #include <cstdarg>
   #include <cstdlib>
   #include <cstring>
-  
+  #include <typeinfo>
   
   #include "flx_strutil_config.hpp"
   
@@ -88,6 +89,13 @@ String utilities
       x << t;
       return x.str();
     }
+    template<class T>
+    string fmt_hex(T const &t) {
+      std::ostringstream x;
+      x << "0x" << std::hex << t << std::dec;
+      return x.str();
+    }
+  
   
     template<class T>
     string fmt_default(T const &t, int w, int p) {

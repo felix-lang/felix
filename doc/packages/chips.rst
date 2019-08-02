@@ -46,7 +46,7 @@ Blocks writer.
   //[chips.flx]
   chip readblock[T]
     connector io
-      pin inp: %>T
+      pin out: %>T
   {
   }
   

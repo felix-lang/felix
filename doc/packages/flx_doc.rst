@@ -567,7 +567,7 @@ with specified heading and pattern match.
     var prefix = "";
     var out = "";
     proc emit_code () { 
-      var b = rev code_buf;
+      var b = unbox (rev code_buf);
       for l in b do
         var rc = Match (class_R, l);
         var rf = Match (fun_R, l);
@@ -600,7 +600,7 @@ with specified heading and pattern match.
       | None =>
         match mode with
         | `Tangler =>
-          var tab = rev tanglers;
+          var tab = unbox (rev tanglers);
           tanglers = Empty[string * string];
           var lkey,lfile = fold_left 
             (fun (lkey:int,lfile:int) (key:string,file:string) =>

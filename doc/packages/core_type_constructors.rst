@@ -773,6 +773,7 @@ Tuples
   }
   open [T,U with Tord[T], Tord[U]] Tord[T ** U];
   open [T,U with Tord[T], Tord[U]] Tord[T * U];
+  open [T with Tord[T]] Tord[T * T];
   
   /* type equality now requires type_eq!
   //------------------------------------------------------------------------------

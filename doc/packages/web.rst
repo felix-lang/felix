@@ -371,7 +371,7 @@ Web Server Support Library
     }
   
     fun get_fname(request:http_request) ={
-      val v = match rev(split(request.path,'/')) with
+      val v = match unbox (rev(split(request.path,'/'))) with
         | Cons(hd,_) => Some(hd) 
         | _ => None[string]
       endmatch;
@@ -379,7 +379,7 @@ Web Server Support Library
     }
   
     fun get_path_and_fname(request:http_request):opt[string^2] ={
-      return match rev(split(request.path,'/')) with
+      return match unbox (rev(split(request.path,'/'))) with
         | Cons(hd,tl) => Some(
               (fold_left (fun(x:string) (y:string):string => x +"/"+ y) "" (rev(tl))), hd)
         | _ => None[string*string]
@@ -1142,7 +1142,7 @@ Web Server Support Library
        endmatch;
     
     fun mime_type_from_file(file:string) =>
-      match rev(split(file,'.')) with
+      match unbox (rev(split(file,'.'))) with
       | Cons(hd,_) => mime_type_from_extension hd
       | _ => text plain
       endmatch;

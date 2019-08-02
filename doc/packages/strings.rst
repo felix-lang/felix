@@ -637,40 +637,40 @@ Split a string into a list on given separator
 .. code-block:: felix
 
   //[string.flx]
-    fun split (x:string, d:char): List::list[string] => List::rev (rev_split (x,d));
+    fun split (x:string, d:char): List::list[string] => unbox (List::rev (rev_split (x,d)));
   
-    fun rev_split (x:string, d:char): List::list[string] = {
+    fun rev_split (x:string, d:char): uniq (List::list[string]) = {
       fun aux (x:string,y:List::list[string]) =>
         match find (x, d) with
         | #None => Cons (x, y)
         | Some n => aux$ x.[n+1uz to], List::Cons (x.[to n],y)
         endmatch
       ;
-      return aux$ x, List::Empty[string];
+      return box (aux$ x, List::Empty[string]);
     }
   
-    fun split (x:string, d:string): List::list[string] => List::rev (rev_split (x,d));
+    fun split (x:string, d:string): List::list[string] => unbox (List::rev (rev_split (x,d)));
   
-    fun rev_split (x:string, d:string): List::list[string] = {
+    fun rev_split (x:string, d:string): uniq List::list[string] = {
       fun aux (pos:size,y:List::list[string]) =>
         match stl_find_first_of (x, d, pos) with
         | $(stl_npos) => List::Cons (x.[pos to],y)
         | n => aux$ (n+1uz), List::Cons (x.[pos to n],y)
         endmatch
       ;
-      return aux$ 0uz, List::Empty[string];
+      return box (aux$ 0uz, List::Empty[string]);
     }
   
-    fun split (x:string, d:+char): List::list[string] => List::rev (rev_split (x,d));
+    fun split (x:string, d:+char): List::list[string] => unbox (List::rev (rev_split (x,d)));
   
-    fun rev_split (x:string, d:+char): List::list[string] = {
+    fun rev_split (x:string, d:+char): uniq (List::list[string]) = {
       fun aux (x:string,y:List::list[string]) =>
         match find_first_of (x, d) with
         | #None => List::Cons (x, y)
         | Some n => aux$ x.[n+1uz to], List::Cons (x.[to n],y)
         endmatch
       ;
-      return aux$ x, List::Empty[string];
+      return box (aux$ x, List::Empty[string]);
     }
   
     fun split_first (x:string, d:string): opt[string*string] =>

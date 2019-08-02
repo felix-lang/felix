@@ -274,6 +274,7 @@ Types required for the RTTI object.
   typedef void copier_t (void*,void*);
   typedef void dflt_init_t (void*);
   
+  
   struct GC_EXTERN gc_shape_t
   {
     char const *cname;              ///< C++ typename
@@ -296,6 +297,34 @@ Types required for the RTTI object.
     size_t deallocations;
   };
   
+  // STL CONTAINER SCANNER
+  template<typename C>
+  void *stl_container_scanner(
+    ::flx::gc::generic::collector_t *gc, 
+    ::flx::gc::generic::gc_shape_t *container_shape, 
+    void *location, 
+    size_t nobjects, 
+    int recdepth)
+  {
+    auto object_shape = ((::flx::gc::generic::gc_shape_t * *)(container_shape->private_data))[0];
+    auto object_scanner = object_shape->scanner;
+    printf("stl_container_scanner,\n  loc=%p shape=%s@%p, size=%ld,\n  value shape=%s@%p value_scanner=%p\n", 
+      location, 
+      container_shape->cname, container_shape, ((C*)location)->size(),
+      object_shape->cname, object_shape,
+      object_scanner
+    );
+    if (object_scanner) {
+      auto & container = *(C*)location;
+      for (auto & v : container) {
+        printf("    .. invoking element scanner for address %p\n", &v);
+        object_scanner (gc,object_shape,&v,1,recdepth+1);
+      }
+    }
+    return nullptr;
+  }
+  
+  
   GC_EXTERN extern gc_shape_t _ptr_void_map;
   
 The standard scanner  :code:`scan_by_offsets` uses an array 
@@ -305,10 +334,15 @@ containing offsets into an object where pointers are located.
 .. code-block:: cpp
 
   //[flx_gc.hpp]
+  struct GC_EXTERN offset_entry_t {
+    ::std::size_t offset;
+    void *descriptor; // TO BE FIXED
+  };
+  
   struct GC_EXTERN offset_data_t
   {
     ::std::size_t n_offsets;
-    ::std::size_t const *offsets;
+    offset_entry_t const *offsets;
   };
   
   GC_EXTERN scanner_t scan_by_offsets;
@@ -788,7 +822,7 @@ Memory Management Abstraction Implementation.
     // find the array of offsets
     offset_data_t const *data = (offset_data_t const *)shape->private_data;
     ::std::size_t n_offsets = data->n_offsets;
-    ::std::size_t const *offsets = data->offsets;
+    offset_entry_t const *offsets = data->offsets;
   
     //fprintf(stderr, "scan by offsets: shape %s has %d offsets\n", shape->cname, (int)n_offsets);
     // if the number of used slots is one and there is only one offset
@@ -796,9 +830,19 @@ Memory Management Abstraction Implementation.
     // so just return the value stored at that offset immediately
     if (n_used * n_offsets == 1) // tail rec optimisation
     {
-        void **pq = (void**)(void*)((unsigned char*)fp + offsets[0]);
-        void *q = *pq;
+      offset_entry_t oe =((offset_entry_t*)offsets)[0];
+      void *loc = (unsigned char*)fp + oe.offset;
+      gc_shape_t *descriptor = (gc_shape_t*)oe.descriptor;
+      if(descriptor) {
+        scanner_t *scanner = descriptor->scanner;
+        if(scanner) scanner (collector, descriptor, loc, 1, reclimit - 1);
+        // do nothing if no scanner
+      }
+      else {
+        void *q = *(void**)loc; // fetch
         if(q) return q; // tail rec optimisation
+        // do nothing if null
+      }
     }
     else
     // otherwise we have to scan through all the offsets in every array element
@@ -806,14 +850,23 @@ Memory Management Abstraction Implementation.
     {
       for(unsigned int i=0; i<n_offsets; ++i)
       {
-        void **pq = (void**)(void*)((unsigned char*)fp + offsets[i]);
-        void *q = *pq;
-        //fprintf(stderr, "scan by offsets %s, #%d, offset %zu, address %p, value %p\n", 
-        //  shape->cname, i, offsets[i], pq, q);
-        // instead of returning the pointer, register it for later processing
-        if(collector->inrange(q))
-        {
-          collector->register_pointer(q, reclimit);
+        offset_entry_t oe =((offset_entry_t*)offsets)[i];
+        void *loc = (unsigned char*)fp + oe.offset;
+        gc_shape_t *descriptor = (gc_shape_t*)oe.descriptor;
+        if(descriptor) {
+          scanner_t *scanner = descriptor->scanner;
+          if(scanner) scanner (collector, descriptor, loc, 1, reclimit - 1);
+          // do nothing if no scanner
+        }
+        else {
+          void *q = *(void**)loc; // fetch
+          //fprintf(stderr, "scan by offsets %s, #%d, offset %zu, address %p, value %p\n", 
+          //  shape->cname, i, offsets[i], pq, q);
+          // instead of returning the pointer, register it for later processing
+          if(collector->inrange(q))
+          {
+            collector->register_pointer(q, reclimit);
+          }
         }
       }
       // on to the next array element
@@ -2271,6 +2324,10 @@ Rtti introspection
 .. index:: encoder(fun)
 .. index:: decoder(fun)
 .. index:: uses_offset_table(fun)
+.. index:: offset_entry_t(type)
+.. index:: offset(fun)
+.. index:: pshape(fun)
+.. index:: is_primitive(fun)
 .. index:: _unsafe_n_offsets(fun)
 .. index:: n_offsets(fun)
 .. index:: _unsafe_offsets(fun)
@@ -2281,8 +2338,6 @@ Rtti introspection
 .. index:: name(fun)
 .. index:: typeid(const)
 .. index:: gxx_demangle(fun)
-.. index:: _link_shape(proc)
-.. index:: link_shape(gen)
 .. code-block:: felix
 
   //[rtti.flx]
@@ -2342,6 +2397,12 @@ Rtti introspection
     //$ Check for offset data
     fun uses_offset_table : gc_shape_t -> bool = "$1->scanner == ::flx::gc::generic::scan_by_offsets";
   
+    type offset_entry_t = "::flx::gc::generic::offset_entry_t";
+    fun offset: offset_entry_t -> size = "$1.offset";
+    fun pshape: offset_entry_t -> gc_shape_t = "$1.descriptor"; // could be NULL
+    fun is_primitive: offset_entry_t -> bool = "$1.descriptor == nullptr";
+  
+  
     //$ The number of pointers in the base type.
     //$ If the type is an array that's the element type.
     fun _unsafe_n_offsets: gc_shape_t -> size = "((::flx::gc::generic::offset_data_t const *)($1->private_data))->n_offsets";
@@ -2351,10 +2412,16 @@ Rtti introspection
     ;
   
     //$ Pointer to the offset table.
-    fun _unsafe_offsets: gc_shape_t -> +size = "const_cast< ::std::size_t *>(((::flx::gc::generic::offset_data_t const *)($1->private_data))->offsets)";
+    fun _unsafe_offsets: gc_shape_t -> +offset_entry_t = 
+        "const_cast< ::flx::gc::generic::offset_entry_t*>(((::flx::gc::generic::offset_data_t const *)($1->private_data))->offsets)";
   
-    fun offsets (shape: gc_shape_t) : +size => 
-      if uses_offset_table shape then _unsafe_offsets shape else C_hack::cast[+size] 0 
+    fun offsets (shape: gc_shape_t) : +offset_entry_t => 
+      // some types have no offset array because they have no pointers,
+      // some types have no offset array because we don't know them
+      // these should be DISTIUNGUISHED but this code is a hack
+      // in fact the scanner, ONLY, knows the type of the private data
+      // the serialiser is using it too, so this is a design fault
+      if uses_offset_table shape then _unsafe_offsets shape else C_hack::cast[+offset_entry_t] 0 
     ;
    
     //$ Flags.
@@ -2392,30 +2459,6 @@ Rtti introspection
       return r;
     }
   
-    proc _link_shape[T]: &gc_shape_t = """
-      ::flx::gc::generic::gc_shape_t *p = (gc_shape_t*)malloc(sizeof(gc_shape_t));
-      PTF shape_list_head = p;
-      p->cname = typeid(?1).name();
-      p->count = 1;
-      p->amt = sizeof(?1);
-      p->finaliser = ::flx::gc::generic::std_finaliser<?1>;
-      p->n_offsets = 0;
-      p->offsets = 0;
-      p->flags = ::flx::gc::generic::gc_flags_default;
-      *$1 = p;
-      """ requires property "needs_gc";
-  
-    //$ Create a new shape record.
-    //$ This routine constructs a new shape record on the heap.
-    //$ It fills in some of the data based on the type.
-    //$ Then it stores the shape at the user specified address.
-    //$ Since the shape is represented in Felix by a pointer,
-    //$ subsequent modifications carry through to the linked shape object.
-    //$ This routine is only useful for adding a shape record for a statically
-    //$ known type: that's useful because not all statically known types get
-    //$ shape records: the compiler only generates them if the shape is
-    //$ required because an object of that type is allocated on the heap.
-    gen link_shape[T]()= { var p: gc_shape_t; _link_shape[T] (&p); return p; }
   }
 
 

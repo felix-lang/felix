@@ -302,7 +302,7 @@ gcc and clang basically.
       var txt = data.[pcolon to];
       txt = search_and_replace (txt,'\\\n','');
       var files = respectful_split txt;
-      files = map Directory::mk_absolute_filename files;
+      files = unbox (map Directory::mk_absolute_filename files);
       return files;
     }
   
@@ -792,7 +792,7 @@ specification. Used by the flx_build_rtl tool.
             done
           done
   
-          var objs = map objname files;
+          var objs = unbox (map objname files);
           var libname = 
             let dlib_root = db.getpkgfield1 ehandler (pkg,"provides_dlib") in
             if prefix (dlib_root,"-l") then "lib"+dlib_root.[2 to]
@@ -853,7 +853,7 @@ specification. Used by the flx_build_rtl tool.
           done
         done
   
-        var objs = map objname files;
+        var objs = unbox (map objname files);
         var libname = 
           let dlib_root = db.getpkgfield1 ehandler (pkg,"provides_slib") in
           if prefix (dlib_root,"-l") then  "lib"+dlib_root.[2 to]
@@ -1986,22 +1986,22 @@ Object for MSVC++ on Windows
     method fun get_base_c_compile_flags () => base_c_compile_flags;
     method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
   
-    var include_switches = map (fun (s:string) => "/I"+s) config.header_search_dirs;
+    var include_switches = unbox (map (fun (s:string) => "/I"+s) config.header_search_dirs);
     include_switches = include_switches + filter 
       (fun (s:string)=> prefix (s,"/I") or prefix (s,"-I")) 
       config.ccflags
     ;
   
-    var macros = map (fun (s:string) => "/D"+s) config.macros;
+    var macros = unbox (map (fun (s:string) => "/D"+s) config.macros);
     // for executable
     var static_link_strings = 
       let fun fixup (s:string) => if prefix (s,"-L") then "/LIBPATH:"+s.[2 to] else s in
-      map fixup (config.library_search_dirs + config.static_libraries)
+      unbox (map fixup (config.library_search_dirs + config.static_libraries))
     ;
     // for DLL
     var dynamic_link_strings = 
       let fun fixup (s:string) => if prefix (s,"-L") then "/LIBPATH:"+s.[2 to] else s in
-      map fixup (config.library_search_dirs + config.dynamic_libraries)
+      unbox (map fixup (config.library_search_dirs + config.dynamic_libraries))
     ;
   
     gen xpopen(cmd:list[string]) = {
@@ -2219,7 +2219,7 @@ Object for clang on iOS
     var c_compiler = clang;
     var cxx_compiler = clangxx;
     var linker = clangxx;
-    var archlist = rev (fold_left (fun (acc:list[string]) (arch:string) => arch ! "-arch" ! acc) Empty[string] archs);
+    var archlist = unbox (rev (fold_left (fun (acc:list[string]) (arch:string) => arch ! "-arch" ! acc) Empty[string] archs));
   
     var ccflags_for_dynamic_link = list[string]("-dynamiclib", "-isysroot", sdk) + archlist;
     var base_c_compile_flags = 

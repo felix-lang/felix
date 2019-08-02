@@ -149,7 +149,7 @@ It is built directly from the repository.
         //println$ "ocamldep result 2 =" + res;
         var dfiles = split(res,' ');
         //println$ "ocamldep result 3 =" + str dfiles;
-        dfiles = map (fun (s:string) = { //println$ "Extension swap case '" + s+"'";
+        dfiles = unbox (map (fun (s:string) = { //println$ "Extension swap case '" + s+"'";
           match Filename::get_extension s with 
           | ".cmi" => return Filename::strip_extension s + ".mli";
           | ".cmx" => return Filename::strip_extension s + ".ml";
@@ -157,7 +157,7 @@ It is built directly from the repository.
           | x => return  "ERROR" ;
           endmatch;
           }) 
-          dfiles
+          dfiles)
         ;
         //println$ "ocamldep result 4 =" + str dfiles;
         dfiles = filter (fun (s:string) => s != "") dfiles;
@@ -232,7 +232,7 @@ It is built directly from the repository.
             done
             files = unsorted;
           done
-          sorted_files = rev sorted_files;
+          sorted_files = unbox (rev sorted_files);
           //println$ "Library build order: " + str sorted_files;
         end
   
@@ -291,10 +291,10 @@ It is built directly from the repository.
             var result = Shell::system$ "ocamlopt.opt" + list(
               "-a", "-w",'yzex','-warn-error',"FPSU",
               '-o',tmpdir/lib + ".cmxa") +
-              map 
+              unbox (map 
                 (fun (s:string) => entmp (Filename::strip_extension s) + ".cmx") 
                 (filter (fun (s:string)=> Filename::get_extension s == ".ml") sorted_files)
-            ;
+            );
             if result !=0 do
               println$ "Linking cmxa library " + tmpdir/lib+'.cmxa' + " failed";
               System::exit 1;
@@ -307,9 +307,10 @@ It is built directly from the repository.
             var result = Shell::system$ "ocamlopt.opt" + list(
                "-w",'yzex','-warn-error',"FPSU",
               '-o',tmpdir/lib ) + spec.external_libs + sorted_libs +
-              map 
+              unbox (map 
                 (fun (s:string) => entmp (Filename::strip_extension s) + ".cmx") 
                 (filter (fun (s:string)=> Filename::get_extension s == ".ml") sorted_files)
+              )
             ;
             if result !=0 do
               println$ "Linking executable " + tmpdir/lib+ " failed";
@@ -391,12 +392,12 @@ It is built directly from the repository.
   
       gen mls (d:string) = {
         var files = FileSystem::regfilesin (d, RE2 '.*\\.(mli?|dyp|mll|mly)');
-        return map (fun (f:string) = { return d/f;}) files;
+        return unbox (map (fun (f:string) = { return d/f;}) files);
       }
   
       gen mls_nodyp (d:string) = {
         var files = FileSystem::regfilesin (d, RE2 '.*\\.(mli?|mll|mly)');
-        return map (fun (f:string) = { return d/f;}) files;
+        return unbox (map (fun (f:string) = { return d/f;}) files);
       }
   
   
@@ -1606,9 +1607,10 @@ directory.
         System::exit 1; 
       done
       var web_plugin_objs = 
-        map 
+        unbox (map 
           (fun (s:string) => target_dir/target_bin/'lib'/'rtl'/s+obj_extn) 
           web_plugins
+        )
       ;
   
       println$ "Build flx_web. Note: requires --build-web-plugins";
@@ -1649,9 +1651,9 @@ directory.
   
       println$ "Compile of dflx"+obj_extn+" SUCCEEDED";
   
-      var toolchain_objects = map (fun (p:string) =>
+      var toolchain_objects : list[string] = unbox (map (fun (p:string) =>
         target_dir/target_bin/'lib'/'rtl'/p + "_static"+obj_extn) 
-        toolchain_plugins
+        toolchain_plugins)
       ; 
   
       println$ "Linking dflx"+obj_extn+" with toolchains "+toolchain_objects.str;

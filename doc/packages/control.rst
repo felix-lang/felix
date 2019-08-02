@@ -41,6 +41,7 @@ Misc Control Flow
 .. index:: fix(fun)
 .. index:: flat_fact(fun)
 .. index:: _swap(proc)
+.. index:: swap(proc)
 .. index:: forever(proc)
 .. index:: pass(proc)
 .. index:: for_each(proc)
@@ -79,6 +80,7 @@ Misc Control Flow
       a <- *b;
       b <- tmp;
     }
+    proc swap[t] (a:&t,b:&t) => _swap(a,b);
   
     //$ infinite loop
     proc forever (bdy:unit->void)

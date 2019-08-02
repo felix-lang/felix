@@ -455,8 +455,6 @@ Compiler Support
   #define FLX_APAR_PASS _ptf,
   #define _PTF _ptf->
   #define _PTFV _ptf
-  #define FLX_PASS_PTF 1
-  #define FLX_EAT_PTF(x) x
   #define FLX_DEF_THREAD_FRAME
   
   #define FLX_FRAME_WRAPPERS(mname,name) \
@@ -1151,9 +1149,9 @@ Shapes
   // ********************************************************
   //OFFSETS for fthread_t
   // ********************************************************
-  static const std::size_t _fthread_offsets[2]={
-      offsetof(fthread_t,cc),
-      offsetof(fthread_t,next)
+  static const ::flx::gc::generic::offset_entry_t _fthread_offsets[2]={
+      {offsetof(fthread_t,cc),nullptr},
+      {offsetof(fthread_t,next),nullptr}
   };
   
   static ::flx::gc::generic::offset_data_t const _fthread_offset_data = { 2, _fthread_offsets };
@@ -1174,8 +1172,8 @@ Shapes
   // ********************************************************
   //OFFSETS for schannel_t
   // ********************************************************
-  static const std::size_t schannel_offsets[1]={
-      offsetof(schannel_t,top),
+  static const ::flx::gc::generic::offset_entry_t schannel_offsets[1]={
+      {offsetof(schannel_t,top),nullptr}
   };
   
   static ::flx::gc::generic::offset_data_t const schannel_offset_data = { 1, schannel_offsets };
@@ -1197,8 +1195,8 @@ Shapes
   // _uctor_ implementation
   // ********************************************************
   //OFFSETS for _uctor_
-  static const std::size_t _uctor_offsets[1]= {
-    offsetof(_uctor_,data)
+  static const ::flx::gc::generic::offset_entry_t  _uctor_offsets[1]= {
+    {offsetof(_uctor_,data),nullptr}
   };
   
   static ::flx::gc::generic::offset_data_t const _uctor_offset_data = { 1, _uctor_offsets };
@@ -1251,8 +1249,8 @@ Shapes
   // jump_address implementation
   // ********************************************************
   //OFFSETS for jump_address 
-  static const std::size_t jump_address_offsets[1]= {
-    offsetof(jump_address_t,target_frame)
+  static const ::flx::gc::generic::offset_entry_t jump_address_offsets[1]= {
+    {offsetof(jump_address_t,target_frame),nullptr}
   };
   
   static ::flx::gc::generic::offset_data_t const 
@@ -1320,7 +1318,7 @@ Shapes
   
   static CxxValueType<clptr_t> clptr_t_fcops {};
   
-  static const std::size_t _clptr_t_offsets[1]={ 0 };
+  static const ::flx::gc::generic::offset_entry_t _clptr_t_offsets[1]={ {0,nullptr} };
   ::flx::gc::generic::offset_data_t const _clptr_t_offset_data = { 1, _clptr_t_offsets };
   
   
@@ -1367,7 +1365,7 @@ Shapes
   // ********************************************************
   
   //OFFSETS for address
-  static const std::size_t _address_offsets[1]={ 0 };
+  static const ::flx::gc::generic::offset_entry_t _address_offsets[1]={ {0,nullptr} };
   ::flx::gc::generic::offset_data_t const _address_offset_data = { 1, _address_offsets };
   
   static ::std::string address_encoder (void *p) { 

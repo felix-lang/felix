@@ -786,9 +786,9 @@ This has to be FIXED so flx can run in non-stop mode.
   
   // println$ "MAP PACKAGE REQUIREMENTS: " + spec.str;
   
-      var PKGCONFIG_PATH=map 
+      var PKGCONFIG_PATH=unbox (map 
          (fun (s:string) => "--path+="+s) 
-         spec.FLX_CONFIG_DIRS
+         spec.FLX_CONFIG_DIRS)
       ;
   
       // to hook any extra packages found by the compiler

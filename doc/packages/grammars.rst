@@ -246,7 +246,7 @@ Closure
   
      match newseq with 
      | Empty => out = (head,(#`Epsilon :>> prod_t)) ! out;
-     | _ => out = (head,(`Seq (rev newseq) :>> prod_t)) ! out;
+     | _ => out = (head,(`Seq (unbox (rev newseq)) :>> prod_t)) ! out;
      endmatch;
   
    | `Alt ps =>

@@ -855,6 +855,8 @@ Integer
     inherit RandomSequence[t];
     virtual fun << : t * t -> t = "$1<<$2";
     virtual fun >> : t * t -> t = "$1>>$2";
+    virtual proc <<= : &t * t = "*$1<<=$2;";
+    virtual proc >>= : &t * t = "*$1>>=$2;";
   
     fun shl(x:t,y:t)=> x << y;
     fun shr(x:t,y:t)=> x >> y;

@@ -57,12 +57,12 @@ Synopsis
   include "std/scalar/bool";
   include "std/scalar/int";
   include "std/scalar/real";
-  include "std/scalar/number";
+  include "std/scalar/complex";
+  include "std/scalar/quaternion";
+  
   include "std/scalar/char";
   
   include "std/scalar/float_format";
-  include "std/scalar/float_math";
-  include "std/scalar/quaternion";
   
   include "std/kind/staticbool";
   
@@ -153,6 +153,8 @@ even on a 32 bit machine.
   pod type uint16 = "uint16_t" requires C99_headers::stdint_h, index TYPE_uint16;
   pod type uint32 = "uint32_t" requires C99_headers::stdint_h, index TYPE_uint32;
   pod type uint64 = "uint64_t" requires C99_headers::stdint_h, index TYPE_uint64;
+  pod type uint128 = "uint128_t" requires package "flx_uint256_t";
+  pod type uint256 = "uint256_t" requires package "flx_uint256_t";
   
 Raw Memory
 ==========
@@ -273,7 +275,7 @@ Integers
   //$ Exact sized unsigned integer types.
   //$ In C these are typedefs.
   //$ In Felix they're distinct types.
-  typedef exact_uints = typesetof (uint8,uint16,uint32,uint64);
+  typedef exact_uints = typesetof (uint8,uint16,uint32,uint64,uint128,uint256);
   
   //$ Weirdo signed integers types corresponding to
   //$ typedefs in C.

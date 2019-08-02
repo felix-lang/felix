@@ -84,14 +84,14 @@ Synopsis:
   fun  +        : ucstr * ucstr -> ucstr
   fun  +        : ucstr * &ucstr -> ucstr           doesn't consume second arg
   proc +=       : &ucstr * &ucstr -> ucstr          modifies first arg, doesn't consume second
-  fun erase     : ucstr -> slice[int] -> ucstr
-  fun insert    : ucstr -> int * ucstr -> ucstr     inserts second arg into first at pos
+  fun erase     : ucstr * slice[int] -> ucstr
+  fun insert    : ucstr * int * ucstr -> ucstr     inserts second arg into first at pos
   fun dup       : ucstr -> ucstr * ucstr            destructive dup
   fun dup       : &ucstr -> ucstr * ucstr           nondestructive dup
 
 This one is private:
 
-  fun strmov    : ucstr -> int * int -> ucstr  
+  fun strmov    : ucstr * int * int -> ucstr  
 
 strmov u (f,l) returns a the original string with the tail
 starting at position l moved left to position f. Right moves
@@ -236,7 +236,7 @@ string length if they exceed it.
       lhs <- append (*lhs,rhs)
     ;
   
-    private fun strmov (var x:ucstr) (var f:int, var l:int) : ucstr = {
+    private fun strmov (var x:ucstr, var f:int, var l:int) : ucstr = {
       var p = x.unpack;
       var n = p.strlen.int;
       if f < 0 perform f = 0; 
@@ -247,19 +247,19 @@ string length if they exceed it.
       return pack p;
     }
    
-    fun erase (var x:ucstr) (sl:slice[int]) : ucstr =>
+    fun erase (var x:ucstr, sl:slice[int]) : ucstr =>
       match sl with
       | Slice_all => set (x,0,char "")
       | Slice_from idx => set (x,idx, char "")
-      | Slice_from_counted (first,len) => strmov x (first,first+len)
-      | Slice_to_incl incl => strmov x (0,incl)
-      | Slice_to_excl excl => strmov x (0, excl - 1)
-      | Slice_range_incl (first, last) => strmov x (first, last+1)
-      | Slice_range_excl (first, last) => strmov x (first, last) 
-      | Slice_one pos => strmov x (pos, pos+1)
+      | Slice_from_counted (first,len) => strmov (x (first,first+len)
+      | Slice_to_incl incl => strmov (x,0,incl)
+      | Slice_to_excl excl => strmov (x,0, excl - 1)
+      | Slice_range_incl (first, last) => strmov, x (first, last+1)
+      | Slice_range_excl (first, last) => strmo, x (first, last) 
+      | Slice_one pos => strmov (x, pos, pos+1)
     ;
   
-    fun insert (var x:ucstr) (var pos: int, var y:ucstr) : ucstr =
+    fun insert (var x:ucstr, var pos: int, var y:ucstr) : ucstr =
     {
       var px = unpack x;
       var py = unpack y;
@@ -338,8 +338,8 @@ Synopsis:
   fun  +        : ustr * ustr -> ustr
   fun  +        : ustr * &ustr -> ustr           doesn't consume second arg
   proc +=       : &ustr * &ustr -> ustr          modifies first arg, doesn't consume second
-  fun erase     : ustr -> slice[int] -> ustr
-  fun insert    : ustr -> int * ustr -> ustr     inserts second arg into first at pos
+  fun erase     : ustr * slice[int] -> ustr
+  fun insert    : ustr * int * ustr -> ustr     inserts second arg into first at pos
   fun dup       : ustr -> ustr * ustr            destructive dup
   fun dup       : &ustr -> ustr * ustr           nondestructive dup
 
@@ -490,7 +490,7 @@ string length if they exceed it.
       lhs <- append (*lhs,rhs)
     ;
   
-    private fun strmov (var x:ustr) (var f:int, var l:int) : ustr = {
+    private fun strmov (var x:ustr, var f:int, var l:int) : ustr = {
       var p = x.unpack;
       var n = p.strlen.int;
       if f < 0 perform f = 0; 
@@ -500,20 +500,20 @@ string length if they exceed it.
       if f != l perform strcpy (p+f, p+l); 
       return pack p;
     }
-   
-    fun erase (var x:ustr) (sl:slice[int]) : ustr =>
+  /* 
+    fun erase (var x: ustr, sl:slice[int]) : ustr =>
       match sl with
       | Slice_all => set (x,0,char "")
       | Slice_from idx => set (x,idx, char "")
-      | Slice_from_counted (first,len) => strmov x (first,first+len)
-      | Slice_to_incl incl => strmov x (0,incl)
-      | Slice_to_excl excl => strmov x (0, excl - 1)
-      | Slice_range_incl (first, last) => strmov x (first, last+1)
-      | Slice_range_excl (first, last) => strmov x (first, last) 
-      | Slice_one pos => strmov x (pos, pos+1)
+      | Slice_from_counted (first,len) => strmov (x,first,first+len)
+      | Slice_to_incl incl => strmov (x, 0,incl)
+      | Slice_to_excl excl => strmov (x, 0, excl - 1)
+      | Slice_range_incl (first, last) => strmov (x, first, last+1)
+      | Slice_range_excl (first, last) => strmov (x,first, last) 
+      | Slice_one pos => strmov (x, pos, pos+1)
     ;
-  
-    fun insert (var x:ustr) (var pos: int, var y:ustr) : ustr =
+  */
+    fun insert (var x:ustr, var pos: int, var y:ustr) : ustr =
     {
       var px = unpack x;
       var py = unpack y;

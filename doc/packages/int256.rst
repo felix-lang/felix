@@ -1,0 +1,231 @@
+Package: src/packages/int256.fdoc
+
+
+=================
+int128 and int256
+=================
+
+========== ===============================
+key        file                            
+========== ===============================
+int256.flx share/lib/std/scalar/int256.flx 
+========== ===============================
+
+Big signed integers
+===================
+
+
+
+.. index:: Int128(class)
+.. index:: int128(type)
+.. index:: int128(ctor)
+.. index:: int128(ctor)
+.. index:: isneg(fun)
+.. index:: iszero(fun)
+.. index:: Int256(class)
+.. index:: int256(type)
+.. index:: int256(ctor)
+.. index:: int256(ctor)
+.. index:: isneg(fun)
+.. index:: iszero(fun)
+.. code-block:: felix
+
+  //[int256.flx]
+  open class Int128 {
+    type int128 = new uint128;
+    ctor int128: uint128 = "/*xx*/$1";
+    ctor int128: int64 = "uint128_t($1)/*ctor-int128-from-int64*/";
+  
+    fun isneg: int128 -> bool = "bool($1 & uint128_t(uint64_t(1) << uint64_t(63),0))";
+    fun iszero: int128 -> bool = "$1==0";
+  
+    instance Eq[int128] { 
+      fun == : int128 * int128 -> bool = "$1==$2";
+    }
+  
+    instance Tord[int128] { 
+      fun < ( x:int128, y:int128 ) : bool =>
+        match isneg x, isneg y with
+        | false,false => x._repr_ < y._repr_
+        | true,false => true
+        | false,true => false
+        | true,true => y._repr_ < x._repr_
+      ;
+    }
+  
+    instance FloatAddgrp [int128] {
+      fun zero : 1 -> int128 = "uint128_t(0)";
+      fun + : int128 * int128 -> int128 = "$1+$2";
+      fun neg : int128 -> int128 = "-$1";
+    }
+  
+    instance FloatMultSemi1 [int128] {
+      fun one: 1 -> int128 = "uint128_t(1)";
+      fun * (x:int128, y:int128) : int128 =>
+        _make_int128 (match isneg x, isneg y with
+        | false,false => x._repr_ * y._repr_
+        | true,false=> -((-x)._repr_ * y._repr_)
+        | false,true=> -(x._repr_ * (-y)._repr_)
+        | true,true=> (-x)._repr_ * (-y)._repr_
+        )
+      ;
+    }
+  
+    instance FloatDring [int128] {
+      fun / (x:int128, y:int128): int128 =>
+        _make_int128 (match isneg x, isneg y with
+        | false,false => x._repr_ / y._repr_
+        | true,false=> -((-x)._repr_ / y._repr_)
+        | false,true=> -(x._repr_ / (-y)._repr_)
+        | true,true=> (-x)._repr_ / (-y)._repr_
+        )
+      ;
+      fun % (x:int128, y:int128): int128 =>
+        _make_int128 (match isneg x, isneg y with
+        | false,false => x._repr_ % y._repr_
+        | true,false=> -((-x)._repr_ % y._repr_)
+        | false,true=> -(x._repr_ % (-y)._repr_)
+        | true,true=> (-x)._repr_ % (-y)._repr_
+        )
+      ;
+    }
+  
+    instance Integer [int128] {
+      fun << (x:int128, y:int128) : int128 => 
+        _make_int128 (match isneg x, isneg y with
+        | false,false => x._repr_ << y._repr_
+        | false,true => x._repr_ >> (-y)._repr_
+        | true,false => -((-x)._repr_ << y._repr_)
+        | true,true => -((-x)._repr_ >> y._repr_)
+        )
+      ;
+  
+      fun >> (x:int128, y:int128) : int128 => 
+        _make_int128 (match isneg x, isneg y with
+        | false,false => x._repr_ >> y._repr_
+        | false,true => x._repr_ << y._repr_
+        | true,false => -((-x)._repr_ >> y._repr_)
+        | true,true => -((-x)._repr_ << y._repr_)
+        )
+      ;
+  
+      proc <<= (px: &int128 , y:int128) => px <- *px << y;
+      proc >>= (px: &int128 , y:int128) => px <- *px >> y;
+    }
+  
+    instance Signed_integer [int128] {
+      fun sgn (x:int128): int => if isneg x then -1 elif iszero x then 0 else 1;
+      fun abs(x:int128):int128 => if isneg x then -x else x;
+    }
+  
+  
+    instance Str[int128] {
+      fun str (x:int128) => 
+        if isneg x then "-" + (- x).str else x._repr_.str
+      ;
+    }
+  
+  }
+  
+  open class Int256 {
+    type int256 = new uint256;
+    ctor int256: uint256 = "$1";
+    ctor int256 : int128 = "uint256_t($1)";
+  
+    fun isneg: int256 -> bool = "bool($1 & uint256_t(uint64_t(1) << uint64_t(63),0,0,0))";
+    fun iszero: int256 -> bool = "$1==0";
+  
+    instance Eq[int256] { 
+      fun == : int256 * int256 -> bool = "$1==$2";
+    }
+  
+    instance Tord[int256] { 
+      fun < ( x:int256, y:int256 ) : bool =>
+        match isneg x, isneg y with
+        | false,false => x._repr_ < y._repr_
+        | true,false => true
+        | false,true => false
+        | true,true => y._repr_ < x._repr_
+      ;
+    }
+  
+    instance FloatAddgrp [int256] {
+      fun zero : 1 -> int256 = "uint256_t(0)";
+      fun + : int256 * int256 -> int256 = "$1+$2";
+      fun neg : int256 -> int256 = "-$1";
+    }
+  
+    instance FloatMultSemi1 [int256] {
+      fun one: 1 -> int256 = "uint256_t(1)";
+      fun * (x:int256, y:int256): int256 =>
+        _make_int256 (match isneg x, isneg y with
+        | false,false => x._repr_ * y._repr_
+        | true,false=> -((-x)._repr_ * y._repr_)
+        | false,true=> -(x._repr_ * (-y)._repr_)
+        | true,true=> (-x)._repr_ * (-y)._repr_
+        )
+      ;
+    }
+  
+    instance FloatDring [int256] {
+      fun / (x:int256, y:int256): int256 =>
+        _make_int256 (match isneg x, isneg y with
+        | false,false => x._repr_ / y._repr_
+        | true,false=> -((-x)._repr_ / y._repr_)
+        | false,true=> -(x._repr_ / (-y)._repr_)
+        | true,true=> (-x)._repr_ / (-y)._repr_
+        )
+      ;
+      fun % (x:int256, y:int256): int256 =>
+        _make_int256 (match isneg x, isneg y with
+        | false,false => x._repr_ % y._repr_
+        | true,false=> -((-x)._repr_ % y._repr_)
+        | false,true=> -(x._repr_ % (-y)._repr_)
+        | true,true=> (-x)._repr_ % (-y)._repr_
+        )
+      ;
+    }
+  
+    instance Integer [int256] {
+      fun << (x:int256, y:int256) : int256 => 
+        _make_int256 (match isneg x, isneg y with
+        | false,false => x._repr_ << y._repr_
+        | false,true => x._repr_ >> (-y)._repr_
+        | true,false => -((-x)._repr_ << y._repr_)
+        | true,true => -((-x)._repr_ >> y._repr_)
+        )
+      ;
+  
+      fun >> (x:int256, y:int256) : int256  => 
+        _make_int256 (match isneg x, isneg y with
+        | false,false => x._repr_ >> y._repr_
+        | false,true => x._repr_ << y._repr_
+        | true,false => -((-x)._repr_ >> y._repr_)
+        | true,true => -((-x)._repr_ << y._repr_)
+        )
+      ;
+  
+      proc <<= (px: &int256 , y:int256) => px <- *px << y;
+      proc >>= (px: &int256 , y:int256) => px <- *px >> y;
+    }
+  
+    instance Signed_integer [int256] {
+      fun sgn (x:int256): int => if isneg x then -1 elif iszero x then 0 else 1;
+      fun abs(x:int256):int256 => if isneg x then -x else x;
+    }
+  
+    instance Str[int256] {
+      fun str (x:int256) => 
+        if isneg x then "-" + (- x).str else x._repr_.str
+      ;
+    }
+  
+  }
+  
+  supertype int128 (x: int64) => x.int128;
+  supertype int256 (x: int128) => x.int256;
+  
+  open Signed_integer[int128];
+  open Signed_integer[int256];
+  
+  

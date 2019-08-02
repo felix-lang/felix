@@ -97,9 +97,9 @@ Not used any more.
   // ********************************************************
   //OFFSETS for slist_node_t
   // ********************************************************
-  static const std::size_t slist_node_offsets[2]={
-      offsetof(slist_node_t,next),
-      offsetof(slist_node_t,data)
+  static const ::flx::gc::generic::offset_entry_t slist_node_offsets[2]={
+      {offsetof(slist_node_t,next),nullptr},
+      {offsetof(slist_node_t,data),nullptr}
   };
   
   static ::flx::gc::generic::offset_data_t const slist_node_offset_data = { 2, slist_node_offsets };
@@ -119,8 +119,8 @@ Not used any more.
   // ********************************************************
   //OFFSETS for slist_t
   // ********************************************************
-  static const std::size_t slist_offsets[1]={
-      offsetof(slist_t,head)
+  static const ::flx::gc::generic::offset_entry_t slist_offsets[1]={
+      {offsetof(slist_t,head),nullptr}
   };
   static ::flx::gc::generic::offset_data_t const slist_offset_data = { 1, slist_offsets };
   

@@ -216,7 +216,7 @@ Type Grammar
       srecord_mem_decl2 := stypeexpr =># '`("" ,_1)';
   
     //$ polyRecord type.
-    tatom := "(" srecord_mem_decl ("," srecord_mem_decl2)*  "|" stypeexpr ")" =># 
+    tatom := "(" srecord_mem_decl ("," srecord_mem_decl2)*  "|" srecord_mem_decl2 ")" =># 
      "`(ast_polyrecord_type ,(cons _2 (map second _3)) ,_5)";
   
   
@@ -389,6 +389,9 @@ See also other packages containing extensions.
   
     //$ Unterminated match
     x[let_pri] := "let" pattern_match =># "_2"; 
+    // below gets confused with statement expression .. :-)
+    satom :=  "(" "var" sname "=" sexpr ")" =># "`(ast_as_var ,_sr (,_5 ,_3))";
+    satom :=  "(" "val" sname "=" sexpr ")" =># "`(ast_as ,_sr (,_5 ,_3))";
   
     //$ Conditional expression.
     x[let_pri] := sconditional =># '_1';
@@ -531,7 +534,14 @@ See also other packages containing extensions.
   
     //$ Reverse application with dereference.
     //$ a *. b same as (*a) . b, like C  a -> b.
-    x[sfactor_pri] := x[sfactor_pri] "*." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 (ast_deref ,_sr ,_1)))";
+    x[sfactor_pri] := x[sfactor_pri] "*." x[>sfactor_pri] =># 
+      "`(ast_apply ,_sr (,_3 (ast_apply ,_sr (,(noi 'deref) ,_1))))"
+    ;
+    x[sfactor_pri] := x[sfactor_pri] "->" x[>sfactor_pri] =># 
+      "`(ast_apply ,_sr (,_3 (ast_apply ,_sr (,(noi 'deref) ,_1))))"
+    ;
+  
+  
   
     //$ a &. b is similar to &a . b for an array, but can be overloaded
     //$ for abstract arrays: like a + b in C. Returns pointer.
@@ -949,7 +959,7 @@ Block forms
   {
     stmt = block;
     block := "do" stmt* "done" =># '`(ast_seq ,_sr ,_2)';
-    block := "begin" stmt* "end" =># '(block _2)';
+    block := "begin" stmt* "end" =># '(block_stmts _2)';
     block := "perform" stmt =># '_2';
   }
   
@@ -1143,7 +1153,7 @@ C binding technology
       """
       (let*
         (
-          (name (string-append "_ctor_" (base_of_qualified_name _3)))
+          (name (string-append "_supertype_" (base_of_qualified_name _3)))
           (vs _2)
           (ret _3)
           (argt _5)
@@ -1877,7 +1887,7 @@ Conditional forms
   
     //$ Short form one branch conditional.
     if_stmt := "if" sexpr "begin" stmt* "end" =>#
-      "(block (list `(ast_ifdo ,_sr ,_2 ,_4 ())))";
+      "(block_stmts (list `(ast_ifdo ,_sr ,_2 ,_4 ())))";
   
     //$ General conditional chain statement.
     //$
@@ -1893,7 +1903,7 @@ Conditional forms
       "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
   
     if_stmt := "if" sexpr "begin" stmt* selse_clause "end" =>#
-      "(block (list `(ast_ifdo ,_sr ,_2 ,_4 ,_5)))";
+      "(block_stmts (list `(ast_ifdo ,_sr ,_2 ,_4 ,_5)))";
   
     //$ General elif clause.
     private selif_clause := "elif" sexpr "do" stmt* =># "`(,_2 ,_4)";
@@ -2334,7 +2344,7 @@ Function forms
       """;
   
     //$ Object factory definition without interface type.
-    sfunction := "object" sdeclname sfun_arg*  "=" scompound =>#
+    sfunction := "object" sdeclname sfun_arg*  "="? scompound =>#
       """
         `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 (typ_none none) Object () ,_5)
       """;
@@ -2343,7 +2353,7 @@ Function forms
     //$ interface type.
     sfunction := 
       "object" sdeclname sfun_arg* "extends" expr_comma_list 
-      "implements" object_return_type "=" scompound 
+      "implements" object_return_type "="? scompound 
     =>#
       """
      (begin ;; (display "object function1\n")
@@ -2504,7 +2514,7 @@ Function forms
       """
       (let*
         (
-          (name (string-append "_ctor_" (base_of_qualified_name _3)))
+          (name (string-append "_supertype_" (base_of_qualified_name _3)))
           (vs _2)
           (ret _3)
           (traint (first _5))
@@ -2536,7 +2546,7 @@ Function forms
       """
       (let*
         (
-          (name (string-append "_ctor_" (base_of_qualified_name _3)))
+          (name (string-append "_supertype_" (base_of_qualified_name _3)))
           (vs _2)
           (ret _3)
           (traint (first _5))
@@ -2842,7 +2852,7 @@ For use in the action codes of the grammar.
   (begin
     (define (lazy stmts) `(ast_lambda ,_sr (,dfltvs ,dfltparams typ_none ,stmts)))
     (define (lazy_proc stmts) `(ast_lambda ,_sr (,dfltvs ,dfltparams (ast_void ,_sr) ,stmts)))
-    (define (block stmts)`(ast_call ,_sr ,(lazy_proc stmts) ()))
+    (define (block_stmts stmts)`(ast_call ,_sr ,(lazy_proc stmts) ()))
     (define (block_expr stmts) `(ast_apply ,_sr (,(lazy stmts) ())))
     (define call (lambda (f a) `(ast_call ,_sr (ast_name ,_sr ,f ()) ,a)))
   )
@@ -3480,7 +3490,7 @@ Loops
      
   //$ Primary looping contructs.
   SCHEME """
-     (define (incluploop)
+     (define (assign_incluploop)
       `(ast_seq ,_sr
         ,(append 
           `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
@@ -3491,6 +3501,10 @@ Loops
           ))
           `(,_8)
           `((ast_label ,_sr ,(string-append "continue_" _1)))
+          `((ast_unlikely_ifgoto ,_sr 
+            ,(binop (noi '==) `(ast_name ,_sr ,_3 ()) _7) ;; unfortunate but necessary to stop incrementing past the bound
+            ,(string-append "break_" _1)
+          ))
           `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
           `((ast_goto ,_sr ,(string-append "redo_" _1)))
           `((ast_label ,_sr ,(string-append "break_" _1)))
@@ -3499,10 +3513,35 @@ Loops
       """;
   
   SCHEME """
-     (define (excluploop)
+     (define (define_incluploop)
       `(ast_seq ,_sr
         ,(append 
-          `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
+          `((ast_var_decl ,_sr ,_3 ,dfltvs none (some ,_5)))
+          `((ast_label ,_sr ,(string-append "redo_" _1)))
+          `((ast_unlikely_ifnotgoto ,_sr
+            ,(binop (noi '<=) `(ast_name ,_sr ,_3 ()) _7)
+            ,(string-append "break_" _1)
+          ))
+          `(,_8)
+          `((ast_label ,_sr ,(string-append "continue_" _1)))
+          `((ast_unlikely_ifgoto ,_sr 
+            ,(binop (noi '==) `(ast_name ,_sr ,_3 ()) _7) ;; unfortunate but necessary to stop incrementing past the bound
+            ,(string-append "break_" _1)
+          ))
+          `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
+          `((ast_goto ,_sr ,(string-append "redo_" _1)))
+          `((ast_label ,_sr ,(string-append "break_" _1)))
+         ))
+    )
+    """;
+  
+  //  loop_stmt := optlabel "for" sname "in" sexpr "..<" sexpr block =># "(define_excluploop)";
+  //                   1           3          5            7     8
+  SCHEME """
+     (define (define_excluploop)
+      `(ast_seq ,_sr
+        ,(append 
+          `((ast_var_decl ,_sr ,_3 ,dfltvs none (some ,_5)))
           `((ast_label ,_sr ,(string-append "redo_" _1)))
           `((ast_unlikely_ifnotgoto ,_sr
             ,(binop (noi '<) `(ast_name ,_sr ,_3 ()) _7)
@@ -3516,6 +3555,8 @@ Loops
          ))
       )
       """;
+  
+  
   
   SCHEME """
     (define iterator_recursive_loop 
@@ -3709,9 +3750,9 @@ Loops
     // the incr/decr is to be done, this is because it might be the max/min value
     // in the range and the incr/decr would be invalid.
   
-    //loop_stmt := optlabel "for" sname "in" sexpr ".." sexpr block =># "(incluploop)";
-    loop_stmt := optlabel "for" sname "in" sexpr "upto" sexpr block =># "(incluploop)";
-    //loop_stmt := optlabel "for" sname "in" sexpr "..<" sexpr block =># "(excluploop)";
+    loop_stmt := optlabel "for" sname "in" sexpr ".." sexpr block =># "(define_incluploop)";
+    loop_stmt := optlabel "for" sname "in" sexpr "upto" sexpr block =># "(assign_incluploop)";
+    loop_stmt := optlabel "for" sname "in" sexpr "..<" sexpr block =># "(define_excluploop)";
    
   
     //$ Numeric upwards for loop, also declares the control variable with type.
@@ -5264,6 +5305,48 @@ Type definitions
     )
     """;
   
+  SCHEME """
+  (
+    define (make_struct_fun struct-name struct-polyvars struct-pvs x) 
+     (let* 
+       (
+         (lst (first x))
+         (t0 (list-ref lst 0)) ; ast_curry_effects
+         (t1 (list-ref lst 1)) ; sr
+         (t2 (list-ref lst 2)) ; name
+         ;;(dummy (begin (display "t2=")(display t2)(display "\n")))
+         (polyspec (list-ref lst 3)) ; polyvars
+         (t4 (list-ref lst 4)) ; args
+         (t5 (list-ref lst 5)) ; return type, constraint
+         ;;(dummy (begin (display "t5=")(display t5)(display "\n")))
+         (t6 (list-ref lst 6)) ; effects
+         (t7 (list-ref lst 7)) ; fun kind
+         (t8 (list-ref lst 8)) ; adjective properties
+         (t9 (list-ref lst 9)) ; body
+         (polyvars (first polyspec))
+         (polyaux (second polyspec))
+         (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
+         (self-name 'self)
+         (self-type 
+           (if (isvoid? (first t5))
+             (begin ;; (display "procedure\n") 
+               `(typ_ref ,_sr (ast_name ,_sr ,struct-name ,struct-pvs))
+             )
+             (begin ;; (display "function\n")
+               `(ast_name ,_sr ,struct-name ,struct-pvs)
+             )
+           )
+         )
+         (self-arg `(,_sr PVal ,self-name ,self-type none)) 
+         (self-args `((Satom ,self-arg) none))
+         (args (cons self-args t4))
+       ) 
+       `(,t0 ,t1 ,t2 ,outpolyvars ,args ,t5 ,t6 ,t7 ,t8 ,t9)
+    )
+  )
+  """;
+  
+  
   syntax type_decls {
     requires statements;
   
@@ -5326,72 +5409,37 @@ Type definitions
     //$ // f is equivalent to
     //$ fun f (self:X) (b:int) => self.a + b;
     //$
+  
     sexport := "export" =># "'export";
     sexport := sepsilon =># "'noexport";
     stmt := sexport "struct" sdeclname "=" ? "{" sstruct_mem_decl * "}" =>#
       """
-       (begin ;;(display "defining struct .. \n")
-       ;;(display "struct name=")(display (first _3))(display "\n")
        (let* 
          (
-           (vals (filter_first 'Pval _6))
-           (funs (filter_first 'Pfun _6))
-           (struct-name (first _3))
-           (struct-polyspec (second _3))
+           (export_clause _1)
+           (decl_name _3)
+           (body _6)
+           (vals (filter_first 'Pval body))
+           (funs (filter_first 'Pfun body))
+           (struct-name (first decl_name))
+           (struct-polyspec (second decl_name))
            (struct-polyvars (first struct-polyspec))
            (struct-pvids (map first struct-polyvars))
            (struct-pvs (map nos struct-pvids))
            (struct-polyaux (second struct-polyspec))
            (struct `(ast_struct ,_sr ,struct-name ,struct-polyspec ,vals))
-           (mfuns (map (lambda (x) 
-             (begin ;; (display "nested fun=")(display x)(display "\n")
-             (let* 
-               (
-                 (lst (first x))
-                 (t0 (list-ref lst 0)) ; ast_curry_effects
-                 (t1 (list-ref lst 1)) ; sr
-                 (t2 (list-ref lst 2)) ; name
-                 ;;(dummy (begin (display "t2=")(display t2)(display "\n")))
-                 (polyspec (list-ref lst 3)) ; polyvars
-                 (t4 (list-ref lst 4)) ; args
-                 (t5 (list-ref lst 5)) ; return type, constraint
-                 ;;(dummy (begin (display "t5=")(display t5)(display "\n")))
-                 (t6 (list-ref lst 6)) ; effects
-                 (t7 (list-ref lst 7)) ; fun kind
-                 (t8 (list-ref lst 8)) ; adjective properties
-                 (t9 (list-ref lst 9)) ; body
-                 (polyvars (first polyspec))
-                 (polyaux (second polyspec))
-                 (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
-                 (self-name 'self)
-                 (self-type 
-                   (if (isvoid? (first t5))
-                     (begin ;; (display "procedure\n") 
-                       `(typ_ref ,_sr (ast_name ,_sr ,struct-name ,struct-pvs))
-                     )
-                     (begin ;; (display "function\n")
-                       `(ast_name ,_sr ,struct-name ,struct-pvs)
-                     )
-                   )
-                 )
-                 (self-arg `(,_sr PVal ,self-name ,self-type none)) 
-                 (self-args `((Satom ,self-arg) none))
-                 (args (cons self-args t4))
-               ) 
-               `(,t0 ,t1 ,t2 ,outpolyvars ,args ,t5 ,t6 ,t7 ,t8 ,t9)
-             ))) funs)
-           )
+           (mfuns (map (lambda (x)(make_struct_fun struct-name struct-polyvars struct-pvs x)) funs))
            (sts (cons struct mfuns))
            (sts 
              (if 
-               (equal? _1 'export) 
+               (equal? export_clause 'export) 
                (cons `(ast_export_struct ,_sr ,struct-name) sts)
                sts
              )
            )
          )
          `(ast_seq ,_sr ,sts)
-       ))
+       )
        """;
       sstruct_mem_decl := stypeexpr sname ";" =># "`(Pval ,_2 ,_1)"; // like C: int x;!
       sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(Pval ,_1 ,_3)";
@@ -5944,7 +5992,7 @@ Syntax
   
   syntax swapop
   {
-    sswapop := "<->" =># "'_swap";
+    sswapop := "<->" =># "'swap";
   }
 
 
@@ -6542,8 +6590,6 @@ Parallel loop grammar
         ;;)
       )
       """;
-  
-  
   }
   
   

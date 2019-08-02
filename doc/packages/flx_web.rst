@@ -2012,11 +2012,11 @@ Felix  :code:`flx` format.
   
   // stick line numbers in front of each line (for hyperlinking source refs)
   fun lc (x:string) = {
-    var lines = rev
-      match rev_split (x,"\n") with 
+    var lines = unbox (rev
+      match unbox (rev_split (x,"\n")) with 
       | Cons ("",t) => t
       | x => x
-      endmatch
+      endmatch)
     ;
     
     var result = "";
@@ -3873,7 +3873,7 @@ Decorator Implementations.
   
     fun calnav() = 
     {
-      val relfile = match (filename,'/').split.rev with | Cons(h,_) => h | #Empty => "";
+      val relfile = match (filename,'/').split.rev.unbox with | Cons(h,_) => h | #Empty => "";
       var lpos = relfile.len.int;
       while lpos > 0 and not isdigit(relfile.[lpos - 1]) do 
          --lpos; 
@@ -4132,7 +4132,7 @@ Decorator Implementations.
       var o = "";
       reserve(&o,10000+out.len.int);
       var h2 = #(d.heading.get_headings);
-      var h3 = map (fun (level:int, heading:string) => level, heading, '#'+heading+'_h') h2;
+      var h3 = unbox (map (fun (level:int, heading:string) => level, heading, '#'+heading+'_h') h2);
       var menu = toc_menu (h3);
   
       o+=frame_style;
@@ -4289,7 +4289,7 @@ Decorator Implementations.
     var all_buttons = "";
     var htree = Empty[int * string];
   
-    method fun get_headings () => rev htree;
+    method fun get_headings () => unbox (rev htree);
   
     method fun emit-buttons() =>
      button.make-button(id="expand", text="Expand", onclick="expand_all") +

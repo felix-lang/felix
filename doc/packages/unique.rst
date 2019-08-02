@@ -17,7 +17,7 @@ General Facilities
 
 .. index:: Unique(class)
 .. index:: box(fun)
-.. index:: unbox(fun)
+.. index:: unbox(gen)
 .. index:: kill(proc)
 .. index:: def(type)
 .. index:: peek(fun)
@@ -30,7 +30,7 @@ General Facilities
     fun box[T] : T -> _uniq T = "($t)";
   
     // unsafely unpack the unique box
-    fun unbox[T] : _uniq T -> T = "($t)";
+    gen unbox[T] : _uniq T -> T = "($t)";
   
     // kill a live unique value
     proc kill[T] : uniq T = ";";

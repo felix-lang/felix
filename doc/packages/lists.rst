@@ -22,8 +22,32 @@ The  :code:`list` type.
 
 The core data type for most functional programming languages.
 
-
 .. index:: List(class)
+.. code-block:: felix
+
+  //[list.flx]
+  open class List
+  {
+Felix uses Snoc lists:
+
+.. code-block:: felix
+
+  //[list.flx]
+    variant list[T] = | Empty | Snoc of list[T] * T;
+Note Snoc is Cons spelled backwards. The representation of this
+variant is a NULL pointer for an empty list, or a pointer to
+a node object otherwise. In the node object, the pointer to the
+next node comes first, followed by the data. Had we used the
+usual Cons, the data would come first. The advantage of having the
+next pointer first is that some operations written in C, such
+as in place reversal and appending two lists can be independent
+of the value type T.
+
+However, we utilise Felix user defined pattern matching feature
+to allow the client to use the more familiar Cons anyhow.
+This requires two functions
+
+
 .. index:: _match_ctor_Cons(fun)
 .. index:: _ctor_arg_Cons(fun)
 .. index:: Cons(fun)
@@ -31,16 +55,19 @@ The core data type for most functional programming languages.
 .. code-block:: felix
 
   //[list.flx]
-  open class List
-  {
-    variant list[T] = | Empty | Snoc of list[T] * T;
+    // match checker
     fun _match_ctor_Cons[T] : list[T] -> bool = "!!$1"; 
+  
+    // argument extractor
     inline fun _ctor_arg_Cons[T]: list[T] -> T * list[T] = 
       "reinterpret<#0>(flx::list::snoc2cons<?1>($1))" 
       requires snoc2cons_h
     ;
+  
+    // Cons pseudo constructor
     inline fun Cons[T] (h:T, t:list[T]) => Snoc (t,h);
   
+    // C++ code use to reverse Cons order to Snoc order and vice versa
     header snoc2cons_h = """
       namespace flx { namespace list {
         template<class T> struct snoc { void *mem_0; T mem_1; };
@@ -50,143 +77,6 @@ The core data type for most functional programming languages.
         }
       }}
     """;
-  
-Splice
-------
-
-This is primarily a non-functional helper routine.
-
-
-.. index:: splice(proc)
-.. code-block:: felix
-
-  //[list.flx]
-    //$ The second list is made the tail of the
-    //$ list stored at the location pointed at by the first argument.
-    //$ If the first list is empty, the variable will point
-    //$ at the second list. This operation is DANGEROUS because
-    //$ it is a mutator: lists are traditionally purely functional.
-  
-    // NOTE: this will fail if the second argument is named "p"!
-    // fix as for rev, rev_last!
-    proc splice[T] : &list[T] * list[T] =
-      """
-      { // list splice
-        //struct node_t { ?1 elt; void *tail; };
-        struct node_t { void *tail; ?1 elt; };
-        void **p = $1;
-        while(*p) p = &((node_t*)FLX_VNP(*p))->tail;
-        *p = $2;
-      }
-      """
-    ;
-  
-In-place unsafe reversal.
--------------------------
-
-Another helper routine.
-
-
-.. index:: rev(proc)
-.. code-block:: felix
-
-  //[list.flx]
-    //$ In place list reversal: unsafe!
-    // second arg is a dummy to make overload work
-    proc rev[T,PLT=&list[T]] : &list[T] = "_rev($1,(?1*)0);" requires _iprev_[T,PLT];
-  
-    body _iprev_[T,PLT]=
-      """
-      static void _rev(?2 plt, ?1*) // second arg is a dummy
-      { // in place reversal
-        //struct node_t { ?1 elt; void *tail; };
-        struct node_t { void *tail; ?1 elt; };
-        void *nutail = 0; 
-        void *cur = *plt;
-        while(cur)
-        {
-          void *oldtail = ((node_t*)FLX_VNP(cur))->tail;   // save old tail in temp
-          ((node_t*)FLX_VNP(cur))->tail = nutail;          // overwrite current node tail
-          nutail = cur;                                   // set new tail to current
-          cur = oldtail;                                  // set current to saved old tail
-        }
-        *plt = nutail;                                    // overwrite 
-      }
-      """
-    ;
-  
-In-place reversal.
-------------------
-
-Another variant of the unsafe reversal.
-
-
-.. index:: rev_last(proc)
-.. code-block:: felix
-
-  //[list.flx]
-    // in place list reversal, also returns the last element
-    // as a list, empty iff the original list is
-    // unsafe!
-    proc rev_last[T,PLT=&list[T]] : &list[T] * &list[T] = "_rev_last($1,$2,(?1*)0);" requires _rev_last_[T,PLT];
-  
-    body _rev_last_[T,PLT]=
-      """
-      static void _rev_last(?2 p1, ?2 p2, ?1*)
-      { // in place reversal returns tail as well
-        //struct node_t { ?1 elt; void *tail; };
-        struct node_t { void *tail; ?1 elt; };
-        void *nutail = (void*)0;                 // new temp tail
-        void *cur = *p1;                         // list to reverse
-        void *last = cur;                        // save head
-        while(cur)
-        {
-          void *oldtail = ((node_t*)FLX_VNP(cur))->tail;            // set old tail to current's tail
-          ((node_t*)FLX_VNP(cur))->tail = nutail;                   // set current's tail to nutail
-          nutail = cur;                                            // set nutail to current
-          cur = oldtail;                                           // set current to old tail
-        }
-        *p1 = nutail;                                              // reversed list
-        *p2 = last;                                                // original lists tail
-      }
-      """
-    ;
-  
-List  :code:`copy`
-==================
-
-Make an entirely new copy of a list.
-Primarily a helper.
-
-
-.. index:: copy(fun)
-.. code-block:: felix
-
-  //[list.flx]
-    //$ Copy a list.
-    fun copy[T] (x:list[T]):list[T]= {
-      var y = rev x;
-      rev (&y);
-      return y;
-    }
-  
-Copy and return last  :code:`copy_last`
----------------------------------------
-
-Yet another helper.
-
-
-.. index:: copy_last(proc)
-.. code-block:: felix
-
-  //[list.flx]
-    //$ Copy a list, and return last element as a list,
-    //$ empty if original list was empty.
-    proc copy_last[T] (inp:list[T], out:&list[T], last:&list[T]) {
-      out <- rev inp;
-      rev_last (out, last);
-    }
-  
   
 Constructors
 ============
@@ -221,6 +111,7 @@ or option iterator.
 Construct a list from an array.
 -------------------------------
 
+You can also use the notation ([1,2,3]).
 
 
 .. code-block:: felix
@@ -277,6 +168,219 @@ Constructor variant.
   //$ List comprehension:
     //$ Make a list from a stream.
     ctor[T] list[T](f: (1->opt[T])) => list_comprehension f;
+  
+  
+Reversing a list
+================
+
+
+In-place unsafe reversal.
+-------------------------
+
+Another helper routine.
+
+
+.. index:: rev(proc)
+.. index:: rev(proc)
+.. code-block:: felix
+
+  //[list.flx]
+    //$ In place list reversal: unsafe!
+    // second arg is a dummy to make overload work
+    proc rev[T,PLT=&list[T]] : &list[T] = "_rev($1,(?1*)0);" requires _iprev_[T,PLT];
+    proc rev[T,PLT=&list[T]] : &(uniq list[T]) = "_rev($1,(?1*)0);" requires _iprev_[T,PLT];
+  
+    body _iprev_[T,PLT]=
+      """
+      static void _rev(?2 plt, ?1*) // second arg is a dummy
+      { // in place reversal
+        struct node_t { void *tail; ?1 elt; };
+        void *nutail = 0; 
+        void *cur = *plt;
+        while(cur)
+        {
+          void *oldtail = ((node_t*)FLX_VNP(cur))->tail;   // save old tail in temp
+          ((node_t*)FLX_VNP(cur))->tail = nutail;          // overwrite current node tail
+          nutail = cur;                                   // set new tail to current
+          cur = oldtail;                                  // set current to saved old tail
+        }
+        *plt = nutail;                                    // overwrite 
+      }
+      """
+    ;
+  
+In-place reversal.
+------------------
+
+Another variant of the unsafe reversal.
+
+
+.. index:: rev_last(proc)
+.. code-block:: felix
+
+  //[list.flx]
+    // in place list reversal, also returns the last element
+    // as a list, empty iff the original list is
+    // unsafe!
+    proc rev_last[T,PLT=&list[T]] : &list[T] * &list[T] = "_rev_last($1,$2,(?1*)0);" requires _rev_last_[T,PLT];
+  
+    body _rev_last_[T,PLT]=
+      """
+      static void _rev_last(?2 p1, ?2 p2, ?1*)
+      { // in place reversal returns tail as well
+        //struct node_t { ?1 elt; void *tail; };
+        struct node_t { void *tail; ?1 elt; };
+        void *nutail = (void*)0;                 // new temp tail
+        void *cur = *p1;                         // list to reverse
+        void *last = cur;                        // save head
+        while(cur)
+        {
+          void *oldtail = ((node_t*)FLX_VNP(cur))->tail;            // set old tail to current's tail
+          ((node_t*)FLX_VNP(cur))->tail = nutail;                   // set current's tail to nutail
+          nutail = cur;                                            // set nutail to current
+          cur = oldtail;                                           // set current to old tail
+        }
+        *p1 = nutail;                                              // reversed list
+        *p2 = last;                                                // original lists tail
+      }
+      """
+    ;
+  
+Copy and return last  :code:`copy_last`
+---------------------------------------
+
+Yet another helper.
+
+
+.. code-block:: felix
+
+  //[list.flx]
+    //$ Copy a list, and return last element as a list,
+    //$ empty if original list was empty.
+    private proc copy_last[T] (inp:list[T], out:&list[T], last:&list[T]) {
+      out <- rev inp;
+      rev_last (out, last);
+    }
+  
+List  :code:`copy`
+==================
+
+Make an entirely new copy of a list.
+Primarily a helper.
+
+
+.. index:: copy(fun)
+.. index:: copy(fun)
+.. index:: dup(fun)
+.. code-block:: felix
+
+  //[list.flx]
+    //$ Copy a list.
+    fun copy[T] (x:list[T]):uniq list[T]=> rev (rev x);
+    fun copy[T] (x:uniq list[T]):uniq list[T]=> x;
+    fun dup[T] (x:uniq list[T]):uniq list[T] * uniq list[T] => x, copy (unbox x);
+  
+  
+Splice
+------
+
+This is primarily a non-functional helper routine.
+
+
+.. index:: _unsafe_splice(proc)
+.. index:: splice(fun)
+.. index:: splice(fun)
+.. code-block:: felix
+
+  //[list.flx]
+    //$ The second list is made the tail of the
+    //$ list stored at the location pointed at by the first argument.
+    //$ If the first list is empty, the variable will point
+    //$ at the second list. This operation is DANGEROUS because
+    //$ it is a mutator: lists are traditionally purely functional.
+  
+    // NOTE: this will fail if the second argument is named "p"!
+    // fix as for rev, rev_last!
+    proc _unsafe_splice[T] : &list[T] * list[T] =
+      """
+      { // list splice
+        struct node_t { void *tail; ?1 elt; };
+        void **p = $1;
+        while(*p) p = &((node_t*)FLX_VNP(*p))->tail;
+        *p = $2;
+      }
+      """
+    ;
+  
+    // safe list splice 
+    fun splice[T] (var x: uniq (list[T]), var y: uniq (list[T])): uniq (list[T]) =
+    {
+      var x1 = unbox x; // hack
+      _unsafe_splice (&x1,unbox y);
+      return  box x1;
+    }
+  
+    // safe list splice 
+    fun splice[T] (var x: uniq (list[T]), var y: list[T]): list[T] =
+    {
+      var x1 = unbox x; // hack
+      _unsafe_splice (&x1,y);
+      return  x1;
+    }
+  
+  
+  
+Concatenate two lists  :code:`join`.
+------------------------------------
+
+
+
+.. code-block:: felix
+
+  //[list.flx]
+    //$ Concatenate two lists.
+    //$ Slow; required for fold
+    pure fun join [T] (x:list[T]) (y: list[T]):list[T] => splice (copy x,y);
+  
+  
+    // fast
+    pure fun + [T] (x:list[T], y: list[T]):list[T] => splice (copy x,y);
+    pure fun + [T] (x:uniq list[T], y: list[T]):list[T] => splice (x, y);
+    pure fun + [T] (x:uniq list[T], y: uniq list[T]):uniq list[T] => splice(x,y);
+  
+    proc += [T] (x:&list[T], y: list[T]) => x <- join (*x) y;
+  
+Cons an element onto a list.
+----------------------------
+
+
+
+.. code-block:: felix
+
+  //[list.flx]
+    //$ Prepend element to head of list.
+    pure fun + [T] (x:T, y:list[T]):list[T] => Snoc(y,x);
+  
+Append an element onto a list.
+------------------------------
+
+O(N) slow.
+
+
+.. code-block:: felix
+
+  //[list.flx]
+    //$ Append element to tail of list (slow!).
+    noinline fun + [T] (x:list[T], y:T):list[T] => rev$ Snoc (rev x,y);
+  
+    //$ Append element to tail of list (slow!).
+    proc += [T] (x:&list[T], y:T) { x <- *x + y; }
+  
+    //$ Prepend element to head of list (fast!).
+    proc -= [T] (x:&list[T], y:T) { x <- y ! *x; }
+  
+  
+  
   
 Construe a list as an array value.
 ==================================
@@ -422,14 +526,14 @@ Tail recursive.
 
   //[list.flx]
     //$ map a list, return mapped list in reverse order (tail rec).
-    fun rev_map[T,U] (_f:T->U) (x:list[T]): list[U] = {
+    fun rev_map[T,U] (_f:T->U) (x:list[T]): uniq list[U] = {
       fun aux (inp:list[T]) (out:list[U]) : list[U] =>
         match inp with
         | #Empty => out
         | Snoc(t,h) => aux t (Snoc(out,_f(h)))
         endmatch
       ;
-      return aux x Empty[U];
+      return box (aux x Empty[U]);
     }
   
 Map a list  :code:`map`
@@ -445,12 +549,9 @@ This is safe because we enforce linearity by abstraction.
   //[list.flx]
     //$ map a list (tail-rec).
     //  tail rec due to in-place reversal of result.
-    fun map[T,U] (_f:T->U) (x:list[T]): list[U] =
-    {
-      var r = rev_map _f x;
-      rev$ &r;
-      return r;
-    }
+    fun map[T,U] (_f:T->U) (x:list[T]): uniq list[U] =>
+      rev (rev_map _f x)
+    ;
   
 Reverse a list  :code:`rev`.
 ----------------------------
@@ -458,13 +559,12 @@ Reverse a list  :code:`rev`.
 Tail recursive.
 
 
-.. index:: urev(fun)
-.. index:: urev(fun)
+.. index:: rev(fun)
 .. code-block:: felix
 
   //[list.flx]
     //$ reverse a list (tail rec).
-    pure fun rev[T] (x:list[T]):list[T]= {
+    pure fun rev[T] (x:list[T]):uniq (list[T])= {
       fun aux (x:list[T]) (y:list[T]) : list[T] =
       {
         return
@@ -477,8 +577,8 @@ Tail recursive.
       return aux x Empty[T];
     }
   
-    fun urev[T](x:list[T]) => box (rev x);
-    fun urev[T](var x:uniq (list[T])) : uniq (list[T]) {
+    // safe inplace reversal
+    fun rev[T](var x:uniq (list[T])) : uniq (list[T]) {
       var y = unbox x;
       rev &y;
       return box y;
@@ -575,68 +675,6 @@ Non-negative integers to limit  :code:`range`
   //[list.flx]
     //$ Range from 0 to num (excluded).
     fun range (num:int) => range(0, num, 1);
-  
-Operators
-=========
-
-
-Concatenate two lists  :code:`join`.
-------------------------------------
-
-
-
-.. index:: join(fun)
-.. code-block:: felix
-
-  //[list.flx]
-    //$ Concatenate two lists.
-    fun join[T] (x:list[T]) (y:list[T]):list[T] =
-    {
-      if is_empty x do
-        return y;
-      else
-        var z: list[T];
-        var last: list[T];
-        copy_last (x,&z,&last);
-        splice (&last, y);
-        return z;
-      done;
-    }
-  
-    //$ Concatenate two lists.
-    pure fun + [T] (x:list[T], y: list[T]):list[T] => join x y;
-  
-    proc += [T] (x:&list[T], y: list[T]) => x <- join (*x) y;
-  
-Cons an element onto a list.
-----------------------------
-
-
-
-.. code-block:: felix
-
-  //[list.flx]
-    //$ Prepend element to head of list.
-    pure fun + [T] (x:T, y:list[T]):list[T] => Snoc(y,x);
-  
-Append an element onto a list.
-------------------------------
-
-O(N) slow.
-
-
-.. code-block:: felix
-
-  //[list.flx]
-    //$ Append element to tail of list (slow!).
-    noinline fun + [T] (x:list[T], y:T):list[T] => rev$ Snoc (rev x,y);
-  
-    //$ Append element to tail of list (slow!).
-    proc += [T] (x:&list[T], y:T) { x <- *x + y; }
-  
-    //$ Prepend element to head of list (fast!).
-    proc -= [T] (x:&list[T], y:T) { x <- y ! *x; }
-  
   
 Outer product.
 --------------
@@ -1420,7 +1458,7 @@ Insertion
   //[dlist.flx]
     proc push_front (dl:&dlist_t, v:T) { 
       var oldfirst = dl*.first;
-      var node = new (data=v, next=oldfirst, prev=nullptr[dnode_t]); 
+      var node = unbox (new (data=v, next=oldfirst, prev=nullptr[dnode_t])); 
       dl.first <- Ptr node;
       match oldfirst with
       | #nullptr => dl.last
@@ -1430,7 +1468,7 @@ Insertion
   
     proc push_back (dl:&dlist_t, v:T) {
       var oldlast = dl*.last;
-      var node = new (data=v, next=nullptr[dnode_t], prev=oldlast); 
+      var node = unbox (new (data=v, next=nullptr[dnode_t], prev=oldlast)); 
       dl.last <- Ptr node;
       match oldlast with
       | #nullptr => dl.first
