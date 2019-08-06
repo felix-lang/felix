@@ -1,0 +1,106 @@
+\documentclass[oneside]{book}
+\usepackage{xcolor}
+\definecolor{bg}{rgb}{0.95,0.95,0.95}
+\definecolor{emphcolor}{rgb}{0.5,0.0,0.0}
+\newcommand{\empha}{\bf\color{emphcolor}}
+\usepackage{parskip}
+\usepackage{minted}
+\usepackage{caption}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amscd}
+\usemintedstyle{friendly}
+\setminted{bgcolor=bg,xleftmargin=20pt}
+\usepackage{hyperref}
+\hypersetup{pdftex,colorlinks=true,allcolors=blue}
+\usepackage{hypcap}
+\title{Designing a Parser}
+\author{John Skaller}
+\begin{document}
+\maketitle
+\tableofcontents
+\chapter{Introduction}
+Our aim is to produce an {\em executable, scannerless} parser. By executable we mean the grammar
+to parse is constructed at run time, and the parser uses this grammar to parse strings. By scannerless
+we mean that there is no lexer, instead all tokens can be considered regular expressions.
+
+Our parser will be a Generalised LR (GLR) shift/reduce parser. This means multiple parse threads
+exist at one time but proceed in lockstep.
+
+Because we intend to parse program input, it suffices to load the entire input into memory
+as an array, since programmers produce relatively short source files. The current position
+in the input can be indicated by a pointer or offset from the start of the text.
+
+We first need a procedure \verb%skipwhite% which skips white space and comments. It is applied
+initially to the input buffer to sit the current position at the start of significant
+lexeme or the end of the input. If we're not at the end, we can locate a lexeme, and then apply
+the \verb%skipwhite% procedure again.
+
+Each parse thread is represented by an object with three components.
+The first is the input string and the current location therein.
+The second is the current location in the grammar, represented by the control stack.
+The third is a stack of as yet unreduced symbols.
+
+Our grammar starts of a set of nonterminals of which one is designated the start symbol.
+Each nonterminal is mapped to a set of labelled productions, representing the alternatives
+for that nonterminal. A production is a sequence of symbols, either terminals or nonterminals.
+Nonterminals are regular expressions.
+
+In order that scanning for lexemes make progress, if the longest match of a regular
+expression for a terminal on a position in the input string is empty, the match is
+considered to fail. This could be assured by requiring the regular expressions to 
+not match the empty string, however simply failing a longest match which makes
+no progress is an alternatives.
+
+When we're matching a nonterminal, we must find all the nonterminals which could
+occur at this point in the parse. We can do this by recursively examining all of the
+alternative productions for that nonterminal. We consider the first symbol in each
+production. If it is a nonterminal we recurse, if it is a terminal we add it to
+the set of possible next nonterminals.
+
+In order that this algorithm terminate we will use two constraints on the grammar.
+First, the grammar does not contain any epsilon (empty) productions.
+Second, it must not be left recursive, as this would cause an infinite loop.
+With this constraints, any recursive descent searching for terminals must bottom out.
+
+Now, we need to do more than just return the set of regular expressions.
+We need to know the path in the grammar from the current position to the
+associated terminal. Thus the set of objects we return will be a set
+of pairs consisting of the terminal regular expression and the path.
+The path is simply a seqence of production labels.
+
+Now, we match each of the returned regular expressions against the input
+in turn, keeping on the longest matches. Each of the final set of objects
+represents a match of exactly the same lexeme so the lexeme can be extracted,
+the input position advanced, and the white space skipper applied to ready
+the input for the next matching operation.
+
+If the set is empty, the parse fails. Otherwise we push the terminal
+and recognised lexeme onto the symbol stack. Now we need to spawn
+a set of new threads, each being the update of the parse thread
+but with one of the returned paths pushed onto the control stack.
+
+Now, for each thread, if the path is at the end of a production
+of length $n$, we pop $n$ symbols off the data stack and replace
+them with a node labelled by the production label; and whose
+children are the symbols popped off the stack. We also pop the
+top entry off the control stack. Now we repeat this process
+until we reach the start symbol or a non-final location in
+some production. If we reached the start symbol 
+then the stack will contain a single node representing
+the parse of the input up to that point in the input.
+If we seek to parse the whole string then if the input is exhausted
+add the stacked node to the set of of final parses.
+Otherwise add the parse and the input location so we know which prefix
+of the input this parse tree represents.
+
+The process above forks the parser on each alternative, and drops
+threads that fails to match the input. If the grammar is ambiguous,
+then the final result consists of a set of parse trees, possibly empty.
+The parse terminates when no threads are left.
+
+
+
+\appendix
+\backmatter
+\end{document}
