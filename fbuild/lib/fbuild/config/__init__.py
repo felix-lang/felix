@@ -30,7 +30,11 @@ class TestMeta(fbuild.db.PersistentMeta):
             return super().__new__(cls, name, bases, attrs)
 
         module = attrs.pop('__module__')
-        new_class = super().__new__(cls, name, bases, {'__module__': module})
+        new_attrs = {'__module__': module}
+        classcell = attrs.pop('__classcell__', None)
+        if classcell is not None:
+            new_attrs['__classcell__'] = classcell
+        new_class = super().__new__(cls, name, bases, new_attrs)
         new_class.__field_names__ = []
 
         for parent in parents:
