@@ -101,6 +101,8 @@ let rec guess_metatype sr t : kind =
   (* note this one COULD be a type function type *)
   | `TYP_function _ -> kind_type
   | `TYP_effector _ -> kind_type
+  | `TYP_linearfunction _ -> kind_type
+  | `TYP_lineareffector _ -> kind_type
 
   | `TYP_dual t -> guess_metatype sr t
 

@@ -145,7 +145,11 @@ print_endline ("Closure wrapper generator: Check expr " ^ sbe bsym_table e);
   match e with
   | BEXPR_apply ((BEXPR_closure (i,ts),ft),e),rt ->
     begin
-      let bsym = Flx_bsym_table.find bsym_table i in
+      let bsym = 
+        try Flx_bsym_table.find bsym_table i 
+        with Not_found ->
+          failwith ("[Flx_mkcls: chk_expr] Cannot find symbol " ^ string_of_int i ^ " in bound symbol table")
+      in
       match Flx_bsym.bbdcl bsym with
       | BBDCL_external_fun _ -> bexpr_apply_prim rt (i,ts,ce e)
       | BBDCL_struct _  -> bexpr_apply_struct rt (i,ts,ce e)

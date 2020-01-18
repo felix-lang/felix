@@ -129,6 +129,8 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
     (* add_eq (lm,t); *) add_eq (l,t)
 *)
 
+  | BTYP_function (dl,cl), BTYP_linearfunction (dr,cr)
+  | BTYP_linearfunction (dl,cl), BTYP_linearfunction (dr,cr)
   | BTYP_function (dl,cl), BTYP_function (dr,cr) ->
     add_ge (dr, dl); (* contravariant *)
     add_ge (cl, cr) (* covariant *)
@@ -263,10 +265,12 @@ and solve_subsumption nominal_subtype counter lhs rhs  dvars (s:vassign_t option
 
       | BTYP_array (t11, t12), BTYP_array (t21, t22)
       | BTYP_function (t11, t12), BTYP_function (t21, t22)
+      | BTYP_linearfunction (t11, t12), BTYP_linearfunction (t21, t22)
       | BTYP_cfunction (t11, t12), BTYP_cfunction (t21, t22) ->
         add_eqn (t11,t21); add_eqn (t12,t22)
 
       (* FIXME *)
+      | BTYP_lineareffector (t11, t12, t13), BTYP_lineareffector (t21, t22, t23)
       | BTYP_effector (t11, t12, t13), BTYP_effector (t21, t22, t23) ->
         add_eqn (t11,t21); add_eqn (t12,t22); add_eqn (t13, t23)
 

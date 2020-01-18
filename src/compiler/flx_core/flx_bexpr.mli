@@ -196,4 +196,5 @@ val map :
 val reduce : t -> t
 
 val contains_uniq : t -> bool
+val show_bexpr : t -> string
  

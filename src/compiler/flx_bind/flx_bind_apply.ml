@@ -228,9 +228,12 @@ end;
             print_endline ("ta=" ^ sbt bsym_table ta);
         *)
         begin match tf with
+        | BTYP_lineareffector _ 
         | BTYP_effector _ 
+        | BTYP_function _ 
+        | BTYP_linearfunction _
         | BTYP_cfunction _ 
-        | BTYP_function _ ->
+          ->
           begin try
 (*
            print_endline (" ** Bound LHS of application as function!");

@@ -45,8 +45,11 @@ let var_occurs bsym_table t =
 
     | BTYP_rptsum (a,b)
     | BTYP_array (a,b)
+    | BTYP_linearfunction (a,b) -> aux a; aux b
     | BTYP_function (a,b) -> aux a; aux b
+    | BTYP_lineareffector (a,e,b) -> aux a; aux e; aux b
     | BTYP_effector (a,e,b) -> aux a; aux e; aux b
+
     | BTYP_cfunction (a,b) -> aux a; aux b
 
     | BTYP_ptr (_,t,ts)  -> aux t; List.iter aux ts

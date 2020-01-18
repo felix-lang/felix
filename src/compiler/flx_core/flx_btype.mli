@@ -37,6 +37,8 @@ and t = private
 
   | BTYP_function of t * t
   | BTYP_effector of t * t * t
+  | BTYP_linearfunction of t * t
+  | BTYP_lineareffector of t * t * t
   | BTYP_cfunction of t * t
   | BTYP_void
   | BTYP_label
@@ -143,6 +145,8 @@ val btyp_cltwref : t -> t -> t
 
 val btyp_function : t * t -> t
 val btyp_effector : t * t * t -> t
+val btyp_linearfunction : t * t -> t
+val btyp_lineareffector : t * t * t -> t
 val btyp_cfunction : t * t -> t
 val btyp_fix : int -> kind -> t
 val btyp_type : int -> kind

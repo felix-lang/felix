@@ -183,6 +183,8 @@ let rec get_offsets' syms bsym_table typ : offset_kind_t list =
     ;
     !lst
 
+  | BTYP_lineareffector _ 
+  | BTYP_linearfunction _ -> [`Ptr "0"]
   | BTYP_effector _ 
   | BTYP_function _ -> [`Ptr "0"]
   | BTYP_cfunction _ -> []

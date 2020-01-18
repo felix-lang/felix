@@ -434,6 +434,8 @@ print_endline ("Flx_bind_type.TYP_typeof fixpoint metatype hack! Expression " ^ 
 
   | `TYP_function (d,c) -> btyp_function (bt d, bt c)
   | `TYP_effector (d,e,c) -> btyp_effector (bt d, bt e,bt c)
+  | `TYP_linearfunction (d,c) -> btyp_linearfunction (bt d, bt c)
+  | `TYP_lineareffector (d,e,c) -> btyp_lineareffector (bt d, bt e,bt c)
   | `TYP_cfunction (d,c) -> btyp_cfunction (bt d, bt c)
   | `TYP_pointer t -> btyp_pointer (bt t)
   | `TYP_rref t -> btyp_rref (bt t)

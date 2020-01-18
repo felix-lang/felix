@@ -109,6 +109,10 @@ syntax types {
   t[sarrow_pri] := t[>sarrow_pri] "->" t[sarrow_pri] =># "`(typ_arrow (,_1 ,_3))";
   t[sarrow_pri] := t[>sarrow_pri] "->" "[" stype "]" t[sarrow_pri] =># "`(typ_effector (,_1 ,_4 ,_6))";
 
+  t[sarrow_pri] := t[>sarrow_pri] "->." t[sarrow_pri] =># "`(typ_lineararrow (,_1 ,_3))";
+  t[sarrow_pri] := t[>sarrow_pri] "->." "[" stype "]" t[sarrow_pri] =># "`(typ_lineareffector (,_1 ,_4 ,_6))";
+
+
   //$ C function type, right associative.
   t[sarrow_pri] := t[>sarrow_pri] "-->" t[sarrow_pri] =># "`(typ_longarrow (,_1 ,_3))";
 
@@ -1892,14 +1896,10 @@ syntax control
       (
         (labstring (fresh_name "_callcclab_"))
         (lab (nos labstring))
-        (sa (splitapply _2))
-        (fun (first sa))
-        (arg (second sa))
-        (apl `(ast_apply ,_sr (,fun ,lab)))
       )
       `(ast_seq ,_sr 
         (
-          (ast_jump ,_sr ,apl ,arg)
+          (ast_jump ,_sr ,_2 ,lab)
           (ast_label ,_sr ,labstring)
         )
       )

@@ -163,6 +163,8 @@ print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
  | Lst [Id "ast_ellipsis"; sr] -> `TYP_ellipsis
  | Lst [Id "typ_arrow";  Lst [e1; e2]] -> `TYP_function (ti e1, ti e2)
  | Lst [Id "typ_effector";  Lst [e1; e2; e3]] -> `TYP_effector (ti e1, ti e2, ti e3)
+ | Lst [Id "typ_lineararrow";  Lst [e1; e2]] -> `TYP_linearfunction (ti e1, ti e2)
+ | Lst [Id "typ_lineareffector";  Lst [e1; e2; e3]] -> `TYP_lineareffector (ti e1, ti e2, ti e3)
  | Lst [Id "typ_longarrow";  Lst [e1; e2]] -> `TYP_cfunction (ti e1, ti e2)
  | Lst [Id "typ_uniq"; sr; e] -> `TYP_uniq (ti e)
 

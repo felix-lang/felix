@@ -85,6 +85,8 @@ let string_of_type_name (t:typecode_t) = match t with
   | `TYP_variant _ -> "`TYP_variant"
   | `TYP_function _ -> "`TYP_function"
   | `TYP_effector _ -> "`TYP_effector"
+  | `TYP_linearfunction _ -> "`TYP_linearfunction"
+  | `TYP_lineareffector _ -> "`TYP_lineareffector"
   | `TYP_cfunction _ -> "`TYP_cfunction"
   | `TYP_pointer _ -> "`TYP_pointer"
   | `TYP_rref _ -> "`TYP_rref"

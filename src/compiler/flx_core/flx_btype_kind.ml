@@ -96,6 +96,8 @@ and metatype' sr typ : kind =
   | BTYP_cfunction _
   | BTYP_function _
   | BTYP_effector _
+  | BTYP_linearfunction _
+  | BTYP_lineareffector _
   | BTYP_ptr _
   | BTYP_variant _
   | BTYP_polyvariant _

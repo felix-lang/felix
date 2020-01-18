@@ -172,7 +172,7 @@ let iter
       f_bexpr e
   | BEXE_label (sr,idx) -> f_label_def idx; f_bid idx
   | BEXE_goto (sr,idx) -> f_label_use idx; f_bid idx
-  | BEXE_ifcgoto (sr,e1,e2) -> f_bexpr e2; f_bexpr e2
+  | BEXE_ifcgoto (sr,e1,e2) -> f_bexpr e1; f_bexpr e2
   | BEXE_cgoto (sr,e) -> f_bexpr e
   | BEXE_fun_return (sr,e) -> f_bexpr e
   | BEXE_yield (sr,e) -> f_bexpr e

@@ -56,6 +56,8 @@ and t =
 
   | BTYP_function of t * t
   | BTYP_effector of t * t * t
+  | BTYP_linearfunction of t * t
+  | BTYP_lineareffector of t * t * t
   | BTYP_cfunction of t * t
   | BTYP_void
   | BTYP_label (* type of a label *)
@@ -129,6 +131,8 @@ let flat_iter
 
   | BTYP_function (a,b) -> f_btype a; f_btype b
   | BTYP_effector (a,e,b) -> f_btype a; f_btype e; f_btype b
+  | BTYP_linearfunction (a,b) -> f_btype a; f_btype b
+  | BTYP_lineareffector (a,e,b) -> f_btype a; f_btype e; f_btype b
   | BTYP_cfunction (a,b) -> f_btype a; f_btype b
   | BTYP_rev t -> f_btype t
   | BTYP_uniq t -> f_btype t
@@ -256,8 +260,11 @@ and str_of_btype typ =
   | BTYP_ptr (m,t,ts) -> "BTYP_ptr(" ^ str_of_pmode m ^"," ^s t^",["^ss ts^"])"
 
   | BTYP_function (d,c) -> "BTYP_function(" ^ s d ^ " -> " ^ s c ^")"
-  | BTYP_cfunction (d,c) -> "BTYP_cfunction(" ^ s d ^ " --> " ^ s c ^")"
+  | BTYP_linearfunction (d,c) -> "BTYP_linearfunction(" ^ s d ^ " -> " ^ s c ^")"
   | BTYP_effector (d,e,c) -> "BTYP_effector(" ^ s d ^ " ->["^s e^"] " ^ s c ^")"
+  | BTYP_lineareffector (d,e,c) -> "BTYP_lineareffector(" ^ s d ^ " ->["^s e^"] " ^ s c ^")"
+  | BTYP_cfunction (d,c) -> "BTYP_cfunction(" ^ s d ^ " --> " ^ s c ^")"
+
   | BTYP_rev t -> "BTYP_rev("^ s t ^")" 
   | BTYP_uniq t -> "BTYP_uniq(" ^ s t ^ ")"
 
@@ -354,6 +361,8 @@ let complete_type t =
     | BTYP_rptsum (a,b) -> uf a; uf b
     | BTYP_function (a,b) -> uf a;uf b
     | BTYP_effector (a,e,b) -> uf a; uf e; uf b
+    | BTYP_linearfunction (a,b) -> uf a;uf b
+    | BTYP_lineareffector (a,e,b) -> uf a; uf e; uf b
     | BTYP_cfunction (a,b) -> uf a;uf b
     | BTYP_ptr (_,a,_) -> uf a
     | BTYP_fix (i,_) when (-i) = depth -> ()
@@ -623,6 +632,14 @@ let btyp_effector (args, effects, ret) =
   | BTYP_tuple [] -> BTYP_function (args,ret)
   | _ -> BTYP_effector (args, effects, ret)
 
+(* &&&&&&&&&& TEMPORARY HACK &&&&&&&&&&& *)
+
+let btyp_linearfunction (args, ret) = BTYP_linearfunction (args,ret)
+let btyp_lineareffector (args, effects, ret) =
+  match effects with
+  | BTYP_tuple [] -> BTYP_linearfunction (args,ret)
+  | _ -> BTYP_lineareffector (args, effects, ret)
+
 
 (** Construct a BTYP_cfunction type. *)
 let btyp_cfunction (args, ret) =
@@ -832,7 +849,10 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
 
   | BTYP_function (a,b) -> btyp_function (f_btype a, f_btype b)
   | BTYP_effector (a,e,b) -> btyp_effector (f_btype a, f_btype e, f_btype b)
+  | BTYP_linearfunction (a,b) -> btyp_linearfunction (f_btype a, f_btype b)
+  | BTYP_lineareffector (a,e,b) -> btyp_lineareffector (f_btype a, f_btype e, f_btype b)
   | BTYP_cfunction (a,b) -> btyp_cfunction (f_btype a, f_btype b)
+
   | BTYP_rev t -> btyp_rev (f_btype t)
   | BTYP_uniq t -> btyp_uniq (f_btype t)
 

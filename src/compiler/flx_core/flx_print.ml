@@ -503,6 +503,13 @@ and st prec tc : string =
       9,st 9 args ^ " ->["^st 0 effects^"] " ^ st 9 result
 
 
+    | `TYP_linearfunction (args, result) ->
+      9,st 9 args ^ " ->. " ^ st 9 result
+
+    | `TYP_lineareffector (args, effects, result) ->
+      9,st 9 args ^ " ->.["^st 0 effects^"] " ^ st 9 result
+
+
     | `TYP_cfunction (args, result) ->
       9,st 9 args ^ " --> " ^ st 9 result
 
@@ -778,6 +785,12 @@ and sb bsym_table depth fixlist counter prec tc =
 
     | BTYP_effector (args, effects, result) ->
       6,(sbt 6 args) ^ " ->["^sbt 0 effects^"] " ^ (sbt 6 result)
+
+    | BTYP_linearfunction (args, result) ->
+      6,(sbt 6 args) ^ " ->. " ^ (sbt 6 result)
+
+    | BTYP_lineareffector (args, effects, result) ->
+      6,(sbt 6 args) ^ " ->.["^sbt 0 effects^"] " ^ (sbt 6 result)
 
 
     | BTYP_cfunction (args, result) ->

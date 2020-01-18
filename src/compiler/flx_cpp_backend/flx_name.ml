@@ -205,6 +205,7 @@ let cpp_instance_name syms bsym_table index ts =
 let tix msg syms bsym_table t =
   let t =
     match t with
+    | BTYP_linearfunction (BTYP_void,cod) -> btyp_linearfunction (btyp_tuple [],cod)
     | BTYP_function (BTYP_void,cod) -> btyp_function (btyp_tuple [],cod)
     | x -> x
   in
@@ -249,6 +250,7 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   | BTYP_ptr (_,t',[]) -> cpp_type_classname syms bsym_table t' ^ "*"
   | BTYP_ptr (_,c,[d]) -> "::flx::rtl::clptr_t";
 
+  | BTYP_lineareffector (d,e,c)
   | BTYP_effector (d,e,c) -> 
     print_endline ("[Flx_name:cpp_type_classname] Attempt to name effector type in code generator:" ^ sbt bsym_table t');
     print_endline (" .. using equivalent function type instead");
@@ -257,6 +259,9 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
  
   | BTYP_function (_,BTYP_void) -> "_pt" ^ cid_of_bid (tix t)
   | BTYP_function _ -> "_ft" ^ cid_of_bid (tix t)
+
+  | BTYP_linearfunction (_,BTYP_void) -> "_lpt" ^ cid_of_bid (tix t)
+  | BTYP_linearfunction _ -> "_lft" ^ cid_of_bid (tix t)
 
   | BTYP_cfunction _ -> "_cft" ^ cid_of_bid (tix t)
   | BTYP_array _ -> "_at" ^ cid_of_bid (tix t)
@@ -416,6 +421,12 @@ and cpp_structure_name syms bsym_table t =
   | BTYP_effector (d,_,c) -> "_ft<" ^ tn d ^ "," ^ tn c ^ ">" 
   | BTYP_function (d,BTYP_void) -> "_pt<" ^tn d ^ ">"
   | BTYP_function (d,c) -> "_ft<" ^ tn d ^ "," ^ tn c ^ ">" 
+
+  | BTYP_lineareffector (d,_,BTYP_void) -> "_lpt<" ^tn d ^ ">"
+  | BTYP_lineareffector (d,_,c) -> "_lft<" ^ tn d ^ "," ^ tn c ^ ">" 
+  | BTYP_linearfunction (d,BTYP_void) -> "_lpt<" ^tn d ^ ">"
+  | BTYP_linearfunction (d,c) -> "_lft<" ^ tn d ^ "," ^ tn c ^ ">" 
+
   | BTYP_cfunction (d,c) -> "_cft<" ^  tn d ^ "," ^ tn c ^">"
   | BTYP_array (e,BTYP_unitsum i) -> "_at<" ^ tn e ^ "," ^ string_of_int i ^ ">" 
   | BTYP_array (e,i) -> 
@@ -507,6 +518,8 @@ and cpp_typename syms bsym_table t =
   match unfold "flx_name: cpp_typename" t with
   | BTYP_effector _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_function _ -> cpp_type_classname syms bsym_table t ^ "*"
+  | BTYP_lineareffector _ -> cpp_type_classname syms bsym_table t ^ "*"
+  | BTYP_linearfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_cfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_ptr (_,t,[]) -> cpp_typename syms bsym_table t ^ "*"
   | _ -> cpp_type_classname syms bsym_table t

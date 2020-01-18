@@ -110,6 +110,7 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
   | BTYP_rptsum (s1,d1),BTYP_rptsum (s2,d2)
   | BTYP_array (s1,d1),BTYP_array (s2,d2)
   | BTYP_function (s1,d1),BTYP_function (s2,d2)
+  | BTYP_linearfunction (s1,d1),BTYP_linearfunction (s2,d2)
   | BTYP_cfunction (s1,d1),BTYP_cfunction (s2,d2)
   | BTYP_type_apply(s1,d1),BTYP_type_apply(s2,d2)
   | BTYP_type_map(s1,d1),BTYP_type_map(s2,d2)
@@ -120,6 +121,7 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
     -> te s1 s2 && te d1 d2
 
 
+  | BTYP_lineareffector (s1,e1,d1),BTYP_lineareffector (s2,e2,d2)
   | BTYP_effector (s1,e1,d1),BTYP_effector (s2,e2,d2)
     -> te s1 s2 && te d1 d2 && te e1 e2
 

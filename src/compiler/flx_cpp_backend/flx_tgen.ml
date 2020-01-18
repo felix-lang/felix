@@ -185,6 +185,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
     let name = cn typ in
     "struct " ^ name ^ ";\n"
 
+  | BTYP_linearfunction _ 
   | BTYP_function _ ->
     descr ^
     let name = cn typ in
@@ -372,6 +373,8 @@ let rec gen_type syms bsym_table (index,typ) =
   (* PROCEDURE *)
   | BTYP_cfunction _ -> ""
 
+  | BTYP_linearfunction (a,BTYP_fix (0,_))
+  | BTYP_linearfunction (a,BTYP_void) 
   | BTYP_function (a,BTYP_fix (0,_))
   | BTYP_function (a,BTYP_void) ->
     descr ^
@@ -394,6 +397,7 @@ let rec gen_type syms bsym_table (index,typ) =
     "};\n"
 
   (* FUNCTION *)
+  | BTYP_linearfunction (a,r)
   | BTYP_function (a,r) ->
     descr ^
     let name = cn typ

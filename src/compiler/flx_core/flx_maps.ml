@@ -49,6 +49,8 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | `TYP_sum ts -> `TYP_sum (List.map f ts)
   | `TYP_function (a,b) -> `TYP_function (f a, f b)
   | `TYP_effector (a,e,b) -> `TYP_effector (f a, f e, f b)
+  | `TYP_linearfunction (a,b) -> `TYP_linearfunction (f a, f b)
+  | `TYP_lineareffector (a,e,b) -> `TYP_lineareffector (f a, f e, f b)
   | `TYP_cfunction (a,b) -> `TYP_cfunction (f a, f b)
   | `TYP_pointer t -> `TYP_pointer (f t)
   | `TYP_rref t -> `TYP_rref (f t)

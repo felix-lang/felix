@@ -87,6 +87,8 @@ and typecode_t = [
   | `TYP_variant of variant_item_t list (** anon sum *)
   | `TYP_function of typecode_t * typecode_t    (** function type *)
   | `TYP_effector of typecode_t * typecode_t * typecode_t    (** function type *)
+  | `TYP_linearfunction of typecode_t * typecode_t    (** function type *)
+  | `TYP_lineareffector of typecode_t * typecode_t * typecode_t    (** function type *)
   | `TYP_cfunction of typecode_t * typecode_t   (** C function type *)
   | `TYP_pointer of typecode_t                  (** pointer type *)
   | `TYP_rref of typecode_t                     (** read pointer type *)

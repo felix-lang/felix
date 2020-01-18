@@ -160,6 +160,18 @@ then
       ":" ^ sbt bsym_table mt);
     *)
     ()
+
+  (* the C representation of a linear function is the same as an ordinary function *)
+  | BTYP_linearfunction (ps,ret) ->
+    let ps = match ps with
+    | BTYP_void -> btyp_tuple []
+    | x -> x
+    in
+    rr ps;
+    rr ret;
+    rnr (btyp_linearfunction (ps,ret))
+
+
   | BTYP_function (ps,ret) ->
     let ps = match ps with
     | BTYP_void -> btyp_tuple []
@@ -183,6 +195,18 @@ print_endline ("Flx_treg: attempt to register effector type, register equivalent
     rr ret;
     (* PROBABLY THIS SHOULD BE FUNCTION: erase effects! *)
     rnr (btyp_function (ps,ret))
+
+  | BTYP_lineareffector (ps,effects, ret) ->
+print_endline ("Flx_treg: attempt to register linear effector type, register equivalent linear function type instead");
+
+    let ps = match ps with
+    | BTYP_void -> btyp_tuple []
+    | x -> x
+    in
+    rr ps;
+    rr ret;
+    (* PROBABLY THIS SHOULD BE FUNCTION: erase effects! *)
+    rnr (btyp_linearfunction (ps,ret))
 
   | BTYP_cfunction (ps,ret) ->
     rr ps;

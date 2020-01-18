@@ -148,8 +148,11 @@ let optimize_bsym_table' syms bsym_table (root_proc: int option) =
   in
 
 (*
-print_endline "Uncurrying DONE";
+print_endline "Uncurrying DONE, validating .. ";
+    Flx_print.print_bsym_table  bsym_table;
+Flx_bsym_table.validate "After uncurrying .." bsym_table;
 *)
+
   let bsym_table = print_time syms "[flx_opt]; Generating wrappers (late)" begin fun () ->
   (* make wrappers for non-function functional values *)
   Flx_mkcls2.make_wrappers syms bsym_table end

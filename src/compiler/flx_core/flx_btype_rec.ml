@@ -7,6 +7,8 @@ let rec check_rec t = match t with
    | BTYP_sum _
    | BTYP_function _
    | BTYP_effector _
+   | BTYP_linearfunction _
+   | BTYP_lineareffector _
    | BTYP_cfunction _
    | BTYP_variant _
      -> ()
@@ -41,8 +43,11 @@ let fix i t =
     | BTYP_tuple ts -> btyp_tuple (List.map aux ts)
     | BTYP_sum ts -> btyp_sum (List.map aux ts)
     | BTYP_type_set ts -> btyp_type_set (List.map aux ts)
+
     | BTYP_function (a,b) -> btyp_function (aux a, aux b)
     | BTYP_effector (a,e,b) -> btyp_effector (aux a, aux e, aux b)
+    | BTYP_linearfunction (a,b) -> btyp_linearfunction (aux a, aux b)
+    | BTYP_lineareffector (a,e,b) -> btyp_lineareffector (aux a, aux e, aux b)
     | BTYP_cfunction (a,b) -> btyp_cfunction (aux a, aux b)
 
     | BTYP_ptr (m,t,ts) -> btyp_ptr m (aux t) (List.map aux ts)

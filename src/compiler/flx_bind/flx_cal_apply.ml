@@ -38,6 +38,8 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
 *)
   let rest,reorder =
     match unfold "flx_lookup" t1 with
+    | BTYP_lineareffector(argt,_,rest)
+    | BTYP_linearfunction (argt,rest)
     | BTYP_effector(argt,_,rest)
     | BTYP_function (argt,rest)
     | BTYP_cfunction (argt,rest) ->
