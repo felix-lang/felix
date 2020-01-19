@@ -49,11 +49,17 @@ let handle_function
 
       (* Make sure we got a function type back. *)
       begin match t with
-      | BTYP_cfunction _ | BTYP_function _ | BTYP_effector _ -> ()
+      | BTYP_cfunction _ 
+      | BTYP_function _ 
+      | BTYP_effector _ 
+      | BTYP_linearfunction _ 
+      | BTYP_lineareffector _ -> ()
+
       | BTYP_fix _ -> raise (Free_fixpoint t)
+
       | _ ->
           ignore (try unfold "flx_lookup" t with | _ -> raise (Free_fixpoint t));
-          clierrx "[flx_bind/flx_lookup.ml:3272: E152] " sra
+          clierrx "[flx_bind/flx_lookup_name_itdws.ml:3272: E152] " sra
           (
             "[handle_function]: closure operator expected '" ^ name ^
             "' to have function type, got '" ^

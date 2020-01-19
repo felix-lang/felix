@@ -314,6 +314,10 @@ and expand_coercion new_table bsym_table counter parent remap ((srcx,srct) as sr
       result
     end
      
+  | BTYP_linearfunction (ld,lc) , BTYP_function (rd,rc) ->
+    (* print_endline ("Coercing linear function type to ordinary function type .."); *)
+    function_coercion new_table bsym_table counter parent remap srce dstt ld lc rd rc sr
+
   | BTYP_function (ld,lc) , BTYP_function (rd,rc)  ->
     function_coercion new_table bsym_table counter parent remap srce dstt ld lc rd rc sr
 

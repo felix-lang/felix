@@ -322,11 +322,13 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
     ;
     let dom2,cod2= 
       match f2 with 
+      | _,BTYP_linearfunction (d,c) -> d,c
       | _,BTYP_function (d,c) -> d,c
       | _ -> assert false 
     in
     let dom1,cod1 = 
       match f1 with
+      | _,BTYP_linearfunction (d,c) -> d,c
       | _,BTYP_function (d,c) -> d,c
       | _ -> assert false
     in
@@ -341,7 +343,11 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
        [ bexe_fun_return (sr, e) ]
     in
 
-    let bbdcl = bbdcl_fun ([],[],(Satom param,None),cod1,noeffects,exes) in
+    let properties = match f1,f2 with 
+      | (_,BTYP_linearfunction _),(_,BTYP_linearfunction _) -> [`LinearFunction]
+      | _ -> []
+    in
+    let bbdcl = bbdcl_fun (properties,[],(Satom param,None),cod1,noeffects,exes) in
     Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
     bexpr_closure t (closure_bid, [])
 

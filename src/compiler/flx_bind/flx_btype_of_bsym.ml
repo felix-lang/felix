@@ -33,13 +33,23 @@ let btype_of_bsym state bsym_table sr bt bid bsym =
   | BBDCL_module -> 
     clierrx "[flx_bind/flx_lookup.ml:1854: E106] " (Flx_bsym.sr bsym) ("Attempt to find type of module or library name " ^ Flx_bsym.id bsym)
 
-  | BBDCL_fun (_,_,params,return_type,effects,_) ->
+  | BBDCL_fun (properties,_,params,return_type,effects,_) ->
+    if List.mem `LinearFunction properties then
+    begin match effects with
+    | BTYP_tuple [] ->
+      btyp_linearfunction (Flx_bparams.get_btype params, return_type)
+    | _ ->
+      btyp_lineareffector (Flx_bparams.get_btype params, effects, return_type)
+    end
+    else
     begin match effects with
     | BTYP_tuple [] ->
       btyp_function (Flx_bparams.get_btype params, return_type)
     | _ ->
       btyp_effector (Flx_bparams.get_btype params, effects, return_type)
     end
+
+
   | BBDCL_val (_,t,_) -> t
   | BBDCL_newtype (_,t) -> t
   | BBDCL_external_type _ -> clierr2 sr (Flx_bsym.sr bsym) ("Use type as if variable: " ^ Flx_bsym.id bsym)

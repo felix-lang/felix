@@ -454,7 +454,10 @@ print_endline ("Join: binding executable instructions");
     let ft =
       if mem `Cfun props
       then btyp_cfunction (d,brt)
-      else btyp_effector (d,beffects,brt)
+      else 
+        if mem `LinearFunction props 
+        then btyp_lineareffector (d,beffects,brt) 
+        else btyp_effector (d,beffects,brt) 
     in
 
     (* Cache the type of the function. *)

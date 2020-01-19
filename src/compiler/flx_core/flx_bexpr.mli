@@ -62,6 +62,7 @@ and t = bexpr_t * Flx_btype.t
 val complete_check : string -> Flx_btype.t  -> Flx_btype.t
 val complete_check_list : Flx_btype.t list -> Flx_btype.t list
 val bexpr_lambda : bid_t -> Flx_btype.t -> t -> t
+val bexpr_linearlambda : bid_t -> Flx_btype.t -> t -> t
 val bexpr_cond :
   t ->
   t -> t -> t

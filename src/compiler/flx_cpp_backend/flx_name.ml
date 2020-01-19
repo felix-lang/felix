@@ -205,8 +205,9 @@ let cpp_instance_name syms bsym_table index ts =
 let tix msg syms bsym_table t =
   let t =
     match t with
-    | BTYP_linearfunction (BTYP_void,cod) -> btyp_linearfunction (btyp_tuple [],cod)
+    | BTYP_linearfunction (BTYP_void,cod) -> btyp_function (btyp_tuple [],cod)
     | BTYP_function (BTYP_void,cod) -> btyp_function (btyp_tuple [],cod)
+    | BTYP_linearfunction (dom,cod) -> btyp_function (dom,cod)
     | x -> x
   in
   let t' = Flx_fold.minimise bsym_table syms.counter t in
@@ -260,8 +261,8 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   | BTYP_function (_,BTYP_void) -> "_pt" ^ cid_of_bid (tix t)
   | BTYP_function _ -> "_ft" ^ cid_of_bid (tix t)
 
-  | BTYP_linearfunction (_,BTYP_void) -> "_lpt" ^ cid_of_bid (tix t)
-  | BTYP_linearfunction _ -> "_lft" ^ cid_of_bid (tix t)
+  | BTYP_linearfunction (_,BTYP_void) -> "_pt" ^ cid_of_bid (tix t)
+  | BTYP_linearfunction _ -> "_ft" ^ cid_of_bid (tix t)
 
   | BTYP_cfunction _ -> "_cft" ^ cid_of_bid (tix t)
   | BTYP_array _ -> "_at" ^ cid_of_bid (tix t)
@@ -422,10 +423,10 @@ and cpp_structure_name syms bsym_table t =
   | BTYP_function (d,BTYP_void) -> "_pt<" ^tn d ^ ">"
   | BTYP_function (d,c) -> "_ft<" ^ tn d ^ "," ^ tn c ^ ">" 
 
-  | BTYP_lineareffector (d,_,BTYP_void) -> "_lpt<" ^tn d ^ ">"
-  | BTYP_lineareffector (d,_,c) -> "_lft<" ^ tn d ^ "," ^ tn c ^ ">" 
-  | BTYP_linearfunction (d,BTYP_void) -> "_lpt<" ^tn d ^ ">"
-  | BTYP_linearfunction (d,c) -> "_lft<" ^ tn d ^ "," ^ tn c ^ ">" 
+  | BTYP_lineareffector (d,_,BTYP_void) -> "_pt<" ^tn d ^ ">"
+  | BTYP_lineareffector (d,_,c) -> "_ft<" ^ tn d ^ "," ^ tn c ^ ">" 
+  | BTYP_linearfunction (d,BTYP_void) -> "_pt<" ^tn d ^ ">"
+  | BTYP_linearfunction (d,c) -> "_ft<" ^ tn d ^ "," ^ tn c ^ ">" 
 
   | BTYP_cfunction (d,c) -> "_cft<" ^  tn d ^ "," ^ tn c ^">"
   | BTYP_array (e,BTYP_unitsum i) -> "_at<" ^ tn e ^ "," ^ string_of_int i ^ ">" 

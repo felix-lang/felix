@@ -312,6 +312,7 @@ and tlvalue_t = lvalue_t * typecode_t option
 
 and funkind_t = [
   | `Function
+  | `LinearFunction
   | `CFunction
   | `GeneratedInlineProcedure
   | `GeneratedInlineFunction
@@ -362,6 +363,7 @@ and property_t = [
   | `NamedExport of string
   | `Service_call        (* does a svc instruction (directly or indirectly maybe*)
   | `NoService_call      (* does not do a svc instruction definitely *)
+  | `LinearFunction
 ]
 
 and type_qual_t = [

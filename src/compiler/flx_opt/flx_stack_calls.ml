@@ -257,6 +257,7 @@ print_endline "Type has fun reached recursion limit, polymorphic recursion?";
     with Not_found ->
       Hashtbl.add cache t `Recurse;
       match t with
+      | BTYP_linearfunction _
       | BTYP_function _ ->
         (* if has_fun bsym_table children then *)
         Hashtbl.replace cache t `Unsafe;

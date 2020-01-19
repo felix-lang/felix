@@ -181,6 +181,10 @@ abstraction.
 let bexpr_lambda i vt ((x,rt) as e)  = 
   BEXPR_lambda (i,vt,e),Flx_btype.btyp_function (vt,rt)
 
+let bexpr_linearlambda i vt ((x,rt) as e)  = 
+  BEXPR_lambda (i,vt,e),Flx_btype.btyp_linearfunction (vt,rt)
+
+
 let bexpr_int i = BEXPR_int i, Flx_btype.btyp_int ()
 
 let bexpr_not (e,t) : t = BEXPR_not (e,t), complete_check "bexpr_not" t

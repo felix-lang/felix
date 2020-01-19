@@ -169,7 +169,7 @@ then
     in
     rr ps;
     rr ret;
-    rnr (btyp_linearfunction (ps,ret))
+    rnr (btyp_function (ps,ret))
 
 
   | BTYP_function (ps,ret) ->
@@ -206,7 +206,7 @@ print_endline ("Flx_treg: attempt to register linear effector type, register equ
     rr ps;
     rr ret;
     (* PROBABLY THIS SHOULD BE FUNCTION: erase effects! *)
-    rnr (btyp_linearfunction (ps,ret))
+    rnr (btyp_function (ps,ret))
 
   | BTYP_cfunction (ps,ret) ->
     rr ps;

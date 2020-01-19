@@ -421,6 +421,11 @@ print_endline ("Processing ast_name "^xid id^" in xexpr");
    let pdef = (* match rt with `TYP_void _ -> `PVar | _ -> *) `PVal in 
    `EXPR_lambda  (xsr sr, (`GeneratedInlineFunction,xvs vs, map (xps pdef) pss, rt, xsts sts))
 
+ | Lst [Id "ast_linearlambda";  sr; Lst [vs; Lst pss; t; sts]] -> 
+   let rt = ti t in
+   let pdef = (* match rt with `TYP_void _ -> `PVar | _ -> *) `PVal in 
+   `EXPR_lambda  (xsr sr, (`LinearFunction,xvs vs, map (xps pdef) pss, rt, xsts sts))
+
  | Lst [Id "ast_object";  sr; Lst [vs; Lst pss; t; sts]] -> 
 
 (*
@@ -777,6 +782,7 @@ and xfunkind_t sr x : funkind_t =
 
 and xadjective_t x : property_t =
   match x with
+  | Id "LinearFunction" -> `LinearFunction
   | Id "InlineFunction" -> `Inline
   | Id "NoInlineFunction" -> `NoInline
   | Id "Virtual" -> `Virtual 

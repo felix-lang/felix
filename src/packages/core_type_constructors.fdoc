@@ -557,8 +557,17 @@ open class Functional
     fun (x:u) => f (g x)
   ;
 
+  //$ series composition (2 functions)
+  fun compose[u,v,w] (f:v->.w, g:u->.v) : u ->. w => 
+    fun (x:u) =>. f (g x)
+  ;
+
   fun \circ [u,v,w] (f:v->w, g:u->v) : u -> w => 
     fun (x:u) => f (g x)
+  ;
+
+  fun \circ [u,v,w] (f:v->.w, g:u->.v) : u ->. w => 
+    fun (x:u) =>. f (g x)
   ;
 
   //$ series reverse composition (2 functions)
@@ -567,13 +576,28 @@ open class Functional
   ;
 
   //$ series reverse composition (2 functions)
+  fun rev_compose[u,v,w] (f:u->.v, g:v->.w) : u ->. w => 
+    fun (x:u) =>. g (f x)
+  ;
+
+  //$ series reverse composition (2 functions)
   fun \odot[u,v,w] (f:u->v, g:v->w) : u -> w => 
     fun (x:u) => g (f x)
   ;
 
   //$ series reverse composition (2 functions)
+  fun \odot[u,v,w] (f:u->.v, g:v->.w) : u ->. w => 
+    fun (x:u) =>. g (f x)
+  ;
+
+  //$ series reverse composition (2 functions)
   fun \cdot[u,v,w] (f:u->v, g:v->w) : u -> w => 
     fun (x:u) => g (f x)
+  ;
+
+  //$ series reverse composition (2 functions)
+  fun \cdot[u,v,w] (f:u->.v, g:v->.w) : u -> w => 
+    fun (x:u) =>. g (f x)
   ;
 
 

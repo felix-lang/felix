@@ -150,6 +150,7 @@ let cal_props kind props = match kind with
   | `GeneratorMethod -> (* `NoInline:: *) `Generator::props
   | `Virtual -> if not (List.mem `Virtual props) then `Virtual::props else props
 
+  | `LinearFunction -> `LinearFunction :: props
   | `Function
   | `Object
   | `Method -> props

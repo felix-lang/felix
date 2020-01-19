@@ -1127,6 +1127,7 @@ and string_of_property = function
 | `NamedExport s -> "export "^ string_of_string s
 | `Service_call -> "Does_service_call"
 | `NoService_call -> "No_service_call"
+| `LinearFunction -> "LinearFunction"
 
 and string_of_properties ps =
   match ps with
@@ -1256,6 +1257,7 @@ and string_of_statements level ss = String.concat "" (List.map (fun s -> string_
 and string_of_funkind kind = 
   match kind with
     | `Function -> "fun"
+    | `LinearFunction -> "linear fun"
     | `CFunction -> "cfun"
     | `GeneratedInlineProcedure -> "inline procedure(generated,block)"
     | `GeneratedInlineFunction-> "inline function(lambda)"

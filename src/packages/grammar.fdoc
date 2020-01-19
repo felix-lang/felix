@@ -2046,6 +2046,13 @@ syntax functions {
     `(ast_lambda ,_sr (,_3 ,_4 ,(first (first _5)) ((ast_fun_return ,_sr ,_7))))
     """;
 
+  //$ Anonymous function (lamda). Linear
+  x[slambda_pri] := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=>." sexpr =>#
+    """
+    `(ast_linearlambda ,_sr (,_3 ,_4 ,(first (first _5)) ((ast_fun_return ,_sr ,_7))))
+    """;
+
+
   //$ Anonymous generator (lamda).
   satom := sadjectives "gen" stvarlist slambda_fun_args fun_return_type "="? scompound =>#
     """
@@ -2219,6 +2226,15 @@ syntax functions {
       `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ,(first _5) ,(second _5) ,(cal_funkind _1 _2) ,_1 ,body))
       )
     """;
+
+  sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=>." sexpr ";" =>#
+    """
+      (begin ;;(display "LINEAR FUNCTION")
+      (let ((body `((ast_fun_return ,_sr ,_7))))
+      `(ast_curry_effects ,_sr ,(first _3) ,(second _3) ,_4 ,(first _5) ,(second _5) ,(cal_funkind _1 _2) ,(cons 'LinearFunction _1) ,body))
+      )
+    """;
+
 
   //$ General function definition. Multiple tuple arguments, body of statements.
   //$ inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l { return x.long + y; }
