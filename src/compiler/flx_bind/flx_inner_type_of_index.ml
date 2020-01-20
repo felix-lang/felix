@@ -136,8 +136,8 @@ print_endline ("** END **** Abnormal Exit Function type for function " ^ sym.Flx
       let d = bt sym.Flx_sym.sr ptyp in
       let e = bt sym.Flx_sym.sr effects in
       let ft = 
-        if List.mem `Cfun props
-        then btyp_cfunction (d, rt)
+        if List.mem `Cfun props then btyp_cfunction (d, rt)
+        else if List.mem `LinearFunction props then btyp_lineareffector (d, e, rt)
         else btyp_effector (d, e, rt)
       in
 (*
