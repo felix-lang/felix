@@ -48,6 +48,7 @@ let rec xsr x : Flx_srcref.t =
 and kind_of_sex sr x : kindcode_t =
   let ki k = kind_of_sex sr k in
   match x with
+  | Lst [Id "ast_name"; sr; Str "LINEAR"; Lst []] ->  KND_linear
   | Lst [Id "ast_name"; sr; Str "TYPE"; Lst []] ->  KND_type
   | Lst [Id "ast_name"; sr; Str "UNITSUM"; Lst []] ->  KND_unitsum
   | Lst [Id "ast_name"; sr; Str "BOOL"; Lst []] ->  KND_bool

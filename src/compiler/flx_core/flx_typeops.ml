@@ -89,6 +89,11 @@ let unitsum_cmp mk_raw_typeop op t k eval =
 
 (* ====== BOOL SUPPORT ================== *)
 
+let string_of_staticbool b = match b with 
+  | BBOOL true -> "TRUE"
+  | BBOOL false -> "FALSE"
+  | _ -> assert false
+
 let isstaticbool x = (* match x with
   | BBOOL _ -> true 
   | _ -> *) 
@@ -134,6 +139,9 @@ let staticbool_and mk_raw_typeop op (t:Flx_btype.t) =
      )
      conjuncts
    in
+(*
+print_endline ("Conjuncts = " ^ String.concat ", " (List.map string_of_staticbool conjuncts));
+*)
    begin match conjuncts with
    | [] -> bbool true
    | [x] -> x

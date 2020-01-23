@@ -350,6 +350,7 @@ and string_of_expr (e:expr_t) =
 and str_of_kindcode k : string =
   match k with
   | KND_type -> "TYPE"
+  | KND_linear -> "LINEAR"
   | KND_unitsum -> "UNITSUM"
   | KND_compactlinear -> "COMPACTLINEAR"
   | KND_bool -> "BOOL"
@@ -886,7 +887,9 @@ and string_of_parameters (ps:params_t) =
   let ps, traint = ps in
   string_of_paramspec_t ps ^
   (match traint with
-  | Some x -> " where " ^ string_of_expr x
+  | Some x -> 
+    (* super hacky .. *)
+    let s = string_of_expr x in if s = "TRUE" then "" else " where " ^ s
   | None -> ""
   )
 
@@ -1013,6 +1016,7 @@ and string_of_maybe_kindcode = function
 
 
 and string_of_tconstraint = function
+  | `TYP_bool true -> ""
   | t -> let x = string_of_typecode t in
     if x <> "any" then " where " ^ x else ""
 
@@ -1038,7 +1042,9 @@ and string_of_ivs (ivs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as c
         (fun (name,ix,tpat) -> string_of_id name ^ string_of_maybe_kindcode tpat)
         ivs
       in
-      Printf.sprintf "[%s%s]" ivs (string_of_tcon con)
+      let s = string_of_tcon con in
+      let ivs_s = ivs ^ s in
+      if ivs_s = "" then "" else "[" ^ ivs_s ^ "]"
 
 and string_of_vs (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
   match vs,tcon,rtcr with
@@ -1048,7 +1054,9 @@ and string_of_vs (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con
         (fun (name,tpat) -> string_of_id name ^ string_of_maybe_kindcode tpat)
         vs
       in
-      Printf.sprintf "[%s%s]" vs (string_of_tcon con)
+      let s = string_of_tcon con in
+      let vs_s = vs ^ s in
+      if vs_s = "" then "" else "[" ^ vs_s ^ "]"
 
 and string_of_plain_vs vs =
   catmap ", "
@@ -1269,6 +1277,11 @@ and string_of_funkind kind =
     | `GeneratorMethod-> "method generator"
     | `Method-> "method"
     | `Object -> "object"
+
+and string_of_effects t =
+  match t with
+  | `TYP_tuple [] -> "" 
+  | _ ->  "[" ^ string_of_typecode t ^ "]"
 
 and string_of_statement level s =
   let se e = string_of_expr e in
@@ -1535,7 +1548,7 @@ and string_of_statement level s =
     spaces level ^
     string_of_properties props ^
     "fun " ^ string_of_id name ^ string_of_vs vs ^
-    "("^string_of_parameters ps^"):["^string_of_typecode effects^"] "^string_of_typecode res^
+    "("^string_of_parameters ps^"):" ^ string_of_effects effects^" "^string_of_typecode res^
     (match post with
     | None -> ""
     | Some x -> " when " ^ string_of_expr x
@@ -1555,7 +1568,7 @@ and string_of_statement level s =
     )
     pss
     ^
-    ":["^string_of_typecode effects^"] "^string_of_typecode res^
+    ":"^string_of_effects effects^" "^string_of_typecode res^
     (match traint with
     | None -> ""
     | Some x -> " when " ^ string_of_expr x
@@ -2524,7 +2537,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     sl ^
     string_of_properties props ^
     "fun " ^ string_of_id name ^ seq ^ string_of_vs vs ^
-    "("^ (string_of_parameters ps)^"):["^st effects^"] "^(st res)^"\n" ^
+    "("^ (string_of_parameters ps)^"):"^string_of_effects effects^" "^(st res)^"\n" ^
     string_of_asm_compound level ss
 
 

@@ -50,18 +50,21 @@ let bridge n sr parent_vs rqname' name : asm_t =
 let map_req name n = if n = "_root" then "_rqs_" ^ name else n 
 
 let map_reqs rqname' sr (reqs : named_req_expr_t) : named_req_expr_t =
-    NREQ_and (NREQ_atom (rqname' sr), reqs)
+  let atom = NREQ_atom (rqname' sr) in
+  match reqs with 
+  | NREQ_true -> atom
+  | _ ->  NREQ_and (NREQ_atom (rqname' sr), reqs)
 
   (* name literal requirements *)
 let mkprop sr s = match s with
-    | "heap_closure" -> `Heap_closure
-    | "needs_gc" -> `Uses_gc
-    | "needs_ptf" -> `Requires_ptf
-    | "pure" -> `Pure
-    | "generator" -> `Generator
-    | "virtual" -> `Virtual
-    | "functor" -> `Tag "functor"
-    | x -> clierrx "[flx_desugar/flx_reqs.ml:62: E353] " sr ("Unknown property " ^ x)
+  | "heap_closure" -> `Heap_closure
+  | "needs_gc" -> `Uses_gc
+  | "needs_ptf" -> `Requires_ptf
+  | "pure" -> `Pure
+  | "generator" -> `Generator
+  | "virtual" -> `Virtual
+  | "functor" -> `Tag "functor"
+  | x -> clierrx "[flx_desugar/flx_reqs.ml:62: E353] " sr ("Unknown property " ^ x)
 
 let mkreqs state access parent_ts sr (rqs :raw_req_expr_t) : 
   int option * 

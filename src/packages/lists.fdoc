@@ -185,7 +185,10 @@ Primarily a helper.
   //$ Copy a list.
   fun copy[T] (x:list[T]):uniq list[T]=> rev (rev x);
   fun copy[T] (x:uniq list[T]):uniq list[T]=> x;
-  fun dup[T] (x:uniq list[T]):uniq list[T] * uniq list[T] => x, copy (unbox x);
+  fun dup[T] (x:uniq list[T]):uniq list[T] * uniq list[T] {
+     var y = unbox x;
+     return box y,copy y;
+  }
 
 
 @h2 Splice

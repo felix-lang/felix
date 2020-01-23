@@ -711,6 +711,7 @@ let bbool v = BBOOL v
 
 let rec bmt msg mt = match mt with
   | Flx_ast.KND_type -> kind_type 
+  | Flx_ast.KND_linear -> kind_linear
   | Flx_ast.KND_compactlinear-> kind_compactlinear
   | Flx_ast.KND_unitsum -> kind_unitsum
   | Flx_ast.KND_nat -> kind_nat

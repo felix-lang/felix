@@ -49,7 +49,8 @@ and suffixed_name_t =
  * union, and the type ordinary procedure types return.  There are no values
  * of this type. *)
 and kindcode_t =
-  | KND_type
+  | KND_type       (* sharable (nonlinear) type *)
+  | KND_linear     (* top level kind for types *)
   | KND_unitsum
   | KND_compactlinear
   | KND_bool

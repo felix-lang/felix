@@ -1,6 +1,7 @@
 (* See Flx_btype_kind for routine metatype, which finds the bound kind of a bound type *)
 type kind =
-  | KIND_type
+  | KIND_type    (* copyable *)
+  | KIND_linear  (* copyable or unique *)
   | KIND_unitsum
   | KIND_compactlinear
   | KIND_bool
@@ -13,6 +14,7 @@ let kind_eq k1 k2 = k1 = k2
 let rec sk k =
   match k with
   | KIND_type -> "TYPE"
+  | KIND_linear -> "LINEAR"
   | KIND_unitsum -> "UNITSUM"
   | KIND_compactlinear -> "COMPACTLINEAR"
   | KIND_bool -> "BOOL"
@@ -21,6 +23,7 @@ let rec sk k =
   | KIND_function (d,c) -> sk d ^ " -> " ^ sk c
 
 let kind_type = KIND_type
+let kind_linear = KIND_linear
 let kind_unitsum = KIND_unitsum
 let kind_compactlinear = KIND_compactlinear
 let kind_bool = KIND_bool
@@ -38,6 +41,11 @@ type keqns_t = keqn_t list
 
 let ksolve_subtypes add_eqn lhs rhs =
   match lhs, rhs with
+  | KIND_linear, KIND_linear
+  | KIND_linear, KIND_type
+  | KIND_linear, KIND_unitsum
+  | KIND_linear, KIND_compactlinear
+
   | KIND_type, KIND_type
   | KIND_type, KIND_unitsum
   | KIND_type, KIND_compactlinear

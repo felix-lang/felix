@@ -477,19 +477,32 @@ print_endline ("Join: binding executable instructions");
     add_bsym true_parent bbdcl
 
   | SYMDEF_parameter (k,_) ->
+    let name = sym.Flx_sym.id in
 (*
-print_endline "BINDING PARAMETER";
+print_endline ("BINDING PARAMETER " ^ name);
 *)
     begin match sym_parent with
     | None -> failwith "[bbind_sym] expected parameter to have a parent"
     | Some ip ->
-      match hfind "bbind" state.sym_table ip with
+      let sym = hfind "bbind" state.sym_table ip in
+      let linear = match sym with
+      | { Flx_sym.symdef=SYMDEF_function (params,ret,effect,props,_)} -> List.mem `LinearFunction props 
+      | _ -> false
+      in
+      match sym with
       | { Flx_sym.symdef=SYMDEF_reduce _}
       | { Flx_sym.symdef=SYMDEF_axiom _}
       | { Flx_sym.symdef=SYMDEF_lemma _}
       | { Flx_sym.symdef=SYMDEF_function _}
         ->
         let t = type_of_index symbol_index in
+        let t = if linear then 
+          begin
+           (* print_endline ("Linear type for parameter "^name^ " of " ^ sym.Flx_sym.id);  *)
+           btyp_uniq t
+          end
+          else t 
+        in
         let bbdcl = match k with
         | `POnce -> bbdcl_val (bvs,t,`Once)
         | `PVal ->  

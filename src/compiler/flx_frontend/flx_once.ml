@@ -174,6 +174,8 @@ at the moment this is just uniq variables and constant projections
 of variables to uniq components
 *)
 
+exception DuplicateGet of int * path_t
+
 let rec find_once bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : unit =
 (*
 print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e);
@@ -184,7 +186,10 @@ print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e);
     List.iter  (fun ((j,path),ix) ->
       if j = i then
         if Flx_list.has_prefix prefix path then 
-          b := BidSet.add ix !b;
+          begin
+            if BidSet.mem ix !b then raise (DuplicateGet (i,path))
+            else b := BidSet.add ix !b
+          end
       )
     chain2ix
 
@@ -193,6 +198,8 @@ print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e);
     find_once bsym_table chain2ix path b base 
 
   | x -> Flx_bexpr.flat_iter ~f_bexpr:(find_once bsym_table chain2ix path b) x
+
+exception DuplicateSet of int * path_t
 
 let rec find_ponce bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : unit =
 (*
@@ -205,7 +212,10 @@ print_endline ("Find pointers to once for expresssion " ^ Flx_print.sbe bsym_tab
     List.iter  (fun ((j,path),ix) ->
       if j = i then
         if Flx_list.has_prefix prefix path then 
-          b := BidSet.add ix !b;
+          begin
+            if BidSet.mem ix !b then raise (DuplicateSet (i,path))
+            else b := BidSet.add ix !b;
+          end
       )
     chain2ix
 
@@ -221,12 +231,28 @@ print_endline ("Find pointers to once for expresssion " ^ Flx_print.sbe bsym_tab
 
 let get_sets bsym_table chain2ix ix2chain bexe =
   let bidset = ref BidSet.empty in
-  let f_bexpr e = find_once bsym_table chain2ix [] bidset e in
+  let f_bexpr e = 
+    try find_once bsym_table chain2ix [] bidset e 
+    with DuplicateGet (i,ix) ->
+      print_endline ("Flx_once: Duplicate Get " ^ id_of_index bsym_table i ^" in "^Flx_print.sbe bsym_table e);
+      print_endline ("Instruction " ^ Flx_print.string_of_bexe bsym_table 0 bexe); 
+      let sr = Flx_bexe.get_srcref bexe in
+      print_endline (Flx_srcref.long_string_of_src sr);
+      failwith ("Flx_once: Duplicate Get of unique variable")
+  in
   begin match bexe with 
   | BEXE_assign (_,l,_) -> f_bexpr l
   | BEXE_init (_,i,(_,vt as e)) -> f_bexpr (bexpr_varname vt (i,[]))
   | BEXE_storeat (_,l,r) -> 
-    find_ponce bsym_table chain2ix [] bidset l
+    begin try
+      find_ponce bsym_table chain2ix [] bidset l
+    with DuplicateSet (i,ix) ->
+      print_endline ("Flx_once: Duplicate Set " ^ id_of_index bsym_table i ^" in "^ Flx_print.string_of_bexe bsym_table 0 bexe);
+      print_endline ("Instruction " ^ Flx_print.string_of_bexe bsym_table 0 bexe); 
+      let sr = Flx_bexe.get_srcref bexe in
+      print_endline (Flx_srcref.long_string_of_src sr);
+      failwith ("Flx_once: Duplicate Set of unique variable")
+    end
   | _ ->  () 
   end;
 
@@ -239,7 +265,14 @@ let get_gets bsym_table chain2ix ix2chain bexe =
   let f_bexpr e = 
      match e with
      | BEXPR_ref (i,_),_ -> ()
-     | _ -> find_once bsym_table chain2ix [] bidset e 
+     | _ -> 
+       try find_once bsym_table chain2ix [] bidset e 
+       with DuplicateGet (i,ix) ->
+        print_endline ("Flx_once: Duplicate Get variable " ^id_of_index bsym_table i  ^" in "^Flx_print.sbe bsym_table e);
+        print_endline ("Instruction " ^ Flx_print.string_of_bexe bsym_table 0 bexe); 
+        let sr = Flx_bexe.get_srcref bexe in
+        print_endline (Flx_srcref.long_string_of_src sr);
+        failwith ("Flx_once: Duplicate Get of unique variable")
   in
   begin match bexe with 
   (* storing at a pointer is still a get on the pointer! *)
@@ -686,10 +719,11 @@ let once_check bsym_table ix2chain chain2ix  bid name  bexes =
 let once_bsym bsym_table counter bid parent bsym =
   let bbdcl = Flx_bsym.bbdcl bsym in
   match bbdcl with
-  | BBDCL_fun(prop, bvs, ps, res, effects, exes) ->
+  | BBDCL_fun(props, bvs, ps, res, effects, exes) ->
     let kids = Flx_bsym_table.find_children bsym_table bid in
+    let linear = List.mem `LinearFunction props in
 if debug then
-print_endline ("Once check examining " ^ Flx_bsym.id bsym);
+print_endline ("Once check examining " ^ (if linear then "linear" else "nonlinear") ^ " function "^ Flx_bsym.id bsym);
     let chain2ix, ix2chain = 
        List.fold_left (fun (acca, accb) vidx ->
          let bsym = Flx_bsym_table.find bsym_table vidx in
@@ -704,12 +738,15 @@ print_endline ("Once check examining " ^ Flx_bsym.id bsym);
       (BidSet.elements kids)
     in
 if debug then begin
-print_endline ("Calculated fairy variables, ix2chain index=");
+print_endline ("  ** Calculated fairy variables, ix2chain index=");
 print_ix2chain bsym_table ix2chain;
 end;
     if (List.length chain2ix <> 0) then
-      once_check bsym_table ix2chain chain2ix bid (Flx_bsym.id bsym) exes 
-
+      begin try once_check bsym_table ix2chain chain2ix bid (Flx_bsym.id bsym) exes 
+      with exn ->
+        print_endline ("Uniqueness Error in function " ^ Flx_bsym.id bsym);
+        raise exn
+      end
   | _ -> ()
 
 let once_bsym_table phase bsym_table counter = 
