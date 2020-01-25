@@ -41,8 +41,13 @@ abstraction invariants applied when they're constructed.
 TODO!
 *)
 
+(* THIS IS USED in Flx_bind_type_index to bind a btyp_inst during the
+replacement of a typedef with a type expression which is NOT mapped to a structural or
+nominal type alias BBDCL entry by a common index, in other words, a simple typedef
+*) 
 let rec guess_metatype sr t : kind =
   match t with
+  | `TYP_uniq _ -> kind_linear
   | `TYP_bool _ -> kind_bool 
   | `TYP_typeop (sr,op,t,k) -> bmt "Flx_guess_meta_type" k 
   | `TYP_unitsum _ -> kind_unitsum
@@ -54,15 +59,22 @@ let rec guess_metatype sr t : kind =
   | `TYP_typefun (d,c,body) -> 
 (*
     print_endline ("A type fun: " ^ 
-    catmap "," (fun (n,t) -> string_of_typecode t) d ^ " -> " ^ string_of_typecode c);
+    Flx_util.catmap "," (fun (n,t) -> str_of_kindcode t) d ^ " -> " ^ str_of_kindcode c);
 *)
     let atyps = List.map (fun (_,t) -> t) d in
     let atyp = match atyps with
     | [x]->x
     | _ -> KND_tuple atyps
     in
-    let t = KND_function (atyp, c) in
-    Flx_btype.bmt "Flx_guess_meta_type" t
+    let k = KND_function (atyp, c) in
+(*
+print_endline (" ** mata type is " ^ Flx_print.str_of_kindcode k);
+*)
+    let bmt = Flx_btype.bmt "Flx_guess_meta_type.guess_metatype" k in
+(*
+print_endline (" ** BOUND mata type is " ^ Flx_kind.sk bmt);
+*)
+    bmt
 
   | `TYP_subtype_match (_,bs) 
   | `TYP_type_match (_,bs) ->
@@ -81,7 +93,6 @@ let rec guess_metatype sr t : kind =
   | `TYP_pclt _
   | `TYP_rpclt _
   | `TYP_wpclt _
-  | `TYP_uniq _
   | `TYP_void _ 
   | `TYP_case_tag _ 
   | `TYP_callback _

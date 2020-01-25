@@ -7,7 +7,7 @@ type kind =
   | KIND_bool
   | KIND_nat
   | KIND_tuple of kind list
-  | KIND_function of kind * kind
+  | KIND_function of kind * kind (* the kind of a type function from domain to codomain kinds *)
 
 let kind_eq k1 k2 = k1 = k2
 

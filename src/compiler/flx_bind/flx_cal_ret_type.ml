@@ -44,6 +44,7 @@ let cal_ret_type'
 print_endline ("+++++++++++++++++++++++++++++");
 print_endline ("Cal ret type of " ^ id ^ "<" ^ string_of_int index ^ "> at " ^ Flx_srcref.short_string_of_src sr);
 print_endline ("+++++ UNBOUND return type is " ^ string_of_typecode rt);
+    begin match rt with | `TYP_var j when j = index -> print_endline ("RETURN TYPE UNSPECIFIED") | _ -> () end;
 print_endline ("Trying to bind type .. if function index variable, we get a recurse?");
 *)
     let rt = bind_type' state bsym_table env rs sr rt args mkenv in
@@ -54,6 +55,9 @@ print_endline ("Type bound; " ^ sbt bsym_table rt);
     let pvtype = match rt with BTYP_variant _ -> true | _ -> false in
 (*
     if pvtype then print_endline (id ^ " has pv type " ^ sbt bsym_table rt);
+*)
+(*
+print_endline("Flx_cal_ret_type: function return type from SYMDEF bound as " ^ Flx_btype.st rt ^ " = " ^ sbt bsym_table rt);
 *)
     let ret_type = ref rt in
     let return_counter = ref 0 in

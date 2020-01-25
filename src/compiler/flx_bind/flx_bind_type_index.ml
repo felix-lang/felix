@@ -255,6 +255,9 @@ print_endline ("Bind type index, trying to bind " ^id ^ "<" ^string_of_int index
       end
     with Not_found ->
       let k = Flx_guess_meta_type.guess_metatype sr t in
+(*
+print_endline ("Flx_bind_type_index: btyp_inst, meta type calculated by guess_metatype!"); 
+*)
       let t = btyp_inst (index,ts,k) in 
 (*
       print_endline ("Bind type index: INITIAL nominalising type alias " ^ id ^ 

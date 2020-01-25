@@ -9,6 +9,7 @@ let rec metatype sr term : kind =
 and metatype' sr typ : kind =
   let st t = Flx_btype.st t in
   let mt t = metatype' sr t in
+  if not (Flx_btype.iscopyable_type typ) then kind_linear else
   match typ with
   | BBOOL _ -> KIND_bool
   | BTYP_typeop (_,_,k) -> k
@@ -49,6 +50,9 @@ and metatype' sr typ : kind =
   | BTYP_type_map (_,_) -> kind_type
 
   | BTYP_type_apply (a,b) ->
+(*
+print_endline ("Flx_btype_kind.metatype' case type_apply: " ^ Flx_btype.st typ);
+*)
     begin
       let ta = mt a
       and tb = mt b

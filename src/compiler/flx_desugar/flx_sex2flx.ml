@@ -118,14 +118,36 @@ print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
     `TYP_typeop  (xsr sr, name, ti ty, kind_of_sex (xsr sr) kd)
 
  | Lst [Id "typ_implies"; sr; t1; t2] -> `TYP_typeop (xsr sr, "_staticbool_implies", `TYP_type_tuple [ti t1; ti t2], KND_bool)
- | Lst [Id "typ_and"; sr; t1; t2] -> `TYP_typeop (xsr sr, "_staticbool_and", `TYP_type_tuple [ti t1; ti t2], KND_bool)
+ | Lst [Id "typ_and"; sr; t1; t2] -> 
+   (* print_endline ("sex2flx makes staticbool_and from typ_and"); *)
+   `TYP_typeop (xsr sr, "_staticbool_and", `TYP_type_tuple [ti t1; ti t2], KND_bool)
+
  | Lst [Id "typ_or"; sr; t1; t2] -> `TYP_typeop (xsr sr, "_staticbool_or", `TYP_type_tuple [ti t1; ti t2], KND_bool)
  | Lst [Id "typ_not"; sr; t] -> `TYP_typeop (xsr sr, "_staticbool_not", ti t, KND_bool)
  | Lst [Id "typ_true"; sr; t] -> `TYP_typeop (xsr sr, "_staticbool_true", `TYP_type_tuple [], KND_bool)
  | Lst [Id "typ_false"; sr; t] -> `TYP_typeop (xsr sr, "_staticbool_false", `TYP_type_tuple [], KND_bool)
 
- | Lst [Id "typ_andchain"; Lst es] -> `TYP_typeop (sr,"_staticbool_and", `TYP_type_tuple (map ti es), KND_bool)
-
+ (* special constant folding here just to clean up common cases *)
+ | Lst [Id "typ_andchain"; Lst es] -> 
+  (* print_endline ("sex2flx makes staticbool_and from typ_andchain"); *)
+  let tis = map ti es in
+  (* print_endline ("  ** AND Components = "  ^ Flx_util.catmap "," Flx_print.string_of_typecode tis); *)
+  begin try
+    let tis = 
+       filter (fun x -> 
+         match x with 
+         | `TYP_bool true -> false 
+         | `TYP_bool false -> raise Not_found 
+         | _ -> true
+       ) 
+       tis
+    in 
+    match tis with
+    | [] -> `TYP_bool true
+    | [x] -> x
+    | tis -> `TYP_typeop (sr,"_staticbool_and", `TYP_type_tuple tis, KND_bool)
+  with Not_found -> `TYP_bool false
+  end
 
  | Lst [Id "ast_record_type"; Lst rs] ->
    let rs =

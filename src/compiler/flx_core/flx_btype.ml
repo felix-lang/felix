@@ -309,6 +309,7 @@ and str_of_btype typ =
   | BTYP_typeop (op,t,k) -> "BTYP_typeop(" ^ op ^ "," ^ s t ^","^sk k^")"
 
 
+(* NOTE: this is a check for compact linear, not LINEAR *)
 let rec islinear_type bsym_table t =
   match t with
   | BTYP_void
@@ -320,6 +321,52 @@ let rec islinear_type bsym_table t =
   | BTYP_rptsum (count,base) -> islinear_type bsym_table base (* coarray *)
   | BTYP_array (base,index) -> islinear_type bsym_table base
   | _ -> false
+
+
+(* values of the type can be copied *)
+(* currently this tests kind TYPE, a subkind of LINEAR *)
+let iscopyable_type t = 
+  let rec f t = 
+    match t with
+    | BTYP_type_var (_,k) -> 
+      (* this rule says all kinds are copyable except run time values (LINEAR)
+         which are not shareable (TYPE)
+
+         in particular kinds like TYPE->TYPE or type functions are considered copyable,
+         because actually this function is really used to detect things with uniq in them
+      *)
+      if kind_ge2 KIND_linear k then       
+        if kind_ge2 KIND_type k then () else raise Not_found
+      else ()
+
+    (* | BTYP_void *)
+    | BTYP_uniq _ -> raise Not_found
+    | BTYP_rptsum (_,t) 
+    | BTYP_rev t 
+    | BTYP_array (t,_) -> f t
+
+    | BTYP_tuple_cons (t1,t2) 
+    | BTYP_tuple_snoc (t1,t2) -> f t1; f t2
+
+    | BTYP_type_set ts
+    | BTYP_type_set_union ts
+    | BTYP_type_set_intersection ts
+    | BTYP_sum ts
+    | BTYP_tuple ts -> List.iter f ts
+
+    | BTYP_variant rs
+    | BTYP_record rs -> List.iter (fun (_,t) -> f t) rs
+    | BTYP_polyrecord (rs,_,t) -> List.iter (fun (_,t) -> f t) rs; f t
+
+    (* note pointers, including functions, are copyable *)
+    (* some other type terms don't make sense, call copyable, 
+       even though values of the encoding don't exist at run time 
+    *)
+    (* assume typeof e is copyable .. *)
+    | _ -> ()
+  in
+  try f t; true with Not_found -> false
+
 
 
 let st t = str_of_btype t

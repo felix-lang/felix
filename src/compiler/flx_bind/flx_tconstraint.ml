@@ -34,6 +34,7 @@ print_endline ("Build type constraints for type variable " ^string_of_int i ^": 
   match p1 with
   | KND_generic (* treated as ordinary type variable here *)
   | KND_type
+  | KND_linear
   | KND_unitsum (* well this is wrong, it IS a constraint! *) 
   | KND_compactlinear  
   | KND_function _ 

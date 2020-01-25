@@ -14,7 +14,7 @@ open class Unique
   proc kill[T] : uniq T = ";";
 
   // functor for typing
-  typedef fun uniq (T:TYPE):TYPE => _uniq T;
+  typedef fun uniq (T:LINEAR):LINEAR => _uniq T;
 
   // peek inside the box without changing livenes state
   fun peek[T] : &<(uniq T) -> T = "*($t)";

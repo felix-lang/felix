@@ -339,6 +339,7 @@ print_endline (" .. found tpattern .. analysing .. ");
 *)
           type_of_tpattern counter t
         | KND_generic (* overload treats this as a type variable in this routine *)
+        | KND_linear
         | KND_type
         | KND_unitsum
         | KND_compactlinear
@@ -616,10 +617,10 @@ print_endline ("flx_overload: solve mgu : "^n^"=T<"^string_of_int i^"> kind="^st
 *)
    let mt = Flx_btype.bmt "Flx_overload.1" mt in
 (*
-print_endline ("Bound meta type = " ^ Flx_btype.st mt); 
-*)
+print_endline ("Bound meta type = " ^ Flx_kind.sk mt); 
 if i = 7141 then
 print_endline ("Flx_overload, parent ts");
+*)
 btyp_type_var (i,mt))
       parent_vs
     in

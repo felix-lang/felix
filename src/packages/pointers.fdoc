@@ -33,8 +33,8 @@ open class MachinePointers
 
   //$ Dereference a Felx pointer.
   //lvalue fun deref[T]: &T -> T = "*$1";
-  fun _deref[T]: &<T -> T = "*$t";
-  fun deref[T] (p:&<T) => _deref p;
+  fun _deref[T:LINEAR]: &<T -> T = "*$t";
+  fun deref[T:LINEAR] (p:&<T) => _deref p;
 }
 
 open class CompactLinearPointers 
