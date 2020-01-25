@@ -627,7 +627,8 @@ print_endline ("Flx_bind_bexe: UNIFICATION DONE, result= " ^ string_of_bool ures
     if match maybe_matches bsym_table state.counter [state.ret_type, t'] with Some _ -> true | _ -> false then
 *)
       [(bexe_fun_return (sr,(e',t')))]
-    else if t' = btyp_fix 0 (btyp_type 0) then begin
+    (* else if t' = btyp_fix 0 (btyp_type 0) then begin *)
+    else if t' = btyp_fix 0 (Flx_kind.kind_type) then begin
       print_endline "Converting return of 'any' type to procedure call";
       state.reachable <- false;
       [(bexe_fun_return (sr,(e',state.ret_type)))]

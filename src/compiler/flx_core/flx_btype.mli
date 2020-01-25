@@ -149,7 +149,6 @@ val btyp_linearfunction : t * t -> t
 val btyp_lineareffector : t * t * t -> t
 val btyp_cfunction : t * t -> t
 val btyp_fix : int -> kind -> t
-val btyp_type : int -> kind
 val btyp_type_tuple : t list -> t
 val btyp_type_function : (bid_t * kind) list * kind * t -> t
 val btyp_type_var : bid_t * kind -> t

@@ -696,13 +696,6 @@ let btyp_cfunction (args, ret) =
 let btyp_fix i mt =
   BTYP_fix (i, mt)
 
-(** Construct a BTYP_type type. *)
-let btyp_type i =
-  Flx_kind.KIND_type
-(*
-  BTYP_type i
-*)
-
 (** Construct a BTYP_type_tuple type. *)
 let btyp_type_tuple ts =
   match ts with 

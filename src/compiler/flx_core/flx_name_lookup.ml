@@ -108,7 +108,10 @@ let eq_entry_kinds y1 y2 =
      if List.length vs1 <> List.length vs2 then false else
      let nvs = List.length vs1 in
      (* just hope these variables aren't used, since they're low indices this should be safe *)
-     let nuvs = List.map (fun i -> btyp_type_var (i, btyp_type 0)) (Flx_list.nlist nvs) in
+     (* let nuvs = List.map (fun i -> btyp_type_var (i, btyp_type 0)) (Flx_list.nlist nvs) in *)
+
+     (* note, we set kind of variable to linear, but tsubst doesn't actually care .. perhaps it should *)
+     let nuvs = List.map (fun i -> btyp_type_var (i, Flx_kind.kind_linear)) (Flx_list.nlist nvs) in
      let sr = dummy_sr in 
      let ts1 = List.map (fun t-> tsubst sr vs1 nuvs t) ts1 in
      let ts2 = List.map (fun t-> tsubst sr vs2 nuvs t) ts2 in

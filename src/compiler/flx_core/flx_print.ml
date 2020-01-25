@@ -364,6 +364,7 @@ and str_of_kindcode k : string =
 
 
 and st prec tc : string =
+  let show_effects t = match t with `TYP_tuple [] -> "" | _ -> "[" ^ string_of_typecode t ^ "]" in
   let iprec,txt =
     match tc with
     | `TYP_bool b -> 0,(if b then "TRUE" else "FALSE")
@@ -501,14 +502,14 @@ and st prec tc : string =
       9,st 9 args ^ " -> " ^ st 9 result
 
     | `TYP_effector (args, effects, result) ->
-      9,st 9 args ^ " ->["^st 0 effects^"] " ^ st 9 result
+      9,st 9 args ^ " ->"^show_effects effects^" " ^ st 9 result
 
 
     | `TYP_linearfunction (args, result) ->
       9,st 9 args ^ " ->. " ^ st 9 result
 
     | `TYP_lineareffector (args, effects, result) ->
-      9,st 9 args ^ " ->.["^st 0 effects^"] " ^ st 9 result
+      9,st 9 args ^ " ->."^show_effects effects^" " ^ st 9 result
 
 
     | `TYP_cfunction (args, result) ->
@@ -618,6 +619,7 @@ and string_of_fixpoints depth fixlist =
 
 and sb bsym_table depth fixlist counter prec tc =
   let sbt prec t = sb bsym_table (depth+1) fixlist counter prec t in
+  let show_effects e = (match e with | BTYP_tuple [] -> "" | _ -> "[" ^ string_of_btypecode bsym_table e ^ "]") in
   let iprec, term =
     match tc with
     | BBOOL b -> 0,("BBOOL " ^ string_of_bool b)
@@ -785,13 +787,13 @@ and sb bsym_table depth fixlist counter prec tc =
       6,(sbt 6 args) ^ " -> " ^ (sbt 6 result)
 
     | BTYP_effector (args, effects, result) ->
-      6,(sbt 6 args) ^ " ->["^sbt 0 effects^"] " ^ (sbt 6 result)
+      6,(sbt 6 args) ^ " ->"^show_effects effects^" " ^ (sbt 6 result)
 
     | BTYP_linearfunction (args, result) ->
       6,(sbt 6 args) ^ " ->. " ^ (sbt 6 result)
 
     | BTYP_lineareffector (args, effects, result) ->
-      6,(sbt 6 args) ^ " ->.["^sbt 0 effects^"] " ^ (sbt 6 result)
+      6,(sbt 6 args) ^ " ->."^show_effects effects^" " ^ (sbt 6 result)
 
 
     | BTYP_cfunction (args, result) ->

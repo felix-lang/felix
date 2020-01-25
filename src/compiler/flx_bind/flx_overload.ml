@@ -20,7 +20,10 @@ open Flx_btype_subst
 open Flx_kind
 open Flx_typeset
 
-let debugid = ""
+let debugid = 
+  try Sys.getenv "FLX_COMPILER_OVERLOAD_DEBUG_ID"   
+  with Not_found -> ""
+
 
 type overload_result = Flx_btype.overload_result
 
@@ -128,57 +131,47 @@ if name = debugid then
     with _ -> print_endline "Failed to unravel candidate return type!"; []
   in
   let curry_domains = spec_domain :: curry_domains in
-(*
-  print_endline ("Argument  sigs= " ^  catmap "->" (sbt bsym_table) arg_types);
-  print_endline ("Candidate sigs= " ^  catmap "->" (sbt bsym_table) curry_domains);
-*)
+
+  if name = debugid then begin
+    print_endline ("Argument  sigs= " ^  catmap "->" (sbt bsym_table) arg_types);
+    print_endline ("Candidate sigs= " ^  catmap "->" (sbt bsym_table) curry_domains);
+  end;
+
   (* equations for user specified assignments *)
-  let lhsi = List.map (fun (n,i,_) -> i) entry_kind.spec_vs in
-  let lhs = List.map
-    (fun (n,i,mt) -> 
-(*
-print_endline ("flx_overload: FUDGE METATYPE? lookup map entry vs does not have kind! make equations: "^n^"=T<"^string_of_int i^">");
-*)
-(*
-if i = 7141 then
-print_endline ("Flx_overload bind type var");
-*)
-     btyp_type_var (i,mt))
-    entry_kind.spec_vs
-  in
+  let lhs = List.map (fun (n,i,mt) -> btyp_type_var (i,mt)) entry_kind.spec_vs in
   let n = min (List.length entry_kind.spec_vs) (List.length input_ts) in
   let eqns = List.combine (list_prefix lhs n) (list_prefix input_ts n) in
 
+  if name = debugid then begin
+    print_endline "TS EQUATIONS ARE:";
+    List.iter (fun (t1,t2) -> print_endline (sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2))
+    eqns
+  end;
+
   (* these are used for early substitution *)
-  let eqnsi = List.combine (list_prefix lhsi n) (list_prefix input_ts n) in
+  let eqnsi =
+    let lhsi = List.map (fun (n,i,_) -> i) entry_kind.spec_vs in 
+    List.combine (list_prefix lhsi n) (list_prefix input_ts n) 
+  in
 
-  (*
-  print_endline "TS EQUATIONS ARE:";
-  List.iter (fun (t1,t2) -> print_endline (sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2))
-  eqns
-  ;
-  *)
 
-  (*
-  print_endline ("Curry domains (presub)   = " ^ catmap ", " (sbt bsym_table) curry_domains);
-  *)
+  if name = debugid then
+    print_endline ("Curry domains (presub)   = " ^ catmap ", " (sbt bsym_table) curry_domains);
   let curry_domains = List.map
     (fun t -> list_subst counter eqnsi t)
     curry_domains
   in
 
-  (*
+  if name = debugid then
   print_endline ("Curry domains (postsub)  = " ^ catmap ", " (sbt bsym_table) curry_domains);
-  *)
 
   let curry_domains = List.map
     (fun t -> beta_reduce "flx_overload: curry domains" counter bsym_table sr t)
     curry_domains
   in
 
-  (*
+  if name = debugid then
   print_endline ("Curry domains (postbeta) = " ^ catmap ", " (sbt bsym_table) curry_domains);
-  *)
 
   let n = min (List.length curry_domains) (List.length arg_types) in
   let eqns = eqns @ List.combine
@@ -188,13 +181,11 @@ print_endline ("Flx_overload bind type var");
 
   let dvars = ref BidSet.empty in
   List.iter (fun (_,i,_)-> dvars := BidSet.add i !dvars) entry_kind.spec_vs;
-(*
 if name = debugid then begin
   print_endline "EQUATIONS ARE:";
   List.iter (fun (t1,t2) -> print_endline (sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2))
   eqns
 end;
-*)
   (* WRONG!! dunno why, but it is! *)
 (*
   print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
@@ -243,7 +234,6 @@ let name = id in
 (*
 print_endline ("Solve MGU .. constraint = " ^ Flx_btype.st con);
 *)
-(*
 if id = debugid then begin
 print_endline ("Solve mgu, for "^id^", parent_vs= " ^
 catmap "," (fun (name,i,mt) -> name ^"<"^string_of_int i^">:"^ str_of_kindcode mt)
@@ -257,7 +247,7 @@ print_endline (" solve_mgu .. mgu = " ^ string_of_varlist bsym_table mgu);
   print_endline "Specialisation detected";
   print_endline (" solve_mgu .. mgu = " ^ string_of_varlist bsym_table mgu);
 end;
-*)
+
   let mgu = ref mgu in
   (* each universally quantified variable must be fixed
     by the mgu .. if it doesn't its an error .. hmmm
@@ -422,12 +412,14 @@ if name = debugid then
 if i = 7123 then
 print_endline ("Flx_overload, constraint FUDGE");
 *)
-            let t1 = btyp_type_var (i, btyp_type 0) in
+            (* let t1 = btyp_type_var (i, btyp_type 0) in *)
+            let t1 = btyp_type_var (i, kind_linear) in
 (*
 if k = 7123 then
 print_endline ("Flx_overload, constraint FUDGE");
 *)
-            let t2 = btyp_type_var (k, btyp_type 0) in
+            (* let t2 = btyp_type_var (k, btyp_type 0) in *)
+            let t2 = btyp_type_var (k, kind_linear) in
 
             print_endline ("Adding equation " ^ sbt bsym_table t1 ^ " = " ^
               sbt bsym_table t2);
@@ -468,7 +460,8 @@ print_endline ("Flx_overload, constraint FUDGE");
 if i = 7123 then
 print_endline ("Flx_overload, extra FUDGE");
 *)
-        let t1 = btyp_type_var (i, btyp_type 0) in
+        (* let t1 = btyp_type_var (i, btyp_type 0) in *)
+        let t1 = btyp_type_var (i, kind_linear) in
         extra_eqns := (t1,t2) :: !extra_eqns
       end eqns1;
 
@@ -612,9 +605,8 @@ print_endline ("SOLVE MGU " ^ name);
 *)
     let parent_ts = List.map
       (fun (n,i,mt) -> 
-(*
-print_endline ("flx_overload: solve mgu : "^n^"=T<"^string_of_int i^"> kind="^string_of_typecode mt);
-*)
+if name = debugid then
+print_endline ("flx_overload: solve mgu : "^n^"=T<"^string_of_int i^"> kind="^str_of_kindcode mt);
    let mt = Flx_btype.bmt "Flx_overload.1" mt in
 (*
 print_endline ("Bound meta type = " ^ Flx_kind.sk mt); 
@@ -885,10 +877,8 @@ print_endline "maybe got mgu ..";
      already by the instance match .. hmm .. *)
   match mgu with
   | Some mgu ->
-(*
 if name = debugid then
 print_endline "solving mgu";
-*)
       solve_mgu
         counter
         bsym_table
@@ -907,10 +897,8 @@ print_endline "solving mgu";
         env_traint
 
   | None ->
-(*
 if name = debugid then
       print_endline "No match";
-*)
       None
 
 
@@ -933,6 +921,8 @@ let overload
 =
 if name = debugid then
 begin
+  print_endline ("");
+  print_endline ("############## start overload ########################################");
   print_endline ("Overload " ^ name);
   print_endline ("Argument sigs are " ^ catmap ", " (sbt bsym_table) sufs);
   print_endline (string_of_int (List.length fs) ^ 

@@ -88,7 +88,7 @@ print_endline ("Build type constraints for type variable " ^string_of_int i ^": 
     varset1 explicit_vars1
   in
   let un = bbool true in (* the 'true' value of the type system *)
-  let elt = btyp_type_var (i, btyp_type 0) in
+  let elt = btyp_type_var (i, Flx_kind.kind_linear) in
   let p1 = bt p1 in
   let rec fe t = match t with
   | BTYP_type_set ls
@@ -107,7 +107,7 @@ print_endline ("Generating type match for typeset " ^ Flx_util.catmap ", " Flx_b
     let fresh = fresh_bid counter in
     let dflt =
       {
-        pattern = btyp_type_var (fresh, Flx_kind.KIND_type);
+        pattern = btyp_type_var (fresh, Flx_kind.kind_linear);
         pattern_vars = BidSet.singleton fresh;
         assignments=[]
       },
@@ -150,7 +150,7 @@ print_endline ("type variable " ^ s ^ " constraint = " ^ str_of_kindcode tp);
     | _ -> 
       (* let traint = btyp_typeop "_type_to_staticbool" t Flx_kind.KIND_bool in *)
       let traint = t in
-      btyp_typeop "_staticbool_and" (btyp_type_tuple [acc; traint]) Flx_kind.KIND_bool
+      btyp_typeop "_staticbool_and" (btyp_type_tuple [acc; traint]) Flx_kind.kind_bool
    )
    (bbool true)
    type_constraints

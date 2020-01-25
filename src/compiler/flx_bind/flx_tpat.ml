@@ -126,7 +126,8 @@ let bind_type_match bsym_table counter bt btp params sr t ps ubt =
      * the argument typing to be known ... no notation for that yet either
      * *)
     let args = List.map (fun (i,s) ->
-    s, btyp_type_var (i,btyp_type 0)) (explicit_vars @ as_vars)
+    (* s, btyp_type_var (i,btyp_type 0)) (explicit_vars @ as_vars) *)
+    s, btyp_type_var (i,Flx_kind.kind_type)) (explicit_vars @ as_vars)
     in
     let t' = btp t' (params@args) in
     let t' = list_subst counter eqns t' in
@@ -199,7 +200,8 @@ let bind_subtype_match bsym_table counter bt btp params sr t ps ubt =
      * the argument typing to be known ... no notation for that yet either
      * *)
     let args = List.map (fun (i,s) ->
-    s, btyp_type_var (i,btyp_type 0)) (explicit_vars @ as_vars)
+    (* s, btyp_type_var (i,btyp_type 0)) (explicit_vars @ as_vars) *)
+    s, btyp_type_var (i,Flx_kind.kind_type)) (explicit_vars @ as_vars)
     in
     let t' = btp t' (params@args) in
     let t' = list_subst counter eqns t' in

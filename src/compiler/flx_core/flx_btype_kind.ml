@@ -14,6 +14,7 @@ and metatype' sr typ : kind =
   | BBOOL _ -> KIND_bool
   | BTYP_typeop (_,_,k) -> k
   | BTYP_hole -> assert false
+  | BTYP_uniq _ -> KIND_linear
 
   | BTYP_type_match (_, bs)
   | BTYP_subtype_match (_, bs) ->
@@ -107,7 +108,6 @@ print_endline ("Flx_btype_kind.metatype' case type_apply: " ^ Flx_btype.st typ);
   | BTYP_polyvariant _
   | BTYP_record _
   | BTYP_rev _
-  | BTYP_uniq _
 
   | BTYP_label
 

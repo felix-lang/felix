@@ -70,7 +70,7 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
       Flx_bsym_table.add bsym_table k (Some this) bsym;
 
       (* append a pointer to this variable to the argument *)
-      let ts' = List.map (fun (s,i,_) -> btyp_type_var (i,btyp_type 0)) vs in
+      let ts' = List.map (fun (s,i,k) -> btyp_type_var (i,k)) vs in
       let ptr = bexpr_ref (btyp_pointer ret) (k,ts') in
       let (_,at') as a' = append_args syms bsym_table f a [ptr] in
 
