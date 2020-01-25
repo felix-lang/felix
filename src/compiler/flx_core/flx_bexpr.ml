@@ -44,6 +44,7 @@ type bexpr_t =
   | BEXPR_record of (string * t) list
   | BEXPR_polyrecord of (string * t) list * t
   | BEXPR_remove_fields of t * string list
+  | BEXPR_getall_field of t * string
   | BEXPR_closure of bid_t * Flx_btype.t list
   | BEXPR_identity_function of Flx_btype.t
 
@@ -543,6 +544,33 @@ print_endline ("Type is " ^ st result_type);
   | _ -> 
 print_endline "type BUGGED";
     failwith ("BUG: caller should have checked! remove fields from non-(poly)record type " ^ Flx_btype.st domain)
+
+let bexpr_getall_field (e',t' as e) s = 
+  match t' with
+  | Flx_btype.BTYP_array _
+  | Flx_btype.BTYP_tuple _ ->
+    if s = "" then e else bexpr_unit
+
+  | Flx_btype.BTYP_record rs
+  | Flx_btype.BTYP_polyrecord (rs,_,_) ->
+    let mkprj fld seq fldt : t = bexpr_rnprj fld seq t' fldt in
+    let dcnt = ref 0 in
+    let nuflds = ref [] in
+    List.iter
+      (fun (s',t) ->
+        if s = s' then begin 
+          let nufld = bexpr_apply t (mkprj s (!dcnt) t, e) in 
+          nuflds := nufld :: !nuflds;
+          incr dcnt
+        end;
+      )
+    rs;
+    let nuflds = List.rev !nuflds in
+    let ts = List.map snd nuflds in
+    bexpr_tuple (Flx_btype.btyp_tuple ts) nuflds
+
+  | _ -> bexpr_unit
+  
 
 (************************ POLYRECORD **************************)
 let bexpr_polyrecord (es: (string * t) list) ((e',t') as e) =
@@ -1081,6 +1109,7 @@ let flat_iter
   | BEXPR_record es -> List.iter (fun (s,e) -> f_bexpr e) es
   | BEXPR_polyrecord (es,e) -> List.iter (fun (s,e) -> f_bexpr e) es; f_bexpr e
   | BEXPR_remove_fields (e,ss) -> f_bexpr e
+  | BEXPR_getall_field (e,s) -> f_bexpr e
   | BEXPR_closure (i,ts) ->
       f_bid i;
       List.iter f_btype ts
@@ -1204,6 +1233,7 @@ let map
   | BEXPR_polyrecord (es,e) ->
       bexpr_polyrecord (List.map (fun (s,e) -> s, f_bexpr e) es) (f_bexpr e)
   | BEXPR_remove_fields (e,ss) -> bexpr_remove_fields (f_bexpr e) ss
+  | BEXPR_getall_field (e,s) -> bexpr_getall_field (f_bexpr e) s
 
   | BEXPR_closure (i,ts) ->
       bexpr_closure t (f_bid i, List.map f_btype ts)
@@ -1276,8 +1306,8 @@ let rec reduce e =
     | BEXPR_cond ((BEXPR_case (1,Flx_btype.BTYP_unitsum 2),Flx_btype.BTYP_unitsum 2), tr, _),_ -> tr
     | BEXPR_rprj (name,seq,d,c),_ -> bexpr_rnprj name seq d c 
     | BEXPR_polyrecord (es,e),_ -> bexpr_polyrecord es e
-    | BEXPR_remove_fields (e,ss),_ -> 
-      bexpr_remove_fields e ss
+    | BEXPR_remove_fields (e,ss),_ -> bexpr_remove_fields e ss
+    | BEXPR_getall_field (e,s),_ -> bexpr_getall_field e s
     | x -> x
   in f_bexpr e
 

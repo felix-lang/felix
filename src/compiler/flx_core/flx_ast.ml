@@ -170,6 +170,7 @@ and expr_t = [
   | `EXPR_polyrecord of Flx_srcref.t * (Flx_id.t * expr_t) list * expr_t
   | `EXPR_remove_fields of Flx_srcref.t * expr_t * string list
   | `EXPR_replace_fields of Flx_srcref.t * expr_t * (Flx_id.t * expr_t ) list
+  | `EXPR_getall_field of Flx_srcref.t * expr_t * Flx_id.t
   | `EXPR_variant of Flx_srcref.t * (Flx_id.t * expr_t)
   | `EXPR_arrayof of Flx_srcref.t * expr_t list
   | `EXPR_coercion of Flx_srcref.t * (expr_t * typecode_t)
@@ -844,6 +845,7 @@ let src_of_expr (e : expr_t) = match e with
   | `EXPR_polyrecord (s,_,_)
   | `EXPR_remove_fields (s,_,_)
   | `EXPR_replace_fields (s,_,_)
+  | `EXPR_getall_field (s,_,_)
   | `EXPR_variant (s,_)
   | `EXPR_arrayof (s,_)
   | `EXPR_lambda (s,_)

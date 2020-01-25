@@ -137,6 +137,7 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | `EXPR_replace_fields (sr,e,ss) -> 
     `EXPR_replace_fields (sr, fe e, List.map (fun (s,e) -> s,fe e) ss)
   | `EXPR_remove_fields (sr,e,ss) -> `EXPR_remove_fields (sr, fe e, ss)
+  | `EXPR_getall_field (sr,e,s) -> `EXPR_getall_field (sr, fe e, s)
   | `EXPR_variant (sr,(s,e)) -> `EXPR_variant (sr, (s,fe e))
   | `EXPR_arrayof (sr, es) -> `EXPR_arrayof (sr, List.map fe es)
   | `EXPR_coercion (sr, (x,t)) -> `EXPR_coercion (sr,(fe x, ft t))
@@ -264,6 +265,7 @@ let iter_expr f (e:expr_t) =
   | `EXPR_get_tuple_body (_,x)
   | `EXPR_get_tuple_last (_,x)
   | `EXPR_remove_fields (_,x,_)
+  | `EXPR_getall_field (_,x,_)
   | `EXPR_uniq (_,x)
     -> f x
 

@@ -238,6 +238,9 @@ and string_of_expr (e:expr_t) =
   | `EXPR_remove_fields (_,e,ss) -> 
     "(" ^ se e ^ " minus fields " ^ String.concat "," ss ^ ")"
 
+  | `EXPR_getall_field (_,e,s) ->
+     "(" ^ se e ^ " getall " ^ s ^ ")"
+
   | `EXPR_variant (_, (s, e)) -> "case " ^ string_of_id s ^ " of (" ^ se e ^ ")"
 
   | `EXPR_arrayof (_,t) -> "[|" ^ catmap ", " se t ^ "|]"
@@ -2200,6 +2203,10 @@ and string_of_bound_expression' bsym_table se e =
 
   | BEXPR_remove_fields (e,ss) ->
      "(" ^ se e ^ " minus fields " ^ String.concat "," ss ^ ")"
+
+  | BEXPR_getall_field (e,s) ->
+     "(" ^ se e ^ " getallfields " ^ s ^ ")"
+
 
   | BEXPR_case (v,t) ->
     "(case " ^ si v ^ " of " ^ string_of_btypecode (Some bsym_table) t ^ ")"

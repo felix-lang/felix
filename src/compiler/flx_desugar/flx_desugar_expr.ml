@@ -519,6 +519,11 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
     let l,x = rex e in
     l,`EXPR_remove_fields(sr,x,ss)
 
+  | `EXPR_getall_field (sr,e,s) ->
+    let l,x = rex e in
+    l,`EXPR_getall_field (sr,x,s)
+
+
   | `EXPR_extension (sr,es,e) -> 
     let lss,xs = List.split (List.map rex es) in
     let l,x = rex e in

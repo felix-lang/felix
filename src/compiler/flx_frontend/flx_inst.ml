@@ -229,6 +229,7 @@ let rec process_expr syms bsym_table weak ref_insts1 hvarmap sr ((e,t) as be) =
     assert false
 
   | BEXPR_remove_fields _ -> assert false
+  | BEXPR_getall_field _ -> assert false
 
   | BEXPR_case (_,t) -> ut (vs t)
 

@@ -1602,6 +1602,9 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
   | `EXPR_remove_fields (sr,e,ss) ->
     bexpr_remove_fields (be e) ss
 
+  | `EXPR_getall_field (sr,e,s) ->
+    bexpr_getall_field (be e) s
+
   | `EXPR_replace_fields (sr, e, fs) ->
     let fs = List.map (fun (s,e) -> s,be e) fs in
     let cmp (s1,e1) (s2,e2) = compare s1 s2 in

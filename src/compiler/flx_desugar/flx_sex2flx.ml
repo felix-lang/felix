@@ -391,6 +391,9 @@ print_endline ("Processing ast_name "^xid id^" in xexpr");
      ss
    in `EXPR_remove_fields (xsr sr,ex e, ss)
 
+ | Lst [Id "ast_getall_field"; sr; e; Str s] ->
+   `EXPR_getall_field (xsr sr, ex e, s)
+
  | Lst [Id "ast_variant";  Lst [Str s; e]] -> `EXPR_variant (sr,(s, ex e))
 
  | Lst [Id "ast_arrayof";  sr; Lst es] -> `EXPR_arrayof (xsr sr, map ex es)

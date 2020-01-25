@@ -585,6 +585,10 @@ syntax expressions {
     "`(ast_remove_fields ,_sr ,_2 ,_4)"
   ;
 
+  satom := "(" sexpr "getall" sname ")" =>#
+    "`(ast_getall_field ,_sr ,_2 ,_4)"
+  ;
+
   satom := "(" sexpr "with" rassign ("," rassign2 )* ")" =>#
     "`(ast_replace_fields ,_sr ,_2 ,(cons _4 (map second _5)))"
   ;

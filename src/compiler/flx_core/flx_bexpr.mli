@@ -28,6 +28,7 @@ type bexpr_t = private
   | BEXPR_record of (string * t) list
   | BEXPR_polyrecord of (string * t) list * t
   | BEXPR_remove_fields of t * string list
+  | BEXPR_getall_field of t * string
   | BEXPR_closure of bid_t * Flx_btype.t list
   | BEXPR_identity_function of Flx_btype.t
   | BEXPR_case of int * Flx_btype.t
@@ -140,6 +141,7 @@ val cal_removal :
   (string * Flx_btype.t) list ->
   string list -> (string * (t)) list
 val bexpr_remove_fields : t -> string list -> t
+val bexpr_getall_field : t -> string -> t
 val bexpr_polyrecord : (string * t) list -> t -> t
 val bexpr_variant : Flx_btype.t -> string * t -> t
 val bexpr_aprj : t -> Flx_btype.t -> Flx_btype.t -> t

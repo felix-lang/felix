@@ -132,6 +132,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
       ("[desugar_pat:subst]8 Not expected in pattern when clause: " ^ string_of_expr e); 
 
   | `EXPR_remove_fields _
+  | `EXPR_getall_field _
   | `EXPR_typecase_match _
   | `EXPR_ho_ctor_arg _
   | `EXPR_match_ho_ctor _

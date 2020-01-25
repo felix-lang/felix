@@ -258,6 +258,7 @@ let rec gen_expr'
   | BEXPR_int i -> ce_atom (si i)
   | BEXPR_polyrecord _ -> print_endline "Attempt to generate polyrecord value, should have been factored out"; assert false
   | BEXPR_remove_fields _ -> print_endline "Attempt to generate remove fields, should have been factored out"; assert false
+  | BEXPR_getall_field _ -> print_endline "Attempt to generate getall field, should have been factored out"; assert false
   | BEXPR_unitptr k -> 
     begin match k with
     | 0 -> print_endline "Generating unit expr"; ce_atom "0/*[gen_expr']CLT:UNIT*/"
