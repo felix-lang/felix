@@ -313,7 +313,7 @@ print_endline ("bind type index, struct thing " ^ si index ^ " ts=" ^ catmap ","
     | SYMDEF_inherit_fun _
     | SYMDEF_instance _
       ->
-      clierrx "[flx_bind/flx_lookup.ml:1591: E103] " sr
+      clierrx "[flx_bind/flx_bind_type_index.ml:316: E103] " sr
       (
         "[bind_type_index] Type " ^ id ^ "<" ^ string_of_bid index ^ ">" ^
         " must be a type [alias, abstract, union, struct, virtual type], got:\n" ^

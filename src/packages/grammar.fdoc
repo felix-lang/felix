@@ -5215,7 +5215,7 @@ syntax type_decls {
     )
     """;
 
-  stypecasematch := "typecase" sexpr "with" stypecase_matching+ "endmatch" =>#
+  stypecasematch := "typecase" stype "with" stypecase_matching+ "endmatch" =>#
     "`(ast_typecase_match ,_sr (,_2 ,_4))";
   stypecase_matching := "|" stype "=>" sexpr =># "`(,_2 ,_4)";
 
