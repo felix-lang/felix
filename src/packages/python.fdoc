@@ -1,0 +1,36 @@
+@title Python Bindings
+Felix can generate Python 3.x modules. At the time of writing
+this packages, the compiler cannot yet generate types. But the modules
+should be enough to start, provided we can actually write CPython
+compatible functions to put in the modules.
+
+@tangler pycore.flx          = share/lib/python/pycore.flx
+@tangler pycore_macosx.fpc   = $PWD/src/config/macosx/pycore.fpc
+
+@h1 Python Core
+We provide C bindings for some basic Python stuff. This stuff
+is all as reentrant as possible even though Python is not.
+
+@tangle pycore.flx
+class Pycore {
+ requires package "pycore";
+ fun Py_GetVersion: 1 -> +char = "Py_GetVersion()";
+ proc Py_Initialize: 1 = "Py_Initialize();";
+
+ type PyObject = "PyObject*";
+ fun PyLong_FromLong : long -> PyObject = "PyLong_FromLong($1)";
+ fun PyLong_Check : PyObject -> bool = "PyLong_Check($1)!=0";
+ fun PyLong_AsLong : PyObject -> long = "PyLong_AsLong($1)";
+
+ const header_version : uint = "PY_VERSION_HEX";
+}
+@
+
+@tangle pycore_macosx.fpc
+Name: Pycore
+Description: Macosx bindings to Python shared run time library core.
+cflags: -I/usr/local/Cellar/python/3.6.5/Frameworks/Python.framework/Versions/3.6/include/python3.6m
+includes: '"Python.h"'
+provides_dlib: -L/usr/local/Cellar/python/3.6.5/Frameworks/Python.framework/Versions/3.6/lib -lpython3.6m
+provides_slib: -L/usr/local/Cellar/python/3.6.5/Frameworks/Python.framework/Versions/3.6/lib -lpython3.6m
+@
