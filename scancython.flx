@@ -1,0 +1,203 @@
+var comment_line = RE2 " *#.*";
+var varargs_fundef_line = RE2 r" *(.*) (\w+)\((.*\.\.\.)\)(.*)";
+var fundef_line = RE2 r" *(.* \*?)(\w+)\((.*)\)(.*)";
+
+var argt1 = RE2 r"(\w+)"; // one word
+var argt2 = RE2 r"(\w+) +\w+"; // two words
+
+// special cases
+var argt2a = RE2 r"(unsigned long) \w+"; // two words
+
+// C array like things rep as pointers
+var argt3 = RE2 r"(char \*)(\w+)?"; // C string
+var argt4 = RE2 r"(const char \*)(\w+)?"; // input C string
+var argt4a = RE2 r"(const wchar_t \*)(\w+)?"; // input C string
+
+var argt5 = RE2 r"(Py_UCS4 \*)(\w+)?"; // unicode string
+var argt6 = RE2 r"(const Py_UCS4 \*)(\w+)?"; // unicode string
+
+// Python object 
+var argt7 = RE2 r"(PyObject ?\* ?)(\w+)?";
+var argt7a = RE2 r"(PyObject ?\* *\*)(\w+)?";
+
+// general cases
+var argt8 = RE2 r"(\w+) *\* ?(\w+)?";
+var argt8a = RE2 r"(\w+) *\*\* ?(\w+)?";
+var argt9 = RE2 r"void \(\*destr\)\(void \*\)";
+var argt10 = RE2 r"void \(\*func\)\(\)";
+
+fun strip_param (s:string) { 
+  // unfortunately chainmatch is a statement only
+  chainmatch Re2::Match (argt1, s) with  
+  | Some v => return v.1;
+  ormatch Re2::Match (argt2, s) with
+  | Some v => return v.1;
+  ormatch Re2::Match (argt2a, s) with
+  | Some v => return "ulong";
+  ormatch Re2::Match (argt3, s) with
+  | Some v => return "+char";
+  ormatch Re2::Match (argt4, s) with
+  | Some v => return "+char";
+  ormatch Re2::Match (argt4a, s) with
+  | Some v => return "+wchar_t";
+  ormatch Re2::Match (argt5, s) with
+  | Some v => return "+Py_UCS4";
+  ormatch Re2::Match (argt6, s) with
+  | Some v => return "+Py_UCS4";
+  ormatch Re2::Match (argt7, s) with
+  | Some v => return "/* weak */ PyObject";
+  ormatch Re2::Match (argt7a, s) with
+  | Some v => return "&PyObject";
+  ormatch Re2::Match (argt8, s) with
+  | Some v => return "&"+v.1;
+  ormatch Re2::Match (argt8a, s) with
+  | Some v => return "&(&" +v.1+")";
+  ormatch Re2::Match (argt9, s) with
+  | Some v => return "(address-->0)";
+  ormatch Re2::Match (argt10, s) with
+  | Some v => return "(1-->0)";
+  | _ => 
+    if s == "" do 
+      return "1"; 
+    else 
+      return "/* %%%%% cant parse: '" + s + "' */";
+    done
+  endmatch;
+}
+
+fun fixtype (s:string) => 
+  let x = strip s in
+  match x with
+  | "cdef PyTypeObject *" => "&PyTypeObject"
+  | "PyInterpreterState *" => "&PyInterpreterState"
+  | "PyThreadState *" => "&PyThreadState"
+  | "Py_buffer *" => "&Py_buffer"
+
+  | "ob" => "PyObject"
+  | "PyObject*" => "PyObject"
+  | "PyObject *" => "PyObject"
+  | "PyObject**" => "&PyObject"
+  | "object" => "PyObject"
+  | "bytearray" => "PyObject"
+
+  | "bint" => "bool"
+
+  | "list" => "PyObject"
+  | "dict" => "PyObject"
+  | "tuple" => "PyObject"
+  | "slice" => "PyObject"
+  | "bytes" => "PyObject"
+  | "type" => "PyObject"
+  | "descr" => "PyObject"
+  | "unicode" => "PyObject"
+
+  | "size_t" => "size"
+  | "unsigned long" => "ulong"
+  | "char*" => "+char"
+  | "wchar_t *" => "+wchar_t"
+  | "const char *" => "+char"
+  | "void *" => "address"
+  | "void*" => "address"
+  | "&void" => "address"
+  | "&Py_UNICODE" => "+char" // UTF8 encoding
+  | "Py_UNICODE*" => "+char" // UTF8 encoding
+  | "Py_UCS4*" => "+Py_UCS4" // UCS4 encoding 
+  | "Py_UCS4" => "Py_UCS4"   // UCS4 encoding
+  | "PY_INT64_T" => "int64"
+  | "Py_tss_t *" => "&Py_tss_t"
+  | _ => s
+;
+
+var exclude = ([
+  "PyString_FromFormatV",
+  "PyBytes_FromFormatV",
+  "PyDescr_NewWrapper", // return type in descr.pxd not specified
+  "PyCObject_FromVoidPtrAndDesc",
+  "PyThread_start_new_thread"
+]);
+
+fun translate (iname,data) {
+  println$ "Processing " + iname;
+
+  // split raw data into lines
+  var lines = split (data, "\n");
+
+  // strip out comments and blank lines
+  var stripped = Empty[string]; 
+  for line in lines do
+    if strip line != "" 
+      match Re2::Match (comment_line, line) with
+      | None =>  stripped += line;
+      | _ => ;
+      endmatch;
+  done
+
+  var processed = Empty[string];
+  for line in stripped do
+    chainmatch Re2::Match (varargs_fundef_line, line) with
+    | Some _ => processed += "// Varargs fundef: " + line; 
+    ormatch Re2::Match (fundef_line, line) with
+    | None => processed += "// Nonfunction line: " + line;
+    | Some v => 
+      processed += "// FUNCTION: " + line;
+      var ret = strip v.1;
+      var name = v.2;
+      var argstring = v.3;
+      var exc = v.4;
+      var args = unbox$ List::map (strip of string) (split (argstring, ","));
+      //println$ "  ret    = " + ret;
+      //println$ "  name   = " + name;
+      //println$ "  args   = " + args.str;
+      //for arg in args do
+      //  println$ "             " + strip_param arg;
+      //done
+      //println$ "  exc    = " + exc;
+      if name in exclude do
+        ;
+      else
+        var argts = unbox$ List::map strip_param args;
+        var fargs = 
+          match argts with 
+          | Empty => "1" 
+          | _ => strcat " * " (List::map (fun (x:string) => fixtype x) argts) 
+          endmatch
+        ;
+        var cargs = match argts with | Empty => "()" | _ => "($a)";
+        var binder = match ret with | "void" => "proc" | _ => "gen";
+        var terminator = match ret with | "void" => ";" | _ => "";
+        var fret = match ret with | "void" => "" | _ => " -> " + fixtype ret;
+        var cast = match ret with | "const char *" => "(char*)" | _ => "";
+        var outline =
+          "  " binder + " " + name + ": " +  fargs + fret " = " + 
+          "'" + cast+name + cargs + terminator + "';"
+        ;
+        println$ outline;
+        processed += outline + "\n";
+      done
+    endmatch;
+  done
+  return strcat "\n" processed;
+}
+
+proc mainline () {
+  println$ "Cython library scanner";
+
+  // design to run in Felix repository, with cython installed as a sibling directory
+  var dirname = "../cython/Cython/Includes/cpython";
+  var regex = RE2 ".*\\.pxd";
+  var files = FileSystem::regfilesin(dirname, regex);
+  println$ files;
+  FileSystem::unlink "cpython_api";
+  C_hack::ignore$ Directory::mkdir "cpython_api";
+  for base in files do 
+    var iname = Filename::join (dirname, base);
+    var oname = Filename::join ("cpython_api", base+".flx");
+    var inp = load iname;
+    var out = "//FILE: " + base;
+    out += translate (base,inp);
+    save (oname, out);
+  done
+}
+
+mainline;
+ 

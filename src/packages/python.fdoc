@@ -12,18 +12,45 @@ We provide C bindings for some basic Python stuff. This stuff
 is all as reentrant as possible even though Python is not.
 
 @tangle pycore.flx
-class Pycore {
+class Pycore_3_6 {
  requires package "pycore";
+/*
+ // PRE-INITIALISATION
+ // Valid prior to initialisation
  fun Py_GetVersion: 1 -> +char = "Py_GetVersion()";
- proc Py_Initialize: 1 = "Py_Initialize();";
+ fun Py_IsInitialised: 1 -> int = "Py_IsInitialised()";
 
+  // Process wide Parameters
+  proc Py_SetStandardStreamEncoding: +char * +char = "Py_SetStandardStreamEncoding($1,$2);";
+  // Py_SetProgramName (+wchar)
+  // +wchar Py_GetProgramName ()
+
+ // INITIALISATION
+ proc Py_Initialize: 1 = "Py_Initialize();";
+ proc Py_InitializeEx: int = "Py_InitializeEx($1);";
+ proc Py_Finalize: 1 = "Py_Finalize();";
+ proc Py_FinalizeEx: 1 = "Py_FinalizeEx();";
+*/
+ // Core Object Protocol
  type PyObject = "PyObject*";
+/*
+ proc Py_INCREF: PyObject = "Py_INCREF($1);";
+ proc Py_DECREF: PyObject = "Py_DECREF($1);";
+
+ // Concrete objects
+ //
+ // PyLong
  fun PyLong_FromLong : long -> PyObject = "PyLong_FromLong($1)";
  fun PyLong_Check : PyObject -> bool = "PyLong_Check($1)!=0";
  fun PyLong_AsLong : PyObject -> long = "PyLong_AsLong($1)";
-
+*/
  const header_version : uint = "PY_VERSION_HEX";
 }
+
+class Pycore {
+  inherit Pycore_3_6;
+}
+
 @
 
 @tangle pycore_macosx.fpc
