@@ -1,0 +1,47 @@
+@title Python C API set
+@tangler set.flx = share/lib/python/set.flx
+@h1 set
+@tangle set.flx
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     bint PyAnySet_Check(object p)
+  gen PyAnySet_Check: PyObject -> bool;
+
+// FUNCTION:     bint PyAnySet_CheckExact(object p)
+  gen PyAnySet_CheckExact: PyObject -> bool;
+
+// FUNCTION:     bint PyFrozenSet_Check(object p)
+  gen PyFrozenSet_Check: PyObject -> bool;
+
+// FUNCTION:     bint PyFrozenSet_CheckExact(object p)
+  gen PyFrozenSet_CheckExact: PyObject -> bool;
+
+// FUNCTION:     bint PySet_Check(object p)
+  gen PySet_Check: PyObject -> bool;
+
+// FUNCTION:     object PySet_New(object iterable)
+  gen PySet_New: PyObject -> PyObject;
+
+// FUNCTION:     object PyFrozenSet_New(object iterable)
+  gen PyFrozenSet_New: PyObject -> PyObject;
+
+// FUNCTION:     Py_ssize_t PySet_Size(object anyset) except -1
+  gen PySet_Size: PyObject -> Py_ssize_t;
+
+// FUNCTION:     Py_ssize_t PySet_GET_SIZE(object anyset)
+  gen PySet_GET_SIZE: PyObject -> Py_ssize_t;
+
+// FUNCTION:     bint PySet_Contains(object anyset, object key) except -1
+  gen PySet_Contains: PyObject * PyObject -> bool;
+
+// FUNCTION:     int PySet_Add(object set, object key) except -1
+  gen PySet_Add: PyObject * PyObject -> int;
+
+// FUNCTION:     bint PySet_Discard(object set, object key) except -1
+  gen PySet_Discard: PyObject * PyObject -> bool;
+
+// FUNCTION:     object PySet_Pop(object set)
+  gen PySet_Pop: PyObject -> PyObject;
+
+// FUNCTION:     int PySet_Clear(object set)
+  gen PySet_Clear: PyObject -> int;
+@

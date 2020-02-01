@@ -1,0 +1,11 @@
+@title Python C API iterator
+@tangler iterator.flx = share/lib/python/iterator.flx
+@h1 iterator
+@tangle iterator.flx
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     bint PyIter_Check(object o)
+  gen PyIter_Check: PyObject -> bool;
+
+// FUNCTION:     object PyIter_Next(object o)
+  gen PyIter_Next: PyObject -> PyObject;
+@

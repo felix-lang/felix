@@ -1,0 +1,11 @@
+@title Python C API ceval
+@tangler ceval.flx = share/lib/python/ceval.flx
+@h1 ceval
+@tangle ceval.flx
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     void PyEval_InitThreads()
+  proc PyEval_InitThreads: 1;
+
+// FUNCTION:     int PyEval_ThreadsInitialized()
+  gen PyEval_ThreadsInitialized: 1 -> int;
+@

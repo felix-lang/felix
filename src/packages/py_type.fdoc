@@ -1,0 +1,34 @@
+@title Python C API type
+@tangler type.flx = share/lib/python/type.flx
+@h1 type
+@tangle type.flx
+// Nonfunction line: cdef extern from "Python.h":
+// Nonfunction line:     ctypedef class __builtin__.type [object PyTypeObject]:
+// Nonfunction line:         pass
+// FUNCTION:     bint PyType_Check(object o)
+  gen PyType_Check: PyObject -> bool;
+
+// FUNCTION:     bint PyType_CheckExact(object o)
+  gen PyType_CheckExact: PyObject -> bool;
+
+// FUNCTION:     void PyType_Modified(type type)
+  proc PyType_Modified: PyObject;
+
+// FUNCTION:     bint PyType_HasFeature(object o, int feature)
+  gen PyType_HasFeature: PyObject * int -> bool;
+
+// FUNCTION:     bint PyType_IS_GC(object o)
+  gen PyType_IS_GC: PyObject -> bool;
+
+// FUNCTION:     bint PyType_IsSubtype(type a, type b)
+  gen PyType_IsSubtype: PyObject * PyObject -> bool;
+
+// FUNCTION:     object PyType_GenericAlloc(object type, Py_ssize_t nitems)
+  gen PyType_GenericAlloc: PyObject * Py_ssize_t -> PyObject;
+
+// FUNCTION:     object PyType_GenericNew(type type, object args, object kwds)
+  gen PyType_GenericNew: PyObject * PyObject * PyObject -> PyObject;
+
+// FUNCTION:     bint PyType_Ready(type type) except -1
+  gen PyType_Ready: PyObject -> bool;
+@

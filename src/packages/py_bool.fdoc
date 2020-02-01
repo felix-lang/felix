@@ -1,0 +1,13 @@
+@title Python C API bool
+@tangler bool.flx = share/lib/python/bool.flx
+@h1 bool
+@tangle bool.flx
+// Nonfunction line: cdef extern from "Python.h":
+// Nonfunction line:     ctypedef class __builtin__.bool [object PyBoolObject]:
+// Nonfunction line:         pass
+// FUNCTION:     bint PyBool_Check(object o)
+  gen PyBool_Check: PyObject -> bool;
+
+// FUNCTION:     object PyBool_FromLong(long v)
+  gen PyBool_FromLong: long -> PyObject;
+@

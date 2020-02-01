@@ -1,0 +1,67 @@
+@title Python C API buffer
+@tangler buffer.flx = share/lib/python/buffer.flx
+@h1 buffer
+@tangle buffer.flx
+// Nonfunction line: cdef extern from "Python.h":
+// Nonfunction line:     cdef enum:
+// Nonfunction line:         PyBUF_SIMPLE,
+// Nonfunction line:         PyBUF_WRITABLE,
+// Nonfunction line:         PyBUF_WRITEABLE, # backwards compatibility
+// Nonfunction line:         PyBUF_FORMAT,
+// Nonfunction line:         PyBUF_ND,
+// Nonfunction line:         PyBUF_STRIDES,
+// Nonfunction line:         PyBUF_C_CONTIGUOUS,
+// Nonfunction line:         PyBUF_F_CONTIGUOUS,
+// Nonfunction line:         PyBUF_ANY_CONTIGUOUS,
+// Nonfunction line:         PyBUF_INDIRECT,
+// Nonfunction line:         PyBUF_CONTIG,
+// Nonfunction line:         PyBUF_CONTIG_RO,
+// Nonfunction line:         PyBUF_STRIDED,
+// Nonfunction line:         PyBUF_STRIDED_RO,
+// Nonfunction line:         PyBUF_RECORDS,
+// Nonfunction line:         PyBUF_RECORDS_RO,
+// Nonfunction line:         PyBUF_FULL,
+// Nonfunction line:         PyBUF_FULL_RO,
+// Nonfunction line:         PyBUF_READ,
+// Nonfunction line:         PyBUF_WRITE,
+// Nonfunction line:         PyBUF_SHADOW
+// FUNCTION:     bint PyObject_CheckBuffer(object obj)
+  gen PyObject_CheckBuffer: PyObject -> bool;
+
+// FUNCTION:     int PyObject_GetBuffer(object obj, Py_buffer *view, int flags) except -1
+  gen PyObject_GetBuffer: PyObject * &Py_buffer * int -> int;
+
+// FUNCTION:     void PyBuffer_Release(Py_buffer *view)
+  proc PyBuffer_Release: &Py_buffer;
+
+// FUNCTION:     void* PyBuffer_GetPointer(Py_buffer *view, Py_ssize_t *indices)
+  gen PyBuffer_GetPointer: &Py_buffer * &Py_ssize_t -> address;
+
+// FUNCTION:     Py_ssize_t PyBuffer_SizeFromFormat(char *) # actually const char
+  gen PyBuffer_SizeFromFormat: +char -> Py_ssize_t;
+
+// FUNCTION:     int PyBuffer_ToContiguous(void *buf, Py_buffer *view, Py_ssize_t len, char fort)
+  gen PyBuffer_ToContiguous: address * &Py_buffer * Py_ssize_t * char -> int;
+
+// FUNCTION:     int PyBuffer_FromContiguous(Py_buffer *view, void *buf, Py_ssize_t len, char fort)
+  gen PyBuffer_FromContiguous: &Py_buffer * address * Py_ssize_t * char -> int;
+
+// FUNCTION:     int PyObject_CopyToObject(object obj, void *buf, Py_ssize_t len, char fortran) except -1
+  gen PyObject_CopyToObject: PyObject * address * Py_ssize_t * char -> int;
+
+// FUNCTION:     int PyObject_CopyData(object dest, object src) except -1
+  gen PyObject_CopyData: PyObject * PyObject -> int;
+
+// FUNCTION:     bint PyBuffer_IsContiguous(Py_buffer *view, char fort)
+  gen PyBuffer_IsContiguous: &Py_buffer * char -> bool;
+
+// Nonfunction line:     void PyBuffer_FillContiguousStrides(int ndims,
+// Nonfunction line:                                         Py_ssize_t *shape,
+// Nonfunction line:                                         Py_ssize_t *strides,
+// Nonfunction line:                                         Py_ssize_t itemsize,
+// Nonfunction line:                                         char fort)
+// Nonfunction line:     int PyBuffer_FillInfo(Py_buffer *view, object exporter, void *buf,
+// Nonfunction line:                           Py_ssize_t len, int readonly, int flags) except -1
+// FUNCTION:     object PyObject_Format(object obj, object format_spec)
+  gen PyObject_Format: PyObject * PyObject -> PyObject;
+@

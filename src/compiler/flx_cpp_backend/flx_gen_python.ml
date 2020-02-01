@@ -60,7 +60,10 @@ let gen_python_module modname syms bsym_table bifaces =
         "0,                           // m_clear\n" ^                                      
         "0                           // m_free\n" ^                                      
       "};\n" ^
-      "PyMODINIT_FUNC PyInit_" ^ modname ^ "()" ^
+(* Note: Python uses PyMODINIT_FUNC, however it gets the exports wrong
+  so the compiler is now doing the visibility control directly
+*)
+      "extern \"C\" FLX_EXPORT PyObject *PyInit_" ^ modname ^ "()" ^
       " { return PyModule_Create(&" ^ modname ^ "_module);}\n"
 
 

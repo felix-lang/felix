@@ -1,0 +1,36 @@
+@title Python C API bytearray
+@tangler bytearray.flx = share/lib/python/bytearray.flx
+@h1 bytearray
+@tangle bytearray.flx
+// Nonfunction line: from .object cimport PyObject
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     bint PyByteArray_Check(object o)
+  gen PyByteArray_Check: PyObject -> bool;
+
+// FUNCTION:     bint PyByteArray_CheckExact(object o)
+  gen PyByteArray_CheckExact: PyObject -> bool;
+
+// FUNCTION:     bytearray PyByteArray_FromObject(object o)
+  gen PyByteArray_FromObject: PyObject -> PyObject;
+
+// FUNCTION:     bytearray PyByteArray_FromStringAndSize(char *string, Py_ssize_t len)
+  gen PyByteArray_FromStringAndSize: +char * Py_ssize_t -> PyObject;
+
+// FUNCTION:     bytearray PyByteArray_Concat(object a, object b)
+  gen PyByteArray_Concat: PyObject * PyObject -> PyObject;
+
+// FUNCTION:     Py_ssize_t PyByteArray_Size(object bytearray)
+  gen PyByteArray_Size: PyObject -> Py_ssize_t;
+
+// FUNCTION:     char* PyByteArray_AsString(object bytearray)
+  gen PyByteArray_AsString: PyObject -> +char;
+
+// FUNCTION:     int PyByteArray_Resize(object bytearray, Py_ssize_t len)
+  gen PyByteArray_Resize: PyObject * Py_ssize_t -> int;
+
+// FUNCTION:     char* PyByteArray_AS_STRING(object bytearray)
+  gen PyByteArray_AS_STRING: PyObject -> +char;
+
+// FUNCTION:     Py_ssize_t PyByteArray_GET_SIZE(object bytearray)
+  gen PyByteArray_GET_SIZE: PyObject -> Py_ssize_t;
+@

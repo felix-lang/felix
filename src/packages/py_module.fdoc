@@ -1,0 +1,79 @@
+@title Python C API module
+@tangler module.flx = share/lib/python/module.flx
+@h1 module
+@tangle module.flx
+// Nonfunction line: from .object cimport PyObject
+// Nonfunction line: cdef extern from "Python.h":
+// Nonfunction line:     ctypedef struct _inittab
+// FUNCTION:     object PyImport_ImportModule(const char *name)
+  gen PyImport_ImportModule: +char -> PyObject;
+
+// FUNCTION:     object PyImport_ImportModuleEx(const char *name, object globals, object locals, object fromlist)
+  gen PyImport_ImportModuleEx: +char * PyObject * PyObject * PyObject -> PyObject;
+
+// FUNCTION:     object PyImport_ImportModuleLevel(char *name, object globals, object locals, object fromlist, int level)
+  gen PyImport_ImportModuleLevel: +char * PyObject * PyObject * PyObject * int -> PyObject;
+
+// FUNCTION:     object PyImport_Import(object name)
+  gen PyImport_Import: PyObject -> PyObject;
+
+// FUNCTION:     object PyImport_ReloadModule(object m)
+  gen PyImport_ReloadModule: PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyImport_AddModule(const char *name) except NULL
+  gen PyImport_AddModule: +char -> PyObject;
+
+// FUNCTION:     object PyImport_ExecCodeModule(char *name, object co)
+  gen PyImport_ExecCodeModule: +char * PyObject -> PyObject;
+
+// FUNCTION:     long PyImport_GetMagicNumber()
+  gen PyImport_GetMagicNumber: 1 -> long;
+
+// FUNCTION:     PyObject* PyImport_GetModuleDict() except NULL
+  gen PyImport_GetModuleDict: 1 -> PyObject;
+
+// FUNCTION:     int PyImport_ImportFrozenModule(char *name) except -1
+  gen PyImport_ImportFrozenModule: +char -> int;
+
+// FUNCTION:     int PyImport_ExtendInittab(_inittab *newtab) except -1
+  gen PyImport_ExtendInittab: &_inittab -> int;
+
+// FUNCTION:     bint PyModule_Check(object p)
+  gen PyModule_Check: PyObject -> bool;
+
+// FUNCTION:     bint PyModule_CheckExact(object p)
+  gen PyModule_CheckExact: PyObject -> bool;
+
+// FUNCTION:     object PyModule_NewObject(object name)
+  gen PyModule_NewObject: PyObject -> PyObject;
+
+// FUNCTION:     object PyModule_New(const char *name)
+  gen PyModule_New: +char -> PyObject;
+
+// FUNCTION:     PyObject* PyModule_GetDict(object module) except NULL
+  gen PyModule_GetDict: PyObject -> PyObject;
+
+// FUNCTION:     object PyModule_GetNameObject(object module)
+  gen PyModule_GetNameObject: PyObject -> PyObject;
+
+// FUNCTION:     char* PyModule_GetName(object module) except NULL
+  gen PyModule_GetName: PyObject -> +char;
+
+// FUNCTION:     void* PyModule_GetState(object module)
+  gen PyModule_GetState: PyObject -> address;
+
+// FUNCTION:     object PyModule_GetFilenameObject(object module)
+  gen PyModule_GetFilenameObject: PyObject -> PyObject;
+
+// FUNCTION:     char* PyModule_GetFilename(object module) except NULL
+  gen PyModule_GetFilename: PyObject -> +char;
+
+// FUNCTION:     int PyModule_AddObject(object module,  const char *name, object value) except -1
+  gen PyModule_AddObject: PyObject * +char * PyObject -> int;
+
+// FUNCTION:     int PyModule_AddIntConstant(object module,  const char *name, long value) except -1
+  gen PyModule_AddIntConstant: PyObject * +char * long -> int;
+
+// FUNCTION:     int PyModule_AddStringConstant(object module,  const char *name,  const char *value) except -1
+  gen PyModule_AddStringConstant: PyObject * +char * +char -> int;
+@

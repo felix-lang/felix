@@ -1,0 +1,224 @@
+@title Python C API object
+@tangler object.flx = share/lib/python/object.flx
+@h1 object
+@tangle object.flx
+// Nonfunction line: from libc.stdio cimport FILE
+// Nonfunction line: cimport cpython.type
+// Nonfunction line: cdef extern from "Python.h":
+// Nonfunction line:     ctypedef struct PyObject  # forward declaration
+// Nonfunction line:     ctypedef object (*newfunc)(cpython.type.type, object, object)  # (type, args, kwargs)
+// Nonfunction line:     ctypedef object (*unaryfunc)(object)
+// Nonfunction line:     ctypedef object (*binaryfunc)(object, object)
+// Nonfunction line:     ctypedef object (*ternaryfunc)(object, object, object)
+// Nonfunction line:     ctypedef int (*inquiry)(object) except -1
+// Nonfunction line:     ctypedef Py_ssize_t (*lenfunc)(object) except -1
+// Nonfunction line:     ctypedef object (*ssizeargfunc)(object, Py_ssize_t)
+// Nonfunction line:     ctypedef object (*ssizessizeargfunc)(object, Py_ssize_t, Py_ssize_t)
+// Nonfunction line:     ctypedef int (*ssizeobjargproc)(object, Py_ssize_t, object) except -1
+// Nonfunction line:     ctypedef int (*ssizessizeobjargproc)(object, Py_ssize_t, Py_ssize_t, object) except -1
+// Nonfunction line:     ctypedef int (*objobjargproc)(object, object, object) except -1
+// Nonfunction line:     ctypedef int (*objobjproc)(object, object) except -1
+// Nonfunction line:     ctypedef Py_hash_t (*hashfunc)(object) except -1
+// Nonfunction line:     ctypedef object (*reprfunc)(object)
+// Nonfunction line:     ctypedef int (*cmpfunc)(object, object) except -2
+// Nonfunction line:     ctypedef object (*richcmpfunc)(object, object, int)
+// Nonfunction line:     ctypedef void (*destructor)(PyObject*)
+// Nonfunction line:     ctypedef int (*visitproc)(PyObject*, void *) except -1
+// Nonfunction line:     ctypedef int (*traverseproc)(PyObject*, visitproc, void*) except -1
+// Nonfunction line:     ctypedef void (*freefunc)(void*)
+// Nonfunction line:     ctypedef object (*descrgetfunc)(object, object, object)
+// Nonfunction line:     ctypedef int (*descrsetfunc)(object, object, object) except -1
+// Nonfunction line:     ctypedef struct PyTypeObject:
+// Nonfunction line:         const char* tp_name
+// Nonfunction line:         const char* tp_doc
+// Nonfunction line:         Py_ssize_t tp_basicsize
+// Nonfunction line:         Py_ssize_t tp_itemsize
+// Nonfunction line:         Py_ssize_t tp_dictoffset
+// Nonfunction line:         unsigned long tp_flags
+// Nonfunction line:         newfunc tp_new
+// Nonfunction line:         destructor tp_dealloc
+// Nonfunction line:         destructor tp_del
+// Nonfunction line:         destructor tp_finalize
+// Nonfunction line:         traverseproc tp_traverse
+// Nonfunction line:         inquiry tp_clear
+// Nonfunction line:         freefunc tp_free
+// Nonfunction line:         ternaryfunc tp_call
+// Nonfunction line:         hashfunc tp_hash
+// Nonfunction line:         reprfunc tp_str
+// Nonfunction line:         reprfunc tp_repr
+// Nonfunction line:         cmpfunc tp_compare
+// Nonfunction line:         richcmpfunc tp_richcompare
+// Nonfunction line:         PyTypeObject* tp_base
+// Nonfunction line:         PyObject* tp_dict
+// Nonfunction line:         descrgetfunc tp_descr_get
+// Nonfunction line:         descrsetfunc tp_descr_set
+// Nonfunction line:         unsigned int tp_version_tag
+// Nonfunction line:     ctypedef struct PyObject:
+// Nonfunction line:         Py_ssize_t ob_refcnt
+// Nonfunction line:         PyTypeObject *ob_type
+// FUNCTION:     cdef PyTypeObject *Py_TYPE(object)
+  gen Py_TYPE: PyObject -> &PyTypeObject;
+
+// FUNCTION:     void* PyObject_Malloc(size_t)
+  gen PyObject_Malloc: size -> address;
+
+// FUNCTION:     void* PyObject_Realloc(void *, size_t)
+  gen PyObject_Realloc: address * size -> address;
+
+// FUNCTION:     void PyObject_Free(void *)
+  proc PyObject_Free: address;
+
+// FUNCTION:     int PyObject_Print(object o, FILE *fp, int flags) except -1
+  gen PyObject_Print: PyObject * &FILE * int -> int;
+
+// FUNCTION:     bint PyObject_HasAttrString(object o, const char *attr_name)
+  gen PyObject_HasAttrString: PyObject * +char -> bool;
+
+// FUNCTION:     object PyObject_GetAttrString(object o, const char *attr_name)
+  gen PyObject_GetAttrString: PyObject * +char -> PyObject;
+
+// FUNCTION:     bint PyObject_HasAttr(object o, object attr_name)
+  gen PyObject_HasAttr: PyObject * PyObject -> bool;
+
+// FUNCTION:     object PyObject_GetAttr(object o, object attr_name)
+  gen PyObject_GetAttr: PyObject * PyObject -> PyObject;
+
+// FUNCTION:     object PyObject_GenericGetAttr(object o, object attr_name)
+  gen PyObject_GenericGetAttr: PyObject * PyObject -> PyObject;
+
+// FUNCTION:     int PyObject_SetAttrString(object o, const char *attr_name, object v) except -1
+  gen PyObject_SetAttrString: PyObject * +char * PyObject -> int;
+
+// FUNCTION:     int PyObject_SetAttr(object o, object attr_name, object v) except -1
+  gen PyObject_SetAttr: PyObject * PyObject * PyObject -> int;
+
+// FUNCTION:     int PyObject_GenericSetAttr(object o, object attr_name, object v) except -1
+  gen PyObject_GenericSetAttr: PyObject * PyObject * PyObject -> int;
+
+// FUNCTION:     int PyObject_DelAttrString(object o, const char *attr_name) except -1
+  gen PyObject_DelAttrString: PyObject * +char -> int;
+
+// FUNCTION:     int PyObject_DelAttr(object o, object attr_name) except -1
+  gen PyObject_DelAttr: PyObject * PyObject -> int;
+
+// Nonfunction line:     int Py_LT, Py_LE, Py_EQ, Py_NE, Py_GT, Py_GE
+// FUNCTION:     object PyObject_RichCompare(object o1, object o2, int opid)
+  gen PyObject_RichCompare: PyObject * PyObject * int -> PyObject;
+
+// FUNCTION:     bint PyObject_RichCompareBool(object o1, object o2, int opid) except -1
+  gen PyObject_RichCompareBool: PyObject * PyObject * int -> bool;
+
+// FUNCTION:     int PyObject_Cmp(object o1, object o2, int *result) except -1
+  gen PyObject_Cmp: PyObject * PyObject * &int -> int;
+
+// FUNCTION:     int PyObject_Compare(object o1, object o2) except *
+  gen PyObject_Compare: PyObject * PyObject -> int;
+
+// FUNCTION:     object PyObject_Repr(object o)
+  gen PyObject_Repr: PyObject -> PyObject;
+
+// FUNCTION:     object PyObject_Str(object o)
+  gen PyObject_Str: PyObject -> PyObject;
+
+// FUNCTION:     object PyObject_Bytes(object o)
+  gen PyObject_Bytes: PyObject -> PyObject;
+
+// FUNCTION:     object PyObject_Unicode(object o)
+  gen PyObject_Unicode: PyObject -> PyObject;
+
+// FUNCTION:     bint PyObject_IsInstance(object inst, object cls) except -1
+  gen PyObject_IsInstance: PyObject * PyObject -> bool;
+
+// FUNCTION:     bint PyObject_IsSubclass(object derived, object cls) except -1
+  gen PyObject_IsSubclass: PyObject * PyObject -> bool;
+
+// FUNCTION:     bint PyCallable_Check(object o)
+  gen PyCallable_Check: PyObject -> bool;
+
+// FUNCTION:     object PyObject_Call(object callable_object, object args, object kw)
+  gen PyObject_Call: PyObject * PyObject * PyObject -> PyObject;
+
+// FUNCTION:     object PyObject_CallObject(object callable_object, object args)
+  gen PyObject_CallObject: PyObject * PyObject -> PyObject;
+
+// Varargs fundef:     object PyObject_CallFunction(object callable, char *format, ...)
+// Varargs fundef:     object PyObject_CallMethod(object o, char *method, char *format, ...)
+// Varargs fundef:     object PyObject_CallFunctionObjArgs(object callable, ...)
+// Varargs fundef:     object PyObject_CallMethodObjArgs(object o, object name, ...)
+// FUNCTION:     long PyObject_Hash(object o) except? -1
+  gen PyObject_Hash: PyObject -> long;
+
+// FUNCTION:     bint PyObject_IsTrue(object o) except -1
+  gen PyObject_IsTrue: PyObject -> bool;
+
+// FUNCTION:     bint PyObject_Not(object o) except -1
+  gen PyObject_Not: PyObject -> bool;
+
+// FUNCTION:     object PyObject_Type(object o)
+  gen PyObject_Type: PyObject -> PyObject;
+
+// FUNCTION:     bint PyObject_TypeCheck(object o, PyTypeObject *type)
+  gen PyObject_TypeCheck: PyObject * &PyTypeObject -> bool;
+
+// FUNCTION:     Py_ssize_t PyObject_Length(object o) except -1
+  gen PyObject_Length: PyObject -> Py_ssize_t;
+
+// FUNCTION:     Py_ssize_t PyObject_Size(object o) except -1
+  gen PyObject_Size: PyObject -> Py_ssize_t;
+
+// FUNCTION:     object PyObject_GetItem(object o, object key)
+  gen PyObject_GetItem: PyObject * PyObject -> PyObject;
+
+// FUNCTION:     int PyObject_SetItem(object o, object key, object v) except -1
+  gen PyObject_SetItem: PyObject * PyObject * PyObject -> int;
+
+// FUNCTION:     int PyObject_DelItem(object o, object key) except -1
+  gen PyObject_DelItem: PyObject * PyObject -> int;
+
+// FUNCTION:     int PyObject_AsFileDescriptor(object o) except -1
+  gen PyObject_AsFileDescriptor: PyObject -> int;
+
+// FUNCTION:     object PyObject_Dir(object o)
+  gen PyObject_Dir: PyObject -> PyObject;
+
+// FUNCTION:     object PyObject_GetIter(object o)
+  gen PyObject_GetIter: PyObject -> PyObject;
+
+// FUNCTION:     Py_ssize_t Py_SIZE(object o)
+  gen Py_SIZE: PyObject -> Py_ssize_t;
+
+// FUNCTION:     object PyObject_Format(object obj, object format_spec)
+  gen PyObject_Format: PyObject * PyObject -> PyObject;
+
+// Nonfunction line:     long Py_TPFLAGS_HAVE_GETCHARBUFFER
+// Nonfunction line:     long Py_TPFLAGS_HAVE_SEQUENCE_IN
+// Nonfunction line:     long Py_TPFLAGS_HAVE_INPLACEOPS
+// Nonfunction line:     long Py_TPFLAGS_CHECKTYPES
+// Nonfunction line:     long Py_TPFLAGS_HAVE_RICHCOMPARE
+// Nonfunction line:     long Py_TPFLAGS_HAVE_WEAKREFS
+// Nonfunction line:     long Py_TPFLAGS_HAVE_ITER
+// Nonfunction line:     long Py_TPFLAGS_HAVE_CLASS
+// Nonfunction line:     long Py_TPFLAGS_HEAPTYPE
+// Nonfunction line:     long Py_TPFLAGS_BASETYPE
+// Nonfunction line:     long Py_TPFLAGS_READY
+// Nonfunction line:     long Py_TPFLAGS_READYING
+// Nonfunction line:     long Py_TPFLAGS_HAVE_GC
+// Nonfunction line:     long Py_TPFLAGS_HAVE_STACKLESS_EXTENSION
+// Nonfunction line:     long Py_TPFLAGS_HAVE_INDEX
+// Nonfunction line:     long Py_TPFLAGS_HAVE_VERSION_TAG
+// Nonfunction line:     long Py_TPFLAGS_VALID_VERSION_TAG
+// Nonfunction line:     long Py_TPFLAGS_IS_ABSTRACT
+// Nonfunction line:     long Py_TPFLAGS_HAVE_NEWBUFFER
+// Nonfunction line:     long Py_TPFLAGS_INT_SUBCLASS
+// Nonfunction line:     long Py_TPFLAGS_LONG_SUBCLASS
+// Nonfunction line:     long Py_TPFLAGS_LIST_SUBCLASS
+// Nonfunction line:     long Py_TPFLAGS_TUPLE_SUBCLASS
+// Nonfunction line:     long Py_TPFLAGS_STRING_SUBCLASS
+// Nonfunction line:     long Py_TPFLAGS_UNICODE_SUBCLASS
+// Nonfunction line:     long Py_TPFLAGS_DICT_SUBCLASS
+// Nonfunction line:     long Py_TPFLAGS_BASE_EXC_SUBCLASS
+// Nonfunction line:     long Py_TPFLAGS_TYPE_SUBCLASS
+// Nonfunction line:     long Py_TPFLAGS_DEFAULT_EXTERNAL
+// Nonfunction line:     long Py_TPFLAGS_DEFAULT_CORE
+// Nonfunction line:     long Py_TPFLAGS_DEFAULT
+// Nonfunction line:     long Py_TPFLAGS_HAVE_FINALIZE@

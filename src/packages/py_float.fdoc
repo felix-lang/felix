@@ -1,0 +1,23 @@
+@title Python C API float
+@tangler float.flx = share/lib/python/float.flx
+@h1 float
+@tangle float.flx
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     bint PyFloat_Check(object p)
+  gen PyFloat_Check: PyObject -> bool;
+
+// FUNCTION:     bint PyFloat_CheckExact(object p)
+  gen PyFloat_CheckExact: PyObject -> bool;
+
+// FUNCTION:     object PyFloat_FromString(object str, char **pend)
+  gen PyFloat_FromString: PyObject * &(&char) -> PyObject;
+
+// FUNCTION:     object PyFloat_FromDouble(double v)
+  gen PyFloat_FromDouble: double -> PyObject;
+
+// FUNCTION:     double PyFloat_AsDouble(object pyfloat) except? -1
+  gen PyFloat_AsDouble: PyObject -> double;
+
+// FUNCTION:     double PyFloat_AS_DOUBLE(object pyfloat)
+  gen PyFloat_AS_DOUBLE: PyObject -> double;
+@

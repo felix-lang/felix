@@ -1,0 +1,75 @@
+@title Python C API sequence
+@tangler sequence.flx = share/lib/python/sequence.flx
+@h1 sequence
+@tangle sequence.flx
+// Nonfunction line: from .object cimport PyObject
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     bint PySequence_Check(object o)
+  gen PySequence_Check: PyObject -> bool;
+
+// FUNCTION:     Py_ssize_t PySequence_Size(object o) except -1
+  gen PySequence_Size: PyObject -> Py_ssize_t;
+
+// FUNCTION:     Py_ssize_t PySequence_Length(object o) except -1
+  gen PySequence_Length: PyObject -> Py_ssize_t;
+
+// FUNCTION:     object PySequence_Concat(object o1, object o2)
+  gen PySequence_Concat: PyObject * PyObject -> PyObject;
+
+// FUNCTION:     object PySequence_Repeat(object o, Py_ssize_t count)
+  gen PySequence_Repeat: PyObject * Py_ssize_t -> PyObject;
+
+// FUNCTION:     object PySequence_InPlaceConcat(object o1, object o2)
+  gen PySequence_InPlaceConcat: PyObject * PyObject -> PyObject;
+
+// FUNCTION:     object PySequence_InPlaceRepeat(object o, Py_ssize_t count)
+  gen PySequence_InPlaceRepeat: PyObject * Py_ssize_t -> PyObject;
+
+// FUNCTION:     object PySequence_GetItem(object o, Py_ssize_t i)
+  gen PySequence_GetItem: PyObject * Py_ssize_t -> PyObject;
+
+// FUNCTION:     object PySequence_GetSlice(object o, Py_ssize_t i1, Py_ssize_t i2)
+  gen PySequence_GetSlice: PyObject * Py_ssize_t * Py_ssize_t -> PyObject;
+
+// FUNCTION:     int PySequence_SetItem(object o, Py_ssize_t i, object v) except -1
+  gen PySequence_SetItem: PyObject * Py_ssize_t * PyObject -> int;
+
+// FUNCTION:     int PySequence_DelItem(object o, Py_ssize_t i) except -1
+  gen PySequence_DelItem: PyObject * Py_ssize_t -> int;
+
+// FUNCTION:     int PySequence_SetSlice(object o, Py_ssize_t i1, Py_ssize_t i2, object v) except -1
+  gen PySequence_SetSlice: PyObject * Py_ssize_t * Py_ssize_t * PyObject -> int;
+
+// FUNCTION:     int PySequence_DelSlice(object o, Py_ssize_t i1, Py_ssize_t i2) except -1
+  gen PySequence_DelSlice: PyObject * Py_ssize_t * Py_ssize_t -> int;
+
+// FUNCTION:     int PySequence_Count(object o, object value) except -1
+  gen PySequence_Count: PyObject * PyObject -> int;
+
+// FUNCTION:     int PySequence_Contains(object o, object value) except -1
+  gen PySequence_Contains: PyObject * PyObject -> int;
+
+// FUNCTION:     Py_ssize_t PySequence_Index(object o, object value) except -1
+  gen PySequence_Index: PyObject * PyObject -> Py_ssize_t;
+
+// FUNCTION:     object PySequence_List(object o)
+  gen PySequence_List: PyObject -> PyObject;
+
+// FUNCTION:     object PySequence_Tuple(object o)
+  gen PySequence_Tuple: PyObject -> PyObject;
+
+// FUNCTION:     object PySequence_Fast(object o, char *m)
+  gen PySequence_Fast: PyObject * +char -> PyObject;
+
+// FUNCTION:     PyObject* PySequence_Fast_GET_ITEM(object o, Py_ssize_t i)
+  gen PySequence_Fast_GET_ITEM: PyObject * Py_ssize_t -> PyObject;
+
+// FUNCTION:     PyObject** PySequence_Fast_ITEMS(object o)
+  gen PySequence_Fast_ITEMS: PyObject -> &PyObject;
+
+// FUNCTION:     object PySequence_ITEM(object o, Py_ssize_t i)
+  gen PySequence_ITEM: PyObject * Py_ssize_t -> PyObject;
+
+// FUNCTION:     Py_ssize_t PySequence_Fast_GET_SIZE(object o)
+  gen PySequence_Fast_GET_SIZE: PyObject -> Py_ssize_t;
+@

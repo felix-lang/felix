@@ -1,0 +1,31 @@
+@title Python C API complex
+@tangler complex.flx = share/lib/python/complex.flx
+@h1 complex
+@tangle complex.flx
+// Nonfunction line: cdef extern from "Python.h":
+// Nonfunction line:     ctypedef struct Py_complex:
+// Nonfunction line:         double imag
+// Nonfunction line:         double real
+// Nonfunction line:     ctypedef class __builtin__.complex [object PyComplexObject]:
+// Nonfunction line:         cdef Py_complex cval
+// FUNCTION:     bint PyComplex_Check(object p)
+  gen PyComplex_Check: PyObject -> bool;
+
+// FUNCTION:     bint PyComplex_CheckExact(object p)
+  gen PyComplex_CheckExact: PyObject -> bool;
+
+// FUNCTION:     object PyComplex_FromCComplex(Py_complex v)
+  gen PyComplex_FromCComplex: Py_complex -> PyObject;
+
+// FUNCTION:     object PyComplex_FromDoubles(double real, double imag)
+  gen PyComplex_FromDoubles: double * double -> PyObject;
+
+// FUNCTION:     double PyComplex_RealAsDouble(object op) except? -1
+  gen PyComplex_RealAsDouble: PyObject -> double;
+
+// FUNCTION:     double PyComplex_ImagAsDouble(object op) except? -1
+  gen PyComplex_ImagAsDouble: PyObject -> double;
+
+// FUNCTION:     Py_complex PyComplex_AsCComplex(object op)
+  gen PyComplex_AsCComplex: PyObject -> Py_complex;
+@

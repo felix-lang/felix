@@ -1,0 +1,70 @@
+@title Python C API long
+@tangler long.flx = share/lib/python/long.flx
+@h1 long
+@tangle long.flx
+// Nonfunction line: cdef extern from "Python.h":
+// Nonfunction line:     ctypedef long long PY_LONG_LONG
+// Nonfunction line:     ctypedef unsigned long long uPY_LONG_LONG "unsigned PY_LONG_LONG"
+// FUNCTION:     bint PyLong_Check(object p)
+  gen PyLong_Check: PyObject -> bool;
+
+// FUNCTION:     bint PyLong_CheckExact(object p)
+  gen PyLong_CheckExact: PyObject -> bool;
+
+// FUNCTION:     object PyLong_FromLong(long v)
+  gen PyLong_FromLong: long -> PyObject;
+
+// FUNCTION:     object PyLong_FromUnsignedLong(unsigned long v)
+  gen PyLong_FromUnsignedLong: ulong -> PyObject;
+
+// FUNCTION:     object PyLong_FromSsize_t(Py_ssize_t v)
+  gen PyLong_FromSsize_t: Py_ssize_t -> PyObject;
+
+// FUNCTION:     object PyLong_FromSize_t(size_t v)
+  gen PyLong_FromSize_t: size -> PyObject;
+
+// FUNCTION:     object PyLong_FromLongLong(PY_LONG_LONG v)
+  gen PyLong_FromLongLong: PY_LONG_LONG -> PyObject;
+
+// FUNCTION:     object PyLong_FromUnsignedLongLong(uPY_LONG_LONG v)
+  gen PyLong_FromUnsignedLongLong: uPY_LONG_LONG -> PyObject;
+
+// FUNCTION:     object PyLong_FromDouble(double v)
+  gen PyLong_FromDouble: double -> PyObject;
+
+// FUNCTION:     object PyLong_FromString(char *str, char **pend, int base)
+  gen PyLong_FromString: +char * &(&char) * int -> PyObject;
+
+// FUNCTION:     object PyLong_FromUnicode(Py_UNICODE *u, Py_ssize_t length, int base)
+  gen PyLong_FromUnicode: +char * Py_ssize_t * int -> PyObject;
+
+// FUNCTION:     object PyLong_FromVoidPtr(void *p)
+  gen PyLong_FromVoidPtr: address -> PyObject;
+
+// FUNCTION:     long PyLong_AsLong(object pylong) except? -1
+  gen PyLong_AsLong: PyObject -> long;
+
+// FUNCTION:     Py_ssize_t PyLong_AsSsize_t(object pylong) except? -1
+  gen PyLong_AsSsize_t: PyObject -> Py_ssize_t;
+
+// FUNCTION:     unsigned long PyLong_AsUnsignedLong(object pylong) except? -1
+  gen PyLong_AsUnsignedLong: PyObject -> ulong;
+
+// FUNCTION:     PY_LONG_LONG PyLong_AsLongLong(object pylong) except? -1
+  gen PyLong_AsLongLong: PyObject -> PY_LONG_LONG;
+
+// FUNCTION:     uPY_LONG_LONG PyLong_AsUnsignedLongLong(object pylong) except? -1
+  gen PyLong_AsUnsignedLongLong: PyObject -> uPY_LONG_LONG;
+
+// FUNCTION:     unsigned long PyLong_AsUnsignedLongMask(object io) except? -1
+  gen PyLong_AsUnsignedLongMask: PyObject -> ulong;
+
+// FUNCTION:     uPY_LONG_LONG PyLong_AsUnsignedLongLongMask(object io) except? -1
+  gen PyLong_AsUnsignedLongLongMask: PyObject -> uPY_LONG_LONG;
+
+// FUNCTION:     double PyLong_AsDouble(object pylong) except? -1.0
+  gen PyLong_AsDouble: PyObject -> double;
+
+// FUNCTION:     void* PyLong_AsVoidPtr(object pylong) except? NULL
+  gen PyLong_AsVoidPtr: PyObject -> address;
+@

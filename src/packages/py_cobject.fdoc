@@ -1,0 +1,21 @@
+@title Python C API cobject
+@tangler cobject.flx = share/lib/python/cobject.flx
+@h1 cobject
+@tangle cobject.flx
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     int PyCObject_Check(object p)
+  gen PyCObject_Check: PyObject -> int;
+
+// FUNCTION:     object PyCObject_FromVoidPtr(void* cobj, void (*destr)(void *))
+  gen PyCObject_FromVoidPtr: address * (address-->0) -> PyObject;
+
+// FUNCTION:     object PyCObject_FromVoidPtrAndDesc(void* cobj, void* desc, void (*destr)(void *, void *))
+// FUNCTION:     void* PyCObject_AsVoidPtr(object self) except? NULL
+  gen PyCObject_AsVoidPtr: PyObject -> address;
+
+// FUNCTION:     void* PyCObject_GetDesc(object self) except? NULL
+  gen PyCObject_GetDesc: PyObject -> address;
+
+// FUNCTION:     int PyCObject_SetVoidPtr(object self, void* cobj) except 0
+  gen PyCObject_SetVoidPtr: PyObject * address -> int;
+@

@@ -24,7 +24,6 @@
 @tangler namespaces.fsyn                 = share/lib/grammar/namespaces.fsyn
 @tangler patterns.fsyn                   = share/lib/grammar/patterns.fsyn
 @tangler plugins.fsyn                    = share/lib/grammar/plugins.fsyn
-@tangler python_grammar.fsyn             = share/lib/grammar/python_grammar.fsyn
 @tangler requirements.fsyn               = share/lib/grammar/requirements.fsyn
 @tangler save.fsyn                       = share/lib/grammar/save.fsyn
 @tangler statements.fsyn                 = share/lib/grammar/statements.fsyn
@@ -1004,6 +1003,12 @@ syntax cbind {
   //$ specified in the "as" phase to be the type expression.
   private cbind_stmt := "export" "type" "(" stypeexpr ")" "as" sstring ";" =>#
     "`(ast_export_type ,_sr ,_4 ,_7)";
+
+
+  // Export python3 function
+  private cbind_stmt := "export" "python" "fun" ssuffixed_name "as" sstring ";" =>#
+    "`(ast_export_python_fun ,_sr ,_4 ,_6)";
+
 
   //$ The optional precedence phase specifies
   //$ the C++ precedence of an expression, to allow
@@ -1990,7 +1995,6 @@ list, and is extended during the build process
 by the python script @{src/tools/flx_find_grammar_files.py}.
 
 @tangle extra.files
-grammar/python_grammar.fsyn
 grammar/debug.fsyn
 @
 
@@ -4335,15 +4339,6 @@ syntax plugins
   )
   """;
  
-}
-@
-
-@h2 Python export grammar.
-Used to create Python3 modules in emitted libraries.
-@tangle python_grammar.fsyn
-syntax python_grammar {
-  stmt := "export" "python" "fun" ssuffixed_name "as" sstring ";" =>#
-    "`(ast_export_python_fun ,_sr ,_4 ,_6)";
 }
 @
 

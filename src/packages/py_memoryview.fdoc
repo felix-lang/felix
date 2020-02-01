@@ -1,0 +1,26 @@
+@title Python C API memoryview
+@tangler memoryview.flx = share/lib/python/memoryview.flx
+@h1 memoryview
+@tangle memoryview.flx
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     object PyMemoryView_FromObject(object obj)
+  gen PyMemoryView_FromObject: PyObject -> PyObject;
+
+// FUNCTION:     object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
+  gen PyMemoryView_FromMemory: +char * Py_ssize_t * int -> PyObject;
+
+// FUNCTION:     object PyMemoryView_FromBuffer(Py_buffer *view)
+  gen PyMemoryView_FromBuffer: &Py_buffer -> PyObject;
+
+// Nonfunction line:     object PyMemoryView_GetContiguous(object obj,
+// Nonfunction line:                                       int buffertype,
+// Nonfunction line:                                       char order)
+// FUNCTION:     bint PyMemoryView_Check(object obj)
+  gen PyMemoryView_Check: PyObject -> bool;
+
+// FUNCTION:     Py_buffer *PyMemoryView_GET_BUFFER(object mview)
+  gen PyMemoryView_GET_BUFFER: PyObject -> &Py_buffer;
+
+// FUNCTION:     Py_buffer *PyMemoryView_GET_BASE(object mview)
+  gen PyMemoryView_GET_BASE: PyObject -> &Py_buffer;
+@

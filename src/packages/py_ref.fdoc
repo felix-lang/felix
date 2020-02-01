@@ -1,0 +1,21 @@
+@title Python C API ref
+@tangler ref.flx = share/lib/python/ref.flx
+@h1 ref
+@tangle ref.flx
+// Nonfunction line: from .object cimport PyObject, PyTypeObject, Py_TYPE  # legacy imports for re-export
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     void Py_INCREF(object o)
+  proc Py_INCREF: PyObject;
+
+// FUNCTION:     void Py_XINCREF(PyObject* o)
+  proc Py_XINCREF: /* weak */ PyObject;
+
+// FUNCTION:     void Py_DECREF(object o)
+  proc Py_DECREF: PyObject;
+
+// FUNCTION:     void Py_XDECREF(PyObject* o)
+  proc Py_XDECREF: /* weak */ PyObject;
+
+// FUNCTION:     void Py_CLEAR(PyObject* o)
+  proc Py_CLEAR: /* weak */ PyObject;
+@

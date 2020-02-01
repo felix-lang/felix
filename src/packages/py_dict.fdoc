@@ -1,0 +1,78 @@
+@title Python C API dict
+@tangler dict.flx = share/lib/python/dict.flx
+@h1 dict
+@tangle dict.flx
+// Nonfunction line: from .object cimport PyObject
+// Nonfunction line: from .pyport cimport uint64_t
+// Nonfunction line: cdef extern from "Python.h":
+// Nonfunction line:     """
+// Nonfunction line:     """
+// FUNCTION:     bint PyDict_Check(object p)
+  gen PyDict_Check: PyObject -> bool;
+
+// FUNCTION:     bint PyDict_CheckExact(object p)
+  gen PyDict_CheckExact: PyObject -> bool;
+
+// FUNCTION:     dict PyDict_New()
+  gen PyDict_New: 1 -> PyObject;
+
+// FUNCTION:     object PyDictProxy_New(object dict)
+  gen PyDictProxy_New: PyObject -> PyObject;
+
+// FUNCTION:     void PyDict_Clear(object p)
+  proc PyDict_Clear: PyObject;
+
+// FUNCTION:     int PyDict_Contains(object p, object key) except -1
+  gen PyDict_Contains: PyObject * PyObject -> int;
+
+// FUNCTION:     dict PyDict_Copy(object p)
+  gen PyDict_Copy: PyObject -> PyObject;
+
+// FUNCTION:     int PyDict_SetItem(object p, object key, object val) except -1
+  gen PyDict_SetItem: PyObject * PyObject * PyObject -> int;
+
+// FUNCTION:     int PyDict_SetItemString(object p, const char *key, object val) except -1
+  gen PyDict_SetItemString: PyObject * +char * PyObject -> int;
+
+// FUNCTION:     int PyDict_DelItem(object p, object key) except -1
+  gen PyDict_DelItem: PyObject * PyObject -> int;
+
+// FUNCTION:     int PyDict_DelItemString(object p, const char *key) except -1
+  gen PyDict_DelItemString: PyObject * +char -> int;
+
+// FUNCTION:     PyObject* PyDict_GetItem(object p, object key)
+  gen PyDict_GetItem: PyObject * PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyDict_GetItemWithError(object p, object key) except? NULL
+  gen PyDict_GetItemWithError: PyObject * PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyDict_GetItemString(object p, const char *key)
+  gen PyDict_GetItemString: PyObject * +char -> PyObject;
+
+// FUNCTION:     PyObject* PyDict_SetDefault(object p, object key, object default) except NULL
+  gen PyDict_SetDefault: PyObject * PyObject * PyObject -> PyObject;
+
+// FUNCTION:     list PyDict_Items(object p)
+  gen PyDict_Items: PyObject -> PyObject;
+
+// FUNCTION:     list PyDict_Keys(object p)
+  gen PyDict_Keys: PyObject -> PyObject;
+
+// FUNCTION:     list PyDict_Values(object p)
+  gen PyDict_Values: PyObject -> PyObject;
+
+// FUNCTION:     Py_ssize_t PyDict_Size(object p) except -1
+  gen PyDict_Size: PyObject -> Py_ssize_t;
+
+// FUNCTION:     int PyDict_Next(object p, Py_ssize_t *ppos, PyObject* *pkey, PyObject* *pvalue)
+  gen PyDict_Next: PyObject * &Py_ssize_t * &PyObject * &PyObject -> int;
+
+// FUNCTION:     int PyDict_Merge(object a, object b, int override) except -1
+  gen PyDict_Merge: PyObject * PyObject * int -> int;
+
+// FUNCTION:     int PyDict_Update(object a, object b) except -1
+  gen PyDict_Update: PyObject * PyObject -> int;
+
+// FUNCTION:     int PyDict_MergeFromSeq2(object a, object seq2, int override) except -1
+  gen PyDict_MergeFromSeq2: PyObject * PyObject * int -> int;
+@

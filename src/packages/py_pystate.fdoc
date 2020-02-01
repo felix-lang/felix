@@ -1,0 +1,78 @@
+@title Python C API pystate
+@tangler pystate.flx = share/lib/python/pystate.flx
+@h1 pystate
+@tangle pystate.flx
+// Nonfunction line: from .object cimport PyObject
+// Nonfunction line: cdef extern from "Python.h":
+// Nonfunction line:     ctypedef long PY_INT64_T  # FIXME: Py2.7+, not defined here but used here
+// Nonfunction line:     ctypedef struct PyInterpreterState:
+// Nonfunction line:         pass
+// Nonfunction line:     ctypedef struct PyThreadState:
+// Nonfunction line:         pass
+// Nonfunction line:     ctypedef struct PyFrameObject:
+// Nonfunction line:         pass
+// Nonfunction line:     ctypedef struct PyGILState_STATE:
+// Nonfunction line:         pass
+// Nonfunction line:     ctypedef int (*Py_tracefunc)(PyObject *, PyFrameObject *, int, PyObject *)
+// Nonfunction line:     enum:
+// Nonfunction line:         PyTrace_CALL
+// Nonfunction line:         PyTrace_EXCEPTION
+// Nonfunction line:         PyTrace_LINE
+// Nonfunction line:         PyTrace_RETURN
+// Nonfunction line:         PyTrace_C_CALL
+// Nonfunction line:         PyTrace_C_EXCEPTION
+// Nonfunction line:         PyTrace_C_RETURN
+// FUNCTION:     PyInterpreterState * PyInterpreterState_New()
+  gen PyInterpreterState_New: 1 -> &PyInterpreterState;
+
+// FUNCTION:     void PyInterpreterState_Clear(PyInterpreterState *)
+  proc PyInterpreterState_Clear: &PyInterpreterState;
+
+// FUNCTION:     void PyInterpreterState_Delete(PyInterpreterState *)
+  proc PyInterpreterState_Delete: &PyInterpreterState;
+
+// FUNCTION:     PY_INT64_T PyInterpreterState_GetID(PyInterpreterState *)
+  gen PyInterpreterState_GetID: &PyInterpreterState -> int64;
+
+// FUNCTION:     PyThreadState * PyThreadState_New(PyInterpreterState *)
+  gen PyThreadState_New: &PyInterpreterState -> &PyThreadState;
+
+// FUNCTION:     void PyThreadState_Clear(PyThreadState *)
+  proc PyThreadState_Clear: &PyThreadState;
+
+// FUNCTION:     void PyThreadState_Delete(PyThreadState *)
+  proc PyThreadState_Delete: &PyThreadState;
+
+// FUNCTION:     PyThreadState * PyThreadState_Get()
+  gen PyThreadState_Get: 1 -> &PyThreadState;
+
+// FUNCTION:     PyThreadState * PyThreadState_Swap(PyThreadState *)  # NOTE: DO NOT USE IN CYTHON CODE !
+  gen PyThreadState_Swap: &PyThreadState -> &PyThreadState;
+
+// FUNCTION:     PyObject * PyThreadState_GetDict()
+  gen PyThreadState_GetDict: 1 -> PyObject;
+
+// FUNCTION:     int PyThreadState_SetAsyncExc(long, PyObject *)
+  gen PyThreadState_SetAsyncExc: long * /* weak */ PyObject -> int;
+
+// FUNCTION:     PyGILState_STATE PyGILState_Ensure()
+  gen PyGILState_Ensure: 1 -> PyGILState_STATE;
+
+// FUNCTION:     void PyGILState_Release(PyGILState_STATE)
+  proc PyGILState_Release: PyGILState_STATE;
+
+// FUNCTION:     int PyGILState_Check()
+  gen PyGILState_Check: 1 -> int;
+
+// FUNCTION:     PyInterpreterState * PyInterpreterState_Head()
+  gen PyInterpreterState_Head: 1 -> &PyInterpreterState;
+
+// FUNCTION:     PyInterpreterState * PyInterpreterState_Next(PyInterpreterState *)
+  gen PyInterpreterState_Next: &PyInterpreterState -> &PyInterpreterState;
+
+// FUNCTION:     PyThreadState * PyInterpreterState_ThreadHead(PyInterpreterState *)
+  gen PyInterpreterState_ThreadHead: &PyInterpreterState -> &PyThreadState;
+
+// FUNCTION:     PyThreadState * PyThreadState_Next(PyThreadState *)
+  gen PyThreadState_Next: &PyThreadState -> &PyThreadState;
+@

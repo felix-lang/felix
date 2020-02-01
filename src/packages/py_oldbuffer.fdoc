@@ -1,0 +1,25 @@
+@title Python C API oldbuffer
+@tangler oldbuffer.flx = share/lib/python/oldbuffer.flx
+@h1 oldbuffer
+@tangle oldbuffer.flx
+// Nonfunction line: cdef extern from "Python.h":
+// Nonfunction line:     cdef enum _:
+// Nonfunction line:         Py_END_OF_BUFFER
+// FUNCTION:     bint PyBuffer_Check(object p)
+  gen PyBuffer_Check: PyObject -> bool;
+
+// FUNCTION:     object PyBuffer_FromObject(object base, Py_ssize_t offset, Py_ssize_t size)
+  gen PyBuffer_FromObject: PyObject * Py_ssize_t * Py_ssize_t -> PyObject;
+
+// FUNCTION:     object PyBuffer_FromReadWriteObject(object base, Py_ssize_t offset, Py_ssize_t size)
+  gen PyBuffer_FromReadWriteObject: PyObject * Py_ssize_t * Py_ssize_t -> PyObject;
+
+// FUNCTION:     object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
+  gen PyBuffer_FromMemory: address * Py_ssize_t -> PyObject;
+
+// FUNCTION:     object PyBuffer_FromReadWriteMemory(void *ptr, Py_ssize_t size)
+  gen PyBuffer_FromReadWriteMemory: address * Py_ssize_t -> PyObject;
+
+// FUNCTION:     object PyBuffer_New(Py_ssize_t size)
+  gen PyBuffer_New: Py_ssize_t -> PyObject;
+@

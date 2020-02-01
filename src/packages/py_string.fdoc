@@ -1,0 +1,66 @@
+@title Python C API string
+@tangler string.flx = share/lib/python/string.flx
+@h1 string
+@tangle string.flx
+// Nonfunction line: from .object cimport PyObject
+// Nonfunction line: cdef extern from "Python.h":
+// Nonfunction line:     ctypedef struct va_list
+// FUNCTION:     bint PyString_Check(object o)
+  gen PyString_Check: PyObject -> bool;
+
+// FUNCTION:     bint PyString_CheckExact(object o)
+  gen PyString_CheckExact: PyObject -> bool;
+
+// FUNCTION:     object PyString_FromString(char *v)
+  gen PyString_FromString: +char -> PyObject;
+
+// FUNCTION:     object PyString_FromStringAndSize(char *v, Py_ssize_t len)
+  gen PyString_FromStringAndSize: +char * Py_ssize_t -> PyObject;
+
+// Varargs fundef:     object PyString_FromFormat(char *format, ...)
+// FUNCTION:     object PyString_FromFormatV(char *format, va_list vargs)
+// FUNCTION:     Py_ssize_t PyString_Size(object string) except -1
+  gen PyString_Size: PyObject -> Py_ssize_t;
+
+// FUNCTION:     Py_ssize_t PyString_GET_SIZE(object string)
+  gen PyString_GET_SIZE: PyObject -> Py_ssize_t;
+
+// FUNCTION:     char* PyString_AsString(object string) except NULL
+  gen PyString_AsString: PyObject -> +char;
+
+// FUNCTION:     char* PyString_AS_STRING(object string)
+  gen PyString_AS_STRING: PyObject -> +char;
+
+// FUNCTION:     int PyString_AsStringAndSize(object obj, char **buffer, Py_ssize_t *length) except -1
+  gen PyString_AsStringAndSize: PyObject * &(&char) * &Py_ssize_t -> int;
+
+// FUNCTION:     void PyString_Concat(PyObject **string, object newpart)
+  proc PyString_Concat: &PyObject * PyObject;
+
+// FUNCTION:     void PyString_ConcatAndDel(PyObject **string, object newpart)
+  proc PyString_ConcatAndDel: &PyObject * PyObject;
+
+// FUNCTION:     int _PyString_Resize(PyObject **string, Py_ssize_t newsize) except -1
+  gen _PyString_Resize: &PyObject * Py_ssize_t -> int;
+
+// FUNCTION:     object PyString_Format(object format, object args)
+  gen PyString_Format: PyObject * PyObject -> PyObject;
+
+// FUNCTION:     void PyString_InternInPlace(PyObject **string)
+  proc PyString_InternInPlace: &PyObject;
+
+// FUNCTION:     object PyString_InternFromString(char *v)
+  gen PyString_InternFromString: +char -> PyObject;
+
+// FUNCTION:     object PyString_Decode(char *s, Py_ssize_t size, char *encoding, char *errors)
+  gen PyString_Decode: +char * Py_ssize_t * +char * +char -> PyObject;
+
+// FUNCTION:     object PyString_AsDecodedObject(object str, char *encoding, char *errors)
+  gen PyString_AsDecodedObject: PyObject * +char * +char -> PyObject;
+
+// FUNCTION:     object PyString_Encode(char *s, Py_ssize_t size, char *encoding, char *errors)
+  gen PyString_Encode: +char * Py_ssize_t * +char * +char -> PyObject;
+
+// FUNCTION:     object PyString_AsEncodedObject(object str, char *encoding, char *errors)
+  gen PyString_AsEncodedObject: PyObject * +char * +char -> PyObject;
+@

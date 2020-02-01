@@ -1,0 +1,54 @@
+@title Python C API list
+@tangler list.flx = share/lib/python/list.flx
+@h1 list
+@tangle list.flx
+// Nonfunction line: from .object cimport PyObject
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     list PyList_New(Py_ssize_t len)
+  gen PyList_New: Py_ssize_t -> PyObject;
+
+// FUNCTION:     bint PyList_Check(object p)
+  gen PyList_Check: PyObject -> bool;
+
+// FUNCTION:     bint PyList_CheckExact(object p)
+  gen PyList_CheckExact: PyObject -> bool;
+
+// FUNCTION:     Py_ssize_t PyList_Size(object list) except -1
+  gen PyList_Size: PyObject -> Py_ssize_t;
+
+// FUNCTION:     Py_ssize_t PyList_GET_SIZE(object list)
+  gen PyList_GET_SIZE: PyObject -> Py_ssize_t;
+
+// FUNCTION:     PyObject* PyList_GetItem(object list, Py_ssize_t index) except NULL
+  gen PyList_GetItem: PyObject * Py_ssize_t -> PyObject;
+
+// FUNCTION:     PyObject* PyList_GET_ITEM(object list, Py_ssize_t i)
+  gen PyList_GET_ITEM: PyObject * Py_ssize_t -> PyObject;
+
+// FUNCTION:     int PyList_SetItem(object list, Py_ssize_t index, object item) except -1
+  gen PyList_SetItem: PyObject * Py_ssize_t * PyObject -> int;
+
+// FUNCTION:     void PyList_SET_ITEM(object list, Py_ssize_t i, object o)
+  proc PyList_SET_ITEM: PyObject * Py_ssize_t * PyObject;
+
+// FUNCTION:     int PyList_Insert(object list, Py_ssize_t index, object item) except -1
+  gen PyList_Insert: PyObject * Py_ssize_t * PyObject -> int;
+
+// FUNCTION:     int PyList_Append(object list, object item) except -1
+  gen PyList_Append: PyObject * PyObject -> int;
+
+// FUNCTION:     list PyList_GetSlice(object list, Py_ssize_t low, Py_ssize_t high)
+  gen PyList_GetSlice: PyObject * Py_ssize_t * Py_ssize_t -> PyObject;
+
+// FUNCTION:     int PyList_SetSlice(object list, Py_ssize_t low, Py_ssize_t high, object itemlist) except -1
+  gen PyList_SetSlice: PyObject * Py_ssize_t * Py_ssize_t * PyObject -> int;
+
+// FUNCTION:     int PyList_Sort(object list) except -1
+  gen PyList_Sort: PyObject -> int;
+
+// FUNCTION:     int PyList_Reverse(object list) except -1
+  gen PyList_Reverse: PyObject -> int;
+
+// FUNCTION:     tuple PyList_AsTuple(object list)
+  gen PyList_AsTuple: PyObject -> PyObject;
+@

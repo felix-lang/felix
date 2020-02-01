@@ -1,0 +1,38 @@
+@title Python C API mapping
+@tangler mapping.flx = share/lib/python/mapping.flx
+@h1 mapping
+@tangle mapping.flx
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     bint PyMapping_Check(object o)
+  gen PyMapping_Check: PyObject -> bool;
+
+// FUNCTION:     Py_ssize_t PyMapping_Length(object o) except -1
+  gen PyMapping_Length: PyObject -> Py_ssize_t;
+
+// FUNCTION:     int PyMapping_DelItemString(object o, char *key) except -1
+  gen PyMapping_DelItemString: PyObject * +char -> int;
+
+// FUNCTION:     int PyMapping_DelItem(object o, object key) except -1
+  gen PyMapping_DelItem: PyObject * PyObject -> int;
+
+// FUNCTION:     bint PyMapping_HasKeyString(object o, char *key)
+  gen PyMapping_HasKeyString: PyObject * +char -> bool;
+
+// FUNCTION:     bint PyMapping_HasKey(object o, object key)
+  gen PyMapping_HasKey: PyObject * PyObject -> bool;
+
+// FUNCTION:     object PyMapping_Keys(object o)
+  gen PyMapping_Keys: PyObject -> PyObject;
+
+// FUNCTION:     object PyMapping_Values(object o)
+  gen PyMapping_Values: PyObject -> PyObject;
+
+// FUNCTION:     object PyMapping_Items(object o)
+  gen PyMapping_Items: PyObject -> PyObject;
+
+// FUNCTION:     object PyMapping_GetItemString(object o, char *key)
+  gen PyMapping_GetItemString: PyObject * +char -> PyObject;
+
+// FUNCTION:     int PyMapping_SetItemString(object o, char *key, object v) except -1
+  gen PyMapping_SetItemString: PyObject * +char * PyObject -> int;
+@

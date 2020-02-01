@@ -1,0 +1,13 @@
+@title Python C API version
+@tangler version.flx = share/lib/python/version.flx
+@h1 version
+@tangle version.flx
+// Nonfunction line: cdef extern from *:
+// Nonfunction line:     int PY_VERSION_HEX
+// Nonfunction line:     int PY_MAJOR_VERSION
+// Nonfunction line:     int PY_MINOR_VERSION
+// Nonfunction line:     int PY_MICRO_VERSION
+// Nonfunction line:     int PY_RELEASE_LEVEL
+// Nonfunction line:     int PY_RELEASE_SERIAL
+// Nonfunction line:     char PY_VERSION[]
+// Nonfunction line:     char PY_PATCHLEVEL_REVISION[]@

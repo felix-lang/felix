@@ -1,0 +1,45 @@
+@title Python C API int
+@tangler int.flx = share/lib/python/int.flx
+@h1 int
+@tangle int.flx
+// Nonfunction line: cdef extern from "Python.h":
+// Nonfunction line:     ctypedef unsigned long long PY_LONG_LONG
+// FUNCTION:     bint PyInt_Check(object  o)
+  gen PyInt_Check: PyObject -> bool;
+
+// FUNCTION:     bint PyInt_CheckExact(object  o)
+  gen PyInt_CheckExact: PyObject -> bool;
+
+// FUNCTION:     object PyInt_FromString(char *str, char **pend, int base)
+  gen PyInt_FromString: +char * &(&char) * int -> PyObject;
+
+// FUNCTION:     object PyInt_FromLong(long ival)
+  gen PyInt_FromLong: long -> PyObject;
+
+// FUNCTION:     object PyInt_FromSsize_t(Py_ssize_t ival)
+  gen PyInt_FromSsize_t: Py_ssize_t -> PyObject;
+
+// FUNCTION:     object PyInt_FromSize_t(size_t ival)
+  gen PyInt_FromSize_t: size -> PyObject;
+
+// FUNCTION:     long PyInt_AsLong(object io) except? -1
+  gen PyInt_AsLong: PyObject -> long;
+
+// FUNCTION:     long PyInt_AS_LONG(object io)
+  gen PyInt_AS_LONG: PyObject -> long;
+
+// FUNCTION:     unsigned long PyInt_AsUnsignedLongMask(object io) except? -1
+  gen PyInt_AsUnsignedLongMask: PyObject -> ulong;
+
+// FUNCTION:     PY_LONG_LONG PyInt_AsUnsignedLongLongMask(object io) except? -1
+  gen PyInt_AsUnsignedLongLongMask: PyObject -> PY_LONG_LONG;
+
+// FUNCTION:     Py_ssize_t PyInt_AsSsize_t(object io) except? -1
+  gen PyInt_AsSsize_t: PyObject -> Py_ssize_t;
+
+// FUNCTION:     long PyInt_GetMax()
+  gen PyInt_GetMax: 1 -> long;
+
+// FUNCTION:     int PyInt_ClearFreeList()
+  gen PyInt_ClearFreeList: 1 -> int;
+@

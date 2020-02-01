@@ -1,0 +1,16 @@
+@title Python C API slice
+@tangler slice.flx = share/lib/python/slice.flx
+@h1 slice
+@tangle slice.flx
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     bint PySlice_Check(object ob)
+  gen PySlice_Check: PyObject -> bool;
+
+// FUNCTION:     slice PySlice_New(object start, object stop, object step)
+  gen PySlice_New: PyObject * PyObject * PyObject -> PyObject;
+
+// Nonfunction line:     int PySlice_GetIndices(object slice, Py_ssize_t length,
+// Nonfunction line:                            Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step) except? -1
+// Nonfunction line:     int PySlice_GetIndicesEx(object slice, Py_ssize_t length,
+// Nonfunction line:                              Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step,
+// Nonfunction line:                              Py_ssize_t *slicelength) except -1@

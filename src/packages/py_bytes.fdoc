@@ -1,0 +1,69 @@
+@title Python C API bytes
+@tangler bytes.flx = share/lib/python/bytes.flx
+@h1 bytes
+@tangle bytes.flx
+// Nonfunction line: from .object cimport PyObject
+// Nonfunction line: cdef extern from "Python.h":
+// Nonfunction line:     ctypedef struct va_list
+// FUNCTION:     bint PyBytes_Check(object o)
+  gen PyBytes_Check: PyObject -> bool;
+
+// FUNCTION:     bint PyBytes_CheckExact(object o)
+  gen PyBytes_CheckExact: PyObject -> bool;
+
+// FUNCTION:     bytes PyBytes_FromString(char *v)
+  gen PyBytes_FromString: +char -> PyObject;
+
+// FUNCTION:     bytes PyBytes_FromStringAndSize(char *v, Py_ssize_t len)
+  gen PyBytes_FromStringAndSize: +char * Py_ssize_t -> PyObject;
+
+// Varargs fundef:     bytes PyBytes_FromFormat(char *format, ...)
+// FUNCTION:     bytes PyBytes_FromFormatV(char *format, va_list vargs)
+// FUNCTION:     bytes PyBytes_FromObject(object o)
+  gen PyBytes_FromObject: PyObject -> PyObject;
+
+// FUNCTION:     Py_ssize_t PyBytes_Size(object string) except -1
+  gen PyBytes_Size: PyObject -> Py_ssize_t;
+
+// FUNCTION:     Py_ssize_t PyBytes_GET_SIZE(object string)
+  gen PyBytes_GET_SIZE: PyObject -> Py_ssize_t;
+
+// FUNCTION:     char* PyBytes_AsString(object string) except NULL
+  gen PyBytes_AsString: PyObject -> +char;
+
+// FUNCTION:     char* PyBytes_AS_STRING(object string)
+  gen PyBytes_AS_STRING: PyObject -> +char;
+
+// FUNCTION:     int PyBytes_AsStringAndSize(object obj, char **buffer, Py_ssize_t *length) except -1
+  gen PyBytes_AsStringAndSize: PyObject * &(&char) * &Py_ssize_t -> int;
+
+// FUNCTION:     void PyBytes_Concat(PyObject **string, object newpart)
+  proc PyBytes_Concat: &PyObject * PyObject;
+
+// FUNCTION:     void PyBytes_ConcatAndDel(PyObject **string, object newpart)
+  proc PyBytes_ConcatAndDel: &PyObject * PyObject;
+
+// FUNCTION:     int _PyBytes_Resize(PyObject **string, Py_ssize_t newsize) except -1
+  gen _PyBytes_Resize: &PyObject * Py_ssize_t -> int;
+
+// FUNCTION:     bytes PyBytes_Format(object format, object args)
+  gen PyBytes_Format: PyObject * PyObject -> PyObject;
+
+// FUNCTION:     void PyBytes_InternInPlace(PyObject **string)
+  proc PyBytes_InternInPlace: &PyObject;
+
+// FUNCTION:     bytes PyBytes_InternFromString(char *v)
+  gen PyBytes_InternFromString: +char -> PyObject;
+
+// FUNCTION:     object PyBytes_Decode(char *s, Py_ssize_t size, char *encoding, char *errors)
+  gen PyBytes_Decode: +char * Py_ssize_t * +char * +char -> PyObject;
+
+// FUNCTION:     object PyBytes_AsDecodedObject(object str, char *encoding, char *errors)
+  gen PyBytes_AsDecodedObject: PyObject * +char * +char -> PyObject;
+
+// FUNCTION:     object PyBytes_Encode(char *s, Py_ssize_t size, char *encoding, char *errors)
+  gen PyBytes_Encode: +char * Py_ssize_t * +char * +char -> PyObject;
+
+// FUNCTION:     object PyBytes_AsEncodedObject(object str, char *encoding, char *errors)
+  gen PyBytes_AsEncodedObject: PyObject * +char * +char -> PyObject;
+@

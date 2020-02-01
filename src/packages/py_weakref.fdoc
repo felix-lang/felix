@@ -1,0 +1,27 @@
+@title Python C API weakref
+@tangler weakref.flx = share/lib/python/weakref.flx
+@h1 weakref
+@tangle weakref.flx
+// Nonfunction line: from .object cimport PyObject
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     bint PyWeakref_Check(object ob)
+  gen PyWeakref_Check: PyObject -> bool;
+
+// FUNCTION:     bint PyWeakref_CheckRef(object ob)
+  gen PyWeakref_CheckRef: PyObject -> bool;
+
+// FUNCTION:     bint PyWeakref_CheckProxy(ob)
+  gen PyWeakref_CheckProxy: PyObject -> bool;
+
+// FUNCTION:     object PyWeakref_NewRef(object ob, object callback)
+  gen PyWeakref_NewRef: PyObject * PyObject -> PyObject;
+
+// FUNCTION:     object PyWeakref_NewProxy(object ob, object callback)
+  gen PyWeakref_NewProxy: PyObject * PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyWeakref_GetObject(object ref) except NULL
+  gen PyWeakref_GetObject: PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyWeakref_GET_OBJECT(object ref)
+  gen PyWeakref_GET_OBJECT: PyObject -> PyObject;
+@

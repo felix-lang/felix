@@ -1,0 +1,30 @@
+@title Python C API method
+@tangler method.flx = share/lib/python/method.flx
+@h1 method
+@tangle method.flx
+// Nonfunction line: from .object cimport PyObject
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     bint PyMethod_Check(object o)
+  gen PyMethod_Check: PyObject -> bool;
+
+// FUNCTION:     object PyMethod_New(object func, object self, object cls)
+  gen PyMethod_New: PyObject * PyObject * PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyMethod_Class(object meth) except NULL
+  gen PyMethod_Class: PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyMethod_GET_CLASS(object meth)
+  gen PyMethod_GET_CLASS: PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyMethod_Function(object meth) except NULL
+  gen PyMethod_Function: PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyMethod_GET_FUNCTION(object meth)
+  gen PyMethod_GET_FUNCTION: PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyMethod_Self(object meth) except? NULL
+  gen PyMethod_Self: PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyMethod_GET_SELF(object meth)
+  gen PyMethod_GET_SELF: PyObject -> PyObject;
+@

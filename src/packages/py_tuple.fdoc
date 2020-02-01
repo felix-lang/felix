@@ -1,0 +1,40 @@
+@title Python C API tuple
+@tangler tuple.flx = share/lib/python/tuple.flx
+@h1 tuple
+@tangle tuple.flx
+// Nonfunction line: from .object cimport PyObject
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     bint PyTuple_Check(object  p)
+  gen PyTuple_Check: PyObject -> bool;
+
+// FUNCTION:     bint PyTuple_CheckExact(object  p)
+  gen PyTuple_CheckExact: PyObject -> bool;
+
+// FUNCTION:     tuple PyTuple_New(Py_ssize_t len)
+  gen PyTuple_New: Py_ssize_t -> PyObject;
+
+// Varargs fundef:     tuple PyTuple_Pack(Py_ssize_t n, ...)
+// FUNCTION:     Py_ssize_t PyTuple_Size(object  p) except -1
+  gen PyTuple_Size: PyObject -> Py_ssize_t;
+
+// FUNCTION:     Py_ssize_t PyTuple_GET_SIZE(object  p)
+  gen PyTuple_GET_SIZE: PyObject -> Py_ssize_t;
+
+// FUNCTION:     PyObject* PyTuple_GetItem(object  p, Py_ssize_t pos) except NULL
+  gen PyTuple_GetItem: PyObject * Py_ssize_t -> PyObject;
+
+// FUNCTION:     PyObject* PyTuple_GET_ITEM(object  p, Py_ssize_t pos)
+  gen PyTuple_GET_ITEM: PyObject * Py_ssize_t -> PyObject;
+
+// FUNCTION:     tuple PyTuple_GetSlice(object  p, Py_ssize_t low, Py_ssize_t high)
+  gen PyTuple_GetSlice: PyObject * Py_ssize_t * Py_ssize_t -> PyObject;
+
+// FUNCTION:     int PyTuple_SetItem(object  p, Py_ssize_t pos, object  o) except -1
+  gen PyTuple_SetItem: PyObject * Py_ssize_t * PyObject -> int;
+
+// FUNCTION:     void PyTuple_SET_ITEM(object  p, Py_ssize_t pos, object  o)
+  proc PyTuple_SET_ITEM: PyObject * Py_ssize_t * PyObject;
+
+// FUNCTION:     int _PyTuple_Resize(PyObject **p, Py_ssize_t newsize) except -1
+  gen _PyTuple_Resize: &PyObject * Py_ssize_t -> int;
+@

@@ -1,0 +1,38 @@
+@title Python C API mem
+@tangler mem.flx = share/lib/python/mem.flx
+@h1 mem
+@tangle mem.flx
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     void* PyMem_RawMalloc(size_t n) nogil
+  gen PyMem_RawMalloc: size -> address;
+
+// FUNCTION:     void* PyMem_Malloc(size_t n)
+  gen PyMem_Malloc: size -> address;
+
+// FUNCTION:     void* PyMem_RawRealloc(void *p, size_t n) nogil
+  gen PyMem_RawRealloc: address * size -> address;
+
+// FUNCTION:     void* PyMem_Realloc(void *p, size_t n)
+  gen PyMem_Realloc: address * size -> address;
+
+// FUNCTION:     void PyMem_RawFree(void *p) nogil
+  proc PyMem_RawFree: address;
+
+// FUNCTION:     void PyMem_Free(void *p)
+  proc PyMem_Free: address;
+
+// FUNCTION:     void PyMem_Del(void *p)
+  proc PyMem_Del: address;
+
+// FUNCTION:     void* PyObject_Malloc(size_t size)
+  gen PyObject_Malloc: size -> address;
+
+// FUNCTION:     void* PyObject_Calloc(size_t nelem, size_t elsize)
+  gen PyObject_Calloc: size * size -> address;
+
+// FUNCTION:     void* PyObject_Realloc(void *ptr, size_t new_size)
+  gen PyObject_Realloc: address * size -> address;
+
+// FUNCTION:     void PyObject_Free(void *ptr)
+  proc PyObject_Free: address;
+@

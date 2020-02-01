@@ -1,0 +1,42 @@
+@title Python C API pycapsule
+@tangler pycapsule.flx = share/lib/python/pycapsule.flx
+@h1 pycapsule
+@tangle pycapsule.flx
+// Nonfunction line: cdef extern from "Python.h":
+// Nonfunction line:     ctypedef struct PyCapsule_Type
+// Nonfunction line:     ctypedef void (*PyCapsule_Destructor)(object o)
+// FUNCTION:     bint PyCapsule_CheckExact(object o)
+  gen PyCapsule_CheckExact: PyObject -> bool;
+
+// Nonfunction line:     object PyCapsule_New(void *pointer, char *name,
+// Nonfunction line:                          PyCapsule_Destructor destructor)
+// FUNCTION:     void* PyCapsule_GetPointer(object capsule, char *name) except? NULL
+  gen PyCapsule_GetPointer: PyObject * +char -> address;
+
+// FUNCTION:     PyCapsule_Destructor PyCapsule_GetDestructor(object capsule) except? NULL
+  gen PyCapsule_GetDestructor: PyObject -> PyCapsule_Destructor;
+
+// FUNCTION:     char* PyCapsule_GetName(object capsule) except? NULL
+  gen PyCapsule_GetName: PyObject -> +char;
+
+// FUNCTION:     void* PyCapsule_GetContext(object capsule) except? NULL
+  gen PyCapsule_GetContext: PyObject -> address;
+
+// FUNCTION:     bint PyCapsule_IsValid(object capsule, char *name)
+  gen PyCapsule_IsValid: PyObject * +char -> bool;
+
+// FUNCTION:     int PyCapsule_SetPointer(object capsule, void *pointer) except -1
+  gen PyCapsule_SetPointer: PyObject * address -> int;
+
+// FUNCTION:     int PyCapsule_SetDestructor(object capsule, PyCapsule_Destructor destructor) except -1
+  gen PyCapsule_SetDestructor: PyObject * PyCapsule_Destructor -> int;
+
+// FUNCTION:     int PyCapsule_SetName(object capsule, char *name) except -1
+  gen PyCapsule_SetName: PyObject * +char -> int;
+
+// FUNCTION:     int PyCapsule_SetContext(object capsule, void *context) except -1
+  gen PyCapsule_SetContext: PyObject * address -> int;
+
+// FUNCTION:     void* PyCapsule_Import(char *name, int no_block) except? NULL
+  gen PyCapsule_Import: +char * int -> address;
+@

@@ -1,0 +1,33 @@
+@title Python C API function
+@tangler function.flx = share/lib/python/function.flx
+@h1 function
+@tangle function.flx
+// Nonfunction line: from .object cimport PyObject
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     bint PyFunction_Check(object o)
+  gen PyFunction_Check: PyObject -> bool;
+
+// FUNCTION:     object PyFunction_New(object code, object globals)
+  gen PyFunction_New: PyObject * PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyFunction_GetCode(object op) except? NULL
+  gen PyFunction_GetCode: PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyFunction_GetGlobals(object op) except? NULL
+  gen PyFunction_GetGlobals: PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyFunction_GetModule(object op) except? NULL
+  gen PyFunction_GetModule: PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyFunction_GetDefaults(object op) except? NULL
+  gen PyFunction_GetDefaults: PyObject -> PyObject;
+
+// FUNCTION:     int PyFunction_SetDefaults(object op, object defaults) except -1
+  gen PyFunction_SetDefaults: PyObject * PyObject -> int;
+
+// FUNCTION:     PyObject* PyFunction_GetClosure(object op) except? NULL
+  gen PyFunction_GetClosure: PyObject -> PyObject;
+
+// FUNCTION:     int PyFunction_SetClosure(object op, object closure) except -1
+  gen PyFunction_SetClosure: PyObject * PyObject -> int;
+@

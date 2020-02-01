@@ -1,0 +1,88 @@
+@title Python C API exc
+@tangler exc.flx = share/lib/python/exc.flx
+@h1 exc
+@tangle exc.flx
+// Nonfunction line: from .object cimport PyObject
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     void PyErr_Print()
+  proc PyErr_Print: 1;
+
+// FUNCTION:     PyObject* PyErr_Occurred()
+  gen PyErr_Occurred: 1 -> PyObject;
+
+// FUNCTION:     bint PyErr_ExceptionMatches(object exc)
+  gen PyErr_ExceptionMatches: PyObject -> bool;
+
+// FUNCTION:     bint PyErr_GivenExceptionMatches(object given, object exc)
+  gen PyErr_GivenExceptionMatches: PyObject * PyObject -> bool;
+
+// FUNCTION:     void PyErr_NormalizeException(PyObject** exc, PyObject** val, PyObject** tb)
+  proc PyErr_NormalizeException: &(&PyObject) * &(&PyObject) * &(&PyObject);
+
+// FUNCTION:     void PyErr_Clear()
+  proc PyErr_Clear: 1;
+
+// FUNCTION:     void PyErr_Fetch(PyObject** ptype, PyObject** pvalue, PyObject** ptraceback)
+  proc PyErr_Fetch: &(&PyObject) * &(&PyObject) * &(&PyObject);
+
+// FUNCTION:     void PyErr_Restore(PyObject* type, PyObject* value, PyObject* traceback)
+  proc PyErr_Restore: /* weak */ PyObject * /* weak */ PyObject * /* weak */ PyObject;
+
+// FUNCTION:     void PyErr_SetString(object type, char *message)
+  proc PyErr_SetString: PyObject * +char;
+
+// FUNCTION:     void PyErr_SetObject(object type, object value)
+  proc PyErr_SetObject: PyObject * PyObject;
+
+// Varargs fundef:     PyObject* PyErr_Format(object exception, char *format, ...) except NULL
+// FUNCTION:     void PyErr_SetNone(object type)
+  proc PyErr_SetNone: PyObject;
+
+// FUNCTION:     int PyErr_BadArgument() except 0
+  gen PyErr_BadArgument: 1 -> int;
+
+// FUNCTION:     PyObject* PyErr_NoMemory() except NULL
+  gen PyErr_NoMemory: 1 -> PyObject;
+
+// FUNCTION:     PyObject* PyErr_SetFromErrno(object type) except NULL
+  gen PyErr_SetFromErrno: PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyErr_SetFromErrnoWithFilenameObject(object type, object filenameObject) except NULL
+  gen PyErr_SetFromErrnoWithFilenameObject: PyObject * PyObject -> PyObject;
+
+// FUNCTION:     PyObject* PyErr_SetFromErrnoWithFilename(object type, char *filename) except NULL
+  gen PyErr_SetFromErrnoWithFilename: PyObject * +char -> PyObject;
+
+// FUNCTION:     PyObject* PyErr_SetFromWindowsErr(int ierr) except NULL
+  gen PyErr_SetFromWindowsErr: int -> PyObject;
+
+// FUNCTION:     PyObject* PyErr_SetExcFromWindowsErr(object type, int ierr) except NULL
+  gen PyErr_SetExcFromWindowsErr: PyObject * int -> PyObject;
+
+// FUNCTION:     PyObject* PyErr_SetFromWindowsErrWithFilename(int ierr, char *filename) except NULL
+  gen PyErr_SetFromWindowsErrWithFilename: int * +char -> PyObject;
+
+// FUNCTION:     PyObject* PyErr_SetExcFromWindowsErrWithFilename(object type, int ierr, char *filename) except NULL
+  gen PyErr_SetExcFromWindowsErrWithFilename: PyObject * int * +char -> PyObject;
+
+// FUNCTION:     void PyErr_BadInternalCall()
+  proc PyErr_BadInternalCall: 1;
+
+// FUNCTION:     int PyErr_WarnEx(object category, char *message, int stacklevel) except -1
+  gen PyErr_WarnEx: PyObject * +char * int -> int;
+
+// FUNCTION:     int PyErr_WarnExplicit(object category, char *message, char *filename, int lineno, char *module, object registry) except -1
+  gen PyErr_WarnExplicit: PyObject * +char * +char * int * +char * PyObject -> int;
+
+// FUNCTION:     int PyErr_CheckSignals() except -1
+  gen PyErr_CheckSignals: 1 -> int;
+
+// FUNCTION:     void PyErr_SetInterrupt() nogil
+  proc PyErr_SetInterrupt: 1;
+
+// FUNCTION:     object PyErr_NewException(char *name, object base, object dict)
+  gen PyErr_NewException: +char * PyObject * PyObject -> PyObject;
+
+// FUNCTION:     void PyErr_WriteUnraisable(object obj)
+  proc PyErr_WriteUnraisable: PyObject;
+@

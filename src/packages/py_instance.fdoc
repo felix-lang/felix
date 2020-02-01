@@ -1,0 +1,14 @@
+@title Python C API instance
+@tangler instance.flx = share/lib/python/instance.flx
+@h1 instance
+@tangle instance.flx
+// Nonfunction line: cdef extern from "Python.h":
+// FUNCTION:     int PyInstance_Check(object obj)
+  gen PyInstance_Check: PyObject -> int;
+
+// FUNCTION:     object PyInstance_New(object cls, object arg, object kw)
+  gen PyInstance_New: PyObject * PyObject * PyObject -> PyObject;
+
+// FUNCTION:     object PyInstance_NewRaw(object cls, object dict)
+  gen PyInstance_NewRaw: PyObject * PyObject -> PyObject;
+@

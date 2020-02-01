@@ -1,0 +1,26 @@
+@title Python C API descr
+@tangler descr.flx = share/lib/python/descr.flx
+@h1 descr
+@tangle descr.flx
+// Nonfunction line: from .object cimport PyObject, PyTypeObject
+// Nonfunction line: cdef extern from "Python.h":
+// Nonfunction line:     ctypedef object (*wrapperfunc)(self, args, void* wrapped)
+// Nonfunction line:     ctypedef object (*wrapperfunc_kwds)(self, args, void* wrapped, kwds)
+// Nonfunction line:     struct wrapperbase:
+// Nonfunction line:         char* name
+// Nonfunction line:         int offset
+// Nonfunction line:         void* function
+// Nonfunction line:         wrapperfunc wrapper
+// Nonfunction line:         char* doc
+// Nonfunction line:         int flags
+// Nonfunction line:         PyObject* name_strobj
+// Nonfunction line:     int PyWrapperFlag_KEYWORDS
+// Nonfunction line:     ctypedef class __builtin__.wrapper_descriptor [object PyWrapperDescrObject]:
+// Nonfunction line:         cdef type d_type
+// Nonfunction line:         cdef d_name
+// Nonfunction line:         cdef wrapperbase* d_base
+// Nonfunction line:         cdef void* d_wrapped
+// FUNCTION:     PyDescr_NewWrapper(PyTypeObject* cls, wrapperbase* wrapper, void* wrapped)
+// FUNCTION:     int PyDescr_IsData(descr)
+  gen PyDescr_IsData: PyObject -> int;
+@

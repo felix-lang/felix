@@ -1,0 +1,117 @@
+@title Python C API pylifecycle
+@tangler pylifecycle.flx = share/lib/python/pylifecycle.flx
+@h1 pylifecycle
+@tangle pylifecycle.flx
+// Nonfunction line: from libc.stdio cimport FILE
+// Nonfunction line: from .pystate cimport PyThreadState
+// Nonfunction line: cdef extern from "Python.h":
+// Nonfunction line:     ctypedef int wchar_t
+// FUNCTION:     void Py_SetProgramName(wchar_t *)
+  proc Py_SetProgramName: &wchar_t;
+
+// FUNCTION:     wchar_t *Py_GetProgramName()
+  gen Py_GetProgramName: 1 -> +wchar_t;
+
+// FUNCTION:     void Py_SetPythonHome(wchar_t *)
+  proc Py_SetPythonHome: &wchar_t;
+
+// FUNCTION:     wchar_t *Py_GetPythonHome()
+  gen Py_GetPythonHome: 1 -> +wchar_t;
+
+// FUNCTION:     int Py_SetStandardStreamEncoding(const char *encoding, const char *errors)
+  gen Py_SetStandardStreamEncoding: +char * +char -> int;
+
+// FUNCTION:     void Py_Initialize()
+  proc Py_Initialize: 1;
+
+// FUNCTION:     void Py_InitializeEx(int)
+  proc Py_InitializeEx: int;
+
+// FUNCTION:     void _Py_InitializeEx_Private(int, int)
+  proc _Py_InitializeEx_Private: int * int;
+
+// FUNCTION:     void Py_Finalize()
+  proc Py_Finalize: 1;
+
+// FUNCTION:     int Py_FinalizeEx()
+  gen Py_FinalizeEx: 1 -> int;
+
+// FUNCTION:     int Py_IsInitialized()
+  gen Py_IsInitialized: 1 -> int;
+
+// FUNCTION:     PyThreadState *Py_NewInterpreter()
+  gen Py_NewInterpreter: 1 -> &PyThreadState;
+
+// FUNCTION:     void Py_EndInterpreter(PyThreadState *)
+  proc Py_EndInterpreter: &PyThreadState;
+
+// FUNCTION:     void _Py_PyAtExit(void (*func)())
+  proc _Py_PyAtExit: (1-->0);
+
+// FUNCTION:     int Py_AtExit(void (*func)())
+  gen Py_AtExit: (1-->0) -> int;
+
+// FUNCTION:     void Py_Exit(int)
+  proc Py_Exit: int;
+
+// FUNCTION:     void _Py_RestoreSignals()
+  proc _Py_RestoreSignals: 1;
+
+// FUNCTION:     int Py_FdIsInteractive(FILE *, const char *)
+  gen Py_FdIsInteractive: &FILE * +char -> int;
+
+// FUNCTION:     int Py_Main(int argc, wchar_t **argv)
+  gen Py_Main: int * &(&wchar_t) -> int;
+
+// FUNCTION:     wchar_t *Py_GetProgramFullPath()
+  gen Py_GetProgramFullPath: 1 -> +wchar_t;
+
+// FUNCTION:     wchar_t *Py_GetPrefix()
+  gen Py_GetPrefix: 1 -> +wchar_t;
+
+// FUNCTION:     wchar_t *Py_GetExecPrefix()
+  gen Py_GetExecPrefix: 1 -> +wchar_t;
+
+// FUNCTION:     wchar_t *Py_GetPath()
+  gen Py_GetPath: 1 -> +wchar_t;
+
+// FUNCTION:     void Py_SetPath(const wchar_t *)
+  proc Py_SetPath: +wchar_t;
+
+// FUNCTION:     int _Py_CheckPython3()
+  gen _Py_CheckPython3: 1 -> int;
+
+// FUNCTION:     const char *Py_GetVersion()
+  gen Py_GetVersion: 1 -> +char = '(char*)Py_GetVersion($a)';
+
+// FUNCTION:     const char *Py_GetPlatform()
+  gen Py_GetPlatform: 1 -> +char = '(char*)Py_GetPlatform($a)';
+
+// FUNCTION:     const char *Py_GetCopyright()
+  gen Py_GetCopyright: 1 -> +char = '(char*)Py_GetCopyright($a)';
+
+// FUNCTION:     const char *Py_GetCompiler()
+  gen Py_GetCompiler: 1 -> +char = '(char*)Py_GetCompiler($a)';
+
+// FUNCTION:     const char *Py_GetBuildInfo()
+  gen Py_GetBuildInfo: 1 -> +char = '(char*)Py_GetBuildInfo($a)';
+
+// FUNCTION:     const char *_Py_gitidentifier()
+  gen _Py_gitidentifier: 1 -> +char = '(char*)_Py_gitidentifier($a)';
+
+// FUNCTION:     const char *_Py_gitversion()
+  gen _Py_gitversion: 1 -> +char = '(char*)_Py_gitversion($a)';
+
+// Nonfunction line:     ctypedef void (*PyOS_sighandler_t)(int)
+// FUNCTION:     PyOS_sighandler_t PyOS_getsig(int)
+  gen PyOS_getsig: int -> PyOS_sighandler_t;
+
+// FUNCTION:     PyOS_sighandler_t PyOS_setsig(int, PyOS_sighandler_t)
+  gen PyOS_setsig: int * PyOS_sighandler_t -> PyOS_sighandler_t;
+
+// FUNCTION:     int _PyOS_URandom(void *buffer, Py_ssize_t size)
+  gen _PyOS_URandom: address * Py_ssize_t -> int;
+
+// FUNCTION:     int _PyOS_URandomNonblock(void *buffer, Py_ssize_t size)
+  gen _PyOS_URandomNonblock: address * Py_ssize_t -> int;
+@
