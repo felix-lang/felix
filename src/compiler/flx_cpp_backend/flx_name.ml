@@ -237,6 +237,7 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   | BTYP_ptr (`R,_,_) -> assert false
   | BTYP_ptr (`W,_,_) -> assert false
   | BTYP_ptr (_,_,(_::_::_)) -> assert false
+  | BTYP_ellipsis -> "..."
 
   | BTYP_type_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^

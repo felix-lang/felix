@@ -287,6 +287,7 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
     reduce_typeop op (br t) k
   | BTYP_typeof _ -> t
   | BTYP_hole -> assert false
+  | BTYP_ellipsis -> btyp_ellipsis (* not a value type! *)
   | BTYP_none -> assert false
   | BTYP_fix _ -> (* print_endline "Returning fixpoint"; *)  t
   | BTYP_type_var (i,_) -> t

@@ -183,7 +183,7 @@ print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
  | Lst [Id "typ_patvar";  sr; Str s] -> `TYP_patvar (xsr sr, s)
  | Lst [Id "typ_patany"; sr] -> `TYP_patany (xsr sr)
  | Lst [Id "ast_void"; sr] -> `TYP_void (xsr sr)
- | Lst [Id "ast_ellipsis"; sr] -> `TYP_ellipsis
+ | Lst [Id "typ_ellipsis"; sr] -> `TYP_ellipsis
  | Lst [Id "typ_arrow";  Lst [e1; e2]] -> `TYP_function (ti e1, ti e2)
  | Lst [Id "typ_effector";  Lst [e1; e2; e3]] -> `TYP_effector (ti e1, ti e2, ti e3)
  | Lst [Id "typ_lineararrow";  Lst [e1; e2]] -> `TYP_linearfunction (ti e1, ti e2)

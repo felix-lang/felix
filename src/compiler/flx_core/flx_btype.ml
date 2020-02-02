@@ -39,6 +39,7 @@ and pvpiece_t = [`Ctor of (string * t) | `Base of t]
 and t = 
   | BBOOL  of bool (* kind BOOL *)
   | BTYP_hole
+  | BTYP_ellipsis (* only at end of a tuple, matches rest of argument tuple, for varargs *)
   | BTYP_none
   | BTYP_sum of t list
   | BTYP_unitsum of int
@@ -106,6 +107,7 @@ let flat_iter
   | BTYP_hole -> ()
   | BTYP_label -> ()
   | BTYP_none -> ()
+  | BTYP_ellipsis -> ()
   | BTYP_sum ts -> List.iter f_btype ts
   | BTYP_unitsum k ->
       let unitrep = BTYP_tuple [] in
@@ -245,6 +247,7 @@ and str_of_btype typ =
 
   | BTYP_hole -> "BTYP_hole"
   | BTYP_none -> "BTYP_none"
+  | BTYP_ellipsis -> "BTYP_ellipsis"
   | BTYP_sum ts -> "BTYP_sum(" ^ ss ts ^")"
   | BTYP_unitsum n -> string_of_int n
   | BTYP_inst (i,ts,mt) -> "BTYP_inst("^string_of_int i^"["^ss ts^"]:"^Flx_kind.sk mt^")"
@@ -444,6 +447,7 @@ let btyp_label () = BTYP_label
 let btyp_none () =
   BTYP_none
 
+let btyp_ellipsis = BTYP_ellipsis
 
 (** The void type. *)
 let btyp_void () =
@@ -865,6 +869,7 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_hole as x -> x
   | BTYP_label as x -> x
   | BTYP_none as x -> x
+  | BTYP_ellipsis as x -> x
   | BTYP_sum ts -> btyp_sum (List.map f_btype ts)
   | BTYP_unitsum k ->
     let mapped_unit = f_btype (BTYP_tuple []) in

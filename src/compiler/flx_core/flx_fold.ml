@@ -39,6 +39,7 @@ let fold (bsym_table: Flx_bsym_table.t) counter t =
     | BTYP_tuple_snoc (a,b) -> ax a; ax b
 
     | BTYP_hole
+    | BTYP_ellipsis
     | BTYP_label 
     | BTYP_none
     | BTYP_void

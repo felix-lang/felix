@@ -145,6 +145,7 @@ then
   | BTYP_typeof _
   | BTYP_hole -> assert false
   | BTYP_rev _ -> assert false (* should have been eliminated *)
+  | BTYP_ellipsis
   | BTYP_label -> ()
   | BTYP_void -> ()
   | BTYP_fix (0,_) -> ()

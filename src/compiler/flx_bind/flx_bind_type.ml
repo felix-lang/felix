@@ -322,8 +322,9 @@ print_endline ("Calling Flx_beta.adjust, possibly incorrectly, type = " ^ sbt bs
 
   | `TYP_dual t -> Flx_btype_dual.dual (bt t)
 
-  | `TYP_ellipsis ->
-    failwith "Unexpected `TYP_ellipsis (...) in bind type"
+  | `TYP_ellipsis -> btyp_ellipsis
+    (* failwith "Unexpected `TYP_ellipsis (...) in bind type" *)
+
   | `TYP_none ->
     failwith "Unexpected `TYP_none in bind type"
 

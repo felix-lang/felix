@@ -122,6 +122,8 @@ print_endline ("Flx_btype_kind.metatype' case type_apply: " ^ Flx_btype.st typ);
   | BTYP_type_set_intersection _
     -> kind_type (* WRONG but lets see what happens ! *)
 
+  | BTYP_ellipsis -> kind_type
+
   | BTYP_none
     ->
     clierrx "[flx_btype_kind:180: E246] " sr ("No meta type for type-like term " ^ 

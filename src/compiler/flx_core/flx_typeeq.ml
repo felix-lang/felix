@@ -37,6 +37,8 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
   | BTYP_hole,_ (* for zippers *)
   | _,BTYP_hole -> true
 
+  | BTYP_ellipsis, BTYP_ellipsis -> true
+
   | BTYP_label,BTYP_label -> true
   | BTYP_vinst (i1,ts1,_),BTYP_vinst (i2,ts2,_)
   | BTYP_inst (i1,ts1,_),BTYP_inst (i2,ts2,_) ->

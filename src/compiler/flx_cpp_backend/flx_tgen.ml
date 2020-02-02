@@ -420,8 +420,12 @@ let rec gen_type syms bsym_table (index,typ) =
   | BTYP_variant _ -> ""
 
   | BTYP_tuple ts ->
-     descr ^
-     gen_tuple (tn typ) tn ts
+    begin match List.rev ts with
+    | BTYP_ellipsis :: tail -> descr
+    | _ ->
+      descr ^
+      gen_tuple (tn typ) tn ts
+    end
 
   | BTYP_record (ts) ->
      descr ^

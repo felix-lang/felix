@@ -88,6 +88,10 @@ syntax types {
   t[satomic_pri] := "true"  =># "`(typ_true,_sr)";
   t[satomic_pri] := "false"  =># "`(typ_false ,_sr)";
 
+  //$ Ellipsis (for binding C varags functions).
+  t[satomic_pri] := "..." =># "`(typ_ellipsis ,_sr)";
+
+
   t[ssum_pri] := t[ssum_pri] "`+" t[>ssum_pri] =># "(tInfix)";
   t[ssum_pri] := t[ssum_pri] "`-" t[>ssum_pri] =># "(tInfix)";
   t[ssum_pri] := t[ssum_pri] "`*" t[>ssum_pri] =># "(tInfix)";
@@ -606,9 +610,6 @@ syntax expressions {
 
   //$ Wildcard pattern.
   satom := _ =># "`(ast_patany ,_sr)";
-
-  //$ Ellipsis (for binding C varags functions).
-  satom := "..." =># "`(ast_ellipsis ,_sr)";
 
   //$ Callback expression.
   satom := "callback" "[" sexpr "]" =># "`(ast_callback ,_sr ,_3)";

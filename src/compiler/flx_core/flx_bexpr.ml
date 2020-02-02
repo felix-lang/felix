@@ -280,10 +280,16 @@ let bexpr_apply t (e1, e2) =
   | Flx_btype.BTYP_effector (d,_,c)
   | Flx_btype.BTYP_function (d,c)
   | Flx_btype.BTYP_cfunction (d,c) ->
-    if not (Flx_typeeq.type_eq Flx_btype.st counter d at) then begin
-      print_endline ("Warning: bexpr_apply: function type: " ^ Flx_btype.st ft);
-      print_endline ("Warning: bexpr_apply: function domain\n"^ Flx_btype.st d ^ "\ndoesn't agree with argtype\n" ^ Flx_btype.st at);
-      failwith ("SYSTEM ERROR: bexpr_apply: function domain\n"^ Flx_btype.st d ^ "\ndoesn't agree with argtype\n" ^ Flx_btype.st at);
+    (* hack, let anything match parameter with ellipsis at end, should check prefix *)
+    begin
+      match d with 
+      | BTYP_tuple ls when (match List.rev ls with | BTYP_ellipsis :: _-> true | _ -> false) -> ()
+      | _ ->
+      if not (Flx_typeeq.type_eq Flx_btype.st counter d at) then begin
+        print_endline ("Warning: bexpr_apply: function type: " ^ Flx_btype.st ft);
+        print_endline ("Warning: bexpr_apply: function domain\n"^ Flx_btype.st d ^ "\ndoesn't agree with argtype\n" ^ Flx_btype.st at);
+        failwith ("SYSTEM ERROR: bexpr_apply: function domain\n"^ Flx_btype.st d ^ "\ndoesn't agree with argtype\n" ^ Flx_btype.st at);
+      end
     end; 
     if not (Flx_typeeq.type_eq Flx_btype.st counter c t) then begin
       print_endline ("Warning: bexpr_apply: function type: " ^ Flx_btype.st ft);

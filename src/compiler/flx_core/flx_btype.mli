@@ -20,6 +20,7 @@ and pvpiece_t = [`Ctor of (string * t) | `Base of t]
 and t = private
   | BBOOL of bool 
   | BTYP_hole
+  | BTYP_ellipsis (* only at end of a tuple, matches rest of argument tuple, for varargs *)
   | BTYP_none
   | BTYP_sum of t list
   | BTYP_unitsum of int
@@ -109,6 +110,7 @@ type biface_t =
   | BIFACE_export_requirement of Flx_srcref.t * breqs_t
 val complete_type : t -> bool
 val btyp_hole : t
+val btyp_ellipsis : t
 val btyp_label : unit -> t
 val btyp_none : unit -> t
 val btyp_int : unit -> t

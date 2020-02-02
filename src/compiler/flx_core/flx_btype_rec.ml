@@ -32,6 +32,7 @@ let fix i t =
     | BTYP_tuple_cons _ -> assert false
     | BTYP_tuple_snoc _ -> assert false
     | BTYP_none -> assert false
+    | BTYP_ellipsis -> assert false
     | BTYP_type_var (k,mt) -> 
       if k = i then begin 
         print_endline ("Flx_btype_rec: fixpoint inheriting metatype from type variabe"); 

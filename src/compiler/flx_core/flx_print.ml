@@ -634,6 +634,7 @@ and sb bsym_table depth fixlist counter prec tc =
 
     | BTYP_hole -> 0, "BTYP_hole"
     | BTYP_none -> 0,"none"
+    | BTYP_ellipsis -> 0,"..."
     | BTYP_label -> 0,"label"
     | BTYP_tuple_cons (t1,t2) -> 
       5,(sbt 5 t1) ^ " ** " ^ (sbt 5 t2)

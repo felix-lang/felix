@@ -78,8 +78,20 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
 
   (* arrays and tuples, must be the same length, covariant by element *)
   | BTYP_tuple ls, BTYP_tuple rs ->
-    if List.length ls <> List.length rs then raise Not_found;
-    List.iter2 (fun l r -> add_ge(l,r)) ls rs
+    (* special hack: parameter with trailing ellipsis matchs argument if the 
+       components match, upto the ellipsis, anything after that matches anything
+    *)
+    begin match List.rev ls with
+    | BTYP_ellipsis :: tail ->
+      let prefix = List.rev tail in
+      let n = List.length prefix in
+      let argprefix = Flx_list.list_prefix ls n in
+      List.iter2 (fun l r -> add_ge(l,r)) prefix argprefix 
+
+    | _ -> 
+      if List.length ls <> List.length rs then raise Not_found;
+      List.iter2 (fun l r -> add_ge(l,r)) ls rs
+    end
 
   | BTYP_tuple ls, BTYP_array (r,BTYP_unitsum n) ->
     if List.length ls <> n then raise Not_found;
