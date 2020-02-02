@@ -329,7 +329,12 @@ and expand_coercion new_table bsym_table counter parent remap ((srcx,srct) as sr
   | BTYP_record ls, BTYP_record rs ->
     record_coercion new_table bsym_table counter parent remap srce dstt ls rs sr
 
-  | BTYP_tuple ls, BTYP_tuple rs when (match List.rev rs with | BTYP_ellipsis :: _ -> true | _ -> false) ->
+  | BTYP_array _, BTYP_tuple rs 
+  | BTYP_tuple _, BTYP_tuple rs when (match List.rev rs with | BTYP_ellipsis :: _ -> true | _ -> false) ->
+    (* NOTE: the leading components of the argument (lhs) should be coerced to the leading
+       components of the parameter (rhs) and the remainder passed "as is",
+       however this code just passes everything "as is" at the moment
+    *)
     srce
 
   | BTYP_tuple ls, BTYP_tuple rs when List.length ls = List.length rs ->

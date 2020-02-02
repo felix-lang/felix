@@ -85,8 +85,11 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
     | BTYP_ellipsis :: tail ->
       let prefix = List.rev tail in
       let n = List.length prefix in
-      let argprefix = Flx_list.list_prefix ls n in
-      List.iter2 (fun l r -> add_ge(l,r)) prefix argprefix 
+      (* the number of components in the argument must be greater or equal to the parameter up to the ellipsis *)
+      if List.length rs >= n then 
+        let argprefix = Flx_list.list_prefix ls n in
+        List.iter2 (fun l r -> add_ge(l,r)) prefix argprefix 
+      else raise Not_found
 
     | _ -> 
       if List.length ls <> List.length rs then raise Not_found;
@@ -94,8 +97,17 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
     end
 
   | BTYP_tuple ls, BTYP_array (r,BTYP_unitsum n) ->
-    if List.length ls <> n then raise Not_found;
-    List.iter (fun l -> add_ge(l,r)) ls
+    begin match List.rev ls with
+    | BTYP_ellipsis :: tail ->
+      let prefix = List.rev tail in
+      let n = List.length prefix in
+      let argprefix = Flx_list.list_prefix ls n in
+      List.iter (fun l -> add_ge(l,r)) prefix
+
+    | _ -> 
+      if List.length ls <> n then raise Not_found;
+      List.iter (fun l -> add_ge(l,r)) ls
+    end
     
   | BTYP_array (l, BTYP_unitsum n), BTYP_tuple rs ->
     if List.length rs <> n then raise Not_found;
