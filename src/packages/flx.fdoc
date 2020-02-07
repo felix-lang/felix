@@ -87,6 +87,7 @@ proc print_options(control:control_type) {
     println$ "RECOMPILE          = "+str control.RECOMPILE;
     println$ "FLXG_FORCE         = "+str control.FLXG_FORCE;
     println$ "ocamls              = "+str control.ocamls;
+    println$ "swifts             = "+str control.swifts;
     println$ "cpps               = "+str control.cpps;
     println$ "cppos              = "+str control.cppos;
     println$ "TIME               = "+str control.TIME;
@@ -98,6 +99,7 @@ proc print_options(control:control_type) {
     println$ "RUNONLY            = "+str control.RUNONLY;
     println$ "CXXONLY            = "+str control.CXXONLY;
     println$ "OCAMLONLY          = "+str control.OCAMLONLY;
+    println$ "SWIFTONLY          = "+str control.SWIFTONLY;
     println$ "FELIX              = "+str control.FELIX;
     println$ "LINKER_SWITCHES    = "+str control.LINKER_SWITCHES;
     println$ "LINKER_OUTPUT_FILENAME = "+str control.LINKER_OUTPUT_FILENAME;
@@ -137,6 +139,7 @@ fun dflt_control () =>
     var RUNONLY=0;
     var CXXONLY=0;
     var OCAMLONLY=0;
+    var SWIFTONLY=0;
     var ECHO=0;
     var DEBUG_FLX=false;
     var VALIDATE_CACHE=1;
@@ -170,6 +173,7 @@ fun dflt_control () =>
     var cppos=Empty[string];
 
     var ocamls=Empty[string];
+    var swifts=Empty[string];
 
     var STANDARD_INCLUDE_FILES=Empty[string];
     var EXTRA_INCLUDE_DIRS=Empty[string];
@@ -263,6 +267,7 @@ private proc print_help() {
   println "--run-only           : run program without dependency checking or linking";
   println "--c++                : Pure C++ build, no Felix code";
   println "--ocaml              : Pure Ocaml build, no Felix code";
+  println "--swift              : Pure Swift build, no Felix code";
   println "--options            : show option set";
   println "--config             : show configuration";
   println "--version            : show felix version";
@@ -775,7 +780,12 @@ private noinline proc handle_switch
     control.OCAMLONLY <- 1;
     control.FELIX <- 0;
     debugln$ "Ocaml only, no Felix";
-  
+
+  elif arg == "--swift" do
+    control.SWIFTONLY <- 1;
+    control.FELIX <- 0;
+    debugln$ "Swift only, no Felix";
+   
 // the main filename -- subsequent args are args to flx_run
   else
     eprintln$ "Unknown switch '" + arg+"'";
@@ -824,6 +834,10 @@ private noinline proc handle_filename
   | "ocaml" =>
     control.ocamls<- control*.ocamls + arg;
 
+  | "swift" =>
+    control.swifts <- control*.swifts + arg;
+
+
   | _ => assert false;
   endmatch
   ;
@@ -837,11 +851,13 @@ private noinline proc handle_filename
 private fun exts () = {
   var compile_exts = list ('.cpp','.cxx','.c','.cc');
   var ocaml = list ('.mli','.ml','.cmi','cmx','.cmxa');
+  var swift = list ('.swift');
 
   var link_exts =  list ('.o','.obj','.lib','.dll','.a','.so','.dylib','.os');
   var felix_exts = list (".flx",".fdoc");
   var exts =
     map (fun (s:string) => s,"ocaml") ocaml+
+    map (fun (s:string) => s,"swift") swift+
     map (fun (s:string) => s,"compile") compile_exts +
     map (fun (s:string) => s,"link") link_exts +
     map (fun (s:string) => s,"felix") felix_exts + 
@@ -971,6 +987,7 @@ noinline proc processing_stage1
   debugln$ "cppos="+str control*.cppos;
 
   debugln$ "ocamls="+str control*.ocamls;
+  debugln$ "swifts="+str control*.swifts;
 
 
   // Grab program arguments.
@@ -1880,6 +1897,7 @@ object processing_env(
     return result;
   }
 
+// OCAML
  gen ocaml_compile1 (ehandler:1->0) (deps:list[string], s:string) = {
     var xqt = dxqt (control.ECHO == 1 or control.DEBUG_FLX);
     var result = xqt("ocamlopt.opt -c " + cat " " deps + " "+ s);
@@ -1911,6 +1929,30 @@ object processing_env(
  {
    return ocaml_compile ehandler;
  }
+
+// SWIFT
+
+ gen swift_compile1 (ehandler:1->0) (deps:list[string], s:string) = {
+    var xqt = dxqt (control.ECHO == 1 or control.DEBUG_FLX);
+    var result = xqt("swiftc -c " + cat " " deps + " "+ s);
+    C_hack::ignore(result);
+    return 0;
+ }
+
+ gen swift_compile (ehandler:1->0) = {
+    var deps = Empty[string];
+    for src in control.swifts do
+      var result = swift_compile1 ehandler (deps,src);
+      if result != 0 return result;
+    done
+    return 0;
+ }
+
+ gen run_swift_compiler_if_required (ehandler:1->0) : int =
+ {
+   return swift_compile ehandler;
+ }
+
 
 /*
 
@@ -2220,6 +2262,7 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
       debugln$ "Extra object files "+ str control.cppos;
 
       debugln$ "Extra ocaml files  "+ str control.ocamls;
+      debugln$ "Extra swift files  "+ str control.swifts;
 
       debugln$ "Filebase = " + dvars.filebase; 
 
@@ -2413,6 +2456,13 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
     else 
       debugln "Ocaml compilation skipped by switch";
     done
+
+    if control.CCOMPILEIT == 1 do // use this switch for swift compiles too
+      result = run_swift_compiler_if_required ehandler;
+    else 
+      debugln "Swift compilation skipped by switch";
+    done
+
 
     if control.LINKIT == 1 do
       result = run_linker_if_required ehandler;
