@@ -8,6 +8,7 @@
 include "std/strings/string";
 include "std/strings/cstring";
 include "std/strings/ustr";
+include "std/strings/ucstr";
 
 @h1 Strings
 We have three string like things. @{cstring} is just 

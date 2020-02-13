@@ -199,18 +199,20 @@ open class UniqueCStrings
     if f != l perform strcpy (p+f, p+l); 
     return pack p;
   }
- 
+
+/*
   fun erase (var x:ucstr, sl:slice[int]) : ucstr =>
     match sl with
     | Slice_all => set (x,0,char "")
     | Slice_from idx => set (x,idx, char "")
-    | Slice_from_counted (first,len) => strmov (x (first,first+len)
+    | Slice_from_counted (first,len) => strmov (x,first,first+len)
     | Slice_to_incl incl => strmov (x,0,incl)
     | Slice_to_excl excl => strmov (x,0, excl - 1)
-    | Slice_range_incl (first, last) => strmov, x (first, last+1)
-    | Slice_range_excl (first, last) => strmo, x (first, last) 
+    | Slice_range_incl (first, last) => strmov (x, first, last+1)
+    | Slice_range_excl (first, last) => strmov (x,first, last) 
     | Slice_one pos => strmov (x, pos, pos+1)
   ;
+*/
 
   fun insert (var x:ucstr, var pos: int, var y:ucstr) : ucstr =
   {
@@ -244,9 +246,9 @@ open class UniqueCStrings
 @tangle ucstr_prim_01.flx
 proc test() {
   var s = ucstr "hello";
-  println$ &s;
+  println$ s&.peek;
   s = set (s, 0, char "e"); 
-  println$ &s;
+  println$ s&.peek;
   delete s;
 }
 test();
@@ -468,9 +470,9 @@ open class UniqueCountedStrings
 @tangle ustr_prim_01.flx
 proc test() {
   var s = ustr "hello";
-  println$ &s;
+  println$ s&.peek;
   s = set (s, 0, char "e"); 
-  println$ &s;
+  println$ s&.peek;
   delete s;
 }
 test();

@@ -5,292 +5,14 @@ open Flx_bid
 open Flx_bexe
 open Flx_bexpr
 open Flx_btype
+open Flx_fairy
+open Flx_getset
+
+let debug = Flx_getset.debug
 
 exception CompleteFlow
 exception IncompletePriorFlow
  
-let debug = 
-  try let _ = Sys.getenv "FLX_COMPILER_DEBUG_UNIQ" in true  
-  with Not_found -> false 
-
-let show_getset_only = 
-  try let _ = Sys.getenv "FLX_COMPILER_DEBUG_UNIQ_GETSET" in true  
-  with Not_found -> false 
-
-
-let show_getset = debug || show_getset_only
- 
-
-type item_t = [`Uniq | `Tup of int]
-type path_t = item_t list 
-type paths_t = path_t list 
-
-type chain2ix_t = ((bid_t * path_t) * bid_t) list
-type ix2chain_t = (bid_t * (bid_t * path_t)) list
-
-let prj_of_item item = match item with
-  | `Uniq -> ":U"
-  | `Tup i -> "." ^ string_of_int i
-
-let chain_of_path (p:path_t) =
-  List.fold_left (fun acc item -> acc ^ prj_of_item item) "" p
-
-let find_chain ix2chain i = List.assoc i ix2chain 
-
-let find_var ix2chain i =
-  let v,prjs = find_chain ix2chain i in
-  v
-
-let str_of_vars bsym_table ix2chain bidset =
-  "("^ String.concat "," (
-  BidSet.fold (fun yidx acc -> 
-    let idx,prjs = find_chain ix2chain yidx in
-    let parent, bsym = Flx_bsym_table.find_with_parent bsym_table idx in
-    let chain = match prjs with | [] -> "" | _ -> chain_of_path prjs in
-    (string_of_int yidx ^ ":->" ^Flx_bsym.id bsym ^ chain) :: acc
-  ) 
-  bidset
-  []) ^ ")"
-
-let def_of_vars bsym_table ix2chain bidset =
-  let chains = str_of_vars bsym_table ix2chain bidset in
-  let vars = 
-    BidSet.fold (fun yidx acc ->
-      let idx = find_var ix2chain yidx in
-      BidSet.add idx acc
-    ) BidSet.empty bidset
-  in
-  let varlocs = 
-    BidSet.fold (fun yidx acc -> 
-      let idx = find_var ix2chain yidx in
-      let parent, bsym = Flx_bsym_table.find_with_parent bsym_table idx in
-      acc ^
-      "Variable " ^ Flx_bsym.id bsym ^ 
-        " defined at\n" ^ Flx_srcref.long_string_of_src (Flx_bsym.sr bsym)
-      ^ "\n"
-    ) 
-    vars 
-    ""
-  in chains ^ "\n" ^ varlocs
-
-let id_of_index bsym_table index = 
-  Flx_bsym.id (Flx_bsym_table.find bsym_table index)
-
-let str_of_ix2chain_entry bsym_table (fairy, (variable, prjs)) =
-  string_of_int fairy ^ " -> " ^ id_of_index bsym_table variable ^
-  "<" ^ string_of_int variable ^ ">" ^ chain_of_path prjs
-
-let print_ix2chain bsym_table ix2chain =
-  List.iter 
-    (fun entry -> print_endline ("  " ^ str_of_ix2chain_entry bsym_table entry)) 
-  ix2chain
-
-(* this function analyses a type and returns a list of 
-symbolic projection chains which reach a uniq component:
-the lists are reversed from the order in which they
-must be provided. It delves into uniqs which are products
-too even though such projections are not allowed at the moment.
-We might actually consider the coerion from uniq T -> T to be
-a special kind of projection and allow it later.
-*)
-
-let rec uniq_anal_aux (path:path_t) typ (paths:paths_t): paths_t = 
-  match typ with
-  | BTYP_uniq t -> (* no index to continue *)
-    let path = `Uniq :: path in
-    uniq_anal_aux path  t (path::paths)
-
-  | BTYP_tuple ts ->
-    List.fold_left2 (fun acc t n -> 
-      let path = `Tup n :: path in
-      uniq_anal_aux path t acc
-    )
-    paths 
-    ts (Flx_list.nlist (List.length ts))
-
-  | _ -> paths
-
-(* this routine reverses the paths so they're in the correct order.
-It also adds every exteniosn of the reversed paths to the set, uniquely.
-The U is lost.  For example if we have paths
-
-  .1
-
-then we might get back
-
-  .1.2.4
-  .1.2
-  .1
-
-Any projection chain from any variable of the given type,
-including the empty chain, which matches any of these
-chains, is either targeting a uniq component, or a component
-containing one, directly or indirectly.
-*)
-let uniq_anal typ : paths_t =
-  let rps = uniq_anal_aux [] typ [] in
-  List.map (fun lst -> List.rev (List.tl lst)) rps
-
-let find_entries bsym_table (chain2ix:chain2ix_t) bid : chain2ix_t = 
-  let paths = List.filter (fun ((bid2,path),ix) -> bid2 = bid) chain2ix in
-  paths
-
-  (* the chain2ix is required when analysing expressions to determine
-which variables or projections of variables are unique, we match
-the left term of the current projection chain against the list
-of all chains, if there's a match the associated synthesised index
-is what we track.
-
-The ix2chain is a way to get back to the original code in case
-we have an error we have to report to the user.
-
-Now, when we analyse an term there are two cases of interest:
-
-(a) its a plain variable
-(b) its the application of a projection to an argument
-
-The third case, neither of the above, just maps our analyser over
-that term with a fresh (empty) path.
-
-In case b, we find the last projection in a chain first,
-and the final variable last, because application is forward
-polish notation, but chains are reverse polish. So in order
-to successively pick match our projection path, the index has
-to store the path in reverse order, with the variable last,
-and the innermost projection first.
-
-*)
-
-let build_once_maps bsym_table counter vidx typ : chain2ix_t * ix2chain_t =
-  let paths = uniq_anal typ in
-  let uxs = List.map (fun _ -> Flx_bid.fresh_bid counter) paths in
-  let chain2ix = List.map2 (fun path idx -> (vidx,path),idx) paths uxs in
-  let ix2chain = List.map2 (fun path idx -> idx,(vidx,path)) paths uxs in
-  chain2ix,ix2chain
-
-
-(* This routine finds all the indexes of uniq expressions .. well
-at the moment this is just uniq variables and constant projections
-of variables to uniq components
-*)
-
-exception DuplicateGet of int * path_t
-
-let rec find_once bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : unit =
-(*
-print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e);
-*)
-  match e with
-  | BEXPR_varname (i,_),_ -> 
-    let prefix = List.rev path in
-    List.iter  (fun ((j,path),ix) ->
-      if j = i then
-        if Flx_list.has_prefix prefix path then 
-          begin
-            if BidSet.mem ix !b then raise (DuplicateGet (i,path))
-            else b := BidSet.add ix !b
-          end
-      )
-    chain2ix
-
-  | BEXPR_apply ( (BEXPR_prj (n,_,_),_), base ),_ ->
-    let path = `Tup n :: path in
-    find_once bsym_table chain2ix path b base 
-
-  | x -> Flx_bexpr.flat_iter ~f_bexpr:(find_once bsym_table chain2ix path b) x
-
-exception DuplicateSet of int * path_t
-
-let rec find_ponce bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : unit =
-(*
-print_endline ("Find pointers to once for expresssion " ^ Flx_print.sbe bsym_table e);
-*)
-  match e with
-  | BEXPR_wref (i,_),_  
-  | BEXPR_ref (i,_),_ -> 
-    let prefix = List.rev path in
-    List.iter  (fun ((j,path),ix) ->
-      if j = i then
-        if Flx_list.has_prefix prefix path then 
-          begin
-            if BidSet.mem ix !b then raise (DuplicateSet (i,path))
-            else b := BidSet.add ix !b;
-          end
-      )
-    chain2ix
-
-  | BEXPR_apply ( (BEXPR_prj (n,_,_),_), base ),_ ->
-    let path = `Tup n :: path in
-    find_ponce bsym_table chain2ix path b base 
-
-  | x -> Flx_bexpr.flat_iter ~f_bexpr:(find_ponce bsym_table chain2ix path b) x
-
-
-
-(* Get and Set detectors for instructions *)
-
-let get_sets bsym_table chain2ix ix2chain bexe =
-  let bidset = ref BidSet.empty in
-  let f_bexpr e = 
-    try find_once bsym_table chain2ix [] bidset e 
-    with DuplicateGet (i,ix) ->
-      print_endline ("Flx_once: Duplicate Get " ^ id_of_index bsym_table i ^" in "^Flx_print.sbe bsym_table e);
-      print_endline ("Instruction " ^ Flx_print.string_of_bexe bsym_table 0 bexe); 
-      let sr = Flx_bexe.get_srcref bexe in
-      print_endline (Flx_srcref.long_string_of_src sr);
-      failwith ("Flx_once: Duplicate Get of unique variable")
-  in
-  begin match bexe with 
-  | BEXE_assign (_,l,_) -> f_bexpr l
-  | BEXE_init (_,i,(_,vt as e)) -> f_bexpr (bexpr_varname vt (i,[]))
-  | BEXE_storeat (_,l,r) -> 
-    begin try
-      find_ponce bsym_table chain2ix [] bidset l
-    with DuplicateSet (i,ix) ->
-      print_endline ("Flx_once: Duplicate Set " ^ id_of_index bsym_table i ^" in "^ Flx_print.string_of_bexe bsym_table 0 bexe);
-      print_endline ("Instruction " ^ Flx_print.string_of_bexe bsym_table 0 bexe); 
-      let sr = Flx_bexe.get_srcref bexe in
-      print_endline (Flx_srcref.long_string_of_src sr);
-      failwith ("Flx_once: Duplicate Set of unique variable")
-    end
-  | _ ->  () 
-  end;
-
-  if show_getset && not (BidSet.is_empty (!bidset)) then
-    print_endline ("  SETS: " ^ str_of_vars bsym_table ix2chain (!bidset));
-  !bidset
-
-let get_gets bsym_table chain2ix ix2chain bexe = 
-  let bidset = ref BidSet.empty in
-  let f_bexpr e = 
-     match e with
-     | BEXPR_ref (i,_),_ -> ()
-     | _ -> 
-       try find_once bsym_table chain2ix [] bidset e 
-       with DuplicateGet (i,ix) ->
-        print_endline ("Flx_once: Duplicate Get variable " ^id_of_index bsym_table i  ^" in "^Flx_print.sbe bsym_table e);
-        print_endline ("Instruction " ^ Flx_print.string_of_bexe bsym_table 0 bexe); 
-        let sr = Flx_bexe.get_srcref bexe in
-        print_endline (Flx_srcref.long_string_of_src sr);
-        failwith ("Flx_once: Duplicate Get of unique variable")
-  in
-  begin match bexe with 
-  (* storing at a pointer is still a get on the pointer! *)
-  | BEXE_storeat (_,l,e)  -> f_bexpr l; f_bexpr e
-
-  (* if the target of an assignment is a variable, is not a get *)
-  | BEXE_assign (_,(BEXPR_varname _,_),e) 
-  | BEXE_assign (_,(BEXPR_deref (BEXPR_varname _,_),_),e) 
-
-  (* nor is the target of an initialisation *)
-  | BEXE_init (_,_,e) -> f_bexpr e
-  | _ -> Flx_bexe.iter ~f_bexpr bexe
-  end;
-
-  if show_getset && not (BidSet.is_empty (!bidset)) then
-    print_endline ("  GETS: " ^ str_of_vars bsym_table ix2chain (!bidset));
-  !bidset
-
 
 (* simulate labels at the start and end of a routine *)
 let entry_label = -1
@@ -317,9 +39,6 @@ let str_of_label bsym_table lidx  =
 (* symmetric difference A \cup B - A \cap B *)
 let symdiff a b = BidSet.diff (BidSet.union a b) (BidSet.inter a b)
 
-type once_data_t = {gets: BidSet.t; sets: BidSet.t}
-type augexe_t = Flx_bexe.t * once_data_t 
-
 type label_t = bid_t * BidSet.t
 type stack_frame_t = {index: bid_t; code: augexe_t list; mutable visited: label_t list}
 
@@ -338,20 +57,6 @@ let rec rec_label stack index label =
 let rec_entry stack index = rec_label stack index entry_label
 let rec_exit stack index = rec_label stack index exit_label
 
-
-let make_augexes bsym_table chain2ix ix2chain get_sets get_gets bexes : augexe_t list=
-  List.map 
-  (
-    fun bexe -> 
-      if show_getset then
-        print_endline ("instruction " ^ Flx_print.string_of_bexe bsym_table 0 bexe);
-      bexe, 
-      {
-        sets=get_sets bsym_table chain2ix ix2chain bexe; 
-        gets=get_gets bsym_table chain2ix ix2chain bexe
-      }
-  ) 
-  bexes 
 
 let make_stack index exes =
   [{current=exes; frame= {index=index; code=exes; visited=[]}}]
@@ -451,8 +156,8 @@ let return bsym_table ix2chain (stack:stack_t) (liveness:BidSet.t) : stack_t =
 
 (*********************************************************************) 
 (* flow analysis *)
-let rec flow seq make_augexes bsym_table chain2ix ix2chain master liveness stack : unit =
-  let flow liveness stack = flow (seq + 1)  make_augexes bsym_table chain2ix ix2chain master liveness stack in
+let rec flow seq make_augexes bsym_table chain2ix ix2chain childfuns master liveness stack : unit =
+  let flow liveness stack = flow (seq + 1)  make_augexes bsym_table chain2ix ix2chain childfuns master liveness stack in
 (*
 print_endline ("Flow, stack depth = " ^ string_of_int (List.length stack));
 *)
@@ -478,13 +183,16 @@ if debug then print_endline ("flow: end of procedure or return");
 
   let lno = Flx_srcref.first_line_no sr in
 if debug then print_endline (string_of_int seq ^"@"^string_of_int lno^ " " ^ Flx_print.string_of_bexe bsym_table 0 bexe);
-if debug then print_endline (string_of_int seq ^"@"^string_of_int lno^ " " ^ str_of_vars bsym_table ix2chain liveness);
+if debug then print_endline (string_of_int seq ^"@"^string_of_int lno^ " " ^ string_of_vars bsym_table ix2chain liveness);
   match bexe with
   | BEXE_proc_return _ ->
 if debug then print_endline ("flow: end of procedure or return");
     flow liveness (return bsym_table ix2chain stack liveness)
 
   | BEXE_fun_return _ ->
+    begin match deltalife with {applies=applies} -> if not (BidSet.is_empty applies) then
+print_endline ("FOUND return statement returning application of child or sibling ..")
+    end;
 if debug then print_endline ("flow: function return");
     flow liveness (return bsym_table ix2chain stack liveness)
 
@@ -690,15 +398,20 @@ if debug then print_endline ("flow: first entry at label  " ^ str_of_label bsym_
 if debug then print_endline ("flow: normal= processing for " ^ Flx_print.string_of_bexe bsym_table 0 bexe);
     next()
 
-let once_check bsym_table ix2chain chain2ix  bid name  bexes = 
+(* Perform a once check on a single function *)
+let once_check bsym_table ix2chain chain2ix childfuns bid name  bexes = 
   if debug then
-    print_endline ("Once_check: Detected once variable of function " ^ name);
-  let make_augexes bexes = make_augexes bsym_table chain2ix ix2chain get_sets get_gets bexes in
+    print_endline ("Once_check: Detected "^string_of_int (List.length ix2chain)  ^
+      " once variables in function " ^ name ^ "<" ^ string_of_int bid^ ">");
+
+  (* map the exes of the function into augmented exes *)
+  let make_augexes bexes = make_augexes bsym_table chain2ix ix2chain childfuns get_sets get_gets get_bexe_applies bexes in
   let bexes = make_augexes bexes in
   if debug then
     print_endline ("Calculated once use per instruction of " ^ name ^ ":" ^ string_of_int bid);
-  (* Calculate initially live indexes: those associated with a parameter are
-     assumed live initially
+
+  (* Calculate initially live fairies: those associated with a parameter are
+     assumed live initially. For each index of a function parameter
   *)
   let bparams = Flx_bsym_table.find_bparams bsym_table bid in 
   let bids = Flx_bparams.get_bids bparams in
@@ -711,7 +424,7 @@ let once_check bsym_table ix2chain chain2ix  bid name  bexes =
 *)
   let stack = make_stack bid bexes in
   try
-    flow 0 make_augexes bsym_table chain2ix ix2chain bid once_params stack
+    flow 0 make_augexes bsym_table chain2ix ix2chain childfuns bid once_params stack
   with IncompletePriorFlow -> 
     print_endline ("Recursive routine requires non-recursive branch for once analysis");
     assert false
@@ -719,34 +432,78 @@ let once_check bsym_table ix2chain chain2ix  bid name  bexes =
 let once_bsym bsym_table counter bid parent bsym =
   let bbdcl = Flx_bsym.bbdcl bsym in
   match bbdcl with
+
+  (* process Felix function *)
   | BBDCL_fun(props, bvs, ps, res, effects, exes) ->
     let kids = Flx_bsym_table.find_children bsym_table bid in
     let linear = List.mem `LinearFunction props in
 if debug then
 print_endline ("Once check examining " ^ (if linear then "linear" else "nonlinear") ^ " function "^ Flx_bsym.id bsym);
-    let chain2ix, ix2chain = 
-       List.fold_left (fun (acca, accb) vidx ->
+
+    (* calculate fairy variables. For each variable which is a child of the function,
+       calculate a chain path from the variable to a uniquely typed component,
+       being the index of the variable and the tuple component index sequence
+       to reach the component. 
+
+       For each such chain, synthesise a new index, the fairy variable,
+       and return two lists, one mapping the chain to the fairy variable       
+       and the inverse, mapping the fairy to the chain.
+    
+       We also return a list of all child functions  (but not procedues).
+       (When we're doing flow analysis, if an instruction containing an expression
+       which applies a child function is executed, we assume all the child functions
+       are called: the only flow in an expression is a recursive descent, which
+       we simply ignore, and assume all the functions are applied in an arbitrary
+       order. We may have to fix this: assuming eager evaluation, in an application
+       f (g x), g is called before f. For tuples, we might assume the first component
+       is evaluated first. So we can establish a definite order, but optimisations
+       could allow something different .. including elision for say constant functions ...
+    *)
+    let chain2ix, ix2chain, funs = 
+       List.fold_left (fun (acca, accb, funs) vidx ->
          let bsym = Flx_bsym_table.find bsym_table vidx in
          let bbdcl = Flx_bsym.bbdcl bsym in
          match bbdcl with
          | BBDCL_val (_,typ,_) ->
            let a,b = build_once_maps bsym_table counter vidx typ in
-           acca @ a, accb @ b
-         | _ -> acca, accb
+           acca @ a, accb @ b, funs
+
+         (* Applications can only call ascendants, self, siblings, and children.
+            Ascendants and siblings cannot access our child variables, 
+            although a parent may call self. 
+
+            However, children can call their children, their siblings,
+            ourself, and our ascendants.
+
+            Note, we skip child procesures, because they can't be invoked 
+            in an application. They're invoked only by specific call instructions,
+            and the analysis at the moment is done in the flow control.
+         *) 
+            
+         | BBDCL_fun (props, bvs, ps, res, effects, exes) when res <> (btyp_void ()) ->
+           acca, accb, BidSet.add vidx funs
+
+         | _ -> acca, accb, funs
       )
-      ([],[])
+      ([],[],BidSet.empty)
       (BidSet.elements kids)
     in
 if debug then begin
-print_endline ("  ** Calculated fairy variables, ix2chain index=");
+print_endline ("  ** Fun " ^ bsym.id ^ "<" ^ string_of_int bid ^"> Calculated fairy variables, ix2chain index=");
 print_ix2chain bsym_table ix2chain;
 end;
+
+    (* if the function has no fairy variables, there's nothing to do, otherwise
+       perform a once check.
+    *)
     if (List.length chain2ix <> 0) then
-      begin try once_check bsym_table ix2chain chain2ix bid (Flx_bsym.id bsym) exes 
+      begin try once_check bsym_table ix2chain chain2ix funs bid (Flx_bsym.id bsym) exes 
       with exn ->
         print_endline ("Uniqueness Error in function " ^ Flx_bsym.id bsym);
         raise exn
       end
+
+  (* Ignore non-function *)
   | _ -> ()
 
 let once_bsym_table phase bsym_table counter = 
