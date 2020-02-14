@@ -140,28 +140,88 @@ let get_gets bsym_table chain2ix ix2chain bexe =
     print_endline ("  GETS: " ^ string_of_vars bsym_table ix2chain (!bidset));
   !bidset
 
-let get_bexpr_applies bsym_table childfuncs apls bexpr : unit =
-  let f_bexpr e = match e with
-    | BEXPR_apply ( (BEXPR_closure (idx,_),_),_),_
-    | BEXPR_apply_stack (idx,_,_),_
-    | BEXPR_apply_direct (idx,_,_),_
-      when BidSet.mem idx childfuncs -> apls := BidSet.add idx !apls
-    | _ -> ()
-  in
-  Flx_bexpr.iter ~f_bexpr bexpr (* full recursive descent *)
+(* Full unravelling removes expressions from instructions so all arguments
+are variables, inserting assignments to temporaries before the instruction.
+All such assignments are then either assigning a constant or variable,
+or assigning the result of a single application to a constant or variable.
 
-(* Find all direct applications of children, which might also access uniq variables *)
-let get_bexe_applies bsym_table childfuncs bexe : BidSet.t =
-  let apls = ref BidSet.empty in
-  Flx_bexe.iter ~f_bexpr:(get_bexpr_applies bsym_table childfuncs apls) bexe;
-  !apls
+We have to do a partial unravel because the flow algorithm cannot remember
+where control is up to during expression evaluation. However an assignment
+to a variable of an application is more or less equivalent to a procedure
+call. In other words the serialisation provides locations in the control
+flow path allowing the algorithm to keep track of the current continuation
+and liveness.
 
-type once_data_t = {gets: BidSet.t; sets: BidSet.t; applies: BidSet.t}
+Unravelling of compositions is sound due to eager evaluation. 
+However unravelling of products is only sound for unique variables
+not shared ones. The reason is: two reads on a unique variable
+can occur in a product; if the initial state is dead, its an error.
+If the initial state is live, the first read changes it to dead,
+which causes the second read to fail with an error.
+
+
+*)
+
+
+(* Bottom up analysis pushes innermost expression temporaries first
+so the resulting list head is the outermost application. This is the order
+we want because we construct the modified executable list by parsing
+the list from the head, producing a list in reverse order and inserting
+the already backwards temporary assignments first, then the stripped
+instruction.
+*)
+
+let rec unrav sr counter extra e = 
+  match Flx_bexpr.map ~f_bexpr:(unrav sr counter extra) e with
+  | (BEXPR_apply ((BEXPR_closure (fidx, ts),_), (_,argt as arg)),rt as rhs) 
+  | (BEXPR_apply_stack (fidx, ts, (_,argt as arg)),rt as rhs)
+  | (BEXPR_apply_direct (fidx, ts, (_,argt as arg)),rt as rhs)
+  ->
+    let v = !counter in (* new temporary index *)
+    incr counter;
+    let lhs = bexpr_varname rt (v,ts) in
+    let instr = bexe_assign (sr, lhs, rhs) in
+    extra := instr :: !extra;
+    lhs  (* return variable *)
+  | x -> x
+
+let unravel sr counter e = 
+  let extra = ref [] in
+  let x = unrav sr counter extra e in
+  List.rev !extra, x
+
+(* test case only, later do more instructions *)
+let unravel_exe bsym_table counter exe =
+  match exe with
+  | BEXE_fun_return (sr,e) -> 
+(* print_endline ("Unravelling return " ^ Flx_print.string_of_bexe bsym_table 2 exe); *)
+    let extra,x = unravel sr counter e in
+    let result = bexe_fun_return (sr,x) :: extra in
+(*
+    if List.length result > 1 then
+    begin
+      print_endline ("Unravlled function return: " ^ Flx_print.string_of_bexe bsym_table 2 exe);
+      let r = List.rev result in
+      List.iter (fun exe -> print_endline (Flx_print.string_of_bexe bsym_table 3 exe)) r
+    end;
+*)
+    result
+ 
+  | _ -> [exe]
+
+let unravel_exes bsym_table counter exes =
+   let exe_chunks = List.rev_map (unravel_exe bsym_table counter) exes in
+   let rexes = List.concat exe_chunks in
+   List.rev rexes
+
+
+type once_data_t = {gets: BidSet.t; sets: BidSet.t}
 type augexe_t = Flx_bexe.t * once_data_t 
 
 
 (* Augment exes with gets and sets *)
-let make_augexes bsym_table chain2ix ix2chain childfuns get_sets get_gets get_applies bexes : augexe_t list=
+let make_augexes bsym_table counter chain2ix ix2chain get_sets get_gets bexes : augexe_t list=
+  let bexes = unravel_exes bsym_table counter bexes in
   List.map 
   (
     fun bexe -> 
@@ -170,8 +230,7 @@ let make_augexes bsym_table chain2ix ix2chain childfuns get_sets get_gets get_ap
       bexe, 
       {
         sets=get_sets bsym_table chain2ix ix2chain bexe; 
-        gets=get_gets bsym_table chain2ix ix2chain bexe;
-        applies=get_applies bsym_table childfuns bexe
+        gets=get_gets bsym_table chain2ix ix2chain bexe
       }
   ) 
   bexes 

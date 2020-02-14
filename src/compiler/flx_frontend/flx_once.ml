@@ -46,6 +46,80 @@ type stack_frame_t = {index: bid_t; code: augexe_t list; mutable visited: label_
 type continuation_t = {current: augexe_t list; frame: stack_frame_t}
 type stack_t = continuation_t list
 
+
+(* FLOW SIMULATION.  How it works.
+
+   The flow algorithm processes a single master function which has a set of local variables
+   of interest by simulating execution starting at the function start.
+
+   Initially, the parameters of the function are considered live, and all other local
+   variables considered dead.
+
+   Each function, including the master, has an associated stack frame with three components.
+   * The index field is the identifier of the function in the symbol table. It is immutable.
+   * The code field is the augmented list of instructions. It is immutable.
+
+   * The visited field is a mutable field that contains a list of visited labels and the 
+     liveness state when that label was first visited.
+
+     When a label is first visited, it is added to the visited set along with the set
+     of variables live at the time of the first visit.
+  
+     On subsequent visits, if the current liveness state equals the state at
+     the time of the first visit, continuing to follow the same control path
+     would have no impact since it is purely a function of the liveness
+     state an current program position, so flow ceases for that path.
+     
+     If the current and prior liveness are not equal, the whole algorithm
+     terminates with an inconsistent state error. 
+
+     Consequently the algorithm only visits any instruction once, and therefore
+     is linear in the number of instructions being processed.
+
+     In order to track completion, a dummy label is inserted at the logical end of
+     a function. All return instructions are assumed to jump to that dummy position
+     prior to returning. The single exit points allows checking all control returns
+     exit the function with a consistent state.
+
+     In order to track recursion, a dummy label is also inserted at the start
+     of the function. A recursive call is then considered like a jump.
+
+     Flow in a single function is then tracked using a pair consisting of
+     the stack frame, and a list of instructions following the current 
+     position. This is the current continuation.
+
+     Finally, the complete machine state consists of two separate variables:
+
+     * A stack of continuations
+     * the current live set
+
+     The flow routine is a procedure which checks all flow from the starting
+     machine state. Each instruction requires a modification to the live set,
+     and an adjustment to the stack of continuations, follow by a recursive
+     call. The recursion terminates on error or when the stack is successfully
+     emptied.
+ 
+     Calls to subroutines may occur in several places, with different
+     liveness states. This means child instructions may be scanned
+     more than once, however any routine only has a finite number of
+     such calls so the algorithm remains linear. Indeed, all such calls
+     could be eliminated by inlining.
+
+     Control flow through parents and siblings of the master cannot influence the
+     current live set because they do not have access to the masters local variables.
+     Therefore, such calls are simply ignored, even if they might recursively
+     call the master, because such calls logically create a whole new simulation,
+     with the same initial conditions as the current analysis (all parameters live,
+     all locals dead).
+
+     However all calls to a descendant from the master or a descendant
+     cannot be ignored.
+*)
+
+
+
+
+
 let rec rec_label stack index label =
   match stack with
   | [] -> None
@@ -156,8 +230,8 @@ let return bsym_table ix2chain (stack:stack_t) (liveness:BidSet.t) : stack_t =
 
 (*********************************************************************) 
 (* flow analysis *)
-let rec flow seq make_augexes bsym_table chain2ix ix2chain childfuns master liveness stack : unit =
-  let flow liveness stack = flow (seq + 1)  make_augexes bsym_table chain2ix ix2chain childfuns master liveness stack in
+let rec flow seq counter make_augexes bsym_table chain2ix ix2chain master liveness stack : unit =
+  let flow liveness stack = flow (seq + 1)  counter make_augexes bsym_table chain2ix ix2chain master liveness stack in
 (*
 print_endline ("Flow, stack depth = " ^ string_of_int (List.length stack));
 *)
@@ -190,9 +264,6 @@ if debug then print_endline ("flow: end of procedure or return");
     flow liveness (return bsym_table ix2chain stack liveness)
 
   | BEXE_fun_return _ ->
-    begin match deltalife with {applies=applies} -> if not (BidSet.is_empty applies) then
-print_endline ("FOUND return statement returning application of child or sibling ..")
-    end;
 if debug then print_endline ("flow: function return");
     flow liveness (return bsym_table ix2chain stack liveness)
 
@@ -359,6 +430,35 @@ if debug then print_endline ("flow: first entry at label  " ^ str_of_label bsym_
     -> 
     final ()
 
+  (* NOTE: we should only need one of these patterns, FIXME unravel *)
+  | BEXE_assign (sr, (BEXPR_varname (v,_),_),(BEXPR_apply ((BEXPR_closure (pidx,_),_),arg),_)) 
+  | BEXE_assign (sr, (BEXPR_varname (v,_),_),(BEXPR_apply_direct (pidx,_,arg),_)) 
+  | BEXE_assign (sr, (BEXPR_varname (v,_),_),(BEXPR_apply_stack (pidx,_,arg),_)) 
+    ->
+    (* We treat this as a procedure call on f for the moment! *)
+    (* print_endline ("Found assign v = f a!"); *)
+
+    (* NOTE: recursion not handled yet *)
+    if Flx_bsym_table.is_ancestor bsym_table pidx master then begin
+      let bsym = Flx_bsym_table.find bsym_table pidx in
+      let bbdcl = Flx_bsym.bbdcl bsym in
+      begin match bbdcl with
+      | BBDCL_fun (prop, bvs, ps, res, effects, bexes) ->
+        let continuation = {cc with current=tail} in
+        let augexes = make_augexes bexes in 
+        let new_frame = {index=pidx; code=augexes; visited=[entry_label,liveness] } in
+        let entry = {current=augexes; frame=new_frame} in
+        let stack = entry :: continuation :: caller in
+if debug then print_endline ("flow: SPECIAL function apply initial entry " ^ string_of_int pidx);
+        flow liveness stack 
+      | _ -> 
+if debug then print_endline ("flow: external function " ^ string_of_int pidx);
+        next();
+      end
+    end 
+    else
+      next()
+
 (* We can't handle this so pretend its final *)
   | BEXE_cgoto _
   | BEXE_ifcgoto _
@@ -399,13 +499,13 @@ if debug then print_endline ("flow: normal= processing for " ^ Flx_print.string_
     next()
 
 (* Perform a once check on a single function *)
-let once_check bsym_table ix2chain chain2ix childfuns bid name  bexes = 
+let once_check bsym_table counter ix2chain chain2ix bid name bexes = 
   if debug then
     print_endline ("Once_check: Detected "^string_of_int (List.length ix2chain)  ^
       " once variables in function " ^ name ^ "<" ^ string_of_int bid^ ">");
 
   (* map the exes of the function into augmented exes *)
-  let make_augexes bexes = make_augexes bsym_table chain2ix ix2chain childfuns get_sets get_gets get_bexe_applies bexes in
+  let make_augexes bexes = make_augexes bsym_table counter chain2ix ix2chain get_sets get_gets bexes in
   let bexes = make_augexes bexes in
   if debug then
     print_endline ("Calculated once use per instruction of " ^ name ^ ":" ^ string_of_int bid);
@@ -424,7 +524,7 @@ let once_check bsym_table ix2chain chain2ix childfuns bid name  bexes =
 *)
   let stack = make_stack bid bexes in
   try
-    flow 0 make_augexes bsym_table chain2ix ix2chain childfuns bid once_params stack
+    flow 0 counter make_augexes bsym_table chain2ix ix2chain bid once_params stack
   with IncompletePriorFlow -> 
     print_endline ("Recursive routine requires non-recursive branch for once analysis");
     assert false
@@ -448,44 +548,18 @@ print_endline ("Once check examining " ^ (if linear then "linear" else "nonlinea
        For each such chain, synthesise a new index, the fairy variable,
        and return two lists, one mapping the chain to the fairy variable       
        and the inverse, mapping the fairy to the chain.
-    
-       We also return a list of all child functions  (but not procedues).
-       (When we're doing flow analysis, if an instruction containing an expression
-       which applies a child function is executed, we assume all the child functions
-       are called: the only flow in an expression is a recursive descent, which
-       we simply ignore, and assume all the functions are applied in an arbitrary
-       order. We may have to fix this: assuming eager evaluation, in an application
-       f (g x), g is called before f. For tuples, we might assume the first component
-       is evaluated first. So we can establish a definite order, but optimisations
-       could allow something different .. including elision for say constant functions ...
     *)
-    let chain2ix, ix2chain, funs = 
-       List.fold_left (fun (acca, accb, funs) vidx ->
+    let chain2ix, ix2chain = 
+       List.fold_left (fun (acca, accb) vidx ->
          let bsym = Flx_bsym_table.find bsym_table vidx in
          let bbdcl = Flx_bsym.bbdcl bsym in
          match bbdcl with
          | BBDCL_val (_,typ,_) ->
            let a,b = build_once_maps bsym_table counter vidx typ in
-           acca @ a, accb @ b, funs
-
-         (* Applications can only call ascendants, self, siblings, and children.
-            Ascendants and siblings cannot access our child variables, 
-            although a parent may call self. 
-
-            However, children can call their children, their siblings,
-            ourself, and our ascendants.
-
-            Note, we skip child procesures, because they can't be invoked 
-            in an application. They're invoked only by specific call instructions,
-            and the analysis at the moment is done in the flow control.
-         *) 
-            
-         | BBDCL_fun (props, bvs, ps, res, effects, exes) when res <> (btyp_void ()) ->
-           acca, accb, BidSet.add vidx funs
-
-         | _ -> acca, accb, funs
+           acca @ a, accb @ b
+         | _ -> acca, accb
       )
-      ([],[],BidSet.empty)
+      ([],[])
       (BidSet.elements kids)
     in
 if debug then begin
@@ -497,7 +571,7 @@ end;
        perform a once check.
     *)
     if (List.length chain2ix <> 0) then
-      begin try once_check bsym_table ix2chain chain2ix funs bid (Flx_bsym.id bsym) exes 
+      begin try once_check bsym_table counter ix2chain chain2ix bid (Flx_bsym.id bsym) exes 
       with exn ->
         print_endline ("Uniqueness Error in function " ^ Flx_bsym.id bsym);
         raise exn

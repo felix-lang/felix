@@ -131,6 +131,7 @@ print_endline ("Calling bind_epression'");
               e []
             )
         in
+        let t = beta_reduce "flx_lookup: cal_ret_type, return expr type" state.counter bsym_table sr t in
 (*
 print_endline "Flx_lookup: about to check calculated and registered return type";
 print_endline ("Return type = " ^ Flx_btype.st !ret_type);
@@ -169,8 +170,9 @@ print_endline ("Return expression type = " ^ Flx_btype.st t);
             (
               "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<" ^
               string_of_bid index ^ ">" ^
-              "\nGot: " ^ str_of_btype !ret_type ^ "\n  = " ^ sbt bsym_table !ret_type ^
-              "\nAnd: " ^ str_of_btype t ^ "\n  = " ^ sbt bsym_table t
+              "\nDeclared Return type       : " ^ str_of_btype rt ^ "\n  = " ^ sbt bsym_table rt ^
+              "\nProgressive infered type   : " ^ str_of_btype !ret_type ^ "\n  = " ^ sbt bsym_table !ret_type ^
+              "\nType of Return Instruction : " ^ str_of_btype t ^ "\n  = " ^ sbt bsym_table t
             )
           end
        end

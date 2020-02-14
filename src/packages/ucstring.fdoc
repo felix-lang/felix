@@ -200,7 +200,6 @@ open class UniqueCStrings
     return pack p;
   }
 
-/*
   fun erase (var x:ucstr, sl:slice[int]) : ucstr =>
     match sl with
     | Slice_all => set (x,0,char "")
@@ -212,7 +211,6 @@ open class UniqueCStrings
     | Slice_range_excl (first, last) => strmov (x,first, last) 
     | Slice_one pos => strmov (x, pos, pos+1)
   ;
-*/
 
   fun insert (var x:ucstr, var pos: int, var y:ucstr) : ucstr =
   {
@@ -241,6 +239,7 @@ open class UniqueCStrings
   }
     
 }
+@
 
 @h1 ucstr_prim_01.flx
 @tangle ucstr_prim_01.flx
@@ -253,6 +252,7 @@ proc test() {
 }
 test();
 @
+
 @tangle ucstr_prim_01.expect
 hello
 eello
@@ -263,7 +263,7 @@ eello
 @h1 Unique Counted Strings 
 @tangler ustr.flx = share/lib/std/strings/ustr.flx
 @tangler ustr_prim_01.flx = src/test/regress/rt/ustr_prim_01.flx
-@tangler ustr_prim_01.expect = src/test/regress/rt/ustr_prim_01.flx
+@tangler ustr_prim_01.expect = src/test/regress/rt/ustr_prim_01.expect
 
 A safer way to handle counted strings using uniq typing to transfer
 owenership. Doesn't require GC.
@@ -425,7 +425,7 @@ open class UniqueCountedStrings
     if f != l perform strcpy (p+f, p+l); 
     return pack p;
   }
-/* 
+
   fun erase (var x: ustr, sl:slice[int]) : ustr =>
     match sl with
     | Slice_all => set (x,0,char "")
@@ -437,7 +437,7 @@ open class UniqueCountedStrings
     | Slice_range_excl (first, last) => strmov (x,first, last) 
     | Slice_one pos => strmov (x, pos, pos+1)
   ;
-*/
+
   fun insert (var x:ustr, var pos: int, var y:ustr) : ustr =
   {
     var px = unpack x;
@@ -465,6 +465,7 @@ open class UniqueCountedStrings
   }
     
 }
+@
 
 @h1 ustr_prim_01.flx
 @tangle ustr_prim_01.flx
