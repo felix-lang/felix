@@ -1,4 +1,7 @@
 ;; Felix-mode
+;;
+;;  add (require 'felix-mode) to your .emacs file
+;;
 
 (require 'generic-x)
 
@@ -406,3 +409,4 @@
 
 (add-hook 'felix-mode-hook 'flymake-mode)
 
+(provide 'felix-mode)
