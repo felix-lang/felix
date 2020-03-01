@@ -1,4 +1,8 @@
 cd docs
+pdflatex -shell-escape ../src/docs/architecture.tex
+pdflatex -shell-escape ../src/docs/architecture.tex
+mv architecture.pdf ../pdfs
+#
 pdflatex -shell-escape ../src/docs/felix-ref.tex
 pdflatex -shell-escape ../src/docs/felix-ref.tex
 makeindex felix-ref

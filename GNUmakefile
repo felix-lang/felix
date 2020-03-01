@@ -182,7 +182,7 @@ gcc_macosx:
 		--target-bin=gcc_macosx --source-dir=${BUILDROOT}	\
 		--source-bin=host --clean-target-bin-dir --copy-compiler\
 	       	--configure --compiler=gcc --os=macosx --bits=64	\
-		--cxx-compiler=g++-8 --debug
+		--cxx-compiler=g++ --debug
 
 	# =========================================================
 	# build gcc rtl on macosx

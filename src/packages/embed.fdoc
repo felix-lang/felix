@@ -390,6 +390,9 @@ run_felix_pthread_ctor(
 
 // =================================================================
 // flx_world : run mainline pthread destructor
+// Joins all threads to main thread
+// Detaches Felix instance by unrooting it
+// Collects all garbage if finalisation set
 // =================================================================
 static void run_felix_pthread_dtor(
   bool debug_driver,
@@ -427,9 +430,43 @@ static void run_felix_pthread_dtor(
 
 // =================================================================
 // flx_world : Constructor
+// attach flx_config and exit
 // =================================================================
-// construct from flx_config pointer
 flx_world::flx_world(flx_config *c_arg) : c(c_arg) {}
+
+// =================================================================
+// flx_world : setup
+// 
+// This is the actual world constructor. It is separated from
+// the C++ constructor to allow a pointer to the world to be stashed
+// by the user somewhere, prior to actually initialising Felix
+//
+// =================================================================
+//
+// attach flx_config and exit
+// calls init passing command line arguments
+// exits if init returns non-zero
+// otherwise, sets up flx_world data based on flx_config attached by constructor
+// creates allocator
+// creates thread control object 
+// creates garbage collector
+// creates collector profile object
+// links to the main library control object and makes it a root
+// adds current thread to thread control object 
+// creates instance of library and makes it a root:
+//   *  loads the dll (if using dynamic loading)
+//   *  finds the thread frame constructor in the library
+//   *  invokes the thread frame constructor to create the thread frame
+//   *  initialises the common part of the thread frame (with command line args etc)
+// removes thread from thread control object
+// sets up synchronous scheduler (by calling run_felix_pthread_ctor):
+//   * finds primary entry point
+//   * creates initial continuation (in a suspended state)
+//   * create initial fibre from that continuation
+//   * creates sync scheduler list and initialises it with initial fibre 
+// creates async scheduler
+// NOTE: does not run scheduler(s)
+// =================================================================
 
 int flx_world::setup(int argc, char **argv) {
   int res;
@@ -561,6 +598,15 @@ int flx_world::setup(int argc, char **argv) {
 
 // =================================================================
 // flx_world : Explicit Destructor
+// Destroys current Felix world.
+// However the Allocator and GC are retained.
+
+// Calls run_felix_pthread_dtor:
+//   *  Joins all threads to main thread
+//   *  Detaches Felix instance by unrooting it
+//   *  Collects all garbage if finalisation set
+//
+// Finalises system, running GC if required (AGAIN!)
 // =================================================================
 int flx_world::explicit_dtor()
 {
@@ -596,6 +642,10 @@ int flx_world::explicit_dtor()
 //
 // IRREVERSIBLY DESTROYS THE WORLD. Kills the allocator, collector,
 // collector profile and thread control object.
+//
+// This routine is a proxy for the destructor, it should be called
+// explicitly before deleting the world object.
+// it returns 0 if the explicit destructor succeeded, non-zero otherwise.
 // =================================================================
 int flx_world::teardown() {
   if (debug_driver)
@@ -635,6 +685,30 @@ int flx_world::teardown() {
   return error_exit_code;
 }
 
+
+// =================================================================
+// Suspension control.
+//
+// In a user event loop, when Felix main thread returns,
+// the thread must be removed from the thread control object.
+// Prior to resuming the suspended system, the current thread
+// must be registered with the thread control object again.
+//
+// The reason is that there may be other threads running, even
+// though the main thread has exited to allow the user event
+// loop to check for and service events.
+//
+// Should one of these threads trigger a garbage collection,
+// the thread control object is used to signal all the other threads 
+// that they muist stop, and then waits until they do so.
+//
+// Waiting for the main thread would cause a lockup, since it is 
+// running the user event loop, not Felix code, and therefore 
+// cannot yield. In fact it has already yielded to the user
+// event loop .. so these two routines are used to ensure that
+// the thread is only registered when it can actually respond
+// to a world stop request.
+//
 // =================================================================
 // flx_world : Resume Felix
 // =================================================================

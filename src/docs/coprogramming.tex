@@ -72,10 +72,10 @@ points, are never interleaved by events from another fibre of the same thread.
 All interleaving must occur interior to the synchronisation point, that is,
 after it commences and before it completes. In other words, given a sequence
 of events from one fibre prior to a synchronisation point, and a sequence of
-event from another after a synchronisation point, all the events of each
+events from another after a synchronisation point, all the events of each
 sequence occur before or after all the events of the other.
 
-Premptive threads, on the other hand, allow arbitrary interleaving of
+Pre-emptive threads, on the other hand, allow arbitrary interleaving of
 each threads sequence of events, up to and after any shared synchronisation.
 Mutual exclusion locks provide serialisation, which is the default behaviour
 of coroutines.
@@ -303,7 +303,7 @@ a {\em pipeline} and corresponds directly to functional composition.
 \subsection{Termination}
 \index{termination}
 Now you may wonder, how does it all end? What happens is that
-when the producer terminates by a procedural return which is
+the producer terminates by a procedural return, which is
 called {\em suicide}\index{suicide}. The transducer tries to read a value
 which is never going to come. The transducer is said to {\em starve}.\index{starve}
 The consumer also waits forever for a value from the transducer
@@ -731,7 +731,7 @@ which is unreachable, the starving fibre is also unreachable.
 So it is garbage collected!
 
 Note {\em very carefully} that it is {\em absolutely essential}
-that channels only be reachable by fibres that wil use them.
+that channels only be reachable by fibres that will use them.
 Go back and look carefully at the \verb%doit% procedure:
 
 \begin{minted}[bgcolor=felixbg]{felix}
