@@ -256,9 +256,50 @@ handled by one of two standard executables:
 \end{enumerate}
 
 
-\subsection{Other entry points}
+\clearpage
+\section{Exports}
 A Felix library may contain arbitrary user defined entry points.
 These are created by the \verb$export$ operator.
+
+\subsection{Export directives}
+Felix provides stand-alone export directives as follows:
+
+\begin{minted}{felix}
+export type typeexpr = "cname"; // generates a typedef
+export fun fname of (domain-type) as "cname";
+export proc fname of (domain-type) as "cname";
+export cfun fname of (domain-type) as "cname";
+export cproc fname of (domain-type) as "cname";
+export python fun fname of (domain-type) as "pyname";
+\end{minted}
+
+The type export creates an alias in the generated export header.
+
+The \verb$fun$ and \verb$proc$ exports export an extern "C" wrapper
+around top level felix routines with name fname, domain type as indicated,
+giving the wrapper the C name cname.  The domain type is required because Felix
+routines can be overloaded.
+
+These wrappers accept multiple arguments, the first of which is the thread frame pointer.
+if the Felix routine has a unit argument, there are no further parameters in the wrapper.
+if the Felix routine has a tuple argument, there is an additional argument for each
+component of the tuple. Otherwise, there is one further argument.
+
+An exported Felix procedure is run by the wrapper, so it acts like
+a C function. Such functions cannot perform service requests.
+
+The \verb$cfun$ and \verb$cproc$ exports generate the same wrapper but
+without the thread frame.
+
+The \verb$python$ variant exports a \verb$cfun$ but also triggers the
+generation of a Python 3.x module table, which contains an entry for
+the function under the specified name. The module table is made
+available by also generating the standard CPython entry point 
+\verb$PtInit_modulename$.
+
+As a short hand, a function or procedure definition can be prefixed by
+word \verb$export$, which causes a \verb$fun$ or \verb$proc$ export to
+be generated, using the same C name as the Felix name.
 
 \subsection{C libraries}
 Felix compiler can also generate plain C/C++ libraries.
@@ -266,8 +307,10 @@ Such a library contains only the explicitly exported symbols,
 does not have the thread frame creator, initialiser, or main
 symbols, and cannot use any Felix facilities since it has
 no access to the garbage collector or \verb$flx_world$ control.
+The exports for the library must be all \verb$cfun$ or \verb$cproc$.
 
-\subsection{CPython libraries}
+
+\subsection{CPython extensions}
 Felix can generate of CPython 3.x extensions.  If any 
 function is exported as \verb$python$ a module table is
 created automatically and all the python exports included
@@ -281,6 +324,9 @@ It contains the usual thread frame creator an initialisation
 routine and two additional routines. The first is an extra
 setup routine, which accepts a thread frame pointer and a 
 C++ string argument and returns an int.
+
+In general, plugins are written in Felix not C or C++.
+Plugin loaders are not currently type safe.
 
 \begin{enumerate}
 \item \verb$modulename_setup$
@@ -366,12 +412,101 @@ Felix supports three function types:
   D --> C     // C function
 \end{minted}
 
+\subsection{Standard Function}
 The standard and linear functions are represented by an object containing a display,
 and containing a non-static member named \verb$apply$ which accepts as an argument
 a value of the function domain type, and returns a value of the function codomain type.
 
 The caller address for a function is stored on the machine stack.
 
+The representation of a Felix function is a C++ class derived from an abstract class
+which represents the function type. The apply method is virtual. Closures of functions
+are just pointers to an instance of the function. The C++ class constructor of a function
+accepts the display values and saves them in the function object, this forming
+an instance object. 
+
+The run time function pointer can be safely upcast to the type of the function,
+thus allowing a higher order function to accept and return function pointers.
+Note that function objects are heap allocated by default although the optimiser
+can stack allocate function objects if it is safe.
+
+
+\subsection{Function example}
+Given the following Felix function 
+
+\begin{minted}{felix}
+fun f(x:int)=>new (x + 1);
+var k = f;
+println$ *(k 42);
+\end{minted}
+
+the C++ header generated includes this code:
+
+\begin{minted}{c++}
+//TYPE 66321: int -> RWptr(int,[])
+struct _ft66321 {
+  typedef int* rettype;
+  typedef int argtype;
+  virtual int* apply(int const &)=0;
+  virtual _ft66321 *clone()=0;
+  virtual ~_ft66321(){};
+};
+\end{minted}
+
+which defines the function type, int a read-write pointer to int.
+The actual function is derived from this type:
+
+\begin{minted}{c++}
+struct f: _ft66321 {
+  thread_frame_t *ptf;      // display: thread frame only
+
+  int x;                    // parameter copy
+  f(FLX_FPAR_DECL_ONLY);    // constructor
+  f* clone();               // clone method
+  int* apply(int const &);  // apply method
+};
+\end{minted}
+
+The contructor and clone method are given by:
+\begin{minted}{c++}
+//FUNCTION <64762>: f: Constructor
+f::f(_ptf):ptf(_ptf){}
+
+//FUNCTION <64762>: f: Clone method
+f* f::clone(){
+  return new(*PTF gcp,f_ptr_map,true) f(*this);
+}
+\end{minted}
+The macros in the constructor just pass the thread frame pointer.
+
+The implemetation of the apply method is:
+\begin{minted}{c++}
+//FUNCTION <64762>: f: Apply method
+int* f::apply(int const &_arg ){
+  x = _arg;
+  return (int*)new(*ptf->gcp, int_ptr_map, true) int (x + 1 );
+}
+\end{minted}
+
+The calling sequence is evident in the init routine:
+\begin{minted}{c++}
+//C PROC <64766>: _init_
+void _init_(thread_frame_t *ptf){
+  ptf->k  = (FLX_NEWP(f)(ptf)); //init
+  {
+    _a17556t_66323 _tmp66332 = 
+      ::flx::rtl::strutil::str<int>
+      (
+        *(PTF k)->clone()->apply(42)
+      ) + ::std::string("\n") 
+    ;
+    ::flx::rtl::ioutil::write(stdout,((_tmp66332)));
+  }
+  fflush(stdout);
+}
+\end{minted}
+
+\subsection{Optimisation}
 The standard model for a function can be replaced by a more efficient representation.
 Felix can use an ordinary C function sometimes, or even eliminate the function
 by inlining. The display can also be reduced to contain only pointers that are
@@ -380,6 +515,7 @@ so that the resulting function, if it compiles, is not only C callable, but also
 has no direct access to Felix specific resources such as the thread frame or
 garbage collector.
 
+\subsection{C function type}
 For the C function type, a trick is used. Since C has no concept of a tuple,
 if the domain has a tuple type, the components are passed separately.
 
@@ -387,6 +523,7 @@ A C function can be used wherever a Felix function is required, this is done
 by generating a Felix function wrapper around the C function. The wrapper
 generation is automatic.
 
+\subsection{Subtyping rule}
 C functions and linear functions are subtypes of standard functions.
 Linear functions promise to use their argument exactly once.
 
@@ -394,6 +531,7 @@ Felix functions are not permitted to have side effects. This is not
 enforced, however the compiler performs optimisations assuming the rule
 is followed.
 
+\subsection{Generators}
 A special kind of function called a generator, which has the same type
 as a standard Felix function, is permitted to modify internal state.
 
@@ -411,17 +549,6 @@ data is retained between applications, since the object is stored in a variable,
 and even more particularly generators can save program locations, allowing them
 to return a value and control in such a way that calling the \verb$apply$ method
 again resumes execution where it last left off.
-
-The representation of a Felix function is a C++ class derived from an abstract class
-which represents the function type. The apply method is virtual. Closures of functions
-are just pointers to an instance of the function. The C++ class constructor of a function
-accepts the display values and saves them in the function object, this forming
-an instance object. 
-
-The run time function pointer can be safely upcast to the type of the function,
-thus allowing a higher order function to accept and return function pointers.
-Note that function objects are heap allocated by default although the optimiser
-can stack allocate function objects if it is safe.
 
 
 \section{Procedures}
@@ -445,10 +572,26 @@ The procedure constructor, like a function, accepts the display to form a closur
 The call method, applied to the closure, binds the procedure argument into the data frame.
 The result is a new kind of object called a continuation object.
 
+\subsection{Continuation Object}
 Continuation objects all have the same type, \verb$con_t$ which is a base class for
 the procedure type abstraction, which in turn is a base for the actual procedure.
 The call method is a member of the type object, the resume method is a member
 of the continuation object.
+
+\begin{minted}{c++}
+namespace flx {namespace rtl {
+struct con_t                  // abstract base for mutable continuations
+{
+  FLX_PC_DECL                 // interior program counter
+  union svc_req_t *p_svc;     // pointer to service request
+
+  con_t();                    // initialise pc, p_svc to 0
+  virtual con_t *resume()=0;  // method to perform a computational step
+  virtual ~con_t();
+  con_t * _caller;            // callers continuation (return address)
+};
+}} //namespaces
+\end{minted}
 
 Continuation objects all contain a variable called the program counter which tells
 where execution is up to within the procedure. Initially, it is set to the start
@@ -475,7 +618,7 @@ Technically, all procedures in Felix are coroutines. This includes the mainline!
 
 \section{Procedure operation}
 Procedures are run by repeatedly calling the resume method of a continuation
-objectr until NULL is returned. In Felix, the loop is also sometimes enclosed
+object until NULL is returned. In Felix, the loop is also sometimes enclosed
 in a try/catch block to implement special semantics. The basic run loop is
 extremely simple and lightning fast:
 
@@ -514,13 +657,18 @@ Procedures can also do various tricky things. For example the driver above
 can be augmented:
 
 \begin{minted}{C++}
-again:
-  try { while (p) p = p -> resume(); }
-  catch (con_t q) { p = q; goto again; }
+void run(::flx::rtl::con_t *p)
+{
+  while(p)
+  {
+    try { p=p->resume(); }
+    catch (::flx::rtl::con_t *x) { p = x; }
+  }
+}
 \end{minted}
 
 This allows a procedure to throw a continuation object which then replaces
-the existing continuation.
+the existing continuation. This routine is in the standard library.
 
 \subsection{Spaghetti Stack}
 Continuations are linked in two ways to form a spaghetti stack: there is a list
@@ -537,6 +685,152 @@ no good reason for ordinary procedural code to return control to the driver,
 only to be called again immediately. The utility will become evident in
 the next section!
 
+\section{Procedure example}
+This example is a bit more complex that for functions;
+\begin{minted}{felix}
+proc f (x:int) { println$ x; }
+proc g (x:int, h: int -> 0) {
+  h x;
+  h (x+1);
+}
+
+var k = g;
+k (42, f);
+\end{minted}
+
+The procedure types are:
+\begin{minted}{c++}
+//TYPE 66319: int -> void
+struct _pt66319: ::flx::rtl::con_t {
+  typedef void rettype;
+  typedef int argtype;
+  virtual ::flx::rtl::con_t *
+    call(::flx::rtl::con_t *, int const &)=0;
+  virtual _pt66319 *clone()=0;
+  virtual ::flx::rtl::con_t *resume()=0;
+};
+\end{minted}
+and
+\begin{minted}{c++}
+//TYPE 66321: int * (int -> void) -> void
+struct _pt66321: ::flx::rtl::con_t {
+  typedef void rettype;
+  typedef _tt66320 argtype;
+  virtual ::flx::rtl::con_t *
+    call(::flx::rtl::con_t *, _tt66320 const &)=0;
+  virtual _pt66321 *clone()=0;
+  virtual ::flx::rtl::con_t *resume()=0;
+};
+\end{minted}
+
+the functions are declared as:
+\begin{minted}{c++}
+//------------------------------
+//PROCEDURE <64762>: f int -> void
+//    parent = None
+struct f: _pt66319 {
+  FLX_FMEM_DECL
+
+  int x;
+  f(FLX_FPAR_DECL_ONLY);
+  f* clone();
+  ::flx::rtl::con_t *
+    call(::flx::rtl::con_t*,int const &);
+  ::flx::rtl::con_t *resume();
+};
+\end{minted}
+
+\begin{minted}{c++}
+//------------------------------
+//PROCEDURE <64766>: g int * (int -> void) -> void
+//    parent = None
+struct g: _pt66321 {
+  FLX_FMEM_DECL
+
+  _pt66319* h;
+  int _vI64768_x;
+  g(FLX_FPAR_DECL_ONLY);
+  g* clone();
+  ::flx::rtl::con_t *call(::flx::rtl::con_t*,_tt66320 const &);
+  ::flx::rtl::con_t *resume();
+};
+\end{minted}
+
+The procedure f is defined with methods:
+\begin{minted}{c++}
+//PROCEDURE <64762:> f: Call method
+::flx::rtl::con_t * 
+f::call(::flx::rtl::con_t *_ptr_caller, int const &_arg){
+  _caller = _ptr_caller;
+  x = _arg;
+  INIT_PC
+  return this;
+}
+
+//PROCEDURE <64762:> f: Resume method
+::flx::rtl::con_t *f::resume(){
+  {
+    _a17556t_66323 _tmp66332 =
+      ::flx::rtl::strutil::str<int>(x) + ::std::string("\n") ;
+    ::flx::rtl::ioutil::write(stdout,((_tmp66332)));
+  }
+  fflush(stdout);
+  FLX_RETURN // procedure return
+}
+\end{minted}
+
+and the procedure g with methods:
+\begin{minted}{c++}
+//PROCEDURE <64766:> g: Call method
+::flx::rtl::con_t * 
+g::call(::flx::rtl::con_t *_ptr_caller, _tt66320 const &_arg){
+  _caller = _ptr_caller;
+  _vI64768_x = _arg.mem_0;
+  h = _arg.mem_1;
+  INIT_PC
+  return this;
+}
+
+//PROCEDURE <64766:> g: Resume method
+::flx::rtl::con_t *g::resume(){
+  FLX_START_SWITCH
+      FLX_SET_PC(66331)
+      return (h)->clone()->call(this, _vI64768_x);
+    FLX_CASE_LABEL(66331)
+      {
+        ::flx::rtl::con_t *tmp = _caller;
+        _caller=0;
+        return (h)->clone()
+      ->call(tmp, _vI64768_x + 1 );//tail call (BEXE_jump)
+      }
+      FLX_KILLPC
+      FLX_RETURN // procedure return
+      FLX_KILLPC
+    FLX_RETURN
+  FLX_END_SWITCH
+}
+\end{minted}
+
+This illustrates the derivation heirarchy of procedures, and also 
+shows how a procedure is called. The first call sets the program
+counter to the next operation after the call, then invokes the procedure
+call method, passing the current object this pointer as the caller,
+along with the argument. The resulting continuation pointer is returned
+to the driver loop. The called procedure is resumed which causes it
+to print its argument, then it returns the callers pointer.
+
+The second call has an optimisation. Instead of passing this as the
+caller continuation, it passes g's caller instead. When the f
+procedure returns it returns that instead of this. This is possible
+because the second call is the last thing done, the optimisation
+is known as tail call optimisation. In fact the compiler is generating
+four extra instructions after that which will never be executed.
+
+This example was contrived to prevent the compiler optimising
+the procedures to ordinary C ones. We had to force the generation
+of closures by storing g in a variable k, and passing f to it
+as a parameter.
+
 \section{Fibration}
 Fibration is a method of interleaving control between fibres.
 
@@ -545,12 +839,45 @@ A fibre, or fthread (Felix thread) is an object containing a continuation pointe
 in Felix, fibre objects also contain a pointer to another fibre, possibly NULL,
 which is used as decribed below.
 
+\begin{minted}{c++}
+struct RTL_EXTERN fthread_t // fthread abstraction
+{
+  con_t *cc;                    // current continuation
+  fthread_t *next;              // link to next fthread, to be used in scheduler queue and schannels
+  fthread_t();                  // dead thread, suitable for assignment
+  fthread_t(con_t*);            // make thread from a continuation
+  svc_req_t *run();             // run until dead or driver service request
+  void kill();                  // kill by detaching the continuation
+  svc_req_t *get_svc()const;    // get current service request of waiting thread
+private: // uncopyable
+  fthread_t(fthread_t const&) = delete;
+  void operator=(fthread_t const&) = delete;
+};
+\end{minted}
+
 \subsection{synchronous channel}
 A synchronous channel, or schannel, is a set of fibres, possibly empty,
 all of which are either waiting to read or waiting to write. It is represented
 in Felix by linking fibres together through the special link, and storing
 the head pointer in the schannel object, setting the low order bit of the
 pointer to 1 if the fibres are waiting to write.
+
+\begin{minted}{c++}
+struct RTL_EXTERN schannel_t
+{
+  fthread_t *top; // has to be public for offsetof macro
+
+  void push_reader(fthread_t *);        // add a reader
+  fthread_t *pop_reader();              // pop a reader, NULL if none
+  void push_writer(fthread_t *);        // add a writer
+  fthread_t *pop_writer();              // pop a writer, NULL if none
+  schannel_t();
+
+private: // uncopyable
+  schannel_t(schannel_t const&) = delete;
+  void operator= (schannel_t const&) = delete;
+};
+\end{minted}
 
 \subsection{scheduler}
 A scheduler is an object with two variables, one which contains

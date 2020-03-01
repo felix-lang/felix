@@ -47,8 +47,8 @@ let gen_fun_header syms bsym_table kind index export_name modulename =
       let arglist = "  " ^
         match kind with 
         | `Fun -> 
-           (if length arglist = 0 then "FLX_FPAR_DECL_ONLY"
-           else "FLX_FPAR_DECL\n" ^ cat ",\n  " arglist
+           (if length arglist = 0 then "thread_frame_t *_ptf"
+           else "thread_frame_t *_ptf,\n" ^ cat ",\n  " arglist
            )
         | `Cfun -> cat ",\n  " arglist
       in
@@ -147,8 +147,8 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
       let strparams = "  " ^
         match kind with
         | `Fun ->
-          (if length params = 0 then "FLX_FPAR_DECL_ONLY"
-          else "FLX_FPAR_DECL\n  " ^ cat ",\n  " params
+          (if length params = 0 then "thread_frame_t *_ptf"
+          else "thread_frame_t *_ptf,\n  " ^ cat ",\n  " params
           )
         | `Cfun -> cat ",\n " params
       in
@@ -198,8 +198,8 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
             begin match kind with
             | `Fun ->
               if length args = 0
-              then "FLX_APAR_PASS_ONLY "
-              else "FLX_APAR_PASS "
+              then "_ptf "
+              else "_ptf, "
             | `Cfun -> 
               clierrx "[flx_cpp_backend/flx_gen_biface.ml:204: E294] " (Flx_bsym.sr bsym) ("Attempt to export procedure requiring thread frame with C interface: "^ Flx_bsym.id bsym)
             end
@@ -214,7 +214,7 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
           (
             if requires_ptf then
             begin match kind with
-            | `Fun -> "_PTFV"
+            | `Fun -> "_ptf"
             | `Cfun -> 
               clierrx "[flx_cpp_backend/flx_gen_biface.ml:219: E295] " (Flx_bsym.sr bsym) ("Attempt to export procedure requiring thread frame with C interface: "^ Flx_bsym.id bsym)
             end
@@ -226,8 +226,8 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
           ^
           "  return 0;\n"
         | `Heap_call ->
-          "  return (new(*_PTF gcp,"^class_name^"_ptr_map,true)\n" ^
-          "    " ^ class_name ^ "(_PTFV))" ^
+          "  return (new(*_ptf-> gcp,"^class_name^"_ptr_map,true)\n" ^
+          "    " ^ class_name ^ "(_ptf))" ^
           "\n      ->call(" ^ strargs ^ ");\n"
       )
       ^
@@ -248,8 +248,8 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
       let arglist = "  " ^
         match kind with
         | `Fun ->
-          (if length arglist = 0 then "FLX_FPAR_DECL_ONLY"
-          else "FLX_FPAR_DECL\n  " ^ cat ",\n  " arglist
+          (if length arglist = 0 then "thread_frame_t *_ptf"
+          else "thread_frame_t *_ptf,\n  " ^ cat ",\n  " arglist
           )
         | `Cfun ->  cat ",\n " arglist
       in
@@ -303,16 +303,16 @@ print_endline ("Export " ^ export_name ^ " properties " ^ string_of_properties p
       | `C_call -> 
         let names = Flx_bparams.get_names ps in
         "  return " ^ class_name ^ "("^
-        (if requires_ptf then "_PTFV"^(if List.length names > 0 then ", " else "") else "") ^
+        (if requires_ptf then "_ptf"^(if List.length names > 0 then ", " else "") else "") ^
         cat ", " names ^ ");\n"
 
       | `Stack_call ->
         "  return " ^ class_name ^ "("^
-          (if requires_ptf then "_PTFV" else "") ^").apply(" ^
+          (if requires_ptf then "_ptf" else "") ^").apply(" ^
           args^ ");\n"
       | `Heap_call ->
-        "  return (new(*_PTF gcp,"^class_name^"_ptr_map,true)\n" ^
-        "    " ^ class_name ^ "(_PTFV))\n" ^
+        "  return (new(*_ptf-> gcp,"^class_name^"_ptr_map,true)\n" ^
+        "    " ^ class_name ^ "(_ptf))\n" ^
         "    ->apply(" ^ args ^ ");\n"
       end 
       ^

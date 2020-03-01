@@ -479,13 +479,13 @@ open class Cstdio {
 
 
   //$ Standard input, can be redirected by flx_run.
-  const stdin: ifile = "PTF flx_stdin" requires property "needs_ptf";
+  const stdin: ifile = "ptf->flx_stdin" requires property "needs_ptf";
 
   //$ Standard output, can be redirected by flx_run.
-  const stdout: ofile = "PTF flx_stdout" requires property "needs_ptf";
+  const stdout: ofile = "ptf-> flx_stdout" requires property "needs_ptf";
 
   //$ Standard error, can be redirected by flx_run.
-  const stderr: ofile = "PTF flx_stderr" requires property "needs_ptf";
+  const stderr: ofile = "ptf-> flx_stderr" requires property "needs_ptf";
 
   //$ Standard input, redirected by shell.
   const cstdin: ifile = "stdin";

@@ -613,8 +613,8 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
           let s = String.concat "," (List.map (fun x -> ge sr x) args) in
           let s =
             if mem `Requires_ptf props then
-              if String.length s > 0 then "FLX_FPAR_PASS " ^ s
-              else "FLX_FPAR_PASS_ONLY"
+              if String.length s > 0 then "ptf, " ^ s
+              else "ptf"
             else s
           in
           "  " ^ name ^ "(" ^ s ^ ");\n"

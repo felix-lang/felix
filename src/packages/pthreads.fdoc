@@ -74,7 +74,7 @@ open class Pthread
       var fthr = mk_thread con;
       svc$ svc_spawn_process fthr;
   }
-  proc thread_yield : 1 = "PTF gcp->collector->get_thread_control()->yield();";
+  proc thread_yield : 1 = "ptf->gcp->collector->get_thread_control()->yield();";
 }
 
 @h1 Pchannels.
@@ -120,7 +120,7 @@ open class Pchannel
   type opchannel[t] = "flx::pthread::monitor_t*" requires monitor_hxx;
 
   //$ Make bidirectional pchannel.
-  fun mk_pchannel[t]: 1->pchannel[t] = "new flx::pthread::monitor_t(PTF gcp->collector->get_thread_control())";
+  fun mk_pchannel[t]: 1->pchannel[t] = "new flx::pthread::monitor_t(ptf->gcp->collector->get_thread_control())";
 
   //$ Safe cast from bidirectional to output pchannel.
   ctor[t] opchannel[t](x:pchannel[t]) => C_hack::cast[opchannel[t]] x;
@@ -150,7 +150,7 @@ open class Pchannel
     {
     //fprintf(stderr,"READ:DQ\\n");
     *$2 = (?1*)($1->dequeue());
-    PTF gcp->collector->remove_root(*$2);
+    ptf->gcp->collector->remove_root(*$2);
     //fprintf(stderr,"DONE READ:DQ\\n");
     }
   """ requires property "needs_ptf";
@@ -166,7 +166,7 @@ open class Pchannel
   proc _write[t]: pchannel[t] * &t = """
     {
     //fprintf(stderr,"WRITE:NQ\\n");
-    PTF gcp->collector->add_root($2);
+    ptf->gcp->collector->add_root($2);
     $1->enqueue((void*)$2);
     //fprintf(stderr,"DONE WRITE:NQ\\n");
     }
@@ -402,7 +402,7 @@ open class Condition_Variable
   type condition_variable = "::flx::pthread::flx_condv_t*" requires condv_hxx;
 
   //$ Condition variable constructor taking unit argument.
-  ctor condition_variable: 1 = "new ::flx::pthread::flx_condv_t(PTF gcp->collector->get_thread_control())";
+  ctor condition_variable: 1 = "new ::flx::pthread::flx_condv_t(ptf->gcp->collector->get_thread_control())";
 
   //$ Function to release a condition variable.
   proc destroy: condition_variable = "delete $1;";
@@ -442,8 +442,8 @@ open class TS_Bound_Queue
   ;
   ctor[T] ts_bound_queue_t[T]: !ints = 
     """
-      new (*PTF gcp, @0, false) ::flx::pthread::bound_queue_t(
-      PTF gcp->collector->get_thread_control(), (size_t)$1)
+      new (*ptf->gcp, @0, false) ::flx::pthread::bound_queue_t(
+      ptf->gcp->collector->get_thread_control(), (size_t)$1)
     """ requires property "needs_ptf";
 
   // NOTE: enqueue/dequeue on queues uses suspend/resume
@@ -457,10 +457,10 @@ open class TS_Bound_Queue
   private proc _enqueue[T]: ts_bound_queue_t[T] * &T = """
     FLX_SAVE_REGS;
 //fprintf(stderr,"enqueue to ts_bound_queue q=%p starts, item=%p\\n", $1, $2);
-    //PTF gcp->collector->get_thread_control()->suspend();
+    //ptf-> gcp->collector->get_thread_control()->suspend();
     $1->enqueue((void*)$2);
 //fprintf(stderr,"enqueue to ts_bound_queue q=%p done, item=%p\\n", $1, $2);
-    //PTF gcp->collector->get_thread_control()->resume();
+    //ptf-> gcp->collector->get_thread_control()->resume();
   """;
 
 
@@ -473,10 +473,10 @@ open class TS_Bound_Queue
   private proc _dequeue[T]: ts_bound_queue_t[T] * &&T = """
     FLX_SAVE_REGS;
 //fprintf(stderr,"dequeue from ts_bound_queue %p starts\\n", $1);
-    //PTF gcp->collector->get_thread_control()->suspend();
+    //ptf-> gcp->collector->get_thread_control()->suspend();
     *$2=(?1*)$1->dequeue();
 //fprintf(stderr,"dequeue from ts_bound_queue done q=%p item=%p\\n",$1,*$2);
-    //PTF gcp->collector->get_thread_control()->resume();
+    //ptf-> gcp->collector->get_thread_control()->resume();
   """;
 
   proc enqueue[T] (Q:ts_bound_queue_t[T])  (elt:T) {
@@ -492,9 +492,9 @@ open class TS_Bound_Queue
 
   proc wait[T]: ts_bound_queue_t[T] = """
     FLX_SAVE_REGS;
-    //PTF gcp->collector->get_thread_control()->suspend();
+    //ptf-> gcp->collector->get_thread_control()->suspend();
     $1->wait_until_empty();
-    //PTF gcp->collector->get_thread_control()->resume();
+    //ptf-> gcp->collector->get_thread_control()->resume();
   """;
 
   proc resize[T]: ts_bound_queue_t[T] * !ints = "$1->resize((size_t)$2);";

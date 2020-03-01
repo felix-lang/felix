@@ -45,7 +45,7 @@ to contain Felix top level variables. For historical
 reasons objects are called <em>thread frames.</em>
 
 Members of a thread frame are accessed in Felix bindings
-to C++ using the macro @{PTF} which stands for <em>pointer
+to C++ using the macro @{ptf->} which stands for <em>pointer
 to thread frame.</em>
 
 A Felix generated shared library requires an instance to be 
@@ -715,7 +715,7 @@ user level error checking as well.
   proc delete : cptr[flx_link_failure_t] = "delete $1;";
 
   //$ This doesn't belong here but it will do for now
-  fun get_debug_driver_flag : 1 -> bool = "PTF gcp->debug_driver" requires property "needs_gc"; 
+  fun get_debug_driver_flag : 1 -> bool = "ptf-> gcp->debug_driver" requires property "needs_gc"; 
 
 @h2 Library handle @{flx_library}
 A platform independent handle which can refer to a dynamic
@@ -732,7 +732,7 @@ not associated with any particular DLL.
 @tangle dynlink.flx
   //$ Create a fresh DLL object.
   fun create_library_handle: bool ->flx_library=
-    "new(*PTF gcp, ::flx::dynlink::flx_dynlink_ptr_map, false) ::flx::dynlink::flx_dynlink_t($1)";
+    "new(*ptf-> gcp, ::flx::dynlink::flx_dynlink_ptr_map, false) ::flx::dynlink::flx_dynlink_t($1)";
 
 @h2 Load a library @{dlopen}
 This procedure associates a library handle with a particular
@@ -759,7 +759,7 @@ Given a registry, simulate dynamic linkage.
   typedef module_dictionary_t = StrDict::strdict[address];
   typedef registry_t = StrDict::strdict[module_dictionary_t];
   fun get_module_registry_address_address: 1 -> &&registry_t = 
-    "(void****)(void*)&(PTF gcp->collector->module_registry)"
+    "(void****)(void*)&(ptf-> gcp->collector->module_registry)"
     requires property "needs_gc";
 
   // severe hackery: if the registry isn't initialised,
@@ -917,7 +917,7 @@ library or thread frame.
 @tangle dynlink.flx
   //$ Create a fresh DLL instance object.
   fun create_instance_handle: bool->flx_instance=
-    "new(*PTF gcp, ::flx::dynlink::flx_libinst_ptr_map, false) ::flx::dynlink::flx_libinst_t($1)";
+    "new(*ptf-> gcp, ::flx::dynlink::flx_libinst_ptr_map, false) ::flx::dynlink::flx_libinst_t($1)";
 
 @h2 Create a library instance from a library: @{create}
 This procedure creates a thread frame from a library,
@@ -930,12 +930,12 @@ or thread frame.
   //$ This is a procedure, so maybe the caller is too
   //$ which means the thread frame must be available.
   proc create: flx_library * flx_instance =
-    "$2->create($1,PTF gcp,PTF world,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
+    "$2->create($1,ptf-> gcp,ptf-> world,ptf-> argc,ptf-> argv,ptf-> flx_stdin, ptf-> flx_stdout, ptf-> flx_stderr, false);" 
     requires property "needs_gc"
   ;
 
   proc create_with_args: flx_library * flx_instance * int * + (+char) =
-    "$2->create($1,PTF gcp,PTF world,$3,$4,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
+    "$2->create($1,ptf-> gcp,ptf-> world,$3,$4,ptf-> flx_stdin, ptf-> flx_stdout, ptf-> flx_stderr, false);" 
     requires property "needs_gc"
   ;
 

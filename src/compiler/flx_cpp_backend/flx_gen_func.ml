@@ -94,7 +94,7 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
   let display = get_display_list bsym_table index in
   let frame_dcls =
     if requires_ptf then
-    "  FLX_FMEM_DECL\n"
+    "  thread_frame_t *ptf;\n"
     else ""
   in
   let pc_dcls =
@@ -119,11 +119,11 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
   and ctor_dcl name =
     "  " ^name^
     (if length display = 0
-    then (if requires_ptf then "(FLX_FPAR_DECL_ONLY);\n" else "();\n")
+    then (if requires_ptf then "(thread_frame_t *_ptf);\n" else "();\n")
     else (
     "  (" ^
     (if requires_ptf then
-    "FLX_FPAR_DECL "
+    "thread_frame_t *_ptf, "
     else ""
     )
     ^

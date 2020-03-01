@@ -667,16 +667,16 @@ class Win32Process {
 
 class System
 {
-  const argc:int = "PTF argc" requires property "needs_ptf";
-  const _argv:&&char= "PTF argv" requires property "needs_ptf";
+  const argc:int = "ptf-> argc" requires property "needs_ptf";
+  const _argv:&&char= "ptf-> argv" requires property "needs_ptf";
 
-  fun argv:int -> string = '::std::string($1<0||$1>=PTF argc??"":PTF argv[$1])' 
+  fun argv:int -> string = '::std::string($1<0||$1>=ptf-> argc??"":ptf-> argv[$1])' 
     requires property "needs_ptf";
   fun argv_dflt (x:int) (y:string) => match argv x with | "" => y | a => a;
 
   fun args () => List::map (argv) (List::range argc);
 
-  proc setargs : + (+char) * size = "PTF argc=$2; PTF argv=$1;" requires property "needs_ptf";
+  proc setargs : + (+char) * size = "ptf-> argc=$2; ptf-> argv=$1;" requires property "needs_ptf";
   proc setargs[N] (a:string^N) 
   {
     gen myget(i:size)=>a.i.cstr;

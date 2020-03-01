@@ -2176,7 +2176,7 @@ flx_collector_t::~flx_collector_t()
 //$ that is, one that is independent of the GC representation.
 open class Gc
 {
-  fun _collect: unit -> size = "PTF gcp->actually_collect()"
+  fun _collect: unit -> size = "ptf-> gcp->actually_collect()"
     requires property "needs_gc";
 
   //$ Invoke the garbage collector.
@@ -2191,21 +2191,21 @@ open class Gc
   }
 
   //$ Get the total number of bytes currently allocated.
-  fun gc_get_allocation_amt : unit -> size= "PTF gcp->collector->get_allocation_amt()"
+  fun gc_get_allocation_amt : unit -> size= "ptf-> gcp->collector->get_allocation_amt()"
     requires property "needs_gc";
 
   //$ Get the total number of objects currently allocated.
-  fun gc_get_allocation_count : unit -> size = "PTF gcp->collector->get_allocation_count()"
+  fun gc_get_allocation_count : unit -> size = "ptf-> gcp->collector->get_allocation_count()"
     requires property "needs_gc";
 
   //$ Get the total number of roots.
-  fun gc_get_root_count : unit -> size = "PTF gcp->collector->get_root_count()"
+  fun gc_get_root_count : unit -> size = "ptf-> gcp->collector->get_root_count()"
     requires property "needs_gc";
 
-  proc add_root: address  = "PTF gcp->collector->add_root ($1);"
+  proc add_root: address  = "ptf-> gcp->collector->add_root ($1);"
     requires property "needs_gc";
 
-  proc remove_root: address  = "PTF gcp->collector->remove_root ($1);"
+  proc remove_root: address  = "ptf-> gcp->collector->remove_root ($1);"
     requires property "needs_gc";
 
 }
@@ -2300,7 +2300,7 @@ class Rtti {
 
   //$ Global head of the compiled shape list.
   //$ This is actually the first type, since they're linked together.
-  fun shape_list_head : unit -> gc_shape_t = "PTF shape_list_head";
+  fun shape_list_head : unit -> gc_shape_t = "ptf-> shape_list_head";
 
   //$ C++ type_info for the type.
   type type_info = "::std::type_info" requires header "#include <typeinfo>";
@@ -2349,7 +2349,7 @@ class Collector
 
   private type raw_pointer_data_t = "::flx::gc::generic::pointer_data_t" ;
   private fun get_raw_pointer_data: address -> raw_pointer_data_t = 
-    "PTF gcp->collector->get_pointer_data($1)"
+    "ptf-> gcp->collector->get_pointer_data($1)"
     requires property "needs_gc"
   ;
   fun get_pointer_data (p:address) => C_hack::reinterpret[pointer_data_t](get_raw_pointer_data p);

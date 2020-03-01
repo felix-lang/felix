@@ -21,11 +21,11 @@ display;
 *)
   name^"::"^name^
   (if length display + length extra_args = 0 then
-  (if requires_ptf then "(FLX_FPAR_DECL_ONLY)" else "()")
+  (if requires_ptf then "(thread_frame_t *_ptf)" else "()")
   else
   "\n  (\n" ^
   (if requires_ptf then
-  "    FLX_FPAR_DECL\n"
+  "    thread_frame_t *_ptf,\n"
   else ""
   )
   ^
@@ -53,10 +53,10 @@ display;
     length extra_args + length extra_inits +
     (if requires_pc then 1 else 0)
     = 0
-  then (if requires_ptf then "FLX_FMEM_INIT_ONLY" else "")
+  then (if requires_ptf then ": ptf(_ptf)" else "")
   else
   (if requires_ptf then
-  "  FLX_FMEM_INIT "
+  ": ptf(_ptf), "
   else " : "
   )
   ^

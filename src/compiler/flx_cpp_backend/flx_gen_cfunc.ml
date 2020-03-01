@@ -98,8 +98,8 @@ let gen_C_function syms bsym_table (shapes:Flx_set.StringSet.t ref) shape_map pr
         if (not (mem `Cfun props)) then
         (
           if String.length s > 0
-          then (if requires_ptf then "FLX_FPAR_DECL " else "") ^s
-          else (if requires_ptf then "FLX_FPAR_DECL_ONLY" else "")
+          then (if requires_ptf then "thread_frame_t *_ptf, " else "") ^s
+          else (if requires_ptf then "thread_frame_t *_ptf" else "")
         ) else s
       )
   ) ^
@@ -226,8 +226,8 @@ let gen_C_function_body filename syms bsym_table
             if not (mem `Cfun props) &&
             requires_ptf then
               if String.length s > 0
-              then "FLX_APAR_DECL " ^ s
-              else "FLX_APAR_DECL_ONLY"
+              then "thread_frame_t *ptf, " ^ s
+              else "thread_frame_t *ptf"
             else s
           )
       )^
@@ -349,8 +349,8 @@ let gen_C_procedure_body filename syms bsym_table
           (
             if (not (mem `Cfun props)) && requires_ptf then
               if String.length s > 0
-              then "FLX_APAR_DECL " ^ s
-              else "FLX_APAR_DECL_ONLY"
+              then "thread_frame_t *ptf, " ^ s
+              else "thread_frame_t *ptf"
             else s
           )
       )^

@@ -66,7 +66,7 @@ let get_var_ref syms bsym_table this index ts : string =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_val (vs,t,(`Val | `Var | `Ref | `Once)) ->
       begin match bsym_parent with
-      | None -> "PTF " ^ cpp_instance_name syms bsym_table index ts
+      | None -> "ptf-> " ^ cpp_instance_name syms bsym_table index ts
       | Some i ->
           (
             if i <> this
@@ -90,7 +90,7 @@ let get_ref_ref syms bsym_table this index ts : string =
   | BBDCL_val (vs,t,(`Val | `Var | `Ref | `Once )) ->
       begin match bsym_parent with
       | None ->
-          "PTF " ^ cpp_instance_name syms bsym_table index ts
+          "ptf-> " ^ cpp_instance_name syms bsym_table index ts
       | Some i ->
           (
             if i <> this
@@ -709,8 +709,8 @@ print_endline ("Apply stack");
         let s = String.concat "," (List.map (fun x -> ge x) args) in
         let s =
           if mem `Requires_ptf props then
-            if String.length s > 0 then "FLX_FPAR_PASS " ^ s
-            else "FLX_FPAR_PASS_ONLY"
+            if String.length s > 0 then "ptf," ^ s
+            else "ptf"
           else s
         in
           ce_atom (name ^ "(" ^ s ^ ")")
@@ -1003,7 +1003,7 @@ assert false;
     let pname = direct_shape_of syms bsym_table shape_map tn t' in
     let typ = tn t' in
     let frame_ptr = ce_new 
-        [ ce_atom "*PTF gcp"; ce_atom pname; ce_atom "true"] 
+        [ ce_atom "*ptf-> gcp"; ce_atom pname; ce_atom "true"] 
         typ 
         [ge' e]
     in
@@ -1020,7 +1020,7 @@ print_endline ("Generating class new for t=" ^ ref_type);
     | BEXPR_tuple es,_ -> map ge' es
     | _ -> [ge' a]
     in
-    ce_new [ce_atom "*PTF gcp";ce_atom (ref_type^"_ptr_map"); ce_atom "true"] ref_type args
+    ce_new [ce_atom "*ptf-> gcp";ce_atom (ref_type^"_ptr_map"); ce_atom "true"] ref_type args
 
   | BEXPR_literal {Flx_literal.c_value=v} ->
     ce_atom v

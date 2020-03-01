@@ -147,7 +147,7 @@ class FastLock
 {
    type fast_lock = "::flx::rtl::fast_lock*" 
      requires header '#include "pthread_fast_lock.hpp"';
-   ctor fast_lock : unit = "new ::flx::rtl::fast_lock(PTF gcp->collector->get_thread_control())";
+   ctor fast_lock : unit = "new ::flx::rtl::fast_lock(ptf->gcp->collector->get_thread_control())";
    proc delete : fast_lock = "delete $1;";
    proc lock : fast_lock = "$1->lock();";
    proc unlock : fast_lock = "$1->unlock();";

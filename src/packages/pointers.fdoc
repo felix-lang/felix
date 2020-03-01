@@ -102,7 +102,7 @@ open class Cptr
   //$ Allocate managed C++ object directly on heap.
   //$ Felix does not check the argument type, but C++ does.
   //$ The argument must select a suitable constructor.
-  gen gcnew[T,A] : A -> &T = "new (*PTF gcp, @?1,true) (?1)($a)";
+  gen gcnew[T,A] : A -> &T = "new (*ptf->gcp, @?1,true) (?1)($a)";
 
 }
 

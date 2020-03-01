@@ -87,15 +87,15 @@ def build_runtime(phase):
 #error "FLX_PTF_STATIC_STRUCT and FLX_PTF_STATIC_PTR no longer supported"
 #endif
 
-#define PTF ptf->
+//#define PTF ptf->
 #define FLX_POINTER_TO_THREAD_FRAME ptf
 
 // for declarations in header file
-#define FLX_FMEM_DECL thread_frame_t *ptf;
-#define FLX_FPAR_DECL_ONLY thread_frame_t *_ptf
-#define FLX_FPAR_DECL thread_frame_t *_ptf,
-#define FLX_APAR_DECL_ONLY thread_frame_t *ptf
-#define FLX_APAR_DECL thread_frame_t *ptf,
+//#define FLX_FMEM_DECL thread_frame_t *ptf;
+//#define FLX_FPAR_DECL_ONLY thread_frame_t *_ptf
+//#define FLX_FPAR_DECL thread_frame_t *_ptf,
+//#define FLX_APAR_DECL_ONLY thread_frame_t *ptf
+//#define FLX_APAR_DECL thread_frame_t *ptf,
 #define FLX_DCL_THREAD_FRAME
 
 #if FLX_CGOTO
@@ -413,7 +413,7 @@ struct _tt5 {
   return tmp; \
 }
 
-#define FLX_NEWP(x) new(*PTF gcp,x##_ptr_map,true)x
+#define FLX_NEWP(x) new(*ptf->gcp,x##_ptr_map,true)x
 
 #define FLX_FINALISER(x) \
 static void x##_finaliser(::flx::gc::generic::collector_t *, void *__p){\
@@ -421,14 +421,14 @@ static void x##_finaliser(::flx::gc::generic::collector_t *, void *__p){\
 }
 
 
-#define FLX_FMEM_INIT_ONLY : ptf(_ptf)
-#define FLX_FMEM_INIT : ptf(_ptf),
-#define FLX_FPAR_PASS_ONLY ptf
-#define FLX_FPAR_PASS ptf,
-#define FLX_APAR_PASS_ONLY _ptf
-#define FLX_APAR_PASS _ptf,
-#define _PTF _ptf->
-#define _PTFV _ptf
+//#define FLX_FMEM_INIT_ONLY : ptf(_ptf)
+//#define FLX_FMEM_INIT : ptf(_ptf),
+//#define FLX_FPAR_PASS_ONLY ptf
+//#define FLX_FPAR_PASS ptf,
+//#define FLX_APAR_PASS_ONLY _ptf
+//#define FLX_APAR_PASS _ptf,
+//#define _PTF _ptf->
+//#define _PTFV _ptf
 #define FLX_DEF_THREAD_FRAME
 
 #define FLX_FRAME_WRAPPERS(mname,name) \

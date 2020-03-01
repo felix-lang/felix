@@ -247,7 +247,7 @@ let gen_make_ctor_arg rep ge tn syms bsym_table shape_map a : cexpr_t =
   | _ ->                            (* make a copy on the heap and return pointer *)
     let ctt = tn ct in
     let ptrmap = Flx_pgen.direct_shape_of syms bsym_table shape_map tn ct in
-    ce_new [ce_atom "*PTF gcp"; ce_atom ptrmap; ce_atom "true"] ctt [ge a]
+    ce_new [ce_atom "*ptf->gcp"; ce_atom ptrmap; ce_atom "true"] ctt [ge a]
 
 
 (* Value constructor for non-constant (argumentful) variant constructor case *)

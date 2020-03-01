@@ -1179,7 +1179,7 @@ syntax cbind {
   //$
   //$ private type RE2_ = "::re2::RE2";
   //$ _gc_pointer _gc_type RE2_ type RE2 = "::re2::RE2*";
-  //$ gen _ctor_RE2 : string -> RE2 = "new (*PTF gcp, @0, false) RE2($1)";
+  //$ gen _ctor_RE2 : string -> RE2 = "new (*ptf->gcp, @0, false) RE2($1)";
   //$
   //$ We bind the private type RE2_ to the C type RE2.
   //$ It's private so the public cannot allocate it.

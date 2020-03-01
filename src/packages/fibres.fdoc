@@ -41,7 +41,7 @@ open class Fibres
   gen start (p:1->0) = { return _start0 (p); }
 
   //$ Function to make a fibre out of a continuation.
-  gen mk_thread: cont->fthread = "new(*PTF gcp,::flx::rtl::_fthread_ptr_map,false) ::flx::rtl::fthread_t($1)";
+  gen mk_thread: cont->fthread = "new(*ptf-> gcp,::flx::rtl::_fthread_ptr_map,false) ::flx::rtl::fthread_t($1)";
 
   // Spawn a fibre on this fibres scheduler.
   // uses a supervisor call so can't be used in a function
@@ -73,12 +73,12 @@ open class Fibres
   //$ Construct a fibre scheduler.
   //$  NOTE: NOW GARBAGE COLLECTED!
   ctor fibre_scheduler: bool = """
-    new(*PTF gcp,::flx::run::sync_sched_ptr_map,false) 
+    new(*ptf-> gcp,::flx::run::sync_sched_ptr_map,false) 
       ::flx::run::sync_sched
       (
         $1, 
-        PTF gcp, 
-        new(*PTF gcp, ::flx::run::fthread_list_ptr_map, false) ::flx::run::fthread_list(PTF gcp)
+        ptf-> gcp, 
+        new(*ptf-> gcp, ::flx::run::fthread_list_ptr_map, false) ::flx::run::fthread_list(ptf-> gcp)
       )
     """
   ;
@@ -94,7 +94,7 @@ open class Fibres
     $1->active->push_back($2);
   """;
 
-  proc frun: (1->0) = "::flx::rtl::executil::frun (PTF gcp, $1);" 
+  proc frun: (1->0) = "::flx::rtl::executil::frun (ptf-> gcp, $1);" 
     requires header '#include "flx_executil.hpp"'
   ;
 
@@ -146,10 +146,10 @@ open class Fibres
     new 
     ::flx::run::async_sched
         (
-          PTF world, // world object
+          ptf-> world, // world object
           $1, // debug driver flag 
-          PTF gcp,  // GC profile object
-          new(*PTF gcp, ::flx::run::fthread_list_ptr_map, false) ::flx::run::fthread_list(PTF gcp),
+          ptf-> gcp,  // GC profile object
+          new(*ptf-> gcp, ::flx::run::fthread_list_ptr_map, false) ::flx::run::fthread_list(ptf-> gcp),
           ::flx::run::async_sched::mainline // temporary hack! thread kind (should be inherited)
         )
       """
@@ -258,7 +258,7 @@ open class Schannel
   _gc_pointer type oschannel[t] = "::flx::rtl::schannel_t*";
 
   gen mk_untyped_schannel: 1 -> address = 
-    "new(*PTF gcp,::flx::rtl::schannel_ptr_map,false) ::flx::rtl::schannel_t()"
+    "new(*ptf-> gcp,::flx::rtl::schannel_ptr_map,false) ::flx::rtl::schannel_t()"
     requires property "needs_gc"
   ;
   //$ Create a bidirectional synchronous channel.

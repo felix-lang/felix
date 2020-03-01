@@ -661,7 +661,7 @@ open class Varray
 
   //$ Create an empty varray with the given bound.
   ctor[t] varray[t]: size =
-    "(?1*)(PTF gcp->collector->create_empty_array(&@?1,$1))"
+    "(?1*)(ptf-> gcp->collector->create_empty_array(&@?1,$1))"
     requires property "needs_gc"
   ;
 
@@ -755,7 +755,7 @@ open class Varray
 
 
   private proc set_used[t]: varray[t] * size =
-    "PTF gcp->collector->set_used($1,$2);"
+    "ptf-> gcp->collector->set_used($1,$2);"
     requires property "needs_gc"
   ;
 
@@ -763,7 +763,7 @@ open class Varray
   instance[v] ArrayValue[varray[v],v] {
     //$ Length of a varray (used).
     fun len: varray[v] -> size =
-      "PTF gcp->collector->get_used($1)"
+      "ptf-> gcp->collector->get_used($1)"
       requires property "needs_gc"
     ;
     //$ Unsafe get value at position.
@@ -784,12 +784,12 @@ open class Varray
     fun stl_begin: varray[v] -> +v = "$1";
 
     //$ STL iterator to end of array.
-    fun stl_end: varray[v] -> +v = "($1+PTF gcp->collector->get_used($1))";
+    fun stl_end: varray[v] -> +v = "($1+ptf-> gcp->collector->get_used($1))";
   }
 
   //$ Get the bound of a varray.
   fun maxlen[t]: varray[t] -> size =
-    "PTF gcp->collector->get_count($1)"
+    "ptf-> gcp->collector->get_count($1)"
     requires property "needs_gc"
   ;
 
@@ -807,8 +807,8 @@ open class Varray
   proc _push_back[t] : varray[t] * t = """
     {
       //?1 * _p = *$1;
-      size_t n = PTF gcp->collector->get_used($1);
-      PTF gcp->collector->incr_used($1,1L);
+      size_t n = ptf-> gcp->collector->get_used($1);
+      ptf-> gcp->collector->incr_used($1,1L);
       new($1+n) ?1($2);
     }
   """
@@ -829,8 +829,8 @@ open class Varray
   proc pop_back[t] : varray[t] = """
     { // pop varray
       ?1 * _p = $1;
-      size_t n = PTF gcp->collector->get_used(_p);
-      PTF gcp->collector->incr_used(_p,-1L);
+      size_t n = ptf-> gcp->collector->get_used(_p);
+      ptf-> gcp->collector->incr_used(_p,-1L);
       destroy(_p+n-1); // from flx_compiler_support_bodies
     }
   """

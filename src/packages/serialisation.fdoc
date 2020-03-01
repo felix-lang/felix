@@ -326,12 +326,12 @@ class Serialise
   ;
 
   gen create_empty_varray : gc_shape_t * size -> address =
-    "(PTF gcp->collector->create_empty_array($1,$2))"
+    "(ptf-> gcp->collector->create_empty_array($1,$2))"
     requires property "needs_gc"
   ;
 
   proc set_used: address * size =
-    "PTF gcp->collector->set_used($1,$2);"
+    "ptf-> gcp->collector->set_used($1,$2);"
     requires property "needs_gc"
   ;
 

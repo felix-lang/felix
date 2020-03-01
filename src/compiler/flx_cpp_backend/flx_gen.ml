@@ -55,7 +55,7 @@ let gen_class syms bsym_table props index id sr vs ts instance_no =
   let display = get_display_list bsym_table index in
   let frame_dcls =
     if requires_ptf then
-    "  FLX_FMEM_DECL\n"
+    "  thread_frame_t *ptf;\n"
     else ""
   in
   let display_string = match display with
@@ -75,11 +75,11 @@ let gen_class syms bsym_table props index id sr vs ts instance_no =
   and ctor_dcl name =
     "  " ^name^
     (if length display = 0
-    then (if requires_ptf then "(FLX_FPAR_DECL_ONLY);\n" else "();\n")
+    then (if requires_ptf then "(thread_frame_t *_ptf);\n" else "();\n")
     else (
     "  (" ^
     (if requires_ptf then
-    "FLX_FPAR_DECL "
+    "thread_frame_t *_ptf, "
     else ""
     )
     ^
@@ -468,7 +468,7 @@ let gen_function_methods filename syms bsym_table (
       "){\n" ^
       (*
       (if mem `Uses_gc props then
-      "  gc_profile_t &gc = *PTF gcp;\n"
+      "  gc_profile_t &gc = *ptf->gcp;\n"
       else ""
       )
       ^
@@ -495,7 +495,7 @@ let gen_function_methods filename syms bsym_table (
       (if mem `Generator props then
       "  return this;\n"
       else
-      "  return new(*PTF gcp,"^name^"_ptr_map,true) "^name^"(*this);\n"
+      "  return new(*ptf->gcp,"^name^"_ptr_map,true) "^name^"(*this);\n"
       )^
       "}\n"
     in
@@ -659,7 +659,7 @@ let gen_procedure_methods filename syms bsym_table
         "}\n"
     and clone =
       "  " ^name^"* "^name^"::clone(){\n" ^
-        "  return new(*PTF gcp,"^name^"_ptr_map,true) "^name^"(*this);\n" ^
+        "  return new(*ptf->gcp,"^name^"_ptr_map,true) "^name^"(*this);\n" ^
         "}\n"
     in
       let q =

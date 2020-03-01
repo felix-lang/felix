@@ -960,9 +960,9 @@ class Judy
 
   private body mkjudy =
     """
-      static void **_mkjudy(FLX_APAR_DECL ::flx::gc::generic::gc_shape_t *jptr_map){
+      static void **_mkjudy(thread_frame_t *ptf, ::flx::gc::generic::gc_shape_t *jptr_map){
         typedef void *voidp; // syntax
-        void **m = new (*PTF gcp, *jptr_map, false) voidp; 
+        void **m = new (*ptf->gcp, *jptr_map, false) voidp; 
         *m=0;
         return m;
       }

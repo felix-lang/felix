@@ -441,7 +441,7 @@ header flx_pkgconfig_header =
 // into the required header file.
 //
 
-proc kludge : 1 = "PTF gcp->allow_collection_anywhere=false;" requires flx_pkgconfig_header;
+proc kludge : 1 = "ptf-> gcp->allow_collection_anywhere=false;" requires flx_pkgconfig_header;
 kludge();
 
 // strip any trailing space off to ease bash scripting
