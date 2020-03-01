@@ -842,13 +842,15 @@ which is used as decribed below.
 \begin{minted}{c++}
 struct RTL_EXTERN fthread_t // fthread abstraction
 {
-  con_t *cc;                    // current continuation
-  fthread_t *next;              // link to next fthread, to be used in scheduler queue and schannels
-  fthread_t();                  // dead thread, suitable for assignment
-  fthread_t(con_t*);            // make thread from a continuation
-  svc_req_t *run();             // run until dead or driver service request
-  void kill();                  // kill by detaching the continuation
-  svc_req_t *get_svc()const;    // get current service request of waiting thread
+  con_t *cc;         // current continuation
+  fthread_t *next;   // link to next fthread
+
+  fthread_t();       // dead thread, suitable for assignment
+  fthread_t(con_t*); // make thread from a continuation
+
+  svc_req_t *run();  // run until dead or service request
+  void kill();       // kill by detaching the continuation
+  svc_req_t *get_svc()const;   // get current service request
 private: // uncopyable
   fthread_t(fthread_t const&) = delete;
   void operator=(fthread_t const&) = delete;
@@ -867,10 +869,10 @@ struct RTL_EXTERN schannel_t
 {
   fthread_t *top; // has to be public for offsetof macro
 
-  void push_reader(fthread_t *);        // add a reader
-  fthread_t *pop_reader();              // pop a reader, NULL if none
-  void push_writer(fthread_t *);        // add a writer
-  fthread_t *pop_writer();              // pop a writer, NULL if none
+  void push_reader(fthread_t *); // add a reader
+  fthread_t *pop_reader();       // pop a reader, NULL if none
+  void push_writer(fthread_t *); // add a writer
+  fthread_t *pop_writer();       // pop a writer, NULL if none
   schannel_t();
 
 private: // uncopyable
@@ -935,6 +937,54 @@ Spawn always pushes the running fibre onto the active list and runs
 the newly spawned fibre. This means that spawning and procedure
 calling are identical if the spawned fibre makes no service
 requests.
+
+\section{Performance}
+It's important to understand why the fibration model works as it does.
+
+A fibre is just a pointer to the top level continuation of a spaghetti stack, so it is
+a single machine pointer. The scheduler has two pointers, one to the running
+fibre, and one to the active list.
+
+Channels are a single machine pointer.
+
+Pushing to a list requires only one read and two writes,
+one to update the top pointer, and one to save the next pointer 
+in the continuation being pushed. Similarly popping requires
+only one write, updating the top pointer.
+
+I/O operations involve only pushing and popping, and changes to the
+scheduler state involve only changing the active list and currently
+running fibre, therefore context switches are extremely fast.
+
+With pthreads, context switches are extremely expensive, as they
+involve machine stack swapping. With Felix fibres, the stacks are
+heap allocated linked lists identified by a single pointer,
+so stack swapping is lighting fast. 
+
+Felix thus obtains extremely high performance, faster than any
+other context switching machinery, whilst at the same time
+preserving C/C++ compatibility. Functions still use the machine stack,
+procedures are coroutines and use spaghetti stacks.
+
+Current work in progress is modifying the scheduler to support
+concurrency. A single active list is maintained, but multiple
+running fibres are allowed. In effect these fibres are elevated
+to concurrent processes. Because the core operations only involve
+extremely fast pointer reads and writes, they can be protected by
+spinlocks using atomic operations, so that the base machinery
+can provide wait free concurrency (one CPU is always making progress).
+The performance gain depends on the level of contention. With extremely
+high contention, performance is slower than a non-concurrent configuration.
+However with fibres doing more work and less I/O, contention drops and
+performance gain is effectively linear in the number of CPUs.
+
+The biggest hit is memory allocation. Felix uses \verb$malloc()$, which
+is thread safe, but may need to use a mutex and or swap to the OS to
+obtain storage. Descheduling a fibre this way is not observed by the
+user space scheduler, and so effectively hangs one of the CPUs.
+It's also possible, though unlikely, that a fibre holding a spinlock
+will be pre-empted, which would block all other fibres contending
+for that spinlock.
 
 
 \clearpage
