@@ -61,6 +61,11 @@ class uint256_t{
         uint256_t(const uint128_t & rhs)
             : UPPER(uint128_0), LOWER(rhs)
         {}
+
+        uint256_t(const uint128_t &lhs, const uint128_t & rhs)
+            : UPPER(lhs), LOWER(rhs)
+        {}
+ 
 #endif
 
 
