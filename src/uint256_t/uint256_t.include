@@ -44,7 +44,7 @@ namespace std {  // This is probably not a good idea
     template <> struct is_arithmetic <uint256_t> : std::true_type {};
     template <> struct is_integral   <uint256_t> : std::true_type {};
     template <> struct is_unsigned   <uint256_t> : std::true_type {};
-}
+};
 
 class uint256_t{
     private:
@@ -55,45 +55,26 @@ class uint256_t{
         uint256_t();
         uint256_t(const uint256_t & rhs);
         uint256_t(uint256_t && rhs);
-        uint256_t(const std::string & s);
-        uint256_t(const char *val);
 
         template <typename T, typename = typename std::enable_if<std::is_integral<T>::value, T>::type >
         uint256_t(const T & rhs)
             : UPPER(uint128_0), LOWER(rhs)
-        {
-            if (rhs < 0) {
-                UPPER = -1;
-            }
-        }
+        {}
 
         template <typename S, typename T, typename = typename std::enable_if <std::is_integral<S>::value && std::is_integral<T>::value, void>::type>
         uint256_t(const S & upper_rhs, const T & lower_rhs)
             : UPPER(upper_rhs), LOWER(lower_rhs)
         {}
-        
-        
-        // felix hack -- works because it doesn't depend on type traits
-        uint256_t(const uint128_t & upper_rhs, const uint128_t & lower_rhs)
-            : UPPER(upper_rhs), LOWER(lower_rhs)
-        {}
-        uint256_t(const uint128_t & lower_rhs)
-            : UPPER(uint128_0), LOWER(lower_rhs)
-        {}
-        // end felix hack
-
        template <typename R, typename S, typename T, typename U,
-                typename = typename std::enable_if<std::is_integral<R>::value &&
-                std::is_integral<S>::value &&
-                std::is_integral<T>::value &&
+                typename = typename std::enable_if<std::is_integral<R>::value && 
+                std::is_integral<S>::value && 
+                std::is_integral<T>::value && 
                 std::is_integral<U>::value, void>::type>
         uint256_t(const R & upper_lhs, const S & lower_lhs, const T & upper_rhs, const U & lower_rhs)
             : UPPER(upper_lhs, lower_lhs), LOWER(upper_rhs, lower_rhs)
         {}
 
         //  RHS input args only
-		std::vector<uint8_t> export_bits() const;
-        std::vector<uint8_t> export_bits_truncate() const;
 
         // Assignment Operator
         uint256_t & operator=(const uint256_t & rhs);
@@ -286,7 +267,9 @@ class uint256_t{
 
         template <typename T, typename = typename std::enable_if<std::is_integral<T>::value, T>::type >
         uint256_t & operator+=(const T & rhs){
-            return *this += uint256_t(rhs);
+            UPPER = UPPER + ((LOWER + rhs) < LOWER);
+            LOWER = LOWER + rhs;
+            return *this;
         }
 
         uint256_t operator-(const uint128_t & rhs) const;
@@ -302,7 +285,8 @@ class uint256_t{
 
         template <typename T, typename = typename std::enable_if<std::is_integral<T>::value, T>::type >
         uint256_t & operator-=(const T & rhs){
-            return *this = *this - uint256_t(rhs);
+            *this = *this - rhs;
+            return *this;
         }
 
         uint256_t operator*(const uint128_t & rhs) const;
@@ -318,12 +302,12 @@ class uint256_t{
 
         template <typename T, typename = typename std::enable_if<std::is_integral<T>::value, T>::type >
         uint256_t & operator*=(const T & rhs){
-            return *this = *this * uint256_t(rhs);
+            *this = *this * uint256_t(rhs);
+            return *this;
         }
 
     private:
         std::pair <uint256_t, uint256_t> divmod(const uint256_t & lhs, const uint256_t & rhs) const;
-        void init(const char * s);
 
     public:
         uint256_t operator/(const uint128_t & rhs) const;
@@ -339,7 +323,8 @@ class uint256_t{
 
         template <typename T, typename = typename std::enable_if<std::is_integral<T>::value, T>::type >
         uint256_t & operator/=(const T & rhs){
-            return *this = *this / uint256_t(rhs);
+            *this = *this / uint256_t(rhs);
+            return *this;
         }
 
         uint256_t operator%(const uint128_t & rhs) const;
@@ -355,7 +340,8 @@ class uint256_t{
 
         template <typename T, typename = typename std::enable_if<std::is_integral<T>::value, T>::type >
         uint256_t & operator%=(const T & rhs){
-            return *this = *this % uint256_t(rhs);
+            *this = *this % uint256_t(rhs);
+            return *this;
         }
 
         // Increment Operators
@@ -383,13 +369,11 @@ class uint256_t{
         std::string str(uint8_t base = 10, const unsigned int & len = 0) const;
 };
 
-// useful values
 UINT256_T_EXTERN extern const uint128_t uint128_64;
 UINT256_T_EXTERN extern const uint128_t uint128_128;
 UINT256_T_EXTERN extern const uint128_t uint128_256;
 UINT256_T_EXTERN extern const uint256_t uint256_0;
 UINT256_T_EXTERN extern const uint256_t uint256_1;
-UINT256_T_EXTERN extern const uint256_t uint256_max;
 
 // Bitwise Operators
 UINT256_T_EXTERN uint256_t operator&(const uint128_t & lhs, const uint256_t & rhs);
