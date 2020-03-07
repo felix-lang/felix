@@ -69,6 +69,15 @@ class uint256_t{
             : UPPER(uint128_0), LOWER(rhs)
         {}
 
+        // felix hack -- works because it doesn't depend on type traits
+        uint256_t(const uint128_t & upper_rhs, const uint128_t & lower_rhs)
+            : UPPER(upper_rhs), LOWER(lower_rhs)
+        {}
+        uint256_t(const uint128_t & lower_rhs)
+            : UPPER(uint128_0), LOWER(lower_rhs)
+        {}
+        // end felix hack
+
         template <typename S, typename T, typename = typename std::enable_if <std::is_integral<S>::value && std::is_integral<T>::value, void>::type>
         uint256_t(const S & upper_rhs, const T & lower_rhs)
             : UPPER(upper_rhs), LOWER(lower_rhs)
