@@ -56,19 +56,6 @@ class uint256_t{
         uint256_t(const uint256_t & rhs);
         uint256_t(uint256_t && rhs);
 
-#if 1
-        // workaround for MSVC2019
-        uint256_t(const uint128_t & rhs)
-            : UPPER(uint128_0), LOWER(rhs)
-        {}
-
-        uint256_t(const uint128_t &lhs, const uint128_t & rhs)
-            : UPPER(lhs), LOWER(rhs)
-        {}
- 
-#endif
-
-
         template <typename T, typename = typename std::enable_if<std::is_integral<T>::value, T>::type >
         uint256_t(const T & rhs)
             : UPPER(uint128_0), LOWER(rhs)
