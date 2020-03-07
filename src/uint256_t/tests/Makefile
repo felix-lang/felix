@@ -1,7 +1,7 @@
 CXX?=g++
 STANDARD?=c++14
 CXXFLAGS=-std=$(STANDARD) -Wall -pedantic -g -I../../googletest/googletest/include -I..
-LDFLAGS=-L../../googletest/googlemock/gtest -lgtest -lpthread
+LDFLAGS=-L../../googletest/build/install/lib -lgtest -lpthread
 TARGET=test
 
 TESTCASES  =
@@ -39,10 +39,10 @@ all: $(TARGET)
 $(TESTCASES): %.o : %.cpp ../uint256_t.h ../uint128_t.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-../uint128_t.o: ../uint128_t.h ../uint128_t.cpp
+../uint128_t.o: ../uint128_t.h ../uint128_t.cpp ../uint128_t.include
 	$(CXX) $(CXXFLAGS) -c ../uint128_t.cpp -o $@
 
-../uint256_t.o: ../uint256_t.h ../uint256_t.cpp ../uint128_t.o
+../uint256_t.o: ../uint256_t.h ../uint256_t.cpp ../uint256_t.include ../uint128_t.o
 	$(CXX) $(CXXFLAGS) -c ../uint256_t.cpp -o $@
 
 $(TARGET): test.cpp ../uint256_t.o ../uint128_t.o $(TESTCASES)
