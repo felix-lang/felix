@@ -90,6 +90,7 @@ proc print_options(control:control_type) {
     println$ "swifts             = "+str control.swifts;
     println$ "cpps               = "+str control.cpps;
     println$ "cppos              = "+str control.cppos;
+    println$ "cppobases          = "+str control.cppobases;
     println$ "TIME               = "+str control.TIME;
     println$ "COMPILER_TIME      = "+str control.COMPILER_TIME;
     println$ "BUNDLE_DIR         = "+str control.BUNDLE_DIR;
@@ -171,6 +172,7 @@ fun dflt_control () =>
 
     var cpps=Empty[string];
     var cppos=Empty[string];
+    var cppobases=Empty[string];
 
     var ocamls=Empty[string];
     var swifts=Empty[string];
@@ -316,6 +318,8 @@ private proc print_help() {
   println "-O2                  : add switch to compiler command";
   println "-O3                  : add switch to compiler command";
   println "--cflags=flags       : addd flags to compiler command";
+  println "--obj=objfile_base   : add object to link, adds extension";
+  println "                         so eg fred becomes fred_static.o";
   println "-Dmac                : add macro def to C++ compiler command";
   println "-DFLX_ENABLE_TRACE   : enable compilation of trace generators (defaults off)";
   println "-DFLX_CGOTO          : use gcc indirect gotos and use assembler hack for long jumps (default on if config detects support)";
@@ -751,6 +755,11 @@ private noinline proc handle_switch
       control.EXTRA_CCFLAGS  <-  control*.EXTRA_CCFLAGS + flags;
     };
 
+  elif prefix(arg,"--obj=") do
+    {
+      var file = arg.[6 to];
+      control.cppobases <- control*.cppobases + file; // without suffix or extension, added later!
+    };
   elif prefix(arg,"-W") do
     debugln$ "Set C++ warning switch "+arg;
     control.EXTRA_CCFLAGS  <-  control*.EXTRA_CCFLAGS + arg;
@@ -985,6 +994,7 @@ noinline proc processing_stage1
   debugln$ "path="+xloopctl*.path+": dir="+xloopctl*.dir+",base="+xloopctl*.base+", ext="+xloopctl*.ext;
   debugln$ "cpps="+str control*.cpps;
   debugln$ "cppos="+str control*.cppos;
+  debugln$ "cppobases="+str control*.cppobases;
 
   debugln$ "ocamls="+str control*.ocamls;
   debugln$ "swifts="+str control*.swifts;
@@ -2028,18 +2038,19 @@ object processing_env(
       end
     ;
     var EXT_SHARED_OBJ = #(tc.dynamic_object_extension);
+    var extra_objects = map (fun (f:string) => f + EXT_SHARED_OBJ) control.cppobases;
     if control.CXXONLY == 0 do
       var result = tc.dynamic_library_linker
         (
           dst=control.LINKER_OUTPUT_FILENAME,
-          srcs= control.cppos + (dvars.cpp_filebase+EXT_SHARED_OBJ)
+          srcs= control.cppos + extra_objects + (dvars.cpp_filebase+EXT_SHARED_OBJ)
         )
       ;
     else
       result = tc.dynamic_library_linker
         (
           dst=control.LINKER_OUTPUT_FILENAME,
-          srcs= control.cppos 
+          srcs= control.cppos  + extra_objects
         )
       ;
     done
@@ -2096,13 +2107,14 @@ println$ "flx, prior to calling toolchain: DRIVER OBJS = " + control.DRIVER_OBJS
 println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
 */
     var EXT_DYNAMIC_OBJ = #(tc.dynamic_object_extension);
+    var extra_objects = map (fun (f:string) => f + EXT_DYNAMIC_OBJ) control.cppobases;
     if control.CXXONLY == 0 do
       var result = tc.dynamic_executable_linker
         (
           dst=control.LINKER_OUTPUT_FILENAME,
           srcs= 
             control.DRIVER_OBJS +
-            control.cppos + 
+            control.cppos + extra_objects +
             (dvars.cpp_filebase+"_static_link_thunk"+EXT_DYNAMIC_OBJ) + 
             (dvars.cpp_filebase+EXT_DYNAMIC_OBJ)
         )
@@ -2112,7 +2124,7 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
         (
           dst=control.LINKER_OUTPUT_FILENAME,
           srcs= 
-            control.cppos 
+            control.cppos + extra_objects
         )
       ;
     done
@@ -2163,13 +2175,14 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
       end
     ;
     var EXT_STATIC_OBJ = #(tc.static_object_extension);
+    var extra_objects = map (fun (f:string) => f + EXT_STATIC_OBJ) control.cppobases;
     if control.CXXONLY == 0 do
       var result = tc.static_executable_linker
         (
           dst=control.LINKER_OUTPUT_FILENAME,
           srcs= 
             control.DRIVER_OBJS +
-            control.cppos + 
+            control.cppos + extra_objects +
             (dvars.cpp_filebase+"_static_link_thunk"+EXT_STATIC_OBJ) + 
             (dvars.cpp_filebase+EXT_STATIC_OBJ)
         )
@@ -2179,7 +2192,7 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
         (
           dst=control.LINKER_OUTPUT_FILENAME,
           srcs= 
-            control.cppos 
+            control.cppos + extra_objects
         )
       ;
     done
@@ -2212,17 +2225,18 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
       end
     ;
     var EXT_STATIC_OBJ = #(tc.static_object_extension);
+    var extra_objects = map (fun (f:string) => f + EXT_STATIC_OBJ) control.cppobases;
     if control.CXXONLY == 0 do
       var result = tc . static_library_linker 
         (
-          srcs=control.cppos + (dvars.cpp_filebase+EXT_STATIC_OBJ) ,
+          srcs=control.cppos + extra_objects + (dvars.cpp_filebase+EXT_STATIC_OBJ) ,
           dst=control.LINKER_OUTPUT_FILENAME
         )
       ;
     else
       result = tc . static_library_linker 
         (
-          srcs=control.cppos,
+          srcs=control.cppos + extra_objects,
           dst=control.LINKER_OUTPUT_FILENAME
         )
       ;
@@ -2260,6 +2274,7 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
 
       debugln$ "Extra c++ sources  "+ str control.cpps;
       debugln$ "Extra object files "+ str control.cppos;
+      debugln$ "Extra object bases "+ str control.cppobases;
 
       debugln$ "Extra ocaml files  "+ str control.ocamls;
       debugln$ "Extra swift files  "+ str control.swifts;
