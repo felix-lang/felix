@@ -738,7 +738,7 @@ private noinline proc handle_switch
 
   elif prefix(arg,"-D") do
     debugln "Set extra macros for C++ compilation";
-    control.MACROS <- control*.MACROS + arg;
+    control.MACROS <- control*.MACROS + arg.[2 to];
 
   elif arg \in ("-O0", "-O1","-O2","-O3") do
     debugln$ "Set C++ compilation optimisation " + arg;
