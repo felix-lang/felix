@@ -169,6 +169,17 @@ to distinguish object files generated for static linkage
 and those for dynamic linkage. When in doubt, use :code:`-fPIC`
 because such code can usually also be statically linked.
 
+You can also use the :code:`--obj=` switch:
+
+.. code-block:: bash
+
+    flx --static --obj=base myfelix.flx
+
+This will add `base_static.o` to the link on Linux.
+The suffix will be `_dynamic` for shared library build.
+The extension will be `.obj` on Windows. This switch
+just removes platform dependencies from the command line.
+
 
 Compiling Felix with added libraries
 ====================================
