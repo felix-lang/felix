@@ -20,6 +20,7 @@ w.add$ mk_drawable FlxGui::write (100,100,font,black,"Felix says: ");
 w.add$ mk_drawable FlxGui::write (100,100+lineskip,font,black,"Hello World");
 w.update();
 w.show();
+SDL_PumpEvents;
 Faio::sleep(clock,15.0);
 
 

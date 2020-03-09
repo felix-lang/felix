@@ -33,6 +33,7 @@ w.add$ mk_drawable draw_line (RGB(0,0,255), 200,110,200,210);
 
 w.update();
 w.show();
+SDL_PumpEvents;
 
 Faio::sleep(clock,15.0);
 @
