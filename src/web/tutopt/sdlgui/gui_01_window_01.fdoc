@@ -15,6 +15,7 @@ var w = create_resizable_window("Felix:gui_01_window_01",100,100,400,400);
 w.add$ mk_drawable FlxGuiSurface::clear lightgrey;
 w.update();
 w.show();
+SDL_PumpEvents;
 
 Faio::sleep(clock,15.0);
 
