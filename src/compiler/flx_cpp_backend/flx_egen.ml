@@ -245,15 +245,41 @@ let rec gen_expr'
      (* ce_atom ("UNIT_ERROR") *)
   | _ ->
   match e with
-  | BEXPR_cltpointer (d,c,p,v) ->
+  (* p is a pointer to product type d, either machine pointer or compact linear pointer now, 
+     v is a list of constant projections starting at d and ending with c
+  *)
+  | BEXPR_cltpointer (d,c,p,v) -> 
     let n = Flx_btype.sizeof_linear_type () c in
-    ce_call (ce_atom "::flx::rtl::clptr_t") [ge' p; ce_int v; ce_int n]
+    let rec cal_divisor d v div = 
+      match v with 
+      | [] -> div
+      | n :: tail ->
+        match d with
+        | BTYP_tuple ls ->
+          let divisor = 
+            List.fold_left (fun acc t -> acc * (Flx_btype.sizeof_linear_type () t)) 1
+            (Flx_list.list_tail ls (n+1))
+          in
+          let d = List.nth ls n in
+          cal_divisor d tail (div * divisor)
+        | BTYP_array (base, index_type) ->
+          let m = Flx_btype.sizeof_linear_type () index_type in
+          let rec pow a b = match b with | 0 -> 1 | 1 -> a | _ -> a * pow a (b - 1) in
+          let base_size = Flx_btype.sizeof_linear_type () base in
+          let divisor = pow base_size (m - n - 1) in 
+          cal_divisor base tail (div * divisor) 
+        | _ -> print_endline ("Compact Linear Pointer, unimplemented component type " ^ sbt bsym_table d); assert false
+    in
+    let divisor = cal_divisor d v 1 in
+    ce_call (ce_atom "::flx::rtl::clptr_t") [ge' p; ce_int divisor; ce_int n]
 
   | BEXPR_cltpointer_prj (d,c,v) -> 
     print_endline ("Construct compact linear pointer projection, should have been removed??");
+    assert false
+(*
     let n = Flx_btype.sizeof_linear_type () c in
     ce_call (ce_atom "::flx::rtl::clprj_t") [ce_int v; ce_int n]
- 
+*) 
 
   | BEXPR_int i -> ce_atom (si i)
   | BEXPR_polyrecord _ -> print_endline "Attempt to generate polyrecord value, should have been factored out"; assert false
@@ -421,7 +447,7 @@ print_endline ("Generated application of injection application " ^ sbe bsym_tabl
    ) ->
     print_endline ("Special case apply clt projection to clt pointer ");
     assert (jd = pd);
-    ge' (bexpr_cltpointer pd jc ptr (v1 * v2))
+    ge' (bexpr_cltpointer pd jc ptr (v1 @ v2))
 
 (* -------------- CONSTANT PROJECTIONS ----------------------------- *)
   | BEXPR_apply ( (BEXPR_prj (ix, domain,codomain),prjt), (_,argt as arg)) ->

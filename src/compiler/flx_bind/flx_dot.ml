@@ -167,45 +167,6 @@ let handle_constant_projection bsym_table sr a ta n =
     else
       bexpr_get_n t n a
 
-(* POINTER TO ARRAY: compact linear *)
-  | BTYP_ptr (mode,(BTYP_tuple ls as tup),[]) when Flx_btype.islinear_type () tup ->
-(*
-print_endline ("projection " ^ si n ^ " of pointer to compact linear type " ^ sbt bsym_table tup);
-*)
-    let m = List.length ls in
-    if n < 0 || n >= m then
-      clierrx "[flx_bind/flx_dot.ml:146: E73] " sr ("AST_dot, tuple index "^ string_of_int n ^ 
-      " out of range 0 to " ^ string_of_int (m-1) ^
-      " for type " ^ sbt bsym_table ta
-      )
-    else
-    let c = List.nth ls n in
-(*
-print_endline ("Component type = " ^ sbt bsym_table c);
-*)
-    (* let domain_cltptr_t = Flx_btype.btyp_cltpointer tup tup in *)
-    (* let codomain_cltptr_t = Flx_btype.btyp_cltpointer tup c in *)
-    let codomain_cltptr_t = Flx_btype.btyp_ptr mode c [tup] in
-
-    (* coerce the machine pointer to a compact linear pointer *)
-    let ptr = bexpr_cltpointer_of_pointer a in
-
-    (* calculate the projection *)
-(*
-print_endline ("Tail components = " ^ catmap "," (sbt bsym_table) (Flx_list.list_tail ls (n+1)));
-*)
-    let divisor = 
-      List.fold_left (fun acc t -> acc * (Flx_btype.sizeof_linear_type () t)) 1
-        (Flx_list.list_tail ls (n+1))
-    in
-(*
-print_endline ("Divisor for term " ^ si n ^ " is " ^ si divisor);
-*)
-    let prj = bexpr_cltpointer_prj tup c divisor in
-
-    (* apply clt pointer projection to coerced pointer *)
-    bexpr_apply codomain_cltptr_t ( prj, ptr )
-
 (* POINTER TO TUPLE: compact linear *)
   | BTYP_ptr (mode,(BTYP_tuple ls as tup),baseptr_t) when Flx_btype.islinear_type () tup ->
 (*
@@ -219,28 +180,7 @@ print_endline ("projection " ^ si n ^ " of cltpointer to compact linear type " ^
       )
     else
     let c = List.nth ls n in
-(*
-print_endline ("Component type = " ^ sbt bsym_table c);
-*)
-    let codomain_cltptr_t = Flx_btype.btyp_ptr mode c [tup] in
-
-    let ptr =  a in
-
-    (* calculate the projection *)
-(*
-print_endline ("Tail components = " ^ catmap "," (sbt bsym_table) (Flx_list.list_tail ls (n+1)));
-*)
-    let divisor = 
-      List.fold_left (fun acc t -> acc * (Flx_btype.sizeof_linear_type () t)) 1
-        (Flx_list.list_tail ls (n+1))
-    in
-(*
-print_endline ("Divisor for term " ^ si n ^ " is " ^ si divisor);
-*)
-    let prj = bexpr_cltpointer_prj tup c divisor in
-
-    (* apply clt pointer projection to coerced pointer *)
-    bexpr_apply codomain_cltptr_t ( prj, ptr )
+    bexpr_cltpointer tup c a [n] 
 
 (* POINTER TO ARRAY: compact linear *)
   (* ARRAY CASE *)
@@ -250,7 +190,7 @@ print_endline ("projection " ^ si n ^ " of pointer to compact linear array type 
 *)
     let m = array_count in
     if n < 0 || n >= m then
-      clierrx "[flx_bind/flx_dot.ml:146: E73] " sr ("AST_dot, tuple index "^ string_of_int n ^ 
+      clierrx "[flx_bind/flx_dot.ml:146: E73] " sr ("AST_dot, array index "^ string_of_int n ^ 
       " out of range 0 to " ^ string_of_int (m-1) ^
       " for type " ^ sbt bsym_table ta
       )
@@ -259,6 +199,8 @@ print_endline ("projection " ^ si n ^ " of pointer to compact linear array type 
 (*
 print_endline ("Component type = " ^ sbt bsym_table c);
 *)
+    bexpr_cltpointer tup c a [n] 
+(*
     (* let domain_cltptr_t = Flx_btype.btyp_cltpointer tup tup in *)
     let codomain_cltptr_t = Flx_btype.btyp_ptr mode c [tup] in
 
@@ -285,41 +227,9 @@ print_endline ("Divisor for term " ^ si n ^ " is " ^ si divisor);
 
     (* apply clt pointer projection to coerced pointer *)
     bexpr_apply codomain_cltptr_t ( prj, ptr )
-
-
-  (* ARRAY CASE *)
-  | BTYP_ptr (mode,(BTYP_array (array_base, BTYP_unitsum array_count) as tup),baseptr_t) when Flx_btype.islinear_type () tup ->
-(*
-print_endline ("projection " ^ si n ^ " of cltpointer to compact linear array type " ^ sbt bsym_table tup);
 *)
-    let m = array_count in
-    if n < 0 || n >= m then
-      clierrx "[flx_bind/flx_dot.ml:146: E73] " sr ("AST_dot, tuple index "^ string_of_int n ^ 
-      " out of range 0 to " ^ string_of_int (m-1) ^
-      " for type " ^ sbt bsym_table ta
-      )
-    else
-    let c = array_base in
-(*
-print_endline ("Component type = " ^ sbt bsym_table c);
-*)
-    let codomain_cltptr_t = Flx_btype.btyp_ptr mode c [tup] in
 
-    let ptr =  a in
-
-    (* calculate the projection *)
-    let rec pow a b = match b with | 0 -> 1 | 1 -> a | _ -> a * pow a (b - 1) in
-    let base_size = Flx_btype.sizeof_linear_type () array_base in
-    let divisor = pow base_size (m - n - 1) in 
-(*
-print_endline ("Divisor for term " ^ si n ^ " is " ^ si divisor);
-*)
-    let prj = bexpr_cltpointer_prj tup c divisor in
-
-    (* apply clt pointer projection to coerced pointer *)
-    bexpr_apply codomain_cltptr_t ( prj, ptr )
-
-  | BTYP_ptr (mode,BTYP_tuple ls,[]) ->
+   | BTYP_ptr (mode,BTYP_tuple ls,[]) ->
     let m = List.length ls in
     if n < 0 || n >= m then
       clierrx "[flx_bind/flx_dot.ml:146: E73] " sr ("AST_dot, tuple index "^ string_of_int n ^ 

@@ -720,6 +720,9 @@ struct RTL_EXTERN clptr_t
 
   // upgrade from ordinary pointer
   clptr_t (cl_t *_p, cl_t siz) : p (_p), divisor(1), modulus(siz) {}
+
+  // add projection to existing compact linear pointer
+  clptr_t (clptr_t _p, cl_t div, cl_t siz) : p(_p.p), divisor (_p.divisor * div), modulus(siz) {}
 };
 
 // apply projection to pointer

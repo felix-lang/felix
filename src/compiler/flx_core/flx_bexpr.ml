@@ -17,16 +17,16 @@ type bexpr_t =
      first argument: base value type of machine pointer
      second argument: result value type
      third argument: machine pointer value, type: BTYP_pointer (base value type)
-     fourth argument: divisor
+     fourth argument: component index
   *)
-  | BEXPR_cltpointer of Flx_btype.t * Flx_btype.t * t * int 
+  | BEXPR_cltpointer of Flx_btype.t * Flx_btype.t * t * int list
 
   (* Compact linear pointer projection term:
      first argument: base value type
      second argument: result value type
-     third argument: divisor required for value projection
+     third argument: component index list
   *)
-  | BEXPR_cltpointer_prj of Flx_btype.t * Flx_btype.t * int
+  | BEXPR_cltpointer_prj of Flx_btype.t * Flx_btype.t * int list
 
   | BEXPR_uniq of t
   | BEXPR_likely of t
@@ -216,26 +216,26 @@ let bexpr_wref t (bid, ts) =
   | Some k -> bexpr_unitptr k
   | _ -> BEXPR_wref (bid, complete_check_list ts), complete_check "bexpr_wref" t
 
-let bexpr_cltpointer d c p v =
+let bexpr_cltpointer d c p (vs: int list) =
   let t = Flx_btype.btyp_cltpointer d c in 
-  BEXPR_cltpointer (d,c,p,v), complete_check "bexpr_cltpointer" t
+  BEXPR_cltpointer (d,c,p,vs), complete_check "bexpr_cltpointer" t
 
 (* FIXME! *)
 let bexpr_cltpointer_of_pointer ((_,pt) as p) = 
   match pt with
   | Flx_btype.BTYP_ptr (m,vt,ts) ->
     if Flx_btype.islinear_type () vt then
-      bexpr_cltpointer vt vt p 1
+      bexpr_cltpointer vt vt p []
     else
       failwith "cltpointer_of_pointer requires (pointer to) compact linear type as argument"
   | _ -> 
     failwith "cltpointer_of_pointer requires pointer (to compact linear type) as argument"
  
-let bexpr_cltpointer_prj base_value_type target_value_type divisor =
+let bexpr_cltpointer_prj base_value_type target_value_type component_list =
   let d = Flx_btype.btyp_cltpointer base_value_type base_value_type in
   let c = Flx_btype.btyp_cltpointer base_value_type target_value_type in
   let t = Flx_btype.btyp_function (d,c) in
-  BEXPR_cltpointer_prj (base_value_type, target_value_type, divisor), complete_check "bexpr_cltpointer_prj" t
+  BEXPR_cltpointer_prj (base_value_type, target_value_type, component_list ), complete_check "bexpr_cltpointer_prj" t
 
 let bexpr_likely ((_,t) as e) = BEXPR_likely e, complete_check "bexpr_likely" t
 
@@ -271,7 +271,7 @@ let bexpr_apply t (e1, e2) =
       failwith ("SYSTEM ERROR: bexpr_apply: clt projection domain\n"^ Flx_btype.st fd ^ 
         "\ndoesn't agree with clt pointer codomain\n" ^ Flx_btype.st ac);
     end;
-    bexpr_cltpointer ad fc p (fv * av)
+    bexpr_cltpointer ad fc p (av @ fv)
 
   | _ ->
   begin match Flx_btype.unfold "Flx_bexpr:bexpr_apply" ft with

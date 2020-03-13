@@ -2124,8 +2124,8 @@ and string_of_bound_expression' bsym_table se e =
   let st t = sbt bsym_table t in
   let sid n = bound_name_of_bindex bsym_table n in
   match fst e with
-  | BEXPR_cltpointer (d,c,p,v) -> "cltpointer(" ^ se p ^ ":" ^ st d ^"," ^ si v ^"(" ^ st c ^"))"
-  | BEXPR_cltpointer_prj (d,c,v) -> "cltpointer_prj(" ^ st d ^ "," ^ st c ^ "," ^ si v^")"
+  | BEXPR_cltpointer (d,c,p,v) -> "cltpointer(" ^ se p ^ ":" ^ st d ^"[" ^ catmap "," si v ^"](" ^ st c ^"))"
+  | BEXPR_cltpointer_prj (d,c,v) -> "cltpointer_prj(" ^ st d ^ "," ^ st c ^ ",[" ^ catmap "," si v^"])"
   | BEXPR_lambda (i,t,e) -> "lamda<"^si i^":"^sbt bsym_table t^">(" ^se e^")"
   | BEXPR_cond (c,t,f) -> "if " ^ se c ^ " then " ^ se t ^ " else " ^ se f ^ " endif"
   | BEXPR_unitptr k -> 

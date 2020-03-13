@@ -9,8 +9,8 @@ type bexpr_t = private
   | BEXPR_rref of bid_t * Flx_btype.t list
   | BEXPR_wref of bid_t * Flx_btype.t list
 
-  | BEXPR_cltpointer of Flx_btype.t * Flx_btype.t * t * int 
-  | BEXPR_cltpointer_prj of Flx_btype.t * Flx_btype.t * int
+  | BEXPR_cltpointer of Flx_btype.t * Flx_btype.t * t * int list 
+  | BEXPR_cltpointer_prj of Flx_btype.t * Flx_btype.t * int list
 
   | BEXPR_uniq of t
   | BEXPR_likely of t
@@ -101,7 +101,7 @@ val bexpr_uniq: t -> t
 val bexpr_cltpointer_of_pointer:
   t -> t
 val bexpr_cltpointer:
-  Flx_btype.t -> Flx_btype.t -> t -> int -> t
+  Flx_btype.t -> Flx_btype.t -> t -> int list -> t
 
 val bexpr_likely : t -> t
 val bexpr_unlikely : t -> t
@@ -132,7 +132,7 @@ val bexpr_rprj :
   string -> Flx_btype.t -> Flx_btype.t -> t
 
 val bexpr_cltpointer_prj:
-  Flx_btype.t -> Flx_btype.t -> int -> t
+  Flx_btype.t -> Flx_btype.t -> int list -> t
 
 
 val bexpr_record : (string * t) list -> t
