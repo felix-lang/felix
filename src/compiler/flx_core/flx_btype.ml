@@ -42,12 +42,16 @@ and t =
   | BTYP_ellipsis (* only at end of a tuple, matches rest of argument tuple, for varargs *)
   | BTYP_none
   | BTYP_sum of t list
+  | BTYP_compactsum of t list
   | BTYP_unitsum of int
   | BTYP_inst of bid_t * t list * Flx_kind.kind
   | BTYP_vinst of bid_t * t list * Flx_kind.kind
   | BTYP_tuple of t list
+  | BTYP_compacttuple of t list
   | BTYP_array of t * t
+  | BTYP_compactarray of t * t
   | BTYP_rptsum of t * t
+  | BTYP_compactrptsum of t * t
   | BTYP_record of (string * t) list
   | BTYP_polyrecord of (string * t) list * string * t
   | BTYP_variant of (string * t) list
@@ -109,6 +113,7 @@ let flat_iter
   | BTYP_none -> ()
   | BTYP_ellipsis -> ()
   | BTYP_sum ts -> List.iter f_btype ts
+  | BTYP_compactsum ts -> List.iter f_btype ts
   | BTYP_unitsum k ->
       let unitrep = BTYP_tuple [] in
       for i = 1 to k do f_btype unitrep done
@@ -118,8 +123,11 @@ let flat_iter
   | BTYP_inst (i,ts,mt) -> f_bid i; List.iter f_btype ts
   | BTYP_vinst (i,ts,mt) -> f_bid i; List.iter f_btype ts
   | BTYP_tuple ts -> List.iter f_btype ts
+  | BTYP_compacttuple ts -> List.iter f_btype ts
   | BTYP_rptsum (t1,t2)
+  | BTYP_compactrptsum (t1,t2)
   | BTYP_array (t1,t2)->  f_btype t1; f_btype t2
+  | BTYP_compactarray (t1,t2)->  f_btype t1; f_btype t2
   | BTYP_record (ts) -> List.iter (fun (s,t) -> f_btype t) ts
   | BTYP_polyrecord (ts,s,v) -> List.iter (fun (s,t) -> f_btype t) ts; f_btype v
   | BTYP_variant ts -> List.iter (fun (s,t) -> f_btype t) ts
@@ -249,12 +257,16 @@ and str_of_btype typ =
   | BTYP_none -> "BTYP_none"
   | BTYP_ellipsis -> "BTYP_ellipsis"
   | BTYP_sum ts -> "BTYP_sum(" ^ ss ts ^")"
+  | BTYP_compactsum ts -> "BTYP_compactsum(" ^ ss ts ^")"
   | BTYP_unitsum n -> string_of_int n
   | BTYP_inst (i,ts,mt) -> "BTYP_inst("^string_of_int i^"["^ss ts^"]:"^Flx_kind.sk mt^")"
   | BTYP_vinst (i,ts,mt) -> "BTYP_vinst("^string_of_int i^"["^ss ts^"]:"^Flx_kind.sk mt^")"
   | BTYP_tuple ts -> "BTYP_tuple(" ^ ss ts ^ ")"
+  | BTYP_compacttuple ts -> "BTYP_compacttuple(" ^ ss ts ^ ")"
   | BTYP_array (b,x) -> "BTYP_array(" ^ s b ^"," ^s x^")"
+  | BTYP_compactarray (b,x) -> "BTYP_compactarray(" ^ s b ^"," ^s x^")"
   | BTYP_rptsum (b,x) -> "BTYP_rptsum(" ^ s b ^"," ^s x^")"
+  | BTYP_compactrptsum (b,x) -> "BTYP_compactrptsum(" ^ s b ^"," ^s x^")"
   | BTYP_record (ls) -> "BTYP_record("^String.concat "," (List.map (fun (name,t)->name^":"^s t) ls)^")"
   | BTYP_polyrecord (ls,name,t) -> "BTYP_polyrecord("^String.concat "," (List.map (fun (name,t)->name^":"^s t) ls)^" | "^name^ ":" ^ s t^")"
   | BTYP_variant (ls) -> "BTYP_variant(" ^String.concat " | " (List.map (fun (name,t)->name^" of "^s t) ls)^")"
@@ -316,13 +328,14 @@ and str_of_btype typ =
 let rec islinear_type bsym_table t =
   match t with
   | BTYP_void
+  | BTYP_tuple []
   | BTYP_unitsum _  -> true
   | BTYP_type_var (_,k) -> kind_ge2 KIND_compactlinear k
 
-  | BTYP_tuple ts
-  | BTYP_sum ts -> List.fold_left (fun acc t -> acc && islinear_type bsym_table t) true ts
-  | BTYP_rptsum (count,base) -> islinear_type bsym_table base (* coarray *)
-  | BTYP_array (base,index) -> islinear_type bsym_table base
+  | BTYP_compacttuple ts
+  | BTYP_compactsum ts -> List.fold_left (fun acc t -> acc && islinear_type bsym_table t) true ts
+  | BTYP_compactrptsum (count,base) -> islinear_type bsym_table base (* coarray *)
+  | BTYP_compactarray (base,index) -> islinear_type bsym_table base
   | _ -> false
 
 
@@ -345,8 +358,10 @@ let iscopyable_type t =
     (* | BTYP_void *)
     | BTYP_uniq _ -> raise Not_found
     | BTYP_rptsum (_,t) 
+    | BTYP_compactrptsum (_,t) 
     | BTYP_rev t 
-    | BTYP_array (t,_) -> f t
+    | BTYP_array (t,_)
+    | BTYP_compactarray (t,_) -> f t
 
     | BTYP_tuple_cons (t1,t2) 
     | BTYP_tuple_snoc (t1,t2) -> f t1; f t2
@@ -355,6 +370,7 @@ let iscopyable_type t =
     | BTYP_type_set_union ts
     | BTYP_type_set_intersection ts
     | BTYP_sum ts
+    | BTYP_compactsum ts
     | BTYP_tuple ts -> List.iter f ts
 
     | BTYP_variant rs
@@ -402,13 +418,17 @@ let complete_type t =
     let uf t = aux (depth + 1) t in
     match t' with
     | BTYP_sum ls -> List.iter uf ls
+    | BTYP_compactsum ls -> List.iter uf ls
     | BTYP_tuple ls -> List.iter uf ls
+    | BTYP_compacttuple ls -> List.iter uf ls
     | BTYP_record (ls) -> List.iter (fun (s,t) -> uf t) ls
     | BTYP_polyrecord (ls,s,v) -> List.iter (fun (s,t) -> uf t) ls; uf v
     | BTYP_variant ls -> (List.iter (fun (s,t) -> uf t) ls)
     | BTYP_polyvariant ls -> (List.iter (fun k -> match k with | `Ctor (s,t) -> uf t | `Base t -> uf t) ls)
     | BTYP_array (a,b) -> uf a; uf b
+    | BTYP_compactarray (a,b) -> uf a; uf b
     | BTYP_rptsum (a,b) -> uf a; uf b
+    | BTYP_compactrptsum (a,b) -> uf a; uf b
     | BTYP_function (a,b) -> uf a;uf b
     | BTYP_effector (a,e,b) -> uf a; uf e; uf b
     | BTYP_linearfunction (a,b) -> uf a;uf b
@@ -478,6 +498,16 @@ let btyp_rptsum (n,t) =
     | BTYP_tuple [] -> n  (* n *+ 1 = n *)
     | _ -> BTYP_rptsum (n,t)
 
+let btyp_compactrptsum (n,t) =
+  match n with
+  | BTYP_void -> BTYP_void (* 0 *+ t = 0 *)
+  | BTYP_tuple [] -> t (* 1 *+ t = t *)
+  | _ -> match t with
+    | BTYP_void  -> BTYP_void (* n *+ 0 = 0 *)
+    | BTYP_tuple [] -> n  (* n *+ 1 = n *)
+    | _ -> BTYP_compactrptsum (n,t)
+
+
 (** Construct a BTYP_sum type. *)
 let btyp_sum ts =
   match ts with 
@@ -491,6 +521,21 @@ let btyp_sum ts =
   with Not_found -> 
     BTYP_sum ts
   end
+
+(** Construct a BTYP_sum type. *)
+let btyp_compactsum ts =
+  match ts with 
+  | [] -> BTYP_void
+  | [t] -> t 
+  | _ ->
+  let first = List.hd ts in
+  begin try List.iter (fun t -> if t <> first then raise Not_found) ts;
+    let n = btyp_unitsum (List.length ts) in
+    btyp_compactrptsum (n,first)
+  with Not_found -> 
+    BTYP_compactsum ts
+  end
+
 
 let btyp_inst (bid, ts,mt) =
   BTYP_inst (bid, ts,mt)
@@ -513,6 +558,18 @@ let btyp_tuple ts =
         BTYP_array (head, (BTYP_unitsum (List.length ts)))
       with Not_found ->
         BTYP_tuple ts
+
+let btyp_compacttuple ts =
+  match ts with
+  | [] -> btyp_unit ()
+  | [t] -> t
+  | (head :: tail) as ts ->
+      (* If all the types are the same, reduce the type to a BTYP_array. *)
+      try
+        List.iter (fun t -> if t <> head then raise Not_found) tail;
+        BTYP_compactarray (head, (BTYP_unitsum (List.length ts)))
+      with Not_found ->
+        BTYP_compacttuple ts
 
 let btyp_rev t =
   match t with
@@ -538,6 +595,22 @@ let btyp_array (t, n) =
     matrices indexed by a pair?
   *)
   | _ -> BTYP_array (t, n)
+
+let btyp_compactarray (t, n) =
+  match n with
+  | BTYP_void -> BTYP_tuple []
+
+  (* Arrays of 1 element don't exist!  
+  This was previously allowed but it has to be inconsistent
+  to allow it
+  *)
+  | BTYP_tuple [] -> t
+
+  (* if n isn't a sum type, what happens? Well .. what about
+    matrices indexed by a pair?
+  *)
+  | _ -> BTYP_compactarray (t, n)
+
 
 (** Construct a BTYP_record type. *)
 let btyp_record ts = 
@@ -804,14 +877,14 @@ let rec int_of_linear_type bsym_table t = match t with
   | BTYP_tuple [] -> 1
   | BTYP_unitsum k -> k
   | BTYP_sum [] ->  0
-  | BTYP_sum ts ->
+  | BTYP_compactsum ts ->
     List.fold_left (fun i t -> i + int_of_linear_type bsym_table t) 0 ts
-  | BTYP_tuple ts ->
+  | BTYP_compacttuple ts ->
     List.fold_left (fun i t -> i * int_of_linear_type bsym_table t) 1 ts
-  | BTYP_array (a,ix) -> 
+  | BTYP_compactarray (a,ix) -> 
     let sa = int_of_linear_type bsym_table a in
     ipow sa (int_of_linear_type bsym_table ix)
-  | BTYP_rptsum (count,base) ->
+  | BTYP_compactrptsum (count,base) ->
     int_of_linear_type bsym_table count * int_of_linear_type bsym_table base
 
   | _ -> raise (Invalid_int_of_unitsum)
@@ -822,15 +895,17 @@ let sizeof_linear_type bsym_table t =
 
 let ncases_of_sum bsym_table t = match t with
   | BTYP_unitsum n -> n
+  | BTYP_compactrptsum (count,_)
   | BTYP_rptsum (count,_) -> int_of_linear_type bsym_table count
+  | BTYP_compactsum ls
   | BTYP_sum ls -> List.length ls 
   | BTYP_void -> 0
   | _ -> 1
 
 let iscompact_linear_product t =
   match t with
-  | BTYP_tuple _ 
-  | BTYP_array _ when islinear_type () t -> true
+  | BTYP_compacttuple _ 
+  | BTYP_compactarray _ when islinear_type () t -> true
   | _ -> false
 
 (* -------------------------------------------------------------------------- *)
@@ -871,6 +946,7 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_none as x -> x
   | BTYP_ellipsis as x -> x
   | BTYP_sum ts -> btyp_sum (List.map f_btype ts)
+  | BTYP_compactsum ts -> btyp_compactsum (List.map f_btype ts)
   | BTYP_unitsum k ->
     let mapped_unit = f_btype (BTYP_tuple []) in
     begin match mapped_unit with
@@ -880,8 +956,11 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_inst (i,ts,mt) -> btyp_inst (f_bid i, List.map f_btype ts,mt)
   | BTYP_vinst (i,ts,mt) -> btyp_vinst (f_bid i, List.map f_btype ts,mt)
   | BTYP_tuple ts -> btyp_tuple (List.map f_btype ts)
+  | BTYP_compacttuple ts -> btyp_compacttuple (List.map f_btype ts)
   | BTYP_array (t1,t2) -> btyp_array (f_btype t1, f_btype t2)
+  | BTYP_compactarray (t1,t2) -> btyp_compactarray (f_btype t1, f_btype t2)
   | BTYP_rptsum (t1,t2) -> btyp_rptsum (f_btype t1, f_btype t2)
+  | BTYP_compactrptsum (t1,t2) -> btyp_compactrptsum (f_btype t1, f_btype t2)
   | BTYP_record (ts) -> btyp_record (List.map (fun (s,t) -> s, f_btype t) ts)
   | BTYP_polyrecord (ts,s,v) -> btyp_polyrecord (List.map (fun (s,t) -> s, f_btype t) ts) s (f_btype v)
   | BTYP_variant ts -> btyp_variant (List.map (fun (s,t) -> s, f_btype t) ts)

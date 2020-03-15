@@ -66,6 +66,15 @@ let rec get_offsets' syms bsym_table typ : offset_kind_t list =
 
   | BTYP_variant _ ->
     [`Ptr (offsetof tname "data")]
+  
+  (* compact linear *)
+  | BTYP_tuple [] 
+  | BTYP_compacttuple _
+  | BTYP_compactarray _
+  | BTYP_compactsum _
+  | BTYP_compactrptsum _
+  | BTYP_unitsum _ -> []
+
 
   (* need to fix the rule for optimisation here .. *)
   | BTYP_rptsum _ 
@@ -189,8 +198,6 @@ let rec get_offsets' syms bsym_table typ : offset_kind_t list =
   | BTYP_effector _ 
   | BTYP_function _ -> [`Ptr "0"]
   | BTYP_cfunction _ -> []
-
-  | BTYP_unitsum _ -> []
 
   | BTYP_label -> [`Ptr "0"] (* see jump_address_t, target_frame at offset 0 *)
 

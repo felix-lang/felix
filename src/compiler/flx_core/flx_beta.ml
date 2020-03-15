@@ -323,13 +323,20 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
   | BTYP_tuple_snoc (t1,t2) -> btyp_tuple_snoc (br t1) (br t2)
   | BTYP_inst (i,ts,mt) -> btyp_inst (i, List.map br ts,mt)
   | BTYP_vinst (i,ts,mt) -> btyp_vinst (i, List.map br ts,mt)
-  | BTYP_tuple ls -> btyp_tuple (List.map br ls)
   | BTYP_rev t -> btyp_rev (br t)
   | BTYP_uniq t -> btyp_uniq (br t)
 
+  | BTYP_compacttuple ls -> btyp_compacttuple (List.map br ls)
+  | BTYP_compactarray (i,t) -> btyp_compactarray (br i, br t)
+  | BTYP_compactrptsum (i,t) -> btyp_compactrptsum (br i, br t)
+  | BTYP_compactsum ls -> btyp_compactsum (List.map br ls)
+
+
+  | BTYP_tuple ls -> btyp_tuple (List.map br ls)
   | BTYP_array (i,t) -> btyp_array (br i, br t)
   | BTYP_rptsum (i,t) -> btyp_rptsum (br i, br t)
   | BTYP_sum ls -> btyp_sum (List.map br ls)
+
   | BTYP_record (ts) ->
      let ss,ls = List.split ts in
      btyp_record (List.combine ss (List.map br ls))

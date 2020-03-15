@@ -23,12 +23,16 @@ and t = private
   | BTYP_ellipsis (* only at end of a tuple, matches rest of argument tuple, for varargs *)
   | BTYP_none
   | BTYP_sum of t list
+  | BTYP_compactsum of t list
   | BTYP_unitsum of int
   | BTYP_inst of bid_t * t list * Flx_kind.kind
   | BTYP_vinst of bid_t * t list * Flx_kind.kind
   | BTYP_tuple of t list
+  | BTYP_compacttuple of t list
   | BTYP_array of t * t
+  | BTYP_compactarray of t * t
   | BTYP_rptsum of t * t
+  | BTYP_compactrptsum of t * t
   | BTYP_record of (string * t) list
   | BTYP_polyrecord of (string * t) list * string * t
   | BTYP_variant of (string * t) list
@@ -119,16 +123,20 @@ val btyp_unit : unit -> t
 val btyp_bool : unit -> t
 val btyp_any : unit -> t
 val btyp_sum : t list -> t
+val btyp_compactsum : t list -> t
 val btyp_unitsum : int -> t
 val btyp_inst : bid_t * t list * kind -> t
 val btyp_vinst : bid_t * t list * kind -> t
 val btyp_tuple : t list -> t
+val btyp_compacttuple : t list -> t
 val btyp_rev : t -> t
 val btyp_uniq : t -> t
 val btyp_tuple_cons : t -> t -> t
 val btyp_tuple_snoc : t -> t -> t
 val btyp_array : t * t -> t
+val btyp_compactarray : t * t -> t
 val btyp_rptsum : t * t -> t
+val btyp_compactrptsum : t * t -> t
 val btyp_record : (string * t) list -> t
 val btyp_polyrecord : (string * t) list -> string -> t -> t
 val btyp_variant : (string * t) list -> t

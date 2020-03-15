@@ -147,7 +147,17 @@ then
   | BTYP_rev _ -> assert false (* should have been eliminated *)
   | BTYP_ellipsis
   | BTYP_label -> ()
-  | BTYP_void -> ()
+
+  (* compact linear types don't need to be registered *)
+  | BTYP_void
+  | BTYP_tuple []
+  | BTYP_compactsum _
+  | BTYP_compacttuple _
+  | BTYP_compactarray _
+  | BTYP_compactrptsum _ -> ()
+
+  | BTYP_unitsum k -> rnr t' (* because we typedef them *)
+
   | BTYP_fix (0,_) -> ()
   | BTYP_fix (i,_) -> clierrx "[flx_frontend/flx_treg.ml:123: E356] " sr ("[register_type_r] Fixpoint "^si i^" encountered")
   | BTYP_polyrecord _ -> clierrx "[flx_frontend/flx_treg.ml:124: E357] " sr ("[register_type_r] attempt to bind polyrecord type")
@@ -243,7 +253,6 @@ print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table
     (* iter rr ps; *) (* should be driven by constructors *)
     rnr t
 
-  | BTYP_unitsum k -> rnr t
   (* NOTE: pointer type is registered before the type it points
     to because it can be incomplete, whereas the type it
     points to may need a complete pointer type: this

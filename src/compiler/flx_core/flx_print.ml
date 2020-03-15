@@ -715,6 +715,13 @@ and sb bsym_table depth fixlist counter prec tc =
       | _ -> 4,cat " * " (map (sbt 4) ls)
       end
 
+    | BTYP_compacttuple ls ->
+      begin match ls with
+      | [] -> 0,"unit"
+      | [x] -> failwith ("UNEXPECTED TUPLE OF ONE ARGUMENT " ^ sbt 9 x)
+      | _ -> 4,"compact("^cat " * " (map (sbt 4) ls)^")"
+      end
+
     | BTYP_rev t -> 0, "_rev(" ^ sbt 0 t ^ ")"
     | BTYP_uniq t -> 0, "uniq(" ^ sbt 0 t ^ ")"
       
@@ -766,6 +773,20 @@ and sb bsym_table depth fixlist counter prec tc =
           5,cat " + " (map (sbt 5) ls)
       end
 
+    | BTYP_compactsum ls ->
+      begin match ls with
+      | [] -> 9,"UNEXPECTED EMPTY SUM = void"
+      | [BTYP_tuple[]; BTYP_tuple[]] -> 0,"unexpected bool"
+      | [x] -> (* failwith *) (9,"UNEXPECTED SUM OF ONE ARGUMENT " ^ sbt 9 x)
+      | _ ->
+        if (all_units ls)
+        then
+          0,si (length ls)
+        else
+          5,"compact("^cat " + " (map (sbt 5) ls)^")"
+      end
+
+
     | BTYP_type_set ls ->
       begin match ls with
       | [] -> 9,"UNEXPECTED EMPTY TYPESET = void"
@@ -809,11 +830,25 @@ and sb bsym_table depth fixlist counter prec tc =
       | _ -> 3, sbt 3 t1 ^"*+"^sbt 3 t2
       end
 
+    | BTYP_compactrptsum (t1,t2) ->
+      begin match t1 with
+      | BTYP_unitsum k -> 3, "compact("^si k ^"*+"^sbt 3 t2^")"
+      | _ -> 3, "compact("^sbt 3 t1 ^"*+"^sbt 3 t2^")"
+      end
+
+
     | BTYP_array (t1,t2) ->
       begin match t2 with
       | BTYP_unitsum k -> 3, sbt 3 t1 ^"^"^si k
       | _ -> 3, sbt 3 t1 ^"^"^sbt 3 t2
       end
+
+    | BTYP_compactarray (t1,t2) ->
+      begin match t2 with
+      | BTYP_unitsum k -> 3, "compact(" ^ sbt 3 t1 ^"^"^si k ^ ")"
+      | _ -> 3, "compact(" ^ sbt 3 t1 ^"^"^sbt 3 t2 ^ ")"
+      end
+
 
     | BTYP_ptr (m,t,ts) -> 1,str_of_pmode m^"ptr(" ^ sbt 1 t^",["^catmap "," (sbt 1) ts ^"])"
 

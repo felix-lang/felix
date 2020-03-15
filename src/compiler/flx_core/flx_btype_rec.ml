@@ -42,7 +42,9 @@ let fix i t =
     | BTYP_inst (k,ts,mt) -> btyp_inst (k, List.map aux ts,mt)
     | BTYP_vinst (k,ts,mt) -> btyp_vinst (k, List.map aux ts,mt)
     | BTYP_tuple ts -> btyp_tuple (List.map aux ts)
+    | BTYP_compacttuple ts -> btyp_compacttuple (List.map aux ts)
     | BTYP_sum ts -> btyp_sum (List.map aux ts)
+    | BTYP_compactsum ts -> btyp_compactsum (List.map aux ts)
     | BTYP_type_set ts -> btyp_type_set (List.map aux ts)
 
     | BTYP_function (a,b) -> btyp_function (aux a, aux b)
@@ -54,7 +56,9 @@ let fix i t =
     | BTYP_ptr (m,t,ts) -> btyp_ptr m (aux t) (List.map aux ts)
 
     | BTYP_array (a,b) -> btyp_array (aux a, aux b)
+    | BTYP_compactarray (a,b) -> btyp_compactarray (aux a, aux b)
     | BTYP_rptsum (a,b) -> btyp_rptsum (aux a, aux b)
+    | BTYP_compactrptsum (a,b) -> btyp_compactrptsum (aux a, aux b)
     | BTYP_rev t -> btyp_rev (aux t)
     | BTYP_uniq t -> btyp_uniq (aux t)
     | BTYP_typeop (op,t,k) -> btyp_typeop op (aux t) k

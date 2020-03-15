@@ -246,8 +246,16 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   | BTYP_none -> "none" (* hack needed for null case in pgen *)
   | BTYP_void -> (* print_endline "WARNING cpp_type_classname of void"; *) "void" (* failwith "void doesn't have a classname" *)
   | BTYP_label -> " ::flx::rtl::jump_address_t" (* space required cause X<::y> is trigraph *)
+
+  (* unit sums have special name *)
+  | BTYP_unitsum k -> "_us" ^ string_of_int k
+
+
+  | BTYP_compacttuple _
+  | BTYP_compactarray _
+  | BTYP_compactsum _
+  | BTYP_compactrptsum _
   | BTYP_tuple [] -> " ::flx::rtl::cl_t" (* COMPACT LINEAR! *)
-  | t when islinear_type bsym_table t -> " ::flx::rtl::cl_t"
 
   | BTYP_ptr (_,t',[]) -> cpp_type_classname syms bsym_table t' ^ "*"
   | BTYP_ptr (_,c,[d]) -> "::flx::rtl::clptr_t";
@@ -290,8 +298,6 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
     | Flx_vrep.VR_packed -> "void*"
     | Flx_vrep.VR_uctor -> " ::flx::rtl::_uctor_"
     end
-
-  | BTYP_unitsum k -> "_us" ^ string_of_int k
 
   | BTYP_vinst (i,ts,_) -> assert false
 
