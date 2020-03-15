@@ -150,13 +150,9 @@ then
 
   (* compact linear types don't need to be registered *)
   | BTYP_void
-  | BTYP_tuple []
-  | BTYP_compactsum _
-  | BTYP_compacttuple _
-  | BTYP_compactarray _
-  | BTYP_compactrptsum _ -> ()
+  | BTYP_tuple [] -> ()
 
-  | BTYP_unitsum k -> rnr t' (* because we typedef them *)
+  | BTYP_unitsum _ -> rnr t (* because we typedef them *)
 
   | BTYP_fix (0,_) -> ()
   | BTYP_fix (i,_) -> clierrx "[flx_frontend/flx_treg.ml:123: E356] " sr ("[register_type_r] Fixpoint "^si i^" encountered")
@@ -224,8 +220,10 @@ print_endline ("Flx_treg: attempt to register linear effector type, register equ
     rr ret;
     rnr t
 
+  | BTYP_compactrptsum (n,b)
   | BTYP_rptsum (n,b) -> rr n; rr b; rnr t
 
+  | BTYP_compactarray (ps,ret)
   | BTYP_array (ps,ret) ->
 (*
 print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table ps ^ " index type " ^ sbt bsym_table ret);
@@ -241,7 +239,9 @@ print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table
     (* | _ -> syserr sr ("Array index type must be unitsum, got " ^ sbt bsym_table ret) *)
     end
 
+  | BTYP_compacttuple ps 
   | BTYP_tuple ps -> iter rr ps; rnr t
+
   | BTYP_tuple_cons (t1,t2) ->  assert false
   | BTYP_tuple_snoc (t1,t2) ->  assert false
   | BTYP_vinst _  -> assert false
@@ -249,6 +249,7 @@ print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table
   | BTYP_record (ps) -> iter (fun (s,t)->rr t) ps; rnr t
   | BTYP_variant ps -> iter (fun (s,t)->rr t) ps; rnr t
 
+  | BTYP_compactsum ps
   | BTYP_sum ps ->
     (* iter rr ps; *) (* should be driven by constructors *)
     rnr t

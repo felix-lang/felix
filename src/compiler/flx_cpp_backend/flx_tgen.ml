@@ -366,7 +366,7 @@ let rec gen_type syms bsym_table (index,typ) =
   in
   let t = unfold "flx_tgen: gen_type" typ in
   match t with
-  | _ when islinear_type bsym_table t -> ""
+  | _ when islinear_type bsym_table t -> descr
   | BTYP_type_var _ -> failwith "[gen_type] can't gen type variable"
   | BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
 
