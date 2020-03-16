@@ -74,6 +74,7 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
       in 
       be rs e
 
+    | BTYP_compactarray (vl,BTYP_unitsum n) 
     | BTYP_array (vl,BTYP_unitsum n) when n < 20 -> 
       let count = ref 0 in
       let e = cats (
@@ -88,7 +89,8 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
       in 
       be rs e
 
-    | BTYP_array (vl,index) when Flx_btype.islinear_type bsym_table index  -> 
+    | BTYP_compactarray (vl,index) 
+    | BTYP_array (vl,index) -> 
       let n = 
         try Some (sizeof_linear_type bsym_table index)
         with Invalid_int_of_unitsum -> None
@@ -137,6 +139,7 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
       in
       be rs e 
 
+    | BTYP_compactsum ls
     | BTYP_sum ls ->
       let limit = rs.Flx_types.strr_limit - 1 in
       if limit = 0 then be rs (mks "...") else
@@ -146,6 +149,7 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
         | BTYP_void ->
           mks ("case " ^ string_of_int index^" VOID")
 
+        | BTYP_compacttuple _
         | BTYP_tuple _ ->
           let arg = `EXPR_case_arg (sr, (index,a)) in
           let strarg = str arg in
@@ -170,6 +174,7 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
       in 
       be rs e
 
+    | BTYP_compactrptsum (n,t)
     | BTYP_rptsum (n,t) ->
       let index = `EXPR_case_index (sr,a) in
       let arg = `EXPR_rptsum_arg (sr,a) in

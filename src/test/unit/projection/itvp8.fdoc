@@ -4,7 +4,15 @@ typedef d_t = 5 ^ 3;
 var x : d_t = `1:5,`2:5,`4:5;
 for i in ..[3] perform
   println$ x . i . _strr;
+
+typedef cd_t = 5 \^ 3;
+var y : cd_t = `1:5\,`2:5\,`4:5;
+for j in ..[3] perform
+  println$ y . j . _strr;
 @expect
+case 1 of 5
+case 2 of 5
+case 4 of 5
 case 1 of 5
 case 2 of 5
 case 4 of 5

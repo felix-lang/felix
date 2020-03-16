@@ -311,6 +311,7 @@ and solve_subsumption nominal_subtype counter lhs rhs  dvars (s:vassign_t option
         )
         ls
 
+      | BTYP_compactarray (t11, t12), BTYP_compactarray (t21, t22)
       | BTYP_array (t11, t12), BTYP_array (t21, t22)
       | BTYP_function (t11, t12), BTYP_function (t21, t22)
       | BTYP_linearfunction (t11, t12), BTYP_linearfunction (t21, t22)
@@ -476,7 +477,9 @@ print_endline "Trying to unify instances (2)";
         end
 
       | (BTYP_type_tuple ls1, BTYP_type_tuple ls2)
+      | (BTYP_compacttuple ls1, BTYP_compacttuple ls2)
       | (BTYP_tuple ls1, BTYP_tuple ls2)
+      | (BTYP_compactsum ls1, BTYP_compactsum ls2)
       | (BTYP_sum ls1, BTYP_sum ls2)
         when List.length ls1 = List.length ls2 ->
         begin
@@ -485,6 +488,7 @@ print_endline "Trying to unify instances (2)";
         end
 
       (* repeated sums *)
+      | BTYP_compactrptsum (n1,t1), BTYP_compactrptsum (n2,t2)
       | BTYP_rptsum (n1,t1), BTYP_rptsum (n2,t2) ->
         add_eqn (n1,n2);
         (* FIXME: in Felix, sum types don't support width subtyping,

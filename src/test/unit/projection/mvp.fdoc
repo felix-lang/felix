@@ -5,16 +5,16 @@ var x : (int ^ 3) ^ 2 = ((1,2,3),(4,5,6));
 println$ x;
 
 // Matrix!
-var y = x :>> (int^(2*3));
+var y = x :>> (int^(2\*3));
 println$ y;
 
 // inline projection
 for i in ..[2] for j in ..[3] perform
-  println$ y. (i,j);
+  println$ y. (i\,j);
 
 // stand-alone projection
 for i in ..[2] for j in ..[3] do
-  var p = aproj (i,j) of int ^ (2 * 3);
+  var p = aproj (i\,j) of int ^ (2 \* 3);
   println$ y . p;
 done
 @expect

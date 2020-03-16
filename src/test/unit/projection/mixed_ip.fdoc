@@ -4,7 +4,7 @@ Inline integer projections crossing compact linear type
 boundary.
 // nasty test case
 @felix
-var x = (1,(2,(true, (`1:3,(`3:5,`7:8)))));
+var x = (1,(2,(true\, (`1:3\,(`3:5\,`7:8)))));
 println$ x.1._strr;
 println$ (x.1).0._strr;
 println$ (x.1).1._strr;

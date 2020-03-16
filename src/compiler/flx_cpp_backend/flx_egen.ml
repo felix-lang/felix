@@ -257,26 +257,28 @@ let rec gen_expr'
       | [] -> div
       | n :: tail ->
         match d with
-        | BTYP_tuple ls ->
+        | BTYP_compacttuple ls ->
           let divisor = 
             List.fold_left (fun acc t -> acc * (Flx_btype.sizeof_linear_type () t)) 1
             (Flx_list.list_tail ls (n+1))
           in
           let d = List.nth ls n in
           cal_divisor d tail (div * divisor)
-        | BTYP_array (base, index_type) ->
+        | BTYP_compactarray (base, index_type) ->
           let m = Flx_btype.sizeof_linear_type () index_type in
           let rec pow a b = match b with | 0 -> 1 | 1 -> a | _ -> a * pow a (b - 1) in
           let base_size = Flx_btype.sizeof_linear_type () base in
           let divisor = pow base_size (m - n - 1) in 
           cal_divisor base tail (div * divisor) 
-        | _ -> print_endline ("Compact Linear Pointer, unimplemented component type " ^ sbt bsym_table d); assert false
+        | _ -> print_endline ("Flx_egen: Compact Linear Pointer, unimplemented component type " ^ sbt bsym_table d); assert false
     in
     let divisor = cal_divisor d v 1 in
     ce_call (ce_atom "::flx::rtl::clptr_t") [ge' p; ce_int divisor; ce_int n]
 
   | BEXPR_cltpointer_prj (d,c,v) -> 
-    print_endline ("Construct compact linear pointer projection, should have been removed??");
+    print_endline ("Flx_egen: Construct compact linear pointer projection");
+    print_endline ("should have been removed??");
+    print_endline ("But we can make one in C++ now anyhow!");
     assert false
 (*
     let n = Flx_btype.sizeof_linear_type () c in
