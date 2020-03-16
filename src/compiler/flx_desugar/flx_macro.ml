@@ -562,6 +562,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | `EXPR_rptsum_arg (sr,e) -> `EXPR_rptsum_arg (sr,me e)
 
   | `EXPR_tuple (sr, es) -> `EXPR_tuple (sr, List.map me es)
+  | `EXPR_compacttuple (sr, es) -> `EXPR_compacttuple (sr, List.map me es)
   | `EXPR_tuple_cons (sr, eh, et) -> `EXPR_tuple_cons (sr, me eh, me et)
   | `EXPR_tuple_snoc (sr, eh, et) -> `EXPR_tuple_snoc (sr, me eh, me et)
 

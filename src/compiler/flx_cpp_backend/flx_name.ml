@@ -232,7 +232,6 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   | BBOOL _ -> assert false
   | BTYP_typeop _ -> assert false
   | BTYP_typeof _ -> assert false
-  | BTYP_hole -> assert false
   | BTYP_uniq _ -> assert false
   | BTYP_ptr (`R,_,_) -> assert false
   | BTYP_ptr (`W,_,_) -> assert false
@@ -408,6 +407,10 @@ print_endline ("[flx_name] One component union should have been removed");
       " to be in registry"
     )
 
+(* Note this isn't used except in comments at the moment.
+It's an attempt to use C++ templates to provide unique names.
+This is required for linkage across Felix generated binary objects
+*)
 and cpp_structure_name syms bsym_table t =
   let tn t = cpp_typename syms bsym_table t in
   let tix t = tix "[flx_name:cpp_structure_name]" syms bsym_table t in
@@ -420,7 +423,7 @@ and cpp_structure_name syms bsym_table t =
   | BTYP_fix (i,_) -> "_fix<"^string_of_int (-i)^">" (* failwith "[cpp_type_classname] Can't name type fixpoint" *)
   | BTYP_none -> "none" (* hack needed for null case in pgen *)
   | BTYP_void -> print_endline ("WARNING cpp_structure_name of void"); "void" (* failwith "void doesn't have a classname" *)
-  | BTYP_tuple [] -> "int" (* COMPACT LINEAR! *)
+  | BTYP_tuple [] -> "::flx::rtl::cl_t" (* COMPACT LINEAR! *)
 
   | BTYP_ptr (_,t',[]) -> cpp_type_classname syms bsym_table t' ^ "*"
   | BTYP_ptr (_,c,[d]) -> "::flx::rtl::clptr_t";
@@ -436,6 +439,10 @@ and cpp_structure_name syms bsym_table t =
   | BTYP_linearfunction (d,c) -> "_ft<" ^ tn d ^ "," ^ tn c ^ ">" 
 
   | BTYP_cfunction (d,c) -> "_cft<" ^  tn d ^ "," ^ tn c ^">"
+
+  | BTYP_compacttuple _
+  | BTYP_compactarray _ -> "::flx::rtl::cl_t"
+  
   | BTYP_array (e,BTYP_unitsum i) -> "_at<" ^ tn e ^ "," ^ string_of_int i ^ ">" 
   | BTYP_array (e,i) -> 
      (*failwith ("Generalisd arrays not supported") *)

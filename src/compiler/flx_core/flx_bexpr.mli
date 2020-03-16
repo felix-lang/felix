@@ -25,6 +25,7 @@ type bexpr_t = private
   | BEXPR_apply_stack of bid_t * Flx_btype.t list * t
   | BEXPR_apply_struct of bid_t * Flx_btype.t list * t
   | BEXPR_tuple of t list
+  | BEXPR_compacttuple of t list
   | BEXPR_record of (string * t) list
   | BEXPR_polyrecord of (string * t) list * t
   | BEXPR_remove_fields of t * string list
@@ -123,6 +124,7 @@ val bexpr_apply_stack :
 val bexpr_apply_struct :
   Flx_btype.t -> bid_t * Flx_btype.t list * t -> t
 val bexpr_tuple : Flx_btype.t -> t list -> t
+val bexpr_compacttuple : Flx_btype.t -> t list -> t
 val bexpr_coerce : t * Flx_btype.t -> t
 val bexpr_reinterpret_cast : t * Flx_btype.t -> t
 val bexpr_prj : int -> Flx_btype.t -> Flx_btype.t -> t

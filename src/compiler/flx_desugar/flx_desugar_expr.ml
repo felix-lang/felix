@@ -488,6 +488,11 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
     let lss,xs = List.split (List.map rex t) in
     List.concat lss,`EXPR_tuple (sr,xs)
 
+  | `EXPR_compacttuple (sr,t) ->
+    let lss,xs = List.split (List.map rex t) in
+    List.concat lss,`EXPR_compacttuple (sr,xs)
+
+
   | `EXPR_tuple_cons (sr,eh,et) ->
     let l1,x1 = rex eh in
     let l2,x2 = rex et in

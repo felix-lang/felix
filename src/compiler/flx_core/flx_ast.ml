@@ -81,6 +81,7 @@ and typecode_t = [
   | `TYP_patvar of Flx_srcref.t * Flx_id.t
   | `TYP_patany of Flx_srcref.t
   | `TYP_tuple of typecode_t list               (** product type *)
+  | `TYP_compacttuple of typecode_t list               (** product type *)
   | `TYP_unitsum of int                         (** sum of units  *)
   | `TYP_sum of typecode_t list                 (** numbered sum type *)
   | `TYP_record of (Flx_id.t * typecode_t) list
@@ -96,6 +97,7 @@ and typecode_t = [
   | `TYP_wref of typecode_t                     (** write pointer type *)
   | `TYP_uniq of typecode_t                     (** uniq type *)
   | `TYP_array of typecode_t * typecode_t       (** array type base ^ index *)
+  | `TYP_compactarray of typecode_t * typecode_t       (** array type base ^ index *)
   | `TYP_as of typecode_t * Flx_id.t            (** fixpoint *)
   | `TYP_typeof of expr_t                       (** typeof *)
   | `TYP_var of index_t                         (** unknown type *)
@@ -166,6 +168,7 @@ and expr_t = [
   | `EXPR_lookup of Flx_srcref.t * (expr_t * Flx_id.t * typecode_t list)
   | `EXPR_apply of Flx_srcref.t * (expr_t * expr_t)
   | `EXPR_tuple of Flx_srcref.t * expr_t list
+  | `EXPR_compacttuple of Flx_srcref.t * expr_t list
   | `EXPR_record of Flx_srcref.t * (Flx_id.t * expr_t) list
   | `EXPR_polyrecord of Flx_srcref.t * (Flx_id.t * expr_t) list * expr_t
   | `EXPR_remove_fields of Flx_srcref.t * expr_t * string list
@@ -770,6 +773,7 @@ let src_of_typecode = function
   | `TYP_rpclt _
   | `TYP_wpclt _
   | `TYP_label
+  | `TYP_compacttuple _
   | `TYP_tuple _
   | `TYP_unitsum _
   | `TYP_sum _
@@ -783,6 +787,7 @@ let src_of_typecode = function
   | `TYP_rref _
   | `TYP_wref _
   | `TYP_uniq _
+  | `TYP_compactarray _
   | `TYP_array _
   | `TYP_as _
   | `TYP_typeof _
@@ -841,6 +846,7 @@ let src_of_expr (e : expr_t) = match e with
   | `EXPR_unlikely (s,_)
   | `EXPR_literal (s,_)
   | `EXPR_tuple (s,_)
+  | `EXPR_compacttuple (s,_)
   | `EXPR_record (s,_)
   | `EXPR_polyrecord (s,_,_)
   | `EXPR_remove_fields (s,_,_)

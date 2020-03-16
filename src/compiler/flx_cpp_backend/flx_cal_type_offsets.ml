@@ -58,7 +58,6 @@ let rec get_offsets' syms bsym_table typ : offset_kind_t list =
   | BBOOL _ -> assert false
   | BTYP_typeop _ -> assert false
   | BTYP_typeof _ -> assert false
-  | BTYP_hole -> assert false
   | BTYP_rev _ -> assert false
   | BTYP_uniq _ -> assert false
   | BTYP_ptr (_,t,_) -> [`Ptr "0"]

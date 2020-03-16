@@ -7,6 +7,7 @@ open Flx_print
  * including all pointer kinds, including compact linear type pointers.
  *)
 let bind_projection bsym_table sr v t = 
+print_endline ("bind projection type " ^ sbt bsym_table t ^ " index " ^ string_of_int v);
   let si i = string_of_int i in
   (* Constant tuple value projection *)
   match t with

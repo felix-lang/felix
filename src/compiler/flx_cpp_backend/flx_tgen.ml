@@ -165,8 +165,13 @@ let rec gen_type_name syms bsym_table (index,typ) =
 
   let t = unfold "flx_tgen: gen_type_name" typ in
   match t with
-  | t when Flx_btype.islinear_type bsym_table t -> descr 
-      (* "typedef int " ^ tn typ ^ ";\n" *)
+  | t when Flx_btype.islinear_type bsym_table t -> 
+
+    (* this is a bit hacked due to bug in naming rules *)
+    let cntyp = cn typ in
+    "\n//TYPE " ^ string_of_bid index ^ ": " ^ sbt bsym_table typ ^ "\n" ^
+    (if cntyp = " ::flx::rtl::cl_t" then "// " else "") ^
+    "typedef ::flx::rtl::cl_t " ^ cntyp ^ ";\n"
 
   | BTYP_fix (i,_) -> ""
   | BTYP_type_var (i,mt) -> failwith "[gen_type_name] Can't gen name of type variable"

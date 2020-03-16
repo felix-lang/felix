@@ -41,6 +41,7 @@ type bexpr_t =
   | BEXPR_apply_stack of bid_t * Flx_btype.t list * t
   | BEXPR_apply_struct of bid_t * Flx_btype.t list * t
   | BEXPR_tuple of t list
+  | BEXPR_compacttuple of t list
   | BEXPR_record of (string * t) list
   | BEXPR_polyrecord of (string * t) list * t
   | BEXPR_remove_fields of t * string list
@@ -106,6 +107,7 @@ let rec show_bexpr e = match e with
   | BEXPR_apply (f,a),_ -> "BEXPR_apply(" ^ show_bexpr f ^ "," ^ show_bexpr a ^ ")"
   | BEXPR_closure (i,_),_ -> "BEXPR_closure(" ^ string_of_int i ^ "[..])"
   | BEXPR_tuple es,_ -> "BEXPR_tuple(" ^ String.concat "," (List.map show_bexpr es) ^")"
+  | BEXPR_compacttuple es,_ -> "BEXPR_compacttuple(" ^ String.concat "," (List.map show_bexpr es) ^")"
   | BEXPR_varname (i,_),_ -> "BEXPR_varname(" ^ string_of_int i ^ ",[..])"
 
   | _ -> "X"
@@ -337,6 +339,15 @@ let bexpr_tuple t es =
   | [x] -> x
   | _ -> BEXPR_tuple es, complete_check "bexpr_tuple(client)" t
 
+let bexpr_compacttuple t es = 
+  let ts = List.map snd es in
+  let _ = List.map (complete_check "bexpr_compacttuple(component)") ts in 
+  match es with 
+  | [] -> bexpr_unit 
+  | [x] -> x
+  | _ -> BEXPR_compacttuple es, complete_check "bexpr_compacttuple(client)" t
+
+
 let bexpr_closure t (bid, ts) = 
   let _ = List.map (complete_check "bexpr_closure(index)") ts in 
 (*
@@ -383,6 +394,8 @@ let bexpr_prj n d c =
  
   (* Arrays with unitsum indices *)
 
+  | Flx_btype.BTYP_ptr (_, Flx_btype.BTYP_compactarray (_,Flx_btype.BTYP_unitsum m), _)
+  | Flx_btype.BTYP_compactarray (_,Flx_btype.BTYP_unitsum m)
   | Flx_btype.BTYP_ptr (_, Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m), _)
   | Flx_btype.BTYP_array (_,Flx_btype.BTYP_unitsum m) ->
     if n>= m then
@@ -392,6 +405,8 @@ let bexpr_prj n d c =
     )
 
   (* Tuples *)
+  | Flx_btype.BTYP_ptr (_, Flx_btype.BTYP_compacttuple ls,_)
+  | Flx_btype.BTYP_compacttuple ls 
   | Flx_btype.BTYP_ptr (_, Flx_btype.BTYP_tuple ls,_)
   | Flx_btype.BTYP_tuple ls -> 
     if n>= List.length ls then
@@ -1112,6 +1127,7 @@ let flat_iter
       List.iter f_btype ts;
       f_bexpr e2
   | BEXPR_tuple es -> List.iter f_bexpr es
+  | BEXPR_compacttuple es -> List.iter f_bexpr es
   | BEXPR_record es -> List.iter (fun (s,e) -> f_bexpr e) es
   | BEXPR_polyrecord (es,e) -> List.iter (fun (s,e) -> f_bexpr e) es; f_bexpr e
   | BEXPR_remove_fields (e,ss) -> f_bexpr e
@@ -1234,6 +1250,7 @@ let map
   | BEXPR_apply_stack (i,ts,e2) ->
       bexpr_apply_stack t (f_bid i, List.map f_btype ts, f_bexpr e2)
   | BEXPR_tuple  es -> bexpr_tuple t (List.map f_bexpr es)
+  | BEXPR_compacttuple  es -> bexpr_compacttuple t (List.map f_bexpr es)
   | BEXPR_record es ->
       bexpr_record (List.map (fun (s,e) -> s, f_bexpr e) es)
   | BEXPR_polyrecord (es,e) ->

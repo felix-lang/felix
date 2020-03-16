@@ -201,8 +201,10 @@ print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
 
  | Lst [Id "typ_dual"; sr; e] -> `TYP_dual (ti e)
 
- | Lst [Id "typ_superscript"; t1; t2] -> `TYP_array (ti t1, ti t2)
+ | Lst [Id "typ_array"; t1; t2] -> `TYP_array (ti t1, ti t2)
+ | Lst [Id "typ_compactarray"; t1; t2] -> `TYP_compactarray (ti t1, ti t2)
  | Lst [Id "typ_tuple"; sr; Lst es] -> `TYP_tuple (map ti es)
+ | Lst [Id "typ_compacttuple"; sr; Lst es] -> `TYP_compacttuple (map ti es)
  | Lst [Id "typ_sum";  sr; Lst es] -> `TYP_sum (map ti es)
  | Lst [Id "typ_rptsum"; sr; d; c] -> `TYP_rptsum (ti d, ti c)
  | Lst [Id "typ_typeof";  sr; e] -> 
@@ -351,6 +353,7 @@ print_endline ("Processing ast_name "^xid id^" in xexpr");
 
  
   | Lst [Id "ast_tuple";  sr; Lst es] -> `EXPR_tuple (xsr sr,map (xexpr_t (xsr sr)) es)
+  | Lst [Id "ast_compacttuple";  sr; Lst es] -> `EXPR_compacttuple (xsr sr,map (xexpr_t (xsr sr)) es)
 
 
   | Lst [Id "ast_tuple_cons";  sr; eh; et] -> `EXPR_tuple_cons (xsr sr, xexpr_t (xsr sr) eh, xexpr_t (xsr sr) et)

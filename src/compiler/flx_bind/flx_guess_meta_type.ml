@@ -51,6 +51,8 @@ let rec guess_metatype sr t : kind =
   | `TYP_bool _ -> kind_bool 
   | `TYP_typeop (sr,op,t,k) -> bmt "Flx_guess_meta_type" k 
   | `TYP_unitsum _ -> kind_unitsum
+  | `TYP_compactarray _ 
+  | `TYP_compacttuple _ -> kind_compactlinear
 
   | `TYP_defer _ -> print_endline "Guess metatype: defered type found"; assert false
   | `TYP_tuple_cons (sr,t1,t2) -> assert false

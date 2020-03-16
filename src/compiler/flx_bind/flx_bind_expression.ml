@@ -1656,6 +1656,27 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
     else
     bexpr_tuple (btyp_tuple []) []
 
+  | `EXPR_compacttuple (_,es) ->
+    let bets = List.map be es in
+    let _, bts = List.split bets in
+    let n = List.length bets in
+    if n > 1 then
+      try
+        let t = List.hd bts in
+        List.iter
+        (fun t' -> if t <> t' then raise Not_found)
+        (List.tl bts)
+        ;
+        let t = btyp_compactarray (t, btyp_unitsum n) in
+        bexpr_compacttuple t bets
+      with Not_found ->
+        bexpr_compacttuple (btyp_compacttuple bts) bets
+    else if n = 1 then
+      List.hd bets
+    else
+    bexpr_tuple (btyp_tuple []) []
+
+
 
   | `EXPR_match_case (sr,(v,e)) ->
      bexpr_match_case (v,be e)

@@ -14,6 +14,9 @@ let apl2 (sr:Flx_srcref.t) (fn : string) (tup:expr_t list) =
   )
 
 let strr' bsym_table sym_table counter be rs sr a =
+(*
+print_endline ("strr of " ^ Flx_print.string_of_expr a);
+*)
     let mks s = `EXPR_literal (sr, 
       { Flx_literal.felix_type="string"; internal_value=s; c_value= "::std::string(" ^ Flx_string.c_quote_of_string s ^ ")" } )
     in
@@ -107,6 +110,7 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
      | None -> Flx_exceptions.syserr sr ("can't decode array index type " ^ Flx_print.sbt bsym_table index) 
      end
       
+    | BTYP_compacttuple ls
     | BTYP_tuple ls ->
       let count = ref 0 in
       let e = cats (

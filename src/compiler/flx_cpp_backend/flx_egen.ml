@@ -108,7 +108,9 @@ let get_ref_ref syms bsym_table this index ts : string =
 let nth_type ts i =
   try match ts with
   | BTYP_tuple ts -> nth ts i
+  | BTYP_compacttuple ts -> nth ts i
   | BTYP_array (t,BTYP_unitsum n) -> assert (i<n); t
+  | BTYP_compactarray (t,BTYP_unitsum n) -> assert (i<n); t
   | _ -> assert false
   with Not_found ->
     failwith ("Can't find component " ^ si i ^ " of type!")
@@ -351,13 +353,13 @@ let rec gen_expr'
   (* if a tuple is compact linear, all the components must be
      too, and the result is just a linear combination 
   *)
-  | BEXPR_tuple es when clt t ->
+  | BEXPR_compacttuple es ->
 (*
 print_endline ("Compact linear tuple " ^ sbt bsym_table t);
 *)
     let result =
       begin match t with
-      | BTYP_tuple ts  -> 
+      | BTYP_compacttuple ts  -> 
 (*
   print_endline ("..tuple subkind " ^ sbt bsym_table t);
 *)
@@ -373,7 +375,7 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
           (ce_int 0)
           (List.combine es ts)
 
-      | BTYP_array (t, BTYP_unitsum n)  -> 
+      | BTYP_compactarray (t, BTYP_unitsum n)  -> 
 (*
   print_endline ("..array subkind " ^ sbt bsym_table t);
 *)

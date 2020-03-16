@@ -124,6 +124,7 @@ syntax types {
 
   //$ multiplication: non-associative.
   t[sproduct_pri] := t[>sproduct_pri] ("*" t[>sproduct_pri])+ =># "(chain 'typ_tuple _1 _2)" note "mul";
+  t[scompactproduct_pri] := t[>scompactproduct_pri] ("\*" t[>scompactproduct_pri])+ =># "(chain 'typ_compacttuple _1 _2)" note "mul";
   
   t[sproduct_pri] := t[>sproduct_pri] "*+" t[sproduct_pri] =># "`(typ_rptsum ,_sr ,_1 ,_3)";
 
@@ -140,7 +141,8 @@ syntax types {
   t[spower_pri] := t[ssuperscript_pri] "<**>" t[sprefixed_pri] =># "(typ_tuple_snoc ,_sr ,_1 ,_3)";
 
   //$ Superscript, exponential.
-  t[ssuperscript_pri] := t[ssuperscript_pri] "^" t[srefr_pri] =># "`(typ_superscript ,_1 ,_3)";
+  t[ssuperscript_pri] := t[ssuperscript_pri] "^" t[srefr_pri] =># "`(typ_array ,_1 ,_3)";
+  t[ssuperscript_pri] := t[ssuperscript_pri] "\^" t[srefr_pri] =># "`(typ_compactarray ,_1 ,_3)";
 
   t[sapplication_pri] := t[sapplication_pri] t[>sapplication_pri] =># 
     "`(typ_apply ,_sr (,_1 ,_2))" note "apply";
@@ -243,6 +245,7 @@ syntax expressions {
     // TUPLES
     stuple_cons_pri <
     stuple_pri <
+    scompacttuple_pri <
 
     // LOGIC
     simplies_condition_pri <
@@ -276,6 +279,7 @@ syntax expressions {
     ssum_pri <
     ssubtraction_pri <
     sproduct_pri <
+    scompactproduct_pri <
     s_term_pri <        // division 
 
     // STUFF
@@ -6085,6 +6089,7 @@ syntax tupleexpr
 
   //$ Tuple formation non-associative.
   x[stuple_pri] := x[>stuple_pri] ( "," x[>stuple_pri])+ =># "(chain 'ast_tuple _1 _2)";
+  x[scompacttuple_pri] := x[>scompacttuple_pri] ( "\," x[>scompacttuple_pri])+ =># "(chain 'ast_compacttuple _1 _2)";
 
 }
 

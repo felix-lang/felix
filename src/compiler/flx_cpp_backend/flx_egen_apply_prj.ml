@@ -52,7 +52,7 @@ print_endline "Apply pointer projection to pointer";
   (* constant projection on ordinary pointer to compact linear array
      yield compact linear pointer 
   *)
-  | (BTYP_array (vt,BTYP_unitsum  n)) when clt vt ->
+  | (BTYP_compactarray (vt,BTYP_unitsum  n)) ->
     if debug then print_endline ("Constant projection of pointer to compact-linear array");
     assert (0 <= ix && ix < n);
     let modulus = sizeof_linear_type bsym_table vt in 
@@ -67,7 +67,7 @@ print_endline ("Divisor = " ^ string_of_int divisor);
     ce_prefix "&" (ce_array (ce_arrow (ge' a) "data") (ce_int ix))
 
   (* A projection on an ordinary pointer to a compact linear tuple yields a compect linear pointer! *)
-  | (BTYP_tuple ts as vt) when clt vt ->
+  | (BTYP_compacttuple ts as vt) ->
     if debug then print_endline ("Constant projection of pointer to compact-linear tuple");
     assert (0 <= n && n < List.length ts);
     let rec aux ls i out = match ls with [] -> assert false | h :: t ->
@@ -124,7 +124,7 @@ print_endline ("Apply projection to compact linear pointer");
   let n = ix in
   match target with
   (* constant projection of cltpointer to compact linear tuple *)
-  | BTYP_tuple ts ->
+  | BTYP_compacttuple ts ->
     assert (0 <= n && n < List.length ts);
     let rec aux ls i out = match ls with [] -> assert false | h :: t ->
       if i = 0 then out else aux t (i-1) (sizeof_linear_type bsym_table h * out)
@@ -136,7 +136,7 @@ print_endline ("Apply projection to compact linear pointer");
     let ptr = ge' a in
     ce_call (ce_atom "::flx::rtl::applyprj") [ptr;prj]
 
-  | BTYP_array (vt,BTYP_unitsum n) -> (* vt has to be compact linear *)
+  | BTYP_compactarray (vt,BTYP_unitsum n) -> (* vt has to be compact linear *)
 if debug then
 print_endline (" .. Apply projection to compact linear pointeri: ARRAY CASE");
     let ipow v i = match i with 0 -> 1 | _ -> v * ipow v (i-1) in
@@ -168,7 +168,7 @@ let apply_value_prj syms bsym_table ge ge' sr (e,t) (ix:int) domain codomain (_,
   let n = ix in
   match domain with
   (* if this is a constant projection of a compact linear array *) 
-  | BTYP_array (vt,aixt) when clt at ->
+  | BTYP_compactarray (vt,aixt) ->
     if debug then print_endline ("Constant value projection  " ^ si ix ^ " of compact-linear array type " ^ sbt bsym_table at);
     ate "value projection of compact linear array" "proj domain" "exponent" ixd  at;
     ate "value projection of compact linear array" "proj codomain" "array base" ixc vt;
@@ -191,7 +191,7 @@ let apply_value_prj syms bsym_table ge ge' sr (e,t) (ix:int) domain codomain (_,
     ce_array (ce_dot (ge' a) "data") (ce_int ix)
 
   (* if this is a constant projection of a compact linear tuple *) 
-  | BTYP_tuple ts when clt at ->
+  | BTYP_compacttuple ts ->
     if debug then print_endline ("Constant value projection "^si ix ^" of compact-linear tuple type" ^ sbt bsym_table at);
     let n = ix in 
     assert (0 <= n && n < List.length ts);
@@ -290,7 +290,7 @@ let apply_array_prj syms bsym_table ge ge' sr (e,t) ix ixd ixc (_,at as a) =
 
   match at with 
   (* if this is an array projection of a compact linear array *)
-  |  BTYP_array (vt,aixt) when clt at ->
+  |  BTYP_compactarray (vt,aixt) ->
 
 if debug then begin
 print_endline ("Array value projection of compact linear array type " ^ sbt bsym_table at);
@@ -335,7 +335,7 @@ end;
   (* array projection of an ORINDARY pointer to a compact linear array 
     result is a compact linear pointer
   *)
-  | BTYP_ptr (_,(BTYP_array (vt,aixt) as at),[]) when clt at -> 
+  | BTYP_ptr (_,(BTYP_compactarray (vt,aixt) as at),[]) -> 
 if debug then begin
 print_endline ("Array projection of ordinary pointer to compact linear array type " ^ sbt bsym_table at);
 print_endline ("Array base value type = " ^ sbt bsym_table vt);
@@ -365,7 +365,7 @@ end;
   (* array projection of a compact linear pointer to a compact linear array 
      result is a compact linear pointer
   *)
-  | BTYP_ptr (_,BTYP_array (vt,aixt),[mach])  -> 
+  | BTYP_ptr (_,BTYP_compactarray (vt,aixt),[mach])  -> 
 (*
     ate "Array projection of compact linear pointer to compact linear array" "index domain" "array type" ixd  at;
     ate "Array projection of compact linear pointer to compact linear array" "index codomain" "array base type" ixc vt;
@@ -393,3 +393,4 @@ end;
     ce_prefix "&" (ce_array (ce_arrow (ge' a) "data") (ge' ix)) 
 
   | _-> assert false
+

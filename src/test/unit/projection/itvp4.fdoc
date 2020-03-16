@@ -1,14 +1,24 @@
-@title Inline Tuple Value Integer (Constant) Projection Compact Linear Array domain
+@title Inline Tuple Value Integer (Constant) Projection Compact Linear Tuple domain
 @felix
-typedef d_t = 5 ^ 3;
-var x : d_t = `1:5,`2:5,`4:5;
+typedef d_t = 2 * 3 * 4;
+var x : d_t = `1:2,`2:3,`3:4;
 println$ x . 0 . _strr;
 println$ x . 1 . _strr;
 println$ x . 2 . _strr;
-@expect
-case 1 of 5
-case 2 of 5
-case 4 of 5
-@
 
+typedef cd_t = 2 \* 3 \* 4;
+var y : cd_t = `1:2\,`2:3\,`3:4;
+println$ y . 0 . _strr;
+println$ y . 1 . _strr;
+println$ y . 2 . _strr;
+
+
+@expect
+true
+case 2 of 3
+case 3 of 4
+true
+case 2 of 3
+case 3 of 4
+@
 

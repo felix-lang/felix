@@ -212,6 +212,7 @@ and string_of_expr (e:expr_t) =
     "(" ^ se a ^ " ^ " ^ se b ^ ")"
 
   | `EXPR_tuple (_,t) -> "(" ^ catmap ", " se t ^ ")"
+  | `EXPR_compacttuple (_,t) -> "(" ^ catmap "\\, " se t ^ ")"
   | `EXPR_get_tuple_tail (_,t) -> "get_tuple_tail(" ^ se t ^ ")"
   | `EXPR_get_tuple_head (_,t) -> "get_tuple_head(" ^ se t ^ ")"
   | `EXPR_get_tuple_body(_,t) -> "get_tuple_body(" ^ se t ^ ")"
@@ -448,6 +449,13 @@ and st prec tc : string =
       | _ -> 4, cat " * " (map (st 4) ls)
       end
 
+
+    | `TYP_compacttuple ls ->
+      begin match ls with
+      | [] -> 0,"unit"
+      | _ -> 0, "compact(" ^ cat " * " (map (st 4) ls) ^ ")"
+      end
+
     | `TYP_record ls ->
       begin match ls with
       | [] -> 0,"unit"
@@ -519,6 +527,7 @@ and st prec tc : string =
       9,st 9 args ^ " --> " ^ st 9 result
 
     | `TYP_array (vt,it) -> 3, st 1 vt ^ "^" ^ st 3 it
+    | `TYP_compactarray (vt,it) -> 3, st 1 vt ^ "\\^" ^ st 3 it
 
     | `TYP_pointer t -> 1,"&" ^ st 1 t
     | `TYP_rref t -> 1,"rref[" ^ st 1 t ^ "]"
@@ -632,7 +641,6 @@ and sb bsym_table depth fixlist counter prec tc =
     | BTYP_typeof (i,t) -> 0,
       "typeof<context=" ^ string_of_int i ^ ">(" ^ string_of_expr t ^ ")"
 
-    | BTYP_hole -> 0, "BTYP_hole"
     | BTYP_none -> 0,"none"
     | BTYP_ellipsis -> 0,"..."
     | BTYP_label -> 0,"label"
@@ -2230,6 +2238,7 @@ and string_of_bound_expression' bsym_table se e =
     ")"
 
   | BEXPR_tuple t -> "(" ^ catmap ", " se t ^ ")"
+  | BEXPR_compacttuple t -> "(" ^ catmap "\\, " se t ^ ")"
 
   | BEXPR_record ts -> "( " ^
       catmap ", " (fun (s,e)-> s^":"^ se e) ts ^ ")"

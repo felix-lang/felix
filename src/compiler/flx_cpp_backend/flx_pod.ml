@@ -9,16 +9,19 @@ let rec is_pod bsym_table t =
   let is_pod t = is_pod bsym_table t in
   match t with
   | BTYP_typeop _ -> assert false
-  | BTYP_hole -> assert false
   | BTYP_uniq _ -> assert false
 
   | BTYP_label
   | BTYP_unitsum _ 
+  | BTYP_compactsum _ 
   | BTYP_sum _ 
+  | BTYP_compactrptsum _ 
   | BTYP_rptsum _ 
   | BTYP_ptr _
   | BTYP_function _
   | BTYP_cfunction _
+  | BTYP_compacttuple _ 
+  | BTYP_compactarray  _ 
   | BTYP_variant _ -> true
   | BTYP_tuple cps -> List.fold_left (fun acc t -> acc && is_pod t) true cps 
   | BTYP_record (cps) -> List.fold_left (fun acc (_,t) -> acc && is_pod t) true cps 

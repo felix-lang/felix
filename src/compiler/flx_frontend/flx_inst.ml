@@ -194,6 +194,11 @@ let rec process_expr syms bsym_table weak ref_insts1 hvarmap sr ((e,t) as be) =
     iter ue es;
     register_tuple "Flx_inst: tuple" syms bsym_table (vs t)
 
+  | BEXPR_compacttuple es ->
+    iter ue es
+    (* register_tuple "Flx_inst: tuple" syms bsym_table (vs t) *)
+
+
   | BEXPR_tuple_head e ->
     ue e
 

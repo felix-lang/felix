@@ -64,7 +64,6 @@ print_endline ("Register type nr " ^ sbt bsym_table t);
   if t <> t' then print_endline ("UNREDUCED TYPE! " ^ sbt bsym_table t ^ " <> " ^ sbt bsym_table t');
   *)
   match t with
-  | BTYP_hole -> assert false
   | BTYP_label -> ()
   | BTYP_fix _
   | BTYP_tuple []
@@ -143,7 +142,6 @@ then
   | BBOOL _
   | BTYP_typeop _
   | BTYP_typeof _
-  | BTYP_hole -> assert false
   | BTYP_rev _ -> assert false (* should have been eliminated *)
   | BTYP_ellipsis
   | BTYP_label -> ()

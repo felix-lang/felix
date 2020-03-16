@@ -96,6 +96,15 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
       List.iter2 (fun l r -> add_ge(l,r)) ls rs
     end
 
+  (* arrays and tuples, must be the same length, covariant by element *)
+  | BTYP_compacttuple ls, BTYP_compacttuple rs ->
+    (* special hack: parameter with trailing ellipsis matchs argument if the 
+       components match, upto the ellipsis, anything after that matches anything
+    *)
+      if List.length ls <> List.length rs then raise Not_found;
+      List.iter2 (fun l r -> add_ge(l,r)) ls rs
+
+
   | BTYP_tuple ls, BTYP_array (r,BTYP_unitsum n) ->
     begin match List.rev ls with
     | BTYP_ellipsis :: tail ->
@@ -108,14 +117,29 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
       if List.length ls <> n then raise Not_found;
       List.iter (fun l -> add_ge(l,r)) ls
     end
+
+  | BTYP_compacttuple ls, BTYP_compactarray (r,BTYP_unitsum n) ->
+    if List.length ls <> n then raise Not_found;
+    List.iter (fun l -> add_ge(l,r)) ls
+    
     
   | BTYP_array (l, BTYP_unitsum n), BTYP_tuple rs ->
     if List.length rs <> n then raise Not_found;
     List.iter (fun r -> add_ge(l,r)) rs
+    
+  | BTYP_compactarray (l, BTYP_unitsum n), BTYP_compacttuple rs ->
+    if List.length rs <> n then raise Not_found;
+    List.iter (fun r -> add_ge(l,r)) rs
+
 
   | BTYP_array (l, BTYP_unitsum n), BTYP_array (r, BTYP_unitsum m) ->
     if m <> n then raise Not_found;
     add_ge (l,r)
+
+  | BTYP_compactarray (l, BTYP_unitsum n), BTYP_compactarray (r, BTYP_unitsum m) ->
+    if m <> n then raise Not_found;
+    add_ge (l,r)
+
 
   (* FIXME: these are the ordinary pointer and clt pointer cases
      we had before. There's an obvious generalisation to just require

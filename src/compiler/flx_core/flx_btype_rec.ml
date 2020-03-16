@@ -28,7 +28,6 @@ let fix i t =
     match t with
     | BBOOL _ -> assert false
     | BTYP_typeof _ -> assert false
-    | BTYP_hole -> assert false
     | BTYP_tuple_cons _ -> assert false
     | BTYP_tuple_snoc _ -> assert false
     | BTYP_none -> assert false

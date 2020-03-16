@@ -187,6 +187,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   | `EXPR_apply (sr,(f,e)) -> `EXPR_apply (sr,(subst f,subst e))
   | `EXPR_map (sr,f,e) -> `EXPR_map (sr,subst f,subst e)
   | `EXPR_tuple (sr,es) -> `EXPR_tuple (sr,map subst es)
+  | `EXPR_compacttuple (sr,es) -> `EXPR_compacttuple (sr,map subst es)
   | `EXPR_record (sr,es) -> `EXPR_record (sr,map (fun (s,e)->s,subst e) es)
   | `EXPR_polyrecord (sr,es,e) -> `EXPR_polyrecord (sr,map (fun (s,e)->s,subst e) es, subst e)
   | `EXPR_variant (sr,(s,e)) -> `EXPR_variant (sr,(s,subst e))

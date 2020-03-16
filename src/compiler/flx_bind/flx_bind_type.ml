@@ -416,6 +416,16 @@ print_endline ("Flx_bind_type.TYP_typeof fixpoint metatype hack! Expression " ^ 
       in
       btyp_array (bt t1, t2)
 
+  | `TYP_compactarray (t1,t2)->
+      let t2 =
+        match bt t2 with
+        | BTYP_tuple [] -> btyp_unitsum 1
+        | x -> x
+      in
+      btyp_compactarray (bt t1, t2)
+
+
+  | `TYP_compacttuple ts -> btyp_compacttuple (List.map bt ts)
   | `TYP_tuple ts -> btyp_tuple (List.map bt ts)
   | `TYP_tuple_cons (_,t1,t2) -> btyp_tuple_cons (bt t1) (bt t2)
   | `TYP_tuple_snoc (_,t1,t2) -> btyp_tuple_snoc (bt t1) (bt t2)

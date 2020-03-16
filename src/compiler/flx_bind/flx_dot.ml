@@ -102,6 +102,9 @@ let handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_
 
 
 let handle_constant_projection bsym_table sr a ta n =
+(*
+print_endline ("Constant projection " ^ string_of_int n ^ " of type " ^ sbt bsym_table ta);
+*)
   begin match unfold "flx_lookup" ta with
 
 (* RECORD *)
@@ -129,6 +132,7 @@ let handle_constant_projection bsym_table sr a ta n =
     bexpr_get_n (btyp_ptr mode (snd (List.nth fs n)) []) n a
 
 (* TUPLE *)
+  | BTYP_compacttuple ls
   | BTYP_tuple ls ->
     let m = List.length ls in
     if n < 0 || n >= m then
@@ -158,7 +162,9 @@ let handle_constant_projection bsym_table sr a ta n =
     cal_prj head tail n 
 
 (* ARRAY *)
+  | BTYP_compactarray (t,BTYP_unitsum m)
   | BTYP_array (t,BTYP_unitsum m) ->
+(* print_endline ("get n=" ^ string_of_int n ^ " of " ^ string_of_int m ^ " base type " ^ sbt bsym_table t); *)
     if n < 0 || n >= m then
       clierrx "[flx_bind/flx_dot.ml:136: E72] " sr ("AST_dot, constant array index "^ string_of_int n ^ 
       " out of range 0 to " ^ string_of_int (m-1) ^
@@ -168,7 +174,7 @@ let handle_constant_projection bsym_table sr a ta n =
       bexpr_get_n t n a
 
 (* POINTER TO TUPLE: compact linear *)
-  | BTYP_ptr (mode,(BTYP_tuple ls as tup),baseptr_t) when Flx_btype.islinear_type () tup ->
+  | BTYP_ptr (mode,(BTYP_compacttuple ls as tup),baseptr_t) ->
 (*
 print_endline ("projection " ^ si n ^ " of cltpointer to compact linear type " ^ sbt bsym_table tup);
 *)
@@ -184,7 +190,7 @@ print_endline ("projection " ^ si n ^ " of cltpointer to compact linear type " ^
 
 (* POINTER TO ARRAY: compact linear *)
   (* ARRAY CASE *)
-  | BTYP_ptr (mode,(BTYP_array (array_base, BTYP_unitsum array_count) as tup),[]) when Flx_btype.islinear_type () tup ->
+  | BTYP_ptr (mode,(BTYP_compactarray (array_base, BTYP_unitsum array_count) as tup),[]) ->
 (*
 print_endline ("projection " ^ si n ^ " of pointer to compact linear array type " ^ sbt bsym_table tup);
 *)
@@ -253,16 +259,22 @@ print_endline ("Divisor for term " ^ si n ^ " is " ^ si divisor);
   end
 
 let handle_array_projection bsym_table int_t sr a ta n =
+(*
+print_endline ("Array projection " ^ sbe bsym_table n ^ " of array type " ^ sbt bsym_table ta);
+*)
   let n = 
     let ixt = match unfold "flx_lookup" ta with
       | BTYP_array (_,ixt)
+      | BTYP_compactarray (_,ixt)
       | BTYP_ptr (_,BTYP_array (_,ixt),[]) -> ixt
+      | BTYP_ptr (_,BTYP_compactarray (_,ixt),[]) -> ixt
       | _ -> assert false
     in
     if snd n = int_t then bexpr_coerce (n,ixt)
     else n
   in
   match unfold "flx_lookup" ta with
+  | BTYP_compactarray (vt,ixt)
   | BTYP_array (vt,ixt) ->
     assert (snd n = ixt);
     bexpr_apply vt (bexpr_aprj n ta vt, a)

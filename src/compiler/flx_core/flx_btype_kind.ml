@@ -13,7 +13,6 @@ and metatype' sr typ : kind =
   match typ with
   | BBOOL _ -> KIND_bool
   | BTYP_typeop (_,_,k) -> k
-  | BTYP_hole -> assert false
   | BTYP_uniq _ -> KIND_linear
 
   | BTYP_type_match (_, bs)

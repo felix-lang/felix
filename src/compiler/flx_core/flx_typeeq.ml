@@ -34,8 +34,6 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
   *)
   match t1,t2 with
   | BBOOL a, BBOOL b -> a = b
-  | BTYP_hole,_ (* for zippers *)
-  | _,BTYP_hole -> true
 
   | BTYP_ellipsis, BTYP_ellipsis -> true
 
@@ -52,7 +50,9 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
   | BTYP_unitsum i,BTYP_unitsum j -> i = j
 
   | BTYP_sum ts1, BTYP_sum ts2
+  | BTYP_compactsum ts1, BTYP_compactsum ts2
   | BTYP_type_tuple ts1,BTYP_type_tuple ts2
+  | BTYP_compacttuple ts1,BTYP_compacttuple ts2
   | BTYP_tuple ts1,BTYP_tuple ts2 ->
     let result =
     if List.length ts1 = List.length ts2
@@ -109,7 +109,9 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
     end else false
 
 
+  | BTYP_compactrptsum (s1,d1),BTYP_compactrptsum (s2,d2)
   | BTYP_rptsum (s1,d1),BTYP_rptsum (s2,d2)
+  | BTYP_compactarray (s1,d1),BTYP_compactarray (s2,d2)
   | BTYP_array (s1,d1),BTYP_array (s2,d2)
   | BTYP_function (s1,d1),BTYP_function (s2,d2)
   | BTYP_linearfunction (s1,d1),BTYP_linearfunction (s2,d2)
