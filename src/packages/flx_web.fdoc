@@ -2132,7 +2132,7 @@ private val dlibrary =
 private val hack = "C_hack","C_hack"; // to make it an array we need 2 components
 
 
-fun valof[N](x:array[string * string,N],key:string) =>
+fun valof[N:UNITSUM](x:array[string * string,N],key:string) =>
   match find (fun (kv:string * string)=> kv.(0) == key) x with
   | Some (k,v) => v
   | #None => ""

@@ -71,7 +71,7 @@ or option iterator.
 You can also use the notation ([1,2,3]).
 @tangle list.flx
   //$ Make a list from an array.
-  ctor[T,N] list[T] (x:array[T, N]) = {
+  ctor[T,N:COMPACTLINEAR] list[T] (x:array[T, N]) = {
     var o = Empty[T];
     if x.len > 0uz do
       for var i in x.len.int - 1 downto 0 do

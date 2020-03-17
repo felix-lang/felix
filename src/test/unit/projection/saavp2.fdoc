@@ -1,8 +1,8 @@
 @title Stand Alone  Precise Array value projection
 Checks RW, R and W pointers.
 @felix
-typedef a_t = 5^3;
-var x : a_t = `1:5,`2:5,`3:5;
+typedef a_t = 5\^3;
+var x : a_t = `1:5\,`2:5\,`3:5;
 for i in ..[3] do
   var  p = aproj i of a_t;
   println$ x.p._strr;

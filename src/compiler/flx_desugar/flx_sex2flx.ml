@@ -206,7 +206,9 @@ print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
  | Lst [Id "typ_tuple"; sr; Lst es] -> `TYP_tuple (map ti es)
  | Lst [Id "typ_compacttuple"; sr; Lst es] -> `TYP_compacttuple (map ti es)
  | Lst [Id "typ_sum";  sr; Lst es] -> `TYP_sum (map ti es)
+ | Lst [Id "typ_compactsum";  sr; Lst es] -> `TYP_compactsum (map ti es)
  | Lst [Id "typ_rptsum"; sr; d; c] -> `TYP_rptsum (ti d, ti c)
+ | Lst [Id "typ_compactrptsum"; sr; d; c] -> `TYP_compactrptsum (ti d, ti c)
  | Lst [Id "typ_typeof";  sr; e] -> 
    `TYP_typeof (ex e)
 

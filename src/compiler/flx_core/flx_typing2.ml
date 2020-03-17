@@ -61,6 +61,7 @@ let all_tunits ts =
 
 let string_of_type_name (t:typecode_t) = match t with
   | `TYP_bool _ -> "`TYP_bool"
+  | `TYP_compactrptsum _ -> "`TYP_compactrptsum"
   | `TYP_rptsum _ -> "`TYP_rptsum"
   | `TYP_pclt _ -> "`TYP_pclt"
   | `TYP_rpclt _ -> "`TYP_rpclt"
@@ -81,6 +82,7 @@ let string_of_type_name (t:typecode_t) = match t with
   | `TYP_compacttuple _ -> "`TYP_compacttuple"
   | `TYP_unitsum _ -> "`TYP_unitsum"
   | `TYP_sum _ -> "`TYP_sum"
+  | `TYP_compactsum _ -> "`TYP_compactsum"
   | `TYP_record _ -> "`TYP_record"
   | `TYP_polyrecord _ -> "`TYP_polyrecord"
   | `TYP_variant _ -> "`TYP_variant"

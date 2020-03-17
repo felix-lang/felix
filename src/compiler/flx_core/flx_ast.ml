@@ -67,6 +67,7 @@ and typecode_t = [
   | `TYP_bool of bool (* KND_bool *)
 
   | `TYP_rptsum of typecode_t * typecode_t
+  | `TYP_compactrptsum of typecode_t * typecode_t
   | `TYP_pclt of typecode_t * typecode_t
   | `TYP_rpclt of typecode_t * typecode_t
   | `TYP_wpclt of typecode_t * typecode_t
@@ -84,6 +85,7 @@ and typecode_t = [
   | `TYP_compacttuple of typecode_t list               (** product type *)
   | `TYP_unitsum of int                         (** sum of units  *)
   | `TYP_sum of typecode_t list                 (** numbered sum type *)
+  | `TYP_compactsum of typecode_t list                 (** numbered sum type *)
   | `TYP_record of (Flx_id.t * typecode_t) list
   | `TYP_polyrecord of (Flx_id.t * typecode_t) list * Flx_id.t * typecode_t
   | `TYP_variant of variant_item_t list (** anon sum *)
@@ -768,6 +770,7 @@ let src_of_typecode = function
   | `TYP_tuple_snoc (s,_,_)
   -> s
 
+  | `TYP_compactrptsum _
   | `TYP_rptsum _
   | `TYP_pclt _
   | `TYP_rpclt _
@@ -777,6 +780,7 @@ let src_of_typecode = function
   | `TYP_tuple _
   | `TYP_unitsum _
   | `TYP_sum _
+  | `TYP_compactsum _
   | `TYP_record _
   | `TYP_polyrecord _
   | `TYP_variant _

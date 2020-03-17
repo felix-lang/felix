@@ -11,20 +11,20 @@ println$ ixk a;
 
 println$ "Test 3, expect 1 to 6";
 var pa = &a;
-var pb = C_hack::cast[&(int ^ (3 * 2))] pa;
+var pb = C_hack::cast[&(int ^ (3 \* 2))] pa;
 var b = *pb;
-println$ b . (case 0 of 3, case 0 of 2);
-println$ b . (case 0 of 3, case 1 of 2);
-println$ b . (case 1 of 3, case 0 of 2);
-println$ b . (case 1 of 3, case 1 of 2);
-println$ b . (case 2 of 3, case 0 of 2);
-println$ b . (case 2 of 3, case 1 of 2);
+println$ b . (case 0 of 3\, case 0 of 2);
+println$ b . (case 0 of 3\, case 1 of 2);
+println$ b . (case 1 of 3\, case 0 of 2);
+println$ b . (case 1 of 3\, case 1 of 2);
+println$ b . (case 2 of 3\, case 0 of 2);
+println$ b . (case 2 of 3\, case 1 of 2);
 
 println$ "Test 4, expect 1 to 12";
 var a2 : int ^ 12 = (1,2,3,4,5,6,7,8,9,10,11,12);
 
 var pa2 = &a2;
-var pb2 = C_hack::cast[&(int ^ (3 * 2 * 2))] pa2;
+var pb2 = C_hack::cast[&(int ^ (3 \* 2 \* 2))] pa2;
 var b2 = *pb2;
 
 for var i  in 0 upto 2 do
@@ -33,7 +33,7 @@ for var i  in 0 upto 2 do
     var jj = j :>> 2;
     for var k in 0 upto 1 do
       var kk = k :>> 2;
-      println$ b2 . (ii,jj,kk);
+      println$ b2 . (ii\,jj\,kk);
     done
   done
 done
@@ -97,13 +97,13 @@ println$ b4 . i5;
 println$ "Test 9, expect 1 to 9";
 var a5 = (1,2,3),(4,5,6), (7,8,9);
 var pa5 = &a5;
-var pb5 = C_hack::cast[& (int ^ (3*3))] pa5;
+var pb5 = C_hack::cast[& (int ^ (3\*3))] pa5;
 var b5 = *pb5;
 for i in 0 upto 2 do
   var ii3 = i :>> 3;
   for j in 0 upto 2 do
     var jj3 = j :>> 3;
-    println$ b5 . (ii3,jj3);
+    println$ b5 . (ii3\,jj3);
   done
 done
 

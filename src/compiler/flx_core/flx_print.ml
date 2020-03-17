@@ -383,6 +383,7 @@ and st prec tc : string =
     | `TYP_rpclt (a,b) -> 0, "_rpclt<" ^ string_of_typecode a ^ "," ^ string_of_typecode b ^ ">"
     | `TYP_wpclt (a,b) -> 0, "_wpclt<" ^ string_of_typecode a ^ "," ^ string_of_typecode b ^ ">"
     | `TYP_rptsum (d,c) -> 6, st 4 d ^ "*+" ^ st 4 c
+    | `TYP_compactrptsum (d,c) -> 6, "compact(" ^ st 4 d ^ "\\*+" ^ st 4 c ^ ")"
 
     | `TYP_index (sr,name,idx) -> 0, name ^ "<" ^ string_of_bid idx ^ ">"
     | `TYP_label -> 0, "LABEL"
@@ -453,7 +454,7 @@ and st prec tc : string =
     | `TYP_compacttuple ls ->
       begin match ls with
       | [] -> 0,"unit"
-      | _ -> 0, "compact(" ^ cat " * " (map (st 4) ls) ^ ")"
+      | _ -> 0, "compact(" ^ cat " \\* " (map (st 4) ls) ^ ")"
       end
 
     | `TYP_record ls ->
@@ -487,8 +488,15 @@ and st prec tc : string =
     | `TYP_sum ls ->
       begin match ls with
       | [] -> 0,"void"
-      | [`TYP_tuple[];`TYP_tuple[]] -> 0,"bool"
       | _ -> 5,cat " + " (map (st 5) ls)
+      end
+
+
+    | `TYP_compactsum ls ->
+      begin match ls with
+      | [] -> 0,"void"
+      | [`TYP_tuple[];`TYP_tuple[]] -> 0,"bool"
+      | _ -> 5,"compact(" ^ cat " \\+ " (map (st 5) ls) ^ ")"
       end
 
     | `TYP_typeset ls ->
@@ -727,7 +735,7 @@ and sb bsym_table depth fixlist counter prec tc =
       begin match ls with
       | [] -> 0,"unit"
       | [x] -> failwith ("UNEXPECTED TUPLE OF ONE ARGUMENT " ^ sbt 9 x)
-      | _ -> 4,"compact("^cat " * " (map (sbt 4) ls)^")"
+      | _ -> 4,"compact("^cat " \\* " (map (sbt 4) ls)^")"
       end
 
     | BTYP_rev t -> 0, "_rev(" ^ sbt 0 t ^ ")"
@@ -791,7 +799,7 @@ and sb bsym_table depth fixlist counter prec tc =
         then
           0,si (length ls)
         else
-          5,"compact("^cat " + " (map (sbt 5) ls)^")"
+          5,"compact("^cat " \\+ " (map (sbt 5) ls)^")"
       end
 
 
@@ -840,8 +848,8 @@ and sb bsym_table depth fixlist counter prec tc =
 
     | BTYP_compactrptsum (t1,t2) ->
       begin match t1 with
-      | BTYP_unitsum k -> 3, "compact("^si k ^"*+"^sbt 3 t2^")"
-      | _ -> 3, "compact("^sbt 3 t1 ^"*+"^sbt 3 t2^")"
+      | BTYP_unitsum k -> 3, "compact("^si k ^"\\*+"^sbt 3 t2^")"
+      | _ -> 3, "compact("^sbt 3 t1 ^"\\*+"^sbt 3 t2^")"
       end
 
 
@@ -853,8 +861,8 @@ and sb bsym_table depth fixlist counter prec tc =
 
     | BTYP_compactarray (t1,t2) ->
       begin match t2 with
-      | BTYP_unitsum k -> 3, "compact(" ^ sbt 3 t1 ^"^"^si k ^ ")"
-      | _ -> 3, "compact(" ^ sbt 3 t1 ^"^"^sbt 3 t2 ^ ")"
+      | BTYP_unitsum k -> 3, "compact(" ^ sbt 3 t1 ^"\\^"^si k ^ ")"
+      | _ -> 3, "compact(" ^ sbt 3 t1 ^"\\^"^sbt 3 t2 ^ ")"
       end
 
 

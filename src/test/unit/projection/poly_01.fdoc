@@ -1,19 +1,39 @@
 @title Inline Tuple Value Integer (Constant) Pointer Projection Tuple domain with Polymorphism
 @felix
-fun swp[X:COMPACTLINEAR,Y:COMPACTLINEAR] (a: X * Y * X) {
-  var b = a;
-  var tmp = b.0;
-  &b.0 <- b.2;
-  &b.2 <- tmp;
-  return b;
-}
+begin
+  fun swp[X:COMPACTLINEAR,Y:COMPACTLINEAR] (a: X * Y * X) {
+    var b = a;
+    var tmp = b.0;
+    &b.0 <- b.2;
+    &b.2 <- tmp;
+    return b;
+  }
 
-var x = `2:6, `3:7, `4:6;
-println$ "x=" + x._strr;
-var y = swp x;
-println$ "y=" + y._strr;
+  var x = `2:6, `3:7, `4:6;
+  println$ "x=" + x._strr;
+  var y = swp x;
+  println$ "y=" + y._strr;
+end
+begin
+  fun swp[X:COMPACTLINEAR,Y:COMPACTLINEAR] (a: X \* Y \* X) {
+    var b = a;
+    var tmp = b.0;
+    &b.0 <- b.2;
+    &b.2 <- tmp;
+    return b;
+  }
+
+  var x = `2:6\, `3:7\, `4:6;
+  println$ "x=" + x._strr;
+  var y = swp x;
+  println$ "y=" + y._strr;
+end
+
+
 @
 @expect
+x=(case 2 of 6,case 3 of 7,case 4 of 6)
+y=(case 4 of 6,case 3 of 7,case 2 of 6)
 x=(case 2 of 6,case 3 of 7,case 4 of 6)
 y=(case 4 of 6,case 3 of 7,case 2 of 6)
 @

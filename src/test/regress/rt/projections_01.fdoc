@@ -42,8 +42,8 @@ end
 @felix
 // compact linear tuple : constant value projection
 begin
-  typedef t3 = 2 * 3 * 4;
-  var x = (`1:2,`2:3,`3:4);
+  typedef t3 = 2 \* 3 \* 4;
+  var x = (`1:2\,`2:3\,`3:4);
   var px = proj 1 of t3;
   println$ x.px._strr;
 end
@@ -52,8 +52,8 @@ case 2 of 3
 @felix
 // compact linear array : constant value projection
 begin
-  var x = `1:3,`2:3,`0:3;
-  var px = proj 1 of (3^3);
+  var x = `1:3\,`2:3\,`0:3;
+  var px = proj 1 of (3\^3);
   println$ x.px._strr;
 end
 @expect
@@ -101,8 +101,8 @@ end
 @felix
 // compact linear tuple : constant pointer projection
 begin
-  typedef t3 = 2 * 3 * 4;
-  var x = (`1:2,`2:3,`3:4);
+  typedef t3 = 2 \* 3 \* 4;
+  var x = (`1:2\,`2:3\,`3:4);
   var px = proj 1 of &t3;
   println$ (*(&x.px))._strr;
 end
@@ -111,8 +111,8 @@ case 2 of 3
 @felix
 // compact linear array : constant pointer projection
 begin
-  var x = `1:3,`2:3,`0:3;
-  var px = proj 1 of &(3^3);
+  var x = `1:3\,`2:3\,`0:3;
+  var px = proj 1 of &(3\^3);
   println$ (*(&x.px))._strr;
 end
 @expect
@@ -120,9 +120,9 @@ case 2 of 3
 @felix
 // compact linear array : constant compact linear pointer projection
 begin
-  var x = `1:3,(`2:3,`0:3);
-  var po = proj 1 of &(3 * 3 ^ 2);
-  var pi = proj 1 of _pclt<3 * 3^2,3^2>;
+  var x = `1:3\,(`2:3\,`0:3);
+  var po = proj 1 of &(3 \* 3 \^ 2);
+  var pi = proj 1 of _pclt<3 \* 3\^2,3\^2>;
   println$ (*(&x.po.pi))._strr;
 end
 @expect
@@ -141,9 +141,9 @@ end
 @felix
 // compact linear array : variable value projection
 begin
-  var x = `1:3,`2:3,`0:3;
+  var x = `1:3\,`2:3\,`0:3;
   var n = `1:3;
-  var px = aproj n of (3^3);
+  var px = aproj n of (3\^3);
   println$ x.px._strr;
 end
 @expect
@@ -162,9 +162,9 @@ end
 @felix
 // compact linear array : variable pointer projection
 begin
-  var x = `1:3,`2:3,`0:3;
+  var x = `1:3\,`2:3\,`0:3;
   var n = `1:3;
-  var px = aproj n of &(3^3);
+  var px = aproj n of &(3\^3);
   println$ (*(&x.px))._strr;
 end
 @expect
@@ -173,10 +173,10 @@ case 2 of 3
 @felix
 // compact linear array : variable compact linear pointer projection
 begin
-  var x = `1:3,(`2:3,`0:3);
-  var po = proj 1 of &(3 * 3 ^ 2);
+  var x = `1:3\,(`2:3\,`0:3);
+  var po = proj 1 of &(3 \* 3 \^ 2);
   var n = `1:2;
-  var pi = aproj n of _pclt<3 * 3^2,3^2>;
+  var pi = aproj n of _pclt<3 \* 3\^2,3\^2>;
   println$ (*(&x.po.pi))._strr;
 end
 @expect

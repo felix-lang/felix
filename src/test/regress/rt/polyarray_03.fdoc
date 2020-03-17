@@ -6,9 +6,9 @@ fun ==: 3 * 3 -> bool = "$1==$2";
 var i : 3 = case 0 of 3;
 var j : 3 = case 1 of 3;
 var k : 3 = case 2 of 3;
-var ijk : 3 * 3 * 3 = i,j,k; 
+var ijk : 3 \* 3 \* 3 = i\,j\,k; 
 
-fun str (x:3*3*3) => (x :>> int) . str;
+fun str (x:3\*3\*3) => (x :>> int) . str;
 fun str (x:3) => (x :>> int) . str;
 
 println$ "ijk=" + str ijk;
@@ -32,7 +32,7 @@ for var ii in 0 upto 2 do
     j = jj :>> 3;
     for var kk in 0 upto 2 do
       k = kk :>> 3;
-      ijk = i,j,k;
+      ijk = i\,j\,k;
       println$ ijk.0.str + "," + ijk.1.str + "," + ijk.2.str+" encoding=" + (ijk :>>int) .str;
       assert 9 * (i:>>int) + 3 * (j:>>int) + (k:>>int) == (ijk :>>int);
     done
@@ -46,7 +46,7 @@ println$ str ijk;
 println$ "Decoding test";
 // Decoding test
 for var v in 0 upto 26 do
-  ijk = v :>> (3 * 3 * 3);
+  ijk = v :>> (3 \* 3 \* 3);
   println$ ijk.0.str + "," + ijk.1.str + "," + ijk.2.str+" encoding=" + (ijk :>>int) .str;
   assert 9 * (ijk.0 :>>int)+ 3 * (ijk.1:>>int)+ (ijk.2 :>>int) == (ijk :>>int);
 done

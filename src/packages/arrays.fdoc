@@ -412,54 +412,54 @@ class TrueContiguousArrayObject[t,x, v]
 //$ Compile time fix length array.
 open class Farray
 {
-  typedef array[t,n] = t ^ n;
+  typedef array[t,n:COMPACTLINEAR] = t ^ n;
 
   //ctor[T,N] array[T,N] (x:array[T,N]) => x;
 
   //$ Array copy.
-  fun copy[T,N] (var x:array[T,N]) => x;
+  fun copy[T,N:COMPACTLINEAR] (var x:array[T,N]) => x;
 
   //$ Array of one element.
   ctor[T] array[T,1] (x:T) => x :>> array[T,1];
 
   //$ Array as value.
-  instance[t,n] ArrayValue[array[t,n], t] {
+  instance[t,n:COMPACTLINEAR] ArrayValue[array[t,n], t] {
     fun len (x:array[t, n]): size => Typing::arrayindexcount[n];
     fun unsafe_get (var a: array[t, n], j: size): t => a . (j :>> n);
   }
 
   //$ Pointer to array as value.
-  instance[t,n] ArrayValue[&array[t,n], &t] {
+  instance[t,n:COMPACTLINEAR] ArrayValue[&array[t,n], &t] {
     fun len (x:&array[t, n]): size => Typing::arrayindexcount[n];
     fun unsafe_get (var a: &array[t, n],  j: size) : &t  => a.(aproj (j :>> n) of (&(t^n)));
   }
 
   //$ Pointer to array as value.
-  instance[t,n] ArrayValue[&array[t,n], _pclt<array[t,n],t>] {
+  instance[t,n:COMPACTLINEAR] ArrayValue[&array[t,n], _pclt<array[t,n],t>] {
     fun len (x:&array[t, n]): size => Typing::arrayindexcount[n];
     fun unsafe_get (var a: &array[t, n],  j: size) : _pclt<array[t,n],t>  => a.(aproj (j :>> n) of (&(t^n)));
   }
 
   //$ Compact Linear Pointer to array as value.
-  instance[t,n] ArrayValue[_pclt<array[t,n],t>, _pclt<array[t,n],t>] {
+  instance[t,n:COMPACTLINEAR] ArrayValue[_pclt<array[t,n],t>, _pclt<array[t,n],t>] {
     fun len (x:&array[t, n]): size => Typing::arrayindexcount[n];
     fun unsafe_get (var a: &array[t, n],  j: size) => a.(aproj (j :>> n) of (&(t^n)));
   }
 
   // this one should
-  proc unsafe_set[t,n] (a: &(t^n), i:size, v:t) { a . (i.int) <- v; }
+  proc unsafe_set[t,n:COMPACTLINEAR] (a: &(t^n), i:size, v:t) { a . (i.int) <- v; }
 
-  proc set[t,n, I in ints] (a: &array[t,n], i:I,v:t) {
+  proc set[t,n:COMPACTLINEAR, I in ints] (a: &array[t,n], i:I,v:t) {
     assert i.size < (*a).len;
     unsafe_set (a,i.size,v);
   }
 
   // these cannot work for compact linear arrays
-  fun stl_begin[t,n]: &array[t,n] -> +t = "(?1*)($1->data)";
-  fun stl_end[t,n] ( x:&array[t,n] ) : +t => stl_begin x + x*.len;
+  fun stl_begin[t,n:COMPACTLINEAR]: &array[t,n] -> +t = "(?1*)($1->data)";
+  fun stl_end[t,n:COMPACTLINEAR] ( x:&array[t,n] ) : +t => stl_begin x + x*.len;
 
   //$ Array map.
-  fun map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N] = {
+  fun map[V,N:COMPACTLINEAR,U] (_f:V->U) (x:array[V,N]):array[U,N] = {
     var o : array[U,N];
     val n = x.len;
     if n > 0uz 
@@ -470,7 +470,7 @@ open class Farray
   }
 
   // not very efficient!
-  fun rev_map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N] => 
+  fun rev_map[V,N:COMPACTLINEAR,U] (_f:V->U) (x:array[V,N]):array[U,N] => 
     rev (map _f x)
   ;
 
@@ -553,7 +553,7 @@ open class Farray
   //$ Transpose and array.
   //$ Subsumes zip.
   //$ Example: transpose ( (1,2,3), (4,5,6) ) = ( (1,4), (2,5), (3,6) ).
-  fun transpose[T,N,M] (y:array[array[T,M],N]) : array[array[T,N],M] = {
+  fun transpose[T,N:COMPACTLINEAR,M:COMPACTLINEAR] (y:array[array[T,M],N]) : array[array[T,N],M] = {
     var o : array[array[T,N],M];
     var n = len y;
     var m = len y.0;
@@ -568,7 +568,7 @@ open class Farray
   }
 
   //$ Reverse elements of an array.
-  fun rev[T, N] (x:array[T, N]): array[T, N] = {
+  fun rev[T, N:COMPACTLINEAR] (x:array[T, N]): array[T, N] = {
     var o : array[T, N];
     var n = len x;
     if n > 0uz
@@ -578,19 +578,19 @@ open class Farray
     return o;
   }
 
-  fun sort[T,N] (cmp: T * T -> bool) (var x:array[T,N]) : array[T,N] = {
+  fun sort[T,N:COMPACTLINEAR] (cmp: T * T -> bool) (var x:array[T,N]) : array[T,N] = {
     Sort::stl_sort (Sort::stl_comparator cmp, stl_begin (&x), stl_end (&x));
     return x;
   }
 
-  fun sort[T,N] (var x:array[T,N]) : array[T,N] = {
+  fun sort[T,N:COMPACTLINEAR] (var x:array[T,N]) : array[T,N] = {
     Sort::stl_sort (stl_begin (&x), stl_end (&x));
     return x;
   }
 
 
   //$ Display: convert to string like (1,2,3).
-  instance[T,N with Show[T]] Str[array[T, N]] {
+  instance[T,N:COMPACTLINEAR with Show[T]] Str[array[T, N]] {
     fun str (xs:array[T,N]) = {
       var o = '(';
       val n = xs.len;
@@ -606,7 +606,7 @@ open class Farray
   }
 
   //$ Equality and Inequality.
-  instance[T,N with Eq[T]] Eq[array[T, N]] {
+  instance[T,N:COMPACTLINEAR with Eq[T]] Eq[array[T, N]] {
     fun == (xs:array[T,N],ys:array[T,N]) = {
       val n = xs.len;
       // assert n == ys.len;
@@ -622,7 +622,7 @@ open class Farray
 
   //$ Lexicographical total order based on
   //$ total order of elements.
-  instance[T,N with Tord[T]] Tord[array[T,N]] {
+  instance[T,N:COMPACTLINEAR with Tord[T]] Tord[array[T,N]] {
     fun < (xs:array[T,N],ys:array[T,N]) = {
       val n = xs.len;
       if n == 0uz return false;
@@ -637,12 +637,12 @@ open class Farray
   }
 }
 
-open[T,N] Eq[array[T,N]];
-open[T,N] Tord[array[T,N]];
-open[T,N with Eq[T]] Set[array[T,N],T];
+open[T,N:COMPACTLINEAR] Eq[array[T,N]];
+open[T,N:COMPACTLINEAR] Tord[array[T,N]];
+open[T,N:COMPACTLINEAR with Eq[T]] Set[array[T,N],T];
 
-open[T,N] ArrayValue[array[T,N], T];
-open[T,N] ArrayValue[&array[T,N], &T];
+open[T,N:COMPACTLINEAR] ArrayValue[array[T,N], T];
+open[T,N:COMPACTLINEAR] ArrayValue[&array[T,N], &T];
 
 @h1 Varray 
 @tangle varray.flx
@@ -701,7 +701,7 @@ open class Varray
 
   //$ Construct a full varray from an array.
   // funny, the N isn't explicitly used.
-  ctor[t,N] varray[t] (x:array[t,N]) => 
+  ctor[t,N:COMPACTLINEAR] varray[t] (x:array[t,N]) => 
      varray[t] (len x, len x, (fun (i:size):t =>x.i))
   ;
 
@@ -1063,7 +1063,7 @@ operation such as a @{push_back} or @{pop_back}.
     _make_darray[T]$ new darray_ctl[T](varray[T] 20uz , dflt_resize);
 
   //$ Make a darray from an array
-  ctor[T,N] darray[T] (a:array[T,N]) =>  
+  ctor[T,N:UNITSUM] darray[T] (a:array[T,N]) =>  
     _make_darray[T]$ new darray_ctl[T]( varray[T] a, dflt_resize);
 
   //$ Make a darray from a varray

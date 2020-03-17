@@ -121,12 +121,15 @@ syntax types {
 
   //$ Addition: left non-associative.
   t[ssum_pri] := t[>ssum_pri] ("+" t[>ssum_pri])+ =># "(chain 'typ_sum _1 _2)" note "add";
+  t[scompactsum_pri] := t[>scompactsum_pri] ("\+" t[>scompactsum_pri])+ =># "(chain 'typ_compactsum _1 _2)" note "add";
 
   //$ multiplication: non-associative.
   t[sproduct_pri] := t[>sproduct_pri] ("*" t[>sproduct_pri])+ =># "(chain 'typ_tuple _1 _2)" note "mul";
   t[scompactproduct_pri] := t[>scompactproduct_pri] ("\*" t[>scompactproduct_pri])+ =># "(chain 'typ_compacttuple _1 _2)" note "mul";
   
+  // questionable precedences here!
   t[sproduct_pri] := t[>sproduct_pri] "*+" t[sproduct_pri] =># "`(typ_rptsum ,_sr ,_1 ,_3)";
+  t[sproduct_pri] := t[>sproduct_pri] "\*+" t[sproduct_pri] =># "`(typ_compactrptsum ,_sr ,_1 ,_3)";
 
   //$ Prefix 
   t[sprefixed_pri] := "~" t[sprefixed_pri] =># "`(typ_dual ,_sr ,_2)";
@@ -277,6 +280,7 @@ syntax expressions {
 
     // NUMERIC OPERATORS
     ssum_pri <
+    scompactsum_pri <
     ssubtraction_pri <
     sproduct_pri <
     scompactproduct_pri <

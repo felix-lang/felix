@@ -92,6 +92,7 @@ print_endline (" ** BOUND mata type is " ^ Flx_kind.sk bmt);
 
   (* usually actual types! *)
   | `TYP_rptsum _
+  | `TYP_compactrptsum _
   | `TYP_pclt _
   | `TYP_rpclt _
   | `TYP_wpclt _
@@ -101,6 +102,7 @@ print_endline (" ** BOUND mata type is " ^ Flx_kind.sk bmt);
   | `TYP_patvar _ 
   | `TYP_tuple _
   | `TYP_sum _
+  | `TYP_compactsum _
   | `TYP_record _
   | `TYP_polyrecord _
   | `TYP_variant _

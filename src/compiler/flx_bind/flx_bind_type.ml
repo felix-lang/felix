@@ -158,6 +158,12 @@ print_endline ("  .. result = " ^ sbt bsym_table result);
     let b = bt base in
     btyp_rptsum (n,b)
 
+
+  | `TYP_compactrptsum (count, base) ->
+    let n = bt count in
+    let b = bt base in
+    btyp_compactrptsum (n,b)
+
   | `TYP_label -> btyp_label ()
   | `TYP_patvar _ -> failwith "Not implemented patvar in typecode"
   | `TYP_patany _ -> failwith "Not implemented patany in typecode"
@@ -409,21 +415,20 @@ print_endline ("Flx_bind_type.TYP_typeof fixpoint metatype hack! Expression " ^ 
     end
 
   | `TYP_array (t1,t2)->
-      let t2 =
-        match bt t2 with
-        | BTYP_tuple [] -> btyp_unitsum 1
-        | x -> x
-      in
-      btyp_array (bt t1, t2)
+      let t1 = bt t1 in
+      let t2 = bt t2 in
+      if not (islinear_type () t2) then 
+        clierr sr ("Flx_bind_type.TYP_array] Array index must be compact linear, got " ^ sbt bsym_table t2);
+      btyp_array (t1, t2)
 
   | `TYP_compactarray (t1,t2)->
-      let t2 =
-        match bt t2 with
-        | BTYP_tuple [] -> btyp_unitsum 1
-        | x -> x
-      in
-      btyp_compactarray (bt t1, t2)
-
+      let t1 = bt t1 in
+      let t2 = bt t2 in
+      if not (islinear_type () t2) then 
+        clierr sr ("Flx_bind_type.TYP_compactarray] Compact Array index must be compact linear, got " ^ sbt bsym_table t2);
+      if not (islinear_type () t1) then 
+        clierr sr ("Flx_bind_type.TYP_compactarray] Compact Array value type must be compact linear, got " ^ sbt bsym_table t1);
+      btyp_compactarray (t1, t2)
 
   | `TYP_compacttuple ts -> btyp_compacttuple (List.map bt ts)
   | `TYP_tuple ts -> btyp_tuple (List.map bt ts)
@@ -435,6 +440,13 @@ print_endline ("Flx_bind_type.TYP_typeof fixpoint metatype hack! Expression " ^ 
       | 1 -> btyp_tuple []
       | _ -> btyp_unitsum k
       end
+
+  | `TYP_compactsum ts ->
+      let ts' = List.map bt ts in
+      if Flx_btype.all_units ts' then
+        btyp_unitsum (List.length ts)
+      else
+        btyp_compactsum ts'
 
   | `TYP_sum ts ->
       let ts' = List.map bt ts in

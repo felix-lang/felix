@@ -230,7 +230,7 @@ of lvalues in general: this is a very special case.
 @h2 Conversions
 @tangle carray.flx
   //$ Get carray of an array.
-  fun stl_begin[T,N]: carray[array[T,N]] -> carray[T] = "(?1*)&($1->data)";
+  fun stl_begin[T,N:COMPACTLINEAR]: carray[array[T,N]] -> carray[T] = "(?1*)&($1->data)";
 
   //$ Unsafe conversion of Felix pointer to carray.
   fun prefix_plus [T]:&T -> carray[T] = "$t"; // unsafe
@@ -242,11 +242,11 @@ of lvalues in general: this is a very special case.
   ctor[T] carray[T] : &T = "$t";
 
   //$ Get a carray from a Felix array object.
-  ctor[T,N] carray[T]: &array[T,N] = "($1)->data";
+  ctor[T,N:COMPACTLINEAR] carray[T]: &array[T,N] = "($1)->data";
 
 
   //$ Convert C array to Felix array.
-  fun array_of[T,N]: carray[T] -> &array[T,N] = "*(#0*)(void*)$1";
+  fun array_of[T,N:COMPACTLINEAR]: carray[T] -> &array[T,N] = "*(#0*)(void*)$1";
 }
 
 open[T] Eq[carray[T]];

@@ -11,6 +11,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | `TYP_bool _ -> t 
   | `TYP_typeop (sr,op,t,k) -> `TYP_typeop (sr,op, f t, k)
   | `TYP_rptsum (i,t) -> `TYP_rptsum (f i, f t)
+  | `TYP_compactrptsum (i,t) -> `TYP_compactrptsum (f i, f t)
   | `TYP_defer (sr,dt) -> 
     begin match !dt with
     | None -> t (* unmodified *)
@@ -47,6 +48,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
   (* here we don't need to go to a unitsum, since
      we have already used up storage
   *)
+  | `TYP_compactsum ts -> `TYP_compactsum (List.map f ts)
   | `TYP_sum ts -> `TYP_sum (List.map f ts)
   | `TYP_function (a,b) -> `TYP_function (f a, f b)
   | `TYP_effector (a,e,b) -> `TYP_effector (f a, f e, f b)

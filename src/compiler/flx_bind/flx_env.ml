@@ -111,10 +111,11 @@ and bind_dir
   (* cheating stuff to add the type variables to the environment *)
   let cheat_table = Hashtbl.create 7 in
   List.iter
-  (fun (n,i,_) ->
+  (fun (n,i,k) ->
    let entry = NonFunctionEntry {base_sym=i; spec_vs=[]; sub_ts=[]} in
     Hashtbl.add cheat_table n entry;
     if not (Flx_sym_table.mem state.sym_table i) then
+      let kind = k in
       Flx_sym_table.add state.sym_table i None {
         Flx_sym.id=n;
         sr=dummy_sr;
@@ -122,7 +123,7 @@ and bind_dir
         pubmap=nullmap;
         privmap=nullmap;
         dirs=[];
-        symdef=SYMDEF_typevar KND_type
+        symdef=SYMDEF_typevar k
       }
     ;
   )
@@ -157,6 +158,9 @@ and bind_dir
       try (bind_type' state bsym_table (cheat_env::env) rs dummy_sr t [] mkenv) 
       with exn -> 
          print_endline ("[bind_dir] Type binding failed for " ^ string_of_typecode t); 
+         print_endline ("Try to bind dir " ^ string_of_qualified_name qn);
+         print_endline ("vs = " ^ Flx_print.string_of_ivs vs); 
+         print_endline ("Original exception: " ^ Printexc.to_string exn);
          raise exn
     in
     try

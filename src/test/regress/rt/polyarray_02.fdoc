@@ -8,11 +8,11 @@ fun ==: 5 * 5 -> bool = "$1==$2";
 var i : 3 = case 1 of 3;
 var j : 4 = case 2 of 4;
 var k : 5 = case 3 of 5;
-var ijk : 3 * 4 * 5 = i,j,k; 
+var ijk : 3 \* 4 \* 5 = i\,j\,k; 
   // encoding: 20i + 5j + k
   // 20 * 1 + 5 * 2 + 3 = 33
 
-fun str (x:3*4*5) => (x :>> int) . str;
+fun str (x:3\*4\*5) => (x :>> int) . str;
 fun str (x:3) => (x :>> int) . str;
 fun str (x:4) => (x :>> int) . str;
 fun str (x:5) => (x :>> int) . str;
@@ -38,7 +38,7 @@ for var ii in 0 upto 2 do
     j = jj :>> 4;
     for var kk in 0 upto 4 do
       k = kk :>> 5;
-      ijk = i,j,k;
+      ijk = i\,j\,k;
       println$ ijk.0.str + "," + ijk.1.str + "," + ijk.2.str+" encoding=" + (ijk :>>int) .str;
       assert 20 * (i:>>int) + 5 * (j:>>int) + (k:>>int) == (ijk :>>int);
     done
@@ -52,7 +52,7 @@ println$ str ijk;
 println$ "Decoding test";
 // Decoding test
 for var v in 0 upto 59 do
-  ijk = v :>> (3 * 4 * 5);
+  ijk = v :>> (3 \* 4 \* 5);
   println$ ijk.0.str + "," + ijk.1.str + "," + ijk.2.str+" encoding=" + (ijk :>>int) .str;
   assert 20 * (ijk.0 :>>int)+ 5 * (ijk.1:>>int)+ (ijk.2 :>>int) == (ijk :>>int);
 done

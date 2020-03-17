@@ -677,7 +677,7 @@ class System
   fun args () => List::map (argv) (List::range argc);
 
   proc setargs : + (+char) * size = "ptf-> argc=$2; ptf-> argv=$1;" requires property "needs_ptf";
-  proc setargs[N] (a:string^N) 
+  proc setargs[N:UNITSUM] (a:string^N) 
   {
     gen myget(i:size)=>a.i.cstr;
     var x = varray[+char] (a.len,a.len,myget);
